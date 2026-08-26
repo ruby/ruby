@@ -90,6 +90,16 @@ guard -> {
       @daemon.invoke("stay_in_dir", [true]).should == @invoke_dir
     end
 
+    it "raises ArgumentError if the first argument is not a boolean or nil" do
+      -> { Process.daemon(1) }.should.raise(ArgumentError, /expected true or false/)
+      -> { Process.daemon("true") }.should.raise(ArgumentError, /expected true or false/)
+    end
+
+    it "raises ArgumentError if the second argument is not a boolean or nil" do
+      -> { Process.daemon(true, 1) }.should.raise(ArgumentError, /expected true or false/)
+      -> { Process.daemon(true, "true") }.should.raise(ArgumentError, /expected true or false/)
+    end
+
     describe "when the second argument is not given" do
       it_behaves_like :process_daemon_keep_stdio_open_false, nil, [false]
     end

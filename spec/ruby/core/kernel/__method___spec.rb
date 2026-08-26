@@ -1,7 +1,11 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/__method__'
 
-describe "Kernel.__method__" do
+describe "Kernel#__method__" do
+  it "is a private method" do
+    Kernel.private_instance_methods(false).should.include?(:__method__)
+  end
+
   it "returns the current method, even when aliased" do
     KernelSpecs::MethodTest.new.f.should == :f
   end
@@ -36,5 +40,11 @@ describe "Kernel.__method__" do
 
   it "returns nil when not called from a method" do
     __method__.should == nil
+  end
+end
+
+describe "Kernel.__method__" do
+  it "is a public method" do
+    Kernel.public_methods(false).should.include?(:__method__)
   end
 end

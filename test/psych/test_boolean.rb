@@ -6,15 +6,30 @@ module Psych
   # Test booleans from YAML spec:
   # http://yaml.org/type/bool.html
   class TestBoolean < TestCase
-    %w{ yes Yes YES true True TRUE on On ON }.each do |truth|
+    # true/false are booleans in both YAML 1.1 and 1.2.
+    %w{ true True TRUE }.each do |truth|
       define_method(:"test_#{truth}") do
         assert_equal true, Psych.load("--- #{truth}")
       end
     end
 
-    %w{ no No NO false False FALSE off Off OFF }.each do |truth|
+    %w{ false False FALSE }.each do |truth|
       define_method(:"test_#{truth}") do
         assert_equal false, Psych.load("--- #{truth}")
+      end
+    end
+
+    # yes/on and no/off are booleans only under YAML 1.1 (the libyaml backend).
+    # The YAML 1.2 libfyaml backend keeps them as plain strings.
+    %w{ yes Yes YES on On ON }.each do |truth|
+      define_method(:"test_#{truth}") do
+        assert_equal(libfyaml? ? truth : true, Psych.load("--- #{truth}"))
+      end
+    end
+
+    %w{ no No NO off Off OFF }.each do |truth|
+      define_method(:"test_#{truth}") do
+        assert_equal(libfyaml? ? truth : false, Psych.load("--- #{truth}"))
       end
     end
 
@@ -32,6 +47,16 @@ module Psych
     def test_n
       assert_equal "n", Psych.load("--- n")
       assert_equal "N", Psych.load("--- N")
+    end
+
+    ###
+    # The "Norway problem": under YAML 1.2 (the libfyaml backend) yes/no/on/off
+    # are plain strings in every context, so the country code "no" no longer
+    # becomes false.
+    def test_norway_problem
+      omit 'libfyaml (YAML 1.2) backend only' unless libfyaml?
+      assert_equal({ 'country' => 'no' }, Psych.load("country: no"))
+      assert_equal %w[yes no on off], Psych.load("- yes\n- no\n- on\n- off\n")
     end
   end
 end

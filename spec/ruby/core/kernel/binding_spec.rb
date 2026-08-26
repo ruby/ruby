@@ -1,12 +1,6 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 
-describe "Kernel.binding" do
-  it "returns a binding for the caller" do
-    Kernel.binding.eval("self").should == self
-  end
-end
-
 describe "Kernel#binding" do
   it "is a private method" do
     Kernel.private_instance_methods(false).should.include?(:binding)
@@ -47,5 +41,15 @@ describe "Kernel#binding" do
     m = mock(:whatever)
     cls = Class.new { ScratchPad.record eval('self', m.send(:binding)) }
     ScratchPad.recorded.should == cls
+  end
+end
+
+describe "Kernel.binding" do
+  it "is a public method" do
+    Kernel.public_methods(false).should.include?(:binding)
+  end
+
+  it "returns a binding for the caller" do
+    Kernel.binding.eval("self").should == self
   end
 end

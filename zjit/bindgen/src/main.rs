@@ -53,6 +53,10 @@ fn main() {
         .header(src_root.join(c_file).to_str().unwrap())
         .header(src_root.join("jit.c").to_str().unwrap())
 
+        .header(src_root.join("gc/gc_impl.h").to_str().unwrap())
+        .header(src_root.join("gc/default/zjit_fastpath.h").to_str().unwrap())
+        .header(src_root.join("gc/mmtk/zjit_fastpath.h").to_str().unwrap())
+
         // Don't want to copy over C comment
         .generate_comments(false)
 
@@ -75,6 +79,7 @@ fn main() {
         .allowlist_type("ruby_special_consts")
         .allowlist_function("rb_utf8_str_new")
         .allowlist_function("rb_str_buf_append")
+        .allowlist_function("rb_jit_str_simple_append")
         .allowlist_function("rb_str_dup")
         .allowlist_function("rb_str_getbyte")
         .allowlist_type("ruby_preserved_encindex")
@@ -85,6 +90,14 @@ fn main() {
 
         // This struct is public to Ruby C extensions
         .allowlist_type("RBasic")
+
+        .allowlist_type("RArray")
+        .allowlist_type("rb_gc_zjit_fastpath_kind")
+        .allowlist_type("rb_gc_zjit_fastpath")
+        .allowlist_type("rb_gc_zjit_fastpath_data")
+        .allowlist_type("rb_gc_zjit_default_new_obj_fastpath")
+        .allowlist_type("rb_gc_zjit_mmtk_new_obj_fastpath")
+        .allowlist_var("RB_GC_ZJIT_FASTPATH_.*")
 
         .allowlist_type("ruby_rstring_flags")
 
@@ -98,7 +111,15 @@ fn main() {
         .allowlist_function("rb_funcallv")
         .allowlist_function("rb_protect")
         .allowlist_function("rb_zjit_profile_disable")
+        .allowlist_function("rb_zjit_profile_enable")
         .allowlist_function("rb_zjit_insn_to_bare_insn")
+        .allowlist_function("rb_zjit_hash_new_size")
+        .allowlist_function("rb_zjit_class_allocate_instance_fastpath")
+        .allowlist_function("rb_zjit_str_resurrect_fastpath")
+        .allowlist_function("rb_zjit_array_dup_can_fastpath")
+        .allowlist_function("rb_zjit_array_new_can_fastpath")
+        .allowlist_function("rb_zjit_hash_dup_can_fastpath")
+        .allowlist_function("rb_zjit_range_new_fastpath")
 
         // For crashing
         .allowlist_function("rb_bug")
@@ -118,7 +139,7 @@ fn main() {
         .allowlist_function("rb_class_real")
         .allowlist_type("ruby_encoding_consts")
         .allowlist_function("rb_hash_new")
-        .allowlist_function("rb_hash_new_with_size")
+        .allowlist_function("rb_hash_new_capa")
         .allowlist_function("rb_hash_resurrect")
         .allowlist_function("rb_hash_stlike_foreach")
         .allowlist_function("rb_to_hash_type")
@@ -153,6 +174,7 @@ fn main() {
         .allowlist_function("rb_gc_writebarrier")
         .allowlist_function("rb_gc_writebarrier_remember")
         .allowlist_function("rb_gc_register_mark_object")
+        .allowlist_function("rb_zjit_new_obj_shape")
 
         // VALUE variables for Ruby class objects
         .allowlist_var("rb_cBasicObject")
@@ -209,7 +231,7 @@ fn main() {
         .allowlist_type("ruby_rstring_private_flags")
         .allowlist_function("rb_ec_str_resurrect")
         .allowlist_function("rb_str_concat_literals")
-        .allowlist_function("rb_obj_as_string_result")
+        .allowlist_function("rb_any_to_s")
         .allowlist_function("rb_str_byte_substr")
         .allowlist_function("rb_str_substr_two_fixnums")
         .allowlist_function("rb_backref_get")
@@ -297,6 +319,7 @@ fn main() {
         .allowlist_function("rb_zjit_iseq_inspect")
         .allowlist_function("rb_zjit_iseq_insn_set")
         .allowlist_function("rb_zjit_local_id")
+        .allowlist_function("rb_id_table_lookup")
         .allowlist_function("rb_set_cfp_(pc|sp)")
         .allowlist_function("rb_c_method_tracing_currently_enabled")
         .allowlist_function("rb_zjit_method_tracing_currently_enabled")
@@ -318,12 +341,18 @@ fn main() {
         .allowlist_function("rb_zjit_insn_leaf")
         .allowlist_type("jit_bindgen_constants")
         .allowlist_type("zjit_struct_offsets")
+        .allowlist_var("rb_zjit_runtime_offsets")
         .allowlist_var("ZJIT_STACK_MAP_SHIFT")
         .allowlist_var("ZJIT_STACK_MAP_VREG_TAG")
+        .allowlist_var("ZJIT_STACK_MAP_SKIP_TAG")
+        .allowlist_var("ZJIT_STACK_MAP_BASE_PTR_TAG")
+        .allowlist_var("ZJIT_STACK_MAP_BASE_PTR_SIZE_SHIFT")
+        .allowlist_var("ZJIT_STACK_MAP_BASE_PTR_INDEX_MASK")
         .allowlist_var("ZJIT_JIT_RETURN_C_FRAME")
         .allowlist_function("rb_assert_holding_vm_lock")
         .allowlist_function("rb_jit_shape_complex_p")
         .allowlist_function("rb_jit_multi_ractor_p")
+        .allowlist_function("rb_jit_constcache_shareable")
         .allowlist_function("rb_jit_vm_lock_then_barrier")
         .allowlist_function("rb_jit_vm_unlock")
         .allowlist_function("rb_jit_for_each_iseq")
@@ -379,7 +408,6 @@ fn main() {
         .allowlist_function("rb_get_cfp_ep")
         .allowlist_function("rb_get_cfp_ep_level")
         .allowlist_function("rb_get_cme_def_type")
-        .allowlist_function("rb_zjit_constcache_shareable")
         .allowlist_function("rb_zjit_vm_search_method")
         .allowlist_function("rb_zjit_cme_is_cfunc")
         .allowlist_function("rb_get_cme_def_body_attr_id")
@@ -394,6 +422,7 @@ fn main() {
         .allowlist_function("rb_get_def_iseq_ptr")
         .allowlist_function("rb_get_def_bmethod_proc")
         .allowlist_function("rb_jit_get_proc_ptr")
+        .allowlist_type("rb_block_type")
         .allowlist_function("rb_iseq_encoded_size")
         .allowlist_function("rb_get_iseq_body_total_calls")
         .allowlist_function("rb_get_iseq_body_local_iseq")
@@ -421,7 +450,6 @@ fn main() {
         .allowlist_function("rb_get_iseq_body_param_opt_table")
         .allowlist_function("rb_get_cikw_keyword_len")
         .allowlist_function("rb_get_cikw_keywords_idx")
-        .allowlist_function("rb_get_call_data_ci")
         .allowlist_function("rb_yarv_str_eql_internal")
         .allowlist_function("rb_str_neq_internal")
         .allowlist_function("rb_yarv_ary_entry_internal")
@@ -449,6 +477,9 @@ fn main() {
         .blocklist_type("VALUE")
         .blocklist_type("ID")
         .blocklist_type("rb_iseq_constant_body")
+
+        // We only need id_table as an opaque pointer to pass to its APIs
+        .opaque_type("rb_id_table")
 
         // Avoid binding to stuff we don't use
         .blocklist_item("rb_thread_struct.*")

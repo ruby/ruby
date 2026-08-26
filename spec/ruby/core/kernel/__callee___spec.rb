@@ -1,7 +1,11 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/__callee__'
 
-describe "Kernel.__callee__" do
+describe "Kernel#__callee__" do
+  it "is a private method" do
+    Kernel.private_instance_methods(false).should.include?(:__callee__)
+  end
+
   it "returns the current method, even when aliased" do
     KernelSpecs::CalleeTest.new.f.should == :f
   end
@@ -44,5 +48,11 @@ describe "Kernel.__callee__" do
       def g; f end
     end
     c.new.g.should == :f
+  end
+end
+
+describe "Kernel.__callee__" do
+  it "is a public method" do
+    Kernel.public_methods(false).should.include?(:__callee__)
   end
 end

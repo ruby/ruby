@@ -352,6 +352,29 @@ class TestBox < Test::Unit::TestCase
 
     assert_equal "foo 1", @box::OpenClassWithInclude.refer_foo
   end
+
+  def test_descendants_follow_ancestors_of_the_current_box
+    setup_box
+
+    @box.require_relative('box/descendants')
+
+    assert_include @box::Descendants.ext_descendants, String
+    assert_include @box::Descendants.string_descendants, @box::BoxedString
+
+    # a builtin class has its own classext per box, so the include is invisible here
+    assert_not_include String.ancestors, @box::DescendantsExt
+    assert_not_include @box::DescendantsExt.descendants, String
+
+    # a class defined outside the box shares its classext, so the include is visible here
+    assert_include TestBoxDescendantsMain.ancestors, @box::DescendantsExt
+    assert_include @box::DescendantsExt.descendants, TestBoxDescendantsMain
+
+    assert_include @box::BoxedString.ancestors, String
+    assert_include String.descendants, @box::BoxedString
+  end
+end
+
+class TestBoxDescendantsMain
 end
 
 module ProcLookupTestA
@@ -868,10 +891,10 @@ class TestBox < Test::Unit::TestCase
       assert_match EXPERIMENTAL_WARNING_LINE_PATTERNS[0], error[0]
       assert_match EXPERIMENTAL_WARNING_LINE_PATTERNS[1], error[1]
 
-      assert_includes output.grep(/^before:/).join("\n"), '/bundled_gems.rb'
-      assert_includes output.grep(/^before:/).join("\n"), '/error_highlight.rb'
-      assert_includes output.grep(/^after:/).join("\n"), '/bundled_gems.rb'
-      assert_includes output.grep(/^after:/).join("\n"), '/error_highlight.rb'
+      assert_include output.grep(/^before:/).join("\n"), '/bundled_gems.rb'
+      refute_includes output.grep(/^before:/).join("\n"), '/error_highlight.rb'
+      assert_include output.grep(/^after:/).join("\n"), '/bundled_gems.rb'
+      assert_include output.grep(/^after:/).join("\n"), '/error_highlight.rb'
     end
   end
 
@@ -894,7 +917,7 @@ class TestBox < Test::Unit::TestCase
       refute_includes output.grep(/^before:/).join("\n"), '/bundled_gems.rb'
       refute_includes output.grep(/^before:/).join("\n"), '/error_highlight.rb'
       refute_includes output.grep(/^after:/).join("\n"), '/bundled_gems.rb'
-      assert_includes output.grep(/^after:/).join("\n"), '/error_highlight.rb'
+      assert_include output.grep(/^after:/).join("\n"), '/error_highlight.rb'
     end
   end
 
@@ -935,6 +958,49 @@ class TestBox < Test::Unit::TestCase
       assert_not_equal result[:main], result[:root]
       assert_not_equal result[:box], result[:root]
       assert_not_equal result[:main], result[:box]
+    end
+  end
+
+  def test_bundler_setup_not_loaded_while_decorator_gems_are_autoloaded
+    with_bundler_setup_log do |env|
+      # assert_separately w/ ENV_ENABLE_BOX and --enable=gems causes timeouts on CI @ Windows
+      assert_in_out_err([env, "--enable=gems"], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
+        begin;
+          Ruby::Box.new
+          autoloaded = %i[ErrorHighlight DidYouMean SyntaxSuggest].any? {|c| Object.autoload?(c) }
+          loaded = File.readlines(ENV["BUNDLER_SETUP_LOG"], chomp: true)
+          puts loaded == (autoloaded ? [] : ["true"]) ? "ok" : "loaded in #{loaded.inspect}"
+        end;
+        assert_equal ["ok"], output
+      end
+    end
+  end
+
+  def test_bundler_setup_loaded_only_in_main_box
+    with_bundler_setup_log do |env|
+      opts = [env, "--enable=gems", "--disable=error_highlight", "--disable=did_you_mean", "--disable=syntax_suggest"]
+      assert_in_out_err(opts, "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
+        begin;
+          Ruby::Box.new
+          puts File.readlines(ENV["BUNDLER_SETUP_LOG"], chomp: true)
+        end;
+        assert_equal ["true"], output
+      end
+    end
+  end
+
+  # Runs a BUNDLER_SETUP script that records the box it was loaded in, after
+  # touching RubyGems through TOPLEVEL_BINDING as Bundler does for gemspecs.
+  def with_bundler_setup_log
+    Tempfile.create(["bundler_setup", ".rb"]) do |setup|
+      Tempfile.create(["bundler_setup_log", ".txt"]) do |log|
+        setup.puts 'eval("Gem::Specification", TOPLEVEL_BINDING.dup)'
+        setup.puts 'File.write(ENV["BUNDLER_SETUP_LOG"], "#{Ruby::Box.current.main?}\n", mode: "a")'
+        setup.close
+        log.close
+
+        yield ENV_ENABLE_BOX.merge("BUNDLER_SETUP" => setup.path, "BUNDLER_SETUP_LOG" => log.path)
+      end
     end
   end
 
@@ -1075,8 +1141,7 @@ class TestBox < Test::Unit::TestCase
   end
 
   def test_loading_extension_libs_in_main_box_1
-    pend if /mswin|mingw/ =~ RUBY_PLATFORM # timeout on windows environments
-    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true, timeout: 60)
     begin;
       require "prism"
       require "optparse"

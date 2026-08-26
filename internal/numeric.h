@@ -126,6 +126,7 @@ VALUE rb_int_even_p(VALUE num);
 VALUE rb_int_odd_p(VALUE num);
 VALUE rb_int_abs(VALUE num);
 VALUE rb_int_bit_length(VALUE num);
+VALUE rb_int_bit_count(VALUE num);
 VALUE rb_int_uminus(VALUE num);
 VALUE rb_int_comp(VALUE num);
 

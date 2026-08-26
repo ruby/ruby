@@ -129,8 +129,12 @@ update_global_event_hooks(rb_hook_list_t *list, rb_event_flag_t prev_events, rb_
     rb_execution_context_t *ec = rb_current_execution_context(false);
     unsigned int lev;
 
-    // Can't enter VM lock during freeing of ractor hook list on MMTK, where ec == NULL.
-    if (ec) {
+    // Lock only with a current Ractor.  ec is NULL in MMTk's hook-list free; a global
+    // GC's sweep frees dead Ractors' hook lists with GET_RACTOR() == NULL (locking =
+    // NULL deref, and the barrier already excludes); in VM destruct's free-at-exit walk
+    // the thread structs are freed first (GET_RACTOR() = UAF) and it is single-threaded.
+    const bool vm_locked_here = ec && !ruby_vm_during_cleanup && GET_RACTOR() != NULL;
+    if (vm_locked_here) {
         RB_VM_LOCK_ENTER_LEV(&lev);
         rb_vm_barrier();
     }
@@ -146,7 +150,8 @@ update_global_event_hooks(rb_hook_list_t *list, rb_event_flag_t prev_events, rb_
     // as for all ractors. That's not how it works right now, so we shouldn't rely on it apart from the
     // internal events. Since it doesn't work like this, we have to track more state with `ruby_vm_iseq_events_enabled`,
     // `ruby_vm_c_events_enabled`, etc.
-    rb_event_flag_t new_events_global = (ruby_vm_event_flags & ~prev_events) | new_events;
+    rb_event_flag_t prev_events_global = ruby_vm_event_flags;
+    rb_event_flag_t new_events_global = (prev_events_global & ~prev_events) | new_events;
     ruby_vm_event_flags = new_events_global;
 
     // Modify ISEQs or CCs to enable tracing
@@ -166,13 +171,20 @@ update_global_event_hooks(rb_hook_list_t *list, rb_event_flag_t prev_events, rb_
     }
     ruby_vm_iseq_events_enabled += change_iseq_events;
     if (change_c_events < 0) {
-        RUBY_ASSERT(ruby_vm_c_events_enabled >= (unsigned int)(-change_iseq_events));
+        RUBY_ASSERT(ruby_vm_c_events_enabled >= (unsigned int)(-change_c_events));
     }
     ruby_vm_c_events_enabled += change_c_events;
 
     ruby_vm_event_enabled_global_flags |= new_events; // NOTE: this is only ever added to
     if (new_events_global & RUBY_INTERNAL_EVENT_MASK) {
         rb_objspace_set_event_hook(new_events_global);
+    }
+
+    // ZJIT's inline allocation fast path bypasses rb_newobj, so it can't fire the
+    // NEWOBJ internal event. Enabling such a hook invalidates the fast path code so
+    // allocation falls back to the interpreter, which fires the event.
+    if ((new_events_global & RUBY_INTERNAL_EVENT_NEWOBJ) && !(prev_events_global & RUBY_INTERNAL_EVENT_NEWOBJ)) {
+        rb_zjit_invalidate_newobj_hook();
     }
 
     // Invalidate JIT code as needed
@@ -185,7 +197,7 @@ update_global_event_hooks(rb_hook_list_t *list, rb_event_flag_t prev_events, rb_
         rb_zjit_tracing_invalidate_all();
     }
 
-    if (ec) {
+    if (vm_locked_here) {
         RB_VM_LOCK_LEAVE_LEV(&lev);
     }
 }
@@ -497,10 +509,12 @@ exec_hooks_unprotected(const rb_execution_context_t *ec, rb_hook_list_t *list, c
 }
 
 static int
-exec_hooks_protected(rb_execution_context_t *ec, rb_hook_list_t *list, const rb_trace_arg_t *trace_arg)
+exec_hooks_protected(rb_execution_context_t *ec_arg, rb_hook_list_t *list_arg, const rb_trace_arg_t *trace_arg)
 {
     enum ruby_tag_type state;
     volatile int raised;
+    rb_execution_context_t * volatile ec = ec_arg;
+    rb_hook_list_t * volatile list = list_arg;
 
     if (exec_hooks_precheck(ec, list, trace_arg) == 0) return 0;
 
@@ -1397,7 +1411,7 @@ rb_tracepoint_enable_for_target(VALUE tpval, VALUE target, VALUE target_line)
             rb_hash_aset(tp->local_target_set, (VALUE)iseq, Qtrue);
 
             if ((tp->events & (RUBY_EVENT_CALL | RUBY_EVENT_RETURN)) &&
-                iseq->body->builtin_attrs & BUILTIN_ATTR_SINGLE_NOARG_LEAF) {
+                ISEQ_BODY(iseq)->builtin_attrs & BUILTIN_ATTR_SINGLE_NOARG_LEAF) {
                 rb_clear_bf_ccs();
             }
 
@@ -1863,9 +1877,12 @@ rb_vm_postponed_job_atfork(void)
 {
     rb_postponed_job_queues_t *pjq = &postponed_job_queue;
     /* make sure we set the interrupt flag on _this_ thread if we carried any pjobs over
-     * from the other side of the fork */
-    if (pjq->triggered_bitset) {
-        RUBY_VM_SET_POSTPONED_JOB_INTERRUPT(get_valid_ec(GET_VM()));
+     * from the other side of the fork (including jobs that targeted the
+     * forking Ractor, which is the child's main Ractor now; jobs targeted
+     * at any other Ractor die with it) */
+    rb_execution_context_t *ec = get_valid_ec(GET_VM());
+    if (pjq->triggered_bitset || rb_ec_ractor_ptr(ec)->postponed_job_triggered_bits) {
+        RUBY_VM_SET_POSTPONED_JOB_INTERRUPT(ec);
     }
 
 }
@@ -1922,6 +1939,37 @@ rb_postponed_job_trigger(rb_postponed_job_handle_t h)
     RUBY_VM_SET_POSTPONED_JOB_INTERRUPT(get_valid_ec(GET_VM()));
 }
 
+/* Like rb_postponed_job_trigger(), but run the job on running_ractor
+ * instead of the caller's or the main Ractor: set the handle's bit in that
+ * Ractor's mask and post a POSTPONED_JOB interrupt to its running EC (or
+ * its main thread's EC before it starts). Delivery is lazy: the target is
+ * not unblocked, and a job for a Ractor that exits first is discarded.
+ *
+ * rb_postponed_job_trigger() is safe from a signal handler or any thread
+ * because it only touches the VM-global queue and the caller's or main EC.
+ * This one dereferences running_ractor and its EC, so the caller must keep
+ * running_ractor alive and running for the whole call: holding its VALUE
+ * is not enough, and a terminated Ractor is unsafe. The main Ractor is
+ * always safe. */
+void
+rb_postponed_job_trigger_for_ractor(unsigned int h, VALUE running_ractor)
+{
+    VM_ASSERT(rb_ractor_p(running_ractor));
+    rb_ractor_t *r = (rb_ractor_t *)DATA_PTR(running_ractor);
+
+    RUBY_ATOMIC_OR(r->postponed_job_triggered_bits, (((rb_atomic_t)1UL) << h));
+
+    /* The racy running_ec read is benign: whichever of the target's threads
+     * checks interrupts first drains the whole per-Ractor mask. */
+    rb_execution_context_t *target_ec = r->threads.running_ec;
+    if (target_ec == NULL && r->threads.main) {
+        target_ec = r->threads.main->ec;
+    }
+    if (target_ec) {
+        RUBY_VM_SET_POSTPONED_JOB_INTERRUPT(target_ec);
+    }
+}
+
 void
 rb_postponed_job_flush(rb_vm_t *vm)
 {
@@ -1938,7 +1986,10 @@ rb_postponed_job_flush(rb_vm_t *vm)
     ccan_list_append_list(&tmp, &vm->workqueue);
     rb_nativethread_lock_unlock(&vm->workqueue_lock);
 
-    rb_atomic_t triggered_bits = RUBY_ATOMIC_EXCHANGE(pjq->triggered_bitset, 0);
+    volatile rb_atomic_t triggered_bits = RUBY_ATOMIC_EXCHANGE(pjq->triggered_bitset, 0);
+
+    /* jobs targeted at this Ractor (rb_postponed_job_trigger_for_ractor) */
+    triggered_bits |= RUBY_ATOMIC_EXCHANGE(rb_ec_ractor_ptr(ec)->postponed_job_triggered_bits, 0);
 
     ec->errinfo = Qnil;
     /* mask POSTPONED_JOB dispatch */
@@ -1950,8 +2001,10 @@ rb_postponed_job_flush(rb_vm_t *vm)
             while (triggered_bits) {
                 unsigned int i = bit_length(triggered_bits) - 1;
                 triggered_bits ^= ((1UL) << i); /* toggle ith bit off */
-                rb_postponed_job_func_t func = pjq->table[i].func;
-                void *data = pjq->table[i].data;
+                /* Read atomically to pair with the atomic CAS/EXCHANGE stores in
+                 * rb_postponed_job_preregister, which can run on another thread. */
+                rb_postponed_job_func_t func = (rb_postponed_job_func_t)(uintptr_t)RUBY_ATOMIC_PTR_LOAD(pjq->table[i].func);
+                void *data = RUBY_ATOMIC_PTR_LOAD(pjq->table[i].data);
                 (func)(data);
             }
 
@@ -1981,9 +2034,11 @@ rb_postponed_job_flush(rb_vm_t *vm)
         RUBY_VM_SET_POSTPONED_JOB_INTERRUPT(GET_EC());
     }
     /* likewise with any remaining-to-be-executed bits of the preregistered postponed
-     * job table */
+     * job table.  A merged bit can carry a Ractor-directed job that must not run on another
+     * Ractor (rb_postponed_job_trigger_for_ractor), so re-post it to this Ractor's own mask
+     * rather than to the global bitset. */
     if (triggered_bits) {
-        RUBY_ATOMIC_OR(pjq->triggered_bitset, triggered_bits);
+        RUBY_ATOMIC_OR(rb_ec_ractor_ptr(ec)->postponed_job_triggered_bits, triggered_bits);
         RUBY_VM_SET_POSTPONED_JOB_INTERRUPT(GET_EC());
     }
 }

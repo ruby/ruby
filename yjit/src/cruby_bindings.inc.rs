@@ -153,6 +153,7 @@ impl<T> ::std::cmp::PartialEq for __BindgenUnionField<T> {
     }
 }
 impl<T> ::std::cmp::Eq for __BindgenUnionField<T> {}
+pub const SHAPE_ID_NUM_BITS: u32 = 32;
 pub const INTEGER_REDEFINED_OP_FLAG: u32 = 1;
 pub const FLOAT_REDEFINED_OP_FLAG: u32 = 2;
 pub const STRING_REDEFINED_OP_FLAG: u32 = 4;
@@ -171,7 +172,6 @@ pub const VM_ENV_DATA_INDEX_ME_CREF: i32 = -2;
 pub const VM_ENV_DATA_INDEX_SPECVAL: i32 = -1;
 pub const VM_ENV_DATA_INDEX_FLAGS: u32 = 0;
 pub const VM_BLOCK_HANDLER_NONE: u32 = 0;
-pub const SHAPE_ID_NUM_BITS: u32 = 32;
 pub type ID = ::std::os::raw::c_ulong;
 pub type rb_alloc_func_t = ::std::option::Option<unsafe extern "C" fn(klass: VALUE) -> VALUE>;
 pub const RUBY_Qfalse: ruby_special_consts = 0;
@@ -257,7 +257,6 @@ pub const RSTRING_NOEMBED: ruby_rstring_flags = 8192;
 pub const RSTRING_FSTR: ruby_rstring_flags = 536870912;
 pub type ruby_rstring_flags = u32;
 pub type st_data_t = ::std::os::raw::c_ulong;
-pub type st_index_t = st_data_t;
 pub const ST_CONTINUE: st_retval = 0;
 pub const ST_STOP: st_retval = 1;
 pub const ST_DELETE: st_retval = 2;
@@ -271,8 +270,6 @@ pub const RARRAY_EMBED_LEN_SHIFT: ruby_rarray_consts = 15;
 pub type ruby_rarray_consts = u32;
 pub const RMODULE_IS_REFINEMENT: ruby_rmodule_flags = 8192;
 pub type ruby_rmodule_flags = u32;
-pub const ROBJECT_HEAP: ruby_robject_flags = 65536;
-pub type ruby_robject_flags = u32;
 pub type rb_block_call_func = ::std::option::Option<
     unsafe extern "C" fn(
         yielded_arg: VALUE,
@@ -302,6 +299,42 @@ pub const RUBY_ENCINDEX_EUC_JP: ruby_preserved_encindex = 10;
 pub const RUBY_ENCINDEX_Windows_31J: ruby_preserved_encindex = 11;
 pub const RUBY_ENCINDEX_BUILTIN_MAX: ruby_preserved_encindex = 12;
 pub type ruby_preserved_encindex = u32;
+pub type rb_atomic_t = ::std::os::raw::c_uint;
+pub const imemo_env: imemo_type = 0;
+pub const imemo_cref: imemo_type = 1;
+pub const imemo_svar: imemo_type = 2;
+pub const imemo_throw_data: imemo_type = 3;
+pub const imemo_ifunc: imemo_type = 4;
+pub const imemo_memo: imemo_type = 5;
+pub const imemo_ment: imemo_type = 6;
+pub const imemo_iseq: imemo_type = 7;
+pub const imemo_tmpbuf: imemo_type = 8;
+pub const imemo_cvar_entry: imemo_type = 9;
+pub const imemo_callinfo: imemo_type = 10;
+pub const imemo_callcache: imemo_type = 11;
+pub const imemo_constcache: imemo_type = 12;
+pub const imemo_fields: imemo_type = 13;
+pub const imemo_subclasses: imemo_type = 14;
+pub const imemo_cdhash: imemo_type = 15;
+pub type imemo_type = u32;
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct vm_ifunc_argc {
+    pub min: ::std::os::raw::c_int,
+    pub max: ::std::os::raw::c_int,
+}
+#[repr(C)]
+pub struct vm_ifunc {
+    pub flags: VALUE,
+    pub svar_lep: *mut VALUE,
+    pub func: rb_block_call_func_t,
+    pub data: *const ::std::os::raw::c_void,
+    pub argc: vm_ifunc_argc,
+}
+pub type attr_index_t = u8;
+pub type shape_id_t = u32;
+pub const SHAPE_ID_HAS_IVAR_MASK: shape_id_mask = 67633150;
+pub type shape_id_mask = u32;
 pub const BOP_PLUS: ruby_basic_operators = 0;
 pub const BOP_MINUS: ruby_basic_operators = 1;
 pub const BOP_MULT: ruby_basic_operators = 2;
@@ -337,41 +370,10 @@ pub const BOP_CMP: ruby_basic_operators = 31;
 pub const BOP_DEFAULT: ruby_basic_operators = 32;
 pub const BOP_PACK: ruby_basic_operators = 33;
 pub const BOP_INCLUDE_P: ruby_basic_operators = 34;
-pub const BOP_LAST_: ruby_basic_operators = 35;
+pub const BOP_YIELD: ruby_basic_operators = 35;
+pub const BOP_LAST_: ruby_basic_operators = 36;
 pub type ruby_basic_operators = u32;
 pub type rb_serial_t = ::std::os::raw::c_ulonglong;
-pub const imemo_env: imemo_type = 0;
-pub const imemo_cref: imemo_type = 1;
-pub const imemo_svar: imemo_type = 2;
-pub const imemo_throw_data: imemo_type = 3;
-pub const imemo_ifunc: imemo_type = 4;
-pub const imemo_memo: imemo_type = 5;
-pub const imemo_ment: imemo_type = 6;
-pub const imemo_iseq: imemo_type = 7;
-pub const imemo_tmpbuf: imemo_type = 8;
-pub const imemo_cvar_entry: imemo_type = 9;
-pub const imemo_callinfo: imemo_type = 10;
-pub const imemo_callcache: imemo_type = 11;
-pub const imemo_constcache: imemo_type = 12;
-pub const imemo_fields: imemo_type = 13;
-pub const imemo_subclasses: imemo_type = 14;
-pub const imemo_cdhash: imemo_type = 15;
-pub type imemo_type = u32;
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct vm_ifunc_argc {
-    pub min: ::std::os::raw::c_int,
-    pub max: ::std::os::raw::c_int,
-}
-#[repr(C)]
-pub struct vm_ifunc {
-    pub flags: VALUE,
-    pub svar_lep: *mut VALUE,
-    pub func: rb_block_call_func_t,
-    pub data: *const ::std::os::raw::c_void,
-    pub argc: vm_ifunc_argc,
-}
-pub type rb_atomic_t = ::std::os::raw::c_uint;
 pub const METHOD_VISI_UNDEF: rb_method_visibility_t = 0;
 pub const METHOD_VISI_PUBLIC: rb_method_visibility_t = 1;
 pub const METHOD_VISI_PRIVATE: rb_method_visibility_t = 2;
@@ -515,8 +517,9 @@ pub const block_type_proc: rb_block_type = 3;
 pub type rb_block_type = u32;
 #[repr(C)]
 pub struct rb_block {
+    pub _bitfield_align_1: [u8; 0],
+    pub _bitfield_1: __BindgenBitfieldUnit<[u8; 1usize]>,
     pub as_: rb_block__bindgen_ty_1,
-    pub type_: rb_block_type,
 }
 #[repr(C)]
 pub struct rb_block__bindgen_ty_1 {
@@ -525,69 +528,148 @@ pub struct rb_block__bindgen_ty_1 {
     pub proc_: __BindgenUnionField<VALUE>,
     pub bindgen_union_field: [u64; 3usize],
 }
+impl rb_block {
+    #[inline]
+    pub fn type_(&self) -> rb_block_type {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(0usize, 8u8) as u32) }
+    }
+    #[inline]
+    pub fn set_type(&mut self, val: rb_block_type) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            self._bitfield_1.set(0usize, 8u8, val as u64)
+        }
+    }
+    #[inline]
+    pub fn new_bitfield_1(type_: rb_block_type) -> __BindgenBitfieldUnit<[u8; 1usize]> {
+        let mut __bindgen_bitfield_unit: __BindgenBitfieldUnit<[u8; 1usize]> = Default::default();
+        __bindgen_bitfield_unit.set(0usize, 8u8, {
+            let type_: u32 = unsafe { ::std::mem::transmute(type_) };
+            type_ as u64
+        });
+        __bindgen_bitfield_unit
+    }
+}
 pub type rb_control_frame_t = rb_control_frame_struct;
 #[repr(C)]
-pub struct rb_proc_t {
-    pub block: rb_block,
+#[repr(align(4))]
+#[derive(Debug, Copy, Clone)]
+pub struct rb_proc_header_t {
     pub _bitfield_align_1: [u8; 0],
-    pub _bitfield_1: __BindgenBitfieldUnit<[u8; 1usize]>,
-    pub __bindgen_padding_0: [u8; 7usize],
+    pub _bitfield_1: __BindgenBitfieldUnit<[u8; 2usize]>,
+    pub __bindgen_padding_0: u16,
 }
-impl rb_proc_t {
+impl rb_proc_header_t {
+    #[inline]
+    pub fn type_(&self) -> rb_block_type {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(0usize, 8u8) as u32) }
+    }
+    #[inline]
+    pub fn set_type(&mut self, val: rb_block_type) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            self._bitfield_1.set(0usize, 8u8, val as u64)
+        }
+    }
     #[inline]
     pub fn is_from_method(&self) -> ::std::os::raw::c_uint {
-        unsafe { ::std::mem::transmute(self._bitfield_1.get(0usize, 1u8) as u32) }
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(8usize, 1u8) as u32) }
     }
     #[inline]
     pub fn set_is_from_method(&mut self, val: ::std::os::raw::c_uint) {
         unsafe {
             let val: u32 = ::std::mem::transmute(val);
-            self._bitfield_1.set(0usize, 1u8, val as u64)
+            self._bitfield_1.set(8usize, 1u8, val as u64)
         }
     }
     #[inline]
     pub fn is_lambda(&self) -> ::std::os::raw::c_uint {
-        unsafe { ::std::mem::transmute(self._bitfield_1.get(1usize, 1u8) as u32) }
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(9usize, 1u8) as u32) }
     }
     #[inline]
     pub fn set_is_lambda(&mut self, val: ::std::os::raw::c_uint) {
         unsafe {
             let val: u32 = ::std::mem::transmute(val);
-            self._bitfield_1.set(1usize, 1u8, val as u64)
+            self._bitfield_1.set(9usize, 1u8, val as u64)
         }
     }
     #[inline]
     pub fn is_isolated(&self) -> ::std::os::raw::c_uint {
-        unsafe { ::std::mem::transmute(self._bitfield_1.get(2usize, 1u8) as u32) }
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(10usize, 1u8) as u32) }
     }
     #[inline]
     pub fn set_is_isolated(&mut self, val: ::std::os::raw::c_uint) {
         unsafe {
             let val: u32 = ::std::mem::transmute(val);
-            self._bitfield_1.set(2usize, 1u8, val as u64)
+            self._bitfield_1.set(10usize, 1u8, val as u64)
+        }
+    }
+    #[inline]
+    pub fn is_refined(&self) -> ::std::os::raw::c_uint {
+        unsafe { ::std::mem::transmute(self._bitfield_1.get(11usize, 1u8) as u32) }
+    }
+    #[inline]
+    pub fn set_is_refined(&mut self, val: ::std::os::raw::c_uint) {
+        unsafe {
+            let val: u32 = ::std::mem::transmute(val);
+            self._bitfield_1.set(11usize, 1u8, val as u64)
         }
     }
     #[inline]
     pub fn new_bitfield_1(
+        type_: rb_block_type,
         is_from_method: ::std::os::raw::c_uint,
         is_lambda: ::std::os::raw::c_uint,
         is_isolated: ::std::os::raw::c_uint,
-    ) -> __BindgenBitfieldUnit<[u8; 1usize]> {
-        let mut __bindgen_bitfield_unit: __BindgenBitfieldUnit<[u8; 1usize]> = Default::default();
-        __bindgen_bitfield_unit.set(0usize, 1u8, {
+        is_refined: ::std::os::raw::c_uint,
+    ) -> __BindgenBitfieldUnit<[u8; 2usize]> {
+        let mut __bindgen_bitfield_unit: __BindgenBitfieldUnit<[u8; 2usize]> = Default::default();
+        __bindgen_bitfield_unit.set(0usize, 8u8, {
+            let type_: u32 = unsafe { ::std::mem::transmute(type_) };
+            type_ as u64
+        });
+        __bindgen_bitfield_unit.set(8usize, 1u8, {
             let is_from_method: u32 = unsafe { ::std::mem::transmute(is_from_method) };
             is_from_method as u64
         });
-        __bindgen_bitfield_unit.set(1usize, 1u8, {
+        __bindgen_bitfield_unit.set(9usize, 1u8, {
             let is_lambda: u32 = unsafe { ::std::mem::transmute(is_lambda) };
             is_lambda as u64
         });
-        __bindgen_bitfield_unit.set(2usize, 1u8, {
+        __bindgen_bitfield_unit.set(10usize, 1u8, {
             let is_isolated: u32 = unsafe { ::std::mem::transmute(is_isolated) };
             is_isolated as u64
         });
+        __bindgen_bitfield_unit.set(11usize, 1u8, {
+            let is_refined: u32 = unsafe { ::std::mem::transmute(is_refined) };
+            is_refined as u64
+        });
         __bindgen_bitfield_unit
     }
+}
+#[repr(C)]
+pub struct rb_proc_captured_t {
+    pub header: rb_proc_header_t,
+    pub captured: rb_captured_block,
+}
+#[repr(C)]
+pub struct rb_proc_symbol_t {
+    pub header: rb_proc_header_t,
+    pub symbol: VALUE,
+}
+#[repr(C)]
+pub struct rb_proc_proc_t {
+    pub header: rb_proc_header_t,
+    pub proc_: VALUE,
+}
+#[repr(C)]
+pub struct rb_proc_t {
+    pub block: __BindgenUnionField<rb_block>,
+    pub header: __BindgenUnionField<rb_proc_header_t>,
+    pub captured: __BindgenUnionField<rb_proc_captured_t>,
+    pub symbol: __BindgenUnionField<rb_proc_symbol_t>,
+    pub proc_: __BindgenUnionField<rb_proc_proc_t>,
+    pub bindgen_union_field: [u64; 4usize],
 }
 pub const VM_CHECKMATCH_TYPE_WHEN: vm_check_match_type = 1;
 pub const VM_CHECKMATCH_TYPE_CASE: vm_check_match_type = 2;
@@ -630,10 +712,6 @@ pub const VM_ENV_FLAG_ESCAPED: vm_frame_env_flags = 4;
 pub const VM_ENV_FLAG_WB_REQUIRED: vm_frame_env_flags = 8;
 pub const VM_ENV_FLAG_ISOLATED: vm_frame_env_flags = 16;
 pub type vm_frame_env_flags = u32;
-pub type attr_index_t = u8;
-pub type shape_id_t = u32;
-pub const SHAPE_ID_HAS_IVAR_MASK: shape_id_mask = 8912894;
-pub type shape_id_mask = u32;
 #[repr(C)]
 pub struct rb_cvar_class_tbl_entry {
     pub imemo_flags: VALUE,
@@ -678,7 +756,7 @@ pub struct rb_call_data {
     pub ci: *const rb_callinfo,
     pub cc: *const rb_callcache,
 }
-pub const RSTRING_CHILLED: ruby_rstring_private_flags = 49152;
+pub const RSTRING_CHILLED: ruby_rstring_private_flags = 16384;
 pub type ruby_rstring_private_flags = u32;
 pub const RHASH_PASS_AS_KEYWORDS: ruby_rhash_flags = 8192;
 pub const RHASH_PROC_DEFAULT: ruby_rhash_flags = 16384;
@@ -687,6 +765,7 @@ pub const RHASH_AR_TABLE_SIZE_MASK: ruby_rhash_flags = 983040;
 pub const RHASH_AR_TABLE_SIZE_SHIFT: ruby_rhash_flags = 16;
 pub const RHASH_AR_TABLE_BOUND_MASK: ruby_rhash_flags = 15728640;
 pub const RHASH_AR_TABLE_BOUND_SHIFT: ruby_rhash_flags = 20;
+pub const RHASH_COMPARE_BY_IDENTITY: ruby_rhash_flags = 16777216;
 pub const RHASH_LEV_SHIFT: ruby_rhash_flags = 25;
 pub const RHASH_LEV_MAX: ruby_rhash_flags = 127;
 pub type ruby_rhash_flags = u32;
@@ -987,6 +1066,10 @@ pub const ROBJECT_OFFSET_AS_HEAP_FIELDS: jit_bindgen_constants = 16;
 pub const ROBJECT_OFFSET_AS_ARY: jit_bindgen_constants = 16;
 pub const RCLASS_OFFSET_PRIME_FIELDS_OBJ: jit_bindgen_constants = 40;
 pub const TDATA_OFFSET_FIELDS_OBJ: jit_bindgen_constants = 16;
+pub const RUBY_OFFSET_RHASH_IFNONE: jit_bindgen_constants = 16;
+pub const RUBY_OFFSET_RHASH_AR_HINT: jit_bindgen_constants = 24;
+pub const RUBY_OFFSET_RHASH_AR_PAIRS: jit_bindgen_constants = 32;
+pub const RUBY_RHASH_AR_TABLE_MAX_SIZE: jit_bindgen_constants = 8;
 pub const RUBY_OFFSET_RSTRING_LEN: jit_bindgen_constants = 16;
 pub const RB_SHAPE_FLAG_SHIFT: jit_bindgen_constants = 32;
 pub const RUBY_OFFSET_EC_CFP: jit_bindgen_constants = 16;
@@ -1036,6 +1119,7 @@ extern "C" {
     pub fn rb_ary_push(ary: VALUE, elem: VALUE) -> VALUE;
     pub fn rb_ary_clear(ary: VALUE) -> VALUE;
     pub fn rb_hash_new() -> VALUE;
+    pub fn rb_hash_new_capa(capa: ::std::os::raw::c_long) -> VALUE;
     pub fn rb_hash_aref(hash: VALUE, key: VALUE) -> VALUE;
     pub fn rb_hash_aset(hash: VALUE, key: VALUE, val: VALUE) -> VALUE;
     pub fn rb_hash_bulk_insert(argc: ::std::os::raw::c_long, argv: *const VALUE, hash: VALUE);
@@ -1081,6 +1165,8 @@ extern "C" {
         elements: *const VALUE,
         opt: ::std::os::raw::c_int,
     ) -> VALUE;
+    pub fn rb_obj_info(obj: VALUE) -> *const ::std::os::raw::c_char;
+    pub fn rb_ec_stack_check(ec: *mut rb_execution_context_struct) -> ::std::os::raw::c_int;
     pub fn rb_ary_tmp_new_from_values(
         arg1: VALUE,
         arg2: ::std::os::raw::c_long,
@@ -1091,6 +1177,14 @@ extern "C" {
         n: ::std::os::raw::c_long,
         elts: *const VALUE,
     ) -> VALUE;
+    pub fn rb_shape_id_offset() -> i32;
+    pub fn rb_obj_shape_id(obj: VALUE) -> shape_id_t;
+    pub fn rb_shape_get_iv_index(shape_id: shape_id_t, id: ID, value: *mut attr_index_t) -> bool;
+    pub fn rb_shape_transition_add_ivar_no_warnings(
+        shape_id: shape_id_t,
+        id: ID,
+        klass: VALUE,
+    ) -> shape_id_t;
     pub fn rb_vm_top_self() -> VALUE;
     pub static mut rb_vm_insn_count: u64;
     pub fn rb_method_entry_at(obj: VALUE, id: ID) -> *const rb_method_entry_t;
@@ -1109,21 +1203,10 @@ extern "C" {
     pub fn rb_vm_frame_method_entry(
         cfp: *const rb_control_frame_t,
     ) -> *const rb_callable_method_entry_t;
-    pub fn rb_obj_info(obj: VALUE) -> *const ::std::os::raw::c_char;
-    pub fn rb_ec_stack_check(ec: *mut rb_execution_context_struct) -> ::std::os::raw::c_int;
-    pub fn rb_shape_id_offset() -> i32;
-    pub fn rb_obj_shape_id(obj: VALUE) -> shape_id_t;
-    pub fn rb_shape_get_iv_index(shape_id: shape_id_t, id: ID, value: *mut attr_index_t) -> bool;
-    pub fn rb_shape_transition_add_ivar_no_warnings(
-        shape_id: shape_id_t,
-        id: ID,
-        klass: VALUE,
-    ) -> shape_id_t;
     pub fn rb_ivar_get_at(obj: VALUE, index: attr_index_t, id: ID) -> VALUE;
     pub fn rb_ivar_get_at_no_ractor_check(obj: VALUE, index: attr_index_t) -> VALUE;
     pub fn rb_gvar_get(arg1: ID) -> VALUE;
     pub fn rb_gvar_set(arg1: ID, arg2: VALUE) -> VALUE;
-    pub fn rb_ensure_iv_list_size(obj: VALUE, current_len: u32, newsize: u32);
     pub fn rb_vm_barrier();
     pub fn rb_str_byte_substr(str_: VALUE, beg: VALUE, len: VALUE) -> VALUE;
     pub fn rb_str_substr_two_fixnums(
@@ -1140,7 +1223,6 @@ extern "C" {
         chilled: bool,
     ) -> VALUE;
     pub fn rb_to_hash_type(obj: VALUE) -> VALUE;
-    pub fn rb_hash_new_with_size(size: st_index_t) -> VALUE;
     pub fn rb_hash_resurrect(hash: VALUE) -> VALUE;
     pub fn rb_hash_stlike_lookup(
         hash: VALUE,
@@ -1176,7 +1258,6 @@ extern "C" {
     pub fn rb_iseq_set_yjit_payload(iseq: *const rb_iseq_t, payload: *mut ::std::os::raw::c_void);
     pub fn rb_get_symbol_id(namep: VALUE) -> ID;
     pub fn rb_yjit_builtin_function(iseq: *const rb_iseq_t) -> *const rb_builtin_function;
-    pub fn rb_yjit_str_simple_append(str1: VALUE, str2: VALUE) -> VALUE;
     pub fn rb_vm_base_ptr(cfp: *mut rb_control_frame_struct) -> *mut VALUE;
     pub fn rb_str_neq_internal(str1: VALUE, str2: VALUE) -> VALUE;
     pub fn rb_ary_unshift_m(argc: ::std::os::raw::c_int, argv: *mut VALUE, ary: VALUE) -> VALUE;
@@ -1192,7 +1273,6 @@ extern "C" {
     pub fn rb_yjit_iseq_inspect(iseq: *const rb_iseq_t) -> *mut ::std::os::raw::c_char;
     pub fn rb_RSTRUCT_SET(st: VALUE, k: ::std::os::raw::c_int, v: VALUE);
     pub fn rb_ENCODING_GET(obj: VALUE) -> ::std::os::raw::c_int;
-    pub fn rb_yjit_constcache_shareable(ice: *const iseq_inline_constant_cache_entry) -> bool;
     pub fn rb_yjit_obj_written(
         old: VALUE,
         young: VALUE,
@@ -1201,6 +1281,7 @@ extern "C" {
     );
     pub fn rb_object_shape_count() -> VALUE;
     pub fn rb_yjit_shape_obj_complex_p(obj: VALUE) -> bool;
+    pub fn rb_yjit_shape_obj_embedded_p(obj: VALUE) -> bool;
     pub fn rb_yjit_shape_capacity(shape_id: shape_id_t) -> attr_index_t;
     pub fn rb_yjit_shape_index(shape_id: shape_id_t) -> attr_index_t;
     pub fn rb_yjit_sendish_sp_pops(ci: *const rb_callinfo) -> usize;
@@ -1311,6 +1392,7 @@ extern "C" {
     pub fn rb_set_cfp_sp(cfp: *mut rb_control_frame_struct, sp: *mut VALUE);
     pub fn rb_jit_shape_complex_p(shape_id: shape_id_t) -> bool;
     pub fn rb_jit_multi_ractor_p() -> bool;
+    pub fn rb_jit_constcache_shareable(ice: *const iseq_inline_constant_cache_entry) -> bool;
     pub fn rb_jit_vm_lock_then_barrier(
         recursive_lock_level: *mut ::std::os::raw::c_uint,
         file: *const ::std::os::raw::c_char,
@@ -1335,5 +1417,6 @@ extern "C" {
     pub fn rb_jit_fix_mod_fix(recv: VALUE, obj: VALUE) -> VALUE;
     pub fn rb_jit_fix_div_fix(recv: VALUE, obj: VALUE) -> VALUE;
     pub fn rb_yarv_str_eql_internal(str1: VALUE, str2: VALUE) -> VALUE;
+    pub fn rb_jit_str_simple_append(str1: VALUE, str2: VALUE) -> VALUE;
     pub fn rb_jit_str_concat_codepoint(str_: VALUE, codepoint: VALUE);
 }

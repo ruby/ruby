@@ -69,7 +69,7 @@ module Bundler
       development_group = opts[:development_group] || :development
       expanded_path     = gemfile_root.join(path)
 
-      gemspecs = Gem::Util.glob_files_in_dir("{,*}.gemspec", expanded_path).filter_map {|g| Bundler.load_gemspec(g) }
+      gemspecs = SharedHelpers.glob_files_in_dir("{,*}.gemspec", expanded_path).filter_map {|g| Bundler.load_gemspec(g) }
       gemspecs.reject! {|s| s.name != name } if name
       specs_by_name_and_version = gemspecs.group_by {|s| [s.name, s.version] }
 
@@ -331,13 +331,10 @@ module Bundler
 
           gemspec_dep = [dep, current].find(&:gemspec_dev_dep?)
           if gemspec_dep
-            require_relative "vendor/pub_grub/lib/pub_grub/version_range"
-            require_relative "vendor/pub_grub/lib/pub_grub/version_constraint"
-            require_relative "vendor/pub_grub/lib/pub_grub/version_union"
-            require_relative "vendor/pub_grub/lib/pub_grub/rubygems"
+            require_relative "vendored_pub_grub"
 
-            current_gemspec_range = PubGrub::RubyGems.requirement_to_range(current.requirement)
-            next_gemspec_range = PubGrub::RubyGems.requirement_to_range(dep.requirement)
+            current_gemspec_range = Gem::PubGrub::RubyGems.requirement_to_range(current.requirement)
+            next_gemspec_range = Gem::PubGrub::RubyGems.requirement_to_range(dep.requirement)
 
             if current_gemspec_range.intersects?(next_gemspec_range)
               dep = Dependency.new(name, current.requirement.as_list + dep.requirement.as_list, options)
@@ -671,8 +668,11 @@ module Bundler
 
           trace_line = backtrace.find {|l| l.include?(dsl_path) } || trace_line
           return m unless trace_line
-          line_number = trace_line.split(":")[1].to_i - 1
+          # Match the line number right before `:in` or the end of the line so a
+          # Windows drive letter like `C:` does not get mistaken for the number.
+          line_number = trace_line[/:(\d+)(?::in\b|\z)/, 1]
           return m unless line_number
+          line_number = line_number.to_i - 1
 
           lines      = contents.lines.to_a
           indent     = " #  "

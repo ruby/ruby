@@ -13,5 +13,7 @@ describe "Kernel#gets" do
 end
 
 describe "Kernel.gets" do
-  it "needs to be reviewed for spec completeness"
+  it "is a public method" do
+    Kernel.public_methods(false).should.include?(:gets)
+  end
 end

@@ -30,12 +30,12 @@ jobs:
           - test_task: check
             os: macos-15
             configure_args: '--with-gcc=gcc-14'
+          # No dedicated --with-gmp job: gmp is enabled by default and
+          # setup/macos passes --with-gmp-dir to every job, so each check
+          # here already builds and tests with -lgmp.
           - test_task: check
             os: macos-26
             configure_args: '--with-jemalloc --with-opt-dir=$(brew --prefix jemalloc)'
-          - test_task: check
-            os: macos-26
-            configure_args: '--with-gmp'
           - test_task: test-all
             test_opts: --repeat-count=2
             os: macos-26
@@ -70,7 +70,7 @@ jobs:
       )}}
 
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github
@@ -95,6 +95,17 @@ jobs:
           sysctl -n kern.coredump
           sudo sysctl -w kern.coredump=1
           sudo chmod -R +rwx /cores/
+
+      - name: Disable ReportCrash
+        # We don't want this service running on every crash signal. When it's running, processes must wait for
+        # the service to gather process info before they can finish. We have tests that test our crash signal
+        # handling and this service can take a while to run which can time our tests out.
+        run: |
+          launchctl bootout gui/"$(id -u)"/com.apple.ReportCrash 2>/dev/null || true
+          launchctl disable gui/"$(id -u)"/com.apple.ReportCrash 2>/dev/null || true
+          sudo launchctl bootout system/com.apple.ReportCrash.Root 2>/dev/null || true
+          sudo launchctl disable system/com.apple.ReportCrash.Root 2>/dev/null || true
+        continue-on-error: true
 
       - name: Delete unused SDKs
         # To free up disk space to not run out during the run
@@ -158,6 +169,7 @@ jobs:
         env:
           RUBY_TESTOPTS: '-q --tty=no'
           TEST_BUNDLED_GEMS_ALLOW_FAILURES: ''
+          RUBY_DEBUG_TEST_NO_REMOTE: "1"
           PRECHECK_BUNDLED_GEMS: 'no'
           LAUNCHABLE_STDOUT: ${{ steps.launchable.outputs.stdout_report_path }}
           LAUNCHABLE_STDERR: ${{ steps.launchable.outputs.stderr_report_path }}

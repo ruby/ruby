@@ -23,6 +23,11 @@ describe "Set#flatten" do
       end
     end
   end
+
+  it "does not retain compare_by_identity flag" do
+    set = Set[1, 2, Set[3, 4]].compare_by_identity
+    set.flatten.compare_by_identity?.should == false
+  end
 end
 
 describe "Set#flatten!" do
@@ -45,5 +50,17 @@ describe "Set#flatten!" do
   it "raises an ArgumentError when self is recursive" do
     (set = Set[]) << set
     -> { set.flatten! }.should.raise(ArgumentError)
+  end
+
+  it "does not retain compare_by_identity flag when flattening elements" do
+    set = Set[1, 2, Set[3, 4]].compare_by_identity
+    set.flatten!
+    set.compare_by_identity?.should == false
+  end
+
+  it "retains compare_by_identity flag if no elements are flattened" do
+    set = Set[1, 2].compare_by_identity
+    set.flatten!
+    set.compare_by_identity?.should == true
   end
 end

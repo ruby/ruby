@@ -50,8 +50,6 @@ wmap_memsize(const void *ptr)
     size_t size = 0;
     if (w->table) {
         size += st_memsize(w->table);
-        /* The key and value of the table each take sizeof(VALUE) in size. */
-        size += st_table_size(w->table) * (2 * sizeof(VALUE));
     }
 
     return size;
@@ -132,7 +130,7 @@ wmap_handle_weak_references(void *ptr)
     st_foreach(w->table, rb_wmap_handle_weak_references_i, (st_data_t)0);
 }
 
-const rb_data_type_t rb_weakmap_type = {
+static const rb_data_type_t rb_weakmap_type = {
     "weakmap",
     {
         NULL,
@@ -561,8 +559,6 @@ wkmap_memsize(const void *ptr)
     size_t size = 0;
     if (w->table) {
         size += st_memsize(w->table);
-        /* Each key of the table takes sizeof(VALUE) in size. */
-        size += st_table_size(w->table) * sizeof(VALUE);
     }
 
     return size;

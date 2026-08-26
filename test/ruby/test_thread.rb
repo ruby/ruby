@@ -847,6 +847,40 @@ class TestThread < Test::Unit::TestCase
     assert_equal(:ok, r)
   end
 
+  def test_handle_interrupt_masks_sigint
+    if /mswin|mingw/ =~ RUBY_PLATFORM
+      omit "SIGINT handling differs on Windows"
+    end
+
+    assert_in_out_err([], <<-INPUT, %w(outer false), [])
+      waiting = Thread::Queue.new
+      release = Thread::Queue.new
+      inner = false
+
+      Thread.new do
+        waiting.pop
+        Process.kill(:INT, Process.pid)
+        release.push(true)
+      end
+
+      begin
+        Thread.handle_interrupt(SignalException => :never) do
+          begin
+            waiting.push(true)
+            release.pop
+          rescue Interrupt
+            inner = true
+            raise
+          end
+        end
+      rescue Interrupt
+        puts "outer"
+      end
+
+      puts inner
+    INPUT
+  end
+
   def test_handle_interrupt_and_io
     assert_in_out_err([], <<-INPUT, %w(ok), [])
       th_waiting = true
@@ -982,11 +1016,10 @@ _eom
     cmd = 'Signal.trap(:INT, "DEFAULT"); pipe=IO.pipe; Thread.start {Thread.pass until Thread.main.stop?; puts; STDOUT.flush}; pipe[0].read'
     opt = {}
     opt[:new_pgroup] = true if /mswin|mingw/ =~ RUBY_PLATFORM
-    s, t, _err = EnvUtil.invoke_ruby(['-e', cmd], "", true, true, **opt) do |in_p, out_p, err_p, cpid|
+    s, _err = EnvUtil.invoke_ruby(['-e', cmd], "", true, true, **opt) do |in_p, out_p, err_p, cpid|
       assert IO.select([out_p], nil, nil, 10), 'subprocess not ready'
       out_p.gets
       pid = cpid
-      t0 = Time.now.to_f
       Process.kill(:SIGINT, pid)
       begin
         Timeout.timeout(10) { Process.wait(pid) }
@@ -994,14 +1027,12 @@ _eom
         EnvUtil.terminate(pid)
         raise
       end
-      t1 = Time.now.to_f
-      [$?, t1 - t0, err_p.read]
+      [$?, err_p.read]
     end
     assert_equal(pid, s.pid, bug5757)
     assert_equal([false, true, false, Signal.list["INT"]],
                  [s.exited?, s.signaled?, s.stopped?, s.termsig],
                  "[s.exited?, s.signaled?, s.stopped?, s.termsig]")
-    assert_include(0..2, t, bug5757)
   end
 
   def test_thread_join_in_trap
@@ -1480,8 +1511,6 @@ q.pop
   end
 
   def test_thread_interrupt_for_killed_thread
-    pend "hang-up" if /mswin|mingw/ =~ RUBY_PLATFORM
-
     opts = { timeout: 5, timeout_error: nil }
 
     assert_normal_exit(<<-_end, '[Bug #8996]', **opts)

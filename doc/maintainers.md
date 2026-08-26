@@ -126,7 +126,7 @@ consensus on ruby-core/ruby-dev.
 
 * *No maintainer*
 * https://github.com/ruby/English
-* https://rubygems.org/gems/English
+* https://rubygems.org/gems/english
 
 #### lib/delegate.rb
 
@@ -390,7 +390,7 @@ consensus on ruby-core/ruby-dev.
 
 ## Bundled gems upstream repositories and maintainers
 
-The maintanance policy of bundled gems is different from Module Maintainers above.
+The maintenance policy of bundled gems is different from Module Maintainers above.
 Please check the policies for each repository.
 
 The ruby core team tries to maintain the repositories with no maintainers.

@@ -81,6 +81,10 @@ pub struct DistributionSummary<T: Copy + PartialEq + Default + std::fmt::Debug, 
 const SKEW_THRESHOLD: f64 = 0.75;
 
 impl<T: Copy + PartialEq + Default + std::fmt::Debug, const N: usize> DistributionSummary<T, N> {
+    pub fn empty() -> Self {
+        Self { kind: DistributionKind::Empty, buckets: [Default::default(); N] }
+    }
+
     pub fn new(dist: &Distribution<T, N>) -> Self {
         #[cfg(debug_assertions)]
         {

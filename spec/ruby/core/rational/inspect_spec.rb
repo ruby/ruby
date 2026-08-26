@@ -6,9 +6,6 @@ describe "Rational#inspect" do
     Rational(-5, 8).inspect.should == "(-5/8)"
     Rational(-1, -2).inspect.should == "(1/2)"
 
-    # Guard against the Mathn library
-    guard -> { !defined?(Math.rsqrt) } do
-      Rational(bignum_value, 1).inspect.should == "(#{bignum_value}/1)"
-    end
+    Rational(bignum_value, 1).inspect.should == "(#{bignum_value}/1)"
   end
 end

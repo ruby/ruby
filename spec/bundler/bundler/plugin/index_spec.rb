@@ -99,9 +99,9 @@ RSpec.describe Bundler::Plugin::Index do
     end
 
     it "is gone after unregistration" do
-      expect(index.index_file.read).to include("after-bar:\n  - \"new-plugin\"\n")
+      expect(index.index_file.read).to include("after-bar:\n    - new-plugin\n")
       index.unregister_plugin(plugin_name)
-      expect(index.index_file.read).to_not include("after-bar:\n  - \n")
+      expect(index.index_file.read).to_not include("after-bar")
     end
 
     context "that are not registered" do
@@ -219,7 +219,7 @@ RSpec.describe Bundler::Plugin::Index do
     end
 
     it "expands relative paths to absolute on load" do
-      require "bundler/yaml_serializer"
+      require "rubygems/yaml_serializer"
 
       plugin_root = Bundler::Plugin.root
 
@@ -231,7 +231,7 @@ RSpec.describe Bundler::Plugin::Index do
         "sources" => {},
       }
 
-      File.open(index.index_file, "w") {|f| f.puts Bundler::YAMLSerializer.dump(relative_index) }
+      File.open(index.index_file, "w") {|f| f.puts Gem::YAMLSerializer.dump(relative_index) }
 
       new_index = Index.new
       expect(new_index.plugin_path(plugin_name)).to eq(plugin_root.join(plugin_name))
@@ -252,7 +252,7 @@ RSpec.describe Bundler::Plugin::Index do
     end
 
     it "reads legacy index files with absolute paths" do
-      require "bundler/yaml_serializer"
+      require "rubygems/yaml_serializer"
 
       plugin_root = Bundler::Plugin.root
       absolute_path = plugin_root.join(plugin_name).to_s
@@ -265,7 +265,7 @@ RSpec.describe Bundler::Plugin::Index do
         "sources" => {},
       }
 
-      File.open(index.index_file, "w") {|f| f.puts Bundler::YAMLSerializer.dump(legacy_index) }
+      File.open(index.index_file, "w") {|f| f.puts Gem::YAMLSerializer.dump(legacy_index) }
 
       new_index = Index.new
       expect(new_index.plugin_path(plugin_name)).to eq(Pathname.new(absolute_path))

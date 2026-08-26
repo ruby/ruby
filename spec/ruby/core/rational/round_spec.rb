@@ -47,11 +47,8 @@ describe "Rational#round" do
     it "returns a Rational" do
       @rational.round(1).should.is_a?(Rational)
       @rational.round(2).should.is_a?(Rational)
-      # Guard against the Mathn library
-      guard -> { !defined?(Math.rsqrt) } do
-        Rational(0, 1).round(1).should.is_a?(Rational)
-        Rational(2, 1).round(1).should.is_a?(Rational)
-      end
+      Rational(0, 1).round(1).should.is_a?(Rational)
+      Rational(2, 1).round(1).should.is_a?(Rational)
     end
 
     it "moves the truncation point n decimal places right" do

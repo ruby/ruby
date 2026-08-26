@@ -1901,22 +1901,14 @@ class TestGemInstaller < Gem::InstallerTestCase
   end
 
   def test_pre_install_checks_malicious_extensions_before_eval
-    pend "mswin environment disallow to create file contained the carriage return code." if Gem.win_platform?
-
     spec = util_spec "malicious", "1"
-    def spec.full_name # so the spec is buildable
-      "malicious-1"
-    end
-
     def spec.validate(*args); end
     spec.extensions = ["malicious\n``"]
 
-    util_build_gem spec
-
-    gem = File.join(@gemhome, "cache", spec.file_name)
+    installer = Gem::Installer.for_spec spec
+    installer.gem_home = @gemhome
 
     use_ui @ui do
-      installer = Gem::Installer.at gem
       e = assert_raise Gem::InstallError do
         installer.pre_install_checks
       end
@@ -2062,6 +2054,62 @@ class TestGemInstaller < Gem::InstallerTestCase
 
       assert_equal "x86-mswin32\n system('id > /tmp/nyangawa')# is an invalid platform", e.message
       assert_empty @ui.output
+    end
+  end
+
+  # Psych assigns @cpu/@os/@version directly, so a platform coming from gem
+  # metadata never goes through Gem::Platform#initialize.
+  def test_pre_install_checks_traversal_platform_from_array
+    spec = util_spec "a", "1"
+    def spec.validate(*args); end
+    spec.platform = Gem::Platform.new([nil, "../../../../tmp/X", nil])
+
+    installer = Gem::Installer.for_spec spec
+    installer.gem_home = @gemhome
+
+    use_ui @ui do
+      e = assert_raise Gem::InstallError do
+        installer.pre_install_checks
+      end
+      assert_equal "../../../../tmp/X is an invalid platform", e.message
+    end
+  end
+
+  # Gem::Platform#initialize normalizes the os but keeps the cpu verbatim.
+  def test_pre_install_checks_traversal_platform_from_string
+    spec = util_spec "a", "1"
+    def spec.validate(*args); end
+    spec.platform = Gem::Platform.new("../../../../tmp/X-linux")
+
+    installer = Gem::Installer.for_spec spec
+    installer.gem_home = @gemhome
+
+    use_ui @ui do
+      e = assert_raise Gem::InstallError do
+        installer.pre_install_checks
+      end
+      assert_equal "../../../../tmp/X-linux is an invalid platform", e.message
+    end
+  end
+
+  def test_pre_install_checks_accepts_real_platforms
+    %w[x86_64-linux arm64-darwin-23 x64-mingw-ucrt java ruby].each do |platform|
+      spec = util_spec "a", "1" do |s|
+        s.platform = platform
+      end
+
+      util_build_gem spec
+
+      installer = Gem::Installer.at spec.cache_file,
+                                    install_dir: @gemhome,
+                                    user_install: false,
+                                    force: true
+
+      use_ui @ui do
+        assert_equal spec, installer.install, platform
+      end
+
+      assert_path_exist File.join(@gemhome, "gems", spec.full_name), platform
     end
   end
 

@@ -50,6 +50,19 @@ module Bundler
       end
     end
 
+    # `require_paths` is overridden above, but `full_require_paths` (and so
+    # `load_paths`) is computed from `raw_require_paths`, which would otherwise
+    # report the default `lib` for every gem
+    def raw_require_paths
+      if @remote_specification
+        @remote_specification.raw_require_paths
+      elsif _local_specification
+        _local_specification.raw_require_paths
+      else
+        super
+      end
+    end
+
     # needed for inline
     def load_paths
       # remote specs aren't installed, and can't have load_paths
@@ -142,10 +155,11 @@ module Bundler
     end
 
     def parse_metadata(data)
+      @created_at = nil
+
       unless data
         @required_ruby_version = nil
         @required_rubygems_version = nil
-        @created_at = nil
         return
       end
 
@@ -153,8 +167,13 @@ module Bundler
         next unless v
         case k.to_s
         when "checksum"
+          # Some registries send empty checksum values, treat them as if the
+          # checksum was not included at all
+          checksum = v.last
+          next unless checksum
+
           begin
-            @checksum = Checksum.from_api(v.last, @spec_fetcher.uri)
+            @checksum = Checksum.from_api(checksum, @spec_fetcher.uri)
           rescue ArgumentError => e
             raise ArgumentError, "Invalid checksum for #{full_name}: #{e.message}"
           end
@@ -163,18 +182,29 @@ module Bundler
         when "ruby"
           @required_ruby_version = Gem::Requirement.new(v)
         when "created_at"
-          value = v.is_a?(Array) ? v.last : v
-          if value.is_a?(String)
-            @created_at = begin
-              Time.new(value)
-            rescue ArgumentError
-              nil
-            end
-          end
+          @created_at = parse_created_at(v.is_a?(Array) ? v.last : v)&.freeze
         end
       end
     rescue StandardError => e
       raise GemspecError, "There was an error parsing the metadata for the gem #{name} (#{version}): #{e.class}\n#{e}\nThe metadata was #{data.inspect}"
+    end
+
+    # Matches an ISO 8601 time zone designator at the end of a timestamp.
+    TIME_ZONE_SUFFIX = /(?:Z|z|[+-]\d{2}(?::?\d{2})?)\z/
+    private_constant :TIME_ZONE_SUFFIX
+
+    # A timestamp without a time zone offset is read as UTC, because reading
+    # it as local time would shift the cooldown window by the environment's
+    # offset. Unparsable values become nil so the cooldown fails open.
+    def parse_created_at(value)
+      return unless value.is_a?(String)
+
+      require "time"
+      begin
+        Time.iso8601(value.match?(TIME_ZONE_SUFFIX) ? value : "#{value}Z")
+      rescue ArgumentError
+        nil
+      end
     end
 
     def build_dependency(name, requirements)

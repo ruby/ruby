@@ -12,55 +12,21 @@
 
 #if !defined(OPENSSL_NO_OCSP)
 
-#define NewOCSPReq(klass) \
-    TypedData_Wrap_Struct((klass), &ossl_ocsp_request_type, 0)
-#define SetOCSPReq(obj, req) do { \
-    if(!(req)) ossl_raise(rb_eRuntimeError, "Request wasn't initialized!"); \
-    RTYPEDDATA_DATA(obj) = (req); \
-} while (0)
 #define GetOCSPReq(obj, req) do { \
     TypedData_Get_Struct((obj), OCSP_REQUEST, &ossl_ocsp_request_type, (req)); \
     if(!(req)) ossl_raise(rb_eRuntimeError, "Request wasn't initialized!"); \
-} while (0)
-
-#define NewOCSPRes(klass) \
-    TypedData_Wrap_Struct((klass), &ossl_ocsp_response_type, 0)
-#define SetOCSPRes(obj, res) do { \
-    if(!(res)) ossl_raise(rb_eRuntimeError, "Response wasn't initialized!"); \
-    RTYPEDDATA_DATA(obj) = (res); \
 } while (0)
 #define GetOCSPRes(obj, res) do { \
     TypedData_Get_Struct((obj), OCSP_RESPONSE, &ossl_ocsp_response_type, (res)); \
     if(!(res)) ossl_raise(rb_eRuntimeError, "Response wasn't initialized!"); \
 } while (0)
-
-#define NewOCSPBasicRes(klass) \
-    TypedData_Wrap_Struct((klass), &ossl_ocsp_basicresp_type, 0)
-#define SetOCSPBasicRes(obj, res) do { \
-    if(!(res)) ossl_raise(rb_eRuntimeError, "Response wasn't initialized!"); \
-    RTYPEDDATA_DATA(obj) = (res); \
-} while (0)
 #define GetOCSPBasicRes(obj, res) do { \
     TypedData_Get_Struct((obj), OCSP_BASICRESP, &ossl_ocsp_basicresp_type, (res)); \
     if(!(res)) ossl_raise(rb_eRuntimeError, "Response wasn't initialized!"); \
 } while (0)
-
-#define NewOCSPSingleRes(klass) \
-    TypedData_Wrap_Struct((klass), &ossl_ocsp_singleresp_type, 0)
-#define SetOCSPSingleRes(obj, res) do { \
-    if(!(res)) ossl_raise(rb_eRuntimeError, "SingleResponse wasn't initialized!"); \
-    RTYPEDDATA_DATA(obj) = (res); \
-} while (0)
 #define GetOCSPSingleRes(obj, res) do { \
     TypedData_Get_Struct((obj), OCSP_SINGLERESP, &ossl_ocsp_singleresp_type, (res)); \
     if(!(res)) ossl_raise(rb_eRuntimeError, "SingleResponse wasn't initialized!"); \
-} while (0)
-
-#define NewOCSPCertId(klass) \
-    TypedData_Wrap_Struct((klass), &ossl_ocsp_certid_type, 0)
-#define SetOCSPCertId(obj, cid) do { \
-    if(!(cid)) ossl_raise(rb_eRuntimeError, "Cert ID wasn't initialized!"); \
-    RTYPEDDATA_DATA(obj) = (cid); \
 } while (0)
 #define GetOCSPCertId(obj, cid) do { \
     TypedData_Get_Struct((obj), OCSP_CERTID, &ossl_ocsp_certid_type, (cid)); \
@@ -148,15 +114,17 @@ static const rb_data_type_t ossl_ocsp_certid_type = {
 /*
  * Public
  */
+static VALUE ossl_ocspcid_alloc(VALUE klass);
+
 static VALUE
 ossl_ocspcid_new(const OCSP_CERTID *cid)
 {
-    VALUE obj = NewOCSPCertId(cOCSPCertId);
+    VALUE obj = ossl_ocspcid_alloc(cOCSPCertId);
     /* OpenSSL 1.1.1 takes a non-const pointer */
     OCSP_CERTID *cid_new = OCSP_CERTID_dup((OCSP_CERTID *)cid);
     if (!cid_new)
         ossl_raise(eOCSPError, "OCSP_CERTID_dup");
-    SetOCSPCertId(obj, cid_new);
+    RTYPEDDATA_DATA(obj) = cid_new;
     return obj;
 }
 
@@ -166,33 +134,22 @@ ossl_ocspcid_new(const OCSP_CERTID *cid)
 static VALUE
 ossl_ocspreq_alloc(VALUE klass)
 {
-    OCSP_REQUEST *req;
-    VALUE obj;
-
-    obj = NewOCSPReq(klass);
-    if (!(req = OCSP_REQUEST_new()))
-        ossl_raise(eOCSPError, NULL);
-    SetOCSPReq(obj, req);
-
-    return obj;
+    return TypedData_Wrap_Struct(klass, &ossl_ocsp_request_type, NULL);
 }
 
 /* :nodoc: */
 static VALUE
 ossl_ocspreq_initialize_copy(VALUE self, VALUE other)
 {
-    OCSP_REQUEST *req, *req_old, *req_new;
+    OCSP_REQUEST *req, *req_new;
 
-    rb_check_frozen(self);
-    GetOCSPReq(self, req_old);
+    ossl_want_uninitialized(self, &ossl_ocsp_request_type);
     GetOCSPReq(other, req);
 
     req_new = ASN1_item_dup(ASN1_ITEM_rptr(OCSP_REQUEST), req);
     if (!req_new)
         ossl_raise(eOCSPError, "ASN1_item_dup");
-
-    SetOCSPReq(self, req_new);
-    OCSP_REQUEST_free(req_old);
+    RTYPEDDATA_DATA(self) = req_new;
 
     return self;
 }
@@ -210,21 +167,25 @@ static VALUE
 ossl_ocspreq_initialize(int argc, VALUE *argv, VALUE self)
 {
     VALUE arg;
-    OCSP_REQUEST *req, *req_new;
+    OCSP_REQUEST *req_new;
     const unsigned char *p;
 
     rb_scan_args(argc, argv, "01", &arg);
-    if(!NIL_P(arg)){
-        GetOCSPReq(self, req);
+    ossl_want_uninitialized(self, &ossl_ocsp_request_type);
+    if (NIL_P(arg)) {
+        req_new = OCSP_REQUEST_new();
+        if (!req_new)
+            ossl_raise(eOCSPError, "OCSP_REQUEST_new");
+    }
+    else {
         arg = ossl_to_der_if_possible(arg);
         StringValue(arg);
         p = (unsigned char *)RSTRING_PTR(arg);
         req_new = d2i_OCSP_REQUEST(NULL, &p, RSTRING_LEN(arg));
         if (!req_new)
             ossl_raise(eOCSPError, "d2i_OCSP_REQUEST");
-        SetOCSPReq(self, req_new);
-        OCSP_REQUEST_free(req);
     }
+    RTYPEDDATA_DATA(self) = req_new;
 
     return self;
 }
@@ -476,6 +437,12 @@ ossl_ocspreq_signed_p(VALUE self)
  * OCSP::Response
  */
 
+static VALUE
+ossl_ocspres_alloc(VALUE klass)
+{
+    return TypedData_Wrap_Struct(klass, &ossl_ocsp_response_type, NULL);
+}
+
 /* call-seq:
  *   OpenSSL::OCSP::Response.create(status, basic_response = nil) -> response
  *
@@ -492,24 +459,10 @@ ossl_ocspres_s_create(VALUE klass, VALUE status, VALUE basic_resp)
 
     if(NIL_P(basic_resp)) bs = NULL;
     else GetOCSPBasicRes(basic_resp, bs); /* NO NEED TO DUP */
-    obj = NewOCSPRes(klass);
-    if(!(res = OCSP_response_create(st, bs)))
-        ossl_raise(eOCSPError, NULL);
-    SetOCSPRes(obj, res);
-
-    return obj;
-}
-
-static VALUE
-ossl_ocspres_alloc(VALUE klass)
-{
-    OCSP_RESPONSE *res;
-    VALUE obj;
-
-    obj = NewOCSPRes(klass);
-    if(!(res = OCSP_RESPONSE_new()))
-        ossl_raise(eOCSPError, NULL);
-    SetOCSPRes(obj, res);
+    obj = ossl_ocspres_alloc(klass);
+    if (!(res = OCSP_response_create(st, bs)))
+        ossl_raise(eOCSPError, "OCSP_response_create");
+    RTYPEDDATA_DATA(obj) = res;
 
     return obj;
 }
@@ -518,18 +471,15 @@ ossl_ocspres_alloc(VALUE klass)
 static VALUE
 ossl_ocspres_initialize_copy(VALUE self, VALUE other)
 {
-    OCSP_RESPONSE *res, *res_old, *res_new;
+    OCSP_RESPONSE *res, *res_new;
 
-    rb_check_frozen(self);
-    GetOCSPRes(self, res_old);
+    ossl_want_uninitialized(self, &ossl_ocsp_response_type);
     GetOCSPRes(other, res);
 
     res_new = ASN1_item_dup(ASN1_ITEM_rptr(OCSP_RESPONSE), res);
     if (!res_new)
         ossl_raise(eOCSPError, "ASN1_item_dup");
-
-    SetOCSPRes(self, res_new);
-    OCSP_RESPONSE_free(res_old);
+    RTYPEDDATA_DATA(self) = res_new;
 
     return self;
 }
@@ -547,21 +497,25 @@ static VALUE
 ossl_ocspres_initialize(int argc, VALUE *argv, VALUE self)
 {
     VALUE arg;
-    OCSP_RESPONSE *res, *res_new;
+    OCSP_RESPONSE *res_new;
     const unsigned char *p;
 
     rb_scan_args(argc, argv, "01", &arg);
-    if(!NIL_P(arg)){
-        GetOCSPRes(self, res);
+    ossl_want_uninitialized(self, &ossl_ocsp_response_type);
+    if (NIL_P(arg)) {
+        res_new = OCSP_RESPONSE_new();
+        if (!res_new)
+            ossl_raise(eOCSPError, "OCSP_RESPONSE_new");
+    }
+    else {
         arg = ossl_to_der_if_possible(arg);
         StringValue(arg);
         p = (unsigned char *)RSTRING_PTR(arg);
         res_new = d2i_OCSP_RESPONSE(NULL, &p, RSTRING_LEN(arg));
         if (!res_new)
             ossl_raise(eOCSPError, "d2i_OCSP_RESPONSE");
-        SetOCSPRes(self, res_new);
-        OCSP_RESPONSE_free(res);
     }
+    RTYPEDDATA_DATA(self) = res_new;
 
     return self;
 }
@@ -604,6 +558,8 @@ ossl_ocspres_status_string(VALUE self)
     return rb_str_new2(OCSP_response_status_str(st));
 }
 
+static VALUE ossl_ocspbres_alloc(VALUE klass);
+
 /*
  * call-seq:
  *   response.basic
@@ -619,10 +575,10 @@ ossl_ocspres_get_basic(VALUE self)
     VALUE ret;
 
     GetOCSPRes(self, res);
-    ret = NewOCSPBasicRes(cOCSPBasicRes);
-    if(!(bs = OCSP_response_get1_basic(res)))
+    ret = ossl_ocspbres_alloc(cOCSPBasicRes);
+    if (!(bs = OCSP_response_get1_basic(res)))
         return Qnil;
-    SetOCSPBasicRes(ret, bs);
+    RTYPEDDATA_DATA(ret) = bs;
 
     return ret;
 }
@@ -660,33 +616,22 @@ ossl_ocspres_to_der(VALUE self)
 static VALUE
 ossl_ocspbres_alloc(VALUE klass)
 {
-    OCSP_BASICRESP *bs;
-    VALUE obj;
-
-    obj = NewOCSPBasicRes(klass);
-    if(!(bs = OCSP_BASICRESP_new()))
-        ossl_raise(eOCSPError, NULL);
-    SetOCSPBasicRes(obj, bs);
-
-    return obj;
+    return TypedData_Wrap_Struct(klass, &ossl_ocsp_basicresp_type, NULL);
 }
 
 /* :nodoc: */
 static VALUE
 ossl_ocspbres_initialize_copy(VALUE self, VALUE other)
 {
-    OCSP_BASICRESP *bs, *bs_old, *bs_new;
+    OCSP_BASICRESP *bs, *bs_new;
 
-    rb_check_frozen(self);
-    GetOCSPBasicRes(self, bs_old);
+    ossl_want_uninitialized(self, &ossl_ocsp_basicresp_type);
     GetOCSPBasicRes(other, bs);
 
     bs_new = ASN1_item_dup(ASN1_ITEM_rptr(OCSP_BASICRESP), bs);
     if (!bs_new)
         ossl_raise(eOCSPError, "ASN1_item_dup");
-
-    SetOCSPBasicRes(self, bs_new);
-    OCSP_BASICRESP_free(bs_old);
+    RTYPEDDATA_DATA(self) = bs_new;
 
     return self;
 }
@@ -703,22 +648,24 @@ static VALUE
 ossl_ocspbres_initialize(int argc, VALUE *argv, VALUE self)
 {
     VALUE arg;
-    OCSP_BASICRESP *res, *res_new;
+    OCSP_BASICRESP *bs_new;
     const unsigned char *p;
 
     rb_scan_args(argc, argv, "01", &arg);
-    if (!NIL_P(arg)) {
-        GetOCSPBasicRes(self, res);
+    if (NIL_P(arg)) {
+        bs_new = OCSP_BASICRESP_new();
+        if (!bs_new)
+            ossl_raise(eOCSPError, "OCSP_BASICRESP_new");
+    }
+    else {
         arg = ossl_to_der_if_possible(arg);
         StringValue(arg);
         p = (unsigned char *)RSTRING_PTR(arg);
-        res_new = d2i_OCSP_BASICRESP(NULL, &p, RSTRING_LEN(arg));
-        if (!res_new)
+        bs_new = d2i_OCSP_BASICRESP(NULL, &p, RSTRING_LEN(arg));
+        if (!bs_new)
             ossl_raise(eOCSPError, "d2i_OCSP_BASICRESP");
-        SetOCSPBasicRes(self, res_new);
-        OCSP_BASICRESP_free(res);
     }
-
+    RTYPEDDATA_DATA(self) = bs_new;
     return self;
 }
 
@@ -1086,32 +1033,24 @@ ossl_ocspbres_to_der(VALUE self)
  * OCSP::SingleResponse
  */
 static VALUE
+ossl_ocspsres_alloc(VALUE klass)
+{
+    return TypedData_Wrap_Struct(klass, &ossl_ocsp_singleresp_type, NULL);
+}
+
+static VALUE
 ossl_ocspsres_new(const OCSP_SINGLERESP *sres)
 {
     VALUE obj;
     OCSP_SINGLERESP *sres_new;
 
-    obj = NewOCSPSingleRes(cOCSPSingleRes);
+    obj = ossl_ocspsres_alloc(cOCSPSingleRes);
     /* OpenSSL 1.1.1 takes a non-const pointer */
     sres_new = ASN1_item_dup(ASN1_ITEM_rptr(OCSP_SINGLERESP),
                              (OCSP_SINGLERESP *)sres);
     if (!sres_new)
         ossl_raise(eOCSPError, "ASN1_item_dup");
-    SetOCSPSingleRes(obj, sres_new);
-
-    return obj;
-}
-
-static VALUE
-ossl_ocspsres_alloc(VALUE klass)
-{
-    OCSP_SINGLERESP *sres;
-    VALUE obj;
-
-    obj = NewOCSPSingleRes(klass);
-    if (!(sres = OCSP_SINGLERESP_new()))
-        ossl_raise(eOCSPError, NULL);
-    SetOCSPSingleRes(obj, sres);
+    RTYPEDDATA_DATA(obj) = sres_new;
 
     return obj;
 }
@@ -1125,19 +1064,18 @@ ossl_ocspsres_alloc(VALUE klass)
 static VALUE
 ossl_ocspsres_initialize(VALUE self, VALUE arg)
 {
-    OCSP_SINGLERESP *res, *res_new;
+    OCSP_SINGLERESP *sres_new;
     const unsigned char *p;
 
+    ossl_want_uninitialized(self, &ossl_ocsp_singleresp_type);
     arg = ossl_to_der_if_possible(arg);
     StringValue(arg);
-    GetOCSPSingleRes(self, res);
 
     p = (unsigned char*)RSTRING_PTR(arg);
-    res_new = d2i_OCSP_SINGLERESP(NULL, &p, RSTRING_LEN(arg));
-    if (!res_new)
+    sres_new = d2i_OCSP_SINGLERESP(NULL, &p, RSTRING_LEN(arg));
+    if (!sres_new)
         ossl_raise(eOCSPError, "d2i_OCSP_SINGLERESP");
-    SetOCSPSingleRes(self, res_new);
-    OCSP_SINGLERESP_free(res);
+    RTYPEDDATA_DATA(self) = sres_new;
 
     return self;
 }
@@ -1146,18 +1084,15 @@ ossl_ocspsres_initialize(VALUE self, VALUE arg)
 static VALUE
 ossl_ocspsres_initialize_copy(VALUE self, VALUE other)
 {
-    OCSP_SINGLERESP *sres, *sres_old, *sres_new;
+    OCSP_SINGLERESP *sres, *sres_new;
 
-    rb_check_frozen(self);
-    GetOCSPSingleRes(self, sres_old);
+    ossl_want_uninitialized(self, &ossl_ocsp_singleresp_type);
     GetOCSPSingleRes(other, sres);
 
     sres_new = ASN1_item_dup(ASN1_ITEM_rptr(OCSP_SINGLERESP), sres);
     if (!sres_new)
         ossl_raise(eOCSPError, "ASN1_item_dup");
-
-    SetOCSPSingleRes(self, sres_new);
-    OCSP_SINGLERESP_free(sres_old);
+    RTYPEDDATA_DATA(self) = sres_new;
 
     return self;
 }
@@ -1389,33 +1324,22 @@ ossl_ocspsres_to_der(VALUE self)
 static VALUE
 ossl_ocspcid_alloc(VALUE klass)
 {
-    OCSP_CERTID *id;
-    VALUE obj;
-
-    obj = NewOCSPCertId(klass);
-    if(!(id = OCSP_CERTID_new()))
-        ossl_raise(eOCSPError, NULL);
-    SetOCSPCertId(obj, id);
-
-    return obj;
+    return TypedData_Wrap_Struct(klass, &ossl_ocsp_certid_type, NULL);
 }
 
 /* :nodoc: */
 static VALUE
 ossl_ocspcid_initialize_copy(VALUE self, VALUE other)
 {
-    OCSP_CERTID *cid, *cid_old, *cid_new;
+    OCSP_CERTID *cid, *cid_new;
 
-    rb_check_frozen(self);
-    GetOCSPCertId(self, cid_old);
+    ossl_want_uninitialized(self, &ossl_ocsp_certid_type);
     GetOCSPCertId(other, cid);
 
     cid_new = OCSP_CERTID_dup(cid);
     if (!cid_new)
         ossl_raise(eOCSPError, "OCSP_CERTID_dup");
-
-    SetOCSPCertId(self, cid_new);
-    OCSP_CERTID_free(cid_old);
+    RTYPEDDATA_DATA(self) = cid_new;
 
     return self;
 }
@@ -1437,11 +1361,12 @@ ossl_ocspcid_initialize_copy(VALUE self, VALUE other)
 static VALUE
 ossl_ocspcid_initialize(int argc, VALUE *argv, VALUE self)
 {
-    OCSP_CERTID *id, *newid;
+    OCSP_CERTID *newid;
     VALUE subject, issuer, digest;
 
-    GetOCSPCertId(self, id);
-    if (rb_scan_args(argc, argv, "12", &subject, &issuer, &digest) == 1) {
+    rb_scan_args(argc, argv, "12", &subject, &issuer, &digest);
+    ossl_want_uninitialized(self, &ossl_ocsp_certid_type);
+    if (argc == 1) {
         VALUE arg;
         const unsigned char *p;
 
@@ -1465,9 +1390,7 @@ ossl_ocspcid_initialize(int argc, VALUE *argv, VALUE self)
         if (!newid)
             ossl_raise(eOCSPError, "OCSP_cert_to_id");
     }
-
-    SetOCSPCertId(self, newid);
-    OCSP_CERTID_free(id);
+    RTYPEDDATA_DATA(self) = newid;
 
     return self;
 }

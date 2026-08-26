@@ -826,6 +826,43 @@ end.join
     end;
   end
 
+  def test_multiple_error_handle
+    errs = [
+      /.*END3 \(RuntimeError\).*\n/,
+      /.*END2 \(RuntimeError\).*\n/,
+      /.*END1 \(RuntimeError\).*\n/,
+      /.*EXIT \(RuntimeError\).*\n/,
+    ]
+    assert_in_out_err([], <<-'end;', [], errs, success: false)
+      Signal.trap(:EXIT) {raise "EXIT"}
+      END{raise "END1"};
+      END{raise "END2"};
+      END{raise "END3"};
+    end;
+  end
+
+  def test_cause_in_exit_handler
+    errs = [
+      /.*outer \(RuntimeError\).*\n/,
+      /.*inner \(RuntimeError\).*\n/,
+    ]
+    assert_in_out_err([], <<-'end;', [], errs, success: false)
+      END{begin; raise "inner"; rescue; raise "outer"; end}
+    end;
+    assert_in_out_err([], <<-'end;', [], errs, success: false)
+      Signal.trap(:EXIT) {begin; raise "inner"; rescue; raise "outer"; end}
+    end;
+    errs = [
+      /.*previous \(RuntimeError\).*\n/,
+      /.*outer \(RuntimeError\).*\n/,
+      /.*middle \(RuntimeError\).*\n/,
+    ]
+    assert_in_out_err([], <<-'end;', [], errs, success: false)
+      END{begin; raise "middle"; rescue => e; raise "outer", cause: e; end}
+      END{raise "previous"}
+    end;
+  end
+
   def test_raise_with_cause
     msg = "[Feature #8257]"
     cause = ArgumentError.new("foobar")
@@ -1442,6 +1479,12 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
 
   def test_detailed_message_under_gc_compact_stress
     omit "compaction doesn't work well on s390x" if RUBY_PLATFORM =~ /s390x/ # https://github.com/ruby/ruby/pull/5077
+
+    # The first error display lazily requires did_you_mean and friends; inside the
+    # block that library load costs one full mark+compact per allocation, enough to
+    # trip the parallel runner's no-response timeout.  Load it here instead.
+    RuntimeError.new("").detailed_message
+
     EnvUtil.under_gc_compact_stress do
       e = RuntimeError.new("foo\nbar\nbaz")
       assert_equal("foo (RuntimeError)\nbar\nbaz", e.detailed_message)

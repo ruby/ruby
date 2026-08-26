@@ -131,6 +131,10 @@ describe "Kernel.autoload" do
     $".replace @loaded_features
   end
 
+  it "is a public method" do
+    Kernel.public_methods(false).should.include?(:autoload)
+  end
+
   it "registers a file to load the first time the toplevel constant is accessed" do
     Kernel.autoload :KSAutoloadAA, @non_existent
     Kernel.autoload?(:KSAutoloadAA).should == @non_existent
@@ -167,6 +171,10 @@ describe "Kernel.autoload" do
 end
 
 describe "Kernel.autoload?" do
+  it "is a public method" do
+    Kernel.public_methods(false).should.include?(:autoload?)
+  end
+
   it "returns the name of the file that will be autoloaded" do
     Kernel.autoload :KSAutoload, "autoload.rb"
     Kernel.autoload?(:KSAutoload).should == "autoload.rb"

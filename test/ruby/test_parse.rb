@@ -323,6 +323,12 @@ class TestParse < Test::Unit::TestCase
     end
     a.call
     assert_equal(42, b)
+
+    obj = BasicObject.new
+    assert_nothing_raised do
+      a = obj.instance_eval('-> a = "#{foo do end}" do end', __FILE__, __LINE__)
+    end
+    assert_raise_with_message(NoMethodError, /foo/) {a.call}
   end
 
   def test_block_call_colon2

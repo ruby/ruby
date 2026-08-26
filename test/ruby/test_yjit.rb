@@ -18,7 +18,7 @@ class TestYJIT < Test::Unit::TestCase
   running_with_yjit = defined?(RubyVM::YJIT) && RubyVM::YJIT.enabled?
 
   def test_yjit_in_ruby_description
-    assert_includes(RUBY_DESCRIPTION, '+YJIT')
+    assert_include(RUBY_DESCRIPTION, '+YJIT')
   end if running_with_yjit
 
   # Check that YJIT is in the version string
@@ -63,7 +63,7 @@ class TestYJIT < Test::Unit::TestCase
       RubyVM::YJIT.enable
 
       assert_predicate RubyVM::YJIT, :enabled?
-      assert_includes RUBY_DESCRIPTION, "+YJIT"
+      assert_include RUBY_DESCRIPTION, "+YJIT"
     RUBY
   end
 
@@ -75,7 +75,7 @@ class TestYJIT < Test::Unit::TestCase
       RubyVM::YJIT.enable
 
       assert_predicate RubyVM::YJIT, :enabled?
-      assert_includes RUBY_DESCRIPTION, "+YJIT"
+      assert_include RUBY_DESCRIPTION, "+YJIT"
     RUBY
   end
 
@@ -644,16 +644,15 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
-  STRUCT_MAX_EMBEDDED_MEMBERS = (
-    GC::INTERNAL_CONSTANTS[:RVARGC_MAX_ALLOCATE_SIZE] -
-    GC::INTERNAL_CONSTANTS[:RBASIC_SIZE] -
-    GC::INTERNAL_CONSTANTS[:RVALUE_OVERHEAD]
-  ) / RbConfig::SIZEOF["void*"]
-
   def test_spilled_struct_aref
     omit("FIXME: https://github.com/Shopify/ruby/issues/977")
+    struct_max_embedded_members = (
+        GC::INTERNAL_CONSTANTS[:RVARGC_MAX_ALLOCATE_SIZE] -
+        GC::INTERNAL_CONSTANTS[:RBASIC_SIZE] -
+        GC::INTERNAL_CONSTANTS[:RVALUE_OVERHEAD]
+      ) / RbConfig::SIZEOF["void*"]
     assert_compiles(<<~RUBY)
-      LargeStruct = Struct.new(:foo, :bar, *(#{STRUCT_MAX_EMBEDDED_MEMBERS} - 2).times.map { :"m_\#{it}" })
+      LargeStruct = Struct.new(:foo, :bar, *(#{struct_max_embedded_members} - 2).times.map { :"m_\#{it}" })
 
       def foo(obj)
         foo = obj.foo
@@ -852,6 +851,27 @@ class TestYJIT < Test::Unit::TestCase
       end
       jit_method
     RUBY
+  end
+
+  def test_forwarding_callee_does_not_map_arguments_to_locals
+    assert_compiles(
+      <<~'RUBY', call_threshold: 1, code_gc: true, result: [:ok, :ok], verify_ctx: true
+      class ForwardingReceiver
+        def foo(...) = :ok
+      end
+
+      def delegate(...)
+        receiver = ForwardingReceiver.new
+        if defined?(receiver.foo)
+          receiver.foo(...)
+        else
+          receiver.__send__(:foo, ...)
+        end
+      end
+
+      2.times.map { delegate(nil, "string") }
+      RUBY
+    )
   end
 
   def test_send_block
@@ -1200,6 +1220,26 @@ class TestYJIT < Test::Unit::TestCase
       end
 
       [case_dispatch(1), case_dispatch(2), case_dispatch(3)]
+    RUBY
+  end
+
+  def test_opt_case_dispatch_all_byte_values
+    branches = 256.times.map { |value| "when #{value} then #{value}" }.join("\n")
+    assert_compiles(<<~RUBY, exits: :any, result: :ok)
+      def case_dispatch(value)
+        case value
+        #{branches}
+        end
+      end
+
+      values = (0...256).to_a
+      return :wrong_result unless values.map { |value| case_dispatch(value) } == values
+
+      stats = RubyVM::YJIT.runtime_stats
+      return :early_fallback if stats[:all_stats] && !stats[:num_opt_case_dispatch_megamorphic].zero?
+      return :wrong_else unless 2.times.map { case_dispatch(256) } == [nil, nil]
+      return :ok unless stats[:all_stats]
+      RubyVM::YJIT.runtime_stats[:num_opt_case_dispatch_megamorphic].positive? ? :ok : :missing_fallback
     RUBY
   end
 
@@ -1997,8 +2037,16 @@ class TestYJIT < Test::Unit::TestCase
     frozen_string_literal: nil,
     mem_size: nil,
     code_gc: false,
-    no_send_fallbacks: false
+    no_send_fallbacks: false,
+    verify_ctx: false
   )
+    # [Bug #22228] Run a major GC to collect objects registered during
+    # initialization that would otherwise cause unexpected YJIT side
+    # exits when GC.stress is enabled.
+    run_gc = <<~RUBY
+      GC.start
+    RUBY
+
     reset_stats = <<~RUBY
       RubyVM::YJIT.runtime_stats
       RubyVM::YJIT.reset_stats!
@@ -2027,12 +2075,13 @@ class TestYJIT < Test::Unit::TestCase
       _test_proc = -> {
         #{test_script}
       }
+      #{run_gc}
       #{reset_stats}
       result = _test_proc.call
       #{write_results}
     RUBY
 
-    status, out, err, stats = eval_with_jit(script, call_threshold:, mem_size:, code_gc:)
+    status, out, err, stats = eval_with_jit(script, call_threshold:, mem_size:, code_gc:, verify_ctx:)
 
     assert status.success?, "exited with status #{status.to_i}, stderr:\n#{err}"
 
@@ -2097,7 +2146,9 @@ class TestYJIT < Test::Unit::TestCase
     s.chars.map { |c| c.ascii_only? ? c : "\\u%x" % c.codepoints[0] }.join
   end
 
-  def eval_with_jit(script, call_threshold: 1, timeout: 1000, mem_size: nil, code_gc: false)
+  def eval_with_jit(
+    script, call_threshold: 1, timeout: 1000, mem_size: nil, code_gc: false, verify_ctx: false
+  )
     args = [
       "--disable-gems",
       "--yjit-call-threshold=#{call_threshold}",
@@ -2105,6 +2156,7 @@ class TestYJIT < Test::Unit::TestCase
     ]
     args << "--yjit-exec-mem-size=#{mem_size}" if mem_size
     args << "--yjit-code-gc" if code_gc
+    args << "--yjit-verify-ctx" if verify_ctx
     args << "-e" << script_shell_encode(script)
     stats_r, stats_w = IO.pipe
     # Separate thread so we don't deadlock when

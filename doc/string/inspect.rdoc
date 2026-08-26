@@ -8,7 +8,7 @@ Most printable characters are rendered simply as themselves:
   "\u000012".inspect   # => "\"\\u000012\""
   'こんにちは'.inspect  # => "\"こんにちは\""
 
-But printable characters double-quote (<tt>'"'</tt>) and backslash and (<tt>'\\'</tt>) are escaped:
+But printable characters double-quote (<tt>'"'</tt>) and backslash (<tt>'\\'</tt>) are escaped:
 
   '"'.inspect  # => "\"\\\"\""
   '\\'.inspect # => "\"\\\\\""

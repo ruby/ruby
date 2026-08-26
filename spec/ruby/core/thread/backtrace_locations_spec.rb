@@ -32,6 +32,18 @@ describe "Thread#backtrace_locations" do
     locations2.map(&:to_s).should == locations1[2..4].map(&:to_s)
   end
 
+  it "raises for negative start" do
+    -> { Thread.current.backtrace_locations(-1) }.should.raise(ArgumentError, "negative level (-1)")
+  end
+
+  it "raises for negative length" do
+    -> { Thread.current.backtrace_locations(0, -1) }.should.raise(ArgumentError, "negative size (-1)")
+  end
+
+  it "can be called with `nil` length" do
+    Thread.current.backtrace_locations(0, nil).map(&:to_s).should == Thread.current.backtrace_locations(0).map(&:to_s)
+  end
+
   it "can be called with a range" do
     locations1 = Thread.current.backtrace_locations
     locations2 = Thread.current.backtrace_locations(2..4)
@@ -75,5 +87,10 @@ describe "Thread#backtrace_locations" do
 
   it "[1..-1] is the same as #caller_locations(0..-1) for Thread.current" do
     Thread.current.backtrace_locations(1..-1).map(&:to_s).should == caller_locations(0..-1).map(&:to_s)
+  end
+
+  it "coerces the arguments to integers" do
+    Thread.current.backtrace_locations(1.1, 1.1).map(&:to_s).should == Thread.current.backtrace_locations(1, 1).map(&:to_s)
+    Thread.current.backtrace_locations(1.1..1.1).map(&:to_s).should == Thread.current.backtrace_locations(1..1).map(&:to_s)
   end
 end

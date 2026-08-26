@@ -192,4 +192,26 @@ describe "C-API Thread function" do
       end
     end
   end
+
+  ruby_version_is "4.1" do
+    describe "rb_nogvl with RB_NOGVL_PENDING_INTR_FAIL" do
+      it "does not enter the blocking region when the current thread has masked pending interrupts" do
+        interrupted = false
+
+        begin
+          Thread.handle_interrupt(Interrupt => :never) do
+            Thread.current.raise(Interrupt)
+
+            # The flag must not call the function (nil return) and errno is 0,
+            # consistent with the in-region skip path (the function never ran).
+            @t.rb_nogvl_pending_intr_fail.should == [false, nil, 0]
+          end
+        rescue Interrupt
+          interrupted = true
+        end
+
+        interrupted.should == true
+      end
+    end
+  end
 end

@@ -13,13 +13,8 @@ extern "C" {
 #define RBASIC_SET_FLAGS(obj, flags_to_set) (RBASIC(obj)->flags = flags_to_set)
 #endif
 
-#ifndef FL_SHAREABLE
-static const VALUE VISIBLE_BITS = FL_TAINT | FL_FREEZE;
-static const VALUE DATA_VISIBLE_BITS = FL_TAINT | FL_FREEZE | ~(FL_USER0 - 1);
-#else
 static const VALUE VISIBLE_BITS = FL_FREEZE;
 static const VALUE DATA_VISIBLE_BITS = FL_FREEZE | ~(FL_USER0 - 1);
-#endif
 
 #if SIZEOF_VALUE == SIZEOF_LONG
 #define VALUE2NUM(v) ULONG2NUM(v)

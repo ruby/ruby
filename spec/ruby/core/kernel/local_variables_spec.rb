@@ -43,3 +43,9 @@ describe "Kernel#local_variables" do
     local_var_method.should == [:a]
   end
 end
+
+describe "Kernel.local_variables" do
+  it "is a public method" do
+    Kernel.public_methods(false).should.include?(:local_variables)
+  end
+end

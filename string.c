@@ -26,6 +26,7 @@
 #include "id.h"
 #include "internal.h"
 #include "internal/array.h"
+#include "internal/bits.h"
 #include "internal/compar.h"
 #include "internal/compilers.h"
 #include "internal/concurrent_set.h"
@@ -48,7 +49,9 @@
 #include "ruby/ractor.h"
 #include "ruby_assert.h"
 #include "shape.h"
+#include "vm_core.h"
 #include "vm_sync.h"
+#include "zjit.h"
 #include "ruby/internal/attr/nonstring.h"
 
 #if defined HAVE_CRYPT_R
@@ -90,11 +93,8 @@ VALUE rb_cSymbol;
  *            The string is not embedded. When a string is embedded, the contents
  *            follow the header. When a string is not embedded, the contents is
  *            on a separately allocated buffer.
- * 2:     STR_CHILLED_LITERAL (will be frozen in a future version)
+ * 2:     STR_CHILLED (will be frozen in a future version)
  *            The string was allocated as a literal in a file without an explicit `frozen_string_literal` comment.
- *            It emits a deprecation warning when mutated for the first time.
- * 3:     STR_CHILLED_SYMBOL_TO_S (will be frozen in a future version)
- *            The string was allocated by the `Symbol#to_s` method.
  *            It emits a deprecation warning when mutated for the first time.
  * 4:     STR_PRECOMPUTED_HASH
  *            The string is embedded and has its precomputed hashcode stored
@@ -131,7 +131,6 @@ VALUE rb_cSymbol;
 #define STR_BORROWED FL_USER6
 #define STR_TMPLOCK FL_USER7
 #define STR_NOFREE FL_USER18
-#define STR_FAKESTR FL_USER19
 
 #define STR_SET_NOEMBED(str) do {\
     FL_SET((str), STR_NOEMBED);\
@@ -223,13 +222,21 @@ SHARABLE_SUBSTRING_P(VALUE str, long beg, long len)
 static inline long
 str_embed_capa(VALUE str)
 {
-    return rb_gc_obj_slot_size(str) - offsetof(struct RString, as.embed.ary);
+    return rb_obj_shape_slot_size(str) - offsetof(struct RString, as.embed.ary);
 }
 
 bool
 rb_str_reembeddable_p(VALUE str)
 {
     return !FL_TEST(str, STR_NOFREE|STR_SHARED_ROOT|STR_SHARED);
+}
+
+/* True when other strings read this string's bytes out of its own slot, so the slot
+ * contents must stay valid for as long as the object does. */
+bool
+rb_str_embedded_shared_root_p(VALUE str)
+{
+    return STR_EMBED_P(str) && FL_TEST(str, STR_SHARED_ROOT);
 }
 
 static inline size_t
@@ -270,6 +277,12 @@ STR_EMBEDDABLE_P(long len, long termlen)
 {
     return rb_gc_size_allocatable_p(rb_str_embed_size(len, termlen));
 }
+
+/* Substrings and duplicated strings that need a slot larger than this are shared
+ * instead of copied. Larger slots hold fewer objects per page and trigger GC
+ * more often, which outweighs the copy they save; see [Feature #22186] for the
+ * benchmarks. */
+#define STR_COPY_MAX_EMBED_SIZE 256
 
 static VALUE str_replace_shared_without_enc(VALUE str2, VALUE str);
 static VALUE str_new_frozen(VALUE klass, VALUE orig);
@@ -630,7 +643,7 @@ static VALUE
 setup_fake_str(struct RString *fake_str, const char *name, long len, int encidx)
 {
     fake_str->basic.flags = T_STRING|RSTRING_NOEMBED|STR_NOFREE|STR_FAKESTR;
-    RBASIC_SET_SHAPE_ID((VALUE)fake_str, ROOT_SHAPE_ID | SHAPE_ID_LAYOUT_OTHER);
+    RBASIC_SET_FULL_SHAPE_ID((VALUE)fake_str, ROOT_SHAPE_ID | SHAPE_ID_LAYOUT_OTHER);
 
     if (!name) {
         RUBY_ASSERT_ALWAYS(len == 0);
@@ -1195,6 +1208,23 @@ VALUE
 rb_str_new_static(const char *ptr, long len)
 {
     return str_new_static(rb_cString, ptr, len, 0);
+}
+
+/* Take an xmalloc'd buffer as the String's body without copying it; the String owns it
+ * from here and frees it like any other heap string.  ptr must hold capa bytes plus the
+ * terminator for encindex, which is what a Ractor courier's string node carries. */
+VALUE
+rb_str_new_owned(char *ptr, long len, long capa, int encindex)
+{
+    RUBY_DTRACE_CREATE_HOOK(STRING, len);
+    VALUE str = str_alloc_heap(rb_cString);
+    RSTRING(str)->len = len;
+    RSTRING(str)->as.heap.ptr = ptr;
+    /* Freed by size (STR_HEAP_SIZE = capa + terminator), so capa must describe the
+     * allocation the caller made, not just the bytes in use. */
+    RSTRING(str)->as.heap.aux.capa = capa;
+    rb_enc_associate_index(str, encindex);
+    return str;
 }
 
 VALUE
@@ -1919,7 +1949,7 @@ ec_str_alloc_heap(struct rb_execution_context_struct *ec, VALUE klass)
     return (VALUE)str;
 }
 
-static inline VALUE
+static inline void
 str_duplicate_setup_encoding(VALUE str, VALUE dup, VALUE flags)
 {
     int encidx = 0;
@@ -1929,12 +1959,11 @@ str_duplicate_setup_encoding(VALUE str, VALUE dup, VALUE flags)
     }
     FL_SET_RAW(dup, flags & ~FL_FREEZE);
     if (encidx) rb_enc_associate_index(dup, encidx);
-    return dup;
 }
 
 static const VALUE flag_mask = ENC_CODERANGE_MASK | ENCODING_MASK | FL_FREEZE;
 
-static inline VALUE
+static inline void
 str_duplicate_setup_embed(VALUE klass, VALUE str, VALUE dup)
 {
     VALUE flags = FL_TEST_RAW(str, flag_mask);
@@ -1944,10 +1973,10 @@ str_duplicate_setup_embed(VALUE klass, VALUE str, VALUE dup)
     RUBY_ASSERT(str_embed_capa(dup) >= len + TERM_LEN(str));
     MEMCPY(RSTRING(dup)->as.embed.ary, RSTRING(str)->as.embed.ary, char, len + TERM_LEN(str));
     STR_SET_LEN(dup, RSTRING_LEN(str));
-    return str_duplicate_setup_encoding(str, dup, flags);
+    str_duplicate_setup_encoding(str, dup, flags);
 }
 
-static inline VALUE
+static inline void
 str_duplicate_setup_heap(VALUE klass, VALUE str, VALUE dup)
 {
     VALUE flags = FL_TEST_RAW(str, flag_mask);
@@ -1968,32 +1997,25 @@ str_duplicate_setup_heap(VALUE klass, VALUE str, VALUE dup)
     flags |= RSTRING_NOEMBED | STR_SHARED;
 
     STR_SET_LEN(dup, RSTRING_LEN(str));
-    return str_duplicate_setup_encoding(str, dup, flags);
-}
-
-static inline VALUE
-str_duplicate_setup(VALUE klass, VALUE str, VALUE dup)
-{
-    if (STR_EMBED_P(str)) {
-        return str_duplicate_setup_embed(klass, str, dup);
-    }
-    else {
-        return str_duplicate_setup_heap(klass, str, dup);
-    }
+    str_duplicate_setup_encoding(str, dup, flags);
 }
 
 static inline VALUE
 str_duplicate(VALUE klass, VALUE str)
 {
     VALUE dup;
-    if (STR_EMBED_P(str)) {
+    if (STR_EMBED_P(str) && rb_str_embed_size(RSTRING_LEN(str), 1) <= STR_COPY_MAX_EMBED_SIZE) {
         dup = str_alloc_embed(klass, RSTRING_LEN(str) + TERM_LEN(str));
+
+        str_duplicate_setup_embed(klass, str, dup);
     }
     else {
         dup = str_alloc_heap(klass);
+
+        str_duplicate_setup_heap(klass, str, dup);
     }
 
-    return str_duplicate_setup(klass, str, dup);
+    return dup;
 }
 
 VALUE
@@ -2036,10 +2058,43 @@ rb_ec_str_resurrect(struct rb_execution_context_struct *ec, VALUE str, bool chil
         str_duplicate_setup_heap(klass, str, new_str);
     }
     if (chilled) {
-        FL_SET_RAW(new_str, STR_CHILLED_LITERAL);
+        FL_SET_RAW(new_str, STR_CHILLED);
     }
     return new_str;
 }
+
+#if USE_ZJIT
+bool
+rb_zjit_str_resurrect_fastpath(VALUE str, bool chilled, size_t *size_out,
+                               VALUE *flags_out,
+                               long *len_out, size_t *byte_size_out)
+{
+    if (chilled && RTEST(rb_ivar_defined(str, id_debug_created_info))) return false;
+
+    if (!STR_EMBED_P(str)) return false;
+
+    long len = RSTRING_LEN(str);
+    long termlen = TERM_LEN(str);
+    size_t size = rb_str_embed_size(len + termlen, 0);
+    if (!rb_gc_size_allocatable_p(size)) return false;
+
+    VALUE flags = FL_TEST_RAW(str, flag_mask);
+
+    if ((flags & ENCODING_MASK) == ((VALUE)ENCODING_INLINE_MAX << ENCODING_SHIFT)) {
+        return false;
+    }
+
+    flags &= ~FL_FREEZE;
+    flags |= T_STRING;
+    if (chilled) flags |= STR_CHILLED;
+
+    *size_out = size;
+    *flags_out = flags;
+    *len_out = len;
+    *byte_size_out = (size_t)(len + termlen);
+    return true;
+}
+#endif
 
 VALUE
 rb_str_with_debug_created_info(VALUE str, VALUE path, int line)
@@ -2047,7 +2102,7 @@ rb_str_with_debug_created_info(VALUE str, VALUE path, int line)
     VALUE debug_info = rb_ary_new_from_args(2, path, INT2FIX(line));
     if (OBJ_FROZEN_RAW(str)) str = rb_str_dup(str);
     rb_ivar_set(str, id_debug_created_info, rb_ary_freeze(debug_info));
-    FL_SET_RAW(str, STR_CHILLED_LITERAL);
+    FL_SET_RAW(str, STR_CHILLED);
     return rb_str_freeze(str);
 }
 
@@ -3153,12 +3208,19 @@ str_subseq(VALUE str, long beg, long len)
         return str2;
     }
 
-    str2 = str_alloc_heap(rb_cString);
-    if (str_embed_capa(str2) >= len + termlen) {
+    /* Sharing allocates a shared root as well unless str can be one itself, so
+     * a copy is worth a larger slot only when it saves that second object. */
+    const bool root_available = STR_SHARED_P(str) ||
+        RB_FL_TEST_RAW(str, FL_FREEZE | STR_CHILLED) == FL_FREEZE;
+    const size_t max_embed_size = root_available ?
+        rb_gc_size_slot_size(sizeof(struct RString)) : STR_COPY_MAX_EMBED_SIZE;
+    const size_t embed_size = rb_str_embed_size(len, termlen);
+
+    if (embed_size <= max_embed_size && rb_gc_size_allocatable_p(embed_size)) {
+        str2 = str_alloc_embed(rb_cString, len + termlen);
         char *ptr2 = RSTRING(str2)->as.embed.ary;
-        STR_SET_EMBED(str2);
         memcpy(ptr2, RSTRING_PTR(str) + beg, len);
-        TERM_FILL(ptr2+len, termlen);
+        TERM_FILL(ptr2 + len, termlen);
 
         STR_SET_LEN(str2, len);
         if (ENC_CODERANGE(str) == ENC_CODERANGE_7BIT) {
@@ -3168,6 +3230,7 @@ str_subseq(VALUE str, long beg, long len)
         RB_GC_GUARD(str);
     }
     else {
+        str2 = str_alloc_heap(rb_cString);
         str_replace_shared(str2, str);
         RUBY_ASSERT(!STR_EMBED_P(str2));
         if (ENC_CODERANGE(str) != ENC_CODERANGE_7BIT) {
@@ -4767,19 +4830,6 @@ rb_str_byteindex_m(int argc, VALUE *argv, VALUE str)
     return Qnil;
 }
 
-#ifndef HAVE_MEMRCHR
-static void*
-memrchr(const char *search_str, int chr, long search_len)
-{
-    const char *ptr = search_str + search_len;
-    while (ptr > search_str) {
-        if ((unsigned char)*(--ptr) == chr) return (void *)ptr;
-    }
-
-    return ((void *)0);
-}
-#endif
-
 static long
 str_rindex(VALUE str, VALUE sub, const char *s, rb_encoding *enc)
 {
@@ -5119,10 +5169,8 @@ static VALUE get_pat(VALUE);
  *
  *      regexp = Regexp.new(pattern)
  *
- *  - Computes +matchdata+, which will be either a MatchData object or +nil+
- *    (see Regexp#match):
- *
- *      matchdata = regexp.match(self[offset..])
+ *  - Calls <tt>regexp.match</tt> with +self+ to compute +matchdata+.
+ *    If +offset+ is given, it is also passed (see Regexp#match).
  *
  *  With no block given, returns the computed +matchdata+ or +nil+:
  *
@@ -5170,8 +5218,8 @@ rb_str_match_m(int argc, VALUE *argv, VALUE str)
  *
  *    regexp = Regexp.new(pattern)
  *
- *  Returns +true+ if <tt>self[offset..].match(regexp)</tt> returns a MatchData object,
- *  +false+ otherwise:
+ *  The search for +regexp+ in +self+ begins at the given character +offset+.
+ *  Returns +true+ if a match is found, +false+ otherwise:
  *
  *    'foo'.match?(/o/) # => true
  *    'foo'.match?('o') # => true
@@ -6734,6 +6782,489 @@ rb_str_setbyte(VALUE str, VALUE index, VALUE value)
   end:
     return value;
 }
+
+static inline bool
+str_bit_offset_out_of_range(long byte_len, uint64_t bit_offset)
+{
+    /* Compare byte indexes to avoid overflowing byte_len * CHAR_BIT. */
+    return bit_offset / CHAR_BIT >= (uint64_t)byte_len;
+}
+
+/*
+ * Keep both the full bit offset and its long representation.  Most calls use a
+ * Fixnum-sized offset and can stay on the original long fast path; only large
+ * Bignum offsets need the uint64_t path below.  This matters on platforms
+ * where long is narrower than the address space, such as 32-bit and LLP64.
+ */
+struct str_bit_offset {
+    uint64_t value;
+    long long_value;
+    bool fits_long;
+};
+
+static inline struct str_bit_offset
+str_bit_offset_from_index(VALUE index)
+{
+    VALUE integer = rb_to_int(index);
+    struct str_bit_offset offset;
+
+    /*
+     * FIXNUM_P only decides whether the common long path is immediately usable.
+     * This covers practically all offsets on LP64 platforms; Bignum offsets
+     * are still accepted below when they fit in uint64_t, mainly for platforms
+     * with 32-bit long where large strings can have Bignum bit offsets.
+     */
+    if (FIXNUM_P(integer)) {
+        offset.long_value = FIX2LONG(integer);
+        if (offset.long_value < 0) {
+            rb_raise(rb_eIndexError, "bit index out of range");
+        }
+        offset.value = (uint64_t)offset.long_value;
+        offset.fits_long = true;
+        return offset;
+    }
+
+    RUBY_ASSERT(RB_TYPE_P(integer, T_BIGNUM));
+    if (rb_int_negative_p(integer)) {
+        rb_raise(rb_eIndexError, "bit index out of range");
+    }
+    if (rb_cmpint(rb_int_cmp(integer, ULL2NUM(UINT64_MAX)), integer, ULL2NUM(UINT64_MAX)) > 0) {
+        rb_raise(rb_eArgError, "bit index out of representable range");
+    }
+
+    offset.value = (uint64_t)NUM2ULL(integer);
+    if (offset.value <= (uint64_t)LONG_MAX) {
+        offset.long_value = (long)offset.value;
+        offset.fits_long = true;
+    }
+    else {
+        offset.long_value = 0;
+        offset.fits_long = false;
+    }
+    return offset;
+}
+
+static bool
+str_lsb_first(int argc, VALUE *argv, VALUE *index)
+{
+    static ID keywords[1];
+    VALUE opts, vlsb_first;
+
+    if (!keywords[0]) {
+        keywords[0] = rb_intern_const("lsb_first");
+    }
+
+    rb_scan_args(argc, argv, "1:", index, &opts);
+    rb_get_kwargs(opts, keywords, 0, 1, &vlsb_first);
+    if (vlsb_first == Qundef || vlsb_first == Qtrue) {
+        return true;
+    }
+    if (vlsb_first == Qfalse) {
+        return false;
+    }
+    rb_raise(rb_eArgError, "lsb_first must be true or false");
+    UNREACHABLE_RETURN(false);
+}
+
+static inline uint64_t
+str_logical_to_physical_bit64(uint64_t logical, bool lsb_first)
+{
+    return lsb_first ? logical : ((logical & ~(uint64_t)7) | (7 - (logical & 7)));
+}
+
+static inline long
+str_logical_to_physical_bit(long logical, bool lsb_first)
+{
+    return lsb_first ? logical : ((logical & ~7L) | (7 - (logical & 7L)));
+}
+
+struct str_bit_location {
+    long byte_index;
+    unsigned int bit_offset;
+};
+
+static inline struct str_bit_location
+str_bit_location_from_offset(uint64_t logical, bool lsb_first)
+{
+    /*
+     * When long is 32-bit, a bit offset for a large string can be a Bignum
+     * while the byte index still fits in long, which is RSTRING_LEN's type.
+     */
+    uint64_t physical = str_logical_to_physical_bit64(logical, lsb_first);
+    struct str_bit_location location;
+    location.byte_index = (long)(physical / CHAR_BIT);
+    location.bit_offset = (unsigned int)(physical % CHAR_BIT);
+    return location;
+}
+
+static inline int
+str_get_bit(const char *ptr, long bit_index)
+{
+    return (((unsigned char)ptr[bit_index / CHAR_BIT]) >> (bit_index % CHAR_BIT)) & 1;
+}
+
+static inline int
+str_get_bit_location(const char *ptr, struct str_bit_location location)
+{
+    return (((unsigned char)ptr[location.byte_index]) >> location.bit_offset) & 1;
+}
+
+static int
+str_bit_get(int argc, VALUE *argv, VALUE str)
+{
+    VALUE index;
+    bool lsb_first = str_lsb_first(argc, argv, &index);
+    struct str_bit_offset offset = str_bit_offset_from_index(index);
+
+    if (str_bit_offset_out_of_range(RSTRING_LEN(str), offset.value)) {
+        return -1;
+    }
+
+    if (offset.fits_long) {
+        return str_get_bit(RSTRING_PTR(str), str_logical_to_physical_bit(offset.long_value, lsb_first));
+    }
+    else {
+        return str_get_bit_location(RSTRING_PTR(str), str_bit_location_from_offset(offset.value, lsb_first));
+    }
+}
+
+/*
+ *  call-seq:
+ *    bit_get(offset, lsb_first: true) -> 0, 1, or nil
+ *
+ *  :include: doc/string/bit_get.rdoc
+ *
+ */
+static VALUE
+rb_str_bit_get(int argc, VALUE *argv, VALUE str)
+{
+    int bit = str_bit_get(argc, argv, str);
+    return bit < 0 ? Qnil : INT2FIX(bit);
+}
+
+/*
+ *  call-seq:
+ *    bit_set?(offset, lsb_first: true) -> true, false, or nil
+ *
+ *  :include: doc/string/bit_set_p.rdoc
+ *
+ */
+static VALUE
+rb_str_bit_set_p(int argc, VALUE *argv, VALUE str)
+{
+    int bit = str_bit_get(argc, argv, str);
+    return bit < 0 ? Qnil : RBOOL(bit);
+}
+
+enum str_bit_mutation {
+    STR_BIT_SET,
+    STR_BIT_CLEAR,
+    STR_BIT_FLIP
+};
+
+static VALUE
+str_mutate_bit(int argc, VALUE *argv, VALUE str, enum str_bit_mutation mutation)
+{
+    VALUE index;
+    bool lsb_first = str_lsb_first(argc, argv, &index);
+    struct str_bit_offset offset = str_bit_offset_from_index(index);
+    struct str_bit_location location;
+    long bit_index;
+    unsigned char *ptr;
+    unsigned char mask;
+
+    if (str_bit_offset_out_of_range(RSTRING_LEN(str), offset.value)) {
+        rb_raise(rb_eIndexError, "bit index out of range");
+    }
+
+    rb_str_modify(str);
+    ptr = (unsigned char *)RSTRING_PTR(str);
+    if (offset.fits_long) {
+        bit_index = str_logical_to_physical_bit(offset.long_value, lsb_first);
+        mask = (unsigned char)(1u << (bit_index % CHAR_BIT));
+        location.byte_index = bit_index / CHAR_BIT;
+    }
+    else {
+        location = str_bit_location_from_offset(offset.value, lsb_first);
+        mask = (unsigned char)(1u << location.bit_offset);
+    }
+
+    switch (mutation) {
+      case STR_BIT_SET:
+        ptr[location.byte_index] |= mask;
+        break;
+      case STR_BIT_CLEAR:
+        ptr[location.byte_index] &= (unsigned char)~mask;
+        break;
+      case STR_BIT_FLIP:
+        ptr[location.byte_index] ^= mask;
+        break;
+    }
+
+    return str;
+}
+
+/*
+ *  call-seq:
+ *    bit_set(offset, lsb_first: true) -> self
+ *
+ *  :include: doc/string/bit_set.rdoc
+ *
+ */
+static VALUE
+rb_str_bit_set(int argc, VALUE *argv, VALUE str)
+{
+    return str_mutate_bit(argc, argv, str, STR_BIT_SET);
+}
+
+/*
+ *  call-seq:
+ *    bit_clear(offset, lsb_first: true) -> self
+ *
+ *  :include: doc/string/bit_clear.rdoc
+ *
+ */
+static VALUE
+rb_str_bit_clear(int argc, VALUE *argv, VALUE str)
+{
+    return str_mutate_bit(argc, argv, str, STR_BIT_CLEAR);
+}
+
+/*
+ *  call-seq:
+ *    bit_flip(offset, lsb_first: true) -> self
+ *
+ *  :include: doc/string/bit_flip.rdoc
+ *
+ */
+static VALUE
+rb_str_bit_flip(int argc, VALUE *argv, VALUE str)
+{
+    return str_mutate_bit(argc, argv, str, STR_BIT_FLIP);
+}
+
+static uint64_t
+str_count_bits(const unsigned char *ptr, long len)
+{
+    uint64_t count = 0;
+    long off = 0;
+    long unrolled_end = len & ~31L;
+    long aligned_end = len & ~7L;
+
+    // 32 bytes (256 bits) at a time
+    for (; off < unrolled_end; off += 32) {
+        uint64_t w0, w1, w2, w3;
+        memcpy(&w0, ptr + off, 8);
+        memcpy(&w1, ptr + off + 8, 8);
+        memcpy(&w2, ptr + off + 16, 8);
+        memcpy(&w3, ptr + off + 24, 8);
+        count += rb_popcount64(w0);
+        count += rb_popcount64(w1);
+        count += rb_popcount64(w2);
+        count += rb_popcount64(w3);
+    }
+
+    // 8 bytes (64 bits) at a time
+    for (; off < aligned_end; off += 8) {
+        uint64_t word;
+        memcpy(&word, ptr + off, 8);
+        count += rb_popcount64(word);
+    }
+
+    // remaining bytes
+    if (off < len) {
+        uint64_t word = 0;
+        int shift = 0;
+        for (; off < len; off++, shift += CHAR_BIT) {
+            word |= (uint64_t)ptr[off] << shift;
+        }
+        count += rb_popcount64(word);
+    }
+
+    return count;
+}
+
+/*
+ *  call-seq:
+ *    bit_count -> integer
+ *
+ *  :include: doc/string/bit_count.rdoc
+ *
+ */
+static VALUE
+rb_str_bit_count(VALUE str)
+{
+    return ULL2NUM(str_count_bits((const unsigned char *)RSTRING_PTR(str), RSTRING_LEN(str)));
+}
+
+static void
+str_check_bitwise_length(VALUE str, VALUE other)
+{
+    if (RSTRING_LEN(str) != RSTRING_LEN(other)) {
+        rb_raise(rb_eArgError, "operands must have the same length (%ld vs %ld)",
+                 RSTRING_LEN(str), RSTRING_LEN(other));
+    }
+}
+
+static VALUE
+str_bitwise_result(VALUE str)
+{
+    long len = RSTRING_LEN(str);
+    VALUE result = rb_str_buf_new(len);
+    rb_str_resize(result, len);
+    rb_enc_associate(result, rb_ascii8bit_encoding());
+    ENC_CODERANGE_CLEAR(result);
+    return result;
+}
+
+#define STR_DEFINE_UNARY_BITWISE_KERNEL(name, expr_word, expr_byte)         \
+    static void                                                             \
+    name(unsigned char *dst, const unsigned char *src, long len)            \
+    {                                                                       \
+        long off = 0;                                                       \
+        long unrolled_end = len & ~31L;                                     \
+        long aligned_end = len & ~7L;                                       \
+        for (; off < unrolled_end; off += 32) {                             \
+            uint64_t s0, s1, s2, s3;                                        \
+            memcpy(&s0, src + off, 8);                                      \
+            memcpy(&s1, src + off + 8, 8);                                  \
+            memcpy(&s2, src + off + 16, 8);                                 \
+            memcpy(&s3, src + off + 24, 8);                                 \
+            s0 = (expr_word(s0));                                           \
+            s1 = (expr_word(s1));                                           \
+            s2 = (expr_word(s2));                                           \
+            s3 = (expr_word(s3));                                           \
+            memcpy(dst + off, &s0, 8);                                      \
+            memcpy(dst + off + 8, &s1, 8);                                  \
+            memcpy(dst + off + 16, &s2, 8);                                 \
+            memcpy(dst + off + 24, &s3, 8);                                 \
+        }                                                                   \
+        for (; off < aligned_end; off += 8) {                               \
+            uint64_t word;                                                  \
+            memcpy(&word, src + off, 8);                                    \
+            word = (expr_word(word));                                       \
+            memcpy(dst + off, &word, 8);                                    \
+        }                                                                   \
+        for (; off < len; off++) dst[off] = (expr_byte(src[off]));          \
+    }
+
+#define STR_DEFINE_BINARY_BITWISE_KERNEL(name, expr_word, expr_byte)        \
+    static void                                                             \
+    name(unsigned char *dst, const unsigned char *lhs,                      \
+         const unsigned char *rhs, long len)                                \
+    {                                                                       \
+        long off = 0;                                                       \
+        long unrolled_end = len & ~31L;                                     \
+        long aligned_end = len & ~7L;                                       \
+        for (; off < unrolled_end; off += 32) {                             \
+            uint64_t l0, l1, l2, l3, r0, r1, r2, r3;                        \
+            memcpy(&l0, lhs + off, 8); memcpy(&r0, rhs + off, 8);           \
+            memcpy(&l1, lhs + off + 8, 8); memcpy(&r1, rhs + off + 8, 8);   \
+            memcpy(&l2, lhs + off + 16, 8); memcpy(&r2, rhs + off + 16, 8); \
+            memcpy(&l3, lhs + off + 24, 8); memcpy(&r3, rhs + off + 24, 8); \
+            l0 = expr_word(l0, r0);                                         \
+            l1 = expr_word(l1, r1);                                         \
+            l2 = expr_word(l2, r2);                                         \
+            l3 = expr_word(l3, r3);                                         \
+            memcpy(dst + off, &l0, 8);                                      \
+            memcpy(dst + off + 8, &l1, 8);                                  \
+            memcpy(dst + off + 16, &l2, 8);                                 \
+            memcpy(dst + off + 24, &l3, 8);                                 \
+        }                                                                   \
+        for (; off < aligned_end; off += 8) {                               \
+            uint64_t lhs_word, rhs_word;                                    \
+            memcpy(&lhs_word, lhs + off, 8);                                \
+            memcpy(&rhs_word, rhs + off, 8);                                \
+            lhs_word = expr_word(lhs_word, rhs_word);                       \
+            memcpy(dst + off, &lhs_word, 8);                                \
+        }                                                                   \
+        for (; off < len; off++) dst[off] = expr_byte(lhs[off], rhs[off]);  \
+    }
+
+#define STR_BITWISE_NOT_WORD(x)    (~(x))
+#define STR_BITWISE_NOT_BYTE(x)    ((unsigned char)~(x))
+#define STR_BITWISE_AND_WORD(x, y) ((x) & (y))
+#define STR_BITWISE_AND_BYTE(x, y) ((unsigned char)((x) & (y)))
+#define STR_BITWISE_OR_WORD(x, y)  ((x) | (y))
+#define STR_BITWISE_OR_BYTE(x, y)  ((unsigned char)((x) | (y)))
+#define STR_BITWISE_XOR_WORD(x, y) ((x) ^ (y))
+#define STR_BITWISE_XOR_BYTE(x, y) ((unsigned char)((x) ^ (y)))
+
+STR_DEFINE_UNARY_BITWISE_KERNEL(str_bitwise_not, STR_BITWISE_NOT_WORD, STR_BITWISE_NOT_BYTE)
+STR_DEFINE_BINARY_BITWISE_KERNEL(str_bitwise_and, STR_BITWISE_AND_WORD, STR_BITWISE_AND_BYTE)
+STR_DEFINE_BINARY_BITWISE_KERNEL(str_bitwise_or,  STR_BITWISE_OR_WORD,  STR_BITWISE_OR_BYTE)
+STR_DEFINE_BINARY_BITWISE_KERNEL(str_bitwise_xor, STR_BITWISE_XOR_WORD, STR_BITWISE_XOR_BYTE)
+
+/*
+ *  call-seq:
+ *    bitwise_not -> string
+ *
+ *  :include: doc/string/bitwise_not.rdoc
+ *
+ */
+static VALUE
+rb_str_bitwise_not(VALUE str)
+{
+    long len = RSTRING_LEN(str);
+    VALUE result = str_bitwise_result(str);
+    str_bitwise_not((unsigned char *)RSTRING_PTR(result),
+                    (const unsigned char *)RSTRING_PTR(str), len);
+    return result;
+}
+
+/*
+ *  call-seq:
+ *    bitwise_not! -> self
+ *
+ *  :include: doc/string/bitwise_not_bang.rdoc
+ *
+ */
+static VALUE
+rb_str_bitwise_not_bang(VALUE str)
+{
+    long len;
+    unsigned char *ptr;
+
+    rb_str_modify(str);
+    len = RSTRING_LEN(str);
+    ptr = (unsigned char *)RSTRING_PTR(str);
+    str_bitwise_not(ptr, ptr, len);
+    return str;
+}
+
+#define STR_DEFINE_BINARY_BITWISE_METHOD(name)                              \
+    static VALUE                                                            \
+    rb_str_bitwise_##name(VALUE str, VALUE other)                           \
+    {                                                                       \
+        long len;                                                           \
+        VALUE result;                                                       \
+        StringValue(other);                                                 \
+        str_check_bitwise_length(str, other);                               \
+        len = RSTRING_LEN(str);                                             \
+        result = str_bitwise_result(str);                                   \
+        str_bitwise_##name((unsigned char *)RSTRING_PTR(result),            \
+                           (const unsigned char *)RSTRING_PTR(str),         \
+                           (const unsigned char *)RSTRING_PTR(other), len); \
+        return result;                                                      \
+    }                                                                       \
+    static VALUE                                                            \
+    rb_str_bitwise_##name##_bang(VALUE str, VALUE other)                    \
+    {                                                                       \
+        long len;                                                           \
+        unsigned char *ptr;                                                 \
+        StringValue(other);                                                 \
+        str_check_bitwise_length(str, other);                               \
+        rb_str_modify(str);                                                 \
+        len = RSTRING_LEN(str);                                             \
+        ptr = (unsigned char *)RSTRING_PTR(str);                            \
+        str_bitwise_##name(ptr, ptr,                                        \
+                           (const unsigned char *)RSTRING_PTR(other), len); \
+        return str;                                                         \
+    }
+
+STR_DEFINE_BINARY_BITWISE_METHOD(and)
+STR_DEFINE_BINARY_BITWISE_METHOD(or)
+STR_DEFINE_BINARY_BITWISE_METHOD(xor)
 
 static VALUE
 str_byte_substr(VALUE str, long beg, long len, int empty)
@@ -12442,9 +12973,7 @@ sym_inspect(VALUE sym)
 VALUE
 rb_sym_to_s(VALUE sym)
 {
-    VALUE str = str_new_shared(rb_cString, rb_sym2str(sym));
-    FL_SET_RAW(str, STR_CHILLED_SYMBOL_TO_S);
-    return str;
+    return rb_sym2str(sym);
 }
 
 VALUE
@@ -12620,20 +13149,6 @@ static VALUE
 sym_length(VALUE sym)
 {
     return rb_str_length(rb_sym2str(sym));
-}
-
-/*
- *  call-seq:
- *    empty? -> true or false
- *
- *  Returns +true+ if +self+ is <tt>:''</tt>, +false+ otherwise.
- *
- */
-
-static VALUE
-sym_empty(VALUE sym)
-{
-    return rb_str_empty(rb_sym2str(sym));
 }
 
 /*
@@ -12925,6 +13440,20 @@ Init_String(void)
     rb_define_method(rb_cString, "chr", rb_str_chr, 0);
     rb_define_method(rb_cString, "getbyte", rb_str_getbyte, 1);
     rb_define_method(rb_cString, "setbyte", rb_str_setbyte, 2);
+    rb_define_method(rb_cString, "bit_get", rb_str_bit_get, -1);
+    rb_define_method(rb_cString, "bit_set?", rb_str_bit_set_p, -1);
+    rb_define_method(rb_cString, "bit_set", rb_str_bit_set, -1);
+    rb_define_method(rb_cString, "bit_clear", rb_str_bit_clear, -1);
+    rb_define_method(rb_cString, "bit_flip", rb_str_bit_flip, -1);
+    rb_define_method(rb_cString, "bit_count", rb_str_bit_count, 0);
+    rb_define_method(rb_cString, "bitwise_not", rb_str_bitwise_not, 0);
+    rb_define_method(rb_cString, "bitwise_not!", rb_str_bitwise_not_bang, 0);
+    rb_define_method(rb_cString, "bitwise_and", rb_str_bitwise_and, 1);
+    rb_define_method(rb_cString, "bitwise_and!", rb_str_bitwise_and_bang, 1);
+    rb_define_method(rb_cString, "bitwise_or", rb_str_bitwise_or, 1);
+    rb_define_method(rb_cString, "bitwise_or!", rb_str_bitwise_or_bang, 1);
+    rb_define_method(rb_cString, "bitwise_xor", rb_str_bitwise_xor, 1);
+    rb_define_method(rb_cString, "bitwise_xor!", rb_str_bitwise_xor_bang, 1);
     rb_define_method(rb_cString, "byteslice", rb_str_byteslice, -1);
     rb_define_method(rb_cString, "bytesplice", rb_str_bytesplice, -1);
     rb_define_method(rb_cString, "scrub", str_scrub, -1);
@@ -13072,7 +13601,6 @@ Init_String(void)
     rb_define_method(rb_cSymbol, "slice", sym_aref, -1);
     rb_define_method(rb_cSymbol, "length", sym_length, 0);
     rb_define_method(rb_cSymbol, "size", sym_length, 0);
-    rb_define_method(rb_cSymbol, "empty?", sym_empty, 0);
     rb_define_method(rb_cSymbol, "match", sym_match_m, -1);
     rb_define_method(rb_cSymbol, "match?", sym_match_m_p, -1);
 

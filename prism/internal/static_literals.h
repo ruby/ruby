@@ -1,6 +1,8 @@
 #ifndef PRISM_INTERNAL_STATIC_LITERALS_H
 #define PRISM_INTERNAL_STATIC_LITERALS_H
 
+#include "prism/internal/encoding.h"
+
 #include "prism/ast.h"
 #include "prism/buffer.h"
 #include "prism/line_offset_list.h"
@@ -83,7 +85,7 @@ typedef struct {
 /*
  * Add a node to the set of static literals.
  */
-pm_node_t * pm_static_literals_add(const pm_line_offset_list_t *line_offsets, const uint8_t *start, int32_t start_line, pm_static_literals_t *literals, pm_node_t *node, bool replace);
+pm_node_t * pm_static_literals_add(const pm_line_offset_list_t *line_offsets, const uint8_t *start, int32_t start_line, const pm_encoding_t *encoding, pm_static_literals_t *literals, pm_node_t *node, bool replace);
 
 /*
  * Free the internal memory associated with the given static literals set.
@@ -93,6 +95,6 @@ void pm_static_literals_free(pm_static_literals_t *literals);
 /*
  * Create a string-based representation of the given static literal.
  */
-void pm_static_literal_inspect(pm_buffer_t *buffer, const pm_line_offset_list_t *line_offsets, const uint8_t *start, int32_t start_line, const char *encoding_name, const pm_node_t *node);
+void pm_static_literal_inspect(pm_buffer_t *buffer, const pm_line_offset_list_t *line_offsets, const uint8_t *start, int32_t start_line, const pm_encoding_t *encoding, const pm_node_t *node);
 
 #endif

@@ -34,6 +34,7 @@
 #include "shape.h"
 #include "vm_core.h"
 #include "builtin.h"
+#include "zjit.h"
 
 #if !ARRAY_DEBUG
 # undef NDEBUG
@@ -66,6 +67,10 @@ VALUE rb_cArray_empty_frozen;
  * 14:  RARRAY_PTR_IN_USE_FLAG
  *          The buffer of the array is in use. This is only used during
  *          debugging.
+ * 19:  RARRAY_FAKEARY
+ *            The array is not allocated or managed by the garbage collector.
+ *            Typically, the array object header (struct RString) is temporarily
+ *            allocated on C stack.
  */
 
 /* for OPTIMIZED_CMP: */
@@ -188,7 +193,7 @@ ARY_SET(VALUE a, long i, VALUE v)
 static long
 ary_embed_capa(VALUE ary)
 {
-    size_t size = rb_gc_obj_slot_size(ary) - offsetof(struct RArray, as.ary);
+    size_t size = rb_obj_shape_slot_size(ary) - offsetof(struct RArray, as.ary);
     RUBY_ASSERT(size % sizeof(VALUE) == 0);
     return size / sizeof(VALUE);
 }
@@ -204,7 +209,9 @@ ary_embed_size(long capa)
 static bool
 ary_embeddable_p(long capa)
 {
-    return rb_gc_size_allocatable_p(ary_embed_size(capa));
+    const long embed_len_max = RARRAY_EMBED_LEN_MASK >> RARRAY_EMBED_LEN_SHIFT;
+
+    return capa <= embed_len_max && rb_gc_size_allocatable_p(ary_embed_size(capa));
 }
 
 bool
@@ -219,6 +226,15 @@ rb_ary_embeddable_p(VALUE ary)
      *    root (to save memory).
      */
     return !(ARY_SHARED_ROOT_P(ary) || OBJ_FROZEN(ary) || ARY_SHARED_P(ary));
+}
+
+/* True when other arrays may read this array's elements out of its own slot, so the
+ * slot contents must stay valid for as long as the object does.  A frozen array is
+ * handed out as a shared root as it is, without the shared root flag. */
+bool
+rb_ary_embedded_shared_root_p(VALUE ary)
+{
+    return ARY_EMBED_P(ary) && OBJ_FROZEN(ary);
 }
 
 size_t
@@ -900,9 +916,9 @@ static VALUE
 init_fake_ary_flags(void)
 {
     struct RArray fake_ary = {0};
-    fake_ary.basic.flags = T_ARRAY;
+    fake_ary.basic.flags = T_ARRAY | RARRAY_FAKEARY;
     VALUE ary = (VALUE)&fake_ary;
-    RBASIC_SET_SHAPE_ID(ary, ROOT_SHAPE_ID | SHAPE_ID_LAYOUT_OTHER);
+    RBASIC_SET_FULL_SHAPE_ID(ary, ROOT_SHAPE_ID | SHAPE_ID_LAYOUT_OTHER);
     rb_ary_freeze(ary);
     return fake_ary.basic.flags;
 }
@@ -1740,32 +1756,29 @@ rb_ary_entry(VALUE ary, long offset)
     return rb_ary_entry_internal(ary, offset);
 }
 
-VALUE
-rb_ary_subseq_step(VALUE ary, long beg, long len, long step)
+static long
+ary_subseq_len(VALUE ary, long beg, long len)
 {
-    VALUE klass;
     long alen = RARRAY_LEN(ary);
 
-    if (beg > alen) return Qnil;
-    if (beg < 0 || len < 0) return Qnil;
+    if (beg > alen) return -1;
+    if (beg < 0 || len < 0) return -1;
 
     if (alen < len || alen < beg + len) {
         len = alen - beg;
     }
-    klass = rb_cArray;
-    if (len == 0) return ary_new(klass, 0);
-    if (step == 0)
-        rb_raise(rb_eArgError, "slice step cannot be zero");
-    if (step == 1)
-        return ary_make_partial(ary, klass, beg, len);
-    else
-        return ary_make_partial_step(ary, klass, beg, len, step);
+    ASSUME(len >= 0);
+    return len;
 }
 
 VALUE
 rb_ary_subseq(VALUE ary, long beg, long len)
 {
-    return rb_ary_subseq_step(ary, beg, len, 1);
+    const VALUE klass = rb_cArray;
+    len = ary_subseq_len(ary, beg, len);
+    if (len < 0) return Qnil;
+    if (len == 0) return ary_new(klass, 0);
+    return ary_make_partial(ary, klass, beg, len);
 }
 
 static VALUE rb_ary_aref2(VALUE ary, VALUE b, VALUE e);
@@ -1913,6 +1926,7 @@ VALUE
 rb_ary_aref1(VALUE ary, VALUE arg)
 {
     long beg, len, step;
+    const VALUE klass = rb_cArray;
 
     /* special case - speeding up */
     if (FIXNUM_P(arg)) {
@@ -1925,7 +1939,11 @@ rb_ary_aref1(VALUE ary, VALUE arg)
       case Qnil:
         return Qnil;
       default:
-        return rb_ary_subseq_step(ary, beg, len, step);
+        if (step == 0) rb_raise(rb_eArgError, "slice step cannot be zero");
+        len = ary_subseq_len(ary, beg, len);
+        if (len == 0) return ary_new(klass, 0);
+        if (step == 1) return ary_make_partial(ary, klass, beg, len);
+        return ary_make_partial_step(ary, klass, beg, len, step);
     }
 
     return rb_ary_entry(ary, NUM2LONG(arg));
@@ -2289,10 +2307,9 @@ rb_ary_to_ary(VALUE obj)
 }
 
 static void
-rb_ary_splice(VALUE ary, long beg, long len, const VALUE *rptr, long rlen)
+ary_splice(VALUE ary, long beg, long len, const VALUE *rptr, long rlen, int self_insert)
 {
     long olen;
-    long rofs;
 
     if (len < 0) rb_raise(rb_eIndexError, "negative length (%ld)", len);
     olen = RARRAY_LEN(ary);
@@ -2307,11 +2324,6 @@ rb_ary_splice(VALUE ary, long beg, long len, const VALUE *rptr, long rlen)
         len = olen - beg;
     }
 
-    {
-        const VALUE *optr = RARRAY_CONST_PTR(ary);
-        rofs = (rptr >= optr && rptr < optr + olen) ? rptr - optr : -1;
-    }
-
     if (beg >= olen) {
         VALUE target_ary;
         if (beg > ARY_MAX_SIZE - rlen) {
@@ -2321,7 +2333,8 @@ rb_ary_splice(VALUE ary, long beg, long len, const VALUE *rptr, long rlen)
         len = beg + rlen;
         ary_mem_clear(ary, olen, beg - olen);
         if (rlen > 0) {
-            if (rofs != -1) rptr = RARRAY_CONST_PTR(ary) + rofs;
+            /* ary's storage may have moved; only ary itself needs re-deriving. */
+            if (self_insert) rptr = RARRAY_CONST_PTR(ary);
             ary_memcpy0(ary, beg, rlen, rptr, target_ary);
         }
         ARY_SET_LEN(ary, len);
@@ -2345,13 +2358,13 @@ rb_ary_splice(VALUE ary, long beg, long len, const VALUE *rptr, long rlen)
             ARY_SET_LEN(ary, alen);
         }
         if (rlen > 0) {
-            if (rofs == -1) {
+            if (!self_insert) {
                 rb_gc_writebarrier_remember(ary);
             }
             else {
                 /* In this case, we're copying from a region in this array, so
                  * we don't need to fire the write barrier. */
-                rptr = RARRAY_CONST_PTR(ary) + rofs;
+                rptr = RARRAY_CONST_PTR(ary);
             }
 
             /* do not use RARRAY_PTR() because it can causes GC.
@@ -2361,6 +2374,13 @@ rb_ary_splice(VALUE ary, long beg, long len, const VALUE *rptr, long rlen)
                                      MEMMOVE(ptr + beg, rptr, VALUE, rlen));
         }
     }
+}
+
+static void
+rb_ary_splice(VALUE ary, long beg, long len, VALUE rpl)
+{
+    ary_splice(ary, beg, len, RARRAY_CONST_PTR(rpl), RARRAY_LEN(rpl), rpl == ary);
+    RB_GC_GUARD(rpl);
 }
 
 void
@@ -2376,6 +2396,24 @@ rb_ary_set_len(VALUE ary, long len)
         rb_bug("probable buffer overflow: %ld for %ld", len, capa);
     }
     ARY_SET_LEN(ary, len);
+}
+
+VALUE
+rb_ary_modify_expand(VALUE ary, long expand)
+{
+    long len = RARRAY_LEN(ary);
+
+    if (expand < 0) {
+        rb_raise(rb_eArgError, "negative expanding array size");
+    }
+    if (expand >= ARY_MAX_SIZE - len) {
+        rb_raise(rb_eArgError, " size too big");
+    }
+    rb_ary_modify_check(ary);
+    if (len + expand > ARY_CAPA(ary)) {
+        ary_resize_capa(ary, len + expand);
+    }
+    return ary;
 }
 
 VALUE
@@ -2432,9 +2470,7 @@ ary_aset_by_rb_ary_store(VALUE ary, long key, VALUE val)
 static VALUE
 ary_aset_by_rb_ary_splice(VALUE ary, long beg, long len, VALUE val)
 {
-    VALUE rpl = rb_ary_to_ary(val);
-    rb_ary_splice(ary, beg, len, RARRAY_CONST_PTR(rpl), RARRAY_LEN(rpl));
-    RB_GC_GUARD(rpl);
+    rb_ary_splice(ary, beg, len, rb_ary_to_ary(val));
     return val;
 }
 
@@ -2663,7 +2699,7 @@ rb_ary_insert(int argc, VALUE *argv, VALUE ary)
         }
         pos++;
     }
-    rb_ary_splice(ary, pos, 0, argv + 1, argc - 1);
+    ary_splice(ary, pos, 0, argv + 1, argc - 1, FALSE);
     return ary;
 }
 
@@ -2684,27 +2720,27 @@ ary_enum_length(VALUE ary, VALUE args, VALUE eobj)
 
 // Return true if the index is at or past the end of the array.
 VALUE
-rb_jit_ary_at_end(rb_execution_context_t *ec, VALUE self, VALUE index)
+rb_builtin_ary_at_end(rb_execution_context_t *ec, VALUE self, VALUE index)
 {
     return FIX2LONG(index) >= RARRAY_LEN(self) ? Qtrue : Qfalse;
 }
 
 // Return the element at the given fixnum index.
 VALUE
-rb_jit_ary_at(rb_execution_context_t *ec, VALUE self, VALUE index)
+rb_builtin_ary_at(rb_execution_context_t *ec, VALUE self, VALUE index)
 {
     return RARRAY_AREF(self, FIX2LONG(index));
 }
 
 // Increment a fixnum by 1.
 VALUE
-rb_jit_fixnum_inc(rb_execution_context_t *ec, VALUE self, VALUE num)
+rb_builtin_fixnum_inc(rb_execution_context_t *ec, VALUE self, VALUE num)
 {
     return LONG2FIX(FIX2LONG(num) + 1);
 }
 
 // Push a value onto an array and return the value.
-VALUE
+static VALUE
 rb_jit_ary_push(rb_execution_context_t *ec, VALUE self, VALUE ary, VALUE val)
 {
     rb_ary_push(ary, val);
@@ -2898,6 +2934,34 @@ rb_ary_resurrect(VALUE ary)
 {
     return ary_make_partial(ary, rb_cArray, 0, RARRAY_LEN(ary));
 }
+
+#if USE_ZJIT
+bool
+rb_zjit_array_new_can_fastpath(long len, size_t *alloc_size_out, VALUE *flags_out)
+{
+    if (!ary_embeddable_p(len)) {
+        return false;
+    }
+    long embed_size = ary_embed_size(len);
+
+    *alloc_size_out = embed_size;
+    *flags_out = T_ARRAY | RARRAY_EMBED_FLAG | ((VALUE)len << RARRAY_EMBED_LEN_SHIFT);
+    return true;
+}
+
+bool
+rb_zjit_array_dup_can_fastpath(VALUE ary, size_t *alloc_size_out, VALUE *flags_out, long *len_out)
+{
+    long len = RARRAY_LEN(ary);
+    if (!rb_zjit_array_new_can_fastpath(len, alloc_size_out, flags_out)) {
+        return false;
+    }
+    else {
+        *len_out = len;
+        return true;
+    }
+}
+#endif
 
 extern VALUE rb_output_fs;
 
@@ -3241,7 +3305,7 @@ static VALUE
 rb_ary_to_h(VALUE ary)
 {
     long i;
-    VALUE hash = rb_hash_new_with_size(RARRAY_LEN(ary));
+    VALUE hash = rb_hash_new_capa(RARRAY_LEN(ary));
     int block_given = rb_block_given_p();
 
     for (i=0; i<RARRAY_LEN(ary); i++) {
@@ -3341,6 +3405,7 @@ rb_ary_reverse_m(VALUE ary)
         const VALUE *p1 = RARRAY_CONST_PTR(ary);
         VALUE *p2 = (VALUE *)RARRAY_CONST_PTR(dup) + len - 1;
         do *p2-- = *p1++; while (--len > 0);
+        rb_gc_writebarrier_remember(dup);
     }
     ARY_SET_LEN(dup, RARRAY_LEN(ary));
     return dup;
@@ -4358,7 +4423,7 @@ ary_slice_bang_by_rb_ary_splice(VALUE ary, long pos, long len)
     }
     else {
         VALUE arg2 = rb_ary_new4(len, RARRAY_CONST_PTR(ary)+pos);
-        rb_ary_splice(ary, pos, len, 0, 0);
+        ary_splice(ary, pos, len, 0, 0, FALSE);
         return arg2;
     }
 }
@@ -5203,11 +5268,9 @@ rb_ary_plus(VALUE x, VALUE y)
 static VALUE
 ary_append(VALUE x, VALUE y)
 {
-    long n = RARRAY_LEN(y);
-    if (n > 0) {
-        rb_ary_splice(x, RARRAY_LEN(x), 0, RARRAY_CONST_PTR(y), n);
+    if (RARRAY_LEN(y) > 0) {
+        rb_ary_splice(x, RARRAY_LEN(x), 0, y);
     }
-    RB_GC_GUARD(y);
     return x;
 }
 
@@ -5676,7 +5739,7 @@ static inline VALUE
 ary_tmp_hash_new(VALUE ary)
 {
     long size = RARRAY_LEN(ary);
-    VALUE hash = rb_hash_new_with_size(size);
+    VALUE hash = rb_hash_new_capa(size);
 
     RBASIC_CLEAR_CLASS(hash);
     return hash;
@@ -6687,6 +6750,8 @@ rb_ary_count(int argc, VALUE *argv, VALUE ary)
     return LONG2NUM(n);
 }
 
+VALUE rb_ident_set_new(void);
+
 static VALUE
 flatten(VALUE ary, int level)
 {
@@ -6714,9 +6779,9 @@ flatten(VALUE ary, int level)
     rb_ary_push(stack, LONG2NUM(i + 1));
 
     if (level < 0) {
-        memo = rb_obj_hide(rb_ident_hash_new());
-        rb_hash_aset(memo, ary, Qtrue);
-        rb_hash_aset(memo, tmp, Qtrue);
+        memo = rb_obj_hide(rb_ident_set_new());
+        rb_set_add(memo, ary);
+        rb_set_add(memo, tmp);
     }
 
     ary = tmp;
@@ -6732,7 +6797,7 @@ flatten(VALUE ary, int level)
             tmp = rb_check_array_type(elt);
             if (RBASIC(result)->klass) {
                 if (RTEST(memo)) {
-                    rb_hash_clear(memo);
+                    rb_set_clear(memo);
                 }
                 rb_raise(rb_eRuntimeError, "flatten reentered");
             }
@@ -6741,11 +6806,11 @@ flatten(VALUE ary, int level)
             }
             else {
                 if (memo) {
-                    if (rb_hash_aref(memo, tmp) == Qtrue) {
-                        rb_hash_clear(memo);
+                    if (rb_set_lookup(memo, tmp)) {
+                        rb_set_clear(memo);
                         rb_raise(rb_eArgError, "tried to flatten recursive array");
                     }
-                    rb_hash_aset(memo, tmp, Qtrue);
+                    rb_set_add(memo, tmp);
                 }
                 rb_ary_push(stack, ary);
                 rb_ary_push(stack, LONG2NUM(i));
@@ -6757,7 +6822,7 @@ flatten(VALUE ary, int level)
             break;
         }
         if (memo) {
-            rb_hash_delete(memo, ary);
+            rb_set_delete(memo, ary);
         }
         tmp = rb_ary_pop(stack);
         i = NUM2LONG(tmp);
@@ -6765,11 +6830,27 @@ flatten(VALUE ary, int level)
     }
 
     if (memo) {
-        rb_hash_clear(memo);
+        rb_set_clear(memo);
     }
 
     RBASIC_SET_CLASS(result, rb_cArray);
     return result;
+}
+
+static inline VALUE
+single_nested_array(VALUE ary)
+{
+    // Fast path for the common variadic argument pattern:
+    // def foo(*args)
+    //   args.flatten!
+    //   ...
+    if (RARRAY_LEN(ary) == 1) {
+        VALUE first = RARRAY_AREF(ary, 0);
+        if (RB_TYPE_P(first, T_ARRAY) && CLASS_OF(first) == rb_cArray) {
+            return first;
+        }
+    }
+    return 0;
 }
 
 /*
@@ -6818,11 +6899,24 @@ rb_ary_flatten_bang(int argc, VALUE *argv, VALUE ary)
     if (!NIL_P(lv)) level = NUM2INT(lv);
     if (level == 0) return Qnil;
 
-    result = flatten(ary, level);
-    if (result == ary) {
-        return Qnil;
+    VALUE child = single_nested_array(ary);
+    if (child) {
+        if (level == 1) {
+            result = child;
+        }
+        else {
+            if (level > 1) level--;
+            result = flatten(child, level);
+        }
     }
-    if (!(mod = ARY_EMBED_P(result))) rb_ary_freeze(result);
+    else {
+        result = flatten(ary, level);
+        if (result == ary) {
+            return Qnil;
+        }
+    }
+
+    if (!(mod = ARY_EMBED_P(result) && result != child)) rb_ary_freeze(result);
     rb_ary_replace(ary, result);
     if (mod) ARY_SET_EMBED_LEN(result, 0);
 
@@ -6875,9 +6969,22 @@ rb_ary_flatten(int argc, VALUE *argv, VALUE ary)
         if (level == 0) return ary_make_shared_copy(ary);
     }
 
-    result = flatten(ary, level);
-    if (result == ary) {
-        result = ary_make_shared_copy(ary);
+    VALUE child = single_nested_array(ary);
+    if (child) {
+        if (level == 1) {
+            result = child;
+        }
+        else {
+            level--;
+            result = flatten(child, level);
+        }
+    }
+    else {
+        result = flatten(ary, level);
+    }
+
+    if (result == ary || result == child) {
+        return ary_make_shared_copy(result);
     }
 
     return result;
@@ -7697,7 +7804,7 @@ rb_ary_repeated_combination(VALUE ary, VALUE num)
  *  If no argument is given, returns an array of 1-element arrays,
  *  each containing an element of +self+:
  *
- *    a.product # => [[0], [1], [2]]
+ *    [0, 1, 2].product # => [[0], [1], [2]]
  *
  *  With a block given, calls the block with each combination; returns +self+:
  *

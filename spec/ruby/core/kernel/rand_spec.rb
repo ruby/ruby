@@ -193,5 +193,7 @@ describe "Kernel#rand" do
 end
 
 describe "Kernel.rand" do
-  it "needs to be reviewed for spec completeness"
+  it "is a public method" do
+    Kernel.public_methods(false).should.include?(:rand)
+  end
 end

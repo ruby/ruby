@@ -20,10 +20,6 @@ module Bundler
         state == :installed
       end
 
-      def enqueued?
-        state == :enqueued
-      end
-
       def enqueue_with_priority?
         state == :installable && spec.extensions.any?
       end
@@ -125,7 +121,7 @@ module Bundler
       # every native extension build with `fatal error U1065: invalid option
       # '-'`. Skip the jobserver when nmake is in use. Other Windows toolchains
       # such as mingw use GNU make and keep working through the inherited pipe.
-      return yield if nmake?
+      return yield if nmake? || bsd_make?
 
       begin
         r, w = IO.pipe
@@ -153,6 +149,12 @@ module Bundler
       make = ENV["MAKE"] || ENV["make"]
       make ||= "nmake" if RUBY_PLATFORM.include?("mswin")
       /\bnmake/i.match?(make.to_s)
+    end
+
+    def bsd_make?
+      return false unless Gem.freebsd_platform?
+      make = ENV["MAKE"] || ENV["make"] || "make"
+      !/\bgmake/i.match?(make)
     end
 
     def install_serially
@@ -249,7 +251,15 @@ module Bundler
 
     def require_tree_for_spec(spec)
       tree = @spec_set.what_required(spec)
-      t = String.new("In #{File.basename(SharedHelpers.default_gemfile)}:\n")
+      gemfile_name = begin
+        File.basename(SharedHelpers.default_gemfile)
+      rescue GemfileNotFound
+        # This runs while reporting an install error. When no Gemfile can be
+        # located (e.g. Bundler used as a library), raising here would mask
+        # the original error, so fall back to a generic header instead.
+        "Gemfile"
+      end
+      t = String.new("In #{gemfile_name}:\n")
       tree.each_with_index do |s, depth|
         t << "  " * depth.succ << s.name
         unless tree.last == s

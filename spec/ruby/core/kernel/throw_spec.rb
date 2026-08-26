@@ -1,7 +1,11 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 
-describe "Kernel.throw" do
+describe "Kernel#throw" do
+  it "is a private method" do
+    Kernel.private_instance_methods(false).should.include?(:throw)
+  end
+
   it "transfers control to the end of the active catch block waiting for symbol" do
     catch(:blah) do
       :value
@@ -73,8 +77,8 @@ describe "Kernel.throw" do
   end
 end
 
-describe "Kernel#throw" do
-  it "is a private method" do
-    Kernel.private_instance_methods(false).should.include?(:throw)
+describe "Kernel.throw" do
+  it "is a public method" do
+    Kernel.public_methods(false).should.include?(:throw)
   end
 end

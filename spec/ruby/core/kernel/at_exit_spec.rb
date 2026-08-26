@@ -2,7 +2,7 @@ require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 require_relative '../../shared/kernel/at_exit'
 
-describe "Kernel.at_exit" do
+describe "Kernel#at_exit" do
   it_behaves_like :kernel_at_exit, :at_exit
 
   it "is a private method" do
@@ -14,6 +14,8 @@ describe "Kernel.at_exit" do
   end
 end
 
-describe "Kernel#at_exit" do
-  it "needs to be reviewed for spec completeness"
+describe "Kernel.at_exit" do
+  it "is a public method" do
+    Kernel.public_methods(false).should.include?(:at_exit)
+  end
 end

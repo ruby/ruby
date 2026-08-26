@@ -5604,53 +5604,62 @@ dup_copy(const void *ptr, size_t size)
 }
 
 extern int
-onig_reg_copy(regex_t** nreg, regex_t* oreg)
+onig_reg_copy_body(regex_t* nreg, regex_t* oreg)
 {
   if (IS_NOT_NULL(oreg)) {
-    regex_t *reg = *nreg = (regex_t* )xmalloc(sizeof(regex_t));
-    if (IS_NULL(reg)) return ONIGERR_MEMORY;
+    *nreg = *oreg;
 
-    *reg = *oreg;
+# define COPY_FAILED(mem, size) IS_NULL(nreg->mem = dup_copy(oreg->mem, size))
 
-# define COPY_FAILED(mem, size) IS_NULL(reg->mem = dup_copy(reg->mem, size))
-
-    if (IS_NOT_NULL(reg->exact)) {
-      size_t exact_size = reg->exact_end - reg->exact;
+    if (IS_NOT_NULL(oreg->exact)) {
+      size_t exact_size = oreg->exact_end - oreg->exact;
       if (COPY_FAILED(exact, exact_size))
         goto err;
-      (reg)->exact_end = (reg)->exact + exact_size;
+      (nreg)->exact_end = (nreg)->exact + exact_size;
     }
 
-    if (IS_NOT_NULL(reg->p)) {
-      if (COPY_FAILED(p, reg->alloc))
+    if (IS_NOT_NULL(oreg->p)) {
+      if (COPY_FAILED(p, oreg->alloc))
         goto err_p;
     }
-    if (IS_NOT_NULL(reg->repeat_range)) {
-      if (COPY_FAILED(repeat_range, reg->repeat_range_alloc * sizeof(OnigRepeatRange)))
+    if (IS_NOT_NULL(oreg->repeat_range)) {
+      if (COPY_FAILED(repeat_range, oreg->repeat_range_alloc * sizeof(OnigRepeatRange)))
         goto err_repeat_range;
     }
-    if (IS_NOT_NULL(reg->name_table)) {
-      if (onig_names_copy(reg, oreg))
+    if (IS_NOT_NULL(oreg->name_table)) {
+      if (onig_names_copy(nreg, oreg))
         goto err_name_table;
     }
-    if (IS_NOT_NULL(reg->chain)) {
-      if (onig_reg_copy(&reg->chain, reg->chain))
+    if (IS_NOT_NULL(oreg->chain)) {
+      if (onig_reg_copy(&nreg->chain, oreg->chain))
         goto err_chain;
     }
     return 0;
 # undef COPY_FAILED
 
   err_chain:
-    onig_names_free(reg);
+    onig_names_free(nreg);
   err_name_table:
-    xfree(reg->repeat_range);
+    xfree(nreg->repeat_range);
   err_repeat_range:
-    xfree(reg->p);
+    xfree(nreg->p);
   err_p:
-    xfree(reg->exact);
+    xfree(nreg->exact);
   err:
-    xfree(reg);
+    xfree(nreg);
     return ONIGERR_MEMORY;
+  }
+  return 0;
+}
+
+extern int
+onig_reg_copy(regex_t** nreg, regex_t* oreg)
+{
+  if (IS_NOT_NULL(oreg)) {
+    regex_t *reg = *nreg = (regex_t* )xmalloc(sizeof(regex_t));
+    if (IS_NULL(reg)) return ONIGERR_MEMORY;
+
+    return onig_reg_copy_body(reg, oreg);
   }
   return 0;
 }

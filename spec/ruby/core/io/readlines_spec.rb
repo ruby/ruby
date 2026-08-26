@@ -209,10 +209,23 @@ describe "IO.readlines" do
 
     # https://bugs.ruby-lang.org/issues/19630
     it "warns about deprecation given a path with a pipe" do
-      cmd = "|echo ok"
       -> {
-        IO.readlines(cmd)
+        IO.readlines("|echo ok")
       }.should complain(/IO process creation with a leading '\|'/)
+    end
+  end
+
+  ruby_version_is "4.0" do
+    platform_is_not :windows do
+      it "raises Errno::ENOENT when path starts with a pipe" do
+        -> { IO.readlines("|echo ok") }.should.raise(Errno::ENOENT)
+      end
+    end
+
+    platform_is :windows do
+      it "raises Errno::EINVAL when path starts with a pipe" do
+        -> { IO.readlines("|echo ok") }.should.raise(Errno::EINVAL)
+      end
     end
   end
 

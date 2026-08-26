@@ -1,5 +1,7 @@
 #include <psych.h>
 
+#ifndef PSYCH_USE_LIBFYAML
+
 #if !defined(RARRAY_CONST_PTR)
 #define RARRAY_CONST_PTR(s) (const VALUE *)RARRAY_PTR(s)
 #endif
@@ -587,3 +589,5 @@ void Init_psych_emitter(void)
     id_indentation = rb_intern("indentation");
     id_canonical   = rb_intern("canonical");
 }
+
+#endif /* PSYCH_USE_LIBFYAML */

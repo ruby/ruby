@@ -13,6 +13,7 @@
 #include "ruby/assert.h"
 
 #include "ruby/thread_native.h"
+#include "ruby/debug.h"
 
 #ifndef VM_CHECK_MODE
 # define VM_CHECK_MODE RUBY_DEBUG
@@ -23,23 +24,7 @@
 # define RACTOR_CHECK_MODE (VM_CHECK_MODE || RUBY_DEBUG) && (SIZEOF_UINT64_T == SIZEOF_VALUE)
 #endif
 
-#if RACTOR_CHECK_MODE
-void rb_ractor_setup_belonging(VALUE obj);
-
-struct rb_gc_obj_suffix {
-    uint32_t _ractor_belonging_id;
-};
-
-# define RB_GC_OBJ_HAS_SUFFIX 1
-# define RB_GC_OBJ_SUFFIX_SIZE (sizeof(struct rb_gc_obj_suffix))
-#else
-# define RB_GC_OBJ_HAS_SUFFIX 0
-# define RB_GC_OBJ_SUFFIX_SIZE 0
-#endif
-
 struct rb_gc_vm_context {
-    rb_nativethread_lock_t lock;
-
     struct rb_execution_context_struct *ec;
 };
 
@@ -50,7 +35,6 @@ enum rb_gc_vm_weak_tables {
     RB_GC_VM_CI_TABLE,
     RB_GC_VM_OVERLOADED_CME_TABLE,
     RB_GC_VM_GLOBAL_SYMBOLS_TABLE,
-    RB_GC_VM_ID2REF_TABLE,
     RB_GC_VM_GENERIC_FIELDS_TABLE,
     RB_GC_VM_FROZEN_STRINGS_TABLE,
     RB_GC_VM_WEAK_TABLE_COUNT
@@ -58,8 +42,6 @@ enum rb_gc_vm_weak_tables {
 
 #define RB_GC_VM_LOCK() rb_gc_vm_lock(__FILE__, __LINE__)
 #define RB_GC_VM_UNLOCK(lev) rb_gc_vm_unlock(lev, __FILE__, __LINE__)
-#define RB_GC_CR_LOCK() rb_gc_cr_lock(__FILE__, __LINE__)
-#define RB_GC_CR_UNLOCK(lev) rb_gc_cr_unlock(lev, __FILE__, __LINE__)
 #define RB_GC_VM_LOCK_NO_BARRIER() rb_gc_vm_lock_no_barrier(__FILE__, __LINE__)
 #define RB_GC_VM_UNLOCK_NO_BARRIER(lev) rb_gc_vm_unlock_no_barrier(lev, __FILE__, __LINE__)
 
@@ -88,29 +70,47 @@ void rb_gc_verify_shareable(VALUE);
 
 MODULAR_GC_FN unsigned int rb_gc_vm_lock(const char *file, int line);
 MODULAR_GC_FN void rb_gc_vm_unlock(unsigned int lev, const char *file, int line);
-MODULAR_GC_FN unsigned int rb_gc_cr_lock(const char *file, int line);
-MODULAR_GC_FN void rb_gc_cr_unlock(unsigned int lev, const char *file, int line);
 MODULAR_GC_FN unsigned int rb_gc_vm_lock_no_barrier(const char *file, int line);
 MODULAR_GC_FN void rb_gc_vm_unlock_no_barrier(unsigned int lev, const char *file, int line);
 MODULAR_GC_FN void rb_gc_vm_barrier(void);
+MODULAR_GC_FN void rb_gc_vm_each_objspace(void (*func)(void *objspace, void *data), void *data);
+MODULAR_GC_FN size_t rb_gc_vm_zombie_total_pages(void);
+MODULAR_GC_FN unsigned int rb_gc_vm_ractor_count(void);
+MODULAR_GC_FN void rb_gc_vm_refresh_zombie_pages(void);
+/* No MODULAR_GC_FN: the VM side (ractor.c) calls this too, so it needs external
+ * linkage even in a non-modular build (see internal/gc.h). */
+bool rb_gc_single_objspace_p(void);
+/* Clear the "absorbed" flag once a global GC finishes (see rb_gc_single_objspace_p).
+ * No MODULAR_GC_FN, for the same reason as above. */
+void rb_gc_reset_absorbed_since_global_gc(void);
 MODULAR_GC_FN size_t rb_gc_obj_optimal_size(VALUE obj);
 MODULAR_GC_FN void rb_gc_mark_children(void *objspace, VALUE obj);
 MODULAR_GC_FN void rb_gc_vm_weak_table_foreach(vm_table_foreach_callback_func callback, vm_table_update_callback_func update_callback, void *data, bool weak_only, enum rb_gc_vm_weak_tables table);
+/* The global GC's weak pass over generic_fields (called from a gc-impl). */
+MODULAR_GC_FN void rb_gc_vm_generic_fields_mark_foreach(int (*cb)(VALUE key, VALUE val, void *arg), void *arg);
+MODULAR_GC_FN void rb_gc_vm_generic_fields_drain_dead(bool (*is_dead)(VALUE key));
+/* Exemptions for the shareable containment verifier (called from a gc-impl). */
+MODULAR_GC_FN VALUE rb_gc_vm_top_self(void);
 MODULAR_GC_FN void rb_gc_update_object_references(void *objspace, VALUE obj);
 MODULAR_GC_FN void rb_gc_update_vm_references(void *objspace);
 MODULAR_GC_FN void rb_gc_event_hook(VALUE obj, rb_event_flag_t event);
 MODULAR_GC_FN void *rb_gc_get_objspace(void);
 MODULAR_GC_FN void rb_gc_run_obj_finalizer(VALUE objid, long count, VALUE (*callback)(long i, void *data), void *data);
 MODULAR_GC_FN void rb_gc_set_pending_interrupt(void);
+MODULAR_GC_FN void rb_gc_trigger_finalize_deferred(void *objspace, rb_postponed_job_handle_t pjob);
 MODULAR_GC_FN void rb_gc_unset_pending_interrupt(void);
 MODULAR_GC_FN void rb_gc_obj_free_vm_weak_references(VALUE obj);
 MODULAR_GC_FN bool rb_gc_obj_free(void *objspace, VALUE obj);
 MODULAR_GC_FN void rb_gc_save_machine_context(void);
 MODULAR_GC_FN void rb_gc_mark_roots(void *objspace, const char **categoryp);
-MODULAR_GC_FN void rb_gc_ractor_newobj_cache_foreach(void (*func)(void *cache, void *data), void *data);
 MODULAR_GC_FN bool rb_gc_multi_ractor_p(void);
+MODULAR_GC_FN bool rb_gc_ever_multi_ractor_p(void);
+/* Process-wide GC disable flag (GC.disable / rb_gc_disable).  Every GC trigger in
+ * an impl checks it, so disabling stops automatic GC in every Ractor.  The
+ * per-objspace switch is objspace->flags.dont_gc. */
+MODULAR_GC_FN bool rb_gc_gc_disabled_global_p(void);
 MODULAR_GC_FN bool rb_gc_shutdown_call_finalizer_p(VALUE obj);
-MODULAR_GC_FN void rb_gc_obj_changed_pool(VALUE obj, size_t heap_id);
+MODULAR_GC_FN void rb_gc_obj_changed_slot_size(VALUE obj, size_t slot_size);
 MODULAR_GC_FN void rb_gc_prepare_heap_process_object(VALUE obj);
 MODULAR_GC_FN bool rb_memerror_reentered(void);
 MODULAR_GC_FN bool rb_obj_id_p(VALUE);
@@ -121,10 +121,10 @@ MODULAR_GC_FN void rb_gc_rp(VALUE);
 MODULAR_GC_FN void rb_gc_handle_weak_references(VALUE obj);
 MODULAR_GC_FN bool rb_gc_obj_needs_cleanup_p(VALUE obj);
 
+void rb_gc_initialize_vm_context(struct rb_gc_vm_context *context);
 #if USE_MODULAR_GC
 MODULAR_GC_FN bool rb_gc_event_hook_required_p(rb_event_flag_t event);
 MODULAR_GC_FN void *rb_gc_get_ractor_newobj_cache(void);
-MODULAR_GC_FN void rb_gc_initialize_vm_context(struct rb_gc_vm_context *context);
 MODULAR_GC_FN void rb_gc_move_obj_during_marking(VALUE from, VALUE to);
 MODULAR_GC_FN void rb_gc_print_backtrace();
 #endif
@@ -133,7 +133,7 @@ MODULAR_GC_FN void rb_gc_print_backtrace();
 RUBY_SYMBOL_EXPORT_END
 #endif
 
-void rb_ractor_finish_marking(void);
+void rb_ractor_finish_marking(bool full_mark);
 
 // -------------------Private section begin------------------------
 // Functions in this section are private to the default GC and gc.c

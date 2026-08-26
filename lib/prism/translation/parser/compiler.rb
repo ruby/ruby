@@ -165,7 +165,14 @@ module Prism
           else
             parts =
               if key.is_a?(SymbolNode)
-                [builder.string_internal([key.unescaped, srange(key.value_loc)])]
+                value_loc = key.value_loc
+                if value_loc.nil?
+                  []
+                elsif value_loc.slice.include?("\n")
+                  string_nodes_from_line_continuations(key.unescaped, value_loc.slice, value_loc.start_offset, key.opening)
+                else
+                  [builder.string_internal([key.unescaped, srange(value_loc)])]
+                end
               else
                 visit_all(key.parts)
               end
@@ -970,17 +977,17 @@ module Prism
             guard = builder.if_guard(token(node.pattern.if_keyword_loc), visit(node.pattern.predicate))
           when UnlessNode
             pattern = within_pattern { |compiler| node.pattern.statements.accept(compiler) }
-            guard = builder.unless_guard(token(node.pattern.keyword_loc), visit(node.pattern.predicate))
+            guard = builder.unless_guard(token(node.pattern.unless_keyword_loc), visit(node.pattern.predicate))
           else
             pattern = within_pattern { |compiler| node.pattern.accept(compiler) }
           end
 
           builder.in_pattern(
-            token(node.in_loc),
+            token(node.in_keyword_loc),
             pattern,
             guard,
-            if (then_loc = node.then_loc)
-              token(then_loc)
+            if (then_keyword_loc = node.then_keyword_loc)
+              token(then_keyword_loc)
             else
               srange_semicolon(node.pattern.location.end_offset, node.statements&.location&.start_offset)
             end,
@@ -1291,7 +1298,7 @@ module Prism
         def visit_match_predicate_node(node)
           builder.match_pattern_p(
             visit(node.value),
-            token(node.operator_loc),
+            token(node.keyword_loc),
             within_pattern { |compiler| node.pattern.accept(compiler) }
           )
         end
@@ -1802,9 +1809,9 @@ module Prism
         # bar unless foo
         # ^^^^^^^^^^^^^^
         def visit_unless_node(node)
-          if node.keyword_loc.start_offset == node.location.start_offset
+          if node.unless_keyword_loc.start_offset == node.location.start_offset
             builder.condition(
-              token(node.keyword_loc),
+              token(node.unless_keyword_loc),
               visit(node.predicate),
               if (then_keyword_loc = node.then_keyword_loc)
                 token(then_keyword_loc)
@@ -1820,7 +1827,7 @@ module Prism
             builder.condition_mod(
               visit(node.else_clause),
               visit(node.statements),
-              token(node.keyword_loc),
+              token(node.unless_keyword_loc),
               visit(node.predicate)
             )
           end
@@ -1832,24 +1839,24 @@ module Prism
         # bar until foo
         # ^^^^^^^^^^^^^
         def visit_until_node(node)
-          if node.location.start_offset == node.keyword_loc.start_offset
+          if node.location.start_offset == node.until_keyword_loc.start_offset
             builder.loop(
               :until,
-              token(node.keyword_loc),
+              token(node.until_keyword_loc),
               visit(node.predicate),
               if (do_keyword_loc = node.do_keyword_loc)
                 token(do_keyword_loc)
               else
-                srange_semicolon(node.predicate.location.end_offset, (node.statements&.location || node.closing_loc).start_offset)
+                srange_semicolon(node.predicate.location.end_offset, (node.statements&.location || node.end_keyword_loc).start_offset)
               end,
               visit(node.statements),
-              token(node.closing_loc)
+              token(node.end_keyword_loc)
             )
           else
             builder.loop_mod(
               :until,
               visit(node.statements),
-              token(node.keyword_loc),
+              token(node.until_keyword_loc),
               visit(node.predicate)
             )
           end
@@ -1859,7 +1866,7 @@ module Prism
         #           ^^^^^^^^^^^^^
         def visit_when_node(node)
           builder.when(
-            token(node.keyword_loc),
+            token(node.when_keyword_loc),
             visit_all(node.conditions),
             if (then_keyword_loc = node.then_keyword_loc)
               token(then_keyword_loc)
@@ -1876,24 +1883,24 @@ module Prism
         # bar while foo
         # ^^^^^^^^^^^^^
         def visit_while_node(node)
-          if node.location.start_offset == node.keyword_loc.start_offset
+          if node.location.start_offset == node.while_keyword_loc.start_offset
             builder.loop(
               :while,
-              token(node.keyword_loc),
+              token(node.while_keyword_loc),
               visit(node.predicate),
               if (do_keyword_loc = node.do_keyword_loc)
                 token(do_keyword_loc)
               else
-                srange_semicolon(node.predicate.location.end_offset, (node.statements&.location || node.closing_loc).start_offset)
+                srange_semicolon(node.predicate.location.end_offset, (node.statements&.location || node.end_keyword_loc).start_offset)
               end,
               visit(node.statements),
-              token(node.closing_loc)
+              token(node.end_keyword_loc)
             )
           else
             builder.loop_mod(
               :while,
               visit(node.statements),
-              token(node.keyword_loc),
+              token(node.while_keyword_loc),
               visit(node.predicate)
             )
           end

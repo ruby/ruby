@@ -21,4 +21,22 @@ describe 'IPSocket#inspect' do
   ensure
     @socket&.close
   end
+
+  it 'returns a String marking the socket as closed for a closed TCPSocket' do
+    @server = TCPServer.new("127.0.0.1", 0)
+    @socket = TCPSocket.new("127.0.0.1", @server.addr[1])
+    @socket.close
+
+    @socket.inspect.should == "#<TCPSocket:(closed)>"
+  ensure
+    @server&.close
+  end
+
+  it 'returns a String marking the socket as closed for a closed UDPSocket' do
+    @socket = UDPSocket.new
+    @socket.bind('127.0.0.1', 0)
+    @socket.close
+
+    @socket.inspect.should == "#<UDPSocket:(closed)>"
+  end
 end

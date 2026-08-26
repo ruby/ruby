@@ -77,6 +77,9 @@ ruby_setup(void)
 #if defined(__linux__) && defined(PR_SET_THP_DISABLE)
     prctl(PR_SET_THP_DISABLE, 1, 0, 0, 0);
 #endif
+#if defined(_WIN32)
+    rb_w32_init_long_paths();
+#endif
     Init_BareVM();
     rb_vm_encoded_insn_data_table_init();
     Init_enable_box();
@@ -147,15 +150,26 @@ rb_ec_fiber_scheduler_finalize(rb_execution_context_t *ec)
 static void
 rb_ec_teardown(rb_execution_context_t *ec)
 {
+    enum ruby_tag_type state = TAG_NONE;
+    volatile VALUE trap_errinfo = Qnil;
+
     // If the user code defined a scheduler for the top level thread, run it:
     rb_ec_fiber_scheduler_finalize(ec);
 
     EC_PUSH_TAG(ec);
-    if (EC_EXEC_TAG() == TAG_NONE) {
+    if ((state = EC_EXEC_TAG()) == TAG_NONE) {
         rb_vm_trap_exit(rb_ec_vm_ptr(ec));
+    }
+    else {
+        trap_errinfo = ec->errinfo;
+        ec->errinfo = Qnil;
     }
     EC_POP_TAG();
     rb_ec_exec_end_proc(ec);
+    if (!NIL_P(trap_errinfo)) {
+        error_handle(ec, trap_errinfo, state);
+        ec->errinfo = trap_errinfo;
+    }
     rb_ec_clear_all_trace_func(ec);
 }
 
@@ -1056,12 +1070,14 @@ rb_rescue2(VALUE (* b_proc) (VALUE), VALUE data1,
 
 VALUE
 rb_vrescue2(VALUE (* b_proc) (VALUE), VALUE data1,
-            VALUE (* r_proc) (VALUE, VALUE), VALUE data2,
+            VALUE (* r_proc_arg) (VALUE, VALUE), VALUE data2_arg,
             va_list args)
 {
     enum ruby_tag_type state;
     rb_execution_context_t * volatile ec = GET_EC();
     rb_control_frame_t *volatile cfp = ec->cfp;
+    VALUE (* volatile r_proc)(VALUE, VALUE) = r_proc_arg;
+    volatile VALUE data2 = data2_arg;
     volatile VALUE result = Qfalse;
     volatile VALUE e_info = ec->errinfo;
 
@@ -1123,12 +1139,13 @@ rb_rescue(VALUE (* b_proc)(VALUE), VALUE data1,
 }
 
 VALUE
-rb_protect(VALUE (* proc) (VALUE), VALUE data, int *pstate)
+rb_protect(VALUE (* proc) (VALUE), VALUE data, int *pstate_arg)
 {
     volatile VALUE result = Qnil;
     volatile enum ruby_tag_type state;
     rb_execution_context_t * volatile ec = GET_EC();
     rb_control_frame_t *volatile cfp = ec->cfp;
+    int * volatile pstate = pstate_arg;
 
     EC_PUSH_TAG(ec);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
@@ -1144,9 +1161,12 @@ rb_protect(VALUE (* proc) (VALUE), VALUE data, int *pstate)
 }
 
 VALUE
-rb_ec_ensure(rb_execution_context_t *ec, VALUE (*b_proc)(VALUE), VALUE data1, VALUE (*e_proc)(VALUE), VALUE data2)
+rb_ec_ensure(rb_execution_context_t *ec_arg, VALUE (*b_proc)(VALUE), VALUE data1, VALUE (*e_proc_arg)(VALUE), VALUE data2_arg)
 {
     enum ruby_tag_type state;
+    rb_execution_context_t * volatile ec = ec_arg;
+    VALUE (* volatile e_proc)(VALUE) = e_proc_arg;
+    volatile VALUE data2 = data2_arg;
     volatile VALUE result = Qnil;
     VALUE errinfo;
     EC_PUSH_TAG(ec);
@@ -1451,15 +1471,20 @@ using_refinement(VALUE klass, VALUE module, VALUE arg)
     return ST_CONTINUE;
 }
 
-static void
-using_module_recursive(const rb_cref_t *cref, VALUE klass)
+/*!
+ * \private
+ * rb_using_module without the refinement method cache flush, for a fresh
+ * cref that no call site references yet (Proc#refined).
+ */
+void
+rb_using_module_recursive(rb_cref_t *cref, VALUE klass)
 {
     ID id_refinements;
     VALUE super, module, refinements;
 
     super = RCLASS_SUPER(klass);
     if (super) {
-        using_module_recursive(cref, super);
+        rb_using_module_recursive(cref, super);
     }
     switch (BUILTIN_TYPE(klass)) {
       case T_MODULE:
@@ -1485,17 +1510,11 @@ using_module_recursive(const rb_cref_t *cref, VALUE klass)
  * \private
  */
 static void
-rb_using_module(const rb_cref_t *cref, VALUE module)
+rb_using_module(rb_cref_t *cref, VALUE module)
 {
     Check_Type(module, T_MODULE);
-    using_module_recursive(cref, module);
+    rb_using_module_recursive(cref, module);
     rb_clear_all_refinement_method_cache();
-}
-
-void
-rb_vm_using_module(VALUE module)
-{
-    rb_using_module(rb_vm_cref_replace_with_duplicated_cref(), module);
 }
 
 /*
@@ -1633,6 +1652,21 @@ ignored_block(VALUE module, const char *klass)
     rb_warn("%s""using doesn't call the given block""%s.", klass, anon);
 }
 
+/* Reject `using` anywhere inside a refined proc's body: the procs sharing
+ * the memoized iseq copy (and its call caches) must all run under the same
+ * refinement set. */
+static void
+check_not_refined_proc_scope(const char *using_name)
+{
+    const rb_cref_t *cref;
+    for (cref = rb_vm_cref(); cref; cref = CREF_NEXT(cref)) {
+        if (CREF_REFINED_PROC(cref)) {
+            rb_raise(rb_eRuntimeError,
+                     "%s is not permitted in a proc with refinements", using_name);
+        }
+    }
+}
+
 /*
  *  call-seq:
  *     using(module)    -> self
@@ -1656,6 +1690,7 @@ mod_using(VALUE self, VALUE module)
     if (rb_block_given_p()) {
         ignored_block(module, "Module#");
     }
+    check_not_refined_proc_scope("Module#using");
     rb_using_module(rb_vm_cref_replace_with_duplicated_cref(), module);
     return self;
 }
@@ -1999,6 +2034,7 @@ top_using(VALUE self, VALUE module)
     if (rb_block_given_p()) {
         ignored_block(module, "main.");
     }
+    check_not_refined_proc_scope("main.using");
     rb_using_module(rb_vm_cref_replace_with_duplicated_cref(), module);
     return self;
 }

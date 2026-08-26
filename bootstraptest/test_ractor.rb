@@ -506,8 +506,9 @@ assert_equal 'false', %q{
   obj.object_id == r.value
 }
 
-# To copy the object, now Marshal#dump is used
-assert_match /can't clone unshareable instance of Thread/, %q{
+# Copying an object uses the native copier or Marshal#dump; it never calls the
+# user-visible #clone.
+assert_match /can not copy Thread object/, %q{
   obj = Thread.new{}
   begin
     r = Ractor.new obj do |msg|
@@ -654,6 +655,29 @@ assert_equal '[0, 1]', %q{
   rescue Ractor::MovedError
     a2.inspect
   end
+}
+
+# move preserves aliasing inside the moved object graph
+assert_equal 'true', %q{
+  r = Ractor.new do
+    Ractor.receive
+  end
+
+  leaf = +"leaf"
+  moved = r.send([leaf, leaf], move: true).value
+  moved[0].equal?(moved[1])
+}
+
+# move handles cyclic references safely and preserves aliasing
+assert_equal 'true', %q{
+  r = Ractor.new do
+    Ractor.receive
+  end
+
+  a = []
+  a << a
+  moved = r.send(a, move: true).value
+  moved.equal?(moved[0])
 }
 
 # unshareable frozen objects should still be frozen in new ractor after move
@@ -1247,45 +1271,16 @@ assert_equal '[1, 4, 3, 2, 1]', %q{
   counts.inspect
 }
 
-# ObjectSpace.each_object can not handle unshareable objects with Ractors
-assert_equal '0', %q{
+# ObjectSpace.each_object enumerates the calling Ractor's own objects (unshareable ones
+# included) and other Ractors' shareable objects, but never their unshareable ones.
+assert_equal 'true', %q{
   Ractor.new{
-    n = 0
-    ObjectSpace.each_object{|o| n += 1 unless Ractor.shareable?(o)}
-    n
+    own = Object.new
+    seen = false
+    ObjectSpace.each_object{|o| seen = true if o.equal?(own)}
+    seen
   }.value
 }
-
-# ObjectSpace._id2ref can not handle unshareable objects with Ractors
-assert_equal 'ok', <<~'RUBY', frozen_string_literal: false
-  s = 'hello'
-
-  Ractor.new s.object_id do |id ;s|
-    begin
-      s = ObjectSpace._id2ref(id)
-    rescue => e
-      :ok
-    end
-  end.value
-RUBY
-
-# Inserting into the id2ref table should be Ractor-safe
-assert_equal 'ok', <<~'RUBY'
-  # Force all calls to Kernel#object_id to insert into the id2ref table
-  obj = Object.new
-  ObjectSpace._id2ref(obj.object_id) rescue nil
-
-  10.times.map do
-    Ractor.new do
-      10_000.times do
-        a = Object.new
-        a.object_id
-      end
-    end
-  end.map(&:value)
-
-  :ok
-RUBY
 
 # Ractor.make_shareable(obj)
 assert_equal 'true', <<~'RUBY', frozen_string_literal: false
@@ -2175,19 +2170,6 @@ assert_equal 'ok', %q{
   roundtripped_obj.instance_variable_get(:@array1) == [1] ? :ok : roundtripped_obj
 }
 
-# move object with generic ivars and existing id2ref table
-# [Bug #21664]
-assert_equal 'ok', %q{
-  obj = [1]
-  obj.instance_variable_set("@field", :ok)
-  ObjectSpace._id2ref(obj.object_id) # build id2ref table
-
-  ractor = Ractor.new { Ractor.receive }
-  ractor.send(obj, move: true)
-  obj = ractor.value
-  obj.instance_variable_get("@field")
-}
-
 # copy object with complex generic ivars
 assert_equal 'ok', %q{
   # Make Array complex
@@ -2441,6 +2423,24 @@ assert_equal 'true', %q{
   port.receive == :aborted
 }
 
+assert_equal 'ok', %q{
+  long = Ractor.new { Ractor.receive }
+  Ractor.new(long) { |t| t.monitor(Ractor::Port.new) }.value
+  GC.start
+  'ok'
+}
+
+assert_equal 'ok', %q{
+  long = Ractor.new { Ractor.receive }
+  20.times do
+    Ractor.new(long) { |t| t.monitor(Ractor::Port.new) }.value
+    GC.start
+  end
+  long.send(:bye)
+  long.join
+  'ok'
+}
+
 ## Ractor#join
 
 # Ractor#join returns self when the Ractor is terminated.
@@ -2480,8 +2480,8 @@ assert_equal 'true', %q{
   ret == [1, 2, ret.object_id]
 }
 
-# Only one Ractor can call Ractor#value
-assert_equal '[["Only the successor ractor can take a value", 9], ["ok", 2]]', %q{
+# Only one Ractor can call Ractor#value, and only once
+assert_equal '[["Only the successor ractor can take a value", 9], ["The value was already taken", 1], ["ok", 1]]', %q{
   r = Ractor.new do
     'ok'
   end
@@ -2492,7 +2492,7 @@ assert_equal '[["Only the successor ractor can take a value", 9], ["ok", 2]]', %
     Ractor.new r do |r|
       begin
         Ractor.main << r.value
-        Ractor.main << r.value # this ractor can get same result
+        Ractor.main << r.value # the value is taken only once
       rescue Ractor::Error => e
         Ractor.main << e.message
       end
@@ -2663,4 +2663,203 @@ assert_equal 'ok', %q{
   end.each(&:join)
 
   :ok
+}
+
+# A thread terminating (here: the pipe writer) while another Ractor runs a
+# compaction barrier must not corrupt the machine context of a thread blocked
+# in IO, whose locked read buffer lives only on that machine stack.
+assert_equal 'ok', %q{
+  Warning[:experimental] = false
+  can_compact = begin
+    GC.compact
+    true
+  rescue NotImplementedError
+    false
+  end
+  if can_compact
+    b = Ractor.new do
+      10.times do
+        r, w = IO.pipe
+        t = Thread.new { w.write("x" * 40); w.close }
+        r.read
+        r.close
+        t.join
+      end
+      :ok
+    end
+    a = Ractor.new { 20.times { GC.compact }; :ok }
+    [a, b].each(&:value)
+  end
+  :ok
+}
+
+# Forking while other Ractors are alive takes a VM barrier in the parent; the
+# child inherits that scheduler/barrier state and must reset it. Exercises the
+# parent-side fork barrier and the child teardown, then checks the surviving
+# Ractors still work.
+assert_equal 'ok', %q{
+  begin
+    rs = 5.times.map { Ractor.new { Ractor.receive } }
+    10.times do
+      pid = fork { GC.start }
+      _, status = Process.waitpid2(pid)
+      raise "child failed" unless status.success?
+    end
+    rs.each { |r| r.send(nil) }
+    rs.each(&:value)
+    :ok
+  rescue NotImplementedError
+    :ok  # platform without fork
+  end
+}
+
+# A moved object's source is neutralized into a RactorMovedObject husk that
+# stays in its original (possibly larger) slot. It must be given a shape whose
+# slot size matches that slot, or a later compaction in the receiver trips the
+# slot_size == shape_slot_size invariant (RGENGC_CHECK_MODE) / corrupts the slot.
+assert_equal 'ok', %q{
+  r = Ractor.new do
+    while (o = Ractor.receive)
+      begin
+        GC.compact
+      rescue NotImplementedError
+        # no-op on platforms without GC.compact (e.g. MMTk)
+      end
+    end
+    :ok
+  end
+  500.times do
+    o = Object.new
+    12.times { |i| o.instance_variable_set("@i#{i}", i) }  # overflow to a larger slot
+    r.send(o, move: true)
+  end
+  r.send(nil)
+  r.value
+}
+
+# A Ractor creation that fails (IsolationError) after the child objspace exists must clean up
+# the creator's cover for it; otherwise a later global GC enumerates the dead child's objspace
+# twice and reads the freed shell.
+assert_equal 'ok', %q{
+  x = 42 # capturing an outer local makes Ractor.new raise IsolationError
+  worker = Ractor.new { loop { break if Ractor.receive == :quit } }
+  begin
+    Ractor.new { x }
+    raise "isolation error did not fire"
+  rescue Ractor::IsolationError
+  end
+  10.times { GC.start; 500.times { Object.new } }
+  worker.send(:quit)
+  worker.value
+  100.times do |i|
+    begin
+      Ractor.new { x }
+      raise "isolation error did not fire"
+    rescue Ractor::IsolationError
+    end
+    if (i % 20).zero?
+      Ractor.new { :ok }.value
+      GC.start
+    end
+  end
+  GC.start
+  :ok
+}
+
+# Moving a CoW shared-root string (a frozen root with an unshareable ivar) must not steal the
+# root's buffer; that would leave the remaining sharers reading freed memory.
+assert_equal 'ok', %q{
+  30.times do
+    r = Ractor.new do
+      v = Ractor.receive
+      v.bytesize
+      :done
+    end
+    f = "x" * 4096
+    f.instance_variable_set(:@x, []) # unshareable ivar: moved rather than passed through
+    f.freeze
+    g = f.dup            # shares f's buffer, making f a shared root
+    h = f[10, 3000]      # a long substring shares the buffer too
+    r.send(f, move: true)
+    r.value
+    GC.start
+    10.times { "z" * 4096 }
+    raise "sharer corrupted" unless g == "x" * 4096 && h == "x" * 3000
+  end
+  :ok
+}
+
+# Same for an array: a frozen array is a shared root without carrying the shared root flag,
+# so its buffer belongs to the sharers and the move must not free it.
+assert_equal 'ok', %q{
+  30.times do
+    r = Ractor.new do
+      v = Ractor.receive
+      v.size
+      :done
+    end
+    a = (1..100).to_a
+    a.instance_variable_set(:@x, []) # unshareable ivar: moved rather than passed through
+    a.freeze
+    b = a.dup            # shares a's buffer, making a a shared root
+    c = a[10, 80]        # a subseq shares the buffer too
+    r.send(a, move: true)
+    r.value
+    GC.start
+    10.times { (1..100).to_a }
+    raise "sharer corrupted" unless b == (1..100).to_a && c == (11..90).to_a
+  end
+  :ok
+}
+
+# Moving a String/Array/Hash subclass (an unshareable ivar sends it down the move path) must
+# preserve the class rather than degrading it to the base class.
+assert_equal '["MyStr", "MyAry", "MyHash"]', %q{
+  class MyStr < String; end
+  class MyAry < Array; end
+  class MyHash < Hash; end
+  r = Ractor.new do
+    3.times.map { Ractor.receive.class.name }
+  end
+  [MyStr.new("x"), (MyAry.new << 1), (h=MyHash.new; h[:a]=1; h)].each do |o|
+    o.instance_variable_set(:@x, []) # unshareable ivar sends it down the move path
+    r.send(o, move: true)
+  end
+  r.value.inspect
+}
+
+# Moving an object with a singleton class must keep its singleton methods and reattach the
+# rebuilt singleton class to the new object; otherwise it keeps pointing at the original the
+# sender's attach invalidated.  Covers T_OBJECT, String and Struct.
+assert_equal '[[:obj, true], [:str, true], [:strct, true]]', %q{
+  o = Object.new
+  def o.m; :obj end
+  s = +"str"
+  def s.m; :str end
+  st = Struct.new(:a).new(1)
+  def st.m; :strct end
+  r = Ractor.new do
+    3.times.map do
+      v = Ractor.receive
+      GC.start
+      [v.m, v.method(:m).owner.attached_object.equal?(v)]
+    end
+  end
+  [o, s, st].each { |x| r.send(x, move: true) }
+  r.value.inspect
+}
+
+# A port that is still reachable keeps its queue, whether or not it was closed.  (Dropping
+# the queue of a port that is gone is not fixed for mmtk, so that case is a test-all one
+# that omits itself: see test_port_queue_dropped_when_port_unreachable.)
+assert_equal '[[0, 1, 2], [:a, :b]]', %q{
+  taken = 3.times.map do |i|
+    port = Ractor::Port.new
+    Ractor.new(port, i) { |p, n| p << n; nil }.join
+    port
+  end
+  closed = Ractor::Port.new
+  closed.send(:a); closed.send(:b); closed.close
+  6.times { GC.start }
+  [taken.map(&:receive), [closed.receive, closed.receive]]
 }

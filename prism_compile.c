@@ -1148,7 +1148,7 @@ pm_compile_conditional(rb_iseq_t *iseq, const pm_node_location_t *node_location,
 
     if (then_label->refcnt && else_label->refcnt && PM_BRANCH_COVERAGE_P(iseq)) {
         conditional_location = pm_code_location(scope_node, node);
-        branches = decl_branch_base(iseq, PTR2NUM(node), &conditional_location, type == PM_IF_NODE ? "if" : "unless");
+        branches = decl_branch_base(iseq, (int) node->node_id, &conditional_location, type == PM_IF_NODE ? "if" : "unless");
     }
 
     if (then_label->refcnt) {
@@ -1278,7 +1278,7 @@ pm_compile_loop(rb_iseq_t *iseq, const pm_node_location_t *node_location, pm_nod
     // Establish branch coverage for the loop.
     if (PM_BRANCH_COVERAGE_P(iseq)) {
         rb_code_location_t loop_location = pm_code_location(scope_node, node);
-        VALUE branches = decl_branch_base(iseq, PTR2NUM(node), &loop_location, type == PM_WHILE_NODE ? "while" : "until");
+        VALUE branches = decl_branch_base(iseq, (int) node->node_id, &loop_location, type == PM_WHILE_NODE ? "while" : "until");
 
         rb_code_location_t branch_location = statements != NULL ? pm_code_location(scope_node, (const pm_node_t *) statements) : loop_location;
         add_trace_branch_coverage(iseq, ret, &branch_location, branch_location.beg_pos.column, 0, "body", branches);
@@ -1494,6 +1494,7 @@ pm_compile_hash_elements(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
 
     int stack_length = 0;
     bool first_chunk = true;
+    bool owned_hash = false;
 
     // This is an optimization wherein we keep track of whether or not the
     // previous element was a static literal. If it was, then we do not attempt
@@ -1504,21 +1505,27 @@ pm_compile_hash_elements(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
     DECL_ANCHOR(anchor);
 
     // Convert pushed elements to a hash, and merge if needed.
-#define FLUSH_CHUNK                                                                         \
-    if (stack_length) {                                                                     \
-        if (first_chunk) {                                                                  \
-            PUSH_SEQ(ret, anchor);                                                          \
-            PUSH_INSN1(ret, location, newhash, INT2FIX(stack_length));                      \
-            first_chunk = false;                                                            \
-        }                                                                                   \
-        else {                                                                              \
-            PUSH_INSN1(ret, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE)); \
-            PUSH_INSN(ret, location, swap);                                                 \
-            PUSH_SEQ(ret, anchor);                                                          \
-            PUSH_SEND(ret, location, id_core_hash_merge_ptr, INT2FIX(stack_length + 1));    \
-        }                                                                                   \
-        INIT_ANCHOR(anchor);                                                                \
-        stack_length = 0;                                                                   \
+#define FLUSH_CHUNK                                                                               \
+    if (stack_length) {                                                                           \
+        if (first_chunk) {                                                                        \
+            PUSH_SEQ(ret, anchor);                                                                \
+            PUSH_INSN1(ret, location, newhash, INT2FIX(stack_length));                            \
+            first_chunk = false;                                                                  \
+        }                                                                                         \
+        else {                                                                                    \
+            PUSH_INSN1(ret, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));       \
+            PUSH_INSN(ret, location, swap);                                                       \
+            PUSH_SEQ(ret, anchor);                                                                \
+            if (owned_hash) {                                                                     \
+                PUSH_SEND(ret, location, id_core_hash_merge_bang_ptr, INT2FIX(stack_length + 1)); \
+            }                                                                                     \
+            else {                                                                                \
+                PUSH_SEND(ret, location, id_core_hash_merge_ptr, INT2FIX(stack_length + 1));      \
+                owned_hash = true;                                                                \
+            }                                                                                     \
+        }                                                                                         \
+        INIT_ANCHOR(anchor);                                                                      \
+        stack_length = 0;                                                                         \
     }
 
     for (size_t index = 0; index < elements->size; index++) {
@@ -1538,7 +1545,9 @@ pm_compile_hash_elements(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
                 size_t count = 1;
                 while (index + count < elements->size && PM_NODE_FLAG_P(elements->nodes[index + count], PM_NODE_FLAG_STATIC_LITERAL)) count++;
 
-                if ((first_chunk && stack_length == 0) || count >= min_tmp_hash_length) {
+                bool first_element = first_chunk && stack_length == 0;
+
+                if (first_element || count >= min_tmp_hash_length) {
                     // The subsequence of elements in this hash is long enough
                     // to merit its own hash.
                     VALUE ary = rb_ary_hidden_new(count);
@@ -1564,7 +1573,14 @@ pm_compile_hash_elements(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
                     // Emit optimized code.
                     FLUSH_CHUNK;
                     if (first_chunk) {
-                        PUSH_INSN1(ret, location, duphash, hash);
+                        if (count == elements->size) {
+                            // A fully literal hash.
+                            PUSH_INSN1(ret, location, duphash, hash);
+                        }
+                        else {
+                            // Partial hash that will be merged with a newly built one, no need to dup
+                            PUSH_INSN1(ret, location, putobject, rb_obj_reveal(hash, rb_cHash));
+                        }
                         first_chunk = false;
                     }
                     else {
@@ -1611,61 +1627,60 @@ pm_compile_hash_elements(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
             bool last_element = index == elements->size - 1;
             bool only_element = first_element && last_element;
 
-            if (empty_hash) {
-                if (only_element && argument) {
-                    // **{} appears at the only keyword argument in method call,
-                    // so it won't be modified.
-                    //
-                    // This is only done for method calls and not for literal
-                    // hashes, because literal hashes should always result in a
-                    // new hash.
-                    PUSH_INSN(ret, location, putnil);
-                }
-                else if (first_element) {
-                    // **{} appears as the first keyword argument, so it may be
-                    // modified. We need to create a fresh hash object.
-                    PUSH_INSN1(ret, location, newhash, INT2FIX(0));
-                }
-                // Any empty keyword splats that are not the first can be
-                // ignored since merging an empty hash into the existing hash is
-                // the same as not merging it.
-            }
-            else {
-                if (only_element && argument) {
-                    // ** is only keyword argument in the method call. Use it
-                    // directly. This will be not be flagged as mutable. This is
-                    // only done for method calls and not for literal hashes,
-                    // because literal hashes should always result in a new
-                    // hash.
-                    if (shareability == 0) {
-                        PM_COMPILE_NOT_POPPED(element);
+            if (only_element) {
+                if (argument) {
+                    if (empty_hash) {
+                        // **{} appears at the only keyword argument in method call
+                        // We can substitute it for `**nil`.
+                        PUSH_INSN(ret, location, putnil);
                     }
                     else {
-                        pm_compile_shareable_constant_value(iseq, element, shareability, path, ret, scope_node, false);
+                        // ** is the only element.
+                        // Since we're in a method call, we can use it directly.
+                        // This will be not be flagged as mutable.
+                        if (shareability == 0) {
+                            PM_COMPILE_NOT_POPPED(element);
+                        }
+                        else {
+                            pm_compile_shareable_constant_value(iseq, element, shareability, path, ret, scope_node, false);
+                        }
                     }
                 }
                 else {
-                    // There is more than one keyword argument, or this is not a
-                    // method call. In that case, we need to add an empty hash
-                    // (if first keyword), or merge the hash to the accumulated
-                    // hash (if not the first keyword).
+                    // {**something}
+                    // We can simply call `core_hash_coerce(something)` to ensure it is coerced
+                    // into a mutable Hash.
                     PUSH_INSN1(ret, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
-
-                    if (first_element) {
-                        PUSH_INSN1(ret, location, newhash, INT2FIX(0));
-                    }
-                    else {
-                        PUSH_INSN(ret, location, swap);
-                    }
-
                     if (shareability == 0) {
                         PM_COMPILE_NOT_POPPED(element);
                     }
                     else {
                         pm_compile_shareable_constant_value(iseq, element, shareability, path, ret, scope_node, false);
                     }
+                    PUSH_SEND(ret, location, id_core_hash_coerce, INT2FIX(1));
+                }
+            }
+            else {
+                if (!first_element) {
+                    PUSH_INSN1(ret, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+                    PUSH_INSN(ret, location, swap);
+                }
 
-                    PUSH_SEND(ret, location, id_core_hash_merge_kwd, INT2FIX(2));
+                if (shareability == 0) {
+                    PM_COMPILE_NOT_POPPED(element);
+                }
+                else {
+                    pm_compile_shareable_constant_value(iseq, element, shareability, path, ret, scope_node, false);
+                }
+
+                if (!first_element) {
+                    if (owned_hash) {
+                        PUSH_SEND(ret, location, id_core_hash_merge_bang_kwd, INT2FIX(2));
+                    }
+                    else {
+                        PUSH_SEND(ret, location, id_core_hash_merge_kwd, INT2FIX(2));
+                        owned_hash = true;
+                    }
                 }
             }
 
@@ -1774,6 +1789,11 @@ pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *b
                             rb_hash_aset(stored_indices, keyword, ULONG2NUM(element_index));
                             rb_ary_store(keyword_indices, (long) element_index, Qtrue);
                             size++;
+                        }
+
+                        if (size > VM_CALL_KW_LEN_MAX) {
+                            COMPILE_ERROR(iseq, node_location->line, "too many keyword arguments (%d, maximum is %d)",
+                                          (int) size, (int) VM_CALL_KW_LEN_MAX);
                         }
 
                         *kw_arg = rb_xmalloc_mul_add(size, sizeof(VALUE), sizeof(struct rb_callinfo_kwarg));
@@ -3529,26 +3549,8 @@ pm_compile_builtin_attr(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_a
         }
 
         VALUE symbol = pm_static_literal_value(iseq, argument, scope_node);
-        VALUE string = rb_sym2str(symbol);
-
-        if (strcmp(RSTRING_PTR(string), "leaf") == 0) {
-            ISEQ_BODY(iseq)->builtin_attrs |= BUILTIN_ATTR_LEAF;
-        }
-        else if (strcmp(RSTRING_PTR(string), "inline_block") == 0) {
-            ISEQ_BODY(iseq)->builtin_attrs |= BUILTIN_ATTR_INLINE_BLOCK;
-        }
-        else if (strcmp(RSTRING_PTR(string), "use_block") == 0) {
-            iseq_set_use_block(iseq);
-        }
-        else if (strcmp(RSTRING_PTR(string), "c_trace") == 0) {
-            // Let the iseq act like a C method in backtraces
-            ISEQ_BODY(iseq)->builtin_attrs |= BUILTIN_ATTR_C_TRACE;
-        }
-        else if (strcmp(RSTRING_PTR(string), "without_interrupts") == 0) {
-            ISEQ_BODY(iseq)->builtin_attrs |= BUILTIN_ATTR_WITHOUT_INTERRUPTS;
-        }
-        else {
-            COMPILE_ERROR(iseq, node_location->line, "unknown argument to attr!: %s", RSTRING_PTR(string));
+        if (compile_builtin_attr_symbol(iseq, symbol) != COMPILE_OK) {
+            COMPILE_ERROR(iseq, node_location->line, "unknown argument to attr!: %" PRIsVALUE, symbol);
             return COMPILE_NG;
         }
     }
@@ -3802,7 +3804,7 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
                 .end_pos = { .lineno = end_location.line, .column = end_location.column }
             };
 
-            branches = decl_branch_base(iseq, PTR2NUM(call_node), &code_location, "&.");
+            branches = decl_branch_base(iseq, (int) call_node->base.node_id, &code_location, "&.");
         }
 
         PUSH_INSN(ret, location, dup);
@@ -3887,6 +3889,8 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
             ELEM_INSERT_NEXT(opt_new_prelude, &new_insn_body(iseq, location.line, location.node_id, BIN(putnil), 0)->link);
         }
 
+        rb_callinfo_kwarg_retain(kw_arg);
+
         // Jump unless the receiver uses the "basic" implementation of "new"
         VALUE ci;
         if (flags & VM_CALL_FORWARDING) {
@@ -3909,6 +3913,8 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
 
         PUSH_LABEL(ret, not_basic_new_finish);
         PUSH_INSN(ret, location, pop);
+
+        rb_callinfo_kwarg_release(kw_arg);
     }
     else {
         PUSH_SEND_R(ret, location, method_id, INT2FIX(orig_argc), block_iseq, INT2FIX(flags), kw_arg);
@@ -6597,6 +6603,11 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
     //                                                   ^^^^^^^^
     // Keywords create an internal variable on the parse tree
     if (keywords_list && keywords_list->size) {
+        if (keywords_list->size > VM_CALL_KW_LEN_MAX) {
+            COMPILE_ERROR(iseq, node_location->line, "too many keyword parameters (%d, maximum is %d)",
+                          (int) keywords_list->size, (int) VM_CALL_KW_LEN_MAX);
+        }
+
         keyword = ZALLOC_N(struct rb_iseq_param_keyword, 1);
         keyword->num = (int) keywords_list->size;
 
@@ -7496,7 +7507,7 @@ pm_compile_call_node(rb_iseq_t *iseq, const pm_call_node_t *node, LINK_ANCHOR *c
         PUSH_INSN(ret, location, putself);
     }
     else {
-        if (method_id == idCall && PM_NODE_TYPE_P(node->receiver, PM_LOCAL_VARIABLE_READ_NODE)) {
+        if ((method_id == idCall || method_id == idAREF || method_id == idYield || method_id == idEqq) && PM_NODE_TYPE_P(node->receiver, PM_LOCAL_VARIABLE_READ_NODE)) {
             const pm_local_variable_read_node_t *read_node_cast = (const pm_local_variable_read_node_t *) node->receiver;
             uint32_t node_id = node->receiver->node_id;
             int idx, level;
@@ -7644,7 +7655,7 @@ pm_compile_case_node(rb_iseq_t *iseq, const pm_case_node_t *cast, const pm_node_
 
         if (PM_BRANCH_COVERAGE_P(iseq)) {
             case_location = pm_code_location(scope_node, (const pm_node_t *) cast);
-            branches = decl_branch_base(iseq, PTR2NUM(cast), &case_location, "case");
+            branches = decl_branch_base(iseq, (int) cast->base.node_id, &case_location, "case");
         }
 
         // Loop through each clauses in the case node and compile each of
@@ -7731,7 +7742,7 @@ pm_compile_case_node(rb_iseq_t *iseq, const pm_case_node_t *cast, const pm_node_
 
         if (PM_BRANCH_COVERAGE_P(iseq)) {
             case_location = pm_code_location(scope_node, (const pm_node_t *) cast);
-            branches = decl_branch_base(iseq, PTR2NUM(cast), &case_location, "case");
+            branches = decl_branch_base(iseq, (int) cast->base.node_id, &case_location, "case");
         }
 
         // This is the label where everything will fall into if none of the
@@ -7903,7 +7914,7 @@ pm_compile_case_match_node(rb_iseq_t *iseq, const pm_case_match_node_t *node, co
 
     if (PM_BRANCH_COVERAGE_P(iseq)) {
         case_location = pm_code_location(scope_node, (const pm_node_t *) node);
-        branches = decl_branch_base(iseq, PTR2NUM(node), &case_location, "case");
+        branches = decl_branch_base(iseq, (int) node->base.node_id, &case_location, "case");
     }
 
     // If there is only one pattern, then the behavior changes a bit. It
@@ -10647,564 +10658,6 @@ pm_parse_result_free(pm_parse_result_t *result)
     pm_options_free(result->options);
 }
 
-/** An error that is going to be formatted into the output. */
-typedef struct {
-    /** A pointer to the diagnostic that was generated during parsing. */
-    const pm_diagnostic_t *error;
-
-    /** The start line of the diagnostic message. */
-    int32_t line;
-
-    /** The column start of the diagnostic message. */
-    uint32_t column_start;
-
-    /** The column end of the diagnostic message. */
-    uint32_t column_end;
-} pm_parse_error_t;
-
-/** The format that will be used to format the errors into the output. */
-typedef struct {
-    /** The prefix that will be used for line numbers. */
-    const char *number_prefix;
-
-    /** The prefix that will be used for blank lines. */
-    const char *blank_prefix;
-
-    /** The divider that will be used between sections of source code. */
-    const char *divider;
-
-    /** The length of the blank prefix. */
-    size_t blank_prefix_length;
-
-    /** The length of the divider. */
-    size_t divider_length;
-} pm_parse_error_format_t;
-
-#define PM_COLOR_BOLD "\033[1m"
-#define PM_COLOR_GRAY "\033[2m"
-#define PM_COLOR_RED "\033[1;31m"
-#define PM_COLOR_RESET "\033[m"
-#define PM_ERROR_TRUNCATE 30
-
-/** Context struct for collecting errors via callback. */
-typedef struct {
-    pm_parse_error_t *errors;
-    size_t count;
-    size_t capacity;
-    const pm_line_offset_list_t *line_offsets;
-    int32_t start_line;
-} pm_error_collect_t;
-
-static void
-pm_error_collect_callback(const pm_diagnostic_t *diagnostic, void *data)
-{
-    pm_error_collect_t *ctx = (pm_error_collect_t *) data;
-    pm_location_t loc = pm_diagnostic_location(diagnostic);
-
-    pm_line_column_t start = pm_line_offset_list_line_column(ctx->line_offsets, loc.start, ctx->start_line);
-    pm_line_column_t end = pm_line_offset_list_line_column(ctx->line_offsets, loc.start + loc.length, ctx->start_line);
-
-    uint32_t column_end;
-    if (start.line == end.line) {
-        column_end = end.column;
-    } else {
-        column_end = (uint32_t) (ctx->line_offsets->offsets[start.line - ctx->start_line + 1] - ctx->line_offsets->offsets[start.line - ctx->start_line] - 1);
-    }
-
-    // Ensure we have at least one column of error.
-    if (start.column == column_end) column_end++;
-
-    // Insert into sorted position (insertion sort).
-    size_t index = 0;
-    while (
-        (index < ctx->count) &&
-        (
-            (ctx->errors[index].line < start.line) ||
-            ((ctx->errors[index].line == start.line) && (ctx->errors[index].column_start < start.column))
-        )
-    ) index++;
-
-    if (index < ctx->count) {
-        memmove(&ctx->errors[index + 1], &ctx->errors[index], sizeof(pm_parse_error_t) * (ctx->count - index));
-    }
-
-    ctx->errors[index] = (pm_parse_error_t) {
-        .error = diagnostic,
-        .line = start.line,
-        .column_start = start.column,
-        .column_end = column_end
-    };
-    ctx->count++;
-}
-
-static inline pm_parse_error_t *
-pm_parse_errors_format_sort(const pm_parser_t *parser, size_t error_count, const pm_line_offset_list_t *line_offsets) {
-    pm_parse_error_t *errors = xcalloc(error_count, sizeof(pm_parse_error_t));
-    if (errors == NULL) return NULL;
-
-    pm_error_collect_t ctx = {
-        .errors = errors,
-        .count = 0,
-        .capacity = error_count,
-        .line_offsets = line_offsets,
-        .start_line = pm_parser_start_line(parser)
-    };
-
-    pm_parser_errors_each(parser, pm_error_collect_callback, &ctx);
-
-    return errors;
-}
-
-static inline void
-pm_parse_errors_format_line(const pm_parser_t *parser, const pm_line_offset_list_t *line_offsets, const char *number_prefix, int32_t line, uint32_t column_start, uint32_t column_end, VALUE buffer) {
-    int32_t line_delta = line - pm_parser_start_line(parser);
-    assert(line_delta >= 0);
-
-    size_t index = (size_t) line_delta;
-    assert(index < line_offsets->size);
-
-    const uint8_t *start = &pm_parser_start(parser)[line_offsets->offsets[index]];
-    const uint8_t *end;
-
-    if (index >= line_offsets->size - 1) {
-        end = pm_parser_end(parser);
-    } else {
-        end = &pm_parser_start(parser)[line_offsets->offsets[index + 1]];
-    }
-
-    rb_str_catf(buffer, number_prefix, line);
-
-    // Here we determine if we should truncate the end of the line.
-    bool truncate_end = false;
-    if ((column_end != 0) && ((end - (start + column_end)) >= PM_ERROR_TRUNCATE)) {
-        const uint8_t *end_candidate = start + column_end + PM_ERROR_TRUNCATE;
-
-        for (const uint8_t *ptr = start; ptr < end_candidate;) {
-            size_t char_width = pm_parser_encoding_char_width(parser, ptr, pm_parser_end(parser) - ptr);
-
-            // If we failed to decode a character, then just bail out and
-            // truncate at the fixed width.
-            if (char_width == 0) break;
-
-            // If this next character would go past the end candidate,
-            // then we need to truncate before it.
-            if (ptr + char_width > end_candidate) {
-                end_candidate = ptr;
-                break;
-            }
-
-            ptr += char_width;
-        }
-
-        end = end_candidate;
-        truncate_end = true;
-    }
-
-    // Here we determine if we should truncate the start of the line.
-    if (column_start >= PM_ERROR_TRUNCATE) {
-        rb_str_cat(buffer, "... ", 4);
-        start += column_start;
-    }
-
-    rb_str_cat(buffer, (const char *) start, (size_t) (end - start));
-
-    if (truncate_end) {
-        rb_str_cat(buffer, " ...\n", 5);
-    } else if (end == pm_parser_end(parser) && end[-1] != '\n') {
-        rb_str_cat(buffer, "\n", 1);
-    }
-}
-
-/**
- * Format a pre-sorted array of errors into the given buffer.
- */
-static void
-pm_parse_errors_format_with(const pm_parser_t *parser, pm_parse_error_t *errors, size_t error_count, VALUE buffer, int highlight, bool inline_messages) {
-    assert(error_count != 0);
-
-    const int32_t start_line = pm_parser_start_line(parser);
-    const pm_line_offset_list_t *line_offsets = pm_parser_line_offsets(parser);
-
-    // Now we're going to determine how we're going to format line numbers and
-    // blank lines based on the maximum number of digits in the line numbers
-    // that are going to be displaid.
-    pm_parse_error_format_t error_format;
-    int32_t first_line_number = errors[0].line;
-    int32_t last_line_number = errors[error_count - 1].line;
-
-    // If we have a maximum line number that is negative, then we're going to
-    // use the absolute value for comparison but multiple by 10 to additionally
-    // have a column for the negative sign.
-    if (first_line_number < 0) first_line_number = (-first_line_number) * 10;
-    if (last_line_number < 0) last_line_number = (-last_line_number) * 10;
-    int32_t max_line_number = first_line_number > last_line_number ? first_line_number : last_line_number;
-
-    if (max_line_number < 10) {
-        if (highlight > 0) {
-            error_format = (pm_parse_error_format_t) {
-                .number_prefix = PM_COLOR_GRAY "%1" PRIi32 " | " PM_COLOR_RESET,
-                .blank_prefix = PM_COLOR_GRAY "  | " PM_COLOR_RESET,
-                .divider = PM_COLOR_GRAY "  ~~~~~" PM_COLOR_RESET "\n"
-            };
-        } else {
-            error_format = (pm_parse_error_format_t) {
-                .number_prefix = "%1" PRIi32 " | ",
-                .blank_prefix = "  | ",
-                .divider = "  ~~~~~\n"
-            };
-        }
-    } else if (max_line_number < 100) {
-        if (highlight > 0) {
-            error_format = (pm_parse_error_format_t) {
-                .number_prefix = PM_COLOR_GRAY "%2" PRIi32 " | " PM_COLOR_RESET,
-                .blank_prefix = PM_COLOR_GRAY "   | " PM_COLOR_RESET,
-                .divider = PM_COLOR_GRAY "  ~~~~~~" PM_COLOR_RESET "\n"
-            };
-        } else {
-            error_format = (pm_parse_error_format_t) {
-                .number_prefix = "%2" PRIi32 " | ",
-                .blank_prefix = "   | ",
-                .divider = "  ~~~~~~\n"
-            };
-        }
-    } else if (max_line_number < 1000) {
-        if (highlight > 0) {
-            error_format = (pm_parse_error_format_t) {
-                .number_prefix = PM_COLOR_GRAY "%3" PRIi32 " | " PM_COLOR_RESET,
-                .blank_prefix = PM_COLOR_GRAY "    | " PM_COLOR_RESET,
-                .divider = PM_COLOR_GRAY "  ~~~~~~~" PM_COLOR_RESET "\n"
-            };
-        } else {
-            error_format = (pm_parse_error_format_t) {
-                .number_prefix = "%3" PRIi32 " | ",
-                .blank_prefix = "    | ",
-                .divider = "  ~~~~~~~\n"
-            };
-        }
-    } else if (max_line_number < 10000) {
-        if (highlight > 0) {
-            error_format = (pm_parse_error_format_t) {
-                .number_prefix = PM_COLOR_GRAY "%4" PRIi32 " | " PM_COLOR_RESET,
-                .blank_prefix = PM_COLOR_GRAY "     | " PM_COLOR_RESET,
-                .divider = PM_COLOR_GRAY "  ~~~~~~~~" PM_COLOR_RESET "\n"
-            };
-        } else {
-            error_format = (pm_parse_error_format_t) {
-                .number_prefix = "%4" PRIi32 " | ",
-                .blank_prefix = "     | ",
-                .divider = "  ~~~~~~~~\n"
-            };
-        }
-    } else {
-        if (highlight > 0) {
-            error_format = (pm_parse_error_format_t) {
-                .number_prefix = PM_COLOR_GRAY "%5" PRIi32 " | " PM_COLOR_RESET,
-                .blank_prefix = PM_COLOR_GRAY "      | " PM_COLOR_RESET,
-                .divider = PM_COLOR_GRAY "  ~~~~~~~~" PM_COLOR_RESET "\n"
-            };
-        } else {
-            error_format = (pm_parse_error_format_t) {
-                .number_prefix = "%5" PRIi32 " | ",
-                .blank_prefix = "      | ",
-                .divider = "  ~~~~~~~~\n"
-            };
-        }
-    }
-
-    error_format.blank_prefix_length = strlen(error_format.blank_prefix);
-    error_format.divider_length = strlen(error_format.divider);
-
-    // Now we're going to iterate through every error in our error list and
-    // display it. While we're iterating, we will display some padding lines of
-    // the source before the error to give some context. We'll be careful not to
-    // display the same line twice in case the errors are close enough in the
-    // source.
-    int32_t last_line = pm_parser_start_line(parser) - 1;
-    uint32_t last_column_start = 0;
-
-    for (size_t index = 0; index < error_count; index++) {
-        pm_parse_error_t *error = &errors[index];
-
-        // Here we determine how many lines of padding of the source to display,
-        // based on the difference from the last line that was displaid.
-        if (error->line - last_line > 1) {
-            if (error->line - last_line > 2) {
-                if ((index != 0) && (error->line - last_line > 3)) {
-                    rb_str_cat(buffer, error_format.divider, error_format.divider_length);
-                }
-
-                rb_str_cat(buffer, "  ", 2);
-                pm_parse_errors_format_line(parser, line_offsets, error_format.number_prefix, error->line - 2, 0, 0, buffer);
-            }
-
-            rb_str_cat(buffer, "  ", 2);
-            pm_parse_errors_format_line(parser, line_offsets, error_format.number_prefix, error->line - 1, 0, 0, buffer);
-        }
-
-        // If this is the first error or we're on a new line, then we'll display
-        // the line that has the error in it.
-        if ((index == 0) || (error->line != last_line)) {
-            if (highlight > 1) {
-                rb_str_cat_cstr(buffer, PM_COLOR_RED "> " PM_COLOR_RESET);
-            } else if (highlight > 0) {
-                rb_str_cat_cstr(buffer, PM_COLOR_BOLD "> " PM_COLOR_RESET);
-            } else {
-                rb_str_cat_cstr(buffer, "> ");
-            }
-
-            last_column_start = error->column_start;
-
-            // Find the maximum column end of all the errors on this line.
-            uint32_t column_end = error->column_end;
-            for (size_t next_index = index + 1; next_index < error_count; next_index++) {
-                if (errors[next_index].line != error->line) break;
-                if (errors[next_index].column_end > column_end) column_end = errors[next_index].column_end;
-            }
-
-            pm_parse_errors_format_line(parser, line_offsets, error_format.number_prefix, error->line, error->column_start, column_end, buffer);
-        }
-
-        const uint8_t *start = &pm_parser_start(parser)[line_offsets->offsets[error->line - start_line]];
-        if (start == pm_parser_end(parser)) rb_str_cat(buffer, "\n", 1);
-
-        // Now we'll display the actual error message. We'll do this by first
-        // putting the prefix to the line, then a bunch of blank spaces
-        // depending on the column, then as many carets as we need to display
-        // the width of the error, then the error message itself.
-        //
-        // Note that this doesn't take into account the width of the actual
-        // character when displaid in the terminal. For some east-asian
-        // languages or emoji, this means it can be thrown off pretty badly. We
-        // will need to solve this eventually.
-        rb_str_cat(buffer, "  ", 2);
-        rb_str_cat(buffer, error_format.blank_prefix, error_format.blank_prefix_length);
-
-        size_t column = 0;
-        if (last_column_start >= PM_ERROR_TRUNCATE) {
-            rb_str_cat(buffer, "    ", 4);
-            column = last_column_start;
-        }
-
-        while (column < error->column_start) {
-            rb_str_cat(buffer, " ", 1);
-
-            size_t char_width = pm_parser_encoding_char_width(parser, start + column, pm_parser_end(parser) - (start + column));
-            column += (char_width == 0 ? 1 : char_width);
-        }
-
-        if (highlight > 1) rb_str_cat_cstr(buffer, PM_COLOR_RED);
-        else if (highlight > 0) rb_str_cat_cstr(buffer, PM_COLOR_BOLD);
-        rb_str_cat(buffer, "^", 1);
-
-        size_t char_width = pm_parser_encoding_char_width(parser, start + column, pm_parser_end(parser) - (start + column));
-        column += (char_width == 0 ? 1 : char_width);
-
-        while (column < error->column_end) {
-            rb_str_cat(buffer, "~", 1);
-
-            size_t char_width = pm_parser_encoding_char_width(parser, start + column, pm_parser_end(parser) - (start + column));
-            column += (char_width == 0 ? 1 : char_width);
-        }
-
-        if (highlight > 0) rb_str_cat_cstr(buffer, PM_COLOR_RESET);
-
-        if (inline_messages) {
-            rb_str_cat(buffer, " ", 1);
-            assert(error->error != NULL);
-
-            const char *message = pm_diagnostic_message(error->error);
-            rb_str_cat(buffer, message, strlen(message));
-        }
-
-        rb_str_cat(buffer, "\n", 1);
-
-        // Here we determine how many lines of padding to display after the
-        // error, depending on where the next error is in source.
-        last_line = error->line;
-        int32_t next_line;
-
-        if (index == error_count - 1) {
-            next_line = (((int32_t) line_offsets->size) + pm_parser_start_line(parser));
-
-            // If the file ends with a newline, subtract one from our "next_line"
-            // so that we don't output an extra line at the end of the file
-            if ((pm_parser_start(parser) + line_offsets->offsets[line_offsets->size - 1]) == pm_parser_end(parser)) {
-                next_line--;
-            }
-        }
-        else {
-            next_line = errors[index + 1].line;
-        }
-
-        if (next_line - last_line > 1) {
-            rb_str_cat(buffer, "  ", 2);
-            pm_parse_errors_format_line(parser, line_offsets, error_format.number_prefix, ++last_line, 0, 0, buffer);
-        }
-
-        if (next_line - last_line > 1) {
-            rb_str_cat(buffer, "  ", 2);
-            pm_parse_errors_format_line(parser, line_offsets, error_format.number_prefix, ++last_line, 0, 0, buffer);
-        }
-    }
-
-}
-
-/**
- * Format the errors on the parser into the given buffer.
- */
-static void
-pm_parse_errors_format(const pm_parser_t *parser, size_t error_count, VALUE buffer, int highlight, bool inline_messages) {
-    const pm_line_offset_list_t *line_offsets = pm_parser_line_offsets(parser);
-
-    pm_parse_error_t *errors = pm_parse_errors_format_sort(parser, error_count, line_offsets);
-    if (errors == NULL) return;
-
-    pm_parse_errors_format_with(parser, errors, error_count, buffer, highlight, inline_messages);
-    SIZED_FREE_N(errors, error_count);
-}
-
-#undef PM_ERROR_TRUNCATE
-#undef PM_COLOR_GRAY
-#undef PM_COLOR_RED
-#undef PM_COLOR_RESET
-
-/**
- * Check if the given source slice is valid UTF-8. The location represents the
- * location of the error, but the slice of the source will include the content
- * of all of the lines that the error touches, so we need to check those parts
- * as well.
- */
-static bool
-pm_parse_process_error_utf8_p(const pm_parser_t *parser, pm_location_t location)
-{
-    const size_t start_line = pm_line_offset_list_line_column(pm_parser_line_offsets(parser), location.start, 1).line;
-    const size_t end_line = pm_line_offset_list_line_column(pm_parser_line_offsets(parser), location.start + location.length, 1).line;
-
-    const pm_line_offset_list_t *line_offsets = pm_parser_line_offsets(parser);
-    const uint8_t *start = pm_parser_start(parser) + line_offsets->offsets[start_line - 1];
-    const uint8_t *end = ((end_line == line_offsets->size) ? pm_parser_end(parser) : (pm_parser_start(parser) + line_offsets->offsets[end_line]));
-
-    rb_encoding *utf8 = rb_utf8_encoding();
-    while (start < end) {
-        int width = rb_enc_precise_mbclen((const char *) start, (const char *) end, utf8);
-        if (!MBCLEN_CHARFOUND_P(width)) return false;
-        start += MBCLEN_CHARFOUND_LEN(width);
-    }
-
-    return true;
-}
-
-/** Context for the error processing callback used in pm_parse_process_error. */
-typedef struct {
-    const pm_parse_result_t *result;
-    const pm_parser_t *parser;
-    const pm_string_t *filepath;
-    VALUE buffer;
-    int highlight;
-    bool valid_utf8;
-    bool found_argument_error;
-    bool found_load_error;
-    VALUE early_return;
-    const pm_diagnostic_t *first_error;
-    size_t error_count;
-} pm_process_error_ctx_t;
-
-static void
-pm_process_error_check_callback(const pm_diagnostic_t *diagnostic, void *data)
-{
-    pm_process_error_ctx_t *ctx = (pm_process_error_ctx_t *) data;
-    pm_location_t loc = pm_diagnostic_location(diagnostic);
-
-    if (ctx->first_error == NULL) ctx->first_error = diagnostic;
-    ctx->error_count++;
-
-    switch (pm_diagnostic_error_level(diagnostic)) {
-      case PM_ERROR_LEVEL_SYNTAX:
-        if (ctx->valid_utf8 && !pm_parse_process_error_utf8_p(ctx->parser, loc)) {
-            ctx->valid_utf8 = false;
-        }
-        break;
-      case PM_ERROR_LEVEL_ARGUMENT: {
-        if (ctx->found_argument_error || ctx->found_load_error) break;
-        ctx->found_argument_error = true;
-
-        int32_t line_number = (int32_t) pm_location_line_number(ctx->parser, &loc);
-
-        rb_str_catf(
-            ctx->buffer,
-            "%.*s:%" PRIi32 ": %s",
-            (int) pm_string_length(ctx->filepath),
-            pm_string_source(ctx->filepath),
-            line_number,
-            pm_diagnostic_message(diagnostic)
-        );
-
-        if (pm_parse_process_error_utf8_p(ctx->parser, loc)) {
-            rb_str_cat(ctx->buffer, "\n", 1);
-            // Format just this one error. We construct a single-element sorted
-            // array manually and call the format function with count=1.
-            const pm_line_offset_list_t *line_offsets = pm_parser_line_offsets(ctx->parser);
-            int32_t start_line = pm_parser_start_line(ctx->parser);
-            pm_line_column_t start_lc = pm_line_offset_list_line_column(line_offsets, loc.start, start_line);
-            pm_line_column_t end_lc = pm_line_offset_list_line_column(line_offsets, loc.start + loc.length, start_line);
-
-            uint32_t col_end;
-            if (start_lc.line == end_lc.line) {
-                col_end = end_lc.column;
-            } else {
-                col_end = (uint32_t) (line_offsets->offsets[start_lc.line - start_line + 1] - line_offsets->offsets[start_lc.line - start_line] - 1);
-            }
-            if (start_lc.column == col_end) col_end++;
-
-            pm_parse_error_t single_error = {
-                .error = diagnostic,
-                .line = start_lc.line,
-                .column_start = start_lc.column,
-                .column_end = col_end
-            };
-            pm_parse_errors_format_with(ctx->parser, &single_error, 1, ctx->buffer, ctx->highlight, false);
-        }
-
-        ctx->early_return = rb_exc_new_str(rb_eArgError, ctx->buffer);
-        break;
-      }
-      case PM_ERROR_LEVEL_LOAD: {
-        if (ctx->found_argument_error || ctx->found_load_error) break;
-        ctx->found_load_error = true;
-
-        VALUE message = rb_enc_str_new_cstr(pm_diagnostic_message(diagnostic), rb_locale_encoding());
-        VALUE value = rb_exc_new3(rb_eLoadError, message);
-        rb_ivar_set(value, rb_intern_const("@path"), Qnil);
-        ctx->early_return = value;
-        break;
-      }
-    }
-}
-
-/** Callback for formatting non-UTF8 errors. */
-typedef struct {
-    const pm_parser_t *parser;
-    const pm_string_t *filepath;
-    VALUE buffer;
-    bool first;
-} pm_error_simple_format_ctx_t;
-
-static void
-pm_error_simple_format_callback(const pm_diagnostic_t *diagnostic, void *data)
-{
-    pm_error_simple_format_ctx_t *ctx = (pm_error_simple_format_ctx_t *) data;
-    pm_location_t loc = pm_diagnostic_location(diagnostic);
-
-    if (!ctx->first) rb_str_cat(ctx->buffer, "\n", 1);
-    ctx->first = false;
-
-    rb_str_catf(ctx->buffer, "%.*s:%" PRIi32 ": %s",
-        (int) pm_string_length(ctx->filepath),
-        pm_string_source(ctx->filepath),
-        (int32_t) pm_location_line_number(ctx->parser, &loc),
-        pm_diagnostic_message(diagnostic));
-}
-
 /**
  * Generate an error object from the given parser that contains as much
  * information as possible about the errors that were encountered.
@@ -11213,70 +10666,49 @@ static VALUE
 pm_parse_process_error(const pm_parse_result_t *result)
 {
     const pm_parser_t *parser = result->parser;
-    size_t error_count = pm_parser_errors_size(parser);
+    pm_buffer_t *buffer = pm_buffer_new();
+    if (buffer == NULL) {
+        return rb_exc_new_cstr(rb_eNoMemError, "failed to allocate memory");
+    }
 
-    VALUE buffer = rb_str_buf_new(0);
-    const pm_string_t *filepath = pm_parser_filepath(parser);
-
-    int highlight = rb_stderr_tty_p();
-    if (highlight) {
+    pm_errors_format_type_t format_type;
+    if (rb_stderr_tty_p()) {
         const char *no_color = getenv("NO_COLOR");
-        highlight = (no_color == NULL || no_color[0] == '\0') ? 2 : 1;
+        if (no_color == NULL || no_color[0] == '\0') {
+            format_type = PM_ERRORS_FORMAT_COLOR;
+        } else {
+            format_type = PM_ERRORS_FORMAT_STYLE;
+        }
+    } else {
+        format_type = PM_ERRORS_FORMAT_PLAIN;
     }
 
-    // First pass: check for argument/load errors and UTF-8 validity.
-    pm_process_error_ctx_t ctx = {
-        .result = result,
-        .parser = parser,
-        .filepath = filepath,
-        .buffer = buffer,
-        .highlight = highlight,
-        .valid_utf8 = true,
-        .found_argument_error = false,
-        .found_load_error = false,
-        .early_return = Qundef,
-        .first_error = NULL,
-        .error_count = 0
-    };
+    pm_error_level_t error_level = pm_errors_format(parser, buffer, format_type);
 
-    pm_parser_errors_each(parser, pm_process_error_check_callback, &ctx);
+    rb_encoding *message_encoding = (error_level == PM_ERROR_LEVEL_LOAD) ? rb_locale_encoding() : rb_enc_find(pm_parser_encoding_name(parser));
+    VALUE message = rb_enc_str_new(pm_buffer_value(buffer), (long) pm_buffer_length(buffer), message_encoding);
+    pm_buffer_free(buffer);
 
-    // If we found an argument or load error, return it immediately.
-    if (ctx.early_return != Qundef) {
-        return ctx.early_return;
+    VALUE error = Qnil;
+    switch (error_level) {
+        case PM_ERROR_LEVEL_SYNTAX: {
+            error = rb_exc_new_str(rb_eSyntaxError, message);
+
+            const pm_string_t *filepath = pm_parser_filepath(result->parser);
+            rb_encoding *filepath_encoding = result->node.filepath_encoding != NULL ? result->node.filepath_encoding : rb_utf8_encoding();
+
+            VALUE path = rb_enc_str_new((const char *) pm_string_source(filepath), pm_string_length(filepath), filepath_encoding);
+            rb_ivar_set(error, rb_intern_const("@path"), path);
+            break;
+        }
+        case PM_ERROR_LEVEL_ARGUMENT:
+            error = rb_exc_new_str(rb_eArgError, message);
+            break;
+        case PM_ERROR_LEVEL_LOAD:
+            error = rb_exc_new_str(rb_eLoadError, message);
+            rb_ivar_set(error, rb_intern_const("@path"), Qnil);
+            break;
     }
-
-    // Format the header line.
-    pm_location_t first_loc = pm_diagnostic_location(ctx.first_error);
-    rb_str_catf(
-        buffer,
-        "%.*s:%" PRIi32 ": syntax error%s found\n",
-        (int) pm_string_length(filepath),
-        pm_string_source(filepath),
-        (int32_t) pm_location_line_number(parser, &first_loc),
-        (error_count > 1) ? "s" : ""
-    );
-
-    if (ctx.valid_utf8) {
-        pm_parse_errors_format(parser, error_count, buffer, highlight, true);
-    }
-    else {
-        pm_error_simple_format_ctx_t simple_ctx = {
-            .parser = parser,
-            .filepath = filepath,
-            .buffer = buffer,
-            .first = true
-        };
-        pm_parser_errors_each(parser, pm_error_simple_format_callback, &simple_ctx);
-    }
-
-    rb_enc_associate(buffer, result->node.encoding);
-    VALUE error = rb_exc_new_str(rb_eSyntaxError, buffer);
-
-    rb_encoding *filepath_encoding = result->node.filepath_encoding != NULL ? result->node.filepath_encoding : rb_utf8_encoding();
-    VALUE path = rb_enc_str_new((const char *) pm_string_source(filepath), pm_string_length(filepath), filepath_encoding);
-
-    rb_ivar_set(error, rb_intern_const("@path"), path);
 
     return error;
 }
@@ -11321,6 +10753,32 @@ pm_warning_emit_callback(const pm_diagnostic_t *diagnostic, void *data) {
  * It returns an error if one should be raised. It is assumed that the parse
  * result object is zeroed out.
  */
+/**
+ * Compute the hash of the source code that was parsed. The data section after
+ * an __END__ marker is not part of the code, so the hash covers the source
+ * only up to the end of the __END__ line, which also matches the range that
+ * parse.y hashes.
+ */
+static uint64_t
+pm_source_hash(const pm_parser_t *parser)
+{
+    const uint8_t *start = pm_parser_start(parser);
+    const uint8_t *end = pm_parser_end(parser);
+    const pm_location_t *data_loc = pm_parser_data_loc(parser);
+
+    if (data_loc->length != 0) {
+        const uint8_t *cursor = start + data_loc->start;
+        while (cursor < end && *cursor != '\n') cursor++;
+        if (cursor < end) cursor++;
+        end = cursor;
+    }
+
+    rb_source_hash_state_t state;
+    rb_source_hash_init(&state);
+    rb_source_hash_update(&state, start, (size_t) (end - start));
+    return rb_source_hash_finalize(&state);
+}
+
 static VALUE
 pm_parse_process(pm_parse_result_t *result, pm_node_t *node, VALUE *script_lines)
 {
@@ -11376,6 +10834,7 @@ pm_parse_process(pm_parse_result_t *result, pm_node_t *node, VALUE *script_lines
     // Now set up the constant pool and intern all of the various constants into
     // their corresponding IDs.
     scope_node->parser = parser;
+    scope_node->source_hash = pm_source_hash(parser);
     scope_node->options = result->options;
     scope_node->line_offsets = pm_parser_line_offsets(parser);
     scope_node->start_line = pm_parser_start_line(parser);
@@ -11544,8 +11003,7 @@ error_generic:
         error = rb_exc_new3(rb_eLoadError, message);
         rb_ivar_set(error, rb_intern_const("@path"), filepath);
     } else {
-        error = rb_syserr_new(err, RSTRING_PTR(filepath));
-        RB_GC_GUARD(filepath);
+        error = rb_syserr_new_str(err, filepath);
     }
 
     return error;
@@ -11635,31 +11093,99 @@ pm_parse_string(pm_parse_result_t *result, VALUE source, VALUE filepath, VALUE *
     return error;
 }
 
-struct rb_stdin_wrapper {
-    VALUE rb_stdin;
-    int eof_seen;
-};
+typedef struct {
+    uint32_t node_id;
+    const pm_node_t *node;
+} pm_node_find_context_t;
 
-static int
-pm_parse_stdin_eof(void *stream)
+static bool
+pm_node_find(const pm_node_t *node, void *data)
 {
-    struct rb_stdin_wrapper * wrapped_stdin = (struct rb_stdin_wrapper *)stream;
-    return wrapped_stdin->eof_seen;
+    pm_node_find_context_t *context = data;
+
+    if (context->node == NULL && node->node_id == context->node_id) {
+        context->node = node;
+        return false;
+    }
+
+    return context->node == NULL;
+}
+
+bool
+pm_node_source_location(VALUE source, VALUE filepath, int start_line,
+                        int node_id, rb_code_location_t *location)
+{
+    pm_parse_result_t result;
+    pm_parse_result_init(&result);
+
+    pm_options_line_set(result.options, start_line);
+    VALUE error = pm_parse_string(&result, source, filepath, NULL);
+
+    if (!NIL_P(error)) {
+        pm_parse_result_free(&result);
+        rb_exc_raise(error);
+    }
+
+    pm_node_find_context_t context = {
+        .node_id = (uint32_t) node_id,
+        .node = NULL
+    };
+    pm_visit_node(result.node.ast_node, pm_node_find, &context);
+
+    bool found = context.node != NULL;
+    if (found) {
+        *location = pm_code_location(&result.node, context.node);
+    }
+
+    RB_GC_GUARD(source);
+    RB_GC_GUARD(filepath);
+
+    pm_parse_result_free(&result);
+    return found;
 }
 
 VALUE rb_io_gets_limit_internal(VALUE io, long limit);
 
 /**
- * An implementation of fgets that is suitable for use with Ruby IO objects.
+ * Report whether the stream has reached EOF. The stream reader uses this to
+ * tell a line that is longer than the read buffer (keep reading) apart from the
+ * final line of input with no trailing newline (stop). We ask the IO directly
+ * rather than inferring EOF from a short read, which is unreliable once we
+ * request fewer bytes than the buffer can hold (see pm_parse_stdin_fgets).
+ */
+static int
+pm_parse_stdin_eof(void *stream)
+{
+    return RTEST(rb_io_eof((VALUE) stream));
+}
+
+/**
+ * The largest number of bytes a single character can occupy in any encoding
+ * that Ruby supports (CESU-8). Ruby's line reader treats a `gets` limit as a
+ * soft limit: to avoid splitting a multi-byte character it may return up to
+ * `MAX_ENC_LEN - 1` more bytes than requested. Reserving `MAX_ENC_LEN` bytes of
+ * headroom therefore leaves room for both that overshoot and the terminating
+ * NUL byte.
+ */
+#define MAX_ENC_LEN 6
+
+/**
+ * An implementation of fgets that is suitable for use with Ruby IO objects. As
+ * required by pm_source_stream_fgets_t, this never writes more than `size`
+ * bytes into `string` (including the terminating NUL byte).
  */
 static char *
 pm_parse_stdin_fgets(char *string, int size, void *stream)
 {
-    RUBY_ASSERT(size > 0);
+    RUBY_ASSERT(size > MAX_ENC_LEN);
 
-    struct rb_stdin_wrapper * wrapped_stdin = (struct rb_stdin_wrapper *)stream;
-
-    VALUE line = rb_io_gets_limit_internal(wrapped_stdin->rb_stdin, size - 1);
+    /*
+     * Request fewer bytes than the buffer can hold. Ruby's line reader may
+     * return more bytes than requested when the limit falls in the middle of a
+     * multi-byte character, and the reserved headroom guarantees the result
+     * still fits.
+     */
+    VALUE line = rb_io_gets_limit_internal((VALUE) stream, size - MAX_ENC_LEN);
     if (NIL_P(line)) {
         return NULL;
     }
@@ -11667,18 +11193,23 @@ pm_parse_stdin_fgets(char *string, int size, void *stream)
     const char *cstr = RSTRING_PTR(line);
     long length = RSTRING_LEN(line);
 
-    memcpy(string, cstr, length);
-    string[length] = '\0';
-
-    // We're reading strings from stdin via gets.  We'll assume that if the
-    // string is smaller than the requested length, and doesn't end with a
-    // newline, that we hit EOF.
-    if (length < (size - 1) && string[length - 1] != '\n') {
-        wrapped_stdin->eof_seen = 1;
+    /*
+     * Defensively clamp the copy. The line reader relaxes the limit to avoid
+     * splitting a multi-byte character, so the returned string can be longer
+     * than requested; we must never write past the caller's buffer. One byte
+     * is reserved for the NUL terminator.
+     */
+    if (length > (long) (size - 1)) {
+        length = (long) (size - 1);
     }
+
+    memcpy(string, cstr, (size_t) length);
+    string[length] = '\0';
 
     return string;
 }
+
+#undef MAX_ENC_LEN
 
 // We need access to this function when we're done parsing stdin.
 void rb_reset_argf_lineno(long n);
@@ -11693,12 +11224,7 @@ pm_parse_stdin(pm_parse_result_t *result)
 {
     pm_options_frozen_string_literal_init(result->options);
 
-    struct rb_stdin_wrapper wrapped_stdin = {
-        rb_stdin,
-        0
-    };
-
-    result->source = pm_source_stream_new((void *) &wrapped_stdin, pm_parse_stdin_fgets, pm_parse_stdin_eof);
+    result->source = pm_source_stream_new((void *) rb_stdin, pm_parse_stdin_fgets, pm_parse_stdin_eof);
     pm_node_t *node = pm_parse_stream(&result->parser, result->arena, result->source, result->options);
 
     // When we're done parsing, we reset $. because we don't want the fact that

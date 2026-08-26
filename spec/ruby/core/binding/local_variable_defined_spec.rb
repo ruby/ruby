@@ -43,4 +43,10 @@ describe 'Binding#local_variable_defined?' do
 
     binding.local_variable_defined?(name).should == true
   end
+
+  it 'raises a TypeError when given non-String/Symbol as the variable name' do
+    -> {
+      binding.local_variable_defined?(1)
+    }.should.raise(TypeError, '1 is not a symbol nor a string')
+  end
 end

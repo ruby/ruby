@@ -16,7 +16,6 @@ use std::thread::ThreadId;
 use abi::RubyUpcalls;
 use binding::RubyBinding;
 use binding::RubyBindingFast;
-use binding::RubyConfiguration;
 use mmtk::vm::slot::SimpleSlot;
 use mmtk::vm::slot::UnimplementedMemorySlice;
 use mmtk::vm::VMBinding;
@@ -71,9 +70,6 @@ pub static BINDING: OnceCell<RubyBinding> = OnceCell::new();
 /// Some data needs to be accessed fast.
 /// We sacrifice safety for speed using unsynchronized global variables.
 pub static mut BINDING_FAST: RubyBindingFast = RubyBindingFast::new();
-
-/// Some data needs to be accessed fast.
-pub static CONFIGURATION: RubyConfiguration = RubyConfiguration::new();
 
 pub fn binding<'b>() -> &'b RubyBinding {
     BINDING

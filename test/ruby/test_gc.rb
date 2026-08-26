@@ -194,8 +194,14 @@ class TestGc < Test::Unit::TestCase
   def test_stat_single
     omit 'stress' if GC.stress
 
-    stat = GC.stat
-    assert_equal stat[:count], GC.stat(:count)
+    # GC.stat and GC.stat(:count) are two separate reads of :count. If a GC
+    # runs between them (e.g. triggered by an allocation on another thread),
+    # :count changes and the two reads disagree. Disable GC so both reads
+    # observe the same :count.
+    EnvUtil.without_gc do
+      stat = GC.stat
+      assert_equal stat[:count], GC.stat(:count)
+    end
     assert_raise(ArgumentError){ GC.stat(:invalid) }
   end
 
@@ -296,6 +302,33 @@ class TestGc < Test::Unit::TestCase
     assert_equal stat[:heap_available_slots], stat_heap_sum[:heap_eden_slots]
     assert_equal stat[:total_allocated_objects], stat_heap_sum[:total_allocated_objects]
     assert_equal stat[:total_freed_objects], stat_heap_sum[:total_freed_objects]
+  rescue Test::Unit::AssertionFailedError
+    # GC.stat and GC.stat_heap are separate reads of the same counters, so
+    # anything allocated between them makes the two disagree.  An accounting
+    # bug disagrees on the retry too.
+    raise if @retried
+    @retried = true
+    retry
+  end
+
+  def test_page_pool_stat_consistency
+    omit 'no page pool' unless GC.stat.key?(:page_pool_total_pages)
+
+    # Freeing arenas back to the OS must keep page_pool_discarded_pages in range.
+    # An underflowed counter wraps to a huge value, which also makes GC.stat
+    # allocate a Bignum and perturb the object counts it reports.
+    assert_separately([], __FILE__, __LINE__, <<~RUBY, timeout: 60)
+      3.times do
+        ary = 200_000.times.map { "x" * 40 }
+        ary.clear
+        GC.start(full_mark: true, immediate_sweep: true)
+        GC.start(full_mark: true, immediate_sweep: true)
+      end
+
+      stat = GC.stat
+      assert_operator stat[:page_pool_discarded_pages], :<=, stat[:page_pool_total_pages]
+      assert_operator stat[:page_pool_arenas], :>=, 0 # arenas is always 0 if doesn't have mmap
+    RUBY
   end
 
   def test_measure_total_time
@@ -580,6 +613,124 @@ class TestGc < Test::Unit::TestCase
     GC::Profiler.disable
   end
 
+  def test_profiler_raw_data_limit
+    assert_separately([], __FILE__, __LINE__, <<~'RUBY', timeout: 30)
+      GC::Profiler.configure(max_records: 2)
+      GC::Profiler.enable
+      GC::Profiler.clear
+
+      3.times { GC.start }
+      records = GC::Profiler.raw_data
+
+      assert_equal 2, records.size
+      assert_operator records[0][:GC_SEQUENCE], :<, records[1][:GC_SEQUENCE]
+      assert_equal records, GC::Profiler.raw_data(limit: 100)
+      assert_equal [records.last], GC::Profiler.raw_data(limit: 1)
+    RUBY
+  end
+
+  def test_profiler_raw_data_since
+    assert_separately([], __FILE__, __LINE__, <<~'RUBY', timeout: 30)
+      GC::Profiler.configure(max_records: 4)
+      GC::Profiler.enable
+      GC::Profiler.clear
+
+      GC.start
+      sequence = GC::Profiler.raw_data.last[:GC_SEQUENCE]
+      2.times { GC.start }
+      records = GC::Profiler.raw_data(since: sequence)
+
+      assert_equal 2, records.size
+      assert_operator records[0][:GC_SEQUENCE], :>, sequence
+      assert_operator records[0][:GC_SEQUENCE], :<, records[1][:GC_SEQUENCE]
+    RUBY
+  end
+
+  def test_profiler_raw_data_with_another_ractor
+    # A second objspace sends GC.start through the global collector, which has to record
+    # a profile entry the same way a local collection does.
+    assert_separately([], <<~RUBY)
+      Warning[:experimental] = false
+      Ractor.new {}.value
+
+      GC::Profiler.enable
+      GC::Profiler.clear
+      GC.start
+
+      record = GC::Profiler.raw_data.last
+      assert_not_nil record
+      assert_kind_of Float, record[:GC_WALL_TIME]
+
+      # A global collection stops the world for its whole duration, so its pause time is
+      # recorded like a local one's -- and the phases it measures fit inside it.
+      assert_operator record[:GC_PAUSE_TIME], :>, 0.0
+      assert_operator record[:GC_MARK_WALL_TIME], :>, 0.0
+      assert_operator record[:GC_SWEEP_WALL_TIME], :>, 0.0
+      assert_in_delta record[:GC_PAUSE_TIME], record[:GC_STOP_TIME] + record[:GC_STW_TIME], 0.001
+      assert_operator record[:GC_MARK_WALL_TIME] + record[:GC_SWEEP_WALL_TIME], :<=, record[:GC_PAUSE_TIME]
+    RUBY
+  ensure
+    GC::Profiler.disable
+  end
+
+  def test_profiler_raw_data_includes_wall_time
+    auto_compact = GC.auto_compact if GC.respond_to?(:auto_compact)
+    GC.auto_compact = false if GC.respond_to?(:auto_compact=)
+
+    GC::Profiler.enable
+    GC::Profiler.clear
+
+    GC.start
+    record = GC::Profiler.raw_data.last
+
+    assert_kind_of Float, record[:GC_WALL_TIME]
+    assert_kind_of Float, record[:GC_INVOKE_WALL_TIME]
+    assert_kind_of Float, record[:GC_PAUSE_TIME]
+    assert_kind_of Float, record[:GC_STOP_TIME]
+    assert_kind_of Float, record[:GC_STW_TIME]
+    assert_kind_of Float, record[:GC_MARK_WALL_TIME]
+    assert_kind_of Float, record[:GC_SWEEP_WALL_TIME]
+    assert_kind_of Float, record[:GC_COMPACT_WALL_TIME]
+
+    assert_operator record[:GC_WALL_TIME], :>=, 0.0
+    assert_operator record[:GC_INVOKE_WALL_TIME], :>=, 0.0
+    assert_operator record[:GC_PAUSE_TIME], :>=, 0.0
+    assert_operator record[:GC_STOP_TIME], :>=, 0.0
+    assert_operator record[:GC_STW_TIME], :>=, 0.0
+    assert_operator record[:GC_MARK_WALL_TIME], :>=, 0.0
+    assert_operator record[:GC_SWEEP_WALL_TIME], :>=, 0.0
+    assert_operator record[:GC_COMPACT_WALL_TIME], :>=, 0.0
+    assert_in_delta record[:GC_PAUSE_TIME], record[:GC_STOP_TIME] + record[:GC_STW_TIME], 0.001
+    assert_operator record[:GC_MARK_WALL_TIME] + record[:GC_SWEEP_WALL_TIME], :<=, record[:GC_PAUSE_TIME] + 0.001
+    assert_equal 0.0, record[:GC_COMPACT_WALL_TIME]
+  ensure
+    GC::Profiler.disable
+    GC::Profiler.clear
+    GC.auto_compact = auto_compact if GC.respond_to?(:auto_compact=) && defined?(auto_compact)
+  end
+
+  def test_profiler_raw_data_reports_compaction_separately_from_sweep_wall_time
+    omit "compaction not supported" unless GC.respond_to?(:compact)
+
+    GC::Profiler.enable
+    GC::Profiler.clear
+
+    objects = 10_000.times.map { Object.new }
+    GC.compact
+    record = GC::Profiler.raw_data.last
+
+    assert_kind_of Float, record[:GC_COMPACT_WALL_TIME]
+    assert_operator record[:GC_COMPACT_WALL_TIME], :>, 0.0
+    phase_wall_time = record[:GC_MARK_WALL_TIME] + record[:GC_SWEEP_WALL_TIME] + record[:GC_COMPACT_WALL_TIME]
+    assert_operator phase_wall_time, :<=, record[:GC_PAUSE_TIME] + 0.001
+    objects.clear
+  rescue NotImplementedError
+    omit "compaction not supported"
+  ensure
+    GC::Profiler.disable
+    GC::Profiler.clear
+  end
+
   def test_profiler_total_time
     GC::Profiler.enable
     GC::Profiler.clear
@@ -752,6 +903,17 @@ class TestGc < Test::Unit::TestCase
 
   def test_verify_internal_consistency
     assert_nil(GC.verify_internal_consistency)
+  end
+
+  def test_gc_stress_on_obj_allocation
+    EnvUtil.under_gc_stress do
+      count = GC.count
+      iters = 100
+      iters.times do
+        Object.new
+      end
+      assert_operator(GC.count - count, :>=, iters)
+    end
   end
 
   def test_gc_stress_on_realloc

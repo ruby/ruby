@@ -1,54 +1,30 @@
 module KernelSpecs
-  def self.Array_function(arg)
-    Array(arg)
-  end
-
-  def self.Array_method(arg)
-    Kernel.Array(arg)
-  end
-
-  def self.Hash_function(arg)
-    Hash(arg)
-  end
-
-  def self.Hash_method(arg)
-    Kernel.Hash(arg)
-  end
-
-  def self.Integer_function(arg)
-    Integer(arg)
-  end
-
-  def self.Integer_method(arg)
-    Kernel.Integer(arg)
-  end
-
-  def self.putc_function(arg)
-    putc arg
-  end
-
-  def self.putc_method(arg)
-    Kernel.putc arg
-  end
-
-  def self.has_private_method(name)
-    IO.popen([*ruby_exe, "-n", "-e", "print Kernel.private_method_defined?(#{name.inspect})"], "r+") do |io|
+  def self.private_instance_method_with_dash_n?(name)
+    IO.popen([*ruby_exe, "-n", "-e", "print Kernel.private_instance_methods(false).include?(#{name.inspect})"], "r+") do |io|
       io.puts
       io.close_write
       io.read
     end == "true"
   end
 
-  def self.chop(str, method)
-    IO.popen([*ruby_exe, "-n", "-e", "$_ = #{str.inspect}; #{method}; print $_"], "r+") do |io|
+  def self.public_singleton_method_with_dash_n?(name)
+    IO.popen([*ruby_exe, "-n", "-e", "print Kernel.public_methods(false).include?(#{name.inspect})"], "r+") do |io|
+      io.puts
+      io.close_write
+      io.read
+    end == "true"
+  end
+
+  def self.chop_with_dash_n(str)
+    IO.popen([*ruby_exe, "-n", "-e", "$_ = #{str.inspect}; chop; print $_"], "r+") do |io|
       io.puts
       io.close_write
       io.read
     end
   end
 
-  def self.chomp(str, method, sep="\n")
-    code = "$_ = #{str.inspect}; $/ = #{sep.inspect}; #{method}; print $_"
+  def self.chomp_with_dash_n(str, sep="\n")
+    code = "$_ = #{str.inspect}; $/ = #{sep.inspect}; chomp; print $_"
     IO.popen([*ruby_exe, "-W0", "-n", "-e", code], "r+") do |io|
       io.puts
       io.close_write
@@ -258,74 +234,6 @@ module KernelSpecs
       define_method(:defined_block_inside_block) do
         yield_self {
           block_given?
-        }
-      end
-    end
-  end
-
-  module SelfBlockGiven
-    def self.accept_block
-      self.send(:block_given?)
-    end
-
-    def self.accept_block_as_argument(&block)
-      self.send(:block_given?)
-    end
-
-    def self.accept_block_inside_block
-      yield_self {
-        self.send(:block_given?)
-      }
-    end
-
-    def self.accept_block_as_argument_inside_block(&block)
-      yield_self {
-        self.send(:block_given?)
-      }
-    end
-
-    class << self
-      define_method(:defined_block) do
-        self.send(:block_given?)
-      end
-
-      define_method(:defined_block_inside_block) do
-        yield_self {
-          self.send(:block_given?)
-        }
-      end
-    end
-  end
-
-  module KernelBlockGiven
-    def self.accept_block
-      Kernel.block_given?
-    end
-
-    def self.accept_block_as_argument(&block)
-      Kernel.block_given?
-    end
-
-    def self.accept_block_inside_block
-      yield_self {
-        Kernel.block_given?
-      }
-    end
-
-    def self.accept_block_as_argument_inside_block(&block)
-      yield_self {
-        Kernel.block_given?
-      }
-    end
-
-    class << self
-      define_method(:defined_block) do
-        Kernel.block_given?
-      end
-
-      define_method(:defined_block_inside_block) do
-        yield_self {
-          Kernel.block_given?
         }
       end
     end

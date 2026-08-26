@@ -28,6 +28,13 @@ module Spec
       [:jruby, :windows, :ruby].find {|tag| tag != local_tag }
     end
 
+    # The mswin build uses nmake and MSVC, which differ from the mingw build in
+    # ways several specs need to skip (no make jobserver, MSVC Makefile syntax,
+    # extensionless executables, mswin-only fixtures).
+    def mswin?
+      RUBY_PLATFORM.include?("mswin")
+    end
+
     def local_ruby_engine
       RUBY_ENGINE
     end

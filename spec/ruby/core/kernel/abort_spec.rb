@@ -11,5 +11,7 @@ describe "Kernel#abort" do
 end
 
 describe "Kernel.abort" do
-  it_behaves_like :process_abort, :abort, Kernel
+  it "is a public method" do
+    Kernel.public_methods(false).should.include?(:abort)
+  end
 end

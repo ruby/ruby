@@ -6,7 +6,7 @@ dir = File.expand_path("../..", __FILE__)
 # baseruby's cgi/escape.so and source cgi/escape.rb via erb.
 $:.unshift("#{dir}/lib") unless defined?(CROSS_COMPILING)
 $:.unshift(Dir.pwd, "#{dir}/tool/lib")
-if $".grep(/mkmf/).empty?
+unless $".any? {|feat| File.basename(feat) == "/mkmf.rb"}
   $" << "mkmf.rb"
   load File.expand_path("lib/mkmf.rb", dir)
 end
@@ -123,7 +123,9 @@ MODULE_TYPE = module_type
 ENCS, ENC_DEPS = target_encodings
 ATRANS, TRANS = target_transcoders
 
-if File.exist?(depend = File.join($srcdir, "depend"))
+depend = File.join(Dir.pwd, ".deps/enc/depend")
+depend = File.join($srcdir, "depend") unless File.file?(depend)
+if File.exist?(depend)
   erb = ERB.new(File.read(depend), trim_mode: '%')
   erb.filename = depend
   tmp = erb.result(binding)

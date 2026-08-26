@@ -11,11 +11,12 @@
 
 #ifdef UNIVERSAL_PARSER
 #include <stddef.h>
-#include "node.h"
 #include "rubyparser.h"
 #endif
 
+#include "internal.h"
 #include "internal/variable.h"
+#include "node.h"
 
 #define NODE_BUF_DEFAULT_SIZE (sizeof(struct RNode) * 16)
 

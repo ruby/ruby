@@ -631,11 +631,35 @@ module Net::HTTPHeader
   #   res = Net::HTTP.get_response(hostname, '/todos/1')
   #   res.content_length # => nil
   #
+  # The value must consist of digits only.
+  # Multiple <tt>'Content-Length'</tt> values are accepted
+  # only when they are all identical;
+  # otherwise Net::HTTPHeaderSyntaxError is raised.
+  # See {RFC 9110 Section 8.6}[https://www.rfc-editor.org/rfc/rfc9110.html#section-8.6].
   def content_length
-    return nil unless key?('Content-Length')
-    len = self['Content-Length'].slice(/\d+/) or
-        raise Net::HTTPHeaderSyntaxError, 'wrong Content-Length format'
-    len.to_i
+    values = @header['content-length']
+    return nil if values.nil?
+
+    lengths = []
+    values.each do |value|
+      value = value.strip
+      if value.empty?
+        raise Net::HTTPHeaderSyntaxError,
+              "empty Content-Length value"
+      end
+      lengths.concat(value.split(/\s*,\s*/, -1))
+    end
+    if lengths.uniq.size != 1
+      raise Net::HTTPHeaderSyntaxError,
+            "Content-Length has multiple different values: " +
+            values.join(", ")
+    end
+    length = lengths.first
+    unless /\A\d+\z/.match?(length)
+      raise Net::HTTPHeaderSyntaxError,
+            "wrong Content-Length format: #{length}"
+    end
+    length.to_i
   end
 
   # Sets the value of field <tt>'Content-Length'</tt> to the given numeric;

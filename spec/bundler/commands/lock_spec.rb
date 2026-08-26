@@ -463,6 +463,49 @@ RSpec.describe "bundle lock" do
     expect(read_lockfile).to eq(expected_lockfile)
   end
 
+  it "updates gems given through repeated --update options" do
+    build_repo4 do
+      build_gem "foo", "1.0"
+      build_gem "foo", "2.0"
+      build_gem "bar", "1.0"
+      build_gem "bar", "2.0"
+      build_gem "baz", "1.0"
+      build_gem "baz", "2.0"
+    end
+
+    gemfile <<-G
+      source "https://gem.repo4"
+
+      gem "foo"
+      gem "bar"
+      gem "baz"
+    G
+
+    lockfile <<~L
+      GEM
+        remote: https://gem.repo4/
+        specs:
+          bar (1.0)
+          baz (1.0)
+          foo (1.0)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        bar
+        baz
+        foo
+
+      BUNDLED WITH
+        #{Bundler::VERSION}
+    L
+
+    bundle "lock --update foo --update bar"
+
+    expect(lockfile).to include("foo (2.0)", "bar (2.0)", "baz (1.0)")
+  end
+
   it "updates specific gems using --update, even if that requires unlocking other top level gems" do
     build_repo4 do
       build_gem "prism", "0.15.1"
@@ -704,8 +747,9 @@ RSpec.describe "bundle lock" do
         build_gem "qux", %w[1.0.0 1.0.1 1.1.0 2.0.0]
       end
 
-      # establish a lockfile set to 1.4.3
-      install_gemfile <<-G
+      # establish a lockfile set to 1.4.3 (these examples only assert on the
+      # generated lockfile, so resolve-and-lock without the install)
+      lock_gemfile <<-G
         source "https://gem.repo4"
         gem 'foo', '1.4.3'
         gem 'bar', '2.0.3'
@@ -852,6 +896,15 @@ RSpec.describe "bundle lock" do
     expect(the_bundle.locked_platforms).to match_array(default_platform_list("java", "x86-mingw32"))
   end
 
+  it "supports adding platforms through repeated --add-platform options" do
+    gemfile_with_rails_weakling_and_foo_from_repo4
+
+    bundle "lock --add-platform java --add-platform x86-mingw32"
+
+    allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
+    expect(the_bundle.locked_platforms).to match_array(default_platform_list("java", "x86-mingw32"))
+  end
+
   it "supports adding new platforms when a previous lockfile exists" do
     gemfile_with_rails_weakling_and_foo_from_repo4
 
@@ -974,6 +1027,19 @@ RSpec.describe "bundle lock" do
     expect(the_bundle.locked_platforms).to match_array(default_platform_list("x86-mingw32"))
   end
 
+  it "supports removing platforms through repeated --remove-platform options" do
+    gemfile_with_rails_weakling_and_foo_from_repo4
+
+    bundle "lock --add-platform java x86-mingw32"
+
+    allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
+    expect(the_bundle.locked_platforms).to match_array(default_platform_list("java", "x86-mingw32"))
+
+    bundle "lock --remove-platform java --remove-platform x86-mingw32"
+
+    expect(the_bundle.locked_platforms).to match_array(default_platform_list)
+  end
+
   it "also cleans up redundant platform gems when removing platforms" do
     build_repo4 do
       build_gem "nokogiri", "1.12.0"
@@ -988,7 +1054,7 @@ RSpec.describe "bundle lock" do
     end
 
     simulate_platform "x86_64-darwin-22" do
-      install_gemfile <<~G
+      lock_gemfile <<~G
         source "https://gem.repo4"
 
         gem "nokogiri"
@@ -1299,6 +1365,11 @@ RSpec.describe "bundle lock" do
 
       build_gem "raygun-apm", "1.0.78" do |s|
         s.platform = "x64-mingw-ucrt"
+        s.required_ruby_version = "< #{next_ruby_minor}.dev"
+      end
+
+      build_gem "raygun-apm", "1.0.78" do |s|
+        s.platform = "x64-mswin64"
         s.required_ruby_version = "< #{next_ruby_minor}.dev"
       end
     end

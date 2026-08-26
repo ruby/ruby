@@ -30,12 +30,24 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     if ctx.options != 4
       pend "SSL_CTX_set_options() seems to be modified by distributor"
     end
+
+    # Unsetting options
+    ctx.options = 0
+    assert_equal(0, ctx.options)
+
+    # Option constants
+    all_ops = OpenSSL::SSL.constants
+      .grep(/^OP_/)
+      .map { |c| OpenSSL::SSL.const_get(c) }
+    all_ops.each { |op| assert_operator(op, :>=, 0) }
+    everything = all_ops.inject(&:|)
+    assert_operator(everything, :>, 0)
+    ctx.options = everything
+    assert_equal(everything, ctx.options)
+
+    # Backwards compatibility: nil means OP_ALL
     ctx.options = nil
     assert_equal OpenSSL::SSL::OP_ALL, ctx.options
-
-    assert_equal true, ctx.setup
-    assert_predicate ctx, :frozen?
-    assert_equal nil, ctx.setup
   end
 
   def test_ctx_options_config
@@ -1251,21 +1263,6 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
       ctx.set_params(cert_store: store)
       assert_raise_with_message(OpenSSL::SSL::SSLError, /expired/) {
         server_connect(port, ctx)
-      }
-    }
-  end
-
-  def test_unset_OP_ALL
-    ctx_proc = Proc.new { |ctx|
-      # If OP_DONT_INSERT_EMPTY_FRAGMENTS is not defined, this test is
-      # redundant because the default options already are equal to OP_ALL.
-      # But it also degrades gracefully, so keep it
-      ctx.options = OpenSSL::SSL::OP_ALL
-    }
-    start_server(ctx_proc: ctx_proc) { |port|
-      server_connect(port) { |ssl|
-        ssl.puts('hello')
-        assert_equal("hello\n", ssl.gets)
       }
     }
   end

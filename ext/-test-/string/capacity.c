@@ -11,8 +11,15 @@ bug_str_capacity(VALUE klass, VALUE str)
     return LONG2FIX(rb_str_capacity(str));
 }
 
+static VALUE
+bug_str_new_shared(VALUE klass, VALUE str)
+{
+    return rb_str_new_shared(str);
+}
+
 void
 Init_string_capacity(VALUE klass)
 {
     rb_define_singleton_method(klass, "capacity", bug_str_capacity, 1);
+    rb_define_singleton_method(klass, "rb_str_new_shared", bug_str_new_shared, 1);
 }

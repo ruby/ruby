@@ -138,6 +138,11 @@ RSpec.configure do |config|
     ENV["XDG_CONFIG_HOME"] = nil
     ENV["XDG_CACHE_HOME"] = nil
     ENV["GEMRC"] = nil
+    # Left set, these point the suite at the real OS credential store, where
+    # specs that configure a host credential would write into the developer's
+    # own keychain.
+    ENV["BUNDLE_CREDENTIAL_STORE"] = nil
+    ENV["RUBYGEMS_CREDENTIAL_STORE"] = nil
 
     # Prevent tests from modifying the user's global git config.
     # GIT_CONFIG_GLOBAL and GIT_CONFIG_NOSYSTEM are available since Git 2.32.
@@ -146,6 +151,24 @@ RSpec.configure do |config|
       ENV["GIT_CONFIG_GLOBAL"] = File.join(ENV["HOME"], ".gitconfig")
       ENV["GIT_CONFIG_NOSYSTEM"] = "1"
     end
+
+    # Prevent git commands spawned by specs (directly or through Bundler)
+    # from discovering the rubygems checkout itself when run in a directory
+    # that is not a fixture repository, e.g. a fixture whose .git has been
+    # deleted by a concurrent cleanup. Without this, repository discovery
+    # walks up into the checkout and a stray `git config` writes the fixture
+    # identity to the checkout's own (possibly worktree-shared) .git/config.
+    ENV["GIT_CEILING_DIRECTORIES"] = [Spec::Path.tmp_root.to_s, Spec::Path.source_root.to_s].uniq.join(File::PATH_SEPARATOR)
+
+    # Disable git background maintenance. Since Git 2.46, commands like
+    # `git commit` spawn a detached `git maintenance run --auto` process,
+    # which briefly creates `.git/objects/maintenance.lock`. That races with
+    # specs copying repositories with FileUtils.cp_r, causing flaky ENOENT
+    # failures. GIT_CONFIG_COUNT is available since Git 2.31 and silently
+    # ignored by older versions.
+    ENV["GIT_CONFIG_COUNT"] = "1"
+    ENV["GIT_CONFIG_KEY_0"] = "maintenance.auto"
+    ENV["GIT_CONFIG_VALUE_0"] = "false"
 
     # Don't wrap output in tests
     ENV["THOR_COLUMNS"] = "10000"

@@ -7,23 +7,6 @@ unless Gem::HAVE_OPENSSL
 end
 
 class TestGemSecurityPolicy < Gem::TestCase
-  ALTERNATE_KEY    = load_key "alternate"
-  INVALID_KEY      = load_key "invalid"
-  CHILD_KEY        = load_key "child"
-  GRANDCHILD_KEY   = load_key "grandchild"
-  INVALIDCHILD_KEY = load_key "invalidchild"
-
-  ALTERNATE_CERT      = load_cert "alternate"
-  CA_CERT             = load_cert "ca"
-  CHILD_CERT          = load_cert "child"
-  EXPIRED_CERT        = load_cert "expired"
-  FUTURE_CERT         = load_cert "future"
-  GRANDCHILD_CERT     = load_cert "grandchild"
-  INVALIDCHILD_CERT   = load_cert "invalidchild"
-  INVALID_ISSUER_CERT = load_cert "invalid_issuer"
-  INVALID_SIGNER_CERT = load_cert "invalid_signer"
-  WRONG_KEY_CERT      = load_cert "wrong_key"
-
   def setup
     super
 

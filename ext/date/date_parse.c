@@ -2325,6 +2325,16 @@ sec_fraction(VALUE f)
 
 #define SNUM 14
 
+#ifndef rb_streql_lit
+static inline int
+rb_streql_cstr(VALUE str, const char *lit, size_t len)
+{
+    if ((size_t)RSTRING_LEN(str) != len) return 0;
+    return memcmp(RSTRING_PTR(str), lit, len) == 0;
+}
+#define rb_streql_lit(str, lit) rb_streql_cstr(str, lit, sizeof(lit "") - 1)
+#endif
+
 static int
 iso8601_ext_datetime_cb(VALUE m, VALUE hash)
 {
@@ -2339,14 +2349,14 @@ iso8601_ext_datetime_cb(VALUE m, VALUE hash)
 
     if (!NIL_P(s[1])) {
 	if (!NIL_P(s[3])) set_hash("mday", str2num(s[3]));
-	if (strcmp(RSTRING_PTR(s[1]), "-") != 0) {
+	if (!rb_streql_lit(s[1], "-")) {
 	    y = str2num(s[1]);
 	    if (RSTRING_LEN(s[1]) < 4)
 		y = comp_year69(y);
 	    set_hash("year", y);
 	}
 	if (NIL_P(s[2])) {
-	    if (strcmp(RSTRING_PTR(s[1]), "-") != 0)
+	    if (!rb_streql_lit(s[1], "-"))
 		return 0;
 	}
 	else
@@ -2425,14 +2435,14 @@ iso8601_bas_datetime_cb(VALUE m, VALUE hash)
 
     if (!NIL_P(s[3])) {
 	set_hash("mday", str2num(s[3]));
-	if (strcmp(RSTRING_PTR(s[1]), "--") != 0) {
+	if (!rb_streql_lit(s[1], "--")) {
 	    y = str2num(s[1]);
 	    if (RSTRING_LEN(s[1]) < 4)
 		y = comp_year69(y);
 	    set_hash("year", y);
 	}
 	if (*RSTRING_PTR(s[2]) == '-') {
-	    if (strcmp(RSTRING_PTR(s[1]), "--") != 0)
+	    if (!rb_streql_lit(s[1], "--"))
 		return 0;
 	}
 	else

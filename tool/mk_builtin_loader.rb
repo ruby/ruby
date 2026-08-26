@@ -116,7 +116,9 @@ def visit_call_node(source, node, name, locals, requires, bs, inlines)
       # an inline function, and then continue the visit.
       raise "argc (#{argc}) of inline! should be 1" if argc != 1
 
-      text = extract_string_literal(args[0]).rstrip
+      # The string literal keeps the line endings of the source file; normalize
+      # them so the generated code does not depend on how it was checked out.
+      text = extract_string_literal(args[0]).encode(universal_newline: true).rstrip
       lineno = line_number(source, node)
 
       case primitive_macro
@@ -184,7 +186,10 @@ def collect_builtins(dump_ast, file)
     exit(1)
   end
 
-  source = File.read(file)
+  # dump_ast reports byte offsets against the raw file bytes, so the source
+  # must be read in binary mode; text mode would convert CRLF to LF on Windows
+  # and shift every offset.
+  source = File.binread(file)
   root = JSON.parse(stdout)
   visit_node(source, root, "top", nil, requires = [], builtins = [], inlines = [])
 

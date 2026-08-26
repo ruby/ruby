@@ -13,6 +13,7 @@ jit = { version = "0.1.0", path = "../jit" }
 
 [dev-dependencies]
 insta = "1.47.2"
+libc = "0.2"
 rand = "0.10"
 yjit = { path = "../yjit" }
 

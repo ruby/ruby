@@ -311,17 +311,7 @@ rb_ractor_sched_barrier_join(rb_vm_t *vm, rb_ractor_t *cr)
     // do nothing
 }
 
-void
-rb_threadptr_remove(rb_thread_t *th)
-{
-    // do nothing
-}
 
-void
-rb_thread_sched_mark_zombies(rb_vm_t *vm)
-{
-    // do nothing
-}
 
 bool
 rb_thread_lock_native_thread(void)
@@ -341,4 +331,31 @@ rb_thread_malloc_stack_set(rb_thread_t *th, void *stack, size_t stack_size)
     // no-op
 }
 
+bool
+rb_thread_event_hooks_registered_p(void)
+{
+    return false; // hooks are not implemented on this platform
+}
+
 #endif /* THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION */
+
+void
+rb_thread_sched_winding_begin(rb_vm_t *vm)
+{
+    // nothing to count: rb_thread_sched_wait_winding below never waits
+    (void)vm;
+}
+
+void
+rb_thread_sched_winding_end(rb_vm_t *vm)
+{
+    (void)vm;
+}
+
+void
+rb_thread_sched_wait_winding(rb_vm_t *vm)
+{
+    // no coroutine (M:N) threads on this implementation: nothing winds down
+    // after leaving the living set (see thread_pthread.c)
+    (void)vm;
+}

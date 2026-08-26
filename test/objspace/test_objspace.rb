@@ -28,13 +28,15 @@ class TestObjSpace < Test::Unit::TestCase
                     ObjectSpace.memsize_of(//.match("")))
   end
 
+  STR_COPY_MAX_EMBED_SIZE = 256 - (RbConfig::SIZEOF["void*"] * 3) - 1 # From macro defined in string.c
+
   def test_memsize_of_root_shared_string
-    a = "a" * GC::INTERNAL_CONSTANTS[:RVARGC_MAX_ALLOCATE_SIZE]
+    a = "a" * (STR_COPY_MAX_EMBED_SIZE + 1)
     b = a.dup
     c = nil
     ObjectSpace.each_object(String) {|x| break c = x if a == x and x.frozen?}
     rv_size = Integer(ObjectSpace.dump(a)[/"slot_size":(\d+)/, 1])
-    assert_equal([rv_size, rv_size, a.length + 1 + rv_size], [a, b, c].map {|x| ObjectSpace.memsize_of(x)})
+    assert_equal([rv_size, GC::INTERNAL_CONSTANTS[:RVALUE_SIZE], rv_size], [a, b, c].map {|x| ObjectSpace.memsize_of(x)})
   end
 
   def test_argf_memsize
@@ -135,7 +137,6 @@ class TestObjSpace < Test::Unit::TestCase
   end
 
   def test_reachable_objects_during_iteration
-    omit 'flaky on Visual Studio with: [BUG] Unnormalized Fixnum value' if /mswin/ =~ RUBY_PLATFORM
     opts = %w[--disable-gem --disable=frozen-string-literal -robjspace]
     assert_ruby_status opts, "#{<<-"begin;"}\n#{<<-'end;'}"
     begin;
@@ -169,6 +170,34 @@ class TestObjSpace < Test::Unit::TestCase
           assert_operator(size, :>=, 0)
         }
       }
+    end;
+  end
+
+  def test_reachable_objects_from_doesnt_break_ractor_containment
+    assert_ractor("#{<<-"begin;"}#{<<-'end;'}")
+    begin;
+      require "objspace"
+      port = Ractor::Port.new
+      ch = Ractor.new(port) do |port|
+        o = Object.new
+        def o.inspect = "unshareable!"
+        sc = o.singleton_class
+        port << [sc] # TODO: singleton classes of unshareables should not be shareable
+        Ractor.receive # wait
+      end
+
+      sc_ary = port.receive
+
+      found = false
+      ObjectSpace.reachable_objects_from(sc_ary).each do |obj|
+        if obj.inspect == "unshareable!"
+          found = true
+        end
+      end
+
+      ch.send(:go)
+      ch.join
+      refute found, "ObjectSpace.reachable_objects_from breaks ractor containment"
     end;
   end
 
@@ -686,18 +715,18 @@ class TestObjSpace < Test::Unit::TestCase
       end;
       assert_empty error
       assert(output.count > 1)
-      assert_includes output.grep(/"imemo_type":"callinfo"/).join("\n"), '"mid":"baz"'
+      assert_include output.grep(/"imemo_type":"callinfo"/).join("\n"), '"mid":"baz"'
     end
   end
 
   def test_dump_string_coderange
-    assert_includes ObjectSpace.dump("TEST STRING"), '"coderange":"7bit"'
+    assert_include ObjectSpace.dump("TEST STRING"), '"coderange":"7bit"'
     unknown = "TEST STRING".dup.force_encoding(Encoding::UTF_16BE)
     2.times do # ensure that dumping the string doesn't mutate it
-      assert_includes ObjectSpace.dump(unknown), '"coderange":"unknown"'
+      assert_include ObjectSpace.dump(unknown), '"coderange":"unknown"'
     end
-    assert_includes ObjectSpace.dump("Fée"), '"coderange":"valid"'
-    assert_includes ObjectSpace.dump("\xFF"), '"coderange":"broken"'
+    assert_include ObjectSpace.dump("Fée"), '"coderange":"valid"'
+    assert_include ObjectSpace.dump("\xFF"), '"coderange":"broken"'
   end
 
   def test_dump_escapes_method_name
@@ -710,7 +739,7 @@ class TestObjSpace < Test::Unit::TestCase
     obj = klass.new.send(method_name)
 
     dump = ObjectSpace.dump(obj)
-    assert_includes dump, '"method":"foo\"bar"'
+    assert_include dump, '"method":"foo\"bar"'
 
     parsed = JSON.parse(dump)
     assert_equal "foo\"bar", parsed["method"]
@@ -723,7 +752,7 @@ class TestObjSpace < Test::Unit::TestCase
     obj = klass.new
     dump = ObjectSpace.dump(obj)
 
-    assert_includes dump, "\"slot_size\":#{GC.stat_heap(0, :slot_size) - GC::INTERNAL_CONSTANTS[:RVALUE_OVERHEAD]}"
+    assert_match /"slot_size":\d+/, dump
   end
 
   def test_dump_reference_addresses_match_dump_all_addresses
@@ -896,6 +925,11 @@ class TestObjSpace < Test::Unit::TestCase
       bar
     rescue => err
       _, m = ObjectSpace.reachable_objects_from(err)
+
+      # The very first NameError allocated by a process is extended
+      if ObjectSpace::InternalObjectWrapper === m # T_IMEMO/fields_obj
+        m, _ = ObjectSpace.reachable_objects_from(m)
+      end
     end
     assert_equal(m, m.clone)
   end

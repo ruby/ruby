@@ -152,6 +152,7 @@ You can use `i` command instead of `install`.
     end
 
     @installed_specs = []
+    @cooldown_skipped = []
 
     ENV.delete "GEM_PATH" if options[:install_dir].nil?
 
@@ -162,6 +163,8 @@ You can use `i` command instead of `install`.
     exit_code = install_gems
 
     show_installed
+
+    Gem::Cooldown.output_skipped_summary @cooldown_skipped
 
     say update_suggestion if eligible_for_update?
 
@@ -183,6 +186,8 @@ You can use `i` command instead of `install`.
     end
 
     @installed_specs = specs
+
+    Gem::Cooldown.output_skipped_summary rs.resolver&.cooldown_skipped
 
     terminate_interaction
   end
@@ -206,6 +211,8 @@ You can use `i` command instead of `install`.
     else
       @installed_specs.concat request_set.install options
     end
+
+    (@cooldown_skipped ||= []).concat dinst.cooldown_skipped
 
     show_install_errors dinst.errors
   end

@@ -14,24 +14,18 @@
 
 #include "id_table.h"
 #include "internal.h"
-#include "internal/array.h"
-#include "internal/class.h"
-#include "internal/gc.h"
 #include "internal/hash.h"
+#include "internal/imemo.h"
 #include "internal/io.h"
+#include "internal/objspace.h"
 #include "internal/string.h"
 #include "internal/sanitizers.h"
 #include "symbol.h"
 #include "shape.h"
-#include "node.h"
 #include "objspace.h"
 #include "ruby/debug.h"
 #include "ruby/util.h"
 #include "ruby/io.h"
-#include "vm_callinfo.h"
-#include "vm_sync.h"
-
-RUBY_EXTERN const char ruby_hexdigits[];
 
 #define BUFFER_CAPACITY 4096
 
@@ -443,7 +437,7 @@ dump_object(VALUE obj, struct dump_config *dc)
 
         switch (imemo_type(obj)) {
           case imemo_callinfo:
-            mid = vm_ci_mid((const struct rb_callinfo *)obj);
+            mid = rb_imemo_callinfo_mid(obj);
             if (mid != 0) {
                 dump_append(dc, ", \"mid\":");
                 dump_append_id(dc, mid);
@@ -452,9 +446,10 @@ dump_object(VALUE obj, struct dump_config *dc)
 
           case imemo_callcache:
             {
-                VALUE klass = ((const struct rb_callcache *)obj)->klass;
-                if (klass != Qundef) {
-                    mid = vm_cc_cme((const struct rb_callcache *)obj)->called_id;
+                struct rb_imemo_callcache_data data;
+                if (rb_imemo_callcache_get_data(obj, &data)) {
+                    VALUE klass = data.klass;
+                    mid = data.called_id;
                     if (mid != 0) {
                         dump_append(dc, ", \"called_id\":");
                         dump_append_id(dc, mid);
@@ -591,17 +586,23 @@ dump_object(VALUE obj, struct dump_config *dc)
         dump_append(dc, "\"");
         break;
 
-      case T_OBJECT:
-        if (!FL_TEST_RAW(obj, ROBJECT_HEAP)) {
+      case T_OBJECT: {
+        shape_id_t shape_id = RBASIC_SHAPE_ID(obj);
+
+        if (rb_shape_embedded_p(shape_id)) {
             dump_append(dc, ", \"embedded\":true");
         }
 
         dump_append(dc, ", \"ivars\":");
-        dump_append_lu(dc, ROBJECT_FIELDS_COUNT(obj));
-        if (rb_obj_shape_complex_p(obj)) {
+        if (rb_shape_complex_p(shape_id)) {
+            dump_append_lu(dc, rb_st_table_size(rb_imemo_fields_complex_tbl(ROBJECT_FIELDS_OBJ(obj))));
             dump_append(dc, ", \"complex_shape\":true");
         }
+        else {
+            dump_append_lu(dc, RSHAPE_LEN(shape_id));
+        }
         break;
+      }
 
       case T_FILE:
         fptr = RFILE(obj)->fptr;

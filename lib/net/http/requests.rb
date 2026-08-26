@@ -271,6 +271,41 @@ class Net::HTTP::Patch < Net::HTTPRequest
   RESPONSE_HAS_BODY = true
 end
 
+# \Class for representing
+# {HTTP method QUERY}[https://www.rfc-editor.org/rfc/rfc10008.html]:
+#
+#   require 'net/http'
+#   uri = URI('http://example.com')
+#   hostname = uri.hostname # => "example.com"
+#   uri.path = '/posts'
+#   req = Net::HTTP::Query.new(uri) # => #<Net::HTTP::Query QUERY>
+#   req.body = '{"title": "foo","body": "bar","userId": 1}'
+#   req.content_type = 'application/json'
+#   res = Net::HTTP.start(hostname) do |http|
+#     http.request(req)
+#   end
+#
+# See {Request Headers}[rdoc-ref:Net::HTTPRequest@Request+Headers].
+#
+# Properties:
+#
+# - Request body: yes.
+# - Response body: yes.
+# - {Safe}[https://en.wikipedia.org/wiki/HTTP#Safe_method]: yes.
+# - {Idempotent}[https://en.wikipedia.org/wiki/HTTP#Idempotent_method]: yes.
+# - {Cacheable}[https://en.wikipedia.org/wiki/HTTP#Cacheable_method]: yes.
+#
+# Related:
+#
+# - Net::HTTP#query: sends +QUERY+ request, returns response object.
+#
+class Net::HTTP::Query < Net::HTTPRequest
+  # :stopdoc:
+  METHOD = 'QUERY'
+  REQUEST_HAS_BODY = true
+  RESPONSE_HAS_BODY = true
+end
+
 #
 # WebDAV methods --- RFC2518
 #

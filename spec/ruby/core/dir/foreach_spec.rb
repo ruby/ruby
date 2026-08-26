@@ -65,4 +65,18 @@ describe "Dir.foreach" do
       end
     end
   end
+
+  platform_is :darwin do
+    it "accepts a path in a non-UTF-8, ASCII-compatible encoding containing non-ASCII characters" do
+      dir = tmp("dir_foreach_\u{3042}")
+      non_utf8_dir = dir.encode(Encoding::Windows_31J)
+
+      begin
+        mkdir_p(dir)
+        Dir.foreach(non_utf8_dir).to_a.should.include?(".".encode(Encoding::Windows_31J))
+      ensure
+        rm_r dir
+      end
+    end
+  end
 end

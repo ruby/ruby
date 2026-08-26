@@ -27,7 +27,7 @@ the browser when you edit source files:
 make html-server
 ```
 
-Then visit http://localhost:4000 in your browser.
+Then visit `http://localhost:4000` in your browser.
 To use a different port: `make html-server RDOC_SERVER_PORT=8080`.
 
 If you don't have a build directory, follow the [quick start
@@ -165,7 +165,7 @@ For a method name in text:
 ### Embedded Code and Commands
 
 Code or commands embedded in running text (i.e., not in a code block)
-should marked up as
+should be marked up as
 [monofont].
 
 Code that is a simple string should include the quote marks.
@@ -347,7 +347,7 @@ Alternatives:
     - Example {source}[https://github.com/ruby/ruby/blob/34d802f32f00df1ac0220b62f72605827c16bad8/file.c#L6570-L6596].
     - Corresponding {output}[rdoc-ref:File@ReadWrite+Mode].
 
-- (Markdown format only): A {Github Flavored Markdown (GFM) table}[https://github.github.com/gfm/#tables-extension-],
+- (Markdown format only): A {GitHub Flavored Markdown (GFM) table}[https://github.github.com/gfm/#tables-extension-],
   using special formatting for the text:
 
     - Example {source}[https://github.com/ruby/ruby/blob/34d802f32f00df1ac0220b62f72605827c16bad8/doc/contributing/glossary.md?plain=1].
@@ -612,7 +612,7 @@ For corner cases of methods, such as atypical usage, briefly mention
 the behavior, but do not provide any examples.
 
 Only document exceptions raised if they are not obvious.  For example,
-if you have stated earlier than an argument type must be an integer,
+if you have stated earlier that an argument type must be an integer,
 you do not need to document that a `TypeError` is raised if a non-integer
 is passed.  Do not provide examples of exceptions being raised unless
 that is a common case, such as `Hash#fetch` raising a `KeyError`.

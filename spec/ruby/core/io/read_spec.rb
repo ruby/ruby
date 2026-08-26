@@ -45,11 +45,11 @@ describe "IO.read" do
   end
 
   it "raises an IOError if the options Hash specifies write mode" do
-    -> { IO.read(@fname, 3, 0, mode: "w") }.should.raise(IOError)
+    -> { IO.read(@fname, 3, 0, mode: "w") }.should.raise(IOError, "not opened for reading")
   end
 
   it "raises an IOError if the options Hash specifies append only mode" do
-    -> { IO.read(@fname, mode: "a") }.should.raise(IOError)
+    -> { IO.read(@fname, mode: "a") }.should.raise(IOError, "not opened for reading")
   end
 
   it "reads the file if the options Hash includes read mode" do
@@ -62,9 +62,6 @@ describe "IO.read" do
 
   it "reads the file if the options Hash includes read/write append mode" do
     IO.read(@fname, mode: "a+").should == @contents
-  end
-
-  platform_is_not :windows do
   end
 
   it "disregards other options if :open_args is given" do
@@ -119,16 +116,16 @@ describe "IO.read" do
   end
 
   it "raises a TypeError when not passed a String type" do
-    -> { IO.read nil }.should.raise(TypeError)
+    -> { IO.read nil }.should raise_consistent_error(TypeError, "no implicit conversion of nil into String")
   end
 
   it "raises an ArgumentError when not passed a valid length" do
-    -> { IO.read @fname, -1 }.should.raise(ArgumentError)
+    -> { IO.read @fname, -1 }.should.raise(ArgumentError, "negative length -1 given")
   end
 
   it "raises an ArgumentError when not passed a valid offset" do
-    -> { IO.read @fname, 0, -1  }.should.raise(ArgumentError)
-    -> { IO.read @fname, -1, -1 }.should.raise(ArgumentError)
+    -> { IO.read @fname, 0, -1  }.should.raise(ArgumentError, "negative offset -1 given")
+    -> { IO.read @fname, -1, -1 }.should.raise(ArgumentError, "negative offset -1 given")
   end
 
   it "uses the external encoding specified via the :external_encoding option" do
@@ -148,10 +145,26 @@ describe "IO.read" do
       IO.read(@fname).should.empty?
     end
   end
+
+  platform_is :darwin do
+    it "reads a file when given a path in a non-UTF-8, ASCII-compatible encoding containing non-ASCII characters" do
+      utf8_path = tmp("io_read_utf8_path_\u{3042}.txt")
+      # Can fail with UndefinedConversionError if tmp path has non-Shift_JIS chars (e.g. Emojis, Hangul, Cyrillic, accented letters)
+      non_utf8_path = utf8_path.encode(Encoding::Windows_31J)
+
+      begin
+        File.write(utf8_path, "ok")
+        IO.read(non_utf8_path).should == "ok"
+      ensure
+        rm_r utf8_path
+        rm_r non_utf8_path
+      end
+    end
+  end
 end
 
-ruby_version_is ""..."4.0" do
-  describe "IO.read from a pipe" do
+describe "IO.read from a pipe" do
+  ruby_version_is ""..."4.0" do
     it "runs the rest as a subprocess and returns the standard output" do
       cmd = "|sh -c 'echo hello'"
       platform_is :windows do
@@ -216,10 +229,23 @@ ruby_version_is ""..."4.0" do
 
     # https://bugs.ruby-lang.org/issues/19630
     it "warns about deprecation" do
-      cmd = "|echo ok"
       -> {
-        IO.read(cmd)
+        IO.read("|echo ok")
       }.should complain(/IO process creation with a leading '\|'/)
+    end
+  end
+
+  ruby_version_is "4.0" do
+    platform_is_not :windows do
+      it "raises Errno::ENOENT when path starts with a pipe" do
+        -> { IO.read("|echo ok") }.should.raise(Errno::ENOENT)
+      end
+    end
+
+    platform_is :windows do
+      it "raises Errno::EINVAL when path starts with a pipe" do
+        -> { IO.read("|echo ok") }.should.raise(Errno::EINVAL)
+      end
     end
   end
 end
@@ -270,29 +296,32 @@ describe "IO#read" do
   end
 
   it "raises an ArgumentError when not passed a valid length" do
-    -> { @io.read(-1) }.should.raise(ArgumentError)
+    -> { @io.read(-1) }.should.raise(ArgumentError, "negative length -1 given")
   end
 
   it "clears the output buffer if there is nothing to read" do
-    @io.pos = 10
-
     buf = +'non-empty string'
-
+    @io.pos = 10
     @io.read(10, buf).should == nil
 
     buf.should == ''
 
     buf = +'non-empty string'
-
+    @io.pos = 10
     @io.read(nil, buf).should == ""
 
     buf.should == ''
 
     buf = +'non-empty string'
-
+    @io.pos = 10
     @io.read(0, buf).should == ""
 
     buf.should == ''
+  end
+
+  it "returns the empty string when there is nothing to read and lenght=0 is given" do
+    @io.read(11)
+    @io.read(0).should == ""
   end
 
   it "raise FrozenError if the output buffer is frozen" do
@@ -423,11 +452,11 @@ describe "IO#read" do
   end
 
   it "raises IOError on closed stream" do
-    -> { IOSpecs.closed_io.read }.should.raise(IOError)
+    -> { IOSpecs.closed_io.read }.should.raise(IOError, "closed stream")
   end
 
   it "raises ArgumentError when length is less than 0" do
-    -> { @io.read(-1) }.should.raise(ArgumentError)
+    -> { @io.read(-1) }.should.raise(ArgumentError, "negative length -1 given")
   end
 
   platform_is_not :windows do
@@ -657,6 +686,12 @@ describe "IO#read" do
 
       it "sets the String encoding to the external encoding" do
         @io.read.encoding.should.equal?(Encoding::EUC_JP)
+      end
+
+      it "reads after ungetc" do
+        c = @io.getc
+        @io.ungetc(c)
+        @io.read(2).should == [164, 162].pack('C*').force_encoding(Encoding::BINARY)
       end
 
       it_behaves_like :io_read_size_internal_encoding, nil

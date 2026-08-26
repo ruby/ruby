@@ -103,6 +103,7 @@ rb_main_box(void)
     return main_box;
 }
 
+// NOTE: must be called by Ruby thread
 const rb_box_t *
 rb_current_box(void)
 {
@@ -121,6 +122,7 @@ rb_current_box(void)
     return rb_vm_current_box(GET_EC());
 }
 
+// NOTE: must be called by Ruby thread
 const rb_box_t *
 rb_loading_box(void)
 {
@@ -132,6 +134,7 @@ rb_loading_box(void)
     return rb_vm_loading_box(GET_EC());
 }
 
+// NOTE: must be called by Ruby thread
 const rb_box_t *
 rb_current_box_in_crash_report(void)
 {
@@ -180,8 +183,8 @@ box_entry_initialize(rb_box_t *box)
     box->loaded_features_realpaths = rb_hash_dup(master->loaded_features_realpaths);
     box->loaded_features_realpath_map = rb_hash_dup(master->loaded_features_realpath_map);
     box->loading_table = st_init_strtable();
-    box->ruby_dln_libmap = rb_hash_new_with_size(0);
-    box->gvar_tbl = rb_hash_new_with_size(0);
+    box->ruby_dln_libmap = rb_hash_new();
+    box->gvar_tbl = rb_hash_new();
     box->classext_cow_classes = st_init_numtable();
 
     box->is_user = true;
@@ -899,8 +902,8 @@ initialize_master_box(void)
     master->loaded_features_realpath_map = rb_hash_new();
     rb_obj_hide(master->loaded_features_realpath_map);
 
-    master->ruby_dln_libmap = rb_hash_new_with_size(0);
-    master->gvar_tbl = rb_hash_new_with_size(0);
+    master->ruby_dln_libmap = rb_hash_new();
+    master->gvar_tbl = rb_hash_new();
     master->classext_cow_classes = NULL; // classext CoW never happen on the master box
 
     vm->master_box = master;

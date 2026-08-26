@@ -3,7 +3,6 @@
 require "rubygems/remote_fetcher"
 require "bundler/fetcher/gem_remote_fetcher"
 require_relative "../../support/artifice/helpers/artifice"
-require "bundler/vendored_persistent.rb"
 
 RSpec.describe Bundler::Fetcher::GemRemoteFetcher do
   describe "#initialize" do

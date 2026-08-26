@@ -189,6 +189,7 @@ void rb_bug_without_die(const char *fmt, ...);
 NORETURN(void rb_no_implicit_conversion(VALUE val, const char *tname));
 NORETURN(void rb_cant_convert(VALUE val, const char *tname));
 NORETURN(void rb_cant_convert_invalid_return(VALUE val, const char *tname, const char *method_name, VALUE ret));
+void rb_eager_load_detailed_message_extension(void);
 
 RUBY_SYMBOL_EXPORT_BEGIN
 /* error.c (export) */

@@ -525,6 +525,10 @@ describe "C-API Kernel function" do
       @s.rb_catch_obj(@tag, -> { 1 }).should == 1
     end
 
+    it "passes non-Ruby pointers to the catch callback" do
+      @s.rb_catch_obj_with_pointer(@tag).should == true
+    end
+
     it "terminates the function at the point it was called" do
       proc = -> do
         ScratchPad << :before_throw
@@ -694,6 +698,10 @@ describe "C-API Kernel function" do
     it "detects recursive invocations of a method and indicates as such" do
       s = "hello"
       @s.rb_exec_recursive(s).should == s
+    end
+
+    it "passes non-Ruby pointers to the recursive callback" do
+      @s.rb_exec_recursive_with_pointer.should == true
     end
   end
 

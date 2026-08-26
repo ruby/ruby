@@ -404,8 +404,17 @@ EOT
   end
 
   def test_stdin
-    assert_equal(Encoding.default_external, STDIN.external_encoding)
-    assert_equal(nil, STDIN.internal_encoding)
+    encoding = Encoding.default_external
+    internal = nil
+    if /mswin|mingw/ =~ RUBY_PLATFORM and STDIN.tty?
+      # Interactive console input on Windows is read in the locale (console
+      # code page) encoding and transcoded to the default external encoding.
+      encoding = Encoding.find("locale")
+      internal = Encoding.default_internal || Encoding.default_external
+      internal = nil if internal == encoding
+    end
+    assert_equal(encoding, STDIN.external_encoding)
+    assert_equal(internal, STDIN.internal_encoding)
   end
 
   def test_stdout

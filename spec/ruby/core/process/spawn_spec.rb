@@ -413,6 +413,12 @@ describe "Process.spawn" do
         Process.wait Process.spawn(ruby_cmd("print Dir.pwd"), chdir: dir)
       end.should output_to_fd(@dir)
     end
+
+    it "raises an Errno::ENOENT when a given path doesn't exist" do
+      -> do
+        Process.wait Process.spawn(ruby_cmd("print Dir.pwd"), chdir: "nonexistent")
+      end.should.raise(Errno::ENOENT, "No such file or directory - nonexistent")
+    end
   end
 
   # chdir
@@ -765,6 +771,23 @@ describe "Process.spawn" do
 
   it "raises an ArgumentError when passed an unknown option key" do
     -> { Process.spawn("echo", nonesuch: :foo) }.should.raise(ArgumentError)
+  end
+
+  it "raises an ArgumentError if :unsetenv_others option is not a boolean or nil" do
+    -> { Process.spawn("true", unsetenv_others: 1) }.should.raise(ArgumentError, /expected true or false/)
+    -> { Process.spawn("true", unsetenv_others: "true") }.should.raise(ArgumentError, /expected true or false/)
+  end
+
+  it "raises an ArgumentError if :close_others option is not a boolean or nil" do
+    -> { Process.spawn("true", close_others: 1) }.should.raise(ArgumentError, /expected true or false/)
+    -> { Process.spawn("true", close_others: "true") }.should.raise(ArgumentError, /expected true or false/)
+  end
+
+  platform_is :windows do
+    it "raises an ArgumentError if :new_pgroup option is not a boolean or nil" do
+      -> { Process.spawn("true", new_pgroup: 1) }.should.raise(ArgumentError, /expected true or false/)
+      -> { Process.spawn("true", new_pgroup: "true") }.should.raise(ArgumentError, /expected true or false/)
+    end
   end
 
   platform_is_not :windows, :aix do

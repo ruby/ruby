@@ -49,6 +49,14 @@ platform_is_not :windows do
       stdin.should == @chunk1
     end
 
+    it "raises an ArgumentError if exception: is not true or false" do
+      argf ['-'] do
+        -> { @argf.read_nonblock(4, exception: 0) }.should.raise(ArgumentError, /expected true or false/)
+        -> { @argf.read_nonblock(4, exception: nil) }.should.raise(ArgumentError, /expected true or false/)
+        -> { @argf.read_nonblock(4, exception: 'false') }.should.raise(ArgumentError, /expected true or false/)
+      end
+    end
+
     context "with STDIN" do
       before do
         @r, @w = IO.pipe

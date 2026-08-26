@@ -390,9 +390,16 @@ rb_managed_id_table_dup(VALUE old_table)
 {
     struct rb_id_table *new_tbl;
     VALUE obj = TypedData_Make_Struct(0, struct rb_id_table, RTYPEDDATA_TYPE(old_table), new_tbl);
+    /* A managed id table hangs off VM-global state (e.g. a shape tree's edge
+     * table grows via this dup) and is reachable from every Ractor, so mark it
+     * shareable. */
+    RB_OBJ_SET_SHAREABLE(obj);
     struct rb_id_table *old_tbl = managed_id_table_ptr(old_table);
     rb_id_table_init(new_tbl, old_tbl->num + 1);
     rb_id_table_foreach(old_tbl, managed_id_table_dup_i, new_tbl);
+    /* The table body is embedded (RUBY_TYPED_EMBEDDABLE), so old_tbl is an
+     * interior pointer.  Keep old_table live in case dup_i triggers a GC. */
+    RB_GC_GUARD(old_table);
     return obj;
 }
 
@@ -418,12 +425,16 @@ void
 rb_managed_id_table_foreach(VALUE table, rb_id_table_foreach_func_t *func, void *data)
 {
     rb_id_table_foreach(managed_id_table_ptr(table), func, data);
+    /* The table body is embedded (RUBY_TYPED_EMBEDDABLE), so the pointer above
+     * is interior.  Keep table live in case func triggers a GC. */
+    RB_GC_GUARD(table);
 }
 
 void
 rb_managed_id_table_foreach_values(VALUE table, rb_id_table_foreach_values_func_t *func, void *data)
 {
     rb_id_table_foreach_values(managed_id_table_ptr(table), func, data);
+    RB_GC_GUARD(table);
 }
 
 int

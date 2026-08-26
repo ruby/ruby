@@ -1,0 +1,9 @@
+BEGIN {
+    printf("====RUBY_TRACING_LOG_START====\n");
+}
+
+% usdt_entries.each do |entry|
+usdt:<%=entry.file%>:ruby:<%=entry.probe_name%> {
+    printf("<%=entry.probe_name%>,%d,%d,%lu<%=",%lu"*entry.nargs%>\n", pid, tid, nsecs<%=(0...entry.nargs).map{|i| ", arg#{i}"}.join%>);
+}
+% end

@@ -73,4 +73,8 @@ describe "File.extname" do
     File.extname('Имя.m4a').should == ".m4a"
   end
 
+  it "preserves the encoding of the path" do
+    path = "foo.bar".encode(Encoding::EUC_JP)
+    File.extname(path).encoding.should == Encoding::EUC_JP
+  end
 end

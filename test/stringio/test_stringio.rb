@@ -168,6 +168,10 @@ class TestStringIO < Test::Unit::TestCase
     assert_string("", Encoding::UTF_8, StringIO.new("\n").gets(chomp: true))
 
     assert_equal("", StringIO.new("ab").gets("ab", chomp: true))
+
+    sio = StringIO.new("abcde\r\n" "fghij\r\n" + "z"*1024)
+    assert_equal("abcde", sio.gets("\r\n", chomp: true))
+    assert_equal("fghij", sio.gets("\r\n", chomp: true))
   end
 
   def test_gets_chomp_eol

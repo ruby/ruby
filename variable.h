@@ -12,7 +12,6 @@
 
 #include "shape.h"
 
-void rb_copy_complex_ivars(VALUE dest, VALUE obj, shape_id_t src_shape_id, st_table *fields_table);
 VALUE rb_obj_fields(VALUE obj, ID field_name);
 
 static inline VALUE

@@ -623,6 +623,54 @@ class TC_Operator < Test::Unit::TestCase
     assert_equal(false, IPAddr.new('2001:db8:1:1:0:ffff:a9fe:101').link_local?)
   end
 
+  def test_multicast?
+    assert_equal(true, IPAddr.new('224.0.0.0').multicast?)
+    assert_equal(true, IPAddr.new('225.0.0.0').multicast?)
+    assert_equal(true, IPAddr.new('224.0.0.0/4').multicast?)
+
+    assert_equal(false, IPAddr.new('240.0.0.0').multicast?)
+    assert_equal(false, IPAddr.new('240.0.0.0/4').multicast?)
+    assert_equal(false, IPAddr.new('192.168.0.0').multicast?)
+    assert_equal(false, IPAddr.new('169.254.1.1').multicast?)
+    assert_equal(false, IPAddr.new('169.254.254.255').multicast?)
+
+    assert_equal(true, IPAddr.new('ff00::').multicast?)
+    assert_equal(true, IPAddr.new('ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff').multicast?)
+    assert_equal(true, IPAddr.new('ff00::/8').multicast?)
+
+    assert_equal(false, IPAddr.new('feff::').multicast?)
+    assert_equal(false, IPAddr.new('feff:ffff:ffff:ffff:ffff:ffff:ffff:ffff').multicast?)
+    assert_equal(false, IPAddr.new('fe00::/8').multicast?)
+    assert_equal(false, IPAddr.new('::1').multicast?)
+    assert_equal(false, IPAddr.new('::').multicast?)
+
+    assert_equal(true, IPAddr.new('::ffff:224.0.0.0').multicast?)
+    assert_equal(false, IPAddr.new('::ffff:240.0.0.0').multicast?)
+  end
+
+  def test_link_local_multicast?
+    assert_equal(true, IPAddr.new('224.0.0.0').link_local_multicast?)
+    assert_equal(true, IPAddr.new('224.0.0.0/24').link_local_multicast?)
+
+    assert_equal(false, IPAddr.new('225.0.0.0').link_local_multicast?)
+    assert_equal(false, IPAddr.new('225.0.0.0/24').link_local_multicast?)
+    assert_equal(false, IPAddr.new('192.168.0.0').link_local_multicast?)
+    assert_equal(false, IPAddr.new('169.254.1.1').link_local_multicast?)
+    assert_equal(false, IPAddr.new('169.254.254.255').link_local_multicast?)
+
+    assert_equal(true, IPAddr.new('ff02::1').link_local_multicast?)
+    assert_equal(true, IPAddr.new('ff02::/16').link_local_multicast?)
+
+    assert_equal(false, IPAddr.new('ff00::').link_local_multicast?)
+    assert_equal(false, IPAddr.new('ff03::1').link_local_multicast?)
+    assert_equal(false, IPAddr.new('ff03::/16').link_local_multicast?)
+    assert_equal(false, IPAddr.new('::1').link_local_multicast?)
+    assert_equal(false, IPAddr.new('::').link_local_multicast?)
+
+    assert_equal(true, IPAddr.new('::ffff:224.0.0.0').link_local_multicast?)
+    assert_equal(false, IPAddr.new('::ffff:225.0.0.0').link_local_multicast?)
+  end
+
   def test_hash
     a1 = IPAddr.new('192.168.2.0')
     a2 = IPAddr.new('192.168.2.0')

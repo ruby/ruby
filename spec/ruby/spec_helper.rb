@@ -28,8 +28,8 @@ unless ENV['MSPEC_RUNNER'] # Running directly with ruby some_spec.rb
 end
 
 # Compare with SpecVersion directly here so it works even with --unguarded
-if VersionGuard::FULL_RUBY_VERSION < SpecVersion.new('2.7')
-  abort "This version of ruby/spec requires Ruby 2.7+"
+if VersionGuard::FULL_RUBY_VERSION < SpecVersion.new('3.3')
+  abort "This version of ruby/spec requires Ruby 3.3+"
 end
 
 unless ENV['MSPEC_RUNNER'] # Running directly with ruby some_spec.rb

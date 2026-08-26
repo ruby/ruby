@@ -40,8 +40,7 @@ ossl_ssl_session_initialize(VALUE self, VALUE arg1)
 {
     SSL_SESSION *ctx;
 
-    if (RTYPEDDATA_DATA(self))
-        ossl_raise(eSSLSession, "SSL Session already initialized");
+    ossl_want_uninitialized(self, &ossl_ssl_session_type);
 
     if (rb_obj_is_instance_of(arg1, cSSLSocket)) {
         SSL *ssl;
@@ -73,10 +72,9 @@ ossl_ssl_session_initialize(VALUE self, VALUE arg1)
 static VALUE
 ossl_ssl_session_initialize_copy(VALUE self, VALUE other)
 {
-    SSL_SESSION *sess, *sess_other, *sess_new;
+    SSL_SESSION *sess_other, *sess_new;
 
-    rb_check_frozen(self);
-    sess = RTYPEDDATA_DATA(self); /* XXX */
+    ossl_want_uninitialized(self, &ossl_ssl_session_type);
     GetSSLSession(other, sess_other);
 
     sess_new = ASN1_dup((i2d_of_void *)i2d_SSL_SESSION, (d2i_of_void *)d2i_SSL_SESSION,
@@ -85,7 +83,6 @@ ossl_ssl_session_initialize_copy(VALUE self, VALUE other)
         ossl_raise(eSSLSession, "ASN1_dup");
 
     RTYPEDDATA_DATA(self) = sess_new;
-    SSL_SESSION_free(sess);
 
     return self;
 }

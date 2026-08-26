@@ -36,6 +36,7 @@ class TestPsych < Psych::TestCase
   end
 
   def test_canonical
+    omit 'canonical output is not supported on the libfyaml backend' if libfyaml?
     yml = Psych.dump({:a => {'b' => 'c'}}, {:canonical => true})
     assert_match(/\? "b/, yml)
   end
@@ -115,6 +116,23 @@ class TestPsych < Psych::TestCase
   def test_libyaml_version
     assert Psych.libyaml_version
     assert_equal Psych.libyaml_version.join('.'), Psych::LIBYAML_VERSION
+  end
+
+  def test_backend
+    omit 'Psych::BACKEND is not defined on this backend' unless defined?(Psych::BACKEND)
+    assert_includes %w[libyaml libfyaml], Psych::BACKEND
+    assert_equal 'libfyaml', Psych::BACKEND if libfyaml?
+  end
+
+  def test_libfyaml_version
+    omit 'libfyaml backend only' unless libfyaml?
+    assert_kind_of String, Psych.libfyaml_version
+    assert_match(/\A\d+\.\d+/, Psych.libfyaml_version)
+  end
+
+  def test_libfyaml_version_absent_without_libfyaml
+    omit 'libfyaml backend defines libfyaml_version' if libfyaml?
+    refute_respond_to Psych, :libfyaml_version
   end
 
   def test_load_stream
@@ -436,6 +454,7 @@ eoyml
   end
 
   def test_safe_dump_extra_permitted_classes
+    omit 'libfyaml formats the empty flow mapping differently' if libfyaml?
     assert_equal "--- !ruby/object {}\n", Psych.safe_dump(Object.new, permitted_classes: [Object])
   end
 
@@ -452,6 +471,9 @@ eoyml
   end
 
   def test_safe_dump_stringify_names
+    # The 1.2 libfyaml backend does not quote 'no', so the expected escaping
+    # of the "no" key does not apply.
+    omit "libfyaml does not quote the 'no' key" if libfyaml?
     yaml = <<-eoyml
 ---
 foo:
@@ -478,6 +500,7 @@ eoyml
   end
 
   def test_safe_dump_aliases
+    omit 'libfyaml formats anchors and aliases differently' if libfyaml?
     x = []
     x << x
     error = assert_raise Psych::BadAlias do

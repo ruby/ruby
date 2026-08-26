@@ -112,20 +112,16 @@ describe "Array#sort" do
   end
 
   it "uses the sign of Integer block results as the sort result" do
+    ruby_exe(<<~RUBY).should == "[-4, 1, 2, 5, 7, 10, 12]\n"
     a = [1, 2, 5, 10, 7, -4, 12]
-    begin
-      class Integer
-        alias old_spaceship <=>
-        def <=>(other)
-          raise
-        end
-      end
-      a.sort {|n, m| (n - m) * (2 ** 200)}.should == [-4, 1, 2, 5, 7, 10, 12]
-    ensure
-      class Integer
-        alias <=> old_spaceship
+    class Integer
+      alias old_spaceship <=>
+      def <=>(other)
+        raise
       end
     end
+    p a.sort { |n,m| (n - m) * (2 ** 200) }
+    RUBY
   end
 
   it "compares values returned by block with 0" do

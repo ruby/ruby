@@ -120,4 +120,33 @@ RSpec.describe Bundler::Source::Git do
       end
     end
   end
+
+  describe "#cache" do
+    let(:options) do
+      { "uri" => uri, "revision" => "123abc" }
+    end
+    let(:app_cache_path) { Pathname.new("vendor/cache/bar-123abc") }
+    let(:git_proxy_stub) do
+      instance_double(Bundler::Source::Git::GitProxy, revision: "123abc", copy_to: nil)
+    end
+
+    before do
+      allow(Bundler::Source::Git::GitProxy).to receive(:new).and_return(git_proxy_stub)
+      allow(Bundler.settings).to receive(:[]).and_call_original
+      allow(Bundler.settings).to receive(:[]).with(:cache_all).and_return(true)
+      allow(subject).to receive(:app_cache_path).and_return(app_cache_path)
+      allow(subject).to receive(:cache_path).and_return(Pathname.new("global/git/bar-123abc"))
+      allow(subject).to receive(:requires_checkout?).and_return(false)
+      allow(subject).to receive(:serialize_gemspecs_in)
+      allow(::Bundler::FileUtils).to receive(:rm_rf)
+    end
+
+    it "copies the repository only once when several gems share the same source" do
+      subject.cache(double("spec for gem a"))
+      subject.cache(double("spec for gem b"))
+
+      expect(git_proxy_stub).to have_received(:copy_to).once
+      expect(::Bundler::FileUtils).to have_received(:rm_rf).once
+    end
+  end
 end

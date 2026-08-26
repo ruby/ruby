@@ -18,12 +18,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           token: ${{ (github.repository == 'ruby/ruby' && !startsWith(github.event_name, 'pull')) && secrets.MATZBOT_AUTO_UPDATE_TOKEN || secrets.GITHUB_TOKEN }}
           persist-credentials: false
 
-      - uses: ruby/setup-ruby@9eb537ca036ebaed86729dcb9309076e4c5c3b74 # v1.314.0
+      - uses: ruby/setup-ruby@95ef2b042f9d7a56d8268cba8559e2842e2ad01b # v1.321.0
         with:
           ruby-version: head
 
@@ -64,7 +64,9 @@ jobs:
 
       - name: Check for bash specific substitution in configure.ac
         run: |
-          git grep -n '\${[A-Za-z_0-9]*/' -- configure.ac && exit 1 || :
+          git grep -n '\${[A-Za-z_0-9]*/' -- configure.ac | sed "s/^/::error::/"
+          test ${PIPESTATUS[0]} != 0
+        if: always()
 
       - name: Check for header macros
         run: |
@@ -72,16 +74,33 @@ jobs:
           for header in ruby/*.h; do
             git grep -l -F -e $header -e HAVE_`echo $header | tr a-z./ A-Z__` -- . > /dev/null && continue
             fail=1
-            echo $header
+            echo "::error::$header"
           done
           exit $fail
         working-directory: include
+        if: always()
+
+      - name: Check for __has_builtin functions
+        run: |
+          missing=()
+          for check in $(git grep -h --no-line-number -o '__has_builtin(__[_a-zA-Z0-9]*)' | sort -u); do
+              func="${check#__has_builtin(}"
+              func="${func%)}"
+              git -P grep -w "RBIMPL_HAS_BUILTIN_$func" > /dev/null || missing+=("-e" "$check")
+          done
+          [ ${#missing[@]} = 0 ] || {
+              echo "::error::Missing __has_builtin fallbacks:"
+              git -P grep -F "${missing[@]}" | sed 's/^/::error::/' | head
+              false
+          }
+        if: always()
 
       - id: now
         run: |
           date +"mon=%-m"%n"day=%-d" >> $GITHUB_OUTPUT
         env:
           TZ: Asia/Tokyo
+        if: always()
 
       - id: deprecation
         run: |
@@ -92,21 +111,26 @@ jobs:
               true
           fi
         continue-on-error: ${{ steps.now.outputs.mon < 12 }}
+        if: always()
+
+      - run: make check-depends
+        if: always()
 
       - name: Check if to generate documents
         id: rdoc
         run: |
           set -- $(sed 's/#.*//;/^rdoc /!d' gems/bundled_gems)
           { echo version=$2; echo ref=$4; } >> $GITHUB_OUTPUT
+        if: always()
 
       - name: Checkout rdoc
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: ruby/rdoc
           ref: ${{ steps.rdoc.outputs.ref }}
           path: .bundle/gems/rdoc-${{ steps.rdoc.outputs.version }}
           persist-credentials: false
-        if: ${{ steps.rdoc.outputs.ref != '' }}
+        if: ${{ always() && steps.rdoc.outputs.ref != '' }}
 
       - name: Generate rdoc scripts
         run: |
@@ -118,11 +142,12 @@ jobs:
           bundle install --jobs 4
           bundle exec rake generate
         working-directory: .bundle/gems/rdoc-${{ steps.rdoc.outputs.version }}
-        if: ${{ steps.rdoc.outputs.ref != '' }}
+        if: ${{ always() && steps.rdoc.outputs.ref != '' }}
 
       - name: Core docs coverage
         run: |
           make XRUBY=ruby RDOC_DEPENDS= RBCONFIG=update-rbconfig rdoc-coverage
+        if: always()
 
       - name: Generate docs
         id: docs
@@ -131,19 +156,19 @@ jobs:
           echo htmlout=ruby-html-${GITHUB_SHA:0:10} >> $GITHUB_OUTPUT
         # Generate only when document commit/PR
         if: >-
-          ${{false
+          ${{always() && (false
           || contains(github.event.head_commit.message, '[ruby/rdoc]')
           || contains(github.event.head_commit.message, '[DOC]')
           || contains(github.event.pull_request.title, '[DOC]')
           || contains(github.event.pull_request.labels.*.name, 'Documentation')
-          }}
+          )}}
 
       - name: Upload docs
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           path: html
           name: ${{ steps.docs.outputs.htmlout }}
-        if: ${{ steps.docs.outcome == 'success' }}
+        if: ${{ always() && steps.docs.outcome == 'success' }}
 
       - uses: ./.github/actions/slack
         with:

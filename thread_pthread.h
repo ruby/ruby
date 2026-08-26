@@ -22,6 +22,14 @@
 # define RB_THREAD_CURRENT_EC_NOINLINE
 #endif
 
+// How a thread_sched_wait_events() wait ended.  "unavailable" (could not be
+// registered) is not "the event fired": the caller must fall back, not proceed.
+enum thread_sched_wait_result {
+    thread_sched_wait_event,       // an event the caller asked for fired
+    thread_sched_wait_timeout,     // the timeout expired before any event
+    thread_sched_wait_unavailable, // not registered; the caller must fall back
+};
+
 // this data should be protected by timer_th.waiting_lock
 struct rb_thread_sched_waiting {
     enum thread_sched_waiting_flag {
@@ -44,8 +52,30 @@ struct rb_thread_sched_waiting {
         int result;
     } data;
 
-    // connected to timer_th.waiting
+    // connected to a timer_th wheel slot (timed) or timer_th.waiting_untimed
     struct ccan_list_node node;
+
+    /* which wheel slot `node` is on; meaningful only while flags has
+     * thread_sched_waiting_timeout */
+    uint8_t wheel_lvl;
+    uint8_t wheel_slot;
+
+    // connected to rb_fd_waiters.waiters of data.fd
+    struct ccan_list_node fd_node;
+};
+
+// One entry per fd with waiters; fds stay dense, so a table indexed by fd fits.
+// Entries live in fixed chunks: growing must not move a live list head.
+struct rb_fd_waiters {
+    struct ccan_list_head waiters; // rb_thread_sched_waiting.fd_node
+
+    // The io flags currently armed in epoll/kqueue for this fd: the union of
+    // what its waiters asked for.
+    uint32_t armed_flags;
+
+    // Bumped on full disarm.  Events carry the generation they were armed with,
+    // so one queued before the fd was disarmed (and reused) is recognised.
+    uint32_t generation;
 };
 
 // per-Thread scheduler helper data
@@ -60,22 +90,20 @@ struct rb_thread_sched_item {
         // There is no clear relationship between this and th->status.
         bool is_ready;
 
-        // connected to vm->ractor.sched.timeslice_threads
-        // locked by vm->ractor.sched.lock
-        struct ccan_list_node timeslice_threads;
-
-        // connected to vm->ractor.sched.running_threads
-        // locked by vm->ractor.sched.lock
-        struct ccan_list_node running_threads;
-
-        // connected to vm->ractor.sched.zombie_threads
-        struct ccan_list_node zombie_threads;
     } node;
 
     struct rb_thread_sched_waiting waiting_reason;
     uint32_t event_serial;
 
-    bool finished;
+    // wakes pending on this thread (timer thread or an fd shard claim);
+    // under timer_th.wake_pending_lock
+    uint32_t wake_pending_cnt;
+
+    // parked on its own condvar with a deadline; under the sched lock (see
+    // ubf_waiting).  Always false for an M:N thread: its deadline lives on the
+    // timer wheel, and its early wake comes from the timer thread instead.
+    bool waiting_timed;
+
     bool malloc_stack;
     void *context_stack;
     size_t context_stack_size;
@@ -94,20 +122,19 @@ struct rb_native_thread {
 
     struct rb_thread_struct *running_thread;
 
-    // to control native thread
-#if defined(__GLIBC__) || defined(__FreeBSD__)
-    union
-#else
-    /*
-     * assume the platform condvars are badly implemented and have a
-     * "memory" of which mutex they're associated with
-     */
-    struct
-#endif
-      {
-        rb_nativethread_cond_t intr; /* th->interrupt_lock */
-        rb_nativethread_cond_t readyq; /* use sched->lock */
-    } cond;
+    // The running thread on this shared nt, for the barrier/timeslice scans.
+    // While a scan holds running_th_lock the thread cannot finish parking.
+    rb_nativethread_lock_t running_th_lock;
+    struct rb_thread_struct *running_th;
+    struct ccan_list_node snts_node; // in vm->ractor.sched.ntlist.snts
+    // in vm->ractor.sched.ntlist.running_dnts while running_thread runs
+    struct ccan_list_node running_dnts_node;
+    // barrier_serial stamped by the barrier's counting walk; this nt's
+    // deregistration during that barrier decrements the snapshot count
+    uint32_t barrier_counted_serial;
+
+    // to control native thread; use sched->lock
+    rb_nativethread_cond_t readyq;
 
 #ifdef USE_SIGALTSTACK
     void *altstack;
@@ -115,6 +142,15 @@ struct rb_native_thread {
 
     struct coroutine_context *nt_context;
     int dedicated;
+
+    // set when this thread came back from a blocking region with no room left
+    // in the shared pool; it ends when it next asks for work
+    bool retiring;
+
+    // A terminating coroutine records its context here before its final
+    // transfer; this nt's loop reclaims it. (Not via coroutine_transfer()'s
+    // return value: its meaning differs between the amd64 asm and ucontext.)
+    struct coroutine_context *dead_co;
 };
 
 #undef except
@@ -135,14 +171,29 @@ struct rb_thread_sched {
     struct rb_thread_struct *runnable_hot_th;
     int runnable_hot_th_waiting;
     bool is_running;
-    bool is_running_timeslice;
+
     bool enable_mn_threads;
 
     struct ccan_list_head readyq;
     int readyq_cnt;
     // ractor scheduling
+    // When not linked in vm->ractor.sched.grq, this node is kept
+    // self-linked (ccan_list_node_init), so "linked?" can be read off the
+    // node itself: enqueuers assert it, and direct transfers cancel an
+    // outstanding entry (see ractor_sched_cancel_enq).
     struct ccan_list_node grq_node;
+    struct ccan_list_node timeslice_node; // self-linked = not on timeslice.scheds
 };
+
+struct rb_thread_context;
+
+// A coroutine (M:N) thread's teardown runs coroutine_thread_terminated
+// instead of the dedicated-thread path in thread_start_func_2; see the
+// comments there and in thread_pthread_mn.c. th->sched.context is cleared in
+// that epilogue, so this also reads as "did not tear down yet".
+// (Only meaningful when USE_MN_THREADS -- gate uses accordingly; the macro
+// itself is a plain pointer test and always compiles.)
+#define th_has_coroutine(th) ((th)->sched.context != NULL)
 
 #ifdef RB_THREAD_LOCAL_SPECIFIER
   NOINLINE(void rb_current_ec_set(struct rb_execution_context_struct *));
@@ -180,5 +231,6 @@ RUBY_EXTERN native_tls_key_t ruby_current_ec_key;
 struct rb_ractor_struct;
 void rb_ractor_sched_wait(struct rb_execution_context_struct *ec, struct rb_ractor_struct *cr, rb_unblock_function_t *ubf, void *ptr);
 void rb_ractor_sched_wakeup(struct rb_ractor_struct *r, struct rb_thread_struct *th);
+void rb_thread_wake_fence(struct rb_thread_struct *th);
 
 #endif /* RUBY_THREAD_PTHREAD_H */

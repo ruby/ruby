@@ -149,6 +149,11 @@ sh ../../ruby/configure -C --disable-install-doc --with-opt-dir=C:\Users\usernam
     of `cmd.exe`.  If you want to enable it explicitly, run `cmd.exe` with
     `/E:ON` option.
 
+7.  Some tests in `nmake check` create symbolic links.  Enable
+    [Developer Mode](https://learn.microsoft.com/windows/apps/get-started/developer-mode-features-and-debugging)
+    (Settings > System > For developers) so that they do not fail with
+    `Permission denied @ rb_file_s_symlink`.
+
 ### How to compile and install
 
 1.  Execute `win32\configure.bat` on your build directory.
@@ -292,7 +297,7 @@ to their base names.
 
 Although no icons are distributed with the ruby source, you can use
 anything you like. You will be able to find many images by search engines.
-For example, followings are made from [Ruby logo kit]:
+For example, the following are made from [Ruby logo kit]:
 
 * Small [favicon] in the official site
 

@@ -161,12 +161,12 @@ class OpenSSL::TestHPKE < OpenSSL::TestCase
   def test_context_cannot_be_reinitialized
     suite = x25519_suite
     sender = OpenSSL::HPKE::Context::Sender.new(suite)
-    assert_raise(OpenSSL::HPKE::HPKEError) do
+    assert_raise(TypeError) do
       sender.send(:initialize, suite)
     end
 
     receiver = OpenSSL::HPKE::Context::Receiver.new(suite)
-    assert_raise(OpenSSL::HPKE::HPKEError) do
+    assert_raise(TypeError) do
       receiver.send(:initialize, suite)
     end
   end

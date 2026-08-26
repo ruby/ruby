@@ -2,11 +2,6 @@
 
 require 'socket.so'
 
-unless IO.method_defined?(:wait_writable, false)
-  # It's only required on older Rubies < v3.2:
-  require 'io/wait'
-end
-
 class Addrinfo
   # creates an Addrinfo object from the arguments.
   #
@@ -63,6 +58,13 @@ class Addrinfo
         when :wait_writable
           sock.wait_writable(timeout) or
             raise Errno::ETIMEDOUT, "user specified timeout for #{self.ip_address}:#{self.ip_port}"
+          # Check SO_ERROR instead of relying on the connect_nonblock retry;
+          # some kernels (e.g. Darwin 27) answer the retry connect(2) with
+          # EISCONN even when the connection has failed.  [Bug #22223]
+          err = sock.getsockopt(Socket::SOL_SOCKET, Socket::SO_ERROR).int
+          unless err.zero?
+            raise SystemCallError.new("connect(2) for #{self.ip_address}:#{self.ip_port}", err)
+          end
         end while true
       else
         sock.connect(self)

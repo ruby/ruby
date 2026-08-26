@@ -175,17 +175,16 @@ VALUE rb_mod_include_p(VALUE child, VALUE parent);
 VALUE rb_mod_ancestors(VALUE mod);
 
 /**
- * Queries the class's descendants. This  routine gathers classes that are
- * subclasses of the given class (or subclasses of those subclasses, etc.),
- * returning an array of classes that have the given class as an ancestor.
- * The returned array does not include the given class or singleton classes.
+ * Queries the module's descendants.  This routine gathers classes and modules
+ * that have the given module in their ancestors.  The returned array includes
+ * neither the given module itself nor singleton classes.
  *
- * @param[in]  klass A class.
- * @return     An array of classes where `klass` is an ancestor.
+ * @param[in]  mod  A module or a class.
+ * @return     An array of classes and modules whose `ancestors` include `mod`.
  *
  * @internal
  */
-VALUE rb_class_descendants(VALUE klass);
+VALUE rb_mod_descendants(VALUE mod);
 
 /**
  * Queries the class's direct descendants. This  routine gathers classes that are

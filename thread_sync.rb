@@ -371,10 +371,10 @@ class Thread
     end
 
     # call-seq:
-    #    mutex.lock  -> self
+    #    mutex.unlock  -> self
     #
-    # Attempts to grab the lock and waits if it isn't available.
-    # Raises +ThreadError+ if +mutex+ was locked by the current thread.
+    # Releases the lock.
+    # Raises +ThreadError+ if +mutex+ wasn't locked by the current thread.
     def unlock
       Primitive.rb_mut_unlock
     end

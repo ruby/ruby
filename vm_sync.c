@@ -4,6 +4,7 @@
 #include "vm_sync.h"
 #include "ractor_core.h"
 #include "vm_debug.h"
+#include "probes.h"
 
 void rb_ractor_sched_barrier_start(rb_vm_t *vm, rb_ractor_t *cr);
 void rb_ractor_sched_barrier_join(rb_vm_t *vm, rb_ractor_t *cr);
@@ -16,10 +17,16 @@ vm_locked(rb_vm_t *vm)
 }
 
 #if RUBY_DEBUG > 0
+static bool
+vm_lock_assertable_p(void)
+{
+    return rb_current_execution_context(false) != NULL;
+}
+
 void
 RUBY_ASSERT_vm_locking(void)
 {
-    if (rb_multi_ractor_p()) {
+    if (vm_lock_assertable_p() && rb_multi_ractor_p()) {
         rb_vm_t *vm = GET_VM();
         VM_ASSERT(vm_locked(vm));
     }
@@ -28,13 +35,13 @@ RUBY_ASSERT_vm_locking(void)
 void
 RUBY_ASSERT_vm_locking_with_barrier(void)
 {
-    if (rb_multi_ractor_p()) {
+    if (vm_lock_assertable_p() && rb_multi_ractor_p()) {
         rb_vm_t *vm = GET_VM();
         VM_ASSERT(vm_locked(vm));
 
         if (vm->ractor.cnt > 1) {
             /* Written to only when holding both ractor.sync and ractor.sched lock */
-            VM_ASSERT(vm->ractor.sched.barrier_waiting);
+            VM_ASSERT(vm->ractor.sched.barrier_is_waiting);
         }
     }
 }
@@ -42,7 +49,7 @@ RUBY_ASSERT_vm_locking_with_barrier(void)
 void
 RUBY_ASSERT_vm_unlocking(void)
 {
-    if (rb_multi_ractor_p()) {
+    if (vm_lock_assertable_p() && rb_multi_ractor_p()) {
         rb_vm_t *vm = GET_VM();
         VM_ASSERT(!vm_locked(vm));
     }
@@ -59,7 +66,7 @@ static bool
 vm_need_barrier_waiting(const rb_vm_t *vm)
 {
 #ifdef RUBY_THREAD_PTHREAD_H
-    return vm->ractor.sched.barrier_waiting;
+    return vm->ractor.sched.barrier_is_waiting;
 #else
     return vm->ractor.sync.barrier_waiting;
 #endif
@@ -115,6 +122,10 @@ vm_lock_enter(rb_ractor_t *cr, rb_vm_t *vm, bool locked, bool no_barrier, unsign
 
     RUBY_DEBUG_LOG2(file, line, "rec:%u owner:%u", vm->ractor.sync.lock_rec,
                     (unsigned int)rb_ractor_id(vm->ractor.sync.lock_owner));
+
+    if (RUBY_DTRACE_GVL_ACQUIRE_ENABLED()) {
+        RUBY_DTRACE_GVL_ACQUIRE();
+    }
 }
 
 static void
@@ -138,6 +149,10 @@ vm_lock_leave(rb_vm_t *vm, bool no_barrier, unsigned int *lev APPEND_LOCATION_AR
         rb_ractor_sched_barrier_end(vm, cr);
     }
 #endif
+
+    if (RUBY_DTRACE_GVL_RELEASE_ENABLED()) {
+        RUBY_DTRACE_GVL_RELEASE();
+    }
 
     vm->ractor.sync.lock_rec--;
     *lev = vm->ractor.sync.lock_rec;
@@ -272,7 +287,7 @@ rb_vm_barrier(void)
             return;
         }
         else {
-            VM_ASSERT(!vm->ractor.sched.barrier_waiting);
+            VM_ASSERT(!vm->ractor.sched.barrier_is_waiting);
             rb_ractor_sched_barrier_start(vm, cr);
         }
     }

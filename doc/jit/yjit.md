@@ -525,23 +525,8 @@ PERF=record ruby --yjit-perf=codegen -Iharness-perf benchmarks/lobsters/benchmar
 
 # Aggregate results
 perf script > /tmp/perf.txt
-../ruby/misc/jit_perf.py /tmp/perf.txt
+../ruby/misc/jit_perf.rb /tmp/perf.txt
 ```
 
-#### Building perf with Python support
-
-The above instructions work fine for most people, but you could also use
-a handy `perf script -s` interface if you build perf from source.
-
-```bash
-# Build perf from source for Python support
-sudo apt-get install libpython3-dev python3-pip flex libtraceevent-dev \
-  libelf-dev libunwind-dev libaudit-dev libslang2-dev libdw-dev
-git clone --depth=1 https://github.com/torvalds/linux
-cd linux/tools/perf
-make
-make install
-
-# Aggregate results
-perf script -s ../ruby/misc/jit_perf.py
-```
+This aggregation script reads the text output from `perf script`, so it does not require `perf`
+to be built with scripting support.

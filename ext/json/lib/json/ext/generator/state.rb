@@ -54,6 +54,7 @@ module JSON
             strict: strict?,
             depth: depth,
             buffer_initial_length: buffer_initial_length,
+            sort_keys: sort_keys
           }
 
           allow_duplicate_key = allow_duplicate_key?
@@ -70,33 +71,6 @@ module JSON
         end
 
         alias_method :to_hash, :to_h
-
-        # call-seq: [](name)
-        #
-        # Returns the value returned by method +name+.
-        def [](name)
-          ::JSON.deprecation_warning("JSON::State#[] is deprecated and will be removed in json 3.0.0")
-
-          if respond_to?(name)
-            __send__(name)
-          else
-            instance_variable_get("@#{name}") if
-              instance_variables.include?("@#{name}".to_sym) # avoid warning
-          end
-        end
-
-        # call-seq: []=(name, value)
-        #
-        # Sets the attribute name to value.
-        def []=(name, value)
-          ::JSON.deprecation_warning("JSON::State#[]= is deprecated and will be removed in json 3.0.0")
-
-          if respond_to?(name_writer = "#{name}=")
-            __send__ name_writer, value
-          else
-            instance_variable_set "@#{name}", value
-          end
-        end
       end
     end
   end

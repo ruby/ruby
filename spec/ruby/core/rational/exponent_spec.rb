@@ -2,34 +2,31 @@ require_relative "../../spec_helper"
 
 describe "Rational#**" do
   describe "when passed Rational" do
-    # Guard against the Mathn library
-    guard -> { !defined?(Math.rsqrt) } do
-      it "returns Rational(1) if the exponent is Rational(0)" do
-        (Rational(0) ** Rational(0)).should.eql?(Rational(1))
-        (Rational(1) ** Rational(0)).should.eql?(Rational(1))
-        (Rational(3, 4) ** Rational(0)).should.eql?(Rational(1))
-        (Rational(-1) ** Rational(0)).should.eql?(Rational(1))
-        (Rational(-3, 4) ** Rational(0)).should.eql?(Rational(1))
-        (Rational(bignum_value) ** Rational(0)).should.eql?(Rational(1))
-        (Rational(-bignum_value) ** Rational(0)).should.eql?(Rational(1))
-      end
+    it "returns Rational(1) if the exponent is Rational(0)" do
+      (Rational(0) ** Rational(0)).should.eql?(Rational(1))
+      (Rational(1) ** Rational(0)).should.eql?(Rational(1))
+      (Rational(3, 4) ** Rational(0)).should.eql?(Rational(1))
+      (Rational(-1) ** Rational(0)).should.eql?(Rational(1))
+      (Rational(-3, 4) ** Rational(0)).should.eql?(Rational(1))
+      (Rational(bignum_value) ** Rational(0)).should.eql?(Rational(1))
+      (Rational(-bignum_value) ** Rational(0)).should.eql?(Rational(1))
+    end
 
-      it "returns self raised to the argument as a Rational if the exponent's denominator is 1" do
-        (Rational(3, 4) ** Rational(1, 1)).should.eql?(Rational(3, 4))
-        (Rational(3, 4) ** Rational(2, 1)).should.eql?(Rational(9, 16))
-        (Rational(3, 4) ** Rational(-1, 1)).should.eql?(Rational(4, 3))
-        (Rational(3, 4) ** Rational(-2, 1)).should.eql?(Rational(16, 9))
-      end
+    it "returns self raised to the argument as a Rational if the exponent's denominator is 1" do
+      (Rational(3, 4) ** Rational(1, 1)).should.eql?(Rational(3, 4))
+      (Rational(3, 4) ** Rational(2, 1)).should.eql?(Rational(9, 16))
+      (Rational(3, 4) ** Rational(-1, 1)).should.eql?(Rational(4, 3))
+      (Rational(3, 4) ** Rational(-2, 1)).should.eql?(Rational(16, 9))
+    end
 
-      it "returns self raised to the argument as a Float if the exponent's denominator is not 1" do
-        (Rational(3, 4) ** Rational(4, 3)).should be_close(0.681420222312052, TOLERANCE)
-        (Rational(3, 4) ** Rational(-4, 3)).should be_close(1.46752322173095, TOLERANCE)
-        (Rational(3, 4) ** Rational(4, -3)).should be_close(1.46752322173095, TOLERANCE)
-      end
+    it "returns self raised to the argument as a Float if the exponent's denominator is not 1" do
+      (Rational(3, 4) ** Rational(4, 3)).should be_close(0.681420222312052, TOLERANCE)
+      (Rational(3, 4) ** Rational(-4, 3)).should be_close(1.46752322173095, TOLERANCE)
+      (Rational(3, 4) ** Rational(4, -3)).should be_close(1.46752322173095, TOLERANCE)
+    end
 
-      it "returns a complex number when self is negative and the passed argument is not 0" do
-        (Rational(-3, 4) ** Rational(-4, 3)).should be_close(Complex(-0.7337616108654732, 1.2709123906625817), TOLERANCE)
-      end
+    it "returns a complex number when self is negative and the passed argument is not 0" do
+      (Rational(-3, 4) ** Rational(-4, 3)).should be_close(Complex(-0.7337616108654732, 1.2709123906625817), TOLERANCE)
     end
   end
 
@@ -46,16 +43,13 @@ describe "Rational#**" do
       (Rational(3, -bignum_value) ** -4).should == Rational(115792089237316195423570985008687907853269984665640564039457584007913129639936, 81)
     end
 
-    # Guard against the Mathn library
-    guard -> { !defined?(Math.rsqrt) } do
-      it "returns Rational(1, 1) when the passed argument is 0" do
-        (Rational(3, 4) ** 0).should.eql?(Rational(1, 1))
-        (Rational(-3, 4) ** 0).should.eql?(Rational(1, 1))
-        (Rational(3, -4) ** 0).should.eql?(Rational(1, 1))
+    it "returns Rational(1, 1) when the passed argument is 0" do
+      (Rational(3, 4) ** 0).should.eql?(Rational(1, 1))
+      (Rational(-3, 4) ** 0).should.eql?(Rational(1, 1))
+      (Rational(3, -4) ** 0).should.eql?(Rational(1, 1))
 
-        (Rational(bignum_value, 4) ** 0).should.eql?(Rational(1, 1))
-        (Rational(3, -bignum_value) ** 0).should.eql?(Rational(1, 1))
-      end
+      (Rational(bignum_value, 4) ** 0).should.eql?(Rational(1, 1))
+      (Rational(3, -bignum_value) ** 0).should.eql?(Rational(1, 1))
     end
   end
 

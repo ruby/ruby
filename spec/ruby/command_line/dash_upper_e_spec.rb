@@ -32,6 +32,11 @@ describe "ruby -E" do
     ruby_exe("p 1",
              options: '-Eascii:ascii -U',
              args: '2>&1',
-             exit_status: 1).should =~ /RuntimeError/
+             exit_status: 1).should =~ /already set to ascii \(RuntimeError\)/
+  end
+
+  it "doesn't raise a RuntimeError if used with -U in RUBYOPT" do
+    ruby_exe("puts Encoding.default_external, Encoding.default_internal", options: '-E ascii:ascii', env: { 'RUBYOPT' => '-U' }).
+      should == "US-ASCII\nUS-ASCII\n"
   end
 end

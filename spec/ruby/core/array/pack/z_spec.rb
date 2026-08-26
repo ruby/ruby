@@ -3,14 +3,12 @@ require_relative '../../../spec_helper'
 require_relative '../fixtures/classes'
 require_relative 'shared/basic'
 require_relative 'shared/string'
-require_relative 'shared/taint'
 
 describe "Array#pack with format 'Z'" do
   it_behaves_like :array_pack_basic, 'Z'
   it_behaves_like :array_pack_basic_non_float, 'Z'
   it_behaves_like :array_pack_no_platform, 'Z'
   it_behaves_like :array_pack_string, 'Z'
-  it_behaves_like :array_pack_taint, 'Z'
 
   it "calls #to_str to convert an Object to a String" do
     obj = mock("pack Z string")

@@ -358,7 +358,7 @@ module Test_SyncDefaultGems
       assert_equal("# 3\n", File.read("src/lib/conflict.rb"), out)
       subject, body = top_commit("src", format: "%B").split("\n\n", 2)
       assert_equal("[ruby/#@target] Merge commit", subject, out)
-      assert_includes(body, "Commit in branch", out)
+      assert_include(body, "Commit in branch", out)
     end
 
     def test_no_upstream_file
@@ -369,8 +369,8 @@ module Test_SyncDefaultGems
           lib/net/https.rb
       ])
       expected = {
-        "un" => %w[lib/un.rb],
-        "net-http" => %w[lib/net/https.rb],
+        "ruby/un" => %w[lib/un.rb],
+        "ruby/net-http" => %w[lib/net/https.rb],
         nil => %w[lib/unicode_normalize/normalize.rb lib/unicode_normalize/tables.rb],
       }
       assert_equal(expected, group)

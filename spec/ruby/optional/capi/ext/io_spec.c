@@ -35,6 +35,10 @@ VALUE io_spec_GetOpenFile_fd(VALUE self, VALUE io) {
   return INT2NUM(io_spec_get_fd(io));
 }
 
+VALUE io_spec_rb_io_get_io(VALUE self, VALUE io) {
+  return rb_io_get_io(io);
+}
+
 VALUE io_spec_rb_io_addstr(VALUE self, VALUE io, VALUE str) {
   return rb_io_addstr(io, str);
 }
@@ -366,6 +370,10 @@ static VALUE io_spec_rb_io_open_descriptor_without_encoding(VALUE self, VALUE kl
   return rb_io_open_descriptor(klass, FIX2INT(descriptor), FIX2INT(mode), path, timeout, NULL);
 }
 
+static VALUE io_spec_rb_eIOTimeoutError(VALUE self) {
+  return rb_eIOTimeoutError;
+}
+
 void Init_io_spec(void) {
   VALUE cls = rb_define_class("CApiIOSpecs", rb_cObject);
   rb_define_method(cls, "GetOpenFile_fd", io_spec_GetOpenFile_fd, 1);
@@ -379,6 +387,7 @@ void Init_io_spec(void) {
   rb_define_method(cls, "rb_io_check_readable", io_spec_rb_io_check_readable, 1);
   rb_define_method(cls, "rb_io_check_writable", io_spec_rb_io_check_writable, 1);
   rb_define_method(cls, "rb_io_check_closed", io_spec_rb_io_check_closed, 1);
+  rb_define_method(cls, "rb_io_get_io", io_spec_rb_io_get_io, 1);
   rb_define_method(cls, "rb_io_set_nonblock", io_spec_rb_io_set_nonblock, 1);
   rb_define_method(cls, "rb_io_taint_check", io_spec_rb_io_taint_check, 1);
   rb_define_method(cls, "rb_io_wait_readable", io_spec_rb_io_wait_readable, 2);
@@ -404,6 +413,7 @@ void Init_io_spec(void) {
   rb_define_method(cls, "rb_io_closed_p", io_spec_rb_io_closed_p, 1);
   rb_define_method(cls, "rb_io_open_descriptor", io_spec_rb_io_open_descriptor, 9);
   rb_define_method(cls, "rb_io_open_descriptor_without_encoding", io_spec_rb_io_open_descriptor_without_encoding, 5);
+  rb_define_method(cls, "rb_eIOTimeoutError", io_spec_rb_eIOTimeoutError, 0);
   rb_define_const(cls, "FMODE_READABLE", INT2FIX(FMODE_READABLE));
   rb_define_const(cls, "FMODE_WRITABLE", INT2FIX(FMODE_WRITABLE));
   rb_define_const(cls, "FMODE_BINMODE", INT2FIX(FMODE_BINMODE));

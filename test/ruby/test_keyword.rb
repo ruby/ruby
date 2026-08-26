@@ -224,6 +224,8 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([[], {}], skws(*nil, **nil))
 
     assert_equal({}, {**nil})
+    assert_equal({}, {**nil, **nil})
+    assert_equal({}, {**nil, **nil, **nil})
     assert_equal({a: 1}, {a: 1, **nil})
     assert_equal({a: 1}, {**nil, a: 1})
   end
@@ -497,6 +499,7 @@ class TestKeywordArguments < Test::Unit::TestCase
     def self.yo(*a, **kw) = kw
     assert_equal_not_same kw, yo(**kw)
     assert_equal_not_same kw, yo(**kw, **kw)
+    assert_equal_not_same kw, yo(**kw, **kw, **kw, **kw)
 
     singleton_class.send(:remove_method, :yo)
     def self.yo(opts) = opts
@@ -4187,7 +4190,7 @@ class TestKeywordArguments < Test::Unit::TestCase
       end
     end
 
-    assert_raise_with_message(TypeError, /expected Hash/, bug13015) do
+    assert_raise_with_message(TypeError, /no implicit conversion of Array into Hash/, bug13015) do
       klass.new(d: 4)
     end
   end
@@ -4585,6 +4588,64 @@ class TestKeywordArgumentsSymProcRefinements < Test::Unit::TestCase
     assert_equal([], m_bug20570(*[], **nil))
     assert_equal([1], m_bug20570(*[1], **nil))
     assert_equal([1, 2], m_bug20570(*[1, 2], **nil))
+  end
+
+  def test_keyword_only_method_rejects_positional_after_cache_primed_bug_22099
+    c = Class.new do
+      def bar(a: nil, b: nil)
+        [a, b]
+      end
+    end
+    obj = c.new
+
+    # Prime the per-class call cache with a valid keyword-only call.
+    assert_equal([1, 2], obj.bar(a: 1, b: 2))
+
+    # Different call sites with the same argc/flag but a positional argument
+    # must still raise, not reuse the cached keyword-setup fastpath and bind
+    # the positional value to the first keyword.
+    assert_raise(ArgumentError) { obj.bar(99, a: 0) }
+    assert_raise(ArgumentError) { obj.bar(99, b: 0) }
+
+    # The cache must compare argc and keyword count separately, not their sum.
+    assert_raise(ArgumentError) { obj.bar(7, 8, a: 1) }
+  end
+
+  def test_keyword_call_cache_resolves_keywords_by_name_bug_22099
+    c = Class.new do
+      def bar(a: nil, b: nil, cc: nil)
+        [a, b, cc]
+      end
+    end
+    obj = c.new
+
+    # Call sites sharing argc/flag/keyword-count must still bind each keyword
+    # by name (the cached fastpath reads the keyword names from the live call).
+    assert_equal([1, nil, nil], obj.bar(a: 1))
+    assert_equal([nil, 2, nil], obj.bar(b: 2))
+    assert_equal([nil, nil, 3], obj.bar(cc: 3))
+    assert_equal([1, 2, nil], obj.bar(a: 1, b: 2))
+    assert_equal([8, 9, nil], obj.bar(b: 9, a: 8))
+    assert_raise(ArgumentError) { obj.bar(z: 1) }
+  end
+
+  def test_too_many_keywords_rejected_at_compile_time
+    # The per-class call cache stores the keyword count in an unsigned short
+    # (rb_class_cc_entries_entry.kw_len), so a call site or method may not use
+    # more than that many keyword arguments. It is rejected when compiling.
+    max = 65535
+
+    over_def = "def m(" + Array.new(max + 1) {|i| "k#{i}:" }.join(", ") + "); end"
+    err = assert_raise(SyntaxError) { RubyVM::InstructionSequence.compile(over_def) }
+    assert_match(/too many keyword parameters/, err.message)
+
+    over_call = "m(" + Array.new(max + 1) {|i| "k#{i}: 0" }.join(", ") + ")"
+    err = assert_raise(SyntaxError) { RubyVM::InstructionSequence.compile(over_call) }
+    assert_match(/too many keyword arguments/, err.message)
+
+    # The maximum itself is still accepted.
+    ok_def = "def m(" + Array.new(max) {|i| "k#{i}:" }.join(", ") + "); end"
+    assert_nothing_raised(SyntaxError) { RubyVM::InstructionSequence.compile(ok_def) }
   end
 
   private def one

@@ -1,5 +1,7 @@
 #include "internal.h"
 #include "internal/box.h"
+#include "internal/string.h"
+#include "internal/variable.h"
 #include "vm_core.h"
 #include "iseq.h"
 #include "builtin.h"
@@ -91,14 +93,17 @@ rb_define_gem_modules(VALUE flags_value, VALUE _)
 
     if (flags->gem) {
         rb_define_module("Gem");
+        // Make the error decoration gems autoload on first constant access.
+        // error.c loads them for error display on the first error
+        // (or eagerly via Process.warmup).
         if (flags->error_highlight) {
-            rb_define_module("ErrorHighlight");
+            rb_autoload_str(rb_cObject, rb_intern("ErrorHighlight"), rb_fstring_cstr("error_highlight"));
         }
         if (flags->did_you_mean) {
-            rb_define_module("DidYouMean");
+            rb_autoload_str(rb_cObject, rb_intern("DidYouMean"), rb_fstring_cstr("did_you_mean"));
         }
         if (flags->syntax_suggest) {
-            rb_define_module("SyntaxSuggest");
+            rb_autoload_str(rb_cObject, rb_intern("SyntaxSuggest"), rb_fstring_cstr("syntax_suggest"));
         }
     }
 

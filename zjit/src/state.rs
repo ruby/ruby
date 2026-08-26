@@ -132,7 +132,7 @@ impl ZJITState {
         let materialize_exit_trampoline = gen_materialize_exit_trampoline(&mut cb, exit_trampoline).unwrap();
         let function_stub_hit_trampoline = gen_function_stub_hit_trampoline(&mut cb).unwrap();
 
-        let perfetto_tracer = if get_option!(trace_side_exits).is_some() || get_option!(trace_compiles) || get_option!(trace_invalidation) {
+        let perfetto_tracer = if get_option!(trace_side_exits).is_some() || get_option!(trace_compiles) || get_option!(trace_invalidation) || get_option!(trace_fallbacks) {
             Some(PerfettoTracer::new())
         } else {
             None
@@ -496,25 +496,63 @@ pub extern "C" fn rb_zjit_record_exit_stack(reason: *const std::ffi::c_char) {
     tracer.write_event("side_exit", reason_str, &frames);
 }
 
+/// Record a backtrace with ZJIT fallbacks as a Perfetto trace event
+#[unsafe(no_mangle)]
+pub extern "C" fn rb_zjit_record_fallback_stack(reason: *const std::ffi::c_char) {
+    if !zjit_enabled_p() || !get_option!(trace_fallbacks) {
+        return;
+    }
+
+    let tracer = match ZJITState::get_tracer() {
+        Some(t) => t,
+        None => return,
+    };
+
+    // When `trace_fallbacks_sample_interval` is non-zero, apply sampling.
+    if get_option!(trace_fallbacks_sample_interval) != 0 {
+        if tracer.skipped_samples < get_option!(trace_fallbacks_sample_interval) {
+            tracer.skipped_samples += 1;
+            return;
+        } else {
+            tracer.skipped_samples = 0;
+        }
+    }
+
+    // Collect profile frames
+    let frames = capture_ruby_frames();
+
+    // Get the reason string
+    let reason_str = if reason.is_null() {
+        "unknown"
+    } else {
+        unsafe { std::ffi::CStr::from_ptr(reason).to_str().unwrap_or("unknown") }
+    };
+
+    tracer.write_event("fallback", reason_str, &frames);
+}
+
 /// Wrap a closure in a Perfetto duration event with category "invalidation"
 /// and a Ruby backtrace captured on the begin event.
-pub fn trace_invalidation<F, R>(reason: &str, func: F) -> R where F: FnOnce() -> R {
+pub fn trace_invalidation<RF, F, R>(reason_func: RF, func: F) -> R
+    where RF: FnOnce() -> String, F: FnOnce() -> R {
     if !get_option!(trace_invalidation) {
         return func();
     }
 
     // Capture backtrace and emit begin event before patching
     let frames = capture_ruby_frames();
+    let mut reason: String = "".into();
     if let Some(tracer) = ZJITState::get_tracer() {
         let ts = tracer.elapsed_ns();
-        tracer.write_duration_begin("invalidation", reason, ts, &frames);
+        reason = reason_func();
+        tracer.write_duration_begin("invalidation", &reason, ts, &frames);
     }
 
     let result = func();
 
     if let Some(tracer) = ZJITState::get_tracer() {
         let ts = tracer.elapsed_ns();
-        tracer.write_duration_end("invalidation", reason, ts);
+        tracer.write_duration_end("invalidation", &reason, ts);
     }
     result
 }

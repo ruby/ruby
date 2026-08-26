@@ -9,7 +9,7 @@ use crate::options::OPTIONS;
 #[path = "../../jit/src/lib.rs"]
 mod jit;
 
-use crate::{cruby::*, hir::ParseError, options::get_option, state::{zjit_enabled_p, ZJITState}};
+use crate::{cast::IntoUsize as _, cruby::*, hir::ParseError, options::get_option, state::{zjit_enabled_p, ZJITState}};
 
 macro_rules! make_counters {
     (
@@ -171,12 +171,14 @@ make_counters! {
         compile_hir_build_time_ns,
         compile_hir_strength_reduce_time_ns,
         compile_hir_inline_methods_time_ns,
+        compile_hir_remove_trivial_block_params_time_ns,
         compile_hir_optimize_load_store_time_ns,
         compile_hir_canonicalize_time_ns,
         compile_hir_fold_constants_time_ns,
         compile_hir_clean_cfg_time_ns,
         compile_hir_remove_redundant_patch_points_time_ns,
         compile_hir_remove_duplicate_check_interrupts_time_ns,
+        compile_hir_eliminate_empty_inline_frames_time_ns,
         compile_hir_eliminate_dead_code_time_ns,
         compile_lir_time_ns,
     }
@@ -185,6 +187,7 @@ make_counters! {
     exit {
         // exit_: Side exits reasons
         exit_compile_error,
+        exit_exception_handler,
         exit_unhandled_newarray_send_min,
         exit_unhandled_newarray_send_hash,
         exit_unhandled_newarray_send_pack,
@@ -195,6 +198,7 @@ make_counters! {
         exit_unhandled_splat,
         exit_unhandled_kwarg,
         exit_unhandled_block_arg,
+        exit_block_arg_not_nil,
         exit_unknown_special_variable,
         exit_unhandled_hir_insn,
         exit_unhandled_yarv_insn,
@@ -219,23 +223,27 @@ make_counters! {
         exit_patchpoint_method_redefined,
         exit_patchpoint_stable_constant_names,
         exit_patchpoint_no_tracepoint,
+        exit_patchpoint_no_newobj_hook,
         exit_patchpoint_no_ep_escape,
         exit_patchpoint_single_ractor_mode,
         exit_patchpoint_no_singleton_class,
         exit_patchpoint_root_box_only,
         exit_callee_side_exit,
-        exit_obj_to_string_fallback,
         exit_interrupt,
+        exit_throw,
         exit_stackoverflow,
         exit_block_param_proxy_not_iseq_or_ifunc,
         exit_block_param_proxy_not_nil,
         exit_block_param_proxy_not_proc,
         exit_block_param_proxy_fallback_miss,
         exit_block_param_proxy_profile_not_covered,
+        exit_invoke_block_handler_not_iseq,
+        exit_invoke_block_iseq_changed,
         exit_block_param_wb_required,
         exit_too_many_keyword_parameters,
-        exit_too_many_args_for_lir,
         exit_no_profile_send,
+        exit_no_profile_getivar,
+        exit_no_profile_setivar,
         exit_splatkw_not_nil_or_hash,
         exit_splatkw_polymorphic,
         exit_splatkw_not_profiled,
@@ -247,28 +255,22 @@ make_counters! {
     // Send fallback counters that are summed as dynamic_send_count
     dynamic_send {
         // send_fallback_: Fallback reasons for send-ish instructions
-        send_fallback_send_without_block_polymorphic,
-        send_fallback_send_without_block_megamorphic,
-        send_fallback_send_without_block_no_profiles,
-        send_fallback_send_without_block_cfunc_not_variadic,
-        send_fallback_send_without_block_cfunc_array_variadic,
-        send_fallback_send_without_block_not_optimized_method_type,
-        send_fallback_send_without_block_not_optimized_method_type_optimized,
-        send_fallback_send_without_block_not_optimized_need_permission,
-        send_fallback_too_many_args_for_lir,
-        send_fallback_send_without_block_bop_redefined,
-        send_fallback_send_without_block_operands_not_fixnum,
-        send_fallback_send_without_block_polymorphic_fallback,
-        send_fallback_send_without_block_direct_keyword_mismatch,
-        send_fallback_send_without_block_direct_keyword_count_mismatch,
-        send_fallback_send_without_block_direct_missing_keyword,
-        send_fallback_send_without_block_direct_too_many_keywords,
+        send_fallback_send_cfunc_not_variadic,
+        send_fallback_send_not_optimized_method_type_optimized,
+        send_fallback_operand_too_large,
+        send_fallback_send_bop_redefined,
+        send_fallback_send_operands_not_fixnum,
+        send_fallback_send_polymorphic_fallback,
+        send_fallback_send_direct_keyword_mismatch,
+        send_fallback_send_direct_keyword_count_mismatch,
+        send_fallback_send_direct_missing_keyword,
+        send_fallback_send_direct_too_many_keywords,
         send_fallback_send_polymorphic,
         send_fallback_send_megamorphic,
         send_fallback_send_no_profiles,
         send_fallback_send_not_optimized_method_type,
         send_fallback_send_not_optimized_need_permission,
-        send_fallback_ccall_with_frame_too_many_args,
+        send_fallback_send_block_arg_not_nil,
         send_fallback_argc_param_mismatch,
         // The call has at least one feature on the caller or callee side
         // that the optimizer does not support.
@@ -289,9 +291,9 @@ make_counters! {
         send_fallback_super_not_optimized_method_type,
         send_fallback_super_polymorphic,
         send_fallback_super_target_not_found,
-        send_fallback_super_target_complex_args_pass,
         send_fallback_cannot_send_direct,
         send_fallback_invokeblock_not_specialized,
+        send_fallback_invokeblock_polymorphic_miss,
         send_fallback_sendforward_not_specialized,
         send_fallback_invokesuperforward_not_specialized,
         send_fallback_single_ractor_mode_required,
@@ -305,6 +307,7 @@ make_counters! {
         inline_iseq_optimized_send_count,
         non_variadic_cfunc_optimized_send_count,
         variadic_cfunc_optimized_send_count,
+        block_iseq_direct_optimized_send_count,
     }
 
     // Ivar fallback counters that are summed as dynamic_setivar_count
@@ -349,7 +352,6 @@ make_counters! {
     compile_error_iseq_version_limit_reached,
     compile_error_iseq_stack_too_large,
     compile_error_native_stack_too_large,
-    compile_error_exception_handler,
     compile_error_out_of_memory,
     compile_error_label_linking_failure,
     compile_error_jit_to_jit_optional,
@@ -369,36 +371,18 @@ make_counters! {
     compile_error_validation_misc_validation_error,
 
     // unhandled_hir_insn_: Unhandled HIR instructions
-    unhandled_hir_insn_array_max,
-    unhandled_hir_insn_fixnum_div,
-    unhandled_hir_insn_throw,
     unhandled_hir_insn_invokebuiltin,
     unhandled_hir_insn_unknown,
 
     // The number of times YARV instructions are executed on JIT code
     zjit_insn_count,
 
-    // Method call def_type related to send without block fallback to dynamic dispatch
-    unspecialized_send_without_block_def_type_iseq,
-    unspecialized_send_without_block_def_type_cfunc,
-    unspecialized_send_without_block_def_type_attrset,
-    unspecialized_send_without_block_def_type_ivar,
-    unspecialized_send_without_block_def_type_bmethod,
-    unspecialized_send_without_block_def_type_zsuper,
-    unspecialized_send_without_block_def_type_alias,
-    unspecialized_send_without_block_def_type_undef,
-    unspecialized_send_without_block_def_type_not_implemented,
-    unspecialized_send_without_block_def_type_optimized,
-    unspecialized_send_without_block_def_type_missing,
-    unspecialized_send_without_block_def_type_refined,
-    unspecialized_send_without_block_def_type_null,
-
     // Method call optimized_type related to send without block fallback to dynamic dispatch
-    unspecialized_send_without_block_def_type_optimized_send,
-    unspecialized_send_without_block_def_type_optimized_call,
-    unspecialized_send_without_block_def_type_optimized_block_call,
-    unspecialized_send_without_block_def_type_optimized_struct_aref,
-    unspecialized_send_without_block_def_type_optimized_struct_aset,
+    unspecialized_send_def_type_optimized_send,
+    unspecialized_send_def_type_optimized_call,
+    unspecialized_send_def_type_optimized_block_call,
+    unspecialized_send_def_type_optimized_struct_aref,
+    unspecialized_send_def_type_optimized_struct_aset,
 
     // Method call def_type related to send fallback to dynamic dispatch
     unspecialized_send_def_type_iseq,
@@ -431,7 +415,6 @@ make_counters! {
     unspecialized_super_def_type_null,
 
     // Unsupported parameter features
-    complex_arg_pass_param_rest,
     complex_arg_pass_param_post,
     complex_arg_pass_param_kwrest,
     complex_arg_pass_param_block,
@@ -448,6 +431,22 @@ make_counters! {
     complex_arg_pass_caller_super,
     complex_arg_pass_caller_zsuper,
     complex_arg_pass_caller_forwarding,
+
+    // Unsupported argument conversions
+    complex_arg_pass_keyword_to_positional_hash,
+
+    // Caller splat length profile shapes
+    caller_splat_profile_no_profiles,
+    caller_splat_profile_monomorphic,
+    caller_splat_profile_polymorphic,
+    caller_splat_profile_skewed_polymorphic,
+    caller_splat_profile_megamorphic,
+    caller_splat_profile_skewed_megamorphic,
+
+    // Contexts in which SendDirect argument planning failed. These are kept
+    // outside dynamic_send because the detailed fallback reason is also counted.
+    send_direct_fallback_context_send,
+    send_direct_fallback_context_super,
 
     // Writes to the VM frame
     vm_write_jit_frame_count,
@@ -477,6 +476,7 @@ make_counters! {
     // be incremented only once, rather than once per SendDirect, if the caller
     // already exceeds the budget before scanning for its SendDirects.
     inline_method_count,
+    empty_inline_frame_count,
     inline_reject_too_large,
     inline_reject_complex_params,
     inline_reject_ep_escapes,
@@ -493,6 +493,8 @@ make_counters! {
     getblockparamproxy_handler_polymorphic,
     getblockparamproxy_handler_megamorphic,
     getblockparamproxy_handler_no_profiles,
+
+    total_native_stack_bytes,
 }
 
 /// Increase a counter by a specified amount
@@ -525,9 +527,9 @@ pub fn exit_counter_ptr_for_opcode(opcode: u32) -> *mut u64 {
 }
 
 /// Return a raw pointer to the fallback counter for a given YARV opcode
-pub fn send_fallback_counter_ptr_for_opcode(opcode: u32) -> *mut u64 {
+pub fn send_fallback_counter_ptr_for_opcode(opcode: VmInsnType) -> *mut u64 {
     let fallback_counters = ZJITState::get_send_fallback_counters();
-    unsafe { fallback_counters.get_unchecked_mut(opcode as usize) }
+    unsafe { fallback_counters.get_unchecked_mut(opcode.to_usize()) }
 }
 
 /// Reason why ZJIT failed to produce any JIT code
@@ -536,7 +538,6 @@ pub enum CompileError {
     IseqVersionLimitReached,
     IseqStackTooLarge,
     NativeStackTooLarge,
-    ExceptionHandler,
     OutOfMemory,
     ParseError(ParseError),
     /// When a ZJIT function is too large, the branches may have
@@ -555,7 +556,6 @@ pub fn exit_counter_for_compile_error(compile_error: &CompileError) -> Counter {
         IseqVersionLimitReached => compile_error_iseq_version_limit_reached,
         IseqStackTooLarge       => compile_error_iseq_stack_too_large,
         NativeStackTooLarge     => compile_error_native_stack_too_large,
-        ExceptionHandler        => compile_error_exception_handler,
         OutOfMemory             => compile_error_out_of_memory,
         LabelLinkingFailure     => compile_error_label_linking_failure,
         ParseError(parse_error) => match parse_error {
@@ -581,9 +581,6 @@ pub fn exit_counter_for_unhandled_hir_insn(insn: &crate::hir::Insn) -> Counter {
     use crate::hir::Insn::*;
     use crate::stats::Counter::*;
     match insn {
-        ArrayMax { .. }      => unhandled_hir_insn_array_max,
-        FixnumDiv { .. }     => unhandled_hir_insn_fixnum_div,
-        Throw { .. }         => unhandled_hir_insn_throw,
         InvokeBuiltin { .. } => unhandled_hir_insn_invokebuiltin,
         _                    => unhandled_hir_insn_unknown,
     }
@@ -612,6 +609,7 @@ pub fn side_exit_counter(reason: crate::hir::SideExitReason) -> Counter {
         UnhandledHIRUnknown(_)        => exit_unhandled_hir_insn,
         UnhandledYARVInsn(_)          => exit_unhandled_yarv_insn,
         UnhandledBlockArg             => exit_unhandled_block_arg,
+        BlockArgNotNil                => exit_block_arg_not_nil,
         FixnumAddOverflow             => exit_fixnum_add_overflow,
         FixnumSubOverflow             => exit_fixnum_sub_overflow,
         FixnumMultOverflow            => exit_fixnum_mult_overflow,
@@ -628,17 +626,18 @@ pub fn side_exit_counter(reason: crate::hir::SideExitReason) -> Counter {
         GuardGreaterEq                => exit_guard_greater_eq_failure,
         GuardSuperMethodEntry         => exit_guard_super_method_entry,
         CalleeSideExit                => exit_callee_side_exit,
-        ObjToStringFallback           => exit_obj_to_string_fallback,
         Interrupt                     => exit_interrupt,
+        Throw                         => exit_throw,
         StackOverflow                 => exit_stackoverflow,
         BlockParamProxyNotIseqOrIfunc => exit_block_param_proxy_not_iseq_or_ifunc,
         BlockParamProxyNotNil         => exit_block_param_proxy_not_nil,
         BlockParamProxyNotProc       => exit_block_param_proxy_not_proc,
         BlockParamProxyFallbackMiss => exit_block_param_proxy_fallback_miss,
         BlockParamProxyProfileNotCovered => exit_block_param_proxy_profile_not_covered,
+        InvokeBlockHandlerNotIseq     => exit_invoke_block_handler_not_iseq,
+        InvokeBlockIseqChanged        => exit_invoke_block_iseq_changed,
         BlockParamWbRequired          => exit_block_param_wb_required,
         TooManyKeywordParameters      => exit_too_many_keyword_parameters,
-        TooManyArgsForLir             => exit_too_many_args_for_lir,
         SplatKwNotNilOrHash           => exit_splatkw_not_nil_or_hash,
         SplatKwPolymorphic            => exit_splatkw_polymorphic,
         SplatKwNotProfiled            => exit_splatkw_not_profiled,
@@ -651,6 +650,8 @@ pub fn side_exit_counter(reason: crate::hir::SideExitReason) -> Counter {
                                       => exit_patchpoint_stable_constant_names,
         PatchPoint(Invariant::NoTracePoint)
                                       => exit_patchpoint_no_tracepoint,
+        PatchPoint(Invariant::NoNewObjHook)
+                                      => exit_patchpoint_no_newobj_hook,
         PatchPoint(Invariant::NoEPEscape(_))
                                       => exit_patchpoint_no_ep_escape,
         PatchPoint(Invariant::SingleRactorMode)
@@ -661,6 +662,8 @@ pub fn side_exit_counter(reason: crate::hir::SideExitReason) -> Counter {
                                       => exit_patchpoint_root_box_only,
         SendWhileTracing              => exit_send_while_tracing,
         NoProfileSend                 => exit_no_profile_send,
+        NoProfileGetIvar              => exit_no_profile_getivar,
+        NoProfileSetIvar              => exit_no_profile_setivar,
         InvokeBlockNotIfunc           => exit_invokeblock_not_ifunc,
     }
 }
@@ -674,24 +677,17 @@ pub fn send_fallback_counter(reason: crate::hir::SendFallbackReason) -> Counter 
     use crate::hir::SendFallbackReason::*;
     use crate::stats::Counter::*;
     match reason {
-        SendWithoutBlockPolymorphic               => send_fallback_send_without_block_polymorphic,
-        SendWithoutBlockMegamorphic               => send_fallback_send_without_block_megamorphic,
-        SendWithoutBlockNoProfiles                => send_fallback_send_without_block_no_profiles,
-        SendWithoutBlockCfuncNotVariadic          => send_fallback_send_without_block_cfunc_not_variadic,
-        SendWithoutBlockCfuncArrayVariadic        => send_fallback_send_without_block_cfunc_array_variadic,
-        SendWithoutBlockNotOptimizedMethodType(_) => send_fallback_send_without_block_not_optimized_method_type,
-        SendWithoutBlockNotOptimizedMethodTypeOptimized(_)
-                                                  => send_fallback_send_without_block_not_optimized_method_type_optimized,
-        SendWithoutBlockNotOptimizedNeedPermission
-                                                  => send_fallback_send_without_block_not_optimized_need_permission,
-        TooManyArgsForLir                         => send_fallback_too_many_args_for_lir,
-        SendWithoutBlockBopRedefined              => send_fallback_send_without_block_bop_redefined,
-        SendWithoutBlockOperandsNotFixnum         => send_fallback_send_without_block_operands_not_fixnum,
-        SendWithoutBlockPolymorphicFallback       => send_fallback_send_without_block_polymorphic_fallback,
-        SendDirectKeywordMismatch                 => send_fallback_send_without_block_direct_keyword_mismatch,
-        SendDirectKeywordCountMismatch            => send_fallback_send_without_block_direct_keyword_count_mismatch,
-        SendDirectMissingKeyword                  => send_fallback_send_without_block_direct_missing_keyword,
-        SendDirectTooManyKeywords                 => send_fallback_send_without_block_direct_too_many_keywords,
+        SendCfuncNotVariadic                      => send_fallback_send_cfunc_not_variadic,
+        SendNotOptimizedMethodTypeOptimized(_)
+                                                  => send_fallback_send_not_optimized_method_type_optimized,
+        OperandTooLarge                           => send_fallback_operand_too_large,
+        SendBopRedefined                          => send_fallback_send_bop_redefined,
+        SendOperandsNotFixnum                     => send_fallback_send_operands_not_fixnum,
+        SendPolymorphicFallback                   => send_fallback_send_polymorphic_fallback,
+        SendDirectKeywordMismatch                 => send_fallback_send_direct_keyword_mismatch,
+        SendDirectKeywordCountMismatch            => send_fallback_send_direct_keyword_count_mismatch,
+        SendDirectMissingKeyword                  => send_fallback_send_direct_missing_keyword,
+        SendDirectTooManyKeywords                 => send_fallback_send_direct_too_many_keywords,
         SendPolymorphic                           => send_fallback_send_polymorphic,
         SendMegamorphic                           => send_fallback_send_megamorphic,
         SendNoProfiles                            => send_fallback_send_no_profiles,
@@ -704,7 +700,7 @@ pub fn send_fallback_counter(reason: crate::hir::SendFallbackReason) -> Counter 
         BmethodNonIseqProc                        => send_fallback_bmethod_non_iseq_proc,
         SendNotOptimizedMethodType(_)             => send_fallback_send_not_optimized_method_type,
         SendNotOptimizedNeedPermission            => send_fallback_send_not_optimized_need_permission,
-        CCallWithFrameTooManyArgs                 => send_fallback_ccall_with_frame_too_many_args,
+        SendBlockArgNotNil                        => send_fallback_send_block_arg_not_nil,
         ObjToStringNotString                      => send_fallback_obj_to_string_not_string,
         SuperCallWithBlock                        => send_fallback_super_call_with_block,
         SuperFromBlock                            => send_fallback_super_from_block,
@@ -714,8 +710,8 @@ pub fn send_fallback_counter(reason: crate::hir::SendFallbackReason) -> Counter 
         SuperNotOptimizedMethodType(_)            => send_fallback_super_not_optimized_method_type,
         SuperPolymorphic                          => send_fallback_super_polymorphic,
         SuperTargetNotFound                       => send_fallback_super_target_not_found,
-        SuperTargetComplexArgsPass                => send_fallback_super_target_complex_args_pass,
         InvokeBlockNotSpecialized                 => send_fallback_invokeblock_not_specialized,
+        InvokeBlockPolymorphicMiss                => send_fallback_invokeblock_polymorphic_miss,
         SendForwardNotSpecialized                 => send_fallback_sendforward_not_specialized,
         InvokeSuperForwardNotSpecialized          => send_fallback_invokesuperforward_not_specialized,
         SingleRactorModeRequired                  => send_fallback_single_ractor_mode_required,
@@ -723,37 +719,16 @@ pub fn send_fallback_counter(reason: crate::hir::SendFallbackReason) -> Counter 
     }
 }
 
-pub fn send_without_block_fallback_counter_for_method_type(method_type: crate::hir::MethodType) -> Counter {
-    use crate::hir::MethodType::*;
-    use crate::stats::Counter::*;
-
-    match method_type {
-        Iseq => unspecialized_send_without_block_def_type_iseq,
-        Cfunc => unspecialized_send_without_block_def_type_cfunc,
-        Attrset => unspecialized_send_without_block_def_type_attrset,
-        Ivar => unspecialized_send_without_block_def_type_ivar,
-        Bmethod => unspecialized_send_without_block_def_type_bmethod,
-        Zsuper => unspecialized_send_without_block_def_type_zsuper,
-        Alias => unspecialized_send_without_block_def_type_alias,
-        Undefined => unspecialized_send_without_block_def_type_undef,
-        NotImplemented => unspecialized_send_without_block_def_type_not_implemented,
-        Optimized => unspecialized_send_without_block_def_type_optimized,
-        Missing => unspecialized_send_without_block_def_type_missing,
-        Refined => unspecialized_send_without_block_def_type_refined,
-        Null => unspecialized_send_without_block_def_type_null,
-    }
-}
-
-pub fn send_without_block_fallback_counter_for_optimized_method_type(method_type: crate::hir::OptimizedMethodType) -> Counter {
+pub fn send_fallback_counter_for_optimized_method_type(method_type: crate::hir::OptimizedMethodType) -> Counter {
     use crate::hir::OptimizedMethodType::*;
     use crate::stats::Counter::*;
 
     match method_type {
-        Send => unspecialized_send_without_block_def_type_optimized_send,
-        Call => unspecialized_send_without_block_def_type_optimized_call,
-        BlockCall => unspecialized_send_without_block_def_type_optimized_block_call,
-        StructAref => unspecialized_send_without_block_def_type_optimized_struct_aref,
-        StructAset => unspecialized_send_without_block_def_type_optimized_struct_aset,
+        Send => unspecialized_send_def_type_optimized_send,
+        Call => unspecialized_send_def_type_optimized_call,
+        BlockCall => unspecialized_send_def_type_optimized_block_call,
+        StructAref => unspecialized_send_def_type_optimized_struct_aref,
+        StructAset => unspecialized_send_def_type_optimized_struct_aset,
     }
 }
 
@@ -1026,7 +1001,7 @@ pub fn zjit_alloc_bytes() -> usize {
 /// Record a Perfetto duration event spanning the execution of `func`.
 /// Uses Begin/End pairs so nested calls produce properly nested slices.
 pub fn trace_compile_phase<F, R>(name: &str, func: F) -> R where F: FnOnce() -> R {
-    if !get_option!(trace_compiles) {
+    if !get_option!(trace_compiles, /*default=*/false) {
         return func();
     }
     if let Some(tracer) = ZJITState::get_tracer() {

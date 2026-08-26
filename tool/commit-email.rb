@@ -280,43 +280,6 @@ class << CommitEmail
     changed_dirs('Modified', info.updated_dirs)
   end
 
-  def changed_dirs_info(info, uri)
-    (info.added_dirs.collect do |dir|
-       "  Added: #{dir}\n"
-     end + info.deleted_dirs.collect do |dir|
-       "  Deleted: #{dir}\n"
-     end + info.updated_dirs.collect do |dir|
-       "  Modified: #{dir}\n"
-     end).join("\n")
-  end
-
-  def diff_info(info, uri)
-    info.diffs.collect do |key, values|
-      [
-        key,
-        values.collect do |type, value|
-          case type
-          when :added
-            rev = "?revision=#{info.revision}&view=markup"
-          when :modified, :property_changed
-            prev_revision = (info.revision.is_a?(Integer) ? info.revision - 1 : "#{info.revision}^")
-            rev = "?r1=#{info.revision}&r2=#{prev_revision}&diff_format=u"
-          when :deleted, :copied
-            rev = ''
-          else
-            raise "unknown diff type: #{value[:type]}"
-          end
-
-          link = [uri, key.sub(/ .+/, '') || ''].join('/') + rev
-
-          desc = ''
-
-          [desc, link]
-        end
-      ]
-    end
-  end
-
   def make_header(to, from, info)
     <<~EOS
       Mime-Version: 1.0

@@ -23,6 +23,14 @@ module OpenSSL
         q.text to_i.to_s
       }
     end
+
+    def marshal_dump # :nodoc:
+      to_i
+    end
+
+    def marshal_load(integer) # :nodoc:
+      initialize(integer)
+    end
   end # BN
 end # OpenSSL
 

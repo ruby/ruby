@@ -9,12 +9,6 @@
 
 /* ruby api and some helpers */
 
-enum duplicate_key_action {
-    JSON_DEPRECATED = 0,
-    JSON_IGNORE,
-    JSON_RAISE,
-};
-
 typedef struct JSON_Generator_StateStruct {
     VALUE indent;
     VALUE space;
@@ -27,20 +21,20 @@ typedef struct JSON_Generator_StateStruct {
     long depth;
     long buffer_initial_length;
 
-    enum duplicate_key_action on_duplicate_key;
-
+    bool allow_duplicate_key;
     bool as_json_single_arg;
     bool allow_nan;
     bool ascii_only;
     bool script_safe;
     bool strict;
+    VALUE sort_keys;
 } JSON_Generator_State;
 
-static VALUE mJSON, cState, cFragment, eGeneratorError, eNestingError, Encoding_UTF_8;
+static VALUE mJSON, cState, cFragment, eGeneratorError, eNestingError, Encoding_UTF_8, default_sort_keys_proc;
 
 static ID i_to_s, i_to_json, i_new, i_encode;
 static VALUE sym_indent, sym_space, sym_space_before, sym_object_nl, sym_array_nl, sym_max_nesting, sym_allow_nan, sym_allow_duplicate_key,
-             sym_ascii_only, sym_depth, sym_buffer_initial_length, sym_script_safe, sym_escape_slash, sym_strict, sym_as_json;
+             sym_ascii_only, sym_depth, sym_buffer_initial_length, sym_script_safe, sym_strict, sym_as_json, sym_sort_keys;
 
 
 #define GET_STATE_TO(self, state) \
@@ -709,6 +703,7 @@ static void State_mark(void *ptr)
     rb_gc_mark_movable(state->object_nl);
     rb_gc_mark_movable(state->array_nl);
     rb_gc_mark_movable(state->as_json);
+    rb_gc_mark_movable(state->sort_keys);
 }
 
 static void State_compact(void *ptr)
@@ -720,6 +715,7 @@ static void State_compact(void *ptr)
     state->object_nl = rb_gc_location(state->object_nl);
     state->array_nl = rb_gc_location(state->array_nl);
     state->as_json = rb_gc_location(state->as_json);
+    state->sort_keys = rb_gc_location(state->sort_keys);
 }
 
 static size_t State_memsize(const void *ptr)
@@ -769,6 +765,7 @@ static void vstate_spill(struct generate_json_data *data)
     RB_OBJ_WRITTEN(vstate, Qundef, state->object_nl);
     RB_OBJ_WRITTEN(vstate, Qundef, state->array_nl);
     RB_OBJ_WRITTEN(vstate, Qundef, state->as_json);
+    RB_OBJ_WRITTEN(vstate, Qundef, state->sort_keys);
 }
 
 static inline VALUE json_call_to_json(struct generate_json_data *data, VALUE obj)
@@ -952,9 +949,8 @@ json_inspect_hash_with_mixed_keys(struct hash_foreach_arg *arg)
     arg->mixed_keys_encountered = true;
 
     JSON_Generator_State *state = arg->data->state;
-    if (state->on_duplicate_key != JSON_IGNORE) {
-        VALUE do_raise = state->on_duplicate_key == JSON_RAISE ? Qtrue : Qfalse;
-        rb_funcall(mJSON, rb_intern("on_mixed_keys_hash"), 2, arg->hash, do_raise);
+    if (!state->allow_duplicate_key) {
+        rb_funcall(mJSON, rb_intern("on_mixed_keys_hash"), 1, arg->hash);
     }
 }
 
@@ -1050,6 +1046,11 @@ static inline long increase_depth(struct generate_json_data *data)
 
 static void generate_json_object(FBuffer *buffer, struct generate_json_data *data, VALUE obj)
 {
+    if (RB_UNLIKELY(data->state->sort_keys)) {
+        obj = rb_proc_call_with_block(data->state->sort_keys, 1, &obj, Qnil);
+        Check_Type(obj, T_HASH);
+    }
+
     long depth = increase_depth(data);
 
     if (RHASH_SIZE(obj) == 0) {
@@ -1376,6 +1377,7 @@ static VALUE cState_init_copy(VALUE obj, VALUE orig)
     RB_OBJ_WRITTEN(obj, Qundef, objState->object_nl);
     RB_OBJ_WRITTEN(obj, Qundef, objState->array_nl);
     RB_OBJ_WRITTEN(obj, Qundef, objState->as_json);
+    RB_OBJ_WRITTEN(obj, Qundef, objState->sort_keys);
 
     return obj;
 }
@@ -1722,17 +1724,59 @@ static VALUE cState_ascii_only_set(VALUE self, VALUE enable)
     return Qnil;
 }
 
+static VALUE cState_set_default_sort_keys_proc(VALUE self, VALUE proc)
+{
+    if (!rb_obj_is_proc(proc)) {
+        rb_raise(rb_eTypeError, "sort_key_proc must be a Proc");
+    }
+    return default_sort_keys_proc = proc;
+}
+
+static VALUE normalize_sort_keys(VALUE value)
+{
+    if (rb_obj_is_proc(value)) {
+        return value;
+    } else if (value == Qtrue) {
+        return default_sort_keys_proc;
+    } else if (RTEST(value)) {
+        rb_raise(rb_eTypeError, "The `sort_keys` argument must be a boolean or a Proc");
+    } else {
+        return Qfalse;
+    }
+}
+
+/*
+ * call-seq: sort_keys
+ *
+ * Get the value of sort_keys.
+ */
+static VALUE cState_sort_keys_p(VALUE self)
+{
+    GET_STATE(self);
+    return state->sort_keys;
+}
+
+/*
+ * call-seq: sort_keys=(value)
+ *
+ * value is a boolean or a proc. If the value is the boolean true, object keys
+ * will be sorted lexicographically in ascending order.
+ *
+ * If the value is a proc, it receives the entire Hash and must return a Hash
+ * with its pairs in the desired order, allowing for arbitrary sorting.
+ */
+static VALUE cState_sort_keys_set(VALUE self, VALUE value)
+{
+    rb_check_frozen(self);
+    GET_STATE(self);
+    RB_OBJ_WRITE(self, &state->sort_keys, normalize_sort_keys(value));
+    return Qnil;
+}
+
 static VALUE cState_allow_duplicate_key_p(VALUE self)
 {
     GET_STATE(self);
-    switch (state->on_duplicate_key) {
-        case JSON_IGNORE:
-            return Qtrue;
-        case JSON_DEPRECATED:
-            return Qnil;
-        default:
-            return Qfalse;
-    }
+    return state->allow_duplicate_key ? Qtrue : Qfalse;
 }
 
 /*
@@ -1797,6 +1841,7 @@ static VALUE cState_buffer_initial_length_set(VALUE self, VALUE buffer_initial_l
 struct configure_state_data {
     JSON_Generator_State *state;
     VALUE vstate;  // Ruby object that owns the state, or Qfalse if stack-allocated
+    VALUE unknown_keywords;
 };
 
 static inline void state_write_value(struct configure_state_data *data, VALUE *field, VALUE value)
@@ -1824,13 +1869,21 @@ static int configure_state_i(VALUE key, VALUE val, VALUE _arg)
     else if (key == sym_depth)                 { state->depth = depth_config(val); }
     else if (key == sym_buffer_initial_length) { buffer_initial_length_set(state, val); }
     else if (key == sym_script_safe)           { state->script_safe = RTEST(val); }
-    else if (key == sym_escape_slash)          { state->script_safe = RTEST(val); }
     else if (key == sym_strict)                { state->strict = RTEST(val); }
-    else if (key == sym_allow_duplicate_key)   { state->on_duplicate_key = RTEST(val) ? JSON_IGNORE : JSON_RAISE; }
+    else if (key == sym_allow_duplicate_key)   { state->allow_duplicate_key = RTEST(val); }
     else if (key == sym_as_json)               {
         VALUE proc = RTEST(val) ? rb_convert_type(val, T_DATA, "Proc", "to_proc") : Qfalse;
         state->as_json_single_arg = proc && rb_proc_arity(proc) == 1;
         state_write_value(data, &state->as_json, proc);
+    }
+    else if (key == sym_sort_keys)             {
+        state_write_value(data, &state->sort_keys, normalize_sort_keys(val));
+    }
+    else {
+        if (!data->unknown_keywords) {
+            data->unknown_keywords = rb_obj_hide(rb_ary_new());
+        }
+        rb_ary_push(data->unknown_keywords, key);
     }
     return ST_CONTINUE;
 }
@@ -1845,12 +1898,15 @@ static void configure_state(JSON_Generator_State *state, VALUE vstate, VALUE con
 
     struct configure_state_data data = {
         .state = state,
-        .vstate = vstate
+        .vstate = vstate,
+        .unknown_keywords = Qfalse,
     };
 
     // We assume in most cases few keys are set so it's faster to go over
     // the provided keys than to check all possible keys.
     rb_hash_foreach(config, configure_state_i, (VALUE)&data);
+
+    raise_argument_error_on_unknown_keywords(data.unknown_keywords);
 }
 
 static VALUE cState_configure(VALUE self, VALUE opts)
@@ -1909,6 +1965,8 @@ void Init_generator(void)
     VALUE mExt = rb_define_module_under(mJSON, "Ext");
     VALUE mGenerator = rb_define_module_under(mExt, "Generator");
 
+    rb_global_variable(&default_sort_keys_proc);
+
     rb_global_variable(&eGeneratorError);
     eGeneratorError = rb_path2class("JSON::GeneratorError");
 
@@ -1918,6 +1976,8 @@ void Init_generator(void)
     cState = rb_define_class_under(mGenerator, "State", rb_cObject);
     rb_define_alloc_func(cState, cState_s_allocate);
     rb_define_singleton_method(cState, "from_state", cState_from_state_s, 1);
+    rb_define_singleton_method(cState, "default_sort_keys_proc=", cState_set_default_sort_keys_proc, 1);
+
     rb_define_method(cState, "initialize", cState_initialize, -1);
     rb_define_alias(cState, "initialize", "initialize"); // avoid method redefinition warnings
     rb_define_private_method(cState, "_configure", cState_configure, 1);
@@ -1940,9 +2000,6 @@ void Init_generator(void)
     rb_define_method(cState, "script_safe", cState_script_safe, 0);
     rb_define_method(cState, "script_safe?", cState_script_safe, 0);
     rb_define_method(cState, "script_safe=", cState_script_safe_set, 1);
-    rb_define_alias(cState, "escape_slash", "script_safe");
-    rb_define_alias(cState, "escape_slash?", "script_safe?");
-    rb_define_alias(cState, "escape_slash=", "script_safe=");
     rb_define_method(cState, "strict", cState_strict, 0);
     rb_define_method(cState, "strict?", cState_strict, 0);
     rb_define_method(cState, "strict=", cState_strict_set, 1);
@@ -1957,6 +2014,8 @@ void Init_generator(void)
     rb_define_method(cState, "buffer_initial_length=", cState_buffer_initial_length_set, 1);
     rb_define_method(cState, "generate", cState_generate, -1);
     rb_define_method(cState, "_generate_no_fallback", cState_generate_no_fallback, -1);
+    rb_define_method(cState, "sort_keys", cState_sort_keys_p, 0);
+    rb_define_method(cState, "sort_keys=", cState_sort_keys_set, 1);
 
     rb_define_private_method(cState, "allow_duplicate_key?", cState_allow_duplicate_key_p, 0);
 
@@ -1982,10 +2041,10 @@ void Init_generator(void)
     sym_depth = ID2SYM(rb_intern("depth"));
     sym_buffer_initial_length = ID2SYM(rb_intern("buffer_initial_length"));
     sym_script_safe = ID2SYM(rb_intern("script_safe"));
-    sym_escape_slash = ID2SYM(rb_intern("escape_slash"));
     sym_strict = ID2SYM(rb_intern("strict"));
     sym_as_json = ID2SYM(rb_intern("as_json"));
     sym_allow_duplicate_key = ID2SYM(rb_intern("allow_duplicate_key"));
+    sym_sort_keys = ID2SYM(rb_intern("sort_keys"));
 
     usascii_encindex = rb_usascii_encindex();
     utf8_encindex = rb_utf8_encindex();

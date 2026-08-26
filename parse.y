@@ -24,6 +24,7 @@
 #endif
 
 #include "ruby/internal/config.h"
+#include "internal/thread.h"
 
 #include <errno.h>
 
@@ -41,11 +42,13 @@
 #else
 
 #include "internal.h"
+#include "internal/array.h"
 #include "internal/compile.h"
 #include "internal/compilers.h"
 #include "internal/complex.h"
 #include "internal/encoding.h"
 #include "internal/error.h"
+#include "internal/gc.h"
 #include "internal/hash.h"
 #include "internal/io.h"
 #include "internal/numeric.h"
@@ -55,7 +58,6 @@
 #include "internal/ruby_parser.h"
 #include "internal/symbol.h"
 #include "internal/thread.h"
-#include "internal/variable.h"
 #include "node.h"
 #include "parser_node.h"
 #include "probes.h"
@@ -578,6 +580,9 @@ struct parser_params {
 # endif
     unsigned int error_p: 1;
     unsigned int cr_seen: 1;
+
+    /* Streaming hash state of the source bytes read so far. */
+    rb_source_hash_state_t source_hash;
 
 #ifndef RIPPER
     /* Ruby core only */
@@ -1755,18 +1760,10 @@ extern const ID id_warn, id_warning, id_gets, id_assoc;
 # define PRIsWARN PRIsVALUE
 # define WARN_ARGS(fmt,n) p->value, id_warn, n, rb_usascii_str_new_lit(fmt)
 # define WARN_ARGS_L(l,fmt,n) WARN_ARGS(fmt,n)
-# ifdef HAVE_VA_ARGS_MACRO
 # define WARN_CALL(...) rb_funcall(__VA_ARGS__)
-# else
-# define WARN_CALL rb_funcall
-# endif
 # define WARNING_ARGS(fmt,n) p->value, id_warning, n, rb_usascii_str_new_lit(fmt)
 # define WARNING_ARGS_L(l, fmt,n) WARNING_ARGS(fmt,n)
-# ifdef HAVE_VA_ARGS_MACRO
 # define WARNING_CALL(...) rb_funcall(__VA_ARGS__)
-# else
-# define WARNING_CALL rb_funcall
-# endif
 # define compile_error ripper_compile_error
 #else
 # define WARN_S_L(s,l) s
@@ -6063,6 +6060,10 @@ string_content	: tSTRING_CONTENT[content]
                         p->lex.brace_nest = 0;
                     }[brace]<num>
                     {
+                        $$ = p->lex.lpar_beg;
+                        p->lex.lpar_beg = -1;
+                    }[lpar]<num>
+                    {
                         $$ = p->heredoc_indent;
                         p->heredoc_indent = 0;
                     }[indent]<num>
@@ -6073,6 +6074,7 @@ string_content	: tSTRING_CONTENT[content]
                         p->lex.strterm = $term;
                         SET_LEX_STATE($state);
                         p->lex.brace_nest = $brace;
+                        p->lex.lpar_beg = $lpar;
                         p->heredoc_indent = $indent;
                         p->heredoc_line_indent = -1;
                         if ($compstmt) nd_unset_fl_newline($compstmt);
@@ -6605,13 +6607,11 @@ assocs		: assoc
                             assocs = tail;
                         }
                         else if (tail) {
-                            if (RNODE_LIST(assocs)->nd_head) {
-                                NODE *n = RNODE_LIST(tail)->nd_next;
-                                if (!RNODE_LIST(tail)->nd_head && nd_type_p(n, NODE_LIST) &&
-                                    nd_type_p((n = RNODE_LIST(n)->nd_head), NODE_HASH)) {
-                                    /* DSTAR */
-                                    tail = RNODE_HASH(n)->nd_head;
-                                }
+                            NODE *n = RNODE_LIST(tail)->nd_next;
+                            if (!RNODE_LIST(tail)->nd_head && nd_type_p(n, NODE_LIST) &&
+                                nd_type_p((n = RNODE_LIST(n)->nd_head), NODE_HASH)) {
+                                /* DSTAR */
+                                tail = RNODE_HASH(n)->nd_head;
                             }
                             if (tail) {
                                 assocs = list_concat(assocs, tail);
@@ -7459,6 +7459,8 @@ yycompile(struct parser_params *p, VALUE fname, int line)
 
     p->ast = ast = rb_ast_new();
     compile_callback(yycompile0, (VALUE)p);
+    ast->body.source_hash = rb_source_hash_finalize(&p->source_hash);
+    ast->body.has_source_hash = 1;
     p->ast = 0;
 
     while (p->lvtbl) {
@@ -7485,6 +7487,7 @@ lex_getline(struct parser_params *p)
     rb_parser_string_t *line = (*p->lex.gets)(p, p->lex.input, p->line_count);
     if (!line) return 0;
     p->line_count++;
+    rb_source_hash_update(&p->source_hash, (const uint8_t *)line->ptr, (size_t)line->len);
     string_buffer_append(p, line);
     must_be_ascii_compatible(p, line);
     return line;
@@ -7731,7 +7734,7 @@ tokspace(struct parser_params *p, int n)
     p->tokidx += n;
 
     if (p->tokidx >= p->toksiz) {
-        do {p->toksiz *= 2;} while (p->toksiz < p->tokidx);
+        do {p->toksiz *= 2;} while (p->toksiz <= p->tokidx);
         REALLOC_N(p->tokenbuf, char, p->toksiz);
     }
     return &p->tokenbuf[p->tokidx-n];
@@ -9174,12 +9177,7 @@ static int
 arg_ambiguous(struct parser_params *p, char c)
 {
 #ifndef RIPPER
-    if (c == '/') {
-        rb_warning1("ambiguity between regexp and two divisions: wrap regexp in parentheses or add a space after '%c' operator", WARN_I(c));
-    }
-    else {
-        rb_warning1("ambiguous first argument; put parentheses or a space even after '%c' operator", WARN_I(c));
-    }
+    rb_warning1("ambiguous first argument; put parentheses or a space even after '%c' operator", WARN_I(c));
 #else
     dispatch1(arg_ambiguous, rb_usascii_str_new(&c, 1));
 #endif
@@ -11019,7 +11017,6 @@ parser_yylex(struct parser_params *p)
         }
         pushback(p, c);
         if (IS_SPCARG(c)) {
-            arg_ambiguous(p, '/');
             p->lex.strterm = NEW_STRTERM(str_regexp, '/', 0);
             return tREGEXP_BEG;
         }
@@ -15530,6 +15527,7 @@ parser_initialize(struct parser_params *p)
     p->node_id = 0;
     p->delayed.token = NULL;
     p->frozen_string_literal = -1; /* not specified */
+    rb_source_hash_init(&p->source_hash);
 #ifndef RIPPER
     p->error_buffer = Qfalse;
     p->end_expect_token_locations = NULL;

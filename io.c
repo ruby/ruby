@@ -545,6 +545,7 @@ rb_cloexec_fcntl_dupfd(int fd, int minfd)
 
 static int io_fflush(rb_io_t *);
 static rb_io_t *flush_before_seek(rb_io_t *fptr, bool discard_rbuf);
+static void clear_readconv(rb_io_t *fptr);
 static void clear_codeconv(rb_io_t *fptr);
 
 #define FMODE_SIGNAL_ON_EPIPE (1<<17)
@@ -895,7 +896,7 @@ rb_io_set_timeout(VALUE self, VALUE timeout)
 
     rb_io_t *fptr = rb_io_get_fptr(self);
 
-    fptr->timeout = timeout;
+    RB_OBJ_WRITE(self, &fptr->timeout, timeout);
 
     return self;
 }
@@ -1297,7 +1298,7 @@ rb_io_read_memory(rb_io_t *fptr, void *buf, size_t count)
     rb_thread_t *th = GET_THREAD();
     VALUE scheduler = rb_fiber_scheduler_current_for_threadptr(th);
     if (scheduler != Qnil) {
-        VALUE result = rb_fiber_scheduler_io_read_memory(scheduler, fptr->self, buf, count, 0);
+        VALUE result = rb_fiber_scheduler_io_read_memory(scheduler, fptr->self, buf, count);
 
         if (!UNDEF_P(result)) {
             return rb_fiber_scheduler_io_result_apply(result);
@@ -1331,7 +1332,7 @@ rb_io_write_memory(rb_io_t *fptr, const void *buf, size_t count)
     rb_thread_t *th = GET_THREAD();
     VALUE scheduler = rb_fiber_scheduler_current_for_threadptr(th);
     if (scheduler != Qnil) {
-        VALUE result = rb_fiber_scheduler_io_write_memory(scheduler, fptr->self, buf, count, 0);
+        VALUE result = rb_fiber_scheduler_io_write_memory(scheduler, fptr->self, buf, count);
 
         if (!UNDEF_P(result)) {
             return rb_fiber_scheduler_io_result_apply(result);
@@ -1370,7 +1371,7 @@ rb_writev_internal(rb_io_t *fptr, const struct iovec *iov, int iovcnt)
     VALUE scheduler = rb_fiber_scheduler_current_for_threadptr(th);
     if (scheduler != Qnil) {
         // This path assumes at least one `iov`:
-        VALUE result = rb_fiber_scheduler_io_write_memory(scheduler, fptr->self, iov[0].iov_base, iov[0].iov_len, 0);
+        VALUE result = rb_fiber_scheduler_io_write_memory(scheduler, fptr->self, iov[0].iov_base, iov[0].iov_len);
 
         if (!UNDEF_P(result)) {
             return rb_fiber_scheduler_io_result_apply(result);
@@ -1424,7 +1425,7 @@ io_flush_buffer_sync(void *arg)
 static inline VALUE
 io_flush_buffer_fiber_scheduler(VALUE scheduler, rb_io_t *fptr)
 {
-    VALUE ret = rb_fiber_scheduler_io_write_memory(scheduler, fptr->self, fptr->wbuf.ptr+fptr->wbuf.off, fptr->wbuf.len, 0);
+    VALUE ret = rb_fiber_scheduler_io_write_memory(scheduler, fptr->self, fptr->wbuf.ptr+fptr->wbuf.off, fptr->wbuf.len);
     if (!UNDEF_P(ret)) {
         ssize_t result = rb_fiber_scheduler_io_result_apply(ret);
         if (result > 0) {
@@ -2482,6 +2483,7 @@ rb_io_seek(VALUE io, VALUE offset, int whence)
     GetOpenFile(io, fptr);
     pos = io_seek(fptr, pos, whence);
     if (pos < 0 && errno) rb_sys_fail_path(fptr->pathv);
+    if (fptr->readconv) clear_readconv(fptr);
 
     return INT2FIX(0);
 }
@@ -2593,11 +2595,10 @@ rb_io_set_pos(VALUE io, VALUE offset)
     GetOpenFile(io, fptr);
     pos = io_seek(fptr, pos, SEEK_SET);
     if (pos < 0 && errno) rb_sys_fail_path(fptr->pathv);
+    if (fptr->readconv) clear_readconv(fptr);
 
     return OFFT2NUM(pos);
 }
-
-static void clear_readconv(rb_io_t *fptr);
 
 /*
  *  call-seq:
@@ -3470,7 +3471,7 @@ io_read_memory_call(VALUE arg)
 
     VALUE scheduler = rb_fiber_scheduler_current();
     if (scheduler != Qnil) {
-        VALUE result = rb_fiber_scheduler_io_read_memory(scheduler, iis->fptr->self, iis->buf, iis->capa, 0);
+        VALUE result = rb_fiber_scheduler_io_read_memory(scheduler, iis->fptr->self, iis->buf, iis->capa);
 
         if (!UNDEF_P(result)) {
             // This is actually returned as a pseudo-VALUE and later cast to a long:
@@ -3572,7 +3573,7 @@ io_getpartial(int argc, VALUE *argv, VALUE io, int no_exception, int nonblock)
  *
  *  - Contains +maxlen+ bytes from the stream, if available.
  *  - Otherwise contains all available bytes, if any available.
- *  - Otherwise is an empty string.
+ *  - Is an empty string if +maxlen+ is zero.
  *
  *  With the single non-negative integer argument +maxlen+ given,
  *  returns a new string:
@@ -5667,6 +5668,7 @@ free_io_buffer(rb_io_buffer_t *buf)
         ruby_xfree_sized(buf->ptr, (size_t)buf->capa);
         buf->ptr = NULL;
     }
+    buf->off = buf->len = buf->capa = 0;
 }
 
 static void
@@ -6227,7 +6229,7 @@ pread_internal_call(VALUE _arg)
 
     VALUE scheduler = rb_fiber_scheduler_current();
     if (scheduler != Qnil) {
-        VALUE result = rb_fiber_scheduler_io_pread_memory(scheduler, arg->io->self, arg->offset, arg->buf, arg->count, 0);
+        VALUE result = rb_fiber_scheduler_io_pread_memory(scheduler, arg->io->self, arg->offset, arg->buf, arg->count);
 
         if (!UNDEF_P(result)) {
             return rb_fiber_scheduler_io_result_apply(result);
@@ -6318,7 +6320,7 @@ pwrite_internal_call(VALUE _arg)
 
     VALUE scheduler = rb_fiber_scheduler_current();
     if (scheduler != Qnil) {
-        VALUE result = rb_fiber_scheduler_io_pwrite_memory(scheduler, arg->io->self, arg->offset, arg->buf, arg->count, 0);
+        VALUE result = rb_fiber_scheduler_io_pwrite_memory(scheduler, arg->io->self, arg->offset, arg->buf, arg->count);
 
         if (!UNDEF_P(result)) {
             return rb_fiber_scheduler_io_result_apply(result);
@@ -8377,13 +8379,9 @@ io_reopen(VALUE io, VALUE nfile)
                      rb_io_fmode_modestr(orig->mode));
         }
     }
-    if (fptr->mode & FMODE_WRITABLE) {
-        if (io_fflush(fptr) < 0)
-            rb_sys_fail_on_write(fptr);
-    }
-    else {
-        flush_before_seek(fptr, true);
-    }
+    flush_before_seek(fptr, true);
+    /* in flush_before_seek, clear_codeconv called only if rbuf is filled */
+    clear_codeconv(fptr);
     if (orig->mode & FMODE_READABLE) {
         pos = io_tell(orig);
     }
@@ -8543,6 +8541,7 @@ rb_io_reopen(int argc, VALUE *argv, VALUE file)
             rb_sys_fail_on_write(fptr);
     }
     fptr->rbuf.off = fptr->rbuf.len = 0;
+    clear_codeconv(fptr);
 
     if (fptr->stdio_file) {
         int e = rb_freopen(rb_str_encode_ospath(fptr->pathv),
@@ -8967,7 +8966,7 @@ io_puts_ary(VALUE ary, VALUE out, int recur)
  *  If called without arguments, writes a newline.
  *  See {Line IO}[rdoc-ref:IO@Line+IO].
  *
- *  Note that each added newline is the character <tt>"\n"<//tt>,
+ *  Note that each added newline is the character <tt>"\n"</tt>,
  *  not the output record separator (<tt>$\\</tt>).
  *
  *  Treatment for each object:
@@ -12141,7 +12140,7 @@ io_s_foreach(VALUE v)
  *
  *  - {Open Options}[rdoc-ref:IO@Open+Options].
  *  - {Encoding options}[rdoc-ref:encodings.rdoc@Encoding+Options].
- *  - {Line Options}[rdoc-ref:IO@Line+IO].
+ *  - {Line Input Options}[rdoc-ref:IO@Line+Input+Options].
  *
  *  Returns an Enumerator if no block is given.
  *
@@ -12217,7 +12216,7 @@ io_s_readlines(VALUE v)
  *
  *  - {Open Options}[rdoc-ref:IO@Open+Options].
  *  - {Encoding options}[rdoc-ref:encodings.rdoc@Encoding+Options].
- *  - {Line Options}[rdoc-ref:IO@Line+IO].
+ *  - {Line Input Options}[rdoc-ref:IO@Line+Input+Options].
  *
  */
 
@@ -15253,7 +15252,12 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *  === Line Input
  *
  *  Class \IO supports line-oriented input for
- *  {files}[rdoc-ref:IO@File+Line+Input] and {IO streams}[rdoc-ref:IO@Stream+Line+Input]
+ *  {files}[rdoc-ref:IO@File+Line+Input] and {IO streams}[rdoc-ref:IO@Stream+Line+Input].
+ *
+ *  ==== Line Input Options
+ *
+ *  Optional keyword argument +chomp+ (default: +false+)
+ *  specifies whether line separators are to be excluded from the result of a read.
  *
  *  ==== \File Line Input
  *

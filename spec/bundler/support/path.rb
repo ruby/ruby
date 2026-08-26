@@ -79,6 +79,10 @@ module Spec
       @spec_dir ||= source_root.join(ruby_core? ? "spec/bundler" : "spec")
     end
 
+    def rubygems_test_dir
+      @rubygems_test_dir ||= source_root.join("test/rubygems")
+    end
+
     def man_dir
       @man_dir ||= lib_dir.join("bundler/man")
     end
@@ -125,6 +129,16 @@ module Spec
       else
         source_root.join("tmp")
       end
+    end
+
+    # On Windows there is no relative path between different drives, and much of
+    # the spec setup (temp home, bundled app, caches) lives under the temp dir.
+    # When the temp dir is on a different drive than the source tree, examples
+    # that compare or look up paths across the two cannot be set up correctly.
+    def tmp_and_source_on_different_drives?
+      return false unless Gem.win_platform?
+      drive = ->(path) { path.to_s[/\A[a-zA-Z]:/]&.upcase }
+      drive[tmp_root] != drive[source_root]
     end
 
     # Bump this version whenever you make a breaking change to the spec setup
@@ -293,7 +307,7 @@ module Spec
     def replace_changelog(version, dir:)
       changelog = File.expand_path("CHANGELOG-bundler.md", dir)
       contents = File.readlines(changelog)
-      contents = [contents[0], contents[1], "## #{version} (2100-01-01)\n", *contents[3..-1]].join
+      contents = [contents[0], contents[1], "## #{version} / 2100-01-01\n", *contents[3..-1]].join
       File.open(changelog, "w") {|f| f << contents }
     end
 
@@ -345,7 +359,7 @@ module Spec
     end
 
     def tracked_files_glob
-      ruby_core? ? "libexec/bundle* lib/bundler lib/bundler.rb lib/rubygems/vendor/uri spec/bundler man/bundle*" : "exe/bundle exe/bundler lib/bundler lib/bundler.rb lib/rubygems/vendor/uri bundler.gemspec CHANGELOG-bundler.md LICENSE-bundler.md README-bundler.md"
+      ruby_core? ? "libexec/bundle* lib/bundler lib/bundler.rb lib/rubygems/vendor/uri lib/rubygems/vendor/securerandom lib/rubygems/vendor/pub_grub lib/rubygems/yaml_serializer.rb lib/rubygems/compact_index_client* lib/rubygems/credential_store* spec/bundler man/bundle*" : "exe/bundle exe/bundler lib/bundler lib/bundler.rb lib/rubygems/vendor/uri lib/rubygems/vendor/securerandom lib/rubygems/vendor/pub_grub lib/rubygems/yaml_serializer.rb lib/rubygems/compact_index_client* lib/rubygems/credential_store* bundler.gemspec CHANGELOG-bundler.md LICENSE-bundler.md README-bundler.md"
     end
 
     def lib_tracked_files_glob

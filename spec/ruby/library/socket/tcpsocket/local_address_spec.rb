@@ -65,7 +65,13 @@ describe 'TCPSocket#local_address' do
 
       describe 'the returned Addrinfo' do
         it 'uses the correct IP address' do
-          @sock.local_address.ip_address.should == @host
+          # An implicit (nil) hostname resolves to the loopback of either family
+          # and Happy Eyeballs prefers IPv6, so the connection is not guaranteed
+          # to land on @host: under parallel runs an unrelated listener on
+          # ::1:<same ephemeral port> can be reached instead, making @host a
+          # flaky expectation (local_address would be ::1). The local end always
+          # matches the family actually connected, so compare against the peer.
+          @sock.local_address.ip_address.should == @sock.remote_address.ip_address
         end
       end
     end

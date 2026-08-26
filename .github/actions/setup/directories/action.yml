@@ -108,16 +108,26 @@ runs:
         git config --global init.defaultBranch garbage
 
     - if: inputs.checkout
-      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         path: ${{ inputs.srcdir }}
         fetch-depth: ${{ inputs.fetch-depth }}
         persist-credentials: false
 
-    - uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+    - id: gems-key
+      shell: bash
+      run: |
+        echo "hash=$hash" >> "$GITHUB_OUTPUT"
+      env:
+        hash: ${{ hashFiles(format('{0}/gems/bundled_gems', inputs.srcdir)) }}
+
+    - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: ${{ inputs.srcdir }}/.downloaded-cache
-        key: ${{ runner.os }}-${{ runner.arch }}-downloaded-cache
+        key: downloaded-cache-${{ steps.gems-key.outputs.hash }}
+        restore-keys: |
+          downloaded-cache-
+          ${{ runner.os }}-${{ runner.arch }}-downloaded-cache
 
     # Cache cloned bundled gem sources so a transient DNS/network failure
     # while cloning from github.com (e.g. "Could not resolve host") does not
@@ -127,11 +137,12 @@ runs:
     # because they are the ones that clone the complete set into gems/src; other
     # jobs would otherwise save a partial gems/src and poison the shared key.
     - if: inputs.bundled-gems-src-cache == 'true'
-      uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: ${{ inputs.srcdir }}/gems/src
-        key: ${{ runner.os }}-${{ runner.arch }}-bundled-gems-src-${{ hashFiles(format('{0}/gems/bundled_gems', inputs.srcdir)) }}
+        key: bundled-gems-src-${{ steps.gems-key.outputs.hash }}
         restore-keys: |
+          bundled-gems-src-
           ${{ runner.os }}-${{ runner.arch }}-bundled-gems-src-
 
     - if: steps.which.outputs.autoreconf
@@ -157,20 +168,9 @@ runs:
       shell: bash
       working-directory: ${{ inputs.srcdir }}
       run: |
-        touch config.status .rbconfig.time
-        for mk in Makefile GNUmakefile; do
-          sed -f tool/prereq.status template/$mk.in > $mk
-        done
-        make up
-
-    # Cleanup, runs even on failure
-    - if: always() && inputs.makeup
-      shell: bash
-      working-directory: ${{ inputs.srcdir }}
-      run: |
-        rm -f config.status .rbconfig.time \
-          Makefile GNUmakefile uncommon.mk enc.mk noarch-fake.rb
-        rm -f prism/.time prism/util/.time
+        ruby tool/missing-baseruby.bat --verbose
+        bash tool/gen-sources.bash up
+        echo RUBY_DUMP_AST=true >> "$GITHUB_ENV"
 
     - if: steps.which.outputs.sudo
       shell: bash

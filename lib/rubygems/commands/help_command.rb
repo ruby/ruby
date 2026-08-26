@@ -59,7 +59,7 @@ multiple environments.  The RubyGems implementation is designed to be
 compatible with Bundler's Gemfile format.  You can see additional
 documentation on the format at:
 
-  https://bundler.io
+  https://guides.rubygems.org/
 
 RubyGems automatically looks for these gem dependencies files:
 
@@ -174,7 +174,7 @@ and #platforms methods:
 See the bundler Gemfile manual page for a list of platforms supported in a gem
 dependencies file.:
 
-  https://bundler.io/v2.5/man/gemfile.5.html
+  https://guides.rubygems.org/gemfile/
 
 Ruby Version and Engine Dependency
 ==================================

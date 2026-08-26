@@ -47,7 +47,9 @@ end
 any = Type.new "Any"
 # Build the Ruby object universe.
 value = any.subtype "RubyValue"
+imemo = value.subtype "IMemo"
 undef_ = value.subtype "Undef"
+# TODO(max): Figure out if CME should be a subtype of IMemo
 value.subtype "CallableMethodEntry"  # rb_callable_method_entry_t*
 basic_object = value.subtype "BasicObject"
 basic_object_exact = basic_object.subtype "BasicObjectExact"
@@ -198,6 +200,8 @@ $bits["Truthy"] = ["BasicObject & !Falsy"]
 $numeric_bits["Truthy"] = $numeric_bits["BasicObject"] & ~$numeric_bits["Falsy"]
 $bits["NotNil"] = ["BasicObject & !NilClass"]
 $numeric_bits["NotNil"] = $numeric_bits["BasicObject"] & ~$numeric_bits["NilClass"]
+$bits["NotString"] = ["BasicObject & !String"]
+$numeric_bits["NotString"] = $numeric_bits["BasicObject"] & ~$numeric_bits["String"]
 
 # ===== Finished generating the DAG; write Rust code =====
 

@@ -40,6 +40,8 @@
 #include <time.h>
 #include <signal.h>
 
+#include "probes.h"
+
 #if defined __APPLE__
 # include <AvailabilityMacros.h>
 #endif
@@ -59,6 +61,10 @@ static pthread_condattr_t *condattr_monotonic = &condattr_mono;
 #else
 static const void *const condattr_monotonic = NULL;
 #endif
+
+/* A retiring shared native thread frees its own context while the threads it
+ * parked are still suspended with that context as their target. */
+#define COROUTINE_TARGET_MAY_BE_FREED 1
 
 #include COROUTINE_H
 
@@ -328,7 +334,29 @@ static void ractor_sched_enq(rb_vm_t *vm, rb_ractor_t *r);
 static void timer_thread_wakeup(void);
 static void timer_thread_wakeup_locked(rb_vm_t *vm);
 static void timer_thread_wakeup_force(void);
+static void timer_thread_wake_fence(struct rb_thread_struct *th);
+static bool ractor_sched_timeout_arm(rb_thread_t *th, const rb_hrtime_t *rel);
+static bool ractor_sched_timeout_disarm(rb_thread_t *th);
 static void thread_sched_switch(rb_thread_t *cth, rb_thread_t *next_th);
+static void ractor_sched_cancel_enq(rb_vm_t *vm, struct rb_thread_sched *sched);
+#if USE_MN_THREADS
+static void nt_machine_stack_atfork(void);
+
+// A coroutine thread's execution context: the coroutine_context (first, so
+// th->sched.context points at the whole block) plus what is needed to free
+// it without the rb_thread_t. Owned by the execution: the dying thread marks
+// it dead before its final transfer, and whichever context RESUMES from that
+// transfer frees it -- the resume itself proves the transfer's register save
+// into this block has completed, so no further synchronization is needed.
+struct rb_thread_context {
+    struct coroutine_context co; // must be first
+    void *stack;                 // the coroutine machine stack (pool stack)
+    struct rb_native_thread *nt; // final transfer target, stashed at termination
+    bool dead;
+};
+
+static bool thread_sched_reclaim(struct coroutine_context *dead_co);
+#endif
 static void coroutine_transfer0(struct coroutine_context *transfer_from,
                                 struct coroutine_context *transfer_to, bool to_dead);
 
@@ -475,6 +503,7 @@ ractor_sched_set_unlocked(rb_vm_t *vm, rb_ractor_t *cr)
 #endif
 }
 
+
 static void
 ractor_sched_lock_(rb_vm_t *vm, rb_ractor_t *cr, const char *file, int line)
 {
@@ -506,134 +535,191 @@ ASSERT_ractor_sched_locked(rb_vm_t *vm, rb_ractor_t *cr)
     VM_ASSERT(cr == NULL || vm->ractor.sched.lock_owner == cr);
 }
 
-RBIMPL_ATTR_MAYBE_UNUSED()
-static bool
-ractor_sched_running_threads_contain_p(rb_vm_t *vm, rb_thread_t *th)
-{
-    rb_thread_t *rth;
-    ccan_list_for_each(&vm->ractor.sched.running_threads, rth, sched.node.running_threads) {
-        if (rth == th) return true;
-    }
-    return false;
-}
-
-RBIMPL_ATTR_MAYBE_UNUSED()
-static unsigned int
-ractor_sched_running_threads_size(rb_vm_t *vm)
-{
-    rb_thread_t *th;
-    unsigned int i = 0;
-    ccan_list_for_each(&vm->ractor.sched.running_threads, th, sched.node.running_threads) {
-        i++;
-    }
-    return i;
-}
-
-RBIMPL_ATTR_MAYBE_UNUSED()
-static unsigned int
-ractor_sched_timeslice_threads_size(rb_vm_t *vm)
-{
-    rb_thread_t *th;
-    unsigned int i = 0;
-    ccan_list_for_each(&vm->ractor.sched.timeslice_threads, th, sched.node.timeslice_threads) {
-        i++;
-    }
-    return i;
-}
-
-RBIMPL_ATTR_MAYBE_UNUSED()
-static bool
-ractor_sched_timeslice_threads_contain_p(rb_vm_t *vm, rb_thread_t *th)
-{
-    rb_thread_t *rth;
-    ccan_list_for_each(&vm->ractor.sched.timeslice_threads, rth, sched.node.timeslice_threads) {
-        if (rth == th) return true;
-    }
-    return false;
-}
-
 static void ractor_sched_barrier_join_signal_locked(rb_vm_t *vm);
 
-// setup timeslice signals by the timer thread.
+/* ntlist registration: a thread that executes Ruby code is always registered,
+ * in its snt's nt->running_th or on running_dnts via its dedicated nt.  The
+ * only unregistered execution is scheduler glue (parking, resuming), which
+ * touches no Ruby heap, and the barrier wait below. */
 static void
-thread_sched_setup_running_threads(struct rb_thread_sched *sched, rb_ractor_t *cr, rb_vm_t *vm,
-                                   rb_thread_t *add_th, rb_thread_t *del_th, rb_thread_t *add_timeslice_th)
+ntlist_add_running(rb_vm_t *vm, rb_thread_t *th)
 {
-#if USE_RUBY_DEBUG_LOG
-    unsigned int prev_running_cnt = vm->ractor.sched.running_cnt;
-#endif
+    struct rb_native_thread *nt = th->nt;
 
-    rb_thread_t *del_timeslice_th;
-
-    if (del_th && sched->is_running_timeslice) {
-        del_timeslice_th = del_th;
-        sched->is_running_timeslice = false;
+    // a dedicated nt is not on the snts list the scans walk: running_dnts instead
+    if (nt != NULL && nt->dedicated == 0) {
+        rb_native_mutex_lock(&nt->running_th_lock);
+        {
+            VM_ASSERT(nt->running_th == NULL);
+            nt->running_th = th;
+        }
+        rb_native_mutex_unlock(&nt->running_th_lock);
     }
     else {
-        del_timeslice_th = NULL;
+        rb_native_mutex_lock(&vm->ractor.sched.ntlist.lock);
+        {
+            // an snt gone dedicated (rb_thread_lock_native_thread) has no
+            // creation-time running_thread: the registration supplies it
+            nt->running_thread = th;
+            ccan_list_add(&vm->ractor.sched.ntlist.running_dnts, &nt->running_dnts_node);
+        }
+        rb_native_mutex_unlock(&vm->ractor.sched.ntlist.lock);
     }
+}
 
-    RUBY_DEBUG_LOG("+:%u -:%u +ts:%u -ts:%u",
-                   rb_th_serial(add_th), rb_th_serial(del_th),
-                   rb_th_serial(add_timeslice_th), rb_th_serial(del_timeslice_th));
+// Returns whether the active barrier's walk had counted this registration:
+// such a deregistration owes the snapshot count a decrement.  Read and
+// cleared under the registration's own lock, so it pairs with the walk.
+static bool
+ntlist_del_running(rb_vm_t *vm, rb_thread_t *th)
+{
+    struct rb_native_thread *nt = th->nt;
+    uint32_t serial;
+    bool counted;
+    bool in_running_th;
 
-    ractor_sched_lock(vm, cr);
+    // The registration itself says where it is: nt->running_th holds th, or
+    // th's nt hangs on running_dnts.  barrier_serial is read inside the
+    // registration's lock, ordered with the walk that stamped there.
+    rb_native_mutex_lock(&nt->running_th_lock);
     {
-        // update running_threads
-        if (del_th) {
-            VM_ASSERT(ractor_sched_running_threads_contain_p(vm, del_th));
-            VM_ASSERT(del_timeslice_th != NULL ||
-                      !ractor_sched_timeslice_threads_contain_p(vm, del_th));
-
-            ccan_list_del_init(&del_th->sched.node.running_threads);
-            vm->ractor.sched.running_cnt--;
-
-            if (UNLIKELY(vm->ractor.sched.barrier_waiting)) {
-                ractor_sched_barrier_join_signal_locked(vm);
-            }
-            sched->is_running = false;
+        in_running_th = (nt->running_th == th);
+        if (in_running_th) {
+            nt->running_th = NULL;
+            serial = vm->ractor.sched.barrier_serial;
+            counted = (nt->barrier_counted_serial == serial);
+            nt->barrier_counted_serial = serial - 1; // only once per barrier
         }
-
-        if (add_th) {
-            if (vm->ractor.sched.barrier_waiting) {
-                // TODO: GC barrier check?
-                RUBY_DEBUG_LOG("barrier_waiting");
-                RUBY_VM_SET_VM_BARRIER_INTERRUPT(add_th->ec);
-            }
-
-            VM_ASSERT(!ractor_sched_running_threads_contain_p(vm, add_th));
-            VM_ASSERT(!ractor_sched_timeslice_threads_contain_p(vm, add_th));
-
-            ccan_list_add(&vm->ractor.sched.running_threads, &add_th->sched.node.running_threads);
-            vm->ractor.sched.running_cnt++;
-            sched->is_running = true;
-        }
-
-        if (add_timeslice_th) {
-            // update timeslice threads
-            int was_empty = ccan_list_empty(&vm->ractor.sched.timeslice_threads);
-            VM_ASSERT(!ractor_sched_timeslice_threads_contain_p(vm, add_timeslice_th));
-            ccan_list_add(&vm->ractor.sched.timeslice_threads, &add_timeslice_th->sched.node.timeslice_threads);
-            sched->is_running_timeslice = true;
-            if (was_empty) {
-                timer_thread_wakeup_locked(vm);
-            }
-        }
-
-        if (del_timeslice_th) {
-            VM_ASSERT(ractor_sched_timeslice_threads_contain_p(vm, del_timeslice_th));
-            ccan_list_del_init(&del_timeslice_th->sched.node.timeslice_threads);
-        }
-
-        VM_ASSERT(ractor_sched_running_threads_size(vm) == vm->ractor.sched.running_cnt);
-        VM_ASSERT(ractor_sched_timeslice_threads_size(vm) <= vm->ractor.sched.running_cnt);
     }
-    ractor_sched_unlock(vm, cr);
+    rb_native_mutex_unlock(&nt->running_th_lock);
 
-    //RUBY_DEBUG_LOG("+:%u -:%u +ts:%u -ts:%u run:%u->%u",
-    //               rb_th_serial(add_th), rb_th_serial(del_th),
-    //               rb_th_serial(add_timeslice_th), rb_th_serial(del_timeslice_th),
-    RUBY_DEBUG_LOG("run:%u->%u", prev_running_cnt, vm->ractor.sched.running_cnt);
+    if (!in_running_th) {
+        rb_native_mutex_lock(&vm->ractor.sched.ntlist.lock);
+        {
+            ccan_list_del_init(&nt->running_dnts_node);
+            serial = vm->ractor.sched.barrier_serial;
+            counted = (nt->barrier_counted_serial == serial);
+            nt->barrier_counted_serial = serial - 1;
+        }
+        rb_native_mutex_unlock(&vm->ractor.sched.ntlist.lock);
+    }
+    return counted;
+}
+
+// Stamp a registration into the active barrier's snapshot unless the walk
+// already counted it; returns whether it stamped.  Called under sched.lock,
+// so it is serialized with the walk: the stamp says exactly whether the
+// registration came first.
+static bool
+ntlist_stamp_if_uncounted(rb_vm_t *vm, rb_thread_t *th)
+{
+    struct rb_native_thread *nt = th->nt;
+    uint32_t serial = vm->ractor.sched.barrier_serial; // sched.lock is held
+    bool stamped;
+    bool in_running_th;
+
+    rb_native_mutex_lock(&nt->running_th_lock);
+    {
+        in_running_th = (nt->running_th == th);
+        if (in_running_th) {
+            stamped = (nt->barrier_counted_serial != serial);
+            nt->barrier_counted_serial = serial;
+        }
+    }
+    rb_native_mutex_unlock(&nt->running_th_lock);
+
+    if (!in_running_th) {
+        rb_native_mutex_lock(&vm->ractor.sched.ntlist.lock);
+        {
+            stamped = (nt->barrier_counted_serial != serial);
+            nt->barrier_counted_serial = serial;
+        }
+        rb_native_mutex_unlock(&vm->ractor.sched.ntlist.lock);
+    }
+    return stamped;
+}
+
+// Record a thread entering/leaving the running set, with no global lock and
+// no count: the records themselves are what the barrier counts.  Pairing:
+// the barrier sets barrier_is_waiting and then walks the records under their
+// locks; we move a record and then read the flag, so one side sees the other.
+// List sched for the timer's timeslice ticks.  The caller holds sched->lock_
+// with the readyq non-empty, so the timer cannot prune the entry meanwhile.
+static void
+timeslice_sched_link(rb_vm_t *vm, struct rb_thread_sched *sched)
+{
+    rb_native_mutex_lock(&vm->ractor.sched.timeslice.lock);
+    {
+        if (sched->timeslice_node.next == &sched->timeslice_node) {
+            ccan_list_add_tail(&vm->ractor.sched.timeslice.scheds, &sched->timeslice_node);
+        }
+    }
+    rb_native_mutex_unlock(&vm->ractor.sched.timeslice.lock);
+}
+
+static void
+thread_sched_setup_running_threads(struct rb_thread_sched *sched, rb_ractor_t *cr, rb_vm_t *vm,
+                                   rb_thread_t *add_th, rb_thread_t *del_th)
+{
+    RUBY_DEBUG_LOG("+:%u -:%u", rb_th_serial(add_th), rb_th_serial(del_th));
+
+    if (del_th) {
+        bool counted = ntlist_del_running(vm, del_th);
+        sched->is_running = false;
+
+        // The first load is only a filter; the one under sched.lock decides.
+        // A missed flag means this deregistration preceded the barrier's walk.
+        if (UNLIKELY(RUBY_ATOMIC_LOAD(vm->ractor.sched.barrier_is_waiting))) {
+            ractor_sched_lock(vm, cr);
+            {
+                if (RUBY_ATOMIC_LOAD(vm->ractor.sched.barrier_is_waiting)) {
+                    if (counted) {
+                        VM_ASSERT(vm->ractor.sched.barrier_running_cnt > 0);
+                        vm->ractor.sched.barrier_running_cnt--;
+                    }
+                    ractor_sched_barrier_join_signal_locked(vm);
+                }
+            }
+            ractor_sched_unlock(vm, cr);
+        }
+    }
+
+    if (add_th) {
+        ntlist_add_running(vm, add_th);
+
+        if (UNLIKELY(RUBY_ATOMIC_LOAD(vm->ractor.sched.barrier_is_waiting))) {
+            // A stop-the-world section.  In its waiting phase sched.lock is
+            // takable: join the snapshot count and take the interrupt (this
+            // thread joins at its next check, like any walked runner).  In
+            // the GC phase the barrier holds sched.lock to its end, so this
+            // blocks here, as the old global-lock design did.
+            ractor_sched_lock(vm, cr);
+            {
+                if (RUBY_ATOMIC_LOAD(vm->ractor.sched.barrier_is_waiting) &&
+                    ntlist_stamp_if_uncounted(vm, add_th)) {
+                    // the walk ran before this registration; count it in
+                    RUBY_DEBUG_LOG("barrier_is_waiting");
+                    vm->ractor.sched.barrier_running_cnt++;
+                    RUBY_VM_SET_VM_BARRIER_INTERRUPT(add_th->ec);
+                }
+            }
+            ractor_sched_unlock(vm, cr);
+        }
+
+        sched->is_running = true;
+
+        // taking a turn with waiters already queued needs the timeslice ticks
+        if (!ccan_list_empty(&sched->readyq)) {
+            timeslice_sched_link(vm, sched);
+            ractor_sched_lock(vm, cr);
+            {
+                if (vm->ractor.sched.timeslice_wait_inf) {
+                    timer_thread_wakeup_locked(vm);
+                }
+            }
+            ractor_sched_unlock(vm, cr);
+        }
+    }
 }
 
 static void
@@ -643,7 +729,7 @@ thread_sched_add_running_thread(struct rb_thread_sched *sched, rb_thread_t *th)
     VM_ASSERT(sched->running == th);
 
     rb_vm_t *vm = th->vm;
-    thread_sched_setup_running_threads(sched, th->ractor, vm, th, NULL, ccan_list_empty(&sched->readyq) ? NULL : th);
+    thread_sched_setup_running_threads(sched, th->ractor, vm, th, NULL);
 }
 
 static void
@@ -652,7 +738,7 @@ thread_sched_del_running_thread(struct rb_thread_sched *sched, rb_thread_t *th)
     ASSERT_thread_sched_locked(sched, th);
 
     rb_vm_t *vm = th->vm;
-    thread_sched_setup_running_threads(sched, th->ractor, vm, NULL, th, NULL);
+    thread_sched_setup_running_threads(sched, th->ractor, vm, NULL, th);
 }
 
 void
@@ -688,6 +774,10 @@ thread_sched_set_running(struct rb_thread_sched *sched, rb_thread_t *th)
 {
     RUBY_DEBUG_LOG("th:%u->th:%u", rb_th_serial(sched->running), rb_th_serial(th));
     VM_ASSERT(sched->running != th);
+
+    if (RUBY_DTRACE_RTS_SET_RUNNING_ENABLED()) {
+        RUBY_DTRACE_RTS_SET_RUNNING(sched, sched->running, th);
+    }
 
     sched->running = th;
 }
@@ -747,20 +837,26 @@ thread_sched_enq(struct rb_thread_sched *sched, rb_thread_t *ready_th)
     VM_ASSERT(sched->running != NULL);
     VM_ASSERT(!thread_sched_readyq_contain_p(sched, ready_th));
 
-    if (sched->is_running) {
-        if (ccan_list_empty(&sched->readyq)) {
-            // add sched->running to timeslice
-            thread_sched_setup_running_threads(sched, ready_th->ractor, ready_th->vm, NULL, NULL, sched->running);
-        }
-    }
-    else {
-        // ractor_sched lock is needed
-        // VM_ASSERT(!ractor_sched_timeslice_threads_contain_p(ready_th->vm, sched->running));
-    }
+    bool timeslice_onset = sched->is_running && ccan_list_empty(&sched->readyq);
 
     ccan_list_add_tail(&sched->readyq, &ready_th->sched.node.readyq);
     ready_th->sched.node.is_ready = true;
     sched->readyq_cnt++;
+
+    if (timeslice_onset) {
+        // The running thread needs the timeslice ticks now.  Linked before
+        // the check under sched.lock: either the timer's scan (same lock)
+        // sees the sched, or this sees timeslice_wait_inf.
+        rb_vm_t *vm = ready_th->vm;
+        timeslice_sched_link(vm, sched);
+        ractor_sched_lock(vm, NULL);
+        {
+            if (vm->ractor.sched.timeslice_wait_inf) {
+                timer_thread_wakeup_locked(vm);
+            }
+        }
+        ractor_sched_unlock(vm, NULL);
+    }
 }
 
 // DNT: kick condvar
@@ -775,7 +871,7 @@ thread_sched_wakeup_running_thread(struct rb_thread_sched *sched, rb_thread_t *n
         if (next_th->nt) {
             if (th_has_dedicated_nt(next_th)) {
                 RUBY_DEBUG_LOG("pinning th:%u", next_th->serial);
-                rb_native_cond_signal(&next_th->nt->cond.readyq);
+                rb_native_cond_signal(&next_th->nt->readyq);
             }
             else {
                 // TODO
@@ -833,19 +929,27 @@ thread_sched_to_ready(struct rb_thread_sched *sched, rb_thread_t *th)
     thread_sched_unlock(sched, th);
 }
 
-// wait until sched->running is `th`.
+// wait until sched->running is `th`.  `end` is an absolute deadline for a dedicated
 static void
-thread_sched_wait_running_turn(struct rb_thread_sched *sched, rb_thread_t *th, bool can_direct_transfer)
+thread_sched_wait_running_turn(struct rb_thread_sched *sched, rb_thread_t *th, bool can_direct_transfer, const rb_hrtime_t *end)
 {
     RUBY_DEBUG_LOG("th:%u", rb_th_serial(th));
 
     ASSERT_thread_sched_locked(sched, th);
     VM_ASSERT(th == rb_ec_thread_ptr(rb_current_ec_noinline()));
 
+    bool timedout = false;
+
     if (th != sched->running) {
         // TODO: This optimization should also be made to work for MN_THREADS
         if (th->has_dedicated_nt && th == sched->runnable_hot_th && (sched->running == NULL || sched->running->has_dedicated_nt)) {
             RUBY_DEBUG_LOG("(nt) stealing: hot-th:%u.  running:%u", rb_th_serial(th), rb_th_serial(sched->running));
+
+            // th serves itself on its own nt, displacing the enqueued
+            // running thread back to the readyq: cancel the entry that was
+            // posted for it (a later dequeue would find this Ractor served
+            // and its next enqueue would double-list the node)
+            ractor_sched_cancel_enq(th->vm, sched);
 
             // If there is a thread set to run, move it back to the front of the readyq
             if (sched->running != NULL) {
@@ -875,7 +979,7 @@ thread_sched_wait_running_turn(struct rb_thread_sched *sched, rb_thread_t *th, b
         }
 
         // already deleted from running threads
-        // VM_ASSERT(!ractor_sched_running_threads_contain_p(th->vm, th)); // need locking
+
 
         // wait for execution right
         rb_thread_t *next_th;
@@ -885,10 +989,38 @@ thread_sched_wait_running_turn(struct rb_thread_sched *sched, rb_thread_t *th, b
 
                 thread_sched_set_unlocked(sched, th);
                 {
-                    RUBY_DEBUG_LOG("nt:%d cond:%p", th->nt->serial, &th->nt->cond.readyq);
-                    rb_native_cond_wait(&th->nt->cond.readyq, &sched->lock_);
+                    RUBY_DEBUG_LOG("nt:%d cond:%p", th->nt->serial, &th->nt->readyq);
+                    rb_nativethread_cond_t *cond = &th->nt->readyq;
+
+                    // Once someone has queued this thread the deadline is spent: it
+                    // is waiting for a turn, not for the time, and arming a kernel
+                    // timer for every round of that costs more than the wait.
+                    // Once someone has queued this thread the deadline is spent: it
+                    // is waiting for a turn, not for the time, and arming a kernel
+                    // timer for every round of that costs more than the wait.
+                    if (end && !th->sched.node.is_ready) {
+                        rb_hrtime_t abs = *end;
+
+                        if (!condattr_monotonic) {
+                            // the condvar counts in another clock: restate it there
+                            rb_hrtime_t now = rb_hrtime_now();
+                            abs = native_cond_timeout(cond, *end > now ? *end - now : 0);
+                        }
+                        timedout = native_cond_timedwait(cond, &sched->lock_, &abs) == ETIMEDOUT;
+                    }
+                    else {
+                        rb_native_cond_wait(cond, &sched->lock_);
+                    }
                 }
                 thread_sched_set_locked(sched, th);
+
+                if (timedout &&
+                    sched->running != th && !th->sched.node.is_ready) {
+                    // the deadline passed and nobody woke this thread: get back in
+                    // line for the running turn, then wait for it without a deadline
+                    thread_sched_to_ready_common(sched, th, false, false);
+                    end = NULL;
+                }
 
                 if (sched->runnable_hot_th != NULL && sched->runnable_hot_th_waiting) {
                     VM_ASSERT(sched->runnable_hot_th != th);
@@ -952,7 +1084,7 @@ thread_sched_wait_running_turn(struct rb_thread_sched *sched, rb_thread_t *th, b
     sched->runnable_hot_th = NULL;
     sched->runnable_hot_th_waiting = 0;
 
-    // VM_ASSERT(ractor_sched_running_threads_contain_p(th->vm, th)); need locking
+
     RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_RESUMED, th);
 }
 
@@ -976,7 +1108,7 @@ thread_sched_to_running_common(struct rb_thread_sched *sched, rb_thread_t *th)
     }
 
     // TODO: check SNT number
-    thread_sched_wait_running_turn(sched, th, false);
+    thread_sched_wait_running_turn(sched, th, false, NULL);
 }
 
 // waiting -> ready -> running
@@ -1039,6 +1171,10 @@ thread_sched_to_dead_common(struct rb_thread_sched *sched, rb_thread_t *th)
 
     RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_SUSPENDED, th);
 
+    // A dying coroutine thread (will_switch=true here) does NOT wake the
+    // next thread now: it is still winding down (co_start's epilogue), and
+    // the same Ractor must not have two threads executing at once. The
+    // epilogue enqueues the Ractor after its last rb_ractor_t access.
     thread_sched_wakeup_next_thread(sched, th, !th_has_dedicated_nt(th));
 
     RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_EXITED, th);
@@ -1048,6 +1184,9 @@ thread_sched_to_dead_common(struct rb_thread_sched *sched, rb_thread_t *th)
 static void
 thread_sched_to_dead(struct rb_thread_sched *sched, rb_thread_t *th)
 {
+    // wait out any pending wake here, while th's Ractor is still alive
+    timer_thread_wake_fence(th);
+
     thread_sched_lock(sched, th);
     {
         thread_sched_to_dead_common(sched, th);
@@ -1147,11 +1286,21 @@ ubf_waiting(void *ptr)
 
     thread_sched_lock(sched, th);
     {
-        if (sched->running == th) {
-            // not sleeping yet.
+        if (sched->running == th || th->sched.node.is_ready) {
+            // not sleeping yet, or a deadline already put it back in line
         }
         else {
             thread_sched_to_ready_common(sched, th, true, false);
+
+            // If the turn is taken, th stays parked until the running thread yields.
+            // For a timed wait, wake it early anyway: it re-parks at once, but its
+            // wakeup then runs on another core in parallel with the running thread,
+            // off the handoff path.  An untimed wait has no post-wake bookkeeping
+            // worth pipelining, so it skips the extra futex round.
+            if (sched->running != th && th->sched.waiting_timed &&
+                th->nt != NULL && th_has_dedicated_nt(th)) {
+                rb_native_cond_signal(&th->nt->readyq);
+            }
         }
     }
     thread_sched_unlock(sched, th);
@@ -1159,11 +1308,15 @@ ubf_waiting(void *ptr)
 
 // running -> waiting
 //
-// This thread will sleep until other thread wakeup the thread.
+// This thread will sleep until other thread wakeup the thread.  `end` is an
+// absolute deadline, NULL to sleep until woken; only a dedicated native thread,
+// which parks on its own condvar, can take one.
 static void
-thread_sched_to_waiting_until_wakeup(struct rb_thread_sched *sched, rb_thread_t *th)
+thread_sched_to_waiting_until_wakeup(struct rb_thread_sched *sched, rb_thread_t *th, const rb_hrtime_t *end)
 {
     RUBY_DEBUG_LOG("th:%u", rb_th_serial(th));
+
+    VM_ASSERT(end == NULL || th_has_dedicated_nt(th));
 
     RB_VM_SAVE_MACHINE_CONTEXT(th);
 
@@ -1178,9 +1331,11 @@ thread_sched_to_waiting_until_wakeup(struct rb_thread_sched *sched, rb_thread_t 
         }
         else {
             bool can_direct_transfer = !th_has_dedicated_nt(th);
+            th->sched.waiting_timed = (end != NULL); // never true here for M:N (end is NULL)
             // NOTE: th->status is set before and after this sleep outside of this function in `sleep_forever`
             thread_sched_wakeup_next_thread(sched, th, can_direct_transfer);
-            thread_sched_wait_running_turn(sched, th, can_direct_transfer);
+            thread_sched_wait_running_turn(sched, th, can_direct_transfer, end);
+            th->sched.waiting_timed = false;
         }
     }
     thread_sched_unlock(sched, th);
@@ -1202,7 +1357,7 @@ thread_sched_yield(struct rb_thread_sched *sched, rb_thread_t *th)
             thread_sched_wakeup_next_thread(sched, th, !th_has_dedicated_nt(th));
             bool can_direct_transfer = !th_has_dedicated_nt(th);
             thread_sched_to_ready_common(sched, th, false, can_direct_transfer);
-            thread_sched_wait_running_turn(sched, th, can_direct_transfer);
+            thread_sched_wait_running_turn(sched, th, can_direct_transfer, NULL);
             th->status = THREAD_RUNNABLE;
         }
         else {
@@ -1223,6 +1378,8 @@ rb_thread_sched_init(struct rb_thread_sched *sched, bool atfork)
 
     ccan_list_head_init(&sched->readyq);
     sched->readyq_cnt = 0;
+    ccan_list_node_init(&sched->grq_node); // self-linked = not enqueued
+    ccan_list_node_init(&sched->timeslice_node);
 
 #if USE_MN_THREADS
     if (!atfork) sched->enable_mn_threads = true; // MN is enabled on Ractors
@@ -1237,6 +1394,13 @@ coroutine_transfer0(struct coroutine_context *transfer_from, struct coroutine_co
     __sanitizer_start_switch_fiber(fake_stack, transfer_to->stack_base, transfer_to->stack_size);
 #endif
 
+#if defined(COROUTINE_SANITIZE_THREAD)
+    /* Tell TSan we are switching to transfer_to's fiber before the stack
+     * switch, so its per-thread shadow stack stays bound to the right
+     * coroutine. */
+    __tsan_switch_to_fiber(transfer_to->tsan_fiber, 0);
+#endif
+
     RBIMPL_ATTR_MAYBE_UNUSED()
     struct coroutine_context *returning_from = coroutine_transfer(transfer_from, transfer_to);
 
@@ -1247,7 +1411,6 @@ coroutine_transfer0(struct coroutine_context *transfer_from, struct coroutine_co
    __sanitizer_finish_switch_fiber(transfer_from->fake_stack,
                                    (const void**)&returning_from->stack_base, &returning_from->stack_size);
 #endif
-
 }
 
 static void
@@ -1257,6 +1420,10 @@ thread_sched_switch0(struct coroutine_context *current_cont, rb_thread_t *next_t
     VM_ASSERT(next_th->nt == NULL);
 
     RUBY_DEBUG_LOG("next_th:%u", rb_th_serial(next_th));
+
+    // this direct transfer serves next_th without a dequeue; cancel its
+    // Ractor's outstanding grq entry (no-op when nothing is enqueued)
+    ractor_sched_cancel_enq(next_th->vm, TH_SCHED(next_th));
 
     ruby_thread_set_native(next_th);
     native_thread_assign(nt, next_th);
@@ -1293,6 +1460,58 @@ grq_size(rb_vm_t *vm, rb_ractor_t *cr)
 }
 #endif
 
+// A native thread enters/leaves an epilogue that outlives its Ractor: from
+// the increment until the decrement, ruby_vm_destruct waits for it below.
+// The increment must happen while the VM still counts the thread's Ractor,
+// so that the two never look absent at the same time.
+void
+rb_thread_sched_winding_begin(rb_vm_t *vm)
+{
+    RUBY_ATOMIC_INC(vm->ractor.sched.winding_cnt);
+}
+
+void
+rb_thread_sched_winding_end(rb_vm_t *vm)
+{
+    VM_ASSERT(RUBY_ATOMIC_LOAD(vm->ractor.sched.winding_cnt) > 0);
+    RUBY_ATOMIC_DEC(vm->ractor.sched.winding_cnt);
+}
+
+// ruby_vm_destruct: wait until no native thread is between a coroutine
+// epilogue and its reclaim -- past that point the reclaim frees through the
+// (about to be destroyed) objspace and reads the (about to be unset) VM.
+// Runs without the VM lock, which the epilogue needs to progress.
+void
+rb_thread_sched_wait_winding(rb_vm_t *vm)
+{
+    while (RUBY_ATOMIC_LOAD(vm->ractor.sched.winding_cnt) > 0) {
+        native_thread_yield();
+    }
+}
+
+// A direct service of a runnable thread (direct transfer or the hot-thread
+// steal) bypasses the grq; cancel the Ractor's outstanding entry so that
+// "enqueued <=> runnable and unserved" keeps holding. The caller holds the
+// per-Ractor sched lock, so no concurrent enqueue can relink the node: a
+// self-linked read needs no lock (the common case -- direct switches whose
+// transition never enqueued). A linked read can race only with a dequeue,
+// hence the recheck under the grq lock.
+static void
+ractor_sched_cancel_enq(rb_vm_t *vm, struct rb_thread_sched *sched)
+{
+    if (sched->grq_node.next != &sched->grq_node) {
+        ractor_sched_lock(vm, NULL);
+        {
+            if (sched->grq_node.next != &sched->grq_node) {
+                ccan_list_del_init(&sched->grq_node);
+                VM_ASSERT(vm->ractor.sched.grq_cnt > 0);
+                vm->ractor.sched.grq_cnt--;
+            }
+        }
+        ractor_sched_unlock(vm, NULL);
+    }
+}
+
 static void
 ractor_sched_enq(rb_vm_t *vm, rb_ractor_t *r)
 {
@@ -1304,14 +1523,16 @@ ractor_sched_enq(rb_vm_t *vm, rb_ractor_t *r)
 
     ractor_sched_lock(vm, cr);
     {
-#if VM_CHECK_MODE > 0
-        // check if grq contains r
-        rb_ractor_t *tr;
-        ccan_list_for_each(&vm->ractor.sched.grq, tr, threads.sched.grq_node) {
-            VM_ASSERT(r != tr);
+        // Precondition: not already enqueued (the grq_node is self-linked).
+        // This holds because every service of a runnable-but-unserved thread
+        // either dequeues the entry (the nt scheduling loop) or cancels it
+        // (direct transfers / the hot-thread steal; see
+        // ractor_sched_cancel_enq) -- re-adding a linked node would corrupt
+        // the queue, so check unconditionally (a CHECK-mode-only assert
+        // would miss it: the race needs timing that CHECK builds perturb).
+        if (sched->grq_node.next != &sched->grq_node) {
+            rb_bug("ractor_sched_enq: already enqueued");
         }
-#endif
-
         ccan_list_add_tail(&vm->ractor.sched.grq, &sched->grq_node);
         vm->ractor.sched.grq_cnt++;
         VM_ASSERT(grq_size(vm, cr) == vm->ractor.sched.grq_cnt);
@@ -1320,25 +1541,44 @@ ractor_sched_enq(rb_vm_t *vm, rb_ractor_t *r)
 
         rb_native_cond_signal(&vm->ractor.sched.cond);
 
+        // The signal reaches a parked snt, and a running one revisits the
+        // queue in ractor_sched_deq before it can wait (same lock as here).
+        // With every snt dedicated or retired, only the timer thread's
+        // timeout branch can serve the entry or widen the pool: wake it
+        // (a no-op unless it sleeps untimed).
+        if (RUBY_ATOMIC_LOAD(vm->ractor.sched.snt_cnt) == 0) {
+            timer_thread_wakeup_locked(vm);
+        }
+
         // ractor_sched_dump(vm);
     }
     ractor_sched_unlock(vm, cr);
 }
 
 
-#ifndef SNT_KEEP_SECONDS
-#define SNT_KEEP_SECONDS 0
-#endif
-
 #ifndef MINIMUM_SNT
 // make at least MINIMUM_SNT snts for debug.
 #define MINIMUM_SNT 0
 #endif
 
+/* A shared thread woken with nothing to run is one whose turn another thread
+ * took first.  After this many in a row it gives itself back: the queue keeps
+ * running dry, so the pool is wider than the work.  0 retires on the first one
+ * and is too eager to be useful; a negative value keeps every thread. */
+#ifndef SNT_IDLE_RETIRE
+#define SNT_IDLE_RETIRE 3
+#endif
+
+/* Never give the last shared thread back.  With none left an enqueue has nobody
+ * to signal, and the only code that makes one runs on the timer thread's
+ * timeout branch, which is reached only once it has seen a backlog. */
+#define SNT_KEEP_MINIMUM (MINIMUM_SNT > 1 ? MINIMUM_SNT : 1)
+
 static rb_ractor_t *
 ractor_sched_deq(rb_vm_t *vm, rb_ractor_t *cr)
 {
     rb_ractor_t *r;
+    int idle_streak = 0;   // consecutive pops that found the queue empty
 
     ractor_sched_lock(vm, cr);
     {
@@ -1351,37 +1591,31 @@ ractor_sched_deq(rb_vm_t *vm, rb_ractor_t *cr)
         while ((r = ccan_list_pop(&vm->ractor.sched.grq, rb_ractor_t, threads.sched.grq_node)) == NULL) {
             RUBY_DEBUG_LOG("wait grq_cnt:%d", (int)vm->ractor.sched.grq_cnt);
 
-#if SNT_KEEP_SECONDS > 0
-            rb_hrtime_t abs = rb_hrtime_add(rb_hrtime_now(), RB_HRTIME_PER_SEC * SNT_KEEP_SECONDS);
-            if (native_cond_timedwait(&vm->ractor.sched.cond, &vm->ractor.sched.lock, &abs) == ETIMEDOUT) {
-                RUBY_DEBUG_LOG("timeout, grq_cnt:%d", (int)vm->ractor.sched.grq_cnt);
-                VM_ASSERT(r == NULL);
-                vm->ractor.sched.snt_cnt--;
-                vm->ractor.sched.running_cnt--;
-                break;
+            if (SNT_IDLE_RETIRE >= 0 && ++idle_streak > SNT_IDLE_RETIRE &&
+                (int)RUBY_ATOMIC_LOAD(vm->ractor.sched.snt_cnt) > SNT_KEEP_MINIMUM) {
+                RUBY_ATOMIC_DEC(vm->ractor.sched.snt_cnt);
+                RUBY_DEBUG_LOG("retire, snt_cnt:%d", (int)vm->ractor.sched.snt_cnt);
+                break;   // returning NULL ends this nt; see the caller
             }
-            else {
-                RUBY_DEBUG_LOG("wakeup grq_cnt:%d", (int)vm->ractor.sched.grq_cnt);
-            }
-#else
+
             ractor_sched_set_unlocked(vm, cr);
             rb_native_cond_wait(&vm->ractor.sched.cond, &vm->ractor.sched.lock);
             ractor_sched_set_locked(vm, cr);
 
             RUBY_DEBUG_LOG("wakeup grq_cnt:%d", (int)vm->ractor.sched.grq_cnt);
-#endif
         }
 
         VM_ASSERT(rb_current_execution_context(false) == NULL);
 
         if (r) {
+            ccan_list_node_init(&r->threads.sched.grq_node); // back to self-linked
             VM_ASSERT(vm->ractor.sched.grq_cnt > 0);
             vm->ractor.sched.grq_cnt--;
             RUBY_DEBUG_LOG("r:%d grq_cnt:%u", (int)rb_ractor_id(r), vm->ractor.sched.grq_cnt);
         }
         else {
-            VM_ASSERT(SNT_KEEP_SECONDS > 0);
-            // timeout
+            // the retire branch is the only way out of the loop without a ractor
+            VM_ASSERT(idle_streak > SNT_IDLE_RETIRE);
         }
     }
     ractor_sched_unlock(vm, cr);
@@ -1413,15 +1647,51 @@ rb_ractor_sched_wait(rb_execution_context_t *ec, rb_ractor_t *cr, rb_unblock_fun
     thread_sched_lock(sched, th);
     rb_ractor_unlock_self(cr);
     {
-        // setup sleep
-        bool can_direct_transfer = !th_has_dedicated_nt(th);
-        RB_VM_SAVE_MACHINE_CONTEXT(th);
-        th->status = THREAD_STOPPED_FOREVER;
-        RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_SUSPENDED, th);
-        thread_sched_wakeup_next_thread(sched, th, can_direct_transfer);
-        // sleep
-        thread_sched_wait_running_turn(sched, th, can_direct_transfer);
-        th->status = THREAD_RUNNABLE;
+        // A dedicated native thread takes the deadline on the very condvar a wakeup
+        // signals.  An M:N thread has no condvar of its own, so its deadline goes to
+        // the timer thread, which then wakes it the way rb_ractor_sched_wakeup() does.
+        bool dedicated = th_has_dedicated_nt(th);
+        const rb_hrtime_t *end_p = NULL;
+        bool armed = false, expired = false;
+
+        if (waiter->end) {
+            if (dedicated) {
+                end_p = waiter->end;
+            }
+            else {
+                // the timer wheel takes a relative timeout
+                rb_hrtime_t now = rb_hrtime_now();
+                rb_hrtime_t rel = *waiter->end > now ? *waiter->end - now : 0;
+
+                armed = ractor_sched_timeout_arm(th, &rel);
+                expired = !armed;
+            }
+        }
+
+        if (expired) {
+            RUBY_DEBUG_LOG("expired before sleep%s", "");
+        }
+        else if (armed && th->sched.waiting_reason.flags == thread_sched_waiting_none) {
+            // the timer thread already took this thread out of the wheel; bump the
+            // serial so that it does not try to wake a thread that never slept
+            th->sched.event_serial++;
+        }
+        else {
+            // setup sleep
+            bool can_direct_transfer = !dedicated;
+            RB_VM_SAVE_MACHINE_CONTEXT(th);
+            th->status = THREAD_STOPPED_FOREVER;
+            th->sched.waiting_timed = (end_p != NULL); // never true here for M:N (end_p is NULL)
+            RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_SUSPENDED, th);
+            thread_sched_wakeup_next_thread(sched, th, can_direct_transfer);
+            // sleep
+            thread_sched_wait_running_turn(sched, th, can_direct_transfer, end_p);
+            th->sched.waiting_timed = false;
+            th->status = THREAD_RUNNABLE;
+
+            // whoever woke this thread took the timeout back first
+            VM_ASSERT(th->sched.waiting_reason.flags == thread_sched_waiting_none);
+        }
     }
     thread_sched_unlock(sched, th);
     rb_ractor_lock_self(cr);
@@ -1443,7 +1713,20 @@ rb_ractor_sched_wakeup(rb_ractor_t *r, rb_thread_t *r_th)
     {
         if (r_th->status == THREAD_STOPPED_FOREVER) {
             RUBY_ATOMIC_ADD(r_th->unblock.event_serial, 1);
-            thread_sched_to_ready_common(sched, r_th, true, false);
+
+            // r_th must not resume with a wheel entry left behind: take its timeout
+            // back, as ubf_event_waiting() does.  Only r_th arms it, and it is
+            // parked here, so reading the flags without the timer lock is safe.
+            if (r_th->sched.waiting_reason.flags != thread_sched_waiting_none) {
+                ractor_sched_timeout_disarm(r_th);
+            }
+
+            // a timeout that fired first may have made r_th runnable already: waking
+            // it twice would put it on the readyq twice
+            if (sched->running != r_th && !r_th->sched.node.is_ready) {
+                r_th->sched.event_serial++; // a timeout still armed must not wake it again
+                thread_sched_to_ready_common(sched, r_th, true, false);
+            }
         }
     }
     thread_sched_unlock(sched, r_th);
@@ -1452,10 +1735,12 @@ rb_ractor_sched_wakeup(rb_ractor_t *r, rb_thread_t *r_th)
 static bool
 ractor_sched_barrier_completed_p(rb_vm_t *vm)
 {
-    RUBY_DEBUG_LOG("run:%u wait:%u", vm->ractor.sched.running_cnt, vm->ractor.sched.barrier_waiting_cnt);
-    VM_ASSERT(vm->ractor.sched.running_cnt - 1 >= vm->ractor.sched.barrier_waiting_cnt);
+    // The snapshot barrier_running_cnt is taken by the barrier's walk and
+    // decremented by counted deregistrations; no rescan is needed here.
+    RUBY_DEBUG_LOG("run:%u wait:%u", vm->ractor.sched.barrier_running_cnt, vm->ractor.sched.barrier_joined_cnt);
+    VM_ASSERT(vm->ractor.sched.barrier_running_cnt - 1 >= vm->ractor.sched.barrier_joined_cnt);
 
-    return (vm->ractor.sched.running_cnt - vm->ractor.sched.barrier_waiting_cnt) == 1;
+    return (vm->ractor.sched.barrier_running_cnt - vm->ractor.sched.barrier_joined_cnt) == 1;
 }
 
 void
@@ -1463,8 +1748,8 @@ rb_ractor_sched_barrier_start(rb_vm_t *vm, rb_ractor_t *cr)
 {
     VM_ASSERT(cr == GET_RACTOR());
     VM_ASSERT(vm->ractor.sync.lock_owner == cr); // VM is locked
-    VM_ASSERT(!vm->ractor.sched.barrier_waiting);
-    VM_ASSERT(vm->ractor.sched.barrier_waiting_cnt == 0);
+    VM_ASSERT(!vm->ractor.sched.barrier_is_waiting);
+    VM_ASSERT(vm->ractor.sched.barrier_joined_cnt == 0);
     VM_ASSERT(vm->ractor.sched.barrier_ractor == NULL);
     VM_ASSERT(vm->ractor.sched.barrier_lock_rec == 0);
 
@@ -1474,7 +1759,7 @@ rb_ractor_sched_barrier_start(rb_vm_t *vm, rb_ractor_t *cr)
 
     ractor_sched_lock(vm, cr);
     {
-        vm->ractor.sched.barrier_waiting = true;
+        RUBY_ATOMIC_SET(vm->ractor.sched.barrier_is_waiting, 1);
         vm->ractor.sched.barrier_ractor = cr;
         vm->ractor.sched.barrier_lock_rec = vm->ractor.sync.lock_rec;
 
@@ -1484,14 +1769,48 @@ rb_ractor_sched_barrier_start(rb_vm_t *vm, rb_ractor_t *cr)
         vm->ractor.sync.lock_owner = NULL;
         rb_native_mutex_unlock(&vm->ractor.sync.lock);
 
-        // interrupts all running threads
+        // Interrupt all running threads: running_dnts plus each snt's running_th.
+        // A switch before this scan is visible to it; one after it sees
+        // barrier_is_waiting (set above) and waits.
+        // Interrupt and count every registered runner, stamping each nt so a
+        // deregistration during this barrier knows it was counted.
         rb_thread_t *ith;
-        ccan_list_for_each(&vm->ractor.sched.running_threads, ith, sched.node.running_threads) {
-            if (ith->ractor != cr) {
-                RUBY_DEBUG_LOG("barrier request to th:%u", rb_th_serial(ith));
-                RUBY_VM_SET_VM_BARRIER_INTERRUPT(ith->ec);
+        unsigned int running_cnt = 0;
+        uint32_t serial = vm->ractor.sched.barrier_serial;
+
+        rb_native_mutex_lock(&vm->ractor.sched.ntlist.lock);
+        {
+            struct rb_native_thread *dnt;
+            ccan_list_for_each(&vm->ractor.sched.ntlist.running_dnts, dnt, running_dnts_node) {
+                ith = dnt->running_thread;
+                dnt->barrier_counted_serial = serial;
+                running_cnt++;
+                if (ith->ractor != cr) {
+                    RUBY_DEBUG_LOG("barrier request to th:%u", rb_th_serial(ith));
+                    RUBY_VM_SET_VM_BARRIER_INTERRUPT(ith->ec);
+                }
+            }
+
+            struct rb_native_thread *nt;
+            ccan_list_for_each(&vm->ractor.sched.ntlist.snts, nt, snts_node) {
+                rb_native_mutex_lock(&nt->running_th_lock);
+                {
+                    ith = nt->running_th;
+                    if (ith != NULL) {
+                        nt->barrier_counted_serial = serial;
+                        running_cnt++;
+                        if (ith->ractor != cr) {
+                            RUBY_DEBUG_LOG("barrier request to th:%u", rb_th_serial(ith));
+                            RUBY_VM_SET_VM_BARRIER_INTERRUPT(ith->ec);
+                        }
+                    }
+                }
+                rb_native_mutex_unlock(&nt->running_th_lock);
             }
         }
+        rb_native_mutex_unlock(&vm->ractor.sched.ntlist.lock);
+
+        vm->ractor.sched.barrier_running_cnt = running_cnt;
 
         // wait for other ractors
         while (!ractor_sched_barrier_completed_p(vm)) {
@@ -1504,7 +1823,7 @@ rb_ractor_sched_barrier_start(rb_vm_t *vm, rb_ractor_t *cr)
 
         // no other ractors are there
         vm->ractor.sched.barrier_serial++;
-        vm->ractor.sched.barrier_waiting_cnt = 0;
+        vm->ractor.sched.barrier_joined_cnt = 0;
         rb_native_cond_broadcast(&vm->ractor.sched.barrier_release_cond);
 
         // acquire VM lock
@@ -1522,11 +1841,11 @@ void
 rb_ractor_sched_barrier_end(rb_vm_t *vm, rb_ractor_t *cr)
 {
     RUBY_DEBUG_LOG("serial:%u", (unsigned int)vm->ractor.sched.barrier_serial - 1);
-    VM_ASSERT(vm->ractor.sched.barrier_waiting);
+    VM_ASSERT(vm->ractor.sched.barrier_is_waiting);
     VM_ASSERT(vm->ractor.sched.barrier_ractor);
     VM_ASSERT(vm->ractor.sched.barrier_lock_rec > 0);
 
-    vm->ractor.sched.barrier_waiting = false;
+    RUBY_ATOMIC_SET(vm->ractor.sched.barrier_is_waiting, 0);
     vm->ractor.sched.barrier_ractor = NULL;
     vm->ractor.sched.barrier_lock_rec = 0;
     ractor_sched_unlock(vm, cr);
@@ -1543,7 +1862,7 @@ ractor_sched_barrier_join_signal_locked(rb_vm_t *vm)
 static void
 ractor_sched_barrier_join_wait_locked(rb_vm_t *vm, rb_thread_t *th)
 {
-    VM_ASSERT(vm->ractor.sched.barrier_waiting);
+    VM_ASSERT(vm->ractor.sched.barrier_is_waiting);
 
     unsigned int barrier_serial = vm->ractor.sched.barrier_serial;
 
@@ -1566,7 +1885,7 @@ rb_ractor_sched_barrier_join(rb_vm_t *vm, rb_ractor_t *cr)
     VM_ASSERT(cr->threads.sched.running != NULL); // running ractor
     VM_ASSERT(cr == GET_RACTOR());
     VM_ASSERT(vm->ractor.sync.lock_owner == NULL); // VM is locked, but owner == NULL
-    VM_ASSERT(vm->ractor.sched.barrier_waiting);  // VM needs barrier sync
+    VM_ASSERT(vm->ractor.sched.barrier_is_waiting);  // VM needs barrier sync
 
 #if USE_RUBY_DEBUG_LOG || VM_CHECK_MODE > 0
     unsigned int barrier_serial = vm->ractor.sched.barrier_serial;
@@ -1576,14 +1895,16 @@ rb_ractor_sched_barrier_join(rb_vm_t *vm, rb_ractor_t *cr)
 
     rb_native_mutex_unlock(&vm->ractor.sync.lock);
     {
-        VM_ASSERT(vm->ractor.sched.barrier_waiting);  // VM needs barrier sync
+        VM_ASSERT(vm->ractor.sched.barrier_is_waiting);  // VM needs barrier sync
         VM_ASSERT(vm->ractor.sched.barrier_serial == barrier_serial);
 
         ractor_sched_lock(vm, cr);
         {
             // running_cnt
-            vm->ractor.sched.barrier_waiting_cnt++;
-            RUBY_DEBUG_LOG("waiting_cnt:%u serial:%u", vm->ractor.sched.barrier_waiting_cnt, barrier_serial);
+            /* Every joiner is a member of the running set: a dying thread
+             * leaves the living set before handing over its scheduler slot. */
+            vm->ractor.sched.barrier_joined_cnt++;
+            RUBY_DEBUG_LOG("waiting_cnt:%u serial:%u", vm->ractor.sched.barrier_joined_cnt, barrier_serial);
 
             ractor_sched_barrier_join_signal_locked(vm);
             ractor_sched_barrier_join_wait_locked(vm, cr->threads.sched.running);
@@ -1595,25 +1916,20 @@ rb_ractor_sched_barrier_join(rb_vm_t *vm, rb_ractor_t *cr)
     // VM locked here
 }
 
-#if 0
-// TODO
-
-static void clear_thread_cache_altstack(void);
-
-static void
+// Called when the ractor holding this sched is freed.  A drained sched can
+// still be on timeslice.scheds (pruning is lazy); an unlisted node is
+// self-linked (fork re-inits them all), making this del a no-op.
+void
 rb_thread_sched_destroy(struct rb_thread_sched *sched)
 {
-    /*
-     * only called once at VM shutdown (not atfork), another thread
-     * may still grab vm->gvl.lock when calling gvl_release at
-     * the end of thread_start_func_2
-     */
-    if (0) {
-        rb_native_mutex_destroy(&sched->lock);
+    rb_vm_t *vm = GET_VM();
+
+    rb_native_mutex_lock(&vm->ractor.sched.timeslice.lock);
+    {
+        ccan_list_del_init(&sched->timeslice_node);
     }
-    clear_thread_cache_altstack();
+    rb_native_mutex_unlock(&vm->ractor.sched.timeslice.lock);
 }
-#endif
 
 #ifdef RB_THREAD_T_HAS_NATIVE_ID
 static int
@@ -1628,7 +1944,7 @@ get_native_thread_id(void)
 #endif
 
 #if defined(HAVE_WORKING_FORK)
-void rb_internal_thread_event_hooks_rw_lock_atfork(void);
+static void rb_internal_thread_event_hooks_rw_lock_atfork(void);
 
 static void
 thread_sched_atfork(struct rb_thread_sched *sched)
@@ -1640,11 +1956,16 @@ thread_sched_atfork(struct rb_thread_sched *sched)
 
     if (th_has_dedicated_nt(th)) {
         vm->ractor.sched.snt_cnt = 0;
+#if USE_RUBY_DEBUG_LOG
+        vm->ractor.sched.dnt_cnt = 1;
+#endif
     }
     else {
         vm->ractor.sched.snt_cnt = 1;
+#if USE_RUBY_DEBUG_LOG
+        vm->ractor.sched.dnt_cnt = 0;
+#endif
     }
-    vm->ractor.sched.running_cnt = 0;
 
     rb_native_mutex_initialize(&vm->ractor.sched.lock);
 #if VM_CHECK_MODE > 0
@@ -1658,19 +1979,51 @@ thread_sched_atfork(struct rb_thread_sched *sched)
     rb_native_cond_initialize(&vm->ractor.sched.barrier_release_cond);
 
     ccan_list_head_init(&vm->ractor.sched.grq);
-    ccan_list_head_init(&vm->ractor.sched.timeslice_threads);
-    ccan_list_head_init(&vm->ractor.sched.running_threads);
+    vm->ractor.sched.grq_cnt = 0; // the list was just emptied; reset the count with it
+    // A fork during a VM barrier leaves the child with barrier state that can
+    // never complete (the other ractors are gone); reset it like the rest.
+    vm->ractor.sched.barrier_is_waiting = 0; // single-threaded child
+    vm->ractor.sched.barrier_joined_cnt = 0;
+    vm->ractor.sched.barrier_ractor = NULL;
+    vm->ractor.sched.barrier_lock_rec = 0;
+    // Threads that were winding down in the parent do not exist in the child;
+    // without this reset the child's ruby_vm_destruct would wait for their
+    // reclaim (which never comes) forever.
+    vm->ractor.sched.winding_cnt = 0;
+    rb_native_mutex_initialize(&vm->ractor.sched.ntlist.lock);
+    ccan_list_head_init(&vm->ractor.sched.ntlist.running_dnts);
+    ccan_list_head_init(&vm->ractor.sched.ntlist.snts); // those nts are gone
+    rb_native_mutex_initialize(&vm->ractor.sched.timeslice.lock);
+    ccan_list_head_init(&vm->ractor.sched.timeslice.scheds);
+    rb_native_mutex_initialize(&th->nt->running_th_lock); // a scan could hold it at fork
+    // Fork can copy nodes linked (or torn mid-link); re-init every sched's
+    // node so rb_thread_sched_destroy's del_init stays a no-op for them.
+    rb_ractor_t *r;
+    ccan_list_for_each(&vm->ractor.set, r, vmlr_node) {
+        ccan_list_node_init(&r->threads.sched.timeslice_node);
+    }
+    ccan_list_for_each(&vm->ractor.terminated_set, r, vmlr_node) {
+        ccan_list_node_init(&r->threads.sched.timeslice_node);
+    }
+    // th re-records itself below; the parent's record did not survive the lists
+    if (th->nt && th->nt->dedicated == 0) {
+        // surviving on an snt: put that nt back on the (just emptied) snts
+        // list, or the scans could not see this thread's record
+        ccan_list_add(&vm->ractor.sched.ntlist.snts, &th->nt->snts_node);
+    }
 
+#if USE_MN_THREADS
+    nt_machine_stack_atfork();
+#endif
     rb_internal_thread_event_hooks_rw_lock_atfork();
 
     VM_ASSERT(sched->is_running);
-    sched->is_running_timeslice = false;
 
     if (sched->running != th) {
         thread_sched_to_running(sched, th);
     }
     else {
-        thread_sched_setup_running_threads(sched, th->ractor, vm, th, NULL, NULL);
+        thread_sched_setup_running_threads(sched, th->ractor, vm, th, NULL);
     }
 
 #ifdef RB_THREAD_T_HAS_NATIVE_ID
@@ -1768,8 +2121,11 @@ Init_native_thread(rb_thread_t *main_th)
     rb_native_cond_initialize(&vm->ractor.sched.barrier_release_cond);
 
     ccan_list_head_init(&vm->ractor.sched.grq);
-    ccan_list_head_init(&vm->ractor.sched.timeslice_threads);
-    ccan_list_head_init(&vm->ractor.sched.running_threads);
+    rb_native_mutex_initialize(&vm->ractor.sched.ntlist.lock);
+    ccan_list_head_init(&vm->ractor.sched.ntlist.running_dnts);
+    ccan_list_head_init(&vm->ractor.sched.ntlist.snts);
+    rb_native_mutex_initialize(&vm->ractor.sched.timeslice.lock);
+    ccan_list_head_init(&vm->ractor.sched.timeslice.scheds);
 
     // setup main thread
     main_th->nt->thread_id = pthread_self();
@@ -1784,14 +2140,17 @@ Init_native_thread(rb_thread_t *main_th)
     TH_SCHED(main_th)->running = main_th;
     main_th->has_dedicated_nt = 1;
 
-    thread_sched_setup_running_threads(TH_SCHED(main_th), main_th->ractor, vm, main_th, NULL, NULL);
-
-    // setup main NT
+    // setup main NT (before the record below: its kind decides where it goes)
     main_th->nt->dedicated = 1;
+    main_th->nt->running_thread = main_th;
     main_th->nt->vm = vm;
 
+    thread_sched_setup_running_threads(TH_SCHED(main_th), main_th->ractor, vm, main_th, NULL);
+
     // setup mn
+#if USE_RUBY_DEBUG_LOG
     vm->ractor.sched.dnt_cnt = 1;
+#endif
 }
 
 extern int ruby_mn_threads_enabled;
@@ -1836,12 +2195,21 @@ native_thread_dedicated_inc(rb_vm_t *vm, rb_ractor_t *cr, struct rb_native_threa
     RUBY_DEBUG_LOG("nt:%d %d->%d", nt->serial, nt->dedicated, nt->dedicated + 1);
 
     if (nt->dedicated == 0) {
-        ractor_sched_lock(vm, cr);
-        {
-            vm->ractor.sched.snt_cnt--;
-            vm->ractor.sched.dnt_cnt++;
+        // Lock-free; pairs with ractor_sched_enq (enq: grq_cnt up then read
+        // snt_cnt / here: snt_cnt down then read grq_cnt) against lost wakeups.
+        if (RUBY_ATOMIC_FETCH_SUB(vm->ractor.sched.snt_cnt, 1) == 1) {
+            // the last snt went dedicated; pending entries need the timer thread
+            ractor_sched_lock(vm, cr);
+            {
+                if (vm->ractor.sched.grq_cnt > 0) {
+                    timer_thread_wakeup_locked(vm);
+                }
+            }
+            ractor_sched_unlock(vm, cr);
         }
-        ractor_sched_unlock(vm, cr);
+#if USE_RUBY_DEBUG_LOG
+        vm->ractor.sched.dnt_cnt++;
+#endif
     }
 
     nt->dedicated++;
@@ -1855,12 +2223,21 @@ native_thread_dedicated_dec(rb_vm_t *vm, rb_ractor_t *cr, struct rb_native_threa
     nt->dedicated--;
 
     if (nt->dedicated == 0) {
-        ractor_sched_lock(vm, cr);
-        {
-            nt->vm->ractor.sched.snt_cnt++;
-            nt->vm->ractor.sched.dnt_cnt--;
+        // Rejoin under the max_cpu cap; with no room this nt retires and
+        // belongs to neither count until it ends.
+        while (1) {
+            rb_atomic_t snt = RUBY_ATOMIC_LOAD(vm->ractor.sched.snt_cnt);
+            if (snt < vm->ractor.sched.max_cpu || (int)snt <= MINIMUM_SNT) {
+                if (RUBY_ATOMIC_CAS(vm->ractor.sched.snt_cnt, snt, snt + 1) == snt) break;
+            }
+            else {
+                nt->retiring = true;
+                break;
+            }
         }
-        ractor_sched_unlock(vm, cr);
+#if USE_RUBY_DEBUG_LOG
+        vm->ractor.sched.dnt_cnt--;
+#endif
     }
 }
 
@@ -1914,14 +2291,25 @@ static void
 native_thread_destroy(struct rb_native_thread *nt)
 {
     if (nt) {
-        rb_native_cond_destroy(&nt->cond.readyq);
-
-        if (&nt->cond.readyq != &nt->cond.intr) {
-            rb_native_cond_destroy(&nt->cond.intr);
-        }
+        rb_native_cond_destroy(&nt->readyq);
+        rb_native_mutex_destroy(&nt->running_th_lock);
 
         native_thread_destroy_atfork(nt);
     }
+}
+
+// A retiring snt frees its own rb_native_thread as it exits.  Disarm the
+// altstack registration first: a signal between the free and the thread's
+// end must not run on the freed block.
+static void
+native_thread_destroy_self(struct rb_native_thread *nt)
+{
+#ifdef USE_SIGALTSTACK
+    stack_t disable = {0};
+    disable.ss_flags = SS_DISABLE;
+    sigaltstack(&disable, NULL);
+#endif
+    native_thread_destroy(nt);
 }
 
 #if defined HAVE_PTHREAD_GETATTR_NP || defined HAVE_PTHREAD_ATTR_GET_NP
@@ -2210,11 +2598,9 @@ static void
 native_thread_setup(struct rb_native_thread *nt)
 {
     // init cond
-    rb_native_cond_initialize(&nt->cond.readyq);
-
-    if (&nt->cond.readyq != &nt->cond.intr) {
-        rb_native_cond_initialize(&nt->cond.intr);
-    }
+    rb_native_cond_initialize(&nt->readyq);
+    // also for the main thread's nt: a zero-filled mutex is not usable on macOS
+    rb_native_mutex_initialize(&nt->running_th_lock);
 }
 
 static void
@@ -2305,9 +2691,21 @@ nt_start(void *ptr)
 
     RUBY_DEBUG_LOG("nt:%u", nt->serial);
 
+    bool in_snts = false;
+
     if (!nt->dedicated) {
         coroutine_initialize_main(nt->nt_context);
+
+        // join the snt list that the barrier/timeslice scans walk
+        rb_native_mutex_lock(&vm->ractor.sched.ntlist.lock);
+        {
+            ccan_list_add(&vm->ractor.sched.ntlist.snts, &nt->snts_node);
+        }
+        rb_native_mutex_unlock(&vm->ractor.sched.ntlist.lock);
+        in_snts = true;
     }
+
+    bool retired = false;
 
     while (1) {
         if (nt->dedicated) {
@@ -2323,7 +2721,7 @@ nt_start(void *ptr)
                 if (sched->running == th) {
                     thread_sched_add_running_thread(sched, th);
                 }
-                thread_sched_wait_running_turn(sched, th, false);
+                thread_sched_wait_running_turn(sched, th, false, NULL);
             }
             thread_sched_unlock(sched, th);
 
@@ -2333,10 +2731,17 @@ nt_start(void *ptr)
         }
         else {
             RUBY_DEBUG_LOG("check next");
+            if (nt->retiring) {   // came back with no room in the shared pool
+                retired = true;
+                break;
+            }
+
             rb_ractor_t *r = ractor_sched_deq(vm, NULL);
 
             if (r) {
                 struct rb_thread_sched *sched = &r->threads.sched;
+
+                bool locked = true;
 
                 thread_sched_lock(sched, NULL);
                 {
@@ -2344,16 +2749,34 @@ nt_start(void *ptr)
 
                     if (next_th && next_th->nt == NULL) {
                         RUBY_DEBUG_LOG("nt:%d next_th:%d", (int)nt->serial, (int)next_th->serial);
+#if USE_MN_THREADS
                         thread_sched_switch0(nt->nt_context, next_th, nt, false);
+
+                        // If a coroutine terminated during the transfer, co_start
+                        // recorded it in nt->dead_co (switch0's return value is
+                        // backend-dependent, unusable; see thread_pthread.h).
+                        struct coroutine_context *dead_co = nt->dead_co;
+                        nt->dead_co = NULL;
+                        if (thread_sched_reclaim(dead_co)) {
+                            // it already released the sched lock before its
+                            // transfer (its Ractor may be gone): leave sched be.
+                            locked = false;
+                        }
+#else
+                        thread_sched_switch0(nt->nt_context, next_th, nt, false);
+#endif
                     }
                     else {
                         RUBY_DEBUG_LOG("no schedulable threads -- next_th:%p", next_th);
                     }
                 }
-                thread_sched_unlock(sched, NULL);
+                if (locked) {
+                    thread_sched_unlock(sched, NULL);
+                }
             }
             else {
-                // timeout -> deleted.
+                // ractor_sched_deq retired this nt.
+                retired = true;
                 break;
             }
 
@@ -2364,6 +2787,24 @@ nt_start(void *ptr)
         }
     }
 
+    if (in_snts) {
+        // Leaving the shared loop: every path back here deregistered first
+        // (park and death both precede the transfer), so only the snts entry
+        // is left to remove.
+        VM_ASSERT(nt->running_th == NULL);
+        rb_native_mutex_lock(&vm->ractor.sched.ntlist.lock);
+        {
+            ccan_list_del_init(&nt->snts_node);
+        }
+        rb_native_mutex_unlock(&vm->ractor.sched.ntlist.lock);
+    }
+
+    if (retired) {
+        // The counts dropped this nt already; nothing can reference it now.
+        RUBY_DEBUG_LOG("retired nt:%u", nt->serial);
+        native_thread_destroy_self(nt);
+    }
+
     return NULL;
 }
 
@@ -2371,44 +2812,57 @@ static int native_thread_create_shared(rb_thread_t *th);
 
 #if USE_MN_THREADS
 static void nt_free_stack(void *mstack);
+
+
+// Reclaim the context a coroutine thread recorded in nt->dead_co before its
+// final transfer (co_start's epilogue). Our running here proves that transfer's
+// register save into the block completed. Returns true when a thread did
+// terminate -- it RELEASED the sched lock before transferring; NULL/false means
+// a live yield, where the loop still owns the lock.
+static bool
+thread_sched_reclaim(struct coroutine_context *dead_co)
+{
+    struct rb_thread_context *tctx = (struct rb_thread_context *)dead_co;
+
+    if (tctx != NULL && tctx->dead) {
+        nt_free_stack(tctx->stack);
+        SIZED_FREE(tctx);
+        // pairs with the increment at the top of coroutine_thread_terminated:
+        // a waiting VM destruct may proceed once this reclaim is done
+        VM_ASSERT(RUBY_ATOMIC_LOAD(GET_VM()->ractor.sched.winding_cnt) > 0);
+        RUBY_ATOMIC_DEC(GET_VM()->ractor.sched.winding_cnt);
+        return true;
+    }
+    return false;
+}
 #endif
 
 void
-rb_threadptr_remove(rb_thread_t *th)
+rb_thread_wake_fence(rb_thread_t *th)
 {
-#if USE_MN_THREADS
-    if (th->sched.malloc_stack) {
-        // dedicated
-        return;
-    }
-    else {
-        rb_vm_t *vm = th->vm;
-        th->sched.finished = false;
-
-        RB_VM_LOCKING() {
-            ccan_list_add(&vm->ractor.sched.zombie_threads, &th->sched.node.zombie_threads);
-        }
-    }
-#endif
+    timer_thread_wake_fence(th);
 }
 
 void
 rb_threadptr_sched_free(rb_thread_t *th)
 {
+    timer_thread_wake_fence(th);
 #if USE_MN_THREADS
     if (th->sched.malloc_stack) {
         // has dedicated
         SIZED_FREE_N((VALUE *)th->sched.context_stack, th->sched.context_stack_size);
         native_thread_destroy(th->nt);
     }
-    else {
-        nt_free_stack(th->sched.context_stack);
+    else if (th->sched.context != NULL) {
+        // a coroutine thread that never reached its epilogue (never started);
+        // a terminated one is reclaimed by whoever resumed from its final
+        // transfer (thread_sched_reclaim), and cleared this pointer.
+        struct rb_thread_context *tctx = (struct rb_thread_context *)th->sched.context;
+        nt_free_stack(tctx->stack);
+        SIZED_FREE(tctx);
+        th->sched.context = NULL;
         // TODO: how to free nt and nt->altstack?
     }
-
-    SIZED_FREE(th->sched.context);
-    th->sched.context = NULL;
-    // VM_ASSERT(th->sched.context == NULL);
 #else
     SIZED_FREE_N((VALUE *)th->sched.context_stack, th->sched.context_stack_size);
     native_thread_destroy(th->nt);
@@ -2417,21 +2871,6 @@ rb_threadptr_sched_free(rb_thread_t *th)
     th->nt = NULL;
 }
 
-void
-rb_thread_sched_mark_zombies(rb_vm_t *vm)
-{
-    if (!ccan_list_empty(&vm->ractor.sched.zombie_threads)) {
-        rb_thread_t *zombie_th, *next_zombie_th;
-        ccan_list_for_each_safe(&vm->ractor.sched.zombie_threads, zombie_th, next_zombie_th, sched.node.zombie_threads) {
-            if (zombie_th->sched.finished) {
-                ccan_list_del_init(&zombie_th->sched.node.zombie_threads);
-            }
-            else {
-                rb_gc_mark(zombie_th->self);
-            }
-        }
-    }
-}
 
 static int
 native_thread_create(rb_thread_t *th)
@@ -2486,64 +2925,6 @@ static int
 native_fd_select(int n, rb_fdset_t *readfds, rb_fdset_t *writefds, rb_fdset_t *exceptfds, struct timeval *timeout, rb_thread_t *th)
 {
     return rb_fd_select(n, readfds, writefds, exceptfds, timeout);
-}
-
-static void
-ubf_pthread_cond_signal(void *ptr)
-{
-    rb_thread_t *th = (rb_thread_t *)ptr;
-    RUBY_DEBUG_LOG("th:%u on nt:%d", rb_th_serial(th), (int)th->nt->serial);
-    rb_native_cond_signal(&th->nt->cond.intr);
-}
-
-static void
-native_cond_sleep(rb_thread_t *th, rb_hrtime_t *rel)
-{
-    rb_nativethread_lock_t *lock = &th->interrupt_lock;
-    rb_nativethread_cond_t *cond = &th->nt->cond.intr;
-
-    /* Solaris cond_timedwait() return EINVAL if an argument is greater than
-     * current_time + 100,000,000.  So cut up to 100,000,000.  This is
-     * considered as a kind of spurious wakeup.  The caller to native_sleep
-     * should care about spurious wakeup.
-     *
-     * See also [Bug #1341] [ruby-core:29702]
-     * http://download.oracle.com/docs/cd/E19683-01/816-0216/6m6ngupgv/index.html
-     */
-    const rb_hrtime_t max = (rb_hrtime_t)100000000 * RB_HRTIME_PER_SEC;
-
-    THREAD_BLOCKING_BEGIN(th);
-    {
-        rb_native_mutex_lock(lock);
-        th->unblock.func = ubf_pthread_cond_signal;
-        th->unblock.arg = th;
-
-        if (RUBY_VM_INTERRUPTED(th->ec)) {
-            /* interrupted.  return immediate */
-            RUBY_DEBUG_LOG("interrupted before sleep th:%u", rb_th_serial(th));
-        }
-        else {
-            if (!rel) {
-                rb_native_cond_wait(cond, lock);
-            }
-            else {
-                rb_hrtime_t end;
-
-                if (*rel > max) {
-                    *rel = max;
-                }
-
-                end = native_cond_timeout(cond, *rel);
-                native_cond_timedwait(cond, lock, &end);
-            }
-        }
-        th->unblock.func = 0;
-
-        rb_native_mutex_unlock(lock);
-    }
-    THREAD_BLOCKING_END(th);
-
-    RUBY_DEBUG_LOG("done th:%u", rb_th_serial(th));
 }
 
 #ifdef USE_UBF_LIST
@@ -2905,9 +3286,40 @@ static struct {
     struct kevent finished_events[KQUEUE_EVENTS_MAX];
 #endif
 
-    // waiting threads list
-    struct ccan_list_head waiting; // waiting threads in ractors
-    pthread_mutex_t waiting_lock;
+#if USE_MN_THREADS
+    /* Timed waiters, bucketed by deadline into a hierarchical timer wheel;
+     * untimed (fd-only) waiters keep a plain list.  Both under waiting_lock.
+     * The wheel operations all live in thread_pthread_mn.c (timer_wheel_*). */
+#define TIMER_WHEEL_LEVELS 4
+#define TIMER_WHEEL_SLOT_BITS 6
+#define TIMER_WHEEL_SLOTS (1 << TIMER_WHEEL_SLOT_BITS)
+    struct timer_wheel_level {
+        uint64_t occupied; // bit s: slots[s] is non-empty
+        struct ccan_list_head slots[TIMER_WHEEL_SLOTS];
+    } wheel[TIMER_WHEEL_LEVELS];
+    uint64_t wheel_cursor_tick; // slots for ticks <= this are drained
+    rb_hrtime_t next_expiry;   // never later than the earliest deadline
+    pthread_mutex_t waiting_lock; // the wheel and the flags of fd-less timed waits
+
+    /* The fd map entries and the flags of io waits are guarded per fd by a
+     * shard lock, so unrelated fds register and wake in parallel.  Whoever
+     * clears an io wait's flags under its shard owns the wakeup.  Lock order:
+     * shard -> waiting_lock -> wake_pending_lock, never the other way. */
+#define IO_WAIT_SHARDS 16
+    pthread_mutex_t fd_shard_locks[IO_WAIT_SHARDS];
+
+    // signaled when wake_pending clears on a thread; see timer_thread_wake_fence
+    pthread_mutex_t wake_pending_lock;
+    rb_nativethread_cond_t wake_pending_cond;
+#endif
+
+#if (HAVE_SYS_EPOLL_H || HAVE_SYS_EVENT_H) && USE_MN_THREADS
+    // fd -> struct rb_fd_waiters, in chunks so entries never move.  The chunk
+    // table installs slots by CAS (chunks span shards); entry state is guarded
+    // by the fd's shard lock.
+#define FDMAP_MAX_CHUNKS 1024 // fds up to FDMAP_MAX_CHUNKS * FDMAP_CHUNK_SIZE
+    struct rb_fd_waiters *fdmap_chunks[FDMAP_MAX_CHUNKS];
+#endif
 } timer_th = {
     .created_fork_gen = 0,
 };
@@ -2915,21 +3327,10 @@ static struct {
 #define TIMER_THREAD_CREATED_P() (timer_th.created_fork_gen == current_fork_gen)
 
 static void timer_thread_check_timeslice(rb_vm_t *vm);
+static bool timeslice_scan(rb_vm_t *vm, bool interrupt);
 static int timer_thread_set_timeout(rb_vm_t *vm);
-static void timer_thread_wakeup_thread(rb_thread_t *th, uint32_t event_serial);
 
 #include "thread_pthread_mn.c"
-
-static rb_thread_t *
-thread_sched_waiting_thread(struct rb_thread_sched_waiting *w)
-{
-    if (w) {
-        return (rb_thread_t *)((size_t)w - offsetof(rb_thread_t, sched.waiting_reason));
-    }
-    else {
-        return NULL;
-    }
-}
 
 static int
 timer_thread_set_timeout(rb_vm_t *vm)
@@ -2941,13 +3342,12 @@ timer_thread_set_timeout(rb_vm_t *vm)
 
     ractor_sched_lock(vm, NULL);
     {
-        if (   !ccan_list_empty(&vm->ractor.sched.timeslice_threads) // (1-1) Provide time slice for active NTs
+        if (   timeslice_scan(vm, false)                             // (1-1) Provide time slice for active NTs
             || !ubf_threads_empty()                                  // (1-3) Periodic UBF
             || vm->ractor.sched.grq_cnt > 0                          // (1-4) Lazy GRQ deq start
             ) {
 
-            RUBY_DEBUG_LOG("timeslice:%d ubf:%d grq:%d",
-                           !ccan_list_empty(&vm->ractor.sched.timeslice_threads),
+            RUBY_DEBUG_LOG("ubf:%d grq:%d",
                            !ubf_threads_empty(),
                            (vm->ractor.sched.grq_cnt > 0));
 
@@ -2960,29 +3360,7 @@ timer_thread_set_timeout(rb_vm_t *vm)
     }
     ractor_sched_unlock(vm, NULL);
 
-    // Always check waiting threads to find minimum timeout
-    // even when scheduler has work (grq_cnt > 0)
-    rb_native_mutex_lock(&timer_th.waiting_lock);
-    {
-        struct rb_thread_sched_waiting *w = ccan_list_top(&timer_th.waiting, struct rb_thread_sched_waiting, node);
-        rb_thread_t *th = thread_sched_waiting_thread(w);
-
-        if (th && (th->sched.waiting_reason.flags & thread_sched_waiting_timeout)) {
-            rb_hrtime_t now = rb_hrtime_now();
-            rb_hrtime_t hrrel = rb_hrtime_sub(th->sched.waiting_reason.data.timeout, now);
-
-            RUBY_DEBUG_LOG("th:%u now:%lu rel:%lu", rb_th_serial(th), (unsigned long)now, (unsigned long)hrrel);
-
-            // TODO: overflow?
-            int thread_timeout = (int)((hrrel + RB_HRTIME_PER_MSEC - 1) / RB_HRTIME_PER_MSEC); // ms
-
-            // Use minimum of scheduler timeout and thread sleep timeout
-            if (timeout < 0 || thread_timeout < timeout) {
-                timeout = thread_timeout;
-            }
-        }
-    }
-    rb_native_mutex_unlock(&timer_th.waiting_lock);
+    timeout = timer_wheel_timeout(timeout);
 
     RUBY_DEBUG_LOG("timeout:%d inf:%d", timeout, (int)vm->ractor.sched.timeslice_wait_inf);
 
@@ -3003,86 +3381,50 @@ timer_thread_check_signal(rb_vm_t *vm)
     }
 }
 
+// Tick (with `interrupt`) each listed sched's running thread and prune scheds
+// whose readyq drained; returns whether any sched still needs ticks.
 static bool
-timer_thread_check_exceed(rb_hrtime_t abs, rb_hrtime_t now)
+timeslice_scan(rb_vm_t *vm, bool interrupt)
 {
-    return abs <= now;
-}
+    bool found = false;
+    struct rb_thread_sched *sched, *next;
 
-static rb_thread_t *
-timer_thread_deq_wakeup(rb_vm_t *vm, rb_hrtime_t now, uint32_t *event_serial)
-{
-    struct rb_thread_sched_waiting *w = ccan_list_top(&timer_th.waiting, struct rb_thread_sched_waiting, node);
-
-    if (w != NULL &&
-        (w->flags & thread_sched_waiting_timeout) &&
-        timer_thread_check_exceed(w->data.timeout, now)) {
-
-        RUBY_DEBUG_LOG("wakeup th:%u", rb_th_serial(thread_sched_waiting_thread(w)));
-
-        // delete from waiting list
-        ccan_list_del_init(&w->node);
-
-        // setup result
-        w->flags = thread_sched_waiting_none;
-        w->data.result = 0;
-
-        rb_thread_t *th = thread_sched_waiting_thread(w);
-        *event_serial = w->data.event_serial;
-        return th;
-    }
-
-    return NULL;
-}
-
-static void
-timer_thread_wakeup_thread_locked(struct rb_thread_sched *sched, rb_thread_t *th, uint32_t event_serial)
-{
-    if (sched->running != th && th->sched.event_serial == event_serial) {
-        thread_sched_to_ready_common(sched, th, true, false);
-    }
-}
-
-static void
-timer_thread_wakeup_thread(rb_thread_t *th, uint32_t event_serial)
-{
-    RUBY_DEBUG_LOG("th:%u", rb_th_serial(th));
-    struct rb_thread_sched *sched = TH_SCHED(th);
-
-    thread_sched_lock(sched, th);
+    rb_native_mutex_lock(&vm->ractor.sched.timeslice.lock);
     {
-        timer_thread_wakeup_thread_locked(sched, th, event_serial);
-    }
-    thread_sched_unlock(sched, th);
-}
-
-static void
-timer_thread_check_timeout(rb_vm_t *vm)
-{
-    rb_hrtime_t now = rb_hrtime_now();
-    rb_thread_t *th;
-    uint32_t event_serial;
-
-    rb_native_mutex_lock(&timer_th.waiting_lock);
-    {
-        while ((th = timer_thread_deq_wakeup(vm, now, &event_serial)) != NULL) {
-            rb_native_mutex_unlock(&timer_th.waiting_lock);
-            timer_thread_wakeup_thread(th, event_serial);
-            rb_native_mutex_lock(&timer_th.waiting_lock);
+        ccan_list_for_each_safe(&vm->ractor.sched.timeslice.scheds, sched, next, timeslice_node) {
+            // trylock: timeslice_sched_link nests sched.lock -> timeslice.lock,
+            // this scan holds the locks the other way around
+            if (rb_native_mutex_trylock(&sched->lock_) == 0) {
+                if (ccan_list_empty(&sched->readyq)) {
+                    ccan_list_del_init(&sched->timeslice_node); // a later enq relinks it
+                }
+                else if (sched->is_running) {
+                    VM_ASSERT(sched->running != NULL);
+                    found = true;
+                    if (interrupt) {
+                        RUBY_DEBUG_LOG("timeslice th:%u", rb_th_serial(sched->running));
+                        RUBY_VM_SET_TIMER_INTERRUPT(sched->running->ec);
+                    }
+                }
+                // else: waiters behind a blocked runner need no ticks; the
+                // add path wakes the timer when the sched runs again
+                rb_native_mutex_unlock(&sched->lock_);
+            }
+            else {
+                found = true; // busy switching; tick it on the next round
+            }
         }
     }
-    rb_native_mutex_unlock(&timer_th.waiting_lock);
+    rb_native_mutex_unlock(&vm->ractor.sched.timeslice.lock);
+
+    return found;
 }
 
 static void
 timer_thread_check_timeslice(rb_vm_t *vm)
 {
     // TODO: check time
-    rb_thread_t *th;
-    ccan_list_for_each(&vm->ractor.sched.timeslice_threads, th, sched.node.timeslice_threads) {
-        RUBY_DEBUG_LOG("timeslice th:%u", rb_th_serial(th));
-        RUBY_VM_SET_TIMER_INTERRUPT(th->ec);
-    }
+    timeslice_scan(vm, true);
 }
 
 void
@@ -3205,14 +3547,50 @@ rb_thread_create_timer_thread(void)
             RUBY_DEBUG_LOG("forked child process");
 
             CLOSE_INVALIDATE_PAIR(timer_th.comm_fds);
+#if USE_MN_THREADS
+            // The parent's waiters do not exist in the child, and the armings
+            // belong to the closed event backend: a stale entry would satisfy
+            // fd_waiters_arm's want == armed_flags check and never arm the new
+            // backend (a lost wake the old dynamic map also had).
+            for (unsigned int ci = 0; ci < FDMAP_MAX_CHUNKS; ci++) {
+                struct rb_fd_waiters *chunk = timer_th.fdmap_chunks[ci];
+                if (chunk == NULL) continue;
+                for (unsigned int i = 0; i < FDMAP_CHUNK_SIZE; i++) {
+                    ccan_list_head_init(&chunk[i].waiters);
+                    chunk[i].armed_flags = 0;
+                    chunk[i].generation++;
+                }
+            }
+#endif
 #if HAVE_SYS_EPOLL_H && USE_MN_THREADS
             close_invalidate(&timer_th.event_fd, "close event_fd");
+#elif HAVE_SYS_EVENT_H && USE_MN_THREADS
+            // A kqueue is not inherited across fork: the number names a closed
+            // fd in the child, and closing it could hit a reused one.
+            timer_th.event_fd = -1;
 #endif
-            rb_native_mutex_destroy(&timer_th.waiting_lock);
+            // No mutex_destroy for waiting_lock: glibc returns EBUSY (and
+            // rb_native_mutex_destroy rb_bugs) for a mutex another ractor's
+            // M:N thread held at the fork moment.  The initialize below
+            // starts over.
         }
 
-        ccan_list_head_init(&timer_th.waiting);
+#if USE_MN_THREADS
+        for (int lvl = 0; lvl < TIMER_WHEEL_LEVELS; lvl++) {
+            timer_th.wheel[lvl].occupied = 0;
+            for (int slot = 0; slot < TIMER_WHEEL_SLOTS; slot++) {
+                ccan_list_head_init(&timer_th.wheel[lvl].slots[slot]);
+            }
+        }
+        timer_th.wheel_cursor_tick = timer_wheel_tick(rb_hrtime_now());
+        timer_th.next_expiry = TIMER_WHEEL_NO_EXPIRY;
         rb_native_mutex_initialize(&timer_th.waiting_lock);
+        for (int i = 0; i < IO_WAIT_SHARDS; i++) {
+            rb_native_mutex_initialize(&timer_th.fd_shard_locks[i]);
+        }
+        rb_native_mutex_initialize(&timer_th.wake_pending_lock);
+        rb_native_cond_initialize(&timer_th.wake_pending_cond);
+#endif
 
         // open communication channel
         setup_communication_pipe_internal(timer_th.comm_fds);
@@ -3221,7 +3599,12 @@ rb_thread_create_timer_thread(void)
         timer_thread_setup_mn();
     }
 
-    pthread_create(&timer_th.pthread_id, NULL, timer_thread_func, GET_VM());
+    int err = pthread_create(&timer_th.pthread_id, NULL, timer_thread_func, GET_VM());
+    if (err != 0) {
+        // The timer thread delivers signals and drives the M:N scheduler;
+        // running without one only defers the failure to stranger places.
+        rb_bug_errno("pthread_create (timer thread)", err);
+    }
 }
 
 static int
@@ -3261,7 +3644,8 @@ ruby_stack_overflowed_p(const rb_thread_t *th, const void *addr)
 #ifdef STACKADDR_AVAILABLE
     else if (get_stack(&base, &size) == 0) {
 # ifdef __APPLE__
-        if (pthread_equal(th->nt->thread_id, native_main_thread.id)) {
+        // th is NULL in this branch; ask about the calling thread itself.
+        if (pthread_equal(pthread_self(), native_main_thread.id)) {
             struct rlimit rlim;
             if (getrlimit(RLIMIT_STACK, &rlim) == 0 && rlim.rlim_cur > size) {
                 size = (size_t)rlim.rlim_cur;
@@ -3351,44 +3735,34 @@ ruby_ppoll(struct pollfd *fds, nfds_t nfds,
 #  define ppoll(fds,nfds,ts,sigmask) ruby_ppoll((fds),(nfds),(ts),(sigmask))
 #endif
 
-/*
- * Single CPU setups benefit from explicit sched_yield() before ppoll(),
- * since threads may be too starved to enter the GVL waitqueue for
- * us to detect contention.  Instead, we want to kick other threads
- * so they can run and possibly prevent us from entering slow paths
- * in ppoll() or similar syscalls.
- *
- * Confirmed on FreeBSD 11.2 and Linux 4.19.
- * [ruby-core:90417] [Bug #15398]
- */
-#define THREAD_BLOCKING_YIELD(th) do { \
-    const rb_thread_t *next_th; \
-    struct rb_thread_sched *sched = TH_SCHED(th); \
-    RB_VM_SAVE_MACHINE_CONTEXT(th); \
-    thread_sched_to_waiting(sched, (th)); \
-    next_th = sched->running; \
-    rb_native_mutex_unlock(&sched->lock_); \
-    native_thread_yield(); /* TODO: needed? */ \
-    if (!next_th && rb_ractor_living_thread_num(th->ractor) > 1) { \
-        native_thread_yield(); \
-    }
-
 static void
 native_sleep(rb_thread_t *th, rb_hrtime_t *rel)
 {
     struct rb_thread_sched *sched = TH_SCHED(th);
 
     RUBY_DEBUG_LOG("rel:%d", rel ? (int)*rel : 0);
-    if (rel) {
-        if (th_has_dedicated_nt(th)) {
-            native_cond_sleep(th, rel);
-        }
-        else {
-            thread_sched_wait_events(sched, th, -1, thread_sched_waiting_timeout, rel);
-        }
+
+    if (rel && !th_has_dedicated_nt(th)) {
+        // an M:N thread has no condvar of its own: the timer thread wakes it
+        thread_sched_wait_events(sched, th, -1, thread_sched_waiting_timeout, rel);
+    }
+    else if (rel) {
+        /* Solaris cond_timedwait() returns EINVAL if an argument is greater than
+         * current_time + 100,000,000.  So cut up to 100,000,000.  This is
+         * considered as a kind of spurious wakeup.  The caller to native_sleep
+         * should care about spurious wakeup.
+         *
+         * See also [Bug #1341] [ruby-core:29702]
+         * http://download.oracle.com/docs/cd/E19683-01/816-0216/6m6ngupgv/index.html
+         */
+        const rb_hrtime_t max = (rb_hrtime_t)100000000 * RB_HRTIME_PER_SEC;
+        if (*rel > max) *rel = max;
+
+        rb_hrtime_t end = rb_hrtime_add(rb_hrtime_now(), *rel);
+        thread_sched_to_waiting_until_wakeup(sched, th, &end);
     }
     else {
-        thread_sched_to_waiting_until_wakeup(sched, th);
+        thread_sched_to_waiting_until_wakeup(sched, th, NULL);
     }
 
     RUBY_DEBUG_LOG("wakeup");
@@ -3452,8 +3826,26 @@ struct rb_internal_thread_event_hook {
 
 static pthread_rwlock_t rb_internal_thread_event_hooks_rw_lock = PTHREAD_RWLOCK_INITIALIZER;
 
+/* For the GC: whether any thread-event hook is registered right now.  The rwlock
+ * makes the answer happen-after any completed registration; a hook registered
+ * after this read gets no event from the asking thread (rb_thread_execute_hooks
+ * skips a swept thread), so it never sees the objects the caller may collect. */
+bool
+rb_thread_event_hooks_registered_p(void)
+{
+    int r;
+    if ((r = pthread_rwlock_rdlock(&rb_internal_thread_event_hooks_rw_lock))) {
+        rb_bug_errno("pthread_rwlock_rdlock", r);
+    }
+    const bool registered = (rb_internal_thread_event_hooks != NULL);
+    if ((r = pthread_rwlock_unlock(&rb_internal_thread_event_hooks_rw_lock))) {
+        rb_bug_errno("pthread_rwlock_unlock", r);
+    }
+    return registered;
+}
+
 #if defined(HAVE_WORKING_FORK)
-void
+static void
 rb_internal_thread_event_hooks_rw_lock_atfork(void)
 {
   // After fork(), this rwlock may have been held by a now-dead thread.
@@ -3530,6 +3922,10 @@ static void
 rb_thread_execute_hooks(rb_event_flag_t event, rb_thread_t *th)
 {
     int r;
+
+    /* th->self == 0: the dying thread's final collection swept its Thread wrapper, so
+     * no hook existed then; one registered since has no ordering claim to this event. */
+    if (th->self == 0) return;
     if ((r = pthread_rwlock_rdlock(&rb_internal_thread_event_hooks_rw_lock))) {
         rb_bug_errno("pthread_rwlock_rdlock", r);
     }

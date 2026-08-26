@@ -19,7 +19,7 @@ describe "File.atime" do
     unless ENV.key?('TRAVIS') # https://bugs.ruby-lang.org/issues/17926
       ## NOTE also that some Linux systems disable atime (e.g. via mount params) for better filesystem speed.
       it "returns the last access time for the named file with microseconds" do
-        supports_subseconds = Integer(`stat -c%x '#{__FILE__}'`[/\.(\d{1,6})/, 1], 10)
+        supports_subseconds = Integer(`stat -c%x #{__FILE__}`[/\.(\d{1,6})/, 1], 10)
         if supports_subseconds != 0
           expected_time = Time.at(Time.now.to_i + 0.123456)
           File.utime expected_time, 0, @file
@@ -40,6 +40,22 @@ describe "File.atime" do
 
   it "accepts an object that has a #to_path method" do
     File.atime(mock_to_path(@file))
+  end
+
+  platform_is :darwin do
+    it "accepts a path in a non-UTF-8, ASCII-compatible encoding containing non-ASCII characters" do
+      utf8_path = tmp("file_atime_utf8_path_\u{3042}.txt")
+      # Can fail with UndefinedConversionError if tmp path has non-Shift_JIS chars (e.g. Emojis, Hangul, Cyrillic, accented letters)
+      non_utf8_path = utf8_path.encode(Encoding::Windows_31J)
+
+      begin
+        touch(utf8_path)
+        File.atime(non_utf8_path).should.is_a?(Time)
+      ensure
+        rm_r utf8_path
+        rm_r non_utf8_path
+      end
+    end
   end
 end
 

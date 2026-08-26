@@ -11,5 +11,7 @@ describe "Kernel#fork" do
 end
 
 describe "Kernel.fork" do
-  it_behaves_like :process_fork, :fork, Kernel
+  it "is a public method" do
+    Kernel.public_methods(false).should.include?(:fork)
+  end
 end

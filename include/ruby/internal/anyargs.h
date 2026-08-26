@@ -91,8 +91,8 @@
 # define RBIMPL_CAST_FN_PTR 1
 
 #elif ! defined(HAVE_VA_ARGS_MACRO)
-# /* :TODO: improve here, please find a way to support. */
-# define RBIMPL_CAST_FN_PTR 1
+# /* prior to C99: unsupported */
+# error __VA_ARGS__ macro is not available
 
 #else
 # /** @cond INTERNAL_MACRO */

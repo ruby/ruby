@@ -79,7 +79,7 @@ struct strscanner
 #define CURPTR(s) (S_PBEG(s) + (s)->curr)
 #define S_RESTLEN(s) (S_LEN(s) - (s)->curr)
 
-#define EOS_P(s) ((s)->curr >= RSTRING_LEN(p->str))
+#define EOS_P(s) ((s)->curr >= RSTRING_LEN((s)->str))
 
 #define GET_SCANNER(obj,var) do {\
     (var) = check_strscan(obj);\
@@ -238,6 +238,10 @@ strscan_memsize(const void *ptr)
     return size;
 }
 
+#ifndef RUBY_TYPED_THREAD_SAFE_FREE
+#define RUBY_TYPED_THREAD_SAFE_FREE RUBY_TYPED_FREE_IMMEDIATELY
+#endif
+
 static const rb_data_type_t strscanner_type = {
     .wrap_struct_name = "StringScanner",
     .function = {
@@ -248,7 +252,7 @@ static const rb_data_type_t strscanner_type = {
         .dcompact = strscan_compact,
 #endif
     },
-    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
+    .flags = RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
 };
 
 static VALUE
@@ -569,10 +573,12 @@ static VALUE
 strscan_get_charpos(VALUE self)
 {
     struct strscanner *p;
+    const char *s;
 
     GET_SCANNER(self, p);
 
-    return LONG2NUM(rb_enc_strlen(S_PBEG(p), CURPTR(p), rb_enc_get(p->str)));
+    s = EOS_P(p) ? S_PEND(p) : CURPTR(p);
+    return LONG2NUM(rb_enc_strlen(S_PBEG(p), s, rb_enc_get(p->str)));
 }
 
 /*
@@ -1858,8 +1864,13 @@ strscan_integer_at(int argc, VALUE *argv, VALUE self)
         return Qnil;
 
     beg = adjust_register_position(p, p->regs.beg[i]);
+    if (beg > S_LEN(p))
+        return Qnil;
     end = adjust_register_position(p, p->regs.end[i]);
+    end = minl(end, S_LEN(p));
     len = end - beg;
+    if (len == 0)
+        return Qnil;
     ptr = S_PBEG(p) + beg;
 #ifdef HAVE_RB_INT_PARSE_CSTR
     {
@@ -2373,7 +2384,6 @@ Init_strscan(void)
 #endif
 
 #undef rb_intern
-    ID id_scanerr = rb_intern("ScanError");
     VALUE tmp;
 
     usascii_encindex = rb_usascii_encindex();
@@ -2382,17 +2392,9 @@ Init_strscan(void)
 
     StringScanner = rb_define_class("StringScanner", rb_cObject);
     ScanError = rb_define_class_under(StringScanner, "Error", rb_eStandardError);
-    if (!rb_const_defined(rb_cObject, id_scanerr)) {
-	rb_const_set(rb_cObject, id_scanerr, ScanError);
-	rb_deprecate_constant(rb_cObject, "ScanError");
-    }
     tmp = rb_str_new2(STRSCAN_VERSION);
     rb_obj_freeze(tmp);
     rb_const_set(StringScanner, rb_intern("Version"), tmp);
-    tmp = rb_str_new2("$Id$");
-    rb_obj_freeze(tmp);
-    rb_const_set(StringScanner, rb_intern("Id"), tmp);
-    rb_deprecate_constant(StringScanner, "Id");
 
     rb_define_alloc_func(StringScanner, strscan_s_allocate);
     rb_define_private_method(StringScanner, "initialize", strscan_initialize, -1);

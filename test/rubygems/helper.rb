@@ -46,6 +46,8 @@ require "tmpdir"
 require "rubygems/vendor/uri/lib/uri"
 require "zlib"
 require_relative "mock_gem_ui"
+require_relative "pem_utilities"
+require_relative "fake_credential_backend"
 
 # JRuby on Windows raises TypeError inside File.symlink (the wincode helper
 # trips on a nil path), so any test that exercises Gem::Installer's symlink
@@ -373,8 +375,17 @@ class Gem::TestCase < Test::Unit::TestCase
 
     @tempdir = Dir.mktmpdir("test_rubygems_", @tmp)
 
+    # @tmp lives inside the checkout by default, so stop git repository
+    # discovery from walking up into the checkout itself. Otherwise a git
+    # command run in a non-repository directory under @tempdir could mutate
+    # the checkout's own (possibly worktree-shared) .git/config.
+    ENV["GIT_CEILING_DIRECTORIES"] = File.realpath(top_srcdir)
+
     ENV["GEM_VENDOR"] = nil
     ENV["GEMRC"] = nil
+    # Left set, this points the suite at the real OS credential store, where
+    # tests that clear an API key would delete the developer's own.
+    ENV["RUBYGEMS_CREDENTIAL_STORE"] = nil
     ENV["XDG_CACHE_HOME"] = nil
     ENV["XDG_CONFIG_HOME"] = nil
     ENV["XDG_DATA_HOME"] = nil
@@ -536,6 +547,11 @@ class Gem::TestCase < Test::Unit::TestCase
       Gem::RemoteFetcher.fetcher = nil
     end
 
+    if defined? Gem::Cooldown
+      Gem::Cooldown.reset_warned_missing_created_at
+      Gem::Cooldown.reset_warned_invalid_days
+    end
+
     Dir.chdir @current_dir
 
     ENV.replace(@orig_env)
@@ -580,6 +596,19 @@ class Gem::TestCase < Test::Unit::TestCase
 
   def credential_teardown
     FileUtils.rm_rf @temp_cred
+  end
+
+  ##
+  # Runs the block with Gem::CredentialStore.instance backed by an
+  # in-memory Gem::FakeCredentialBackend, so credential_store-enabled code paths
+  # can be exercised without touching a real OS credential store.
+
+  def with_fake_credential_store
+    require "rubygems/credential_store"
+    Gem::CredentialStore.instance = Gem::CredentialStore.new(backend: Gem::FakeCredentialBackend.new)
+    yield Gem::CredentialStore.instance
+  ensure
+    Gem::CredentialStore.reset!
   end
 
   def common_installer_setup
@@ -661,9 +690,9 @@ class Gem::TestCase < Test::Unit::TestCase
 
     Dir.chdir directory do
       unless File.exist? ".git"
-        system @git, "init", "--quiet"
-        system @git, "config", "user.name",  "RubyGems Tests"
-        system @git, "config", "user.email", "rubygems@example"
+        system @git, "init", "--quiet", exception: true
+        system @git, "config", "user.name",  "RubyGems Tests", exception: true
+        system @git, "config", "user.email", "rubygems@example", exception: true
       end
 
       system @git, "add", gemspec
@@ -1652,75 +1681,7 @@ Also, a list:
     end
   end
 
-  ##
-  # Loads certificate named +cert_name+ from <tt>test/rubygems/</tt>.
-
-  def self.load_cert(cert_name)
-    cert_file = cert_path cert_name
-
-    cert = File.read cert_file
-
-    OpenSSL::X509::Certificate.new cert
-  end
-
-  ##
-  # Returns the path to the certificate named +cert_name+ from
-  # <tt>test/rubygems/</tt>.
-
-  def self.cert_path(cert_name)
-    if begin
-         Time.at(2**32)
-       rescue StandardError
-         32
-       end == 32
-      cert_file = "#{__dir__}/#{cert_name}_cert_32.pem"
-
-      return cert_file if File.exist? cert_file
-    end
-
-    "#{__dir__}/#{cert_name}_cert.pem"
-  end
-
-  ##
-  # Loads a private key named +key_name+ with +passphrase+ in <tt>test/rubygems/</tt>
-
-  def self.load_key(key_name, passphrase = nil)
-    key_file = key_path key_name
-
-    key = File.read key_file
-
-    OpenSSL::PKey.read key, passphrase
-  end
-
-  ##
-  # Returns the path to the key named +key_name+ from <tt>test/rubygems</tt>
-
-  def self.key_path(key_name)
-    "#{__dir__}/#{key_name}_key.pem"
-  end
-
-  # :stopdoc:
-  # only available in RubyGems tests
-
-  PRIVATE_KEY_PASSPHRASE = "Foo bar"
-
-  begin
-    PRIVATE_KEY                 = load_key "private"
-    PRIVATE_KEY_PATH            = key_path "private"
-
-    # ENCRYPTED_PRIVATE_KEY is PRIVATE_KEY encrypted with PRIVATE_KEY_PASSPHRASE
-    ENCRYPTED_PRIVATE_KEY       = load_key "encrypted_private", PRIVATE_KEY_PASSPHRASE
-    ENCRYPTED_PRIVATE_KEY_PATH  = key_path "encrypted_private"
-
-    PUBLIC_KEY                  = PRIVATE_KEY.public_key
-
-    PUBLIC_CERT                 = load_cert "public"
-    PUBLIC_CERT_PATH            = cert_path "public"
-  rescue Errno::ENOENT
-    PRIVATE_KEY = nil
-    PUBLIC_KEY  = nil
-    PUBLIC_CERT = nil
-  end if Gem::HAVE_OPENSSL
+  include Gem::PemUtilities
 end
 
 # https://github.com/seattlerb/minitest/blob/13c48a03d84a2a87855a4de0c959f96800100357/lib/minitest/mock.rb#L192

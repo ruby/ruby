@@ -69,11 +69,32 @@ describe "Kernel#p" do
   end
 
   it "prints nothing if no argument is given" do
-    -> { p }.should output("")
+    -> { p.should == nil }.should output("")
   end
 
   it "prints nothing if called splatting an empty Array" do
-    -> { p(*[]) }.should output("")
+    -> { p(*[]).should == nil }.should output("")
+  end
+
+  it "returns the argument if a single argument is given" do
+    o = mock("Inspector Gadget")
+    o.should_receive(:inspect).any_number_of_times.and_return "Next time, Gadget, NEXT TIME!"
+
+    -> { p(o).should.equal?(o) }.should output("Next time, Gadget, NEXT TIME!\n")
+  end
+
+  it "returns the argument if called splatting a single-element Array" do
+    o = mock("Inspector Gadget")
+    o.should_receive(:inspect).any_number_of_times.and_return "Next time, Gadget, NEXT TIME!"
+
+    -> { p(*[o]).should.equal?(o) }.should output("Next time, Gadget, NEXT TIME!\n")
+  end
+
+  it "returns an Array of the arguments if multiple arguments are given" do
+    o = mock("Inspector Gadget")
+    o.should_receive(:inspect).any_number_of_times.and_return "Next time, Gadget, NEXT TIME!"
+
+    -> { p(o, o).should == [o, o] }.should output("Next time, Gadget, NEXT TIME!\nNext time, Gadget, NEXT TIME!\n")
   end
 
   # Not sure how to spec this, but wanted to note the behavior here
@@ -81,5 +102,7 @@ describe "Kernel#p" do
 end
 
 describe "Kernel.p" do
-  it "needs to be reviewed for spec completeness"
+  it "is a public method" do
+    Kernel.public_methods(false).should.include?(:p)
+  end
 end

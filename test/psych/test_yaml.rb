@@ -461,6 +461,9 @@ EOY
     end
 
     def test_spec_type_misc
+        # The fixture relies on yes/no parsing as booleans, which is YAML 1.1
+        # behavior the libfyaml backend does not follow.
+        omit 'yes/no are strings on the YAML 1.2 libfyaml backend' if libfyaml?
         assert_parse_only(
             { nil => nil, true => true, false => false, 'string' => '12345' }, <<EOY
 null: ~

@@ -54,16 +54,20 @@ class JSONCommonInterfaceTest < Test::Unit::TestCase
     assert_match(/::(TruffleRuby)?Generator::State\z/, JSON.state.name)
   end
 
-  def test_create_id
-    assert_equal 'json_class', JSON.create_id
-    JSON.create_id = 'foo_bar'
-    assert_equal 'foo_bar', JSON.create_id
-  ensure
-    JSON.create_id = 'json_class'
-  end
-
   def test_parse
     assert_equal [ 1, 2, 3, ], JSON.parse('[ 1, 2, 3 ]')
+  end
+
+  def test_parse_unknown_option
+    error = assert_raise(ArgumentError) do
+      JSON.parse('[]', quirks_mode: true)
+    end
+    assert_match "quirks_mode", error.message
+
+    error = assert_raise(ArgumentError) do
+      JSON.parse('[]', a: 1, b: 2)
+    end
+    assert_match "a, b", error.message
   end
 
   def test_parse_bang
@@ -72,6 +76,18 @@ class JSONCommonInterfaceTest < Test::Unit::TestCase
 
   def test_generate
     assert_equal '[1,2,3]', JSON.generate([ 1, 2, 3 ])
+  end
+
+  def test_generate_unknown_option
+    error = assert_raise(ArgumentError) do
+      JSON.generate([], quirks_mode: true)
+    end
+    assert_match "quirks_mode", error.message
+
+    error = assert_raise(ArgumentError) do
+      JSON.generate([], a: 1, b: 2)
+    end
+    assert_match(/unknown keywords: :?a, :?b/, error.message)
   end
 
   def test_fast_generate
@@ -142,16 +158,16 @@ class JSONCommonInterfaceTest < Test::Unit::TestCase
 
   def test_load_with_options
     json  = '{ "foo": NaN }'
-    assert JSON.load(json, nil, :allow_nan => true)['foo'].nan?
-    assert JSON.load(json, :allow_nan => true)['foo'].nan?
+    assert JSON.load(json, nil, allow_nan: true)['foo'].nan?
+    assert JSON.load(json, allow_nan: true)['foo'].nan?
   end
 
   def test_load_null
-    assert_equal nil, JSON.load(nil, nil, :allow_blank => true)
-    assert_raise(TypeError) { JSON.load(nil, nil, :allow_blank => false) }
-    assert_raise(JSON::ParserError) { JSON.load('', nil, :allow_blank => false) }
-    assert_raise(TypeError) { JSON.load([], nil, :allow_blank => true) }
-    assert_raise(TypeError) { JSON.load({}, nil, :allow_blank => true) }
+    assert_equal nil, JSON.load(nil, nil, allow_blank: true)
+    assert_raise(TypeError) { JSON.load(nil, nil, allow_blank: false) }
+    assert_raise(JSON::ParserError) { JSON.load('', nil, allow_blank: false) }
+    assert_raise(TypeError) { JSON.load([], nil, allow_blank: true) }
+    assert_raise(TypeError) { JSON.load({}, nil, allow_blank: true) }
   end
 
   def test_unsafe_load
@@ -224,40 +240,36 @@ class JSONCommonInterfaceTest < Test::Unit::TestCase
 
   def test_unsafe_load_with_options
     nan_json = '{ "foo": NaN }'
-    assert_raise(JSON::ParserError) { JSON.unsafe_load(nan_json, nil, :allow_nan => false)['foo'].nan? }
+    assert_raise(JSON::ParserError) { JSON.unsafe_load(nan_json, nil, allow_nan: false)['foo'].nan? }
     # make sure it still uses the defaults when something is provided
-    assert JSON.unsafe_load(nan_json, nil, :allow_blank => true)['foo'].nan?
-    assert JSON.unsafe_load(nan_json, :allow_nan => true)['foo'].nan?
+    assert JSON.unsafe_load(nan_json, nil, allow_blank: true)['foo'].nan?
+    assert JSON.unsafe_load(nan_json, allow_nan: true)['foo'].nan?
   end
 
   def test_unsafe_load_null
-    assert_equal nil, JSON.unsafe_load(nil, nil, :allow_blank => true)
-    assert_raise(TypeError) { JSON.unsafe_load(nil, nil, :allow_blank => false) }
-    assert_raise(JSON::ParserError) { JSON.unsafe_load('', nil, :allow_blank => false) }
+    assert_equal nil, JSON.unsafe_load(nil, nil, allow_blank: true)
+    assert_raise(TypeError) { JSON.unsafe_load(nil, nil, allow_blank: false) }
+    assert_raise(JSON::ParserError) { JSON.unsafe_load('', nil, allow_blank: false) }
   end
 
   def test_dump
-    too_deep = '[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]'
+    too_deep = '[' * 101 + ']' * 101
     obj = eval(too_deep)
-    assert_equal too_deep, dump(obj)
-    assert_kind_of String, Marshal.dump(obj)
-    assert_raise(ArgumentError) { dump(obj, 100) }
-    assert_raise(ArgumentError) { Marshal.dump(obj, 100) }
-    assert_equal too_deep, dump(obj, 101)
-    assert_kind_of String, Marshal.dump(obj, 101)
+    assert_raise(JSON::NestingError) { dump(obj) }
+    assert_equal too_deep, dump(obj, max_nesting: 101)
 
-    assert_equal too_deep, JSON.dump(obj, StringIO.new, 101, strict: false).string
-    assert_equal too_deep, dump(obj, StringIO.new, 101, strict: false).string
-    assert_raise(JSON::GeneratorError) { JSON.dump(Object.new, StringIO.new, 101, strict: true).string }
-    assert_raise(JSON::GeneratorError) { dump(Object.new, StringIO.new, 101, strict: true).string }
+    assert_equal too_deep, JSON.dump(obj, StringIO.new, max_nesting: 101, strict: false).string
+    assert_equal too_deep, dump(obj, StringIO.new, max_nesting: 101, strict: false).string
+    assert_raise(JSON::GeneratorError) { JSON.dump(Object.new, StringIO.new, max_nesting: 101, strict: true).string }
+    assert_raise(JSON::GeneratorError) { dump(Object.new, StringIO.new, max_nesting: 101, strict: true).string }
 
-    assert_equal too_deep, dump(obj, nil, nil, strict: false)
-    assert_equal too_deep, dump(obj, nil, 101, strict: false)
-    assert_equal too_deep, dump(obj, StringIO.new, nil, strict: false).string
-    assert_equal too_deep, dump(obj, nil, strict: false)
-    assert_equal too_deep, dump(obj, 101, strict: false)
-    assert_equal too_deep, dump(obj, StringIO.new, strict: false).string
-    assert_equal too_deep, dump(obj, strict: false)
+    assert_raise(JSON::NestingError) { dump(obj, nil, strict: false) }
+    assert_equal too_deep, dump(obj, nil, max_nesting: 101, strict: false)
+    assert_raise(JSON::NestingError) { dump(obj, StringIO.new, strict: false) }
+    assert_raise(JSON::NestingError) { dump(obj, strict: false) }
+    assert_equal too_deep, dump(obj, max_nesting: 101, strict: false)
+    assert_raise(JSON::NestingError) { dump(obj, StringIO.new, strict: false) }
+    assert_raise(JSON::NestingError) { dump(obj, strict: false) }
   end
 
   def test_dump_in_io
@@ -269,12 +281,6 @@ class JSONCommonInterfaceTest < Test::Unit::TestCase
     io.rewind
     assert_same io, JSON.dump(big_object, io)
     assert_equal JSON.dump(big_object), io.string
-  end
-
-  def test_dump_should_modify_defaults
-    max_nesting = JSON._dump_default_options[:max_nesting]
-    dump([], StringIO.new, 10)
-    assert_equal max_nesting, JSON._dump_default_options[:max_nesting]
   end
 
   def test_JSON
@@ -312,12 +318,6 @@ class JSONCommonInterfaceTest < Test::Unit::TestCase
         JSON.load_file(path)
       end
       assert_equal data, loaded_data
-    end
-  end
-
-  def test_deprecated_dump_default_options
-    assert_deprecated_warning(/dump_default_options/) do
-      JSON.dump_default_options
     end
   end
 

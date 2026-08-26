@@ -231,6 +231,14 @@ module StringScannerTests
     assert_equal(8, scanner.charpos)
   end
 
+  def test_charpos_when_shrunk
+    s = "\u{e9}" * 64
+    sc = StringScanner.new(s)
+    sc.scan(/(?:\u{e9})+/)
+    s.replace("z")
+    assert_equal(s.length, sc.charpos)
+  end
+
   def test_concat
     s = create_string_scanner('a'.dup)
     s.scan(/a/)
@@ -576,6 +584,29 @@ module StringScannerTests
     s.skip_until(" ")
     assert_equal("0xa_f", s.scan(/0x[\h_]+/))
     assert_integer_at(s, 0, 0) # 0xaf
+  end
+
+  def test_integer_at_empty
+    s = create_string_scanner("")
+    assert_equal("", s.scan(/()/))
+    assert_nil(s.integer_at(0))
+    assert_nil(s.integer_at(1))
+  end
+
+  def test_integer_at_shrunk
+    s = create_string_scanner(+"before 29 after")
+    s.skip_until(" ")
+    assert_equal("29", s.scan(/\d+/))
+    s.string.replace("before ")
+    assert_nil(s.integer_at(0))
+  end
+
+  def test_integer_at_shrunk_partial
+    s = create_string_scanner(+"before 29 after")
+    s.skip_until(" ")
+    assert_equal("29", s.scan(/\d+/))
+    s.string.replace("before 2")
+    assert_integer_at(s, 2)
   end
 
   def test_pre_match

@@ -113,6 +113,29 @@ class TestGemCompactIndexClientCache < Gem::TestCase
     assert_equal "a 1.0.0\n", @dir.join("info", "a").read
   end
 
+  def test_info_rejects_name_escaping_cache_directory
+    fetcher = FakeFetcher.new("1.0.0\n")
+    cache = Gem::CompactIndexClient::Cache.new(@dir, fetcher)
+
+    e = assert_raise Gem::Exception do
+      cache.info("../../../../pwn", "no-match")
+    end
+
+    assert_includes e.message, "malformed gem name"
+    assert_empty fetcher.requests
+  end
+
+  def test_fetch_info_rejects_name_escaping_cache_directory
+    fetcher = FakeFetcher.new("1.0.0\n")
+    cache = Gem::CompactIndexClient::Cache.new(@dir, fetcher)
+
+    assert_raise Gem::Exception do
+      cache.fetch_info("../pwn")
+    end
+
+    assert_empty fetcher.requests
+  end
+
   def test_info_with_special_characters_uses_hashed_path
     fetcher = FakeFetcher.new("1.0.0\n")
     cache = Gem::CompactIndexClient::Cache.new(@dir, fetcher)

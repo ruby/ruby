@@ -23,13 +23,34 @@
 #include "iseq.h"
 #include "ruby/debug.h"
 #include "internal/cont.h"
+#include "ractor_core.h"
+#include "shape.h"
 
 // This build config impacts the pointer tagging scheme and we only want to
 // support one scheme for simplicity.
 STATIC_ASSERT(pointer_tagging_scheme, USE_FLONUM);
 
 enum zjit_struct_offsets {
-    ISEQ_BODY_OFFSET_PARAM = offsetof(struct rb_iseq_constant_body, param)
+    ISEQ_BODY_OFFSET_PARAM = offsetof(struct rb_iseq_constant_body, param),
+    ISEQ_BODY_OFFSET_OUTER_VARIABLES = offsetof(struct rb_iseq_constant_body, outer_variables),
+    RUBY_OFFSET_THREAD_RACTOR = offsetof(rb_thread_t, ractor),
+};
+
+// Struct offsets that cannot be constants in the checked-in bindgen output
+// (zjit/src/cruby_bindings.inc.rs) because they vary with the build target
+// and configuration. For example, offsetof(rb_ractor_t, newobj_cache) depends
+// on the sizes of pthread types embedded in rb_ractor_t, which differ across
+// architectures and OSes, as well as on VM_CHECK_MODE and RACTOR_CHECK_MODE.
+// This table is filled out at C compile time and read by Rust at JIT compile
+// time. Offsets that are identical on all supported builds should be added to
+// enum zjit_struct_offsets above instead.
+struct rb_zjit_runtime_offsets {
+    int32_t ractor_newobj_cache;
+    int32_t ractor_objspace;
+};
+const struct rb_zjit_runtime_offsets rb_zjit_runtime_offsets = {
+    .ractor_newobj_cache = offsetof(rb_ractor_t, newobj_cache),
+    .ractor_objspace = offsetof(rb_ractor_t, objspace),
 };
 
 // Special JITFrame used by all C method calls. We don't control the native
@@ -55,21 +76,15 @@ rb_zjit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec, bool jit
         uintptr_t code_ptr = (uintptr_t)rb_zjit_iseq_gen_entry_point(iseq, ec, jit_exception);
 
         if (jit_exception) {
-            iseq->body->jit_exception = (rb_jit_func_t)code_ptr;
+            ISEQ_BODY(iseq)->jit_exception = (rb_jit_func_t)code_ptr;
         }
         else {
-            iseq->body->jit_entry = (rb_jit_func_t)code_ptr;
+            ISEQ_BODY(iseq)->jit_entry = (rb_jit_func_t)code_ptr;
         }
     }
 }
 
 extern VALUE *rb_vm_base_ptr(struct rb_control_frame_struct *cfp);
-
-bool
-rb_zjit_constcache_shareable(const struct iseq_inline_constant_cache_entry *ice)
-{
-    return (ice->flags & IMEMO_CONST_CACHE_SHAREABLE) != 0;
-}
 
 // Convert a given ISEQ's instructions to zjit_* instructions
 void
@@ -79,11 +94,11 @@ rb_zjit_profile_enable(const rb_iseq_t *iseq)
     const void *const *insn_table = rb_vm_get_insns_address_table();
 
     unsigned int insn_idx = 0;
-    while (insn_idx < iseq->body->iseq_size) {
-        int insn = rb_vm_insn_addr2opcode((void *)iseq->body->iseq_encoded[insn_idx]);
+    while (insn_idx < ISEQ_BODY(iseq)->iseq_size) {
+        int insn = rb_vm_insn_addr2opcode((void *)ISEQ_BODY(iseq)->iseq_encoded[insn_idx]);
         int zjit_insn = vm_bare_insn_to_zjit_insn(insn);
         if (insn != zjit_insn) {
-            iseq->body->iseq_encoded[insn_idx] = (VALUE)insn_table[zjit_insn];
+            ISEQ_BODY(iseq)->iseq_encoded[insn_idx] = (VALUE)insn_table[zjit_insn];
         }
         insn_idx += insn_len(insn);
     }
@@ -97,11 +112,11 @@ rb_zjit_profile_disable(const rb_iseq_t *iseq)
     const void *const *insn_table = rb_vm_get_insns_address_table();
 
     unsigned int insn_idx = 0;
-    while (insn_idx < iseq->body->iseq_size) {
-        int insn = rb_vm_insn_addr2opcode((void *)iseq->body->iseq_encoded[insn_idx]);
+    while (insn_idx < ISEQ_BODY(iseq)->iseq_size) {
+        int insn = rb_vm_insn_addr2opcode((void *)ISEQ_BODY(iseq)->iseq_encoded[insn_idx]);
         int bare_insn = vm_zjit_insn_to_bare_insn(insn);
         if (insn != bare_insn) {
-            iseq->body->iseq_encoded[insn_idx] = (VALUE)insn_table[bare_insn];
+            ISEQ_BODY(iseq)->iseq_encoded[insn_idx] = (VALUE)insn_table[bare_insn];
         }
         insn_idx += insn_len(insn);
     }
@@ -119,11 +134,11 @@ void
 rb_zjit_iseq_insn_set(const rb_iseq_t *iseq, unsigned int insn_idx, enum ruby_vminsn_type bare_insn)
 {
 #if RUBY_DEBUG
-    int insn = rb_vm_insn_addr2opcode((void *)iseq->body->iseq_encoded[insn_idx]);
+    int insn = rb_vm_insn_addr2opcode((void *)ISEQ_BODY(iseq)->iseq_encoded[insn_idx]);
     RUBY_ASSERT(vm_zjit_insn_to_bare_insn(insn) == (int)bare_insn);
 #endif
     const void *const *insn_table = rb_vm_get_insns_address_table();
-    iseq->body->iseq_encoded[insn_idx] = (VALUE)insn_table[bare_insn];
+    ISEQ_BODY(iseq)->iseq_encoded[insn_idx] = (VALUE)insn_table[bare_insn];
 }
 
 // Get profiling information for ISEQ
@@ -131,8 +146,8 @@ void *
 rb_iseq_get_zjit_payload(const rb_iseq_t *iseq)
 {
     RUBY_ASSERT_ALWAYS(IMEMO_TYPE_P(iseq, imemo_iseq));
-    if (iseq->body) {
-        return iseq->body->zjit_payload;
+    if (ISEQ_BODY(iseq)) {
+        return ISEQ_BODY(iseq)->zjit_payload;
     }
     else {
         // Body is NULL when constructing the iseq.
@@ -145,9 +160,9 @@ void
 rb_iseq_set_zjit_payload(const rb_iseq_t *iseq, void *payload)
 {
     RUBY_ASSERT_ALWAYS(IMEMO_TYPE_P(iseq, imemo_iseq));
-    RUBY_ASSERT_ALWAYS(iseq->body);
-    RUBY_ASSERT_ALWAYS(NULL == iseq->body->zjit_payload);
-    iseq->body->zjit_payload = payload;
+    RUBY_ASSERT_ALWAYS(ISEQ_BODY(iseq));
+    RUBY_ASSERT_ALWAYS(NULL == ISEQ_BODY(iseq)->zjit_payload);
+    ISEQ_BODY(iseq)->zjit_payload = payload;
 }
 
 void
@@ -163,6 +178,37 @@ bool
 rb_zjit_singleton_class_p(VALUE klass)
 {
     return RCLASS_SINGLETON_P(klass);
+}
+
+/* Sets all of the required shape flags for the object including the layout type,
+ * the frozen status, and the slot size. Mimics `rb_newobj`.
+ */
+VALUE
+rb_zjit_new_obj_shape(VALUE flags, size_t alloc_size)
+{
+    shape_id_t shape_id;
+    switch (flags & T_MASK) {
+      case T_OBJECT:
+        shape_id = ROOT_SHAPE_ID;
+        break;
+      case T_STRUCT:
+        shape_id = ROOT_SHAPE_ID | SHAPE_ID_LAYOUT_EXTENDED;
+        break;
+      case T_DATA:
+        shape_id = ROOT_SHAPE_ID | SHAPE_ID_LAYOUT_RDATA;
+        break;
+      default:
+        shape_id = ROOT_SHAPE_ID | SHAPE_ID_LAYOUT_OTHER;
+        break;
+    }
+
+    if (flags & FL_FREEZE) {
+        shape_id = rb_shape_transition_frozen(shape_id);
+    }
+
+    shape_id = rb_shape_transition_slot_size(shape_id, rb_gc_size_slot_size(alloc_size));
+
+    return (flags & SHAPE_FLAG_MASK) | ((VALUE)shape_id << SHAPE_FLAG_SHIFT);
 }
 
 VALUE

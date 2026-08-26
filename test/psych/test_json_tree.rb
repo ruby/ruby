@@ -53,12 +53,14 @@ module Psych
     end
 
     def test_time
+      omit 'libfyaml emits JSON flow mappings multi-line' if libfyaml?
       time = Time.utc(2010, 10, 10)
       assert_equal "{\"a\": \"2010-10-10 00:00:00.000000000 Z\"}\n",
 Psych.to_json({'a' => time })
     end
 
     def test_datetime
+      omit 'libfyaml emits JSON flow mappings multi-line' if libfyaml?
       time = Time.new(2010, 10, 10).to_datetime
       assert_equal "{\"a\": \"#{time.strftime("%Y-%m-%d %H:%M:%S.%9N %:z")}\"}\n", Psych.to_json({'a' => time })
     end

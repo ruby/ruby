@@ -158,7 +158,7 @@ enc_list_update(int index, rb_raw_encoding *encoding)
         /* initialize encoding data */
         rb_ary_store(new_list, index, enc_new(encoding));
         rb_ary_freeze(new_list);
-        FL_SET_RAW(new_list, RUBY_FL_SHAREABLE);
+        RB_OBJ_SET_SHAREABLE(new_list);
         RUBY_ATOMIC_VALUE_SET(rb_encoding_list, new_list);
     }
 }
@@ -1944,10 +1944,10 @@ static VALUE
 rb_enc_aliases(VALUE klass)
 {
     VALUE aliases[2];
-    aliases[0] = rb_hash_new();
     aliases[1] = rb_ary_new();
 
     GLOBAL_ENC_TABLE_LOCKING(enc_table) {
+        aliases[0] = rb_hash_new_capa(st_table_size(enc_table->names));
         st_foreach(enc_table->names, rb_enc_aliases_enc_i, (st_data_t)aliases);
     }
 

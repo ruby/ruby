@@ -41,9 +41,11 @@
 #include "internal/sanitizers.h"
 #include "internal/variable.h"
 #include "internal/warnings.h"
+#include "ruby/atomic.h"
 #include "ruby/thread.h"
 #include "ruby/util.h"
 #include "ruby_assert.h"
+#include "vm_core.h"            /* for GET_EC() */
 
 #if USE_GMP
 RBIMPL_WARNING_PUSH()
@@ -3002,7 +3004,7 @@ rb_cmpint(VALUE val, VALUE a, VALUE b)
 static size_t
 big_embed_capa(VALUE big)
 {
-    size_t size = rb_gc_obj_slot_size(big) - offsetof(struct RBignum, as.ary);
+    size_t size = rb_obj_shape_slot_size(big) - offsetof(struct RBignum, as.ary);
     RUBY_ASSERT(size % sizeof(BDIGIT) == 0);
     size_t capa = size / sizeof(BDIGIT);
     RUBY_ASSERT(capa <= BIGNUM_EMBED_LEN_MAX);
@@ -3440,9 +3442,6 @@ absint_numwords_generic(size_t numbytes, int nlz_bits_in_msbyte, size_t word_num
         INTEGER_PACK_NATIVE_BYTE_ORDER);
 
     if (sign == 2) {
-#if defined __GNUC__ && (__GNUC__ == 4 && __GNUC_MINOR__ == 4)
-        *nlz_bits_ret = 0;
-#endif
         return (size_t)-1;
     }
     *nlz_bits_ret = nlz_bits;
@@ -4765,7 +4764,7 @@ power_cache_get_power(int base, int power_level, size_t *numdigits_ret)
     if (MAX_BASE36_POWER_TABLE_ENTRIES <= power_level)
         rb_bug("too big power number requested: maxpow_in_bdigit_dbl(%d)**(2**%d)", base, power_level);
 
-    VALUE power = base36_power_cache[base - 2][power_level];
+    VALUE power = rbimpl_atomic_value_load(&base36_power_cache[base - 2][power_level], RBIMPL_ATOMIC_ACQUIRE);
     if (!power) {
         size_t numdigits;
         if (power_level == 0) {
@@ -4780,9 +4779,16 @@ power_cache_get_power(int base, int power_level, size_t *numdigits_ret)
             numdigits *= 2;
         }
         rb_obj_hide(power);
-        base36_power_cache[base - 2][power_level] = power;
-        base36_numdigits_cache[base - 2][power_level] = numdigits;
-        rb_vm_register_global_object(power);
+        base36_numdigits_cache[base - 2][power_level] = numdigits; // benign race
+        /* Ractors can race this fill */
+        VALUE old = rbimpl_atomic_value_cas(&base36_power_cache[base - 2][power_level], 0, power,
+                                            RBIMPL_ATOMIC_RELEASE, RBIMPL_ATOMIC_ACQUIRE);
+        if (old) {
+            power = old;
+        }
+        else {
+            rb_vm_register_global_object(power);
+        }
     }
     if (numdigits_ret)
         *numdigits_ret = base36_numdigits_cache[base - 2][power_level];
@@ -7027,6 +7033,23 @@ rb_big_bit_length(VALUE big)
 
     return rb_integer_unpack(result_bary, numberof(result_bary), sizeof(BDIGIT), 0,
             INTEGER_PACK_LSWORD_FIRST|INTEGER_PACK_NATIVE_BYTE_ORDER);
+}
+
+VALUE
+rb_big_bit_count(VALUE big)
+{
+    if (BIGNUM_NEGATIVE_P(big))
+        rb_raise(rb_eArgError, "bit_count is undefined for negative integers");
+
+    BDIGIT *ds = BDIGITS(big);
+    size_t n = BIGNUM_LEN(big);
+    size_t count = 0;
+
+    while (n--) {
+        count += rb_popcount64((uint64_t)ds[n]);
+    }
+
+    return SIZET2NUM(count);
 }
 
 VALUE

@@ -10,23 +10,14 @@ describe "Enumerable#find" do
     @empty = []
   end
 
-  it "passes each entry in enum to block while block when block is false" do
-    visited_elements = []
-    @numerous.find do |element|
-      visited_elements << element
-      false
-    end
-    visited_elements.should == @elements
-  end
-
-  it "returns nil when the block is false and there is no ifnone proc given" do
-    @numerous.find {|e| false }.should == nil
-  end
-
   it "returns the first element for which the block is not false" do
     @elements.each do |element|
       @numerous.find {|e| e > element - 1 }.should == element
     end
+  end
+
+  it "returns nil when the block is false and there is no ifnone proc given" do
+    @numerous.find {|e| false }.should == nil
   end
 
   it "returns the value of the ifnone proc if the block is false" do
@@ -54,9 +45,25 @@ describe "Enumerable#find" do
     @numerous.find(nil) {|e| false }.should == nil
   end
 
+  it "raises a NoMethodError if the ifnone argument does not respond to #call and no element is found" do
+    -> { @numerous.find(42) {|e| false } }.should.raise(NoMethodError)
+  end
+
+  it "iterates elements in forward order" do
+    visited = []
+    @numerous.find { |element| visited << element; false }
+    visited.should == @elements
+  end
+
   it "passes through the values yielded by #each_with_index" do
     [:a, :b].each_with_index.find { |x, i| ScratchPad << [x, i]; nil }
     ScratchPad.recorded.should == [[:a, 0], [:b, 1]]
+  end
+
+  it "stops iterating as soon as an element is found" do
+    visited = []
+    @numerous.find { |x| visited << x; x == 6 }
+    visited.should == [2, 4, 6]
   end
 
   it "returns an enumerator when no block given" do
@@ -64,9 +71,9 @@ describe "Enumerable#find" do
   end
 
   it "passes the ifnone proc to the enumerator" do
-    times = 0
-    fail_proc = -> { times += 1; raise if times > 1; "cheeseburgers" }
-    @numerous.find(fail_proc).each {|e| false }.should == "cheeseburgers"
+    fail_proc = -> { "cheeseburgers" }
+    enum = @numerous.find(fail_proc)
+    enum.each { |e| false }.should == "cheeseburgers"
   end
 
   it "gathers whole arrays as elements when each yields multiple" do

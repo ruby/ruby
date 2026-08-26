@@ -102,10 +102,10 @@ class << RubyVM::ZJIT
 
     # Show fallback counters, ordered by the typical amount of fallbacks for the prefix at the time
     print_counters_with_prefix(prefix: 'unspecialized_send_def_type_', prompt: 'not optimized method types for send', buf:, stats:, limit: 20)
-    print_counters_with_prefix(prefix: 'unspecialized_send_without_block_def_type_', prompt: 'not optimized method types for send_without_block', buf:, stats:, limit: 20)
     print_counters_with_prefix(prefix: 'unspecialized_super_def_type_', prompt: 'not optimized method types for super', buf:, stats:, limit: 20)
     print_counters_with_prefix(prefix: 'uncategorized_fallback_yarv_insn_', prompt: 'instructions with uncategorized fallback reason', buf:, stats:, limit: 20)
     print_counters_with_prefix(prefix: 'send_fallback_', prompt: 'send fallback reasons', buf:, stats:, limit: 20)
+    print_counters_with_prefix(prefix: 'send_direct_fallback_context_', prompt: 'SendDirect fallback contexts', buf:, stats:, limit: 10)
     print_counters_with_prefix(prefix: 'setivar_fallback_', prompt: 'setivar fallback reasons', buf:, stats:, limit: 5)
     print_counters_with_prefix(prefix: 'getivar_fallback_', prompt: 'getivar fallback reasons', buf:, stats:, limit: 5)
     print_counters_with_prefix(prefix: 'definedivar_fallback_', prompt: 'definedivar fallback reasons', buf:, stats:, limit: 5)
@@ -117,6 +117,7 @@ class << RubyVM::ZJIT
     # use multiple complex features, a decrease in this number does not
     # necessarily mean an increase in number of optimized calls.
     print_counters_with_prefix(prefix: 'complex_arg_pass_', prompt: 'popular complex argument-parameter features not optimized', buf:, stats:, limit: 10)
+    print_counters_with_prefix(prefix: 'caller_splat_profile_', prompt: 'caller splat length profiles', buf:, stats:, limit: 10)
 
     # Show exit counters, ordered by the typical amount of exits for the prefix at the time
     print_counters_with_prefix(prefix: 'compile_error_', prompt: 'compile error reasons', buf:, stats:, limit: 20)
@@ -133,6 +134,7 @@ class << RubyVM::ZJIT
       :inline_cfunc_optimized_send_count,
       :inline_iseq_optimized_send_count,
       :inline_method_count,
+      :empty_inline_frame_count,
       :non_variadic_cfunc_optimized_send_count,
       :variadic_cfunc_optimized_send_count,
     ], buf:, stats:, right_align: true, base: :send_count)
@@ -152,9 +154,13 @@ class << RubyVM::ZJIT
       :compile_hir_build_time_ns,
       :compile_hir_strength_reduce_time_ns,
       :compile_hir_inline_methods_time_ns,
+      :compile_hir_remove_trivial_block_params_time_ns,
+      :compile_hir_optimize_load_store_time_ns,
       :compile_hir_canonicalize_time_ns,
       :compile_hir_fold_constants_time_ns,
       :compile_hir_clean_cfg_time_ns,
+      :compile_hir_remove_redundant_patch_points_time_ns,
+      :compile_hir_remove_duplicate_check_interrupts_time_ns,
       :compile_hir_eliminate_dead_code_time_ns,
       :compile_lir_time_ns,
       :profile_time_ns,
@@ -180,6 +186,7 @@ class << RubyVM::ZJIT
       :side_exit_size_ratio,
       :zjit_alloc_bytes,
       :total_mem_bytes,
+      :total_native_stack_bytes,
 
       :side_exit_count,
       :total_insn_count,
@@ -281,7 +288,12 @@ class << RubyVM::ZJIT
   def print_stats_file
     filename = Primitive.rb_zjit_get_stats_file_path_p
     File.open(filename, "wb") do |file|
-      file.write stats_string
+      if filename.end_with?(".json")
+        require "json"
+        file.write(JSON.pretty_generate(stats))
+      else
+        file.write stats_string
+      end
     end
   end
 

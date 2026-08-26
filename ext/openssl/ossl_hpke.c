@@ -121,8 +121,7 @@ ossl_hpke_ctx_new_sender(VALUE self, VALUE suite)
     ossl_hpke_ctx_t *data;
     OSSL_HPKE_SUITE *suite_st;
 
-    if (RTYPEDDATA_DATA(self))
-        ossl_raise(eHPKEError, "HPKE context is already initialized");
+    ossl_want_uninitialized(self, &ossl_hpke_ctx_type);
     if (!rb_obj_is_kind_of(suite, cSuite))
         ossl_raise(eHPKEError, "invalid suite specified");
     GetHpkeSuite(suite, suite_st);
@@ -155,8 +154,7 @@ ossl_hpke_ctx_new_receiver(VALUE self, VALUE suite)
     ossl_hpke_ctx_t *data;
     OSSL_HPKE_SUITE *suite_st;
 
-    if (RTYPEDDATA_DATA(self))
-        ossl_raise(eHPKEError, "HPKE context is already initialized");
+    ossl_want_uninitialized(self, &ossl_hpke_ctx_type);
     if (!rb_obj_is_kind_of(suite, cSuite))
         ossl_raise(eHPKEError, "invalid suite specified");
     GetHpkeSuite(suite, suite_st);
@@ -379,8 +377,7 @@ ossl_hpke_suite_initialize(VALUE self, VALUE kem, VALUE kdf, VALUE aead)
 {
     OSSL_HPKE_SUITE *suite, tmp;
 
-    if (RTYPEDDATA_DATA(self))
-        ossl_raise(eHPKEError, "HPKE suite is already initialized");
+    ossl_want_uninitialized(self, &ossl_hpke_suite_type);
 
     if (RB_INTEGER_TYPE_P(kem) && RB_INTEGER_TYPE_P(kdf) &&
         RB_INTEGER_TYPE_P(aead)) {

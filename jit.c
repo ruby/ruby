@@ -16,6 +16,7 @@
 #include "internal/gc.h"
 #include "vm_sync.h"
 #include "internal/fixnum.h"
+#include "internal/hash.h"
 #include "internal/string.h"
 #include "internal/class.h"
 #include "internal/imemo.h"
@@ -28,7 +29,7 @@
 
 enum jit_bindgen_constants {
     // Field offsets for the RObject struct
-    ROBJECT_OFFSET_AS_HEAP_FIELDS = offsetof(struct RObject, as.heap.fields),
+    ROBJECT_OFFSET_AS_HEAP_FIELDS = offsetof(struct RObject, as.extended),
     ROBJECT_OFFSET_AS_ARY = offsetof(struct RObject, as.ary),
 
     // Field offset for prime classext's fields_obj from a class pointer
@@ -36,6 +37,16 @@ enum jit_bindgen_constants {
 
     // Field offset for fields_obj in T_DATA
     TDATA_OFFSET_FIELDS_OBJ = offsetof(struct RTypedData, fields_obj),
+
+    // Field offset for the RHash struct
+    RUBY_OFFSET_RHASH_IFNONE = offsetof(struct RHash, ifnone),
+
+    // Field offsets for the embedded ar_table in a hash
+    RUBY_OFFSET_RHASH_AR_HINT = sizeof(struct RHash) + offsetof(ar_table, ar_hint),
+    RUBY_OFFSET_RHASH_AR_PAIRS = sizeof(struct RHash) + offsetof(ar_table, pairs),
+
+    // Max pairs an embedded ar_table hash holds before it converts to an st_table
+    RUBY_RHASH_AR_TABLE_MAX_SIZE = RHASH_AR_TABLE_MAX_SIZE,
 
     // Field offsets for the RString struct
     RUBY_OFFSET_RSTRING_LEN = offsetof(struct RString, len),
@@ -59,7 +70,7 @@ const shape_id_t rb_invalid_shape_id = INVALID_SHAPE_ID;
 unsigned int
 rb_iseq_encoded_size(const rb_iseq_t *iseq)
 {
-    return iseq->body->iseq_size;
+    return ISEQ_BODY(iseq)->iseq_size;
 }
 
 // Get the PC for a given index in an iseq
@@ -67,8 +78,8 @@ VALUE *
 rb_iseq_pc_at_idx(const rb_iseq_t *iseq, uint32_t insn_idx)
 {
     RUBY_ASSERT_ALWAYS(IMEMO_TYPE_P(iseq, imemo_iseq));
-    RUBY_ASSERT_ALWAYS(insn_idx < iseq->body->iseq_size);
-    VALUE *encoded = iseq->body->iseq_encoded;
+    RUBY_ASSERT_ALWAYS(insn_idx < ISEQ_BODY(iseq)->iseq_size);
+    VALUE *encoded = ISEQ_BODY(iseq)->iseq_encoded;
     VALUE *pc = &encoded[insn_idx];
     return pc;
 }
@@ -227,13 +238,28 @@ rb_optimized_call(VALUE recv, rb_execution_context_t *ec, int argc, VALUE *argv,
 {
     rb_proc_t *proc;
     GetProcPtr(recv, proc);
-    return rb_vm_invoke_proc(ec, proc, argc, argv, kw_splat, block_handler);
+    return rb_vm_invoke_proc(ec, proc, argc, argv, kw_splat, block_handler,
+                             rb_proc_refinements_cref_for_call(recv));
 }
 
 unsigned int
 rb_jit_iseq_builtin_attrs(const rb_iseq_t *iseq)
 {
-    return iseq->body->builtin_attrs;
+    return ISEQ_BODY(iseq)->builtin_attrs;
+}
+
+// Relaxed memory ordering, but called by the JIT with VM lock and barrier.
+void
+rb_jit_iseq_mark_ep_escape_recorded(const rb_iseq_t *iseq)
+{
+    rbimpl_atomic_store(&ISEQ_BODY(iseq)->jit_ep_escape_recorded, 1, RBIMPL_ATOMIC_RELAXED);
+}
+
+// Whether an EP escape of this iseq has been reported to the enabled JIT.
+bool
+rb_jit_iseq_ep_escape_recorded_p(const rb_iseq_t *iseq)
+{
+    return rbimpl_atomic_load(&ISEQ_BODY(iseq)->jit_ep_escape_recorded, RBIMPL_ATOMIC_RELAXED) != 0;
 }
 
 int
@@ -257,109 +283,109 @@ rb_get_def_iseq_ptr(rb_method_definition_t *def)
 const rb_iseq_t *
 rb_get_iseq_body_local_iseq(const rb_iseq_t *iseq)
 {
-    return iseq->body->local_iseq;
+    return ISEQ_BODY(iseq)->local_iseq;
 }
 
 const rb_iseq_t *
 rb_get_iseq_body_parent_iseq(const rb_iseq_t *iseq)
 {
-    return iseq->body->parent_iseq;
+    return ISEQ_BODY(iseq)->parent_iseq;
 }
 
 unsigned int
 rb_get_iseq_body_local_table_size(const rb_iseq_t *iseq)
 {
-    return iseq->body->local_table_size;
+    return ISEQ_BODY(iseq)->local_table_size;
 }
 
 VALUE *
 rb_get_iseq_body_iseq_encoded(const rb_iseq_t *iseq)
 {
-    return iseq->body->iseq_encoded;
+    return ISEQ_BODY(iseq)->iseq_encoded;
 }
 
 unsigned
 rb_get_iseq_body_stack_max(const rb_iseq_t *iseq)
 {
-    return iseq->body->stack_max;
+    return ISEQ_BODY(iseq)->stack_max;
 }
 
 enum rb_iseq_type
 rb_get_iseq_body_type(const rb_iseq_t *iseq)
 {
-    return iseq->body->type;
+    return ISEQ_BODY(iseq)->type;
 }
 
 bool
 rb_get_iseq_flags_has_lead(const rb_iseq_t *iseq)
 {
-    return iseq->body->param.flags.has_lead;
+    return ISEQ_BODY(iseq)->param.flags.has_lead;
 }
 
 bool
 rb_get_iseq_flags_has_opt(const rb_iseq_t *iseq)
 {
-    return iseq->body->param.flags.has_opt;
+    return ISEQ_BODY(iseq)->param.flags.has_opt;
 }
 
 bool
 rb_get_iseq_flags_has_kw(const rb_iseq_t *iseq)
 {
-    return iseq->body->param.flags.has_kw;
+    return ISEQ_BODY(iseq)->param.flags.has_kw;
 }
 
 bool
 rb_get_iseq_flags_has_post(const rb_iseq_t *iseq)
 {
-    return iseq->body->param.flags.has_post;
+    return ISEQ_BODY(iseq)->param.flags.has_post;
 }
 
 bool
 rb_get_iseq_flags_has_kwrest(const rb_iseq_t *iseq)
 {
-    return iseq->body->param.flags.has_kwrest;
+    return ISEQ_BODY(iseq)->param.flags.has_kwrest;
 }
 
 bool
 rb_get_iseq_flags_anon_kwrest(const rb_iseq_t *iseq)
 {
-    return iseq->body->param.flags.anon_kwrest;
+    return ISEQ_BODY(iseq)->param.flags.anon_kwrest;
 }
 
 bool
 rb_get_iseq_flags_has_rest(const rb_iseq_t *iseq)
 {
-    return iseq->body->param.flags.has_rest;
+    return ISEQ_BODY(iseq)->param.flags.has_rest;
 }
 
 bool
 rb_get_iseq_flags_ruby2_keywords(const rb_iseq_t *iseq)
 {
-    return iseq->body->param.flags.ruby2_keywords;
+    return ISEQ_BODY(iseq)->param.flags.ruby2_keywords;
 }
 
 bool
 rb_get_iseq_flags_has_block(const rb_iseq_t *iseq)
 {
-    return iseq->body->param.flags.has_block;
+    return ISEQ_BODY(iseq)->param.flags.has_block;
 }
 
 bool
 rb_get_iseq_flags_ambiguous_param0(const rb_iseq_t *iseq)
 {
-    return iseq->body->param.flags.ambiguous_param0;
+    return ISEQ_BODY(iseq)->param.flags.ambiguous_param0;
 }
 
 bool
 rb_get_iseq_flags_accepts_no_kwarg(const rb_iseq_t *iseq)
 {
-    return iseq->body->param.flags.accepts_no_kwarg;
+    return ISEQ_BODY(iseq)->param.flags.accepts_no_kwarg;
 }
 
 bool
 rb_get_iseq_flags_forwardable(const rb_iseq_t *iseq)
 {
-    return iseq->body->param.flags.forwardable;
+    return ISEQ_BODY(iseq)->param.flags.forwardable;
 }
 
 // This is defined only as a named struct inside rb_iseq_constant_body.
@@ -370,31 +396,31 @@ typedef struct rb_iseq_param_keyword rb_iseq_param_keyword_struct;
 const rb_iseq_param_keyword_struct *
 rb_get_iseq_body_param_keyword(const rb_iseq_t *iseq)
 {
-    return iseq->body->param.keyword;
+    return ISEQ_BODY(iseq)->param.keyword;
 }
 
 unsigned
 rb_get_iseq_body_param_size(const rb_iseq_t *iseq)
 {
-    return iseq->body->param.size;
+    return ISEQ_BODY(iseq)->param.size;
 }
 
 int
 rb_get_iseq_body_param_lead_num(const rb_iseq_t *iseq)
 {
-    return iseq->body->param.lead_num;
+    return ISEQ_BODY(iseq)->param.lead_num;
 }
 
 int
 rb_get_iseq_body_param_opt_num(const rb_iseq_t *iseq)
 {
-    return iseq->body->param.opt_num;
+    return ISEQ_BODY(iseq)->param.opt_num;
 }
 
 const VALUE *
 rb_get_iseq_body_param_opt_table(const rb_iseq_t *iseq)
 {
-    return iseq->body->param.opt_table;
+    return ISEQ_BODY(iseq)->param.opt_table;
 }
 
 struct rb_control_frame_struct *
@@ -560,6 +586,12 @@ rb_jit_multi_ractor_p(void)
     return rb_multi_ractor_p();
 }
 
+bool
+rb_jit_constcache_shareable(const struct iseq_inline_constant_cache_entry *ice)
+{
+    return (ice->flags & IMEMO_CONST_CACHE_SHAREABLE) != 0;
+}
+
 // Acquire the VM lock and then signal all other Ruby threads (ractors) to
 // contend for the VM lock, putting them to sleep. ZJIT and YJIT use this to
 // evict threads running inside generated code so among other things, it can
@@ -583,12 +615,12 @@ void
 rb_iseq_reset_jit_func(const rb_iseq_t *iseq)
 {
     RUBY_ASSERT_ALWAYS(IMEMO_TYPE_P(iseq, imemo_iseq));
-    iseq->body->jit_entry = NULL;
-    iseq->body->jit_exception = NULL;
+    ISEQ_BODY(iseq)->jit_entry = NULL;
+    ISEQ_BODY(iseq)->jit_exception = NULL;
     // Enable re-compiling this ISEQ. Event when it's invalidated for TracePoint,
     // we'd like to re-compile ISEQs that haven't been converted to trace_* insns.
-    iseq->body->jit_entry_calls = 0;
-    iseq->body->jit_exception_calls = 0;
+    ISEQ_BODY(iseq)->jit_entry_calls = 0;
+    ISEQ_BODY(iseq)->jit_exception_calls = 0;
 }
 
 // Callback data for rb_jit_for_each_iseq
@@ -819,6 +851,12 @@ rb_yarv_str_eql_internal(VALUE str1, VALUE str2)
 {
     // We wrap this since it's static inline
     return rb_str_eql_internal(str1, str2);
+}
+
+VALUE
+rb_jit_str_simple_append(VALUE str1, VALUE str2)
+{
+    return rb_str_cat(str1, RSTRING_PTR(str2), RSTRING_LEN(str2));
 }
 
 void rb_jit_str_concat_codepoint(VALUE str, VALUE codepoint);

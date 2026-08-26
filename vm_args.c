@@ -192,7 +192,7 @@ args_kw_argv_to_hash(struct args_info *args)
     const struct rb_callinfo_kwarg *kw_arg = args->kw_arg;
     const VALUE *const passed_keywords = kw_arg->keywords;
     const int kw_len = kw_arg->keyword_len;
-    VALUE h = rb_hash_new_with_size(kw_len);
+    VALUE h = rb_hash_new_capa(kw_len);
     const int kw_start = args->argc - kw_len;
     const VALUE * const kw_argv = args->argv + kw_start;
     int i;
@@ -293,7 +293,7 @@ static VALUE
 make_rest_kw_hash(const VALUE *passed_keywords, int passed_keyword_len, const VALUE *kw_argv)
 {
     int i;
-    VALUE obj = rb_hash_new_with_size(passed_keyword_len);
+    VALUE obj = rb_hash_new_capa(passed_keyword_len);
 
     for (i=0; i<passed_keyword_len; i++) {
         if (!UNDEF_P(kw_argv[i])) {
@@ -1149,7 +1149,10 @@ vm_caller_setup_arg_block(const rb_execution_context_t *ec, rb_control_frame_t *
                     rb_ary_push(callback_arg, ref);
                     OBJ_FREEZE(callback_arg);
                     func = rb_func_lambda_new(refine_sym_proc_call, callback_arg, 1, UNLIMITED_ARGUMENTS);
-                    rb_hash_aset(ref, block_code, func);
+                    /* the table is frozen when it belongs to a Proc#refined memo; skip the cache then */
+                    if (!OBJ_FROZEN(ref)) {
+                        rb_hash_aset(ref, block_code, func);
+                    }
                 }
                 block_code = func;
             }
@@ -1184,7 +1187,7 @@ vm_caller_setup_fwd_args(const rb_execution_context_t *ec, rb_control_frame_t *r
     CALL_INFO site_ci = cd->ci;
     VALUE bh = Qundef;
 
-    RUBY_ASSERT(ISEQ_BODY(ISEQ_BODY(GET_ISEQ())->local_iseq)->param.flags.forwardable);
+    RUBY_ASSERT(ISEQ_BODY(ISEQ_BODY(CFP_ISEQ(reg_cfp))->local_iseq)->param.flags.forwardable);
     CALL_INFO caller_ci = (CALL_INFO)TOPN(0);
 
     unsigned int site_argc = vm_ci_argc(site_ci);

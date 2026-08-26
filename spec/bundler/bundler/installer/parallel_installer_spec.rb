@@ -9,6 +9,7 @@ RSpec.describe Bundler::ParallelInstaller do
   describe "priority queue" do
     before do
       require "support/artifice/compact_index"
+      Artifice.activate_with(CompactIndexAPI)
 
       @previous_client = Gem::Request::ConnectionPools.client
       Gem::Request::ConnectionPools.client = Gem::Net::HTTP
@@ -83,6 +84,11 @@ RSpec.describe Bundler::ParallelInstaller do
         skip "This example is runnable when RubyGems::Installer implements `build_jobs`"
       end
 
+      # The make jobserver is a GNU make feature. On Windows extensions are built
+      # with nmake, which has no `-j` jobserver, so the per-gem slot count never
+      # appears in the build output.
+      skip "The make jobserver is not available on Windows (nmake)" if mswin?
+
       # When run under a parent make that already passes `-j` (e.g. ruby/ruby's
       # `make test-bundler-parallel`), RubyGems' extension builder sees the
       # inherited MAKEFLAGS as "jobs already requested" and skips appending its
@@ -93,6 +99,7 @@ RSpec.describe Bundler::ParallelInstaller do
       end
 
       require "support/artifice/compact_index"
+      Artifice.activate_with(CompactIndexAPI)
 
       @previous_client = Gem::Request::ConnectionPools.client
       Gem::Request::ConnectionPools.client = Gem::Net::HTTP
@@ -125,9 +132,12 @@ RSpec.describe Bundler::ParallelInstaller do
       Bundler.ui = Bundler::UI::Silent.new
     end
 
+    # The `before` hook can `skip` before it saves anything, so only restore
+    # what was actually captured. Otherwise every skipped example clobbers the
+    # globals with nil.
     after do
-      Bundler.ui = @old_ui
-      Gem::Request::ConnectionPools.client = @previous_client
+      Bundler.ui = @old_ui if @old_ui
+      Gem::Request::ConnectionPools.client = @previous_client if @previous_client
       Artifice.deactivate
     end
 
@@ -220,6 +230,26 @@ RSpec.describe Bundler::ParallelInstaller do
     end
   end
 
+  describe "require tree in error reports" do
+    # require_tree_for_spec runs while reporting an install error. When no
+    # Gemfile can be located, default_gemfile raises GemfileNotFound, which
+    # would mask the original install error entirely.
+    it "falls back to a generic header when no Gemfile can be located" do
+      parallel_installer = Bundler::ParallelInstaller.new(nil, [], 1, false, false)
+
+      spec = double("spec", name: "mygem", version: Gem::Version.new("1.0"))
+      spec_set = double("spec_set", what_required: [spec])
+      parallel_installer.instance_variable_set(:@spec_set, spec_set)
+
+      allow(Bundler::SharedHelpers).to receive(:default_gemfile).
+        and_raise(Bundler::GemfileNotFound, "Could not locate Gemfile")
+
+      tree = parallel_installer.send(:require_tree_for_spec, spec)
+      expect(tree).to start_with("In Gemfile:\n")
+      expect(tree).to include("mygem")
+    end
+  end
+
   describe "make jobserver with nmake" do
     # nmake reads MAKEFLAGS from the environment and treats its contents as
     # bare option letters, so a GNU make `--jobserver-auth` aborts the build
@@ -242,6 +272,52 @@ RSpec.describe Bundler::ParallelInstaller do
       end
 
       expect(makeflags_during).to eq(makeflags_before)
+    end
+  end
+
+  describe "make jobserver on BSD" do
+    # BSD make (the default `make` on FreeBSD) can't parse the GNU
+    # `--jobserver-auth` and aborts every native extension build, so the
+    # jobserver must be skipped there.
+    it "leaves MAKEFLAGS untouched" do
+      parallel_installer = Bundler::ParallelInstaller.new(nil, [], 5, false, false)
+
+      makeflags_before = ENV["MAKEFLAGS"]
+      makeflags_during = :not_yielded
+
+      old_make = ENV["MAKE"]
+      ENV.delete("MAKE")
+      allow(Gem).to receive(:freebsd_platform?).and_return(true)
+      begin
+        parallel_installer.send(:with_jobserver) do
+          makeflags_during = ENV["MAKEFLAGS"]
+        end
+      ensure
+        ENV["MAKE"] = old_make
+      end
+
+      expect(makeflags_during).to eq(makeflags_before)
+    end
+
+    # A BSD user who opts into gmake gets a make that understands the
+    # jobserver, so it should still be set up.
+    it "sets up the jobserver when gmake is used" do
+      parallel_installer = Bundler::ParallelInstaller.new(nil, [], 5, false, false)
+
+      makeflags_during = :not_yielded
+
+      old_make = ENV["MAKE"]
+      ENV["MAKE"] = "gmake"
+      allow(Gem).to receive(:freebsd_platform?).and_return(true)
+      begin
+        parallel_installer.send(:with_jobserver) do
+          makeflags_during = ENV["MAKEFLAGS"]
+        end
+      ensure
+        ENV["MAKE"] = old_make
+      end
+
+      expect(makeflags_during).to include("--jobserver-auth=")
     end
   end
 end

@@ -20,6 +20,7 @@ bundle-lock(1) -- Creates / Updates a lockfile without installing
               [--pre]
               [--strict]
               [--conservative]
+              [--cooldown=NUMBER]
 
 ## DESCRIPTION
 
@@ -83,6 +84,11 @@ Lock the gems specified in Gemfile.
 
 * `--conservative`:
   If updating, use bundle install conservative update behavior and do not allow shared dependencies to be updated.
+
+* `--cooldown=<number>`:
+  Only consider gem versions published at least <number> days ago when
+  resolving. Pass `0` to disable cooldown for this run, overriding any
+  per-source or global configuration. See `cooldown` in bundle-config(1).
 
 ## UPDATING ALL GEMS
 

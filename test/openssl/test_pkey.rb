@@ -182,6 +182,10 @@ class OpenSSL::TestPKey < OpenSSL::PKeyTestCase
     omit_on_fips
 
     # Test vector from RFC 8032 Section 7.1 TEST 2
+    secret_key = ["4ccd089b28ff96da9db6c346ec114e0f" \
+                  "5b8a319f35aba624da8cf6ed4fb8a6fb"].pack("H*")
+    public_key = ["3d4017c3e843895a92b70aa74d1b7ebc" \
+                  "9c982ccf2ec4968cc0cd55f12af4660c"].pack("H*")
     priv_pem = <<~EOF
     -----BEGIN PRIVATE KEY-----
     MC4CAQAwBQYDK2VwBCIEIEzNCJso/5banbbDRuwRTg9bijGfNaumJNqM9u1PuKb7
@@ -200,14 +204,14 @@ class OpenSSL::TestPKey < OpenSSL::PKeyTestCase
     assert_equal pub_pem, priv.public_to_pem
     assert_equal pub_pem, pub.public_to_pem
 
-    assert_equal "4ccd089b28ff96da9db6c346ec114e0f5b8a319f35aba624da8cf6ed4fb8a6fb",
-      priv.raw_private_key.unpack1("H*")
-    assert_equal OpenSSL::PKey.new_raw_private_key("ED25519", priv.raw_private_key).private_to_pem,
-      priv.private_to_pem
-    assert_equal "3d4017c3e843895a92b70aa74d1b7ebc9c982ccf2ec4968cc0cd55f12af4660c",
-      priv.raw_public_key.unpack1("H*")
-    assert_equal OpenSSL::PKey.new_raw_public_key("ED25519", priv.raw_public_key).public_to_pem,
-      pub.public_to_pem
+    assert_equal secret_key, priv.raw_private_key
+    assert_equal secret_key, priv.get_param("priv") if openssl?(3, 0, 0)
+    assert_equal priv.private_to_pem,
+      OpenSSL::PKey.new_raw_private_key("ED25519", secret_key).private_to_pem
+    assert_equal public_key, priv.raw_public_key
+    assert_equal public_key, priv.get_param("pub") if openssl?(3, 0, 0)
+    assert_equal pub.public_to_pem,
+      OpenSSL::PKey.new_raw_public_key("ED25519", public_key).public_to_pem
 
     sig = [<<~EOF.gsub(/[^0-9a-f]/, "")].pack("H*")
     92a009a9f0d4cab8720e820b5f642540
@@ -272,6 +276,7 @@ class OpenSSL::TestPKey < OpenSSL::PKeyTestCase
 
     pkey = OpenSSL::PKey.generate_key("ML-DSA-44")
     assert_match(/type_name=ML-DSA-44/, pkey.inspect)
+    assert_equal(32, pkey.get_param("seed").bytesize)
     sig = pkey.sign(nil, "data")
     assert_equal(2420, sig.bytesize)
     assert_equal(true, pkey.verify(nil, sig, "data"))

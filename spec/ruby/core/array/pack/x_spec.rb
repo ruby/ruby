@@ -32,6 +32,22 @@ describe "Array#pack with format 'x'" do
     [].pack("x*").should == ""
     [1, 2].pack("Cx*C").should == "\x01\x02"
   end
+
+  ruby_version_is "4.1" do
+    it "aligns to the given byte boundary with the '!' modifier" do
+      [1, 2].pack("C x!4 C").should == "\x01\x00\x00\x00\x02"
+    end
+
+    it "aligns from the beginning of the output with '@!'" do
+      buffer = +"z"
+      [1, 2].pack("C @!4 C", buffer: buffer)
+      buffer.should == "z\x01\x00\x00\x02"
+    end
+
+    it "aligns to a directive's alignment with the '!' modifier" do
+      [1, 2].pack("C x!i i").should == [1, 2].pack("i< i")
+    end
+  end
 end
 
 describe "Array#pack with format 'X'" do

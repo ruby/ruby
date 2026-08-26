@@ -77,6 +77,23 @@ platform_is_not :windows do
       path.should_receive(:to_path).and_return(__FILE__)
       File.realpath(path).should == File.realpath(__FILE__ )
     end
+
+    platform_is :darwin do
+      it "accepts a path in a non-UTF-8, ASCII-compatible encoding containing non-ASCII characters" do
+        dir = tmp("file_realpath_dir_\u{3042}")
+        utf8_file = File.join(dir, "file.txt")
+        # Can fail with UndefinedConversionError if tmp path has non-Shift_JIS chars (e.g. Emojis, Hangul, Cyrillic, accented letters)
+        non_utf8_file = utf8_file.encode(Encoding::Windows_31J)
+
+        begin
+          mkdir_p(dir)
+          touch(utf8_file)
+          File.realpath(non_utf8_file).should == File.realpath(utf8_file).encode(Encoding::Windows_31J)
+        ensure
+          rm_r dir
+        end
+      end
+    end
   end
 end
 
@@ -93,6 +110,29 @@ platform_is :windows do
 
     it "returns the same path" do
       File.realpath(@file).should == @file
+    end
+  end
+end
+
+describe "File.realpath" do
+  it "preserves the encoding of the path" do
+    path = __FILE__.encode(Encoding::EUC_JP)
+    File.realpath(path).encoding.should == Encoding::EUC_JP
+    dir = File.dirname(__FILE__).encode(Encoding::EUC_JP)
+    File.realpath(File.basename(path), dir).encoding.should == Encoding::EUC_JP
+  end
+
+  platform_is_not :windows do
+    it "forces the encoding of the path when encoding conversion fails" do
+      dir = tmp("realpath_あ")
+      mkdir_p(dir)
+      begin
+        resolved = File.realpath(".".encode(Encoding::ISO_8859_1), dir)
+        resolved.encoding.should == Encoding::ISO_8859_1
+        resolved.b.should.include?(dir.b)
+      ensure
+        rm_r dir
+      end
     end
   end
 end

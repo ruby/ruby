@@ -21,6 +21,7 @@ module SyncDefaultGems
   # exclude: [ "fnmatch_pattern_after_mapping", ... ]
   Repository = Data.define(:upstream, :branch, :mappings, :exclude) do
     def excluded?(newpath)
+      return true if newpath.end_with?(*%w".a .bundle .dll .dylib .so .o .obj")
       p = newpath
       until p == "."
         return true if exclude.any? {|pat| File.fnmatch?(pat, p, File::FNM_PATHNAME|File::FNM_EXTGLOB)}
@@ -78,6 +79,8 @@ module SyncDefaultGems
       ["regsyntax.c", "regsyntax.c"],
       ["onigmo.h", "include/ruby/onigmo.h"],
       ["enc", "enc"],
+    ], exclude: [
+      "encoding.c",
     ]),
     "io-console": repo("ruby/io-console", [
       ["ext/io/console", "ext/io/console"],
@@ -114,8 +117,6 @@ module SyncDefaultGems
       ["lib", "ext/date/lib"],
       ["test/date", "test/date"],
       ["date.gemspec", "ext/date/date.gemspec"],
-    ], exclude: [
-      "ext/date/lib/date_core.bundle",
     ]),
     delegate: lib("ruby/delegate"),
     did_you_mean: repo("ruby/did_you_mean", [
@@ -178,6 +179,8 @@ module SyncDefaultGems
     ]),
     mmtk: repo(["ruby/mmtk", "main"], [
       ["gc/mmtk", "gc/mmtk"],
+      ["test/.excludes-mmtk", "test/.excludes-mmtk"],
+      ["test/mmtk", "test/mmtk"],
     ]),
     open3: lib("ruby/open3", gemspec_in_subdir: true).tap {
       it.exclude << "lib/open3/jruby_windows.rb"
@@ -225,7 +228,6 @@ module SyncDefaultGems
       "ext/psych/lib/org",
       "ext/psych/lib/psych.jar",
       "ext/psych/lib/psych_jars.rb",
-      "ext/psych/lib/psych.{bundle,so}",
       "ext/psych/lib/2.*",
       "ext/psych/yaml/LICENSE",
       "ext/psych/.gitignore",
@@ -303,6 +305,10 @@ module SyncDefaultGems
       ["test/zlib", "test/zlib"],
       ["zlib.gemspec", "ext/zlib/zlib.gemspec"],
     ]),
+    "test-unit-ruby-core":repo("ruby/test-unit-ruby-core", [
+      ["lib", "tool/lib"],
+      ["test", "tool/test"],
+    ]),
   }.transform_keys(&:to_s)
 
   def REPOSITORIES.[](gem)
@@ -314,7 +320,7 @@ module SyncDefaultGems
       return if NO_UPSTREAM.any? {|dst| file.start_with?(dst) }
       REPOSITORIES.find do |repo_name, repository|
         if repository.mappings.any? {|_src, dst| file.start_with?(dst) }
-          break repo_name
+          break repository.upstream
         end
       end
     end

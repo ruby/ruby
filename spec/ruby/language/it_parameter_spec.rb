@@ -1,7 +1,7 @@
 require_relative '../spec_helper'
 
 ruby_version_is "3.4" do
-  eval <<-RUBY # use eval to avoid warnings on Ruby 3.3
+  eval <<-RUBY, binding, __FILE__, __LINE__ + 1 # use eval to avoid warnings on Ruby 3.3
   describe "The `it` parameter" do
     it "provides it in a block" do
       -> { it }.call("a").should == "a"
@@ -84,6 +84,25 @@ ruby_version_is "3.4" do
 
     it "does not affect binding local variables" do
       -> { it; binding.local_variables }.call("a").should == []
+    end
+
+    it "does not affect binding local variables getting" do
+      proc {
+        a = it; binding.local_variable_get(:it)
+      }.should.raise(NameError, /local variable 'it' is not defined for/)
+    end
+
+    it "does not affect binding local variables setting" do
+      -> {
+       a = it
+       binding.local_variable_set(:it, :b)
+       [a, it]
+      }.call(:a).should == [:a, :a]
+    end
+
+    it "does not affect binding local variables definition check" do
+      a = it
+      binding.local_variable_defined?(:it).should == false
     end
 
     it "does not work in methods" do

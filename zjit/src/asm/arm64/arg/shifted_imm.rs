@@ -13,16 +13,20 @@ pub struct ShiftedImmediate {
     value: u16
 }
 
+impl ShiftedImmediate {
+    pub const MAX: u64 = 2_u64.pow(12) - 1;
+}
+
 impl TryFrom<u64> for ShiftedImmediate {
     type Error = ();
 
     fn try_from(value: u64) -> Result<Self, Self::Error> {
         let current = value;
-        if current < 2_u64.pow(12) {
+        if current <= Self::MAX {
             return Ok(ShiftedImmediate { shift: Shift::LSL0, value: current as u16 });
         }
 
-        if (current & (2_u64.pow(12) - 1) == 0) && ((current >> 12) < 2_u64.pow(12)) {
+        if (current & Self::MAX == 0) && ((current >> 12) <= Self::MAX) {
             return Ok(ShiftedImmediate { shift: Shift::LSL12, value: (current >> 12) as u16 });
         }
 

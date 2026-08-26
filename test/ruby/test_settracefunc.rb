@@ -26,6 +26,19 @@ class TestSetTraceFunc < Test::Unit::TestCase
     Thread.current == @target_thread
   end
 
+  # Reject trace events from other code interrupting this thread, such as
+  # finalizers of objects left by other tests (e.g. Tempfile's), whose
+  # frames are pushed on top of the interrupted frame of this file. An
+  # event is ours iff the innermost frame, ignoring core methods written
+  # in Ruby (<internal:*> such as Kernel#tap), belongs to this file.
+  #
+  # +locations+ must be the caller_locations captured directly in the
+  # trace handler; capturing it here would add this method's own frame.
+  def event_from_this_file?(locations)
+    innermost = locations.drop_while{|loc| loc.path.start_with?("<internal:")}.first
+    innermost&.path == __FILE__
+  end
+
   def test_c_call
     events = []
     name = "#{self.class}\##{__method__}"
@@ -352,7 +365,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
      2:   events << [event, lineno, mid, klass] if file == name
      3: })
      4: [1,2,3].any? {|n| n}
-     8: set_trace_func(nil)
+     5: set_trace_func(nil)
     EOF
 
     [["c-return", 1, :set_trace_func, Kernel],
@@ -1577,6 +1590,7 @@ CODE
     obj = C11492.new
     TracePoint.new(:call, :return){|tp|
       next unless target_thread?
+      next unless event_from_this_file?(caller_locations)
       events << [tp.event, tp.method_id]
     }.enable{
       obj.foo_return
@@ -1588,6 +1602,7 @@ CODE
     obj = C11492.new
     TracePoint.new(:call, :return){|tp|
       next unless target_thread?
+      next unless event_from_this_file?(caller_locations)
       events << [tp.event, tp.method_id]
     }.enable{
       obj.foo_break
@@ -1600,6 +1615,7 @@ CODE
     begin
       set_trace_func(lambda{|event, file, lineno, mid, binding, klass|
         next unless target_thread?
+        next unless event_from_this_file?(caller_locations)
         case event
         when 'call', 'return'
           events << [event, mid]
@@ -1617,6 +1633,7 @@ CODE
     begin
       set_trace_func(lambda{|event, file, lineno, mid, binding, klass|
         next unless target_thread?
+        next unless event_from_this_file?(caller_locations)
         case event
         when 'call', 'return'
           events << [event, mid]
@@ -1904,14 +1921,7 @@ CODE
     events = []
     capture_events = Proc.new{|tp|
       next unless target_thread?
-      # Skip events from other code interrupting this thread, such as
-      # finalizers of objects left by other tests (e.g. Tempfile's),
-      # whose frames are pushed on top of the interrupted frame of this
-      # file. The event is ours iff the innermost frame, ignoring core
-      # methods written in Ruby (e.g. Kernel#tap in <internal:kernel>),
-      # belongs to this file.
-      innermost = caller_locations.drop_while{|loc| loc.path.start_with?("<internal:")}.first
-      next unless innermost&.path == __FILE__
+      next unless event_from_this_file?(caller_locations)
       events << [tp.event, tp.method_id, tp.callee_id]
     }
 
@@ -2762,6 +2772,48 @@ CODE
     tp_line.enable(target: method(:bar))
     bar
     EOS
+
+    # When another event fires at the same pc as a targeted :line hook (here,
+    # COVERAGE_LINE alongside LINE while Coverage is running), disabling the
+    # last targeted TracePoint on the iseq from inside the line hook must not
+    # leave vm_trace() dispatching the remaining event through the freed hook
+    # list.
+    assert_normal_exit(<<-'EOS', 'targeted TracePoint freed mid-dispatch')
+    require "coverage"
+    require "tempfile"
+
+    Coverage.start
+
+    file = Tempfile.new(["cov_tp", ".rb"])
+    50.times { |i| file.puts "def tracee#{i}; 1 + 1; end" }
+    file.close
+    require file.path
+
+    50.times do |i|
+      tp = TracePoint.new(:line) { tp.disable }
+      tp.enable(target: method("tracee#{i}"))
+      send("tracee#{i}")
+    end
+    EOS
+
+    # Same hazard for a bmethod's def-local hook list: a targeted :return
+    # TracePoint on the bmethod fires from vm_trace()'s special RETURN dispatch,
+    # which runs after the b_return event. A targeted :b_return hook that
+    # disables the :return TP frees that list before the special RETURN uses it.
+    assert_normal_exit(<<-'EOS', 'targeted bmethod TracePoint freed mid-dispatch')
+    50.times do
+      obj = Object.new
+      obj.define_singleton_method(:m) { 1 }
+
+      ret_tp = TracePoint.new(:return) { }
+      ret_tp.enable(target: obj.method(:m))
+
+      bret_tp = TracePoint.new(:b_return) { ret_tp.disable }
+      bret_tp.enable(target: obj.method(:m))
+
+      obj.m
+    end
+    EOS
   end
 
   def test_stat_exists
@@ -2796,6 +2848,62 @@ CODE
       end
     }
     assert_equal [__LINE__ - 5, __LINE__ - 4, __LINE__ - 3], lines, 'Bug #17868'
+  end
+
+  def test_line_event_after_guard_before_while
+    lines = []
+    while_line = body_line = nil
+
+    TracePoint.new(:line) {|tp|
+      next unless target_thread?
+      lines << tp.lineno
+    }.enable {
+      raise if 1 == 2
+      while_line = __LINE__ + 1
+      while true
+        body_line = __LINE__ + 1
+        break
+      end
+    }
+
+    assert_include lines, while_line
+    assert_include lines, body_line
+    assert_operator lines.index(while_line), :<, lines.index(body_line)
+  end
+
+  def test_line_event_after_guard_before_while_predicate
+    parent = Class.new do
+      def read
+        @values.shift
+      end
+    end
+
+    child = Class.new(parent) do
+      def initialize
+        @values = ["chunk", nil]
+      end
+    end
+
+    start_line = __LINE__ + 2
+    while_line = start_line + 2
+    child.class_eval <<~RUBY, __FILE__, start_line
+      def read
+        return if @finished
+        while chunk = super
+          chunk.upcase
+        end
+      end
+    RUBY
+
+    lines = []
+    TracePoint.new(:line) {|tp|
+      next unless target_thread?
+      lines << tp.lineno
+    }.enable {
+      child.new.read
+    }
+
+    assert_include lines, while_line
   end
 
   def test_allow_reentry
@@ -2968,6 +3076,10 @@ CODE
     assert_kind_of(Thread, target_thread)
   end
 
+  private def finalized(done)
+    proc {done[0] = true}
+  end
+
   def test_tracepoint_garbage_collected_when_disable
     before_count_stat = 0
     before_count_objspace = 0
@@ -2982,18 +3094,17 @@ CODE
     tp.enable
     Class.inspect # c_call, c_return invoked
     tp.disable
-    tp_id = tp.object_id
+    done = [false]
+    ObjectSpace.define_finalizer(tp, finalized(done))
     tp = nil
 
     gc_times = 0
     gc_max_retries = 10
-    EnvUtil.suppress_warning do
-      until (ObjectSpace._id2ref(tp_id) rescue nil).nil?
-        GC.start
-        gc_times += 1
-        if gc_times == gc_max_retries
-          break
-        end
+    until done[0]
+      GC.start
+      gc_times += 1
+      if gc_times == gc_max_retries
+        break
       end
     end
     return if gc_times == gc_max_retries
@@ -3002,12 +3113,12 @@ CODE
     TracePoint.stat.each do |v|
       after_count_stat += 1
     end
-    assert after_count_stat <= before_count_stat
+    assert_operator after_count_stat, :<=, before_count_stat
     after_count_objspace = 0
     ObjectSpace.each_object(TracePoint) do
       after_count_objspace += 1
     end
-    assert after_count_objspace <= before_count_objspace
+    assert_operator after_count_objspace, :<=, before_count_objspace
   end
 
   def test_tp_ractor_local_untargeted
@@ -3101,7 +3212,9 @@ CODE
   def test_tracepoints_not_disabled_by_ractor_gc
     assert_ractor("#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
-    $-w = nil # uses ObjectSpace._id2ref
+    def finalized(done)
+      proc {done[0] = true}
+    end
     def hi = "hi"
     greetings = 0
     tp_target = TracePoint.new(:call) do |tp|
@@ -3117,12 +3230,13 @@ CODE
 
     r = Ractor.new { 10 }
     r.join
-    ractor_id = r.object_id
+    done = [false]
+    ObjectSpace.define_finalizer(r, finalized(done))
     r = nil # allow gc for ractor
     gc_max_retries = 15
     gc_times = 0
     # force GC of ractor (or try, because we have a conservative GC)
-    until (ObjectSpace._id2ref(ractor_id) rescue nil).nil?
+    until done[0]
       GC.start
       gc_times += 1
       if gc_times == gc_max_retries
@@ -3140,11 +3254,7 @@ CODE
     tp_target.disable
     tp_global.disable
     assert_equal 5, greetings
-    if gc_times == gc_max_retries # _id2ref never raised
-      assert_equal 6, raises
-    else
-      assert_equal 7, raises
-    end
+    assert_equal 6, raises
     end;
   end
 

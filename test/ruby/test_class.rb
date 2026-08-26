@@ -846,6 +846,20 @@ class TestClass < Test::Unit::TestCase
     end
   end
 
+  def test_subclasses_includes_clone
+    c = Class.new
+    with_include = Class.new(c) { include Module.new }
+    with_prepend = Class.new(c) { prepend Module.new }
+    plain = Class.new(c)
+
+    bug22190 = '[ruby-core:126038] [Bug #22190]'
+    clones = [with_include, with_prepend, plain].flat_map {|k| [k.clone, k.dup]}
+    subclasses = c.subclasses
+    clones.each do |k|
+      assert_equal(1, subclasses.count(k), "#{bug22190} expected #{k.inspect} to appear in subclasses exactly once")
+    end
+  end
+
   def test_attached_object
     c = Class.new
     sc = c.singleton_class

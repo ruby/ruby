@@ -1,7 +1,7 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 
-describe "Kernel.loop" do
+describe "Kernel#loop" do
   it "is a private method" do
     Kernel.private_instance_methods(false).should.include?(:loop)
   end
@@ -75,5 +75,11 @@ describe "Kernel.loop" do
         end
       end
     end
+  end
+end
+
+describe "Kernel.loop" do
+  it "is a public method" do
+    Kernel.public_methods(false).should.include?(:loop)
   end
 end

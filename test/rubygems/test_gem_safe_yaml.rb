@@ -950,6 +950,45 @@ class TestGemSafeYAML < Gem::TestCase
     assert_equal({}, loaded["hash"])
   end
 
+  def test_load_url_key_and_value
+    # Bundler mirror settings use URLs both as mapping key and value
+    yaml = "BUNDLE_MIRROR__HTTPS://RUBYGEMS__ORG/: http://example-mirror.rubygems.org\n"
+
+    expected = { "BUNDLE_MIRROR__HTTPS://RUBYGEMS__ORG/" => "http://example-mirror.rubygems.org" }
+    assert_equal expected, yaml_load(yaml)
+  end
+
+  def test_psych_interop_roundtrip
+    require "yaml"
+
+    hash = {
+      "a_joke" => {
+        "my-stand" => "I can totally keep secrets",
+        "but" => "The people I tell them to can't :P",
+        "wouldn't it be funny if this string were empty?" => "",
+      },
+      "more" => {
+        "first" => [
+          "Can a kangaroo jump higher than a house?",
+          "Of course, a house doesn't jump at all.",
+        ],
+        "second" => [
+          "What did the sea say to the sand?",
+          "Nothing, it simply waved.",
+        ],
+        "array with empty string" => [""],
+      },
+      "sales" => {
+        "item" => "A Parachute",
+        "description" => "Only used once, never opened.",
+      },
+      "one-more" => "I'd tell you a chemistry joke but I know I wouldn't get a reaction.",
+    }
+
+    assert_equal hash, Gem::YAMLSerializer.load(Psych.dump(hash))
+    assert_equal hash, Psych.load(Gem::YAMLSerializer.dump(hash))
+  end
+
   def test_load_double_quoted_escape_sequences
     result = yaml_load("newline: \"hello\\nworld\"")
     assert_equal "hello\nworld", result["newline"]
@@ -1098,6 +1137,23 @@ class TestGemSafeYAML < Gem::TestCase
     result = yaml_load("key: value\r\nother: data\r\n")
     assert_equal "value", result["key"]
     assert_equal "data", result["other"]
+  end
+
+  def test_dump_crlf_string_roundtrip
+    obj = { "pem" => "line one\r\nline two\r\n" }
+    assert_equal obj, yaml_load(yaml_dump(obj))
+  end
+
+  def test_load_crlf_with_sequence
+    yaml = <<~YAML.gsub("\n", "\r\n")
+      ---
+      nested_hash:
+        contains_array:
+        - "quoted item"
+        - plain item
+    YAML
+
+    assert_equal({ "nested_hash" => { "contains_array" => ["quoted item", "plain item"] } }, yaml_load(yaml))
   end
 
   def test_load_version_requirement_old_tag

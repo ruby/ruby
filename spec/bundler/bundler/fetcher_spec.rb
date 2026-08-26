@@ -78,36 +78,46 @@ RSpec.describe Bundler::Fetcher do
         end
       end
       it "consider no_proxy" do
-        with_env_vars("HTTP_PROXY" => "http://proxy-example4.com", "NO_PROXY" => ".example.com,.example.net") do
-          expect(
-            fetcher.send(:connection).no_proxy
-          ).to eq([".example.com", ".example.net"])
+        with_env_vars("HTTP_PROXY" => "http://proxy-example4.com", "NO_PROXY" => "example.com,.example.net") do
+          expect(fetcher.http_proxy).to be_nil
+        end
+      end
+      it "bypass proxy for every host when no_proxy is '*'" do
+        with_env_vars("HTTP_PROXY" => "http://proxy-example5.com", "NO_PROXY" => "*") do
+          expect(fetcher.http_proxy).to be_nil
         end
       end
     end
 
+    def configured_connection
+      http = Gem::Net::HTTP.new(uri.host, uri.port)
+      fetcher.send(:connection).send(:configure_ssl, http)
+      http
+    end
+
     context "when no ssl configuration is set" do
       it "no cert" do
-        expect(fetcher.send(:connection).cert).to be_nil
-        expect(fetcher.send(:connection).key).to be_nil
+        expect(configured_connection.cert).to be_nil
+        expect(configured_connection.key).to be_nil
       end
     end
 
-    context "when bunder ssl ssl configuration is set" do
+    context "when bunder ssl configuration is set" do
       before do
         cert = File.join(Spec::Path.tmpdir, "cert")
         File.open(cert, "w") {|f| f.write "PEM" }
         allow(Bundler.settings).to receive(:[]).and_return(nil)
         allow(Bundler.settings).to receive(:[]).with(:ssl_client_cert).and_return(cert)
         expect(OpenSSL::X509::Certificate).to receive(:new).with("PEM").and_return("cert")
-        expect(OpenSSL::PKey::RSA).to receive(:new).with("PEM").and_return("key")
+        expect(OpenSSL::PKey).to receive(:read).with("PEM").and_return("key")
       end
       after do
         FileUtils.rm File.join(Spec::Path.tmpdir, "cert")
       end
       it "use bundler configuration" do
-        expect(fetcher.send(:connection).cert).to eq("cert")
-        expect(fetcher.send(:connection).key).to eq("key")
+        connection = configured_connection
+        expect(connection.cert).to eq("cert")
+        expect(connection.key).to eq("key")
       end
     end
 
@@ -120,14 +130,15 @@ RSpec.describe Bundler::Fetcher do
         )
         expect(File).to receive(:read).and_return("")
         expect(OpenSSL::X509::Certificate).to receive(:new).and_return("cert")
-        expect(OpenSSL::PKey::RSA).to receive(:new).and_return("key")
+        expect(OpenSSL::PKey).to receive(:read).and_return("key")
         store = double("ca store")
         expect(store).to receive(:add_file)
         expect(OpenSSL::X509::Store).to receive(:new).and_return(store)
       end
       it "use gem configuration" do
-        expect(fetcher.send(:connection).cert).to eq("cert")
-        expect(fetcher.send(:connection).key).to eq("key")
+        connection = configured_connection
+        expect(connection.cert).to eq("cert")
+        expect(connection.key).to eq("key")
       end
     end
   end
@@ -139,6 +150,19 @@ RSpec.describe Bundler::Fetcher do
       expect(fetcher.user_agent).to match(%r{rubygems/(\d.)})
       expect(fetcher.user_agent).to match(%r{ruby/(\d.)})
       expect(fetcher.user_agent).to match(%r{options/foo,bar})
+    end
+
+    it "strips userinfo from settings keys that embed a URI" do
+      allow(Bundler.settings).to receive(:all).and_return(
+        %w[foo mirror.http://user:token@example.org/ mirror.https://token@example.net/]
+      )
+      options = fetcher.user_agent.split(" ").find {|x| x.start_with?("options/") }
+
+      expect(options).not_to include("token")
+      expect(options).not_to include("user:")
+      expect(options).to include("mirror.http://example.org/")
+      expect(options).to include("mirror.https://example.net/")
+      expect(options).to include("foo")
     end
 
     describe "include CI information" do

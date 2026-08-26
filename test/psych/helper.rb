@@ -14,6 +14,13 @@ module Psych
       $VERBOSE = verbose
     end
 
+    # True when psych was built with the experimental libfyaml backend
+    # (--enable-libfyaml), which follows YAML 1.2 and formats output
+    # differently from the default libyaml backend.
+    def libfyaml?
+      defined?(Psych::BACKEND) && Psych::BACKEND == 'libfyaml'
+    end
+
     def with_default_external(enc)
       verbose, $VERBOSE = $VERBOSE, nil
       origenc, Encoding.default_external = Encoding.default_external, enc

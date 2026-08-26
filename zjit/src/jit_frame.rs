@@ -292,6 +292,49 @@ mod tests {
         "#), @r#""no bar""#);
     }
 
+    // This test makes a JIT control frame move cfp->sp from as set by gen_prepare_non_leaf_call()
+    // and then ask for materialization. A C function that calls back into Ruby (rb_const_missing
+    // here) pushes recv+args using jit_entry's cfp->sp via vm_call0_body(). A wrong arity makes
+    // vm_callee_setup_arg() raise before vm_call_iseq_setup_normal() restores cfp->sp, so cfp->sp
+    // is left 1+argc slots high while this frame is materialized for the rescue. At the time of
+    // materialization, the top most control frame is the JIT frame.
+    #[test]
+    fn test_stack_map_anchor_after_callee_arity_error() {
+        assert_snapshot!(inspect(r#"
+            class Holder
+              def self.const_missing(a, b) = nil # wrong arity: called with 1 arg
+            end
+            def jit_entry
+              [1, (begin # the 1 is live across the const_missing call
+                     Holder::NOPE
+                   rescue ArgumentError
+                     2
+                   end)]
+            end
+            jit_entry
+            jit_entry
+        "#), @"[1, 2]");
+    }
+
+    // Same displaced cfp->sp, but reaching across an inlined frame: `defined?`
+    // calls respond_to_missing? with 2 args, which raises on arity.
+    #[test]
+    fn test_stack_map_anchor_with_inlined_frame() {
+        assert_snapshot!(inspect(r#"
+            class BadResponder
+              def respond_to_missing?(name) = true # wrong arity: called with 2
+            end
+            class Test
+              def initialize = @o = BadResponder.new
+              def inner = defined?(@o.nope) # must have 0 locals
+              def outer = [1, inner] # the 1 is live across the inlined call
+            end
+            test = Test.new
+            test.outer
+            test.outer
+        "#), @"[1, nil]");
+    }
+
     // Proc.new inside a block passed via invokeblock captures the caller's
     // block_code. When the JIT compiles the caller, block_code must be
     // correctly available for the proc to work.

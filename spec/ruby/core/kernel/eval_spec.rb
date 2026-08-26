@@ -8,10 +8,6 @@ describe "Kernel#eval" do
     Kernel.private_instance_methods(false).should.include?(:eval)
   end
 
-  it "is a module function" do
-    Kernel.respond_to?(:eval).should == true
-  end
-
   it "evaluates the code within" do
     eval("2 + 3").should == 5
   end
@@ -264,7 +260,6 @@ describe "Kernel#eval" do
   # See http://jira.codehaus.org/browse/JRUBY-5163
   it "uses the receiver as self inside the eval" do
     eval("self").should.equal?(self)
-    Kernel.eval("self").should.equal?(Kernel)
   end
 
   it "does not pass the block to the method being eval'ed" do
@@ -548,5 +543,15 @@ CODE
 
       result.should == "bar"
     end
+  end
+end
+
+describe "Kernel.eval" do
+  it "is a public method" do
+    Kernel.public_methods(false).should.include?(:Array)
+  end
+
+  it "uses the receiver as self inside the eval" do
+    Kernel.eval("self").should.equal?(Kernel)
   end
 end

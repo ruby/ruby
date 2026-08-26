@@ -53,4 +53,10 @@ describe "Binding#local_variable_get" do
     -> { bind.local_variable_get(:$~) }.should.raise(NameError)
     -> { bind.local_variable_get(:$_) }.should.raise(NameError)
   end
+
+  it 'raises a TypeError when given non-String/Symbol as the variable name' do
+    -> {
+      binding.local_variable_get(1)
+    }.should.raise(TypeError, '1 is not a symbol nor a string')
+  end
 end

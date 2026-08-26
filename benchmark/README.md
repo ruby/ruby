@@ -62,8 +62,7 @@ make benchmark ITEM=vm
 # Run some limited benchmarks in ITEM-matched files
 make benchmark ITEM=vm OPTS=--filter=block
 
-# You can specify the benchmark by an exact filename instead of using the default argument:
-# ARGS = $$(find $(srcdir)/benchmark -maxdepth 1 -name '*$(ITEM)*.yml' -o -name '*$(ITEM)*.rb')
+# You can specify the benchmark by exact filenames instead of matching ITEM:
 make benchmark ARGS=benchmark/erb_render.yml
 
 # You can specify any option via $OPTS

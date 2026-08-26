@@ -67,7 +67,7 @@ ossl_rand_add(VALUE self, VALUE str, VALUE entropy)
 static VALUE
 ossl_rand_load_file(VALUE self, VALUE filename)
 {
-    if(!RAND_load_file(StringValueCStr(filename), -1)) {
+    if (RAND_load_file(StringValueCStr(filename), -1) < 0) {
         ossl_raise(eRandomError, NULL);
     }
     return Qtrue;

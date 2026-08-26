@@ -170,10 +170,7 @@ pub fn track_no_ep_escape_assumption(uninit_block: BlockRef, iseq: IseqPtr) {
 
 /// Returns true if a given ISEQ has escaped an environment since YJIT boot.
 pub fn seen_escaped_env(iseq: IseqPtr) -> bool {
-    Invariants::get_instance()
-        .no_ep_escape_iseqs
-        .get(&iseq)
-        .map_or(false, |blocks| blocks.is_empty())
+    unsafe { rb_jit_iseq_ep_escape_recorded_p(iseq) }
 }
 
 /// Forget an ISEQ remembered in invariants
@@ -303,10 +300,11 @@ pub extern "C" fn rb_yjit_cme_invalidate(callee_cme: *const rb_callable_method_e
     });
 }
 
-/// Callback for when Ruby is about to spawn a ractor. In that case we need to
-/// invalidate every block that is assuming single ractor mode.
+/// Invalidate every block that assumes single-ractor mode. Called when Ruby
+/// transitions from single-ractor to multi-ractor mode (i.e. a second ractor
+/// is spawned).
 #[no_mangle]
-pub extern "C" fn rb_yjit_before_ractor_spawn() {
+pub extern "C" fn rb_yjit_invalidate_single_ractor() {
     // If YJIT isn't enabled, do nothing
     if !yjit_enabled_p() {
         return;
@@ -582,21 +580,16 @@ pub extern "C" fn rb_yjit_invalidate_ep_is_bp(iseq: IseqPtr) {
 
     with_vm_lock(src_loc!(), || {
         // If an EP escape for this ISEQ is detected for the first time, invalidate all blocks
-        // associated to the ISEQ.
-        let no_ep_escape_iseqs = &mut Invariants::get_instance().no_ep_escape_iseqs;
-        match no_ep_escape_iseqs.get_mut(&iseq) {
-            Some(blocks) => {
-                // Invalidate existing blocks and make jit.ep_is_bp() return false
-                for block in mem::take(blocks) {
-                    invalidate_block_version(&block);
-                    incr_counter!(invalidate_ep_escape);
-                }
-            }
-            None => {
-                // Let jit.ep_is_bp() return false for this ISEQ
-                no_ep_escape_iseqs.insert(iseq, HashSet::new());
+        // associated to the ISEQ. The iseq flag records the escape, so the map keeps only
+        // iseqs with live assumptions.
+        if let Some(blocks) = Invariants::get_instance().no_ep_escape_iseqs.remove(&iseq) {
+            for block in blocks {
+                invalidate_block_version(&block);
+                incr_counter!(invalidate_ep_escape);
             }
         }
+
+        unsafe { rb_jit_iseq_mark_ep_escape_recorded(iseq) };
     });
 }
 

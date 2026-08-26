@@ -9,6 +9,11 @@ require_relative 'lib/test/jobserver'
 
 ENV.delete("GNUMAKEFLAGS")
 
+# net-imap's test helper enables SimpleCov, but its released versions still
+# call the pre-1.0.0 `SimpleCov.formatters=` API that breaks with simplecov
+# 1.0.0. Coverage of bundled gems is not collected in CI, so disable it.
+ENV["SIMPLECOV_DISABLE"] = "1"
+
 github_actions = ENV["GITHUB_ACTIONS"] == "true"
 
 DEFAULT_ALLOWED_FAILURES = RUBY_PLATFORM =~ /mswin|mingw/ ? [
@@ -16,6 +21,35 @@ DEFAULT_ALLOWED_FAILURES = RUBY_PLATFORM =~ /mswin|mingw/ ? [
   'irb',
   'csv',
 ] : []
+
+# minitest's assertion tests compare against unified diff output produced by
+# the `diff` command, so they fail spuriously when it is not available.
+diff_available = ENV["PATH"].to_s.split(File::PATH_SEPARATOR).any? do |dir|
+  next false if dir.empty?
+  exe = File.join(dir, "diff")
+  File.executable?(exe) || (/mswin|mingw/ =~ RUBY_PLATFORM && File.file?("#{exe}.exe"))
+end
+DEFAULT_ALLOWED_FAILURES << 'minitest' unless diff_available
+
+# rake's TestBacktraceSuppression#test_system_dir_suppressed expects rake to
+# suppress RbConfig's rubylibprefix from backtraces. In an uninstalled
+# out-of-tree build it is a POSIX "/usr"-style prefix that File.expand_path
+# turns into a drive-prefixed path on Windows, which no longer matches rake's
+# suppression pattern, so the test fails.
+if /mswin|mingw/ =~ RUBY_PLATFORM && RbConfig::CONFIG["rubylibprefix"] !~ /\A[a-zA-Z]:/
+  DEFAULT_ALLOWED_FAILURES << 'rake'
+end
+
+# rbs's stdlib Resolv tests need to resolve "localhost"; allow its failures on
+# hosts where the Resolv library cannot resolve it.
+begin
+  require 'resolv'
+  Resolv.getaddress('localhost')
+rescue LoadError
+rescue Resolv::ResolvError
+  DEFAULT_ALLOWED_FAILURES << 'rbs'
+end
+
 allowed_failures = ENV['TEST_BUNDLED_GEMS_ALLOW_FAILURES'] || ''
 allowed_failures = allowed_failures.split(',').concat(DEFAULT_ALLOWED_FAILURES).uniq.reject(&:empty?)
 
@@ -61,8 +95,21 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
 
   case gem
   when "rbs"
-    # TODO: We should skip test file instead of test class/methods
+    # json gem v3 removed JSON additions.
     skip_test_files = %w[
+      test/stdlib/json/JSONBigDecimal_test.rb
+      test/stdlib/json/JSONComplex_test.rb
+      test/stdlib/json/JSONDateTime_test.rb
+      test/stdlib/json/JSONDate_test.rb
+      test/stdlib/json/JSONException_test.rb
+      test/stdlib/json/JSONOpenStruct_test.rb
+      test/stdlib/json/JSONRange_test.rb
+      test/stdlib/json/JSONRational_test.rb
+      test/stdlib/json/JSONRegexp_test.rb
+      test/stdlib/json/JSONSet_test.rb
+      test/stdlib/json/JSONStruct_test.rb
+      test/stdlib/json/JSONSymbol_test.rb
+      test/stdlib/json/JSONTime_test.rb
     ]
 
     skip_test_files.each do |file|
@@ -81,7 +128,23 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
     test_command.concat %W[stdlib_test validate RBS_SKIP_TESTS=#{rbs_skip_tests.join(File::PATH_SEPARATOR)} SKIP_RBS_VALIDATION=true]
     first_timeout *= 3
 
+  when "rexml"
+    test_command[-2..-1] = %w[test/run.rb --ignore-name=/linear_performance/]
+
+  when "fiddle"
+    # When ZJIT is compile-happy, skip Fiddle::TestFunction#test_no_memory_leak
+    # since compiling uses more memory which the test does not expect.
+    # Similarly, it's extremely flaky when running with `parse.y` for unclear reasons,
+    # but closer inspection didn't reveal any leak.
+    # It's a bit of a badly crafted test, and is likely missing some warmup to stabilize the memory usage.
+    if run_opts&.include?("--zjit-call-threshold=1") || run_opts&.include?('--parser=parse.y')
+      test_command[-2..-1] = %w[test/run.rb --ignore-name=/\Atest_no_memory_leak\z/]
+    end
+
   when "debug"
+    # needs pty
+    next unless /mswin|mingw/ =~ RUBY_PLATFORM
+
     # Since debug gem requires debug.so in child processes without
     # activating the gem, we preset necessary paths in RUBYLIB
     # environment variable.
@@ -94,6 +157,8 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
 
   when "csv"
     first_timeout = 30
+    test_command = [ruby, *run_opts, "-C", "#{gem_dir}/src/#{gem}", "run-test.rb"]
+    test_command << "--ignore-name=/ractor/" if /mswin|mingw/ =~ RUBY_PLATFORM
 
   when "win32ole"
     next unless /mswin|mingw/ =~ RUBY_PLATFORM
@@ -117,6 +182,10 @@ trap(:INT) do
     Process.kill("#{signal_prefix}INT", pid) rescue nil
   end
 end
+
+heavy_tests = %w[rbs debug reline win32ole irb drb net-imap rdoc typeprof racc rake]
+others = heavy_tests.size
+jobs.sort_by! {|job| heavy_tests.index(job[:gem]) || (others += 1)}
 
 results = Array.new(jobs.size)
 queue = Queue.new

@@ -551,7 +551,16 @@ module Prism
 
     #: (Array[Symbol]? keys) -> Hash[Symbol, untyped]
     def deconstruct_keys(keys) # :nodoc:
-      { <%= (["node_id: node_id", "location: location"] + node.fields.map { |field| "#{field.name}: #{field.name}" }).join(", ") %> }
+      <%- deconstruct = [:node_id, :location, *node.fields.map { |field| field.name.to_sym }, *node.fields.select { |field| field.is_a?(Prism::Template::LocationField) || field.is_a?(Prism::Template::OptionalLocationField) }.map { |field| field.name.delete_suffix("_loc").to_sym }].uniq -%>
+      (keys || %i[<%= deconstruct.join(" ") %>]).each_with_object(
+        {} #: Hash[Symbol, untyped]
+      ) do |key, deconstructed|
+        case key
+        <%- deconstruct.each do |key| -%>
+        when <%= "%-24s then" % [key.inspect] %> deconstructed[<%= key.inspect %>] = self.<%= key %>
+        <%- end -%>
+        end
+      end
     end
 
     # See `Node#type`.

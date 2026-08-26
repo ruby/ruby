@@ -6,14 +6,19 @@ module Bundler
       HTTP_NON_RETRYABLE_ERRORS = [
         SocketError,
         Errno::EADDRNOTAVAIL,
+        Errno::ECONNREFUSED,
+        Errno::EHOSTDOWN,
+        Errno::EHOSTUNREACH,
         Errno::ENETDOWN,
         Errno::ENETUNREACH,
-        Gem::Net::HTTP::Persistent::Error,
-        Errno::EHOSTUNREACH,
       ].freeze
 
+      # The vendored net-http raises Gem::Timeout::Error, but when Gem::Net is
+      # the real Net (hosts without a vendored net-http), timeouts are plain
+      # Timeout::Error subclasses instead.
       HTTP_RETRYABLE_ERRORS = [
         Gem::Timeout::Error,
+        *(::Timeout::Error if defined?(::Timeout::Error)),
         EOFError,
         Errno::EINVAL,
         Errno::ECONNRESET,
@@ -25,11 +30,11 @@ module Bundler
         Zlib::BufError,
       ].freeze
 
-      attr_reader :connection
+      attr_reader :connections
       attr_reader :redirect_limit
 
-      def initialize(connection, redirect_limit)
-        @connection = connection
+      def initialize(connections, redirect_limit)
+        @connections = connections
         @redirect_limit = redirect_limit
       end
 
@@ -79,23 +84,25 @@ module Bundler
         filtered_uri = URICredentialsFilter.credential_filtered_uri(uri)
 
         Bundler.ui.debug "HTTP GET #{filtered_uri}"
-        req = Gem::Net::HTTP::Get.new uri.request_uri, headers
-        if uri.user
-          user = CGI.unescape(uri.user)
-          password = uri.password ? CGI.unescape(uri.password) : nil
-          req.basic_auth(user, password)
+        connections.request(uri, headers)
+      rescue Gem::RemoteFetcher::FetchError => e
+        Bundler.ui.trace e
+
+        case e.message
+        when /certificate verify failed/
+          raise CertificateFailureError.new(uri)
+        when /host is down|host down/i
+          raise network_down_error(uri, filtered_uri)
+        else
+          raise HTTPError, "Network error while fetching #{filtered_uri}" \
+              " (#{e})"
         end
-        connection.request(uri, req)
       rescue OpenSSL::SSL::SSLError
         raise CertificateFailureError.new(uri)
       rescue *HTTP_NON_RETRYABLE_ERRORS => e
         Bundler.ui.trace e
 
-        host = uri.host
-        host_port = "#{host}:#{uri.port}"
-        host = host_port if filtered_uri.to_s.include?(host_port)
-        raise NetworkDownError, "Could not reach host #{host}. Check your network " \
-          "connection and try again."
+        raise network_down_error(uri, filtered_uri)
       rescue *HTTP_RETRYABLE_ERRORS => e
         Bundler.ui.trace e
 
@@ -104,6 +111,14 @@ module Bundler
       end
 
       private
+
+      def network_down_error(uri, filtered_uri)
+        host = uri.host
+        host_port = "#{host}:#{uri.port}"
+        host = host_port if filtered_uri.to_s.include?(host_port)
+        NetworkDownError.new("Could not reach host #{host}. Check your network " \
+          "connection and try again.")
+      end
 
       def validate_uri_scheme!(uri)
         return if /\Ahttps?\z/.match?(uri.scheme)

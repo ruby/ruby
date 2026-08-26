@@ -256,6 +256,110 @@ class TestCoverage < Test::Unit::TestCase
     end;
   end
 
+def test_branch_coverage_for_eval_repeated
+    assert_in_out_err(["-W0", *ARGV], <<-"end;", ["2", "2", "[[0, 1], [0, 2]]"], [])
+      Coverage.start(eval: true, branches: true)
+
+      code = <<-RUBY
+      def foo(x)
+        x ? 1 : 2
+      end
+      RUBY
+
+      # Evaluating different code at the same path yields separate entries
+      eval(code, TOPLEVEL_BINDING, "test.rb", 1)
+      eval(code.sub("foo", "bar"), TOPLEVEL_BINDING, "test.rb", 10)
+      foo(true)
+      r = Coverage.peek_result["test.rb"][:branches]
+      p r.size
+
+      # Re-evaluating the very same code accumulates the counters instead of
+      # adding duplicated entries
+      eval(code, TOPLEVEL_BINDING, "test.rb", 1)
+      foo(true)
+      bar(false)
+      r = Coverage.peek_result["test.rb"][:branches]
+      p r.size
+      p r.values.map {|targets| targets.values.sort }.sort
+    end;
+  end
+
+  def test_peek_result_branches_after_eval_adds_branches
+    assert_in_out_err(ARGV, <<-"end;", ["1", "1", "2", "3", "1", "false"], [])
+      Coverage.start(eval: true, branches: true)
+
+      sum = ->(r) { r.sum {|_, targets| targets.sum {|_, count| count } } }
+
+      eval(<<-RUBY, TOPLEVEL_BINDING, "test.rb", 1)
+      def foo(x)
+        x ? 1 : 2
+      end
+      RUBY
+
+      foo(true)
+      r1 = Coverage.peek_result["test.rb"][:branches]
+      p r1.size
+      p sum[r1]
+
+      # A later eval with the same path adds new branches to the same file,
+      # and the cached result template must be refreshed accordingly
+      eval(<<-RUBY, TOPLEVEL_BINDING, "test.rb", 10)
+      def bar(x)
+        x ? 1 : 2
+      end
+      RUBY
+
+      foo(true)
+      bar(false)
+      r2 = Coverage.peek_result["test.rb"][:branches]
+      p r2.size
+      p sum[r2]
+      # the earlier snapshot must not be affected
+      p sum[r1]
+      p r1.equal?(r2)
+    end;
+  end
+
+  def test_peek_result_methods_after_eval_adds_methods
+    assert_in_out_err(["-W0", *ARGV], <<-"end;", ["1", "2", "1", "3", "1", "false"], [])
+      Coverage.start(eval: true, methods: true)
+
+      eval(<<-RUBY, TOPLEVEL_BINDING, "test.rb", 1)
+      class Foo
+        def foo; end
+      end
+      RUBY
+
+      Foo.new.foo
+      r1 = Coverage.peek_result["test.rb"][:methods]
+      p r1.size
+
+      # A later eval with the same path adds new methods to the same file,
+      # and redefining a method at the same location shares the key
+      eval(<<-RUBY, TOPLEVEL_BINDING, "test.rb", 10)
+      class Foo
+        def bar; end
+      end
+      RUBY
+      eval(<<-RUBY, TOPLEVEL_BINDING, "test.rb", 1)
+      class Foo
+        def foo; end
+      end
+      RUBY
+
+      Foo.new.foo
+      Foo.new.foo
+      Foo.new.bar
+      r2 = Coverage.peek_result["test.rb"][:methods]
+      p r2.size
+      # the earlier snapshot must not be affected
+      p r1.size
+      p r2[[Foo, :foo, 2, 8, 2, 20]]
+      p r2[[Foo, :bar, 11, 8, 11, 20]]
+      p r1.equal?(r2)
+    end;
+  end
+
   def test_eval_negative_lineno
     assert_in_out_err(ARGV, <<-"end;", ["[1, 1, 1]"], [])
       Coverage.start(eval: true, lines: true)
@@ -580,6 +684,45 @@ class TestCoverage < Test::Unit::TestCase
       foo
       foo
       bar
+    end;
+  end
+
+  def test_method_coverage_for_redefinition
+    # [Bug #22179] A method shadowed by a redefinition (and never called) must
+    # not disappear from the result even when GC collects its method entry.
+    result = {
+      :methods => {
+        [Object, :foo, 1, 0, 2, 3] => 0,
+        [Object, :foo, 3, 0, 4, 3] => 1,
+      }
+    }
+    assert_coverage(<<~"end;", { methods: true }, result)
+      def foo
+      end
+      def foo
+      end
+      foo
+      GC.start
+      GC.start
+    end;
+  end
+
+  def test_method_coverage_for_removed_method
+    # [Bug #22179] A method removed by remove_method (and never called) must not
+    # disappear from the result even when GC collects its method entry.
+    result = {
+      :methods => {
+        [Object, :foo, 1, 0, 2, 3] => 0,
+      }
+    }
+    assert_coverage(<<~"end;", { methods: true }, result)
+      def foo
+      end
+      class Object
+        remove_method(:foo)
+      end
+      GC.start
+      GC.start
     end;
   end
 

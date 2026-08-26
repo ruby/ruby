@@ -287,6 +287,56 @@ class TestMemoryView < Test::Unit::TestCase
     assert_nil(memory_view_info)
   end
 
+  def test_rb_memory_view_is_row_major_contiguous
+    es = MemoryViewTestUtils::ExportableString.new("ruby")
+    assert_true(MemoryViewTestUtils.is_row_major_contiguous(es))
+
+    item_size = sizeof(:long)
+    buf1 = [ 1, 2 ].pack("l!*")
+    shape1 = [1, 1, 2]
+    strides1 = [2*item_size, 2*item_size, item_size]
+    mv1 = MemoryViewTestUtils::MultiDimensionalView.new(buf1, "l!", shape1, strides1)
+    assert_true(MemoryViewTestUtils.is_row_major_contiguous(mv1))
+
+    buf2 = [ 1, 2, 3, 4,
+             5, 6, 7, 8,
+             9, 10, 11, 12 ].pack("l!*")
+    shape2 = [3, 4]
+    mv2 = MemoryViewTestUtils::MultiDimensionalView.new(buf2, "l!", shape2, nil)
+    assert_true(MemoryViewTestUtils.is_row_major_contiguous(mv2))
+  end
+
+  def test_rb_memory_view_is_column_major_contiguous
+    es = MemoryViewTestUtils::ExportableString.new("ruby")
+    assert_true(MemoryViewTestUtils.is_column_major_contiguous(es))
+
+    item_size = sizeof(:long)
+    buf1 = [ 1, 2 ].pack("l!*")
+    shape1 = [1, 1, 2]
+    strides1 = [item_size, item_size, item_size]
+    mv1 = MemoryViewTestUtils::MultiDimensionalView.new(buf1, "l!", shape1, strides1)
+    assert_true(MemoryViewTestUtils.is_column_major_contiguous(mv1))
+
+    buf2 = [ 1, 2, 3, 4,
+             5, 6, 7, 8,
+             9, 10, 11, 12 ].pack("l!*")
+    shape2 = [3, 4]
+    mv2 = MemoryViewTestUtils::MultiDimensionalView.new(buf2, "l!", shape2, nil)
+    assert_false(MemoryViewTestUtils.is_column_major_contiguous(mv2))
+
+    buf3 = buf2
+    shape3 = shape2
+    strides3 = [item_size, 3*item_size]
+    mv3 = MemoryViewTestUtils::MultiDimensionalView.new(buf3, "l!", shape3, strides3)
+    assert_true(MemoryViewTestUtils.is_column_major_contiguous(mv3))
+
+    buf4 = [ 1, 2, 3 ].pack("l!*")
+    shape4 = shape1
+    strides4 = [item_size, item_size, 2*item_size]
+    mv4 = MemoryViewTestUtils::MultiDimensionalView.new(buf4, "l!", shape4, strides4)
+    assert_false(MemoryViewTestUtils.is_column_major_contiguous(mv4))
+  end
+
   def test_rb_memory_view_fill_contiguous_strides
     row_major_strides = MemoryViewTestUtils.fill_contiguous_strides(3, 8, [2, 3, 4], true)
     assert_equal([96, 32, 8],

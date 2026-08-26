@@ -231,6 +231,16 @@ VALUE mOSSL;
  */
 VALUE eOSSLError;
 
+void
+ossl_want_uninitialized(VALUE self, const rb_data_type_t *type)
+{
+    if (rb_check_typeddata(self, type)) {
+        rb_raise(rb_eTypeError, "%"PRIsVALUE" already initialized",
+                 rb_obj_class(self));
+    }
+    rb_check_frozen(self);
+}
+
 /*
  * Convert to DER string
  */
@@ -744,7 +754,7 @@ ossl_crypto_fixed_length_secure_compare(VALUE dummy, VALUE str1, VALUE str2)
  *   cert.not_before = Time.now
  *   cert.not_after = Time.now + 3600
  *
- *   cert.public_key = key.public_key
+ *   cert.public_key = key
  *   cert.subject = name
  *
  * === Certificate Extensions
@@ -826,7 +836,7 @@ ossl_crypto_fixed_length_secure_compare(VALUE dummy, VALUE str1, VALUE str2)
  *   ca_cert.not_before = Time.now
  *   ca_cert.not_after = Time.now + 86400
  *
- *   ca_cert.public_key = ca_key.public_key
+ *   ca_cert.public_key = ca_key
  *   ca_cert.subject = ca_name
  *   ca_cert.issuer = ca_name
  *
@@ -868,7 +878,7 @@ ossl_crypto_fixed_length_secure_compare(VALUE dummy, VALUE str1, VALUE str2)
  *   csr = OpenSSL::X509::Request.new
  *   csr.version = 0
  *   csr.subject = name
- *   csr.public_key = key.public_key
+ *   csr.public_key = key
  *   csr.sign key, OpenSSL::Digest.new('SHA1')
  *
  * A CSR is saved to disk and sent to the CA for signing.

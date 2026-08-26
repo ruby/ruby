@@ -1,0 +1,215 @@
+#! /usr/bin/env ruby
+#
+#  This is a standalone script intended to run as part of the CI test suite.
+#
+#  It inspects the contents of a gem file -- both the files and the gemspec -- to ensure we're
+#  packaging what we expect, and that we're not packaging anything we don't expect.
+#
+require "bundler/inline"
+
+gemfile do
+  source "https://rubygems.org"
+  gem "minitest"
+  gem "minitest-reporters"
+end
+
+require "yaml"
+
+def usage_and_exit(message = nil)
+  puts "ERROR: #{message}" if message
+  puts "USAGE: #{File.basename(__FILE__)} <gemfile> [options]"
+  exit(1)
+end
+
+usage_and_exit if ARGV.include?("-h")
+usage_and_exit unless (gemfile = ARGV[0])
+usage_and_exit("#{gemfile} does not exist") unless File.file?(gemfile)
+usage_and_exit("#{gemfile} is not a gem") unless /\.gem$/.match?(gemfile)
+gemfile = File.expand_path(gemfile)
+
+gemfile_contents = Dir.mktmpdir do |dir|
+  Dir.chdir(dir) do
+    unless system("tar", "-xf", gemfile, "data.tar.gz")
+      raise "could not unpack gem #{gemfile}"
+    end
+
+    `tar -ztf data.tar.gz`.split("\n")
+  end
+end
+
+gemspec = Dir.mktmpdir do |dir|
+  Dir.chdir(dir) do
+    unless system("tar", "-xf", gemfile, "metadata.gz")
+      raise "could not unpack gem #{gemfile}"
+    end
+
+    YAML.unsafe_load(`gunzip -c metadata.gz`)
+  end
+end
+
+if ARGV.include?("-v")
+  puts "---------- gemfile contents ----------"
+  puts gemfile_contents
+  puts
+  puts "---------- gemspec ----------"
+  puts gemspec.to_ruby
+  puts
+end
+
+require "minitest/autorun"
+require "minitest/reporters"
+Minitest::Reporters.use!([Minitest::Reporters::SpecReporter.new])
+
+puts "Testing '#{gemfile}' (#{gemspec.platform})"
+describe File.basename(gemfile) do
+  let(:native_ruby_versions) { ["3.3", "3.4", "4.0"] }
+
+  describe "setup" do
+    it "gemfile contains some files" do
+      actual = gemfile_contents.length
+      assert_operator(actual, :>, 10, "expected gemfile to contain more than #{actual} files")
+    end
+
+    it "gemspec is a Gem::Specification" do
+      assert_equal(Gem::Specification, gemspec.class)
+    end
+  end
+
+  describe "all platforms" do
+    ["lib"].each do |dir|
+      it "contains every ruby file in #{dir}/" do
+        committed_files = `git ls-files #{dir}`.split("\n").grep(/\.rb$/)
+        generated_files = `git ls-files templates/lib/prism/*.rb.erb`.split("\n").map { |f| f.delete_prefix("templates/").delete_suffix(".erb") }
+        expected_files = Set.new(committed_files + generated_files)
+
+        skip "looks like this isn't a git repository" if expected_files.empty?
+
+        actual_files = Set.new(gemfile_contents.select { |f| f.start_with?("#{dir}/") }.grep(/\.rb$/))
+        assert_equal(expected_files, actual_files)
+      end
+    end
+
+    ["test"].each do |dir|
+      it "does not contain files from #{dir}/" do
+        actual = gemfile_contents.select { |f| f.start_with?("#{dir}/") }.grep(/\.rb$/)
+        assert_empty(actual)
+      end
+    end
+
+    it "does not contain the Gemfile" do
+      refute_includes(gemfile_contents, "Gemfile")
+    end
+  end
+
+  describe "ruby platform" do
+    before { skip unless gemspec.platform == Gem::Platform::RUBY }
+
+    it "contains C source files in ext/" do
+      assert_operator(gemfile_contents.count { |f| File.fnmatch?("ext/**/*.c", f) }, :>=, 2)
+    end
+
+    it "contains header files" do
+      assert_operator(gemfile_contents.count { |f| File.fnmatch?("ext/**/*.h", f) }, :>=, 1)
+      assert_operator(gemfile_contents.count { |f| File.fnmatch?("include/**/*.h", f) }, :>=, 20)
+    end
+
+    it "contains C source files in src/" do
+      assert_operator(gemfile_contents.count { |f| File.fnmatch?("src/*.c", f) }, :>=, 10)
+    end
+
+    it "contains extconf.rb" do
+      assert_includes(gemfile_contents, "ext/prism/extconf.rb")
+    end
+
+    it "has extensions set" do
+      assert_includes(gemspec.extensions, "ext/prism/extconf.rb")
+    end
+
+    it "sets required_ruby_version appropriately" do
+      assert(
+        gemspec.required_ruby_version.satisfied_by?(Gem::Version.new("2.7")),
+        "required_ruby_version='#{gemspec.required_ruby_version}' should support ruby 2.7"
+      )
+      native_ruby_versions.each do |v|
+        assert(
+          gemspec.required_ruby_version.satisfied_by?(Gem::Version.new(v)),
+          "required_ruby_version='#{gemspec.required_ruby_version}' should support ruby #{v}"
+        )
+      end
+    end
+  end
+
+  describe "native platform" do
+    before { skip unless gemspec.platform.is_a?(Gem::Platform) && gemspec.platform.cpu }
+
+    # aarch64-mingw-ucrt only has cross-rubies for 3.4+, all other platforms have all versions
+    let(:expected_ruby_versions) do
+      if gemspec.platform.to_s == "aarch64-mingw-ucrt"
+        native_ruby_versions.reject { |v| v == "3.3" }
+      else
+        native_ruby_versions
+      end
+    end
+
+    it "contains expected shared library files" do
+      expected_ruby_versions.each do |version|
+        actual = gemfile_contents.find do |p|
+          File.fnmatch?("lib/prism/#{version}/prism.{so,bundle}", p, File::FNM_EXTGLOB)
+        end
+        assert(actual, "expected to find shared library file for ruby #{version}")
+      end
+
+      actual = gemfile_contents.find do |p|
+        File.fnmatch?("lib/prism/prism.{so,bundle}", p, File::FNM_EXTGLOB)
+      end
+      refute(actual, "did not expect to find shared library file in lib/prism")
+
+      actual = gemfile_contents.find_all do |p|
+        File.fnmatch?("lib/prism/**/*.{so,bundle}", p, File::FNM_EXTGLOB)
+      end
+      assert_equal(
+        expected_ruby_versions.length,
+        actual.length,
+        "expected exactly #{expected_ruby_versions.length} shared library files, found: #{actual.inspect}"
+      )
+    end
+
+    it "has extensions cleared" do
+      assert_empty(gemspec.extensions)
+    end
+
+    it "sets required_ruby_version appropriately" do
+      expected_ruby_versions.each do |v|
+        assert(
+          gemspec.required_ruby_version.satisfied_by?(Gem::Version.new(v)),
+          "required_ruby_version='#{gemspec.required_ruby_version}' should support ruby #{v}"
+        )
+      end
+
+      # verify unsupported versions are excluded
+      unsupported_ruby_versions = native_ruby_versions - expected_ruby_versions
+      unsupported_ruby_versions.each do |v|
+        refute(
+          gemspec.required_ruby_version.satisfied_by?(Gem::Version.new(v)),
+          "required_ruby_version='#{gemspec.required_ruby_version}' should NOT support ruby #{v}"
+        )
+      end
+
+      refute(
+        gemspec.required_ruby_version.satisfied_by?(Gem::Version.new("2.7")),
+        "required_ruby_version='#{gemspec.required_ruby_version}' should NOT support ruby 2.7"
+      )
+
+      refute(
+        gemspec.required_ruby_version.satisfied_by?(Gem::Version.new("3.2")),
+        "required_ruby_version='#{gemspec.required_ruby_version}' should NOT support ruby 3.2"
+      )
+
+      # verify the upper bound is set (required_ruby_version should not be open-ended)
+      refute(
+        gemspec.required_ruby_version.satisfied_by?(Gem::Version.new("9.9")),
+        "required_ruby_version='#{gemspec.required_ruby_version}' should have an upper bound"
+      )
+    end
+  end
+end

@@ -125,4 +125,10 @@ describe :basicobject_send, shared: true do
 
     c2.new.send(@method, :foo, *[[]]).should == %i[m1 m2]
   end
+
+  it "can be called reflectively" do
+    obj = Object.new
+    obj.method(@method).call(:itself).should.equal?(obj)
+    obj.method(@method).to_proc.call(:itself).should.equal?(obj)
+  end
 end

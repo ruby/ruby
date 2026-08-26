@@ -225,3 +225,12 @@ end
     Ripper::Lexer::State.new(Ripper.const_get(name))
   end
 end if ripper_test
+
+class TestRipper::DSL < Test::Unit::TestCase
+  def test_array_elements_are_values
+    require_relative "../../ext/ripper/tools/dsl"
+
+    code = DSL.line?("/*% ripper: [$:$, 0] %*/").generate
+    assert_include(code, "rb_ary_new_from_args(2, (VALUE)0|(p->s_lvalue), (VALUE)0|(0))")
+  end
+end if ripper_test

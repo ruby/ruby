@@ -45,6 +45,7 @@
 #include "internal.h"
 #include "internal/cmdlineopt.h"
 #include "internal/cont.h"
+#include "internal/coverage.h"
 #include "internal/error.h"
 #include "internal/file.h"
 #include "internal/inits.h"
@@ -523,7 +524,7 @@ expand_include_path(VALUE path)
     return rb_file_expand_path(path, Qnil);
 }
 
-void
+static void
 ruby_incpush_expand(const char *path)
 {
     ruby_push_include(path, expand_include_path);
@@ -2227,7 +2228,7 @@ prism_script(ruby_cmdline_options_t *opt, pm_parse_result_t *result)
     const bool read_stdin = (strcmp(opt->script, "-") == 0);
 
     if (read_stdin) {
-        pm_options_encoding_set(options, rb_enc_name(rb_locale_encoding()));
+        pm_options_encoding_set(options, rb_enc_name(IF_UTF8_PATH(rb_utf8_encoding(), rb_locale_encoding())));
     }
     if (opt->src.enc.name != 0) {
         pm_options_encoding_set(options, StringValueCStr(opt->src.enc.name));
@@ -2844,7 +2845,7 @@ load_file_internal(VALUE argp_v)
         enc = rb_enc_from_index(opt->src.enc.index);
     }
     else if (f == rb_stdin) {
-        enc = rb_locale_encoding();
+        enc = IF_UTF8_PATH(rb_utf8_encoding(), rb_locale_encoding());
     }
     else {
         enc = rb_utf8_encoding();

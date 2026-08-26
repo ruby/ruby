@@ -146,7 +146,8 @@ ZJIT options:
   --zjit-stats[=quiet]
                   Enable collecting ZJIT statistics (=quiet to suppress output).
   --zjit-disable  Disable ZJIT for lazily enabling it with RubyVM::ZJIT.enable.
-  --zjit-perf     Dump ISEQ symbols into /tmp/perf-{}.map for Linux perf.
+  --zjit-perf[=iseq|hir]
+                  Dump symbols for Linux perf /tmp/perf-{}.map (default: iseq).
   --zjit-log-compiled-iseqs=path
                   Log compiled ISEQs to the file. The file will be truncated.
   --zjit-trace-exits[=counter]
@@ -155,6 +156,59 @@ ZJIT options:
                   Frequency at which to record side exits. Must be `usize`.
 $
 ```
+
+### Profiling with Linux perf
+
+`--zjit-perf` allows you to profile JIT-ed methods along with other native functions using Linux perf.
+When you run Ruby with `perf record`, perf looks up `/tmp/perf-{pid}.map` to resolve symbols in JIT code,
+and this option lets ZJIT write ISEQ symbols into that file.
+
+#### Call graph
+
+Here's an example way to use this option with [Firefox Profiler](https://profiler.firefox.com)
+(See also: [Profiling with Linux perf](https://profiler.firefox.com/docs/#/./guide-perf-profiling)):
+
+```bash
+# Compile the interpreter with frame pointers enabled
+./configure --enable-zjit --prefix=$HOME/.rubies/ruby-zjit --disable-install-doc cflags=-fno-omit-frame-pointer
+make -j && make install
+
+# [Optional] Allow running perf without sudo
+echo 0 | sudo tee /proc/sys/kernel/kptr_restrict
+echo -1 | sudo tee /proc/sys/kernel/perf_event_paranoid
+
+# Profile Ruby with --zjit-perf
+cd ../ruby-bench
+PERF="record --call-graph fp" ruby --zjit-perf -Iharness-perf benchmarks/liquid-render/benchmark.rb
+
+# View results on Firefox Profiler https://profiler.firefox.com.
+# Create /tmp/test.perf as below and upload it using "Load a profile from file".
+perf script --fields +pid > /tmp/test.perf
+```
+
+#### ZJIT HIR
+
+You can also profile the number of cycles consumed by code generated from each kind of HIR instruction.
+
+```bash
+# Install perf
+apt-get install linux-tools-common linux-tools-generic linux-tools-`uname -r`
+
+# [Optional] Allow running perf without sudo
+echo 0 | sudo tee /proc/sys/kernel/kptr_restrict
+echo -1 | sudo tee /proc/sys/kernel/perf_event_paranoid
+
+# Profile Ruby with --zjit-perf=hir
+cd ../ruby-bench
+PERF=record ruby --zjit-perf=hir -Iharness-perf benchmarks/lobsters/benchmark.rb
+
+# Aggregate results
+perf script > /tmp/perf.txt
+../ruby/misc/jit_perf.rb /tmp/perf.txt
+```
+
+This aggregation script reads the text output from `perf script`, so it does not require `perf`
+to be built with scripting support.
 
 ### Source level documentation
 
@@ -233,27 +287,27 @@ cd zjit && cargo insta review
 
 Test changes will be reviewed alongside code changes.
 
-### Running integration tests
+### Running smoke tests
 
-This command runs Ruby execution tests.
-
-```bash
-make test-all TESTS="test/ruby/test_zjit.rb"
-```
-
-You can also run a single test case by matching the method name:
-
-```bash
-make test-all TESTS="test/ruby/test_zjit.rb -n TestZJIT#test_putobject"
-```
-
-### Running all tests
-
-Runs both `make zjit-test` and `test/ruby/test_zjit.rb`:
+Runs both `make zjit-test` and `test/ruby/test_zjit_cli.rb`:
 
 ```bash
 make zjit-check
 ```
+
+### Integration testing
+
+A thorough test run will want to enable ZJIT on Ruby workloads. Some
+test suites written in Ruby in this repository accepts the `RUN_OPTS`
+Make macro for passing ruby(1) command-line arguments:
+
+```bash
+make test-all RUN_OPTS='--zjit-call-threshold=2'
+make btest RUN_OPTS='--zjit-call-threshold=1'
+```
+
+See [Testing Ruby](rdoc-ref:contributing/testing_ruby.md) for a list of
+test suites.
 
 ## Statistics Collection
 
@@ -271,6 +325,13 @@ Collect stats without printing (access via `RubyVM::ZJIT.stats` in Ruby):
 
 ```bash
 ./miniruby --zjit-stats=quiet script.rb
+```
+
+Dump stats to a file. Name the file with a `.json` extension to write the
+stats as pretty-printed JSON instead of the human-readable text format:
+
+```bash
+ruby --zjit-stats=stats.json script.rb
 ```
 
 ### Accessing Stats in Ruby

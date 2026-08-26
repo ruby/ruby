@@ -2,8 +2,10 @@ require 'test/unit'
 require "securerandom"
 
 class TestObjectId < Test::Unit::TestCase
+  SomeClass = Class.new
+
   def setup
-    @obj = Object.new
+    @obj = SomeClass.new
   end
 
   def test_dup_new_id

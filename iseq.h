@@ -10,6 +10,7 @@
   Copyright (C) 2004-2008 Koichi Sasada
 
 **********************************************************************/
+#include "internal/coverage.h"
 #include "internal/gc.h"
 #include "shape.h"
 #include "vm_core.h"
@@ -25,6 +26,26 @@ RUBY_EXTERN const int ruby_api_version[];
 #define ISEQ_MBITS_SET_P(buf, i) ((buf[(i) / ISEQ_MBITS_BITLENGTH] >> ((i) % ISEQ_MBITS_BITLENGTH)) & 0x1)
 #define ISEQ_MBITS_BUFLEN(size) roomof(size, ISEQ_MBITS_BITLENGTH)
 
+#define ISEQ_LVAR_STATE_BITS 2
+#define ISEQ_LVAR_STATES_PER_BYTE (CHAR_BIT / ISEQ_LVAR_STATE_BITS)
+#define ISEQ_LVAR_STATES_BUFLEN(size) roomof(size, ISEQ_LVAR_STATES_PER_BYTE)
+STATIC_ASSERT(lvar_state_fits_in_iseq_lvar_state_bits, lvar_reassigned < (1 << ISEQ_LVAR_STATE_BITS));
+
+static inline enum lvar_state
+iseq_lvar_state_get(const uint8_t *buf, unsigned int i)
+{
+    const unsigned int shift = (i % ISEQ_LVAR_STATES_PER_BYTE) * ISEQ_LVAR_STATE_BITS;
+    return (enum lvar_state)((buf[i / ISEQ_LVAR_STATES_PER_BYTE] >> shift) & ((1 << ISEQ_LVAR_STATE_BITS) - 1));
+}
+
+static inline void
+iseq_lvar_state_set(uint8_t *buf, unsigned int i, enum lvar_state state)
+{
+    uint8_t *const byte = &buf[i / ISEQ_LVAR_STATES_PER_BYTE];
+    const unsigned int shift = (i % ISEQ_LVAR_STATES_PER_BYTE) * ISEQ_LVAR_STATE_BITS;
+    *byte = (*byte & ~(((1 << ISEQ_LVAR_STATE_BITS) - 1) << shift)) | ((uint8_t)state << shift);
+}
+
 #ifndef USE_ISEQ_NODE_ID
 #define USE_ISEQ_NODE_ID 1
 #endif
@@ -37,49 +58,86 @@ typedef void (*rb_iseq_callback)(const rb_iseq_t *, void *);
 
 extern const ID rb_iseq_shared_exc_local_tbl[];
 
-#define ISEQ_COVERAGE(iseq)           ISEQ_BODY(iseq)->variable.coverage
-#define ISEQ_COVERAGE_SET(iseq, cov)  RB_OBJ_WRITE(iseq, &ISEQ_BODY(iseq)->variable.coverage, cov)
+/* Ensure body->variable is allocated, returning the struct. */
+struct rb_iseq_variable *rb_iseq_variable_ensure(rb_iseq_t *iseq);
+
+static inline struct rb_iseq_variable *
+ISEQ_BODY_VARIABLE(const rb_iseq_t *iseq)
+{
+    return ISEQ_BODY(iseq)->variable;
+}
+
+/* NULL-safe read accessors for body->variable fields. */
+static inline VALUE
+ISEQ_BODY_VARIABLE_SCRIPT_LINES(const rb_iseq_t *iseq)
+{
+    struct rb_iseq_variable *v = ISEQ_BODY_VARIABLE(iseq);
+    return v ? v->script_lines : Qnil;
+}
+
+static inline VALUE
+ISEQ_BODY_VARIABLE_COVERAGE(const rb_iseq_t *iseq)
+{
+    struct rb_iseq_variable *v = ISEQ_BODY_VARIABLE(iseq);
+    return v ? v->coverage : Qfalse;
+}
+
+static inline VALUE
+ISEQ_BODY_VARIABLE_PC2BRANCHINDEX(const rb_iseq_t *iseq)
+{
+    struct rb_iseq_variable *v = ISEQ_BODY_VARIABLE(iseq);
+    return v ? v->pc2branchindex : Qfalse;
+}
+
+static inline rb_snum_t
+ISEQ_BODY_VARIABLE_FLIP_CNT(const rb_iseq_t *iseq)
+{
+    struct rb_iseq_variable *v = ISEQ_BODY_VARIABLE(iseq);
+    return v ? v->flip_count : 0;
+}
+
+static inline VALUE *
+ISEQ_BODY_VARIABLE_ORIGINAL_ISEQ(const rb_iseq_t *iseq)
+{
+    struct rb_iseq_variable *v = ISEQ_BODY_VARIABLE(iseq);
+    return v ? v->original_iseq : NULL;
+}
+
+/* Write accessors (lazily allocate variable as needed). */
+void rb_iseq_coverage_set(rb_iseq_t *iseq, VALUE cov);
+void rb_iseq_pc2branchindex_set(rb_iseq_t *iseq, VALUE h);
+rb_snum_t rb_iseq_flip_cnt_increment(const rb_iseq_t *iseq);
+
+/* Short macros for reading variable fields. */
+#define ISEQ_VARIABLE(iseq)           ISEQ_BODY_VARIABLE(iseq)
+#define ISEQ_SCRIPT_LINES(iseq)       ISEQ_BODY_VARIABLE_SCRIPT_LINES(iseq)
+#define ISEQ_COVERAGE(iseq)           ISEQ_BODY_VARIABLE_COVERAGE(iseq)
+#define ISEQ_COVERAGE_SET(iseq, cov)  rb_iseq_coverage_set(iseq, cov)
 #define ISEQ_LINE_COVERAGE(iseq)      RARRAY_AREF(ISEQ_COVERAGE(iseq), COVERAGE_INDEX_LINES)
 #define ISEQ_BRANCH_COVERAGE(iseq)    RARRAY_AREF(ISEQ_COVERAGE(iseq), COVERAGE_INDEX_BRANCHES)
 
-#define ISEQ_PC2BRANCHINDEX(iseq)         ISEQ_BODY(iseq)->variable.pc2branchindex
-#define ISEQ_PC2BRANCHINDEX_SET(iseq, h)  RB_OBJ_WRITE(iseq, &ISEQ_BODY(iseq)->variable.pc2branchindex, h)
+#define ISEQ_PC2BRANCHINDEX(iseq)       ISEQ_BODY_VARIABLE_PC2BRANCHINDEX(iseq)
+#define ISEQ_PC2BRANCHINDEX_SET(iseq,h) rb_iseq_pc2branchindex_set(iseq, h)
 
-#define ISEQ_FLIP_CNT(iseq) ISEQ_BODY(iseq)->variable.flip_count
+#define ISEQ_FLIP_CNT(iseq)             ISEQ_BODY_VARIABLE_FLIP_CNT(iseq)
+#define ISEQ_FLIP_CNT_INCREMENT(iseq)   rb_iseq_flip_cnt_increment(iseq)
+#define ISEQ_ORIGINAL_ISEQ(iseq)        ISEQ_BODY_VARIABLE_ORIGINAL_ISEQ(iseq)
 
 #define ISEQ_FROZEN_STRING_LITERAL_ENABLED 1
 #define ISEQ_FROZEN_STRING_LITERAL_DISABLED 0
 #define ISEQ_FROZEN_STRING_LITERAL_UNSET -1
 
-static inline rb_snum_t
-ISEQ_FLIP_CNT_INCREMENT(const rb_iseq_t *iseq)
-{
-    rb_snum_t cnt = ISEQ_BODY(iseq)->variable.flip_count;
-    ISEQ_BODY(iseq)->variable.flip_count += 1;
-    return cnt;
-}
-
-static inline VALUE *
-ISEQ_ORIGINAL_ISEQ(const rb_iseq_t *iseq)
-{
-    return ISEQ_BODY(iseq)->variable.original_iseq;
-}
-
 static inline void
 ISEQ_ORIGINAL_ISEQ_CLEAR(const rb_iseq_t *iseq)
 {
-    VALUE *ptr = (VALUE *)ISEQ_BODY(iseq)->variable.original_iseq;
-    if (ptr) {
-        ISEQ_BODY(iseq)->variable.original_iseq = NULL;
-        SIZED_FREE_N(ptr, ISEQ_BODY(iseq)->iseq_size);
+    struct rb_iseq_variable *v = ISEQ_BODY_VARIABLE(iseq);
+    if (v) {
+        VALUE *ptr = v->original_iseq;
+        if (ptr) {
+            v->original_iseq = NULL;
+            SIZED_FREE_N(ptr, ISEQ_BODY(iseq)->iseq_size);
+        }
     }
-}
-
-static inline VALUE *
-ISEQ_ORIGINAL_ISEQ_ALLOC(const rb_iseq_t *iseq, long size)
-{
-    return ISEQ_BODY(iseq)->variable.original_iseq =
-        ALLOC_N(VALUE, size);
 }
 
 #define ISEQ_TRACE_EVENTS (RUBY_EVENT_LINE  | \
@@ -98,6 +156,8 @@ ISEQ_ORIGINAL_ISEQ_ALLOC(const rb_iseq_t *iseq, long size)
 #define ISEQ_NOT_LOADED_YET   IMEMO_FL_USER1
 #define ISEQ_USE_COMPILE_DATA IMEMO_FL_USER2
 #define ISEQ_TRANSLATED       IMEMO_FL_USER3
+/* set on every iseq of a subtree copied for Proc#refined */
+#define ISEQ_REFINED_COPY     IMEMO_FL_USER4
 
 #define ISEQ_EXECUTABLE_P(iseq) (FL_TEST_RAW(((VALUE)iseq), ISEQ_NOT_LOADED_YET | ISEQ_USE_COMPILE_DATA) == 0)
 
@@ -189,6 +249,7 @@ void rb_ibf_load_iseq_complete(rb_iseq_t *iseq);
 const rb_iseq_t *rb_iseq_ibf_load(VALUE str);
 const rb_iseq_t *rb_iseq_ibf_load_bytes(const char *cstr, size_t);
 VALUE rb_iseq_ibf_load_extra_data(VALUE str);
+const rb_iseq_t *rb_iseq_dup_with_independent_caches(const rb_iseq_t *iseq);
 void rb_iseq_init_trace(rb_iseq_t *iseq);
 int rb_iseq_add_local_tracepoint_recursively(const rb_iseq_t *iseq, rb_event_flag_t turnon_events, VALUE tpval, unsigned int target_line, bool target_bmethod);
 int rb_iseq_remove_local_tracepoint_recursively(const rb_iseq_t *iseq, VALUE tpval, rb_ractor_t *r);

@@ -16,9 +16,9 @@ use crate::hir::{self, FieldName};
 
 // Array iteration builtin functions (defined in array.c)
 unsafe extern "C" {
-    fn rb_jit_ary_at_end(ec: EcPtr, self_: VALUE, index: VALUE) -> VALUE;
-    fn rb_jit_ary_at(ec: EcPtr, self_: VALUE, index: VALUE) -> VALUE;
-    fn rb_jit_fixnum_inc(ec: EcPtr, self_: VALUE, num: VALUE) -> VALUE;
+    fn rb_builtin_ary_at_end(ec: EcPtr, self_: VALUE, index: VALUE) -> VALUE;
+    fn rb_builtin_ary_at(ec: EcPtr, self_: VALUE, index: VALUE) -> VALUE;
+    fn rb_builtin_fixnum_inc(ec: EcPtr, self_: VALUE, num: VALUE) -> VALUE;
     fn rb_str_equal(str1: VALUE, str2: VALUE) -> VALUE;
 }
 
@@ -70,6 +70,10 @@ impl Annotations {
     pub fn get_builtin_properties(&self, bf: *const rb_builtin_function) -> Option<FnProperties> {
         let func_ptr = unsafe { (*bf).func_ptr as *mut c_void };
         self.builtin_funcs.get(&func_ptr).copied()
+    }
+
+    pub fn get_builtin_return_type(&self, bf: *const rb_builtin_function) -> Type {
+        self.get_builtin_properties(bf).map(|p| p.return_type).unwrap_or(types::BasicObject)
     }
 }
 
@@ -282,19 +286,20 @@ pub fn init() -> Annotations {
     annotate_builtin!(rb_cFloat, "zero?", types::BoolExact);
     annotate_builtin!(rb_cFloat, "positive?", types::BoolExact);
     annotate_builtin!(rb_cFloat, "negative?", types::BoolExact);
-    annotate_builtin!(rb_mKernel, "Float", types::Float);
-    annotate_builtin!(rb_mKernel, "Integer", types::Integer);
+    annotate_builtin!(rb_mKernel, "Float", types::Float.union(types::NilClass));
+    annotate_builtin!(rb_mKernel, "Integer", types::Integer.union(types::NilClass));
     annotate_builtin!(rb_mKernel, "class", inline_kernel_class, types::Class, leaf);
     annotate_builtin!(rb_mKernel, "frozen?", types::BoolExact);
     annotate_builtin!(rb_cSymbol, "name", types::StringExact);
     annotate_builtin!(rb_cSymbol, "to_s", types::StringExact);
     annotate_builtin!(rb_cString, "ascii_only?", inline_string_ascii_only_p, types::BoolExact, no_gc, leaf);
     annotate_builtin!(rb_cString, "valid_encoding?", inline_string_valid_encoding_p, types::BoolExact, no_gc, leaf);
+    annotate_builtin!(rb_cSymbol, "empty?", types::BoolExact);
 
     // Array iteration builtins (used in with_jit Array#each, map, select, find)
-    builtin_funcs.insert(rb_jit_fixnum_inc as *mut c_void, FnProperties { inline: inline_fixnum_inc, return_type: types::Fixnum, ..Default::default() });
-    builtin_funcs.insert(rb_jit_ary_at as *mut c_void, FnProperties { inline: inline_ary_at, ..Default::default() });
-    builtin_funcs.insert(rb_jit_ary_at_end as *mut c_void, FnProperties { inline: inline_ary_at_end, return_type: types::BoolExact, ..Default::default() });
+    builtin_funcs.insert(rb_builtin_fixnum_inc as *mut c_void, FnProperties { inline: inline_fixnum_inc, return_type: types::Fixnum, ..Default::default() });
+    builtin_funcs.insert(rb_builtin_ary_at as *mut c_void, FnProperties { inline: inline_ary_at, ..Default::default() });
+    builtin_funcs.insert(rb_builtin_ary_at_end as *mut c_void, FnProperties { inline: inline_ary_at_end, return_type: types::BoolExact, ..Default::default() });
 
     Annotations {
         cfuncs: std::mem::take(cfuncs),
@@ -317,20 +322,10 @@ fn inline_string_to_s(fun: &mut hir::Function, block: hir::BlockId, recv: hir::I
 fn inline_thread_current(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
     let &[] = args else { return None; };
     let ec = fun.push_insn(block, hir::Insn::LoadEC);
-    let thread_ptr = fun.push_insn(block, hir::Insn::LoadField {
-        recv: ec,
-        id: FieldName::thread_ptr,
-        offset: RUBY_OFFSET_EC_THREAD_PTR,
-        return_type: types::CPtr,
-    });
-    let thread_self = fun.push_insn(block, hir::Insn::LoadField {
-        recv: thread_ptr,
-        id: FieldName::SelfParam,
-        offset: RUBY_OFFSET_THREAD_SELF,
-        // TODO(max): Add Thread type. But Thread.current is not guaranteed to be an exact Thread.
-        // You can make subclasses...
-        return_type: types::BasicObject,
-    });
+    let thread_ptr = fun.load_field(block, ec, FieldName::thread_ptr, RUBY_OFFSET_EC_THREAD_PTR, types::CPtr);
+    // TODO(max): Add Thread type. But Thread.current is not guaranteed to be an exact Thread.
+    // You can make subclasses...
+    let thread_self = fun.load_field(block, thread_ptr, FieldName::SelfParam, RUBY_OFFSET_THREAD_SELF, types::BasicObject);
     Some(thread_self)
 }
 
@@ -357,7 +352,8 @@ fn inline_kernel_block_given_p(fun: &mut hir::Function, block: hir::BlockId, _re
         // Equivalent of GET_LEP() macro.
         let level = crate::cruby::get_lvar_level(call_site_iseq);
         let lep = fun.push_insn(block, hir::Insn::GetEP { level });
-        Some(fun.push_insn(block, hir::Insn::IsBlockGiven { lep }))
+        let block_handler = fun.load_field(block, lep, FieldName::VM_ENV_DATA_INDEX_SPECVAL, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL, types::RubyValue);
+        Some(fun.push_insn(block, hir::Insn::IsBlockGiven { block_handler }))
     } else {
         Some(fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(Qfalse) }))
     }
@@ -372,11 +368,11 @@ fn inline_array_aref(fun: &mut hir::Function, block: hir::BlockId, recv: hir::In
             let index = fun.coerce_to(block, index, types::Fixnum, state);
             let index = fun.push_insn(block, hir::Insn::UnboxFixnum { val: index });
             let length = fun.push_insn(block, hir::Insn::ArrayLength { array: recv });
-            let index = fun.push_insn(block, hir::Insn::GuardLess { left: index, right: length, reason: SideExitReason::GuardLess, state });
+            let index = fun.push_insn(block, hir::Insn::GuardLess { left: index, right: length, reason: Box::new(SideExitReason::GuardLess), state });
             let index = fun.push_insn(block, hir::Insn::AdjustBounds { index, length });
             let zero = fun.push_insn(block, hir::Insn::Const { val: hir::Const::CInt64(0) });
             use crate::hir::SideExitReason;
-            let index = fun.push_insn(block, hir::Insn::GuardGreaterEq { left: index, right: zero, reason: SideExitReason::GuardGreaterEq, state });
+            let index = fun.push_insn(block, hir::Insn::GuardGreaterEq { left: index, right: zero, reason: Box::new(SideExitReason::GuardGreaterEq), state });
             let result = fun.push_insn(block, hir::Insn::ArrayAref { array: recv, index });
             return Some(result);
         }
@@ -397,11 +393,11 @@ fn inline_array_aset(fun: &mut hir::Function, block: hir::BlockId, recv: hir::In
             // Bounds check: unbox Fixnum index and guard 0 <= idx < length.
             let index = fun.push_insn(block, hir::Insn::UnboxFixnum { val: index });
             let length = fun.push_insn(block, hir::Insn::ArrayLength { array: recv });
-            let index = fun.push_insn(block, hir::Insn::GuardLess { left: index, right: length, reason: SideExitReason::GuardLess, state });
+            let index = fun.push_insn(block, hir::Insn::GuardLess { left: index, right: length, reason: Box::new(SideExitReason::GuardLess), state });
             let index = fun.push_insn(block, hir::Insn::AdjustBounds { index, length });
             let zero = fun.push_insn(block, hir::Insn::Const { val: hir::Const::CInt64(0) });
             use crate::hir::SideExitReason;
-            let index = fun.push_insn(block, hir::Insn::GuardGreaterEq { left: index, right: zero, reason: SideExitReason::GuardGreaterEq, state });
+            let index = fun.push_insn(block, hir::Insn::GuardGreaterEq { left: index, right: zero, reason: Box::new(SideExitReason::GuardGreaterEq), state });
 
             let _ = fun.push_insn(block, hir::Insn::ArrayAset { array: recv, index, val });
             fun.push_insn(block, hir::Insn::WriteBarrier { recv, val });
@@ -463,12 +459,7 @@ fn inline_hash_aset(fun: &mut hir::Function, block: hir::BlockId, recv: hir::Ins
 fn inline_string_bytesize(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     if args.is_empty() && fun.likely_a(recv, types::String, state) {
         let recv = fun.coerce_to(block, recv, types::String, state);
-        let len = fun.push_insn(block, hir::Insn::LoadField {
-            recv,
-            id: FieldName::len,
-            offset: RUBY_OFFSET_RSTRING_LEN,
-            return_type: types::CInt64,
-        });
+        let len = fun.load_string_length(block, recv);
 
         let result = fun.push_insn(block, hir::Insn::BoxFixnum {
             val: len,
@@ -487,21 +478,16 @@ fn inline_string_getbyte(fun: &mut hir::Function, block: hir::BlockId, recv: hir
         // when converting the index to a C integer.
         let index = fun.coerce_to(block, index, types::Fixnum, state);
         let unboxed_index = fun.push_insn(block, hir::Insn::UnboxFixnum { val: index });
-        let len = fun.push_insn(block, hir::Insn::LoadField {
-            recv,
-            id: FieldName::len,
-            offset: RUBY_OFFSET_RSTRING_LEN,
-            return_type: types::CInt64,
-        });
+        let len = fun.load_string_length(block, recv);
         // TODO(max): Find a way to mark these guards as not needed for correctness... as in, once
         // the data dependency is gone (say, the StringGetbyte is elided), they can also be elided.
         //
         // This is unlike most other guards.
-        let unboxed_index = fun.push_insn(block, hir::Insn::GuardLess { left: unboxed_index, right: len, reason: SideExitReason::GuardLess, state });
+        let unboxed_index = fun.push_insn(block, hir::Insn::GuardLess { left: unboxed_index, right: len, reason: Box::new(SideExitReason::GuardLess), state });
         let unboxed_index = fun.push_insn(block, hir::Insn::AdjustBounds { index: unboxed_index, length: len });
         let zero = fun.push_insn(block, hir::Insn::Const { val: hir::Const::CInt64(0) });
         use crate::hir::SideExitReason;
-        let _ = fun.push_insn(block, hir::Insn::GuardGreaterEq { left: unboxed_index, right: zero, reason: SideExitReason::GuardGreaterEq, state });
+        let _ = fun.push_insn(block, hir::Insn::GuardGreaterEq { left: unboxed_index, right: zero, reason: Box::new(SideExitReason::GuardGreaterEq), state });
         let result = fun.push_insn(block, hir::Insn::StringGetbyte { string: recv, index: unboxed_index });
         return Some(result);
     }
@@ -515,17 +501,12 @@ fn inline_string_setbyte(fun: &mut hir::Function, block: hir::BlockId, recv: hir
         let value = fun.coerce_to(block, value, types::Fixnum, state);
 
         let unboxed_index = fun.push_insn(block, hir::Insn::UnboxFixnum { val: index });
-        let len = fun.push_insn(block, hir::Insn::LoadField {
-            recv,
-            id: FieldName::len,
-            offset: RUBY_OFFSET_RSTRING_LEN,
-            return_type: types::CInt64,
-        });
-        let unboxed_index = fun.push_insn(block, hir::Insn::GuardLess { left: unboxed_index, right: len, reason: SideExitReason::GuardLess, state });
+        let len = fun.load_string_length(block, recv);
+        let unboxed_index = fun.push_insn(block, hir::Insn::GuardLess { left: unboxed_index, right: len, reason: Box::new(SideExitReason::GuardLess), state });
         let unboxed_index = fun.push_insn(block, hir::Insn::AdjustBounds { index: unboxed_index, length: len });
         let zero = fun.push_insn(block, hir::Insn::Const { val: hir::Const::CInt64(0) });
         use crate::hir::SideExitReason;
-        let _ = fun.push_insn(block, hir::Insn::GuardGreaterEq { left: unboxed_index, right: zero, reason: SideExitReason::GuardGreaterEq, state });
+        let _ = fun.push_insn(block, hir::Insn::GuardGreaterEq { left: unboxed_index, right: zero, reason: Box::new(SideExitReason::GuardGreaterEq), state });
         // We know that all String are HeapObject, so no need to insert a GuardType(HeapObject).
         fun.guard_not_frozen(block, recv, state);
         let _ = fun.push_insn(block, hir::Insn::StringSetbyteFixnum { string: recv, index, value });
@@ -538,12 +519,7 @@ fn inline_string_setbyte(fun: &mut hir::Function, block: hir::BlockId, recv: hir
 
 fn inline_string_empty_p(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
     let &[] = args else { return None; };
-    let len = fun.push_insn(block, hir::Insn::LoadField {
-        recv,
-        id: FieldName::len,
-        offset: RUBY_OFFSET_RSTRING_LEN,
-        return_type: types::CInt64,
-    });
+    let len = fun.load_string_length(block, recv);
     let zero = fun.push_insn(block, hir::Insn::Const { val: hir::Const::CInt64(0) });
     let is_zero = fun.push_insn(block, hir::Insn::IsBitEqual { left: len, right: zero });
     let result = fun.push_insn(block, hir::Insn::BoxBool { val: is_zero });
@@ -561,7 +537,7 @@ fn guard_string_coderange(fun: &mut hir::Function, block: hir::BlockId, args: &[
     let mask = fun.push_insn(block, hir::Insn::Const { val: hir::Const::CUInt64(RUBY_ENC_CODERANGE_MASK.into()) });
     let cr = fun.push_insn(block, hir::Insn::IntAnd { left: flags, right: mask });
     let min_known = fun.push_insn(block, hir::Insn::Const { val: hir::Const::CInt64(RUBY_ENC_CODERANGE_7BIT.into()) });
-    Some(fun.push_insn(block, hir::Insn::GuardGreaterEq { left: cr, right: min_known, reason: SideExitReason::GuardGreaterEq, state }))
+    Some(fun.push_insn(block, hir::Insn::GuardGreaterEq { left: cr, right: min_known, reason: Box::new(SideExitReason::GuardGreaterEq), state }))
 }
 
 // Inlines String#ascii_only? (rb_str_is_ascii_only_p): coderange == 7BIT.
@@ -680,12 +656,20 @@ fn try_inline_float_op(fun: &mut hir::Function, block: hir::BlockId, f: &dyn Fn(
     if fun.likely_a(recv, types::Flonum, state)
         && (fun.likely_a(other, types::Flonum, state) || fun.likely_a(other, types::Fixnum, state))
     {
-        let recv = fun.coerce_to(block, recv, types::Flonum, state);
+        let recv = coerce_float_op_operand(fun, block, recv, types::Flonum, state);
         let other_type = if fun.likely_a(other, types::Flonum, state) { types::Flonum } else { types::Fixnum };
-        let other = fun.coerce_to(block, other, other_type, state);
+        let other = coerce_float_op_operand(fun, block, other, other_type, state);
         return Some(fun.push_insn(block, f(recv, other)));
     }
     None
+}
+
+fn coerce_float_op_operand(fun: &mut hir::Function, block: hir::BlockId, val: hir::InsnId, guard_type: Type, state: hir::InsnId) -> hir::InsnId {
+    if fun.is_a(val, guard_type) {
+        val
+    } else {
+        fun.guard_type_recompile(block, val, guard_type, state, hir::Recompile)
+    }
 }
 
 fn inline_float_plus(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
@@ -816,6 +800,24 @@ fn inline_integer_rshift(fun: &mut hir::Function, block: hir::BlockId, recv: hir
 
 fn inline_integer_aref(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[index] = args else { return None; };
+
+    // Optimize a compile-time constant index that fits in the Fixnum payload as a bit test.
+    // A Fixnum payload is VALUE_BITS - 1 bits wide (one bit is the tag), so its highest
+    // (sign) bit is at index VALUE_BITS - 2.
+    const FIXNUM_SIGN_BIT_INDEX: i64 = VALUE_BITS as i64 - 2;
+    if fun.likely_a(recv, types::Fixnum, state) {
+        if let Some(index_value) = fun.type_of(index).fixnum_value() {
+            if (0..=FIXNUM_SIGN_BIT_INDEX).contains(&index_value) {
+                // Optimize `recv[i]` into `(recv >> i) & 1`.
+                let recv = fun.coerce_to(block, recv, types::Fixnum, state);
+                let shift = fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(VALUE::fixnum_from_usize(index_value as usize)) });
+                let shifted = fun.push_insn(block, hir::Insn::FixnumRShift { left: recv, right: shift });
+                let mask = fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(VALUE::fixnum_from_usize(1)) });
+                return Some(fun.push_insn(block, hir::Insn::FixnumAnd { left: shifted, right: mask }));
+            }
+        }
+    }
+    // Use a C call (FixnumAref) for any other (e.g. non-constant) index.
     if fun.likely_a(recv, types::Fixnum, state) && fun.likely_a(index, types::Fixnum, state) {
         let recv = fun.coerce_to(block, recv, types::Fixnum, state);
         let index = fun.coerce_to(block, index, types::Fixnum, state);

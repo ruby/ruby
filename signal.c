@@ -762,7 +762,7 @@ rb_get_next_signal(void)
 #if defined SIGSEGV || defined SIGBUS || defined SIGILL || defined SIGFPE
 static const char *received_signal;
 # define clear_received_signal() do { \
-    if (GET_VM() != NULL) rb_gc_enable(); \
+    if (GET_VM() != NULL) rb_gc_local_enable(); \
     received_signal = 0; \
 } while (0)
 #else
@@ -1046,7 +1046,7 @@ check_reserved_signal_(const char *name, size_t name_len, int signo)
     }
 
     if (GET_VM() != NULL) {
-        rb_gc_disable_no_rest();
+        rb_gc_local_disable_no_rest();
     }
 }
 #endif
@@ -1112,7 +1112,7 @@ rb_signal_exec(rb_thread_t *th, int sig)
     if (cmd == 0) {
         switch (sig) {
           case SIGINT:
-            rb_interrupt();
+            rb_threadptr_interrupt_raise(th);
             break;
 #ifdef SIGHUP
           case SIGHUP:

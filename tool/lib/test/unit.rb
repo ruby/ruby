@@ -1108,7 +1108,7 @@ module Test
         super
         parser.separator "load path options:"
         parser.on '-Idirectory', 'Add library load path' do |dirs|
-          dirs.split(':').each { |d| $LOAD_PATH.unshift d }
+          dirs.split(File::PATH_SEPARATOR).each { |d| $LOAD_PATH.unshift d }
         end
       end
     end
@@ -1676,6 +1676,19 @@ module Test
           $stdout.flush
 
           leakchecker.check("#{inst.class}\##{inst.__name__}")
+
+          # Optionally verify GC internal consistency after each test. An
+          # integer >= 2 samples once every N tests (use a prime so a
+          # randomized test order samples a different set each run); any other
+          # non-empty value verifies every test (O(heap) per test, so only
+          # practical for small runs).
+          if (interval = ENV["RUBY_TEST_GC_VERIFY"])
+            n = interval.to_i
+            @__gc_verify_tick = (@__gc_verify_tick || 0) + 1
+            if n <= 1 || (@__gc_verify_tick % n).zero?
+              GC.verify_internal_consistency
+            end
+          end
 
           _end_method(inst)
 

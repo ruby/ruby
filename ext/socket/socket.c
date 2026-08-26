@@ -873,7 +873,8 @@ sock_gethostname(VALUE obj)
         rb_str_modify_expand(name, len);
         len += len;
     }
-    rb_str_resize(name, strlen(RSTRING_PTR(name)));
+    char *s = RSTRING_PTR(name), *p = memchr(s, 0, len);
+    if (p) rb_str_resize(name, (long)(p - s));
     return name;
 }
 #else

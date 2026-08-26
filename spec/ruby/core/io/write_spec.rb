@@ -140,6 +140,36 @@ describe "IO#write on a file" do
       File.binread(@filename).bytes.should == [0x61, 0x00, 0x00, 0x00, 0xC4, 0x85]
     end
   end
+
+  it "writes binary data if encoding is ASCII-8BIT" do
+    File.open(@filename, "w:ascii-8bit") do |file|
+      file.write('Hëllö'.encode('ISO-8859-1'))
+    end
+    ë = ([235].pack('U')).encode('ISO-8859-1')
+    ö = ([246].pack('U')).encode('ISO-8859-1')
+    res = "H#{ë}ll#{ö}"
+    File.binread(@filename).should == res.b
+  end
+
+  it "writes binary data with newline conversion if no encoding is given" do
+    File.open(@filename, "w", newline: :crlf) do |file|
+      file.write("Hëllö\n".encode('ISO-8859-1'))
+    end
+    ë = ([235].pack('U')).encode('ISO-8859-1')
+    ö = ([246].pack('U')).encode('ISO-8859-1')
+    res = "H#{ë}ll#{ö}\r\n"
+    File.binread(@filename).should == res.b
+  end
+
+  it "writes binary data with newline conversion if encoding is ASCII-8BIT" do
+    File.open(@filename, "w:ascii-8bit", newline: :crlf) do |file|
+      file.write("Hëllö\n".encode('ISO-8859-1'))
+    end
+    ë = ([235].pack('U')).encode('ISO-8859-1')
+    ö = ([246].pack('U')).encode('ISO-8859-1')
+    res = "H#{ë}ll#{ö}\r\n"
+    File.binread(@filename).should == res.b
+  end
 end
 
 describe "IO.write" do
@@ -235,6 +265,19 @@ describe "IO.write" do
             IO.write("|cat", "xxx")
           }.should output_to_fd("xxx")
         }.should complain(/IO process creation with a leading '\|'/)
+      end
+    end
+
+    ruby_version_is "4.0" do
+      it "writes to that literal file when path starts with a pipe" do
+        Dir.chdir(tmp("")) do
+          begin
+            IO.write("|cat", "xxx")
+            File.read("|cat").should == "xxx"
+          ensure
+            File.unlink("|cat")
+          end
+        end
       end
     end
   end

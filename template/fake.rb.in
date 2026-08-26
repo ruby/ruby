@@ -51,8 +51,8 @@ class Object
 end
 v=$VERBOSE;$VERBOSE=nil;module Ruby; end;$VERBOSE=v
 module Ruby
-  constants.each {|n| remove_const n}
 % arg['versions'].each {|n, v|
+  remove_const :<%=n%> if defined?(<%=n%>)
   <%=n%> = ::RUBY_<%=n%>
 % }
 end

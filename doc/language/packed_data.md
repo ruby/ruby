@@ -879,6 +879,32 @@ for one byte in the input or output string.
     "\x00\x00\x02".unpack("x4C") # Raises ArgumentError
     ```
 
+- `'x!'` - Align to the given byte boundary or directive alignment;
+  for packing, null fill if necessary.  With `buffer:` or `offset:`,
+  alignment is relative to the starting position:
+
+    ```ruby
+    [1, 2].pack("C x!4 C") # => "\x01\x00\x00\x00\x02"
+    [1, 2].pack("C x!i i") # Aligns to the native int alignment.
+    ```
+
+    For unpacking, skip forward to the aligned offset:
+
+    ```ruby
+    "\x01\x00\x00\x00\x02".unpack("C x!4 C") # => [1, 2]
+    ```
+
+- `'@!'` - Align to the given byte boundary or directive alignment
+  from the beginning of the output or input string:
+
+    ```ruby
+    buffer = +"z"
+    [1, 2].pack("C @!4 C", buffer: buffer)
+    buffer # => "z\x01\x00\x00\x02"
+
+    "z\x01\x00\x00\x02".unpack("C @!4 C", offset: 1) # => [1, 2]
+    ```
+
 - `'^'` - Only for unpacking; the current position:
 
     ```ruby

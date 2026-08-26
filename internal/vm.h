@@ -24,6 +24,7 @@
 
 struct rb_callable_method_entry_struct; /* in method.h */
 struct rb_method_definition_struct;     /* in method.h */
+struct rb_cref_struct;                  /* in method.h */
 struct rb_execution_context_struct;     /* in vm_core.h */
 struct rb_control_frame_struct;         /* in vm_core.h */
 struct rb_callinfo;                     /* in vm_core.h */
@@ -55,6 +56,7 @@ void rb_vm_pop_cfunc_frame(void);
 void rb_vm_check_redefinition_by_prepend(VALUE klass);
 int rb_vm_check_optimizable_mid(VALUE mid);
 VALUE rb_yield_refine_block(VALUE refinement, VALUE refinements);
+struct rb_cref_struct *rb_vm_cref_dup(const struct rb_cref_struct *cref);
 VALUE ruby_vm_special_exception_copy(VALUE);
 
 void rb_lastline_set_up(VALUE val, unsigned int up);
@@ -112,6 +114,10 @@ VALUE rb_vm_backtrace_locations(int argc, const VALUE * argv, struct rb_executio
 VALUE rb_make_backtrace(void);
 void rb_backtrace_print_as_bugreport(FILE*);
 int rb_backtrace_p(VALUE obj);
+VALUE rb_backtrace_dup(VALUE btobj);
+void *rb_backtrace_blob_dump(VALUE btobj, int *size_out);
+VALUE rb_backtrace_blob_load(const void *blob, int size);
+void rb_backtrace_blob_mark(const void *blob, int size);
 VALUE rb_backtrace_to_str_ary(VALUE obj);
 VALUE rb_backtrace_to_location_ary(VALUE obj);
 VALUE rb_location_ary_to_backtrace(VALUE ary);

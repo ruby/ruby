@@ -97,15 +97,9 @@ describe "IO#ungetc" do
     @io.pos.should == pos - 1
   end
 
-  it "makes subsequent unbuffered operations to raise IOError" do
-    @io.getc
-    @io.ungetc(100)
-    -> { @io.sysread(1) }.should.raise(IOError)
-  end
-
   it "raises TypeError if passed nil" do
     @io.getc.should == ?V
-    proc{@io.ungetc(nil)}.should.raise(TypeError)
+    proc{@io.ungetc(nil)}.should raise_consistent_error(TypeError, /no implicit conversion of nil into String/)
   end
 
   it "puts one or more characters back in the stream" do

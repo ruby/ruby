@@ -232,7 +232,7 @@ class TestFiberMutex < Test::Unit::TestCase
           mutex.lock
         end.resume
       end
-      assert_includes error.message, "deadlock; lock already owned by another fiber belonging to the same thread"
+      assert_include error.message, "deadlock; lock already owned by another fiber belonging to the same thread"
     end
   ensure
     thr&.kill&.join

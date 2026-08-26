@@ -14,11 +14,11 @@ module Prism
   module NodeFind # :nodoc:
     # Find the node for the given callable or backtrace location.
     #--
-    #: (Method | UnboundMethod | Proc | Thread::Backtrace::Location callable, bool rubyvm) -> Node?
-    def self.find(callable, rubyvm)
+    #: (Method | UnboundMethod | Proc | Thread::Backtrace::Location callable) -> Node?
+    def self.find(callable)
       case callable
       when Proc
-        if rubyvm
+        if defined?(::RubyVM)
           RubyVMCallableFind.new.find(callable)
         elsif callable.lambda?
           LineLambdaFind.new.find(callable)
@@ -26,13 +26,13 @@ module Prism
           LineProcFind.new.find(callable)
         end
       when Method, UnboundMethod
-        if rubyvm
+        if defined?(::RubyVM)
           RubyVMCallableFind.new.find(callable)
         else
           LineMethodFind.new.find(callable)
         end
       when Thread::Backtrace::Location
-        if rubyvm
+        if defined?(::RubyVM)
           RubyVMBacktraceLocationFind.new.find(callable)
         else
           LineBacktraceLocationFind.new.find(callable)

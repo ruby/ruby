@@ -1,0 +1,14 @@
+foo(m a(1) do end)
+           ^~ unexpected 'do'; expected a `)` to close the arguments
+           ^~ unexpected 'do', expecting end-of-input
+           ^~ unexpected 'do', ignoring it
+              ^~~ unexpected 'end', ignoring it
+                 ^ unexpected ')', ignoring it
+
+foo(m a.b(1) do end)
+             ^~ unexpected 'do'; expected a `)` to close the arguments
+             ^~ unexpected 'do', expecting end-of-input
+             ^~ unexpected 'do', ignoring it
+                ^~~ unexpected 'end', ignoring it
+                   ^ unexpected ')', ignoring it
+

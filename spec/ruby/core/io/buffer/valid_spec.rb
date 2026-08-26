@@ -50,6 +50,39 @@ describe "IO::Buffer#valid?" do
       slice.valid?.should == true
     end
 
+    ruby_version_is "4.1" do
+      it "is true for an empty slice of an empty buffer" do
+        @buffer = IO::Buffer.new(0)
+        slice = @buffer.slice(0, 0)
+
+        slice.valid?.should == true
+        slice.get_string.should == ""
+      end
+
+      it "tracks whether its empty range exists in the source" do
+        @buffer = IO::Buffer.new(0)
+        slice = @buffer.slice(0, 0)
+
+        slice.valid?.should == true
+
+        @buffer.resize(1)
+        slice.valid?.should == false
+        -> { slice.get_string }.should.raise(IO::Buffer::InvalidatedError)
+
+        @buffer.resize(0)
+        slice.valid?.should == true
+        slice.get_string.should == ""
+      end
+
+      it "is false when its empty range no longer belongs to the source" do
+        @buffer = IO::Buffer.new(1)
+        slice = @buffer.slice(1, 0)
+
+        @buffer.resize(0)
+        slice.valid?.should == false
+      end
+    end
+
     context "when buffer is resized" do
       it "is false when slice becomes outside the buffer" do
         @buffer = IO::Buffer.new(4)
@@ -73,6 +106,25 @@ describe "IO::Buffer#valid?" do
       slice.valid?.should == false
     end
 
+    it "is independent of null? and empty?" do
+      @buffer = IO::Buffer.new(4)
+      slice = @buffer.slice(0, 2)
+      @buffer.free
+
+      slice.valid?.should == false
+      slice.null?.should == false
+      slice.empty?.should == false
+    end
+
+    it "can be true for a non-null empty slice" do
+      @buffer = IO::Buffer.new(4)
+      slice = @buffer.slice(2, 0)
+
+      slice.valid?.should == true
+      slice.null?.should == false
+      slice.empty?.should == true
+    end
+
     it "is false for a slice of a freed file-backed buffer" do
       File.open(__FILE__, "r") do |file|
         @buffer = IO::Buffer.map(file, nil, 0, IO::Buffer::READONLY)
@@ -83,12 +135,24 @@ describe "IO::Buffer#valid?" do
       end
     end
 
-    it "is true for a slice of a freed string-backed buffer while string is alive" do
-      @buffer = IO::Buffer.for("alive")
-      slice = @buffer.slice(0, 2)
-      slice.valid?.should == true
-      @buffer.free
-      slice.valid?.should == true
+    ruby_version_is ""..."4.1" do
+      it "is true for a slice of a freed string-backed buffer while string is alive" do
+        @buffer = IO::Buffer.for("alive")
+        slice = @buffer.slice(0, 2)
+        slice.valid?.should == true
+        @buffer.free
+        slice.valid?.should == true
+      end
+    end
+
+    ruby_version_is "4.1" do
+      it "is false for a slice of a freed string-backed buffer" do
+        @buffer = IO::Buffer.for("alive")
+        slice = @buffer.slice(0, 2)
+        slice.valid?.should == true
+        @buffer.free
+        slice.valid?.should == false
+      end
     end
 
     # There probably should be a test with a garbage-collected string,

@@ -1,29 +1,33 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 
-describe :kernel_String, shared: true do
+describe "Kernel#String" do
+  it "is a private method" do
+    Kernel.private_instance_methods(false).should.include?(:String)
+  end
+
   it "converts nil to a String" do
-    @object.send(@method, nil).should == ""
+    String(nil).should == ""
   end
 
   it "converts a Float to a String" do
-    @object.send(@method, 1.12).should == "1.12"
+    String(1.12).should == "1.12"
   end
 
   it "converts a boolean to a String" do
-    @object.send(@method, false).should == "false"
-    @object.send(@method, true).should == "true"
+    String(false).should == "false"
+    String(true).should == "true"
   end
 
   it "converts a constant to a String" do
-    @object.send(@method, Object).should == "Object"
+    String(Object).should == "Object"
   end
 
   it "calls #to_s to convert an arbitrary object to a String" do
     obj = mock('test')
     obj.should_receive(:to_s).and_return("test")
 
-    @object.send(@method, obj).should == "test"
+    String(obj).should == "test"
   end
 
   it "raises a TypeError if #to_s does not exist" do
@@ -32,7 +36,7 @@ describe :kernel_String, shared: true do
       undef_method :to_s
     end
 
-    -> { @object.send(@method, obj) }.should.raise(TypeError)
+    -> { String(obj) }.should.raise(TypeError)
   end
 
   # #5158
@@ -44,7 +48,7 @@ describe :kernel_String, shared: true do
       end
     end
 
-    -> { @object.send(@method, obj) }.should.raise(TypeError)
+    -> { String(obj) }.should.raise(TypeError)
   end
 
   it "raises a TypeError if #to_s is not defined, even though #respond_to?(:to_s) returns true" do
@@ -57,7 +61,7 @@ describe :kernel_String, shared: true do
       end
     end
 
-    -> { @object.send(@method, obj) }.should.raise(TypeError)
+    -> { String(obj) }.should.raise(TypeError)
   end
 
   it "calls #to_s if #respond_to?(:to_s) returns true" do
@@ -69,18 +73,18 @@ describe :kernel_String, shared: true do
       end
     end
 
-    @object.send(@method, obj).should == "test"
+    String(obj).should == "test"
   end
 
   it "raises a TypeError if #to_s does not return a String" do
     (obj = mock('123')).should_receive(:to_s).and_return(123)
-    -> { @object.send(@method, obj) }.should.raise(TypeError)
+    -> { String(obj) }.should.raise(TypeError)
   end
 
   it "returns the same object if it is already a String" do
     string = +"Hello"
     string.should_not_receive(:to_s)
-    string2 = @object.send(@method, string)
+    string2 = String(string)
     string.should.equal?(string2)
   end
 
@@ -88,19 +92,13 @@ describe :kernel_String, shared: true do
     subklass = Class.new(String)
     string = subklass.new("Hello")
     string.should_not_receive(:to_s)
-    string2 = @object.send(@method, string)
+    string2 = String(string)
     string.should.equal?(string2)
   end
 end
 
 describe "Kernel.String" do
-  it_behaves_like :kernel_String, :String, Kernel
-end
-
-describe "Kernel#String" do
-  it_behaves_like :kernel_String, :String, Object.new
-
-  it "is a private method" do
-    Kernel.private_instance_methods(false).should.include?(:String)
+  it "is a public method" do
+    Kernel.public_methods(false).should.include?(:String)
   end
 end

@@ -290,7 +290,8 @@ vm_call0_body(rb_execution_context_t *ec, struct rb_calling_info *calling, const
             {
                 rb_proc_t *proc;
                 GetProcPtr(calling->recv, proc);
-                ret = rb_vm_invoke_proc(ec, proc, calling->argc, argv, calling->kw_splat, calling->block_handler);
+                ret = rb_vm_invoke_proc(ec, proc, calling->argc, argv, calling->kw_splat, calling->block_handler,
+                                        rb_proc_refinements_cref_for_call(calling->recv));
                 goto success;
             }
           case OPTIMIZED_METHOD_TYPE_STRUCT_AREF:
@@ -1080,6 +1081,7 @@ VALUE
 rb_funcallv(VALUE recv, ID mid, int argc, const VALUE *argv)
 {
     VM_ASSERT(ruby_thread_has_gvl_p());
+    VM_ASSERT(!RB_TYPE_P(recv, T_IMEMO));
 
     return rb_funcallv_scope(recv, mid, argc, argv, CALL_FCALL);
 }
@@ -1477,11 +1479,12 @@ vm_frametype_name(const rb_control_frame_t *cfp);
 static VALUE
 rb_iterate0(VALUE (* it_proc) (VALUE), VALUE data1,
             const struct vm_ifunc *const ifunc,
-            rb_execution_context_t *ec)
+            rb_execution_context_t *ec_arg)
 {
     enum ruby_tag_type state;
     volatile VALUE retval = Qnil;
-    rb_control_frame_t *const cfp = ec->cfp;
+    rb_execution_context_t * volatile ec = ec_arg;
+    rb_control_frame_t *volatile const cfp = ec->cfp;
 
     EC_PUSH_TAG(ec);
     state = EC_EXEC_TAG();
@@ -2004,7 +2007,7 @@ eval_string_with_cref(VALUE self, VALUE src, rb_cref_t *cref, VALUE file, int li
     /* TODO: what the code checking? */
     if (!cref && block.as.captured.code.val) {
         rb_cref_t *orig_cref = vm_get_cref(vm_block_ep(&block));
-        cref = vm_cref_dup(orig_cref);
+        cref = rb_vm_cref_dup(orig_cref);
     }
     vm_set_eval_stack(ec, iseq, cref, &block);
 
@@ -2216,6 +2219,7 @@ yield_under(VALUE self, int singleton, int argc, const VALUE *argv, int kw_splat
     const VALUE *ep = NULL;
     rb_cref_t *cref;
     int is_lambda = FALSE;
+    const rb_cref_t *proc_cref = NULL;
 
     if (block_handler != VM_BLOCK_HANDLER_NONE) {
       again:
@@ -2231,8 +2235,14 @@ yield_under(VALUE self, int singleton, int argc, const VALUE *argv, int kw_splat
             new_block_handler = VM_BH_FROM_IFUNC_BLOCK(&new_captured);
             break;
           case block_handler_type_proc:
-            is_lambda = rb_proc_lambda_p(block_handler) != Qfalse;
-            block_handler = vm_proc_to_block_handler(VM_BH_TO_PROC(block_handler));
+            {
+                VALUE procval = VM_BH_TO_PROC(block_handler);
+                rb_proc_t *po;
+                GetProcPtr(procval, po);
+                is_lambda = po->header.is_lambda;
+                if (po->header.is_refined) proc_cref = rb_proc_refinements_cref_for_call(procval);
+                block_handler = vm_block_to_block_handler(&po->block);
+            }
             goto again;
           case block_handler_type_symbol:
             return rb_sym_proc_call(SYM2ID(VM_BH_TO_SYMBOL(block_handler)),
@@ -2248,6 +2258,11 @@ yield_under(VALUE self, int singleton, int argc, const VALUE *argv, int kw_splat
 
     VM_ASSERT(singleton || RB_TYPE_P(self, T_MODULE) || RB_TYPE_P(self, T_CLASS));
     cref = vm_cref_push(ec, self, ep, TRUE, singleton);
+
+    if (proc_cref && !NIL_P(CREF_REFINEMENTS(proc_cref))) {
+        CREF_REFINEMENTS_SET(cref, rb_hash_dup(CREF_REFINEMENTS(proc_cref)));
+        CREF_REFINED_PROC_SET(cref);
+    }
 
     return vm_yield_with_cref(ec, argc, argv, kw_splat, cref, is_lambda);
 }
@@ -2427,7 +2442,7 @@ rb_obj_instance_exec(int argc, const VALUE *argv, VALUE self)
  *      class Foo; end
  *
  *      Foo.module_eval("puts __LINE__") # => 1
- *      Foo.module_eval("puts __FILE__", nil, 10) # => 10
+ *      Foo.module_eval("puts __LINE__", nil, 10) # => 10
  *
  *  When a block is given, evaluates the block in the context
  *  of +self+:
@@ -2441,7 +2456,7 @@ rb_obj_instance_exec(int argc, const VALUE *argv, VALUE self)
  *      Foo.new.greeting
  *
  *  However, constant and class variable lookup differs between
- *  +string+ and block. When +string+ is given, contant and class
+ *  +string+ and block. When +string+ is given, constant and class
  *  variables are looked up in the context of +self+. When a block
  *  is given, the context of the lookup is not changed:
  *
@@ -2690,11 +2705,12 @@ rb_catch(const char *tag, rb_block_call_func_t func, VALUE data)
 
 static VALUE
 vm_catch_protect(VALUE tag, rb_block_call_func *func, VALUE data,
-                 enum ruby_tag_type *stateptr, rb_execution_context_t *volatile ec)
+                 enum ruby_tag_type *stateptr_arg, rb_execution_context_t *volatile ec)
 {
     enum ruby_tag_type state;
     VALUE val = Qnil;		/* OK */
     rb_control_frame_t *volatile saved_cfp = ec->cfp;
+    enum ruby_tag_type * volatile stateptr = stateptr_arg;
 
     EC_PUSH_TAG(ec);
 

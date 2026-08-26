@@ -39,6 +39,10 @@ describe "C-API Proc function" do
       -> { @prc2.call(3, :foo, :bar) }.should.raise(ArgumentError)
     end
 
+    it "passes non-Ruby pointers to the proc callback" do
+      @p.rb_proc_new_with_pointer.should == true
+    end
+
     it "calls the C function with the block passed in blockarg" do
       a_block = :foo.to_proc
       @p.rb_proc_new_blockarg.call(&a_block).should == a_block

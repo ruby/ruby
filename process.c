@@ -154,7 +154,7 @@ static VALUE rb_cProcessTms;
 #define WSTOPSIG        WEXITSTATUS
 #endif
 
-#if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__bsdi__)
+#if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
 #define HAVE_44BSD_SETUID 1
 #define HAVE_44BSD_SETGID 1
 #endif
@@ -164,20 +164,11 @@ static VALUE rb_cProcessTms;
 #undef HAVE_SETRGID
 #endif
 
-#ifdef BROKEN_SETREUID
-#define setreuid ruby_setreuid
-int setreuid(rb_uid_t ruid, rb_uid_t euid);
-#endif
-#ifdef BROKEN_SETREGID
-#define setregid ruby_setregid
-int setregid(rb_gid_t rgid, rb_gid_t egid);
-#endif
-
 #if defined(HAVE_44BSD_SETUID) || defined(__APPLE__)
-#if !defined(USE_SETREUID) && !defined(BROKEN_SETREUID)
+#if !defined(USE_SETREUID)
 #define OBSOLETE_SETREUID 1
 #endif
-#if !defined(USE_SETREGID) && !defined(BROKEN_SETREGID)
+#if !defined(USE_SETREGID)
 #define OBSOLETE_SETREGID 1
 #endif
 #endif
@@ -360,6 +351,9 @@ static ID id_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC;
 # define RUBY_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC ID2SYM(id_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC)
 #endif
 static ID id_hertz;
+#ifdef HAVE_WORKING_FORK
+static ID id__fork;
+#endif
 
 static rb_pid_t cached_pid;
 
@@ -597,7 +591,7 @@ static const rb_data_type_t rb_process_status_type = {
         .dfree = RUBY_DEFAULT_FREE,
         .dsize = NULL,
     },
-    .flags = RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE,
+    .flags = RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE | RUBY_TYPED_FROZEN_SHAREABLE,
 };
 
 static VALUE
@@ -642,7 +636,7 @@ proc_s_last_status(VALUE mod)
 }
 
 VALUE
-rb_process_status_new(rb_pid_t pid, int status, int error)
+rb_process_status_for(rb_pid_t pid, int status, int error)
 {
     VALUE last_status = rb_process_status_allocate(rb_cProcessStatus);
     struct rb_process_status *data = RTYPEDDATA_GET_DATA(last_status);
@@ -657,7 +651,7 @@ rb_process_status_new(rb_pid_t pid, int status, int error)
 static VALUE
 process_status_dump(VALUE status)
 {
-    VALUE dump = rb_class_new_instance(0, 0, rb_cObject);
+    VALUE dump = rb_class_allocate_instance_capa(rb_cObject, 2);
     struct rb_process_status *data;
     TypedData_Get_Struct(status, struct rb_process_status, &rb_process_status_type, data);
     if (data->pid) {
@@ -681,7 +675,7 @@ process_status_load(VALUE real_obj, VALUE load_obj)
 void
 rb_last_status_set(int status, rb_pid_t pid)
 {
-    GET_THREAD()->last_status = rb_process_status_new(pid, status, 0);
+    GET_THREAD()->last_status = rb_process_status_for(pid, status, 0);
 }
 
 static void
@@ -1112,7 +1106,7 @@ rb_process_status_wait(rb_pid_t pid, int flags)
 
     if (waitpid_state.ret == 0) return Qnil;
 
-    return rb_process_status_new(waitpid_state.ret, waitpid_state.status, waitpid_state.errnum);
+    return rb_process_status_for(waitpid_state.ret, waitpid_state.status, waitpid_state.errnum);
 }
 
 /*
@@ -1125,20 +1119,19 @@ rb_process_status_wait(rb_pid_t pid, int flags)
  *
  *  If there are child processes,
  *  waits for a child process to exit and returns a Process::Status object
- *  containing information on that process;
- *  sets thread-local variable <tt>$?</tt>:
+ *  containing information on that process.
+ *  Unlike Process.wait, this method does not set thread-local variable
+ *  <tt>$?</tt>:
  *
  *    Process.spawn('cat /nop') # => 1155880
  *    Process::Status.wait      # => #<Process::Status: pid 1155880 exit 1>
- *    $?                        # => #<Process::Status: pid 1155508 exit 1>
+ *    $?                        # => nil # Not set.
  *
  *  If there is no child process,
  *  returns an "empty" Process::Status object
- *  that does not represent an actual process;
- *  does not set thread-local variable <tt>$?</tt>:
+ *  that does not represent an actual process:
  *
  *    Process::Status.wait # => #<Process::Status: pid -1 exit 0>
- *    $?                   # => #<Process::Status: pid 1155508 exit 1> # Unchanged.
  *
  *  May invoke the scheduler hook Fiber::Scheduler#process_wait.
  *
@@ -1673,18 +1666,6 @@ proc_exec_sh(const char *str, VALUE envp_str)
 
 #ifdef _WIN32
     rb_w32_uspawn(P_OVERLAY, (char *)str, 0);
-#elif defined(__CYGWIN32__)
-    {
-        char fbuf[MAXPATHLEN];
-        char *shell = dln_find_exe_r("sh", 0, fbuf, sizeof(fbuf));
-        int status = -1;
-        if (shell)
-            execl(shell, "sh", "-c", str, (char *) NULL);
-        else
-            status = system(str);
-        if (status != -1)
-            exit(status);
-    }
 #else
     if (envp_str)
         execle("/bin/sh", "sh", "-c", str, (char *)NULL, RB_IMEMO_TMPBUF_PTR(envp_str)); /* async-signal-safe */
@@ -2457,6 +2438,8 @@ compare_posix_sh(const void *key, const void *el)
 }
 #endif
 
+#define append_terminator(buf) rb_str_buf_cat(buf, "", 1) /* append '\0' */
+
 static void
 rb_exec_fillarg(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, VALUE execarg_obj)
 {
@@ -2514,7 +2497,10 @@ rb_exec_fillarg(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, VAL
             "while",		/* reserved */
         };
         const char *p;
+        const char *const s = rb_str_null_check(prog);
+        const char *const e = RSTRING_END(prog);
         struct string_part first = {0, 0};
+        int has_slash = 0;
         int has_meta = 0;
         /*
          * meta characters:
@@ -2540,7 +2526,7 @@ rb_exec_fillarg(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, VAL
          * =    Assignment preceding command name
          * %    (used in Parameter Expansion)
          */
-        for (p = RSTRING_PTR(prog); *p; p++) {
+        for (p = s; p < e; p++) {
             if (*p == ' ' || *p == '\t') {
                 if (first.ptr && !first.len) first.len = p - first.ptr;
             }
@@ -2554,15 +2540,17 @@ rb_exec_fillarg(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, VAL
                     has_meta = 1;
                 }
                 else if (*p == '/') {
-                    first.len = 0x100; /* longer than any posix_sh_cmds */
+                    has_slash = 1;
                 }
             }
             if (has_meta)
                 break;
         }
-        if (!has_meta && first.ptr) {
+        if (!has_meta) {
+            if (!first.ptr) first.ptr = e;
             if (!first.len) first.len = p - first.ptr;
             if (first.len > 0 && first.len <= sizeof(posix_sh_cmds[0]) &&
+                !has_slash &&
                 bsearch(&first, posix_sh_cmds, numberof(posix_sh_cmds), sizeof(posix_sh_cmds[0]), compare_posix_sh))
                 has_meta = 1;
         }
@@ -2573,21 +2561,22 @@ rb_exec_fillarg(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, VAL
         if (!eargp->use_shell) {
             VALUE argv_buf;
             argv_buf = hide_obj(rb_str_buf_new(0));
-            p = RSTRING_PTR(prog);
-            while (*p) {
-                while (*p == ' ' || *p == '\t')
+            rb_str_buf_cat(argv_buf, first.ptr, first.len);
+            append_terminator(argv_buf);
+            for (p = first.ptr + first.len; p < e;) {
+                while (p < e && (*p == ' ' || *p == '\t'))
                     p++;
-                if (*p) {
+                if (p < e) {
                     const char *w = p;
-                    while (*p && *p != ' ' && *p != '\t')
+                    while (p < e && *p != ' ' && *p != '\t')
                         p++;
                     rb_str_buf_cat(argv_buf, w, p-w);
-                    rb_str_buf_cat(argv_buf, "", 1); /* append '\0' */
+                    append_terminator(argv_buf);
                 }
             }
             eargp->invoke.cmd.argv_buf = argv_buf;
             eargp->invoke.cmd.command_name =
-                hide_obj(rb_str_subseq(argv_buf, 0, strlen(RSTRING_PTR(argv_buf))));
+                hide_obj(rb_str_subseq(argv_buf, 0, first.len));
             rb_enc_copy(eargp->invoke.cmd.command_name, prog);
         }
     }
@@ -2617,7 +2606,8 @@ rb_exec_fillarg(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, VAL
             arg = EXPORT_STR(arg);
             s = RSTRING_PTR(arg);
 #endif
-            rb_str_buf_cat(argv_buf, s, RSTRING_LEN(arg) + 1); /* include '\0' */
+            rb_str_buf_cat(argv_buf, s, RSTRING_LEN(arg));
+            append_terminator(argv_buf);
         }
         eargp->invoke.cmd.argv_buf = argv_buf;
     }
@@ -2697,7 +2687,7 @@ fill_envp_buf_i(st_data_t st_key, st_data_t st_val, st_data_t arg)
     rb_str_buf_cat2(envp_buf, StringValueCStr(key));
     rb_str_buf_cat2(envp_buf, "=");
     rb_str_buf_cat2(envp_buf, StringValueCStr(val));
-    rb_str_buf_cat(envp_buf, "", 1); /* append '\0' */
+    append_terminator(envp_buf);
 
     return ST_CONTINUE;
 }
@@ -2797,20 +2787,16 @@ rb_execarg_parent_start1(VALUE execarg_obj)
         }
         hide_obj(envtbl);
         if (envopts != Qfalse) {
-            st_table *stenv = RHASH_TBL_RAW(envtbl);
             long i;
             for (i = 0; i < RARRAY_LEN(envopts); i++) {
                 VALUE pair = RARRAY_AREF(envopts, i);
                 VALUE key = RARRAY_AREF(pair, 0);
                 VALUE val = RARRAY_AREF(pair, 1);
                 if (NIL_P(val)) {
-                    st_data_t stkey = (st_data_t)key;
-                    st_delete(stenv, &stkey, NULL);
+                    rb_hash_delete(envtbl, key);
                 }
                 else {
-                    st_insert(stenv, (st_data_t)key, (st_data_t)val);
-                    RB_OBJ_WRITTEN(envtbl, Qundef, key);
-                    RB_OBJ_WRITTEN(envtbl, Qundef, val);
+                    rb_hash_aset(envtbl, key, val);
                 }
             }
         }
@@ -3852,6 +3838,7 @@ getresgid(rb_gid_t *rgid, rb_gid_t *egid, rb_gid_t *sgid)
 #define HAVE_GETRESGID
 #endif
 
+#if !defined(RUBY_ASAN_ENABLED)
 static int
 has_privilege(void)
 {
@@ -3913,6 +3900,7 @@ has_privilege(void)
 
     return 0;
 }
+#endif
 #endif
 
 struct child_handler_disabler_state
@@ -4174,17 +4162,32 @@ proc_fork_pid(void)
     return pid;
 }
 
+static VALUE
+call_proc__fork_protected(VALUE arg)
+{
+    VALUE ret = rb_funcall(rb_mProcess, id__fork, 0);
+    *(rb_pid_t *)arg = NUM2PIDT(ret);
+    /* discard the returned object itself */
+    return Qtrue;
+}
+
 rb_pid_t
 rb_call_proc__fork(void)
 {
-    ID id__fork;
-    CONST_ID(id__fork, "_fork");
     if (rb_method_basic_definition_p(CLASS_OF(rb_mProcess), id__fork)) {
         return proc_fork_pid();
     }
     else {
-        VALUE pid = rb_funcall(rb_mProcess, id__fork, 0);
-        return NUM2PIDT(pid);
+        rb_pid_t parent = getpid(), pid;
+        int state;
+
+        if (NIL_P(rb_protect(call_proc__fork_protected, (VALUE)&pid, &state))) {
+            if (getpid() != parent) {
+                ruby_stop(state);
+            }
+            rb_jump_tag(state);
+        }
+        return pid;
     }
 }
 #endif
@@ -4698,8 +4701,6 @@ rb_spawn(int argc, const VALUE *argv)
  *
  *  See {Execution Shell}[rdoc-ref:Process@Execution+Shell] for details about the shell.
  *
- *  Raises an exception if the new process could not execute.
- *
  *  <b>Argument +exe_path+</b>
  *
  *  Argument +exe_path+ is one of the following:
@@ -4741,7 +4742,6 @@ rb_spawn(int argc, const VALUE *argv)
  *    C*
  *    hello world
  *
- *  Raises an exception if the new process could not execute.
  */
 
 static VALUE
@@ -6303,21 +6303,6 @@ proc_setuid(VALUE obj, VALUE id)
 
 static rb_uid_t SAVED_USER_ID = -1;
 
-#ifdef BROKEN_SETREUID
-int
-setreuid(rb_uid_t ruid, rb_uid_t euid)
-{
-    if (ruid != (rb_uid_t)-1 && ruid != getuid()) {
-        if (euid == (rb_uid_t)-1) euid = geteuid();
-        if (setuid(ruid) < 0) return -1;
-    }
-    if (euid != (rb_uid_t)-1 && euid != geteuid()) {
-        if (seteuid(euid) < 0) return -1;
-    }
-    return 0;
-}
-#endif
-
 /*
  *  call-seq:
  *     Process::UID.change_privilege(user)   -> integer
@@ -7016,21 +7001,6 @@ rb_daemon(int nochdir, int noclose)
  */
 
 static rb_gid_t SAVED_GROUP_ID = -1;
-
-#ifdef BROKEN_SETREGID
-int
-setregid(rb_gid_t rgid, rb_gid_t egid)
-{
-    if (rgid != (rb_gid_t)-1 && rgid != getgid()) {
-        if (egid == (rb_gid_t)-1) egid = getegid();
-        if (setgid(rgid) < 0) return -1;
-    }
-    if (egid != (rb_gid_t)-1 && egid != getegid()) {
-        if (setegid(egid) < 0) return -1;
-    }
-    return 0;
-}
-#endif
 
 /*
  *  call-seq:
@@ -8753,11 +8723,18 @@ static VALUE rb_mProcID_Syscall;
  *  * Frees all empty heap pages and increments the allocatable pages counter
  *    by the number of pages freed.
  *  * Invoke +malloc_trim+ if available to free empty malloc pages.
+ *  * Eagerly loads the +error_highlight+, +did_you_mean+, and +syntax_suggest+
+ *    gems, which are otherwise loaded lazily on the first error display.
  */
 
 static VALUE
 proc_warmup(VALUE _)
 {
+    // Load the error decoration gems now so that their detailed_message
+    // decorators land in shared memory before a pre-forking server forks,
+    // instead of being loaded lazily on the first error at runtime.
+    rb_eager_load_detailed_message_extension();
+
     RB_VM_LOCKING() {
         rb_gc_prepare_heap();
     }
@@ -9704,6 +9681,9 @@ Init_process(void)
     define_id(MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC);
 #endif
     define_id(hertz);
+#ifdef HAVE_WORKING_FORK
+    define_id(_fork);
+#endif
 
     InitVM(process);
 }

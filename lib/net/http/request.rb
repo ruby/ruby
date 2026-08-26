@@ -61,6 +61,7 @@
 # - Net::HTTP::Options
 # - Net::HTTP::Trace
 # - Net::HTTP::Patch
+# - Net::HTTP::Query
 #
 # Subclasses for WebDAV requests:
 #

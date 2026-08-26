@@ -114,49 +114,115 @@ memory_view_parse_item_format(VALUE mod, VALUE format)
 }
 
 static VALUE
-memory_view_get_memory_view_info(VALUE mod, VALUE obj)
+memory_view_release_ensure(VALUE data)
 {
-    rb_memory_view_t view;
+    rb_memory_view_t *view = (rb_memory_view_t *)data;
+    rb_memory_view_release(view);
+    return Qnil;
+}
 
-    if (!rb_memory_view_get(obj, &view, 0)) {
-        return Qnil;
-    }
+static VALUE
+memory_view_get_memory_view_info_body(VALUE args)
+{
+    rb_memory_view_t *view = (rb_memory_view_t *)args;
 
     VALUE hash = rb_hash_new();
-    rb_hash_aset(hash, sym_obj, view.obj);
-    rb_hash_aset(hash, sym_byte_size, SSIZET2NUM(view.byte_size));
-    rb_hash_aset(hash, sym_readonly, view.readonly ? Qtrue : Qfalse);
-    rb_hash_aset(hash, sym_format, view.format ? rb_str_new_cstr(view.format) : Qnil);
-    rb_hash_aset(hash, sym_item_size, SSIZET2NUM(view.item_size));
-    rb_hash_aset(hash, sym_ndim, SSIZET2NUM(view.ndim));
+    rb_hash_aset(hash, sym_obj, view->obj);
+    rb_hash_aset(hash, sym_byte_size, SSIZET2NUM(view->byte_size));
+    rb_hash_aset(hash, sym_readonly, view->readonly ? Qtrue : Qfalse);
+    rb_hash_aset(hash, sym_format, view->format ? rb_str_new_cstr(view->format) : Qnil);
+    rb_hash_aset(hash, sym_item_size, SSIZET2NUM(view->item_size));
+    rb_hash_aset(hash, sym_ndim, SSIZET2NUM(view->ndim));
 
-    if (view.shape) {
-        VALUE shape = rb_ary_new_capa(view.ndim);
+    if (view->shape) {
+        VALUE shape = rb_ary_new_capa(view->ndim);
+        ssize_t i;
+        for (i = 0; i < view->ndim; i++) {
+            rb_ary_push(shape, SSIZET2NUM(view->shape[i]));
+        }
         rb_hash_aset(hash, sym_shape, shape);
     }
     else {
         rb_hash_aset(hash, sym_shape, Qnil);
     }
 
-    if (view.strides) {
-        VALUE strides = rb_ary_new_capa(view.ndim);
+    if (view->strides) {
+        VALUE strides = rb_ary_new_capa(view->ndim);
+        ssize_t i;
+        for (i = 0; i < view->ndim; i++) {
+            rb_ary_push(strides, SSIZET2NUM(view->strides[i]));
+        }
         rb_hash_aset(hash, sym_strides, strides);
     }
     else {
         rb_hash_aset(hash, sym_strides, Qnil);
     }
 
-    if (view.sub_offsets) {
-        VALUE sub_offsets = rb_ary_new_capa(view.ndim);
+    if (view->sub_offsets) {
+        VALUE sub_offsets = rb_ary_new_capa(view->ndim);
         rb_hash_aset(hash, sym_sub_offsets, sub_offsets);
     }
     else {
         rb_hash_aset(hash, sym_sub_offsets, Qnil);
     }
 
+    return hash;
+}
+
+static VALUE
+memory_view_get_memory_view_info(int argc, VALUE *args, VALUE mod)
+{
+    rb_memory_view_t view;
+    VALUE obj;
+    VALUE flags;
+    enum ruby_memory_view_flags view_flags;
+
+    rb_scan_args(argc, args, "11", &obj, &flags);
+    if (NIL_P(flags)) {
+        view_flags = RUBY_MEMORY_VIEW_SIMPLE;
+    }
+    else {
+        view_flags = NUM2UINT(flags);
+    }
+
+    if (!rb_memory_view_get(obj, &view, view_flags)) {
+        return Qnil;
+    }
+
+    return rb_ensure(memory_view_get_memory_view_info_body, (VALUE)&view,
+                     memory_view_release_ensure, (VALUE)&view);
+}
+
+static VALUE
+memory_view_is_row_major_contiguous(VALUE mod, VALUE obj)
+{
+    rb_memory_view_t view;
+    VALUE result;
+
+    if (!rb_memory_view_get(obj, &view, 0)) {
+        rb_raise(rb_eArgError, "Unable to get MemoryView");
+    }
+
+    result = rb_memory_view_is_row_major_contiguous(&view) ? Qtrue : Qfalse;
     rb_memory_view_release(&view);
 
-    return hash;
+    return result;
+}
+
+static VALUE
+memory_view_is_column_major_contiguous(VALUE mod, VALUE obj)
+{
+    rb_memory_view_t view;
+    VALUE result;
+
+    if (!rb_memory_view_get(obj, &view, 0)) {
+        rb_raise(rb_eArgError, "Unable to get MemoryView");
+    }
+
+    result = rb_memory_view_is_column_major_contiguous(&view) ? Qtrue : Qfalse;
+    rb_memory_view_release(&view);
+
+    return result;
 }
 
 static VALUE
@@ -247,6 +313,108 @@ memory_view_extract_item_members(VALUE mod, VALUE str, VALUE format)
     xfree(members);
 
     return item;
+}
+
+typedef struct {
+    VALUE location;
+    rb_memory_view_t view;
+} memory_view_get_data_args;
+
+static VALUE
+memory_view_get_data_body(VALUE _args)
+{
+    memory_view_get_data_args *args = (memory_view_get_data_args *)_args;
+    long beg, len;
+
+    if (RTEST(rb_range_beg_len(args->location,
+                               &beg,
+                               &len,
+                               args->view.byte_size,
+                               0))) {
+        const char *content = ((const char *)(args->view.data)) + beg;
+        return rb_str_new(content, len);
+    }
+    else {
+        const char *content =
+            ((const char *)(args->view.data)) + NUM2LONG(args->location);
+        return rb_str_new(content, 1);
+    }
+}
+
+static VALUE
+memory_view_get_data(VALUE mod, VALUE obj, VALUE location)
+{
+    memory_view_get_data_args args;
+    args.location = location;
+
+    if (!rb_memory_view_get(obj, &(args.view), 0)) {
+        return Qnil;
+    }
+
+    return rb_ensure(memory_view_get_data_body, (VALUE)&args,
+                     memory_view_release_ensure, (VALUE)&(args.view));
+}
+
+typedef struct {
+    VALUE offset;
+    VALUE data;
+    rb_memory_view_t view;
+} memory_view_set_data_args;
+
+static VALUE
+memory_view_set_data_body(VALUE _args)
+{
+    memory_view_set_data_args *args = (memory_view_set_data_args *)_args;
+
+    if (FIXNUM_P(args->data)) {
+        ((char *)(args->view.data))[NUM2LONG(args->offset)] =
+            NUM2LONG(args->data);
+    }
+    else {
+        StringValue(args->data);
+        memcpy(((char *)(args->view.data)) + NUM2LONG(args->offset),
+               RSTRING_PTR(args->data),
+               RSTRING_LEN(args->data));
+    }
+
+    return Qtrue;
+}
+
+static VALUE
+memory_view_set_data(VALUE mod, VALUE obj, VALUE offset, VALUE data)
+{
+    memory_view_set_data_args args;
+    args.offset = offset;
+    args.data = data;
+
+    if (!rb_memory_view_get(obj, &(args.view), RUBY_MEMORY_VIEW_WRITABLE)) {
+        return Qnil;
+    }
+
+    return rb_ensure(memory_view_set_data_body, (VALUE)&args,
+                     memory_view_release_ensure, (VALUE)&(args.view));
+}
+
+static VALUE
+memory_view_get_body(VALUE data)
+{
+    return rb_yield_values(0);
+}
+
+static VALUE
+memory_view_get(VALUE mod, VALUE obj, VALUE flags)
+{
+    rb_memory_view_t view;
+
+    if (!rb_memory_view_get(obj, &view, NUM2UINT(flags))) {
+        rb_raise(rb_eArgError,
+                 "Unable to get memory view: "
+                 "object=%+" PRIsVALUE " flags=%+" PRIsVALUE,
+                 obj, flags);
+    }
+
+    return rb_ensure(memory_view_get_body, Qnil,
+                     memory_view_release_ensure, (VALUE)&view);
 }
 
 static VALUE
@@ -384,14 +552,38 @@ Init_memory_view(void)
 #ifdef HAVE_RUBY_MEMORY_VIEW_H
     VALUE mMemoryViewTestUtils = rb_define_module("MemoryViewTestUtils");
 
+    rb_define_const(mMemoryViewTestUtils, "SIMPLE",
+                    UINT2NUM(RUBY_MEMORY_VIEW_SIMPLE));
+    rb_define_const(mMemoryViewTestUtils, "WRITABLE",
+                    UINT2NUM(RUBY_MEMORY_VIEW_WRITABLE));
+    rb_define_const(mMemoryViewTestUtils, "FORMAT",
+                    UINT2NUM(RUBY_MEMORY_VIEW_FORMAT));
+    rb_define_const(mMemoryViewTestUtils, "MULTI_DIMENSIONAL",
+                    UINT2NUM(RUBY_MEMORY_VIEW_MULTI_DIMENSIONAL));
+    rb_define_const(mMemoryViewTestUtils, "STRIDES",
+                    UINT2NUM(RUBY_MEMORY_VIEW_STRIDES));
+    rb_define_const(mMemoryViewTestUtils, "ROW_MAJOR",
+                    UINT2NUM(RUBY_MEMORY_VIEW_ROW_MAJOR));
+    rb_define_const(mMemoryViewTestUtils, "COLUMN_MAJOR",
+                    UINT2NUM(RUBY_MEMORY_VIEW_COLUMN_MAJOR));
+    rb_define_const(mMemoryViewTestUtils, "ANY_CONTIGUOUS",
+                    UINT2NUM(RUBY_MEMORY_VIEW_ANY_CONTIGUOUS));
+    rb_define_const(mMemoryViewTestUtils, "INDIRECT",
+                    UINT2NUM(RUBY_MEMORY_VIEW_INDIRECT));
+
     rb_define_module_function(mMemoryViewTestUtils, "available?", memory_view_available_p, 1);
     rb_define_module_function(mMemoryViewTestUtils, "register", memory_view_register, 1);
     rb_define_module_function(mMemoryViewTestUtils, "item_size_from_format", memory_view_item_size_from_format, 1);
     rb_define_module_function(mMemoryViewTestUtils, "parse_item_format", memory_view_parse_item_format, 1);
-    rb_define_module_function(mMemoryViewTestUtils, "get_memory_view_info", memory_view_get_memory_view_info, 1);
+    rb_define_module_function(mMemoryViewTestUtils, "get_memory_view_info", memory_view_get_memory_view_info, -1);
+    rb_define_module_function(mMemoryViewTestUtils, "is_row_major_contiguous", memory_view_is_row_major_contiguous, 1);
+    rb_define_module_function(mMemoryViewTestUtils, "is_column_major_contiguous", memory_view_is_column_major_contiguous, 1);
     rb_define_module_function(mMemoryViewTestUtils, "fill_contiguous_strides", memory_view_fill_contiguous_strides, 4);
     rb_define_module_function(mMemoryViewTestUtils, "ref_count_while_exporting", memory_view_ref_count_while_exporting, 2);
     rb_define_module_function(mMemoryViewTestUtils, "extract_item_members", memory_view_extract_item_members, 2);
+    rb_define_module_function(mMemoryViewTestUtils, "get_data", memory_view_get_data, 2);
+    rb_define_module_function(mMemoryViewTestUtils, "set_data", memory_view_set_data, 3);
+    rb_define_module_function(mMemoryViewTestUtils, "get", memory_view_get, 2);
 
     VALUE cExportableString = rb_define_class_under(mMemoryViewTestUtils, "ExportableString", rb_cObject);
     rb_define_method(cExportableString, "initialize", expstr_initialize, 1);

@@ -203,7 +203,11 @@ RSpec.describe "bundled_gems.rb" do
   it "Show warning when bundle exec with -r option" do
     create_file("stub.rb", stub_code)
     create_file("Gemfile", "source 'https://rubygems.org'")
-    bundle "exec ruby -r./stub -ropenssl -e ''"
+    # Command-line -r features are required before RUBYOPT's -rbundler/setup,
+    # and gem_prelude no longer consumes BUNDLER_SETUP in the main box, so
+    # bundler/setup must be requested explicitly ahead of the bundled gem to
+    # exercise the warning for requires without a Ruby caller frame.
+    bundle "exec ruby -rbundler/setup -r./stub -ropenssl -e ''"
 
     expect(err).to include(/openssl used to be loaded from (.*) since Ruby #{RUBY_VERSION}/)
   end
@@ -388,6 +392,12 @@ RSpec.describe "bundled_gems.rb" do
     end
 
     context "with bundle environment" do
+      # Windows has no executable bit or shebang dispatch, so running the
+      # script directly is rejected by bundler as "not executable". Invoke it
+      # through ruby there. What matters here is force_activate's behavior under
+      # the bundle environment, not shebang execution (covered by another spec).
+      let(:exec_command) { Gem.win_platform? ? "exec ruby ./script.rb" : "exec ./script.rb" }
+
       before do
         code = <<-RUBY
           #!/usr/bin/env ruby
@@ -400,13 +410,13 @@ RSpec.describe "bundled_gems.rb" do
 
       it "lockfile is available" do
         bundle "install"
-        bundle "exec ./script.rb"
+        bundle exec_command
 
         expect(err).to include("gem install csv")
       end
 
       it "lockfile is not available" do
-        bundle "exec ./script.rb"
+        bundle exec_command
 
         expect(err).to include("gem install csv")
       end

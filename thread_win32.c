@@ -44,6 +44,12 @@ rb_internal_thread_remove_event_hook(rb_internal_thread_event_hook_t * hook)
     return false;
 }
 
+bool
+rb_thread_event_hooks_registered_p(void)
+{
+    return false; // hooks are not implemented on this platform
+}
+
 RBIMPL_ATTR_NORETURN()
 static void
 w32_error(const char *func)
@@ -589,35 +595,27 @@ rb_native_cond_destroy(rb_nativethread_cond_t *cond)
 }
 
 
-#define CHECK_ERR(expr) \
-    {if (!(expr)) {rb_bug("err: %lu - %s", GetLastError(), #expr);}}
-
-COMPILER_WARNING_PUSH
-#if __has_warning("-Wmaybe-uninitialized")
-COMPILER_WARNING_IGNORED(-Wmaybe-uninitialized)
+#if !defined(_WIN32_WINNT_WIN8) || _WIN32_WINNT < 0x602
+/* declared in processthreadsapi.h only when _WIN32_WINNT >= 0x0602,
+ * but exported from kernel32.dll since Windows 8 */
+WINBASEAPI VOID WINAPI GetCurrentThreadStackLimits(PULONG_PTR, PULONG_PTR);
 #endif
-static inline SIZE_T
-query_memory_basic_info(PMEMORY_BASIC_INFORMATION mi, void *local_in_parent_frame)
-{
-    return VirtualQuery(asan_get_real_stack_addr(local_in_parent_frame), mi, sizeof(*mi));
-}
-COMPILER_WARNING_POP
 
 static void
 native_thread_init_stack(rb_thread_t *th, void *local_in_parent_frame)
 {
-    MEMORY_BASIC_INFORMATION mi;
-    char *base, *end;
-    DWORD size, space;
+    ULONG_PTR low, high;
+    SIZE_T size, space;
 
-    CHECK_ERR(query_memory_basic_info(&mi, local_in_parent_frame));
-    base = mi.AllocationBase;
-    end = mi.BaseAddress;
-    end += mi.RegionSize;
-    size = end - base;
+    /* VirtualQuery against the current stack pointer may return a region
+     * that does not span the whole stack when the interpreter is
+     * initialized deep in the stack, which makes stack_check() misfire.
+     * [Bug #11438] */
+    GetCurrentThreadStackLimits(&low, &high);
+    size = high - low;
     space = size / 5;
     if (space > 1024*1024) space = 1024*1024;
-    th->ec->machine.stack_start = (VALUE *)end - 1;
+    th->ec->machine.stack_start = (VALUE *)high - 1;
     th->ec->machine.stack_maxsize = size - space;
 }
 
@@ -910,17 +908,7 @@ rb_threadptr_sched_free(rb_thread_t *th)
     ruby_xfree(th->sched.vm_stack);
 }
 
-void
-rb_threadptr_remove(rb_thread_t *th)
-{
-    // do nothing
-}
 
-void
-rb_thread_sched_mark_zombies(rb_vm_t *vm)
-{
-    // do nothing
-}
 
 static bool
 vm_barrier_finish_p(rb_vm_t *vm)
@@ -1031,3 +1019,24 @@ rb_thread_malloc_stack_set(rb_thread_t *th, void *stack, size_t stack_size)
 }
 
 #endif /* THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION */
+
+void
+rb_thread_sched_winding_begin(rb_vm_t *vm)
+{
+    // nothing to count: rb_thread_sched_wait_winding below never waits
+    (void)vm;
+}
+
+void
+rb_thread_sched_winding_end(rb_vm_t *vm)
+{
+    (void)vm;
+}
+
+void
+rb_thread_sched_wait_winding(rb_vm_t *vm)
+{
+    // no coroutine (M:N) threads on this implementation: nothing winds down
+    // after leaving the living set (see thread_pthread.c)
+    (void)vm;
+}

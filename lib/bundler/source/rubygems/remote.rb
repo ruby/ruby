@@ -20,10 +20,15 @@ module Bundler
         # Returns the cooldown days that apply to this remote, resolving the
         # precedence CLI > config > Gemfile per-source. Returns nil if no
         # cooldown applies.
+        #
+        # The resolver asks once per candidate spec, so the settings lookup is
+        # memoized. That snapshots the value: a Remote created before a
+        # settings change keeps the old one. Nothing in Bundler changes the
+        # cooldown setting after the sources are built (the CLI flag is applied
+        # before the Definition exists), so build a new Remote if you need to.
         def effective_cooldown
-          override = Bundler.settings[:cooldown]
-          return override if override
-          @cooldown
+          return @effective_cooldown if defined?(@effective_cooldown)
+          @effective_cooldown = Bundler.settings[:cooldown] || @cooldown
         end
 
         MAX_CACHE_SLUG_HOST_SIZE = 255 - 1 - 32 # 255 minus dot minus MD5 length

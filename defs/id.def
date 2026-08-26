@@ -48,6 +48,7 @@ firstline, predefined = __LINE__+1, %[\
   bt
   bt_locations
   call
+  yield
   mesg
   exception
   locals
@@ -97,7 +98,10 @@ firstline, predefined = __LINE__+1, %[\
   core#define_singleton_method
   core#set_postexe
   core#hash_merge_ptr
+  core#hash_merge_bang_ptr
   core#hash_merge_kwd
+  core#hash_merge_bang_kwd
+  core#hash_coerce
   core#raise
   core#sprintf
 

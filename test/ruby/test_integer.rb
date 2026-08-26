@@ -632,6 +632,41 @@ class TestInteger < Test::Unit::TestCase
     }
   end
 
+  def test_bit_count
+    assert_equal(0, 0.bit_count)
+    assert_equal(1, 1.bit_count)
+    assert_equal(1, 2.bit_count)
+    assert_equal(2, 3.bit_count)
+    assert_equal(3, 7.bit_count)
+    assert_equal(3, 0b10101.bit_count)
+    assert_equal(8, 0xff.bit_count)
+    assert_equal(1, 0x100.bit_count)
+
+    # Fixnum boundaries
+    assert_equal(1, (2**30).bit_count)
+    assert_equal(1, (2**62).bit_count)
+
+    # Bignum
+    assert_equal(1, (2**64).bit_count)
+    assert_equal(64, (2**64-1).bit_count)
+    assert_equal(1, (2**1000).bit_count)
+    assert_equal(1000, (2**1000-1).bit_count)
+    assert_equal(2, (2**1000 + 2**500).bit_count)
+
+    0.upto(1000) {|i|
+      n = 2**i
+      assert_equal(1, n.bit_count, "(#{n}).bit_count")
+      assert_equal(i, (n-1).bit_count, "(#{n-1}).bit_count")
+      assert_equal(2, (n+1).bit_count, "(#{n+1}).bit_count") if i >= 1
+    }
+  end
+
+  def test_bit_count_for_negative_numbers
+    assert_raise(ArgumentError) { -1.bit_count }
+    assert_raise(ArgumentError) { -19.bit_count }
+    assert_raise(ArgumentError) { (-2**1000).bit_count }
+  end
+
   def test_digits
     assert_equal([0], 0.digits)
     assert_equal([1], 1.digits)

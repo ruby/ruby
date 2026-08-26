@@ -4,7 +4,7 @@ require_relative 'shared/lambda'
 
 # The functionality of lambdas is specified in core/proc
 
-describe "Kernel.lambda" do
+describe "Kernel#lambda" do
   it_behaves_like :kernel_lambda, :lambda
 
   it "is a private method" do
@@ -106,5 +106,11 @@ describe "Kernel.lambda" do
     it "doesn't warn when proc is lambda" do
       -> { lambda(&lambda{}) }.should_not complain(verbose: true)
     end
+  end
+end
+
+describe "Kernel.lambda" do
+  it "is a public method" do
+    Kernel.public_methods(false).should.include?(:lambda)
   end
 end

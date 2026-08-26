@@ -78,7 +78,7 @@ describe "Kernel#sleep" do
     t.value.should == 5
   end
 
-  context "Kernel.sleep with Fiber scheduler" do
+  context "Kernel#sleep with Fiber scheduler" do
     before :each do
       Fiber.set_scheduler(FiberSpecs::LoggingScheduler.new)
     end
@@ -114,5 +114,7 @@ describe "Kernel#sleep" do
 end
 
 describe "Kernel.sleep" do
-  it "needs to be reviewed for spec completeness"
+  it "is a public method" do
+    Kernel.public_methods(false).should.include?(:sleep)
+  end
 end

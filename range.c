@@ -21,12 +21,16 @@
 #include "id.h"
 #include "internal.h"
 #include "internal/array.h"
+#include "internal/class.h"
 #include "internal/compar.h"
 #include "internal/enum.h"
 #include "internal/enumerator.h"
 #include "internal/error.h"
 #include "internal/numeric.h"
+#include "internal/object.h"
 #include "internal/range.h"
+#include "shape.h"
+#include "zjit.h"
 
 VALUE rb_cRange;
 static ID id_beg, id_end, id_excl;
@@ -40,9 +44,8 @@ static VALUE r_cover_p(VALUE, VALUE, VALUE, VALUE);
 
 #define RANGE_SET_BEG(r, v) (RSTRUCT_SET(r, 0, v))
 #define RANGE_SET_END(r, v) (RSTRUCT_SET(r, 1, v))
-#define RANGE_SET_EXCL(r, v) (RSTRUCT_SET(r, 2, v))
 
-#define EXCL(r) RTEST(RANGE_EXCL(r))
+#define EXCL(r) RTEST(FL_TEST(r, RANGE_FL_EXCL))
 
 static void
 range_init(VALUE range, VALUE beg, VALUE end, VALUE exclude_end)
@@ -56,7 +59,12 @@ range_init(VALUE range, VALUE beg, VALUE end, VALUE exclude_end)
             rb_raise(rb_eArgError, "bad value for range");
     }
 
-    RANGE_SET_EXCL(range, exclude_end);
+    if (RTEST(exclude_end)) {
+        FL_SET_RAW(range, RANGE_FL_EXCL);
+    }
+
+    FL_SET_RAW(range, RANGE_FL_INIT);
+
     RANGE_SET_BEG(range, beg);
     RANGE_SET_END(range, end);
 
@@ -74,12 +82,27 @@ rb_range_new(VALUE beg, VALUE end, int exclude_end)
     return range;
 }
 
+#if USE_ZJIT
+void
+rb_zjit_range_new_fastpath(bool exclude_end, size_t *alloc_size_out, VALUE *flags_out)
+{
+    const long len = 2;
+    *alloc_size_out = offsetof(struct RStruct, as.ary) + (sizeof(VALUE) * len);
+    if (RCLASS_MAX_IV_COUNT(rb_cRange) > 0) {
+        *alloc_size_out += sizeof(VALUE);
+    }
+
+    *flags_out = T_STRUCT | (len << RSTRUCT_EMBED_LEN_SHIFT) | RANGE_FL_INIT | FL_FREEZE;
+    if (exclude_end) *flags_out |= RANGE_FL_EXCL;
+}
+#endif
+
 static void
 range_modify(VALUE range)
 {
     rb_check_frozen(range);
     /* Ranges are immutable, so that they should be initialized only once. */
-    if (RANGE_EXCL(range) != Qnil) {
+    if (FL_TEST(range, RANGE_FL_INIT)) {
         rb_name_err_raise("'initialize' called twice", range, ID2SYM(idInitialize));
     }
 }
@@ -115,6 +138,7 @@ static VALUE
 range_initialize_copy(VALUE range, VALUE orig)
 {
     range_modify(range);
+    FL_SET_RAW(range, FL_TEST_RAW(orig, RANGE_FL_EXCL|RANGE_FL_INIT));
     rb_struct_init_copy(range, orig);
     return range;
 }
@@ -190,6 +214,18 @@ range_eq(VALUE range, VALUE obj)
         return Qfalse;
 
     return rb_exec_recursive_paired(recursive_equal, range, obj, obj);
+}
+
+/* compares _a_ and _b_ and returns:
+ * < 0: a < b
+ * = 0: a = b
+ * > 0: a > b
+ * raises an ArgumentError if non-comparable
+ */
+static int
+r_cmp(VALUE a, VALUE b)
+{
+    return OPTIMIZED_CMP(a, b);
 }
 
 /* compares _a_ and _b_ and returns:
@@ -410,7 +446,7 @@ range_step_size(VALUE range, VALUE args, VALUE eobj)
  *  Iterates over the elements of range in steps of +s+. The iteration is performed
  *  by <tt>+</tt> operator:
  *
- *    (0..6).step(2) { puts _1 } #=> 1..5
+ *    (0..6).step(2) { puts _1 }
  *    # Prints: 0, 2, 4, 6
  *
  *    # Iterate between two dates in step of 1 day (24 hours)
@@ -1345,13 +1381,6 @@ range_reverse_each(VALUE range)
  *  Related: Range#first, Range#end.
  */
 
-static VALUE
-range_begin(VALUE range)
-{
-    return RANGE_BEG(range);
-}
-
-
 /*
  *  call-seq:
  *    self.end -> object
@@ -1364,14 +1393,6 @@ range_begin(VALUE range)
  *
  *  Related: Range#begin, Range#last.
  */
-
-
-static VALUE
-range_end(VALUE range)
-{
-    return RANGE_END(range);
-}
-
 
 static VALUE
 first_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, cbarg))
@@ -2382,7 +2403,7 @@ r_cover_p(VALUE range, VALUE beg, VALUE end, VALUE val)
 static VALUE
 range_dumper(VALUE range)
 {
-    VALUE v = rb_obj_alloc(rb_cObject);
+    VALUE v = rb_class_allocate_instance_capa(rb_cObject, 3);
 
     rb_ivar_set(v, id_excl, RANGE_EXCL(range));
     rb_ivar_set(v, id_beg, RANGE_BEG(range));
@@ -2594,6 +2615,111 @@ range_overlap(VALUE range, VALUE other)
     return Qtrue;
 }
 
+/*
+ * call-seq:
+ *    clamp(min, max) ->  range
+ *    clamp(range)    ->  range
+ *
+ * Returns a new +Range+ instance whose begin and end values are
+ * clamped to _min_ and _max_, or to _range.begin_ and _range.end_.
+ *
+ * The returned range excludes its end if any of the following is true:
+ *
+ * - The returned end value is an excluded end value of +self+ or _range_.
+ * - Both begin and end values are clamped to the lower bound, or both
+ *   are clamped to the upper bound.  Since +self+ is entirely outside
+ *   the clamping bounds, the returned range is made empty by
+ *   excluding its end.
+ *
+ * Otherwise, the returned range includes its end.
+ *
+ * Examples:
+ *
+ *   (1..10).clamp(3, 7)       # => 3..7
+ *   (1...10).clamp(3, 7)      # => 3..7
+ *   (1...10).clamp(3, 10)     # => 3...10
+ *   (0...).clamp(0, 10)       # => 0..10
+ *
+ *   (1..10).clamp(3..7)       # => 3..7
+ *   (1..10).clamp(3...7)      # => 3...7
+ *   (1..5).clamp(3...7)       # => 3..5
+ *
+ *   (..10).clamp(3, 7)        # => 3..7
+ *   (...10).clamp(3, 7)       # => 3..7
+ *   (..10).clamp(3...7)       # => 3...7
+ *   (..5).clamp(3...7)        # => 3..5
+ *
+ *   (1..10).clamp(20..30)     # => 20...20
+ *   (1..10).clamp(-10..0)     # => 0...0
+ *   (..10).clamp(20..30)      # => 20...20
+ *
+ *   (1..10).clamp(..7)        # => 1..7
+ *   (1..10).clamp(...7)       # => 1...7
+ *   (1..5).clamp(...7)        # => 1..5
+ *
+ *   (1..10).clamp(3..)        # => 3..10
+ *   (1..10).clamp(3...)       # => 3..10
+ *   (1..).clamp(3..)          # => 3..
+ *   (1...).clamp(3...)        # => 3...
+ */
+
+static VALUE
+range_clamp(int argc, VALUE *argv, VALUE self)
+{
+    VALUE self_beg = RANGE_BEG(self);
+    VALUE self_end = RANGE_END(self);
+    int self_excl = EXCL(self);
+    VALUE min, max;
+    int clamp_beg = 0, clamp_end = 0, excl = 0;
+
+    argc = rb_scan_args(argc, argv, "11", &min, &max);
+    if (argc == 1) {
+        VALUE range = min;
+        if (!rb_range_values(range, &min, &max, &excl)) {
+            rb_raise(rb_eTypeError, "wrong argument type %s (expected Range)",
+                     rb_builtin_class_name(range));
+        }
+    }
+    if (!NIL_P(min) && !NIL_P(max) && r_cmp(min, max) > 0) {
+        rb_raise(rb_eArgError, "min argument must be less than or equal to max argument");
+    }
+
+    if (!NIL_P(min)) {
+        if (NIL_P(self_beg) || r_cmp(self_beg, min) < 0) {
+            clamp_beg = -1;
+            self_beg = min;
+        }
+        if (!NIL_P(self_end) && r_cmp(self_end, min) < 0) {
+            clamp_end = -1;
+            self_end = min;
+        }
+    }
+    if (!NIL_P(max)) {
+        if (clamp_beg == 0) {
+            if (!NIL_P(self_beg) && r_cmp(self_beg, max) > 0) {
+                clamp_beg = +1;
+                self_beg = max;
+            }
+        }
+        if (clamp_end == 0) {
+            int cmp = NIL_P(self_end) ? +1 : r_cmp(self_end, max);
+            if (cmp > 0) {
+                clamp_end = +1;
+                self_end = max;
+                self_excl = excl;
+            }
+            else if (cmp == 0) {
+                self_excl |= excl;
+            }
+        }
+    }
+    if (clamp_beg && clamp_beg == clamp_end) {
+        /* self is entirely outside the clamping bounds. */
+        self_excl = TRUE;
+    }
+    return rb_range_new(self_beg, self_end, self_excl);
+}
+
 /* A \Range object represents a collection of values
  * that are between given begin and end values.
  *
@@ -2783,6 +2909,7 @@ range_overlap(VALUE range, VALUE other)
  * === Methods for Creating a \Range
  *
  * - ::new: Returns a new range.
+ * - #clamp: Returns a new range with clamped begin and end values.
  *
  * === Methods for Querying
  *
@@ -2842,7 +2969,7 @@ Init_Range(void)
 
     rb_cRange = rb_struct_define_without_accessor(
         "Range", rb_cObject, range_alloc,
-        "begin", "end", "excl", NULL);
+        "begin", "end", NULL);
 
     rb_include_module(rb_cRange, rb_mEnumerable);
     rb_marshal_define_compat(rb_cRange, rb_cObject, range_dumper, range_loader);
@@ -2857,8 +2984,8 @@ Init_Range(void)
     rb_define_method(rb_cRange, "%", range_percent_step, 1);
     rb_define_method(rb_cRange, "reverse_each", range_reverse_each, 0);
     rb_define_method(rb_cRange, "bsearch", range_bsearch, 0);
-    rb_define_method(rb_cRange, "begin", range_begin, 0);
-    rb_define_method(rb_cRange, "end", range_end, 0);
+    rb_struct_define_aref_method(rb_cRange, id_beg, 0);
+    rb_struct_define_aref_method(rb_cRange, id_end, 1);
     rb_define_method(rb_cRange, "first", range_first, -1);
     rb_define_method(rb_cRange, "last", range_last, -1);
     rb_define_method(rb_cRange, "min", range_min, -1);
@@ -2878,4 +3005,5 @@ Init_Range(void)
     rb_define_method(rb_cRange, "cover?", range_cover, 1);
     rb_define_method(rb_cRange, "count", range_count, -1);
     rb_define_method(rb_cRange, "overlap?", range_overlap, 1);
+    rb_define_method(rb_cRange, "clamp", range_clamp, -1);
 }

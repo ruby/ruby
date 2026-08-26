@@ -462,6 +462,7 @@ module Bundler
     method_option "path", type: :string, banner: "Specify a different path than the system default, namely, $BUNDLE_PATH or $GEM_HOME (removed)."
     method_option "quiet", type: :boolean, banner: "Only output warnings and errors."
     method_option "frozen", type: :boolean, banner: "Do not allow the Gemfile.lock to be updated after this bundle cache operation's install (removed)"
+    method_option "cooldown", type: :numeric, banner: "Only consider gem versions published at least N days ago. Use 0 to disable."
     long_desc <<-D
       The cache command will copy the .gem files for every gem in the bundle into the
       directory ./vendor/cache. If you then check that directory into your source
@@ -626,15 +627,15 @@ module Bundler
     end
 
     desc "lock", "Creates a lockfile without installing"
-    method_option "update", type: :array, lazy_default: true, banner: "ignore the existing lockfile, update all gems by default, or update list of given gems"
+    method_option "update", type: :array, lazy_default: true, repeatable: true, banner: "ignore the existing lockfile, update all gems by default, or update list of given gems"
     method_option "local", type: :boolean, default: false, banner: "do not attempt to fetch remote gemspecs and use the local gem cache only"
     method_option "print", type: :boolean, default: false, banner: "print the lockfile to STDOUT instead of writing to the file system"
     method_option "gemfile", type: :string, banner: "Use the specified gemfile instead of Gemfile"
     method_option "lockfile", type: :string, default: nil, banner: "the path the lockfile should be written to"
     method_option "full-index", type: :boolean, default: false, banner: "Fall back to using the single-file index of all gems"
     method_option "add-checksums", type: :boolean, default: false, banner: "Adds checksums to the lockfile"
-    method_option "add-platform", type: :array, default: [], banner: "Add a new platform to the lockfile"
-    method_option "remove-platform", type: :array, default: [], banner: "Remove a platform from the lockfile"
+    method_option "add-platform", type: :array, default: [], repeatable: true, banner: "Add a new platform to the lockfile"
+    method_option "remove-platform", type: :array, default: [], repeatable: true, banner: "Remove a platform from the lockfile"
     method_option "normalize-platforms", type: :boolean, default: false, banner: "Normalize lockfile platforms"
     method_option "patch", type: :boolean, banner: "If updating, prefer updating only to next patch version"
     method_option "minor", type: :boolean, banner: "If updating, prefer updating only to next minor version"
@@ -643,6 +644,7 @@ module Bundler
     method_option "strict", type: :boolean, banner: "If updating, do not allow any gem to be updated past latest --patch | --minor | --major"
     method_option "conservative", type: :boolean, banner: "If updating, use bundle install conservative update behavior and do not allow shared dependencies to be updated"
     method_option "bundler", type: :string, lazy_default: "> 0.a", banner: "Update the locked version of bundler"
+    method_option "cooldown", type: :numeric, banner: "Only consider gem versions published at least N days ago. Use 0 to disable."
     def lock
       require_relative "cli/lock"
       Lock.new(options).run
@@ -758,9 +760,6 @@ module Bundler
       config[:current_command] = original_command
     end
 
-    def current_command=(command)
-    end
-
     def print_command
       return unless Bundler.ui.debug?
       cmd = current_command
@@ -786,9 +785,13 @@ module Bundler
       return unless SharedHelpers.md5_available?
 
       require_relative "vendored_uri"
+      require "rubygems/compact_index_client"
+      if Gem::CompactIndexClient.respond_to?(:filesystem_access=)
+        Gem::CompactIndexClient.filesystem_access = SharedHelpers.method(:filesystem_access)
+      end
       remote = Source::Rubygems::Remote.new(Gem::URI("https://rubygems.org"))
       cache_path = Bundler.user_cache.join("compact_index", remote.cache_slug)
-      latest = Bundler::CompactIndexClient.new(cache_path).latest_version("bundler")
+      latest = Gem::CompactIndexClient.new(cache_path).latest_version("bundler")
       return unless latest
 
       current = Gem::Version.new(VERSION)

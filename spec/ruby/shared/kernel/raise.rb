@@ -1,3 +1,5 @@
+require_relative 'fixtures/classes'
+
 describe :kernel_raise, shared: true do
   before :each do
     ScratchPad.clear
@@ -137,6 +139,42 @@ describe :kernel_raise, shared: true do
 
     raised_exception.backtrace.should == backtrace
     raised_exception.should == exception
+  end
+
+  it "re-raises a previously rescued exception with cleaned backtrace and sets a new backtrace" do
+    begin
+      raise "raised"
+    rescue => exception
+      # ignore
+    end
+
+    exception.set_backtrace(nil)
+
+    # To get a uniform backtrace check across Kernel, Thread, and Fiber:
+    # - Kernel#raise raises directly in the outer block.
+    # - Fiber/Thread wrappers (NewFiberToRaise, NewThreadToRaise) yield/sleep
+    #   inside the inner block in their own context.
+    # In both cases, the backtrace contains the UniqueClass.with_raise frame.
+    begin
+      KernelSpecs::RaiseSpecs::UniqueClass.with_raise do
+        @object.raise(exception) do |&pause|
+          KernelSpecs::RaiseSpecs::UniqueClass.with_raise do
+            pause.call
+          end
+        end
+      end
+    rescue => reraised_exception
+      # ignore
+    end
+
+    reraised_exception.should == exception
+    reraised_exception.backtrace.should.is_a?(Array)
+
+    ruby_version_is "4.0" do
+      reraised_exception.backtrace.should.any? { |line|
+        line.include?("KernelSpecs::RaiseSpecs::UniqueClass.with_raise")
+      }
+    end
   end
 
   it "allows Exception, message, and backtrace parameters" do

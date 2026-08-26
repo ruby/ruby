@@ -453,10 +453,7 @@ EOM
           directories << mkdir
         end
 
-        real_mkdir = File.realpath(mkdir)
-        unless real_mkdir == destination_dir || normalize_path(real_mkdir).start_with?(normalize_path(destination_dir + "/"))
-          raise Gem::Package::PathError.new(real_mkdir, destination_dir)
-        end
+        verify_extraction_dir mkdir, destination_dir
 
         if entry.file?
           File.open(destination, "wb") do |out|
@@ -508,24 +505,6 @@ EOM
     yield gz_io
   ensure
     gz_io.close
-  end
-
-  ##
-  # Returns the full path for installing +filename+.
-  #
-  # If +filename+ is not inside +destination_dir+ an exception is raised.
-
-  def install_location(filename, destination_dir) # :nodoc:
-    raise Gem::Package::PathError.new(filename, destination_dir) if
-      filename.start_with? "/"
-
-    destination_dir = File.realpath(destination_dir)
-    destination = File.expand_path(filename, destination_dir)
-
-    raise Gem::Package::PathError.new(destination, destination_dir) unless
-      normalize_path(destination).start_with? normalize_path(destination_dir + "/")
-
-    destination
   end
 
   if Gem.win_platform?
@@ -661,6 +640,38 @@ EOM
   end
 
   private
+
+  ##
+  # Returns the full path for installing +filename+ into +destination_dir+,
+  # which must already be resolved with File.realpath by the caller.
+  #
+  # If +filename+ is not inside +destination_dir+ an exception is raised.
+
+  def install_location(filename, destination_dir) # :nodoc:
+    raise Gem::Package::PathError.new(filename, destination_dir) if
+      filename.start_with? "/"
+
+    destination = File.expand_path(filename, destination_dir)
+
+    raise Gem::Package::PathError.new(destination, destination_dir) unless
+      normalize_path(destination).start_with? normalize_path(destination_dir + "/")
+
+    destination
+  end
+
+  ##
+  # Raises an exception unless +dir+, with symlinks resolved, is
+  # +destination_dir+ or a directory inside it.  +destination_dir+ must
+  # already be resolved with File.realpath by the caller.
+
+  def verify_extraction_dir(dir, destination_dir) # :nodoc:
+    real_dir = File.realpath(dir)
+
+    return if real_dir == destination_dir ||
+              normalize_path(real_dir).start_with?(normalize_path(destination_dir + "/"))
+
+    raise Gem::Package::PathError.new(real_dir, destination_dir)
+  end
 
   ##
   # Verifies the +checksums+ against the +digests+.  This check is not

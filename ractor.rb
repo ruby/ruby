@@ -242,6 +242,7 @@ class Ractor
   #
   #   Ractor.current #=> #<Ractor:#1 running>
   def self.current
+    Primitive.attr! :leaf
     __builtin_cexpr! %q{
       rb_ractor_self(rb_ec_ractor_ptr(ec));
     }
@@ -256,6 +257,7 @@ class Ractor
   #    r.join                         # wait for r's termination
   #    Ractor.count                   #=> 1
   def self.count
+    Primitive.attr! :leaf
     __builtin_cexpr! %q{
       ULONG2NUM(GET_VM()->ractor.cnt);
     }
@@ -263,10 +265,11 @@ class Ractor
 
   #
   # call-seq:
-  #    Ractor.select(*ractors_or_ports) -> [ractor or port, obj]
+  #    Ractor.select(*ractors_or_ports, timeout: nil) -> [ractor or port, obj] or nil
   #
   # Blocks the current Thread until one of the given ports has received a message. Returns an
   # array of two elements where the first element is the Port and the second is the received object.
+  # With +timeout+ (in seconds) it returns +nil+ instead once the timeout passes.
   # This method can also accept Ractor objects themselves, and in that case will wait until one
   # has terminated and return a two-element array where the first element is the ractor and the
   # second is its termination value.
@@ -305,7 +308,7 @@ class Ractor
   #      values << val
   #    end
   #
-  def self.select(*ports)
+  def self.select(*ports, timeout: nil)
     raise ArgumentError, 'specify at least one Ractor::Port or Ractor' if ports.empty?
 
     monitors = {} # Ractor::Port => Ractor
@@ -325,7 +328,10 @@ class Ractor
     end
 
     begin
-      result_port, obj = __builtin_ractor_select_internal(ports)
+      result = __builtin_ractor_select_internal(ports, timeout)
+      return nil if result.nil? # timed out
+
+      result_port, obj = result
 
       if r = monitors[result_port]
         [r, r.value]
@@ -343,11 +349,11 @@ class Ractor
 
   #
   # call-seq:
-  #    Ractor.receive -> obj
+  #    Ractor.receive(timeout: nil) -> obj or nil
   #
   # Receives a message from the current ractor's default port.
-  def self.receive
-    Ractor.current.default_port.receive
+  def self.receive(timeout: nil)
+    Ractor.current.default_port.receive(timeout: timeout)
   end
 
   class << self
@@ -355,8 +361,8 @@ class Ractor
   end
 
   # same as Ractor.receive
-  private def receive
-    default_port.receive
+  private def receive(timeout: nil)
+    default_port.receive(timeout: timeout)
   end
   alias recv receive
 
@@ -376,7 +382,7 @@ class Ractor
     name = __builtin_cexpr! %q{ RACTOR_PTR(self)->name }
     id   = __builtin_cexpr! %q{ UINT2NUM(rb_ractor_id(RACTOR_PTR(self))) }
     status = __builtin_cexpr! %q{
-      rb_str_new2(ractor_status_str(RACTOR_PTR(self)->status_))
+      rb_str_new2(RACTOR_PTR(self)->status_ == ractor_terminated ? "terminated" : "running")
     }
     "#<Ractor:##{id}#{name ? ' '+name : ''}#{loc ? " " + loc : ''} #{status}>"
   end
@@ -385,6 +391,7 @@ class Ractor
 
   # Returns the name set in Ractor.new, or +nil+.
   def name
+    Primitive.attr! :leaf
     __builtin_cexpr! %q{RACTOR_PTR(self)->name}
   end
 
@@ -517,6 +524,7 @@ class Ractor
 
   # Returns the main ractor.
   def self.main
+    Primitive.attr! :leaf
     __builtin_cexpr! %q{
       rb_ractor_self(GET_VM()->ractor.main_ractor);
     }
@@ -524,6 +532,7 @@ class Ractor
 
   # Returns true if the current ractor is the main ractor.
   def self.main?
+    Primitive.attr! :leaf
     __builtin_cexpr! %q{
       RBOOL(GET_VM()->ractor.main_ractor == rb_ec_ractor_ptr(ec))
     }
@@ -564,6 +573,7 @@ class Ractor
   # Returns the default port of the Ractor.
   #
   def default_port
+    Primitive.attr! :leaf
     __builtin_cexpr! %q{
       ractor_default_port_value(RACTOR_PTR(self))
     }
@@ -601,10 +611,12 @@ class Ractor
   #
   # Waits for +ractor+ to complete and returns its value or raises the exception
   # which terminated the Ractor. The termination value will be moved to the calling
-  # Ractor. Therefore, at most 1 Ractor can receive another ractor's termination value.
+  # Ractor. Therefore, at most 1 Ractor can receive another ractor's termination
+  # value, and it can be received only once.
   #
   #   r = Ractor.new{ [1, 2] }
   #   r.value #=> [1, 2] (unshareable object)
+  #   r.value #=> Ractor::Error
   #
   #   Ractor.new(r){|r| r.value} #=> Ractor::Error
   #
@@ -694,7 +706,7 @@ class Ractor
   class Port
     #
     # call-seq:
-    #    port.receive -> msg
+    #    port.receive(timeout: nil) -> msg or nil
     #
     # Receives a message from the port (which was sent there by Port#send). Only the ractor
     # that created the port can receive messages this way.
@@ -735,6 +747,17 @@ class Ractor
     #     Still received only one
     #     Received: message2
     #
+    # With +timeout+ (in seconds) the method gives up waiting and returns +nil+
+    # once it passes. A message that arrives just as the timeout expires is still
+    # returned; the timeout bounds the wait, it does not cut delivery off.
+    #
+    #     port = Ractor::Port.new
+    #     port.receive(timeout: 0.1) #=> nil
+    #     port.receive(timeout: 0)   #=> nil
+    #
+    # A +timeout+ of 0 never blocks and reads no clock: it takes a message if one
+    # is already there and returns +nil+ otherwise.
+    #
     # If the port is closed and there are no more messages in the message queue,
     # the method raises Ractor::ClosedError.
     #
@@ -742,9 +765,9 @@ class Ractor
     #     port.close
     #     port.receive #=> raise Ractor::ClosedError
     #
-    def receive
+    def receive(timeout: nil)
       __builtin_cexpr! %q{
-        ractor_port_receive(ec, self)
+        ractor_port_receive(ec, self, timeout)
       }
     end
 
@@ -829,7 +852,7 @@ class Ractor
     #    port.inspect -> string
     def inspect
       "#<Ractor::Port to:\##{
-        __builtin_cexpr! "SIZET2NUM(rb_ractor_id((RACTOR_PORT_PTR(self)->r)))"
+        __builtin_cexpr! "SIZET2NUM(rb_ractor_id(ractor_port_ptr_check(self)->r))"
       } id:#{
         __builtin_cexpr! "SIZET2NUM(ractor_port_id(RACTOR_PORT_PTR(self)))"
       }>"

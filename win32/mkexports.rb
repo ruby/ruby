@@ -102,7 +102,7 @@ class Exports::Mswin < Exports
   end
 
   def each_export(objs)
-    noprefix = ($arch ||= nil and /^(sh|i\d86)/ !~ $arch)
+    noprefix = ($arch ||= nil and /^i\d86/ !~ $arch)
     objs = objs.collect {|s| s.tr('/', '\\')}
     filetype = nil
     objdump(objs) do |l|

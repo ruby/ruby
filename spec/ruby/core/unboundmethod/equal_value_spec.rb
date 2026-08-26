@@ -129,6 +129,13 @@ describe "UnboundMethod#==" do
     (@discard_1 == UnboundMethodSpecs::Methods.instance_method(:discard_1)).should == false
   end
 
+  it "returns false for two attr_reader methods" do
+    Class.new do
+      attr_reader :a, :b
+      instance_method(:a).should_not == instance_method(:b)
+    end
+  end
+
   it "considers methods through aliasing equal" do
     c = Class.new do
       class << self

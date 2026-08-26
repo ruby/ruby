@@ -49,10 +49,23 @@ describe "IO.foreach" do
 
     # https://bugs.ruby-lang.org/issues/19630
     it "warns about deprecation given a path with a pipe" do
-      cmd = "|echo ok"
       -> {
-        IO.foreach(cmd).to_a
+        IO.foreach("|echo ok").to_a
       }.should complain(/IO process creation with a leading '\|'/)
+    end
+  end
+
+  ruby_version_is "4.0" do
+    platform_is_not :windows do
+      it "raises Errno::ENOENT when path starts with a pipe" do
+        -> { IO.foreach("|echo ok").to_a }.should.raise(Errno::ENOENT)
+      end
+    end
+
+    platform_is :windows do
+      it "raises Errno::EINVAL when path starts with a pipe" do
+        -> { IO.foreach("|echo ok").to_a }.should.raise(Errno::EINVAL)
+      end
     end
   end
 end

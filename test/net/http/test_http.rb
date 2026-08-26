@@ -636,6 +636,7 @@ module TestNetHTTP_version_1_2_methods
   def test_request
     start {|http|
       _test_request__GET http
+      _test_request__QUERY http
       _test_request__accept_encoding http
       _test_request__file http
       # _test_request__range http   # WEBrick does not support Range: header.
@@ -662,6 +663,21 @@ module TestNetHTTP_version_1_2_methods
       assert_equal $test_net_http_data, res.body
 
       assert res.decode_content, 'Bug #7831' if Net::HTTP::HAVE_ZLIB
+    }
+  end
+
+  def _test_request__QUERY(http)
+    data = 'query data'
+    req = Net::HTTP::Query.new('/')
+    req['Accept'] = $test_net_http_data_type
+    req['Content-Type'] = 'application/x-www-form-urlencoded'
+    http.request(req, data) {|res|
+      assert_kind_of Net::HTTPResponse, res
+      unless self.is_a?(TestNetHTTP_v1_2_chunked)
+        assert_equal data.size, res['content-length'].to_i
+      end
+      assert_kind_of String, res.body
+      assert_equal data, res.body
     }
   end
 
@@ -791,6 +807,7 @@ module TestNetHTTP_version_1_2_methods
   def test_send_request
     start {|http|
       _test_send_request__GET http
+      _test_send_request__QUERY http
       _test_send_request__HEAD http
       _test_send_request__POST http
     }
@@ -804,6 +821,17 @@ module TestNetHTTP_version_1_2_methods
     end
     assert_kind_of String, res.body
     assert_equal $test_net_http_data, res.body
+  end
+
+  def _test_send_request__QUERY(http)
+    data = 'aaabbb cc ddddddddddd lkjoiu4j3qlkuoa'
+    res = http.send_request('QUERY', '/', data, 'content-type' => 'application/x-www-form-urlencoded')
+    assert_kind_of Net::HTTPResponse, res
+    unless self.is_a?(TestNetHTTP_v1_2_chunked)
+      assert_equal data.size, res['content-length'].to_i
+    end
+    assert_kind_of String, res.body
+    assert_equal data, res.body
   end
 
   def _test_send_request__HEAD(http)
@@ -1143,6 +1171,48 @@ class TestNetHTTPSwitchingProtocols < Test::Unit::TestCase
   end
 end
 
+class TestNetHTTPInformationalResponses < Test::Unit::TestCase
+  CONFIG = {
+    'host' => '127.0.0.1',
+    'proxy_host' => nil,
+    'proxy_port' => nil,
+  }
+
+  include TestNetHTTPUtils
+
+  def mount_informational(count)
+    @server.mount('/info', proc {|req, res|
+      count.times { req.continue }
+      res.body = 'BODY'
+    })
+  end
+
+  def test_informational_responses
+    mount_informational 3
+    start {|http|
+      res = http.get('/info')
+      assert_equal('BODY', res.body)
+    }
+  end
+
+  def test_max_informational_responses
+    mount_informational Net::HTTPResponse::MAX_INFORMATIONAL_RESPONSES
+    start {|http|
+      res = http.get('/info')
+      assert_equal('BODY', res.body)
+    }
+  end
+
+  def test_too_many_informational_responses
+    mount_informational Net::HTTPResponse::MAX_INFORMATIONAL_RESPONSES + 1
+    start {|http|
+      assert_raise(Net::HTTPBadResponse) {
+        http.get('/info')
+      }
+    }
+  end
+end
+
 class TestNetHTTPKeepAlive < Test::Unit::TestCase
   CONFIG = {
     'host' => '127.0.0.1',
@@ -1234,16 +1304,17 @@ class TestNetHTTPKeepAlive < Test::Unit::TestCase
     end
     def write(_)
     end
-    def readline
+    def readuntil(terminator, ignore_eof = false, limit: nil)
+      raise "unexpected terminator #{terminator.dump}" unless terminator == "\n"
+      # A header read ends the headers at once. Every other read is the
+      # status line of a fresh attempt, which is what count measures.
+      return "" if ignore_eof
       @count += 1
       if @success_after && @success_after <= @count
-        "HTTP/1.1 200 OK"
+        "HTTP/1.1 200 OK\n"
       else
         raise Errno::ECONNRESET
       end
-    end
-    def readuntil(*_)
-      ""
     end
     def read_all(_)
     end

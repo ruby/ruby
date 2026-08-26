@@ -485,4 +485,39 @@ class TestGCCompact < Test::Unit::TestCase
       assert_equal("hello", obj.instance_variable_get(:@str))
     RUBY
   end
+
+  def test_object_reembedding
+    assert_separately([], <<~'RUBY')
+      GC.auto_compact = true
+
+      objs = []
+      30.times.map { Class.new }.map do |k|
+        50.times.each do
+          obj = k.new
+          rand(0..30).times do |i|
+            obj.instance_variable_set(:"@v#{i}", i)
+          end
+          objs << obj
+        end
+      end
+
+      GC.verify_compaction_references(expand_heap: true, toward: :empty)
+      assert :ok
+    RUBY
+  end
+
+  # Regression test for [Bug #22237]
+  def test_str_and_ary_ptr_references_dont_go_stale_after_compaction
+    assert_separately([], <<~'RUBY')
+      input = "aaa"
+      iterations = 20_000
+      GC.auto_compact = true
+      Object.new # increases chance of memory corruption or segfault
+
+      iterations.times do |i|
+        s = input.tr("\u0080", "\u20AC").dup
+        assert_equal input, s
+      end
+    RUBY
+  end
 end

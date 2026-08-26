@@ -42,3 +42,22 @@ assert_normal_exit %q{
 assert_normal_exit %q{
   Thread.new { Fiber.current.kill }.join
 }
+
+# fiber_current() must not read a stale (cached) TLS execution context after a
+# fiber's coroutine migrates between native threads under the M:N scheduler.
+# Needs >= 2 Ractors so coroutines actually migrate; sleep drives the migration.
+assert_equal 'ok', %q{
+  Warning[:experimental] = false
+  2.times.map do
+    Ractor.new do
+      200.times do
+        f = Fiber.new { Fiber.yield; 1 }
+        f.resume
+        sleep(0.0003)   # block -> M:N native-thread migration
+        f.resume rescue nil
+      end
+      :ok
+    end
+  end.each(&:value)
+  :ok
+}

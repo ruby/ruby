@@ -28,6 +28,7 @@
 #include "internal/variable.h"
 #include "internal/set_table.h"
 #include "internal/struct.h"
+#include "ruby/thread.h"
 #include "variable.h"
 
 /* finish iseq array */
@@ -513,10 +514,23 @@ NOINLINE(static void vm_env_write_slowpath(const VALUE *ep, int index, VALUE v))
 static void
 vm_env_write_slowpath(const VALUE *ep, int index, VALUE v)
 {
-    /* remember env value forcely */
-    rb_gc_writebarrier_remember(VM_ENV_ENVVAL(ep));
-    VM_FORCE_WRITE(&ep[index], v);
-    VM_ENV_FLAGS_UNSET(ep, VM_ENV_FLAG_WB_REQUIRED);
+    const VALUE envval = VM_ENV_ENVVAL(ep);
+
+    if (RB_FL_TEST_RAW(envval, RUBY_FL_SHAREABLE)) {
+        /* Writing to a SHAREABLE env (an isolated proc) can create a shareable ->
+         * unshareable edge; only a full barrier sets the shref bit keeping v alive
+         * through its owner's local GC.  WB_REQUIRED stays: later writes need it too. */
+        if (!SPECIAL_CONST_P(v)) {
+            rb_gc_writebarrier(envval, v);
+        }
+        VM_FORCE_WRITE(&ep[index], v);
+    }
+    else {
+        /* remember env value forcely */
+        rb_gc_writebarrier_remember(envval);
+        VM_FORCE_WRITE(&ep[index], v);
+        VM_ENV_FLAGS_UNSET(ep, VM_ENV_FLAG_WB_REQUIRED);
+    }
     RB_DEBUG_COUNTER_INC(lvar_set_slowpath);
 }
 
@@ -581,12 +595,32 @@ vm_svar_valid_p(VALUE svar)
 }
 #endif
 
+/* Should this frame's special variables live in the env's svar slot?  A SHAREABLE env
+ * (isolated proc) can run in several Ractors at once, making svar shared mutable state
+ * leaking $~/$_ across Ractors: keep them per-EC instead. */
+static inline bool
+lep_svar_in_env_p(const rb_execution_context_t *ec, const VALUE *lep)
+{
+    if (!lep) return false;
+    if (ec == NULL) return true;
+    if (ec->root_lep == lep) return false;
+    /* lep may be a stale on-stack ep of a frame whose env already escaped: lep[0]
+     * still holds the imemo_env, so flags is not a FIXNUM and VM_ENV_ESCAPED_P
+     * asserts.  That is not a live shareable proc's env, so fall back to in-env. */
+    if (FIXNUM_P(lep[VM_ENV_DATA_INDEX_FLAGS]) &&
+            VM_ENV_ESCAPED_P(lep) &&
+            RB_FL_TEST_RAW(VM_ENV_ENVVAL(lep), RUBY_FL_SHAREABLE)) {
+        return false;
+    }
+    return true;
+}
+
 static inline struct vm_svar *
 lep_svar(const rb_execution_context_t *ec, const VALUE *lep)
 {
     VALUE svar;
 
-    if (lep && (ec == NULL || ec->root_lep != lep)) {
+    if (lep_svar_in_env_p(ec, lep)) {
         svar = lep[VM_ENV_DATA_INDEX_ME_CREF];
     }
     else {
@@ -603,7 +637,7 @@ lep_svar_write(const rb_execution_context_t *ec, const VALUE *lep, const struct 
 {
     VM_ASSERT(vm_svar_valid_p((VALUE)svar));
 
-    if (lep && (ec == NULL || ec->root_lep != lep)) {
+    if (lep_svar_in_env_p(ec, lep)) {
         vm_env_write(lep, VM_ENV_DATA_INDEX_ME_CREF, (VALUE)svar);
     }
     else {
@@ -908,7 +942,7 @@ cref_replace_with_duplicated_cref_each_frame(const VALUE *vptr, int can_be_svar,
         switch (imemo_type(v)) {
           case imemo_cref:
             cref = (rb_cref_t *)v;
-            new_cref = vm_cref_dup(cref);
+            new_cref = rb_vm_cref_dup(cref);
             if (parent) {
                 RB_OBJ_WRITE(parent, vptr, new_cref);
             }
@@ -1216,7 +1250,7 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
 
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
-        fields_obj = obj;
+        fields_obj = ROBJECT_FIELDS_OBJ(obj);
         break;
       case T_CLASS:
       case T_MODULE:
@@ -1404,7 +1438,7 @@ vm_setivar_class(VALUE obj, VALUE val, rb_setivar_cache cache)
     }
 
     shape_id_t shape_id = RBASIC_SHAPE_ID(fields_obj);
-    shape_id_t dest_shape_id = rb_setivar_cache_revalidate(shape_id, cache);
+    shape_id_t dest_shape_id = rb_setivar_cache_revalidate(shape_id, RBASIC_SHAPE_ID(fields_obj), cache);
     if (UNLIKELY(dest_shape_id == INVALID_SHAPE_ID)) {
         return Qundef;
     }
@@ -1412,8 +1446,7 @@ vm_setivar_class(VALUE obj, VALUE val, rb_setivar_cache cache)
     RB_OBJ_WRITE(fields_obj, &rb_imemo_fields_ptr(fields_obj)[cache.index], val);
 
     if (shape_id != dest_shape_id) {
-        // The dest_shape_id comes from the fields_obj
-        RBASIC_SET_SHAPE_ID(obj, SHAPE_ID_LAYOUT_RCLASS | (dest_shape_id & ~SHAPE_ID_LAYOUT_MASK));
+        RBASIC_SET_SHAPE_ID(obj, dest_shape_id);
         RBASIC_SET_SHAPE_ID(fields_obj, dest_shape_id);
     }
 
@@ -1426,21 +1459,22 @@ NOINLINE(static VALUE vm_setivar_default(VALUE obj, ID id, VALUE val, rb_setivar
 static VALUE
 vm_setivar_default(VALUE obj, ID id, VALUE val, rb_setivar_cache cache)
 {
+    VALUE fields_obj = rb_obj_fields(obj, id);
+    if (UNLIKELY(!fields_obj)) {
+        return Qundef;
+    }
+
     shape_id_t shape_id = RBASIC_SHAPE_ID(obj);
-    shape_id_t dest_shape_id = rb_setivar_cache_revalidate(shape_id, cache);
+    shape_id_t dest_shape_id = rb_setivar_cache_revalidate(shape_id, RBASIC_SHAPE_ID(fields_obj), cache);
     if (UNLIKELY(dest_shape_id == INVALID_SHAPE_ID)) {
         return Qundef;
     }
 
-    VALUE fields_obj = rb_obj_fields(obj, id);
-    RUBY_ASSERT(fields_obj);
     RB_OBJ_WRITE(fields_obj, &rb_imemo_fields_ptr(fields_obj)[cache.index], val);
 
     if (shape_id != dest_shape_id) {
         RBASIC_SET_SHAPE_ID(obj, dest_shape_id);
-        // The dest_shape_id comes from the owner, but fields_obj must always
-        // have layout RObject, so give the fields_object the right layout.
-        RBASIC_SET_SHAPE_ID(fields_obj, rb_shape_id_with_robject_layout(dest_shape_id));
+        RBASIC_SET_SHAPE_ID(fields_obj, dest_shape_id);
     }
 
     RB_DEBUG_COUNTER_INC(ivar_set_ic_hit);
@@ -1458,14 +1492,18 @@ vm_setivar(VALUE obj, VALUE val, rb_setivar_cache cache)
             VM_ASSERT(!rb_ractor_shareable_p(obj) || rb_obj_frozen_p(obj));
 
             shape_id_t shape_id = RBASIC_SHAPE_ID(obj);
-            shape_id_t dest_shape_id = rb_setivar_cache_revalidate(shape_id, cache);
+            shape_id_t dest_shape_id = rb_setivar_cache_revalidate(shape_id, shape_id, cache);
             if (UNLIKELY(dest_shape_id == INVALID_SHAPE_ID)) {
                 break;
             }
 
-            RB_OBJ_WRITE(obj, &ROBJECT_FIELDS(obj)[cache.index], val);
+            VALUE fields_obj = ROBJECT_FIELDS_OBJ(obj);
+            RB_OBJ_WRITE(fields_obj, &rb_imemo_fields_ptr(fields_obj)[cache.index], val);
             if (shape_id != dest_shape_id) {
                 RBASIC_SET_SHAPE_ID(obj, dest_shape_id);
+                if (fields_obj != obj) {
+                    RBASIC_SET_SHAPE_ID(fields_obj, dest_shape_id);
+                }
             }
 
             RB_DEBUG_COUNTER_INC(ivar_set_ic_hit);
@@ -1954,9 +1992,11 @@ vm_ccs_push(VALUE cc_tbl, ID mid, struct rb_class_cc_entries *ccs, const struct 
     }
     VM_ASSERT(ccs->len < ccs->capa);
 
+    const struct rb_callinfo_kwarg *kwarg = vm_ci_kwarg(ci);
     const int pos = ccs->len++;
     ccs->entries[pos].argc = vm_ci_argc(ci);
-    ccs->entries[pos].flag = vm_ci_flag(ci);
+    ccs->entries[pos].flag = (unsigned short)vm_ci_flag(ci);
+    ccs->entries[pos].kw_len = (unsigned short)(kwarg ? kwarg->keyword_len : 0);
     RB_OBJ_WRITE(cc_tbl, &ccs->entries[pos].cc, cc);
 
     if (RB_DEBUG_COUNTER_SETMAX(ccs_maxlen, ccs->len)) {
@@ -1971,9 +2011,10 @@ rb_vm_ccs_dump(struct rb_class_cc_entries *ccs)
 {
     ruby_debug_printf("ccs:%p (%d,%d)\n", (void *)ccs, ccs->len, ccs->capa);
     for (int i=0; i<ccs->len; i++) {
-        ruby_debug_printf("CCS CI ID:flag:%x argc:%u\n",
+        ruby_debug_printf("CCS CI ID:flag:%x argc:%u kw_len:%u\n",
                 ccs->entries[i].flag,
-                ccs->entries[i].argc);
+                ccs->entries[i].argc,
+                ccs->entries[i].kw_len);
         rp(ccs->entries[i].cc);
     }
 }
@@ -2118,19 +2159,25 @@ retry:
                 VM_ASSERT(vm_ccs_verify(ccs, mid, klass));
 
                 // We already know the method id is correct because we had
-                // to look up the ccs_data by method id.  All we need to
-                // compare is argc and flag
+                // to look up the ccs_data by method id.  We compare argc and
+                // flag, plus the keyword argument count: two call sites with
+                // the same argc and flag can still differ in how many of the
+                // arguments are keywords (e.g. `m(a: 1, b: 2)` vs `m(1, b: 2)`),
+                // which selects a different argument setup fastpath.
+                const struct rb_callinfo_kwarg *kwarg = vm_ci_kwarg(ci);
                 unsigned int argc = vm_ci_argc(ci);
                 unsigned int flag = vm_ci_flag(ci);
+                unsigned int kw_len = kwarg ? kwarg->keyword_len : 0;
 
                 for (int i=0; i<ccs_len; i++) {
                     unsigned int ccs_ci_argc = ccs->entries[i].argc;
                     unsigned int ccs_ci_flag = ccs->entries[i].flag;
+                    unsigned int ccs_ci_kw_len = ccs->entries[i].kw_len;
                     const struct rb_callcache *ccs_cc = ccs->entries[i].cc;
 
                     VM_ASSERT(IMEMO_TYPE_P(ccs_cc, imemo_callcache));
 
-                    if (ccs_ci_argc == argc && ccs_ci_flag == flag) {
+                    if (ccs_ci_argc == argc && ccs_ci_flag == flag && ccs_ci_kw_len == kw_len) {
                         RB_DEBUG_COUNTER_INC(cc_found_in_ccs);
 
                         VM_ASSERT(vm_cc_cme(ccs_cc)->called_id == mid);
@@ -2204,20 +2251,35 @@ rb_vm_search_method_slowpath(const struct rb_callinfo *ci, VALUE klass)
     return cc;
 }
 
+#if VM_CHECK_MODE > 0
+static bool
+vm_cd_owned_by_iseq_p(const struct rb_call_data *cd, const rb_iseq_t *iseq)
+{
+    const struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
+    return cd >= body->call_data && cd < body->call_data + body->ci_size;
+}
+#endif
+
 static const struct rb_callcache *
 vm_search_method_slowpath0(VALUE cd_owner, struct rb_call_data *cd, VALUE klass)
 {
 #if USE_DEBUG_COUNTER
     const struct rb_callcache *old_cc = cd->cc;
+    const rb_callable_method_entry_t *const old_cme = old_cc ? old_cc->cme_ : NULL;
 #endif
 
     const struct rb_callcache *cc = rb_vm_search_method_slowpath(cd->ci, klass);
+    const rb_callable_method_entry_t *const new_cme = vm_cc_cme(cc);
 
 #if OPT_INLINE_METHOD_CACHE
     cd->cc = cc;
 
     const struct rb_callcache *empty_cc = &vm_empty_cc;
     if (cd_owner && cc != empty_cc) {
+        // invokesuper dispatches with a cd on the machine stack, which has no
+        // owning iseq to remember and keeps its ci out of the GC.
+        VM_ASSERT(!vm_ci_markable(cd->ci) ||
+                  vm_cd_owned_by_iseq_p(cd, (const rb_iseq_t *)cd_owner));
         RB_OBJ_WRITTEN(cd_owner, Qundef, cc);
     }
 
@@ -2229,11 +2291,10 @@ vm_search_method_slowpath0(VALUE cd_owner, struct rb_call_data *cd, VALUE klass)
     else if (old_cc == cc) {
         RB_DEBUG_COUNTER_INC(mc_inline_miss_same_cc);
     }
-    else if (vm_cc_cme(old_cc) == vm_cc_cme(cc)) {
+    else if (old_cme == new_cme) {
         RB_DEBUG_COUNTER_INC(mc_inline_miss_same_cme);
     }
-    else if (vm_cc_cme(old_cc) && vm_cc_cme(cc) &&
-             vm_cc_cme(old_cc)->def == vm_cc_cme(cc)->def) {
+    else if (old_cme && new_cme && old_cme->def == new_cme->def) {
         RB_DEBUG_COUNTER_INC(mc_inline_miss_same_def);
     }
     else {
@@ -2242,18 +2303,15 @@ vm_search_method_slowpath0(VALUE cd_owner, struct rb_call_data *cd, VALUE klass)
 #endif
 #endif // OPT_INLINE_METHOD_CACHE
 
-    VM_ASSERT(vm_cc_cme(cc) == NULL ||
-              vm_cc_cme(cc)->called_id == vm_ci_mid(cd->ci));
+    if (new_cme) VM_ASSERT(new_cme->called_id == vm_ci_mid(cd->ci));
 
     return cc;
 }
 
-ALWAYS_INLINE(static const struct rb_callcache *vm_search_method_fastpath(const struct rb_control_frame_struct *reg_cfp, struct rb_call_data *cd, VALUE klass));
-static const struct rb_callcache *
-vm_search_method_fastpath(const struct rb_control_frame_struct *reg_cfp, struct rb_call_data *cd, VALUE klass)
+ALWAYS_INLINE(static bool vm_cc_hit_p(const struct rb_callcache *cc, const struct rb_call_data *cd, VALUE klass));
+static bool
+vm_cc_hit_p(const struct rb_callcache *cc, const struct rb_call_data *cd, VALUE klass)
 {
-    const struct rb_callcache *cc = cd->cc;
-
     VM_ASSERT_TYPE2(klass, T_CLASS, T_ICLASS);
 
 #if OPT_INLINE_METHOD_CACHE
@@ -2265,7 +2323,7 @@ vm_search_method_fastpath(const struct rb_control_frame_struct *reg_cfp, struct 
                       (vm_ci_flag(cd->ci) & VM_CALL_SUPER) ||         // search_super w/ define_method
                       vm_cc_cme(cc)->called_id == vm_ci_mid(cd->ci)); // cme->called_id == ci->mid
 
-            return cc;
+            return true;
         }
         RB_DEBUG_COUNTER_INC(mc_inline_miss_invalidated);
     }
@@ -2273,6 +2331,18 @@ vm_search_method_fastpath(const struct rb_control_frame_struct *reg_cfp, struct 
         RB_DEBUG_COUNTER_INC(mc_inline_miss_klass);
     }
 #endif
+
+    return false;
+}
+
+ALWAYS_INLINE(static const struct rb_callcache *vm_search_method_fastpath(const struct rb_control_frame_struct *reg_cfp, struct rb_call_data *cd, VALUE klass));
+static const struct rb_callcache *
+vm_search_method_fastpath(const struct rb_control_frame_struct *reg_cfp, struct rb_call_data *cd, VALUE klass)
+{
+    const struct rb_callcache *cc = cd->cc;
+    if (vm_cc_hit_p(cc, cd, klass)) {
+        return cc;
+    }
 
     return vm_search_method_slowpath0((VALUE)CFP_ISEQ(reg_cfp), cd, klass);
 }
@@ -2292,9 +2362,12 @@ const struct rb_callable_method_entry_struct *
 rb_zjit_vm_search_method(VALUE cd_owner, struct rb_call_data *cd, VALUE recv)
 {
     // Called from ZJIT with the compile-time iseq, which may differ from
-    // the iseq on the current CFP. Use the slowpath to avoid stale caches.
+    // the iseq on the current CFP.
     VALUE klass = CLASS_OF(recv);
-    const struct rb_callcache *cc = vm_search_method_slowpath0(cd_owner, cd, klass);
+    const struct rb_callcache *cc = cd->cc;
+    if (!vm_cc_hit_p(cc, cd, klass)) {
+        cc = vm_search_method_slowpath0(cd_owner, cd, klass);
+    }
     return vm_cc_cme(cc);
 }
 
@@ -2371,18 +2444,15 @@ rb_zjit_cme_is_cfunc(const rb_callable_method_entry_t *me, const cfunc_type func
 int
 rb_vm_method_cfunc_is(const rb_iseq_t *iseq, CALL_DATA cd, VALUE recv, cfunc_type func)
 {
-    // Called from ZJIT with the compile-time iseq, which may differ from
-    // the iseq on the current CFP. Use the slowpath to avoid stale caches.
-    VALUE klass = CLASS_OF(recv);
-    const struct rb_callcache *cc = vm_search_method_slowpath0((VALUE)iseq, cd, klass);
-    const struct rb_callable_method_entry_struct *cme = vm_cc_cme(cc);
+    const struct rb_callable_method_entry_struct *cme = rb_zjit_vm_search_method((VALUE)iseq, cd, recv);
     return check_cfunc(cme, func);
 }
 
 #define check_cfunc(me, func) check_cfunc(me, make_cfunc_type(func))
 #define vm_method_cfunc_is(reg_cfp, cd, recv, func) vm_method_cfunc_is(reg_cfp, cd, recv, make_cfunc_type(func))
 
-#define EQ_UNREDEFINED_P(t) BASIC_OP_UNREDEFINED_P(BOP_EQ, t##_REDEFINED_OP_FLAG)
+#define OP_UNREDEFINED_P(op, t) BASIC_OP_UNREDEFINED_P(BOP_##op, t##_REDEFINED_OP_FLAG)
+#define EQ_UNREDEFINED_P(t) OP_UNREDEFINED_P(EQ, t)
 
 static inline bool
 FIXNUM_2_P(VALUE a, VALUE b)
@@ -2463,8 +2533,6 @@ opt_equality(struct rb_control_frame_struct *reg_cfp, VALUE recv, VALUE obj, CAL
         return RBOOL(recv == obj);
     }
 }
-
-#undef EQ_UNREDEFINED_P
 
 static inline const struct rb_callcache *gccct_method_search(rb_execution_context_t *ec, VALUE recv, ID mid, const struct rb_callinfo *ci); // vm_eval.c
 NOINLINE(static VALUE opt_equality_by_mid_slowpath(VALUE recv, VALUE obj, ID mid));
@@ -2738,7 +2806,7 @@ vm_caller_setup_arg_kw(rb_control_frame_t *cfp, struct rb_calling_info *calling,
 {
     const VALUE *const passed_keywords = vm_ci_kwarg(ci)->keywords;
     const int kw_len = vm_ci_kwarg(ci)->keyword_len;
-    const VALUE h = rb_hash_new_with_size(kw_len);
+    const VALUE h = rb_hash_new_capa(kw_len);
     VALUE *sp = cfp->sp;
     int i;
 
@@ -3134,9 +3202,9 @@ vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling,
             VM_ASSERT(cc == calling->cc);
 
             if (vm_call_iseq_optimizable_p(ci, cc)) {
-                if ((iseq->body->builtin_attrs & BUILTIN_ATTR_SINGLE_NOARG_LEAF) && ruby_vm_c_events_enabled == 0) {
-                    VM_ASSERT(iseq->body->builtin_attrs & BUILTIN_ATTR_LEAF);
-                    vm_cc_bf_set(cc, (void *)iseq->body->iseq_encoded[1]);
+                if ((ISEQ_BODY(iseq)->builtin_attrs & BUILTIN_ATTR_SINGLE_NOARG_LEAF) && ruby_vm_c_events_enabled == 0) {
+                    VM_ASSERT(ISEQ_BODY(iseq)->builtin_attrs & BUILTIN_ATTR_LEAF);
+                    vm_cc_bf_set(cc, (void *)ISEQ_BODY(iseq)->iseq_encoded[1]);
                     CC_SET_FASTPATH(cc, vm_call_single_noarg_leaf_builtin, true);
                 }
                 else {
@@ -4652,7 +4720,15 @@ vm_call_opt_block_call(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, 
     VALUE block_handler = VM_ENV_BLOCK_HANDLER(VM_CF_LEP(reg_cfp));
     const struct rb_callinfo *ci = calling->cd->ci;
 
-    if (BASIC_OP_UNREDEFINED_P(BOP_CALL, PROC_REDEFINED_OP_FLAG)) {
+    enum ruby_basic_operators bop;
+    switch (vm_ci_mid(ci)) {
+      case idAREF:  bop = BOP_AREF;  break;
+      case idYield: bop = BOP_YIELD; break;
+      case idEqq:   bop = BOP_EQQ;   break;
+      default:      bop = BOP_CALL;  break;
+    }
+
+    if (BASIC_OP_UNREDEFINED_P(bop, PROC_REDEFINED_OP_FLAG)) {
         return vm_invoke_block_opt_call(ec, reg_cfp, calling, ci, block_handler);
     }
     else {
@@ -5129,7 +5205,7 @@ block_proc_is_lambda(const VALUE procval)
 
     if (procval) {
         GetProcPtr(procval, proc);
-        return proc->is_lambda;
+        return proc->header.is_lambda;
     }
     else {
         return 0;
@@ -5277,9 +5353,9 @@ vm_yield_setup_args(rb_execution_context_t *ec, const rb_iseq_t *iseq, const int
 /* ruby iseq -> ruby block */
 
 static VALUE
-vm_invoke_iseq_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
-                     struct rb_calling_info *calling, const struct rb_callinfo *ci,
-                     bool is_lambda, VALUE block_handler)
+vm_invoke_iseq_block_with_cref(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
+                               struct rb_calling_info *calling, const struct rb_callinfo *ci,
+                               bool is_lambda, VALUE block_handler, const rb_cref_t *cref)
 {
     const struct rb_captured_block *captured = VM_BH_TO_ISEQ_BLOCK(block_handler);
     const rb_iseq_t *iseq = rb_iseq_check(captured->code.iseq);
@@ -5291,15 +5367,24 @@ vm_invoke_iseq_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
 
     SET_SP(rsp);
 
+    /* cref is normally 0; Proc#refined supplies a refinement cref */
     vm_push_frame(ec, iseq,
                   frame_flag,
                   captured->self,
-                  VM_GUARDED_PREV_EP(captured->ep), 0,
+                  VM_GUARDED_PREV_EP(captured->ep), (VALUE)cref,
                   ISEQ_BODY(iseq)->iseq_encoded + opt_pc,
                   rsp + arg_size,
                   ISEQ_BODY(iseq)->local_table_size - arg_size, ISEQ_BODY(iseq)->stack_max);
 
     return Qundef;
+}
+
+static VALUE
+vm_invoke_iseq_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
+                     struct rb_calling_info *calling, const struct rb_callinfo *ci,
+                     bool is_lambda, VALUE block_handler)
+{
+    return vm_invoke_iseq_block_with_cref(ec, reg_cfp, calling, ci, is_lambda, block_handler, NULL);
 }
 
 static VALUE
@@ -5365,11 +5450,9 @@ vm_invoke_ifunc_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
     return val;
 }
 
-static VALUE
-vm_proc_to_block_handler(VALUE procval)
+static inline VALUE
+vm_block_to_block_handler(const struct rb_block *block)
 {
-    const struct rb_block *block = vm_proc_block(procval);
-
     switch (vm_block_type(block)) {
       case block_type_iseq:
         return VM_BH_FROM_ISEQ_BLOCK(&block->as.captured);
@@ -5385,14 +5468,44 @@ vm_proc_to_block_handler(VALUE procval)
 }
 
 static VALUE
+vm_proc_to_block_handler(VALUE procval)
+{
+    return vm_block_to_block_handler(vm_proc_block(procval));
+}
+
+NOINLINE(static VALUE
+vm_invoke_proc_block_with_cref(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
+                               struct rb_calling_info *calling, const struct rb_callinfo *ci,
+                               bool is_lambda, VALUE block_handler, VALUE refined_procval));
+static VALUE
+vm_invoke_proc_block_with_cref(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
+                               struct rb_calling_info *calling, const struct rb_callinfo *ci,
+                               bool is_lambda, VALUE block_handler, VALUE refined_procval)
+{
+    const rb_cref_t *cref = rb_proc_refinements_cref_for_call(refined_procval);
+    return vm_invoke_iseq_block_with_cref(ec, reg_cfp, calling, ci, is_lambda, block_handler, cref);
+}
+
+static VALUE
 vm_invoke_proc_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
                      struct rb_calling_info *calling, const struct rb_callinfo *ci,
                      bool is_lambda, VALUE block_handler)
 {
+    VALUE refined_procval = 0;
+
     while (vm_block_handler_type(block_handler) == block_handler_type_proc) {
-        VALUE proc = VM_BH_TO_PROC(block_handler);
-        is_lambda = block_proc_is_lambda(proc);
-        block_handler = vm_proc_to_block_handler(proc);
+        VALUE procval = VM_BH_TO_PROC(block_handler);
+        rb_proc_t *po;
+        GetProcPtr(procval, po);
+        if (po->header.is_refined) refined_procval = procval;
+        is_lambda = po->header.is_lambda;
+        block_handler = vm_block_to_block_handler(&po->block);
+    }
+
+    if (UNLIKELY(refined_procval) && vm_block_handler_type(block_handler) == block_handler_type_iseq) {
+        /* should not be inlined so that vm_invoke_proc_block stays leaf/frameless. */
+        return vm_invoke_proc_block_with_cref(ec, reg_cfp, calling, ci, is_lambda, block_handler,
+                                              refined_procval);
     }
 
     return vm_invoke_block(ec, reg_cfp, calling, ci, is_lambda, block_handler);
@@ -5442,11 +5555,49 @@ vm_once_exec(VALUE iseq)
     return rb_proc_call_with_block(proc, 0, 0, Qnil);
 }
 
+#define RUNNING_THREAD_ONCE_DONE ((rb_thread_t *)0x1)
+
+struct vm_once_wait_arg {
+    rb_vm_t *vm;
+    union iseq_inline_storage_entry *is;
+};
+
+static void
+vm_once_broadcast(rb_vm_t *vm)
+{
+    rb_native_mutex_lock(&vm->once_lock);
+    rb_native_cond_broadcast(&vm->once_cond);
+    rb_native_mutex_unlock(&vm->once_lock);
+}
+
+static void *
+vm_once_wait_no_gvl(void *ptr)
+{
+    struct vm_once_wait_arg *arg = (struct vm_once_wait_arg *)ptr;
+    rb_vm_t *vm = arg->vm;
+    rb_thread_t *running_th;
+
+    rb_native_mutex_lock(&vm->once_lock);
+    running_th = rbimpl_atomic_ptr_load((void **)&arg->is->once.running_thread, RBIMPL_ATOMIC_ACQUIRE);
+    if (running_th != NULL && running_th != RUNNING_THREAD_ONCE_DONE) {
+        rb_native_cond_wait(&vm->once_cond, &vm->once_lock);
+    }
+    rb_native_mutex_unlock(&vm->once_lock);
+    return NULL;
+}
+
+static void
+vm_once_wait_ubf(void *ptr)
+{
+    vm_once_broadcast((rb_vm_t *)ptr);
+}
+
 static VALUE
 vm_once_clear(VALUE data)
 {
     union iseq_inline_storage_entry *is = (union iseq_inline_storage_entry *)data;
-    is->once.running_thread = NULL;
+    rbimpl_atomic_ptr_store((volatile void **)&is->once.running_thread, NULL, RBIMPL_ATOMIC_RELEASE);
+    vm_once_broadcast(GET_VM());
     return Qnil;
 }
 
@@ -6012,6 +6163,10 @@ enum method_explorer_type {
     mexp_search_super,
 };
 
+ALWAYS_INLINE(static VALUE vm_sendish(struct rb_execution_context_struct *ec,
+                                      struct rb_control_frame_struct *reg_cfp,
+                                      struct rb_call_data *cd, VALUE block_handler,
+                                      enum method_explorer_type method_explorer));
 static inline VALUE
 vm_sendish(
     struct rb_execution_context_struct *ec,
@@ -6171,9 +6326,6 @@ vm_objtostring(struct rb_control_frame_struct *reg_cfp, VALUE recv, CALL_DATA cd
     switch (type) {
       case T_SYMBOL:
         if (check_method_basic_definition(cme)) {
-            // rb_sym_to_s() allocates a mutable string, but since we are only
-            // going to use this string for interpolation, it's fine to use the
-            // frozen string.
             return rb_sym2str(recv);
         }
         break;
@@ -6261,7 +6413,7 @@ vm_opt_str_freeze(VALUE str, int bop, ID id)
 static VALUE
 vm_opt_duparray_include_p(rb_execution_context_t *ec, const VALUE ary, VALUE target)
 {
-    if (BASIC_OP_UNREDEFINED_P(BOP_INCLUDE_P, ARRAY_REDEFINED_OP_FLAG)) {
+    if (OP_UNREDEFINED_P(INCLUDE_P, ARRAY)) {
         return rb_ary_includes(ary, target);
     }
     else {
@@ -6284,7 +6436,7 @@ rb_vm_opt_duparray_include_p(rb_execution_context_t *ec, const VALUE ary, VALUE 
 static VALUE
 vm_opt_newarray_max(rb_execution_context_t *ec, rb_num_t array_len, const VALUE *ptr)
 {
-    if (BASIC_OP_UNREDEFINED_P(BOP_MAX, ARRAY_REDEFINED_OP_FLAG)) {
+    if (OP_UNREDEFINED_P(MAX, ARRAY)) {
         if (array_len == 0) {
             return Qnil;
         }
@@ -6314,7 +6466,7 @@ rb_vm_opt_newarray_max(rb_execution_context_t *ec, rb_num_t array_len, const VAL
 static VALUE
 vm_opt_newarray_min(rb_execution_context_t *ec, rb_num_t array_len, const VALUE *ptr)
 {
-    if (BASIC_OP_UNREDEFINED_P(BOP_MIN, ARRAY_REDEFINED_OP_FLAG)) {
+    if (OP_UNREDEFINED_P(MIN, ARRAY)) {
         if (array_len == 0) {
             return Qnil;
         }
@@ -6345,7 +6497,7 @@ static VALUE
 vm_opt_newarray_hash(rb_execution_context_t *ec, rb_num_t array_len, const VALUE *ptr)
 {
     // If Array#hash is _not_ monkeypatched, use the optimized call
-    if (BASIC_OP_UNREDEFINED_P(BOP_HASH, ARRAY_REDEFINED_OP_FLAG)) {
+    if (OP_UNREDEFINED_P(HASH, ARRAY)) {
         return rb_ary_hash_values(array_len, ptr);
     }
     else {
@@ -6365,7 +6517,7 @@ VALUE rb_ec_pack_ary(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buf
 static VALUE
 vm_opt_newarray_include_p(rb_execution_context_t *ec, rb_num_t array_len, const VALUE *ptr, VALUE target)
 {
-    if (BASIC_OP_UNREDEFINED_P(BOP_INCLUDE_P, ARRAY_REDEFINED_OP_FLAG)) {
+    if (OP_UNREDEFINED_P(INCLUDE_P, ARRAY)) {
         struct RArray fake_ary = {RBASIC_INIT};
         VALUE ary = rb_setup_fake_ary(&fake_ary, ptr, array_len);
         return rb_ary_includes(ary, target);
@@ -6385,7 +6537,7 @@ rb_vm_opt_newarray_include_p(rb_execution_context_t *ec, rb_num_t array_len, con
 static VALUE
 vm_opt_newarray_pack_buffer(rb_execution_context_t *ec, rb_num_t array_len, const VALUE *ptr, VALUE fmt, VALUE buffer)
 {
-    if (BASIC_OP_UNREDEFINED_P(BOP_PACK, ARRAY_REDEFINED_OP_FLAG)) {
+    if (OP_UNREDEFINED_P(PACK, ARRAY)) {
         struct RArray fake_ary = {RBASIC_INIT};
         VALUE ary = rb_setup_fake_ary(&fake_ary, ptr, array_len);
         return rb_ec_pack_ary(ec, ary, fmt, (UNDEF_P(buffer) ? Qnil : buffer));
@@ -6399,7 +6551,7 @@ vm_opt_newarray_pack_buffer(rb_execution_context_t *ec, rb_num_t array_len, cons
         int argc = 1;
 
         if (!UNDEF_P(buffer)) {
-            args[1] = rb_hash_new_with_size(1);
+            args[1] = rb_hash_new_capa(1);
             rb_hash_aset(args[1], ID2SYM(idBuffer), buffer);
             kw_splat = RB_PASS_KEYWORDS;
             argc++;
@@ -6530,7 +6682,11 @@ rb_vm_opt_getconstant_path(rb_execution_context_t *ec, rb_control_frame_t *const
     if (ice && vm_ic_hit_p(ice, GET_EP())) {
         val = ice->value;
 
-        VM_ASSERT(val == vm_get_ev_const_chain(ec, segments));
+        // On a non-main ractor another ractor can concurrently reassign a
+        // shareable constant (which invalidates ICs asynchronously), so the
+        // cached-but-still-shareable value may legitimately differ from a
+        // freshly recomputed chain. Only assert equality when single-ractor.
+        VM_ASSERT(val == vm_get_ev_const_chain(ec, segments) || rb_multi_ractor_p());
     }
     else {
         ruby_vm_constant_cache_misses++;
@@ -6547,36 +6703,50 @@ static VALUE
 vm_once_dispatch(rb_execution_context_t *ec, ISEQ iseq, ISE is)
 {
     rb_thread_t *th = rb_ec_thread_ptr(ec);
-    rb_thread_t *const RUNNING_THREAD_ONCE_DONE = (rb_thread_t *)(0x1);
+    rb_thread_t *running_th;
 
   again:
-    if (is->once.running_thread == RUNNING_THREAD_ONCE_DONE) {
+    running_th = rbimpl_atomic_ptr_load((void**)&is->once.running_thread, RBIMPL_ATOMIC_ACQUIRE);
+    if (running_th == RUNNING_THREAD_ONCE_DONE) {
         return is->once.value;
     }
-    else if (is->once.running_thread == NULL) {
-        VALUE val;
-        is->once.running_thread = th;
-        val = rb_ensure(vm_once_exec, (VALUE)iseq, vm_once_clear, (VALUE)is);
-        // TODO: confirm that it is shareable
+    else if (running_th == NULL) {
+        VALUE val = Qundef;
+        enum ruby_tag_type state;
+        if (rbimpl_atomic_ptr_cas((void**)&is->once.running_thread, running_th, th, RBIMPL_ATOMIC_RELEASE, RBIMPL_ATOMIC_RELAXED) != running_th) {
+            goto again;
+        }
+        EC_PUSH_TAG(ec);
+        if ((state = EC_EXEC_TAG()) == TAG_NONE) {
+            val = vm_once_exec((VALUE)iseq);
+        }
+        EC_POP_TAG();
+        if (state != TAG_NONE) {
+            vm_once_clear((VALUE)is);
+            EC_JUMP_TAG(ec, state);
+        }
 
+        // TODO: confirm that it is shareable
         if (RB_FL_ABLE(val)) {
             RB_OBJ_SET_SHAREABLE(val);
         }
 
         RB_OBJ_WRITE(CFP_ISEQ(ec->cfp), &is->once.value, val);
 
-        /* is->once.running_thread is cleared by vm_once_clear() */
-        is->once.running_thread = RUNNING_THREAD_ONCE_DONE; /* success */
+        rbimpl_atomic_ptr_store((volatile void**)&is->once.running_thread, RUNNING_THREAD_ONCE_DONE, RBIMPL_ATOMIC_RELEASE); /* success */
+        vm_once_broadcast(rb_ec_vm_ptr(ec));
         return val;
     }
-    else if (is->once.running_thread == th) {
+    else if (running_th == th) {
         /* recursive once */
         return vm_once_exec((VALUE)iseq);
     }
     else {
-        /* waiting for finish */
+        /* wait for the winner to finish */
+        struct vm_once_wait_arg arg = { .vm = rb_ec_vm_ptr(ec), .is = is };
+        rb_nogvl(vm_once_wait_no_gvl, &arg, vm_once_wait_ubf, arg.vm,
+                 RB_NOGVL_UBF_ASYNC_SAFE | RB_NOGVL_INTR_FAIL);
         RUBY_VM_CHECK_INTS(ec);
-        rb_thread_schedule();
         goto again;
     }
 }
@@ -6643,11 +6813,11 @@ static VALUE
 vm_opt_plus(VALUE recv, VALUE obj)
 {
     if (FIXNUM_2_P(recv, obj) &&
-        BASIC_OP_UNREDEFINED_P(BOP_PLUS, INTEGER_REDEFINED_OP_FLAG)) {
+        OP_UNREDEFINED_P(PLUS, INTEGER)) {
         return rb_fix_plus_fix(recv, obj);
     }
     else if (FLONUM_2_P(recv, obj) &&
-             BASIC_OP_UNREDEFINED_P(BOP_PLUS, FLOAT_REDEFINED_OP_FLAG)) {
+             OP_UNREDEFINED_P(PLUS, FLOAT)) {
         return DBL2NUM(RFLOAT_VALUE(recv) + RFLOAT_VALUE(obj));
     }
     else if (SPECIAL_CONST_P(recv) || SPECIAL_CONST_P(obj)) {
@@ -6655,17 +6825,17 @@ vm_opt_plus(VALUE recv, VALUE obj)
     }
     else if (RBASIC_CLASS(recv) == rb_cFloat &&
              RBASIC_CLASS(obj)  == rb_cFloat &&
-             BASIC_OP_UNREDEFINED_P(BOP_PLUS, FLOAT_REDEFINED_OP_FLAG)) {
+             OP_UNREDEFINED_P(PLUS, FLOAT)) {
         return DBL2NUM(RFLOAT_VALUE(recv) + RFLOAT_VALUE(obj));
     }
     else if (RBASIC_CLASS(recv) == rb_cString &&
              RBASIC_CLASS(obj) == rb_cString &&
-             BASIC_OP_UNREDEFINED_P(BOP_PLUS, STRING_REDEFINED_OP_FLAG)) {
+             OP_UNREDEFINED_P(PLUS, STRING)) {
         return rb_str_opt_plus(recv, obj);
     }
     else if (RBASIC_CLASS(recv) == rb_cArray &&
              RBASIC_CLASS(obj) == rb_cArray &&
-             BASIC_OP_UNREDEFINED_P(BOP_PLUS, ARRAY_REDEFINED_OP_FLAG)) {
+             OP_UNREDEFINED_P(PLUS, ARRAY)) {
         return rb_ary_plus(recv, obj);
     }
     else {
@@ -6677,11 +6847,11 @@ static VALUE
 vm_opt_minus(VALUE recv, VALUE obj)
 {
     if (FIXNUM_2_P(recv, obj) &&
-        BASIC_OP_UNREDEFINED_P(BOP_MINUS, INTEGER_REDEFINED_OP_FLAG)) {
+        OP_UNREDEFINED_P(MINUS, INTEGER)) {
         return rb_fix_minus_fix(recv, obj);
     }
     else if (FLONUM_2_P(recv, obj) &&
-             BASIC_OP_UNREDEFINED_P(BOP_MINUS, FLOAT_REDEFINED_OP_FLAG)) {
+             OP_UNREDEFINED_P(MINUS, FLOAT)) {
         return DBL2NUM(RFLOAT_VALUE(recv) - RFLOAT_VALUE(obj));
     }
     else if (SPECIAL_CONST_P(recv) || SPECIAL_CONST_P(obj)) {
@@ -6689,7 +6859,7 @@ vm_opt_minus(VALUE recv, VALUE obj)
     }
     else if (RBASIC_CLASS(recv) == rb_cFloat &&
              RBASIC_CLASS(obj)  == rb_cFloat &&
-             BASIC_OP_UNREDEFINED_P(BOP_MINUS, FLOAT_REDEFINED_OP_FLAG)) {
+             OP_UNREDEFINED_P(MINUS, FLOAT)) {
         return DBL2NUM(RFLOAT_VALUE(recv) - RFLOAT_VALUE(obj));
     }
     else {
@@ -6701,11 +6871,11 @@ static VALUE
 vm_opt_mult(VALUE recv, VALUE obj)
 {
     if (FIXNUM_2_P(recv, obj) &&
-        BASIC_OP_UNREDEFINED_P(BOP_MULT, INTEGER_REDEFINED_OP_FLAG)) {
+        OP_UNREDEFINED_P(MULT, INTEGER)) {
         return rb_fix_mul_fix(recv, obj);
     }
     else if (FLONUM_2_P(recv, obj) &&
-             BASIC_OP_UNREDEFINED_P(BOP_MULT, FLOAT_REDEFINED_OP_FLAG)) {
+             OP_UNREDEFINED_P(MULT, FLOAT)) {
         return DBL2NUM(RFLOAT_VALUE(recv) * RFLOAT_VALUE(obj));
     }
     else if (SPECIAL_CONST_P(recv) || SPECIAL_CONST_P(obj)) {
@@ -6713,7 +6883,7 @@ vm_opt_mult(VALUE recv, VALUE obj)
     }
     else if (RBASIC_CLASS(recv) == rb_cFloat &&
              RBASIC_CLASS(obj)  == rb_cFloat &&
-             BASIC_OP_UNREDEFINED_P(BOP_MULT, FLOAT_REDEFINED_OP_FLAG)) {
+             OP_UNREDEFINED_P(MULT, FLOAT)) {
         return DBL2NUM(RFLOAT_VALUE(recv) * RFLOAT_VALUE(obj));
     }
     else {
@@ -6725,11 +6895,11 @@ static VALUE
 vm_opt_div(VALUE recv, VALUE obj)
 {
     if (FIXNUM_2_P(recv, obj) &&
-        BASIC_OP_UNREDEFINED_P(BOP_DIV, INTEGER_REDEFINED_OP_FLAG)) {
+        OP_UNREDEFINED_P(DIV, INTEGER)) {
         return (FIX2LONG(obj) == 0) ? Qundef : rb_fix_div_fix(recv, obj);
     }
     else if (FLONUM_2_P(recv, obj) &&
-             BASIC_OP_UNREDEFINED_P(BOP_DIV, FLOAT_REDEFINED_OP_FLAG)) {
+             OP_UNREDEFINED_P(DIV, FLOAT)) {
         return rb_flo_div_flo(recv, obj);
     }
     else if (SPECIAL_CONST_P(recv) || SPECIAL_CONST_P(obj)) {
@@ -6737,7 +6907,7 @@ vm_opt_div(VALUE recv, VALUE obj)
     }
     else if (RBASIC_CLASS(recv) == rb_cFloat &&
              RBASIC_CLASS(obj)  == rb_cFloat &&
-             BASIC_OP_UNREDEFINED_P(BOP_DIV, FLOAT_REDEFINED_OP_FLAG)) {
+             OP_UNREDEFINED_P(DIV, FLOAT)) {
         return rb_flo_div_flo(recv, obj);
     }
     else {
@@ -6749,11 +6919,11 @@ static VALUE
 vm_opt_mod(VALUE recv, VALUE obj)
 {
     if (FIXNUM_2_P(recv, obj) &&
-        BASIC_OP_UNREDEFINED_P(BOP_MOD, INTEGER_REDEFINED_OP_FLAG)) {
+        OP_UNREDEFINED_P(MOD, INTEGER)) {
         return (FIX2LONG(obj) == 0) ? Qundef : rb_fix_mod_fix(recv, obj);
     }
     else if (FLONUM_2_P(recv, obj) &&
-             BASIC_OP_UNREDEFINED_P(BOP_MOD, FLOAT_REDEFINED_OP_FLAG)) {
+             OP_UNREDEFINED_P(MOD, FLOAT)) {
         return DBL2NUM(ruby_float_mod(RFLOAT_VALUE(recv), RFLOAT_VALUE(obj)));
     }
     else if (SPECIAL_CONST_P(recv) || SPECIAL_CONST_P(obj)) {
@@ -6761,7 +6931,7 @@ vm_opt_mod(VALUE recv, VALUE obj)
     }
     else if (RBASIC_CLASS(recv) == rb_cFloat &&
              RBASIC_CLASS(obj)  == rb_cFloat &&
-             BASIC_OP_UNREDEFINED_P(BOP_MOD, FLOAT_REDEFINED_OP_FLAG)) {
+             OP_UNREDEFINED_P(MOD, FLOAT)) {
         return DBL2NUM(ruby_float_mod(RFLOAT_VALUE(recv), RFLOAT_VALUE(obj)));
     }
     else {
@@ -6787,11 +6957,11 @@ static VALUE
 vm_opt_lt(VALUE recv, VALUE obj)
 {
     if (FIXNUM_2_P(recv, obj) &&
-        BASIC_OP_UNREDEFINED_P(BOP_LT, INTEGER_REDEFINED_OP_FLAG)) {
+        OP_UNREDEFINED_P(LT, INTEGER)) {
         return RBOOL((SIGNED_VALUE)recv < (SIGNED_VALUE)obj);
     }
     else if (FLONUM_2_P(recv, obj) &&
-             BASIC_OP_UNREDEFINED_P(BOP_LT, FLOAT_REDEFINED_OP_FLAG)) {
+             OP_UNREDEFINED_P(LT, FLOAT)) {
         return RBOOL(RFLOAT_VALUE(recv) < RFLOAT_VALUE(obj));
     }
     else if (SPECIAL_CONST_P(recv) || SPECIAL_CONST_P(obj)) {
@@ -6799,7 +6969,7 @@ vm_opt_lt(VALUE recv, VALUE obj)
     }
     else if (RBASIC_CLASS(recv) == rb_cFloat &&
              RBASIC_CLASS(obj)  == rb_cFloat &&
-             BASIC_OP_UNREDEFINED_P(BOP_LT, FLOAT_REDEFINED_OP_FLAG)) {
+             OP_UNREDEFINED_P(LT, FLOAT)) {
         return RBOOL(RFLOAT_VALUE(recv) < RFLOAT_VALUE(obj));
     }
     else {
@@ -6811,11 +6981,11 @@ static VALUE
 vm_opt_le(VALUE recv, VALUE obj)
 {
     if (FIXNUM_2_P(recv, obj) &&
-        BASIC_OP_UNREDEFINED_P(BOP_LE, INTEGER_REDEFINED_OP_FLAG)) {
+        OP_UNREDEFINED_P(LE, INTEGER)) {
         return RBOOL((SIGNED_VALUE)recv <= (SIGNED_VALUE)obj);
     }
     else if (FLONUM_2_P(recv, obj) &&
-             BASIC_OP_UNREDEFINED_P(BOP_LE, FLOAT_REDEFINED_OP_FLAG)) {
+             OP_UNREDEFINED_P(LE, FLOAT)) {
         return RBOOL(RFLOAT_VALUE(recv) <= RFLOAT_VALUE(obj));
     }
     else if (SPECIAL_CONST_P(recv) || SPECIAL_CONST_P(obj)) {
@@ -6823,7 +6993,7 @@ vm_opt_le(VALUE recv, VALUE obj)
     }
     else if (RBASIC_CLASS(recv) == rb_cFloat &&
              RBASIC_CLASS(obj)  == rb_cFloat &&
-             BASIC_OP_UNREDEFINED_P(BOP_LE, FLOAT_REDEFINED_OP_FLAG)) {
+             OP_UNREDEFINED_P(LE, FLOAT)) {
         return RBOOL(RFLOAT_VALUE(recv) <= RFLOAT_VALUE(obj));
     }
     else {
@@ -6835,11 +7005,11 @@ static VALUE
 vm_opt_gt(VALUE recv, VALUE obj)
 {
     if (FIXNUM_2_P(recv, obj) &&
-        BASIC_OP_UNREDEFINED_P(BOP_GT, INTEGER_REDEFINED_OP_FLAG)) {
+        OP_UNREDEFINED_P(GT, INTEGER)) {
         return RBOOL((SIGNED_VALUE)recv > (SIGNED_VALUE)obj);
     }
     else if (FLONUM_2_P(recv, obj) &&
-             BASIC_OP_UNREDEFINED_P(BOP_GT, FLOAT_REDEFINED_OP_FLAG)) {
+             OP_UNREDEFINED_P(GT, FLOAT)) {
         return RBOOL(RFLOAT_VALUE(recv) > RFLOAT_VALUE(obj));
     }
     else if (SPECIAL_CONST_P(recv) || SPECIAL_CONST_P(obj)) {
@@ -6847,7 +7017,7 @@ vm_opt_gt(VALUE recv, VALUE obj)
     }
     else if (RBASIC_CLASS(recv) == rb_cFloat &&
              RBASIC_CLASS(obj)  == rb_cFloat &&
-             BASIC_OP_UNREDEFINED_P(BOP_GT, FLOAT_REDEFINED_OP_FLAG)) {
+             OP_UNREDEFINED_P(GT, FLOAT)) {
         return RBOOL(RFLOAT_VALUE(recv) > RFLOAT_VALUE(obj));
     }
     else {
@@ -6859,11 +7029,11 @@ static VALUE
 vm_opt_ge(VALUE recv, VALUE obj)
 {
     if (FIXNUM_2_P(recv, obj) &&
-        BASIC_OP_UNREDEFINED_P(BOP_GE, INTEGER_REDEFINED_OP_FLAG)) {
+        OP_UNREDEFINED_P(GE, INTEGER)) {
         return RBOOL((SIGNED_VALUE)recv >= (SIGNED_VALUE)obj);
     }
     else if (FLONUM_2_P(recv, obj) &&
-             BASIC_OP_UNREDEFINED_P(BOP_GE, FLOAT_REDEFINED_OP_FLAG)) {
+             OP_UNREDEFINED_P(GE, FLOAT)) {
         return RBOOL(RFLOAT_VALUE(recv) >= RFLOAT_VALUE(obj));
     }
     else if (SPECIAL_CONST_P(recv) || SPECIAL_CONST_P(obj)) {
@@ -6871,7 +7041,7 @@ vm_opt_ge(VALUE recv, VALUE obj)
     }
     else if (RBASIC_CLASS(recv) == rb_cFloat &&
              RBASIC_CLASS(obj)  == rb_cFloat &&
-             BASIC_OP_UNREDEFINED_P(BOP_GE, FLOAT_REDEFINED_OP_FLAG)) {
+             OP_UNREDEFINED_P(GE, FLOAT)) {
         return RBOOL(RFLOAT_VALUE(recv) >= RFLOAT_VALUE(obj));
     }
     else {
@@ -6887,7 +7057,7 @@ vm_opt_ltlt(VALUE recv, VALUE obj)
         return Qundef;
     }
     else if (RBASIC_CLASS(recv) == rb_cString &&
-             BASIC_OP_UNREDEFINED_P(BOP_LTLT, STRING_REDEFINED_OP_FLAG)) {
+             OP_UNREDEFINED_P(LTLT, STRING)) {
         if (LIKELY(RB_TYPE_P(obj, T_STRING))) {
             return rb_str_buf_append(recv, obj);
         }
@@ -6896,7 +7066,7 @@ vm_opt_ltlt(VALUE recv, VALUE obj)
         }
     }
     else if (RBASIC_CLASS(recv) == rb_cArray &&
-             BASIC_OP_UNREDEFINED_P(BOP_LTLT, ARRAY_REDEFINED_OP_FLAG)) {
+             OP_UNREDEFINED_P(LTLT, ARRAY)) {
         return rb_ary_push(recv, obj);
     }
     else {
@@ -6914,7 +7084,7 @@ vm_opt_and(VALUE recv, VALUE obj)
     VALUE ret = ((SIGNED_VALUE) recv) & ((SIGNED_VALUE) obj);
 
     if (FIXNUM_P(ret) &&
-        BASIC_OP_UNREDEFINED_P(BOP_AND, INTEGER_REDEFINED_OP_FLAG)) {
+        OP_UNREDEFINED_P(AND, INTEGER)) {
         return ret;
     }
     else {
@@ -6926,7 +7096,7 @@ static VALUE
 vm_opt_or(VALUE recv, VALUE obj)
 {
     if (FIXNUM_2_P(recv, obj) &&
-        BASIC_OP_UNREDEFINED_P(BOP_OR, INTEGER_REDEFINED_OP_FLAG)) {
+        OP_UNREDEFINED_P(OR, INTEGER)) {
         return recv | obj;
     }
     else {
@@ -6939,13 +7109,13 @@ vm_opt_aref(VALUE recv, VALUE obj)
 {
     if (SPECIAL_CONST_P(recv)) {
         if (FIXNUM_2_P(recv, obj) &&
-                BASIC_OP_UNREDEFINED_P(BOP_AREF, INTEGER_REDEFINED_OP_FLAG)) {
+                OP_UNREDEFINED_P(AREF, INTEGER)) {
             return rb_fix_aref(recv, obj);
         }
         return Qundef;
     }
     else if (RBASIC_CLASS(recv) == rb_cArray &&
-             BASIC_OP_UNREDEFINED_P(BOP_AREF, ARRAY_REDEFINED_OP_FLAG)) {
+             OP_UNREDEFINED_P(AREF, ARRAY)) {
         if (FIXNUM_P(obj)) {
             return rb_ary_entry_internal(recv, FIX2LONG(obj));
         }
@@ -6954,7 +7124,7 @@ vm_opt_aref(VALUE recv, VALUE obj)
         }
     }
     else if (RBASIC_CLASS(recv) == rb_cHash &&
-             BASIC_OP_UNREDEFINED_P(BOP_AREF, HASH_REDEFINED_OP_FLAG)) {
+             OP_UNREDEFINED_P(AREF, HASH)) {
         return rb_hash_aref(recv, obj);
     }
     else {
@@ -6969,13 +7139,13 @@ vm_opt_aset(VALUE recv, VALUE obj, VALUE set)
         return Qundef;
     }
     else if (RBASIC_CLASS(recv) == rb_cArray &&
-             BASIC_OP_UNREDEFINED_P(BOP_ASET, ARRAY_REDEFINED_OP_FLAG) &&
+             OP_UNREDEFINED_P(ASET, ARRAY) &&
              FIXNUM_P(obj)) {
         rb_ary_store(recv, FIX2LONG(obj), set);
         return set;
     }
     else if (RBASIC_CLASS(recv) == rb_cHash &&
-             BASIC_OP_UNREDEFINED_P(BOP_ASET, HASH_REDEFINED_OP_FLAG)) {
+             OP_UNREDEFINED_P(ASET, HASH)) {
         rb_hash_aset(recv, obj, set);
         return set;
     }
@@ -7028,7 +7198,7 @@ static VALUE
 vm_opt_nil_p(struct rb_control_frame_struct *reg_cfp, CALL_DATA cd, VALUE recv)
 {
     if (NIL_P(recv) &&
-        BASIC_OP_UNREDEFINED_P(BOP_NIL_P, NIL_REDEFINED_OP_FLAG)) {
+        OP_UNREDEFINED_P(NIL_P, NIL)) {
         return Qtrue;
     }
     else if (vm_method_cfunc_is(reg_cfp, cd, recv, rb_false)) {
@@ -7071,14 +7241,14 @@ static VALUE
 vm_opt_succ(VALUE recv)
 {
     if (FIXNUM_P(recv) &&
-        BASIC_OP_UNREDEFINED_P(BOP_SUCC, INTEGER_REDEFINED_OP_FLAG)) {
+        OP_UNREDEFINED_P(SUCC, INTEGER)) {
         return fix_succ(recv);
     }
     else if (SPECIAL_CONST_P(recv)) {
         return Qundef;
     }
     else if (RBASIC_CLASS(recv) == rb_cString &&
-             BASIC_OP_UNREDEFINED_P(BOP_SUCC, STRING_REDEFINED_OP_FLAG)) {
+             OP_UNREDEFINED_P(SUCC, STRING)) {
         return rb_str_succ(recv);
     }
     else {
@@ -7105,17 +7275,20 @@ vm_opt_regexpmatch2(VALUE recv, VALUE obj)
     }
     else if (RBASIC_CLASS(recv) == rb_cString &&
         CLASS_OF(obj) == rb_cRegexp &&
-        BASIC_OP_UNREDEFINED_P(BOP_MATCH, STRING_REDEFINED_OP_FLAG)) {
+        OP_UNREDEFINED_P(MATCH, STRING)) {
         return rb_reg_match(obj, recv);
     }
     else if (RBASIC_CLASS(recv) == rb_cRegexp &&
-        BASIC_OP_UNREDEFINED_P(BOP_MATCH, REGEXP_REDEFINED_OP_FLAG)) {
+        OP_UNREDEFINED_P(MATCH, REGEXP)) {
         return rb_reg_match(recv, obj);
     }
     else {
         return Qundef;
     }
 }
+
+#undef EQ_UNREDEFINED_P
+#undef OP_UNREDEFINED_P
 
 rb_event_flag_t rb_iseq_event_flags(const rb_iseq_t *iseq, size_t pos);
 
@@ -7152,8 +7325,13 @@ vm_trace_hook(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VAL
     }
 }
 
+/* Re-fetch the iseq-local hook list before each event: a hook fired by an
+ * earlier event at this pc can disable the last targeted TracePoint on this
+ * iseq, which frees local_hooks. Reload from its stable source (the ractor's
+ * targeted-hooks table) so we never dereference a dangling pointer. */
 #define VM_TRACE_HOOK(target_event, val) do { \
     if ((pc_events & (target_event)) & enabled_flags) { \
+        if (local_hooks_cnt > 0) local_hooks = rb_iseq_local_hooks(iseq, r, false); \
         vm_trace_hook(ec, reg_cfp, pc, pc_events, (target_event), global_hooks, local_hooks, (val)); \
     } \
 } while (0)
@@ -7193,6 +7371,8 @@ vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp)
 
         rb_hook_list_t *bmethod_local_hooks = NULL;
         rb_event_flag_t bmethod_local_events = 0;
+        unsigned int bmethod_hooks_cnt = 0;
+        rb_method_definition_t *bmethod_def = NULL;
         const bool bmethod_frame = VM_FRAME_BMETHOD_P(reg_cfp);
         enabled_flags |= iseq_local_events;
 
@@ -7201,7 +7381,8 @@ vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp)
         if (bmethod_frame) {
             const rb_callable_method_entry_t *me = rb_vm_frame_method_entry(reg_cfp);
             VM_ASSERT(me->def->type == VM_METHOD_TYPE_BMETHOD);
-            unsigned int bmethod_hooks_cnt = me->def->body.bmethod.local_hooks_cnt;
+            bmethod_def = me->def;
+            bmethod_hooks_cnt = me->def->body.bmethod.local_hooks_cnt;
             if (RB_UNLIKELY(bmethod_hooks_cnt > 0)) {
                 st_data_t val;
                 if (st_lookup(rb_ractor_targeted_hooks(r), (st_data_t)me->def, &val)) {
@@ -7236,12 +7417,14 @@ vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp)
             rb_event_flag_t bmethod_events = ractor_events | bmethod_local_events;
 
             if (0) {
-                ruby_debug_printf("vm_trace>>%4d (%4x) - %s:%d %s\n",
+                VALUE path = rb_iseq_path(iseq);
+                VALUE label = rb_iseq_label(iseq);
+                ruby_debug_printf("vm_trace>>%4d (%4x) - %.*s:%d %.*s\n",
                                   (int)pos,
                                   (int)pc_events,
-                                  RSTRING_PTR(rb_iseq_path(iseq)),
+                                  RSTRING_LENINT(path), RSTRING_PTR(path),
                                   (int)rb_iseq_line_no(iseq, pos),
-                                  RSTRING_PTR(rb_iseq_label(iseq)));
+                                  RSTRING_LENINT(label), RSTRING_PTR(label));
             }
             VM_ASSERT(reg_cfp->pc == pc);
             VM_ASSERT(pc_events != 0);
@@ -7259,6 +7442,9 @@ vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp)
             VM_TRACE_HOOK(RUBY_EVENT_END | RUBY_EVENT_RETURN | RUBY_EVENT_B_RETURN, TOPN(0));
             if ((pc_events & RUBY_EVENT_B_RETURN) && bmethod_frame && (bmethod_events & RUBY_EVENT_RETURN)) {
                 /* b_return instruction running as a method. Fire return event. */
+                /* An earlier event's hook at this pc may have freed bmethod_local_hooks
+                 * (see VM_TRACE_HOOK); reload it from its stable source. */
+                if (bmethod_hooks_cnt > 0) bmethod_local_hooks = rb_method_def_local_hooks(bmethod_def, r, false);
                 vm_trace_hook(ec, reg_cfp, pc, RUBY_EVENT_RETURN, RUBY_EVENT_RETURN, global_hooks, bmethod_local_hooks, TOPN(0));
             }
         }

@@ -697,7 +697,7 @@ class Gem::Installer
       raise Gem::InstallError, "#{spec} has an invalid extensions"
     end
 
-    if /\R/.match?(spec.platform.to_s)
+    unless /\A[\w.-]+\z/.match?(spec.platform.to_s)
       raise Gem::InstallError, "#{spec.platform} is an invalid platform"
     end
 

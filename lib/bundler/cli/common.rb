@@ -3,9 +3,25 @@
 module Bundler
   module CLI::Common
     def self.validate_cooldown!(value)
-      return if value.nil?
+      # Without the flag the config file and BUNDLE_COOLDOWN decide, and those
+      # only warn, so a typo left in a config file keeps the command usable.
+      return warn_invalid_cooldown_setting if value.nil?
       return if value.is_a?(Integer) && value >= 0
       raise InvalidOption, "Expected `--cooldown` to be a non-negative integer, got #{value.inspect}"
+    end
+
+    # A cooldown value that cannot be read as a non-negative integer disables
+    # the cooldown for every source, overriding any per-source `cooldown:` in
+    # the Gemfile, so say so rather than letting the protection lapse quietly.
+    def self.warn_invalid_cooldown_setting
+      value = Bundler.settings.locations(:cooldown).values.first
+      return if value.nil?
+
+      days = Integer(value.to_s, exception: false)
+      return if days && !days.negative?
+
+      Bundler.ui.warn "Invalid cooldown value #{value.inspect}, so the cooldown is disabled for all sources. " \
+                      "Expected a non-negative integer number of days."
     end
 
     def self.output_post_install_messages(messages)
@@ -18,6 +34,17 @@ module Bundler
     def self.print_post_install_message(name, msg)
       Bundler.ui.confirm "Post-install message from #{name}:"
       Bundler.ui.info msg
+    end
+
+    def self.output_cooldown_skipped_summary(definition = Bundler.definition)
+      skipped = definition.cooldown_skipped
+      return if skipped.empty?
+
+      Bundler.ui.info "The following gem versions were skipped by the cooldown setting:"
+      skipped.each do |entry|
+        days = entry[:available_in_days]
+        Bundler.ui.info "  * #{entry[:name]} #{entry[:version]} (available in #{days} #{days == 1 ? "day" : "days"}), resolved #{entry[:resolved]} instead"
+      end
     end
 
     def self.output_fund_metadata_summary

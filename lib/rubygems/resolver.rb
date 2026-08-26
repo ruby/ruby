@@ -35,6 +35,19 @@ class Gem::Resolver
   attr_accessor :ignore_dependencies
 
   ##
+  # The Gem::Cooldown applied to release candidates, if any.
+
+  attr_accessor :cooldown
+
+  ##
+  # Per-gem summary entries for the newest versions the cooldown kept out
+  # of a successful resolution.  See Gem::Cooldown.output_skipped_summary.
+
+  def cooldown_skipped
+    @cooldown_skipped || []
+  end
+
+  ##
   # Hash of gems to skip resolution.  Keyed by gem name, with arrays of
   # gem specifications as values.
 
@@ -94,6 +107,7 @@ class Gem::Resolver
     @set = set || Gem::Resolver::IndexSet.new
     @needed = needed
 
+    @cooldown            = nil
     @development         = false
     @development_shallow = false
     @ignore_dependencies = false
@@ -158,13 +172,17 @@ class Gem::Resolver
 
     # Convert to Array<ActivationRequest>
     needed_by_name = @needed.group_by(&:name)
-    result.filter_map do |package, version|
+    requests = result.filter_map do |package, version|
       next if Gem::PubGrub::Package.root?(package)
       spec = spec_for(package.to_s, version)
       dep = needed_by_name[package.to_s]&.first || Gem::Dependency.new(package.to_s)
       dep_request = DependencyRequest.new(dep, nil)
       ActivationRequest.new(spec, dep_request)
     end
+
+    @cooldown_skipped = cooldown_skipped_summary(requests) if @cooldown&.active?
+
+    requests
   rescue Gem::PubGrub::SolveFailure => e
     extended = extract_extended_explanation(e.incompatibility)
     if extended
@@ -373,7 +391,75 @@ class Gem::Resolver
       end
     end
 
+    filtered = filter_cooldown_specs(filtered) if @cooldown&.active?
+
     filtered
+  end
+
+  ##
+  # Rejects specs published within the cooldown period.  Specs with an
+  # unknown publish time (installed gems, lockfiles, sources without
+  # timestamps) are kept, so the cooldown fails open.
+
+  def filter_cooldown_specs(specs)
+    remote = specs.select do |s|
+      Gem::Resolver::APISpecification === s || Gem::Resolver::IndexSpecification === s
+    end
+    if remote.any? && remote.none?(&:created_at)
+      Gem::Cooldown.warn_missing_created_at remote.first.source
+    end
+
+    specs.reject do |s|
+      next false unless @cooldown.skip?(s.created_at)
+
+      (@cooldown_skipped_specs ||= {})[[s.name, s.version]] ||= s
+      true
+    end
+  end
+
+  ##
+  # Reports, per gem, the newest version that the cooldown kept out of a
+  # successful resolution.  A skipped version is only worth reporting when
+  # it is newer than the resolved version and satisfies every requirement
+  # the final resolution places on that gem, so we don't claim a version
+  # the resolver could never have picked anyway.
+
+  def cooldown_skipped_summary(requests)
+    skipped_specs = @cooldown_skipped_specs || {}
+    return [] if skipped_specs.empty?
+
+    requirements = Hash.new {|h, name| h[name] = [] }
+    @needed.each {|dep| requirements[dep.name] << dep.requirement }
+    requests.each do |request|
+      request.spec.dependencies.each do |dep|
+        next if dep.type == :development && !@development
+        requirements[dep.name] << dep.requirement
+      end
+    end
+
+    resolved = {}
+    requests.each do |request|
+      version = resolved[request.spec.name]
+      resolved[request.spec.name] = request.spec.version if version.nil? || request.spec.version > version
+    end
+
+    newest_skipped = {}
+    skipped_specs.each do |(name, version), spec|
+      resolved_version = resolved[name]
+      next unless resolved_version && version > resolved_version
+      next unless requirements[name].all? {|req| req.satisfied_by?(version) }
+      newest = newest_skipped[name]
+      newest_skipped[name] = spec if newest.nil? || version > newest.version
+    end
+
+    newest_skipped.values.sort_by(&:name).map do |spec|
+      {
+        name: spec.name,
+        version: spec.version,
+        resolved: resolved[spec.name],
+        available_in_days: @cooldown.remaining_days(spec.created_at),
+      }
+    end
   end
 
   def spec_for(name, version)
@@ -484,6 +570,17 @@ class Gem::Resolver
       actual = sample.respond_to?(:spec) ? sample.spec : sample
       ruby_req = actual.required_ruby_version
       hints << "#{name} #{versions.join(", ")} requires Ruby #{ruby_req} (you have #{Gem.ruby_version})"
+    end
+
+    # Check for specs filtered by the cooldown period
+    if @cooldown&.active?
+      cooldown_specs = installable.select do |s|
+        constraint.range.include?(s.version) && @cooldown.skip?(s.created_at)
+      end
+      if cooldown_specs.any?
+        versions = cooldown_specs.map(&:version).uniq.sort.reverse.first(3)
+        hints << "#{name} #{versions.join(", ")} published within the cooldown period (#{@cooldown.days} days). Use --cooldown 0 to bypass it."
+      end
     end
 
     # Check for specs filtered by prerelease status

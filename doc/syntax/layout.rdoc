@@ -51,7 +51,7 @@ These works:
         2
 
     File.read "test.txt",         # incomplete without something after ,
-              enconding: "utf-8"
+              encoding: "utf-8"
 
 These would not:
 

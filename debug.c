@@ -52,7 +52,6 @@ const union {
     enum ruby_econv_flag_type   econv_flag_types;
     rb_econv_result_t           econv_result;
     enum ruby_preserved_encindex encoding_index;
-    enum ruby_robject_flags     robject_flags;
     enum ruby_rmodule_flags     rmodule_flags;
     enum ruby_rstring_flags     rstring_flags;
     enum ruby_rarray_flags      rarray_flags;
@@ -621,8 +620,8 @@ ruby_debug_log(const char *file, int line, const char *func_name, const char *fm
             rb_vm_t *vm = GET_VM();
 
             if (r && len < MAX_DEBUG_LOG_MESSAGE_LEN) {
-                r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN - len, "\tr:#%d/%u (%u)",
-                             cr ? (int)rb_ractor_id(cr) : -1, vm->ractor.cnt, vm->ractor.sched.running_cnt);
+                r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN - len, "\tr:#%d/%u",
+                             cr ? (int)rb_ractor_id(cr) : -1, vm->ractor.cnt);
 
                 if (r < 0) rb_bug("ruby_debug_log returns %d", r);
                 len += r;

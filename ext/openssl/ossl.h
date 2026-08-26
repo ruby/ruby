@@ -92,14 +92,18 @@ extern VALUE eOSSLError;
     }\
 } while (0)
 
+void ossl_want_uninitialized(VALUE self, const rb_data_type_t *type);
+
 /*
  * Type conversions
  */
 #if !defined(NUM2UINT64T) /* in case Ruby starts to provide */
 #  if SIZEOF_LONG == 8
 #    define NUM2UINT64T(x) ((uint64_t)NUM2ULONG(x))
+#    define UINT64T2NUM(x) ULONG2NUM(x)
 #  elif defined(HAVE_LONG_LONG) && SIZEOF_LONG_LONG == 8
 #    define NUM2UINT64T(x) ((uint64_t)NUM2ULL(x))
+#    define UINT64T2NUM(x) ULL2NUM(x)
 #  else
 #    error "unknown platform; no 64-bit width integer"
 #  endif

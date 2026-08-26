@@ -14,7 +14,7 @@ if "%1" == "-n" (shift & set "dryrun=%1" & goto :optloop)
 if "%1" == "-r" (shift & set "recursive=%1" & goto :optloop)
 if "%1" == "--debug" (shift & set "debug=%1" & set PROMPT=$E[34m+$E[m$S & echo on & goto :optloop)
 :begin
-if "%1" == "" goto :EOF
+if "%1" == "" exit /b %error%
   set p=%1
   shift
   set p=%p:/=\%
@@ -48,17 +48,39 @@ if "%sub:\=%" == "%sub%" goto :remove_plain
 goto :remove_end
 :remove_plain
     set p=%2%1
-    if not exist "%1" goto :remove_end
+    if not exist "%p%" goto :remove_end
     if not "%dryrun%" == "" (
         echo Removing %p:\=/%
         goto :remove_end
     )
     ::- Try `rd` first for symlink to a directory; `del` attemps to remove all
     ::- files under the target directory, instead of the symlink itself.
-    (rd /q "%p%" || del /q "%p%") 2> nul && goto :remove_end
+    rd /q "%p%" 2> nul && goto :remove_end
 
-    if "%recursive%" == "-r" for /D %%I in (%p%) do (
-        rd /s /q %%I || call set error=%%ERRORLEVEL%%
+    ::- If matching files and directory exist, remove the files only first.
+    del /f /q "%p%" 2> nul
+
+    ::- `del` exits with 0 even when nothing matched, so its result cannot
+    ::- tell whether directories remain; check if matching entries still
+    ::- exist instead.
+    if not exist "%p%" goto :remove_end
+
+    ::- Unless `-r` option is given, do not remove directories; just fail.
+    if not "%recursive%" == "-r" (
+        call set error=1
+        goto :remove_end
     )
+
+    ::- Remove remained directories recursively.
+    for /D %%I in (%p%) do (
+        rd /s /q %%I 2> nul
+    )
+
+    ::- `rd /s` does not set ERRORLEVEL on failure; check what remains
+    ::- instead.  `if exist "dir\*"` is true even for an empty directory,
+    ::- so check remaining files and directories separately.
+    if not exist "%p%" goto :remove_end
+    for %%I in (%p%) do if not exist "%%I\" set error=1
+    for /D %%I in (%p%) do if exist "%%I\" set error=1
 :remove_end
 endlocal & set "error=%error%" & goto :EOF

@@ -47,6 +47,7 @@
 #include "ruby/encoding.h"
 #include "ruby/st.h"
 #include "ruby/util.h"
+#include "internal/vm.h"
 #include "ruby_assert.h"
 #include "vm_core.h"
 #include "yjit.h"
@@ -365,7 +366,7 @@ rb_warn_category(VALUE str, VALUE category)
     else {
         VALUE args[2];
         args[0] = str;
-        args[1] = rb_hash_new();
+        args[1] = rb_hash_new_capa(1);
         rb_hash_aset(args[1], sym_category, category);
         return rb_funcallv_kw(rb_mWarning, id_warn, 2, args, RB_PASS_KEYWORDS);
     }
@@ -1586,7 +1587,7 @@ exc_to_s(VALUE exc)
 /* FIXME: Include eval_error.c */
 void rb_error_write(VALUE errinfo, VALUE emesg, VALUE errat, VALUE str, VALUE opt, VALUE highlight, VALUE reverse);
 
-VALUE
+static VALUE
 rb_get_message(VALUE exc)
 {
     VALUE e = rb_check_funcall(exc, id_message, 0, 0);
@@ -1733,7 +1734,7 @@ exc_full_message(int argc, VALUE *argv, VALUE exc)
     order = check_order_keyword(opt);
 
     {
-        if (NIL_P(opt)) opt = rb_hash_new();
+        if (NIL_P(opt)) opt = rb_hash_new_capa(1);
         rb_hash_aset(opt, sym_highlight, highlight);
     }
 
@@ -1758,6 +1759,71 @@ static VALUE
 exc_message(VALUE exc)
 {
     return rb_funcallv(exc, idTo_s, 0, 0);
+}
+
+// Whether error_highlight, did_you_mean, and syntax_suggest have already
+// been loaded (lazily on the first error, or eagerly via Process.warmup).
+// Ractors run in parallel, so the load is claimed by an atomic exchange.
+static rb_atomic_t decoration_gems_loaded = 0;
+
+static VALUE
+load_decoration_gem(VALUE feature)
+{
+    // The C-level require bypasses Kernel#require monkeypatches;
+    // displaying an error must not invoke or depend on them.
+    return rb_require_string(feature);
+}
+
+// Require error_highlight, did_you_mean, and syntax_suggest.
+// rb_define_gem_modules registers an autoload entry for each enabled gem;
+// disabled gems have no entry and are skipped.
+static void
+require_decoration_gems(void)
+{
+    // Loading must not disturb the caller's $!: it is called while
+    // displaying an exception. rb_protect does not preserve errinfo, so
+    // save and restore it around the requires, leaving $! untouched
+    // whether or not a require raises.
+    VALUE saved_errinfo = rb_errinfo();
+    static const char *const gems[] = {"ErrorHighlight", "DidYouMean", "SyntaxSuggest"};
+    for (size_t i = 0; i < numberof(gems); i++) {
+        VALUE feature = rb_autoload_p(rb_cObject, rb_intern(gems[i]));
+        if (NIL_P(feature)) continue;
+        int state;
+        rb_protect(load_decoration_gem, feature, &state);
+        (void)state;
+    }
+    rb_set_errinfo(saved_errinfo);
+}
+
+// Load the decoration gems on the first error display instead of at boot.
+// In non-main Ractors rb_require_string delegates the require to the main
+// Ractor, so this works from any Ractor.
+// Returns whether the caller should re-dispatch to pick up the
+// detailed_message decorators the gems prepend.
+static bool
+lazy_load_decoration_gems(VALUE exc)
+{
+    if (ATOMIC_EXCHANGE(decoration_gems_loaded, 1)) return false;
+
+    // When entered through super from a decorator already sitting above
+    // this method, the caller decorates the result; re-dispatching would
+    // decorate it twice.
+    bool redispatch = rb_method_basic_definition_p(CLASS_OF(exc), id_detailed_message);
+
+    require_decoration_gems();
+    return redispatch;
+}
+
+// Load the decoration gems eagerly, e.g. from Process.warmup before a
+// pre-forking server forks, so the prepended detailed_message decorators
+// land in shared memory and do not bust method caches at runtime.
+void
+rb_eager_load_detailed_message_extension(void)
+{
+    if (ATOMIC_EXCHANGE(decoration_gems_loaded, 1)) return;
+
+    require_decoration_gems();
 }
 
 /*
@@ -1808,6 +1874,10 @@ exc_message(VALUE exc)
 static VALUE
 exc_detailed_message(int argc, VALUE *argv, VALUE exc)
 {
+    if (lazy_load_decoration_gems(exc)) {
+        return rb_funcallv_kw(exc, id_detailed_message, argc, argv, RB_PASS_CALLED_KEYWORDS);
+    }
+
     VALUE opt;
 
     rb_scan_args(argc, argv, "0:", &opt);
@@ -2624,6 +2694,8 @@ name_err_mesg_to_str(VALUE obj)
         int state = 0;
         rb_encoding *usascii = rb_usascii_encoding();
 
+#define rb_memsearch_lit(str, v) \
+    rb_memsearch((str), rb_strlen_lit(str), RSTRING_PTR(v), RSTRING_LEN(v), rb_enc_get(v))
 #define FAKE_CSTR(v, str) rb_setup_fake_str((v), (str), rb_strlen_lit(str), usascii)
         c = s = FAKE_CSTR(&s_str, "");
         obj = ptr->recv;
@@ -2638,7 +2710,7 @@ name_err_mesg_to_str(VALUE obj)
             c = d = FAKE_CSTR(&d_str, "false");
             break;
           default:
-            if (strstr(RSTRING_PTR(mesg), "%2$s")) {
+            if (rb_memsearch_lit("%2$s", mesg) >= 0) {
                 d = rb_protect(name_err_mesg_receiver_name, obj, &state);
                 if (state || NIL_OR_UNDEF_P(d))
                     d = rb_protect(rb_inspect, obj, &state);
@@ -4269,15 +4341,6 @@ rb_warn_unchilled_literal(VALUE obj)
         }
         rb_warn_category(mesg, rb_warning_category_to_name(category));
     }
-}
-
-void
-rb_warn_unchilled_symbol_to_s(VALUE obj)
-{
-    rb_category_warn(
-        RB_WARN_CATEGORY_DEPRECATED,
-        "string returned by :%s.to_s will be frozen in the future", RSTRING_PTR(obj)
-    );
 }
 
 #undef rb_check_frozen

@@ -1,15 +1,16 @@
 require_relative '../../spec_helper'
 require_relative '../rational/fixtures/rational'
 
-describe "Kernel.Rational" do
+describe "Kernel#Rational" do
+  it "is a private method" do
+    Kernel.private_instance_methods(false).should.include?(:Rational)
+  end
+
   describe "passed Integer" do
-    # Guard against the Mathn library
-    guard -> { !defined?(Math.rsqrt) } do
-      it "returns a new Rational number with 1 as the denominator" do
-        Rational(1).should.eql?(Rational(1, 1))
-        Rational(-3).should.eql?(Rational(-3, 1))
-        Rational(bignum_value).should.eql?(Rational(bignum_value, 1))
-      end
+    it "returns a new Rational number with 1 as the denominator" do
+      Rational(1).should.eql?(Rational(1, 1))
+      Rational(-3).should.eql?(Rational(-3, 1))
+      Rational(bignum_value).should.eql?(Rational(bignum_value, 1))
     end
   end
 
@@ -232,5 +233,17 @@ describe "Kernel.Rational" do
 
   it "freezes its result" do
     Rational(1).frozen?.should == true
+  end
+
+  it "raises an ArgumentError if exception: is not true or false" do
+    -> { Rational(1, exception: 0) }.should.raise ArgumentError, /expected true or false/
+    -> { Rational(1, exception: nil) }.should.raise ArgumentError, /expected true or false/
+    -> { Rational(1, exception: 'false') }.should.raise ArgumentError, /expected true or false/
+  end
+end
+
+describe "Kernel.Rational" do
+  it "is a public method" do
+    Kernel.public_methods(false).should.include?(:Rational)
   end
 end

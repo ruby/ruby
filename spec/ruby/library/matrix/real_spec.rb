@@ -16,11 +16,8 @@ describe "Matrix#real?" do
     Matrix[ [Complex(1,1), 2], [3, 4] ].real?.should == false
   end
 
-  # Guard against the Mathn library
-  guard -> { !defined?(Math.rsqrt) } do
-    it "returns false if one element is a Complex whose imaginary part is 0" do
-      Matrix[ [Complex(1,0), 2], [3, 4] ].real?.should == false
-    end
+  it "returns false if one element is a Complex whose imaginary part is 0" do
+    Matrix[ [Complex(1,0), 2], [3, 4] ].real?.should == false
   end
 end
 
