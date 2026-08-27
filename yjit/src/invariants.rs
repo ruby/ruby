@@ -573,11 +573,6 @@ pub extern "C" fn rb_yjit_invalidate_no_singleton_class(klass: VALUE) {
 /// equal to base pointer.
 #[no_mangle]
 pub extern "C" fn rb_yjit_invalidate_ep_is_bp(iseq: IseqPtr) {
-    // Skip tracking EP escapes on boot. We don't need to invalidate anything during boot.
-    if unsafe { INVARIANTS.is_none() } {
-        return;
-    }
-
     with_vm_lock(src_loc!(), || {
         // If an EP escape for this ISEQ is detected for the first time, invalidate all blocks
         // associated to the ISEQ. The iseq flag records the escape, so the map keeps only

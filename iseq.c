@@ -192,14 +192,14 @@ rb_iseq_free(const rb_iseq_t *iseq)
         iseq_clear_ic_references(iseq);
         struct rb_iseq_constant_body *const body = ISEQ_BODY(iseq);
 #if USE_YJIT
-        rb_yjit_iseq_free(iseq);
+        if (rb_yjit_enabled_p) rb_yjit_iseq_free(iseq);
         if (FL_TEST_RAW((VALUE)iseq, ISEQ_TRANSLATED)) {
             RUBY_ASSERT(rb_yjit_live_iseq_count > 0);
             rb_yjit_live_iseq_count--;
         }
 #endif
 #if USE_ZJIT
-        rb_zjit_iseq_free(iseq);
+        if (rb_zjit_enabled_p) rb_zjit_iseq_free(iseq);
 #endif
         SIZED_FREE_N(body->iseq_encoded, body->iseq_size);
         SIZED_FREE_N(body->insns_info.body, body->insns_info.size);
