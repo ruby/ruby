@@ -278,7 +278,10 @@ static void some_struct_mark(void *ptr) {
 
 static void some_struct_compact(void *ptr) {
     struct SomeStruct *data = ptr;
-    data->some_reference = rb_gc_location(data->some_reference);
+    VALUE ref = rb_gc_location(data->some_reference);
+    if (ref != data->some_reference) { // Copy-on-write friendly check, don't rewrite unless it changed
+        data->some_reference = ref;
+    }
 }
 
 static const rb_data_type_t some_typed_data_type = {
