@@ -4,21 +4,16 @@
 #include <stddef.h>
 #include "ruby/ruby.h"
 
-#if SIZEOF_VALUE != 8
-struct rb_id_item;
-#endif
-
 struct rb_id_table {
     int capa;
     int num;
     int used;
-#if SIZEOF_VALUE == 8
-    VALUE *items;
-    uint32_t *keys;
-    uint8_t *collision_table;
-#else
-    struct rb_id_item *items;
-#endif
+    /* The table body is a single buffer laid out as:
+     *
+     * [VALUE values[capa] | id_key_t keys[capa] | collision bitmap]
+     *
+     * where the collision bitmap uses one mark bit per slot. */
+    void *buf;
 };
 
 /* compatible with ST_* */

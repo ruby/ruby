@@ -31,20 +31,46 @@ id2key(ID id)
    ID is strictly 3 bits larger than rb_id_serial_t */
 
 #if SIZEOF_VALUE == 8
+/* The table body is a single buffer laid out as:
+
+     [VALUE values[capa] | id_key_t keys[capa] | collision bitmap]
+
+   where the collision bitmap uses one mark bit per slot.  Keeping the
+   keys out of the item struct avoids padding them to the alignment of
+   VALUE.  The three regions are computed from buf and capa, so the
+   struct only needs to store the buffer pointer. */
 #define COLLISION_TABLE_SIZE(capa) roomof((size_t)(capa), CHAR_BIT)
-#define ID_TABLE_ITEMS_SIZE(capa) \
+#define ID_TABLE_BUF_SIZE(capa) \
     ((sizeof(VALUE) + sizeof(id_key_t)) * (size_t)(capa) + COLLISION_TABLE_SIZE(capa))
 
-#define ITEM_GET_KEY(tbl, i) ((tbl)->keys[i])
-#define ITEM_KEY_ISSET(tbl, i) ((tbl)->items && (tbl)->keys[i])
-#define ITEM_COLLIDED(tbl, i) ((tbl)->collision_table[(i) / CHAR_BIT] & ((uint8_t)1 << ((i) % CHAR_BIT)))
-#define ITEM_SET_COLLIDED(tbl, i) ((tbl)->collision_table[(i) / CHAR_BIT] |= ((uint8_t)1 << ((i) % CHAR_BIT)))
-#define ITEM_VALUE(tbl, i) ((tbl)->items[i])
+static inline VALUE *
+id_table_items(struct rb_id_table *tbl)
+{
+    return (VALUE *)tbl->buf;
+}
+
+static inline id_key_t *
+id_table_keys(struct rb_id_table *tbl)
+{
+    return (id_key_t *)(id_table_items(tbl) + tbl->capa);
+}
+
+static inline uint8_t *
+id_table_collision_table(struct rb_id_table *tbl)
+{
+    return (uint8_t *)(id_table_keys(tbl) + tbl->capa);
+}
+
+#define ITEM_GET_KEY(tbl, i) (id_table_keys(tbl)[i])
+#define ITEM_KEY_ISSET(tbl, i) ((tbl)->buf && id_table_keys(tbl)[i])
+#define ITEM_COLLIDED(tbl, i) (id_table_collision_table(tbl)[(i) / CHAR_BIT] & ((uint8_t)1 << ((i) % CHAR_BIT)))
+#define ITEM_SET_COLLIDED(tbl, i) (id_table_collision_table(tbl)[(i) / CHAR_BIT] |= ((uint8_t)1 << ((i) % CHAR_BIT)))
+#define ITEM_VALUE(tbl, i) (id_table_items(tbl)[i])
 
 static inline void
 ITEM_SET_KEY(struct rb_id_table *tbl, int i, id_key_t key)
 {
-    tbl->keys[i] = key;
+    id_table_keys(tbl)[i] = key;
 }
 #else
 typedef struct rb_id_item {
@@ -52,18 +78,19 @@ typedef struct rb_id_item {
     VALUE    val;
 } item_t;
 
-#define ID_TABLE_ITEMS_SIZE(capa) (sizeof(item_t) * (size_t)(capa))
+#define ID_TABLE_BUF_SIZE(capa) (sizeof(item_t) * (size_t)(capa))
+#define id_table_items(tbl) ((item_t *)(tbl)->buf)
 
-#define ITEM_GET_KEY(tbl, i) ((tbl)->items[i].key >> 1)
-#define ITEM_KEY_ISSET(tbl, i) ((tbl)->items[i].key > 1)
-#define ITEM_COLLIDED(tbl, i) ((tbl)->items[i].key & 1)
-#define ITEM_SET_COLLIDED(tbl, i) ((tbl)->items[i].key |= 1)
-#define ITEM_VALUE(tbl, i) ((tbl)->items[i].val)
+#define ITEM_GET_KEY(tbl, i) (id_table_items(tbl)[i].key >> 1)
+#define ITEM_KEY_ISSET(tbl, i) (id_table_items(tbl)[i].key > 1)
+#define ITEM_COLLIDED(tbl, i) (id_table_items(tbl)[i].key & 1)
+#define ITEM_SET_COLLIDED(tbl, i) (id_table_items(tbl)[i].key |= 1)
+#define ITEM_VALUE(tbl, i) (id_table_items(tbl)[i].val)
 
 static inline void
 ITEM_SET_KEY(struct rb_id_table *tbl, int i, id_key_t key)
 {
-    tbl->items[i].key = (key << 1) | ITEM_COLLIDED(tbl, i);
+    id_table_items(tbl)[i].key = (key << 1) | ITEM_COLLIDED(tbl, i);
 }
 #endif
 
@@ -81,15 +108,12 @@ round_capa(int capa)
 }
 
 static void
-id_table_alloc_items(struct rb_id_table *tbl, int capa)
+id_table_alloc_buf(struct rb_id_table *tbl, int capa)
 {
 #if SIZEOF_VALUE == 8
-    /* The values, keys, and collision bitmap share a single allocation. */
-    tbl->items = ruby_xcalloc(1, ID_TABLE_ITEMS_SIZE(capa));
-    tbl->keys = (id_key_t *)(tbl->items + capa);
-    tbl->collision_table = (uint8_t *)(tbl->keys + capa);
+    tbl->buf = ruby_xcalloc(1, ID_TABLE_BUF_SIZE(capa));
 #else
-    tbl->items = ZALLOC_N(item_t, capa);
+    tbl->buf = ZALLOC_N(item_t, capa);
 #endif
 }
 
@@ -101,7 +125,7 @@ rb_id_table_init(struct rb_id_table *tbl, size_t s_capa)
     if (capa > 0) {
         capa = round_capa(capa);
         tbl->capa = (int)capa;
-        id_table_alloc_items(tbl, capa);
+        id_table_alloc_buf(tbl, capa);
     }
     return tbl;
 }
@@ -116,13 +140,13 @@ rb_id_table_create(size_t capa)
 void
 rb_id_table_free_items(struct rb_id_table *tbl)
 {
-    xfree(tbl->items);
+    xfree(tbl->buf);
 }
 
 void
 rb_id_table_free(struct rb_id_table *tbl)
 {
-    xfree(tbl->items);
+    xfree(tbl->buf);
     xfree(tbl);
 }
 
@@ -131,9 +155,8 @@ rb_id_table_clear(struct rb_id_table *tbl)
 {
     tbl->num = 0;
     tbl->used = 0;
-    if (tbl->items) {
-        /* Values, keys, and collision bitmap live in one allocation. */
-        memset(tbl->items, 0, ID_TABLE_ITEMS_SIZE(tbl->capa));
+    if (tbl->buf) {
+        memset(tbl->buf, 0, ID_TABLE_BUF_SIZE(tbl->capa));
     }
 }
 
@@ -146,7 +169,7 @@ rb_id_table_size(const struct rb_id_table *tbl)
 size_t
 rb_id_table_memsize(const struct rb_id_table *tbl)
 {
-    return ID_TABLE_ITEMS_SIZE(tbl->capa) + sizeof(struct rb_id_table);
+    return ID_TABLE_BUF_SIZE(tbl->capa) + sizeof(struct rb_id_table);
 }
 
 static int
@@ -216,14 +239,14 @@ hash_table_extend(struct rb_id_table* tbl)
             new_cap = round_capa(tbl->used + (tbl->used >> 1));
         }
         tmp_tbl.capa = new_cap;
-        id_table_alloc_items(&tmp_tbl, new_cap);
+        id_table_alloc_buf(&tmp_tbl, new_cap);
         for (i = 0; i < tbl->capa; i++) {
             id_key_t key = ITEM_GET_KEY(tbl, i);
             if (key != 0) {
                 hash_table_raw_insert(&tmp_tbl, key, ITEM_VALUE(tbl, i));
             }
         }
-        old = tbl->items;
+        old = tbl->buf;
         *tbl = tmp_tbl;
         xfree(old);
     }
@@ -233,14 +256,14 @@ hash_table_extend(struct rb_id_table* tbl)
 static void
 hash_table_show(struct rb_id_table *tbl)
 {
-    const id_key_t *keys = tbl->keys;
     const int capa = tbl->capa;
     int i;
 
     fprintf(stderr, "tbl: %p (capa: %d, num: %d, used: %d)\n", tbl, tbl->capa, tbl->num, tbl->used);
     for (i=0; i<capa; i++) {
         if (ITEM_KEY_ISSET(tbl, i)) {
-            fprintf(stderr, " -> [%d] %s %d\n", i, rb_id2name(key2id(keys[i])), (int)keys[i]);
+            const id_key_t key = ITEM_GET_KEY(tbl, i);
+            fprintf(stderr, " -> [%d] %s %d\n", i, rb_id2name(key2id(key)), (int)key);
         }
     }
 }
@@ -314,7 +337,7 @@ rb_id_table_foreach_values(struct rb_id_table *tbl, rb_id_table_foreach_values_f
 {
     int i, capa = tbl->capa;
 
-    if (!tbl->items) {
+    if (!tbl->buf) {
         return;
     }
 
@@ -390,7 +413,7 @@ rb_managed_id_table_create(const rb_data_type_t *type, size_t capa)
     struct rb_id_table *tbl;
     VALUE obj = TypedData_Make_Struct(0, struct rb_id_table, type, tbl);
     RB_OBJ_SET_SHAREABLE(obj);
-    rb_id_table_init(tbl, capa); // NOTE: this can cause GC, so dmark and dsize need to check tbl->items
+    rb_id_table_init(tbl, capa); // NOTE: this can cause GC, so dmark and dsize need to check tbl->buf
     return obj;
 }
 
