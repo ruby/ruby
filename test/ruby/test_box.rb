@@ -1212,6 +1212,28 @@ class TestBox < Test::Unit::TestCase
     end
   end
 
+  def test_loading_extension_from_deep_path_in_user_box
+    require 'date'
+    dlext = RbConfig::CONFIG['DLEXT']
+    src = $LOADED_FEATURES.find {|f| f.end_with?("date_core.#{dlext}")}
+    omit "date_core.#{dlext} is not loaded dynamically" unless src && File.exist?(src)
+
+    require 'tmpdir'
+    require 'fileutils'
+    Dir.mktmpdir do |tmpdir|
+      # deep enough that this path flattened into a single file name exceeds NAME_MAX
+      deep = File.join(tmpdir, "d" * 90, "e" * 90, "f" * 90)
+      FileUtils.mkdir_p(deep)
+      FileUtils.cp(src, deep)
+      env = ENV_ENABLE_BOX.merge({'BOX_TEST_EXT_FEATURE'=>File.join(deep, "date_core")})
+      assert_ruby_status([env], "#{<<~"begin;"}\n#{<<~'end;'}")
+      begin;
+        require ENV['BOX_TEST_EXT_FEATURE'] or raise "already loaded"
+        raise "Date is not defined" unless defined?(Date)
+      end;
+    end
+  end
+
   def test_root_box_iclasses_should_be_boxable
     assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
     begin;
