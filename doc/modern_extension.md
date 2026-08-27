@@ -11,15 +11,13 @@ When C extensions are using old APIs/doing things incorrectly, Ruby needs to fal
 
 ## The "elephant" in the room
 
-### T1 Tip
+### Tip: 🟧 _Avoid native extensions if you can_
 
 Can you avoid doing the thing in native code at all? See <https://railsatscale.com/2023-08-29-ruby-outperforms-c/> and <https://jpcamara.com/2024/12/01/speeding-up-ruby.html>. Can you use [ffi](https://github.com/ffi/ffi) instead?
 
 ## Arrays
 
-### A1 Tip
-
-Tip: 🟥 _Never use `RARRAY_PTR`_
+### Tip: 🟥 _Never use `RARRAY_PTR`_
 
 Impact: _Slows down GC forever (while the object lives)_
 
@@ -34,9 +32,7 @@ Do instead:
 1. Use `rb_ary_entry` to read
 2. Use `rb_ary_store` to write
 
-### A2 Tip
-
-Tip: 🟧 _Avoid using `RARRAY_AREF` to read an array_
+### Tip: 🟧 _Avoid using `RARRAY_AREF` to read an array_
 
 Impact: _No bounds checking (unsafe)_
 
@@ -47,9 +43,7 @@ Why:
 Do instead:
 1. Use `rb_ary_entry`, it checks the array is long enough to contain the entry requested
 
-### A3 Tip
-
-Tip: 🟩 _Use `rb_ary_store` to write to an array_
+### Tip: 🟩 _Use `rb_ary_store` to write to an array_
 
 Impact: _GC faster, and respects frozen_
 
@@ -60,9 +54,7 @@ Why:
 
 ## Hashes
 
-### H1 Tip
-
-Tip: 🟥 _Never use `RHASH_TBL`_
+### Tip: 🟥 _Never use `RHASH_TBL`_
 
 Impact: _Slows down GC forever (while the object lives), no bounds/frozen checking_
 
@@ -80,9 +72,7 @@ Do instead:
 
 ## Strings
 
-### S1 Tip
-
-Tip: 🟩 _Use fstrings for repeated/long-lived strings_
+### Tip: 🟩 _Use fstrings for repeated/long-lived strings_
 
 Impact: _Lower app memory use, faster hash lookups, slightly slower creation_
 
@@ -105,9 +95,7 @@ Why:
 
 ## Memory
 
-### M1 Tip
-
-Tip: 🟩 _Use `ruby_xmalloc`/`ruby_xfree`/`ruby_x`... to manage memory_
+### Tip: 🟩 _Use `ruby_xmalloc`/`ruby_xfree`/`ruby_x`... to manage memory_
 
 Impact: _Improved low memory handling, improved GC behavior, safer_
 
@@ -129,9 +117,7 @@ rb_gc_impl_malloc(void *objspace_ptr, size_t size, bool gc_allowed)
 }
 ```
 
-### M2 Tip
-
-Tip: 🟧 _Be careful about making objects "immortal"_
+### Tip: 🟧 _Be careful about making objects "immortal"_
 
 Impact: _Higher memory use_
 
@@ -141,9 +127,7 @@ Why:
 Do instead (*sometimes?):
 1. `rb_global_variable` prevents an object referenced from being garbage collected and moved, but once the variable stops pointing at the object the effect disappears
 
-### M3 Tip
-
-Tip: 🟩 _Use sized/bulk APIs to avoid unnecessary resizing of Arrays, Hashes, Strings_
+### Tip: 🟩 _Use sized/bulk APIs to avoid unnecessary resizing of Arrays, Hashes, Strings_
 
 When creating Arrays, Hashes, and Strings, you can often provide sizes and perform operations in bulk.
 
@@ -162,9 +146,7 @@ Why:
 
 ## Ractors
 
-### R1 Tip
-
-Tip: 🟩 _If your extension is Ractor-safe, remember to tell Ruby about it with `rb_ext_ractor_safe`_
+### Tip: 🟩 _If your extension is Ractor-safe, remember to tell Ruby about it with `rb_ext_ractor_safe`_
 
 Impact: _Faster performance! (Even very slightly with a single Ractor)_
 
@@ -232,9 +214,7 @@ static VALUE some_class_set_some_reference(VALUE self, VALUE reference) {
 }
 ```
 
-### T1 Tip
-
-Tip: 🟧 _Avoid using TypedData, especially for referencing Ruby objects if you can!_
+### Tip: 🟧 _Avoid using TypedData, especially for referencing Ruby objects if you can!_
 
 Impact: _Simplicity and correctness (sanity?)_
 
@@ -243,9 +223,7 @@ Why:
 2. If you can store your extension's data in a regular Ruby array or Ruby hash, consider doing that! Those are extremely optimized already!
 3. You'll be able to ignore ALL of the tips that follow!
 
-### T2 Tip
-
-Tip: 🟩 _Use declarative marking_
+### Tip: 🟩 _Use declarative marking_
 
 Impact: _Lower memory usage, and easier to maintain_
 
@@ -274,9 +252,7 @@ static const rb_data_type_t some_typed_data_type = {
 No `dmark` function, no `dcompact` function -- the GC walks the offset list for both marking and compaction.
 If you later add a new `VALUE` member to `struct SomeStruct`, remember to add a matching `RUBY_REF_EDGE` and that's it!
 
-### T4 Tip
-
-Tip: 🟥 _Always provide a dcompact function when referencing Ruby objects_
+### Tip: 🟥 _Always provide a dcompact function when referencing Ruby objects_
 
 (*UNLESS you're using declarative marking)
 
@@ -312,9 +288,7 @@ static const rb_data_type_t some_typed_data_type = {
 `rb_gc_location` returns the (possibly new) address of an object that was marked movable.
 If the object wasn't moved, it returns the same `VALUE` unchanged -- so it's always safe to assign back.
 
-### T5 Tip
-
-Tip: 🟥 _Do not use TypedData without `RUBY_TYPED_WB_PROTECTED`_
+### Tip: 🟥 _Do not use TypedData without `RUBY_TYPED_WB_PROTECTED`_
 
 Impact: _Slows down GC_
 
@@ -342,9 +316,7 @@ static const rb_data_type_t some_typed_data_type = {
 };
 ```
 
-### T6 Tip
-
-Tip: 🟩 _Implement dsize_
+### Tip: 🟩 _Implement dsize_
 
 Impact: _Accurate memory information_
 
@@ -375,9 +347,7 @@ static const rb_data_type_t some_typed_data_type = {
 
 If `struct SomeStruct` later owns heap-allocated memory (e.g. malloc and the like), include their sizes in the return value too.
 
-### T7 Tip
-
-Tip: 🟧 _If possible, use `RUBY_TYPED_FREE_IMMEDIATELY`_
+### Tip: 🟧 _If possible, use `RUBY_TYPED_FREE_IMMEDIATELY`_
 
 Impact: _Slows down garbage collection_
 
@@ -394,9 +364,7 @@ static const rb_data_type_t some_typed_data_type = {
 };
 ```
 
-### T8 Tip
-
-Tip: 🟧 _Consider using `RUBY_TYPED_EMBEDDABLE`_
+### Tip: 🟧 _Consider using `RUBY_TYPED_EMBEDDABLE`_
 
 Impact: _Faster GC, fewer memory allocations, better code performance (trade off with complexity)_
 
@@ -424,9 +392,7 @@ static const rb_data_type_t some_typed_data_type = {
 
 Note that it requires `RUBY_TYPED_FREE_IMMEDIATELY`.
 
-### T9 Tip
-
-Tip: 🟧 _Consider using mass marking/compacting functions_
+### Tip: 🟧 _Consider using mass marking/compacting functions_
 
 Ruby provides a number of "mark all/compact all" reference functions:
 
@@ -470,9 +436,7 @@ Why:
 1. As with any low-level vs high-level API, it's much better if you can tell Ruby "I want to mark all of this" vs going one by one
 2. ...Although Ruby right now maps this to "one-by-one" so... the gain is more on expressiveness than speed (and maybe future MMTk optimization?)
 
-### T10 Tip
-
-Tip: 🟩 _Prefer `TypedData_Make_Struct` over `TypedData_Wrap_Struct`_
+### Tip: 🟩 _Prefer `TypedData_Make_Struct` over `TypedData_Wrap_Struct`_
 
 Impact: _Avoids memory leaks on the error path_
 
@@ -482,9 +446,7 @@ Why:
 
 Sharp edge: if struct allocation inside `Make_Struct` fails, you can end up with a Ruby object whose data pointer is `NULL`. Still usually better than the leak. Reach for `Wrap_Struct` only when you already have a pre-existing struct pointer you can't recreate.
 
-### T11 Tip
-
-Tip: 🟧 _Set `RUBY_TYPED_FROZEN_SHAREABLE` if you want frozen TypedData to cross Ractors_
+### Tip: 🟧 _Set `RUBY_TYPED_FROZEN_SHAREABLE` if you want frozen TypedData to cross Ractors_
 
 Impact: _Allows frozen instances to be shared across Ractors without copying_
 
