@@ -1843,6 +1843,10 @@ ensure_origin(VALUE klass)
 {
     VALUE origin = RCLASS_ORIGIN(klass);
     if (origin == klass) {
+        /* Create the box-local classext before reading m_tbl, so that the
+         * origin shares the m_tbl with the box-local iclasses of klass,
+         * as rb_prepend_module relies on that identity. */
+        rb_class_ensure_writable(klass);
         origin = class_alloc(T_ICLASS, klass);
         RCLASS_SET_M_TBL(origin, RCLASS_M_TBL(klass));
         rb_class_set_super(origin, RCLASS_SUPER(klass));
