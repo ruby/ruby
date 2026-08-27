@@ -6144,7 +6144,7 @@ impl Function {
 
         // Instantiate the domain for abstract interpretation.
         // We store possible param values for each block
-        let mut param_values: Vec<Vec<ParamValue>> = vec![Vec::new(); self.blocks.len()];
+        let mut param_values: Vec<Vec<ParamValue>> = self.blocks.iter().map(|block| vec![ParamValue::None; block.params.len()]).collect();
 
         let blocks = self.reverse_post_order();
 
@@ -6163,12 +6163,6 @@ impl Function {
         // Create a vec to represent trivial indices
         let max_params = blocks.iter().copied().map(|id| self.blocks[id].params.len()).max().unwrap_or(0);
         let mut trivial_indices: Vec<usize> = Vec::with_capacity(max_params);
-
-        // Prepare the initial param_values. As trivial block params are discovered and elided during analysis,
-        // the number of params in each row will decrease.
-        for (row, block) in param_values.iter_mut().zip(&self.blocks) {
-            row.resize(block.params.len(), ParamValue::None);
-        }
 
         let mut changed = true;
 
