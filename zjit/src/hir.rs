@@ -6714,6 +6714,20 @@ impl Function {
                             insn_id
                         }
                     }
+                    &Insn::BoxBool { val: bool_val } => {
+                        if let &Insn::Test { val: test_val } = self.resolve(bool_val).insn(self) {
+                            // If the thing being Test'd is already a BoolExact
+                            // (TrueClass|FalseClass), then we don't need to Test+BoxBool and can
+                            // just return the test_val.
+                            if self.is_a(test_val, types::BoolExact) {
+                                self.make_equal_to(insn_id, test_val);
+                                continue;
+                            }
+                            insn_id
+                        } else {
+                            insn_id
+                        }
+                    }
                     &Insn::CondBranch { val, ref if_true, .. } if self.is_a(val, Type::from_cbool(true)) => {
                         self.new_insn(Insn::Jump(if_true.clone()))
                     }
