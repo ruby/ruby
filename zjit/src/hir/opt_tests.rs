@@ -43,14 +43,13 @@ mod hir_opt_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:NilClass = Const Value(nil)
-          Jump bb3(v1, v2)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
           v5:BasicObject = LoadArg :self@0
-          v6:NilClass = Const Value(nil)
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:NilClass):
+          Jump bb3(v5)
+        bb3(v8:BasicObject):
+          v40:NilClass = Const Value(nil)
           v13:TrueClass = Const Value(true)
           v24:Fixnum[3] = Const Value(3)
           CheckInterrupts
@@ -75,14 +74,13 @@ mod hir_opt_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:NilClass = Const Value(nil)
-          Jump bb3(v1, v2)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
           v5:BasicObject = LoadArg :self@0
-          v6:NilClass = Const Value(nil)
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:NilClass):
+          Jump bb3(v5)
+        bb3(v8:BasicObject):
+          v40:NilClass = Const Value(nil)
           v13:FalseClass = Const Value(false)
           v34:Fixnum[4] = Const Value(4)
           CheckInterrupts
@@ -1734,6 +1732,49 @@ mod hir_opt_tests {
         ");
     }
 
+    // `m`'s else branch is profiled with Fixnums, so it gets specialized to FixnumAdd. Once `m` is
+    // inlined into `test`, where `x` is known to be nil, that branch becomes statically
+    // unreachable: infer_types skips it and its instructions keep the `Empty` type. Later passes
+    // still walk the block, so `Empty` must not masquerade as a known Ruby object (`nil`) --
+    // folding FixnumAdd would then call `as_fixnum` on `nil` and panic.
+    #[test]
+    fn test_fixnum_add_in_unreachable_block_after_inlining() {
+        eval("
+            def m(x)
+              if x.nil?
+                0
+              else
+                x + 1
+              end
+            end
+            def test = m(nil)
+            m(1); m(2)
+            test; test
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:9:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v11:NilClass = Const Value(nil)
+          PatchPoint MethodRedefined(Object@0x1000, m@0x1008, cme:0x1010)
+          v20:ObjectSubclass[class_exact*:Object@VALUE(0x1000)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1000)] recompile
+          PushInlineFrame :m, v20 (0x1038), num_args=1
+          PatchPoint MethodRedefined(NilClass@0x1060, nil?@0x1068, cme:0x1070)
+          v52:Fixnum[0] = Const Value(0)
+          CheckInterrupts
+          v84:Fixnum[0] = Const Value(0)
+          PopInlineFrame
+          Return v84
+        ");
+    }
+
     #[test]
     fn test_optimize_send_to_aliased_cfunc() {
         eval("
@@ -2060,8 +2101,8 @@ mod hir_opt_tests {
           v58:NilClass = Const Value(nil)
           CheckInterrupts
           PopInlineFrame
-          v120:NilClass = Const Value(nil)
-          Return v120
+          v131:NilClass = Const Value(nil)
+          Return v131
         ");
     }
 
@@ -2100,8 +2141,8 @@ mod hir_opt_tests {
           v61:NilClass = Const Value(nil)
           CheckInterrupts
           PopInlineFrame
-          v129:NilClass = Const Value(nil)
-          Return v129
+          v140:NilClass = Const Value(nil)
+          Return v140
         ");
     }
 
@@ -2581,14 +2622,13 @@ mod hir_opt_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:NilClass = Const Value(nil)
-          Jump bb3(v1, v2)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
           v5:BasicObject = LoadArg :self@0
-          v6:NilClass = Const Value(nil)
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:NilClass):
+          Jump bb3(v5)
+        bb3(v8:BasicObject):
+          v27:NilClass = Const Value(nil)
           v13:Fixnum[2] = Const Value(2)
           v17:Fixnum[1] = Const Value(1)
           v26:RangeExact = NewRangeFixnum v17 NewRangeInclusive v13
@@ -2612,14 +2652,13 @@ mod hir_opt_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:NilClass = Const Value(nil)
-          Jump bb3(v1, v2)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
           v5:BasicObject = LoadArg :self@0
-          v6:NilClass = Const Value(nil)
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:NilClass):
+          Jump bb3(v5)
+        bb3(v8:BasicObject):
+          v27:NilClass = Const Value(nil)
           v13:Fixnum[2] = Const Value(2)
           v17:Fixnum[1] = Const Value(1)
           v26:RangeExact = NewRangeFixnum v17 NewRangeExclusive v13
@@ -2780,14 +2819,13 @@ mod hir_opt_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:NilClass = Const Value(nil)
-          Jump bb3(v1, v2)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
           v5:BasicObject = LoadArg :self@0
-          v6:NilClass = Const Value(nil)
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:NilClass):
+          Jump bb3(v5)
+        bb3(v8:BasicObject):
+          v23:NilClass = Const Value(nil)
           v13:ArrayExact = NewArray
           v17:Fixnum[5] = Const Value(5)
           CheckInterrupts
@@ -2876,14 +2914,13 @@ mod hir_opt_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:NilClass = Const Value(nil)
-          Jump bb3(v1, v2)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
           v5:BasicObject = LoadArg :self@0
-          v6:NilClass = Const Value(nil)
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:NilClass):
+          Jump bb3(v5)
+        bb3(v8:BasicObject):
+          v23:NilClass = Const Value(nil)
           v13:RangeExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v17:Fixnum[5] = Const Value(5)
           CheckInterrupts
@@ -2905,14 +2942,13 @@ mod hir_opt_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:NilClass = Const Value(nil)
-          Jump bb3(v1, v2)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
           v5:BasicObject = LoadArg :self@0
-          v6:NilClass = Const Value(nil)
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:NilClass):
+          Jump bb3(v5)
+        bb3(v8:BasicObject):
+          v31:NilClass = Const Value(nil)
           PatchPoint BOPRedefined(STRING_REDEFINED_OP_FLAG, BOP_UMINUS)
           v14:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v16:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
@@ -2941,15 +2977,14 @@ mod hir_opt_tests {
           v1:BasicObject = LoadSelf
           v2:CPtr = LoadSP
           v3:BasicObject = LoadField v2, :a@0x1000
-          v4:NilClass = Const Value(nil)
-          Jump bb3(v1, v3, v4)
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
           v7:BasicObject = LoadArg :self@0
           v8:BasicObject = LoadArg :a@1
-          v9:NilClass = Const Value(nil)
-          Jump bb3(v7, v8, v9)
-        bb3(v11:BasicObject, v12:BasicObject, v13:NilClass):
+          Jump bb3(v7, v8)
+        bb3(v11:BasicObject, v12:BasicObject):
+          v28:NilClass = Const Value(nil)
           v18:ArrayExact = NewArray v12
           v22:Fixnum[5] = Const Value(5)
           CheckInterrupts
@@ -2970,14 +3005,13 @@ mod hir_opt_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:NilClass = Const Value(nil)
-          Jump bb3(v1, v2)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
           v5:BasicObject = LoadArg :self@0
-          v6:NilClass = Const Value(nil)
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:NilClass):
+          Jump bb3(v5)
+        bb3(v8:BasicObject):
+          v25:NilClass = Const Value(nil)
           v13:HashExact = NewHash
           PatchPoint NoEPEscape(test)
           v19:Fixnum[5] = Const Value(5)
@@ -3002,16 +3036,15 @@ mod hir_opt_tests {
           v2:CPtr = LoadSP
           v3:BasicObject = LoadField v2, :aval@0x1000
           v4:BasicObject = LoadField v2, :bval@0x1001
-          v5:NilClass = Const Value(nil)
-          Jump bb3(v1, v3, v4, v5)
+          Jump bb3(v1, v3, v4)
         bb2():
           EntryPoint JIT(0)
           v8:BasicObject = LoadArg :self@0
           v9:BasicObject = LoadArg :aval@1
           v10:BasicObject = LoadArg :bval@2
-          v11:NilClass = Const Value(nil)
-          Jump bb3(v8, v9, v10, v11)
-        bb3(v13:BasicObject, v14:BasicObject, v15:BasicObject, v16:NilClass):
+          Jump bb3(v8, v9, v10)
+        bb3(v13:BasicObject, v14:BasicObject, v15:BasicObject):
+          v38:NilClass = Const Value(nil)
           v20:StaticSymbol[:a] = Const Value(VALUE(0x1008))
           v23:StaticSymbol[:b] = Const Value(VALUE(0x1010))
           v26:HashExact = NewHash v20: v14, v23: v15
@@ -3036,14 +3069,13 @@ mod hir_opt_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:NilClass = Const Value(nil)
-          Jump bb3(v1, v2)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
           v5:BasicObject = LoadArg :self@0
-          v6:NilClass = Const Value(nil)
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:NilClass):
+          Jump bb3(v5)
+        bb3(v8:BasicObject):
+          v24:NilClass = Const Value(nil)
           v13:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v14:ArrayExact = ArrayDup v13
           v18:Fixnum[5] = Const Value(5)
@@ -3065,14 +3097,13 @@ mod hir_opt_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:NilClass = Const Value(nil)
-          Jump bb3(v1, v2)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
           v5:BasicObject = LoadArg :self@0
-          v6:NilClass = Const Value(nil)
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:NilClass):
+          Jump bb3(v5)
+        bb3(v8:BasicObject):
+          v24:NilClass = Const Value(nil)
           v13:HashExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v14:HashExact = HashDup v13
           v18:Fixnum[5] = Const Value(5)
@@ -3095,14 +3126,13 @@ mod hir_opt_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:NilClass = Const Value(nil)
-          Jump bb3(v1, v2)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
           v5:BasicObject = LoadArg :self@0
-          v6:NilClass = Const Value(nil)
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:NilClass):
+          Jump bb3(v5)
+        bb3(v8:BasicObject):
+          v22:NilClass = Const Value(nil)
           v16:Fixnum[5] = Const Value(5)
           CheckInterrupts
           Return v16
@@ -3123,14 +3153,13 @@ mod hir_opt_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:NilClass = Const Value(nil)
-          Jump bb3(v1, v2)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
           v5:BasicObject = LoadArg :self@0
-          v6:NilClass = Const Value(nil)
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:NilClass):
+          Jump bb3(v5)
+        bb3(v8:BasicObject):
+          v24:NilClass = Const Value(nil)
           v13:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v14:StringExact = StringCopy v13
           v18:Fixnum[5] = Const Value(5)
@@ -3637,14 +3666,13 @@ mod hir_opt_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:NilClass = Const Value(nil)
-          Jump bb3(v1, v2)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
           v5:BasicObject = LoadArg :self@0
-          v6:NilClass = Const Value(nil)
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:NilClass):
+          Jump bb3(v5)
+        bb3(v8:BasicObject):
+          v30:NilClass = Const Value(nil)
           v13:ArrayExact = NewArray
           PatchPoint NoSingletonClass(Array@0x1000)
           PatchPoint MethodRedefined(Array@0x1000, itself@0x1008, cme:0x1010)
@@ -3670,14 +3698,13 @@ mod hir_opt_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:NilClass = Const Value(nil)
-          Jump bb3(v1, v2)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
           v5:BasicObject = LoadArg :self@0
-          v6:NilClass = Const Value(nil)
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:NilClass):
+          Jump bb3(v5)
+        bb3(v8:BasicObject):
+          v33:NilClass = Const Value(nil)
           PatchPoint StableConstantNames(0x1000, M)
           v14:ModuleExact[M@0x1008] = Const Value(VALUE(0x1008))
           PatchPoint NoSingletonClass(Module@0x1010)
@@ -4004,15 +4031,14 @@ mod hir_opt_tests {
           v1:BasicObject = LoadSelf
           v2:CPtr = LoadSP
           v3:BasicObject = LoadField v2, :x@0x1000
-          v4:NilClass = Const Value(nil)
-          Jump bb3(v1, v3, v4)
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
           v7:BasicObject = LoadArg :self@0
           v8:BasicObject = LoadArg :x@1
-          v9:NilClass = Const Value(nil)
-          Jump bb3(v7, v8, v9)
-        bb3(v11:BasicObject, v12:BasicObject, v13:NilClass):
+          Jump bb3(v7, v8)
+        bb3(v11:BasicObject, v12:BasicObject):
+          v32:NilClass = Const Value(nil)
           v17:ArrayExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           v18:ArrayExact = ArrayDup v17
           PatchPoint NoSingletonClass(Array@0x1010)
@@ -4605,14 +4631,13 @@ mod hir_opt_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:NilClass = Const Value(nil)
-          Jump bb3(v1, v2)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
           v5:BasicObject = LoadArg :self@0
-          v6:NilClass = Const Value(nil)
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:NilClass):
+          Jump bb3(v5)
+        bb3(v8:BasicObject):
+          v36:NilClass = Const Value(nil)
           v13:Fixnum[1] = Const Value(1)
           PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
           v34:ObjectSubclass[class_exact*:Object@VALUE(0x1000)] = GuardType v8, ObjectSubclass[class_exact*:Object@VALUE(0x1000)] recompile
@@ -4643,16 +4668,16 @@ mod hir_opt_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:NilClass = Const Value(nil)
-          Jump bb3(v1, v2)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
           v5:BasicObject = LoadArg :self@0
           v6:NilClass = Const Value(nil)
           v7:CPtr = GetEP 0
           StoreField v7, :a@0x1000, v6
-          Jump bb3(v5, v6)
-        bb3(v10:BasicObject, v11:NilClass):
+          Jump bb3(v5)
+        bb3(v10:BasicObject):
+          v48:NilClass = Const Value(nil)
           v15:Fixnum[1] = Const Value(1)
           SetLocal :a, l0, EP@3, v15
           PatchPoint MethodRedefined(Object@0x1008, lambda@0x1010, cme:0x1018)
@@ -5965,15 +5990,14 @@ mod hir_opt_tests {
           v1:BasicObject = LoadSelf
           v2:CPtr = LoadSP
           v3:BasicObject = LoadField v2, :s@0x1000
-          v4:NilClass = Const Value(nil)
-          Jump bb3(v1, v3, v4)
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
           v7:BasicObject = LoadArg :self@0
           v8:BasicObject = LoadArg :s@1
-          v9:NilClass = Const Value(nil)
-          Jump bb3(v7, v8, v9)
-        bb3(v11:BasicObject, v12:BasicObject, v13:NilClass):
+          Jump bb3(v7, v8)
+        bb3(v11:BasicObject, v12:BasicObject):
+          v37:NilClass = Const Value(nil)
           v17:ArrayExact = NewArray
           v22:TrueClass = Const Value(true)
           v24:BasicObject = Send v12, 0x1008, :each_line, v22 # SendFallbackReason: Complex argument passing
@@ -6766,15 +6790,14 @@ mod hir_opt_tests {
           v1:BasicObject = LoadSelf
           v2:CPtr = LoadSP
           v3:BasicObject = LoadField v2, :block@0x1000
-          v4:NilClass = Const Value(nil)
-          Jump bb3(v1, v3, v4)
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
           v7:BasicObject = LoadArg :self@0
           v8:BasicObject = LoadArg :block@1
-          v9:NilClass = Const Value(nil)
-          Jump bb3(v7, v8, v9)
-        bb3(v11:BasicObject, v12:BasicObject, v13:NilClass):
+          Jump bb3(v7, v8)
+        bb3(v11:BasicObject, v12:BasicObject):
+          v50:NilClass = Const Value(nil)
           v18:CPtr = GetEP 0
           v19:CUInt64 = LoadField v18, :VM_ENV_DATA_INDEX_FLAGS@0x1001
           v20:CBool = IsBlockParamModified v19
@@ -6818,14 +6841,13 @@ mod hir_opt_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:NilClass = Const Value(nil)
-          Jump bb3(v1, v2)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
           v5:BasicObject = LoadArg :self@0
-          v6:NilClass = Const Value(nil)
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:NilClass):
+          Jump bb3(v5)
+        bb3(v8:BasicObject):
+          v45:NilClass = Const Value(nil)
           v14:CPtr = GetEP 1
           v15:CUInt64 = LoadField v14, :VM_ENV_DATA_INDEX_FLAGS@0x1000
           v16:CBool = IsBlockParamModified v15
@@ -7365,15 +7387,14 @@ mod hir_opt_tests {
           v1:BasicObject = LoadSelf
           v2:CPtr = LoadSP
           v3:BasicObject = LoadField v2, :p@0x1000
-          v4:NilClass = Const Value(nil)
-          Jump bb3(v1, v3, v4)
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
           v7:BasicObject = LoadArg :self@0
           v8:BasicObject = LoadArg :p@1
-          v9:NilClass = Const Value(nil)
-          Jump bb3(v7, v8, v9)
-        bb3(v11:BasicObject, v12:BasicObject, v13:NilClass):
+          Jump bb3(v7, v8)
+        bb3(v11:BasicObject, v12:BasicObject):
+          v31:NilClass = Const Value(nil)
           v17:ArrayExact = NewArray
           v23:ArrayExact = ToArray v17
           v25:BasicObject = Send v12, :call, v23 # SendFallbackReason: Complex argument passing
@@ -8687,14 +8708,13 @@ mod hir_opt_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:NilClass = Const Value(nil)
-          Jump bb3(v1, v2)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
           v5:BasicObject = LoadArg :self@0
-          v6:NilClass = Const Value(nil)
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:NilClass):
+          Jump bb3(v5)
+        bb3(v8:BasicObject):
+          v36:NilClass = Const Value(nil)
           v20:NilClass = Const Value(nil)
           CheckInterrupts
           Return v20
@@ -8715,18 +8735,19 @@ mod hir_opt_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:NilClass = Const Value(nil)
-          Jump bb3(v1, v2)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
           v5:BasicObject = LoadArg :self@0
-          v6:NilClass = Const Value(nil)
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:NilClass):
+          Jump bb3(v5)
+        bb3(v8:BasicObject):
+          v37:NilClass = Const Value(nil)
           v13:Fixnum[1] = Const Value(1)
           PatchPoint MethodRedefined(Integer@0x1000, itself@0x1008, cme:0x1010)
+          v39:Fixnum[1] = Const Value(1)
+          v38:Fixnum[1] = Const Value(1)
           CheckInterrupts
-          Return v13
+          Return v39
         ");
     }
 
@@ -11085,14 +11106,13 @@ mod hir_opt_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:NilClass = Const Value(nil)
-          Jump bb3(v1, v2)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
           v5:BasicObject = LoadArg :self@0
-          v6:NilClass = Const Value(nil)
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:NilClass):
+          Jump bb3(v5)
+        bb3(v8:BasicObject):
+          v43:NilClass = Const Value(nil)
           v13:ArrayExact = NewArray
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1000, A)
@@ -11368,8 +11388,9 @@ mod hir_opt_tests {
           PushInlineFrame :foo, v19 (0x1038), num_args=0
           v43:Fixnum[42] = Const Value(42)
           CheckInterrupts
+          v53:Fixnum[42] = Const Value(42)
           PopInlineFrame
-          Return v43
+          Return v53
         ");
     }
 
@@ -11389,14 +11410,13 @@ mod hir_opt_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:NilClass = Const Value(nil)
-          Jump bb3(v1, v2)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
           v5:BasicObject = LoadArg :self@0
-          v6:NilClass = Const Value(nil)
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:NilClass):
+          Jump bb3(v5)
+        bb3(v8:BasicObject):
+          v25:NilClass = Const Value(nil)
           v13:StaticSymbol[:to_s] = Const Value(VALUE(0x1000))
           v19:BasicObject = Send v8, &block, :foo, v13 # SendFallbackReason: Send: block argument is not nil
           CheckInterrupts
@@ -11420,14 +11440,13 @@ mod hir_opt_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:NilClass = Const Value(nil)
-          Jump bb3(v1, v2)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
           v5:BasicObject = LoadArg :self@0
-          v6:NilClass = Const Value(nil)
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:NilClass):
+          Jump bb3(v5)
+        bb3(v8:BasicObject):
+          v29:NilClass = Const Value(nil)
           v13:NilClass = Const Value(nil)
           PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
           v27:ObjectSubclass[class_exact*:Object@VALUE(0x1000)] = GuardType v8, ObjectSubclass[class_exact*:Object@VALUE(0x1000)] recompile
@@ -12134,22 +12153,21 @@ mod hir_opt_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:NilClass = Const Value(nil)
-          Jump bb3(v1, v2)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
           v5:BasicObject = LoadArg :self@0
-          v6:NilClass = Const Value(nil)
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:NilClass):
+          Jump bb3(v5)
+        bb3(v8:BasicObject):
+          v38:NilClass = Const Value(nil)
           v13:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v14:ArrayExact = ArrayDup v13
           v19:Fixnum[0] = Const Value(0)
           PatchPoint NoSingletonClass(Array@0x1008)
           PatchPoint MethodRedefined(Array@0x1008, []@0x1010, cme:0x1018)
-          v38:CInt64[0] = Const CInt64(0)
+          v39:CInt64[0] = Const CInt64(0)
           v32:CInt64 = ArrayLength v14
-          v33:CInt64[0] = GuardLess v38, v32
+          v33:CInt64[0] = GuardLess v39, v32
           v37:BasicObject = ArrayAref v14, v33
           CheckInterrupts
           Return v37
@@ -12250,14 +12268,13 @@ mod hir_opt_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:NilClass = Const Value(nil)
-          Jump bb3(v1, v2)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
           v5:BasicObject = LoadArg :self@0
-          v6:NilClass = Const Value(nil)
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:NilClass):
+          Jump bb3(v5)
+        bb3(v8:BasicObject):
+          v32:NilClass = Const Value(nil)
           v13:HashExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v14:HashExact = HashDup v13
           v19:Fixnum[1] = Const Value(1)
@@ -12378,14 +12395,13 @@ mod hir_opt_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:NilClass = Const Value(nil)
-          Jump bb3(v1, v2)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
           v5:BasicObject = LoadArg :self@0
-          v6:NilClass = Const Value(nil)
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:NilClass):
+          Jump bb3(v5)
+        bb3(v8:BasicObject):
+          v39:NilClass = Const Value(nil)
           v13:HashExact = NewHash
           PatchPoint NoEPEscape(test)
           v22:Fixnum[1] = Const Value(1)
@@ -14651,14 +14667,13 @@ mod hir_opt_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:NilClass = Const Value(nil)
-          Jump bb3(v1, v2)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
           v5:BasicObject = LoadArg :self@0
-          v6:NilClass = Const Value(nil)
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:NilClass):
+          Jump bb3(v5)
+        bb3(v8:BasicObject):
+          v49:NilClass = Const Value(nil)
           v13:ArrayExact = NewArray
           v19:ArrayExact = ToArray v13
           v21:BasicObject = Send v8, :foo, v19 # SendFallbackReason: Complex argument passing
@@ -15241,21 +15256,20 @@ mod hir_opt_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:NilClass = Const Value(nil)
-          Jump bb3(v1, v2)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
           v5:BasicObject = LoadArg :self@0
-          v6:NilClass = Const Value(nil)
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:NilClass):
+          Jump bb3(v5)
+        bb3(v8:BasicObject):
+          v32:NilClass = Const Value(nil)
           PatchPoint BOPRedefined(STRING_REDEFINED_OP_FLAG, BOP_FREEZE)
           v14:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           PatchPoint NoSingletonClass(String@0x1008)
           PatchPoint MethodRedefined(String@0x1008, ==@0x1010, cme:0x1018)
-          v32:TrueClass = Const Value(true)
+          v33:TrueClass = Const Value(true)
           CheckInterrupts
-          Return v32
+          Return v33
         ");
     }
 
@@ -15439,16 +15453,14 @@ mod hir_opt_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:NilClass = Const Value(nil)
-          v3:NilClass = Const Value(nil)
-          Jump bb3(v1, v2, v3)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
           v6:BasicObject = LoadArg :self@0
-          v7:NilClass = Const Value(nil)
-          v8:NilClass = Const Value(nil)
-          Jump bb3(v6, v7, v8)
-        bb3(v10:BasicObject, v11:NilClass, v12:NilClass):
+          Jump bb3(v6)
+        bb3(v10:BasicObject):
+          v57:NilClass = Const Value(nil)
+          v56:NilClass = Const Value(nil)
           v16:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v17:StringExact = StringCopy v16
           v21:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
@@ -16524,8 +16536,7 @@ mod hir_opt_tests {
          v3:BasicObject = LoadField v2, :a@0x1000
          v4:BasicObject = LoadField v2, :_b@0x1001
          v5:BasicObject = LoadField v2, :_c@0x1002
-         v6:NilClass = Const Value(nil)
-         Jump bb3(v1, v3, v4, v5, v6)
+         Jump bb3(v1, v3, v4, v5)
        bb2():
          EntryPoint JIT(0)
          v9:BasicObject = LoadArg :self@0
@@ -16538,8 +16549,9 @@ mod hir_opt_tests {
          StoreField v11, :_c@0x1003, v15
          v17:NilClass = Const Value(nil)
          StoreField v11, :formatted@0x1004, v17
-         Jump bb3(v9, v10, v13, v15, v17)
-       bb3(v20:BasicObject, v21:BasicObject, v22:BasicObject, v23:BasicObject, v24:NilClass):
+         Jump bb3(v9, v10, v13, v15)
+       bb3(v20:BasicObject, v21:BasicObject, v22:BasicObject, v23:BasicObject):
+         v82:NilClass = Const Value(nil)
          SetLocal :formatted, l0, EP@3, v21
          PatchPoint SingleRactorMode
          v47:HeapBasicObject = GuardType v20, HeapBasicObject
@@ -17784,8 +17796,7 @@ mod hir_opt_tests {
           v1:HeapBasicObject = LoadSelf
           v2:CPtr = LoadSP
           v3:BasicObject = LoadField v2, :blk@0x1000
-          v4:NilClass = Const Value(nil)
-          Jump bb3(v1, v3, v4)
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
           v7:HeapBasicObject = LoadArg :self@0
@@ -17794,8 +17805,9 @@ mod hir_opt_tests {
           StoreField v9, :blk@0x1001, v8
           v11:NilClass = Const Value(nil)
           StoreField v9, :other_block@0x1002, v11
-          Jump bb3(v7, v8, v11)
-        bb3(v14:HeapBasicObject, v15:BasicObject, v16:NilClass):
+          Jump bb3(v7, v8)
+        bb3(v14:HeapBasicObject, v15:BasicObject):
+          v44:NilClass = Const Value(nil)
           PatchPoint NoSingletonClass(B@0x1008)
           PatchPoint MethodRedefined(B@0x1008, proc@0x1010, cme:0x1018)
           v42:ObjectSubclass[class_exact:B] = GuardType v14, ObjectSubclass[class_exact:B] recompile
@@ -18482,17 +18494,16 @@ mod hir_opt_tests {
           v3:BasicObject = LoadField v2, :list@0x1000
           v4:BasicObject = LoadField v2, :sep@0x1001
           v5:BasicObject = LoadField v2, :iter_method@0x1002
-          v6:NilClass = Const Value(nil)
           v7:CPtr = LoadPC
           v8:CPtr[CPtr(0x1003)] = Const CPtr(0x1003)
           v9:CBool = IsBitEqual v7, v8
-          CondBranch v9, bb3(v1, v3, v4, v5, v6), bb9()
+          CondBranch v9, bb3(v1, v3, v4, v5), bb9()
         bb9():
           v11:CPtr[CPtr(0x1004)] = Const CPtr(0x1004)
           v12:CBool = IsBitEqual v7, v11
-          CondBranch v12, bb5(v1, v3, v4, v5, v6), bb10()
+          CondBranch v12, bb5(v1, v3, v4, v5), bb10()
         bb10():
-          Jump bb7(v1, v3, v4, v5, v6)
+          Jump bb7(v1, v3, v4, v5)
         bb2():
           EntryPoint JIT(0)
           v16:BasicObject = LoadArg :self@0
@@ -18505,11 +18516,12 @@ mod hir_opt_tests {
           StoreField v18, :iter_method@0x1005, v22
           v24:NilClass = Const Value(nil)
           StoreField v18, :kwsplat@0x1006, v24
-          Jump bb3(v16, v17, v20, v22, v24)
-        bb3(v51:BasicObject, v52:BasicObject, v53:BasicObject, v54:BasicObject, v55:NilClass):
+          Jump bb3(v16, v17, v20, v22)
+        bb3(v51:BasicObject, v52:BasicObject, v53:BasicObject, v54:BasicObject):
+          v132:NilClass = Const Value(nil)
           v58:NilClass = Const Value(nil)
           SetLocal :sep, l0, EP@5, v58
-          Jump bb5(v51, v52, v58, v54, v55)
+          Jump bb5(v51, v52, v58, v54)
         bb4():
           EntryPoint JIT(1)
           v28:BasicObject = LoadArg :self@0
@@ -18522,11 +18534,12 @@ mod hir_opt_tests {
           StoreField v30, :iter_method@0x1005, v34
           v36:NilClass = Const Value(nil)
           StoreField v30, :kwsplat@0x1006, v36
-          Jump bb5(v28, v29, v32, v34, v36)
-        bb5(v62:BasicObject, v63:BasicObject, v64:BasicObject, v65:BasicObject, v66:NilClass):
+          Jump bb5(v28, v29, v32, v34)
+        bb5(v62:BasicObject, v63:BasicObject, v64:BasicObject, v65:BasicObject):
+          v133:NilClass = Const Value(nil)
           v69:StaticSymbol[:each] = Const Value(VALUE(0x1008))
           SetLocal :iter_method, l0, EP@4, v69
-          Jump bb7(v62, v63, v64, v69, v66)
+          Jump bb7(v62, v63, v64, v69)
         bb6():
           EntryPoint JIT(2)
           v40:BasicObject = LoadArg :self@0
@@ -18539,11 +18552,12 @@ mod hir_opt_tests {
           StoreField v42, :iter_method@0x1005, v46
           v48:NilClass = Const Value(nil)
           StoreField v42, :kwsplat@0x1006, v48
-          Jump bb7(v40, v41, v44, v46, v48)
-        bb7(v73:BasicObject, v74:BasicObject, v75:BasicObject, v76:BasicObject, v77:NilClass):
+          Jump bb7(v40, v41, v44, v46)
+        bb7(v73:BasicObject, v74:BasicObject, v75:BasicObject, v76:BasicObject):
+          v134:NilClass = Const Value(nil)
           v82:CBool = Test v75
           v83:Truthy = RefineType v75, Truthy
-          CondBranch v82, bb8(v74, v83, v76, v77), bb11()
+          CondBranch v82, bb8(v74, v83, v76, v134), bb11()
         bb11():
           v85:Falsy = RefineType v75, Falsy
           PatchPoint MethodRedefined(Object@0x1010, lambda@0x1018, cme:0x1020)
@@ -18583,14 +18597,13 @@ mod hir_opt_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:NilClass = Const Value(nil)
-          Jump bb3(v1, v2)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
           v5:BasicObject = LoadArg :self@0
-          v6:NilClass = Const Value(nil)
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:NilClass):
+          Jump bb3(v5)
+        bb3(v8:BasicObject):
+          v99:NilClass = Const Value(nil)
           v13:NilClass = Const Value(nil)
           v15:TrueClass|NilClass = Defined yield, v13
           v17:CBool = Test v15
@@ -18757,14 +18770,13 @@ mod hir_opt_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:NilClass = Const Value(nil)
-          Jump bb3(v1, v2)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
           v5:BasicObject = LoadArg :self@0
-          v6:NilClass = Const Value(nil)
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:NilClass):
+          Jump bb3(v5)
+        bb3(v8:BasicObject):
+          v45:NilClass = Const Value(nil)
           v13:Fixnum[1] = Const Value(1)
           PatchPoint SingleRactorMode
           v19:HeapBasicObject = GuardType v8, HeapBasicObject
@@ -18802,16 +18814,14 @@ mod hir_opt_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:NilClass = Const Value(nil)
-          v3:NilClass = Const Value(nil)
-          Jump bb3(v1, v2, v3)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
           v6:BasicObject = LoadArg :self@0
-          v7:NilClass = Const Value(nil)
-          v8:NilClass = Const Value(nil)
-          Jump bb3(v6, v7, v8)
-        bb3(v10:BasicObject, v11:NilClass, v12:NilClass):
+          Jump bb3(v6)
+        bb3(v10:BasicObject):
+          v64:NilClass = Const Value(nil)
+          v63:NilClass = Const Value(nil)
           v16:Fixnum[1] = Const Value(1)
           PatchPoint SingleRactorMode
           v22:HeapBasicObject = GuardType v10, HeapBasicObject
@@ -18824,7 +18834,7 @@ mod hir_opt_tests {
           v32:Fixnum[5] = Const Value(5)
           PatchPoint NoEPEscape(initialize)
           PatchPoint MethodRedefined(Integer@0x1008, +@0x1010, cme:0x1018)
-          v63:Fixnum[6] = Const Value(6)
+          v65:Fixnum[6] = Const Value(6)
           PatchPoint SingleRactorMode
           WriteBarrier v22, v16
           CheckInterrupts
@@ -18851,14 +18861,13 @@ mod hir_opt_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:NilClass = Const Value(nil)
-          Jump bb3(v1, v2)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
           v5:BasicObject = LoadArg :self@0
-          v6:NilClass = Const Value(nil)
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:NilClass):
+          Jump bb3(v5)
+        bb3(v8:BasicObject):
+          v57:NilClass = Const Value(nil)
           v13:Fixnum[1] = Const Value(1)
           PatchPoint SingleRactorMode
           v19:HeapBasicObject = GuardType v8, HeapBasicObject
@@ -19322,14 +19331,13 @@ mod hir_opt_tests {
         bb1():
           EntryPoint interpreter
           v1:HeapBasicObject = LoadSelf
-          v2:NilClass = Const Value(nil)
-          Jump bb3(v1, v2)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
           v5:HeapBasicObject = LoadArg :self@0
-          v6:NilClass = Const Value(nil)
-          Jump bb3(v5, v6)
-        bb3(v8:HeapBasicObject, v9:NilClass):
+          Jump bb3(v5)
+        bb3(v8:HeapBasicObject):
+          v99:NilClass = Const Value(nil)
           v13:Fixnum[0] = Const Value(0)
           Jump bb6(v8, v13)
         bb6(v18:HeapBasicObject, v19:Fixnum):
@@ -19960,15 +19968,14 @@ mod hir_opt_tests {
           v1:BasicObject = LoadSelf
           v2:CPtr = LoadSP
           v3:BasicObject = LoadField v2, :obj@0x1000
-          v4:NilClass = Const Value(nil)
-          Jump bb3(v1, v3, v4)
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
           v7:BasicObject = LoadArg :self@0
           v8:BasicObject = LoadArg :obj@1
-          v9:NilClass = Const Value(nil)
-          Jump bb3(v7, v8, v9)
-        bb3(v11:BasicObject, v12:BasicObject, v13:NilClass):
+          Jump bb3(v7, v8)
+        bb3(v11:BasicObject, v12:BasicObject):
+          v226:NilClass = Const Value(nil)
           v17:Fixnum[0] = Const Value(0)
           PatchPoint NoSingletonClass(C@0x1008)
           PatchPoint MethodRedefined(C@0x1008, var@0x1010, cme:0x1018)
@@ -20137,15 +20144,14 @@ mod hir_opt_tests {
           v1:HeapBasicObject = LoadSelf
           v2:CPtr = LoadSP
           v3:BasicObject = LoadField v2, :x@0x1000
-          v4:NilClass = Const Value(nil)
-          Jump bb3(v1, v3, v4)
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
           v7:HeapBasicObject = LoadArg :self@0
           v8:BasicObject = LoadArg :x@1
-          v9:NilClass = Const Value(nil)
-          Jump bb3(v7, v8, v9)
-        bb3(v11:HeapBasicObject, v12:BasicObject, v13:NilClass):
+          Jump bb3(v7, v8)
+        bb3(v11:HeapBasicObject, v12:BasicObject):
+          v74:NilClass = Const Value(nil)
           v17:Fixnum[1] = Const Value(1)
           PatchPoint SingleRactorMode
           v21:CShape = LoadField v11, :shape_id@0x1001
@@ -20197,15 +20203,14 @@ mod hir_opt_tests {
           v1:HeapBasicObject = LoadSelf
           v2:CPtr = LoadSP
           v3:BasicObject = LoadField v2, :x@0x1000
-          v4:NilClass = Const Value(nil)
-          Jump bb3(v1, v3, v4)
+          Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
           v7:HeapBasicObject = LoadArg :self@0
           v8:BasicObject = LoadArg :x@1
-          v9:NilClass = Const Value(nil)
-          Jump bb3(v7, v8, v9)
-        bb3(v11:HeapBasicObject, v12:BasicObject, v13:NilClass):
+          Jump bb3(v7, v8)
+        bb3(v11:HeapBasicObject, v12:BasicObject):
+          v90:NilClass = Const Value(nil)
           v17:Fixnum[1] = Const Value(1)
           PatchPoint SingleRactorMode
           v21:CShape = LoadField v11, :shape_id@0x1001
@@ -21734,10 +21739,10 @@ mod hir_opt_tests {
           PatchPoint NoEPEscape(==)
           PatchPoint MethodRedefined(Point@0x1008, x@0x10f8, cme:0x1100)
           PatchPoint MethodRedefined(Integer@0x1128, ==@0x10a0, cme:0x1130)
-          v253:Fixnum = GuardType v199, Fixnum recompile
-          v255:BoolExact = FixnumEq v253, v49
-          v210:CBool = Test v255
-          v211:FalseClass = RefineType v255, Falsy
+          v255:Fixnum = GuardType v199, Fixnum recompile
+          v257:BoolExact = FixnumEq v255, v49
+          v210:CBool = Test v257
+          v211:FalseClass = RefineType v257, Falsy
           CondBranch v210, bb19(), bb18(v211)
         bb19():
           PatchPoint SingleRactorMode
@@ -21747,14 +21752,14 @@ mod hir_opt_tests {
           PatchPoint NoEPEscape(==)
           PatchPoint NoSingletonClass(Point@0x1008)
           PatchPoint MethodRedefined(Point@0x1008, y@0x1158, cme:0x1160)
-          v260:CShape = LoadField v97, :shape_id@0x1090
-          v261:CShape[0x1095] = GuardBitEquals v260, CShape(0x1095) recompile
-          v262:BasicObject = LoadField v97, :@y@0x1094
+          v262:CShape = LoadField v97, :shape_id@0x1090
+          v263:CShape[0x1095] = GuardBitEquals v262, CShape(0x1095) recompile
+          v264:BasicObject = LoadField v97, :@y@0x1094
           PatchPoint MethodRedefined(Integer@0x1128, ==@0x10a0, cme:0x1130)
-          v265:Fixnum = GuardType v220, Fixnum recompile
-          v266:Fixnum = GuardType v262, Fixnum
-          v267:BoolExact = FixnumEq v265, v266
-          Jump bb18(v267)
+          v267:Fixnum = GuardType v220, Fixnum recompile
+          v268:Fixnum = GuardType v264, Fixnum
+          v269:BoolExact = FixnumEq v267, v268
+          Jump bb18(v269)
         bb18(v232:BoolExact):
           CheckInterrupts
           PopInlineFrame
@@ -21814,16 +21819,15 @@ mod hir_opt_tests {
           v2:CPtr = LoadSP
           v3:BasicObject = LoadField v2, :obj@0x1000
           v4:BasicObject = LoadField v2, :flag@0x1001
-          v5:NilClass = Const Value(nil)
-          Jump bb3(v1, v3, v4, v5)
+          Jump bb3(v1, v3, v4)
         bb2():
           EntryPoint JIT(0)
           v8:BasicObject = LoadArg :self@0
           v9:BasicObject = LoadArg :obj@1
           v10:BasicObject = LoadArg :flag@2
-          v11:NilClass = Const Value(nil)
-          Jump bb3(v8, v9, v10, v11)
-        bb3(v13:BasicObject, v14:BasicObject, v15:BasicObject, v16:NilClass):
+          Jump bb3(v8, v9, v10)
+        bb3(v13:BasicObject, v14:BasicObject, v15:BasicObject):
+          v72:NilClass = Const Value(nil)
           v21:Fixnum[1] = Const Value(1)
           v23:Fixnum[2] = Const Value(2)
           v25:Fixnum[3] = Const Value(3)
@@ -21932,14 +21936,13 @@ mod hir_opt_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:NilClass = Const Value(nil)
-          Jump bb3(v1, v2)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
           v5:BasicObject = LoadArg :self@0
-          v6:NilClass = Const Value(nil)
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:NilClass):
+          Jump bb3(v5)
+        bb3(v8:BasicObject):
+          v63:NilClass = Const Value(nil)
           v13:Fixnum[0] = Const Value(0)
           Jump bb5(v13)
         bb5(v19:Fixnum):
@@ -21957,6 +21960,50 @@ mod hir_opt_tests {
         bb6():
           CheckInterrupts
           Return v19
+        ");
+    }
+
+    #[test]
+    fn test_same_constant_does_not_create_block_param() {
+        eval(r#"
+            def test(cond)
+              if cond
+                x = 1
+              else
+                x = 1
+              end
+              x
+            end
+
+            test(true)
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :cond@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :cond@1
+          Jump bb3(v7, v8)
+        bb3(v11:BasicObject, v12:BasicObject):
+          v48:NilClass = Const Value(nil)
+          v18:CBool = Test v12
+          v19:Falsy = RefineType v12, Falsy
+          CondBranch v18, bb6(), bb4()
+        bb6():
+          v21:Truthy = RefineType v12, Truthy
+          Jump bb5(v21)
+        bb4():
+          Jump bb5(v19)
+        bb5(v38:BasicObject):
+          v49:Fixnum[1] = Const Value(1)
+          CheckInterrupts
+          Return v49
         ");
     }
 }

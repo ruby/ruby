@@ -436,6 +436,13 @@ impl Type {
 
     /// Return the object specialization, if any.
     pub fn ruby_object(&self) -> Option<VALUE> {
+        // We ask not for the type, but for a specific value associated with this Type. If the Type
+        // is Empty, it will be a subtype of every other Type, but it will never have any value.
+        // Therefore, special-case Empty.
+        if self.is_subtype(types::Empty) { return None; }
+        if self.is_subtype(types::NilClass) { return Some(Qnil); }
+        if self.is_subtype(types::TrueClass) { return Some(Qtrue); }
+        if self.is_subtype(types::FalseClass) { return Some(Qfalse); }
         match self.spec() {
             Specialization::Object(val) => Some(val),
             _ => None,
@@ -595,6 +602,10 @@ impl Type {
         if let Some(val) = self.exact_ruby_class() {
             return Some(val);
         }
+        // As in `ruby_object`, we ask not for the type but for a property of the values it
+        // describes. Empty is a subtype of every Type, so the scan below would report the first
+        // entry's class, but Empty describes no value and therefore no run-time class.
+        if self.is_subtype(types::Empty) { return None; }
         types::ExactBitsAndClass
             .iter()
             .find(|&(bits, _)| self.is_subtype(Type::from_bits(*bits)))
@@ -843,13 +854,25 @@ mod tests {
     }
 
     #[test]
-    fn singletons_do_not_have_ruby_object() {
-        assert_eq!(Type::from_value(Qnil).ruby_object(), None);
-        assert_eq!(types::NilClass.ruby_object(), None);
-        assert_eq!(Type::from_value(Qtrue).ruby_object(), None);
-        assert_eq!(types::TrueClass.ruby_object(), None);
-        assert_eq!(Type::from_value(Qfalse).ruby_object(), None);
-        assert_eq!(types::FalseClass.ruby_object(), None);
+    fn singletons_have_ruby_object() {
+        assert_eq!(Type::from_value(Qnil).ruby_object(), Some(Qnil));
+        assert_eq!(types::NilClass.ruby_object(), Some(Qnil));
+        assert_eq!(Type::from_value(Qtrue).ruby_object(), Some(Qtrue));
+        assert_eq!(types::TrueClass.ruby_object(), Some(Qtrue));
+        assert_eq!(Type::from_value(Qfalse).ruby_object(), Some(Qfalse));
+        assert_eq!(types::FalseClass.ruby_object(), Some(Qfalse));
+    }
+
+    #[test]
+    fn empty_has_no_ruby_object() {
+        // Empty is a subtype of every type, but has no value.
+        assert_eq!(types::Empty.ruby_object(), None);
+        assert_eq!(types::Empty.fixnum_value(), None);
+        assert_eq!(types::Empty.runtime_exact_ruby_class(), None);
+        assert_eq!(types::Empty.cint64_value(), None);
+        assert_eq!(types::Empty.exact_ruby_class(), None);
+        assert_eq!(types::Empty.inexact_ruby_class(), None);
+        assert_eq!(types::Empty.builtin_type_equivalent(), None);
     }
 
     #[test]
