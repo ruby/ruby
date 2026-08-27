@@ -372,6 +372,21 @@ class TestBox < Test::Unit::TestCase
     assert_include @box::BoxedString.ancestors, String
     assert_include String.descendants, @box::BoxedString
   end
+
+  def test_prepend_to_builtin_module_in_box
+    # Use --disable-gems to keep Kernel untouched in the new box, so that
+    # the prepend below is the first copy-on-write of Kernel's classext
+    assert_separately([ENV_ENABLE_BOX, '--disable-gems'], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      box = Ruby::Box.new
+      box.eval('module BoxDecor; def itself; :decorated; end; end; Kernel.prepend(BoxDecor)')
+      ancestors = box.eval('Object.ancestors')
+      assert_operator ancestors.index(box::BoxDecor), :<, ancestors.index(Kernel)
+      assert_equal :decorated, box.eval('Object.new.itself')
+      assert_not_include Object.ancestors, box::BoxDecor
+      assert_equal 42, 42.itself
+    end;
+  end
 end
 
 class TestBoxDescendantsMain
