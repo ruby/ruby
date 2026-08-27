@@ -407,8 +407,6 @@ rb_iseq_mark_and_move(rb_iseq_t *iseq, bool reference_updating)
 {
     RUBY_MARK_ENTER("iseq");
 
-    rb_gc_mark_and_move(&iseq->wrapper);
-
     if (ISEQ_BODY(iseq)) {
         struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
 
@@ -1721,24 +1719,11 @@ static const rb_data_type_t iseqw_data_type = {
 static VALUE
 iseqw_new(const rb_iseq_t *iseq)
 {
-    if (iseq->wrapper) {
-        if (*(const rb_iseq_t **)rb_check_typeddata(iseq->wrapper, &iseqw_data_type) != iseq) {
-            rb_raise(rb_eTypeError, "wrong iseq wrapper: %" PRIsVALUE " for %p",
-                     iseq->wrapper, (void *)iseq);
-        }
-        return iseq->wrapper;
-    }
-    else {
-        rb_iseq_t **ptr;
-        VALUE obj = TypedData_Make_Struct(rb_cISeq, rb_iseq_t *, &iseqw_data_type, ptr);
-        RB_OBJ_WRITE(obj, ptr, iseq);
-
-        /* cache a wrapper object */
-        RB_OBJ_SET_FROZEN_SHAREABLE((VALUE)obj);
-        RB_OBJ_WRITE((VALUE)iseq, &iseq->wrapper, obj);
-
-        return obj;
-    }
+    rb_iseq_t **ptr;
+    VALUE obj = TypedData_Make_Struct(rb_cISeq, rb_iseq_t *, &iseqw_data_type, ptr);
+    RB_OBJ_WRITE(obj, ptr, iseq);
+    RB_OBJ_SET_FROZEN_SHAREABLE((VALUE)obj);
+    return obj;
 }
 
 VALUE
