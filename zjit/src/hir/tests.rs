@@ -1031,6 +1031,7 @@ pub(crate) mod hir_build_tests {
           Jump bb3(v4)
         bb3(v6:BasicObject):
           SideExit PatchPoint(BOPRedefined(HASH_REDEFINED_OP_FLAG, BOP_FREEZE))
+          Unreachable
         ");
     }
 
@@ -1079,6 +1080,7 @@ pub(crate) mod hir_build_tests {
           Jump bb3(v4)
         bb3(v6:BasicObject):
           SideExit PatchPoint(BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_FREEZE))
+          Unreachable
         ");
     }
 
@@ -1127,6 +1129,7 @@ pub(crate) mod hir_build_tests {
           Jump bb3(v4)
         bb3(v6:BasicObject):
           SideExit PatchPoint(BOPRedefined(STRING_REDEFINED_OP_FLAG, BOP_FREEZE))
+          Unreachable
         ");
     }
 
@@ -1175,6 +1178,7 @@ pub(crate) mod hir_build_tests {
           Jump bb3(v4)
         bb3(v6:BasicObject):
           SideExit PatchPoint(BOPRedefined(STRING_REDEFINED_OP_FLAG, BOP_UMINUS))
+          Unreachable
         ");
     }
 
@@ -1331,16 +1335,17 @@ pub(crate) mod hir_build_tests {
           Jump bb3(v11, v12, v13)
         bb3(v20:BasicObject, v21:BasicObject, v22:NilClass):
           SideExit UnhandledYARVInsn(trace_putobject_INT2FIX_1_)
+          Unreachable
         bb4():
           EntryPoint JIT(1)
           v16:BasicObject = LoadArg :self@0
           v17:BasicObject = LoadArg :a@1
           v18:NilClass = Const Value(nil)
           Jump bb5(v16, v17, v18)
-        bb5(v27:BasicObject, v28:BasicObject, v29:NilClass):
-          v35:ArrayExact = NewArray v28, v29
+        bb5(v28:BasicObject, v29:BasicObject, v30:NilClass):
+          v36:ArrayExact = NewArray v29, v30
           CheckInterrupts
-          Return v35
+          Return v36
         ");
     }
 
@@ -1369,14 +1374,15 @@ pub(crate) mod hir_build_tests {
           Jump bb3(v10, v11)
         bb3(v17:BasicObject, v18:BasicObject):
           SideExit UnhandledYARVInsn(definemethod)
+          Unreachable
         bb4():
           EntryPoint JIT(1)
           v14:BasicObject = LoadArg :self@0
           v15:BasicObject = LoadArg :a@1
           Jump bb5(v14, v15)
-        bb5(v23:BasicObject, v24:BasicObject):
+        bb5(v24:BasicObject, v25:BasicObject):
           CheckInterrupts
-          Return v24
+          Return v25
         ");
     }
 
@@ -2220,6 +2226,7 @@ pub(crate) mod hir_build_tests {
           PatchPoint StableConstantNames(0x1030, ::RubyVM::ZJIT)
           v24:ModuleSubclass[RubyVM::ZJIT@0x1038] = Const Value(VALUE(0x1038))
           SideExit DirectiveInduced
+          Unreachable
         ");
     }
 
@@ -2260,6 +2267,7 @@ pub(crate) mod hir_build_tests {
           PatchPoint StableConstantNames(0x1030, ::RubyVM::ZJIT)
           v29:ModuleSubclass[RubyVM::ZJIT@0x1038] = Const Value(VALUE(0x1038))
           SideExit DirectiveInduced
+          Unreachable
         ");
     }
 
@@ -2862,6 +2870,7 @@ pub(crate) mod hir_build_tests {
           Jump bb6(v44, v21)
         bb6(v34:BasicObject, v35:BasicObject):
           SideExit SplatKwNotProfiled
+          Unreachable
         ");
     }
 
@@ -2984,6 +2993,7 @@ pub(crate) mod hir_build_tests {
           Jump bb3(v7, v8, v9)
         bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
           SideExit PatchPoint(BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_MAX))
+          Unreachable
         ");
     }
 
@@ -3071,6 +3081,7 @@ pub(crate) mod hir_build_tests {
           Jump bb3(v7, v8, v9)
         bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
           SideExit PatchPoint(BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_MIN))
+          Unreachable
         ");
     }
 
@@ -3153,6 +3164,7 @@ pub(crate) mod hir_build_tests {
         bb3(v15:BasicObject, v16:BasicObject, v17:BasicObject, v18:NilClass, v19:NilClass):
           v26:BasicObject = Send v16, :+, v17 # SendFallbackReason: Uncategorized(opt_plus)
           SideExit PatchPoint(BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_HASH))
+          Unreachable
         ");
     }
 
@@ -3240,6 +3252,7 @@ pub(crate) mod hir_build_tests {
           v32:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           v33:StringExact = StringCopy v32
           SideExit PatchPoint(BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_PACK))
+          Unreachable
         ");
     }
 
@@ -3327,6 +3340,7 @@ pub(crate) mod hir_build_tests {
           v37:StringExact[VALUE(0x1010)] = Const Value(VALUE(0x1010))
           v38:StringExact = StringCopy v37
           SideExit PatchPoint(BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_PACK))
+          Unreachable
         ");
     }
 
@@ -3414,6 +3428,7 @@ pub(crate) mod hir_build_tests {
         bb3(v15:BasicObject, v16:BasicObject, v17:BasicObject, v18:NilClass, v19:NilClass):
           v26:BasicObject = Send v16, :+, v17 # SendFallbackReason: Uncategorized(opt_plus)
           SideExit PatchPoint(BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_INCLUDE_P))
+          Unreachable
         ");
     }
 
@@ -3475,6 +3490,7 @@ pub(crate) mod hir_build_tests {
           Jump bb3(v6, v7)
         bb3(v9:BasicObject, v10:BasicObject):
           SideExit PatchPoint(BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_INCLUDE_P))
+          Unreachable
         ");
     }
 
@@ -4034,11 +4050,12 @@ pub(crate) mod hir_build_tests {
           v34:NilClass = Const Value(nil)
           Jump bb6(v34, v10)
         bb6(v16:BasicObject, v17:BasicObject):
-          v38:BasicObject = Send v14, &block, :then, v16 # SendFallbackReason: Uncategorized(send)
+          v39:BasicObject = Send v14, &block, :then, v16 # SendFallbackReason: Uncategorized(send)
           CheckInterrupts
-          Return v38
+          Return v39
         bb10():
           SideExit BlockParamProxyProfileNotCovered
+          Unreachable
         ");
     }
 
@@ -4104,11 +4121,12 @@ pub(crate) mod hir_build_tests {
           v41:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
           Jump bb6(v41, v10)
         bb6(v16:BasicObject, v17:BasicObject):
-          v45:BasicObject = Send v14, &block, :then, v16 # SendFallbackReason: Uncategorized(send)
+          v46:BasicObject = Send v14, &block, :then, v16 # SendFallbackReason: Uncategorized(send)
           CheckInterrupts
-          Return v45
+          Return v46
         bb13():
           SideExit BlockParamProxyProfileNotCovered
+          Unreachable
         ");
     }
 
@@ -4251,6 +4269,7 @@ pub(crate) mod hir_build_tests {
           Jump bb6(v29, v13)
         bb6(v19:BasicObject, v20:BasicObject):
           SideExit SplatKwNotProfiled
+          Unreachable
         ");
     }
 
@@ -4442,6 +4461,7 @@ pub(crate) mod hir_build_tests {
           Jump bb6(v44, v21)
         bb6(v34:BasicObject, v35:BasicObject):
           SideExit SplatKwPolymorphic
+          Unreachable
         ");
     }
 
@@ -4485,6 +4505,7 @@ pub(crate) mod hir_build_tests {
           Jump bb6(v29, v13)
         bb6(v19:BasicObject, v20:BasicObject):
           SideExit SplatKwNotNilOrHash
+          Unreachable
         ");
     }
 
@@ -4893,6 +4914,7 @@ pub(crate) mod hir_build_tests {
           PatchPoint SingleRactorMode
           v20:HeapBasicObject = GuardType v12, HeapBasicObject
           SideExit NoProfileGetIvar recompile
+          Unreachable
 
         fn reverse_even@<compiled>:8:
         bb1():
@@ -4915,6 +4937,7 @@ pub(crate) mod hir_build_tests {
           PatchPoint SingleRactorMode
           v23:HeapBasicObject = GuardType v14, HeapBasicObject
           SideExit NoProfileGetIvar recompile
+          Unreachable
         ");
     }
 
@@ -5842,6 +5865,7 @@ pub(crate) mod hir_build_tests {
           Jump bb3(v8, v9, v10, v11)
         bb3(v13:BasicObject, v14:BasicObject, v15:NilClass, v16:NilClass):
           SideExit UnhandledYARVInsn(expandarray)
+          Unreachable
         ");
     }
 
@@ -5874,6 +5898,7 @@ pub(crate) mod hir_build_tests {
           Jump bb3(v9, v10, v11, v12, v13)
         bb3(v15:BasicObject, v16:BasicObject, v17:NilClass, v18:NilClass, v19:NilClass):
           SideExit UnhandledYARVInsn(expandarray)
+          Unreachable
         ");
     }
 
@@ -6010,6 +6035,7 @@ pub(crate) mod hir_build_tests {
           Jump bb3(v39, v40, v41, v42, v43, v44, v45, v46, v47, v48, v49, v50, v51, v52, v53, v54, v55, v56, v57, v58, v59, v60, v61, v62, v63, v64, v65, v66, v67, v68, v69, v70, v71, v72, v74)
         bb3(v76:BasicObject, v77:BasicObject, v78:BasicObject, v79:BasicObject, v80:BasicObject, v81:BasicObject, v82:BasicObject, v83:BasicObject, v84:BasicObject, v85:BasicObject, v86:BasicObject, v87:BasicObject, v88:BasicObject, v89:BasicObject, v90:BasicObject, v91:BasicObject, v92:BasicObject, v93:BasicObject, v94:BasicObject, v95:BasicObject, v96:BasicObject, v97:BasicObject, v98:BasicObject, v99:BasicObject, v100:BasicObject, v101:BasicObject, v102:BasicObject, v103:BasicObject, v104:BasicObject, v105:BasicObject, v106:BasicObject, v107:BasicObject, v108:BasicObject, v109:BasicObject, v110:BasicObject):
           SideExit TooManyKeywordParameters
+          Unreachable
         ");
     }
 
@@ -6096,6 +6122,7 @@ pub(crate) mod hir_build_tests {
           v12:BasicObject = Send v10, :induce_side_exit! # SendFallbackReason: Uncategorized(opt_send_without_block)
           v16:BasicObject = GetConstantPath 0x1010
           SideExit DirectiveInduced
+          Unreachable
         ");
     }
 

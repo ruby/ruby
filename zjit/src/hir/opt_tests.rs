@@ -6269,6 +6269,7 @@ mod hir_opt_tests {
         bb6():
           v17:HeapBasicObject = ObjectAlloc v10
           SideExit NoProfileSend recompile
+          Unreachable
         bb4():
           PatchPoint NoSingletonClass(Factory@0x1010)
           PatchPoint MethodRedefined(Factory@0x1010, new@0x1018, cme:0x1020)
@@ -6278,12 +6279,12 @@ mod hir_opt_tests {
           v50:ClassSubclass[Object@0x1078] = Const Value(VALUE(0x1078))
           v52:NilClass = Const Value(nil)
           PatchPoint MethodRedefined(Object@0x1078, new@0x1018, cme:0x1080)
-          v86:ObjectExact = ObjectAllocClass Object:VALUE(0x1078)
+          v88:ObjectExact = ObjectAllocClass Object:VALUE(0x1078)
           PatchPoint NoSingletonClass(Object@0x1078)
           PatchPoint MethodRedefined(Object@0x1078, initialize@0x10a8, cme:0x10b0)
           CheckInterrupts
           PopInlineFrame
-          Return v86
+          Return v88
         ");
     }
 
@@ -6664,6 +6665,7 @@ mod hir_opt_tests {
           Jump bb6(v25, v10)
         bb6(v15:BasicObject, v16:BasicObject):
           SideExit NoProfileSend recompile
+          Unreachable
         ");
     }
 
@@ -6823,6 +6825,7 @@ mod hir_opt_tests {
           Jump bb9(v40, v17)
         bb9(v30:BasicObject, v31:BasicObject):
           SideExit NoProfileSend recompile
+          Unreachable
         ");
     }
 
@@ -6873,6 +6876,7 @@ mod hir_opt_tests {
           Jump bb9(v35)
         bb9(v26:BasicObject):
           SideExit NoProfileSend recompile
+          Unreachable
         ");
     }
 
@@ -6927,11 +6931,12 @@ mod hir_opt_tests {
           v34:NilClass = Const Value(nil)
           Jump bb6(v34, v10)
         bb6(v16:BasicObject, v17:BasicObject):
-          v38:BasicObject = Send v14, &block, :then, v16 # SendFallbackReason: Send: block argument is not nil
+          v39:BasicObject = Send v14, &block, :then, v16 # SendFallbackReason: Send: block argument is not nil
           CheckInterrupts
-          Return v38
+          Return v39
         bb10():
           SideExit BlockParamProxyProfileNotCovered
+          Unreachable
         ");
     }
 
@@ -6995,11 +7000,12 @@ mod hir_opt_tests {
           v41:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
           Jump bb6(v41, v10)
         bb6(v16:BasicObject, v17:BasicObject):
-          v45:BasicObject = Send v14, &block, :then, v16 # SendFallbackReason: Send: block argument is not nil
+          v46:BasicObject = Send v14, &block, :then, v16 # SendFallbackReason: Send: block argument is not nil
           CheckInterrupts
-          Return v45
+          Return v46
         bb13():
           SideExit BlockParamProxyProfileNotCovered
+          Unreachable
         ");
     }
 
@@ -7159,6 +7165,7 @@ mod hir_opt_tests {
           PatchPoint SingleRactorMode
           v11:HeapBasicObject = GuardType v6, HeapBasicObject
           SideExit NoProfileGetIvar recompile
+          Unreachable
         ");
     }
 
@@ -7182,6 +7189,7 @@ mod hir_opt_tests {
           PatchPoint SingleRactorMode
           v14:HeapBasicObject = GuardType v6, HeapBasicObject
           SideExit NoProfileSetIvar recompile
+          Unreachable
         ");
     }
 
@@ -8189,6 +8197,7 @@ mod hir_opt_tests {
           Jump bb3(v4)
         bb3(v6:BasicObject):
           SideExit PatchPoint(BOPRedefined(HASH_REDEFINED_OP_FLAG, BOP_FREEZE))
+          Unreachable
         ");
     }
 
@@ -8899,6 +8908,9 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(Array@0x1008)
           PatchPoint MethodRedefined(Array@0x1008, []@0x1010, cme:0x1018)
           SideExit GuardLess
+          v35:NilClass = Const Value(nil)
+          CheckInterrupts
+          Return v35
         ");
     }
 
@@ -8962,6 +8974,7 @@ mod hir_opt_tests {
           v17:Fixnum[1] = Const Value(1)
           v19:Fixnum[10] = Const Value(10)
           SideExit NoProfileSend recompile
+          Unreachable
         ");
     }
 
@@ -10052,6 +10065,7 @@ mod hir_opt_tests {
           PatchPoint SingleRactorMode
           v11:HeapBasicObject = GuardType v6, HeapBasicObject
           SideExit NoProfileGetIvar recompile
+          Unreachable
         ");
     }
 
@@ -10077,6 +10091,7 @@ mod hir_opt_tests {
           PatchPoint SingleRactorMode
           v11:HeapBasicObject = GuardType v6, HeapBasicObject
           SideExit NoProfileGetIvar recompile
+          Unreachable
         ");
     }
 
@@ -10102,6 +10117,7 @@ mod hir_opt_tests {
           PatchPoint SingleRactorMode
           v11:HeapBasicObject = GuardType v6, HeapBasicObject
           SideExit NoProfileGetIvar recompile
+          Unreachable
         ");
     }
 
@@ -10127,6 +10143,7 @@ mod hir_opt_tests {
           PatchPoint SingleRactorMode
           v11:HeapBasicObject = GuardType v6, HeapBasicObject
           SideExit NoProfileGetIvar recompile
+          Unreachable
         ");
     }
 
@@ -10152,6 +10169,7 @@ mod hir_opt_tests {
           PatchPoint SingleRactorMode
           v11:HeapBasicObject = GuardType v6, HeapBasicObject
           SideExit NoProfileGetIvar recompile
+          Unreachable
         ");
     }
 
@@ -10177,6 +10195,7 @@ mod hir_opt_tests {
           PatchPoint SingleRactorMode
           v11:HeapBasicObject = GuardType v6, HeapBasicObject
           SideExit NoProfileGetIvar recompile
+          Unreachable
         ");
     }
 
@@ -10268,6 +10287,7 @@ mod hir_opt_tests {
           PatchPoint SingleRactorMode
           v11:HeapBasicObject = GuardType v6, HeapBasicObject
           SideExit NoProfileGetIvar recompile
+          Unreachable
         ");
     }
 
@@ -10495,6 +10515,7 @@ mod hir_opt_tests {
           PatchPoint SingleRactorMode
           v11:HeapBasicObject = GuardType v6, HeapBasicObject
           SideExit NoProfileGetIvar recompile
+          Unreachable
         ");
     }
 
@@ -10565,6 +10586,7 @@ mod hir_opt_tests {
           PatchPoint SingleRactorMode
           v11:HeapBasicObject = GuardType v6, HeapBasicObject
           SideExit NoProfileGetIvar recompile
+          Unreachable
         ");
     }
 
@@ -10665,6 +10687,7 @@ mod hir_opt_tests {
           PatchPoint SingleRactorMode
           v11:HeapBasicObject = GuardType v6, HeapBasicObject
           SideExit NoProfileGetIvar recompile
+          Unreachable
         ");
     }
 
@@ -10690,6 +10713,7 @@ mod hir_opt_tests {
           Jump bb3(v4)
         bb3(v6:BasicObject):
           SideExit UnhandledYARVInsn(getinstancevariable)
+          Unreachable
         ");
     }
 
@@ -13998,6 +14022,7 @@ mod hir_opt_tests {
           Jump bb3(v7, v8, v9)
         bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
           SideExit NoProfileSend recompile
+          Unreachable
         ");
     }
 
