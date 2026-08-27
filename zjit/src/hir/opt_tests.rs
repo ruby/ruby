@@ -22039,4 +22039,38 @@ mod hir_opt_tests {
           Return v28
         ");
     }
+
+    #[test]
+    fn test_optimize_trueclass_and_to_test() {
+        eval(r#"
+            def test(l, r)
+              l & r
+            end
+
+            test(true, "hello")
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :l@0x1000
+          v4:BasicObject = LoadField v2, :r@0x1001
+          Jump bb3(v1, v3, v4)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :l@1
+          v9:BasicObject = LoadArg :r@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint MethodRedefined(TrueClass@0x1008, &@0x1010, cme:0x1018)
+          v28:TrueClass = GuardType v12, TrueClass recompile
+          v29:CBool = Test v13
+          v30:BoolExact = BoxBool v29
+          CheckInterrupts
+          Return v30
+        ");
+    }
 }
