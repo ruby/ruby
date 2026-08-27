@@ -358,6 +358,29 @@ static void iseq_add_setlocal(rb_iseq_t *iseq, LINK_ANCHOR *const seq, const NOD
 #define IS_INSN_ID(iobj, insn) (INSN_OF(iobj) == BIN(insn))
 #define IS_NEXT_INSN_ID(link, insn) \
     ((link)->next && IS_INSN((link)->next) && IS_INSN_ID((link)->next, insn))
+#define IS_NEXT_NEXT_INSN_ID(link, insn) \
+    ((link)->next && IS_NEXT_INSN_ID((link)->next, insn))
+
+static inline bool
+IS_INDEPENDENT_INSN(LINK_ELEMENT *link)
+{
+    if (!IS_INSN(link)) {
+        return false;
+    }
+
+    enum ruby_vminsn_type type = INSN_OF(link);
+
+    return (
+        type == BIN(putobject) ||
+        type == BIN(putspecialobject) ||
+        type == BIN(putnil) ||
+        type == BIN(putself) ||
+        type == BIN(duphash) ||
+        type == BIN(getinstancevariable) ||
+        type == BIN(getlocal) ||
+        type == BIN(opt_getconstant_path)
+    );
+}
 
 /* error */
 #if CPDEBUG > 0
@@ -1223,6 +1246,25 @@ ELEM_REMOVE(LINK_ELEMENT *elem)
     if (elem->next) {
         elem->next->prev = elem->prev;
     }
+}
+
+/*
+ * elem1, elem2 => elem2, elem1
+ */
+static void
+ELEM_SWAP(LINK_ELEMENT *first, LINK_ELEMENT *second)
+{
+    RUBY_ASSERT(first->next == second);
+    RUBY_ASSERT(first == second->prev);
+
+    first->prev->next = second;
+    second->next->prev = first;
+
+    first->next = second->next;
+    second->next = first;
+
+    second->prev = first->prev;
+    first->prev = second;
 }
 
 static LINK_ELEMENT *
@@ -4250,6 +4292,24 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
                     OPERAND_AT(siobj, 0) = (VALUE)nci;
                 }
             }
+        }
+    }
+
+   /*
+    *  putself / (or any other independent instruction)
+    *  putnil  / (or any other independent instruction)
+    *  swap
+    * =>
+    *  putnil  / (or any other independent instruction)
+    *  putself / (or any other independent instruction)
+    */
+    if (IS_NEXT_NEXT_INSN_ID(&iobj->link, swap)) {
+        LINK_ELEMENT *first = &iobj->link;
+        LINK_ELEMENT *second = first->next;
+        LINK_ELEMENT *swap = second->next;
+        if (IS_INDEPENDENT_INSN(first) && IS_INDEPENDENT_INSN(second)) {
+            ELEM_REMOVE(swap);
+            ELEM_SWAP(first, second);
         }
     }
 
