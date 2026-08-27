@@ -449,6 +449,19 @@ thread_sched_unlock_(struct rb_thread_sched *sched, rb_thread_t *th, const char 
     rb_native_mutex_unlock(&sched->lock_);
 }
 
+#if USE_MN_THREADS
+// Like thread_sched_unlock(), but never dereferences th (the debug log above
+// reads th->serial).  For the MN termination epilogue, which unlocks after th
+// may already be collectable.  Keep in sync with thread_sched_unlock_.
+static void
+thread_sched_unlock_no_log(struct rb_thread_sched *sched, rb_thread_t *th)
+{
+    thread_sched_set_unlocked(sched, th); // pointer compare only
+
+    rb_native_mutex_unlock(&sched->lock_);
+}
+#endif
+
 static void
 ASSERT_thread_sched_locked(struct rb_thread_sched *sched, rb_thread_t *th)
 {
