@@ -7259,8 +7259,8 @@ impl Function {
             } else {
                 false
             };
-            run_pass!(remove_trivial_block_params);
             run_pass!(convert_no_profile_sends);
+            run_pass!(remove_trivial_block_params);
             run_pass!(optimize_load_store);
             run_pass!(canonicalize);
             run_pass!(fold_constants);
