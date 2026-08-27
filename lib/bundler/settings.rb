@@ -54,6 +54,7 @@ module Bundler
 
     ARRAY_KEYS = %w[
       only
+      prune
       with
       without
     ].freeze
@@ -416,14 +417,7 @@ module Bundler
     end
 
     def to_bool(value)
-      case value
-      when String
-        value.match?(/\A(false|f|no|n|0|)\z/i) ? false : true
-      when nil, false
-        false
-      else
-        true
-      end
+      self.class.to_bool(value)
     end
 
     def is_num(key)
@@ -732,6 +726,17 @@ module Bundler
         (\.#{FALLBACK_TIMEOUT_URI_OPTION})? # optional suffix key
         \z
       /ix
+
+    def self.to_bool(value)
+      case value
+      when String
+        value.match?(/\A(false|f|no|n|0|)\z/i) ? false : true
+      when nil, false
+        false
+      else
+        true
+      end
+    end
 
     def self.key_for(key)
       key = key_to_s(key)

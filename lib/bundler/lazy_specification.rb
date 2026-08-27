@@ -72,6 +72,10 @@ module Bundler
       end
     end
 
+    def file_name
+      "#{full_name}.gem"
+    end
+
     def lock_name
       @lock_name ||= name_tuple.lock_name
     end

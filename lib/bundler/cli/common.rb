@@ -171,6 +171,15 @@ module Bundler
       clean
     end
 
+    # `bundle cache` copies the gem files out of the cache after installing, so
+    # it asks to be skipped here and prunes once it is done.
+    def self.prune(options = {})
+      return if options["skip-prune"]
+
+      categories = Bundler.settings[:prune]
+      Bundler.load.prune(categories) unless categories.empty?
+    end
+
     def self.word_list(words)
       if words.empty?
         return ""

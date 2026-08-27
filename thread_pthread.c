@@ -3848,15 +3848,15 @@ rb_thread_event_hooks_registered_p(void)
 static void
 rb_internal_thread_event_hooks_rw_lock_atfork(void)
 {
-    // After fork(), this rwlock may have been held by a now-dead thread.
-    //
-    // pthread_rwlock_destroy() on a held lock is undefined behavior, and
-    // pthread_rwlock_init() on an already-initialized lock is also undefined
-    // behavior
-    //
-    // Direct assignment of PTHREAD_RWLOCK_INITIALIZER is safe and portable.
-    rb_internal_thread_event_hooks_rw_lock =
-        (pthread_rwlock_t)PTHREAD_RWLOCK_INITIALIZER;
+  // After fork(), this rwlock may have been held by a now-dead thread.
+  //
+  // pthread_rwlock_destroy() on a held lock is undefined behavior, and
+  // pthread_rwlock_init() on an already-initialized lock is also undefined
+  // behavior
+  //
+  // Direct assignment of PTHREAD_RWLOCK_INITIALIZER is safe and portable.
+  rb_internal_thread_event_hooks_rw_lock =
+      (pthread_rwlock_t)PTHREAD_RWLOCK_INITIALIZER;
 }
 #endif
 

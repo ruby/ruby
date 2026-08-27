@@ -54,7 +54,7 @@ module Prism
       # @rbs @values: Hash[Symbol, untyped]?
 
       # Initialize a new entry with the given repository.
-      #--
+      #
       #: (Repository repository) -> void
       def initialize(repository)
         @repository = repository
@@ -62,49 +62,49 @@ module Prism
       end
 
       # Fetch the filepath of the value.
-      #--
+      #
       #: () -> String
       def filepath
         fetch_value(:filepath)
       end
 
       # Fetch the start line of the value.
-      #--
+      #
       #: () -> Integer
       def start_line
         fetch_value(:start_line)
       end
 
       # Fetch the end line of the value.
-      #--
+      #
       #: () -> Integer
       def end_line
         fetch_value(:end_line)
       end
 
       # Fetch the start byte offset of the value.
-      #--
+      #
       #: () -> Integer
       def start_offset
         fetch_value(:start_offset)
       end
 
       # Fetch the end byte offset of the value.
-      #--
+      #
       #: () -> Integer
       def end_offset
         fetch_value(:end_offset)
       end
 
       # Fetch the start character offset of the value.
-      #--
+      #
       #: () -> Integer
       def start_character_offset
         fetch_value(:start_character_offset)
       end
 
       # Fetch the end character offset of the value.
-      #--
+      #
       #: () -> Integer
       def end_character_offset
         fetch_value(:end_character_offset)
@@ -112,7 +112,7 @@ module Prism
 
       # Fetch the start code units offset of the value, for the encoding that
       # was configured on the repository.
-      #--
+      #
       #: () -> Integer
       def start_code_units_offset
         fetch_value(:start_code_units_offset)
@@ -120,35 +120,35 @@ module Prism
 
       # Fetch the end code units offset of the value, for the encoding that was
       # configured on the repository.
-      #--
+      #
       #: () -> Integer
       def end_code_units_offset
         fetch_value(:end_code_units_offset)
       end
 
       # Fetch the start byte column of the value.
-      #--
+      #
       #: () -> Integer
       def start_column
         fetch_value(:start_column)
       end
 
       # Fetch the end byte column of the value.
-      #--
+      #
       #: () -> Integer
       def end_column
         fetch_value(:end_column)
       end
 
       # Fetch the start character column of the value.
-      #--
+      #
       #: () -> Integer
       def start_character_column
         fetch_value(:start_character_column)
       end
 
       # Fetch the end character column of the value.
-      #--
+      #
       #: () -> Integer
       def end_character_column
         fetch_value(:end_character_column)
@@ -156,7 +156,7 @@ module Prism
 
       # Fetch the start code units column of the value, for the encoding that
       # was configured on the repository.
-      #--
+      #
       #: () -> Integer
       def start_code_units_column
         fetch_value(:start_code_units_column)
@@ -164,28 +164,28 @@ module Prism
 
       # Fetch the end code units column of the value, for the encoding that was
       # configured on the repository.
-      #--
+      #
       #: () -> Integer
       def end_code_units_column
         fetch_value(:end_code_units_column)
       end
 
       # Fetch the leading comments of the value.
-      #--
+      #
       #: () -> Array[CommentsField::Comment]
       def leading_comments
         fetch_value(:leading_comments)
       end
 
       # Fetch the trailing comments of the value.
-      #--
+      #
       #: () -> Array[CommentsField::Comment]
       def trailing_comments
         fetch_value(:trailing_comments)
       end
 
       # Fetch the leading and trailing comments of the value.
-      #--
+      #
       #: () -> Array[CommentsField::Comment]
       def comments
         [*leading_comments, *trailing_comments]
@@ -194,7 +194,7 @@ module Prism
       # Reify the values on this entry with the given values. This is an
       # internal-only API that is called from the repository when it is time to
       # reify the values.
-      #--
+      #
       #: (entry_values values) -> void
       def reify!(values) # :nodoc:
         @repository = nil
@@ -204,7 +204,7 @@ module Prism
       private
 
       # Fetch a value from the entry, raising an error if it is missing.
-      #--
+      #
       #: (Symbol name) -> entry_value
       def fetch_value(name)
         values.fetch(name) do
@@ -214,7 +214,7 @@ module Prism
       end
 
       # Return the values from the repository, reifying them if necessary.
-      #--
+      #
       #: () -> entry_values
       def values
         @values || (@repository&.reify!; @values) #: entry_values
@@ -227,21 +227,21 @@ module Prism
       attr_reader :value #: untyped
 
       # Initialize the source with the given value.
-      #--
+      #
       #: (untyped value) -> void
       def initialize(value)
         @value = value
       end
 
       # Reparse the value and return the parse result.
-      #--
+      #
       #: () -> ParseResult
       def result
         raise NotImplementedError, "Subclasses must implement #result"
       end
 
       # Create a code units cache for the given encoding.
-      #--
+      #
       #: (Encoding encoding) -> _CodeUnitsCache
       def code_units_cache(encoding)
         result.code_units_cache(encoding)
@@ -251,7 +251,7 @@ module Prism
     # A source that is represented by a file path.
     class SourceFilepath < Source
       # Reparse the file and return the parse result.
-      #--
+      #
       #: () -> ParseResult
       def result
         Prism.parse_file(value)
@@ -261,7 +261,7 @@ module Prism
     # A source that is represented by a string.
     class SourceString < Source
       # Reparse the string and return the parse result.
-      #--
+      #
       #: () -> ParseResult
       def result
         Prism.parse(value)
@@ -274,14 +274,14 @@ module Prism
       attr_reader :value #: String
 
       # Initialize a new field with the given file path.
-      #--
+      #
       #: (String value) -> void
       def initialize(value)
         @value = value
       end
 
       # Fetch the file path.
-      #--
+      #
       #: (_Value _value) -> entry_values
       def fields(_value)
         { filepath: value }
@@ -291,7 +291,7 @@ module Prism
     # A field representing the start and end lines.
     class LinesField
       # Fetches the start and end line of a value.
-      #--
+      #
       #: (_Value value) -> entry_values
       def fields(value)
         { start_line: value.start_line, end_line: value.end_line }
@@ -301,7 +301,7 @@ module Prism
     # A field representing the start and end byte offsets.
     class OffsetsField
       # Fetches the start and end byte offset of a value.
-      #--
+      #
       #: (_Value value) -> entry_values
       def fields(value)
         { start_offset: value.start_offset, end_offset: value.end_offset }
@@ -311,7 +311,7 @@ module Prism
     # A field representing the start and end character offsets.
     class CharacterOffsetsField
       # Fetches the start and end character offset of a value.
-      #--
+      #
       #: (_Value value) -> entry_values
       def fields(value)
         {
@@ -333,7 +333,7 @@ module Prism
       # @rbs @cache: _CodeUnitsCache?
 
       # Initialize a new field with the associated repository and encoding.
-      #--
+      #
       #: (Repository repository, Encoding encoding) -> void
       def initialize(repository, encoding)
         @repository = repository
@@ -343,7 +343,7 @@ module Prism
 
       # Fetches the start and end code units offset of a value for a particular
       # encoding.
-      #--
+      #
       #: (_Value value) -> entry_values
       def fields(value)
         {
@@ -355,7 +355,7 @@ module Prism
       private
 
       # Lazily create a code units cache for the associated encoding.
-      #--
+      #
       #: () -> _CodeUnitsCache
       def cache
         @cache ||= repository.code_units_cache(encoding)
@@ -365,7 +365,7 @@ module Prism
     # A field representing the start and end byte columns.
     class ColumnsField
       # Fetches the start and end byte column of a value.
-      #--
+      #
       #: (_Value value) -> entry_values
       def fields(value)
         { start_column: value.start_column, end_column: value.end_column }
@@ -375,7 +375,7 @@ module Prism
     # A field representing the start and end character columns.
     class CharacterColumnsField
       # Fetches the start and end character column of a value.
-      #--
+      #
       #: (_Value value) -> entry_values
       def fields(value)
         {
@@ -398,7 +398,7 @@ module Prism
       # @rbs @cache: _CodeUnitsCache?
 
       # Initialize a new field with the associated repository and encoding.
-      #--
+      #
       #: (Repository repository, Encoding encoding) -> void
       def initialize(repository, encoding)
         @repository = repository
@@ -408,7 +408,7 @@ module Prism
 
       # Fetches the start and end code units column of a value for a particular
       # encoding.
-      #--
+      #
       #: (_Value value) -> entry_values
       def fields(value)
         {
@@ -420,7 +420,7 @@ module Prism
       private
 
       # Lazily create a code units cache for the associated encoding.
-      #--
+      #
       #: () -> _CodeUnitsCache
       def cache
         @cache ||= repository.code_units_cache(encoding)
@@ -445,7 +445,7 @@ module Prism
       private
 
       # Create comment objects from the given values.
-      #--
+      #
       #: (entry_value values) -> Array[Comment]
       def comments(values)
         values.map { |value| Comment.new(value.slice) }
@@ -455,7 +455,7 @@ module Prism
     # A field representing the leading comments.
     class LeadingCommentsField < CommentsField
       # Fetches the leading comments of a value.
-      #--
+      #
       #: (_Value value) -> entry_values
       def fields(value)
         { leading_comments: comments(value.leading_comments) }
@@ -465,7 +465,7 @@ module Prism
     # A field representing the trailing comments.
     class TrailingCommentsField < CommentsField
       # Fetches the trailing comments of a value.
-      #--
+      #
       #: (_Value value) -> entry_values
       def fields(value)
         { trailing_comments: comments(value.trailing_comments) }
@@ -491,7 +491,7 @@ module Prism
       attr_reader :entries #: Hash[Integer, Hash[Symbol, Entry]]
 
       # Initialize a new repository with the given source.
-      #--
+      #
       #: (Source source) -> void
       def initialize(source)
         @source = source
@@ -500,14 +500,14 @@ module Prism
       end
 
       # Create a code units cache for the given encoding from the source.
-      #--
+      #
       #: (Encoding encoding) -> _CodeUnitsCache
       def code_units_cache(encoding)
         source.code_units_cache(encoding)
       end
 
       # Configure the filepath field for this repository and return self.
-      #--
+      #
       #: () -> self
       def filepath
         raise ConfigurationError, "Can only specify filepath for a filepath source" unless source.is_a?(SourceFilepath)
@@ -515,14 +515,14 @@ module Prism
       end
 
       # Configure the lines field for this repository and return self.
-      #--
+      #
       #: () -> self
       def lines
         field(:lines, LinesField.new)
       end
 
       # Configure the offsets field for this repository and return self.
-      #--
+      #
       #: () -> self
       def offsets
         field(:offsets, OffsetsField.new)
@@ -530,7 +530,7 @@ module Prism
 
       # Configure the character offsets field for this repository and return
       # self.
-      #--
+      #
       #: () -> self
       def character_offsets
         field(:character_offsets, CharacterOffsetsField.new)
@@ -538,14 +538,14 @@ module Prism
 
       # Configure the code unit offsets field for this repository for a specific
       # encoding and return self.
-      #--
+      #
       #: (Encoding encoding) -> self
       def code_unit_offsets(encoding)
         field(:code_unit_offsets, CodeUnitOffsetsField.new(self, encoding))
       end
 
       # Configure the columns field for this repository and return self.
-      #--
+      #
       #: () -> self
       def columns
         field(:columns, ColumnsField.new)
@@ -553,7 +553,7 @@ module Prism
 
       # Configure the character columns field for this repository and return
       # self.
-      #--
+      #
       #: () -> self
       def character_columns
         field(:character_columns, CharacterColumnsField.new)
@@ -561,7 +561,7 @@ module Prism
 
       # Configure the code unit columns field for this repository for a specific
       # encoding and return self.
-      #--
+      #
       #: (Encoding encoding) -> self
       def code_unit_columns(encoding)
         field(:code_unit_columns, CodeUnitColumnsField.new(self, encoding))
@@ -569,7 +569,7 @@ module Prism
 
       # Configure the leading comments field for this repository and return
       # self.
-      #--
+      #
       #: () -> self
       def leading_comments
         field(:leading_comments, LeadingCommentsField.new)
@@ -577,7 +577,7 @@ module Prism
 
       # Configure the trailing comments field for this repository and return
       # self.
-      #--
+      #
       #: () -> self
       def trailing_comments
         field(:trailing_comments, TrailingCommentsField.new)
@@ -585,7 +585,7 @@ module Prism
 
       # Configure both the leading and trailing comment fields for this
       # repository and return self.
-      #--
+      #
       #: () -> self
       def comments
         leading_comments.trailing_comments
@@ -594,7 +594,7 @@ module Prism
       # This method is called from nodes and locations when they want to enter
       # themselves into the repository. It it internal-only and meant to be
       # called from the #save* APIs.
-      #--
+      #
       #: (Integer node_id, Symbol field_name) -> Entry
       def enter(node_id, field_name) # :nodoc:
         entry = Entry.new(self)
@@ -605,7 +605,7 @@ module Prism
       # This method is called from the entries in the repository when they need
       # to reify their values. It is internal-only and meant to be called from
       # the various value APIs.
-      #--
+      #
       #: () -> void
       def reify! # :nodoc:
         result = source.result
@@ -639,7 +639,7 @@ module Prism
 
       # Append the given field to the repository and return the repository so
       # that these calls can be chained.
-      #--
+      #
       #: (Symbol name, _Field) -> self
       def field(name, value)
         raise ConfigurationError, "Cannot specify multiple #{name} fields" if @fields.key?(name)
@@ -649,14 +649,14 @@ module Prism
     end
 
     # Create a new repository for the given filepath.
-    #--
+    #
     #: (String value) -> Repository
     def self.filepath(value)
       Repository.new(SourceFilepath.new(value))
     end
 
     # Create a new repository for the given string.
-    #--
+    #
     #: (String value) -> Repository
     def self.string(value)
       Repository.new(SourceString.new(value))

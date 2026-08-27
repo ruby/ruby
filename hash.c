@@ -65,6 +65,9 @@
  *            The size of the AR table.
  * 8-11:  RHASH_AR_TABLE_BOUND_MASK
  *            The bounds of the AR table.
+ * 12:    RHASH_COMPARE_BY_IDENTITY
+ *            The hash compares keys by identity (compare_by_identity).
+ *            ST tables also store this in the type of the st_table.
  * 13-19: RHASH_LEV_MASK
  *            The iterational level of the hash. Used to prevent modifications
  *            to the hash during iteration.
@@ -81,6 +84,8 @@
 #define SET_PROC_DEFAULT(hash, proc) set_proc_default(hash, proc)
 
 #define COPY_DEFAULT(hash, hash2) copy_default(RHASH(hash), RHASH(hash2))
+
+#define RHASH_TYPE(hash) (FL_TEST_RAW(hash, RHASH_COMPARE_BY_IDENTITY) ? &identhash : &objhash)
 
 static inline void
 copy_default(struct RHash *hash, const struct RHash *hash2)
@@ -391,12 +396,12 @@ rb_ident_hash(st_data_t n)
 }
 
 #define identhash rb_hashtype_ident
-const struct st_hash_type rb_hashtype_ident = {
+static const struct st_hash_type rb_hashtype_ident = {
     rb_ident_cmp,
     rb_ident_hash,
 };
 
-#define RHASH_IDENTHASH_P(hash) (RHASH_TYPE(hash) == &identhash)
+#define RHASH_IDENTHASH_P(hash) FL_TEST_RAW(hash, RHASH_COMPARE_BY_IDENTITY)
 #define RHASH_STRING_KEY_P(hash, key) (!RHASH_IDENTHASH_P(hash) && (rb_obj_class(key) == rb_cString))
 
 typedef st_index_t st_hash_t;
@@ -429,8 +434,11 @@ RHASH_AR_TABLE_MAX_BOUND(VALUE h)
 #define RHASH_AR_CLEARED_HINT 0xff
 
 static inline st_hash_t
-ar_do_hash(st_data_t key)
+ar_do_hash(VALUE hash, st_data_t key)
 {
+    if (RHASH_IDENTHASH_P(hash)) {
+        return (st_hash_t)rb_ident_hash(key);
+    }
     return (st_hash_t)rb_any_hash(key);
 }
 
@@ -525,6 +533,7 @@ hash_verify_(VALUE hash, const char *file, int line)
         HASH_ASSERT(RHASH_ST_TABLE(hash) != NULL);
         HASH_ASSERT(RHASH_AR_TABLE_SIZE_RAW(hash) == 0);
         HASH_ASSERT(RHASH_AR_TABLE_BOUND_RAW(hash) == 0);
+        HASH_ASSERT(!!RHASH_IDENTHASH_P(hash) == (RHASH_ST_TABLE(hash)->type == &identhash));
     }
 
     return hash;
@@ -544,10 +553,10 @@ RHASH_TABLE_EMPTY_P(VALUE hash)
 #define RHASH_UNSET_ST_FLAG(h)        FL_UNSET_RAW(h, RHASH_ST_TABLE_FLAG)
 
 static void
-hash_st_table_init(VALUE hash, const struct st_hash_type *type, st_index_t size)
+hash_st_table_init(VALUE hash, st_index_t size)
 {
     RUBY_ASSERT(rb_gc_obj_slot_size(hash) >= sizeof(struct RHash) + sizeof(st_table));
-    st_init_existing_table_with_size(RHASH_ST_TABLE(hash), type, size);
+    st_init_existing_table_with_size(RHASH_ST_TABLE(hash), RHASH_TYPE(hash), size);
     RHASH_SET_ST_FLAG(hash);
 }
 
@@ -617,11 +626,14 @@ RHASH_AR_TABLE_CLEAR(VALUE h)
     memset(RHASH_AR_TABLE(h), 0, rb_obj_shape_slot_size(h) - sizeof(struct RHash));
 }
 
-NOINLINE(static int ar_equal(VALUE x, VALUE y));
+NOINLINE(static int ar_equal(VALUE hash, VALUE x, VALUE y));
 
 static int
-ar_equal(VALUE x, VALUE y)
+ar_equal(VALUE hash, VALUE x, VALUE y)
 {
+    if (RHASH_IDENTHASH_P(hash)) {
+        return x == y;
+    }
     return rb_any_cmp(x, y) == 0;
 }
 
@@ -672,7 +684,7 @@ ar_find_entry_hint(VALUE hash, ar_hint_t hint, st_data_t key)
     }
 
     RUBY_ASSERT(RHASH_AR_TABLE(hash)->ar_hint.ary[first_match] == hint);
-    int eq = ar_equal(key, RHASH_AR_TABLE_REF(hash, first_match)->key);
+    int eq = ar_equal(hash, key, RHASH_AR_TABLE_REF(hash, first_match)->key);
     if (UNLIKELY(!RHASH_AR_TABLE_P(hash))) {
         return RHASH_AR_TABLE_CONVERTED_TO_ST_TABLE;
     }
@@ -687,7 +699,7 @@ ar_find_entry_hint(VALUE hash, ar_hint_t hint, st_data_t key)
         for (unsigned i = first_match + 1; i < RHASH_AR_TABLE_BOUND(hash); i++) {
             const ar_hint_t *hints = RHASH_AR_TABLE(hash)->ar_hint.ary;
             if (UNLIKELY(hints[i] == hint)) {
-                eq = ar_equal(key, RHASH_AR_TABLE_REF(hash, i)->key);
+                eq = ar_equal(hash, key, RHASH_AR_TABLE_REF(hash, i)->key);
                 if (UNLIKELY(!RHASH_AR_TABLE_P(hash))) {
                     return RHASH_AR_TABLE_CONVERTED_TO_ST_TABLE;
                 }
@@ -763,6 +775,7 @@ ar_force_convert_table(VALUE hash, const char *file, int line)
         ar_table *ar = RHASH_AR_TABLE(hash);
         st_hash_t hashes[RHASH_AR_TABLE_MAX_SIZE];
         unsigned int bound, size;
+        const struct st_hash_type *type = RHASH_TYPE(hash);
 
         RUBY_ASSERT(rb_gc_obj_slot_size(hash) >= sizeof(struct RHash) + sizeof(st_table));
 
@@ -775,7 +788,7 @@ ar_force_convert_table(VALUE hash, const char *file, int line)
 
             for (unsigned int i = 0; i < bound; i++) {
                 // do_hash calls #hash method and it can modify hash object
-                hashes[i] = UNDEF_P(keys[i]) ? 0 : ar_do_hash(keys[i]);
+                hashes[i] = UNDEF_P(keys[i]) ? 0 : ar_do_hash(hash, keys[i]);
             }
 
             // check if modified
@@ -789,7 +802,7 @@ ar_force_convert_table(VALUE hash, const char *file, int line)
         // make st
         st_table tab;
         st_table *new_tab = &tab;
-        st_init_existing_table_with_size(new_tab, &objhash, size);
+        st_init_existing_table_with_size(new_tab, type, size);
         ar_each_key(ar, bound, ar_each_key_insert, NULL, new_tab, hashes);
         hash_ar_free_and_clear_table(hash);
         rb_hash_st_table_set(hash, new_tab);
@@ -1015,7 +1028,7 @@ ar_update(VALUE hash, st_data_t key,
     int retval, existing;
     unsigned bin = RHASH_AR_TABLE_MISS;
     st_data_t value = 0, old_key;
-    st_hash_t hash_value = ar_do_hash(key);
+    st_hash_t hash_value = ar_do_hash(hash, key);
 
     if (UNLIKELY(!RHASH_AR_TABLE_P(hash))) {
         // `#hash` changes ar_table -> st_table
@@ -1104,7 +1117,7 @@ ar_insert_direct(VALUE hash, st_data_t key, st_data_t value, st_hash_t hash_valu
 static int
 ar_insert(VALUE hash, st_data_t key, st_data_t value)
 {
-    st_hash_t hash_value = ar_do_hash(key);
+    st_hash_t hash_value = ar_do_hash(hash, key);
     return ar_insert_direct(hash, key, value, hash_value);
 }
 
@@ -1115,7 +1128,7 @@ ar_lookup(VALUE hash, st_data_t key, st_data_t *value)
         return 0;
     }
     else {
-        st_hash_t hash_value = ar_do_hash(key);
+        st_hash_t hash_value = ar_do_hash(hash, key);
         if (UNLIKELY(!RHASH_AR_TABLE_P(hash))) {
             // `#hash` changes ar_table -> st_table
             return st_lookup(RHASH_ST_TABLE(hash), key, value);
@@ -1142,7 +1155,7 @@ static int
 ar_delete(VALUE hash, st_data_t *key, st_data_t *value)
 {
     unsigned bin;
-    st_hash_t hash_value = ar_do_hash(*key);
+    st_hash_t hash_value = ar_do_hash(hash, *key);
 
     if (UNLIKELY(!RHASH_AR_TABLE_P(hash))) {
         // `#hash` changes ar_table -> st_table
@@ -1561,7 +1574,7 @@ static VALUE
 hash_init_capa(VALUE hash, size_t size)
 {
     if (size > RHASH_AR_TABLE_MAX_SIZE) {
-        hash_st_table_init(hash, &objhash, size);
+        hash_st_table_init(hash, size);
     }
     else {
         RUBY_ASSERT(RHASH_AR_TABLE_MAX_BOUND(hash) >= size);
@@ -1648,13 +1661,17 @@ hash_copy(VALUE ret, VALUE hash)
         RHASH_UNSET_ST_FLAG(ret);
     }
 
-    if (rb_hash_compare_by_id_p(hash)) {
-        // If `hash` is an ar_table it can't be `compare_by_identity?`.
-        RUBY_ASSERT(RHASH_ST_TABLE_P(hash));
-        RHASH_SET_ST_FLAG(ret);
+    bool compare_by_id = RHASH_IDENTHASH_P(hash);
+
+    if (compare_by_id) {
         rb_gc_register_pinning_obj(ret);
+        FL_SET_RAW(ret, RHASH_COMPARE_BY_IDENTITY);
     }
-    else if (RHASH_AR_TABLE_MAX_BOUND(ret) < RHASH_SIZE(hash)) {
+    else {
+        FL_UNSET_RAW(ret, RHASH_COMPARE_BY_IDENTITY);
+    }
+
+    if (RHASH_AR_TABLE_MAX_BOUND(ret) < RHASH_SIZE(hash)) {
         RHASH_SET_ST_FLAG(ret);
     }
 
@@ -1664,7 +1681,10 @@ hash_copy(VALUE ret, VALUE hash)
         }
         else {
             st_table *tab = RHASH_ST_TABLE(ret);
-            st_init_existing_table_with_size(tab, &objhash, RHASH_SIZE(hash));
+
+            st_init_existing_table_with_size(RHASH_ST_TABLE(ret),
+                                             compare_by_id ? &identhash : &objhash,
+                                             RHASH_SIZE(hash));
 
             int bound = RHASH_AR_TABLE_BOUND(hash);
             for (int i = 0; i < bound; i++) {
@@ -1929,7 +1949,7 @@ rb_hash_init(rb_execution_context_t *ec, VALUE hash, VALUE capa_value, VALUE ifn
     if (capa_value != INT2FIX(0)) {
         long capa = NUM2LONG(capa_value);
         if (capa > 0 && RHASH_AR_TABLE_P(hash) && RHASH_SIZE(hash) == 0 && capa > RHASH_AR_TABLE_MAX_BOUND(hash)) {
-            hash_st_table_init(hash, &objhash, capa);
+            hash_st_table_init(hash, capa);
         }
     }
 
@@ -2201,6 +2221,9 @@ rb_hash_rehash(VALUE hash)
     rb_hash_modify_check(hash);
     if (RHASH_AR_TABLE_P(hash)) {
         tmp = hash_alloc_capa(0, RHASH_SIZE(hash));
+        if (RHASH_IDENTHASH_P(hash)) {
+            FL_SET_RAW(tmp, RHASH_COMPARE_BY_IDENTITY);
+        }
         rb_hash_foreach(hash, rb_hash_rehash_i, (VALUE)tmp);
 
         hash_ar_free_and_clear_table(hash);
@@ -2209,8 +2232,12 @@ rb_hash_rehash(VALUE hash)
     else if (RHASH_ST_TABLE_P(hash)) {
         st_table *old_tab = RHASH_ST_TABLE(hash);
         tmp = hash_alloc_capa(0, 0);
+        if (old_tab->type == &identhash) {
+            FL_SET_RAW(tmp, RHASH_COMPARE_BY_IDENTITY);
+        }
 
-        hash_st_table_init(tmp, old_tab->type, old_tab->num_entries);
+        hash_st_table_init(tmp, old_tab->num_entries);
+        RHASH_ST_TABLE(tmp)->type = old_tab->type;
         tbl = RHASH_ST_TABLE(tmp);
 
         rb_hash_foreach(hash, rb_hash_rehash_i, (VALUE)tmp);
@@ -4917,10 +4944,17 @@ rb_hash_compare_by_id(VALUE hash)
         rb_raise(rb_eRuntimeError, "compare_by_identity during iteration");
     }
 
-    if (RHASH_TABLE_EMPTY_P(hash)) {
+    if (RHASH_AR_TABLE_P(hash)) {
+        unsigned int bound = RHASH_AR_TABLE_BOUND(hash);
+        for (unsigned int i = 0; i < bound; i++) {
+            if (ar_cleared_entry(hash, i)) continue;
+
+            ar_table_pair *pair = RHASH_AR_TABLE_REF(hash, i);
+            ar_hint_set(hash, i, (st_hash_t)rb_ident_hash(pair->key));
+        }
+    }
+    else if (RHASH_TABLE_EMPTY_P(hash)) {
         // Fast path: There's nothing to rehash, so we don't need a `tmp` table.
-        // We're most likely an AR table, so this will need an allocation.
-        ar_force_convert_table(hash, __FILE__, __LINE__);
         HASH_ASSERT(RHASH_ST_TABLE_P(hash));
 
         RHASH_ST_TABLE(hash)->type = &identhash;
@@ -4929,7 +4963,8 @@ rb_hash_compare_by_id(VALUE hash)
         // Slow path: Need to rehash the members of `self` into a new
         // `tmp` table using the new `identhash` compare/hash functions.
         tmp = hash_alloc_capa(0, 0);
-        hash_st_table_init(tmp, &identhash, RHASH_SIZE(hash));
+        FL_SET_RAW(tmp, RHASH_COMPARE_BY_IDENTITY);
+        hash_st_table_init(tmp, RHASH_SIZE(hash));
         identtable = RHASH_ST_TABLE(tmp);
 
         rb_hash_foreach(hash, rb_hash_rehash_i, (VALUE)tmp);
@@ -4940,6 +4975,8 @@ rb_hash_compare_by_id(VALUE hash)
         rb_hash_st_table_set(hash, identtable);
         RHASH_ST_CLEAR(tmp);
     }
+
+    FL_SET_RAW(hash, RHASH_COMPARE_BY_IDENTITY);
 
     rb_gc_register_pinning_obj(hash);
 
@@ -4971,7 +5008,8 @@ VALUE
 rb_ident_hash_new(void)
 {
     VALUE hash = rb_hash_new_capa(0);
-    hash_st_table_init(hash, &identhash, 0);
+    FL_SET_RAW(hash, RHASH_COMPARE_BY_IDENTITY);
+    hash_st_table_init(hash, 0);
     rb_gc_register_pinning_obj(hash);
     return hash;
 }
@@ -4980,7 +5018,8 @@ VALUE
 rb_ident_hash_new_capa(long size)
 {
     VALUE hash = rb_hash_new_capa(0);
-    hash_st_table_init(hash, &identhash, size);
+    FL_SET_RAW(hash, RHASH_COMPARE_BY_IDENTITY);
+    hash_st_table_init(hash, size);
     rb_gc_register_pinning_obj(hash);
     return hash;
 }
@@ -5328,9 +5367,9 @@ rb_hash_add_new_element(VALUE hash, VALUE key, VALUE val)
 }
 
 static st_data_t
-key_stringify(VALUE key)
+key_stringify(VALUE hash, VALUE key)
 {
-    return (rb_obj_class(key) == rb_cString && !RB_OBJ_FROZEN(key)) ?
+    return (RHASH_STRING_KEY_P(hash, key) && !RB_OBJ_FROZEN(key)) ?
         rb_hash_key_str(key) : key;
 }
 
@@ -5339,7 +5378,7 @@ ar_bulk_insert(VALUE hash, long argc, const VALUE *argv)
 {
     long i;
     for (i = 0; i < argc; ) {
-        st_data_t k = key_stringify(argv[i++]);
+        st_data_t k = key_stringify(hash, argv[i++]);
         st_data_t v = argv[i++];
         ar_insert(hash, k, v);
         RB_OBJ_WRITTEN(hash, Qundef, k);

@@ -25,7 +25,7 @@ module Prism
   module RegularExpressionOptions # :nodoc:
     # Returns a numeric value that represents the flags that were used to create
     # the regular expression.
-    #--
+    #
     #: (Integer flags) -> Integer
     def self.options(flags)
       o = 0
@@ -41,7 +41,7 @@ module Prism
   class InterpolatedMatchLastLineNode < Node
     # Returns a numeric value that represents the flags that were used to create
     # the regular expression.
-    #--
+    #
     #: () -> Integer
     def options
       RegularExpressionOptions.options(flags)
@@ -51,7 +51,7 @@ module Prism
   class InterpolatedRegularExpressionNode < Node
     # Returns a numeric value that represents the flags that were used to create
     # the regular expression.
-    #--
+    #
     #: () -> Integer
     def options
       RegularExpressionOptions.options(flags)
@@ -61,7 +61,7 @@ module Prism
   class MatchLastLineNode < Node
     # Returns a numeric value that represents the flags that were used to create
     # the regular expression.
-    #--
+    #
     #: () -> Integer
     def options
       RegularExpressionOptions.options(flags)
@@ -71,7 +71,7 @@ module Prism
   class RegularExpressionNode < Node
     # Returns a numeric value that represents the flags that were used to create
     # the regular expression.
-    #--
+    #
     #: () -> Integer
     def options
       RegularExpressionOptions.options(flags)
@@ -82,7 +82,7 @@ module Prism
 
   module HeredocQuery # :nodoc:
     # Returns true if this node was represented as a heredoc in the source code.
-    #--
+    #
     #: (String? opening) -> bool?
     def self.heredoc?(opening)
       # @type self: InterpolatedStringNode | InterpolatedXStringNode | StringNode | XStringNode
@@ -92,7 +92,7 @@ module Prism
 
   class InterpolatedStringNode < Node
     # Returns true if this node was represented as a heredoc in the source code.
-    #--
+    #
     #: () -> bool?
     def heredoc?
       HeredocQuery.heredoc?(opening)
@@ -101,7 +101,7 @@ module Prism
 
   class InterpolatedXStringNode < Node
     # Returns true if this node was represented as a heredoc in the source code.
-    #--
+    #
     #: () -> bool?
     def heredoc?
       HeredocQuery.heredoc?(opening)
@@ -110,7 +110,7 @@ module Prism
 
   class StringNode < Node
     # Returns true if this node was represented as a heredoc in the source code.
-    #--
+    #
     #: () -> bool?
     def heredoc?
       HeredocQuery.heredoc?(opening)
@@ -118,7 +118,7 @@ module Prism
 
     # Occasionally it's helpful to treat a string as if it were interpolated so
     # that there's a consistent interface for working with strings.
-    #--
+    #
     #: () -> InterpolatedStringNode
     def to_interpolated
       InterpolatedStringNode.new(
@@ -135,7 +135,7 @@ module Prism
 
   class XStringNode < Node
     # Returns true if this node was represented as a heredoc in the source code.
-    #--
+    #
     #: () -> bool?
     def heredoc?
       HeredocQuery.heredoc?(opening)
@@ -143,7 +143,7 @@ module Prism
 
     # Occasionally it's helpful to treat a string as if it were interpolated so
     # that there's a consistent interface for working with strings.
-    #--
+    #
     #: () -> InterpolatedXStringNode
     def to_interpolated
       InterpolatedXStringNode.new(
@@ -162,7 +162,7 @@ module Prism
 
   class ImaginaryNode < Node
     # Returns the value of the node as a Ruby Complex.
-    #--
+    #
     #: () -> Complex
     def value
       Complex(0, numeric.value)
@@ -171,7 +171,7 @@ module Prism
 
   class RationalNode < Node
     # Returns the value of the node as a Ruby Rational.
-    #--
+    #
     #: () -> Rational
     def value
       Rational(numerator, denominator)
@@ -181,14 +181,14 @@ module Prism
   class ConstantReadNode < Node
     # Returns the list of parts for the full name of this constant.
     # For example: [:Foo]
-    #--
+    #
     #: () -> Array[Symbol]
     def full_name_parts
       [name]
     end
 
     # Returns the full name of this constant. For example: "Foo"
-    #--
+    #
     #: () -> String
     def full_name
       name.to_s
@@ -198,14 +198,14 @@ module Prism
   class ConstantWriteNode < Node
     # Returns the list of parts for the full name of this constant.
     # For example: [:Foo]
-    #--
+    #
     #: () -> Array[Symbol]
     def full_name_parts
       [name]
     end
 
     # Returns the full name of this constant. For example: "Foo"
-    #--
+    #
     #: () -> String
     def full_name
       name.to_s
@@ -228,7 +228,7 @@ module Prism
 
     # Returns the list of parts for the full name of this constant path.
     # For example: [:Foo, :Bar]
-    #--
+    #
     #: () -> Array[Symbol]
     def full_name_parts
       parts = [] #: Array[Symbol]
@@ -252,7 +252,7 @@ module Prism
     end
 
     # Returns the full name of this constant path. For example: "Foo::Bar"
-    #--
+    #
     #: () -> String
     def full_name
       full_name_parts.join("::")
@@ -262,7 +262,7 @@ module Prism
   class ConstantPathTargetNode < Node
     # Returns the list of parts for the full name of this constant path.
     # For example: [:Foo, :Bar]
-    #--
+    #
     #: () -> Array[Symbol]
     def full_name_parts
       parts =
@@ -284,7 +284,7 @@ module Prism
     end
 
     # Returns the full name of this constant path. For example: "Foo::Bar"
-    #--
+    #
     #: () -> String
     def full_name
       full_name_parts.join("::")
@@ -294,14 +294,14 @@ module Prism
   class ConstantTargetNode < Node
     # Returns the list of parts for the full name of this constant.
     # For example: [:Foo]
-    #--
+    #
     #: () -> Array[Symbol]
     def full_name_parts
       [name]
     end
 
     # Returns the full name of this constant. For example: "Foo"
-    #--
+    #
     #: () -> String
     def full_name
       name.to_s
@@ -310,7 +310,7 @@ module Prism
 
   class ParametersNode < Node
     # Mirrors the Method#parameters method.
-    #--
+    #
     #: () -> Array[[Symbol, Symbol] | [Symbol]]
     def signature
       names = [] #: Array[[Symbol, Symbol] | [Symbol]]
@@ -379,7 +379,7 @@ module Prism
     # can be any amount of space between the message and the = sign. However,
     # sometimes you want the location of the full message including the inner
     # space and the = sign. This method provides that.
-    #--
+    #
     #: () -> Location?
     def full_message_loc
       attribute_write? ? message_loc&.adjoin("=") : message_loc

@@ -4,6 +4,8 @@ module Bundler
   class Runtime
     include SharedHelpers
 
+    PRUNE_CATEGORIES = [:cache, :git].freeze
+
     def initialize(root, definition)
       @root = root
       @definition = definition
@@ -229,7 +231,70 @@ module Bundler
       output
     end
 
+    # Removes the artifacts Bundler keeps for its own bookkeeping and can rebuild
+    # from the lockfile. Gem contents are never touched.
+    def prune(categories)
+      categories = expand_prune_categories(categories)
+      return if categories.empty?
+
+      # Without a bundle path the cache is shared with RubyGems, so it holds gem
+      # files Bundler never put there.
+      if Bundler.use_system_gems?
+        Bundler.ui.warn "The `prune` setting was ignored because this bundle installs into the system gem " \
+                        "directory, which Bundler shares with RubyGems. Run " \
+                        "`bundle config set --local path vendor/bundle` to prune.", wrap: true
+        return
+      end
+
+      # Git metadata first, because resolving a checkout's install path can need
+      # the mirror that pruning the cache removes.
+      prune_git_metadata if categories.include?(:git)
+      prune_download_cache if categories.include?(:cache)
+    end
+
     private
+
+    # Anything that is not a category name is read as a boolean with Bundler's
+    # usual vocabulary, so `BUNDLE_PRUNE=1` selects every category and keeps
+    # doing so as categories are added. That way a tool can set the flag without
+    # tracking this list.
+    def expand_prune_categories(categories)
+      Array(categories).flat_map do |category|
+        name = category.to_s
+        next name.to_sym if PRUNE_CATEGORIES.include?(name.to_sym)
+
+        Settings.to_bool(name) ? PRUNE_CATEGORIES : []
+      end.uniq
+    end
+
+    def prune_download_cache
+      cache_path = File.join(Bundler.bundle_path, "cache")
+      return unless File.exist?(cache_path)
+
+      Bundler.ui.info "Removing the download cache at #{cache_path}"
+      SharedHelpers.filesystem_access(cache_path) do |p|
+        FileUtils.rm_rf(p)
+      end
+    end
+
+    def prune_git_metadata
+      owned = "#{Bundler.install_path}#{File::SEPARATOR}"
+      git_dirs = @definition.sources.git_sources.reject(&:local?).filter_map do |source|
+        install_path = source.install_path.to_s
+        next unless install_path.start_with?(owned)
+
+        git_dir = File.join(install_path, ".git")
+        git_dir if File.exist?(git_dir)
+      end
+      return if git_dirs.empty?
+
+      Bundler.ui.info "Removing git metadata from checked out git gems"
+      git_dirs.each do |git_dir|
+        SharedHelpers.filesystem_access(git_dir) do |p|
+          FileUtils.rm_rf(p)
+        end
+      end
+    end
 
     def prune_gem_cache(resolve, cache_path)
       cached = SharedHelpers.glob_files_in_dir("*.gem", cache_path.to_s)

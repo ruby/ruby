@@ -11,6 +11,11 @@ module Bundler
     def run
       require_path_or_force unless options[:"dry-run"]
       Bundler.load.clean(options[:"dry-run"])
+      return if options[:"dry-run"]
+
+      # Pruning last, because cleaning decides which cached .gem files are
+      # stale by reading them.
+      Bundler::CLI::Common.prune(options)
     end
 
     protected

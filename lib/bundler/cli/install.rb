@@ -69,6 +69,8 @@ module Bundler
       if CLI::Common.clean_after_install?
         require_relative "clean"
         Bundler::CLI::Clean.new(options).run
+      else
+        CLI::Common.prune(options)
       end
 
       Bundler::CLI::Common.output_fund_metadata_summary
