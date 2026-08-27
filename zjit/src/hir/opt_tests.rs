@@ -22073,4 +22073,42 @@ mod hir_opt_tests {
           Return v30
         ");
     }
+
+    #[test]
+    fn test_remove_box_of_test_of_bool_exact() {
+        eval(r#"
+            def test(l, a, b)
+              l & (a == b)
+            end
+
+            test(true, 3, 4)
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :l@0x1000
+          v4:BasicObject = LoadField v2, :a@0x1001
+          v5:BasicObject = LoadField v2, :b@0x1002
+          Jump bb3(v1, v3, v4, v5)
+        bb2():
+          EntryPoint JIT(0)
+          v8:BasicObject = LoadArg :self@0
+          v9:BasicObject = LoadArg :l@1
+          v10:BasicObject = LoadArg :a@2
+          v11:BasicObject = LoadArg :b@3
+          Jump bb3(v8, v9, v10, v11)
+        bb3(v13:BasicObject, v14:BasicObject, v15:BasicObject, v16:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1008, ==@0x1010, cme:0x1018)
+          v35:Fixnum = GuardType v15, Fixnum recompile
+          v36:Fixnum = GuardType v16, Fixnum
+          v37:BoolExact = FixnumEq v35, v36
+          PatchPoint MethodRedefined(TrueClass@0x1040, &@0x1048, cme:0x1050)
+          v40:TrueClass = GuardType v14, TrueClass recompile
+          CheckInterrupts
+          Return v37
+        ");
+    }
 }
