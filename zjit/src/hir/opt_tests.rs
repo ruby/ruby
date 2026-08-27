@@ -6172,7 +6172,6 @@ mod hir_opt_tests {
           v63:CShape = LoadField v45, :shape_id@0x1088
           v64:CShape[0x1089] = GuardBitEquals v63, CShape(0x1089) recompile
           StoreField v45, :@x@0x108a, v15
-          WriteBarrier v45, v15
           v67:CShape[0x108b] = Const CShape(0x108b)
           StoreField v45, :shape_id@0x1088, v67
           CheckInterrupts
@@ -7844,7 +7843,6 @@ mod hir_opt_tests {
           v15:CShape = LoadField v14, :shape_id@0x1000
           v16:CShape[0x1001] = GuardBitEquals v15, CShape(0x1001) recompile
           StoreField v14, :@foo@0x1002, v10
-          WriteBarrier v14, v10
           CheckInterrupts
           Return v10
         ");
@@ -7916,7 +7914,6 @@ mod hir_opt_tests {
           v15:CShape = LoadField v14, :shape_id@0x1000
           v16:CShape[0x1001] = GuardBitEquals v15, CShape(0x1001) recompile
           StoreField v14, :@foo@0x1002, v10
-          WriteBarrier v14, v10
           v19:CShape[0x1003] = Const CShape(0x1003)
           StoreField v14, :shape_id@0x1000, v19
           CheckInterrupts
@@ -7985,13 +7982,11 @@ mod hir_opt_tests {
           v14:CShape = LoadField v13, :shape_id@0x1000
           v15:CShape[0x1001] = GuardBitEquals v14, CShape(0x1001) recompile
           StoreField v13, :@foo@0x1002, v10
-          WriteBarrier v13, v10
           v18:CShape[0x1003] = Const CShape(0x1003)
           StoreField v13, :shape_id@0x1000, v18
           v23:Fixnum[2] = Const Value(2)
           PatchPoint SingleRactorMode
           StoreField v13, :@bar@0x1004, v23
-          WriteBarrier v13, v23
           v32:CShape[0x1005] = Const CShape(0x1005)
           StoreField v13, :shape_id@0x1000, v32
           CheckInterrupts
@@ -8064,14 +8059,12 @@ mod hir_opt_tests {
           CondBranch v17, bb5(), bb6()
         bb5():
           StoreField v14, :@a@0x1002, v10
-          WriteBarrier v14, v10
           v21:CShape[0x1003] = Const CShape(0x1003)
           StoreField v14, :shape_id@0x1000, v21
           Jump bb4()
         bb6():
           v24:CShape[0x1004] = GuardBitEquals v15, CShape(0x1004) recompile
           StoreField v14, :@a@0x1005, v10
-          WriteBarrier v14, v10
           Jump bb4()
         bb4():
           CheckInterrupts
@@ -10368,12 +10361,10 @@ mod hir_opt_tests {
           CondBranch v17, bb5(), bb6()
         bb5():
           StoreField v6, :@foo@0x1002, v10
-          WriteBarrier v6, v10
           Jump bb4()
         bb6():
           v22:CShape[0x1003] = GuardBitEquals v15, CShape(0x1003) recompile
           StoreField v6, :@foo@0x1004, v10
-          WriteBarrier v6, v10
           Jump bb4()
         bb4():
           CheckInterrupts
@@ -11677,7 +11668,6 @@ mod hir_opt_tests {
           v30:CShape = LoadField v28, :shape_id@0x1040
           v31:CShape[0x1041] = GuardBitEquals v30, CShape(0x1041)
           StoreField v28, :@foo@0x1042, v17
-          WriteBarrier v28, v17
           v34:CShape[0x1043] = Const CShape(0x1043)
           StoreField v28, :shape_id@0x1040, v34
           CheckInterrupts
@@ -11716,7 +11706,6 @@ mod hir_opt_tests {
           v30:CShape = LoadField v28, :shape_id@0x1040
           v31:CShape[0x1041] = GuardBitEquals v30, CShape(0x1041)
           StoreField v28, :@foo@0x1042, v17
-          WriteBarrier v28, v17
           v34:CShape[0x1043] = Const CShape(0x1043)
           StoreField v28, :shape_id@0x1040, v34
           CheckInterrupts
@@ -12547,7 +12536,6 @@ mod hir_opt_tests {
           v39:CInt64 = ArrayLength v33
           v40:CInt64[1] = GuardLess v46, v39
           ArrayAset v33, v40, v19
-          WriteBarrier v33, v19
           CheckInterrupts
           Return v19
         ");
@@ -18783,12 +18771,10 @@ mod hir_opt_tests {
           v20:CShape = LoadField v19, :shape_id@0x1000
           v21:CShape[0x1001] = GuardBitEquals v20, CShape(0x1001) recompile
           StoreField v19, :@a@0x1002, v13
-          WriteBarrier v19, v13
           v24:CShape[0x1003] = Const CShape(0x1003)
           StoreField v19, :shape_id@0x1000, v24
           PatchPoint NoEPEscape(initialize)
           PatchPoint SingleRactorMode
-          WriteBarrier v19, v13
           CheckInterrupts
           Return v13
         ");
@@ -18828,7 +18814,6 @@ mod hir_opt_tests {
           v23:CShape = LoadField v22, :shape_id@0x1000
           v24:CShape[0x1001] = GuardBitEquals v23, CShape(0x1001) recompile
           StoreField v22, :@a@0x1002, v16
-          WriteBarrier v22, v16
           v27:CShape[0x1003] = Const CShape(0x1003)
           StoreField v22, :shape_id@0x1000, v27
           v32:Fixnum[5] = Const Value(5)
@@ -18836,7 +18821,6 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(Integer@0x1008, +@0x1010, cme:0x1018)
           v65:Fixnum[6] = Const Value(6)
           PatchPoint SingleRactorMode
-          WriteBarrier v22, v16
           CheckInterrupts
           Return v16
         ");
@@ -18874,13 +18858,10 @@ mod hir_opt_tests {
           v20:CShape = LoadField v19, :shape_id@0x1000
           v21:CShape[0x1001] = GuardBitEquals v20, CShape(0x1001) recompile
           StoreField v19, :@a@0x1002, v13
-          WriteBarrier v19, v13
           v24:CShape[0x1003] = Const CShape(0x1003)
           StoreField v19, :shape_id@0x1000, v24
           PatchPoint NoEPEscape(initialize)
           PatchPoint SingleRactorMode
-          WriteBarrier v19, v13
-          WriteBarrier v19, v13
           CheckInterrupts
           Return v13
         ");
@@ -19369,7 +19350,6 @@ mod hir_opt_tests {
           v68:CShape = LoadField v18, :shape_id@0x1038
           v69:CShape[0x103b] = GuardBitEquals v68, CShape(0x103b) recompile
           StoreField v18, :@levar@0x103a, v19
-          WriteBarrier v18, v19
           v72:CShape[0x1039] = Const CShape(0x1039)
           StoreField v18, :shape_id@0x1038, v72
           Jump bb5(v18)
@@ -20160,7 +20140,6 @@ mod hir_opt_tests {
           CondBranch v23, bb5(), bb6()
         bb5():
           StoreField v11, :@a@0x1003, v17
-          WriteBarrier v11, v17
           Jump bb4()
         bb6():
           v28:CShape[0x1004] = Const CShape(0x1004)
@@ -20168,7 +20147,6 @@ mod hir_opt_tests {
           CondBranch v29, bb7(), bb8()
         bb7():
           StoreField v11, :@a@0x1003, v17
-          WriteBarrier v11, v17
           v35:CShape[0x1002] = Const CShape(0x1002)
           StoreField v11, :shape_id@0x1001, v35
           Jump bb4()
@@ -20188,7 +20166,6 @@ mod hir_opt_tests {
           CondBranch v57, bb10(), bb11()
         bb10():
           StoreField v11, :@a@0x1003, v73
-          WriteBarrier v11, v73
           Jump bb9()
         bb11():
           SetIvar v11, :@a, v73
@@ -20219,7 +20196,6 @@ mod hir_opt_tests {
           CondBranch v23, bb5(), bb6()
         bb5():
           StoreField v11, :@a@0x1003, v17
-          WriteBarrier v11, v17
           Jump bb4()
         bb6():
           v28:CShape[0x1004] = Const CShape(0x1004)
@@ -20227,7 +20203,6 @@ mod hir_opt_tests {
           CondBranch v29, bb7(), bb8()
         bb7():
           StoreField v11, :@a@0x1003, v17
-          WriteBarrier v11, v17
           v35:CShape[0x1002] = Const CShape(0x1002)
           StoreField v11, :shape_id@0x1001, v35
           Jump bb4()
@@ -21693,13 +21668,11 @@ mod hir_opt_tests {
           v117:CShape = LoadField v85, :shape_id@0x1088
           v118:CShape[0x1089] = GuardBitEquals v117, CShape(0x1089) recompile
           StoreField v85, :@x@0x108a, v15
-          WriteBarrier v85, v15
           v121:CShape[0x108b] = Const CShape(0x108b)
           StoreField v85, :shape_id@0x1088, v121
           PatchPoint NoEPEscape(initialize)
           PatchPoint SingleRactorMode
           StoreField v85, :@y@0x108c, v17
-          WriteBarrier v85, v17
           v136:CShape[0x108d] = Const CShape(0x108d)
           StoreField v85, :shape_id@0x1088, v136
           CheckInterrupts
@@ -21718,13 +21691,11 @@ mod hir_opt_tests {
           v157:CShape = LoadField v95, :shape_id@0x1088
           v158:CShape[0x1089] = GuardBitEquals v157, CShape(0x1089) recompile
           StoreField v95, :@x@0x108a, v47
-          WriteBarrier v95, v47
           v161:CShape[0x108b] = Const CShape(0x108b)
           StoreField v95, :shape_id@0x1088, v161
           PatchPoint NoEPEscape(initialize)
           PatchPoint SingleRactorMode
           StoreField v95, :@y@0x108c, v49
-          WriteBarrier v95, v49
           v176:CShape[0x108d] = Const CShape(0x108d)
           StoreField v95, :shape_id@0x1088, v176
           CheckInterrupts
@@ -21896,7 +21867,6 @@ mod hir_opt_tests {
           v71:Fixnum = GuardType v15, Fixnum recompile
           v72:Fixnum = FixnumAdd v71, v17
           StoreField v14, :@hclk@0x1003, v72
-          WriteBarrier v14, v72
           PatchPoint SingleRactorMode
           v37:BasicObject = LoadField v14, :@hclk_target@0x1040
           PatchPoint MethodRedefined(Integer@0x1008, <=@0x1041, cme:0x1048)

@@ -6447,6 +6447,10 @@ impl Function {
                             _ => insn_id,
                         }
                     }
+                    &Insn::WriteBarrier { val, .. } if self.is_a(val, types::Immediate) => {
+                        // The write barrier does nothing for immediates.
+                        continue;
+                    }
                     &Insn::ArrayLength { array } => {
                         match self.type_of(array).ruby_object() {
                             Some(array_obj) if array_obj.is_frozen() => {
