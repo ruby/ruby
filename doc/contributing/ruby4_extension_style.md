@@ -1,4 +1,4 @@
-# Tips for updating Ruby C extensions for making the best out of modern VM APIs
+# Tips for updating Ruby C extensions for making the best out of Ruby 4 VM APIs
 
 ## Why?
 
@@ -6,7 +6,7 @@ The Ruby VM has evolved a lot from Ruby 2 to Ruby 4. While this evolution was re
 
 Yet, C extensions that keep using old APIs and design patterns are leaving performance and safety advances "on the table" not only for the extensions themselves, but also silently disabling or hindering major Ruby VM optimizations, getting in the way of GC, Ractors, observability, etc.
 
-As much as possible, C should have "mechanical sympathy" for the Ruby VM.
+As much as possible, C extensions should have "mechanical sympathy" for the Ruby VM.
 When C extensions are using old APIs/doing things incorrectly, Ruby needs to falls back on safer behaviors, which means the whole application goes slower because of those C extensions.
 
 ## The "elephant" in the room
