@@ -11,6 +11,7 @@
 #include "internal/hash.h"
 #include "internal/io.h"
 #include "internal/load.h"
+#include "internal/random.h"
 #include "internal/st.h"
 #include "internal/variable.h"
 #include "iseq.h"
@@ -47,11 +48,15 @@ static rb_box_gem_flags_t box_gem_flags[1];
 static char *tmp_dir;
 static bool tmp_dir_has_dirsep;
 
-#define BOX_TMP_PREFIX "_ruby_box_"
-
 #ifndef MAXPATHLEN
 # define MAXPATHLEN 1024
 #endif
+
+/* process-private 0700 directory for box-local copies of extensions */
+static char box_ext_tmp_dir[MAXPATHLEN];
+static unsigned long box_ext_seq;
+
+#define BOX_TMP_PREFIX "_ruby_box_"
 
 #if defined(_WIN32)
 # define DIRSEP "\\"
@@ -560,13 +565,40 @@ system_tmpdir(void)
 
 /* end of copy */
 
-static int
-sprint_ext_filename(char *str, size_t size, long box_id, const char *prefix, const char *basename)
+/* Box-local copies of extensions are placed in a process-private 0700
+ * directory with an unpredictable name, so that other local users cannot
+ * occupy the copy destination in a shared TMPDIR [Bug #22110], and so
+ * that the file name of each copy stays short regardless of the depth of
+ * the original path (a full path flattened into a single file name can
+ * exceed NAME_MAX). */
+static void
+ensure_box_ext_tmp_dir(void)
 {
-    if (tmp_dir_has_dirsep) {
-        return snprintf(str, size, "%s%sp%"PRI_PIDT_PREFIX"u_%ld_%s", tmp_dir, prefix, getpid(), box_id, basename);
+    if (box_ext_tmp_dir[0]) return;
+
+    int last_errno = 0;
+    for (int retry = 0; retry < 10; retry++) {
+        char path[MAXPATHLEN];
+        uint64_t suffix;
+        if (ruby_fill_random_bytes(&suffix, sizeof(suffix), FALSE) != 0) {
+            /* no random source; mkdir(0700) below still refuses hijacked names */
+            suffix = ((uint64_t)getpid() << 32) ^ (uint64_t)(uintptr_t)&suffix ^ (uint64_t)retry;
+        }
+        int wrote = snprintf(path, sizeof(path), "%s%s%sp%"PRI_PIDT_PREFIX"u_%.16"PRIx64,
+                             tmp_dir, tmp_dir_has_dirsep ? "" : DIRSEP,
+                             BOX_TMP_PREFIX, getpid(), suffix);
+        if (wrote >= (int)sizeof(path)) {
+            rb_raise(rb_eLoadError, "TMPDIR for Ruby Box extensions is too long: %s", tmp_dir);
+        }
+        if (mkdir(path, 0700) == 0) {
+            strlcpy(box_ext_tmp_dir, path, sizeof(box_ext_tmp_dir));
+            return;
+        }
+        last_errno = errno;
+        if (last_errno != EEXIST) break;
     }
-    return snprintf(str, size, "%s%s%sp%"PRI_PIDT_PREFIX"u_%ld_%s", tmp_dir, DIRSEP, prefix, getpid(), box_id, basename);
+    rb_raise(rb_eLoadError, "can't create the temporary directory for Ruby Box extensions under %s: %s",
+             tmp_dir, strerror(last_errno));
 }
 
 enum copy_error_type {
@@ -738,41 +770,14 @@ copy_ext_file(const char *src_path, const char *dst_path)
 #define isdirsep(x) ((x) == '/')
 #endif
 
-#define IS_SOEXT(e) (strcmp((e), ".so") == 0 || strcmp((e), ".o") == 0)
-#define IS_DLEXT(e) (strcmp((e), DLEXT) == 0)
-
-static void
-fname_without_suffix(const char *fname, char *rvalue, size_t rsize)
+static const char *
+ext_basename(const char *path)
 {
-    size_t len = strlen(fname);
-    const char *pos;
-    for (pos = fname + len; pos > fname; pos--) {
-        if (IS_SOEXT(pos) || IS_DLEXT(pos)) {
-            len = pos - fname;
-            break;
-        }
-        if (fname + len - pos > DLEXT_MAXLEN) break;
+    const char *base = path;
+    for (const char *pos = path; *pos; pos++) {
+        if (isdirsep(*pos)) base = pos + 1;
     }
-    if (len > rsize - 1) len = rsize - 1;
-    memcpy(rvalue, fname, len);
-    rvalue[len] = '\0';
-}
-
-static void
-escaped_basename(const char *path, const char *fname, char *rvalue, size_t rsize)
-{
-    char *pos;
-    const char *leaf = path, *found;
-    // `leaf + 1` looks uncomfortable (when leaf == path), but fname must not be the top-dir itself
-    while ((found = strstr(leaf + 1, fname)) != NULL) {
-        leaf = found; // find the last occurrence for the path like /etc/my-crazy-lib-dir/etc.so
-    }
-    strlcpy(rvalue, leaf, rsize);
-    for (pos = rvalue; *pos; pos++) {
-        if (isdirsep(*pos)) {
-            *pos = '+';
-        }
-    }
+    return base;
 }
 
 static void
@@ -847,22 +852,25 @@ rb_box_unload_local_extensions(void)
         ext = next;
     }
 #endif
+    if (box_ext_tmp_dir[0]) {
+        rmdir(box_ext_tmp_dir);
+        box_ext_tmp_dir[0] = '\0';
+    }
 }
 
 VALUE
-rb_box_local_extension(VALUE box_value, VALUE fname, VALUE path, VALUE *cleanup)
+rb_box_local_extension(VALUE box_value, VALUE path, VALUE *cleanup)
 {
-    char ext_path[MAXPATHLEN], fname2[MAXPATHLEN], basename[MAXPATHLEN];
+    char ext_path[MAXPATHLEN];
     int wrote;
-    const char *src_path = RSTRING_PTR(path), *fname_ptr = RSTRING_PTR(fname);
+    const char *src_path = RSTRING_PTR(path);
     rb_box_t *box = rb_get_box_t(box_value);
 
-    fname_without_suffix(fname_ptr, fname2, sizeof(fname2));
-    escaped_basename(src_path, fname2, basename, sizeof(basename));
-
-    wrote = sprint_ext_filename(ext_path, sizeof(ext_path), box->box_id, BOX_TMP_PREFIX, basename);
+    ensure_box_ext_tmp_dir();
+    wrote = snprintf(ext_path, sizeof(ext_path), "%s%s%ld_%lu_%s",
+                     box_ext_tmp_dir, DIRSEP, box->box_id, box_ext_seq++, ext_basename(src_path));
     if (wrote >= (int)sizeof(ext_path)) {
-        rb_bug("Extension file path in the box was too long");
+        rb_raise(rb_eLoadError, "extension file path in the box is too long: %"PRIsVALUE, path);
     }
     VALUE new_path = rb_str_new_cstr(ext_path);
     *cleanup = TypedData_Wrap_Struct(0, &box_ext_cleanup_type, NULL);
