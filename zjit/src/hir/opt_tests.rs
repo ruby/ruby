@@ -2147,6 +2147,49 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_eliminate_empty_inline_frames_with_dead_snapshot() {
+        eval("
+            def add(a, b) = a + b
+            def test = add(1, 2) + add(3, 4)
+            test
+        ");
+
+        // `add` is inlined at both call sites, giving two `PushInlineFrame`/`PopInlineFrame`
+        // pairs. The first pair keeps `add`'s `PatchPoint` and `CheckInterrupts`, which the
+        // deduplication passes leave on the earliest copy, so it has real work between it. The
+        // second pair's body is optimized away entirely, yet the pair still isn't eliminated,
+        // because it encloses the `Snapshot`s that body left behind. `Snapshot`s aren't printed
+        // out, so that pair looks empty below even though the pass doesn't treat it as empty.
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v11:Fixnum[1] = Const Value(1)
+          v13:Fixnum[2] = Const Value(2)
+          PatchPoint MethodRedefined(Object@0x1000, add@0x1008, cme:0x1010)
+          v32:ObjectSubclass[class_exact*:Object@VALUE(0x1000)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1000)] recompile
+          PushInlineFrame :add, v32 (0x1038), num_args=2
+          PatchPoint MethodRedefined(Integer@0x1058, +@0x1060, cme:0x1068)
+          v88:Fixnum[3] = Const Value(3)
+          CheckInterrupts
+          PopInlineFrame
+          v18:Fixnum[3] = Const Value(3)
+          v20:Fixnum[4] = Const Value(4)
+          PushInlineFrame :add, v32 (0x1038), num_args=2
+          PopInlineFrame
+          v90:Fixnum[10] = Const Value(10)
+          Return v90
+        ");
+    }
+
+    #[test]
     fn test_call_with_correct_and_too_many_args_for_method() {
         eval("
             def target(a = 1, b = 2, c = 3, d = 4) = [a, b, c, d]
