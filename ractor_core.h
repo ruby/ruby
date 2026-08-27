@@ -101,6 +101,9 @@ struct rb_ractor_struct {
         struct rb_thread_sched sched;
         rb_execution_context_t *running_ec;
         rb_thread_t *main;
+        // MN termination epilogue: keeps the dying thread marked (like a set
+        // member) between leaving the living set and its last use
+        rb_thread_t *dying_th;
 
         // `main` is in rb_thread_terminate_all(), waiting for the others to go
         bool terminating;
