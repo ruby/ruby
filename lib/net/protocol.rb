@@ -385,6 +385,9 @@ module Net # :nodoc:
             # next string
           end
           # continue looping
+        when :wait_readable
+          (io = @io.to_io).wait_readable(@write_timeout) or raise Net::WriteTimeout.new(io)
+          # continue looping
         when :wait_writable
           (io = @io.to_io).wait_writable(@write_timeout) or raise Net::WriteTimeout.new(io)
           # continue looping
