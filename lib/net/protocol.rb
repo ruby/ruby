@@ -189,6 +189,7 @@ module Net # :nodoc:
     public
 
     def read(len, dest = ''.b, ignore_eof = false)
+      raise ArgumentError, "negative length #{len} given" if len < 0
       LOG "reading #{len} bytes..."
       read_bytes = 0
       begin
