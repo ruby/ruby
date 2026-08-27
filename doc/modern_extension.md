@@ -245,25 +245,6 @@ Why:
 
 ### T2 Tip
 
-Tip: 🟥 _Never use `Data_Wrap_Struct` / `Data_Make_Struct`_
-
-Impact: _Slows down GC while the object lives, slows down freeing the object, slower reading/writing of instance variables, missing safety checks, no memory profiling, no Ractor support, prevents GC compaction_
-
-Why:
-1. The `Data_` APIs are the equivalent of using `TypedData` and making **all the wrong choices**
-    * It's almost a TypedData that ignores all of the next tips
-2. Data objects that hold Ruby references are always write-barrier unprotected, slowing down GC
-    * They always use "deferred freeing", with no `FREE_IMMEDIATELY`
-3. If they reference other Ruby objects, they cannot be compacted
-4. They can't report their proper size for memory profiling
-5. They can't support multiple Ractors
-6. They don't support the "fast path" for instance variables that TypedData provides in Ruby 4.0
-
-Do instead:
-1. Use `TypedData_Wrap_Struct` / `TypedData_Make_Struct`
-
-### T3 Tip
-
 Tip: 🟩 _Use declarative marking_
 
 Impact: _Lower memory usage, and easier to maintain_
