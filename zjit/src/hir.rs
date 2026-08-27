@@ -7085,9 +7085,18 @@ impl Function {
     /// * It must not reference a FrameState `Snapshot` operand: a side exit
     ///   materializes the enclosing inlined frame, and effects don't model
     ///   deopt for otherwise pure instructions like `FixnumAdd`.
+    ///   (`Snapshot` instructions themselves are exempt: they are inert data
+    ///   that cannot side-exit, so they should not prevent elision.)
     /// * `LoadSP` reads the frame-dependent SP register despite having empty
     ///   effects, so it's excluded explicitly.
     fn can_elide_enclosing_frame(&self, insn: &Insn) -> bool {
+        // A `Snapshot` only matters as the deopt state of an instruction
+        // that can side-exit. It shouldn't prevent elision on its own.
+        // Side-exiting instructions will block elision when they're scanned.
+        // TODO (nirvdrum 2026-09-02) Replace this specific instruction check with a check of the instruction's effects.
+        if matches!(insn, Insn::Snapshot { .. }) {
+            return true;
+        }
         // TODO: Model LoadSP as reading from the control frame and drop this
         // special case.
         if matches!(insn, Insn::LoadSP) {

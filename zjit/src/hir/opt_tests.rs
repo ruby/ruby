@@ -2156,10 +2156,8 @@ mod hir_opt_tests {
 
         // `add` is inlined at both call sites, giving two `PushInlineFrame`/`PopInlineFrame`
         // pairs. The first pair keeps `add`'s `PatchPoint` and `CheckInterrupts`, which the
-        // deduplication passes leave on the earliest copy, so it has real work between it. The
-        // second pair's body is optimized away entirely, yet the pair still isn't eliminated,
-        // because it encloses the `Snapshot`s that body left behind. `Snapshot`s aren't printed
-        // out, so that pair looks empty below even though the pass doesn't treat it as empty.
+        // deduplication passes leave on the earliest copy, so it has real work between it and
+        // survives. The second pair and its body are optimized away entirely.
         assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
@@ -2179,10 +2177,6 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(Integer@0x1058, +@0x1060, cme:0x1068)
           v88:Fixnum[3] = Const Value(3)
           CheckInterrupts
-          PopInlineFrame
-          v18:Fixnum[3] = Const Value(3)
-          v20:Fixnum[4] = Const Value(4)
-          PushInlineFrame :add, v32 (0x1038), num_args=2
           PopInlineFrame
           v90:Fixnum[10] = Const Value(10)
           Return v90
