@@ -665,6 +665,8 @@ pub enum SideExitReason {
     SplatKwNotNilOrHash,
     SplatKwPolymorphic,
     SplatKwNotProfiled,
+    CallerSplatLengthMismatch,
+    CallerSplatRuby2Keywords,
     DirectiveInduced,
     SendWhileTracing,
     NoProfileSend,
@@ -3977,54 +3979,32 @@ impl Function {
         args
     }
 
-    /// Dispatch a Send with a caller splat between a fixed-length direct path and
-    /// the original Send fallback. The callback generates the direct path after
-    /// the runtime length and ruby2_keywords checks have been connected.
+    /// Guard a monomorphic caller splat and generate its direct path in place.
     fn dispatch_caller_splat(
         &mut self,
         block: BlockId,
         caller_splat: CallerSplat,
-        optimized_block: BlockId,
-        send: &Insn,
         state: InsnId,
         emit_optimized: impl FnOnce(&mut Function, BlockId) -> InsnId,
-    ) -> (BlockId, InsnId) {
-        // The fixed-length direct path and VM fallback produce the result of the
-        // same Send, so route them through one join block.
-        let insn_idx = self.frame_state(state).insn_idx() as u32;
-        let fallback_block = self.new_block(insn_idx);
-        let join_block = self.new_block(insn_idx);
-        let join_param = self.push_insn(join_block, Insn::Param);
-        // The join result may be used later in this type_specialize pass, before
-        // infer_types runs again. Both branches produce a Ruby value.
-        self.insn_types[join_param.to_usize()] = types::BasicObject;
-        let edge = |target| BranchEdge { target, args: vec![] };
-
-        // Compare the runtime array length with the profiled length before
-        // entering the path that expands the array for SendDirect.
+    ) -> InsnId {
+        // Recompile when the runtime length changes so the call site can collect
+        // a new length profile instead of repeatedly taking the same side exit.
         let length = self.push_insn(block, Insn::ArrayLength { array: caller_splat.array });
-        let expected = self.push_insn(block, Insn::Const { val: Const::CInt64(i64::from(caller_splat.length)) });
-        let length_matches = self.push_insn(block, Insn::IsBitEqual { left: length, right: expected });
+        self.push_insn(block, Insn::GuardBitEquals {
+            val: length,
+            expected: Const::CInt64(i64::from(caller_splat.length)),
+            reason: Box::new(SideExitReason::CallerSplatLengthMismatch),
+            state,
+            recompile: Some(Recompile),
+        });
 
         // An empty splat cannot end in a ruby2_keywords hash, so skip
         // that runtime check when the profiled length is zero.
-        if caller_splat.length == 0 {
-            self.push_insn(block, Insn::CondBranch {
-                val: length_matches,
-                if_true: edge(optimized_block),
-                if_false: edge(fallback_block),
-            });
-        } else {
-            let ruby2_keywords_block = self.new_block(insn_idx);
-            self.push_insn(block, Insn::CondBranch {
-                val: length_matches,
-                if_true: edge(ruby2_keywords_block),
-                if_false: edge(fallback_block),
-            });
-
+        if caller_splat.length != 0 {
             // A ruby2_keywords hash changes how the VM interprets the final splat
-            // element, so only expand arrays that preserve positional semantics.
-            let ruby2_keywords_splat = self.push_insn(ruby2_keywords_block, Insn::CCall {
+            // element. Recompilation would produce the same length-based plan, so
+            // side-exit without recompiling when one is present.
+            let ruby2_keywords_splat = self.push_insn(block, Insn::CCall {
                 cfunc: rb_jit_ruby2_keywords_splat_p as *const u8,
                 recv: caller_splat.array,
                 args: vec![],
@@ -4033,27 +4013,16 @@ impl Function {
                 return_type: types::CInt64,
                 elidable: false,
             });
-            let zero = self.push_insn(ruby2_keywords_block, Insn::Const { val: Const::CInt64(0) });
-            let is_positional = self.push_insn(ruby2_keywords_block, Insn::IsBitEqual { left: ruby2_keywords_splat, right: zero });
-            self.push_insn(ruby2_keywords_block, Insn::CondBranch {
-                val: is_positional,
-                if_true: edge(optimized_block),
-                if_false: edge(fallback_block),
+            self.push_insn(block, Insn::GuardBitEquals {
+                val: ruby2_keywords_splat,
+                expected: Const::CInt64(0),
+                reason: Box::new(SideExitReason::CallerSplatRuby2Keywords),
+                state,
+                recompile: None,
             });
         }
 
-        // Generate the direct path only in the block selected by the checks above.
-        let optimized_result = emit_optimized(self, optimized_block);
-        self.push_insn(optimized_block, Insn::Jump(BranchEdge { target: join_block, args: vec![optimized_result] }));
-
-        // Preserve the original splat Send on the fallback path so VM argument
-        // setup handles lengths and keyword conversion that SendDirect cannot.
-        self.count(fallback_block, Counter::complex_arg_pass_caller_splat);
-        let fallback_result = self.push_insn(fallback_block, send.clone());
-        self.set_dynamic_send_reason(fallback_result, ComplexArgPass);
-        self.push_insn(fallback_block, Insn::Jump(BranchEdge { target: join_block, args: vec![fallback_result] }));
-
-        (join_block, join_param)
+        emit_optimized(self, block)
     }
 
     /// Reorder keyword arguments to match the callee's expected order, and synthesize
@@ -4641,10 +4610,9 @@ impl Function {
     /// opens the door for inlining.
     /// Also try and inline constant caches, specialize object allocations, and more.
     fn type_specialize(&mut self) {
-        for original_block in self.reverse_post_order() {
-            let old_insns = std::mem::take(&mut self.blocks[original_block].insns);
-            assert!(self.blocks[original_block].insns.is_empty());
-            let mut block = original_block;
+        for block in self.reverse_post_order() {
+            let old_insns = std::mem::take(&mut self.blocks[block].insns);
+            assert!(self.blocks[block].insns.is_empty());
             for insn_id in old_insns {
                 let resolved = self.resolve(insn_id);
                 match resolved.insn(self) {
@@ -4652,8 +4620,7 @@ impl Function {
                         self.try_rewrite_freeze(block, insn_id, recv, state),
                     &Insn::Send { recv, block: None, ref args, state, cd, .. } if ruby_call_method_id(cd) == ID!(minusat) && args.is_empty() =>
                         self.try_rewrite_uminus(block, insn_id, recv, state),
-                    &Insn::Send { mut recv, cd, state, block: send_block, reason, .. } => {
-                        let send = resolved.insn(self).clone();
+                    &Insn::Send { mut recv, cd, state, block: send_block, .. } => {
                         let mut has_block = send_block.is_some();
                         let (klass, profiled_type) = match self.resolve_receiver_type(recv, self.type_of(recv), state) {
                             ReceiverTypeResolution::StaticallyKnown { class } => (class, None),
@@ -4783,14 +4750,16 @@ impl Function {
                             let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
                             let caller_args = CallerArguments::new(&args, ci);
                             let caller_splat = if let Some(arg_idx) = caller_args.splat_arg_idx {
-                                // A classified caller-splat Send is a dynamic fallback retained from
-                                // an earlier specialization pass. Do not dispatch it again.
-                                if !matches!(reason, Uncategorized(_)) {
-                                    self.push_insn_id(block, insn_id); continue;
-                                }
                                 // Count the profile shape for every caller-splat execution;
                                 // complex_arg_pass_caller_splat separately tracks fallbacks.
                                 self.count_caller_splat_profile(block, state);
+                                // The final ISEQ version cannot recover from guard exits by
+                                // recompiling, so keep the dynamic Send instead of specializing.
+                                if self.policy.no_side_exits {
+                                    self.count(block, Counter::complex_arg_pass_caller_splat);
+                                    self.set_dynamic_send_reason(insn_id, ComplexArgPass);
+                                    self.push_insn_id(block, insn_id); continue;
+                                }
                                 // Expand a caller splat only when profiling observed one stable
                                 // array length; otherwise keep the original dynamic Send.
                                 // TODO: Support polymorphic caller-splat length profiles.
@@ -4816,38 +4785,25 @@ impl Function {
                                 self.push_insn_id(block, insn_id); continue;
                             };
 
-                            // Start the direct path in a detached block so a failed singleton-class
-                            // assumption can discard it before caller-splat dispatch connects the CFG.
-                            // Calls without a splat use the current block directly.
-                            let optimized_block = if caller_splat.is_some() {
-                                let insn_idx = self.frame_state(state).insn_idx() as u32;
-                                self.new_block(insn_idx)
-                            } else {
-                                block
-                            };
-
                             // Check singleton class assumption first, before emitting other patchpoints
-                            if !self.assume_no_singleton_classes(optimized_block, klass, state) {
-                                if caller_splat.is_some() {
-                                    self.remove_block(optimized_block);
-                                }
+                            if !self.assume_no_singleton_classes(block, klass, state) {
                                 self.set_dynamic_send_reason(insn_id, SingletonClassSeen);
                                 self.push_insn_id(block, insn_id); continue;
                             }
 
-                            let emit_optimized = move |function: &mut Function, optimized_block: BlockId| {
+                            let emit_optimized = move |function: &mut Function, block: BlockId| {
                                 if caller_splat.is_some() {
                                     // Count caller-splat executions that take this optimized path.
                                     // This is a feature-specific counter, not part of optimized_send_count.
-                                    function.count(optimized_block, Counter::caller_splat_optimized);
+                                    function.count(block, Counter::caller_splat_optimized);
                                 }
 
                                 // Add PatchPoint for method redefinition
-                                function.push_insn(optimized_block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
+                                function.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
 
                                 // Add GuardType for profiled receiver
                                 let recv = if let Some(profiled_type) = profiled_type {
-                                    let recv = function.push_insn(optimized_block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state, recompile: Some(Recompile) });
+                                    let recv = function.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state, recompile: Some(Recompile) });
                                     function.insn_types[recv] = function.infer_type(recv);
                                     recv
                                 } else {
@@ -4855,16 +4811,14 @@ impl Function {
                                 };
 
                                 let SendDirectArgs { state: send_state, args: send_args, kw_bits, jit_entry_idx } =
-                                    function.emit_send_direct_args(optimized_block, call, &args, send_frame_state);
-                                function.try_inline_send_direct(optimized_block, Insn::SendDirect(Box::new(SendDirectData { recv, cd, cme, iseq, args: send_args, kw_bits, jit_entry_idx, state: send_state, block: send_block })))
+                                    function.emit_send_direct_args(block, call, &args, send_frame_state);
+                                function.try_inline_send_direct(block, Insn::SendDirect(Box::new(SendDirectData { recv, cd, cme, iseq, args: send_args, kw_bits, jit_entry_idx, state: send_state, block: send_block })))
                             };
 
                             let replacement = if let Some(caller_splat) = caller_splat {
-                                let (join_block, join_param) = self.dispatch_caller_splat(block, caller_splat, optimized_block, &send, state, emit_optimized);
-                                block = join_block;
-                                join_param
+                                self.dispatch_caller_splat(block, caller_splat, state, emit_optimized)
                             } else {
-                                emit_optimized(self, optimized_block)
+                                emit_optimized(self, block)
                             };
                             self.make_equal_to(insn_id, replacement);
                         } else if !has_block && def_type == VM_METHOD_TYPE_BMETHOD {
