@@ -23,10 +23,9 @@ Impact: _Slows down GC forever (while the object lives)_
 
 Why:
 1. It "wb unprotects" the object forever. Aka object is permanently in young generation, GC always needs to scan it forever even if it's not changing
-2. Plus "wb unprotecting" is expensive, needs special "GC VM lock" to do
-3. The impact applies even if you only read from the array once; Ruby doesn't know it and is conservative forever
-4. You can accidentally write to a frozen array
-5. No bounds checking, you can accidentally corrupt memory
+2. The impact applies even if you only read from the array once; Ruby doesn't know it and is conservative forever
+3. You can accidentally write to a frozen array
+4. No bounds checking, you can accidentally corrupt memory
 
 Do instead:
 1. Use `rb_ary_entry` to read
@@ -61,12 +60,11 @@ Impact: _Slows down GC forever (while the object lives), no bounds/frozen checki
 
 Why:
 1. It "wb unprotects" the object forever. Aka object is permanently in young generation, GC always needs to scan it forever even if it's not changing
-2. Plus "wb unprotecting" is expensive, needs special "GC VM lock" to do
-3. The impact applies even if you only read from the hash once; Ruby doesn't know it and is conservative forever
+2. The impact applies even if you only read from the hash once; Ruby doesn't know it and is conservative forever
 
-(You might recognize points 1-3 as "same downsides as `RARRAY_PTR`", but for hashes)
+(You might recognize the points above as "same downsides as `RARRAY_PTR`", but for hashes)
 
-4. Forces "ar table" to "st table" conversion => Ruby has a special compact representation for small hashes and this forces the non-compact representation always
+3. Forces "ar table" to "st table" conversion => Ruby has a special compact representation for small hashes and this forces the non-compact representation always
 
 Do instead:
 * Use `rb_hash_...` functions
