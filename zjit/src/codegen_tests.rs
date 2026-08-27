@@ -7193,17 +7193,17 @@ fn test_send_caller_splat_arguments_with_block_literal() {
 }
 
 #[test]
-fn test_send_caller_splat_length_mismatch_falls_back() {
+fn test_send_caller_splat_length_mismatch_side_exits() {
     eval("
         def test(*args) = args
         def entry(args) = test(*args)
         entry([1, 2])
     ");
-    assert_snapshot!(assert_compiles("entry([1, 2, 3])"), @"[1, 2, 3]");
+    assert_snapshot!(assert_compiles_allowing_exits("entry([1, 2, 3])"), @"[1, 2, 3]");
 }
 
 #[test]
-fn test_send_caller_splat_with_ruby2_keywords_hash_falls_back() {
+fn test_send_caller_splat_with_ruby2_keywords_hash_side_exits() {
     eval("
         def capture(*args) = args
         ruby2_keywords(:capture)
@@ -7211,7 +7211,7 @@ fn test_send_caller_splat_with_ruby2_keywords_hash_falls_back() {
         def entry(args) = test(*args)
         entry(capture(k: 1))
     ");
-    assert_snapshot!(assert_compiles("entry(capture(k: 1))"), @"[:default, 1]");
+    assert_snapshot!(assert_compiles_allowing_exits("entry(capture(k: 1))"), @"[:default, 1]");
 }
 
 #[test]
