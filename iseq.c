@@ -300,11 +300,16 @@ iseq_scan_bits(unsigned int page, iseq_bits_t bits, VALUE *code, VALUE *original
 
     while (bits) {
         offset = ntz_intptr(bits);
-        VALUE op = code[page_offset + offset];
-        rb_gc_mark_and_move(&code[page_offset + offset]);
-        VALUE newop = code[page_offset + offset];
-        if (original_iseq && newop != op) {
-            original_iseq[page_offset + offset] = newop;
+        if (original_iseq) {
+            VALUE op = original_iseq[page_offset + offset];
+            rb_gc_mark_and_move(&code[page_offset + offset]);
+            VALUE newop = code[page_offset + offset];
+            if (op != newop) {
+                original_iseq[page_offset + offset] = newop;
+            }
+        }
+        else {
+            rb_gc_mark_and_move(&code[page_offset + offset]);
         }
         bits &= bits - 1; // Reset Lowest Set Bit (BLSR)
     }
