@@ -1,4 +1,22 @@
-// included by "thread_pthread.c"
+/* -*-c-*- */
+/**********************************************************************
+
+  thread_sched_mn.c - the M:N scheduler
+
+  Included by the platform implementation (currently only thread_pthread.c)
+  when USE_MN_THREADS is 1.  A platform that cannot run coroutine threads
+  defines it to 0 and supplies the stubs at the bottom of this file itself
+  (see thread_win32.c).
+
+  Most of what is here is platform independent: the coroutine threads
+  themselves, the native thread stack pool, the timer wheel, and the
+  fd -> waiters map.  The part that is not is the readiness backend --
+  arming an fd and waiting for events -- which is epoll on Linux and kqueue
+  elsewhere.  Those pieces are marked "backend" below; they are the natural
+  seam for a thread_sched_epoll.c / thread_sched_kqueue.c split, and for an
+  IOCP backend that would let Windows run M:N threads too.
+
+**********************************************************************/
 
 #if USE_MN_THREADS
 
@@ -1357,6 +1375,14 @@ verify_waiting_list(void)
     }
 #endif
 }
+
+/* ------------------------------------------------------------------------
+ * backend: the readiness notification mechanism (epoll / kqueue).
+ *
+ * Everything below that names epoll or kqueue is this backend; the rest of
+ * the M:N scheduler only asks it to arm an fd (fd_waiters_arm) and to wait
+ * for what fired (event_wait / timer_thread_polling).
+ * ------------------------------------------------------------------------ */
 
 #if HAVE_SYS_EVENT_H // kqueue helpers
 

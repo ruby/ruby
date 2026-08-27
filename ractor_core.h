@@ -24,10 +24,6 @@ struct rb_ractor_sync {
     VALUE locked_by;
 #endif
 
-#ifndef RUBY_THREAD_PTHREAD_H
-    rb_nativethread_cond_t wakeup_cond;
-#endif
-
     // incoming messages
     struct ractor_queue *recv_queue;
 
