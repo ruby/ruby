@@ -106,14 +106,14 @@ Permissions for directories and files include read and write permissions.
 The permissions in this table do not involve execute/search,
 and so apply similarly to a directory or a file.
 
-| Octal | \String       | Permissions                                     |
-|:-----:|---------------|-------------------------------------------------|
-| `000` | `'---------'` | No permissions.                                 |
-| `400` | `'r--------'` | Owner read-only.                                |
-| `600` | `'rw-------'` | Owner read-write.                               |
-| `644` | `'rw-r--r--'` | Owner read-write; group/world read-only.        |
-| `664` | `'rw-rw-r--'` | Owner/group read-write; world read-only.        |
-| `777` | `'rw-rw-rw-'` | Owner/group/world read-write (generally avoid). |
+| Octal | \String       | Permissions                              |
+|:-----:|---------------|------------------------------------------|
+| `000` | `'---------'` | No permissions.                          |
+| `400` | `'r--------'` | Owner read-only.                         |
+| `600` | `'rw-------'` | Owner read-write.                        |
+| `644` | `'rw-r--r--'` | Owner read-write; group/world read-only. |
+| `664` | `'rw-rw-r--'` | Owner/group read-write; world read-only. |
+| `666` | `'rw-rw-rw-'` | Owner/group/world read-write.            |
 
 ### \File Permissions
 
@@ -128,7 +128,7 @@ The permissions in this table, applied to a file, specify execute permissions.
 |  `750`   | `'rwxr-x---'` | Owner read-write-execute; group read-execute.                |
 |  `755`   | `'rwxr-xr-x'` | Owner read-write-execute; group read-execute; world execute. |
 |  `775`   | `'rwxrwxr-x'` | Owner/group read-write-execute; world read-execute.          |
-|  `777`   | `'rwxrwxrwx'` | Owner/group/world read-write-execute (enerally avoid).       |
+|  `777`   | `'rwxrwxrwx'` | Owner/group/world read-write-execute.                        |
 
 ### Directory Permissions
 
@@ -143,11 +143,11 @@ The permissions in this table, applied to a directory, specify search permission
 | `750`  | `'rwxr-x---'` | Owner read-write-search; group read-search.               |
 | `755`  | `'rwxr-xr-x'` | Owner read-write-search; group read-search; world search. |
 | `775`  | `'rwxrwxr-x'` | Owner/group read-write-search; world read-search.         |
-| `777`  | `'rwxrwxrwx'` | Owner/group/world read-write-search; generally avoid.     |
+| `777`  | `'rwxrwxrwx'` | Owner/group/world read-write-search.                      |
 
 ## Special Bits
 
-The fourth-from-left octal digit in a mode represents its special bits:
+The fourth octal digit in a mode represents its special bits:
 
 - Its low-order bit (`1000`) shows whether the [sticky bit][sticky bit]  is set.
 - The next bit (`2000`) shows whether the [setuid bit][setuid bit] is set.
@@ -198,7 +198,7 @@ mode(filepath) # => "107755 -rwsr-sr-t"
 
 ## \File Type
 
-The fifth- and sixth-from left octal digits in a mode represent a file type:
+The fifth and sixth octal digits in a mode represent a file type:
 
 | Octal    | Character | \File Type        |
 |----------|:---------:|-------------------|
@@ -236,20 +236,24 @@ mode('README.md') # => "0100664 -rw-rw-r--"
 mode('/etc')      # => "0040755 drwxr-xr-x"
 ```
 
-In the returned value, the [permissions][permissions] are expressed both in:
+The [permissions][permissions] are expressed both in:
 
 - The trailing three digits of the octal value (e.g., `755`, `644`).
 
-    - Third-from-left digit: owner permissions.
-    - Second-from-left digit: group permissions.
-    - Leftmost digit: world permissions.
+    - Left digit: owner permissions.
+    - Middle digit: group permissions.
+    - Right digit: world permissions.
 
 - The trailing nine characters of the string string value
   (e.g., `'rwxr-xr-x'`, `'rw-r--r--'`).
 
-    - First three characters: owner permissions.
+    - Left three characters: owner permissions.
     - Middle three characters: group permissions.
-    - Last three characters: world permissions.
+    - Right three characters: world permissions.
+
+The [special bits][special bits] are expressed in the fourth digit.
+
+The [file type][file type] is expressed the fifth and sixth digits.
 
 For the code-curious:
 
