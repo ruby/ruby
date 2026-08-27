@@ -449,7 +449,7 @@ pub extern "C" fn rb_zjit_assert_compiles(_ec: EcPtr, _self: VALUE) -> VALUE {
 }
 
 /// Resolve a profile frame VALUE to a human-readable "label (path)" string.
-fn resolve_frame_label(frame: VALUE) -> String {
+fn resolve_frame_label(frame: VALUE, line_number: i32) -> String {
     unsafe {
         let label_str = ruby_str_to_rust_string_result(rb_profile_frame_full_label(frame)).unwrap_or("<unknown>".into());
 
@@ -457,7 +457,7 @@ fn resolve_frame_label(frame: VALUE) -> String {
         let path = if path.nil_p() { rb_profile_frame_path(frame) } else { path };
         let path_str = ruby_str_to_rust_string_result(path).unwrap_or("<unknown>".into());
 
-        format!("{label_str} ({path_str})")
+        format!("{label_str} ({path_str}:{line_number})")
     }
 }
 
@@ -574,6 +574,6 @@ fn capture_ruby_frames() -> Vec<String> {
 
     // Resolve each frame to a human-readable string (top frame first)
     (0..stack_length as usize)
-        .map(|i| resolve_frame_label(frames_buffer[i]))
+        .map(|i| resolve_frame_label(frames_buffer[i], lines_buffer[i]))
         .collect()
 }
