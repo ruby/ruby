@@ -163,6 +163,8 @@ class << RubyVM::ZJIT
       :compile_hir_remove_duplicate_check_interrupts_time_ns,
       :compile_hir_eliminate_dead_code_time_ns,
       :compile_lir_time_ns,
+      :compile_jit_jit_stubs_time_ns,
+      :compile_function_stubs_time_ns,
       :profile_time_ns,
       :gc_time_ns,
       :invalidation_time_ns,
