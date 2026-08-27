@@ -203,6 +203,58 @@ class TestBox < Test::Unit::TestCase
     assert_raise(NameError) { BOX_B }
   end
 
+  def test_autoload_dispatches_prepended_require
+    # Autoload must go through the `Kernel#require` decorations (Zeitwerk, RubyGems, etc.)
+    # of the box that registered the autoload, not `Ruby::Box#require` directly.
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      FEATURE = "/nonexistent/virtual_feature"
+      module Decor
+        def require(path)
+          if path == FEATURE
+            Object.const_set(:AutoloadedFromDecorator, Module.new)
+            return true
+          end
+          super
+        end
+      end
+      Kernel.prepend(Decor)
+      Object.autoload(:AutoloadedFromDecorator, FEATURE)
+      assert_kind_of Module, AutoloadedFromDecorator
+    end;
+  end
+
+  def test_autoload_dispatches_prepended_require_of_the_registered_box
+    # Even when the autoload is triggered from outside, it must be dispatched to the
+    # (decorated) `Kernel#require` of the box that registered the autoload.
+    # --enable=gems because Kernel.prepend in a box without RubyGems has a separate
+    # ancestry ordering problem, and assert_separately runs with --disable=gems.
+    assert_in_out_err([ENV_ENABLE_BOX, "--enable=gems"], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
+      begin;
+        box = Ruby::Box.new
+        box.eval(<<~RUBY)
+          FEATURE = "/nonexistent/box_virtual_feature"
+          module BoxDecor
+            def require(path)
+              if path == FEATURE
+                Holder.const_set(:Virtual, "decorated in \#{Ruby::Box.current.inspect}")
+                return true
+              end
+              super
+            end
+          end
+          Kernel.prepend(BoxDecor)
+          module Holder
+            autoload :Virtual, FEATURE
+          end
+        RUBY
+        puts box::Holder::Virtual
+      end;
+      assert_equal 1, output.size
+      assert_match(/\Adecorated in #<Ruby::Box:\d+,user/, output.first)
+    end
+  end
+
   def test_continuous_top_level_method_in_a_box
     setup_box
 
