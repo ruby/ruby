@@ -22006,4 +22006,37 @@ mod hir_opt_tests {
           Return v49
         ");
     }
+
+    #[test]
+    fn test_optimize_falseclass_and_to_false() {
+        eval(r#"
+            def test(cond)
+              cond & "hello"
+            end
+
+            test(false)
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :cond@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :cond@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v16:StringExact = StringCopy v15
+          PatchPoint MethodRedefined(FalseClass@0x1010, &@0x1018, cme:0x1020)
+          v27:FalseClass = GuardType v10, FalseClass recompile
+          v28:FalseClass = Const Value(false)
+          CheckInterrupts
+          Return v28
+        ");
+    }
 }
