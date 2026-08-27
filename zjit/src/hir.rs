@@ -6144,7 +6144,7 @@ impl Function {
 
         // Instantiate the domain for abstract interpretation.
         // We store possible param values for each block
-        let mut param_values: Vec<Vec<ParamValue>> = vec![Vec::new(); self.blocks.len()];
+        let mut param_values: Vec<Vec<ParamValue>> = self.blocks.iter().map(|block| vec![ParamValue::None; block.params.len()]).collect();
 
         let blocks = self.reverse_post_order();
 
@@ -6169,8 +6169,14 @@ impl Function {
         while changed {
             changed = false;
 
+            // When trivial params are elided, the number of params per block can shrink.
+            // When we reset each analysis loop, we do two things:
+            // 1. Reset analysis state to None (bottom of the lattice)
+            // 2. Shrink the number of params per row to match the params per block.
+            //    This resizing occurs when former iterations have found and removed trivial params.
             for (row, block) in param_values.iter_mut().zip(&self.blocks) {
-                row.resize(block.params.len(), ParamValue::None);
+                row.truncate(block.params.len());
+                row.as_mut_slice().fill(ParamValue::None);
             }
 
             // Scan through each jump, collecting edges with params to analyze from CondBranch and Jump insns.
