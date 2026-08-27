@@ -853,7 +853,10 @@ if you believe they were disclosed to a third party.
   end
 
   CREDENTIAL_STORE_OFF = %w[false 0 no off f n].freeze
+  private_constant :CREDENTIAL_STORE_OFF
+
   CREDENTIAL_STORE_ON = %w[true 1 yes on t y].freeze
+  private_constant :CREDENTIAL_STORE_ON
 
   #--
   # Anything that reads as a boolean is one, so RUBYGEMS_CREDENTIAL_STORE=0
