@@ -14,6 +14,7 @@ require "openssl/buffering"
 
 if defined?(OpenSSL::SSL)
 
+require "io/wait" if RUBY_VERSION < "3.2"
 require "io/nonblock"
 require "ipaddr"
 require "socket"
@@ -367,6 +368,153 @@ module OpenSSL
         return if closed?
         stop
         io.close if sync_close
+      end
+
+      # Ruby 3.2
+      IO_TimeoutError = defined?(IO::TimeoutError) ? IO::TimeoutError : IOError
+      private_constant :IO_TimeoutError
+
+      private def blocking
+        while true
+          ret = yield
+          if :wait_readable == ret
+            io.wait_readable or raise IO_TimeoutError,
+              "Timed out while waiting to become readable!"
+          elsif :wait_writable == ret
+            io.wait_writable or raise IO_TimeoutError,
+              "Timed out while waiting to become writable!"
+          else
+            return ret
+          end
+        end
+      end
+
+      private def check_nonblock(ret)
+        if :wait_readable == ret
+          raise SSLErrorWaitReadable, "read would block"
+        elsif :wait_writable == ret
+          raise SSLErrorWaitWritable, "write would block"
+        else
+          ret
+        end
+      end
+
+      # :call-seq:
+      #    ssl.connect -> self
+      #
+      # Initiates an SSL/TLS handshake with a server.
+      def connect
+        blocking { ssl_connect }
+      end
+
+      # :call-seq:
+      #    ssl.connect_nonblock -> self
+      #    ssl.connect_nonblock(exception: false) -> self, :wait_readable, or :wait_writable
+      #
+      # Initiates the SSL/TLS handshake as a client in non-blocking manner.
+      #
+      #   # emulates blocking connect
+      #   begin
+      #     ssl.connect_nonblock
+      #   rescue IO::WaitReadable
+      #     IO.select([s2])
+      #     retry
+      #   rescue IO::WaitWritable
+      #     IO.select(nil, [s2])
+      #     retry
+      #   end
+      #
+      # By specifying a keyword argument _exception_ to +false+, you can
+      # indicate that connect_nonblock should not raise an IO::WaitReadable or
+      # IO::WaitWritable exception, but return the symbol +:wait_readable+ or
+      # +:wait_writable+ instead.
+      def connect_nonblock(exception: true)
+        ret = ssl_connect
+        check_nonblock(ret) if exception
+        ret
+      end
+
+      # :call-seq:
+      #    ssl.accept -> self
+      #
+      # Waits for a SSL/TLS client to initiate a handshake.
+      def accept
+        blocking { ssl_accept }
+      end
+
+      # :call-seq:
+      #    ssl.accept_nonblock -> self
+      #    ssl.accept_nonblock(exception: false) -> self, :wait_readable, or :wait_writable
+      #
+      # Initiates the SSL/TLS handshake as a server in non-blocking manner.
+      #
+      #   # emulates blocking accept
+      #   begin
+      #     ssl.accept_nonblock
+      #   rescue IO::WaitReadable
+      #     IO.select([s2])
+      #     retry
+      #   rescue IO::WaitWritable
+      #     IO.select(nil, [s2])
+      #     retry
+      #   end
+      #
+      # By specifying a keyword argument _exception_ to +false+, you can
+      # indicate that accept_nonblock should not raise an IO::WaitReadable or
+      # IO::WaitWritable exception, but return the symbol +:wait_readable+ or
+      # +:wait_writable+ instead.
+      def accept_nonblock(exception: true)
+        ret = ssl_accept
+        check_nonblock(ret) if exception
+        ret
+      end
+
+      # :call-seq:
+      #    ssl.sysread(length) -> string
+      #    ssl.sysread(length, buffer) -> buffer
+      #
+      # Reads _length_ bytes from the SSL connection.  If a pre-allocated
+      # _buffer_ is provided the data will be written into it.
+      def sysread(length, buffer = nil)
+        buffer ||= String.new(capacity: length)
+        blocking {
+          ssl_read(length, buffer) or raise EOFError, "end of file reached"
+        }
+      end
+
+      # :call-seq:
+      #    ssl.sysread_nonblock(length) -> string
+      #    ssl.sysread_nonblock(length, buffer) -> buffer
+      #    ssl.sysread_nonblock(length, buffer, exception: false) -> buffer, nil, :wait_readable, or :wait_writable
+      #
+      # A non-blocking version of #sysread.
+      private def sysread_nonblock(length, buffer = nil, exception: true)
+        buffer ||= String.new(capacity: length)
+        ret = ssl_read(length, buffer)
+        if exception
+          raise EOFError, "end of file reached" if ret.nil?
+          check_nonblock(ret)
+        end
+        ret
+      end
+
+      # :call-seq:
+      #    ssl.syswrite(string) -> Integer
+      #
+      # Writes _string_ to the SSL connection.
+      def syswrite(string)
+        blocking { ssl_write(string) }
+      end
+
+      # :call-seq:
+      #    ssl.syswrite_nonblock(string) -> Integer
+      #    ssl.syswrite_nonblock(string, exception: false) -> Integer, :wait_readable, or :wait_writable
+      #
+      # Writes _string_ to the SSL connection in a non-blocking manner.
+      private def syswrite_nonblock(string, exception: true)
+        ret = ssl_write(string)
+        check_nonblock(ret) if exception
+        ret
       end
 
       # call-seq:
