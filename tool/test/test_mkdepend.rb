@@ -940,6 +940,7 @@ class TestMkdepend < Test::Unit::TestCase
 
         #{MARK_START}
         example.o: example.c
+        example.o: local.h
         #{MARK_END}
       DEPEND
     end
