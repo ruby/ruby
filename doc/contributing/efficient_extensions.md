@@ -1,4 +1,4 @@
-# Tips for updating Ruby C extensions for making the best out of Ruby 4 VM APIs
+# Tips for updating Ruby C extensions for efficiently using Ruby 4 VM APIs
 
 ## Why?
 
