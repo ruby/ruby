@@ -2754,13 +2754,13 @@ pub(crate) mod hir_build_tests {
           v7:BasicObject = LoadArg :a@1
           Jump bb3(v6, v7)
         bb3(v9:BasicObject, v10:BasicObject):
-          v16:ClassSubclass[VMFrozenCore] = Const Value(VALUE(0x1008))
-          v19:StaticSymbol[:b] = Const Value(VALUE(0x1010))
-          v21:Fixnum[1] = Const Value(1)
-          v23:BasicObject = Send v16, :core#hash_merge_ptr, v10, v19, v21 # SendFallbackReason: Uncategorized(opt_send_without_block)
-          v25:BasicObject = Send v9, :foo, v23 # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v15:ClassSubclass[VMFrozenCore] = Const Value(VALUE(0x1008))
+          v18:StaticSymbol[:b] = Const Value(VALUE(0x1010))
+          v20:Fixnum[1] = Const Value(1)
+          v22:BasicObject = Send v15, :core#hash_merge_ptr, v10, v18, v20 # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v24:BasicObject = Send v9, :foo, v22 # SendFallbackReason: Uncategorized(opt_send_without_block)
           CheckInterrupts
-          Return v25
+          Return v24
         ");
     }
 
@@ -2883,20 +2883,20 @@ pub(crate) mod hir_build_tests {
           v4:BasicObject = LoadArg :self@0
           Jump bb3(v4)
         bb3(v6:BasicObject):
-          v10:BasicObject = GetConstantPath 0x1000
-          v12:NilClass = Const Value(nil)
-          v15:CBool = IsMethodCFunc v10, :new
-          CondBranch v15, bb6(), bb4(v6, v12, v10)
+          v10:NilClass = Const Value(nil)
+          v12:BasicObject = GetConstantPath 0x1000
+          v14:CBool = IsMethodCFunc v12, :new
+          CondBranch v14, bb6(), bb4(v6, v10, v12)
         bb6():
-          v17:HeapBasicObject = ObjectAlloc v10
-          v19:BasicObject = Send v17, :initialize # SendFallbackReason: Uncategorized(opt_send_without_block)
-          Jump bb5(v6, v17, v19)
-        bb4(v22:BasicObject, v23:NilClass, v24:BasicObject):
-          v27:BasicObject = Send v24, :new # SendFallbackReason: Uncategorized(opt_send_without_block)
-          Jump bb5(v22, v27, v23)
-        bb5(v30:BasicObject, v31:BasicObject, v32:BasicObject):
+          v16:HeapBasicObject = ObjectAlloc v12
+          v18:BasicObject = Send v16, :initialize # SendFallbackReason: Uncategorized(opt_send_without_block)
+          Jump bb5(v6, v16, v18)
+        bb4(v21:BasicObject, v22:NilClass, v23:BasicObject):
+          v26:BasicObject = Send v23, :new # SendFallbackReason: Uncategorized(opt_send_without_block)
+          Jump bb5(v21, v26, v22)
+        bb5(v29:BasicObject, v30:BasicObject, v31:BasicObject):
           CheckInterrupts
-          Return v31
+          Return v30
         ");
     }
 
