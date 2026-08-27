@@ -7,7 +7,7 @@ The Ruby VM has evolved a lot from Ruby 2 to Ruby 4. While this evolution was re
 Yet, C extensions that keep using old APIs and design patterns are leaving performance and safety advances "on the table" not only for the extensions themselves, but also silently disabling or hindering major Ruby VM optimizations, getting in the way of GC, Ractors, observability, etc.
 
 As much as possible, C extensions should have "mechanical sympathy" for the Ruby VM.
-When C extensions are using old APIs/doing things incorrectly, Ruby needs to falls back on safer behaviors, which means the whole application goes slower because of those C extensions.
+When C extensions use old APIs or do things incorrectly, Ruby needs to fall back to safer behaviors, which means the whole application runs more slowly because of those C extensions.
 
 ## The "elephant" in the room
 
@@ -31,6 +31,7 @@ Why:
 Do instead:
 1. Use `rb_ary_entry` to read
 2. Use `rb_ary_store` to write
+3. If an API requires a contiguous `VALUE` pointer, use `RARRAY_PTR_USE` to keep raw-pointer access scoped
 
 ### Tip: 🟧 _Avoid using `RARRAY_AREF` to read an array_
 
@@ -349,7 +350,7 @@ If `struct SomeStruct` later owns heap-allocated memory (e.g. malloc and the lik
 
 ### Tip: 🟧 _If possible, use `RUBY_TYPED_FREE_IMMEDIATELY`_
 
-Impact: _Slows down garbage collection_
+Impact: _Faster garbage collection and earlier memory reclamation_
 
 Why:
 1. When `RUBY_TYPED_FREE_IMMEDIATELY` is set, you are "promising" to Ruby that it's safe to call dfree immediately, during GC. To make your function safe, you should never call into Ruby APIs (like trying to release the GVL) and ideally avoid any kind of blocking or I/O. A function that just calls xfree/free on things is one example of something free to call immediately. With this "promise", Ruby is able to call the dfree it immediately during object sweeping, thus freeing up the memory immediately.
