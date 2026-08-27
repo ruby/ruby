@@ -419,11 +419,14 @@ module OpenSSL
       end
 
       # :call-seq:
-      #    ssl.connect -> self
+      #    ssl.connect(timeout: ssl.timeout) -> self
       #
       # Initiates an SSL/TLS handshake with a server.
-      def connect
-        blocking { ssl_connect }
+      #
+      # If _timeout_ is specified, and if the handshake does not complete
+      # within _timeout_ seconds, IO::TimeoutError is raised.
+      def connect(timeout: self.timeout)
+        blocking(timeout) { ssl_connect }
       end
 
       # :call-seq:
@@ -454,11 +457,14 @@ module OpenSSL
       end
 
       # :call-seq:
-      #    ssl.accept -> self
+      #    ssl.accept(timeout: ssl.timeout) -> self
       #
       # Waits for a SSL/TLS client to initiate a handshake.
-      def accept
-        blocking { ssl_accept }
+      #
+      # If _timeout_ is specified, and if the handshake does not complete
+      # within _timeout_ seconds, IO::TimeoutError is raised.
+      def accept(timeout: self.timeout)
+        blocking(timeout) { ssl_accept }
       end
 
       # :call-seq:
