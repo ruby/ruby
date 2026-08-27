@@ -377,6 +377,32 @@ class TestFiberScheduler < Test::Unit::TestCase
     FileUtils.rm_f(path)
   end
 
+  # `join(10)` so that a regression fails rather than hangs:
+  def test_io_write_zero_progress
+    path = File.join(Dir.tmpdir, "ruby_test_io_write_zero_progress_#{SecureRandom.hex}")
+    error = nil
+
+    thread = Thread.new do
+      scheduler = ZeroWriteScheduler.new
+      Fiber.set_scheduler scheduler
+      Fiber.schedule do
+        File.open(path, 'w+') { it.sync = true; it << 'foo' }
+      rescue => error
+        # Ignore.
+      end
+    end
+
+    unless thread.join(10)
+      flunk "IO#write did not return: the write loop spun on a scheduler which wrote nothing."
+    end
+
+    assert_kind_of IOError, error
+    assert_include error.message, "wrote 0 of 3 bytes"
+  ensure
+    thread.kill rescue nil
+    FileUtils.rm_f(path)
+  end
+
   def test_io_write_flush_error
     path = File.join(Dir.tmpdir, "ruby_test_io_write_flush_error_#{SecureRandom.hex}")
     error = nil

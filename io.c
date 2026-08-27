@@ -1326,6 +1326,35 @@ rb_io_read_memory(rb_io_t *fptr, void *buf, size_t count)
     return (ssize_t)rb_io_blocking_region_wait(fptr, internal_read_func, &iis, RUBY_IO_READABLE);
 }
 
+// Zero is not a valid result for a non-empty write: a short write is positive, and a
+// would-block is a negative errno. The callers retry a zero immediately, so a scheduler
+// which transfers nothing (usually an older interface version) would spin forever:
+static ssize_t
+io_fiber_scheduler_write_result_apply(VALUE result, size_t length)
+{
+    ssize_t bytes = rb_fiber_scheduler_io_result_apply(result);
+
+    if (bytes == 0 && length > 0) {
+        char message[256];
+        snprintf(message, sizeof(message),
+                 "Fiber scheduler wrote 0 of %"PRIuSIZE" bytes: #io_write must transfer at "
+                 "least one byte or return -errno (scheduler interface version %d)",
+                 length, RUBY_FIBER_SCHEDULER_VERSION);
+
+        // `$stderr` writes through the scheduler as well, so this is the only way the
+        // message escapes a scheduler which cannot write. Once per process:
+        static rb_atomic_t reported = 0;
+        if (!ATOMIC_EXCHANGE(reported, 1)) {
+            fprintf(stderr, "warning: [pid %ld] %s\n", (long)getpid(), message);
+            fflush(stderr);
+        }
+
+        rb_raise(rb_eIOError, "%s", message);
+    }
+
+    return bytes;
+}
+
 static ssize_t
 rb_io_write_memory(rb_io_t *fptr, const void *buf, size_t count)
 {
@@ -1335,7 +1364,7 @@ rb_io_write_memory(rb_io_t *fptr, const void *buf, size_t count)
         VALUE result = rb_fiber_scheduler_io_write_memory(scheduler, fptr->self, buf, count);
 
         if (!UNDEF_P(result)) {
-            return rb_fiber_scheduler_io_result_apply(result);
+            return io_fiber_scheduler_write_result_apply(result, count);
         }
     }
 
@@ -1374,7 +1403,7 @@ rb_writev_internal(rb_io_t *fptr, const struct iovec *iov, int iovcnt)
         VALUE result = rb_fiber_scheduler_io_write_memory(scheduler, fptr->self, iov[0].iov_base, iov[0].iov_len);
 
         if (!UNDEF_P(result)) {
-            return rb_fiber_scheduler_io_result_apply(result);
+            return io_fiber_scheduler_write_result_apply(result, iov[0].iov_len);
         }
     }
 
