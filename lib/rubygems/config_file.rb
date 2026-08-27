@@ -763,13 +763,13 @@ if you believe they were disclosed to a third party.
 
   def self.deep_transform_config_keys!(config)
     config.transform_keys! do |k|
-      if k.match?(/\A:(.*)\Z/)
+      if k.match?(/\A:(.*)\z/)
         k[1..-1].to_sym
-      elsif k.include?("__") || k.match?(%r{/\Z})
+      elsif k.include?("__") || k.end_with?("/")
         if k.is_a?(Symbol)
-          k.to_s.gsub(/__/,".").gsub(%r{/\Z}, "").to_sym
+          k.to_s.gsub(/__/,".").delete_suffix("/").to_sym
         else
-          k.dup.gsub(/__/,".").gsub(%r{/\Z}, "")
+          k.dup.gsub(/__/,".").delete_suffix("/")
         end
       else
         k
@@ -778,11 +778,11 @@ if you believe they were disclosed to a third party.
 
     config.transform_values! do |v|
       if v.is_a?(String)
-        if v.match?(/\A:(.*)\Z/)
+        if v.match?(/\A:(.*)\z/)
           v[1..-1].to_sym
-        elsif v.match?(/\A[+-]?\d+\Z/)
+        elsif v.match?(/\A[+-]?\d+\z/)
           v.to_i
-        elsif v.match?(/\Atrue|false\Z/)
+        elsif v.match?(/\A(?:true|false)\z/)
           v == "true"
         elsif v.empty?
           nil
