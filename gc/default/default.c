@@ -8586,10 +8586,32 @@ gc_enter_count(enum gc_enter_event event)
 
 static bool current_process_time(struct timespec *ts);
 
+/* A gc phase must be timed on the collecting thread's own cpu.  A local gc runs
+ * while the other ractors keep going, and process cpu time counts their work as
+ * gc: with eight busy ractors the same ten collections were reported as 131ms
+ * instead of 3ms, more than the wall clock they ran in.  The kernel also answers
+ * this one without walking every thread in the process. */
+static bool
+current_thread_time(struct timespec *ts)
+{
+#if defined(HAVE_CLOCK_GETTIME) && defined(CLOCK_THREAD_CPUTIME_ID)
+    {
+        static int try_clock_gettime = 1;
+        if (try_clock_gettime && clock_gettime(CLOCK_THREAD_CPUTIME_ID, ts) == 0) {
+            return true;
+        }
+        else {
+            try_clock_gettime = 0;
+        }
+    }
+#endif
+    return current_process_time(ts);
+}
+
 static void
 gc_clock_start(struct timespec *ts)
 {
-    if (!current_process_time(ts)) {
+    if (!current_thread_time(ts)) {
         ts->tv_sec = 0;
         ts->tv_nsec = 0;
     }
@@ -8601,7 +8623,7 @@ gc_clock_end(struct timespec *ts)
     struct timespec end_time;
 
     if ((ts->tv_sec > 0 || ts->tv_nsec > 0) &&
-            current_process_time(&end_time) &&
+            current_thread_time(&end_time) &&
             end_time.tv_sec >= ts->tv_sec) {
         return (unsigned long long)(end_time.tv_sec - ts->tv_sec) * (1000 * 1000 * 1000) +
                     (end_time.tv_nsec - ts->tv_nsec);
