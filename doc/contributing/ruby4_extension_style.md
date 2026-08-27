@@ -92,7 +92,7 @@ VALUE v2 = rb_interned_str_cstr("hello");
 
 Why:
 1. It lowers memory use since only one copy of string data is kept
-2. It speeds up hash lookups with string keys since those always turn the key into an fstring -- so you save Ruby from having to redo that
+2. It speeds up hash inserts with string keys, since a non-frozen String key gets fstring-deduplicated on insert anyway -- passing an fstring avoids that extra work
 
 ## Memory
 
@@ -164,6 +164,10 @@ VALUE call_cfunc(...) {
 }
 ```
 
+Note: `rb_ext_ractor_safe(true)` must be called **before** the `rb_define_method` calls for the methods you want optimized.
+It changes the invoker used for methods defined *afterward*; calling it later does not retrofit already-defined methods.
+Whenever possible, consider doing it in the extension's `Init_...` function.
+
 ## TypedData
 
 What is TypedData? It allows a Ruby object to wrap a C struct or similar native memory.
@@ -194,7 +198,7 @@ TypedData + Ruby references is the ultimate in "mechanical sympathy".
 ```c
 static void some_struct_mark(void *ptr) {
     struct SomeStruct *data = ptr;
-    rb_gc_mark(data->some_reference);   // pins the reference -- see T2
+    rb_gc_mark(data->some_reference);   // pins the reference, see tip on `dcompact` below
 }
 
 static const rb_data_type_t some_typed_data_type = {
@@ -202,15 +206,16 @@ static const rb_data_type_t some_typed_data_type = {
     .function = {
         .dmark = some_struct_mark,
         .dfree = RUBY_TYPED_DEFAULT_FREE,   // = ruby_xfree
-        // .dsize, .dcompact omitted -- see T4, T2
+        // .dsize omitted -- see tip on `dsize` below
+        // .dcompact omitted -- see tip on `dcompact` below
     },
-    // .flags omitted -- see T3, T5, T6
+    // .flags omitted -- see tips below
 };
 
 static VALUE some_class_set_some_reference(VALUE self, VALUE reference) {
     struct SomeStruct *data;
     TypedData_Get_Struct(self, struct SomeStruct, &some_typed_data_type, data);
-    data->some_reference = reference;    // no write barrier -- see T3
+    data->some_reference = reference;    // no write barrier -- see tip on it below
     return reference;
 }
 ```
@@ -257,7 +262,7 @@ If you later add a new `VALUE` member to `struct SomeStruct`, remember to add a 
 
 (*UNLESS you're using declarative marking)
 
-Impact: _Prevents GC compaction_
+Impact: _Pins referenced objects, preventing them from being compacted_
 
 Why:
 1. A dcompact allows Ruby to still do GC compaction, even when not using declarative marking
@@ -353,8 +358,8 @@ If `struct SomeStruct` later owns heap-allocated memory (e.g. malloc and the lik
 Impact: _Faster garbage collection and earlier memory reclamation_
 
 Why:
-1. When `RUBY_TYPED_FREE_IMMEDIATELY` is set, you are "promising" to Ruby that it's safe to call dfree immediately, during GC. To make your function safe, you should never call into Ruby APIs (like trying to release the GVL) and ideally avoid any kind of blocking or I/O. A function that just calls xfree/free on things is one example of something free to call immediately. With this "promise", Ruby is able to call the dfree it immediately during object sweeping, thus freeing up the memory immediately.
-2. Without it, Ruby keeps the object as a "zombie", then needs to add it to a list of pages to finalize, then needs to do extra work to go through the page, etc... Hard to avoid in some situations.
+1. When `RUBY_TYPED_FREE_IMMEDIATELY` is set, you are "promising" to Ruby that it's safe to call dfree immediately, during GC. To make your function safe, you should never call into Ruby APIs (like trying to release the GVL) and ideally avoid any kind of blocking or I/O. A function that just calls xfree/free on things is one example of something free to call immediately. With this "promise", Ruby is able to call the dfree immediately during object sweeping, thus freeing up the memory immediately.
+2. Without it -- that is, for a custom `dfree` callback that hasn't opted in -- Ruby keeps the object as a "zombie", then needs to add it to a list of pages to finalize, then needs to do extra work to go through the page, etc... Hard to avoid in some situations. This deferred handling applies specifically to custom `dfree` functions; `RUBY_TYPED_DEFAULT_FREE` (used in our example) is already recognized and safely executed immediately during sweeping regardless of this flag, since Ruby knows in advance that it's just a plain `xfree`.
 
 Applied to the running example -- our `dfree` is just `ruby_xfree` (never touches the GVL, never blocks), so the flag is safe to add:
 
@@ -385,13 +390,25 @@ I think? I didn't find any reason _not_ to use it, do let me know if I missed it
 Applied to the running example -- `struct SomeStruct` is tiny (one int + one `VALUE`), so it's a strong candidate for embedding directly in the Ruby object slot:
 
 ```c
+static size_t some_struct_dsize(const void *ptr) {
+    return 0; // struct now embedded in the Ruby object slot, so Ruby
+              // already accounts for its size -- report only auxiliary
+              // heap allocations here
+}
+
 static const rb_data_type_t some_typed_data_type = {
     ...
+    .function = {
+        ...
+        .dsize = some_struct_dsize,   // CHANGED: no longer counts sizeof(struct SomeStruct)
+    },
     .flags = RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_EMBEDDABLE,
 };
 ```
 
 Note that it requires `RUBY_TYPED_FREE_IMMEDIATELY`.
+
+Also note that `dsize` must be revisited: once the struct is embedded, its memory is already part of the Ruby object slot, so `dsize` returning `sizeof(struct SomeStruct)` (as in the earlier tip) would double-count it in `ObjectSpace` accounting. `dsize` should report only auxiliary heap allocations owned by the struct (e.g. malloc'd buffers) -- zero if there are none, as here.
 
 ### Tip: 🟧 _Consider using mass marking/compacting functions_
 
