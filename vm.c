@@ -4903,10 +4903,6 @@ Init_BareVM(void)
     vm_opt_method_def_table = st_init_numtable();
     vm_opt_mid_table = st_init_numtable();
 
-#ifdef RUBY_THREAD_WIN32_H
-    rb_native_cond_initialize(&vm->ractor.sync.barrier_complete_cond);
-    rb_native_cond_initialize(&vm->ractor.sync.barrier_release_cond);
-#endif
 }
 
 void

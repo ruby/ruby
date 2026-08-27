@@ -945,9 +945,6 @@ ractor_sync_init(rb_ractor_t *r)
 
     // no receive is rebuilding a payload yet
 
-#ifndef RUBY_THREAD_PTHREAD_H
-    rb_native_cond_initialize(&r->sync.wakeup_cond);
-#endif
 }
 
 /* Create the default port.  Call only after the Ractor joined vm->ractor.set, so the
@@ -1303,73 +1300,6 @@ basket_type_name(enum ractor_basket_type type)
 }
 
 #endif // USE_RUBY_DEBUG_LOG
-
-#ifdef RUBY_THREAD_PTHREAD_H
-
-//
-
-#else // win32
-
-static void
-ractor_cond_wait(rb_ractor_t *r, const rb_hrtime_t *end)
-{
-#if RACTOR_CHECK_MODE > 0
-    VALUE locked_by = r->sync.locked_by;
-    r->sync.locked_by = Qnil;
-#endif
-    if (end) {
-        rb_hrtime_t now = rb_hrtime_now();
-        rb_hrtime_t rel = *end > now ? *end - now : 0;
-        // the condvar takes msec: never round a live timeout down to 0
-        unsigned long msec = (unsigned long)(rel / RB_HRTIME_PER_MSEC);
-        rb_native_cond_timedwait(&r->sync.wakeup_cond, &r->sync.lock, msec > 0 ? msec : 1);
-    }
-    else {
-        rb_native_cond_wait(&r->sync.wakeup_cond, &r->sync.lock);
-    }
-
-#if RACTOR_CHECK_MODE > 0
-    r->sync.locked_by = locked_by;
-#endif
-}
-
-static void *
-ractor_wait_no_gvl(void *ptr)
-{
-    struct ractor_waiter *waiter = (struct ractor_waiter *)ptr;
-    rb_ractor_t *cr = waiter->th->ractor;
-
-    RACTOR_LOCK_SELF(cr);
-    {
-        if (waiter->wakeup_status == wakeup_none) {
-            ractor_cond_wait(cr, waiter->end);
-        }
-    }
-    RACTOR_UNLOCK_SELF(cr);
-    return NULL;
-}
-
-static void
-rb_ractor_sched_wait(rb_execution_context_t *ec, rb_ractor_t *cr, rb_unblock_function_t *ubf, void *ptr)
-{
-    struct ractor_waiter *waiter = (struct ractor_waiter *)ptr;
-
-    RACTOR_UNLOCK(cr);
-    {
-        rb_nogvl(ractor_wait_no_gvl, waiter,
-                 ubf, waiter,
-                 RB_NOGVL_UBF_ASYNC_SAFE | RB_NOGVL_INTR_FAIL);
-    }
-    RACTOR_LOCK(cr);
-}
-
-static void
-rb_ractor_sched_wakeup(rb_ractor_t *r, rb_thread_t *th)
-{
-    // ractor lock is acquired
-    rb_native_cond_broadcast(&r->sync.wakeup_cond);
-}
-#endif
 
 static bool
 ractor_wakeup_all(rb_ractor_t *r, enum ractor_wakeup_status wakeup_status)
