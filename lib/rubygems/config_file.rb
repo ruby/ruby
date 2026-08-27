@@ -36,6 +36,7 @@ require "rbconfig"
 # +:ipv4_fallback_enabled+:: See #ipv4_fallback_enabled
 # +:global_gem_cache+:: See #global_gem_cache
 # +:use_psych+:: See #use_psych
+# +:credential_store+:: See #credential_store
 # +:gemhome+:: See #home
 # +:gempath+:: See #path
 # +:sources+:: Sets Gem::sources
