@@ -636,6 +636,205 @@ class TestResolvDNS < Test::Unit::TestCase
     end
   end
 
+  # A DNS label is limited to 63 octets. [RFC 1035 2.3.4] Writing a longer label
+  # through the label path must raise instead of overflowing the length octet.
+  def test_put_label_rejects_label_over_63_octets
+    Resolv::DNS::Message::MessageEncoder.new {|msg|
+      assert_nothing_raised { msg.put_label("a" * 63) }
+      assert_raise_with_message(ArgumentError, /DNS label is too long/) do
+        msg.put_label("a" * 64)
+      end
+    }
+    # put_labels drives put_label, so the same guard applies to the name path.
+    Resolv::DNS::Message::MessageEncoder.new {|msg|
+      assert_raise_with_message(ArgumentError, /DNS label is too long/) do
+        msg.put_labels(["a" * 64])
+      end
+    }
+  end
+
+  # The per-label limit is an invariant of Label::Str, so no label object can
+  # exist that would overflow its length octet. [RFC 1035 2.3.4]
+  def test_label_str_rejects_label_over_63_octets
+    assert_nothing_raised { Resolv::DNS::Label::Str.new("a" * 63) }
+    assert_raise_with_message(ArgumentError, /DNS label is too long/) do
+      Resolv::DNS::Label::Str.new("a" * 64)
+    end
+  end
+
+  # Every way of building a name goes through Label::Str, so the paths that
+  # skip Name.create are covered too.
+  def test_label_length_is_enforced_on_every_construction_path
+    assert_raise_with_message(ArgumentError, /DNS label is too long/) do
+      Resolv::DNS::Name.new(["a" * 64])
+    end
+    assert_raise_with_message(ArgumentError, /DNS label is too long/) do
+      Resolv::DNS::Label.split("a" * 64)
+    end
+    # Config#generate_candidates appends search domains with Name.new, and the
+    # search list itself comes from Label.split, so a resolv.conf carrying an
+    # over-long label is rejected when the config is read.
+    config = Resolv::DNS::Config.new(nameserver: ['127.0.0.1'],
+                                     search: ["a" * 64], ndots: 1)
+    assert_raise_with_message(ArgumentError, /DNS label is too long/) do
+      config.lazy_initialize
+    end
+  end
+
+  def test_name_create_rejects_too_long_label
+    assert_nothing_raised { Resolv::DNS::Name.create("a" * 63) }
+    assert_raise_with_message(Resolv::ResolvError, /DNS label is too long/) do
+      Resolv::DNS::Name.create("a" * 64)
+    end
+  end
+
+  def test_name_create_rejects_too_long_name
+    # Five 63-octet labels total 321 encoded octets, over the 255 octet limit,
+    # while each individual label is still valid.
+    too_long = (["a" * 63] * 5).join(".")
+    assert_raise_with_message(Resolv::ResolvError, /DNS name is too long/) do
+      Resolv::DNS::Name.create(too_long)
+    end
+  end
+
+  # A hostname is runtime data, so an over-long one has to stay rescuable the
+  # way the rest of name resolution is. It reaches Name.create through
+  # Config#generate_candidates, which runs outside Config#resolv's own rescue.
+  def test_oversized_name_is_rescuable_as_resolv_error
+    dns = Resolv::DNS.new(nameserver_port: [['127.0.0.1', 53]])
+    assert_raise(Resolv::ResolvError) { dns.getaddress("a" * 64) }
+    assert_raise(Resolv::ResolvError) { dns.getaddress((["a" * 63] * 5).join(".")) }
+  ensure
+    dns&.close
+  end
+
+  # A length octet of 64..191 is reserved, not a label length, but this decoder
+  # read it as one and accepted labels no encoder should ever produce.
+  # [RFC 1035 4.1.4] Rejecting them has to look like any other malformed
+  # message, so the caller's rescue DecodeError still covers it.
+  def test_decode_rejects_label_over_63_octets
+    message = ->(n) {
+      [0, 0x8180, 1, 0, 0, 0].pack("n*") +
+        [n].pack("C") + ("a" * n) + "\0" + [1, 1].pack("nn")
+    }
+    assert_nothing_raised { Resolv::DNS::Message.decode(message.call(63)) }
+    [64, 100, 191].each do |n|
+      assert_raise_with_message(Resolv::DNS::DecodeError, /DNS label is too long/) do
+        Resolv::DNS::Message.decode(message.call(n))
+      end
+    end
+  end
+
+  # The type check is a caller mistake rather than runtime data, so it keeps
+  # raising ArgumentError.
+  def test_name_create_still_raises_argument_error_for_wrong_type
+    assert_raise_with_message(ArgumentError, /cannot interpret as DNS name/) do
+      Resolv::DNS::Name.create(123)
+    end
+  end
+
+  # The 255 octet limit counts the encoded form, including each label's length
+  # octet and the root label's terminating zero octet. [RFC 1035 2.3.4, 3.1]
+  # So the longest legal name encodes to exactly 255 octets.
+  def test_name_create_total_length_boundary
+    at_limit = (["a" * 63] * 3 + ["a" * 61]).join(".")
+    name = Resolv::DNS::Name.create(at_limit)
+    encoded = Resolv::DNS::Message::MessageEncoder.new {|msg| msg.put_name(name) }.to_s
+    assert_equal(255, encoded.bytesize, "longest legal name encodes to 255 octets")
+
+    over_limit = (["a" * 63] * 3 + ["a" * 62]).join(".")
+    assert_raise_with_message(Resolv::ResolvError, /DNS name is too long/) do
+      Resolv::DNS::Name.create(over_limit)
+    end
+
+    # Four 63-octet labels encode to 257 octets. Counting the presentation
+    # form instead of the encoded form lets these two extra octets through.
+    assert_raise_with_message(Resolv::ResolvError, /DNS name is too long/) do
+      Resolv::DNS::Name.create((["a" * 63] * 4).join("."))
+    end
+  end
+
+  # The decoder enforces the same limit, counted the same way.
+  def test_get_labels_total_length_boundary
+    encode = ->(labels) {
+      Resolv::DNS::Message::MessageEncoder.new {|msg|
+        msg.put_labels(labels.map {|l| Resolv::DNS::Label::Str.new(l) })
+      }.to_s
+    }
+
+    at_limit = encode.call(["a" * 63] * 3 + ["a" * 61])
+    assert_equal(255, at_limit.bytesize)
+    Resolv::DNS::Message::MessageDecoder.new(at_limit) {|msg|
+      assert_equal(4, msg.get_labels.length)
+    }
+
+    over_limit = encode.call(["a" * 63] * 4)
+    assert_equal(257, over_limit.bytesize)
+    assert_raise_with_message(Resolv::DNS::DecodeError, /name label data exceed 255 octets/) do
+      Resolv::DNS::Message::MessageDecoder.new(over_limit) {|msg| msg.get_labels }
+    end
+  end
+
+  # A single 262-octet label whose bytes start with "target\x03com\x00". The
+  # old encoder wrote the length octet as 262 & 0xff == 6, so the wire bytes
+  # decoded to the unrelated name "target.com" (query name confusion /
+  # allowlist bypass).
+  def test_encoder_rejects_label_length_wrap
+    poc_label = "target".b + "\x03com\x00".b + ("a".b * 251)
+    assert_equal(262, poc_label.bytesize)
+    assert_equal(6, poc_label.bytesize & 0xff, "precondition: the length octet wraps to 6")
+
+    # The bytes the buggy encoder would have emitted really do decode to a
+    # different name. This is the vulnerability being fixed.
+    wrapped = [poc_label.bytesize & 0xff].pack("C") + poc_label
+    Resolv::DNS::Message::MessageDecoder.new(wrapped) {|msg|
+      assert_equal("target.com", msg.get_labels.map(&:to_s).join("."))
+    }
+
+    # The fixed encoder refuses to emit it instead of silently wrapping, so it
+    # can no longer produce "target.com" from this input.
+    Resolv::DNS::Message::MessageEncoder.new {|msg|
+      assert_raise_with_message(ArgumentError, /DNS label is too long/) do
+        msg.put_label(poc_label)
+      end
+    }
+    assert_raise_with_message(Resolv::ResolvError, /DNS label is too long/) do
+      Resolv::DNS::Name.create(poc_label)
+    end
+  end
+
+  # A character-string (e.g. TXT rdata) is prefixed by a single length octet and
+  # may legitimately be up to 255 octets, so the 63 octet label limit must not
+  # leak into put_string. [RFC 1035 3.3]
+  def test_put_string_allows_character_string_up_to_255
+    [64, 200, 255].each do |n|
+      s = "a" * n
+      m = Resolv::DNS::Message::MessageEncoder.new {|msg| msg.put_string(s) }
+      encoded = m.to_s
+      assert_equal(n, encoded.getbyte(0), "length octet for #{n} byte string")
+      assert_equal(n + 1, encoded.bytesize)
+      Resolv::DNS::Message::MessageDecoder.new(encoded) {|msg|
+        assert_equal(s, msg.get_string)
+      }
+    end
+  end
+
+  def test_txt_record_roundtrip_with_long_character_strings
+    txt = Resolv::DNS::Resource::IN::TXT.new("a" * 255, "b" * 64)
+    m = Resolv::DNS::Message.new(0)
+    m.add_answer("example.com.", 3600, txt)
+    decoded = Resolv::DNS::Message.decode(m.encode)
+    _, _, res = decoded.answer.first
+    assert_equal(["a" * 255, "b" * 64], res.strings)
+  end
+
+  # put_string still guards against the length octet wrapping past 255 octets.
+  def test_put_string_rejects_over_255_octets
+    assert_raise_with_message(ArgumentError, /character-string is too long/) do
+      Resolv::DNS::Message::MessageEncoder.new {|msg| msg.put_string("a" * 256) }
+    end
+  end
+
   def assert_no_fd_leak
     socket = assert_throw(self) do |tag|
       Resolv::DNS.stub(:bind_random_port, ->(s, *) {throw(tag, s)}) do
@@ -820,6 +1019,126 @@ class TestResolvDNS < Test::Unit::TestCase
       ensure
         tcp_server1_socket&.close
       end
+    end
+  end
+
+  def test_tcp_connection_closed_before_length
+    with_tcp('127.0.0.1', 0) do |t|
+      _, server_port, _, server_address = t.addr
+
+      server_thread = Thread.new do
+        ct = t.accept
+        ct.recv(512)
+        ct.close
+      end
+
+      client_thread = Thread.new do
+        requester = Resolv::DNS::Requester::TCP.new(server_address, server_port)
+        begin
+          msg = Resolv::DNS::Message.new
+          msg.add_question('example.org', Resolv::DNS::Resource::IN::A)
+          sender = requester.sender(msg, msg)
+          assert_raise(Resolv::ResolvTimeout) do
+            requester.request(sender, 2)
+          end
+        ensure
+          requester.close
+        end
+      end
+
+      server_thread.join
+      client_thread.join
+    end
+  end
+
+  def test_tcp_connection_closed_after_length
+    with_tcp('127.0.0.1', 0) do |t|
+      _, server_port, _, server_address = t.addr
+
+      server_thread = Thread.new do
+        ct = t.accept
+        ct.recv(512)
+        ct.send([100].pack('n'), 0)
+        ct.close
+      end
+
+      client_thread = Thread.new do
+        requester = Resolv::DNS::Requester::TCP.new(server_address, server_port)
+        begin
+          msg = Resolv::DNS::Message.new
+          msg.add_question('example.org', Resolv::DNS::Resource::IN::A)
+          sender = requester.sender(msg, msg)
+          assert_raise(Resolv::ResolvTimeout) do
+            requester.request(sender, 2)
+          end
+        ensure
+          requester.close
+        end
+      end
+
+      server_thread.join
+      client_thread.join
+    end
+  end
+
+  def test_tcp_connection_closed_with_partial_length_prefix
+    with_tcp('127.0.0.1', 0) do |t|
+      _, server_port, _, server_address = t.addr
+
+      server_thread = Thread.new do
+        ct = t.accept
+        ct.recv(512)
+        ct.write "A" # 1 byte
+        ct.close
+      end
+
+      client_thread = Thread.new do
+        requester = Resolv::DNS::Requester::TCP.new(server_address, server_port)
+        begin
+          msg = Resolv::DNS::Message.new
+          msg.add_question('example.org', Resolv::DNS::Resource::IN::A)
+          sender = requester.sender(msg, msg)
+          assert_raise(Resolv::ResolvTimeout) do
+            requester.request(sender, 2)
+          end
+        ensure
+          requester.close
+        end
+      end
+
+      server_thread.join
+      client_thread.join
+    end
+  end
+
+  def test_tcp_connection_closed_with_partial_message_body
+    with_tcp('127.0.0.1', 0) do |t|
+      _, server_port, _, server_address = t.addr
+
+      server_thread = Thread.new do
+        ct = t.accept
+        ct.recv(512)
+        ct.write([10].pack('n')) # length 10
+        ct.write "12345" # 5 bytes (partial)
+        ct.close
+      end
+
+      client_thread = Thread.new do
+        requester = Resolv::DNS::Requester::TCP.new(server_address, server_port)
+        begin
+          msg = Resolv::DNS::Message.new
+          msg.add_question('example.org', Resolv::DNS::Resource::IN::A)
+          sender = requester.sender(msg, msg)
+          assert_raise(Resolv::ResolvTimeout) do
+            requester.request(sender, 2)
+          end
+        ensure
+          requester.close
+        end
+      end
+
+      server_thread.join
+      client_thread.join
     end
   end
 end
