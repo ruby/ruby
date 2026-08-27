@@ -212,9 +212,9 @@ mod snapshot_tests {
           v44:Fixnum[0] = Const Value(0)
           v27:Any = Snapshot FrameState { pc: 0x1008, stack: [], locals: [] }
           PushInlineFrame :foo, v24 (0x1048), num_args=3
-          v38:Any = Snapshot FrameState { pc: 0x1070, stack: [v13, v15, v11], locals: [a=v13, b=v15, c=v11, ID(0)=v44], caller: v27 }
+          v38:Any = Snapshot FrameState { pc: 0x1068, stack: [v13, v15, v11], locals: [a=v13, b=v15, c=v11, ID(0)=v44], caller: v27 }
           v39:ArrayExact = NewArray v13, v15, v11
-          v40:Any = Snapshot FrameState { pc: 0x1078, stack: [v39], locals: [a=v13, b=v15, c=v11, ID(0)=v44], caller: v27 }
+          v40:Any = Snapshot FrameState { pc: 0x1070, stack: [v39], locals: [a=v13, b=v15, c=v11, ID(0)=v44], caller: v27 }
           CheckInterrupts
           PopInlineFrame
           Return v39
@@ -252,9 +252,9 @@ mod snapshot_tests {
           v39:Fixnum[0] = Const Value(0)
           v24:Any = Snapshot FrameState { pc: 0x1008, stack: [], locals: [] }
           PushInlineFrame :foo, v22 (0x1048), num_args=2
-          v33:Any = Snapshot FrameState { pc: 0x1070, stack: [v11, v13], locals: [a=v11, b=v13, ID(0)=v39], caller: v24 }
+          v33:Any = Snapshot FrameState { pc: 0x1068, stack: [v11, v13], locals: [a=v11, b=v13, ID(0)=v39], caller: v24 }
           v34:ArrayExact = NewArray v11, v13
-          v35:Any = Snapshot FrameState { pc: 0x1078, stack: [v34], locals: [a=v11, b=v13, ID(0)=v39], caller: v24 }
+          v35:Any = Snapshot FrameState { pc: 0x1070, stack: [v34], locals: [a=v11, b=v13, ID(0)=v39], caller: v24 }
           CheckInterrupts
           PopInlineFrame
           Return v34
@@ -299,9 +299,9 @@ mod snapshot_tests {
           v64:Fixnum[0] = Const Value(0)
           v37:Any = Snapshot FrameState { pc: 0x1008, stack: [], locals: [] }
           PushInlineFrame :foo, v34 (0x1048), num_args=8
-          v58:Any = Snapshot FrameState { pc: 0x1070, stack: [v19, v21, v17, v15, v11, v13, v23, v25], locals: [five=v11, six=v13, a=v19, b=v21, c=v17, d=v15, e=v23, f=v25, ID(0)=v64], caller: v37 }
+          v58:Any = Snapshot FrameState { pc: 0x1068, stack: [v19, v21, v17, v15, v11, v13, v23, v25], locals: [five=v11, six=v13, a=v19, b=v21, c=v17, d=v15, e=v23, f=v25, ID(0)=v64], caller: v37 }
           v59:ArrayExact = NewArray v19, v21, v17, v15, v11, v13, v23, v25
-          v60:Any = Snapshot FrameState { pc: 0x1078, stack: [v59], locals: [five=v11, six=v13, a=v19, b=v21, c=v17, d=v15, e=v23, f=v25, ID(0)=v64], caller: v37 }
+          v60:Any = Snapshot FrameState { pc: 0x1070, stack: [v59], locals: [five=v11, six=v13, a=v19, b=v21, c=v17, d=v15, e=v23, f=v25, ID(0)=v64], caller: v37 }
           CheckInterrupts
           PopInlineFrame
           Return v59
@@ -2141,7 +2141,7 @@ pub(crate) mod hir_build_tests {
           v25:BasicObject = Send v10, 0x1000, :foo # SendFallbackReason: Uncategorized(send)
           PatchPoint NoEPEscape(test)
           v28:CPtr = LoadSP
-          v29:BasicObject = LoadField v28, :a@0x1028
+          v29:BasicObject = LoadField v28, :a@0x1020
           PatchPoint NoEPEscape(test)
           v38:BasicObject = Send v29, :+, v20 # SendFallbackReason: Uncategorized(opt_plus)
           CheckInterrupts
@@ -2217,8 +2217,8 @@ pub(crate) mod hir_build_tests {
           PatchPoint NoEPEscape(test)
           v18:CPtr = LoadSP
           v19:BasicObject = LoadField v18, :block@0x1000
-          PatchPoint StableConstantNames(0x1030, ::RubyVM::ZJIT)
-          v24:ModuleSubclass[RubyVM::ZJIT@0x1038] = Const Value(VALUE(0x1038))
+          PatchPoint StableConstantNames(0x1028, ::RubyVM::ZJIT)
+          v24:ModuleSubclass[RubyVM::ZJIT@0x1030] = Const Value(VALUE(0x1030))
           SideExit DirectiveInduced
         ");
     }
@@ -2257,8 +2257,8 @@ pub(crate) mod hir_build_tests {
           v17:Fixnum[1] = Const Value(1)
           v22:BasicObject = Send v11, 0x1008, :consume # SendFallbackReason: Uncategorized(send)
           PatchPoint NoEPEscape(test)
-          PatchPoint StableConstantNames(0x1030, ::RubyVM::ZJIT)
-          v29:ModuleSubclass[RubyVM::ZJIT@0x1038] = Const Value(VALUE(0x1038))
+          PatchPoint StableConstantNames(0x1028, ::RubyVM::ZJIT)
+          v29:ModuleSubclass[RubyVM::ZJIT@0x1030] = Const Value(VALUE(0x1030))
           SideExit DirectiveInduced
         ");
     }
@@ -2295,16 +2295,16 @@ pub(crate) mod hir_build_tests {
           v15:BasicObject = Send v9, 0x1008, :consume # SendFallbackReason: Uncategorized(send)
           PatchPoint NoEPEscape(test)
           v24:CPtr = GetEP 0
-          v25:CUInt64 = LoadField v24, :VM_ENV_DATA_INDEX_FLAGS@0x1030
+          v25:CUInt64 = LoadField v24, :VM_ENV_DATA_INDEX_FLAGS@0x1028
           v26:CBool = IsBlockParamModified v25
           CondBranch v26, bb4(), bb5()
         bb4():
-          v28:BasicObject = LoadField v24, :&@0x1031
+          v28:BasicObject = LoadField v24, :&@0x1029
           Jump bb6(v28, v28)
         bb5():
-          v30:CInt64 = LoadField v24, :VM_ENV_DATA_INDEX_SPECVAL@0x1032
+          v30:CInt64 = LoadField v24, :VM_ENV_DATA_INDEX_SPECVAL@0x102a
           v31:CInt64 = GuardAnyBitSet v30, CUInt64(1) recompile
-          v32:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1038))
+          v32:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1030))
           Jump bb6(v32, v10)
         bb6(v22:BasicObject, v23:BasicObject):
           v35:BasicObject = Send v9, &block, :consume, v22 # SendFallbackReason: Uncategorized(send)
@@ -2350,7 +2350,7 @@ pub(crate) mod hir_build_tests {
           v25:BasicObject = Send v10, 0x1000, :foo # SendFallbackReason: Uncategorized(send)
           PatchPoint NoEPEscape(test)
           v28:CPtr = LoadSP
-          v29:BasicObject = LoadField v28, :a@0x1028
+          v29:BasicObject = LoadField v28, :a@0x1020
           PatchPoint NoEPEscape(test)
           v38:BasicObject = Send v29, :+, v20 # SendFallbackReason: Uncategorized(opt_plus)
           CheckInterrupts

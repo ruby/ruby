@@ -590,11 +590,10 @@ struct rb_iseq_constant_body {
 /* typedef rb_iseq_t is in method.h */
 struct rb_iseq_struct {
     VALUE flags; /* 1 */
-    VALUE wrapper; /* 2 */
 
-    struct rb_iseq_constant_body *body;  /* 3 */
+    struct rb_iseq_constant_body *body;  /* 2 */
 
-    union { /* 4, 5 words */
+    union { /* 3, 4 words */
         struct iseq_compile_data *compile_data; /* used at compile time */
 
         struct {

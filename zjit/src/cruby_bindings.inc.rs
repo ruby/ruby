@@ -1289,7 +1289,6 @@ pub union rb_iseq_constant_body__bindgen_ty_1 {
 #[repr(C)]
 pub struct rb_iseq_struct {
     pub flags: VALUE,
-    pub wrapper: VALUE,
     pub body: *mut rb_iseq_constant_body,
     pub aux: rb_iseq_struct__bindgen_ty_1,
 }
