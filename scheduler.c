@@ -293,8 +293,11 @@ rb_fiber_scheduler_blocking_operation_new(void *(*function)(void *), void *data,
  *  * #yield
  *  * (the list is expanded as Ruby developers make more methods having non-blocking calls)
  *
- *  The #block, #unblock, #kernel_sleep, #io_wait, and #fiber_interrupt hooks are mandatory.
- *  Other hooks are optional unless specified otherwise.
+ *  When not specified otherwise, the hook implementations are mandatory: if they are not
+ *  implemented, the methods trying to call hook will fail. To provide backward compatibility,
+ *  in the future hooks will be optional (if they are not implemented, due to the scheduler
+ *  being created for the older Ruby version, the code which needs this hook will not fail,
+ *  and will just behave in a blocking fashion).
  *
  *  It is also strongly recommended that the scheduler implements the #fiber method, which is
  *  delegated to by Fiber.schedule.
@@ -398,7 +401,7 @@ verify_interface(VALUE scheduler)
     }
 
     if (!rb_respond_to(scheduler, id_fiber_interrupt)) {
-        rb_raise(rb_eArgError, "Scheduler must implement #fiber_interrupt");
+        rb_warn("Scheduler should implement #fiber_interrupt");
     }
 }
 
@@ -737,7 +740,11 @@ rb_fiber_scheduler_io_wait(VALUE scheduler, VALUE io, VALUE events, VALUE timeou
         scheduler, io, events, timeout
     };
 
-    return rb_thread_io_blocking_operation(io, fiber_scheduler_io_wait, (VALUE)&arguments);
+    if (rb_respond_to(scheduler, id_fiber_interrupt)) {
+        return rb_thread_io_blocking_operation(io, fiber_scheduler_io_wait, (VALUE)&arguments);
+    } else {
+        return fiber_scheduler_io_wait((VALUE)&arguments);
+    }
 }
 
 VALUE
@@ -820,7 +827,11 @@ rb_fiber_scheduler_io_read(VALUE scheduler, VALUE io, VALUE buffer, size_t offse
         scheduler, io, buffer, SIZET2NUM(offset), SIZET2NUM(length)
     };
 
-    return rb_thread_io_blocking_operation(io, fiber_scheduler_io_read, (VALUE)&arguments);
+    if (rb_respond_to(scheduler, id_fiber_interrupt)) {
+        return rb_thread_io_blocking_operation(io, fiber_scheduler_io_read, (VALUE)&arguments);
+    } else {
+        return fiber_scheduler_io_read((VALUE)&arguments);
+    }
 }
 
 /*
@@ -854,7 +865,11 @@ rb_fiber_scheduler_io_pread(VALUE scheduler, VALUE io, rb_off_t from, VALUE buff
         scheduler, io, buffer, OFFT2NUM(from), SIZET2NUM(offset), SIZET2NUM(length)
     };
 
-    return rb_thread_io_blocking_operation(io, fiber_scheduler_io_pread, (VALUE)&arguments);
+    if (rb_respond_to(scheduler, id_fiber_interrupt)) {
+        return rb_thread_io_blocking_operation(io, fiber_scheduler_io_pread, (VALUE)&arguments);
+    } else {
+        return fiber_scheduler_io_pread((VALUE)&arguments);
+    }
 }
 
 /*
@@ -897,7 +912,11 @@ rb_fiber_scheduler_io_write(VALUE scheduler, VALUE io, VALUE buffer, size_t offs
         scheduler, io, buffer, SIZET2NUM(offset), SIZET2NUM(length)
     };
 
-    return rb_thread_io_blocking_operation(io, fiber_scheduler_io_write, (VALUE)&arguments);
+    if (rb_respond_to(scheduler, id_fiber_interrupt)) {
+        return rb_thread_io_blocking_operation(io, fiber_scheduler_io_write, (VALUE)&arguments);
+    } else {
+        return fiber_scheduler_io_write((VALUE)&arguments);
+    }
 }
 
 /*
@@ -933,7 +952,11 @@ rb_fiber_scheduler_io_pwrite(VALUE scheduler, VALUE io, rb_off_t from, VALUE buf
         scheduler, io, buffer, OFFT2NUM(from), SIZET2NUM(offset), SIZET2NUM(length)
     };
 
-    return rb_thread_io_blocking_operation(io, fiber_scheduler_io_pwrite, (VALUE)&arguments);
+    if (rb_respond_to(scheduler, id_fiber_interrupt)) {
+        return rb_thread_io_blocking_operation(io, fiber_scheduler_io_pwrite, (VALUE)&arguments);
+    } else {
+        return fiber_scheduler_io_pwrite((VALUE)&arguments);
+    }
 }
 
 VALUE
@@ -1119,7 +1142,7 @@ VALUE rb_fiber_scheduler_fiber_interrupt(VALUE scheduler, VALUE fiber, VALUE exc
     rb_control_frame_t *volatile cfp = ec->cfp;
     EC_PUSH_TAG(ec);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
-        result = rb_funcallv(scheduler, id_fiber_interrupt, 2, arguments);
+        result = rb_check_funcall(scheduler, id_fiber_interrupt, 2, arguments);
     }
     else {
         rb_vm_rewind_cfp(ec, cfp);

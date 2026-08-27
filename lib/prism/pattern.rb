@@ -43,7 +43,7 @@ module Prism
     class CompilationError < StandardError
       # Create a new CompilationError with the given representation of the node
       # that caused the error.
-      #
+      #--
       #: (String repr) -> void
       def initialize(repr) # :nodoc:
         super(<<~ERROR)
@@ -66,7 +66,7 @@ module Prism
 
     # Create a new pattern with the given query. The query should be a string
     # containing a Ruby pattern matching expression.
-    #
+    #--
     #: (String query) -> void
     def initialize(query)
       @query = query
@@ -75,7 +75,7 @@ module Prism
 
     # Compile the query into a callable object that can be used to match against
     # nodes.
-    #
+    #--
     #: () -> Proc
     def compile
       result = Prism.parse("case nil\nin #{query}\nend")
@@ -93,7 +93,7 @@ module Prism
     # pattern. If a block is given, it will be called with each node that
     # matches the pattern. If no block is given, an enumerator will be returned
     # that will yield each node that matches the pattern.
-    #
+    #--
     #: (node root) -> Enumerator[node, void]
     #: (node root) { (node) -> void } -> void
     def scan(root, &blk)
@@ -112,7 +112,7 @@ module Prism
 
     # Shortcut for combining two procs into one that returns true if both return
     # true.
-    #
+    #--
     #: (Proc left, Proc right) -> Proc
     def combine_and(left, right) # :nodoc:
       ->(other) { left.call(other) && right.call(other) }
@@ -120,7 +120,7 @@ module Prism
 
     # Shortcut for combining two procs into one that returns true if either
     # returns true.
-    #
+    #--
     #: (Proc left, Proc right) -> Proc
     def combine_or(left, right) # :nodoc:
       ->(other) { left.call(other) || right.call(other) }
@@ -129,14 +129,14 @@ module Prism
     # Raise an error because the given node is not supported. Note purposefully
     # not typing this method since it is a no return method that Steep does not
     # understand.
-    #
+    #--
     #: (node node) -> bot
     def compile_error(node) # :nodoc:
       raise CompilationError, node.inspect
     end
 
     # in [foo, bar, baz]
-    #
+    #--
     #: (ArrayPatternNode node) -> Proc
     def compile_array_pattern_node(node) # :nodoc:
       compile_error(node) if !node.rest.nil? || node.posts.any?
@@ -163,14 +163,14 @@ module Prism
     end
 
     # in foo | bar
-    #
+    #--
     #: (AlternationPatternNode node) -> Proc
     def compile_alternation_pattern_node(node) # :nodoc:
       combine_or(compile_node(node.left), compile_node(node.right))
     end
 
     # in Prism::ConstantReadNode
-    #
+    #--
     #: (ConstantPathNode node) -> Proc
     def compile_constant_path_node(node) # :nodoc:
       parent = node.parent
@@ -187,14 +187,14 @@ module Prism
 
     # in ConstantReadNode
     # in String
-    #
+    #--
     #: (ConstantReadNode node) -> Proc
     def compile_constant_read_node(node) # :nodoc:
       compile_constant_name(node, node.name)
     end
 
     # Compile a name associated with a constant.
-    #
+    #--
     #: ((ConstantPathNode | ConstantReadNode) node, Symbol name) -> Proc
     def compile_constant_name(node, name) # :nodoc:
       if Prism.const_defined?(name, false)
@@ -212,7 +212,7 @@ module Prism
 
     # in InstanceVariableReadNode[name: Symbol]
     # in { name: Symbol }
-    #
+    #--
     #: (HashPatternNode node) -> Proc
     def compile_hash_pattern_node(node) # :nodoc:
       compile_error(node) if node.rest
@@ -247,14 +247,14 @@ module Prism
     end
 
     # in nil
-    #
+    #--
     #: (NilNode node) -> Proc
     def compile_nil_node(node) # :nodoc:
       ->(attribute) { attribute.nil? }
     end
 
     # in /foo/
-    #
+    #--
     #: (RegularExpressionNode node) -> Proc
     def compile_regular_expression_node(node) # :nodoc:
       regexp = Regexp.new(node.unescaped, node.closing[1..])
@@ -264,7 +264,7 @@ module Prism
 
     # in ""
     # in "foo"
-    #
+    #--
     #: (StringNode node) -> Proc
     def compile_string_node(node) # :nodoc:
       string = node.unescaped
@@ -274,7 +274,7 @@ module Prism
 
     # in :+
     # in :foo
-    #
+    #--
     #: (SymbolNode node) -> Proc
     def compile_symbol_node(node) # :nodoc:
       symbol = node.unescaped.to_sym
@@ -284,7 +284,7 @@ module Prism
 
     # Compile any kind of node. Dispatch out to the individual compilation
     # methods based on the type of node.
-    #
+    #--
     #: (node node) -> Proc
     def compile_node(node) # :nodoc:
       case node

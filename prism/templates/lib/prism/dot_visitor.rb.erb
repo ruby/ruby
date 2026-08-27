@@ -112,14 +112,14 @@ module Prism
     attr_reader :digraph #: Digraph
 
     # Initialize a new dot visitor.
-    #
+    #--
     #: () -> void
     def initialize
       @digraph = Digraph.new
     end
 
     # Convert this visitor into a graphviz dot graph string.
-    #
+    #--
     #: () -> String
     def to_dot
       digraph.to_dot
@@ -185,14 +185,14 @@ module Prism
     private
 
     # Generate a unique node ID for a node throughout the digraph.
-    #
+    #--
     #: (node) -> String
     def node_id(node) # :nodoc:
       "Node_#{node.object_id}"
     end
 
     # Inspect a location to display the start and end line and columns in bytes.
-    #
+    #--
     #: (Location) -> String
     def location_inspect(location) # :nodoc:
       "(#{location.start_line},#{location.start_column})-(#{location.end_line},#{location.end_column})"
@@ -201,7 +201,7 @@ module Prism
 
     # Inspect a node that has <%= flag.human %> flags to display the flags as a
     # comma-separated list.
-    #
+    #--
     #: (<%= nodes.filter_map { |node| node.name if node.flags == flag }.join(" | ") %> node) -> String
     def <%= flag.human %>_inspect(node) # :nodoc:
       flags = [] #: Array[String]

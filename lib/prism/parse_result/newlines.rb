@@ -31,14 +31,14 @@ module Prism
       # @rbs @lines: Array[bool]
 
       # Create a new Newlines visitor with the given newline offsets.
-      #
+      #--
       #: (Integer lines) -> void
       def initialize(lines)
         @lines = Array.new(1 + lines, false)
       end
 
       # Permit block nodes to mark newlines within themselves.
-      #
+      #--
       #: (BlockNode node) -> void
       def visit_block_node(node)
         old_lines = @lines
@@ -52,7 +52,7 @@ module Prism
       end
 
       # Permit lambda nodes to mark newlines within themselves.
-      #
+      #--
       #: (LambdaNode node) -> void
       def visit_lambda_node(node)
         old_lines = @lines
@@ -66,7 +66,7 @@ module Prism
       end
 
       # Mark if nodes as newlines.
-      #
+      #--
       #: (IfNode node) -> void
       def visit_if_node(node)
         node.newline_flag!(@lines)
@@ -74,7 +74,7 @@ module Prism
       end
 
       # Mark unless nodes as newlines.
-      #
+      #--
       #: (UnlessNode node) -> void
       def visit_unless_node(node)
         node.newline_flag!(@lines)
@@ -82,7 +82,7 @@ module Prism
       end
 
       # Permit statements lists to mark newlines within themselves.
-      #
+      #--
       #: (StatementsNode node) -> void
       def visit_statements_node(node)
         node.body.each do |child|

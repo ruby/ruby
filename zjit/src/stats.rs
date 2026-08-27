@@ -257,6 +257,7 @@ make_counters! {
         // send_fallback_: Fallback reasons for send-ish instructions
         send_fallback_send_cfunc_not_variadic,
         send_fallback_send_not_optimized_method_type_optimized,
+        send_fallback_too_many_args_for_lir,
         send_fallback_operand_too_large,
         send_fallback_send_bop_redefined,
         send_fallback_send_operands_not_fixnum,
@@ -271,6 +272,7 @@ make_counters! {
         send_fallback_send_not_optimized_method_type,
         send_fallback_send_not_optimized_need_permission,
         send_fallback_send_block_arg_not_nil,
+        send_fallback_ccall_with_frame_too_many_args,
         send_fallback_argc_param_mismatch,
         // The call has at least one feature on the caller or callee side
         // that the optimizer does not support.
@@ -680,6 +682,7 @@ pub fn send_fallback_counter(reason: crate::hir::SendFallbackReason) -> Counter 
         SendCfuncNotVariadic                      => send_fallback_send_cfunc_not_variadic,
         SendNotOptimizedMethodTypeOptimized(_)
                                                   => send_fallback_send_not_optimized_method_type_optimized,
+        TooManyArgsForLir                         => send_fallback_too_many_args_for_lir,
         OperandTooLarge                           => send_fallback_operand_too_large,
         SendBopRedefined                          => send_fallback_send_bop_redefined,
         SendOperandsNotFixnum                     => send_fallback_send_operands_not_fixnum,
@@ -701,6 +704,7 @@ pub fn send_fallback_counter(reason: crate::hir::SendFallbackReason) -> Counter 
         SendNotOptimizedMethodType(_)             => send_fallback_send_not_optimized_method_type,
         SendNotOptimizedNeedPermission            => send_fallback_send_not_optimized_need_permission,
         SendBlockArgNotNil                        => send_fallback_send_block_arg_not_nil,
+        CCallWithFrameTooManyArgs                 => send_fallback_ccall_with_frame_too_many_args,
         ObjToStringNotString                      => send_fallback_obj_to_string_not_string,
         SuperCallWithBlock                        => send_fallback_super_call_with_block,
         SuperFromBlock                            => send_fallback_super_from_block,

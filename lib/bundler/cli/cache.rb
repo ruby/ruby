@@ -17,8 +17,6 @@ module Bundler
       Bundler.settings.temporary(cache_all_platforms: options["all-platforms"]) do
         Bundler.load.cache
       end
-
-      Bundler::CLI::Common.prune
     end
 
     private
@@ -28,8 +26,6 @@ module Bundler
       options = self.options.dup
       options["local"] = false if Bundler.settings[:cache_all_platforms]
       options["no-cache"] = true
-      options["skip-prune"] = true
-      options["cache-archives"] = true
       Bundler::CLI::Install.new(options).run
     end
   end

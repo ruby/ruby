@@ -106,20 +106,6 @@ class TestFiberScheduler < Test::Unit::TestCase
     thread.join
   end
 
-  def test_fiber_interrupt_is_required
-    scheduler = Object.new
-
-    [:block, :unblock, :io_wait, :kernel_sleep].each do |method|
-      scheduler.define_singleton_method(method) {}
-    end
-
-    error = assert_raise(ArgumentError) do
-      Fiber.set_scheduler scheduler
-    end
-
-    assert_equal "Scheduler must implement #fiber_interrupt", error.message
-  end
-
   def test_current_scheduler
     thread = Thread.new do
       scheduler = Scheduler.new
