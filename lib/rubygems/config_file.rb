@@ -852,10 +852,17 @@ if you believe they were disclosed to a third party.
     alert_warning "Could not write the API key to the credential store, so it was written to #{credentials_path} in plain text."
   end
 
-  # Anything that reads as a boolean is one, so RUBYGEMS_CREDENTIAL_STORE=0
-  # turns the store off rather than naming a backend gem "0".
   CREDENTIAL_STORE_OFF = %w[false 0 no off f n].freeze
   CREDENTIAL_STORE_ON = %w[true 1 yes on t y].freeze
+
+  #--
+  # Anything that reads as a boolean is one, so RUBYGEMS_CREDENTIAL_STORE=0
+  # turns the store off rather than naming a backend gem "0". Both lists are
+  # this setting's own. Nothing on the way here turns `off` into a boolean, so
+  # a gemrc saying `off` arrives as a String just as the environment variable
+  # does. Bundler leaves `off` out of its half because every one of its
+  # boolean settings shares a single vocabulary that has never had it. Nothing
+  # here shares that constraint.
 
   def normalize_credential_store(value, default)
     # An environment variable can carry bytes String#downcase would reject.
