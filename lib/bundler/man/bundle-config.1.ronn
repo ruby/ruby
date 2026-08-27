@@ -193,6 +193,14 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
    setting enabled to move each one into the store. Being experimental, the
    name and behavior of this setting may change in a future release.
 
+   The value is read in three ways. An empty value and the false values
+   Bundler takes everywhere else (`false`, `f`, `no`, `n`, `0`) turn the
+   store off. `true`, `t`, `yes`, `y`, `on` and `1` select the native store.
+   Case does not matter for any of those. Anything else is a backend name,
+   taken as written, and only lowercase letters, digits, `_` and `-` are
+   recognized in one. So `off` names a backend rather than turning the store
+   off, which `false` does.
+
    A credential kept in the store is never printed back. `bundle config get
    <host>` and `bundle config list` name the key and say that its value lives
    in the credential store. With `--parseable`, such a key is left out

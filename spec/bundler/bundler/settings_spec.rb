@@ -275,6 +275,53 @@ that would suck --ehhh=oh geez it looks like i might have broken bundler somehow
     end
   end
 
+  describe "#credential_store_spec" do
+    it "is off when the setting is unset" do
+      expect(settings.send(:credential_store_spec)).to be_nil
+    end
+
+    it "reads the same false spellings as every other Bundler boolean" do
+      ["", "false", "FALSE", "f", "no", "n", "0"].each do |off|
+        settings.set_local "credential_store", off
+
+        expect(settings.send(:credential_store_spec)).to be_nil, "#{off.inspect} should turn the store off"
+      end
+    end
+
+    it "reads the boolean true spellings as this platform's native store" do
+      %w[true TRUE t yes y on 1].each do |on|
+        settings.set_local "credential_store", on
+
+        expect(settings.send(:credential_store_spec)).to be(true), "#{on.inspect} should select the native store"
+      end
+    end
+
+    it "reads anything else as a backend name, `off` included" do
+      %w[1password off 1Password].each do |name|
+        settings.set_local "credential_store", name
+
+        expect(settings.send(:credential_store_spec)).to eq(name)
+      end
+    end
+
+    it "lets a host override the global setting" do
+      settings.set_local "credential_store", "1password"
+      settings.set_local "credential_store.gemserver.example.org", "false"
+
+      expect(settings.send(:credential_store_spec, "gemserver.example.org")).to be_nil
+      expect(settings.send(:credential_store_spec, "other.example.org")).to eq("1password")
+    end
+
+    it "survives an undecodable environment variable" do
+      # #to_bool refuses these bytes too, not just String#downcase.
+      without_env_side_effects do
+        ENV["BUNDLE_CREDENTIAL_STORE"] = "\xff".dup.force_encoding("UTF-8")
+
+        expect(settings.send(:credential_store_spec)).to eq(ENV["BUNDLE_CREDENTIAL_STORE"])
+      end
+    end
+  end
+
   describe "#credentials_for" do
     let(:uri) { Gem::URI("https://gemserver.example.org/") }
     let(:credentials) { "username:password" }
