@@ -582,7 +582,7 @@ ensure_box_ext_tmp_dir(void)
         uint64_t suffix;
         if (ruby_fill_random_bytes(&suffix, sizeof(suffix), FALSE) != 0) {
             /* no random source; mkdir(0700) below still refuses hijacked names */
-            suffix = ((uint64_t)getpid() << 32) ^ (uint64_t)(uintptr_t)&suffix ^ (uint64_t)retry;
+            suffix = (uint64_t)(uintptr_t)&suffix ^ (uint64_t)retry;
         }
         int wrote = snprintf(path, sizeof(path), "%s%s%sp%"PRI_PIDT_PREFIX"u_%.16"PRIx64,
                              tmp_dir, tmp_dir_has_dirsep ? "" : DIRSEP,
