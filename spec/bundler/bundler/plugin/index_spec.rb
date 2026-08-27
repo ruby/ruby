@@ -277,6 +277,15 @@ RSpec.describe Bundler::Plugin::Index do
       expect(new_index.load_paths(plugin_name)).to eq([plugin_root.join("~nosuchuser", "lib").to_s])
     end
 
+    it "keeps an absolute path that only looks like it is under the plugin root" do
+      escaping_path = File.join(Bundler::Plugin.root.to_s, "..", "..", "escaping-plugin")
+
+      index.register_plugin("escaping-plugin", escaping_path, [File.join(escaping_path, "lib")], [], [], [])
+
+      new_index = Index.new
+      expect(new_index.installed?("escaping-plugin")).to eq(escaping_path)
+    end
+
     it "keeps paths outside the plugin root as absolute" do
       outside_path = tmp.join("outside", "external-plugin")
       FileUtils.mkdir_p(outside_path.join("lib"))

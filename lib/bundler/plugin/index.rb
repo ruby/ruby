@@ -231,7 +231,7 @@ module Bundler
       end
 
       # Expanded here, not by the caller: what gets stored stays joined, because
-      # the rest of the class matches it against Plugin.root as written.
+      # #installed_in_plugin_root? matches it against Plugin.root as written.
       def contained_in?(path, base)
         path = File.expand_path(path)
         base = File.expand_path(base)
@@ -264,12 +264,9 @@ module Bundler
         pathname = Pathname.new(path)
         return path unless pathname.absolute?
 
-        base_path = Pathname.new(base)
-        if pathname == base_path || pathname.to_s.start_with?(base_path.to_s + File::SEPARATOR)
-          pathname.relative_path_from(base_path).to_s
-        else
-          path
-        end
+        return path unless contained_in?(pathname.to_s, base)
+
+        pathname.relative_path_from(Pathname.new(base)).to_s
       end
 
       def absolutize_path(path, base)
