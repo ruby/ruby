@@ -371,6 +371,17 @@ static const rb_data_type_t some_typed_data_type = {
 };
 ```
 
+### Tip: 🟧 _Consider using `RUBY_TYPED_THREAD_SAFE_FREE`_
+
+Impact: _Faster GC when multiple Ractors are running_
+
+Why:
+1. `RUBY_TYPED_THREAD_SAFE_FREE` (new in Ruby 4.1) tells Ruby it's safe to call your `dfree` function from multiple Ractors in parallel, letting Ractor-local GC sweep objects of this type without deferring
+2. Without it, once more than one Ractor is running, Ruby doesn't know if it's safe to call `dfree` concurrently, so it defers freeing those objects to a later time
+3. Having no `dfree` function, or using `RUBY_TYPED_DEFAULT_FREE` (as in our running example), is already automatically safe to sweep in parallel -- this flag only matters if you have a custom `dfree`
+
+Do make sure your `dfree` is genuinely thread-safe (doesn't mutate global/shared state) before adding this flag.
+
 ### Tip: 🟧 _Consider using `RUBY_TYPED_EMBEDDABLE`_
 
 Impact: _Faster GC, fewer memory allocations, better code performance (trade off with complexity)_
