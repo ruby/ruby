@@ -582,7 +582,7 @@ class TestBox < Test::Unit::TestCase
     assert_equal nil, $,
 
     # used only in box
-    assert_not_include? global_variables, :$used_only_in_box
+    assert_not_include global_variables, :$used_only_in_box
     @box::UniqueGvar.write(123)
     assert_equal 123, @box::UniqueGvar.read
     assert_nil $used_only_in_box
