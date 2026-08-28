@@ -2946,26 +2946,28 @@ chmod_internal(const char *path, void *mode)
 
 /*
  *  call-seq:
- *     File.chmod(mode, *paths) -> integer
+ *    File.chmod(mode, *paths) -> integer
  *
- *  Changes the mode (i.e., permissions) of the entries of each the given +paths+;
- *  see {File Permissions}[rdoc-ref:File@File+Permissions].
- *  Returns the count of the given +paths+:
+ *  Changes the modes of each of the entries at each the given +paths+;
+ *  returns the count of the given +paths+.
+ *  See {Filesystem Modes}[rdoc-ref:file/filesystem_modes.md]
+ *  and especially {Setting a Mode}[rdoc-ref:file/filesystem_modes.md@Setting+a+Mode].
  *
- *    filepath = 't.tmp'
- *    File.write(filepath, 'foo')
- *    dirpath = 'tempdir'
- *    Dir.mkdir(dirpath)
- *    File::Stat.new(filepath).mode.to_s(8) # => "100664"
- *    File::Stat.new(dirpath).mode.to_s(8)  # => "40775"
- *    File.chmod(0775, filepath, dirpath)   # => 2
- *    File::Stat.new(filepath).mode.to_s(8) # => "100775"
- *    File::Stat.new(dirpath).mode.to_s(8)  # => "40775"
- *    File.chmod(0664, filepath, dirpath)   # => 2
- *    File::Stat.new(filepath).mode.to_s(8) # => "100664"
- *    File::Stat.new(dirpath).mode.to_s(8)  # => "40664"
- *    File.delete(filepath)
- *    Dir.rmdir(dirpath)
+ *  These examples use
+ *  a {helper method}[rdoc-ref:file/filesystem_modes.md@Helper+Method], +mode+,
+ *  that displays a mode both in octal digits and in characters:
+ *
+ *    dirpath = 'doc/foo'
+ *    filepath = File.join(dirpath, 't.tmp')
+ *    Dir.mkdir(dirpath)          # Create directory.
+ *    mode(dirpath)               # => "040775 drwxrwxr-x"
+ *    File.write(filepath, 'bar') # Create file.
+ *    mode(filepath)              # => "100664 -rw-rw-r--"
+ *    File.chmod(0755, filepath)  # Change file mode.
+ *    mode(filepath)              # => "100755 -rwxr-xr-x"
+ *    File.chmod(0664, dirpath)   # Change directory mode.
+ *    mode(dirpath)               # => "040664 drw-rw-r--"
+ *    FileUtils.rm_rf(dirpath)    # Clean up.
  *
  */
 
@@ -3005,15 +3007,25 @@ rb_fchmod(struct rb_io* io, mode_t mode)
 
 /*
  *  call-seq:
- *     file.chmod(mode_int)   -> 0
+ *    chmod(mode) -> 0
  *
- *  Changes permission bits on <i>file</i> to the bit pattern
- *  represented by <i>mode_int</i>. Actual effects are platform
- *  dependent; on Unix systems, see <code>chmod(2)</code> for details.
- *  Follows symbolic links. Also see File#lchmod.
+ *  Changes the mode of +self+;  returns '0'.
+ *  See {Filesystem Modes}[rdoc-ref:file/filesystem_modes.md]
+ *  and especially {Setting a Mode}[rdoc-ref:file/filesystem_modes.md@Setting+a+Mode].
  *
- *     f = File.new("out", "w");
- *     f.chmod(0644)   #=> 0
+ *  These examples use
+ *  a {helper method}[rdoc-ref:file/filesystem_modes.md@Helper+Method], +mode+,
+ *  that displays a mode both in octal digits and in characters:
+ *
+ *    filepath = 'doc/t.tmp'
+ *    File.write(filepath, 'foo')
+ *    file = File.new(filepath)
+ *    mode(filepath)      # => "100664 -rw-rw-r--"
+ *    file.chmod(0775)
+ *    mode(filepath)      # => "100775 -rwxrwxr-x"
+ *    file.close
+ *    File.delete(filepath)
+ *
  */
 
 static VALUE
