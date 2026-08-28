@@ -873,7 +873,7 @@ class Gem::TestCase < Test::Unit::TestCase
   # Builds a gem from +spec+ and places it in <tt>File.join @gemhome,
   # 'cache'</tt>.  Automatically creates files based on +spec.files+
 
-  def util_build_gem(spec)
+  def util_build_gem(spec, ruby_abi: nil)
     dir = spec.gem_dir
     FileUtils.mkdir_p dir
 
@@ -887,12 +887,14 @@ class Gem::TestCase < Test::Unit::TestCase
         end
       end
 
+      built_gem_name = nil
       use_ui Gem::MockGemUi.new do
-        Gem::Package.build spec
+        built_gem_name = Gem::Package.build spec, false, false, nil, ruby_abi
       end
 
-      cache = spec.cache_file
+      cache = File.join File.dirname(spec.cache_file), File.basename(built_gem_name)
       FileUtils.mv File.basename(cache), cache
+      cache
     end
   end
 
@@ -1028,11 +1030,12 @@ class Gem::TestCase < Test::Unit::TestCase
 
   ##
   # Creates a gem with +name+, +version+ and +deps+.  The specification will
-  # be yielded before gem creation for customization.  The gem will be placed
-  # in <tt>File.join @tempdir, 'gems'</tt>.  The specification and .gem file
-  # location are returned.
+  # be yielded before gem creation for customization.  When +ruby_abi+ is set,
+  # the gem is built using a content-addressable file name for that Ruby ABI.
+  # The gem will be placed in <tt>File.join @tempdir, 'gems'</tt>.  The
+  # specification and .gem file location are returned.
 
-  def util_gem(name, version, deps = nil, &block)
+  def util_gem(name, version, deps = nil, ruby_abi: nil, &block)
     if deps
       block = proc do |s|
         deps.keys.each do |n|
@@ -1043,11 +1046,11 @@ class Gem::TestCase < Test::Unit::TestCase
 
     spec = quick_gem(name, version, &block)
 
-    util_build_gem spec
+    built_gem_path = util_build_gem spec, ruby_abi: ruby_abi
 
-    cache_file = File.join @tempdir, "gems", "#{spec.original_name}.gem"
+    cache_file = File.join @tempdir, "gems", File.basename(built_gem_path)
     FileUtils.mkdir_p File.dirname cache_file
-    FileUtils.mv spec.cache_file, cache_file
+    FileUtils.mv built_gem_path, cache_file
     FileUtils.rm spec.spec_file
 
     spec.loaded_from = nil
