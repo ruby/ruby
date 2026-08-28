@@ -8,7 +8,6 @@ class TestTDataNonThreadSafeFree < Test::Unit::TestCase
       ITERS = 20
       BATCH = 10000
 
-      # TODO: use GC.start once a `global: false` option is available
       ractors = RACTORS.times.map do
         Ractor.new do
           ITERS.times { Bug::TDataNonThreadSafeFree.make(BATCH) }
@@ -20,7 +19,7 @@ class TestTDataNonThreadSafeFree < Test::Unit::TestCase
       max = Bug::TDataNonThreadSafeFree.max_concurrent_free
       total = Bug::TDataNonThreadSafeFree.total_frees
 
-      assert_operator total, :>, 0, "expected objects to actually be freed"
+      assert_operator total, :>, 0, "expected all tdatas to have been freed (finalizers or postponed job)"
       assert_operator max, :==, 1,
         "non-thread-safe dfree ran concurrently (BUG!): observed #{max} simultaneous " \
         "frees across #{total} total; Ractor-local GC must not invoke a dfree " \
@@ -47,7 +46,7 @@ class TestTDataNonThreadSafeFree < Test::Unit::TestCase
       end
       ractors.each(&:value)
       assert_operator Bug::TDataNonThreadSafeFree.total_frees, :>, 0,
-        "A postponed job should have fired and freed deferred tdatas (conservative GC)"
+        "Finalizers should have ran or postponed job should have fired and freed deferred tdatas"
 
       max = Bug::TDataNonThreadSafeFree.max_concurrent_free
       assert_operator max, :==, 1,
@@ -64,10 +63,10 @@ class TestTDataNonThreadSafeFree < Test::Unit::TestCase
       BATCH = 50_000
 
       ITERS.times { Bug::TDataNonThreadSafeFree.make(BATCH) }
-      4.times { GC.start }
+      GC.start
 
       total = Bug::TDataNonThreadSafeFree.total_frees
-      assert_operator total, :>, 0,
+      assert_operator total, :==, ITERS * BATCH,
         "expected a single-Ractor major GC to free non-thread-safe T_DATA"
     RUBY
   end
@@ -85,7 +84,7 @@ class TestTDataNonThreadSafeFree < Test::Unit::TestCase
 
       if before == after
         total = Bug::TDataNonThreadSafeFree.total_frees
-        assert_operator total, :==, 0, "If didn't hit threshold, shouldn't trigger postponed job"
+        assert_operator total, :==, 0, "If didn't hit postponed job threshold or trigger GC, shouldn't have freed any"
       end
       r.send(nil); r.join
     RUBY
@@ -104,13 +103,13 @@ class TestTDataNonThreadSafeFree < Test::Unit::TestCase
 
       if before == after
         total = Bug::TDataNonThreadSafeFree.total_frees
-        assert_operator total, :==, 0, "If didn't hit threshold, shouldn't trigger postponed job"
+        assert_operator total, :==, 0, "If didn't hit postponed job threshold or trigger GC, shouldn't have freed any"
       end
 
       r.send(nil); r.value
-      3.times { GC.start } # single-ractor major GCs
+      GC.start # single-ractor major GC
       total = Bug::TDataNonThreadSafeFree.total_frees
-      assert_operator total, :>, 0,
+      assert_operator total, :==, BATCH,
         "expected a single-Ractor major GC to free non-thread-safe T_DATA"
     RUBY
   end
@@ -128,13 +127,13 @@ class TestTDataNonThreadSafeFree < Test::Unit::TestCase
 
       if before == after
         total = Bug::TDataNonThreadSafeFree.total_frees
-        assert_operator total, :==, 0, "If didn't hit threshold, shouldn't trigger postponed job"
+        assert_operator total, :==, 0, "If didn't hit postponed job threshold or trigger GC, shouldn't have freed any"
       end
 
-      3.times { GC.start } # global GCs
+      GC.start # global GC
       total = Bug::TDataNonThreadSafeFree.total_frees
-      assert_operator total, :>, 0,
-        "expected a multi-ractor global GC to free non-thread-safe T_DATA"
+      assert_operator total, :==, BATCH,
+        "expected a multi-ractor global GC to free non-thread-safe T_DATA (under barrier)"
       r.send(nil); r.join
     RUBY
   end

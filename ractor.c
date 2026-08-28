@@ -513,12 +513,6 @@ ractor_next_id(void)
     return id;
 }
 
-uint32_t
-rb_ractor_last_id(void)
-{
-    return (uint32_t)RUBY_ATOMIC_LOAD(ractor_last_id);
-}
-
 static void
 vm_insert_ractor0(rb_vm_t *vm, rb_ractor_t *r, bool single_ractor_mode)
 {

@@ -1952,12 +1952,6 @@ rb_gc_impl_garbage_object_p(void *objspace_ptr, VALUE obj)
     return !result;
 }
 
-bool
-rb_gc_impl_internal_object_p(void *objspace_ptr, VALUE obj)
-{
-    return false;
-}
-
 void
 rb_gc_impl_set_event_hook(void *objspace_ptr, const rb_event_flag_t event)
 {
