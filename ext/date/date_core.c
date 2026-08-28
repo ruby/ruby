@@ -4515,7 +4515,8 @@ d_new_by_frags(VALUE klass, VALUE hash, VALUE sg)
 }
 
 VALUE date__strptime(const char *str, size_t slen,
-		     const char *fmt, size_t flen, VALUE hash);
+		     const char *fmt, size_t flen,
+		     VALUE hash, rb_encoding *enc);
 
 static VALUE
 date_s__strptime_internal(int argc, VALUE *argv, VALUE klass,
@@ -4524,6 +4525,7 @@ date_s__strptime_internal(int argc, VALUE *argv, VALUE klass,
     VALUE vstr, vfmt, hash;
     const char *str, *fmt;
     size_t slen, flen;
+    rb_encoding *enc;
 
     rb_scan_args(argc, argv, "11", &vstr, &vfmt);
 
@@ -4537,33 +4539,18 @@ date_s__strptime_internal(int argc, VALUE *argv, VALUE klass,
     if (argc < 2) {
 	fmt = default_fmt;
 	flen = strlen(default_fmt);
+	enc = rb_enc_get(vstr);
     }
     else {
 	if (!rb_enc_str_asciicompat_p(vfmt))
 	    rb_raise(rb_eArgError,
 		     "format should have ASCII compatible encoding");
+	enc = rb_enc_check(vstr, vfmt);
 	fmt = RSTRING_PTR(vfmt);
 	flen = RSTRING_LEN(vfmt);
     }
     hash = rb_hash_new();
-    if (NIL_P(date__strptime(str, slen, fmt, flen, hash)))
-	return Qnil;
-
-    {
-	VALUE zone = ref_hash("zone");
-	VALUE left = ref_hash("leftover");
-
-	if (!NIL_P(zone)) {
-	    rb_enc_copy(zone, vstr);
-	    set_hash("zone", zone);
-	}
-	if (!NIL_P(left)) {
-	    rb_enc_copy(left, vstr);
-	    set_hash("leftover", left);
-	}
-    }
-
-    return hash;
+    return date__strptime(str, slen, fmt, flen, hash, enc);
 }
 
 /*
