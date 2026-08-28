@@ -609,7 +609,7 @@ class TestGemCommandsBuildCommand < Gem::TestCase
   def test_build_signed_gem_ml_dsa_65
     pend "openssl is missing" unless Gem::HAVE_OPENSSL && !Gem.java_platform?
 
-    omit_unless_support_pqc
+    omit_unless_support_ml_dsa_key
 
     trust_dir = Gem::Security.trust_dir
 

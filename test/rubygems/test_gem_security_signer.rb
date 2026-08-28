@@ -70,7 +70,7 @@ class TestGemSecuritySigner < Gem::TestCase
   end
 
   def test_initialize_key_path_ml_dsa_65
-    omit_unless_support_pqc
+    omit_unless_support_ml_dsa_key
 
     key_file = ML_DSA_65_PRIVATE_KEY_FILE
 
@@ -103,7 +103,7 @@ class TestGemSecuritySigner < Gem::TestCase
   end
 
   def test_initialize_encrypted_key_path_ml_dsa_65
-    omit_unless_support_pqc
+    omit_unless_support_ml_dsa_key
 
     key_file = ML_DSA_65_ENCRYPTED_PRIVATE_KEY_FILE
 
@@ -153,7 +153,7 @@ class TestGemSecuritySigner < Gem::TestCase
   end
 
   def test_sign_ml_dsa_65
-    omit_unless_support_pqc
+    omit_unless_support_ml_dsa_key
 
     signer = Gem::Security::Signer.new ML_DSA_65_PRIVATE_KEY, [ML_DSA_65_PUBLIC_CERT]
 

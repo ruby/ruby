@@ -52,6 +52,41 @@ module Gem::PQCUtilities
       end
   end
 
+  ##
+  # Returns whether the runtime can sign an X.509 certificate with an ML-DSA
+  # key. Ruby OpenSSL rejects the nil digest that needs before 3.3, so
+  # support_ml_dsa_key? alone does not cover certificate building.
+
+  def self.support_ml_dsa_cert?
+    return @support_ml_dsa_cert unless @support_ml_dsa_cert.nil?
+
+    @support_ml_dsa_cert =
+      begin
+        key = OpenSSL::PKey.generate_key("ML-DSA-65")
+        cert = OpenSSL::X509::Certificate.new
+        cert.subject = cert.issuer = OpenSSL::X509::Name.new([["CN", "probe"]])
+        cert.public_key = OpenSSL::PKey.read(key.public_to_pem)
+        cert.not_before = Time.now
+        cert.not_after = Time.now + 60
+        cert.sign(key, nil)
+        true
+      # NoMethodError: JRuby's Ruby OpenSSL lacks generate_key.
+      # TypeError: Ruby OpenSSL < 3.3 rejects a nil digest here.
+      rescue OpenSSL::PKey::PKeyError, OpenSSL::X509::CertificateError,
+             NoMethodError, TypeError
+        false
+      end
+  end
+
+  ##
+  # Returns the algorithm named in the SubjectPublicKeyInfo of +key+, such as
+  # "ML-DSA-65". OpenSSL::PKey::PKey#inspect only names the algorithm on Ruby
+  # OpenSSL >= 4.0, and #oid raises for the provider-backed keys ML-DSA uses.
+
+  def self.key_algorithm_name(key)
+    OpenSSL::ASN1.decode(key.public_to_der).value.first.value.first.ln
+  end
+
   # Probe an actual PQC handshake between a forced-PQC server and a
   # default-configured client, mirroring what the integration tests exercise.
   # Memoized so the probe runs at most once per process.
@@ -68,10 +103,10 @@ module Gem::PQCUtilities
     ctx.key = Gem::PEMUtilities::MLDSA65_SSL_KEY
     # ctx.key is nil when unsupported ML-DSA-65 algorithm's file is read with
     # old OpenSSL versions.
-    return nil unless ctx.key
+    return false unless ctx.key
 
     # ctx.groups (OpenSSL::SSL::SSLContext#groups) requires Ruby OpenSSL >= 4.0.
-    return nil unless ctx.respond_to?(:groups=)
+    return false unless ctx.respond_to?(:groups=)
 
     ctx.groups = "X25519MLKEM768"
     ssl_server = OpenSSL::SSL::SSLServer.new(server, ctx)

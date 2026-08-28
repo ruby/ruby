@@ -104,30 +104,30 @@ class TestGemSecurity < Gem::TestCase
   end
 
   def test_class_create_key_ml_dsa_44
-    omit_unless_support_pqc
+    omit_unless_support_ml_dsa_key
 
     key = Gem::Security.create_key "ml-dsa-44"
 
     assert_kind_of OpenSSL::PKey::PKey, key
-    assert_match(/type_name=ML-DSA-44/, key.inspect)
+    assert_equal "ML-DSA-44", Gem::PQCUtilities.key_algorithm_name(key)
   end
 
   def test_class_create_key_ml_dsa_65
-    omit_unless_support_pqc
+    omit_unless_support_ml_dsa_key
 
     key = Gem::Security.create_key "ml-dsa-65"
 
     assert_kind_of OpenSSL::PKey::PKey, key
-    assert_match(/type_name=ML-DSA-65/, key.inspect)
+    assert_equal "ML-DSA-65", Gem::PQCUtilities.key_algorithm_name(key)
   end
 
   def test_class_create_key_ml_dsa_87
-    omit_unless_support_pqc
+    omit_unless_support_ml_dsa_key
 
     key = Gem::Security.create_key "ml-dsa-87"
 
     assert_kind_of OpenSSL::PKey::PKey, key
-    assert_match(/type_name=ML-DSA-87/, key.inspect)
+    assert_equal "ML-DSA-87", Gem::PQCUtilities.key_algorithm_name(key)
   end
 
   def test_class_create_key_ml_dsa_44_without_ml_dsa_support
@@ -207,7 +207,7 @@ class TestGemSecurity < Gem::TestCase
   end
 
   def test_class_digest_required_ml_dsa_65
-    omit_unless_support_pqc
+    omit_unless_support_ml_dsa_key
 
     refute Gem::Security.digest_required?(Gem::Security.create_key("ml-dsa-65"))
   end
@@ -225,7 +225,7 @@ class TestGemSecurity < Gem::TestCase
   end
 
   def test_class_get_public_key_ml_dsa_65
-    omit_unless_support_pqc
+    omit_unless_support_ml_dsa_key
 
     pkey = Gem::Security.get_public_key(ML_DSA_65_PRIVATE_KEY)
 
@@ -334,7 +334,7 @@ class TestGemSecurity < Gem::TestCase
   end
 
   def test_class_sign_ml_dsa_65
-    omit_unless_support_pqc
+    omit_unless_support_ml_dsa_cert
 
     assert_sign ML_DSA_65_PUBLIC_CERT, ML_DSA_65_PRIVATE_KEY
   end
@@ -362,7 +362,7 @@ class TestGemSecurity < Gem::TestCase
   end
 
   def test_class_write_private_key_ml_dsa_65
-    omit_unless_support_pqc
+    omit_unless_support_ml_dsa_key
 
     key = Gem::Security.create_key "ml-dsa-65"
 
@@ -394,7 +394,7 @@ class TestGemSecurity < Gem::TestCase
   end
 
   def test_class_write_private_key_encrypted_ml_dsa_65
-    omit_unless_support_pqc
+    omit_unless_support_ml_dsa_key
 
     key = Gem::Security.create_key "ml-dsa-65"
 
@@ -433,7 +433,7 @@ class TestGemSecurity < Gem::TestCase
   end
 
   def test_class_write_private_key_encrypted_cipher_ml_dsa_65
-    omit_unless_support_pqc
+    omit_unless_support_ml_dsa_key
 
     key = Gem::Security.create_key "ml-dsa-65"
 

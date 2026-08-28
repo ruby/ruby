@@ -158,7 +158,7 @@ Added '/CN=alternate/DC=example'
   end
 
   def test_execute_build_key_algorithm_ml_dsa_65_key
-    omit_unless_support_pqc
+    omit_unless_support_ml_dsa_cert
 
     passphrase = "Foo bar"
 
@@ -193,7 +193,8 @@ Added '/CN=alternate/DC=example'
     assert_path_exist cert_path
     cert = OpenSSL::X509::Certificate.new(File.read(cert_path))
     assert cert.public_key.is_a? OpenSSL::PKey::PKey
-    assert_match(/type_name=ML-DSA-65/, cert.public_key.inspect)
+    assert_equal "ML-DSA-65",
+                 Gem::PQCUtilities.key_algorithm_name(cert.public_key)
   end
 
   def test_execute_build_key_algorithm_ml_dsa_65_key_without_ml_dsa_support
@@ -390,7 +391,7 @@ Added '/CN=alternate/DC=example'
   end
 
   def test_execute_build_ml_dsa_65_key
-    omit_unless_support_pqc
+    omit_unless_support_ml_dsa_cert
 
     @cmd.handle_options %W[
       --build nobody@example.com
@@ -414,7 +415,7 @@ Added '/CN=alternate/DC=example'
   end
 
   def test_execute_build_encrypted_ml_dsa_65_key
-    omit_unless_support_pqc
+    omit_unless_support_ml_dsa_cert
 
     @cmd.handle_options %W[
       --build nobody@example.com
@@ -448,7 +449,7 @@ Added '/CN=alternate/DC=example'
   end
 
   def test_execute_certificate_ml_dsa_65
-    omit_unless_support_pqc
+    omit_unless_support_ml_dsa_key
 
     use_ui @ui do
       @cmd.handle_options %W[--certificate #{ML_DSA_65_PUBLIC_CERT_FILE}]
@@ -512,7 +513,7 @@ Added '/CN=alternate/DC=example'
   end
 
   def test_execute_private_ml_dsa_65_key
-    omit_unless_support_pqc
+    omit_unless_support_ml_dsa_key
 
     use_ui @ui do
       @cmd.send :handle_options, %W[--private-key #{ML_DSA_65_PRIVATE_KEY_FILE}]
@@ -538,7 +539,7 @@ Added '/CN=alternate/DC=example'
   end
 
   def test_execute_encrypted_private_ml_dsa_65_key
-    omit_unless_support_pqc
+    omit_unless_support_ml_dsa_key
 
     use_ui @ui do
       @cmd.send :handle_options,
