@@ -6,6 +6,16 @@ $LOAD_PATH.unshift Spec::Path.tmp_root.join("compact_index/lib").to_s
 require "compact_index"
 require "digest"
 
+# The vendored compact_index code targets rubygems.org's Rails environment;
+# provide the ActiveSupport predicate it relies on when running without Rails.
+unless Object.method_defined?(:present?)
+  class Object
+    def present?
+      respond_to?(:empty?) ? !empty? : !!self
+    end
+  end
+end
+
 class CompactIndexAPI < Endpoint
   helpers do
     include Spec::Path
@@ -85,7 +95,7 @@ class CompactIndexAPI < Endpoint
             end
             begin
               checksum = ENV.fetch("BUNDLER_SPEC_#{name.upcase}_CHECKSUM") do
-                Digest(:SHA256).file("#{gem_repo}/gems/#{spec.original_name}.gem").hexdigest
+                Digest(:SHA256).file("#{gem_repo}/gems/#{spec.full_name}.gem").hexdigest
               end
             rescue StandardError
               checksum = nil
@@ -98,7 +108,7 @@ class CompactIndexAPI < Endpoint
     end
 
     def build_gem_version(spec, deps, checksum)
-      CompactIndex::GemVersion.new(spec.version.version, spec.platform.to_s, checksum, nil,
+      CompactIndex::GemVersionV2.new(spec.version.version, spec.platform.to_s, checksum, nil,
         deps, spec.required_ruby_version.to_s, spec.required_rubygems_version.to_s)
     end
   end

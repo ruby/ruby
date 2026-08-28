@@ -2140,7 +2140,7 @@ class Gem::Specification < Gem::BasicSpecification
   # Return a NameTuple that represents this Specification
 
   def name_tuple
-    Gem::NameTuple.new name, version, original_platform
+    Gem::NameTuple.new name, version, original_platform, content_address: content_address
   end
 
   ##

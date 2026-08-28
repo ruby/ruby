@@ -19,6 +19,24 @@ class Gem::Source
   }.freeze
 
   ##
+  # Decoded compact index metadata for one content-addressable gem build:
+  # its +version+, content-address +suffix+, +ruby_abi+, and +platform+.
+  # Two infos are equal when their version and suffix match.
+
+  ContentAddressableInfo = Struct.new(:version, :suffix, :ruby_abi, :platform) do
+    def hash
+      [version, suffix].hash
+    end
+
+    def eql?(other)
+      other.is_a?(self.class) &&
+        version == other.version &&
+        suffix == other.suffix
+    end
+    alias_method :==, :eql?
+  end
+
+  ##
   # The URI this source will fetch gems from.
 
   attr_reader :uri
@@ -357,27 +375,6 @@ class Gem::Source
     compact_index_client.info(name)
   rescue Gem::RemoteFetcher::FetchError, Gem::CompactIndexClient::Error
     []
-  end
-
-  class ContentAddressableInfo
-    attr_reader :version, :suffix, :ruby_abi, :platform
-
-    def initialize(version, suffix, ruby_abi, platform = nil)
-      @version = version
-      @suffix = suffix
-      @ruby_abi = ruby_abi
-      @platform = platform
-    end
-
-    def hash
-      [@version, @suffix].hash
-    end
-
-    def eql?(other)
-      other.is_a?(ContentAddressableInfo) &&
-        version == other.version &&
-        suffix == other.suffix
-    end
   end
 
   def content_addressable_tuples(name, rows)

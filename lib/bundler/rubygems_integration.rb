@@ -144,7 +144,12 @@ module Bundler
 
     def spec_from_gem(path)
       require "rubygems/package"
-      Gem::Package.new(path).spec
+      package = Gem::Package.new(path)
+      spec = package.spec
+      if package.respond_to?(:content_address)
+        spec.content_address = package.content_address
+      end
+      spec
     end
 
     def build_gem(gem_dir, spec)

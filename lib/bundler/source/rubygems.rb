@@ -196,6 +196,8 @@ module Bundler
              "the security policy didn't allow it, with the message: #{e.message}"
           end
 
+          s.content_address = spec.content_address if spec.content_address
+
           spec.__swap__(s)
         end
 

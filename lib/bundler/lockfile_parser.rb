@@ -264,11 +264,13 @@ module Bundler
       checksums = $6
       name = $2
       version = $3
-      platform = $4
+      content_address = $4 if Gem::ContentAddress.match?($4)
+      platform = $4 unless content_address
 
       version = Gem::Version.new(version)
       platform = platform ? Gem::Platform.new(platform) : Gem::Platform::RUBY
-      full_name = Gem::NameTuple.new(name, version, platform).full_name
+      name_tuple = Gem::NameTuple.new(name, version, platform, content_address: content_address)
+      full_name = name_tuple.full_name
       spec = @specs[full_name]
 
       if name == "bundler"
@@ -295,11 +297,17 @@ module Bundler
 
       if spaces.size == 4
         # only load platform for non-dependency (spec) line
-        platform = $4
+        if Gem::ContentAddress.match?($4) && $6 && $6 != Gem::Platform::RUBY.to_s
+          content_address = $4
+          platform = $6
+        else
+          platform = $4
+          content_address = $6 if Gem::ContentAddress.match?($6)
+        end
 
         version = Gem::Version.new(version)
         platform = platform ? Gem::Platform.new(platform) : Gem::Platform::RUBY
-        @current_spec = LazySpecification.new(name, version, platform, @current_source, strict: @strict)
+        @current_spec = LazySpecification.new(name, version, platform, @current_source, content_address: content_address, strict: @strict)
         @current_source.add_dependency_names(name)
 
         @specs[@current_spec.full_name] = @current_spec

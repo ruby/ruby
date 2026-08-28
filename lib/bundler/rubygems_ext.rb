@@ -13,7 +13,34 @@ require "rubygems" unless defined?(Gem)
 # `Gem::Source` from the redefined `Gem::Specification#source`.
 require "rubygems/source"
 
+# Can be removed once RubyGems 4.0.0 support is dropped
+unless Gem::BasicSpecification.method_defined?(:content_address)
+  Gem::BasicSpecification.attr_accessor :content_address
+end
+
+# Can be removed once RubyGems 4.0.0 support is dropped
+unless Gem::NameTuple.method_defined?(:content_address)
+  Gem::NameTuple.attr_reader :content_address
+end
+
 module Gem
+  # Can be removed once RubyGems 4.0.0 support is dropped
+  unless defined?(Gem::ContentAddress)
+    module ContentAddress
+      def self.match?(token)
+        false
+      end
+
+      def self.applicable?(spec)
+        false
+      end
+
+      def self.content_addressed?(spec)
+        false
+      end
+    end
+  end
+
   # Can be removed once RubyGems 3.5.11 support is dropped
   unless Gem.respond_to?(:freebsd_platform?)
     def self.freebsd_platform?
@@ -417,7 +444,8 @@ module Gem
     unless Gem::NameTuple.new("a", Gem::Version.new("1"), Gem::Platform.new("x86_64-linux")).platform.is_a?(String)
       alias_method :initialize_with_platform, :initialize
 
-      def initialize(name, version, platform = Gem::Platform::RUBY)
+      def initialize(name, version, platform = Gem::Platform::RUBY, content_address = nil)
+        @content_address = content_address
         if Gem::Platform === platform
           initialize_with_platform(name, version, platform.to_s)
         else
@@ -426,7 +454,18 @@ module Gem
       end
     end
 
+    unless instance_method(:initialize).parameters.any? {|kind, name| kind == :key && name == :content_address }
+      alias_method :initialize_without_content_address, :initialize
+
+      def initialize(name, version, platform = Gem::Platform::RUBY, content_address: nil)
+        initialize_without_content_address(name, version, platform)
+        @content_address = content_address
+      end
+    end
+
     def lock_name
+      return "#{name} (#{version}-#{content_address})" if Gem::ContentAddress.match?(content_address)
+
       if platform == Gem::Platform::RUBY
         "#{name} (#{version})"
       else

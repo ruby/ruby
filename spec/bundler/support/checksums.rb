@@ -16,18 +16,18 @@ module Spec
         @checksums = @checksums.dup
       end
 
-      def checksum(repo, name, version, platform = Gem::Platform::RUBY, folder = "gems")
+      def checksum(repo, name, version, platform = Gem::Platform::RUBY, folder = "gems", content_address: nil)
         @bundler_registered = true if name == "bundler"
 
-        name_tuple = Gem::NameTuple.new(name, version, platform)
+        name_tuple = Gem::NameTuple.new(name, version, platform, content_address: content_address)
         gem_file = File.join(repo, folder, "#{name_tuple.full_name}.gem")
         File.open(gem_file, "rb") do |f|
           register(name_tuple, Bundler::Checksum.from_gem(f, "#{gem_file} (via ChecksumsBuilder#checksum)"))
         end
       end
 
-      def no_checksum(name, version, platform = Gem::Platform::RUBY)
-        name_tuple = Gem::NameTuple.new(name, version, platform)
+      def no_checksum(name, version, platform = Gem::Platform::RUBY, content_address: nil)
+        name_tuple = Gem::NameTuple.new(name, version, platform, content_address: content_address)
         register(name_tuple, nil)
       end
 

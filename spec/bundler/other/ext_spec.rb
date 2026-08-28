@@ -46,5 +46,20 @@ RSpec.describe "Gem::NameTuple" do
       expect(Gem::NameTuple.new("a", v("1.0.0"), "ruby").lock_name).to eq("a (1.0.0)")
       expect(Gem::NameTuple.new("a", v("1.0.0")).lock_name).to eq("a (1.0.0)")
     end
+
+    it "uses content_address in the lock name when set" do
+      expect(Gem::NameTuple.new("a", v("1.0.0"), "x86_64-linux", content_address: "abcdef12").lock_name).to eq("a (1.0.0-abcdef12)")
+      expect(Gem::NameTuple.new("a", v("1.0.0"), "ruby", content_address: "abcdef12").lock_name).to eq("a (1.0.0-abcdef12)")
+    end
+  end
+end
+
+RSpec.describe Bundler::LazySpecification do
+  describe "#to_lock" do
+    it "appends the content address after the platform lock name when set" do
+      spec = Bundler::LazySpecification.new("mygem", v("1.0"), "x86_64-linux", nil, content_address: "abcdef1234")
+
+      expect(spec.to_lock).to eq("    mygem (1.0-abcdef1234) x86_64-linux\n")
+    end
   end
 end

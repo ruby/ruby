@@ -145,6 +145,65 @@ RSpec.describe Bundler::LockfileParser do
 
     include_examples "parsing"
 
+    context "when a spec has a content address" do
+      let(:lockfile_contents) do
+        <<~L
+          GEM
+            remote: https://rubygems.org/
+            specs:
+              mygem (1.0-abcdef1234) x86_64-linux
+
+          PLATFORMS
+            x86_64-linux
+
+          DEPENDENCIES
+            mygem
+
+          CHECKSUMS
+            mygem (1.0-abcdef1234) sha256=814828c34f1315d7e7b7e8295184577cc4e969bad6156ac069d02d63f58d82e8
+
+          BUNDLED WITH
+             1.12.0.rc.2
+        L
+      end
+
+      it "parses the platform and content address" do
+        spec = subject.specs.find {|s| s.name == "mygem" }
+
+        expect(spec.platform).to eq(Gem::Platform.new("x86_64-linux"))
+        expect(spec.content_address).to eq("abcdef1234")
+
+        checksums = subject.sources.first.checksum_store.to_lock(spec)
+        expect(checksums).to eq("#{spec.lock_name} sha256=814828c34f1315d7e7b7e8295184577cc4e969bad6156ac069d02d63f58d82e8")
+      end
+    end
+
+    context "when a Ruby-platform suffix resembles a content address but no platform is present" do
+      let(:lockfile_contents) do
+        <<~L
+          GEM
+            remote: https://rubygems.org/
+            specs:
+              mygem (1.0-abcdef1234)
+
+          PLATFORMS
+            ruby
+
+          DEPENDENCIES
+            mygem
+
+          BUNDLED WITH
+             1.12.0.rc.2
+        L
+      end
+
+      it "does not parse the suffix as a content address" do
+        spec = subject.specs.find {|s| s.name == "mygem" }
+
+        expect(spec.content_address).to be_nil
+      end
+    end
+
     context "when an extra section is at the end" do
       let(:lockfile_contents) { super() + "\n\nFOO BAR\n  baz\n   baa\n    qux\n" }
       include_examples "parsing"

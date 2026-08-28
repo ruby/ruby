@@ -105,7 +105,7 @@ module Spec
         next if files.all? {|path| File.exist?(target_root.join(path)) }
 
         require "open-uri"
-        ref = ENV["COMPACT_INDEX_REF"] || "7c68a7b39761c61a66f9299f85b889ec39afc02c"
+        ref = ENV["COMPACT_INDEX_REF"] || "bdf05e24cd381402822387240f1697c0193ad171"
         files.each do |path|
           url = "https://raw.githubusercontent.com/rubygems/rubygems.org/#{ref}/#{path}"
           target = target_root.join(path)
