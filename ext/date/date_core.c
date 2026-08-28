@@ -992,11 +992,15 @@ c_valid_commercial_p(int y, int w, int d, double sg,
     if (w < 0) {
 	int rjd2;
 
+	if (w < -53) return 0;
 	c_commercial_to_jd(y + 1, 1, 1, sg, &rjd2, &ns2);
 	c_jd_to_commercial(rjd2 + w * 7, sg, &ry2, &rw2, &rd2);
 	if (ry2 != y)
 	    return 0;
 	w = rw2;
+    }
+    else {
+	if (w < 1 || 53 < w) return 0;
     }
     c_commercial_to_jd(y, w, d, sg, rjd, ns);
     c_jd_to_commercial(*rjd, sg, &ry2, rw, rd);

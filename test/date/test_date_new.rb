@@ -256,6 +256,11 @@ class TestDateNew < Test::Unit::TestCase
     end
   end
 
+  def test_commercial_p
+    assert_equal(false, Date.valid_commercial?(2024, -53, 1))
+    assert_equal(false, Date.valid_commercial?(2024, -1227133565, 1))
+  end
+
   def test_weeknum
     d = Date.weeknum
     dt = DateTime.weeknum
