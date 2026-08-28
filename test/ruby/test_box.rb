@@ -439,6 +439,35 @@ class TestBox < Test::Unit::TestCase
       assert_equal 42, 42.itself
     end;
   end
+
+  def test_marshal_round_trip_in_main_box
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      class BoxMarshalFoo
+        attr_reader :value
+        def initialize(value)
+          @value = value
+        end
+      end
+      obj = Marshal.load(Marshal.dump(BoxMarshalFoo.new(42))) # [Bug #22090]
+      assert_instance_of BoxMarshalFoo, obj
+      assert_equal 42, obj.value
+      assert_instance_of BoxMarshalFoo, Marshal.load(Marshal.dump(BoxMarshalFoo.new(1)), freeze: true)
+    end;
+  end
+
+  def test_marshal_resolves_classes_in_the_caller_box
+    setup_box
+
+    obj = @box.eval("class BoxMarshalBar; end; Marshal.load(Marshal.dump(BoxMarshalBar.new))")
+    assert_equal "BoxMarshalBar", obj.class.name
+
+    # a class defined only in the box is invisible from the main box
+    dump = @box.eval("Marshal.dump(BoxMarshalBar.new)")
+    assert_raise_with_message(ArgumentError, /undefined class\/module BoxMarshalBar/) do
+      Marshal.load(dump)
+    end
+  end
 end
 
 class TestBoxDescendantsMain

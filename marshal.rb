@@ -31,6 +31,7 @@ module Marshal
   #    # => [1039360, 1039380, 1039360, 1039380] -- only 2 different objects, object_ids repeating
   #
   def self.load(source, proc = nil, freeze: false)
+    Primitive.attr! :caller_box
     Primitive.marshal_load(source, proc, freeze)
   end
 
