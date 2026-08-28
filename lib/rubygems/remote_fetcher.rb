@@ -179,7 +179,7 @@ class Gem::RemoteFetcher
 
         remote_gem_path = Gem::Util.correct_for_windows_path(File.join(path, "gems", gem_file_name))
 
-        FileUtils.cp(remote_gem_path, local_gem_path)
+        atomic_copy(remote_gem_path, local_gem_path)
       rescue Errno::EACCES
         local_gem_path = source_uri.to_s
       end
@@ -196,7 +196,7 @@ class Gem::RemoteFetcher
       source_path = Gem::UriFormatter.new(source_path).unescape
 
       begin
-        FileUtils.cp source_path, local_gem_path unless
+        atomic_copy(source_path, local_gem_path) unless
           File.identical?(source_path, local_gem_path)
       rescue Errno::EACCES
         local_gem_path = source_uri.to_s
@@ -358,6 +358,26 @@ class Gem::RemoteFetcher
     end
 
     File.writable?(cache_dir)
+  end
+
+  def atomic_copy(source_path, destination_path)
+    File.open(source_path, "rb") do |source|
+      # FileUtils.cp passed the source mode to File.open, so it only reached a
+      # file being created and the umask still applied to it. The writer
+      # already carries over the mode of a file it replaces.
+      mode = source.stat.mode & 0o777 & ~File.umask
+      replacing = File.exist?(destination_path)
+
+      Gem::AtomicFileWriter.open(destination_path) do |io|
+        IO.copy_stream(source, io)
+
+        begin
+          io.chmod(mode) unless replacing
+        rescue Errno::EPERM, Errno::EACCES
+          # the filesystem does not carry permissions
+        end
+      end
+    end
   end
 
   def proxy_for(proxy, uri)

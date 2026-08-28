@@ -672,6 +672,63 @@ class TestGemRemoteFetcher < Gem::TestCase
     Gem.configuration.global_gem_cache = false
   end
 
+  def test_download_local_takes_the_source_permissions_through_the_umask
+    omit "File.chmod doesn't work on Windows" if Gem.win_platform?
+    omit "doesn't work if tempdir has +" if @tempdir.include?("+")
+
+    FileUtils.mv @a1_gem, @tempdir
+    local_path = File.join @tempdir, @a1.file_name
+    FileUtils.chmod 0o666, local_path
+    inst = nil
+
+    Dir.chdir @tempdir do
+      inst = Gem::RemoteFetcher.fetcher
+    end
+
+    assert_equal @a1.cache_file, inst.download(@a1, local_path)
+    assert_equal 0o666 & ~File.umask, File.stat(@a1.cache_file).mode & 0o777
+  end
+
+  def test_download_local_keeps_a_restrictive_source_permission
+    omit "File.chmod doesn't work on Windows" if Gem.win_platform?
+    omit "doesn't work if tempdir has +" if @tempdir.include?("+")
+
+    FileUtils.mv @a1_gem, @tempdir
+    local_path = File.join @tempdir, @a1.file_name
+    FileUtils.chmod 0o600, local_path
+    inst = nil
+
+    Dir.chdir @tempdir do
+      inst = Gem::RemoteFetcher.fetcher
+    end
+
+    # a mode the writer would not produce on its own, so dropping the chmod
+    # would show up here
+    assert_equal @a1.cache_file, inst.download(@a1, local_path)
+    assert_equal 0o600, File.stat(@a1.cache_file).mode & 0o777
+  end
+
+  def test_download_local_keeps_the_replaced_cache_file_permissions
+    omit "File.chmod doesn't work on Windows" if Gem.win_platform?
+    omit "doesn't work if tempdir has +" if @tempdir.include?("+")
+
+    FileUtils.mv @a1_gem, @tempdir
+    local_path = File.join @tempdir, @a1.file_name
+    FileUtils.chmod 0o666, local_path
+    inst = nil
+
+    FileUtils.mkdir_p File.dirname(@a1.cache_file)
+    FileUtils.touch @a1.cache_file
+    FileUtils.chmod 0o640, @a1.cache_file
+
+    Dir.chdir @tempdir do
+      inst = Gem::RemoteFetcher.fetcher
+    end
+
+    assert_equal @a1.cache_file, inst.download(@a1, local_path)
+    assert_equal 0o640, File.stat(@a1.cache_file).mode & 0o777
+  end
+
   def test_download_to_current_directory_reached_through_a_symlink
     omit "symlinks are not usable on Windows" if Gem.win_platform?
 
@@ -791,6 +848,27 @@ class TestGemRemoteFetcher < Gem::TestCase
       Gem.configuration.global_gem_cache = false
     end
 
+    def test_download_local_replaces_read_only_cache_file
+      omit "doesn't work if tempdir has +" if @tempdir.include?("+")
+      FileUtils.mv @a1_gem, @tempdir
+      local_path = File.join @tempdir, @a1.file_name
+      inst = nil
+
+      FileUtils.mkdir_p File.dirname(@a1.cache_file)
+      FileUtils.touch @a1.cache_file
+      FileUtils.chmod 0o444, @a1.cache_file
+
+      Dir.chdir @tempdir do
+        inst = Gem::RemoteFetcher.fetcher
+      end
+
+      # the atomic replacement of the cache copy must not depend on the
+      # permissions of the previous file
+      assert_equal @a1.cache_file, inst.download(@a1, local_path)
+      assert_equal File.binread(local_path), File.binread(@a1.cache_file)
+    ensure
+      FileUtils.chmod 0o644, @a1.cache_file if File.exist?(@a1.cache_file)
+    end
   end
 
   def test_fetch_http_with_custom_error_header
