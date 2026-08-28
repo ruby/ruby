@@ -6335,40 +6335,29 @@ big_fdiv_int(VALUE x, VALUE y)
 }
 
 static double
-big_fdiv_float(VALUE x, VALUE y)
+big_fdiv_float(VALUE x, double dy)
 {
     int i;
-    y = dbl2big(ldexp(frexp(RFLOAT_VALUE(y), &i), DBL_MANT_DIG));
-    return big_fdiv(x, y, i - DBL_MANT_DIG);
+    if (isnan(dy))
+        return dy;
+    if (isinf(dy))
+        return BIGNUM_NEGATIVE_P(x) == !!signbit(dy) ? 0.0 : -0.0;
+    if (dy == 0.0)
+        return BIGNUM_NEGATIVE_P(x) == !!signbit(dy) ? HUGE_VAL : -HUGE_VAL;
+    dy = ldexp(frexp(dy, &i), DBL_MANT_DIG);
+    return big_fdiv(x, dbl2big(dy), i - DBL_MANT_DIG);
 }
 
 double
 rb_big_fdiv_double(VALUE x, VALUE y)
 {
-    double dx, dy;
-    VALUE v;
-
-    dx = big2dbl(x);
-    if (FIXNUM_P(y)) {
-        dy = (double)FIX2LONG(y);
-        if (isinf(dx))
-            return big_fdiv_int(x, rb_int2big(FIX2LONG(y)));
-    }
-    else if (RB_BIGNUM_TYPE_P(y)) {
+    if (FIXNUM_P(y))
+        return big_fdiv_int(x, rb_int2big(FIX2LONG(y)));
+    if (RB_BIGNUM_TYPE_P(y))
         return big_fdiv_int(x, y);
-    }
-    else if (RB_FLOAT_TYPE_P(y)) {
-        dy = RFLOAT_VALUE(y);
-        if (isnan(dy))
-            return dy;
-        if (isinf(dx))
-            return big_fdiv_float(x, y);
-    }
-    else {
-        return NUM2DBL(rb_num_coerce_bin(x, y, idFdiv));
-    }
-    v = rb_flo_div_flo(DBL2NUM(dx), DBL2NUM(dy));
-    return NUM2DBL(v);
+    if (RB_FLOAT_TYPE_P(y))
+        return big_fdiv_float(x, RFLOAT_VALUE(y));
+    return NUM2DBL(rb_num_coerce_bin(x, y, idFdiv));
 }
 
 VALUE
