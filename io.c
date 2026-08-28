@@ -15930,6 +15930,11 @@ Init_IO(void)
     rb_gvar_ractor_local("$>");
     rb_gvar_ractor_local("$stderr");
 
+    rb_gvar_box_dynamic("$stdin");
+    rb_gvar_box_dynamic("$stdout");
+    rb_gvar_box_dynamic("$>");
+    rb_gvar_box_dynamic("$stderr");
+
     rb_global_variable(&rb_stdin);
     rb_stdin  = rb_io_prep_stdin();
     rb_global_variable(&rb_stdout);
