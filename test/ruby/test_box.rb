@@ -1152,6 +1152,20 @@ class TestBox < Test::Unit::TestCase
     end;
   end
 
+  def test_symbol_to_proc_uses_main_box
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      class Array
+        def main_box_only_method
+          :ok
+        end
+      end
+
+      assert_equal [:ok], [[1]].flat_map { |ary| ary.main_box_only_method }
+      assert_equal [:ok], [[1]].flat_map(&:main_box_only_method)
+    end;
+  end
+
   def test_very_basic_method_calls_and_constants
     assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
     begin;

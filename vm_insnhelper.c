@@ -5272,18 +5272,18 @@ vm_yield_with_symbol(rb_execution_context_t *ec,  VALUE symbol, int argc, const 
     const rb_box_t *box = NULL;
 
     /*
-     * Traverse the frames until a user-defined Box (Optional Box) is found.
-     * Frames for built-in methods like <internal:xxx> run in the Root or Main Box,
+     * Traverse the frames until a user box (Main or Optional Box) is found.
+     * Frames for built-in methods like <internal:xxx> run in the Root or Master Box,
      */
     while (ruby_cfp) {
         box = current_box_on_cfp(ec, ruby_cfp);
-        if (BOX_OPTIONAL_P(box)) {
+        if (BOX_USER_P(box)) {
             break;
         }
         ruby_cfp = rb_vm_get_ruby_level_next_cfp(ec, RUBY_VM_PREVIOUS_CONTROL_FRAME(ruby_cfp));
     }
 
-    // Fallback to the normal call if no user-defined Box (Optional Box) is found
+    // Fallback to the normal call if no user box is found
     if (!ruby_cfp || !box) {
         return rb_sym_proc_call(SYM2ID(symbol), argc, argv, kw_splat, passed_proc);
     }
