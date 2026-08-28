@@ -1067,7 +1067,7 @@ fn gen_ccall_with_frame(
     // make them authoritative in memory. Without a block, the stack map is
     // enough to reconstruct locals lazily on exception/binding.
     if block.is_some() {
-        gen_spill_locals(jit, asm, state);
+        gen_spill_block_accessed_locals(jit, asm, state);
     }
 
     let block_handler_specval = if let Some(BlockHandler::BlockIseq(block_iseq)) = block {
@@ -1165,7 +1165,7 @@ fn gen_ccall_variadic(
     gen_spill_stack(jit, asm, function, state);
     // A passed block can read or write this frame's locals through its EP.
     if block.is_some() {
-        gen_spill_locals(jit, asm, state);
+        gen_spill_block_accessed_locals(jit, asm, state);
     }
 
     let block_handler_specval = if let Some(BlockHandler::BlockIseq(blockiseq)) = block {
@@ -1567,7 +1567,7 @@ fn gen_send(
     gen_prepare_fallback_call(jit, asm, function, state);
     // A literal block passed here can read or write this frame's locals through its EP.
     if !blockiseq.is_null() {
-        gen_spill_locals(jit, asm, state);
+        gen_spill_block_accessed_locals(jit, asm, state);
     }
     asm_comment!(asm, "call #{} with dynamic dispatch", ruby_call_method_name(cd));
     unsafe extern "C" {
@@ -1596,7 +1596,7 @@ fn gen_send_forward(
     gen_prepare_fallback_call(jit, asm, function, state);
     // A literal block passed here can read or write this frame's locals through its EP.
     if !blockiseq.is_null() {
-        gen_spill_locals(jit, asm, state);
+        gen_spill_block_accessed_locals(jit, asm, state);
     }
 
     asm_comment!(asm, "call #{} with dynamic dispatch", ruby_call_method_name(cd));
@@ -1660,7 +1660,7 @@ fn gen_push_inline_frame(
 
     // A passed block can read or write this frame's locals through its EP.
     if blockiseq.is_some() {
-        gen_spill_locals(jit, asm, state);
+        gen_spill_block_accessed_locals(jit, asm, state);
     }
 
     // This mirrors vm_caller_setup_arg_block() for the `blockiseq != NULL` case.
@@ -1803,7 +1803,7 @@ fn gen_send_iseq_direct(
     // A passed block can read or write this frame's locals through its EP.
     // Without a block, the stack map reconstructs locals lazily on demand.
     if block.is_some() {
-        gen_spill_locals(jit, asm, state);
+        gen_spill_block_accessed_locals(jit, asm, state);
     }
     asm.stack_map(stack_map, jit_frame, state.depth);
 
@@ -2095,7 +2095,7 @@ fn gen_invokesuper(
     gen_prepare_fallback_call(jit, asm, function, state);
     // A literal block passed here can read or write this frame's locals through its EP.
     if !blockiseq.is_null() {
-        gen_spill_locals(jit, asm, state);
+        gen_spill_block_accessed_locals(jit, asm, state);
     }
     asm_comment!(asm, "call super with dynamic dispatch");
     unsafe extern "C" {
@@ -2124,7 +2124,7 @@ fn gen_invokesuperforward(
     gen_prepare_fallback_call(jit, asm, function, state);
     // A literal block passed here can read or write this frame's locals through its EP.
     if !blockiseq.is_null() {
-        gen_spill_locals(jit, asm, state);
+        gen_spill_block_accessed_locals(jit, asm, state);
     }
     asm_comment!(asm, "call super with dynamic dispatch (forwarding)");
     unsafe extern "C" {
@@ -3442,6 +3442,27 @@ fn gen_spill_locals(jit: &JITState, asm: &mut Assembler, state: &FrameState) {
     gen_incr_counter(asm, Counter::vm_write_locals_count);
     asm_comment!(asm, "spill locals");
     for (idx, &insn_id) in state.locals().enumerate() {
+        asm.mov(Opnd::mem(64, SP, (-local_idx_to_ep_offset(state.iseq, idx) - 1) * SIZEOF_VALUE_I32), jit.get_opnd(insn_id));
+    }
+}
+
+/// Spill the locals a passed block can touch through this frame's EP.
+///
+/// [`FrameState::spilled_locals`] names exactly that set, and [`build_stack_map`]
+/// emits `Skip` for those slots, so this is the writer that makes them
+/// authoritative. The remaining locals stay in registers; the stack map carries
+/// them and materialization writes them out if anyone ever asks.
+fn gen_spill_block_accessed_locals(jit: &JITState, asm: &mut Assembler, state: &FrameState) {
+    let spilled = state.spilled_locals();
+    if spilled.is_empty() {
+        return;
+    }
+    gen_incr_counter(asm, Counter::vm_write_locals_count);
+    asm_comment!(asm, "spill block-accessed locals");
+    for (idx, &insn_id) in state.locals().enumerate() {
+        if !spilled.contains(&(idx as u32)) {
+            continue;
+        }
         asm.mov(Opnd::mem(64, SP, (-local_idx_to_ep_offset(state.iseq, idx) - 1) * SIZEOF_VALUE_I32), jit.get_opnd(insn_id));
     }
 }
