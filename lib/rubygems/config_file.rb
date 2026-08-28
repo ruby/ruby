@@ -191,7 +191,12 @@ class Gem::ConfigFile
 
   ##
   # Use a global cache for .gem files shared across all Ruby installations.
-  # When enabled, gems are cached to ~/.cache/gem/gems (or XDG_CACHE_HOME/gem/gems).
+  # When enabled, gems fetched from a remote source are cached to
+  # ~/.cache/gem/gems (or XDG_CACHE_HOME/gem/gems). Gems installed from a
+  # local path are not, since a cached copy is later reused without being
+  # verified again. <tt>gem fetch</tt> still writes to the working directory,
+  # and an unwritable cache directory falls back to the cache of the
+  # installation.
 
   attr_accessor :global_gem_cache
 

@@ -47,6 +47,10 @@ class Gem::RemoteFetcher
   end
   deprecate_constant(:UnknownHostError)
 
+  # Schemes fetched over the network, as opposed to copied from a local path.
+  REMOTE_SCHEMES = %w[http https s3].freeze
+  private_constant :REMOTE_SCHEMES
+
   @fetcher = nil
 
   ##
@@ -113,12 +117,21 @@ class Gem::RemoteFetcher
   def download(spec, source_uri, install_dir = Gem.dir)
     gem_file_name = File.basename spec.cache_file
 
+    source_uri = Gem::Uri.new(source_uri)
+
+    scheme = source_uri.scheme
+
+    # Gem::URI.parse gets confused by MS Windows paths with forward slashes.
+    scheme = nil if /^[a-z]$/i.match?(scheme)
+
+    remote_source = REMOTE_SCHEMES.include?(scheme)
+
     install_cache_dir = File.join install_dir, "cache"
     cache_dir =
-      if Gem.configuration.global_gem_cache
-        Gem.global_gem_cache_path
-      elsif Dir.pwd == install_dir # see fetch_command
+      if File.identical?(".", install_dir) # gem fetch asks for it this way
         install_dir
+      elsif Gem.configuration.global_gem_cache && remote_source && ensure_writable_cache_dir(Gem.global_gem_cache_path)
+        Gem.global_gem_cache_path
       elsif File.writable?(install_cache_dir) || (File.writable?(install_dir) && !File.exist?(install_cache_dir))
         install_cache_dir
       else
@@ -134,20 +147,15 @@ class Gem::RemoteFetcher
       nil
     end unless File.exist? cache_dir
 
-    source_uri = Gem::Uri.new(source_uri)
-
-    scheme = source_uri.scheme
-
-    # Gem::URI.parse gets confused by MS Windows paths with forward slashes.
-    scheme = nil if /^[a-z]$/i.match?(scheme)
-
     # REFACTOR: split this up and dispatch on scheme (eg download_http)
     # REFACTOR: be sure to clean up fake fetcher when you do this... cleaner
     case scheme
-    when "http", "https", "s3" then
-      unless File.exist? local_gem_path
+    when *REMOTE_SCHEMES then
+      if File.exist? local_gem_path
+        verbose "Using local gem #{local_gem_path}"
+      else
         begin
-          verbose "Downloading gem #{gem_file_name}"
+          verbose "Downloading gem #{gem_file_name} to #{cache_dir}"
 
           remote_gem_path = source_uri + "gems/#{gem_file_name}"
 
@@ -157,7 +165,7 @@ class Gem::RemoteFetcher
 
           alternate_name = "#{spec.original_name}.gem"
 
-          verbose "Failed, downloading gem #{alternate_name}"
+          verbose "Failed, downloading gem #{alternate_name} to #{cache_dir}"
 
           remote_gem_path = source_uri + "gems/#{alternate_name}"
 
@@ -337,6 +345,20 @@ class Gem::RemoteFetcher
   end
 
   private
+
+  # Creates +cache_dir+ so its writability can be probed, since File.writable?
+  # is false for a path that does not exist yet.
+
+  def ensure_writable_cache_dir(cache_dir)
+    require "fileutils"
+    begin
+      FileUtils.mkdir_p cache_dir
+    rescue SystemCallError
+      return false
+    end
+
+    File.writable?(cache_dir)
+  end
 
   def proxy_for(proxy, uri)
     Gem::Request.proxy_uri(proxy || Gem::Request.get_proxy_from_env(uri.scheme))
