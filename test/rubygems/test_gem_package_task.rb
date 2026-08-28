@@ -43,6 +43,47 @@ class TestGemPackageTask < Gem::TestCase
     RakeFileUtils.verbose_flag = original_rake_fileutils_verbosity
   end
 
+  def test_moves_filename_returned_by_build
+    gem = Gem::Specification.new do |g|
+      g.name = "pkgr"
+      g.version = "1.2.3"
+      g.platform = "arm64-darwin"
+      g.required_ruby_version = "~> 3.4.0"
+
+      g.authors = %w[author]
+      g.files = %w[x]
+      g.summary = "summary"
+    end
+
+    Rake.application = Rake::Application.new
+
+    pkg = Gem::PackageTask.new(gem) do |p|
+      p.package_files << "y"
+    end
+
+    assert_equal %w[x y], pkg.package_files
+
+    Dir.chdir @tempdir do
+      FileUtils.touch "x"
+      FileUtils.touch "y"
+
+      built_gem_file = "pkgr-1.2.3-01234567.gem"
+
+      Gem::Package.stub :build, ->(_) {
+        FileUtils.touch built_gem_file
+        built_gem_file
+      } do
+        Rake.application["package"].invoke
+      end
+
+      built_files = Dir["pkg/pkgr-1.2.3-*.gem"]
+
+      assert_equal 1, built_files.length
+      assert_equal "pkg/pkgr-1.2.3-01234567.gem", built_files.first
+      assert_path_not_exist "pkg/pkgr-1.2.3-arm64-darwin.gem"
+    end
+  end
+
   def test_gem_package_prints_to_stdout_by_default
     gem = Gem::Specification.new do |g|
       g.name = "pkgr"

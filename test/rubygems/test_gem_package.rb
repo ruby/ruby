@@ -236,6 +236,417 @@ class TestGemPackage < Gem::Package::TarTestCase
     assert_equal [{ "lib/code_sym.rb" => "code.rb" }, { "lib/code_sym2.rb" => "../lib/code.rb" }], symlinks
   end
 
+  def test_ruby_abi_creates_content_addressed_file
+    spec = Gem::Specification.new "platformed", "1"
+    spec.summary = "platformed"
+    spec.authors = "platformed"
+    spec.files = ["lib/code.rb"]
+    spec.platform = "arm64-darwin"
+    spec.required_ruby_version = Gem::Requirement.new("~> 3.4.0")
+
+    FileUtils.mkdir "lib"
+
+    File.open "lib/code.rb", "w" do |io|
+      io.write "# lib/code.rb"
+    end
+
+    built_file = Gem::Package.build(spec, false, false, nil, "3.4")
+
+    assert_path_not_exist spec.file_name
+    assert_path_exist built_file
+    assert_match(/\Aplatformed-1-[0-9a-f]{8}\.gem\z/, built_file)
+  end
+
+  def test_ruby_abi_built_gem_preserves_derived_metadata
+    spec = Gem::Specification.new "platformed", "1"
+    spec.summary = "platformed"
+    spec.authors = "platformed"
+    spec.files = ["lib/code.rb"]
+    spec.platform = "arm64-darwin"
+    spec.required_ruby_version = Gem::Requirement.new("~> 3.4.0")
+
+    FileUtils.mkdir "lib"
+
+    File.open "lib/code.rb", "w" do |io|
+      io.write "# lib/code.rb"
+    end
+
+    built_file = Gem::Package.build(spec, false, false, nil, "3.4")
+
+    loaded_spec = Gem::Package.new(built_file).spec
+    assert_equal "platformed", loaded_spec.name
+    assert_equal Gem::Version.new("1"), loaded_spec.version
+    assert_equal Gem::Platform.new("arm64-darwin"), loaded_spec.platform
+    assert_equal Gem::Requirement.new("~> 3.4.0"), loaded_spec.required_ruby_version
+    assert_equal Gem::Requirement.new(Gem::Package::MINIMUM_RUBYGEMS_VERSION), loaded_spec.required_rubygems_version
+    assert_equal "3.4", loaded_spec.ruby_abi
+  end
+
+  def test_required_rubygems_version_is_set_by_ruby_abi_if_default
+    spec = Gem::Specification.new "platformed", "1"
+    spec.summary = "platformed"
+    spec.authors = "platformed"
+    spec.files = ["lib/code.rb"]
+    spec.platform = "arm64-darwin"
+    spec.required_ruby_version = Gem::Requirement.new("~> 3.4.0")
+
+    FileUtils.mkdir "lib"
+
+    File.open "lib/code.rb", "w" do |io|
+      io.write "# lib/code.rb"
+    end
+
+    assert_equal Gem::Requirement.default, spec.required_rubygems_version
+
+    Gem::Package.build(spec, false, false, nil, "3.4")
+
+    assert_equal Gem::Requirement.new(">= 4.1.0.a"), spec.required_rubygems_version
+  end
+
+  def test_required_rubygems_version_untouched_when_floor_already_satisfied
+    spec = Gem::Specification.new "platformed", "1"
+    spec.summary = "platformed"
+    spec.authors = "platformed"
+    spec.files = ["lib/code.rb"]
+    spec.platform = "arm64-darwin"
+    spec.required_ruby_version = Gem::Requirement.new("~> 3.4.0")
+    spec.required_rubygems_version = Gem::Requirement.new(">= 4.2")
+
+    FileUtils.mkdir "lib"
+
+    File.open "lib/code.rb", "w" do |io|
+      io.write "# lib/code.rb"
+    end
+
+    ui = Gem::MockGemUi.new
+    built_file = use_ui ui do
+      Gem::Package.build(spec, false, false, nil, "3.4")
+    end
+
+    assert_equal Gem::Requirement.new(">= 4.2"), spec.required_rubygems_version
+    assert_equal Gem::Requirement.new(">= 4.2"), Gem::Package.new(built_file).spec.required_rubygems_version
+    refute_match "required_rubygems_version was changed", ui.error
+  end
+
+  def test_required_rubygems_version_weaker_lower_bound_is_raised_to_floor_with_warning
+    spec = Gem::Specification.new "platformed", "1"
+    spec.summary = "platformed"
+    spec.authors = "platformed"
+    spec.files = ["lib/code.rb"]
+    spec.platform = "arm64-darwin"
+    spec.required_ruby_version = Gem::Requirement.new("~> 3.4.0")
+    spec.required_rubygems_version = Gem::Requirement.new(">= 3.0")
+
+    FileUtils.mkdir "lib"
+
+    File.open "lib/code.rb", "w" do |io|
+      io.write "# lib/code.rb"
+    end
+
+    ui = Gem::MockGemUi.new
+    built_file = use_ui ui do
+      Gem::Package.build(spec, false, false, nil, "3.4")
+    end
+
+    assert_equal Gem::Requirement.new(">= 4.1.0.a"), spec.required_rubygems_version
+    assert_equal Gem::Requirement.new(">= 4.1.0.a"), Gem::Package.new(built_file).spec.required_rubygems_version
+
+    assert_match "required_rubygems_version was changed from \">= 3.0\" to \">= 4.1.0.a\"", ui.error
+  end
+
+  def test_required_rubygems_version_upper_bound_above_minimum_is_preserved
+    spec = Gem::Specification.new "platformed", "1"
+    spec.summary = "platformed"
+    spec.authors = "platformed"
+    spec.files = ["lib/code.rb"]
+    spec.platform = "arm64-darwin"
+    spec.required_ruby_version = Gem::Requirement.new("~> 3.4.0")
+    spec.required_rubygems_version = Gem::Requirement.new("< 5.0")
+
+    FileUtils.mkdir "lib"
+
+    File.open "lib/code.rb", "w" do |io|
+      io.write "# lib/code.rb"
+    end
+
+    ui = Gem::MockGemUi.new
+    use_ui ui do
+      Gem::Package.build(spec, false, false, nil, "3.4")
+    end
+
+    assert_equal Gem::Requirement.new(["< 5.0", ">= 4.1.0.a"]), spec.required_rubygems_version
+    assert_match "required_rubygems_version was changed from \"< 5.0\" to \">= 4.1.0.a, < 5.0\"", ui.error
+  end
+
+  def test_raise_if_required_rubygems_version_conflicts_with_content_addressing
+    FileUtils.mkdir "lib"
+
+    File.open "lib/code.rb", "w" do |io|
+      io.write "# lib/code.rb"
+    end
+
+    conflicting_requirements = [
+      "~> 3.5",
+      "< 4.0",
+      "<= 4.0.9",
+      "= 3.5.9",
+      "~> 4.0.0",
+      "< 4.1.0.a",
+    ]
+
+    conflicting_requirements.each do |conflicting|
+      spec = Gem::Specification.new "platformed", "1"
+      spec.summary = "platformed"
+      spec.authors = "platformed"
+      spec.files = ["lib/code.rb"]
+      spec.platform = "arm64-darwin"
+      spec.required_ruby_version = Gem::Requirement.new("~> 3.4.0")
+      spec.required_rubygems_version = Gem::Requirement.new(conflicting)
+
+      e = assert_raise ArgumentError do
+        Gem::Package.build(spec, false, false, nil, "3.4")
+      end
+
+      assert_match "Cannot build gem for Ruby ABI 3.4 because required_rubygems_version is set to #{Gem::Requirement.new(conflicting)}", e.message
+      assert_match "excludes RubyGems >= 4.1.0.a", e.message
+      assert_equal Gem::Requirement.new(conflicting), spec.required_rubygems_version
+      assert_empty Dir["platformed-1-*.gem"]
+    end
+  end
+
+  def test_required_rubygems_version_is_not_duplicated_if_already_present
+    spec = Gem::Specification.new "platformed", "1"
+    spec.summary = "platformed"
+    spec.authors = "platformed"
+    spec.files = ["lib/code.rb"]
+    spec.platform = "arm64-darwin"
+    spec.required_ruby_version = Gem::Requirement.new("~> 3.4.0")
+    spec.required_rubygems_version = Gem::Requirement.new(Gem::Package::MINIMUM_RUBYGEMS_VERSION)
+
+    FileUtils.mkdir "lib"
+
+    File.open "lib/code.rb", "w" do |io|
+      io.write "# lib/code.rb"
+    end
+
+    Gem::Package.build(spec, false, false, nil, "3.4")
+
+    assert_equal [">= 4.1.0.a"], spec.required_rubygems_version.as_list
+  end
+
+  def test_required_rubygems_version_is_not_modified_if_build_fails
+    spec = Gem::Specification.new "platformed", "1"
+    spec.summary = "platformed"
+    spec.files = ["lib/code.rb"]
+    spec.platform = "arm64-darwin"
+    spec.required_ruby_version = Gem::Requirement.new("~> 3.4.0")
+
+    FileUtils.mkdir "lib"
+
+    File.open "lib/code.rb", "w" do |io|
+      io.write "# lib/code.rb"
+    end
+
+    assert_raise Gem::InvalidSpecificationException do
+      Gem::Package.build(spec, false, false, nil, "3.4")
+    end
+
+    assert_equal Gem::Requirement.default, spec.required_rubygems_version
+  end
+
+  def test_required_ruby_version_unchanged_after_successful_matching_build
+    spec = Gem::Specification.new "platformed", "1"
+    spec.summary = "platformed"
+    spec.authors = "platformed"
+    spec.files = ["lib/code.rb"]
+    spec.platform = "arm64-darwin"
+    spec.required_ruby_version = Gem::Requirement.new("~> 3.4.0")
+
+    FileUtils.mkdir "lib"
+
+    File.open "lib/code.rb", "w" do |io|
+      io.write "# lib/code.rb"
+    end
+
+    original_rrv = spec.required_ruby_version
+
+    Gem::Package.build(spec, false, false, nil, "3.4")
+
+    assert_equal original_rrv, spec.required_ruby_version
+    assert_equal Gem::Requirement.new("~> 3.4.0"), spec.required_ruby_version
+  end
+
+  def test_ruby_abi_not_passed_does_not_create_content_addressed_file
+    spec = Gem::Specification.new "platformed", "1"
+    spec.summary = "platformed"
+    spec.authors = "platformed"
+    spec.files = ["lib/code.rb"]
+    spec.platform = "arm64-darwin"
+    spec.required_ruby_version = Gem::Requirement.new("~> 3.4.0")
+
+    FileUtils.mkdir "lib"
+
+    File.open "lib/code.rb", "w" do |io|
+      io.write "# lib/code.rb"
+    end
+
+    built_file = Gem::Package.build(spec)
+
+    assert_path_exist built_file
+    assert_equal("platformed-1-arm64-darwin.gem", built_file)
+    assert_equal Gem::Requirement.default, spec.required_rubygems_version
+    assert_equal Gem::Requirement.default, Gem::Package.new(built_file).spec.required_rubygems_version
+  end
+
+  def test_required_ruby_version_is_set_by_ruby_abi_if_default
+    spec = Gem::Specification.new "platformed", "1"
+    spec.summary = "platformed"
+    spec.authors = "platformed"
+    spec.files = ["lib/code.rb"]
+    spec.platform = "arm64-darwin"
+    spec.required_ruby_version = Gem::Requirement.default
+
+    FileUtils.mkdir "lib"
+
+    File.open "lib/code.rb", "w" do |io|
+      io.write "# lib/code.rb"
+    end
+
+    built_file = Gem::Package.build(spec, false, false, nil, "3.4")
+
+    assert_path_exist built_file
+    assert_match(/\Aplatformed-1-[0-9a-f]{8}\.gem\z/, built_file)
+    assert_equal Gem::Requirement.new("~> 3.4.0"), spec.required_ruby_version
+  end
+
+  def test_required_ruby_version_is_not_modified_if_build_fails
+    spec = Gem::Specification.new "platformed", "1"
+    spec.summary = "platformed"
+    spec.files = ["lib/code.rb"]
+    spec.platform = "arm64-darwin"
+    spec.required_ruby_version = Gem::Requirement.default
+
+    FileUtils.mkdir "lib"
+
+    File.open "lib/code.rb", "w" do |io|
+      io.write "# lib/code.rb"
+    end
+
+    # missing authors makes validation during the build raise
+    assert_raise Gem::InvalidSpecificationException do
+      Gem::Package.build(spec, false, false, nil, "3.4")
+    end
+
+    assert_equal Gem::Requirement.default, spec.required_ruby_version
+  end
+
+  def test_raise_if_required_ruby_version_conflicts_with_ruby_abi
+    spec = Gem::Specification.new "platformed", "1"
+    spec.summary = "platformed"
+    spec.authors = "platformed"
+    spec.files = ["lib/code.rb"]
+    spec.platform = "arm64-darwin"
+    spec.required_ruby_version = Gem::Requirement.new("~> 3.5.0")
+
+    FileUtils.mkdir "lib"
+
+    File.open "lib/code.rb", "w" do |io|
+      io.write "# lib/code.rb"
+    end
+
+    e = assert_raise ArgumentError do
+      Gem::Package.build(spec, false, false, nil, "3.4")
+    end
+
+    assert_match "Cannot build gem for Ruby ABI 3.4 because required_ruby_version is set to ~> 3.5.0", e.message
+    assert_match "Please set required_ruby_version to \"~> 3.4.0\"", e.message
+    assert_equal Gem::Requirement.new("~> 3.5.0"), spec.required_ruby_version
+  end
+
+  def test_raise_if_ruby_abi_is_not_in_x_y_format
+    spec = Gem::Specification.new "platformed", "1"
+    spec.summary = "platformed"
+    spec.authors = "platformed"
+    spec.files = ["lib/code.rb"]
+    spec.platform = "arm64-darwin"
+    spec.required_ruby_version = Gem::Requirement.new("~> 3.4.0")
+
+    FileUtils.mkdir "lib"
+
+    File.open "lib/code.rb", "w" do |io|
+      io.write "# lib/code.rb"
+    end
+
+    e = assert_raise ArgumentError do
+      Gem::Package.build(spec, false, false, nil, "3.4.5")
+    end
+
+    assert_match "Ruby ABI must be in X.Y format", e.message
+  end
+
+  def test_raise_if_spec_is_non_platformed_but_ruby_abi_is_passed
+    spec = Gem::Specification.new "non-platformed", "1"
+    spec.summary = "non-platformed"
+    spec.authors = "non-platformed"
+    spec.files = ["lib/code.rb"]
+    spec.required_ruby_version = Gem::Requirement.new("~> 3.4")
+
+    FileUtils.mkdir "lib"
+
+    File.open "lib/code.rb", "w" do |io|
+      io.write "# lib/code.rb"
+    end
+
+    e = assert_raise ArgumentError do
+      Gem::Package.build(spec, false, false, nil, "3.4")
+    end
+
+    assert_match "no platform or a Ruby platform has been set", e.message
+  end
+
+  def test_explicit_output_keeps_requested_filename
+    spec = Gem::Specification.new "explicit", "1"
+    spec.summary = "explicit"
+    spec.authors = "explicit"
+    spec.files = ["lib/code.rb"]
+    spec.platform = "arm64-darwin"
+    spec.required_ruby_version = Gem::Requirement.new("~> 3.4.0")
+
+    FileUtils.mkdir "lib"
+
+    File.open "lib/code.rb", "w" do |io|
+      io.write "# lib/code.rb"
+    end
+
+    built_file = Gem::Package.build(spec, false, false, "explicit-output.gem")
+
+    assert_path_exist built_file
+    assert_equal("explicit-output.gem", built_file)
+  end
+
+  def test_explicit_output_and_ruby_abi_raises
+    spec = Gem::Specification.new "explicit", "1"
+    spec.summary = "explicit"
+    spec.authors = "explicit"
+    spec.files = ["lib/code.rb"]
+    spec.platform = "arm64-darwin"
+    spec.required_ruby_version = Gem::Requirement.default
+
+    FileUtils.mkdir "lib"
+
+    File.open "lib/code.rb", "w" do |io|
+      io.write "# lib/code.rb"
+    end
+
+    e = assert_raise ArgumentError do
+      Gem::Package.build(spec, false, false, "explicit-output.gem", "3.4")
+    end
+
+    assert_match "Cannot specify both a Ruby ABI and an output file name", e.message
+    assert_equal Gem::Requirement.default, spec.required_ruby_version
+    assert_path_not_exist "explicit-output.gem"
+  end
+
   def test_build
     spec = Gem::Specification.new "build", "1"
     spec.summary = "build"

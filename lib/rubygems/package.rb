@@ -129,13 +129,51 @@ class Gem::Package
   # Permission for other files
   attr_accessor :data_mode
 
-  def self.build(spec, skip_validation = false, strict_validation = false, file_name = nil)
-    gem_file = file_name || spec.file_name
+  ##
+  # The number of characters of the SHA-256 digest of the gem contents used
+  # in a content-addressable gem file name.
 
-    package = new gem_file
-    package.spec = spec
-    package.build skip_validation, strict_validation
+  DEFAULT_CONTENT_ADDRESS_LENGTH = 8
 
+  ##
+  # The minimum RubyGems version that can install content-addressable gems.
+  # Built into +required_rubygems_version+ so older clients reject skinny
+  # gems through both the local and remote install paths.
+
+  MINIMUM_RUBYGEMS_VERSION = ">= 4.1.0.a"
+
+  ##
+  # Builds the gem described by +spec+ and returns the built file name;
+  # passing +ruby_abi+ ("X.Y") builds a content-addressable gem named by the
+  # SHA-256 of its contents, updates +spec.required_ruby_version+ to
+  # "~> X.Y.0", and constrains +spec.required_rubygems_version+ to at least
+  # MINIMUM_RUBYGEMS_VERSION (incompatible with
+  # +file_name+).
+
+  def self.build(spec, skip_validation = false, strict_validation = false, file_name = nil, ruby_abi = nil)
+    if ruby_abi && file_name
+      raise ArgumentError, "Cannot specify both a Ruby ABI and an output file name because content addressable gems must use the generated file name."
+    end
+    if ruby_abi
+      require "digest"
+      require "stringio"
+
+      io = StringIO.new
+      io.set_encoding(Encoding::BINARY)
+
+      package = new io
+      package.spec = spec.dup
+      gem_file = package.build_content_addressable_file ruby_abi, skip_validation, strict_validation
+
+      spec.required_ruby_version = package.spec.required_ruby_version
+      spec.required_rubygems_version = package.spec.required_rubygems_version
+    else
+      gem_file = file_name || spec.file_name
+
+      package = new gem_file
+      package.spec = spec
+      package.build skip_validation, strict_validation
+    end
     gem_file
   end
 
@@ -315,14 +353,45 @@ class Gem::Package
       end
     end
 
-    say <<-EOM
+    message = <<-EOM
   Successfully built RubyGem
   Name: #{@spec.name}
   Version: #{@spec.version}
-  File: #{File.basename @gem.path}
 EOM
+
+    message += "  File: #{File.basename(@gem.path)}\n" if @gem.path
+    say message
   ensure
     @signer = nil
+  end
+
+  ##
+  # Builds this package scoped to +ruby_abi+ ("X.Y"), then writes it to a
+  # content-addressable file name derived from the SHA-256 digest of the gem
+  # contents, e.g. "example-1.0-01234567.gem". Returns the file name of the
+  # written gem.
+  #
+  # The spec is validated for an ABI-scoped build and its
+  # +required_ruby_version+ and +required_rubygems_version+ are constrained
+  # before building, so every gem this method produces is eligible for
+  # content addressing.
+
+  def build_content_addressable_file(ruby_abi, skip_validation = false, strict_validation = false)
+    validate_ruby_abi ruby_abi
+    @spec.required_rubygems_version = normalized_required_rubygems_version(ruby_abi)
+    @spec.required_ruby_version = Gem::Requirement.new("~> #{ruby_abi}.0")
+
+    build skip_validation, strict_validation
+
+    bytes = @gem.with_read_io(&:read)
+    gem_file = "#{@spec.name}-#{@spec.version}-#{Digest::SHA256.hexdigest(bytes)[0, DEFAULT_CONTENT_ADDRESS_LENGTH]}.gem"
+    File.binwrite(gem_file, bytes)
+
+    say "  File: #{gem_file}"
+    say "  Platform: #{@spec.platform}"
+    say "  Ruby ABI: #{ruby_abi}"
+
+    gem_file
   end
 
   ##
@@ -640,6 +709,92 @@ EOM
   end
 
   private
+
+  ##
+  # The +required_rubygems_version+ for a content-addressable build: the
+  # spec's requirement raised to at least MINIMUM_RUBYGEMS_VERSION, warning
+  # if it had to be changed. Raises if the requirement excludes every version
+  # satisfying that floor, since no RubyGems could install the built gem.
+
+  def normalized_required_rubygems_version(ruby_abi)
+    minimum = Gem::Requirement.new(MINIMUM_RUBYGEMS_VERSION)
+    existing = @spec.required_rubygems_version
+
+    return minimum if existing.nil? || existing == Gem::Requirement.default
+
+    floor = minimum.requirements.first.last
+
+    if excludes_rubygems_floor?(existing, floor)
+      raise ArgumentError,
+        "Cannot build gem for Ruby ABI #{ruby_abi} because required_rubygems_version is set to #{existing}, " \
+        "which excludes RubyGems #{MINIMUM_RUBYGEMS_VERSION} required to install content addressable gems. " \
+        "Please remove or loosen the conflicting constraint."
+    end
+
+    return existing if satisfies_rubygems_floor?(existing, floor)
+
+    preserved = existing.requirements.filter_map do |op, version|
+      "#{op} #{version}" if ["~>", "<", "<=", "!="].include?(op)
+    end
+
+    normalized = Gem::Requirement.new([MINIMUM_RUBYGEMS_VERSION, *preserved])
+
+    alert_warning \
+      "required_rubygems_version was changed from \"#{existing}\" to \"#{normalized}\" for this build " \
+      "because content addressable gems can only be installed by RubyGems #{MINIMUM_RUBYGEMS_VERSION}."
+
+    normalized
+  end
+
+  ##
+  # Whether +requirement+ excludes every RubyGems version satisfying the
+  # +floor+, so that no RubyGems could install the built gem.
+
+  def excludes_rubygems_floor?(requirement, floor)
+    capped_below_floor = requirement.requirements.any? do |op, version|
+      case op
+      when "<" then version <= floor
+      when "<=", "=" then version < floor
+      when "~>" then version.bump <= floor.release
+      else false
+      end
+    end
+
+    return true if capped_below_floor
+
+    !requirement.satisfied_by?(floor) && requirement.requirements.any? do |op, version|
+      ["<=", "="].include?(op) && version == floor
+    end
+  end
+
+  ##
+  # Whether one of the lower bounds of +requirement+ already guarantees the
+  # +floor+.
+
+  def satisfies_rubygems_floor?(requirement, floor)
+    requirement.requirements.any? do |op, version|
+      case op
+      when ">=", "~>", "=", ">" then version >= floor
+      else false
+      end
+    end
+  end
+
+  ##
+  # Validates that the spec can be built as a content-addressable gem scoped
+  # to +ruby_abi+ ("X.Y"): the ABI must be well-formed, the spec must declare
+  # a non-Ruby platform, and any existing +required_ruby_version+ must match
+  # the ABI.
+
+  def validate_ruby_abi(ruby_abi)
+    if !/\A\d+\.\d+\z/.match?(ruby_abi)
+      raise ArgumentError, "Ruby ABI must be in X.Y format"
+    elsif @spec.platform.nil? || @spec.platform == Gem::Platform::RUBY
+      raise ArgumentError, "Cannot build a gem scoped to a single Ruby ABI as no platform or a Ruby platform has been set"
+    elsif @spec.required_ruby_version && @spec.required_ruby_version != Gem::Requirement.default && @spec.ruby_abi != ruby_abi
+      raise ArgumentError, "Cannot build gem for Ruby ABI #{ruby_abi} because required_ruby_version is set to #{@spec.required_ruby_version}. Please set required_ruby_version to \"~> #{ruby_abi}.0\"."
+    end
+  end
 
   ##
   # Returns the full path for installing +filename+ into +destination_dir+,
