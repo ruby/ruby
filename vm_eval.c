@@ -109,9 +109,8 @@ vm_call0_cme(rb_execution_context_t *ec, struct rb_calling_info *calling, const 
 }
 
 static VALUE
-vm_call0_super(rb_execution_context_t *ec, struct rb_calling_info *calling, const VALUE *argv, VALUE klass, enum method_missing_reason ex)
+vm_call0_super(rb_execution_context_t *ec, struct rb_calling_info *calling, const VALUE *argv, VALUE klass, ID mid, enum method_missing_reason ex)
 {
-    ID mid = vm_ci_mid(calling->cd->ci);
     klass = RCLASS_SUPER(klass);
 
     if (klass) {
@@ -124,7 +123,7 @@ vm_call0_super(rb_execution_context_t *ec, struct rb_calling_info *calling, cons
     }
 
     vm_passed_block_handler_set(ec, calling->block_handler);
-    return method_missing(ec, calling->recv, mid, calling->argc, argv, ex, calling->kw_splat);
+    return method_missing(ec, calling->recv, vm_ci_mid(calling->cd->ci), calling->argc, argv, ex, calling->kw_splat);
 }
 
 static VALUE
@@ -246,7 +245,7 @@ vm_call0_body(rb_execution_context_t *ec, struct rb_calling_info *calling, const
       case VM_METHOD_TYPE_ZSUPER:
         {
             VALUE klass = RCLASS_ORIGIN(vm_cc_cme(cc)->defined_class);
-            return vm_call0_super(ec, calling, argv, klass, MISSING_SUPER);
+            return vm_call0_super(ec, calling, argv, klass, vm_cc_cme(cc)->def->original_id, MISSING_SUPER);
         }
       case VM_METHOD_TYPE_REFINED:
         {
@@ -258,7 +257,7 @@ vm_call0_body(rb_execution_context_t *ec, struct rb_calling_info *calling, const
             }
 
             VALUE klass = cme->defined_class;
-            return vm_call0_super(ec, calling, argv, klass, 0);
+            return vm_call0_super(ec, calling, argv, klass, vm_ci_mid(calling->cd->ci), 0);
         }
       case VM_METHOD_TYPE_ALIAS:
         {

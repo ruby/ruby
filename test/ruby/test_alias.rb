@@ -330,15 +330,46 @@ class TestAlias < Test::Unit::TestCase
   end
 
   def test_undef_method_error_message_with_zsuper_method
-    modules = [
-      Module.new { private :class },
-      Module.new { prepend Module.new { private :class } },
+    a = Class.new { private def foo; end }
+    classes = [
+      Class.new(a) { public :foo },
+      Class.new(a) { prepend Module.new; public :foo },
     ]
-    message = "undefined method 'class' for module '%s'"
-    modules.each do |mod|
-      assert_raise_with_message(NameError, message % mod) do
-        mod.alias_method :xyz, :class
+    a.send(:remove_method, :foo)
+    message = "undefined method 'foo' for class '%s'"
+    classes.each do |klass|
+      assert_raise_with_message(NameError, message % klass) do
+        klass.alias_method :xyz, :foo
       end
     end
+  end
+
+  def test_alias_in_module_resolved_at_call_time
+    bug22276 = '[ruby-core:126537] [Bug #22276]'
+
+    m = Module.new do
+      alias orig_to_s to_s
+      alias orig_to_s2 orig_to_s
+      private def to_s = "M"
+    end
+
+    c = Class.new { include m }
+    obj = c.new
+    assert_equal(Kernel.instance_method(:to_s).bind_call(obj), obj.orig_to_s, bug22276)
+    assert_equal(obj.orig_to_s, obj.orig_to_s2, bug22276)
+    assert_equal(:orig_to_s, obj.method(:orig_to_s).name, bug22276)
+    assert_equal(m, obj.method(:orig_to_s).owner, bug22276)
+    assert_equal(obj.orig_to_s, obj.method(:orig_to_s).call, bug22276)
+    assert_equal(obj.orig_to_s, c.instance_method(:orig_to_s).bind_call(obj), bug22276)
+
+    m2 = Module.new { private :class; alias_method :xyz, :class }
+    obj = Class.new { include m2 }.new
+    assert_raise(NoMethodError, bug22276) { obj.xyz }
+    assert_equal(obj.instance_eval { self.class }, obj.instance_eval { xyz }, bug22276)
+
+    assert_raise(NameError, bug22276) { Module.new { alias foo bar } }
+
+    c = Class.new(BasicObject) { include m; public :orig_to_s }
+    assert_raise(NoMethodError, bug22276) { c.new.orig_to_s }
   end
 end
