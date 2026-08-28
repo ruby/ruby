@@ -312,7 +312,7 @@ module Random::Formatter
   #   prng.choose([*'0'..'9'], 5)  #=> "27309"
   private def choose(source, n)
     size = source.size
-    raise ArgumentError, "character length must not be negative" if n.negative?
+    raise ArgumentError, "character length must not be negative" if 0 > n
     raise ArgumentError, "character source must not be empty" if size == 0
     return source.first * n if size < 2
     m = 1
