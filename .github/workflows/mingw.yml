@@ -71,6 +71,13 @@ jobs:
         with:
           ruby-version: ${{ matrix.baseruby }}
 
+      - name: Install MSYS2 perl
+        working-directory:
+        # MSYS2 dropped perl from its base install, and the runner image
+        # picked that up, so `autoreconf` no longer finds its interpreter.
+        # https://github.com/actions/runner-images/issues/14562
+        run: pacman --sync --refresh --needed --noconfirm perl
+
       - name: Misc system & package info
         working-directory:
         run: |
