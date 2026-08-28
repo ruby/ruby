@@ -6916,7 +6916,7 @@ rb_ary_flatten_bang(int argc, VALUE *argv, VALUE ary)
         }
     }
 
-    if (!(mod = ARY_EMBED_P(result) && result != child)) rb_ary_freeze(result);
+    if (result != child && !(mod = ARY_EMBED_P(result))) rb_ary_freeze(result);
     rb_ary_replace(ary, result);
     if (mod) ARY_SET_EMBED_LEN(result, 0);
 
