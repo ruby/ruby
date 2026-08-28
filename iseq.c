@@ -417,7 +417,6 @@ rb_iseq_mark_and_move(rb_iseq_t *iseq, bool reference_updating)
         struct rb_iseq_variable *v = ISEQ_VARIABLE(iseq);
         if (v) rb_gc_mark_and_move(&v->script_lines);
         rb_gc_mark_and_move(&body->location.label);
-        rb_gc_mark_and_move(&body->location.base_label);
         rb_gc_mark_and_move(&body->location.pathobj);
         if (body->local_iseq) rb_gc_mark_and_move_ptr(&body->local_iseq);
         if (body->parent_iseq) rb_gc_mark_and_move_ptr(&body->parent_iseq);
@@ -713,7 +712,6 @@ iseq_location_setup(rb_iseq_t *iseq, VALUE name, VALUE path, VALUE realpath, int
 
     rb_iseq_pathobj_set(iseq, path, realpath);
     RB_OBJ_WRITE(iseq, &loc->label, name);
-    RB_OBJ_WRITE(iseq, &loc->base_label, name);
     loc->first_lineno = first_lineno;
 
     if (ISEQ_BODY(iseq)->local_iseq == iseq && rb_streql_lit(name, "initialize")) {
@@ -805,9 +803,6 @@ prepare_iseq_build(rb_iseq_t *iseq,
 
     name = rb_fstring(name);
     iseq_location_setup(iseq, name, path, realpath, first_lineno, code_location, node_id);
-    if (iseq != body->local_iseq) {
-        RB_OBJ_WRITE(iseq, &body->location.base_label, ISEQ_BODY(body->local_iseq)->location.label);
-    }
     ISEQ_ORIGINAL_ISEQ_CLEAR(iseq);
     if (body->variable) {
         body->variable->flip_count = 0;
@@ -1621,7 +1616,15 @@ rb_iseq_label(const rb_iseq_t *iseq)
 VALUE
 rb_iseq_base_label(const rb_iseq_t *iseq)
 {
-    return ISEQ_BODY(iseq)->location.base_label;
+    const struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
+    const rb_iseq_t *local_iseq = body->local_iseq;
+
+    if (local_iseq == NULL || local_iseq == iseq) {
+        return body->location.label;
+    }
+    else {
+        return ISEQ_BODY(rb_iseq_check(local_iseq))->location.label;
+    }
 }
 
 VALUE
@@ -1636,7 +1639,7 @@ rb_iseq_method_name(const rb_iseq_t *iseq)
     struct rb_iseq_constant_body *const body = ISEQ_BODY(ISEQ_BODY(iseq)->local_iseq);
 
     if (body->type == ISEQ_TYPE_METHOD) {
-        return body->location.base_label;
+        return body->location.label;
     }
     else {
         return Qnil;

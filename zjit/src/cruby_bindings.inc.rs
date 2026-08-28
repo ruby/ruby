@@ -619,7 +619,6 @@ pub struct iseq_inline_storage_entry {
 #[repr(C)]
 pub struct rb_iseq_location_struct {
     pub pathobj: VALUE,
-    pub base_label: VALUE,
     pub label: VALUE,
     pub first_lineno: ::std::os::raw::c_int,
     pub node_id: ::std::os::raw::c_int,
@@ -2100,7 +2099,7 @@ pub struct zjit_jit_frame {
     pub stack: __IncompleteArrayField<VALUE>,
 }
 pub const ISEQ_BODY_OFFSET_PARAM: zjit_struct_offsets = 16;
-pub const ISEQ_BODY_OFFSET_OUTER_VARIABLES: zjit_struct_offsets = 248;
+pub const ISEQ_BODY_OFFSET_OUTER_VARIABLES: zjit_struct_offsets = 240;
 pub const RUBY_OFFSET_THREAD_RACTOR: zjit_struct_offsets = 24;
 pub type zjit_struct_offsets = u32;
 #[repr(C)]
