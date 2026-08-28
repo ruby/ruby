@@ -638,6 +638,12 @@ module Gem::Security
     rescue OpenSSL::PKey::PKeyError, ArgumentError
       raise Gem::Security::Exception,
         "incorrect signing key for signing"
+    # Ruby OpenSSL only accepts the nil digest ML-DSA needs from 3.3 on.
+    rescue TypeError
+      raise if digest_name
+
+      raise Gem::Security::Exception,
+        "certificate signing failed: ML-DSA requires Ruby OpenSSL >= 3.3."
     end
   end
 

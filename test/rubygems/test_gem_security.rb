@@ -85,6 +85,18 @@ class TestGemSecurity < Gem::TestCase
     assert_equal 59, key_ident.value.length
   end
 
+  def test_class_create_cert_email_ml_dsa_65_without_cert_support
+    omit_unless_support_ml_dsa_key
+    omit_if_support_ml_dsa_cert
+
+    e = assert_raise Gem::Security::Exception do
+      Gem::Security.create_cert_email "nobody@example",
+                                      ML_DSA_65_PRIVATE_KEY, 60
+    end
+
+    assert_match(/^certificate signing failed: /, e.message)
+  end
+
   def test_class_create_key
     key = Gem::Security.create_key "rsa"
 
