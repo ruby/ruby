@@ -367,6 +367,9 @@ module Gem::Security
   ML_DSA_65_NAME = "ML-DSA-65"
   ML_DSA_87_NAME = "ML-DSA-87"
 
+  ML_DSA_NAMES = [ML_DSA_44_NAME, ML_DSA_65_NAME, ML_DSA_87_NAME].freeze
+  private_constant :ML_DSA_NAMES
+
   ##
   # Cipher used to encrypt the key pair used to sign gems.
   # Must be in the list returned by OpenSSL::Cipher.ciphers
@@ -518,12 +521,35 @@ module Gem::Security
   private_class_method :create_ml_dsa_key
 
   ##
+  # Returns whether +key+ uses ML-DSA. OpenSSL::PKey::PKey#oid raises for the
+  # provider-backed keys ML-DSA uses, so the algorithm is read from the
+  # SubjectPublicKeyInfo instead.
+
+  def self.ml_dsa_key?(key)
+    algorithm = OpenSSL::ASN1.decode(key.public_to_der).value.first.value.first
+    ML_DSA_NAMES.include?(algorithm.ln)
+  rescue OpenSSL::ASN1::ASN1Error, OpenSSL::PKey::PKeyError, NoMethodError
+    false
+  end
+  private_class_method :ml_dsa_key?
+
+  ##
   # Returns whether the +key+ requires an explicit digest algorithm for signing
   # and verification. ML-DSA has a built-in digest and does not accept one.
+  # Any other algorithm raises, since a gem carries no record of how its
+  # signature was produced and RubyGems must not guess.
 
   def self.digest_required?(key)
-    key.is_a?(OpenSSL::PKey::RSA) || key.is_a?(OpenSSL::PKey::DSA) ||
-      key.is_a?(OpenSSL::PKey::EC)
+    case key
+    when OpenSSL::PKey::RSA, OpenSSL::PKey::DSA, OpenSSL::PKey::EC
+      true
+    else
+      return false if ml_dsa_key?(key)
+
+      raise Gem::Security::Exception,
+        "unsupported key algorithm. RSA, DSA, EC, ML-DSA-44, ML-DSA-65, and "\
+        "ML-DSA-87 keys are supported."
+    end
   end
 
   ##

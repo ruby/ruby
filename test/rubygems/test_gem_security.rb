@@ -192,6 +192,20 @@ class TestGemSecurity < Gem::TestCase
     assert Gem::Security.digest_required?(Gem::Security.create_key("ec"))
   end
 
+  def test_class_digest_required_raises_unsupported_algorithm
+    key = begin
+      OpenSSL::PKey.generate_key("X25519")
+    rescue OpenSSL::PKey::PKeyError, NoMethodError
+      omit "X25519 is not available"
+    end
+
+    e = assert_raise Gem::Security::Exception do
+      Gem::Security.digest_required?(key)
+    end
+
+    assert_match(/^unsupported key algorithm\./, e.message)
+  end
+
   def test_class_digest_required_ml_dsa_65
     omit_unless_support_pqc
 
