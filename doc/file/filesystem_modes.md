@@ -50,13 +50,17 @@ Dir.rmdir(dirpath)
 You can use one of these methods to change the [permissions][permissions]
 and [special bits][special bits] (but not the [file type][file type]):
 
-- File::chmod.
-- FileUtils::chmod.
-- FileUtils::chmod_R.
 - File#chmod.
-- Pathname#chmod.
+- File::chmod.
+- File::lchmod (does not follow symbolic links).
 - FileUtils#chmod.
 - FileUtils#chmod_R.
+- FileUtils::chmod.
+- FileUtils::chmod_R.
+- Pathname#chmod.
+- Pathname#lchmod (does not follow symbolic links).
+
+The actual effects of these methods is filesystem-dependent.
 
 ## Permissions
 
