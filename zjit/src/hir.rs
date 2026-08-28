@@ -6547,6 +6547,10 @@ impl Function {
                             _ => None,
                         })
                     }
+                    &Insn::FixnumSub { left, right, .. } if left == right => {
+                        // x - x == 0 for every fixnum x
+                        self.new_insn(Insn::Const { val: Const::Value(VALUE::fixnum_from_isize(0)) })
+                    }
                     &Insn::FixnumSub { left, right, .. } => {
                         match (self.type_of(left).fixnum_value(), self.type_of(right).fixnum_value()) {
                             (_, Some(0)) => { self.make_equal_to(insn_id, left); continue; }
@@ -6624,19 +6628,44 @@ impl Function {
                             _ => None,
                         })
                     }
+                    &Insn::FixnumXor { left, right, .. } if left == right => {
+                        // x ^ x == 0 for every fixnum x
+                        self.new_insn(Insn::Const { val: Const::Value(VALUE::fixnum_from_isize(0)) })
+                    }
                     &Insn::FixnumXor { left, right, .. } => {
+                        match (self.type_of(left).fixnum_value(), self.type_of(right).fixnum_value()) {
+                            (Some(0), _) => { self.make_equal_to(insn_id, right); continue; }
+                            (_, Some(0)) => { self.make_equal_to(insn_id, left); continue; }
+                            _ => {}
+                        }
                         self.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
                             (Some(l), Some(r)) => Some(l ^ r),
                             _ => None,
                         })
                     }
+                    &Insn::FixnumAnd { left, right, .. } if left == right => {
+                        // x & x == x for every fixnum x
+                        self.make_equal_to(insn_id, left);
+                        continue;
+                    }
                     &Insn::FixnumAnd { left, right, .. } => {
                         self.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
                             (Some(l), Some(r)) => Some(l & r),
+                            (Some(0), _) | (_, Some(0)) => Some(0),
                             _ => None,
                         })
                     }
+                    &Insn::FixnumOr { left, right, .. } if left == right => {
+                        // x | x == x for every fixnum x
+                        self.make_equal_to(insn_id, left);
+                        continue;
+                    }
                     &Insn::FixnumOr { left, right, .. } => {
+                        match (self.type_of(left).fixnum_value(), self.type_of(right).fixnum_value()) {
+                            (Some(0), _) => { self.make_equal_to(insn_id, right); continue; }
+                            (_, Some(0)) => { self.make_equal_to(insn_id, left); continue; }
+                            _ => {}
+                        }
                         self.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
                             (Some(l), Some(r)) => Some(l | r),
                             _ => None,
