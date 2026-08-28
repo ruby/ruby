@@ -486,6 +486,7 @@ pub const BUILTIN_ATTR_SINGLE_NOARG_LEAF: rb_builtin_attr = 2;
 pub const BUILTIN_ATTR_INLINE_BLOCK: rb_builtin_attr = 4;
 pub const BUILTIN_ATTR_C_TRACE: rb_builtin_attr = 8;
 pub const BUILTIN_ATTR_WITHOUT_INTERRUPTS: rb_builtin_attr = 16;
+pub const BUILTIN_ATTR_CALLER_BOX: rb_builtin_attr = 32;
 pub type rb_builtin_attr = u32;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]

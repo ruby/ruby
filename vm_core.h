@@ -404,6 +404,8 @@ enum rb_builtin_attr {
     BUILTIN_ATTR_C_TRACE = 0x08,
     // The iseq uses noint branch/jump opcodes that skip interrupt checking.
     BUILTIN_ATTR_WITHOUT_INTERRUPTS = 0x10,
+    // The iseq operates on its caller's box, like C functions do.
+    BUILTIN_ATTR_CALLER_BOX = 0x20,
 };
 
 typedef VALUE (*rb_jit_func_t)(struct rb_execution_context_struct *, struct rb_control_frame_struct *);
