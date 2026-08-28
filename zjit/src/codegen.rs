@@ -2034,7 +2034,6 @@ fn gen_invoke_block_iseq_direct(
     let jit_frame = gen_write_jit_frame(asm, state, stack_map.len());
     gen_save_sp(asm, stack_size);
 
-    gen_spill_locals(jit, asm, state);
     asm.stack_map(stack_map, jit_frame, state.depth);
 
     gen_push_frame(asm, args.len(), state, ControlFrame {
