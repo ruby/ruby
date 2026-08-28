@@ -374,7 +374,7 @@ location_base_label(rb_backtrace_location_t *loc)
         return rb_id2str(loc->cme->def->original_id);
     }
 
-    return ISEQ_BODY(loc->iseq)->location.base_label;
+    return rb_iseq_base_label(loc->iseq);
 }
 
 /*

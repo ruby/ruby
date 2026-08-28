@@ -12680,7 +12680,7 @@ typedef uint32_t ibf_offset_t;
 
 #define IBF_MAJOR_VERSION ISEQ_MAJOR_VERSION
 #ifdef RUBY_DEVEL
-#define IBF_DEVEL_VERSION 7
+#define IBF_DEVEL_VERSION 8
 #define IBF_MINOR_VERSION (ISEQ_MINOR_VERSION * 10000 + IBF_DEVEL_VERSION)
 #else
 #define IBF_MINOR_VERSION ISEQ_MINOR_VERSION
@@ -13774,7 +13774,6 @@ ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq)
     const struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
 
     const VALUE location_pathobj_index = ibf_dump_object(dump, body->location.pathobj); /* TODO: freeze */
-    const VALUE location_base_label_index = ibf_dump_object(dump, body->location.base_label);
     const VALUE location_label_index = ibf_dump_object(dump, body->location.label);
 
 #if IBF_ISEQ_ENABLE_LOCAL_BUFFER
@@ -13856,7 +13855,6 @@ ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq)
     ibf_dump_write_small_value(dump, IBF_BODY_OFFSET(param_opt_table_offset));
     ibf_dump_write_small_value(dump, param_keyword_offset);
     ibf_dump_write_small_value(dump, location_pathobj_index);
-    ibf_dump_write_small_value(dump, location_base_label_index);
     ibf_dump_write_small_value(dump, location_label_index);
     ibf_dump_write_small_value(dump, body->location.first_lineno);
     ibf_dump_write_small_value(dump, body->location.node_id);
@@ -13972,7 +13970,6 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
     const ibf_offset_t param_opt_table_offset = (ibf_offset_t)IBF_BODY_OFFSET(ibf_load_small_value(load, &reading_pos));
     const ibf_offset_t param_keyword_offset = (ibf_offset_t)ibf_load_small_value(load, &reading_pos);
     const VALUE location_pathobj_index = ibf_load_small_value(load, &reading_pos);
-    const VALUE location_base_label_index = ibf_load_small_value(load, &reading_pos);
     const VALUE location_label_index = ibf_load_small_value(load, &reading_pos);
     const int location_first_lineno = (int)ibf_load_small_value(load, &reading_pos);
     const int location_node_id = (int)ibf_load_small_value(load, &reading_pos);
@@ -14137,7 +14134,6 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
     load->current_buffer = &load->global_buffer;
 #endif
 
-    RB_OBJ_WRITE(iseq, &load_body->location.base_label,    ibf_load_location_str(load, location_base_label_index));
     RB_OBJ_WRITE(iseq, &load_body->location.label,         ibf_load_location_str(load, location_label_index));
 
 #if IBF_ISEQ_ENABLE_LOCAL_BUFFER

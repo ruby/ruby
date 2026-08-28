@@ -3160,7 +3160,7 @@ warn_unused_block(const rb_callable_method_entry_t *cme, const rb_iseq_t *iseq, 
     }
     else if (RTEST(ruby_verbose) || strict_unused_block) {
         VALUE m_loc = rb_method_entry_location((const rb_method_entry_t *)cme);
-        VALUE name = rb_gen_method_name(cme->defined_class, ISEQ_BODY(iseq)->location.base_label);
+        VALUE name = rb_gen_method_name(cme->defined_class, rb_iseq_base_label(iseq));
 
         if (!NIL_P(m_loc)) {
             rb_warn("the block passed to '%"PRIsVALUE"' defined at %"PRIsVALUE":%"PRIsVALUE" may be ignored",

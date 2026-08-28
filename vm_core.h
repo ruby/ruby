@@ -338,7 +338,6 @@ struct rb_execution_context_struct;
 
 typedef struct rb_iseq_location_struct {
     VALUE pathobj;      /* String (path) or Array [path, realpath]. Frozen. */
-    VALUE base_label;   /* String */
     VALUE label;        /* String */
     int first_lineno;
     int node_id;
