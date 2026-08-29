@@ -1022,6 +1022,35 @@ def test_branch_coverage_for_eval_repeated
     }
   end
 
+  def test_line_stub_does_not_clobber_existing_coverage
+    Dir.mktmpdir {|tmp|
+      Dir.chdir(tmp) {
+        File.open("test.rb", "w") do |f|
+          f.puts <<-EOS
+            def coverage_test_snapshot
+              :ok
+            end
+          EOS
+        end
+
+        assert_in_out_err(ARGV, <<-"end;", ["[1, 1, nil]", "[1, 1, nil]", "[1, 2, nil]"], [])
+          Coverage.start
+          tmp = Dir.pwd
+          f = tmp + "/test.rb"
+          require f
+          coverage_test_snapshot
+          cov = Coverage.peek_result[f]
+          Coverage.line_stub(f)
+          cov2 = Coverage.peek_result[f]
+          coverage_test_snapshot
+          p cov
+          p cov2
+          p Coverage.result[f]
+        end;
+      }
+    }
+  end
+
   def test_stop_wrong_peephole_optimization
     result = {
       :lines => [1, 1, 1, nil]
