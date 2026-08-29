@@ -545,7 +545,7 @@ class TestEnumerable < Test::Unit::TestCase
     EOS
   end
 
-  def test_one
+  def test_one_p
     assert(@obj.one? {|x| x == 3 })
     assert(!(@obj.one? {|x| x == 1 }))
     assert(!(@obj.one? {|x| x == 4 }))
@@ -564,7 +564,7 @@ class TestEnumerable < Test::Unit::TestCase
     assert([ nil, true, 99 ].one?(Integer))
   end
 
-  def test_one_with_unused_block
+  def test_one_p_with_unused_block
     assert_in_out_err [], <<-EOS, [], ["-:1: warning: given block not used"]
       [1, 2].one?(1) {|x| x == 3 }
     EOS
@@ -577,6 +577,24 @@ class TestEnumerable < Test::Unit::TestCase
     assert_in_out_err [], <<-EOS, [], ["-:1: warning: given block not used"]
       {a: 1, b: 2}.one?([:b, 2]) {|x| x == 4 }
     EOS
+  end
+
+  def test_one
+    assert_equal(42, [42].one)
+    assert_raise_with_message(RuntimeError, "collection is empty") do
+      [].one
+    end
+    assert_raise_with_message(RuntimeError, "collection contains more than one item") do
+      [42, 43].one
+    end
+  end
+
+  def test_one_default
+    assert_in_out_err [], <<-EOS, [], ["-:1: warning: block supersedes default value argument"]
+      [].one(42) { 42 }
+    EOS
+    assert_equal(42, [].one(42))
+    assert_equal(42, [].one { 42 })
   end
 
   def test_none
