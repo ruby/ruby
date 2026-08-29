@@ -367,6 +367,17 @@ class TestIO_Console
     end
   end
 
+  def test_getpass_empty
+    helper do |m, s|
+      result = Thread.new {s.getpass("> ")}
+      assert_equal("> ", m.readpartial(10))
+      Timeout.timeout(1) {Thread.pass while s.echo?}
+      m.write "\C-D"
+      assert_nil(result.value)
+      assert_equal("\r\n", m.readpartial(10))
+    end
+  end
+
   def test_iflush
     pend "stty cannot flush terminal queues" if IO.private_method_defined?(:_io_console_stty)
 
