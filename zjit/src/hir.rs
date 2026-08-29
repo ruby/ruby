@@ -8919,15 +8919,103 @@ fn add_iseq_to_hir(
                     state.stack_push(insn_id);
                 }
                 YARVINSN_splatarray => {
+                    /*
+                    This is based on:
+                        static VALUE
+                        vm_splat_array(VALUE flag, VALUE ary)
+                        {
+                            if (NIL_P(ary)) {
+                                return RTEST(flag) ? rb_ary_new() : rb_cArray_empty_frozen;
+                            }
+                            VALUE tmp = rb_check_to_array(ary);
+                            if (NIL_P(tmp)) {
+                                return rb_ary_new3(1, ary);
+                            }
+                            else if (RTEST(flag)) {
+                                return rb_ary_dup(tmp);
+                            }
+                            else {
+                                return tmp;
+                            }
+                        }
+                    but we know `flag` at compile-time, and we inline the nil and is-array
+                    checks as branches so they fold away when the type of `val` is known:
+
+                                       block
+                                HasType val, NilClass
+                                  /            \
+                          is_nil_block     not_nil_block
+                          flag ? NewArray  HasType val, ArrayExact
+                               : Const []      /            \
+                                |      is_array_block   not_array_block
+                                |      flag ? ArrayDup  flag ? ToNewArray
+                                |           : val            : ToArray
+                                 \             |            /
+                                  \            |           /
+                                     join_block(result)
+
+                    rb_check_to_array returns `ary` unchanged when it is already T_ARRAY, so
+                    is_array_block only needs the flag-dependent dup. Everything else (to_ary
+                    conversion, wrapping in a one-element array) stays in the ToArray /
+                    ToNewArray fallback, which calls rb_vm_splat_array.
+                    */
                     let flag = get_arg(pc, 0);
                     let result_must_be_mutable = flag.test();
                     let val = state.stack_pop()?;
-                    let obj = if result_must_be_mutable {
-                        fun.push_insn(block, Insn::ToNewArray { val, state: exit_id })
+
+                    let is_nil_block = fun.new_block(insn_idx);
+                    let not_nil_block = fun.new_block(insn_idx);
+                    let is_array_block = fun.new_block(insn_idx);
+                    let not_array_block = fun.new_block(insn_idx);
+                    let join_block = fun.new_block(insn_idx);
+                    let join_param = fun.push_insn(join_block, Insn::Param);
+
+                    // if (NIL_P(ary))
+                    let ary_is_nil = fun.push_insn(block, Insn::HasType { val, expected: types::NilClass });
+                    fun.push_insn(block, Insn::CondBranch {
+                        val: ary_is_nil,
+                        if_true: BranchEdge { target: is_nil_block, args: vec![] },
+                        if_false: BranchEdge { target: not_nil_block, args: vec![] }
+                    });
+
+                    // return RTEST(flag) ? rb_ary_new() : rb_cArray_empty_frozen;
+                    let result = if result_must_be_mutable {
+                        fun.push_insn(is_nil_block, Insn::NewArray { elements: vec![], state: exit_id })
                     } else {
-                        fun.push_insn(block, Insn::ToArray { val, state: exit_id })
+                        fun.push_insn(is_nil_block, Insn::Const { val: Const::Value(unsafe { rb_cArray_empty_frozen }) })
                     };
-                    state.stack_push(obj);
+                    fun.push_insn(is_nil_block, Insn::Jump(BranchEdge { target: join_block, args: vec![result] }));
+
+                    // Fast path for when rb_check_to_array would return `ary` itself: exact
+                    // Array, no conversion needed. Subclasses take the fallback since HasType
+                    // can only test exact classes at runtime.
+                    let not_nil = fun.push_insn(not_nil_block, Insn::RefineType { val, new_type: types::NotNil });
+                    let is_array = fun.push_insn(not_nil_block, Insn::HasType { val: not_nil, expected: types::ArrayExact });
+                    fun.push_insn(not_nil_block, Insn::CondBranch {
+                        val: is_array,
+                        if_true: BranchEdge { target: is_array_block, args: vec![] },
+                        if_false: BranchEdge { target: not_array_block, args: vec![] }
+                    });
+
+                    // return RTEST(flag) ? rb_ary_dup(tmp) : tmp;
+                    let ary = fun.push_insn(is_array_block, Insn::RefineType { val: not_nil, new_type: types::ArrayExact });
+                    let result = if result_must_be_mutable {
+                        fun.push_insn(is_array_block, Insn::ArrayDup { val: ary, state: exit_id })
+                    } else {
+                        ary
+                    };
+                    fun.push_insn(is_array_block, Insn::Jump(BranchEdge { target: join_block, args: vec![result] }));
+
+                    // Fall back to rb_vm_splat_array for the to_ary conversion.
+                    let result = if result_must_be_mutable {
+                        fun.push_insn(not_array_block, Insn::ToNewArray { val: not_nil, state: exit_id })
+                    } else {
+                        fun.push_insn(not_array_block, Insn::ToArray { val: not_nil, state: exit_id })
+                    };
+                    fun.push_insn(not_array_block, Insn::Jump(BranchEdge { target: join_block, args: vec![result] }));
+
+                    block = join_block;
+                    state.stack_push(join_param);
                 }
                 YARVINSN_splatkw => {
                     let block_val = state.stack_pop()?;
