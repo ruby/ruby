@@ -2238,17 +2238,17 @@ console_ttyname(VALUE io)
 	char termname[1024], *tn = termname;
 	size_t size = sizeof(termname);
 	int e;
-	if (ttyname_r(fd, tn, size) == 0)
+	if ((e = ttyname_r(fd, tn, size)) == 0)
 	    return rb_interned_str_cstr(tn);
-	if ((e = errno) == ERANGE) {
+	if (e == ERANGE) {
 	    VALUE s = rb_str_new(0, size);
 	    while (1) {
 		tn = RSTRING_PTR(s);
 		size = rb_str_capacity(s);
-		if (ttyname_r(fd, tn, size) == 0) {
+		if ((e = ttyname_r(fd, tn, size)) == 0) {
 		    return rb_str_to_interned_str(rb_str_resize(s, strlen(tn)));
 		}
-		if ((e = errno) != ERANGE) break;
+		if (e != ERANGE) break;
 		if ((size *= 2) >= INT_MAX/2) break;
 		rb_str_resize(s, size);
 	    }
