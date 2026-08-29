@@ -92,7 +92,12 @@ static const void *const condattr_monotonic = NULL;
     #define USE_MN_THREADS 0
   #elif HAVE_SYS_EPOLL_H
     #include <sys/epoll.h>
-    #define USE_MN_THREADS 1
+    #ifdef EPOLLONESHOT
+      #define USE_MN_THREADS 1
+    #else
+      // the scheduler arms io fds with EPOLLONESHOT (Linux 2.6.2)
+      #define USE_MN_THREADS 0
+    #endif
   #elif HAVE_SYS_EVENT_H
     #include <sys/event.h>
     #define USE_MN_THREADS 1
