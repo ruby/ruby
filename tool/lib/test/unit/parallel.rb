@@ -167,7 +167,7 @@ module Test
         abort("#{e.inspect} in _report(#{res.inspect}, #{args.inspect})\n#{e.backtrace.join("\n")}")
       end
 
-      def puke(klass, meth, e) # :nodoc:
+      def puke(klass, meth, e, file=nil) # :nodoc:
         if e.is_a?(Test::Unit::PendedError)
           new_e = Test::Unit::PendedError.new(e.message)
           new_e.set_backtrace(e.backtrace)
