@@ -731,7 +731,7 @@ class TestIO_Console
     end
 
     def test_noctty
-      assert_equal(["nil"], run_noctty("IO.console"))
+      assert_equal(["[nil, nil]"], run_noctty("[IO.console, IO.console(:tty?)]"))
       if IO.method_defined?(:ttyname)
         assert_equal(["nil"], run_noctty("STDIN.ttyname rescue $!"))
       end
