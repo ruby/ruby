@@ -77,6 +77,9 @@ struct rb_fd_waiters {
     // what its waiters asked for.
     uint32_t armed_flags;
 
+    // epoll only: the fd is in the interest set (kept across oneshot disarms).
+    bool registered;
+
     // Bumped on full disarm.  Events carry the generation they were armed with,
     // so one queued before the fd was disarmed (and reused) is recognised.
     uint32_t generation;
