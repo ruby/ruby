@@ -712,7 +712,7 @@ class TestIO_Console
   if noctty
     require 'tempfile'
     NOCTTY = noctty
-    def run_noctty(src)
+    def run_noctty(src, require: "io/console", env: nil)
       t = Tempfile.new("noctty_out")
       t.close
       t2 = Tempfile.new("noctty_run")
@@ -722,12 +722,13 @@ class TestIO_Console
         '-e', 'open(ARGV[0], "w") {|f|',
         '-e',   'STDOUT.reopen(f)',
         '-e',   'STDERR.reopen(f)',
-        '-e',   'require "io/console"',
+        '-e',   "require #{require.dump}",
         '-e',   "f.puts (#{src}).inspect",
         '-e',   'f.flush',
         '-e',   'File.unlink(ARGV[1])',
         '-e', '}',
         '--', t.path, t2.path]
+      cmd.unshift(env) if env
       assert_ruby_status(cmd, rubybin: NOCTTY[0])
       30.times do
         break unless File.exist?(t2.path)
@@ -744,6 +745,25 @@ class TestIO_Console
       assert_equal(["[nil, nil]"], run_noctty("[IO.console, IO.console(:tty?)]"))
       if IO.method_defined?(:ttyname)
         assert_equal(["nil"], run_noctty("STDIN.ttyname rescue $!"))
+      end
+    end
+
+    def test_default_console_size
+      [
+        [40, 100],
+        [nil, 50],
+        [30, nil],
+        [0, 50],
+        [30, 0],
+        [-1, 50],
+        [30, -1],
+      ].each do |lines, columns|
+        result = run_noctty("IO.console_size",
+                            require: "io/console/size",
+                            env: {"LINES"=>lines&.to_s, "COLUMNS"=>columns&.to_s})
+        lines = 25 unless lines&.positive?
+        columns = 80 unless columns&.positive?
+        assert_equal([[lines, columns].inspect], result)
       end
     end
   end
