@@ -467,6 +467,8 @@ class TestIO_Console
         con.cursor_right(4); con.puts
         con.cursor_left(2); con.puts
         con.cursor_up(1); con.puts
+        p con.cursor
+        p con.cursor
       end;
       assert_equal("\e[6n", r.readpartial(5))
       w.print("\e[12;34R"); w.flush
@@ -475,6 +477,14 @@ class TestIO_Console
       assert_equal("\e[4C", r.gets.chomp)
       assert_equal("\e[2D", r.gets.chomp)
       assert_equal("\e[1A", r.gets.chomp)
+
+      assert_equal("\e[6n", r.readpartial(5))
+      w.print("\e[12R"); w.flush
+      assert_equal("nil", r.gets.chomp)
+
+      assert_equal("\e[6n", r.readpartial(5))
+      w.print("\e[12;34;56R"); w.flush
+      assert_equal("nil", r.gets.chomp)
     end
   end
 
