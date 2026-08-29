@@ -36,7 +36,7 @@
 # mkdepend: depends vmtc.inc => {$(VPATH)}vmtc.inc
 # mkdepend: undef parse.y => RIPPER
 
-.deps/depend update-dependencies: $(srcdir)/depend \
+.deps/depend update-dependencies: $(REVISION_H) $(srcdir)/depend \
                                   $(srcdir)/tool/mkdepend.rb \
                                   $(srcdir)/lib/mkmf/depend.rb
 	$(BASERUBY) "$(srcdir)/tool/mkdepend.rb" --root="$(srcdir)" \
