@@ -13016,6 +13016,74 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_optimize_string_byteslice_fixnum() {
+        eval(r#"
+            def test(s, beg, len) = s.byteslice(beg, len)
+            test("foo", 0, 1)
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :s@0x1000
+          v4:BasicObject = LoadField v2, :beg@0x1001
+          v5:BasicObject = LoadField v2, :len@0x1002
+          Jump bb3(v1, v3, v4, v5)
+        bb2():
+          EntryPoint JIT(0)
+          v8:BasicObject = LoadArg :self@0
+          v9:BasicObject = LoadArg :s@1
+          v10:BasicObject = LoadArg :beg@2
+          v11:BasicObject = LoadArg :len@3
+          Jump bb3(v8, v9, v10, v11)
+        bb3(v13:BasicObject, v14:BasicObject, v15:BasicObject, v16:BasicObject):
+          PatchPoint NoSingletonClass(String@0x1008)
+          PatchPoint MethodRedefined(String@0x1008, byteslice@0x1010, cme:0x1018)
+          v32:StringExact = GuardType v14, StringExact recompile
+          v33:Fixnum = GuardType v15, Fixnum
+          v34:Fixnum = GuardType v16, Fixnum
+          v35:StringExact|NilClass = StringByteslice v32, v33, v34
+          CheckInterrupts
+          Return v35
+        ");
+    }
+
+    #[test]
+    fn test_no_optimize_string_byteslice_non_fixnum() {
+        eval(r#"
+            def test(s, beg, len) = s.byteslice(beg, len)
+            test("foo", 0.0, 1.0)
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :s@0x1000
+          v4:BasicObject = LoadField v2, :beg@0x1001
+          v5:BasicObject = LoadField v2, :len@0x1002
+          Jump bb3(v1, v3, v4, v5)
+        bb2():
+          EntryPoint JIT(0)
+          v8:BasicObject = LoadArg :self@0
+          v9:BasicObject = LoadArg :s@1
+          v10:BasicObject = LoadArg :beg@2
+          v11:BasicObject = LoadArg :len@3
+          Jump bb3(v8, v9, v10, v11)
+        bb3(v13:BasicObject, v14:BasicObject, v15:BasicObject, v16:BasicObject):
+          PatchPoint NoSingletonClass(String@0x1008)
+          PatchPoint MethodRedefined(String@0x1008, byteslice@0x1010, cme:0x1018)
+          v32:StringExact = GuardType v14, StringExact recompile
+          v33:BasicObject = CCallVariadic v32, :String#byteslice@0x1040, v15, v16
+          CheckInterrupts
+          Return v33
+        ");
+    }
+
+    #[test]
     fn test_elide_string_getbyte_fixnum() {
         eval(r#"
             def test(s, i)

@@ -4831,6 +4831,25 @@ fn test_array_pop_arg() {
 }
 
 #[test]
+fn test_string_byteslice_basic() {
+    assert_snapshot!(inspect(r#"
+        def test(s, beg, len) = s.byteslice(beg, len)
+        test("hello", 1, 3)
+        test("hello", 1, 3)
+    "#), @r#""ell""#);
+}
+
+#[test]
+fn test_string_byteslice_bignum_arg_falls_back() {
+    assert_snapshot!(inspect(r#"
+        def test(s, beg, len) = s.byteslice(beg, len)
+        fixnum_result = test("hello", 0, 3)
+        bignum_result = test("hello", 0, 2**62)
+        [fixnum_result, bignum_result]
+    "#), @r#"["hel", "hello"]"#);
+}
+
+#[test]
 fn test_new_range_inclusive() {
     assert_snapshot!(inspect("
         def test(a, b) = a..b
