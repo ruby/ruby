@@ -1712,7 +1712,7 @@ rb_econv_insert_output(rb_econv_t *ec,
             size_t s = (*data_end_p - *buf_start_p) + need;
             if (s < need)
                 goto fail;
-            buf = ruby_xrealloc_sized(*buf_start_p, s, buf_end_p - buf_start_p);
+            buf = ruby_xrealloc_sized(*buf_start_p, s, *buf_end_p - *buf_start_p);
             *data_start_p = buf;
             *data_end_p = buf + (*data_end_p - *buf_start_p);
             *buf_start_p = buf;
