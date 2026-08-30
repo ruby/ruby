@@ -10559,6 +10559,10 @@ fn compile_entry_block(fun: &mut Function, jit_entry_insns: &[u32], insn_idx_to_
     let mut pc: Option<InsnId> = None;
     let &all_opts_passed_insn_idx = jit_entry_insns.last().unwrap();
 
+    if get_option!(stats) {
+        fun.count_iseq_calls(entry_block);
+    }
+
     // Check-and-jump for each missing optional PC
     let mut iter = jit_entry_insns.iter().peekable();
     while let Some(&jit_entry_insn) = iter.next() {
