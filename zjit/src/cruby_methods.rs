@@ -221,6 +221,7 @@ pub fn init() -> Annotations {
     annotate!(rb_cString, "size", types::Fixnum, no_gc, leaf, elidable);
     annotate!(rb_cString, "length", types::Fixnum, no_gc, leaf, elidable);
     annotate!(rb_cString, "getbyte", inline_string_getbyte);
+    annotate!(rb_cString, "byteslice", inline_string_byteslice);
     annotate!(rb_cString, "setbyte", inline_string_setbyte);
     annotate!(rb_cString, "empty?", inline_string_empty_p, types::BoolExact, no_gc, leaf, elidable);
     annotate!(rb_cString, "<<", inline_string_append);
@@ -507,6 +508,17 @@ fn inline_string_getbyte(fun: &mut hir::Function, block: hir::BlockId, recv: hir
         return Some(result);
     }
     None
+}
+
+fn inline_string_byteslice(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[beg, len] = args else { return None; };
+    if fun.likely_a(beg, types::Fixnum, state) && fun.likely_a(len, types::Fixnum, state) {
+        let beg = fun.coerce_to(block, beg, types::Fixnum, state);
+        let len = fun.coerce_to(block, len, types::Fixnum, state);
+        Some(fun.push_insn(block, hir::Insn::StringByteslice { string: recv, beg, len, state }))
+    } else {
+        None
+    }
 }
 
 fn inline_string_setbyte(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
