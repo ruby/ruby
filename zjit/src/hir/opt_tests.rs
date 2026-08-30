@@ -18147,10 +18147,12 @@ mod hir_opt_tests {
           PushInlineFrame :klass_eq, v21 (0x1048), num_args=1
           PatchPoint StableConstantNames(0x1068, Integer)
           v31:ClassSubclass[Integer@0x1070] = Const Value(VALUE(0x1070))
-          v34:BasicObject = Send v12, :==, v31 # SendFallbackReason: Send: megamorphic call site
+          PatchPoint MethodRedefined(Class@0x1078, ==@0x1080, cme:0x1088)
+          v45:CBool = IsBitEqual v12, v31
+          v46:BoolExact = BoxBool v45
           CheckInterrupts
           PopInlineFrame
-          Return v34
+          Return v46
         ");
     }
 
