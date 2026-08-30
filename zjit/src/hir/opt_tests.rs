@@ -18120,6 +18120,44 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_specialize_inlined_megamorphic_receiver() {
+        set_call_threshold(6);
+        eval("
+        def klass_eq(klass) = klass == Integer
+
+        def test = klass_eq(String)
+
+        # 5 distinct receiver classes at the == site: one more than the profile's
+        # 4 buckets, so the distribution is megamorphic.
+        klass_eq(Integer); klass_eq(Array); klass_eq(Hash); klass_eq(Symbol); klass_eq(Float)
+        6.times { test }
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:4:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint StableConstantNames(0x1000, String)
+          v12:ClassSubclass[String@0x1008] = Const Value(VALUE(0x1008))
+          PatchPoint MethodRedefined(Object@0x1010, klass_eq@0x1018, cme:0x1020)
+          v21:ObjectSubclass[class_exact*:Object@VALUE(0x1010)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1010)] recompile
+          PushInlineFrame :klass_eq, v21 (0x1048), num_args=1
+          PatchPoint StableConstantNames(0x1068, Integer)
+          v31:ClassSubclass[Integer@0x1070] = Const Value(VALUE(0x1070))
+          v34:BasicObject = Send v12, :==, v31 # SendFallbackReason: Send: megamorphic call site
+          CheckInterrupts
+          PopInlineFrame
+          Return v34
+        ");
+    }
+
+    #[test]
     fn specialize_polymorphic_send_preserves_argument_profiles() {
         // Each arm of a polymorphic dispatch must still see the profiled types of
         // the non-receiver arguments: the Array arm below can only inline ArrayAref
