@@ -2023,13 +2023,22 @@ rb_file_chardev_p(VALUE obj, VALUE fname)
 
 /*
  * call-seq:
- *    File.exist?(file_name)    ->  true or false
+ *   File.exist?(object) -> true or false
  *
- * Return <code>true</code> if the named file exists.
+ * Return whether the specified +object+, a string path or IO object, exists:
  *
- * _file_name_ can be an IO object.
+ *   # String paths.
+ *   File.exist?('README.md') # => true
+ *   File.exist?('.')         # => true
+ *   filepath = 't.tmp'
+ *   File.exist?(filepath)    # => false
+ *   File.write(filepath, 'foo')
+ *   File.exist?(filepath)    # => true
+ *   # File (IO object).
+ *   file = File.new(filepath)
+ *   File.exist?(file)        # => true
+ *   file.close               # Clean up.
  *
- * "file exists" means that stat() or fstat() system call is successful.
  */
 
 static VALUE
