@@ -314,7 +314,7 @@ module Random::Formatter
     size = source.size
     raise ArgumentError, "character length must not be negative" if 0 > n
     raise ArgumentError, "character source must not be empty" if size == 0
-    return source.first * n if size < 2
+    return source.values_at(0).join('') * n if size < 2
     m = 1
     limit = size
     while limit * size <= 0x100000000
