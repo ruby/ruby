@@ -255,6 +255,28 @@ class Gem::Package
   end
 
   ##
+  # Derives the content address from the gem's file name and verifies it
+  # against the SHA256 digest of the file contents.
+
+  def content_address
+    path = @gem&.path
+    return unless path
+
+    return nil unless Gem::ContentAddress.applicable?(spec)
+
+    filename = File.basename(path, ".gem")
+    base = "#{spec.name}-#{spec.version}"
+    suffix = filename.delete_prefix("#{base}-")
+    return nil if suffix == filename
+    return nil unless Gem::ContentAddress.match?(suffix)
+
+    require "digest"
+    digest = Digest::SHA256.file(path).hexdigest
+    raise Gem::InstallError, "content address mismatch for #{File.basename(path)}" unless digest.start_with?(suffix)
+    suffix
+  end
+
+  ##
   # Adds a checksum for each entry in the gem to checksums.yaml.gz.
 
   def add_checksums(tar)

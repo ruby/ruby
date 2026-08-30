@@ -8,7 +8,7 @@ class TestGemResolverAPISpecification < Gem::TestCase
     data = {
       name: "rails",
       number: "3.0.3",
-      platform: Gem::Platform.local.to_s,
+      suffix: Gem::Platform.local.to_s,
       dependencies: [
         ["bundler",  "~> 1.0"],
         ["railties", "= 3.0.3"],
@@ -30,12 +30,64 @@ class TestGemResolverAPISpecification < Gem::TestCase
     assert_nil spec.created_at
   end
 
+  def test_initialize_content_address
+    set = Gem::Resolver::APISet.new
+    data = {
+      name: "rails",
+      number: "3.0.3",
+      suffix: "abc1234567",
+      dependencies: [],
+      requirements: { platform: ["= #{Gem::Platform.local}"] },
+    }
+
+    spec = Gem::Resolver::APISpecification.new set, data
+
+    assert_equal "abc1234567", spec.content_address
+    assert_equal Gem::Platform.local, spec.platform
+    assert Gem::ContentAddress.match?(spec.content_address)
+    assert_equal "abc1234567", spec.spec.content_address
+  end
+
+  def test_initialize_does_not_treat_non_content_address_suffix_as_content_addressed
+    set = Gem::Resolver::APISet.new
+    data = {
+      name: "rails",
+      number: "3.0.3",
+      suffix: Gem::Platform.local.to_s,
+      dependencies: [],
+      requirements: { platform: ["= #{Gem::Platform.local}"] },
+    }
+
+    spec = Gem::Resolver::APISpecification.new set, data
+
+    assert_nil spec.content_address
+    refute Gem::ContentAddress.match?(spec.content_address)
+    assert_equal Gem::Platform.local, spec.platform
+  end
+
+  def test_content_addressed_specs_with_different_addresses_are_distinct
+    set = Gem::Resolver::APISet.new
+    data = {
+      name: "rails",
+      number: "3.0.3",
+      suffix: "abc1234567",
+      dependencies: [],
+      requirements: { platform: ["= #{Gem::Platform.local}"] },
+    }
+
+    first = Gem::Resolver::APISpecification.new set, data
+    second = Gem::Resolver::APISpecification.new set, data.merge(suffix: "def1234567")
+
+    refute_equal first, second
+    refute_equal first.hash, second.hash
+  end
+
   def test_initialize_created_at
     set = Gem::Resolver::APISet.new
     data = {
       name: "rails",
       number: "3.0.3",
-      platform: "ruby",
+      suffix: "ruby",
       dependencies: [],
       requirements: { created_at: ["2026-06-05T10:30:45Z"] },
     }
@@ -50,7 +102,7 @@ class TestGemResolverAPISpecification < Gem::TestCase
     data = {
       name: "rails",
       number: "3.0.3",
-      platform: "ruby",
+      suffix: "ruby",
       dependencies: [],
       requirements: { created_at: ["not a timestamp"] },
     }
@@ -65,7 +117,7 @@ class TestGemResolverAPISpecification < Gem::TestCase
     data = {
       name: "rails",
       number: "3.0.3",
-      platform: "ruby",
+      suffix: "ruby",
       dependencies: [],
       requirements: { created_at: ["2026"] },
     }
@@ -133,7 +185,7 @@ class TestGemResolverAPISpecification < Gem::TestCase
     data = {
       name: "rails",
       number: "3.0.3",
-      platform: "ruby",
+      suffix: "ruby",
       dependencies: [
         ["bundler",  "~> 1.0"],
         ["railties", "= 3.0.3"],
@@ -155,12 +207,42 @@ class TestGemResolverAPISpecification < Gem::TestCase
     assert_equal expected, spec.dependencies
   end
 
+  def test_fetch_development_dependencies_for_content_addressed_spec
+    fetched_tuple = nil
+    fetched_spec = util_spec "rails", "3.0.3" do |s|
+      s.add_development_dependency "a", "= 1"
+    end
+
+    source = Object.new
+    source.define_singleton_method(:fetch_spec) do |tuple|
+      fetched_tuple = tuple
+      fetched_spec
+    end
+
+    set = Gem::Resolver::APISet.new
+    set.instance_variable_set :@source, source
+    data = {
+      name: "rails",
+      number: "3.0.3",
+      suffix: "abc1234567",
+      dependencies: [],
+      requirements: { platform: ["= #{Gem::Platform.local}"] },
+    }
+
+    spec = Gem::Resolver::APISpecification.new set, data
+
+    spec.fetch_development_dependencies
+
+    assert_equal "rails-3.0.3-abc1234567.gemspec", fetched_tuple.spec_name
+    assert_equal [Gem::Dependency.new("a", "= 1", :development)], spec.dependencies
+  end
+
   def test_installable_platform_eh
     set = Gem::Resolver::APISet.new
     data = {
       name: "a",
       number: "1",
-      platform: "ruby",
+      suffix: "ruby",
       dependencies: [],
     }
 
@@ -171,7 +253,7 @@ class TestGemResolverAPISpecification < Gem::TestCase
     data = {
       name: "b",
       number: "1",
-      platform: "cpu-other_platform-1",
+      suffix: "cpu-other_platform-1",
       dependencies: [],
     }
 
@@ -182,7 +264,7 @@ class TestGemResolverAPISpecification < Gem::TestCase
     data = {
       name: "c",
       number: "1",
-      platform: Gem::Platform.local.to_s,
+      suffix: Gem::Platform.local.to_s,
       dependencies: [],
     }
 
@@ -196,7 +278,7 @@ class TestGemResolverAPISpecification < Gem::TestCase
     data = {
       name: "a",
       number: "1",
-      platform: "ruby",
+      suffix: "ruby",
       dependencies: [],
     }
 
@@ -215,7 +297,7 @@ class TestGemResolverAPISpecification < Gem::TestCase
     data = {
       name: "a",
       number: "1",
-      platform: "ruby",
+      suffix: "ruby",
       dependencies: [],
     }
 
@@ -239,7 +321,7 @@ class TestGemResolverAPISpecification < Gem::TestCase
     data = {
       name: "j",
       number: "1",
-      platform: "jruby",
+      suffix: "jruby",
       dependencies: [],
     }
 

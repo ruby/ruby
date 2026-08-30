@@ -80,4 +80,40 @@ class TestGemContentAddress < Gem::TestCase
     spec.content_address = "abcdef12"
     refute Gem::ContentAddress.content_addressed?(spec)
   end
+
+  def test_ruby_abi_specificity_match_ranks_content_addressed_spec_for_that_ruby_first
+    spec = Gem::Specification.new "a", 1
+    spec.platform = "x86_64-linux"
+    spec.required_ruby_version = "~> 3.4.0"
+    spec.content_address = "abcdef12"
+
+    assert_equal 0, Gem::ContentAddress.ruby_abi_specificity_match(spec, Gem::Version.new("3.4.1"))
+  end
+
+  def test_ruby_abi_specificity_match_ranks_non_content_addressed_spec_second
+    spec = Gem::Specification.new "a", 1
+    spec.platform = "x86_64-linux"
+    spec.required_ruby_version = "~> 3.3.0"
+
+    assert_equal 1, Gem::ContentAddress.ruby_abi_specificity_match(spec, Gem::Version.new("3.4.1"))
+  end
+
+  def test_ruby_abi_specificity_match_ranks_content_addressed_spec_for_another_ruby_last
+    spec = Gem::Specification.new "a", 1
+    spec.platform = "x86_64-linux"
+    spec.required_ruby_version = "~> 3.3.0"
+    spec.content_address = "abcdef12"
+
+    assert_equal 2, Gem::ContentAddress.ruby_abi_specificity_match(spec, Gem::Version.new("3.4.1"))
+  end
+
+  def test_ruby_abi_specificity_match_defaults_to_the_running_ruby
+    spec = Gem::Specification.new "a", 1
+    spec.platform = "x86_64-linux"
+    spec.required_ruby_version = "~> 3.4.0"
+    spec.content_address = "abcdef12"
+
+    assert_equal Gem::ContentAddress.ruby_abi_specificity_match(spec, Gem.ruby_version),
+                 Gem::ContentAddress.ruby_abi_specificity_match(spec)
+  end
 end

@@ -1943,6 +1943,11 @@ dependencies: []
     assert_nil spec.ruby_abi
   end
 
+  def test_ruby_abi_returns_nil_for_default_required_ruby_version
+    spec = Gem::Specification.new
+    assert_nil spec.ruby_abi
+  end
+
   def test_full_name
     assert_equal "a-1", @a1.full_name
 
@@ -1959,6 +1964,15 @@ dependencies: []
     @a1 = Gem::Specification.new "a", 1
     @a1.platform = "current"
     assert_equal "a-1-x86-darwin-8", @a1.full_name
+  end
+
+  def test_content_addressable_full_name
+    @a1 = Gem::Specification.new "a", 1
+    @a1.required_ruby_version = ">= 3.0"
+    @a1.platform = "x86_64-linux"
+    @a1.content_address = "abcdef12"
+    assert_equal "a-1-abcdef12", @a1.full_name
+    assert_equal "x86_64-linux", @a1.platform.to_s
   end
 
   def test_full_name_windows
@@ -1985,6 +1999,21 @@ dependencies: []
     assert_equal @a1.hash, @a1.hash
     assert_equal @a1.hash, @a1.dup.hash
     refute_equal @a1.hash, @a2.hash
+  end
+
+  def test_content_addressable_specs_are_distinct
+    first = Gem::Specification.new "a", 1
+    first.required_ruby_version = ">= 3.0"
+    first.platform = "arm64-darwin"
+    first.content_address = "abcdef12"
+
+    second = Gem::Specification.new "a", 1
+    second.required_ruby_version = ">= 3.0"
+    second.platform = "arm64-darwin"
+    second.content_address = "12345678"
+
+    refute_equal first, second
+    assert_equal 2, [first, second].uniq.size
   end
 
   def test_installed_by_version
@@ -2378,6 +2407,31 @@ end
     same_spec = eval ruby_code
 
     assert_equal @a2, same_spec
+  end
+
+  def test_to_ruby_content_addressable
+    spec = Gem::Specification.new "a", 1
+    spec.required_ruby_version = ">= 3.0"
+    spec.platform = "x86_64-linux"
+    spec.content_address = "abcdef12"
+    spec.extensions = ["ext/a/extconf.rb"]
+
+    ruby_code = spec.to_ruby
+
+    expected_stub = <<~STUB.chomp
+      # stub: a 1 abcdef12 lib
+      # stub: ext/a/extconf.rb
+      # stub-target: platform=x86_64-linux
+    STUB
+
+    assert_includes ruby_code, expected_stub
+    assert_includes ruby_code, "if s.respond_to? :content_address="
+
+    same_spec = eval ruby_code
+
+    assert_equal "abcdef12", same_spec.content_address
+    assert_equal "x86_64-linux", same_spec.platform.to_s
+    assert_equal "a-1-abcdef12", same_spec.full_name
   end
 
   def test_to_ruby_with_rsa_key

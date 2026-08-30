@@ -34,4 +34,20 @@ module Gem::ContentAddress
   def self.match?(value)
     value.is_a?(String) && PATTERN.match?(value)
   end
+
+  ##
+  # Ranks +spec+ for candidate selection against +ruby_version+: a
+  # content-addressed spec built for that Ruby ranks first (0), any
+  # non-content-addressed spec next (1), and a content-addressed spec built
+  # for another Ruby last (2), since its binary cannot load there.
+
+  def self.ruby_abi_specificity_match(spec, ruby_version = Gem.ruby_version)
+    return 1 unless match?(spec.content_address)
+
+    if spec.required_ruby_version.satisfied_by?(ruby_version)
+      0
+    else
+      2
+    end
+  end
 end

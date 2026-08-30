@@ -617,6 +617,7 @@ module Bundler
 
           installer = Bundler::RubyGemsGemInstaller.at(
             path,
+            content_address: (spec.content_address if Gem::ContentAddress.content_addressed?(spec, validate_ruby_abi: false)),
             security_policy: Bundler.rubygems.security_policies[Bundler.settings["trust-policy"]],
             install_dir: rubygems_dir.to_s,
             bin_dir: Bundler.system_bindir.to_s,

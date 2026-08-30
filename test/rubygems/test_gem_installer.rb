@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "installer_test_case"
+require "digest"
 
 class TestGemInstaller < Gem::InstallerTestCase
   def setup
@@ -810,6 +811,46 @@ class TestGemInstaller < Gem::InstallerTestCase
     assert File.exist?(plugin_path), "plugin not written"
   end
 
+  def test_install_with_matching_content_address
+    _, a_gem = util_gem("a", 2) do |spec|
+      spec.required_ruby_version = "~> 3.4.0"
+      spec.platform = "x86_64-linux"
+    end
+
+    address = Digest::SHA256.file(a_gem).hexdigest[0, 8]
+    ca_gem = File.join(File.dirname(a_gem), "a-2-#{address}.gem")
+    FileUtils.cp a_gem, ca_gem
+
+    installer = Gem::Installer.at ca_gem, install_dir: @gemhome, force: true,
+                                          content_address: address
+    spec = installer.install
+
+    assert_equal address, spec.content_address
+    assert_path_exist File.join(@gemhome, "gems", "a-2-#{address}")
+  end
+
+  def test_install_raises_when_content_address_is_not_carried_by_package
+    platform_spec, platform_gem = util_gem("a", 2) do |spec|
+      spec.required_ruby_version = "~> 3.4.0"
+      spec.platform = "x86_64-linux"
+    end
+
+    Gem::Installer.at(platform_gem, install_dir: @gemhome, force: true).install
+    platform_gem_dir = File.join(@gemhome, "gems", platform_spec.full_name)
+    assert_path_exist platform_gem_dir
+
+    installer = Gem::Installer.at platform_gem, install_dir: @gemhome, force: true,
+                                                content_address: "deadbeef"
+
+    e = assert_raise Gem::InstallError do
+      installer.install
+    end
+
+    assert_match(/content address mismatch/, e.message)
+    assert_match(/expected deadbeef, got no content address/, e.message)
+    assert_path_exist platform_gem_dir
+  end
+
   def test_generate_plugins_with_install_dir
     spec = quick_gem "a" do |s|
       write_file File.join(@tempdir, "lib", "rubygems_plugin.rb") do |io|
@@ -1028,6 +1069,247 @@ class TestGemInstaller < Gem::InstallerTestCase
 
     assert_path_exist File.join(gemhome2, "gems", @spec.full_name)
     assert_path_not_exist File.join(Gem.user_dir, "gems", @spec.full_name)
+  end
+
+  def test_install_assigns_content_address_from_filename
+    _, a_gem = util_gem("a", 2) do |spec|
+      spec.required_ruby_version = ">= 3.0"
+      spec.platform = "x86_64-linux"
+    end
+
+    digest = Digest::SHA256.file(a_gem).hexdigest
+    address = digest[0, 8]
+    dir = File.dirname(a_gem)
+    filename = File.join(dir, "a-2-#{address}.gem")
+    FileUtils.cp a_gem, filename
+    installer = Gem::Installer.at filename, install_dir: @gemhome, force: true
+    # deliberately memoize the directory before installation, to prove the installation recalculates
+    installer.gem_dir
+    spec = installer.install
+
+    assert_equal address, spec.content_address
+    assert_equal "a-2-#{address}", spec.full_name
+    assert_path_exist File.join(@gemhome, "gems", "a-2-#{address}")
+    assert_path_exist File.join(@gemhome, "cache", "a-2-#{address}.gem")
+    assert_path_exist File.join(@gemhome, "specifications", "a-2-#{address}.gemspec")
+  end
+
+  def test_install_raises_for_mismatched_content_address
+    _, a_gem = util_gem("a", 2) do |spec|
+      spec.required_ruby_version = ">= 3.0"
+      spec.platform = "x86_64-linux"
+    end
+    dir = File.dirname(a_gem)
+    filename = File.join(dir, "a-2-deadbeef.gem")
+    FileUtils.cp a_gem, filename
+    installer = Gem::Installer.at filename, install_dir: @gemhome, force: true
+
+    e = assert_raise Gem::InstallError do
+      installer.install
+    end
+
+    assert_match(/content address mismatch/, e.message)
+  end
+
+  def test_non_content_addressed_gems_install_as_expected
+    _, a_gem = util_gem "a", 2
+    installer = Gem::Installer.at a_gem, install_dir: @gemhome, force: true
+    spec = installer.install
+
+    assert_nil spec.content_address
+    assert_equal "a-2", spec.full_name
+    assert_path_exist File.join(@gemhome, "gems", "a-2")
+    assert_path_exist File.join(@gemhome, "specifications", "a-2.gemspec")
+  end
+
+  def test_numeric_version_not_treated_as_content_address
+    _, a_gem = util_gem "a", "20240101"
+    installer = Gem::Installer.at a_gem, install_dir: @gemhome, force: true
+    spec = installer.install
+
+    assert_nil spec.content_address
+    assert_equal "a-20240101", spec.full_name
+    assert_path_exist File.join(@gemhome, "gems", "a-20240101")
+    assert_path_exist File.join(@gemhome, "specifications", "a-20240101.gemspec")
+  end
+
+  def test_normal_gem_with_hex_suffix_is_not_content_addressed
+    _, a_gem = util_gem "a", 2 do |spec|
+      spec.platform = Gem::Platform.new("x86-linux-deadbeef")
+    end
+    installer = Gem::Installer.at a_gem, install_dir: @gemhome, force: true
+    spec = installer.install
+
+    assert_nil spec.content_address
+    assert_equal "a-2-x86-linux-deadbeef", spec.full_name
+  end
+
+  def test_content_address_not_set_without_required_ruby_version_and_platform
+    _, a_gem = util_gem "a", 2
+    digest = Digest::SHA256.file(a_gem).hexdigest
+    address = digest[0, 8]
+    dir = File.dirname(a_gem)
+    filename = File.join(dir, "a-2-#{address}.gem")
+    FileUtils.cp a_gem, filename
+    installer = Gem::Installer.at filename, install_dir: @gemhome, force: true
+    spec = installer.install
+
+    assert_nil spec.content_address
+    assert_equal "a-2", spec.full_name
+  end
+
+  def test_hex_suffix_without_matching_spec_prefix_is_not_content_addressed
+    _, a_gem = util_gem "a", 2
+
+    digest = Digest::SHA256.file(a_gem).hexdigest
+    address = digest[0, 8]
+    dir = File.dirname(a_gem)
+    filename = File.join(dir, "wrong_name-2-#{address}.gem")
+    FileUtils.cp a_gem, filename
+    installer = Gem::Installer.at filename, install_dir: @gemhome, force: true
+    spec = installer.install
+
+    assert_nil spec.content_address
+    assert_equal "a-2", spec.full_name
+  end
+
+  def test_content_address_not_set_with_only_required_ruby_version
+    _, a_gem = util_gem("a", 2) do |spec|
+      spec.required_ruby_version = ">= 3.0"
+    end
+    digest = Digest::SHA256.file(a_gem).hexdigest
+    address = digest[0, 8]
+    dir = File.dirname(a_gem)
+    filename = File.join(dir, "a-2-#{address}.gem")
+    FileUtils.cp a_gem, filename
+    installer = Gem::Installer.at filename, install_dir: @gemhome, force: true
+    spec = installer.install
+
+    assert_nil spec.content_address
+  end
+
+  def test_content_address_not_set_with_only_platform
+    _, a_gem = util_gem("a", 2) do |spec|
+      spec.platform = "x86_64-linux"
+    end
+    digest = Digest::SHA256.file(a_gem).hexdigest
+    address = digest[0, 8]
+    dir = File.dirname(a_gem)
+    filename = File.join(dir, "a-2-#{address}.gem")
+    FileUtils.cp a_gem, filename
+    installer = Gem::Installer.at filename, install_dir: @gemhome, force: true
+    spec = installer.install
+
+    assert_nil spec.content_address
+  end
+
+  def test_require_works_after_content_addressed_install
+    source_spec, a_gem = util_gem("a", 2) do |spec|
+      spec.files = ["lib/ca_activation_test.rb"]
+      spec.required_ruby_version = ">= 3.0"
+      spec.platform = "x86_64-linux"
+    end
+    FileUtils.rm_rf source_spec.gem_dir
+
+    digest = Digest::SHA256.file(a_gem).hexdigest
+    address = digest[0, 8]
+    dir = File.dirname(a_gem)
+    filename = File.join(dir, "a-2-#{address}.gem")
+    FileUtils.cp a_gem, filename
+
+    installer = Gem::Installer.at filename, install_dir: @gemhome, force: true
+    installer.install
+
+    Gem::Specification.reset
+
+    assert require "ca_activation_test"
+  end
+
+  def test_reinstalling_content_addressed_gem_is_idempotent
+    source_spec, a_gem = util_gem("a", 2) do |spec|
+      spec.required_ruby_version = ">= 3.0"
+      spec.platform = "x86_64-linux"
+    end
+    FileUtils.rm_rf source_spec.gem_dir
+
+    digest = Digest::SHA256.file(a_gem).hexdigest
+    address = digest[0, 8]
+    dir = File.dirname(a_gem)
+    filename = File.join(dir, "a-2-#{address}.gem")
+    FileUtils.cp a_gem, filename
+    installer = Gem::Installer.at filename, install_dir: @gemhome, force: true
+    installer.install
+
+    installer2 = Gem::Installer.at filename, install_dir: @gemhome, force: true
+    spec2 = installer2.install
+
+    assert_equal "a-2-#{address}", spec2.full_name
+    assert_path_exist File.join(@gemhome, "gems", "a-2-#{address}")
+    assert_path_exist File.join(@gemhome, "specifications", "a-2-#{address}.gemspec")
+    assert_equal 1, Dir[File.join(@gemhome, "gems", "a-2*")].size
+    assert_equal 1, Dir[File.join(@gemhome, "specifications", "a-2*.gemspec")].size
+  end
+
+  def test_install_assigns_content_address_from_filename_with_full_sha
+    _, a_gem = util_gem("a", 2) do |spec|
+      spec.required_ruby_version = ">= 3.0"
+      spec.platform = "x86_64-linux"
+    end
+
+    digest = Digest::SHA256.file(a_gem).hexdigest
+    dir = File.dirname(a_gem)
+    filename = File.join(dir, "a-2-#{digest}.gem")
+    FileUtils.cp a_gem, filename
+    installer = Gem::Installer.at filename, install_dir: @gemhome, force: true
+    spec = installer.install
+
+    assert_equal digest, spec.content_address
+    assert_equal "a-2-#{digest}", spec.full_name
+    assert_path_exist File.join(@gemhome, "gems", "a-2-#{digest}")
+    assert_path_exist File.join(@gemhome, "cache", "a-2-#{digest}.gem")
+    assert_path_exist File.join(@gemhome, "specifications", "a-2-#{digest}.gemspec")
+  end
+
+  def test_two_content_addressed_gems_with_same_name_version_coexist
+    _, gem1 = util_gem("a", 2) do |spec|
+      spec.required_ruby_version = ">= 3.0"
+      spec.platform = "x86_64-linux"
+      spec.summary = "variant 1"
+    end
+    gem1_backup = File.join(@tempdir, "gem1_backup.gem")
+    FileUtils.cp gem1, gem1_backup
+
+    _, gem2 = util_gem("a", 2) do |spec|
+      spec.required_ruby_version = ">= 3.0"
+      spec.platform = "x86_64-linux"
+      spec.summary = "variant 2"
+    end
+
+    FileUtils.rm_rf File.join(@gemhome, "gems", "a-2-x86_64-linux")
+    FileUtils.rm_rf File.join(@gemhome, "specifications", "a-2-x86_64-linux.gemspec")
+    Gem::Specification.reset
+
+    dir = File.dirname(gem1)
+    digest1 = Digest::SHA256.file(gem1_backup).hexdigest
+    digest2 = Digest::SHA256.file(gem2).hexdigest
+    refute_equal digest1, digest2
+
+    address1 = digest1[0, 8]
+    address2 = digest2[0, 8]
+    file1 = File.join(dir, "a-2-#{address1}.gem")
+    file2 = File.join(dir, "a-2-#{address2}.gem")
+    FileUtils.cp gem1_backup, file1
+    FileUtils.cp gem2, file2
+
+    Gem::Installer.at(file1, install_dir: @gemhome, force: true).install
+    Gem::Installer.at(file2, install_dir: @gemhome, force: true).install
+
+    assert_path_exist File.join(@gemhome, "gems", "a-2-#{address1}")
+    assert_path_exist File.join(@gemhome, "gems", "a-2-#{address2}")
+    assert_path_exist File.join(@gemhome, "specifications", "a-2-#{address1}.gemspec")
+    assert_path_exist File.join(@gemhome, "specifications", "a-2-#{address2}.gemspec")
+    assert_equal 2, Dir[File.join(@gemhome, "gems", "a-2-*")].size
+    assert_equal 2, Dir[File.join(@gemhome, "specifications", "a-2-*.gemspec")].size
   end
 
   def test_install

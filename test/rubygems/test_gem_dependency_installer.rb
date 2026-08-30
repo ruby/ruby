@@ -373,7 +373,7 @@ class TestGemDependencyInstaller < Gem::TestCase
     end
     e1_gem = e1.cache_file
 
-    _, f1_gem = util_gem "f", "1", "e" => nil
+    _, f1_gem = util_gem "f", "1", { "e" => nil }
 
     Gem::Installer.at(e1_gem).install
     FileUtils.rm_r e1.extension_dir
@@ -394,7 +394,7 @@ class TestGemDependencyInstaller < Gem::TestCase
 
   def test_install_dependency_old
     _, e1_gem = util_gem "e", "1"
-    _, f1_gem = util_gem "f", "1", "e" => nil
+    _, f1_gem = util_gem "f", "1", { "e" => nil }
     _, f2_gem = util_gem "f", "2"
 
     FileUtils.mv e1_gem, @tempdir
@@ -422,6 +422,26 @@ class TestGemDependencyInstaller < Gem::TestCase
     end
 
     assert_equal %w[a-1], inst.installed_gems.map(&:full_name)
+  end
+
+  def test_install_local_by_name_preserves_content_address
+    ruby_abi = Gem.ruby_version.segments.first(2).join(".")
+    _spec, ca_gem = util_gem("ca", "1.0.0", ruby_abi: ruby_abi) do |spec|
+      spec.platform = Gem::Platform.local
+    end
+    FileUtils.mv ca_gem, @tempdir
+    moved_gem = File.join(@tempdir, File.basename(ca_gem))
+    address = Gem::Package.new(moved_gem).content_address
+    inst = nil
+    Dir.chdir @tempdir do
+      inst = Gem::DependencyInstaller.new(domain: :local)
+      source = Gem::Source::Local.new
+      local_spec = source.find_all_gems("ca", Gem::Requirement.default).first
+
+      assert_equal(address, local_spec.content_address)
+      inst.install("ca")
+    end
+    assert_equal(address, inst.installed_gems.first.content_address)
   end
 
   def test_install_local_prerelease
@@ -507,7 +527,7 @@ class TestGemDependencyInstaller < Gem::TestCase
   end
 
   def test_install_compact_index_api
-    a1, a1_gem = util_gem "a", 1, "b" => ">= 1"
+    a1, a1_gem = util_gem "a", 1, { "b" => ">= 1" }
     b1, b1_gem = util_gem "b", 1
 
     util_setup_compact_index a1, b1

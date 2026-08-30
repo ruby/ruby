@@ -125,6 +125,29 @@ class TestGemRemoteFetcher < Gem::TestCase
     assert File.exist?(a1_cache_gem)
   end
 
+  def test_download_and_install_content_addressed_gem
+    require "digest"
+
+    ca_spec, ca_gem = util_gem "a", "1" do |s|
+      s.required_ruby_version = "~> 3.4.0"
+      s.platform = "x86_64-linux"
+    end
+
+    address = Digest::SHA256.file(ca_gem).hexdigest[0, 10]
+    ca_spec.content_address = address
+    gem_data = File.binread ca_gem
+    gem_url = "http://gems.example.com/gems/a-1-#{address}.gem"
+    fetcher = fake_fetcher(gem_url, gem_data)
+
+    gem_path = fetcher.download(ca_spec, "http://gems.example.com")
+    installed_spec = Gem::Installer.at(gem_path, install_dir: @gemhome, force: true).install
+
+    assert_equal gem_url, fetcher.paths.last
+    assert_equal address, installed_spec.content_address
+    assert_equal "a-1-#{address}", installed_spec.full_name
+    assert_path_exist installed_spec.full_gem_path
+  end
+
   def test_download_with_auth
     a1_data = File.open @a1_gem, "rb", &:read
     a1_url = "http://user:password@gems.example.com/gems/a-1.gem"
@@ -271,6 +294,49 @@ class TestGemRemoteFetcher < Gem::TestCase
       FileUtils.chmod 0o755, @gemhome
       FileUtils.chmod 0o755, @a1.cache_dir
     end
+  end
+
+  def test_download_content_addressed_gem_does_not_fall_back_to_platform_name
+    ca_spec, = util_gem "a", "1" do |s|
+      s.required_ruby_version = "~> 3.4.0"
+      s.platform = "x86_64-linux"
+    end
+    ca_spec.content_address = "abcdef12"
+
+    fetcher = Gem::RemoteFetcher.fetcher
+    def fetcher.fetch_path(uri, *rest)
+      @tried_uris ||= []
+      @tried_uris << uri.to_s
+      raise Gem::RemoteFetcher::FetchError.new("not found", uri)
+    end
+
+    assert_raise Gem::RemoteFetcher::FetchError do
+      fetcher.download(ca_spec, "http://gems.example.com")
+    end
+
+    tried_uris = fetcher.instance_variable_get(:@tried_uris)
+    assert_equal ["http://gems.example.com/gems/a-1-abcdef12.gem"], tried_uris
+    assert_path_not_exist ca_spec.cache_file
+  end
+
+  def test_download_does_not_retry_identical_alternate_name
+    a1_spec, = util_gem "a", "1" do |s|
+      s.platform = "x86_64-linux"
+    end
+
+    fetcher = Gem::RemoteFetcher.fetcher
+    def fetcher.fetch_path(uri, *rest)
+      @tried_uris ||= []
+      @tried_uris << uri.to_s
+      raise Gem::RemoteFetcher::FetchError.new("not found", uri)
+    end
+
+    assert_raise Gem::RemoteFetcher::FetchError do
+      fetcher.download(a1_spec, "http://gems.example.com")
+    end
+
+    tried_uris = fetcher.instance_variable_get(:@tried_uris)
+    assert_equal ["http://gems.example.com/gems/a-1-x86_64-linux.gem"], tried_uris
   end
 
   def test_download_platform_legacy

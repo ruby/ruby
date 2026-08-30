@@ -32,6 +32,21 @@ class TestGemResolverIndexSpecification < Gem::TestCase
     assert_equal Gem::Platform.local, spec.platform
   end
 
+  def test_content_addressed_specs_with_different_addresses_are_distinct
+    set = Gem::Resolver::IndexSet.new
+    source = Gem::Source::Local.new
+    version = Gem::Version.new "3.0.3"
+    first = Gem::Resolver::IndexSpecification.new(
+      set, "rails", version, source, Gem::Platform.local, content_address: "abc1234567"
+    )
+    second = Gem::Resolver::IndexSpecification.new(
+      set, "rails", version, source, Gem::Platform.local, content_address: "def1234567"
+    )
+
+    refute_equal first, second
+    refute_equal first.hash, second.hash
+  end
+
   def test_install
     spec_fetcher do |fetcher|
       fetcher.gem "a", 2
