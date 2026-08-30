@@ -142,8 +142,8 @@ module Random::Formatter
       assert_raise(ArgumentError) { @it.alphanumeric(-1) }
       assert_raise(ArgumentError) { @it.alphanumeric(0, chars: []) }
       assert_raise(ArgumentError) { @it.alphanumeric(1, chars: []) }
-      assert_equal("", @it.alphanumeric(0, chars: ["x"]))
-      assert_equal("xxx", @it.alphanumeric(3, chars: ["x"]))
+      assert_raise(ArgumentError) { @it.alphanumeric(0, chars: ["x"]) }
+      assert_raise(ArgumentError) { @it.alphanumeric(3, chars: ["x"]) }
     end
 
     def assert_in_range(range, result, mesg = nil)
