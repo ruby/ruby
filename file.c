@@ -2207,8 +2207,8 @@ rb_file_world_writable_p(VALUE obj, VALUE fname)
  *   mode('/etc/passwd')             # => "100644 -rw-r--r--"
  *   File.executable?('nosuch')      # => false
  *
- * Note that some filesystem  settings may cause this method to return +true+
- * even though the file is not executable by the effective user/group.
+ * Note that some filesystem settings may cause this method to return +true+
+ * even though the entry is not executable by the effective user/group.
  */
 
 static VALUE
