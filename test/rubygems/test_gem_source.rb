@@ -168,6 +168,109 @@ class TestGemSource < Gem::TestCase
     assert File.exist?(File.join(cache_dir, "versions")), "versions cache file does not exist"
   end
 
+  def test_load_specs_compact_index_content_addressable_metadata
+    spec = util_ca_spec("a", "1", "abcdef12", ruby_abi: "3.3", platform: "x86_64-linux")
+    util_setup_compact_index(spec)
+
+    specs = @source.load_specs(:released)
+    refute @fetcher.requests.any? {|req| req.path.end_with?("/info/a") }
+
+    spec = @source.decode_content_addressable_tuples(specs).first
+
+    assert_equal "a-1-abcdef12", spec.full_name
+    assert_equal "x86_64-linux", spec.platform
+    assert_equal "abcdef12", spec.content_address
+    assert_equal "3.3", spec.ruby_abi
+  end
+
+  def test_load_specs_compact_index_skips_content_addressable_rows_without_metadata
+    versions_body = +"created_at: 2026-01-01T00:00:00Z\n---\na 1-abcdef12 0000\n"
+    versions_response = util_compact_index_response(versions_body)
+    versions_response.uri = Gem::URI("#{@gem_repo}versions")
+    @fetcher.data["#{@gem_repo}versions"] = versions_response
+    @fetcher.data["#{@gem_repo}info/a"] = util_compact_index_response("---\n")
+
+    specs = @source.load_specs(:released)
+
+    assert_empty @source.decode_content_addressable_tuples(specs)
+  end
+
+  def test_load_specs_compact_index_skips_content_addressable_rows_without_required_platform
+    versions_body = +"created_at: 2026-01-01T00:00:00Z\n---\na 1-abcdef12 0000\n"
+    versions_response = util_compact_index_response(versions_body)
+    versions_response.uri = Gem::URI("#{@gem_repo}versions")
+    @fetcher.data["#{@gem_repo}versions"] = versions_response
+    @fetcher.data["#{@gem_repo}info/a"] = util_compact_index_response("---\n1-abcdef12 |checksum:123,ruby:~> 3.3.0\n")
+
+    specs = @source.load_specs(:released)
+
+    assert_empty @source.decode_content_addressable_tuples(specs)
+  end
+
+  def test_load_specs_compact_index_does_not_infer_ruby_abi_from_broad_ruby_requirement
+    spec = util_ca_spec("a", "1", "abcdef12", required_ruby_version: ">= 3.3", platform: "x86_64-linux")
+    util_setup_compact_index(spec)
+
+    spec = @source.decode_content_addressable_tuples(@source.load_specs(:released)).first
+
+    assert_equal "x86_64-linux", spec.platform
+    assert_equal "abcdef12", spec.content_address
+    assert_nil spec.ruby_abi
+  end
+
+  def test_load_specs_compact_index_latest_keeps_content_addressable_ruby_abi_variants
+    a1 = util_ca_spec("a", "1", "abcdef12", ruby_abi: "3.3", platform: "x86_64-linux")
+    a2 = util_ca_spec("a", "1", "fedcba98", ruby_abi: "3.4", platform: "x86_64-linux")
+    util_setup_compact_index(a1, a2)
+
+    specs = @source.decode_content_addressable_tuples(@source.load_specs(:latest))
+
+    assert_equal %w[a-1-abcdef12 a-1-fedcba98], specs.map(&:full_name).sort
+    assert_equal %w[3.3 3.4], specs.map(&:ruby_abi).sort
+  end
+
+  def test_decode_content_addressable_tuples_latest_groups_by_gem_name_before_platform
+    aa = util_ca_spec("aa", "7.1", "aaaa1111", ruby_abi: "3.3", platform: "x86_64-linux")
+    ab = util_ca_spec("ab", "1.5", "bbbb2222", ruby_abi: "3.3", platform: "x86_64-linux")
+    ac = util_ca_spec("ac", "6.4", "cccc3333", ruby_abi: "3.3", platform: "x86_64-linux")
+    ad = util_ca_spec("ad", "1.16", "dddd4444", ruby_abi: "3.3", platform: "x86_64-linux")
+    util_setup_compact_index(aa, ab, ac, ad)
+
+    specs = @source.decode_content_addressable_tuples(@source.load_specs(:released), latest: true)
+
+    assert_equal %w[aa-7.1-aaaa1111 ab-1.5-bbbb2222 ac-6.4-cccc3333 ad-1.16-dddd4444], specs.map(&:full_name).sort
+  end
+
+  def test_load_specs_compact_index_decodes_mixed_content_addressable_and_platform_entries
+    a1_ca = util_ca_spec("a", "1", "abcdef12", ruby_abi: "3.3", platform: "x86_64-linux")
+    a1_platform = util_spec("a", "1") {|s| s.platform = Gem::Platform.new("x86_64-linux") }
+    util_setup_compact_index(a1_ca, a1_platform)
+
+    specs = @source.load_specs(:released)
+    decoded = @source.decode_content_addressable_tuples(specs)
+
+    assert_equal 2, decoded.size
+    ca_spec = decoded.find {|s| s.content_address == "abcdef12" }
+    platform_spec = decoded.find {|s| s.content_address.nil? }
+    assert_equal "a-1-abcdef12", ca_spec.full_name
+    assert_equal "x86_64-linux", ca_spec.platform
+    assert_equal "3.3", ca_spec.ruby_abi
+    assert_equal "a-1-x86_64-linux", platform_spec.full_name
+    assert_nil platform_spec.ruby_abi
+  end
+
+  def test_load_specs_compact_index_skips_content_addressable_rows_without_ruby_field
+    versions_body = +"created_at: 2026-01-01T00:00:00Z\n---\na 1-abcdef12 0000\n"
+    versions_response = util_compact_index_response(versions_body)
+    versions_response.uri = Gem::URI("#{@gem_repo}versions")
+    @fetcher.data["#{@gem_repo}versions"] = versions_response
+    @fetcher.data["#{@gem_repo}info/a"] = util_compact_index_response("---\n1-abcdef12 |checksum:123,platform:= x86_64-linux\n")
+
+    specs = @source.decode_content_addressable_tuples(@source.load_specs(:released))
+
+    assert_empty specs
+  end
+
   def test_load_specs_compact_index_latest_per_platform
     a1 = util_spec "a", "1"
     a2_java = util_spec "a", "2" do |s|

@@ -149,12 +149,27 @@ module Gem::QueryUtils
     spec_tuples = if name.nil?
       fetcher.detect(specs_type) { true }
     else
-      fetcher.detect(specs_type) do |name_tuple|
+      matching_tuples = fetcher.detect(specs_type) do |name_tuple|
         name === name_tuple.name && options[:version].satisfied_by?(name_tuple.version)
+      end
+
+      if args.empty?
+        matching_tuples
+      else
+        decode_content_addressable_tuples(matching_tuples, latest: specs_type == :latest)
       end
     end
 
     output_query_results(spec_tuples)
+  end
+
+  def decode_content_addressable_tuples(spec_tuples, latest: false)
+    spec_tuples.group_by {|_, source| source }.flat_map do |source, source_tuples|
+      next source_tuples unless source.respond_to?(:decode_content_addressable_tuples)
+
+      tuples = source_tuples.map(&:first)
+      source.decode_content_addressable_tuples(tuples, latest: latest).map {|tuple| [tuple, source] }
+    end
   end
 
   def specs_type
@@ -200,9 +215,11 @@ module Gem::QueryUtils
       matching_tuples = matching_tuples.sort_by {|n,_| n.version }.reverse
 
       platforms = Hash.new {|h,version| h[version] = [] }
+      platform_ruby_abis = Hash.new {|h,version| h[version] = Hash.new {|hh,platform| hh[platform] = [] } }
 
       matching_tuples.each do |n, _|
         platforms[n.version] << n.platform if n.platform
+        platform_ruby_abis[n.version][n.platform] << n.ruby_abi if n.ruby_abi
       end
 
       seen = {}
@@ -216,11 +233,11 @@ module Gem::QueryUtils
         end
       end
 
-      output << clean_text(make_entry(matching_tuples, platforms))
+      output << clean_text(make_entry(matching_tuples, platforms, platform_ruby_abis))
     end
   end
 
-  def entry_details(entry, detail_tuple, specs, platforms)
+  def entry_details(entry, detail_tuple, specs, platforms, platform_ruby_abis)
     return unless options[:details]
 
     name_tuple, spec = detail_tuple
@@ -229,7 +246,11 @@ module Gem::QueryUtils
 
     entry << "\n"
 
-    spec_platforms   entry, platforms
+    if ruby_abi_metadata?(platform_ruby_abis)
+      spec_platform_ruby_abis entry, platforms, platform_ruby_abis
+    else
+      spec_platforms entry, platforms
+    end
     spec_authors     entry, spec
     spec_homepage    entry, spec
     spec_license     entry, spec
@@ -237,36 +258,63 @@ module Gem::QueryUtils
     spec_summary     entry, spec
   end
 
-  def entry_versions(entry, name_tuples, platforms, specs)
+  def entry_versions(entry, name_tuples, platforms, platform_ruby_abis, specs)
     return unless options[:versions]
 
     list =
       if platforms.empty? || options[:details]
         name_tuples.map(&:version).uniq
+      elsif ruby_abi_metadata?(platform_ruby_abis)
+        platforms.sort.reverse.flat_map do |version, pls|
+          out = version_label(version, specs)
+          labels = version_platform_labels(version, pls, platform_ruby_abis, label_platform: true)
+          labels.empty? ? [out] : labels.map {|label| "#{out} #{label}" }
+        end
       else
         platforms.sort.reverse.map do |version, pls|
-          out = version.to_s
-
-          if options[:domain] == :local
-            default = specs.any? do |s|
-              !s.is_a?(Gem::Source) && s.version == version && s.default_gem?
-            end
-            out = "default: #{out}" if default
-          end
-
-          if pls != [Gem::Platform::RUBY]
-            platform_list = [pls.delete(Gem::Platform::RUBY), *pls.sort].compact
-            out = platform_list.unshift(out).join(" ")
-          end
-
-          out
+          out = version_label(version, specs)
+          labels = version_platform_labels(version, pls, platform_ruby_abis)
+          labels.empty? ? out : "#{out} #{labels.join(" ")}"
         end
       end
 
-    entry << " (#{list.join ", "})"
+    use_multiline_separator = !options[:details] && ruby_abi_metadata?(platform_ruby_abis) && list.length > 1
+    separator = use_multiline_separator ? "\n#{" " * (entry.first.length + 2)}" : ", "
+    entry << " (#{list.join separator})"
   end
 
-  def make_entry(entry_tuples, platforms)
+  def version_label(version, specs)
+    out = version.to_s
+    return out unless options[:domain] == :local
+
+    default = specs.any? do |s|
+      !s.is_a?(Gem::Source) && s.version == version && s.default_gem?
+    end
+    default ? "default: #{out}" : out
+  end
+
+  def ruby_abi_metadata?(platform_ruby_abis)
+    platform_ruby_abis.values.any? do |ruby_abis_by_platform|
+      ruby_abis_by_platform.values.any?(&:any?)
+    end
+  end
+
+  def version_platform_labels(version, platforms, platform_ruby_abis, label_platform: false)
+    platforms = platforms.uniq
+    return [] if platforms == [Gem::Platform::RUBY]
+
+    platforms = [platforms.delete(Gem::Platform::RUBY), *platforms.sort].compact
+    platforms.map do |platform|
+      ruby_abis = platform_ruby_abis[version][platform].uniq.sort
+      platform_label = label_platform ? "Platform: #{platform}" : platform
+      next platform_label if ruby_abis.empty?
+
+      separator = label_platform ? ", " : " "
+      "#{platform_label}#{separator}Ruby ABI: #{ruby_abis.join(", ")}"
+    end
+  end
+
+  def make_entry(entry_tuples, platforms, platform_ruby_abis)
     detail_tuple = entry_tuples.first
 
     name_tuples, specs = entry_tuples.flatten.partition do |item|
@@ -275,8 +323,8 @@ module Gem::QueryUtils
 
     entry = [name_tuples.first.name]
 
-    entry_versions(entry, name_tuples, platforms, specs)
-    entry_details(entry, detail_tuple, specs, platforms)
+    entry_versions(entry, name_tuples, platforms, platform_ruby_abis, specs)
+    entry_details(entry, detail_tuple, specs, platforms, platform_ruby_abis)
 
     entry.join
   end
@@ -319,6 +367,7 @@ module Gem::QueryUtils
   end
 
   def spec_platforms(entry, platforms)
+    platforms = platforms.transform_values(&:uniq)
     non_ruby = platforms.any? do |_, pls|
       pls.any? {|pl| pl != Gem::Platform::RUBY }
     end
@@ -326,7 +375,7 @@ module Gem::QueryUtils
     return unless non_ruby
 
     if platforms.length == 1
-      title = platforms.values.length == 1 ? "Platform" : "Platforms"
+      title = platforms.values.first.length == 1 ? "Platform" : "Platforms"
       entry << "    #{title}: #{platforms.values.sort.join(", ")}\n"
     else
       entry << "    Platforms:\n"
@@ -336,6 +385,26 @@ module Gem::QueryUtils
       sorted_platforms.each do |version, pls|
         label = "        #{version}: "
         data = format_text pls.sort.join(", "), 68, label.length
+        data[0, label.length] = label
+        entry << data << "\n"
+      end
+    end
+  end
+
+  def spec_platform_ruby_abis(entry, platforms, platform_ruby_abis)
+    entry << "    Platforms:\n"
+
+    platforms.sort.each do |version, pls|
+      labels = version_platform_labels(version, pls, platform_ruby_abis)
+      next if labels.empty?
+
+      if platforms.length == 1
+        labels.each do |label|
+          entry << "        #{label}\n"
+        end
+      else
+        label = "        #{version}: "
+        data = format_text labels.join(", "), 68, label.length
         data[0, label.length] = label
         entry << data << "\n"
       end

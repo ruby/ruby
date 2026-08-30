@@ -419,6 +419,13 @@ class Gem::Specification < Gem::BasicSpecification
 
   attr_accessor :metadata
 
+  ##
+  # The content address of this gem, a SHA-256 prefix of the gem file
+  # contents used in place of the platform in file and install names
+  # (e.g. "example-1.0-78be552b"), or +nil+ for non-content-addressable gems.
+
+  attr_accessor :content_address
+
   ######################################################################
   # :section: Optional gemspec attributes
 
@@ -1371,7 +1378,8 @@ class Gem::Specification < Gem::BasicSpecification
     self.class === other &&
       name == other.name &&
       version == other.version &&
-      platform == other.platform
+      platform == other.platform &&
+      content_address == other.content_address
   end
 
   ##
@@ -1942,7 +1950,7 @@ class Gem::Specification < Gem::BasicSpecification
   # :startdoc:
 
   def hash # :nodoc:
-    name.hash ^ version.hash
+    [name, version, platform, content_address].hash
   end
 
   def init_with(coder) # :nodoc:
@@ -1978,6 +1986,7 @@ class Gem::Specification < Gem::BasicSpecification
     @loaded_from = nil
     @original_platform = nil
     @installed_by_version = nil
+    @content_address = nil
 
     set_nil_attributes_to_nil
     set_not_nil_attributes_to_default_values
@@ -2298,7 +2307,8 @@ class Gem::Specification < Gem::BasicSpecification
   # True if this gem has the same attributes as +other+.
 
   def same_attributes?(spec)
-    @@attributes.all? {|name, _default| send(name) == spec.send(name) }
+    @@attributes.all? {|name, _default| send(name) == spec.send(name) } &&
+      content_address == spec.content_address
   end
 
   private :same_attributes?

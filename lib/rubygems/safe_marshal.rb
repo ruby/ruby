@@ -51,7 +51,7 @@ module Gem
         @name @requirement @prerelease @version_requirement @version_requirements @type
         @force_ruby_platform
       ],
-      "Gem::NameTuple" => %w[@name @version @platform],
+      "Gem::NameTuple" => %w[@name @version @platform @content_address @ruby_abi],
       "Gem::Platform" => %w[@os @cpu @version],
       "Psych::PrivateType" => %w[@value @type_id],
       "YAML::PrivateType" => %w[@value @type_id],

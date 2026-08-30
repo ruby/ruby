@@ -1009,6 +1009,24 @@ class Gem::TestCase < Test::Unit::TestCase
   end
 
   ##
+  # Creates a content-addressable spec for compact index testing. Requires
+  # either +ruby_abi+ (sets +required_ruby_version+ to "~> X.Y.0") or an
+  # explicit +required_ruby_version+. No gem file is built.
+
+  def util_ca_spec(name, version, content_address, ruby_abi: nil, platform: "x86_64-linux", required_ruby_version: nil, &block)
+    unless ruby_abi || required_ruby_version
+      raise ArgumentError, "util_ca_spec requires either ruby_abi or required_ruby_version"
+    end
+
+    util_spec(name, version) do |s|
+      s.platform = Gem::Platform.new(platform)
+      s.content_address = content_address
+      s.required_ruby_version = required_ruby_version || "~> #{ruby_abi}.0"
+      yield(s) if block
+    end
+  end
+
+  ##
   # Creates a gem with +name+, +version+ and +deps+.  The specification will
   # be yielded before gem creation for customization.  The gem will be placed
   # in <tt>File.join @tempdir, 'gems'</tt>.  The specification and .gem file
@@ -1226,7 +1244,7 @@ Also, a list:
         info_body << util_compact_index_info_line(spec, created_at[spec.original_name]) << "\n"
       end
 
-      versions_list = by_name[name].map {|spec| spec.original_name.delete_prefix("#{spec.name}-") }.join(",")
+      versions_list = by_name[name].map {|spec| spec.content_address ? "#{spec.version}-#{spec.content_address}" : spec.original_name.delete_prefix("#{spec.name}-") }.join(",")
       versions_body << "#{name} #{versions_list} #{Digest::MD5.hexdigest(info_body)}\n"
       names_body << "#{name}\n"
 
@@ -1248,7 +1266,11 @@ Also, a list:
   # A compact index info file line for +spec+, including v2 metadata.
 
   def util_compact_index_info_line(spec, created_at = nil)
-    version = spec.original_name.delete_prefix("#{spec.name}-")
+    version = if spec.content_address
+      "#{spec.version}-#{spec.content_address}"
+    else
+      spec.original_name.delete_prefix("#{spec.name}-")
+    end
 
     dependencies = spec.runtime_dependencies.map do |dependency|
       "#{dependency.name}:#{util_compact_index_requirement(dependency.requirement)}"
@@ -1260,6 +1282,9 @@ Also, a list:
     end
     unless spec.required_rubygems_version.nil? || spec.required_rubygems_version.none?
       metadata << ",rubygems:#{util_compact_index_requirement(spec.required_rubygems_version)}"
+    end
+    if spec.content_address
+      metadata << ",platform:= #{spec.platform}"
     end
     metadata << ",created_at:#{created_at}" if created_at
 
@@ -1286,7 +1311,11 @@ Also, a list:
     v = Gem.marshal_version
 
     all_specs.each do |spec|
-      path = "#{@gem_repo}quick/Marshal.#{v}/#{spec.original_name}.gemspec.rz"
+      # For content-addressed specs the gemspec is fetched by its
+      # content-addressed name, not its platform-suffixed name
+      name_tuple = Gem::NameTuple.new(spec.name, spec.version, spec.original_platform,
+                                      content_address: spec.content_address)
+      path = "#{@gem_repo}quick/Marshal.#{v}/#{name_tuple.spec_name}.rz"
       data = Marshal.dump spec
       data_deflate = Zlib::Deflate.deflate data
       @fetcher.data[path] = data_deflate

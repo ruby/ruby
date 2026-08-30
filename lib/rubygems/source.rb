@@ -186,6 +186,42 @@ class Gem::Source
   end
 
   ##
+  # Decodes content-addressable +tuples+ (whose platform field holds the
+  # content address) into tuples carrying their real platform and Ruby ABI
+  # from the compact index /info metadata.
+
+  def decode_content_addressable_tuples(tuples, latest: false)
+    ca_tuples = tuples.select(&:content_address)
+    return tuples if ca_tuples.empty?
+
+    decoded_tuples = ca_tuples.group_by(&:name).flat_map do |name, name_tuples|
+      rows = name_tuples.map do |tuple|
+        [tuple.name, tuple.version, tuple.version.to_s, tuple.content_address]
+      end
+
+      content_addressable_tuples(name, rows)
+    end
+
+    decoded_by_key = decoded_tuples.to_h do |tuple|
+      [[tuple.name, tuple.version, tuple.content_address], tuple]
+    end
+
+    decoded = tuples.filter_map do |tuple|
+      if tuple.content_address
+        decoded_by_key[[tuple.name, tuple.version, tuple.content_address]]
+      else
+        tuple
+      end
+    end
+
+    return decoded unless latest
+
+    decoded.group_by(&:name).flat_map do |_, name_tuples|
+      max_versions_by_platform(name_tuples)
+    end
+  end
+
+  ##
   # The publish time of gem +name+ at +version+ for +platform+, when this
   # source provides it through the compact index created_at metadata.
   # Returns nil when the source, the gem or the version has no known
@@ -290,13 +326,16 @@ class Gem::Source
     tuples = []
 
     versions.each_value do |rows|
-      gem_tuples = rows.filter_map do |name, version_string, platform|
+      gem_tuples = rows.filter_map do |row_name, version_string, suffix|
         next unless Gem::Version.correct?(version_string)
 
         version = Gem::Version.new(version_string)
         next if version.prerelease? != (type == :prerelease)
 
-        Gem::NameTuple.new(name, version, platform || "ruby")
+        suffix ||= "ruby"
+        content_address = suffix if Gem::ContentAddress.match?(suffix)
+
+        Gem::NameTuple.new(row_name, version, suffix, content_address: content_address)
       end
 
       gem_tuples = max_versions_by_platform(gem_tuples) if type == :latest
@@ -314,8 +353,108 @@ class Gem::Source
     nil
   end
 
+  def compact_index_info_rows(name)
+    compact_index_client.info(name)
+  rescue Gem::RemoteFetcher::FetchError, Gem::CompactIndexClient::Error
+    []
+  end
+
+  class ContentAddressableInfo
+    attr_reader :version, :suffix, :ruby_abi, :platform
+
+    def initialize(version, suffix, ruby_abi, platform = nil)
+      @version = version
+      @suffix = suffix
+      @ruby_abi = ruby_abi
+      @platform = platform
+    end
+
+    def hash
+      [@version, @suffix].hash
+    end
+
+    def eql?(other)
+      other.is_a?(ContentAddressableInfo) &&
+        version == other.version &&
+        suffix == other.suffix
+    end
+  end
+
+  def content_addressable_tuples(name, rows)
+    metadata = content_addressable_metadata(name, rows)
+
+    rows.filter_map do |row_name, version, version_string, suffix|
+      row_metadata = metadata.find do |entry|
+        entry.version == version_string && entry.suffix == suffix
+      end
+      next unless row_metadata
+
+      Gem::NameTuple.new(
+        row_name,
+        version,
+        row_metadata.platform,
+        content_address: suffix,
+        ruby_abi: row_metadata.ruby_abi
+      )
+    end
+  end
+
+  def content_addressable_metadata(name, rows)
+    wanted_rows = rows.map do |row|
+      ContentAddressableInfo.new(row[2], row[3], nil, nil)
+    end
+
+    available_rows = compact_index_info_rows(name).filter_map do |info_row|
+      version = info_row[Gem::CompactIndexClient::INFO_VERSION]
+      suffix = info_row[Gem::CompactIndexClient::INFO_PLATFORM]
+
+      requirements = compact_index_requirements(info_row)
+      platform = required_platform_from(requirements[:platform])
+      next unless platform
+      next unless requirements[:ruby]
+
+      ContentAddressableInfo.new(version, suffix, ruby_abi_from(requirements[:ruby]), platform)
+    end
+
+    available_rows & wanted_rows
+  end
+
+  def compact_index_requirements(info_row)
+    info_row[Gem::CompactIndexClient::INFO_REQS].to_h do |key, requirements|
+      [key.to_sym, requirements]
+    end
+  end
+
+  def required_platform_from(requirement)
+    platform_requirement = Array(requirement).last.to_s
+    operator, platform = platform_requirement.split(" ", 2)
+    return unless operator == "=" && platform
+
+    platform
+  end
+
+  def ruby_abi_from(requirement)
+    Array(requirement).each do |ruby_requirement|
+      match = ruby_requirement.to_s.match(/\A~>\s*(\d+)\.(\d+)\.0\z/)
+      return "#{match[1]}.#{match[2]}" if match
+    end
+
+    nil
+  end
+
   def max_versions_by_platform(tuples)
-    tuples.group_by(&:platform).map {|_, platform_tuples| platform_tuples.max_by(&:version) }
+    grouped_tuples = tuples.group_by {|tuple| latest_platform_key(tuple) }
+    grouped_tuples.map do |_, platform_tuples|
+      platform_tuples.max_by(&:version)
+    end
+  end
+
+  def latest_platform_key(tuple)
+    if tuple.content_address
+      [tuple.platform, tuple.ruby_abi || tuple.content_address]
+    else
+      tuple.platform
+    end
   end
 
   def compact_index_uri
