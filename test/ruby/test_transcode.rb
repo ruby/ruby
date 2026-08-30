@@ -2232,6 +2232,16 @@ class TestTranscode < Test::Unit::TestCase
     assert_equal("U+3042", "\u{3042}".encode("US-ASCII", fallback: fallback))
   end
 
+  def test_fallback_grow_insert_buffer
+    # A later fallback insertion larger than the first one's buffer grows it
+    # in rb_econv_insert_output; the sized realloc there passed a wrong old
+    # size (caught by RUBY_DEBUG builds).
+    n = 0
+    r = "\u{3042}\u{3044}\u{3046}".encode("US-ASCII",
+          fallback: proc {|x| n += 1; "Y" * (5000 * n)})
+    assert_equal(30000, r.bytesize)
+  end
+
   def test_fallback_method
     def (fallback = "U+%.4X").escape(x)
       self % x.unpack("U")
