@@ -10175,8 +10175,55 @@ fn add_iseq_to_hir(
                         None
                     };
                     let caller_splat_length = fun.monomorphic_caller_splat_length(call_info, exit_id);
-                    let send = fun.push_insn(block, Insn::Send { recv, cd, block: block_handler, args, caller_splat_length, state: exit_id, reason: Uncategorized(opcode.into()) });
-                    state.stack_push(send);
+                    if let Some(summary) = fun.polymorphic_summary(&profiles, recv, exit_id) {
+                        let join_block = fun.new_block(insn_idx);
+                        let join_param = fun.push_insn(join_block, Insn::Param);
+                        // Dedup by expected type so immediate/heap variants
+                        // under the same Ruby class can still get separate branches.
+                        let mut seen_types = Vec::with_capacity(summary.buckets().len());
+                        for &profiled_type in summary.buckets() {
+                            if profiled_type.is_empty() { break; }
+                            let expected = Type::from_profiled_type(profiled_type);
+                            if seen_types.iter().any(|ty: &Type| ty.bit_equal(expected)) {
+                                continue;
+                            }
+                            seen_types.push(expected);
+                            let has_type = fun.push_insn(block, Insn::HasType { val: recv, expected });
+                            let iftrue_block = fun.new_block(insn_idx);
+                            let fall_through = fun.new_block(insn_idx);
+                            fun.push_insn(block, Insn::CondBranch {
+                                val: has_type,
+                                if_true: BranchEdge { target: iftrue_block, args: vec![] },
+                                if_false: BranchEdge { target: fall_through, args: vec![] }
+                            });
+                            block = fall_through;
+                            // Take a fresh Snapshot rather than
+                            // reusing exit_id so type specialization resolves the receiver from
+                            // its refined, exact type instead of the polymorphic profile that is
+                            // keyed at exit_id.
+                            let snapshot = fun.push_insn(iftrue_block, Insn::Snapshot { state: Box::new(exit_state.clone()) });
+                            // Keep the other operands' profile entries visible at the fresh
+                            // Snapshot so the specialized send can still see argument profiles
+                            // (e.g. Array#[] needs a Fixnum-profiled index to be inlined). Only
+                            // the receiver's entry is dropped: it must resolve from its refined,
+                            // exact type, and resolve_receiver_type prefers profiles over types.
+                            profiles.copy_entries_except(exit_id, snapshot, recv, fun);
+                            let refined_recv = fun.push_insn(iftrue_block, Insn::RefineType { val: recv, new_type: expected });
+                            let send = fun.push_insn(iftrue_block, Insn::Send { recv: refined_recv, cd, block: block_handler, args: args.clone(), caller_splat_length, state: snapshot, reason: Uncategorized(opcode.into()) });
+                            fun.push_insn(iftrue_block, Insn::Jump(BranchEdge { target: join_block, args: vec![send] }));
+                        }
+                        // In the fallthrough case, do a generic interpreter send and then join.
+                        let reason = SendPolymorphicFallback;
+                        let send = fun.push_insn(block, Insn::Send { recv, cd, block: block_handler, args, caller_splat_length, state: exit_id, reason });
+                        fun.push_insn(block, Insn::Jump(BranchEdge { target: join_block, args: vec![send] }));
+                        state.stack_push(join_param);
+                        // Continue compilation from the join block at the next instruction.
+                        block = join_block;
+                    } else {
+                        // Maybe monomorphic; handled in type_specialize
+                        let send = fun.push_insn(block, Insn::Send { recv, cd, block: block_handler, args, caller_splat_length, state: exit_id, reason: Uncategorized(opcode.into()) });
+                        state.stack_push(send);
+                    }
 
                     if let Some(BlockHandler::BlockIseq(blockiseq)) = block_handler {
                         // Reload locals that may have been modified by the blockiseq.
