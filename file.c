@@ -2188,16 +2188,35 @@ rb_file_world_writable_p(VALUE obj, VALUE fname)
 
 /*
  * call-seq:
- *    File.executable?(file_name)   -> true or false
+ *   File.executable?(path) -> true or false
  *
- * Returns <code>true</code> if the named file is executable by the effective
- * user and group id of this process. See eaccess(3).
+ * Returns whether the filesystem entry at the given string +path+
+ * exists and is executable.
  *
- * Windows does not support execute permissions separately from read
- * permissions. On Windows, a file is only considered executable if it ends in
- * .bat, .cmd, .com, or .exe.
+ * On Windows, the entry is executable if its path has file extension
+ * +.bat+, +.cmd+, +.com+, or +.exe+:
  *
- * Note that some OS-level security features may cause this to return true
+ *   File.executable?('win32/rtname.cmd') # => true
+ *   File.executable?('win32/rtname')     # => false
+ *   File.executable?('win32/nosuch.cmd') # => false
+ *
+ * On other systems, the entry is executable if it has the execute/search
+ * permission for the effective user and group id of the current process;
+ * see {Permissions}[rdoc-ref:file/filesystem_modes.md@Permissions].
+ *
+ * These examples use
+ * a {helper method}[rdoc-ref:file/filesystem_modes.md@Helper+Method], +mode+,
+ * that displays a mode both in octal digits and in characters:
+ *
+ *   File.executable?('.')           # => true
+ *   mode('.')                       # => "040775 drwxrwxr-x"
+ *   File.executable?('bin/gem')     # => true
+ *   mode('bin/gem')                 # => "100775 -rwxrwxr-x"
+ *   File.executable?('/etc/passwd') # => false
+ *   mode('/etc/passwd')             # => "100644 -rw-r--r--"
+ *   File.executable?('nosuch')      # => false
+ *
+ * Note that some filesystem  settings may cause this method to return +true+
  * even though the file is not executable by the effective user/group.
  */
 
