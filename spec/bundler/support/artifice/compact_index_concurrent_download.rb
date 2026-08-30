@@ -21,7 +21,7 @@ class CompactIndexConcurrentDownload < CompactIndexAPI
     etag_response do
       file = tmp("versions.list")
       FileUtils.rm_f(file)
-      file = CompactIndex::VersionsFile.new(file.to_s)
+      file = VendoredCompactIndex::VersionsFile.new(file.to_s)
       file.create(gems)
       file.contents
     end

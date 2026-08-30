@@ -6,9 +6,13 @@ class CompactIndexV2API < CompactIndexAPI
   helpers do
     def build_gem_version(spec, deps, checksum)
       created_at = spec.date&.utc&.iso8601
-      CompactIndex::GemVersionV2.new(spec.version.version, spec.platform.to_s, checksum, nil,
+      # The system-RubyGems jobs run this artifice against a Gem::Specification
+      # that predates the content-addressable accessors.
+      ruby_abi = spec.ruby_abi if spec.respond_to?(:ruby_abi)
+      content_address = spec.content_address if spec.respond_to?(:content_address)
+      VendoredCompactIndex::GemVersionV2.new(spec.version.version, spec.platform.to_s, checksum, nil,
         deps, spec.required_ruby_version.to_s, spec.required_rubygems_version.to_s, created_at,
-        spec.ruby_abi, spec.content_address)
+        ruby_abi, content_address)
     end
 
     def content_addressable_specs(gem_repo)
@@ -32,7 +36,7 @@ class CompactIndexV2API < CompactIndexAPI
       new_versions = versions.map do |spec|
         deps = spec.runtime_dependencies.map do |d|
           reqs = d.requirement.requirements.map {|r| r.join(" ") }.join(", ")
-          CompactIndex::Dependency.new(d.name, reqs)
+          VendoredCompactIndex::Dependency.new(d.name, reqs)
         end
         begin
           checksum = Digest(:SHA256).file("#{gem_repo}/gems/#{spec.full_name}.gem").hexdigest
@@ -44,7 +48,7 @@ class CompactIndexV2API < CompactIndexAPI
       if gem
         gem.versions.concat(new_versions)
       else
-        all_gems << CompactIndex::Gem.new(name, new_versions)
+        all_gems << VendoredCompactIndex::Gem.new(name, new_versions)
       end
     end
     all_gems
