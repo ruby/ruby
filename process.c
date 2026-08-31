@@ -9166,6 +9166,8 @@ InitVM_process(void)
 
     rb_gvar_ractor_local("$$");
     rb_gvar_ractor_local("$?");
+    rb_gvar_box_ready("$$");
+    rb_gvar_box_ready("$?");
 
     rb_define_global_function("exec", f_exec, -1);
     rb_define_global_function("fork", rb_f_fork, 0);
