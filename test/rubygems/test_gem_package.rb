@@ -932,22 +932,8 @@ class TestGemPackage < Gem::Package::TarTestCase
   end
 
   def test_load_spec_from_metadata
-    entry = StringIO.new Gem::Util.gzip @spec.to_yaml
-    def entry.full_name
-      "metadata.gz"
-    end
-
-    package = Gem::Package.new "nonexistent.gem"
-
-    spec = package.load_spec_from_metadata entry
-
-    assert_equal @spec, spec
-  end
-
-  def test_load_spec_from_metadata_with_latin1
     @spec.description = "Based on Mauricio Fern\u00E1ndez's implementation"
-    metadata = @spec.to_yaml.encode Encoding::ISO_8859_1
-    entry = StringIO.new Gem::Util.gzip metadata
+    entry = StringIO.new Gem::Util.gzip @spec.to_yaml.encode(Encoding::ISO_8859_1)
     def entry.full_name
       "metadata.gz"
     end

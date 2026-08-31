@@ -1146,9 +1146,7 @@ class Gem::Specification < Gem::BasicSpecification
     result = result.dup
     # Ruby 1.8 gem metadata may contain Latin-1 bytes without an encoding declaration.
     if [Encoding::BINARY, Encoding::UTF_8].include?(result.encoding)
-      result.force_encoding(Encoding::UTF_8).scrub! do |bytes|
-        bytes.encode(Encoding::UTF_8, Encoding::ISO_8859_1)
-      end
+      result.force_encoding(Encoding::UTF_8).scrub! {|bytes| bytes.encode(Encoding::UTF_8, Encoding::ISO_8859_1) }
     end
     result = "--- " + result unless result.start_with?("--- ")
     result.gsub!(/ !!null \n/, " \n")
