@@ -164,6 +164,26 @@ class TestGemCommandsPushCommand < Gem::TestCase
                  @fetcher.last_request["Content-Type"]
   end
 
+  def test_execute_attestation_auto_skipped_unless_github_actions_true
+    omit if RUBY_ENGINE == "jruby"
+
+    ENV["GITHUB_ACTIONS"] = "false"
+
+    @response = "Successfully registered gem: freewill (1.0.0)"
+    @fetcher.data["#{Gem.host}/api/v1/gems"] = HTTPResponseFactory.create(body: @response, code: 200, msg: "OK")
+
+    @cmd.options[:args] = [@path]
+
+    attest_called = false
+    @cmd.stub(:attest!, proc { attest_called = true }) do
+      @cmd.execute
+    end
+
+    refute attest_called, "attest! should not be called when GITHUB_ACTIONS is not \"true\""
+    assert_equal "application/octet-stream",
+                 @fetcher.last_request["Content-Type"]
+  end
+
   def test_execute_attestation_skipped_on_non_rubygems_host
     omit if RUBY_ENGINE == "jruby"
 

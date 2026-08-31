@@ -96,7 +96,7 @@ The API key to send is resolved in this order: the GEM_HOST_API_KEY environment 
   def send_push_request(name, args)
     # Always honor explicit --attestation option
     # Auto-attestation is only supported on rubygems.org with GitHub Actions (not JRuby)
-    if options[:attestations].any? || (RUBY_ENGINE != "jruby" && attestation_supported_host? && ENV["GITHUB_ACTIONS"])
+    if options[:attestations].any? || (RUBY_ENGINE != "jruby" && attestation_supported_host? && ENV["GITHUB_ACTIONS"] == "true")
       send_push_request_with_attestation(name, args)
     else
       send_push_request_without_attestation(name, args)
