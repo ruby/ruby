@@ -821,7 +821,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::IsA { val, class } => gen_is_a(jit, asm, opnd!(val), opnd!(class)),
         &Insn::ArrayMax { ref elements, state } => gen_array_max(jit, asm, function, opnds!(elements), &function.frame_state(state)),
         &Insn::ArrayMin { ref elements, state } => gen_array_min(jit, asm, function, opnds!(elements), &function.frame_state(state)),
-        &Insn::Throw { state, .. } => no_output!(gen_throw(jit, asm, function, &function.frame_state(state))),
+        &Insn::Throw { throw_state, val, state } => no_output!(gen_throw(jit, asm, function, throw_state, opnd!(val), &function.frame_state(state))),
         &Insn::CondBranch { .. }
         | &Insn::Jump { .. } | Insn::Entries { .. } => unreachable!(),
     };
@@ -2778,10 +2778,25 @@ fn gen_return(asm: &mut Assembler, val: lir::Opnd) {
     asm.cret(C_RET_OPND);
 }
 
-fn gen_throw(jit: &mut JITState, asm: &mut Assembler, function: &Function, state: &FrameState) {
-    // TODO: Consider calling rb_vm_throw and propagating ec->tag->state to the interpreter.
-    // Also consider making it a jump on method inlining.
-    gen_side_exit(jit, asm, function, &SideExitReason::Throw, None, state);
+fn gen_throw(jit: &mut JITState, asm: &mut Assembler, function: &Function, throw_state: u32, val: lir::Opnd, state: &FrameState) {
+    gen_incr_counter(asm, Counter::throw_count);
+
+    // The interpreter pops the thrown value before calling vm_throw(), so keep it out of the cfp->sp we publish.
+    let state = state.with_stack_size(state.stack_size() - 1); // -1 for popped throw value
+    // rb_vm_throw() allocates with THROW_DATA_NEW() and may raise LocalJumpError, and the interpreter reads this
+    // frame's locals and stack while unwinding, so publish them in the same way as any other non-leaf fallback call.
+    gen_prepare_fallback_call(jit, asm, function, &state);
+
+    asm_comment!(asm, "throw");
+    unsafe extern "C" {
+        fn rb_zjit_throw(ec: EcPtr, cfp: CfpPtr, throw_state: usize, throwobj: VALUE) -> VALUE;
+    }
+    asm_ccall!(asm, rb_zjit_throw, EC, CFP, Opnd::UImm(throw_state.into()), val);
+
+    // rb_zjit_throw() never returns. Trap in case it somehow does, and end the
+    // LIR block with an unreachable ret to give it a normal terminator.
+    asm.abort();
+    asm.cret(C_RET_OPND);
 }
 
 /// Compile Fixnum + Fixnum

@@ -650,7 +650,6 @@ pub enum SideExitReason {
     PatchPoint(Invariant),
     CalleeSideExit,
     Interrupt,
-    Throw,
     BlockParamProxyNotIseqOrIfunc,
     BlockParamProxyNotNil,
     BlockParamProxyNotProc,
@@ -1266,6 +1265,7 @@ pub enum Insn {
     /// Control flow instructions
     Return { val: InsnId },
     /// Non-local control flow. See the throw YARV instruction
+    /// TODO: Consider turning this into Insn::Jump when inlined.
     Throw { throw_state: u32, val: InsnId, state: InsnId },
 
     /// Fixnum +, -, *, /, %, ==, !=, <, <=, >, >=, &, |, ^, <<

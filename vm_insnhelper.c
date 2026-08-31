@@ -1874,10 +1874,27 @@ vm_throw(const rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
     }
 }
 
+// Fallback for YJIT. Prepare throw data and return it.
 VALUE
 rb_vm_throw(const rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_num_t throw_state, VALUE throwobj)
 {
     return vm_throw(ec, reg_cfp, throw_state, throwobj);
+}
+
+// Fallback for ZJIT. Make a longjmp and unwind to the most recent vm_exec().
+VALUE
+rb_zjit_throw(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_num_t throw_state, VALUE throwobj)
+{
+    VALUE val = vm_throw(ec, reg_cfp, throw_state, throwobj);
+
+    // vm_throw() has set ec->tag->state. On the longjmp path, vm_exec() reads the throw data from
+    // ec->errinfo instead of vm_exec_core()'s return value like THROW_EXCEPTION()'s path does, so
+    // we need to put it there instead.
+    enum ruby_tag_type state = ec->tag->state;
+    ec->errinfo = val;
+    EC_JUMP_TAG(ec, state);
+
+    UNREACHABLE_RETURN(Qundef);
 }
 
 static inline void
