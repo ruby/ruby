@@ -18,7 +18,7 @@ use crate::invariants::{
 use crate::gc::append_gc_offsets;
 use crate::payload::{IseqCodePtrs, IseqStatus, IseqVersion, IseqVersionRef, JITFrame, get_or_create_iseq_payload};
 use crate::profile::reset_profiles_remaining;
-use crate::state::ZJITState;
+use crate::state::{rb_zjit_compiling_p, ZJITState};
 use crate::stats::{CompileError, exit_counter_for_compile_error, exit_counter_for_unhandled_hir_insn, incr_counter, incr_counter_by, send_fallback_counter, send_fallback_counter_for_method_type, send_fallback_counter_for_super_method_type, send_fallback_counter_ptr_for_opcode, send_fallback_counter_for_optimized_method_type};
 use crate::stats::{counter_ptr, with_time_stat, trace_compile_phase, Counter, Counter::{compile_time_ns, exit_compile_error}};
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
@@ -199,6 +199,14 @@ pub extern "C" fn rb_zjit_iseq_gen_entry_point(iseq: IseqPtr, ec: EcPtr, jit_exc
 
         let cb = ZJITState::get_code_block();
         let mut code_ptr = with_time_stat(compile_time_ns, || gen_iseq_entry_point(cb, iseq, jit_exception));
+
+        // If this compile ran out of executable memory, stop compiling so
+        // that the interpreter stops incrementing ISEQ call counters. It is
+        // set back to true in update_dropped_bytes() if memory becomes
+        // available again.
+        if matches!(&code_ptr, Err(CompileError::OutOfMemory)) {
+            unsafe { rb_zjit_compiling_p = false; }
+        }
 
         if let Err(err) = &code_ptr {
             // Assert that the ISEQ compiles if RubyVM::ZJIT.assert_compiles is enabled.
