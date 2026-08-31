@@ -391,6 +391,7 @@ class Gem::TestCase < Test::Unit::TestCase
     ENV["XDG_STATE_HOME"] = nil
     ENV["MAKEFLAGS"] = nil
     ENV["SOURCE_DATE_EPOCH"] = nil
+    ENV["GITHUB_ACTIONS"] = nil
     ENV["BUNDLER_VERSION"] = nil
     ENV["BUNDLE_CONFIG"] = nil
     ENV["BUNDLE_USER_CONFIG"] = nil

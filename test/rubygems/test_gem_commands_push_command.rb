@@ -122,55 +122,53 @@ class TestGemCommandsPushCommand < Gem::TestCase
     omit if RUBY_ENGINE == "jruby"
 
     ENV["GITHUB_ACTIONS"] = "true"
-    begin
-      @response = "Successfully registered gem: freewill (1.0.0)"
-      @fetcher.data["#{Gem.host}/api/v1/gems"] = HTTPResponseFactory.create(body: @response, code: 200, msg: "OK")
 
-      attestation_path = "#{@path}.sigstore.json"
-      attestation_content = "auto-attestation"
-      File.write(attestation_path, attestation_content)
-      @cmd.options[:args] = [@path]
+    @response = "Successfully registered gem: freewill (1.0.0)"
+    @fetcher.data["#{Gem.host}/api/v1/gems"] = HTTPResponseFactory.create(body: @response, code: 200, msg: "OK")
 
-      @cmd.stub(:attest!, attestation_path) do
-        @cmd.execute
-      end
+    attestation_path = "#{@path}.sigstore.json"
+    attestation_content = "auto-attestation"
+    File.write(attestation_path, attestation_content)
+    @cmd.options[:args] = [@path]
 
-      assert_equal Gem::Net::HTTP::Post, @fetcher.last_request.class
-      content_length = @fetcher.last_request["Content-Length"].to_i
-      assert_equal content_length, @fetcher.last_request.body.length
-      assert_attestation_multipart attestation_content
-    ensure
-      ENV.delete("GITHUB_ACTIONS")
+    @cmd.stub(:attest!, attestation_path) do
+      @cmd.execute
     end
+
+    assert_equal Gem::Net::HTTP::Post, @fetcher.last_request.class
+    content_length = @fetcher.last_request["Content-Length"].to_i
+    assert_equal content_length, @fetcher.last_request.body.length
+    assert_attestation_multipart attestation_content
   end
 
   def test_execute_attestation_fallback
     omit if RUBY_ENGINE == "jruby"
 
     ENV["GITHUB_ACTIONS"] = "true"
-    begin
-      @response = "Successfully registered gem: freewill (1.0.0)"
-      @fetcher.data["#{Gem.host}/api/v1/gems"] = HTTPResponseFactory.create(body: @response, code: 200, msg: "OK")
 
-      @cmd.options[:args] = [@path]
+    @response = "Successfully registered gem: freewill (1.0.0)"
+    @fetcher.data["#{Gem.host}/api/v1/gems"] = HTTPResponseFactory.create(body: @response, code: 200, msg: "OK")
 
-      @cmd.stub(:attest!, proc { raise Gem::Exception, "boom" }) do
-        use_ui @ui do
-          @cmd.execute
-        end
+    @cmd.options[:args] = [@path]
+
+    @cmd.stub(:attest!, proc { raise Gem::Exception, "boom" }) do
+      use_ui @ui do
+        @cmd.execute
       end
-
-      assert_match "Failed to push with attestation, retrying without attestation.", @ui.error
-      assert_equal Gem::Net::HTTP::Post, @fetcher.last_request.class
-      assert_equal Gem.read_binary(@path), @fetcher.last_request.body
-      assert_equal "application/octet-stream",
-                   @fetcher.last_request["Content-Type"]
-    ensure
-      ENV.delete("GITHUB_ACTIONS")
     end
+
+    assert_match "Failed to push with attestation, retrying without attestation.", @ui.error
+    assert_equal Gem::Net::HTTP::Post, @fetcher.last_request.class
+    assert_equal Gem.read_binary(@path), @fetcher.last_request.body
+    assert_equal "application/octet-stream",
+                 @fetcher.last_request["Content-Type"]
   end
 
   def test_execute_attestation_skipped_on_non_rubygems_host
+    omit if RUBY_ENGINE == "jruby"
+
+    ENV["GITHUB_ACTIONS"] = "true"
+
     @spec, @path = util_gem "freebird", "1.0.1" do |spec|
       spec.metadata["allowed_push_host"] = "https://privategemserver.example"
     end
@@ -193,6 +191,8 @@ class TestGemCommandsPushCommand < Gem::TestCase
   end
 
   def test_execute_attestation_skipped_on_jruby
+    ENV["GITHUB_ACTIONS"] = "true"
+
     @response = "Successfully registered gem: freewill (1.0.0)"
     @fetcher.data["#{Gem.host}/api/v1/gems"] = HTTPResponseFactory.create(body: @response, code: 200, msg: "OK")
 
