@@ -106,7 +106,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
     @response = "Successfully registered gem: freewill (1.0.0)"
     @fetcher.data["#{Gem.host}/api/v1/gems"] = HTTPResponseFactory.create(body: @response, code: 200, msg: "OK")
 
-    File.write("#{@path}.sigstore.json", "attestation")
+    File.write("#{@path}.sigstore.json", '{"attestation":true}')
     @cmd.options[:args] = [@path]
     @cmd.options[:attestations] = ["#{@path}.sigstore.json"]
 
@@ -118,6 +118,20 @@ class TestGemCommandsPushCommand < Gem::TestCase
     assert_attestation_multipart Gem.read_binary("#{@path}.sigstore.json")
   end
 
+  def test_execute_attestation_multiple
+    @response = "Successfully registered gem: freewill (1.0.0)"
+    @fetcher.data["#{Gem.host}/api/v1/gems"] = HTTPResponseFactory.create(body: @response, code: 200, msg: "OK")
+
+    File.write("#{@path}.a.sigstore.json", '{"attestation":"a"}')
+    File.write("#{@path}.b.sigstore.json", '{"attestation":"b"}')
+    @cmd.options[:args] = [@path]
+    @cmd.options[:attestations] = ["#{@path}.a.sigstore.json", "#{@path}.b.sigstore.json"]
+
+    @cmd.execute
+
+    assert_attestation_multipart '{"attestation":"a"},{"attestation":"b"}'
+  end
+
   def test_execute_attestation_auto
     omit if RUBY_ENGINE == "jruby"
 
@@ -126,12 +140,10 @@ class TestGemCommandsPushCommand < Gem::TestCase
     @response = "Successfully registered gem: freewill (1.0.0)"
     @fetcher.data["#{Gem.host}/api/v1/gems"] = HTTPResponseFactory.create(body: @response, code: 200, msg: "OK")
 
-    attestation_path = "#{@path}.sigstore.json"
-    attestation_content = "auto-attestation"
-    File.write(attestation_path, attestation_content)
+    attestation_content = '{"auto":"attestation"}'
     @cmd.options[:args] = [@path]
 
-    @cmd.stub(:attest!, attestation_path) do
+    @cmd.stub(:attest!, attestation_content) do
       @cmd.execute
     end
 
@@ -157,11 +169,88 @@ class TestGemCommandsPushCommand < Gem::TestCase
       end
     end
 
-    assert_match "Failed to push with attestation, retrying without attestation.", @ui.error
+    assert_match "Failed to create an attestation, pushing without one.", @ui.error
     assert_equal Gem::Net::HTTP::Post, @fetcher.last_request.class
     assert_equal Gem.read_binary(@path), @fetcher.last_request.body
     assert_equal "application/octet-stream",
                  @fetcher.last_request["Content-Type"]
+  end
+
+  def test_execute_attestation_explicit_missing_file
+    @fetcher.data["#{Gem.host}/api/v1/gems"] = HTTPResponseFactory.create(body: "", code: 200, msg: "OK")
+
+    @cmd.options[:args] = [@path]
+    @cmd.options[:attestations] = ["#{@path}.sigstore.json"]
+
+    e = assert_raise Gem::Exception do
+      use_ui @ui do
+        @cmd.execute
+      end
+    end
+
+    assert_match "Failed to read attestation", e.message
+    refute_match "pushing without one", @ui.error
+    assert_nil @fetcher.last_request
+  end
+
+  def test_execute_attestation_explicit_invalid_json
+    @fetcher.data["#{Gem.host}/api/v1/gems"] = HTTPResponseFactory.create(body: "", code: 200, msg: "OK")
+
+    File.write("#{@path}.sigstore.json", "not json")
+    @cmd.options[:args] = [@path]
+    @cmd.options[:attestations] = ["#{@path}.sigstore.json"]
+
+    e = assert_raise Gem::Exception do
+      use_ui @ui do
+        @cmd.execute
+      end
+    end
+
+    assert_match "is not valid JSON", e.message
+    refute_match "pushing without one", @ui.error
+    assert_nil @fetcher.last_request
+  end
+
+  def test_execute_attestation_explicit_json_scalar
+    @fetcher.data["#{Gem.host}/api/v1/gems"] = HTTPResponseFactory.create(body: "", code: 200, msg: "OK")
+
+    File.write("#{@path}.sigstore.json", "null")
+    @cmd.options[:args] = [@path]
+    @cmd.options[:attestations] = ["#{@path}.sigstore.json"]
+
+    e = assert_raise Gem::Exception do
+      use_ui @ui do
+        @cmd.execute
+      end
+    end
+
+    assert_match "is not a JSON object", e.message
+    assert_nil @fetcher.last_request
+  end
+
+  def test_execute_attestation_network_error_not_retried_without_attestation
+    omit if RUBY_ENGINE == "jruby"
+
+    ENV["GITHUB_ACTIONS"] = "true"
+
+    requests = 0
+    @fetcher.data["#{Gem.host}/api/v1/gems"] = proc do
+      requests += 1
+      raise Gem::RemoteFetcher::FetchError.new("timed out", "#{Gem.host}/api/v1/gems")
+    end
+
+    @cmd.options[:args] = [@path]
+
+    assert_raise Gem::RemoteFetcher::FetchError do
+      @cmd.stub(:attest!, '{"auto":"attestation"}') do
+        use_ui @ui do
+          @cmd.execute
+        end
+      end
+    end
+
+    assert_equal 1, requests
+    refute_match "pushing without one", @ui.error
   end
 
   def test_execute_attestation_auto_skipped_unless_github_actions_true
@@ -254,6 +343,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
     captured = nil
     capture_stub = lambda do |*args, **_kwargs|
       captured = args
+      File.write(args[args.index("--bundle") + 1], "{}")
       ["", fake_status]
     end
     Gem.stub(:ruby, '"/path with space/bin/ruby"') do
@@ -267,6 +357,77 @@ class TestGemCommandsPushCommand < Gem::TestCase
     assert_equal "/path with space/bin/ruby", captured[1]
     refute_includes captured[1], '"'
     assert_equal "-S", captured[2]
+  end
+
+  def test_attest_aborts_when_signing_fails
+    require "open3"
+
+    fake_status = Object.new
+    def fake_status.success?
+      false
+    end
+
+    bundle_path = nil
+    capture_stub = lambda do |*args, **_kwargs|
+      bundle_path = args[args.index("--bundle") + 1]
+      ["sigstore-cli: no identity token available", fake_status]
+    end
+
+    e = assert_raise Gem::Exception do
+      Open3.stub(:capture2e, capture_stub) do
+        @cmd.send(:attest!, @path)
+      end
+    end
+
+    assert_match "Failed to sign gem", e.message
+    assert_match "no identity token available", e.message
+    refute_nil bundle_path, "signing command should have been spawned"
+    refute File.exist?(bundle_path), "bundle tempfile should be removed"
+  end
+
+  def test_attest_rejects_a_bundle_that_is_not_json
+    require "open3"
+
+    fake_status = Object.new
+    def fake_status.success?
+      true
+    end
+
+    capture_stub = lambda do |*args, **_kwargs|
+      File.write(args[args.index("--bundle") + 1], "not json")
+      ["", fake_status]
+    end
+
+    e = assert_raise Gem::Exception do
+      Open3.stub(:capture2e, capture_stub) do
+        @cmd.send(:attest!, @path)
+      end
+    end
+
+    assert_match "is not valid JSON", e.message
+  end
+
+  def test_attest_returns_bundle_content_and_removes_tempfile
+    require "open3"
+
+    fake_status = Object.new
+    def fake_status.success?
+      true
+    end
+
+    bundle_path = nil
+    capture_stub = lambda do |*args, **_kwargs|
+      bundle_path = args[args.index("--bundle") + 1]
+      File.write(bundle_path, '{"signed":true}')
+      ["", fake_status]
+    end
+
+    content = Open3.stub(:capture2e, capture_stub) do
+      @cmd.send(:attest!, @path)
+    end
+
+    assert_equal '{"signed":true}', content
+    refute File.exist?(bundle_path), "bundle tempfile should be removed"
   end
 
   def test_execute_allowed_push_host
