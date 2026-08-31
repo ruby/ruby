@@ -5288,14 +5288,24 @@ vm_yield_with_symbol(rb_execution_context_t *ec,  VALUE symbol, int argc, const 
         return rb_sym_proc_call(SYM2ID(symbol), argc, argv, kw_splat, passed_proc);
     }
 
-    VALUE filename = rb_iseq_path(CFP_ISEQ(ruby_cfp));
-    const rb_iseq_t *iseq = rb_iseq_new(Qnil, filename, filename, Qnil, 0, ISEQ_TYPE_TOP);
+    /*
+     * Push a dummy block frame whose outer env is `ruby_cfp` so that the
+     * method resolves in the caller's box (via the ep chain) and the
+     * backtrace reads like a usual block invocation at the caller's site.
+     */
+    const rb_iseq_t *caller_iseq = CFP_ISEQ(ruby_cfp);
+    VALUE name = rb_sprintf("block in %"PRIsVALUE, rb_iseq_label(caller_iseq));
+    const rb_iseq_t *iseq = rb_iseq_new_with_opt(Qnil, name,
+                                                 rb_iseq_path(caller_iseq), rb_iseq_realpath(caller_iseq),
+                                                 rb_vm_get_sourceline(ruby_cfp), caller_iseq, 0,
+                                                 ISEQ_TYPE_BLOCK, NULL, Qnil);
     VALUE val;
 
-    vm_push_frame(ec, iseq, VM_FRAME_MAGIC_TOP | VM_ENV_FLAG_LOCAL | VM_FRAME_FLAG_FINISH,
-                  Qnil, GC_GUARDED_PTR(box),
-                  (VALUE)vm_cref_new_toplevel(ec), /* cref or me */
-                  0, reg_cfp->sp, 0, 0);
+    vm_push_frame(ec, iseq, VM_FRAME_MAGIC_BLOCK | VM_FRAME_FLAG_FINISH,
+                  ruby_cfp->self, VM_GUARDED_PREV_EP(ruby_cfp->ep),
+                  Qfalse, /* cref or me */
+                  ISEQ_BODY(iseq)->iseq_encoded, reg_cfp->sp,
+                  ISEQ_BODY(iseq)->local_table_size, ISEQ_BODY(iseq)->stack_max);
 
     val = rb_sym_proc_call(SYM2ID(symbol), argc, argv, kw_splat, passed_proc);
 
