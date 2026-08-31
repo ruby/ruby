@@ -527,9 +527,9 @@ yjit_compile(rb_execution_context_t *ec)
     struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
 
     // Increment the ISEQ's call counter and trigger JIT compilation if not compiled.
-    // Stop incrementing at the threshold so that ISEQs that failed to compile
-    // (e.g. out of executable memory) don't keep dirtying CoW pages after fork.
-    if (body->jit_entry == NULL && body->jit_entry_calls < rb_yjit_call_threshold) {
+    // Stop incrementing when not compiling (out of executable memory) so that
+    // ISEQs that failed to compile don't keep dirtying CoW pages after fork.
+    if (body->jit_entry == NULL && rb_yjit_compiling_p) {
         body->jit_entry_calls++;
         if (rb_yjit_threshold_hit(iseq, body->jit_entry_calls)) {
             rb_yjit_compile_iseq(iseq, ec, false);
@@ -548,7 +548,7 @@ zjit_compile(rb_execution_context_t *ec)
     const rb_iseq_t *iseq = CFP_ISEQ(ec->cfp);
     struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
 
-    if (body->jit_entry == NULL && body->jit_entry_calls < rb_zjit_call_threshold) {
+    if (body->jit_entry == NULL && rb_zjit_compiling_p) {
         body->jit_entry_calls++;
 
         // At profile-threshold, rewrite some of the YARV instructions
@@ -609,7 +609,9 @@ jit_compile_exception(rb_execution_context_t *ec)
     struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
 
 #if USE_ZJIT
-    if (body->jit_exception == NULL && rb_zjit_enabled_p && body->jit_exception_calls < rb_zjit_call_threshold) {
+    // rb_zjit_compiling_p is false until ZJIT is enabled, so no
+    // rb_zjit_enabled_p check is needed here.
+    if (body->jit_exception == NULL && rb_zjit_compiling_p) {
         body->jit_exception_calls++;
 
         // At profile-threshold, rewrite some of the YARV instructions
@@ -626,8 +628,9 @@ jit_compile_exception(rb_execution_context_t *ec)
 #endif
 
 #if USE_YJIT
-    // Increment the ISEQ's call counter and trigger JIT compilation if not compiled
-    if (body->jit_exception == NULL && rb_yjit_enabled_p && body->jit_exception_calls < rb_yjit_call_threshold) {
+    // Increment the ISEQ's call counter and trigger JIT compilation if not compiled.
+    // Like the ZJIT branch above, no rb_yjit_enabled_p check is needed here.
+    if (body->jit_exception == NULL && rb_yjit_compiling_p) {
         body->jit_exception_calls++;
         if (body->jit_exception_calls == rb_yjit_call_threshold) {
             rb_yjit_compile_iseq(iseq, ec, true);

@@ -29,6 +29,7 @@ extern uint64_t rb_yjit_cold_threshold;
 extern uint64_t rb_yjit_live_iseq_count;
 extern uint64_t rb_yjit_iseq_alloc_count;
 extern bool rb_yjit_enabled_p;
+extern bool rb_yjit_compiling_p;
 void rb_yjit_incr_counter(const char *counter_name);
 void rb_yjit_invalidate_all_method_lookup_assumptions(void);
 void rb_yjit_cme_invalidate(rb_callable_method_entry_t *cme);
@@ -58,6 +59,7 @@ void rb_yjit_mark_all_executable(void);
 // In these builds, YJIT could never be turned on. Provide dummy implementations.
 
 #define rb_yjit_enabled_p false
+#define rb_yjit_compiling_p false
 static inline void rb_yjit_incr_counter(const char *counter_name) {}
 static inline void rb_yjit_invalidate_all_method_lookup_assumptions(void) {}
 static inline void rb_yjit_cme_invalidate(rb_callable_method_entry_t *cme) {}

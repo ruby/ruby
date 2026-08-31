@@ -1264,7 +1264,7 @@ pub use manual_defs::*;
 pub mod test_utils {
     use std::{ptr::null, sync::Once};
 
-    use crate::{options::{rb_zjit_call_threshold, rb_zjit_prepare_options, set_call_threshold, DEFAULT_CALL_THRESHOLD}, state::{rb_zjit_entry, ZJITState}};
+    use crate::{options::{DEFAULT_CALL_THRESHOLD, rb_zjit_call_threshold, rb_zjit_prepare_options, set_call_threshold}, state::{ZJITState, rb_zjit_compiling_p, rb_zjit_entry}};
 
     use super::*;
 
@@ -1316,7 +1316,10 @@ pub mod test_utils {
         let zjit_entry = ZJITState::init();
 
         // Enable zjit_* instructions
-        unsafe { rb_zjit_entry = zjit_entry; }
+        unsafe {
+            rb_zjit_entry = zjit_entry;
+            rb_zjit_compiling_p = true;
+        }
     }
 
     /// Make sure the Ruby VM is set up and run a given callback with rb_protect()
