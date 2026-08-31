@@ -1301,6 +1301,18 @@ class TestBox < Test::Unit::TestCase
     end
   end
 
+  def test_extension_loading_survives_fork_in_user_box
+    omit "fork is not supported" unless Process.respond_to?(:fork)
+
+    assert_ruby_status([ENV_ENABLE_BOX], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      Ruby::Box.new.require "digest/md5"
+      pid = fork {Ruby::Box.new.require "digest/sha2"}
+      raise "extension loading failed in the child" unless Process.wait2(pid)[1].success?
+      Ruby::Box.new.require "digest/sha2"
+    end;
+  end
+
   def test_root_box_iclasses_should_be_boxable
     assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
     begin;
