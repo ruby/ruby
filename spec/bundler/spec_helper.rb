@@ -60,12 +60,10 @@ begin
   end
 
   SimpleCov.print_error_status = false
-  SimpleCov.at_exit do
-    $stdout = File.open(File::NULL, "w")
-    SimpleCov.result.format!
-  ensure
-    $stdout = STDOUT
-  end
+
+  # Only merge this process result into the resultset. Parallel workers share a
+  # coverage directory, so the report is formatted once by `rake coverage:report`.
+  SimpleCov.at_exit { SimpleCov.result }
 rescue LoadError
   # SimpleCov is not installed
 end
