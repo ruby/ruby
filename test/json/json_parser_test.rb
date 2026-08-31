@@ -852,8 +852,6 @@ class JSONParserTest < Test::Unit::TestCase
   end
 
   def test_parse_error_json_path
-    omit "JRuby errors don't contain positions" if RUBY_ENGINE == "jruby"
-
     assert_parse_error_at "$", "xyz"
     assert_parse_error_at "$.a", '{"a": xyz}'
     assert_parse_error_at "$[3]", '[1, 2, "hi", xyz]'
@@ -870,9 +868,17 @@ class JSONParserTest < Test::Unit::TestCase
     assert_parse_error_at "$[5]", '[1,2,3,4,5,]'
   end
 
-  def test_parse_error_json_path_on_load
-    omit "JRuby errors don't contain positions" if RUBY_ENGINE == "jruby"
+  def test_parse_error_position
+    error = assert_raise(JSON::ParserError) { JSON.parse("[1,\n@") }
+    assert_equal 2, error.line
+    assert_equal 1, error.column
 
+    error = assert_raise(JSON::ParserError) { JSON.parse('{"a": {"b": [1, {"c": 1, "c": 2}]}}') }
+    assert_equal 1, error.line
+    assert_equal 17, error.column
+  end
+
+  def test_parse_error_json_path_on_load
     assert_parse_error_at "$" do
       JSON.load('{"a": {"b": {"c":', -> (obj) {
         if String === obj
@@ -895,8 +901,6 @@ class JSONParserTest < Test::Unit::TestCase
   end
 
   def test_parse_error_json_path_key_escaping
-    omit "JRuby errors don't contain positions" if RUBY_ENGINE == "jruby"
-
     assert_parse_error_at '$["hello world"]', '{"hello world": xyz}'
     assert_parse_error_at '$["a\"b"]', '{"a\"b": xyz}'
     assert_parse_error_at '$[""]', '{"": xyz}'
@@ -905,8 +909,6 @@ class JSONParserTest < Test::Unit::TestCase
   end
 
   def test_parse_error_json_path_duplicate_key
-    omit "JRuby errors don't contain positions" if RUBY_ENGINE == "jruby"
-
     assert_parse_error_at "$.a", '{"a": 1, "a": 2}'
     assert_parse_error_at "$.x.a", '{"x": {"a": 1, "b": 2, "a": 3}}'
     assert_parse_error_at "$.arr[0].a", '{"arr": [{"a": 1, "a": 2}]}'
