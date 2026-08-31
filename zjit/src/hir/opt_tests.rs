@@ -5486,23 +5486,24 @@ mod hir_opt_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
+          IncrCounterPtr
           Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :self@0
           IncrCounterPtr
-          Jump bb3(v4)
-        bb3(v7:BasicObject):
+          Jump bb3(v5)
+        bb3(v8:BasicObject):
           IncrCounter zjit_insn_count
           IncrCounter zjit_insn_count
-          v14:HashExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-          v15:HashExact = HashDup v14
+          v15:HashExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v16:HashExact = HashDup v15
           IncrCounter zjit_insn_count
           IncrCounter complex_arg_pass_caller_kw_splat
-          v18:BasicObject = Send v7, :foo, v15 # SendFallbackReason: Complex argument passing
+          v19:BasicObject = Send v8, :foo, v16 # SendFallbackReason: Complex argument passing
           IncrCounter zjit_insn_count
           CheckInterrupts
-          Return v18
+          Return v19
         ");
     }
 
@@ -5520,23 +5521,24 @@ mod hir_opt_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
+          IncrCounterPtr
           Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :self@0
           IncrCounterPtr
-          Jump bb3(v4)
-        bb3(v7:BasicObject):
+          Jump bb3(v5)
+        bb3(v8:BasicObject):
           IncrCounter zjit_insn_count
           IncrCounter zjit_insn_count
-          v14:Fixnum[1] = Const Value(1)
+          v15:Fixnum[1] = Const Value(1)
           IncrCounter zjit_insn_count
           IncrCounter complex_arg_pass_keyword_to_positional_hash
           IncrCounter send_direct_fallback_context_send
-          v17:BasicObject = Send v7, :foo, v14 # SendFallbackReason: Complex argument passing
+          v18:BasicObject = Send v8, :foo, v15 # SendFallbackReason: Complex argument passing
           IncrCounter zjit_insn_count
           CheckInterrupts
-          Return v17
+          Return v18
         ");
     }
 
@@ -5554,23 +5556,24 @@ mod hir_opt_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
+          IncrCounterPtr
           Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :self@0
           IncrCounterPtr
-          Jump bb3(v4)
-        bb3(v7:BasicObject):
+          Jump bb3(v5)
+        bb3(v8:BasicObject):
           IncrCounter zjit_insn_count
           IncrCounter zjit_insn_count
-          v14:Fixnum[1] = Const Value(1)
+          v15:Fixnum[1] = Const Value(1)
           IncrCounter zjit_insn_count
           IncrCounter complex_arg_pass_keyword_to_positional_hash
           IncrCounter send_direct_fallback_context_send
-          v17:BasicObject = Send v7, :foo, v14 # SendFallbackReason: Complex argument passing
+          v18:BasicObject = Send v8, :foo, v15 # SendFallbackReason: Complex argument passing
           IncrCounter zjit_insn_count
           CheckInterrupts
-          Return v17
+          Return v18
         ");
     }
 
@@ -5772,23 +5775,24 @@ mod hir_opt_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
+          IncrCounterPtr
           Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :self@0
           IncrCounterPtr
-          Jump bb3(v4)
-        bb3(v7:BasicObject):
+          Jump bb3(v5)
+        bb3(v8:BasicObject):
           IncrCounter zjit_insn_count
           IncrCounter zjit_insn_count
-          v14:Fixnum[1] = Const Value(1)
+          v15:Fixnum[1] = Const Value(1)
           IncrCounter zjit_insn_count
           IncrCounter complex_arg_pass_param_kwrest
           IncrCounter send_direct_fallback_context_send
-          v17:BasicObject = Send v7, :foo, v14 # SendFallbackReason: Complex argument passing
+          v18:BasicObject = Send v8, :foo, v15 # SendFallbackReason: Complex argument passing
           IncrCounter zjit_insn_count
           CheckInterrupts
-          Return v17
+          Return v18
         ");
     }
 
@@ -5893,23 +5897,24 @@ mod hir_opt_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
+          IncrCounterPtr
           Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :self@0
           IncrCounterPtr
-          Jump bb3(v4)
-        bb3(v7:BasicObject):
+          Jump bb3(v5)
+        bb3(v8:BasicObject):
           IncrCounter zjit_insn_count
           IncrCounter zjit_insn_count
-          v14:HashExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-          v15:HashExact = HashDup v14
+          v15:HashExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v16:HashExact = HashDup v15
           IncrCounter zjit_insn_count
           IncrCounter complex_arg_pass_caller_kw_splat
-          v18:BasicObject = Send v7, :foo, v15 # SendFallbackReason: Complex argument passing
+          v19:BasicObject = Send v8, :foo, v16 # SendFallbackReason: Complex argument passing
           IncrCounter zjit_insn_count
           CheckInterrupts
-          Return v18
+          Return v19
         ");
     }
 
@@ -5927,21 +5932,22 @@ mod hir_opt_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
+          IncrCounterPtr
           Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :self@0
           IncrCounterPtr
-          Jump bb3(v4)
-        bb3(v7:BasicObject):
+          Jump bb3(v5)
+        bb3(v8:BasicObject):
           IncrCounter zjit_insn_count
           IncrCounter zjit_insn_count
           IncrCounter complex_arg_pass_param_kwrest
           IncrCounter send_direct_fallback_context_send
-          v14:BasicObject = Send v7, :foo # SendFallbackReason: Complex argument passing
+          v15:BasicObject = Send v8, :foo # SendFallbackReason: Complex argument passing
           IncrCounter zjit_insn_count
           CheckInterrupts
-          Return v14
+          Return v15
         ");
     }
 
@@ -14694,25 +14700,26 @@ mod hir_opt_tests {
           v1:BasicObject = LoadSelf
           v2:CPtr = LoadSP
           v3:BasicObject = LoadField v2, :args@0x1000
+          IncrCounterPtr
           Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :args@1
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :args@1
           IncrCounterPtr
-          Jump bb3(v6, v7)
-        bb3(v10:BasicObject, v11:BasicObject):
+          Jump bb3(v7, v8)
+        bb3(v11:BasicObject, v12:BasicObject):
           IncrCounter zjit_insn_count
           IncrCounter zjit_insn_count
           IncrCounter zjit_insn_count
-          v20:ArrayExact = ToArray v11
+          v21:ArrayExact = ToArray v12
           IncrCounter zjit_insn_count
           IncrCounter complex_arg_pass_caller_splat
           IncrCounter caller_splat_profile_monomorphic
-          v23:BasicObject = Send v10, :foo, v20 # SendFallbackReason: Complex argument passing
+          v24:BasicObject = Send v11, :foo, v21 # SendFallbackReason: Complex argument passing
           IncrCounter zjit_insn_count
           CheckInterrupts
-          Return v23
+          Return v24
         ");
     }
 
@@ -14734,25 +14741,26 @@ mod hir_opt_tests {
           v1:BasicObject = LoadSelf
           v2:CPtr = LoadSP
           v3:BasicObject = LoadField v2, :args@0x1000
+          IncrCounterPtr
           Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :args@1
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :args@1
           IncrCounterPtr
-          Jump bb3(v6, v7)
-        bb3(v10:BasicObject, v11:BasicObject):
+          Jump bb3(v7, v8)
+        bb3(v11:BasicObject, v12:BasicObject):
           IncrCounter zjit_insn_count
           IncrCounter zjit_insn_count
           IncrCounter zjit_insn_count
-          v20:ArrayExact = ToArray v11
+          v21:ArrayExact = ToArray v12
           IncrCounter zjit_insn_count
           IncrCounter complex_arg_pass_caller_splat
           IncrCounter caller_splat_profile_polymorphic
-          v23:BasicObject = Send v10, :foo, v20 # SendFallbackReason: Complex argument passing
+          v24:BasicObject = Send v11, :foo, v21 # SendFallbackReason: Complex argument passing
           IncrCounter zjit_insn_count
           CheckInterrupts
-          Return v23
+          Return v24
         ");
     }
 
@@ -17933,20 +17941,21 @@ mod hir_opt_tests {
         bb1():
           EntryPoint interpreter
           v1:HeapBasicObject = LoadSelf
+          IncrCounterPtr
           Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v4:HeapBasicObject = LoadArg :self@0
+          v5:HeapBasicObject = LoadArg :self@0
           IncrCounterPtr
-          Jump bb3(v4)
-        bb3(v7:HeapBasicObject):
+          Jump bb3(v5)
+        bb3(v8:HeapBasicObject):
           IncrCounter zjit_insn_count
           IncrCounter zjit_insn_count
           IncrCounter send_direct_fallback_context_super
-          v14:BasicObject = InvokeSuper v7, 0x1000 # SendFallbackReason: Argument count does not match parameter count
+          v15:BasicObject = InvokeSuper v8, 0x1000 # SendFallbackReason: Argument count does not match parameter count
           IncrCounter zjit_insn_count
           CheckInterrupts
-          Return v14
+          Return v15
         ");
     }
 
