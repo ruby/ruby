@@ -1296,16 +1296,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     end
   end
 
-  def check_supported_protocol_versions
-    possible_versions = [
-      OpenSSL::SSL::SSL3_VERSION,
-      OpenSSL::SSL::TLS1_VERSION,
-      OpenSSL::SSL::TLS1_1_VERSION,
-      OpenSSL::SSL::TLS1_2_VERSION,
-      OpenSSL::SSL::TLS1_3_VERSION,
-    ]
-    supported = []
-
+  private def protocol_version_available?(ver)
     sctx = make_server_context
     # The default security level is 1 in OpenSSL <= 3.1, 2 in OpenSSL >= 3.2
     # In OpenSSL >= 3.0, TLS 1.1 or older is disabled at level 1
@@ -1313,32 +1304,27 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     # Explicitly reset them to avoid influenced by OPENSSL_CONF
     sctx.min_version = sctx.max_version = nil
 
+    ok = false
     start_server(sctx, ignore_listener_error: true) do |port|
-      possible_versions.each do |ver|
-        ctx = OpenSSL::SSL::SSLContext.new
-        ctx.security_level = 0
-        ctx.min_version = ctx.max_version = ver
-        server_connect(port, ctx) { |ssl|
-          ssl.puts "abc"; assert_equal "abc\n", ssl.gets
-        }
-        supported << ver
-      rescue OpenSSL::SSL::SSLError
-      end
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.security_level = 0
+      ctx.min_version = ctx.max_version = ver
+      server_connect(port, ctx) { |ssl|
+        ssl.puts "abc"; assert_equal "abc\n", ssl.gets
+      }
+      ok = true
+    rescue OpenSSL::SSL::SSLError
     end
 
-    # Sanity check: in our test suite we assume these are always supported
-    assert_include(supported, OpenSSL::SSL::TLS1_2_VERSION)
-    assert_include(supported, OpenSSL::SSL::TLS1_3_VERSION)
-
-    supported
+    ok
   end
 
   def test_set_params_min_version
-    supported = check_supported_protocol_versions
-    return unless supported.include?(OpenSSL::SSL::SSL3_VERSION)
+    return unless protocol_version_available?(OpenSSL::SSL::SSL3_VERSION)
 
     # SSLContext#set_params properly disables SSL 3.0 by default
     sctx = make_server_context
+    sctx.security_level = 0
     sctx.min_version = sctx.max_version = OpenSSL::SSL::SSL3_VERSION
 
     start_server(sctx, ignore_listener_error: true) { |port|
@@ -1351,141 +1337,123 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
   end
 
   def test_minmax_version
-    supported = check_supported_protocol_versions
+    # Assumption: OpenSSL supports TLS 1.2 and TLS 1.3, and they are both
+    # enabled by default
 
-    # name: The string that would be returned by SSL_get_version()
-    # method: The version-specific method name (if any)
-    vmap = {
-      OpenSSL::SSL::SSL3_VERSION => { name: "SSLv3", method: "SSLv3" },
-      OpenSSL::SSL::SSL3_VERSION => { name: "SSLv3", method: "SSLv3" },
-      OpenSSL::SSL::TLS1_VERSION => { name: "TLSv1", method: "TLSv1" },
-      OpenSSL::SSL::TLS1_1_VERSION => { name: "TLSv1.1", method: "TLSv1_1" },
-      OpenSSL::SSL::TLS1_2_VERSION => { name: "TLSv1.2", method: "TLSv1_2" },
-      OpenSSL::SSL::TLS1_3_VERSION => { name: "TLSv1.3", method: nil },
-    }
-
-    # Server enables a single version
-    supported.each do |ver|
-      sctx = make_server_context
-      sctx.security_level = 0
-      sctx.min_version = sctx.max_version = ver
-
-      start_server(sctx, ignore_listener_error: true) { |port|
-        supported.each do |cver|
-          # Client enables a single version
-          ctx1 = OpenSSL::SSL::SSLContext.new
-          ctx1.security_level = 0
-          ctx1.min_version = ctx1.max_version = cver
-          if ver == cver
-            server_connect(port, ctx1) { |ssl|
-              assert_equal vmap[cver][:name], ssl.ssl_version
-              ssl.puts "abc"; assert_equal "abc\n", ssl.gets
-            }
-          else
-            assert_raise(OpenSSL::SSL::SSLError) { server_connect(port, ctx1) }
-          end
-
-          # There is no version-specific SSL methods for TLS 1.3
-          if cver <= OpenSSL::SSL::TLS1_2_VERSION
-            # Client enables a single version using #ssl_version=
-            ctx2 = OpenSSL::SSL::SSLContext.new
-            ctx2.security_level = 0
-            ctx2.ssl_version = vmap[cver][:method]
-            if ver == cver
-              server_connect(port, ctx2) { |ssl|
-                assert_equal vmap[cver][:name], ssl.ssl_version
-                ssl.puts "abc"; assert_equal "abc\n", ssl.gets
-              }
-            else
-              assert_raise(OpenSSL::SSL::SSLError) { server_connect(port, ctx2) }
-            end
-          end
-        end
-
-        # Client enables all supported versions
-        ctx3 = OpenSSL::SSL::SSLContext.new
-        ctx3.security_level = 0
-        ctx3.min_version = ctx3.max_version = nil
-        server_connect(port, ctx3) { |ssl|
-          assert_equal vmap[ver][:name], ssl.ssl_version
-          ssl.puts "abc"; assert_equal "abc\n", ssl.gets
-        }
+    # Server supports TLS 1.2 only
+    sctx = make_server_context
+    sctx.min_version = sctx.max_version = OpenSSL::SSL::TLS1_2_VERSION
+    start_server(sctx, ignore_listener_error: true) { |port|
+      # Client enables all supported protocol versions
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.min_version = ctx.max_version = 0
+      server_connect(port, ctx) { |ssl|
+        assert_equal("TLSv1.2", ssl.ssl_version)
       }
-    end
 
-    if supported.size == 1
-      pend "More than one protocol version must be supported"
-    end
+      # Client supports TLS 1.1 and up
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.min_version = OpenSSL::SSL::TLS1_1_VERSION
+      server_connect(port, ctx) { |ssl|
+        assert_equal("TLSv1.2", ssl.ssl_version)
+      }
 
-    # Server sets min_version (earliest is disabled)
-    sver = supported[1]
-    sctx = make_server_context
-    sctx.security_level = 0
-    sctx.min_version = sver
+      # Client supports TLS 1.2 and up
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.min_version = OpenSSL::SSL::TLS1_2_VERSION
+      server_connect(port, ctx) { |ssl|
+        assert_equal("TLSv1.2", ssl.ssl_version)
+      }
 
-    start_server(sctx, ignore_listener_error: true) { |port|
-      supported.each do |cver|
-        # Client sets min_version
-        ctx1 = OpenSSL::SSL::SSLContext.new
-        ctx1.security_level = 0
-        ctx1.min_version = cver
-        ctx1.max_version = 0
-        server_connect(port, ctx1) { |ssl|
-          assert_equal vmap[supported.last][:name], ssl.ssl_version
-          ssl.puts "abc"; assert_equal "abc\n", ssl.gets
-        }
-
-        # Client sets max_version
-        ctx2 = OpenSSL::SSL::SSLContext.new
-        ctx2.security_level = 0
-        ctx2.min_version = 0
-        ctx2.max_version = cver
-        if cver >= sver
-          server_connect(port, ctx2) { |ssl|
-            assert_equal vmap[cver][:name], ssl.ssl_version
-            ssl.puts "abc"; assert_equal "abc\n", ssl.gets
-          }
-        else
-          assert_raise(OpenSSL::SSL::SSLError) { server_connect(port, ctx2) }
-        end
-      end
+      # Client supports TLS 1.3 and up
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.min_version = OpenSSL::SSL::TLS1_3_VERSION
+      assert_raise(OpenSSL::SSL::SSLError) { server_connect(port, ctx) }
     }
 
-    # Server sets max_version (latest is disabled)
-    sver = supported[-2]
+    # Server supports TLS 1.3 only
     sctx = make_server_context
-    sctx.security_level = 0
-    sctx.min_version = 0
-    sctx.max_version = sver
-
+    sctx.min_version = sctx.max_version = OpenSSL::SSL::TLS1_3_VERSION
     start_server(sctx, ignore_listener_error: true) { |port|
-      supported.each do |cver|
-        # Client sets min_version
-        ctx1 = OpenSSL::SSL::SSLContext.new
-        ctx1.min_version = cver
-        if cver <= sver
-          server_connect(port, ctx1) { |ssl|
-            assert_equal vmap[sver][:name], ssl.ssl_version
-            ssl.puts "abc"; assert_equal "abc\n", ssl.gets
-          }
-        else
-          assert_raise(OpenSSL::SSL::SSLError) { server_connect(port, ctx1) }
-        end
+      # Client enables all supported protocol versions
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.min_version = ctx.max_version = 0
+      server_connect(port, ctx) { |ssl|
+        assert_equal("TLSv1.3", ssl.ssl_version)
+        ssl.puts("abc"); assert_equal("abc\n", ssl.gets)
+      }
 
-        # Client sets max_version
-        ctx2 = OpenSSL::SSL::SSLContext.new
-        ctx2.security_level = 0
-        ctx2.min_version = 0
-        ctx2.max_version = cver
-        server_connect(port, ctx2) { |ssl|
-          if cver >= sver
-            assert_equal vmap[sver][:name], ssl.ssl_version
-          else
-            assert_equal vmap[cver][:name], ssl.ssl_version
-          end
-          ssl.puts "abc"; assert_equal "abc\n", ssl.gets
-        }
+      # Client supports up to TLS 1.1
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.min_version = 0
+      begin
+        ctx.max_version = OpenSSL::SSL::TLS1_1_VERSION
+      rescue OpenSSL::SSL::SSLError
+        # TLS 1.1 is disabled by a compile-time option; ignoring
+      else
+        assert_raise(OpenSSL::SSL::SSLError) { server_connect(port, ctx) }
       end
+
+      # Client supports up to TLS 1.2
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.min_version = 0
+      ctx.max_version = OpenSSL::SSL::TLS1_2_VERSION
+      assert_raise(OpenSSL::SSL::SSLError) { server_connect(port, ctx) }
+
+      # Client supports up to TLS 1.3
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.min_version = 0
+      ctx.max_version = OpenSSL::SSL::TLS1_3_VERSION
+      server_connect(port, ctx) { |ssl|
+        assert_equal("TLSv1.3", ssl.ssl_version)
+        ssl.puts("abc"); assert_equal("abc\n", ssl.gets)
+      }
+    }
+  end
+
+  def test_minmax_version_symbols
+    start_server { |port|
+      # nil is equivalent to 0
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.min_version = ctx.max_version = nil
+      server_connect(port, ctx) { |ssl|
+        assert_equal("TLSv1.3", ssl.ssl_version)
+        ssl.puts("abc"); assert_equal("abc\n", ssl.gets)
+      }
+
+      # Symbol
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.min_version = ctx.max_version = :TLS1_2
+      server_connect(port, ctx) { |ssl|
+        assert_equal("TLSv1.2", ssl.ssl_version)
+      }
+
+      # Known Symbols
+      known = [
+        [:SSL3, OpenSSL::SSL::SSL3_VERSION],
+        [:TLS1, OpenSSL::SSL::TLS1_VERSION],
+        [:TLS1_1, OpenSSL::SSL::TLS1_1_VERSION],
+        [:TLS1_2, OpenSSL::SSL::TLS1_2_VERSION],
+        [:TLS1_3, OpenSSL::SSL::TLS1_3_VERSION],
+      ]
+      known.each do |sym, i|
+        ctx = OpenSSL::SSL::SSLContext.new
+        begin
+          ctx.min_version = sym
+        rescue OpenSSL::SSL::SSLError
+          # If the Symbol is rejected by OpenSSL due to its compile-time
+          # options, the numeric equivalent should also be rejected
+          assert_raise(OpenSSL::SSL::SSLError) {
+            ctx.min_version = i
+          }
+        end
+      end
+
+      # Invalid
+      ctx = OpenSSL::SSL::SSLContext.new
+      assert_raise(ArgumentError) {
+        ctx.min_version = :bogus
+      }
     }
   end
 
@@ -1584,12 +1552,6 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     # It's recommended to use SSLContext#{min,max}_version= instead in real
     # applications. The purpose of this test case is to check that SSL options
     # are properly propagated to OpenSSL library.
-    supported = check_supported_protocol_versions
-    if !supported.include?(OpenSSL::SSL::TLS1_2_VERSION) ||
-        !supported.include?(OpenSSL::SSL::TLS1_3_VERSION)
-      pend "this test case requires both TLS 1.2 and TLS 1.3 to be supported " \
-        "and enabled by default"
-    end
 
     # Server disables TLS 1.2 and earlier
     sctx = make_server_context
@@ -1605,7 +1567,10 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
       # Client only supports TLS 1.3
       ctx2 = OpenSSL::SSL::SSLContext.new
       ctx2.min_version = ctx2.max_version = OpenSSL::SSL::TLS1_3_VERSION
-      assert_nothing_raised { server_connect(port, ctx2) { } }
+      server_connect(port, ctx2) { |ssl|
+        assert_equal("TLSv1.3", ssl.ssl_version)
+        ssl.puts("abc"); assert_equal("abc\n", ssl.gets)
+      }
     }
 
     # Server only supports TLS 1.2
@@ -1620,7 +1585,42 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
       # Client supports TLS 1.2 by default
       ctx2 = OpenSSL::SSL::SSLContext.new
       ctx2.options |= OpenSSL::SSL::OP_NO_TLSv1_3
-      assert_nothing_raised { server_connect(port, ctx2) { } }
+      server_connect(port, ctx2) { |ssl|
+        assert_equal("TLSv1.2", ssl.ssl_version)
+      }
+    }
+  end
+
+  def test_ssl_set_version
+    start_server { |port|
+      # Sanity check: without any constraints, TLS 1.3 will be used
+      ctx = OpenSSL::SSL::SSLContext.new
+      server_connect(port, ctx) { |ssl|
+        assert_equal("TLSv1.3", ssl.ssl_version)
+        ssl.puts("abc"); assert_equal("abc\n", ssl.gets)
+      }
+
+      # Client only supports TLS 1.2
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.ssl_version = "TLSv1_2"
+      server_connect(port, ctx) { |ssl|
+        assert_equal("TLSv1.2", ssl.ssl_version)
+      }
+    }
+
+    # Server only supports TLS 1.2
+    sctx = make_server_context
+    sctx.ssl_version = :TLSv1_2
+    start_server(sctx) { |port|
+      server_connect(port) { |ssl|
+        assert_equal("TLSv1.2", ssl.ssl_version)
+      }
+    }
+
+    # Invalid version
+    ctx = OpenSSL::SSL::SSLContext.new
+    assert_raise_with_message(ArgumentError, /SSL method/) {
+      ctx.ssl_version = :TLSv1_3
     }
   end
 
@@ -1843,11 +1843,9 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
   end
 
   def test_fallback_scsv
-    supported = check_supported_protocol_versions
-    unless supported.include?(OpenSSL::SSL::TLS1_1_VERSION)
+    unless protocol_version_available?(OpenSSL::SSL::TLS1_1_VERSION)
       omit "TLS 1.1 support is required to run this test case"
     end
-
     omit "Fallback SCSV is not supported" if libressl?
 
     start_server do |port|
