@@ -1143,8 +1143,14 @@ class Gem::Specification < Gem::BasicSpecification
 
   def self.normalize_yaml_input(input)
     result = input.respond_to?(:read) ? input.read : input
-    result = "--- " + result unless result.start_with?("--- ")
     result = result.dup
+    # Ruby 1.8 gem metadata may contain Latin-1 bytes without an encoding declaration.
+    if [Encoding::BINARY, Encoding::UTF_8].include?(result.encoding)
+      result.force_encoding(Encoding::UTF_8).scrub! do |bytes|
+        bytes.encode(Encoding::UTF_8, Encoding::ISO_8859_1)
+      end
+    end
+    result = "--- " + result unless result.start_with?("--- ")
     result.gsub!(/ !!null \n/, " \n")
     # date: 2011-04-26 00:00:00.000000000Z
     # date: 2011-04-26 00:00:00.000000000 Z
