@@ -5299,7 +5299,8 @@ vm_yield_with_symbol(rb_execution_context_t *ec,  VALUE symbol, int argc, const 
                                                  rb_iseq_path(caller_iseq), rb_iseq_realpath(caller_iseq),
                                                  rb_vm_get_sourceline(ruby_cfp), caller_iseq, 0,
                                                  ISEQ_TYPE_BLOCK, NULL, Qnil);
-    VALUE val;
+    volatile VALUE val = Qnil;
+    enum ruby_tag_type state;
 
     vm_push_frame(ec, iseq, VM_FRAME_MAGIC_BLOCK | VM_FRAME_FLAG_FINISH,
                   ruby_cfp->self, VM_GUARDED_PREV_EP(ruby_cfp->ep),
@@ -5307,7 +5308,21 @@ vm_yield_with_symbol(rb_execution_context_t *ec,  VALUE symbol, int argc, const 
                   ISEQ_BODY(iseq)->iseq_encoded, reg_cfp->sp,
                   ISEQ_BODY(iseq)->local_table_size, ISEQ_BODY(iseq)->stack_max);
 
-    val = rb_sym_proc_call(SYM2ID(symbol), argc, argv, kw_splat, passed_proc);
+    /*
+     * The pushed frame is finished (owned by no vm_exec loop), so catch the
+     * non-local exit here, pop the frame, and let the caller's handlers see
+     * the exception.
+     */
+    EC_PUSH_TAG(ec);
+    if ((state = EC_EXEC_TAG()) == TAG_NONE) {
+        val = rb_sym_proc_call(SYM2ID(symbol), argc, argv, kw_splat, passed_proc);
+    }
+    EC_POP_TAG();
+
+    if (state != TAG_NONE) {
+        rb_vm_rewind_cfp(ec, (rb_control_frame_t *)reg_cfp);
+        EC_JUMP_TAG(ec, state);
+    }
 
     rb_vm_pop_frame(ec);
 
