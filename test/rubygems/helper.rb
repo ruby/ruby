@@ -5,7 +5,6 @@ require "rubygems"
 begin
   raise LoadError if ENV["GEM_COMMAND"]
 
-  gem "simplecov_json_formatter"
   require "simplecov"
 
   unless ENV["SIMPLECOV_SUBPROCESS"]

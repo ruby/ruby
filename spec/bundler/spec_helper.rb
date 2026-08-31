@@ -43,7 +43,6 @@ require_relative "support/shards"
 begin
   raise LoadError if File.exist?(File.expand_path("../../lib/bundler/bundler.gemspec", __dir__))
 
-  gem "simplecov_json_formatter"
   require "simplecov"
 
   SimpleCov.start do
