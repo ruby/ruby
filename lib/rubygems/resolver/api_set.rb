@@ -5,7 +5,7 @@
 # Returns instances of APISpecification.
 
 class Gem::Resolver::APISet < Gem::Resolver::Set
-  autoload :GemParser, File.expand_path("api_set/gem_parser", __dir__)
+  autoload :GemParser, "rubygems/resolver/api_set/gem_parser"
 
   ##
   # The URI for the Compact Index API this APISet uses.
