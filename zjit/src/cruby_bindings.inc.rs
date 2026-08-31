@@ -1282,6 +1282,12 @@ pub union rb_iseq_constant_body_iseq_insn_info__bindgen_ty_1 {
 #[repr(C)]
 #[derive(Copy, Clone)]
 pub union rb_iseq_constant_body__bindgen_ty_1 {
+    pub list: *mut u8,
+    pub single: [u8; 8usize],
+}
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub union rb_iseq_constant_body__bindgen_ty_2 {
     pub list: *mut iseq_bits_t,
     pub single: iseq_bits_t,
 }
