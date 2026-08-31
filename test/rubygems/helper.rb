@@ -13,11 +13,11 @@ begin
       root File.expand_path("../..", __dir__)
       coverage_dir File.expand_path("../../coverage", __dir__)
 
-      add_filter "/test/"
-      add_filter "/bundler/"
-      add_filter "/tool/"
-      add_filter "/lib/rubygems/vendor/"
-      add_filter ".gemspec"
+      skip "/test/"
+      skip "/bundler/"
+      skip "/tool/"
+      skip "/lib/rubygems/vendor/"
+      skip ".gemspec"
     end
 
     # Prevent SimpleCov from running in subprocesses spawned by assert_separately

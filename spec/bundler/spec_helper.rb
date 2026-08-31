@@ -50,13 +50,13 @@ begin
     root File.expand_path("../bundler", __dir__)
     coverage_dir File.expand_path("../coverage", __dir__)
 
-    add_filter "/spec/"
-    add_filter "/test/"
-    add_filter "/lib/rubygems/"
-    add_filter "/lib/bundler/vendor/"
-    add_filter "/tool/"
-    add_filter "/tmp/"
-    add_filter ".gemspec"
+    skip "/spec/"
+    skip "/test/"
+    skip "/lib/rubygems/"
+    skip "/lib/bundler/vendor/"
+    skip "/tool/"
+    skip "/tmp/"
+    skip ".gemspec"
   end
 
   SimpleCov.print_error_status = false
