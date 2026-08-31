@@ -4358,6 +4358,7 @@ pub struct IseqCall {
     end_addr: Cell<Option<CodePtr>>,
 
     /// Address of the function stub generated for this call, if already compiled.
+    // TODO(alan): Remove with removal of without_locals(), as this caching means `IseqCall` is never freed.
     stub_addr: Cell<Option<CodePtr>>,
 }
 
