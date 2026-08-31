@@ -524,7 +524,10 @@ struct rb_iseq_constant_body {
 
     const ID *local_table;		/* must free */
 
-    uint8_t *lvar_states;
+    union {
+        uint8_t *list;
+        uint8_t single[sizeof(uint8_t *)];
+    } lvar_states;
 
     /* catch table */
     struct iseq_catch_table *catch_table;
