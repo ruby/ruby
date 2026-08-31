@@ -143,7 +143,7 @@ pub fn num_arguments_on_stack(cd: *const rb_call_data) -> usize {
     (unsafe { vm_ci_argc(ci) }) as usize + has_blockarg as usize
 }
 
-const DISTRIBUTION_SIZE: usize = 4;
+const DISTRIBUTION_SIZE: usize = 8;
 
 pub type TypeDistribution = Distribution<ProfiledType, DISTRIBUTION_SIZE>;
 
