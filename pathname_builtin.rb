@@ -1670,9 +1670,19 @@ class Pathname    # * File *
   def fnmatch?(pattern, ...) File.fnmatch?(pattern, @path, ...) end
 
   #  call-seq:
-  #    pathname.ftype -> string
+  #    ftype -> string
   #
-  #  Returns the string type of the object at the path in +self+:
+  #  Returns the string type of the object at the path in <tt>self</tt>, one of:
+  #
+  #  - <tt>'file'</tt>.
+  #  - <tt>'directory'</tt>.
+  #  - <tt>'characterSpecial'</tt>.
+  #  - <tt>'blockSpecial'</tt>.
+  #  - <tt>'fifo'</tt>.
+  #  - <tt>'link'</tt>.
+  #  - <tt>'socket'</tt>.
+  #
+  #  Examples:
   #
   #    Pathname('README.md').ftype   # => "file"
   #    Pathname('lib').ftype         # => "directory"
