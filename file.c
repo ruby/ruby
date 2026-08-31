@@ -7010,8 +7010,8 @@ rb_stat_ww(VALUE obj)
 }
 
 /*
- *  call-seq:
- *    executable? -> true or false
+ * call-seq:
+ *   executable? -> true or false
  *
  * Returns whether the filesystem entry represented by +self+
  * exists and is executable;
