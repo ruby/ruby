@@ -54,6 +54,7 @@ static bool tmp_dir_has_dirsep;
 
 /* process-private 0700 directory for box-local copies of extensions */
 static char box_ext_tmp_dir[MAXPATHLEN];
+static rb_pid_t box_ext_tmp_dir_owner;
 static unsigned long box_ext_seq;
 
 #define BOX_TMP_PREFIX "_ruby_box_"
@@ -574,6 +575,13 @@ system_tmpdir(void)
 static void
 ensure_box_ext_tmp_dir(void)
 {
+    /* A forked child inherits the parent's directory path; discard it so
+     * that each process creates its own directory and removes only that
+     * one at teardown. */
+    if (box_ext_tmp_dir[0] && box_ext_tmp_dir_owner != getpid()) {
+        box_ext_tmp_dir[0] = '\0';
+        box_ext_seq = 0;
+    }
     if (box_ext_tmp_dir[0]) return;
 
     int last_errno = 0;
@@ -592,6 +600,7 @@ ensure_box_ext_tmp_dir(void)
         }
         if (mkdir(path, 0700) == 0) {
             strlcpy(box_ext_tmp_dir, path, sizeof(box_ext_tmp_dir));
+            box_ext_tmp_dir_owner = getpid();
             return;
         }
         last_errno = errno;
@@ -852,7 +861,7 @@ rb_box_unload_local_extensions(void)
         ext = next;
     }
 #endif
-    if (box_ext_tmp_dir[0]) {
+    if (box_ext_tmp_dir[0] && box_ext_tmp_dir_owner == getpid()) {
         rmdir(box_ext_tmp_dir);
         box_ext_tmp_dir[0] = '\0';
     }
