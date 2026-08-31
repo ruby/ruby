@@ -777,6 +777,45 @@ class TestBox < Test::Unit::TestCase
     end;
   end
 
+  def test_child_status_gvar_not_cached_in_box
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      system(EnvUtil.rubybin, "-e", "exit 3")
+      assert_equal 3, $?.exitstatus
+      assert_equal Process.last_status.pid, $?.pid
+      IO.popen([EnvUtil.rubybin, "-e", "exit 5"]) {|io| io.read}
+      assert_equal 5, $?.exitstatus
+    end;
+  end
+
+  def test_child_status_gvar_not_cached_in_user_box
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      ruby = EnvUtil.rubybin.dump
+      first, second = Ruby::Box.new.eval(<<~CODE)
+        system(#{ruby}, "-e", "exit 3")
+        first = $?.exitstatus
+        system(#{ruby}, "-e", "exit 5")
+        [first, $?.exitstatus]
+      CODE
+      assert_equal 3, first
+      assert_equal 5, second
+    end;
+  end
+
+  def test_pid_gvar_not_cached_in_forked_child
+    omit "fork is not supported" unless Process.respond_to?(:fork)
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      _parent_pid = $$
+      r, w = IO.pipe
+      pid = fork { r.close; w.puts($$ == Process.pid); exit!(true) }
+      w.close
+      Process.wait(pid)
+      assert_equal "true", r.read.chomp
+    end;
+  end
+
   def test_errinfo_isolated_between_boxes
     assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
     begin;
