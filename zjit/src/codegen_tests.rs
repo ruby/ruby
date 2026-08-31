@@ -6,7 +6,7 @@ use crate::backend::lir::Assembler;
 use crate::codegen::max_iseq_versions;
 use crate::cruby::*;
 use crate::hir::{Insn, iseq_to_hir};
-use crate::options::{get_option, rb_zjit_prepare_options, set_call_threshold, set_inline_threshold, set_max_versions};
+use crate::options::{get_option, rb_zjit_prepare_options, set_call_threshold, set_inline_threshold, set_max_versions, set_mem_bytes};
 use crate::payload::IseqVersion;
 use crate::hir::tests::hir_build_tests::assert_contains_opcode;
 use crate::payload::*;
@@ -1103,6 +1103,41 @@ fn test_no_ep_escape_patch_point_after_send_does_not_repeat_send() {
     "#);
     assert_contains_opcode("test", YARVINSN_send);
     assert_snapshot!(assert_compiles_allowing_exits("[test, test, test]"), @"[1, 2, 3]");
+}
+
+#[test]
+fn test_no_ep_escape_side_exit_restores_locals_while_oom() {
+    // A regression test for stub compilation failures on OOM. Functions patched by NoEPEscape
+    // is unsafe to enter (FrameState uses without_locals() and doesn't spill the entry state),
+    // so even under OOM, the re-stub after invalidation must succeed.
+    set_mem_bytes(2 * 1024 * 1024);
+    set_inline_threshold(0);
+    set_call_threshold(2);
+    assert_snapshot!(inspect(r#"
+        class Foo
+          def initialize = @perm = 7
+          def callee(esc, local_to_spill = "spilled", perm = @perm)
+            binding if esc
+            local_to_spill
+          end
+        end
+        def kaller(foo, esc) = foo.callee(esc)
+
+        foo = Foo.new
+        300.times { kaller(foo, false) } # compile callee (with its NoEPEscape patch point) and the kaller->callee edge
+
+        # Fill the code region so the re-stub after the EP escape fails with OutOfMemory.
+        1000.times do |i|
+          body = (0...25).map { |k| "u#{k} = #{i} + #{k}; s += u#{k}" }.join("; ")
+          eval "def big#{i}(a = 1); s = 0; #{body}; s; end"
+        end
+        1000.times { |i| 2.times { send(:"big#{i}") } }
+
+        kaller(foo, true) # escape callee's EP; the kaller->callee re-stub OOMs
+        # Re-enter the patched callee. Each call must still return "spilled"; on the buggy
+        # build local_to_spill is read from a stale stack slot and comes back as junk.
+        300.times.all? { kaller(foo, false) == "spilled" }
+    "#), @"true");
 }
 
 #[test]

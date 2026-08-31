@@ -273,9 +273,26 @@ pub fn invalidate_iseq_version(cb: &mut CodeBlock, iseq: IseqPtr, version: &mut 
 pub fn gen_iseq_call(cb: &mut CodeBlock, iseq_call: &IseqCallRef) -> Result<(), CompileError> {
     trace_compile_phase("compile_stub", || {
         // Compile a function stub
-        let stub_ptr = gen_function_stub(cb, iseq_call.clone()).inspect_err(|err| {
-            debug!("{err:?}: gen_function_stub failed: {}", iseq_get_location(iseq_call.iseq.get(), 0));
-        })?;
+        let stub_ptr = match iseq_call.stub_addr.get() {
+            // When gen_iseq_call() is called from invalidation and therefore this IseqCall has been
+            // compiled before, reuse the address of the previously-compiled stub.
+            Some(stub_ptr) => {
+                // gen_function_stub leaked one Rc reference into the stub's baked IseqCall pointer,
+                // and the previous function_stub_hit consumed it. Restore one leaked reference for
+                // the next stub hit's Rc::from_raw to reclaim.
+                unsafe { Rc::increment_strong_count(Rc::as_ptr(iseq_call)); }
+                stub_ptr
+            }
+            // When gen_iseq_call() is called from gen_iseq_body() and this IseqCall is compiled for
+            // the first time, generate a function stub and remember the address in the IseqCall.
+            None => {
+                let stub_ptr = gen_function_stub(cb, iseq_call.clone()).inspect_err(|err| {
+                    debug!("{err:?}: gen_function_stub failed: {}", iseq_get_location(iseq_call.iseq.get(), 0));
+                })?;
+                iseq_call.stub_addr.set(Some(stub_ptr));
+                stub_ptr
+            }
+        };
 
         // Update the JIT-to-JIT call to call the stub
         let stub_addr = stub_ptr.raw_ptr(cb);
@@ -4340,6 +4357,10 @@ pub struct IseqCall {
 
     /// Position where the call instruction ends (exclusive)
     end_addr: Cell<Option<CodePtr>>,
+
+    /// Address of the function stub generated for this call, if already compiled.
+    // TODO(alan): Remove with removal of without_locals(), as this caching means `IseqCall` is never freed.
+    stub_addr: Cell<Option<CodePtr>>,
 }
 
 pub type IseqCallRef = Rc<IseqCall>;
@@ -4351,6 +4372,7 @@ impl IseqCall {
             iseq: Cell::new(iseq),
             start_addr: Cell::new(None),
             end_addr: Cell::new(None),
+            stub_addr: Cell::new(None),
             jit_entry_idx,
             argc,
         };
