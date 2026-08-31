@@ -52,7 +52,37 @@ class GemTest < Gem::TestCase
     end
   end
 
+  def test_autoload_does_not_load_a_second_copy_of_the_same_file
+    # Two RubyGems trees on the load path, as when Bundler runs from a RubyGems
+    # checkout while the host RubyGems is already loaded.
+    path = util_install_name_tuple_rb
+
+    output = Gem::Util.popen(
+      *ruby_with_shadowing_rubygems_in_load_path(path),
+      "-e",
+      "require \"rubygems/name_tuple\"; puts $LOADED_FEATURES.count {|f| f.end_with?(\"rubygems/name_tuple.rb\") }",
+      { err: [:child, :out] }
+    ).strip
+
+    assert_equal "1", output
+  end
+
   private
+
+  def util_install_name_tuple_rb
+    dir = Dir.mktmpdir("test_shadowing_rubygems_lib", @tempdir)
+
+    name_tuple_rb = File.join dir, "rubygems", "name_tuple.rb"
+
+    FileUtils.mkdir_p File.dirname(name_tuple_rb)
+    FileUtils.cp File.join(rubygems_path, "rubygems", "name_tuple.rb"), name_tuple_rb
+
+    dir
+  end
+
+  def ruby_with_shadowing_rubygems_in_load_path(shadowing_path)
+    [Gem.ruby, "-I", shadowing_path, *ruby_with_rubygems_in_load_path.drop(1)]
+  end
 
   def util_install_operating_system_rb(content)
     dir_lib = Dir.mktmpdir("test_operating_system_lib", @tempdir)

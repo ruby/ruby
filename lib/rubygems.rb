@@ -1433,24 +1433,27 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
 
   MARSHAL_SPEC_DIR = "quick/Marshal.#{Gem.marshal_version}/".freeze
 
-  autoload :ConfigFile,         File.expand_path("rubygems/config_file", __dir__)
-  autoload :ContentAddress,     File.expand_path("rubygems/content_address", __dir__)
-  autoload :CIDetector,         File.expand_path("rubygems/ci_detector", __dir__)
-  autoload :Dependency,         File.expand_path("rubygems/dependency", __dir__)
-  autoload :DependencyList,     File.expand_path("rubygems/dependency_list", __dir__)
-  autoload :Installer,          File.expand_path("rubygems/installer", __dir__)
-  autoload :Licenses,           File.expand_path("rubygems/util/licenses", __dir__)
-  autoload :NameTuple,          File.expand_path("rubygems/name_tuple", __dir__)
-  autoload :PathSupport,        File.expand_path("rubygems/path_support", __dir__)
-  autoload :RequestSet,         File.expand_path("rubygems/request_set", __dir__)
-  autoload :Requirement,        File.expand_path("rubygems/requirement", __dir__)
-  autoload :Resolver,           File.expand_path("rubygems/resolver", __dir__)
-  autoload :Source,             File.expand_path("rubygems/source", __dir__)
-  autoload :SourceList,         File.expand_path("rubygems/source_list", __dir__)
-  autoload :SpecFetcher,        File.expand_path("rubygems/spec_fetcher", __dir__)
-  autoload :SpecificationPolicy, File.expand_path("rubygems/specification_policy", __dir__)
-  autoload :Util,               File.expand_path("rubygems/util", __dir__)
-  autoload :Version,            File.expand_path("rubygems/version", __dir__)
+  # Autoload by feature name. An absolute path skips the $LOADED_FEATURES
+  # check, so a second RubyGems tree on the load path gets loaded on top of
+  # this one.
+  autoload :ConfigFile,         "rubygems/config_file"
+  autoload :ContentAddress,     "rubygems/content_address"
+  autoload :CIDetector,         "rubygems/ci_detector"
+  autoload :Dependency,         "rubygems/dependency"
+  autoload :DependencyList,     "rubygems/dependency_list"
+  autoload :Installer,          "rubygems/installer"
+  autoload :Licenses,           "rubygems/util/licenses"
+  autoload :NameTuple,          "rubygems/name_tuple"
+  autoload :PathSupport,        "rubygems/path_support"
+  autoload :RequestSet,         "rubygems/request_set"
+  autoload :Requirement,        "rubygems/requirement"
+  autoload :Resolver,           "rubygems/resolver"
+  autoload :Source,             "rubygems/source"
+  autoload :SourceList,         "rubygems/source_list"
+  autoload :SpecFetcher,        "rubygems/spec_fetcher"
+  autoload :SpecificationPolicy, "rubygems/specification_policy"
+  autoload :Util,               "rubygems/util"
+  autoload :Version,            "rubygems/version"
 end
 
 require_relative "rubygems/exceptions"
