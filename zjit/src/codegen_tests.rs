@@ -1106,7 +1106,7 @@ fn test_no_ep_escape_patch_point_after_send_does_not_repeat_send() {
 }
 
 #[test]
-fn test_no_ep_escape_side_exit_restores_locals() {
+fn test_no_ep_escape_side_exit_restores_locals_while_oom() {
     // A regression test for stub compilation failures on OOM. Functions patched by NoEPEscape
     // is unsafe to enter (FrameState uses without_locals() and doesn't spill the entry state),
     // so even under OOM, the re-stub after invalidation must succeed.
