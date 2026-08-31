@@ -2253,14 +2253,25 @@ rb_file_executable_real_p(VALUE obj, VALUE fname)
 
 /*
  * call-seq:
- *    File.file?(file) -> true or false
+ *   File.file?(object) -> true or false
  *
- * Returns +true+ if the named +file+ exists and is a regular file.
+ * Returns whether the given +object+, a string path or IO object,
+ * represents a filesystem entry that exists and is a regular file;
+ * see File.ftype:
  *
- * +file+ can be an IO object.
+ *   # Paths.
+ *   File.file?('README.md')     # => true
+ *   File.file?('doc/')     # => false
+ *   File.file?('nosuch')     # => false
+ *   # IO objects.
+ *   file = File.new('README.md')
+ *   File.file?(file)     # => true
+ *   dir = Dir.new('doc/')
+ *   File.file?(dir)     # => false
+ *   # Clean up.
+ *   file.close
+ *   dir.close
  *
- * If the +file+ argument is a symbolic link, it will resolve the symbolic link
- * and use the file referenced by the link.
  */
 
 static VALUE
@@ -7080,12 +7091,16 @@ rb_stat_X(VALUE obj)
 
 /*
  *  call-seq:
- *     stat.file?    -> true or false
+ *    file? -> true or false
  *
- *  Returns <code>true</code> if <i>stat</i> is a regular file (not
- *  a device file, pipe, socket, etc.).
+ * Returns whether +self+ represents a filesystem entry that exists and is a regular file;
+ * see File::Stat.ftype:
  *
- *     File.stat("testfile").file?   #=> true
+ *   # Paths.
+ *   File.stat('README.md').file?     # => true
+ *   File.stat('doc/').file?     # => false
+ *   File.stat('nosuch').file? # Raises Errno::ENOENT: No such file or directory.
+ *
  *
  */
 

@@ -2385,7 +2385,8 @@ class Pathname    # * FileTest *
   # call-seq:
   #   file? -> true or false
   #
-  # Returns whether the entry at the path in `self` exists and is a regular file:
+  # Returns whether the entry at the path in `self` exists and is a regular file;
+  # see #ftype:
   #
   # ```ruby
   # Pathname('README.md').file? # => true
