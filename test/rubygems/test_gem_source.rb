@@ -334,6 +334,16 @@ class TestGemSource < Gem::TestCase
     assert_nil @source.created_at("c", v(1))
   end
 
+  def test_created_at_for_tuple_uses_content_address
+    ca_spec = util_ca_spec "a", "1", "abcdef12", ruby_abi: "3.3"
+    util_setup_compact_index ca_spec, created_at: {
+      ca_spec.original_name => "2026-06-05T10:30:45Z",
+    }
+
+    assert_nil @source.created_at("a", v(1), "x86_64-linux")
+    assert_equal Time.utc(2026, 6, 5, 10, 30, 45), @source.created_at_for_tuple(ca_spec.name_tuple)
+  end
+
   def test_created_at_file_uri
     source = Gem::Source.new "file:///tmp/gems"
 

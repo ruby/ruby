@@ -156,20 +156,11 @@ module Gem::QueryUtils
       if args.empty?
         matching_tuples
       else
-        decode_content_addressable_tuples(matching_tuples, latest: specs_type == :latest)
+        fetcher.decode_content_addressable_tuples(matching_tuples, latest: specs_type == :latest)
       end
     end
 
     output_query_results(spec_tuples)
-  end
-
-  def decode_content_addressable_tuples(spec_tuples, latest: false)
-    spec_tuples.group_by {|_, source| source }.flat_map do |source, source_tuples|
-      next source_tuples unless source.respond_to?(:decode_content_addressable_tuples)
-
-      tuples = source_tuples.map(&:first)
-      source.decode_content_addressable_tuples(tuples, latest: latest).map {|tuple| [tuple, source] }
-    end
   end
 
   def specs_type

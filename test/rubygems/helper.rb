@@ -1059,6 +1059,31 @@ class Gem::TestCase < Test::Unit::TestCase
   end
 
   ##
+  # Builds a platform gem and serves it through compact index as a
+  # content-addressable gem. Returns the specification, gem path, and content
+  # address.
+
+  def util_setup_content_addressable_compact_index_gem(name, version, platform: "x86_64-linux", required_ruby_version: ">= 3.0", &block)
+    spec, gem_path = util_gem(name, version) do |s|
+      s.platform = platform
+      s.required_ruby_version = required_ruby_version
+      yield(s) if block
+    end
+
+    content_address = Digest::SHA256.file(gem_path).hexdigest[0, 8]
+    ca_gem_path = File.join(File.dirname(gem_path), "#{spec.name}-#{spec.version}-#{content_address}.gem")
+    FileUtils.cp gem_path, ca_gem_path
+    spec.content_address = content_address
+
+    util_setup_compact_index spec
+    @fetcher.data["#{@gem_repo}quick/Marshal.#{Gem.marshal_version}/#{spec.full_name}.gemspec.rz"] = util_zip(Marshal.dump(spec))
+    add_to_fetcher spec, ca_gem_path
+    Gem::SpecFetcher.fetcher = nil
+
+    [spec, ca_gem_path, content_address]
+  end
+
+  ##
   # Gzips +data+.
 
   def util_gzip(data)

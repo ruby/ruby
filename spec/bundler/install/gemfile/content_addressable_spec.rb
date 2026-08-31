@@ -458,6 +458,10 @@ RSpec.describe "bundle install with content-addressable gems", :compact_index, r
 end
 
 RSpec.describe "bundle install with content-addressable gems invisible to pre-4.1 RubyGems clients", :compact_index, rubygems: ">= 4.1.0.a" do
+  before do
+    skip "Gem::ContentAddress not available" if ruby_core?
+  end
+
   let(:current_abi) { "#{Gem.ruby_version.segments[0]}.#{Gem.ruby_version.segments[1]}" }
 
   it "installs content-addressed gems constrained so older clients refuse them" do

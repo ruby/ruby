@@ -122,6 +122,87 @@ class TestGemSpecFetcher < Gem::TestCase
                  spec_names
   end
 
+  def test_decode_content_addressable_tuples_decodes_source_tuples
+    spec_fetcher
+
+    ca_spec = util_ca_spec "a", "1", "abcdef12", ruby_abi: "3.3"
+    util_setup_compact_index ca_spec
+
+    ca_tuple = Gem::NameTuple.new("a", v(1), "abcdef12", content_address: "abcdef12")
+    ruby_tuple = tuple("b", v(1), "ruby")
+
+    decoded = @sf.decode_content_addressable_tuples([[ca_tuple, @source], [ruby_tuple, @source]])
+
+    decoded_ca_tuple, decoded_ca_source = decoded.find {|decoded_tuple,| decoded_tuple.name == "a" }
+    decoded_ruby_tuple, decoded_ruby_source = decoded.find {|decoded_tuple,| decoded_tuple.name == "b" }
+
+    assert_equal @source, decoded_ca_source
+    assert_equal "a-1-abcdef12", decoded_ca_tuple.full_name
+    assert_equal "x86_64-linux", decoded_ca_tuple.platform
+    assert_equal "abcdef12", decoded_ca_tuple.content_address
+    assert_equal "3.3", decoded_ca_tuple.ruby_abi
+
+    assert_equal @source, decoded_ruby_source
+    assert_equal ruby_tuple, decoded_ruby_tuple
+  end
+
+  def test_decode_content_addressable_tuples_does_not_decode_non_content_addressable_gems
+    source = Object.new
+    original = [[tuple("a", v(1), "ruby"), source]]
+
+    assert_equal original, @sf.decode_content_addressable_tuples(original)
+  end
+
+  def test_search_for_dependency_decodes_content_addressable_tuples
+    spec_fetcher
+    util_set_arch "x86_64-linux"
+
+    ruby_abi = Gem.ruby_version.segments.first(2).join(".")
+    other_abi = "#{Gem.ruby_version.segments[0] + 1}.0"
+    compatible = util_ca_spec "a", "1", "abcdef12", ruby_abi: ruby_abi
+    incompatible = util_ca_spec "a", "1", "fedcba98", ruby_abi: other_abi
+    util_setup_compact_index compatible, incompatible
+
+    tuples, errors = @sf.search_for_dependency Gem::Dependency.new("a")
+
+    assert_empty errors
+    assert_equal 1, tuples.length
+
+    tuple, source = tuples.first
+    assert_equal @source, source
+    assert_equal "a-1-abcdef12", tuple.full_name
+    assert_equal "x86_64-linux", tuple.platform
+    assert_equal "abcdef12", tuple.content_address
+    assert_equal ruby_abi, tuple.ruby_abi
+  end
+
+  def test_spec_for_dependency_preserves_content_address_from_tuple
+    spec_fetcher
+    util_set_arch "x86_64-linux"
+
+    ruby_abi = Gem.ruby_version.segments.first(2).join(".")
+    ca_spec = util_ca_spec "a", "1", "abcdef12", ruby_abi: ruby_abi
+    util_setup_compact_index ca_spec
+
+    fetched_spec = util_spec "a", "1" do |s|
+      s.platform = "x86_64-linux"
+      s.required_ruby_version = ">= 3.0"
+    end
+    refute fetched_spec.content_address
+    @fetcher.data["#{@gem_repo}quick/Marshal.#{Gem.marshal_version}/#{ca_spec.spec_name}.rz"] = util_zip(Marshal.dump(fetched_spec))
+
+    dep = Gem::Dependency.new "a"
+    specs_and_sources, errors = @sf.spec_for_dependency dep
+
+    assert_empty errors
+    assert_equal 1, specs_and_sources.length
+
+    spec, source = specs_and_sources.first
+    assert_equal @source, source
+    assert_equal "abcdef12", spec.content_address
+    assert_equal "a-1-abcdef12", spec.full_name
+  end
+
   def test_spec_for_dependency_mismatched_platform
     util_set_arch "hrpa-989"
 

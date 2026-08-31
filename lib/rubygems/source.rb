@@ -240,12 +240,12 @@ class Gem::Source
   end
 
   ##
-  # The publish time of gem +name+ at +version+ for +platform+, when this
+  # The publish time of gem +name+ at +version+ for +suffix+, when this
   # source provides it through the compact index created_at metadata.
   # Returns nil when the source, the gem or the version has no known
   # publish time.
 
-  def created_at(name, version, platform = Gem::Platform::RUBY)
+  def created_at(name, version, suffix = Gem::Platform::RUBY)
     return unless %w[http https].include?(uri.scheme)
 
     @created_at_info ||= {}
@@ -255,18 +255,26 @@ class Gem::Source
       []
     end
 
-    platform = (platform || Gem::Platform::RUBY).to_s
+    suffix = (suffix || Gem::Platform::RUBY).to_s
     version = version.to_s
 
     row = info.find do |row_info|
       row_info[Gem::CompactIndexClient::INFO_VERSION] == version &&
-        (row_info[Gem::CompactIndexClient::INFO_PLATFORM] || Gem::Platform::RUBY) == platform
+        (row_info[Gem::CompactIndexClient::INFO_SUFFIX] || Gem::Platform::RUBY) == suffix
     end
     return unless row
 
     value = row[Gem::CompactIndexClient::INFO_REQS].assoc("created_at")&.last&.first
 
     Gem::Cooldown.parse_created_at(value)
+  end
+
+  ##
+  # The publish time for +tuple+. Content-addressable tuples are looked up by
+  # content address; all other tuples are looked up by platform.
+
+  def created_at_for_tuple(tuple)
+    created_at(tuple.name, tuple.version, tuple.content_address || tuple.platform)
   end
 
   ##
@@ -403,7 +411,7 @@ class Gem::Source
 
     available_rows = compact_index_info_rows(name).filter_map do |info_row|
       version = info_row[Gem::CompactIndexClient::INFO_VERSION]
-      suffix = info_row[Gem::CompactIndexClient::INFO_PLATFORM]
+      suffix = info_row[Gem::CompactIndexClient::INFO_SUFFIX]
 
       requirements = compact_index_requirements(info_row)
       platform = required_platform_from(requirements[:platform])

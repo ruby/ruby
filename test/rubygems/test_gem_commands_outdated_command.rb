@@ -90,6 +90,33 @@ class TestGemCommandsOutdatedCommand < Gem::TestCase
     assert_equal "", @ui.error
   end
 
+  def test_execute_cooldown_embargoes_content_addressable_tuple
+    util_set_arch "x86_64-linux"
+
+    spec_fetcher do |fetcher|
+      fetcher.gem "ca_cooldown", "1.0.0" do |s|
+        s.platform = "x86_64-linux"
+      end
+    end
+
+    ca_spec = util_ca_spec "ca_cooldown", "2.0.0", "abcdef12",
+      ruby_abi: Gem.ruby_version.segments.first(2).join("."),
+      platform: "x86_64-linux"
+    util_setup_compact_index ca_spec, created_at: {
+      ca_spec.original_name => util_cooldown_time(1),
+    }
+    Gem::SpecFetcher.fetcher = nil
+
+    @cmd.options[:cooldown] = 7
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    assert_equal "ca_cooldown (1.0.0 < 2.0.0 (cooldown 7d))\n", @ui.output
+    assert_equal "", @ui.error
+  end
+
   def test_execute_cooldown_only_version_within_period
     util_setup_cooldown_repo "foo-0.3" => util_cooldown_time(1)
 
