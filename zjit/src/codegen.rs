@@ -2760,7 +2760,6 @@ fn gen_return(asm: &mut Assembler, val: lir::Opnd) {
     asm.cret(C_RET_OPND);
 }
 
-// TODO: Consider turning Insn::Throw into Insn::Jump when inlined.
 fn gen_throw(jit: &mut JITState, asm: &mut Assembler, function: &Function, throw_state: u32, val: lir::Opnd, state: &FrameState) {
     gen_incr_counter(asm, Counter::throw_count);
 
