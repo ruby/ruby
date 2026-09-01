@@ -40,6 +40,12 @@ struct rb_classext_struct {
     const rb_box_t *box;
     VALUE super;
     VALUE fields_obj; // Fields are either ivar or other internal properties stored inline
+    /**
+     * For class/module: name of class/module
+     * For refinement iclass: hidden hash with refinement module keys and module refinement
+     *                        iclass values
+     * TODO: move into as union below
+     */
     VALUE classpath;
     struct rb_id_table *m_tbl;
     struct rb_id_table *const_tbl;
@@ -180,6 +186,7 @@ static inline rb_classext_t * RCLASS_EXT_WRITABLE(VALUE obj);
 #define RCLASSEXT_ICLASS_ORIGIN_SHARED_MTBL(ext) (ext->iclass_origin_shared_mtbl)
 #define RCLASSEXT_SUPERCLASSES_WITH_SELF(ext) (ext->superclasses_with_self)
 #define RCLASSEXT_CLASSPATH(ext) (ext->classpath)
+#define RCLASSEXT_MODULE_REFINEMENT_ICLASSES(ext) (ext->classpath)
 
 static inline void RCLASSEXT_SET_ORIGIN(rb_classext_t *ext, VALUE klass, VALUE origin);
 static inline void RCLASSEXT_SET_INCLUDER(rb_classext_t *ext, VALUE klass, VALUE includer);
@@ -221,6 +228,7 @@ static inline void RCLASSEXT_SET_INCLUDER(rb_classext_t *ext, VALUE klass, VALUE
 #define RCLASS_REFINED_CLASS(c) (RCLASS_EXT_PRIME(c)->refined_class)
 #define RCLASS_ATTACHED_OBJECT(c) (RCLASS_EXT_PRIME(c)->as.singleton_class.attached_object)
 #define RCLASS_INCLUDER(c) (RCLASS_EXT_PRIME(c)->as.iclass.includer)
+#define RCLASS_MODULE_REFINEMENT_ICLASSES(c) (RCLASS_EXT_PRIME(c)->classpath)
 
 // max IV count and variation count are just hints, so they don't need to be per-box
 #define RCLASS_MAX_IV_COUNT(ext) (RCLASS_EXT_PRIME(ext)->max_iv_count)
@@ -259,6 +267,7 @@ static inline void RCLASS_SET_ALLOCATOR(VALUE klass, rb_alloc_func_t allocator);
 static inline VALUE RCLASS_SET_ATTACHED_OBJECT(VALUE klass, VALUE attached_object);
 
 static inline void RCLASS_SET_INCLUDER(VALUE iclass, VALUE klass);
+static inline void RCLASS_SET_MODULE_REFINEMENT_ICLASSES(VALUE iclass, VALUE table);
 static inline void RCLASS_SET_MAX_IV_COUNT(VALUE klass, attr_index_t count);
 static inline void RCLASS_SET_CLASSPATH(VALUE klass, VALUE classpath, bool permanent);
 static inline void RCLASS_WRITE_CLASSPATH(VALUE klass, VALUE classpath, bool permanent);
@@ -697,6 +706,13 @@ RCLASS_SET_INCLUDER(VALUE iclass, VALUE klass)
 {
     RUBY_ASSERT(RB_TYPE_P(iclass, T_ICLASS));
     RB_OBJ_WRITE(iclass, &RCLASS_INCLUDER(iclass), klass);
+}
+
+static inline void
+RCLASS_SET_MODULE_REFINEMENT_ICLASSES(VALUE iclass, VALUE table)
+{
+    RUBY_ASSERT(RB_TYPE_P(iclass, T_ICLASS));
+    RB_OBJ_WRITE(iclass, &RCLASS_MODULE_REFINEMENT_ICLASSES(iclass), table);
 }
 
 static inline void
