@@ -852,6 +852,9 @@ static void objspace_absorb(rb_objspace_t *dst, rb_objspace_t *src);
 
 static struct heap_page_body *page_pool_acquire(struct page_arena **arena_out);
 static void page_pool_release(struct heap_page_body *body, struct page_arena *arena);
+#ifdef HAVE_MMAP
+static void page_pool_release_locked(struct heap_page_body *body, struct page_arena *arena);
+#endif
 static void page_pool_reclaim(rb_global_objspace_t *g);
 
 static void
@@ -2224,6 +2227,12 @@ heap_page_body_free(struct heap_page_body *page_body, struct page_arena *arena)
     page_pool_release(page_body, arena);
 }
 
+#if RGENGC_CHECK_MODE && !defined(_WIN32) && !defined(__wasi__)
+# define ASSERT_PAGE_POOL_LOCKED(g) GC_ASSERT(rb_native_mutex_trylock(&(g)->page_pool.lock) == EBUSY)
+#else
+# define ASSERT_PAGE_POOL_LOCKED(g) ((void)0)
+#endif
+
 /* Insert into page_index.  Writers serialize on page_pool.lock; lomem and himem are a
  * monotonically growing over-approximation used for a quick reject. */
 static void
@@ -2259,12 +2268,13 @@ global_page_index_insert(struct heap_page *page)
 }
 
 static void
-global_page_index_remove(const struct heap_page *page)
+global_page_index_remove_locked(const struct heap_page *page)
 {
     rb_global_objspace_t *g = global_objspace;
     uintptr_t body = (uintptr_t)page->body;
 
-    rb_native_mutex_lock(&g->page_pool.lock);
+    ASSERT_PAGE_POOL_LOCKED(g);
+
     size_t lo = 0, hi = g->page_index.n_pages;
     while (lo < hi) {
         size_t mid = (lo + hi) / 2;
@@ -2275,6 +2285,15 @@ global_page_index_remove(const struct heap_page *page)
     memmove(&g->page_index.pages[lo], &g->page_index.pages[lo + 1],
             (g->page_index.n_pages - lo - 1) * sizeof(struct heap_page *));
     g->page_index.n_pages--;
+}
+
+static void
+global_page_index_remove(const struct heap_page *page)
+{
+    rb_global_objspace_t *g = global_objspace;
+
+    rb_native_mutex_lock(&g->page_pool.lock);
+    global_page_index_remove_locked(page);
     rb_native_mutex_unlock(&g->page_pool.lock);
 }
 
@@ -2288,6 +2307,36 @@ heap_page_free(rb_objspace_t *objspace, struct heap_page *page)
 }
 
 static void
+heap_pages_free_batch(rb_objspace_t *objspace, struct heap_page *pages)
+{
+    if (HEAP_PAGE_ALLOC_USE_MMAP) {
+#ifdef HAVE_MMAP
+        rb_global_objspace_t *g = global_objspace;
+
+        rb_native_mutex_lock(&g->page_pool.lock);
+        for (struct heap_page *page = pages; page != NULL; page = page->free_next) {
+            global_page_index_remove_locked(page);
+            page_pool_release_locked(page->body, page->arena);
+        }
+        rb_native_mutex_unlock(&g->page_pool.lock);
+#endif
+    }
+    else {
+        for (struct heap_page *page = pages; page != NULL; page = page->free_next) {
+            global_page_index_remove(page);
+            heap_page_body_free(page->body, page->arena);
+        }
+    }
+
+    while (pages != NULL) {
+        struct heap_page *next = pages->free_next;
+        objspace->heap_pages.freed_pages++;
+        free(pages);
+        pages = next;
+    }
+}
+
+static void
 heap_pages_free_unused_pages(rb_objspace_t *objspace)
 {
     if (objspace->empty_pages != NULL && heap_pages_freeable_pages > 0) {
@@ -2296,11 +2345,13 @@ heap_pages_free_unused_pages(rb_objspace_t *objspace)
         objspace->empty_pages_count = 0;
 
         size_t i, j;
+        struct heap_page *to_free = NULL;
         for (i = j = 0; i < rb_darray_size(objspace->heap_pages.sorted); i++) {
             struct heap_page *page = rb_darray_get(objspace->heap_pages.sorted, i);
 
             if (heap_page_in_global_empty_pages_pool(objspace, page) && heap_pages_freeable_pages > 0) {
-                heap_page_free(objspace, page);
+                page->free_next = to_free;
+                to_free = page;
                 heap_pages_freeable_pages--;
             }
             else {
@@ -2336,6 +2387,8 @@ heap_pages_free_unused_pages(rb_objspace_t *objspace)
             heap_pages_lomem = 0;
             heap_pages_himem = 0;
         }
+
+        heap_pages_free_batch(objspace, to_free);
     }
 }
 
@@ -2529,6 +2582,33 @@ page_pool_acquire(struct page_arena **arena_out)
     return body;
 }
 
+#ifdef HAVE_MMAP
+static void
+page_pool_release_locked(struct heap_page_body *body, struct page_arena *arena)
+{
+    rb_global_objspace_t *g = global_objspace;
+
+    ASSERT_PAGE_POOL_LOCKED(g);
+
+    /* A body in the empty-pages pool stays fully poisoned (see gc_sweep_page), so
+     * unpoison the scratch area (link + arena tag) before writing. */
+    asan_unpoison_memory_region(body, PAGE_POOL_SCRATCH_SIZE, false);
+    arena->free_count++;
+    PAGE_POOL_BODY_ARENA(body) = arena;
+    if (g->page_pool.hot_count < PAGE_POOL_HOT_MAX) {
+        *(uintptr_t *)body = (uintptr_t)g->page_pool.hot_list;
+        g->page_pool.hot_list = body;
+        g->page_pool.hot_count++;
+    }
+    else {
+        *(uintptr_t *)body = (uintptr_t)arena->cold_freelist;
+        arena->cold_freelist = body;
+        arena->cold_count++;
+    }
+    asan_poison_memory_region(body, HEAP_PAGE_SIZE);
+}
+#endif
+
 static void
 page_pool_release(struct heap_page_body *body, struct page_arena *arena)
 {
@@ -2537,22 +2617,7 @@ page_pool_release(struct heap_page_body *body, struct page_arena *arena)
         rb_global_objspace_t *g = global_objspace;
 
         rb_native_mutex_lock(&g->page_pool.lock);
-        /* A body in the empty-pages pool stays fully poisoned (see gc_sweep_page), so
-         * unpoison the scratch area (link + arena tag) before writing. */
-        asan_unpoison_memory_region(body, PAGE_POOL_SCRATCH_SIZE, false);
-        arena->free_count++;
-        PAGE_POOL_BODY_ARENA(body) = arena;
-        if (g->page_pool.hot_count < PAGE_POOL_HOT_MAX) {
-            *(uintptr_t *)body = (uintptr_t)g->page_pool.hot_list;
-            g->page_pool.hot_list = body;
-            g->page_pool.hot_count++;
-        }
-        else {
-            *(uintptr_t *)body = (uintptr_t)arena->cold_freelist;
-            arena->cold_freelist = body;
-            arena->cold_count++;
-        }
-        asan_poison_memory_region(body, HEAP_PAGE_SIZE);
+        page_pool_release_locked(body, arena);
         rb_native_mutex_unlock(&g->page_pool.lock);
 #endif
     }
