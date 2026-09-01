@@ -116,3 +116,10 @@ rb_load_gem_prelude(VALUE _)
 {
     // do nothing - miniruby doesn't support loading RubyGems.
 }
+
+void
+rb_load_prelude(VALUE box)
+{
+    const rb_iseq_t *iseq = builtin_iseq_load("prelude", NULL);
+    rb_iseq_eval(iseq, (const rb_box_t *)box);
+}
