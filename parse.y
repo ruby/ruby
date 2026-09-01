@@ -9929,6 +9929,7 @@ parse_qmark(struct parser_params *p, int space_seen)
     newtok(p);
     enc = p->enc;
     int w = parser_precise_mbclen(p, start);
+    if (w < 0) return -1;
     if (is_identchar(p, start, p->lex.pend, p->enc) &&
         !(lex_eol_ptr_n_p(p, start, w) || !is_identchar(p, start + w, p->lex.pend, p->enc))) {
         if (space_seen) {
