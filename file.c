@@ -7021,16 +7021,36 @@ rb_stat_ww(VALUE obj)
 }
 
 /*
- *  call-seq:
- *     stat.executable?    -> true or false
+ * call-seq:
+ *   executable? -> true or false
  *
- *  Returns <code>true</code> if <i>stat</i> is executable or if the
- *  operating system doesn't distinguish executable files from
- *  nonexecutable files. The tests are made using the effective owner of
- *  the process.
+ * Returns whether the filesystem entry represented by +self+
+ * exists and is executable;
+ * raises Errno::ENOENT if the entry does not exist.
  *
- *     File.stat("testfile").executable?   #=> false
+ * On Windows, the entry is executable if its path has file extension
+ * +.bat+, +.cmd+, +.com+, or +.exe+:
  *
+ *   File.stat('win32/rtname.cmd').executable? # => true
+ *   File.stat('win32/file.c').executable?     # => false
+ *
+ * On other systems, the entry is executable if it has the execute/search
+ * permission for the effective user and group id of the current process;
+ * see {Permissions}[rdoc-ref:file/filesystem_modes.md@Permissions].
+ *
+ * These examples use
+ * a {helper method}[rdoc-ref:file/filesystem_modes.md@Helper+Method], +mode+,
+ * that displays a mode both in octal digits and in characters:
+ *
+ *   File.stat('.').executable?           # => true
+ *   mode('.')                            # => "040775 drwxrwxr-x"
+ *   File.stat('bin/gem').executable?     # => true
+ *   mode('bin/gem')                      # => "100775 -rwxrwxr-x"
+ *   File.stat('/etc/passwd').executable? # => false
+ *   mode('/etc/passwd')                  # => "100644 -rw-r--r--"
+ *
+ * Note that some filesystem settings may cause this method to return +true+
+ * even though the entry is not executable by the effective user/group.
  */
 
 static VALUE
