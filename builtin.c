@@ -116,6 +116,12 @@ rb_load_gem_prelude(VALUE box)
     load_with_builtin_functions("gem_prelude", NULL, (const rb_box_t *)box);
 }
 
+void
+rb_load_prelude(VALUE box)
+{
+    load_with_builtin_functions("prelude", NULL, (const rb_box_t *)box);
+}
+
 #endif
 
 void
@@ -133,6 +139,16 @@ Init_builtin(void)
 void
 Init_builtin_features(void)
 {
+    /*
+     * Load prelude per box (user boxes load it in Ruby::Box#initialize), so
+     * that the methods defined there belong to each box and `require` in
+     * their bodies loads features into the box of the caller.
+     */
+    rb_load_prelude((VALUE)rb_root_box());
+
+    if (rb_box_available()) {
+        rb_load_prelude((VALUE)rb_main_box());
+    }
 
 #ifdef BUILTIN_BINARY_SIZE
 
