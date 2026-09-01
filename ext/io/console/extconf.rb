@@ -52,8 +52,22 @@ when true
   have_const("RB_WARN_CATEGORY_DEPRECATED")
   win32 or have_func("ttyname_r") or have_func("ttyname")
   have_func("rb_prepend_module") # not exported by TruffleRuby
+  vk_tool = find_executable("gperf")
   create_makefile("io/console") {|conf|
-    conf << "\n""VK_HEADER = #{vk_header}\n"
+    if vk_header
+      conf << <<~MK
+        VK_HEADER = #{vk_header}
+        all:
+        console.#$OBJEXT: $(VK_HEADER)
+      MK
+    end
+    if vk_tool
+      unless conf.any? {|c| /^ *top_srcdir *=/.match?(c)}
+        conf << "top_srcdir = $(srcdir)/../../..\n"
+      end
+      conf.concat(depend_rules(File.read("#$srcdir/win32_vk.mk")))
+    end
+    conf
   }
 when nil
   File.write("Makefile", dummy_makefile($srcdir).join(""))
