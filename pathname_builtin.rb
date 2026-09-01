@@ -3019,6 +3019,38 @@ class Pathname    # * mixed *
 end
 
 class Pathname
+
+  # :markup: markdown
+  #
+  # call-seq:
+  #   find(ignore_error: true) -> nil
+  #
+  # Deprecated: use #glob instead.
+  #
+  # Calls the block with each entry under the path in `self`;
+  # equivalent to:
+  #
+  # ```ruby
+  # glob('**/*', File::FNM_DOTMATCH) {|entry| ... }
+  # ```
+  #
+  # Code that depends on the Find.find traversal behavior
+  # (entry order, Find.prune, error handling) should use Find.find directly:
+  #
+  # ```ruby
+  # require 'find'
+  # Find.find(pathname.to_s) {|entry| ... }
+  # ```
+  #
+  # Keyword argument `ignore_error` is accepted for compatibility and ignored.
+  #
+  # With no block given, returns a new Enumerator.
+  def find(ignore_error: true, &block) # :yield: pathname
+    return to_enum(__method__, ignore_error: ignore_error) unless block
+    warn "Pathname#find is deprecated; use Pathname#glob instead, or Find.find for the previous traversal behavior", uplevel: 1, category: :deprecated
+    glob('**/*', File::FNM_DOTMATCH, &block)
+  end
+
   undef =~ if Kernel.method_defined?(:=~)
 end
 

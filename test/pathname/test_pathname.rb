@@ -1476,6 +1476,7 @@ class TestPathname < Test::Unit::TestCase
   end
 
   def test_find
+    EnvUtil.suppress_warning do
     with_tmpchdir('rubytest-pathname') {|dir|
       open("a", "w") {}
       open("b", "w") {}
@@ -1498,25 +1499,11 @@ class TestPathname < Test::Unit::TestCase
         assert_equal([Pathname("."), Pathname("a"), Pathname("b"), Pathname("d"), Pathname("d/x")], a)
         a = []; Pathname("d").find(ignore_error: true) {|v| a << v }; a.sort!
         assert_equal([Pathname("d"), Pathname("d/x")], a)
-
-        omit "no meaning test on Windows" if /mswin|mingw/ =~ RUBY_PLATFORM
-        omit 'skipped in root privilege' if Process.uid == 0
-        a = [];
-        assert_raise_with_message(Errno::EACCES, %r{d/x}) do
-          Pathname(".").find(ignore_error: false) {|v| a << v }
-        end
-        a.sort!
-        assert_equal([Pathname("."), Pathname("a"), Pathname("b"), Pathname("d"), Pathname("d/x")], a)
-        a = [];
-        assert_raise_with_message(Errno::EACCES, %r{d/x}) do
-          Pathname("d").find(ignore_error: false) {|v| a << v }
-        end
-        a.sort!
-        assert_equal([Pathname("d"), Pathname("d/x")], a)
       ensure
         File.chmod(0700, "d")
       end
     }
+    end
   end
 
   def assert_mode(val, mask, path, mesg = nil)
@@ -1594,6 +1581,24 @@ class TestPathname < Test::Unit::TestCase
       Dir.mkdir("d")
       Pathname("d").unlink
       assert_file.not_exist?("d")
+    }
+  end
+
+  def test_find_deprecated
+    with_tmpchdir('rubytest-pathname') {|dir|
+      assert_deprecated_warning(/Pathname#find is deprecated/) do
+        Pathname(".").find { }
+      end
+    }
+  end
+
+  def test_find_nonexistent
+    with_tmpchdir('rubytest-pathname') {|dir|
+      a = []
+      EnvUtil.suppress_warning do
+        Pathname("nosuch").find {|v| a << v }
+      end
+      assert_empty(a)
     }
   end
 
