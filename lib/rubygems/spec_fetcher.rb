@@ -320,6 +320,6 @@ class Gem::SpecFetcher
   end
 
   def current_ruby_abi # :nodoc:
-    @current_ruby_abi ||= Gem.ruby_version.segments.first(2).join(".")
+    @current_ruby_abi ||= Gem.ruby_abi
   end
 end

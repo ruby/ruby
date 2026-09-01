@@ -811,6 +811,88 @@ class TestGemInstaller < Gem::InstallerTestCase
     assert File.exist?(plugin_path), "plugin not written"
   end
 
+  def test_generate_plugins_for_content_addressed_gem_installs_stub_under_ruby_abi
+    ruby_abi = Gem.ruby_abi
+
+    _, a_gem = util_gem "a", 2, ruby_abi: ruby_abi do |spec|
+      spec.platform = "x86_64-linux"
+
+      write_file File.join(@tempdir, "lib", "rubygems_plugin.rb") do |io|
+        io.write "# do nothing"
+      end
+
+      spec.files += %w[lib/rubygems_plugin.rb]
+    end
+
+    root_plugin_path = File.join Gem.plugindir(@gemhome), "a_plugin.rb"
+    write_file root_plugin_path do |io|
+      io.write "# previous root plugin stub"
+    end
+
+    installer = Gem::Installer.at a_gem, install_dir: @gemhome, force: true
+    spec = installer.install
+    plugin_path = File.join Gem.plugindir(@gemhome), ruby_abi, "a_plugin.rb"
+
+    assert_equal ruby_abi, spec.ruby_abi
+    assert_path_not_exist root_plugin_path
+    assert_path_exist plugin_path
+    assert_match %r{\Arequire_relative '../../gems/a-2-[0-9a-f]{8}/lib/rubygems_plugin\.rb'},
+                 File.read(plugin_path)
+  end
+
+  def test_generate_plugins_for_non_content_addressed_gem_removes_abi_scoped_stub
+    ruby_abi = Gem.ruby_abi
+    abi_plugin_path = File.join Gem.plugindir(@gemhome), ruby_abi, "a_plugin.rb"
+    write_file abi_plugin_path do |io|
+      io.write "# previous ABI plugin stub"
+    end
+
+    spec = quick_gem "a", 2 do |s|
+      write_file File.join(@tempdir, "lib", "rubygems_plugin.rb") do |io|
+        io.write "# do nothing"
+      end
+
+      s.files += %w[lib/rubygems_plugin.rb]
+    end
+
+    util_build_gem spec
+
+    installer = Gem::Installer.at spec.cache_file, install_dir: @gemhome, force: true
+    installer.install
+    root_plugin_path = File.join Gem.plugindir(@gemhome), "a_plugin.rb"
+
+    assert_path_exist root_plugin_path
+    assert_path_not_exist abi_plugin_path
+    assert_match %r{\Arequire_relative '../gems/a-2/lib/rubygems_plugin\.rb'},
+                 File.read(root_plugin_path)
+  end
+
+  def test_generate_plugins_for_non_content_addressed_gem_without_plugin_removes_abi_scoped_stub
+    ruby_abi = Gem.ruby_abi
+
+    _, ca_gem = util_gem "a", 1, ruby_abi: ruby_abi do |spec|
+      spec.platform = "x86_64-linux"
+
+      write_file File.join(@tempdir, "lib", "rubygems_plugin.rb") do |io|
+        io.write "# do nothing"
+      end
+
+      spec.files += %w[lib/rubygems_plugin.rb]
+    end
+
+    Gem::Installer.at(ca_gem, install_dir: @gemhome, force: true).install
+    abi_plugin_path = File.join Gem.plugindir(@gemhome), ruby_abi, "a_plugin.rb"
+
+    assert_path_exist abi_plugin_path
+
+    spec = quick_gem "a", 2
+    util_build_gem spec
+
+    Gem::Installer.at(spec.cache_file, install_dir: @gemhome, force: true).install
+
+    assert_path_not_exist abi_plugin_path
+  end
+
   def test_install_with_matching_content_address
     _, a_gem = util_gem("a", 2) do |spec|
       spec.required_ruby_version = "~> 3.4.0"
@@ -849,6 +931,31 @@ class TestGemInstaller < Gem::InstallerTestCase
     assert_match(/content address mismatch/, e.message)
     assert_match(/expected deadbeef, got no content address/, e.message)
     assert_path_exist platform_gem_dir
+  end
+
+  def test_remove_plugins_for_content_addressed_gem_removes_stub_from_ruby_abi_dir
+    ruby_abi = Gem.ruby_abi
+
+    _, a_gem = util_gem "a", 2, ruby_abi: ruby_abi do |spec|
+      spec.platform = "x86_64-linux"
+
+      write_file File.join(@tempdir, "lib", "rubygems_plugin.rb") do |io|
+        io.write "# do nothing"
+      end
+
+      spec.files += %w[lib/rubygems_plugin.rb]
+    end
+
+    installer = Gem::Installer.at a_gem, install_dir: @gemhome, force: true
+    spec = installer.install
+    plugin_path = File.join Gem.plugindir(@gemhome), ruby_abi, "a_plugin.rb"
+
+    assert_path_exist plugin_path
+
+    FileUtils.rm File.join(spec.gem_dir, "lib", "rubygems_plugin.rb")
+    installer.generate_plugins
+
+    assert_path_not_exist plugin_path
   end
 
   def test_generate_plugins_with_install_dir
