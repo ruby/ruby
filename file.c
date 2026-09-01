@@ -2482,21 +2482,29 @@ rb_file_sticky_p(VALUE obj, VALUE fname)
 
 /*
  * call-seq:
- *   File.identical?(file_1, file_2)   ->  true or false
+ *   File.identical?(object_0, object_1) -> true or false
  *
- * Returns <code>true</code> if the named files are identical.
+ * Returns whether the given objects represent filesystem entries that are identical;
+ * each object may be a string path or an IO object:
  *
- * _file_1_ and _file_2_ can be an IO object.
+ *   # Paths.
+ *   File.identical?('README.md', 'README.md')   # => true  # Same path.
+ *   File.identical?('README.md', './README.md') # => true  # Same entry.
+ *   File.identical?('.', '.')                   # => true  # Directory.
+ *   File.identical?('README.md', 'LEGAL')       # => false
+ *   File.identical?('README.md', 'nosuch')      # => false # Non-existent entry.
+ *   # Links and File object.
+ *   File.link('README.md', 'link')              # Symbolic link.
+ *   File.symlink('README.md', 'symlink')        # Hard link.
+ *   file = File.open('README.md', 'r')          # File object.
+ *   File.identical?('README.md', 'link')        # => true
+ *   File.identical?('README.md', 'symlink')     # => true
+ *   File.identical?('README.md', file)          # => true
+ *   # Clean up.
+ *   File.unlink('link')
+ *   File.unlink('symlink')
+ *   file.close
  *
- *     open("a", "w") {}
- *     p File.identical?("a", "a")      #=> true
- *     p File.identical?("a", "./a")    #=> true
- *     File.link("a", "b")
- *     p File.identical?("a", "b")      #=> true
- *     File.symlink("a", "c")
- *     p File.identical?("a", "c")      #=> true
- *     open("d", "w") {}
- *     p File.identical?("a", "d")      #=> false
  */
 
 static VALUE
