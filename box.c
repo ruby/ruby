@@ -429,6 +429,7 @@ box_initialize(VALUE box_value)
     rb_ivar_set(box_value, id_box_entry, entry);
 
     if (ruby_box_init_done) {
+        rb_load_prelude((VALUE)box);
         if (box_gem_flags->gem) {
             rb_vm_call_cfunc_in_box(Qnil, rb_define_gem_modules, (VALUE)box_gem_flags, Qnil,
                                     rb_str_new_cstr("before_prelude.user.dummy"), (const rb_box_t *)box);
