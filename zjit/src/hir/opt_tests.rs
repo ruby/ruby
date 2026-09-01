@@ -15144,6 +15144,63 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn dont_repeat_caller_splat_length_guard_for_skewed_polymorphic_profile() {
+        enable_zjit_stats();
+        set_call_threshold(5);
+        set_max_versions(4);
+        // Profile length 1 on calls 1-4, then compile its monomorphic guard on call 5.
+        eval("
+            def foo(*args) = args
+            def capture(*args) = args
+            ruby2_keywords(:capture)
+            def test(args) = foo(*args)
+            5.times { test([1]) }
+        ");
+
+        // Record a less frequent second length through the recompiling length guard.
+        eval("test([1, 2])");
+
+        // Finish the profile window with the first length. These calls exit through
+        // the non-recompiling ruby2_keywords guard, so the version remains active.
+        eval("4.times { test(capture(k: 1)) }");
+
+        // With the profile window complete, the next length mismatch invalidates
+        // the monomorphic version for recompilation.
+        eval("test([1, 2])");
+
+        // The next version must keep the dynamic Send because the accumulated
+        // length profile is skewed polymorphic rather than monomorphic.
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:5:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :args@0x1000
+          IncrCounterPtr
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :args@1
+          IncrCounterPtr
+          Jump bb3(v7, v8)
+        bb3(v11:BasicObject, v12:BasicObject):
+          IncrCounter zjit_insn_count
+          IncrCounter zjit_insn_count
+          IncrCounter zjit_insn_count
+          v21:ArrayExact = ToArray v12
+          IncrCounter zjit_insn_count
+          IncrCounter caller_splat_profile_skewed_polymorphic
+          IncrCounter complex_arg_pass_caller_splat
+          v24:BasicObject = Send v11, :foo, v21 # SendFallbackReason: Complex argument passing
+          IncrCounter zjit_insn_count
+          CheckInterrupts
+          Return v24
+        ");
+    }
+
+    #[test]
     fn dont_specialize_call_to_iseq_with_caller_splat_on_final_version() {
         enable_zjit_stats();
         set_max_versions(2);
