@@ -1197,7 +1197,7 @@ BUILTIN_RB_SRCS = \
 		$(srcdir)/array.rb \
 		$(srcdir)/hash.rb \
 		$(srcdir)/kernel.rb \
-		$(srcdir)/pathname_builtin.rb \
+		$(srcdir)/pathname.rb \
 		$(srcdir)/ractor.rb \
 		$(srcdir)/string.rb \
 		$(srcdir)/symbol.rb \

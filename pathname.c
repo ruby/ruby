@@ -794,7 +794,7 @@ path_rmtree(int argc, VALUE *argv, VALUE self)
     return self;
 }
 
-#include "pathname_builtin.rbinc"
+#include "pathname.rbinc"
 
 static void init_ids(void);
 

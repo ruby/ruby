@@ -50,7 +50,7 @@ consensus on ruby-core/ruby-dev.
 
 * *No maintainer*
 
-#### pathname_builtin.rb, lib/pathname.rb
+#### pathname.rb
 
 * Tanaka Akira ([akr])
 
