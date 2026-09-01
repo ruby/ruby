@@ -57,10 +57,16 @@ class GemTest < Gem::TestCase
     # checkout while the host RubyGems is already loaded.
     path = util_install_name_tuple_rb
 
+    script = File.join @tempdir, "count_name_tuple.rb"
+
+    write_file script do |io|
+      io.puts 'require "rubygems/name_tuple"'
+      io.puts 'puts $LOADED_FEATURES.count {|f| f.end_with?("name_tuple.rb") }'
+    end
+
     output = Gem::Util.popen(
       *ruby_with_shadowing_rubygems_in_load_path(path),
-      "-e",
-      "require \"rubygems/name_tuple\"; puts $LOADED_FEATURES.count {|f| f.end_with?(\"rubygems/name_tuple.rb\") }",
+      script,
       { err: [:child, :out] }
     ).strip
 
