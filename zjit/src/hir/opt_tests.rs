@@ -18117,17 +18117,17 @@ mod hir_opt_tests {
     }
 
     #[test]
-    #[ignore = "started failing after profiling bucket was changed from 4 to 8"]
     fn test_specialize_inlined_megamorphic_receiver() {
-        set_call_threshold(6);
+        assert_eq!(crate::profile::DISTRIBUTION_SIZE, 8, "If you change distribution size, update the number of classes used");
+        set_call_threshold((crate::profile::DISTRIBUTION_SIZE + 2).try_into().unwrap());
         eval("
         def klass_eq(klass) = klass == Integer
 
         def test = klass_eq(String)
 
-        # 5 distinct receiver classes at the == site: one more than the profile's
-        # 4 buckets, so the distribution is megamorphic.
-        klass_eq(Integer); klass_eq(Array); klass_eq(Hash); klass_eq(Symbol); klass_eq(Float)
+        # 9 distinct receiver classes at the == site: one more than the profile's
+        # 8 buckets, so the distribution is megamorphic.
+        klass_eq(Integer); klass_eq(Array); klass_eq(Hash); klass_eq(Symbol); klass_eq(Float); klass_eq(NilClass); klass_eq(TrueClass); klass_eq(FalseClass); klass_eq(String)
         6.times { test }
         ");
         assert_snapshot!(hir_string("test"), @"
@@ -18149,11 +18149,11 @@ mod hir_opt_tests {
           PatchPoint StableConstantNames(0x1068, Integer)
           v31:ClassSubclass[Integer@0x1070] = Const Value(VALUE(0x1070))
           PatchPoint MethodRedefined(Class@0x1078, ==@0x1080, cme:0x1088)
-          v45:CBool = IsBitEqual v12, v31
-          v46:BoolExact = BoxBool v45
+          v82:CBool = IsBitEqual v12, v31
+          v83:BoolExact = BoxBool v82
           CheckInterrupts
           PopInlineFrame
-          Return v46
+          Return v83
         ");
     }
 
