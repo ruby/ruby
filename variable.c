@@ -1083,6 +1083,9 @@ rb_gvar_get(ID id)
                 retval = rb_hash_aref(gvars, key);
             }
             else {
+                // An undefined gvar has no value to snapshot, and caching its nil
+                // would make rb_gvar_defined() report it as defined in this box.
+                bool cache = var->getter != rb_gvar_undef_getter;
                 RB_VM_UNLOCK();
                 {
                     retval = (*var->getter)(entry->id, var->data);
@@ -1091,7 +1094,7 @@ rb_gvar_get(ID id)
                     }
                 }
                 RB_VM_LOCK();
-                rb_hash_aset(gvars, key, retval);
+                if (cache) rb_hash_aset(gvars, key, retval);
             }
         }
     }
@@ -1117,8 +1120,17 @@ rb_gv_get(const char *name)
 VALUE
 rb_gvar_defined(ID id)
 {
-    struct rb_global_entry *entry = rb_global_entry(id);
-    return RBOOL(entry->var->getter != rb_gvar_undef_getter);
+    const rb_box_t *box = rb_current_box();
+    bool defined;
+
+    RB_VM_LOCKING() {
+        const struct rb_global_entry *entry = rb_global_entry(id);
+
+        defined = entry->var->getter != rb_gvar_undef_getter ||
+            (gvar_use_box_tbl(box, entry) &&
+             RTEST(rb_hash_has_key(box->gvar_tbl, rb_id2sym(id))));
+    }
+    return RBOOL(defined);
 }
 
 rb_gvar_getter_t *
