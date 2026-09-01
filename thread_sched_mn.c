@@ -1,4 +1,22 @@
-// included by "thread_pthread.c"
+/* -*-c-*- */
+/**********************************************************************
+
+  thread_sched_mn.c - the M:N scheduler
+
+  Included by the platform implementation (currently only thread_pthread.c)
+  when USE_MN_THREADS is 1.  A platform that cannot run coroutine threads
+  defines it to 0 and supplies the stubs at the bottom of this file itself
+  (see thread_win32.c).
+
+  Most of what is here is platform independent: the coroutine threads
+  themselves, the native thread stack pool, the timer wheel, and the
+  fd -> waiters map.  The part that is not is the readiness backend --
+  arming an fd and waiting for events -- which is epoll on Linux and kqueue
+  elsewhere.  Those pieces are marked "backend" below; they are the natural
+  seam for a thread_sched_epoll.c / thread_sched_kqueue.c split, and for an
+  IOCP backend that would let Windows run M:N threads too.
+
+**********************************************************************/
 
 #if USE_MN_THREADS
 
@@ -978,24 +996,23 @@ coroutine_thread_terminated(rb_thread_t *th)
     // GET_VM()). Make destruct wait until the reclaim finished. (Observed:
     // an assert_separately child exiting right after a Ractor finished
     // crashed at GET_VM()->default_params, offset 0x2600, on two arches.)
-    RUBY_ATOMIC_INC(th->vm->ractor.sched.winding_cnt);
+    rb_vm_t *const vm = th->vm; // survives th; the tail below must not read th
+    RUBY_ATOMIC_INC(vm->ractor.sched.winding_cnt);
 
     rb_thread_t *wake_th;
+    bool wake_mn = false;
 
-    // Leave the living set BEFORE handing over the scheduler slot: the
-    // removal's VM-lock work (ractor_check_blocking, a barrier join) then
-    // runs as an ordinary counted running thread. Afterwards th may be
-    // unreachable, but no GC can complete while th still owns the slot
-    // (a barrier waits for it to join), so the handoff below may keep
-    // touching th/sched.
-    //
-    // The Ractor's last thread is the exception and keeps the reverse
-    // order (below): its removal unlinks the Ractor itself, after which
-    // r/sched must not be touched. That order is safe only for it: with
-    // no successor, sched->running stays NULL, so the removal's VM lock
-    // never joins a barrier (vm_need_barrier requires a running thread).
-    VM_ASSERT(sched->running == th); // th owns the slot through the removal
-    if (!last) rb_ractor_living_threads_remove(r, th);
+    // Leave the living set here, while th is still barrier-registered and no
+    // successor can run: the GC's root scan walks r->threads.set without the
+    // Ractor lock, so the unlink must not race with it.  Off the set th would
+    // be unreachable although the handoff below keeps using it (and the GC can
+    // run: to_dead_common() deregisters th, so no barrier waits for it) --
+    // dying_th keeps it marked until its last use.
+    VM_ASSERT(sched->running == th); // th owns the slot through the handoff
+    if (!last) {
+        RUBY_ATOMIC_PTR_SET(r->threads.dying_th, th);
+        rb_ractor_living_threads_remove(r, th);
+    }
 
     thread_sched_lock(sched, th);
     {
@@ -1007,20 +1024,32 @@ coroutine_thread_terminated(rb_thread_t *th)
         // epilogue (below). If readyq was empty, running is now NULL and a
         // waker (e.g. the timer thread) that later installs a runnable
         // thread enqueues the Ractor itself -- enqueuing "whatever is
-        // running" at that point would duplicate its entry. While running
-        // is non-NULL, nobody else re-assigns it, so wake_th stays valid
-        // until we enqueue.
+        // running" at that point would duplicate its entry.
         wake_th = is_dnt ? NULL : sched->running;
+        // Read wake_th->nt under the lock: a dedicated successor was already
+        // woken by to_dead_common and may die (freeing wake_th) as soon as we
+        // unlock.  An M:N successor (nt == NULL) cannot run or be assigned an
+        // nt before our enqueue below, so the value cannot go stale.
+        wake_mn = (wake_th != NULL && wake_th->nt == NULL);
 
         tctx->nt = th->nt;        // stash the final transfer target for co_start
         native_thread_assign(NULL, th);
         th->sched.context = NULL; // the wrapper's dfree must not reclaim tctx
-    }
-    thread_sched_unlock(sched, th);
 
+        if (!last) {
+            // Still under the sched lock: a successor (even a dedicated one
+            // woken by to_dead_common) starts by taking it, so it cannot
+            // observe or overwrite these until we unlock.  th was last used
+            // above and running_ec no longer points into it; now it may be
+            // collected.
+            rb_ractor_set_current_ec(r, NULL); // r alive: it has other threads
+            VM_ASSERT(RUBY_ATOMIC_PTR_LOAD(r->threads.dying_th) == th);
+            RUBY_ATOMIC_PTR_SET(r->threads.dying_th, NULL);
+        }
+    }
     if (last) {
-        // The reverse order is safe only with no successor: running == NULL
-        // means the removal's VM lock cannot join a barrier (vm_need_barrier).
+        thread_sched_unlock(sched, th); // th is still on the living set here
+
         VM_ASSERT(sched->running == NULL);
         VM_ASSERT(wake_th == NULL);
         // Last access to th/r: the removal may unlink the Ractor, after
@@ -1029,13 +1058,15 @@ coroutine_thread_terminated(rb_thread_t *th)
         rb_current_ec_set(NULL); // TLS only; r may be collectable already
     }
     else {
-        rb_ractor_set_current_ec(r, NULL); // r alive: it has other threads
+        // th lost its root at the clear above; the plain unlock's debug log
+        // would read th->serial.
+        thread_sched_unlock_no_log(sched, th);
 
-        if (wake_th && wake_th->nt == NULL) {
+        if (wake_mn) {
             // enqueue the successor designated above -- exactly once per
             // "runnable but unserved" period, by its designator.
             thread_sched_lock(sched, NULL);
-            ractor_sched_enq(wake_th->vm, r);
+            ractor_sched_enq(vm, r);
             thread_sched_unlock(sched, NULL);
         }
     }
@@ -1109,6 +1140,7 @@ native_thread_create_shared(rb_thread_t *th)
     struct rb_thread_context *tctx = ruby_xmalloc(sizeof(struct rb_thread_context));
     tctx->stack = machine_stack;
     tctx->dead = false;
+    tctx->nt = NULL;
     th->sched.context = &tctx->co;
     coroutine_initialize(&tctx->co, co_start, machine_stack, machine_stack_size);
     tctx->co.argument = th;
@@ -1196,11 +1228,14 @@ fd_event_tag(int fd, uint32_t generation)
 
 // Make the backend match `want`.  Returns false if the fd cannot be registered
 // at all (closed, or unsupported by the backend), leaving the entry untouched.
-// The fd's shard lock must be held.
+// The fd's shard lock must be held.  `consumed` says an epoll event for the
+// current arming was just delivered, so EPOLLONESHOT has already disarmed it.
 static bool
-fd_waiters_arm(int fd, struct rb_fd_waiters *e, uint32_t want)
+fd_waiters_arm(int fd, struct rb_fd_waiters *e, uint32_t want, bool consumed)
 {
-    if (want == e->armed_flags) return true;
+    // After a delivery the kernel side is disarmed even when the flags agree,
+    // so a consumed call must fall through to re-arm.
+    if (want == e->armed_flags && !consumed) return true;
 
 #if HAVE_SYS_EVENT_H
     struct kevent ke[2];
@@ -1236,15 +1271,22 @@ fd_waiters_arm(int fd, struct rb_fd_waiters *e, uint32_t want)
     }
 #elif HAVE_SYS_EPOLL_H
     if (want == 0) {
-        if (epoll_ctl(timer_th.event_fd, EPOLL_CTL_DEL, fd, NULL) == -1) {
-            switch (errno) {
-              case EBADF:
-              case ENOENT:
-                // the fd is already closed or gone from the set
-                break;
-              default:
-                perror("epoll_ctl");
-                rb_bug("fd_waiters_arm/epoll_ctl del failed (fd:%d errno:%d)", fd, errno);
+        // A delivered oneshot event has already disarmed the fd; otherwise
+        // disarm by MOD to no events.  Either way the registration stays, so
+        // the next wait is one MOD instead of DEL + ADD.
+        if (!consumed && e->registered) {
+            struct epoll_event off = { .events = 0, .data = { .u64 = 0 } };
+            if (epoll_ctl(timer_th.event_fd, EPOLL_CTL_MOD, fd, &off) == -1) {
+                switch (errno) {
+                  case EBADF:
+                  case ENOENT:
+                    // the fd is already closed or gone from the set
+                    e->registered = false;
+                    break;
+                  default:
+                    perror("epoll_ctl");
+                    rb_bug("fd_waiters_arm/epoll_ctl disarm failed (fd:%d errno:%d)", fd, errno);
+                }
             }
         }
         // Anything epoll_wait already queued for the old arming is stale now.
@@ -1253,7 +1295,7 @@ fd_waiters_arm(int fd, struct rb_fd_waiters *e, uint32_t want)
         return true;
     }
 
-    uint32_t epoll_events = 0;
+    uint32_t epoll_events = EPOLLONESHOT;
     if (want & thread_sched_waiting_io_read)  epoll_events |= EPOLLIN;
     if (want & thread_sched_waiting_io_write) epoll_events |= EPOLLOUT;
 
@@ -1262,7 +1304,7 @@ fd_waiters_arm(int fd, struct rb_fd_waiters *e, uint32_t want)
         .data = { .u64 = fd_event_tag(fd, e->generation) },
     };
 
-    int op = e->armed_flags ? EPOLL_CTL_MOD : EPOLL_CTL_ADD;
+    int op = e->registered ? EPOLL_CTL_MOD : EPOLL_CTL_ADD;
 
     if (epoll_ctl(timer_th.event_fd, op, fd, &event) == -1) {
         switch (errno) {
@@ -1272,6 +1314,7 @@ fd_waiters_arm(int fd, struct rb_fd_waiters *e, uint32_t want)
                 epoll_ctl(timer_th.event_fd, EPOLL_CTL_ADD, fd, &event) == 0) {
                 break;
             }
+            e->registered = false;
             return false;
           case EEXIST:
             // Likewise in the other direction.
@@ -1283,12 +1326,14 @@ fd_waiters_arm(int fd, struct rb_fd_waiters *e, uint32_t want)
           case EBADF:
           case EPERM:
             // closed, or the fd does not support epoll
+            e->registered = false;
             return false;
           default:
             perror("epoll_ctl");
             rb_bug("fd_waiters_arm/epoll_ctl failed (fd:%d op:%d errno:%d)", fd, op, errno);
         }
     }
+    e->registered = true;
 #else
 # error "neither kqueue nor epoll"
 #endif
@@ -1343,6 +1388,14 @@ verify_waiting_list(void)
     }
 #endif
 }
+
+/* ------------------------------------------------------------------------
+ * backend: the readiness notification mechanism (epoll / kqueue).
+ *
+ * Everything below that names epoll or kqueue is this backend; the rest of
+ * the M:N scheduler only asks it to arm an fd (fd_waiters_arm) and to wait
+ * for what fired (event_wait / timer_thread_polling).
+ * ------------------------------------------------------------------------ */
 
 #if HAVE_SYS_EVENT_H // kqueue helpers
 
@@ -1453,7 +1506,7 @@ timer_thread_register_waiting(rb_thread_t *th, int fd, enum thread_sched_waiting
 
             // Arm the union of what this fd's waiters want, so a second waiter
             // on the same fd extends the arming instead of colliding with it.
-            if (!fd_waiters_arm(fd, e, fd_waiters_union(e) | (uint32_t)(flags & FD_WAIT_IO_MASK))) {
+            if (!fd_waiters_arm(fd, e, fd_waiters_union(e) | (uint32_t)(flags & FD_WAIT_IO_MASK), false)) {
                 fd_shard_unlock(fd);
                 return timer_thread_unavailable;
             }
@@ -1533,7 +1586,7 @@ timer_thread_unregister_waiting(rb_thread_t *th, int fd, enum thread_sched_waiti
 
     struct rb_fd_waiters *e = fd_waiters_lookup(fd, false);
     if (e) {
-        fd_waiters_arm(fd, e, fd_waiters_union(e));
+        fd_waiters_arm(fd, e, fd_waiters_union(e), false);
     }
 }
 
@@ -1649,7 +1702,7 @@ timer_thread_wake_fd_waiters(int fd, uint32_t generation, uint32_t wake_flags, i
 
                 // Re-arm for whoever is still waiting on this fd (nothing, if
                 // they all just woke up).
-                fd_waiters_arm(fd, e, fd_waiters_union(e));
+                fd_waiters_arm(fd, e, fd_waiters_union(e), true);
             }
         }
         fd_shard_unlock(fd);

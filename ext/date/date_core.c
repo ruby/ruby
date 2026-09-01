@@ -992,11 +992,15 @@ c_valid_commercial_p(int y, int w, int d, double sg,
     if (w < 0) {
 	int rjd2;
 
+	if (w < -53) return 0;
 	c_commercial_to_jd(y + 1, 1, 1, sg, &rjd2, &ns2);
 	c_jd_to_commercial(rjd2 + w * 7, sg, &ry2, &rw2, &rd2);
 	if (ry2 != y)
 	    return 0;
 	w = rw2;
+    }
+    else {
+	if (w < 1 || 53 < w) return 0;
     }
     c_commercial_to_jd(y, w, d, sg, rjd, ns);
     c_jd_to_commercial(*rjd, sg, &ry2, rw, rd);
@@ -2621,9 +2625,9 @@ offset_to_sec(VALUE vof, int *rof)
 		if (!FIXNUM_P(vn))
 		    return 0;
 		n = FIX2LONG(vn);
-		if (n < -DAY_IN_SECONDS || n > DAY_IN_SECONDS)
-		    return 0;
 	    }
+	    if (n < -DAY_IN_SECONDS || n > DAY_IN_SECONDS)
+		return 0;
 	    *rof = (int)n;
 	    return 1;
 	}
@@ -3195,34 +3199,66 @@ date_s_gregorian_leap_p(VALUE klass, VALUE y)
     return f_boolcast(c_gregorian_leap_p(ry));
 }
 
+#ifndef HAVE_RB_GC_MARK_MOVABLE
+#define rb_gc_mark_movable rb_gc_mark
+#else
+static void
+d_lite_gc_compact(void *ptr)
+{
+    union DateData *dat = ptr;
+    if (simple_dat_p(dat))
+        dat->s.nth = rb_gc_location(dat->s.nth);
+    else {
+        dat->c.nth = rb_gc_location(dat->c.nth);
+        dat->c.sf = rb_gc_location(dat->c.sf);
+    }
+}
+#endif
+
 static void
 d_lite_gc_mark(void *ptr)
 {
     union DateData *dat = ptr;
     if (simple_dat_p(dat))
-	rb_gc_mark(dat->s.nth);
+        rb_gc_mark_movable(dat->s.nth);
     else {
-	rb_gc_mark(dat->c.nth);
-	rb_gc_mark(dat->c.sf);
+        rb_gc_mark_movable(dat->c.nth);
+        rb_gc_mark_movable(dat->c.sf);
     }
-}
-
-static size_t
-d_lite_memsize(const void *ptr)
-{
-    const union DateData *dat = ptr;
-    return complex_dat_p(dat) ? sizeof(struct ComplexDateData) : sizeof(struct SimpleDateData);
 }
 
 #ifndef HAVE_RB_EXT_RACTOR_SAFE
 #   define RUBY_TYPED_FROZEN_SHAREABLE 0
 #endif
 
+#if defined(RUBY_TYPED_EMBEDDABLE) || defined(HAVE_CONST_RUBY_TYPED_EMBEDDABLE)
+# define HAVE_RUBY_TYPED_EMBEDDABLE 1
+#else
+# define RUBY_TYPED_EMBEDDABLE 0
+#endif
+
+static size_t
+d_lite_memsize(const void *ptr)
+{
+#ifdef HAVE_RUBY_TYPED_EMBEDDABLE
+    return 0;
+#else
+    return sizeof(union DateData);
+#endif
+}
+
 static const rb_data_type_t d_lite_type = {
     "Date",
-    {d_lite_gc_mark, RUBY_TYPED_DEFAULT_FREE, d_lite_memsize,},
+    {
+        d_lite_gc_mark,
+        RUBY_TYPED_DEFAULT_FREE,
+        d_lite_memsize,
+#ifdef HAVE_RB_GC_MARK_MOVABLE
+        d_lite_gc_compact,
+#endif
+    },
     0, 0,
-    RUBY_TYPED_FREE_IMMEDIATELY|RUBY_TYPED_WB_PROTECTED|RUBY_TYPED_FROZEN_SHAREABLE,
+    RUBY_TYPED_FREE_IMMEDIATELY|RUBY_TYPED_WB_PROTECTED|RUBY_TYPED_EMBEDDABLE|RUBY_TYPED_FROZEN_SHAREABLE,
 };
 
 inline static VALUE
@@ -3233,10 +3269,11 @@ d_simple_new_internal(VALUE klass,
 		      unsigned flags)
 {
     struct SimpleDateData *dat;
+    union DateData *u_dat;
     VALUE obj;
 
-    obj = TypedData_Make_Struct(klass, struct SimpleDateData,
-				&d_lite_type, dat);
+    obj = TypedData_Make_Struct(klass, union DateData, &d_lite_type, u_dat);
+    dat = &u_dat->s;
     set_to_simple(obj, dat, nth, jd, sg, y, m, d, flags);
 
     assert(have_jd_p(dat) || have_civil_p(dat));
@@ -3254,10 +3291,11 @@ d_complex_new_internal(VALUE klass,
 		       unsigned flags)
 {
     struct ComplexDateData *dat;
+    union DateData *u_dat;
     VALUE obj;
 
-    obj = TypedData_Make_Struct(klass, struct ComplexDateData,
-				&d_lite_type, dat);
+    obj = TypedData_Make_Struct(klass, union DateData, &d_lite_type, u_dat);
+    dat = &u_dat->c;
     set_to_complex(obj, dat, nth, jd, df, sf, of, sg,
 		   y, m, d, h, min, s, flags);
 
@@ -4515,7 +4553,8 @@ d_new_by_frags(VALUE klass, VALUE hash, VALUE sg)
 }
 
 VALUE date__strptime(const char *str, size_t slen,
-		     const char *fmt, size_t flen, VALUE hash);
+		     const char *fmt, size_t flen,
+		     VALUE hash, rb_encoding *enc);
 
 static VALUE
 date_s__strptime_internal(int argc, VALUE *argv, VALUE klass,
@@ -4524,6 +4563,7 @@ date_s__strptime_internal(int argc, VALUE *argv, VALUE klass,
     VALUE vstr, vfmt, hash;
     const char *str, *fmt;
     size_t slen, flen;
+    rb_encoding *enc;
 
     rb_scan_args(argc, argv, "11", &vstr, &vfmt);
 
@@ -4537,33 +4577,18 @@ date_s__strptime_internal(int argc, VALUE *argv, VALUE klass,
     if (argc < 2) {
 	fmt = default_fmt;
 	flen = strlen(default_fmt);
+	enc = rb_enc_get(vstr);
     }
     else {
 	if (!rb_enc_str_asciicompat_p(vfmt))
 	    rb_raise(rb_eArgError,
 		     "format should have ASCII compatible encoding");
+	enc = rb_enc_check(vstr, vfmt);
 	fmt = RSTRING_PTR(vfmt);
 	flen = RSTRING_LEN(vfmt);
     }
     hash = rb_hash_new();
-    if (NIL_P(date__strptime(str, slen, fmt, flen, hash)))
-	return Qnil;
-
-    {
-	VALUE zone = ref_hash("zone");
-	VALUE left = ref_hash("leftover");
-
-	if (!NIL_P(zone)) {
-	    rb_enc_copy(zone, vstr);
-	    set_hash("zone", zone);
-	}
-	if (!NIL_P(left)) {
-	    rb_enc_copy(left, vstr);
-	    set_hash("leftover", left);
-	}
-    }
-
-    return hash;
+    return date__strptime(str, slen, fmt, flen, hash, enc);
 }
 
 /*
@@ -7804,8 +7829,6 @@ d_lite_marshal_load(VALUE self, VALUE a)
     if (simple_dat_p(dat)) {
 	if (df || !f_zero_p(sf) || of) {
 	    /* loading a fractional date; promote to complex */
-	    dat = ruby_xrealloc(dat, sizeof(struct ComplexDateData));
-	    RTYPEDDATA(self)->data = dat;
 	    goto complex_data;
 	}
 	set_to_simple(self, &dat->s, nth, jd, sg, 0, 0, 0, HAVE_JD);

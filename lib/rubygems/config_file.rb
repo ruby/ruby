@@ -36,6 +36,7 @@ require "rbconfig"
 # +:ipv4_fallback_enabled+:: See #ipv4_fallback_enabled
 # +:global_gem_cache+:: See #global_gem_cache
 # +:use_psych+:: See #use_psych
+# +:credential_store+:: See #credential_store
 # +:gemhome+:: See #home
 # +:gempath+:: See #path
 # +:sources+:: Sets Gem::sources
@@ -763,13 +764,13 @@ if you believe they were disclosed to a third party.
 
   def self.deep_transform_config_keys!(config)
     config.transform_keys! do |k|
-      if k.match?(/\A:(.*)\Z/)
+      if k.match?(/\A:(.*)\z/)
         k[1..-1].to_sym
-      elsif k.include?("__") || k.match?(%r{/\Z})
+      elsif k.include?("__") || k.end_with?("/")
         if k.is_a?(Symbol)
-          k.to_s.gsub(/__/,".").gsub(%r{/\Z}, "").to_sym
+          k.to_s.gsub(/__/,".").delete_suffix("/").to_sym
         else
-          k.dup.gsub(/__/,".").gsub(%r{/\Z}, "")
+          k.dup.gsub(/__/,".").delete_suffix("/")
         end
       else
         k
@@ -778,11 +779,11 @@ if you believe they were disclosed to a third party.
 
     config.transform_values! do |v|
       if v.is_a?(String)
-        if v.match?(/\A:(.*)\Z/)
+        if v.match?(/\A:(.*)\z/)
           v[1..-1].to_sym
-        elsif v.match?(/\A[+-]?\d+\Z/)
+        elsif v.match?(/\A[+-]?\d+\z/)
           v.to_i
-        elsif v.match?(/\Atrue|false\Z/)
+        elsif v.match?(/\A(?:true|false)\z/)
           v == "true"
         elsif v.empty?
           nil
@@ -852,10 +853,20 @@ if you believe they were disclosed to a third party.
     alert_warning "Could not write the API key to the credential store, so it was written to #{credentials_path} in plain text."
   end
 
-  # Anything that reads as a boolean is one, so RUBYGEMS_CREDENTIAL_STORE=0
-  # turns the store off rather than naming a backend gem "0".
   CREDENTIAL_STORE_OFF = %w[false 0 no off f n].freeze
+  private_constant :CREDENTIAL_STORE_OFF
+
   CREDENTIAL_STORE_ON = %w[true 1 yes on t y].freeze
+  private_constant :CREDENTIAL_STORE_ON
+
+  #--
+  # Anything that reads as a boolean is one, so RUBYGEMS_CREDENTIAL_STORE=0
+  # turns the store off rather than naming a backend gem "0". Both lists are
+  # this setting's own. Nothing on the way here turns `off` into a boolean, so
+  # a gemrc saying `off` arrives as a String just as the environment variable
+  # does. Bundler leaves `off` out of its half because every one of its
+  # boolean settings shares a single vocabulary that has never had it. Nothing
+  # here shares that constraint.
 
   def normalize_credential_store(value, default)
     # An environment variable can carry bytes String#downcase would reject.

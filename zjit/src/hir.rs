@@ -652,7 +652,6 @@ pub enum SideExitReason {
     PatchPoint(Invariant),
     CalleeSideExit,
     Interrupt,
-    Throw,
     BlockParamProxyNotIseqOrIfunc,
     BlockParamProxyNotNil,
     BlockParamProxyNotProc,
@@ -1268,6 +1267,7 @@ pub enum Insn {
     /// Control flow instructions
     Return { val: InsnId },
     /// Non-local control flow. See the throw YARV instruction
+    /// TODO: Consider turning this into Insn::Jump when inlined.
     Throw { throw_state: u32, val: InsnId, state: InsnId },
 
     /// Fixnum +, -, *, /, %, ==, !=, <, <=, >, >=, &, |, ^, <<
@@ -4125,13 +4125,13 @@ impl Function {
     /// - Result of [`Self::resolve_receiver_type_from_profile`] if we need to check profile data
     fn resolve_receiver_type(&self, recv: InsnId, recv_type: Type, state: InsnId) -> ReceiverTypeResolution {
         match self.resolve_receiver_type_from_profile(recv, state) {
-            ReceiverTypeResolution::NoProfile => {
+            resolution@(ReceiverTypeResolution::NoProfile|ReceiverTypeResolution::Megamorphic) => {
                 // Use known type information as a fallback because it doesn't have shape
                 // information (and we can generally eliminate duplicate guards).
                 if let Some(class) = recv_type.runtime_exact_ruby_class() {
                     ReceiverTypeResolution::StaticallyKnown { class }
                 } else {
-                    ReceiverTypeResolution::NoProfile
+                    resolution
                 }
             }
             resolution => resolution,
@@ -6460,6 +6460,10 @@ impl Function {
                             _ => insn_id,
                         }
                     }
+                    &Insn::WriteBarrier { val, .. } if self.is_a(val, types::Immediate) => {
+                        // The write barrier does nothing for immediates.
+                        continue;
+                    }
                     &Insn::ArrayLength { array } => {
                         match self.type_of(array).ruby_object() {
                             Some(array_obj) if array_obj.is_frozen() => {
@@ -6727,6 +6731,20 @@ impl Function {
                             insn_id
                         }
                     }
+                    &Insn::BoxBool { val: bool_val } => {
+                        if let &Insn::Test { val: test_val } = self.resolve(bool_val).insn(self) {
+                            // If the thing being Test'd is already a BoolExact
+                            // (TrueClass|FalseClass), then we don't need to Test+BoxBool and can
+                            // just return the test_val.
+                            if self.is_a(test_val, types::BoolExact) {
+                                self.make_equal_to(insn_id, test_val);
+                                continue;
+                            }
+                            insn_id
+                        } else {
+                            insn_id
+                        }
+                    }
                     &Insn::CondBranch { val, ref if_true, .. } if self.is_a(val, Type::from_cbool(true)) => {
                         self.new_insn(Insn::Jump(if_true.clone()))
                     }
@@ -6769,8 +6787,7 @@ impl Function {
         let mut necessary = InsnSet::with_capacity(self.insns.len());
         // Now recursively traverse their data dependencies and mark those as necessary
         while let Some(insn_id) = worklist.pop_front() {
-            if necessary.get(insn_id) { continue; }
-            necessary.insert(insn_id);
+            if !necessary.insert(insn_id) { continue; }
             let insn_id = self.union_find.borrow().find_const(insn_id);
             self.insns[insn_id].for_each_operand(|operand| {
                 worklist.push_back(self.union_find.borrow().find_const(operand));
@@ -10648,6 +10665,10 @@ fn compile_entry_block(fun: &mut Function, jit_entry_insns: &[u32], insn_idx_to_
     let (self_param, entry_state) = compile_entry_state(fun);
     let mut pc: Option<InsnId> = None;
     let &all_opts_passed_insn_idx = jit_entry_insns.last().unwrap();
+
+    if get_option!(stats) {
+        fun.count_iseq_calls(entry_block);
+    }
 
     // Check-and-jump for each missing optional PC
     let mut iter = jit_entry_insns.iter().peekable();

@@ -303,7 +303,7 @@ fn main() {
         .allowlist_type("rb_iseq_type")
         .allowlist_type("rb_event_flag_t")
         .allowlist_function("rb_object_shape_count")
-        .allowlist_function("rb_iseq_(get|set)_zjit_payload")
+        .allowlist_function("rb_iseq_(get|set)_jit_payload")
         .allowlist_function("rb_iseq_pc_at_idx")
         .allowlist_function("rb_iseq_opcode_at_pc")
         .allowlist_function("rb_iseq_bare_opcode_at_pc")

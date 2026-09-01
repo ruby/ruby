@@ -88,7 +88,7 @@ void rb_box_gc_update_references(void *ptr);
 rb_box_t * rb_get_box_t(VALUE ns);
 VALUE rb_get_box_object(rb_box_t *ns);
 
-VALUE rb_box_local_extension(VALUE box, VALUE fname, VALUE path, VALUE *cleanup);
+VALUE rb_box_local_extension(VALUE box, VALUE path, VALUE *cleanup);
 void rb_box_cleanup_local_extension(VALUE cleanup);
 void rb_box_defer_unload_local_extension(void *handle);
 void rb_box_unload_local_extensions(void);

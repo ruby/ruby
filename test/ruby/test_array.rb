@@ -1018,6 +1018,12 @@ class TestArray < Test::Unit::TestCase
     assert_equal(@cls[1, 2, 3, 4, 5, 6], a5)
   end
 
+  def test_flatten_bang_does_not_freeze_nested_array
+    child = []
+    [child].flatten!
+    assert_not_predicate(child, :frozen?)
+  end
+
   def test_flatten_empty!
     assert_nil(@cls[].flatten!)
     assert_equal(@cls[],

@@ -1,0 +1,74 @@
+prelude: |
+  MarshalLoadPartialObjectsObject = Class.new do
+    def initialize(a, b, c, d)
+      @a = a
+      @b = b
+      @c = c
+      @d = d
+    end
+  end
+
+  MarshalLoadPartialObjectsStruct = Struct.new(:a, :b, :c, :d)
+  MarshalLoadPartialObjectsData = Data.define(:a, :b, :c, :d)
+
+  integer_array_10 = 10.times.to_a
+  integer_array_1000 = 1000.times.to_a
+  unique_strings = 1000.times.map { |i| "string #{i}" }
+  shared_string = +"shared string"
+  shared_strings = Array.new(1000, shared_string)
+  integer_hash = 1000.times.to_h { |i| [i, i] }
+  symbol_string_hash = 1000.times.to_h { |i| ["key#{i}".to_sym, "value #{i}"] }
+  objects = 1000.times.map { |i| MarshalLoadPartialObjectsObject.new(i, i + 1, i + 2, i + 3) }
+  structs = 1000.times.map { |i| MarshalLoadPartialObjectsStruct.new(i, i + 1, i + 2, i + 3) }
+  data_objects = 1000.times.map { |i| MarshalLoadPartialObjectsData.new(i, i + 1, i + 2, i + 3) }
+
+  integer_array_10_dump = Marshal.dump(integer_array_10)
+  integer_array_1000_dump = Marshal.dump(integer_array_1000)
+  unique_strings_dump = Marshal.dump(unique_strings)
+  shared_strings_dump = Marshal.dump(shared_strings)
+  integer_hash_dump = Marshal.dump(integer_hash)
+  symbol_string_hash_dump = Marshal.dump(symbol_string_hash)
+  objects_dump = Marshal.dump(objects)
+  structs_dump = Marshal.dump(structs)
+  data_objects_dump = Marshal.dump(data_objects)
+
+  load_proc = ->(object) { object }
+
+benchmark:
+  marshal_load_integer_array_10: 'Marshal.load(integer_array_10_dump)'
+  marshal_load_integer_array_10_with_proc: 'Marshal.load(integer_array_10_dump, load_proc)'
+  marshal_load_integer_array_10_freeze: 'Marshal.load(integer_array_10_dump, freeze: true)'
+
+  marshal_load_integer_array_1000: 'Marshal.load(integer_array_1000_dump)'
+  marshal_load_integer_array_1000_with_proc: 'Marshal.load(integer_array_1000_dump, load_proc)'
+  marshal_load_integer_array_1000_freeze: 'Marshal.load(integer_array_1000_dump, freeze: true)'
+
+  marshal_load_unique_strings: 'Marshal.load(unique_strings_dump)'
+  marshal_load_unique_strings_with_proc: 'Marshal.load(unique_strings_dump, load_proc)'
+  marshal_load_unique_strings_freeze: 'Marshal.load(unique_strings_dump, freeze: true)'
+
+  marshal_load_shared_strings: 'Marshal.load(shared_strings_dump)'
+  marshal_load_shared_strings_with_proc: 'Marshal.load(shared_strings_dump, load_proc)'
+  marshal_load_shared_strings_freeze: 'Marshal.load(shared_strings_dump, freeze: true)'
+
+  marshal_load_integer_hash: 'Marshal.load(integer_hash_dump)'
+  marshal_load_integer_hash_with_proc: 'Marshal.load(integer_hash_dump, load_proc)'
+  marshal_load_integer_hash_freeze: 'Marshal.load(integer_hash_dump, freeze: true)'
+
+  marshal_load_symbol_string_hash: 'Marshal.load(symbol_string_hash_dump)'
+  marshal_load_symbol_string_hash_with_proc: 'Marshal.load(symbol_string_hash_dump, load_proc)'
+  marshal_load_symbol_string_hash_freeze: 'Marshal.load(symbol_string_hash_dump, freeze: true)'
+
+  marshal_load_objects: 'Marshal.load(objects_dump)'
+  marshal_load_objects_with_proc: 'Marshal.load(objects_dump, load_proc)'
+  marshal_load_objects_freeze: 'Marshal.load(objects_dump, freeze: true)'
+
+  marshal_load_structs: 'Marshal.load(structs_dump)'
+  marshal_load_structs_with_proc: 'Marshal.load(structs_dump, load_proc)'
+  marshal_load_structs_freeze: 'Marshal.load(structs_dump, freeze: true)'
+
+  marshal_load_data_objects: 'Marshal.load(data_objects_dump)'
+  marshal_load_data_objects_with_proc: 'Marshal.load(data_objects_dump, load_proc)'
+  marshal_load_data_objects_freeze: 'Marshal.load(data_objects_dump, freeze: true)'
+
+loop_count: 1000

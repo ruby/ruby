@@ -619,7 +619,6 @@ pub struct iseq_inline_storage_entry {
 #[repr(C)]
 pub struct rb_iseq_location_struct {
     pub pathobj: VALUE,
-    pub base_label: VALUE,
     pub label: VALUE,
     pub first_lineno: ::std::os::raw::c_int,
     pub node_id: ::std::os::raw::c_int,
@@ -1283,13 +1282,18 @@ pub union rb_iseq_constant_body_iseq_insn_info__bindgen_ty_1 {
 #[repr(C)]
 #[derive(Copy, Clone)]
 pub union rb_iseq_constant_body__bindgen_ty_1 {
+    pub list: *mut u8,
+    pub single: [u8; 8usize],
+}
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub union rb_iseq_constant_body__bindgen_ty_2 {
     pub list: *mut iseq_bits_t,
     pub single: iseq_bits_t,
 }
 #[repr(C)]
 pub struct rb_iseq_struct {
     pub flags: VALUE,
-    pub wrapper: VALUE,
     pub body: *mut rb_iseq_constant_body,
     pub aux: rb_iseq_struct__bindgen_ty_1,
 }
@@ -2100,7 +2104,7 @@ pub struct zjit_jit_frame {
     pub stack: __IncompleteArrayField<VALUE>,
 }
 pub const ISEQ_BODY_OFFSET_PARAM: zjit_struct_offsets = 16;
-pub const ISEQ_BODY_OFFSET_OUTER_VARIABLES: zjit_struct_offsets = 248;
+pub const ISEQ_BODY_OFFSET_OUTER_VARIABLES: zjit_struct_offsets = 240;
 pub const RUBY_OFFSET_THREAD_RACTOR: zjit_struct_offsets = 24;
 pub type zjit_struct_offsets = u32;
 #[repr(C)]
@@ -2450,8 +2454,6 @@ unsafe extern "C" {
         insn_idx: ::std::os::raw::c_uint,
         bare_insn: ruby_vminsn_type,
     );
-    pub fn rb_iseq_get_zjit_payload(iseq: *const rb_iseq_t) -> *mut ::std::os::raw::c_void;
-    pub fn rb_iseq_set_zjit_payload(iseq: *const rb_iseq_t, payload: *mut ::std::os::raw::c_void);
     pub fn rb_zjit_print_exception();
     pub fn rb_zjit_singleton_class_p(klass: VALUE) -> bool;
     pub fn rb_zjit_defined_ivar(obj: VALUE, id: ID, pushval: VALUE) -> VALUE;
@@ -2579,6 +2581,8 @@ unsafe extern "C" {
         file: *const ::std::os::raw::c_char,
         line: ::std::os::raw::c_int,
     );
+    pub fn rb_iseq_get_jit_payload(iseq: *const rb_iseq_t) -> *mut ::std::os::raw::c_void;
+    pub fn rb_iseq_set_jit_payload(iseq: *const rb_iseq_t, payload: *mut ::std::os::raw::c_void);
     pub fn rb_iseq_reset_jit_func(iseq: *const rb_iseq_t);
     pub fn rb_jit_get_page_size() -> u32;
     pub fn rb_jit_reserve_addr_space(mem_size: u32) -> *mut u8;

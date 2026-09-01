@@ -238,6 +238,33 @@ mark_targeted_hook_list(st_data_t key, st_data_t value, st_data_t _arg)
 }
 
 static void
+ractor_mark_thread(rb_thread_t *th)
+{
+    rb_gc_mark(th->self);
+
+    /* A thread's ec lives inside the root fiber struct and is freed with that
+     * fiber's wrapper object, so keep the fiber wrappers alive from here too. */
+    if (th->root_fiber) {
+        VALUE root_fiber_self = rb_fiberptr_self(th->root_fiber);
+        if (root_fiber_self) rb_gc_mark(root_fiber_self);
+    }
+    /* The ec sits inside its fiber, so marking that fiber's wrapper scans the ec
+     * as well.  Only when there is no wrapper yet (mid-creation, teardown) does
+     * the ec need marking of its own. */
+    VALUE ec_fiber_self = (th->ec && th->ec->fiber_ptr) ? rb_fiberptr_self(th->ec->fiber_ptr) : 0;
+    if (ec_fiber_self) {
+        rb_gc_mark(ec_fiber_self);
+    }
+    else if (th->ec) {
+        rb_execution_context_mark(th->ec);
+    }
+
+    /* Root the thread's remaining possessions directly as well; thgroup in
+     * particular has no other root. */
+    rb_thread_mark_owned_roots(th);
+}
+
+static void
 ractor_mark_unshareable_parts(rb_ractor_t *r)
 {
     /* A single VALUE slot written by the owner in one word, so any GC reads it safely.
@@ -263,30 +290,18 @@ ractor_mark_unshareable_parts(rb_ractor_t *r)
         rb_thread_t *th = 0;
         ccan_list_for_each(&r->threads.set, th, lt_node) {
             VM_ASSERT(th != NULL);
-            rb_gc_mark(th->self);
-
-            /* A thread's ec lives inside the root fiber struct and is freed with that
-             * fiber's wrapper object, so keep the fiber wrappers alive from here too. */
-            if (th->root_fiber) {
-                VALUE root_fiber_self = rb_fiberptr_self(th->root_fiber);
-                if (root_fiber_self) rb_gc_mark(root_fiber_self);
-            }
-            /* The ec sits inside its fiber, so marking that fiber's wrapper scans the ec
-             * as well.  Only when there is no wrapper yet (mid-creation, teardown) does
-             * the ec need marking of its own. */
-            VALUE ec_fiber_self = (th->ec && th->ec->fiber_ptr) ? rb_fiberptr_self(th->ec->fiber_ptr) : 0;
-            if (ec_fiber_self) {
-                rb_gc_mark(ec_fiber_self);
-            }
-            else if (th->ec) {
-                rb_execution_context_mark(th->ec);
-            }
-
-            /* Root the thread's remaining possessions directly as well; thgroup in
-             * particular has no other root. */
-            rb_thread_mark_owned_roots(th);
+            ractor_mark_thread(th);
         }
     }
+
+    /* A thread in the MN termination epilogue has left the set but is still
+     * running on its coroutine stack; it stays a root until its last use.
+     * Read once: the epilogue clears the slot concurrently.  The thread is
+     * past rb_fiber_close/thread_cleanup_func by then -- the same state
+     * thread_mark walks whenever a terminated Thread's wrapper is still
+     * referenced, and ractor_mark_thread performs the same marks. */
+    rb_thread_t *dying_th = RUBY_ATOMIC_PTR_LOAD(r->threads.dying_th);
+    if (dying_th) ractor_mark_thread(dying_th);
 
     ractor_local_storage_mark(r);
 }
@@ -329,7 +344,11 @@ rb_ractor_mark_local_roots(rb_ractor_t *r)
 {
     if (r->postmortem) {
         /* The final self collection: everything else -- the Thread and Fiber
-         * wrappers, stdio, stack leftovers -- is what it exists to reclaim. */
+         * wrappers, stdio, stack leftovers -- is what it exists to reclaim.
+         * Skipping the walk below cannot drop dying_th: postmortem runs on the
+         * Ractor's last thread, which can only run after any predecessor's
+         * epilogue cleared the slot (under the same scheduler lock). */
+        VM_ASSERT(RUBY_ATOMIC_PTR_LOAD(r->threads.dying_th) == NULL);
         rb_ractor_mark_terminated_join_value(r);
         rb_gc_mark_vm_stack_values((long)r->registered_marks_cnt, r->registered_marks);
         return;
@@ -399,9 +418,7 @@ free_targeted_hooks(st_table *hooks_tbl)
     st_foreach(hooks_tbl, free_targeted_hook_lists, 0);
 }
 
-#ifdef RUBY_THREAD_PTHREAD_H
 void rb_thread_sched_destroy(struct rb_thread_sched *);
-#endif
 
 static void
 ractor_free(void *ptr)
@@ -410,13 +427,8 @@ ractor_free(void *ptr)
     RUBY_DEBUG_LOG("free r:%d", rb_ractor_id(r));
 
     free_targeted_hooks(&r->pub.targeted_hooks);
-#ifdef RUBY_THREAD_PTHREAD_H
     rb_thread_sched_destroy(&r->threads.sched);
-#endif
     rb_native_mutex_destroy(&r->sync.lock);
-#ifdef RUBY_THREAD_WIN32_H
-    rb_native_cond_destroy(&r->sync.wakeup_cond);
-#endif
     ractor_local_storage_free(r);
     rb_hook_list_free(&r->pub.hooks);
     rb_st_free_embedded_table(&r->pub.targeted_hooks);
@@ -761,6 +773,8 @@ rb_ractor_terminate_atfork(rb_vm_t *vm, rb_ractor_t *r)
     rb_gc_ractor_cache_free(r->newobj_cache);
     r->newobj_cache = NULL;
     r->status_ = ractor_terminated;
+    // a termination epilogue in the parent did not survive the fork
+    r->threads.dying_th = NULL;
     /* In a forked child every other Ractor is terminated-unjoined, so keep its objspace
      * enumerable until a join or a global GC merges it. */
     if (r->objspace) {
@@ -779,6 +793,8 @@ rb_ractor_living_threads_init(rb_ractor_t *r)
     r->threads.cnt = 0;
     r->threads.blocking_cnt = 0;
     r->threads.terminating = false;
+    // atfork: a sibling's termination epilogue did not survive the fork
+    r->threads.dying_th = NULL;
 }
 
 static void
@@ -1001,39 +1017,6 @@ rb_vm_ractor_blocking_cnt_dec(rb_vm_t *vm, rb_ractor_t *cr, const char *file, in
     ractor_status_set(cr, ractor_running);
 }
 
-static void
-ractor_check_blocking(rb_ractor_t *cr, unsigned int remained_thread_cnt, const char *file, int line)
-{
-    VM_ASSERT(cr == GET_RACTOR());
-
-#ifdef RUBY_THREAD_PTHREAD_H
-    // vm->ractor.blocking_cnt is only consumed by the win32 scheduler; the
-    // pthread one must not pay a VM lock per blocking region for it.  The
-    // running<->blocking status flips stop with it (all callers), matching
-    // rb_ractor_blocking_threads_dec skipping the reverse transition.
-    return;
-#endif
-
-    RUBY_DEBUG_LOG2(file, line,
-                    "cr->threads.cnt:%u cr->threads.blocking_cnt:%u vm->ractor.cnt:%u vm->ractor.blocking_cnt:%u",
-                    cr->threads.cnt, cr->threads.blocking_cnt,
-                    GET_VM()->ractor.cnt, GET_VM()->ractor.blocking_cnt);
-
-    VM_ASSERT(cr->threads.cnt >= cr->threads.blocking_cnt + 1);
-
-    if (remained_thread_cnt > 0 &&
-        // will be block
-        cr->threads.cnt == cr->threads.blocking_cnt + 1) {
-        // change ractor status: running -> blocking
-        rb_vm_t *vm = GET_VM();
-
-        RB_VM_LOCKING() {
-            rb_vm_ractor_blocking_cnt_inc(vm, cr, file, line);
-        }
-    }
-}
-
-
 /* Remove a child that never started (send_parameters failed during creation).  The
  * creator calls this (rb_ractor_living_threads_remove assumes the current Ractor);
  * leaving the set and disowning the objspace share one VM-lock section, no window. */
@@ -1077,8 +1060,6 @@ rb_ractor_living_threads_remove(rb_ractor_t *cr, rb_thread_t *th)
 {
     VM_ASSERT(cr == GET_RACTOR());
     RUBY_DEBUG_LOG("r->threads.cnt:%d--", cr->threads.cnt);
-    ractor_check_blocking(cr, cr->threads.cnt - 1, __FILE__, __LINE__);
-
 
     if (cr->threads.cnt == 1) {
         vm_remove_ractor(th->vm, cr);
@@ -1101,7 +1082,6 @@ rb_ractor_blocking_threads_inc(rb_ractor_t *cr, const char *file, int line)
     VM_ASSERT(cr->threads.cnt > 0);
     VM_ASSERT(cr == GET_RACTOR());
 
-    ractor_check_blocking(cr, cr->threads.cnt, __FILE__, __LINE__);
     cr->threads.blocking_cnt++;
 }
 
@@ -1113,17 +1093,6 @@ rb_ractor_blocking_threads_dec(rb_ractor_t *cr, const char *file, int line)
                     cr->threads.blocking_cnt, cr->threads.cnt);
 
     VM_ASSERT(cr == GET_RACTOR());
-
-#ifndef RUBY_THREAD_PTHREAD_H
-    // see rb_ractor_blocking_threads_inc
-    if (cr->threads.cnt == cr->threads.blocking_cnt) {
-        rb_vm_t *vm = GET_VM();
-
-        RB_VM_LOCKING() {
-            rb_vm_ractor_blocking_cnt_dec(vm, cr, __FILE__, __LINE__);
-        }
-    }
-#endif
 
     cr->threads.blocking_cnt--;
 }
@@ -1213,7 +1182,6 @@ rb_ractor_terminate_all(void)
             rb_vm_ractor_blocking_cnt_inc(vm, cr, __FILE__, __LINE__);
             rb_del_running_thread(rb_ec_thread_ptr(cr->threads.running_ec));
             rb_vm_cond_timedwait(vm, &vm->ractor.sync.terminate_cond, 1000 /* ms */);
-#ifdef RUBY_THREAD_PTHREAD_H
             while (vm->ractor.sched.barrier_is_waiting) {
                 // A barrier is waiting. Threads relinquish the VM lock before joining the barrier and
                 // since we just acquired the VM lock back, we're blocking other threads from joining it.
@@ -1223,7 +1191,6 @@ rb_ractor_terminate_all(void)
                 unsigned int lev;
                 RB_VM_LOCK_ENTER_LEV_NB(&lev);
             }
-#endif
             rb_add_running_thread(rb_ec_thread_ptr(cr->threads.running_ec));
             rb_vm_ractor_blocking_cnt_dec(vm, cr, __FILE__, __LINE__);
 

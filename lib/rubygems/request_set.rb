@@ -346,17 +346,32 @@ class Gem::RequestSet
     # `gem install -g` lockfile can be parsed without a Bundler environment.
     previous_root = Bundler.instance_variable_get(:@root)
     Bundler.instance_variable_set(:@root, Pathname.new(File.expand_path(File.dirname(lock_file))))
+    root_swapped = true
+
+    # A PLUGIN SOURCE section otherwise sends Bundler::Plugin.from_lock looking
+    # for the plugin that handles it, which loads and runs that plugin's
+    # `plugins.rb`. Nothing here can use a plugin source anyway, so borrow the
+    # flag Bundler itself uses to keep lockfile parsing inert.
+    previous_gemfile_parse = Bundler::Plugin.instance_variable_get(:@gemfile_parse)
+    Bundler::Plugin.instance_variable_set(:@gemfile_parse, true)
+    gemfile_parse_swapped = true
 
     parser = Bundler::LockfileParser.new(File.read(lock_file), lockfile_path: lock_file)
+
+    locked_versions = {}
 
     parser.specs.group_by(&:source).each do |source, specs|
       case source
       when Bundler::Source::Rubygems
-        remotes = source.remotes.map {|remote| Gem::Source.new(remote.to_s) }
+        # Bundler::Source::Rubygems stores remotes in reverse of the lockfile
+        # order (Bundler::Source::Rubygems#to_lock reverses them back), so
+        # restore the lockfile order here.
+        remotes = source.remotes.reverse.map {|remote| Gem::Source.new(remote.to_s) }
         remotes << Gem::Source.new(Gem::DEFAULT_HOST) if remotes.empty?
         lock_set = Gem::Resolver::LockSet.new(remotes)
         specs.each do |spec|
           added = lock_set.add(spec.name, spec.version.to_s, spec.platform)
+          locked_versions[spec.name] ||= spec.version
           spec.dependencies.each do |dep|
             added.each {|s| s.add_dependency dep }
           end
@@ -373,6 +388,7 @@ class Gem::RequestSet
             source.revision,
             source.submodules || false
           )
+          locked_versions[spec.name] ||= spec.version
           spec.dependencies.each {|dep| git_spec.add_dependency dep }
         end
         @sets << git_set
@@ -380,6 +396,7 @@ class Gem::RequestSet
         vendor_set = Gem::Resolver::VendorSet.new
         specs.each do |spec|
           loaded = vendor_set.add_vendor_gem(spec.name, source.path.to_s)
+          locked_versions[spec.name] ||= loaded.version
           spec.dependencies.each {|dep| loaded.dependencies << dep }
         end
         @sets << vendor_set
@@ -387,10 +404,21 @@ class Gem::RequestSet
     end
 
     parser.dependencies.each_value do |dep|
-      gem dep.name, *dep.requirement.as_list
+      requirements = dep.requirement.as_list
+
+      # A dependency the lockfile ties to a source replaces whatever it asks
+      # for with the version that source resolved, the way the parser this
+      # replaced did. For a PATH section that is the version of the gemspec on
+      # disk, not the one the lockfile records.
+      if dep.source && (version = locked_versions[dep.name])
+        requirements = [version]
+      end
+
+      gem dep.name, *requirements
     end
   ensure
-    Bundler.instance_variable_set(:@root, previous_root) if defined?(previous_root)
+    Bundler.instance_variable_set(:@root, previous_root) if root_swapped
+    Bundler::Plugin.instance_variable_set(:@gemfile_parse, previous_gemfile_parse) if gemfile_parse_swapped
   end
 
   def pretty_print(q) # :nodoc:

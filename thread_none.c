@@ -42,12 +42,10 @@ rb_thread_sched_init(struct rb_thread_sched *sched, bool atfork)
 {
 }
 
-#if 0
-static void
+void
 rb_thread_sched_destroy(struct rb_thread_sched *sched)
 {
 }
-#endif
 
 // Do nothing for mutex guard
 void
@@ -307,6 +305,25 @@ rb_ractor_sched_barrier_start(rb_vm_t *vm, rb_ractor_t *cr)
 
 void
 rb_ractor_sched_barrier_join(rb_vm_t *vm, rb_ractor_t *cr)
+{
+    // do nothing
+}
+
+void
+rb_ractor_sched_barrier_end(rb_vm_t *vm, rb_ractor_t *cr)
+{
+    // do nothing
+}
+
+void
+rb_ractor_sched_wait(rb_execution_context_t *ec, rb_ractor_t *cr, rb_unblock_function_t *ubf, void *ptr)
+{
+    // nothing can wake this: with no threads there is nobody to send
+    rb_bug("unreachable");
+}
+
+void
+rb_ractor_sched_wakeup(rb_ractor_t *r, rb_thread_t *th)
 {
     // do nothing
 }

@@ -526,8 +526,10 @@ yjit_compile(rb_execution_context_t *ec)
     const rb_iseq_t *iseq = CFP_ISEQ(ec->cfp);
     struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
 
-    // Increment the ISEQ's call counter and trigger JIT compilation if not compiled
-    if (body->jit_entry == NULL) {
+    // Increment the ISEQ's call counter and trigger JIT compilation if not compiled.
+    // Stop incrementing when not compiling (out of executable memory) so that
+    // ISEQs that failed to compile don't keep dirtying CoW pages after fork.
+    if (body->jit_entry == NULL && rb_yjit_compiling_p) {
         body->jit_entry_calls++;
         if (rb_yjit_threshold_hit(iseq, body->jit_entry_calls)) {
             rb_yjit_compile_iseq(iseq, ec, false);
@@ -546,7 +548,7 @@ zjit_compile(rb_execution_context_t *ec)
     const rb_iseq_t *iseq = CFP_ISEQ(ec->cfp);
     struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
 
-    if (body->jit_entry == NULL) {
+    if (body->jit_entry == NULL && rb_zjit_compiling_p) {
         body->jit_entry_calls++;
 
         // At profile-threshold, rewrite some of the YARV instructions
@@ -607,7 +609,9 @@ jit_compile_exception(rb_execution_context_t *ec)
     struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
 
 #if USE_ZJIT
-    if (body->jit_exception == NULL && rb_zjit_enabled_p) {
+    // rb_zjit_compiling_p is false until ZJIT is enabled, so no
+    // rb_zjit_enabled_p check is needed here.
+    if (body->jit_exception == NULL && rb_zjit_compiling_p) {
         body->jit_exception_calls++;
 
         // At profile-threshold, rewrite some of the YARV instructions
@@ -624,8 +628,9 @@ jit_compile_exception(rb_execution_context_t *ec)
 #endif
 
 #if USE_YJIT
-    // Increment the ISEQ's call counter and trigger JIT compilation if not compiled
-    if (body->jit_exception == NULL && rb_yjit_enabled_p) {
+    // Increment the ISEQ's call counter and trigger JIT compilation if not compiled.
+    // Like the ZJIT branch above, no rb_yjit_enabled_p check is needed here.
+    if (body->jit_exception == NULL && rb_yjit_compiling_p) {
         body->jit_exception_calls++;
         if (body->jit_exception_calls == rb_yjit_call_threshold) {
             rb_yjit_compile_iseq(iseq, ec, true);
@@ -1498,7 +1503,7 @@ env_copy(const VALUE *src_ep, VALUE read_only_variables)
             for (unsigned int j=0; j<body->local_table_size; j++) {
                 if (id == body->local_table[j]) {
                     // check reassignment
-                    if (iseq_lvar_state_get(body->lvar_states, j) == lvar_reassigned) {
+                    if (iseq_lvar_state_get(iseq_lvar_states(body), j) == lvar_reassigned) {
                         VALUE name = rb_id2str(id);
                         VALUE msg = rb_sprintf("cannot make a shareable Proc because "
                                                "the outer variable '%" PRIsVALUE "' may be reassigned.", name);
@@ -4928,10 +4933,6 @@ Init_BareVM(void)
     vm_opt_method_def_table = st_init_numtable();
     vm_opt_mid_table = st_init_numtable();
 
-#ifdef RUBY_THREAD_WIN32_H
-    rb_native_cond_initialize(&vm->ractor.sync.barrier_complete_cond);
-    rb_native_cond_initialize(&vm->ractor.sync.barrier_release_cond);
-#endif
 }
 
 void

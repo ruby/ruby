@@ -611,6 +611,27 @@ rb_jit_vm_unlock(unsigned int *recursive_lock_level, const char *file, int line)
     rb_vm_lock_leave(recursive_lock_level, file, line);
 }
 
+void *
+rb_iseq_get_jit_payload(const rb_iseq_t *iseq)
+{
+    RUBY_ASSERT_ALWAYS(IMEMO_TYPE_P(iseq, imemo_iseq));
+    if (ISEQ_BODY(iseq)) {
+        return ISEQ_BODY(iseq)->jit_payload;
+    }
+    else {
+        return NULL;
+    }
+}
+
+void
+rb_iseq_set_jit_payload(const rb_iseq_t *iseq, void *payload)
+{
+    RUBY_ASSERT_ALWAYS(IMEMO_TYPE_P(iseq, imemo_iseq));
+    RUBY_ASSERT_ALWAYS(ISEQ_BODY(iseq));
+    RUBY_ASSERT_ALWAYS(NULL == ISEQ_BODY(iseq)->jit_payload);
+    ISEQ_BODY(iseq)->jit_payload = payload;
+}
+
 void
 rb_iseq_reset_jit_func(const rb_iseq_t *iseq)
 {

@@ -654,7 +654,7 @@ ar_hint_first_match(ar_hint_t needle, VALUE haystack)
 {
     // Common SWAR technique.
     // First XOR all bytes so that matching ones are set to 0x00.
-    VALUE search_mask = AR_HINT_BASE_MASK * needle;
+    VALUE search_mask = (VALUE)AR_HINT_BASE_MASK * needle;
     VALUE matches = haystack ^ search_mask;
 
     // Then turns 0x00 into 0x80, and any other bytes into 0x00.
@@ -1941,7 +1941,8 @@ rb_hash_init(rb_execution_context_t *ec, VALUE hash, VALUE capa_value, VALUE ifn
 
     if (capa_value != INT2FIX(0)) {
         long capa = NUM2LONG(capa_value);
-        if (capa > 0 && RHASH_AR_TABLE_P(hash) && RHASH_SIZE(hash) == 0 && capa > RHASH_AR_TABLE_MAX_BOUND(hash)) {
+        if (capa > 0 && RHASH_AR_TABLE_P(hash) && RHASH_SIZE(hash) == 0 &&
+            (unsigned long)capa > RHASH_AR_TABLE_MAX_BOUND(hash)) {
             hash_st_table_init(hash, capa);
         }
     }

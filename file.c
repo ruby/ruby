@@ -2023,13 +2023,22 @@ rb_file_chardev_p(VALUE obj, VALUE fname)
 
 /*
  * call-seq:
- *    File.exist?(file_name)    ->  true or false
+ *   File.exist?(object) -> true or false
  *
- * Return <code>true</code> if the named file exists.
+ * Return whether the specified +object+, a string path or IO object, exists:
  *
- * _file_name_ can be an IO object.
+ *   # String paths.
+ *   File.exist?('README.md') # => true
+ *   File.exist?('.')         # => true
+ *   filepath = 't.tmp'
+ *   File.exist?(filepath)    # => false
+ *   File.write(filepath, 'foo')
+ *   File.exist?(filepath)    # => true
+ *   # File (IO object).
+ *   file = File.new(filepath)
+ *   File.exist?(file)        # => true
+ *   file.close               # Clean up.
  *
- * "file exists" means that stat() or fstat() system call is successful.
  */
 
 static VALUE
@@ -2179,17 +2188,36 @@ rb_file_world_writable_p(VALUE obj, VALUE fname)
 
 /*
  * call-seq:
- *    File.executable?(file_name)   -> true or false
+ *   File.executable?(path) -> true or false
  *
- * Returns <code>true</code> if the named file is executable by the effective
- * user and group id of this process. See eaccess(3).
+ * Returns whether the filesystem entry at the given string +path+
+ * exists and is executable.
  *
- * Windows does not support execute permissions separately from read
- * permissions. On Windows, a file is only considered executable if it ends in
- * .bat, .cmd, .com, or .exe.
+ * On Windows, the entry is executable if its path has file extension
+ * +.bat+, +.cmd+, +.com+, or +.exe+:
  *
- * Note that some OS-level security features may cause this to return true
- * even though the file is not executable by the effective user/group.
+ *   File.executable?('win32/rtname.cmd') # => true
+ *   File.executable?('win32/rtname')     # => false
+ *   File.executable?('win32/nosuch.cmd') # => false
+ *
+ * On other systems, the entry is executable if it has the execute/search
+ * permission for the effective user and group id of the current process;
+ * see {Permissions}[rdoc-ref:file/filesystem_modes.md@Permissions].
+ *
+ * These examples use
+ * a {helper method}[rdoc-ref:file/filesystem_modes.md@Helper+Method], +mode+,
+ * that displays a mode both in octal digits and in characters:
+ *
+ *   File.executable?('.')           # => true
+ *   mode('.')                       # => "040775 drwxrwxr-x"
+ *   File.executable?('bin/gem')     # => true
+ *   mode('bin/gem')                 # => "100775 -rwxrwxr-x"
+ *   File.executable?('/etc/passwd') # => false
+ *   mode('/etc/passwd')             # => "100644 -rw-r--r--"
+ *   File.executable?('nosuch')      # => false
+ *
+ * Note that some filesystem settings may cause this method to return +true+
+ * even though the entry is not executable by the effective user/group.
  */
 
 static VALUE
@@ -2225,14 +2253,25 @@ rb_file_executable_real_p(VALUE obj, VALUE fname)
 
 /*
  * call-seq:
- *    File.file?(file) -> true or false
+ *   File.file?(object) -> true or false
  *
- * Returns +true+ if the named +file+ exists and is a regular file.
+ * Returns whether the given +object+, a string path or IO object,
+ * represents a filesystem entry that exists and is a regular file;
+ * see File.ftype:
  *
- * +file+ can be an IO object.
+ *   # Paths.
+ *   File.file?('README.md')     # => true
+ *   File.file?('doc/')     # => false
+ *   File.file?('nosuch')     # => false
+ *   # IO objects.
+ *   file = File.new('README.md')
+ *   File.file?(file)     # => true
+ *   dir = Dir.new('doc/')
+ *   File.file?(dir)     # => false
+ *   # Clean up.
+ *   file.close
+ *   dir.close
  *
- * If the +file+ argument is a symbolic link, it will resolve the symbolic link
- * and use the file referenced by the link.
  */
 
 static VALUE
@@ -2946,26 +2985,28 @@ chmod_internal(const char *path, void *mode)
 
 /*
  *  call-seq:
- *     File.chmod(mode, *paths) -> integer
+ *    File.chmod(mode, *paths) -> integer
  *
- *  Changes the mode (i.e., permissions) of the entries of each the given +paths+;
- *  see {File Permissions}[rdoc-ref:File@File+Permissions].
- *  Returns the count of the given +paths+:
+ *  Changes the modes of each of the entries at each the given +paths+;
+ *  returns the count of the given +paths+.
+ *  See {Filesystem Modes}[rdoc-ref:file/filesystem_modes.md]
+ *  and especially {Setting a Mode}[rdoc-ref:file/filesystem_modes.md@Setting+a+Mode].
  *
- *    filepath = 't.tmp'
- *    File.write(filepath, 'foo')
- *    dirpath = 'tempdir'
- *    Dir.mkdir(dirpath)
- *    File::Stat.new(filepath).mode.to_s(8) # => "100664"
- *    File::Stat.new(dirpath).mode.to_s(8)  # => "40775"
- *    File.chmod(0775, filepath, dirpath)   # => 2
- *    File::Stat.new(filepath).mode.to_s(8) # => "100775"
- *    File::Stat.new(dirpath).mode.to_s(8)  # => "40775"
- *    File.chmod(0664, filepath, dirpath)   # => 2
- *    File::Stat.new(filepath).mode.to_s(8) # => "100664"
- *    File::Stat.new(dirpath).mode.to_s(8)  # => "40664"
- *    File.delete(filepath)
- *    Dir.rmdir(dirpath)
+ *  These examples use
+ *  a {helper method}[rdoc-ref:file/filesystem_modes.md@Helper+Method], +mode+,
+ *  that displays a mode both in octal digits and in characters:
+ *
+ *    dirpath = 'doc/foo'
+ *    filepath = File.join(dirpath, 't.tmp')
+ *    Dir.mkdir(dirpath)          # Create directory.
+ *    mode(dirpath)               # => "040775 drwxrwxr-x"
+ *    File.write(filepath, 'bar') # Create file.
+ *    mode(filepath)              # => "100664 -rw-rw-r--"
+ *    File.chmod(0755, filepath)  # Change file mode.
+ *    mode(filepath)              # => "100755 -rwxr-xr-x"
+ *    File.chmod(0664, dirpath)   # Change directory mode.
+ *    mode(dirpath)               # => "040664 drw-rw-r--"
+ *    FileUtils.rm_rf(dirpath)    # Clean up.
  *
  */
 
@@ -3005,15 +3046,25 @@ rb_fchmod(struct rb_io* io, mode_t mode)
 
 /*
  *  call-seq:
- *     file.chmod(mode_int)   -> 0
+ *    chmod(mode) -> 0
  *
- *  Changes permission bits on <i>file</i> to the bit pattern
- *  represented by <i>mode_int</i>. Actual effects are platform
- *  dependent; on Unix systems, see <code>chmod(2)</code> for details.
- *  Follows symbolic links. Also see File#lchmod.
+ *  Changes the mode of +self+;  returns '0'.
+ *  See {Filesystem Modes}[rdoc-ref:file/filesystem_modes.md]
+ *  and especially {Setting a Mode}[rdoc-ref:file/filesystem_modes.md@Setting+a+Mode].
  *
- *     f = File.new("out", "w");
- *     f.chmod(0644)   #=> 0
+ *  These examples use
+ *  a {helper method}[rdoc-ref:file/filesystem_modes.md@Helper+Method], +mode+,
+ *  that displays a mode both in octal digits and in characters:
+ *
+ *    filepath = 'doc/t.tmp'
+ *    File.write(filepath, 'foo')
+ *    file = File.new(filepath)
+ *    mode(filepath)      # => "100664 -rw-rw-r--"
+ *    file.chmod(0775)
+ *    mode(filepath)      # => "100775 -rwxrwxr-x"
+ *    file.close
+ *    File.delete(filepath)
+ *
  */
 
 static VALUE
@@ -6970,16 +7021,36 @@ rb_stat_ww(VALUE obj)
 }
 
 /*
- *  call-seq:
- *     stat.executable?    -> true or false
+ * call-seq:
+ *   executable? -> true or false
  *
- *  Returns <code>true</code> if <i>stat</i> is executable or if the
- *  operating system doesn't distinguish executable files from
- *  nonexecutable files. The tests are made using the effective owner of
- *  the process.
+ * Returns whether the filesystem entry represented by +self+
+ * exists and is executable;
+ * raises Errno::ENOENT if the entry does not exist.
  *
- *     File.stat("testfile").executable?   #=> false
+ * On Windows, the entry is executable if its path has file extension
+ * +.bat+, +.cmd+, +.com+, or +.exe+:
  *
+ *   File.stat('win32/rtname.cmd').executable? # => true
+ *   File.stat('win32/file.c').executable?     # => false
+ *
+ * On other systems, the entry is executable if it has the execute/search
+ * permission for the effective user and group id of the current process;
+ * see {Permissions}[rdoc-ref:file/filesystem_modes.md@Permissions].
+ *
+ * These examples use
+ * a {helper method}[rdoc-ref:file/filesystem_modes.md@Helper+Method], +mode+,
+ * that displays a mode both in octal digits and in characters:
+ *
+ *   File.stat('.').executable?           # => true
+ *   mode('.')                            # => "040775 drwxrwxr-x"
+ *   File.stat('bin/gem').executable?     # => true
+ *   mode('bin/gem')                      # => "100775 -rwxrwxr-x"
+ *   File.stat('/etc/passwd').executable? # => false
+ *   mode('/etc/passwd')                  # => "100644 -rw-r--r--"
+ *
+ * Note that some filesystem settings may cause this method to return +true+
+ * even though the entry is not executable by the effective user/group.
  */
 
 static VALUE
@@ -7040,12 +7111,16 @@ rb_stat_X(VALUE obj)
 
 /*
  *  call-seq:
- *     stat.file?    -> true or false
+ *    file? -> true or false
  *
- *  Returns <code>true</code> if <i>stat</i> is a regular file (not
- *  a device file, pipe, socket, etc.).
+ * Returns whether +self+ represents a filesystem entry that exists and is a regular file;
+ * see File::Stat.ftype:
  *
- *     File.stat("testfile").file?   #=> true
+ *   # Paths.
+ *   File.stat('README.md').file?     # => true
+ *   File.stat('doc/').file?     # => false
+ *   File.stat('nosuch').file? # Raises Errno::ENOENT: No such file or directory.
+ *
  *
  */
 

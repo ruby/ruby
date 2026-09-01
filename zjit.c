@@ -141,30 +141,6 @@ rb_zjit_iseq_insn_set(const rb_iseq_t *iseq, unsigned int insn_idx, enum ruby_vm
     ISEQ_BODY(iseq)->iseq_encoded[insn_idx] = (VALUE)insn_table[bare_insn];
 }
 
-// Get profiling information for ISEQ
-void *
-rb_iseq_get_zjit_payload(const rb_iseq_t *iseq)
-{
-    RUBY_ASSERT_ALWAYS(IMEMO_TYPE_P(iseq, imemo_iseq));
-    if (ISEQ_BODY(iseq)) {
-        return ISEQ_BODY(iseq)->zjit_payload;
-    }
-    else {
-        // Body is NULL when constructing the iseq.
-        return NULL;
-    }
-}
-
-// Set profiling information for ISEQ
-void
-rb_iseq_set_zjit_payload(const rb_iseq_t *iseq, void *payload)
-{
-    RUBY_ASSERT_ALWAYS(IMEMO_TYPE_P(iseq, imemo_iseq));
-    RUBY_ASSERT_ALWAYS(ISEQ_BODY(iseq));
-    RUBY_ASSERT_ALWAYS(NULL == ISEQ_BODY(iseq)->zjit_payload);
-    ISEQ_BODY(iseq)->zjit_payload = payload;
-}
-
 void
 rb_zjit_print_exception(void)
 {

@@ -465,16 +465,15 @@ module Bundler
       value.include?(":")
     end
 
-    ##
-    # The Gem::CredentialStore instance to use, or nil when the
-    # `credential_store` setting is off. The value is `true`/`"true"` for this
-    # platform's native backend or a backend name such as `"1password"`.
-    # Guarded by a cheap lookup so reading and writing settings costs nothing
-    # extra when the setting is disabled.
-
     # Kept separate from RubyGems so gem signout does not remove Bundler's
     # host credentials.
     CREDENTIAL_STORE_SERVICE = "bundler"
+
+    ##
+    # The Gem::CredentialStore for the spec #credential_store_spec returns,
+    # or nil when the setting is off or this RubyGems has no credential store.
+    # Guarded by a cheap lookup so reading and writing settings costs nothing
+    # extra when the setting is disabled.
 
     def active_credential_store(host = nil)
       spec = credential_store_spec(host)
@@ -493,8 +492,13 @@ module Bundler
       value = self[:credential_store] if value.nil?
 
       # An environment variable can carry bytes String#downcase would reject.
-      case value.to_s.b.downcase
-      when "", "false", "0", "no", "off", "f", "n" then nil
+      normalized = value.to_s.b.downcase
+
+      # Tri-state, unlike a BOOL_KEYS setting, so #to_bool is only consulted
+      # for the false half.
+      return nil unless to_bool(normalized)
+
+      case normalized
       when "true", "1", "yes", "on", "t", "y" then true
       else value.to_s
       end
