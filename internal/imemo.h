@@ -15,7 +15,7 @@
 #include "ruby/internal/stdbool.h"     /* for bool */
 #include "ruby/ruby.h"          /* for rb_block_call_func_t */
 
-#define IMEMO_MASK   0x0f
+#define IMEMO_MASK   (FL_USER0 | FL_USER1 | FL_USER2 | FL_USER3)
 
 /* FL_USER0 to FL_USER3 is for type */
 #define IMEMO_FL_USHIFT (FL_USHIFT + 4)
@@ -171,7 +171,7 @@ RUBY_SYMBOL_EXPORT_END
 static inline enum imemo_type
 imemo_type(VALUE imemo)
 {
-    return (RBASIC(imemo)->flags >> FL_USHIFT) & IMEMO_MASK;
+    return (RBASIC(imemo)->flags & IMEMO_MASK) >> FL_USHIFT;
 }
 
 static inline int
@@ -179,7 +179,7 @@ imemo_type_p(VALUE imemo, enum imemo_type imemo_type)
 {
     if (LIKELY(!RB_SPECIAL_CONST_P(imemo))) {
         /* fixed at compile time if imemo_type is given. */
-        const VALUE mask = (IMEMO_MASK << FL_USHIFT) | RUBY_T_MASK;
+        const VALUE mask = IMEMO_MASK | RUBY_T_MASK;
         const VALUE expected_type = (imemo_type << FL_USHIFT) | T_IMEMO;
         /* fixed at runtime. */
         return expected_type == (RBASIC(imemo)->flags & mask);
