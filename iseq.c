@@ -1298,7 +1298,7 @@ rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE realpath, VALUE line, V
         rb_exc_raise(GET_EC()->errinfo);
     }
     else {
-        iseq_new_setup_coverage(file, ast_line_count(ast_value));
+        if (option.coverage_enabled) iseq_new_setup_coverage(file, ast_line_count(ast_value));
         iseq = rb_iseq_new_with_opt(ast_value, name, file, realpath, ln,
                                     NULL, 0, ISEQ_TYPE_TOP, &option,
                                     Qnil);
@@ -1333,7 +1333,7 @@ pm_iseq_compile_with_option(VALUE src, VALUE file, VALUE realpath, VALUE line, V
     pm_parse_result_t result = { 0 };
     pm_options_line_set(&result.options, NUM2INT(line));
     pm_options_scopes_init(&result.options, 1);
-    result.node.coverage_enabled = 1;
+    result.node.coverage_enabled = option.coverage_enabled;
 
     switch (option.frozen_string_literal) {
       case ISEQ_FROZEN_STRING_LITERAL_UNSET:
@@ -1363,7 +1363,7 @@ pm_iseq_compile_with_option(VALUE src, VALUE file, VALUE realpath, VALUE line, V
 
     if (error == Qnil) {
         int error_state;
-        iseq_new_setup_coverage(file, (int) (result.node.parser->newline_list.size - 1));
+        if (option.coverage_enabled) iseq_new_setup_coverage(file, (int) (result.node.parser->newline_list.size - 1));
         iseq = pm_iseq_new_with_opt(&result.node, name, file, realpath, ln, NULL, 0, ISEQ_TYPE_TOP, &option, &error_state);
 
         pm_parse_result_free(&result);
@@ -1754,6 +1754,8 @@ iseqw_s_compile_file(int argc, VALUE *argv, VALUE self)
     FilePathValue(file);
     file = rb_fstring(file); /* rb_io_t->pathv gets frozen anyways */
 
+    make_compile_option(&option, opt);
+
     f = rb_file_open_str(file, "r");
 
     rb_execution_context_t *ec = GET_EC();
@@ -1762,7 +1764,7 @@ iseqw_s_compile_file(int argc, VALUE *argv, VALUE self)
     parser = rb_parser_new();
     rb_parser_set_context(parser, NULL, FALSE);
     ast_value = rb_parser_load_file(parser, file);
-    iseq_new_setup_coverage(file, ast_line_count(ast_value));
+    if (option.coverage_enabled) iseq_new_setup_coverage(file, ast_line_count(ast_value));
     ast = rb_ruby_ast_data_get(ast_value);
     if (!ast->body.root) exc = GET_EC()->errinfo;
 
@@ -1771,8 +1773,6 @@ iseqw_s_compile_file(int argc, VALUE *argv, VALUE self)
         rb_ast_dispose(ast);
         rb_exc_raise(exc);
     }
-
-    make_compile_option(&option, opt);
 
     ret = iseqw_new(rb_iseq_new_with_opt(ast_value, rb_fstring_lit("<main>"),
                                          file,
@@ -1830,7 +1830,7 @@ iseqw_s_compile_file_prism(int argc, VALUE *argv, VALUE self)
 
     pm_parse_result_t result = { 0 };
     result.options.line = 1;
-    result.node.coverage_enabled = 1;
+    result.node.coverage_enabled = option.coverage_enabled;
 
     switch (option.frozen_string_literal) {
       case ISEQ_FROZEN_STRING_LITERAL_UNSET:
@@ -1851,7 +1851,7 @@ iseqw_s_compile_file_prism(int argc, VALUE *argv, VALUE self)
 
     if (error == Qnil) {
         int error_state;
-        iseq_new_setup_coverage(file, (int) (result.node.parser->newline_list.size - 1));
+        if (option.coverage_enabled) iseq_new_setup_coverage(file, (int) (result.node.parser->newline_list.size - 1));
         rb_iseq_t *iseq = pm_iseq_new_with_opt(&result.node, rb_fstring_lit("<main>"),
                                                file,
                                                rb_realpath_internal(Qnil, file, 1),
