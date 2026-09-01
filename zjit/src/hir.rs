@@ -3987,8 +3987,9 @@ impl Function {
         state: InsnId,
         emit_optimized: impl FnOnce(&mut Function, BlockId) -> InsnId,
     ) -> InsnId {
-        // Recompile when the runtime length changes so the call site can collect
-        // a new length profile instead of repeatedly taking the same side exit.
+        // Recompile after enough side exits have re-profiled the original Send. Any
+        // second observed length makes the distribution non-monomorphic, so the next
+        // version keeps the dynamic Send instead of emitting the same guard again.
         let length = self.push_insn(block, Insn::ArrayLength { array: caller_splat.array });
         self.push_insn(block, Insn::GuardBitEquals {
             val: length,
