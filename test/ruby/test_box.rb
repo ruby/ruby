@@ -652,6 +652,31 @@ class TestBox < Test::Unit::TestCase
     end
   end
 
+  def test_defined_for_global_variables
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      $assigned_in_box = 1
+      assert_equal "global-variable", defined?($assigned_in_box)
+
+      assert_nil $never_assigned_in_box
+      assert_nil defined?($never_assigned_in_box)
+
+      assert_equal "global-variable", defined?($stdout)
+
+      in_box = Ruby::Box.new.eval(<<~'CODE')
+        $assigned_in_inner_box = 1
+        [
+          defined?($assigned_in_inner_box),
+          $never_assigned_in_inner_box,
+          defined?($never_assigned_in_inner_box),
+          defined?($stdout),
+        ]
+      CODE
+      assert_equal ["global-variable", nil, nil, "global-variable"], in_box
+      assert_nil defined?($assigned_in_inner_box)
+    end;
+  end
+
   def test_match_variables_are_not_cached_in_box
     assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
     begin;
