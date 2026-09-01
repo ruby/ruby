@@ -18,6 +18,16 @@ pub mod x86_64;
 
 pub mod arm64;
 
+/// Pad the code block with NOPs so the write address is aligned to the given
+/// byte boundary (a no-op on A64, where code is always 4-byte aligned).
+/// ISEQ entry points must be at least 2-byte aligned because the C side packs
+/// a call counter into the least significant bit of the stored entry point
+/// (rb_iseq_jit_pack_func).
+#[cfg(target_arch = "x86_64")]
+pub use x86_64::align;
+#[cfg(target_arch = "aarch64")]
+pub use arm64::align;
+
 //
 // TODO: need a field_size_of macro, to compute the size of a struct field in bytes
 //

@@ -1107,6 +1107,14 @@ pub fn gen_entry_prologue(
     jit_exception: bool,
 ) -> Option<(CodePtr, RegMapping)> {
     let iseq = blockid.iseq;
+
+    // The C side packs a call counter into the least significant bit of the
+    // iseq's entry point (rb_iseq_jit_pack_func), so the entry point must be
+    // at least 2-byte aligned. Variable-length x86_64 instructions can leave
+    // the write position on an odd address, so pad with NOPs (no-op on A64,
+    // where code is always 4-byte aligned).
+    align(cb, 2);
+
     let code_ptr = cb.get_write_ptr();
 
     let mut asm = Assembler::new(unsafe { get_iseq_body_local_table_size(iseq) });

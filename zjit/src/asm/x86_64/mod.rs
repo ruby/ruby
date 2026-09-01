@@ -1079,6 +1079,11 @@ pub fn nop(cb: &mut CodeBlock, length: u32) {
     };
 }
 
+pub fn align(cb: &mut CodeBlock, alignment: u32) {
+    let padding = (alignment as usize - cb.get_write_ptr().raw_addr(cb) % alignment as usize) % alignment as usize;
+    nop(cb, padding as u32);
+}
+
 /// not - Bitwise NOT
 pub fn not(cb: &mut CodeBlock, opnd: X86Opnd) {
     write_rm_unary(

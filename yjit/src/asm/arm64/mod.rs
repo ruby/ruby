@@ -755,6 +755,8 @@ pub fn nop(cb: &mut CodeBlock) {
     cb.write_bytes(&bytes);
 }
 
+pub fn align(_cb: &mut CodeBlock, _alignment: u32) {}
+
 /// ORN - perform a bitwise OR of rn and NOT rm, put the result in rd, don't update flags
 pub fn orn(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd, rm: A64Opnd) {
     let bytes: [u8; 4] = match (rd, rn, rm) {

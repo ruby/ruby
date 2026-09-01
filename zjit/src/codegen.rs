@@ -593,6 +593,13 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
     });
 
     // Generate code if everything can be compiled
+    //
+    // The C side packs a call counter into the least significant bit of the
+    // iseq's entry point (rb_iseq_jit_pack_func), so the compiled code must
+    // start at least 2-byte aligned. Variable-length x86_64 instructions can
+    // leave the write position on an odd address, so pad with NOPs (no-op on
+    // A64, where code is always 4-byte aligned).
+    crate::asm::align(cb, 2);
     let result = asm.compile(cb);
     if let Ok((start_ptr, _)) = result {
         if get_option!(perf) == Some(PerfMap::ISEQ) {
@@ -4271,6 +4278,8 @@ fn gen_compile_error_counter(cb: &mut CodeBlock, compile_error: &CompileError) -
     gen_incr_counter(&mut asm, exit_counter_for_compile_error(compile_error));
     asm.cret(Qundef.into());
 
+    // Keep the entry point address aligned for rb_iseq_jit_pack_func; see gen_function.
+    crate::asm::align(cb, 2);
     asm.compile(cb).map(|(code_ptr, gc_offsets)| {
         assert_eq!(0, gc_offsets.len());
         code_ptr
@@ -4284,6 +4293,8 @@ fn gen_exception_handler_counter(cb: &mut CodeBlock) -> Result<CodePtr, CompileE
     gen_incr_counter(&mut asm, Counter::exit_exception_handler);
     asm.cret(Qundef.into());
 
+    // Keep the entry point address aligned for rb_iseq_jit_pack_func; see gen_function.
+    crate::asm::align(cb, 2);
     asm.compile(cb).map(|(code_ptr, gc_offsets)| {
         assert_eq!(0, gc_offsets.len());
         code_ptr

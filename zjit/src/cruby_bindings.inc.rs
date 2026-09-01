@@ -642,12 +642,6 @@ pub const BUILTIN_ATTR_INLINE_BLOCK: rb_builtin_attr = 4;
 pub const BUILTIN_ATTR_C_TRACE: rb_builtin_attr = 8;
 pub const BUILTIN_ATTR_WITHOUT_INTERRUPTS: rb_builtin_attr = 16;
 pub type rb_builtin_attr = u32;
-pub type rb_jit_func_t = ::std::option::Option<
-    unsafe extern "C" fn(
-        arg1: *mut rb_execution_context_struct,
-        arg2: *mut rb_control_frame_struct,
-    ) -> VALUE,
->;
 #[repr(C)]
 pub struct rb_iseq_variable {
     pub flip_count: rb_snum_t,

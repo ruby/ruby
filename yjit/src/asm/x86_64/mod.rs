@@ -1170,6 +1170,21 @@ pub fn nop(cb: &mut CodeBlock, length: u32) {
     };
 }
 
+pub fn align(cb: &mut CodeBlock, alignment: u32) {
+    fn padding_for(cb: &CodeBlock, alignment: u32) -> u32 {
+        let alignment = alignment as usize;
+        ((alignment - cb.get_write_ptr().raw_addr(cb) % alignment) % alignment) as u32
+    }
+
+    let mut padding = padding_for(cb, alignment);
+    if padding > 0 && !cb.has_capacity(padding as usize) {
+        let write_ptr = cb.get_write_ptr();
+        let _ = cb.next_page(write_ptr, jmp_ptr);
+        padding = padding_for(cb, alignment);
+    }
+    nop(cb, padding);
+}
+
 /// not - Bitwise NOT
 pub fn not(cb: &mut CodeBlock, opnd: X86Opnd) {
     write_rm_unary(
