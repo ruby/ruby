@@ -119,13 +119,19 @@ module Bundler
       @name == dependency.name && effective_requirement.satisfied_by?(Gem::Version.new(@version))
     end
 
+    ##
+    # Assigns the content address parsed from the lockfile's CONTENT
+    # ADDRESSES section. The full name embeds the content address, so its
+    # memoization must be invalidated.
+
+    def content_address=(value)
+      @content_address = value
+      @full_name = nil
+    end
+
     def to_lock
       out = String.new
-      out << "    #{lock_name}"
-      # Append the platform additionally for content-addressable gems that contain a SHA
-      # where the platform would otherwise be
-      out << " #{platform}" if Gem::ContentAddress.match?(content_address) && platform != Gem::Platform::RUBY
-      out << "\n"
+      out << "    #{lock_name}\n"
 
       dependencies.sort_by(&:to_s).uniq.each do |dep|
         next if dep.type == :development

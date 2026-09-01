@@ -464,8 +464,6 @@ module Gem
     end
 
     def lock_name
-      return "#{name} (#{version}-#{content_address})" if Gem::ContentAddress.match?(content_address)
-
       if platform == Gem::Platform::RUBY
         "#{name} (#{version})"
       else

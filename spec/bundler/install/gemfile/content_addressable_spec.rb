@@ -35,18 +35,24 @@ RSpec.describe "bundle install with content-addressable gems", :compact_index, r
       expect(cached_files.size).to eq(1), "expected exactly one cached gem file, found: #{cached_files}"
       expect(cached_files.first).to match(/mygem-1\.0-[0-9a-f]{8,64}\.gem$/)
       expect(default_bundle_path("cache", "mygem-1.0-x86_64-linux.gem")).not_to exist
-      expect(lockfile).to match(/^    mygem \(1\.0-[0-9a-f]{8,64}\) x86_64-linux$/)
+
+      expect(lockfile).to match(/^    mygem \(1\.0-x86_64-linux\)$/)
 
       content_address = File.basename(cached_files.first, ".gem").rpartition("-").last
       digest = Digest::SHA256.file(cached_files.first).hexdigest
       expect(content_address).to eq(digest[0, content_address.length])
 
+      checksums_enabled = lockfile.match?(/^CHECKSUMS$/)
+
+      expected_content_address_line = +"  mygem (1.0-x86_64-linux) #{content_address}"
+      expected_content_address_line << " sha256=#{digest}" if checksums_enabled
+      expect(lockfile).to include("CONTENT ADDRESSES\n#{expected_content_address_line}\n")
+
       checksums = checksums_section_when_enabled do |c|
-        c.checksum(gem_repo2, "mygem", "1.0", "x86_64-linux", content_address: content_address)
+        c.checksum(gem_repo2, "mygem", "1.0", "x86_64-linux")
       end
       expect(lockfile).to include(checksums.to_s)
-      expect(lockfile).to include("mygem (1.0-#{content_address}) sha256=#{digest}")
-      expect(lockfile).not_to include("mygem (1.0-x86_64-linux)")
+      expect(lockfile).not_to include("(1.0-#{content_address})")
     end
   end
 
@@ -399,11 +405,13 @@ RSpec.describe "bundle install with content-addressable gems", :compact_index, r
         gem "mygem"
       G
 
+      fat_checksum = Digest::SHA256.file(gem_repo2("gems", "mygem-1.0-x86_64-linux.gem")).hexdigest
+
       lockfile <<~L
         GEM
           remote: https://gem.repo2/
           specs:
-            mygem (1.0-#{mismatched_address}) x86_64-linux
+            mygem (1.0-x86_64-linux)
 
         PLATFORMS
           x86_64-linux
@@ -411,8 +419,11 @@ RSpec.describe "bundle install with content-addressable gems", :compact_index, r
         DEPENDENCIES
           mygem
 
+        CONTENT ADDRESSES
+          mygem (1.0-x86_64-linux) #{mismatched_address} sha256=#{mismatched_checksum}
+
         CHECKSUMS
-          mygem (1.0-#{mismatched_address}) sha256=#{mismatched_checksum}
+          mygem (1.0-x86_64-linux) sha256=#{fat_checksum}
 
         BUNDLED WITH
            #{Bundler::VERSION}
@@ -423,7 +434,44 @@ RSpec.describe "bundle install with content-addressable gems", :compact_index, r
 
       expect(last_command).to be_failure
       expect(the_bundle).not_to include_gems "mygem 1.0 content_addressed"
-      expect(lockfile).to include("mygem (1.0-#{mismatched_address}) x86_64-linux")
+      expect(lockfile).to include("mygem (1.0-x86_64-linux) #{mismatched_address}")
+    end
+  end
+
+  it "omits the CHECKSUMS entry when only a content addressable build exists" do
+    simulate_platform "x86_64-linux" do
+      build_repo2 do
+        build_gem "othergem", "1.0"
+      end
+
+      build_gem "mygem", "1.0", ruby_abi: current_abi, path: gem_repo2("gems") do |s|
+        s.platform = Gem::Platform.new("x86_64-linux")
+        s.required_ruby_version = "~> #{current_abi}.0"
+        s.write "lib/mygem.rb", "MYGEM = '1.0 content_addressed'"
+      end
+
+      install_gemfile <<~G, artifice: "compact_index_v2", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }
+        source "https://gem.repo2"
+
+        gem "mygem"
+      G
+
+      expect(the_bundle).to include_gems "mygem 1.0 content_addressed"
+
+      cached_file = Dir[default_bundle_path("cache", "mygem-1.0-*.gem").to_s].first
+      content_address = File.basename(cached_file, ".gem").rpartition("-").last
+      digest = Digest::SHA256.file(cached_file).hexdigest
+
+      expected_content_address_line = +"  mygem (1.0-x86_64-linux) #{content_address}"
+      expected_content_address_line << " sha256=#{digest}" if lockfile.match?(/^CHECKSUMS$/)
+      expect(lockfile).to include("CONTENT ADDRESSES\n#{expected_content_address_line}\n")
+
+      expect(lockfile).not_to match(/^  mygem \(1\.0-x86_64-linux\)$/)
+
+      original_lockfile = lockfile
+      bundle_config "frozen true"
+      bundle "install", artifice: "compact_index_v2", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }
+      expect(lockfile).to eq(original_lockfile)
     end
   end
 
