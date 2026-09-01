@@ -931,19 +931,24 @@ class TestGemPackage < Gem::Package::TarTestCase
     assert_path_not_exist parent
   end
 
-  def test_load_spec_from_metadata
-    @spec.description = "Based on Mauricio Fern\u00E1ndez's implementation"
-    entry = StringIO.new Gem::Util.gzip @spec.to_yaml.encode(Encoding::ISO_8859_1)
-    def entry.full_name
-      "metadata.gz"
+  def test_load_spec_from_metadata_with_legacy_encodings
+    {
+      "Based on Mauricio Fern\u00E1ndez's implementation" => Encoding::ISO_8859_1,
+      "\u65E5\u672C\u8A9E" => Encoding::EUC_JP,
+    }.each do |description, encoding|
+      @spec.description = description
+      metadata = @spec.to_yaml.encode encoding
+      entry = StringIO.new Gem::Util.gzip metadata
+      def entry.full_name
+        "metadata.gz"
+      end
+
+      package = Gem::Package.new "nonexistent.gem"
+      spec = package.load_spec_from_metadata entry
+
+      assert_equal @spec, spec
+      assert_equal description.encode(encoding).b, spec.description.b
     end
-
-    package = Gem::Package.new "nonexistent.gem"
-
-    spec = package.load_spec_from_metadata entry
-
-    assert_equal @spec, spec
-    assert_equal @spec.description, spec.description
   end
 
   def test_verify
