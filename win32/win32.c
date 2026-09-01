@@ -5013,7 +5013,7 @@ kill(rb_pid_t pid, int sig)
       case 0:
         RUBY_CRITICAL {
             HANDLE hProc;
-            struct ChildRecord* child = FindChildSlot(pid);
+            struct ChildRecord *child = FindChildSlot(pid);
             if (child) {
                 hProc = child->hProcess;
             }
@@ -5073,7 +5073,7 @@ kill(rb_pid_t pid, int sig)
       case SIGKILL:
         RUBY_CRITICAL {
             HANDLE hProc;
-            struct ChildRecord* child = FindChildSlot(pid);
+            struct ChildRecord *child = FindChildSlot(pid);
             if (child) {
                 hProc = child->hProcess;
             }
