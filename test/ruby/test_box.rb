@@ -1234,6 +1234,49 @@ class TestBox < Test::Unit::TestCase
     end
   end
 
+  def test_prelude_method_require_loads_feature_into_calling_box
+    # `Kernel#pp` in <internal:prelude> requires 'pp' and calls the real pp.
+    # The require must load the feature into the box of the caller, not into
+    # the master box where it is invisible from every other box.
+    assert_in_out_err([ENV_ENABLE_BOX], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
+      begin;
+        root = Ruby::Box.root
+        root.eval("pp 42")
+        puts root.eval("defined?(PP)").inspect
+        puts root.eval("method(:pp).source_location.first")
+        puts root.eval("$LOADED_FEATURES").grep(%r{/pp\.rb\z}).size
+        puts defined?(PP).inspect
+        pp :main
+        puts defined?(PP).inspect
+        puts method(:pp).source_location.first
+      end;
+      assert_equal "42", output[0]
+      assert_equal '"constant"', output[1], "PP must be defined in the root box"
+      assert_match(%r{/pp\.rb\z}, output[2], "lib/pp.rb must redefine pp in the root box")
+      assert_equal "1", output[3], "pp.rb must be in the root box's $LOADED_FEATURES"
+      assert_equal "nil", output[4], "PP must not leak into the main box"
+      assert_equal ":main", output[5]
+      assert_equal '"constant"', output[6], "PP must be defined in the main box"
+      assert_match(%r{/pp\.rb\z}, output[7], "lib/pp.rb must redefine pp in the main box")
+    end
+  end
+
+  def test_prelude_method_require_loads_feature_into_user_box
+    assert_in_out_err([ENV_ENABLE_BOX], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
+      begin;
+        box = Ruby::Box.new
+        box.eval("pp :user")
+        puts box.eval("defined?(PP)").inspect
+        puts box.eval("method(:pp).source_location.first")
+        puts defined?(PP).inspect
+      end;
+      assert_equal ":user", output[0]
+      assert_equal '"constant"', output[1], "PP must be defined in the user box"
+      assert_match(%r{/pp\.rb\z}, output[2], "lib/pp.rb must redefine pp in the user box")
+      assert_equal "nil", output[3], "PP must not leak into the main box"
+    end
+  end
+
   def test_calling_root_box_methods_does_not_change_user_boxes_newly_created
     assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true, timeout: 60)
     begin;
