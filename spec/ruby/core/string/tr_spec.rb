@@ -93,6 +93,50 @@ describe "String#tr" do
     str.tr(a, b).should == "椎名深夏"
   end
 
+  it "raises Encoding::CompatibilityError when from_string or to_string parameters have an incompatible encoding" do
+    -> { "fée".tr("é".encode(Encoding::ISO_8859_1), "e") }.should.raise(Encoding::CompatibilityError)
+    -> { "fée".tr("e", "é".encode(Encoding::ISO_8859_1)) }.should.raise(Encoding::CompatibilityError)
+  end
+
+  ruby_version_is "4.1" do
+    describe "hash form" do
+      it "returns a new strings with characters from keys replaced by the associated strings" do
+        "hello".tr("e" => "EH! ", "o" => "OH!", "l" => "").should == "hEH! OH!"
+        "h€llø".tr("€" => "e", "ø" => "o").should == "hello"
+      end
+
+      it "returns a string in the combined encoding" do
+        str = "hello".encode(Encoding::US_ASCII).tr("e" => "é")
+        str.should == "héllo"
+        str.encoding.should == Encoding::UTF_8
+      end
+
+      it "works with multi-byte encodings" do
+        "hello".encode(Encoding::UTF_16LE).tr(
+          "e".encode(Encoding::UTF_16LE) => "EH! ".encode(Encoding::UTF_16LE),
+          "o".encode(Encoding::UTF_16LE) => "OH!".encode(Encoding::UTF_16LE),
+          "l".encode(Encoding::UTF_16LE) => "".encode(Encoding::UTF_16LE),
+        ).should == "hEH! OH!".encode(Encoding::UTF_16LE)
+
+        "h€llø".encode(Encoding::UTF_16LE).tr(
+          "€".encode(Encoding::UTF_16LE) => "e".encode(Encoding::UTF_16LE),
+          "ø".encode(Encoding::UTF_16LE) => "o".encode(Encoding::UTF_16LE),
+        ).should == "hello".encode(Encoding::UTF_16LE)
+      end
+
+      it "raises ArgumentError if a key is more than one codepoint" do
+        -> { "hello".tr("hel" => "") }.should.raise(ArgumentError)
+        -> { "🤦🏼‍♂️".tr("🤦🏼‍♂️" => "") }.should.raise(ArgumentError)
+      end
+
+      it "raises Encoding::CompatibilityError when either keys or values have an incompatible encoding" do
+        -> { "fée".tr("é".encode(Encoding::ISO_8859_1) => "e") }.should.raise(Encoding::CompatibilityError)
+        -> { "fée".tr("e" => "é".encode(Encoding::ISO_8859_1)) }.should.raise(Encoding::CompatibilityError)
+
+        -> { "ab".encode(Encoding::US_ASCII).tr("a" => "à".encode(Encoding::ISO_8859_1), "b" => "é") }.should.raise(Encoding::CompatibilityError)
+      end
+    end
+  end
 end
 
 describe "String#tr!" do
@@ -122,5 +166,49 @@ describe "String#tr!" do
     -> { s.tr!("cdefg", "12") }.should.raise(FrozenError)
     -> { s.tr!("R", "S")      }.should.raise(FrozenError)
     -> { s.tr!("", "")        }.should.raise(FrozenError)
+  end
+
+  ruby_version_is "4.1" do
+    describe "hash form" do
+      it "returns a new strings with characters from keys replaced by the associated strings" do
+        "hello".tr!("e" => "EH! ", "o" => "OH!", "l" => "").should == "hEH! OH!"
+        "h€llø".tr!("€" => "e", "ø" => "o").should == "hello"
+      end
+
+      it "returns a string in the combined encoding" do
+        str = "hello".encode(Encoding::US_ASCII).tr!("e" => "é")
+        str.should == "héllo"
+        str.encoding.should == Encoding::UTF_8
+      end
+
+      it "works with multi-byte encodings" do
+        "hello".encode(Encoding::UTF_16LE).tr!(
+          "e".encode(Encoding::UTF_16LE) => "EH! ".encode(Encoding::UTF_16LE),
+          "o".encode(Encoding::UTF_16LE) => "OH!".encode(Encoding::UTF_16LE),
+          "l".encode(Encoding::UTF_16LE) => "".encode(Encoding::UTF_16LE),
+        ).should == "hEH! OH!".encode(Encoding::UTF_16LE)
+
+        "h€llø".encode(Encoding::UTF_16LE).tr!(
+          "€".encode(Encoding::UTF_16LE) => "e".encode(Encoding::UTF_16LE),
+          "ø".encode(Encoding::UTF_16LE) => "o".encode(Encoding::UTF_16LE),
+        ).should == "hello".encode(Encoding::UTF_16LE)
+      end
+
+      it "returns nil if the string wasn't modified" do
+        "hello".tr!("€" => "", "Ø" => "").should == nil
+      end
+
+      it "raises ArgumentError if a key is more than one codepoint" do
+        -> { "hello".tr!("hel" => "") }.should.raise(ArgumentError)
+        -> { "🤦🏼‍♂️".tr!("🤦🏼‍♂️" => "") }.should.raise(ArgumentError)
+      end
+
+      it "raises Encoding::CompatibilityError when either keys or values have an incompatible encoding" do
+        -> { "fée".tr!("é".encode(Encoding::ISO_8859_1) => "e") }.should.raise(Encoding::CompatibilityError)
+        -> { "fée".tr!("e" => "é".encode(Encoding::ISO_8859_1)) }.should.raise(Encoding::CompatibilityError)
+
+        -> { "ab".encode(Encoding::US_ASCII).tr!("a" => "à".encode(Encoding::ISO_8859_1), "b" => "é") }.should.raise(Encoding::CompatibilityError)
+      end
+    end
   end
 end

@@ -9186,10 +9186,274 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
     return Qnil;
 }
 
+struct tr_buffer {
+    unsigned char *buf;
+    unsigned char *ptr;
+    size_t capa;
+    size_t initial_capa;
+};
+
+static inline void
+tr_buffer_init(struct tr_buffer *buffer, size_t initial_capa)
+{
+    if (initial_capa < 32) {
+        initial_capa = 32;
+    }
+    *buffer = (struct tr_buffer){ .initial_capa = initial_capa };
+}
+
+static inline void
+tr_buffer_ensure_capa(struct tr_buffer *buffer, size_t extra_capa)
+{
+    size_t offset = buffer->ptr - buffer->buf;
+    size_t required_capa = offset + extra_capa;
+    if (UNLIKELY(buffer->capa < required_capa)) {
+        size_t new_capa = buffer->capa ? buffer->capa : buffer->initial_capa;
+        while (new_capa < required_capa) {
+            new_capa *= 1.2;
+        }
+        buffer->buf = SIZED_REALLOC_N(buffer->buf, unsigned char, new_capa, buffer->capa);
+        buffer->ptr = buffer->buf + offset;
+        buffer->capa = new_capa;
+    }
+}
+
+static inline void
+tr_buffer_append(struct tr_buffer *buffer, unsigned char *ptr, size_t len)
+{
+    if (len) {
+        tr_buffer_ensure_capa(buffer, len);
+        memcpy(buffer->ptr, ptr, len);
+        buffer->ptr += len;
+    }
+}
+
+static inline void
+tr_buffer_append_str(struct tr_buffer *buffer, VALUE str)
+{
+    tr_buffer_append(buffer, (unsigned char *)RSTRING_PTR(str), RSTRING_LEN(str));
+}
+
+static inline void
+tr_buffer_mbcput(struct tr_buffer *buffer, int codepoint, rb_encoding *enc)
+{
+    tr_buffer_ensure_capa(buffer, 4);
+    buffer->ptr += rb_enc_mbcput(codepoint, buffer->ptr, enc);
+}
+
+static inline void
+tr_buffer_free(struct tr_buffer *buffer)
+{
+    if (buffer->buf) {
+        SIZED_FREE_N(buffer->buf, buffer->capa);
+    }
+}
+
+struct tr_pair {
+    VALUE search;
+    VALUE replace;
+};
+
+struct tr_trans_pairs_coerce_args {
+    struct tr_pair *pairs;
+    size_t index;
+    rb_encoding *enc;
+    int cr;
+};
+
+static int
+tr_trans_pairs_coerce_i(st_data_t key, st_data_t value, st_data_t _args)
+{
+    struct tr_trans_pairs_coerce_args *args = (struct tr_trans_pairs_coerce_args *)_args;
+    struct tr_pair *pair = &args->pairs[args->index];
+    args->index++;
+
+    VALUE search = (VALUE)key;
+    VALUE replace = (VALUE)value;
+    StringValue(search);
+    StringValue(replace);
+
+    if (RSTRING_LEN(search) != 1 && str_strlen(search, NULL) != 1) {
+        rb_raise(rb_eArgError, "keys must be of size 1"); // TODO: better error message
+    }
+
+    args->enc = rb_enc_check_multi_str(args->enc, &args->cr, search);
+    args->enc = rb_enc_check_multi_str(args->enc, &args->cr, replace);
+
+    pair->search = search;
+    pair->replace = replace;
+    return ST_CONTINUE;
+}
+
+static VALUE
+tr_trans_pairs(VALUE str, VALUE pairs_val)
+{
+    Check_Type(pairs_val, T_HASH);
+    size_t pairs_count = RHASH_SIZE(pairs_val);
+    rb_str_modify(str);
+
+    if (RSTRING_LEN(str) == 0 || !RSTRING_PTR(str) || pairs_count == 0) return Qnil;
+
+    VALUE pairs_handle;
+    struct tr_pair *pairs = ALLOCV_N(struct tr_pair, pairs_handle, pairs_count);
+
+    int cr = rb_enc_str_coderange(str);
+    rb_encoding *enc = rb_str_enc_get(str);
+
+    struct tr_trans_pairs_coerce_args coerce_args = {
+        .pairs = pairs,
+        .enc = enc,
+        .cr = cr,
+    };
+    rb_hash_foreach(pairs_val, tr_trans_pairs_coerce_i, (VALUE)&coerce_args);
+    rb_encoding *e1 = coerce_args.enc;
+
+    VALUE hash = 0;
+
+    unsigned char *sstart = (unsigned char *)RSTRING_PTR(str);
+    unsigned char *s = sstart;
+    unsigned char *send = sstart + RSTRING_LEN(str);
+    int termlen = rb_enc_mbminlen(e1);
+
+    struct tr_buffer buffer;
+    tr_buffer_init(&buffer, send - s);
+    bool modify = false;
+
+    if (RB_LIKELY(rb_str_encindex_fastpath(rb_enc_to_index(e1)))) {
+        VALUE trans_table[256] = { 0 };
+
+        for (size_t index = 0; index < pairs_count; index++) {
+            struct tr_pair *pair = &pairs[index];
+
+            char *ptr = RSTRING_PTR(pair->search);
+            unsigned int codepoint = rb_enc_mbc_to_codepoint(ptr, RSTRING_END(pair->search), e1);
+
+            if (rb_enc_codelen(codepoint, e1) == 1) {
+                trans_table[(unsigned char)*ptr] = pair->replace;
+            }
+            else {
+                trans_table[(unsigned char)*ptr] = Qundef;
+                if (!hash) {
+                    hash = rb_obj_hide(rb_hash_new_capa(pairs_count));
+                }
+                rb_hash_aset(hash, UINT2NUM(codepoint), pair->replace);
+            }
+        }
+
+        unsigned char *checkpoint = s;
+        while (s < send) {
+            VALUE repl = trans_table[*s];
+
+            int clen = 1;
+
+            if (UNLIKELY(repl == Qundef)) {
+                unsigned int c = rb_enc_mbc_to_codepoint((char *)s, (char *)send, e1);
+                clen = rb_enc_codelen(c, e1);
+                repl = rb_hash_lookup2(hash, UINT2NUM(c), 0);
+            }
+
+            if (LIKELY(repl == 0)) {
+                s += clen;
+                continue;
+            }
+
+            modify = true;
+
+            if (checkpoint < s) {
+                tr_buffer_append(&buffer, checkpoint, s - checkpoint);
+            }
+            tr_buffer_append_str(&buffer, repl);
+            s += clen;
+            checkpoint = s;
+
+            if (cr == ENC_CODERANGE_7BIT && rb_enc_str_coderange(repl) != ENC_CODERANGE_7BIT) {
+                cr == ENC_CODERANGE_VALID;
+            }
+        }
+
+        if (modify && checkpoint < s) {
+            tr_buffer_append(&buffer, checkpoint, s - checkpoint);
+        }
+    }
+    else {
+        hash = rb_obj_hide(rb_hash_new_capa(pairs_count));
+
+        for (size_t index = 0; index < pairs_count; index++) {
+            struct tr_pair *pair = &pairs[index];
+
+            unsigned int codepoint = rb_enc_mbc_to_codepoint(RSTRING_PTR(pair->search), RSTRING_END(pair->search), e1);
+            rb_hash_aset(hash, UINT2NUM(codepoint), pair->replace);
+        }
+
+        while (s < send) {
+            bool may_modify = false;
+
+            int r = rb_enc_precise_mbclen((char *)s, (char *)send, e1);
+            if (!MBCLEN_CHARFOUND_P(r)) {
+                tr_buffer_free(&buffer);
+                rb_raise(rb_eArgError, "invalid byte sequence in %s", rb_enc_name(e1));
+            }
+            int clen = MBCLEN_CHARFOUND_LEN(r);
+            unsigned int c = rb_enc_mbc_to_codepoint((char *)s, (char *)send, e1);
+            unsigned int c0 = c;
+
+            long tlen = enc == e1 ? clen : rb_enc_codelen(c, e1);
+
+            VALUE replacement = rb_hash_lookup(hash, UINT2NUM(c));
+            if (NIL_P(replacement)) {
+                tlen = enc == e1 ? clen : rb_enc_codelen(c, enc);
+                c = c0;
+                if (enc != e1) may_modify = true;
+            }
+            else {
+                tlen = RSTRING_LEN(replacement);
+                modify = true;
+            }
+
+            if (NIL_P(replacement)) {
+                tr_buffer_mbcput(&buffer, c, enc);
+            }
+            else {
+                tr_buffer_append_str(&buffer, replacement);
+            }
+
+            if (may_modify && memcmp(s, buffer.ptr - tlen, tlen) != 0) {
+                modify = true;
+            }
+
+            if (cr == ENC_CODERANGE_7BIT && !rb_isascii(c)) {
+                cr = ENC_CODERANGE_VALID;
+            }
+
+            s += clen;
+        }
+    }
+
+    if (!STR_EMBED_P(str)) {
+        SIZED_FREE_N(STR_HEAP_PTR(str), STR_HEAP_SIZE(str));
+    }
+    tr_buffer_ensure_capa(&buffer, termlen);
+    TERM_FILL((char *)buffer.ptr, termlen);
+    RSTRING(str)->as.heap.ptr = (char *)buffer.buf;
+    STR_SET_LEN(str, buffer.ptr - buffer.buf);
+    STR_SET_NOEMBED(str);
+    RSTRING(str)->as.heap.aux.capa = buffer.capa - termlen;
+
+    RB_GC_GUARD(hash);
+
+    if (modify) {
+        if (cr != ENC_CODERANGE_BROKEN)
+            ENC_CODERANGE_SET(str, cr);
+        rb_enc_associate(str, e1);
+        return str;
+    }
+    return Qnil;
+}
 
 /*
  *  call-seq:
  *    tr!(selector, replacements) -> self or nil
+ *    tr!(pairs) -> self or nil
  *
  *  Like String#tr, except:
  *
@@ -9200,8 +9464,16 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
  */
 
 static VALUE
-rb_str_tr_bang(VALUE str, VALUE src, VALUE repl)
+rb_str_tr_bang(int argc, VALUE *argv, VALUE str)
 {
+    rb_check_arity(argc, 1, 2);
+
+    if (argc == 1) {
+        VALUE pairs = argv[0];
+        return tr_trans_pairs(str, pairs);
+    }
+
+    VALUE src = argv[0], repl = argv[1];
     return tr_trans(str, src, repl, 0);
 }
 
@@ -9244,9 +9516,18 @@ rb_str_tr_bang(VALUE str, VALUE src, VALUE repl)
  */
 
 static VALUE
-rb_str_tr(VALUE str, VALUE src, VALUE repl)
+rb_str_tr(int argc, VALUE *argv, VALUE str)
 {
+    rb_check_arity(argc, 1, 2);
+
     str = str_duplicate(rb_cString, str);
+
+    if (argc == 1) {
+        VALUE pairs = argv[0];
+        return tr_trans_pairs(str, pairs);
+    }
+
+    VALUE src = argv[0], repl = argv[1];
     tr_trans(str, src, repl, 0);
     return str;
 }
@@ -13535,13 +13816,13 @@ Init_String(void)
     rb_define_method(rb_cString, "delete_prefix!", rb_str_delete_prefix_bang, 1);
     rb_define_method(rb_cString, "delete_suffix!", rb_str_delete_suffix_bang, 1);
 
-    rb_define_method(rb_cString, "tr", rb_str_tr, 2);
+    rb_define_method(rb_cString, "tr", rb_str_tr, -1);
     rb_define_method(rb_cString, "tr_s", rb_str_tr_s, 2);
     rb_define_method(rb_cString, "delete", rb_str_delete, -1);
     rb_define_method(rb_cString, "squeeze", rb_str_squeeze, -1);
     rb_define_method(rb_cString, "count", rb_str_count, -1);
 
-    rb_define_method(rb_cString, "tr!", rb_str_tr_bang, 2);
+    rb_define_method(rb_cString, "tr!", rb_str_tr_bang, -1);
     rb_define_method(rb_cString, "tr_s!", rb_str_tr_s_bang, 2);
     rb_define_method(rb_cString, "delete!", rb_str_delete_bang, -1);
     rb_define_method(rb_cString, "squeeze!", rb_str_squeeze_bang, -1);
