@@ -563,14 +563,14 @@ struct rb_iseq_constant_body {
     const rb_iseq_t *mandatory_only_iseq;
 
 #if USE_YJIT || USE_ZJIT
-    // Function pointer for JIT code on jit_exec()
-    rb_jit_func_t jit_entry;
-    // Number of calls on jit_exec()
-    long unsigned jit_entry_calls;
-    // Function pointer for JIT code on jit_exec_exception()
-    rb_jit_func_t jit_exception;
-    // Number of calls on jit_exec_exception()
-    long unsigned jit_exception_calls;
+    // When ISEQ_JIT_CALLS_TAG bit is set, stores the number of calls on
+    // jit_exec(). Otherwise, stores the function pointer for JIT code on
+    // jit_exec().
+    uintptr_t jit_entry;
+    // When ISEQ_JIT_CALLS_TAG bit is set, stores the number of calls on
+    // jit_exec_exception(). Otherwise, stores the function pointer for JIT
+    // code on jit_exec_exception().
+    uintptr_t jit_exception;
     void *jit_payload;
 #endif
 
@@ -584,6 +584,36 @@ struct rb_iseq_constant_body {
     // 0 never denotes a real hash.
     uint64_t source_hash;
 };
+
+#if USE_YJIT || USE_ZJIT
+#define ISEQ_JIT_CALLS_TAG ((uintptr_t)0x1)
+
+static inline rb_jit_func_t
+rb_iseq_jit_func(uintptr_t tagged)
+{
+    return (tagged & ISEQ_JIT_CALLS_TAG) ? NULL : (rb_jit_func_t)tagged;
+}
+
+static inline unsigned long
+rb_iseq_jit_calls(uintptr_t tagged)
+{
+    return (unsigned long)(tagged >> 1);
+}
+
+static inline uintptr_t
+rb_iseq_jit_increment_calls(uintptr_t tagged)
+{
+    RUBY_ASSERT(!rb_iseq_jit_func(tagged));
+    return ((tagged >> 1) + 1) << 1 | ISEQ_JIT_CALLS_TAG;
+}
+
+static inline uintptr_t
+rb_iseq_jit_pack_func(rb_jit_func_t func)
+{
+    RUBY_ASSERT(((uintptr_t)func & ISEQ_JIT_CALLS_TAG) == 0);
+    return (uintptr_t)func;
+}
+#endif
 
 /* T_IMEMO/iseq */
 /* typedef rb_iseq_t is in method.h */

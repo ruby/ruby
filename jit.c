@@ -636,12 +636,11 @@ void
 rb_iseq_reset_jit_func(const rb_iseq_t *iseq)
 {
     RUBY_ASSERT_ALWAYS(IMEMO_TYPE_P(iseq, imemo_iseq));
-    ISEQ_BODY(iseq)->jit_entry = NULL;
-    ISEQ_BODY(iseq)->jit_exception = NULL;
-    // Enable re-compiling this ISEQ. Event when it's invalidated for TracePoint,
+    // 0 packs a NULL code pointer with a zeroed call counter, enabling
+    // re-compiling this ISEQ. Even when it's invalidated for TracePoint,
     // we'd like to re-compile ISEQs that haven't been converted to trace_* insns.
-    ISEQ_BODY(iseq)->jit_entry_calls = 0;
-    ISEQ_BODY(iseq)->jit_exception_calls = 0;
+    ISEQ_BODY(iseq)->jit_entry = 0;
+    ISEQ_BODY(iseq)->jit_exception = 0;
 }
 
 // Callback data for rb_jit_for_each_iseq

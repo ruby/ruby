@@ -526,16 +526,19 @@ yjit_compile(rb_execution_context_t *ec)
     const rb_iseq_t *iseq = CFP_ISEQ(ec->cfp);
     struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
 
+    rb_jit_func_t jit_entry = rb_iseq_jit_func(body->jit_entry);
+
     // Increment the ISEQ's call counter and trigger JIT compilation if not compiled.
     // Stop incrementing when not compiling (out of executable memory) so that
     // ISEQs that failed to compile don't keep dirtying CoW pages after fork.
-    if (body->jit_entry == NULL && rb_yjit_compiling_p) {
-        body->jit_entry_calls++;
-        if (rb_yjit_threshold_hit(iseq, body->jit_entry_calls)) {
+    if (jit_entry == NULL && rb_yjit_compiling_p) {
+        body->jit_entry = rb_iseq_jit_increment_calls(body->jit_entry);
+        if (rb_yjit_threshold_hit(iseq, rb_iseq_jit_calls(body->jit_entry))) {
             rb_yjit_compile_iseq(iseq, ec, false);
+            jit_entry = rb_iseq_jit_func(body->jit_entry);
         }
     }
-    return body->jit_entry;
+    return jit_entry;
 }
 #else
 # define yjit_compile(ec) ((rb_jit_func_t)0)
@@ -548,21 +551,25 @@ zjit_compile(rb_execution_context_t *ec)
     const rb_iseq_t *iseq = CFP_ISEQ(ec->cfp);
     struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
 
-    if (body->jit_entry == NULL && rb_zjit_compiling_p) {
-        body->jit_entry_calls++;
+    rb_jit_func_t jit_entry = rb_iseq_jit_func(body->jit_entry);
+
+    if (jit_entry == NULL && rb_zjit_compiling_p) {
+        body->jit_entry = rb_iseq_jit_increment_calls(body->jit_entry);
+        unsigned long entry_calls = rb_iseq_jit_calls(body->jit_entry);
 
         // At profile-threshold, rewrite some of the YARV instructions
         // to zjit_* instructions to profile these instructions.
-        if (body->jit_entry_calls == rb_zjit_profile_threshold) {
+        if (entry_calls == rb_zjit_profile_threshold) {
             rb_zjit_profile_enable(iseq);
         }
 
         // At call-threshold, compile the ISEQ with ZJIT.
-        if (body->jit_entry_calls == rb_zjit_call_threshold) {
+        if (entry_calls == rb_zjit_call_threshold) {
             rb_zjit_compile_iseq(iseq, ec, false);
+            jit_entry = rb_iseq_jit_func(body->jit_entry);
         }
     }
-    return body->jit_entry;
+    return jit_entry;
 }
 #else
 # define zjit_compile(ec) ((rb_jit_func_t)0)
@@ -608,21 +615,25 @@ jit_compile_exception(rb_execution_context_t *ec)
     const rb_iseq_t *iseq = CFP_ISEQ(ec->cfp);
     struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
 
+    rb_jit_func_t jit_entry = rb_iseq_jit_func(body->jit_exception);
+
 #if USE_ZJIT
     // rb_zjit_compiling_p is false until ZJIT is enabled, so no
     // rb_zjit_enabled_p check is needed here.
-    if (body->jit_exception == NULL && rb_zjit_compiling_p) {
-        body->jit_exception_calls++;
+    if (jit_entry == NULL && rb_zjit_compiling_p) {
+        body->jit_exception = rb_iseq_jit_increment_calls(body->jit_exception);
+        unsigned long exception_calls = rb_iseq_jit_calls(body->jit_exception);
 
         // At profile-threshold, rewrite some of the YARV instructions
         // to zjit_* instructions to profile these instructions.
-        if (body->jit_exception_calls == rb_zjit_profile_threshold) {
+        if (exception_calls == rb_zjit_profile_threshold) {
             rb_zjit_profile_enable(iseq);
         }
 
         // At call-threshold, compile the ISEQ with ZJIT.
-        if (body->jit_exception_calls == rb_zjit_call_threshold) {
+        if (exception_calls == rb_zjit_call_threshold) {
             rb_zjit_compile_iseq(iseq, ec, true);
+            jit_entry = rb_iseq_jit_func(body->jit_exception);
         }
     }
 #endif
@@ -630,14 +641,15 @@ jit_compile_exception(rb_execution_context_t *ec)
 #if USE_YJIT
     // Increment the ISEQ's call counter and trigger JIT compilation if not compiled.
     // Like the ZJIT branch above, no rb_yjit_enabled_p check is needed here.
-    if (body->jit_exception == NULL && rb_yjit_compiling_p) {
-        body->jit_exception_calls++;
-        if (body->jit_exception_calls == rb_yjit_call_threshold) {
+    if (jit_entry == NULL && rb_yjit_compiling_p) {
+        body->jit_exception = rb_iseq_jit_increment_calls(body->jit_exception);
+        if (rb_iseq_jit_calls(body->jit_exception) == rb_yjit_call_threshold) {
             rb_yjit_compile_iseq(iseq, ec, true);
+            jit_entry = rb_iseq_jit_func(body->jit_exception);
         }
     }
 #endif
-    return body->jit_exception;
+    return jit_entry;
 }
 
 // Execute JIT code compiled by jit_compile_exception()
