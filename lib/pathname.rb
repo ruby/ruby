@@ -83,35 +83,6 @@ class Pathname
 end
 
 
-class Pathname    # * FileUtils *
-
-  # :markup: markdown
-  #
-  # call-seq:
-  #   rmtree -> 0
-  #
-  # Deletes the entire filetree at the path in `self`; returns `0`:
-  #
-  # ```ruby
-  # dir_pn = Pathname('foo/bar/baz') # => #<Pathname:foo/bar/baz>
-  # dir_pn.mkpath                    # Create 'baz' and intermediate directories.
-  # file_pn = dir_pn.join('t.tmp')   # => #<Pathname:foo/bar/baz/t.tmp>
-  # file_pn.write('foo')             # Create file at nested directory 'baz'.
-  # Pathname('foo').rmtree           # Delete the entire tree at directory 'foo'.
-  # Pathname('foo').exist?           # => false
-  # ```
-  #
-  # Use method #rmdir to delete a single (empty) directory.
-  #
-  def rmtree(noop: nil, verbose: nil, secure: nil)
-    # The name "rmtree" is borrowed from File::Path of Perl.
-    # File::Path provides "mkpath" and "rmtree".
-    require 'fileutils'
-    FileUtils.rm_rf(@path, noop: noop, verbose: verbose, secure: secure)
-    self
-  end
-end
-
 class Pathname    # * tmpdir *
   # call-seq:
   #   Pathname.mktmpdir -> new_pathname

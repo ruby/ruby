@@ -1,8 +1,32 @@
 #include "ruby.h"
+#include "ruby/thread.h"
 #include "internal.h"
 #include "internal/file.h"
 #include "internal/string.h"
 #include "internal/vm.h"
+
+#include <sys/stat.h>
+#ifdef _WIN32
+# include "win32/dir.h"
+# define dirent direct
+#else
+# include <fcntl.h>
+# include <dirent.h>
+# include <unistd.h>
+#endif
+
+#if defined(HAVE_OPENAT) && defined(HAVE_UNLINKAT) && defined(HAVE_FSTATAT) && \
+    defined(HAVE_FDOPENDIR) && defined(HAVE_DIRFD) && \
+    defined(O_DIRECTORY) && defined(O_NOFOLLOW)
+# define USE_OPENAT_RMTREE 1
+#endif
+
+#ifndef O_CLOEXEC
+# define O_CLOEXEC 0
+#endif
+#ifndef S_ISDIR
+# define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR)
+#endif
 
 #if defined __CYGWIN__ || defined DOSISH
 # define drive_letter 1
@@ -17,6 +41,8 @@
 static VALUE rb_cPathname;
 static ID id_at_path;
 static ID id_sub;
+static ID id_puts;
+static ID rmtree_keyword_ids[3];
 
 static VALUE
 check_strpath(VALUE path)
@@ -412,6 +438,362 @@ del_trailing_separator(VALUE self, VALUE path)
     return rb_str_subseq(path, 0, tail - name);
 }
 
+/*
+ * Depth-first removal, preferring the *at family so that the traversal
+ * never follows symbolic links and cannot be redirected by concurrent
+ * renames of ancestor directories (requested by akr in [Bug #21640]).
+ * Platforms without the *at family (e.g. Windows) traverse by full path
+ * with the same skeleton.
+ */
+
+struct rmtree_ctx {
+    char *path;                 /* current path, for error messages */
+    size_t len, cap;
+    rb_encoding *enc;
+    int force;
+    int err;                    /* first errno, when !force */
+    char *errpath;
+    volatile int interrupted;
+};
+
+static int
+rmtree_fail(struct rmtree_ctx *ctx, int e)
+{
+    if (ctx->force) return 0;
+    if (!ctx->err) {
+        char *p = malloc(ctx->len + 1);
+        if (p) memcpy(p, ctx->path, ctx->len + 1);
+        ctx->err = e;
+        ctx->errpath = p;
+    }
+    return -1;
+}
+
+static int
+rmtree_push(struct rmtree_ctx *ctx, const char *name)
+{
+    size_t nlen = strlen(name);
+    size_t need = ctx->len + nlen + 2;
+    if (need > ctx->cap) {
+        size_t cap = ctx->cap;
+        char *p;
+        while (cap < need) cap *= 2;
+        p = realloc(ctx->path, cap);
+        if (!p) {
+            rmtree_fail(ctx, ENOMEM);
+            return -1;
+        }
+        ctx->path = p;
+        ctx->cap = cap;
+    }
+    ctx->path[ctx->len] = '/';
+    memcpy(ctx->path + ctx->len + 1, name, nlen + 1);
+    ctx->len += nlen + 1;
+    return 0;
+}
+
+static void
+rmtree_pop(struct rmtree_ctx *ctx, size_t len)
+{
+    ctx->len = len;
+    ctx->path[len] = '\0';
+}
+
+#ifdef USE_OPENAT_RMTREE
+#define RMTREE_OPEN_FLAGS (O_RDONLY|O_DIRECTORY|O_NOFOLLOW|O_CLOEXEC)
+#define RMTREE_ROOT_FD AT_FDCWD
+#define RMTREE_DIRFD(dirp) dirfd(dirp)
+
+static int
+rmtree_do_lstat(struct rmtree_ctx *ctx, int pfd, const char *name, struct stat *st)
+{
+    (void)ctx;
+    return fstatat(pfd, name, st, AT_SYMLINK_NOFOLLOW);
+}
+
+static DIR *
+rmtree_do_opendir(struct rmtree_ctx *ctx, int pfd, const char *name, const struct stat *st)
+{
+    struct stat st2;
+    DIR *dir;
+    int fd = openat(pfd, name, RMTREE_OPEN_FLAGS);
+    (void)ctx;
+    if (fd < 0) return NULL;
+    if (fstat(fd, &st2) != 0 ||
+        st2.st_dev != st->st_dev || st2.st_ino != st->st_ino) {
+        /* the entry was replaced between lstat and openat */
+        close(fd);
+        errno = ELOOP;
+        return NULL;
+    }
+    if (!(dir = fdopendir(fd))) {
+        int e = errno;
+        close(fd);
+        errno = e;
+    }
+    return dir;
+}
+
+static int
+rmtree_do_unlink(struct rmtree_ctx *ctx, int pfd, const char *name)
+{
+    (void)ctx;
+    return unlinkat(pfd, name, 0);
+}
+
+static int
+rmtree_do_rmdir(struct rmtree_ctx *ctx, int pfd, const char *name)
+{
+    (void)ctx;
+    return unlinkat(pfd, name, AT_REMOVEDIR);
+}
+#else
+#define RMTREE_ROOT_FD -1
+#define RMTREE_DIRFD(dirp) -1
+
+static int
+rmtree_do_lstat(struct rmtree_ctx *ctx, int pfd, const char *name, struct stat *st)
+{
+    (void)pfd;
+    (void)name;
+    return lstat(ctx->path, st);
+}
+
+static DIR *
+rmtree_do_opendir(struct rmtree_ctx *ctx, int pfd, const char *name, const struct stat *st)
+{
+    (void)pfd;
+    (void)name;
+    (void)st;
+    return opendir(ctx->path);
+}
+
+static int
+rmtree_do_unlink(struct rmtree_ctx *ctx, int pfd, const char *name)
+{
+    (void)pfd;
+    (void)name;
+    return unlink(ctx->path);
+}
+
+static int
+rmtree_do_rmdir(struct rmtree_ctx *ctx, int pfd, const char *name)
+{
+    (void)pfd;
+    (void)name;
+    return rmdir(ctx->path);
+}
+#endif
+
+static int rmtree_entry(struct rmtree_ctx *ctx, int pfd, const char *name, int root);
+
+/* remove all children of dir; closes dir */
+static int
+rmtree_children(DIR *dir, struct rmtree_ctx *ctx)
+{
+    char **names = NULL;
+    size_t n = 0, cap = 0, i;
+    int ret = 0;
+    struct dirent *de;
+
+    while ((de = readdir(dir)) != NULL) {
+        const char *nm = de->d_name;
+        size_t nlen;
+        char *copy;
+        if (nm[0] == '.' && (!nm[1] || (nm[1] == '.' && !nm[2]))) continue;
+        if (n >= cap) {
+            char **p;
+            cap = cap ? cap * 2 : 16;
+            p = realloc(names, cap * sizeof(*names));
+            if (!p) {
+                rmtree_fail(ctx, ENOMEM);
+                ret = -1;
+                goto done;
+            }
+            names = p;
+        }
+        nlen = strlen(nm) + 1;
+        copy = malloc(nlen);
+        if (!copy) {
+            rmtree_fail(ctx, ENOMEM);
+            ret = -1;
+            goto done;
+        }
+        memcpy(copy, nm, nlen);
+        names[n++] = copy;
+    }
+    for (i = 0; i < n; i++) {
+        if (ctx->interrupted) {
+            ret = -1;
+            break;
+        }
+        if (rmtree_entry(ctx, RMTREE_DIRFD(dir), names[i], 0)) {
+            ret = -1;
+            break;
+        }
+    }
+  done:
+    for (i = 0; i < n; i++) free(names[i]);
+    free(names);
+    closedir(dir);
+    return ret;
+}
+
+static int
+rmtree_entry(struct rmtree_ctx *ctx, int pfd, const char *name, int root)
+{
+    struct stat st;
+    size_t len = ctx->len;
+    int ret = 0;
+
+    if (!root && rmtree_push(ctx, name)) return -1;
+    if (rmtree_do_lstat(ctx, pfd, name, &st) != 0) {
+        if (root || errno != ENOENT) ret = rmtree_fail(ctx, errno);
+    }
+    else if (S_ISDIR(st.st_mode)) {
+        DIR *dir = rmtree_do_opendir(ctx, pfd, name, &st);
+        if (!dir) {
+            ret = rmtree_fail(ctx, errno);
+        }
+        else if (rmtree_children(dir, ctx)) {
+            ret = -1;
+        }
+        else if (!ctx->interrupted &&
+                 rmtree_do_rmdir(ctx, pfd, name) != 0 && errno != ENOENT) {
+            ret = rmtree_fail(ctx, errno);
+        }
+    }
+    else if (rmtree_do_unlink(ctx, pfd, name) != 0 && errno != ENOENT) {
+        ret = rmtree_fail(ctx, errno);
+    }
+    if (!root) rmtree_pop(ctx, len);
+    return ret;
+}
+
+static void *
+rmtree_body(void *ptr)
+{
+    struct rmtree_ctx *ctx = ptr;
+    rmtree_entry(ctx, RMTREE_ROOT_FD, ctx->path, 1);
+    return NULL;
+}
+
+static void
+rmtree_ubf(void *ptr)
+{
+    ((struct rmtree_ctx *)ptr)->interrupted = 1;
+}
+
+static VALUE
+rmtree_call(VALUE ptr)
+{
+    struct rmtree_ctx *ctx = (struct rmtree_ctx *)ptr;
+    size_t rootlen = ctx->len;
+
+    for (;;) {
+        ctx->interrupted = 0;
+        rb_thread_call_without_gvl(rmtree_body, ctx, rmtree_ubf, ctx);
+        if (!ctx->interrupted || ctx->err) break;
+        rb_thread_check_ints();
+        /* spurious wakeup: restart the traversal (removal is idempotent) */
+        rmtree_pop(ctx, rootlen);
+    }
+    if (ctx->err) {
+        if (ctx->errpath) {
+            rb_syserr_fail_str(ctx->err, rb_enc_str_new_cstr(ctx->errpath, ctx->enc));
+        }
+        rb_syserr_fail(ctx->err, "rmtree");
+    }
+    return Qnil;
+}
+
+static VALUE
+rmtree_ensure(VALUE ptr)
+{
+    struct rmtree_ctx *ctx = (struct rmtree_ctx *)ptr;
+    free(ctx->path);
+    free(ctx->errpath);
+    return Qnil;
+}
+
+static void
+rmtree_remove(VALUE path, int force)
+{
+    struct rmtree_ctx ctx = {0};
+    long len;
+
+    check_strpath(path);
+    ctx.force = force;
+    ctx.enc = rb_enc_get(path);
+    len = RSTRING_LEN(path);
+    ctx.cap = len + 32;
+    ctx.path = malloc(ctx.cap);
+    if (!ctx.path) rb_memerror();
+    memcpy(ctx.path, RSTRING_PTR(path), len);
+    ctx.path[len] = '\0';
+    ctx.len = len;
+    rb_ensure(rmtree_call, (VALUE)&ctx, rmtree_ensure, (VALUE)&ctx);
+}
+
+/* :nodoc: */
+static VALUE
+path_remove_entry(int argc, VALUE *argv, VALUE self)
+{
+    VALUE path, force;
+
+    rb_scan_args(argc, argv, "11", &path, &force);
+    rmtree_remove(path, argc < 2 ? 1 : RTEST(force));
+    return Qnil;
+}
+
+/*
+ * :markup: markdown
+ *
+ * call-seq:
+ *   rmtree(noop: nil, verbose: nil, secure: nil) -> self
+ *
+ * Deletes the entire filetree at the path in `self`; returns `self`:
+ *
+ * ```ruby
+ * dir_pn = Pathname('foo/bar/baz') # => #<Pathname:foo/bar/baz>
+ * dir_pn.mkpath                    # Create 'baz' and intermediate directories.
+ * file_pn = dir_pn.join('t.tmp')   # => #<Pathname:foo/bar/baz/t.tmp>
+ * file_pn.write('foo')             # Create file at nested directory 'baz'.
+ * Pathname('foo').rmtree           # Delete the entire tree at directory 'foo'.
+ * Pathname('foo').exist?           # => false
+ * ```
+ *
+ * Use method #rmdir to delete a single (empty) directory.
+ *
+ * Keyword arguments `noop` and `verbose` work as in FileUtils.rm_rf;
+ * `secure` is accepted for compatibility and ignored
+ * (the traversal never follows symbolic links).
+ *
+ */
+static VALUE
+path_rmtree(int argc, VALUE *argv, VALUE self)
+{
+    /* The name "rmtree" is borrowed from File::Path of Perl.
+     * File::Path provides "mkpath" and "rmtree". */
+    VALUE opts, kwvals[3];
+    VALUE path = get_strpath(self);
+
+    rb_scan_args(argc, argv, "0:", &opts);
+    kwvals[0] = kwvals[1] = kwvals[2] = Qnil;
+    if (!NIL_P(opts)) {
+        rb_get_kwargs(opts, rmtree_keyword_ids, 0, 3, kwvals);
+        if (UNDEF_P(kwvals[0])) kwvals[0] = Qnil;
+        if (UNDEF_P(kwvals[1])) kwvals[1] = Qnil;
+    }
+    if (RTEST(kwvals[1])) {
+        VALUE mesg = rb_sprintf("rm -rf %"PRIsVALUE, path);
+        rb_funcall(rb_gv_get("$stdout"), id_puts, 1, mesg);
+    }
+    if (RTEST(kwvals[0])) return self;
+    rmtree_remove(path, 1);
+    return self;
+}
+
 #include "pathname_builtin.rbinc"
 
 static void init_ids(void);
@@ -444,6 +826,8 @@ InitVM_pathname(void)
     rb_define_private_method(rb_cPathname, "has_trailing_separator?", has_trailing_separator, 1);
     rb_define_private_method(rb_cPathname, "add_trailing_separator", add_trailing_separator, 1);
     rb_define_private_method(rb_cPathname, "del_trailing_separator", del_trailing_separator, 1);
+    rb_define_method(rb_cPathname, "rmtree", path_rmtree, -1);
+    rb_define_private_method(rb_cPathname, "remove_entry", path_remove_entry, -1);
 
     rb_provide("pathname.so");
 }
@@ -454,4 +838,8 @@ init_ids(void)
 #undef rb_intern
     id_at_path = rb_intern("@path");
     id_sub = rb_intern("sub");
+    id_puts = rb_intern("puts");
+    rmtree_keyword_ids[0] = rb_intern("noop");
+    rmtree_keyword_ids[1] = rb_intern("verbose");
+    rmtree_keyword_ids[2] = rb_intern("secure");
 }

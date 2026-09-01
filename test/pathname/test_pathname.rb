@@ -1524,6 +1524,43 @@ class TestPathname < Test::Unit::TestCase
     }
   end
 
+  def test_rmtree_file
+    with_tmpchdir('rubytest-pathname') {|dir|
+      File.write("f", "abc")
+      Pathname("f").rmtree
+      assert_file.not_exist?("f")
+    }
+  end
+
+  def test_rmtree_nonexistent
+    with_tmpchdir('rubytest-pathname') {|dir|
+      path = Pathname("nosuch")
+      assert_equal(path, path.rmtree)
+    }
+  end
+
+  def test_rmtree_noop
+    with_tmpchdir('rubytest-pathname') {|dir|
+      Pathname("a/b").mkpath
+      path = Pathname("a")
+      assert_equal(path, path.rmtree(noop: true))
+      assert_file.exist?("a/b")
+    }
+  end
+
+  def test_rmtree_does_not_follow_symlink
+    return if !has_symlink?
+    with_tmpchdir('rubytest-pathname') {|dir|
+      Pathname("target").mkpath
+      File.write("target/keep", "abc")
+      Pathname("tree/sub").mkpath
+      File.symlink("../../target", "tree/sub/link")
+      Pathname("tree").rmtree
+      assert_file.not_exist?("tree")
+      assert_file.exist?("target/keep")
+    }
+  end
+
   def test_unlink
     with_tmpchdir('rubytest-pathname') {|dir|
       open("f", "w") {|f| f.write "abc" }
