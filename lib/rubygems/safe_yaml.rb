@@ -53,8 +53,8 @@ module Gem
       alias_method :load, :safe_load
     end
 
-    private_class_method def valid_encoding?(input)
-      return false unless input.is_a?(String)
+    private_class_method def self.valid_encoding?(input)
+      return true unless input.is_a?(String)
 
       input.dup.force_encoding(Encoding::UTF_8).valid_encoding?
     end
