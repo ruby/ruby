@@ -2939,6 +2939,83 @@ class Pathname    # * mixed *
     File.unlink @path
   end
   alias delete unlink
+
+  # call-seq:
+  #   Pathname.mktmpdir -> new_pathname
+  #   Pathname.mktmpdir {|pathname| ... } -> object
+  #
+  # Creates:
+  #
+  # - A temporary directory.
+  # - A \Pathname object that contains the path to that directory.
+  #
+  # With no block given, returns the created pathname;
+  # the caller should delete the created directory when it is no longer needed
+  # (#rmtree is a convenient method for the deletion):
+  #
+  #   pathname = Pathname.mktmpdir
+  #   dirpath = pathname.to_s
+  #   Dir.exist?(dirpath) # => true
+  #   # Do something with the directory.
+  #   pathname.rmtree
+  #
+  # With a block given, calls the block with the created pathname;
+  # on block exit, automatically deletes the created directory and all its contents;
+  # returns the block's exit value:
+  #
+  #   pathname = Pathname.mktmpdir do |p|
+  #     # Do something with the directory.
+  #     p
+  #   end
+  #   Dir.exist?(pathname.to_s) # => false
+  def self.mktmpdir
+    systmpdir = (defined?(Etc.systmpdir) ? Etc.systmpdir.freeze : '/tmp')
+    candidates = [
+      'TMPDIR', 'TMP', 'TEMP',
+      ['system temporary path', systmpdir],
+      %w[/tmp /tmp],
+      %w[. .],
+    ]
+    tmpdir = candidates.find do |name, dir|
+      unless dir
+        next if !(dir = ENV[name] rescue next) or dir.empty?
+      end
+      dir = File.expand_path(dir)
+      stat = File.stat(dir) rescue next
+      case
+      when !stat.directory?
+        warn "#{name} is not a directory: #{dir}"
+      when !File.writable?(dir)
+        warn "#{name} is not writable: #{dir}"
+      when stat.world_writable? && !stat.sticky?
+        warn "#{name} is world-writable: #{dir}"
+      else
+        break dir
+      end
+    end or raise ArgumentError, "could not find a temporary directory"
+
+    begin
+      dir = File.join(tmpdir, "d#{Random.urandom(6).unpack1("H*")}")
+      Dir.mkdir(dir, 0700)
+    rescue Errno::EEXIST
+      retry
+    end
+    path = new(dir)
+    if block_given?
+      begin
+        yield path
+      ensure
+        stat = File.stat(tmpdir)
+        if stat.world_writable? && !stat.sticky?
+          raise ArgumentError, "parent directory is world writable but not sticky: #{tmpdir}"
+        end
+        path.send(:remove_entry, dir, false)
+      end
+    else
+      path
+    end
+  end
+
 end
 
 class Pathname

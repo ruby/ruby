@@ -1367,6 +1367,31 @@ class TestPathname < Test::Unit::TestCase
     end
   end
 
+  def test_mktmpdir_no_block
+    dir = Pathname.mktmpdir
+    begin
+      assert_kind_of(Pathname, dir)
+      assert_predicate(dir, :directory?)
+      if /mswin|mingw/ !~ RUBY_PLATFORM
+        assert_equal(0700, dir.stat.mode & 0777)
+      end
+    ensure
+      dir.rmtree
+    end
+    assert_not_predicate(dir, :exist?)
+  end
+
+  def test_mktmpdir_unique
+    a = Pathname.mktmpdir
+    b = Pathname.mktmpdir
+    begin
+      assert_not_equal(a.to_s, b.to_s)
+    ensure
+      a.rmtree
+      b.rmtree
+    end
+  end
+
   def test_s_getwd
     wd = Pathname.getwd
     assert_kind_of(Pathname, wd)
