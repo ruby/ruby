@@ -4601,7 +4601,7 @@ current_method_entry(const rb_execution_context_t *ec, rb_control_frame_t *cfp)
 {
     rb_control_frame_t *top_cfp = cfp;
 
-    if (CFP_ISEQ(cfp) && ISEQ_BODY(CFP_ISEQ(cfp))->type == ISEQ_TYPE_BLOCK) {
+    if (CFP_ISEQ(cfp) && !VM_FRAME_BMETHOD_P(cfp) && ISEQ_BODY(CFP_ISEQ(cfp))->type == ISEQ_TYPE_BLOCK) {
         const rb_iseq_t *local_iseq = ISEQ_BODY(CFP_ISEQ(cfp))->local_iseq;
 
         do {
@@ -4610,7 +4610,7 @@ current_method_entry(const rb_execution_context_t *ec, rb_control_frame_t *cfp)
                 /* TODO: orphan block */
                 return top_cfp;
             }
-        } while (CFP_ISEQ(cfp) != local_iseq);
+        } while (CFP_ISEQ(cfp) != local_iseq && !VM_FRAME_BMETHOD_P(cfp));
     }
     return cfp;
 }
@@ -5102,6 +5102,70 @@ vm_search_normal_superclass(VALUE klass)
     return RCLASS_SUPER(klass);
 }
 
+static const rb_control_frame_t *
+vm_previous_cfp_from_current_method_entry(const rb_execution_context_t *ec, const rb_control_frame_t *cfp)
+{
+    return RUBY_VM_PREVIOUS_CONTROL_FRAME(current_method_entry(ec, (rb_control_frame_t *)cfp));
+}
+
+static inline bool
+vm_refined_module_iclass_p(VALUE defined_class)
+{
+    return RB_TYPE_P(defined_class, T_ICLASS) &&
+        !RICLASS_FOR_REFINEMENT_P(defined_class) &&
+        RCLASS_INCLUDER(defined_class) == 0;
+}
+
+static VALUE
+vm_superclass_after_module(VALUE klass, VALUE module)
+{
+    for (; klass; klass = RCLASS_SUPER(klass)) {
+        if (RB_TYPE_P(klass, T_ICLASS) && RBASIC(klass)->klass == module) {
+            return RCLASS_SUPER(klass);
+        }
+    }
+    return 0;
+}
+
+// Find the correct ancestor for super in a module method when that method
+// was called via a refinement method. In this case, we cannot tell from the
+// module information what the superclass would be. However, we know the
+// current method entry is the module method, and the previous method entry
+// is the refinement.  The method before that may be another module method
+// for a refinement super call, so keep walking up the call stack a couple
+// methods at a time until we come to a method that isn't a module method
+// called from a refinement method.
+static VALUE
+vm_find_next_ancestor_after_refined_module(const rb_control_frame_t *cfp, VALUE recv, VALUE module, ID mid)
+{
+    const rb_execution_context_t *ec = GET_EC();
+    VALUE klass = 0;
+
+    while (klass == 0) {
+        const rb_control_frame_t *refinement_cfp = vm_previous_cfp_from_current_method_entry(ec, cfp);
+        if (RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(ec, refinement_cfp)) break;
+        const rb_control_frame_t *caller_cfp = vm_previous_cfp_from_current_method_entry(ec, refinement_cfp);
+        if (RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(ec, caller_cfp)) break;
+
+        const rb_callable_method_entry_t *caller_me = rb_vm_frame_method_entry(caller_cfp);
+        if (!caller_me || caller_cfp->self != recv || caller_me->def->original_id != mid) break;
+
+        if (vm_refined_module_iclass_p(caller_me->defined_class) ||
+                RICLASS_FOR_REFINEMENT_P(caller_me->defined_class)) {
+            cfp = caller_cfp;
+        }
+        else {
+            klass = vm_search_normal_superclass(caller_me->defined_class);
+        }
+    }
+
+    if (klass) {
+        VALUE found = vm_superclass_after_module(klass, module);
+        if (found) return found;
+    }
+    return vm_superclass_after_module(CLASS_OF(recv), module);
+}
+
 NORETURN(static void vm_super_outside(void));
 
 static void
@@ -5169,17 +5233,15 @@ vm_search_super_method(const rb_control_frame_t *reg_cfp, struct rb_call_data *c
 
     VALUE klass = vm_search_normal_superclass(me->defined_class);
 
+    if (klass == rb_cBasicObject && vm_refined_module_iclass_p(me->defined_class)) {
+        klass = vm_find_next_ancestor_after_refined_module(reg_cfp, recv,
+            RBASIC(me->defined_class)->klass, me->def->original_id);
+    }
+
     if (!klass) {
         /* bound instance method of module */
         cc = vm_cc_new(Qundef, NULL, vm_call_method_missing, cc_type_super);
         RB_OBJ_WRITE(iseq, &cd->cc, cc);
-    }
-    else if (klass == rb_cBasicObject &&
-             RB_TYPE_P(me->defined_class, T_ICLASS) &&
-             RCLASS_INCLUDER(me->defined_class) == 0) {
-        rb_raise(rb_eNoMethodError,
-                 "super in a method in a module that has been refined and that is called via super"
-                 " from a refinement method is not supported.");
     }
     else {
         cc = vm_search_method_fastpath(reg_cfp, cd, klass);
