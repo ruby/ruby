@@ -830,6 +830,7 @@ InitVM_pathname(void)
     rb_define_private_method(rb_cPathname, "remove_entry", path_remove_entry, -1);
 
     rb_provide("pathname.so");
+    rb_provide("pathname.rb");
 }
 
 void
