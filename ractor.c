@@ -2404,6 +2404,7 @@ struct courier_node {
 
 struct rb_ractor_courier {
     struct courier_node *nodes;
+    uint32_t *order;          /* node ids in capture's post-order: children before parents */
     uint32_t count;
     uint32_t capa;
     VALUE *refs;              /* shareable payloads, embedded by value */
@@ -2418,6 +2419,7 @@ struct courier_build {
     /* Copy mode: read the sources instead of taking them apart.  No husk, no buffer
      * hand-over, no freeing of the source's internals. */
     bool copy;
+    uint32_t ordered; /* nodes appended to c->order so far */
 };
 
 static uint32_t courier_capture(struct courier_build *b, VALUE obj);
@@ -2439,6 +2441,7 @@ courier_grow_nodes(struct rb_ractor_courier *c)
     c->nodes = nodes;
     c->capa = capa;
     ruby_xfree(old_nodes);
+    REALLOC_N(c->order, uint32_t, capa);
 }
 
 static void
@@ -2477,6 +2480,7 @@ courier_reserve(struct rb_ractor_courier *c, uint32_t nodes, uint32_t refs)
 {
     if (nodes > 0) {
         c->nodes = ALLOC_N(struct courier_node, nodes);
+        c->order = ALLOC_N(uint32_t, nodes);
         c->capa = nodes;
     }
     if (refs > 0) {
@@ -2812,6 +2816,8 @@ courier_capture(struct courier_build *b, VALUE obj)
     }
 
     if (!b->copy) move_neutralize_source(obj);
+    /* Every child has returned: the post-order materialize fills in. */
+    b->c->order[b->ordered++] = id;
     return id;
 }
 
@@ -3155,7 +3161,12 @@ rb_ractor_courier_materialize(struct rb_ractor_courier *c)
         rb_ary_push(shells, shell);
     }
 
-    for (uint32_t i = 0; i < c->count; i++) {
+    /* Fill in capture's post-order, so each node is settled after everything below it,
+     * shared children included: a Hash sees complete keys (a content-based #hash would
+     * collide on every key while the graph is still empty).  Only a cycle reaches a
+     * node still being filled (a #hash cycling through itself is out of scope). */
+    for (uint32_t k = 0; k < c->count; k++) {
+        uint32_t i = c->order[k];
         struct courier_node *n = &c->nodes[i];
         VALUE shell = RARRAY_AREF(shells, i);
         switch (n->kind) {
@@ -3172,9 +3183,18 @@ rb_ractor_courier_materialize(struct rb_ractor_courier *c)
             break;
           }
           case COURIER_KIND_HASH:
-            /* Entry insertion is deferred to a third pass: insertion calls the key's
-             * #hash / #eql?, and a content-based #hash would collide on every key while
-             * the graph is still empty, collapsing entries. */
+            for (long j = 0; j < n->u.hash.size; j++) {
+                rb_hash_aset(shell, courier_child(c, shells, n->u.hash.kv[2 * j]),
+                             courier_child(c, shells, n->u.hash.kv[2 * j + 1]));
+            }
+            /* Restore the default value and default proc (before freezing) */
+            VALUE ifnone = courier_child(c, shells, n->u.hash.ifnone_id);
+            if (n->u.hash.proc_default) {
+                rb_hash_set_default_proc(shell, ifnone);
+            }
+            else if (ifnone != Qnil) {
+                rb_hash_set_default(shell, ifnone);
+            }
             break;
           case COURIER_KIND_STRUCT:
             for (long j = 0; j < n->u.strct.len; j++) {
@@ -3203,27 +3223,6 @@ rb_ractor_courier_materialize(struct rb_ractor_courier *c)
         /* Restore instance and generic ivars (any non-REF node can have them) */
         for (uint32_t j = 0; j < n->niv; j++) {
             rb_ivar_set(shell, n->iv_ids[j], courier_child(c, shells, n->iv_vals[j]));
-        }
-    }
-
-    /* Insert hash entries only once every shell is filled.  Ids are assigned
-     * depth-first (children larger), so inserting in reverse settles nested hash keys
-     * inside-out (a #hash cycling through itself is out of scope). */
-    for (uint32_t i = c->count; i > 0; i--) {
-        struct courier_node *n = &c->nodes[i - 1];
-        if (n->kind != COURIER_KIND_HASH) continue;
-        VALUE shell = RARRAY_AREF(shells, i - 1);
-        for (long j = 0; j < n->u.hash.size; j++) {
-            rb_hash_aset(shell, courier_child(c, shells, n->u.hash.kv[2 * j]),
-                         courier_child(c, shells, n->u.hash.kv[2 * j + 1]));
-        }
-        /* Restore the default value and default proc (before freezing) */
-        VALUE ifnone = courier_child(c, shells, n->u.hash.ifnone_id);
-        if (n->u.hash.proc_default) {
-            rb_hash_set_default_proc(shell, ifnone);
-        }
-        else if (ifnone != Qnil) {
-            rb_hash_set_default(shell, ifnone);
         }
     }
 
@@ -3280,6 +3279,7 @@ rb_ractor_courier_free(struct rb_ractor_courier *c)
         }
     }
     ruby_xfree(c->nodes);
+    ruby_xfree(c->order);
     ruby_xfree(c->refs);
     ruby_xfree(c);
 }
