@@ -113,6 +113,13 @@ class TestGemCooldown < Gem::TestCase
     assert_nil Gem::Cooldown.parse_created_at(7)
   end
 
+  def test_parse_created_at_rejects_years_outside_four_digits
+    # Time.iso8601 accepts these, but the distance from now overflows Float.
+    assert_nil Gem::Cooldown.parse_created_at("#{"9" * 400}-01-01T00:00:00Z")
+    assert_nil Gem::Cooldown.parse_created_at("-2026-06-05T10:30:45Z")
+    assert_nil Gem::Cooldown.parse_created_at("02026-06-05T10:30:45Z")
+  end
+
   def with_tz(tz)
     orig_tz = ENV["TZ"]
     ENV["TZ"] = tz

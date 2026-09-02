@@ -107,6 +107,20 @@ class TestGemCommandsOutdatedCommand < Gem::TestCase
     assert_equal 1, @ui.error.scan("publish times").size
   end
 
+  def test_execute_cooldown_unparsable_created_at_fails_open
+    util_setup_cooldown_repo "foo-0.2" => util_cooldown_time(30),
+                             "foo-0.3" => "#{"9" * 400}-01-01T00:00:00Z"
+
+    @cmd.options[:cooldown] = 7
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    assert_equal "foo (0.1 < 0.3)\n", @ui.output
+    assert_equal "", @ui.error
+  end
+
   def test_cooldown_option
     @cmd.handle_options %w[--cooldown 7]
 

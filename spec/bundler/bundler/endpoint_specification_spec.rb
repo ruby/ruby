@@ -97,6 +97,14 @@ RSpec.describe Bundler::EndpointSpecification do
       end
     end
 
+    context "when created_at has a year that overflows Float arithmetic" do
+      let(:metadata) { { "created_at" => ["#{"9" * 400}-01-01T00:00:00Z"] } }
+
+      it "leaves created_at as nil" do
+        expect(subject.created_at).to be_nil
+      end
+    end
+
     context "when the metadata has an empty checksum value" do
       let(:metadata) { { "checksum" => [] } }
 

@@ -193,11 +193,16 @@ module Bundler
     TIME_ZONE_SUFFIX = /(?:Z|z|[+-]\d{2}(?::?\d{2})?)\z/
     private_constant :TIME_ZONE_SUFFIX
 
+    # See Gem::Cooldown::FOUR_DIGIT_YEAR.
+    FOUR_DIGIT_YEAR = /\A\d{4}-/
+    private_constant :FOUR_DIGIT_YEAR
+
     # A timestamp without a time zone offset is read as UTC, because reading
     # it as local time would shift the cooldown window by the environment's
-    # offset. Unparsable values become nil so the cooldown fails open.
+    # offset. Unparsable values and years outside four digits become nil so
+    # the cooldown fails open.
     def parse_created_at(value)
-      return unless value.is_a?(String)
+      return unless value.is_a?(String) && value.match?(FOUR_DIGIT_YEAR)
 
       require "time"
       begin

@@ -94,14 +94,21 @@ class Gem::Cooldown
   TIME_ZONE_SUFFIX = /(?:Z|z|[+-]\d{2}(?::?\d{2})?)\z/ # :nodoc:
   private_constant :TIME_ZONE_SUFFIX
 
+  # Matches the four-digit year an ISO 8601 timestamp starts with.
+  # Time.iso8601 also accepts a year of any length, and one far enough
+  # away overflows the Float arithmetic behind #remaining_days.
+  FOUR_DIGIT_YEAR = /\A\d{4}-/ # :nodoc:
+  private_constant :FOUR_DIGIT_YEAR
+
   ##
   # Parses a +created_at+ timestamp from the compact index.  A timestamp
   # without a time zone offset is read as UTC, because reading it as local
   # time would shift the cooldown window by the environment's offset.
-  # Returns nil for anything unparsable, so the cooldown fails open.
+  # Returns nil for anything unparsable, including a year outside four
+  # digits, so the cooldown fails open.
 
   def self.parse_created_at(value)
-    return unless value.is_a?(String)
+    return unless value.is_a?(String) && value.match?(FOUR_DIGIT_YEAR)
 
     require "time"
     begin

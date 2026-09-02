@@ -788,6 +788,25 @@ ERROR:  Possible alternatives: non_existent_with_hint
     assert_match "--cooldown 0", @ui.error
   end
 
+  def test_execute_remote_cooldown_unparsable_created_at_fails_open
+    util_setup_cooldown_repo created_at: {
+      "a-1" => util_cooldown_time(30),
+      "a-2" => "#{"9" * 400}-01-01T00:00:00Z",
+    }
+
+    @cmd.options[:cooldown] = 7
+    @cmd.options[:args] = %w[a]
+
+    use_ui @ui do
+      assert_raise Gem::MockGemUi::SystemExitException, @ui.error do
+        @cmd.execute
+      end
+    end
+
+    assert_equal %w[a-2], @cmd.installed_specs.map(&:full_name)
+    refute_match "skipped by the cooldown setting", @ui.output
+  end
+
   def test_execute_remote_cooldown_missing_created_at_fails_open
     util_setup_cooldown_repo
 

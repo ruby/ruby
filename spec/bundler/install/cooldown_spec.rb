@@ -424,6 +424,22 @@ RSpec.describe "bundle install with the cooldown setting" do
       expect(the_bundle).to include_gems("ripe_gem 2.0.0")
     end
 
+    it "treats a created_at with a year that overflows Float arithmetic as unknown" do
+      gemfile <<-G
+        source "https://gem.repo3"
+        gem "ripe_gem"
+      G
+
+      bundle "install --cooldown 7", artifice: "compact_index_cooldown_bad_created_at"
+
+      expect(the_bundle).to include_gems("ripe_gem 2.0.0")
+      expect(out).not_to include("skipped by the cooldown setting")
+
+      bundle "outdated --cooldown 7", artifice: "compact_index_cooldown_bad_created_at", raise_on_error: false
+
+      expect(out).not_to include("cooldown")
+    end
+
     it "annotates in-cooldown versions in bundle outdated table output" do
       gemfile <<-G
         source "https://gem.repo3"
