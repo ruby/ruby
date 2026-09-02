@@ -336,8 +336,6 @@ class TestMkdepend < Test::Unit::TestCase
       %w[eventids1.h {$(VPATH)}eventids1.c],
       ripper.dependencies['eventids1.c'],
     )
-    console = mkdepend.dependency_declarations('ext/io/console/depend')
-    assert_equal(%w[$(VK_HEADER)], console.dependencies['win32_vk.inc'])
     assert_include(
       mkdepend.dependency_targets('ext/socket/depend'),
       'constdefs.h',

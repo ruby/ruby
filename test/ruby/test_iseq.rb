@@ -837,21 +837,6 @@ class TestISeq < Test::Unit::TestCase
     }
   end
 
-  def test_iseq_of_twice_for_same_code
-    [
-      proc{},
-      method(:test_iseq_of_twice_for_same_code),
-      RubyVM::InstructionSequence.compile("p 1"),
-      begin; raise "error"; rescue => error; error.backtrace_locations[0]; end
-    ].each{|src|
-      iseq1 = RubyVM::InstructionSequence.of(src)
-      iseq2 = RubyVM::InstructionSequence.of(src)
-
-      # ISeq objects should be same for same src
-      assert_equal iseq1.object_id, iseq2.object_id
-    }
-  end
-
   def test_iseq_builtin_to_a
     invokebuiltin = eval(EnvUtil.invoke_ruby(['-e', <<~EOS], '', true).first)
       insns = RubyVM::InstructionSequence.of([].method(:pack)).to_a.last

@@ -1106,6 +1106,7 @@ RSpec.describe "bundle gem" do
 
       def setup_rust_env
         skip "rust toolchain of mingw is broken" if RUBY_PLATFORM.match?("mingw")
+        skip "magnus has no release supporting the extended rb_data_type_struct yet (https://github.com/matsadler/magnus/issues/173)" if rb_data_type_struct_extended?
 
         env = {
           "CARGO_HOME" => ENV.fetch("CARGO_HOME", File.join(ENV["HOME"], ".cargo")),
@@ -1118,6 +1119,12 @@ RSpec.describe "bundle gem" do
         # Hermetic Cargo setup
         RbConfig::CONFIG.each {|k, v| env["RBCONFIG_#{k}"] = v }
         env
+      end
+
+      def rb_data_type_struct_extended?
+        rtypeddata_h = File.join(RbConfig::CONFIG["rubyhdrdir"], "ruby", "internal", "core", "rtypeddata.h")
+
+        File.exist?(rtypeddata_h) && File.read(rtypeddata_h).include?("handle_weak_references")
       end
     end
 

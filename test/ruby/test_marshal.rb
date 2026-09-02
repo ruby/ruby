@@ -769,6 +769,14 @@ class TestMarshal < Test::Unit::TestCase
     assert_equal object, Marshal.load(Marshal.dump(object), :freeze.to_proc)
   end
 
+  def test_marshal_false_proc
+    object = []
+    object << object
+
+    loaded = Marshal.load(Marshal.dump(object), false)
+    assert_same loaded, loaded.first
+  end
+
   def test_marshal_load_extended_class_crash
     assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}")
     begin;

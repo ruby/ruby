@@ -1537,7 +1537,7 @@ update-config_files: PHONY
 
 update-coverage: main PHONY
 	$(XRUBY) -C "$(srcdir)" bin/gem install --no-document \
-		--install-dir .bundle --conservative "simplecov"
+		--install-dir .bundle --conservative "simplecov" -v "~> 1.1"
 
 refresh-gems: update-bundled_gems prepare-gems
 # can't recall exactly, but `make` somewhere (not GNU or nmake)

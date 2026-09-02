@@ -43,30 +43,27 @@ require_relative "support/shards"
 begin
   raise LoadError if File.exist?(File.expand_path("../../lib/bundler/bundler.gemspec", __dir__))
 
-  gem "simplecov_json_formatter"
   require "simplecov"
 
   SimpleCov.start do
     command_name "bundler:#{Process.pid}"
-    root File.expand_path("../bundler", __dir__)
+    root File.expand_path("..", __dir__)
     coverage_dir File.expand_path("../coverage", __dir__)
 
-    add_filter "/spec/"
-    add_filter "/test/"
-    add_filter "/lib/rubygems/"
-    add_filter "/lib/bundler/vendor/"
-    add_filter "/tool/"
-    add_filter "/tmp/"
-    add_filter ".gemspec"
+    skip "/spec/"
+    skip "/test/"
+    skip "/lib/rubygems/"
+    skip "/lib/bundler/vendor/"
+    skip "/tool/"
+    skip "/tmp/"
+    skip ".gemspec"
   end
 
   SimpleCov.print_error_status = false
-  SimpleCov.at_exit do
-    $stdout = File.open(File::NULL, "w")
-    SimpleCov.result.format!
-  ensure
-    $stdout = STDOUT
-  end
+
+  # Only merge this process result into the resultset. Parallel workers share a
+  # coverage directory, so the report is formatted once by `rake coverage:report`.
+  SimpleCov.at_exit { SimpleCov.result }
 rescue LoadError
   # SimpleCov is not installed
 end

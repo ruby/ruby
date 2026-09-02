@@ -181,6 +181,8 @@ class << RubyVM::ZJIT
       :load_field_count,
       :store_field_count,
 
+      :throw_count,
+
       :side_exit_size,
       :code_region_bytes,
       :side_exit_size_ratio,

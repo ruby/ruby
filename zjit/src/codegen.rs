@@ -18,7 +18,7 @@ use crate::invariants::{
 use crate::gc::append_gc_offsets;
 use crate::payload::{IseqCodePtrs, IseqStatus, IseqVersion, IseqVersionRef, JITFrame, get_or_create_iseq_payload};
 use crate::profile::reset_profiles_remaining;
-use crate::state::ZJITState;
+use crate::state::{rb_zjit_compiling_p, ZJITState};
 use crate::stats::{CompileError, exit_counter_for_compile_error, exit_counter_for_unhandled_hir_insn, incr_counter, incr_counter_by, send_fallback_counter, send_fallback_counter_for_method_type, send_fallback_counter_for_super_method_type, send_fallback_counter_ptr_for_opcode, send_fallback_counter_for_optimized_method_type};
 use crate::stats::{counter_ptr, with_time_stat, trace_compile_phase, Counter, Counter::{compile_time_ns, exit_compile_error}};
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
@@ -200,6 +200,14 @@ pub extern "C" fn rb_zjit_iseq_gen_entry_point(iseq: IseqPtr, ec: EcPtr, jit_exc
         let cb = ZJITState::get_code_block();
         let mut code_ptr = with_time_stat(compile_time_ns, || gen_iseq_entry_point(cb, iseq, jit_exception));
 
+        // If this compile ran out of executable memory, stop compiling so
+        // that the interpreter stops incrementing ISEQ call counters. It is
+        // set back to true in update_dropped_bytes() if memory becomes
+        // available again.
+        if matches!(&code_ptr, Err(CompileError::OutOfMemory)) {
+            unsafe { rb_zjit_compiling_p = false; }
+        }
+
         if let Err(err) = &code_ptr {
             // Assert that the ISEQ compiles if RubyVM::ZJIT.assert_compiles is enabled.
             // We assert only `jit_exception: false` cases until we support exception handlers.
@@ -273,9 +281,26 @@ pub fn invalidate_iseq_version(cb: &mut CodeBlock, iseq: IseqPtr, version: &mut 
 pub fn gen_iseq_call(cb: &mut CodeBlock, iseq_call: &IseqCallRef) -> Result<(), CompileError> {
     trace_compile_phase("compile_stub", || {
         // Compile a function stub
-        let stub_ptr = gen_function_stub(cb, iseq_call.clone()).inspect_err(|err| {
-            debug!("{err:?}: gen_function_stub failed: {}", iseq_get_location(iseq_call.iseq.get(), 0));
-        })?;
+        let stub_ptr = match iseq_call.stub_addr.get() {
+            // When gen_iseq_call() is called from invalidation and therefore this IseqCall has been
+            // compiled before, reuse the address of the previously-compiled stub.
+            Some(stub_ptr) => {
+                // gen_function_stub leaked one Rc reference into the stub's baked IseqCall pointer,
+                // and the previous function_stub_hit consumed it. Restore one leaked reference for
+                // the next stub hit's Rc::from_raw to reclaim.
+                unsafe { Rc::increment_strong_count(Rc::as_ptr(iseq_call)); }
+                stub_ptr
+            }
+            // When gen_iseq_call() is called from gen_iseq_body() and this IseqCall is compiled for
+            // the first time, generate a function stub and remember the address in the IseqCall.
+            None => {
+                let stub_ptr = gen_function_stub(cb, iseq_call.clone()).inspect_err(|err| {
+                    debug!("{err:?}: gen_function_stub failed: {}", iseq_get_location(iseq_call.iseq.get(), 0));
+                })?;
+                iseq_call.stub_addr.set(Some(stub_ptr));
+                stub_ptr
+            }
+        };
 
         // Update the JIT-to-JIT call to call the stub
         let stub_addr = stub_ptr.raw_ptr(cb);
@@ -633,6 +658,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
             assert_eq!(SHAPE_ID_NUM_BITS, 32);
             gen_const_uint32(val.0)
         }
+        &Insn::Const { val: Const::CBool(val) } => Opnd::UImm(val.into()),
         Insn::Const { .. } => panic!("Unexpected Const in gen_insn: {insn}"),
         Insn::NewArray { elements, state } => gen_new_array(jit, asm, function, opnds!(elements), &function.frame_state(*state)),
         Insn::NewHash { elements, state } => {
@@ -803,7 +829,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::IsA { val, class } => gen_is_a(jit, asm, opnd!(val), opnd!(class)),
         &Insn::ArrayMax { ref elements, state } => gen_array_max(jit, asm, function, opnds!(elements), &function.frame_state(state)),
         &Insn::ArrayMin { ref elements, state } => gen_array_min(jit, asm, function, opnds!(elements), &function.frame_state(state)),
-        &Insn::Throw { state, .. } => no_output!(gen_throw(jit, asm, function, &function.frame_state(state))),
+        &Insn::Throw { throw_state, val, state } => no_output!(gen_throw(jit, asm, function, throw_state, opnd!(val), &function.frame_state(state))),
         &Insn::CondBranch { .. }
         | &Insn::Jump { .. } | Insn::Entries { .. } => unreachable!(),
     };
@@ -2760,10 +2786,25 @@ fn gen_return(asm: &mut Assembler, val: lir::Opnd) {
     asm.cret(C_RET_OPND);
 }
 
-fn gen_throw(jit: &mut JITState, asm: &mut Assembler, function: &Function, state: &FrameState) {
-    // TODO: Consider calling rb_vm_throw and propagating ec->tag->state to the interpreter.
-    // Also consider making it a jump on method inlining.
-    gen_side_exit(jit, asm, function, &SideExitReason::Throw, None, state);
+fn gen_throw(jit: &mut JITState, asm: &mut Assembler, function: &Function, throw_state: u32, val: lir::Opnd, state: &FrameState) {
+    gen_incr_counter(asm, Counter::throw_count);
+
+    // The interpreter pops the thrown value before calling vm_throw(), so keep it out of the cfp->sp we publish.
+    let state = state.with_stack_size(state.stack_size() - 1); // -1 for popped throw value
+    // rb_vm_throw() allocates with THROW_DATA_NEW() and may raise LocalJumpError, and the interpreter reads this
+    // frame's locals and stack while unwinding, so publish them in the same way as any other non-leaf fallback call.
+    gen_prepare_fallback_call(jit, asm, function, &state);
+
+    asm_comment!(asm, "throw");
+    unsafe extern "C" {
+        fn rb_zjit_throw(ec: EcPtr, cfp: CfpPtr, throw_state: usize, throwobj: VALUE) -> VALUE;
+    }
+    asm_ccall!(asm, rb_zjit_throw, EC, CFP, Opnd::UImm(throw_state.into()), val);
+
+    // rb_zjit_throw() never returns. Trap in case it somehow does, and end the
+    // LIR block with an unreachable ret to give it a normal terminator.
+    asm.abort();
+    asm.cret(C_RET_OPND);
 }
 
 /// Compile Fixnum + Fixnum
@@ -4339,6 +4380,10 @@ pub struct IseqCall {
 
     /// Position where the call instruction ends (exclusive)
     end_addr: Cell<Option<CodePtr>>,
+
+    /// Address of the function stub generated for this call, if already compiled.
+    // TODO(alan): Remove with removal of without_locals(), as this caching means `IseqCall` is never freed.
+    stub_addr: Cell<Option<CodePtr>>,
 }
 
 pub type IseqCallRef = Rc<IseqCall>;
@@ -4350,6 +4395,7 @@ impl IseqCall {
             iseq: Cell::new(iseq),
             start_addr: Cell::new(None),
             end_addr: Cell::new(None),
+            stub_addr: Cell::new(None),
             jit_entry_idx,
             argc,
         };

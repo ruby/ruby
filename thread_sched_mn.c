@@ -1,4 +1,22 @@
-// included by "thread_pthread.c"
+/* -*-c-*- */
+/**********************************************************************
+
+  thread_sched_mn.c - the M:N scheduler
+
+  Included by the platform implementation (currently only thread_pthread.c)
+  when USE_MN_THREADS is 1.  A platform that cannot run coroutine threads
+  defines it to 0 and supplies the stubs at the bottom of this file itself
+  (see thread_win32.c).
+
+  Most of what is here is platform independent: the coroutine threads
+  themselves, the native thread stack pool, the timer wheel, and the
+  fd -> waiters map.  The part that is not is the readiness backend --
+  arming an fd and waiting for events -- which is epoll on Linux and kqueue
+  elsewhere.  Those pieces are marked "backend" below; they are the natural
+  seam for a thread_sched_epoll.c / thread_sched_kqueue.c split, and for an
+  IOCP backend that would let Windows run M:N threads too.
+
+**********************************************************************/
 
 #if USE_MN_THREADS
 
@@ -1210,11 +1228,14 @@ fd_event_tag(int fd, uint32_t generation)
 
 // Make the backend match `want`.  Returns false if the fd cannot be registered
 // at all (closed, or unsupported by the backend), leaving the entry untouched.
-// The fd's shard lock must be held.
+// The fd's shard lock must be held.  `consumed` says an epoll event for the
+// current arming was just delivered, so EPOLLONESHOT has already disarmed it.
 static bool
-fd_waiters_arm(int fd, struct rb_fd_waiters *e, uint32_t want)
+fd_waiters_arm(int fd, struct rb_fd_waiters *e, uint32_t want, bool consumed)
 {
-    if (want == e->armed_flags) return true;
+    // After a delivery the kernel side is disarmed even when the flags agree,
+    // so a consumed call must fall through to re-arm.
+    if (want == e->armed_flags && !consumed) return true;
 
 #if HAVE_SYS_EVENT_H
     struct kevent ke[2];
@@ -1250,15 +1271,22 @@ fd_waiters_arm(int fd, struct rb_fd_waiters *e, uint32_t want)
     }
 #elif HAVE_SYS_EPOLL_H
     if (want == 0) {
-        if (epoll_ctl(timer_th.event_fd, EPOLL_CTL_DEL, fd, NULL) == -1) {
-            switch (errno) {
-              case EBADF:
-              case ENOENT:
-                // the fd is already closed or gone from the set
-                break;
-              default:
-                perror("epoll_ctl");
-                rb_bug("fd_waiters_arm/epoll_ctl del failed (fd:%d errno:%d)", fd, errno);
+        // A delivered oneshot event has already disarmed the fd; otherwise
+        // disarm by MOD to no events.  Either way the registration stays, so
+        // the next wait is one MOD instead of DEL + ADD.
+        if (!consumed && e->registered) {
+            struct epoll_event off = { .events = 0, .data = { .u64 = 0 } };
+            if (epoll_ctl(timer_th.event_fd, EPOLL_CTL_MOD, fd, &off) == -1) {
+                switch (errno) {
+                  case EBADF:
+                  case ENOENT:
+                    // the fd is already closed or gone from the set
+                    e->registered = false;
+                    break;
+                  default:
+                    perror("epoll_ctl");
+                    rb_bug("fd_waiters_arm/epoll_ctl disarm failed (fd:%d errno:%d)", fd, errno);
+                }
             }
         }
         // Anything epoll_wait already queued for the old arming is stale now.
@@ -1267,7 +1295,7 @@ fd_waiters_arm(int fd, struct rb_fd_waiters *e, uint32_t want)
         return true;
     }
 
-    uint32_t epoll_events = 0;
+    uint32_t epoll_events = EPOLLONESHOT;
     if (want & thread_sched_waiting_io_read)  epoll_events |= EPOLLIN;
     if (want & thread_sched_waiting_io_write) epoll_events |= EPOLLOUT;
 
@@ -1276,7 +1304,7 @@ fd_waiters_arm(int fd, struct rb_fd_waiters *e, uint32_t want)
         .data = { .u64 = fd_event_tag(fd, e->generation) },
     };
 
-    int op = e->armed_flags ? EPOLL_CTL_MOD : EPOLL_CTL_ADD;
+    int op = e->registered ? EPOLL_CTL_MOD : EPOLL_CTL_ADD;
 
     if (epoll_ctl(timer_th.event_fd, op, fd, &event) == -1) {
         switch (errno) {
@@ -1286,6 +1314,7 @@ fd_waiters_arm(int fd, struct rb_fd_waiters *e, uint32_t want)
                 epoll_ctl(timer_th.event_fd, EPOLL_CTL_ADD, fd, &event) == 0) {
                 break;
             }
+            e->registered = false;
             return false;
           case EEXIST:
             // Likewise in the other direction.
@@ -1297,12 +1326,14 @@ fd_waiters_arm(int fd, struct rb_fd_waiters *e, uint32_t want)
           case EBADF:
           case EPERM:
             // closed, or the fd does not support epoll
+            e->registered = false;
             return false;
           default:
             perror("epoll_ctl");
             rb_bug("fd_waiters_arm/epoll_ctl failed (fd:%d op:%d errno:%d)", fd, op, errno);
         }
     }
+    e->registered = true;
 #else
 # error "neither kqueue nor epoll"
 #endif
@@ -1357,6 +1388,14 @@ verify_waiting_list(void)
     }
 #endif
 }
+
+/* ------------------------------------------------------------------------
+ * backend: the readiness notification mechanism (epoll / kqueue).
+ *
+ * Everything below that names epoll or kqueue is this backend; the rest of
+ * the M:N scheduler only asks it to arm an fd (fd_waiters_arm) and to wait
+ * for what fired (event_wait / timer_thread_polling).
+ * ------------------------------------------------------------------------ */
 
 #if HAVE_SYS_EVENT_H // kqueue helpers
 
@@ -1467,7 +1506,7 @@ timer_thread_register_waiting(rb_thread_t *th, int fd, enum thread_sched_waiting
 
             // Arm the union of what this fd's waiters want, so a second waiter
             // on the same fd extends the arming instead of colliding with it.
-            if (!fd_waiters_arm(fd, e, fd_waiters_union(e) | (uint32_t)(flags & FD_WAIT_IO_MASK))) {
+            if (!fd_waiters_arm(fd, e, fd_waiters_union(e) | (uint32_t)(flags & FD_WAIT_IO_MASK), false)) {
                 fd_shard_unlock(fd);
                 return timer_thread_unavailable;
             }
@@ -1547,7 +1586,7 @@ timer_thread_unregister_waiting(rb_thread_t *th, int fd, enum thread_sched_waiti
 
     struct rb_fd_waiters *e = fd_waiters_lookup(fd, false);
     if (e) {
-        fd_waiters_arm(fd, e, fd_waiters_union(e));
+        fd_waiters_arm(fd, e, fd_waiters_union(e), false);
     }
 }
 
@@ -1663,7 +1702,7 @@ timer_thread_wake_fd_waiters(int fd, uint32_t generation, uint32_t wake_flags, i
 
                 // Re-arm for whoever is still waiting on this fd (nothing, if
                 // they all just woke up).
-                fd_waiters_arm(fd, e, fd_waiters_union(e));
+                fd_waiters_arm(fd, e, fd_waiters_union(e), true);
             }
         }
         fd_shard_unlock(fd);

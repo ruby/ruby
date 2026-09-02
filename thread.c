@@ -278,12 +278,19 @@ MAYBE_UNUSED(NOINLINE(static int thread_start_func_2(rb_thread_t *th, VALUE *sta
 MAYBE_UNUSED(static bool th_has_dedicated_nt(const rb_thread_t *th));
 MAYBE_UNUSED(static int waitfd_to_waiting_flag(int wfd_event));
 
-#include THREAD_IMPL_SRC
+#ifdef RB_THREAD_SCHED_NONE
+// The no-thread model is not a set of primitives under the common scheduler:
+// it replaces the scheduler with stubs, so it stands alone.
+# include THREAD_IMPL_SRC
+#else
+// The scheduler pulls in the platform implementation (THREAD_IMPL_SRC) itself:
+// the platform primitives come first, the scheduler is built on top of them.
+# include "thread_sched.c"
+#endif
 
 /*
  * TODO: somebody with win32 knowledge should be able to get rid of
- * timer-thread by busy-waiting on signals.  And it should be possible
- * to make the GVL in thread_pthread.c be platform-independent.
+ * timer-thread by busy-waiting on signals.
  */
 #ifndef BUSY_WAIT_SIGNALS
 #  define BUSY_WAIT_SIGNALS (0)
@@ -841,7 +848,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
 
         // Run the coroutine thread's epilogue here, while th is still valid;
         // co_start then only makes the final transfer (see
-        // coroutine_thread_terminated in thread_pthread_mn.c).
+        // coroutine_thread_terminated in thread_sched_mn.c).
         coroutine_thread_terminated(th);
         rb_ractor_postmortem_free(&pf);
         return 0;
@@ -6112,9 +6119,7 @@ rb_check_deadlock(rb_ractor_t *r)
 {
     if (GET_THREAD()->vm->thread_ignore_deadlock) return;
 
-#ifdef RUBY_THREAD_PTHREAD_H
     if (r->threads.sched.readyq_cnt > 0) return;
-#endif
 
     int sleeper_num = rb_ractor_sleeper_thread_num(r);
     int ltnum = rb_ractor_living_thread_num(r);

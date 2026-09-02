@@ -5,10 +5,10 @@ if defined?(OpenSSL::SSL)
 
 class OpenSSL::TestSSLSession < OpenSSL::SSLTestCase
   def test_session
-    ctx_proc = proc { |ctx|
-      ctx.max_version = OpenSSL::SSL::TLS1_2_VERSION
-    }
-    start_server(ctx_proc: ctx_proc) do |port|
+    sctx = make_server_context
+    sctx.max_version = OpenSSL::SSL::TLS1_2_VERSION
+
+    start_server(sctx) do |port|
       server_connect_with_session(port, nil, nil) { |ssl|
         session = ssl.session
         assert(session == OpenSSL::SSL::Session.new(session.to_pem))
@@ -120,14 +120,15 @@ __EOS__
       }
     }
 
-    ctx_proc = proc { |ctx|
-      ctx.options &= ~OpenSSL::SSL::OP_NO_TICKET
-      # Disable server-side session cache which is enabled by default
-      ctx.session_cache_mode = OpenSSL::SSL::SSLContext::SESSION_CACHE_OFF
-      # Session tickets must be retrieved via ctx.session_new_cb in TLS 1.3 in AWS-LC.
-      ctx.max_version = OpenSSL::SSL::TLS1_2_VERSION if libressl? || aws_lc?
-    }
-    start_server(ctx_proc: ctx_proc) do |port|
+    sctx = make_server_context
+    sctx.options &= ~OpenSSL::SSL::OP_NO_TICKET
+    # Disable server-side session cache which is enabled by default
+    sctx.session_cache_mode = OpenSSL::SSL::SSLContext::SESSION_CACHE_OFF
+    # Session tickets must be retrieved via ctx.session_new_cb in TLS 1.3 in
+    # AWS-LC.
+    sctx.max_version = OpenSSL::SSL::TLS1_2_VERSION if libressl? || aws_lc?
+
+    start_server(sctx) do |port|
       sess1 = server_connect_with_session(port, nil, nil) { |ssl|
         ssl.puts("abc"); assert_equal "abc\n", ssl.gets
         assert_equal false, ssl.session_reused?
@@ -147,14 +148,16 @@ __EOS__
   end
 
   def test_server_session_cache
-    ctx_proc = Proc.new do |ctx|
-      ctx.max_version = OpenSSL::SSL::TLS1_2_VERSION
-      ctx.options |= OpenSSL::SSL::OP_NO_TICKET
-    end
+    sctx = make_server_context
+    sctx.max_version = OpenSSL::SSL::TLS1_2_VERSION
+    sctx.options |= OpenSSL::SSL::OP_NO_TICKET
 
     connections = nil
     saved_session = nil
-    server_proc = Proc.new do |ctx, ssl|
+
+    server_proc = Proc.new do |sock|
+      ssl = OpenSSL::SSL::SSLSocket.new(sock, sctx).accept
+      ctx = ssl.context
       stats = ctx.session_cache_stats
 
       case connections
@@ -194,10 +197,9 @@ __EOS__
         assert_equal true, ctx.session_add(saved_session.dup)
       end
 
-      readwrite_loop(ctx, ssl)
+      readwrite_loop(ssl)
     end
-
-    start_server(ctx_proc: ctx_proc, server_proc: server_proc) do |port|
+    start_server_proc(server_proc) do |port|
       first_session = nil
       10.times do |i|
         connections = i
@@ -285,11 +287,12 @@ __EOS__
   def test_ctx_client_session_cb_tls13_exception
     omit "LibreSSL does not call session_new_cb in TLS 1.3" if libressl?
 
-    server_proc = lambda do |ctx, ssl|
-      readwrite_loop(ctx, ssl)
-    rescue SystemCallError, OpenSSL::SSL::SSLError
+    sctx = make_server_context
+    if defined?(OpenSSL::SSL::OP_IGNORE_UNEXPECTED_EOF)
+      sctx.options |= OpenSSL::SSL::OP_IGNORE_UNEXPECTED_EOF
     end
-    start_server(server_proc: server_proc) do |port|
+
+    start_server(sctx) do |port|
       ctx = OpenSSL::SSL::SSLContext.new
       ctx.min_version = :TLS1_3
       ctx.session_cache_mode = OpenSSL::SSL::SSLContext::SESSION_CACHE_CLIENT
@@ -308,42 +311,42 @@ __EOS__
   def test_ctx_server_session_cb
     connections = nil
     called = {}
+
     cctx = OpenSSL::SSL::SSLContext.new
     cctx.max_version = OpenSSL::SSL::TLS1_2_VERSION
-    sctx = nil
-    ctx_proc = Proc.new { |ctx|
-      sctx = ctx
-      ctx.max_version = OpenSSL::SSL::TLS1_2_VERSION
-      ctx.options |= OpenSSL::SSL::OP_NO_TICKET
 
-      # get_cb is called whenever a client proposed to resume a session but
-      # the session could not be found in the internal session cache.
-      last_server_session = nil
-      ctx.session_get_cb = lambda { |ary|
-        _sess, data = ary
-        called[:get] = data
+    sctx = make_server_context
+    sctx.max_version = OpenSSL::SSL::TLS1_2_VERSION
+    sctx.options |= OpenSSL::SSL::OP_NO_TICKET
 
-        if connections == 2
-          last_server_session.dup
-        else
-          nil
-        end
-      }
+    # get_cb is called whenever a client proposed to resume a session but
+    # the session could not be found in the internal session cache.
+    last_server_session = nil
+    sctx.session_get_cb = lambda { |ary|
+      _sess, data = ary
+      called[:get] = data
 
-      ctx.session_new_cb = lambda { |ary|
-        _sock, sess = ary
-        called[:new] = sess
-        last_server_session = sess
-      }
-
-      if TEST_SESSION_REMOVE_CB
-        ctx.session_remove_cb = lambda { |ary|
-          _ctx, sess = ary
-          called[:remove] = sess
-        }
+      if connections == 2
+        last_server_session.dup
+      else
+        nil
       end
     }
-    start_server(ctx_proc: ctx_proc) do |port|
+
+    sctx.session_new_cb = lambda { |ary|
+      _sock, sess = ary
+      called[:new] = sess
+      last_server_session = sess
+    }
+
+    if TEST_SESSION_REMOVE_CB
+      sctx.session_remove_cb = lambda { |ary|
+        _ctx, sess = ary
+        called[:remove] = sess
+      }
+    end
+
+    start_server(sctx) do |port|
       connections = 0
       sess0 = server_connect_with_session(port, cctx, nil) { |ssl|
         ssl.puts("abc"); assert_equal "abc\n", ssl.gets

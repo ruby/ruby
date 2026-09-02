@@ -2,35 +2,34 @@
 require_relative 'utils'
 require_relative 'ut_eof'
 
-if defined?(OpenSSL::SSL)
+return unless defined?(OpenSSL::SSL)
 
-module OpenSSL::SSLPairM
-  def setup
+module OpenSSL::SSLPair
+  def ssl_pair
     svr_dn = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=localhost")
     ee_exts = [
       ["keyUsage", "keyEncipherment,digitalSignature", true],
     ]
-    @svr_key = OpenSSL::TestUtils::Fixtures.pkey("rsa-1")
-    @svr_cert = issue_cert(svr_dn, @svr_key, 1, ee_exts, nil, nil)
-  end
+    svr_key = OpenSSL::TestUtils::Fixtures.pkey("rsa-1")
+    svr_cert = issue_cert(svr_dn, svr_key, 1, ee_exts, nil, nil)
 
-  def ssl_pair
     host = "127.0.0.1"
-    tcps = create_tcp_server(host, 0)
-    port = tcps.connect_address.ip_port
+    svr = TCPServer.new(host, 0)
+    svr.setsockopt(:TCP, :NODELAY, 1)
+    port = svr.connect_address.ip_port
 
+    tcps = nil
     th = Thread.new {
+      tcps = svr.accept
       sctx = OpenSSL::SSL::SSLContext.new
-      sctx.cert = @svr_cert
-      sctx.key = @svr_key
-      sctx.options |= OpenSSL::SSL::OP_NO_COMPRESSION
-      ssls = OpenSSL::SSL::SSLServer.new(tcps, sctx)
-      ns = ssls.accept
-      ssls.close
-      ns
+      sctx.add_certificate(svr_cert, svr_key)
+      ssl = OpenSSL::SSL::SSLSocket.new(tcps, sctx)
+      ssl.accept
+      ssl
     }
 
-    tcpc = create_tcp_client(host, port)
+    tcpc = TCPSocket.new(host, port)
+    tcpc.setsockopt(:TCP, :NODELAY, 1)
     c = OpenSSL::SSL::SSLSocket.new(tcpc)
     c.connect
     s = th.value
@@ -39,57 +38,7 @@ module OpenSSL::SSLPairM
   ensure
     tcpc&.close
     tcps&.close
-    s&.close
-  end
-end
-
-module OpenSSL::SSLPair
-  include OpenSSL::SSLPairM
-
-  def create_tcp_server(host, port)
-    TCPServer.new(host, port)
-  end
-
-  def create_tcp_client(host, port)
-    TCPSocket.new(host, port)
-  end
-end
-
-module OpenSSL::SSLPairLowlevelSocket
-  include OpenSSL::SSLPairM
-
-  def create_tcp_server(host, port)
-    Addrinfo.tcp(host, port).listen
-  end
-
-  def create_tcp_client(host, port)
-    Addrinfo.tcp(host, port).connect
-  end
-end
-
-module OpenSSL::TestEOF1M
-  def open_file(content)
-    ssl_pair { |s1, s2|
-      begin
-        th = Thread.new { s2 << content; s2.close }
-        yield s1
-      ensure
-        th&.join
-      end
-    }
-  end
-end
-
-module OpenSSL::TestEOF2M
-  def open_file(content)
-    ssl_pair { |s1, s2|
-      begin
-        th = Thread.new { s1 << content; s1.close }
-        yield s2
-      ensure
-        th&.join
-      end
-    }
+    svr&.close
   end
 end
 
@@ -97,28 +46,36 @@ module OpenSSL::TestPairM
   def test_getc
     ssl_pair {|s1, s2|
       s1 << "a"
+      s1.close
       assert_equal(?a, s2.getc)
+      assert_nil(s2.getc)
     }
   end
 
   def test_getbyte
     ssl_pair {|s1, s2|
       s1 << "a"
+      s1.close
       assert_equal(97, s2.getbyte)
+      assert_nil(s2.getbyte)
+    }
+  end
+
+  def test_readchar
+    ssl_pair {|s1, s2|
+      s1 << "b"
+      s1.close
+      assert_equal("b", s2.readchar)
+      assert_raise(EOFError) { s2.readchar }
     }
   end
 
   def test_readbyte
     ssl_pair {|s1, s2|
       s1 << "b"
+      s1.close
       assert_equal(98, s2.readbyte)
-    }
-  end
-
-  def test_readbyte_eof
-    ssl_pair {|s1, s2|
-      s2.close
-      assert_raise(EOFError) { s1.readbyte }
+      assert_raise(EOFError) { s2.readbyte }
     }
   end
 
@@ -213,6 +170,25 @@ module OpenSSL::TestPairM
       assert_equal Encoding::ASCII_8BIT, read.encoding
       assert_equal bsize + 1, read.bytesize
       assert_equal auml + "\n", read.force_encoding(Encoding::UTF_8)
+    }
+  end
+
+  def test_sysread_and_syswrite
+    ssl_pair {|s1, s2|
+      str = "x" * 100 + "\n"
+      s1.syswrite(str)
+      newstr = s2.sysread(str.bytesize)
+      assert_equal(str, newstr)
+
+      buf = String.new
+      s1.syswrite(str)
+      assert_same(buf, s2.sysread(str.size, buf))
+      assert_equal(str, buf)
+
+      obj = Object.new
+      obj.define_singleton_method(:to_str) { str }
+      s1.syswrite(obj)
+      assert_equal(str, s2.sysread(str.bytesize))
     }
   end
 
@@ -393,151 +369,33 @@ module OpenSSL::TestPairM
     }
   end
 
-  def test_partial_tls_record_read_nonblock
+  def test_copy_stream
     ssl_pair { |s1, s2|
-      # the beginning of a TLS record
-      s1.io.write("\x17")
-      # should raise a IO::WaitReadable since a full TLS record is not available
-      # for reading
-      assert_raise(IO::WaitReadable) { s2.read_nonblock(1) }
-    }
-  end
-
-  def tcp_pair
-    host = "127.0.0.1"
-    serv = TCPServer.new(host, 0)
-    port = serv.connect_address.ip_port
-    sock1 = TCPSocket.new(host, port)
-    sock2 = serv.accept
-    serv.close
-    [sock1, sock2]
-  ensure
-    serv.close if serv && !serv.closed?
-  end
-
-  def test_connect_accept_nonblock_no_exception
-    ctx2 = OpenSSL::SSL::SSLContext.new
-    ctx2.cert = @svr_cert
-    ctx2.key = @svr_key
-
-    sock1, sock2 = tcp_pair
-
-    s2 = OpenSSL::SSL::SSLSocket.new(sock2, ctx2)
-    accepted = s2.accept_nonblock(exception: false)
-    assert_equal :wait_readable, accepted
-
-    ctx1 = OpenSSL::SSL::SSLContext.new
-    s1 = OpenSSL::SSL::SSLSocket.new(sock1, ctx1)
-    th = Thread.new do
-      rets = []
-      begin
-        rv = s1.connect_nonblock(exception: false)
-        rets << rv
-        case rv
-        when :wait_writable
-          IO.select(nil, [s1], nil, 5)
-        when :wait_readable
-          IO.select([s1], nil, nil, 5)
-        end
-      end until rv == s1
-      rets
-    end
-
-    until th.join(0.01)
-      accepted = s2.accept_nonblock(exception: false)
-      assert_include([s2, :wait_readable, :wait_writable ], accepted)
-    end
-
-    rets = th.value
-    assert_instance_of Array, rets
-    rets.each do |rv|
-      assert_include([s1, :wait_readable, :wait_writable ], rv)
-    end
-  ensure
-    th.join if th
-    s1.close if s1
-    s2.close if s2
-    sock1.close if sock1
-    sock2.close if sock2
-    accepted.close if accepted.respond_to?(:close)
-  end
-
-  def test_connect_accept_nonblock
-    ctx = OpenSSL::SSL::SSLContext.new
-    ctx.cert = @svr_cert
-    ctx.key = @svr_key
-
-    sock1, sock2 = tcp_pair
-
-    th = Thread.new {
-      s2 = OpenSSL::SSL::SSLSocket.new(sock2, ctx)
-      5.times {
-        begin
-          break s2.accept_nonblock
-        rescue IO::WaitReadable
-          IO.select([s2], nil, nil, 1)
-        rescue IO::WaitWritable
-          IO.select(nil, [s2], nil, 1)
-        end
-        sleep 0.2
-      }
-    }
-
-    s1 = OpenSSL::SSL::SSLSocket.new(sock1)
-    5.times {
-      begin
-        break s1.connect_nonblock
-      rescue IO::WaitReadable
-        IO.select([s1], nil, nil, 1)
-      rescue IO::WaitWritable
-        IO.select(nil, [s1], nil, 1)
+      IO.pipe do |r, w|
+        str = "hello world\n"
+        w.write(str)
+        IO.copy_stream(r, s1, str.bytesize)
+        IO.copy_stream(s2, w, str.bytesize)
+        assert_equal(str, r.read(str.bytesize))
       end
-      sleep 0.2
     }
+  end
 
-    s2 = th.value
-
-    s1.print "a\ndef"
-    assert_equal("a\n", s2.gets)
-  ensure
-    sock1&.close
-    sock2&.close
-    th&.join
+  def test_close_write
+    ssl_pair { |s1, s2|
+      message = "abc"*1024
+      s1.write(message)
+      s1.close_write
+      assert_equal(message, s2.read)
+      s2.write(message)
+      s2.close_write
+      assert_equal(message, s1.read)
+    }
   end
 end
 
-class OpenSSL::TestEOF1 < OpenSSL::TestCase
-  include OpenSSL::TestEOF
-  include OpenSSL::SSLPair
-  include OpenSSL::TestEOF1M
-end
-
-class OpenSSL::TestEOF1LowlevelSocket < OpenSSL::TestCase
-  include OpenSSL::TestEOF
-  include OpenSSL::SSLPairLowlevelSocket
-  include OpenSSL::TestEOF1M
-end
-
-class OpenSSL::TestEOF2 < OpenSSL::TestCase
-  include OpenSSL::TestEOF
-  include OpenSSL::SSLPair
-  include OpenSSL::TestEOF2M
-end
-
-class OpenSSL::TestEOF2LowlevelSocket < OpenSSL::TestCase
-  include OpenSSL::TestEOF
-  include OpenSSL::SSLPairLowlevelSocket
-  include OpenSSL::TestEOF2M
-end
-
-class OpenSSL::TestPair < OpenSSL::TestCase
+class OpenSSL::TestSSLPair < OpenSSL::TestCase
   include OpenSSL::SSLPair
   include OpenSSL::TestPairM
-end
-
-class OpenSSL::TestPairLowlevelSocket < OpenSSL::TestCase
-  include OpenSSL::SSLPairLowlevelSocket
-  include OpenSSL::TestPairM
-end
-
+  include OpenSSL::TestEOF
 end

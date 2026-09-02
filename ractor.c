@@ -418,9 +418,7 @@ free_targeted_hooks(st_table *hooks_tbl)
     st_foreach(hooks_tbl, free_targeted_hook_lists, 0);
 }
 
-#ifdef RUBY_THREAD_PTHREAD_H
 void rb_thread_sched_destroy(struct rb_thread_sched *);
-#endif
 
 static void
 ractor_free(void *ptr)
@@ -429,13 +427,8 @@ ractor_free(void *ptr)
     RUBY_DEBUG_LOG("free r:%d", rb_ractor_id(r));
 
     free_targeted_hooks(&r->pub.targeted_hooks);
-#ifdef RUBY_THREAD_PTHREAD_H
     rb_thread_sched_destroy(&r->threads.sched);
-#endif
     rb_native_mutex_destroy(&r->sync.lock);
-#ifdef RUBY_THREAD_WIN32_H
-    rb_native_cond_destroy(&r->sync.wakeup_cond);
-#endif
     ractor_local_storage_free(r);
     rb_hook_list_free(&r->pub.hooks);
     rb_st_free_embedded_table(&r->pub.targeted_hooks);
@@ -1024,39 +1017,6 @@ rb_vm_ractor_blocking_cnt_dec(rb_vm_t *vm, rb_ractor_t *cr, const char *file, in
     ractor_status_set(cr, ractor_running);
 }
 
-static void
-ractor_check_blocking(rb_ractor_t *cr, unsigned int remained_thread_cnt, const char *file, int line)
-{
-    VM_ASSERT(cr == GET_RACTOR());
-
-#ifdef RUBY_THREAD_PTHREAD_H
-    // vm->ractor.blocking_cnt is only consumed by the win32 scheduler; the
-    // pthread one must not pay a VM lock per blocking region for it.  The
-    // running<->blocking status flips stop with it (all callers), matching
-    // rb_ractor_blocking_threads_dec skipping the reverse transition.
-    return;
-#endif
-
-    RUBY_DEBUG_LOG2(file, line,
-                    "cr->threads.cnt:%u cr->threads.blocking_cnt:%u vm->ractor.cnt:%u vm->ractor.blocking_cnt:%u",
-                    cr->threads.cnt, cr->threads.blocking_cnt,
-                    GET_VM()->ractor.cnt, GET_VM()->ractor.blocking_cnt);
-
-    VM_ASSERT(cr->threads.cnt >= cr->threads.blocking_cnt + 1);
-
-    if (remained_thread_cnt > 0 &&
-        // will be block
-        cr->threads.cnt == cr->threads.blocking_cnt + 1) {
-        // change ractor status: running -> blocking
-        rb_vm_t *vm = GET_VM();
-
-        RB_VM_LOCKING() {
-            rb_vm_ractor_blocking_cnt_inc(vm, cr, file, line);
-        }
-    }
-}
-
-
 /* Remove a child that never started (send_parameters failed during creation).  The
  * creator calls this (rb_ractor_living_threads_remove assumes the current Ractor);
  * leaving the set and disowning the objspace share one VM-lock section, no window. */
@@ -1100,8 +1060,6 @@ rb_ractor_living_threads_remove(rb_ractor_t *cr, rb_thread_t *th)
 {
     VM_ASSERT(cr == GET_RACTOR());
     RUBY_DEBUG_LOG("r->threads.cnt:%d--", cr->threads.cnt);
-    ractor_check_blocking(cr, cr->threads.cnt - 1, __FILE__, __LINE__);
-
 
     if (cr->threads.cnt == 1) {
         vm_remove_ractor(th->vm, cr);
@@ -1124,7 +1082,6 @@ rb_ractor_blocking_threads_inc(rb_ractor_t *cr, const char *file, int line)
     VM_ASSERT(cr->threads.cnt > 0);
     VM_ASSERT(cr == GET_RACTOR());
 
-    ractor_check_blocking(cr, cr->threads.cnt, __FILE__, __LINE__);
     cr->threads.blocking_cnt++;
 }
 
@@ -1136,17 +1093,6 @@ rb_ractor_blocking_threads_dec(rb_ractor_t *cr, const char *file, int line)
                     cr->threads.blocking_cnt, cr->threads.cnt);
 
     VM_ASSERT(cr == GET_RACTOR());
-
-#ifndef RUBY_THREAD_PTHREAD_H
-    // see rb_ractor_blocking_threads_inc
-    if (cr->threads.cnt == cr->threads.blocking_cnt) {
-        rb_vm_t *vm = GET_VM();
-
-        RB_VM_LOCKING() {
-            rb_vm_ractor_blocking_cnt_dec(vm, cr, __FILE__, __LINE__);
-        }
-    }
-#endif
 
     cr->threads.blocking_cnt--;
 }
@@ -1236,7 +1182,6 @@ rb_ractor_terminate_all(void)
             rb_vm_ractor_blocking_cnt_inc(vm, cr, __FILE__, __LINE__);
             rb_del_running_thread(rb_ec_thread_ptr(cr->threads.running_ec));
             rb_vm_cond_timedwait(vm, &vm->ractor.sync.terminate_cond, 1000 /* ms */);
-#ifdef RUBY_THREAD_PTHREAD_H
             while (vm->ractor.sched.barrier_is_waiting) {
                 // A barrier is waiting. Threads relinquish the VM lock before joining the barrier and
                 // since we just acquired the VM lock back, we're blocking other threads from joining it.
@@ -1246,7 +1191,6 @@ rb_ractor_terminate_all(void)
                 unsigned int lev;
                 RB_VM_LOCK_ENTER_LEV_NB(&lev);
             }
-#endif
             rb_add_running_thread(rb_ec_thread_ptr(cr->threads.running_ec));
             rb_vm_ractor_blocking_cnt_dec(vm, cr, __FILE__, __LINE__);
 
