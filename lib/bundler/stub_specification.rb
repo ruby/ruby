@@ -126,7 +126,9 @@ module Bundler
     def _remote_specification
       @_remote_specification ||= begin
         rs = stub.to_spec
-        if rs.equal?(self) # happens when to_spec gets the spec from Gem.loaded_specs
+        # Gem::StubSpecification#to_spec may return an activated specification
+        # with the same name and version from a different gem installation.
+        if rs.equal?(self) || rs.loaded_from != loaded_from
           rs = Gem::Specification.load(loaded_from)
           Bundler.rubygems.stub_set_spec(stub, rs)
         end

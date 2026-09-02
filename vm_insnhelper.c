@@ -1874,10 +1874,29 @@ vm_throw(const rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
     }
 }
 
+// Fallback for YJIT. Prepare throw data and return it.
 VALUE
 rb_vm_throw(const rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_num_t throw_state, VALUE throwobj)
 {
     return vm_throw(ec, reg_cfp, throw_state, throwobj);
+}
+
+NORETURN(VALUE rb_zjit_throw(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_num_t throw_state, VALUE throwobj));
+
+// Fallback for ZJIT. Make a longjmp and unwind to the most recent vm_exec().
+VALUE
+rb_zjit_throw(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_num_t throw_state, VALUE throwobj)
+{
+    VALUE val = vm_throw(ec, reg_cfp, throw_state, throwobj);
+
+    // vm_throw() has set ec->tag->state. On the longjmp path, vm_exec() reads the throw data from
+    // ec->errinfo instead of vm_exec_core()'s return value like THROW_EXCEPTION()'s path does, so
+    // we need to put it there instead.
+    enum ruby_tag_type state = ec->tag->state;
+    ec->errinfo = val;
+    EC_JUMP_TAG(ec, state);
+
+    UNREACHABLE_RETURN(Qundef);
 }
 
 static inline void
@@ -2251,20 +2270,35 @@ rb_vm_search_method_slowpath(const struct rb_callinfo *ci, VALUE klass)
     return cc;
 }
 
+#if VM_CHECK_MODE > 0
+static bool
+vm_cd_owned_by_iseq_p(const struct rb_call_data *cd, const rb_iseq_t *iseq)
+{
+    const struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
+    return cd >= body->call_data && cd < body->call_data + body->ci_size;
+}
+#endif
+
 static const struct rb_callcache *
 vm_search_method_slowpath0(VALUE cd_owner, struct rb_call_data *cd, VALUE klass)
 {
 #if USE_DEBUG_COUNTER
     const struct rb_callcache *old_cc = cd->cc;
+    const rb_callable_method_entry_t *const old_cme = old_cc ? old_cc->cme_ : NULL;
 #endif
 
     const struct rb_callcache *cc = rb_vm_search_method_slowpath(cd->ci, klass);
+    const rb_callable_method_entry_t *const new_cme = vm_cc_cme(cc);
 
 #if OPT_INLINE_METHOD_CACHE
     cd->cc = cc;
 
     const struct rb_callcache *empty_cc = &vm_empty_cc;
     if (cd_owner && cc != empty_cc) {
+        // invokesuper dispatches with a cd on the machine stack, which has no
+        // owning iseq to remember and keeps its ci out of the GC.
+        VM_ASSERT(!vm_ci_markable(cd->ci) ||
+                  vm_cd_owned_by_iseq_p(cd, (const rb_iseq_t *)cd_owner));
         RB_OBJ_WRITTEN(cd_owner, Qundef, cc);
     }
 
@@ -2276,11 +2310,10 @@ vm_search_method_slowpath0(VALUE cd_owner, struct rb_call_data *cd, VALUE klass)
     else if (old_cc == cc) {
         RB_DEBUG_COUNTER_INC(mc_inline_miss_same_cc);
     }
-    else if (vm_cc_cme(old_cc) == vm_cc_cme(cc)) {
+    else if (old_cme == new_cme) {
         RB_DEBUG_COUNTER_INC(mc_inline_miss_same_cme);
     }
-    else if (vm_cc_cme(old_cc) && vm_cc_cme(cc) &&
-             vm_cc_cme(old_cc)->def == vm_cc_cme(cc)->def) {
+    else if (old_cme && new_cme && old_cme->def == new_cme->def) {
         RB_DEBUG_COUNTER_INC(mc_inline_miss_same_def);
     }
     else {
@@ -2289,18 +2322,15 @@ vm_search_method_slowpath0(VALUE cd_owner, struct rb_call_data *cd, VALUE klass)
 #endif
 #endif // OPT_INLINE_METHOD_CACHE
 
-    VM_ASSERT(vm_cc_cme(cc) == NULL ||
-              vm_cc_cme(cc)->called_id == vm_ci_mid(cd->ci));
+    if (new_cme) VM_ASSERT(new_cme->called_id == vm_ci_mid(cd->ci));
 
     return cc;
 }
 
-ALWAYS_INLINE(static const struct rb_callcache *vm_search_method_fastpath(const struct rb_control_frame_struct *reg_cfp, struct rb_call_data *cd, VALUE klass));
-static const struct rb_callcache *
-vm_search_method_fastpath(const struct rb_control_frame_struct *reg_cfp, struct rb_call_data *cd, VALUE klass)
+ALWAYS_INLINE(static bool vm_cc_hit_p(const struct rb_callcache *cc, const struct rb_call_data *cd, VALUE klass));
+static bool
+vm_cc_hit_p(const struct rb_callcache *cc, const struct rb_call_data *cd, VALUE klass)
 {
-    const struct rb_callcache *cc = cd->cc;
-
     VM_ASSERT_TYPE2(klass, T_CLASS, T_ICLASS);
 
 #if OPT_INLINE_METHOD_CACHE
@@ -2312,7 +2342,7 @@ vm_search_method_fastpath(const struct rb_control_frame_struct *reg_cfp, struct 
                       (vm_ci_flag(cd->ci) & VM_CALL_SUPER) ||         // search_super w/ define_method
                       vm_cc_cme(cc)->called_id == vm_ci_mid(cd->ci)); // cme->called_id == ci->mid
 
-            return cc;
+            return true;
         }
         RB_DEBUG_COUNTER_INC(mc_inline_miss_invalidated);
     }
@@ -2320,6 +2350,18 @@ vm_search_method_fastpath(const struct rb_control_frame_struct *reg_cfp, struct 
         RB_DEBUG_COUNTER_INC(mc_inline_miss_klass);
     }
 #endif
+
+    return false;
+}
+
+ALWAYS_INLINE(static const struct rb_callcache *vm_search_method_fastpath(const struct rb_control_frame_struct *reg_cfp, struct rb_call_data *cd, VALUE klass));
+static const struct rb_callcache *
+vm_search_method_fastpath(const struct rb_control_frame_struct *reg_cfp, struct rb_call_data *cd, VALUE klass)
+{
+    const struct rb_callcache *cc = cd->cc;
+    if (vm_cc_hit_p(cc, cd, klass)) {
+        return cc;
+    }
 
     return vm_search_method_slowpath0((VALUE)CFP_ISEQ(reg_cfp), cd, klass);
 }
@@ -2339,9 +2381,12 @@ const struct rb_callable_method_entry_struct *
 rb_zjit_vm_search_method(VALUE cd_owner, struct rb_call_data *cd, VALUE recv)
 {
     // Called from ZJIT with the compile-time iseq, which may differ from
-    // the iseq on the current CFP. Use the slowpath to avoid stale caches.
+    // the iseq on the current CFP.
     VALUE klass = CLASS_OF(recv);
-    const struct rb_callcache *cc = vm_search_method_slowpath0(cd_owner, cd, klass);
+    const struct rb_callcache *cc = cd->cc;
+    if (!vm_cc_hit_p(cc, cd, klass)) {
+        cc = vm_search_method_slowpath0(cd_owner, cd, klass);
+    }
     return vm_cc_cme(cc);
 }
 
@@ -2418,11 +2463,7 @@ rb_zjit_cme_is_cfunc(const rb_callable_method_entry_t *me, const cfunc_type func
 int
 rb_vm_method_cfunc_is(const rb_iseq_t *iseq, CALL_DATA cd, VALUE recv, cfunc_type func)
 {
-    // Called from ZJIT with the compile-time iseq, which may differ from
-    // the iseq on the current CFP. Use the slowpath to avoid stale caches.
-    VALUE klass = CLASS_OF(recv);
-    const struct rb_callcache *cc = vm_search_method_slowpath0((VALUE)iseq, cd, klass);
-    const struct rb_callable_method_entry_struct *cme = vm_cc_cme(cc);
+    const struct rb_callable_method_entry_struct *cme = rb_zjit_vm_search_method((VALUE)iseq, cd, recv);
     return check_cfunc(cme, func);
 }
 
@@ -2784,7 +2825,7 @@ vm_caller_setup_arg_kw(rb_control_frame_t *cfp, struct rb_calling_info *calling,
 {
     const VALUE *const passed_keywords = vm_ci_kwarg(ci)->keywords;
     const int kw_len = vm_ci_kwarg(ci)->keyword_len;
-    const VALUE h = rb_hash_new_with_size(kw_len);
+    const VALUE h = rb_hash_new_capa(kw_len);
     VALUE *sp = cfp->sp;
     int i;
 
@@ -3138,7 +3179,7 @@ warn_unused_block(const rb_callable_method_entry_t *cme, const rb_iseq_t *iseq, 
     }
     else if (RTEST(ruby_verbose) || strict_unused_block) {
         VALUE m_loc = rb_method_entry_location((const rb_method_entry_t *)cme);
-        VALUE name = rb_gen_method_name(cme->defined_class, ISEQ_BODY(iseq)->location.base_label);
+        VALUE name = rb_gen_method_name(cme->defined_class, rb_iseq_base_label(iseq));
 
         if (!NIL_P(m_loc)) {
             rb_warn("the block passed to '%"PRIsVALUE"' defined at %"PRIsVALUE":%"PRIsVALUE" may be ignored",
@@ -3180,9 +3221,9 @@ vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling,
             VM_ASSERT(cc == calling->cc);
 
             if (vm_call_iseq_optimizable_p(ci, cc)) {
-                if ((iseq->body->builtin_attrs & BUILTIN_ATTR_SINGLE_NOARG_LEAF) && ruby_vm_c_events_enabled == 0) {
-                    VM_ASSERT(iseq->body->builtin_attrs & BUILTIN_ATTR_LEAF);
-                    vm_cc_bf_set(cc, (void *)iseq->body->iseq_encoded[1]);
+                if ((ISEQ_BODY(iseq)->builtin_attrs & BUILTIN_ATTR_SINGLE_NOARG_LEAF) && ruby_vm_c_events_enabled == 0) {
+                    VM_ASSERT(ISEQ_BODY(iseq)->builtin_attrs & BUILTIN_ATTR_LEAF);
+                    vm_cc_bf_set(cc, (void *)ISEQ_BODY(iseq)->iseq_encoded[1]);
                     CC_SET_FASTPATH(cc, vm_call_single_noarg_leaf_builtin, true);
                 }
                 else {
@@ -5183,7 +5224,7 @@ block_proc_is_lambda(const VALUE procval)
 
     if (procval) {
         GetProcPtr(procval, proc);
-        return proc->is_lambda;
+        return proc->header.is_lambda;
     }
     else {
         return 0;
@@ -5475,8 +5516,8 @@ vm_invoke_proc_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
         VALUE procval = VM_BH_TO_PROC(block_handler);
         rb_proc_t *po;
         GetProcPtr(procval, po);
-        if (po->is_refined) refined_procval = procval;
-        is_lambda = po->is_lambda;
+        if (po->header.is_refined) refined_procval = procval;
+        is_lambda = po->header.is_lambda;
         block_handler = vm_block_to_block_handler(&po->block);
     }
 
@@ -6529,7 +6570,7 @@ vm_opt_newarray_pack_buffer(rb_execution_context_t *ec, rb_num_t array_len, cons
         int argc = 1;
 
         if (!UNDEF_P(buffer)) {
-            args[1] = rb_hash_new_with_size(1);
+            args[1] = rb_hash_new_capa(1);
             rb_hash_aset(args[1], ID2SYM(idBuffer), buffer);
             kw_splat = RB_PASS_KEYWORDS;
             argc++;

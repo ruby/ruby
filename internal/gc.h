@@ -230,12 +230,18 @@ void rb_gc_after_fork(rb_pid_t pid);
     if (_obj != (VALUE)*(ptr)) *(ptr) = (void *)_obj; \
 } while (0)
 
+#define rb_gc_move_ptr(ptr) do { \
+    VALUE _obj = rb_gc_location((VALUE)*(ptr)); \
+    if (_obj != (VALUE)*(ptr)) *(ptr) = (void *)_obj; \
+} while (0)
+
 RUBY_SYMBOL_EXPORT_BEGIN
 /* exports for objspace module */
 void rb_objspace_reachable_objects_from(VALUE obj, void (func)(VALUE, void *), void *data);
 void rb_objspace_reachable_objects_from_root(void (func)(const char *category, VALUE, void *), void *data);
 int rb_objspace_internal_object_p(VALUE obj);
 int rb_objspace_garbage_object_p(VALUE obj);
+int rb_objspace_foreign_object_p(VALUE obj);
 void rb_gc_declare_weak_references(VALUE obj);
 bool rb_gc_handle_weak_references_alive_p(VALUE obj);
 
@@ -298,12 +304,12 @@ rb_obj_atomic_write(
 int rb_ec_stack_check(struct rb_execution_context_struct *ec);
 void rb_gc_writebarrier_remember(VALUE obj);
 void rb_gc_obj_became_shareable(VALUE obj);
-void rb_gc_pin_in_flight_message(VALUE obj);
 bool rb_gc_multi_objspace_p(void);
 bool rb_gc_obj_foreign_p(VALUE obj);
 void *rb_gc_objspace_alloc(void);
 void rb_gc_objspace_retire_gc(void);
 void rb_gc_objspace_retire(void **objspace_slot);
+void rb_gc_objspace_postmortem_self(void);
 void rb_gc_objspace_absorb_into_current(void **objspace_slot);
 void rb_gc_objspace_absorb_all_zombies(void);
 void rb_gc_objspace_disown(void *objspace);
@@ -311,7 +317,7 @@ void rb_gc_zombie_objspaces_atfork(void);
 void rb_gc_disable_holders_atfork(void);
 void rb_gc_atfork_global_locks(void);
 void rb_gc_stash_cleanup_objspace(void);
-void rb_gc_finish_in_flight_gc(void);
+void rb_gc_rest(void);
 bool rb_gc_during_global_gc_p(void);
 bool rb_gc_single_objspace_p(void);
 const char *rb_obj_info(VALUE obj);

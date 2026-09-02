@@ -1210,6 +1210,23 @@ rb_str_new_static(const char *ptr, long len)
     return str_new_static(rb_cString, ptr, len, 0);
 }
 
+/* Take an xmalloc'd buffer as the String's body without copying it; the String owns it
+ * from here and frees it like any other heap string.  ptr must hold capa bytes plus the
+ * terminator for encindex, which is what a Ractor courier's string node carries. */
+VALUE
+rb_str_new_owned(char *ptr, long len, long capa, int encindex)
+{
+    RUBY_DTRACE_CREATE_HOOK(STRING, len);
+    VALUE str = str_alloc_heap(rb_cString);
+    RSTRING(str)->len = len;
+    RSTRING(str)->as.heap.ptr = ptr;
+    /* Freed by size (STR_HEAP_SIZE = capa + terminator), so capa must describe the
+     * allocation the caller made, not just the bytes in use. */
+    RSTRING(str)->as.heap.aux.capa = capa;
+    rb_enc_associate_index(str, encindex);
+    return str;
+}
+
 VALUE
 rb_usascii_str_new_static(const char *ptr, long len)
 {
@@ -9141,11 +9158,10 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
                 SIZED_REALLOC_N(buf, unsigned char, max + termlen, old);
                 t = buf + offset;
             }
-            if (s != t) {
-                rb_enc_mbcput(c, t, enc);
-                if (may_modify && memcmp(s, t, tlen) != 0) {
-                    modify = 1;
-                }
+
+            rb_enc_mbcput(c, t, enc);
+            if (may_modify && memcmp(s, t, tlen) != 0) {
+                modify = 1;
             }
             CHECK_IF_ASCII(c);
             s += clen;

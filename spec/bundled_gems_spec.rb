@@ -203,7 +203,11 @@ RSpec.describe "bundled_gems.rb" do
   it "Show warning when bundle exec with -r option" do
     create_file("stub.rb", stub_code)
     create_file("Gemfile", "source 'https://rubygems.org'")
-    bundle "exec ruby -r./stub -ropenssl -e ''"
+    # Command-line -r features are required before RUBYOPT's -rbundler/setup,
+    # and gem_prelude no longer consumes BUNDLER_SETUP in the main box, so
+    # bundler/setup must be requested explicitly ahead of the bundled gem to
+    # exercise the warning for requires without a Ruby caller frame.
+    bundle "exec ruby -rbundler/setup -r./stub -ropenssl -e ''"
 
     expect(err).to include(/openssl used to be loaded from (.*) since Ruby #{RUBY_VERSION}/)
   end

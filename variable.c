@@ -3164,10 +3164,16 @@ autoload_apply_constants(VALUE _arguments)
 }
 
 static VALUE
+autoload_feature_require_in_box(VALUE receiver, VALUE feature)
+{
+    rb_vm_frame_flag_set_box_require(GET_EC());
+
+    return rb_funcall(receiver, rb_intern("require"), 1, feature);
+}
+
+static VALUE
 autoload_feature_require(VALUE _arguments)
 {
-    VALUE receiver = rb_vm_top_self();
-
     struct autoload_load_arguments *arguments = (struct autoload_load_arguments*)_arguments;
 
     struct autoload_const *autoload_const = arguments->autoload_const;
@@ -3175,9 +3181,6 @@ autoload_feature_require(VALUE _arguments)
 
     // We save this for later use in autoload_apply_constants:
     arguments->autoload_data = rb_check_typeddata(autoload_const->autoload_data_value, &autoload_data_type);
-
-    if (rb_box_available() && BOX_OBJ_P(autoload_box_value))
-        receiver = autoload_box_value;
 
     /*
      * Clear the global cc cache table because the require method can be different from the current
@@ -3187,7 +3190,25 @@ autoload_feature_require(VALUE _arguments)
      */
     rb_gccct_clear_table();
 
-    VALUE result = rb_funcall(receiver, rb_intern("require"), 1, arguments->autoload_data->feature);
+    VALUE feature = arguments->autoload_data->feature;
+    rb_box_t *box = NULL;
+    if (rb_box_available() && BOX_OBJ_P(autoload_box_value)) {
+        box = rb_get_box_t(autoload_box_value);
+    }
+
+    VALUE result;
+    if (box && box->top_self) {
+        /*
+         * Call `require` on the top self of the box that registered the autoload, in a frame
+         * running in that box, so that `Kernel#require` decorations in the box (RubyGems,
+         * Zeitwerk, etc.) are dispatched and the feature is loaded into that box.
+         */
+        result = rb_vm_call_cfunc_in_box(box->top_self, autoload_feature_require_in_box,
+                                         box->top_self, feature, feature, box);
+    }
+    else {
+        result = rb_funcall(rb_vm_top_self(), rb_intern("require"), 1, feature);
+    }
 
     if (RTEST(result)) {
         return rb_mutex_synchronize(autoload_mutex, autoload_apply_constants, _arguments);

@@ -351,6 +351,9 @@ static ID id_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC;
 # define RUBY_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC ID2SYM(id_MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC)
 #endif
 static ID id_hertz;
+#ifdef HAVE_WORKING_FORK
+static ID id__fork;
+#endif
 
 static rb_pid_t cached_pid;
 
@@ -588,7 +591,7 @@ static const rb_data_type_t rb_process_status_type = {
         .dfree = RUBY_DEFAULT_FREE,
         .dsize = NULL,
     },
-    .flags = RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE,
+    .flags = RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE | RUBY_TYPED_FROZEN_SHAREABLE,
 };
 
 static VALUE
@@ -4159,17 +4162,32 @@ proc_fork_pid(void)
     return pid;
 }
 
+static VALUE
+call_proc__fork_protected(VALUE arg)
+{
+    VALUE ret = rb_funcall(rb_mProcess, id__fork, 0);
+    *(rb_pid_t *)arg = NUM2PIDT(ret);
+    /* discard the returned object itself */
+    return Qtrue;
+}
+
 rb_pid_t
 rb_call_proc__fork(void)
 {
-    ID id__fork;
-    CONST_ID(id__fork, "_fork");
     if (rb_method_basic_definition_p(CLASS_OF(rb_mProcess), id__fork)) {
         return proc_fork_pid();
     }
     else {
-        VALUE pid = rb_funcall(rb_mProcess, id__fork, 0);
-        return NUM2PIDT(pid);
+        rb_pid_t parent = getpid(), pid;
+        int state;
+
+        if (NIL_P(rb_protect(call_proc__fork_protected, (VALUE)&pid, &state))) {
+            if (getpid() != parent) {
+                ruby_stop(state);
+            }
+            rb_jump_tag(state);
+        }
+        return pid;
     }
 }
 #endif
@@ -9663,6 +9681,9 @@ Init_process(void)
     define_id(MACH_ABSOLUTE_TIME_BASED_CLOCK_MONOTONIC);
 #endif
     define_id(hertz);
+#ifdef HAVE_WORKING_FORK
+    define_id(_fork);
+#endif
 
     InitVM(process);
 }

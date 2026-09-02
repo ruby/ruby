@@ -97,7 +97,7 @@ module Bundler
             confirm(name)
           end
 
-          if current_value.nil?
+          if current_value.nil? && !Bundler.settings.credential_stored?(name)
             exit 1
           else
             return
@@ -111,6 +111,8 @@ module Bundler
       def confirm_all
         if @options[:parseable]
           thor.with_padding do
+            # --parseable output is fed back to `bundle config set`, where a
+            # placeholder would be read back as the credential itself.
             Bundler.settings.all.each do |setting|
               val = Bundler.settings[setting]
               Bundler.ui.info "#{setting}=#{val}"
@@ -118,7 +120,7 @@ module Bundler
           end
         else
           Bundler.ui.confirm "Settings are listed in order of priority. The top value will be used.\n"
-          Bundler.settings.all.each do |setting|
+          Bundler.settings.all_including_stored_credentials.each do |setting|
             Bundler.ui.confirm setting
             show_pretty_values_for(setting)
             Bundler.ui.confirm ""

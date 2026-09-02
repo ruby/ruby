@@ -10,6 +10,14 @@ RSpec.describe Bundler::EndpointSpecification do
 
   subject(:spec) { described_class.new(name, version, platform, spec_fetcher, dependencies, metadata) }
 
+  def with_tz(tz)
+    orig_tz = ENV["TZ"]
+    ENV["TZ"] = tz
+    yield
+  ensure
+    ENV["TZ"] = orig_tz
+  end
+
   describe "#build_dependency" do
     let(:name)           { "foo" }
     let(:requirement1)   { "~> 1.1" }
@@ -60,6 +68,24 @@ RSpec.describe Bundler::EndpointSpecification do
 
       it "still parses created_at" do
         expect(subject.created_at).to eq(Time.utc(2026, 5, 12, 10, 0, 0))
+      end
+    end
+
+    context "when created_at has no time zone offset" do
+      let(:metadata) { { "created_at" => "2026-05-12T10:00:00" } }
+
+      it "is interpreted as UTC regardless of the local time zone" do
+        with_tz("Asia/Tokyo") do
+          expect(subject.created_at).to eq(Time.utc(2026, 5, 12, 10, 0, 0))
+        end
+      end
+    end
+
+    context "when created_at has an explicit offset" do
+      let(:metadata) { { "created_at" => "2026-05-12T10:00:00+02:00" } }
+
+      it "keeps the offset" do
+        expect(subject.created_at).to eq(Time.utc(2026, 5, 12, 8, 0, 0))
       end
     end
 

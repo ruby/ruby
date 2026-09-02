@@ -6,6 +6,7 @@ require 'fileutils'
 require "rbconfig"
 require "find"
 require "tempfile"
+require_relative "../lib/mkmf/depend"
 
 module SyncDefaultGems
   include FileUtils
@@ -21,6 +22,7 @@ module SyncDefaultGems
   # exclude: [ "fnmatch_pattern_after_mapping", ... ]
   Repository = Data.define(:upstream, :branch, :mappings, :exclude) do
     def excluded?(newpath)
+      return true if newpath.end_with?(*%w".a .bundle .dll .dylib .so .o .obj")
       p = newpath
       until p == "."
         return true if exclude.any? {|pat| File.fnmatch?(pat, p, File::FNM_PATHNAME|File::FNM_EXTGLOB)}
@@ -45,7 +47,6 @@ module SyncDefaultGems
 
   def repo((upstream, branch), mappings, exclude: [])
     branch ||= CLASSICAL_DEFAULT_BRANCH
-    exclude += ["ext/**/depend"]
     Repository.new(upstream:, branch:, mappings:, exclude:)
   end
 
@@ -78,6 +79,8 @@ module SyncDefaultGems
       ["regsyntax.c", "regsyntax.c"],
       ["onigmo.h", "include/ruby/onigmo.h"],
       ["enc", "enc"],
+    ], exclude: [
+      "encoding.c",
     ]),
     "io-console": repo("ruby/io-console", [
       ["ext/io/console", "ext/io/console"],
@@ -114,8 +117,6 @@ module SyncDefaultGems
       ["lib", "ext/date/lib"],
       ["test/date", "test/date"],
       ["date.gemspec", "ext/date/date.gemspec"],
-    ], exclude: [
-      "ext/date/lib/date_core.bundle",
     ]),
     delegate: lib("ruby/delegate"),
     did_you_mean: repo("ruby/did_you_mean", [
@@ -193,7 +194,6 @@ module SyncDefaultGems
       ["History.md", "ext/openssl/History.md"],
     ], exclude: [
       "test/openssl/envutil.rb",
-      "ext/openssl/depend",
     ]),
     optparse: lib("ruby/optparse", gemspec_in_subdir: true).tap {
       it.mappings << ["doc/optparse", "doc/optparse"]
@@ -227,7 +227,6 @@ module SyncDefaultGems
       "ext/psych/lib/org",
       "ext/psych/lib/psych.jar",
       "ext/psych/lib/psych_jars.rb",
-      "ext/psych/lib/psych.{bundle,so}",
       "ext/psych/lib/2.*",
       "ext/psych/yaml/LICENSE",
       "ext/psych/.gitignore",
@@ -304,6 +303,10 @@ module SyncDefaultGems
       ["ext/zlib", "ext/zlib"],
       ["test/zlib", "test/zlib"],
       ["zlib.gemspec", "ext/zlib/zlib.gemspec"],
+    ]),
+    "test-unit-ruby-core":repo("ruby/test-unit-ruby-core", [
+      ["lib", "tool/lib"],
+      ["test", "tool/test"],
     ]),
   }.transform_keys(&:to_s)
 
@@ -391,6 +394,23 @@ module SyncDefaultGems
     end
   end
 
+  def minimize_dependencies(gem)
+    files = REPOSITORIES[gem].mappings.flat_map do |_src, dst|
+      if File.file?(dst)
+        File.basename(dst) == "depend" ? [dst] : []
+      elsif File.directory?(dst)
+        Dir.glob("#{dst}/**/depend")
+      else
+        []
+      end
+    end.uniq
+    return if files.empty?
+
+    MakeMakefile::Depend.new(root: Dir.pwd).run(
+      files, mode: :inplace, sources: true,
+    )
+  end
+
   # We usually don't use this. Please consider using #sync_default_gems_with_commits instead.
   def sync_default_gems(gem)
     config = REPOSITORIES[gem]
@@ -434,6 +454,7 @@ module SyncDefaultGems
     if gem == "rubygems"
       rubygems_do_fixup
     end
+    minimize_dependencies(gem)
 
     check_prerelease_version(gem)
 
@@ -649,6 +670,7 @@ module SyncDefaultGems
       if gem == "rubygems"
         rubygems_do_fixup
       end
+      minimize_dependencies(gem)
       replace_rdoc_ref_all_full
     end
 

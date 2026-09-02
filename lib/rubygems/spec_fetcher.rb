@@ -82,13 +82,16 @@ class Gem::SpecFetcher
   # Find and fetch gem name tuples that match +dependency+.
   #
   # If +matching_platform+ is false, gems for all platforms are returned.
+  #
+  # +type+ overrides the index type derived from +dependency+.  See
+  # #available_specs for the list of types.
 
-  def search_for_dependency(dependency, matching_platform = true)
+  def search_for_dependency(dependency, matching_platform = true, type: nil)
     found = {}
 
     rejected_specs = {}
 
-    list, errors = available_specs(dependency.identity)
+    list, errors = available_specs(type || dependency.identity)
 
     list.each do |source, specs|
       if dependency.name.is_a?(String) && specs.respond_to?(:bsearch)

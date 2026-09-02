@@ -1108,28 +1108,45 @@ static VALUE statx_birthtime(const rb_io_stat_data *st);
 
 /*
  *  call-seq:
- *    atime -> new_time
+ *    atime -> time
  *
  * Returns a new Time object containing the access time
  * of the object represented by +self+
  * at the time +self+ was created;
- * see {Snapshot}[rdoc-ref:File::Stat@Snapshot]:
+ * see {Snapshot}[rdoc-ref:File::Stat@Snapshot].
+ * See {File System Timestamps}[rdoc-ref:file/timestamps.md].
+ *
+ * Access time for a file is established when it is created,
+ * and may be updated when the file content is read:
  *
  *   filepath = 't.tmp'
- *   File.write(filepath, 'foo')
- *   file = File.new(filepath, 'w')
- *   stat = File::Stat.new(filepath)
- *   file.atime     # => 2026-03-31 16:26:39.5913207 -0500
- *   stat.atime     # => 2026-03-31 16:26:39.5913207 -0500
- *   File.write(filepath, 'bar')
- *   file.atime     # => 2026-03-31 16:27:01.4981624 -0500  # Changed by access.
- *   stat.atime     # => 2026-03-31 16:26:39.5913207 -0500  # Unchanged by access.
- *   stat = File::Stat.new(filepath)
- *   stat.atime     # => 2026-03-31 16:27:01.4981624 -0500  # New access time.
+ *   File.exist?(filepath)            # => false
+ *   file = File.open(filepath, 'w+') # Create by writing; establishes access time.
+ *   file.atime                       # => 2026-08-14 11:55:55.436283939 -0500
+ *   stat0 = File::Stat.new(filepath) # Take snapshot.
+ *   stat0.atime                      # => 2026-08-14 11:55:55.436283939 -0500
+ *   file.read                        # Read file content; updates file access time.
+ *   file.atime                       # => 2026-08-14 11:56:22.74241085 -0500
+ *   stat0.atime                      # => 2026-08-14 11:55:55.436283939 -0500  # Not updated.
+ *   stat1 = File::Stat.new(filepath) # Take new snapshot.
+ *   stat1.atime                      # => 2026-08-14 11:56:22.74241085 -0500   # Updated.
+ *   # Clean up.
  *   file.close
  *   File.delete(filepath)
  *
- * See {File System Timestamps}[rdoc-ref:file/timestamps.md].
+ * Access time for a directory is established when it is created,
+ * and may be updated when its entries are read:
+ *
+ *   dirpath = 'foo'
+ *   File.exist?(dirpath)         # => false
+ *   FileUtils.cp_r('doc', 'foo') # Create directory by copying.
+ *   File.atime(dirpath)          # => 2026-08-15 14:10:04.832180372 -0500
+ *   stat = File::Stat.new(dirpath)
+ *   stat.atime                   # => 2026-08-15 14:10:04.832180372 -0500
+ *   # Clean up.
+ *   FileUtils.rm_rf(dirpath)
+ *   dir.close
+ *
  */
 
 static VALUE
@@ -1777,19 +1794,27 @@ rb_access(VALUE fname, int mode)
 
 /*
  * call-seq:
- *   File.directory?(path) -> true or false
+ *   File.directory?(object) -> true or false
  *
- * With string +object+ given, returns +true+ if +path+ is a string path
- * leading to a directory, or to a symbolic link to a directory; +false+ otherwise:
+ * Returns whether the given +object+ represents a directory;
+ * +object+ may be a string path or an IO object:
  *
- *   File.directory?('.')              # => true
- *   File.directory?('foo')            # => false
- *   File.symlink('.', 'dirlink')      # => 0
- *   File.directory?('dirlink')        # => true
- *   File.symlink('t,txt', 'filelink') # => 0
- *   File.directory?('filelink')       # => false
+ *   File.directory?('/etc')      # => true
+ *   File.directory?('lib')       # => true
+ *   File.directory?('README.md') # => false
+ *   File.directory?('nosuch')    # => false
+ *   File.directory?($stdin)      # => false
  *
- * Argument +path+ can be an IO object.
+ * Follows symbolic links:
+ *
+ *   dirpath = 'doc/dirname'
+ *   File.symlink('.', dirpath)
+ *   File.directory?(dirpath)     # => true
+ *   File.unlink(dirpath)
+ *   filepath = 't.tmp'
+ *   File.symlink('README.md', filepath)
+ *   File.directory?(filepath)    # => false
+ *   File.unlink(filepath)
  *
  */
 
@@ -1928,13 +1953,19 @@ rb_file_socket_p(VALUE obj, VALUE fname)
 
 /*
  * call-seq:
- *   File.blockdev?(filepath) -> true or false
+ *   File.blockdev?(object) -> true or false
  *
- * Returns +true+ if +filepath+ points to a block device, +false+ otherwise:
+ * Returns whether +object+ (a path or IO object)
+ * represents a block device (i.e., a direct-access device):
  *
- *   File.blockdev?('/dev/sda1')       # => true
- *   File.blockdev?(File.new('t.tmp')) # => false
+ *   File.blockdev?('/dev/nvme0n1') # => true
+ *   File.blockdev?('/dev/loop0')   # => true
+ *   File.blockdev?('/dev/tty')     # => false
+ *   File.blockdev?('/dev/null')    # => false
+ *   File.blockdev?('nosuch')       # => false
+ *   File.blockdev?($stdin)         # => false
  *
+ * The returned value is filesystem-dependent; on Windows, always +false+.
  */
 
 static VALUE
@@ -1960,13 +1991,20 @@ rb_file_blockdev_p(VALUE obj, VALUE fname)
 
 /*
  * call-seq:
- *   File.chardev?(filepath) -> true or false
+ *   File.chardev?(object) -> true or false
  *
- * Returns +true+ if +filepath+ points to a character device, +false+ otherwise.
+ * Returns whether +object+ (a path or IO object)
+ * represents a character device (i.e., a sequential-access device):
  *
- *   File.chardev?($stdin)     # => true
- *   File.chardev?('t.txt')     # => false
+ *   File.chardev?('/dev/tty')     # => true
+ *   File.chardev?('/dev/null')    # => true
+ *   File.chardev?($stdin)         # => true
+ *   File.chardev?('/dev/nvme0n1') # => false
+ *   File.chardev?('/dev/loop0')   # => false
+ *   File.chardev?('nosuch')       # => false
  *
+ *
+ * The returned value is filesystem-dependent; on Windows, always +false+.
  */
 static VALUE
 rb_file_chardev_p(VALUE obj, VALUE fname)
@@ -1985,13 +2023,22 @@ rb_file_chardev_p(VALUE obj, VALUE fname)
 
 /*
  * call-seq:
- *    File.exist?(file_name)    ->  true or false
+ *   File.exist?(object) -> true or false
  *
- * Return <code>true</code> if the named file exists.
+ * Return whether the specified +object+, a string path or IO object, exists:
  *
- * _file_name_ can be an IO object.
+ *   # String paths.
+ *   File.exist?('README.md') # => true
+ *   File.exist?('.')         # => true
+ *   filepath = 't.tmp'
+ *   File.exist?(filepath)    # => false
+ *   File.write(filepath, 'foo')
+ *   File.exist?(filepath)    # => true
+ *   # File (IO object).
+ *   file = File.new(filepath)
+ *   File.exist?(file)        # => true
+ *   file.close               # Clean up.
  *
- * "file exists" means that stat() or fstat() system call is successful.
  */
 
 static VALUE
@@ -2141,17 +2188,36 @@ rb_file_world_writable_p(VALUE obj, VALUE fname)
 
 /*
  * call-seq:
- *    File.executable?(file_name)   -> true or false
+ *   File.executable?(path) -> true or false
  *
- * Returns <code>true</code> if the named file is executable by the effective
- * user and group id of this process. See eaccess(3).
+ * Returns whether the filesystem entry at the given string +path+
+ * exists and is executable.
  *
- * Windows does not support execute permissions separately from read
- * permissions. On Windows, a file is only considered executable if it ends in
- * .bat, .cmd, .com, or .exe.
+ * On Windows, the entry is executable if its path has file extension
+ * +.bat+, +.cmd+, +.com+, or +.exe+:
  *
- * Note that some OS-level security features may cause this to return true
- * even though the file is not executable by the effective user/group.
+ *   File.executable?('win32/rtname.cmd') # => true
+ *   File.executable?('win32/rtname')     # => false
+ *   File.executable?('win32/nosuch.cmd') # => false
+ *
+ * On other systems, the entry is executable if it has the execute/search
+ * permission for the effective user and group id of the current process;
+ * see {Permissions}[rdoc-ref:file/filesystem_modes.md@Permissions].
+ *
+ * These examples use
+ * a {helper method}[rdoc-ref:file/filesystem_modes.md@Helper+Method], +mode+,
+ * that displays a mode both in octal digits and in characters:
+ *
+ *   File.executable?('.')           # => true
+ *   mode('.')                       # => "040775 drwxrwxr-x"
+ *   File.executable?('bin/gem')     # => true
+ *   mode('bin/gem')                 # => "100775 -rwxrwxr-x"
+ *   File.executable?('/etc/passwd') # => false
+ *   mode('/etc/passwd')             # => "100644 -rw-r--r--"
+ *   File.executable?('nosuch')      # => false
+ *
+ * Note that some filesystem settings may cause this method to return +true+
+ * even though the entry is not executable by the effective user/group.
  */
 
 static VALUE
@@ -2187,14 +2253,25 @@ rb_file_executable_real_p(VALUE obj, VALUE fname)
 
 /*
  * call-seq:
- *    File.file?(file) -> true or false
+ *   File.file?(object) -> true or false
  *
- * Returns +true+ if the named +file+ exists and is a regular file.
+ * Returns whether the given +object+, a string path or IO object,
+ * represents a filesystem entry that exists and is a regular file;
+ * see File.ftype:
  *
- * +file+ can be an IO object.
+ *   # Paths.
+ *   File.file?('README.md')     # => true
+ *   File.file?('doc/')     # => false
+ *   File.file?('nosuch')     # => false
+ *   # IO objects.
+ *   file = File.new('README.md')
+ *   File.file?(file)     # => true
+ *   dir = Dir.new('doc/')
+ *   File.file?(dir)     # => false
+ *   # Clean up.
+ *   file.close
+ *   dir.close
  *
- * If the +file+ argument is a symbolic link, it will resolve the symbolic link
- * and use the file referenced by the link.
  */
 
 static VALUE
@@ -2208,12 +2285,39 @@ rb_file_file_p(VALUE obj, VALUE fname)
 
 /*
  * call-seq:
- *    File.zero?(file_name)   -> true or false
+ *   File.empty?(object) -> true or false
+ *   File.zero?(object) -> true or false
  *
- * Returns <code>true</code> if the named file exists and has
- * a zero size.
+ * Returns whether the given +object+ exists and has size zero.
  *
- * _file_name_ can be an IO object.
+ * The given +object+ may be the path to a directory (possibly non-existent):
+ *
+ *    dirpath = 'foo'
+ *    File.empty?(dirpath)       # => false  # Directory does not exist.
+ *    dir = Dir.mkdir(dirpath)
+ *    # The directory size is filesystem-dependent;
+ *    # for a directory with no children, may or may not be zero.
+ *    File.size?(dirpath)        # => 4096
+ *    File.empty?(dirpath)       # => false
+ *
+ * The given +object+ may be the path to a file (possibly non-existent):
+ *
+ *    filepath = File.join(dirpath, 't.tmp')
+ *    File.empty?(filepath)      # => false  # File does not exist.
+ *    File.write(filepath, '')
+ *    File.size(filepath)        # => 0
+ *    File.empty?(filepath)      # => true   # File exists; size zero.
+ *    File.size?(dirpath)        # => 4096
+ *    File.empty?(dirpath)       # => false
+ *    File.write(filepath, 'bar')
+ *    File.size(filepath)        # => 3
+ *    File.empty?(filepath)      # => false  # File exists; size non-zero.
+ *    FileUtils.rm_rf(dirpath)   # Clean up.
+ *
+ * The given +object+ may be an IO object:
+ *
+ *   File.empty?($stdin)         # => true
+ *
  */
 
 static VALUE
@@ -2378,21 +2482,29 @@ rb_file_sticky_p(VALUE obj, VALUE fname)
 
 /*
  * call-seq:
- *   File.identical?(file_1, file_2)   ->  true or false
+ *   File.identical?(object_0, object_1) -> true or false
  *
- * Returns <code>true</code> if the named files are identical.
+ * Returns whether the given objects represent filesystem entries that are identical;
+ * each object may be a string path or an IO object:
  *
- * _file_1_ and _file_2_ can be an IO object.
+ *   # Paths.
+ *   File.identical?('README.md', 'README.md')   # => true  # Same path.
+ *   File.identical?('README.md', './README.md') # => true  # Same entry.
+ *   File.identical?('.', '.')                   # => true  # Directory.
+ *   File.identical?('README.md', 'LEGAL')       # => false
+ *   File.identical?('README.md', 'nosuch')      # => false # Non-existent entry.
+ *   # Links and File object.
+ *   File.link('README.md', 'link')              # Symbolic link.
+ *   File.symlink('README.md', 'symlink')        # Hard link.
+ *   file = File.open('README.md', 'r')          # File object.
+ *   File.identical?('README.md', 'link')        # => true
+ *   File.identical?('README.md', 'symlink')     # => true
+ *   File.identical?('README.md', file)          # => true
+ *   # Clean up.
+ *   File.unlink('link')
+ *   File.unlink('symlink')
+ *   file.close
  *
- *     open("a", "w") {}
- *     p File.identical?("a", "a")      #=> true
- *     p File.identical?("a", "./a")    #=> true
- *     File.link("a", "b")
- *     p File.identical?("a", "b")      #=> true
- *     File.symlink("a", "c")
- *     p File.identical?("a", "c")      #=> true
- *     open("d", "w") {}
- *     p File.identical?("a", "d")      #=> false
  */
 
 static VALUE
@@ -2524,25 +2636,42 @@ rb_file_s_ftype(VALUE klass, VALUE fname)
 
 /*
  *  call-seq:
- *    File.atime(object) -> new_time
+ *    File.atime(object) -> time
  *
  * Returns a new Time object containing the time of the most recent
- * access (read or write) to the object,
- * which may be a string filepath or dirpath, or a File or Dir object:
+ * access to the given +object+.
+ * See {File System Timestamps}[rdoc-ref:file/timestamps.md].
+ *
+ * Access time for a file is established when it is created,
+ * and may be updated when the file content is read:
  *
  *   filepath = 't.tmp'
- *   File.exist?(filepath)             # => false
- *   File.atime(filepath)              # Raises Errno::ENOENT.
- *   File.write(filepath, 'foo')
- *   File.atime(filepath)              # => 2026-03-31 16:39:37.9290772 -0500
- *   File.write(filepath, 'bar')
- *   File.atime(filepath)              # => 2026-03-31 16:39:57.7710876 -0500
+ *   File.exist?(filepath)       # => false
+ *   File.atime(filepath)        # Raises Errno::ENOENT.
+ *   File.write(filepath, 'foo') # Create by writing; establishes access time.
+ *   File.atime(filepath)        # => 2026-08-14 10:02:39.721407762 -0500
+ *   File.read(filepath)         # Read file content; updates access time.
+ *   File.atime(filepath)        # => 2026-08-14 10:03:02.520494995 -0500
+ *   File.delete(filepath)       # Clean up.
  *
- *   File.atime('.')                   # => 2026-03-31 16:47:49.0970483 -0500
+ * Access time for a directory is established when it is created,
+ * and may updated when its entries are read:
+ *
+ *   dirpath = 'foo'
+ *   File.exist?(dirpath)         # => false
+ *   File.atime(dirpath)          # Raises Errno::ENOENT.
+ *   FileUtils.cp_r('doc', 'foo') # Create by copying; establishes access time.
+ *   File.atime(dirpath)          # => 2026-08-14 10:32:59.229951125 -0500
+ *   Dir.entries(dirpath)         # Read directory entries; updates access time.
+ *   File.atime(dirpath)          # => 2026-08-14 10:33:05.679978581 -0500
+ *   FileUtils.rm_rf(dirpath)     # Clean up.
+ *
+ * Argument +object+ may be a string path (as above),
+ * a File object, or a Dir object:
+ *
  *   File.atime(File.new('README.md')) # => 2026-03-31 11:15:27.8215934 -0500
  *   File.atime(Dir.new('.'))          # => 2026-03-31 12:39:45.5910591 -0500
  *
- * See {File System Timestamps}[rdoc-ref:file/timestamps.md].
  */
 
 static VALUE
@@ -2560,22 +2689,25 @@ rb_file_s_atime(VALUE klass, VALUE fname)
 
 /*
  *  call-seq:
- *    atime -> new_time
+ *    atime -> time
  *
  * Returns a new Time object containing the time of the most recent
- * access (read or write) to the file represented by +self+:
+ * access to +self+.
+ * See {File System Timestamps}[rdoc-ref:file/timestamps.md].
+ *
+ * Access time for a file is established when it is created,
+ * and may be updated when the file content is read:
  *
  *   filepath = 't.tmp'
- *   file = File.new(filepath, 'a+')
- *   file.atime # => 2026-03-31 17:11:27.7285397 -0500
- *   file.write('foo')
- *   file.atime # => 2026-03-31 17:11:27.7285397 -0500  # Unchanged; not yet written.
- *   file.flush
- *   file.atime # => 2026-03-31 17:12:11.3408054 -0500  # Changed; now written.
+ *   File.exist?(filepath)            # => false
+ *   file = File.open(filepath, 'w+') # Create by opening; establishes access time.
+ *   file.atime                       # => 2026-08-14 11:15:48.422773736 -0500
+ *   file.read                        # Read file content; updates access time.
+ *   file.atime                       # => 2026-08-14 11:16:10.697861103 -0500
+ *   # Clean up.
  *   file.close
- *   File.delete(filename)
+ *   File.delete(filepath)
  *
- * See {File System Timestamps}[rdoc-ref:file/timestamps.md].
  */
 
 static VALUE
@@ -2641,17 +2773,36 @@ rb_file_mtime(VALUE obj)
 
 /*
  *  call-seq:
- *     File.ctime(file_name)  -> time
+ *     File.ctime(object) -> time
  *
- *  Returns the change time for the named file (the time at which
- *  directory information about the file was changed, not the file
- *  itself).
+ *  Returns a Time object, based on the given +object+,
+ *  which is a string path or an IO object.
  *
- *  _file_name_ can be an IO object.
+ *  On Windows, returns the #birthtime for +object+.
  *
- *  Note that on Windows (NTFS), returns creation time (birth time).
+ *  On other systems,
+ *  returns a new Time object containing the time of the most recent
+ *  metadata change to the entry represented by +object+;
+ *  see {File System Timestamps}[rdoc-ref:file/timestamps.md]:
  *
- *     File.ctime("testfile")   #=> Wed Apr 09 08:53:13 CDT 2003
+ *    # Create directory; directory ctime established.
+ *    dirpath = 'doc/foo'
+ *    Dir.mkdir(dirpath)
+ *    File.ctime(dirpath)                     # => 2026-08-23 10:43:05.473815913 -0500
+ *    # Create file therein; file ctime established; directory ctime updated.
+ *    filepath = File.join(dirpath, 't.tmp')  # => "doc/foo/t.tmp"
+ *    File.write(filepath, 'foo')
+ *    File.ctime(filepath)                    # => 2026-08-23 10:43:37.560429379 -0500
+ *    File.ctime(dirpath)                     # => 2026-08-23 10:43:37.560429379 -0500
+ *    # Write file; file ctime updated; directory ctime not updated.
+ *    File.write(filepath, 'bar')
+ *    File.ctime(filepath)                    # => 2026-08-23 10:46:49.299180833 -0500
+ *    File.ctime(dirpath)                     # => 2026-08-23 10:43:37.560429379 -0500
+ *    # Read file; neither ctime updated.
+ *    File.read(filepath)
+ *    File.ctime(filepath)                    # => 2026-08-23 10:46:49.299180833 -0500
+ *    File.ctime(dirpath)                     # => 2026-08-23 10:43:37.560429379 -0500
+ *    FileUtils.rm_rf(dirpath)                # Clean up.
  *
  */
 
@@ -2697,21 +2848,27 @@ rb_file_ctime(VALUE obj)
 #if defined(HAVE_STAT_BIRTHTIME)
 /*
  *  call-seq:
- *     File.birthtime(entry_path) -> new_time
+ *    File.birthtime(path) -> time
  *
  * Returns a new Time object containing the create time
- * of the entry at the given +path+:
+ * of the entry at the given +path+;
+ * see {File System Timestamps}[rdoc-ref:file/timestamps.md]:
  *
- *   path = 't.tmp'
- *   File.birthtime(path) # Raises Errno::ENOENT: No such file or directory
- *   File.write(path, 'foo')
- *   File.birthtime(path) # => 2026-04-14 11:10:43.2891695 -0500
- *   File.write(path, 'bar')
- *   File.birthtime(path) # => 2026-04-14 11:10:43.2891695 -0500
- *   File.delete(path)
- *   File.birthtime(path) # Raises Errno::ENOENT: No such file or directory
+ *   filepath = 't.tmp'
+ *   File.birthtime(filepath) # Raises Errno::ENOENT: No such file or directory
+ *   File.write(filepath, 'foo')
+ *   File.birthtime(filepath) # => 2026-04-14 11:10:43.2891695 -0500
+ *   File.write(filepath, 'bar')
+ *   File.birthtime(filepath) # => 2026-04-14 11:10:43.2891695 -0500
+ *   File.delete(filepath)
+ *   File.birthtime(filepath) # Raises Errno::ENOENT: No such file or directory.
  *
- * See {File System Timestamps}[rdoc-ref:file/timestamps.md].
+ *   dirpath = 'tmp'
+ *   Dir.mkdir(dirpath)
+ *   File.birthtime(dirpath) # => 2026-08-21 13:42:19.389324172 -0500
+ *   Dir.rmdir(dirpath)
+ *   File.birthtime(dirpath) # Raises Errno::ENOENT: No such file or directory.
+ *
  */
 
 VALUE
@@ -2836,15 +2993,29 @@ chmod_internal(const char *path, void *mode)
 
 /*
  *  call-seq:
- *     File.chmod(mode_int, file_name, ... )  ->  integer
+ *    File.chmod(mode, *paths) -> integer
  *
- *  Changes permission bits on the named file(s) to the bit pattern
- *  represented by <i>mode_int</i>. Actual effects are operating system
- *  dependent (see the beginning of this section). On Unix systems, see
- *  <code>chmod(2)</code> for details. Returns the number of files
- *  processed.
+ *  Changes the modes of each of the entries at each the given +paths+;
+ *  returns the count of the given +paths+.
+ *  See {Filesystem Modes}[rdoc-ref:file/filesystem_modes.md]
+ *  and especially {Setting a Mode}[rdoc-ref:file/filesystem_modes.md@Setting+a+Mode].
  *
- *     File.chmod(0644, "testfile", "out")   #=> 2
+ *  These examples use
+ *  a {helper method}[rdoc-ref:file/filesystem_modes.md@Helper+Method], +mode+,
+ *  that displays a mode both in octal digits and in characters:
+ *
+ *    dirpath = 'doc/foo'
+ *    filepath = File.join(dirpath, 't.tmp')
+ *    Dir.mkdir(dirpath)          # Create directory.
+ *    mode(dirpath)               # => "040775 drwxrwxr-x"
+ *    File.write(filepath, 'bar') # Create file.
+ *    mode(filepath)              # => "100664 -rw-rw-r--"
+ *    File.chmod(0755, filepath)  # Change file mode.
+ *    mode(filepath)              # => "100755 -rwxr-xr-x"
+ *    File.chmod(0664, dirpath)   # Change directory mode.
+ *    mode(dirpath)               # => "040664 drw-rw-r--"
+ *    FileUtils.rm_rf(dirpath)    # Clean up.
+ *
  */
 
 static VALUE
@@ -2883,15 +3054,25 @@ rb_fchmod(struct rb_io* io, mode_t mode)
 
 /*
  *  call-seq:
- *     file.chmod(mode_int)   -> 0
+ *    chmod(mode) -> 0
  *
- *  Changes permission bits on <i>file</i> to the bit pattern
- *  represented by <i>mode_int</i>. Actual effects are platform
- *  dependent; on Unix systems, see <code>chmod(2)</code> for details.
- *  Follows symbolic links. Also see File#lchmod.
+ *  Changes the mode of +self+;  returns '0'.
+ *  See {Filesystem Modes}[rdoc-ref:file/filesystem_modes.md]
+ *  and especially {Setting a Mode}[rdoc-ref:file/filesystem_modes.md@Setting+a+Mode].
  *
- *     f = File.new("out", "w");
- *     f.chmod(0644)   #=> 0
+ *  These examples use
+ *  a {helper method}[rdoc-ref:file/filesystem_modes.md@Helper+Method], +mode+,
+ *  that displays a mode both in octal digits and in characters:
+ *
+ *    filepath = 'doc/t.tmp'
+ *    File.write(filepath, 'foo')
+ *    file = File.new(filepath)
+ *    mode(filepath)      # => "100664 -rw-rw-r--"
+ *    file.chmod(0775)
+ *    mode(filepath)      # => "100775 -rwxrwxr-x"
+ *    file.close
+ *    File.delete(filepath)
+ *
  */
 
 static VALUE
@@ -3004,16 +3185,46 @@ chown_internal(const char *path, void *arg)
 
 /*
  *  call-seq:
- *     File.chown(owner_int, group_int, file_name, ...)  ->  integer
+ *    File.chown(owner_int, group_int, *paths) -> integer
  *
- *  Changes the owner and group of the named file(s) to the given
- *  numeric owner and group id's. Only a process with superuser
- *  privileges may change the owner of a file. The current owner of a
- *  file may change the file's group to any group to which the owner
- *  belongs. A <code>nil</code> or -1 owner or group id is ignored.
- *  Returns the number of files processed.
+ *  Changes the owner and group of the entry at each of the given +paths+;
+ *  returns the count of the given +paths+:
  *
- *     File.chown(nil, 100, "testfile")
+ *    # Super user; all privileges.
+ *    Process.uid                               => 0
+ *    Process.gid                               => 0
+ *    # Create a directory and a file.
+ *    dirpath = 'doc/foo'
+ *    Dir.mkdir(dirpath)
+ *    filepath = 't.tmp'
+ *    File.write(filepath, 'foo')
+ *    # Get their user and group ids.
+ *    dirstat = File::Stat.new(dirpath)
+ *    dirstat.uid                               => 0
+ *    dirstat.gid                               => 0
+ *    filestat = File::Stat.new(filepath)
+ *    filestat.uid                              => 0
+ *    filestat.gid                              => 0
+ *    # Change ownership of both.
+ *    File.chown(1000, 1000, filepath, dirpath) => 2
+ *    dirstat = File::Stat.new(dirpath)
+ *    dirstat.uid                               => 1000
+ *    dirstat.gid                               => 1000
+ *    filestat = File::Stat.new(filepath)
+ *    filestat.uid                              => 1000
+ *    filestat.gid                              => 1000
+ *    # Clean up.
+ *    Dir.rmdir(dirpath)
+ *    File.delete(filepath)
+ *
+ *  Notes:
+ *
+ *  - On Windows, the owner and group are not changed.
+ *  - Only a process with superuser privileges can change the owner of an entry.
+ *  - The owner of an entry can change its group to any group
+ *    to which the owner belongs.
+ *  - A +nil+ or +-1+ owner or group id is ignored.
+ *  - The method follows symbolic links to the target entry.
  *
  */
 
@@ -3654,18 +3865,18 @@ unlink_internal(const char *path, void *arg)
 
 /*
  *  call-seq:
- *     File.delete(file_name, ...)  -> integer
- *     File.unlink(file_name, ...)  -> integer
+ *    File.delete(*filepaths) -> integer
+ *    File.unlink(*filepaths) -> integer
  *
- *  Deletes the named files, returning the number of names
- *  passed as arguments. Raises an exception on any error.
- *  Since the underlying implementation relies on the
- *  <code>unlink(2)</code> system call, the type of
- *  exception raised depends on its error type (see
- *  https://man7.org/linux/man-pages/man2/unlink.2.html) and has the form of
- *  e.g. Errno::ENOENT.
+ *  Removes the file entry at each path in +filepaths+;
+ *  returns the number of removed files.
  *
- *  See also Dir::rmdir.
+ *    File.write('t.tmp', 'foo')
+ *    File.write('u.tmp', 'bar')
+ *    File.delete('t.tmp', 'u.tmp') # => 2
+ *
+ *  Raises an exception on any error;
+ *  some files may have been deleted before the path causing the error.
  */
 
 static VALUE
@@ -5327,11 +5538,11 @@ ruby_enc_find_basename(const char *name, long *baselen, long *alllen, rb_encodin
 
 /*
  *  call-seq:
- *    File.basename(path, suffix = '') -> new_string
+ *    File.basename(path, suffix = '') -> string
  *
- *  Returns a new string containing all or part of the last entry of the given +path+.
- *  Entries are delimited by the value of constant File::SEPARATOR
- *  and, if non-nil, the value of constant File::ALT_SEPARATOR.
+ *  Returns a new string containing all or part of the last component of the given +path+.
+ *  Components are delimited by the value of constant File::SEPARATOR
+ *  and, if non-+nil+, the value of constant File::ALT_SEPARATOR.
  *
  *  When +suffix+ is the empty string <tt>''</tt>,
  *  returns all of the last entry:
@@ -5411,21 +5622,22 @@ static VALUE rb_file_dirname_n(VALUE fname, int n);
 
 /*
  *  call-seq:
- *     File.dirname(file_name, level = 1)  ->  dir_name
+ *    File.dirname(path, count = 1) -> string
  *
- *  Returns all components of the filename given in <i>file_name</i>
- *  except the last one (after first stripping trailing separators).
- *  The filename can be formed using both File::SEPARATOR and
- *  File::ALT_SEPARATOR as the separator when File::ALT_SEPARATOR is
- *  not <code>nil</code>.
+ *  Returns a string path containing all but the last +count+ components
+ *  of the given +path+:
  *
- *     File.dirname("/home/gumby/work/ruby.rb")   #=> "/home/gumby/work"
+ *    File.dirname('/usr/lib/linux')     # => "/usr/lib"
+ *    File.dirname('/usr')               # => "/"
+ *    File.dirname('/')                  # => "/"
+ *    File.dirname('lib/')               # => "."
+ *    File.dirname('nosuch')             # => "."
+ *    File.dirname('/usr/lib/linux', 2)  # => "/usr"
+ *    File.dirname('/usr/lib/linux', 20) # => "/"
+ *    File.dirname('/usr/lib/linux', 0)  # => "/usr/lib/linux"
  *
- *  If +level+ is given, removes the last +level+ components, not only
- *  one.
+ *  Components are delimited by File::SEPARATOR and, if non-+nil+, File::ALT_SEPARATOR.
  *
- *     File.dirname("/home/gumby/work/ruby.rb", 2) #=> "/home/gumby"
- *     File.dirname("/home/gumby/work/ruby.rb", 4) #=> "/"
  */
 
 static VALUE
@@ -6817,16 +7029,36 @@ rb_stat_ww(VALUE obj)
 }
 
 /*
- *  call-seq:
- *     stat.executable?    -> true or false
+ * call-seq:
+ *   executable? -> true or false
  *
- *  Returns <code>true</code> if <i>stat</i> is executable or if the
- *  operating system doesn't distinguish executable files from
- *  nonexecutable files. The tests are made using the effective owner of
- *  the process.
+ * Returns whether the filesystem entry represented by +self+
+ * exists and is executable;
+ * raises Errno::ENOENT if the entry does not exist.
  *
- *     File.stat("testfile").executable?   #=> false
+ * On Windows, the entry is executable if its path has file extension
+ * +.bat+, +.cmd+, +.com+, or +.exe+:
  *
+ *   File.stat('win32/rtname.cmd').executable? # => true
+ *   File.stat('win32/file.c').executable?     # => false
+ *
+ * On other systems, the entry is executable if it has the execute/search
+ * permission for the effective user and group id of the current process;
+ * see {Permissions}[rdoc-ref:file/filesystem_modes.md@Permissions].
+ *
+ * These examples use
+ * a {helper method}[rdoc-ref:file/filesystem_modes.md@Helper+Method], +mode+,
+ * that displays a mode both in octal digits and in characters:
+ *
+ *   File.stat('.').executable?           # => true
+ *   mode('.')                            # => "040775 drwxrwxr-x"
+ *   File.stat('bin/gem').executable?     # => true
+ *   mode('bin/gem')                      # => "100775 -rwxrwxr-x"
+ *   File.stat('/etc/passwd').executable? # => false
+ *   mode('/etc/passwd')                  # => "100644 -rw-r--r--"
+ *
+ * Note that some filesystem settings may cause this method to return +true+
+ * even though the entry is not executable by the effective user/group.
  */
 
 static VALUE
@@ -6887,12 +7119,16 @@ rb_stat_X(VALUE obj)
 
 /*
  *  call-seq:
- *     stat.file?    -> true or false
+ *    file? -> true or false
  *
- *  Returns <code>true</code> if <i>stat</i> is a regular file (not
- *  a device file, pipe, socket, etc.).
+ * Returns whether +self+ represents a filesystem entry that exists and is a regular file;
+ * see File::Stat.ftype:
  *
- *     File.stat("testfile").file?   #=> true
+ *   # Paths.
+ *   File.stat('README.md').file?     # => true
+ *   File.stat('doc/').file?     # => false
+ *   File.stat('nosuch').file? # Raises Errno::ENOENT: No such file or directory.
+ *
  *
  */
 

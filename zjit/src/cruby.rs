@@ -90,7 +90,7 @@ use std::os::raw::{c_char, c_int, c_long, c_uint};
 use std::panic::{catch_unwind, UnwindSafe};
 use std::ptr::NonNull;
 
-use crate::cast::IntoUsize as _;
+use crate::cast::IntoUsize;
 
 // We check that we can do this with the configure script and a couple of
 // static asserts. u64 and not usize to play nice with lowering to x86.
@@ -102,6 +102,7 @@ pub type RedefinitionFlag = u32;
 
 #[allow(unsafe_op_in_unsafe_fn)]
 #[allow(dead_code)]
+#[allow(non_snake_case)] // bindgen names bitfield raw accessors like `type__raw`
 #[allow(clippy::all)] // warning meant to help with reading; not useful for generated code
 mod autogened {
     use super::*;
@@ -121,6 +122,9 @@ unsafe extern "C" {
         me: *const rb_callable_method_entry_t,
         ci: *const rb_callinfo,
     ) -> *const rb_callable_method_entry_t;
+
+    pub fn rb_jit_iseq_mark_ep_escape_recorded(iseq: IseqPtr);
+    pub fn rb_jit_iseq_ep_escape_recorded_p(iseq: IseqPtr) -> bool;
 
     // Floats within range will be encoded without creating objects in the heap.
     // (Range is 0x3000000000000001 to 0x4fffffffffffffff (1.7272337110188893E-77 to 2.3158417847463237E+77).
@@ -202,6 +206,27 @@ pub use rb_vm_ci_flag as vm_ci_flag;
 pub use rb_METHOD_ENTRY_VISI as METHOD_ENTRY_VISI;
 pub use rb_RCLASS_ORIGIN as RCLASS_ORIGIN;
 pub use rb_jit_fix_mod_fix as rb_fix_mod_fix;
+
+/// A YARV instruction opcode (`ruby_vminsn_type`), stored as a `u16` since there are only
+/// `VM_INSTRUCTION_SIZE` (~259) instructions. Keeps enums that embed an opcode (e.g.
+/// `SendFallbackReason::Uncategorized`) small.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct VmInsnType(u16);
+
+const _: () = assert!(VM_INSTRUCTION_SIZE <= u16::MAX as u32);
+
+impl From<ruby_vminsn_type> for VmInsnType {
+    fn from(opcode: ruby_vminsn_type) -> Self {
+        assert!(opcode < VM_INSTRUCTION_SIZE, "opcode {opcode} out of range for a YARV instruction");
+        Self(opcode as u16)
+    }
+}
+
+impl IntoUsize for VmInsnType {
+    fn to_usize(self) -> usize {
+        self.0.to_usize()
+    }
+}
 
 /// Helper so we can get a Rust string for insn_name()
 pub fn insn_name(opcode: usize) -> String {
@@ -814,7 +839,6 @@ impl IseqAccess for IseqPtr {
 
     /// The iseq's `outer_variables` table. See [`OuterVariables`].
     unsafe fn outer_variables(self) -> OuterVariables {
-        use crate::cast::IntoUsize;
         let field = unsafe { (*self).body.byte_add(ISEQ_BODY_OFFSET_OUTER_VARIABLES.to_usize()) } as *const *mut rb_id_table;
         OuterVariables(NonNull::new(unsafe { *field }))
     }
@@ -1240,7 +1264,7 @@ pub use manual_defs::*;
 pub mod test_utils {
     use std::{ptr::null, sync::Once};
 
-    use crate::{options::{rb_zjit_call_threshold, rb_zjit_prepare_options, set_call_threshold, DEFAULT_CALL_THRESHOLD}, state::{rb_zjit_entry, ZJITState}};
+    use crate::{options::{DEFAULT_CALL_THRESHOLD, rb_zjit_call_threshold, rb_zjit_prepare_options, set_call_threshold}, state::{ZJITState, rb_zjit_compiling_p, rb_zjit_entry}};
 
     use super::*;
 
@@ -1292,7 +1316,10 @@ pub mod test_utils {
         let zjit_entry = ZJITState::init();
 
         // Enable zjit_* instructions
-        unsafe { rb_zjit_entry = zjit_entry; }
+        unsafe {
+            rb_zjit_entry = zjit_entry;
+            rb_zjit_compiling_p = true;
+        }
     }
 
     /// Make sure the Ruby VM is set up and run a given callback with rb_protect()

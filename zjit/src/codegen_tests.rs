@@ -6,7 +6,7 @@ use crate::backend::lir::Assembler;
 use crate::codegen::max_iseq_versions;
 use crate::cruby::*;
 use crate::hir::{Insn, iseq_to_hir};
-use crate::options::{get_option, rb_zjit_prepare_options, set_call_threshold, set_inline_threshold, set_max_versions};
+use crate::options::{get_option, rb_zjit_prepare_options, set_call_threshold, set_inline_threshold, set_max_versions, set_mem_bytes};
 use crate::payload::IseqVersion;
 use crate::hir::tests::hir_build_tests::assert_contains_opcode;
 use crate::payload::*;
@@ -713,17 +713,49 @@ fn test_yield_inline_invocation_with_args() {
 }
 
 #[test]
-fn test_yield_with_too_many_args_for_lir() {
-    // `self` + six yield args don't fit in C argument registers, so the direct
-    // block invocation must be rejected instead of emitting an uncompilable CCall.
+fn test_yield_with_more_args_than_abi_registers() {
+    // `self` + eight yield args don't fit in C argument registers (6 on x86_64, 8 on
+    // arm64), so the direct block invocation passes the overflow arguments on the
+    // native stack.
     set_call_threshold(2);
     eval("
-        def foo = yield(1, 2, 3, 4, 5, 6)
-        def test = foo { |a, b, c, d, e, f| a + b + c + d + e + f }
+        def foo = yield(1, 2, 3, 4, 5, 6, 7, 8)
+        def test = foo { |a, b, c, d, e, f, g, h| a + b + c + d + e + f + g + h }
         test
         test
     ");
-    assert_snapshot!(assert_compiles("test"), @"21");
+    assert_snapshot!(assert_compiles("test"), @"36");
+}
+
+#[test]
+fn test_send_direct_with_more_args_than_abi_registers() {
+    // `self` + ten args don't fit in C argument registers (6 on x86_64, 8 on arm64),
+    // so the JIT-to-JIT call passes the overflow arguments on the native stack, and
+    // the callee's JIT entry loads them from above its frame.
+    set_call_threshold(2);
+    eval("
+        def callee(a, b, c, d, e, f, g, h, i, j) = [a, b, c, d, e, f, g, h, i, j]
+        def test = callee(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+        test
+        test
+    ");
+    assert_snapshot!(assert_compiles("test"), @"[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]");
+}
+
+#[test]
+fn test_send_direct_with_equal_args_beyond_abi_registers() {
+    // A pair of adjacent stack-passed arguments that are the same zero immediate
+    // (false) or the same register lowers to an STP with an identical register
+    // pair on arm64, e.g. `stp xzr, xzr`, which the assembler used to reject.
+    // On arm64, c_args[8] and c_args[9] (arguments h and i below) form a pair.
+    set_call_threshold(2);
+    eval("
+        def callee(a, b, c, d, e, f, g, h, i, j) = [a, b, c, d, e, f, g, h, i, j]
+        def test(x = 9) = [callee(1, 2, 3, 4, 5, 6, 7, false, false, 10), callee(1, 2, 3, 4, 5, 6, 7, x, x, 10)]
+        test
+        test
+    ");
+    assert_snapshot!(assert_compiles("test"), @"[[1, 2, 3, 4, 5, 6, 7, false, false, 10], [1, 2, 3, 4, 5, 6, 7, 9, 9, 10]]");
 }
 
 #[test]
@@ -795,6 +827,206 @@ fn test_yield_non_local_return() {
         test
     ");
     assert_snapshot!(assert_compiles_allowing_exits("test"), @"42");
+}
+
+#[test]
+fn test_throw_break_with_value_from_each() {
+    set_call_threshold(2);
+    eval("
+        def test(a) = a.each { |x| break x * 10 if x == 3 }
+        test([1, 2, 3, 4])
+        test([1, 2, 3, 4])
+    ");
+    assert_snapshot!(assert_compiles_allowing_exits("test([1, 2, 3, 4])"), @"30");
+}
+
+#[test]
+fn test_throw_no_break_returns_receiver() {
+    set_call_threshold(2);
+    eval("
+        def test(a) = a.each { |x| break x if x == 99 }
+        test([1, 2])
+        test([1, 2])
+    ");
+    assert_snapshot!(assert_compiles_allowing_exits("test([1, 2])"), @"[1, 2]");
+}
+
+#[test]
+fn test_throw_break_across_jit_to_jit_call() {
+    set_call_threshold(2);
+    eval("
+        def inner = yield
+        def outer = inner { break 7 }
+        def test = outer
+        test
+        test
+    ");
+    assert_snapshot!(assert_compiles_allowing_exits("test"), @"7");
+}
+
+#[test]
+fn test_throw_break_three_frames_deep() {
+    set_call_threshold(2);
+    eval("
+        def innermost(a) = a.each { |x| break x if x.even? }
+        def middle(a) = innermost(a)
+        def test(a) = middle(a)
+        test([1, 2, 3])
+        test([1, 2, 3])
+    ");
+    assert_snapshot!(assert_compiles_allowing_exits("test([1, 2, 3])"), @"2");
+}
+
+#[test]
+fn test_throw_break_value_used_by_caller() {
+    set_call_threshold(2);
+    eval("
+        def test(a)
+          v = a.each { |x| break x + 100 if x > 1 }
+          v.to_s
+        end
+        test([1, 2, 3])
+        test([1, 2, 3])
+    ");
+    assert_snapshot!(assert_compiles_allowing_exits("test([1, 2, 3])"), @r#""102""#);
+}
+
+#[test]
+fn test_throw_break_search_loop() {
+    set_call_threshold(2);
+    eval("
+        def test(a) = a.each_with_index { |x, i| break i if x == :b }
+        test([:a, :b, :c])
+        test([:a, :b, :c])
+    ");
+    assert_snapshot!(assert_compiles_allowing_exits("test([:a, :b, :c])"), @"1");
+}
+
+#[test]
+fn test_throw_break_runs_ensure() {
+    set_call_threshold(2);
+    eval("
+        def test(a)
+          log = []
+          r = a.each do |x|
+            begin
+              break x if x == 2
+            ensure
+              log << x
+            end
+          end
+          [r, log]
+        end
+        test([1, 2, 3])
+        test([1, 2, 3])
+    ");
+    assert_snapshot!(assert_compiles_allowing_exits("test([1, 2, 3])"), @"[2, [1, 2]]");
+}
+
+#[test]
+fn test_throw_return_from_proc() {
+    set_call_threshold(2);
+    eval("
+        def test
+          p = proc { return 5 }
+          p.call
+          99
+        end
+        test
+        test
+    ");
+    assert_snapshot!(assert_compiles_allowing_exits("test"), @"5");
+}
+
+#[test]
+fn test_throw_return_from_lambda() {
+    set_call_threshold(2);
+    eval("
+        def test
+          l = lambda { return 5 }
+          l.call + 1
+        end
+        test
+        test
+    ");
+    assert_snapshot!(assert_compiles_allowing_exits("test"), @"6");
+}
+
+#[test]
+fn test_throw_orphan_break_raises_local_jump_error() {
+    set_call_threshold(2);
+    eval("
+        def test
+          pr = proc { break 1 }
+          begin
+            pr.call
+          rescue LocalJumpError => e
+            e.class
+          end
+        end
+        test
+        test
+    ");
+    assert_snapshot!(assert_compiles_allowing_exits("test"), @"LocalJumpError");
+}
+
+#[test]
+fn test_throw_retry_in_rescue() {
+    set_call_threshold(2);
+    eval("
+        def test
+          tries = 0
+          begin
+            tries += 1
+            raise 'boom' if tries < 3
+            tries
+          rescue
+            retry
+          end
+        end
+        test
+        test
+    ");
+    assert_snapshot!(assert_compiles_allowing_exits("test"), @"3");
+}
+
+#[test]
+fn test_throw_next_with_ensure() {
+    set_call_threshold(2);
+    eval("
+        def test(a)
+          a.map do |x|
+            begin
+              next x * 2
+            ensure
+              nil
+            end
+          end
+        end
+        test([1, 2, 3])
+        test([1, 2, 3])
+    ");
+    assert_snapshot!(assert_compiles_allowing_exits("test([1, 2, 3])"), @"[2, 4, 6]");
+}
+
+#[test]
+fn test_throw_break_inner_loop_repeatedly() {
+    set_call_threshold(2);
+    eval("
+        def test(a)
+          sum = 0
+          a.each do |x|
+            a.each do |y|
+              break if y > 2
+              sum += x * y
+            end
+          end
+          sum
+        end
+        test([1, 2, 3])
+        test([1, 2, 3])
+    ");
+    assert_snapshot!(assert_compiles_allowing_exits("test([1, 2, 3])"), @"18");
 }
 
 #[test]
@@ -1071,6 +1303,41 @@ fn test_no_ep_escape_patch_point_after_send_does_not_repeat_send() {
     "#);
     assert_contains_opcode("test", YARVINSN_send);
     assert_snapshot!(assert_compiles_allowing_exits("[test, test, test]"), @"[1, 2, 3]");
+}
+
+#[test]
+fn test_no_ep_escape_side_exit_restores_locals_while_oom() {
+    // A regression test for stub compilation failures on OOM. Functions patched by NoEPEscape
+    // is unsafe to enter (FrameState uses without_locals() and doesn't spill the entry state),
+    // so even under OOM, the re-stub after invalidation must succeed.
+    set_mem_bytes(2 * 1024 * 1024);
+    set_inline_threshold(0);
+    set_call_threshold(2);
+    assert_snapshot!(inspect(r#"
+        class Foo
+          def initialize = @perm = 7
+          def callee(esc, local_to_spill = "spilled", perm = @perm)
+            binding if esc
+            local_to_spill
+          end
+        end
+        def kaller(foo, esc) = foo.callee(esc)
+
+        foo = Foo.new
+        300.times { kaller(foo, false) } # compile callee (with its NoEPEscape patch point) and the kaller->callee edge
+
+        # Fill the code region so the re-stub after the EP escape fails with OutOfMemory.
+        1000.times do |i|
+          body = (0...25).map { |k| "u#{k} = #{i} + #{k}; s += u#{k}" }.join("; ")
+          eval "def big#{i}(a = 1); s = 0; #{body}; s; end"
+        end
+        1000.times { |i| 2.times { send(:"big#{i}") } }
+
+        kaller(foo, true) # escape callee's EP; the kaller->callee re-stub OOMs
+        # Re-enter the patched callee. Each call must still return "spilled"; on the buggy
+        # build local_to_spill is read from a stale stack slot and comes back as junk.
+        300.times.all? { kaller(foo, false) == "spilled" }
+    "#), @"true");
 }
 
 #[test]
@@ -1495,12 +1762,14 @@ fn test_send_unexpected_keyword() {
 
 #[test]
 fn test_pos_optional_with_maybe_too_many_args() {
+    // The last call passes 8 args, which together with self exceed the C argument
+    // registers (6 on x86_64, 8 on arm64), so it runs through the dynamic send path.
     assert_snapshot!(inspect("
-        def target(a = 1, b = 2, c = 3, d = 4, e = 5, f:) = [a, b, c, d, e, f]
-        def test = [target(f: 6), target(10, 20, 30, f: 6), target(10, 20, 30, 40, 50, f: 60)]
+        def target(a = 1, b = 2, c = 3, d = 4, e = 5, f = 6, g = 7, h:) = [a, b, c, d, e, f, g, h]
+        def test = [target(h: 8), target(10, 20, 30, h: 8), target(10, 20, 30, 40, 50, 60, 70, h: 80)]
         test
         test
-    "), @"[[1, 2, 3, 4, 5, 6], [10, 20, 30, 4, 5, 6], [10, 20, 30, 40, 50, 60]]");
+    "), @"[[1, 2, 3, 4, 5, 6, 7, 8], [10, 20, 30, 4, 5, 6, 7, 8], [10, 20, 30, 40, 50, 60, 70, 80]]");
 }
 
 #[test]
@@ -1817,7 +2086,9 @@ fn test_invokesuper_to_cfunc_varargs() {
 
 #[test]
 fn test_invokesuper_to_cfunc_with_too_many_args_exits() {
-    unsafe extern "C" fn test_six_args(
+    // `self` + eight args don't fit in C argument registers (6 on x86_64, 8 on arm64),
+    // so the invokesuper to the cfunc must side-exit instead of emitting a CCall.
+    unsafe extern "C" fn test_super_eight_args(
         _self: VALUE,
         a: VALUE,
         b: VALUE,
@@ -1825,61 +2096,116 @@ fn test_invokesuper_to_cfunc_with_too_many_args_exits() {
         d: VALUE,
         e: VALUE,
         f: VALUE,
+        g: VALUE,
+        h: VALUE,
     ) -> VALUE {
-        unsafe { rb_ary_new_from_args(6, a, b, c, d, e, f) }
+        unsafe { rb_ary_new_from_args(8, a, b, c, d, e, f, g, h) }
     }
 
     with_rubyvm(|| {
-        let superclass = define_class("ZJITSixArgs", unsafe { rb_cObject });
+        let superclass = define_class("ZJITSuperEightArgs", unsafe { rb_cObject });
         unsafe {
             rb_define_method(
                 superclass,
-                c"six".as_ptr(),
+                c"eight".as_ptr(),
                 Some(std::mem::transmute::<
-                    unsafe extern "C" fn(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE) -> VALUE,
+                    unsafe extern "C" fn(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE) -> VALUE,
                     unsafe extern "C" fn(VALUE) -> VALUE,
-                >(test_six_args)),
-                6,
+                >(test_super_eight_args)),
+                8,
             );
         }
     });
 
     assert_snapshot!(assert_compiles_allowing_exits(r#"
-        class ZJITSixArgsSubclass < ZJITSixArgs
-          def six(a, b, c, d, e, f)
+        class ZJITSuperEightArgsSubclass < ZJITSuperEightArgs
+          def eight(a, b, c, d, e, f, g, h)
             super
           end
         end
 
         def test
-          ZJITSixArgsSubclass.new.six(1, 2, 3, 4, 5, 6)
+          ZJITSuperEightArgsSubclass.new.eight(1, 2, 3, 4, 5, 6, 7, 8)
         end
 
         test
         test
         test
-    "#), @"[1, 2, 3, 4, 5, 6]");
+    "#), @"[1, 2, 3, 4, 5, 6, 7, 8]");
 }
 
 // Repro for the production "Failed to get_opnd(vN)" panic
 // (PriceRs::PricingService#build_rust_adjustment_from_row, introduced by #17186).
 //
-// A regular send to a C method with 7 fixed args is reduced to a CCallWithFrame
-// with recv + 7 = 8 operands, which exceeds C_ARG_OPNDS.len() (6). gen_insn bails
-// with `return Err(*state)`; the caller emits a side exit and `break`s out of the
-// block. But the call's *result* is stored in a local and used in a *later* basic
-// block (the `if` arm here). Because codegen bailed before assigning a LIR operand
-// to the result, compiling that later block calls get_opnd(result) on a None entry
-// and panics. The existing `test_invokesuper_to_cfunc_with_too_many_args_exits` does
-// not catch this because there the call result is the method's tail value and is not
-// referenced past the bailed block.
+// A regular send to a C method with 8 fixed args is reduced to a CCallWithFrame
+// with recv + 8 = 9 operands, which exceeds C_ARG_OPNDS.len() (6 on x86_64, 8 on
+// arm64). gen_insn bails with `return Err(*state)`; the caller emits a side exit and
+// `break`s out of the block. But the call's *result* is stored in a local and used in
+// a *later* basic block (the `if` arm here). Because codegen bailed before assigning
+// a LIR operand to the result, compiling that later block calls get_opnd(result) on a
+// None entry and panics. The existing `test_invokesuper_to_cfunc_with_too_many_args_exits`
+// does not catch this because there the call result is the method's tail value and is
+// not referenced past the bailed block.
 //
 // NOTE: This currently ABORTS with `Failed to get_opnd(vN)` (the bug). The snapshot
 // below is the expected behavior once the backend exits cleanly: `flag` is true so
-// `test` returns the cfunc's result, the array [1, 2, 3, 4, 5, 6, 7].
+// `test` returns the cfunc's result, the array [1, 2, 3, 4, 5, 6, 7, 8].
 #[test]
 fn test_ccall_with_frame_too_many_args_result_used_in_later_block() {
-    unsafe extern "C" fn test_seven_args(
+    unsafe extern "C" fn test_eight_args(
+        _self: VALUE,
+        a: VALUE,
+        b: VALUE,
+        c: VALUE,
+        d: VALUE,
+        e: VALUE,
+        f: VALUE,
+        g: VALUE,
+        h: VALUE,
+    ) -> VALUE {
+        unsafe { rb_ary_new_from_args(8, a, b, c, d, e, f, g, h) }
+    }
+
+    with_rubyvm(|| {
+        let klass = define_class("ZJITEightArgs", unsafe { rb_cObject });
+        unsafe {
+            rb_define_method(
+                klass,
+                c"eight".as_ptr(),
+                Some(std::mem::transmute::<
+                    unsafe extern "C" fn(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE) -> VALUE,
+                    unsafe extern "C" fn(VALUE) -> VALUE,
+                >(test_eight_args)),
+                8,
+            );
+        }
+    });
+
+    assert_snapshot!(assert_compiles_allowing_exits(r#"
+        def test(obj, flag)
+          priceable = obj.eight(1, 2, 3, 4, 5, 6, 7, 8)
+          if flag
+            priceable
+          else
+            nil
+          end
+        end
+
+        obj = ZJITEightArgs.new
+        test(obj, true)  # profile receiver class
+        test(obj, true)  # compile -> currently panics: Failed to get_opnd(vN)
+        test(obj, true)
+    "#), @"[1, 2, 3, 4, 5, 6, 7, 8]");
+}
+
+// Assert that a C method defined with rb_define_method() observes exactly the
+// argument values that were passed at the Ruby level. The 7-arg method plus
+// the receiver fills all 8 AAPCS64 argument registers on arm64 (x86_64 falls
+// back to a dynamic send); the 10-arg method exceeds the argument registers
+// on both platforms.
+#[test]
+fn test_cfunc_asserts_argument_values() {
+    unsafe extern "C" fn assert_seven_args(
         _self: VALUE,
         a: VALUE,
         b: VALUE,
@@ -1889,11 +2215,44 @@ fn test_ccall_with_frame_too_many_args_result_used_in_later_block() {
         f: VALUE,
         g: VALUE,
     ) -> VALUE {
-        unsafe { rb_ary_new_from_args(7, a, b, c, d, e, f, g) }
+        assert_eq!(a, VALUE::fixnum_from_usize(1));
+        assert_eq!(b, VALUE::fixnum_from_usize(2));
+        assert_eq!(c, VALUE::fixnum_from_usize(3));
+        assert_eq!(d, VALUE::fixnum_from_usize(4));
+        assert_eq!(e, VALUE::fixnum_from_usize(5));
+        assert_eq!(f, VALUE::fixnum_from_usize(6));
+        assert_eq!(g, VALUE::fixnum_from_usize(7));
+        Qtrue
+    }
+
+    unsafe extern "C" fn assert_ten_args(
+        _self: VALUE,
+        a: VALUE,
+        b: VALUE,
+        c: VALUE,
+        d: VALUE,
+        e: VALUE,
+        f: VALUE,
+        g: VALUE,
+        h: VALUE,
+        i: VALUE,
+        j: VALUE,
+    ) -> VALUE {
+        assert_eq!(a, VALUE::fixnum_from_usize(1));
+        assert_eq!(b, VALUE::fixnum_from_usize(2));
+        assert_eq!(c, VALUE::fixnum_from_usize(3));
+        assert_eq!(d, VALUE::fixnum_from_usize(4));
+        assert_eq!(e, VALUE::fixnum_from_usize(5));
+        assert_eq!(f, VALUE::fixnum_from_usize(6));
+        assert_eq!(g, VALUE::fixnum_from_usize(7));
+        assert_eq!(h, VALUE::fixnum_from_usize(8));
+        assert_eq!(i, VALUE::fixnum_from_usize(9));
+        assert_eq!(j, VALUE::fixnum_from_usize(10));
+        Qtrue
     }
 
     with_rubyvm(|| {
-        let klass = define_class("ZJITSevenArgs", unsafe { rb_cObject });
+        let klass = define_class("ZJITArgValues", unsafe { rb_cObject });
         unsafe {
             rb_define_method(
                 klass,
@@ -1901,27 +2260,31 @@ fn test_ccall_with_frame_too_many_args_result_used_in_later_block() {
                 Some(std::mem::transmute::<
                     unsafe extern "C" fn(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE) -> VALUE,
                     unsafe extern "C" fn(VALUE) -> VALUE,
-                >(test_seven_args)),
+                >(assert_seven_args)),
                 7,
+            );
+            rb_define_method(
+                klass,
+                c"ten".as_ptr(),
+                Some(std::mem::transmute::<
+                    unsafe extern "C" fn(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE) -> VALUE,
+                    unsafe extern "C" fn(VALUE) -> VALUE,
+                >(assert_ten_args)),
+                10,
             );
         }
     });
 
     assert_snapshot!(assert_compiles_allowing_exits(r#"
-        def test(obj, flag)
-          priceable = obj.seven(1, 2, 3, 4, 5, 6, 7)
-          if flag
-            priceable
-          else
-            nil
-          end
+        def test(obj)
+          [obj.seven(1, 2, 3, 4, 5, 6, 7), obj.ten(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)]
         end
 
-        obj = ZJITSevenArgs.new
-        test(obj, true)  # profile receiver class
-        test(obj, true)  # compile -> currently panics: Failed to get_opnd(vN)
-        test(obj, true)
-    "#), @"[1, 2, 3, 4, 5, 6, 7]");
+        obj = ZJITArgValues.new
+        test(obj)
+        test(obj)
+        test(obj)
+    "#), @"[true, true]");
 }
 
 #[test]
@@ -2549,6 +2912,18 @@ fn test_invokebuiltin_delegate() {
 }
 
 #[test]
+fn test_invokebuiltin_many_args() {
+    // Time#initialize calls the time_init_args builtin with 7 arguments
+    // (9 C arguments including ec and self), which don't fit in argument
+    // registers and exercise stack arguments in CCall.
+    assert_snapshot!(inspect("
+        def test = Time.new(1992, 9, 23, 23, 0, 0, 3600)
+        test
+        test
+    "), @"1992-09-23 23:00:00 +0100");
+}
+
+#[test]
 fn test_kernel_integer_exception_false_returns_nil() {
     with_inlining(|| {
         assert_snapshot!(assert_inlines_allowing_exits("
@@ -2721,6 +3096,29 @@ fn test_opt_minus_overflow() {
 
         [r1, r2, r3]
     "), @"[2, 4611686018427387904, -4611686018427387905]");
+}
+
+#[test]
+fn test_fixnum_lshift() {
+    assert_snapshot!(inspect("
+        def test(a) = a << 3
+        test(1) # profile opt_ltlt
+
+        [test(5), test(0), test(-5)]
+    "), @"[40, 0, -40]");
+}
+
+#[test]
+fn test_fixnum_lshift_overflow() {
+    assert_snapshot!(inspect("
+        def test(a) = a << 3
+        test(1) # profile opt_ltlt
+
+        r1 = test(1 << 60)
+        r2 = test(-(1 << 60))
+
+        [r1, r2]
+    "), @"[9223372036854775808, -9223372036854775808]");
 }
 
 #[test]
@@ -4139,6 +4537,45 @@ fn test_new_array_order() {
         test
         test
     "), @"[3, 2, 1]");
+}
+
+#[test]
+fn test_new_array_embedded_gc_stress() {
+    eval(r#"
+        def make(a) = [a, a, a]
+    "#);
+    assert_contains_opcode("make", YARVINSN_newarray);
+    assert_snapshot!(assert_compiles(r#"
+        begin
+          GC.stress = true
+          s = "x"
+          make(s)
+          a = make(s)
+          a << :extra
+          [a.frozen?, a.class, a]
+        ensure
+          GC.stress = false
+        end
+    "#), @r#"[false, Array, ["x", "x", "x", :extra]]"#);
+}
+
+#[test]
+fn test_new_array_embedded_memcpy_gc_stress() {
+    eval(r#"
+        def make(a) = [a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a, a] # size: 17
+    "#);
+    assert_contains_opcode("make", YARVINSN_newarray);
+    assert_snapshot!(assert_compiles(r#"
+        begin
+          GC.stress = true
+          s = "y"
+          make(s)
+          m = make(s)
+          [m.frozen?, m.length, m.class]
+        ensure
+          GC.stress = false
+        end
+    "#), @r#"[false, 17, Array]"#);
 }
 
 #[test]
@@ -7761,6 +8198,45 @@ fn test_keep_jit_frame_for_caught_jump() {
     set_inline_threshold(old_inline_threshold);
     set_call_threshold(old_call_threshold);
     assert_snapshot!(result, @":ok");
+}
+
+// A NoEPEscape patch point can be reached without the frame's locals ever being
+// written to the stack: JIT-to-JIT calls don't write locals, and the code before
+// the patch point may be leaf. When an EP escape fires while the version limit
+// prevents invalidate_iseq_version() from running, every version containing a
+// patched point must still stop receiving calls. Otherwise a fresh call would
+// side-exit through the patched point's without_locals() frame state and the
+// interpreter would read garbage locals.
+#[test]
+fn test_no_ep_escape_invalidation_at_max_versions() {
+    rb_zjit_prepare_options();
+    let old_call_threshold = unsafe { crate::options::rb_zjit_call_threshold };
+    let old_max_versions = get_option!(max_versions);
+    set_call_threshold(2);
+    set_max_versions(1);
+    let result = inspect(r#"
+        def ep_escape_callee(a = "expected")
+          binding if @ep_escape
+          a
+        end
+
+        def ep_escape_caller = ep_escape_callee
+
+        def ep_escape_dirty(x) = x
+        def ep_escape_dirty_caller = ep_escape_dirty(:garbage)
+
+        @ep_escape = nil
+        ep_escape_callee; ep_escape_callee    # profile + compile callee
+        ep_escape_caller; ep_escape_caller    # profile + compile caller
+        @ep_escape = true
+        ep_escape_caller                      # binding escapes callee's EP -> invalidation
+        @ep_escape = nil
+        ep_escape_dirty_caller                # dirty the stale local's stack slot
+        ep_escape_caller
+    "#);
+    set_max_versions(old_max_versions);
+    set_call_threshold(old_call_threshold);
+    assert_snapshot!(result, @r#""expected""#);
 }
 
 #[test]

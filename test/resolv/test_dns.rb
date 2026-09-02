@@ -636,6 +636,205 @@ class TestResolvDNS < Test::Unit::TestCase
     end
   end
 
+  # A DNS label is limited to 63 octets. [RFC 1035 2.3.4] Writing a longer label
+  # through the label path must raise instead of overflowing the length octet.
+  def test_put_label_rejects_label_over_63_octets
+    Resolv::DNS::Message::MessageEncoder.new {|msg|
+      assert_nothing_raised { msg.put_label("a" * 63) }
+      assert_raise_with_message(ArgumentError, /DNS label is too long/) do
+        msg.put_label("a" * 64)
+      end
+    }
+    # put_labels drives put_label, so the same guard applies to the name path.
+    Resolv::DNS::Message::MessageEncoder.new {|msg|
+      assert_raise_with_message(ArgumentError, /DNS label is too long/) do
+        msg.put_labels(["a" * 64])
+      end
+    }
+  end
+
+  # The per-label limit is an invariant of Label::Str, so no label object can
+  # exist that would overflow its length octet. [RFC 1035 2.3.4]
+  def test_label_str_rejects_label_over_63_octets
+    assert_nothing_raised { Resolv::DNS::Label::Str.new("a" * 63) }
+    assert_raise_with_message(ArgumentError, /DNS label is too long/) do
+      Resolv::DNS::Label::Str.new("a" * 64)
+    end
+  end
+
+  # Every way of building a name goes through Label::Str, so the paths that
+  # skip Name.create are covered too.
+  def test_label_length_is_enforced_on_every_construction_path
+    assert_raise_with_message(ArgumentError, /DNS label is too long/) do
+      Resolv::DNS::Name.new(["a" * 64])
+    end
+    assert_raise_with_message(ArgumentError, /DNS label is too long/) do
+      Resolv::DNS::Label.split("a" * 64)
+    end
+    # Config#generate_candidates appends search domains with Name.new, and the
+    # search list itself comes from Label.split, so a resolv.conf carrying an
+    # over-long label is rejected when the config is read.
+    config = Resolv::DNS::Config.new(nameserver: ['127.0.0.1'],
+                                     search: ["a" * 64], ndots: 1)
+    assert_raise_with_message(ArgumentError, /DNS label is too long/) do
+      config.lazy_initialize
+    end
+  end
+
+  def test_name_create_rejects_too_long_label
+    assert_nothing_raised { Resolv::DNS::Name.create("a" * 63) }
+    assert_raise_with_message(Resolv::ResolvError, /DNS label is too long/) do
+      Resolv::DNS::Name.create("a" * 64)
+    end
+  end
+
+  def test_name_create_rejects_too_long_name
+    # Five 63-octet labels total 321 encoded octets, over the 255 octet limit,
+    # while each individual label is still valid.
+    too_long = (["a" * 63] * 5).join(".")
+    assert_raise_with_message(Resolv::ResolvError, /DNS name is too long/) do
+      Resolv::DNS::Name.create(too_long)
+    end
+  end
+
+  # A hostname is runtime data, so an over-long one has to stay rescuable the
+  # way the rest of name resolution is. It reaches Name.create through
+  # Config#generate_candidates, which runs outside Config#resolv's own rescue.
+  def test_oversized_name_is_rescuable_as_resolv_error
+    dns = Resolv::DNS.new(nameserver_port: [['127.0.0.1', 53]])
+    assert_raise(Resolv::ResolvError) { dns.getaddress("a" * 64) }
+    assert_raise(Resolv::ResolvError) { dns.getaddress((["a" * 63] * 5).join(".")) }
+  ensure
+    dns&.close
+  end
+
+  # A length octet of 64..191 is reserved, not a label length, but this decoder
+  # read it as one and accepted labels no encoder should ever produce.
+  # [RFC 1035 4.1.4] Rejecting them has to look like any other malformed
+  # message, so the caller's rescue DecodeError still covers it.
+  def test_decode_rejects_label_over_63_octets
+    message = ->(n) {
+      [0, 0x8180, 1, 0, 0, 0].pack("n*") +
+        [n].pack("C") + ("a" * n) + "\0" + [1, 1].pack("nn")
+    }
+    assert_nothing_raised { Resolv::DNS::Message.decode(message.call(63)) }
+    [64, 100, 191].each do |n|
+      assert_raise_with_message(Resolv::DNS::DecodeError, /DNS label is too long/) do
+        Resolv::DNS::Message.decode(message.call(n))
+      end
+    end
+  end
+
+  # The type check is a caller mistake rather than runtime data, so it keeps
+  # raising ArgumentError.
+  def test_name_create_still_raises_argument_error_for_wrong_type
+    assert_raise_with_message(ArgumentError, /cannot interpret as DNS name/) do
+      Resolv::DNS::Name.create(123)
+    end
+  end
+
+  # The 255 octet limit counts the encoded form, including each label's length
+  # octet and the root label's terminating zero octet. [RFC 1035 2.3.4, 3.1]
+  # So the longest legal name encodes to exactly 255 octets.
+  def test_name_create_total_length_boundary
+    at_limit = (["a" * 63] * 3 + ["a" * 61]).join(".")
+    name = Resolv::DNS::Name.create(at_limit)
+    encoded = Resolv::DNS::Message::MessageEncoder.new {|msg| msg.put_name(name) }.to_s
+    assert_equal(255, encoded.bytesize, "longest legal name encodes to 255 octets")
+
+    over_limit = (["a" * 63] * 3 + ["a" * 62]).join(".")
+    assert_raise_with_message(Resolv::ResolvError, /DNS name is too long/) do
+      Resolv::DNS::Name.create(over_limit)
+    end
+
+    # Four 63-octet labels encode to 257 octets. Counting the presentation
+    # form instead of the encoded form lets these two extra octets through.
+    assert_raise_with_message(Resolv::ResolvError, /DNS name is too long/) do
+      Resolv::DNS::Name.create((["a" * 63] * 4).join("."))
+    end
+  end
+
+  # The decoder enforces the same limit, counted the same way.
+  def test_get_labels_total_length_boundary
+    encode = ->(labels) {
+      Resolv::DNS::Message::MessageEncoder.new {|msg|
+        msg.put_labels(labels.map {|l| Resolv::DNS::Label::Str.new(l) })
+      }.to_s
+    }
+
+    at_limit = encode.call(["a" * 63] * 3 + ["a" * 61])
+    assert_equal(255, at_limit.bytesize)
+    Resolv::DNS::Message::MessageDecoder.new(at_limit) {|msg|
+      assert_equal(4, msg.get_labels.length)
+    }
+
+    over_limit = encode.call(["a" * 63] * 4)
+    assert_equal(257, over_limit.bytesize)
+    assert_raise_with_message(Resolv::DNS::DecodeError, /name label data exceed 255 octets/) do
+      Resolv::DNS::Message::MessageDecoder.new(over_limit) {|msg| msg.get_labels }
+    end
+  end
+
+  # A single 262-octet label whose bytes start with "target\x03com\x00". The
+  # old encoder wrote the length octet as 262 & 0xff == 6, so the wire bytes
+  # decoded to the unrelated name "target.com" (query name confusion /
+  # allowlist bypass).
+  def test_encoder_rejects_label_length_wrap
+    poc_label = "target".b + "\x03com\x00".b + ("a".b * 251)
+    assert_equal(262, poc_label.bytesize)
+    assert_equal(6, poc_label.bytesize & 0xff, "precondition: the length octet wraps to 6")
+
+    # The bytes the buggy encoder would have emitted really do decode to a
+    # different name. This is the vulnerability being fixed.
+    wrapped = [poc_label.bytesize & 0xff].pack("C") + poc_label
+    Resolv::DNS::Message::MessageDecoder.new(wrapped) {|msg|
+      assert_equal("target.com", msg.get_labels.map(&:to_s).join("."))
+    }
+
+    # The fixed encoder refuses to emit it instead of silently wrapping, so it
+    # can no longer produce "target.com" from this input.
+    Resolv::DNS::Message::MessageEncoder.new {|msg|
+      assert_raise_with_message(ArgumentError, /DNS label is too long/) do
+        msg.put_label(poc_label)
+      end
+    }
+    assert_raise_with_message(Resolv::ResolvError, /DNS label is too long/) do
+      Resolv::DNS::Name.create(poc_label)
+    end
+  end
+
+  # A character-string (e.g. TXT rdata) is prefixed by a single length octet and
+  # may legitimately be up to 255 octets, so the 63 octet label limit must not
+  # leak into put_string. [RFC 1035 3.3]
+  def test_put_string_allows_character_string_up_to_255
+    [64, 200, 255].each do |n|
+      s = "a" * n
+      m = Resolv::DNS::Message::MessageEncoder.new {|msg| msg.put_string(s) }
+      encoded = m.to_s
+      assert_equal(n, encoded.getbyte(0), "length octet for #{n} byte string")
+      assert_equal(n + 1, encoded.bytesize)
+      Resolv::DNS::Message::MessageDecoder.new(encoded) {|msg|
+        assert_equal(s, msg.get_string)
+      }
+    end
+  end
+
+  def test_txt_record_roundtrip_with_long_character_strings
+    txt = Resolv::DNS::Resource::IN::TXT.new("a" * 255, "b" * 64)
+    m = Resolv::DNS::Message.new(0)
+    m.add_answer("example.com.", 3600, txt)
+    decoded = Resolv::DNS::Message.decode(m.encode)
+    _, _, res = decoded.answer.first
+    assert_equal(["a" * 255, "b" * 64], res.strings)
+  end
+
+  # put_string still guards against the length octet wrapping past 255 octets.
+  def test_put_string_rejects_over_255_octets
+    assert_raise_with_message(ArgumentError, /character-string is too long/) do
+      Resolv::DNS::Message::MessageEncoder.new {|msg| msg.put_string("a" * 256) }
+    end
+  end
+
   def assert_no_fd_leak
     socket = assert_throw(self) do |tag|
       Resolv::DNS.stub(:bind_random_port, ->(s, *) {throw(tag, s)}) do
@@ -843,6 +1042,8 @@ class TestResolvDNS < Test::Unit::TestCase
           assert_raise(Resolv::ResolvTimeout) do
             requester.request(sender, 2)
           end
+          # The peer went away, so this connection cannot carry another request.
+          assert_equal(false, requester.reusable?)
         ensure
           requester.close
         end
@@ -941,6 +1142,316 @@ class TestResolvDNS < Test::Unit::TestCase
 
       server_thread.join
       client_thread.join
+    end
+  end
+
+  def accept_within_timeout(t)
+    Timeout.timeout(EnvUtil.apply_timeout_scale(10)) { t.accept }
+  end
+
+  # Reads one length prefixed DNS message from +sock+.
+  def read_framed_query(sock)
+    len_data = sock.read(2)
+    flunk('the client closed the connection before sending a query') unless len_data&.bytesize == 2
+    Resolv::DNS::Message.decode(sock.read(len_data.unpack('n')[0]))
+  end
+
+  # Builds the encoded reply answering +query+ with a single A record.
+  def reply_for_query(query, address)
+    reply = Resolv::DNS::Message.new(query.id)
+    reply.qr = 1
+    reply.rd = query.rd
+    reply.ra = 1
+    query.each_question do |name, typeclass|
+      reply.add_question(name, typeclass)
+      reply.add_answer(name, 3600, Resolv::DNS::Resource::IN::A.new(address))
+    end
+    reply.encode
+  end
+
+  def framed(encoded)
+    [encoded.bytesize].pack('n') << encoded
+  end
+
+  # Runs a TCP server which replies with +reply+ and then keeps the connection
+  # open until the client side is done, so that only the timeout can end the
+  # request.
+  def with_tcp_server_keeping_connection_open(reply)
+    with_tcp('127.0.0.1', 0) do |t|
+      _, server_port, _, server_address = t.addr
+      done = Thread::Queue.new
+
+      server_thread = Thread.new do
+        ct = accept_within_timeout(t)
+        begin
+          ct.recv(512)
+          ct.write(reply)
+          done.pop
+        ensure
+          ct.close
+        end
+      end
+
+      client_thread = Thread.new do
+        begin
+          yield server_address, server_port
+        ensure
+          done.push(true)
+        end
+      end
+
+      assert_join_threads([client_thread, server_thread])
+    end
+  end
+
+  def request_over_tcp(server_address, server_port, tout)
+    requester = Resolv::DNS::Requester::TCP.new(server_address, server_port)
+    begin
+      msg = Resolv::DNS::Message.new
+      msg.add_question('example.org', Resolv::DNS::Resource::IN::A)
+      sender = requester.sender(msg, msg)
+      Timeout.timeout(EnvUtil.apply_timeout_scale(10)) do
+        requester.request(sender, EnvUtil.apply_timeout_scale(tout))
+      end
+    ensure
+      requester.close
+    end
+  end
+
+  def test_tcp_partial_length_prefix_kept_open
+    with_tcp_server_keeping_connection_open("\x00") do |server_address, server_port|
+      assert_raise(Resolv::ResolvTimeout) do
+        request_over_tcp(server_address, server_port, 0.5)
+      end
+    end
+  end
+
+  def test_tcp_partial_message_body_kept_open
+    reply = [10].pack('n') << '12345' # 5 bytes of a 10 byte message
+    with_tcp_server_keeping_connection_open(reply) do |server_address, server_port|
+      assert_raise(Resolv::ResolvTimeout) do
+        request_over_tcp(server_address, server_port, 0.5)
+      end
+    end
+  end
+
+  def test_tcp_complete_reply_kept_open
+    with_tcp('127.0.0.1', 0) do |t|
+      _, server_port, _, server_address = t.addr
+      done = Thread::Queue.new
+
+      server_thread = Thread.new do
+        ct = accept_within_timeout(t)
+        begin
+          ct.write(framed(reply_for_query(read_framed_query(ct), '192.0.2.1')))
+          done.pop
+        ensure
+          ct.close
+        end
+      end
+
+      client_thread = Thread.new do
+        begin
+          reply, = request_over_tcp(server_address, server_port, 2)
+          assert_equal(1, reply.answer.length)
+          assert_equal('192.0.2.1', reply.answer[0][2].address.to_s)
+        ensure
+          done.push(true)
+        end
+      end
+
+      assert_join_threads([client_thread, server_thread])
+    end
+  end
+
+  def test_tcp_reply_arriving_in_two_chunks
+    with_tcp('127.0.0.1', 0) do |t|
+      _, server_port, _, server_address = t.addr
+      done = Thread::Queue.new
+
+      server_thread = Thread.new do
+        ct = accept_within_timeout(t)
+        begin
+          reply = framed(reply_for_query(read_framed_query(ct), '192.0.2.1'))
+          ct.write(reply.byteslice(0, 6))
+          sleep EnvUtil.apply_timeout_scale(0.2)
+          ct.write(reply.byteslice(6..-1))
+          done.pop
+        ensure
+          ct.close
+        end
+      end
+
+      client_thread = Thread.new do
+        begin
+          reply, = request_over_tcp(server_address, server_port, 2)
+          assert_equal(1, reply.answer.length)
+          assert_equal('192.0.2.1', reply.answer[0][2].address.to_s)
+        ensure
+          done.push(true)
+        end
+      end
+
+      assert_join_threads([client_thread, server_thread])
+    end
+  end
+
+  def test_truncated_tcp_fallback_with_partial_message_body_kept_open
+    with_udp_and_tcp('127.0.0.1', 0) do |u, t|
+      _, server_port, _, server_address = u.addr
+      done = Thread::Queue.new
+
+      client_thread = Thread.new do
+        begin
+          dns = Resolv::DNS.new(nameserver_port: [[server_address, server_port]],
+                                raise_timeout_errors: true)
+          begin
+            dns.timeouts = EnvUtil.apply_timeout_scale(0.5)
+            assert_raise(Resolv::ResolvError) do
+              Timeout.timeout(EnvUtil.apply_timeout_scale(10)) do
+                dns.getresources('foo.example.org', Resolv::DNS::Resource::IN::A)
+              end
+            end
+          ensure
+            dns.close
+          end
+        ensure
+          done.push(true)
+        end
+      end
+
+      udp_server_thread = Thread.new do
+        msg, (_, client_port, _, client_address) =
+          Timeout.timeout(EnvUtil.apply_timeout_scale(10)) { u.recvfrom(4096) }
+        id, word2, = msg.unpack('nnnnnn')
+        opcode = (word2 & 0x7800) >> 11
+        rd = (word2 & 0x0100) >> 8
+        qr = 1
+        tc = 1 # ask the client to retry over TCP
+        ra = 1
+        word2 = (qr << 15) | (opcode << 11) | (tc << 9) | (rd << 8) | (ra << 7)
+        u.send([id, word2, 0, 0, 0, 0].pack('nnnnnn'), 0, client_address, client_port)
+      end
+
+      tcp_server_thread = Thread.new do
+        ct = accept_within_timeout(t)
+        begin
+          ct.recv(512)
+          ct.write([10].pack('n') << '12345') # 5 bytes of a 10 byte message
+          done.pop
+        ensure
+          ct.close
+        end
+      end
+
+      assert_join_threads([client_thread, udp_server_thread, tcp_server_thread])
+    end
+  end
+
+  # A frame read that gives up part way through a frame leaves the stream
+  # between frame boundaries, so the retry has to start from a new connection.
+  def test_truncated_tcp_fallback_retries_on_a_new_connection
+    with_udp_and_tcp('127.0.0.1', 0) do |u, t|
+      _, server_port, _, server_address = u.addr
+
+      client_thread = Thread.new do
+        Resolv::DNS.open(nameserver_port: [[server_address, server_port]],
+                         raise_timeout_errors: true) do |dns|
+          dns.timeouts = [EnvUtil.apply_timeout_scale(1),
+                          EnvUtil.apply_timeout_scale(3)]
+          Timeout.timeout(EnvUtil.apply_timeout_scale(20)) do
+            dns.getresources('foo.example.org', Resolv::DNS::Resource::IN::A)
+          end
+        end
+      end
+
+      udp_server_thread = Thread.new do
+        msg, (_, client_port, _, client_address) =
+          Timeout.timeout(EnvUtil.apply_timeout_scale(10)) { u.recvfrom(4096) }
+        id, word2, = msg.unpack('nnnnnn')
+        opcode = (word2 & 0x7800) >> 11
+        rd = (word2 & 0x0100) >> 8
+        qr = 1
+        tc = 1 # ask the client to retry over TCP
+        ra = 1
+        word2 = (qr << 15) | (opcode << 11) | (tc << 9) | (rd << 8) | (ra << 7)
+        u.send([id, word2, 0, 0, 0, 0].pack('nnnnnn'), 0, client_address, client_port)
+      end
+
+      tcp_server_thread = Thread.new do
+        partial = accept_within_timeout(t)
+        begin
+          read_framed_query(partial)
+          partial.write([45].pack('n') << 'abcdef') # 6 bytes of a 45 byte message
+          complete = accept_within_timeout(t)
+          begin
+            complete.write(framed(reply_for_query(read_framed_query(complete), '192.0.2.1')))
+          ensure
+            complete.close
+          end
+        ensure
+          partial.close
+        end
+      end
+
+      result, = assert_join_threads([client_thread, udp_server_thread, tcp_server_thread])
+      assert_equal(['192.0.2.1'], result.map {|rr| rr.address.to_s })
+    end
+  end
+
+  # A timeout with no bytes read leaves the stream on a frame boundary, so the
+  # retry keeps the connection.  The reply below only ever reaches the client if
+  # the second attempt reuses the socket the first one opened.
+  def test_truncated_tcp_fallback_keeps_the_connection_when_nothing_arrived
+    with_udp_and_tcp('127.0.0.1', 0) do |u, t|
+      _, server_port, _, server_address = u.addr
+      done = Thread::Queue.new
+
+      client_thread = Thread.new do
+        begin
+          Resolv::DNS.open(nameserver_port: [[server_address, server_port]],
+                           raise_timeout_errors: true) do |dns|
+            dns.timeouts = [EnvUtil.apply_timeout_scale(0.5),
+                            EnvUtil.apply_timeout_scale(5)]
+            Timeout.timeout(EnvUtil.apply_timeout_scale(20)) do
+              dns.getresources('foo.example.org', Resolv::DNS::Resource::IN::A)
+            end
+          end
+        ensure
+          done.push(true)
+        end
+      end
+
+      udp_server_thread = Thread.new do
+        msg, (_, client_port, _, client_address) =
+          Timeout.timeout(EnvUtil.apply_timeout_scale(10)) { u.recvfrom(4096) }
+        id, word2, = msg.unpack('nnnnnn')
+        opcode = (word2 & 0x7800) >> 11
+        rd = (word2 & 0x0100) >> 8
+        qr = 1
+        tc = 1 # ask the client to retry over TCP
+        ra = 1
+        word2 = (qr << 15) | (opcode << 11) | (tc << 9) | (rd << 8) | (ra << 7)
+        u.send([id, word2, 0, 0, 0, 0].pack('nnnnnn'), 0, client_address, client_port)
+      end
+
+      tcp_server_thread = Thread.new do
+        ct = accept_within_timeout(t)
+        begin
+          query = read_framed_query(ct)
+          # Stay silent past the first interval, then answer on this connection.
+          # It has to stay open until the client is done: the retry resends the
+          # query, and closing with that still unread would discard the reply.
+          sleep EnvUtil.apply_timeout_scale(1)
+          ct.write(framed(reply_for_query(query, '192.0.2.1')))
+          done.pop
+        ensure
+          ct.close
+        end
+      end
+
+      result, = assert_join_threads([client_thread, udp_server_thread, tcp_server_thread])
+      assert_equal(['192.0.2.1'], result.map {|rr| rr.address.to_s })
     end
   end
 end

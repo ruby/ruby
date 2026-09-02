@@ -4,13 +4,16 @@
 #include <stddef.h>
 #include "ruby/ruby.h"
 
-struct rb_id_item;
-
 struct rb_id_table {
     int capa;
     int num;
     int used;
-    struct rb_id_item *items;
+    /* The table body is a single buffer laid out as:
+     *
+     * [VALUE values[capa] | id_key_t keys[capa] | collision bitmap]
+     *
+     * where the collision bitmap uses one mark bit per slot. */
+    void *buf;
 };
 
 /* compatible with ST_* */

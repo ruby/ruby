@@ -203,6 +203,58 @@ class TestBox < Test::Unit::TestCase
     assert_raise(NameError) { BOX_B }
   end
 
+  def test_autoload_dispatches_prepended_require
+    # Autoload must go through the `Kernel#require` decorations (Zeitwerk, RubyGems, etc.)
+    # of the box that registered the autoload, not `Ruby::Box#require` directly.
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      FEATURE = "/nonexistent/virtual_feature"
+      module Decor
+        def require(path)
+          if path == FEATURE
+            Object.const_set(:AutoloadedFromDecorator, Module.new)
+            return true
+          end
+          super
+        end
+      end
+      Kernel.prepend(Decor)
+      Object.autoload(:AutoloadedFromDecorator, FEATURE)
+      assert_kind_of Module, AutoloadedFromDecorator
+    end;
+  end
+
+  def test_autoload_dispatches_prepended_require_of_the_registered_box
+    # Even when the autoload is triggered from outside, it must be dispatched to the
+    # (decorated) `Kernel#require` of the box that registered the autoload.
+    # --enable=gems because Kernel.prepend in a box without RubyGems has a separate
+    # ancestry ordering problem, and assert_separately runs with --disable=gems.
+    assert_in_out_err([ENV_ENABLE_BOX, "--enable=gems"], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
+      begin;
+        box = Ruby::Box.new
+        box.eval(<<~RUBY)
+          FEATURE = "/nonexistent/box_virtual_feature"
+          module BoxDecor
+            def require(path)
+              if path == FEATURE
+                Holder.const_set(:Virtual, "decorated in \#{Ruby::Box.current.inspect}")
+                return true
+              end
+              super
+            end
+          end
+          Kernel.prepend(BoxDecor)
+          module Holder
+            autoload :Virtual, FEATURE
+          end
+        RUBY
+        puts box::Holder::Virtual
+      end;
+      assert_equal 1, output.size
+      assert_match(/\Adecorated in #<Ruby::Box:\d+,user/, output.first)
+    end
+  end
+
   def test_continuous_top_level_method_in_a_box
     setup_box
 
@@ -371,6 +423,21 @@ class TestBox < Test::Unit::TestCase
 
     assert_include @box::BoxedString.ancestors, String
     assert_include String.descendants, @box::BoxedString
+  end
+
+  def test_prepend_to_builtin_module_in_box
+    # Use --disable-gems to keep Kernel untouched in the new box, so that
+    # the prepend below is the first copy-on-write of Kernel's classext
+    assert_separately([ENV_ENABLE_BOX, '--disable-gems'], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      box = Ruby::Box.new
+      box.eval('module BoxDecor; def itself; :decorated; end; end; Kernel.prepend(BoxDecor)')
+      ancestors = box.eval('Object.ancestors')
+      assert_operator ancestors.index(box::BoxDecor), :<, ancestors.index(Kernel)
+      assert_equal :decorated, box.eval('Object.new.itself')
+      assert_not_include Object.ancestors, box::BoxDecor
+      assert_equal 42, 42.itself
+    end;
   end
 end
 
@@ -567,7 +634,7 @@ class TestBox < Test::Unit::TestCase
     assert_equal nil, $,
 
     # used only in box
-    assert_not_include? global_variables, :$used_only_in_box
+    assert_not_include global_variables, :$used_only_in_box
     @box::UniqueGvar.write(123)
     assert_equal 123, @box::UniqueGvar.read
     assert_nil $used_only_in_box
@@ -1210,6 +1277,40 @@ class TestBox < Test::Unit::TestCase
       end;
       assert_empty(Dir.children(tmpdir))
     end
+  end
+
+  def test_loading_extension_from_deep_path_in_user_box
+    require 'date'
+    dlext = RbConfig::CONFIG['DLEXT']
+    src = $LOADED_FEATURES.find {|f| f.end_with?("date_core.#{dlext}")}
+    omit "date_core.#{dlext} is not loaded dynamically" unless src && File.exist?(src)
+
+    require 'tmpdir'
+    require 'fileutils'
+    Dir.mktmpdir do |tmpdir|
+      # deep enough that this path flattened into a single file name exceeds NAME_MAX
+      deep = File.join(tmpdir, "d" * 90, "e" * 90, "f" * 90)
+      FileUtils.mkdir_p(deep)
+      FileUtils.cp(src, deep)
+      env = ENV_ENABLE_BOX.merge({'BOX_TEST_EXT_FEATURE'=>File.join(deep, "date_core")})
+      assert_ruby_status([env], "#{<<~"begin;"}\n#{<<~'end;'}")
+      begin;
+        require ENV['BOX_TEST_EXT_FEATURE'] or raise "already loaded"
+        raise "Date is not defined" unless defined?(Date)
+      end;
+    end
+  end
+
+  def test_extension_loading_survives_fork_in_user_box
+    omit "fork is not supported" unless Process.respond_to?(:fork)
+
+    assert_ruby_status([ENV_ENABLE_BOX], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      Ruby::Box.new.require "digest/md5"
+      pid = fork {Ruby::Box.new.require "digest/sha2"}
+      raise "extension loading failed in the child" unless Process.wait2(pid)[1].success?
+      Ruby::Box.new.require "digest/sha2"
+    end;
   end
 
   def test_root_box_iclasses_should_be_boxable

@@ -28,7 +28,7 @@ module Prism
     # can be calculated by iterating through the source code and recording the
     # byte offset whenever a newline character is encountered.  The first
     # element is always 0 to mark the first line.
-    #--
+    #
     #: (String source, Integer start_line, Array[Integer] offsets) -> Source
     def self.for(source, start_line, offsets)
       if source.ascii_only?
@@ -62,7 +62,7 @@ module Prism
     # The list of newline byte offsets in the source code. When initialized from
     # the C extension, this may be a packed binary string of uint32_t values
     # that is lazily unpacked on first access.
-    #--
+    #
     #: () -> Array[Integer]
     def offsets
       offsets = @offsets
@@ -73,7 +73,7 @@ module Prism
     # Create a new source object with the given source code. The offsets
     # parameter can be either an Array of Integer byte offsets or a packed
     # binary string of uint32_t values (from the C extension).
-    #--
+    #
     #: (String source, Integer start_line, Array[Integer] | String offsets) -> void
     def initialize(source, start_line, offsets)
       @source = source
@@ -82,14 +82,14 @@ module Prism
     end
 
     # Replace the value of start_line with the given value.
-    #--
+    #
     #: (Integer start_line) -> void
     def replace_start_line(start_line)
       @start_line = start_line
     end
 
     # Replace the value of offsets with the given value.
-    #--
+    #
     #: (Array[Integer] offsets) -> void
     def replace_offsets(offsets)
       @offsets = offsets
@@ -97,14 +97,14 @@ module Prism
 
     # Returns the encoding of the source code, which is set by parameters to the
     # parser or by the encoding magic comment.
-    #--
+    #
     #: () -> Encoding
     def encoding
       source.encoding
     end
 
     # Returns the lines of the source code as an array of strings.
-    #--
+    #
     #: () -> Array[String]
     def lines
       source.lines
@@ -112,14 +112,14 @@ module Prism
 
     # Perform a byteslice on the source code using the given byte offset and
     # byte length.
-    #--
+    #
     #: (Integer byte_offset, Integer length) -> String
     def slice(byte_offset, length)
       source.byteslice(byte_offset, length) or raise
     end
 
     # Converts the line number and column in bytes to a byte offset.
-    #--
+    #
     #: (Integer line, Integer column) -> Integer
     def byte_offset(line, column)
       normal = line - @start_line
@@ -131,7 +131,7 @@ module Prism
 
     # Binary search through the offsets to find the line number for the given
     # byte offset.
-    #--
+    #
     #: (Integer byte_offset) -> Integer
     def line(byte_offset)
       start_line + find_line(byte_offset)
@@ -139,7 +139,7 @@ module Prism
 
     # Return the byte offset of the start of the line corresponding to the given
     # byte offset.
-    #--
+    #
     #: (Integer byte_offset) -> Integer
     def line_start(byte_offset)
       offsets[find_line(byte_offset)]
@@ -147,28 +147,28 @@ module Prism
 
     # Returns the byte offset of the end of the line corresponding to the given
     # byte offset.
-    #--
+    #
     #: (Integer byte_offset) -> Integer
     def line_end(byte_offset)
       offsets[find_line(byte_offset) + 1] || source.bytesize
     end
 
     # Return the column in bytes for the given byte offset.
-    #--
+    #
     #: (Integer byte_offset) -> Integer
     def column(byte_offset)
       byte_offset - line_start(byte_offset)
     end
 
     # Return the character offset for the given byte offset.
-    #--
+    #
     #: (Integer byte_offset) -> Integer
     def character_offset(byte_offset)
       (source.byteslice(0, byte_offset) or raise).length
     end
 
     # Return the column in characters for the given byte offset.
-    #--
+    #
     #: (Integer byte_offset) -> Integer
     def character_column(byte_offset)
       character_offset(byte_offset) - character_offset(line_start(byte_offset))
@@ -186,7 +186,7 @@ module Prism
     # possible that the given byte offset will not occur on a character
     # boundary. Second, it's possible that the source code will contain a
     # character that has no equivalent in the given encoding.
-    #--
+    #
     #: (Integer byte_offset, Encoding encoding) -> Integer
     def code_units_offset(byte_offset, encoding)
       return byte_offset if encoding == Encoding::UTF_8
@@ -202,7 +202,7 @@ module Prism
 
     # Generate a cache that targets a specific encoding for calculating code
     # unit offsets.
-    #--
+    #
     #: (Encoding encoding) -> CodeUnitsCache
     def code_units_cache(encoding)
       CodeUnitsCache.new(source, encoding)
@@ -210,14 +210,14 @@ module Prism
 
     # Returns the column in code units for the given encoding for the
     # given byte offset.
-    #--
+    #
     #: (Integer byte_offset, Encoding encoding) -> Integer
     def code_units_column(byte_offset, encoding)
       code_units_offset(byte_offset, encoding) - code_units_offset(line_start(byte_offset), encoding)
     end
 
     # Freeze this object and the objects it contains.
-    #--
+    #
     #: () -> void
     def deep_freeze
       source.freeze
@@ -227,7 +227,7 @@ module Prism
 
     # Binary search through the offsets to find the index for the given
     # byte offset.
-    #--
+    #
     #: (Integer byte_offset) -> Integer
     def find_line(byte_offset) # :nodoc:
       index = offsets.bsearch_index { |offset| offset > byte_offset } || offsets.length
@@ -301,7 +301,7 @@ module Prism
     # @rbs @offsets: Array[Integer]
 
     # Initialize a new cache with the given source and encoding.
-    #--
+    #
     #: (String source, Encoding encoding) -> void
     def initialize(source, encoding)
       @source = source
@@ -320,7 +320,7 @@ module Prism
     end
 
     # Retrieve the code units offset from the given byte offset.
-    #--
+    #
     #: (Integer byte_offset) -> Integer
     def [](byte_offset)
       @cache[byte_offset] ||=
@@ -348,14 +348,14 @@ module Prism
   # at that point we will treat everything as single-byte characters.
   class ASCIISource < Source
     # Return the character offset for the given byte offset.
-    #--
+    #
     #: (Integer byte_offset) -> Integer
     def character_offset(byte_offset)
       byte_offset
     end
 
     # Return the column in characters for the given byte offset.
-    #--
+    #
     #: (Integer byte_offset) -> Integer
     def character_column(byte_offset)
       byte_offset - line_start(byte_offset)
@@ -367,7 +367,7 @@ module Prism
     # This method is tested with UTF-8, UTF-16, and UTF-32. If there is the
     # concept of code units that differs from the number of characters in other
     # encodings, it is not captured here.
-    #--
+    #
     #: (Integer byte_offset, Encoding encoding) -> Integer
     def code_units_offset(byte_offset, encoding)
       byte_offset
@@ -376,7 +376,7 @@ module Prism
     # Returns a cache that is the identity function in order to maintain the
     # same interface. We can do this because code units are always equivalent to
     # byte offsets for ASCII-only sources.
-    #--
+    #
     #: (Encoding encoding) -> _CodeUnitsCache
     def code_units_cache(encoding)
       ->(byte_offset) { byte_offset }
@@ -385,7 +385,7 @@ module Prism
     # Specialized version of `code_units_column` that does not depend on
     # `code_units_offset`, which is a more expensive operation. This is
     # essentially the same as `Prism::Source#column`.
-    #--
+    #
     #: (Integer byte_offset, Encoding encoding) -> Integer
     def code_units_column(byte_offset, encoding)
       byte_offset - line_start(byte_offset)
@@ -411,7 +411,7 @@ module Prism
 
     # Create a new location object with the given source, start byte offset, and
     # byte length.
-    #--
+    #
     #: (Source source, Integer start_offset, Integer length) -> void
     def initialize(source, start_offset, length)
       @source = source
@@ -427,14 +427,14 @@ module Prism
 
     # These are the comments that are associated with this location that exist
     # before the start of this location.
-    #--
+    #
     #: () -> Array[Comment]
     def leading_comments
       @leading_comments ||= []
     end
 
     # Attach a comment to the leading comments of this location.
-    #--
+    #
     #: (Comment comment) -> void
     def leading_comment(comment)
       leading_comments << comment
@@ -442,14 +442,14 @@ module Prism
 
     # These are the comments that are associated with this location that exist
     # after the end of this location.
-    #--
+    #
     #: () -> Array[Comment]
     def trailing_comments
       @trailing_comments ||= []
     end
 
     # Attach a comment to the trailing comments of this location.
-    #--
+    #
     #: (Comment comment) -> void
     def trailing_comment(comment)
       trailing_comments << comment
@@ -457,42 +457,42 @@ module Prism
 
     # Returns all comments that are associated with this location (both leading
     # and trailing comments).
-    #--
+    #
     #: () -> Array[Comment]
     def comments
       [*@leading_comments, *@trailing_comments] #: Array[Comment]
     end
 
     # Create a new location object with the given options.
-    #--
+    #
     #: (?source: Source, ?start_offset: Integer, ?length: Integer) -> Location
     def copy(source: self.source, start_offset: self.start_offset, length: self.length)
       Location.new(source, start_offset, length)
     end
 
     # Returns a new location that is the result of chopping off the last byte.
-    #--
+    #
     #: () -> Location
     def chop
       copy(length: length == 0 ? length : length - 1)
     end
 
     # Returns a string representation of this location.
-    #--
+    #
     #: () -> String
     def inspect # :nodoc:
       "#<Prism::Location @start_offset=#{@start_offset} @length=#{@length} start_line=#{start_line}>"
     end
 
     # Returns all of the lines of the source code associated with this location.
-    #--
+    #
     #: () -> Array[String]
     def source_lines
       source.lines
     end
 
     # The source code that this location represents.
-    #--
+    #
     #: () -> String
     def slice
       source.slice(start_offset, length)
@@ -501,7 +501,7 @@ module Prism
     # The source code that this location represents starting from the beginning
     # of the line that this location starts on to the end of the line that this
     # location ends on.
-    #--
+    #
     #: () -> String
     def slice_lines
       line_start = source.line_start(start_offset)
@@ -511,14 +511,14 @@ module Prism
 
     # The character offset from the beginning of the source where this location
     # starts.
-    #--
+    #
     #: () -> Integer
     def start_character_offset
       source.character_offset(start_offset)
     end
 
     # The offset from the start of the file in code units of the given encoding.
-    #--
+    #
     #: (Encoding encoding) -> Integer
     def start_code_units_offset(encoding = Encoding::UTF_16LE)
       source.code_units_offset(start_offset, encoding)
@@ -526,14 +526,14 @@ module Prism
 
     # The start offset from the start of the file in code units using the given
     # cache to fetch or calculate the value.
-    #--
+    #
     #: (_CodeUnitsCache cache) -> Integer
     def cached_start_code_units_offset(cache)
       cache[start_offset]
     end
 
     # The byte offset from the beginning of the source where this location ends.
-    #--
+    #
     #: () -> Integer
     def end_offset
       start_offset + length
@@ -541,14 +541,14 @@ module Prism
 
     # The character offset from the beginning of the source where this location
     # ends.
-    #--
+    #
     #: () -> Integer
     def end_character_offset
       source.character_offset(end_offset)
     end
 
     # The offset from the start of the file in code units of the given encoding.
-    #--
+    #
     #: (Encoding encoding) -> Integer
     def end_code_units_offset(encoding = Encoding::UTF_16LE)
       source.code_units_offset(end_offset, encoding)
@@ -556,21 +556,21 @@ module Prism
 
     # The end offset from the start of the file in code units using the given
     # cache to fetch or calculate the value.
-    #--
+    #
     #: (_CodeUnitsCache cache) -> Integer
     def cached_end_code_units_offset(cache)
       cache[end_offset]
     end
 
     # The line number where this location starts.
-    #--
+    #
     #: () -> Integer
     def start_line
       source.line(start_offset)
     end
 
     # The content of the line where this location starts before this location.
-    #--
+    #
     #: () -> String
     def start_line_slice
       offset = source.line_start(start_offset)
@@ -578,7 +578,7 @@ module Prism
     end
 
     # The line number where this location ends.
-    #--
+    #
     #: () -> Integer
     def end_line
       source.line(end_offset)
@@ -586,7 +586,7 @@ module Prism
 
     # The column in bytes where this location starts from the start of
     # the line.
-    #--
+    #
     #: () -> Integer
     def start_column
       source.column(start_offset)
@@ -594,7 +594,7 @@ module Prism
 
     # The column in characters where this location ends from the start of
     # the line.
-    #--
+    #
     #: () -> Integer
     def start_character_column
       source.character_column(start_offset)
@@ -602,7 +602,7 @@ module Prism
 
     # The column in code units of the given encoding where this location
     # starts from the start of the line.
-    #--
+    #
     #: (?Encoding encoding) -> Integer
     def start_code_units_column(encoding = Encoding::UTF_16LE)
       source.code_units_column(start_offset, encoding)
@@ -610,7 +610,7 @@ module Prism
 
     # The start column in code units using the given cache to fetch or calculate
     # the value.
-    #--
+    #
     #: (_CodeUnitsCache cache) -> Integer
     def cached_start_code_units_column(cache)
       cache[start_offset] - cache[source.line_start(start_offset)]
@@ -618,7 +618,7 @@ module Prism
 
     # The column in bytes where this location ends from the start of the
     # line.
-    #--
+    #
     #: () -> Integer
     def end_column
       source.column(end_offset)
@@ -626,7 +626,7 @@ module Prism
 
     # The column in characters where this location ends from the start of
     # the line.
-    #--
+    #
     #: () -> Integer
     def end_character_column
       source.character_column(end_offset)
@@ -634,7 +634,7 @@ module Prism
 
     # The column in code units of the given encoding where this location
     # ends from the start of the line.
-    #--
+    #
     #: (?Encoding encoding) -> Integer
     def end_code_units_column(encoding = Encoding::UTF_16LE)
       source.code_units_column(end_offset, encoding)
@@ -642,28 +642,28 @@ module Prism
 
     # The end column in code units using the given cache to fetch or calculate
     # the value.
-    #--
+    #
     #: (_CodeUnitsCache cache) -> Integer
     def cached_end_code_units_column(cache)
       cache[end_offset] - cache[source.line_start(end_offset)]
     end
 
     # Implement the hash pattern matching interface for Location.
-    #--
+    #
     #: (Array[Symbol]? keys) -> Hash[Symbol, untyped]
     def deconstruct_keys(keys) # :nodoc:
       { start_offset: start_offset, end_offset: end_offset }
     end
 
     # Implement the pretty print interface for Location.
-    #--
+    #
     #: (PP q) -> void
     def pretty_print(q) # :nodoc:
       q.text("(#{start_line},#{start_column})-(#{end_line},#{end_column})")
     end
 
     # Returns true if the given other location is equal to this location.
-    #--
+    #
     #: (untyped other) -> bool
     def ==(other)
       Location === other &&
@@ -674,7 +674,7 @@ module Prism
     # Returns a new location that stretches from this location to the given
     # other location. Raises an error if this location is not before the other
     # location or if they don't share the same source.
-    #--
+    #
     #: (Location other) -> Location
     def join(other)
       raise "Incompatible sources" if source != other.source
@@ -686,7 +686,7 @@ module Prism
     # Join this location with the first occurrence of the string in the source
     # that occurs after this location on the same line, and return the new
     # location. This will raise an error if the string does not exist.
-    #--
+    #
     #: (String string) -> Location
     def adjoin(string)
       line_suffix = source.slice(end_offset, source.line_end(end_offset) - end_offset)
@@ -705,21 +705,21 @@ module Prism
     attr_reader :location #: Location
 
     # Create a new comment object with the given location.
-    #--
+    #
     #: (Location location) -> void
     def initialize(location)
       @location = location
     end
 
     # Implement the hash pattern matching interface for Comment.
-    #--
+    #
     #: (Array[Symbol]? keys) -> Hash[Symbol, untyped]
     def deconstruct_keys(keys) # :nodoc:
       { location: location }
     end
 
     # Returns the content of the comment by slicing it from the source code.
-    #--
+    #
     #: () -> String
     def slice
       location.slice
@@ -728,7 +728,7 @@ module Prism
     # Returns true if this comment happens on the same line as other code and
     # false if the comment is by itself. This can only be true for inline
     # comments and should be false for block comments.
-    #--
+    #
     #: () -> bool
     def trailing?
       raise NotImplementedError, "trailing? is not implemented for #{self.class}"
@@ -740,14 +740,14 @@ module Prism
   class InlineComment < Comment
     # Returns true if this comment happens on the same line as other code and
     # false if the comment is by itself.
-    #--
+    #
     #: () -> bool
     def trailing?
       !location.start_line_slice.strip.empty?
     end
 
     # Returns a string representation of this comment.
-    #--
+    #
     #: () -> String
     def inspect # :nodoc:
       "#<Prism::InlineComment @location=#{location.inspect}>"
@@ -758,14 +758,14 @@ module Prism
   # and =end.
   class EmbDocComment < Comment
     # Returns false. This can only be true for inline comments.
-    #--
+    #
     #: () -> bool
     def trailing?
       false
     end
 
     # Returns a string representation of this comment.
-    #--
+    #
     #: () -> String
     def inspect # :nodoc:
       "#<Prism::EmbDocComment @location=#{location.inspect}>"
@@ -781,7 +781,7 @@ module Prism
     attr_reader :value_loc #: Location
 
     # Create a new magic comment object with the given key and value locations.
-    #--
+    #
     #: (Location key_loc, Location value_loc) -> void
     def initialize(key_loc, value_loc)
       @key_loc = key_loc
@@ -789,28 +789,28 @@ module Prism
     end
 
     # Returns the key of the magic comment by slicing it from the source code.
-    #--
+    #
     #: () -> String
     def key
       key_loc.slice
     end
 
     # Returns the value of the magic comment by slicing it from the source code.
-    #--
+    #
     #: () -> String
     def value
       value_loc.slice
     end
 
     # Implement the hash pattern matching interface for MagicComment.
-    #--
+    #
     #: (Array[Symbol]? keys) -> Hash[Symbol, untyped]
     def deconstruct_keys(keys) # :nodoc:
       { key_loc: key_loc, value_loc: value_loc }
     end
 
     # Returns a string representation of this magic comment.
-    #--
+    #
     #: () -> String
     def inspect # :nodoc:
       "#<Prism::MagicComment @key=#{key.inspect} @value=#{value.inspect}>"
@@ -833,7 +833,7 @@ module Prism
     attr_reader :level #: Symbol
 
     # Create a new error object with the given message and location.
-    #--
+    #
     #: (Symbol type, String message, Location location, Symbol level) -> void
     def initialize(type, message, location, level)
       @type = type
@@ -843,14 +843,14 @@ module Prism
     end
 
     # Implement the hash pattern matching interface for ParseError.
-    #--
+    #
     #: (Array[Symbol]? keys) -> Hash[Symbol, untyped]
     def deconstruct_keys(keys) # :nodoc:
       { type: type, message: message, location: location, level: level }
     end
 
     # Returns a string representation of this error.
-    #--
+    #
     #: () -> String
     def inspect # :nodoc:
       "#<Prism::ParseError @type=#{@type.inspect} @message=#{@message.inspect} @location=#{@location.inspect} @level=#{@level.inspect}>"
@@ -873,7 +873,7 @@ module Prism
     attr_reader :level #: Symbol
 
     # Create a new warning object with the given message and location.
-    #--
+    #
     #: (Symbol type, String message, Location location, Symbol level) -> void
     def initialize(type, message, location, level)
       @type = type
@@ -883,14 +883,14 @@ module Prism
     end
 
     # Implement the hash pattern matching interface for ParseWarning.
-    #--
+    #
     #: (Array[Symbol]? keys) -> Hash[Symbol, untyped]
     def deconstruct_keys(keys) # :nodoc:
       { type: type, message: message, location: location, level: level }
     end
 
     # Returns a string representation of this warning.
-    #--
+    #
     #: () -> String
     def inspect # :nodoc:
       "#<Prism::ParseWarning @type=#{@type.inspect} @message=#{@message.inspect} @location=#{@location.inspect} @level=#{@level.inspect}>"
@@ -922,7 +922,7 @@ module Prism
     attr_reader :source #: Source
 
     # Create a new result object with the given values.
-    #--
+    #
     #: (Array[Comment] comments, Array[MagicComment] magic_comments, Location? data_loc, Array[ParseError] errors, Array[ParseWarning] warnings, bool continuable, Source source) -> void
     def initialize(comments, magic_comments, data_loc, errors, warnings, continuable, source)
       @comments = comments
@@ -935,14 +935,14 @@ module Prism
     end
 
     # Implement the hash pattern matching interface for Result.
-    #--
+    #
     #: (Array[Symbol]? keys) -> Hash[Symbol, untyped]
     def deconstruct_keys(keys) # :nodoc:
       { comments: comments, magic_comments: magic_comments, data_loc: data_loc, errors: errors, warnings: warnings }
     end
 
     # Returns the encoding of the source code that was parsed.
-    #--
+    #
     #: () -> Encoding
     def encoding
       source.encoding
@@ -950,7 +950,7 @@ module Prism
 
     # Returns true if there were no errors during parsing and false if there
     # were.
-    #--
+    #
     #: () -> bool
     def success?
       errors.empty?
@@ -958,7 +958,7 @@ module Prism
 
     # Returns true if there were errors during parsing and false if there were
     # not.
-    #--
+    #
     #: () -> bool
     def failure?
       !success?
@@ -984,14 +984,13 @@ module Prism
     #     Prism.parse("tap do").continuable?     #=> true  (unclosed block)
     #     Prism.parse("end.tap do").continuable? #=> false (stray end)
     #
-    #--
     #: () -> bool
     def continuable?
       @continuable
     end
 
     # Create a code units cache for the given encoding.
-    #--
+    #
     #: (Encoding encoding) -> _CodeUnitsCache
     def code_units_cache(encoding)
       source.code_units_cache(encoding)
@@ -1012,7 +1011,7 @@ module Prism
     attr_reader :value #: ProgramNode
 
     # Create a new parse result object with the given values.
-    #--
+    #
     #: (ProgramNode value, Array[Comment] comments, Array[MagicComment] magic_comments, Location? data_loc, Array[ParseError] errors, Array[ParseWarning] warnings, bool continuable, Source source) -> void
     def initialize(value, comments, magic_comments, data_loc, errors, warnings, continuable, source)
       @value = value
@@ -1020,14 +1019,14 @@ module Prism
     end
 
     # Implement the hash pattern matching interface for ParseResult.
-    #--
+    #
     #: (Array[Symbol]? keys) -> Hash[Symbol, untyped]
     def deconstruct_keys(keys) # :nodoc:
       super.merge!(value: value)
     end
 
     # Attach the list of comments to their respective locations in the tree.
-    #--
+    #
     #: () -> void
     def attach_comments!
       Comments.new(self).attach! # steep:ignore
@@ -1035,7 +1034,7 @@ module Prism
 
     # Walk the tree and mark nodes that are on a new line, loosely emulating
     # the behavior of CRuby's `:line` tracepoint event.
-    #--
+    #
     #: () -> void
     def mark_newlines!
       value.accept(Newlines.new(source.offsets.size)) # steep:ignore
@@ -1043,7 +1042,7 @@ module Prism
 
     # Returns a string representation of the syntax tree with the errors
     # displayed inline.
-    #--
+    #
     #: () -> String
     def errors_format
       Errors.new(self).format
@@ -1053,18 +1052,18 @@ module Prism
   # This is a result specific to the `lex` and `lex_file` methods.
   class LexResult < Result
     # The list of tokens that were parsed from the source code.
-    attr_reader :value #: Array[[Token, Integer]]
+    attr_reader :value #: Array[Token]
 
     # Create a new lex result object with the given values.
-    #--
-    #: (Array[[Token, Integer]] value, Array[Comment] comments, Array[MagicComment] magic_comments, Location? data_loc, Array[ParseError] errors, Array[ParseWarning] warnings, bool continuable, Source source) -> void
+    #
+    #: (Array[Token] value, Array[Comment] comments, Array[MagicComment] magic_comments, Location? data_loc, Array[ParseError] errors, Array[ParseWarning] warnings, bool continuable, Source source) -> void
     def initialize(value, comments, magic_comments, data_loc, errors, warnings, continuable, source)
       @value = value
       super(comments, magic_comments, data_loc, errors, warnings, continuable, source)
     end
 
     # Implement the hash pattern matching interface for LexResult.
-    #--
+    #
     #: (Array[Symbol]? keys) -> Hash[Symbol, untyped]
     def deconstruct_keys(keys) # :nodoc:
       super.merge!(value: value)
@@ -1075,18 +1074,18 @@ module Prism
   class ParseLexResult < Result
     # A tuple of the syntax tree and the list of tokens that were parsed from
     # the source code.
-    attr_reader :value #: [ProgramNode, Array[[Token, Integer]]]
+    attr_reader :value #: [ProgramNode, Array[Token]]
 
     # Create a new parse lex result object with the given values.
-    #--
-    #: ([ProgramNode, Array[[Token, Integer]]] value, Array[Comment] comments, Array[MagicComment] magic_comments, Location? data_loc, Array[ParseError] errors, Array[ParseWarning] warnings, bool continuable, Source source) -> void
+    #
+    #: ([ProgramNode, Array[Token]] value, Array[Comment] comments, Array[MagicComment] magic_comments, Location? data_loc, Array[ParseError] errors, Array[ParseWarning] warnings, bool continuable, Source source) -> void
     def initialize(value, comments, magic_comments, data_loc, errors, warnings, continuable, source)
       @value = value
       super(comments, magic_comments, data_loc, errors, warnings, continuable, source)
     end
 
     # Implement the hash pattern matching interface for ParseLexResult.
-    #--
+    #
     #: (Array[Symbol]? keys) -> Hash[Symbol, untyped]
     def deconstruct_keys(keys) # :nodoc:
       super.merge!(value: value)
@@ -1108,24 +1107,25 @@ module Prism
     # @rbs @location: Location | Integer
 
     # Create a new token object with the given type, value, and location.
-    #--
-    #: (Source source, Symbol type, String value, Location | Integer location) -> void
-    def initialize(source, type, value, location)
+    #
+    #: (Source source, Symbol type, String value, Location | Integer location, Integer state) -> void
+    def initialize(source, type, value, location, state)
       @source = source
       @type = type
       @value = value
       @location = location
+      @state = state
     end
 
     # Implement the hash pattern matching interface for Token.
-    #--
+    #
     #: (Array[Symbol]? keys) -> Hash[Symbol, untyped]
     def deconstruct_keys(keys) # :nodoc:
       { type: type, value: value, location: location }
     end
 
     # A Location object representing the location of this token in the source.
-    #--
+    #
     #: () -> Location
     def location
       location = @location
@@ -1134,7 +1134,7 @@ module Prism
     end
 
     # Implement the pretty print interface for Token.
-    #--
+    #
     #: (PP q) -> void
     def pretty_print(q) # :nodoc:
       q.group do
@@ -1151,7 +1151,7 @@ module Prism
     end
 
     # Returns true if the given other token is equal to this token.
-    #--
+    #
     #: (untyped other) -> bool
     def ==(other)
       Token === other &&
@@ -1160,7 +1160,7 @@ module Prism
     end
 
     # Returns a string representation of this token.
-    #--
+    #
     #: () -> String
     def inspect # :nodoc:
       location
@@ -1168,12 +1168,33 @@ module Prism
     end
 
     # Freeze this object and the objects it contains.
-    #--
+    #
     #: () -> void
     def deep_freeze
       value.freeze
       location.freeze
       freeze
+    end
+
+    # For internal use only.
+    #: () -> Integer
+    def _ripper_state # :nodoc:
+      @state
+    end
+
+    # Backwards compatibility for Prism.lex/Prism.lex_file/Prism.parse_lex
+    # when they returned a 2-element array.
+
+    #: (Integer index) -> Token | Integer
+    def [](index) # :nodoc:
+      return self if index == 0
+      return @state if index == 1
+      raise ArgumentError, "Invalid index #{index}"
+    end
+
+    #: () -> Token
+    def first # :nodoc:
+      self
     end
   end
 
@@ -1192,7 +1213,7 @@ module Prism
     attr_reader :forwarding #: Array[Symbol]
 
     # Create a new scope object with the given locals and forwarding.
-    #--
+    #
     #: (Array[Symbol] locals, Array[Symbol] forwarding) -> void
     def initialize(locals, forwarding)
       @locals = locals
@@ -1203,7 +1224,7 @@ module Prism
   # Create a new scope with the given locals and forwarding options that is
   # suitable for passing into one of the Prism.* methods that accepts the
   # `scopes` option.
-  #--
+  #
   #: (?locals: Array[Symbol], ?forwarding: Array[Symbol]) -> Scope
   def self.scope(locals: [], forwarding: [])
     Scope.new(locals, forwarding)

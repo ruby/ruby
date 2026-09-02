@@ -209,6 +209,57 @@ class TestMkdepend < Test::Unit::TestCase
     end
   end
 
+  def test_scanners_share_source_file_cache
+    Dir.mktmpdir('mkdepend-scanner') do |dir|
+      %w[first.c second.c].each do |source|
+        File.write(File.join(dir, source), "#include \"common.h\"\n")
+      end
+      header = File.join(dir, 'common.h')
+      File.write(header, "#include \"nested.h\"\n")
+      File.write(File.join(dir, 'nested.h'), "")
+
+      cache = {}
+      opened = Hash.new(0)
+      original_open = File.method(:open)
+      File.define_singleton_method(:open) do |path, *args, **kwargs, &block|
+        opened[File.expand_path(path)] += 1
+        original_open.call(path, *args, **kwargs, &block)
+      end
+
+      %w[first.c second.c].each do |source|
+        scanner = Scanner.new(root: dir, include_dirs: [dir], cache: cache)
+        assert_include(scanner.scan(source), 'common.h')
+      end
+      assert_equal(1, opened[header])
+    ensure
+      File.define_singleton_method(:open, original_open) if original_open
+    end
+  end
+
+  def test_scanner_joins_continued_directives
+    Dir.mktmpdir('mkdepend-scanner') do |dir|
+      File.write(File.join(dir, 'main.c'), <<~'C')
+        #include \
+          "continued.h"
+      C
+      File.write(File.join(dir, 'continued.h'), "")
+
+      scanner = Scanner.new(root: dir, include_dirs: [dir])
+      assert_include(scanner.scan('main.c'), 'continued.h')
+    end
+  end
+
+  def test_scanner_ignores_template_include
+    Dir.mktmpdir('mkdepend-scanner') do |dir|
+      File.write(File.join(dir, 'main.c'), "#include <<%= header %>>\n")
+
+      scanner = Scanner.new(root: dir, include_dirs: [dir])
+
+      assert_equal(%w[main.c], scanner.scan('main.c'))
+      assert_empty(scanner.unresolved)
+    end
+  end
+
   def test_project_internal_headers_precede_public_headers
     Dir.mktmpdir('mkdepend-scanner') do |root|
       %w[ext/example internal include/ruby/internal].each do |dir|
@@ -260,6 +311,10 @@ class TestMkdepend < Test::Unit::TestCase
       'prism/templates/include/prism/ast.h.erb',
       declarations.scan['prism/ast.h'],
     )
+    assert_equal(
+      'prism/templates/include/prism/internal/diagnostic.h.erb',
+      declarations.scan['prism/internal/diagnostic.h'],
+    )
     assert_equal('thread_pthread.h', declarations.scan['THREAD_IMPL_H'])
     assert_equal('thread_pthread.c', declarations.scan['THREAD_IMPL_SRC'])
     assert_equal(
@@ -281,8 +336,6 @@ class TestMkdepend < Test::Unit::TestCase
       %w[eventids1.h {$(VPATH)}eventids1.c],
       ripper.dependencies['eventids1.c'],
     )
-    console = mkdepend.dependency_declarations('ext/io/console/depend')
-    assert_equal(%w[$(VK_HEADER)], console.dependencies['win32_vk.inc'])
     assert_include(
       mkdepend.dependency_targets('ext/socket/depend'),
       'constdefs.h',
@@ -885,6 +938,7 @@ class TestMkdepend < Test::Unit::TestCase
 
         #{MARK_START}
         example.o: example.c
+        example.o: local.h
         #{MARK_END}
       DEPEND
     end
@@ -947,6 +1001,85 @@ class TestMkdepend < Test::Unit::TestCase
       assert_match(/date_core\.o.*: \$\(hdrdir\)\/ruby\/ruby\.h/, generated)
       assert_not_include(generated, '{$(VPATH)}')
       assert_equal(original, File.read(source))
+    end
+  end
+
+  def test_run_reuses_unchanged_output_dependencies
+    Dir.mktmpdir('mkdepend-input') do |root|
+      File.write(File.join(root, 'one.c'), "#include \"common.h\"\n")
+      header = File.join(root, 'common.h')
+      File.write(header, "")
+      input = File.join(root, 'depend')
+      File.write(input, <<~DEPEND)
+        #{MARK_START}
+        one.$(OBJEXT): one.c
+        #{MARK_END}
+      DEPEND
+      output = File.join(root, '.deps')
+      destination = File.join(output, 'depend')
+
+      updater = TestDepend.new(root: root)
+      assert_true(updater.run([input], mode: :output, output: output))
+      assert_path_exist(destination + '.mkdepend')
+
+      opened = []
+      original_open = File.method(:open)
+      File.define_singleton_method(:open) do |path, *args, **kwargs, &block|
+        opened << File.expand_path(path)
+        original_open.call(path, *args, **kwargs, &block)
+      end
+      updater = TestDepend.new(root: root)
+      assert_true(updater.run([input], mode: :output, output: output))
+      assert_empty(opened & [File.join(root, 'one.c'), header])
+
+      future = Time.now + 2
+      File.utime(future, future, header)
+      updater = TestDepend.new(root: root)
+      assert_true(updater.run([input], mode: :output, output: output))
+      assert_include(opened, header)
+    ensure
+      File.define_singleton_method(:open, original_open) if original_open
+    end
+  end
+
+  def test_run_invalidates_output_when_missing_header_appears
+    Dir.mktmpdir('mkdepend-input') do |root|
+      File.write(File.join(root, 'one.c'), "#include \"appeared.h\"\n")
+      input = File.join(root, 'depend')
+      File.write(input, <<~DEPEND)
+        #{MARK_START}
+        one.$(OBJEXT): one.c
+        #{MARK_END}
+      DEPEND
+      output = File.join(root, '.deps')
+      destination = File.join(output, 'depend')
+      updater = TestDepend.new(root: root)
+
+      assert_true(updater.run([input], mode: :output, output: output))
+      assert_not_include(File.read(destination), 'appeared.h')
+
+      File.write(File.join(root, 'appeared.h'), "")
+      assert_true(updater.run([input], mode: :output, output: output))
+      assert_include(File.read(destination), 'one.$(OBJEXT): appeared.h')
+    end
+  end
+
+  def test_run_reuses_output_with_non_directory_include_prefix
+    Dir.mktmpdir('mkdepend-input') do |root|
+      File.write(File.join(root, 'ruby'), "")
+      File.write(File.join(root, 'one.c'), "#include \"ruby/assert.h\"\n")
+      input = File.join(root, 'depend')
+      File.write(input, <<~DEPEND)
+        #{MARK_START}
+        one.$(OBJEXT): one.c
+        #{MARK_END}
+      DEPEND
+      output = File.join(root, '.deps')
+      updater = TestDepend.new(root: root)
+
+      assert_true(updater.run([input], mode: :output, output: output))
+      updater = TestDepend.new(root: root)
+      assert_true(updater.run([input], mode: :output, output: output))
     end
   end
 
@@ -1025,68 +1158,6 @@ class TestMkdepend < Test::Unit::TestCase
         )
       end
     end
-  end
-
-  def test_build_frontends_use_selected_dependency_directory
-    common = File.read(File.join(TOP_SRCDIR, 'common.mk'))
-    configure = File.read(File.join(TOP_SRCDIR, 'configure.ac'))
-    makefile = File.read(File.join(TOP_SRCDIR, 'template/Makefile.in'))
-    gnumakefile = File.read(File.join(TOP_SRCDIR, 'template/GNUmakefile.in'))
-    prereq = File.read(File.join(TOP_SRCDIR, 'tool/prereq.status'))
-    win32 = File.read(File.join(TOP_SRCDIR, 'win32/Makefile.sub'))
-    setup = File.read(File.join(TOP_SRCDIR, 'win32/setup.mak'))
-    mkmf = File.read(File.join(TOP_SRCDIR, 'lib/mkmf.rb'))
-    configure_ext = File.read(
-      File.join(TOP_SRCDIR, 'template/configure-ext.mk.tmpl'),
-    )
-
-    assert_include(common, '!include $(DEPENDENCIES_DIR)/depend')
-    assert_include(configure, 'AC_SUBST(X_DEPENDENCIES_DIR)')
-    assert_include(configure, "X_DEPENDENCIES_DIR='\$X_DEPENDENCIES_DIR'")
-    assert_not_include(configure, 'AC_SUBST(DEPENDENCIES_DIR)')
-    assert_include(configure, '--root="$srcdir"')
-    assert_include(configure, '--scope=core')
-    assert_include(makefile, 'DEPENDENCIES_DIR = @X_DEPENDENCIES_DIR@')
-    assert_include(prereq, 's,@X_DEPENDENCIES_DIR@,$(srcdir),g')
-    assert_include(gnumakefile, 'include $(DEPENDENCIES_DIR)/depend')
-    assert_match(/filter-out .*DEPENDENCIES_DIR.*common_mk_includes/, gnumakefile)
-    assert_include(win32, 'DEPENDENCIES_DIR = .deps')
-    assert_include(win32, 'DEPENDENCIES_DIR = $(srcdir)')
-    assert_include(setup, '--scope=core')
-    assert_include(mkmf, 'if arg_config("--update-depend")')
-    assert_include(mkmf, 'MakeMakefile::Depend.new')
-    assert_include(configure_ext, '--scope=extensions')
-    assert_include(configure_ext, '--thread-model=$(THREAD_MODEL)')
-    assert_match(
-      %r{tool/mkdepend\.rb.*\n.*--output=\.deps},
-      configure_ext,
-    )
-  end
-
-  def test_common_dependency_maintenance_targets
-    common = File.read(File.join(TOP_SRCDIR, 'common.mk'))
-    gmake = File.read(File.join(TOP_SRCDIR, 'defs/gmake.mk'))
-    setup = File.read(File.join(TOP_SRCDIR, 'win32/setup.mak'))
-    snapshot = File.read(File.join(TOP_SRCDIR, 'tool/make-snapshot'))
-
-    assert_match(/^fix-depends: PHONY$/, common)
-    assert_match(/^check-depends: PHONY$/, common)
-    assert_match(/^distclean-local::.*\n\t-\$\(Q\)\$\(RMALL\) \.deps$/, common)
-    assert_not_match(/^fix-depends:/, gmake)
-    assert_not_match(/^check-depends:/, gmake)
-    assert_match(/rm\.bat -f -r \.deps/, setup)
-    assert_include(setup, '--root=$(srcdir)')
-    assert_match(
-      %r{tool[\\/]mkdepend\.rb --root=\$\(srcdir\) --scope=core --nmake --output=\.deps},
-      setup,
-    )
-    assert_include(snapshot, 'args["MKDEPEND_FILES"] = "--scope=core"')
-    assert_include(snapshot, 'args["MKDEPEND_OPTIONS"] = ""')
-    assert_match(
-      %r{if File\.file\?\("tool/mkdepend\.rb"\).*make\.run\("fix-depends"\)}m,
-      snapshot,
-    )
-    assert_not_include(snapshot, 'File.read("defs/gmake.mk")')
   end
 
   def test_file_without_markers_is_not_updated

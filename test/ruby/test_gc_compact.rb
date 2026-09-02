@@ -505,4 +505,19 @@ class TestGCCompact < Test::Unit::TestCase
       assert :ok
     RUBY
   end
+
+  # Regression test for [Bug #22237]
+  def test_str_and_ary_ptr_references_dont_go_stale_after_compaction
+    assert_separately([], <<~'RUBY')
+      input = "aaa"
+      iterations = 20_000
+      GC.auto_compact = true
+      Object.new # increases chance of memory corruption or segfault
+
+      iterations.times do |i|
+        s = input.tr("\u0080", "\u20AC").dup
+        assert_equal input, s
+      end
+    RUBY
+  end
 end

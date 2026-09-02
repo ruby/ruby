@@ -26,6 +26,9 @@ module Bundler
       Bundler::Fetcher.disable_endpoint = options["full-index"]
 
       update = options[:update]
+      # --update is repeatable, so it parses as an array with one entry per
+      # occurrence, where a bare `--update` produces a `true` entry
+      update = update.include?(true) ? true : update.flatten if update.is_a?(Array)
       conservative = options[:conservative]
       bundler = options[:bundler]
 
@@ -44,12 +47,12 @@ module Bundler
 
         Bundler::CLI::Common.configure_gem_version_promoter(definition, options) if options[:update]
 
-        options["remove-platform"].each do |platform_string|
+        options["remove-platform"].flatten.each do |platform_string|
           platform = Gem::Platform.new(platform_string)
           definition.remove_platform(platform)
         end
 
-        options["add-platform"].each do |platform_string|
+        options["add-platform"].flatten.each do |platform_string|
           platform = Gem::Platform.new(platform_string)
           if platform.to_s == "unknown"
             Bundler.ui.error "The platform `#{platform_string}` is unknown to RubyGems and can't be added to the lockfile."

@@ -95,8 +95,21 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
 
   case gem
   when "rbs"
-    # TODO: We should skip test file instead of test class/methods
+    # json gem v3 removed JSON additions.
     skip_test_files = %w[
+      test/stdlib/json/JSONBigDecimal_test.rb
+      test/stdlib/json/JSONComplex_test.rb
+      test/stdlib/json/JSONDateTime_test.rb
+      test/stdlib/json/JSONDate_test.rb
+      test/stdlib/json/JSONException_test.rb
+      test/stdlib/json/JSONOpenStruct_test.rb
+      test/stdlib/json/JSONRange_test.rb
+      test/stdlib/json/JSONRational_test.rb
+      test/stdlib/json/JSONRegexp_test.rb
+      test/stdlib/json/JSONSet_test.rb
+      test/stdlib/json/JSONStruct_test.rb
+      test/stdlib/json/JSONSymbol_test.rb
+      test/stdlib/json/JSONTime_test.rb
     ]
 
     skip_test_files.each do |file|
@@ -117,6 +130,16 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
 
   when "rexml"
     test_command[-2..-1] = %w[test/run.rb --ignore-name=/linear_performance/]
+
+  when "fiddle"
+    # When ZJIT is compile-happy, skip Fiddle::TestFunction#test_no_memory_leak
+    # since compiling uses more memory which the test does not expect.
+    # Similarly, it's extremely flaky when running with `parse.y` for unclear reasons,
+    # but closer inspection didn't reveal any leak.
+    # It's a bit of a badly crafted test, and is likely missing some warmup to stabilize the memory usage.
+    if run_opts&.include?("--zjit-call-threshold=1") || run_opts&.include?('--parser=parse.y')
+      test_command[-2..-1] = %w[test/run.rb --ignore-name=/\Atest_no_memory_leak\z/]
+    end
 
   when "debug"
     # needs pty

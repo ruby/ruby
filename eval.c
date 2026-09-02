@@ -77,6 +77,9 @@ ruby_setup(void)
 #if defined(__linux__) && defined(PR_SET_THP_DISABLE)
     prctl(PR_SET_THP_DISABLE, 1, 0, 0, 0);
 #endif
+#if defined(_WIN32)
+    rb_w32_init_long_paths();
+#endif
     Init_BareVM();
     rb_vm_encoded_insn_data_table_init();
     Init_enable_box();

@@ -27,6 +27,7 @@ require "rbconfig"
 #
 # +:backtrace+:: See #backtrace
 # +:bulk_threshold+:: See #bulk_threshold
+# +:cooldown+:: See #cooldown
 # +:verbose+:: See #verbose
 # +:update_sources+:: See #update_sources
 # +:concurrent_downloads+:: See #concurrent_downloads
@@ -35,6 +36,7 @@ require "rbconfig"
 # +:ipv4_fallback_enabled+:: See #ipv4_fallback_enabled
 # +:global_gem_cache+:: See #global_gem_cache
 # +:use_psych+:: See #use_psych
+# +:credential_store+:: See #credential_store
 # +:gemhome+:: See #home
 # +:gempath+:: See #path
 # +:sources+:: Sets Gem::sources
@@ -55,6 +57,7 @@ class Gem::ConfigFile
 
   DEFAULT_BACKTRACE = true
   DEFAULT_BULK_THRESHOLD = 1000
+  DEFAULT_COOLDOWN = 0
   DEFAULT_VERBOSITY = true
   DEFAULT_UPDATE_SOURCES = true
   DEFAULT_CONCURRENT_DOWNLOADS = 8
@@ -63,6 +66,14 @@ class Gem::ConfigFile
   DEFAULT_INSTALL_EXTENSION_IN_LIB = true
   DEFAULT_GLOBAL_GEM_CACHE = false
   DEFAULT_USE_PSYCH = false
+  DEFAULT_CREDENTIAL_STORE = false
+
+  ##
+  # The account name under which the default RubyGems.org API key is
+  # stored in the credential store, mirroring the +:rubygems_api_key+
+  # symbol used by the plain text credentials file.
+
+  CREDENTIAL_STORE_DEFAULT_ACCOUNT = "rubygems_api_key"
 
   ##
   # For Ruby packagers to set configuration defaults.  Set in
@@ -115,6 +126,15 @@ class Gem::ConfigFile
   # threshold value, then a bulk download technique is used.  (deprecated)
 
   attr_accessor :bulk_threshold
+
+  ##
+  # Number of days a newly published gem version must wait before it is
+  # considered for installation or update (the cooldown period).  0
+  # disables the cooldown.  A value that cannot be read as a non-negative
+  # integer warns and leaves the cooldown disabled, so a typo in the gemrc
+  # file does not make every command fail.
+
+  attr_accessor :cooldown
 
   ##
   # Verbose level of output:
@@ -171,7 +191,12 @@ class Gem::ConfigFile
 
   ##
   # Use a global cache for .gem files shared across all Ruby installations.
-  # When enabled, gems are cached to ~/.cache/gem/gems (or XDG_CACHE_HOME/gem/gems).
+  # When enabled, gems fetched from a remote source are cached to
+  # ~/.cache/gem/gems (or XDG_CACHE_HOME/gem/gems). Gems installed from a
+  # local path are not, since a cached copy is later reused without being
+  # verified again. <tt>gem fetch</tt> still writes to the working directory,
+  # and an unwritable cache directory falls back to the cache of the
+  # installation.
 
   attr_accessor :global_gem_cache
 
@@ -184,6 +209,17 @@ class Gem::ConfigFile
   # Path name of directory or file of openssl client certificate, used for remote https connection with client authentication
 
   attr_reader :ssl_client_cert
+
+  ##
+  # == Experimental ==
+  # Store and read push/authentication credentials in a credential store
+  # instead of the plain text credentials file. +true+ selects the operating
+  # system's native store (macOS Keychain, Linux Secret Service, Windows
+  # Credential Manager) when one is available on this platform. A string
+  # selects a named backend registered by a third-party gem, such as
+  # +"1password"+. +false+ (the default) keeps using the credentials file.
+
+  attr_accessor :credential_store
 
   ##
   # Create the config file object.  +args+ is the list of arguments
@@ -211,6 +247,7 @@ class Gem::ConfigFile
 
     @backtrace = DEFAULT_BACKTRACE
     @bulk_threshold = DEFAULT_BULK_THRESHOLD
+    @cooldown = DEFAULT_COOLDOWN
     @verbose = DEFAULT_VERBOSITY
     @update_sources = DEFAULT_UPDATE_SOURCES
     @concurrent_downloads = DEFAULT_CONCURRENT_DOWNLOADS
@@ -219,9 +256,10 @@ class Gem::ConfigFile
     @ipv4_fallback_enabled = ENV["IPV4_FALLBACK_ENABLED"] == "true" || DEFAULT_IPV4_FALLBACK_ENABLED
     @global_gem_cache = ENV["RUBYGEMS_GLOBAL_GEM_CACHE"] == "true" || DEFAULT_GLOBAL_GEM_CACHE
     @use_psych = ENV["RUBYGEMS_USE_PSYCH"] == "true" || DEFAULT_USE_PSYCH
+    @credential_store = normalize_credential_store(ENV["RUBYGEMS_CREDENTIAL_STORE"], DEFAULT_CREDENTIAL_STORE)
 
-    operating_system_config = Marshal.load Marshal.dump(OPERATING_SYSTEM_DEFAULTS)
-    platform_config = Marshal.load Marshal.dump(PLATFORM_DEFAULTS)
+    operating_system_config = Gem::Util.deep_dup(OPERATING_SYSTEM_DEFAULTS)
+    platform_config = Gem::Util.deep_dup(PLATFORM_DEFAULTS)
     system_config = load_file SYSTEM_WIDE_CONFIG_FILE
     user_config = load_file config_file_name
 
@@ -239,9 +277,9 @@ class Gem::ConfigFile
 
     @hash.transform_keys! do |k|
       # gemhome and gempath are not working with symbol keys
-      if %w[backtrace bulk_threshold verbose update_sources cert_expiration_length_days
+      if %w[backtrace bulk_threshold cooldown verbose update_sources cert_expiration_length_days
             concurrent_downloads install_extension_in_lib ipv4_fallback_enabled
-            global_gem_cache use_psych sources
+            global_gem_cache use_psych credential_store sources
             disable_default_gem_server ssl_verify_mode ssl_ca_cert ssl_client_cert].include?(k)
         k.to_sym
       else
@@ -252,6 +290,7 @@ class Gem::ConfigFile
     # HACK: these override command-line args, which is bad
     @backtrace                   = @hash[:backtrace]                   if @hash.key? :backtrace
     @bulk_threshold              = @hash[:bulk_threshold]              if @hash.key? :bulk_threshold
+    @cooldown                    = @hash[:cooldown]                    if @hash.key? :cooldown
     @verbose                     = @hash[:verbose]                     if @hash.key? :verbose
     @update_sources              = @hash[:update_sources]              if @hash.key? :update_sources
     @concurrent_downloads        = @hash[:concurrent_downloads]        if @hash.key? :concurrent_downloads
@@ -260,6 +299,7 @@ class Gem::ConfigFile
     @ipv4_fallback_enabled       = @hash[:ipv4_fallback_enabled]       if @hash.key? :ipv4_fallback_enabled
     @global_gem_cache            = @hash[:global_gem_cache]            if @hash.key? :global_gem_cache
     @use_psych                   = @hash[:use_psych]                   if @hash.key? :use_psych
+    @credential_store            = normalize_credential_store(@hash[:credential_store], @credential_store) if @hash.key? :credential_store
 
     @home                        = @hash[:gemhome]                     if @hash.key? :gemhome
     @path                        = @hash[:gempath]                     if @hash.key? :gempath
@@ -276,7 +316,11 @@ class Gem::ConfigFile
   end
 
   ##
-  # Hash of RubyGems.org and alternate API keys
+  # Hash of RubyGems.org and alternate API keys, as they appear in the
+  # credentials file. Keys held in the credential store are not included, so
+  # this is not the full set of keys a command can authenticate with. Use
+  # #credential_store_api_key_for or #credential_store_default_api_key to
+  # reach those.
 
   def api_keys
     load_api_keys unless @api_keys
@@ -351,45 +395,147 @@ if you believe they were disclosed to a third party.
   def rubygems_api_key
     load_api_keys unless @rubygems_api_key
 
-    @rubygems_api_key
+    # #load_api_keys only reads the credentials file, which no longer holds the
+    # key once it is stored. A copy left there after the move is stale.
+    credential_store_default_api_key || @rubygems_api_key
   end
 
   ##
   # Sets the RubyGems.org API key to +api_key+
 
   def rubygems_api_key=(api_key)
+    if credential_store
+      store = active_credential_store
+
+      if api_key.to_s.empty?
+        warn_unremoved_credential(CREDENTIAL_STORE_DEFAULT_ACCOUNT) if store&.available? && !store.delete(CREDENTIAL_STORE_DEFAULT_ACCOUNT)
+      elsif store&.set(CREDENTIAL_STORE_DEFAULT_ACCOUNT, api_key)
+        remove_api_key_from_file(:rubygems_api_key)
+        @rubygems_api_key = api_key
+        return
+      else
+        warn_unremoved_credential(CREDENTIAL_STORE_DEFAULT_ACCOUNT) if store&.available? && !store.delete(CREDENTIAL_STORE_DEFAULT_ACCOUNT)
+        warn_credential_store_fallback
+      end
+    end
+
     set_api_key :rubygems_api_key, api_key
 
     @rubygems_api_key = api_key
   end
 
   ##
+  # Looks up +host+'s own API key from the credential store, when the
+  # #credential_store setting is on. Only the host-specific account is
+  # consulted: falling back to the default account here would send the
+  # RubyGems.org key to whatever host was asked for, ahead of that host's own
+  # key in the credentials file. #credential_store_default_api_key covers the
+  # default account, at the precedence the credentials file uses for it.
+
+  def credential_store_api_key_for(host)
+    return nil if host.nil? || host.to_s.empty?
+    return nil unless credential_store
+    return nil unless store = active_credential_store
+
+    store.get(self.class.credential_store_account(host))
+  end
+
+  ##
+  # True when a read for +host+ failed rather than finding nothing. Whether
+  # the store holds a key for it is unknowable once the read fails, which is
+  # the point: a caller that would otherwise fall through to a key belonging
+  # to a different host has to treat "unknown" differently from "absent".
+
+  def credential_store_read_failed_for?(host)
+    return false unless credential_store
+    return false unless store = active_credential_store
+
+    # #rubygems_api_key reads the default account on the way to answering, and
+    # for the default host that is the only failure that can happen.
+    return true if store.read_failed?(CREDENTIAL_STORE_DEFAULT_ACCOUNT)
+    return false if host.nil? || host.to_s.empty?
+
+    store.read_failed?(self.class.credential_store_account(host))
+  end
+
+  ##
+  # The default RubyGems.org API key from the credential store, or +nil+.
+  # This is the stored counterpart of #rubygems_api_key, and belongs at the
+  # same point in the lookup order.
+
+  def credential_store_default_api_key
+    return nil unless credential_store
+    return nil unless store = active_credential_store
+
+    store.get(CREDENTIAL_STORE_DEFAULT_ACCOUNT)
+  end
+
+  ##
   # Set a specific host's API key to +api_key+
 
   def set_api_key(host, api_key)
+    if credential_store && host != :rubygems_api_key
+      store = active_credential_store
+
+      if api_key.to_s.empty?
+        delete_stored_key(store, host)
+      elsif store&.set(self.class.credential_store_account(host), api_key)
+        remove_api_key_from_file(host)
+        return
+      else
+        delete_stored_key(store, host)
+        warn_credential_store_fallback
+      end
+    end
+
     check_credentials_permissions
 
-    config = load_file(credentials_path).merge(host => api_key)
+    config = load_file(credentials_path).merge(self.class.normalize_credentials_key(host) => api_key)
 
-    dirname = File.dirname credentials_path
-    require "fileutils"
-    FileUtils.mkdir_p(dirname)
-
-    permissions = 0o600 & ~File.umask
-    File.open(credentials_path, "w", permissions) do |f|
-      f.write self.class.dump_with_rubygems_yaml(config)
-    end
+    write_credentials(config)
 
     load_api_keys # reload
   end
 
   ##
-  # Remove the +~/.gem/credentials+ file to clear all the current sessions.
+  # Remove the +~/.gem/credentials+ file to clear all the current sessions,
+  # and every RubyGems key from the credential store when the
+  # #credential_store setting is on, including keys saved for other hosts
+  # with <tt>gem signin --host</tt>.
 
   def unset_api_key!
-    return false unless File.exist?(credentials_path)
+    store = active_credential_store
+    store_cleared =
+      if store.nil?
+        true
+      elsif store.available?
+        store.delete_all
+      else
+        # Failing here would make signout exit 1 on every platform without a
+        # native store, and plain success would claim a removal nobody made.
+        Gem::CredentialStore.warn_once "The credential store is enabled but unavailable, so any key it holds was left in place."
+        true
+      end
 
-    File.delete(credentials_path)
+    file_removed =
+      if File.exist?(credentials_path)
+        # POSIX deletes a read-only file whenever the directory is writable, so
+        # the marking has to be honored explicitly.
+        if File.writable?(credentials_path)
+          begin
+            File.delete(credentials_path)
+            true
+          rescue SystemCallError
+            false
+          end
+        else
+          false
+        end
+      else
+        false
+      end
+
+    [store_cleared, file_removed]
   end
 
   def load_file(filename)
@@ -594,15 +740,42 @@ if you believe they were disclosed to a third party.
 
   private
 
+  # Built on the same normalized form the credentials file uses, so the two
+  # never disagree about which host a spelling refers to. Userinfo is dropped
+  # because the account reaches the backend as a command argument, where any
+  # other user on the machine can read it.
+  def self.credential_store_account(host)
+    host = normalize_credentials_key(host).to_s
+    return host unless host.match?(%r{\Ahttps?://}i)
+
+    require_relative "vendor/uri/lib/uri"
+    uri = Gem::URI(host)
+    return host unless uri.userinfo
+
+    uri = uri.dup
+    uri.user = uri.password = nil
+    uri.to_s
+  rescue Gem::URI::Error
+    host
+  end
+
+  # A trailing slash, or the underscore pair standing in for a dot, comes back
+  # rewritten from #load_file, so a raw host would silently miss.
+  def self.normalize_credentials_key(host)
+    return host unless host.is_a?(String)
+
+    deep_transform_config_keys!(host => nil).keys.first
+  end
+
   def self.deep_transform_config_keys!(config)
     config.transform_keys! do |k|
-      if k.match?(/\A:(.*)\Z/)
+      if k.match?(/\A:(.*)\z/)
         k[1..-1].to_sym
-      elsif k.include?("__") || k.match?(%r{/\Z})
+      elsif k.include?("__") || k.end_with?("/")
         if k.is_a?(Symbol)
-          k.to_s.gsub(/__/,".").gsub(%r{/\Z}, "").to_sym
+          k.to_s.gsub(/__/,".").delete_suffix("/").to_sym
         else
-          k.dup.gsub(/__/,".").gsub(%r{/\Z}, "")
+          k.dup.gsub(/__/,".").delete_suffix("/")
         end
       else
         k
@@ -611,11 +784,11 @@ if you believe they were disclosed to a third party.
 
     config.transform_values! do |v|
       if v.is_a?(String)
-        if v.match?(/\A:(.*)\Z/)
+        if v.match?(/\A:(.*)\z/)
           v[1..-1].to_sym
-        elsif v.match?(/\A[+-]?\d+\Z/)
+        elsif v.match?(/\A[+-]?\d+\z/)
           v.to_i
-        elsif v.match?(/\Atrue|false\Z/)
+        elsif v.match?(/\A(?:true|false)\z/)
           v == "true"
         elsif v.empty?
           nil
@@ -632,6 +805,87 @@ if you believe they were disclosed to a third party.
     end
 
     config
+  end
+
+  def active_credential_store
+    return nil unless credential_store
+
+    require_relative "credential_store"
+    Gem::CredentialStore.for(credential_store)
+  end
+
+  def write_credentials(config)
+    dirname = File.dirname credentials_path
+    require "fileutils"
+    FileUtils.mkdir_p(dirname)
+
+    permissions = 0o600 & ~File.umask
+    File.open(credentials_path, "w", permissions) do |f|
+      f.write self.class.dump_with_rubygems_yaml(config)
+    end
+  end
+
+  def remove_api_key_from_file(host)
+    return unless File.exist?(credentials_path)
+
+    unless File.writable?(credentials_path)
+      alert_warning "The API key moved to the credential store but the plain text copy " \
+                    "in #{credentials_path} could not be removed. Delete it yourself."
+      return
+    end
+
+    key = self.class.normalize_credentials_key(host)
+    config = load_file(credentials_path)
+    return unless config.key?(key)
+
+    config.delete(key)
+    write_credentials(config)
+    load_api_keys
+  end
+
+  def delete_stored_key(store, host)
+    account = self.class.credential_store_account(host)
+    warn_unremoved_credential(account) if store&.available? && !store.delete(account)
+  end
+
+  def warn_unremoved_credential(account)
+    alert_warning "Could not remove the API key for #{account} from the credential store. " \
+                  "It is still there and will be used instead of the one just set. " \
+                  "Remove it with your platform's credential manager."
+  end
+
+  def warn_credential_store_fallback
+    alert_warning "Could not write the API key to the credential store, so it was written to #{credentials_path} in plain text."
+  end
+
+  CREDENTIAL_STORE_OFF = %w[false 0 no off f n].freeze
+  private_constant :CREDENTIAL_STORE_OFF
+
+  CREDENTIAL_STORE_ON = %w[true 1 yes on t y].freeze
+  private_constant :CREDENTIAL_STORE_ON
+
+  #--
+  # Anything that reads as a boolean is one, so RUBYGEMS_CREDENTIAL_STORE=0
+  # turns the store off rather than naming a backend gem "0". Both lists are
+  # this setting's own. Nothing on the way here turns `off` into a boolean, so
+  # a gemrc saying `off` arrives as a String just as the environment variable
+  # does. Bundler leaves `off` out of its half because every one of its
+  # boolean settings shares a single vocabulary that has never had it. Nothing
+  # here shares that constraint.
+
+  def normalize_credential_store(value, default)
+    # An environment variable can carry bytes String#downcase would reject.
+    normalized = value.to_s.b.downcase
+
+    if normalized.empty?
+      default
+    elsif CREDENTIAL_STORE_OFF.include?(normalized)
+      false
+    elsif CREDENTIAL_STORE_ON.include?(normalized)
+      true
+    else
+      value
+    end
   end
 
   def set_config_file_name(args)

@@ -7,6 +7,10 @@
 
   Copyright (C) 2004-2007 Koichi Sasada
 
+  Windows platform primitives for the common thread/ractor scheduler.  The
+  scheduler itself is in thread_sched.c, which includes this file and then
+  builds on the primitives below; see thread_sched.h for the contract.
+
 **********************************************************************/
 
 #ifdef THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION
@@ -14,21 +18,43 @@
 #include "internal/sanitizers.h"
 #include <process.h>
 
-#define TIME_QUANTUM_USEC (10 * 1000)
-#define RB_CONDATTR_CLOCK_MONOTONIC 1 /* no effect */
-
 #undef Sleep
 
 #define native_thread_yield() Sleep(0)
-#define unregister_ubf_list(th)
-#define ubf_wakeup_all_threads() do {} while (0)
-#define ubf_threads_empty() (1)
-#define ubf_timer_disarm() do {} while (0)
-#define ubf_list_atfork() do {} while (0)
+
+// A CRITICAL_SECTION is recursive, so trylock cannot tell "held by me" from
+// "free"; see thread_sched.c.
+#define RB_NATIVE_MUTEX_TRYLOCK_DETECTS_SELF 0
+
+// M:N threads need an event backend to park a coroutine on (epoll/kqueue on
+// the POSIX side; IOCP would be the Windows counterpart).  Until there is one
+// every thread here is dedicated, and this file supplies the stubs that
+// thread_sched_mn.c provides elsewhere.
+#define USE_MN_THREADS 0
+
+// Interruption is delivered through a per-native-thread event object rather
+// than a signal, but the bookkeeping is the same as everywhere else.
+#define USE_UBF_LIST 1
+
+#include COROUTINE_H
+
+// Thread event hooks are not implemented on this platform.
+#define RB_INTERNAL_THREAD_HOOK(event, th) ((void)0)
+
+// No fork(), so this never advances; it only keeps TIMER_THREAD_CREATED_P()
+// spelled the same way on both platforms.
+static rb_serial_t current_fork_gen = 1;
+
+// Always: native_cond_timedwait() below takes the rb_hrtime_t deadline and
+// converts it to the relative timeout the Win32 wait wants itself.
+#define RB_NATIVE_COND_HRTIME_DEADLINE_P() 1
 
 static volatile DWORD ruby_native_thread_key = TLS_OUT_OF_INDEXES;
 
 static int w32_wait_events(HANDLE *events, int count, DWORD timeout, rb_thread_t *th);
+static void native_thread_destroy(struct rb_native_thread *nt);
+static void timer_thread_wakeup_force(void);
+static void ubf_select(void *ptr); // thread_sched.c
 
 rb_internal_thread_event_hook_t *
 rb_internal_thread_add_event_hook(rb_internal_thread_event_callback callback, rb_event_flag_t internal_event, void *user_data)
@@ -42,6 +68,12 @@ rb_internal_thread_remove_event_hook(rb_internal_thread_event_hook_t * hook)
 {
     // not implemented
     return false;
+}
+
+bool
+rb_thread_event_hooks_registered_p(void)
+{
+    return false; // hooks are not implemented on this platform
 }
 
 RBIMPL_ATTR_NORETURN()
@@ -123,159 +155,6 @@ w32_mutex_create(void)
     return lock;
 }
 
-#define GVL_DEBUG 0
-
-static void
-thread_sched_to_running(struct rb_thread_sched *sched, rb_thread_t *th)
-{
-    w32_mutex_lock(sched->lock, false);
-    if (GVL_DEBUG) fprintf(stderr, "gvl acquire (%p): acquire\n", th);
-}
-
-static void
-thread_sched_to_waiting(struct rb_thread_sched *sched, rb_thread_t *th, bool yield_immediately)
-{
-    ReleaseMutex(sched->lock);
-}
-
-static void
-thread_sched_to_dead(struct rb_thread_sched *sched, rb_thread_t *th)
-{
-    thread_sched_to_waiting(sched, th, true);
-}
-
-static void
-thread_sched_yield(struct rb_thread_sched *sched, rb_thread_t *th)
-{
-    thread_sched_to_waiting(sched, th, true);
-    native_thread_yield();
-    thread_sched_to_running(sched, th);
-}
-
-void
-rb_thread_sched_init(struct rb_thread_sched *sched, bool atfork)
-{
-    if (GVL_DEBUG) fprintf(stderr, "sched init\n");
-    sched->lock = w32_mutex_create();
-}
-
-#if 0
-// per-ractor
-void
-rb_thread_sched_destroy(struct rb_thread_sched *sched)
-{
-    if (GVL_DEBUG) fprintf(stderr, "sched destroy\n");
-    CloseHandle(sched->lock);
-}
-#endif
-
-rb_thread_t *
-ruby_thread_from_native(void)
-{
-    return TlsGetValue(ruby_native_thread_key);
-}
-
-int
-ruby_thread_set_native(rb_thread_t *th)
-{
-    if (th && th->ec) {
-        rb_ractor_set_current_ec(th->ractor, th->ec);
-    }
-    return TlsSetValue(ruby_native_thread_key, th);
-}
-
-void
-Init_native_thread(rb_thread_t *main_th)
-{
-    if ((ruby_current_ec_key = TlsAlloc()) == TLS_OUT_OF_INDEXES) {
-        rb_bug("TlsAlloc() for ruby_current_ec_key fails");
-    }
-    if ((ruby_native_thread_key = TlsAlloc()) == TLS_OUT_OF_INDEXES) {
-        rb_bug("TlsAlloc() for ruby_native_thread_key fails");
-    }
-
-    // setup main thread
-
-    ruby_thread_set_native(main_th);
-    main_th->nt->interrupt_event = CreateEvent(0, TRUE, FALSE, 0);
-
-    DuplicateHandle(GetCurrentProcess(),
-                    GetCurrentThread(),
-                    GetCurrentProcess(),
-                    &main_th->nt->thread_id, 0, FALSE, DUPLICATE_SAME_ACCESS);
-
-    RUBY_DEBUG_LOG("initial thread th:%u thid:%p, event: %p",
-                   rb_th_serial(main_th),
-                   main_th->nt->thread_id,
-                   main_th->nt->interrupt_event);
-}
-
-void
-ruby_mn_threads_params(void)
-{
-}
-
-static int
-w32_wait_events(HANDLE *events, int count, DWORD timeout, rb_thread_t *th)
-{
-    HANDLE *targets = events;
-    HANDLE intr;
-    const int initcount = count;
-    DWORD ret;
-
-    w32_event_debug("events:%p, count:%d, timeout:%ld, th:%u\n",
-                    events, count, timeout, th ? rb_th_serial(th) : UINT_MAX);
-
-    if (th && (intr = th->nt->interrupt_event)) {
-        if (ResetEvent(intr) && (!RUBY_VM_INTERRUPTED(th->ec) || SetEvent(intr))) {
-            targets = ALLOCA_N(HANDLE, count + 1);
-            memcpy(targets, events, sizeof(HANDLE) * count);
-
-            targets[count++] = intr;
-            w32_event_debug("handle:%p (count:%d, intr)\n", intr, count);
-        }
-        else if (intr == th->nt->interrupt_event) {
-            w32_error("w32_wait_events");
-        }
-    }
-
-    w32_event_debug("WaitForMultipleObjects start count:%d\n", count);
-    ret = WaitForMultipleObjects(count, targets, FALSE, timeout);
-    w32_event_debug("WaitForMultipleObjects end ret:%lu\n", ret);
-
-    if (ret == (DWORD)(WAIT_OBJECT_0 + initcount) && th) {
-        errno = EINTR;
-    }
-    if (ret == WAIT_FAILED && W32_EVENT_DEBUG) {
-        int i;
-        DWORD dmy;
-        for (i = 0; i < count; i++) {
-            w32_event_debug("i:%d %s\n", i, GetHandleInformation(targets[i], &dmy) ? "OK" : "NG");
-        }
-    }
-    return ret;
-}
-
-static void ubf_handle(void *ptr);
-#define ubf_select ubf_handle
-
-int
-rb_w32_wait_events_blocking(HANDLE *events, int num, DWORD timeout)
-{
-    return w32_wait_events(events, num, timeout, ruby_thread_from_native());
-}
-
-int
-rb_w32_wait_events(HANDLE *events, int num, DWORD timeout)
-{
-    int ret;
-    rb_thread_t *th = GET_THREAD();
-
-    BLOCKING_REGION(th, ret = rb_w32_wait_events_blocking(events, num, timeout),
-                    ubf_handle, ruby_thread_from_native(), FALSE);
-    return ret;
-}
-
 static void
 w32_close_handle(HANDLE handle)
 {
@@ -284,90 +163,9 @@ w32_close_handle(HANDLE handle)
     }
 }
 
-static void
-w32_resume_thread(HANDLE handle)
-{
-    if (ResumeThread(handle) == (DWORD)-1) {
-        w32_error("w32_resume_thread");
-    }
-}
-
-#ifdef _MSC_VER
-#define HAVE__BEGINTHREADEX 1
-#else
-#undef HAVE__BEGINTHREADEX
-#endif
-
-#ifdef HAVE__BEGINTHREADEX
-#define start_thread (HANDLE)_beginthreadex
-#define thread_errno errno
-typedef unsigned long (__stdcall *w32_thread_start_func)(void*);
-#else
-#define start_thread CreateThread
-#define thread_errno rb_w32_map_errno(GetLastError())
-typedef LPTHREAD_START_ROUTINE w32_thread_start_func;
-#endif
-
-static HANDLE
-w32_create_thread(DWORD stack_size, w32_thread_start_func func, void *val)
-{
-    return start_thread(0, stack_size, func, val, CREATE_SUSPENDED | STACK_SIZE_PARAM_IS_A_RESERVATION, 0);
-}
-
-int
-rb_w32_sleep(unsigned long msec)
-{
-    return w32_wait_events(0, 0, msec, ruby_thread_from_native());
-}
-
-int WINAPI
-rb_w32_Sleep(unsigned long msec)
-{
-    int ret;
-    rb_thread_t *th = GET_THREAD();
-
-    BLOCKING_REGION(th, ret = rb_w32_sleep(msec),
-                    ubf_handle, ruby_thread_from_native(), FALSE);
-    return ret;
-}
-
-static DWORD
-hrtime2msec(rb_hrtime_t hrt)
-{
-    return (DWORD)hrt / (DWORD)RB_HRTIME_PER_MSEC;
-}
-
-static void
-native_sleep(rb_thread_t *th, rb_hrtime_t *rel)
-{
-    const volatile DWORD msec = rel ? hrtime2msec(*rel) : INFINITE;
-
-    THREAD_BLOCKING_BEGIN(th);
-    {
-        DWORD ret;
-
-        rb_native_mutex_lock(&th->interrupt_lock);
-        th->unblock.func = ubf_handle;
-        th->unblock.arg = th;
-        rb_native_mutex_unlock(&th->interrupt_lock);
-
-        if (RUBY_VM_INTERRUPTED(th->ec)) {
-            /* interrupted.  return immediate */
-        }
-        else {
-            RUBY_DEBUG_LOG("start msec:%lu", msec);
-            ret = w32_wait_events(0, 0, msec, th);
-            RUBY_DEBUG_LOG("done ret:%lu", ret);
-            (void)ret;
-        }
-
-        rb_native_mutex_lock(&th->interrupt_lock);
-        th->unblock.func = 0;
-        th->unblock.arg = 0;
-        rb_native_mutex_unlock(&th->interrupt_lock);
-    }
-    THREAD_BLOCKING_END(th);
-}
+/* -------------------------------------------------------------------------
+ * native mutex / condition variable
+ * ------------------------------------------------------------------------- */
 
 void
 rb_native_mutex_lock(rb_nativethread_lock_t *lock)
@@ -504,75 +302,38 @@ rb_native_cond_wait(rb_nativethread_cond_t *cond, rb_nativethread_lock_t *mutex)
     native_cond_timedwait_ms(cond, mutex, INFINITE);
 }
 
-static unsigned long
-abs_timespec_to_timeout_ms(const struct timespec *ts)
-{
-    struct timeval tv;
-    struct timeval now;
-
-    gettimeofday(&now, NULL);
-    tv.tv_sec = ts->tv_sec;
-    tv.tv_usec = ts->tv_nsec / 1000;
-
-    if (!rb_w32_time_subtract(&tv, &now))
-        return 0;
-
-    return (tv.tv_sec * 1000) + (tv.tv_usec / 1000);
-}
-
-static int
-native_cond_timedwait(rb_nativethread_cond_t *cond, rb_nativethread_lock_t *mutex, const struct timespec *ts)
-{
-    unsigned long timeout_ms;
-
-    timeout_ms = abs_timespec_to_timeout_ms(ts);
-    if (!timeout_ms)
-        return ETIMEDOUT;
-
-    return native_cond_timedwait_ms(cond, mutex, timeout_ms);
-}
-
-static struct timespec native_cond_timeout(rb_nativethread_cond_t *cond, struct timespec timeout_rel);
-
 void
 rb_native_cond_timedwait(rb_nativethread_cond_t *cond, rb_nativethread_lock_t *mutex, unsigned long msec)
 {
-    struct timespec rel = {
-        .tv_sec = msec / 1000,
-        .tv_nsec = (msec % 1000) * 1000 * 1000,
-    };
-    struct timespec ts = native_cond_timeout(cond, rel);
-    native_cond_timedwait(cond, mutex, &ts);
+    native_cond_timedwait_ms(cond, mutex, msec);
 }
 
-static struct timespec
-native_cond_timeout(rb_nativethread_cond_t *cond, struct timespec timeout_rel)
+// The scheduler parks threads with an absolute deadline; on this platform the
+// wait itself is relative, so the conversion happens here.
+static rb_hrtime_t
+native_cond_timeout(rb_nativethread_cond_t *cond, const rb_hrtime_t rel)
 {
-    int ret;
-    struct timeval tv;
-    struct timespec timeout;
-    struct timespec now;
-
-    ret = gettimeofday(&tv, 0);
-    if (ret != 0)
-        rb_sys_fail(0);
-    now.tv_sec = tv.tv_sec;
-    now.tv_nsec = tv.tv_usec * 1000;
-
-    timeout.tv_sec = now.tv_sec;
-    timeout.tv_nsec = now.tv_nsec;
-    timeout.tv_sec += timeout_rel.tv_sec;
-    timeout.tv_nsec += timeout_rel.tv_nsec;
-
-    if (timeout.tv_nsec >= 1000*1000*1000) {
-        timeout.tv_sec++;
-        timeout.tv_nsec -= 1000*1000*1000;
+    if (rel > 0) {
+        rb_hrtime_t now = rb_hrtime_now();
+        return (rel > RB_HRTIME_MAX - now) ? RB_HRTIME_MAX : now + rel;
     }
+    return rb_hrtime_now();
+}
 
-    if (timeout.tv_sec < now.tv_sec)
-        timeout.tv_sec = TIMET_MAX;
+static int
+native_cond_timedwait(rb_nativethread_cond_t *cond, rb_nativethread_lock_t *mutex, const rb_hrtime_t *abs)
+{
+    rb_hrtime_t now = rb_hrtime_now();
 
-    return timeout;
+    if (*abs <= now) return ETIMEDOUT;
+
+    rb_hrtime_t rel = *abs - now;
+    unsigned long msec = (unsigned long)(rel / RB_HRTIME_PER_MSEC);
+
+    // do not busy loop on a sub-millisecond deadline
+    if (msec == 0) msec = 1;
+
+    return native_cond_timedwait_ms(cond, mutex, msec);
 }
 
 void
@@ -588,6 +349,167 @@ rb_native_cond_destroy(rb_nativethread_cond_t *cond)
     /* */
 }
 
+/* -------------------------------------------------------------------------
+ * thread local storage
+ * ------------------------------------------------------------------------- */
+
+rb_thread_t *
+ruby_thread_from_native(void)
+{
+    return TlsGetValue(ruby_native_thread_key);
+}
+
+int
+ruby_thread_set_native(rb_thread_t *th)
+{
+    if (th) {
+        ccan_list_node_init(&th->sched.node.ubf);
+    }
+
+    if (th && th->ec) {
+        rb_ractor_set_current_ec(th->ractor, th->ec);
+    }
+    return TlsSetValue(ruby_native_thread_key, th);
+}
+
+/* -------------------------------------------------------------------------
+ * waiting on Windows objects, with interruption
+ * ------------------------------------------------------------------------- */
+
+static int
+w32_wait_events(HANDLE *events, int count, DWORD timeout, rb_thread_t *th)
+{
+    HANDLE *targets = events;
+    HANDLE intr;
+    const int initcount = count;
+    DWORD ret;
+
+    w32_event_debug("events:%p, count:%d, timeout:%ld, th:%u\n",
+                    events, count, timeout, th ? rb_th_serial(th) : UINT_MAX);
+
+    if (th && (intr = th->nt->interrupt_event)) {
+        if (ResetEvent(intr) && (!RUBY_VM_INTERRUPTED(th->ec) || SetEvent(intr))) {
+            targets = ALLOCA_N(HANDLE, count + 1);
+            memcpy(targets, events, sizeof(HANDLE) * count);
+
+            targets[count++] = intr;
+            w32_event_debug("handle:%p (count:%d, intr)\n", intr, count);
+        }
+        else if (intr == th->nt->interrupt_event) {
+            w32_error("w32_wait_events");
+        }
+    }
+
+    w32_event_debug("WaitForMultipleObjects start count:%d\n", count);
+    ret = WaitForMultipleObjects(count, targets, FALSE, timeout);
+    w32_event_debug("WaitForMultipleObjects end ret:%lu\n", ret);
+
+    if (ret == (DWORD)(WAIT_OBJECT_0 + initcount) && th) {
+        errno = EINTR;
+    }
+    if (ret == WAIT_FAILED && W32_EVENT_DEBUG) {
+        int i;
+        DWORD dmy;
+        for (i = 0; i < count; i++) {
+            w32_event_debug("i:%d %s\n", i, GetHandleInformation(targets[i], &dmy) ? "OK" : "NG");
+        }
+    }
+    return ret;
+}
+
+int
+rb_w32_wait_events_blocking(HANDLE *events, int num, DWORD timeout)
+{
+    return w32_wait_events(events, num, timeout, ruby_thread_from_native());
+}
+
+int
+rb_w32_wait_events(HANDLE *events, int num, DWORD timeout)
+{
+    int ret;
+    rb_thread_t *th = GET_THREAD();
+
+    BLOCKING_REGION(th, ret = rb_w32_wait_events_blocking(events, num, timeout),
+                    ubf_select, ruby_thread_from_native(), FALSE);
+    return ret;
+}
+
+int
+rb_w32_sleep(unsigned long msec)
+{
+    return w32_wait_events(0, 0, msec, ruby_thread_from_native());
+}
+
+int WINAPI
+rb_w32_Sleep(unsigned long msec)
+{
+    int ret;
+    rb_thread_t *th = GET_THREAD();
+
+    BLOCKING_REGION(th, ret = rb_w32_sleep(msec),
+                    ubf_select, ruby_thread_from_native(), FALSE);
+    return ret;
+}
+
+/* @internal */
+int
+rb_w32_check_interrupt(rb_thread_t *th)
+{
+    return w32_wait_events(0, 0, 0, th);
+}
+
+/*
+ * Pull the target thread out of a blocking w32_wait_events().  This is the
+ * counterpart of the SIGVTALRM the POSIX implementation sends.
+ */
+static void
+native_thread_interrupt(rb_thread_t *th)
+{
+    // the caller (ubf_wakeup_thread) logs this
+    if (!SetEvent(th->nt->interrupt_event)) {
+        w32_error("native_thread_interrupt");
+    }
+}
+
+/* -------------------------------------------------------------------------
+ * native thread
+ * ------------------------------------------------------------------------- */
+
+static void
+w32_resume_thread(HANDLE handle)
+{
+    if (ResumeThread(handle) == (DWORD)-1) {
+        w32_error("w32_resume_thread");
+    }
+}
+
+#ifdef _MSC_VER
+#define HAVE__BEGINTHREADEX 1
+#else
+#undef HAVE__BEGINTHREADEX
+#endif
+
+#ifdef HAVE__BEGINTHREADEX
+#define start_thread (HANDLE)_beginthreadex
+#define thread_errno errno
+typedef unsigned long (__stdcall *w32_thread_start_func)(void*);
+#else
+#define start_thread CreateThread
+#define thread_errno rb_w32_map_errno(GetLastError())
+typedef LPTHREAD_START_ROUTINE w32_thread_start_func;
+#endif
+
+static HANDLE
+w32_create_thread(DWORD stack_size, w32_thread_start_func func, void *val)
+{
+    return start_thread(0, stack_size, func, val, CREATE_SUSPENDED | STACK_SIZE_PARAM_IS_A_RESERVATION, 0);
+}
+
+static void
+native_thread_join(HANDLE th)
+{
+    w32_wait_events(&th, 1, INFINITE, 0);
+}
 
 #if !defined(_WIN32_WINNT_WIN8) || _WIN32_WINNT < 0x602
 /* declared in processthreadsapi.h only when _WIN32_WINNT >= 0x0602,
@@ -614,83 +536,105 @@ native_thread_init_stack(rb_thread_t *th, void *local_in_parent_frame)
 }
 
 static void
+native_thread_setup(struct rb_native_thread *nt)
+{
+    rb_native_cond_initialize(&nt->readyq);
+    rb_native_mutex_initialize(&nt->running_th_lock);
+
+    // Created here rather than on the new thread itself: ubf can fire before
+    // that thread gets a chance to run.
+    nt->interrupt_event = CreateEvent(0, TRUE, FALSE, 0);
+    if (nt->interrupt_event == NULL) {
+        w32_error("native_thread_setup");
+    }
+}
+
+static void
+native_thread_setup_on_thread(struct rb_native_thread *nt)
+{
+    // nothing to do: there is no altstack and no thread id to cache
+}
+
+static struct rb_native_thread *
+native_thread_alloc(void)
+{
+    struct rb_native_thread *nt = ZALLOC(struct rb_native_thread);
+    native_thread_setup(nt);
+
+#if USE_RUBY_DEBUG_LOG
+    static rb_atomic_t nt_serial = 2;
+    nt->serial = RUBY_ATOMIC_FETCH_ADD(nt_serial, 1);
+#endif
+    return nt;
+}
+
+static void
 native_thread_destroy_atfork(struct rb_native_thread *nt)
 {
-    /* no-op */
+    /* no fork() on this platform */
 }
 
 #ifndef InterlockedExchangePointer
 #define InterlockedExchangePointer(t, v) \
     (void *)InterlockedExchange((long *)(t), (long)(v))
 #endif
+
 static void
 native_thread_destroy(struct rb_native_thread *nt)
 {
     if (nt) {
         HANDLE intr = InterlockedExchangePointer(&nt->interrupt_event, 0);
         RUBY_DEBUG_LOG("close handle intr:%p, thid:%p\n", intr, nt->thread_id);
-        w32_close_handle(intr);
+        if (intr) w32_close_handle(intr);
+
+        rb_native_cond_destroy(&nt->readyq);
+        rb_native_mutex_destroy(&nt->running_th_lock);
+
+        ruby_xfree(nt);
     }
 }
 
-static unsigned long __stdcall
-thread_start_func_1(void *th_ptr)
+static void
+native_thread_destroy_self(struct rb_native_thread *nt)
 {
-    rb_thread_t *th = th_ptr;
-    volatile HANDLE thread_id = th->nt->thread_id;
+    native_thread_destroy(nt);
+}
 
-    native_thread_init_stack(th, &th);
-    th->nt->interrupt_event = CreateEvent(0, TRUE, FALSE, 0);
+static unsigned long __stdcall
+nt_start_trampoline(void *nt_ptr)
+{
+    struct rb_native_thread *nt = (struct rb_native_thread *)nt_ptr;
+    HANDLE thread_id = nt->thread_id;
 
-    /* run */
-    RUBY_DEBUG_LOG("thread created th:%u, thid: %p, event: %p",
-                   rb_th_serial(th), th->nt->thread_id, th->nt->interrupt_event);
-
-    thread_sched_to_running(TH_SCHED(th), th);
-    ruby_thread_set_native(th);
-
-    // kick threads
-    thread_start_func_2(th, th->ec->machine.stack_start);
+    nt_start(nt);
 
     w32_close_handle(thread_id);
-    RUBY_DEBUG_LOG("thread deleted th:%u", rb_th_serial(th));
-
     return 0;
 }
 
 static int
-native_thread_create(rb_thread_t *th)
+native_thread_create0(struct rb_native_thread *nt)
 {
-    // setup nt
-    const size_t stack_size = th->vm->default_params.thread_machine_stack_size;
-    th->nt = ZALLOC(struct rb_native_thread);
-    th->nt->thread_id = w32_create_thread(stack_size, thread_start_func_1, th);
+    const size_t stack_size = nt->vm->default_params.thread_machine_stack_size;
 
-    // setup vm stack
-    size_t vm_stack_word_size = th->vm->default_params.thread_vm_stack_size / sizeof(VALUE);
-    void *vm_stack = ruby_xmalloc(vm_stack_word_size * sizeof(VALUE));
-    th->sched.vm_stack = vm_stack;
-    rb_ec_initialize_vm_stack(th->ec, vm_stack, vm_stack_word_size);
-
-    if ((th->nt->thread_id) == 0) {
+    nt->thread_id = w32_create_thread(stack_size, nt_start_trampoline, nt);
+    if (nt->thread_id == 0) {
         return thread_errno;
     }
 
-    w32_resume_thread(th->nt->thread_id);
+    w32_resume_thread(nt->thread_id);
 
-    if (USE_RUBY_DEBUG_LOG) {
-        Sleep(0);
-        RUBY_DEBUG_LOG("th:%u thid:%p intr:%p), stack size: %"PRIuSIZE"",
-                       rb_th_serial(th), th->nt->thread_id,
-                       th->nt->interrupt_event, stack_size);
-    }
+    RUBY_DEBUG_LOG("nt:%u thid:%p stack size:%"PRIuSIZE"",
+                   nt->serial, nt->thread_id, stack_size);
     return 0;
 }
 
-static void
-native_thread_join(HANDLE th)
+static int
+native_thread_default_max_cpu(void)
 {
-    w32_wait_events(&th, 1, INFINITE, 0);
+    SYSTEM_INFO si;
+    GetSystemInfo(&si);
+    return si.dwNumberOfProcessors > 0 ? (int)si.dwNumberOfProcessors : 8;
 }
 
 #if USE_NATIVE_THREAD_PRIORITY
@@ -735,66 +679,166 @@ native_fd_select(int n, rb_fdset_t *readfds, rb_fdset_t *writefds, rb_fdset_t *e
     return rb_w32_select_with_thread(n, r, w, e, timeout, th);
 }
 
-/* @internal */
-int
-rb_w32_check_interrupt(rb_thread_t *th)
-{
-    return w32_wait_events(0, 0, 0, th);
-}
-
-static void
-ubf_handle(void *ptr)
-{
-    rb_thread_t *th = (rb_thread_t *)ptr;
-    RUBY_DEBUG_LOG("th:%u\n", rb_th_serial(th));
-
-    if (!SetEvent(th->nt->interrupt_event)) {
-        w32_error("ubf_handle");
-    }
-}
-
 int rb_w32_set_thread_description(HANDLE th, const WCHAR *name);
 int rb_w32_set_thread_description_str(HANDLE th, VALUE name);
 #define native_set_another_thread_name rb_w32_set_thread_description_str
 
-static struct {
-    HANDLE id;
-    HANDLE lock;
-} timer_thread;
-#define TIMER_THREAD_CREATED_P() (timer_thread.id != 0)
-
-static unsigned long __stdcall
-timer_thread_func(void *dummy)
+static void
+native_set_thread_name(rb_thread_t *th)
 {
-    rb_vm_t *vm = GET_VM();
-    RUBY_DEBUG_LOG("start");
-    rb_w32_set_thread_description(GetCurrentThread(), L"ruby-timer-thread");
-    while (WaitForSingleObject(timer_thread.lock,
-                               TIME_QUANTUM_USEC/1000) == WAIT_TIMEOUT) {
-        vm->clock++;
-        rb_threadptr_check_signal(vm->ractor.main_thread);
+}
+
+static VALUE
+native_thread_native_thread_id(rb_thread_t *th)
+{
+    DWORD tid = GetThreadId(th->nt->thread_id);
+    if (tid == 0) rb_sys_fail("GetThreadId");
+    return ULONG2NUM(tid);
+}
+#define USE_NATIVE_THREAD_NATIVE_THREAD_ID 1
+
+void
+Init_native_thread(rb_thread_t *main_th)
+{
+    if ((ruby_current_ec_key = TlsAlloc()) == TLS_OUT_OF_INDEXES) {
+        rb_bug("TlsAlloc() for ruby_current_ec_key fails");
     }
-    RUBY_DEBUG_LOG("end");
-    return 0;
+    if ((ruby_native_thread_key = TlsAlloc()) == TLS_OUT_OF_INDEXES) {
+        rb_bug("TlsAlloc() for ruby_native_thread_key fails");
+    }
+
+    // setup vm
+    rb_vm_t *vm = main_th->vm;
+    thread_sched_init_vm(vm);
+
+    // setup main thread
+    native_thread_setup(main_th->nt);
+    DuplicateHandle(GetCurrentProcess(),
+                    GetCurrentThread(),
+                    GetCurrentProcess(),
+                    &main_th->nt->thread_id, 0, FALSE, DUPLICATE_SAME_ACCESS);
+    main_th->nt->serial = 1;
+    ruby_thread_set_native(main_th);
+
+    TH_SCHED(main_th)->running = main_th;
+    main_th->has_dedicated_nt = 1;
+
+    // setup main NT (before the record below: its kind decides where it goes)
+    main_th->nt->dedicated = 1;
+    main_th->nt->running_thread = main_th;
+    main_th->nt->vm = vm;
+
+    thread_sched_setup_running_threads(TH_SCHED(main_th), main_th->ractor, vm, main_th, NULL);
+
+#if USE_RUBY_DEBUG_LOG
+    vm->ractor.sched.dnt_cnt = 1;
+#endif
+
+    RUBY_DEBUG_LOG("initial thread th:%u thid:%p, event: %p",
+                   rb_th_serial(main_th),
+                   main_th->nt->thread_id,
+                   main_th->nt->interrupt_event);
+}
+
+/* -------------------------------------------------------------------------
+ * timer thread
+ * ------------------------------------------------------------------------- */
+
+static struct {
+    rb_serial_t created_fork_gen;
+    HANDLE thread_id;
+    HANDLE wakeup_event; // manual reset; the "comm pipe" of this platform
+} timer_th = {
+    .created_fork_gen = 0,
+};
+
+#define TIMER_THREAD_CREATED_P() (timer_th.created_fork_gen == current_fork_gen)
+
+static void
+timer_thread_wakeup_force(void)
+{
+    if (timer_th.wakeup_event) {
+        SetEvent(timer_th.wakeup_event);
+    }
 }
 
 void
 rb_thread_wakeup_timer_thread(int sig)
 {
-    /* do nothing */
+    timer_thread_wakeup_force();
+
+    if (RUBY_ATOMIC_LOAD(system_working)) {
+        rb_vm_t *vm = GET_VM();
+        rb_thread_t *main_th = vm->ractor.main_thread;
+
+        if (main_th) {
+            volatile rb_execution_context_t *main_th_ec = ACCESS_ONCE(rb_execution_context_t *, main_th->ec);
+
+            if (main_th_ec) {
+                RUBY_VM_SET_TRAP_INTERRUPT(main_th_ec);
+
+                if (vm->ubf_async_safe && main_th->unblock.func) {
+                    (main_th->unblock.func)(main_th->unblock.arg);
+                }
+            }
+        }
+    }
+}
+
+// The blocking part of the timer thread loop: this is what
+// timer_thread_wakeup_force() interrupts.
+static void
+timer_thread_polling(rb_vm_t *vm)
+{
+    int timeout = timer_thread_set_timeout(vm);
+    DWORD msec = (timeout < 0) ? INFINITE : (DWORD)timeout;
+
+    DWORD ret = WaitForSingleObject(timer_th.wakeup_event, msec);
+
+    switch (ret) {
+      case WAIT_TIMEOUT:
+        ractor_sched_lock(vm, NULL);
+        {
+            timer_thread_check_timeslice(vm);
+        }
+        ractor_sched_unlock(vm, NULL);
+        break;
+
+      case WAIT_OBJECT_0:
+        ResetEvent(timer_th.wakeup_event);
+        break;
+
+      default:
+        w32_error("timer_thread_polling");
+    }
+}
+
+static unsigned long __stdcall
+timer_thread_trampoline(void *vm_ptr)
+{
+    rb_w32_set_thread_description(GetCurrentThread(), L"ruby-timer-thread");
+    timer_thread_func(vm_ptr);
+    return 0;
 }
 
 static void
 rb_thread_create_timer_thread(void)
 {
-    if (timer_thread.id == 0) {
-        if (!timer_thread.lock) {
-            timer_thread.lock = CreateEvent(0, TRUE, FALSE, 0);
+    timer_th.created_fork_gen = current_fork_gen;
+
+    if (timer_th.wakeup_event == NULL) {
+        timer_th.wakeup_event = CreateEvent(0, TRUE, FALSE, 0);
+        if (timer_th.wakeup_event == NULL) {
+            w32_error("rb_thread_create_timer_thread");
         }
-        timer_thread.id = w32_create_thread(1024 + (USE_RUBY_DEBUG_LOG ? BUFSIZ : 0),
-                                            timer_thread_func, 0);
-        w32_resume_thread(timer_thread.id);
     }
+
+    timer_th.thread_id = w32_create_thread(1024 + (USE_RUBY_DEBUG_LOG ? BUFSIZ : 0),
+                                           timer_thread_trampoline, GET_VM());
+    if (timer_th.thread_id == 0) {
+        rb_bug("rb_thread_create_timer_thread: failed to create the timer thread");
+    }
+    w32_resume_thread(timer_th.thread_id);
 }
 
 static int
@@ -802,10 +846,11 @@ native_stop_timer_thread(void)
 {
     RUBY_ATOMIC_SET(system_working, 0);
 
-    SetEvent(timer_thread.lock);
-    native_thread_join(timer_thread.id);
-    CloseHandle(timer_thread.lock);
-    timer_thread.lock = 0;
+    timer_thread_wakeup_force();
+    native_thread_join(timer_th.thread_id);
+
+    w32_close_handle(timer_th.wakeup_event);
+    timer_th.wakeup_event = NULL;
 
     return 1;
 }
@@ -813,11 +858,66 @@ native_stop_timer_thread(void)
 static void
 native_reset_timer_thread(void)
 {
-    if (timer_thread.id) {
-        CloseHandle(timer_thread.id);
-        timer_thread.id = 0;
+    if (timer_th.thread_id) {
+        CloseHandle(timer_th.thread_id);
+        timer_th.thread_id = 0;
     }
 }
+
+/* -------------------------------------------------------------------------
+ * M:N scheduler stubs
+ *
+ * These are what thread_sched_mn.c provides on platforms that have an event
+ * backend.  Every thread here is dedicated, so the scheduler never reaches
+ * the ones that rb_bug().
+ * ------------------------------------------------------------------------- */
+
+static int
+native_thread_create_shared(rb_thread_t *th)
+{
+    rb_bug("unreachable");
+}
+
+static enum thread_sched_wait_result
+thread_sched_wait_events(struct rb_thread_sched *sched, rb_thread_t *th, int fd,
+                         enum thread_sched_waiting_flag events, rb_hrtime_t *rel)
+{
+    return thread_sched_wait_unavailable;
+}
+
+static bool
+ractor_sched_timeout_arm(rb_thread_t *th, const rb_hrtime_t *rel)
+{
+    rb_bug("unreachable");
+}
+
+static bool
+ractor_sched_timeout_disarm(rb_thread_t *th)
+{
+    rb_bug("unreachable");
+}
+
+static int
+timer_wheel_timeout(int timeout)
+{
+    return timeout; // no M:N threads, no timed waiters
+}
+
+static void
+timer_thread_wake_fence(rb_thread_t *th)
+{
+    // no timer wheel, no wake batches
+}
+
+static void
+timer_thread_check_timeout(rb_vm_t *vm)
+{
+    // no M:N threads, no timed waiters
+}
+
+/* -------------------------------------------------------------------------
+ * misc
+ * ------------------------------------------------------------------------- */
 
 int
 ruby_stack_overflowed_p(const rb_thread_t *th, const void *addr)
@@ -850,6 +950,7 @@ ruby_alloca_chkstk(size_t len, void *sp)
     }
 }
 #endif
+
 int
 rb_reserved_fd_p(int fd)
 {
@@ -862,162 +963,10 @@ rb_nativethread_self(void)
     return GetCurrentThread();
 }
 
-static void
-native_set_thread_name(rb_thread_t *th)
-{
-}
-
-static VALUE
-native_thread_native_thread_id(rb_thread_t *th)
-{
-    DWORD tid = GetThreadId(th->nt->thread_id);
-    if (tid == 0) rb_sys_fail("GetThreadId");
-    return ULONG2NUM(tid);
-}
-#define USE_NATIVE_THREAD_NATIVE_THREAD_ID 1
-
-void
-rb_add_running_thread(rb_thread_t *th)
-{
-    // do nothing
-}
-
-void
-rb_del_running_thread(rb_thread_t *th)
-{
-    // do nothing
-}
-
-static bool
-th_has_dedicated_nt(const rb_thread_t *th)
-{
-    return true;
-}
-
-void
-rb_threadptr_sched_free(rb_thread_t *th)
-{
-    native_thread_destroy(th->nt);
-    ruby_xfree(th->nt);
-    ruby_xfree(th->sched.vm_stack);
-}
-
-
-
-static bool
-vm_barrier_finish_p(rb_vm_t *vm)
-{
-    RUBY_DEBUG_LOG("cnt:%u living:%u blocking:%u",
-                   vm->ractor.blocking_cnt == vm->ractor.cnt,
-                   vm->ractor.sync.barrier_cnt,
-                   vm->ractor.cnt,
-                   vm->ractor.blocking_cnt);
-
-    VM_ASSERT(vm->ractor.blocking_cnt <= vm->ractor.cnt);
-
-    return vm->ractor.blocking_cnt == vm->ractor.cnt;
-}
-
-void
-rb_ractor_sched_barrier_start(rb_vm_t *vm, rb_ractor_t *cr)
-{
-    vm->ractor.sync.barrier_waiting = true;
-
-    RUBY_DEBUG_LOG("barrier start. cnt:%u living:%u blocking:%u",
-                   vm->ractor.sync.barrier_cnt,
-                   vm->ractor.cnt,
-                   vm->ractor.blocking_cnt);
-
-    rb_vm_ractor_blocking_cnt_inc(vm, cr, __FILE__, __LINE__);
-
-    // send signal
-    rb_ractor_t *r = 0;
-    ccan_list_for_each(&vm->ractor.set, r, vmlr_node) {
-        if (r != cr) {
-            rb_ractor_vm_barrier_interrupt_running_thread(r);
-        }
-    }
-
-    // wait
-    while (!vm_barrier_finish_p(vm)) {
-        rb_vm_cond_wait(vm, &vm->ractor.sync.barrier_complete_cond);
-    }
-
-    RUBY_DEBUG_LOG("cnt:%u barrier success", vm->ractor.sync.barrier_cnt);
-
-    rb_vm_ractor_blocking_cnt_dec(vm, cr, __FILE__, __LINE__);
-
-    vm->ractor.sync.barrier_waiting = false;
-    vm->ractor.sync.barrier_cnt++;
-
-    rb_native_cond_broadcast(&vm->ractor.sync.barrier_release_cond);
-}
-
-void
-rb_ractor_sched_barrier_join(rb_vm_t *vm, rb_ractor_t *cr)
-{
-    vm->ractor.sync.lock_owner = cr;
-    unsigned int barrier_cnt = vm->ractor.sync.barrier_cnt;
-    rb_thread_t *th = GET_THREAD();
-    bool running;
-
-    RB_VM_SAVE_MACHINE_CONTEXT(th);
-
-    if (rb_ractor_status_p(cr, ractor_running)) {
-        rb_vm_ractor_blocking_cnt_inc(vm, cr, __FILE__, __LINE__);
-        running = true;
-    }
-    else {
-        running = false;
-    }
-    VM_ASSERT(rb_ractor_status_p(cr, ractor_blocking));
-
-    if (vm_barrier_finish_p(vm)) {
-        RUBY_DEBUG_LOG("wakeup barrier owner");
-        rb_native_cond_signal(&vm->ractor.sync.barrier_complete_cond);
-    }
-    else {
-        RUBY_DEBUG_LOG("wait for barrier finish");
-    }
-
-    // wait for restart
-    while (barrier_cnt == vm->ractor.sync.barrier_cnt) {
-        rb_vm_cond_wait(vm, &vm->ractor.sync.barrier_release_cond);
-    }
-
-    RUBY_DEBUG_LOG("barrier is released. Acquire vm_lock");
-
-    if (running) {
-        rb_vm_ractor_blocking_cnt_dec(vm, cr, __FILE__, __LINE__);
-    }
-
-        vm->ractor.sync.lock_owner = NULL;
-}
-
-bool
-rb_thread_lock_native_thread(void)
-{
-    return false;
-}
-
 void *
 rb_thread_prevent_fork(void *(*func)(void *), void *data)
 {
     return func(data);
 }
 
-void
-rb_thread_malloc_stack_set(rb_thread_t *th, void *stack, size_t stack_size)
-{
-    // no-op
-}
-
 #endif /* THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION */
-
-void
-rb_thread_sched_wait_winding(rb_vm_t *vm)
-{
-    // no coroutine (M:N) threads on this implementation: nothing winds down
-    // after leaving the living set (see thread_pthread.c)
-    (void)vm;
-}

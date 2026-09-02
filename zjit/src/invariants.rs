@@ -5,7 +5,7 @@ use std::{collections::{HashMap, HashSet}, mem};
 use crate::{backend::lir::{Assembler, asm_comment}, cruby::{ID, IseqPtr, RedefinitionFlag, VALUE, iseq_name, rb_callable_method_entry_t, rb_gc_location, ruby_basic_operators, src_loc, with_vm_lock}, hir::Invariant, options::debug, state::{ZJITState, zjit_enabled_p, trace_invalidation}, virtualmem::CodePtr};
 use crate::payload::{IseqVersionRef, get_or_create_iseq_payload};
 use crate::codegen::invalidate_iseq_version;
-use crate::cruby::rb_iseq_reset_jit_func;
+use crate::cruby::{rb_iseq_reset_jit_func, rb_jit_iseq_ep_escape_recorded_p, rb_jit_iseq_mark_ep_escape_recorded};
 use crate::stats::with_time_stat;
 use crate::stats::Counter::invalidation_time_ns;
 use crate::gc::remove_gc_offsets;
@@ -70,9 +70,6 @@ impl PatchPoint {
 /// about the state of the virtual machine.
 #[derive(Default)]
 pub struct Invariants {
-    /// Set of ISEQs that are known to escape EP
-    ep_escape_iseqs: HashSet<IseqPtr>,
-
     /// Map from ISEQ that's assumed to not escape EP to a set of patch points
     no_ep_escape_iseq_patch_points: HashMap<IseqPtr, HashSet<PatchPoint>>,
 
@@ -108,7 +105,6 @@ pub struct Invariants {
 impl Invariants {
     /// Update object references in Invariants
     pub fn update_references(&mut self) {
-        self.update_ep_escape_iseqs();
         self.update_no_ep_escape_iseq_patch_points();
         self.update_cme_patch_points();
         self.update_no_singleton_class_patch_points();
@@ -121,7 +117,6 @@ impl Invariants {
         // Why not patch the patch points? If the ISEQ is dead then the GC also proved that all
         // generated code referencing the ISEQ are unreachable. We mark the ISEQs baked into
         // generated code.
-        self.ep_escape_iseqs.remove(&iseq);
         self.no_ep_escape_iseq_patch_points.remove(&iseq);
     }
 
@@ -133,15 +128,6 @@ impl Invariants {
     /// Forget a class when freeing it. See [Self::forget_iseq] for reasoning.
     pub fn forget_klass(&mut self, klass: VALUE) {
         self.no_singleton_class_patch_points.remove(&klass);
-    }
-
-    /// Update ISEQ references in Invariants::ep_escape_iseqs
-    fn update_ep_escape_iseqs(&mut self) {
-        let updated = std::mem::take(&mut self.ep_escape_iseqs)
-            .into_iter()
-            .map(|iseq| unsafe { rb_gc_location(iseq.into()) }.as_iseq())
-            .collect();
-        self.ep_escape_iseqs = updated;
     }
 
     /// Update ISEQ references in Invariants::no_ep_escape_iseq_patch_points
@@ -208,40 +194,59 @@ pub extern "C" fn rb_zjit_bop_redefined(klass: RedefinitionFlag, bop: ruby_basic
 /// equal to base pointer.
 #[unsafe(no_mangle)]
 pub extern "C" fn rb_zjit_invalidate_no_ep_escape(iseq: IseqPtr) {
-    // Skip tracking EP escapes on boot. We don't need to invalidate anything during boot.
-    if !ZJITState::has_instance() {
-        return;
-    }
-
     with_vm_lock(src_loc!(), || {
         // Remember that this ISEQ may escape EP
+        unsafe { rb_jit_iseq_mark_ep_escape_recorded(iseq) };
         let invariants = ZJITState::get_invariants();
-        invariants.ep_escape_iseqs.insert(iseq);
 
         // If the ISEQ has been compiled assuming it doesn't escape EP, invalidate the JIT code.
         if let Some(patch_points) = invariants.no_ep_escape_iseq_patch_points.remove(&iseq) {
             debug!("EP is escaped: {}", iseq_name(iseq));
 
+            // Collect the versions that contain these patch points before the macro
+            // consumes them. A NoEPEscape(iseq) patch point may live in another
+            // ISEQ's version when `iseq` was inlined into a caller.
+            let mut patched_versions: Vec<IseqVersionRef> = patch_points.iter().map(|patch_point| patch_point.version).collect();
+
             // Invalidate the patch points for this ISEQ
             let cb = ZJITState::get_code_block();
             compile_patch_points!(cb, patch_points, EP, "EP is escaped: {}", iseq_name(iseq));
 
-            // Also invalidate the ISEQ version so the method falls back to the
-            // interpreter on the next call. NoEPEscape PatchPoint side exits use
-            // without_locals() and don't save locals to the frame. If a PatchPoint
-            // fires on a later call (where EP hasn't escaped), the interpreter would
-            // read stale locals (e.g., nil instead of [] for keyword defaults).
+            // Also invalidate every version that contains one of the patched points,
+            // and this ISEQ's latest version, so that no new call runs the patched code.
+            // NoEPEscape PatchPoint side exits use without_locals() and don't save
+            // locals to the frame. If a PatchPoint fires on a later call (where EP
+            // hasn't escaped), the interpreter would read stale locals (e.g., nil
+            // instead of [] for keyword defaults).
             //
-            // We can't use invalidate_iseq_version() here because it skips when
-            // at MAX_ISEQ_VERSIONS (to prevent unbounded recompilation). Instead,
-            // directly mark the version as invalidated and reset jit_func so the
-            // interpreter takes over permanently.
-            let payload = crate::payload::get_or_create_iseq_payload(iseq);
-            if let Some(version) = payload.versions.last_mut() {
+            // We can't rely on the invalidate_iseq_version() calls made by
+            // compile_patch_points! because it skips when at MAX_ISEQ_VERSIONS
+            // (to prevent unbounded recompilation). Instead, directly mark the
+            // versions as invalidated, reset jit_func, and re-stub incoming
+            // JIT-to-JIT calls so the interpreter takes over permanently.
+            let payload = get_or_create_iseq_payload(iseq);
+            patched_versions.extend(payload.versions.last());
+            for mut version in patched_versions {
                 use crate::payload::IseqStatus;
+                let owner_iseq = unsafe { version.as_ref() }.iseq;
+                if owner_iseq.is_null() {
+                    continue;
+                }
                 if unsafe { version.as_ref() }.status != IseqStatus::Invalidated {
                     unsafe { version.as_mut() }.status = IseqStatus::Invalidated;
-                    unsafe { rb_iseq_reset_jit_func(iseq) };
+                    unsafe { rb_iseq_reset_jit_func(owner_iseq) };
+
+                    // Re-stub incoming JIT-to-JIT calls. Resetting jit_func is not
+                    // enough: SendDirect callers jump straight into the invalidated
+                    // code, whose NoEPEscape patch points now side-exit with
+                    // without_locals() frame states. A frame entered through a
+                    // JIT-to-JIT call does not write locals to the stack, so resuming
+                    // the interpreter through such an exit would read garbage locals.
+                    for incoming in unsafe { version.as_ref() }.incoming.iter() {
+                        if let Err(err) = crate::codegen::gen_iseq_call(cb, incoming) {
+                            debug!("{err:?}: gen_iseq_call failed during EP escape invalidation: {}", iseq_name(owner_iseq));
+                        }
+                    }
                 }
             }
 
@@ -267,7 +272,7 @@ pub fn track_no_ep_escape_assumption(
 
 /// Returns true if a given ISEQ has previously escaped environment pointer.
 pub fn iseq_seen_ep_escape(iseq: IseqPtr) -> bool {
-    ZJITState::get_invariants().ep_escape_iseqs.contains(&iseq)
+    unsafe { rb_jit_iseq_ep_escape_recorded_p(iseq) }
 }
 
 /// Track a patch point for a basic operator in a given class.

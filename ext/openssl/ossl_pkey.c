@@ -1192,7 +1192,7 @@ ossl_pkey_compare(VALUE self, VALUE other)
  *   signature = pkey.sign("SHA256", data, signopts)
  *
  *   # Creates a copy of the RSA key pkey, but without the private components
- *   pub_key = pkey.public_key
+ *   pub_key = OpenSSL::PKey.read(pkey.public_to_der)
  *   puts pub_key.verify("SHA256", signature, data, signopts) # => true
  */
 static VALUE
@@ -1350,7 +1350,7 @@ ossl_pkey_verify(int argc, VALUE *argv, VALUE self)
  *   signature = pkey.sign_raw("SHA256", hash, signopts)
  *
  *   # Creates a copy of the RSA key pkey, but without the private components
- *   pub_key = pkey.public_key
+ *   pub_key = OpenSSL::PKey.read(pkey.public_to_der)
  *   puts pub_key.verify_raw("SHA256", signature, hash, signopts) # => true
  */
 static VALUE

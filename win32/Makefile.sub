@@ -12,6 +12,7 @@ TZ =				# skip timezone tests
 PWD = $(MAKEDIR)
 empty =
 tooldir = $(srcdir)/tool
+nmake = yes
 
 PROMPT = +$$S
 

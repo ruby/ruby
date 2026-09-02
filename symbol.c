@@ -235,6 +235,7 @@ id_entry_dir_free(void *ptr)
 {
     struct id_entry_dir *dir = ptr;
     SIZED_FREE_N(dir->entries, dir->capa);
+    xfree(dir);
 }
 
 static size_t
@@ -361,6 +362,8 @@ set_id_entry(rb_symbols_t *symbols, rb_id_serial_t num, VALUE str, VALUE sym)
     ASSERT_vm_locking();
     RUBY_ASSERT_BUILTIN_TYPE(str, T_STRING);
     RUBY_ASSERT_BUILTIN_TYPE(sym, T_SYMBOL);
+    RUBY_ASSERT(RB_OBJ_SHAREABLE_P(str));
+    RUBY_ASSERT(RB_SPECIAL_CONST_P(sym) || RB_OBJ_SHAREABLE_P(sym));
 
     size_t idx = num / ID_ENTRY_UNIT;
 

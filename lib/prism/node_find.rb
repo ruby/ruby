@@ -13,12 +13,12 @@ module Prism
   # pay for its definition.
   module NodeFind # :nodoc:
     # Find the node for the given callable or backtrace location.
-    #--
-    #: (Method | UnboundMethod | Proc | Thread::Backtrace::Location callable, bool rubyvm) -> Node?
-    def self.find(callable, rubyvm)
+    #
+    #: (Method | UnboundMethod | Proc | Thread::Backtrace::Location callable) -> Node?
+    def self.find(callable)
       case callable
       when Proc
-        if rubyvm
+        if defined?(::RubyVM)
           RubyVMCallableFind.new.find(callable)
         elsif callable.lambda?
           LineLambdaFind.new.find(callable)
@@ -26,13 +26,13 @@ module Prism
           LineProcFind.new.find(callable)
         end
       when Method, UnboundMethod
-        if rubyvm
+        if defined?(::RubyVM)
           RubyVMCallableFind.new.find(callable)
         else
           LineMethodFind.new.find(callable)
         end
       when Thread::Backtrace::Location
-        if rubyvm
+        if defined?(::RubyVM)
           RubyVMBacktraceLocationFind.new.find(callable)
         else
           LineBacktraceLocationFind.new.find(callable)
@@ -47,7 +47,7 @@ module Prism
       private
 
       # Parse the given file path, returning a ParseResult or nil.
-      #--
+      #
       #: (String? file) -> ParseResult?
       def parse_file(file)
         return unless file && File.readable?(file)
@@ -60,7 +60,7 @@ module Prism
     # from the instruction sequence.
     class RubyVMCallableFind < Find
       # Find the node for the given callable using the ISeq node_id.
-      #--
+      #
       #: (Method | UnboundMethod | Proc callable) -> Node?
       def find(callable)
         return unless (source_location = callable.source_location)
@@ -78,7 +78,7 @@ module Prism
     # from the backtrace location.
     class RubyVMBacktraceLocationFind < Find
       # Find the node for the given backtrace location using node_id.
-      #--
+      #
       #: (Thread::Backtrace::Location location) -> Node?
       def find(location)
         file = location.absolute_path || location.path
@@ -95,7 +95,7 @@ module Prism
     # matching. Used on non-CRuby implementations.
     class LineMethodFind < Find
       # Find the node for the given method by matching on name and line.
-      #--
+      #
       #: (Method | UnboundMethod callable) -> Node?
       def find(callable)
         return unless (source_location = callable.source_location)
@@ -121,7 +121,7 @@ module Prism
     # on non-CRuby implementations.
     class LineLambdaFind < Find
       # Find the node for the given lambda by matching on line.
-      #--
+      #
       #: (Proc callable) -> Node?
       def find(callable)
         return unless (source_location = callable.source_location)
@@ -146,7 +146,7 @@ module Prism
     # matching. Used on non-CRuby implementations.
     class LineProcFind < Find
       # Find the node for the given proc by matching on line.
-      #--
+      #
       #: (Proc callable) -> Node?
       def find(callable)
         return unless (source_location = callable.source_location)
@@ -171,7 +171,7 @@ module Prism
     # line matching. Used on non-CRuby implementations.
     class LineBacktraceLocationFind < Find
       # Find the node for the given backtrace location by matching on line.
-      #--
+      #
       #: (Thread::Backtrace::Location location) -> Node?
       def find(location)
         file = location.absolute_path || location.path

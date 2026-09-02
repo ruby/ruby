@@ -7,12 +7,17 @@ mod size_tests {
 
     #[test]
     fn test_size_of_insn() {
-        assert_eq!(std::mem::size_of::<Insn>(), 80);
+        assert_eq!(std::mem::size_of::<Insn>(), 72);
     }
 
     #[test]
     fn test_size_of_type() {
         assert_eq!(std::mem::size_of::<Type>(), 16);
+    }
+
+    #[test]
+    fn test_size_of_send_fallback_reason() {
+        assert_eq!(std::mem::size_of::<SendFallbackReason>(), 4);
     }
 }
 
@@ -201,14 +206,15 @@ mod snapshot_tests {
           v13:Fixnum[1] = Const Value(1)
           v15:Fixnum[2] = Const Value(2)
           v16:Any = Snapshot FrameState { pc: 0x1008, stack: [v6, v11, v13, v15], locals: [] }
-          v23:Any = Snapshot FrameState { pc: 0x1008, stack: [v6, v13, v15, v11], locals: [] }
           PatchPoint MethodRedefined(Object@0x1010, foo@0x1018, cme:0x1020)
-          v25:ObjectSubclass[class_exact*:Object@VALUE(0x1010)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1010)] recompile
+          v24:ObjectSubclass[class_exact*:Object@VALUE(0x1010)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1010)] recompile
+          v25:Any = Snapshot FrameState { pc: 0x1008, stack: [v24, v13, v15, v11], locals: [] }
           v44:Fixnum[0] = Const Value(0)
-          PushInlineFrame v25 (0x1048), v13, v15, v11
-          v38:Any = Snapshot FrameState { pc: 0x1070, stack: [v13, v15, v11], locals: [a=v13, b=v15, c=v11, ID(0)=v44], caller: v27 }
+          v27:Any = Snapshot FrameState { pc: 0x1008, stack: [], locals: [] }
+          PushInlineFrame :foo, v24 (0x1048), num_args=3
+          v38:Any = Snapshot FrameState { pc: 0x1068, stack: [v13, v15, v11], locals: [a=v13, b=v15, c=v11, ID(0)=v44], caller: v27 }
           v39:ArrayExact = NewArray v13, v15, v11
-          v40:Any = Snapshot FrameState { pc: 0x1078, stack: [v39], locals: [a=v13, b=v15, c=v11, ID(0)=v44], caller: v27 }
+          v40:Any = Snapshot FrameState { pc: 0x1070, stack: [v39], locals: [a=v13, b=v15, c=v11, ID(0)=v44], caller: v27 }
           CheckInterrupts
           PopInlineFrame
           Return v39
@@ -244,10 +250,11 @@ mod snapshot_tests {
           PatchPoint MethodRedefined(Object@0x1010, foo@0x1018, cme:0x1020)
           v22:ObjectSubclass[class_exact*:Object@VALUE(0x1010)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1010)] recompile
           v39:Fixnum[0] = Const Value(0)
-          PushInlineFrame v22 (0x1048), v11, v13
-          v33:Any = Snapshot FrameState { pc: 0x1070, stack: [v11, v13], locals: [a=v11, b=v13, ID(0)=v39], caller: v24 }
+          v24:Any = Snapshot FrameState { pc: 0x1008, stack: [], locals: [] }
+          PushInlineFrame :foo, v22 (0x1048), num_args=2
+          v33:Any = Snapshot FrameState { pc: 0x1068, stack: [v11, v13], locals: [a=v11, b=v13, ID(0)=v39], caller: v24 }
           v34:ArrayExact = NewArray v11, v13
-          v35:Any = Snapshot FrameState { pc: 0x1078, stack: [v34], locals: [a=v11, b=v13, ID(0)=v39], caller: v24 }
+          v35:Any = Snapshot FrameState { pc: 0x1070, stack: [v34], locals: [a=v11, b=v13, ID(0)=v39], caller: v24 }
           CheckInterrupts
           PopInlineFrame
           Return v34
@@ -286,11 +293,18 @@ mod snapshot_tests {
           v23:Fixnum[7] = Const Value(7)
           v25:Fixnum[8] = Const Value(8)
           v26:Any = Snapshot FrameState { pc: 0x1008, stack: [v6, v11, v13, v15, v17, v19, v21, v23, v25], locals: [] }
-          v27:BasicObject = Send v6, :foo, v11, v13, v15, v17, v19, v21, v23, v25 # SendFallbackReason: Too many arguments for LIR
-          v28:Any = Snapshot FrameState { pc: 0x1010, stack: [v27], locals: [] }
-          PatchPoint NoTracePoint
+          PatchPoint MethodRedefined(Object@0x1010, foo@0x1018, cme:0x1020)
+          v34:ObjectSubclass[class_exact*:Object@VALUE(0x1010)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1010)] recompile
+          v35:Any = Snapshot FrameState { pc: 0x1008, stack: [v34, v11, v13, v19, v21, v17, v15, v23, v25], locals: [] }
+          v64:Fixnum[0] = Const Value(0)
+          v37:Any = Snapshot FrameState { pc: 0x1008, stack: [], locals: [] }
+          PushInlineFrame :foo, v34 (0x1048), num_args=8
+          v58:Any = Snapshot FrameState { pc: 0x1068, stack: [v19, v21, v17, v15, v11, v13, v23, v25], locals: [five=v11, six=v13, a=v19, b=v21, c=v17, d=v15, e=v23, f=v25, ID(0)=v64], caller: v37 }
+          v59:ArrayExact = NewArray v19, v21, v17, v15, v11, v13, v23, v25
+          v60:Any = Snapshot FrameState { pc: 0x1070, stack: [v59], locals: [five=v11, six=v13, a=v19, b=v21, c=v17, d=v15, e=v23, f=v25, ID(0)=v64], caller: v37 }
           CheckInterrupts
-          Return v27
+          PopInlineFrame
+          Return v59
         ");
     }
 }
@@ -469,22 +483,21 @@ pub(crate) mod hir_build_tests {
           Jump bb3(v6, v7)
         bb3(v9:BasicObject, v10:BasicObject):
           v14:NilClass = Const Value(nil)
-          PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1008, Integer)
-          v20:ClassSubclass[Integer@0x1010] = Const Value(VALUE(0x1010))
-          v22:BasicObject = CheckMatch v10, v20, CASE
-          v24:CBool = Test v22
-          v25:Truthy = RefineType v22, Truthy
-          CondBranch v24, bb4(v9, v10, v14, v10), bb5()
-        bb4(v37:BasicObject, v38:BasicObject, v39:NilClass, v40:BasicObject):
-          v45:Fixnum[1] = Const Value(1)
+          v19:ClassSubclass[Integer@0x1010] = Const Value(VALUE(0x1010))
+          v21:BasicObject = CheckMatch v10, v19, CASE
+          v23:CBool = Test v21
+          v24:Truthy = RefineType v21, Truthy
+          CondBranch v23, bb4(v9, v10, v14, v10), bb5()
+        bb4(v36:BasicObject, v37:BasicObject, v38:NilClass, v39:BasicObject):
+          v44:Fixnum[1] = Const Value(1)
           CheckInterrupts
-          Return v45
+          Return v44
         bb5():
-          v27:Falsy = RefineType v22, Falsy
-          v32:Fixnum[2] = Const Value(2)
+          v26:Falsy = RefineType v21, Falsy
+          v31:Fixnum[2] = Const Value(2)
           CheckInterrupts
-          Return v32
+          Return v31
         ");
     }
 
@@ -2128,7 +2141,7 @@ pub(crate) mod hir_build_tests {
           v25:BasicObject = Send v10, 0x1000, :foo # SendFallbackReason: Uncategorized(send)
           PatchPoint NoEPEscape(test)
           v28:CPtr = LoadSP
-          v29:BasicObject = LoadField v28, :a@0x1028
+          v29:BasicObject = LoadField v28, :a@0x1020
           PatchPoint NoEPEscape(test)
           v38:BasicObject = Send v29, :+, v20 # SendFallbackReason: Uncategorized(opt_plus)
           CheckInterrupts
@@ -2204,9 +2217,8 @@ pub(crate) mod hir_build_tests {
           PatchPoint NoEPEscape(test)
           v18:CPtr = LoadSP
           v19:BasicObject = LoadField v18, :block@0x1000
-          PatchPoint SingleRactorMode
-          PatchPoint StableConstantNames(0x1030, ::RubyVM::ZJIT)
-          v25:ModuleSubclass[RubyVM::ZJIT@0x1038] = Const Value(VALUE(0x1038))
+          PatchPoint StableConstantNames(0x1028, ::RubyVM::ZJIT)
+          v24:ModuleSubclass[RubyVM::ZJIT@0x1030] = Const Value(VALUE(0x1030))
           SideExit DirectiveInduced
         ");
     }
@@ -2245,9 +2257,8 @@ pub(crate) mod hir_build_tests {
           v17:Fixnum[1] = Const Value(1)
           v22:BasicObject = Send v11, 0x1008, :consume # SendFallbackReason: Uncategorized(send)
           PatchPoint NoEPEscape(test)
-          PatchPoint SingleRactorMode
-          PatchPoint StableConstantNames(0x1030, ::RubyVM::ZJIT)
-          v30:ModuleSubclass[RubyVM::ZJIT@0x1038] = Const Value(VALUE(0x1038))
+          PatchPoint StableConstantNames(0x1028, ::RubyVM::ZJIT)
+          v29:ModuleSubclass[RubyVM::ZJIT@0x1030] = Const Value(VALUE(0x1030))
           SideExit DirectiveInduced
         ");
     }
@@ -2284,16 +2295,16 @@ pub(crate) mod hir_build_tests {
           v15:BasicObject = Send v9, 0x1008, :consume # SendFallbackReason: Uncategorized(send)
           PatchPoint NoEPEscape(test)
           v24:CPtr = GetEP 0
-          v25:CUInt64 = LoadField v24, :VM_ENV_DATA_INDEX_FLAGS@0x1030
+          v25:CUInt64 = LoadField v24, :VM_ENV_DATA_INDEX_FLAGS@0x1028
           v26:CBool = IsBlockParamModified v25
           CondBranch v26, bb4(), bb5()
         bb4():
-          v28:BasicObject = LoadField v24, :&@0x1031
+          v28:BasicObject = LoadField v24, :&@0x1029
           Jump bb6(v28, v28)
         bb5():
-          v30:CInt64 = LoadField v24, :VM_ENV_DATA_INDEX_SPECVAL@0x1032
+          v30:CInt64 = LoadField v24, :VM_ENV_DATA_INDEX_SPECVAL@0x102a
           v31:CInt64 = GuardAnyBitSet v30, CUInt64(1) recompile
-          v32:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1038))
+          v32:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1030))
           Jump bb6(v32, v10)
         bb6(v22:BasicObject, v23:BasicObject):
           v35:BasicObject = Send v9, &block, :consume, v22 # SendFallbackReason: Uncategorized(send)
@@ -2339,7 +2350,7 @@ pub(crate) mod hir_build_tests {
           v25:BasicObject = Send v10, 0x1000, :foo # SendFallbackReason: Uncategorized(send)
           PatchPoint NoEPEscape(test)
           v28:CPtr = LoadSP
-          v29:BasicObject = LoadField v28, :a@0x1028
+          v29:BasicObject = LoadField v28, :a@0x1020
           PatchPoint NoEPEscape(test)
           v38:BasicObject = Send v29, :+, v20 # SendFallbackReason: Uncategorized(opt_plus)
           CheckInterrupts
@@ -2744,16 +2755,12 @@ pub(crate) mod hir_build_tests {
           Jump bb3(v6, v7)
         bb3(v9:BasicObject, v10:BasicObject):
           v15:ClassSubclass[VMFrozenCore] = Const Value(VALUE(0x1008))
-          v17:HashExact = NewHash
-          PatchPoint NoEPEscape(test)
-          v22:BasicObject = Send v15, :core#hash_merge_kwd, v17, v10 # SendFallbackReason: Uncategorized(opt_send_without_block)
-          v24:ClassSubclass[VMFrozenCore] = Const Value(VALUE(0x1008))
-          v27:StaticSymbol[:b] = Const Value(VALUE(0x1010))
-          v29:Fixnum[1] = Const Value(1)
-          v31:BasicObject = Send v24, :core#hash_merge_ptr, v22, v27, v29 # SendFallbackReason: Uncategorized(opt_send_without_block)
-          v33:BasicObject = Send v9, :foo, v31 # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v18:StaticSymbol[:b] = Const Value(VALUE(0x1010))
+          v20:Fixnum[1] = Const Value(1)
+          v22:BasicObject = Send v15, :core#hash_merge_ptr, v10, v18, v20 # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v24:BasicObject = Send v9, :foo, v22 # SendFallbackReason: Uncategorized(opt_send_without_block)
           CheckInterrupts
-          Return v33
+          Return v24
         ");
     }
 
@@ -2876,20 +2883,20 @@ pub(crate) mod hir_build_tests {
           v4:BasicObject = LoadArg :self@0
           Jump bb3(v4)
         bb3(v6:BasicObject):
-          v10:BasicObject = GetConstantPath 0x1000
-          v12:NilClass = Const Value(nil)
-          v15:CBool = IsMethodCFunc v10, :new
-          CondBranch v15, bb6(), bb4(v6, v12, v10)
+          v10:NilClass = Const Value(nil)
+          v12:BasicObject = GetConstantPath 0x1000
+          v14:CBool = IsMethodCFunc v12, :new
+          CondBranch v14, bb6(), bb4(v6, v10, v12)
         bb6():
-          v17:HeapBasicObject = ObjectAlloc v10
-          v19:BasicObject = Send v17, :initialize # SendFallbackReason: Uncategorized(opt_send_without_block)
-          Jump bb5(v6, v17, v19)
-        bb4(v22:BasicObject, v23:NilClass, v24:BasicObject):
-          v27:BasicObject = Send v24, :new # SendFallbackReason: Uncategorized(opt_send_without_block)
-          Jump bb5(v22, v27, v23)
-        bb5(v30:BasicObject, v31:BasicObject, v32:BasicObject):
+          v16:HeapBasicObject = ObjectAlloc v12
+          v18:BasicObject = Send v16, :initialize # SendFallbackReason: Uncategorized(opt_send_without_block)
+          Jump bb5(v6, v16, v18)
+        bb4(v21:BasicObject, v22:NilClass, v23:BasicObject):
+          v26:BasicObject = Send v23, :new # SendFallbackReason: Uncategorized(opt_send_without_block)
+          Jump bb5(v21, v26, v22)
+        bb5(v29:BasicObject, v30:BasicObject, v31:BasicObject):
           CheckInterrupts
-          Return v31
+          Return v30
         ");
     }
 
@@ -6298,7 +6305,7 @@ pub(crate) mod hir_build_tests {
 
         assert!(cfi.is_preceded_by(bb1, bb2));
         assert!(cfi.is_succeeded_by(bb2, bb1));
-        assert!(cfi.predecessors(bb3).eq([bb2]));
+        assert!(cfi.predecessors(bb3).eq(&[bb2]));
      }
 
      #[test]
@@ -6345,8 +6352,8 @@ pub(crate) mod hir_build_tests {
          function.seal_entries();
          let cfi = ControlFlowInfo::new(&function);
 
-         assert_eq!(cfi.predecessors(bb1).collect::<Vec<_>>().len(), 1);
-         assert_eq!(cfi.successors(bb0).collect::<Vec<_>>().len(), 1);
+         assert_eq!(cfi.predecessors(bb1).len(), 1);
+         assert_eq!(cfi.successors(bb0).len(), 1);
      }
  }
 
@@ -6363,7 +6370,7 @@ pub(crate) mod hir_build_tests {
      fn assert_dominators_contains_self(function: &Function, dominators: &Dominators) {
          for (i, _) in function.blocks.iter().enumerate() {
              // Ensure that each dominating set contains the block itself.
-             assert!(dominators.is_dominated_by(BlockId(i), BlockId(i)));
+             assert!(dominators.is_dominated_by(BlockId::from(i), BlockId::from(i)));
          }
      }
 
@@ -6657,9 +6664,8 @@ mod loop_info_tests {
         function.push_insn(bb1, Insn::Jump(edge(bb2)));
 
         function.seal_entries();
-        let cfi = ControlFlowInfo::new(&function);
         let dominators = Dominators::new(&function);
-        let loop_info = LoopInfo::new(&cfi, &dominators);
+        let loop_info = LoopInfo::new(&dominators);
 
         assert_snapshot!(format!("{}", FunctionPrinter::without_snapshot(&function)), @"
         fn <manual>:
@@ -6723,9 +6729,8 @@ mod loop_info_tests {
         let _ = function.push_insn(bb4, Insn::Return { val: retval });
 
         function.seal_entries();
-        let cfi = ControlFlowInfo::new(&function);
         let dominators = Dominators::new(&function);
-        let loop_info = LoopInfo::new(&cfi, &dominators);
+        let loop_info = LoopInfo::new(&dominators);
 
         assert_snapshot!(format!("{}", FunctionPrinter::without_snapshot(&function)), @"
         fn <manual>:
@@ -6805,9 +6810,8 @@ mod loop_info_tests {
         let _ = function.push_insn(bb6, Insn::Return { val: retval });
 
         function.seal_entries();
-        let cfi = ControlFlowInfo::new(&function);
         let dominators = Dominators::new(&function);
-        let loop_info = LoopInfo::new(&cfi, &dominators);
+        let loop_info = LoopInfo::new(&dominators);
 
         assert_snapshot!(format!("{}", FunctionPrinter::without_snapshot(&function)), @"
         fn <manual>:
@@ -6876,9 +6880,8 @@ mod loop_info_tests {
         let _ = function.push_insn(bb2, Insn::Return { val: retval });
 
         function.seal_entries();
-        let cfi = ControlFlowInfo::new(&function);
         let dominators = Dominators::new(&function);
-        let loop_info = LoopInfo::new(&cfi, &dominators);
+        let loop_info = LoopInfo::new(&dominators);
 
         assert_snapshot!(format!("{}", FunctionPrinter::without_snapshot(&function)), @"
         fn <manual>:
@@ -6968,9 +6971,8 @@ mod loop_info_tests {
           Unreachable
         ");
 
-        let cfi = ControlFlowInfo::new(&function);
         let dominators = Dominators::new(&function);
-        let loop_info = LoopInfo::new(&cfi, &dominators);
+        let loop_info = LoopInfo::new(&dominators);
 
         assert!(!loop_info.is_back_edge_source(bb0));
         assert!(!loop_info.is_back_edge_source(bb1));

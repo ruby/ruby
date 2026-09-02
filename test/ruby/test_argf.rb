@@ -383,7 +383,7 @@ class TestArgf < Test::Unit::TestCase
   end
 
   def test_inplace_bug_17117
-    assert_in_out_err(["-", @t1.path], "#{<<~"{#"}#{<<~'};'}")
+    assert_in_out_err(["-", @t1.path], "#{<<~"{#"}#{<<~'};'}", timeout: 60)
     {#
       #!/usr/bin/ruby -pi.bak
       BEGIN {

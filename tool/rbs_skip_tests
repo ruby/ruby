@@ -25,6 +25,7 @@ test_collection_install__mutex_m__config__stdlib_source(RBS::CliTest) running te
 test_collection_install__mutex_m__dependency_no_bundled(RBS::CliTest) running tests without Bundler
 test_collection_install__mutex_m__no_bundled(RBS::CliTest) running tests without Bundler
 test_collection_install__mutex_m__rbs_dependency_and__gem_dependency(RBS::CliTest) running tests without Bundler
+test_collection_install__nongem_stdlib_no_warning(RBS::CliTest) running tests without Bundler
 test_collection_install_frozen(RBS::CliTest) running tests without Bundler
 test_collection_install_gemspec(RBS::CliTest) running tests without Bundler
 test_collection_update(RBS::CliTest) running tests without Bundler
@@ -34,6 +35,7 @@ NetInstanceTest depending on external resources
 TestHTTPRequest depending on external resources
 TestSingletonNetHTTPResponse depending on external resources
 TestInstanceNetHTTPResponse depending on external resources
+test_URI_open(OpenURISingletonTest) depending on external resources
 
 test_TOPDIR(RbConfigSingletonTest) `TOPDIR` is `nil` during CI while RBS type is declared as `String`
 
@@ -50,6 +52,22 @@ test_new(RegexpSingletonTest)
 # Errno::ENOENT: No such file or directory - bundle
 test_collection_install__pathname_set(RBS::CliTest)
 test_collection_install__set_pathname__manifest(RBS::CliTest)
+
+# json-schema passes the obsolete `quirks_mode` parameter, but json gem v3 rejects it
+RBS::SchemaTest
+
+# RBS 4.0.3's JSON tests use APIs removed or changed in json gem v3
+test_dump(JSONInstanceTest)
+test_parse(JSONInstanceTest)
+test_parse!(JSONInstanceTest)
+test_create_id(JSONSingletonTest)
+test_create_id_eq(JSONSingletonTest)
+test_dump(JSONSingletonTest)
+test_load(JSONSingletonTest)
+test_load_file(JSONSingletonTest)
+test_load_file!(JSONSingletonTest)
+test_parse(JSONSingletonTest)
+test_parse!(JSONSingletonTest)
 
 # RBS 4.0.3's RDoc plugin is incompatible with the RDoc 7.2.0 development revision
 test_attr_decl_1(RDocPluginParserTest)

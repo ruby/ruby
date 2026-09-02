@@ -5191,7 +5191,7 @@ time_deconstruct_keys(VALUE time, VALUE keys)
     MAKE_TM_ENSURE(time, tobj, tobj->vtm.yday != 0);
 
     if (NIL_P(keys)) {
-        h = rb_hash_new_with_size(11);
+        h = rb_hash_new_capa(11);
 
         rb_hash_aset(h, sym_year, tobj->vtm.year);
         rb_hash_aset(h, sym_month, INT2FIX(tobj->vtm.mon));
@@ -5215,7 +5215,7 @@ time_deconstruct_keys(VALUE time, VALUE keys)
 
     }
 
-    h = rb_hash_new_with_size(RARRAY_LEN(keys));
+    h = rb_hash_new_capa(RARRAY_LEN(keys));
 
     for (i=0; i<RARRAY_LEN(keys); i++) {
         VALUE key = RARRAY_AREF(keys, i);

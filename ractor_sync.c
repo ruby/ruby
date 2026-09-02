@@ -13,15 +13,22 @@ ractor_port_id(const struct ractor_port *rp)
 
 static VALUE rb_cRactorPort;
 
-static VALUE ractor_receive(rb_execution_context_t *ec, const struct ractor_port *rp);
+static VALUE ractor_receive(rb_execution_context_t *ec, const struct ractor_port *rp, const rb_hrtime_t *end);
 static VALUE ractor_send(rb_execution_context_t *ec, const struct ractor_port *rp, VALUE obj, VALUE move);
-static VALUE ractor_try_send(rb_execution_context_t *ec, const struct ractor_port *rp, VALUE obj, VALUE move);
+static struct ractor_basket *ractor_basket_new_ref(VALUE shareable);
+static void ractor_send_basket(rb_execution_context_t *ec, const struct ractor_port *rp, struct ractor_basket *b, bool raise_on_error);
 static void ractor_add_port(rb_ractor_t *r, st_data_t id);
 
-// The off-heap courier used for moves.  It is defined in ractor.c.
-struct rb_ractor_move_courier *rb_ractor_move_courier_build(VALUE obj);
-VALUE rb_ractor_move_courier_materialize(struct rb_ractor_move_courier *c);
-void rb_ractor_move_courier_free(struct rb_ractor_move_courier *c);
+// The off-heap courier a copy or a move payload travels in.  Defined in ractor.c.
+struct rb_ractor_courier *rb_ractor_courier_build_move(VALUE obj, struct rb_ractor_courier **slot);
+VALUE rb_ractor_courier_materialize(struct rb_ractor_courier *c);
+void rb_ractor_courier_free(struct rb_ractor_courier *c);
+static void ractor_off_queue_add(rb_ractor_t *cr, struct ractor_basket *b);
+static void ractor_off_queue_remove(struct ractor_basket *b);
+void rb_ractor_courier_mark(struct rb_ractor_courier *c);
+struct rb_ractor_courier *rb_ractor_courier_build_copy(VALUE obj, struct rb_ractor_courier **slot);
+
+static void ractor_port_note_alive(const struct ractor_port *rp);
 
 static void
 ractor_port_mark(void *ptr)
@@ -30,6 +37,13 @@ ractor_port_mark(void *ptr)
 
     if (rp->r) {
         rb_gc_mark(rp->r->pub.self);
+
+        /* Only a mark that covers every objspace can call a port dead.  Ask the single
+         * objspace first: it answers without the VM, which a GC worker thread cannot
+         * reach (mmtk marks from several of them). */
+        if (rb_gc_single_objspace_p() || rb_gc_during_global_gc_p()) {
+            ractor_port_note_alive(rp);
+        }
     }
 }
 
@@ -135,8 +149,10 @@ ractor_port_p(VALUE self)
     return rb_typeddata_is_kind_of(self, &ractor_port_data_type);
 }
 
+static const rb_hrtime_t *ractor_timeout_deadline(VALUE timeout, rb_hrtime_t *storage);
+
 static VALUE
-ractor_port_receive(rb_execution_context_t *ec, VALUE self)
+ractor_port_receive(rb_execution_context_t *ec, VALUE self, VALUE timeout)
 {
     const struct ractor_port *rp = ractor_port_ptr_check(self);
 
@@ -144,9 +160,14 @@ ractor_port_receive(rb_execution_context_t *ec, VALUE self)
         rb_raise(rb_eRactorError, "only allowed from the creator Ractor of this port");
     }
 
-    VALUE v = ractor_receive(ec, rp);
+    rb_hrtime_t deadline;
+    const rb_hrtime_t *end = ractor_timeout_deadline(timeout, &deadline);
+
+    VALUE v = ractor_receive(ec, rp, end);
     RB_GC_GUARD(self);
-    return v;
+
+    // no message before the timeout
+    return UNDEF_P(v) ? Qnil : v;
 }
 
 static VALUE
@@ -228,17 +249,18 @@ struct ractor_basket {
          * Marshal byte String.  The receiver rebuilds it with Marshal.load instead
          * of walking it natively. */
         bool marshaled;
-        /* The off-heap (xmalloc) courier of a basket_type_move.  A move basket does
-         * not use v. */
-        struct rb_ractor_move_courier *move_courier;
-        /* Every node of a native copy snapshot, collected while building it (raw
-         * malloc).  The global GC's re-pin walks this list, since traversing the graph
-         * in-GC would need generic-ivar lookups.  NULL: only the root (p.v) is pinned. */
-        VALUE *pinned;
-        size_t pinned_cnt;
+        /* The off-heap (xmalloc) courier the payload graph was serialized into.
+         * Copy and move both use it; when set, v is unused. */
+        struct rb_ractor_courier *courier;
+        /* The marshaled bytes of a copy payload, off-heap like the courier.  When
+         * set, v is unused: an in-flight payload that is not a GC object needs no
+         * in-flight pin, so it never keeps a page of the sender's heap alive. */
+        char *mbuf;
+        size_t mlen;
     } p; // payload
 
-    struct ccan_list_node node;
+    struct ccan_list_node node;           /* the port queue it waits on */
+    struct ccan_list_node off_queue_node; /* or sync.off_queue_baskets, when on none */
 };
 
 #if 0
@@ -258,10 +280,15 @@ ractor_basket_none_p(const struct ractor_basket *b)
 static void
 ractor_basket_mark(const struct ractor_basket *b)
 {
-    /* A move courier lives off-heap, and the shareable REFs it carries are marked and
-     * pinned as a global GC root by the in-flight registry (ractor.c).  Nothing to do
-     * here. */
-    if (b->type != basket_type_move) {
+    if (b->p.courier != NULL) {
+        /* The payload became this Ractor's to root the moment the message was enqueued
+         * here: the sender's own roots stop at the send.  Before and after the queue the
+         * basket is on its holder's off_queue_baskets instead, so a courier is rooted
+         * from the moment it is allocated to the moment it is freed. */
+        rb_ractor_courier_mark(b->p.courier);
+    }
+    else if (b->p.mbuf == NULL) {
+        /* Marshaled bytes are off-heap and hold nothing to mark. */
         rb_gc_mark(b->p.v);
     }
 }
@@ -269,19 +296,14 @@ ractor_basket_mark(const struct ractor_basket *b)
 static void
 ractor_basket_free(struct ractor_basket *b)
 {
-    /* A basket that dies before being enqueued clears the sender's re-pin slot; a
-     * free by the Ractor tearing the queue down does not match and is a no-op. */
-    rb_ractor_t *cr = rb_current_ractor_raw(false);
-    if (cr != NULL && cr->sending_basket == b) {
-        cr->sending_basket = NULL;
-    }
-    free(b->p.pinned);
-    b->p.pinned = NULL;
-    b->p.pinned_cnt = 0;
-    if (b->type == basket_type_move && b->p.move_courier) {
-        /* A move courier that was never consumed (a queue being torn down, say). */
-        rb_ractor_move_courier_free(b->p.move_courier);
-        b->p.move_courier = NULL;
+    ractor_off_queue_remove(b);
+    ruby_xfree(b->p.mbuf);
+    b->p.mbuf = NULL;
+    b->p.mlen = 0;
+    if (b->p.courier) {
+        /* A courier that was never consumed (a queue being torn down, say). */
+        rb_ractor_courier_free(b->p.courier);
+        b->p.courier = NULL;
     }
     SIZED_FREE(b);
 }
@@ -290,7 +312,45 @@ static struct ractor_basket *
 ractor_basket_alloc(void)
 {
     struct ractor_basket *b = ALLOC(struct ractor_basket);
+
+    /* Empty and mark-safe from the start: a basket goes on its holder's in-flight list
+     * before it has a payload, so a GC can walk it while it is still being filled. */
+    b->type = basket_type_none;
+    b->sender = Qnil;
+    b->port_id = 0;
+    b->p.v = Qnil;
+    b->p.exception = false;
+    b->p.marshaled = false;
+    b->p.courier = NULL;
+    b->p.mbuf = NULL;
+    b->p.mlen = 0;
+    ccan_list_node_init(&b->off_queue_node);
+
     return b;
+}
+
+/* A basket is rooted by whoever holds it: a port queue while it waits there, and its
+ * holder's off-queue list while it is being built or materialized. */
+static void
+ractor_off_queue_add(rb_ractor_t *cr, struct ractor_basket *b)
+{
+    VM_ASSERT(cr == rb_current_ractor_raw(false));
+    ccan_list_add_tail(&cr->sync.off_queue_baskets, &b->off_queue_node);
+}
+
+static void
+ractor_off_queue_remove(struct ractor_basket *b)
+{
+    ccan_list_del_init(&b->off_queue_node);
+}
+
+static void
+ractor_mark_off_queue_baskets(rb_ractor_t *r)
+{
+    struct ractor_basket *b;
+    ccan_list_for_each(&r->sync.off_queue_baskets, b, off_queue_node) {
+        ractor_basket_mark(b);
+    }
 }
 
 // ractor-internal - ractor_queue
@@ -298,6 +358,7 @@ ractor_basket_alloc(void)
 struct ractor_queue {
     struct ccan_list_head set;
     bool closed;
+    bool alive;  /* its Ractor::Port is still reachable; see the reap below */
 };
 
 static void
@@ -305,6 +366,7 @@ ractor_queue_init(struct ractor_queue *rq)
 {
     ccan_list_head_init(&rq->set);
     rq->closed = false;
+    rq->alive = true;
 }
 
 static struct ractor_queue *
@@ -313,6 +375,19 @@ ractor_queue_new(void)
     struct ractor_queue *rq = ALLOC(struct ractor_queue);
     ractor_queue_init(rq);
     return rq;
+}
+
+static void
+ractor_port_note_alive(const struct ractor_port *rp)
+{
+    struct ractor_queue *rq;
+
+    if (rp->r->sync.ports && st_lookup(rp->r->sync.ports, rp->id_, (st_data_t *)&rq)) {
+        /* Several markers can reach the same port at once (mmtk marks from its GC worker
+         * threads), but they all store the same value and the reap reads it once marking
+         * is over. */
+        rq->alive = true;
+    }
 }
 
 static void
@@ -446,11 +521,33 @@ ractor_add_port(rb_ractor_t *r, st_data_t id)
 
     RUBY_DEBUG_LOG("id:%u", (unsigned int)id);
 
+    // Rebuilding the table on insertion can run GC by the allocation and the
+    // GC acquires the VM lock, which is prohibited under the ractor lock.
+    st_table *const old_tab = r->sync.ports;
+    bool inserted;
+
     RACTOR_LOCK(r);
     {
-        st_insert(r->sync.ports, id, (st_data_t)rq);
+        inserted = st_insert_no_rebuild(old_tab, id, (st_data_t)rq) >= 0;
     }
     RACTOR_UNLOCK(r);
+
+    if (!inserted) {
+        // The table is full. Rebuild it outside of the ractor lock (mutators
+        // are serialized by the per-ractor GVL) and swap it under the lock
+        // to exclude the readers (other ractors).
+        st_table *const new_tab = st_copy(old_tab);
+        st_insert(new_tab, id, (st_data_t)rq);
+
+        RACTOR_LOCK(r);
+        {
+            VM_ASSERT(r->sync.ports == old_tab);
+            r->sync.ports = new_tab;
+        }
+        RACTOR_UNLOCK(r);
+
+        st_free_table(old_tab);
+    }
 }
 
 static void
@@ -539,6 +636,32 @@ ractor_close_port(rb_execution_context_t *ec, rb_ractor_t *cr, const struct ract
     RACTOR_UNLOCK_SELF(cr);
 
     return rq != NULL;
+}
+
+/* A port is the only way to receive from its queue, so a queue whose port is gone is
+ * unreachable -- but the table is keyed by id, so no sweep finds it.  Mark and sweep the
+ * table itself: ractor_port_mark sets the flag, this clears it for the next cycle. */
+static int
+ractor_reap_dead_ports_i(st_data_t port_id, st_data_t val, st_data_t dat)
+{
+    struct ractor_queue *rq = (struct ractor_queue *)val;
+
+    if (rq->alive) {
+        rq->alive = false;
+        return ST_CONTINUE;
+    }
+    else {
+        ractor_queue_free(rq);
+        return ST_DELETE;
+    }
+}
+
+void
+rb_ractor_reap_dead_ports(rb_ractor_t *r)
+{
+    if (r->sync.ports) {
+        st_foreach(r->sync.ports, ractor_reap_dead_ports_i, 0);
+    }
 }
 
 static int
@@ -652,7 +775,7 @@ ractor_unmonitor(rb_execution_context_t *ec, VALUE self, VALUE port)
             struct ractor_monitor *rm, *nxt;
 
             ccan_list_for_each_safe(&r->sync.monitors, rm, nxt, node) {
-                if (ractor_port_id(&rm->port) == ractor_port_id(rp)) {
+                if (rm->port.r == rp->r && ractor_port_id(&rm->port) == ractor_port_id(rp)) {
                     RUBY_DEBUG_LOG("r:%u -> port:%u@r%u",
                                    (unsigned int)rb_ractor_id(r),
                                    (unsigned int)ractor_port_id(&rm->port),
@@ -675,12 +798,6 @@ ractor_notify_exit(rb_execution_context_t *ec, rb_ractor_t *cr, VALUE legacy, bo
     VM_ASSERT(!UNDEF_P(legacy));
     VM_ASSERT(cr->sync.legacy == Qundef);
 
-    /* Last local GC before termination, in ordinary execution context: collect here
-     * what the joiner would otherwise inherit, and return empty pages to the pool. */
-    if (cr != GET_VM()->ractor.main_ractor) {
-        rb_gc_objspace_retire_gc();
-    }
-
     RACTOR_LOCK_SELF(cr);
     {
         ractor_free_all_ports(cr);
@@ -690,16 +807,21 @@ ractor_notify_exit(rb_execution_context_t *ec, rb_ractor_t *cr, VALUE legacy, bo
     }
     RACTOR_UNLOCK_SELF(cr);
 
-    // send token
+}
 
-    VALUE token = ractor_exit_token(exc);
+/* Sent after the dying thread's post-mortem collection: waking a joiner any earlier makes
+ * ractor_value spin for the whole of that collection. */
+static void
+ractor_send_exit_tokens(rb_execution_context_t *ec, rb_ractor_t *cr)
+{
+    VALUE token = ractor_exit_token(cr->sync.legacy_exc);
     struct ractor_monitor *rm, *nxt;
 
     ccan_list_for_each_safe(&cr->sync.monitors, rm, nxt, node)
     {
         RUBY_DEBUG_LOG("port:%u@r%u", (unsigned int)ractor_port_id(&rm->port), (unsigned int)rb_ractor_id(rm->port.r));
 
-        ractor_try_send(ec, &rm->port, token, false);
+        ractor_send_basket(ec, &rm->port, ractor_basket_new_ref(token), false);
 
         ccan_list_del(&rm->node);
         SIZED_FREE(rm);
@@ -729,8 +851,6 @@ ractor_sync_mark(rb_ractor_t *r)
 
     rb_gc_mark(r->sync.default_port_value);
 
-    /* (A copy snapshot being materialized is not marked here: each EC's frame
-     * chain roots it in rb_execution_context_mark, which also re-pins it.) */
     /* Until the value is absorbed this is its only reliable root (Qundef while the
      * Ractor still runs); after Ractor#value returns it, the Ruby side roots it. */
     rb_gc_mark(r->sync.legacy);
@@ -748,72 +868,17 @@ ractor_sync_mark(rb_ractor_t *r)
             ractor_mark_monitors(r);
         }
         if (!world_stopped) RACTOR_UNLOCK_SELF(r);
-    }
-}
 
-/* Re-pin a copy basket's payload: the root and every collected node. */
-static void
-ractor_basket_repin_in_flight(const struct ractor_basket *b)
-{
-    if (b->type != basket_type_copy) return;
-    rb_gc_pin_in_flight_message(b->p.v);
-    for (size_t i = 0; i < b->p.pinned_cnt; i++) {
-        rb_gc_pin_in_flight_message(b->p.pinned[i]);
-    }
-}
-
-static void
-ractor_queue_repin_in_flight(const struct ractor_queue *rq)
-{
-    const struct ractor_basket *b;
-    ccan_list_for_each(&rq->set, b, node) {
-        /* A move basket carries an off-heap courier, so it has no shref to re-pin;
-         * ractor_basket_mark marks the shareable VALUEs it carries instead. */
-        ractor_basket_repin_in_flight(b);
-    }
-}
-
-static int
-ractor_repin_ports_i(st_data_t key, st_data_t val, st_data_t data)
-{
-    ractor_queue_repin_in_flight((struct ractor_queue *)val);
-    return ST_CONTINUE;
-}
-
-/* A global GC clears every shref bit, so all in-flight payloads have to be re-pinned
- * before the unified mark.  Runs on the driver, under the barrier. */
-void
-rb_ractor_repin_in_flight(rb_ractor_t *r)
-{
-    if (r->sync.ports) {
-        ractor_queue_repin_in_flight(r->sync.recv_queue);
-        st_foreach(r->sync.ports, ractor_repin_ports_i, 0);
-    }
-    /* Baskets already built but not enqueued yet (in flight on the send path). */
-    if (r->sending_basket != NULL) {
-        ractor_basket_repin_in_flight(r->sending_basket);
-    }
-    /* A snapshot still being built (from prepare_payload's walk until it moves into
-     * the basket). */
-    for (size_t i = 0; i < r->pin_capture_cnt; i++) {
-        rb_gc_pin_in_flight_message(r->pin_capture[i]);
-    }
-    /* Snapshots being materialized are re-pinned from the EC frame chains instead
-     * (rb_execution_context_mark, which also covers a suspended fiber's EC). */
-}
-
-/* A single-objspace impl (mmtk) has no pin or shref bits and no zombie_objspaces, so
- * plain marking from the wrapper keeps these alive; the default GC covers the same set
- * with its pins and its zombie scan. */
-void
-rb_ractor_mark_in_flight_for_single_objspace(rb_ractor_t *r)
-{
-    rb_gc_mark(r->sync.legacy);
-    if (r->sending_basket != NULL) {
-        ractor_basket_mark(r->sending_basket);
-    }
-    for (size_t i = 0; i < r->pin_capture_cnt; i++) {
-        rb_gc_mark(r->pin_capture[i]);
+        /* The baskets on no queue: one being built to send, one being materialized.
+         * Walked in every collection, like the queues.  What they hold is shareable, but
+         * "only a global GC frees a shareable" does not hold: pinned_roots_mark, which
+         * roots a shareable from its page bit, is skipped once the process is back to a
+         * single Ractor (rb_gc_single_objspace_p), and then an ordinary local GC frees
+         * one that nothing else names.  A payload in flight is named by its basket and
+         * nothing else, so this list has to be a root whenever the queues are.  No sync
+         * lock, though: only the owner touches it (the lock above guards the queues,
+         * which a foreign sender writes). */
+        ractor_mark_off_queue_baskets(r);
     }
 }
 
@@ -860,6 +925,7 @@ ractor_sync_init(rb_ractor_t *r)
     rb_native_mutex_initialize(&r->sync.lock);
 
     // monitors
+    ccan_list_head_init(&r->sync.off_queue_baskets);
     ccan_list_head_init(&r->sync.monitors);
 
     // waiters
@@ -878,11 +944,7 @@ ractor_sync_init(rb_ractor_t *r)
     r->sync.legacy = Qundef;
 
     // no receive is rebuilding a payload yet
-    r->sync.materializing_copies = 0;
 
-#ifndef RUBY_THREAD_PTHREAD_H
-    rb_native_cond_initialize(&r->sync.wakeup_cond);
-#endif
 }
 
 /* Create the default port.  Call only after the Ractor joined vm->ractor.set, so the
@@ -995,7 +1057,8 @@ ractor_marshal_dump_rescue(VALUE obj, VALUE errinfo)
 }
 
 static VALUE
-ractor_prepare_payload(rb_execution_context_t *ec, VALUE obj, enum ractor_basket_type *ptype, bool *pmarshaled)
+ractor_prepare_payload(rb_execution_context_t *ec, VALUE obj, enum ractor_basket_type *ptype, bool *pmarshaled,
+                       struct rb_ractor_courier **pcourier)
 {
     switch (*ptype) {
       case basket_type_ref:
@@ -1007,131 +1070,83 @@ ractor_prepare_payload(rb_execution_context_t *ec, VALUE obj, enum ractor_basket
         }
         else {
             /* Snapshot the object on the sender side without calling the user-visible
-             * #clone: core types are deep-copied natively and anything else is
-             * marshaled here, so its user hooks run on the sender. */
+             * #clone.  Both forms are off-heap, so an in-flight payload is never a GC
+             * object and needs no pin: nothing of the sender's heap stays alive while
+             * the message waits (design_v2.md 4.5).  The courier carries the core
+             * types; anything else is marshaled here, so its user hooks run on the
+             * sender, and the dump travels as plain bytes. */
             *ptype = basket_type_copy;
-            /* During a native copy, copy_enter collects every snapshot node into the
-             * pin list that covers construction, enqueue and materialization. */
-            rb_ractor_t *cr = rb_ec_ractor_ptr(ec);
-            VM_ASSERT(!cr->gen_fields_capturing);
-            cr->gen_fields_capturing = true;
-            VALUE snapshot = Qundef;
-            /* A native copy can raise (allocation, async interrupt).  Leaving the
-             * capturing flag set would fail the next send's assert and leak a stale
-             * pin_capture list into that basket. */
-            enum ruby_tag_type state;
-            EC_PUSH_TAG(ec);
-            if ((state = EC_EXEC_TAG()) == TAG_NONE) {
-                snapshot = ractor_copy_native_try(obj);
-            }
-            EC_POP_TAG();
-            cr->gen_fields_capturing = false;
-            if (state != TAG_NONE) {
-                cr->pin_capture_cnt = 0;
-                EC_JUMP_TAG(ec, state);
-            }
-            if (UNDEF_P(snapshot)) {
-                cr->pin_capture_cnt = 0;
-                snapshot = rb_rescue2(ractor_marshal_dump_body, obj,
-                                      ractor_marshal_dump_rescue, obj,
-                                      rb_eTypeError, (VALUE)0);
-                *pmarshaled = true;
-            }
-            return snapshot;
+            if (rb_ractor_courier_build_copy(obj, pcourier) != NULL) return Qundef;
+
+            *pmarshaled = true;
+            return rb_rescue2(ractor_marshal_dump_body, obj,
+                              ractor_marshal_dump_rescue, obj,
+                              rb_eTypeError, (VALUE)0);
         }
+    }
+}
+
+#if RBIMPL_COMPILER_IS(GCC) && defined(__OPTIMIZE__)
+/* GCC produces false-positive -Wclobbered warnings after inlining
+ * this function into ractor_basket_new(). */
+NOINLINE(static void ractor_basket_build_payload(rb_execution_context_t *ec, struct ractor_basket *b, VALUE obj, enum ractor_basket_type type, bool exc));
+#endif
+static void
+ractor_basket_build_payload(rb_execution_context_t *ec, struct ractor_basket *b, VALUE obj,
+                            enum ractor_basket_type type, bool exc)
+{
+    b->p.exception = exc;
+    if (type == basket_type_move) {
+        /* Serialize the graph into an off-heap courier; the sources become
+         * RactorMovedObject.  While in flight there is no GC object left for the
+         * sender's GC to mark, sweep or move.  The build publishes the courier into
+         * the basket as soon as it exists. */
+        rb_ractor_courier_build_move(obj, &b->p.courier);
+        b->type = type;
+        b->p.v = Qfalse;
+    }
+    else {
+        bool marshaled = false;
+        VALUE v = ractor_prepare_payload(ec, obj, &type, &marshaled, &b->p.courier);
+
+        if (type == basket_type_copy && marshaled) {
+            /* Take the dump off-heap: the sender's copy of it is ordinary garbage
+             * from here, so nothing of its heap is held while the message waits. */
+            size_t mlen = (size_t)RSTRING_LEN(v);
+            char *mbuf = ALLOC_N(char, mlen > 0 ? mlen : 1);
+            b->p.marshaled = marshaled;
+            b->p.mbuf = mbuf;
+            b->p.mlen = mlen;
+            memcpy(mbuf, RSTRING_PTR(v), mlen);
+            v = Qundef;
+        }
+        b->type = type;
+        b->p.v = v;
     }
 }
 
 static struct ractor_basket *
 ractor_basket_new(rb_execution_context_t *ec, VALUE obj, enum ractor_basket_type type, bool exc)
 {
-    /* A copy payload's preparation can raise (an uncopyable object), so it runs before
-     * the basket is allocated and cannot leak one; the move branch allocates first,
-     * since an alloc raise must not orphan an already built courier. */
-    VALUE v = Qfalse;
-    bool marshaled = false;
-    struct rb_ractor_move_courier *courier = NULL;
+    rb_ractor_t *cr = rb_ec_ractor_ptr(ec);
+    /* Allocate and list the basket before anything is built into it: from here the
+     * courier it is about to hold is rooted by this Ractor's in-flight list, even
+     * half-built, and every raise below frees it through one path. */
+    struct ractor_basket *b = ractor_basket_alloc();
+    ractor_off_queue_add(cr, b);
 
-    struct ractor_basket *b;
-    if (type == basket_type_move) {
-        /* Allocate the basket first: its xmalloc can raise NoMemoryError, and a courier
-         * already built (sources destroyed, registry entry live) would be orphaned. */
-        b = ractor_basket_alloc();
-        enum ruby_tag_type state;
-        EC_PUSH_TAG(ec);
-        if ((state = EC_EXEC_TAG()) == TAG_NONE) {
-            /* Serialize the graph into an off-heap courier; the sources become
-             * RactorMovedObject.  While in flight there is no GC object left for the
-             * sender's GC to mark, sweep or move. */
-            courier = rb_ractor_move_courier_build(obj);
-        }
-        EC_POP_TAG();
-        if (state != TAG_NONE) {
-            SIZED_FREE(b);
-            EC_JUMP_TAG(ec, state);
-        }
+    enum ruby_tag_type state;
+    EC_PUSH_TAG(ec);
+    if ((state = EC_EXEC_TAG()) == TAG_NONE) {
+        ractor_basket_build_payload(ec, b, obj, type, exc);
     }
-    else {
-        v = ractor_prepare_payload(ec, obj, &type, &marshaled);
-        enum ruby_tag_type state;
-        EC_PUSH_TAG(ec);
-        if ((state = EC_EXEC_TAG()) == TAG_NONE) {
-            b = ractor_basket_alloc();
-        }
-        EC_POP_TAG();
-        if (state != TAG_NONE) {
-            /* Drop the pin list, or every global GC re-pins the dead snapshot from it
-             * forever (rb_ractor_repin_in_flight walks it unconditionally).  The nodes
-             * stay shref-pinned only until the next global GC clears the bits. */
-            rb_ractor_t *cr = rb_ec_ractor_ptr(ec);
-            free(cr->pin_capture);
-            cr->pin_capture = NULL;
-            cr->pin_capture_cnt = cr->pin_capture_capa = 0;
-            EC_JUMP_TAG(ec, state);
-        }
-        /* copy_enter pinned every node at construction with cr->pin_capture as the
-         * re-pin source; hand it to the basket only after basket_alloc (which may GC)
-         * so the cover never lapses.  A marshaled String is pinned here, after the
-         * alloc, so an alloc raise leaves no stale pin. */
-        if (type == basket_type_copy && marshaled) {
-            rb_gc_pin_in_flight_message(v);
-        }
+    EC_POP_TAG();
+    if (state != TAG_NONE) {
+        ractor_basket_free(b);   /* leaves the list and frees a courier already built */
+        EC_JUMP_TAG(ec, state);
     }
 
-    b->type = type;
-    b->p.exception = exc;
-    b->p.v = v;
-    b->p.marshaled = marshaled;
-    b->p.move_courier = courier;
-    b->p.pinned = NULL;
-    b->p.pinned_cnt = 0;
-    if (type == basket_type_copy) {
-        /* Hand the pin list to the basket, moving the re-pin cover from
-         * cr->pin_capture to cr->sending_basket with no safepoint in between. */
-        rb_ractor_t *cr = rb_ec_ractor_ptr(ec);
-        b->p.pinned = cr->pin_capture;
-        b->p.pinned_cnt = cr->pin_capture_cnt;
-        VM_ASSERT(cr->sending_basket == NULL);
-        cr->sending_basket = b;
-        cr->pin_capture = NULL;
-        cr->pin_capture_cnt = cr->pin_capture_capa = 0;
-    }
     return b;
-}
-
-/* True while this Ractor materializes an arriving copy: the half-built result
- * legitimately points at the sender-resident (pinned) snapshot, so a local GC's
- * verifier must not report containment violations, and the copy's own allocations can
- * start that GC. */
-bool
-rb_ractor_materializing_p(void)
-{
-    const rb_ractor_t *cr = rb_current_ractor_raw(false);
-    if (cr == NULL) return false;
-    /* Only a COPY materialization sets this: move shells reference other shells in
-     * this objspace, never the sender's graph.  The count is per Ractor, so a fiber
-     * switch keeps it exact. */
-    return cr->sync.materializing_copies > 0;
 }
 
 static VALUE
@@ -1141,40 +1156,26 @@ ractor_basket_value(struct ractor_basket *b)
       case basket_type_ref:
         break;
       case basket_type_copy: {
-        /* Materialize the sender's snapshot into the receiving Ractor's objspace.
-         * Passing the sender-resident graph by reference would create an unshareable
-         * cross-objspace edge that neither local GC can follow.  The snapshot stays
-         * pinned in the sender's objspace and becomes garbage there once this copy
-         * finishes.  Marshal.load allocates through this Ractor's normal newobj and
-         * write-barrier paths.
-         *
-         * Rebuilding can raise (marshal load hooks and autoload run user code and an
-         * async interrupt can arrive anywhere), and those hooks can run a nested
-         * Ractor.receive.  The frame is pushed on the machine stack and popped under a
-         * TAG, so the chain never leaks a dead materialization or drops an outer one. */
+        /* An off-heap copy courier rebuilds exactly like a move one; only the sources
+         * differ (still alive here, already shells there). */
+        if (b->p.courier != NULL) goto materialize_courier;
+        /* The payload is the marshaled bytes.  Marshal.load allocates through this
+         * Ractor's normal newobj and write-barrier paths, and can raise (load hooks and
+         * autoload run user code, an async interrupt can arrive anywhere), so it runs
+         * under a TAG. */
         rb_execution_context_t *ec = rb_current_ec_noinline();
-        rb_ractor_t *cr = rb_ec_ractor_ptr(ec);
-        struct ractor_materialize_frame frame = {
-            .snapshot = b->p.v, .pinned = b->p.pinned, .pinned_cnt = b->p.pinned_cnt,
-            .prev = ec->materialize_frames,
-        };
-        ec->materialize_frames = &frame;
-        cr->sync.materializing_copies++;
         VALUE result = Qundef;
         enum ruby_tag_type state;
         EC_PUSH_TAG(ec);
         if ((state = EC_EXEC_TAG()) == TAG_NONE) {
-            if (b->p.marshaled) {
-                result = rb_marshal_load(b->p.v);
-            }
-            else {
-                result = ractor_copy_native_try(b->p.v);
-                if (UNDEF_P(result)) rb_bug("ractor_basket_value: native snapshot not natively copyable");
-            }
+            /* Rebuild the byte string in this Ractor's objspace.  Marshal does not mark
+             * its source (mark_load_arg) and the basket is off the queue, so this
+             * frame's stack slot is the String's only root for the load. */
+            VALUE bin = rb_str_new(b->p.mbuf, (long)b->p.mlen);
+            result = rb_marshal_load(bin);
+            RB_GC_GUARD(bin);
         }
         EC_POP_TAG();
-        ec->materialize_frames = frame.prev;
-        cr->sync.materializing_copies--;
         /* rb_copy_generic_ivar left the sender-resident snapshot host and fields_obj in
          * this EC's gen_fields_cache; the snapshot is garbage on the sender now, and a
          * stale cache hit on a reused address would deref a freed foreign fields_obj.
@@ -1192,19 +1193,20 @@ ractor_basket_value(struct ractor_basket *b)
         RB_GC_GUARD(result);
         break;
       }
-      case basket_type_move: {
+      case basket_type_move:
+      materialize_courier: {
         /* Rebuild the moved graph from the off-heap courier into this Ractor's
          * objspace.  The sources are already RactorMovedObject (set when the courier
          * was built), so move's snapshot semantics hold.  The courier is xmalloc'd
          * rather than a GC object, so the sender's concurrent local GC never touches
-         * it; the VALUEs it carries are shareable or immediates, marked and pinned as
-         * a global GC root by the in-flight registry (ractor.c).
+         * it; the shareable VALUEs it carries are marked through this basket, which is
+         * on this Ractor's off-queue list until it is freed.
          *
          * Rebuilding can raise here too (rb_hash_aset on a moved key with a custom
          * #hash runs user code, and an async interrupt can arrive).  On a raise the
          * courier is still owned by the basket, whose teardown frees it. */
         rb_execution_context_t *ec = rb_current_ec_noinline();
-        struct rb_ractor_move_courier *courier = b->p.move_courier;
+        struct rb_ractor_courier *courier = b->p.courier;
         /* Keep the materialized graph on the machine stack (result): it is the only
          * root until it reaches the caller.  courier_free below runs a long loop, and
          * only the malloc'd basket's p.v holding it would give a concurrent global GC a
@@ -1213,16 +1215,16 @@ ractor_basket_value(struct ractor_basket *b)
         enum ruby_tag_type state;
         EC_PUSH_TAG(ec);
         if ((state = EC_EXEC_TAG()) == TAG_NONE) {
-            result = rb_ractor_move_courier_materialize(courier);
+            result = rb_ractor_courier_materialize(courier);
         }
         EC_POP_TAG();
         if (state != TAG_NONE) {
-            /* An unconsumed courier stays in b->p.move_courier; basket_free frees it. */
+            /* An unconsumed courier stays in b->p.courier; basket_free frees it. */
             ractor_basket_free(b);
             EC_JUMP_TAG(ec, state);
         }
-        rb_ractor_move_courier_free(courier);
-        b->p.move_courier = NULL;
+        rb_ractor_courier_free(courier);
+        b->p.courier = NULL;
         b->p.v = result;
         RB_GC_GUARD(result);
         break;
@@ -1299,64 +1301,6 @@ basket_type_name(enum ractor_basket_type type)
 
 #endif // USE_RUBY_DEBUG_LOG
 
-#ifdef RUBY_THREAD_PTHREAD_H
-
-//
-
-#else // win32
-
-static void
-ractor_cond_wait(rb_ractor_t *r)
-{
-#if RACTOR_CHECK_MODE > 0
-    VALUE locked_by = r->sync.locked_by;
-    r->sync.locked_by = Qnil;
-#endif
-    rb_native_cond_wait(&r->sync.wakeup_cond, &r->sync.lock);
-
-#if RACTOR_CHECK_MODE > 0
-    r->sync.locked_by = locked_by;
-#endif
-}
-
-static void *
-ractor_wait_no_gvl(void *ptr)
-{
-    struct ractor_waiter *waiter = (struct ractor_waiter *)ptr;
-    rb_ractor_t *cr = waiter->th->ractor;
-
-    RACTOR_LOCK_SELF(cr);
-    {
-        if (waiter->wakeup_status == wakeup_none) {
-            ractor_cond_wait(cr);
-        }
-    }
-    RACTOR_UNLOCK_SELF(cr);
-    return NULL;
-}
-
-static void
-rb_ractor_sched_wait(rb_execution_context_t *ec, rb_ractor_t *cr, rb_unblock_function_t *ubf, void *ptr)
-{
-    struct ractor_waiter *waiter = (struct ractor_waiter *)ptr;
-
-    RACTOR_UNLOCK(cr);
-    {
-        rb_nogvl(ractor_wait_no_gvl, waiter,
-                 ubf, waiter,
-                 RB_NOGVL_UBF_ASYNC_SAFE | RB_NOGVL_INTR_FAIL);
-    }
-    RACTOR_LOCK(cr);
-}
-
-static void
-rb_ractor_sched_wakeup(rb_ractor_t *r, rb_thread_t *th)
-{
-    // ractor lock is acquired
-    rb_native_cond_broadcast(&r->sync.wakeup_cond);
-}
-#endif
-
 static bool
 ractor_wakeup_all(rb_ractor_t *r, enum ractor_wakeup_status wakeup_status)
 {
@@ -1418,14 +1362,16 @@ ubf_ractor_wait(void *ptr)
     rb_native_mutex_lock(&th->interrupt_lock);
 }
 
+// Waits for an event on cr.  `end` is an absolute deadline, NULL to wait forever.
 static enum ractor_wakeup_status
-ractor_wait(rb_execution_context_t *ec, rb_ractor_t *cr)
+ractor_wait(rb_execution_context_t *ec, rb_ractor_t *cr, const rb_hrtime_t *end)
 {
     rb_thread_t *th = rb_ec_thread_ptr(ec);
 
     struct ractor_waiter waiter = {
         .wakeup_status = wakeup_none,
         .th = th,
+        .end = end,
     };
 
     RUBY_DEBUG_LOG("wait%s", "");
@@ -1493,19 +1439,30 @@ ractor_check_received(rb_ractor_t *cr, struct ractor_queue *messages)
     return received;
 }
 
-static void
-ractor_wait_receive(rb_execution_context_t *ec, rb_ractor_t *cr)
+// Returns false if the deadline `end` passed with nothing to deliver.  Incoming
+// messages are delivered even then, so the caller retries its queue once more.
+static bool
+ractor_wait_receive(rb_execution_context_t *ec, rb_ractor_t *cr, const rb_hrtime_t *end)
 {
     struct ractor_queue messages;
     bool deliverred = false;
+    bool timedout = false;
 
     RACTOR_LOCK_SELF(cr);
     {
         if (ractor_check_received(cr, &messages)) {
             deliverred = true;
         }
+        else if (!end) {
+            ractor_wait(ec, cr, NULL); // no timeout: wait until a message arrives
+        }
+        else if (*end == 0) {
+            timedout = true; // `timeout: 0`: over without reading any clock
+        }
         else {
-            ractor_wait(ec, cr);
+            // only a wakeup nobody claimed can be the deadline, so only then look at
+            // the clock: a send or an interrupt says what woke this thread by itself
+            timedout = ractor_wait(ec, cr, end) == wakeup_none && rb_hrtime_now() >= *end;
         }
     }
     RACTOR_UNLOCK_SELF(cr);
@@ -1518,6 +1475,8 @@ ractor_wait_receive(rb_execution_context_t *ec, rb_ractor_t *cr)
             ractor_queue_enq(cr, ractor_get_queue(cr, b->port_id, false), b);
         }
     }
+
+    return !timedout;
 }
 
 static VALUE
@@ -1530,6 +1489,8 @@ ractor_try_receive(rb_execution_context_t *ec, rb_ractor_t *cr, const struct rac
     }
 
     struct ractor_basket *b = ractor_queue_deq(cr, rq);
+    /* Off the queue and not yet freed: this Ractor roots it while it materializes. */
+    if (b) ractor_off_queue_add(cr, b);
 
     if (rq->closed && ractor_queue_empty_p(cr, rq)) {
         ractor_delete_port(cr, ractor_port_id(rp), false);
@@ -1543,8 +1504,12 @@ ractor_try_receive(rb_execution_context_t *ec, rb_ractor_t *cr, const struct rac
     }
 }
 
+// Returns Qundef if the deadline passed first.  It bounds how long this blocks; it
+// does not cut delivery off.  A message that lands while the timeout is being
+// reported is still returned, as Thread::Queue#pop(timeout:) does.  Either way
+// nothing is lost: a basket only leaves the queue when it is returned.
 static VALUE
-ractor_receive(rb_execution_context_t *ec, const struct ractor_port *rp)
+ractor_receive(rb_execution_context_t *ec, const struct ractor_port *rp, const rb_hrtime_t *end)
 {
     rb_ractor_t *cr = rb_ec_ractor_ptr(ec);
     VM_ASSERT(cr == rp->r);
@@ -1557,10 +1522,31 @@ ractor_receive(rb_execution_context_t *ec, const struct ractor_port *rp)
         if (v != Qundef) {
             return v;
         }
-        else {
-            ractor_wait_receive(ec, cr);
+        else if (!ractor_wait_receive(ec, cr, end)) {
+            return Qundef;
         }
     }
+}
+
+// A timeout argument becomes an absolute deadline, or 0 for `timeout: 0`, which
+// every wait reads as "do not wait".  Returns NULL when there is no timeout.
+static const rb_hrtime_t *
+ractor_timeout_deadline(VALUE timeout, rb_hrtime_t *storage)
+{
+    if (NIL_P(timeout)) return NULL;
+
+    if (!(FIXNUM_P(timeout) && FIX2LONG(timeout) == 0)) {
+        struct timeval tv = rb_time_interval(timeout); // raises on a negative timeout
+        rb_hrtime_t rel = rb_timeval2hrtime(&tv);
+
+        if (rel > 0) {
+            *storage = rb_hrtime_add(rb_hrtime_now(), rel);
+            return storage;
+        }
+    }
+
+    *storage = 0;
+    return storage;
 }
 
 // Ractor#send
@@ -1579,16 +1565,9 @@ ractor_send_basket(rb_execution_context_t *ec, const struct ractor_port *rp, str
         }
         else {
             b->port_id = ractor_port_id(rp);
+            /* The receiver's queue roots it from here; drop it from ours. */
+            ractor_off_queue_remove(b);
             ractor_queue_enq(rp->r, rp->r->sync.recv_queue, b);
-            /* From basket_new to the enqueue the sender's sending_basket slot covers
-             * the re-pin; from here the queue walk does, so drop the slot (no safepoint
-             * or malloc-triggered GC inside the lock, so the cover never lapses). */
-            if (b->type == basket_type_copy) {
-                rb_ractor_t *scr = rb_current_ractor_raw(false);
-                if (scr != NULL && scr->sending_basket == b) {
-                    scr->sending_basket = NULL;
-                }
-            }
         }
     }
     RACTOR_UNLOCK(rp->r);
@@ -1601,11 +1580,34 @@ ractor_send_basket(rb_execution_context_t *ec, const struct ractor_port *rp, str
     else {
         RUBY_DEBUG_LOG("closed:%u@r%u", (unsigned int)ractor_port_id(rp), rb_ractor_id(rp->r));
 
+        /* Nothing took the basket: it was not enqueued, so free it whether or not the
+         * caller wants the error raised. */
+        ractor_basket_free(b);
+
         if (raise_on_error) {
-            ractor_basket_free(b);
             rb_raise(rb_eRactorClosedError, "The port was already closed");
         }
     }
+}
+
+/* A shareable payload needs no preparation, so this skips the tag ractor_basket_new
+ * pushes.  The exit tokens travel this way: they are sent from a thread whose EC has
+ * already lost its VM stack, and EC_PUSH_TAG reads ec->cfp under ZJIT. */
+static struct ractor_basket *
+ractor_basket_new_ref(VALUE shareable)
+{
+    struct ractor_basket *b = ractor_basket_alloc();
+
+    b->type = basket_type_ref;
+    b->sender = Qnil;
+    b->p.v = shareable;
+    b->p.exception = false;
+    b->p.marshaled = false;
+    b->p.courier = NULL;
+    b->p.mbuf = NULL;
+    b->p.mlen = 0;
+
+    return b;
 }
 
 static VALUE
@@ -1621,12 +1623,6 @@ static VALUE
 ractor_send(rb_execution_context_t *ec, const struct ractor_port *rp, VALUE obj, VALUE move)
 {
     return ractor_send0(ec, rp, obj, move, true);
-}
-
-static VALUE
-ractor_try_send(rb_execution_context_t *ec, const struct ractor_port *rp, VALUE obj, VALUE move)
-{
-    return ractor_send0(ec, rp, obj, move, false);
 }
 
 // Ractor::Selector
@@ -1816,7 +1812,7 @@ ractor_selector_wait_i(st_data_t key, st_data_t val, st_data_t data)
 }
 
 static VALUE
-ractor_selector__wait(rb_execution_context_t *ec, VALUE selector)
+ractor_selector__wait(rb_execution_context_t *ec, VALUE selector, const rb_hrtime_t *end)
 {
     rb_ractor_t *cr = rb_ec_ractor_ptr(ec);
     struct ractor_selector *s = RACTOR_SELECTOR_PTR(selector);
@@ -1833,8 +1829,9 @@ ractor_selector__wait(rb_execution_context_t *ec, VALUE selector)
         if (data.found) {
             return rb_ary_new_from_args(2, data.rpv, data.v);
         }
-
-        ractor_wait_receive(ec, cr);
+        else if (!ractor_wait_receive(ec, cr, end)) {
+            return Qnil;
+        }
     }
 }
 
@@ -1847,7 +1844,7 @@ ractor_selector__wait(rb_execution_context_t *ec, VALUE selector)
 static VALUE
 ractor_selector_wait(VALUE selector)
 {
-    return ractor_selector__wait(GET_EC(), selector);
+    return ractor_selector__wait(GET_EC(), selector, NULL);
 }
 
 static VALUE
@@ -1863,10 +1860,13 @@ ractor_selector_new(int argc, VALUE *ractors, VALUE klass)
 }
 
 static VALUE
-ractor_select_internal(rb_execution_context_t *ec, VALUE self, VALUE ports)
+ractor_select_internal(rb_execution_context_t *ec, VALUE self, VALUE ports, VALUE timeout)
 {
+    rb_hrtime_t deadline;
+    const rb_hrtime_t *end = ractor_timeout_deadline(timeout, &deadline);
+
     VALUE selector = ractor_selector_new(RARRAY_LENINT(ports), (VALUE *)RARRAY_CONST_PTR(ports), rb_cRactorSelector);
-    VALUE result = ractor_selector__wait(ec, selector);
+    VALUE result = ractor_selector__wait(ec, selector, end);
 
     RB_GC_GUARD(selector);
     RB_GC_GUARD(ports);

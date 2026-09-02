@@ -82,7 +82,7 @@ The following is a list of all configuration keys and their purpose\. You can le
 .IP "\(bu" 4
 \fBcache_path\fR (\fBBUNDLE_CACHE_PATH\fR): The directory that bundler will place cached gems in when running \fBbundle package\fR, and that bundler will look in when installing gems\. Defaults to \fBvendor/cache\fR\.
 .IP "\(bu" 4
-\fBclean\fR (\fBBUNDLE_CLEAN\fR): Whether Bundler should run \fBbundle clean\fR automatically after \fBbundle install\fR\. Defaults to \fBtrue\fR in Bundler 4, as long as \fBpath\fR is not explicitly configured\.
+\fBclean\fR (\fBBUNDLE_CLEAN\fR): Whether Bundler should run \fBbundle clean\fR automatically after \fBbundle install\fR\. Defaults to \fBtrue\fR in Bundler 5, as long as \fBpath\fR is not explicitly configured\.
 .IP "\(bu" 4
 \fBconsole\fR (\fBBUNDLE_CONSOLE\fR): The console that \fBbundle console\fR starts\. Defaults to \fBirb\fR\.
 .IP "\(bu" 4
@@ -99,7 +99,23 @@ The per\-source \fBcooldown:\fR keyword in the Gemfile, such as \fBsource "https
 .IP
 The CLI flag and this setting apply uniformly to every source, including ones declared with their own \fBcooldown:\fR value\. To keep a private registry permanently exempt while still cooling down public gems, declare \fBsource "https://internal", cooldown: 0\fR in the Gemfile; remember that \fB\-\-cooldown N\fR on the command line will still override it for that single run\.
 .IP
+The value must be a non\-negative integer\. \fB\-\-cooldown\fR rejects anything else outright, while a value coming from this setting or from \fBBUNDLE_COOLDOWN\fR only warns, because a typo left in a config file should not make every command fail\. Such a value disables the cooldown for every source, including sources that declare their own \fBcooldown:\fR in the Gemfile\.
+.IP
 Cooldown filtering depends on the gem server providing a per\-version \fBcreated_at\fR timestamp in the v2 compact\-index format\. Versions without that metadata \- older gem servers, historical entries that predate the v2 cutover on \fBrubygems\.org\fR, or private registries that still emit the v1 format \- are treated as outside the cooldown window and remain resolvable\. If you rely on cooldown for supply\-chain protection, confirm that the gem server emits \fBcreated_at\fR in its \fB/info/<gem>\fR responses\.
+.IP
+A \fBcreated_at\fR timestamp is read as UTC when it carries no time zone offset\. \fBrubygems\.org\fR always sends one, but a third\-party server that omits it would otherwise shift the cooldown window by the offset of whatever machine runs bundler\.
+.IP "\(bu" 4
+\fBcredential_store\fR (\fBBUNDLE_CREDENTIAL_STORE\fR): Experimental: store and read host credentials (the values otherwise set via \fBbundle config set <host> <user:pass>\fR) in a credential store instead of the plain text config file\. Set it to \fBtrue\fR to use the operating system's native store (macOS Keychain, Linux Secret Service, Windows Credential Manager) when one is available on this platform, or to the name of a backend provided by a third\-party gem, such as \fB1password\fR\. Falls back to the config file when the store is unavailable or fails, warning that the credential was written in plain text\. Defaults to false\. Credentials already written to the config file are not migrated automatically; re\-run \fBbundle config set <host> <user:pass>\fR with the setting enabled to move each one into the store\. Being experimental, the name and behavior of this setting may change in a future release\.
+.IP
+The value is read in three ways\. An empty value and the false values Bundler takes everywhere else (\fBfalse\fR, \fBf\fR, \fBno\fR, \fBn\fR, \fB0\fR) turn the store off\. \fBtrue\fR, \fBt\fR, \fByes\fR, \fBy\fR, \fBon\fR and \fB1\fR select the native store\. Case does not matter for any of those\. Anything else is a backend name, taken as written, and only lowercase letters, digits, \fB_\fR and \fB\-\fR are recognized in one\. So \fBoff\fR names a backend rather than turning the store off, which \fBfalse\fR does\.
+.IP
+A credential kept in the store is never printed back\. \fBbundle config get <host>\fR and \fBbundle config list\fR name the key and say that its value lives in the credential store\. With \fB\-\-parseable\fR, such a key is left out entirely, since that output is meant to be read back by \fBbundle config set\fR\. A third\-party backend is not required to enumerate what it holds, so a credential kept in one may not be listed at all\.
+.IP
+The store belongs to the machine's user, not to a project, so \fB\-\-local\fR and \fB\-\-global\fR make no difference to where a credential is kept\. Setting a host's credential in one project changes it for every project on the machine, and unsetting it there removes it everywhere\. Protecting the store itself is the operating system's job, or that of whichever backend you selected\.
+.IP
+A credential given in the environment, such as \fBBUNDLE_GEMS__EXAMPLE__COM\fR, takes precedence over the stored one, so a CI run can pass its own credentials without the store getting in the way\. The store takes precedence over the config file\.
+.IP
+The store can also be selected per host with \fBcredential_store\.<host>\fR (\fBBUNDLE_CREDENTIAL_STORE__<HOST>\fR), for example \fBbundle config set credential_store\.gems\.example\.com code_artifact\fR\. That host then uses only the named backend, with no chaining to the global one, while every other host keeps following the global setting\. Setting a host's value to \fBfalse\fR keeps that one host on the config file even when a global store is enabled\.
 .IP "\(bu" 4
 \fBdefault_cli_command\fR (\fBBUNDLE_DEFAULT_CLI_COMMAND\fR): The command that running \fBbundle\fR without arguments should run\. Defaults to \fBcli_help\fR since Bundler 4, but can also be \fBinstall\fR which was the previous default\.
 .IP "\(bu" 4
@@ -137,6 +153,8 @@ Cooldown filtering depends on the gem server providing a per\-version \fBcreated
 .IP "\(bu" 4
 \fBjobs\fR (\fBBUNDLE_JOBS\fR): The number of gems Bundler can download and install in parallel\. Defaults to the number of available processors\.
 .IP "\(bu" 4
+\fBkeep_outdated_cache\fR (\fBBUNDLE_KEEP_OUTDATED_CACHE\fR): Whether Bundler should leave outdated gems unpruned when caching\. Defaults to false\.
+.IP "\(bu" 4
 \fBlockfile\fR (\fBBUNDLE_LOCKFILE\fR): The path to the lockfile that bundler should use\. By default, Bundler adds \fB\.lock\fR to the end of the \fBgemfile\fR entry\. Can be set to \fBfalse\fR in the Gemfile to disable lockfile creation entirely (see gemfile(5))\.
 .IP "\(bu" 4
 \fBlockfile_checksums\fR (\fBBUNDLE_LOCKFILE_CHECKSUMS\fR): Whether Bundler should include a checksums section in new lockfiles, to protect from compromised gem sources\. Defaults to true\. Bundler's own checksum is only included when its \fB\.gem\fR file is cached, which may not be the case when Bundler is installed as a default gem\.
@@ -147,17 +165,19 @@ Cooldown filtering depends on the gem server providing a per\-version \fBcreated
 .IP "\(bu" 4
 \fBno_install_plugin\fR (\fBBUNDLE_NO_INSTALL_PLUGIN\fR): Whether Bundler should skip installing RubyGems plugins during installation\. When set, plugin files are not written to the plugins directory\. To install plugins later, unset this setting and run \fBbundle pristine <gem>\fR\.
 .IP "\(bu" 4
-\fBno_prune\fR (\fBBUNDLE_NO_PRUNE\fR): Whether Bundler should leave outdated gems unpruned when caching\.
+\fBno_prune\fR (\fBBUNDLE_NO_PRUNE\fR): Deprecated name for \fBkeep_outdated_cache\fR\. Each priority level is checked for \fBkeep_outdated_cache\fR and then for \fBno_prune\fR, and the first value found wins\. \fBno_prune\fR will be removed in Bundler 5\.
 .IP "\(bu" 4
 \fBonly\fR (\fBBUNDLE_ONLY\fR): A space\-separated list of groups to install only gems of the specified groups\. Please check carefully if you want to install also gems without a group, because they get put inside \fBdefault\fR group\. For example \fBonly test:default\fR will install all gems specified in test group and without one\.
 .IP "\(bu" 4
-\fBpath\fR (\fBBUNDLE_PATH\fR): The location on disk where all gems in your bundle will be located regardless of \fB$GEM_HOME\fR or \fB$GEM_PATH\fR values\. Bundle gems not found in this location will be installed by \fBbundle install\fR\. When not set, Bundler install by default to a \fB\.bundle\fR directory relative to repository root in Bundler 4, and to the default system path (\fBGem\.dir\fR) before Bundler 4\. That means that before Bundler 4, Bundler shares this location with Rubygems, and \fBgem install \|\.\|\.\|\.\fR will have gems installed in the same location and therefore, gems installed without \fBpath\fR set will show up by calling \fBgem list\fR\. This will not be the case in Bundler 4\.
+\fBpath\fR (\fBBUNDLE_PATH\fR): The location on disk where all gems in your bundle will be located regardless of \fB$GEM_HOME\fR or \fB$GEM_PATH\fR values\. Bundle gems not found in this location will be installed by \fBbundle install\fR\. When not set, Bundler install by default to a \fB\.bundle\fR directory relative to repository root in Bundler 5, and to the default system path (\fBGem\.dir\fR) before Bundler 5\. That means that before Bundler 5, Bundler shares this location with Rubygems, and \fBgem install \|\.\|\.\|\.\fR will have gems installed in the same location and therefore, gems installed without \fBpath\fR set will show up by calling \fBgem list\fR\. This will not be the case in Bundler 5\.
 .IP "\(bu" 4
 \fBpath\.system\fR (\fBBUNDLE_PATH__SYSTEM\fR): Whether Bundler will install gems into the default system path (\fBGem\.dir\fR)\.
 .IP "\(bu" 4
 \fBplugins\fR (\fBBUNDLE_PLUGINS\fR): Enable Bundler's experimental plugin system\.
 .IP "\(bu" 4
 \fBprefer_patch\fR (\fBBUNDLE_PREFER_PATCH\fR): Prefer updating only to next patch version during updates\. Makes \fBbundle update\fR calls equivalent to \fBbundler update \-\-patch\fR\.
+.IP "\(bu" 4
+\fBprune\fR (\fBBUNDLE_PRUNE\fR): A space\-separated or \fB:\fR\-separated list of Bundler\-managed artifacts to delete after a successful \fBbundle install\fR, \fBbundle update\fR or \fBbundle cache\fR, and on \fBbundle clean\fR\. \fBcache\fR removes the download cache under the bundle path, which holds both the cached \fB\.gem\fR files and the git mirrors\. \fBgit\fR removes the \fB\.git\fR directory of every checked out git gem\. Any value that is not a category name is read as a boolean, so \fBBUNDLE_PRUNE=1\fR selects every category and keeps doing so as categories are added\. This is meant for container images and other throwaway environments\. \fBThe setting only takes effect when a bundle path is set\.\fR Without one Bundler installs into the system gem directory, where the cache is shared with RubyGems and holds gem files Bundler never put there, so pruning is skipped with a warning\. Set a path with \fBBUNDLE_PATH\fR or \fBbundle config set path <dir>\fR\. A pruned artifact comes back only when Bundler has to install that gem again, so a later \fBbundle install\fR does not restore it on its own\. \fBbundle install \-\-redownload\fR does, and \fBbundle pristine\fR works once it has, though with \fBprune\fR still set the reinstall prunes again at the end\.
 .IP "\(bu" 4
 \fBredirect\fR (\fBBUNDLE_REDIRECT\fR): The number of redirects allowed for network requests\. Defaults to \fB5\fR\.
 .IP "\(bu" 4
@@ -179,7 +199,7 @@ Cooldown filtering depends on the gem server providing a per\-version \fBcreated
 .IP "\(bu" 4
 \fBsystem_bindir\fR (\fBBUNDLE_SYSTEM_BINDIR\fR): The location where RubyGems installs binstubs\. Defaults to \fBGem\.bindir\fR\.
 .IP "\(bu" 4
-\fBtimeout\fR (\fBBUNDLE_TIMEOUT\fR): The seconds allowed before timing out for network requests\. Defaults to \fB10\fR\.
+\fBtimeout\fR (\fBBUNDLE_TIMEOUT\fR): The seconds allowed before timing out for network requests, applied to each request individually\. A network operation retried by Bundler may wait a multiple of this value in total\. Defaults to \fB10\fR\.
 .IP "\(bu" 4
 \fBupdate_requires_all_flag\fR (\fBBUNDLE_UPDATE_REQUIRES_ALL_FLAG\fR): Require passing \fB\-\-all\fR to \fBbundle update\fR when everything should be updated, and disallow passing no options to \fBbundle update\fR\.
 .IP "\(bu" 4
@@ -330,6 +350,12 @@ Any \fB\.\fR characters in a host name are mapped to a double underscore (\fB__\
 .IP "" 0
 .P
 This means that if you have a gem server named \fBmy\.gem\-host\.com\fR, you'll need to use the \fBBUNDLE_MY__GEM___HOST__COM\fR variable to configure credentials for it through ENV\.
+.SH "PROXY SUPPORT"
+Bundler reads the proxy for a gem source from the \fB:http_proxy\fR key in the RubyGems configuration file (\fB~/\.gemrc\fR), falling back to the environment\. For an \fBhttps\fR source, \fBhttps_proxy\fR (or \fBHTTPS_PROXY\fR) takes precedence over \fBhttp_proxy\fR (or \fBHTTP_PROXY\fR), which is only used when no https\-specific proxy is set\. Proxy credentials that are not embedded in the proxy URL are read from \fBHTTP_PROXY_USER\fR and \fBHTTP_PROXY_PASS\fR, or from \fBHTTPS_PROXY_USER\fR and \fBHTTPS_PROXY_PASS\fR when the https proxy is used\.
+.P
+Setting \fB:http_proxy: :no_proxy\fR in the RubyGems configuration file disables proxies entirely, including any proxy environment variables\. To keep using a proxy from the environment, remove that line\. To configure a proxy in the file, replace \fB:no_proxy\fR with an explicit proxy URL\.
+.P
+The \fBNO_PROXY\fR (or \fBno_proxy\fR) environment variable lists hosts that are reached directly, bypassing the proxy\. An entry matches the host itself and its subdomains, so \fBNO_PROXY=example\.com\fR bypasses both \fBexample\.com\fR and \fBsub\.example\.com\fR, but not \fBmyexample\.com\fR\. An entry starting with a dot matches only subdomains\. A value of \fB*\fR bypasses the proxy for every host\.
 .SH "CONFIGURE BUNDLER DIRECTORIES"
 Bundler's home, cache and plugin directories and config file can be configured through environment variables\. The default location for Bundler's home directory is \fB~/\.bundle\fR, which all directories inherit from by default\. The following outlines the available environment variables and their default values
 .IP "" 4

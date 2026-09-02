@@ -26,6 +26,10 @@ module Bundler
         end
 
         spec = Bundler.load_gemspec_uncached(gemspec)
+        unless spec
+          Bundler.ui.error "Gem specification #{gemspec} did not produce a specification"
+          exit 1
+        end
 
         File.open(gemfile, "wb") do |file|
           file << "# Generated from #{gemspec}\n"

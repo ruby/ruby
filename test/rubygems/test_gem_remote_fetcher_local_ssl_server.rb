@@ -155,10 +155,4 @@ class TestGemRemoteFetcherLocalSSLServer < Gem::TestCase
     fetcher.close_all
     Gem.configuration = nil
   end
-
-  def omit_unless_support_pqc
-    without_pqc_support do |message|
-      omit message
-    end
-  end
 end if Gem::HAVE_OPENSSL

@@ -670,6 +670,83 @@ class TestArray < Test::Unit::TestCase
     assert_equal(:ok, a.last)
   end
 
+  # Long enough not to be embedded, so that dup/slicing share the buffer.
+  SHARED_BUFFER_LEN = 200
+
+  def shared_buffer_src
+    (0...SHARED_BUFFER_LEN).map {|i| "e#{i}"}
+  end
+
+  # [Bug #22259]
+  def test_splice_shared_buffer_longer_than_self
+    src = shared_buffer_src
+    a = @cls[*src]
+    b = a.dup
+    b.pop
+    # `a` and `b` share one buffer, but `a` is longer.
+    assert_equal(src[0..-2] + src, b.concat(a))
+    GC.start
+    assert_equal(src.last, b.last)
+  end
+
+  def test_splice_shared_buffer_overlapping
+    src = shared_buffer_src
+    a = @cls[*src]
+    b = a[0, 150]
+    c = a[50, 150]
+    assert_equal(src[0, 150] + src[50, 150], b.concat(c))
+    GC.start
+    assert_equal(src.last, b.last)
+  end
+
+  def test_splice_shared_buffer_at_offset
+    src = shared_buffer_src
+    a = @cls[*src]
+    b = a[10, SHARED_BUFFER_LEN - 10]
+    # `b` shares `a`'s buffer at a non-zero offset.
+    a[0, 0] = b
+    assert_equal(src[10..] + src, a)
+    GC.start
+    assert_equal(src.last, a.last)
+
+    c = @cls[*src]
+    d = c[10, SHARED_BUFFER_LEN - 10]
+    c[5, 2] = d
+    assert_equal(src[0, 5] + src[10..] + src[7..], c)
+  end
+
+  def test_splice_shared_buffer_replace_shorter
+    src = shared_buffer_src
+    a = @cls[*src]
+    b = a[SHARED_BUFFER_LEN / 2, SHARED_BUFFER_LEN / 2]
+    a[0, SHARED_BUFFER_LEN] = b
+    assert_equal(src[SHARED_BUFFER_LEN / 2..], a)
+    GC.start
+    assert_equal(src.last, a.last)
+  end
+
+  def test_splice_shared_buffer_frozen_root
+    src = shared_buffer_src
+    # A frozen array becomes the shared root itself.
+    a = @cls[*src].freeze
+    b = a[0, SHARED_BUFFER_LEN - 1]
+    assert_equal(src[0..-2] + src, b.concat(a))
+    GC.start
+    assert_equal(src.last, b.last)
+  end
+
+  def test_splice_self_shared_buffer
+    src = shared_buffer_src
+    a = @cls[*src]
+    a[10, 1]                    # make `a` share its buffer
+    assert_equal(src + src, a.concat(a))
+
+    b = @cls[*src]
+    b[10, SHARED_BUFFER_LEN - 10]
+    b[5, 2] = b
+    assert_equal(src[0, 5] + src + src[7..], b)
+  end
+
   def test_count
     a = @cls[1, 2, 3, 1, 2]
     assert_equal(5, a.count)
@@ -939,6 +1016,12 @@ class TestArray < Test::Unit::TestCase
     assert_equal(@cls[1, 2, 3, 4, 5, 6], a5.flatten!)
     assert_nil(a5.flatten!(0), '[ruby-core:23382]')
     assert_equal(@cls[1, 2, 3, 4, 5, 6], a5)
+  end
+
+  def test_flatten_bang_does_not_freeze_nested_array
+    child = []
+    [child].flatten!
+    assert_not_predicate(child, :frozen?)
   end
 
   def test_flatten_empty!

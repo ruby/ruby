@@ -374,7 +374,7 @@ location_base_label(rb_backtrace_location_t *loc)
         return rb_id2str(loc->cme->def->original_id);
     }
 
-    return ISEQ_BODY(loc->iseq)->location.base_label;
+    return rb_iseq_base_label(loc->iseq);
 }
 
 /*
@@ -560,7 +560,7 @@ location_source_first_lineno(const rb_iseq_t *iseq, VALUE script_lines)
 
     while (ISEQ_BODY(source_iseq)->parent_iseq) {
         const rb_iseq_t *parent = ISEQ_BODY(source_iseq)->parent_iseq;
-        if (ISEQ_BODY(parent)->variable.script_lines != script_lines) break;
+        if (ISEQ_SCRIPT_LINES(parent) != script_lines) break;
         source_iseq = parent;
     }
 
@@ -601,14 +601,14 @@ location_source_range_m(VALUE self)
     if (node_id == -1) {
         rb_raise(rb_eRuntimeError, "cannot get source range for location without a node ID");
     }
-    if (!ISEQ_BODY(iseq)->has_source_hash) {
+    if (!ISEQ_BODY(iseq)->source_hash) {
         rb_raise(rb_eRuntimeError, "cannot get source range because the source hash is unavailable");
     }
     uint64_t source_hash = ISEQ_BODY(iseq)->source_hash;
 
     VALUE path = rb_iseq_path(iseq);
     VALUE absolute_path = rb_iseq_realpath(iseq);
-    VALUE script_lines = ISEQ_BODY(iseq)->variable.script_lines;
+    VALUE script_lines = ISEQ_SCRIPT_LINES(iseq);
     VALUE source;
     VALUE parser_path = path;
     int first_lineno = 1;
@@ -866,6 +866,51 @@ rb_backtrace_dup(VALUE btobj)
     return dupobj;
 }
 
+
+/* Copy a backtrace's frames into an off-heap blob for a Ractor copy courier.  A frame
+ * only references shareable iseq / method-entry imemos, so the blob can carry them as
+ * they are.  It has no compaction update hook, so rb_backtrace_blob_mark pins them
+ * (rb_gc_mark, not _movable) for as long as the message is in flight. */
+void *
+rb_backtrace_blob_dump(VALUE btobj, int *size_out)
+{
+    rb_backtrace_t *bt;
+    TypedData_Get_Struct(btobj, rb_backtrace_t, &backtrace_data_type, bt);
+
+    int size = bt->backtrace_size;
+    *size_out = size;
+    rb_backtrace_location_t *blob = ALLOC_N(rb_backtrace_location_t, size > 0 ? size : 1);
+    MEMCPY(blob, bt->backtrace, rb_backtrace_location_t, size);
+    return blob;
+}
+
+VALUE
+rb_backtrace_blob_load(const void *blob_, int size)
+{
+    const rb_backtrace_location_t *blob = blob_;
+    rb_backtrace_t *dst;
+    VALUE btobj = backtrace_alloc_capa(size, &dst);
+
+    dst->backtrace_size = size;
+    MEMCPY(dst->backtrace, blob, rb_backtrace_location_t, size);
+    for (int i = 0; i < size; i++) {
+        const rb_backtrace_location_t *fi = &dst->backtrace[i];
+        if (fi->cme) RB_OBJ_WRITTEN(btobj, Qundef, (VALUE)fi->cme);
+        if (fi->iseq) RB_OBJ_WRITTEN(btobj, Qundef, (VALUE)fi->iseq);
+    }
+    /* strary / locary stay unset: the receiver rebuilds them lazily. */
+    return btobj;
+}
+
+void
+rb_backtrace_blob_mark(const void *blob_, int size)
+{
+    const rb_backtrace_location_t *blob = blob_;
+    for (int i = 0; i < size; i++) {
+        if (blob[i].cme) rb_gc_mark((VALUE)blob[i].cme);
+        if (blob[i].iseq) rb_gc_mark((VALUE)blob[i].iseq);
+    }
+}
 
 static long
 backtrace_size(const rb_execution_context_t *ec)
@@ -2107,10 +2152,6 @@ thread_profile_frames(rb_execution_context_t *ec, int start, int limit, VALUE *b
                 // may leave it uninitialized for speed. JIT code must update the PC
                 // before entering a non-leaf method (so that `caller` will work),
                 // so only the topmost frame could possibly have an out-of-date PC.
-                // ZJIT doesn't set `cfp->jit_return`, so it's not a reliable signal.
-                // TODO(zjit): lightweight frames potentially makes more than
-                //             the top most frame invalid.
-                //
                 // Avoid passing invalid PC to calc_lineno() to avoid crashing.
                 if (cfp == top && (pc < iseq_encoded || pc > pc_end)) {
                     lines[i] = 0;

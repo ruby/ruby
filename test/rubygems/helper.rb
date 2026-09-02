@@ -5,7 +5,6 @@ require "rubygems"
 begin
   raise LoadError if ENV["GEM_COMMAND"]
 
-  gem "simplecov_json_formatter"
   require "simplecov"
 
   unless ENV["SIMPLECOV_SUBPROCESS"]
@@ -14,11 +13,11 @@ begin
       root File.expand_path("../..", __dir__)
       coverage_dir File.expand_path("../../coverage", __dir__)
 
-      add_filter "/test/"
-      add_filter "/bundler/"
-      add_filter "/tool/"
-      add_filter "/lib/rubygems/vendor/"
-      add_filter ".gemspec"
+      skip "/test/"
+      skip "/bundler/"
+      skip "/tool/"
+      skip "/lib/rubygems/vendor/"
+      skip ".gemspec"
     end
 
     # Prevent SimpleCov from running in subprocesses spawned by assert_separately
@@ -47,6 +46,8 @@ require "rubygems/vendor/uri/lib/uri"
 require "zlib"
 require_relative "mock_gem_ui"
 require_relative "pem_utilities"
+require_relative "fake_credential_backend"
+require_relative "pqc_utilities"
 
 # JRuby on Windows raises TypeError inside File.symlink (the wincode helper
 # trips on a nil path), so any test that exercises Gem::Installer's symlink
@@ -382,12 +383,16 @@ class Gem::TestCase < Test::Unit::TestCase
 
     ENV["GEM_VENDOR"] = nil
     ENV["GEMRC"] = nil
+    # Left set, this points the suite at the real OS credential store, where
+    # tests that clear an API key would delete the developer's own.
+    ENV["RUBYGEMS_CREDENTIAL_STORE"] = nil
     ENV["XDG_CACHE_HOME"] = nil
     ENV["XDG_CONFIG_HOME"] = nil
     ENV["XDG_DATA_HOME"] = nil
     ENV["XDG_STATE_HOME"] = nil
     ENV["MAKEFLAGS"] = nil
     ENV["SOURCE_DATE_EPOCH"] = nil
+    ENV["GITHUB_ACTIONS"] = nil
     ENV["BUNDLER_VERSION"] = nil
     ENV["BUNDLE_CONFIG"] = nil
     ENV["BUNDLE_USER_CONFIG"] = nil
@@ -543,6 +548,11 @@ class Gem::TestCase < Test::Unit::TestCase
       Gem::RemoteFetcher.fetcher = nil
     end
 
+    if defined? Gem::Cooldown
+      Gem::Cooldown.reset_warned_missing_created_at
+      Gem::Cooldown.reset_warned_invalid_days
+    end
+
     Dir.chdir @current_dir
 
     ENV.replace(@orig_env)
@@ -587,6 +597,19 @@ class Gem::TestCase < Test::Unit::TestCase
 
   def credential_teardown
     FileUtils.rm_rf @temp_cred
+  end
+
+  ##
+  # Runs the block with Gem::CredentialStore.instance backed by an
+  # in-memory Gem::FakeCredentialBackend, so credential_store-enabled code paths
+  # can be exercised without touching a real OS credential store.
+
+  def with_fake_credential_store
+    require "rubygems/credential_store"
+    Gem::CredentialStore.instance = Gem::CredentialStore.new(backend: Gem::FakeCredentialBackend.new)
+    yield Gem::CredentialStore.instance
+  ensure
+    Gem::CredentialStore.reset!
   end
 
   def common_installer_setup
@@ -1659,7 +1682,34 @@ Also, a list:
     end
   end
 
-  include Gem::PemUtilities
+  include Gem::PEMUtilities
+
+  include Gem::PQCUtilities
+
+  def omit_unless_support_pqc
+    without_pqc_support do |message|
+      omit message
+    end
+  end
+
+  def omit_unless_support_ml_dsa_key
+    omit "OpenSSL does not support ML-DSA" unless
+      Gem::PQCUtilities.support_ml_dsa_key?
+  end
+
+  def omit_unless_support_ml_dsa_cert
+    omit "Ruby OpenSSL cannot sign a certificate with an ML-DSA key" unless
+      Gem::PQCUtilities.support_ml_dsa_cert?
+  end
+
+  def omit_if_support_ml_dsa_cert
+    omit "Ruby OpenSSL can sign a certificate with an ML-DSA key" if
+      Gem::PQCUtilities.support_ml_dsa_cert?
+  end
+
+  def omit_if_support_ml_dsa_key
+    omit "OpenSSL supports ML-DSA" if Gem::PQCUtilities.support_ml_dsa_key?
+  end
 end
 
 # https://github.com/seattlerb/minitest/blob/13c48a03d84a2a87855a4de0c959f96800100357/lib/minitest/mock.rb#L192

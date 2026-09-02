@@ -81,12 +81,12 @@ rustc-version-check: target/.rustc-version
 
 target/.rustc-version: PHONY
 	$(eval prev_version := $(if $(wildcard $@),$(shell cat $@)))
-	$(eval curr_version := $(shell $(RUSTC) -V | cut -d' ' -f2))
+	$(eval curr_version := $(shell $(RUSTC) -V))
 	$(eval clean := $(filter-out $(prev_version),$(curr_version)))
-	$(if $(clean),$(ECHO) Cleaning $(@D) for rustc $(curr_version))
+	$(if $(clean),$(ECHO) "Cleaning $(@D) for $(curr_version)")
 	$(if $(clean),$(Q)$(RMALL) $(@D))
 	$(if $(clean),$(Q)$(MAKEDIRS) $(@D))
-	$(if $(clean),$(Q)echo $(curr_version) > $@)
+	$(if $(clean),$(Q)echo "$(curr_version)" > $@)
 
 # For Darwin only: a list of symbols that we want the glommed Rust static lib to export.
 # Unfortunately, using wildcard like '_rb_*' with -exported-symbol does not work, at least

@@ -83,19 +83,37 @@ class Scheduler
   end
 
   # Read from the given io into the specified buffer.
-  # WARNING: Experimental hook! Do not use in production code!
   # @parameter io [IO] The io to read from.
   # @parameter buffer [IO::Buffer] The buffer to read into.
-  # @parameter length [Integer] The minimum amount to read.
-  def io_read(io, buffer, length)
+  # @parameter offset [Integer] The offset in the buffer to read to.
+  # @parameter length [Integer] The maximum amount to read in one operation.
+  def io_read(io, buffer, offset, length)
+  end
+
+  # Read from the given io at the specified position into the specified buffer.
+  # @parameter io [IO] The io to read from.
+  # @parameter buffer [IO::Buffer] The buffer to read into.
+  # @parameter from [Integer] The position in the io to read from.
+  # @parameter offset [Integer] The offset in the buffer to read to.
+  # @parameter length [Integer] The maximum amount to read in one operation.
+  def io_pread(io, buffer, from, offset, length)
   end
 
   # Write from the given buffer into the specified IO.
-  # WARNING: Experimental hook! Do not use in production code!
   # @parameter io [IO] The io to write to.
   # @parameter buffer [IO::Buffer] The buffer to write from.
-  # @parameter length [Integer] The minimum amount to write.
-  def io_write(io, buffer, length)
+  # @parameter offset [Integer] The offset in the buffer to write from.
+  # @parameter length [Integer] The maximum amount to write in one operation.
+  def io_write(io, buffer, offset, length)
+  end
+
+  # Write from the given buffer to the specified position in the given io.
+  # @parameter io [IO] The io to write to.
+  # @parameter buffer [IO::Buffer] The buffer to write from.
+  # @parameter from [Integer] The position in the io to write to.
+  # @parameter offset [Integer] The offset in the buffer to write from.
+  # @parameter length [Integer] The maximum amount to write in one operation.
+  def io_pwrite(io, buffer, from, offset, length)
   end
 
   # Sleep the current task for the specified duration, or forever if not
@@ -216,7 +234,7 @@ non-blocking*, the operation will invoke the scheduler.
 
 Closing an IO interrupts all blocking operations on that IO. When a thread calls `IO#close`, it first attempts to interrupt any threads or fibers that are blocked on that IO. The closing thread waits until all blocked threads and fibers have been properly interrupted and removed from the IO's blocking list. Each interrupted thread or fiber receives an `IOError` and is cleanly removed from the blocking operation. Only after all blocking operations have been interrupted and cleaned up will the actual file descriptor be closed, ensuring proper resource cleanup and preventing potential race conditions.
 
-For fibers managed by a scheduler, the interruption process involves calling `rb_fiber_scheduler_fiber_interrupt` on the scheduler. This allows the scheduler to handle the interruption in a way that's appropriate for its event loop implementation. The scheduler can then notify the fiber, which will receive an `IOError` and be removed from the blocking operation. This mechanism ensures that fiber-based concurrency works correctly with IO operations, even when those operations are interrupted by `IO#close`.
+For fibers managed by a scheduler, the interruption process involves calling `rb_fiber_scheduler_fiber_interrupt` on the scheduler. The corresponding `Fiber::Scheduler#fiber_interrupt` hook is required. This allows the scheduler to handle the interruption in a way that's appropriate for its event loop implementation. The scheduler can then notify the fiber, which will receive an `IOError` and be removed from the blocking operation. This mechanism ensures that fiber-based concurrency works correctly with IO operations, even when those operations are interrupted by `IO#close`.
 
 ```mermaid
 sequenceDiagram

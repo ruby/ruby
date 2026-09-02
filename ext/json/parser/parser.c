@@ -5,7 +5,7 @@
 static VALUE mJSON, eNestingError, eParserError, Encoding_UTF_8;
 static VALUE CNaN, CInfinity, CMinusInfinity, JSON_empty_string;
 
-static ID i_new, i_try_convert, i_encode, i_at_line, i_at_column;
+static ID i_new, i_try_convert, i_encode, i_at_line, i_at_column, i_at_json_path;
 #ifndef HAVE_RB_STR_TO_INTERNED_STR
 static ID i_uminus;
 #endif
@@ -403,19 +403,13 @@ typedef struct json_frame_stack_struct {
     json_frame *ptr;
 } json_frame_stack;
 
-enum deprecatable_action {
-    JSON_DEPRECATED = 0,
-    JSON_IGNORE,
-    JSON_RAISE,
-};
-
 typedef struct JSON_ParserStruct {
     VALUE on_load_proc;
     VALUE decimal_class;
     ID decimal_method_id;
-    enum deprecatable_action on_duplicate_key;
-    enum deprecatable_action on_comment;
     int max_nesting;
+    bool allow_comments;
+    bool allow_duplicate_key;
     bool allow_nan;
     bool allow_trailing_comma;
     bool allow_control_characters;
@@ -435,7 +429,6 @@ typedef struct JSON_ParserStateStruct {
     rvalue_cache name_cache;
     int in_array;
     int current_nesting;
-    unsigned int emitted_deprecations;
     VALUE parser;
 } JSON_ParserState;
 
@@ -619,21 +612,6 @@ static void cursor_position(JSON_ParserState *state, long *line_out, long *colum
     *column_out = column;
 }
 
-static const unsigned int MAX_DEPRECATIONS = 5;
-
-static void emit_parse_warning(const char *message, JSON_ParserState *state)
-{
-    VALUE warning;
-    if (state->parser) { // line and columns can't be accurate in resumable
-        warning = rb_utf8_str_new_cstr(message);
-    } else {
-        long line, column;
-        cursor_position(state, &line, &column);
-        warning = rb_sprintf("%s at line %ld column %ld", message, line, column);
-    }
-    rb_funcall(mJSON, rb_intern("deprecation_warning"), 1, warning);
-}
-
 #define PARSE_ERROR_FRAGMENT_LEN 32
 
 static VALUE build_parse_error_message(const char *format, JSON_ParserState *state)
@@ -673,11 +651,42 @@ static VALUE build_parse_error_message(const char *format, JSON_ParserState *sta
     return rb_enc_sprintf(enc_utf8, format, ptr);
 }
 
+static VALUE json_path_new(JSON_ParserState *state, VALUE duplicate_key)
+{
+    VALUE path = rb_ary_new_capa(state->current_nesting);
+
+    json_frame_stack *frames = state->frames;
+    rvalue_stack *values = state->value_stack;
+
+    for (long depth = 1; depth < frames->head; depth++) {
+        json_frame *frame = &frames->ptr[depth];
+
+        bool innermost = depth == frames->head - 1;
+        long child_head = innermost ? values->head : frames->ptr[depth + 1].value_stack_head;
+        long count = child_head - frame->value_stack_head;
+
+        if (frame->type == JSON_FRAME_ARRAY) {
+            rb_ary_push(path, LONG2NUM(frame->phase == JSON_PHASE_ARRAY_COMMA ? count - 1 : count));
+        } else if (innermost && !UNDEF_P(duplicate_key)) {
+            rb_ary_push(path, duplicate_key);
+        } else if (count & 1) {
+            rb_ary_push(path, values->ptr[child_head - 1]);
+        } else if (frame->phase == JSON_PHASE_OBJECT_COMMA && count >= 2) {
+            rb_ary_push(path, values->ptr[child_head - 2]);
+        } else {
+            break;
+        }
+    }
+
+    return path;
+}
+
 static VALUE parse_error_new(JSON_ParserState *state, VALUE message, long line, long column, bool eos)
 {
     VALUE exc = rb_exc_new_str(eParserError, message);
     rb_ivar_set(exc, i_at_line, LONG2NUM(line));
     rb_ivar_set(exc, i_at_column, LONG2NUM(column));
+    rb_ivar_set(exc, i_at_json_path, json_path_new(state, Qundef));
     return exc;
 }
 
@@ -772,11 +781,10 @@ static uint32_t unescape_unicode(JSON_ParserState *state, const char *sp, const 
 
 static const rb_data_type_t JSON_ParserConfig_type;
 
-const char *COMMENT_DEPRECATION_MESSAGE = "Encountered comment in JSON. This will raise an error in json 3.0 unless enabled via `allow_comments: true`";
 NOINLINE(static) void
 json_eat_comments(JSON_ParserState *state, JSON_ParserConfig *config, const char *resume_pos)
 {
-    if (config->on_comment == JSON_RAISE) {
+    if (!config->allow_comments) {
         raise_syntax_error("unexpected token %s", state);
     }
 
@@ -825,11 +833,6 @@ json_eat_comments(JSON_ParserState *state, JSON_ParserConfig *config, const char
         default:
             raise_parse_error_at("unexpected token %s", state, eos(state) ? rewind_pos : start, eos(state));
             break;
-    }
-
-    if (config->on_comment == JSON_DEPRECATED && state->emitted_deprecations < MAX_DEPRECATIONS) {
-        state->emitted_deprecations++;
-        emit_parse_warning(COMMENT_DEPRECATION_MESSAGE, state);
     }
 }
 
@@ -1219,17 +1222,6 @@ static VALUE json_find_duplicated_key(size_t count, const VALUE *pairs)
     return Qfalse;
 }
 
-NOINLINE(static) void emit_duplicate_key_warning(JSON_ParserState *state, VALUE duplicate_key)
-{
-    VALUE message = rb_sprintf(
-        "detected duplicate key %"PRIsVALUE" in JSON object. This will raise an error in json 3.0 unless enabled via `allow_duplicate_key: true`",
-        rb_inspect(duplicate_key)
-    );
-
-    emit_parse_warning(RSTRING_PTR(message), state);
-    RB_GC_GUARD(message);
-}
-
 NORETURN(static) void raise_duplicate_key_error(JSON_ParserState *state, VALUE duplicate_key)
 {
     VALUE message = rb_sprintf(
@@ -1238,35 +1230,24 @@ NORETURN(static) void raise_duplicate_key_error(JSON_ParserState *state, VALUE d
     );
 
     rb_str_concat(message, build_parse_error_message("", state));
+    VALUE exc;
     if (state->parser) { // line and columns can't be accurate in resumable
-        rb_exc_raise(parse_error_new(state, message, 0, 0, false));
+        exc = parse_error_new(state, message, 0, 0, false);
     } else {
         long line, column;
         cursor_position(state, &line, &column);
         rb_str_catf(message, " at line %ld column %ld", line, column);
-        rb_exc_raise(parse_error_new(state, message, line, column, false));
+        exc = parse_error_new(state, message, line, column, false);
     }
+    rb_ivar_set(exc, i_at_json_path, json_path_new(state, duplicate_key));
+    rb_exc_raise(exc);
 }
 
 NOINLINE(static) void json_on_duplicate_key(JSON_ParserState *state, JSON_ParserConfig *config, size_t count, const VALUE *pairs)
 {
-    switch (config->on_duplicate_key) {
-        case JSON_IGNORE:
-            return;
-
-        case JSON_DEPRECATED:
-            // Only emit the first few deprecations to avoid spamming.
-            if (state->emitted_deprecations < MAX_DEPRECATIONS) {
-                state->emitted_deprecations++;
-                emit_duplicate_key_warning(state, json_find_duplicated_key(count, pairs));
-            }
-            return;
-
-        case JSON_RAISE:
-            raise_duplicate_key_error(state, json_find_duplicated_key(count, pairs));
-            return;
+    if (!config->allow_duplicate_key) {
+        raise_duplicate_key_error(state, json_find_duplicated_key(count, pairs));
     }
-    UNREACHABLE;
 }
 
 static inline VALUE json_decode_object(JSON_ParserState *state, JSON_ParserConfig *config, size_t count)
@@ -2032,13 +2013,13 @@ static int parser_config_init_i(VALUE key, VALUE val, VALUE data)
          if (key == sym_max_nesting)                { config->max_nesting = RTEST(val) ? FIX2INT(val) : 0; }
     else if (key == sym_allow_nan)                  { config->allow_nan = RTEST(val); }
     else if (key == sym_allow_trailing_comma)       { config->allow_trailing_comma = RTEST(val); }
-    else if (key == sym_allow_comments)             { config->on_comment = RTEST(val) ? JSON_IGNORE : JSON_RAISE; }
+    else if (key == sym_allow_comments)             { config->allow_comments = RTEST(val); }
     else if (key == sym_allow_control_characters)   { config->allow_control_characters = RTEST(val); }
     else if (key == sym_allow_invalid_escape)       { config->allow_invalid_escape = RTEST(val); }
     else if (key == sym_symbolize_names)            { config->symbolize_names = RTEST(val); }
     else if (key == sym_freeze)                     { config->freeze = RTEST(val); }
     else if (key == sym_on_load)                    { parser_config_wb_write(self, &config->on_load_proc, RTEST(val) ? val : Qfalse); }
-    else if (key == sym_allow_duplicate_key)        { config->on_duplicate_key = RTEST(val) ? JSON_IGNORE : JSON_RAISE; }
+    else if (key == sym_allow_duplicate_key)        { config->allow_duplicate_key = RTEST(val); }
     else if (key == sym_decimal_class)              {
         if (RTEST(val)) {
             if (rb_respond_to(val, i_try_convert)) {
@@ -2068,7 +2049,7 @@ static int parser_config_init_i(VALUE key, VALUE val, VALUE data)
             }
         }
     }
-    else if (args->strict) {
+    else {
         if (!args->unknown_keywords) {
             args->unknown_keywords = rb_obj_hide(rb_ary_new());
         }
@@ -2096,15 +2077,7 @@ static void parser_config_init(JSON_ParserConfig *config, VALUE opts, VALUE self
     // the provided keys than to check all possible keys.
     rb_hash_foreach(opts, parser_config_init_i, (VALUE)&args);
 
-    if (RB_UNLIKELY(args.unknown_keywords)) {
-        if (RARRAY_LEN(args.unknown_keywords) == 1) {
-            rb_raise(rb_eArgError, "unknown keyword: %" PRIsVALUE, RARRAY_AREF(args.unknown_keywords, 0));
-        }
-        else {
-            VALUE keywords = rb_ary_join(args.unknown_keywords, rb_utf8_str_new_cstr(", "));
-            rb_raise(rb_eArgError, "unknown keywords: %" PRIsVALUE, keywords);
-        }
-    }
+    raise_argument_error_on_unknown_keywords(args.unknown_keywords);
 }
 
 /*
@@ -2183,6 +2156,12 @@ static VALUE cParser_parse(JSON_ParserConfig *config, VALUE src)
     // the rvalue stack.
     VALUE result = complete ? *rvalue_stack_peek(state->value_stack, 1) : Qundef;
 
+    if (complete) {
+        json_ensure_eof(state, config);
+    } else {
+        raise_eos_error("unexpected end of input", state);
+    }
+
     // This may be skipped in case of exception, but
     // it won't cause a leak.
     rvalue_stack_eagerly_release(value_stack_handle);
@@ -2190,12 +2169,6 @@ static VALUE cParser_parse(JSON_ParserConfig *config, VALUE src)
     RB_GC_GUARD(value_stack_handle);
     RB_GC_GUARD(frame_stack_handle);
     RB_GC_GUARD(Vsource);
-
-    if (complete) {
-        json_ensure_eof(state, config);
-    } else {
-        raise_eos_error("unexpected end of input", state);
-    }
 
     return result;
 }
@@ -2666,7 +2639,6 @@ static VALUE cResumableParser_clear(VALUE self)
     parser->state.name_cache.length = 0;
     parser->state.current_nesting = 0;
     parser->state.in_array = 1;
-    parser->state.emitted_deprecations = 0;
     parser->state.start = parser->state.cursor = parser->state.end = NULL;
     return self;
 }
@@ -2933,6 +2905,7 @@ void Init_parser(void)
     i_encode = rb_intern("encode");
     i_at_line = rb_intern("@line");
     i_at_column = rb_intern("@column");
+    i_at_json_path = rb_intern("@json_path");
 
     binary_encindex = rb_ascii8bit_encindex();
     utf8_encindex = rb_utf8_encindex();

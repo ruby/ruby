@@ -606,6 +606,71 @@ class TestGemCommandsBuildCommand < Gem::TestCase
     assert gem.verify
   end
 
+  def test_build_signed_gem_ml_dsa_65
+    pend "openssl is missing" unless Gem::HAVE_OPENSSL && !Gem.java_platform?
+
+    omit_unless_support_ml_dsa_key
+
+    trust_dir = Gem::Security.trust_dir
+
+    spec = util_spec "some_gem" do |s|
+      s.signing_key = ML_DSA_65_PRIVATE_KEY_FILE
+      s.cert_chain = [ML_DSA_65_PUBLIC_CERT_FILE]
+    end
+
+    gemspec_file = File.join(@tempdir, spec.spec_name)
+
+    File.open gemspec_file, "w" do |gs|
+      gs.write spec.to_ruby
+    end
+
+    @cmd.options[:args] = [gemspec_file]
+
+    util_test_build_gem spec
+
+    trust_dir.trust_cert(
+      OpenSSL::X509::Certificate.new(
+        File.read(ML_DSA_65_PUBLIC_CERT_FILE)
+      )
+    )
+
+    gem = Gem::Package.new(File.join(@tempdir, spec.file_name),
+                           Gem::Security::HighSecurity)
+    assert gem.verify
+  end
+
+  def test_build_signed_gem_ml_dsa_65_without_ml_dsa_support
+    pend "openssl is missing" unless Gem::HAVE_OPENSSL
+
+    omit_if_support_ml_dsa_key
+
+    spec = util_spec "some_gem" do |s|
+      s.signing_key = ML_DSA_65_PRIVATE_KEY_FILE
+      s.cert_chain = [ML_DSA_65_PUBLIC_CERT_FILE]
+    end
+
+    gemspec_file = File.join(@tempdir, spec.spec_name)
+
+    File.open gemspec_file, "w" do |gs|
+      gs.write spec.to_ruby
+    end
+
+    @cmd.options[:args] = [gemspec_file]
+
+    use_ui @ui do
+      Dir.chdir @tempdir do
+        e = assert_raise Gem::Security::Exception do
+          @cmd.execute
+        end
+
+        assert_match(
+          /^private key could not be loaded: .+ ML-DSA requires OpenSSL >= 3\.5/,
+          e.message
+        )
+      end
+    end
+  end
+
   def test_build_signed_gem_with_cert_expiration_length_days
     pend "openssl is missing" unless Gem::HAVE_OPENSSL && !Gem.java_platform?
 

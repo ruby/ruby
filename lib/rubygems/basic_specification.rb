@@ -183,17 +183,6 @@ class Gem::BasicSpecification
   end
 
   ##
-  # The path to the data directory for this gem.
-
-  def datadir
-    # TODO: drop the extra ", gem_name" which is uselessly redundant
-    File.expand_path(File.join(gems_dir, full_name, "data", name))
-  end
-
-  extend Gem::Deprecate
-  rubygems_deprecate :datadir, :none, "4.1"
-
-  ##
   # Full path of the target library file.
   # If the file is not in this gem, return nil.
 

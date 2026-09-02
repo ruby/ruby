@@ -276,9 +276,11 @@ module Bundler
     method_option "with", type: :array, banner: "Include gems that are part of the specified named group (removed)."
     method_option "cooldown", type: :numeric, banner: "Only consider gem versions published at least N days ago. Use 0 to disable."
     def install
-      %w[clean deployment frozen no-prune path shebang without with].each do |option|
+      %w[clean deployment frozen path shebang without with].each do |option|
         remembered_flag_deprecation(option)
       end
+
+      remembered_flag_deprecation("no-prune", option_name: "keep_outdated_cache")
 
       print_remembered_flag_deprecation("--system", "path.system", "true") if ARGV.include?("--system")
 
@@ -473,9 +475,8 @@ module Bundler
       print_remembered_flag_deprecation("--all", "cache_all", "true") if ARGV.include?("--all")
       print_remembered_flag_deprecation("--no-all", "cache_all", "false") if ARGV.include?("--no-all")
 
-      %w[frozen no-prune].each do |option|
-        remembered_flag_deprecation(option)
-      end
+      remembered_flag_deprecation("frozen")
+      remembered_flag_deprecation("no-prune", option_name: "keep_outdated_cache")
 
       if flag_passed?("--path")
         removed_message =
@@ -627,15 +628,15 @@ module Bundler
     end
 
     desc "lock", "Creates a lockfile without installing"
-    method_option "update", type: :array, lazy_default: true, banner: "ignore the existing lockfile, update all gems by default, or update list of given gems"
+    method_option "update", type: :array, lazy_default: true, repeatable: true, banner: "ignore the existing lockfile, update all gems by default, or update list of given gems"
     method_option "local", type: :boolean, default: false, banner: "do not attempt to fetch remote gemspecs and use the local gem cache only"
     method_option "print", type: :boolean, default: false, banner: "print the lockfile to STDOUT instead of writing to the file system"
     method_option "gemfile", type: :string, banner: "Use the specified gemfile instead of Gemfile"
     method_option "lockfile", type: :string, default: nil, banner: "the path the lockfile should be written to"
     method_option "full-index", type: :boolean, default: false, banner: "Fall back to using the single-file index of all gems"
     method_option "add-checksums", type: :boolean, default: false, banner: "Adds checksums to the lockfile"
-    method_option "add-platform", type: :array, default: [], banner: "Add a new platform to the lockfile"
-    method_option "remove-platform", type: :array, default: [], banner: "Remove a platform from the lockfile"
+    method_option "add-platform", type: :array, default: [], repeatable: true, banner: "Add a new platform to the lockfile"
+    method_option "remove-platform", type: :array, default: [], repeatable: true, banner: "Remove a platform from the lockfile"
     method_option "normalize-platforms", type: :boolean, default: false, banner: "Normalize lockfile platforms"
     method_option "patch", type: :boolean, banner: "If updating, prefer updating only to next patch version"
     method_option "minor", type: :boolean, banner: "If updating, prefer updating only to next minor version"

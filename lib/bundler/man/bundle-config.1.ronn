@@ -133,7 +133,7 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
    Defaults to `vendor/cache`.
 * `clean` (`BUNDLE_CLEAN`):
    Whether Bundler should run `bundle clean` automatically after
-   `bundle install`. Defaults to `true` in Bundler 4, as long as `path` is not
+   `bundle install`. Defaults to `true` in Bundler 5, as long as `path` is not
    explicitly configured.
 * `console` (`BUNDLE_CONSOLE`):
    The console that `bundle console` starts. Defaults to `irb`.
@@ -159,6 +159,13 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
    Gemfile; remember that `--cooldown N` on the command line will
    still override it for that single run.
 
+   The value must be a non-negative integer. `--cooldown` rejects
+   anything else outright, while a value coming from this setting or
+   from `BUNDLE_COOLDOWN` only warns, because a typo left in a config
+   file should not make every command fail. Such a value disables the
+   cooldown for every source, including sources that declare their own
+   `cooldown:` in the Gemfile.
+
    Cooldown filtering depends on the gem server providing a per-version
    `created_at` timestamp in the v2 compact-index format. Versions
    without that metadata - older gem servers, historical entries that
@@ -167,6 +174,59 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
    window and remain resolvable. If you rely on cooldown for
    supply-chain protection, confirm that the gem server emits
    `created_at` in its `/info/<gem>` responses.
+
+   A `created_at` timestamp is read as UTC when it carries no time zone
+   offset. `rubygems.org` always sends one, but a third-party server
+   that omits it would otherwise shift the cooldown window by the
+   offset of whatever machine runs bundler.
+* `credential_store` (`BUNDLE_CREDENTIAL_STORE`):
+   Experimental: store and read host credentials (the values otherwise set
+   via `bundle config set <host> <user:pass>`) in a credential store instead
+   of the plain text config file. Set it to `true` to use the operating
+   system's native store (macOS Keychain, Linux Secret Service, Windows
+   Credential Manager) when one is available on this platform, or to the name
+   of a backend provided by a third-party gem, such as `1password`. Falls
+   back to the config file when the store is unavailable or fails, warning
+   that the credential was written in plain text. Defaults to false.
+   Credentials already written to the config file are not migrated
+   automatically; re-run `bundle config set <host> <user:pass>` with the
+   setting enabled to move each one into the store. Being experimental, the
+   name and behavior of this setting may change in a future release.
+
+   The value is read in three ways. An empty value and the false values
+   Bundler takes everywhere else (`false`, `f`, `no`, `n`, `0`) turn the
+   store off. `true`, `t`, `yes`, `y`, `on` and `1` select the native store.
+   Case does not matter for any of those. Anything else is a backend name,
+   taken as written, and only lowercase letters, digits, `_` and `-` are
+   recognized in one. So `off` names a backend rather than turning the store
+   off, which `false` does.
+
+   A credential kept in the store is never printed back. `bundle config get
+   <host>` and `bundle config list` name the key and say that its value lives
+   in the credential store. With `--parseable`, such a key is left out
+   entirely, since that output is meant to be read back by `bundle config
+   set`. A third-party backend is not required to enumerate what it holds, so
+   a credential kept in one may not be listed at all.
+
+   The store belongs to the machine's user, not to a project, so
+   `--local` and `--global` make no difference to where a credential is
+   kept. Setting a host's credential in one project changes it for every
+   project on the machine, and unsetting it there removes it everywhere.
+   Protecting the store itself is the operating system's job, or that of
+   whichever backend you selected.
+
+   A credential given in the environment, such as
+   `BUNDLE_GEMS__EXAMPLE__COM`, takes precedence over the stored one, so a
+   CI run can pass its own credentials without the store getting in the
+   way. The store takes precedence over the config file.
+
+   The store can also be selected per host with `credential_store.<host>`
+   (`BUNDLE_CREDENTIAL_STORE__<HOST>`), for example `bundle config set
+   credential_store.gems.example.com code_artifact`. That host then uses
+   only the named backend, with no chaining to the global one, while every
+   other host keeps following the global setting. Setting a host's value
+   to `false` keeps that one host on the config file even when a global
+   store is enabled.
 * `default_cli_command` (`BUNDLE_DEFAULT_CLI_COMMAND`):
    The command that running `bundle` without arguments should run. Defaults to
    `cli_help` since Bundler 4, but can also be `install` which was the previous
@@ -224,6 +284,9 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
 * `jobs` (`BUNDLE_JOBS`):
    The number of gems Bundler can download and install in parallel.
    Defaults to the number of available processors.
+* `keep_outdated_cache` (`BUNDLE_KEEP_OUTDATED_CACHE`):
+   Whether Bundler should leave outdated gems unpruned when caching. Defaults
+   to false.
 * `lockfile` (`BUNDLE_LOCKFILE`):
    The path to the lockfile that bundler should use. By default, Bundler adds
    `.lock` to the end of the `gemfile` entry. Can be set to `false` in the
@@ -243,7 +306,9 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
    When set, plugin files are not written to the plugins directory.
    To install plugins later, unset this setting and run `bundle pristine <gem>`.
 * `no_prune` (`BUNDLE_NO_PRUNE`):
-   Whether Bundler should leave outdated gems unpruned when caching.
+   Deprecated name for `keep_outdated_cache`. Each priority level is checked
+   for `keep_outdated_cache` and then for `no_prune`, and the first value
+   found wins. `no_prune` will be removed in Bundler 5.
 * `only` (`BUNDLE_ONLY`):
    A space-separated list of groups to install only gems of the specified groups.
    Please check carefully if you want to install also gems without a group, because
@@ -253,18 +318,35 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
    The location on disk where all gems in your bundle will be located regardless
    of `$GEM_HOME` or `$GEM_PATH` values. Bundle gems not found in this location
    will be installed by `bundle install`. When not set, Bundler install by
-   default to a `.bundle` directory relative to repository root in Bundler 4,
-   and to the default system path (`Gem.dir`) before Bundler 4. That means that
-   before Bundler 4, Bundler shares this location with Rubygems, and `gem
+   default to a `.bundle` directory relative to repository root in Bundler 5,
+   and to the default system path (`Gem.dir`) before Bundler 5. That means that
+   before Bundler 5, Bundler shares this location with Rubygems, and `gem
    install ...` will have gems installed in the same location and therefore,
    gems installed without `path` set will show up by calling `gem list`. This
-   will not be the case in Bundler 4.
+   will not be the case in Bundler 5.
 * `path.system` (`BUNDLE_PATH__SYSTEM`):
    Whether Bundler will install gems into the default system path (`Gem.dir`).
 * `plugins` (`BUNDLE_PLUGINS`):
    Enable Bundler's experimental plugin system.
 * `prefer_patch` (`BUNDLE_PREFER_PATCH`):
    Prefer updating only to next patch version during updates. Makes `bundle update` calls equivalent to `bundler update --patch`.
+* `prune` (`BUNDLE_PRUNE`):
+   A space-separated or `:`-separated list of Bundler-managed artifacts to
+   delete after a successful `bundle install`, `bundle update` or `bundle
+   cache`, and on `bundle clean`. `cache` removes the download cache under the
+   bundle path, which holds both the cached `.gem` files and the git mirrors.
+   `git` removes the `.git` directory of every checked out git gem. Any value
+   that is not a category name is read as a boolean, so `BUNDLE_PRUNE=1` selects
+   every category and keeps doing so as categories are added. This is meant for
+   container images and other throwaway
+   environments. **The setting only takes effect when a bundle path is set.**
+   Without one Bundler installs into the system gem directory, where the cache
+   is shared with RubyGems and holds gem files Bundler never put there, so
+   pruning is skipped with a warning. Set a path with `BUNDLE_PATH` or `bundle
+   config set path <dir>`. A pruned artifact comes back only when Bundler has to
+   install that gem again, so a later `bundle install` does not restore it on
+   its own. `bundle install --redownload` does, and `bundle pristine` works once
+   it has, though with `prune` still set the reinstall prunes again at the end.
 * `redirect` (`BUNDLE_REDIRECT`):
    The number of redirects allowed for network requests. Defaults to `5`.
 * `retry` (`BUNDLE_RETRY`):
@@ -293,7 +375,9 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
 * `system_bindir` (`BUNDLE_SYSTEM_BINDIR`):
    The location where RubyGems installs binstubs. Defaults to `Gem.bindir`.
 * `timeout` (`BUNDLE_TIMEOUT`):
-   The seconds allowed before timing out for network requests. Defaults to `10`.
+   The seconds allowed before timing out for network requests, applied to each
+   request individually. A network operation retried by Bundler may wait a
+   multiple of this value in total. Defaults to `10`.
 * `update_requires_all_flag` (`BUNDLE_UPDATE_REQUIRES_ALL_FLAG`):
    Require passing `--all` to `bundle update` when everything should be updated,
    and disallow passing no options to `bundle update`.
@@ -451,6 +535,27 @@ names and valid host names, bundler makes the following transformations:
 This means that if you have a gem server named `my.gem-host.com`, you'll need to
 use the `BUNDLE_MY__GEM___HOST__COM` variable to configure credentials for it
 through ENV.
+
+## PROXY SUPPORT
+
+Bundler reads the proxy for a gem source from the `:http_proxy` key in the
+RubyGems configuration file (`~/.gemrc`), falling back to the environment.
+For an `https` source, `https_proxy` (or `HTTPS_PROXY`) takes precedence over
+`http_proxy` (or `HTTP_PROXY`), which is only used when no https-specific
+proxy is set. Proxy credentials that are not embedded in the proxy URL are
+read from `HTTP_PROXY_USER` and `HTTP_PROXY_PASS`, or from `HTTPS_PROXY_USER`
+and `HTTPS_PROXY_PASS` when the https proxy is used.
+
+Setting `:http_proxy: :no_proxy` in the RubyGems configuration file disables
+proxies entirely, including any proxy environment variables. To keep using a
+proxy from the environment, remove that line. To configure a proxy in the
+file, replace `:no_proxy` with an explicit proxy URL.
+
+The `NO_PROXY` (or `no_proxy`) environment variable lists hosts that are
+reached directly, bypassing the proxy. An entry matches the host itself and
+its subdomains, so `NO_PROXY=example.com` bypasses both `example.com` and
+`sub.example.com`, but not `myexample.com`. An entry starting with a dot
+matches only subdomains. A value of `*` bypasses the proxy for every host.
 
 ## CONFIGURE BUNDLER DIRECTORIES
 

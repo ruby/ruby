@@ -14,6 +14,16 @@ class TestGemCompactIndexClientHTTPFetcher < Gem::TestCase
     alias_method :body, :fake_body
   end
 
+  class FakePartialContent < Gem::Net::HTTPPartialContent
+    def initialize(body)
+      super("1.1", "206", "Partial Content")
+      @fake_body = body
+    end
+
+    attr_reader :fake_body
+    alias_method :body, :fake_body
+  end
+
   class FakeRedirect < Gem::Net::HTTPFound
     def initialize(location)
       super("1.1", "302", "Found")
@@ -52,7 +62,10 @@ class TestGemCompactIndexClientHTTPFetcher < Gem::TestCase
       request = request_class.new(uri)
       yield request if block_given?
       @requests << [uri, request]
-      @responses.fetch(uri.to_s)
+      response = @responses.fetch(uri.to_s)
+      # A mapped exception stands in for a connection that never produced a response.
+      raise response if response.is_a?(Exception)
+      response
     end
   end
 
@@ -68,6 +81,19 @@ class TestGemCompactIndexClientHTTPFetcher < Gem::TestCase
 
     assert_equal "data", response.body
     assert_equal Gem::URI("https://index.example/info/a"), remote.requests.first.first
+  end
+
+  def test_call_returns_not_modified_responses
+    response = Gem::Net::HTTPNotModified.new("1.1", "304", "Not Modified")
+    fetcher, _remote = fetcher_for("https://index.example/versions" => response)
+
+    assert_same response, fetcher.call("versions")
+  end
+
+  def test_call_returns_partial_content_responses
+    fetcher, _remote = fetcher_for("https://index.example/versions" => FakePartialContent.new("tail"))
+
+    assert_equal "tail", fetcher.call("versions", "Range" => "bytes=10-").body
   end
 
   def test_call_applies_request_headers
@@ -108,6 +134,104 @@ class TestGemCompactIndexClientHTTPFetcher < Gem::TestCase
     )
 
     assert_equal "data", fetcher.call("versions").body
+  end
+
+  def test_call_rejects_https_to_http_redirect
+    fetcher, remote = fetcher_for(
+      "https://index.example/versions" => FakeRedirect.new("http://mirror.example/versions")
+    )
+
+    error = assert_raise Gem::RemoteFetcher::FetchError do
+      fetcher.call("versions")
+    end
+
+    assert_match(%r{redirecting to non-https resource: http://mirror\.example/versions}, error.message)
+    assert_equal 1, remote.requests.size
+  end
+
+  def test_call_wraps_connection_refused_in_fetch_error
+    fetcher, remote = fetcher_for(
+      "https://index.example/versions" => Errno::ECONNREFUSED.new("Connection refused")
+    )
+
+    error = assert_raise Gem::RemoteFetcher::FetchError do
+      fetcher.call("versions")
+    end
+
+    assert_match(/Errno::ECONNREFUSED/, error.message)
+    assert_equal 1, remote.requests.size
+  end
+
+  def test_call_wraps_ssl_error_in_fetch_error
+    pend "OpenSSL is unavailable" unless Gem::HAVE_OPENSSL
+
+    fetcher, _remote = fetcher_for(
+      "https://index.example/versions" => OpenSSL::SSL::SSLError.new("certificate verify failed")
+    )
+
+    error = assert_raise Gem::RemoteFetcher::FetchError do
+      fetcher.call("versions")
+    end
+
+    assert_match(/OpenSSL::SSL::SSLError/, error.message)
+  end
+
+  def test_call_wraps_socket_error_in_fetch_error
+    fetcher, _remote = fetcher_for(
+      "https://index.example/versions" => SocketError.new("getaddrinfo: Name or service not known")
+    )
+
+    error = assert_raise Gem::RemoteFetcher::FetchError do
+      fetcher.call("versions")
+    end
+
+    assert_match(/SocketError/, error.message)
+  end
+
+  def test_call_follows_redirects_from_an_http_source
+    remote = FakeRemoteFetcher.new(
+      "http://index.example/versions" => FakeRedirect.new("http://mirror.example/versions"),
+      "http://mirror.example/versions" => FakeResponse.new("data")
+    )
+    fetcher = Gem::CompactIndexClient::HTTPFetcher.new("http://index.example", remote)
+
+    assert_equal "data", fetcher.call("versions").body
+    assert_equal 2, remote.requests.size
+  end
+
+  def test_call_redacts_credentials_in_rejected_redirect
+    fetcher, _remote = fetcher_for(
+      "https://index.example/versions" => FakeRedirect.new("http://user:s3cr3t@mirror.example/versions")
+    )
+
+    error = assert_raise Gem::RemoteFetcher::FetchError do
+      fetcher.call("versions")
+    end
+
+    refute_match(/s3cr3t/, error.message)
+    assert_match(%r{redirecting to non-https resource: http://user:REDACTED@mirror\.example/versions}, error.message)
+  end
+
+  def test_call_keeps_credentials_on_an_accepted_redirect
+    remote = FakeRemoteFetcher.new(
+      "https://user:s3cr3t@index.example/versions" => FakeRedirect.new("/v2/versions"),
+      "https://user:s3cr3t@index.example/v2/versions" => FakeResponse.new("data")
+    )
+    fetcher = Gem::CompactIndexClient::HTTPFetcher.new("https://user:s3cr3t@index.example", remote)
+
+    assert_equal "data", fetcher.call("versions").body
+    assert_equal "s3cr3t", remote.requests.last.first.password
+  end
+
+  def test_call_drops_credentials_on_a_cross_host_redirect
+    remote = FakeRemoteFetcher.new(
+      "https://user:s3cr3t@index.example/versions" => FakeRedirect.new("https://mirror.example/versions"),
+      "https://mirror.example/versions" => FakeResponse.new("data")
+    )
+    fetcher = Gem::CompactIndexClient::HTTPFetcher.new("https://user:s3cr3t@index.example", remote)
+
+    assert_equal "data", fetcher.call("versions").body
+    assert_nil remote.requests.last.first.userinfo
   end
 
   def test_call_raises_after_too_many_redirects

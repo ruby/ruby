@@ -26,9 +26,7 @@ class Gem::CompactIndexClient
     private
 
     def fetch(uri, headers, redirects_remaining)
-      response = @remote_fetcher.request(uri, Gem::Net::HTTP::Get) do |req|
-        headers.each {|name, value| req[name] = value }
-      end
+      response = request(uri, headers)
 
       case response
       when Gem::Net::HTTPSuccess, Gem::Net::HTTPNotModified
@@ -40,7 +38,12 @@ class Gem::CompactIndexClient
         location = response["Location"]
         raise Gem::RemoteFetcher::FetchError.new("redirecting but no redirect location was given", uri) unless location
 
-        fetch(uri + location, headers, redirects_remaining - 1)
+        redirect = uri + location
+        if https?(uri) && !https?(redirect)
+          raise Gem::RemoteFetcher::FetchError.new("redirecting to non-https resource: #{Gem::Uri.redact(redirect)}", uri)
+        end
+
+        fetch(redirect, headers, redirects_remaining - 1)
       when Gem::Net::HTTPRangeNotSatisfiable
         raise Gem::RemoteFetcher::FetchError.new("bad response #{response.message} #{response.code}", uri) unless headers.key?("Range")
 
@@ -49,6 +52,21 @@ class Gem::CompactIndexClient
       else
         raise Gem::RemoteFetcher::FetchError.new("bad response #{response.message} #{response.code}", uri)
       end
+    end
+
+    # The callers fall back to the Marshal index when a fetch fails, and they
+    # only recognize a failure that arrives as a FetchError.
+    def request(uri, headers)
+      @remote_fetcher.request(uri, Gem::Net::HTTP::Get) do |req|
+        headers.each {|name, value| req[name] = value }
+      end
+    rescue Gem::Timeout::Error, IOError, SocketError, SystemCallError,
+           *(OpenSSL::SSL::SSLError if Gem::HAVE_OPENSSL) => e
+      raise Gem::RemoteFetcher::FetchError.new("#{e.class}: #{e}", uri)
+    end
+
+    def https?(uri)
+      uri.scheme == "https"
     end
   end
 end

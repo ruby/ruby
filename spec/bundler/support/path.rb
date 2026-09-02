@@ -307,7 +307,7 @@ module Spec
     def replace_changelog(version, dir:)
       changelog = File.expand_path("CHANGELOG-bundler.md", dir)
       contents = File.readlines(changelog)
-      contents = [contents[0], contents[1], "## #{version} (2100-01-01)\n", *contents[3..-1]].join
+      contents = [contents[0], contents[1], "## #{version} / 2100-01-01\n", *contents[3..-1]].join
       File.open(changelog, "w") {|f| f << contents }
     end
 
@@ -359,7 +359,7 @@ module Spec
     end
 
     def tracked_files_glob
-      ruby_core? ? "libexec/bundle* lib/bundler lib/bundler.rb lib/rubygems/vendor/uri lib/rubygems/vendor/securerandom lib/rubygems/vendor/pub_grub lib/rubygems/yaml_serializer.rb lib/rubygems/compact_index_client* spec/bundler man/bundle*" : "exe/bundle exe/bundler lib/bundler lib/bundler.rb lib/rubygems/vendor/uri lib/rubygems/vendor/securerandom lib/rubygems/vendor/pub_grub lib/rubygems/yaml_serializer.rb lib/rubygems/compact_index_client* bundler.gemspec CHANGELOG-bundler.md LICENSE-bundler.md README-bundler.md"
+      ruby_core? ? "libexec/bundle* lib/bundler lib/bundler.rb lib/rubygems/vendor/uri lib/rubygems/vendor/securerandom lib/rubygems/vendor/pub_grub lib/rubygems/yaml_serializer.rb lib/rubygems/compact_index_client* lib/rubygems/credential_store* spec/bundler man/bundle*" : "exe/bundle exe/bundler lib/bundler lib/bundler.rb lib/rubygems/vendor/uri lib/rubygems/vendor/securerandom lib/rubygems/vendor/pub_grub lib/rubygems/yaml_serializer.rb lib/rubygems/compact_index_client* lib/rubygems/credential_store* bundler.gemspec CHANGELOG-bundler.md LICENSE-bundler.md README-bundler.md"
     end
 
     def lib_tracked_files_glob

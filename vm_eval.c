@@ -1997,7 +1997,7 @@ eval_string_with_cref(VALUE self, VALUE src, rb_cref_t *cref, VALUE file, int li
 
     // EP is not escaped to the heap here, but captured and reused by another frame.
     // ZJIT's locals are incompatible with it unlike YJIT's, so invalidate the ISEQ for ZJIT.
-    rb_zjit_invalidate_no_ep_escape(CFP_ISEQ(cfp));
+    if (rb_zjit_enabled_p) rb_zjit_invalidate_no_ep_escape(CFP_ISEQ(cfp));
 
     iseq = eval_make_iseq(src, file, line, &block);
     if (!iseq) {
@@ -2239,8 +2239,8 @@ yield_under(VALUE self, int singleton, int argc, const VALUE *argv, int kw_splat
                 VALUE procval = VM_BH_TO_PROC(block_handler);
                 rb_proc_t *po;
                 GetProcPtr(procval, po);
-                is_lambda = po->is_lambda;
-                if (po->is_refined) proc_cref = rb_proc_refinements_cref_for_call(procval);
+                is_lambda = po->header.is_lambda;
+                if (po->header.is_refined) proc_cref = rb_proc_refinements_cref_for_call(procval);
                 block_handler = vm_block_to_block_handler(&po->block);
             }
             goto again;

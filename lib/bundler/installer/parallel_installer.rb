@@ -20,10 +20,6 @@ module Bundler
         state == :installed
       end
 
-      def enqueued?
-        state == :enqueued
-      end
-
       def enqueue_with_priority?
         state == :installable && spec.extensions.any?
       end

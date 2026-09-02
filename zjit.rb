@@ -105,6 +105,7 @@ class << RubyVM::ZJIT
     print_counters_with_prefix(prefix: 'unspecialized_super_def_type_', prompt: 'not optimized method types for super', buf:, stats:, limit: 20)
     print_counters_with_prefix(prefix: 'uncategorized_fallback_yarv_insn_', prompt: 'instructions with uncategorized fallback reason', buf:, stats:, limit: 20)
     print_counters_with_prefix(prefix: 'send_fallback_', prompt: 'send fallback reasons', buf:, stats:, limit: 20)
+    print_counters_with_prefix(prefix: 'send_direct_fallback_context_', prompt: 'SendDirect fallback contexts', buf:, stats:, limit: 10)
     print_counters_with_prefix(prefix: 'setivar_fallback_', prompt: 'setivar fallback reasons', buf:, stats:, limit: 5)
     print_counters_with_prefix(prefix: 'getivar_fallback_', prompt: 'getivar fallback reasons', buf:, stats:, limit: 5)
     print_counters_with_prefix(prefix: 'definedivar_fallback_', prompt: 'definedivar fallback reasons', buf:, stats:, limit: 5)
@@ -133,6 +134,7 @@ class << RubyVM::ZJIT
       :inline_cfunc_optimized_send_count,
       :inline_iseq_optimized_send_count,
       :inline_method_count,
+      :empty_inline_frame_count,
       :non_variadic_cfunc_optimized_send_count,
       :variadic_cfunc_optimized_send_count,
     ], buf:, stats:, right_align: true, base: :send_count)
@@ -152,6 +154,7 @@ class << RubyVM::ZJIT
       :compile_hir_build_time_ns,
       :compile_hir_strength_reduce_time_ns,
       :compile_hir_inline_methods_time_ns,
+      :compile_hir_remove_trivial_block_params_time_ns,
       :compile_hir_optimize_load_store_time_ns,
       :compile_hir_canonicalize_time_ns,
       :compile_hir_fold_constants_time_ns,
@@ -177,6 +180,8 @@ class << RubyVM::ZJIT
 
       :load_field_count,
       :store_field_count,
+
+      :throw_count,
 
       :side_exit_size,
       :code_region_bytes,

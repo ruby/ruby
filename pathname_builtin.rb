@@ -1357,35 +1357,36 @@ class Pathname    # * File *
   # :markup: markdown
   #
   # call-seq:
-  #   atime -> new_time
+  #   atime -> time
   #
-  # Returns a Time object containing the access time
+  # Returns a new Time object containing the access time
   # of the entry represented by `self`, as reported by the filesystem;
-  # see {File System Access Time}[rdoc-ref:file/timestamps.md@Access+Time]:
+  # see {File System Access Time}[rdoc-ref:file/timestamps.md@Access+Time].
+  #
+  # For a file, the access time is established when the file is created,
+  # and may be updated with the file content is read:
   #
   # ```ruby
-  # # Pathname for a (non-existent) directory.
-  # dir_pn = Pathname('doc/foo')   # => #<Pathname:doc/foo>
-  # # Create directory; establishes atime for directory.
-  # dir_pn.mkdir
-  # dir_pn.atime                   # => 2026-06-17 10:10:20.801115774 -0500
-  # # Pathname for a (non-existent) file in the directory.
-  # file_pn = dir_pn.join('t.tmp') # => #<Pathname:doc/foo/t.tmp>
-  # # Create file; establishes atime for file, updates atime for directory.
-  # file_pn.write('foo')
-  # file_pn.atime                  # => 2026-06-17 10:11:40.987171568 -0500
-  # dir_pn.atime                   # => 2026-06-17 10:11:40.96617277 -0500
-  # # Write file; updates atime for file,but not directory.
-  # file_pn.write('bar')
-  # file_pn.atime                  # => 2026-06-17 10:13:22.062904563 -0500
-  # dir_pn.atime                   # => 2026-06-17 10:11:40.96617277 -0500
-  # # Read file; may update atime for file, but not directory.
-  # file_pn.read
-  # file_pn.atime                  # => 2026-06-17 10:13:22.062904563 -0500
-  # dir_pn.atime                   # => 2026-06-17 10:11:40.96617277 -0500
-  # # Clean up.
-  # file_pn.delete
-  # dir_pn.rmdir
+  # filepath = 't.tmp'
+  # pn = Pathname(filepath)
+  # pn.exist? # => false
+  # pn.write('foo')
+  # pn.atime # => 2026-08-15 14:30:28.624455747 -0500
+  # pn.delete
+  # ```
+  #
+  # For a directory, the access time is established when the directory is created,
+  # and may be updated when its entries are read:
+  #
+  # ```ruby
+  # dirpath = 'foo'
+  # pn = Pathname(dirpath)
+  # pn.exist?          # => false
+  # FileUtils.cp_r('doc', 'foo')
+  # pn.atime           # => 2026-08-15 14:36:20.139756073 -0500
+  # pn.entries.take(3) # => [#<Pathname:syntax>, #<Pathname:contributing>, #<Pathname:strscan>]
+  # pn.atime           # => 2026-08-15 14:36:32.262779081 -0500
+  # pn.rmtree          # Clean up.
   # ```
   #
   def atime() File.atime(@path) end
@@ -1502,31 +1503,28 @@ class Pathname    # * File *
   # call-seq:
   #   chmod(mode) -> 1
   #
-  # Changes the mode (i.e., permissions) of the entry represented by `self`;
-  # see {File Permissions}[rdoc-ref:File@File+Permissions]:
+  #  Changes the mode of the entry at the path in `self`;  returns `1`.
+  #  See {Filesystem Modes}[rdoc-ref:file/filesystem_modes.md]
+  #  and especially {Setting a Mode}[rdoc-ref:file/filesystem_modes.md@Setting+a+Mode].
+  #
+  #  These examples use
+  #  a {helper method}[rdoc-ref:file/filesystem_modes.md@Helper+Method], `mode`,
+  #  that displays a mode both in octal digits and in characters:
   #
   # ```ruby
-  # # Pathname for a (non-existent) directory.
-  # dir_pn = Pathname('doc/foo') # => #<Pathname:doc/foo>
-  # # Create the directory and fetch its mode.
-  # dir_pn.mkdir
-  # dir_pn.stat.mode.to_s(8) # => "40775"
-  # # Change the directory mode and fetch the new mode.
-  # dir_pn.chmod(0777)
-  # dir_pn.stat.mode.to_s(8) # => "40777"
-  #
-  # # Pathname for a (non-existent) file in the directory.
-  # file_pn = dir_pn.join('t.tmp') # => #<Pathname:doc/foo/t.tmp>
-  # # Create the file and fetch its mode.
-  # file_pn.write('foo')
-  # file_pn.stat.mode.to_s(8) # => "100664"
-  # # Change the file mode and fetch its new mode.
-  # file_pn.chmod(0777)
-  # file_pn.stat.mode.to_s(8) # => "100777"
-  #
-  # # Clean up.
-  # file_pn.delete
-  # dir_pn.rmdir
+  # dirpath = 'doc/foo'
+  # dir_pn = Pathname(dirpath)
+  # dir_pn.mkdir         # Create directory.
+  # mode(dirpath)        # => "040775 drwxrwxr-x"
+  # filepath = File.join(dirpath, 't.tmp')
+  # file_pn = Pathname(filepath)
+  # file_pn.write('bar') # Create file.
+  # mode(filepath)       # => "100664 -rw-rw-r--"
+  # file_pn.chmod(0755)  # Change file mode.
+  # mode(filepath)       # => "100755 -rwxr-xr-x"
+  # dir_pn.chmod(0644)   # Change directory mode.
+  # mode(dirpath)        # => "040644 drw-r--r--"
+  # dir_pn.rmtree        # Clean up.
   # ```
   #
   def chmod(mode) File.chmod(mode, @path) end
@@ -1672,9 +1670,19 @@ class Pathname    # * File *
   def fnmatch?(pattern, ...) File.fnmatch?(pattern, @path, ...) end
 
   #  call-seq:
-  #    pathname.ftype -> string
+  #    ftype -> string
   #
-  #  Returns the string type of the object at the path in +self+:
+  #  Returns the string type of the object at the path in <tt>self</tt>, one of:
+  #
+  #  - <tt>'file'</tt>.
+  #  - <tt>'directory'</tt>.
+  #  - <tt>'characterSpecial'</tt>.
+  #  - <tt>'blockSpecial'</tt>.
+  #  - <tt>'fifo'</tt>.
+  #  - <tt>'link'</tt>.
+  #  - <tt>'socket'</tt>.
+  #
+  #  Examples:
   #
   #    Pathname('README.md').ftype   # => "file"
   #    Pathname('lib').ftype         # => "directory"
@@ -2044,6 +2052,8 @@ class Pathname    # * File *
   # Pathname('nosuch').basename         # => #<Pathname:nosuch>
   # ```
   #
+  # Components are delimited by File::SEPARATOR and, if non-+nil+, File::ALT_SEPARATOR.
+
   def dirname() self.class.new(File.dirname(@path)) end
 
   # :markup: markdown
@@ -2219,7 +2229,7 @@ class Pathname    # * FileTest *
   # Pathname($stdin).blockdev?         # => false
   # ```
   #
-  # The returned value is OS-dependent; on Windows, almost always `false`.
+  # The returned value is filesystem-dependent; on Windows, always `false`.
   def blockdev?() FileTest.blockdev?(@path) end
 
   # :markup: markdown
@@ -2239,7 +2249,7 @@ class Pathname    # * FileTest *
   # Pathname('nosuch').chardev?       # => false
   # ```
   #
-  # The returned value is OS-dependent; on Windows, almost always `false`.
+  # The returned value is filesystem-dependent; on Windows, always `false`.
   def chardev?() FileTest.chardev?(@path) end
 
   # :markup: markdown
@@ -2280,12 +2290,33 @@ class Pathname    # * FileTest *
   # call-seq:
   #   executable? -> true or false
   #
-  # Returns whether the entry represented by `self` is executable;
-  # calls FileTest.executable? with argument `self.to_s`:
+  # Returns whether the entry represented by `self` exists and is executable.
+  #
+  # On Windows, the entry is executable if its path has file extension
+  # `.bat`, `.cmd`, `.com`, or `.exe`:
   #
   # ```ruby
-  # Pathname('bin/gem').executable?   # => true
-  # Pathname('README.md').executable? # => false
+  # Pathname('bin/gem').executable? # => true
+  # mode('bin/gem') # => "100775 -rwxrwxr-x"
+  # Pathname('.').executable? # => true
+  # mode('.') # => "040775 drwxrwxr-x"
+  # Pathname('nosuch').executable? # => false
+  # ```
+  #
+  # On other systems, the entry is executable if it has the execute/search
+  # permission for the effective user and group id of the current process;
+  # see {Permissions}[rdoc-ref:file/filesystem_modes.md@Permissions].
+  #
+  # These examples use
+  # a {helper method}[rdoc-ref:file/filesystem_modes.md@Helper+Method], `mode`,
+  # that displays a mode both in octal digits and in characters:
+  #
+  # ```ruby
+  # Pathname('bin/gem').executable? # => true
+  # mode('bin/gem')                 # => "100775 -rwxrwxr-x"
+  # Pathname('.').executable?       # => true
+  # mode('.')                       # => "040775 drwxrwxr-x"
+  # Pathname('nosuch').executable?  # => false
   # ```
   #
   def executable?() FileTest.executable?(@path) end
@@ -2350,6 +2381,22 @@ class Pathname    # * FileTest *
   # Pathname('lib').directory?       # => true
   # Pathname('README.md').directory? # => false
   # Pathname('nosuch').directory?    # => false
+  # Pathname($stdin).directory?      # => false
+  # ```
+  #
+  # Follows symbolic links:
+  #
+  # ```ruby
+  # target_pn = Pathname('doc')
+  # link_pn = Pathname('link')
+  # link_pn.make_symlink(target_pn)
+  # link_pn.directory?               # => true
+  # link_pn.delete
+  # target_pn = Pathname('README.md')
+  # link_pn = Pathname('link')
+  # link_pn.make_symlink(target_pn)
+  # link_pn.directory?               # => false
+  # link_pn.delete
   # ```
   #
   def directory?() FileTest.directory?(@path) end
@@ -2359,7 +2406,8 @@ class Pathname    # * FileTest *
   # call-seq:
   #   file? -> true or false
   #
-  # Returns whether the entry at the path in `self` exists and is a regular file:
+  # Returns whether the entry at the path in `self` exists and is a regular file;
+  # see #ftype:
   #
   # ```ruby
   # Pathname('README.md').file? # => true

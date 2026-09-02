@@ -16,13 +16,6 @@
 #include <sys/mman.h>
 #endif
 
-// On Solaris, madvise() is NOT declared for SUS (XPG4v2) or later,
-// but MADV_* macros are defined when __EXTENSIONS__ is defined.
-#ifdef NEED_MADVICE_PROTOTYPE_USING_CADDR_T
-#include <sys/types.h>
-extern int madvise(caddr_t, size_t, int);
-#endif
-
 #include COROUTINE_H
 
 #include "eval_intern.h"
@@ -34,6 +27,7 @@ extern int madvise(caddr_t, size_t, int);
 #include "internal/gc.h"
 #include "internal/proc.h"
 #include "internal/sanitizers.h"
+#include "internal/vm_map.h"
 #include "internal/warnings.h"
 #include "ruby/fiber/scheduler.h"
 #include "yjit.h"
@@ -501,12 +495,7 @@ fiber_pool_allocate_memory(size_t * count, size_t stride)
         }
         else {
             ruby_annotate_mmap(base, mmap_size, "Ruby:fiber_pool_allocate_memory");
-#if defined(MADV_FREE_REUSE)
-            // On Mac MADV_FREE_REUSE is necessary for the task_info api
-            // to keep the accounting accurate as possible when a page is marked as reusable
-            // it can possibly not occurring at first call thus re-iterating if necessary.
-            while (madvise(base, mmap_size, MADV_FREE_REUSE) == -1 && errno == EAGAIN);
-#endif
+            rb_vm_map_reuse(base, mmap_size);
             return base;
         }
 #endif
@@ -820,7 +809,7 @@ fiber_pool_stack_acquire(struct fiber_pool * fiber_pool)
 }
 
 // We advise the operating system that the stack memory pages are no longer being used.
-// This introduce some performance overhead but allows system to relaim memory when there is pressure.
+// This introduces some performance overhead but allows the system to reclaim memory when there is pressure.
 static inline void
 fiber_pool_stack_free(struct fiber_pool_stack * stack)
 {
@@ -843,37 +832,7 @@ fiber_pool_stack_free(struct fiber_pool_stack * stack)
     // In addition, it's actually slightly desirable to not do anything here,
     // but that results in higher memory usage.
 
-#ifdef __wasi__
-    // WebAssembly doesn't support madvise, so we just don't do anything.
-#elif VM_CHECK_MODE > 0 && defined(MADV_DONTNEED)
-    if (!advice) advice = MADV_DONTNEED;
-    // This immediately discards the pages and the memory is reset to zero.
-    madvise(base, size, advice);
-#elif defined(MADV_FREE_REUSABLE)
-    if (!advice) advice = MADV_FREE_REUSABLE;
-    // Darwin / macOS / iOS.
-    // Acknowledge the kernel down to the task info api we make this
-    // page reusable for future use.
-    // As for MADV_FREE_REUSABLE below we ensure in the rare occasions the task was not
-    // completed at the time of the call to re-iterate.
-    while (madvise(base, size, advice) == -1 && errno == EAGAIN);
-#elif defined(MADV_FREE)
-    if (!advice) advice = MADV_FREE;
-    // Recent Linux.
-    madvise(base, size, advice);
-#elif defined(MADV_DONTNEED)
-    if (!advice) advice = MADV_DONTNEED;
-    // Old Linux.
-    madvise(base, size, advice);
-#elif defined(POSIX_MADV_DONTNEED)
-    if (!advice) advice = POSIX_MADV_DONTNEED;
-    // Solaris?
-    posix_madvise(base, size, advice);
-#elif defined(_WIN32)
-    VirtualAlloc(base, size, MEM_RESET, PAGE_READWRITE);
-    // Not available in all versions of Windows.
-    //DiscardVirtualMemory(base, size);
-#endif
+    rb_vm_map_reusable_lazy(base, size, advice);
 
 #if defined(COROUTINE_SANITIZE_ADDRESS)
     __asan_poison_memory_region(fiber_pool_stack_poison_base(stack), fiber_pool_stack_poison_size(stack));
@@ -1300,6 +1259,22 @@ fiber_mark(void *ptr)
 
 static void
 fiber_free(void *ptr)
+{
+    rb_fiber_t *fiber = ptr;
+
+    /* Root fiber of the thread running the final self collection: saved_ec is the ec
+     * that thread still executes on, so the thread frees the struct itself at its
+     * last step (rb_ractor_postmortem_free).  cont.self == 0 already means "no
+     * wrapper" (rb_threadptr_root_fiber_release). */
+    if (&fiber->cont.saved_ec == rb_current_execution_context(false)) {
+        fiber->cont.self = 0;
+        return;
+    }
+    rb_fiber_free_body(ptr);
+}
+
+void
+rb_fiber_free_body(void *ptr)
 {
     rb_fiber_t *fiber = ptr;
     RUBY_FREE_ENTER("fiber");

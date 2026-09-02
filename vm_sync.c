@@ -17,10 +17,16 @@ vm_locked(rb_vm_t *vm)
 }
 
 #if RUBY_DEBUG > 0
+static bool
+vm_lock_assertable_p(void)
+{
+    return rb_current_execution_context(false) != NULL;
+}
+
 void
 RUBY_ASSERT_vm_locking(void)
 {
-    if (rb_multi_ractor_p()) {
+    if (vm_lock_assertable_p() && rb_multi_ractor_p()) {
         rb_vm_t *vm = GET_VM();
         VM_ASSERT(vm_locked(vm));
     }
@@ -29,13 +35,13 @@ RUBY_ASSERT_vm_locking(void)
 void
 RUBY_ASSERT_vm_locking_with_barrier(void)
 {
-    if (rb_multi_ractor_p()) {
+    if (vm_lock_assertable_p() && rb_multi_ractor_p()) {
         rb_vm_t *vm = GET_VM();
         VM_ASSERT(vm_locked(vm));
 
         if (vm->ractor.cnt > 1) {
             /* Written to only when holding both ractor.sync and ractor.sched lock */
-            VM_ASSERT(vm->ractor.sched.barrier_waiting);
+            VM_ASSERT(vm->ractor.sched.barrier_is_waiting);
         }
     }
 }
@@ -43,7 +49,7 @@ RUBY_ASSERT_vm_locking_with_barrier(void)
 void
 RUBY_ASSERT_vm_unlocking(void)
 {
-    if (rb_multi_ractor_p()) {
+    if (vm_lock_assertable_p() && rb_multi_ractor_p()) {
         rb_vm_t *vm = GET_VM();
         VM_ASSERT(!vm_locked(vm));
     }
@@ -59,21 +65,13 @@ rb_vm_locked_p(void)
 static bool
 vm_need_barrier_waiting(const rb_vm_t *vm)
 {
-#ifdef RUBY_THREAD_PTHREAD_H
-    return vm->ractor.sched.barrier_waiting;
-#else
-    return vm->ractor.sync.barrier_waiting;
-#endif
+    return vm->ractor.sched.barrier_is_waiting;
 }
 
 static bool
 vm_need_barrier(bool no_barrier, const rb_ractor_t *cr, const rb_vm_t *vm)
 {
-#ifdef RUBY_THREAD_PTHREAD_H
     return !no_barrier && cr->threads.sched.running != NULL && vm_need_barrier_waiting(vm); // ractor has running threads.
-#else
-    return !no_barrier && vm_need_barrier_waiting(vm);
-#endif
 }
 
 static void
@@ -136,13 +134,11 @@ vm_lock_leave(rb_vm_t *vm, bool no_barrier, unsigned int *lev APPEND_LOCATION_AR
     VM_ASSERT(vm->ractor.sync.lock_rec == *lev);
     VM_ASSERT(cr == GET_RACTOR());
 
-#ifdef RUBY_THREAD_PTHREAD_H
     if (vm->ractor.sched.barrier_ractor == cr &&
         vm->ractor.sched.barrier_lock_rec == vm->ractor.sync.lock_rec) {
         VM_ASSERT(!no_barrier);
         rb_ractor_sched_barrier_end(vm, cr);
     }
-#endif
 
     if (RUBY_DTRACE_GVL_RELEASE_ENABLED()) {
         RUBY_DTRACE_GVL_RELEASE();
@@ -252,11 +248,7 @@ rb_vm_cond_timedwait(rb_vm_t *vm, rb_nativethread_cond_t *cond, unsigned long ms
 static bool
 vm_barrier_acquired_p(const rb_vm_t *vm, const rb_ractor_t *cr)
 {
-#ifdef RUBY_THREAD_PTHREAD_H
     return vm->ractor.sched.barrier_ractor == cr;
-#else
-    return false;
-#endif
 }
 
 void
@@ -281,7 +273,7 @@ rb_vm_barrier(void)
             return;
         }
         else {
-            VM_ASSERT(!vm->ractor.sched.barrier_waiting);
+            VM_ASSERT(!vm->ractor.sched.barrier_is_waiting);
             rb_ractor_sched_barrier_start(vm, cr);
         }
     }

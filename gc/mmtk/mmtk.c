@@ -1214,6 +1214,13 @@ rb_gc_impl_object_moved_p(void *objspace_ptr, VALUE obj)
     return rb_mmtk_call_object_closure(obj, false) != obj;
 }
 
+bool
+rb_gc_impl_pinned_p(void *objspace_ptr, VALUE obj)
+{
+    /* MMTk tracks pinning separately */
+    return false;
+}
+
 VALUE
 rb_gc_impl_location(void *objspace_ptr, VALUE obj)
 {
@@ -1256,12 +1263,6 @@ void
 rb_gc_impl_obj_became_shareable(void *objspace_ptr, VALUE obj)
 {
     /* MMTk has no per-page shareable bits. */
-}
-
-void
-rb_gc_impl_pin_in_flight_message(void *objspace_ptr, VALUE obj)
-{
-    /* With a single objspace there is nothing to pin. */
 }
 
 void
@@ -1816,6 +1817,13 @@ rb_gc_impl_during_global_gc_p(void *objspace_ptr)
 }
 
 bool
+rb_gc_impl_during_postmortem_p(void *objspace_ptr)
+{
+    /* mmtk has a single objspace and no per-Ractor retire collection. */
+    return false;
+}
+
+bool
 rb_gc_impl_obj_foreign_p(void *objspace_ptr, VALUE obj)
 {
     /* With a single objspace every object is our own. */
@@ -1826,7 +1834,7 @@ bool
 rb_gc_impl_shref_marked_p(void *objspace_ptr, VALUE obj)
 {
     /* With a single objspace there is no cross-objspace pinning to track. */
-    return false;
+    return true;
 }
 
 size_t

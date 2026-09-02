@@ -239,7 +239,7 @@ module EnvUtil
     args = [args] if args.kind_of?(String)
     # use the same parser as current ruby
     if (args.none? { |arg| arg.start_with?("--parser=") } and
-        /^ +--parser=/ =~ IO.popen([rubybin, "--help"], &:read))
+        /^ +--parser=/ =~ IO.popen([{"PAGER"=>nil, "RUBY_PAGER"=>nil}, rubybin, "--help", err: %i[child out]], &:read))
       args = ["--parser=#{current_parser}"] + args
     end
     pid = spawn(child_env, *precommand, rubybin, *args, opt)
