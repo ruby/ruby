@@ -14790,6 +14790,83 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn specialize_polymorphic_receiver_with_monomorphic_caller_splat() {
+        set_call_threshold(4);
+        eval("
+            class CallerSplatA
+              def target(*args) = args
+            end
+            class CallerSplatB
+              def target(*args) = args
+            end
+            def test(recv, args) = recv.target(*args)
+            test(CallerSplatA.new, [1])
+            test(CallerSplatB.new, [2])
+            test(CallerSplatA.new, [3])
+            test(CallerSplatB.new, [4])
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:8:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :recv@0x1000
+          v4:BasicObject = LoadField v2, :args@0x1001
+          Jump bb3(v1, v3, v4)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :recv@1
+          v9:BasicObject = LoadArg :args@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          v19:ArrayExact = ToArray v13
+          v22:CBool = HasType v12, ObjectSubclass[class_exact:CallerSplatA]
+          CondBranch v22, bb5(), bb6()
+        bb5():
+          v25:ObjectSubclass[class_exact:CallerSplatA] = RefineType v12, ObjectSubclass[class_exact:CallerSplatA]
+          PatchPoint NoSingletonClass(CallerSplatA@0x1008)
+          v42:CInt64 = ArrayLength v19
+          v43:CInt64[1] = GuardBitEquals v42, CInt64(1) recompile
+          v44:CInt64 = CCall v19, :rb_jit_ruby2_keywords_splat_p@0x1010
+          v45:CInt64[0] = GuardBitEquals v44, CInt64(0)
+          PatchPoint MethodRedefined(CallerSplatA@0x1008, target@0x1011, cme:0x1018)
+          v47:CInt64[0] = Const CInt64(0)
+          v48:BasicObject = ArrayAref v19, v47
+          v49:ArrayExact = NewArray v48
+          PushInlineFrame :target, v25 (0x1040), num_args=1
+          CheckInterrupts
+          PopInlineFrame
+          Jump bb4(v49)
+        bb6():
+          v28:CBool = HasType v12, ObjectSubclass[class_exact:CallerSplatB]
+          CondBranch v28, bb7(), bb8()
+        bb7():
+          v31:ObjectSubclass[class_exact:CallerSplatB] = RefineType v12, ObjectSubclass[class_exact:CallerSplatB]
+          PatchPoint NoSingletonClass(CallerSplatB@0x1060)
+          v53:CInt64 = ArrayLength v19
+          v54:CInt64[1] = GuardBitEquals v53, CInt64(1) recompile
+          v55:CInt64 = CCall v19, :rb_jit_ruby2_keywords_splat_p@0x1010
+          v56:CInt64[0] = GuardBitEquals v55, CInt64(0)
+          PatchPoint MethodRedefined(CallerSplatB@0x1060, target@0x1011, cme:0x1068)
+          v58:CInt64[0] = Const CInt64(0)
+          v59:BasicObject = ArrayAref v19, v58
+          v60:ArrayExact = NewArray v59
+          PushInlineFrame :target, v31 (0x1090), num_args=1
+          CheckInterrupts
+          PopInlineFrame
+          Jump bb4(v60)
+        bb8():
+          v34:BasicObject = Send v12, :target, v19 # SendFallbackReason: Send: polymorphic call site
+          Jump bb4(v34)
+        bb4(v21:BasicObject):
+          CheckInterrupts
+          Return v21
+        ");
+    }
+
+    #[test]
     fn specialize_call_to_iseq_with_empty_caller_splat() {
         eval("
             def foo(arg = 1) = arg
