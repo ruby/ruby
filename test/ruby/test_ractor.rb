@@ -271,9 +271,15 @@ class TestRactor < Test::Unit::TestCase
       assert_copy [Time.now, Ractor::Port.new]
       # Dump hooks run after the courier is sized, so enough of them make it grow.
       assert_copy Array.new(2000) { |i| Time.at(i) }
-      #assert_copy Set.new
-      #assert_copy Set[1,2,3]
-      #assert_copy Set[Ractor::Port.new, Ractor::Port.new]
+      # Set has no dump hook of its own; it goes through its rb_marshal_define_compat entry.
+      assert_copy Set.new
+      assert_copy Set[1,2,3]
+      assert_copy Set[+"a", [+"b"], {+"c" => Set[+"d"]}]
+      assert_copy Set[1].compare_by_identity
+      assert_copy Class.new(Set)[1, 2]
+      assert_equal true, echo(Set[1].compare_by_identity).compare_by_identity?
+      set = Set[Ractor::Port.new, Ractor::Port.new]   # Marshal cannot carry a Port
+      assert_equal set.to_a, echo(set).to_a
 
       # Time#_dump keeps these as ivars on the dumped string; Time#== ignores the last two.
       time = Time.at(0, 123456789, :nsec, in: "+09:00")
