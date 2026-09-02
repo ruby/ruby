@@ -244,6 +244,18 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+  def test_sending_hash_with_shared_key
+    # A key that was already reached elsewhere in the graph must be complete before the
+    # hash inserts it, or it is inserted under the wrong #hash.
+    assert_ractor(<<~'RUBY')
+      key = { 1 => 2 }
+      copy_key, copy_hash = Ractor.new { Ractor.receive }.send([key, { key => 1 }]).value
+      assert_equal key, copy_key
+      assert_equal 1, copy_hash[key]
+      assert_same copy_key, copy_hash.keys[0]
+    RUBY
+  end
+
   def test_move_nested_hash_during_gc_with_yjit
     assert_ractor(<<~'RUBY', timeout: 20, args: [{ "RUBY_YJIT_ENABLE" => "1" }])
       GC.stress = true
