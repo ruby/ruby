@@ -39,8 +39,9 @@ class TestGemCompactIndexClientHTTPFetcher < Gem::TestCase
   end
 
   class FakeNotFound < Gem::Net::HTTPNotFound
-    def initialize
+    def initialize(error_message = nil)
       super("1.1", "404", "Not Found")
+      self["X-Error-Message"] = error_message if error_message
     end
   end
 
@@ -305,5 +306,17 @@ class TestGemCompactIndexClientHTTPFetcher < Gem::TestCase
     end
 
     assert_match(/bad response Not Found 404/, error.message)
+  end
+
+  def test_call_includes_x_error_message_in_fetch_error
+    fetcher, _remote = fetcher_for(
+      "https://index.example/versions" => FakeNotFound.new("blocked by corporate proxy policy")
+    )
+
+    error = assert_raise Gem::RemoteFetcher::FetchError do
+      fetcher.call("versions")
+    end
+
+    assert_match(/bad response blocked by corporate proxy policy 404/, error.message)
   end
 end
