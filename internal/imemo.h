@@ -15,17 +15,17 @@
 #include "ruby/internal/stdbool.h"     /* for bool */
 #include "ruby/ruby.h"          /* for rb_block_call_func_t */
 
-#define IMEMO_MASK   (FL_USER0 | FL_USER1 | FL_USER2 | FL_USER3)
+#define IMEMO_MASK   (FL_USER0 | FL_USER1 | FL_USER2 | FL_USER3 | FL_USER4)
 
-/* FL_USER0 to FL_USER3 is for type */
-#define IMEMO_FL_USHIFT (FL_USHIFT + 4)
-#define IMEMO_FL_USER0 FL_USER4
-#define IMEMO_FL_USER1 FL_USER5
-#define IMEMO_FL_USER2 FL_USER6
-#define IMEMO_FL_USER3 FL_USER7
-#define IMEMO_FL_USER4 FL_USER8
-#define IMEMO_FL_USER5 FL_USER9
-#define IMEMO_FL_USER6 FL_USER10
+/* FL_USER0 to FL_USER4 is for type */
+#define IMEMO_FL_USHIFT (FL_USHIFT + 5)
+#define IMEMO_FL_USER0 FL_USER5
+#define IMEMO_FL_USER1 FL_USER6
+#define IMEMO_FL_USER2 FL_USER7
+#define IMEMO_FL_USER3 FL_USER8
+#define IMEMO_FL_USER4 FL_USER9
+#define IMEMO_FL_USER5 FL_USER10
+#define IMEMO_FL_USER6 FL_USER11
 
 enum imemo_type {
     imemo_env            =  0,
