@@ -3513,14 +3513,10 @@ fn build_stack_map(jit: &JITState, function: &Function, state: &FrameState) -> V
         stack.extend(current_state.stack().rev().copied().map(to_entry));
         // Frame environment data (me/cref, specval, flags) already lives in memory.
         stack.push(StackMapEntry::Skip(VM_ENV_DATA_SIZE.to_usize()));
-        // Locals, top-down (local[L-1] .. local[0]). They land at fixed
-        // EP-relative slots because we write down from cfp->sp.
-        //
-        // Locals backed by memory are accessed in mainline code,
-        // so we skip over those slots to not interfere and clobber.
-        // (The stack map is not the 1st write to the slot.)
+        // Locals, top-down (local[L-1] .. local[0]).
         let spilled_locals = current_state.spilled_locals();
         for (idx, &insn_id) in current_state.locals().enumerate().rev() {
+            // Skip spilled slots which are already initialized on entry.
             if spilled_locals.get(idx) {
                 stack.push(StackMapEntry::Skip(1));
             } else {
@@ -3531,9 +3527,9 @@ fn build_stack_map(jit: &JITState, function: &Function, state: &FrameState) -> V
         let Some(caller) = current_state.caller() else {
             break;
         };
-        // Skip the callee's receiver slot below its local table. We currently
-        // never map out the stack for `invokeblock`, which doesn't put a
-        // receiver on cfp->sp stack.
+        // Skip the callee's receiver slot below its local table.
+        // We currently never map out the stack for `invokeblock`, which doesn't
+        // put a receiver on cfp->sp stack.
         stack.push(StackMapEntry::Skip(1));
         current_state = function.frame_state(caller);
     }

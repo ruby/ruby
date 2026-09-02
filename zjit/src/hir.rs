@@ -3278,7 +3278,7 @@ impl Function {
 
     /// Record on the `Snapshot` at `insn_id` the locals that must stay in EP
     /// across a block-passing call (block-modifiable locals), so codegen keeps
-    /// them out of the register-based stack map. See [`FrameState::spilled_locals`].
+    /// them out of the register-based stack map. See [`field@FrameState::spilled_locals`].
     fn set_snapshot_spilled_locals(&mut self, insn_id: InsnId, spilled: LocalSet) {
         let insn_id = self.union_find.borrow().find_const(insn_id);
         match &mut self.insns[insn_id] {
