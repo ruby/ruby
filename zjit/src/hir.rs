@@ -10461,11 +10461,9 @@ fn add_iseq_to_hir(
 
                     // Primitive.cexpr! and friends have access to all Ruby locals as C locals,
                     // so we spill all locals here.
-                    let Insn::Snapshot { state: entry_state } = &mut fun.insns[exit_id] else {
-                        unreachable!("exit_id always points to a snapshot");
-                    };
-                    entry_state.spilled_locals = LocalSet::with_capacity(entry_state.locals.len());
-                    entry_state.spilled_locals.insert_all();
+                    let mut all_spilled = LocalSet::with_capacity(exit_state.locals.len());
+                    all_spilled.insert_all();
+                    fun.set_snapshot_spilled_locals(exit_id, all_spilled);
 
                     let insn_id = fun.try_inline_invoke_builtin(block, Insn::InvokeBuiltin {
                         bf,
@@ -10497,11 +10495,9 @@ fn add_iseq_to_hir(
 
                     // Primitive.cexpr! and friends have access to all Ruby locals as C locals,
                     // so we spill all locals here.
-                    let Insn::Snapshot { state: entry_state } = &mut fun.insns[exit_id] else {
-                        unreachable!("exit_id always points to a snapshot");
-                    };
-                    entry_state.spilled_locals = LocalSet::with_capacity(entry_state.locals.len());
-                    entry_state.spilled_locals.insert_all();
+                    let mut all_spilled = LocalSet::with_capacity(exit_state.locals.len());
+                    all_spilled.insert_all();
+                    fun.set_snapshot_spilled_locals(exit_id, all_spilled);
 
                     let insn_id = fun.try_inline_invoke_builtin(block, Insn::InvokeBuiltin {
                         bf,
