@@ -20,6 +20,7 @@
 #include "internal/variable.h"
 #include "eval_intern.h"
 #include "internal/io.h"
+#include "internal/marshal.h"
 #include "internal/ractor.h"
 #include "internal/rational.h"
 #include "internal/re.h"
@@ -2386,6 +2387,7 @@ enum courier_hook {
     COURIER_HOOK_NONE,
     COURIER_HOOK_MARSHAL_DUMP, /* marshal_dump -> alloc + marshal_load */
     COURIER_HOOK_DUMP,         /* _dump        -> klass._load         */
+    COURIER_HOOK_COMPAT,       /* rb_marshal_define_compat dumper -> alloc + loader (Set, Process::Status) */
     COURIER_HOOK_DUMP_DATA,    /* _dump_data   -> alloc + _load_data  */
 };
 
@@ -2395,6 +2397,7 @@ courier_hook_of(VALUE obj)
 {
     if (rb_obj_respond_to(obj, id_marshal_dump, TRUE)) return COURIER_HOOK_MARSHAL_DUMP;
     if (rb_obj_respond_to(obj, id_dump, TRUE)) return COURIER_HOOK_DUMP;
+    if (rb_marshal_compat_lookup(CLASS_OF(obj), NULL, NULL)) return COURIER_HOOK_COMPAT;
     if (BUILTIN_TYPE(obj) == T_DATA && rb_obj_respond_to(obj, id_dump_data, TRUE)) return COURIER_HOOK_DUMP_DATA;
     return COURIER_HOOK_NONE;
 }
@@ -2668,6 +2671,12 @@ courier_capture_hooked(struct courier_build *b, VALUE obj, uint32_t id, enum cou
       case COURIER_HOOK_DUMP_DATA:
         payload = rb_funcallv(obj, id_dump_data, 0, 0);
         break;
+      case COURIER_HOOK_COMPAT: {
+        VALUE (*dumper)(VALUE);
+        rb_marshal_compat_lookup(klass, &dumper, NULL);
+        payload = dumper(obj);
+        break;
+      }
       default:
         rb_bug("courier_capture_hooked: no dump protocol");
     }
@@ -3313,6 +3322,12 @@ rb_ractor_courier_materialize(struct rb_ractor_courier *c)
                 }
                 rb_funcallv(shell, mid, 1, &payload);
                 break;
+              case COURIER_HOOK_COMPAT: {
+                VALUE (*loader)(VALUE, VALUE);
+                rb_marshal_compat_lookup(klass, NULL, &loader);
+                loader(shell, payload);
+                break;
+              }
               default:
                 rb_bug("rb_ractor_courier_materialize: no dump protocol");
             }
