@@ -54,10 +54,10 @@ when true
   have_func("rb_prepend_module") # not exported by TruffleRuby
   vk_tool = find_executable("gperf")
   create_makefile("io/console") {|conf|
+    conf << "###\n" "all: # the default target\n"
     if vk_header
       conf << <<~MK
         VK_HEADER = #{vk_header}
-        all:
         console.#$OBJEXT: $(VK_HEADER)
       MK
     end
