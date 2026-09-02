@@ -27,10 +27,14 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
       cmd << "--target-rbconfig=#{target_rbconfig.path}" if target_rbconfig.path
       cmd.push(*args)
 
-      # Leave mkmf.log in the extension directory. The final placement (dropped
-      # on success, moved to build_info on failure) is decided by
-      # Gem::Ext::Builder#build_extension.
       run(cmd, results, class_name, extension_dir)
+
+      # "clean" is the first make target, and mkmf puts mkmf.log in CLEANFILES,
+      # so park the log next to the built extension before make can delete it.
+      # Whether it is then dropped or kept for inspection is decided by
+      # Gem::Ext::Builder#build_extension.
+      mkmf_log = File.join(extension_dir, "mkmf.log")
+      FileUtils.mv mkmf_log, dest_path if File.exist?(mkmf_log)
 
       ENV["DESTDIR"] = nil
 

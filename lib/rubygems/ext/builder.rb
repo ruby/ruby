@@ -243,18 +243,20 @@ EOF
 
       verbose { results.join("\n") }
 
-      # mkmf.log is a noisy, non-reproducible build artifact that is not meant
-      # to be installed. Drop the one left behind by a successful build instead
-      # of leaving it in the installation tree.
-      FileUtils.rm_f File.join(extension_dir, "mkmf.log")
+      # Build logs are noisy, non-reproducible artifacts that are not meant to
+      # be installed. Drop the ones this build left behind, plus any written
+      # into the extension directory by a RubyGems old enough to put them there.
+      FileUtils.rm_f mkmf_log_candidates(extension_dir, dest_path)
+      FileUtils.rm_f File.join(dest_path, "gem_make.out")
+      FileUtils.rm_f [build_log_path("mkmf.log"), build_log_path("gem_make.out")]
     rescue StandardError => e
       results << e.message
 
       # On failure keep the mkmf.log for inspection, but move it out of the
       # installation tree into the build_info directory.
-      mkmf_log = File.join extension_dir, "mkmf.log"
-      if File.exist?(mkmf_log)
-        mkmf_log_dest = File.join @spec.build_info_dir, "#{@spec.full_name}.mkmf.log"
+      mkmf_log = mkmf_log_candidates(extension_dir, dest_path).find {|log| File.exist?(log) }
+      if mkmf_log
+        mkmf_log_dest = build_log_path "mkmf.log"
         FileUtils.mkdir_p @spec.build_info_dir
         FileUtils.mv mkmf_log, mkmf_log_dest
 
@@ -264,6 +266,22 @@ EOF
 
       build_error(results.join("\n"), $@)
     end
+  end
+
+  ##
+  # Where a build log of +kind+ for this gem lives in the build_info directory.
+
+  def build_log_path(kind) # :nodoc:
+    File.join @spec.build_info_dir, "#{@spec.full_name}.#{kind}"
+  end
+
+  ##
+  # Places a completed build may have left an mkmf.log, most specific first.
+  # Gem::Ext::ExtConfBuilder parks it in +dest_path+ so that the "clean" target
+  # cannot delete it; the other builders leave it where extconf ran.
+
+  def mkmf_log_candidates(extension_dir, dest_path) # :nodoc:
+    [File.join(dest_path, "mkmf.log"), File.join(extension_dir, "mkmf.log")]
   end
 
   ##
@@ -298,7 +316,7 @@ EOF
   # tree.
 
   def write_gem_make_out(output) # :nodoc:
-    destination = File.join @spec.build_info_dir, "#{@spec.full_name}.gem_make.out"
+    destination = build_log_path "gem_make.out"
 
     FileUtils.mkdir_p @spec.build_info_dir
 

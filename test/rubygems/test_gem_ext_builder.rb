@@ -395,6 +395,80 @@ install:
     assert_path_not_exist File.join @spec.build_info_dir, "#{@spec.full_name}.gem_make.out"
   end
 
+  def test_build_extensions_logs_to_build_info_on_make_failure
+    pend "terminates on mswin" if vc_windows? && ruby_repo?
+
+    @spec.extensions << "ext/extconf.rb"
+
+    ext_dir = File.join @spec.gem_dir, "ext"
+    FileUtils.mkdir_p ext_dir
+
+    # have_header makes mkmf actually write an mkmf.log. extconf then succeeds,
+    # so "make clean" runs before the build and would delete that log unless it
+    # has been parked out of the way first.
+    File.open File.join(ext_dir, "extconf.rb"), "w" do |f|
+      f.write <<-'RUBY'
+        require 'mkmf'
+
+        have_header 'stdio.h'
+
+        File.write 'a.c', "#error forced build failure for test\n"
+
+        create_makefile 'a'
+      RUBY
+    end
+
+    e = assert_raise Gem::Ext::BuildError do
+      use_ui @ui do
+        @builder.build_extensions
+      end
+    end
+
+    mkmf_log = File.join @spec.build_info_dir, "#{@spec.full_name}.mkmf.log"
+
+    assert_path_exist mkmf_log
+    assert_includes e.message, mkmf_log
+
+    assert_path_not_exist File.join @spec.extension_dir, "mkmf.log"
+    assert_path_not_exist File.join ext_dir, "mkmf.log"
+  end
+
+  def test_build_extensions_removes_stale_build_info_logs_on_success
+    pend "terminates on mswin" if vc_windows? && ruby_repo?
+
+    @spec.extensions << "ext/extconf.rb"
+
+    ext_dir = File.join @spec.gem_dir, "ext"
+    FileUtils.mkdir_p ext_dir
+
+    File.open File.join(ext_dir, "extconf.rb"), "w" do |f|
+      f.write <<-'RUBY'
+        require 'mkmf'
+
+        create_makefile 'a'
+      RUBY
+    end
+
+    # Logs left in build_info by an earlier failed build, and in the extension
+    # directory by a RubyGems old enough to install them there.
+    FileUtils.mkdir_p @spec.build_info_dir
+    FileUtils.mkdir_p @spec.extension_dir
+    stale = [
+      File.join(@spec.build_info_dir, "#{@spec.full_name}.mkmf.log"),
+      File.join(@spec.build_info_dir, "#{@spec.full_name}.gem_make.out"),
+      File.join(@spec.extension_dir, "gem_make.out"),
+    ]
+    FileUtils.touch stale
+
+    use_ui @ui do
+      @builder.build_extensions
+    end
+
+    assert_path_exist @spec.gem_build_complete_path
+
+    stale.each {|path| assert_path_not_exist path }
+  end
+
   def test_build_extensions_logs_to_build_info_on_failure
     pend "terminates on mswin" if vc_windows? && ruby_repo?
 

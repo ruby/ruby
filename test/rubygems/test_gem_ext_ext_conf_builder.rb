@@ -135,10 +135,10 @@ class TestGemExtExtConfBuilder < Gem::TestCase
 
     refute_includes(output, "To see why this extension failed to compile, please check the mkmf.log which can be found here:\n")
 
-    # On a successful build, mkmf.log is cleaned up by "make clean" and is never
-    # copied into the install destination.
+    # mkmf.log is parked in dest_path so that "make clean" cannot delete it.
+    # Dropping it is Gem::Ext::Builder#build_extension's job, not this one's.
     assert_path_not_exist File.join @ext, "mkmf.log"
-    assert_path_not_exist File.join @dest_path, "mkmf.log"
+    assert_path_exist File.join @dest_path, "mkmf.log"
   end
 
   def test_class_build_unconventional
