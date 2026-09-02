@@ -29,7 +29,13 @@ class Gem::CompactIndexClient
       response = request(uri, headers)
 
       case response
-      when Gem::Net::HTTPSuccess, Gem::Net::HTTPNotModified
+      when Gem::Net::HTTPNotModified
+        response
+      when Gem::Net::HTTPSuccess
+        # The callers write the body into the cache, so a body-less success
+        # such as 204 would truncate the cached file.
+        raise Gem::RemoteFetcher::FetchError.new("bad response #{response.message} #{response.code}", uri) unless response.class.body_permitted?
+
         response
       when Gem::Net::HTTPMovedPermanently, Gem::Net::HTTPFound, Gem::Net::HTTPSeeOther,
            Gem::Net::HTTPTemporaryRedirect, Gem::Net::HTTPPermanentRedirect

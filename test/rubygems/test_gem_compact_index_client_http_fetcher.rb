@@ -44,6 +44,12 @@ class TestGemCompactIndexClientHTTPFetcher < Gem::TestCase
     end
   end
 
+  class FakeNoContent < Gem::Net::HTTPNoContent
+    def initialize
+      super("1.1", "204", "No Content")
+    end
+  end
+
   class FakeRangeNotSatisfiable < Gem::Net::HTTPRangeNotSatisfiable
     def initialize
       super("1.1", "416", "Range Not Satisfiable")
@@ -279,6 +285,16 @@ class TestGemCompactIndexClientHTTPFetcher < Gem::TestCase
     end
 
     assert_match(/bad response Range Not Satisfiable 416/, error.message)
+  end
+
+  def test_call_raises_fetch_error_on_no_content
+    fetcher, _remote = fetcher_for("https://index.example/versions" => FakeNoContent.new)
+
+    error = assert_raise Gem::RemoteFetcher::FetchError do
+      fetcher.call("versions")
+    end
+
+    assert_match(/bad response No Content 204/, error.message)
   end
 
   def test_call_raises_fetch_error_on_failure_response
