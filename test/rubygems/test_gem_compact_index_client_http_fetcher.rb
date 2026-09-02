@@ -230,6 +230,17 @@ class TestGemCompactIndexClientHTTPFetcher < Gem::TestCase
     assert_equal "s3cr3t", remote.requests.last.first.password
   end
 
+  def test_call_keeps_credentials_on_an_absolute_same_host_redirect
+    remote = FakeRemoteFetcher.new(
+      "https://user:s3cr3t@index.example/versions" => FakeRedirect.new("https://index.example/v2/versions"),
+      "https://user:s3cr3t@index.example/v2/versions" => FakeResponse.new("data")
+    )
+    fetcher = Gem::CompactIndexClient::HTTPFetcher.new("https://user:s3cr3t@index.example", remote)
+
+    assert_equal "data", fetcher.call("versions").body
+    assert_equal "s3cr3t", remote.requests.last.first.password
+  end
+
   def test_call_drops_credentials_on_a_cross_host_redirect
     remote = FakeRemoteFetcher.new(
       "https://user:s3cr3t@index.example/versions" => FakeRedirect.new("https://mirror.example/versions"),

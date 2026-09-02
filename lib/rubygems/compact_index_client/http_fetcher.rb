@@ -48,6 +48,9 @@ class Gem::CompactIndexClient
         if https?(uri) && !https?(redirect)
           raise Gem::RemoteFetcher::FetchError.new("redirecting to non-https resource: #{Gem::Uri.redact(redirect)}", uri)
         end
+        # An absolute Location on the same host drops the credentials that a
+        # relative one would have kept.
+        redirect.userinfo = uri.userinfo if redirect.host == uri.host && !redirect.userinfo
 
         fetch(redirect, headers, redirects_remaining - 1)
       when Gem::Net::HTTPRangeNotSatisfiable
