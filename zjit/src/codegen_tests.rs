@@ -4840,6 +4840,16 @@ fn test_string_byteslice_basic() {
 }
 
 #[test]
+fn test_string_byteslice_out_of_range_returns_nil() {
+    assert_snapshot!(inspect(r#"
+        def test(s, beg, len) = s.byteslice(beg, len)
+        test("hello", 1, 3)
+        test("hello", 1, 3)
+        test("hello", 6, 1)
+    "#), @"nil");
+}
+
+#[test]
 fn test_string_byteslice_bignum_arg_falls_back() {
     assert_snapshot!(inspect(r#"
         def test(s, beg, len) = s.byteslice(beg, len)
