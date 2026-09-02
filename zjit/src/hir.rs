@@ -135,7 +135,7 @@ impl std::fmt::Display for BlockId {
 
 type InsnSet = BitSet<InsnId>;
 type BlockSet = BitSet<BlockId>;
-/// Set of indices into a frame's local table. Always sized to [`FrameState::locals`].
+/// Set of indices into a frame's local table. Always sized to [`field@FrameState::locals`].
 pub type LocalSet = BitSet<usize>;
 
 fn write_vec<T: std::fmt::Display>(f: &mut std::fmt::Formatter, objs: &Vec<T>) -> std::fmt::Result {
@@ -3282,7 +3282,7 @@ impl Function {
     fn set_snapshot_spilled_locals(&mut self, insn_id: InsnId, spilled: LocalSet) {
         let insn_id = self.union_find.borrow().find_const(insn_id);
         match &mut self.insns[insn_id] {
-            Insn::Snapshot { state } => state.set_spilled_locals(spilled),
+            Insn::Snapshot { state } => state.spilled_locals = spilled,
             insn => panic!("Unexpected non-Snapshot {insn} when setting spilled locals"),
         }
     }
@@ -8104,6 +8104,11 @@ pub struct FrameState {
     stack: Vec<InsnId>,
     locals: Vec<InsnId>,
 
+    /// The subset of locals that must be in EP memory prior to a safepoint.
+    ///
+    /// Predominatedly used for with-block sends for locals syntatically accessed within the block.
+    spilled_locals: LocalSet,
+
     /// `InsnId` of the caller's post-send `Snapshot` for inlined frames; `None`
     /// for non-inlined frames. Stored as an instruction reference rather than
     /// an owned `FrameState` so that value remapping in the caller's `Snapshot`
@@ -8117,17 +8122,6 @@ pub struct FrameState {
     /// `cfp->jit_return` values do not alias across the shared native stack frame.
     /// This value's upper bound is the `inline_max_iterations` value.
     pub depth: InlineDepth,
-
-    /// Locals codegen has spilled to memory, making the memory slot authoritative.
-    /// Such a local is read or written by the block through this frame's EP.
-    ///
-    /// Two consumers depend on this: codegen spills exactly these before a
-    /// block-passing call, and the stack map skips them so materialization does
-    /// not overwrite a block's write with a stale register value.
-    ///
-    /// Empty for frames not suspended at a block-passing call (including inlined
-    /// caller frames, whose block writes update registers directly).
-    spilled_locals: LocalSet,
 }
 
 impl FrameState {
@@ -8218,16 +8212,8 @@ impl FrameState {
         self.locals.iter()
     }
 
-    /// Local indices kept authoritative in EP for this frame's pending
-    /// block-passing call. See the field docs on [`FrameState::spilled_locals`].
     pub fn spilled_locals(&self) -> &LocalSet {
         &self.spilled_locals
-    }
-
-    /// Record the locals that must stay in EP across this frame's pending
-    /// block-passing call (block-modifiable locals). See [`FrameState::spilled_locals`].
-    fn set_spilled_locals(&mut self, spilled: LocalSet) {
-        self.spilled_locals = spilled;
     }
 
     /// Push a stack operand
