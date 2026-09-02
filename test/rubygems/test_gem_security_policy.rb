@@ -53,6 +53,16 @@ class TestGemSecurityPolicy < Gem::TestCase
     assert @almost_no.check_data(PUBLIC_KEY, @digest, signature, data)
   end
 
+  def test_check_data_ml_dsa_65
+    omit_unless_support_ml_dsa_key
+
+    data = digest "hello"
+
+    signature = sign data, ML_DSA_65_PRIVATE_KEY, nil
+
+    assert @almost_no.check_data(ML_DSA_65_PUBLIC_KEY, @digest, signature, data)
+  end
+
   def test_check_data_invalid
     data = digest "hello"
 
@@ -62,6 +72,22 @@ class TestGemSecurityPolicy < Gem::TestCase
 
     e = assert_raise Gem::Security::Exception do
       @almost_no.check_data PUBLIC_KEY, @digest, signature, invalid
+    end
+
+    assert_equal "invalid signature", e.message
+  end
+
+  def test_check_data_invalid_ml_dsa_65
+    omit_unless_support_ml_dsa_key
+
+    data = digest "hello"
+
+    signature = sign data, ML_DSA_65_PRIVATE_KEY, nil
+
+    invalid = digest "hello!"
+
+    e = assert_raise Gem::Security::Exception do
+      @almost_no.check_data ML_DSA_65_PUBLIC_KEY, @digest, signature, invalid
     end
 
     assert_equal "invalid signature", e.message
@@ -220,6 +246,14 @@ class TestGemSecurityPolicy < Gem::TestCase
     Gem::Security.trust_dir.trust_cert PUBLIC_CERT
 
     assert @high.check_trust [PUBLIC_CERT], @digest, @trust_dir
+  end
+
+  def test_check_trust_ml_dsa_65
+    omit_unless_support_ml_dsa_key
+
+    Gem::Security.trust_dir.trust_cert ML_DSA_65_PUBLIC_CERT
+
+    assert @high.check_trust [ML_DSA_65_PUBLIC_CERT], @digest, @trust_dir
   end
 
   def test_check_trust_child
@@ -392,6 +426,19 @@ class TestGemSecurityPolicy < Gem::TestCase
     assert_equal "no digests provided (probable bug)", e.message
   end
 
+  def test_verify_ml_dsa_65_without_ml_dsa_support
+    omit_if_support_ml_dsa_key
+
+    e = assert_raise Gem::Security::Exception do
+      @high.verify [ML_DSA_65_PUBLIC_CERT], nil, *dummy_signatures
+    end
+
+    assert_match(
+      /^certificate verification failed: .+ ML-DSA requires OpenSSL >= 3\.5/,
+      e.message
+    )
+  end
+
   def test_verify_signatures_chain
     @spec.cert_chain = [PUBLIC_CERT, CHILD_CERT]
 
@@ -509,8 +556,8 @@ class TestGemSecurityPolicy < Gem::TestCase
     digester
   end
 
-  def sign(data, key = PRIVATE_KEY)
-    key.sign @digest.new, data.digest
+  def sign(data, key = PRIVATE_KEY, digest = @digest.new)
+    key.sign digest, data.digest
   end
 
   def dummy_signatures(key = PRIVATE_KEY)

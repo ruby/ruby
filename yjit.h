@@ -24,8 +24,8 @@
 #endif
 
 // Expose these as declarations since we are building YJIT.
-extern uint64_t rb_yjit_call_threshold;
-extern uint64_t rb_yjit_cold_threshold;
+extern unsigned int rb_yjit_call_threshold;
+extern unsigned int rb_yjit_cold_threshold;
 extern uint64_t rb_yjit_live_iseq_count;
 extern uint64_t rb_yjit_iseq_alloc_count;
 extern bool rb_yjit_enabled_p;

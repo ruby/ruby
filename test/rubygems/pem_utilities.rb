@@ -5,7 +5,7 @@
 
 require "rubygems/openssl"
 
-module Gem::PemUtilities
+module Gem::PEMUtilities
   ##
   # Loads certificate named +cert_name+ from <tt>test/rubygems/</tt>.
 
@@ -33,7 +33,8 @@ module Gem::PemUtilities
   end
 
   ##
-  # Loads a private key named +key_name+ with +passphrase+ in <tt>test/rubygems/</tt>
+  # Loads a private key named +key_name+ with +passphrase+ or a public key
+  # named +key_name+ in <tt>test/rubygems/</tt>
 
   def self.load_key(key_name, passphrase = nil)
     key = File.read(key_file(key_name))
@@ -98,7 +99,7 @@ module Gem::PemUtilities
     # ENCRYPTED_PRIVATE_KEY is PRIVATE_KEY encrypted with PRIVATE_KEY_PASSPHRASE
     ENCRYPTED_PRIVATE_KEY       = load_key "encrypted_private", PRIVATE_KEY_PASSPHRASE
     ENCRYPTED_PRIVATE_KEY_FILE  = key_file "encrypted_private"
-    PUBLIC_KEY                  = PRIVATE_KEY.public_key
+    PUBLIC_KEY                  = load_key "public"
     PUBLIC_KEY_FILE             = key_file "public"
     PUBLIC_CERT                 = load_cert "public"
     PUBLIC_CERT_FILE            = cert_file "public"
@@ -117,6 +118,15 @@ module Gem::PemUtilities
     EXPIRED_CERT_FILE           = cert_file "expired"
     FUTURE_CERT                 = load_cert "future"
     WRONG_KEY_CERT              = load_cert "wrong_key"
+    # ML-DSA-65
+    ML_DSA_65_PRIVATE_KEY       = load_key "mldsa65_private"
+    ML_DSA_65_PRIVATE_KEY_FILE  = key_file "mldsa65_private"
+    ML_DSA_65_ENCRYPTED_PRIVATE_KEY      = load_key "mldsa65_encrypted_private", PRIVATE_KEY_PASSPHRASE
+    ML_DSA_65_ENCRYPTED_PRIVATE_KEY_FILE = key_file "mldsa65_encrypted_private"
+    ML_DSA_65_PUBLIC_KEY        = load_key "mldsa65_public"
+    ML_DSA_65_PUBLIC_KEY_FILE   = key_file "mldsa65_public"
+    ML_DSA_65_PUBLIC_CERT       = load_cert "mldsa65_public"
+    ML_DSA_65_PUBLIC_CERT_FILE  = cert_file "mldsa65_public"
 
     # Keys and certificates manually created without script
     # RSA 3072 bits

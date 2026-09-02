@@ -238,7 +238,7 @@ pub extern "C" fn rb_yjit_enable(_ec: EcPtr, _ruby_self: VALUE, gen_stats: VALUE
         if !call_threshold.nil_p() {
             let threshold = call_threshold.as_isize() >> 1;
             unsafe {
-                rb_yjit_call_threshold = threshold as u64;
+                rb_yjit_call_threshold = threshold as u32;
             }
         }
 

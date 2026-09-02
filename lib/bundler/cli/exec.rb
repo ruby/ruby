@@ -23,7 +23,7 @@ module Bundler
           bin_path.delete_suffix!(".bat") if Gem.win_platform?
           kernel_load(bin_path, *args)
         else
-          bin_path = "./" + bin_path unless File.absolute_path?(bin_path)
+          bin_path = explicit_path(bin_path)
           kernel_exec(bin_path, *args)
         end
       else
@@ -69,6 +69,20 @@ module Bundler
 
     def process_title(file, args)
       "#{file} #{args.join(" ")}".strip
+    end
+
+    def explicit_path(path)
+      if File.absolute_path?(path) || explicit_relative_path?(path)
+        path
+      else
+        ".#{File::SEPARATOR}#{path}"
+      end
+    end
+
+    def explicit_relative_path?(path)
+      [File::SEPARATOR, File::ALT_SEPARATOR].compact.any? do |separator|
+        path.start_with?(".#{separator}", "..#{separator}")
+      end
     end
 
     def directly_loadable?(file)

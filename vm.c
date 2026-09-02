@@ -470,14 +470,14 @@ static VALUE vm_invoke_proc(rb_execution_context_t *ec, rb_proc_t *proc, VALUE s
 
 #if USE_YJIT
 // Counter to serve as a proxy for execution time, total number of calls
-static uint64_t yjit_total_entry_hits = 0;
+static unsigned int yjit_total_entry_hits = 0;
 
 // Number of calls used to estimate how hot an ISEQ is
 #define YJIT_CALL_COUNT_INTERV 20u
 
 /// Test whether we are ready to compile an ISEQ or not
 static inline bool
-rb_yjit_threshold_hit(const rb_iseq_t *iseq, uint64_t entry_calls)
+rb_yjit_threshold_hit(const rb_iseq_t *iseq, unsigned int entry_calls)
 {
     yjit_total_entry_hits += 1;
 
@@ -494,7 +494,7 @@ rb_yjit_threshold_hit(const rb_iseq_t *iseq, uint64_t entry_calls)
             return true;
         }
 
-        uint64_t num_calls = yjit_total_entry_hits - ISEQ_BODY(iseq)->yjit_calls_at_interv;
+        unsigned int num_calls = yjit_total_entry_hits - ISEQ_BODY(iseq)->yjit_calls_at_interv;
 
         // Reject ISEQs that don't get called often enough
         if (num_calls > rb_yjit_cold_threshold) {

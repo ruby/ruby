@@ -25,7 +25,7 @@ pub type NumProfiles = u16;
 /// Default --zjit-call-threshold. This should be large enough to avoid compiling
 /// warmup code, but small enough to perform well on micro-benchmarks.
 pub const DEFAULT_CALL_THRESHOLD: CallThreshold = 30;
-pub type CallThreshold = u64;
+pub type CallThreshold = u32;
 
 /// Default --zjit-inline-threshold
 /// TODO (nirvdrum 2026-06-25): 30 has proven to work well with ruby-bench, but we should finely

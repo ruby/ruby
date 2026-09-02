@@ -47,6 +47,7 @@ require "zlib"
 require_relative "mock_gem_ui"
 require_relative "pem_utilities"
 require_relative "fake_credential_backend"
+require_relative "pqc_utilities"
 
 # JRuby on Windows raises TypeError inside File.symlink (the wincode helper
 # trips on a nil path), so any test that exercises Gem::Installer's symlink
@@ -391,6 +392,7 @@ class Gem::TestCase < Test::Unit::TestCase
     ENV["XDG_STATE_HOME"] = nil
     ENV["MAKEFLAGS"] = nil
     ENV["SOURCE_DATE_EPOCH"] = nil
+    ENV["GITHUB_ACTIONS"] = nil
     ENV["BUNDLER_VERSION"] = nil
     ENV["BUNDLE_CONFIG"] = nil
     ENV["BUNDLE_USER_CONFIG"] = nil
@@ -1680,7 +1682,34 @@ Also, a list:
     end
   end
 
-  include Gem::PemUtilities
+  include Gem::PEMUtilities
+
+  include Gem::PQCUtilities
+
+  def omit_unless_support_pqc
+    without_pqc_support do |message|
+      omit message
+    end
+  end
+
+  def omit_unless_support_ml_dsa_key
+    omit "OpenSSL does not support ML-DSA" unless
+      Gem::PQCUtilities.support_ml_dsa_key?
+  end
+
+  def omit_unless_support_ml_dsa_cert
+    omit "Ruby OpenSSL cannot sign a certificate with an ML-DSA key" unless
+      Gem::PQCUtilities.support_ml_dsa_cert?
+  end
+
+  def omit_if_support_ml_dsa_cert
+    omit "Ruby OpenSSL can sign a certificate with an ML-DSA key" if
+      Gem::PQCUtilities.support_ml_dsa_cert?
+  end
+
+  def omit_if_support_ml_dsa_key
+    omit "OpenSSL supports ML-DSA" if Gem::PQCUtilities.support_ml_dsa_key?
+  end
 end
 
 # https://github.com/seattlerb/minitest/blob/13c48a03d84a2a87855a4de0c959f96800100357/lib/minitest/mock.rb#L192

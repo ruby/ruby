@@ -9,11 +9,11 @@ RSpec.describe "global gem caching" do
     let(:source2) { "http://gemserver.example.org" }
 
     def cache_base
-      # Use the unified global gem cache path if the RubyGems under test
-      # provides it, otherwise fall back to the Bundler-specific cache
-      # location that Bundler uses on RubyGems older than 4.0
-      if exercised_rubygems_version >= Gem::Version.new("4.0.0.a")
-        Pathname.new(Gem.global_gem_cache_path)
+      # Gem.global_gem_cache_path first ships in RubyGems 4.1. Older RubyGems
+      # fall back to the Bundler-specific cache location. The suite clears
+      # XDG_CACHE_HOME, so the path resolves to the ~/.cache default.
+      if exercised_rubygems_version >= Gem::Version.new("4.1.0.a")
+        home(".cache", "gem", "gems")
       else
         home(".bundle", "cache", "gems")
       end

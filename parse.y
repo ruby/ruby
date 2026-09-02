@@ -9885,6 +9885,7 @@ parse_numeric(struct parser_params *p, int c)
             type = tRATIONAL;
         }
         else {
+            errno = 0;
             strtod(tok(p), 0);
             if (errno == ERANGE) {
                 rb_warning1("Float %s out of range", WARN_S(tok(p)));
