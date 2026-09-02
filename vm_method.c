@@ -1704,6 +1704,8 @@ rb_check_overloaded_cme(const rb_callable_method_entry_t *cme, const struct rb_c
     return cme;
 }
 
+static inline void stack_check(rb_execution_context_t *ec);
+
 #define CALL_METHOD_HOOK(klass, hook, mid) do {		\
         const VALUE arg = ID2SYM(mid);			\
         VALUE recv_class = (klass);			\
@@ -1712,7 +1714,7 @@ rb_check_overloaded_cme(const rb_callable_method_entry_t *cme, const struct rb_c
             recv_class = RCLASS_ATTACHED_OBJECT((klass));	\
             hook_id = singleton_##hook;			\
         }						\
-        rb_funcallv(recv_class, hook_id, 1, &arg);	\
+        rb_funcallv_uncached(recv_class, hook_id, 1, &arg);	\
     } while (0)
 
 static void
@@ -1930,6 +1932,34 @@ prepare_callable_method_entry(VALUE defined_class, ID id, const rb_method_entry_
     else {
         return NULL;
     }
+}
+
+/* A hook like this fires from C with no call site to cache into except for the gccct table,
+ * which is often cleared anyway. It would leave a permanent CC behind (tied to the class) if it
+ * created one, so we try to avoid it. */
+VALUE
+rb_funcallv_uncached(VALUE recv, ID mid, int argc, const VALUE *argv)
+{
+    VALUE defined_class;
+    const rb_method_entry_t *me = search_method(CLASS_OF(recv), mid, &defined_class);
+
+    if (UNLIKELY(UNDEFINED_METHOD_ENTRY_P(me))) {
+        return rb_funcallv(recv, mid, argc, argv);
+    }
+
+    const rb_callable_method_entry_t *cme;
+
+    if (UNLIKELY(me->defined_class == 0)) {
+        // produce a transient CME that will get collected
+        cme = rb_method_entry_complement_defined_class(me, me->called_id, defined_class);
+    }
+    else {
+        cme = (const rb_callable_method_entry_t *)me;
+    }
+
+    rb_execution_context_t *ec = GET_EC();
+    stack_check(ec);
+    return rb_vm_call_kw(ec, recv, mid, argc, argv, cme, RB_NO_KEYWORDS);
 }
 
 static const rb_callable_method_entry_t *
