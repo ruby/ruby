@@ -538,7 +538,9 @@ RSpec.describe "bundle install with git sources" do
   end
 
   describe "a git gem whose extension fails to build" do
-    it "keeps the build log with that checkout instead of the shared repository" do
+    # Where a build log goes is decided by the RubyGems running the install, and
+    # older ones write a bare gem_make.out into the extension directory.
+    it "keeps the build log with that checkout instead of the shared repository", rubygems: ">= 4.1.0.dev" do
       build_git "foo", "1.0" do |s|
         s.add_c_extension
         # Overwrite the source add_c_extension wrote, before the checkout is
