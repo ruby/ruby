@@ -430,7 +430,7 @@ module Bundler
         def configured_uri
           @configured_uri ||= if /https?:/.match?(uri)
             remote = Gem::URI(uri)
-            config_auth = Bundler.settings[remote.to_s] || Bundler.settings[remote.host]
+            config_auth = Bundler.settings.credentials_for(remote)
             remote.userinfo ||= config_auth
             remote.to_s
           else

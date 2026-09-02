@@ -1,5 +1,8 @@
 # frozen_string_literal: true
 
+require "rubygems/credential_store"
+require_relative "../../../support/fake_credential_backend"
+
 RSpec.describe Bundler::Source::Git::GitProxy do
   let(:path) { Pathname("path") }
   let(:uri) { "https://github.com/ruby/rubygems.git" }
@@ -89,6 +92,36 @@ RSpec.describe Bundler::Source::Git::GitProxy do
 
     it "keeps original userinfo" do
       Bundler.settings.temporary("github.com" => "u:p") do
+        original = "https://orig:info@github.com/ruby/rubygems.git"
+        git_proxy = described_class.new(Pathname("path"), original, options)
+        allow(git_proxy).to receive(:git_local).with("--version").and_return("git version 2.14.0")
+        expect(git_proxy).to receive(:capture).with([*base_clone_args, "--", original, path.to_s], nil).and_return(["", "", clone_result])
+        git_proxy.checkout
+      end
+    end
+  end
+
+  context "with credentials in the credential store" do
+    let(:fake_store) { Gem::CredentialStore.new(backend: FakeCredentialBackend.new) }
+
+    before do
+      Gem::CredentialStore.instance = fake_store
+      fake_store.set(Bundler::Settings.key_for("github.com"), "u:p")
+    end
+
+    after { Gem::CredentialStore.reset! }
+
+    it "adds username and password from the store to URI for host" do
+      Bundler.settings.temporary("credential_store" => "true") do
+        expect(Bundler.settings["github.com"]).to be_nil
+        allow(git_proxy).to receive(:git_local).with("--version").and_return("git version 2.14.0")
+        expect(git_proxy).to receive(:capture).with([*base_clone_args, "--", "https://u:p@github.com/ruby/rubygems.git", path.to_s], nil).and_return(["", "", clone_result])
+        subject.checkout
+      end
+    end
+
+    it "keeps original userinfo" do
+      Bundler.settings.temporary("credential_store" => "true") do
         original = "https://orig:info@github.com/ruby/rubygems.git"
         git_proxy = described_class.new(Pathname("path"), original, options)
         allow(git_proxy).to receive(:git_local).with("--version").and_return("git version 2.14.0")
