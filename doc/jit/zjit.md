@@ -427,6 +427,15 @@ Note that this disables profiling. To inject interpreter profiles into ZJIT, con
 ./miniruby --zjit --zjit-dump-hir -e "30.times { 1 + 1 }"
 ```
 
+To write the dump to a file instead of stdout, pass a file path as the option value. Any value other than `all` or `debug` is treated as a path, and it composes with those format variants:
+
+```bash
+./miniruby --zjit --zjit-dump-hir=/tmp/out.hir --zjit-call-threshold=1 -e "1 + 1"
+./miniruby --zjit --zjit-dump-hir=all --zjit-dump-hir=/tmp/out.hir --zjit-call-threshold=1 -e "1 + 1"
+```
+
+The file is truncated at startup and appended to as each method compiles.
+
 ### Viewing HIR in Iongraph
 
 Using `--zjit-dump-hir-iongraph` will dump all compiled functions into a directory named `/tmp/zjit-iongraph-{PROCESS_PID}`. Each file will be named `func_{ZJIT_FUNC_NAME}.json`. In order to use them in the Iongraph viewer, you'll need to use `jq` to collate them to a single file. An example invocation of `jq` is shown below for reference.

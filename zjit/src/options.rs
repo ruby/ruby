@@ -105,6 +105,9 @@ pub struct Options {
     /// Dump High-level IR after optimization, right before codegen.
     pub dump_hir_opt: Option<DumpHIR>,
 
+    /// Dump High-level IR to the given file instead of stdout
+    pub dump_hir_file: Option<std::path::PathBuf>,
+
     /// Dump High-level IR to the given file in Graphviz format after optimization
     pub dump_hir_graphviz: Option<std::path::PathBuf>,
 
@@ -203,6 +206,7 @@ impl Default for Options {
             disable_hir_opt: false,
             dump_hir_init: None,
             dump_hir_opt: None,
+            dump_hir_file: None,
             dump_hir_graphviz: None,
             dump_hir_iongraph: false,
             dump_lir: None,
@@ -536,6 +540,21 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
         ("dump-hir" | "dump-hir-opt", "") => options.dump_hir_opt = Some(DumpHIR::WithoutSnapshot),
         ("dump-hir" | "dump-hir-opt", "all") => options.dump_hir_opt = Some(DumpHIR::All),
         ("dump-hir" | "dump-hir-opt", "debug") => options.dump_hir_opt = Some(DumpHIR::Debug),
+        // Any other value is a file path to dump HIR to instead of stdout. It composes with the
+        // format variants, e.g. --zjit-dump-hir=all --zjit-dump-hir=/tmp/out.hir.
+        ("dump-hir" | "dump-hir-opt", _) => {
+            // Truncate the file if it exists
+            std::fs::OpenOptions::new()
+                .create(true)
+                .write(true)
+                .truncate(true)
+                .open(opt_val)
+                .map_err(|e| eprintln!("Failed to open file '{opt_val}': {e}"))
+                .ok();
+            let opt_val = std::fs::canonicalize(opt_val).unwrap_or_else(|_| opt_val.into());
+            options.dump_hir_file = Some(opt_val);
+            options.dump_hir_opt.get_or_insert(DumpHIR::WithoutSnapshot);
+        }
 
         ("dump-hir-init", "") => options.dump_hir_init = Some(DumpHIR::WithoutSnapshot),
         ("dump-hir-init", "all") => options.dump_hir_init = Some(DumpHIR::All),
@@ -751,6 +770,42 @@ pub extern "C" fn rb_zjit_get_stats_file_path_p(_ec: EcPtr, _self: VALUE) -> VAL
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn parse_dump_hir_path() {
+        unsafe { OPTIONS = Some(Options::default()); }
+
+        let path = std::env::temp_dir().join(format!("zjit_dump_hir_{}.txt", std::process::id()));
+        let option = CString::new(format!("dump-hir={}", path.display())).unwrap();
+
+        assert!(parse_option(option.as_ptr()).is_some());
+
+        let options = unsafe { OPTIONS.as_ref() }.unwrap();
+        // parse_option canonicalizes the path, so canonicalize the expectation too
+        assert_eq!(options.dump_hir_file, Some(std::fs::canonicalize(&path).unwrap()));
+        assert!(matches!(options.dump_hir_opt, Some(DumpHIR::WithoutSnapshot)));
+        assert!(path.exists());
+
+        let _ = std::fs::remove_file(path);
+    }
+
+    #[test]
+    fn parse_dump_hir_path_keeps_format() {
+        unsafe { OPTIONS = Some(Options::default()); }
+
+        let path = std::env::temp_dir().join(format!("zjit_dump_hir_all_{}.txt", std::process::id()));
+        let all = CString::new("dump-hir=all").unwrap();
+        let file = CString::new(format!("dump-hir={}", path.display())).unwrap();
+
+        assert!(parse_option(all.as_ptr()).is_some());
+        assert!(parse_option(file.as_ptr()).is_some());
+
+        let options = unsafe { OPTIONS.as_ref() }.unwrap();
+        assert_eq!(options.dump_hir_file, Some(std::fs::canonicalize(&path).unwrap()));
+        assert!(matches!(options.dump_hir_opt, Some(DumpHIR::All)));
+
+        let _ = std::fs::remove_file(path);
+    }
 
     #[test]
     fn parse_dump_disasm_path() {
