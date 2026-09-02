@@ -2223,7 +2223,7 @@ io_getpass(int argc, VALUE *argv, VALUE io)
  * call-seq:
  *   io.ttyname       -> string or nil
  *
- * Returns name of associated terminal (tty) if +io+ is not a tty.
+ * Returns name of associated terminal (tty) if +io+ is a tty.
  * Returns +nil+ otherwise.
  */
 static VALUE
