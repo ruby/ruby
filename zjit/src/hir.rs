@@ -135,7 +135,7 @@ impl std::fmt::Display for BlockId {
 
 type InsnSet = BitSet<InsnId>;
 type BlockSet = BitSet<BlockId>;
-/// Set of indices into a frame's local table. Always sized to [`field@FrameState::locals`].
+/// A bit for each local in a frame, matched by local table index.
 pub type LocalSet = BitSet<usize>;
 
 fn write_vec<T: std::fmt::Display>(f: &mut std::fmt::Formatter, objs: &Vec<T>) -> std::fmt::Result {
@@ -8071,14 +8071,9 @@ impl<'a> std::fmt::Display for FunctionPrinter<'a> {
     }
 }
 
-/// Local indices of `iseq` that the block `blockiseq` (or any iseq nested within
-/// it) can touch through this frame's EP — reads as well as writes.
-///
-/// These are the locals codegen must make authoritative in memory before the
-/// call. A read matters as much as a write here: the block resolves this frame's
-/// EP through its specval chain and loads the slot directly, with no side exit
-/// or materialization step in between that could push a register value out.
-fn block_accessed_local_indices(iseq: IseqPtr, blockiseq: IseqPtr, num_locals: usize, ep_escaped: bool) -> LocalSet {
+/// Local variables of `iseq` that the block `blockiseq` (or any iseq nested within
+/// the block) syntactically read or write.
+fn block_accessed_local_set(iseq: IseqPtr, blockiseq: IseqPtr, num_locals: usize, ep_escaped: bool) -> LocalSet {
     let mut accessed = LocalSet::with_capacity(num_locals);
     if ep_escaped {
         accessed.insert_all();
@@ -8102,11 +8097,11 @@ pub struct FrameState {
     pub pc: *const VALUE,
 
     stack: Vec<InsnId>,
-    locals: Vec<InsnId>,
 
+    /// Values for local variables in `rb_iseq_constant_body::local_table` order.
+    locals: Vec<InsnId>,
     /// The subset of locals that must be in EP memory prior to a safepoint.
-    ///
-    /// Predominatedly used for with-block sends for locals syntatically accessed within the block.
+    /// Predominantly used for with-block sends for locals syntactically accessed within the block.
     spilled_locals: LocalSet,
 
     /// `InsnId` of the caller's post-send `Snapshot` for inlined frames; `None`
@@ -10043,7 +10038,7 @@ fn add_iseq_to_hir(
                             fun.gen_post_send_no_ep_escape_patch_point(block, &state, insn_idx);
                         }
                         // Put locals accessed by the block to memory
-                        let spilled = block_accessed_local_indices(iseq, blockiseq, state.locals.len(), ep_escaped);
+                        let spilled = block_accessed_local_set(iseq, blockiseq, state.locals.len(), ep_escaped);
                         fun.set_snapshot_spilled_locals(exit_id, spilled);
                         fun.reload_locals_modified_by_block(block, iseq, blockiseq, &mut state, ep_escaped);
                     }
@@ -10077,7 +10072,7 @@ fn add_iseq_to_hir(
                             fun.gen_post_send_no_ep_escape_patch_point(block, &state, insn_idx);
                         }
                         // Put locals accessed by the block to memory
-                        let spilled = block_accessed_local_indices(iseq, blockiseq, state.locals.len(), ep_escaped);
+                        let spilled = block_accessed_local_set(iseq, blockiseq, state.locals.len(), ep_escaped);
                         fun.set_snapshot_spilled_locals(exit_id, spilled);
                         fun.reload_locals_modified_by_block(block, iseq, blockiseq, &mut state, ep_escaped);
                     }
@@ -10108,7 +10103,7 @@ fn add_iseq_to_hir(
                             fun.gen_post_send_no_ep_escape_patch_point(block, &state, insn_idx);
                         }
                         // Put locals accessed by the block to memory
-                        let spilled = block_accessed_local_indices(iseq, blockiseq, state.locals.len(), ep_escaped);
+                        let spilled = block_accessed_local_set(iseq, blockiseq, state.locals.len(), ep_escaped);
                         fun.set_snapshot_spilled_locals(exit_id, spilled);
                         fun.reload_locals_modified_by_block(block, iseq, blockiseq, &mut state, ep_escaped);
                     }
@@ -10141,7 +10136,7 @@ fn add_iseq_to_hir(
                             fun.gen_post_send_no_ep_escape_patch_point(block, &state, insn_idx);
                         }
                         // Put locals accessed by the block to memory
-                        let spilled = block_accessed_local_indices(iseq, blockiseq, state.locals.len(), ep_escaped);
+                        let spilled = block_accessed_local_set(iseq, blockiseq, state.locals.len(), ep_escaped);
                         fun.set_snapshot_spilled_locals(exit_id, spilled);
                         fun.reload_locals_modified_by_block(block, iseq, blockiseq, &mut state, ep_escaped);
                     }
