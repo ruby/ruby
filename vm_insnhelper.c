@@ -1881,6 +1881,8 @@ rb_vm_throw(const rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_nu
     return vm_throw(ec, reg_cfp, throw_state, throwobj);
 }
 
+NORETURN(VALUE rb_zjit_throw(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_num_t throw_state, VALUE throwobj));
+
 // Fallback for ZJIT. Make a longjmp and unwind to the most recent vm_exec().
 VALUE
 rb_zjit_throw(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_num_t throw_state, VALUE throwobj)

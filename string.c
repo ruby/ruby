@@ -9158,11 +9158,10 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
                 SIZED_REALLOC_N(buf, unsigned char, max + termlen, old);
                 t = buf + offset;
             }
-            if (s != t) {
-                rb_enc_mbcput(c, t, enc);
-                if (may_modify && memcmp(s, t, tlen) != 0) {
-                    modify = 1;
-                }
+
+            rb_enc_mbcput(c, t, enc);
+            if (may_modify && memcmp(s, t, tlen) != 0) {
+                modify = 1;
             }
             CHECK_IF_ASCII(c);
             s += clen;
