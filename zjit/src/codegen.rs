@@ -2034,6 +2034,7 @@ fn gen_invoke_block_iseq_direct(
     let jit_frame = gen_write_jit_frame(asm, state, stack_map.len());
     gen_save_sp(asm, stack_size);
 
+    gen_spill_locals(jit, asm, state);
     asm.stack_map(stack_map, jit_frame, state.depth);
 
     gen_push_frame(asm, args.len(), state, ControlFrame {
@@ -3346,9 +3347,8 @@ pub(crate) fn block_iseq_may_throw(iseq: IseqPtr) -> bool {
 /// Byte offset from NATIVE_BASE_PTR of the JITFrame storage slot for a frame at
 /// the given inlining depth. Depth 0 (the top-level frame) lives at
 /// `[NATIVE_BASE_PTR - 8]`; each deeper inlined frame gets the next slot below.
-/// gen_function() reserves `inlining_depth() + 1` of these, so every live
-/// frame's depth maps to a distinct slot, followed by the single saved-SP slot
-/// of base_ptr_slot_offset().
+/// gen_function() reserves `inlining_depth() + 1` slots, so every live frame's
+/// depth maps to a distinct slot inside that reserved region.
 fn jit_frame_slot_offset(depth: InlineDepth) -> i32 {
     -(SIZEOF_VALUE_I32 * (depth as i32 + 1))
 }
@@ -3449,7 +3449,7 @@ fn gen_spill_locals(jit: &JITState, asm: &mut Assembler, state: &FrameState) {
         return;
     }
     gen_incr_counter(asm, Counter::vm_write_locals_count);
-    asm_comment!(asm, "spill block-accessed locals");
+    asm_comment!(asm, "spill locals");
     for (idx, &insn_id) in state.locals().enumerate() {
         if !spilled.get(idx) {
             continue;
