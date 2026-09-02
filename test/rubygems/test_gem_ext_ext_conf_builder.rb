@@ -26,22 +26,27 @@ class TestGemExtExtConfBuilder < Gem::TestCase
 
     output = []
 
-    result = Gem::Ext::ExtConfBuilder.build "extconf.rb", @dest_path, output, [], nil, @ext
-
-    assert_same result, output
-
-    assert_match(/^current directory:/, output[0])
-    assert_match(/^#{Regexp.quote(Gem.ruby)}.* extconf.rb/, output[1])
-
     if Gem.java_platform?
-      assert_includes(output, "Skipping make for extconf.rb as no Makefile was found.")
+      # extconf returns before creating a Makefile, so the extension is skipped.
+      # Deciding what that means is Gem::Ext::Builder#build_extension's job now,
+      # so the error reaches it instead of being swallowed here.
+      assert_raise Gem::Ext::Builder::NoMakefileError do
+        Gem::Ext::ExtConfBuilder.build "extconf.rb", @dest_path, output, [], nil, @ext
+      end
     else
+      result = Gem::Ext::ExtConfBuilder.build "extconf.rb", @dest_path, output, [], nil, @ext
+
+      assert_same result, output
+
       assert_equal "creating Makefile\n", output[2]
       assert_match(/^current directory:/, output[3])
       assert_contains_make_command "clean", output[4]
       assert_contains_make_command "", output[7]
       assert_contains_make_command "install", output[10]
     end
+
+    assert_match(/^current directory:/, output[0])
+    assert_match(/^#{Regexp.quote(Gem.ruby)}.* extconf.rb/, output[1])
 
     assert_empty Dir.glob(File.join(@ext, "siteconf*.rb"))
     assert_empty Dir.glob(File.join(@ext, ".gem.*"))
