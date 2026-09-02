@@ -69,7 +69,7 @@ module Bundler
 
     def add_content_addresses
       content_addresses = definition.resolve.filter_map do |spec|
-        next unless Gem::ContentAddress.match?(spec.content_address)
+        next unless Gem::ContentAddress.content_addressed?(spec, validate_ruby_abi: false)
 
         line = "#{spec.lock_name} #{spec.content_address}"
 
@@ -89,7 +89,7 @@ module Bundler
       checksums = definition.resolve.filter_map do |spec|
         line = spec.source.checksum_store.to_lock(spec)
 
-        next if line == spec.lock_name && Gem::ContentAddress.match?(spec.content_address)
+        next if line == spec.lock_name && Gem::ContentAddress.content_addressed?(spec, validate_ruby_abi: false)
 
         line
       end

@@ -66,7 +66,7 @@ module Bundler
     end
 
     def full_name
-      @full_name ||= if Gem::ContentAddress.match?(@content_address) && platform != Gem::Platform::RUBY
+      @full_name ||= if Gem::ContentAddress.content_addressed?(self, validate_ruby_abi: false)
         "#{@name}-#{@version}-#{@content_address}"
       elsif platform == Gem::Platform::RUBY
         "#{@name}-#{@version}"

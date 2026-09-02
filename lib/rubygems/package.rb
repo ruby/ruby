@@ -130,12 +130,6 @@ class Gem::Package
   attr_accessor :data_mode
 
   ##
-  # The number of characters of the SHA-256 digest of the gem contents used
-  # in a content-addressable gem file name.
-
-  DEFAULT_CONTENT_ADDRESS_LENGTH = 8
-
-  ##
   # The minimum RubyGems version that can install content-addressable gems.
   # Built into +required_rubygems_version+ so older clients reject skinny
   # gems through both the local and remote install paths.
@@ -262,18 +256,11 @@ class Gem::Package
     path = @gem&.path
     return unless path
 
-    return nil unless Gem::ContentAddress.applicable?(spec)
+    address = Gem::ContentAddress.verified_file_name_claim(path, spec)
+    return nil unless address
+    return nil unless Gem::ContentAddress.eligible?(spec)
 
-    filename = File.basename(path, ".gem")
-    base = "#{spec.name}-#{spec.version}"
-    suffix = filename.delete_prefix("#{base}-")
-    return nil if suffix == filename
-    return nil unless Gem::ContentAddress.match?(suffix)
-
-    require "digest"
-    digest = Digest::SHA256.file(path).hexdigest
-    raise Gem::InstallError, "content address mismatch for #{File.basename(path)}" unless digest.start_with?(suffix)
-    suffix
+    address
   end
 
   ##
@@ -401,12 +388,12 @@ EOM
   def build_content_addressable_file(ruby_abi, skip_validation = false, strict_validation = false)
     validate_ruby_abi ruby_abi
     @spec.required_rubygems_version = normalized_required_rubygems_version(ruby_abi)
-    @spec.required_ruby_version = Gem::Requirement.new("~> #{ruby_abi}.0")
+    @spec.required_ruby_version = Gem::ContentAddress.ruby_abi_requirement(ruby_abi)
 
     build skip_validation, strict_validation
 
     bytes = @gem.with_read_io(&:read)
-    gem_file = "#{@spec.name}-#{@spec.version}-#{Digest::SHA256.hexdigest(bytes)[0, DEFAULT_CONTENT_ADDRESS_LENGTH]}.gem"
+    gem_file = "#{@spec.name}-#{@spec.version}-#{Gem::ContentAddress.address_for(bytes)}.gem"
     File.binwrite(gem_file, bytes)
 
     say "  File: #{gem_file}"
@@ -809,11 +796,11 @@ EOM
   # the ABI.
 
   def validate_ruby_abi(ruby_abi)
-    if !/\A\d+\.\d+\z/.match?(ruby_abi)
+    if !Gem::ContentAddress.valid_ruby_abi?(ruby_abi)
       raise ArgumentError, "Ruby ABI must be in X.Y format"
-    elsif @spec.platform.nil? || @spec.platform == Gem::Platform::RUBY
+    elsif !Gem::ContentAddress.platform_eligible?(@spec.platform)
       raise ArgumentError, "Cannot build a gem scoped to a single Ruby ABI as no platform or a Ruby platform has been set"
-    elsif @spec.required_ruby_version && @spec.required_ruby_version != Gem::Requirement.default && @spec.ruby_abi != ruby_abi
+    elsif !Gem::ContentAddress.ruby_abi_compatible?(@spec, ruby_abi)
       raise ArgumentError, "Cannot build gem for Ruby ABI #{ruby_abi} because required_ruby_version is set to #{@spec.required_ruby_version}. Please set required_ruby_version to \"~> #{ruby_abi}.0\"."
     end
   end

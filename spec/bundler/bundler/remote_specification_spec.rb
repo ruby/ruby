@@ -48,6 +48,22 @@ RSpec.describe Bundler::RemoteSpecification do
         expect(subject.full_name).to eq("foo-1.0.0-java")
       end
     end
+
+    context "when a content address is set with a non-ruby platform" do
+      subject { described_class.new(name, version, "x86_64-linux", spec_fetcher, content_address: "abc1234567") }
+
+      it "should return the spec name, version, and content address" do
+        expect(subject.full_name).to eq("foo-1.0.0-abc1234567")
+      end
+    end
+
+    context "when a content address is set with the ruby platform" do
+      subject { described_class.new(name, version, Gem::Platform::RUBY, spec_fetcher, content_address: "abc1234567") }
+
+      it "should ignore the content address" do
+        expect(subject.full_name).to eq("foo-1.0.0")
+      end
+    end
   end
 
   describe "#<=>" do

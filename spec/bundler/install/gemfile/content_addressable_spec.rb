@@ -480,6 +480,7 @@ RSpec.describe "bundle install with content-addressable gems", :compact_index, r
       build_repo2 do
         build_gem "mygem", "1.0" do |s|
           s.platform = Gem::Platform.new("x86_64-linux")
+          s.required_ruby_version = "~> #{current_abi}.0"
           s.write "lib/mygem.rb", "MYGEM = '1.0 not_content_addressed'"
         end
       end

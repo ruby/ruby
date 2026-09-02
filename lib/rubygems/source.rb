@@ -418,7 +418,8 @@ class Gem::Source
       next unless platform
       next unless requirements[:ruby]
 
-      ContentAddressableInfo.new(version, suffix, ruby_abi_from(requirements[:ruby]), platform)
+      ruby_abi = Gem::ContentAddress.ruby_abi_for(Gem::Requirement.new(requirements[:ruby]))
+      ContentAddressableInfo.new(version, suffix, ruby_abi, platform)
     end
 
     available_rows & wanted_rows
@@ -436,15 +437,6 @@ class Gem::Source
     return unless operator == "=" && platform
 
     platform
-  end
-
-  def ruby_abi_from(requirement)
-    Array(requirement).each do |ruby_requirement|
-      match = ruby_requirement.to_s.match(/\A~>\s*(\d+)\.(\d+)\.0\z/)
-      return "#{match[1]}.#{match[2]}" if match
-    end
-
-    nil
   end
 
   def max_versions_by_platform(tuples)

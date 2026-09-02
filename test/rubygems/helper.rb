@@ -1063,7 +1063,7 @@ class Gem::TestCase < Test::Unit::TestCase
   # content-addressable gem. Returns the specification, gem path, and content
   # address.
 
-  def util_setup_content_addressable_compact_index_gem(name, version, platform: "x86_64-linux", required_ruby_version: ">= 3.0", &block)
+  def util_setup_content_addressable_compact_index_gem(name, version, platform: "x86_64-linux", required_ruby_version: "~> #{Gem.ruby_abi}.0", &block)
     spec, gem_path = util_gem(name, version) do |s|
       s.platform = platform
       s.required_ruby_version = required_ruby_version

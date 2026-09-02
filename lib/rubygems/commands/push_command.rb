@@ -122,7 +122,7 @@ The API key to send is resolved in this order: the GEM_HOST_API_KEY environment 
 
     matches = candidates.select do |_, spec|
       (!platform || spec.platform == platform) &&
-        (!ruby_abi || (Gem::ContentAddress.applicable?(spec) && spec.ruby_abi == ruby_abi))
+        (!ruby_abi || (Gem::ContentAddress.eligible?(spec) && spec.ruby_abi == ruby_abi))
     end
 
     raise Gem::CommandLineError, "No gem matched #{gem_name_selector_description}" if matches.empty?

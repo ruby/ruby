@@ -186,7 +186,7 @@ class TestGemSpecFetcher < Gem::TestCase
 
     fetched_spec = util_spec "a", "1" do |s|
       s.platform = "x86_64-linux"
-      s.required_ruby_version = ">= 3.0"
+      s.required_ruby_version = "~> #{ruby_abi}.0"
     end
     refute fetched_spec.content_address
     @fetcher.data["#{@gem_repo}quick/Marshal.#{Gem.marshal_version}/#{ca_spec.spec_name}.rz"] = util_zip(Marshal.dump(fetched_spec))

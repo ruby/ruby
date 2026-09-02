@@ -33,13 +33,13 @@ class Gem::Resolver::APISpecification < Gem::Resolver::Specification
     @set = set
     @name = api_data[:name]
     @version = Gem::Version.new(api_data[:number]).freeze
-    assign_platform(api_data)
     @dependencies = api_data[:dependencies].map do |name, ver|
       Gem::Dependency.new(name, ver.split(/\s*,\s*/)).freeze
     end.freeze
     @required_ruby_version = Gem::Requirement.new(api_data.dig(:requirements, :ruby)).freeze
     @required_rubygems_version = Gem::Requirement.new(api_data.dig(:requirements, :rubygems)).freeze
     @created_at = parse_created_at(api_data.dig(:requirements, :created_at))&.freeze
+    assign_platform(api_data)
   end
 
   def ==(other) # :nodoc:
@@ -120,7 +120,7 @@ class Gem::Resolver::APISpecification < Gem::Resolver::Specification
     suffix = api_data[:suffix]
     required_platform = required_platform_from(api_data.dig(:requirements, :platform))
 
-    if Gem::ContentAddress.match?(suffix) && required_platform
+    if Gem::ContentAddress.content_addressed_row?(suffix, required_platform, @required_ruby_version)
       @content_address = suffix.freeze
       @platform = required_platform.freeze
       @original_platform = required_platform.to_s.freeze

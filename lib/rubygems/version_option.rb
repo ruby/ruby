@@ -52,7 +52,7 @@ module Gem::VersionOption
   def add_ruby_abi_option(task = command, *wrap)
     add_option("--ruby-abi RUBY_ABI",
                "Specify the Ruby ABI of gem to #{task}", *wrap) do |value, options|
-      unless /\A\d+\.\d+\z/.match?(value)
+      unless Gem::ContentAddress.valid_ruby_abi?(value)
         raise Gem::OptionParser::InvalidArgument, "#{value}: Ruby ABI must be in X.Y format"
       end
 

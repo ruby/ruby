@@ -34,12 +34,15 @@ module Gem::InstallerUninstallerUtils
   private
 
   def plugin_stub_dir_for(spec, plugins_dir)
-    ruby_abi = spec.to_spec.ruby_abi if Gem::ContentAddress.match?(spec.content_address)
-    ruby_abi ? File.join(plugins_dir, ruby_abi) : plugins_dir
+    full_spec = spec.to_spec
+    return plugins_dir unless Gem::ContentAddress.content_addressed?(full_spec)
+
+    File.join plugins_dir, full_spec.ruby_abi
   end
 
   def ruby_abi_plugin_dir_for(spec, plugins_dir)
-    ruby_abi = spec.to_spec.ruby_abi if Gem::ContentAddress.match?(spec.content_address)
-    File.join plugins_dir, ruby_abi || Gem.ruby_abi
+    full_spec = spec.to_spec
+    ruby_abi = Gem::ContentAddress.content_addressed?(full_spec) ? full_spec.ruby_abi : Gem.ruby_abi
+    File.join plugins_dir, ruby_abi
   end
 end

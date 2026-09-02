@@ -25,7 +25,7 @@ module Bundler
 
       parse_metadata(metadata)
 
-      if Gem::ContentAddress.match?(suffix) && @required_platform
+      if Gem::ContentAddress.content_addressed_row?(suffix, @required_platform, @required_ruby_version)
         @content_address = suffix
         @platform = @required_platform
         @required_rubygems_version ||= Gem::Requirement.default

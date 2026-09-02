@@ -21,7 +21,7 @@ class CompactIndexV2API < CompactIndexAPI
         next unless Gem::ContentAddress.match?(token)
 
         spec = Gem::Package.new(file).spec
-        next unless Gem::ContentAddress.applicable?(spec)
+        next unless Gem::ContentAddress.eligible?(spec)
         spec.content_address = token
         spec
       end

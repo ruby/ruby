@@ -581,15 +581,7 @@ class Gem::Specification < Gem::BasicSpecification
   # Returns nil if the required_ruby_version does not specify a single Ruby ABI
 
   def ruby_abi
-    return nil if required_ruby_version.nil? || required_ruby_version == Gem::Requirement.default
-
-    requirements = required_ruby_version.requirements
-    return nil if requirements.size != 1
-
-    op, version = requirements.first
-    return nil if op != "~>" || version.segments.size != 3 || version.segments[2] != 0
-
-    version.segments[0..1].join(".")
+    Gem::ContentAddress.ruby_abi_for(required_ruby_version)
   end
 
   ##

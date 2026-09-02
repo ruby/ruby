@@ -31,11 +31,15 @@ module Gem
         false
       end
 
-      def self.applicable?(spec)
+      def self.eligible?(spec, validate_ruby_abi: true)
         false
       end
 
-      def self.content_addressed?(spec)
+      def self.content_addressed?(spec, validate_ruby_abi: true)
+        false
+      end
+
+      def self.content_addressed_row?(suffix, platform, required_ruby_version = nil, validate_ruby_abi: true)
         false
       end
     end
