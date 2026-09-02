@@ -1,5 +1,12 @@
 # frozen_string_literal: true
 #
+# = pathname.rb
+#
+# Object-Oriented Pathname Class
+#
+# Author:: Tanaka Akira <akr@m17n.org>
+# Documentation:: Author and Gavin Sinclair
+#
 # A \Pathname object stores a string:
 #
 #   pn = Pathname('README.md') # => #<Pathname:README.md>
@@ -2939,9 +2946,118 @@ class Pathname    # * mixed *
     File.unlink @path
   end
   alias delete unlink
+
+  # call-seq:
+  #   Pathname.mktmpdir -> new_pathname
+  #   Pathname.mktmpdir {|pathname| ... } -> object
+  #
+  # Creates:
+  #
+  # - A temporary directory.
+  # - A \Pathname object that contains the path to that directory.
+  #
+  # With no block given, returns the created pathname;
+  # the caller should delete the created directory when it is no longer needed
+  # (#rmtree is a convenient method for the deletion):
+  #
+  #   pathname = Pathname.mktmpdir
+  #   dirpath = pathname.to_s
+  #   Dir.exist?(dirpath) # => true
+  #   # Do something with the directory.
+  #   pathname.rmtree
+  #
+  # With a block given, calls the block with the created pathname;
+  # on block exit, automatically deletes the created directory and all its contents;
+  # returns the block's exit value:
+  #
+  #   pathname = Pathname.mktmpdir do |p|
+  #     # Do something with the directory.
+  #     p
+  #   end
+  #   Dir.exist?(pathname.to_s) # => false
+  def self.mktmpdir
+    systmpdir = (defined?(Etc.systmpdir) ? Etc.systmpdir.freeze : '/tmp')
+    candidates = [
+      'TMPDIR', 'TMP', 'TEMP',
+      ['system temporary path', systmpdir],
+      %w[/tmp /tmp],
+      %w[. .],
+    ]
+    tmpdir = candidates.find do |name, dir|
+      unless dir
+        next if !(dir = ENV[name] rescue next) or dir.empty?
+      end
+      dir = File.expand_path(dir)
+      stat = File.stat(dir) rescue next
+      case
+      when !stat.directory?
+        warn "#{name} is not a directory: #{dir}"
+      when !File.writable?(dir)
+        warn "#{name} is not writable: #{dir}"
+      when stat.world_writable? && !stat.sticky?
+        warn "#{name} is world-writable: #{dir}"
+      else
+        break dir
+      end
+    end or raise ArgumentError, "could not find a temporary directory"
+
+    begin
+      dir = File.join(tmpdir, "d#{Random.urandom(6).unpack1("H*")}")
+      Dir.mkdir(dir, 0700)
+    rescue Errno::EEXIST
+      retry
+    end
+    path = new(dir)
+    if block_given?
+      begin
+        yield path
+      ensure
+        stat = File.stat(tmpdir)
+        if stat.world_writable? && !stat.sticky?
+          raise ArgumentError, "parent directory is world writable but not sticky: #{tmpdir}"
+        end
+        path.send(:remove_entry, dir, false)
+      end
+    else
+      path
+    end
+  end
+
 end
 
 class Pathname
+
+  # :markup: markdown
+  #
+  # call-seq:
+  #   find(ignore_error: true) -> nil
+  #
+  # Deprecated: use #glob instead.
+  #
+  # Calls the block with each entry under the path in `self`;
+  # equivalent to:
+  #
+  # ```ruby
+  # glob('**/*', File::FNM_DOTMATCH) {|entry| ... }
+  # ```
+  #
+  # Code that depends on the Find.find traversal behavior
+  # (entry order, Find.prune, error handling) should use Find.find directly:
+  #
+  # ```ruby
+  # require 'find'
+  # Find.find(pathname.to_s) {|entry| ... }
+  # ```
+  #
+  # Keyword argument `ignore_error` is accepted for compatibility and ignored.
+  #
+  # With no block given, returns a new Enumerator.
+  def find(ignore_error: true, &block) # :yield: pathname
+    return to_enum(__method__, ignore_error: ignore_error) unless block
+    warn "Pathname#find is deprecated; use Pathname#glob instead, or Find.find for the previous traversal behavior", uplevel: 1, category: :deprecated
+    glob('**/*', File::FNM_DOTMATCH, &block)
+  end
+
   undef =~ if Kernel.method_defined?(:=~)
 end
 

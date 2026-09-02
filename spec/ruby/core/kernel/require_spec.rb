@@ -41,6 +41,7 @@ describe "Kernel#require" do
     end
 
     features_no_ext = features.map { |path| File.basename(path, '.*') }
+    features_no_ext.uniq!
     features_no_ext.sort.should == provided.sort
 
     requires = features

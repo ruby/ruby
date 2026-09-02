@@ -2313,6 +2313,7 @@ AC_CHECK_FUNCS(truncate)
 AC_CHECK_FUNCS(truncate64)		# used for Win32
 AC_CHECK_FUNCS(tzset)
 AC_CHECK_FUNCS(umask)
+AC_CHECK_FUNCS(unlinkat)
 AC_CHECK_FUNCS(unsetenv)
 AC_CHECK_FUNCS(utimensat)
 AC_CHECK_FUNCS(utimes)

@@ -1367,6 +1367,31 @@ class TestPathname < Test::Unit::TestCase
     end
   end
 
+  def test_mktmpdir_no_block
+    dir = Pathname.mktmpdir
+    begin
+      assert_kind_of(Pathname, dir)
+      assert_predicate(dir, :directory?)
+      if /mswin|mingw/ !~ RUBY_PLATFORM
+        assert_equal(0700, dir.stat.mode & 0777)
+      end
+    ensure
+      dir.rmtree
+    end
+    assert_not_predicate(dir, :exist?)
+  end
+
+  def test_mktmpdir_unique
+    a = Pathname.mktmpdir
+    b = Pathname.mktmpdir
+    begin
+      assert_not_equal(a.to_s, b.to_s)
+    ensure
+      a.rmtree
+      b.rmtree
+    end
+  end
+
   def test_s_getwd
     wd = Pathname.getwd
     assert_kind_of(Pathname, wd)
@@ -1451,6 +1476,7 @@ class TestPathname < Test::Unit::TestCase
   end
 
   def test_find
+    EnvUtil.suppress_warning do
     with_tmpchdir('rubytest-pathname') {|dir|
       open("a", "w") {}
       open("b", "w") {}
@@ -1473,25 +1499,11 @@ class TestPathname < Test::Unit::TestCase
         assert_equal([Pathname("."), Pathname("a"), Pathname("b"), Pathname("d"), Pathname("d/x")], a)
         a = []; Pathname("d").find(ignore_error: true) {|v| a << v }; a.sort!
         assert_equal([Pathname("d"), Pathname("d/x")], a)
-
-        omit "no meaning test on Windows" if /mswin|mingw/ =~ RUBY_PLATFORM
-        omit 'skipped in root privilege' if Process.uid == 0
-        a = [];
-        assert_raise_with_message(Errno::EACCES, %r{d/x}) do
-          Pathname(".").find(ignore_error: false) {|v| a << v }
-        end
-        a.sort!
-        assert_equal([Pathname("."), Pathname("a"), Pathname("b"), Pathname("d"), Pathname("d/x")], a)
-        a = [];
-        assert_raise_with_message(Errno::EACCES, %r{d/x}) do
-          Pathname("d").find(ignore_error: false) {|v| a << v }
-        end
-        a.sort!
-        assert_equal([Pathname("d"), Pathname("d/x")], a)
       ensure
         File.chmod(0700, "d")
       end
     }
+    end
   end
 
   def assert_mode(val, mask, path, mesg = nil)
@@ -1524,6 +1536,43 @@ class TestPathname < Test::Unit::TestCase
     }
   end
 
+  def test_rmtree_file
+    with_tmpchdir('rubytest-pathname') {|dir|
+      File.write("f", "abc")
+      Pathname("f").rmtree
+      assert_file.not_exist?("f")
+    }
+  end
+
+  def test_rmtree_nonexistent
+    with_tmpchdir('rubytest-pathname') {|dir|
+      path = Pathname("nosuch")
+      assert_equal(path, path.rmtree)
+    }
+  end
+
+  def test_rmtree_noop
+    with_tmpchdir('rubytest-pathname') {|dir|
+      Pathname("a/b").mkpath
+      path = Pathname("a")
+      assert_equal(path, path.rmtree(noop: true))
+      assert_file.exist?("a/b")
+    }
+  end
+
+  def test_rmtree_does_not_follow_symlink
+    return if !has_symlink?
+    with_tmpchdir('rubytest-pathname') {|dir|
+      Pathname("target").mkpath
+      File.write("target/keep", "abc")
+      Pathname("tree/sub").mkpath
+      File.symlink("../../target", "tree/sub/link")
+      Pathname("tree").rmtree
+      assert_file.not_exist?("tree")
+      assert_file.exist?("target/keep")
+    }
+  end
+
   def test_unlink
     with_tmpchdir('rubytest-pathname') {|dir|
       open("f", "w") {|f| f.write "abc" }
@@ -1532,6 +1581,24 @@ class TestPathname < Test::Unit::TestCase
       Dir.mkdir("d")
       Pathname("d").unlink
       assert_file.not_exist?("d")
+    }
+  end
+
+  def test_find_deprecated
+    with_tmpchdir('rubytest-pathname') {|dir|
+      assert_deprecated_warning(/Pathname#find is deprecated/) do
+        Pathname(".").find { }
+      end
+    }
+  end
+
+  def test_find_nonexistent
+    with_tmpchdir('rubytest-pathname') {|dir|
+      a = []
+      EnvUtil.suppress_warning do
+        Pathname("nosuch").find {|v| a << v }
+      end
+      assert_empty(a)
     }
   end
 
