@@ -269,6 +269,8 @@ class TestRactor < Test::Unit::TestCase
       assert_shared Ractor::Port.new
       assert_copy [Ractor::Port.new]
       assert_copy [Time.now, Ractor::Port.new]
+      # Dump hooks run after the courier is sized, so enough of them make it grow.
+      assert_copy Array.new(2000) { |i| Time.at(i) }
       #assert_copy Set.new
       #assert_copy Set[1,2,3]
       #assert_copy Set[Ractor::Port.new, Ractor::Port.new]
@@ -291,11 +293,37 @@ class TestRactor < Test::Unit::TestCase
     # A key that was already reached elsewhere in the graph must be complete before the
     # hash inserts it, or it is inserted under the wrong #hash.
     assert_ractor(<<~'RUBY')
+      def echo(obj)
+        Ractor.new { Ractor.receive }.send(obj).value
+      end
+
       key = { 1 => 2 }
-      copy_key, copy_hash = Ractor.new { Ractor.receive }.send([key, { key => 1 }]).value
+      copy_key, copy_hash = echo([key, { key => 1 }])
       assert_equal key, copy_key
       assert_equal 1, copy_hash[key]
       assert_same copy_key, copy_hash.keys[0]
+
+      # The same for a key hashed by an ivar that is itself copied.
+      class ByValue
+        attr_reader :v
+        def initialize(v) = @v = v
+        def hash = @v.hash
+        def eql?(other) = other.is_a?(ByValue) && @v == other.v
+      end
+      key = ByValue.new(+"abc")
+      copy_key, copy_hash = echo([key, { key => 1 }])
+      assert_equal 1, copy_hash[key]
+      assert_same copy_key, copy_hash.keys[0]
+    RUBY
+  end
+
+  def test_failed_send_leaves_receiver_usable
+    # The courier built so far is freed once, not again with the basket.
+    assert_ractor(<<~'RUBY')
+      ractor = Ractor.new { Ractor.receive }
+      assert_raise(Ractor::Error) { ractor.send([proc {}]) }
+      ractor.send(42)
+      assert_equal 42, ractor.value
     RUBY
   end
 
