@@ -744,6 +744,8 @@ module Prism
     #: () -> bool
     def trailing?
       !location.start_line_slice.strip.empty?
+    rescue ArgumentError # invalid bytes, never whitespace only
+      false
     end
 
     # Returns a string representation of this comment.
