@@ -21,7 +21,7 @@ class Gem::Doctor
 
   REPOSITORY_EXTENSION_MAP = [ # :nodoc:
     ["specifications", ".gemspec"],
-    ["build_info",     ".info"],
+    ["build_info",     ".info", ".mkmf.log", ".gem_make.out"],
     ["cache",          ".gem"],
     ["doc",            ""],
     ["extensions",     ""],
@@ -92,15 +92,15 @@ class Gem::Doctor
   # Cleans up children of this gem repository
 
   def doctor_children # :nodoc:
-    REPOSITORY_EXTENSION_MAP.each do |sub_directory, extension|
-      doctor_child sub_directory, extension
+    REPOSITORY_EXTENSION_MAP.each do |sub_directory, *extensions|
+      doctor_child sub_directory, *extensions
     end
   end
 
   ##
-  # Removes files in +sub_directory+ with +extension+
+  # Removes files in +sub_directory+ with any of +extensions+
 
-  def doctor_child(sub_directory, extension) # :nodoc:
+  def doctor_child(sub_directory, *extensions) # :nodoc:
     directory = File.join(@gem_repository, sub_directory)
 
     Dir.entries(directory).sort.each do |ent|
@@ -109,7 +109,7 @@ class Gem::Doctor
       child = File.join(directory, ent)
       next unless File.exist?(child)
 
-      basename = File.basename(child, extension)
+      basename = strip_extension File.basename(child), extensions
       next if installed_specs.include? basename
       next if /^rubygems-\d/.match?(basename)
       next if sub_directory == "specifications" && basename == "default"
@@ -134,5 +134,16 @@ class Gem::Doctor
     end
   rescue Errno::ENOENT
     # ignore
+  end
+
+  ##
+  # Removes the first of +extensions+ that +name+ ends with
+
+  def strip_extension(name, extensions) # :nodoc:
+    extension = extensions.find do |ext|
+      !ext.empty? && name.end_with?(ext)
+    end
+
+    extension ? name.delete_suffix(extension) : name
   end
 end

@@ -121,6 +121,33 @@ Extra directory gems/c-2
     assert_equal Gem.path, [@gemhome, @userhome]
   end
 
+  def test_doctor_keeps_build_logs_of_installed_gems
+    a = gem "a"
+
+    Gem.use_paths @userhome, @gemhome
+
+    build_info_dir = File.join @gemhome, "build_info"
+    FileUtils.mkdir_p build_info_dir
+
+    kept = ["#{a.full_name}.mkmf.log", "#{a.full_name}.gem_make.out"].map do |name|
+      File.join build_info_dir, name
+    end
+    stale = File.join build_info_dir, "b-2.gem_make.out"
+
+    FileUtils.touch kept + [stale]
+
+    doctor = Gem::Doctor.new @gemhome
+
+    capture_output do
+      use_ui @ui do
+        doctor.doctor
+      end
+    end
+
+    kept.each {|path| assert_path_exist path }
+    assert_path_not_exist stale
+  end
+
   def test_doctor_non_gem_home
     other_dir = File.join @tempdir, "other", "dir"
 
