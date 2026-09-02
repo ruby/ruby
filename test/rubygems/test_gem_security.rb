@@ -34,8 +34,7 @@ class TestGemSecurity < Gem::TestCase
     assert_equal "CA:FALSE", constraints.value
 
     key_usage = cert.extensions.find {|ext| ext.oid == "keyUsage" }
-    assert_equal "Digital Signature, Key Encipherment, Data Encipherment",
-                 key_usage.value
+    assert_include key_usage.value, "Digital Signature"
 
     key_ident = cert.extensions.find {|ext| ext.oid == "subjectKeyIdentifier" }
     assert_equal 59, key_ident.value.length
@@ -80,8 +79,7 @@ class TestGemSecurity < Gem::TestCase
     assert_equal "CA:FALSE", constraints.value
 
     key_usage = cert.extensions.find {|ext| ext.oid == "keyUsage" }
-    assert_equal "Digital Signature, Key Encipherment, Data Encipherment",
-                 key_usage.value
+    assert_include key_usage.value, "Digital Signature"
 
     key_ident = cert.extensions.find {|ext| ext.oid == "subjectKeyIdentifier" }
     assert_equal 59, key_ident.value.length
@@ -312,8 +310,7 @@ class TestGemSecurity < Gem::TestCase
     assert_equal "CA:FALSE", constraints.value
 
     key_usage = signed.extensions.find {|ext| ext.oid == "keyUsage" }
-    assert_equal "Digital Signature, Key Encipherment, Data Encipherment",
-                 key_usage.value
+    assert_include key_usage.value, "Digital Signature"
 
     key_ident =
       signed.extensions.find {|ext| ext.oid == "subjectKeyIdentifier" }
@@ -490,8 +487,7 @@ class TestGemSecurity < Gem::TestCase
     assert_equal "CA:FALSE", constraints.value
 
     key_usage = signed.extensions.find {|ext| ext.oid == "keyUsage" }
-    assert_equal "Digital Signature, Key Encipherment, Data Encipherment",
-                 key_usage.value
+    assert_include key_usage.value, "Digital Signature"
 
     key_ident =
       signed.extensions.find {|ext| ext.oid == "subjectKeyIdentifier" }

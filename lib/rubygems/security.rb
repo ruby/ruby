@@ -387,14 +387,12 @@ module Gem::Security
   # The default set of extensions are:
   #
   # * The certificate is not a certificate authority
-  # * The key for the certificate may be used for key and data encipherment
-  #   and digital signatures
+  # * The key for the certificate may be used for digital signatures
   # * The certificate contains a subject key identifier
 
   EXTENSIONS = {
     "basicConstraints" => "CA:FALSE",
-    "keyUsage" =>
-      "keyEncipherment,dataEncipherment,digitalSignature",
+    "keyUsage" => "digitalSignature",
     "subjectKeyIdentifier" => "hash",
   }.freeze
 
