@@ -203,7 +203,7 @@ module Bundler
       spec_gem_executables.flatten!
 
       stale_gem_bins       = gem_bins - spec_gem_executables
-      stale_git_dirs       = git_dirs - spec_git_paths - ["#{Gem.dir}/bundler/gems/extensions", "#{Gem.dir}/bundler/gems/build_info"]
+      stale_git_dirs       = git_dirs - spec_git_paths - ["#{Gem.dir}/bundler/gems/extensions"]
       stale_git_cache_dirs = git_cache_dirs - spec_git_cache_dirs
       stale_gem_dirs       = gem_dirs - spec_gem_paths
       stale_gem_files      = gem_files - spec_cache_paths

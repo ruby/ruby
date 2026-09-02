@@ -536,4 +536,26 @@ RSpec.describe "bundle install with git sources" do
       end
     end
   end
+
+  describe "a git gem whose extension fails to build" do
+    it "keeps the build log with that checkout instead of the shared repository" do
+      build_git "foo", "1.0", &:add_c_extension
+      File.write lib_path("foo-1.0/ext/foo.c"), "#error forced build failure for test\n"
+
+      install_gemfile <<~G, raise_on_error: false
+        source "https://gem.repo1"
+        gem "foo", :git => "#{lib_path("foo-1.0")}"
+      G
+
+      # The log lands in the checkout's own extension directory, which is unique
+      # per revision and which `bundle clean` prunes along with the checkout.
+      logs = Dir.glob("#{Gem.dir}/bundler/gems/extensions/*/*/*/*.gem_make.out")
+
+      expect(logs.size).to eq(1)
+      expect(File.basename(File.dirname(logs.first))).to start_with("foo-1.0-")
+
+      # Nothing is left directly under bundler/gems, which holds checkouts.
+      expect(Pathname.new("#{Gem.dir}/bundler/gems/build_info")).not_to exist
+    end
+  end
 end

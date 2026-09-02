@@ -281,6 +281,20 @@ module Gem
       end
     end
 
+    alias_method :rg_build_info_dir, :build_info_dir
+    def build_info_dir
+      # A git checkout's build logs belong with that checkout's extension build.
+      # base_dir points at the directory holding every checkout, so logs keyed by
+      # full_name would collide between revisions of the same gem and would sit
+      # outside anything `bundle clean` prunes. extension_dir is unique per
+      # revision and goes away with the checkout.
+      if source.respond_to?(:extension_dir_name)
+        extension_dir
+      else
+        rg_build_info_dir
+      end
+    end
+
     # Can be removed once RubyGems 3.5.21 support is dropped
     remove_method :gem_dir if method_defined?(:gem_dir, false)
 
