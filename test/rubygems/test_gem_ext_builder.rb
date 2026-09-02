@@ -469,6 +469,57 @@ install:
     stale.each {|path| assert_path_not_exist path }
   end
 
+  def test_build_extensions_keeps_logs_when_no_makefile_is_generated
+    pend "terminates on mswin" if vc_windows? && ruby_repo?
+
+    @spec.extensions << "ext/extconf.rb"
+
+    ext_dir = File.join @spec.gem_dir, "ext"
+    FileUtils.mkdir_p ext_dir
+
+    # extconf exits cleanly but generates no Makefile, the way one that bails out
+    # early on an unsupported platform does. The extension is then skipped rather
+    # than built, and the log is the only record of why.
+    File.open File.join(ext_dir, "extconf.rb"), "w" do |f|
+      f.write "# nothing to build on this platform\n"
+    end
+
+    use_ui @ui do
+      @builder.build_extensions
+    end
+
+    gem_make_out = File.join @spec.build_info_dir, "#{@spec.full_name}.gem_make.out"
+
+    assert_path_exist gem_make_out
+    assert_includes File.read(gem_make_out), "no Makefile was found"
+
+    # Skipping still leaves nothing behind in the installation tree.
+    assert_path_not_exist File.join @spec.extension_dir, "mkmf.log"
+    assert_path_not_exist File.join @spec.extension_dir, "gem_make.out"
+    assert_path_not_exist File.join ext_dir, "mkmf.log"
+  end
+
+  def test_build_extensions_reports_build_error_when_logs_cannot_be_written
+    @spec.extensions << "extconf.rb"
+
+    FileUtils.mkdir_p @spec.gem_dir
+
+    # A plain file where build_info belongs makes every log write fail.
+    FileUtils.rm_rf @spec.build_info_dir
+    File.write @spec.build_info_dir, ""
+
+    e = assert_raise Gem::Ext::BuildError do
+      use_ui @ui do
+        @builder.build_extensions
+      end
+    end
+
+    # The build failure survives instead of being replaced by the log failure.
+    assert_match(/\AERROR: Failed to build gem native extension.$/, e.message)
+    assert_match(/: No such file/, e.message)
+    refute_includes e.message, "Results logged to"
+  end
+
   def test_build_extensions_logs_to_build_info_on_failure
     pend "terminates on mswin" if vc_windows? && ruby_repo?
 

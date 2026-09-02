@@ -220,8 +220,10 @@ ERROR: Failed to build gem native extension.
     #{output}
 
 Gem files will remain installed in #{@gem_dir} for inspection.
-Results logged to #{gem_make_out}
 EOF
+
+    # Losing the log must not cost the user the build error itself.
+    message += "Results logged to #{gem_make_out}\n" if gem_make_out
 
     raise Gem::Ext::BuildError, message, backtrace
   end
@@ -249,17 +251,22 @@ EOF
       FileUtils.rm_f mkmf_log_candidates(extension_dir, dest_path)
       FileUtils.rm_f File.join(dest_path, "gem_make.out")
       FileUtils.rm_f [build_log_path("mkmf.log"), build_log_path("gem_make.out")]
+    rescue Gem::Ext::Builder::NoMakefileError => e
+      # extconf ran fine but produced no Makefile, so the extension was skipped
+      # rather than built and installing carries on. Keep the log that says why
+      # it was skipped, out of the installation tree but still reachable.
+      results << e.message
+      results << "Skipping make for #{extension} as no Makefile was found."
+
+      verbose { results.join("\n") }
+
+      preserve_mkmf_log extension_dir, dest_path
+      write_gem_make_out results.join("\n")
     rescue StandardError => e
       results << e.message
 
-      # On failure keep the mkmf.log for inspection, but move it out of the
-      # installation tree into the build_info directory.
-      mkmf_log = mkmf_log_candidates(extension_dir, dest_path).find {|log| File.exist?(log) }
-      if mkmf_log
-        mkmf_log_dest = build_log_path "mkmf.log"
-        FileUtils.mkdir_p @spec.build_info_dir
-        FileUtils.mv mkmf_log, mkmf_log_dest
-
+      mkmf_log_dest = preserve_mkmf_log(extension_dir, dest_path)
+      if mkmf_log_dest
         results << "To see why this extension failed to compile, please check the mkmf.log which can be found here:"
         results << "  #{mkmf_log_dest}"
       end
@@ -273,6 +280,26 @@ EOF
 
   def build_log_path(kind) # :nodoc:
     File.join @spec.build_info_dir, "#{@spec.full_name}.#{kind}"
+  end
+
+  ##
+  # Moves the mkmf.log this build left behind into the build_info directory and
+  # returns its new path, or nil when there is none or it cannot be kept.
+  # Keeping a log must never replace the build error the caller is reporting,
+  # so a filesystem failure here is swallowed.
+
+  def preserve_mkmf_log(extension_dir, dest_path) # :nodoc:
+    mkmf_log = mkmf_log_candidates(extension_dir, dest_path).find {|log| File.exist?(log) }
+    return unless mkmf_log
+
+    destination = build_log_path "mkmf.log"
+
+    FileUtils.mkdir_p @spec.build_info_dir
+    FileUtils.mv mkmf_log, destination
+
+    destination
+  rescue SystemCallError
+    nil
   end
 
   ##
@@ -311,9 +338,9 @@ EOF
   end
 
   ##
-  # Writes +output+ to gem_make.out in the build_info directory. Only called
-  # on failure (via #build_error), to keep build logs out of the installation
-  # tree.
+  # Writes +output+ to gem_make.out in the build_info directory and returns its
+  # path, or nil when it cannot be written. Only called when the extension was
+  # not built, to keep build logs out of the installation tree.
 
   def write_gem_make_out(output) # :nodoc:
     destination = build_log_path "gem_make.out"
@@ -325,5 +352,7 @@ EOF
     end
 
     destination
+  rescue SystemCallError
+    nil
   end
 end
