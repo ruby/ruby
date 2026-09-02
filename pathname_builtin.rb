@@ -955,16 +955,25 @@ class Pathname
   end
   private :plus
 
-  # call-seq:
-  #   join(*objects) -> new_pathname
+  # :markup: markdown
   #
-  # Joins the string-converted given +objects+ to the string path in +self+;
+  # call-seq:
+  #   join(*components) -> self or new_pathname
+  #
+  # With no arguments, returns `self`.
+  #
+  # With arguments, joins the given `components` to the string path in `self`
+  # with character `'/'`;
   # returns a new pathname containing the joined string:
   #
-  #   Pathname('foo').join                  # => #<Pathname:foo>
-  #   Pathname('foo').join('bar')           # => #<Pathname:foo/bar>
-  #   Pathname('foo').join('bar', 'baz')    # => #<Pathname:foo/bar/baz>
-  #   Pathname('foo').join(Pathname('bar')) # => #<Pathname:foo/bar>
+  # ```ruby
+  # pn = Pathname('foo')                      # => #<Pathname:foo>
+  # # String arguments.
+  # pn.join('bar')                            # => #<Pathname:foo/bar>
+  # pn.join(*%w[bar baz bat])                 # => #<Pathname:foo/bar/baz/bat>
+  # # Pathname arguments.
+  # pn.join(Pathname('bar'), Pathname('baz')) # => #<Pathname:foo/bar/baz>
+  # ```
   #
   def join(*args)
     return self if args.empty?
