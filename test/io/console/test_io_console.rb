@@ -77,6 +77,18 @@ class TestIO_Console < Test::Unit::TestCase
   TTY_ENHANCED = IO.instance_method(:tty?).arity != 0
   TTY_MODE_STTY = IO.private_method_defined?(:_io_console_stty)
 
+  def test_stty_mode_arguments
+    omit "stty backend only" unless TTY_MODE_STTY
+
+    mode = IO::Console::Mode.new(
+      "saved\n",
+      "echo icanon isig opost; min = 1; time = 0;",
+    )
+    mode.raw!(min: 2, time: 0.3)
+
+    assert_equal(["saved", "raw", "min", "2", "time", "3"], mode.arguments)
+  end
+
   def test_tty?
     pend "not supported" unless TTY_ENHANCED
 
@@ -294,8 +306,10 @@ class TestIO_Console
           assert_same(IO::Console::Mode, IO.const_get(:ConsoleMode))
         end
 
+        assert_predicate(original, :echo?)
         noecho = original.dup
         noecho.echo = false
+        assert_not_predicate(noecho, :echo?)
         assert_same(noecho, s.send(:console_mode=, noecho))
         assert_not_predicate(s, :echo?)
 
@@ -305,6 +319,15 @@ class TestIO_Console
         assert_same(raw, s.send(:console_mode=, raw))
         s.print "raw\n"
         assert_equal("raw\n", m.gets)
+
+        if min = s.console_mode.min
+          assert_equal(1, min)
+          assert_equal(2, s.raw(min: 2) {s.console_mode.min})
+        end
+        if time = s.console_mode.time
+          assert_equal(0, time)
+          assert_equal(3.1, s.raw(time: 3.14r) {s.console_mode.time})
+        end
       ensure
         s.console_mode = original if original
       end

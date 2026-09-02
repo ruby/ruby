@@ -178,6 +178,22 @@ typedef struct {
 # define NIL_OR_UNDEF_P(obj) (NIL_P(obj) || UNDEF_P(obj))
 #endif
 
+static int
+to_vtime(VALUE vtime)
+{
+    VALUE v10 = INT2FIX(10);
+    vtime = rb_funcall3(vtime, '*', 1, &v10);
+    return NUM2INT(vtime);
+}
+
+static unsigned char
+clamp_uchar(int n)
+{
+    if ((unsigned int)n >= UCHAR_MAX) n = UCHAR_MAX;
+    else if (n < 0) n = 0;
+    return (unsigned char)n;
+}
+
 static rawmode_arg_t *
 rawmode_opt(int *argcp, VALUE *argv, int min_argc, int max_argc, rawmode_arg_t *opts)
 {
@@ -209,13 +225,11 @@ rawmode_opt(int *argcp, VALUE *argv, int min_argc, int max_argc, rawmode_arg_t *
 	opts->vtime = 0;
 	opts->intr = 0;
 	if (!NIL_OR_UNDEF_P(vmin)) {
-	    opts->vmin = NUM2INT(vmin);
+	    opts->vmin = clamp_uchar(NUM2INT(vmin));
 	    optp = opts;
 	}
 	if (!NIL_OR_UNDEF_P(vtime)) {
-	    VALUE v10 = INT2FIX(10);
-	    vtime = rb_funcall3(vtime, '*', 1, &v10);
-	    opts->vtime = NUM2INT(vtime);
+	    opts->vtime = clamp_uchar(to_vtime(vtime));
 	    optp = opts;
 	}
 	switch (intr) {
@@ -763,6 +777,13 @@ conmode_init_copy(VALUE obj, VALUE obj2)
 }
 
 static VALUE
+conmode_get_echo(VALUE obj)
+{
+    conmode *t = rb_check_typeddata(obj, &conmode_type);
+    return echo_p(t) ? Qtrue : Qfalse;
+}
+
+static VALUE
 conmode_set_echo(VALUE obj, VALUE f)
 {
     conmode *t = rb_check_typeddata(obj, &conmode_type);
@@ -792,6 +813,58 @@ conmode_raw_new(int argc, VALUE *argv, VALUE obj)
 
     set_rawmode(&t, optp);
     return conmode_new(rb_obj_class(obj), &t);
+}
+
+static VALUE
+conmode_get_min(VALUE obj)
+{
+    conmode *t = rb_check_typeddata(obj, &conmode_type);
+#ifdef VMIN
+    return INT2FIX(t->c_cc[VMIN]);
+#else
+    (void)t;
+    return Qnil;
+#endif
+}
+
+static VALUE
+conmode_set_min(VALUE obj, VALUE min)
+{
+    conmode *t = rb_check_typeddata(obj, &conmode_type);
+    int vmin = NIL_P(min) ? 1 : clamp_uchar(NUM2INT(min));
+#ifdef VMIN
+    t->c_cc[VMIN] = vmin;
+#else
+    (void)t;
+    (void)vmin;
+#endif
+    return min;
+}
+
+static VALUE
+conmode_get_time(VALUE obj)
+{
+    conmode *t = rb_check_typeddata(obj, &conmode_type);
+#ifdef VTIME
+    return rb_rational_new(INT2FIX(t->c_cc[VTIME]), INT2FIX(10));
+#else
+    (void)t;
+    return Qnil;
+#endif
+}
+
+static VALUE
+conmode_set_time(VALUE obj, VALUE time)
+{
+    conmode *t = rb_check_typeddata(obj, &conmode_type);
+    int vtime = NIL_P(time) ? 0 : clamp_uchar(to_vtime(time));
+#ifdef VTIME
+    t->c_cc[VTIME] = vtime;
+#else
+    (void)t;
+    (void)vtime;
+#endif
+    return time;
 }
 
 #ifdef _WIN32
@@ -2508,9 +2581,15 @@ InitVM_console(void)
         rb_define_alloc_func(cConmode, conmode_alloc);
         rb_undef_method(cConmode, "initialize");
         rb_define_method(cConmode, "initialize_copy", conmode_init_copy, 1);
+	rb_define_method(cConmode, "echo?", conmode_get_echo, 0);
+	rb_define_method(cConmode, "echo", conmode_get_echo, 0);
         rb_define_method(cConmode, "echo=", conmode_set_echo, 1);
         rb_define_method(cConmode, "raw!", conmode_set_raw, -1);
         rb_define_method(cConmode, "raw", conmode_raw_new, -1);
+	rb_define_method(cConmode, "min", conmode_get_min, 0);
+	rb_define_method(cConmode, "min=", conmode_set_min, 1);
+	rb_define_method(cConmode, "time", conmode_get_time, 0);
+	rb_define_method(cConmode, "time=", conmode_set_time, 1);
 #ifdef _WIN32
         rb_define_method(cConmode, "virtual_terminal_processing?", conmode_virtual_terminal_processing_p, 0);
         rb_define_method(cConmode, "virtual_terminal_processing=", conmode_set_virtual_terminal_processing, 1);
