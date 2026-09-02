@@ -47,8 +47,10 @@ class Gem::CompactIndexClient
       when Gem::Net::HTTPRangeNotSatisfiable
         raise Gem::RemoteFetcher::FetchError.new("bad response #{response.message} #{response.code}", uri) unless headers.key?("Range")
 
-        # The local cache is longer than the remote file, refetch it whole.
-        fetch(uri, headers.except("Range"), redirects_remaining)
+        # The local cache is longer than the remote file, refetch it whole. A
+        # matching ETag would otherwise turn the retry into a 304 and keep the
+        # oversized cache.
+        fetch(uri, headers.except("Range", "If-None-Match"), redirects_remaining)
       else
         raise Gem::RemoteFetcher::FetchError.new("bad response #{response.message} #{response.code}", uri)
       end
