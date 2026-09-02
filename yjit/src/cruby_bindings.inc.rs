@@ -1060,6 +1060,8 @@ pub const DEFINED_REF: defined_type = 15;
 pub const DEFINED_FUNC: defined_type = 16;
 pub const DEFINED_CONST_FROM: defined_type = 17;
 pub type defined_type = u32;
+pub const YJIT_ISEQ_TRANSLATED: yjit_bindgen_constants = 1048576;
+pub type yjit_bindgen_constants = u32;
 pub type rb_seq_param_keyword_struct =
     rb_iseq_constant_body_rb_iseq_parameters_rb_iseq_param_keyword;
 pub const ROBJECT_OFFSET_AS_HEAP_FIELDS: jit_bindgen_constants = 16;
