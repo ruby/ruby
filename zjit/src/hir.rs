@@ -673,6 +673,7 @@ pub enum SideExitReason {
     NoProfileGetIvar,
     NoProfileSetIvar,
     InvokeBlockNotIfunc,
+    OnceNotDone,
 }
 
 /// Marks a side exit as triggering profiling and recompilation.
@@ -9386,6 +9387,21 @@ fn add_iseq_to_hir(
                                 }
                             }
                         }
+                    }
+                }
+                YARVINSN_once => {
+                    let iseq: *const rb_iseq_t = get_arg(pc, 0).as_ptr();
+                    let ise: *mut iseq_inline_storage_entry = get_arg(pc, 1).as_mut_ptr();
+                    debug_assert!(!iseq.is_null());
+                    debug_assert!(!ise.is_null());
+                    let mut value = Qnil;
+                    if unsafe { rb_vm_once_done_value(ise, &mut value) } {
+                        let val = fun.push_insn(block, Insn::Const { val: Const::Value(value) });
+                        state.stack_push(val);
+                    } else {
+                        // Exit
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: Box::new(SideExitReason::OnceNotDone), recompile: Some(Recompile) });
+                        break;  // End the block
                     }
                 }
                 YARVINSN_branchunless | YARVINSN_branchunless_without_ints => {

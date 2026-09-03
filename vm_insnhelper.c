@@ -6718,6 +6718,20 @@ rb_vm_opt_getconstant_path(rb_execution_context_t *ec, rb_control_frame_t *const
     return val;
 }
 
+// Return true if the once value is already computed and set *result to the value.
+// Otherwise, return false.
+// Used for ZJIT. Keep in sync with `vm_once_dispatch` below.
+bool
+rb_vm_once_done_value(ISE is, VALUE *result)
+{
+    rb_thread_t *running_th = rbimpl_atomic_ptr_load((void**)&is->once.running_thread, RBIMPL_ATOMIC_ACQUIRE);
+    if (running_th == RUNNING_THREAD_ONCE_DONE) {
+        *result = is->once.value;
+        return true;
+    }
+    return false;
+}
+
 static VALUE
 vm_once_dispatch(rb_execution_context_t *ec, ISEQ iseq, ISE is)
 {

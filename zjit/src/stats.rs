@@ -251,6 +251,7 @@ make_counters! {
         exit_directive_induced,
         exit_send_while_tracing,
         exit_invokeblock_not_ifunc,
+        exit_once_not_done,
     }
 
     // Send fallback counters that are summed as dynamic_send_count
@@ -673,6 +674,7 @@ pub fn side_exit_counter(reason: crate::hir::SideExitReason) -> Counter {
         NoProfileGetIvar              => exit_no_profile_getivar,
         NoProfileSetIvar              => exit_no_profile_setivar,
         InvokeBlockNotIfunc           => exit_invokeblock_not_ifunc,
+        OnceNotDone                   => exit_once_not_done,
     }
 }
 

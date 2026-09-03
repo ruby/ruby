@@ -269,6 +269,7 @@ rb_zjit_class_has_default_allocator(VALUE klass)
 
 VALUE rb_vm_untag_block_handler(VALUE block_handler);
 VALUE rb_vm_get_untagged_block_handler(rb_control_frame_t *reg_cfp);
+bool rb_vm_once_done_value(ISE is, VALUE *result);
 
 // Primitives used by zjit.rb. Don't put other functions below, which wouldn't use them.
 VALUE rb_zjit_enable(rb_execution_context_t *ec, VALUE self);
