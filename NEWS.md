@@ -305,6 +305,15 @@ Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for det
   process starts, from the `USER` or `USERNAME` environment variable or
   `GetUserName()`.  It used to follow later changes to `ENV['USER']`.
 
+* Socket
+
+    * On Windows, `BasicSocket#getsockopt(:SOCKET, :ERROR)` now reports an
+      errno as it does on the other platforms, instead of the raw WinSock
+      error code. Code comparing it with a `WSAE*` value has to compare it
+      with the matching `Errno::*::Errno` instead.
+
+    [[Bug #18661]]
+
 ## C API updates
 
 ### Embedded TypedData
@@ -421,6 +430,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 
 ## JIT
 
+[Bug #18661]: https://bugs.ruby-lang.org/issues/18661
 [Bug #18947]: https://bugs.ruby-lang.org/issues/18947
 [Feature #8948]: https://bugs.ruby-lang.org/issues/8948
 [Feature #9779]: https://bugs.ruby-lang.org/issues/9779
