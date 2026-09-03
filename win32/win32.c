@@ -3366,6 +3366,28 @@ get_wsa_extension_function(SOCKET s, GUID guid)
     return ptr;
 }
 
+#ifdef HAVE_AFUNIX_H
+/* License: Ruby's */
+static void
+fix_unix_namelen(const struct sockaddr *addr, int *namelen)
+{
+    const struct sockaddr_un *sun = (const struct sockaddr_un *)addr;
+    const int pathoff = (int)offsetof(struct sockaddr_un, sun_path);
+
+    /* winsock returns the size of the whole struct sockaddr_un with
+     * NUL-padded sun_path, while POSIX returns the actual length. */
+    if (*namelen > pathoff && sun->sun_family == AF_UNIX) {
+        const char *nul = memchr(sun->sun_path, '\0', *namelen - pathoff);
+        if (nul) {
+            int len = (int)(nul - sun->sun_path);
+            *namelen = len ? pathoff + len + 1 : pathoff;
+        }
+    }
+}
+#else
+#define fix_unix_namelen(addr, namelen) ((void)0)
+#endif
+
 #undef accept
 
 /* License: Artistic or GPL */
@@ -3378,6 +3400,8 @@ rb_w32_accept(int s, struct sockaddr *addr, int *addrlen)
     RUBY_CRITICAL {
         r = accept(TO_SOCKET(s), addr, addrlen);
         if (r != INVALID_SOCKET) {
+            if (addr && addrlen)
+                fix_unix_namelen(addr, addrlen);
             SetHandleInformation((HANDLE)r, HANDLE_FLAG_INHERIT, 0);
             fd = rb_w32_open_osfhandle((intptr_t)r, O_RDWR|O_BINARY|O_NOINHERIT);
             if (fd != -1)
@@ -3441,6 +3465,8 @@ rb_w32_getpeername(int s, struct sockaddr *addr, int *addrlen)
         r = getpeername(TO_SOCKET(s), addr, addrlen);
         if (r == SOCKET_ERROR)
             errno = map_errno(WSAGetLastError());
+        else
+            fix_unix_namelen(addr, addrlen);
     }
     return r;
 }
@@ -3456,7 +3482,10 @@ rb_w32_getsockname(int fd, struct sockaddr *addr, int *addrlen)
     RUBY_CRITICAL {
         sock = TO_SOCKET(fd);
         r = getsockname(sock, addr, addrlen);
-        if (r == SOCKET_ERROR) {
+        if (r != SOCKET_ERROR) {
+            fix_unix_namelen(addr, addrlen);
+        }
+        else {
             DWORD wsaerror = WSAGetLastError();
             if (wsaerror == WSAEINVAL) {
                 int flags;
