@@ -612,7 +612,7 @@ class TestSocket < Test::Unit::TestCase
     assert_raise(Errno::ECONNREFUSED) do
       Socket.tcp("127.0.0.1", port, connect_timeout: 5)
     end
-  end unless /mswin|mingw/ =~ RUBY_PLATFORM
+  end
 
   def test_getifaddrs
     begin
