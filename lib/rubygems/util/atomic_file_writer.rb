@@ -99,7 +99,9 @@ module Gem
     # still be cut mid-character.
     def self.byteslice_at_char_boundary(string, max_bytesize)
       sliced = string.byteslice(0, max_bytesize)
-      sliced.scrub!("") if string.valid_encoding?
+      if string.valid_encoding?
+        sliced = sliced.byteslice(0, sliced.bytesize - 1) until sliced.valid_encoding?
+      end
       sliced
     end
     private_class_method :byteslice_at_char_boundary
