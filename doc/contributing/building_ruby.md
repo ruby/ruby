@@ -256,11 +256,6 @@ generating `LDFLAGS` from it can yield `-L` options for directories that do not
 exist, which `configure` rejects. Use `brew --prefix --installed LIB`, which
 fails instead of printing a path for an uninstalled formula.
 
-Build this configuration with GNU make 4 or later. Under GNU
-make 3 a parallel build can link `ruby` without the extension objects, and that
-link succeeds silently, leaving an interpreter with no extensions and no
-encodings.
-
 ## Debugging
 
 You can use either lldb or gdb for debugging. Before debugging, you need to
