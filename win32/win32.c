@@ -3487,6 +3487,15 @@ rb_w32_getsockopt(int s, int level, int optname, char *optval, int *optlen)
         if (r == SOCKET_ERROR)
             errno = map_errno(WSAGetLastError());
     }
+    /* Winsock leaves a WSA error code in SO_ERROR, but the callers expect
+     * an errno as on the other platforms.  [Bug #18661] */
+    if (r == 0 && level == SOL_SOCKET && optname == SO_ERROR &&
+        *optlen == (int)sizeof(int)) {
+        int sockerr;
+        memcpy(&sockerr, optval, sizeof(sockerr));
+        sockerr = map_errno(sockerr);
+        memcpy(optval, &sockerr, sizeof(sockerr));
+    }
     return r;
 }
 
