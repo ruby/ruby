@@ -540,19 +540,20 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
         ("dump-hir" | "dump-hir-opt", "") => options.dump_hir_opt = Some(DumpHIR::WithoutSnapshot),
         ("dump-hir" | "dump-hir-opt", "all") => options.dump_hir_opt = Some(DumpHIR::All),
         ("dump-hir" | "dump-hir-opt", "debug") => options.dump_hir_opt = Some(DumpHIR::Debug),
-        // Any other value is a file path to dump HIR to instead of stdout. It composes with the
-        // format variants, e.g. --zjit-dump-hir=all --zjit-dump-hir=/tmp/out.hir.
+        // Any other value is a directory to dump HIR to instead of stdout. It composes with the
+        // format variants, e.g. `--zjit-dump-hir=all --zjit-dump-hir=/tmp/` dumps to /tmp/hir-PID.
         ("dump-hir" | "dump-hir-opt", _) => {
+            let file_name = format!("{opt_val}/hir-{}", std::process::id());
+            let file_name = std::fs::canonicalize(&file_name).unwrap_or_else(|_| file_name.into());
             // Truncate the file if it exists
             std::fs::OpenOptions::new()
                 .create(true)
                 .write(true)
                 .truncate(true)
-                .open(opt_val)
-                .map_err(|e| eprintln!("Failed to open file '{opt_val}': {e}"))
+                .open(&file_name)
+                .map_err(|e| eprintln!("Failed to open file '{}': {e}", file_name.display()))
                 .ok();
-            let opt_val = std::fs::canonicalize(opt_val).unwrap_or_else(|_| opt_val.into());
-            options.dump_hir_file = Some(opt_val);
+            options.dump_hir_file = Some(file_name);
             options.dump_hir_opt.get_or_insert(DumpHIR::WithoutSnapshot);
         }
 
