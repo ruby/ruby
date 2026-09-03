@@ -192,4 +192,103 @@ Removed file plugins/a_badly_named_file.rb
 
     assert doctor.gem_repository?, "gems installed"
   end
+
+  def test_doctor_preserves_valid_abi_scoped_gemspec
+    spec = util_ca_spec "ca_gem", "1", "aabbccdd",
+      required_ruby_version: "~> #{Gem.ruby_abi}.0",
+      platform: Gem::Platform.local.to_s
+    abi_dir = File.join @gemhome, "specifications", Gem.ruby_abi
+    FileUtils.mkdir_p abi_dir
+    gemspec_path = File.join(abi_dir, "#{spec.full_name}.gemspec")
+    File.write gemspec_path, spec.to_ruby_for_cache
+
+    doctor = Gem::Doctor.new @gemhome
+
+    use_ui @ui do
+      doctor.doctor
+    end
+
+    assert_path_exist abi_dir
+    assert_path_exist gemspec_path
+  end
+
+  def test_doctor_removes_corrupt_abi_scoped_gemspec
+    install_specs util_spec "regular_gem"
+
+    spec = util_ca_spec "ca_gem", "1", "aabbccdd",
+      required_ruby_version: "~> #{Gem.ruby_abi}.0",
+      platform: Gem::Platform.local.to_s
+    abi_dir = File.join @gemhome, "specifications", Gem.ruby_abi
+    FileUtils.mkdir_p abi_dir
+    gemspec_path = File.join(abi_dir, "#{spec.full_name}.gemspec")
+    File.write gemspec_path, spec.to_ruby_for_cache
+
+    corrupt_path = File.join(abi_dir, "corrupt_gem-1-deadbeef.gemspec")
+    File.write corrupt_path, "this will raise an exception when evaluated."
+
+    doctor = Gem::Doctor.new @gemhome
+
+    use_ui @ui do
+      doctor.doctor
+    end
+
+    assert_path_exist abi_dir
+    assert_path_exist gemspec_path
+    assert_path_not_exist corrupt_path
+  end
+
+  def test_doctor_preserves_other_abi_dir
+    install_specs util_spec "regular_gem"
+
+    abi_dir = File.join @gemhome, "specifications", "9.9"
+    FileUtils.mkdir_p abi_dir
+    gemspec_path = File.join(abi_dir, "other_ruby_gem-1-deadbeef.gemspec")
+    File.write gemspec_path, "belongs to another Ruby installation"
+
+    doctor = Gem::Doctor.new @gemhome
+
+    use_ui @ui do
+      doctor.doctor
+    end
+
+    assert_path_exist abi_dir
+    assert_path_exist gemspec_path
+  end
+
+  def test_doctor_does_not_recurse_into_abi_symlink
+    pend "symlinks not supported" unless symlink_supported?
+
+    install_specs util_spec "regular_gem"
+
+    target_dir = File.join @tempdir, "outside_repository"
+    FileUtils.mkdir_p target_dir
+    outside_path = File.join(target_dir, "outside_gem-1-deadbeef.gemspec")
+    File.write outside_path, "outside the gem repository"
+
+    link = File.join @gemhome, "specifications", Gem.ruby_abi
+    File.symlink target_dir, link
+
+    doctor = Gem::Doctor.new @gemhome
+
+    use_ui @ui do
+      doctor.doctor
+    end
+
+    assert File.symlink?(link)
+    assert_path_exist outside_path
+  end
+
+  def test_doctor_preserves_empty_abi_dir
+    install_specs util_spec "regular_gem"
+    abi_dir = File.join @gemhome, "specifications", Gem.ruby_abi
+    FileUtils.mkdir_p abi_dir
+
+    doctor = Gem::Doctor.new @gemhome
+
+    use_ui @ui do
+      doctor.doctor
+    end
+
+    assert_path_exist abi_dir
+  end
 end

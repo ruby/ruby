@@ -115,6 +115,12 @@ class Gem::Doctor
       next if sub_directory == "specifications" && basename == "default"
       next if sub_directory == "plugins" && Gem.plugin_suffix_regexp =~ basename
 
+      if sub_directory == "specifications" && File.directory?(child) &&
+         Gem::ContentAddress.valid_ruby_abi?(ent)
+        doctor_child(File.join(sub_directory, ent), extension) if ent == Gem.ruby_abi && !File.symlink?(child)
+        next
+      end
+
       type = File.directory?(child) ? "directory" : "file"
 
       action = if @dry_run
