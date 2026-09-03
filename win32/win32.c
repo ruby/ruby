@@ -1050,7 +1050,9 @@ static const char szInternalCmds[][InternalCmdsMax+2] = {
 static int
 internal_match(const void *key, const void *elem)
 {
-    return strncmp(key, ((const char *)elem) + 1, InternalCmdsMax);
+    /* Compare the terminator too, so a longer key that merely starts with an
+     * entry (e.g. "setlocal&...") does not match that entry. */
+    return strncmp(key, ((const char *)elem) + 1, InternalCmdsMax + 1);
 }
 
 /* License: Ruby's */
@@ -1120,8 +1122,23 @@ rb_w32_get_osfhandle(int fh)
 }
 
 /* License: Ruby's */
+/* How an argument is kept from being re-parsed by the cmd.exe that runs a
+ * batch file or an internal command.  CMDQ_CARET escapes a metacharacter with
+ * a caret, which the single cmd.exe parse of an internal command honors and
+ * which leaves the argument itself unchanged.  A batch file needs CMDQ_QUOTE
+ * instead, because CreateProcess wraps the command line before cmd.exe sees it
+ * and the caret is lost; there an argument carrying a metacharacter is wrapped
+ * in double quotes.  Both modes double an embedded double quote instead of
+ * escaping it with a backslash, which cmd.exe does not honor.  `quote_bs`
+ * doubles a trailing run of backslashes so it does not escape the closing
+ * quote ([Bug #22199]). */
+#define CMDQ_NONE 0
+#define CMDQ_CARET 1
+#define CMDQ_QUOTE 2
+#define CMDQ_METACHARS "&|<>()^"
+
 static int
-join_argv(char *cmd, char *const *argv, BOOL escape, UINT cp, int backslash, BOOL quote_bs)
+join_argv(char *cmd, char *const *argv, int cmdmode, UINT cp, int backslash, BOOL quote_bs)
 {
     const char *p, *s;
     char *q, *const *t;
@@ -1130,7 +1147,8 @@ join_argv(char *cmd, char *const *argv, BOOL escape, UINT cp, int backslash, BOO
     for (t = argv, q = cmd, len = 0; (p = *t) != 0; t++) {
         quote = 0;
         s = p;
-        if (!*p || strpbrk(p, " \t\"'")) {
+        if (!*p || strpbrk(p, " \t\"'") ||
+            (cmdmode == CMDQ_QUOTE && strpbrk(p, CMDQ_METACHARS))) {
             quote = 1;
             len++;
             if (q) *q++ = '"';
@@ -1146,16 +1164,30 @@ join_argv(char *cmd, char *const *argv, BOOL escape, UINT cp, int backslash, BOO
                     memcpy(q, s, n);
                     q += n;
                 }
-                s = p;
-                len += ++bs;
-                if (q) {
-                    memset(q, '\\', bs);
-                    q += bs;
+                if (cmdmode != CMDQ_NONE) {
+                    /* double the run of backslashes, then emit "" */
+                    len += bs + 2;
+                    if (q) {
+                        memset(q, '\\', bs);
+                        q += bs;
+                        *q++ = '"';
+                        *q++ = '"';
+                    }
+                    s = p + 1;
+                }
+                else {
+                    s = p;
+                    len += ++bs;
+                    if (q) {
+                        memset(q, '\\', bs);
+                        q += bs;
+                    }
                 }
                 bs = 0;
                 break;
-              case '<': case '>': case '|': case '^':
-                if (escape && !quote) {
+              case '&': case '|': case '<': case '>':
+              case '(': case ')': case '^':
+                if (cmdmode == CMDQ_CARET && !quote) {
                     len += (n = p - s) + 1;
                     if (q) {
                         memcpy(q, s, n);
@@ -1163,8 +1195,10 @@ join_argv(char *cmd, char *const *argv, BOOL escape, UINT cp, int backslash, BOO
                         *q++ = '^';
                     }
                     s = p;
+                    bs = 0;
                     break;
                 }
+                /* fall through */
               default:
                 bs = 0;
                 p = CharNextExA(cp, p, 0) - 1;
@@ -1172,7 +1206,7 @@ join_argv(char *cmd, char *const *argv, BOOL escape, UINT cp, int backslash, BOO
             }
         }
         len += (n = p - s) + 1;
-        if (quote) len += (quote_bs ? bs : 0) + 1;
+        if (quote) len += ((cmdmode != CMDQ_NONE || quote_bs) ? bs : 0) + 1;
         if (q) {
             memcpy(q, s, n);
             if (backslash > 0) {
@@ -1182,8 +1216,9 @@ join_argv(char *cmd, char *const *argv, BOOL escape, UINT cp, int backslash, BOO
             }
             q += n;
             if (quote) {
-                // See [Bug #22199]
-                if (quote_bs && bs) {
+                /* Double a trailing run of backslashes so it does not escape
+                 * the closing quote for CommandLineToArgvW.  See [Bug #22199]. */
+                if ((cmdmode != CMDQ_NONE || quote_bs) && bs) {
                     memset(q, '\\', bs);
                     q += bs;
                 }
@@ -1483,9 +1518,9 @@ static rb_pid_t
 w32_spawn_process(int mode, const char *prog, char *const *argv,
                   int in_fd, int out_fd, int err_fd, DWORD flags, UINT cp)
 {
-    int c_switch = 0;
+    int c_switch = 0, cmdmode = CMDQ_NONE;
     size_t len;
-    BOOL ntcmd = FALSE, tmpnt;
+    BOOL tmpnt;
     const char *shell;
     char *cmd, fbuf[PATH_MAX];
     WCHAR *wcmd = NULL, *wprog = NULL;
@@ -1509,7 +1544,7 @@ w32_spawn_process(int mode, const char *prog, char *const *argv,
     if (!prog) prog = argv[0];
     if ((shell = w32_getenv("COMSPEC", cp)) &&
         internal_cmd_match(prog, tmpnt = !is_command_com(shell))) {
-        ntcmd = tmpnt;
+        if (tmpnt) cmdmode = CMDQ_CARET;
         prog = shell;
         c_switch = 1;
     }
@@ -1529,22 +1564,25 @@ w32_spawn_process(int mode, const char *prog, char *const *argv,
     }
     if (c_switch || is_batch(prog)) {
         char *progs[2];
+        /* CreateProcess wraps a batch file's command line before cmd.exe sees
+         * it and the caret is lost, so quote its arguments instead. */
+        int argmode = c_switch ? cmdmode : CMDQ_QUOTE;
         progs[0] = (char *)prog;
         progs[1] = NULL;
-        len = join_argv(NULL, progs, ntcmd, cp, 1, FALSE);
+        len = join_argv(NULL, progs, cmdmode, cp, 1, FALSE);
         if (c_switch) len += 3;
         else ++argv;
-        if (argv[0]) len += join_argv(NULL, argv, ntcmd, cp, 0, FALSE);
+        if (argv[0]) len += join_argv(NULL, argv, argmode, cp, 0, FALSE);
         cmd = ALLOCV(v, len);
-        join_argv(cmd, progs, ntcmd, cp, 1, FALSE);
+        join_argv(cmd, progs, cmdmode, cp, 1, FALSE);
         if (c_switch) strlcat(cmd, " /c", len);
-        if (argv[0]) join_argv(cmd + strlcat(cmd, " ", len), argv, ntcmd, cp, 0, FALSE);
+        if (argv[0]) join_argv(cmd + strlcat(cmd, " ", len), argv, argmode, cp, 0, FALSE);
         prog = c_switch ? shell : 0;
     }
     else {
-        len = join_argv(NULL, argv, FALSE, cp, 1, TRUE);
+        len = join_argv(NULL, argv, CMDQ_NONE, cp, 1, TRUE);
         cmd = ALLOCV(v, len);
-        join_argv(cmd, argv, FALSE, cp, 1, TRUE);
+        join_argv(cmd, argv, CMDQ_NONE, cp, 1, TRUE);
     }
 
     if (!e && cmd && !(wcmd = mbstr_to_wstr(cp, cmd, -1, NULL))) e = E2BIG;
