@@ -20,6 +20,7 @@
 #include "internal/string.h"
 #include "internal/class.h"
 #include "internal/imemo.h"
+#include "internal/struct.h"
 #include "ruby/internal/core/rtypeddata.h"
 #include "zjit.h"
 

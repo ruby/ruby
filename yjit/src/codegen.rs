@@ -8990,7 +8990,7 @@ fn gen_struct_aref(
     // length. So if our comptime_recv is embedded all runtime
     // structs of the same class and shape_id should be as well, and the same is
     // true of the converse.
-    let embedded = unsafe { FL_TEST_RAW(comptime_recv, VALUE(RSTRUCT_EMBED_LEN_MASK)) };
+    let embedded = unsafe { FL_TEST_RAW(comptime_recv, VALUE(RSTRUCT_EMBED_LEN_MASK as usize)) };
 
     asm_comment!(asm, "struct aref");
 

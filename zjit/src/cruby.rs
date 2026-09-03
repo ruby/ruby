@@ -678,7 +678,7 @@ impl VALUE {
     pub fn struct_embedded_p(self) -> bool {
         unsafe {
             RB_TYPE_P(self, RUBY_T_STRUCT) &&
-            FL_TEST_RAW(self, VALUE(RSTRUCT_EMBED_LEN_MASK)) != VALUE(0)
+            FL_TEST_RAW(self, VALUE(RSTRUCT_EMBED_LEN_MASK as usize)) != VALUE(0)
         }
     }
 
@@ -1219,9 +1219,6 @@ mod manual_defs {
     pub const VM_CALL_SUPER : u32 = 1 << VM_CALL_SUPER_bit;
     pub const VM_CALL_ZSUPER : u32 = 1 << VM_CALL_ZSUPER_bit;
     pub const VM_CALL_OPT_SEND : u32 = 1 << VM_CALL_OPT_SEND_bit;
-
-    // From internal/struct.h - in anonymous enum, so we can't easily import it
-    pub const RSTRUCT_EMBED_LEN_MASK: usize = (RUBY_FL_USER7 | RUBY_FL_USER6 | RUBY_FL_USER5 | RUBY_FL_USER4 | RUBY_FL_USER3 |RUBY_FL_USER2 | RUBY_FL_USER1) as usize;
 
     // We'll need to encode a lot of Ruby struct/field offsets as constants unless we want to
     // redeclare all the Ruby C structs and write our own offsetof macro. For now, we use constants.

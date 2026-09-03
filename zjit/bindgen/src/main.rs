@@ -100,6 +100,7 @@ fn main() {
         .allowlist_var("RB_GC_ZJIT_FASTPATH_.*")
 
         .allowlist_type("ruby_rstring_flags")
+        .allowlist_type("ruby_rstruct_flags")
 
         // This function prints info about a value and is useful for debugging
         .allowlist_function("rb_raw_obj_info")
