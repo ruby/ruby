@@ -1029,8 +1029,7 @@ class TestSocket < Test::Unit::TestCase
 
     server.close
 
-    # SystemCallError is a workaround for Windows environment
-    assert_raise(Errno::ECONNREFUSED, SystemCallError) do
+    assert_raise(Errno::ECONNREFUSED) do
       Socket.tcp("localhost", port)
     end
     RUBY
