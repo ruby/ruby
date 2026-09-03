@@ -62,6 +62,22 @@ class TestGemCommandsContentsCommand < Gem::TestCase
     assert_equal "", @ui.error
   end
 
+  def test_execute_bad_gem_with_spec_dir
+    @cmd.options[:args] = %w[foo]
+    @cmd.options[:specdirs] = [@gemhome]
+
+    assert_raise Gem::MockGemUi::TermError do
+      use_ui @ui do
+        @cmd.execute
+      end
+    end
+
+    assert_match(/Unable to find gem 'foo' in specified path/, @ui.output)
+    assert_match(/Directories searched:/, @ui.output)
+    assert_match(File.join(@gemhome, "specifications", Gem.ruby_abi), @ui.output)
+    assert_equal "", @ui.error
+  end
+
   def test_execute_exact_match
     @cmd.options[:args] = %w[foo]
     gem "foo"
