@@ -1065,7 +1065,7 @@ $(PLATFORM_D):
 exe/$(PROGRAM): $(TIMESTAMPDIR)/$(arch)/.time
 exe/$(PROGRAM): ruby-runner.c ruby-runner.h exe/.time $(PREP) {$(VPATH)}config.h
 	$(Q) $(CC) $(CFLAGS) $(INCFLAGS) $(CPPFLAGS) -DRUBY_INSTALL_NAME=$(@F) $(COUTFLAG)ruby-runner.$(OBJEXT) -c $(CSRCFLAG)$(srcdir)/ruby-runner.c
-	$(Q) $(PURIFY) $(CC) $(CFLAGS) $(LDFLAGS) $(OUTFLAG)$@ ruby-runner.$(OBJEXT) $(LIBS)
+	$(Q) $(PURIFY) $(CC) $(CFLAGS) $(LDFLAGS) $(XLDFLAGS) $(OUTFLAG)$@ ruby-runner.$(OBJEXT) $(LIBS)
 	$(Q) $(POSTLINK)
 	$(Q) $(BOOTSTRAPRUBY) \
 	    -e 'prog, dest, inst = ARGV; dest += "/ruby"' \
