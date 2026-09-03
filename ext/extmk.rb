@@ -123,6 +123,10 @@ def extract_makefile(makefile, keep = true)
     /^STATIC_LIB[ \t]*=[ \t]*\S+/ =~ m or $static = false
   end
   $preload = Shellwords.shellwords(m[/^preload[ \t]*=[ \t]*(.*)/, 1] || "")
+  if ldflags = m[/^ldflags[ \t]*=[ \t]*(.*)/, 1] and !$LDFLAGS.include?(ldflags)
+    # extconf.rb may have added library paths here, e.g. via pkg_config.
+    $LDFLAGS += " " + ldflags
+  end
   if dldflags = m[/^dldflags[ \t]*=[ \t]*(.*)/, 1] and !$DLDFLAGS.include?(dldflags)
     $DLDFLAGS += " " + dldflags
   end
