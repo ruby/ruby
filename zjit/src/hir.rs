@@ -2521,7 +2521,8 @@ impl<'a> FunctionPrinter<'a> {
     }
 }
 
-/// Write a HIR dump to the file given by --zjit-dump-hir=<path>, or to stdout if no path was given.
+/// Write a HIR dump to the file given by --zjit-dump-hir=some_directory, or to stdout if no path
+/// was given.
 fn print_hir_dump(label: &str, body: &dyn std::fmt::Display) {
     match crate::options::get_option_ref!(dump_hir_file) {
         Some(path) => {
