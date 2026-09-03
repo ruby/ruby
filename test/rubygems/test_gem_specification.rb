@@ -1948,6 +1948,121 @@ dependencies: []
     assert_nil spec.ruby_abi
   end
 
+  def test_spec_paths_for_content_addressed_spec_use_abi_scoped_dir
+    spec = util_ca_spec "a", "2", "78be552b", ruby_abi: "3.4"
+    spec.loaded_from = File.join @gemhome, "specifications", "3.4", "a-2-78be552b.gemspec"
+
+    assert_equal @gemhome, spec.base_dir
+    assert_equal File.join(@gemhome, "specifications", "3.4"), spec.spec_dir
+    assert_equal File.join(@gemhome, "specifications", "3.4", "a-2-78be552b.gemspec"),
+                 spec.spec_file
+    assert_equal File.join(@gemhome, "gems", "a-2-78be552b"), spec.gem_dir
+  end
+
+  def test_spec_file_for_content_addressed_spec_loaded_from_flat_dir
+    spec = util_ca_spec "a", "2", "78be552b", ruby_abi: "3.4"
+    spec.loaded_from = File.join @gemhome, "specifications", "a-2-78be552b.gemspec"
+
+    assert_equal File.join(@gemhome, "specifications"), spec.spec_dir
+    assert_equal File.join(@gemhome, "specifications", "a-2-78be552b.gemspec"),
+                 spec.spec_file
+  end
+
+  def test_base_dir_unchanged_for_abi_shaped_dir_outside_specifications
+    spec = util_spec "a", 2
+    spec.loaded_from = File.join @tempdir, "3.4", "a-2.gemspec"
+
+    assert_equal @tempdir, spec.base_dir
+  end
+
+  def test_specification_record_dirs_from_includes_current_abi_dir
+    assert_equal [File.join(@gemhome, "specifications"),
+                  File.join(@gemhome, "specifications", Gem.ruby_abi)],
+                 Gem::SpecificationRecord.dirs_from([@gemhome])
+  end
+
+  def test_specification_record_abi_scoped_spec_dir_eh
+    assert Gem::SpecificationRecord.abi_scoped_spec_dir?(File.join(@gemhome, "specifications", "3.4"))
+
+    refute Gem::SpecificationRecord.abi_scoped_spec_dir?(File.join(@gemhome, "specifications"))
+    refute Gem::SpecificationRecord.abi_scoped_spec_dir?(File.join(@gemhome, "specifications", "default"))
+    refute Gem::SpecificationRecord.abi_scoped_spec_dir?(File.join(@tempdir, "3.4"))
+  end
+
+  def test_specification_record_specification_dir_for_content_addressed_spec
+    spec = util_ca_spec "a", "2", "78be552b", ruby_abi: "3.4"
+
+    assert_equal File.join(@gemhome, "specifications", "3.4"),
+                 Gem::SpecificationRecord.specification_dir_for(spec, @gemhome)
+  end
+
+  def test_specification_record_specification_dir_for_non_content_addressed_spec
+    spec = util_spec "a", 2 do |s|
+      s.required_ruby_version = "~> 3.4.0"
+      s.platform = "x86_64-linux"
+    end
+
+    assert_equal File.join(@gemhome, "specifications"),
+                 Gem::SpecificationRecord.specification_dir_for(spec, @gemhome)
+  end
+
+  def test_self_stubs_finds_content_addressed_gemspec_in_current_abi_dir
+    write_ca_gemspec_in "ca_gem", Gem.ruby_abi
+
+    Gem::Specification.reset
+
+    abi_dir = File.join(@gemhome, "specifications", Gem.ruby_abi)
+    assert_path_exist File.join(abi_dir, "ca_gem-1-aabbccdd.gemspec"),
+      "content-addressed gemspec file should exist in the ABI dir"
+    assert_includes Gem::SpecificationRecord.dirs_from([@gemhome]), abi_dir,
+      "dirs_from should include the ABI dir"
+    glob = Gem::Util.glob_files_in_dir("*.gemspec", abi_dir)
+    assert_includes glob.map {|f| File.basename(f) }, "ca_gem-1-aabbccdd.gemspec",
+      "Dir.glob should find the content-addressed gemspec in the ABI dir"
+    stub_path = File.join(abi_dir, "ca_gem-1-aabbccdd.gemspec")
+    gemspec_stub = Gem::StubSpecification.gemspec_stub(stub_path, @gemhome, File.join(@gemhome, "gems"))
+    assert gemspec_stub.valid?, "StubSpecification should be valid (data parses correctly)"
+
+    all_stubs = Gem::Specification.stubs
+    stub_names = all_stubs.map(&:full_name)
+    assert_includes stub_names, "ca_gem-1-aabbccdd",
+      "stubs should include ca_gem (got: #{stub_names.inspect})"
+
+    stub = Gem::Specification.stubs.find {|s| s.name == "ca_gem" }
+
+    refute_nil stub
+    assert_equal "ca_gem-1-aabbccdd", stub.full_name
+    assert_equal @gemhome, stub.base_dir
+    assert_equal File.join(@gemhome, "gems", "ca_gem-1-aabbccdd"), stub.full_gem_path
+  end
+
+  def test_content_addressed_gemspec_for_other_abi_is_not_an_activation_candidate
+    other_abi = "1.0"
+    refute_equal Gem.ruby_abi, other_abi
+
+    write_ca_gemspec_in "ca_gem", other_abi
+
+    Gem::Specification.reset
+
+    assert_nil Gem::Specification.stubs.find {|s| s.name == "ca_gem" }
+  end
+
+  def test_flat_record_does_not_see_abi_scoped_gemspecs
+    write_ca_gemspec_in "ca_gem", Gem.ruby_abi
+
+    record = Gem::SpecificationRecord.new([File.join(@gemhome, "specifications")])
+
+    assert_nil record.stubs.find {|s| s.name == "ca_gem" }
+  end
+
+  def write_ca_gemspec_in(name, abi)
+    spec = util_ca_spec name, "1", "aabbccdd", required_ruby_version: "~> #{abi}.0"
+    abi_dir = File.join @gemhome, "specifications", abi
+    FileUtils.mkdir_p abi_dir
+    File.write File.join(abi_dir, "#{spec.full_name}.gemspec"), spec.to_ruby_for_cache
+    spec
+  end
+
   def test_full_name
     assert_equal "a-1", @a1.full_name
 

@@ -115,6 +115,10 @@ class TestGemContentAddress < Gem::TestCase
     refute Gem::ContentAddress.eligible?(spec)
   end
 
+  def test_ruby_abi_returns_nil_for_non_numeric_segments
+    assert_nil Gem::ContentAddress.ruby_abi_for(Gem::Requirement.new("~> 3.a.0"))
+  end
+
   def test_content_addressed_with_eligible_spec_and_valid_address
     spec = Gem::Specification.new "a", 1
     spec.required_ruby_version = "~> 3.4.0"

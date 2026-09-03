@@ -1231,7 +1231,8 @@ class TestGemInstaller < Gem::InstallerTestCase
     assert_equal "a-2-#{address}", spec.full_name
     assert_path_exist File.join(@gemhome, "gems", "a-2-#{address}")
     assert_path_exist File.join(@gemhome, "cache", "a-2-#{address}.gem")
-    assert_path_exist File.join(@gemhome, "specifications", "a-2-#{address}.gemspec")
+    assert_path_exist File.join(@gemhome, "specifications", "3.4", "a-2-#{address}.gemspec")
+    assert_path_not_exist File.join(@gemhome, "specifications", "a-2-#{address}.gemspec")
   end
 
   def test_install_raises_for_mismatched_content_address
@@ -1346,8 +1347,8 @@ class TestGemInstaller < Gem::InstallerTestCase
   def test_require_works_after_content_addressed_install
     source_spec, a_gem = util_gem("a", 2) do |spec|
       spec.files = ["lib/ca_activation_test.rb"]
-      spec.required_ruby_version = "~> 3.4.0"
-      spec.platform = "x86_64-linux"
+      spec.required_ruby_version = "~> #{Gem.ruby_abi}.0"
+      spec.platform = Gem::Platform.local.to_s
     end
     FileUtils.rm_rf source_spec.gem_dir
 
@@ -1385,9 +1386,9 @@ class TestGemInstaller < Gem::InstallerTestCase
 
     assert_equal "a-2-#{address}", spec2.full_name
     assert_path_exist File.join(@gemhome, "gems", "a-2-#{address}")
-    assert_path_exist File.join(@gemhome, "specifications", "a-2-#{address}.gemspec")
+    assert_path_exist File.join(@gemhome, "specifications", "3.4", "a-2-#{address}.gemspec")
     assert_equal 1, Dir[File.join(@gemhome, "gems", "a-2*")].size
-    assert_equal 1, Dir[File.join(@gemhome, "specifications", "a-2*.gemspec")].size
+    assert_equal 1, Dir[File.join(@gemhome, "specifications", "3.4", "a-2*.gemspec")].size
   end
 
   def test_install_assigns_content_address_from_filename_with_full_sha
@@ -1407,7 +1408,7 @@ class TestGemInstaller < Gem::InstallerTestCase
     assert_equal "a-2-#{digest}", spec.full_name
     assert_path_exist File.join(@gemhome, "gems", "a-2-#{digest}")
     assert_path_exist File.join(@gemhome, "cache", "a-2-#{digest}.gem")
-    assert_path_exist File.join(@gemhome, "specifications", "a-2-#{digest}.gemspec")
+    assert_path_exist File.join(@gemhome, "specifications", "3.4", "a-2-#{digest}.gemspec")
   end
 
   def test_two_content_addressed_gems_with_same_name_version_coexist
@@ -1446,10 +1447,77 @@ class TestGemInstaller < Gem::InstallerTestCase
 
     assert_path_exist File.join(@gemhome, "gems", "a-2-#{address1}")
     assert_path_exist File.join(@gemhome, "gems", "a-2-#{address2}")
-    assert_path_exist File.join(@gemhome, "specifications", "a-2-#{address1}.gemspec")
-    assert_path_exist File.join(@gemhome, "specifications", "a-2-#{address2}.gemspec")
+    assert_path_exist File.join(@gemhome, "specifications", "3.4", "a-2-#{address1}.gemspec")
+    assert_path_exist File.join(@gemhome, "specifications", "3.4", "a-2-#{address2}.gemspec")
     assert_equal 2, Dir[File.join(@gemhome, "gems", "a-2-*")].size
-    assert_equal 2, Dir[File.join(@gemhome, "specifications", "a-2-*.gemspec")].size
+    assert_equal 2, Dir[File.join(@gemhome, "specifications", "3.4", "a-2-*.gemspec")].size
+  end
+
+  def test_sequential_content_addressed_installs_with_restrictive_dir_mode
+    pend "chmod not supported" if Gem.win_platform?
+
+    abi_spec_dir = File.join(@gemhome, "specifications", Gem.ruby_abi)
+    addresses = %w[a b].map do |name|
+      _, gem = util_gem(name, 2) do |spec|
+        spec.required_ruby_version = "~> #{Gem.ruby_abi}.0"
+        spec.platform = Gem::Platform.local.to_s
+      end
+
+      address = Digest::SHA256.file(gem).hexdigest[0, 8]
+      filename = File.join(File.dirname(gem), "#{name}-2-#{address}.gem")
+      FileUtils.cp gem, filename
+
+      Gem::Installer.at(filename, install_dir: @gemhome, force: true, dir_mode: 0o555).install
+
+      [name, address]
+    end
+
+    addresses.each do |name, address|
+      assert_path_exist File.join(abi_spec_dir, "#{name}-2-#{address}.gemspec")
+    end
+
+    _, a_address = addresses.first
+    assert_equal 0o555, File.stat(File.join(@gemhome, "gems", "a-2-#{a_address}")).mode & 0o777
+    assert_equal 0o555, File.stat(abi_spec_dir).mode & 0o777
+  ensure
+    FileUtils.chmod(0o755, abi_spec_dir) if abi_spec_dir && File.directory?(abi_spec_dir)
+  end
+
+  def test_incompatible_abi_content_addressed_install_is_not_registered_in_memory
+    incompatible_abi = "1.0"
+    refute_equal Gem.ruby_abi, incompatible_abi
+
+    _, a_gem = util_gem("a", 2) do |spec|
+      spec.required_ruby_version = "~> #{incompatible_abi}.0"
+      spec.platform = Gem::Platform.local.to_s
+    end
+
+    address = Digest::SHA256.file(a_gem).hexdigest[0, 8]
+    filename = File.join(File.dirname(a_gem), "a-2-#{address}.gem")
+    FileUtils.cp a_gem, filename
+
+    use_ui @ui do
+      Gem::Installer.at(filename, force: true).install
+    end
+
+    assert_path_exist File.join(@gemhome, "specifications", incompatible_abi, "a-2-#{address}.gemspec")
+    assert_empty Gem::Specification.find_all_by_name("a").map(&:full_name).grep(/#{address}/)
+    assert_match(/scoped to Ruby ABI #{incompatible_abi}/, @ui.output)
+  end
+
+  def test_current_abi_content_addressed_install_is_registered_in_memory
+    _, a_gem = util_gem("a", 2) do |spec|
+      spec.required_ruby_version = "~> #{Gem.ruby_abi}.0"
+      spec.platform = Gem::Platform.local.to_s
+    end
+
+    address = Digest::SHA256.file(a_gem).hexdigest[0, 8]
+    filename = File.join(File.dirname(a_gem), "a-2-#{address}.gem")
+    FileUtils.cp a_gem, filename
+
+    Gem::Installer.at(filename, force: true).install
+
+    assert_includes Gem::Specification.find_all_by_name("a").map(&:full_name), "a-2-#{address}"
   end
 
   def test_install

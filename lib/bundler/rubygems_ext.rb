@@ -45,6 +45,21 @@ module Gem
     end
   end
 
+  # Can be removed once RubyGems 4.0.0 support is dropped
+  class SpecificationRecord
+    unless respond_to?(:specification_dir_for)
+      def self.specification_dir_for(spec, base_dir)
+        File.join(base_dir, "specifications")
+      end
+    end
+
+    unless respond_to?(:dirs_from)
+      def self.dirs_from(paths)
+        paths.map {|path| File.join(path, "specifications") }
+      end
+    end
+  end
+
   # Can be removed once RubyGems 3.5.11 support is dropped
   unless Gem.respond_to?(:freebsd_platform?)
     def self.freebsd_platform?

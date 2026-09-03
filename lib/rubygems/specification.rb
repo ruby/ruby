@@ -1263,7 +1263,9 @@ class Gem::Specification < Gem::BasicSpecification
   # Keeps track of all currently known specifications
 
   def self.specification_record
-    @specification_record ||= Gem::SpecificationRecord.new(dirs)
+    @specification_record ||= Gem::SpecificationRecord.new(
+      Gem::SpecificationRecord.dirs_with_abi(dirs)
+    )
   end
 
   # DOC: This method needs documented or nodoc'd
@@ -2026,12 +2028,18 @@ class Gem::Specification < Gem::BasicSpecification
 
   def base_dir
     return Gem.dir unless loaded_from
-    @base_dir ||= if default_gem?
+    @base_dir ||= if default_gem? || loaded_from_abi_scoped_spec_dir?
       File.dirname File.dirname File.dirname loaded_from
     else
       File.dirname File.dirname loaded_from
     end
   end
+
+  def loaded_from_abi_scoped_spec_dir?
+    !loaded_from.nil? &&
+      Gem::SpecificationRecord.abi_scoped_spec_dir?(File.dirname(loaded_from))
+  end
+  private :loaded_from_abi_scoped_spec_dir?
 
   def inspect # :nodoc:
     if $DEBUG
@@ -2328,11 +2336,14 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   ##
-  # Returns the full path to the directory containing this spec's
-  # gemspec file. eg: /usr/local/lib/ruby/gems/1.8/specifications
-
+  # Full path to the directory containing this spec's gemspec file.
+  # ABI-scoped for content-addressed specs.
   def spec_dir
-    @spec_dir ||= File.join base_dir, "specifications"
+    @spec_dir ||= if loaded_from && Gem::ContentAddress.content_addressed?(self)
+      File.dirname loaded_from
+    else
+      Gem::SpecificationRecord.specification_dir_for(self, base_dir)
+    end
   end
 
   ##

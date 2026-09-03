@@ -53,9 +53,11 @@ module Gem::ContentAddress
     return nil if requirements.size != 1
 
     op, version = requirements.first
-    return nil if op != "~>" || version.segments.size != 3 || version.segments[2] != 0
+    segments = version.segments
+    return nil if op != "~>" || segments.size != 3 || segments[2] != 0
+    return nil unless segments[0].is_a?(Integer) && segments[1].is_a?(Integer)
 
-    version.segments[0..1].join(".")
+    segments[0..1].join(".")
   end
 
   ##

@@ -161,7 +161,8 @@ module Bundler
     end
 
     def local_specification_path
-      "#{base_dir}/specifications/#{full_name}.gemspec"
+      File.join(Gem::SpecificationRecord.specification_dir_for(self, base_dir),
+                "#{full_name}.gemspec")
     end
 
     def parse_metadata(data)

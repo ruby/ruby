@@ -556,7 +556,7 @@ EOM
       end
     end
 
-    if dir_mode
+    if dir_mode && !directories.empty?
       File.chmod(dir_mode, *directories)
     end
   end

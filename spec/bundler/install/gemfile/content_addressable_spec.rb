@@ -536,7 +536,10 @@ RSpec.describe "bundle install with content-addressable gems invisible to pre-4.
 
       expect(the_bundle).to include_gems "mygem 1.0 content_addressed"
 
-      installed_gemspec = Dir[default_bundle_path("specifications", "mygem-1.0-*.gemspec").to_s].first
+      expect(Dir[default_bundle_path("specifications", "mygem-1.0-*.gemspec").to_s]).to be_empty
+
+      installed_gemspec = Dir[default_bundle_path("specifications", current_abi, "mygem-1.0-*.gemspec").to_s].first
+      expect(installed_gemspec).not_to be_nil
       spec = Gem::Specification.load(installed_gemspec)
 
       expect(spec.required_rubygems_version).to eq(Gem::Requirement.new(">= 4.1.0.a"))

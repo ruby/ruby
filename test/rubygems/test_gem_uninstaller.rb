@@ -326,6 +326,34 @@ class TestGemUninstaller < Gem::InstallerTestCase
     assert_same uninstaller, @post_uninstall_hook_arg
   end
 
+  def test_uninstall_content_addressed_gem_removes_abi_scoped_gemspec
+    _, a_gem = util_gem("ca_gone", 2) do |spec|
+      spec.required_ruby_version = "~> #{Gem.ruby_abi}.0"
+      spec.platform = Gem::Platform.local.to_s
+    end
+
+    digest = Digest::SHA256.file(a_gem).hexdigest
+    address = digest[0, 8]
+    filename = File.join(File.dirname(a_gem), "ca_gone-2-#{address}.gem")
+    FileUtils.cp a_gem, filename
+
+    Gem::Installer.at(filename, force: true).install
+    Gem::Specification.reset
+
+    gemspec = File.join(@gemhome, "specifications", Gem.ruby_abi, "ca_gone-2-#{address}.gemspec")
+    gem_dir = File.join(@gemhome, "gems", "ca_gone-2-#{address}")
+    cache_file = File.join(@gemhome, "cache", "ca_gone-2-#{address}.gem")
+    assert_path_exist gemspec
+    assert_path_exist gem_dir
+    assert_path_exist cache_file
+
+    Gem::Uninstaller.new("ca_gone", executables: true, force: true).uninstall
+
+    assert_path_not_exist gemspec
+    assert_path_not_exist gem_dir
+    assert_path_not_exist cache_file
+  end
+
   def test_uninstall_default_gem
     spec = new_default_spec "default", "2"
 
