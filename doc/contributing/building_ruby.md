@@ -235,6 +235,32 @@ required to build Ruby. To build Miniruby:
 make miniruby
 ```
 
+### Statically linking extensions
+
+`configure --with-static-linked-ext` links the extension libraries under `ext/`
+into the `ruby` binary instead of building them as separate `.so`/`.bundle`
+files, and makes `RbConfig::CONFIG["EXTSTATIC"]` `"static"`. Bundled gems that
+have C extensions, such as `bigdecimal` and `fiddle`, are unaffected and are
+still built as loadable objects.
+
+The external libraries the extensions need are then linked into `ruby` itself,
+so pass `--with-EXTLIB-dir` to `configure` rather than putting the paths in
+`LDFLAGS` by hand. On macOS with Homebrew:
+
+```sh
+./configure --with-static-linked-ext --with-openssl-dir=$(brew --prefix openssl@3)
+```
+
+`brew --prefix LIB` prints a path even for a formula that is not installed, so
+generating `LDFLAGS` from it can yield `-L` options for directories that do not
+exist, which `configure` rejects. Use `brew --prefix --installed LIB`, which
+fails instead of printing a path for an uninstalled formula.
+
+Build this configuration with GNU make 4 or later. Under GNU
+make 3 a parallel build can link `ruby` without the extension objects, and that
+link succeeds silently, leaving an interpreter with no extensions and no
+encodings.
+
 ## Debugging
 
 You can use either lldb or gdb for debugging. Before debugging, you need to
