@@ -3621,6 +3621,32 @@ obj_respond_to_missing(VALUE obj, VALUE mid, VALUE priv)
     return Qfalse;
 }
 
+static void
+method_uncached(VALUE klass, const char *name)
+{
+    rb_method_entry_t *me = lookup_method_table(klass, rb_intern(name));
+
+    VM_ASSERT(me != NULL);
+    me->def->uncached = 1;
+}
+
+/* Called a fixed number of times per class, from a class body, so a cc would be
+ * a permanent cost per class for no reuse. */
+void
+Init_uncached_methods(void)
+{
+    static const char *const names[] = {
+        "public", "protected", "private", "module_function", "ruby2_keywords",
+        "alias_method", "undef_method", "remove_method",
+        "attr_reader", "attr_writer", "attr_accessor",
+        "include", "prepend",
+    };
+
+    for (int i = 0; i < numberof(names); i++) {
+        method_uncached(rb_cModule, names[i]);
+    }
+}
+
 void
 Init_eval_method(void)
 {

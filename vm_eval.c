@@ -418,6 +418,11 @@ gccct_method_search_slowpath(rb_vm_t *vm, VALUE klass, unsigned int index, const
 
     vm_search_method_slowpath0(vm->self, &cd, klass);
 
+    if (UNLIKELY(cd.cc == rb_vm_uncached_cc())) {
+        // Carries no cme, so it would only ever miss here. Don't evict a usable entry for it.
+        return cd.cc;
+    }
+
     if (UNLIKELY(!vm->global_cc_cache_table_used)) {
         vm->global_cc_cache_table_used = true;
     }
@@ -522,6 +527,21 @@ rb_gccct_clear_table(void)
  *
  * @note `self` is used in order to controlling access to protected methods.
  */
+static VALUE
+vm_call0_uncached(rb_execution_context_t *ec, VALUE recv, ID mid, int argc, const VALUE *argv,
+                  int kw_splat, call_type scope, VALUE self)
+{
+    const rb_callable_method_entry_t *cme = rb_callable_method_entry(CLASS_OF(recv), mid);
+    enum method_missing_reason call_status = rb_method_call_status(ec, cme, scope, self);
+
+    if (UNLIKELY(call_status != MISSING_NONE)) {
+        return method_missing(ec, recv, mid, argc, argv, call_status, kw_splat);
+    }
+
+    stack_check(ec);
+    return rb_vm_call0(ec, recv, mid, argc, argv, cme, kw_splat);
+}
+
 static inline VALUE
 rb_call0(rb_execution_context_t *ec,
          VALUE recv, ID mid, int argc, const VALUE *argv,
@@ -548,6 +568,10 @@ rb_call0(rb_execution_context_t *ec,
     scope_to_ci(scope, mid, argc, &ci);
 
     const struct rb_callcache *cc = gccct_method_search(ec, recv, mid, &ci);
+
+    if (UNLIKELY(cc == rb_vm_uncached_cc())) {
+        return vm_call0_uncached(ec, recv, mid, argc, argv, kw_splat, scope, self);
+    }
 
     if (scope == CALL_PUBLIC) {
         RB_DEBUG_COUNTER_INC(call0_public);

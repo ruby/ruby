@@ -752,6 +752,19 @@ static const struct rb_callcache vm_empty_cc = {
     }
 };
 
+/* Installed instead of a real cc at call sites of methods that opted out of
+ * call caching: dispatch resolves the cme on every call rather than leaving a
+ * cc behind on the receiver's class. */
+static const struct rb_callcache vm_uncached_cc = {
+    .flags = T_IMEMO | (imemo_callcache << FL_USHIFT) | VM_CALLCACHE_UNMARKABLE,
+    .klass = Qundef,
+    .cme_  = NULL,
+    .call_ = vm_call_uncached,
+    .aux_  = {
+        .v = Qfalse,
+    }
+};
+
 static const struct rb_callcache vm_empty_cc_for_super = {
     .flags = T_IMEMO | (imemo_callcache << FL_USHIFT) | VM_CALLCACHE_UNMARKABLE,
     .klass = Qundef,
@@ -5336,6 +5349,12 @@ const struct rb_callcache *
 rb_vm_empty_cc_for_super(void)
 {
     return &vm_empty_cc_for_super;
+}
+
+const struct rb_callcache *
+rb_vm_uncached_cc(void)
+{
+    return &vm_uncached_cc;
 }
 
 #include "vm_call_iseq_optimized.inc" /* required from vm_insnhelper.c */

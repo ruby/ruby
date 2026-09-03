@@ -429,7 +429,8 @@ rb_iseq_mark_and_move(rb_iseq_t *iseq, bool reference_updating)
                 if (cds[i].ci) rb_gc_mark_and_move_ptr(&cds[i].ci);
 
                 const struct rb_callcache *cc = cds[i].cc;
-                if (!cc || cc == rb_vm_empty_cc() || cc == rb_vm_empty_cc_for_super()) {
+                if (!cc || cc == rb_vm_empty_cc() || cc == rb_vm_empty_cc_for_super() ||
+                    cc == rb_vm_uncached_cc()) {
                     // No need for marking, reference updating, or clearing
                     // We also want to avoid reassigning to improve CoW
                     continue;
