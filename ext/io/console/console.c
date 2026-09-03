@@ -2136,9 +2136,16 @@ puts_call(VALUE io)
 }
 
 static VALUE
+funcall_with_rs(VALUE obj, ID mid)
+{
+    const VALUE rs = rb_default_rs; /* rvalue in TruffleRuby */
+    return rb_funcallv(obj, mid, 1, &rs);
+}
+
+static VALUE
 gets_call(VALUE io)
 {
-    return rb_funcallv(io, id_gets, 0, 0);
+    return funcall_with_rs(io, id_gets);
 }
 
 static VALUE
@@ -2161,8 +2168,7 @@ static VALUE
 str_chomp(VALUE str)
 {
     if (!NIL_P(str)) {
-	const VALUE rs = rb_default_rs; /* rvalue in TruffleRuby */
-	rb_funcallv(str, id_chomp_bang, 1, &rs);
+	funcall_with_rs(str, id_chomp_bang);
     }
     return str;
 }

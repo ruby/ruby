@@ -26,14 +26,14 @@ class TestIO_Console < Test::Unit::TestCase
   end
 
   begin
-    PATHS = $LOADED_FEATURES.grep(%r"/io/console(?:\.#{RbConfig::CONFIG['DLEXT']}|\.rb|/\w+\.rb)\z") {$`}
+    paths = $LOADED_FEATURES.grep(%r"/io/console(?:\.#{RbConfig::CONFIG['DLEXT']}|\.rb|/\w+\.rb)\z") {$`}
   rescue Encoding::CompatibilityError
     $stderr.puts "test_io_console.rb debug"
     $LOADED_FEATURES.each{|path| $stderr.puts [path, path.encoding].inspect}
     raise
   end
-  PATHS.uniq!
-  INCLUDE_OPTS = "-I#{PATHS.join(File::PATH_SEPARATOR)}"
+  paths.uniq!
+  INCLUDE_OPTS = "-I#{paths.join(File::PATH_SEPARATOR)}".freeze
 
   # FreeBSD seems to hang on TTOU when running parallel tests
   # tested on FreeBSD 11.x.
@@ -75,6 +75,7 @@ class TestIO_Console < Test::Unit::TestCase
   end
 
   TTY_ENHANCED = IO.instance_method(:tty?).arity != 0
+  TTY_MODE_STTY = IO.private_method_defined?(:_io_console_stty)
 
   def test_tty?
     pend "not supported" unless TTY_ENHANCED
@@ -348,7 +349,9 @@ class TestIO_Console
       assert_equal("\r\n", r.gets)
       assert_equal("\"asdf\"", r.gets.chomp)
     end
+  end
 
+  def test_getpass_eof
     run_pty("p IO.console.getpass('> ')") do |r, w|
       assert_equal("> ", r.readpartial(10))
       sleep 0.1
@@ -357,7 +360,9 @@ class TestIO_Console
       assert_equal("\r\n", r.gets)
       assert_equal("\"asdf\"", r.gets.chomp)
     end
+  end
 
+  def test_getpass_rs
     run_pty("$VERBOSE, $/ = nil, '.'; p IO.console.getpass('> ')") do |r, w|
       assert_equal("> ", r.readpartial(10))
       sleep 0.1
@@ -380,7 +385,7 @@ class TestIO_Console
   end
 
   def test_iflush
-    pend "stty cannot flush terminal queues" if IO.private_method_defined?(:_io_console_stty)
+    pend "stty cannot flush terminal queues" if TTY_MODE_STTY
 
     helper {|m, s|
       m.print "a"
@@ -403,7 +408,7 @@ class TestIO_Console
   end
 
   def test_ioflush
-    pend "stty cannot flush terminal queues" if IO.private_method_defined?(:_io_console_stty)
+    pend "stty cannot flush terminal queues" if TTY_MODE_STTY
 
     helper {|m, s|
       m.print "a"
