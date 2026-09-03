@@ -517,6 +517,14 @@ struct parser_params {
         /* track the nest level of only braces "{}" */
         int brace_nest;
     } lex;
+    /* Cache the tail of the and/or chain most recently built by logop(), so a
+     * left-associative chain does not rescan its right-leaning spine on every
+     * operator. head is the chain's top node, tail the node whose nd_2nd is the
+     * next insertion point. */
+    struct {
+        NODE *head;
+        NODE *tail;
+    } logop;
     stack_type cond_stack;
     stack_type cmdarg_stack;
     int tokidx;
@@ -14339,25 +14347,70 @@ new_unless(struct parser_params *p, NODE *cc, NODE *left, NODE *right, const YYL
 
 #define NEW_AND_OR(type, f, s, loc, op_loc) (type == NODE_AND ? NEW_AND(f,s,loc,op_loc) : NEW_OR(f,s,loc,op_loc))
 
+/* A cached logop tail is usable only if it is still a node of the chain's type
+ * whose nd_2nd is the insertion point, i.e. not itself another node of that
+ * type. This rejects a stale cache left over from an earlier parse. */
+static int
+logop_valid_tail(NODE *tail, enum node_type type)
+{
+    NODE *second;
+    return tail && nd_type_p(tail, type) &&
+        ((second = RNODE_AND(tail)->nd_2nd) == 0 || !nd_type_p(second, type));
+}
+
 static NODE*
 logop(struct parser_params *p, ID id, NODE *left, NODE *right,
           const YYLTYPE *op_loc, const YYLTYPE *loc)
 {
     enum node_type type = id == idAND || id == idANDOP ? NODE_AND : NODE_OR;
     NODE *op;
+    /* Snapshot the cache from the previous logop() call before overwriting it. */
+    NODE *prev_head = p->logop.head;
+    NODE *prev_tail = p->logop.tail;
+    NODE *node, *second;
     value_expr(p, left);
     if (left && nd_type_p(left, type)) {
-        NODE *node = left, *second;
-        while ((second = RNODE_AND(node)->nd_2nd) != 0 && nd_type_p(second, type)) {
-            node = second;
+        /* The insertion point is the far end of left's right-leaning spine.
+         * Reusing the cached tail keeps a chain such as `a && a && ... && a`
+         * linear instead of rescanning the whole spine on every operator. The
+         * cache is validated (its nd_2nd is not another node of the same type)
+         * so a stale entry falls back to the scan. */
+        if (left == prev_head && logop_valid_tail(prev_tail, type)) {
+            node = prev_tail;
         }
+        else {
+            node = left;
+            while ((second = RNODE_AND(node)->nd_2nd) != 0 && nd_type_p(second, type)) {
+                node = second;
+            }
+        }
+        second = RNODE_AND(node)->nd_2nd;
         RNODE_AND(node)->nd_2nd = NEW_AND_OR(type, second, right, loc, op_loc);
         nd_set_line(RNODE_AND(node)->nd_2nd, op_loc->beg_pos.lineno);
         left->nd_loc.end_pos = loc->end_pos;
+        p->logop.head = left;
+        p->logop.tail = RNODE_AND(node)->nd_2nd;
         return left;
     }
     op = NEW_AND_OR(type, left, right, loc, op_loc);
     nd_set_line(op, op_loc->beg_pos.lineno);
+    /* Record where the next operator will extend op, mirroring the scan the
+     * chained branch above would perform: if right is itself a chain of the
+     * same type (from parentheses), its far end; otherwise op itself. */
+    p->logop.head = op;
+    if (right == prev_head && logop_valid_tail(prev_tail, type)) {
+        p->logop.tail = prev_tail;
+    }
+    else if (right && nd_type_p(right, type)) {
+        node = right;
+        while ((second = RNODE_AND(node)->nd_2nd) != 0 && nd_type_p(second, type)) {
+            node = second;
+        }
+        p->logop.tail = node;
+    }
+    else {
+        p->logop.tail = op;
+    }
     return op;
 }
 
