@@ -1474,25 +1474,13 @@ class TestEnv < Test::Unit::TestCase
     end;
   end
 
-  def test_ivar_in_env_should_not_be_access_from_non_main_ractors
+  def test_ivar_in_env_is_not_allowed
+    # ENV is shareable but can never be frozen, so it may not carry instance
+    # variables at all: other ractors can reach it while it mutates.
     assert_ractor <<~RUBY
-    ENV.instance_eval{ @a = "hello" }
-    assert_equal "hello", ENV.instance_variable_get(:@a)
-
-    r_get =  Ractor.new do
-      ENV.instance_variable_get(:@a)
-    rescue Ractor::IsolationError => e
-      e
-    end
-    assert_equal Ractor::IsolationError, r_get.value.class
-
-    r_get =  Ractor.new do
-      ENV.instance_eval{ @a }
-    rescue Ractor::IsolationError => e
-      e
-    end
-
-    assert_equal Ractor::IsolationError, r_get.value.class
+    assert_raise(Ractor::IsolationError) { ENV.instance_eval{ @a = "hello" } }
+    assert_nil ENV.instance_variable_get(:@a)
+    assert_equal [], ENV.instance_variables
 
     r_set = Ractor.new do
       ENV.instance_eval{ @b = "hello" }
@@ -1501,6 +1489,13 @@ class TestEnv < Test::Unit::TestCase
     end
 
     assert_equal Ractor::IsolationError, r_set.value.class
+
+    r_get =  Ractor.new do
+      ENV.instance_variable_get(:@a)
+    rescue Ractor::IsolationError => e
+      e
+    end
+    assert_equal Ractor::IsolationError, r_get.value.class
     RUBY
   end
 
