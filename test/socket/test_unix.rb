@@ -392,10 +392,6 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
   end
 
   def test_noname_recvfrom
-    if /mswin|mingw/ =~ RUBY_PLATFORM
-      omit "unnamed pipe is emulated on windows"
-    end
-
     UNIXSocket.pair do |s1, s2|
       s2.write("a")
       assert_equal(["a", ["AF_UNIX", ""]], s1.recvfrom(10))
