@@ -857,12 +857,33 @@ static void page_pool_release_locked(struct heap_page_body *body, struct page_ar
 #endif
 static void page_pool_reclaim(rb_global_objspace_t *g);
 
+#if RGENGC_CHECK_MODE && !defined(_WIN32) && !defined(__wasi__) && defined(HAVE_PTHREAD_H)
+# define PAGE_POOL_LOCK_ERRORCHECK 1
+#endif
+
+static void
+page_pool_lock_initialize(rb_nativethread_lock_t *lock)
+{
+#ifdef PAGE_POOL_LOCK_ERRORCHECK
+    /* PTHREAD_MUTEX_ERRORCHECK makes pthread_mutex_lock return EDEADLK when the
+     * calling thread already holds the lock; ASSERT_PAGE_POOL_LOCKED relies on that.
+     * A trylock on a mutex the caller holds is undefined behaviour. */
+    pthread_mutexattr_t attr;
+    pthread_mutexattr_init(&attr);
+    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ERRORCHECK);
+    pthread_mutex_init(lock, &attr);
+    pthread_mutexattr_destroy(&attr);
+#else
+    rb_native_mutex_initialize(lock);
+#endif
+}
+
 static void
 global_objspace_init(void)
 {
     if (global_objspace == NULL) {
         rb_global_objspace_t *g = &rb_global_objspace_instance;
-        rb_native_mutex_initialize(&g->page_pool.lock);
+        page_pool_lock_initialize(&g->page_pool.lock);
         g->page_pool.hot_list = NULL;
         g->page_pool.hot_count = 0;
         g->page_pool.arenas = NULL;
@@ -2227,8 +2248,8 @@ heap_page_body_free(struct heap_page_body *page_body, struct page_arena *arena)
     page_pool_release(page_body, arena);
 }
 
-#if RGENGC_CHECK_MODE && !defined(_WIN32) && !defined(__wasi__)
-# define ASSERT_PAGE_POOL_LOCKED(g) GC_ASSERT(rb_native_mutex_trylock(&(g)->page_pool.lock) == EBUSY)
+#ifdef PAGE_POOL_LOCK_ERRORCHECK
+# define ASSERT_PAGE_POOL_LOCKED(g) GC_ASSERT(pthread_mutex_lock(&(g)->page_pool.lock) == EDEADLK)
 #else
 # define ASSERT_PAGE_POOL_LOCKED(g) ((void)0)
 #endif
@@ -12493,7 +12514,7 @@ rb_gc_impl_after_fork(void *objspace_ptr, rb_pid_t pid)
         heap_alloc_state_clear(objspace);
         /* The forking Ractor becomes the child process's main Ractor. */
         global_objspace->main_objspace = objspace;
-        rb_native_mutex_initialize(&rb_global_objspace_instance.page_pool.lock);
+        page_pool_lock_initialize(&rb_global_objspace_instance.page_pool.lock);
     }
 }
 
