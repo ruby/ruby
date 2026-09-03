@@ -8640,16 +8640,20 @@ impl ProfileOracle {
     /// refined arm gets a fresh Snapshot: the receiver must resolve from its refined type rather
     /// than the polymorphic profile, but the other operands' profiles should remain visible so
     /// argument-profile-dependent specializations (e.g. Array#[]) still apply.
-    fn copy_entries_except(&mut self, src: InsnId, dst: InsnId, exclude: InsnId, fun: &Function) {
+    fn copy_entries_except(&mut self, src: InsnId, dst: InsnId, exclude: InsnId, excluded_profiled_type: ProfiledType, fun: &Function) {
+        use crate::profile::TypeDistribution;
         let Some(entries) = self.types.get(&src) else { return };
         let exclude = fun.chase_insn(exclude);
-        let filtered: Vec<_> = entries.iter()
+        // Remove the polymorphic entries for `excluded`
+        let mut filtered: Vec<_> = entries.iter()
             .filter(|(insn, _)| fun.chase_insn(*insn) != exclude)
             .cloned()
             .collect();
-        if !filtered.is_empty() {
-            self.types.insert(dst, filtered);
-        }
+        // Re-add a monomorphic entry for this arm of the dispatch
+        let mut dist = TypeDistribution::new();
+        dist.observe(excluded_profiled_type);
+        filtered.push((exclude, TypeDistributionSummary::new(&dist)));
+        self.types.insert(dst, filtered);
     }
 }
 
@@ -10130,7 +10134,7 @@ fn add_iseq_to_hir(
                             // (e.g. Array#[] needs a Fixnum-profiled index to be inlined). Only
                             // the receiver's entry is dropped: it must resolve from its refined,
                             // exact type, and resolve_receiver_type prefers profiles over types.
-                            profiles.copy_entries_except(exit_id, snapshot, recv, fun);
+                            profiles.copy_entries_except(exit_id, snapshot, recv, profiled_type, fun);
                             let refined_recv = fun.push_insn(iftrue_block, Insn::RefineType { val: recv, new_type: expected });
                             let send = fun.push_insn(iftrue_block, Insn::Send { recv: refined_recv, cd, block: None, args: args.clone(), caller_splat_length, state: snapshot, reason: Uncategorized(opcode.into()) });
                             fun.push_insn(iftrue_block, Insn::Jump(BranchEdge { target: join_block, args: vec![send] }));
