@@ -137,6 +137,33 @@ class JSONCoderTest < Test::Unit::TestCase
     assert_equal 2, calls
   end
 
+  def test_json_coder_symbol_invalid_encoding
+    symbol = "\xFF".b.to_sym
+
+    calls = 0
+    coder = JSON::Coder.new do |object, is_key|
+      calls += 1
+      object.bytes
+    end
+
+    assert_equal "[[255]]", coder.dump([symbol])
+    assert_equal 1, calls
+
+    coder = JSON::Coder.new { |object, is_key| nil }
+    assert_equal "[null]", coder.dump([symbol])
+
+    coder = JSON::Coder.new { |object, is_key| Object.new }
+    assert_raise(JSON::GeneratorError) { coder.dump([symbol]) }
+
+    if RUBY_ENGINE == "ruby"
+      coder = JSON::Coder.new { |object, is_key| symbol }
+      error = assert_raise JSON::GeneratorError do
+        coder.dump([symbol])
+      end
+      assert_equal "source sequence is illegal/malformed utf-8", error.message
+    end
+  end
+
   def test_depth
     coder = JSON::Coder.new(object_nl: "\n", array_nl: "\n", space: " ", indent: "  ", depth: 1)
     assert_equal %({\n    "foo": 42\n  }), coder.dump(foo: 42)
