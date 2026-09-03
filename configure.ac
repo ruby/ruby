@@ -698,12 +698,15 @@ RUBY_WERROR_FLAG([
 	[
 	cd .. && rm -fr tmp.$$.try_link
 	AC_MSG_RESULT(no)
-	rb_ldflags_nodir=
+	rb_ldflags_nodir= rb_ldflags_Lopt=
 	for rb_ldflags_arg in $LDFLAGS; do
-	    AS_CASE(["$rb_ldflags_arg"], [-L?*], [
-		AS_IF([test -d "${rb_ldflags_arg#-L}"], [],
-		      [rb_ldflags_nodir="$rb_ldflags_nodir ${rb_ldflags_arg#-L}"])
-	    ])
+	    AS_IF([test "$rb_ldflags_Lopt"], [rb_ldflags_Lopt=],
+		  [AS_CASE(["$rb_ldflags_arg"],
+			   [-L?*], [rb_ldflags_arg="${rb_ldflags_arg@%:@-L}" rb_ldflags_Lopt=],
+			   [-L], [rb_ldflags_Lopt=yes; continue],
+			   [continue])])
+	    AS_IF([test -d "${rb_ldflags_arg}"], [],
+		  [rb_ldflags_nodir="$rb_ldflags_nodir ${rb_ldflags_arg}"])
 	done
 	AC_MSG_ERROR([something wrong with LDFLAGS="$LDFLAGS"]dnl
 [${rb_ldflags_nodir:+; no such directory:$rb_ldflags_nodir}])
