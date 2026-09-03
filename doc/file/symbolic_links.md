@@ -133,7 +133,7 @@ Each of these methods changes the ownership of a symlink entry:
 - File::lchown
 - Pathname#lchown
 
-Examples:
+Example:
 
 ```ruby
 # Super user; all privileges.
@@ -173,6 +173,36 @@ Each of these methods updates timestamps for a symlink entry:
 - File::lutime
 - Pathname#lutime
 
+Example:
+
+```ruby
+filepath = 'README.md'
+linkpath = 'foo'
+File.symlink(filepath, linkpath)
+# Take snapshots of both.
+fstat0 = File.stat(filepath)
+lstat0 = File.lstat(linkpath)
+# Fetch access times and modification times of both.
+fstat0.atime    # => 2026-09-03 07:46:04.940377552 -0500
+fstat0.mtime    # => 2026-09-01 09:09:28.378987388 -0500
+lstat0.atime    # => 2026-09-03 09:14:13.753865727 -0500
+lstat0.mtime    # => 2026-09-03 09:14:13.753865727 -0500
+# Update access time and modification time of the symlink.
+time = Time.now # => 2026-09-03 09:16:42.619702232 -0500
+File.lutime(time, time, linkpath)
+# Take fresh snapshots of both.
+fstat1 = File.stat(filepath)
+lstat1 = File.lstat(linkpath)
+# Fetch access time and modification time of file (not changed).
+fstat1.atime    # => 2026-09-03 07:46:04.940377552 -0500
+fstat1.mtime    # => 2026-09-01 09:09:28.378987388 -0500
+# Fetch access time and modification time of link (changed).
+lstat1.atime    # => 2026-09-03 09:16:52.77029217 -0500
+lstat1.mtime    # => 2026-09-03 09:16:42.619702232 -0500
+# Clean up.
+File.delete(linkpath)
+```
+
 ### `rename`
 
 Each of these methods changes the name of an entry (which need not be a symlink):
@@ -184,13 +214,12 @@ Each of these methods changes the name of an entry (which need not be a symlink)
 
 ### `unlink`
 
-Each of thesese methods removes an entry (which need not be a symlink):
+Each of these methods removes an entry (which need not be a symlink):
 
 - Dir::unlink (aliased as Dir::delete)
 - File::delete
 - File::unlink
 - Pathname#unlink (aliased as Pathname#delete)
-- Tempfile#unlink (aliased as Tempfile#delete)
 
 Examples:
 
@@ -249,6 +278,5 @@ but instead operate directly on the entry at the path
 | FileUtils::ln (aliased as FileUtils.link)    | Creates a hard link.             |
 | Pathname#rename                              | Changes the name of the entry.   |
 | Pathname#unlink (aliased as Pathname#delete) | Removes the entry.               |
-| Tempfile#unlink (aliased as Tempfile#delete) | Removes the entry.               |
-
+s
 [symbolic link]: https://en.wikipedia.org/wiki/Symbolic_link
