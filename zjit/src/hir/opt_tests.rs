@@ -16790,6 +16790,38 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_fold_is_a_user_class_with_profiled_fixnum_to_false() {
+        eval(r#"
+            class C; end
+            def test(o) = o.is_a?(C)
+            test(5)
+            test(5)
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint StableConstantNames(0x1008, C)
+          v16:ClassSubclass[C@0x1010] = Const Value(VALUE(0x1010))
+          PatchPoint MethodRedefined(Integer@0x1018, is_a?@0x1020, cme:0x1028)
+          v26:Fixnum = GuardType v10, Fixnum recompile
+          v28:FalseClass = Const Value(false)
+          CheckInterrupts
+          Return v28
+        ");
+    }
+
+    #[test]
     fn test_is_a_array_subclass_folds_to_true() {
         eval(r#"
             class C < Array; end

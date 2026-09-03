@@ -364,11 +364,16 @@ impl Type {
     }
 
     pub fn from_class_inexact(class: VALUE) -> Type {
-        let bits = types::InexactBitsAndClass
+        if let Some(&(bits, _)) = types::InexactBitsAndClass
             .iter()
-            .find(|&(_, class_object)| class.is_subclass_of(unsafe { **class_object }) == ClassRelationship::Subclass)
-            .unwrap_or_else(|| panic!("Class {} is not a subclass of BasicObject! Don't know what to do.", get_class_name(class))).0;
-        Type::new(bits, Specialization::Type(class))
+            .find(|&&(_, class_object)| unsafe { *class_object } == class) {
+            return Type::new(bits, Specialization::Type(class));
+        }
+        if let Some(bits) = Self::bits_from_subclass(class) {
+            return Type::new(bits, Specialization::Type(class));
+        }
+        unreachable!("Class {} is not a subclass of BasicObject! Don't know what to do.",
+                     get_class_name(class))
     }
 
     /// Private. Only for creating type globals.
@@ -914,6 +919,32 @@ mod tests {
             assert_bit_equal(Type::from_class(unsafe { rb_cFalseClass }), types::FalseClass);
             let c_class = define_class("C", unsafe { rb_cObject });
             assert_bit_equal(Type::from_class(c_class), Type::new(bits::ObjectSubclass, Specialization::TypeExact(c_class)));
+        });
+    }
+
+    #[test]
+    fn from_class_inexact() {
+        crate::cruby::with_rubyvm(|| {
+            let string_class = unsafe { rb_cString };
+            assert_bit_equal(Type::from_class_inexact(string_class),
+                             Type::new(bits::String, Specialization::Type(string_class)));
+            let c_class = define_class("C", unsafe { rb_cObject });
+            assert_bit_equal(Type::from_class_inexact(c_class),
+                             Type::new(bits::ObjectSubclass, Specialization::Type(c_class)));
+        });
+    }
+
+    #[test]
+    fn intersection_of_builtin_and_user_class_inexact_is_empty() {
+        crate::cruby::with_rubyvm(|| {
+            let c_class = define_class("C", unsafe { rb_cObject });
+            let c_inexact = Type::from_class_inexact(c_class);
+            // A Fixnum can never be an instance of C or any subclass of C; the
+            // bits are disjoint, so no specialization comparison is needed.
+            assert_bit_equal(Type::fixnum(123).intersection(c_inexact), types::Empty);
+            assert_bit_equal(c_inexact.intersection(Type::fixnum(123)), types::Empty);
+            assert_bit_equal(types::Fixnum.intersection(c_inexact), types::Empty);
+            assert_bit_equal(c_inexact.intersection(types::Fixnum), types::Empty);
         });
     }
 
