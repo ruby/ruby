@@ -12,12 +12,15 @@ Gem::Specification.new do |s|
   s.version     = Bundler::VERSION
   s.license     = "MIT"
   s.authors     = [
-    "André Arko", "Samuel Giddins", "Colby Swandale", "Hiroshi Shibata",
-    "David Rodríguez", "Grey Baker", "Stephanie Morillo", "Chris Morris", "James Wen", "Tim Moore",
-    "André Medeiros", "Jessica Lynn Suttles", "Terence Lee", "Carl Lerche",
-    "Yehuda Katz"
+    "Yehuda Katz", "Carl Lerche", "André Arko", "Terence Lee", "Tim Moore",
+    "Jessica Lynn Suttles", "Hiroshi SHIBATA", "André Medeiros", "Samuel Giddins", "David Rodríguez",
+    "James Wen", "Chris Morris", "Colby Swandale", "Grey Baker", "Stephanie Morillo"
   ]
-  s.email       = ["team@bundler.io"]
+  s.email = [
+    "wycats@gmail.com", "me@carllerche.com", "andre@arko.net", "hone02@gmail.com", "tmoore@incrementalism.net",
+    "jlsuttles@gmail.com", "hsbt@ruby-lang.org", "me@andremedeiros.info", "segiddins@segiddins.me", "deivid.rodriguez@riseup.net",
+    "jrw2175@columbia.edu", "chrismo@clabs.org", "colby@rubygems.org", "greysteil@gmail.com", ""
+  ]
   s.homepage    = "https://bundler.io"
   s.summary     = "The best way to manage your application's dependencies"
   s.description = "Bundler manages an application's dependencies through its entire life, across many machines, systematically and repeatably"
