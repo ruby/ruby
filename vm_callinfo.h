@@ -326,6 +326,7 @@ enum vm_cc_type {
 
 extern const struct rb_callcache *rb_vm_empty_cc(void);
 extern const struct rb_callcache *rb_vm_empty_cc_for_super(void);
+extern const struct rb_callcache *rb_vm_uncached_cc(void);
 
 #define vm_cc_empty() rb_vm_empty_cc()
 
