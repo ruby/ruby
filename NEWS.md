@@ -130,6 +130,8 @@ Note: We're only listing outstanding class updates.
       `String#bit_count` handle individual bits, and `String#bitwise_not`,
       `String#bitwise_and`, `String#bitwise_or`, `String#bitwise_xor`
       (with their `!` variants) handle whole strings. [[Feature #22118]]
+    * `String#tr` now accept a Hash for multi-character replacement.
+      [[Feature #22238]]
 
 * Symbol
 
@@ -376,6 +378,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #22175]: https://bugs.ruby-lang.org/issues/22175
 [Feature #22185]: https://bugs.ruby-lang.org/issues/22185
 [Feature #22205]: https://bugs.ruby-lang.org/issues/22205
+[Feature #22238]: https://bugs.ruby-lang.org/issues/22238
 [PR #17201]: https://github.com/ruby/ruby/pull/17201
 [GH-psych #805]: https://github.com/ruby/psych/pull/805
 [RubyGems-v4.0.4]: https://github.com/rubygems/rubygems/releases/tag/v4.0.4
