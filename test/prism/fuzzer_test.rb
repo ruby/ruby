@@ -63,5 +63,9 @@ module Prism
       a
       /{/, ''\\
     RUBY
+
+    snippet "escaped newline in char literal after heredoc opener", "<<i=?\\\n\n\n"
+    snippet "escaped newline in char literal after heredoc opener with operator", "<<T^?\\\n\n\n"
+    snippet "control escape consuming newline after heredoc in interpolation", "%\n\#{<<e}\\c\n\n"
   end
 end
