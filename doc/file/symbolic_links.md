@@ -5,6 +5,8 @@ is a filesystem entry that stores a filesystem path.
 The stored path refers to a _target_ filesystem entry, which may or may not exist.
 Further, the stored path need not even be a valid path.
 
+## Methods That Follow Symlinks
+
 Most Ruby methods that deal with filesystem paths "follow" symbolic links;
 that is, if the path refers to a symlink, the method does not operate on the entry
 at that path, but instead operates on the path stored in the symlink:
@@ -23,23 +25,23 @@ Each of these methods creates a symlink:
 - FileUtils::ln_s
 - Pathname#make_symlink
 
-In each case, if the target path is itself a symlink, that symlink is not followed.
+If the target path is itself a symlink, that symlink is not followed.
 
 Examples:
 
 ```ruby
-# Make some symlinks.
+# Symlink for a file.
 File.symlink('README.md', 'foo')
-FileUtils.ln_s('README.md', 'bar')
-Pathname('baz').make_symlink('README.md')
-# A symlink may refer to another symlink.
-File.symlink('foo', 'bat')
-# All are symlinks.
-%w[foo bar baz bat].map {|s| File.symlink?(s) }  # => [true, true, true, true]
-# Each refers, directly or indirectly, to README.md.
-File.read('README.md').size                      # => 3463
-%w[foo bar baz bat].map {|s| File.read(s).size } # => [3463, 3463, 3463, 3463]
-File.delete(*%w[foo bar baz bat])                # Clean up.
+# Symlink for another symlink.
+File.symlink('foo', 'bar')
+File.read('README.md').size      # => 3463
+File.read('foo').size            # => 3463
+File.read('bar').size            # => 3463
+# Symlink for a directory.
+File.symlink('doc/', 'baz')
+Dir.entries('doc/').size         # => 33
+Dir.entries('baz').size          # => 33
+File.unlink('foo', 'bar', 'baz') # Clean up.
 ```
 
 ## Querying Symlinks
@@ -50,7 +52,7 @@ Each of these methods creates a File::Stat object for a filesystem entry:
 
 - File::lstat
 - Pathname#lstat
--
+
 The object contains information for the entry at the given path,
 even if that entry is a symlink;
 i.e., symlinks are not followed.
@@ -63,14 +65,9 @@ Examples:
 ```ruby
 linkpath = 'foo'
 File.symlink('README.md', linkpath)
-File::stat(linkpath).size     # => 3469  # Size of file README.md.
-File::lstat(linkpath).size    # => 9     # Size of symlink linkpath.
-Pathname(linkpath).lstat.size # => 9
-file = File.new(linkpath)
-file.lstat.size               # => 9
-# Clean up.
-file.close
-File.unlink(linkpath)
+File::stat(linkpath).size  # => 3469  # Size of file README.md.
+File::lstat(linkpath).size # => 9     # Size of symlink linkpath.
+File.unlink(linkpath)      # Clean up.
 ```
 
 ### `symlink?`
@@ -88,14 +85,10 @@ Examples:
 ```ruby
 linkpath = 'foo'
 File.symlink('README.md', 'foo')
-File.symlink?(linkpath)     # => true
-Pathname(linkpath).symlink? # => true
-file = File.new(linkpath)
-file.stat.symlink?          # => false # Follows symlink to README.md.
-file.lstat.symlink?         # => true  # Does not follow symlink.
-# Clean up.
-file.close
-File.delete(linkpath)
+File.symlink?(linkpath)    # => true
+File.symlink?('README.md') # => false
+File.symlink?('nosuch')    # => false
+File.delete(linkpath)      # Clean up.
 ```
 
 ### `readlink`
@@ -111,7 +104,6 @@ Examples:
 linkpath = 'foo'
 File.symlink('README.md', 'foo')
 File.readlink(linkpath)     # => "README.md"
-Pathname(linkpath).readlink # => #<Pathname:README.md>
 File.delete(linkpath)       # Clean up.
 ```
 
@@ -210,18 +202,34 @@ Each of these methods changes the name of an entry (which need not be a symlink)
 - File::rename
 - Pathname#rename
 
+Examples:
+
+```ruby
+File.symlink('README.md', 'foo')
+File.rename('foo', 'bar')
+File.symlink?('bar') # => true
+File.rename('bar', 'baz')
+File.symlink?('baz') # => true
+File.delete('baz')   # Clean up.
+```
+
 ## Removing Symlinks
 
 ### `unlink`
 
 Each of these methods removes an entry (which need not be a symlink):
 
-- Dir::unlink (aliased as Dir::delete)
 - File::delete
 - File::unlink
 - Pathname#unlink (aliased as Pathname#delete)
 
-Examples:
+Example:
+
+```ruby
+linkpath = 'foo'
+File.symlink('README.md', linkpath)
+File.unlink(linkpath)
+```
 
 ## Methods That Don't Follow Symlinks
 
@@ -269,7 +277,6 @@ but instead operate directly on the entry at the path
 
 | Method                                       | Effect                           |
 |----------------------------------------------|----------------------------------|
-| Dir::unlink (aliased as Dir::delete)         | Removes the entry.               |
 | File::delete                                 | Removes the entry.               |
 | File::link                                   | Creates a hard link.             |
 | File::rename                                 | Changes the name of the entry.   |
@@ -278,5 +285,5 @@ but instead operate directly on the entry at the path
 | FileUtils::ln (aliased as FileUtils.link)    | Creates a hard link.             |
 | Pathname#rename                              | Changes the name of the entry.   |
 | Pathname#unlink (aliased as Pathname#delete) | Removes the entry.               |
-s
+
 [symbolic link]: https://en.wikipedia.org/wiki/Symbolic_link
