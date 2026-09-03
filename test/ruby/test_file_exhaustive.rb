@@ -1371,6 +1371,20 @@ class TestFileExhaustive < Test::Unit::TestCase
     bug3175 = '[ruby-core:29627]'
     assert_equal(".rb", File.extname("/tmp//bla.rb"), bug3175)
 
+    assert_equal("", File.extname(""))
+
+    # A path consisting only of separators must not make the backward scan in
+    # strrdirsep read before the beginning of the string.  The return value is
+    # correct either way, so a regression shows up only on a sanitizer build,
+    # and only once the string is too long to be embedded in its RVALUE.
+    seps = [File::SEPARATOR, File::ALT_SEPARATOR].compact
+    seps.each do |sep|
+      [1, 2, 4096].each do |len|
+        path = sep * len
+        assert_equal("", File.extname(path), "File.extname(#{sep.inspect} * #{len})")
+      end
+    end
+
     assert_incompatible_encoding {|d| File.extname(d)}
   end
 
