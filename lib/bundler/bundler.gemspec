@@ -55,7 +55,7 @@ Gem::Specification.new do |s|
 
   # These live next to the gemspec when Bundler ships as a gem, but not when
   # it is synced into Ruby core, where the gemspec moves under lib/bundler.
-  s.files += %w[CHANGELOG-bundler.md LICENSE-bundler.md README-bundler.md].select {|f| File.file?(f) }
+  s.files += %w[CHANGELOG-bundler.md MIT.txt].select {|f| File.file?(f) }
   s.bindir        = "exe"
   s.executables   = %w[bundle bundler]
   s.require_paths = ["lib"]

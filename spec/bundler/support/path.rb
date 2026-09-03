@@ -359,7 +359,7 @@ module Spec
     end
 
     def tracked_files_glob
-      ruby_core? ? "libexec/bundle* lib/bundler lib/bundler.rb lib/rubygems/vendor/uri lib/rubygems/vendor/securerandom lib/rubygems/vendor/pub_grub lib/rubygems/yaml_serializer.rb lib/rubygems/compact_index_client* lib/rubygems/credential_store* spec/bundler man/bundle*" : "exe/bundle exe/bundler lib/bundler lib/bundler.rb lib/rubygems/vendor/uri lib/rubygems/vendor/securerandom lib/rubygems/vendor/pub_grub lib/rubygems/yaml_serializer.rb lib/rubygems/compact_index_client* lib/rubygems/credential_store* bundler.gemspec CHANGELOG-bundler.md LICENSE-bundler.md README-bundler.md"
+      ruby_core? ? "libexec/bundle* lib/bundler lib/bundler.rb lib/rubygems/vendor/uri lib/rubygems/vendor/securerandom lib/rubygems/vendor/pub_grub lib/rubygems/yaml_serializer.rb lib/rubygems/compact_index_client* lib/rubygems/credential_store* spec/bundler man/bundle*" : "exe/bundle exe/bundler lib/bundler lib/bundler.rb lib/rubygems/vendor/uri lib/rubygems/vendor/securerandom lib/rubygems/vendor/pub_grub lib/rubygems/yaml_serializer.rb lib/rubygems/compact_index_client* lib/rubygems/credential_store* bundler.gemspec CHANGELOG-bundler.md MIT.txt"
     end
 
     def lib_tracked_files_glob
