@@ -868,6 +868,9 @@ class TestFileExhaustive < Test::Unit::TestCase
   def test_expand_path
     assert_equal(regular_file, File.expand_path(File.basename(regular_file), File.dirname(regular_file)))
     assert_equal(utf8_file, File.expand_path(File.basename(utf8_file), File.dirname(utf8_file)))
+    # On POSIX expand_path reaches the backward scan in strrdirsep too.  See
+    # test_extname for what that scan must not do.
+    assert_equal(File.expand_path("/" * 4096), File.expand_path("/" * 4096 + ".."))
   end
 
   if NTFS
