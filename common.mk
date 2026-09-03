@@ -1520,9 +1520,10 @@ after-update:: extract-extlibs
 after-update:: extract-gems
 after-update:: update-default-gemspecs
 
+# Do not remove or empty revision.h itself, whose content file2lastrev.rb
+# keeps when the source tree has no VCS.
 update-src::
-	$(Q) $(RM) $(REVISION_H) revision.h "$(srcdir)/$(REVISION_H)" "$(srcdir)/revision.h"
-	$(Q) exit > "$(srcdir)/revision.h"
+	$(Q) $(RM) $(REVISION_H) "$(srcdir)/$(REVISION_H)"
 
 # $(REVISION_H) can have been made already in this run, as a prerequisite
 # of the included dependency file, and make does not make it twice.
