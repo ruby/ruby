@@ -1,11 +1,9 @@
 # Symbolic Links
 
-A [symbolic link][symbolic link] (often called a _symlink_ or _soft link_)
+A [symbolic link][symbolic link] (sometimes called a _symlink_ or _soft link_)
 is a filesystem entry that stores a filesystem path.
 The stored path refers to a _target_ filesystem entry, which may or may not exist.
 Further, the stored path need not even be a valid path.
-
-## Methods That Follow Symlinks
 
 Most Ruby methods that deal with filesystem paths "follow" symbolic links;
 that is, if the path refers to a symlink, the method does not operate on the entry
@@ -17,47 +15,17 @@ File.read('foo').size # => 3463  # Size of README.md, not foo.
 File.delete('foo')
 ```
 
-## Methods That Don't Follow Symlinks
+## Creating Symlinks
 
-Sometimes it's necessary to query, modify, or delete a symlink;
-therefore certain Ruby methods do not follow symlinks,
-but instead operate directly on the symlinks.
+Each of these methods creates a symlink:
 
-### Symlink-Specific Methods
+- File::symlink
+- FileUtils::ln_s
+- Pathname#make_symlink
 
-Each method in the table below is symlink-specific.
+In each case, if the target path is itself a symlink, that symlink is not followed.
 
-| Method Name           | Effect                                              |
-|-----------------------|-----------------------------------------------------|
-| File::Stat#symlink?   | Returns whether a path is a symlink.                |
-| File::lchmod          | Changes the mode of the symlink. See Note 1.        |
-| File::lchown          | Changes the ownership of the symlink. See Note 2.   |
-| File::lstat           | Creates a File::Stat object for a link. See Note 3. |
-| File::lutime          | Updates timestamps for the symlink. See Note 4.     |
-| File::readlink        | Returns the path stored in a symlink.               |
-| File::symlink         | Creates a symlink.                                  |
-| File::symlink?        | Returns whether a path is a symlink.                |
-| FileUtils::ln_s       | Creates a symlink.                                  |
-| Pathname#lchmod       | Changes the mode of the symlink. See Note 1.        |
-| Pathname#lchown       | Changes the ownership of the symlink. See Note 2.   |
-| Pathname#lstat        | Creates a File::Stat object for a link. See Note 3. |
-| Pathname#lutime       | Updates timestamps for the symlink. See Note 4.     |
-| Pathname#make_symlink | Creates a symlink.                                  |
-| Pathname#readlink     | Returns the path stored in a symlink.               |
-| Pathname#symlink?     | Returns whether a path is a symlink.                |
-
-Notes:
-
-1. File::chmod and Pathname#chmod follow symlinks before changing the mode.
-1. File::chown and Pathname#chown follow symlinks before changing the ownership.
-1. File::stat and Pathname#stat follow symlinks before creating the File::Stat object.
-1. File::utime and Pathname#utime follow symlinks before updating timestamps.
-
-#### `symlink`, `ln_s`
-
-Each of the methods File::symlink, FileUtils::ln_s, and Pathname#make_symlink
-creates a symlink;
-in each case, if the target path is itself a symlink, that symlink is not followed:
+Examples:
 
 ```ruby
 # Make some symlinks.
@@ -74,12 +42,16 @@ File.read('README.md').size                      # => 3463
 File.delete(*%w[foo bar baz bat])                # Clean up.
 ```
 
+## Querying Symlinks
 
-#### `lstat`
+### `lstat`
 
-Each of the methods File::lstat and Pathname#lstat
-creates a File::Stat object for a filesystem entry.
-That object contains information for the entry at the given path,
+Each of these methods creates a File::Stat object for a filesystem entry:
+
+- File::lstat
+- Pathname#lstat
+-
+The object contains information for the entry at the given path,
 even if that entry is a symlink;
 i.e., symlinks are not followed.
 
@@ -101,11 +73,17 @@ file.close
 File.unlink(linkpath)
 ```
 
-#### `symlink?`
+### `symlink?`
 
-Each of the methods File::symlink?, File::Stat#symlink?, and Pathname#symlink?
-returns whether the entry at a given path is a symlink;
-if the entry is a symlink, it is not followed:
+Each of these methods returns whether the entry at a given path is a symlink:
+
+- File::symlink?
+- File::Stat#symlink?
+- Pathname#symlink?
+
+If the entry is a symlink, it is not followed.
+
+Examples:
 
 ```ruby
 linkpath = 'foo'
@@ -120,31 +98,141 @@ file.close
 File.delete(linkpath)
 ```
 
-#### `readlink`
+### `readlink`
 
-Each method named `readlink` returns the path stored in a symlink:
+Each of these methods returns the path stored in a symlink:
 
-- File::readlink, Pathname#readlink.
+- File::readlink
+- Pathname#readlink
 
-#### `lchmod`
+Examples:
 
-Each method named `lchmod` changes the mode of the symlink entry:
+```ruby
+linkpath = 'foo'
+File.symlink('README.md', 'foo')
+File.readlink(linkpath)     # => "README.md"
+Pathname(linkpath).readlink # => #<Pathname:README.md>
+File.delete(linkpath)       # Clean up.
+```
 
-- File::lchmod, Pathname#lchmod.
+## Modifying Symlinks
 
-#### `lchown`
+### `lchmod`
 
-Each method named `lchown` changes the ownership of a symlink entry:
+Each of these methods changes the mode of the symlink entry:
 
-- File::lchown, Pathname#lchown.
+- File::lchmod
+- Pathname#lchmod
 
-#### `lutime`
+These methods are not supported on Windows or Linux (raise Errno::ENOTSUP).
 
-Each method named `lutime` updates timestamps for a symlink entry:
+### `lchown`
 
-- File::lutime, Pathname#lutime.
+Each of these methods changes the ownership of a symlink entry:
 
-### Other Methods
+- File::lchown
+- Pathname#lchown
+
+Examples:
+
+```ruby
+# Super user; all privileges.
+Process.uid # => 0
+Process.gid # => 0
+# Create regular file and symlink to it.
+filepath = 't.tmp'
+linkpath = 'foo'
+File.write(filepath, '')
+File.symlink(filepath, linkpath)
+# Capture original statuses.
+fstat0 = File.stat(filepath)
+lstat0 = File.lstat(linkpath)
+fstat0.uid # => 0
+fstat0.gid # => 0
+lstat0.uid # => 0
+lstat0.gid # => 0
+# Change owner for the symlink.
+File.lchown(1000, 1000, linkpath)
+# Capture new statuses.
+fstat1 = File.stat(filepath)
+lstat1 = File.lstat(linkpath)
+# User id and group id for file not changed.
+fstat1.uid # => 0
+fstat1.gid # => 0
+# User is and group id for link changed.
+lstat1.uid # => 1000
+lstat1.gid # => 1000
+# Clean up.
+File.delete(filepath, linkpath)
+```
+
+### `lutime`
+
+Each of these methods updates timestamps for a symlink entry:
+
+- File::lutime
+- Pathname#lutime
+
+### `rename`
+
+Each of these methods changes the name of an entry (which need not be a symlink):
+
+- File::rename
+- Pathname#rename
+
+## Removing Symlinks
+
+### `unlink`
+
+Each of thesese methods removes an entry (which need not be a symlink):
+
+- Dir::unlink (aliased as Dir::delete)
+- File::delete
+- File::unlink
+- Pathname#unlink (aliased as Pathname#delete)
+- Tempfile#unlink (aliased as Tempfile#delete)
+
+Examples:
+
+## Methods That Don't Follow Symlinks
+
+Sometimes it's necessary to query, modify, or delete a symlink;
+therefore certain Ruby methods do not follow symlinks,
+but instead operate directly on the symlinks.
+
+### Symlink-Specific Methods
+
+Each method in the table below has a symlink-specific purpose.
+
+| Method Name           | Effect                                              |
+|-----------------------|-----------------------------------------------------|
+| File::Stat#symlink?   | Returns whether a path is a symlink.                |
+| File::lchmod          | Changes the mode of the symlink. See Note 1.        |
+| File::lchown          | Changes the ownership of the symlink. See Note 2.   |
+| File::lstat           | Creates a File::Stat object for a link. See Note 3. |
+| File::lutime          | Updates timestamps for the symlink. See Note 4.     |
+| File::readlink        | Returns the path stored in a symlink.               |
+| File::symlink         | Creates a symlink.                                  |
+| File::symlink?        | Returns whether a path is a symlink.                |
+| FileUtils::ln_s       | Creates a symlink.                                  |
+| FileUtils::ln_sf      | Creates a symlink.                                  |
+| FileUtils::ln_sr      | Creates a symlink.                                  |
+| Pathname#lchmod       | Changes the mode of the symlink. See Note 1.        |
+| Pathname#lchown       | Changes the ownership of the symlink. See Note 2.   |
+| Pathname#lstat        | Creates a File::Stat object for a link. See Note 3. |
+| Pathname#lutime       | Updates timestamps for the symlink. See Note 4.     |
+| Pathname#make_symlink | Creates a symlink.                                  |
+| Pathname#readlink     | Returns the path stored in a symlink.               |
+| Pathname#symlink?     | Returns whether a path is a symlink.                |
+
+Notes:
+
+1. File::chmod and Pathname#chmod follow symlinks before changing the mode.
+1. File::chown and Pathname#chown follow symlinks before changing the ownership.
+1. File::stat and Pathname#stat follow symlinks before creating the File::Stat object.
+1. File::utime and Pathname#utime follow symlinks before updating timestamps.
+
+### Other Non-Following Methods
 
 The methods in the table below do not follow symlinks,
 but instead operate directly on the entry at the path
@@ -152,19 +240,15 @@ but instead operate directly on the entry at the path
 
 | Method                                       | Effect                           |
 |----------------------------------------------|----------------------------------|
-| Dir::[]                                      | Finds entry names.               |
-| Dir::children                                | Returns an array of child names. |
-| Dir::each_child                              | Traverses child names.           |
-| Dir::entries                                 | Returns an array of entry names. |
-| Dir::foreach                                 | Traverses entry names.           |
-| Dir::glob                                    | Finds entry names.               |
 | Dir::unlink (aliased as Dir::delete)         | Removes the entry.               |
 | File::delete                                 | Removes the entry.               |
+| File::link                                   | Creates a hard link.             |
 | File::rename                                 | Changes the name of the entry.   |
 | File::unlink                                 | Removes the entry.               |
+| FileUtils::link_entry                        | Creates a hard link.             |
+| FileUtils::ln (aliased as FileUtils.link)    | Creates a hard link.             |
 | Pathname#rename                              | Changes the name of the entry.   |
 | Pathname#unlink (aliased as Pathname#delete) | Removes the entry.               |
 | Tempfile#unlink (aliased as Tempfile#delete) | Removes the entry.               |
-
 
 [symbolic link]: https://en.wikipedia.org/wiki/Symbolic_link
