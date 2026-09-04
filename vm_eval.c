@@ -418,7 +418,7 @@ gccct_method_search_slowpath(rb_vm_t *vm, VALUE klass, unsigned int index, const
 
     vm_search_method_slowpath0(vm->self, &cd, klass);
 
-    if (UNLIKELY(cd.cc == rb_vm_uncached_cc())) {
+    if (UNLIKELY(cd.cc == &rb_vm_uncached_cc)) {
         // Carries no cme, so it would only ever miss here. Don't evict a usable entry for it.
         return cd.cc;
     }
@@ -569,7 +569,7 @@ rb_call0(rb_execution_context_t *ec,
 
     const struct rb_callcache *cc = gccct_method_search(ec, recv, mid, &ci);
 
-    if (UNLIKELY(cc == rb_vm_uncached_cc())) {
+    if (UNLIKELY(cc == &rb_vm_uncached_cc)) {
         return vm_call0_uncached(ec, recv, mid, argc, argv, kw_splat, scope, self);
     }
 
