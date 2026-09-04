@@ -689,13 +689,8 @@ rb_gvar_val_compactor(void *_var)
 {
     struct rb_global_variable *var = (struct rb_global_variable *)_var;
 
-    VALUE obj = (VALUE)var->data;
-
-    if (obj) {
-        VALUE new = rb_gc_location(obj);
-        if (new != obj) {
-            var->data = (void*)new;
-        }
+    if (var->data) {
+        rb_gc_update_moved_ptr(&var->data);
     }
 }
 
