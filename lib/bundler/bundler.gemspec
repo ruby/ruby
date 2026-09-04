@@ -27,7 +27,7 @@ Gem::Specification.new do |s|
 
   s.metadata = {
     "bug_tracker_uri" => "https://github.com/ruby/rubygems/issues?q=is%3Aopen+is%3Aissue+label%3ABundler",
-    "changelog_uri" => "https://github.com/ruby/rubygems/blob/master/CHANGELOG-bundler.md",
+    "changelog_uri" => "https://github.com/ruby/rubygems/blob/master/CHANGELOG.md",
     "homepage_uri" => "https://bundler.io/",
     "source_code_uri" => "https://github.com/ruby/rubygems",
   }
@@ -56,7 +56,7 @@ Gem::Specification.new do |s|
 
   # These live next to the gemspec when Bundler ships as a gem, but not when
   # it is synced into Ruby core, where the gemspec moves under lib/bundler.
-  s.files += %w[CHANGELOG-bundler.md MIT.txt].select {|f| File.file?(f) }
+  s.files += %w[MIT.txt].select {|f| File.file?(f) }
   s.bindir        = "exe"
   s.executables   = %w[bundle bundler]
   s.require_paths = ["lib"]
