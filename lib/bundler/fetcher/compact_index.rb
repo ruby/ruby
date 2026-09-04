@@ -113,7 +113,7 @@ module Bundler
       def bundle_worker(func = nil)
         @bundle_worker ||= begin
           worker_name = "Compact Index (#{display_uri.host})"
-          Bundler::Worker.new(Bundler.settings.metadata_parallelization, worker_name, func)
+          Bundler::Worker.new(Bundler.settings.processor_count, worker_name, func)
         end
         @bundle_worker.tap do |worker|
           worker.instance_variable_set(:@func, func) if func

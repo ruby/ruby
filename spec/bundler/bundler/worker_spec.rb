@@ -33,7 +33,7 @@ RSpec.describe Bundler::Worker do
         responses = Array.new(2) { workers.first.deq.first }
         expect(responses).to contain_exactly("first", "second")
       ensure
-        workers&.each(&:stop)
+        workers&.reverse_each(&:stop)
       end
     end
   end

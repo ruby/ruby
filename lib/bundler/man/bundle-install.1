@@ -26,7 +26,7 @@ Bundler will not call Rubygems' API endpoint (default) but download and cache a 
 The location of the Gemfile(5) which Bundler should use\. This defaults to a Gemfile(5) in the current working directory\. In general, Bundler will assume that the location of the Gemfile(5) is also the project's root and will try to find \fBGemfile\.lock\fR and \fBvendor/cache\fR relative to this location\.
 .TP
 \fB\-\-jobs=<number>\fR, \fB\-j=<number>\fR
-The maximum number of parallel installation jobs\. The default is the number of available processors\.
+The maximum number of parallel download and install jobs\. The default is the number of available processors\.
 .TP
 \fB\-\-local\fR
 Do not attempt to connect to \fBrubygems\.org\fR\. Instead, Bundler will use the gems already present in Rubygems' cache or in \fBvendor/cache\fR\. Note that if an appropriate platform\-specific gem exists on \fBrubygems\.org\fR it will not be found\.

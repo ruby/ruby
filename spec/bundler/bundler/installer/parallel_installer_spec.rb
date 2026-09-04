@@ -57,7 +57,7 @@ RSpec.describe Bundler::ParallelInstaller do
     let(:installer) { Bundler::Installer.new(bundled_app, definition) }
 
     it "prioritizes native extensions for installation" do
-      parallel_installer = Bundler::ParallelInstaller.new(installer, definition.specs, 2, false, true, download_size: 6)
+      parallel_installer = Bundler::ParallelInstaller.new(installer, definition.specs, 2, false, true)
       download_worker_pool = parallel_installer.send(:download_worker_pool)
       install_worker_pool = parallel_installer.send(:worker_pool)
 
@@ -77,17 +77,38 @@ RSpec.describe Bundler::ParallelInstaller do
   end
 
   describe "worker pools" do
-    it "uses separate sizes for download and installation workers" do
-      parallel_installer = described_class.new(nil, [], 2, false, false, download_size: 6)
+    it "uses separate worker pools with the configured size" do
+      parallel_installer = described_class.new(nil, [], 2, false, false)
 
       download_worker_pool = parallel_installer.send(:download_worker_pool)
       install_worker_pool = parallel_installer.send(:worker_pool)
 
-      expect(download_worker_pool.instance_variable_get(:@size)).to eq(6)
+      expect(download_worker_pool).not_to equal(install_worker_pool)
+      expect(download_worker_pool.instance_variable_get(:@size)).to eq(2)
       expect(install_worker_pool.instance_variable_get(:@size)).to eq(2)
     ensure
-      download_worker_pool&.stop
       install_worker_pool&.stop
+      download_worker_pool&.stop
+    end
+
+    it "restores the previous interrupt handler after shutting down" do
+      parallel_installer = described_class.new(nil, [], 2, false, false)
+      download_worker_pool = parallel_installer.send(:download_worker_pool)
+      install_worker_pool = parallel_installer.send(:worker_pool)
+
+      previous_handler = Signal.trap("INT", "IGNORE")
+      custom_handler = proc {}
+      Signal.trap("INT", custom_handler)
+
+      download_worker_pool.send(:create_threads)
+      install_worker_pool.send(:create_threads)
+
+      parallel_installer.call
+
+      restored_handler = Signal.trap("INT", previous_handler)
+      expect(restored_handler).to equal(custom_handler)
+    ensure
+      Signal.trap("INT", previous_handler) if previous_handler
     end
   end
 

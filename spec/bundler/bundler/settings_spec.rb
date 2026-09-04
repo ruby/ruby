@@ -380,40 +380,6 @@ that would suck --ehhh=oh geez it looks like i might have broken bundler somehow
     end
   end
 
-  describe "#download_parallelization" do
-    it "defaults to three times installation parallelization" do
-      allow(settings).to receive(:installation_parallelization).and_return(2)
-
-      expect(settings.download_parallelization).to eq(6)
-    end
-
-    it "caps the default at eight" do
-      allow(settings).to receive(:installation_parallelization).and_return(4)
-
-      expect(settings.download_parallelization).to eq(8)
-    end
-
-    it "uses configured download jobs" do
-      settings.temporary(download_jobs: 7) do
-        expect(settings.download_parallelization).to eq(7)
-      end
-    end
-  end
-
-  describe "#metadata_parallelization" do
-    it "defaults to download parallelization" do
-      allow(settings).to receive(:download_parallelization).and_return(7)
-
-      expect(settings.metadata_parallelization).to eq(7)
-    end
-
-    it "uses configured metadata jobs" do
-      settings.temporary(metadata_jobs: 9) do
-        expect(settings.metadata_parallelization).to eq(9)
-      end
-    end
-  end
-
   describe "#set_global" do
     context "when it's not possible to write to create the settings directory" do
       it "raises an PermissionError with explanation" do

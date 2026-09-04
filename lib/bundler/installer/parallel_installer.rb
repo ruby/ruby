@@ -60,10 +60,9 @@ module Bundler
 
     attr_reader :size
 
-    def initialize(installer, all_specs, size, standalone, force, local: false, skip: nil, download_size: Bundler.settings.download_parallelization)
+    def initialize(installer, all_specs, size, standalone, force, local: false, skip: nil)
       @installer = installer
       @size = size
-      @download_size = download_size
       @standalone = standalone
       @force = force
       @local = local
@@ -88,7 +87,7 @@ module Bundler
         Gem::Specification.reset
       end
 
-      if @size > 1 || @download_size > 1
+      if @size > 1
         install_with_worker
       else
         install_serially
@@ -97,8 +96,8 @@ module Bundler
       handle_error if failed_specs.any?
       @specs
     ensure
-      download_worker_pool&.stop
-      worker_pool&.stop
+      @worker_pool&.stop
+      @download_worker_pool&.stop
     end
 
     private
@@ -169,7 +168,7 @@ module Bundler
     end
 
     def download_worker_pool
-      @download_worker_pool ||= Bundler::Worker.new(@download_size, "Gem Downloader",
+      @download_worker_pool ||= Bundler::Worker.new(@size, "Gem Downloader",
         ->(spec_install, worker_num) { do_download(spec_install, worker_num) }, response_queue: response_queue)
     end
 

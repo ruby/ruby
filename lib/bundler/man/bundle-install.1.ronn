@@ -61,8 +61,8 @@ update process below under [CONSERVATIVE UPDATING][].
   to this location.
 
 * `--jobs=<number>`, `-j=<number>`:
-  The maximum number of parallel installation jobs. The default is the number
-  of available processors.
+  The maximum number of parallel download and install jobs. The default is the
+  number of available processors.
 
 * `--local`:
   Do not attempt to connect to `rubygems.org`. Instead, Bundler will use the
