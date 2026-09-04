@@ -4663,29 +4663,51 @@ impl Function {
         self.polymorphic_summary(profiles, recv, state)
     }
 
+    /// Return the definition type of the method `cd` names on `klass`, chasing aliases, or None
+    /// if lookup fails. This is advisory (no patch point): [`Function::type_specialize_send`]
+    /// repeats the lookup and emits the MethodRedefined patch point itself.
+    fn resolved_method_def_type(klass: VALUE, cd: *const rb_call_data) -> Option<rb_method_type_t> {
+        let mid = unsafe { vm_ci_mid((*cd).ci) };
+        let mut cme = unsafe { rb_callable_method_entry(klass, mid) };
+        if cme.is_null() {
+            return None;
+        }
+        let mut def_type = unsafe { get_cme_def_type(cme) };
+        while def_type == VM_METHOD_TYPE_ALIAS {
+            cme = unsafe { rb_aliased_callable_method_entry(cme) };
+            def_type = unsafe { get_cme_def_type(cme) };
+        }
+        Some(def_type)
+    }
+
     /// Split `block` into a dispatch chain for a Send with a polymorphic receiver:
     ///
     /// ```text
     /// for class in profiles:
     ///     if HasType class:
     ///         RefineType class
-    ///         s = load shape
-    ///         for shape in class:
-    ///             if s == shape:
-    ///                 specialize send for (class, shape)
-    ///             else:
-    ///                 goto next shape
-    ///         goto next class
+    ///         if method(class) is an ivar accessor:
+    ///             s = load shape
+    ///             for shape in class:
+    ///                 if s == shape:
+    ///                     specialize send for (class, shape)
+    ///                 else:
+    ///                     goto next shape
+    ///             goto next class
+    ///         else:
+    ///             specialize send for class
     ///     else:
     ///         goto next class
     /// ```
     ///
     /// The outer chain tests the receiver's class (HasType/RefineType) and the inner chain its
     /// shape (IsBitEqual on the loaded shape id), so each arm's send specializes against a fully
-    /// guaranteed (class, shape) pair and emits no receiver guards of its own. Receivers matching
-    /// no profiled class or shape fall through to a generic dynamic send. All branches join on a
-    /// block whose Param replaces the original send. Returns the join block, which the caller
-    /// should continue filling.
+    /// guaranteed (class, shape) pair and emits no receiver guards of its own. Only ivar
+    /// accessors (attr_reader/attr_writer) consume the receiver's shape, so the shape dispatch
+    /// is emitted only for them; every other method type specializes against the class alone.
+    /// Receivers matching no profiled class or shape fall through to a generic dynamic send.
+    /// All branches join on a block whose Param replaces the original send. Returns the join
+    /// block, which the caller should continue filling.
     fn specialize_polymorphic_send(
         &mut self,
         mut block: BlockId,
@@ -4732,17 +4754,27 @@ impl Function {
             block = next_class;
             let refined_recv = self.push_insn(class_block, Insn::RefineType { val: recv, new_type: expected });
             self.insn_types[refined_recv] = self.infer_type(refined_recv);
+            // Only ivar accessors consume the receiver's shape, so only they need per-shape
+            // dispatch arms. The arm re-resolves the same method, so a shape-guaranteed arm is
+            // emitted exactly when the specialization would read the profiled shape.
+            let needs_shape = matches!(
+                Self::resolved_method_def_type(buckets[0].class(), cd),
+                Some(def_type) if def_type == VM_METHOD_TYPE_IVAR || def_type == VM_METHOD_TYPE_ATTRSET
+            );
             // Dedup this class's buckets by shape so each shape gets one arm.
             let mut shapes: Vec<ProfiledType> = Vec::with_capacity(buckets.len());
-            for &profiled_type in &buckets {
-                if profiled_type.shape().is_valid()
-                    && !shapes.iter().any(|seen| seen.shape() == profiled_type.shape()) {
-                    shapes.push(profiled_type);
+            if needs_shape {
+                for &profiled_type in &buckets {
+                    if profiled_type.shape().is_valid()
+                        && !shapes.iter().any(|seen| seen.shape() == profiled_type.shape()) {
+                        shapes.push(profiled_type);
+                    }
                 }
             }
             if shapes.is_empty() {
-                // Immediates carry no shape (their profile entries have an invalid shape id);
-                // specialize directly against the class.
+                // No shape dispatch needed: either the method doesn't consume the receiver's
+                // shape, or the receivers are immediates, which carry no shape (their profile
+                // entries have an invalid shape id). Specialize directly against the class.
                 let result = self.specialize_send_arm(class_block, insn_id, refined_recv, cd, state, caller_splat_length, buckets[0]);
                 join_type = join_type.union(self.type_of(result));
                 self.push_insn(class_block, Insn::Jump(BranchEdge { target: join_block, args: vec![result] }));
