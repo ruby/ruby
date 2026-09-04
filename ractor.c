@@ -3098,9 +3098,7 @@ copy_support_hash_i(st_data_t key, st_data_t val, st_data_t arg)
     return copy_support_val_i(val, arg);
 }
 
-/* Read-only walk: can the copy courier carry obj's whole graph?  Everything it says no
- * to (MatchData, IO, any other T_DATA, a singleton class) stays on the older on-heap
- * snapshot path, which keeps handling or rejecting it exactly as before. */
+/* Read-only walk: can the copy courier carry obj's whole graph?  A no is a send error. */
 static bool
 copy_courier_supported_p(VALUE obj, struct copy_support_ctx *ctx)
 {
@@ -3162,7 +3160,7 @@ copy_courier_supported_p(VALUE obj, struct copy_support_ctx *ctx)
 }
 
 /* Build a courier holding a copy of obj's graph, leaving the sources untouched.
- * Returns NULL when the graph has a type only the on-heap snapshot path handles. */
+ * Returns NULL when the graph has a type it cannot carry. */
 struct rb_ractor_courier *
 rb_ractor_courier_build_copy(VALUE obj, struct rb_ractor_courier **slot)
 {
