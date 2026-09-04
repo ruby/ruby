@@ -29,11 +29,12 @@ platform_is_not :windows do
           else
             # Etc.getlogin returns the same result of logname(2)
             # if it returns non NULL
-            if system("which logname", out: File::NULL, err: File::NULL)
-              Etc.getlogin.should == `logname`.chomp
-            else
-              # fallback to `id` command since `logname` is not available
-              Etc.getlogin.should == `id -un`.chomp
+            logname = [%w[logname], %w[id -un]].find do |cmd|
+              name = IO.popen(cmd, err: File::NULL, &:read) rescue next
+              break name.chomp if $?.success?
+            end
+            if logname
+              Etc.getlogin.should == logname
             end
           end
         else
