@@ -66,6 +66,8 @@ const zjit_jit_frame_t rb_zjit_c_frame = (zjit_jit_frame_t) {
     .materialize_block_code = false,
 };
 
+uint8_t *rb_jit_align_ptr(uint8_t *ptr, uint32_t multiple); // defined in jit.c
+
 // Reserve address space that lives entirely below INT32_MAX for JITFrame.
 //
 // When a JITFrame pointer fits in 32 bits, x86_64 can encode the store
@@ -94,10 +96,11 @@ rb_zjit_reserve_low_addr_space(size_t size)
         // mmap calls, while being coarse enough that each step clears whatever
         // mapping made the previous probe fail.
         const uintptr_t probe_stride = 64 * 1024 * 1024;
-        const uintptr_t page_size = (uintptr_t)sysconf(_SC_PAGESIZE);
+        const uint32_t page_size = (uint32_t)sysconf(_SC_PAGESIZE);
         const uintptr_t limit = (uintptr_t)INT32_MAX - size;
         for (uintptr_t addr = probe_stride; addr < limit; addr += probe_stride) {
-            void *req = (void *)(addr & ~(page_size - 1));
+            // mmap only honors a hint that is page-aligned.
+            void *req = rb_jit_align_ptr((uint8_t *)addr, page_size);
             mem_block = mmap(req, size, PROT_NONE,
                              MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED_NOREPLACE, -1, 0);
             if (mem_block != MAP_FAILED) break;
