@@ -1769,9 +1769,9 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(NilClass@0x1058, nil?@0x1060, cme:0x1068)
           v38:Fixnum[0] = Const Value(0)
           CheckInterrupts
-          v87:Fixnum[0] = Const Value(0)
+          v85:Fixnum[0] = Const Value(0)
           PopInlineFrame
-          Return v87
+          Return v85
         ");
     }
 
@@ -9715,18 +9715,18 @@ mod hir_opt_tests {
           CondBranch v42, bb8(), bb9()
         bb8():
           PatchPoint MethodRedefined(FalseClass@0x1008, !@0x1010, cme:0x1018)
-          v49:TrueClass = Const Value(true)
-          Jump bb7(v49)
+          v48:TrueClass = Const Value(true)
+          Jump bb7(v48)
         bb9():
-          v51:CBool = HasType v31, NilClass
-          CondBranch v51, bb10(), bb11()
+          v50:CBool = HasType v31, NilClass
+          CondBranch v50, bb10(), bb11()
         bb10():
           PatchPoint MethodRedefined(NilClass@0x1040, !@0x1010, cme:0x1018)
-          v58:TrueClass = Const Value(true)
-          Jump bb7(v58)
+          v56:TrueClass = Const Value(true)
+          Jump bb7(v56)
         bb11():
-          v60:BasicObject = Send v31, :! # SendFallbackReason: Send: polymorphic fallback
-          Jump bb7(v60)
+          v58:BasicObject = Send v31, :! # SendFallbackReason: Send: polymorphic fallback
+          Jump bb7(v58)
         bb7(v41:BasicObject):
           CheckInterrupts
           Return v41
@@ -10460,14 +10460,27 @@ mod hir_opt_tests {
           CondBranch v28, bb5(), bb6()
         bb5():
           v30:ObjectSubclass[class_exact:C] = RefineType v10, ObjectSubclass[class_exact:C]
+          v31:CShape = LoadField v30, :shape_id@0x1001
+          v32:CShape[0x1002] = Const CShape(0x1002)
+          v33:CBool = IsBitEqual v31, v32
+          CondBranch v33, bb7(), bb8()
+        bb7():
           PatchPoint MethodRedefined(C@0x1008, foo=@0x1010, cme:0x1018)
-          v35:CShape = LoadField v30, :shape_id@0x1040
-          v36:CShape[0x1041] = GuardBitEquals v35, CShape(0x1041)
+          StoreField v30, :@foo@0x1040, v17
+          Jump bb4(v17)
+        bb8():
+          v40:CShape[0x1041] = Const CShape(0x1041)
+          v41:CBool = IsBitEqual v31, v40
+          CondBranch v41, bb9(), bb10()
+        bb9():
+          PatchPoint MethodRedefined(C@0x1008, foo=@0x1010, cme:0x1018)
           StoreField v30, :@foo@0x1042, v17
           Jump bb4(v17)
+        bb10():
+          Jump bb6()
         bb6():
-          v40:BasicObject = Send v10, :foo=, v17 # SendFallbackReason: Send: polymorphic fallback
-          Jump bb4(v40)
+          v49:BasicObject = Send v10, :foo=, v17 # SendFallbackReason: Send: polymorphic fallback
+          Jump bb4(v49)
         bb4(v27:BasicObject):
           CheckInterrupts
           Return v17
@@ -11044,15 +11057,29 @@ mod hir_opt_tests {
           CondBranch v22, bb5(), bb6()
         bb5():
           v24:ObjectSubclass[class_exact:C] = RefineType v10, ObjectSubclass[class_exact:C]
+          v25:CShape = LoadField v24, :shape_id@0x1001
+          v26:CShape[0x1002] = Const CShape(0x1002)
+          v27:CBool = IsBitEqual v25, v26
+          CondBranch v27, bb7(), bb8()
+        bb7():
           PatchPoint NoSingletonClass(C@0x1008)
           PatchPoint MethodRedefined(C@0x1008, foo@0x1010, cme:0x1018)
-          v30:CShape = LoadField v24, :shape_id@0x1040
-          v31:CShape[0x1041] = GuardBitEquals v30, CShape(0x1041) recompile
-          v32:BasicObject = LoadField v24, :@foo@0x1042
+          v32:BasicObject = LoadField v24, :@foo@0x1040
           Jump bb4(v32)
+        bb8():
+          v34:CShape[0x1041] = Const CShape(0x1041)
+          v35:CBool = IsBitEqual v25, v34
+          CondBranch v35, bb9(), bb10()
+        bb9():
+          PatchPoint NoSingletonClass(C@0x1008)
+          PatchPoint MethodRedefined(C@0x1008, foo@0x1010, cme:0x1018)
+          v40:BasicObject = LoadField v24, :@foo@0x1042
+          Jump bb4(v40)
+        bb10():
+          Jump bb6()
         bb6():
-          v34:BasicObject = Send v10, :foo # SendFallbackReason: Send: polymorphic fallback
-          Jump bb4(v34)
+          v43:BasicObject = Send v10, :foo # SendFallbackReason: Send: polymorphic fallback
+          Jump bb4(v43)
         bb4(v21:BasicObject):
           CheckInterrupts
           Return v21
@@ -14867,40 +14894,54 @@ mod hir_opt_tests {
           CondBranch v28, bb5(), bb6()
         bb5():
           v30:ObjectSubclass[class_exact:CallerSplatA] = RefineType v12, ObjectSubclass[class_exact:CallerSplatA]
+          v31:CShape = LoadField v30, :shape_id@0x1002
+          v32:CShape[0x1003] = Const CShape(0x1003)
+          v33:CBool = IsBitEqual v31, v32
+          CondBranch v33, bb7(), bb8()
+        bb7():
           PatchPoint NoSingletonClass(CallerSplatA@0x1008)
-          v33:CInt64 = ArrayLength v19
-          v34:CInt64[1] = GuardBitEquals v33, CInt64(1) recompile
-          v35:CInt64 = CCall v19, :rb_jit_ruby2_keywords_splat_p@0x1010
-          v36:CInt64[0] = GuardBitEquals v35, CInt64(0)
+          v37:CInt64 = ArrayLength v19
+          v38:CInt64[1] = GuardBitEquals v37, CInt64(1) recompile
+          v39:CInt64 = CCall v19, :rb_jit_ruby2_keywords_splat_p@0x1010
+          v40:CInt64[0] = GuardBitEquals v39, CInt64(0)
           PatchPoint MethodRedefined(CallerSplatA@0x1008, target@0x1011, cme:0x1018)
-          v39:CInt64[0] = Const CInt64(0)
-          v40:BasicObject = ArrayAref v19, v39
-          v41:ArrayExact = NewArray v40
+          v42:CInt64[0] = Const CInt64(0)
+          v43:BasicObject = ArrayAref v19, v42
+          v44:ArrayExact = NewArray v43
           PushInlineFrame :target, v30 (0x1040), num_args=1
           CheckInterrupts
           PopInlineFrame
-          Jump bb4(v41)
+          Jump bb4(v44)
+        bb8():
+          Jump bb6()
         bb6():
-          v45:CBool = HasType v12, ObjectSubclass[class_exact:CallerSplatB]
-          CondBranch v45, bb7(), bb8()
-        bb7():
-          v47:ObjectSubclass[class_exact:CallerSplatB] = RefineType v12, ObjectSubclass[class_exact:CallerSplatB]
+          v49:CBool = HasType v12, ObjectSubclass[class_exact:CallerSplatB]
+          CondBranch v49, bb9(), bb10()
+        bb9():
+          v51:ObjectSubclass[class_exact:CallerSplatB] = RefineType v12, ObjectSubclass[class_exact:CallerSplatB]
+          v52:CShape = LoadField v51, :shape_id@0x1002
+          v53:CShape[0x1003] = Const CShape(0x1003)
+          v54:CBool = IsBitEqual v52, v53
+          CondBranch v54, bb11(), bb12()
+        bb11():
           PatchPoint NoSingletonClass(CallerSplatB@0x1060)
-          v50:CInt64 = ArrayLength v19
-          v51:CInt64[1] = GuardBitEquals v50, CInt64(1) recompile
-          v52:CInt64 = CCall v19, :rb_jit_ruby2_keywords_splat_p@0x1010
-          v53:CInt64[0] = GuardBitEquals v52, CInt64(0)
+          v58:CInt64 = ArrayLength v19
+          v59:CInt64[1] = GuardBitEquals v58, CInt64(1) recompile
+          v60:CInt64 = CCall v19, :rb_jit_ruby2_keywords_splat_p@0x1010
+          v61:CInt64[0] = GuardBitEquals v60, CInt64(0)
           PatchPoint MethodRedefined(CallerSplatB@0x1060, target@0x1011, cme:0x1068)
-          v56:CInt64[0] = Const CInt64(0)
-          v57:BasicObject = ArrayAref v19, v56
-          v58:ArrayExact = NewArray v57
-          PushInlineFrame :target, v47 (0x1090), num_args=1
+          v63:CInt64[0] = Const CInt64(0)
+          v64:BasicObject = ArrayAref v19, v63
+          v65:ArrayExact = NewArray v64
+          PushInlineFrame :target, v51 (0x1090), num_args=1
           CheckInterrupts
           PopInlineFrame
-          Jump bb4(v58)
-        bb8():
-          v62:BasicObject = Send v12, :target, v19 # SendFallbackReason: Send: polymorphic call site
-          Jump bb4(v62)
+          Jump bb4(v65)
+        bb12():
+          Jump bb10()
+        bb10():
+          v70:BasicObject = Send v12, :target, v19 # SendFallbackReason: Send: polymorphic call site
+          Jump bb4(v70)
         bb4(v27:BasicObject):
           CheckInterrupts
           Return v27
@@ -18691,28 +18732,44 @@ mod hir_opt_tests {
           v27:CBool = HasType v10, ObjectSubclass[class_exact:C]
           CondBranch v27, bb5(), bb6()
         bb5():
+          v29:ObjectSubclass[class_exact:C] = RefineType v10, ObjectSubclass[class_exact:C]
+          v30:CShape = LoadField v29, :shape_id@0x1001
+          v31:CShape[0x1002] = Const CShape(0x1002)
+          v32:CBool = IsBitEqual v30, v31
+          CondBranch v32, bb7(), bb8()
+        bb7():
           PatchPoint NoSingletonClass(C@0x1008)
           PatchPoint MethodRedefined(C@0x1008, foo@0x1010, cme:0x1018)
-          v34:Fixnum[3] = Const Value(3)
-          Jump bb4(v34)
+          v37:Fixnum[3] = Const Value(3)
+          Jump bb4(v37)
+        bb8():
+          Jump bb6()
         bb6():
-          v36:CBool = HasType v10, ObjectSubclass[class_exact:D]
-          CondBranch v36, bb7(), bb8()
-        bb7():
+          v40:CBool = HasType v10, ObjectSubclass[class_exact:D]
+          CondBranch v40, bb9(), bb10()
+        bb9():
+          v42:ObjectSubclass[class_exact:D] = RefineType v10, ObjectSubclass[class_exact:D]
+          v43:CShape = LoadField v42, :shape_id@0x1001
+          v44:CShape[0x1002] = Const CShape(0x1002)
+          v45:CBool = IsBitEqual v43, v44
+          CondBranch v45, bb11(), bb12()
+        bb11():
           PatchPoint NoSingletonClass(D@0x1040)
           PatchPoint MethodRedefined(D@0x1040, foo@0x1010, cme:0x1048)
-          v43:Fixnum[4] = Const Value(4)
-          Jump bb4(v43)
-        bb8():
-          v45:BasicObject = Send v10, :foo # SendFallbackReason: Send: polymorphic fallback
-          Jump bb4(v45)
+          v50:Fixnum[4] = Const Value(4)
+          Jump bb4(v50)
+        bb12():
+          Jump bb10()
+        bb10():
+          v53:BasicObject = Send v10, :foo # SendFallbackReason: Send: polymorphic fallback
+          Jump bb4(v53)
         bb4(v26:BasicObject):
           v17:Fixnum[2] = Const Value(2)
           PatchPoint MethodRedefined(Integer@0x1070, +@0x1078, cme:0x1080)
-          v49:Fixnum = GuardType v26, Fixnum recompile
-          v50:Fixnum = FixnumAdd v49, v17
+          v57:Fixnum = GuardType v26, Fixnum recompile
+          v58:Fixnum = FixnumAdd v57, v17
           CheckInterrupts
-          Return v50
+          Return v58
         ");
     }
 
@@ -18746,19 +18803,26 @@ mod hir_opt_tests {
           CondBranch v22, bb5(), bb6()
         bb5():
           v24:ObjectSubclass[class_exact:C] = RefineType v10, ObjectSubclass[class_exact:C]
+          v25:CShape = LoadField v24, :shape_id@0x1001
+          v26:CShape[0x1002] = Const CShape(0x1002)
+          v27:CBool = IsBitEqual v25, v26
+          CondBranch v27, bb7(), bb8()
+        bb7():
           PatchPoint NoSingletonClass(C@0x1008)
           PatchPoint MethodRedefined(C@0x1008, itself@0x1010, cme:0x1018)
           Jump bb4(v24)
-        bb6():
-          v31:CBool = HasType v10, Fixnum
-          CondBranch v31, bb7(), bb8()
-        bb7():
-          v33:Fixnum = RefineType v10, Fixnum
-          PatchPoint MethodRedefined(Integer@0x1040, itself@0x1010, cme:0x1018)
-          Jump bb4(v33)
         bb8():
-          v39:BasicObject = Send v10, :itself # SendFallbackReason: Send: polymorphic fallback
-          Jump bb4(v39)
+          Jump bb6()
+        bb6():
+          v35:CBool = HasType v10, Fixnum
+          CondBranch v35, bb9(), bb10()
+        bb9():
+          v37:Fixnum = RefineType v10, Fixnum
+          PatchPoint MethodRedefined(Integer@0x1040, itself@0x1010, cme:0x1018)
+          Jump bb4(v37)
+        bb10():
+          v42:BasicObject = Send v10, :itself # SendFallbackReason: Send: polymorphic fallback
+          Jump bb4(v42)
         bb4(v21:BasicObject):
           CheckInterrupts
           Return v21
@@ -18797,12 +18861,22 @@ mod hir_opt_tests {
           PushInlineFrame :klass_eq, v21 (0x1048), num_args=1
           PatchPoint StableConstantNames(0x1068, Integer)
           v31:ClassSubclass[Integer@0x1070] = Const Value(VALUE(0x1070))
+          v47:CShape = LoadField v12, :shape_id@0x1071
+          v48:CShape[0x1072] = Const CShape(0x1072)
+          v49:CBool = IsBitEqual v47, v48
+          CondBranch v49, bb9(), bb10()
+        bb9():
           PatchPoint MethodRedefined(Class@0x1078, ==@0x1080, cme:0x1088)
-          v51:CBool = IsBitEqual v12, v31
-          v52:BoolExact = BoxBool v51
+          v54:CBool = IsBitEqual v12, v31
+          v55:BoolExact = BoxBool v54
+          Jump bb6(v55)
+        bb10():
+          v114:BasicObject = Send v12, :==, v31 # SendFallbackReason: Send: polymorphic fallback
+          Jump bb6(v114)
+        bb6(v43:BasicObject):
           CheckInterrupts
           PopInlineFrame
-          Return v52
+          Return v43
         ");
     }
 
@@ -18842,29 +18916,43 @@ mod hir_opt_tests {
           CondBranch v27, bb5(), bb6()
         bb5():
           v29:ArrayExact = RefineType v12, ArrayExact
+          v30:CShape = LoadField v29, :shape_id@0x1002
+          v31:CShape[0x1003] = Const CShape(0x1003)
+          v32:CBool = IsBitEqual v30, v31
+          CondBranch v32, bb7(), bb8()
+        bb7():
           PatchPoint NoSingletonClass(Array@0x1008)
           PatchPoint MethodRedefined(Array@0x1008, []@0x1010, cme:0x1018)
-          v35:Fixnum = GuardType v13, Fixnum
-          v36:CInt64 = UnboxFixnum v35
-          v37:CInt64 = ArrayLength v29
-          v38:CInt64 = GuardLess v36, v37
-          v39:CInt64 = AdjustBounds v38, v37
-          v40:CInt64[0] = Const CInt64(0)
-          v41:CInt64 = GuardGreaterEq v39, v40
-          v42:BasicObject = ArrayAref v29, v41
-          Jump bb4(v42)
-        bb6():
-          v44:CBool = HasType v12, HashExact
-          CondBranch v44, bb7(), bb8()
-        bb7():
-          v46:HashExact = RefineType v12, HashExact
-          PatchPoint NoSingletonClass(Hash@0x1040)
-          PatchPoint MethodRedefined(Hash@0x1040, []@0x1010, cme:0x1048)
-          v52:BasicObject = HashAref v46, v13
-          Jump bb4(v52)
+          v38:Fixnum = GuardType v13, Fixnum
+          v39:CInt64 = UnboxFixnum v38
+          v40:CInt64 = ArrayLength v29
+          v41:CInt64 = GuardLess v39, v40
+          v42:CInt64 = AdjustBounds v41, v40
+          v43:CInt64[0] = Const CInt64(0)
+          v44:CInt64 = GuardGreaterEq v42, v43
+          v45:BasicObject = ArrayAref v29, v44
+          Jump bb4(v45)
         bb8():
-          v54:BasicObject = Send v12, :[], v13 # SendFallbackReason: Send: polymorphic fallback
-          Jump bb4(v54)
+          Jump bb6()
+        bb6():
+          v48:CBool = HasType v12, HashExact
+          CondBranch v48, bb9(), bb10()
+        bb9():
+          v50:HashExact = RefineType v12, HashExact
+          v51:CShape = LoadField v50, :shape_id@0x1002
+          v52:CShape[0x1040] = Const CShape(0x1040)
+          v53:CBool = IsBitEqual v51, v52
+          CondBranch v53, bb11(), bb12()
+        bb11():
+          PatchPoint NoSingletonClass(Hash@0x1048)
+          PatchPoint MethodRedefined(Hash@0x1048, []@0x1010, cme:0x1050)
+          v59:BasicObject = HashAref v50, v13
+          Jump bb4(v59)
+        bb12():
+          Jump bb10()
+        bb10():
+          v62:BasicObject = Send v12, :[], v13 # SendFallbackReason: Send: polymorphic fallback
+          Jump bb4(v62)
         bb4(v26:BasicObject):
           CheckInterrupts
           Return v26
@@ -18908,19 +18996,26 @@ mod hir_opt_tests {
         bb5():
           v24:Fixnum = RefineType v10, Fixnum
           PatchPoint MethodRedefined(Integer@0x1008, to_s@0x1010, cme:0x1018)
-          v29:StringExact = CCallVariadic v24, :Integer#to_s@0x1040
-          Jump bb4(v29)
+          v28:StringExact = CCallVariadic v24, :Integer#to_s@0x1040
+          Jump bb4(v28)
         bb6():
-          v31:CBool = HasType v10, Bignum
-          CondBranch v31, bb8(), bb9()
+          v30:CBool = HasType v10, Bignum
+          CondBranch v30, bb8(), bb9()
         bb8():
-          v33:Bignum = RefineType v10, Bignum
+          v32:Bignum = RefineType v10, Bignum
+          v33:CShape = LoadField v32, :shape_id@0x1041
+          v34:CShape[0x1042] = Const CShape(0x1042)
+          v35:CBool = IsBitEqual v33, v34
+          CondBranch v35, bb10(), bb11()
+        bb10():
           PatchPoint MethodRedefined(Integer@0x1008, to_s@0x1010, cme:0x1018)
-          v38:StringExact = CCallVariadic v33, :Integer#to_s@0x1040
-          Jump bb4(v38)
-        bb9():
-          v40:BasicObject = Send v10, :to_s # SendFallbackReason: Send: polymorphic fallback
+          v40:StringExact = CCallVariadic v32, :Integer#to_s@0x1040
           Jump bb4(v40)
+        bb11():
+          Jump bb9()
+        bb9():
+          v43:BasicObject = Send v10, :to_s # SendFallbackReason: Send: polymorphic fallback
+          Jump bb4(v43)
         bb4(v21:BasicObject):
           CheckInterrupts
           Return v21
@@ -18961,19 +19056,26 @@ mod hir_opt_tests {
         bb5():
           v24:Flonum = RefineType v10, Flonum
           PatchPoint MethodRedefined(Float@0x1008, to_s@0x1010, cme:0x1018)
-          v29:BasicObject = CCallWithFrame v24, :Float#to_s@0x1040
-          Jump bb4(v29)
+          v28:BasicObject = CCallWithFrame v24, :Float#to_s@0x1040
+          Jump bb4(v28)
         bb6():
-          v31:CBool = HasType v10, HeapFloat
-          CondBranch v31, bb8(), bb9()
+          v30:CBool = HasType v10, HeapFloat
+          CondBranch v30, bb8(), bb9()
         bb8():
-          v33:HeapFloat = RefineType v10, HeapFloat
+          v32:HeapFloat = RefineType v10, HeapFloat
+          v33:CShape = LoadField v32, :shape_id@0x1041
+          v34:CShape[0x1042] = Const CShape(0x1042)
+          v35:CBool = IsBitEqual v33, v34
+          CondBranch v35, bb10(), bb11()
+        bb10():
           PatchPoint MethodRedefined(Float@0x1008, to_s@0x1010, cme:0x1018)
-          v38:BasicObject = CCallWithFrame v33, :Float#to_s@0x1040
-          Jump bb4(v38)
-        bb9():
-          v40:BasicObject = Send v10, :to_s # SendFallbackReason: Send: polymorphic fallback
+          v40:BasicObject = CCallWithFrame v32, :Float#to_s@0x1040
           Jump bb4(v40)
+        bb11():
+          Jump bb9()
+        bb9():
+          v43:BasicObject = Send v10, :to_s # SendFallbackReason: Send: polymorphic fallback
+          Jump bb4(v43)
         bb4(v21:BasicObject):
           CheckInterrupts
           Return v21
@@ -19014,19 +19116,26 @@ mod hir_opt_tests {
         bb5():
           v24:StaticSymbol = RefineType v10, StaticSymbol
           PatchPoint MethodRedefined(Symbol@0x1008, to_s@0x1010, cme:0x1018)
-          v28:StringExact = InvokeBuiltin leaf <inline_expr>, v24
-          Jump bb4(v28)
+          v27:StringExact = InvokeBuiltin leaf <inline_expr>, v24
+          Jump bb4(v27)
         bb6():
-          v30:CBool = HasType v10, DynamicSymbol
-          CondBranch v30, bb8(), bb9()
+          v29:CBool = HasType v10, DynamicSymbol
+          CondBranch v29, bb8(), bb9()
         bb8():
-          v32:DynamicSymbol = RefineType v10, DynamicSymbol
+          v31:DynamicSymbol = RefineType v10, DynamicSymbol
+          v32:CShape = LoadField v31, :shape_id@0x1040
+          v33:CShape[0x1041] = Const CShape(0x1041)
+          v34:CBool = IsBitEqual v32, v33
+          CondBranch v34, bb10(), bb11()
+        bb10():
           PatchPoint MethodRedefined(Symbol@0x1008, to_s@0x1010, cme:0x1018)
-          v36:StringExact = InvokeBuiltin leaf <inline_expr>, v32
-          Jump bb4(v36)
-        bb9():
-          v38:BasicObject = Send v10, :to_s # SendFallbackReason: Send: polymorphic fallback
+          v38:StringExact = InvokeBuiltin leaf <inline_expr>, v31
           Jump bb4(v38)
+        bb11():
+          Jump bb9()
+        bb9():
+          v41:BasicObject = Send v10, :to_s # SendFallbackReason: Send: polymorphic fallback
+          Jump bb4(v41)
         bb4(v21:BasicObject):
           CheckInterrupts
           Return v21
@@ -19069,13 +19178,30 @@ mod hir_opt_tests {
           v22:CBool = HasType v10, ObjectSubclass[class_exact:C]
           CondBranch v22, bb5(), bb6()
         bb5():
+          v24:ObjectSubclass[class_exact:C] = RefineType v10, ObjectSubclass[class_exact:C]
+          v25:CShape = LoadField v24, :shape_id@0x1001
+          v26:CShape[0x1002] = Const CShape(0x1002)
+          v27:CBool = IsBitEqual v25, v26
+          CondBranch v27, bb7(), bb8()
+        bb7():
           PatchPoint NoSingletonClass(C@0x1008)
           PatchPoint MethodRedefined(C@0x1008, foo@0x1010, cme:0x1018)
-          v29:Fixnum[3] = Const Value(3)
-          Jump bb4(v29)
+          v32:Fixnum[3] = Const Value(3)
+          Jump bb4(v32)
+        bb8():
+          v34:CShape[0x1040] = Const CShape(0x1040)
+          v35:CBool = IsBitEqual v25, v34
+          CondBranch v35, bb9(), bb10()
+        bb9():
+          PatchPoint NoSingletonClass(C@0x1008)
+          PatchPoint MethodRedefined(C@0x1008, foo@0x1010, cme:0x1018)
+          v40:Fixnum[3] = Const Value(3)
+          Jump bb4(v40)
+        bb10():
+          Jump bb6()
         bb6():
-          v31:BasicObject = Send v10, :foo # SendFallbackReason: Send: polymorphic fallback
-          Jump bb4(v31)
+          v43:BasicObject = Send v10, :foo # SendFallbackReason: Send: polymorphic fallback
+          Jump bb4(v43)
         bb4(v21:BasicObject):
           CheckInterrupts
           Return v21
@@ -20599,21 +20725,28 @@ mod hir_opt_tests {
           CondBranch v27, bb5(), bb6()
         bb5():
           v29:HeapFloat = RefineType v12, HeapFloat
+          v30:CShape = LoadField v29, :shape_id@0x1002
+          v31:CShape[0x1003] = Const CShape(0x1003)
+          v32:CBool = IsBitEqual v30, v31
+          CondBranch v32, bb7(), bb8()
+        bb7():
           PatchPoint MethodRedefined(Float@0x1008, *@0x1010, cme:0x1018)
-          v34:BasicObject = CCallWithFrame v29, :Float#*@0x1040, v13
-          Jump bb4(v34)
-        bb6():
-          v36:CBool = HasType v12, Flonum
-          CondBranch v36, bb8(), bb9()
+          v37:BasicObject = CCallWithFrame v29, :Float#*@0x1040, v13
+          Jump bb4(v37)
         bb8():
-          v38:Flonum = RefineType v12, Flonum
+          Jump bb6()
+        bb6():
+          v40:CBool = HasType v12, Flonum
+          CondBranch v40, bb10(), bb11()
+        bb10():
+          v42:Flonum = RefineType v12, Flonum
           PatchPoint MethodRedefined(Float@0x1008, *@0x1010, cme:0x1018)
-          v43:Flonum = GuardType v13, Flonum recompile
-          v44:Float = FloatMul v38, v43
-          Jump bb4(v44)
-        bb9():
-          v46:BasicObject = Send v12, :*, v13 # SendFallbackReason: Send: polymorphic fallback
-          Jump bb4(v46)
+          v46:Flonum = GuardType v13, Flonum recompile
+          v47:Float = FloatMul v42, v46
+          Jump bb4(v47)
+        bb11():
+          v49:BasicObject = Send v12, :*, v13 # SendFallbackReason: Send: polymorphic fallback
+          Jump bb4(v49)
         bb4(v26:BasicObject):
           CheckInterrupts
           Return v26
@@ -20830,63 +20963,7 @@ mod hir_opt_tests {
           v8:BasicObject = LoadArg :x@1
           Jump bb3(v7, v8)
         bb3(v11:HeapBasicObject, v12:BasicObject):
-          v74:NilClass = Const Value(nil)
-          v17:Fixnum[1] = Const Value(1)
-          PatchPoint SingleRactorMode
-          v21:CShape = LoadField v11, :shape_id@0x1001
-          v22:CShape[0x1002] = Const CShape(0x1002)
-          v23:CBool = IsBitEqual v21, v22
-          CondBranch v23, bb5(), bb6()
-        bb5():
-          StoreField v11, :@a@0x1003, v17
-          Jump bb4()
-        bb6():
-          v28:CShape[0x1004] = Const CShape(0x1004)
-          v29:CBool = IsBitEqual v21, v28
-          CondBranch v29, bb7(), bb8()
-        bb7():
-          StoreField v11, :@a@0x1003, v17
-          v35:CShape[0x1002] = Const CShape(0x1002)
-          StoreField v11, :shape_id@0x1001, v35
-          Jump bb4()
-        bb8():
-          SetIvar v11, :@a, v17
-          Jump bb4()
-        bb4():
-          PatchPoint NoEPEscape(f)
-          v44:Fixnum[1] = Const Value(1)
-          PatchPoint MethodRedefined(Integer@0x1008, +@0x1010, cme:0x1018)
-          v72:Fixnum = GuardType v12, Fixnum recompile
-          v73:Fixnum = FixnumAdd v72, v44
-          PatchPoint SingleRactorMode
-          v55:CShape = LoadField v11, :shape_id@0x1001
-          v56:CShape[0x1002] = Const CShape(0x1002)
-          v57:CBool = IsBitEqual v55, v56
-          CondBranch v57, bb10(), bb11()
-        bb10():
-          StoreField v11, :@a@0x1003, v73
-          Jump bb9()
-        bb11():
-          SetIvar v11, :@a, v73
-          Jump bb9()
-        bb9():
-          CheckInterrupts
-          Return v73
-
-        fn f@<compiled>:4:
-        bb1():
-          EntryPoint interpreter
-          v1:HeapBasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :x@0x1000
-          Jump bb3(v1, v3)
-        bb2():
-          EntryPoint JIT(0)
-          v7:HeapBasicObject = LoadArg :self@0
-          v8:BasicObject = LoadArg :x@1
-          Jump bb3(v7, v8)
-        bb3(v11:HeapBasicObject, v12:BasicObject):
-          v91:NilClass = Const Value(nil)
+          v81:NilClass = Const Value(nil)
           v17:Fixnum[1] = Const Value(1)
           PatchPoint SingleRactorMode
           v21:CShape = LoadField v11, :shape_id@0x1001
@@ -20916,19 +20993,84 @@ mod hir_opt_tests {
         bb13():
           v73:Fixnum = RefineType v12, Fixnum
           PatchPoint MethodRedefined(Integer@0x1008, +@0x1010, cme:0x1018)
-          v78:Fixnum = FixnumAdd v73, v44
-          Jump bb12(v78)
+          v77:Fixnum = FixnumAdd v73, v44
+          Jump bb12(v77)
         bb14():
-          v80:CBool = HasType v12, Flonum
-          CondBranch v80, bb15(), bb16()
+          v79:BasicObject = Send v12, :+, v44 # SendFallbackReason: Send: polymorphic fallback
+          Jump bb12(v79)
+        bb12(v70:BasicObject):
+          PatchPoint SingleRactorMode
+          v55:CShape = LoadField v11, :shape_id@0x1001
+          v56:CShape[0x1002] = Const CShape(0x1002)
+          v57:CBool = IsBitEqual v55, v56
+          CondBranch v57, bb10(), bb11()
+        bb10():
+          StoreField v11, :@a@0x1003, v70
+          WriteBarrier v11, v70
+          Jump bb9()
+        bb11():
+          SetIvar v11, :@a, v70
+          Jump bb9()
+        bb9():
+          CheckInterrupts
+          Return v70
+
+        fn f@<compiled>:4:
+        bb1():
+          EntryPoint interpreter
+          v1:HeapBasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :x@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v7:HeapBasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :x@1
+          Jump bb3(v7, v8)
+        bb3(v11:HeapBasicObject, v12:BasicObject):
+          v89:NilClass = Const Value(nil)
+          v17:Fixnum[1] = Const Value(1)
+          PatchPoint SingleRactorMode
+          v21:CShape = LoadField v11, :shape_id@0x1001
+          v22:CShape[0x1002] = Const CShape(0x1002)
+          v23:CBool = IsBitEqual v21, v22
+          CondBranch v23, bb5(), bb6()
+        bb5():
+          StoreField v11, :@a@0x1003, v17
+          Jump bb4()
+        bb6():
+          v28:CShape[0x1004] = Const CShape(0x1004)
+          v29:CBool = IsBitEqual v21, v28
+          CondBranch v29, bb7(), bb8()
+        bb7():
+          StoreField v11, :@a@0x1003, v17
+          v35:CShape[0x1002] = Const CShape(0x1002)
+          StoreField v11, :shape_id@0x1001, v35
+          Jump bb4()
+        bb8():
+          SetIvar v11, :@a, v17
+          Jump bb4()
+        bb4():
+          PatchPoint NoEPEscape(f)
+          v44:Fixnum[1] = Const Value(1)
+          v71:CBool = HasType v12, Fixnum
+          CondBranch v71, bb13(), bb14()
+        bb13():
+          v73:Fixnum = RefineType v12, Fixnum
+          PatchPoint MethodRedefined(Integer@0x1008, +@0x1010, cme:0x1018)
+          v77:Fixnum = FixnumAdd v73, v44
+          Jump bb12(v77)
+        bb14():
+          v79:CBool = HasType v12, Flonum
+          CondBranch v79, bb15(), bb16()
         bb15():
-          v82:Flonum = RefineType v12, Flonum
+          v81:Flonum = RefineType v12, Flonum
           PatchPoint MethodRedefined(Float@0x1040, +@0x1010, cme:0x1048)
-          v87:Float = FloatAdd v82, v44
-          Jump bb12(v87)
+          v85:Float = FloatAdd v81, v44
+          Jump bb12(v85)
         bb16():
-          v89:BasicObject = Send v12, :+, v44 # SendFallbackReason: Send: polymorphic fallback
-          Jump bb12(v89)
+          v87:BasicObject = Send v12, :+, v44 # SendFallbackReason: Send: polymorphic fallback
+          Jump bb12(v87)
         bb12(v70:BasicObject):
           PatchPoint SingleRactorMode
           v55:CShape = LoadField v11, :shape_id@0x1001
