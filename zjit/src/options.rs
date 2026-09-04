@@ -789,7 +789,7 @@ mod tests {
         let options = unsafe { OPTIONS.as_ref() }.unwrap();
         // parse_option canonicalizes the path, so canonicalize the expectation too
         let expected = std::fs::canonicalize(&path).unwrap().join(format!("hir-{}", std::process::id()));
-        assert_eq!(options.dump_hir_file, Some(expected));
+        assert_eq!(options.dump_hir_file, Some(expected.clone()));
         assert!(matches!(options.dump_hir_opt, Some(DumpHIR::WithoutSnapshot)));
         assert!(expected.exists());
 
@@ -810,7 +810,7 @@ mod tests {
         let options = unsafe { OPTIONS.as_ref() }.unwrap();
         // parse_option canonicalizes the path, so canonicalize the expectation too
         let expected = std::fs::canonicalize(&path).unwrap().join(format!("hir-{}", std::process::id()));
-        assert_eq!(options.dump_hir_file, Some(expected));
+        assert_eq!(options.dump_hir_file, Some(expected.clone()));
         assert!(matches!(options.dump_hir_opt, Some(DumpHIR::All)));
         assert!(expected.exists());
 
