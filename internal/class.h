@@ -730,7 +730,9 @@ RCLASS_SET_ATTACHED_OBJECT(VALUE klass, VALUE attached_object)
 static inline void
 RCLASS_SET_MAX_IV_COUNT(VALUE klass, attr_index_t count)
 {
-    RCLASS_MAX_IV_COUNT(klass) = count;
+    if (klass != rb_cObject && klass != rb_cBasicObject) {
+        RCLASS_MAX_IV_COUNT(klass) = count;
+    }
 }
 
 static inline void
