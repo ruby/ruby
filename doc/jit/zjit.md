@@ -430,7 +430,7 @@ Note that this disables profiling. To inject interpreter profiles into ZJIT, con
 To write the dump to a file instead of stdout, pass a file path as the option value. Any value other than `all` or `debug` is treated as a directory name, and it composes with those format variants:
 
 ```bash
-./miniruby --zjit --zjit-dump-hir=/tmp/out.hir --zjit-call-threshold=1 -e "1 + 1"
+./miniruby --zjit --zjit-dump-hir=/tmp --zjit-call-threshold=1 -e "1 + 1"
 ./miniruby --zjit --zjit-dump-hir=all --zjit-dump-hir=/tmp --zjit-call-threshold=1 -e "1 + 1"
 ```
 
