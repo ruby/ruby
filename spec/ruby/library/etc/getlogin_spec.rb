@@ -5,8 +5,8 @@ platform_is :windows do
   describe "Etc.getlogin" do
     it "returns the name associated with the current login activity" do
       # The login name is determined when the process starts, from ENV['USER'],
-      # ENV['USERNAME'] or GetUserName(), so ENV['USER'] has no effect here.
-      Etc.getlogin.should == ENV['USERNAME']
+      # ENV['USERNAME'] or GetUserName(), and ENV['USER'] is set from it.
+      Etc.getlogin.should == ENV['USER']
     end
   end
 end
