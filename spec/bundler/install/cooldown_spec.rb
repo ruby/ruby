@@ -217,7 +217,7 @@ RSpec.describe "bundle install with the cooldown setting" do
       it "applies it when bundler configures none of its own" do
         gemrc_cooldown 7
 
-        bundle "install", artifice: "compact_index_cooldown"
+        bundle "install", artifice: "compact_index_v2"
 
         expect(the_bundle).to include_gems("ripe_gem 1.0.0")
       end
@@ -225,7 +225,7 @@ RSpec.describe "bundle install with the cooldown setting" do
       it "takes the longer of the two settings" do
         gemrc_cooldown 7
 
-        bundle "install", env: { "BUNDLE_COOLDOWN" => "1" }, artifice: "compact_index_cooldown"
+        bundle "install", env: { "BUNDLE_COOLDOWN" => "1" }, artifice: "compact_index_v2"
 
         expect(the_bundle).to include_gems("ripe_gem 1.0.0")
       end
@@ -233,7 +233,7 @@ RSpec.describe "bundle install with the cooldown setting" do
       it "counts a bundler-side 0 as a value rather than as unset" do
         gemrc_cooldown 7
 
-        bundle "install", env: { "BUNDLE_COOLDOWN" => "0" }, artifice: "compact_index_cooldown"
+        bundle "install", env: { "BUNDLE_COOLDOWN" => "0" }, artifice: "compact_index_v2"
 
         expect(the_bundle).to include_gems("ripe_gem 1.0.0")
       end
@@ -241,7 +241,7 @@ RSpec.describe "bundle install with the cooldown setting" do
       it "counts a gemrc 0 as a value rather than as unset" do
         gemrc_cooldown 0
 
-        bundle "install", env: { "BUNDLE_COOLDOWN" => "7" }, artifice: "compact_index_cooldown"
+        bundle "install", env: { "BUNDLE_COOLDOWN" => "7" }, artifice: "compact_index_v2"
 
         expect(the_bundle).to include_gems("ripe_gem 1.0.0")
       end
@@ -254,7 +254,7 @@ RSpec.describe "bundle install with the cooldown setting" do
           gem "ripe_gem"
         G
 
-        bundle "install", artifice: "compact_index_cooldown"
+        bundle "install", artifice: "compact_index_v2"
 
         expect(the_bundle).to include_gems("ripe_gem 1.0.0")
       end
@@ -262,7 +262,7 @@ RSpec.describe "bundle install with the cooldown setting" do
       it "lets --cooldown 0 bypass it" do
         gemrc_cooldown 7
 
-        bundle "install --cooldown 0", artifice: "compact_index_cooldown"
+        bundle "install --cooldown 0", artifice: "compact_index_v2"
 
         expect(the_bundle).to include_gems("ripe_gem 2.0.0")
       end
@@ -270,7 +270,7 @@ RSpec.describe "bundle install with the cooldown setting" do
       it "warns and ignores it when it is not a number" do
         gemrc_cooldown "seven"
 
-        bundle "install", artifice: "compact_index_cooldown"
+        bundle "install", artifice: "compact_index_v2"
 
         expect(err).to include('Invalid cooldown value "seven" in the gemrc file, so it is ignored.')
         expect(the_bundle).to include_gems("ripe_gem 2.0.0")
