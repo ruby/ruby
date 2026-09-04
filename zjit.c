@@ -90,9 +90,13 @@ rb_zjit_reserve_low_addr_space(size_t size)
     // Elsewhere on Linux, probe upwards for a free hole below 2GiB.
     // MAP_FIXED_NOREPLACE fails rather than clobbering an existing mapping.
     if (mem_block == MAP_FAILED) {
+        // Distance between probes. 64MiB sweeps the usable 2GiB in at most 32
+        // mmap calls, while being coarse enough that each step clears whatever
+        // mapping made the previous probe fail.
+        const uintptr_t probe_stride = 64 * 1024 * 1024;
         const uintptr_t page_size = (uintptr_t)sysconf(_SC_PAGESIZE);
         const uintptr_t limit = (uintptr_t)INT32_MAX - size;
-        for (uintptr_t addr = 64 * 1024 * 1024; addr < limit; addr += 64 * 1024 * 1024) {
+        for (uintptr_t addr = probe_stride; addr < limit; addr += probe_stride) {
             void *req = (void *)(addr & ~(page_size - 1));
             mem_block = mmap(req, size, PROT_NONE,
                              MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED_NOREPLACE, -1, 0);
