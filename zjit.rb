@@ -186,8 +186,8 @@ class << RubyVM::ZJIT
 
       :side_exit_size,
       :side_exit_size_ratio,
-      :failed_jit_frame_bytes,
-      :jit_frame_bytes,
+      :jit_frame_heap_bytes,
+      :jit_frame_region_bytes,
       :code_region_bytes,
       :zjit_alloc_bytes,
       :total_mem_bytes,
