@@ -545,6 +545,10 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
         ("dump-hir" | "dump-hir-opt", _) => {
             let directory = std::fs::canonicalize(&opt_val)
                 .map_err(|e| eprintln!("Failed to canonicalize path '{opt_val}': {e}")).ok()?;
+            if !directory.is_dir() {
+                eprintln!("Path '{opt_val}' is not a directory");
+                return None;
+            }
             let file_name = directory.join(format!("hir-{}", std::process::id()));
             // Truncate the file if it exists
             std::fs::OpenOptions::new()
@@ -787,9 +791,9 @@ mod tests {
         let expected = std::fs::canonicalize(&path).unwrap().join(format!("hir-{}", std::process::id()));
         assert_eq!(options.dump_hir_file, Some(expected));
         assert!(matches!(options.dump_hir_opt, Some(DumpHIR::WithoutSnapshot)));
-        assert!(path.exists());
+        assert!(expected.exists());
 
-        let _ = std::fs::remove_file(path);
+        let _ = std::fs::remove_file(expected);
     }
 
     #[test]
@@ -808,8 +812,9 @@ mod tests {
         let expected = std::fs::canonicalize(&path).unwrap().join(format!("hir-{}", std::process::id()));
         assert_eq!(options.dump_hir_file, Some(expected));
         assert!(matches!(options.dump_hir_opt, Some(DumpHIR::All)));
+        assert!(expected.exists());
 
-        let _ = std::fs::remove_file(path);
+        let _ = std::fs::remove_file(expected);
     }
 
     #[test]
