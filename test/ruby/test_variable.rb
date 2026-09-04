@@ -71,6 +71,27 @@ class TestVariable < Test::Unit::TestCase
     assert_equal "Athena", Zeus.class_variable_get(:@@rule)
   end
 
+  def test_raw_object_smallest_slot
+    assert_separately([], <<-"end;")
+      require 'objspace'
+      base_size = ObjectSpace.memsize_of(Object.new)
+
+      assert_equal base_size, ObjectSpace.memsize_of(Object.new)
+
+      object = Object.new
+      10.times do |i|
+        object.instance_variable_set("@iv_\#{i}", i)
+      end
+
+      assert_equal base_size, ObjectSpace.memsize_of(Object.new)
+
+      class TestClass
+      end
+
+      assert_equal base_size, ObjectSpace.memsize_of(TestClass.new)
+    end;
+  end
+
   def test_singleton_class_included_class_variable
     c = Class.new
     c.extend(Olympians)
