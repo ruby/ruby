@@ -397,6 +397,9 @@ class Gem::TestCase < Test::Unit::TestCase
     ENV["BUNDLE_CONFIG"] = nil
     ENV["BUNDLE_USER_CONFIG"] = nil
     ENV["BUNDLE_USER_HOME"] = nil
+    # Cooldown resolution reads Bundler's settings, so a developer running the
+    # suite with one configured would otherwise see it applied to the fixtures.
+    ENV["BUNDLE_COOLDOWN"] = nil
     ENV["RUBYGEMS_PREVENT_UPDATE_SUGGESTION"] = "true"
 
     @current_dir = Dir.pwd
