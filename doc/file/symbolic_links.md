@@ -116,7 +116,7 @@ Each of these methods changes the mode of the symlink entry:
 - File::lchmod
 - Pathname#lchmod
 
-These methods are not supported on Windows or Linux (raise Errno::ENOTSUP).
+These methods are not supported on Windows or Linux (raise NotImplementedError).
 
 ### `lchown`
 
