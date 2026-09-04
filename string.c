@@ -9209,10 +9209,11 @@ tr_buffer_ensure_capa(struct tr_buffer *buffer, size_t extra_capa)
     size_t required_capa = offset + extra_capa;
     if (UNLIKELY(buffer->capa < required_capa)) {
         size_t new_capa = buffer->capa ? buffer->capa : buffer->initial_capa;
+        RUBY_ASSERT(new_capa >= 32); // Lower would cause infinite loop
         while (new_capa < required_capa) {
             new_capa *= 1.2;
         }
-        buffer->buf = SIZED_REALLOC_N(buffer->buf, unsigned char, new_capa, buffer->capa);
+        SIZED_REALLOC_N(buffer->buf, unsigned char, new_capa, buffer->capa);
         buffer->ptr = buffer->buf + offset;
         buffer->capa = new_capa;
     }
