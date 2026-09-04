@@ -2,6 +2,16 @@
 
 module Bundler
   module CLI::Common
+    # Validates the `--cooldown` flag and makes it the setting for this
+    # command. Every command that takes the flag goes through here, so they
+    # share one reading of the value.
+    def self.configure_cooldown(options)
+      value = options[:cooldown]
+
+      validate_cooldown!(value)
+      Bundler.settings.set_command_option_if_given :cooldown, value
+    end
+
     def self.validate_cooldown!(value)
       # Without the flag the config file and BUNDLE_COOLDOWN decide, and those
       # only warn, so a typo left in a config file keeps the command usable.
