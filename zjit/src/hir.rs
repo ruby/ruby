@@ -3858,7 +3858,11 @@ impl Function {
                         Insn::CondBranchHasType(insn) => {
                             let CondBranchHasTypeData { val, expected, if_true, if_false } = &**insn;
                             let val_type = self.type_of(*val);
-                            if val_type.could_be(*expected) {
+                            // `is_subtype` additionally covers a Bottom `val`: an
+                            // impossible value (e.g. refined to a disjoint type) folds
+                            // to `Jump(if_true)`, so `if_true` must be marked reachable
+                            // to stay consistent with `fold_constants`.
+                            if val_type.could_be(*expected) || val_type.is_subtype(*expected) {
                                 reachable.insert(if_true.target);
                                 let arg_types: Vec<Type> = if_true.args.iter().map(|a| self.type_of(*a)).collect();
                                 for (idx, arg_type) in arg_types.into_iter().enumerate() {
@@ -11560,6 +11564,51 @@ mod validation_tests {
             function.infer_types();
             // Just checking that we don't panic.
             assert!(function.validate_definite_assignment().is_ok());
+        });
+    }
+
+    // A `CondBranchHasType` whose `val` has been refined to a disjoint type is
+    // `Empty` (Bottom). `fold_constants` folds such a branch to `Jump(if_true)`
+    // (Bottom is a subtype of every type, so `is_a` holds), so `infer_types` must
+    // agree and mark the `if_true` edge reachable, unioning its arg types into the
+    // target's params. If it instead marked neither edge reachable, the `if_true`
+    // params would be left at `Empty` and diverge from the folded CFG.
+    #[test]
+    fn condbranchhastype_bottom_val_marks_if_true_reachable() {
+        let mut function = Function::new(std::ptr::null());
+        let entry = function.entry_block;
+        let if_true = function.new_block(0);
+        let if_false = function.new_block(0);
+        let p_true = function.push_insn(if_true, Insn::Param);
+        function.push_insn(if_true, Insn::Return { val: p_true });
+        let p_false = function.push_insn(if_false, Insn::Param);
+        function.push_insn(if_false, Insn::Return { val: p_false });
+        // Refine a nil to Fixnum: NilClass ∩ Fixnum = Empty (Bottom).
+        let nil = function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
+        let bottom = function.push_insn(entry, Insn::RefineType { val: nil, new_type: types::Fixnum });
+        // Pass a Fixnum const as the edge arg so the resulting param type is
+        // observable (Fixnum when the edge is visited, Empty when it is not).
+        let arg = function.push_insn(entry, Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(3)) });
+        function.push_insn(entry, Insn::CondBranchHasType(Box::new(CondBranchHasTypeData {
+            val: bottom,
+            expected: types::Fixnum,
+            if_true: BranchEdge { target: if_true, args: vec![arg] },
+            if_false: BranchEdge { target: if_false, args: vec![arg] },
+        })));
+        function.seal_entries();
+        crate::cruby::with_rubyvm(|| {
+            function.infer_types();
+            assert!(function.type_of(bottom).bit_equal(types::Empty), "refine to disjoint type should be Bottom");
+            // if_true is the branch fold_constants takes for a Bottom val, so its
+            // param must receive the edge arg's type (a Fixnum const here) rather
+            // than being left at Empty.
+            let p_true_type = function.type_of(p_true);
+            assert!(!p_true_type.bit_equal(types::Empty) && p_true_type.is_subtype(types::Fixnum),
+                "if_true param should be a Fixnum, got {p_true_type}");
+            // if_false is genuinely unreachable (a Bottom value can never fail the
+            // type check), so its param stays Empty.
+            assert!(function.type_of(p_false).bit_equal(types::Empty),
+                "if_false param should be Empty, got {}", function.type_of(p_false));
         });
     }
 
