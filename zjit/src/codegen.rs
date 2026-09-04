@@ -3515,13 +3515,21 @@ fn build_stack_map(jit: &JITState, function: &Function, state: &FrameState) -> V
         stack.push(StackMapEntry::Skip(VM_ENV_DATA_SIZE.to_usize()));
         // Locals, top-down (local[L-1] .. local[0]).
         let spilled_locals = current_state.spilled_locals();
+        let mut run_of_spilled_locals = 0;
         for (idx, &insn_id) in current_state.locals().enumerate().rev() {
             // Skip spilled slots which are already initialized on entry.
             if spilled_locals.get(idx) {
-                stack.push(StackMapEntry::Skip(1));
+                run_of_spilled_locals += 1;
             } else {
+                if run_of_spilled_locals > 0 {
+                    stack.push(StackMapEntry::Skip(run_of_spilled_locals));
+                    run_of_spilled_locals = 0;
+                }
                 stack.push(to_entry(insn_id));
             }
+        }
+        if run_of_spilled_locals > 0 {
+            stack.push(StackMapEntry::Skip(run_of_spilled_locals));
         }
 
         let Some(caller) = current_state.caller() else {
