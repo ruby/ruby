@@ -369,6 +369,50 @@ module Bundler
       self[:jobs] || processor_count
     end
 
+    ##
+    # The cooldown that applies to a source whose Gemfile declaration asks for
+    # +source_cooldown+ days.
+    #
+    # `--cooldown` is set as a command line option, and it wins outright so
+    # that `--cooldown 0` bypasses the cooldown however the two tools are
+    # configured. Otherwise this setting, or the per-source value when this
+    # setting is unset, is raised to RubyGems' own `:cooldown:` setting, so a
+    # cooldown configured for only one of the two tools covers both.
+
+    def cooldown_for(source_cooldown = nil)
+      command_line = @temporary[key_for(:cooldown)]
+      return converted_value(command_line, :cooldown) unless command_line.nil?
+
+      # Read raw rather than through #[], whose `to_i` would turn a value that
+      # is not a number into a 0 that suppresses `source_cooldown`.
+      configured = cooldown_settings.days(configured_value(:cooldown))
+
+      cooldown_settings.combine(configured || source_cooldown, rubygems_cooldown)
+    end
+
+    ##
+    # RubyGems' `:cooldown:` gemrc setting, read from the loaded gemrc rather
+    # than from `Gem.configuration.cooldown`, which only exists on RubyGems
+    # versions that know the setting. A value assigned to that accessor from
+    # Ruby after startup is therefore not seen here.
+    #
+    # Reading it builds Gem::ConfigFile, which costs a command that never
+    # resolves against a remote around 30ms it has no use for, so the setting
+    # is validated here, at the point of use, rather than when the command
+    # starts.
+
+    def rubygems_cooldown
+      return @rubygems_cooldown if defined?(@rubygems_cooldown)
+
+      @rubygems_cooldown = gemrc_cooldown
+
+      if cooldown_settings.invalid?(@rubygems_cooldown)
+        Bundler.ui.warn cooldown_settings.invalid_message(@rubygems_cooldown, "the gemrc file")
+      end
+
+      @rubygems_cooldown
+    end
+
     def validate!
       all.each do |raw_key|
         [@local_config, @env_config, @global_config].each do |settings|
@@ -383,6 +427,19 @@ module Bundler
     end
 
     private
+
+    def cooldown_settings
+      require "rubygems/cooldown_settings"
+      Gem::CooldownSettings
+    end
+
+    # Scanned rather than looked up, because ConfigFile#[] stringifies the key
+    # on RubyGems 3.4 and a `:cooldown:` gemrc entry is stored under a Symbol.
+
+    def gemrc_cooldown
+      Gem.configuration.each {|key, value| return value if key.to_s == "cooldown" }
+      nil
+    end
 
     def configs
       @configs ||= {

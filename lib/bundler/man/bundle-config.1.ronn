@@ -145,26 +145,46 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
    The effective cooldown for any given gem is resolved from three
    layers, highest precedence first:
 
-     1. CLI flag `--cooldown N` on `install`, `update`, `add`, and
-        `outdated`.
+     1. CLI flag `--cooldown N` on `install`, `update`, `add`, `cache`,
+        `lock`, and `outdated`.
      2. This setting (`bundle config set cooldown N` or
         `BUNDLE_COOLDOWN=N`).
      3. The per-source `cooldown:` keyword in the Gemfile, such as
         `source "https://rubygems.org", cooldown: 7`.
 
    The CLI flag and this setting apply uniformly to every source,
-   including ones declared with their own `cooldown:` value. To keep a
-   private registry permanently exempt while still cooling down public
-   gems, declare `source "https://internal", cooldown: 0` in the
-   Gemfile; remember that `--cooldown N` on the command line will
-   still override it for that single run.
+   including ones declared with their own `cooldown:` value. To exempt a
+   private registry while still cooling down public gems, declare
+   `source "https://internal", cooldown: 0` in the Gemfile. That
+   exemption is not absolute. `--cooldown N` on the command line
+   overrides it for a single run, and a gemrc cooldown raises it the
+   same way it raises any other layer, as described below. Where a
+   gemrc cooldown is configured, `--cooldown 0` is the only way to get
+   the exemption back.
+
+   RubyGems has a cooldown of its own, set with `gem`'s `--cooldown`
+   flag or the `:cooldown:` key in the gemrc file, and the two are read
+   together. Whatever the three layers above resolve to is raised to the
+   gemrc value, and the longer of the two wins. It carries the other way
+   round as well. `gem install`, `gem update` and `gem outdated` read
+   this setting and `BUNDLE_COOLDOWN`, so a cooldown configured for
+   either tool covers both. The Gemfile per-source `cooldown:` is the
+   exception, since `gem` never reads a Gemfile. A configured `0` takes
+   part like any other value rather than switching the cooldown off, so
+   `bundle config set cooldown 0` does not cancel a gemrc cooldown. The
+   `--cooldown` flag is what bypasses the other tool's setting. It wins
+   outright, which is why `--cooldown 0` remains the escape hatch for an
+   urgent update.
 
    The value must be a non-negative integer. `--cooldown` rejects
-   anything else outright, while a value coming from this setting or
-   from `BUNDLE_COOLDOWN` only warns, because a typo left in a config
-   file should not make every command fail. Such a value disables the
-   cooldown for every source, including sources that declare their own
-   `cooldown:` in the Gemfile.
+   anything else outright, while a value coming from this setting, from
+   `BUNDLE_COOLDOWN` or from the gemrc file only warns, because a typo
+   left in a config file should not make every command fail. Such a
+   value takes no part in the resolution above, so a per-source
+   `cooldown:` in the Gemfile, or a usable value configured for the
+   other tool, still applies. The warning names where the value came
+   from, since either tool reports the other's setting as well as its
+   own.
 
    Cooldown filtering depends on the gem server providing a per-version
    `created_at` timestamp in the v2 compact-index format. Versions

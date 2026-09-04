@@ -136,6 +136,118 @@ that would suck --ehhh=oh geez it looks like i might have broken bundler somehow
       end
     end
 
+    describe "#rubygems_cooldown" do
+      it "warns once when the gemrc value is not a number" do
+        allow(Gem.configuration).to receive(:each).and_yield(:cooldown, "abc")
+
+        expect(Bundler.ui).to receive(:warn).with(/Invalid cooldown value "abc"/).once
+        2.times { settings.rubygems_cooldown }
+      end
+
+      it "stays quiet for a usable value" do
+        allow(Gem.configuration).to receive(:each).and_yield(:cooldown, 7)
+
+        expect(Bundler.ui).not_to receive(:warn)
+        expect(settings.rubygems_cooldown).to be 7
+      end
+
+      it "reads a value that Gem::ConfigFile#[] cannot look up" do
+        # RubyGems 3.4 behaves this way. See Settings#gemrc_cooldown.
+        allow(Gem.configuration).to receive(:[]).with(:cooldown).and_return(nil)
+        allow(Gem.configuration).to receive(:each).and_yield(:cooldown, 7)
+
+        expect(settings.rubygems_cooldown).to be 7
+      end
+
+      it "reads a value stored under a string key" do
+        allow(Gem.configuration).to receive(:each).and_yield("cooldown", 7)
+
+        expect(settings.rubygems_cooldown).to be 7
+      end
+    end
+
+    describe "#cooldown_for" do
+      before { allow(settings).to receive(:rubygems_cooldown).and_return(nil) }
+
+      it "is nil when nothing is configured" do
+        expect(settings.cooldown_for).to be_nil
+      end
+
+      it "returns the per-source value when the setting is unset" do
+        expect(settings.cooldown_for(7)).to be 7
+      end
+
+      it "prefers the setting over the per-source value" do
+        settings.set_local :cooldown, "14"
+
+        expect(settings.cooldown_for(7)).to be 14
+      end
+
+      it "keeps the per-source value when the setting is not a number" do
+        settings.set_local :cooldown, "abc"
+
+        expect(settings.cooldown_for(7)).to be 7
+      end
+
+      context "when RubyGems configures a cooldown too" do
+        it "uses it when Bundler configures none" do
+          allow(settings).to receive(:rubygems_cooldown).and_return(7)
+
+          expect(settings.cooldown_for).to be 7
+        end
+
+        it "takes the longer of the two" do
+          allow(settings).to receive(:rubygems_cooldown).and_return(7)
+          settings.set_local :cooldown, "3"
+
+          expect(settings.cooldown_for).to be 7
+
+          settings.set_local :cooldown, "14"
+
+          expect(settings.cooldown_for).to be 14
+        end
+
+        it "raises a per-source value to it" do
+          allow(settings).to receive(:rubygems_cooldown).and_return(7)
+
+          expect(settings.cooldown_for(3)).to be 7
+        end
+
+        it "leaves a longer per-source value alone" do
+          allow(settings).to receive(:rubygems_cooldown).and_return(7)
+
+          expect(settings.cooldown_for(14)).to be 14
+        end
+
+        it "counts a configured 0 as a value rather than as unset" do
+          allow(settings).to receive(:rubygems_cooldown).and_return(7)
+          settings.set_local :cooldown, "0"
+
+          expect(settings.cooldown_for).to be 7
+
+          allow(settings).to receive(:rubygems_cooldown).and_return(0)
+          settings.set_local :cooldown, "7"
+
+          expect(settings.cooldown_for).to be 7
+        end
+
+        it "ignores a value that is not a number" do
+          allow(settings).to receive(:rubygems_cooldown).and_return("abc")
+          settings.set_local :cooldown, "7"
+
+          expect(settings.cooldown_for).to be 7
+        end
+
+        it "lets --cooldown win outright so 0 bypasses it" do
+          allow(settings).to receive(:rubygems_cooldown).and_return(7)
+
+          settings.temporary(cooldown: 0) do
+            expect(settings.cooldown_for(14)).to be 0
+          end
+        end
+      end
+    end
+
     context "when the setting has been renamed" do
       it "reads the value set under the old name" do
         settings.set_local :no_prune, "true"

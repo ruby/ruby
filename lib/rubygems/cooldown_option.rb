@@ -12,7 +12,8 @@ module Gem::CooldownOption
   def add_cooldown_option(group = nil)
     args = [group, "--cooldown DAYS", Integer,
             "Do not use gem versions published within",
-            "the last DAYS days (0 disables the cooldown)"].compact
+            "the last DAYS days (0 disables the cooldown,",
+            "overriding the gemrc and Bundler settings)"].compact
 
     add_option(*args) do |value, options|
       if value.negative?

@@ -55,7 +55,7 @@ Adds pessimistic declaration of version\.
 Adds strict declaration of version\.
 .TP
 \fB\-\-cooldown=<number>\fR
-Only consider gem versions published at least \fInumber\fR days ago when resolving\. Pass \fB0\fR to disable cooldown for this run\. See \fBcooldown\fR in bundle\-config(1) for precedence rules\.
+Only consider gem versions published at least \fInumber\fR days ago when resolving\. Pass \fB0\fR to disable cooldown for this run, overriding every other cooldown setting, RubyGems' own included\. See \fBcooldown\fR in bundle\-config(1) for precedence rules\.
 .SH "EXAMPLES"
 .IP "1." 4
 You can add the \fBrails\fR gem to the Gemfile without any version restriction\. The source of the gem will be the global source\.

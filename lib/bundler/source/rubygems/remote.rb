@@ -18,8 +18,8 @@ module Bundler
         end
 
         # Returns the cooldown days that apply to this remote, resolving the
-        # precedence CLI > config > Gemfile per-source. Returns nil if no
-        # cooldown applies.
+        # precedence CLI > config > Gemfile per-source and then raising the
+        # result to RubyGems' own setting. Returns nil if no cooldown applies.
         #
         # The resolver asks once per candidate spec, so the settings lookup is
         # memoized. That snapshots the value: a Remote created before a
@@ -28,7 +28,7 @@ module Bundler
         # before the Definition exists), so build a new Remote if you need to.
         def effective_cooldown
           return @effective_cooldown if defined?(@effective_cooldown)
-          @effective_cooldown = Bundler.settings[:cooldown] || @cooldown
+          @effective_cooldown = Bundler.settings.cooldown_for(@cooldown)
         end
 
         MAX_CACHE_SLUG_HOST_SIZE = 255 - 1 - 32 # 255 minus dot minus MD5 length

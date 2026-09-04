@@ -130,9 +130,14 @@ class Gem::ConfigFile
   ##
   # Number of days a newly published gem version must wait before it is
   # considered for installation or update (the cooldown period).  0
-  # disables the cooldown.  A value that cannot be read as a non-negative
-  # integer warns and leaves the cooldown disabled, so a typo in the gemrc
-  # file does not make every command fail.
+  # disables the cooldown, unless Bundler is configured with a longer one:
+  # this setting and Bundler's own +cooldown+ setting are both read, and the
+  # longer of the two applies, so a cooldown configured for only one of the
+  # two tools still covers both.  <tt>--cooldown</tt> overrides both.
+  #
+  # A value that cannot be read as a non-negative integer warns and takes no
+  # part in that resolution, so a typo in the gemrc file does not make every
+  # command fail.
 
   attr_accessor :cooldown
 

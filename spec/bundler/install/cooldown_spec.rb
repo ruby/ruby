@@ -200,6 +200,83 @@ RSpec.describe "bundle install with the cooldown setting" do
       expect(the_bundle).to include_gems("ripe_gem 2.0.0")
     end
 
+    context "when RubyGems configures a cooldown" do
+      before do
+        gemfile <<-G
+          source "https://gem.repo3"
+          gem "ripe_gem"
+        G
+      end
+
+      after { FileUtils.rm_rf home(".gemrc") }
+
+      def gemrc_cooldown(days)
+        File.write home(".gemrc"), { cooldown: days }.to_yaml
+      end
+
+      it "applies it when bundler configures none of its own" do
+        gemrc_cooldown 7
+
+        bundle "install", artifice: "compact_index_cooldown"
+
+        expect(the_bundle).to include_gems("ripe_gem 1.0.0")
+      end
+
+      it "takes the longer of the two settings" do
+        gemrc_cooldown 7
+
+        bundle "install", env: { "BUNDLE_COOLDOWN" => "1" }, artifice: "compact_index_cooldown"
+
+        expect(the_bundle).to include_gems("ripe_gem 1.0.0")
+      end
+
+      it "counts a bundler-side 0 as a value rather than as unset" do
+        gemrc_cooldown 7
+
+        bundle "install", env: { "BUNDLE_COOLDOWN" => "0" }, artifice: "compact_index_cooldown"
+
+        expect(the_bundle).to include_gems("ripe_gem 1.0.0")
+      end
+
+      it "counts a gemrc 0 as a value rather than as unset" do
+        gemrc_cooldown 0
+
+        bundle "install", env: { "BUNDLE_COOLDOWN" => "7" }, artifice: "compact_index_cooldown"
+
+        expect(the_bundle).to include_gems("ripe_gem 1.0.0")
+      end
+
+      it "raises a shorter per-source cooldown to it" do
+        gemrc_cooldown 7
+
+        gemfile <<-G
+          source "https://gem.repo3", cooldown: 0
+          gem "ripe_gem"
+        G
+
+        bundle "install", artifice: "compact_index_cooldown"
+
+        expect(the_bundle).to include_gems("ripe_gem 1.0.0")
+      end
+
+      it "lets --cooldown 0 bypass it" do
+        gemrc_cooldown 7
+
+        bundle "install --cooldown 0", artifice: "compact_index_cooldown"
+
+        expect(the_bundle).to include_gems("ripe_gem 2.0.0")
+      end
+
+      it "warns and ignores it when it is not a number" do
+        gemrc_cooldown "seven"
+
+        bundle "install", artifice: "compact_index_cooldown"
+
+        expect(err).to include('Invalid cooldown value "seven" in the gemrc file, so it is ignored.')
+        expect(the_bundle).to include_gems("ripe_gem 2.0.0")
+      end
+    end
+
     it "summarizes skipped versions at the end of bundle install" do
       gemfile <<-G
         source "https://gem.repo3"

@@ -7,7 +7,16 @@ class TestGemCommandsOutdatedCommand < Gem::TestCase
   def setup
     super
 
+    without_any_upwards_gemfiles
+
+    @orig_cooldown = Gem.configuration.cooldown
     @cmd = Gem::Commands::OutdatedCommand.new
+  end
+
+  def teardown
+    Gem.configuration.cooldown = @orig_cooldown
+
+    super
   end
 
   def test_initialize
@@ -119,6 +128,48 @@ class TestGemCommandsOutdatedCommand < Gem::TestCase
 
     assert_equal "foo (0.1 < 0.3)\n", @ui.output
     assert_equal "", @ui.error
+  end
+
+  def test_execute_cooldown_from_the_bundler_setting
+    util_setup_cooldown_repo "foo-0.2" => util_cooldown_time(30),
+                             "foo-0.3" => util_cooldown_time(1)
+
+    ENV["BUNDLE_COOLDOWN"] = "7"
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    assert_equal "foo (0.1 < 0.2, 0.3 (cooldown 7d))\n", @ui.output
+    assert_equal "", @ui.error
+  end
+
+  def test_execute_cooldown_takes_the_longer_of_the_two_settings
+    util_setup_cooldown_repo "foo-0.2" => util_cooldown_time(30),
+                             "foo-0.3" => util_cooldown_time(1)
+
+    ENV["BUNDLE_COOLDOWN"] = "7"
+    Gem.configuration.cooldown = 3
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    assert_equal "foo (0.1 < 0.2, 0.3 (cooldown 7d))\n", @ui.output
+  end
+
+  def test_execute_cooldown_option_bypasses_the_bundler_setting
+    util_setup_cooldown_repo "foo-0.2" => util_cooldown_time(30),
+                             "foo-0.3" => util_cooldown_time(1)
+
+    ENV["BUNDLE_COOLDOWN"] = "7"
+    @cmd.options[:cooldown] = 0
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    assert_equal "foo (0.1 < 0.3)\n", @ui.output
   end
 
   def test_cooldown_option
