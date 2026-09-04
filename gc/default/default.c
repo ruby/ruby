@@ -9852,7 +9852,7 @@ gc_update_references_weak_table_i(VALUE obj, void *data)
 static int
 gc_update_references_weak_table_replace_i(VALUE *obj, void *data)
 {
-    *obj = rb_gc_location(*obj);
+    rb_gc_update_moved(obj);
 
     return ST_CONTINUE;
 }

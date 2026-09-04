@@ -105,11 +105,11 @@ compact_cc_entry_i(VALUE ccs_ptr, void *data)
 {
     struct rb_class_cc_entries *ccs = (struct rb_class_cc_entries *)ccs_ptr;
 
-    ccs->cme = (const struct rb_callable_method_entry_struct *)rb_gc_location((VALUE)ccs->cme);
+    rb_gc_update_moved_ptr(&ccs->cme);
     VM_ASSERT(vm_ccs_p(ccs));
 
     for (int i=0; i<ccs->len; i++) {
-        ccs->entries[i].cc = (const struct rb_callcache *)rb_gc_location((VALUE)ccs->entries[i].cc);
+        rb_gc_update_moved_ptr(&ccs->entries[i].cc);
     }
 
     return ID_TABLE_CONTINUE;
@@ -776,7 +776,7 @@ cc_refinement_set_compact(void *ptr)
 {
     struct cc_refinement_entries *e = ptr;
     for (size_t i = 0; i < e->len; i++) {
-        e->entries[i] = rb_gc_location(e->entries[i]);
+        rb_gc_update_moved(&e->entries[i]);
     }
 }
 

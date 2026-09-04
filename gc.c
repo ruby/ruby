@@ -3107,6 +3107,15 @@ rb_gc_location(VALUE value)
     return gc_location_internal(rb_gc_get_objspace(), value);
 }
 
+void
+rb_gc_update_moved(VALUE *ptr)
+{
+    VALUE destination = rb_gc_location(*ptr);
+    if (destination != *ptr) {
+        *ptr = destination;
+    }
+}
+
 #if defined(__wasm__)
 
 
@@ -4421,9 +4430,7 @@ rb_gc_update_set_refs_i(st_data_t key, st_data_t value, st_data_t argp, int erro
 static int
 rb_gc_update_set_refs_replace_i(st_data_t *key, st_data_t *value, st_data_t argp, int existing)
 {
-    if (rb_gc_location((VALUE)*key) != (VALUE)*key) {
-        *key = rb_gc_location((VALUE)*key);
-    }
+    rb_gc_update_moved((VALUE *)key);
 
     return ST_CONTINUE;
 }
