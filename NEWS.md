@@ -284,6 +284,10 @@ Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for det
 
 ## Stdlib compatibility issues
 
+* `Etc.getlogin` on Windows now returns the login name determined when the
+  process starts, from the `USER` or `USERNAME` environment variable or
+  `GetUserName()`.  It used to follow later changes to `ENV['USER']`.
+
 ## C API updates
 
 ### Embedded TypedData
