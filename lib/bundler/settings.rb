@@ -187,6 +187,7 @@ module Bundler
       # The listing comes from the globally selected store, but a host can name
       # its own, so keep only the keys the per-host lookup agrees are set.
       keys.select! {|key| credential_stored?(key) }
+      keys << "cooldown" if gemrc_cooldown_days
 
       all.union(keys).sort
     end
@@ -258,8 +259,25 @@ module Bundler
         locations << "Set for the current user (#{global_config_file}): #{printable_value(value, exposed_key).inspect}"
       end
 
+      # The gemrc cooldown sits outside the priority order too. It is not one
+      # of the layers, it raises whatever they resolve to. See #cooldown_for.
+      if key == key_for(:cooldown) && (days = gemrc_cooldown_days)
+        line = "Set in the RubyGems configuration as `:cooldown:`: #{days}"
+        line += ". The longer of that and the top value applies" unless locations.empty?
+        locations << line
+      end
+
       return ["You have not configured a value for `#{exposed_key}`"] if locations.empty?
       locations
+    end
+
+    ##
+    # True when +name+ has a configured value Settings#[] cannot see. A
+    # credential in the store is one, and so is the RubyGems `:cooldown:`
+    # setting that #cooldown_for raises the config layers to.
+
+    def stored_outside_config_files?(name)
+      credential_stored?(name) || (key_for(name) == key_for(:cooldown) && !gemrc_cooldown_days.nil?)
     end
 
     ##
@@ -439,6 +457,14 @@ module Bundler
     def gemrc_cooldown
       Gem.configuration.each {|key, value| return value if key.to_s == "cooldown" }
       nil
+    end
+
+    # The gemrc cooldown as a usable number of days, or nil. A value that is
+    # not one takes no part in the resolution, so nothing reports it as
+    # configured either.
+
+    def gemrc_cooldown_days
+      cooldown_settings.days(rubygems_cooldown)
     end
 
     def configs

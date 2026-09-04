@@ -136,6 +136,73 @@ that would suck --ehhh=oh geez it looks like i might have broken bundler somehow
       end
     end
 
+    describe "#pretty_values_for" do
+      it "reports a gemrc cooldown that no Bundler layer configures" do
+        allow(Gem.configuration).to receive(:each).and_yield(:cooldown, 7)
+
+        expect(settings.pretty_values_for(:cooldown)).to eq(
+          ["Set in the RubyGems configuration as `:cooldown:`: 7"]
+        )
+      end
+
+      it "explains the max rule only when a Bundler layer configures one too" do
+        allow(Gem.configuration).to receive(:each).and_yield(:cooldown, 7)
+        settings.set_local :cooldown, "3"
+
+        expect(settings.pretty_values_for(:cooldown).last).to eq(
+          "Set in the RubyGems configuration as `:cooldown:`: 7. The longer of that and the top value applies"
+        )
+      end
+
+      it "leaves out a gemrc value that takes no part in the resolution" do
+        allow(Gem.configuration).to receive(:each).and_yield(:cooldown, "abc")
+        allow(Bundler.ui).to receive(:warn)
+
+        expect(settings.pretty_values_for(:cooldown)).to eq(["You have not configured a value for `cooldown`"])
+      end
+
+      it "says nothing about RubyGems when it configures no cooldown" do
+        allow(Gem.configuration).to receive(:each)
+
+        expect(settings.pretty_values_for(:cooldown)).to eq(["You have not configured a value for `cooldown`"])
+      end
+    end
+
+    describe "#stored_outside_config_files?" do
+      it "is true for a cooldown only the gemrc configures" do
+        allow(Gem.configuration).to receive(:each).and_yield(:cooldown, 7)
+
+        expect(settings.stored_outside_config_files?(:cooldown)).to be true
+      end
+
+      it "is false for a gemrc value that takes no part in the resolution" do
+        allow(Gem.configuration).to receive(:each).and_yield(:cooldown, "abc")
+        allow(Bundler.ui).to receive(:warn)
+
+        expect(settings.stored_outside_config_files?(:cooldown)).to be false
+      end
+
+      it "is false for another key the gemrc knows nothing about" do
+        allow(Gem.configuration).to receive(:each).and_yield(:cooldown, 7)
+
+        expect(settings.stored_outside_config_files?(:jobs)).to be false
+      end
+    end
+
+    describe "#all_including_stored_credentials" do
+      it "lists a cooldown only the gemrc configures" do
+        allow(Gem.configuration).to receive(:each).and_yield(:cooldown, 7)
+
+        expect(settings.all_including_stored_credentials).to include("cooldown")
+      end
+
+      it "leaves it out when the gemrc configures none" do
+        allow(Gem.configuration).to receive(:each)
+
+        expect(settings.all_including_stored_credentials).not_to include("cooldown")
+      end
+    end
+
     describe "#rubygems_cooldown" do
       it "warns once when the gemrc value is not a number" do
         allow(Gem.configuration).to receive(:each).and_yield(:cooldown, "abc")
