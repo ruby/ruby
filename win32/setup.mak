@@ -55,10 +55,14 @@ prefix = $(prefix:\=/)
 	@cd $(srcdir:/=\)\tool && $(BASERUBY:/=\) missing-baseruby.bat --verbose || exit $(HAVE_BASERUBY:yes=non-)0
 !endif
 
+# Unlike -baseruby-, this runs in the build directory, where a just
+# built `ruby.exe` would be found prior to $PATH but cannot load the
+# standard library yet.
 -dependencies-: -baseruby-
 !if "$(HAVE_BASERUBY)" != "no"
-	@$(BASERUBY:/=\) $(srcdir)/tool/mkdepend.rb --root=$(srcdir) \
-	    --scope=core --nmake --output=.deps
+	@$(COMSPEC) /C "set NoDefaultCurrentDirectoryInExePath=1& \
+	$(BASERUBY:/=\) $(srcdir)/tool/mkdepend.rb --root=$(srcdir) \
+	    --scope=core --nmake --output=.deps"
 !endif
 
 -gmp-:
