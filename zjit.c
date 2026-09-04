@@ -66,6 +66,7 @@ const zjit_jit_frame_t rb_zjit_c_frame = (zjit_jit_frame_t) {
     .materialize_block_code = false,
 };
 
+#if !defined(_WIN32) && defined(MAP_ANONYMOUS)
 uint8_t *rb_jit_align_ptr(uint8_t *ptr, uint32_t multiple); // defined in jit.c
 
 // Reserve address space that lives entirely below INT32_MAX for JITFrame.
@@ -79,22 +80,20 @@ uint8_t *rb_jit_align_ptr(uint8_t *ptr, uint32_t multiple); // defined in jit.c
 void *
 rb_zjit_reserve_low_addr_space(size_t size)
 {
-#if !defined(_WIN32) && defined(MAP_ANONYMOUS)
     void *mem_block = MAP_FAILED;
 
+    // Linux (x86_64): Use MAP_32BIT to map within the first 2GiB of address space.
+    // This works only for x86_64, and the kernel restricts it to [1GiB, 2GiB).
   #ifdef MAP_32BIT
-    // Linux: maps within the first 2GiB of address space.
     mem_block = mmap(NULL, size, PROT_NONE,
                      MAP_PRIVATE | MAP_ANONYMOUS | MAP_32BIT, -1, 0);
   #endif
 
-  #if defined(MAP_FIXED_NOREPLACE) && defined(_SC_PAGESIZE)
-    // Elsewhere on Linux, probe upwards for a free hole below 2GiB.
+    // Linux (all arch): Probe a free hole below 2GiB if MAP_32BIT is not possible.
     // MAP_FIXED_NOREPLACE fails rather than clobbering an existing mapping.
+  #if defined(MAP_FIXED_NOREPLACE) && defined(_SC_PAGESIZE)
     if (mem_block == MAP_FAILED) {
-        // Distance between probes. 64MiB sweeps the usable 2GiB in at most 32
-        // mmap calls, while being coarse enough that each step clears whatever
-        // mapping made the previous probe fail.
+        // Distance between probes. 64MiB sweeps the usable 2GiB in at most 32 mmap calls.
         const uintptr_t probe_stride = 64 * 1024 * 1024;
         const uint32_t page_size = (uint32_t)sysconf(_SC_PAGESIZE);
         const uintptr_t limit = (uintptr_t)INT32_MAX - size;
@@ -110,19 +109,22 @@ rb_zjit_reserve_low_addr_space(size_t size)
 
     if (mem_block == MAP_FAILED) return NULL;
 
-    // MAP_32BIT is advisory on some kernels and a no-op under some sandboxes,
-    // so check the result rather than trusting the flag.
+    // Both MAP_32BIT and MAP_FIXED_NOREPLACE are advisory in some platforms, e.g.
+    // sandboxes or older kernels. Fallback to normal allocation if it doesn't work.
     if ((uintptr_t)mem_block + size > (uintptr_t)INT32_MAX) {
         munmap(mem_block, size);
         return NULL;
     }
     ruby_annotate_mmap(mem_block, size, "Ruby:rb_zjit_reserve_low_addr_space");
     return mem_block;
-#else
-    (void)size;
-    return NULL;
-#endif
 }
+
+#else
+
+// Windows not supported for now
+void *rb_zjit_reserve_low_addr_space(size_t size) { return NULL; }
+
+#endif
 
 void rb_zjit_profile_disable(const rb_iseq_t *iseq);
 int rb_zjit_insn_to_bare_insn(int insn);
