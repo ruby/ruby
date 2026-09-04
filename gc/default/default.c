@@ -158,6 +158,10 @@ rb_hrtime_sub(rb_hrtime_t a, rb_hrtime_t b)
 #ifndef GC_HEAP_FREE_SLOTS
 #define GC_HEAP_FREE_SLOTS  4096
 #endif
+#ifndef GC_RACTOR_HEAP_INIT_BYTES
+/* 0 is resolved at boot to the smallest size that works. */
+#define GC_RACTOR_HEAP_INIT_BYTES 0
+#endif
 #ifndef GC_HEAP_GROWTH_FACTOR
 #define GC_HEAP_GROWTH_FACTOR 1.8
 #endif
@@ -250,6 +254,7 @@ static RB_THREAD_LOCAL_SPECIFIER int malloc_increase_local;
 
 typedef struct {
     size_t heap_init_bytes;
+    size_t ractor_heap_init_bytes;
     size_t heap_free_slots;
     double growth_factor;
     size_t growth_max_bytes;
@@ -271,6 +276,7 @@ typedef struct {
 
 static ruby_gc_params_t gc_params = {
     GC_HEAP_INIT_BYTES,
+    GC_RACTOR_HEAP_INIT_BYTES,
     GC_HEAP_FREE_SLOTS,
     GC_HEAP_GROWTH_FACTOR,
     GC_HEAP_GROWTH_MAX_BYTES,
@@ -932,6 +938,14 @@ static const size_t pool_slot_sizes[HEAP_COUNT] = {
     EACH_POOL_SLOT_SIZE(SLOT)
 #undef SLOT
 };
+
+/* An init size below one slot in the largest heap never forces that heap's first
+ * page, and allocating there then fails with "cannot create a new page after GC". */
+static inline size_t
+heap_init_bytes_min(void)
+{
+    return pool_slot_sizes[HEAP_COUNT - 1];
+}
 
 /* Precomputed reciprocals for fast slot index calculation.
  * For slot size d: reciprocal = ceil(2^48 / d).
@@ -2140,6 +2154,15 @@ heap_page_add_free_region(rb_objspace_t *objspace, struct heap_page *page, VALUE
     gc_report(3, objspace, "heap_page_add_free_region: %p\n", (void *)obj);
 }
 
+/* The initial size is per objspace, so a Ractor's own gets a smaller one than
+ * main's rather than paying main's again. */
+static inline size_t
+objspace_heap_init_bytes(const rb_objspace_t *objspace)
+{
+    return objspace == global_objspace->main_objspace
+        ? gc_params.heap_init_bytes : gc_params.ractor_heap_init_bytes;
+}
+
 static void
 heap_allocatable_bytes_expand(rb_objspace_t *objspace,
         rb_heap_t *heap, size_t free_slots, size_t total_slots, size_t slot_size)
@@ -2151,7 +2174,7 @@ heap_allocatable_bytes_expand(rb_objspace_t *objspace,
         target_total_slots = (size_t)(total_slots * gc_params.growth_factor);
     }
     else if (total_slots == 0) {
-        target_total_slots = gc_params.heap_init_bytes / slot_size;
+        target_total_slots = objspace_heap_init_bytes(objspace) / slot_size;
     }
     else {
         /* Find `f' where free_slots = f * total_slots * goal_ratio
@@ -2977,7 +3000,7 @@ heap_prepare(rb_objspace_t *objspace, rb_heap_t *heap)
 {
     GC_ASSERT(heap->free_pages == NULL);
 
-    if (heap->total_slots < gc_params.heap_init_bytes / heap->slot_size &&
+    if (heap->total_slots < objspace_heap_init_bytes(objspace) / heap->slot_size &&
             heap->sweeping_page == NULL) {
         heap_page_allocate_and_initialize_force(objspace, heap);
         GC_ASSERT(heap->free_pages != NULL);
@@ -5139,7 +5162,7 @@ gc_sweep_finish_heap(rb_objspace_t *objspace, rb_heap_t *heap)
     size_t total_slots = heap->total_slots;
     size_t swept_slots = heap->freed_slots + heap->empty_slots;
 
-    size_t init_slots = gc_params.heap_init_bytes / heap->slot_size;
+    size_t init_slots = objspace_heap_init_bytes(objspace) / heap->slot_size;
     size_t min_free_slots = (size_t)(MAX(total_slots, init_slots) * gc_params.heap_free_slots_min_ratio);
 
     if (swept_slots < min_free_slots &&
@@ -7182,7 +7205,7 @@ gc_marks_finish(rb_objspace_t *objspace)
         /* Setup freeable slots. */
         size_t total_init_slots = 0;
         for (int i = 0; i < HEAP_COUNT; i++) {
-            total_init_slots += (gc_params.heap_init_bytes / heaps[i].slot_size) * r_mul;
+            total_init_slots += (objspace_heap_init_bytes(objspace) / heaps[i].slot_size) * r_mul;
         }
 
         if (max_free_slots < total_init_slots) {
@@ -10847,6 +10870,8 @@ rb_gc_impl_set_params(void *objspace_ptr)
     get_envparam_size("RUBY_GC_HEAP_FREE_SLOTS", &gc_params.heap_free_slots, 0);
 
     get_envparam_size("RUBY_GC_HEAP_INIT_BYTES", &gc_params.heap_init_bytes, 0);
+    get_envparam_size("RUBY_GC_RACTOR_HEAP_INIT_BYTES", &gc_params.ractor_heap_init_bytes,
+                      heap_init_bytes_min() - 1);
 
     get_envparam_double("RUBY_GC_HEAP_GROWTH_FACTOR", &gc_params.growth_factor, 1.0, 0.0, FALSE);
     get_envparam_size  ("RUBY_GC_HEAP_GROWTH_MAX_BYTES", &gc_params.growth_max_bytes, 0);
@@ -12693,6 +12718,8 @@ rb_gc_impl_objspace_init(void *objspace_ptr)
         heap_page_alloc_use_mmap = INIT_HEAP_PAGE_ALLOC_USE_MMAP;
 #endif
         gc_params.heap_init_bytes = GC_HEAP_INIT_BYTES;
+        gc_params.ractor_heap_init_bytes = GC_RACTOR_HEAP_INIT_BYTES ? GC_RACTOR_HEAP_INIT_BYTES
+                                                                     : heap_init_bytes_min();
     }
     // GC.measure_total_time= sets the caller's objspace only; a new Ractor's follows
     // its creator's, which is the objspace running this init (main starts it on).
