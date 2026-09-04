@@ -3528,8 +3528,7 @@ fn build_stack_map(jit: &JITState, function: &Function, state: &FrameState) -> V
             break;
         };
         // Skip the callee's receiver slot below its local table.
-        // We currently never map out the stack for `invokeblock`, which doesn't
-        // put a receiver on cfp->sp stack.
+        // There is always a receiver there because we currently only inline through sends.
         stack.push(StackMapEntry::Skip(1));
         current_state = function.frame_state(caller);
     }
