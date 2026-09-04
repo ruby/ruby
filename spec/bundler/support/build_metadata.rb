@@ -43,15 +43,11 @@ module Spec
       ruby_core_tarball? ? "unknown" : git("rev-parse --short HEAD", source_root).strip
     end
 
-    # Stamped the same way the changelog header is stamped when a release is
-    # cut, so both come out of one definition instead of one being parsed back
-    # out of the other. Required lazily because the release tooling is not
-    # shipped to ruby/ruby, where this helper also runs but always gets an
-    # explicit `built_at`.
+    # Required lazily because ruby/ruby ships this helper without tool/changelog.rb.
     def release_date
       require source_root.join("tool/changelog").to_s
 
-      ChangelogHeader.for("bundler").release_date
+      ChangelogHeader.from_config.release_date
     end
 
     extend self

@@ -457,9 +457,6 @@ module Spec
 
         @context.replace_version_file(@spec.version, dir: build_path)
 
-        # A released build gets a fixed stamp so specs can assert on it. An
-        # unreleased one gets none, the way a gem built outside the release
-        # task does.
         built_at = options[:released] ? RELEASED_BUILT_AT : nil
         Spec::BuildMetadata.write_build_metadata(dir: build_path, built_at: built_at)
 
