@@ -543,8 +543,9 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
         // Any other value is a directory to dump HIR to instead of stdout. It composes with the
         // format variants, e.g. `--zjit-dump-hir=all --zjit-dump-hir=/tmp/` dumps to /tmp/hir-PID.
         ("dump-hir" | "dump-hir-opt", _) => {
-            let file_name = format!("{opt_val}/hir-{}", std::process::id());
-            let file_name = std::fs::canonicalize(&file_name).unwrap_or_else(|_| file_name.into());
+            let directory = std::fs::canonicalize(&opt_val)
+                .map_err(|e| eprintln!("Failed to canonicalize path '{opt_val}': {e}")).ok()?;
+            let file_name = directory.join(format!("hir-{}", std::process::id()));
             // Truncate the file if it exists
             std::fs::OpenOptions::new()
                 .create(true)
@@ -776,14 +777,15 @@ mod tests {
     fn parse_dump_hir_path() {
         unsafe { OPTIONS = Some(Options::default()); }
 
-        let path = std::env::temp_dir().join(format!("zjit_dump_hir_{}.txt", std::process::id()));
+        let path = std::path::PathBuf::from("/tmp");
         let option = CString::new(format!("dump-hir={}", path.display())).unwrap();
 
         assert!(parse_option(option.as_ptr()).is_some());
 
         let options = unsafe { OPTIONS.as_ref() }.unwrap();
         // parse_option canonicalizes the path, so canonicalize the expectation too
-        assert_eq!(options.dump_hir_file, Some(std::fs::canonicalize(&path).unwrap()));
+        let expected = std::fs::canonicalize(&path).unwrap().join(format!("hir-{}", std::process::id()));
+        assert_eq!(options.dump_hir_file, Some(expected));
         assert!(matches!(options.dump_hir_opt, Some(DumpHIR::WithoutSnapshot)));
         assert!(path.exists());
 
@@ -794,7 +796,7 @@ mod tests {
     fn parse_dump_hir_path_keeps_format() {
         unsafe { OPTIONS = Some(Options::default()); }
 
-        let path = std::env::temp_dir().join(format!("zjit_dump_hir_all_{}.txt", std::process::id()));
+        let path = std::path::PathBuf::from(".");
         let all = CString::new("dump-hir=all").unwrap();
         let file = CString::new(format!("dump-hir={}", path.display())).unwrap();
 
@@ -802,7 +804,9 @@ mod tests {
         assert!(parse_option(file.as_ptr()).is_some());
 
         let options = unsafe { OPTIONS.as_ref() }.unwrap();
-        assert_eq!(options.dump_hir_file, Some(std::fs::canonicalize(&path).unwrap()));
+        // parse_option canonicalizes the path, so canonicalize the expectation too
+        let expected = std::fs::canonicalize(&path).unwrap().join(format!("hir-{}", std::process::id()));
+        assert_eq!(options.dump_hir_file, Some(expected));
         assert!(matches!(options.dump_hir_opt, Some(DumpHIR::All)));
 
         let _ = std::fs::remove_file(path);
