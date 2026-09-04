@@ -795,12 +795,8 @@ rb_jit_reserve_addr_space(uint32_t mem_size)
 
     // Check that the memory mapping was successful
     if (mem_block == MAP_FAILED) {
-        perror("ruby: jit: mmap:");
-        if(errno == ENOMEM) {
-            // No crash report if it's only insufficient memory
-            exit(EXIT_FAILURE);
-        }
-        rb_bug("mmap failed");
+        perror("ruby: jit: Fatal mmap failure:");
+        abort();
     }
 
     return mem_block;
