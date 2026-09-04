@@ -726,6 +726,14 @@ describe "C-API IO function" do
         io.should_not.binmode?
       end
 
+      it "sets sync mode" do
+        mode = CApiIOSpecs::FMODE_READABLE | CApiIOSpecs::FMODE_SYNC
+        io = @o.rb_io_open_descriptor(File, @r_io.fileno, mode, "a.txt", 60, "US-ASCII", "UTF-8", 0, {})
+
+        io.should.sync
+        @o.rb_io_mode_sync_flag(io).should == true
+      end
+
       it "sets the specified timeout" do
         io = @o.rb_io_open_descriptor(File, @r_io.fileno, 0, "a.txt", 60, "US-ASCII", "UTF-8", 0, {})
         io.timeout.should == 60
