@@ -3388,9 +3388,9 @@ rb_vm_update_references(void *ptr)
     if (ptr) {
         rb_vm_t *vm = ptr;
 
-        vm->self = rb_gc_location(vm->self);
-        vm->orig_progname = rb_gc_location(vm->orig_progname);
-        vm->cc_refinement_set = rb_gc_location(vm->cc_refinement_set);
+        rb_gc_update_moved(&vm->self);
+        rb_gc_update_moved(&vm->orig_progname);
+        rb_gc_update_moved(&vm->cc_refinement_set);
 
         if (vm->root_box)
             rb_box_gc_update_references(vm->root_box);
@@ -3400,9 +3400,9 @@ rb_vm_update_references(void *ptr)
         rb_gc_update_values(RUBY_NSIG, vm->trap_list.cmd);
 
         if (vm->coverages) {
-            vm->coverages = rb_gc_location(vm->coverages);
-            vm->cme2counter = rb_gc_location(vm->cme2counter);
-            vm->me_set = rb_gc_location(vm->me_set);
+            rb_gc_update_moved(&vm->coverages);
+            rb_gc_update_moved(&vm->cme2counter);
+            rb_gc_update_moved(&vm->me_set);
         }
     }
 }
@@ -3774,17 +3774,13 @@ rb_execution_context_update(rb_execution_context_t *ec)
         // safely use rb_gc_location on such slots.
         if (!rb_zjit_enabled_p) {
             for (i = 0; i < (long)(sp - p); i++) {
-                VALUE ref = p[i];
-                VALUE update = rb_gc_location(ref);
-                if (ref != update) {
-                    p[i] = update;
-                }
+                rb_gc_update_moved(&p[i]);
             }
         }
 
         while (cfp != limit_cfp) {
             const VALUE *ep = cfp->ep;
-            cfp->self = rb_gc_location(cfp->self);
+            rb_gc_update_moved(&cfp->self);
             if (CFP_ZJIT_FRAME_P(cfp)) {
                 const zjit_jit_frame_t *jit_frame = CFP_ZJIT_FRAME(cfp);
                 rb_zjit_jit_frame_update_references((zjit_jit_frame_t *)jit_frame);
@@ -3793,23 +3789,23 @@ rb_execution_context_update(rb_execution_context_t *ec)
                 // was initialized by ZJIT and may have been written later by
                 // vm_caller_setup_arg_block (ISEQ frames) or rb_iterate0 (C frames).
                 if (!jit_frame->materialize_block_code) {
-                    cfp->block_code = (void *)rb_gc_location((VALUE)cfp->block_code);
+                    rb_gc_update_moved_ptr(&cfp->block_code);
                 }
             }
             else {
-                cfp->_iseq = (rb_iseq_t *)rb_gc_location((VALUE)cfp->_iseq);
-                cfp->block_code = (void *)rb_gc_location((VALUE)cfp->block_code);
+                rb_gc_update_moved_ptr(&cfp->_iseq);
+                rb_gc_update_moved_ptr(&cfp->block_code);
             }
 
             if (!VM_ENV_LOCAL_P(ep)) {
                 const VALUE *prev_ep = VM_ENV_PREV_EP(ep);
                 if (VM_ENV_FLAGS(prev_ep, VM_ENV_FLAG_ESCAPED)) {
-                    VM_FORCE_WRITE(&prev_ep[VM_ENV_DATA_INDEX_ENV], rb_gc_location(prev_ep[VM_ENV_DATA_INDEX_ENV]));
+                    rb_gc_update_moved((VALUE *)&prev_ep[VM_ENV_DATA_INDEX_ENV]);
                 }
 
                 if (VM_ENV_FLAGS(ep, VM_ENV_FLAG_ESCAPED)) {
-                    VM_FORCE_WRITE(&ep[VM_ENV_DATA_INDEX_ENV], rb_gc_location(ep[VM_ENV_DATA_INDEX_ENV]));
-                    VM_FORCE_WRITE(&ep[VM_ENV_DATA_INDEX_ME_CREF], rb_gc_location(ep[VM_ENV_DATA_INDEX_ME_CREF]));
+                    rb_gc_update_moved((VALUE *)&ep[VM_ENV_DATA_INDEX_ENV]);
+                    rb_gc_update_moved((VALUE *)&ep[VM_ENV_DATA_INDEX_ME_CREF]);
                 }
             }
 
@@ -3817,10 +3813,10 @@ rb_execution_context_update(rb_execution_context_t *ec)
         }
     }
 
-    ec->storage = rb_gc_location(ec->storage);
+    rb_gc_update_moved(&ec->storage);
 
-    ec->gen_fields_cache.obj = rb_gc_location(ec->gen_fields_cache.obj);
-    ec->gen_fields_cache.fields_obj = rb_gc_location(ec->gen_fields_cache.fields_obj);
+    rb_gc_update_moved(&ec->gen_fields_cache.obj);
+    rb_gc_update_moved(&ec->gen_fields_cache.fields_obj);
 }
 
 static enum rb_id_table_iterator_result
@@ -3926,7 +3922,7 @@ thread_compact(void *ptr)
 {
     rb_thread_t *th = ptr;
 
-    th->self = rb_gc_location(th->self);
+    rb_gc_update_moved(&th->self);
 }
 
 /* Mark the heap objects a thread owns (the caller handles ec and fiber).  Split

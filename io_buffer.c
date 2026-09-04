@@ -304,7 +304,7 @@ rb_io_buffer_type_compact(void *_buffer)
             // The `source` String has to be pinned, because the `base` may point to the embedded String content,
             // which can be otherwise moved by GC compaction.
         } else {
-            buffer->source = rb_gc_location(buffer->source);
+            rb_gc_update_moved(&buffer->source);
         }
     }
 }

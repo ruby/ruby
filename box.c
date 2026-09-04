@@ -203,21 +203,21 @@ rb_box_gc_update_references(void *ptr)
     if (!box) return;
 
     if (box->box_object)
-        box->box_object = rb_gc_location(box->box_object);
+        rb_gc_update_moved(&box->box_object);
     if (box->top_self)
-        box->top_self = rb_gc_location(box->top_self);
-    box->load_path = rb_gc_location(box->load_path);
-    box->expanded_load_path = rb_gc_location(box->expanded_load_path);
-    box->load_path_snapshot = rb_gc_location(box->load_path_snapshot);
+        rb_gc_update_moved(&box->top_self);
+    rb_gc_update_moved(&box->load_path);
+    rb_gc_update_moved(&box->expanded_load_path);
+    rb_gc_update_moved(&box->load_path_snapshot);
     if (box->load_path_check_cache) {
-        box->load_path_check_cache = rb_gc_location(box->load_path_check_cache);
+        rb_gc_update_moved(&box->load_path_check_cache);
     }
-    box->loaded_features = rb_gc_location(box->loaded_features);
-    box->loaded_features_snapshot = rb_gc_location(box->loaded_features_snapshot);
-    box->loaded_features_realpaths = rb_gc_location(box->loaded_features_realpaths);
-    box->loaded_features_realpath_map = rb_gc_location(box->loaded_features_realpath_map);
-    box->ruby_dln_libmap = rb_gc_location(box->ruby_dln_libmap);
-    box->gvar_tbl = rb_gc_location(box->gvar_tbl);
+    rb_gc_update_moved(&box->loaded_features);
+    rb_gc_update_moved(&box->loaded_features_snapshot);
+    rb_gc_update_moved(&box->loaded_features_realpaths);
+    rb_gc_update_moved(&box->loaded_features_realpath_map);
+    rb_gc_update_moved(&box->ruby_dln_libmap);
+    rb_gc_update_moved(&box->gvar_tbl);
 }
 
 void

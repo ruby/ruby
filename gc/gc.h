@@ -171,7 +171,7 @@ hash_foreach_replace_value(st_data_t key, st_data_t value, st_data_t argp, int e
 static int
 hash_replace_ref_value(st_data_t *key, st_data_t *value, st_data_t argp, int existing)
 {
-    *value = rb_gc_location((VALUE)*value);
+    rb_gc_update_moved((VALUE *)value);
 
     return ST_CONTINUE;
 }
@@ -219,15 +219,8 @@ hash_foreach_replace(st_data_t key, st_data_t value, st_data_t argp, int error)
 static int
 hash_replace_ref(st_data_t *key, st_data_t *value, st_data_t argp, int existing)
 {
-    VALUE new_key = rb_gc_location((VALUE)*key);
-    if (new_key != (VALUE)*key) {
-        *key = new_key;
-    }
-
-    VALUE new_value = rb_gc_location((VALUE)*value);
-    if (new_value != (VALUE)*value) {
-        *value = new_value;
-    }
+    rb_gc_update_moved((VALUE *)key);
+    rb_gc_update_moved((VALUE *)value);
 
     return ST_CONTINUE;
 }
