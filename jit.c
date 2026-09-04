@@ -744,10 +744,19 @@ rb_jit_reserve_addr_space(uint32_t mem_size)
         // to improve odds of being in range for 32-bit relative call instructions.
         uint8_t *req_addr = cfunc_sample_addr;
         for (int i = 0; i < max_probe_trials; i++) {
-            // Downwards to probe away from the heap. (On x86/A64 Linux
-            // main_code_addr < heap_addr, and in case we are in a shared
-            // library mapped higher than the heap, downwards is still better
-            // since it's towards the end of the heap rather than the stack.)
+            // The address space on x86-64/A64 Linux tends to look like:
+            //
+            //  high addr  +---------------+
+            //      |      |    [stack]    |
+            //      |      |   DSO  text   |
+            //      |      |    [heap]     |
+            //      |      | main exe text |
+            //      v      |       0       |
+            //   low addr  +---------------+
+            //
+            // We always probe downwards from one of the program text areas
+            // to avoid getting in the way of the stack's downwards growth.
+            // If we happen to start from the main text, we also avoid the heap.
             req_addr -= probe_stride;
 
             // Align the requested address to page size
