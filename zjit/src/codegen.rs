@@ -24,7 +24,7 @@ use crate::stats::{counter_ptr, with_time_stat, trace_compile_phase, Counter, Co
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
 use crate::backend::lir::{self, Assembler, CArgLocation, C_ARG_OPNDS, C_RET_OPND, CFP, EC, NATIVE_BASE_PTR, NATIVE_STACK_PTR, Opnd, SP, SideExit, SideExitRecompile, SideExitTarget, StackMap, StackMapEntry, Target, asm_ccall, asm_comment};
 use crate::hir::{self, iseq_to_hir, BlockId, Invariant, RangeType, SideExitReason::{self, *}, SpecialBackrefSymbol, SpecialObjectType};
-use crate::hir::{BlockHandler, CCallVariadicData, CCallWithFrameData, Const, FieldName, FrameState, Function, Insn, InsnId, Recompile, SendDirectData, SendFallbackReason, qualified_method_name};
+use crate::hir::{BlockHandler, CCallVariadicData, CCallWithFrameData, CondBranchHasTypeData, Const, FieldName, FrameState, Function, Insn, InsnId, Recompile, SendDirectData, SendFallbackReason, qualified_method_name};
 use crate::hir_type::{types, Type};
 use crate::options::{get_option, InlineDepth, PerfMap, DEFAULT_MAX_VERSIONS};
 use crate::cast::IntoUsize;
@@ -538,6 +538,32 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
                         assert!(asm.current_block().insns.last().unwrap().is_terminator());
                         Ok(())
                     }
+                    Insn::CondBranchHasType(cond_branch) => {
+                        let CondBranchHasTypeData { val, expected, if_true, if_false } = &**cond_branch;
+                        let val_opnd = jit.get_opnd(*val);
+                        let val_type = function.type_of(*val);
+                        let test_result = gen_has_type(&mut jit, &mut asm, val_opnd, val_type, *expected);
+
+                        let true_target = hir_to_lir[if_true.target].unwrap();
+                        let false_target = hir_to_lir[if_false.target].unwrap();
+
+                        let true_branch = lir::BranchEdge {
+                            target: true_target,
+                            args: if_true.args.iter().map(|insn_id| jit.get_opnd(*insn_id)).collect()
+                        };
+
+                        let false_branch = lir::BranchEdge {
+                            target: false_target,
+                            args: if_false.args.iter().map(|insn_id| jit.get_opnd(*insn_id)).collect()
+                        };
+
+                        asm.test(test_result, test_result);
+                        asm.push_insn(lir::Insn::Jnz(Target::Block(Box::new(true_branch))));
+                        asm.jmp(Target::Block(Box::new(false_branch)));
+
+                        assert!(asm.current_block().insns.last().unwrap().is_terminator());
+                        Ok(())
+                    }
                     Insn::Jump(target) => {
                         let lir_target = hir_to_lir[target.target].unwrap();
                         let branch_edge = lir::BranchEdge {
@@ -758,10 +784,6 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::UnboxFixnum { val } => gen_unbox_fixnum(asm, opnd!(val)),
         Insn::Test { val } => gen_test(asm, opnd!(val)),
         Insn::RefineType { val, .. } => opnd!(val),
-        Insn::HasType { val, expected } => {
-            let val_type = function.type_of(*val);
-            gen_has_type(jit, asm, opnd!(val), val_type, *expected)
-        }
         &Insn::GuardType { val, guard_type, state, recompile } => {
             let val_type = function.type_of(val);
             gen_guard_type(jit, asm, function, opnd!(val), val_type, guard_type, recompile, &function.frame_state(state))
@@ -830,7 +852,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::ArrayMax { ref elements, state } => gen_array_max(jit, asm, function, opnds!(elements), &function.frame_state(state)),
         &Insn::ArrayMin { ref elements, state } => gen_array_min(jit, asm, function, opnds!(elements), &function.frame_state(state)),
         &Insn::Throw { throw_state, val, state } => no_output!(gen_throw(jit, asm, function, throw_state, opnd!(val), &function.frame_state(state))),
-        &Insn::CondBranch { .. }
+        &Insn::CondBranch { .. } | &Insn::CondBranchHasType { .. }
         | &Insn::Jump { .. } | Insn::Entries { .. } => unreachable!(),
     };
 
