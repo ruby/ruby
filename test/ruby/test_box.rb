@@ -777,6 +777,39 @@ class TestBox < Test::Unit::TestCase
     end;
   end
 
+  def test_stdio_gvar_reassignment_seen_by_kernel_methods
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      require "stringio"
+      orig_stdout, orig_stderr = $stdout, $stderr
+      $stdout, $stderr = StringIO.new, StringIO.new
+      puts "standard out"
+      warn "standard err"
+      out, err = $stdout.string, $stderr.string
+      $stdout, $stderr = orig_stdout, orig_stderr
+      assert_equal "standard out\n", out
+      assert_equal "standard err\n", err
+    end;
+  end
+
+  def test_stdio_gvar_reassignment_in_box_seen_by_kernel_methods
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      out, err = Ruby::Box.new.eval(<<~'CODE')
+        require "stringio"
+        orig_stdout, orig_stderr = $stdout, $stderr
+        $stdout, $stderr = StringIO.new, StringIO.new
+        puts "standard out"
+        warn "standard err"
+        result = [$stdout.string, $stderr.string]
+        $stdout, $stderr = orig_stdout, orig_stderr
+        result
+      CODE
+      assert_equal "standard out\n", out
+      assert_equal "standard err\n", err
+    end;
+  end
+
   def test_errinfo_isolated_between_boxes
     assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
     begin;
