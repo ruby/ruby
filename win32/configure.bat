@@ -161,11 +161,13 @@ goto :loopend ;
   )
 goto :loopend ;
 :withoutarg
+  ::- These take an argument and are recorded in :witharg.  Recording
+  ::- them here too would duplicate them at each reconfiguration.
+  if "%opt%" == "--without-ext" goto :witharg
+  if "%opt%" == "--without-extensions" goto :witharg
   echo>>%confargs%  "%opt%" \
   if "%opt%" == "--without-baseruby" goto :nobaseruby
   if "%opt%" == "--without-git" goto :nogit
-  if "%opt%" == "--without-ext" goto :witharg
-  if "%opt%" == "--without-extensions" goto :witharg
 goto :loop ;
 :witharg
   if "%opt%" == "--with-static-linked-ext" goto :extstatic
