@@ -542,24 +542,18 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
                         let CondBranchHasTypeData { val, expected, if_true, if_false } = &**cond_branch;
                         let val_opnd = jit.get_opnd(*val);
                         let val_type = function.type_of(*val);
-                        let test_result = gen_has_type(&mut jit, &mut asm, val_opnd, val_type, *expected);
-
-                        let true_target = hir_to_lir[if_true.target].unwrap();
-                        let false_target = hir_to_lir[if_false.target].unwrap();
 
                         let true_branch = lir::BranchEdge {
-                            target: true_target,
+                            target: hir_to_lir[if_true.target].unwrap(),
                             args: if_true.args.iter().map(|insn_id| jit.get_opnd(*insn_id)).collect()
                         };
 
                         let false_branch = lir::BranchEdge {
-                            target: false_target,
+                            target: hir_to_lir[if_false.target].unwrap(),
                             args: if_false.args.iter().map(|insn_id| jit.get_opnd(*insn_id)).collect()
                         };
 
-                        asm.test(test_result, test_result);
-                        asm.push_insn(lir::Insn::Jnz(Target::Block(Box::new(true_branch))));
-                        asm.jmp(Target::Block(Box::new(false_branch)));
+                        gen_cond_branch_has_type(&mut jit, &mut asm, val_opnd, val_type, *expected, true_branch, false_branch);
 
                         assert!(asm.current_block().insns.last().unwrap().is_terminator());
                         Ok(())
@@ -3039,45 +3033,43 @@ fn gen_test(asm: &mut Assembler, val: lir::Opnd) -> lir::Opnd {
     asm.csel_e(0.into(), 1.into())
 }
 
-fn gen_has_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, val_type: Type, ty: Type) -> lir::Opnd {
-    if ty.is_subtype(types::Fixnum) {
+/// Branch to `if_true` if `val` has type `ty` and to `if_false` otherwise, using only the
+/// condition flags -- the test result is never materialized as a boolean. Terminates the
+/// current block.
+fn gen_cond_branch_has_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, val_type: Type, ty: Type, if_true: lir::BranchEdge, if_false: lir::BranchEdge) {
+    let true_target = Target::Block(Box::new(if_true));
+    let false_target = Target::Block(Box::new(if_false));
+
+    // Each arm sets the flags and picks the conditional jump taken when `val` has type `ty`;
+    // the not-taken path falls to the unconditional jmp to `false_target` below.
+    let jcc: fn(Target) -> lir::Insn = if ty.is_subtype(types::Fixnum) {
         asm.test(val, Opnd::UImm(RUBY_FIXNUM_FLAG as u64));
-        asm.csel_nz(Opnd::Imm(1), Opnd::Imm(0))
+        lir::Insn::Jnz
     } else if ty.is_subtype(types::Flonum) {
         // Flonum: (val & RUBY_FLONUM_MASK) == RUBY_FLONUM_FLAG
         let masked = asm.and(val, Opnd::UImm(RUBY_FLONUM_MASK as u64));
         asm.cmp(masked, Opnd::UImm(RUBY_FLONUM_FLAG as u64));
-        asm.csel_e(Opnd::Imm(1), Opnd::Imm(0))
+        lir::Insn::Je
     } else if ty.is_subtype(types::StaticSymbol) {
         // Static symbols have (val & 0xff) == RUBY_SYMBOL_FLAG
         // Use 8-bit comparison like YJIT does.
         // If `val` is a constant (rare but possible), put it in a register to allow masking.
         let val = asm.load_imm(val);
         asm.cmp(val.with_num_bits(8), Opnd::UImm(RUBY_SYMBOL_FLAG as u64));
-        asm.csel_e(Opnd::Imm(1), Opnd::Imm(0))
+        lir::Insn::Je
     } else if ty.is_subtype(types::NilClass) {
         asm.cmp(val, Qnil.into());
-        asm.csel_e(Opnd::Imm(1), Opnd::Imm(0))
+        lir::Insn::Je
     } else if ty.is_subtype(types::TrueClass) {
         asm.cmp(val, Qtrue.into());
-        asm.csel_e(Opnd::Imm(1), Opnd::Imm(0))
+        lir::Insn::Je
     } else if ty.is_subtype(types::FalseClass) {
         asm.cmp(val, Qfalse.into());
-        asm.csel_e(Opnd::Imm(1), Opnd::Imm(0))
+        lir::Insn::Je
     } else if ty.is_immediate() {
         // All immediate types' guard should have been handled above
         panic!("unexpected immediate guard type: {ty}");
     } else if let Some(expected_class) = ty.runtime_exact_ruby_class() {
-        let hir_block_id = asm.current_block().hir_block_id;
-        let rpo_idx = asm.current_block().rpo_index;
-
-        // Create a result block that all paths converge to
-        let result_block = asm.new_block(hir_block_id, false, rpo_idx);
-        let result_edge = |v| Target::Block(Box::new(lir::BranchEdge {
-            target: result_block,
-            args: vec![v],
-        }));
-
         // If val isn't in a register, load it to use it as the base of Opnd::mem later.
         // TODO: Max thinks codegen should not care about the shapes of the operands except to create them. (Shopify/ruby#685)
         let val = asm.load_mem(val);
@@ -3086,49 +3078,30 @@ fn gen_has_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, val_typ
         if !is_known_heap_basic_object {
             // Immediate -> definitely not the class
             asm.test(val, (RUBY_IMMEDIATE_MASK as u64).into());
-            asm.jnz(jit, result_edge(Opnd::Imm(0)));
+            asm.jnz(jit, false_target.clone());
 
             // Qfalse -> definitely not the class
             asm.cmp(val, Qfalse.into());
-            asm.je(jit, result_edge(Opnd::Imm(0)));
+            asm.je(jit, false_target.clone());
         }
 
         // Heap object -> check klass field
         let klass = asm.load(Opnd::mem(64, val, RUBY_OFFSET_RBASIC_KLASS));
         asm.cmp(klass, Opnd::Value(expected_class));
-        let result = asm.csel_e(Opnd::UImm(1), Opnd::Imm(0));
-        asm.jmp(result_edge(result));
-
-        // Result block -- receives the value via block parameter (phi node)
-        asm.set_current_block(result_block);
-        let label = jit.get_label(asm, result_block, hir_block_id);
-        asm.write_label(label);
-        let param = asm.new_block_param(VALUE_BITS);
-        asm.current_block().add_parameter(param);
-        param
+        lir::Insn::Je
     } else if let Some(builtin_type) = ty.builtin_type_equivalent() {
-        let hir_block_id = asm.current_block().hir_block_id;
-        let rpo_idx = asm.current_block().rpo_index;
-
-        // Create a result block that all paths converge to
-        let result_block = asm.new_block(hir_block_id, false, rpo_idx);
-        let result_edge = |v| Target::Block(Box::new(lir::BranchEdge {
-            target: result_block,
-            args: vec![v],
-        }));
-
         // If val isn't in a register, load it to use it as the base of Opnd::mem later.
         let val = asm.load_mem(val);
 
         let is_known_heap_basic_object = val_type.is_subtype(types::HeapBasicObject);
         if !is_known_heap_basic_object {
-            // Immediate -> definitely not the class
+            // Immediate -> definitely not the type
             asm.test(val, (RUBY_IMMEDIATE_MASK as u64).into());
-            asm.jnz(jit, result_edge(Opnd::Imm(0)));
+            asm.jnz(jit, false_target.clone());
 
-            // Qfalse -> definitely not the class
+            // Qfalse -> definitely not the type
             asm.cmp(val, Qfalse.into());
-            asm.je(jit, result_edge(Opnd::Imm(0)));
+            asm.je(jit, false_target.clone());
         }
 
         // Heap object
@@ -3136,19 +3109,13 @@ fn gen_has_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, val_typ
         let flags = asm.load(Opnd::mem(VALUE_BITS, val, RUBY_OFFSET_RBASIC_FLAGS));
         let tag   = asm.and(flags, Opnd::UImm(RUBY_T_MASK as u64));
         asm.cmp(tag, Opnd::UImm(builtin_type as u64));
-        let result = asm.csel_e(Opnd::UImm(1), Opnd::Imm(0));
-        asm.jmp(result_edge(result));
-
-        // Result block -- receives the value via block parameter (phi node)
-        asm.set_current_block(result_block);
-        let label = jit.get_label(asm, result_block, hir_block_id);
-        asm.write_label(label);
-        let param = asm.new_block_param(VALUE_BITS);
-        asm.current_block().add_parameter(param);
-        param
+        lir::Insn::Je
     } else {
         unimplemented!("unsupported type: {ty}");
-    }
+    };
+
+    asm.push_insn(jcc(true_target));
+    asm.jmp(false_target);
 }
 
 /// Compile a type check with a side exit
