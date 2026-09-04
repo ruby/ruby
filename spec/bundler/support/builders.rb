@@ -423,6 +423,8 @@ module Spec
     end
 
     class BundlerBuilder
+      RELEASED_BUILT_AT = "2100-01-01"
+
       def initialize(context, name, version)
         @context = context
         @spec = Spec::Path.loaded_gemspec.dup
@@ -454,9 +456,12 @@ module Spec
         end
 
         @context.replace_version_file(@spec.version, dir: build_path)
-        @context.replace_changelog(@spec.version, dir: build_path) if options[:released]
 
-        Spec::BuildMetadata.write_build_metadata(dir: build_path, version: @spec.version.to_s)
+        # A released build gets a fixed stamp so specs can assert on it. An
+        # unreleased one gets none, the way a gem built outside the release
+        # task does.
+        built_at = options[:released] ? RELEASED_BUILT_AT : nil
+        Spec::BuildMetadata.write_build_metadata(dir: build_path, built_at: built_at)
 
         Dir.chdir build_path do
           Gem::DefaultUserInteraction.use_ui(Gem::SilentUI.new) do
