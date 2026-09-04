@@ -1146,10 +1146,14 @@ vm_make_env_each(const rb_execution_context_t * const ec, rb_control_frame_t *co
     if (VM_FRAME_RUBYFRAME_P(cfp) &&
         !rbimpl_atomic_load(&ISEQ_BODY(iseq)->jit_ep_escape_recorded, RBIMPL_ATOMIC_RELAXED)) {
         if (rb_yjit_enabled_p) rb_yjit_invalidate_ep_is_bp(iseq);
-        if (rb_zjit_enabled_p) {
-            rb_zjit_invalidate_no_ep_escape(iseq);
-            rb_zjit_spill_frame(cfp);
-        }
+        if (rb_zjit_enabled_p) rb_zjit_invalidate_no_ep_escape(iseq);
+    }
+
+    // Spill ZJIT frame if there is one. This is a separate concern from
+    // invalidation and needs to happen in all execution threads that reach here.
+    if (VM_FRAME_RUBYFRAME_P(cfp)) {
+        // We only need the locals here but we reconstruct the stack as well for simplicity.
+        rb_zjit_spill_frame(cfp);
     }
 
     /*
