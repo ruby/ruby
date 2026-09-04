@@ -3858,11 +3858,7 @@ impl Function {
                         Insn::CondBranchHasType(insn) => {
                             let CondBranchHasTypeData { val, expected, if_true, if_false } = &**insn;
                             let val_type = self.type_of(*val);
-                            // `is_subtype` additionally covers a Bottom `val`: an
-                            // impossible value (e.g. refined to a disjoint type) folds
-                            // to `Jump(if_true)`, so `if_true` must be marked reachable
-                            // to stay consistent with `fold_constants`.
-                            if val_type.could_be(*expected) || val_type.is_subtype(*expected) {
+                            if val_type.could_be(*expected) {
                                 reachable.insert(if_true.target);
                                 let arg_types: Vec<Type> = if_true.args.iter().map(|a| self.type_of(*a)).collect();
                                 for (idx, arg_type) in arg_types.into_iter().enumerate() {
@@ -6960,6 +6956,13 @@ impl Function {
                     }
                     &Insn::CondBranch { val, ref if_false, .. } if self.is_a(val, Type::from_cbool(false)) => {
                         self.new_insn(Insn::Jump(if_false.clone()))
+                    }
+                    // A Bottom `val` (e.g. refined to a type disjoint from its own)
+                    // is an impossible value, so this program point is dead. Fold to
+                    // Unreachable rather than a Jump; this keeps `infer_types` (which
+                    // uses `could_be` and so marks neither edge reachable) consistent.
+                    Insn::CondBranchHasType(insn) if self.type_of(insn.val).is_subtype(types::Empty) => {
+                        self.new_insn(Insn::Unreachable)
                     }
                     Insn::CondBranchHasType(insn) if self.is_a(insn.val, insn.expected) => {
                         self.new_insn(Insn::Jump(insn.if_true.clone()))
@@ -11568,13 +11571,11 @@ mod validation_tests {
     }
 
     // A `CondBranchHasType` whose `val` has been refined to a disjoint type is
-    // `Empty` (Bottom). `fold_constants` folds such a branch to `Jump(if_true)`
-    // (Bottom is a subtype of every type, so `is_a` holds), so `infer_types` must
-    // agree and mark the `if_true` edge reachable, unioning its arg types into the
-    // target's params. If it instead marked neither edge reachable, the `if_true`
-    // params would be left at `Empty` and diverge from the folded CFG.
+    // `Empty` (Bottom): an impossible value, so the branch is dead. `infer_types`
+    // uses `could_be` and so marks neither edge reachable (both params stay
+    // `Empty`), and `fold_constants` folds the branch to `Unreachable` to match.
     #[test]
-    fn condbranchhastype_bottom_val_marks_if_true_reachable() {
+    fn condbranchhastype_bottom_val_folds_to_unreachable() {
         let mut function = Function::new(std::ptr::null());
         let entry = function.entry_block;
         let if_true = function.new_block(0);
@@ -11586,8 +11587,6 @@ mod validation_tests {
         // Refine a nil to Fixnum: NilClass ∩ Fixnum = Empty (Bottom).
         let nil = function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
         let bottom = function.push_insn(entry, Insn::RefineType { val: nil, new_type: types::Fixnum });
-        // Pass a Fixnum const as the edge arg so the resulting param type is
-        // observable (Fixnum when the edge is visited, Empty when it is not).
         let arg = function.push_insn(entry, Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(3)) });
         function.push_insn(entry, Insn::CondBranchHasType(Box::new(CondBranchHasTypeData {
             val: bottom,
@@ -11599,16 +11598,16 @@ mod validation_tests {
         crate::cruby::with_rubyvm(|| {
             function.infer_types();
             assert!(function.type_of(bottom).bit_equal(types::Empty), "refine to disjoint type should be Bottom");
-            // if_true is the branch fold_constants takes for a Bottom val, so its
-            // param must receive the edge arg's type (a Fixnum const here) rather
-            // than being left at Empty.
-            let p_true_type = function.type_of(p_true);
-            assert!(!p_true_type.bit_equal(types::Empty) && p_true_type.is_subtype(types::Fixnum),
-                "if_true param should be a Fixnum, got {p_true_type}");
-            // if_false is genuinely unreachable (a Bottom value can never fail the
-            // type check), so its param stays Empty.
+            // `could_be`-only means neither edge is reachable, so both params are Empty.
+            assert!(function.type_of(p_true).bit_equal(types::Empty),
+                "if_true param should be Empty, got {}", function.type_of(p_true));
             assert!(function.type_of(p_false).bit_equal(types::Empty),
                 "if_false param should be Empty, got {}", function.type_of(p_false));
+            // The dead branch folds to Unreachable, agreeing with infer_types.
+            function.fold_constants();
+            let last = *function.blocks[entry].insns.last().unwrap();
+            assert!(matches!(function.find_ref(last), Insn::Unreachable),
+                "expected entry terminator to fold to Unreachable");
         });
     }
 
