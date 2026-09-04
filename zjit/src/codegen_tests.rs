@@ -4850,6 +4850,28 @@ fn test_string_byteslice_out_of_range_returns_nil() {
 }
 
 #[test]
+fn test_string_byteslice_one_arg() {
+    assert_snapshot!(inspect(r#"
+        def test(s, beg) = s.byteslice(beg)
+        test("hello", 1)
+        test("hello", 1)
+    "#), @r#""e""#);
+}
+
+#[test]
+fn test_string_byteslice_three_args_raises() {
+    assert_snapshot!(inspect(r#"
+        def test(s, beg, len, extra)
+          s.byteslice(beg, len, extra)
+        rescue ArgumentError
+          "ArgumentError"
+        end
+        test("hello", 1, 3, 5)
+        test("hello", 1, 3, 5)
+    "#), @r#""ArgumentError""#);
+}
+
+#[test]
 fn test_string_byteslice_bignum_arg_falls_back() {
     assert_snapshot!(inspect(r#"
         def test(s, beg, len) = s.byteslice(beg, len)

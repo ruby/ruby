@@ -13051,7 +13051,7 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_no_optimize_string_byteslice_non_fixnum() {
+    fn test_do_not_optimize_string_byteslice_non_fixnum() {
         eval(r#"
             def test(s, beg, len) = s.byteslice(beg, len)
             test("foo", 0.0, 1.0)
@@ -13080,6 +13080,76 @@ mod hir_opt_tests {
           v33:BasicObject = CCallVariadic v32, :String#byteslice@0x1040, v15, v16
           CheckInterrupts
           Return v33
+        ");
+    }
+
+    #[test]
+    fn test_do_not_optimize_string_byteslice_one_arg() {
+        eval(r#"
+            def test(s, beg) = s.byteslice(beg)
+            test("foo", 0)
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :s@0x1000
+          v4:BasicObject = LoadField v2, :beg@0x1001
+          Jump bb3(v1, v3, v4)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :s@1
+          v9:BasicObject = LoadArg :beg@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint NoSingletonClass(String@0x1008)
+          PatchPoint MethodRedefined(String@0x1008, byteslice@0x1010, cme:0x1018)
+          v28:StringExact = GuardType v12, StringExact recompile
+          v29:BasicObject = CCallVariadic v28, :String#byteslice@0x1040, v13
+          CheckInterrupts
+          Return v29
+        ");
+    }
+
+    #[test]
+    fn test_do_not_optimize_string_byteslice_three_args() {
+        eval(r#"
+            def test(s, beg, len, extra)
+              s.byteslice(beg, len, extra)
+            rescue ArgumentError
+              nil
+            end
+            test("foo", 0, 1, 2)
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :s@0x1000
+          v4:BasicObject = LoadField v2, :beg@0x1001
+          v5:BasicObject = LoadField v2, :len@0x1002
+          v6:BasicObject = LoadField v2, :extra@0x1003
+          Jump bb3(v1, v3, v4, v5, v6)
+        bb2():
+          EntryPoint JIT(0)
+          v9:BasicObject = LoadArg :self@0
+          v10:BasicObject = LoadArg :s@1
+          v11:BasicObject = LoadArg :beg@2
+          v12:BasicObject = LoadArg :len@3
+          v13:BasicObject = LoadArg :extra@4
+          Jump bb3(v9, v10, v11, v12, v13)
+        bb3(v15:BasicObject, v16:BasicObject, v17:BasicObject, v18:BasicObject, v19:BasicObject):
+          PatchPoint NoSingletonClass(String@0x1008)
+          PatchPoint MethodRedefined(String@0x1008, byteslice@0x1010, cme:0x1018)
+          v37:StringExact = GuardType v16, StringExact recompile
+          v38:BasicObject = CCallVariadic v37, :String#byteslice@0x1040, v17, v18, v19
+          CheckInterrupts
+          Return v38
         ");
     }
 
