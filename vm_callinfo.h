@@ -324,11 +324,11 @@ enum vm_cc_type {
     cc_type_refinement,
 };
 
-extern const struct rb_callcache *rb_vm_empty_cc(void);
-extern const struct rb_callcache *rb_vm_empty_cc_for_super(void);
-extern const struct rb_callcache *rb_vm_uncached_cc(void);
+extern const struct rb_callcache rb_vm_empty_cc;
+extern const struct rb_callcache rb_vm_empty_cc_for_super;
+extern const struct rb_callcache rb_vm_uncached_cc;
 
-#define vm_cc_empty() rb_vm_empty_cc()
+#define vm_cc_empty() (&rb_vm_empty_cc)
 
 static inline VALUE
 cc_check_class(VALUE klass)
