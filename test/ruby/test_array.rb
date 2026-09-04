@@ -1906,6 +1906,58 @@ class TestArray < Test::Unit::TestCase
     assert_equal(@cls[], @cls[].sort)
   end
 
+  # Shapes that take different routes through the sort: the ordered ones are
+  # detected up front, and the sizes straddle the switch from insertion sort to
+  # partitioning and the widening pivot selection.
+  def test_sort_shapes
+    [1, 2, 16, 17, 59, 60, 199, 200, 1000].each do |n|
+      sorted = (1..n).to_a
+      {
+        ascending: sorted,
+        descending: sorted.reverse,
+        equal: [7] * n,
+        two_runs: sorted.each_slice((n + 1) / 2).to_a.inject(:+),
+        random: sorted.shuffle(random: Random.new(n)),
+      }.each do |shape, a|
+        assert_equal(a.dup.sort_by {|x| x }, @cls[*a].sort, "#{shape} n=#{n}")
+        assert_equal(a.dup.sort_by {|x| -x }, @cls[*a].sort {|x, y| y <=> x },
+                     "#{shape} n=#{n} with block")
+      end
+    end
+  end
+
+  def test_sort_with_duplicates_keeps_every_element
+    a = @cls[*(1..500).map {|i| i % 7 }]
+    assert_equal(a.tally, a.sort.tally)
+    assert_equal(a.sort, a.sort.sort)
+  end
+
+  # A block may return anything at all, so the comparison is not necessarily an
+  # ordering.  Sorting must still terminate without reading outside the array.
+  def test_sort_with_inconsistent_block
+    [17, 60, 200, 1000].each do |n|
+      a = @cls[*(1..n).to_a]
+      assert_equal(n, a.sort { -1 }.size, "n=#{n}")
+      assert_equal(n, a.sort { 1 }.size, "n=#{n}")
+      assert_equal(n, a.sort { 0 }.size, "n=#{n}")
+      r = Random.new(n)
+      assert_equal(n, a.sort { r.rand(-1..1) }.size, "n=#{n} random")
+    end
+  end
+
+  # The comparison raising must unwind cleanly, leaving the array usable.  On
+  # glibc this used to escape qsort_r by longjmp and strand its scratch buffer.
+  def test_sort_raising_comparison
+    a = @cls[*(1..1000).to_a.shuffle(random: Random.new(1))]
+    b = a.dup
+    assert_raise(ArgumentError) { b.sort! {|x, y| raise ArgumentError if x > 500; x <=> y } }
+    assert_equal(a.size, b.size)
+    assert_equal(a.sort, b.sort)
+
+    c = @cls[*(1..1000).to_a.shuffle(random: Random.new(2))] << nil
+    assert_raise(ArgumentError) { c.sort }
+  end
+
   def test_sort!
     a = @cls[ 4, 1, 2, 3 ]
     assert_equal(@cls[1, 2, 3, 4], a.sort!)
