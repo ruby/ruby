@@ -4718,8 +4718,8 @@ impl Function {
         caller_splat_length: Option<SplatLength>,
         profiled_types: &[ProfiledType],
     ) -> BlockId {
-        let args = match self.find(insn_id) {
-            Insn::Send { args, .. } => args,
+        let args = match self.resolve(insn_id).insn(self) {
+            Insn::Send { args, .. } => args.clone(),
             insn => panic!("Expected Send instruction, got {insn:?}"),
         };
         let insn_idx = self.frame_state_insn_idx(state) as u32;
@@ -4815,10 +4815,11 @@ impl Function {
         join_block
     }
 
-    /// Specialize a copy of the Send at `insn_id` against a dispatch arm whose receiver class
-    /// (and shape, when the profiled type has one) is guaranteed by the enclosing branch tests,
-    /// so the specialized code emits no receiver guards. On failure the copy stays in the arm as
-    /// a dynamic send. Returns the arm's result value.
+    /// Specialize the Send at `insn_id` into a dispatch arm whose receiver class (and shape,
+    /// when the profiled type has one) is guaranteed by the enclosing branch tests, so the
+    /// specialized code emits no receiver guards. The original send is only read for its
+    /// arguments; on failure a dynamic send on the refined receiver is pushed into the arm.
+    /// Returns the arm's result value.
     fn specialize_send_arm(
         &mut self,
         arm_block: BlockId,
@@ -4829,17 +4830,15 @@ impl Function {
         caller_splat_length: Option<SplatLength>,
         profiled_type: ProfiledType,
     ) -> InsnId {
-        let (args, reason) = match self.find(insn_id) {
-            Insn::Send { args, reason, .. } => (args, reason),
-            insn => panic!("Expected Send instruction, got {insn:?}"),
-        };
-        let arm_send = self.new_insn(Insn::Send { recv, cd, block: None, args, caller_splat_length, state, reason });
-        self.insn_types[arm_send] = self.infer_type(arm_send);
-        match self.type_specialize_send(arm_block, arm_send, recv, cd, state, None, caller_splat_length, SpecializedReceiver::Guaranteed { profiled_type }) {
+        match self.type_specialize_send(arm_block, insn_id, recv, cd, state, None, caller_splat_length, SpecializedReceiver::Guaranteed { profiled_type }) {
             Ok(replacement) => replacement,
             Err(reason) => {
-                self.set_dynamic_send_reason(arm_send, reason);
-                self.push_insn_id(arm_block, arm_send);
+                let args = match self.resolve(insn_id).insn(self) {
+                    Insn::Send { args, .. } => args.clone(),
+                    insn => panic!("Expected Send instruction, got {insn:?}"),
+                };
+                let arm_send = self.push_insn(arm_block, Insn::Send { recv, cd, block: None, args, caller_splat_length, state, reason });
+                self.insn_types[arm_send] = self.infer_type(arm_send);
                 arm_send
             }
         }
@@ -4901,8 +4900,8 @@ impl Function {
         // block arg stripped from the stack.
         let mut send_block = send_block;
         let mut send_frame_state = state;
-        let mut args = match self.find(insn_id) {
-            Insn::Send { args, .. } => args,
+        let mut args = match self.resolve(insn_id).insn(self) {
+            Insn::Send { args, .. } => args.clone(),
             insn => panic!("Expected Send instruction, got {insn:?}"),
         };
         let mut stripped_nil_block = false;
