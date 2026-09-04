@@ -734,13 +734,34 @@ rb_jit_reserve_addr_space(uint32_t mem_size)
     #if defined(MAP_FIXED_NOREPLACE) && defined(_SC_PAGESIZE)
         uint32_t const page_size = (uint32_t)sysconf(_SC_PAGESIZE);
         uint8_t *const cfunc_sample_addr = (void *)(uintptr_t)&rb_jit_reserve_addr_space;
-        uint8_t *const probe_region_end = cfunc_sample_addr + INT32_MAX;
-        // Align the requested address to page size
-        uint8_t *req_addr = align_ptr(cfunc_sample_addr, page_size);
+        // 64MiB. This is rather arbitrary.
+        const uintptr_t probe_stride = 64 * 1024 * 1024;
+        // Related to the stride. Any successful trial will be within INT32_MAX
+        // range with slack for the binary size.
+        const int max_probe_trials = 30;
 
         // Probe for addresses close to this function using MAP_FIXED_NOREPLACE
         // to improve odds of being in range for 32-bit relative call instructions.
-        do {
+        uint8_t *req_addr = cfunc_sample_addr;
+        for (int i = 0; i < max_probe_trials; i++) {
+            // The address space on x86-64/A64 Linux tends to look like:
+            //
+            //  high addr  +---------------+
+            //      |      |    [stack]    |
+            //      |      |   DSO  text   |
+            //      |      |    [heap]     |
+            //      |      | main exe text |
+            //      v      |       0       |
+            //   low addr  +---------------+
+            //
+            // We always probe downwards from one of the program text areas
+            // to avoid getting in the way of the stack's downwards growth.
+            // If we happen to start from the main text, we also avoid the heap.
+            req_addr -= probe_stride;
+
+            // Align the requested address to page size
+            req_addr = align_ptr(req_addr, page_size);
+
             mem_block = mmap(
                 req_addr,
                 mem_size,
@@ -755,13 +776,7 @@ rb_jit_reserve_addr_space(uint32_t mem_size)
                 ruby_annotate_mmap(mem_block, mem_size, "Ruby:rb_jit_reserve_addr_space");
                 break;
             }
-
-            // -4MiB. Downwards to probe away from the heap. (On x86/A64 Linux
-            // main_code_addr < heap_addr, and in case we are in a shared
-            // library mapped higher than the heap, downwards is still better
-            // since it's towards the end of the heap rather than the stack.)
-            req_addr -= 4 * 1024 * 1024;
-        } while (req_addr < probe_region_end);
+        }
 
     // On MacOS and other platforms
     #else
