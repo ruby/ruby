@@ -16535,9 +16535,56 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(String@0x1010)
           PatchPoint MethodRedefined(String@0x1010, is_a?@0x1011, cme:0x1018)
           v27:StringExact = GuardType v10, StringExact recompile
-          v28:BoolExact = IsA v27, v16
+          v29:TrueClass = Const Value(true)
           CheckInterrupts
-          Return v28
+          Return v29
+        ");
+    }
+
+    #[test]
+    fn test_specialize_is_a_class_polymorphic() {
+        set_call_threshold(4);
+        eval(r#"
+            def test(o) = o.is_a?(String)
+            test("asdf")
+            test(4)
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint StableConstantNames(0x1008, String)
+          v16:ClassSubclass[String@0x1010] = Const Value(VALUE(0x1010))
+          v19:CBool = HasType v10, Fixnum
+          CondBranch v19, bb5(), bb6()
+        bb5():
+          PatchPoint MethodRedefined(Integer@0x1018, is_a?@0x1020, cme:0x1028)
+          v45:FalseClass = Const Value(false)
+          Jump bb4(v45)
+        bb6():
+          v25:CBool = HasType v10, StringExact
+          CondBranch v25, bb7(), bb8()
+        bb7():
+          PatchPoint NoSingletonClass(String@0x1010)
+          PatchPoint MethodRedefined(String@0x1010, is_a?@0x1020, cme:0x1028)
+          v46:TrueClass = Const Value(true)
+          Jump bb4(v46)
+        bb8():
+          v31:BasicObject = Send v10, :is_a?, v16 # SendFallbackReason: Send: polymorphic call site
+          Jump bb4(v31)
+        bb4(v18:BasicObject):
+          CheckInterrupts
+          Return v18
         ");
     }
 
@@ -16664,9 +16711,9 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(String@0x1010)
           PatchPoint MethodRedefined(String@0x1010, kind_of?@0x1011, cme:0x1018)
           v27:StringExact = GuardType v10, StringExact recompile
-          v28:BoolExact = IsA v27, v16
+          v29:TrueClass = Const Value(true)
           CheckInterrupts
-          Return v28
+          Return v29
         ");
     }
 
@@ -16786,6 +16833,38 @@ mod hir_opt_tests {
           v25:FalseClass = Const Value(false)
           CheckInterrupts
           Return v25
+        ");
+    }
+
+    #[test]
+    fn test_fold_is_a_user_class_with_profiled_fixnum_to_false() {
+        eval(r#"
+            class C; end
+            def test(o) = o.is_a?(C)
+            test(5)
+            test(5)
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint StableConstantNames(0x1008, C)
+          v16:ClassSubclass[C@0x1010] = Const Value(VALUE(0x1010))
+          PatchPoint MethodRedefined(Integer@0x1018, is_a?@0x1020, cme:0x1028)
+          v26:Fixnum = GuardType v10, Fixnum recompile
+          v28:FalseClass = Const Value(false)
+          CheckInterrupts
+          Return v28
         ");
     }
 
