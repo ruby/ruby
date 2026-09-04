@@ -151,7 +151,7 @@ lstat1 = File.lstat(linkpath)
 # User id and group id for file not changed.
 fstat1.uid # => 0
 fstat1.gid # => 0
-# User is and group id for link changed.
+# User id and group id for link changed.
 lstat1.uid # => 1000
 lstat1.gid # => 1000
 # Clean up.
