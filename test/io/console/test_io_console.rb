@@ -1,6 +1,7 @@
 # frozen_string_literal: false
 begin
   require 'io/console'
+  require 'io/console/size'
   require 'test/unit'
   require 'pty'
 rescue LoadError
