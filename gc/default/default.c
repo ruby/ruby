@@ -1414,6 +1414,23 @@ total_final_slots_count(rb_objspace_t *objspace)
 #define is_full_marking(objspace)        ((objspace)->flags.during_minor_gc == FALSE)
 #define is_incremental_marking(objspace) ((objspace)->flags.during_incremental_marking != FALSE)
 #define will_be_incremental_marking(objspace) ((objspace)->rgengc.need_major_gc != GPR_FLAG_NONE)
+
+/* Mirrors flags.during_incremental_marking so that ZJIT-generated code can
+ * read it (a bitfield has no address); see rb_gc_impl_zjit_incremental_marking_ptr.
+ * Only transitions write to it: incremental marking requires a single objspace,
+ * so a redundant FALSE store from another objspace's GC entry must not clobber
+ * the marking objspace's TRUE. Written inside GC while mutators are stopped;
+ * read by JIT code. */
+static uintptr_t zjit_during_incremental_marking = FALSE;
+
+static void
+gc_set_incremental_marking(rb_objspace_t *objspace, unsigned int value)
+{
+    if (objspace->flags.during_incremental_marking != value) {
+        objspace->flags.during_incremental_marking = value;
+        zjit_during_incremental_marking = value;
+    }
+}
 /*
  * Byte budget for incremental sweep steps. Each step sweeps at most
  * this many bytes worth of slots before yielding. The effective slot
@@ -3248,6 +3265,12 @@ rb_gc_impl_zjit_new_obj_fastpath(void *objspace_ptr, size_t alloc_size, VALUE fl
 #endif
 }
 
+const uintptr_t *
+rb_gc_impl_zjit_incremental_marking_ptr(void *objspace_ptr)
+{
+    return &zjit_during_incremental_marking;
+}
+
 NOINLINE(static VALUE newobj_refill(rb_objspace_t *objspace, size_t heap_idx));
 
 static VALUE
@@ -3985,7 +4008,7 @@ gc_abort(void *objspace_ptr)
         VALUE obj;
         while (pop_mark_stack(&objspace->mark_stack, &obj));
 
-        objspace->flags.during_incremental_marking = FALSE;
+        gc_set_incremental_marking(objspace, FALSE);
     }
 
     if (is_lazy_sweeping(objspace)) {
@@ -7007,7 +7030,7 @@ gc_marks_finish(rb_objspace_t *objspace)
         }
 #endif
 
-        objspace->flags.during_incremental_marking = FALSE;
+        gc_set_incremental_marking(objspace, FALSE);
         /* check children of all marked wb-unprotected objects */
         for (int i = 0; i < HEAP_COUNT; i++) {
             gc_marks_wb_unprotected_objects(objspace, &heaps[i]);
@@ -8276,10 +8299,10 @@ gc_start_body(rb_objspace_t *objspace, unsigned int reason, bool allow_global)
              * Ractor can create and share objects behind this objspace's already-scanned
              * roots. */
             !rb_gc_single_objspace_p()) {
-        objspace->flags.during_incremental_marking = FALSE;
+        gc_set_incremental_marking(objspace, FALSE);
     }
     else {
-        objspace->flags.during_incremental_marking = do_full_mark;
+        gc_set_incremental_marking(objspace, do_full_mark);
     }
 
     /* Compaction on the local GC path (autocompact) runs only with a single objspace:
@@ -9010,7 +9033,7 @@ gc_start_global(rb_objspace_t *driver, unsigned int reason, bool compact, bool a
     for (size_t i = 0; i < global_objspace->global_gc.n_objspaces; i++) {
         rb_objspace_t *objspace = global_objspace->global_gc.objspaces[i];
         objspace->flags.during_minor_gc = FALSE;
-        objspace->flags.during_incremental_marking = FALSE;
+        gc_set_incremental_marking(objspace, FALSE);
         /* The unified mark is precise and does not pin, so the per-objspace sweep below must
          * not re-check against a stale local cycle. */
         objspace->last_cycle_pinned = 0;
