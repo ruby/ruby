@@ -17011,6 +17011,178 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn specialize_sendforward_positional_monomorphic() {
+        enable_zjit_stats();
+        eval("
+            def callee(a, b) = [a, b]
+            def test(...) = callee(...)
+            test(1, 2)
+            test(3, 4)
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :...@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :...@1
+          IncrCounterPtr
+          Jump bb3(v6, v7)
+        bb3(v10:BasicObject, v11:BasicObject):
+          IncrCounter zjit_insn_count
+          IncrCounter zjit_insn_count
+          IncrCounter zjit_insn_count
+          PatchPoint NoEPEscape(test)
+          v28:CPtr = GetEP 0
+          v29:BasicObject = LoadField v28, :forwarded_arg@0x1001
+          v30:BasicObject = LoadField v28, :forwarded_arg@0x1000
+          v32:CInt64 = LoadField v28, :VM_ENV_DATA_INDEX_SPECVAL@0x1002
+          v33:CInt64[0] = GuardBitEquals v32, CInt64(0)
+          PatchPoint MethodRedefined(Object@0x1008, callee@0x1010, cme:0x1018)
+          v35:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v10, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
+          PushInlineFrame :callee, v35 (0x1040), num_args=2
+          IncrCounter inline_iseq_optimized_send_count
+          IncrCounter zjit_insn_count
+          IncrCounter zjit_insn_count
+          IncrCounter zjit_insn_count
+          v49:ArrayExact = NewArray v29, v30
+          IncrCounter zjit_insn_count
+          CheckInterrupts
+          PopInlineFrame
+          IncrCounter zjit_insn_count
+          Return v49
+        ");
+    }
+
+    #[test]
+    fn dont_specialize_sendforward_with_keywords() {
+        enable_zjit_stats();
+        eval("
+            def callee(k:) = k
+            def test(...) = callee(...)
+            test(k: 1)
+            test(k: 2)
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :...@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :...@1
+          IncrCounterPtr
+          Jump bb3(v6, v7)
+        bb3(v10:BasicObject, v11:BasicObject):
+          IncrCounter zjit_insn_count
+          IncrCounter zjit_insn_count
+          IncrCounter zjit_insn_count
+          IncrCounter complex_arg_pass_caller_kwarg
+          v20:BasicObject = SendForward v10, 0x1008, :callee, v11 # SendFallbackReason: SendForward: complex argument passing from forwarded caller
+          IncrCounter zjit_insn_count
+          CheckInterrupts
+          Return v20
+        ");
+    }
+
+    #[test]
+    fn dont_specialize_sendforward_with_polymorphic_caller_ci_and_monomorphic_receiver() {
+        set_call_threshold(4);
+        eval("
+            class C
+              def g(*args) = args
+            end
+
+            @target = C.new
+            def test(...) = @target.g(...)
+
+            test(1)
+            test(1, 2)
+            test(1, 2, 3)
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:7:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :...@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :...@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint SingleRactorMode
+          v15:HeapBasicObject = GuardType v9, HeapBasicObject
+          v16:CShape = LoadField v15, :shape_id@0x1001
+          v17:CShape[0x1002] = GuardBitEquals v16, CShape(0x1002) recompile
+          v18:BasicObject = LoadField v15, :@target@0x1003
+          PatchPoint NoEPEscape(test)
+          v23:BasicObject = SendForward v18, 0x1008, :g, v10 # SendFallbackReason: SendForward: polymorphic caller callinfo
+          CheckInterrupts
+          Return v23
+        ");
+    }
+
+    #[test]
+    fn dont_specialize_sendforward_with_monomorphic_caller_ci_and_polymorphic_receiver() {
+        set_call_threshold(4);
+        eval("
+            class C
+              def g(a) = [:a, a]
+            end
+
+            class D
+              def g(a) = [:b, a]
+            end
+
+            def test(...) = @target.g(...)
+
+            @target = C.new
+            test(1)
+            @target = D.new
+            test(1)
+            @target = C.new
+            test(1)
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:10:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :...@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :...@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint SingleRactorMode
+          v15:HeapBasicObject = GuardType v9, HeapBasicObject
+          v16:CShape = LoadField v15, :shape_id@0x1001
+          v17:CShape[0x1002] = GuardBitEquals v16, CShape(0x1002) recompile
+          v18:BasicObject = LoadField v15, :@target@0x1003
+          PatchPoint NoEPEscape(test)
+          v23:BasicObject = SendForward v18, 0x1008, :g, v10 # SendFallbackReason: SendForward: polymorphic receiver
+          CheckInterrupts
+          Return v23
+        ");
+    }
+
+    #[test]
     fn test_elide_string_length() {
         eval(r#"
             def test(s)

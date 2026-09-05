@@ -102,6 +102,7 @@ fn profile_insn_sample(
             profile_operands(profiler, profile, argc + 1);
             profile_splat_length(profiler, profile, unsafe { (*cd).ci });
         }
+        YARVINSN_sendforward => profile_sendforward(profiler, profile),
         YARVINSN_splatkw => profile_operands(profiler, profile, 2),
         _ => return false,
     }
@@ -169,6 +170,35 @@ fn profile_operands(profiler: &mut Profiler, profile: &mut IseqProfile, n: usize
         // TODO(max): Handle GC-hidden classes like Array, Hash, etc and make them look normal or
         // drop them or something
         let ty = ProfiledType::new(obj);
+        VALUE::from(profiler.iseq).write_barrier(ty.class());
+        profile_type.observe(ty);
+    }
+}
+
+fn profile_sendforward(profiler: &mut Profiler, profile: &mut IseqProfile) {
+    let cd: *const rb_call_data = profiler.insn_opnd(0).as_ptr();
+    let ci = unsafe { (*cd).ci };
+    let flags = unsafe { rb_vm_ci_flag(ci) };
+    let has_forwarding_ci = flags & VM_CALL_FORWARDING != 0;
+
+    debug_assert!(has_forwarding_ci);
+    let argc = num_arguments_on_stack(cd) + usize::from(has_forwarding_ci);
+    let num_operands = argc + 1; // including receiver
+
+    let entry = profile.entry_mut(profiler.insn_idx);
+    if entry.opnd_types.is_empty() {
+        entry.opnd_types.resize(num_operands, TypeDistribution::new());
+    }
+
+    for (i, profile_type) in entry.opnd_types.iter_mut().enumerate() {
+        let obj = profiler.peek_at_stack((num_operands - i - 1) as isize);
+        let ty = if has_forwarding_ci && i == num_operands - 1 {
+            // `sendforward` keeps the caller's callinfo on top of the stack.
+            // It is not a Ruby operand, so profile its exact identity instead of class/shape.
+            ProfiledType::object(obj)
+        } else {
+            ProfiledType::new(obj)
+        };
         VALUE::from(profiler.iseq).write_barrier(ty.class());
         profile_type.observe(ty);
     }
