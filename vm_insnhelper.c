@@ -4567,7 +4567,8 @@ vm_call_zsuper(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_ca
 {
     klass = RCLASS_SUPER(klass);
 
-    const rb_callable_method_entry_t *cme = klass ? rb_callable_method_entry(klass, vm_ci_mid(calling->cd->ci)) : NULL;
+    ID mid = vm_cc_cme(calling->cc)->def->original_id;
+    const rb_callable_method_entry_t *cme = klass ? rb_callable_method_entry(klass, mid) : NULL;
     if (cme == NULL) {
         return vm_call_method_nome(ec, cfp, calling);
     }

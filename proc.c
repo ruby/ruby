@@ -2509,6 +2509,7 @@ mnew_internal(const rb_method_entry_t *me, VALUE klass, VALUE iclass,
     struct METHOD *data;
     VALUE method;
     const rb_method_entry_t *original_me = me;
+    const ID called_id = id;
     rb_method_visibility_t visi = METHOD_VISI_UNDEF;
 
   again:
@@ -2535,11 +2536,22 @@ mnew_internal(const rb_method_entry_t *me, VALUE klass, VALUE iclass,
             me = (rb_method_entry_t *)rb_callable_method_entry_with_refinements(klass, id, &iclass);
         }
         else {
-            VALUE klass = RCLASS_SUPER(RCLASS_ORIGIN(me->owner));
+            VALUE klass = RCLASS_SUPER(RCLASS_ORIGIN(RB_TYPE_P(iclass, T_ICLASS) ? iclass : me->owner));
             id = me->def->original_id;
             me = rb_method_entry_without_refinements(klass, id, &iclass);
         }
         goto again;
+    }
+
+    if (me->called_id != called_id) {
+        /* resolved from a ZSUPER alias; keep the name it was looked up by */
+        if (me->defined_class) {
+            me = (const rb_method_entry_t *)
+                rb_method_entry_complement_defined_class(me, called_id, me->defined_class);
+        }
+        else {
+            me = rb_method_entry_create(called_id, me->owner, METHOD_ENTRY_VISI(me), me->def);
+        }
     }
 
     method = TypedData_Make_Struct(mclass, struct METHOD, &method_data_type, data);

@@ -2890,6 +2890,7 @@ rb_alias(VALUE klass, ID alias_name, ID original_name)
     VALUE defined_class;
     const rb_method_entry_t *orig_me;
     rb_method_visibility_t visi = METHOD_VISI_UNDEF;
+    bool deferred = false;
 
     if (NIL_P(klass)) {
         rb_raise(rb_eTypeError, "no class to make alias");
@@ -2906,11 +2907,14 @@ rb_alias(VALUE klass, ID alias_name, ID original_name)
 
     if (UNDEFINED_METHOD_ENTRY_P(orig_me) ||
         UNDEFINED_REFINED_METHOD_P(orig_me->def)) {
-        if ((!RB_TYPE_P(klass, T_MODULE)) ||
-            (orig_me = search_method(rb_cObject, original_name, &defined_class),
-             UNDEFINED_METHOD_ENTRY_P(orig_me))) {
+        if (!RB_TYPE_P(target_klass, T_MODULE) || deferred) {
             rb_print_undef(target_klass, original_name, METHOD_VISI_UNDEF);
         }
+        /* Object is not an ancestor of the module; use it only to check the
+         * method and its visibility, and resolve the alias at call time. */
+        deferred = true;
+        klass = rb_cObject;
+        goto again;
     }
 
     switch (orig_me->def->type) {
@@ -2929,7 +2933,13 @@ rb_alias(VALUE klass, ID alias_name, ID original_name)
 
     if (visi == METHOD_VISI_UNDEF) visi = METHOD_ENTRY_VISI(orig_me);
 
-    if (orig_me->defined_class == 0) {
+    if (deferred) {
+        const rb_method_entry_t *alias_me =
+            rb_method_entry_make(target_klass, alias_name, target_klass, visi,
+                                 VM_METHOD_TYPE_ZSUPER, NULL, original_name, NULL);
+        method_added(target_klass, alias_name, alias_me);
+    }
+    else if (orig_me->defined_class == 0) {
         const rb_method_entry_t *alias_me =
             rb_method_entry_make(target_klass, alias_name, target_klass, visi,
                                  VM_METHOD_TYPE_ALIAS, NULL, orig_me->called_id,
@@ -3437,10 +3447,11 @@ rb_mod_modfunc(int argc, VALUE *argv, VALUE module)
         VALUE m = module;
 
         id = rb_to_id(argv[i]);
+        ID orig_id = id;
         for (;;) {
-            me = search_method(m, id, 0);
+            me = search_method(m, orig_id, 0);
             if (me == 0) {
-                me = search_method(rb_cObject, id, 0);
+                me = search_method(rb_cObject, orig_id, 0);
             }
             if (UNDEFINED_METHOD_ENTRY_P(me)) {
                 rb_print_undef(module, id, METHOD_VISI_UNDEF);
@@ -3448,6 +3459,7 @@ rb_mod_modfunc(int argc, VALUE *argv, VALUE module)
             if (me->def->type != VM_METHOD_TYPE_ZSUPER) {
                 break; /* normal case: need not to follow 'super' link */
             }
+            orig_id = me->def->original_id;
             m = RCLASS_SUPER(m);
             if (!m)
                 break;
