@@ -56,6 +56,7 @@ rb_call_inits(void)
     CALL(Ruby_module);
     CALL(Box);
     CALL(Proc);
+    CALL(uncached_methods); /* after every uncached method is defined */
     CALL(Binding);
     CALL(Math);
     CALL(GC);

@@ -41,9 +41,6 @@ extern int rb_method_definition_eq(const rb_method_definition_t *d1, const rb_me
 extern VALUE rb_make_no_method_exception(VALUE exc, VALUE format, VALUE obj,
                                          int argc, const VALUE *argv, int priv);
 
-static const struct rb_callcache vm_empty_cc;
-static const struct rb_callcache vm_empty_cc_for_super;
-
 /* control stack frame */
 
 static rb_control_frame_t *vm_get_ruby_level_caller_cfp(const rb_execution_context_t *ec, const rb_control_frame_t *cfp);
@@ -2102,8 +2099,16 @@ vm_populate_cc(VALUE klass, const struct rb_callinfo * const ci, ID mid)
 
     if (cme == NULL) {
         // undef or not found: can't cache the information
-        VM_ASSERT(vm_cc_cme(&vm_empty_cc) == NULL);
-        return &vm_empty_cc;
+        VM_ASSERT(vm_cc_cme(&rb_vm_empty_cc) == NULL);
+        return &rb_vm_empty_cc;
+    }
+
+    if (UNLIKELY(cme->def->uncached && !(vm_ci_flag(ci) & VM_CALL_SUPER))) {
+        // Leaving a cc here would cost a ccs and a cc table entry on klass, which
+        // is usually a metaclass, so the cost would scale with the number of
+        // classes. invokesuper is excluded because vm_search_super_method needs a
+        // cme in the cc it gets back.
+        return &rb_vm_uncached_cc;
     }
 
     VALUE cc_tbl = RCLASS_WRITABLE_CC_TBL(klass);
@@ -2239,6 +2244,14 @@ vm_search_cc(const VALUE klass, const struct rb_callinfo * const ci)
     return cc;
 }
 
+#if VM_CHECK_MODE > 0
+static bool
+vm_cc_resolved_p(const struct rb_callcache *cc)
+{
+    return cc != &rb_vm_empty_cc && cc != &rb_vm_uncached_cc;
+}
+#endif
+
 const struct rb_callcache *
 rb_vm_search_method_slowpath(const struct rb_callinfo *ci, VALUE klass)
 {
@@ -2262,10 +2275,10 @@ rb_vm_search_method_slowpath(const struct rb_callinfo *ci, VALUE klass)
 
     VM_ASSERT(cc);
     VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
-    VM_ASSERT(cc == vm_cc_empty() || cc->klass == klass);
-    VM_ASSERT(cc == vm_cc_empty() || callable_method_entry_p(vm_cc_cme(cc)));
-    VM_ASSERT(cc == vm_cc_empty() || !METHOD_ENTRY_INVALIDATED(vm_cc_cme(cc)));
-    VM_ASSERT(cc == vm_cc_empty() || vm_cc_cme(cc)->called_id == vm_ci_mid(ci));
+    VM_ASSERT(!vm_cc_resolved_p(cc) || cc->klass == klass);
+    VM_ASSERT(!vm_cc_resolved_p(cc) || callable_method_entry_p(vm_cc_cme(cc)));
+    VM_ASSERT(!vm_cc_resolved_p(cc) || !METHOD_ENTRY_INVALIDATED(vm_cc_cme(cc)));
+    VM_ASSERT(!vm_cc_resolved_p(cc) || vm_cc_cme(cc)->called_id == vm_ci_mid(ci));
 
     return cc;
 }
@@ -2293,8 +2306,7 @@ vm_search_method_slowpath0(VALUE cd_owner, struct rb_call_data *cd, VALUE klass)
 #if OPT_INLINE_METHOD_CACHE
     cd->cc = cc;
 
-    const struct rb_callcache *empty_cc = &vm_empty_cc;
-    if (cd_owner && cc != empty_cc) {
+    if (cd_owner && vm_cc_markable(cc)) {
         // invokesuper dispatches with a cd on the machine stack, which has no
         // owning iseq to remember and keeps its ci out of the GC.
         VM_ASSERT(!vm_ci_markable(cd->ci) ||
@@ -2303,6 +2315,7 @@ vm_search_method_slowpath0(VALUE cd_owner, struct rb_call_data *cd, VALUE klass)
     }
 
 #if USE_DEBUG_COUNTER
+    const struct rb_callcache *empty_cc = &rb_vm_empty_cc;
     if (!old_cc || old_cc == empty_cc) {
         // empty
         RB_DEBUG_COUNTER_INC(mc_inline_miss_empty);
@@ -2362,6 +2375,9 @@ vm_search_method_fastpath(const struct rb_control_frame_struct *reg_cfp, struct 
     if (vm_cc_hit_p(cc, cd, klass)) {
         return cc;
     }
+    if (UNLIKELY(cc == &rb_vm_uncached_cc)) {
+        return cc;
+    }
 
     return vm_search_method_slowpath0((VALUE)CFP_ISEQ(reg_cfp), cd, klass);
 }
@@ -2377,6 +2393,29 @@ vm_search_method(struct rb_control_frame_struct *reg_cfp, struct rb_call_data *c
     return vm_cc_cme(cc);
 }
 
+static VALUE
+vm_call_uncached(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling)
+{
+    RB_DEBUG_COUNTER_INC(ccf_uncached);
+
+    const struct rb_call_data *cd = calling->cd;
+    const VALUE klass = CLASS_OF(calling->recv);
+    const rb_callable_method_entry_t *cme = rb_callable_method_entry(klass, vm_ci_mid(cd->ci));
+
+    if (UNLIKELY(cme == NULL || !cme->def->uncached)) {
+        // A site that saw an uncached method is now seeing a receiver whose
+        // method is cacheable, so let it have a real cc after all.
+        const struct rb_callcache *cc =
+            vm_search_method_slowpath0((VALUE)CFP_ISEQ(cfp), (struct rb_call_data *)cd, klass);
+        calling->cc = cc;
+        return vm_cc_call(cc)(ec, cfp, calling);
+    }
+
+    calling->cc = &VM_CC_ON_STACK(klass, vm_call_general, {{ 0 }},
+                                  rb_check_overloaded_cme(cme, cd->ci));
+    return vm_call_general(ec, cfp, calling);
+}
+
 const struct rb_callable_method_entry_struct *
 rb_zjit_vm_search_method(VALUE cd_owner, struct rb_call_data *cd, VALUE recv)
 {
@@ -2385,6 +2424,9 @@ rb_zjit_vm_search_method(VALUE cd_owner, struct rb_call_data *cd, VALUE recv)
     VALUE klass = CLASS_OF(recv);
     const struct rb_callcache *cc = cd->cc;
     if (!vm_cc_hit_p(cc, cd, klass)) {
+        if (UNLIKELY(cc == &rb_vm_uncached_cc)) {
+            return rb_callable_method_entry(klass, vm_ci_mid(cd->ci));
+        }
         cc = vm_search_method_slowpath0(cd_owner, cd, klass);
     }
     return vm_cc_cme(cc);
@@ -5108,7 +5150,7 @@ vm_super_outside(void)
 static const struct rb_callcache *
 empty_cc_for_super(void)
 {
-    return &vm_empty_cc_for_super;
+    return &rb_vm_empty_cc_for_super;
 }
 
 static const struct rb_callcache *
