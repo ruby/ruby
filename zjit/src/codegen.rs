@@ -681,7 +681,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::StringConcat { strings, state } => gen_string_concat(jit, asm, function, opnds!(strings), &function.frame_state(*state)),
         &Insn::StringGetbyte { string, index } => gen_string_getbyte(asm, opnd!(string), opnd!(index)),
         Insn::StringSetbyteFixnum { string, index, value } => gen_string_setbyte_fixnum(asm, opnd!(string), opnd!(index), opnd!(value)),
-        Insn::StringAppend { recv, other, state } => gen_string_append(jit, asm, function, opnd!(recv), opnd!(other), &function.frame_state(*state)),
+        Insn::StringAppend { recv, other, flags_xor, state } => gen_string_append(jit, asm, function, opnd!(recv), opnd!(other), opnd!(flags_xor), &function.frame_state(*state)),
         Insn::StringAppendCodepoint { recv, other, state } => gen_string_append_codepoint(jit, asm, function, opnd!(recv), opnd!(other), &function.frame_state(*state)),
         Insn::StringEqual { left, right } => gen_string_equal(asm, opnd!(left), opnd!(right)),
         Insn::StringIntern { val, state } => gen_intern(asm, opnd!(val), &function.frame_state(*state)),
@@ -736,6 +736,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::FixnumXor { left, right } => gen_fixnum_xor(asm, opnd!(left), opnd!(right)),
         Insn::IntAnd { left, right } => asm.and(opnd!(left), opnd!(right)),
         Insn::IntOr { left, right } => gen_int_or(asm, opnd!(left), opnd!(right)),
+        Insn::IntXor { left, right } => gen_int_xor(asm, opnd!(left), opnd!(right)),
         &Insn::FixnumLShift { left, right, state } => {
             // We only create FixnumLShift when we know the shift amount statically and it's in [0,
             // 63].
@@ -2929,6 +2930,11 @@ fn gen_int_or(asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd) -> lir::Op
     asm.or(left, right)
 }
 
+/// Compile C integer ^ C integer.
+fn gen_int_xor(asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd) -> lir::Opnd {
+    asm.xor(left, right)
+}
+
 /// Compile Fixnum ^ Fixnum
 fn gen_fixnum_xor(asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd) -> lir::Opnd {
     // XOR and then re-tag the resulting fixnum
@@ -4211,22 +4217,16 @@ fn gen_string_setbyte_fixnum(asm: &mut Assembler, string: Opnd, index: Opnd, val
     asm_ccall!(asm, rb_str_setbyte, string, index, value)
 }
 
-fn gen_string_append(jit: &mut JITState, asm: &mut Assembler, function: &Function, string: Opnd, val: Opnd, state: &FrameState) -> Opnd {
+fn gen_string_append(jit: &mut JITState, asm: &mut Assembler, function: &Function, string: Opnd, val: Opnd, flags_xor: Opnd, state: &FrameState) -> Opnd {
     gen_prepare_non_leaf_call(jit, asm, function, state);
 
     // Test if string encodings differ. If different, use rb_str_buf_append. If the same,
     // use rb_jit_str_simple_append, which calls rb_str_cat.
     asm_comment!(asm, "<< on strings");
 
-    // Take receiver's object flags XOR arg's flags. If any
-    // string-encoding flags are different between the two,
-    // the encodings don't match.
-    let string_reg = asm.load_mem(string);
-    let val_reg = asm.load_mem(val);
-    let flags_xor = asm.xor(
-        Opnd::mem(VALUE_BITS, string_reg, RUBY_OFFSET_RBASIC_FLAGS),
-        Opnd::mem(VALUE_BITS, val_reg, RUBY_OFFSET_RBASIC_FLAGS)
-    );
+    // flags_xor is the receiver's object flags XOR arg's flags, computed in HIR. If any
+    // string-encoding flags are different between the two, the encodings don't match.
+    let flags_xor = asm.load_mem(flags_xor);
     asm.test(flags_xor, Opnd::UImm(RUBY_ENCODING_MASK as u64));
 
     let hir_block_id = asm.current_block().hir_block_id;

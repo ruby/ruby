@@ -13609,7 +13609,10 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(String@0x1008, <<@0x1010, cme:0x1018)
           v29:StringExact = GuardType v12, StringExact recompile
           v30:String = GuardType v13, String
-          v31:StringExact = StringAppend v29, v30
+          v31:CUInt64 = LoadField v29, :RBASIC_FLAGS@0x1040
+          v32:CUInt64 = LoadField v30, :RBASIC_FLAGS@0x1040
+          v33:CUInt64 = IntXor v31, v32
+          v34:StringExact = StringAppend v29, v30, flags_xor: v33
           CheckInterrupts
           Return v29
         ");
@@ -13675,7 +13678,10 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(String@0x1008, <<@0x1010, cme:0x1018)
           v29:StringExact = GuardType v12, StringExact recompile
           v30:String = GuardType v13, String
-          v31:StringExact = StringAppend v29, v30
+          v31:CUInt64 = LoadField v29, :RBASIC_FLAGS@0x1040
+          v32:CUInt64 = LoadField v30, :RBASIC_FLAGS@0x1040
+          v33:CUInt64 = IntXor v31, v32
+          v34:StringExact = StringAppend v29, v30, flags_xor: v33
           CheckInterrupts
           Return v29
         ");
@@ -16110,13 +16116,16 @@ mod hir_opt_tests {
           v28:StringExact = StringCopy v27
           PatchPoint NoSingletonClass(String@0x1008)
           PatchPoint MethodRedefined(String@0x1008, <<@0x1010, cme:0x1018)
-          v50:StringExact = StringAppend v17, v28
+          v50:CUInt64 = LoadField v17, :RBASIC_FLAGS@0x1040
+          v51:CUInt64 = LoadField v28, :RBASIC_FLAGS@0x1040
+          v52:CUInt64 = IntXor v50, v51
+          v53:StringExact = StringAppend v17, v28, flags_xor: v52
           PatchPoint NoEPEscape(test)
           PatchPoint NoSingletonClass(String@0x1008)
-          PatchPoint MethodRedefined(String@0x1008, ==@0x1040, cme:0x1048)
-          v55:BoolExact = StringEqual v17, v22
+          PatchPoint MethodRedefined(String@0x1008, ==@0x1041, cme:0x1048)
+          v58:BoolExact = StringEqual v17, v22
           CheckInterrupts
-          Return v55
+          Return v58
         ");
     }
 
