@@ -471,16 +471,29 @@ rsock_socket(int domain, int type, int proto)
     return fd;
 }
 
+static int
+pending_sockerr(int fd)
+{
+    int sockerr;
+    socklen_t sockerrlen = (socklen_t)sizeof(sockerr);
+
+    if (getsockopt(fd, SOL_SOCKET, SO_ERROR, (void *)&sockerr, &sockerrlen) < 0)
+        return -1;
+#ifdef _WIN32
+    /* Winsock leaves a WSA error code, not an errno, in SO_ERROR. */
+    sockerr = rb_w32_map_errno(sockerr);
+#endif
+    return sockerr;
+}
+
 /* emulate blocking connect behavior on EINTR or non-blocking socket */
 static int
 wait_connectable(VALUE self, VALUE timeout, const struct sockaddr *sockaddr, int len)
 {
-    int sockerr;
-    socklen_t sockerrlen;
     int fd = rb_io_descriptor(self);
+    int sockerr = pending_sockerr(fd);
 
-    sockerrlen = (socklen_t)sizeof(sockerr);
-    if (getsockopt(fd, SOL_SOCKET, SO_ERROR, (void *)&sockerr, &sockerrlen) < 0)
+    if (sockerr < 0)
         return -1;
 
     /* necessary for non-blocking sockets (at least ECONNREFUSED) */
@@ -511,7 +524,13 @@ wait_connectable(VALUE self, VALUE timeout, const struct sockaddr *sockaddr, int
      *
      * Note: rb_wait_for_single_fd already retries on EINTR/ERESTART
      */
-    VALUE result = rb_io_wait(self, RB_INT2NUM(RUBY_IO_READABLE|RUBY_IO_WRITABLE), timeout);
+    int events = RUBY_IO_READABLE|RUBY_IO_WRITABLE;
+#ifdef _WIN32
+    /* Winsock signals a failed connection in the exceptfds set only. */
+    events |= RUBY_IO_PRIORITY;
+#endif
+
+    VALUE result = rb_io_wait(self, RB_INT2NUM(events), timeout);
 
     if (result == Qfalse) {
         VALUE rai = rsock_addrinfo_new((struct sockaddr *)sockaddr, len, PF_UNSPEC, 0, 0, Qnil, Qnil);
@@ -524,8 +543,8 @@ wait_connectable(VALUE self, VALUE timeout, const struct sockaddr *sockaddr, int
     if (revents < 0)
         return -1;
 
-    sockerrlen = (socklen_t)sizeof(sockerr);
-    if (getsockopt(fd, SOL_SOCKET, SO_ERROR, (void *)&sockerr, &sockerrlen) < 0)
+    sockerr = pending_sockerr(fd);
+    if (sockerr < 0)
         return -1;
 
     switch (sockerr) {
@@ -580,8 +599,8 @@ socks_connect_blocking(void *data)
 }
 #endif
 
-int
-rsock_connect(VALUE self, const struct sockaddr *sockaddr, int len, int socks, VALUE timeout)
+static int
+connect_internal(VALUE self, const struct sockaddr *sockaddr, int len, int socks, VALUE timeout)
 {
     int descriptor = rb_io_descriptor(self);
     rb_blocking_function_t *func = connect_blocking;
@@ -609,6 +628,70 @@ rsock_connect(VALUE self, const struct sockaddr *sockaddr, int len, int socks, V
         }
     }
     return status;
+}
+
+#ifdef _WIN32
+struct connect_internal_arg {
+    VALUE self;
+    rb_io_t *fptr;
+    const struct sockaddr *sockaddr;
+    int len;
+    int socks;
+    VALUE timeout;
+};
+
+static VALUE
+connect_internal_call(VALUE value)
+{
+    struct connect_internal_arg *arg = (struct connect_internal_arg *)value;
+    return INT2FIX(connect_internal(arg->self, arg->sockaddr, arg->len, arg->socks, arg->timeout));
+}
+
+static VALUE
+connect_back_to_blocking(VALUE value)
+{
+    struct connect_internal_arg *arg = (struct connect_internal_arg *)value;
+    int save_errno = errno;
+
+    /* The caller reads errno right after a failed connect(2), and another
+     * thread may have closed the socket while the connection was pending. */
+    if (arg->fptr->fd >= 0) fcntl(arg->fptr->fd, F_SETFL, 0);
+    errno = save_errno;
+
+    return Qnil;
+}
+#endif
+
+int
+rsock_connect(VALUE self, const struct sockaddr *sockaddr, int len, int socks, VALUE timeout)
+{
+#ifdef _WIN32
+    if (NIL_P(timeout)) timeout = rb_io_timeout(self);
+
+    if (!NIL_P(timeout)) {
+        /*
+         * Sockets stay blocking on Windows (see rsock_make_fd_nonblock), so
+         * connect(2) does not return until Winsock gives up after its own
+         * timeout and wait_connectable, which applies the given one, is never
+         * reached.  Connect in non-blocking mode instead.  fcntl(2) has no
+         * F_GETFL here, so the socket is left blocking afterwards rather than
+         * put back to whatever it was.  [Bug #19609]
+         */
+        struct connect_internal_arg arg = {
+            .self = self,
+            .sockaddr = sockaddr,
+            .len = len,
+            .socks = socks,
+            .timeout = timeout,
+        };
+        RB_IO_POINTER(self, arg.fptr);
+        rb_io_set_nonblock(arg.fptr);
+
+        return FIX2INT(rb_ensure(connect_internal_call, (VALUE)&arg,
+                                 connect_back_to_blocking, (VALUE)&arg));
+    }
+#endif
+    return connect_internal(self, sockaddr, len, socks, timeout);
 }
 
 void
