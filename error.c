@@ -1447,6 +1447,7 @@ VALUE rb_eNoMatchingPatternKeyError;
 VALUE rb_eScriptError;
 VALUE rb_eSyntaxError;
 VALUE rb_eLoadError;
+VALUE rb_eAbstractMethodError;
 
 VALUE rb_eSystemCallError;
 VALUE rb_mErrno;
@@ -3479,10 +3480,9 @@ syserr_eqq(VALUE self, VALUE exc)
 /*
  *  Document-class: ScriptError
  *
- *  ScriptError is the superclass for errors raised when a script
- *  can not be executed because of a +LoadError+,
- *  +NotImplementedError+ or a +SyntaxError+. Note these type of
- *  +ScriptErrors+ are not +StandardError+ and will not be
+ *  ScriptError is the superclass for +AbstractMethodError+,
+ *  +LoadError+, +NotImplementedError+ and +SyntaxError+.
+ *  Note these type of +ScriptErrors+ are not +StandardError+ and will not be
  *  rescued unless it is specified explicitly (or its ancestor
  *  +Exception+).
  */
@@ -3510,6 +3510,25 @@ syserr_eqq(VALUE self, VALUE exc)
  *  <em>raises the exception:</em>
  *
  *     LoadError: no such file to load -- this/file/does/not/exist
+ */
+
+/*
+ *  Document-class: AbstractMethodError
+ *
+ *  Raised when an abstract method is called; that is, a method that is
+ *  expected to be overridden in a subclass.
+ *
+ *     class Shape
+ *       def area
+ *         raise AbstractMethodError, "subclass must implement #area"
+ *       end
+ *     end
+ *
+ *     Shape.new.area
+ *
+ *  <em>raises the exception:</em>
+ *
+ *     AbstractMethodError: subclass must implement #area
  */
 
 /*
@@ -3674,6 +3693,7 @@ syserr_eqq(VALUE self, VALUE exc)
  *
  *  * NoMemoryError
  *  * ScriptError
+ *    * AbstractMethodError
  *    * LoadError
  *    * NotImplementedError
  *    * SyntaxError
@@ -3813,6 +3833,7 @@ Init_Exception(void)
     /* the path that failed to load */
     rb_attr(rb_eLoadError, path, TRUE, FALSE, FALSE);
 
+    rb_eAbstractMethodError = rb_define_class("AbstractMethodError", rb_eScriptError);
     rb_eNotImpError = rb_define_class("NotImplementedError", rb_eScriptError);
 
     rb_eNameError     = rb_define_class("NameError", rb_eStandardError);
