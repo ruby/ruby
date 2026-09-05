@@ -5012,8 +5012,14 @@ kill(rb_pid_t pid, int sig)
     switch (sig) {
       case 0:
         RUBY_CRITICAL {
-            HANDLE hProc =
-                OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, (DWORD)pid);
+            HANDLE hProc;
+            struct ChildRecord *child = FindChildSlot(pid);
+            if (child) {
+                hProc = child->hProcess;
+            }
+            else {
+                hProc = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, (DWORD)pid);
+            }
             if (hProc == NULL || hProc == INVALID_HANDLE_VALUE) {
                 if (GetLastError() == ERROR_INVALID_PARAMETER) {
                     errno = ESRCH;
@@ -5024,7 +5030,24 @@ kill(rb_pid_t pid, int sig)
                 ret = -1;
             }
             else {
-                CloseHandle(hProc);
+                DWORD status;
+                if (!GetExitCodeProcess(hProc, &status)) {
+                    errno = map_errno(GetLastError());
+                    ret = -1;
+                }
+                else if (status != STILL_ACTIVE) {
+                    /* The process has exited, but its handle is still
+                     * open elsewhere (e.g., a child spawned by
+                     * IO.popen).  A process which exited with the
+                     * code STILL_ACTIVE (259) cannot be distinguished
+                     * from a running process, due to the Windows API
+                     * limitation. */
+                    errno = ESRCH;
+                    ret = -1;
+                }
+                if (!child) {
+                    CloseHandle(hProc);
+                }
             }
         }
         break;
@@ -5050,7 +5073,7 @@ kill(rb_pid_t pid, int sig)
       case SIGKILL:
         RUBY_CRITICAL {
             HANDLE hProc;
-            struct ChildRecord* child = FindChildSlot(pid);
+            struct ChildRecord *child = FindChildSlot(pid);
             if (child) {
                 hProc = child->hProcess;
             }
