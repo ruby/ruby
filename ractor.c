@@ -3343,7 +3343,7 @@ ractor_native_shallow_copy(VALUE obj)
 
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
-        copy = rb_obj_alloc(rb_obj_class(obj));
+        copy = rb_obj_alloc_copy(obj);
         rb_obj_copy_ivar(copy, obj);
         break;
       case T_STRING:
@@ -3356,11 +3356,11 @@ ractor_native_shallow_copy(VALUE obj)
         copy = rb_hash_dup(obj);
         break;
       case T_STRUCT:
-        copy = rb_obj_alloc(rb_obj_class(obj));
+        copy = rb_obj_alloc_copy(obj);
         rb_struct_init_copy(copy, obj);
         break;
       case T_MATCH:
-        copy = rb_obj_alloc(rb_obj_class(obj));
+        copy = rb_obj_alloc_copy(obj);
         rb_match_init_copy(copy, obj);
         break;
       case T_DATA:

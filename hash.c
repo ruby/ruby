@@ -1594,11 +1594,22 @@ rb_hash_alloc_copy(VALUE klass, VALUE src)
 }
 
 static VALUE
-empty_hash_alloc(VALUE klass)
+empty_hash_alloc2(VALUE klass, VALUE src)
 {
     RUBY_DTRACE_CREATE_HOOK(HASH, 0);
 
-    return hash_alloc_capa(klass, 0);
+    if (UNDEF_P(src)) {
+        return hash_alloc_capa(klass, 0);
+    }
+
+    RUBY_ASSERT(RB_TYPE_P(src, T_HASH));
+    return hash_alloc_capa(klass, RHASH_SIZE(src));
+}
+
+static VALUE
+empty_hash_alloc(VALUE klass)
+{
+    return empty_hash_alloc2(klass, Qundef);
 }
 
 static VALUE
@@ -7704,7 +7715,7 @@ Init_Hash(void)
 
     rb_include_module(rb_cHash, rb_mEnumerable);
 
-    rb_define_alloc_func(rb_cHash, empty_hash_alloc);
+    rb_define_copy_alloc_func(rb_cHash, empty_hash_alloc2, empty_hash_alloc);
     rb_define_singleton_method(rb_cHash, "[]", rb_hash_s_create, -1);
     rb_define_singleton_method(rb_cHash, "try_convert", rb_hash_s_try_convert, 1);
     rb_define_method(rb_cHash, "initialize_copy", rb_hash_replace, 1);

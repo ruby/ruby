@@ -688,10 +688,9 @@ class_boot_boxable(VALUE super, bool boxable)
 
     class_associate_super(klass, super, true);
     if (super && !UNDEF_P(super)) {
-        RCLASS_SET_ALLOCATOR(klass, RCLASS_ALLOCATOR(super));
+        RCLASS_INHERIT_ALLOCATOR(klass, super);
         rb_class_set_initialized(klass);
     }
-
     return (VALUE)klass;
 }
 
