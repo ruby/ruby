@@ -1508,6 +1508,172 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_raise(ArgumentError) { IO::Buffer.for("\xFF").bit_count(1, 1) }
   end
 
+  def test_index_integer
+    buffer = IO::Buffer.for("Hello World")
+
+    assert_equal 4,  buffer.index("o".ord)
+    assert_equal 0,  buffer.index("H".ord)
+    assert_equal 10, buffer.index("d".ord)
+    assert_nil       buffer.index("!".ord)
+
+    # NUL is an ordinary byte here, not a terminator:
+    assert_equal 5, IO::Buffer.for("Hello\x00World").index(0)
+  end
+
+  def test_index_string
+    buffer = IO::Buffer.for("Hello World")
+
+    assert_equal 0,  buffer.index("Hello")
+    assert_equal 6,  buffer.index("World")
+    assert_equal 4,  buffer.index("o")
+    assert_equal 0,  buffer.index("Hello World")
+    assert_nil       buffer.index("world")
+    assert_nil       buffer.index("Hello!")
+
+    assert_equal 6, buffer.index("World".dup.force_encoding(Encoding::UTF_8))
+  end
+
+  def test_index_string_long
+    # Values longer than SIZEOF_VALUE take a different search path internally:
+    buffer = IO::Buffer.for(("x" * 100) + "abcdefghijklmnop" + ("y" * 100))
+
+    assert_equal 100, buffer.index("abcdefghijklmnop")
+    assert_nil        buffer.index("abcdefghijklmnopq")
+  end
+
+  def test_index_binary
+    buffer = IO::Buffer.for("\x00\x01\xFF\xFE\x00\x01")
+
+    assert_equal 2, buffer.index("\xFF\xFE".b)
+    assert_equal 0, buffer.index("\x00\x01".b)
+    assert_equal 4, buffer.index("\x00\x01".b, 1)
+  end
+
+  def test_index_buffer
+    buffer = IO::Buffer.for("Hello World")
+
+    assert_equal 6, buffer.index(IO::Buffer.for("World"))
+    assert_equal 3, buffer.index(IO::Buffer.for("lo W"))
+    assert_equal 4, buffer.index(IO::Buffer.for("o"))
+    assert_nil      buffer.index(IO::Buffer.for("world"))
+
+    assert_equal 6, buffer.index(buffer.slice(6, 5))
+  end
+
+  def test_index_invalid_object
+    buffer = IO::Buffer.for("Hello World")
+
+    assert_raise_with_message(TypeError, "expected Integer, String or IO::Buffer, not Symbol") { buffer.index(:World) }
+    assert_raise(TypeError) { buffer.index(nil) }
+    assert_raise(TypeError) { buffer.index(1.0) }
+
+    assert_raise(ArgumentError) { buffer.index(256) }
+    assert_raise(ArgumentError) { buffer.index(-1) }
+  end
+
+  def test_index_slice
+    buffer = IO::Buffer.for("Hello World")
+    slice = buffer.slice(6, 5)
+
+    # Offsets are relative to the slice, not to the underlying buffer:
+    assert_equal 1, slice.index("o")
+    assert_equal 0, slice.index("World")
+    assert_nil      slice.index("Hello")
+    assert_nil      slice.index("H")
+  end
+
+  def test_index_offset
+    buffer = IO::Buffer.for("Hello World")
+
+    # The result is relative to the start of the buffer, not to the offset:
+    assert_equal 4, buffer.index("o", 0)
+    assert_equal 4, buffer.index("o", 4)
+    assert_equal 7, buffer.index("o", 5)
+    assert_nil      buffer.index("o", 8)
+
+    # An offset equal to the size searches an empty range:
+    assert_nil buffer.index("o", buffer.size)
+  end
+
+  def test_index_length
+    buffer = IO::Buffer.for("Hello World")
+
+    assert_equal 4, buffer.index("o", 0, 5)
+    assert_nil      buffer.index("o", 0, 4)
+    assert_equal 7, buffer.index("o", 5, 3)
+    assert_nil      buffer.index("o", 5, 2)
+
+    # The search value must fit entirely within the range:
+    assert_equal 6, buffer.index("World", 0, 11)
+    assert_nil      buffer.index("World", 0, 10)
+
+    assert_nil buffer.index("H", 0, 0)
+  end
+
+  def test_index_empty_object
+    buffer = IO::Buffer.for("Hello World")
+
+    assert_equal 0, buffer.index("")
+    assert_equal 3, buffer.index("", 3)
+    assert_equal 11, buffer.index("", buffer.size)
+    assert_equal 3, buffer.index("", 3, 0)
+    assert_equal 0, buffer.index(IO::Buffer.new(0))
+
+    assert_equal 0, IO::Buffer.new(0).index("")
+  end
+
+  def test_index_object_longer_than_range
+    buffer = IO::Buffer.for("Hello")
+
+    assert_nil buffer.index("Hello World")
+    assert_nil buffer.index("Hello", 1)
+    assert_nil buffer.index("ello", 0, 4)
+    assert_nil IO::Buffer.new(0).index("H")
+  end
+
+  def test_index_out_of_range
+    buffer = IO::Buffer.for("Hello World")
+
+    # Following String#index, an offset past the end does not match, and a
+    # length past the end searches to the end of the buffer:
+    assert_nil      buffer.index("o", 12)
+    assert_nil      buffer.index("", 12)
+    assert_equal 4, buffer.index("o", 0, 12)
+    assert_equal 7, buffer.index("o", 6, 6)
+    assert_equal 6, buffer.index("World", 0, 100)
+
+    # Negative offsets and lengths remain an error:
+    assert_raise(ArgumentError) { buffer.index("o", -1) }
+    assert_raise(ArgumentError) { buffer.index("o", 0, -1) }
+    assert_raise(ArgumentError) { buffer.index("o", 12, -1) }
+  end
+
+  def test_index_freed
+    buffer = IO::Buffer.new(128)
+    buffer.set_string("Hello World")
+    buffer.free
+
+    # A freed buffer is empty rather than invalid, so there is nothing to find:
+    assert_nil buffer.index("World")
+    assert_equal 0, buffer.index("")
+    assert_nil buffer.index("World", 1)
+    assert_nil buffer.index("", 1)
+  end
+
+  def test_index_invalidated
+    inner = IO::Buffer.new(IO::Buffer::PAGE_SIZE)
+    slice = inner.slice(0, 16)
+    inner.free
+
+    assert_raise(IO::Buffer::InvalidatedError) { slice.index("A") }
+
+    inner2 = IO::Buffer.new(IO::Buffer::PAGE_SIZE)
+    object = inner2.slice(0, 16)
+    inner2.free
+
+    assert_raise(IO::Buffer::InvalidatedError) { IO::Buffer.for("Hello World").index(object) }
+  end
+
   def test_shared
     message = "Hello World"
     buffer = IO::Buffer.new(64, IO::Buffer::MAPPED | IO::Buffer::SHARED)

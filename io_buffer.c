@@ -4319,6 +4319,161 @@ static const rb_memory_view_entry_t io_buffer_memory_view_entry = {
     .available_p_func = io_buffer_memory_view_available_p,
 };
 
+static const unsigned char *
+memory_index(const unsigned char *base, size_t size, const unsigned char *object_base, size_t object_size)
+{
+    RUBY_ASSERT(object_size > 0);
+    RUBY_ASSERT(object_size <= size);
+
+    if (object_size == 1) {
+        return memchr(base, *object_base, size);
+    }
+
+    // `rb_memsearch` takes `long` sizes, so where `size_t` is bigger, the range
+    // is searched in chunks overlapping by `object_size-1` bytes, so that a
+    // match straddling a chunk boundary is still found:
+    while (size >= object_size) {
+        size_t chunk = size < (size_t)LONG_MAX ? size : (size_t)LONG_MAX;
+
+        long index = rb_memsearch(object_base, (long)object_size, base, (long)chunk, rb_ascii8bit_encoding());
+
+        if (index >= 0) return base + index;
+
+        if (chunk == size) break;
+
+        size_t advance = chunk - (object_size - 1);
+        base += advance;
+        size -= advance;
+    }
+
+    return NULL;
+}
+
+// `byte` provides the storage when the object is a single Integer byte, so it
+// must outlive the extracted bytes; likewise `object` in the remaining cases.
+static inline void
+io_buffer_extract_object(VALUE object, unsigned char *byte, const void **base, size_t *size)
+{
+    if (RB_INTEGER_TYPE_P(object)) {
+        if (rb_int_negative_p(object)) {
+            rb_raise(rb_eArgError, "Byte value can't be negative!");
+        }
+
+        unsigned long value = NUM2ULONG(object);
+
+        if (value > 0xFF) {
+            rb_raise(rb_eArgError, "Byte value must be at most 255!");
+        }
+
+        *byte = (unsigned char)value;
+        *base = byte;
+        *size = 1;
+    }
+    else if (RB_TYPE_P(object, T_STRING)) {
+        *base = RSTRING_PTR(object);
+        *size = RSTRING_LEN(object);
+    }
+    else if (rb_obj_is_kind_of(object, rb_cIOBuffer)) {
+        rb_io_buffer_get_bytes_for_reading(object, base, size);
+    }
+    else {
+        rb_raise(rb_eTypeError, "expected Integer, String or IO::Buffer, not %"PRIsVALUE,
+                 rb_obj_class(object));
+    }
+}
+
+/*
+ *  call-seq: index(object, [offset, [length]]) -> integer or nil
+ *
+ *  Returns the offset of the first occurrence of +object+ in the buffer, or
+ *  +nil+ if it does not occur. The +object+ may be an Integer in the range
+ *  0..255, a String, or another IO::Buffer. The search is byte-oriented: the
+ *  encoding of a String +object+ is ignored.
+ *
+ *    buffer = IO::Buffer.for("Hello World")
+ *    buffer.index("o")
+ *    # => 4
+ *    buffer.index("o".ord)
+ *    # => 4
+ *    buffer.index(IO::Buffer.for("World"))
+ *    # => 6
+ *    buffer.index("!")
+ *    # => nil
+ *
+ *  The search may be restricted to a subrange using +offset+ and +length+, and
+ *  the returned offset remains relative to the start of the buffer. An empty
+ *  +object+ matches at +offset+:
+ *
+ *    buffer.index("o", 5)
+ *    # => 7
+ *    buffer.index("o", 0, 4)
+ *    # => nil
+ *    buffer.index("", 3)
+ *    # => 3
+ *
+ *  Following String#index, a range outside the buffer is not an error: an
+ *  +offset+ beyond the end returns +nil+, and a +length+ beyond the end searches
+ *  to the end of the buffer:
+ *
+ *    buffer.index("o", 100)
+ *    # => nil
+ *    buffer.index("o", 0, 100)
+ *    # => 4
+ */
+static VALUE
+io_buffer_index(int argc, VALUE *argv, VALUE self)
+{
+    rb_check_arity(argc, 1, 3);
+
+    struct rb_io_buffer *buffer = get_io_buffer(self);
+
+    size_t offset = 0;
+    if (argc >= 2 && !NIL_P(argv[1])) {
+        offset = io_buffer_extract_offset(argv[1]);
+    }
+
+    size_t length = SIZE_MAX;
+    if (argc >= 3 && !NIL_P(argv[2])) {
+        length = io_buffer_extract_length(argv[2]);
+    }
+
+    // Take the pointers only once the arguments are extracted: they must not be
+    // held across anything which could free, resize or move the memory.
+    const void *base;
+    size_t size;
+    io_buffer_get_bytes_for_reading(buffer, &base, &size);
+
+    VALUE object = argv[0];
+    unsigned char byte;
+    const void *object_base;
+    size_t object_size;
+    io_buffer_extract_object(object, &byte, &object_base, &object_size);
+
+    if (object_size > LONG_MAX) {
+        rb_raise(rb_eArgError, "The given value is bigger than the maximum search size!");
+    }
+
+    // Unlike the other range operations, an offset or length outside the buffer
+    // cannot match rather than being an error, as with String#index:
+    if (offset > size) return Qnil;
+
+    if (length > size - offset) length = size - offset;
+
+    if (object_size == 0) return SIZET2NUM(offset);
+    if (object_size > length) return Qnil;
+
+    RUBY_ASSERT(base != NULL);
+
+    const unsigned char *search_base = (const unsigned char *)base + offset;
+    const unsigned char *found = memory_index(search_base, length, object_base, object_size);
+
+    RB_GC_GUARD(object);
+
+    if (!found) return Qnil;
+
+    return SIZET2NUM(offset + (size_t)(found - search_base));
+}
+
 /*
  *  Document-class: IO::Buffer
  *
@@ -4590,6 +4745,9 @@ Init_IO_Buffer(void)
     rb_define_method(rb_cIOBuffer, "not!", io_buffer_not_inplace, 0);
 
     rb_define_method(rb_cIOBuffer, "bit_count", io_buffer_bit_count, -1);
+
+    // Searching:
+    rb_define_method(rb_cIOBuffer, "index", io_buffer_index, -1);
 
     // IO operations:
     rb_define_method(rb_cIOBuffer, "read", io_buffer_read, -1);
