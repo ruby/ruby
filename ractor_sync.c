@@ -1009,6 +1009,7 @@ ractor_value(rb_execution_context_t *ec, VALUE self)
         /* Move r's rb_gc_register_mark_object pins to the joiner before the merge
          * below sweeps r's objspace, or the objects pinned there lose their root. */
         rb_ractor_absorb_registered_marks(GET_RACTOR(), r);
+        rb_ractor_absorb_registered_addrs_without_gc(GET_RACTOR(), r);
 
         rb_gc_objspace_absorb_into_current(&r->objspace);
 
