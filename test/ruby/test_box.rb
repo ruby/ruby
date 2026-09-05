@@ -1195,6 +1195,41 @@ class TestBox < Test::Unit::TestCase
     end;
   end
 
+  def test_symbol_to_proc_with_escaped_binding
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      # Regression test for [BUG] Local ep without cme/box, flags: 66660087.
+      # binding() may escape TOP env and propagate LOCAL to IFUNC frames.
+      assert_nothing_raised do
+        using Module.new {
+          refine ::Binding do
+            def eval_methods
+              ::Kernel.instance_method(:methods).bind_call(receiver)
+            end
+          end
+        }
+
+        result = binding.eval_methods.map(&:to_s)
+        assert_kind_of Array, result
+        assert result.all? { |x| x.is_a?(String) }
+      end
+    end;
+  end
+
+  def test_method_to_proc_called_from_ruby_frame
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      # Regression test for [BUG] Local ep without cme/box, flags: 77770021.
+      # An ifunc proc invoked directly from a Ruby frame (e.g. Proc#call)
+      # has no enclosing CFUNC frame, so the caller Ruby frame determines
+      # the box.
+      assert_nothing_raised do
+        method(:require).to_proc.call("English")
+      end
+      assert_equal 1, $LOADED_FEATURES.grep(/English/).size
+    end;
+  end
+
   def test_very_basic_method_calls_and_constants
     assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
     begin;

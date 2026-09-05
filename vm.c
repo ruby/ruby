@@ -118,53 +118,62 @@ VM_EP_RUBY_LEP(const rb_execution_context_t *ec, const rb_control_frame_t *curre
     const rb_control_frame_t * const eocfp = RUBY_VM_END_CONTROL_FRAME(ec); /* end of control frame pointer */
     const rb_control_frame_t *cfp = current_cfp;
 
-    if (VM_ENV_FRAME_TYPE_P(ep, VM_FRAME_MAGIC_IFUNC)) {
-        ep = VM_EP_LEP(current_cfp->ep);
-        /**
-         * Returns CFUNC frame only in this case.
-         *
-         * Usually CFUNC frame doesn't represent the current box and it should operate
-         * the caller box. See the example:
-         *
-         * # in the main box
-         * module Kernel
-         *   def foo = "foo"
-         *   module_function :foo
-         * end
-         *
-         * In the case above, `module_function` is defined in the root box.
-         * If `module_function` worked in the root box, `Kernel#foo` is invisible
-         * from it and it causes NameError: undefined method `foo` for module `Kernel`.
-         *
-         * But in cases of IFUNC (blocks written in C), IFUNC doesn't have its own box
-         * and its local env frame will be CFUNC frame.
-         * For example, `Enumerator#chunk` calls IFUNC blocks, written as `chunk_i` function.
-         *
-         * [1].chunk{ it.even? }.each{ ... }
-         *
-         * Before calling the Ruby block `{ it.even? }`, `#chunk` calls `chunk_i` as IFUNC
-         * to iterate the array's members (it's just like `#each`).
-         * We expect that `chunk_i` works as expected by the implementation of `#chunk`
-         * without any overwritten definitions from boxes.
-         * So the definitions on IFUNC frames should be equal to the caller CFUNC.
-         */
-        VM_ASSERT(VM_ENV_FRAME_TYPE_P(ep, VM_FRAME_MAGIC_CFUNC));
-        return ep;
-    }
+    /**
+     * For IFUNC frames, returns the ep of the enclosing CFUNC frame.
+     *
+     * Usually CFUNC frame doesn't represent the current box and it should operate
+     * the caller box. See the example:
+     *
+     * # in the main box
+     * module Kernel
+     *   def foo = "foo"
+     *   module_function :foo
+     * end
+     *
+     * In the case above, `module_function` is defined in the root box.
+     * If `module_function` worked in the root box, `Kernel#foo` is invisible
+     * from it and it causes NameError: undefined method `foo` for module `Kernel`.
+     *
+     * But in cases of IFUNC (blocks written in C), IFUNC doesn't have its own box
+     * and its local env frame will be CFUNC frame.
+     * For example, `Enumerator#chunk` calls IFUNC blocks, written as `chunk_i` function.
+     *
+     * [1].chunk{ it.even? }.each{ ... }
+     *
+     * Before calling the Ruby block `{ it.even? }`, `#chunk` calls `chunk_i` as IFUNC
+     * to iterate the array's members (it's just like `#each`).
+     * We expect that `chunk_i` works as expected by the implementation of `#chunk`
+     * without any overwritten definitions from boxes.
+     * So the definitions on IFUNC frames should be equal to the caller CFUNC.
+     *
+     * NOTE: We traverse the cfp chain directly instead of using VM_EP_LEP.
+     * When an IFUNC env is escaped to the heap (e.g., due to a surrounding
+     * `binding` call), the env may acquire VM_ENV_FLAG_LOCAL, causing VM_EP_LEP
+     * to return the IFUNC ep itself rather than the enclosing CFUNC ep.
+     *
+     * NOTE: An IFUNC may also have no enclosing CFUNC frame at all, when an
+     * ifunc proc is invoked directly from Ruby code (e.g. Proc#call on a proc
+     * created by Method#to_proc). In that case the caller Ruby frame
+     * determines the box, so continue to the local ep walk below.
+     */
+    while (VM_ENV_FRAME_TYPE_P(ep, VM_FRAME_MAGIC_IFUNC) ||
+           VM_ENV_FRAME_TYPE_P(ep, VM_FRAME_MAGIC_CFUNC)) {
+        bool from_ifunc = VM_ENV_FRAME_TYPE_P(ep, VM_FRAME_MAGIC_IFUNC);
 
-    while (VM_ENV_FRAME_TYPE_P(ep, VM_FRAME_MAGIC_CFUNC)) {
         cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
-
-        VM_BOX_ASSERT(cfp, "CFUNC should have a valid previous control frame");
-        VM_BOX_ASSERT(cfp < eocfp, "CFUNC should have a valid caller frame");
-        if (!cfp || cfp >= eocfp) {
+        VM_BOX_ASSERT(RUBY_VM_VALID_CONTROL_FRAME_P(cfp, eocfp), "Valid caller control frame expected");
+        if (!RUBY_VM_VALID_CONTROL_FRAME_P(cfp, eocfp)) {
             return NULL;
         }
 
-        VM_BOX_ASSERT(cfp->ep, "CFUNC should have a valid caller frame with env");
+        VM_BOX_ASSERT(cfp->ep, "Caller control frame should have a valid env");
         ep = cfp->ep;
         if (!ep) {
             return NULL;
+        }
+
+        if (from_ifunc && VM_ENV_FRAME_TYPE_P(ep, VM_FRAME_MAGIC_CFUNC)) {
+            return ep;
         }
     }
 
