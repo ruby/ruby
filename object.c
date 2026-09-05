@@ -3439,9 +3439,16 @@ rb_check_to_i(VALUE val)
 }
 
 static VALUE
+rb_try_to_int(VALUE val)
+{
+    return try_to_int(val, idTo_int, FALSE);
+}
+
+static VALUE
 rb_convert_to_integer(VALUE val, int base, int raise_exception)
 {
     VALUE tmp;
+    int state;
 
     if (base) {
         tmp = rb_check_string_type(val);
@@ -3473,9 +3480,12 @@ rb_convert_to_integer(VALUE val, int base, int raise_exception)
         rb_cant_convert(val, "Integer");
     }
 
-    tmp = rb_protect(rb_check_to_int, val, NULL);
-    if (RB_INTEGER_TYPE_P(tmp)) return tmp;
+    tmp = rb_protect(rb_try_to_int, val, &state);
+    if (!state && RB_INTEGER_TYPE_P(tmp)) return tmp;
     rb_set_errinfo(Qnil);
+    if (!state && !NIL_P(tmp)) {
+        rb_cant_convert_invalid_return(val, "Integer", "to_int", tmp);
+    }
     if (!NIL_P(tmp = rb_check_string_type(val))) {
         return rb_str_convert_to_inum(tmp, base, TRUE, raise_exception);
     }
