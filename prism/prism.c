@@ -1359,16 +1359,14 @@ pm_check_value_expression(pm_parser_t *parser, pm_node_t *node) {
                 node = UP(cast->statements);
                 break;
             }
-            case PM_AND_NODE: {
-                pm_and_node_t *cast = (pm_and_node_t *) node;
-                node = cast->left;
-                break;
-            }
-            case PM_OR_NODE: {
-                pm_or_node_t *cast = (pm_or_node_t *) node;
-                node = cast->left;
-                break;
-            }
+            case PM_AND_NODE:
+            case PM_OR_NODE:
+                // The left operand of an and/or node was already checked for a
+                // value when the node was created, so descending into it again
+                // would re-report the same void value and, in a chain such as
+                // `a && a && ...`, walk the whole left branch on every operator,
+                // which is quadratic in the length of the chain.
+                return NULL;
             case PM_LOCAL_VARIABLE_WRITE_NODE: {
                 pm_local_variable_write_node_t *cast = (pm_local_variable_write_node_t *) node;
 
