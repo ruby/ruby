@@ -6,11 +6,11 @@ use std::mem::take;
 use std::rc::Rc;
 use crate::bitset::BitSet;
 use crate::codegen::{perf_symbol_range_start, perf_symbol_range_end, register_with_perf};
-use crate::cruby::{IseqPtr, RUBY_OFFSET_CFP_ISEQ, RUBY_OFFSET_CFP_JIT_RETURN, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32, VALUE, ZJIT_STACK_MAP_BASE_PTR_INDEX_MASK, ZJIT_STACK_MAP_BASE_PTR_SIZE_SHIFT, ZJIT_STACK_MAP_BASE_PTR_TAG, ZJIT_STACK_MAP_SHIFT, ZJIT_STACK_MAP_SKIP_TAG, ZJIT_STACK_MAP_VREG_TAG, vm_stack_canary, YarvInsnIdx, zjit_jit_frame, local_size_and_idx_to_ep_offset};
+use crate::cruby::{IseqPtr, RUBY_OFFSET_CFP_ISEQ, RUBY_OFFSET_CFP_JIT_RETURN, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32, VALUE, ZJIT_STACK_MAP_BASE_PTR_INDEX_MASK, ZJIT_STACK_MAP_BASE_PTR_SIZE_SHIFT, ZJIT_STACK_MAP_BASE_PTR_TAG, ZJIT_STACK_MAP_SHIFT, ZJIT_STACK_MAP_SKIP_TAG, ZJIT_STACK_MAP_VREG_TAG, vm_stack_canary, zjit_jit_frame, local_size_and_idx_to_ep_offset};
 use crate::hir::{Invariant, SideExitReason};
 use crate::hir;
 use crate::options::{TraceExits, PerfMap, get_option};
-use crate::payload::{IseqVersionRef, get_or_create_iseq_payload};
+use crate::payload::IseqVersionRef;
 use crate::stats::{exit_counter_ptr, exit_counter_ptr_for_opcode, side_exit_counter, CompileError};
 use crate::virtualmem::CodePtr;
 use crate::asm::{CodeBlock, Label};
@@ -628,8 +628,7 @@ pub struct SideExit {
     /// side exit. The current frame's stack and locals are still handled by
     /// `stack` and `locals` above.
     pub stack_map: Option<StackMap>,
-    /// If set, the side exit will profile the current instruction and invalidate
-    /// the compiled ISEQ for recompilation.
+    /// If set, the side exit will invalidate the compiled ISEQ for recompilation.
     pub recompile: Option<SideExitRecompile>,
 }
 
@@ -639,11 +638,6 @@ pub struct SideExitRecompile {
     /// The compiled unit whose version must be invalidated to force a recompile. For inlined
     /// methods, this will be the outer function it was inlined into.
     pub compiled_iseq: Opnd,
-    /// The exiting frame's ISEQ, which owns the profile entry for `insn_idx`. For
-    /// an exit out of inlined code this is the inlined callee, not the compiled unit.
-    pub frame_iseq: Opnd,
-    /// The exiting frame's instruction index within `frame_iseq`.
-    pub insn_idx: u32,
 }
 
 /// Payload of `Target::SideExit`, boxed to keep `Target` (and every `Insn`
@@ -3163,15 +3157,9 @@ impl Assembler
 
         fn compile_exit_recompile(asm: &mut Assembler, exit: &SideExit) {
             if let Some(recompile) = &exit.recompile {
-                let payload = get_or_create_iseq_payload(exit.iseq);
-                payload.reset_profiles_remaining(recompile.insn_idx as YarvInsnIdx);
                 use crate::codegen::exit_recompile;
-                asm_comment!(asm, "profile and maybe recompile");
-                asm_ccall!(asm, exit_recompile,
-                    recompile.compiled_iseq,
-                    recompile.frame_iseq,
-                    recompile.insn_idx.into()
-                );
+                asm_comment!(asm, "invalidate for recompilation");
+                asm_ccall!(asm, exit_recompile, recompile.compiled_iseq);
             }
         }
 

@@ -408,12 +408,6 @@ pub struct ProfileEntry {
     profiles_remaining: NumProfiles,
 }
 
-impl ProfileEntry {
-    pub fn set_profiles_remaining(&mut self, num_profiles: NumProfiles) {
-        self.profiles_remaining = num_profiles;
-    }
-}
-
 #[derive(Debug)]
 pub struct IseqProfile {
     /// Sparse storage of per-instruction profile data, sorted by instruction index.
@@ -457,11 +451,6 @@ impl IseqProfile {
         let idx = insn_idx as u32;
         self.entries.binary_search_by_key(&idx, |e| e.insn_idx)
             .ok().map(|i| &self.entries[i])
-    }
-
-    /// Check if enough profiles have been gathered for this instruction.
-    pub fn done_profiling_at(&self, insn_idx: YarvInsnIdx) -> bool {
-        self.entry(insn_idx).map_or(false, |e| e.profiles_remaining == 0)
     }
 
     /// Get profiled operand types for a given instruction index

@@ -3676,8 +3676,6 @@ fn side_exit_with_recompile(jit: &JITState, function: &Function, state: &FrameSt
     let mut exit = build_side_exit(jit, function, state);
     exit.recompile = recompile.map(|_| SideExitRecompile {
         compiled_iseq: Opnd::Value(VALUE::from(jit.iseq())),
-        frame_iseq: Opnd::Value(VALUE::from(state.iseq)),
-        insn_idx: state.insn_idx() as u32,
     });
     Target::SideExit(Box::new(SideExitTarget { exit, reason }))
 }
@@ -3736,24 +3734,20 @@ macro_rules! c_callable {
 pub(crate) use c_callable;
 
 c_callable! {
-    /// Called from JIT side-exit code to profile operands and trigger recompilation.
-    /// Once enough profiles are gathered, invalidates the compiled unit for recompilation.
+    /// Called from JIT side-exit code to invalidate the compiled unit for recompilation.
     ///
     /// `compiled_iseq_raw` is the ISEQ that was actually compiled. For an exit out
     /// of inlined code, the inliner folds the callee's body into the outer ISEQ, so
     /// the outer ISEQ's version holds the failing guard and must be invalidated to
     /// force a recompile. For non-inlined code, it is the same as the frame ISEQ.
     ///
-    /// `frame_iseq_raw` and `insn_idx` identify the instruction this exit came from,
-    /// whose re-profiling gates the recompile. Both are baked in at compile time,
-    /// where the exit already knows them, rather than read back out of the control
-    /// frame: the control frame describes the exiting frame only because the exit
-    /// wrote its ISEQ and PC there moments earlier, and an exit path that does not
-    /// write them would silently gate the recompile on an unrelated instruction.
-    pub(crate) fn exit_recompile(compiled_iseq_raw: VALUE, frame_iseq_raw: VALUE, insn_idx: u32) {
+    /// The first exit invalidates the version right away. Invalidation resets the
+    /// ISEQ's call counter and re-stubs incoming JIT-to-JIT calls, so every entry
+    /// runs the profiling window in the interpreter before the next compile.
+    pub(crate) fn exit_recompile(compiled_iseq_raw: VALUE) {
         // Fast check before taking the VM lock: skip if the compiled unit is already
         // invalidated or at the version limit. This avoids expensive lock acquisition
-        // on every shape guard exit after the recompile has already been triggered.
+        // on every shape guard exit taken by frames still running the invalidated code.
         // The check is on the compiled unit because that is the version we invalidate.
         {
             let compiled_iseq: IseqPtr = compiled_iseq_raw.as_iseq();
@@ -3768,24 +3762,11 @@ c_callable! {
 
         with_vm_lock(src_loc!(), || {
             let compiled_iseq: IseqPtr = compiled_iseq_raw.as_iseq();
-
-            let should_recompile = with_time_stat(Counter::profile_time_ns, || {
-                get_or_create_iseq_payload(frame_iseq_raw.as_iseq())
-                    .profile.done_profiling_at(insn_idx as YarvInsnIdx)
-            });
-
-            // Once we have enough profiles, invalidate the compiled unit so it
-            // recompiles and reads the freshly recorded profile. We invalidate
-            // `compiled_iseq` rather than `frame_iseq` because an inlined callee has no
-            // compiled code of its own; the outer function it was folded into is what
-            // actually got compiled.
-            if should_recompile {
-                let payload = get_or_create_iseq_payload(compiled_iseq);
-                if let Some(version) = payload.versions.last_mut() {
-                    let cb = ZJITState::get_code_block();
-                    invalidate_iseq_version(cb, compiled_iseq, version);
-                    cb.mark_all_executable();
-                }
+            let payload = get_or_create_iseq_payload(compiled_iseq);
+            if let Some(version) = payload.versions.last_mut() {
+                let cb = ZJITState::get_code_block();
+                invalidate_iseq_version(cb, compiled_iseq, version);
+                cb.mark_all_executable();
             }
         });
     }
@@ -3828,7 +3809,7 @@ c_callable! {
 
             // JIT-to-JIT calls don't eagerly fill nils to non-parameter locals.
             // If we side-exit from function_stub_hit (before JIT code runs), we need to set them here.
-            fn prepare_for_exit(iseq: IseqPtr, cfp: CfpPtr, sp: *mut VALUE, argc: u16, num_opts_filled: u16, compile_error: &CompileError) {
+            fn prepare_for_exit(iseq: IseqPtr, cfp: CfpPtr, sp: *mut VALUE, argc: u16, num_opts_filled: u16, compile_error: Option<&CompileError>) {
                 unsafe {
                     // Caller frames are materialized by the materialize_exit trampoline before unwinding native frames.
                     // The current frame's pc and iseq are already set by function_stub_hit before this point.
@@ -3891,8 +3872,10 @@ c_callable! {
                 }
 
                 // Increment a compile error counter for --zjit-stats
-                if get_option!(stats) {
-                    incr_counter_by(exit_counter_for_compile_error(compile_error), 1);
+                if let Some(compile_error) = compile_error {
+                    if get_option!(stats) {
+                        incr_counter_by(exit_counter_for_compile_error(compile_error), 1);
+                    }
                 }
             }
 
@@ -3922,8 +3905,16 @@ c_callable! {
                 // We'll use this Rc again, so increment the ref count decremented by from_raw.
                 unsafe { Rc::increment_strong_count(iseq_call_ptr as *const IseqCall); }
 
-                prepare_for_exit(iseq, cfp, sp, argc, num_opts_filled, compile_error);
+                prepare_for_exit(iseq, cfp, sp, argc, num_opts_filled, Some(compile_error));
                 return ZJITState::get_materialize_exit_trampoline_with_counter().raw_ptr(cb);
+            }
+
+            // Exit to the interpreter until the callee ISEQ collects enough profiles.
+            if !unsafe { rb_zjit_profile_stub_hit(iseq) } {
+                // Preserve the reference owned by the stub when iseq_call is dropped.
+                unsafe { Rc::increment_strong_count(iseq_call_ptr as *const IseqCall); }
+                prepare_for_exit(iseq, cfp, sp, argc, num_opts_filled, None);
+                return ZJITState::get_materialize_exit_trampoline().raw_ptr(cb);
             }
 
             // Otherwise, attempt to compile the ISEQ. We have to mark_all_executable() beyond this point.
@@ -3937,7 +3928,7 @@ c_callable! {
                 // We'll use this Rc again, so increment the ref count decremented by from_raw.
                 unsafe { Rc::increment_strong_count(iseq_call_ptr as *const IseqCall); }
 
-                prepare_for_exit(iseq, cfp, sp, argc, num_opts_filled, &compile_error);
+                prepare_for_exit(iseq, cfp, sp, argc, num_opts_filled, Some(&compile_error));
                 ZJITState::get_materialize_exit_trampoline_with_counter()
             });
             cb.mark_all_executable();
@@ -3949,9 +3940,12 @@ c_callable! {
 /// Compile an ISEQ for a function stub
 fn function_stub_hit_body(cb: &mut CodeBlock, iseq_call: &IseqCallRef) -> Result<CodePtr, CompileError> {
     // Compile the stubbed ISEQ
-    let IseqCodePtrs { jit_entry_ptrs, .. } = gen_iseq(cb, iseq_call.iseq.get(), None).inspect_err(|err| {
+    let IseqCodePtrs { start_ptr, jit_entry_ptrs } = gen_iseq(cb, iseq_call.iseq.get(), None).inspect_err(|err| {
         debug!("{err:?}: gen_iseq failed: {}", iseq_get_location(iseq_call.iseq.get(), 0));
     })?;
+
+    // The compile above generated the interpreter entry along with the JIT-to-JIT entries, so install it now.
+    unsafe { rb_zjit_iseq_set_jit_entry(iseq_call.iseq.get(), start_ptr.raw_ptr(cb) as *mut c_void); }
 
     // Update the stub to call the code pointer
     let jit_entry_ptr = jit_entry_ptrs[iseq_call.jit_entry_idx.to_usize()];
@@ -3980,8 +3974,19 @@ fn gen_function_stub(cb: &mut CodeBlock, iseq_call: IseqCallRef) -> Result<CodeP
     // any optional positional gaps.
     let argc = iseq_call.argc.to_usize();
     let local_size = unsafe { get_iseq_body_local_table_size(iseq_call.iseq.get()) }.to_usize();
-    for arg_idx in 0..argc {
-        let src = match lir::c_arg_location(arg_idx + 1) { // +1 for self
+
+    // Mirror the argument layout of gen_send_direct: self, then the packed
+    // positional arguments, and the block handler if it exists.
+    let params = unsafe { iseq_call.iseq.get().params() };
+    let mut spills: Vec<(usize, usize)> = (0..argc).map(|arg_idx| (arg_idx + 1, arg_idx)).collect();
+    if params.flags.has_block() != 0 {
+        let block_local_idx: usize = params.block_start.try_into()
+            .expect("ISEQ block_start should be non-negative");
+        spills.push((argc + 1, block_local_idx));
+    }
+
+    for (c_arg_idx, local_idx) in spills {
+        let src = match lir::c_arg_location(c_arg_idx) {
             CArgLocation::Reg(reg) => reg,
             CArgLocation::StackSlot(slot) => {
                 // The stub runs before any frame setup, so stack-passed arguments
@@ -3993,7 +3998,7 @@ fn gen_function_stub(cb: &mut CodeBlock, iseq_call: IseqCallRef) -> Result<CodeP
             }
         };
         asm.store(
-            Opnd::mem(64, SP, -local_size_and_idx_to_bp_offset(local_size, arg_idx) * SIZEOF_VALUE_I32),
+            Opnd::mem(64, SP, -local_size_and_idx_to_bp_offset(local_size, local_idx) * SIZEOF_VALUE_I32),
             src,
         );
     }
