@@ -415,6 +415,9 @@ ruby_thread_set_native(rb_thread_t *th)
 
 static void native_thread_setup(struct rb_native_thread *nt);
 static void native_thread_setup_on_thread(struct rb_native_thread *nt);
+#if defined(__CYGWIN__)
+static void cygwin_rwlock_init(void);
+#endif
 
 // Internal cache of page size:
 static size_t RB_THREAD_PAGE_SIZE;
@@ -424,6 +427,10 @@ Init_native_thread(rb_thread_t *main_th)
 {
     // Get the system page size for later use in stack allocation and stack overflow checks:
     RB_THREAD_PAGE_SIZE = sysconf(_SC_PAGESIZE);
+
+#if defined(__CYGWIN__)
+    cygwin_rwlock_init();
+#endif
 
 #if defined(HAVE_PTHREAD_CONDATTR_SETCLOCK)
     if (condattr_monotonic) {
@@ -1511,6 +1518,23 @@ struct rb_internal_thread_event_hook {
 
 static pthread_rwlock_t rb_internal_thread_event_hooks_rw_lock = PTHREAD_RWLOCK_INITIALIZER;
 
+#if defined(__CYGWIN__)
+/* Cygwin can't reliably initialize a pthread_rwlock_t via
+ * PTHREAD_RWLOCK_INITIALIZER under concurrent first use, so initialize
+ * explicitly here while still single-threaded. */
+static void
+cygwin_rwlock_init(void)
+{
+    int r;
+    if ((r = pthread_rwlock_init(&rb_thread_fork_rw_lock, NULL))) {
+        rb_bug_errno("pthread_rwlock_init", r);
+    }
+    if ((r = pthread_rwlock_init(&rb_internal_thread_event_hooks_rw_lock, NULL))) {
+        rb_bug_errno("pthread_rwlock_init", r);
+    }
+}
+#endif
+
 /* For the GC: whether any thread-event hook is registered right now.  The rwlock
  * makes the answer happen-after any completed registration; a hook registered
  * after this read gets no event from the asking thread (rb_thread_execute_hooks
@@ -1542,6 +1566,13 @@ rb_internal_thread_event_hooks_rw_lock_atfork(void)
     // Direct assignment of PTHREAD_RWLOCK_INITIALIZER is safe and portable.
     rb_internal_thread_event_hooks_rw_lock =
         (pthread_rwlock_t)PTHREAD_RWLOCK_INITIALIZER;
+
+#if defined(__CYGWIN__)
+    int r;
+    if ((r = pthread_rwlock_init(&rb_internal_thread_event_hooks_rw_lock, NULL))) {
+        rb_bug_errno("pthread_rwlock_init", r);
+    }
+#endif
 }
 #endif
 
