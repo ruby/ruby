@@ -445,6 +445,13 @@ VALUE string_spec_RSTRING_PTR_null_terminate(VALUE self, VALUE str, VALUE min_le
   return rb_str_new(end, FIX2LONG(min_length));
 }
 
+#ifdef RUBY_VERSION_IS_4_1
+static VALUE string_spec_rb_str_cstr(VALUE self, VALUE str) {
+  const char *ptr = rb_str_cstr(str);
+  return rb_str_new_cstr(ptr);
+}
+#endif
+
 VALUE string_spec_StringValue(VALUE self, VALUE str) {
   return StringValue(str);
 }
@@ -696,6 +703,9 @@ void Init_string_spec(void) {
   rb_define_method(cls, "RSTRING_PTR_after_yield", string_spec_RSTRING_PTR_after_yield, 1);
   rb_define_method(cls, "RSTRING_PTR_read", string_spec_RSTRING_PTR_read, 2);
   rb_define_method(cls, "RSTRING_PTR_null_terminate", string_spec_RSTRING_PTR_null_terminate, 2);
+#ifdef RUBY_VERSION_IS_4_1
+  rb_define_method(cls, "rb_str_cstr", string_spec_rb_str_cstr, 1);
+#endif
   rb_define_method(cls, "StringValue", string_spec_StringValue, 1);
   rb_define_method(cls, "SafeStringValue", string_spec_SafeStringValue, 1);
   rb_define_method(cls, "rb_str_hash", string_spec_rb_str_hash, 1);
