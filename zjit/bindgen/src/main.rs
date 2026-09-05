@@ -308,6 +308,7 @@ fn main() {
         .allowlist_function("rb_iseq_opcode_at_pc")
         .allowlist_function("rb_iseq_bare_opcode_at_pc")
         .allowlist_function("rb_jit_reserve_addr_space")
+        .allowlist_function("rb_zjit_reserve_low_addr_space")
         .allowlist_function("rb_jit_mark_writable")
         .allowlist_function("rb_jit_mark_executable")
         .allowlist_function("rb_jit_mark_unused")
