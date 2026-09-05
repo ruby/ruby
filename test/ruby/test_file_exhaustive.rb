@@ -868,6 +868,9 @@ class TestFileExhaustive < Test::Unit::TestCase
   def test_expand_path
     assert_equal(regular_file, File.expand_path(File.basename(regular_file), File.dirname(regular_file)))
     assert_equal(utf8_file, File.expand_path(File.basename(utf8_file), File.dirname(utf8_file)))
+    # On POSIX expand_path reaches the backward scan in strrdirsep too.  See
+    # test_extname for what that scan must not do.
+    assert_equal(File.expand_path("/" * 4096), File.expand_path("/" * 4096 + ".."))
   end
 
   if NTFS
@@ -1370,6 +1373,20 @@ class TestFileExhaustive < Test::Unit::TestCase
     end
     bug3175 = '[ruby-core:29627]'
     assert_equal(".rb", File.extname("/tmp//bla.rb"), bug3175)
+
+    assert_equal("", File.extname(""))
+
+    # A path consisting only of separators must not make the backward scan in
+    # strrdirsep read before the beginning of the string.  The return value is
+    # correct either way, so a regression shows up only on a sanitizer build,
+    # and only once the string is too long to be embedded in its RVALUE.
+    seps = [File::SEPARATOR, File::ALT_SEPARATOR].compact
+    seps.each do |sep|
+      [1, 2, 4096].each do |len|
+        path = sep * len
+        assert_equal("", File.extname(path), "File.extname(#{sep.inspect} * #{len})")
+      end
+    end
 
     assert_incompatible_encoding {|d| File.extname(d)}
   end
