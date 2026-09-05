@@ -658,6 +658,7 @@ typedef struct gc_function_map {
     // Object allocation
     VALUE (*new_obj)(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags, bool wb_protected, size_t alloc_size, size_t *actual_alloc_size);
     bool (*zjit_new_obj_fastpath)(void *objspace_ptr, size_t alloc_size, VALUE flags, VALUE klass, struct rb_gc_zjit_fastpath *fastpath);
+    const uintptr_t *(*zjit_incremental_marking_ptr)(void *objspace_ptr);
     size_t (*obj_slot_size)(VALUE obj);
     size_t (*size_slot_size)(void *objspace_ptr, size_t size);
     bool (*size_allocatable_p)(size_t size);
@@ -853,6 +854,7 @@ ruby_modular_gc_init(void)
     // Object allocation
     load_modular_gc_func(new_obj);
     load_modular_gc_func(zjit_new_obj_fastpath);
+    load_modular_gc_func(zjit_incremental_marking_ptr);
     load_modular_gc_func(obj_slot_size);
     load_modular_gc_func(size_slot_size);
     load_modular_gc_func(size_allocatable_p);
@@ -957,6 +959,7 @@ ruby_modular_gc_init(void)
 // Object allocation
 # define rb_gc_impl_new_obj rb_gc_functions.new_obj
 # define rb_gc_impl_zjit_new_obj_fastpath rb_gc_functions.zjit_new_obj_fastpath
+# define rb_gc_impl_zjit_incremental_marking_ptr rb_gc_functions.zjit_incremental_marking_ptr
 # define rb_gc_impl_obj_slot_size rb_gc_functions.obj_slot_size
 # define rb_gc_impl_size_slot_size rb_gc_functions.size_slot_size
 # define rb_gc_impl_size_allocatable_p rb_gc_functions.size_allocatable_p
@@ -3803,6 +3806,12 @@ rb_gc_zjit_new_obj_fastpath(size_t alloc_size, VALUE flags, VALUE klass, struct 
 #else
     return rb_gc_impl_zjit_new_obj_fastpath(rb_gc_get_objspace(), alloc_size, flags, klass, fastpath);
 #endif
+}
+
+const uintptr_t *
+rb_gc_zjit_incremental_marking_ptr(void)
+{
+    return rb_gc_impl_zjit_incremental_marking_ptr(rb_gc_get_objspace());
 }
 
 void

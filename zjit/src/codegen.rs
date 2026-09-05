@@ -1489,6 +1489,23 @@ fn gen_write_barrier(jit: &mut JITState, asm: &mut Assembler, recv: Opnd, val: O
         asm.cmp(val, Qfalse.into());
         asm.je(jit, result_edge.clone());
 
+        unsafe extern "C" {
+            fn rb_gc_zjit_incremental_marking_ptr() -> *const usize;
+        }
+        // The barrier is a no-op when the receiver is young (not RUBY_FL_PROMOTED),
+        // not RUBY_FL_SHAREABLE, and incremental marking is off; see
+        // rb_gc_impl_writebarrier. NULL means the GC has no such fast path.
+        let marking_ptr = unsafe { rb_gc_zjit_incremental_marking_ptr() };
+        if !marking_ptr.is_null() {
+            let flags = asm.load(Opnd::mem(64, recv, RUBY_OFFSET_RBASIC_FLAGS));
+            let old_or_shareable = asm.and(flags, Opnd::UImm((RUBY_FL_PROMOTED | RUBY_FL_SHAREABLE) as u64));
+            let marking_addr = asm.load(Opnd::const_ptr(marking_ptr));
+            let marking = asm.load(Opnd::mem(64, marking_addr, 0));
+            let needs_wb = asm.or(old_or_shareable, marking);
+            asm.test(needs_wb, needs_wb);
+            asm.jz(jit, result_edge.clone());
+        }
+
         // Heap object; fire the write barrier
         asm_ccall!(asm, rb_gc_writebarrier, recv, val);
         asm.jmp(result_edge);

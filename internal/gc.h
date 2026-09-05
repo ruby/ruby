@@ -210,6 +210,7 @@ VALUE rb_newobj_of_unprotected(VALUE klass, VALUE flags, size_t size);
 void *rb_gc_ractor_cache_alloc(struct rb_ractor_struct *ractor);
 void rb_gc_ractor_cache_free(void *cache);
 bool rb_gc_zjit_new_obj_fastpath(size_t alloc_size, VALUE flags, VALUE klass, struct rb_gc_zjit_fastpath *fastpath);
+const uintptr_t *rb_gc_zjit_incremental_marking_ptr(void);
 
 bool rb_gc_size_allocatable_p(size_t size);
 size_t rb_gc_size_slot_size(size_t size);
