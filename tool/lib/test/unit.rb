@@ -517,11 +517,6 @@ module Test
         worker
       end
 
-      def delete_worker(worker)
-        @workers_hash.delete worker.io
-        @workers.delete worker
-        @ios.delete worker.io
-      end
 
       def quit_workers(&cond)
         return if @workers.empty?
