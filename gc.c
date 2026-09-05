@@ -123,6 +123,7 @@
 #include "vm_sync.h"
 #include "vm_callinfo.h"
 #include "ractor_core.h"
+#include "internal/ractor.h"
 #include "yjit.h"
 #include "zjit.h"
 
@@ -3986,6 +3987,7 @@ static void gc_orphan_merge_job(void *unused);
 static void
 zombie_objspaces_push(rb_vm_t *vm, void *objspace, void **owner_slot, struct rb_ractor_struct *owner)
 {
+    ASSERT_vm_locking();
     if (vm->gc.zombie_objspaces_count == vm->gc.zombie_objspaces_capa) {
         size_t new_capa = vm->gc.zombie_objspaces_capa ? vm->gc.zombie_objspaces_capa * 2 : 16;
         struct rb_objspace_zombie *grown =
@@ -4064,6 +4066,7 @@ void
 rb_gc_objspace_disown(void *objspace)
 {
     if (!rb_gc_impl_multi_objspace_p()) return;
+    ASSERT_vm_locking();
     rb_vm_t *vm = GET_VM();
     bool found = false;
 
@@ -4098,6 +4101,7 @@ rb_gc_during_global_gc_p(void)
 static void
 rb_gc_vm_forget_zombie(void *objspace)
 {
+    ASSERT_vm_locking();
     rb_vm_t *vm = GET_VM();
     size_t n = vm->gc.zombie_objspaces_count;
     for (size_t i = 0; i < n; i++) {

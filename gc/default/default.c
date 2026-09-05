@@ -648,6 +648,10 @@ typedef struct rb_objspace {
 
         /* final */
         VALUE deferred_final;
+        /* Dead non-thread-safe T_DATA turned into zombies during a parallel local sweep.
+         * Their dfree is serialized by tdata_thread_unsafe_drain_lock; each objspace's
+         * owner drains its own list. */
+        VALUE deferred_final_thread_unsafe;
     } heap_pages;
 
     st_table *finalizer_table;
@@ -762,7 +766,6 @@ typedef struct rb_objspace {
     rb_darray(VALUE) weak_references;
     rb_postponed_job_handle_t finalize_deferred_pjob;
 
-
     int sweeping_heap_count;
 
     int fork_vm_lock_lev;
@@ -833,6 +836,17 @@ typedef struct rb_global_objspace {
         size_t n_pages, capa;
         uintptr_t lomem, himem;
     } page_index;
+
+    rb_postponed_job_handle_t tdata_deferred_free_pjob;
+
+    /* Live count of deferred non-thread-safe T_DATA zombies across all objspaces:
+     * incremented when one is created in the defer path, decremented when its dfree
+     * runs. Crossing TDATA_DEFERRED_FREE_THRESHOLD triggers the backstop pjob. */
+    size_t tdata_deferred_free_count;
+
+    /* Serializes the dfree of thread-unsafe T_DATA zombies: a Ractor CASes this 0->1
+     * before running any such dfree, so no two run concurrently. */
+    rb_atomic_t tdata_thread_unsafe_drain_lock;
 } rb_global_objspace_t;
 
 static rb_global_objspace_t rb_global_objspace_instance;
@@ -846,6 +860,9 @@ static rb_global_objspace_t *global_objspace = NULL;
  * small Ractor's objspace is about 13 pages, so discarding many of them still stays
  * below it, while a single fat zombie crosses it. */
 #define ZOMBIE_PAGES_TRIGGER 256
+/* Trigger the deferred T_DATA free postponed job once this many have accumulated
+ * across all objspaces. */
+#define TDATA_DEFERRED_FREE_THRESHOLD (1 << 16)
 
 static void objspace_absorb(rb_objspace_t *dst, rb_objspace_t *src);
 
@@ -868,6 +885,8 @@ global_objspace_init(void)
         g->page_pool.arena_current = NULL;
         g->page_pool.arena_count = 0;
         g->page_pool.advised_count = 0;
+        g->tdata_deferred_free_pjob = POSTPONED_JOB_HANDLE_INVALID;
+        g->tdata_thread_unsafe_drain_lock = 0;
         g->page_pool.arenas_unmapped = 0;
 #ifdef HAVE_MMAP
         g->page_pool.os_page_size = sysconf(_SC_PAGE_SIZE);
@@ -1310,6 +1329,7 @@ gc_malloc_counters_snapshot(rb_objspace_t *objspace, struct gc_malloc_bytes *c)
 #define heap_pages_himem	objspace->heap_pages.range[1]
 #define heap_pages_freeable_pages	objspace->heap_pages.freeable_pages
 #define heap_pages_deferred_final	objspace->heap_pages.deferred_final
+#define heap_pages_deferred_final_thread_unsafe	objspace->heap_pages.deferred_final_thread_unsafe
 #define heaps              objspace->heaps
 #define during_gc		objspace->flags.during_gc
 #define finalizing		objspace->atomic_flags.finalizing
@@ -3490,7 +3510,15 @@ rb_gc_impl_live_object_p(void *objspace_ptr, const void *ptr)
     return live;
 }
 
+/* Set on a thread-unsafe T_DATA zombie whose type is embeddable but whose instance was
+ * not embedded: the external data buffer must be xfree'd after dfree (as rb_data_free
+ * does inline). */
+#define ZOMBIE_TDATA_EMBED_XFREE FL_USER0
+
+/* Flags preserved from the original object when it becomes a zombie. */
 #define ZOMBIE_OBJ_KEPT_FLAGS (FL_FINALIZE)
+/* Flags that may legitimately be set on a zombie (kept flags plus zombie-only bits). */
+#define ZOMBIE_OBJ_VALID_FLAGS (ZOMBIE_OBJ_KEPT_FLAGS | ZOMBIE_TDATA_EMBED_XFREE)
 
 void
 rb_gc_impl_make_zombie(void *objspace_ptr, VALUE obj, void (*dfree)(void *), void *data)
@@ -3510,6 +3538,39 @@ rb_gc_impl_make_zombie(void *objspace_ptr, VALUE obj, void (*dfree)(void *), voi
     struct heap_page *page = GET_HEAP_PAGE(obj);
     page->final_slots++;
     page->heap->final_slots_count++;
+}
+
+/* Turn a dead non-thread-safe T_DATA into a zombie on the thread-unsafe deferred list.
+ * Its dfree is NOT run here: during a parallel local sweep that would race another
+ * Ractor's dfree of the same type.  It runs later, serialized either by
+ * tdata_thread_unsafe_drain_lock (eager finalizer-time drain) or by a VM barrier
+ * (backstop pjob / global GC). Returns the new global deferred count. */
+static size_t
+gc_make_thread_unsafe_zombie(rb_objspace_t *objspace, VALUE obj)
+{
+    const rb_data_type_t *type = RTYPEDDATA_TYPE(obj);
+    void (*dfree)(void *) = type->function.dfree;
+    void *data = RTYPEDDATA_GET_DATA(obj);
+    bool embed_xfree = ((type->flags & RUBY_TYPED_EMBEDDABLE) != 0) && !rbimpl_typeddata_embedded_p(obj);
+
+    rb_gc_obj_free_vm_weak_references(obj);
+
+    struct RZombie *zombie = RZOMBIE(obj);
+    zombie->flags = T_ZOMBIE | (zombie->flags & ZOMBIE_OBJ_KEPT_FLAGS) |
+                    (embed_xfree ? ZOMBIE_TDATA_EMBED_XFREE : 0);
+    zombie->dfree = dfree;
+    zombie->data = data;
+    VALUE prev, next = heap_pages_deferred_final_thread_unsafe;
+    do {
+        zombie->next = prev = next;
+        next = RUBY_ATOMIC_VALUE_CAS(heap_pages_deferred_final_thread_unsafe, prev, obj);
+    } while (next != prev);
+
+    struct heap_page *page = GET_HEAP_PAGE(obj);
+    page->final_slots++;
+    page->heap->final_slots_count++;
+
+    return (size_t)RUBY_ATOMIC_SIZE_FETCH_ADD(global_objspace->tdata_deferred_free_count, 1) + 1;
 }
 
 typedef int each_obj_callback(void *, void *, size_t, void *);
@@ -3935,7 +3996,7 @@ finalize_list(rb_objspace_t *objspace, VALUE zombie)
 }
 
 static void
-finalize_deferred_heap_pages(rb_objspace_t *objspace)
+finalize_zombies(rb_objspace_t *objspace)
 {
     VALUE zombie;
     while ((zombie = RUBY_ATOMIC_VALUE_EXCHANGE(heap_pages_deferred_final, 0)) != 0) {
@@ -3943,11 +4004,78 @@ finalize_deferred_heap_pages(rb_objspace_t *objspace)
     }
 }
 
+/* Run the dfree of each thread-unsafe zombie in the list and reclaim its slot.  The dfree
+ * is the only part that must be serialized across objspaces (it touches shared,
+ * non-thread-safe process state), so the caller must exclude concurrent dfree: hold the
+ * CAS drain lock, or run under a VM barrier.  Slot reclaim (freelist + final_slots) is
+ * owner-local bookkeeping and runs inline.  Zombies carrying FL_FINALIZE still need their
+ * Ruby finalizer, so they are not reclaimed here; they are chained and returned for the
+ * caller to hand to finalize_list (which runs the finalizer and reclaims them). */
+static VALUE
+gc_run_thread_unsafe_dfree_list(rb_objspace_t *objspace, VALUE list)
+{
+    VALUE finalize = 0;
+    VALUE zombie = list;
+    while (zombie) {
+        rb_asan_unpoison_object(zombie, false);
+        VALUE next = RZOMBIE(zombie)->next;
+        void (*dfree)(void *) = RZOMBIE(zombie)->dfree;
+        void *data = RZOMBIE(zombie)->data;
+        if (dfree) {
+            dfree(data);
+            if (FL_TEST_RAW(zombie, ZOMBIE_TDATA_EMBED_XFREE)) {
+                xfree(data);
+            }
+            RZOMBIE(zombie)->dfree = 0;
+            RUBY_ATOMIC_SIZE_SUB(global_objspace->tdata_deferred_free_count, 1);
+        }
+        if (FL_TEST_RAW(zombie, FL_FINALIZE)) {
+            RZOMBIE(zombie)->next = finalize;
+            finalize = zombie;
+            rb_asan_poison_object(zombie);
+        }
+        else {
+            struct heap_page *page = GET_HEAP_PAGE(zombie);
+            page->heap->final_slots_count--;
+            page->final_slots--;
+            page->free_slots++;
+            RVALUE_AGE_SET_BITMAP(zombie, 0);
+            heap_page_add_free_region(objspace, page, zombie);
+            page->heap->total_freed_objects++;
+        }
+        zombie = next;
+    }
+    return finalize;
+}
+
+/* Eager drain of this objspace's thread-unsafe zombies, run on the owner during
+ * finalizer processing.  A single global CAS lock lets only one objspace run the dfree
+ * batch at a time; if another owner holds it we skip and retry at the next drain point.
+ * The lock is released before finalize_list, which runs the Ruby finalizers of any
+ * FL_FINALIZE zombies (VM lock + arbitrary Ruby); the pure-C dfree and the owner-local
+ * slot reclaim of the rest run inside gc_run_thread_unsafe_dfree_list under the CAS lock. */
+static void
+finalize_thread_unsafe_free_zombies(rb_objspace_t *objspace)
+{
+    if (!heap_pages_deferred_final_thread_unsafe) return;
+    if (RUBY_ATOMIC_CAS(global_objspace->tdata_thread_unsafe_drain_lock, 0, 1) != 0) {
+        return;
+    }
+
+    VALUE list = RUBY_ATOMIC_VALUE_EXCHANGE(heap_pages_deferred_final_thread_unsafe, 0);
+    VALUE finalize = gc_run_thread_unsafe_dfree_list(objspace, list);
+
+    RUBY_ATOMIC_SET(global_objspace->tdata_thread_unsafe_drain_lock, 0);
+
+    if (finalize) finalize_list(objspace, finalize);
+}
+
 static void
 finalize_deferred(rb_objspace_t *objspace)
 {
     rb_gc_set_pending_interrupt();
-    finalize_deferred_heap_pages(objspace);
+    finalize_zombies(objspace);
+    finalize_thread_unsafe_free_zombies(objspace);
     rb_gc_unset_pending_interrupt();
 }
 
@@ -4110,7 +4238,7 @@ rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr)
 
     gc_exit(objspace, gc_enter_event_finalizer, &lock_lev);
 
-    finalize_deferred_heap_pages(objspace);
+    finalize_zombies(objspace);
 
     st_free_table(finalizer_table);
     finalizer_table = 0;
@@ -4531,10 +4659,148 @@ struct gc_sweep_context {
     int empty_slots;
     /* Hoisted out of the per-slot pinned-free assert: too expensive for the sweep loop
      * as an external call. */
-    unsigned char check_pinned_free;
+    const bool check_pinned_free;
+    /* This is a parallel local sweep (multi-Ractor, not a global GC), so a non-thread-safe
+     * T_DATA dfree must be deferred to the global GC or the postponed job rather than run here. */
+    const bool defer_thread_unsafe_local_sweep;
+    bool trigger_thread_unsafe_sweep_postponed_job;
 
     struct free_region *free_region;
 };
+
+/* True when a local (per-Ractor) sweep must not free obj. Doing so would run a T_DATA
+ * dfree inline (RUBY_TYPED_FREE_IMMEDIATELY) that is not RUBY_TYPED_THREAD_SAFE_FREE.
+ * NOTE: We must free the root fiber during postmortem collection, otherwise another Ractor
+ * can collect the fiber through a major GC while we're still tearing it down. Once fibers are
+ * THREAD_SAFE_FREE, we no longer need the root fiber condition as it will be guaranteed to be
+ * collected during this time.
+ */
+static bool
+gc_obj_defer_local_free_p(rb_objspace_t *objspace, VALUE obj)
+{
+    if (BUILTIN_TYPE(obj) != T_DATA) return false;
+
+    const rb_data_type_t *type = RTYPEDDATA_TYPE(obj);
+    void (*dfree)(void *) = type->function.dfree;
+    if (!dfree || dfree == RUBY_DEFAULT_FREE) return false;
+    if (type->flags & RUBY_TYPED_THREAD_SAFE_FREE) return false;
+
+    if (type->flags & RUBY_TYPED_FREE_IMMEDIATELY) {
+        if (objspace->flags.during_postmortem) {
+            if (rb_fiber_current() == obj) {
+                return false;
+            }
+        }
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+
+static void gc_tdata_deferred_free_job(void *unused);
+static void gc_tdata_deferred_free_pjob_ensure(void);
+static unsigned int gc_during_gc_get(const rb_objspace_t *objspace);
+static void gc_during_gc_set(rb_objspace_t *objspace, unsigned int v);
+static void gc_global_snapshot_objspaces(void);
+
+static void
+gc_tdata_deferred_free_pjob_ensure(void)
+{
+    if (global_objspace->tdata_deferred_free_pjob == POSTPONED_JOB_HANDLE_INVALID) {
+        global_objspace->tdata_deferred_free_pjob =
+            rb_postponed_job_preregister(0, gc_tdata_deferred_free_job, NULL);
+        if (global_objspace->tdata_deferred_free_pjob == POSTPONED_JOB_HANDLE_INVALID) {
+            rb_bug("Could not preregister postponed job for deferred T_DATA free");
+        }
+    }
+}
+
+/* -- Deferred T_DATA free postponed job --
+ *
+ * Non-thread-safe T_DATA that die during a parallel local sweep become zombies on their
+ * objspace's deferred_final_thread_unsafe list (see gc_make_thread_unsafe_zombie).  A
+ * global counter tracks how many have accumulated.  When it crosses
+ * TDATA_DEFERRED_FREE_THRESHOLD this backstop job fires: it takes the VM lock + barrier
+ * (stopping all Ractors, so running the non-thread-safe dfree is safe with no CAS lock)
+ * and drains every objspace's list.  This avoids a full global GC (with its every-ec
+ * root scan) just to reap them.  The eager finalizer-time drain (gc_drain_thread_unsafe)
+ * is the primary path; this is only for when they pile up.
+ */
+
+/* Drain os's thread-unsafe zombies while the world is stopped (VM barrier held): the
+ * barrier serializes dfree, so no CAS lock is needed.  The pure-C dfree and slot reclaim
+ * run inline; any FL_FINALIZE zombies are handed to os's normal deferred_final so its
+ * owner runs the Ruby finalizer (and reclaims those slots) on its own thread. */
+static void
+gc_run_thread_unsafe_dfrees_with_barrier(rb_objspace_t *os)
+{
+    VALUE list = RUBY_ATOMIC_VALUE_EXCHANGE(os->heap_pages.deferred_final_thread_unsafe, 0);
+    if (!list) return;
+
+    VALUE finalize = gc_run_thread_unsafe_dfree_list(os, list);
+    if (!finalize) return;
+
+    VALUE tail = finalize;
+    rb_asan_unpoison_object(tail, false);
+    while (RZOMBIE(tail)->next) {
+        VALUE next_obj = RZOMBIE(tail)->next;
+        rb_asan_poison_object(tail);
+        tail = next_obj;
+        rb_asan_unpoison_object(tail, false);
+    }
+    VALUE prev;
+    do {
+        prev = os->heap_pages.deferred_final;
+        RZOMBIE(tail)->next = prev;
+    } while (RUBY_ATOMIC_VALUE_CAS(os->heap_pages.deferred_final, prev, finalize) != prev);
+    rb_asan_poison_object(tail);
+
+    gc_finalize_deferred_register(os);
+}
+
+static void
+gc_tdata_deferred_free_job(void *unused)
+{
+    (void)unused;
+
+    size_t count = (size_t)RUBY_ATOMIC_VALUE_LOAD(global_objspace->tdata_deferred_free_count);
+    if (count < TDATA_DEFERRED_FREE_THRESHOLD || rb_gc_single_objspace_p()) {
+        return;
+    }
+
+    unsigned int lev = RB_GC_VM_LOCK();
+
+    if (global_objspace->tdata_deferred_free_count < TDATA_DEFERRED_FREE_THRESHOLD) {
+        RB_GC_VM_UNLOCK(lev);
+        return;
+    }
+
+    rb_gc_vm_barrier();
+
+    gc_global_snapshot_objspaces();
+    size_t n = global_objspace->global_gc.n_objspaces;
+    rb_objspace_t **objspaces = global_objspace->global_gc.objspaces;
+
+    /* Set during_gc=TRUE and init vm_context for the CURRENT objspace only.
+     * The no-alloc guard (default.c:3315-3322) checks only the allocating
+     * (=current) objspace's during_gc, and rb_gc_get_ec() reads only the
+     * current objspace's vm_context.ec. */
+    rb_objspace_t *objspace = rb_gc_get_objspace();
+    unsigned int saved_during_gc = gc_during_gc_get(objspace);
+    dont_gc_on();
+    rb_gc_initialize_vm_context(&objspace->vm_context);
+    gc_during_gc_set(objspace, TRUE);
+
+    for (size_t i = 0; i < n; i++) {
+        gc_run_thread_unsafe_dfrees_with_barrier(objspaces[i]);
+    }
+
+    gc_during_gc_set(objspace, saved_during_gc);
+    dont_gc_off();
+
+    RB_GC_VM_UNLOCK(lev);
+}
 
 static inline void
 gc_sweep_register_free_slot(rb_objspace_t *objspace, struct heap_page *page, struct gc_sweep_context *ctx, uintptr_t p, short slot_size)
@@ -4629,6 +4895,7 @@ gc_sweep_plane(rb_objspace_t *objspace, rb_heap_t *heap, uintptr_t p, bits_t bit
 #undef CHECK
 #endif
 
+
                 if (!rb_gc_obj_needs_cleanup_p(vp)) {
                     (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)p, slot_size);
                     gc_sweep_register_free_slot(objspace, sweep_page, ctx, p, slot_size);
@@ -4636,6 +4903,16 @@ gc_sweep_plane(rb_objspace_t *objspace, rb_heap_t *heap, uintptr_t p, bits_t bit
                     ctx->freed_slots++;
                 }
                 else {
+                    if (RB_UNLIKELY(ctx->defer_thread_unsafe_local_sweep && gc_obj_defer_local_free_p(objspace, vp))) {
+                        /* Turn this into a thread-unsafe zombie instead of freeing it here:
+                         * running its dfree now might race another Ractor's parallel sweep. */
+                        size_t count = gc_make_thread_unsafe_zombie(objspace, vp);
+                        ctx->final_slots++;
+                        if (count >= TDATA_DEFERRED_FREE_THRESHOLD) {
+                            ctx->trigger_thread_unsafe_sweep_postponed_job = true;
+                        }
+                        break;
+                    }
                     gc_report(2, objspace, "page_sweep: free %p\n", (void *)p);
 
                     rb_gc_obj_free_vm_weak_references(vp);
@@ -4765,7 +5042,7 @@ gc_sweep_page(rb_objspace_t *objspace, rb_heap_t *heap, struct gc_sweep_context 
     sweep_page->free_slots += ctx->freed_slots + ctx->empty_slots;
     sweep_page->heap->total_freed_objects += ctx->freed_slots;
 
-    if (heap_pages_deferred_final && !finalizing) {
+    if ((heap_pages_deferred_final || heap_pages_deferred_final_thread_unsafe) && !finalizing) {
         gc_finalize_deferred_register(objspace);
     }
 
@@ -5114,7 +5391,11 @@ gc_sweep_step(rb_objspace_t *objspace, rb_heap_t *heap)
      * ran the pinned walk.  The current world state would misfire: a single-world
      * cycle leaves dead shareable objects unmarked and its sweep can straddle the switch
      * to multi-objspace.  A global GC's exact mark does not pin, so it is excluded. */
-    const unsigned char check_pinned_free = objspace->last_cycle_pinned;
+    const bool check_pinned_free = objspace->last_cycle_pinned;
+
+    const bool defer_thread_unsafe_local_sweep =
+        rb_gc_multi_ractor_p() && !objspace->flags.during_global_gc;
+    bool trigger_thread_unsafe_sweep_postponed_job = false;
 
     do {
         RUBY_DEBUG_LOG("sweep_page:%p", (void *)sweep_page);
@@ -5125,9 +5406,12 @@ gc_sweep_step(rb_objspace_t *objspace, rb_heap_t *heap)
             .freed_slots = 0,
             .empty_slots = 0,
             .check_pinned_free = check_pinned_free,
+            .defer_thread_unsafe_local_sweep = defer_thread_unsafe_local_sweep,
+            .trigger_thread_unsafe_sweep_postponed_job = trigger_thread_unsafe_sweep_postponed_job,
         };
         gc_sweep_page(objspace, heap, &ctx);
         int free_slots = ctx.freed_slots + ctx.empty_slots;
+        trigger_thread_unsafe_sweep_postponed_job = ctx.trigger_thread_unsafe_sweep_postponed_job;
 
         RUBY_DTRACE_GC_HOOK(SWEEP_PAGE, ctx.page->slot_size, ctx.final_slots, ctx.freed_slots, ctx.empty_slots);
 
@@ -5173,6 +5457,12 @@ gc_sweep_step(rb_objspace_t *objspace, rb_heap_t *heap)
             sweep_page->free_next = NULL;
         }
     } while ((sweep_page = heap->sweeping_page));
+
+    if (trigger_thread_unsafe_sweep_postponed_job) {
+        gc_report(2, objspace, "thread-unsafe sweep postponed job triggered\n");
+        // Trigger on current EC
+        rb_postponed_job_trigger(global_objspace->tdata_deferred_free_pjob);
+    }
 
     if (!heap->sweeping_page) {
         objspace->sweeping_heap_count--;
@@ -6584,7 +6874,7 @@ verify_internal_consistency_i(void *page_start, void *page_end, size_t stride,
                 if (BUILTIN_TYPE(obj) == T_ZOMBIE) {
                     data->zombie_object_count++;
 
-                    if ((RBASIC(obj)->flags & ~ZOMBIE_OBJ_KEPT_FLAGS) != T_ZOMBIE) {
+                    if ((RBASIC(obj)->flags & ~ZOMBIE_OBJ_VALID_FLAGS) != T_ZOMBIE) {
                         fprintf(stderr, "verify_internal_consistency_i: T_ZOMBIE has extra flags set: %s\n",
                                 rb_obj_info(obj));
                         data->err_count++;
@@ -6773,6 +7063,13 @@ gc_verify_internal_consistency_(rb_objspace_t *objspace, bool world_stopped)
 
         {
             VALUE z = heap_pages_deferred_final;
+            while (z) {
+                list_count++;
+                z = RZOMBIE(z)->next;
+            }
+        }
+        {
+            VALUE z = heap_pages_deferred_final_thread_unsafe;
             while (z) {
                 list_count++;
                 z = RZOMBIE(z)->next;
@@ -8021,7 +8318,38 @@ finalize_deferred_dfree_only(rb_objspace_t *objspace)
         zombie = next;
     }
     if (dfree_only) finalize_list(objspace, dfree_only);
-    return dfree_only != 0;
+    bool did = dfree_only != 0;
+
+    /* Thread-unsafe zombies need their dfree serialized against other Ractors still
+     * running, so drain under the CAS lock.  FL_FINALIZE ones are re-deferred onto the
+     * same list for the inheritor (objspace_absorb) since Ruby finalizers can't run on a
+     * dying Ractor.  If the CAS is lost, leave the whole list for absorb to hand to dst. */
+    if (heap_pages_deferred_final_thread_unsafe &&
+        RUBY_ATOMIC_CAS(global_objspace->tdata_thread_unsafe_drain_lock, 0, 1) == 0) {
+        VALUE ts_dfree_only = 0;
+        VALUE tz = RUBY_ATOMIC_VALUE_EXCHANGE(heap_pages_deferred_final_thread_unsafe, 0);
+        while (tz) {
+            rb_asan_unpoison_object(tz, false);
+            VALUE next = RZOMBIE(tz)->next;
+            if (FL_TEST_RAW(tz, FL_FINALIZE)) {
+                VALUE prev2, next2 = heap_pages_deferred_final_thread_unsafe;
+                do {
+                    RZOMBIE(tz)->next = prev2 = next2;
+                    next2 = RUBY_ATOMIC_VALUE_CAS(heap_pages_deferred_final_thread_unsafe, prev2, tz);
+                } while (next2 != prev2);
+                rb_asan_poison_object(tz);
+            }
+            else {
+                RZOMBIE(tz)->next = ts_dfree_only;
+                ts_dfree_only = tz;
+            }
+            tz = next;
+        }
+        gc_run_thread_unsafe_dfree_list(objspace, ts_dfree_only);
+        RUBY_ATOMIC_SET(global_objspace->tdata_thread_unsafe_drain_lock, 0);
+        if (ts_dfree_only) did = true;
+    }
+    return did;
 }
 
 void
@@ -9207,6 +9535,13 @@ gc_start_global(rb_objspace_t *driver, unsigned int reason, bool compact, bool a
         if (new_limit < SHAREABLE_OBJECTS_LIMIT_MIN) new_limit = SHAREABLE_OBJECTS_LIMIT_MIN;
         objspace->shareable_objects_limit = new_limit;
     }
+
+    /* The global sweep skips T_ZOMBIE, so pre-existing thread-unsafe zombies survive it.
+     * Drain them here under the global barrier (the stopped world serializes dfree); the
+     * count reaches 0 as each dfree decrements it. */
+    for (size_t i = 0; i < global_objspace->global_gc.n_objspaces; i++) {
+        gc_run_thread_unsafe_dfrees_with_barrier(global_objspace->global_gc.objspaces[i]);
+    }
     driver->profile.count++;
 
     /* step 10 */
@@ -9415,6 +9750,28 @@ objspace_absorb(rb_objspace_t *dst, rb_objspace_t *src)
             /* No owner was left to run these zombies (register's owner walk misses a dead
              * Ractor).  dst runs this merge, so schedule dst's job here; otherwise they wait
              * until dst's next GC. */
+            rb_postponed_job_trigger(dst->finalize_deferred_pjob);
+        }
+    }
+    {
+        VALUE src_ts = RUBY_ATOMIC_VALUE_EXCHANGE(src->heap_pages.deferred_final_thread_unsafe, 0);
+        if (src_ts) {
+            VALUE tail_obj = src_ts;
+            rb_asan_unpoison_object(tail_obj, false);
+            while (RZOMBIE(tail_obj)->next) {
+                VALUE next_obj = RZOMBIE(tail_obj)->next;
+                rb_asan_poison_object(tail_obj);
+                tail_obj = next_obj;
+                rb_asan_unpoison_object(tail_obj, false);
+            }
+            VALUE prev;
+            do {
+                prev = dst->heap_pages.deferred_final_thread_unsafe;
+                RZOMBIE(tail_obj)->next = prev;
+            } while (RUBY_ATOMIC_VALUE_CAS(dst->heap_pages.deferred_final_thread_unsafe, prev, src_ts) != prev);
+            rb_asan_poison_object(tail_obj);
+            /* dst's finalize_deferred drains the thread-unsafe list too (under the CAS
+             * lock), so the same job trigger reaps these merged zombies. */
             rb_postponed_job_trigger(dst->finalize_deferred_pjob);
         }
     }
@@ -12514,6 +12871,8 @@ rb_gc_impl_objspace_init(void *objspace_ptr)
     if (objspace->finalize_deferred_pjob == POSTPONED_JOB_HANDLE_INVALID) {
         rb_bug("Could not preregister postponed job for GC");
     }
+
+    gc_tdata_deferred_free_pjob_ensure();
 
     /* A standard RVALUE (RBasic + embedded VALUEs + debug overhead) must fit
      * in at least one pool.  In debug builds RVALUE_OVERHEAD can push this

@@ -570,6 +570,7 @@ cancel_single_ractor_mode(void)
     rb_yjit_invalidate_single_ractor();
     rb_zjit_invalidate_single_ractor();
 
+    ASSERT_vm_unlocking();
     rb_funcall(rb_cRactor, rb_intern("_activated"), 0);
 }
 
