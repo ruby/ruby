@@ -143,7 +143,7 @@ static void
 location_ref_update(void *ptr)
 {
     struct valued_frame_info *vfi = ptr;
-    vfi->btobj = rb_gc_location(vfi->btobj);
+    rb_gc_update_moved(&vfi->btobj);
 }
 
 static void
@@ -798,9 +798,9 @@ backtrace_mark(void *ptr)
 static void
 location_update_entry(rb_backtrace_location_t *fi)
 {
-    fi->cme = (rb_callable_method_entry_t *)rb_gc_location((VALUE)fi->cme);
+    rb_gc_update_moved_ptr(&fi->cme);
     if (fi->iseq) {
-        fi->iseq = (rb_iseq_t *)rb_gc_location((VALUE)fi->iseq);
+        rb_gc_update_moved_ptr(&fi->iseq);
     }
 }
 
@@ -813,8 +813,8 @@ backtrace_update(void *ptr)
     for (i=0; i<s; i++) {
         location_update_entry(&bt->backtrace[i]);
     }
-    bt->strary = rb_gc_location(bt->strary);
-    bt->locary = rb_gc_location(bt->locary);
+    rb_gc_update_moved(&bt->strary);
+    rb_gc_update_moved(&bt->locary);
 }
 
 static const rb_data_type_t backtrace_data_type = {

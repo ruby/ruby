@@ -91,7 +91,7 @@ wmap_compact_table_replace_i(st_data_t *k, st_data_t *v, st_data_t d, int existi
 {
     RUBY_ASSERT((VALUE)*k == rb_gc_location((VALUE)*k));
 
-    *v = (st_data_t)rb_gc_location((VALUE)*v);
+    rb_gc_update_moved((VALUE *)v);
 
     return ST_CONTINUE;
 }
@@ -579,8 +579,8 @@ wkmap_compact_table_replace(st_data_t *key_ptr, st_data_t *val_ptr, st_data_t _d
 {
     RUBY_ASSERT(existing);
 
-    *key_ptr = (st_data_t)rb_gc_location((VALUE)*key_ptr);
-    *val_ptr = (st_data_t)rb_gc_location((VALUE)*val_ptr);
+    rb_gc_update_moved((VALUE *)key_ptr);
+    rb_gc_update_moved((VALUE *)val_ptr);
 
     return ST_CONTINUE;
 }

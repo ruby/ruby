@@ -1274,7 +1274,7 @@ static void
 monitor_compact(void *ptr)
 {
     struct rb_monitor *mc = ptr;
-    mc->mutex = rb_gc_location(mc->mutex);
+    rb_gc_update_moved(&mc->mutex);
 }
 
 static const rb_data_type_t monitor_data_type = {

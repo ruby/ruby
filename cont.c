@@ -1107,9 +1107,9 @@ cont_compact(void *ptr)
     rb_context_t *cont = ptr;
 
     if (cont->self) {
-        cont->self = rb_gc_location(cont->self);
+        rb_gc_update_moved(&cont->self);
     }
-    cont->value = rb_gc_location(cont->value);
+    rb_gc_update_moved(&cont->value);
     rb_execution_context_update(&cont->saved_ec);
 }
 
@@ -1220,7 +1220,7 @@ void
 rb_fiber_update_self(rb_fiber_t *fiber)
 {
     if (fiber->cont.self) {
-        fiber->cont.self = rb_gc_location(fiber->cont.self);
+        rb_gc_update_moved(&fiber->cont.self);
     }
     else {
         rb_execution_context_update(&fiber->cont.saved_ec);
@@ -1237,7 +1237,7 @@ static void
 fiber_compact(void *ptr)
 {
     rb_fiber_t *fiber = ptr;
-    fiber->first_proc = rb_gc_location(fiber->first_proc);
+    rb_gc_update_moved(&fiber->first_proc);
 
     if (fiber->prev) rb_fiber_update_self(fiber->prev);
 

@@ -230,8 +230,9 @@ void rb_gc_after_fork(rb_pid_t pid);
     if (_obj != (VALUE)*(ptr)) *(ptr) = (void *)_obj; \
 } while (0)
 
-#define rb_gc_move_ptr(ptr) do { \
-    VALUE _obj = rb_gc_location((VALUE)*(ptr)); \
+#define rb_gc_update_moved_ptr(ptr) do { \
+    VALUE _obj = (VALUE)*(ptr); \
+    rb_gc_update_moved(&_obj); \
     if (_obj != (VALUE)*(ptr)) *(ptr) = (void *)_obj; \
 } while (0)
 
