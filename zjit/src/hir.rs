@@ -135,6 +135,8 @@ impl std::fmt::Display for BlockId {
 
 type InsnSet = BitSet<InsnId>;
 type BlockSet = BitSet<BlockId>;
+/// A bit for each local in a frame, matched by local table index.
+pub type LocalSet = BitSet<usize>;
 
 fn write_vec<T: std::fmt::Display>(f: &mut std::fmt::Formatter, objs: &Vec<T>) -> std::fmt::Result {
     write!(f, "[")?;
@@ -3353,6 +3355,17 @@ impl Function {
         matches!(self.find_ref(insn_id), Insn::SendDirect(..))
     }
 
+    /// Record on the `Snapshot` at `insn_id` the locals that must stay in EP
+    /// across a block-passing call (block-modifiable locals), so codegen keeps
+    /// them out of the register-based stack map. See [`field@FrameState::spilled_locals`].
+    fn set_snapshot_spilled_locals(&mut self, insn_id: InsnId, spilled: LocalSet) {
+        let insn_id = self.union_find.borrow().find_const(insn_id);
+        match &mut self.insns[insn_id] {
+            Insn::Snapshot { state } => state.spilled_locals = spilled,
+            insn => panic!("Unexpected non-Snapshot {insn} when setting spilled locals"),
+        }
+    }
+
     fn new_block(&mut self, insn_idx: u32) -> BlockId {
         let id = BlockId::from(self.blocks.len());
         let block = Block {
@@ -5677,6 +5690,8 @@ impl Function {
                 let send = self.resolve(send_insn_id);
                 let Insn::SendDirect(data) = send.insn(self)
                 else {
+                    // TODO(alan): If we start to inling through inovkeblock here, we need to change
+                    // build_stack_map() to account for the lack of receiver on the operand stack.
                     unreachable!("position {send_insn_id} is not a SendDirect");
                 };
                 let SendDirectData { recv, cme, iseq, kw_bits, jit_entry_idx, block: call_block, state, .. } = **data;
@@ -8260,6 +8275,24 @@ impl<'a> std::fmt::Display for FunctionPrinter<'a> {
     }
 }
 
+/// Local variables of `iseq` that the block `blockiseq` (or any iseq nested within
+/// the block) syntactically read or write.
+fn block_accessed_local_set(iseq: IseqPtr, blockiseq: IseqPtr, num_locals: usize, ep_escaped: bool) -> LocalSet {
+    let mut accessed = LocalSet::with_capacity(num_locals);
+    if ep_escaped {
+        accessed.insert_all();
+        return accessed;
+    }
+    let outer_variables = unsafe { blockiseq.outer_variables() };
+    for local_idx in 0..num_locals {
+        let id = unsafe { rb_zjit_local_id(iseq, local_idx.try_into().unwrap()) };
+        if outer_variables.local_access(id).is_some() {
+            accessed.insert(local_idx);
+        }
+    }
+    accessed
+}
+
 #[derive(Debug, Clone)]
 pub struct FrameState {
     pub iseq: IseqPtr,
@@ -8268,7 +8301,12 @@ pub struct FrameState {
     pub pc: *const VALUE,
 
     stack: Vec<InsnId>,
+
+    /// Values for local variables in `rb_iseq_constant_body::local_table` order.
     locals: Vec<InsnId>,
+    /// The subset of locals that must be in EP memory prior to a safepoint.
+    /// Predominantly used for with-block sends for locals syntactically accessed within the block.
+    spilled_locals: LocalSet,
 
     /// `InsnId` of the caller's post-send `Snapshot` for inlined frames; `None`
     /// for non-inlined frames. Stored as an instruction reference rather than
@@ -8295,6 +8333,7 @@ impl FrameState {
     fn without_locals(&self) -> Self {
         let mut state = self.clone();
         state.locals.clear();
+        state.spilled_locals = LocalSet::with_capacity(0);
         state
     }
 
@@ -8344,7 +8383,7 @@ pub struct FrameStatePrinter<'a> {
 
 impl FrameState {
     fn new(iseq: IseqPtr) -> FrameState {
-        FrameState { iseq, pc: std::ptr::null::<VALUE>(), insn_idx: 0, stack: vec![], locals: vec![], caller: None, depth: 0 }
+        FrameState { iseq, pc: std::ptr::null::<VALUE>(), insn_idx: 0, stack: vec![], locals: vec![], caller: None, depth: 0, spilled_locals: LocalSet::with_capacity(0) }
     }
 
     /// Construct a `FrameState` for an inlined callee. `caller` is the `InsnId`
@@ -8370,6 +8409,10 @@ impl FrameState {
     /// Iterate over all local variables
     pub fn locals(&self) -> Iter<'_, InsnId> {
         self.locals.iter()
+    }
+
+    pub fn spilled_locals(&self) -> &LocalSet {
+        &self.spilled_locals
     }
 
     /// Push a stack operand
@@ -8882,6 +8925,7 @@ fn add_iseq_to_hir(
             for _ in 0..local_size {
                 result.locals.push(fun.push_insn(block, Insn::Param));
             }
+            result.spilled_locals = LocalSet::with_capacity(result.locals.len());
             for _ in incoming_state.stack {
                 result.stack.push(fun.push_insn(block, Insn::Param));
             }
@@ -10199,6 +10243,9 @@ fn add_iseq_to_hir(
                         if !ep_escaped && !state.locals.is_empty() {
                             fun.gen_post_send_no_ep_escape_patch_point(block, &state, insn_idx);
                         }
+                        // Put locals accessed by the block to memory
+                        let spilled = block_accessed_local_set(iseq, blockiseq, state.locals.len(), ep_escaped);
+                        fun.set_snapshot_spilled_locals(exit_id, spilled);
                         fun.reload_locals_modified_by_block(block, iseq, blockiseq, &mut state, ep_escaped);
                     }
                 }
@@ -10230,6 +10277,9 @@ fn add_iseq_to_hir(
                         if !ep_escaped && !state.locals.is_empty() {
                             fun.gen_post_send_no_ep_escape_patch_point(block, &state, insn_idx);
                         }
+                        // Put locals accessed by the block to memory
+                        let spilled = block_accessed_local_set(iseq, blockiseq, state.locals.len(), ep_escaped);
+                        fun.set_snapshot_spilled_locals(exit_id, spilled);
                         fun.reload_locals_modified_by_block(block, iseq, blockiseq, &mut state, ep_escaped);
                     }
                 }
@@ -10258,6 +10308,9 @@ fn add_iseq_to_hir(
                         if !ep_escaped && !state.locals.is_empty() {
                             fun.gen_post_send_no_ep_escape_patch_point(block, &state, insn_idx);
                         }
+                        // Put locals accessed by the block to memory
+                        let spilled = block_accessed_local_set(iseq, blockiseq, state.locals.len(), ep_escaped);
+                        fun.set_snapshot_spilled_locals(exit_id, spilled);
                         fun.reload_locals_modified_by_block(block, iseq, blockiseq, &mut state, ep_escaped);
                     }
                 }
@@ -10288,6 +10341,9 @@ fn add_iseq_to_hir(
                         if !ep_escaped && !state.locals.is_empty() {
                             fun.gen_post_send_no_ep_escape_patch_point(block, &state, insn_idx);
                         }
+                        // Put locals accessed by the block to memory
+                        let spilled = block_accessed_local_set(iseq, blockiseq, state.locals.len(), ep_escaped);
+                        fun.set_snapshot_spilled_locals(exit_id, spilled);
                         fun.reload_locals_modified_by_block(block, iseq, blockiseq, &mut state, ep_escaped);
                     }
                 }
@@ -10590,6 +10646,12 @@ fn add_iseq_to_hir(
                     let builtin_attrs = unsafe { rb_jit_iseq_builtin_attrs(iseq) };
                     let leaf = builtin_attrs & BUILTIN_ATTR_LEAF != 0;
 
+                    // Primitive.cexpr! and friends have access to all Ruby locals as C locals,
+                    // so we spill all locals here.
+                    let mut all_spilled = LocalSet::with_capacity(exit_state.locals.len());
+                    all_spilled.insert_all();
+                    fun.set_snapshot_spilled_locals(exit_id, all_spilled);
+
                     let insn_id = fun.try_inline_invoke_builtin(block, Insn::InvokeBuiltin {
                         bf,
                         recv: self_param,
@@ -10617,6 +10679,12 @@ fn add_iseq_to_hir(
 
                     let builtin_attrs = unsafe { rb_jit_iseq_builtin_attrs(iseq) };
                     let leaf = builtin_attrs & BUILTIN_ATTR_LEAF != 0;
+
+                    // Primitive.cexpr! and friends have access to all Ruby locals as C locals,
+                    // so we spill all locals here.
+                    let mut all_spilled = LocalSet::with_capacity(exit_state.locals.len());
+                    all_spilled.insert_all();
+                    fun.set_snapshot_spilled_locals(exit_id, all_spilled);
 
                     let insn_id = fun.try_inline_invoke_builtin(block, Insn::InvokeBuiltin {
                         bf,
@@ -10861,6 +10929,7 @@ fn compile_entry_state(fun: &mut Function) -> (InsnId, FrameState) {
             entry_state.locals.push(fun.push_insn(entry_block, Insn::Const { val: Const::Value(Qnil) }));
         }
     }
+    entry_state.spilled_locals = LocalSet::with_capacity(entry_state.locals.len());
     (self_param, entry_state)
 }
 
@@ -10958,6 +11027,7 @@ fn compile_jit_entry_state(fun: &mut Function, jit_entry_block: BlockId, jit_ent
             });
         }
     }
+    entry_state.spilled_locals = LocalSet::with_capacity(entry_state.locals.len());
     (self_param, entry_state)
 }
 

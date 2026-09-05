@@ -8335,6 +8335,44 @@ fn test_no_ep_escape_invalidation_at_max_versions() {
 }
 
 #[test]
+fn test_concurrent_ep_escape() {
+    // Test to see if concurrent environment escapes
+    // sharing one piece of JIT code produce one consistent result.
+    rb_zjit_prepare_options();
+    set_call_threshold(2);
+    set_inline_threshold(0);
+    let result = inspect(r#"
+        def spill_escaper(gate)
+          a = 1
+          b = 2
+          spill_captor(gate) { }  # empty block, no eager spill
+        end
+
+        # Returning `blk` materializes the Proc, which escapes spill_escaper's EP.
+        def spill_captor(gate, &blk)
+          gate.receive ? blk : nil
+        end
+
+        ready = Ractor::Port.new
+        results = Ractor::Port.new
+        ractors = 4.times.map do
+          Ractor.new(ready, results) do |ready, results|
+            port = Ractor.current.default_port
+            2.times { port << false; spill_escaper(port) }  # compile spill_escaper, no escape
+            ready << :parked                                # parks until the main Ractor releases
+            bnd = spill_escaper(port).binding
+            results << [bnd.local_variable_get(:a), bnd.local_variable_get(:b)]
+          end
+        end
+
+        ractors.size.times { ready.receive }
+        ractors.each { |r| r << true }  # have all ractor do EP escapes
+        ractors.size.times.map { results.receive }.uniq
+    "#);
+    assert_snapshot!(result, @r#"[[1, 2]]"#);
+}
+
+#[test]
 fn test_float_arithmetic() {
     set_call_threshold(1);
     eval("nil"); // boot the VM before assert_compiles_allowing_exits touches ZJITState

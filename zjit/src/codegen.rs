@@ -3444,10 +3444,16 @@ fn gen_save_sp(asm: &mut Assembler, stack_size: usize) {
 
 /// Spill locals onto the stack.
 fn gen_spill_locals(jit: &JITState, asm: &mut Assembler, state: &FrameState) {
-    // TODO: Avoid spilling locals that have been spilled before and not changed.
+    let spilled = state.spilled_locals();
+    if spilled.is_empty() {
+        return;
+    }
     gen_incr_counter(asm, Counter::vm_write_locals_count);
     asm_comment!(asm, "spill locals");
     for (idx, &insn_id) in state.locals().enumerate() {
+        if !spilled.get(idx) {
+            continue;
+        }
         asm.mov(Opnd::mem(64, SP, (-local_idx_to_ep_offset(state.iseq, idx) - 1) * SIZEOF_VALUE_I32), jit.get_opnd(insn_id));
     }
 }
@@ -3494,29 +3500,47 @@ fn build_stack_map(jit: &JITState, function: &Function, state: &FrameState) -> V
     let mut stack = Vec::new();
     let mut current_state = state.clone();
     loop {
-        stack.extend(current_state.stack().rev().copied().map(|insn_id| {
+        let to_entry = |insn_id| {
             let opnd = jit.get_opnd(insn_id);
             assert!(
                 matches!(opnd, Opnd::Value(_) | Opnd::VReg { .. }),
                 "FrameState should only reference Opnd::Value or Opnd::VReg, but got: {opnd:?}",
             );
             StackMapEntry::Opnd(opnd)
-        }));
+        };
+
+        // Operand stack, top-down.
+        stack.extend(current_state.stack().rev().copied().map(to_entry));
+        // Frame environment data (me/cref, specval, flags) already lives in memory.
+        stack.push(StackMapEntry::Skip(VM_ENV_DATA_SIZE.to_usize()));
+        // Locals, top-down (local[L-1] .. local[0]).
+        let spilled_locals = current_state.spilled_locals();
+        let mut run_of_spilled_locals = 0;
+        for (idx, &insn_id) in current_state.locals().enumerate().rev() {
+            // Skip spilled slots which are already initialized on entry.
+            if spilled_locals.get(idx) {
+                run_of_spilled_locals += 1;
+            } else {
+                if run_of_spilled_locals > 0 {
+                    stack.push(StackMapEntry::Skip(run_of_spilled_locals));
+                    run_of_spilled_locals = 0;
+                }
+                stack.push(to_entry(insn_id));
+            }
+        }
+        if run_of_spilled_locals > 0 {
+            stack.push(StackMapEntry::Skip(run_of_spilled_locals));
+        }
 
         let Some(caller) = current_state.caller() else {
             break;
         };
-        stack.push(StackMapEntry::Skip(inline_frame_stack_gap(current_state.iseq)));
+        // Skip the callee's receiver slot below its local table.
+        // There is always a receiver there because we currently only inline through sends.
+        stack.push(StackMapEntry::Skip(1));
         current_state = function.frame_state(caller);
     }
     stack
-}
-
-fn inline_frame_stack_gap(iseq: IseqPtr) -> usize {
-    // The extra slot is for the callee's receiver below its local table.
-    // We currently never map out the stack for `invokeblock`, which doesn't
-    // put a receiver on cfp->sp stack.
-    1 + unsafe { get_iseq_body_local_table_size(iseq) }.to_usize() + VM_ENV_DATA_SIZE.to_usize()
 }
 
 /// Prepare for calling a C function that may call an arbitrary method.
