@@ -352,6 +352,20 @@ module Prism
       assert_location(FloatNode, "1.0e-10")
     end
 
+    def test_ForComprehensionIteratorNode
+      assert_location(ForComprehensionIteratorNode, "for foo in bar then foo end", 4...14) do |node|
+        node.iterators.first
+      end
+      assert_location(ForComprehensionIteratorNode, "for foo in bar when foo.odd? then foo end", 4...28) do |node|
+        node.iterators.first
+      end
+    end
+
+    def test_ForComprehensionNode
+      assert_location(ForComprehensionNode, "for foo in bar then foo end")
+      assert_location(ForComprehensionNode, "for foo in bar, baz in qux then [foo, baz] end")
+    end
+
     def test_ForNode
       assert_location(ForNode, "for foo in bar; end")
       assert_location(ForNode, "for foo, bar in baz do end")

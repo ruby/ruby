@@ -124,6 +124,13 @@ module Prism
     # definition that is destructured.
     AnonymousLocal = Object.new
 
+    # Emulates one block iseq synthesized for a for-comprehension iterator:
+    # the flat_map/map block (when comprehension is set, along with the
+    # iterator's position in it), or the filter block of a guard (when
+    # comprehension is nil). Each such block's local table holds the hidden
+    # iteration parameter followed by the iterator's locals.
+    ForCompScope = Struct.new(:iterator, :comprehension, :position)
+
     # For the given source, compiles with CRuby and returns a list of all of the
     # sets of local variables that were encountered.
     def cruby_locals(source)
@@ -159,6 +166,26 @@ module Prism
       stack = [Prism.parse(source).value] #: Array[Prism::node]
 
       while (node = stack.pop)
+        if node.is_a?(ForCompScope)
+          names = [AnonymousLocal, *node.iterator.locals]
+          names.map!.with_index do |name, index|
+            name == AnonymousLocal ? names.length - index + 1 : name
+          end
+          locals << names
+
+          if node.comprehension.nil?
+            # A guard's filter block: its body is the guard expression.
+            stack << node.iterator.guard
+          elsif node.position + 1 < node.comprehension.iterators.length
+            # The block's body is the next iterator's send chain.
+            stack.concat(for_comp_children(node.comprehension, node.position + 1))
+          elsif node.comprehension.statements
+            # The innermost block: its body is the user statements.
+            stack << node.comprehension.statements
+          end
+          next
+        end
+
         case node
         when BlockNode, DefNode, LambdaNode
           names = node.locals
@@ -248,6 +275,12 @@ module Prism
           locals << node.locals
         when ForNode
           locals << [2]
+        when ForComprehensionNode
+          # The comprehension compiles to filter/flat_map/map sends in the
+          # enclosing scope; emulate its synthesized block iseqs instead of
+          # traversing the node's children directly.
+          stack.concat(for_comp_children(node, 0))
+          next
         when PostExecutionNode
           locals.push([], [])
         when InterpolatedRegularExpressionNode
@@ -258,6 +291,18 @@ module Prism
       end
 
       locals
+    end
+
+    # The stack entries for the comprehension's iterator at position, in the
+    # order the enclosing instruction sequence contains them: the collection
+    # is compiled in the enclosing scope, then the guard's filter block (if
+    # any), then the flat_map/map block.
+    def for_comp_children(node, position)
+      iterator = node.iterators[position]
+      children = [iterator.collection]
+      children << ForCompScope.new(iterator, nil, nil) if iterator.guard
+      children << ForCompScope.new(iterator, node, position)
+      children
     end
   end
 end
