@@ -22855,4 +22855,91 @@ mod hir_opt_tests {
           Return v37
         ");
     }
+
+    #[test]
+    fn test_specialize_polymorphic_send_with_block() {
+        set_call_threshold(4);
+        eval(r#"
+            class A
+              def foo = yield
+            end
+            class B < A; end
+            class C < A; end
+            def test(obj)
+              obj.foo { }
+            end
+            test(A.new)
+            test(B.new)
+            test(C.new)
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:8:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :obj@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :obj@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v16:CBool = HasType v10, ObjectSubclass[class_exact:C]
+          CondBranch v16, bb5(), bb6()
+        bb5():
+          v19:ObjectSubclass[class_exact:C] = RefineType v10, ObjectSubclass[class_exact:C]
+          PatchPoint NoSingletonClass(C@0x1008)
+          PatchPoint MethodRedefined(C@0x1008, foo@0x1010, cme:0x1018)
+          PushInlineFrame :foo, v19 (0x1040), num_args=0
+          v57:CPtr = GetEP 0
+          v58:CInt64 = LoadField v57, :VM_ENV_DATA_INDEX_SPECVAL@0x1060
+          v59:CInt64[-4] = Const CInt64(-4)
+          v60:CInt64 = IntAnd v58, v59
+          v61:BasicObject = InvokeBlockIseqDirect (0x1068), v60
+          CheckInterrupts
+          PopInlineFrame
+          Jump bb4(v61)
+        bb6():
+          v22:CBool = HasType v10, ObjectSubclass[class_exact:A]
+          CondBranch v22, bb7(), bb8()
+        bb7():
+          v25:ObjectSubclass[class_exact:A] = RefineType v10, ObjectSubclass[class_exact:A]
+          PatchPoint NoSingletonClass(A@0x1088)
+          PatchPoint MethodRedefined(A@0x1088, foo@0x1010, cme:0x1018)
+          PushInlineFrame :foo, v25 (0x1040), num_args=0
+          v75:CPtr = GetEP 0
+          v76:CInt64 = LoadField v75, :VM_ENV_DATA_INDEX_SPECVAL@0x1060
+          v77:CInt64[-4] = Const CInt64(-4)
+          v78:CInt64 = IntAnd v76, v77
+          v79:BasicObject = InvokeBlockIseqDirect (0x1068), v78
+          CheckInterrupts
+          PopInlineFrame
+          Jump bb4(v79)
+        bb8():
+          v28:CBool = HasType v10, ObjectSubclass[class_exact:B]
+          CondBranch v28, bb9(), bb10()
+        bb9():
+          v31:ObjectSubclass[class_exact:B] = RefineType v10, ObjectSubclass[class_exact:B]
+          PatchPoint NoSingletonClass(B@0x1090)
+          PatchPoint MethodRedefined(B@0x1090, foo@0x1010, cme:0x1018)
+          PushInlineFrame :foo, v31 (0x1040), num_args=0
+          v93:CPtr = GetEP 0
+          v94:CInt64 = LoadField v93, :VM_ENV_DATA_INDEX_SPECVAL@0x1060
+          v95:CInt64[-4] = Const CInt64(-4)
+          v96:CInt64 = IntAnd v94, v95
+          v97:BasicObject = InvokeBlockIseqDirect (0x1068), v96
+          CheckInterrupts
+          PopInlineFrame
+          Jump bb4(v97)
+        bb10():
+          v34:BasicObject = Send v10, 0x1068, :foo # SendFallbackReason: Send: polymorphic call site
+          Jump bb4(v34)
+        bb4(v15:BasicObject):
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v15
+        ");
+    }
 }
