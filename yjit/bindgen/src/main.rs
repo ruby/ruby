@@ -76,6 +76,7 @@ fn main() {
         .allowlist_type("RBasic")
 
         .allowlist_type("ruby_rstring_flags")
+        .allowlist_type("ruby_rstruct_flags")
 
         // This function prints info about a value and is useful for debugging
         .allowlist_function("rb_obj_info_dump")
@@ -284,6 +285,7 @@ fn main() {
         .allowlist_function("rb_jit_vm_unlock")
         .allowlist_function("rb_jit_for_each_iseq")
         .allowlist_type("jit_bindgen_constants")
+        .allowlist_type("yjit_bindgen_constants")
         .allowlist_function("rb_vm_barrier")
         .allowlist_function("rb_yjit_cdhash_all_fixnum_p")
         .allowlist_function("rb_yjit_cdhash_lookup")

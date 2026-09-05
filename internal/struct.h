@@ -18,7 +18,7 @@
  *          header, rather than being on a separately allocated buffer) and
  *          these bits are the length of the Struct.
  */
-enum {
+enum ruby_rstruct_flags {
     RSTRUCT_EMBED_LEN_MASK = RUBY_FL_USER7 | RUBY_FL_USER6 | RUBY_FL_USER5 | RUBY_FL_USER4 |
                                  RUBY_FL_USER3 | RUBY_FL_USER2 | RUBY_FL_USER1,
     RSTRUCT_EMBED_LEN_SHIFT = (RUBY_FL_USHIFT+1),
