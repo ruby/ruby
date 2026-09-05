@@ -6273,6 +6273,49 @@ pub(crate) mod hir_build_tests {
         Return v22
       ");
     }
+
+    #[test]
+    fn test_once_not_done_side_exits() {
+        eval("
+            def test = /#{'a'.upcase}/o
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          SideExit OnceNotDone recompile
+        ");
+    }
+
+    #[test]
+    fn test_once_done_returns_value() {
+        eval("
+            def test = /#{'a'.upcase}/o
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:RegexpExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          CheckInterrupts
+          Return v10
+        ");
+    }
 }
 
  /// Test successor and predecessor set computations.
