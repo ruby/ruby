@@ -820,7 +820,10 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::IncrCounterPtr { counter_ptr } => no_output!(gen_incr_counter_ptr(asm, *counter_ptr)),
         &Insn::CheckInterrupts { state } => no_output!(gen_check_interrupts(jit, asm, function, &function.frame_state(state))),
         Insn::BreakPoint => no_output!(asm.breakpoint()),
-        Insn::Unreachable => no_output!(asm.abort()),
+        // Trap, then end the LIR block with an unreachable ret so it has a
+        // normal terminator (mirrors gen_throw). `Unreachable` marks a program
+        // point the optimizer proved dead; if we somehow reach it, we abort.
+        Insn::Unreachable => no_output!({ asm.abort(); asm.cret(C_RET_OPND); }),
         &Insn::HashDup { val, state } => { gen_hash_dup(jit, asm, function, val, opnd!(val), &function.frame_state(state)) },
         &Insn::HashAref { hash, key, state } => { gen_hash_aref(jit, asm, function, opnd!(hash), opnd!(key), &function.frame_state(state)) },
         &Insn::HashAset { hash, key, val, state } => { no_output!(gen_hash_aset(jit, asm, function, opnd!(hash), opnd!(key), opnd!(val), &function.frame_state(state))) },

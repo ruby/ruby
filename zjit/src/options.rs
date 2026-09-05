@@ -666,6 +666,14 @@ pub fn set_inline_threshold(inline_threshold: InlineThreshold) {
     unsafe { OPTIONS.as_mut().unwrap().inline_threshold = inline_threshold; }
 }
 
+/// Update --zjit-num-profiles for testing
+#[cfg(test)]
+pub fn set_num_profiles(num_profiles: NumProfiles) {
+    rb_zjit_prepare_options();
+    unsafe { OPTIONS.as_mut().unwrap().num_profiles = num_profiles; }
+    update_profile_threshold();
+}
+
 /// Set --zjit-mem-size for testing. It's used to force OOM in tests.
 #[cfg(test)]
 pub fn set_mem_bytes(mem_bytes: usize) {

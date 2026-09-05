@@ -1775,6 +1775,49 @@ mod hir_opt_tests {
         ");
     }
 
+    // `b`'s else branch interpolates `x`, emitting `CondBranchHasType x, String` (objtostring).
+    // Once `b` is inlined into `test`, where `x` is a String literal (and so provably `Truthy`),
+    // the `if x` else branch refines `x` to `Falsy`, i.e. `String & Falsy = Empty`. That `Empty`
+    // value then feeds the `CondBranchHasType`: infer_types (using `could_be`) marks neither of its
+    // edges reachable, and fold_constants must fold the branch to `Unreachable` -- not to a `Jump`
+    // into a block whose params it never made reachable, which would fail validation.
+    #[test]
+    fn test_condbranchhastype_on_empty_after_inlining_folds_to_unreachable() {
+        eval("
+            def b(x)
+              if x
+                x.itself
+              else
+                \"interp=#{x}\"
+              end
+            end
+            def test = b(\"s\")
+            test; test
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:9:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v11:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          v12:StringExact = StringCopy v11
+          PatchPoint MethodRedefined(Object@0x1008, b@0x1010, cme:0x1018)
+          v21:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
+          PushInlineFrame :b, v21 (0x1040), num_args=1
+          PatchPoint NoSingletonClass(String@0x1060)
+          PatchPoint MethodRedefined(String@0x1060, itself@0x1068, cme:0x1070)
+          CheckInterrupts
+          PopInlineFrame
+          Return v12
+        ");
+    }
+
     #[test]
     fn test_optimize_send_to_aliased_cfunc() {
         eval("
