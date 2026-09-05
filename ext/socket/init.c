@@ -147,6 +147,17 @@ rsock_strbuf(VALUE str, long buflen)
     return str;
 }
 
+/* As io.c's io_shrink_read_string(): a buffer this call created holds
+ * buflen bytes however short the read was; give the unused part back. */
+#define RSOCK_MAX_REALLOC_GAP 4096
+static void
+rsock_shrink_strbuf(VALUE str, long n)
+{
+    if (rb_str_capacity(str) - (size_t)n > RSOCK_MAX_REALLOC_GAP) {
+        rb_str_resize(str, n);
+    }
+}
+
 static VALUE
 recvfrom_locktmp(VALUE v)
 {
@@ -185,6 +196,8 @@ rsock_s_recvfrom(VALUE socket, int argc, VALUE *argv, enum sock_recv_type from)
         arg.flags = NUM2INT(flg);
 
     buflen = NUM2INT(len);
+    // Only a buffer allocated here may shrink, as io_setstrbuf() decides in io.c.
+    int shrinkable = NIL_P(str);
     str = rsock_strbuf(str, buflen);
 
     RB_IO_POINTER(socket, fptr);
@@ -220,6 +233,7 @@ rsock_s_recvfrom(VALUE socket, int argc, VALUE *argv, enum sock_recv_type from)
 
     /* Resize the string to the amount of data received */
     rb_str_set_len(str, slen);
+    if (shrinkable) rsock_shrink_strbuf(str, slen);
     switch (from) {
       case RECV_RECV:
         return str;
@@ -260,6 +274,7 @@ rsock_s_recvfrom_nonblock(VALUE sock, VALUE len, VALUE flg, VALUE str,
 
     flags = NUM2INT(flg);
     buflen = NUM2INT(len);
+    int shrinkable = NIL_P(str);
     str = rsock_strbuf(str, buflen);
 
 #ifdef MSG_DONTWAIT
@@ -303,6 +318,7 @@ rsock_s_recvfrom_nonblock(VALUE sock, VALUE len, VALUE flg, VALUE str,
     }
     if (slen != RSTRING_LEN(str)) {
         rb_str_set_len(str, slen);
+        if (shrinkable) rsock_shrink_strbuf(str, slen);
     }
     switch (from) {
       case RECV_RECV:
@@ -379,6 +395,7 @@ rsock_read_nonblock(VALUE sock, VALUE length, VALUE buf, VALUE ex)
         if (ex == Qfalse) return Qnil;
         rb_eof_error();
     }
+    if (NIL_P(buf)) rsock_shrink_strbuf(str, n);
 
     return str;
 }

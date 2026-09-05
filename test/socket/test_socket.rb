@@ -1089,4 +1089,36 @@ class TestSocket < Test::Unit::TestCase
     assert_true(Socket.tcp_fast_fallback)
     RUBY
   end
+
+  def test_read_buffer_is_shrunk
+    # A buffer this call allocated must not keep the whole requested length
+    # (io.c has done the same for IO#read since [Bug #13597]); a
+    # caller-supplied buffer keeps its capacity, which is why it was supplied.
+    #
+    # mmtk can embed a string of any size, so the buffer is never malloc'd and
+    # there is nothing to give back: the capacity stays at the slot size.
+    omit "buffer is embedded, not malloc'd" if RUBY_DESCRIPTION.include?("+GC[mmtk]")
+    require 'objspace'
+    s1, s2 = UNIXSocket.pair
+    begin
+      s2.write "hi"
+      str = s1.recv(65536)
+      assert_equal "hi", str
+      assert_operator ObjectSpace.memsize_of(str), :<, 8192
+
+      s2.write "nb"
+      nb = s1.recv_nonblock(65536)
+      assert_equal "nb", nb
+      assert_operator ObjectSpace.memsize_of(nb), :<, 8192
+
+      given = String.new(capacity: 65536)
+      s2.write "yo"
+      s1.recv(65536, 0, given)
+      assert_equal "yo", given
+      assert_operator ObjectSpace.memsize_of(given), :>, 60000
+    ensure
+      s1.close
+      s2.close
+    end
+  end
 end if defined?(Socket)
