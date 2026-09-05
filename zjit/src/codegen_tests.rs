@@ -6,7 +6,7 @@ use crate::backend::lir::Assembler;
 use crate::codegen::max_iseq_versions;
 use crate::cruby::*;
 use crate::hir::{Insn, iseq_to_hir};
-use crate::options::{get_option, rb_zjit_prepare_options, set_call_threshold, set_inline_threshold, set_max_versions, set_mem_bytes, set_num_profiles};
+use crate::options::{get_option, rb_zjit_prepare_options, set_call_threshold, set_inline_threshold, set_max_versions, set_mem_bytes};
 use crate::payload::IseqVersion;
 use crate::hir::tests::hir_build_tests::assert_contains_opcode;
 use crate::payload::*;
@@ -142,52 +142,6 @@ fn test_recompile_exit_waits_for_interpreter_profiles() {
     eval("recompile_profile_window(1.5, 2.5)");
     let payload = get_or_create_iseq_payload(iseq);
     assert!(unsafe { payload.versions.last().unwrap().as_ref() }.is_invalidated());
-}
-
-// Regression test for a dead string-interpolation raise block whose receiver
-// is refined to Bottom. Across the multi-version recompile, the polymorphic
-// `enc.foo` guard funnels the common `mode == nil` path so `mode` freezes to a
-// monomorphic NilClass guard upstream, while the rare string-`mode` calls have
-// already frozen the `#{mode}` interpolation site as String-profiled. That
-// leaves `GuardType(NilClass, String)` = Bottom feeding the CondBranchHasType
-// on the dead `raise` block. Without folding that to Unreachable, the dead
-// block survives, `#{uri.class}` (Module#to_s -> BasicObject) flows into a
-// StringConcat that requires String operands, and `validate()` aborts the
-// process with MismatchedOperandType during codegen. With the fold, the block
-// is proved dead and the program runs to completion.
-#[test]
-fn dead_string_interp_raise_block_folds_to_unreachable() {
-    // NB: 31, not 30. boot_rubyvm() resets the threshold to 2 whenever it equals
-    // DEFAULT_CALL_THRESHOLD (30), which would make profiling sample the very first
-    // (String) call and defeat the race we need.
-    set_call_threshold(31);
-    set_num_profiles(1);
-    set_max_versions(2);
-    set_inline_threshold(0);
-    assert_snapshot!(inspect(r#"
-        class FakeURI; end
-        class A; def foo; 1; end; end
-        class B; def foo; 2; end; end
-
-        def open_uri(uri, enc, mode)
-          enc.foo
-          unless mode == nil || mode == 'r' || mode == 'rb'
-            raise ArgumentError.new("invalid access mode #{mode} (#{uri.class} resource is read only.)")
-          end
-          :ok
-        end
-
-        u = FakeURI.new
-        encs = [A.new, B.new]
-        i = 0
-        while i < 3000
-          enc  = encs[i % 2]
-          mode = (i % 31 == 0) ? "zz" : nil
-          begin; open_uri(u, enc, mode); rescue ArgumentError; end
-          i += 1
-        end
-        :done
-    "#), @":done");
 }
 
 #[test]

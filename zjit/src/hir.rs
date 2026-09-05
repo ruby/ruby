@@ -6961,10 +6961,9 @@ impl Function {
                     // is an impossible value, so this program point is dead. Fold to
                     // Unreachable rather than a Jump; this keeps `infer_types` (which
                     // uses `could_be` and so marks neither edge reachable) consistent.
-                    // TEMP DISABLED to verify the opt test catches the crash
-                    // Insn::CondBranchHasType(insn) if self.type_of(insn.val).is_subtype(types::Empty) => {
-                    //     self.new_insn(Insn::Unreachable)
-                    // }
+                    Insn::CondBranchHasType(insn) if self.type_of(insn.val).is_subtype(types::Empty) => {
+                        self.new_insn(Insn::Unreachable)
+                    }
                     Insn::CondBranchHasType(insn) if self.is_a(insn.val, insn.expected) => {
                         self.new_insn(Insn::Jump(insn.if_true.clone()))
                     }

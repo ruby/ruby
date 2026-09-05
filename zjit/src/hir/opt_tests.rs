@@ -1781,6 +1781,125 @@ mod hir_opt_tests {
     // value then feeds the `CondBranchHasType`: infer_types (using `could_be`) marks neither of its
     // edges reachable, and fold_constants must fold the branch to `Unreachable` -- not to a `Jump`
     // into a block whose params it never made reachable, which would fail validation.
+    // Regression test for a dead string-interpolation raise block whose receiver is
+    // refined to Bottom. Across the multi-version recompile, the polymorphic `enc.foo`
+    // guard funnels the common `mode == nil` path so `mode` freezes to a monomorphic
+    // NilClass guard upstream, while the rare string-`mode` calls have already frozen
+    // the `#{mode}` interpolation site as String-profiled. That leaves
+    // `GuardType(NilClass, String)` = Bottom feeding the CondBranchHasType on the dead
+    // `raise` block. Without folding that to Unreachable, the dead block survives,
+    // `#{uri.class}` (Module#to_s -> BasicObject) flows into a StringConcat that requires
+    // String operands, and `validate()` aborts the process during the driver's own JIT
+    // compile inside eval. With the fold the block is proved dead and eval completes,
+    // so hir_string can then compile a valid function.
+    #[test]
+    fn test_dead_string_interp_raise_block_folds_to_unreachable() {
+        // NB: 31, not 30. boot_rubyvm() resets the threshold to 2 whenever it equals
+        // DEFAULT_CALL_THRESHOLD (30), which would make profiling sample the very first
+        // (String) call and defeat the race we need.
+        set_call_threshold(31);
+        set_num_profiles(1);
+        set_max_versions(2);
+        set_inline_threshold(0);
+        eval(r#"
+            class FakeURI; end
+            class A; def foo; 1; end; end
+            class B; def foo; 2; end; end
+
+            def open_uri(uri, enc, mode)
+              enc.foo
+              unless mode == nil || mode == 'r' || mode == 'rb'
+                raise ArgumentError.new("invalid access mode #{mode} (#{uri.class} resource is read only.)")
+              end
+              :ok
+            end
+
+            u = FakeURI.new
+            encs = [A.new, B.new]
+            i = 0
+            while i < 3000
+              enc  = encs[i % 2]
+              mode = (i % 31 == 0) ? "zz" : nil
+              begin; open_uri(u, enc, mode); rescue ArgumentError; end
+              i += 1
+            end
+            :done
+        "#);
+        assert_snapshot!(hir_string("open_uri"), @"
+        fn open_uri@<compiled>:7:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :uri@0x1000
+          v4:BasicObject = LoadField v2, :enc@0x1001
+          v5:BasicObject = LoadField v2, :mode@0x1002
+          Jump bb3(v1, v3, v4, v5)
+        bb2():
+          EntryPoint JIT(0)
+          v8:BasicObject = LoadArg :self@0
+          v9:BasicObject = LoadArg :uri@1
+          v10:BasicObject = LoadArg :enc@2
+          v11:BasicObject = LoadArg :mode@3
+          Jump bb3(v8, v9, v10, v11)
+        bb3(v13:BasicObject, v14:BasicObject, v15:BasicObject, v16:BasicObject):
+          CondBranchHasType v15, ObjectSubclass[class_exact:B], bb8(), bb9()
+        bb8():
+          PatchPoint NoSingletonClass(B@0x1008)
+          PatchPoint MethodRedefined(B@0x1008, foo@0x1010, cme:0x1018)
+          v167:Fixnum[2] = Const Value(2)
+          Jump bb7(v167)
+        bb9():
+          CondBranchHasType v15, ObjectSubclass[class_exact:A], bb10(), bb11()
+        bb10():
+          PatchPoint NoSingletonClass(A@0x1040)
+          PatchPoint MethodRedefined(A@0x1040, foo@0x1010, cme:0x1048)
+          v170:Fixnum[1] = Const Value(1)
+          Jump bb7(v170)
+        bb11():
+          v32:BasicObject = Send v15, :foo # SendFallbackReason: Send: polymorphic call site
+          Jump bb7(v32)
+        bb7(v21:BasicObject):
+          PatchPoint NoEPEscape(open_uri)
+          v40:NilClass = Const Value(nil)
+          PatchPoint MethodRedefined(NilClass@0x1070, ==@0x1078, cme:0x1080)
+          v173:NilClass = GuardType v16, NilClass recompile
+          v174:CBool = IsBitEqual v173, v40
+          CondBranch v174, bb6(), bb12()
+        bb12():
+          v51:StringExact[VALUE(0x10a8)] = Const Value(VALUE(0x10a8))
+          v52:StringExact = StringCopy v51
+          PatchPoint NoSingletonClass(String@0x10b0)
+          PatchPoint MethodRedefined(String@0x10b0, ==@0x1078, cme:0x10b8)
+          v179 = GuardType v173, StringExact recompile
+          v180:BoolExact = StringEqual v179, v52
+          v57:CBool = Test v180
+          CondBranch v57, bb6(), bb13()
+        bb13():
+          v63:StringExact[VALUE(0x10e0)] = Const Value(VALUE(0x10e0))
+          v64:StringExact = StringCopy v63
+          PatchPoint NoSingletonClass(String@0x10b0)
+          PatchPoint MethodRedefined(String@0x10b0, ==@0x1078, cme:0x10b8)
+          v184 = GuardType v173, StringExact recompile
+          v185:BoolExact = StringEqual v184, v64
+          v69:CBool = Test v185
+          CondBranch v69, bb6(), bb14()
+        bb6():
+          v133:StaticSymbol[:ok] = Const Value(VALUE(0x10e8))
+          CheckInterrupts
+          Return v133
+        bb14():
+          v76:NilClass = Const Value(nil)
+          PatchPoint StableConstantNames(0x10f0, ArgumentError)
+          v79:ClassSubclass[ArgumentError@0x10f8] = Const Value(VALUE(0x10f8))
+          v81:StringExact[VALUE(0x1100)] = Const Value(VALUE(0x1100))
+          PatchPoint NoEPEscape(open_uri)
+          PatchPoint NoSingletonClass(String@0x10b0)
+          v88 = GuardType v173, String
+          Unreachable
+        ");
+    }
+
     #[test]
     fn test_condbranchhastype_on_empty_after_inlining_folds_to_unreachable() {
         eval("
