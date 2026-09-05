@@ -1514,6 +1514,38 @@ class TestHash < Test::Unit::TestCase
     assert_predicate(h.dup, :compare_by_identity?, bug8703)
   end
 
+  def test_compare_by_identity_comparison
+    h1 = @cls[].compare_by_identity
+    h1["one"] = 1
+    h2 = @cls["one" => 1]
+
+    # == is consistent in both directions
+    assert_equal(false, h1 == h2)
+    assert_equal(false, h2 == h1)
+
+    # <= and >= should be consistent with ==
+    assert_equal(false, h1 <= h2, "[Bug #21921]")
+    assert_equal(false, h2 <= h1, "[Bug #21921]")
+    assert_equal(false, h1 >= h2, "[Bug #21921]")
+    assert_equal(false, h2 >= h1, "[Bug #21921]")
+
+    # < and > should also be consistent
+    assert_equal(false, h1 < h2, "[Bug #21921]")
+    assert_equal(false, h2 < h1, "[Bug #21921]")
+    assert_equal(false, h1 > h2, "[Bug #21921]")
+    assert_equal(false, h2 > h1, "[Bug #21921]")
+
+    # two identity hashes with same key object should still work
+    h3 = @cls[].compare_by_identity
+    h4 = @cls[].compare_by_identity
+    s = "key"
+    h3[s] = 1
+    h4[s] = 1
+    h4["extra"] = 2
+    assert_equal(true, h3 <= h4)
+    assert_equal(true, h3 < h4)
+  end
+
   def test_compare_by_identy_memory_leak
     assert_no_memory_leak([], "", "#{<<~"begin;"}\n#{<<~'end;'}", "[Bug #20145]", rss: true)
     begin;
