@@ -3974,8 +3974,19 @@ fn gen_function_stub(cb: &mut CodeBlock, iseq_call: IseqCallRef) -> Result<CodeP
     // any optional positional gaps.
     let argc = iseq_call.argc.to_usize();
     let local_size = unsafe { get_iseq_body_local_table_size(iseq_call.iseq.get()) }.to_usize();
-    for arg_idx in 0..argc {
-        let src = match lir::c_arg_location(arg_idx + 1) { // +1 for self
+
+    // Mirror the argument layout of gen_send_direct: self, then the packed
+    // positional arguments, and the block handler if it exists.
+    let params = unsafe { iseq_call.iseq.get().params() };
+    let mut spills: Vec<(usize, usize)> = (0..argc).map(|arg_idx| (arg_idx + 1, arg_idx)).collect();
+    if params.flags.has_block() != 0 {
+        let block_local_idx: usize = params.block_start.try_into()
+            .expect("ISEQ block_start should be non-negative");
+        spills.push((argc + 1, block_local_idx));
+    }
+
+    for (c_arg_idx, local_idx) in spills {
+        let src = match lir::c_arg_location(c_arg_idx) {
             CArgLocation::Reg(reg) => reg,
             CArgLocation::StackSlot(slot) => {
                 // The stub runs before any frame setup, so stack-passed arguments
@@ -3987,7 +3998,7 @@ fn gen_function_stub(cb: &mut CodeBlock, iseq_call: IseqCallRef) -> Result<CodeP
             }
         };
         asm.store(
-            Opnd::mem(64, SP, -local_size_and_idx_to_bp_offset(local_size, arg_idx) * SIZEOF_VALUE_I32),
+            Opnd::mem(64, SP, -local_size_and_idx_to_bp_offset(local_size, local_idx) * SIZEOF_VALUE_I32),
             src,
         );
     }
