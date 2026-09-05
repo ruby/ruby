@@ -1306,6 +1306,34 @@ fn test_no_ep_escape_patch_point_after_send_does_not_repeat_send() {
 }
 
 #[test]
+fn test_function_stub_exit_initializes_block_param() {
+    set_mem_bytes(1024 * 1024);
+    set_inline_threshold(0);
+    set_call_threshold(2);
+    assert_snapshot!(inspect(r#"
+        # Make the callee big enough that compiling it exhausts the code region, so the
+        # stub hit fails with OutOfMemory and falls back to the interpreter.
+        body = (0...400).map { |k| "u#{k} = #{k} + n" }.join("
+")
+        # Using a bmethod makes &blk observable on the captured EP rather than a block handler.
+        Integer.class_eval <<~BMETHOD
+          define_method(:zjit_blk_callee) do |n, &blk|
+            #{body}
+            blk.nil?
+          end
+        BMETHOD
+
+        # Compile the call site, which generates the function stub, without running it,
+        # so the callee is still uncompiled when the stub is first hit.
+        def kaller(run) = run ? 1.zjit_blk_callee(2) : nil
+        300.times { kaller(false) }
+
+        # No block is passed, so the callee must see a nil block parameter.
+        kaller(true)
+    "#), @"true");
+}
+
+#[test]
 fn test_no_ep_escape_side_exit_restores_locals_while_oom() {
     // A regression test for stub compilation failures on OOM. Functions patched by NoEPEscape
     // is unsafe to enter (FrameState uses without_locals() and doesn't spill the entry state),
