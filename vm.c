@@ -1534,6 +1534,13 @@ env_copy(const VALUE *src_ep, VALUE read_only_variables)
         RB_OBJ_WRITTEN(copied_env, Qundef, new_prev_env);
         VM_ENV_FLAGS_UNSET(ep, VM_ENV_FLAG_LOCAL);
     }
+    else if (VM_ENV_BOXED_P(src_ep)) {
+        // A TOP/CLASS local env stores its box, not a block handler, in the
+        // SPECVAL slot (VM_ENV_BOX). Preserve it: method lookup inside the
+        // isolated proc reads the box back via rb_current_box(), and a
+        // cleared slot dereferences a NULL box.
+        ep[VM_ENV_DATA_INDEX_SPECVAL] = src_ep[VM_ENV_DATA_INDEX_SPECVAL];
+    }
     else {
         ep[VM_ENV_DATA_INDEX_SPECVAL] = VM_BLOCK_HANDLER_NONE;
     }

@@ -1382,4 +1382,17 @@ class TestBox < Test::Unit::TestCase
       Module.new.include?(Module.new)
     end;
   end
+
+  def test_method_call_in_isolated_proc_from_class_frame
+    # A TOP/CLASS local env stores its box in the SPECVAL slot (VM_ENV_BOX);
+    # Ractor.make_shareable's env copy must preserve it, or any method call
+    # inside the isolated proc dereferences a NULL box and crashes the VM.
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      module BoxIsolatedProcTest
+        PROC = Ractor.make_shareable(->(x){ x.to_s })
+      end
+      assert_equal "42", BoxIsolatedProcTest::PROC.call(42)
+    end;
+  end
 end
