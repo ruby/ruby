@@ -634,7 +634,7 @@ typedef struct gc_function_map {
     void (*objspace_free)(void *objspace_ptr);
     void (*ractor_cache_free)(void *objspace_ptr, void *cache);
     // GC
-    void (*start)(void *objspace_ptr, bool full_mark, bool immediate_mark, bool immediate_sweep, bool compact);
+    void (*start)(void *objspace_ptr, bool full_mark, bool immediate_mark, bool immediate_sweep, bool compact, bool global);
     bool (*during_gc_p)(void *objspace_ptr);
     void (*prepare_heap)(void *objspace_ptr);
     void (*gc_enable)(void *objspace_ptr);
@@ -3865,9 +3865,9 @@ rb_global_variable(VALUE *var)
 }
 
 static VALUE
-gc_start_internal(rb_execution_context_t *ec, VALUE self, VALUE full_mark, VALUE immediate_mark, VALUE immediate_sweep, VALUE compact)
+gc_start_internal(rb_execution_context_t *ec, VALUE self, VALUE full_mark, VALUE immediate_mark, VALUE immediate_sweep, VALUE compact, VALUE global)
 {
-    rb_gc_impl_start(rb_gc_get_objspace(), RTEST(full_mark), RTEST(immediate_mark), RTEST(immediate_sweep), RTEST(compact));
+    rb_gc_impl_start(rb_gc_get_objspace(), RTEST(full_mark), RTEST(immediate_mark), RTEST(immediate_sweep), RTEST(compact), RTEST(global));
 
     return Qnil;
 }
@@ -5134,7 +5134,7 @@ rb_gc(void)
 {
     unless_objspace(objspace) { return; }
 
-    rb_gc_impl_start(objspace, true, true, true, false);
+    rb_gc_impl_start(objspace, true, true, true, false, true);
 }
 
 int
