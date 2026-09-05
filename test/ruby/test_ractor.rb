@@ -244,6 +244,95 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+  def test_sending_objects
+    assert_ractor(<<~'RUBY')
+      def echo(obj)
+        Ractor.new { Ractor.receive }.send(obj).value
+      end
+
+      # An unshareable object arrives as an equal copy.
+      def assert_copy(obj)
+        copy = echo(obj)
+        refute_same obj, copy
+        assert_instance_of obj.class, copy
+        assert_equal obj, copy
+      end
+
+      # A shareable object arrives as itself.
+      def assert_shared(obj)
+        assert_same obj, echo(obj)
+      end
+
+      assert_copy Time.at(0)
+      assert_copy Time.now
+      assert_copy [Time.now]
+      assert_shared Ractor::Port.new
+      assert_copy [Ractor::Port.new]
+      assert_copy [Time.now, Ractor::Port.new]
+      # Dump hooks run after the courier is sized, so enough of them make it grow.
+      assert_copy Array.new(2000) { |i| Time.at(i) }
+      # Set has no dump hook of its own; it goes through its rb_marshal_define_compat entry.
+      assert_copy Set.new
+      assert_copy Set[1,2,3]
+      assert_copy Set[+"a", [+"b"], {+"c" => Set[+"d"]}]
+      assert_copy Set[1].compare_by_identity
+      assert_copy Class.new(Set)[1, 2]
+      assert_equal true, echo(Set[1].compare_by_identity).compare_by_identity?
+      set = Set[Ractor::Port.new, Ractor::Port.new]   # Marshal cannot carry a Port
+      assert_equal set.to_a, echo(set).to_a
+
+      # Time#_dump keeps these as ivars on the dumped string; Time#== ignores the last two.
+      time = Time.at(0, 123456789, :nsec, in: "+09:00")
+      copy = echo(time)
+      assert_equal time.nsec, copy.nsec
+      assert_equal time.utc_offset, copy.utc_offset
+      assert_equal time.zone, copy.zone
+
+      # Every reference to a _load'ed object resolves to the one copy.
+      copy_time, copy_hash = echo([time, { time => time }])
+      assert_same copy_time, copy_hash.keys[0]
+      assert_same copy_time, copy_hash[time]
+    RUBY
+  end
+
+  def test_sending_hash_with_shared_key
+    # A key that was already reached elsewhere in the graph must be complete before the
+    # hash inserts it, or it is inserted under the wrong #hash.
+    assert_ractor(<<~'RUBY')
+      def echo(obj)
+        Ractor.new { Ractor.receive }.send(obj).value
+      end
+
+      key = { 1 => 2 }
+      copy_key, copy_hash = echo([key, { key => 1 }])
+      assert_equal key, copy_key
+      assert_equal 1, copy_hash[key]
+      assert_same copy_key, copy_hash.keys[0]
+
+      # The same for a key hashed by an ivar that is itself copied.
+      class ByValue
+        attr_reader :v
+        def initialize(v) = @v = v
+        def hash = @v.hash
+        def eql?(other) = other.is_a?(ByValue) && @v == other.v
+      end
+      key = ByValue.new(+"abc")
+      copy_key, copy_hash = echo([key, { key => 1 }])
+      assert_equal 1, copy_hash[key]
+      assert_same copy_key, copy_hash.keys[0]
+    RUBY
+  end
+
+  def test_failed_send_leaves_receiver_usable
+    # The courier built so far is freed once, not again with the basket.
+    assert_ractor(<<~'RUBY')
+      ractor = Ractor.new { Ractor.receive }
+      assert_raise(Ractor::Error) { ractor.send([proc {}]) }
+      ractor.send(42)
+      assert_equal 42, ractor.value
+    RUBY
+  end
+
   def test_move_nested_hash_during_gc_with_yjit
     assert_ractor(<<~'RUBY', timeout: 20, args: [{ "RUBY_YJIT_ENABLE" => "1" }])
       GC.stress = true
