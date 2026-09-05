@@ -3000,7 +3000,12 @@ set_method_visibility(VALUE self, int argc, const VALUE *argv, rb_method_visibil
 {
     int i;
 
+    // Changing visibility rewrites the method entry (or inserts a ZSUPER one), so
+    // it is a modification of the class like any other and belongs to the owner.
+    // Not rb_class_modify_check: that also marks a module initialized, which this
+    // path has never done and which would make a later Module#initialize raise.
     rb_check_frozen(self);
+    rb_class_owner_check(self);
     if (argc == 0) {
         rb_warning("%"PRIsVALUE" with no argument is just ignored",
                    QUOTE_ID(rb_frame_callee()));

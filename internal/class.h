@@ -65,6 +65,18 @@ struct rb_classext_struct {
             const VALUE includer;
         } iclass;
     } as;
+    /**
+     * The id of the Ractor that created this class/module; only that Ractor can
+     * modify it.  0 means the main Ractor, so a program that never leaves it
+     * stores nothing.  An id rather than the Ractor object: ids are handed out by
+     * a monotonic counter and never reused, so the comparison cannot be fooled by
+     * a dangling or recycled reference, and a class does not keep its creator
+     * alive.  Once the owner terminates no live Ractor carries its id, which is
+     * what makes such a class permanently read-only.  Internal only: never
+     * exposed to Ruby.  Meaningful only in the prime classext; always 0 for
+     * T_ICLASS.
+     */
+    uint32_t owner_ractor_id;
     uint16_t superclass_depth;
     attr_index_t max_iv_count;
     uint8_t variation_count;
@@ -114,6 +126,28 @@ static inline void RCLASS_SET_PRIME_CLASSEXT_WRITABLE(VALUE obj, bool writable);
 
 #define RCLASS_EXT_PRIME(c) (&((struct RClass_and_rb_classext_t*)(c))->classext)
 #define RCLASS_EXT_PRIME_P(ext, c) (&((struct RClass_and_rb_classext_t*)(c))->classext == ext)
+
+// Class ownership (the Ractor that created the class/module).
+// The owner is stored only in the prime classext. See the comment on
+// rb_classext_struct::owner_ractor_id.
+#define RCLASSEXT_OWNER_RACTOR_ID(ext) (ext->owner_ractor_id)
+
+static inline uint32_t
+RCLASS_OWNER_RACTOR_ID(VALUE klass)
+{
+    return RCLASS_EXT_PRIME(klass)->owner_ractor_id;
+}
+
+static inline void
+RCLASS_SET_OWNER_RACTOR_ID(VALUE klass, uint32_t ractor_id)
+{
+    // Not a VALUE, so no write barrier and nothing for the GC to mark or update.
+    RCLASS_EXT_PRIME(klass)->owner_ractor_id = ractor_id;
+}
+
+bool rb_class_owned_p(VALUE klass);          // true if the current Ractor created klass
+void rb_class_owner_check(VALUE klass);      // raise Ractor::IsolationError unless rb_class_owned_p(klass)
+void rb_class_take_ownership(VALUE klass);   // make the current Ractor the owner (moved singleton classes only)
 
 static inline rb_classext_t * RCLASS_EXT_READABLE_IN_BOX(VALUE obj, const rb_box_t *box);
 static inline rb_classext_t * RCLASS_EXT_READABLE(VALUE obj);

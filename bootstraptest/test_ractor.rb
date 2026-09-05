@@ -869,8 +869,8 @@ assert_equal '99', %q{
   Ractor.new { inner = 99; eval("inner").to_s }.value
 }
 
-# ivar in shareable-objects are not allowed to access from non-main Ractor
-assert_equal "can not get unshareable values from instance variables of classes/modules from non-main Ractors (@iv from C)", <<~'RUBY', frozen_string_literal: false
+# ivar in shareable-objects are not allowed to access from non-owner Ractor
+assert_equal "can not get unshareable values from instance variables of classes/modules created by another Ractor (@iv from C)", <<~'RUBY', frozen_string_literal: false
   class C
     @iv = 'str'
   end
@@ -1046,7 +1046,7 @@ assert_equal '1234', %q{
 }
 
 # Reading non-shareable cvar from non-main Ractor is not allowed
-assert_equal 'can not read non-shareable class variable @@cv from non-main Ractors (C)', %q{
+assert_equal 'can not read non-shareable class variable @@cv of C, which was created by another Ractor', %q{
   class C
     @@cv = 'str'
   end
@@ -1065,7 +1065,7 @@ assert_equal 'can not read non-shareable class variable @@cv from non-main Racto
 }
 
 # also cached non-shareable cvar read from non-main Ractor is not allowed
-assert_equal 'can not read non-shareable class variable @@cv from non-main Ractors (C)', %q{
+assert_equal 'can not read non-shareable class variable @@cv of C, which was created by another Ractor', %q{
   class C
     @@cv = 'str'
     def self.cv
@@ -1130,7 +1130,7 @@ assert_equal 'hello', %q{
 }
 
 # Writing cvar from non-main Ractor is not allowed
-assert_equal 'can not set class variables from non-main Ractors (@@cv from C)', %q{
+assert_equal 'can not set class variable @@cv of C, which was created by another Ractor', %q{
   class C
     @@cv = 'str'
     def self.cv=(v)
@@ -1175,8 +1175,175 @@ assert_equal 'true', %q{
   r.value
 }
 
+# A Ractor has full use of the cvars of a class it created, unshareable values included
+assert_equal 'not shareable', %q{
+  Ractor.new do
+    k = Class.new
+    k.class_variable_set(:@@cv, +'not shareable')
+    k.class_variable_get(:@@cv)
+  end.value
+}
+
+# The owner is the owner of the class the cvar is stored in, not of the receiver
+assert_equal 'can not set class variable @@cv of C, which was created by another Ractor', %q{
+  class C
+    @@cv = 1
+  end
+
+  r = Ractor.new do
+    # a subclass created by this Ractor, but @@cv lives in C
+    Class.new(C).class_variable_set(:@@cv, 2)
+  end
+
+  begin
+    r.join
+  rescue Ractor::RemoteError => e
+    e.cause.message
+  end
+}
+
+# Removing a cvar of a class created by another Ractor is not allowed
+assert_equal 'can not set class variable @@cv of C, which was created by another Ractor', %q{
+  class C
+    @@cv = 1
+  end
+
+  r = Ractor.new do
+    C.send(:remove_class_variable, :@@cv)
+  end
+
+  begin
+    r.join
+  rescue Ractor::RemoteError => e
+    e.cause.message
+  end
+}
+
+# A moved object takes its singleton class's ownership with it, so the receiver
+# can keep defining singleton methods on it
+assert_equal '[:from_main, :from_ractor]', %q{
+  o = Object.new
+  def o.foo = :from_main   # materializes the singleton class here, in the main Ractor
+
+  r = Ractor.new do
+    x = Ractor.receive
+    def x.bar = :from_ractor
+    [x.foo, x.bar]
+  end
+  r.send(o, move: true)
+  r.value.inspect
+}
+
+# ... and it comes back when the object is moved back
+assert_equal '[:from_main, :from_ractor, :from_main_again]', %q{
+  o = Object.new
+  def o.foo = :from_main
+
+  port = Ractor::Port.new
+  r = Ractor.new(port) do |port|
+    x = Ractor.receive
+    def x.bar = :from_ractor
+    port.send(x, move: true)
+  end
+  r.send(o, move: true)
+
+  back = port.receive
+  def back.baz = :from_main_again
+  [back.foo, back.bar, back.baz].inspect
+}
+
+# Changing method visibility on a class created by another Ractor is not allowed
+assert_equal 'can not modify C because it is created by another Ractor', %q{
+  class C
+    def m; end
+  end
+
+  r = Ractor.new do
+    C.send(:private, :m)
+  end
+
+  begin
+    r.join
+  rescue Ractor::RemoteError => e
+    e.cause.message
+  end
+}
+
+# ... and neither is module_function with a method name
+assert_equal 'can not modify M because it is created by another Ractor', %q{
+  module M
+    def m; end
+  end
+
+  r = Ractor.new do
+    M.send(:module_function, :m)
+  end
+
+  begin
+    r.join
+  rescue Ractor::RemoteError => e
+    e.cause.message
+  end
+}
+
+# Visibility changes on a class the Ractor created itself are allowed
+assert_equal 'true', %q{
+  Ractor.new do
+    k = Class.new { def m; end }
+    k.send(:private, :m)
+    k.private_method_defined?(:m).to_s
+  end.value
+}
+
+# Freezing a class created by another Ractor is not allowed
+assert_equal 'can not modify String because it is created by another Ractor', %q{
+  r = Ractor.new do
+    String.freeze
+  end
+
+  begin
+    r.join
+  rescue Ractor::RemoteError => e
+    e.cause.message
+  end
+}
+
+# Freezing a class the Ractor created itself is allowed, and freezing an
+# already frozen class stays a no-op for everybody
+assert_equal 'true true', %q{
+  FROZEN = Class.new.freeze
+
+  Ractor.new do
+    own = Class.new
+    own.freeze
+    "#{own.frozen?} #{FROZEN.freeze.frozen?}"
+  end.value
+}
+
+# set_temporary_name on a class created by another Ractor is not allowed
+assert_equal 'can not modify C because it is created by another Ractor', %q{
+  class C; end
+
+  r = Ractor.new do
+    C.set_temporary_name('other')
+  end
+
+  begin
+    r.join
+  rescue Ractor::RemoteError => e
+    e.cause.message
+  end
+}
+
+# set_temporary_name on a module the Ractor created itself is allowed
+assert_equal 'mine', %q{
+  Ractor.new do
+    Module.new.set_temporary_name('mine').name
+  end.value
+}
+
 # Getting non-shareable objects via constants by other Ractors is not allowed
-assert_equal 'can not access non-shareable objects in constant C::CONST by non-main Ractor.', <<~'RUBY', frozen_string_literal: false
+assert_equal 'can not access non-shareable objects in constant C::CONST of a class/module created by another Ractor.', <<~'RUBY', frozen_string_literal: false
   class C
     CONST = 'str'
   end
@@ -1191,7 +1358,7 @@ assert_equal 'can not access non-shareable objects in constant C::CONST by non-m
   RUBY
 
 # Constant cache should care about non-shareable constants
-assert_equal "can not access non-shareable objects in constant Object::STR by non-main Ractor.", <<~'RUBY', frozen_string_literal: false
+assert_equal "can not access non-shareable objects in constant Object::STR of a class/module created by another Ractor.", <<~'RUBY', frozen_string_literal: false
   STR = "hello"
   def str; STR; end
   s = str() # fill const cache
@@ -1203,7 +1370,7 @@ assert_equal "can not access non-shareable objects in constant Object::STR by no
 RUBY
 
 # The correct constant path shall be reported
-assert_equal "can not access non-shareable objects in constant Object::STR by non-main Ractor.", <<~'RUBY', frozen_string_literal: false
+assert_equal "can not access non-shareable objects in constant Object::STR of a class/module created by another Ractor.", <<~'RUBY', frozen_string_literal: false
   STR = "hello"
   module M
     def self.str; STR; end
@@ -1216,8 +1383,8 @@ assert_equal "can not access non-shareable objects in constant Object::STR by no
   end
 RUBY
 
-# Setting non-shareable objects into constants by other Ractors is not allowed
-assert_equal 'can not set constants with non-shareable objects by non-main Ractors', <<~'RUBY', frozen_string_literal: false
+# Setting constants of classes created by other Ractors is not allowed
+assert_equal 'can not set constants of classes/modules created by another Ractor', <<~'RUBY', frozen_string_literal: false
   class C
   end
   r = Ractor.new do
@@ -1733,17 +1900,10 @@ assert_equal 'true', %q{
 }
 
 # check method cache invalidation
+# (the owner Ractor redefines methods while another Ractor calls them)
 assert_equal 'true', %q{
   class Foo
     def hello = nil
-  end
-
-  r1 = Ractor.new do
-    1000.times do
-      class Foo
-        def hello = nil
-      end
-    end
   end
 
   r2 = Ractor.new do
@@ -1753,7 +1913,12 @@ assert_equal 'true', %q{
     end
   end
 
-  r1.value
+  1000.times do
+    class Foo
+      def hello = nil
+    end
+  end
+
   r2.value
 
   true
@@ -2603,21 +2768,23 @@ RUBY
 assert_equal 'ok', <<~'RUBY'
 
 begin
-  CLASSES = 1000.times.map { Class.new }.freeze
-
+  # Each Ractor creates its own class (it can only define bmethods on classes
+  # it owns) and returns it after defining the bmethod.
   # This would be better to run in parallel, but there's a bug with lambda
   # creation and YJIT causing crashes in dev mode
-  ractors = CLASSES.map do |klass|
-    Ractor.new(klass) do |klass|
+  ractors = 1000.times.map do
+    Ractor.new do
+      klass = Class.new
       Ractor.receive
       klass.define_method(:foo) {}
+      klass
     end
   end
 
-  ractors.each do |ractor|
+  CLASSES = ractors.map do |ractor|
     ractor << nil
-    ractor.join
-  end
+    ractor.value
+  end.freeze
 
   ractors.clear
   GC.start
