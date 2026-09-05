@@ -17004,9 +17004,109 @@ mod hir_opt_tests {
           v4:BasicObject = LoadArg :self@0
           Jump bb3(v4)
         bb3(v6:BasicObject):
-          v11:BasicObject = Send v6, :forwardable # SendFallbackReason: Complex argument passing
+          PatchPoint MethodRedefined(Object@0x1000, forwardable@0x1008, cme:0x1010)
+          v18:ObjectSubclass[class_exact*:Object@VALUE(0x1000)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1000)] recompile
+          v19:BasicObject = SendDirect v18, 0x0, :forwardable (0x1038)
           CheckInterrupts
-          Return v11
+          Return v19
+        ");
+    }
+
+    #[test]
+    fn call_method_forwardable_param_with_args() {
+        eval("
+           def target(a, b, k:) = [a, b, k]
+           def forwardable(...) = target(...)
+           def call_forwardable = forwardable(1, 2, k: 3)
+           call_forwardable
+        ");
+        assert_snapshot!(hir_string("call_forwardable"), @"
+        fn call_forwardable@<compiled>:4:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v11:Fixnum[1] = Const Value(1)
+          v13:Fixnum[2] = Const Value(2)
+          v15:Fixnum[3] = Const Value(3)
+          PatchPoint MethodRedefined(Object@0x1000, forwardable@0x1008, cme:0x1010)
+          v24:ObjectSubclass[class_exact*:Object@VALUE(0x1000)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1000)] recompile
+          v25:BasicObject = SendDirect v24, 0x0, :forwardable (0x1038), v11, v13, v15
+          CheckInterrupts
+          Return v25
+        ");
+    }
+
+    #[test]
+    fn call_method_forwardable_param_with_splat() {
+        eval("
+           def forwardable(...) = itself(...)
+           def call_forwardable(args) = forwardable(*args)
+           call_forwardable([])
+        ");
+        assert_snapshot!(hir_string("call_forwardable"), @"
+        fn call_forwardable@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :args@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :args@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v16:ArrayExact = ToArray v10
+          v18:BasicObject = Send v9, :forwardable, v16 # SendFallbackReason: Complex argument passing
+          CheckInterrupts
+          Return v18
+        ");
+    }
+
+    #[test]
+    fn call_super_to_forwardable_param() {
+        eval("
+           class SuperFwdBase
+             def run(...) = fin(...)
+             def fin(a, b) = [a, b]
+           end
+           class SuperFwdChild < SuperFwdBase
+             def run(a, b) = super(a, b)
+           end
+           SuperFwdChild.new.run(1, 2)
+        ");
+        assert_snapshot!(hir_string_proc("SuperFwdChild.instance_method(:run)"), @"
+        fn run@<compiled>:7:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          v4:BasicObject = LoadField v2, :b@0x1001
+          Jump bb3(v1, v3, v4)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :a@1
+          v9:BasicObject = LoadArg :b@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint MethodRedefined(SuperFwdBase@0x1008, run@0x1010, cme:0x1018)
+          v27:CPtr = GetEP 0
+          v28:RubyValue = LoadField v27, :VM_ENV_DATA_INDEX_ME_CREF@0x1040
+          v29:CallableMethodEntry[VALUE(0x1048)] = GuardBitEquals v28, Value(VALUE(0x1048))
+          v30:RubyValue = LoadField v27, :VM_ENV_DATA_INDEX_SPECVAL@0x1050
+          v31:FalseClass = GuardBitEquals v30, Value(false)
+          v32:BasicObject = SendDirect v11, 0x0, :run (0x1058), v12, v13
+          CheckInterrupts
+          Return v32
         ");
     }
 
