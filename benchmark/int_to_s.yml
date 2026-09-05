@@ -4,7 +4,10 @@ prelude: |
   N2   = 42
   N3   = 400
   N5   = 12345
+  N6   = 123_456
   N10  = 1_234_567_890
+  N13  = 1_234_567_890_123
+  N16  = 1_234_567_890_123_456
   N19  = 4_611_686_018_427_387_903
   NEG  = -1_234_567_890
   BIG20  = 10 ** 19 + 12_345_678_901_234_567
@@ -15,7 +18,10 @@ benchmark:
   fix_2digit:   "N2.to_s"
   fix_3digit:   "N3.to_s"
   fix_5digit:   "N5.to_s"
+  fix_6digit:   "N6.to_s"
   fix_10digit:  "N10.to_s"
+  fix_13digit:  "N13.to_s"
+  fix_16digit:  "N16.to_s"
   fix_19digit:  "N19.to_s"
   fix_negative: "NEG.to_s"
   big_20digit:  "BIG20.to_s"
