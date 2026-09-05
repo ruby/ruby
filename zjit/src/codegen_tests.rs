@@ -7193,6 +7193,61 @@ fn test_send_caller_splat_arguments_with_block_literal() {
 }
 
 #[test]
+fn test_send_polymorphic_caller_splat_arguments() {
+    set_call_threshold(3);
+    eval("
+        def test(*args) = args
+        def entry(args) = test(*args)
+        entry([1])
+        entry([2, 3])
+    ");
+    // Unprofiled lengths use the original Send without leaving compiled code.
+    assert_snapshot!(assert_compiles("[entry([4]), entry([5, 6]), entry([]), entry([7, 8, 9])]"), @"[[4], [5, 6], [], [7, 8, 9]]");
+}
+
+#[test]
+fn test_send_polymorphic_receiver_with_polymorphic_caller_splat() {
+    set_call_threshold(5);
+    eval("
+        class CallerSplatA
+          def target(*args) = args
+        end
+        class CallerSplatB
+          def target(*args) = args
+        end
+        class CallerSplatC
+          def target(*args) = args
+        end
+        def entry(recv, args) = recv.target(*args)
+        entry(CallerSplatA.new, [1])
+        entry(CallerSplatB.new, [2, 3])
+        entry(CallerSplatA.new, [4, 5])
+        entry(CallerSplatB.new, [6])
+    ");
+    // Both a new length and an unprofiled receiver use the shared original Send.
+    assert_snapshot!(assert_compiles("
+        [entry(CallerSplatA.new, [7]), entry(CallerSplatB.new, [8, 9]),
+         entry(CallerSplatA.new, [1, 2, 3]), entry(CallerSplatC.new, [10, 11, 12])]
+    "), @"[[7], [8, 9], [1, 2, 3], [10, 11, 12]]");
+}
+
+#[test]
+fn test_send_polymorphic_caller_splat_with_cfunc_receiver() {
+    set_call_threshold(5);
+    eval("
+        class CallerSplatFetch
+          def fetch(*args) = args
+        end
+        def entry(recv, args) = recv.fetch(*args)
+        entry(CallerSplatFetch.new, [1])
+        entry([10], [0])
+        entry(CallerSplatFetch.new, [2, 3])
+        entry([], [0, 20])
+    ");
+    assert_snapshot!(assert_compiles("[entry(CallerSplatFetch.new, [4]), entry([10], [0]), entry([], [0, 20])]"), @"[[4], 10, 20]");
+}
+
+#[test]
 fn test_send_caller_splat_length_mismatch_side_exits() {
     eval("
         def test(*args) = args
