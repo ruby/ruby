@@ -385,6 +385,15 @@ rb_object_shape_count(void)
     return ULONG2NUM((unsigned long)rb_shapes_count());
 }
 
+// Execute pending interrupts inline from JIT code, instead of taking a side
+// exit. This allows YJIT to continue running compiled code after handling
+// interrupts (e.g. from signal-based profilers using postponed jobs).
+void
+rb_yjit_execute_interrupts(rb_execution_context_t *ec)
+{
+    rb_threadptr_execute_interrupts(rb_ec_thread_ptr(ec), 0);
+}
+
 bool
 rb_yjit_shape_obj_complex_p(VALUE obj)
 {
