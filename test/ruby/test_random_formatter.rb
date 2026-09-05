@@ -138,6 +138,14 @@ module Random::Formatter
       end
     end
 
+    def test_alphanumeric_small_alphabets
+      assert_raise(ArgumentError) { @it.alphanumeric(-1) }
+      assert_raise(ArgumentError) { @it.alphanumeric(0, chars: []) }
+      assert_raise(ArgumentError) { @it.alphanumeric(1, chars: []) }
+      assert_raise(ArgumentError) { @it.alphanumeric(0, chars: ["x"]) }
+      assert_raise(ArgumentError) { @it.alphanumeric(3, chars: ["x"]) }
+    end
+
     def assert_in_range(range, result, mesg = nil)
       assert(range.cover?(result), build_message(mesg, "Expected #{result} to be in #{range}"))
     end
