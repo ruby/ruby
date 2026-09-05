@@ -971,6 +971,15 @@ pub struct SendDirectData {
     pub state: InsnId,
 }
 
+/// Payload of [`Insn::CondBranchHasType`]. Boxed in the enum to keep `Insn` small.
+#[derive(Debug, Clone)]
+pub struct CondBranchHasTypeData {
+    pub val: InsnId,
+    pub expected: Type,
+    pub if_true: BranchEdge,
+    pub if_false: BranchEdge,
+}
+
 /// Payload of [`Insn::CCallVariadic`]. Boxed in the enum to keep `Insn` small.
 #[derive(Debug, Clone)]
 pub struct CCallVariadicData {
@@ -1153,6 +1162,10 @@ pub enum Insn {
     /// Conditional branch
     CondBranch { val: InsnId, if_true: BranchEdge, if_false: BranchEdge },
 
+    /// Conditional branch on a type test: branch to if_true if val has type expected and to
+    /// if_false otherwise.
+    CondBranchHasType(Box<CondBranchHasTypeData>),
+
     /// Call a C function without pushing a frame
     /// `name` and `owner` are for printing purposes only
     CCall { cfunc: *const u8, recv: InsnId, args: Vec<InsnId>, name: ID, owner: VALUE, return_type: Type, elidable: bool },
@@ -1305,8 +1318,6 @@ pub enum Insn {
     /// Refine the known type information of with additional type information.
     /// Computes the intersection of the existing type and the new type.
     RefineType { val: InsnId, new_type: Type },
-    /// Return CBool[true] if val has type Type and CBool[false] otherwise.
-    HasType { val: InsnId, expected: Type },
 
     /// Side-exit if val doesn't have the expected type.
     GuardType { val: InsnId, guard_type: Type, state: InsnId, recompile: Option<Recompile> },
@@ -1449,7 +1460,6 @@ macro_rules! for_each_operand_impl {
                 $visit_one!(*state);
             }
             Insn::RefineType { val, .. }
-            | Insn::HasType { val, .. }
             | Insn::Return { val }
             | Insn::Test { val }
             | Insn::BoxBool { val } => {
@@ -1531,6 +1541,11 @@ macro_rules! for_each_operand_impl {
                 $visit_one!(*val);
                 $visit_many!(true_args);
                 $visit_many!(false_args);
+            }
+            Insn::CondBranchHasType(insn) => {
+                $visit_one!(insn.val);
+                $visit_many!(insn.if_true.args);
+                $visit_many!(insn.if_false.args);
             }
             Insn::ArrayDup { val, state }
             | Insn::Throw { val, state, .. }
@@ -1688,7 +1703,7 @@ impl Insn {
             Insn::Comment { .. }
             | Insn::Jump(_)
             | Insn::Entries { .. }
-            | Insn::CondBranch { .. } | Insn::EntryPoint { .. } | Insn::Return { .. }
+            | Insn::CondBranch { .. } | Insn::CondBranchHasType { .. } | Insn::EntryPoint { .. } | Insn::Return { .. }
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::SetClassVar { .. } | Insn::ArrayExtend { .. }
             | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetGlobal { .. }
             | Insn::SetLocal { .. } | Insn::Throw { .. } | Insn::IncrCounter(_) | Insn::IncrCounterPtr { .. }
@@ -1703,7 +1718,7 @@ impl Insn {
     /// Return true if the instruction ends a basic block and false otherwise.
     pub fn is_terminator(&self) -> bool {
         match self {
-            Insn::Unreachable | Insn::CondBranch { .. } | Insn::Jump(_) | Insn::Entries { .. } | Insn::Return { .. } | Insn::SideExit { .. } | Insn::Throw { .. } => true,
+            Insn::Unreachable | Insn::CondBranch { .. } | Insn::CondBranchHasType { .. } | Insn::Jump(_) | Insn::Entries { .. } | Insn::Return { .. } | Insn::SideExit { .. } | Insn::Throw { .. } => true,
             _ => false,
         }
     }
@@ -1711,7 +1726,7 @@ impl Insn {
     /// Return true if the instruction is a jump (has successor blocks in the CFG).
     pub fn is_jump(&self) -> bool {
         match self {
-            Insn::CondBranch { .. } | Insn::Jump(_) | Insn::Entries { .. } => true,
+            Insn::CondBranch { .. } | Insn::CondBranchHasType { .. } | Insn::Jump(_) | Insn::Entries { .. } => true,
             _ => false,
         }
     }
@@ -1838,6 +1853,11 @@ impl Insn {
             Insn::Snapshot { .. } => effects::Empty,
             Insn::Jump(_) => effects::Any,
             Insn::CondBranch { .. } => effects::Any,
+            Insn::CondBranchHasType(insn)
+                => Effect::read_write(
+                    if insn.expected.is_subtype(types::Immediate) { abstract_heaps::Empty } else { abstract_heaps::Memory },
+                    abstract_heaps::Control
+                ),
             Insn::CCall { elidable, .. } => {
                 if *elidable {
                     Effect::write(abstract_heaps::Allocator)
@@ -1931,11 +1951,6 @@ impl Insn {
             Insn::InvokeProc { .. } => effects::Any,
             Insn::InvokeBlockIseqDirect { .. } => effects::Any,
             Insn::RefineType { .. } => effects::Empty,
-            Insn::HasType { expected, .. }
-                => Effect::read_write(
-                    if expected.is_subtype(types::Immediate) { abstract_heaps::Empty } else { abstract_heaps::Memory },
-                    abstract_heaps::Empty
-                ),
             Insn::Entries { .. } => effects::Any,
             Insn::BreakPoint | Insn::Unreachable => Effect::read_write(abstract_heaps::Empty, abstract_heaps::Control),
         }
@@ -2190,6 +2205,10 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::FixnumAref { recv, index } => write!(f, "FixnumAref {recv}, {index}"),
             Insn::Jump(target) => { write!(f, "Jump {target}") }
             Insn::CondBranch { val, if_true, if_false } => { write!(f, "CondBranch {val}, {if_true}, {if_false}") },
+            Insn::CondBranchHasType(insn) => {
+                let CondBranchHasTypeData { val, expected, if_true, if_false } = &**insn;
+                write!(f, "CondBranchHasType {val}, {}, {if_true}, {if_false}", expected.print(self.ptr_map))
+            },
             Insn::SendDirect(insn) => {
                 let SendDirectData { recv, cme, iseq, args, block, jit_entry_idx, .. } = &**insn;
                 let blockiseq = block.map(|bh| match bh { BlockHandler::BlockIseq(iseq) => iseq, BlockHandler::BlockArg => unreachable!() });
@@ -2312,7 +2331,6 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 return Ok(())
             },
             Insn::RefineType { val, new_type, .. } => { write!(f, "RefineType {val}, {}", new_type.print(self.ptr_map)) },
-            Insn::HasType { val, expected, .. } => { write!(f, "HasType {val}, {}", expected.print(self.ptr_map)) },
             Insn::GuardBitEquals { val, expected, recompile, .. } => {
                 write!(f, "GuardBitEquals {val}, {}", expected.print(self.ptr_map))?;
                 if recompile.is_some() {
@@ -3382,6 +3400,7 @@ impl Function {
 
         let (first, second, rest): (Option<BlockId>, Option<BlockId>, &[BlockId]) = match terminator {
             Insn::CondBranch { if_true, if_false, .. } => (Some(if_true.target), Some(if_false.target), &[]),
+            Insn::CondBranchHasType(insn) => (Some(insn.if_true.target), Some(insn.if_false.target), &[]),
             Insn::Jump(edge) => (Some(edge.target), None, &[]),
             Insn::Entries { targets } => (None, None, targets.as_slice()),
 
@@ -3589,7 +3608,7 @@ impl Function {
             Insn::LoadArg { val_type, .. } => *val_type,
             Insn::SetGlobal { .. } | Insn::Jump(_) | Insn::Entries { .. } | Insn::EntryPoint { .. }
             | Insn::Comment { .. }
-            | Insn::CondBranch { .. } | Insn::Return { .. } | Insn::Throw { .. }
+            | Insn::CondBranch { .. } | Insn::CondBranchHasType { .. } | Insn::Return { .. } | Insn::Throw { .. }
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::SetClassVar { .. } | Insn::ArrayExtend { .. }
             | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetLocal { .. }
             | Insn::IncrCounter(_) | Insn::IncrCounterPtr { .. }
@@ -3652,9 +3671,6 @@ impl Function {
             Insn::CheckMatch { .. } => types::BasicObject,
             Insn::GuardType { val, guard_type, .. } => self.type_of(*val).intersection(*guard_type),
             Insn::RefineType { val, new_type, .. } => self.type_of(*val).intersection(*new_type),
-            &Insn::HasType { val, expected } if self.is_a(val, expected) => Type::from_cbool(true),
-            &Insn::HasType { val, expected } if !self.type_of(val).could_be(expected) => Type::from_cbool(false),
-            Insn::HasType { .. } => types::CBool,
             Insn::GuardBitEquals { val, expected, .. } => self.type_of(*val).intersection(Type::from_const(*expected)),
             Insn::GuardAnyBitSet { val, .. } => self.type_of(*val),
             Insn::GuardNoBitsSet { val, .. } => self.type_of(*val),
@@ -3845,6 +3861,29 @@ impl Function {
                                 traversed_back_edge |= rpo_order[if_true.target] <= rpo_index;
                             }
                             if self.type_of(*val).could_be(Type::from_cbool(false)) {
+                                reachable.insert(if_false.target);
+                                let arg_types: Vec<Type> = if_false.args.iter().map(|a| self.type_of(*a)).collect();
+                                for (idx, arg_type) in arg_types.into_iter().enumerate() {
+                                    let param = self.blocks[if_false.target].params[idx];
+                                    changed |= set_type!(param, self.type_of(param).union(arg_type));
+                                }
+                                traversed_back_edge |= rpo_order[if_false.target] <= rpo_index;
+                            }
+                            continue;
+                        }
+                        Insn::CondBranchHasType(insn) => {
+                            let CondBranchHasTypeData { val, expected, if_true, if_false } = &**insn;
+                            let val_type = self.type_of(*val);
+                            if val_type.could_be(*expected) {
+                                reachable.insert(if_true.target);
+                                let arg_types: Vec<Type> = if_true.args.iter().map(|a| self.type_of(*a)).collect();
+                                for (idx, arg_type) in arg_types.into_iter().enumerate() {
+                                    let param = self.blocks[if_true.target].params[idx];
+                                    changed |= set_type!(param, self.type_of(param).union(arg_type));
+                                }
+                                traversed_back_edge |= rpo_order[if_true.target] <= rpo_index;
+                            }
+                            if !val_type.is_subtype(*expected) {
                                 reachable.insert(if_false.target);
                                 let arg_types: Vec<Type> = if_false.args.iter().map(|a| self.type_of(*a)).collect();
                                 for (idx, arg_type) in arg_types.into_iter().enumerate() {
@@ -6322,11 +6361,14 @@ impl Function {
             *fun.blocks[block_id].insns().last().unwrap()
         }
 
+        // The extra `&`/`&mut` tokens borrow the boxed CondBranchHasType payload's edges with the
+        // same mutability as the match ergonomics give the other arms' bindings.
         macro_rules! edges_of {
-            ($insn:expr) => {
+            ($insn:expr, $($borrow:tt)+) => {
                 match $insn {
                     Insn::Jump(edge) => [Some(edge), None],
                     Insn::CondBranch { if_true, if_false, .. } => [Some(if_true), Some(if_false)],
+                    Insn::CondBranchHasType(insn) => [Some($($borrow)+ insn.if_true), Some($($borrow)+ insn.if_false)],
                     _ => [None, None],
                 }.into_iter().flatten()
             };
@@ -6334,12 +6376,12 @@ impl Function {
 
         fn outgoing_edges(fun: &Function, block_id: BlockId) -> impl Iterator<Item = &BranchEdge> {
             let insn_id = block_terminator(fun, block_id);
-            edges_of!(&fun.insns[insn_id])
+            edges_of!(&fun.insns[insn_id], &)
         }
 
         fn outgoing_edges_mut(fun: &mut Function, block_id: BlockId) -> impl Iterator<Item = &mut BranchEdge> {
             let insn_id = block_terminator(fun, block_id);
-            edges_of!(&mut fun.insns[insn_id])
+            edges_of!(&mut fun.insns[insn_id], &mut)
         }
 
         // Instantiate the domain for abstract interpretation.
@@ -6930,6 +6972,19 @@ impl Function {
                     }
                     &Insn::CondBranch { val, ref if_false, .. } if self.is_a(val, Type::from_cbool(false)) => {
                         self.new_insn(Insn::Jump(if_false.clone()))
+                    }
+                    // A Bottom `val` (e.g. refined to a type disjoint from its own)
+                    // is an impossible value, so this program point is dead. Fold to
+                    // Unreachable rather than a Jump; this keeps `infer_types` (which
+                    // uses `could_be` and so marks neither edge reachable) consistent.
+                    Insn::CondBranchHasType(insn) if self.type_of(insn.val).is_subtype(types::Empty) => {
+                        self.new_insn(Insn::Unreachable)
+                    }
+                    Insn::CondBranchHasType(insn) if self.is_a(insn.val, insn.expected) => {
+                        self.new_insn(Insn::Jump(insn.if_true.clone()))
+                    }
+                    Insn::CondBranchHasType(insn) if !self.type_of(insn.val).could_be(insn.expected) => {
+                        self.new_insn(Insn::Jump(insn.if_false.clone()))
                     }
                     _ => insn_id,
                 };
@@ -7565,6 +7620,10 @@ impl Function {
                         check_edge(block_id, if_true)?;
                         check_edge(block_id, if_false)?;
                     }
+                    Insn::CondBranchHasType(insn) => {
+                        check_edge(block_id, &insn.if_true)?;
+                        check_edge(block_id, &insn.if_false)?;
+                    }
                     _ => {}
                 }
 
@@ -7631,6 +7690,10 @@ impl Function {
                     Insn::CondBranch { if_true, if_false, .. } => {
                         propagate(if_true.target)?;
                         propagate(if_false.target)?;
+                    }
+                    Insn::CondBranchHasType(insn) => {
+                        propagate(insn.if_true.target)?;
+                        propagate(insn.if_false.target)?;
                     }
                     Insn::Entries { targets } => {
                         for &target in targets {
@@ -8021,7 +8084,7 @@ impl Function {
                 self.assert_subtype(insn_id, class, types::Class)
             }
             Insn::RefineType { .. } => Ok(()),
-            Insn::HasType { val, .. } => self.assert_subtype(insn_id, val, types::BasicObject),
+            Insn::CondBranchHasType(ref insn) => self.assert_subtype(insn_id, insn.val, types::BasicObject),
             Insn::IsBlockParamModified { flags } => self.assert_subtype(insn_id, flags, types::CUInt64),
             // Frame instructions have no output to validate; their operands
             // are validated by the recv+args group (PushLightweightFrame)
@@ -9467,7 +9530,6 @@ fn add_iseq_to_hir(
                         fun.push_insn(block, Insn::CheckInterrupts { state: exit_id });
                     }
                     let val = state.stack_pop()?;
-                    let test_id = fun.push_insn(block, Insn::HasType { val, expected: types::NilClass });
                     let target_idx = insn_idx_at_offset(insn_idx, offset);
                     let target = insn_idx_to_block[&target_idx];
                     let nil = fun.push_insn(block, Insn::Const { val: Const::Value(Qnil) });
@@ -9476,11 +9538,12 @@ fn add_iseq_to_hir(
 
                     let fall_through = fun.new_block(insn_idx);
 
-                    fun.push_insn(block, Insn::CondBranch {
-                        val: test_id,
+                    fun.push_insn(block, Insn::CondBranchHasType(Box::new(CondBranchHasTypeData {
+                        val,
+                        expected: types::NilClass,
                         if_true: BranchEdge { target, args: iftrue_state.as_args(self_param) },
                         if_false: BranchEdge { target: fall_through, args: vec![] }
-                    });
+                    })));
 
                     block = fall_through;
                     let new_type = types::NotNil;
@@ -10127,14 +10190,14 @@ fn add_iseq_to_hir(
                                 continue;
                             }
                             seen_types.push(expected);
-                            let has_type = fun.push_insn(block, Insn::HasType { val: recv, expected });
                             let iftrue_block = fun.new_block(insn_idx);
                             let fall_through = fun.new_block(insn_idx);
-                            fun.push_insn(block, Insn::CondBranch {
-                                val: has_type,
+                            fun.push_insn(block, Insn::CondBranchHasType(Box::new(CondBranchHasTypeData {
+                                val: recv,
+                                expected,
                                 if_true: BranchEdge { target: iftrue_block, args: vec![] },
                                 if_false: BranchEdge { target: fall_through, args: vec![] }
-                            });
+                            })));
                             block = fall_through;
                             // Take a fresh Snapshot rather than
                             // reusing exit_id so type specialization resolves the receiver from
@@ -10644,15 +10707,15 @@ fn add_iseq_to_hir(
                             fun.push_insn(block, Insn::Send { recv, cd, block: None, args: vec![], caller_splat_length: None, state: exit_id, reason: ObjToStringNotString })
                         }
                     } else {
-                        let has_type = fun.push_insn(block, Insn::HasType { val: recv, expected: types::String });
                         let iftrue_block = fun.new_block(insn_idx);
                         let iffalse_block = fun.new_block(insn_idx);
                         let join_block = fun.new_block(insn_idx);
-                        fun.push_insn(block, Insn::CondBranch {
-                            val: has_type,
+                        fun.push_insn(block, Insn::CondBranchHasType(Box::new(CondBranchHasTypeData {
+                            val: recv,
+                            expected: types::String,
                             if_true: BranchEdge { target: iftrue_block, args: vec![] },
                             if_false: BranchEdge { target: iffalse_block, args: vec![] }
-                        });
+                        })));
                         // true block
                         let refined = fun.push_insn(iftrue_block, Insn::RefineType { val: recv, new_type: types::String });
                         fun.push_insn(iftrue_block, Insn::Jump(BranchEdge { target: join_block, args: vec![refined] }));
@@ -10671,15 +10734,15 @@ fn add_iseq_to_hir(
                     let val = state.stack_pop()?;
 
                     // Mirror logic of rb_obj_as_string_result() (`anytostring` in insns.def)
-                    let has_type = fun.push_insn(block, Insn::HasType { val: str, expected: types::String });
                     let iftrue_block = fun.new_block(insn_idx);
                     let iffalse_block = fun.new_block(insn_idx);
                     let join_block = fun.new_block(insn_idx);
-                    fun.push_insn(block, Insn::CondBranch {
-                        val: has_type,
+                    fun.push_insn(block, Insn::CondBranchHasType(Box::new(CondBranchHasTypeData {
+                        val: str,
+                        expected: types::String,
                         if_true: BranchEdge { target: iftrue_block, args: vec![] },
                         if_false: BranchEdge { target: iffalse_block, args: vec![] }
-                    });
+                    })));
                     // true block
                     let refined = fun.push_insn(iftrue_block, Insn::RefineType { val: str, new_type: types::String });
                     fun.push_insn(iftrue_block, Insn::Jump(BranchEdge { target: join_block, args: vec![refined] }));
@@ -11520,6 +11583,47 @@ mod validation_tests {
             function.infer_types();
             // Just checking that we don't panic.
             assert!(function.validate_definite_assignment().is_ok());
+        });
+    }
+
+    // A `CondBranchHasType` whose `val` has been refined to a disjoint type is
+    // `Empty` (Bottom): an impossible value, so the branch is dead. `infer_types`
+    // uses `could_be` and so marks neither edge reachable (both params stay
+    // `Empty`), and `fold_constants` folds the branch to `Unreachable` to match.
+    #[test]
+    fn condbranchhastype_bottom_val_folds_to_unreachable() {
+        let mut function = Function::new(std::ptr::null());
+        let entry = function.entry_block;
+        let if_true = function.new_block(0);
+        let if_false = function.new_block(0);
+        let p_true = function.push_insn(if_true, Insn::Param);
+        function.push_insn(if_true, Insn::Return { val: p_true });
+        let p_false = function.push_insn(if_false, Insn::Param);
+        function.push_insn(if_false, Insn::Return { val: p_false });
+        // Refine a nil to Fixnum: NilClass ∩ Fixnum = Empty (Bottom).
+        let nil = function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
+        let bottom = function.push_insn(entry, Insn::RefineType { val: nil, new_type: types::Fixnum });
+        let arg = function.push_insn(entry, Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(3)) });
+        function.push_insn(entry, Insn::CondBranchHasType(Box::new(CondBranchHasTypeData {
+            val: bottom,
+            expected: types::Fixnum,
+            if_true: BranchEdge { target: if_true, args: vec![arg] },
+            if_false: BranchEdge { target: if_false, args: vec![arg] },
+        })));
+        function.seal_entries();
+        crate::cruby::with_rubyvm(|| {
+            function.infer_types();
+            assert!(function.type_of(bottom).bit_equal(types::Empty), "refine to disjoint type should be Bottom");
+            // `could_be`-only means neither edge is reachable, so both params are Empty.
+            assert!(function.type_of(p_true).bit_equal(types::Empty),
+                "if_true param should be Empty, got {}", function.type_of(p_true));
+            assert!(function.type_of(p_false).bit_equal(types::Empty),
+                "if_false param should be Empty, got {}", function.type_of(p_false));
+            // The dead branch folds to Unreachable, agreeing with infer_types.
+            function.fold_constants();
+            let last = *function.blocks[entry].insns.last().unwrap();
+            assert!(matches!(function.find_ref(last), Insn::Unreachable),
+                "expected entry terminator to fold to Unreachable");
         });
     }
 
