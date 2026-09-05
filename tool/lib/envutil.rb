@@ -36,6 +36,15 @@ module EnvUtil
   end
   module_function :rubybin
 
+  # Whether the current process effectively runs as the superuser (root), which
+  # bypasses file permission checks.  Tests that assert on permission denials
+  # should skip when this is true.  Returns false on platforms without euid
+  # (e.g. Windows).
+  def superuser?
+    Process.respond_to?(:euid) && Process.euid == 0
+  end
+  module_function :superuser?
+
   LANG_ENVS = %w"LANG LC_ALL LC_CTYPE"
 
   DEFAULT_SIGNALS = Signal.list
