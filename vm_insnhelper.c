@@ -5280,7 +5280,72 @@ rb_vm_yield_with_cfunc(rb_execution_context_t *ec, const struct rb_captured_bloc
 static VALUE
 vm_yield_with_symbol(rb_execution_context_t *ec,  VALUE symbol, int argc, const VALUE *argv, int kw_splat, VALUE block_handler)
 {
-    return rb_sym_proc_call(SYM2ID(symbol), argc, argv, kw_splat, rb_vm_bh_to_procval(ec, block_handler));
+    VALUE passed_proc = rb_vm_bh_to_procval(ec, block_handler);
+
+    if (!rb_box_available()) {
+        return rb_sym_proc_call(SYM2ID(symbol), argc, argv, kw_splat, passed_proc);
+    }
+
+    const rb_control_frame_t *reg_cfp = ec->cfp;
+    const rb_control_frame_t *ruby_cfp = rb_vm_get_ruby_level_next_cfp(ec, reg_cfp);
+    const rb_box_t *box = NULL;
+
+    /*
+     * Traverse the frames until a user box (Main or Optional Box) is found.
+     * Frames for built-in methods like <internal:xxx> run in the Root or Master Box,
+     */
+    while (ruby_cfp) {
+        box = current_box_on_cfp(ec, ruby_cfp);
+        if (BOX_USER_P(box)) {
+            break;
+        }
+        ruby_cfp = rb_vm_get_ruby_level_next_cfp(ec, RUBY_VM_PREVIOUS_CONTROL_FRAME(ruby_cfp));
+    }
+
+    // Fallback to the normal call if no user box is found
+    if (!ruby_cfp || !box) {
+        return rb_sym_proc_call(SYM2ID(symbol), argc, argv, kw_splat, passed_proc);
+    }
+
+    /*
+     * Push a dummy block frame whose outer env is `ruby_cfp` so that the
+     * method resolves in the caller's box (via the ep chain) and the
+     * backtrace reads like a usual block invocation at the caller's site.
+     */
+    const rb_iseq_t *caller_iseq = CFP_ISEQ(ruby_cfp);
+    VALUE name = rb_sprintf("block in %"PRIsVALUE, rb_iseq_label(caller_iseq));
+    const rb_iseq_t *iseq = rb_iseq_new_with_opt(Qnil, name,
+                                                 rb_iseq_path(caller_iseq), rb_iseq_realpath(caller_iseq),
+                                                 rb_vm_get_sourceline(ruby_cfp), caller_iseq, 0,
+                                                 ISEQ_TYPE_BLOCK, NULL, Qnil);
+    volatile VALUE val = Qnil;
+    enum ruby_tag_type state;
+
+    vm_push_frame(ec, iseq, VM_FRAME_MAGIC_BLOCK | VM_FRAME_FLAG_FINISH,
+                  ruby_cfp->self, VM_GUARDED_PREV_EP(ruby_cfp->ep),
+                  Qfalse, /* cref or me */
+                  ISEQ_BODY(iseq)->iseq_encoded, reg_cfp->sp,
+                  ISEQ_BODY(iseq)->local_table_size, ISEQ_BODY(iseq)->stack_max);
+
+    /*
+     * The pushed frame is finished (owned by no vm_exec loop), so catch the
+     * non-local exit here, pop the frame, and let the caller's handlers see
+     * the exception.
+     */
+    EC_PUSH_TAG(ec);
+    if ((state = EC_EXEC_TAG()) == TAG_NONE) {
+        val = rb_sym_proc_call(SYM2ID(symbol), argc, argv, kw_splat, passed_proc);
+    }
+    EC_POP_TAG();
+
+    if (state != TAG_NONE) {
+        rb_vm_rewind_cfp(ec, (rb_control_frame_t *)reg_cfp);
+        EC_JUMP_TAG(ec, state);
+    }
+
+    rb_vm_pop_frame(ec);
+
+    return val;
 }
 
 static inline int
