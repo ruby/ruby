@@ -27,7 +27,7 @@ module VendoredCompactIndex
       line = "#{version_token} #{deps_line}|checksum:#{checksum}"
       line << ",ruby:#{ruby_version_line}" if ruby_version && ruby_version != ">= 0"
       line << ",rubygems:#{rubygems_version_line}" if rubygems_version && rubygems_version != ">= 0"
-      line << ",platform:= #{platform}" if content_address?
+      line << ",platform:#{platform}" if content_address?
       line
     end
 

@@ -432,9 +432,8 @@ class Gem::Source
   end
 
   def required_platform_from(requirement)
-    platform_requirement = Array(requirement).last.to_s
-    operator, platform = platform_requirement.split(" ", 2)
-    return unless operator == "=" && platform
+    platform = Array(requirement).last.to_s
+    return if platform.empty?
 
     platform
   end

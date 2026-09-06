@@ -1312,7 +1312,7 @@ Also, a list:
       metadata << ",rubygems:#{util_compact_index_requirement(spec.required_rubygems_version)}"
     end
     if spec.content_address
-      metadata << ",platform:= #{spec.platform}"
+      metadata << ",platform:#{spec.platform}"
     end
     metadata << ",created_at:#{created_at}" if created_at
 

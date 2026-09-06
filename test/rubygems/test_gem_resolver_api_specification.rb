@@ -37,7 +37,7 @@ class TestGemResolverAPISpecification < Gem::TestCase
       number: "3.0.3",
       suffix: "abc1234567",
       dependencies: [],
-      requirements: { platform: ["= #{Gem::Platform.local}"], ruby: ["~> 3.4.0"] },
+      requirements: { platform: [Gem::Platform.local.to_s], ruby: ["~> 3.4.0"] },
     }
 
     spec = Gem::Resolver::APISpecification.new set, data
@@ -55,7 +55,7 @@ class TestGemResolverAPISpecification < Gem::TestCase
       number: "3.0.3",
       suffix: "abc1234567",
       dependencies: [],
-      requirements: { platform: ["= #{Gem::Platform.local}"] },
+      requirements: { platform: [Gem::Platform.local.to_s] },
     }
 
     spec = Gem::Resolver::APISpecification.new set, data
@@ -70,7 +70,7 @@ class TestGemResolverAPISpecification < Gem::TestCase
       number: "3.0.3",
       suffix: "abc1234567",
       dependencies: [],
-      requirements: { platform: ["= #{Gem::Platform.local}"], ruby: [">= 3.0"] },
+      requirements: { platform: [Gem::Platform.local.to_s], ruby: [">= 3.0"] },
     }
 
     spec = Gem::Resolver::APISpecification.new set, data
@@ -85,7 +85,7 @@ class TestGemResolverAPISpecification < Gem::TestCase
       number: "3.0.3",
       suffix: Gem::Platform.local.to_s,
       dependencies: [],
-      requirements: { platform: ["= #{Gem::Platform.local}"] },
+      requirements: { platform: [Gem::Platform.local.to_s] },
     }
 
     spec = Gem::Resolver::APISpecification.new set, data
@@ -102,7 +102,7 @@ class TestGemResolverAPISpecification < Gem::TestCase
       number: "3.0.3",
       suffix: "abc1234567",
       dependencies: [],
-      requirements: { platform: ["= #{Gem::Platform.local}"] },
+      requirements: { platform: [Gem::Platform.local.to_s] },
     }
 
     data[:requirements][:ruby] = ["~> 3.4.0"]
@@ -257,7 +257,7 @@ class TestGemResolverAPISpecification < Gem::TestCase
       number: "3.0.3",
       suffix: "abc1234567",
       dependencies: [],
-      requirements: { platform: ["= #{Gem::Platform.local}"], ruby: ["~> 3.4.0"] },
+      requirements: { platform: [Gem::Platform.local.to_s], ruby: ["~> 3.4.0"] },
     }
 
     spec = Gem::Resolver::APISpecification.new set, data

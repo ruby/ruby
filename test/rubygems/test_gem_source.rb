@@ -264,7 +264,7 @@ class TestGemSource < Gem::TestCase
     versions_response = util_compact_index_response(versions_body)
     versions_response.uri = Gem::URI("#{@gem_repo}versions")
     @fetcher.data["#{@gem_repo}versions"] = versions_response
-    @fetcher.data["#{@gem_repo}info/a"] = util_compact_index_response("---\n1-abcdef12 |checksum:123,platform:= x86_64-linux\n")
+    @fetcher.data["#{@gem_repo}info/a"] = util_compact_index_response("---\n1-abcdef12 |checksum:123,platform:x86_64-linux\n")
 
     specs = @source.decode_content_addressable_tuples(@source.load_specs(:released))
 

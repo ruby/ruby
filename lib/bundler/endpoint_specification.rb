@@ -230,10 +230,10 @@ module Bundler
     end
 
     def required_platform_from(value)
-      op, platform = value.to_s.split(" ", 2)
-      return unless op == "=" && platform
+      value = value.to_s
+      return if value.empty?
 
-      Gem::Platform.new(platform)
+      Gem::Platform.new(value)
     end
   end
 end

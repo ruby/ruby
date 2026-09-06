@@ -132,10 +132,8 @@ class Gem::Resolver::APISpecification < Gem::Resolver::Specification
   end
 
   def required_platform_from(requirement)
-    return unless requirement
-
-    op, platform = requirement.last&.split(" ", 2)
-    return unless op == "=" && platform
+    platform = Array(requirement).last
+    return if platform.nil? || platform.empty?
 
     Gem::Platform.new(platform)
   end
