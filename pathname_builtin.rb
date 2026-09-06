@@ -1543,7 +1543,7 @@ class Pathname    # * File *
   #  call-seq:
   #    lchmod(mode) -> 1
   #
-  #  Not supported on some platforms (raises Errno::ENOTSUP).
+  #  Not supported on some platforms (raises NotImplementedError).
   #
   #  When supported: like Pathname::chmod, but does not follow symbolic links,
   #  and therefore changes the mode of the entry specified by `self`:
