@@ -292,7 +292,11 @@ class Array
         Primitive.attr! :inline_block, :c_trace, :without_interrupts
 
         unless defined?(yield)
-          return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 0, 0, ary_enum_length)'
+          if Primitive.mandatory_only?
+            return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 0, 0, 0)'
+          else
+            return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 1, &if_none_proc, 0)'
+          end
         end
         i = 0
         until Primitive.rb_builtin_ary_at_end(i)
@@ -301,6 +305,11 @@ class Array
           i = Primitive.rb_builtin_fixnum_inc(i)
         end
         if_none_proc&.call
+      end
+
+      if Primitive.rb_builtin_basic_definition_p(:detect)
+        undef :detect
+        alias detect find
       end
     end
   end
