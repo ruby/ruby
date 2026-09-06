@@ -3757,6 +3757,40 @@ assert_equal 'ok', %q{
   foo(s) rescue :ok
 }
 
+# max size struct with ivars
+assert_equal 'ok', <<~'RUBY'
+  n = 78
+  members = n.times.map { |i| :"m#{i}" }
+  klass = Struct.new(*members)
+  reader = ->(s) { s.m2 }
+  make = -> { klass.new(*n.times.to_a) }
+
+  before = make.call
+  300.times { reader.call(before); make.call }
+
+  before.instance_variable_set(:@iv, 1)
+  after = make.call
+  raise "wrong value" unless reader.call(after) == 2 && after.send(members.last) == (n - 1)
+  :ok
+RUBY
+
+# struct with ivars
+assert_equal 'ok', <<~'RUBY'
+  n = 3
+  members = n.times.map { |i| :"m#{i}" }
+  klass = Struct.new(*members)
+  reader = ->(s) { s.m2 }
+  make = -> { klass.new(*n.times.to_a) }
+
+  before = make.call
+  300.times { reader.call(before); make.call }
+
+  before.instance_variable_set(:@iv, 1)
+  after = make.call
+  raise "wrong value" unless reader.call(after) == 2 && after.send(members.last) == (n - 1)
+  :ok
+RUBY
+
 # File.join is a cfunc accepting variable arguments as a Ruby array (argc = -2)
 assert_equal 'foo/bar', %q{
   def foo
