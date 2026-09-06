@@ -936,16 +936,45 @@ rb_fiber_scheduler_io_pwrite(VALUE scheduler, VALUE io, rb_off_t from, VALUE buf
     return rb_thread_io_blocking_operation(io, fiber_scheduler_io_pwrite, (VALUE)&arguments);
 }
 
+struct fiber_scheduler_io_memory_arguments {
+    VALUE scheduler;
+    VALUE io;
+    VALUE buffer;
+    rb_off_t from;
+    size_t offset;
+    size_t length;
+};
+
+static VALUE
+fiber_scheduler_io_read_memory(VALUE _arguments)
+{
+    struct fiber_scheduler_io_memory_arguments *arguments = (void *)_arguments;
+
+    return rb_fiber_scheduler_io_read(arguments->scheduler, arguments->io, arguments->buffer, arguments->offset, arguments->length);
+}
+
 VALUE
 rb_fiber_scheduler_io_read_memory(VALUE scheduler, VALUE io, void *base, size_t size)
 {
     VALUE buffer = rb_io_buffer_new_locked(base, size, 0);
 
-    VALUE result = rb_fiber_scheduler_io_read(scheduler, io, buffer, 0, size);
+    struct fiber_scheduler_io_memory_arguments arguments = {
+        .scheduler = scheduler,
+        .io = io,
+        .buffer = buffer,
+        .offset = 0,
+        .length = size,
+    };
 
-    rb_io_buffer_free_locked(buffer);
+    return rb_ensure(fiber_scheduler_io_read_memory, (VALUE)&arguments, rb_io_buffer_free_locked, buffer);
+}
 
-    return result;
+static VALUE
+fiber_scheduler_io_write_memory(VALUE _arguments)
+{
+    struct fiber_scheduler_io_memory_arguments *arguments = (void *)_arguments;
+
+    return rb_fiber_scheduler_io_write(arguments->scheduler, arguments->io, arguments->buffer, arguments->offset, arguments->length);
 }
 
 VALUE
@@ -953,11 +982,23 @@ rb_fiber_scheduler_io_write_memory(VALUE scheduler, VALUE io, const void *base, 
 {
     VALUE buffer = rb_io_buffer_new_locked((void*)base, size, RB_IO_BUFFER_READONLY);
 
-    VALUE result = rb_fiber_scheduler_io_write(scheduler, io, buffer, 0, size);
+    struct fiber_scheduler_io_memory_arguments arguments = {
+        .scheduler = scheduler,
+        .io = io,
+        .buffer = buffer,
+        .offset = 0,
+        .length = size,
+    };
 
-    rb_io_buffer_free_locked(buffer);
+    return rb_ensure(fiber_scheduler_io_write_memory, (VALUE)&arguments, rb_io_buffer_free_locked, buffer);
+}
 
-    return result;
+static VALUE
+fiber_scheduler_io_pread_memory(VALUE _arguments)
+{
+    struct fiber_scheduler_io_memory_arguments *arguments = (void *)_arguments;
+
+    return rb_fiber_scheduler_io_pread(arguments->scheduler, arguments->io, arguments->from, arguments->buffer, arguments->offset, arguments->length);
 }
 
 VALUE
@@ -965,11 +1006,24 @@ rb_fiber_scheduler_io_pread_memory(VALUE scheduler, VALUE io, rb_off_t from, voi
 {
     VALUE buffer = rb_io_buffer_new_locked(base, size, 0);
 
-    VALUE result = rb_fiber_scheduler_io_pread(scheduler, io, from, buffer, 0, size);
+    struct fiber_scheduler_io_memory_arguments arguments = {
+        .scheduler = scheduler,
+        .io = io,
+        .buffer = buffer,
+        .from = from,
+        .offset = 0,
+        .length = size,
+    };
 
-    rb_io_buffer_free_locked(buffer);
+    return rb_ensure(fiber_scheduler_io_pread_memory, (VALUE)&arguments, rb_io_buffer_free_locked, buffer);
+}
 
-    return result;
+static VALUE
+fiber_scheduler_io_pwrite_memory(VALUE _arguments)
+{
+    struct fiber_scheduler_io_memory_arguments *arguments = (void *)_arguments;
+
+    return rb_fiber_scheduler_io_pwrite(arguments->scheduler, arguments->io, arguments->from, arguments->buffer, arguments->offset, arguments->length);
 }
 
 VALUE
@@ -977,11 +1031,16 @@ rb_fiber_scheduler_io_pwrite_memory(VALUE scheduler, VALUE io, rb_off_t from, co
 {
     VALUE buffer = rb_io_buffer_new_locked((void*)base, size, RB_IO_BUFFER_READONLY);
 
-    VALUE result = rb_fiber_scheduler_io_pwrite(scheduler, io, from, buffer, 0, size);
+    struct fiber_scheduler_io_memory_arguments arguments = {
+        .scheduler = scheduler,
+        .io = io,
+        .buffer = buffer,
+        .from = from,
+        .offset = 0,
+        .length = size,
+    };
 
-    rb_io_buffer_free_locked(buffer);
-
-    return result;
+    return rb_ensure(fiber_scheduler_io_pwrite_memory, (VALUE)&arguments, rb_io_buffer_free_locked, buffer);
 }
 
 /*
