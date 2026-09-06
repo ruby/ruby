@@ -3119,7 +3119,7 @@ lchmod_internal(const char *path, void *mode)
  *  call-seq:
  *    File.lchmod(mode, *paths) -> paths_count
  *
- *  Not supported on some platforms (raises Errno:: ENOTSUP).
+ *  Not supported on some platforms (raises NotImplementedError).
  *
  *  When supported: like File::chmod, but does not follow symbolic links,
  *  and therefore changes the mode of the entries given by `paths`;
