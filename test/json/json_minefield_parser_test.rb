@@ -22,12 +22,9 @@ class JSONMinefieldParserTest < Test::Unit::TestCase
     i_string_overlong_sequence_2_bytes
     i_string_not_in_unicode_range
     i_string_lone_utf8_continuation_byte
-    i_string_lone_second_surrogate
     i_string_iso_latin_1
     i_string_invalid_utf-8
-    i_string_incomplete_surrogate_pair
     i_string_UTF-8_invalid_sequence
-    i_object_key_lone_2nd_surrogate
   )
 
   COMMENT_TESTS = %w(
@@ -56,6 +53,9 @@ class JSONMinefieldParserTest < Test::Unit::TestCase
     i_string_utf16BE_no_BOM
     i_string_utf16LE_no_BOM
     i_structure_UTF-8_BOM_empty_object
+    i_string_lone_second_surrogate
+    i_string_incomplete_surrogate_pair
+    i_object_key_lone_2nd_surrogate
   )
 
   if RUBY_ENGINE == 'jruby'

@@ -403,6 +403,15 @@ class JSONParserTest < Test::Unit::TestCase
     assert_raise(JSON::ParserError) { parse('"\\uD800_________________"') }
     assert_raise(JSON::ParserError) { parse('"\\uD800\\u0041"') }
     assert_raise(JSON::ParserError) { parse('"\\uD800\\u004') }
+    # Lone trailing surrogate (issue #1069): parser previously returned an
+    # invalid-UTF-8 String instead of raising. Symmetric to the leading cases
+    # above.
+    assert_raise(JSON::ParserError) { parse('"\\uDC00"') }
+    assert_raise(JSON::ParserError) { parse('"\\uDC00_________________"') }
+    assert_raise(JSON::ParserError) { parse('"\\uDC00\\uD800"') }
+    # Valid pair still parses to the astral codepoint U+10000.
+    assert_predicate JSON.parse('"\\uD800\\uDC00"'), :valid_encoding?
+    assert_equal "\u{10000}", JSON.parse('"\\uD800\\uDC00"')
   end
 
   def test_parse_big_integers
