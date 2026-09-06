@@ -6,9 +6,11 @@ prelude: |
   STR = ((("a" * 31) + "<") * 1000).freeze
 
   ESCAPED_CHARS = {
-    ">" => '\u003e',
-    "<" => '\u003c',
-    "&" => '\u0026',
+    "\\" => "&#39",
+    "\"" => "&quot;",
+    ">" => '&gt;',
+    "<" => '&lt;',
+    "&" => '&amp;',
   }.freeze
   ESCAPE_PATTERN = Regexp.union(ESCAPED_CHARS.keys)
 
