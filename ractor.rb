@@ -380,7 +380,7 @@ class Ractor
   def inspect
     loc  = __builtin_cexpr! %q{ RACTOR_PTR(self)->loc }
     name = __builtin_cexpr! %q{ RACTOR_PTR(self)->name }
-    id   = __builtin_cexpr! %q{ UINT2NUM(rb_ractor_id(RACTOR_PTR(self))) }
+    id   = __builtin_cexpr! %q{ ULL2NUM(rb_ractor_id(RACTOR_PTR(self))) }
     status = __builtin_cexpr! %q{
       rb_str_new2(RACTOR_PTR(self)->status_ == ractor_terminated ? "terminated" : "running")
     }
@@ -852,7 +852,7 @@ class Ractor
     #    port.inspect -> string
     def inspect
       "#<Ractor::Port to:\##{
-        __builtin_cexpr! "SIZET2NUM(rb_ractor_id(ractor_port_ptr_check(self)->r))"
+        __builtin_cexpr! "ULL2NUM(rb_ractor_id(ractor_port_ptr_check(self)->r))"
       } id:#{
         __builtin_cexpr! "SIZET2NUM(ractor_port_id(RACTOR_PORT_PTR(self)))"
       }>"

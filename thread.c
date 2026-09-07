@@ -971,7 +971,7 @@ thread_create_core(VALUE thval, struct thread_create_params *params)
         RBASIC_CLEAR_CLASS(th->pending_interrupt_mask_stack);
     }
 
-    RUBY_DEBUG_LOG("r:%u th:%u", rb_ractor_id(th->ractor), rb_th_serial(th));
+    RUBY_DEBUG_LOG("r:%"PRI_SERIALT_PREFIX"u th:%u", rb_ractor_id(th->ractor), rb_th_serial(th));
 
     rb_ractor_living_threads_insert(th->ractor, th);
 

@@ -155,7 +155,7 @@ ractor_sched_dump_(const char *file, int line, rb_vm_t *vm)
     ccan_list_for_each(&vm->ractor.sched.grq, r, threads.sched.grq_node) {
         i++;
         if (i>10) rb_bug("!!");
-        fprintf(stderr, "  %d ready:%d\n", i, rb_ractor_id(r));
+        fprintf(stderr, "  %d ready:%"PRI_SERIALT_PREFIX"u\n", i, rb_ractor_id(r));
     }
 }
 
@@ -235,7 +235,7 @@ ASSERT_thread_sched_locked(struct rb_thread_sched *sched, rb_thread_t *th)
 
 
 RBIMPL_ATTR_MAYBE_UNUSED()
-static unsigned int
+static rb_serial_t
 rb_ractor_serial(const rb_ractor_t *r)
 {
     if (r) {
@@ -277,9 +277,9 @@ ractor_sched_lock_(rb_vm_t *vm, rb_ractor_t *cr, const char *file, int line)
     rb_native_mutex_lock(&vm->ractor.sched.lock);
 
 #if VM_CHECK_MODE
-    RUBY_DEBUG_LOG2(file, line, "cr:%u prev_owner:%u", rb_ractor_serial(cr), rb_ractor_serial(vm->ractor.sched.lock_owner));
+    RUBY_DEBUG_LOG2(file, line, "cr:%"PRI_SERIALT_PREFIX"u prev_owner:%"PRI_SERIALT_PREFIX"u", rb_ractor_serial(cr), rb_ractor_serial(vm->ractor.sched.lock_owner));
 #else
-    RUBY_DEBUG_LOG2(file, line, "cr:%u", rb_ractor_serial(cr));
+    RUBY_DEBUG_LOG2(file, line, "cr:%"PRI_SERIALT_PREFIX"u", rb_ractor_serial(cr));
 #endif
 
     ractor_sched_set_locked(vm, cr);
@@ -288,7 +288,7 @@ ractor_sched_lock_(rb_vm_t *vm, rb_ractor_t *cr, const char *file, int line)
 static void
 ractor_sched_unlock_(rb_vm_t *vm, rb_ractor_t *cr, const char *file, int line)
 {
-    RUBY_DEBUG_LOG2(file, line, "cr:%u", rb_ractor_serial(cr));
+    RUBY_DEBUG_LOG2(file, line, "cr:%"PRI_SERIALT_PREFIX"u", rb_ractor_serial(cr));
 
     ractor_sched_set_unlocked(vm, cr);
     rb_native_mutex_unlock(&vm->ractor.sched.lock);
@@ -1306,7 +1306,7 @@ ractor_sched_enq(rb_vm_t *vm, rb_ractor_t *r)
         vm->ractor.sched.grq_cnt++;
         VM_ASSERT(grq_size(vm, cr) == vm->ractor.sched.grq_cnt);
 
-        RUBY_DEBUG_LOG("r:%u th:%u grq_cnt:%u", rb_ractor_id(r), rb_th_serial(sched->running), vm->ractor.sched.grq_cnt);
+        RUBY_DEBUG_LOG("r:%"PRI_SERIALT_PREFIX"u th:%u grq_cnt:%u", rb_ractor_id(r), rb_th_serial(sched->running), vm->ractor.sched.grq_cnt);
 
         rb_native_cond_signal(&vm->ractor.sched.cond);
 

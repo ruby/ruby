@@ -5740,7 +5740,7 @@ rb_raw_obj_info_buitin_type(char *const buff, const size_t buff_size, const VALU
             else if (rb_ractor_p(obj)) {
                 rb_ractor_t *r = (void *)DATA_PTR(obj);
                 if (r) {
-                    APPEND_F("r:%d", r->pub.id);
+                    APPEND_F("r:%"PRI_SERIALT_PREFIX"u", r->pub.id);
                 }
             }
             break;
