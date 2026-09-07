@@ -364,9 +364,10 @@ module Bundler
           git("rev-parse", "--verify", reference, dir: path).strip
         end
 
-        # Adds credentials to the URI
+        # Adds credentials to the URI. This is the URI given to git, so it's
+        # also the one command output must be filtered against.
         def configured_uri
-          if /https?:/.match?(uri)
+          @configured_uri ||= if /https?:/.match?(uri)
             remote = Gem::URI(uri)
             config_auth = Bundler.settings[remote.to_s] || Bundler.settings[remote.host]
             remote.userinfo ||= config_auth
@@ -409,7 +410,7 @@ module Bundler
           raise GitNotInstalledError.new unless Bundler.git_present?
 
           require "shellwords"
-          URICredentialsFilter.credential_filtered_string("git #{command.shelljoin}", uri)
+          URICredentialsFilter.credential_filtered_string("git #{command.shelljoin}", configured_uri)
         end
 
         def run_command(*command, dir: nil)
@@ -429,10 +430,10 @@ module Bundler
             require "open3"
             out, err, status = Open3.capture3(*capture3_args_for(cmd, dir))
 
-            filtered_out = URICredentialsFilter.credential_filtered_string(out, uri)
+            filtered_out = URICredentialsFilter.credential_filtered_string(out, configured_uri)
             return [filtered_out, status] if ignore_err
 
-            filtered_err = URICredentialsFilter.credential_filtered_string(err, uri)
+            filtered_err = URICredentialsFilter.credential_filtered_string(err, configured_uri)
             [filtered_out, filtered_err, status]
           end
         end

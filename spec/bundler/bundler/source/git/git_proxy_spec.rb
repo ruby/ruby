@@ -98,6 +98,68 @@ RSpec.describe Bundler::Source::Git::GitProxy do
     end
   end
 
+  describe "filtering credentials out of command output" do
+    let(:secret) { "s3cr3tp4ss" }
+    let(:credentialed_uri) { "https://user:#{secret}@github.com/ruby/rubygems.git" }
+    let(:redacted_uri) { "https://user@github.com/ruby/rubygems.git" }
+
+    before do
+      allow(Open3).to receive(:capture3).and_return(["", "fatal: repository '#{credentialed_uri}' not found", fail_result])
+      allow(Open3).to receive(:capture3).with("git", "--version").and_return(["git version 2.14.0", "", clone_result])
+    end
+
+    it "redacts credentials configured for the host from failed commands" do
+      Bundler.settings.temporary("github.com" => "user:#{secret}") do
+        expect { git_proxy.checkout }.to raise_error(Bundler::Source::Git::GitCommandError) do |error|
+          expect(error.message).not_to include(secret)
+          expect(error.message).to include(redacted_uri)
+        end
+      end
+    end
+
+    it "redacts credentials configured for the full URI from failed commands" do
+      Bundler.settings.temporary(uri => "user:#{secret}") do
+        expect { git_proxy.checkout }.to raise_error(Bundler::Source::Git::GitCommandError) do |error|
+          expect(error.message).not_to include(secret)
+          expect(error.message).to include(redacted_uri)
+        end
+      end
+    end
+
+    it "redacts configured credentials from stdout and stderr" do
+      Bundler.settings.temporary("github.com" => "user:#{secret}") do
+        allow(Open3).to receive(:capture3).and_return(["cloning #{credentialed_uri}", "error: #{credentialed_uri}", fail_result])
+
+        out, err, = git_proxy.send(:capture, ["fetch"], nil)
+
+        expect(out).to eq("cloning #{redacted_uri}")
+        expect(err).to eq("error: #{redacted_uri}")
+      end
+    end
+
+    context "when the URI itself embeds credentials" do
+      let(:uri) { credentialed_uri }
+
+      it "redacts them from failed commands" do
+        expect { git_proxy.checkout }.to raise_error(Bundler::Source::Git::GitCommandError) do |error|
+          expect(error.message).not_to include(secret)
+          expect(error.message).to include(redacted_uri)
+        end
+      end
+    end
+
+    context "when no credentials are involved" do
+      it "leaves output untouched" do
+        allow(Open3).to receive(:capture3).and_return(["cloning #{uri}", "error: #{uri}", fail_result])
+
+        out, err, = git_proxy.send(:capture, ["fetch"], nil)
+
+        expect(out).to eq("cloning #{uri}")
+        expect(err).to eq("error: #{uri}")
+      end
+    end
+  end
+
   describe "#copy_to" do
     let(:revision) { "abc123" }
     let(:destination) { tmp("git-proxy-copy") }

@@ -14,11 +14,15 @@ module Bundler
     require_relative "resolver/root"
     require_relative "resolver/strategy"
 
+    attr_reader :cooldown_skipped
+
     def initialize(base, gem_version_promoter, most_specific_locked_platform = nil)
       @source_requirements = base.source_requirements
       @base = base
       @gem_version_promoter = gem_version_promoter
       @most_specific_locked_platform = most_specific_locked_platform
+      @cooldown_skipped = []
+      @cooldown_skipped_specs = {}
     end
 
     def start
@@ -35,6 +39,8 @@ module Bundler
     def setup_solver
       root = Resolver::Root.new(name_for_explicit_dependency_source)
       root_version = Resolver::Candidate.new(0)
+
+      @cooldown_skipped_specs = {}
 
       @all_specs = Hash.new do |specs, name|
         source = source_for(name)
@@ -80,7 +86,9 @@ module Bundler
       solver = PubGrub::VersionSolver.new(source: self, root: root, strategy: Strategy.new(self), logger: logger)
       result = solver.solve
       resolved_specs = result.flat_map {|package, version| version.to_specs(package, @most_specific_locked_platform) }
-      SpecSet.new(resolved_specs).specs_with_additional_variants_from(@base.locked_specs)
+      spec_set = SpecSet.new(resolved_specs).specs_with_additional_variants_from(@base.locked_specs)
+      @cooldown_skipped = cooldown_skipped_summary(spec_set)
+      spec_set
     rescue PubGrub::SolveFailure => e
       incompatibility = e.incompatibility
 
@@ -424,6 +432,7 @@ module Bundler
       specs.each do |spec|
         next unless cooldown_excluded?(spec)
         excluded[[spec.name, spec.version]] = true
+        (@cooldown_skipped_specs ||= {})[[spec.name, spec.version]] ||= spec
       end
       excluded
     end
@@ -464,6 +473,50 @@ module Bundler
 
     def cooldown_now
       @cooldown_now ||= Time.now
+    end
+
+    # Reports, per gem, the newest version that cooldown kept out of a
+    # successful resolution. A skipped version is only worth reporting when it
+    # is newer than the resolved version and satisfies every requirement the
+    # final resolution places on that gem, so we don't claim a version the
+    # resolver could never have picked anyway.
+    def cooldown_skipped_summary(spec_set)
+      return [] if @cooldown_skipped_specs.empty?
+
+      requirements = Hash.new {|h, name| h[name] = [] }
+      @requirements.each {|dep| requirements[dep.name] << dep.requirement }
+      spec_set.each do |spec|
+        spec.dependencies.each {|dep| requirements[dep.name] << dep.requirement }
+      end
+
+      resolved_versions = {}
+      spec_set.each do |spec|
+        version = resolved_versions[spec.name]
+        resolved_versions[spec.name] = spec.version if version.nil? || spec.version > version
+      end
+
+      newest_skipped = {}
+      @cooldown_skipped_specs.each do |(name, version), spec|
+        resolved = resolved_versions[name]
+        next unless resolved && version > resolved
+        next unless requirements[name].all? {|req| req.satisfied_by?(version) }
+        newest = newest_skipped[name]
+        newest_skipped[name] = spec if newest.nil? || version > newest.version
+      end
+
+      newest_skipped.values.sort_by(&:name).map do |spec|
+        {
+          name: spec.name,
+          version: spec.version,
+          resolved: resolved_versions[spec.name],
+          available_in_days: remaining_cooldown_days(spec),
+        }
+      end
+    end
+
+    def remaining_cooldown_days(spec)
+      remaining = (spec.remote.effective_cooldown * 86_400) - (cooldown_now - spec.created_at)
+      [(remaining / 86_400.0).ceil, 1].max
     end
 
     def filter_remote_specs(specs, package)

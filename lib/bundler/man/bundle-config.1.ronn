@@ -133,7 +133,7 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
    Defaults to `vendor/cache`.
 * `clean` (`BUNDLE_CLEAN`):
    Whether Bundler should run `bundle clean` automatically after
-   `bundle install`. Defaults to `true` in Bundler 4, as long as `path` is not
+   `bundle install`. Defaults to `true` in Bundler 5, as long as `path` is not
    explicitly configured.
 * `console` (`BUNDLE_CONSOLE`):
    The console that `bundle console` starts. Defaults to `irb`.
@@ -245,12 +245,12 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
    The location on disk where all gems in your bundle will be located regardless
    of `$GEM_HOME` or `$GEM_PATH` values. Bundle gems not found in this location
    will be installed by `bundle install`. When not set, Bundler install by
-   default to a `.bundle` directory relative to repository root in Bundler 4,
-   and to the default system path (`Gem.dir`) before Bundler 4. That means that
-   before Bundler 4, Bundler shares this location with Rubygems, and `gem
+   default to a `.bundle` directory relative to repository root in Bundler 5,
+   and to the default system path (`Gem.dir`) before Bundler 5. That means that
+   before Bundler 5, Bundler shares this location with Rubygems, and `gem
    install ...` will have gems installed in the same location and therefore,
    gems installed without `path` set will show up by calling `gem list`. This
-   will not be the case in Bundler 4.
+   will not be the case in Bundler 5.
 * `path.system` (`BUNDLE_PATH__SYSTEM`):
    Whether Bundler will install gems into the default system path (`Gem.dir`).
 * `plugins` (`BUNDLE_PLUGINS`):

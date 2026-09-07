@@ -175,6 +175,75 @@ RSpec.describe "install in deployment or frozen mode" do
       end.not_to change { bundled_app_lock.mtime }
     end
 
+    it "explodes if regenerating the lockfile would change it" do
+      lockfile lockfile.
+        sub("    myrack (1.0.0)", "    myrack-obama (1.0)\n    myrack (1.0.0)").
+        sub(/^  myrack \(1\.0\.0\) sha256=\S+$/) {|line| "#{line}\n  #{checksum_to_lock(gem_repo1, "myrack-obama", "1.0")}" }
+
+      bundle :install, env: { "BUNDLE_FROZEN" => "true" }, raise_on_error: false
+      expect(err).to include("Your lockfile needs to be updated, but it can't be because frozen mode is set")
+      expect(last_command).to be_failure
+    end
+
+    it "explodes on `bundle check` if the lockfile contains a gem bundler would prune" do
+      lockfile lockfile.sub("    myrack (1.0.0)", "    myrack (1.0.0)\n    myrack-obama (1.0)")
+
+      bundle :check, env: { "BUNDLE_FROZEN" => "true" }, raise_on_error: false
+      expect(err).to include("but can't be updated because frozen mode is set")
+      expect(last_command).to be_failure
+    end
+
+    it "works when the lockfile includes a checksum entry for bundler itself" do
+      lockfile <<~L
+        GEM
+          remote: https://gem.repo1/
+          specs:
+            myrack (1.0.0)
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          myrack
+
+        CHECKSUMS
+          bundler (#{Bundler::VERSION}) sha256=#{"a" * 64}
+          #{checksum_to_lock gem_repo1, "myrack", "1.0.0"}
+
+        BUNDLED WITH
+          #{Bundler::VERSION}
+      L
+
+      bundle :install, env: { "BUNDLE_FROZEN" => "true" }
+      expect(err).to be_empty
+    end
+
+    it "explodes if the lockfile checksum entry for bundler does not match the BUNDLED WITH version" do
+      lockfile <<~L
+        GEM
+          remote: https://gem.repo1/
+          specs:
+            myrack (1.0.0)
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          myrack
+
+        CHECKSUMS
+          bundler (4.0.16) sha256=#{"a" * 64}
+          #{checksum_to_lock gem_repo1, "myrack", "1.0.0"}
+
+        BUNDLED WITH
+          #{Bundler::VERSION}
+      L
+
+      bundle :install, env: { "BUNDLE_FROZEN" => "true" }, raise_on_error: false
+      expect(err).to include("Your lockfile needs to be updated, but it can't be because frozen mode is set")
+      expect(last_command).to be_failure
+    end
+
     it "explodes with the `deployment` setting if you make a change and don't check in the lockfile" do
       gemfile <<-G
         source "https://gem.repo1"
