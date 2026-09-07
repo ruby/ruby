@@ -1379,6 +1379,15 @@ Also, a list:
     Object.const_set :RUBY_ENGINE_VERSION, engine_version
   end
 
+  ##
+  # Pins the running Ruby to the first release of +ruby_abi+, so that the
+  # "~> X.Y.0" requirement a content addressed gem pins its ABI with is
+  # satisfied on a prerelease Ruby too. Pair with util_restore_RUBY_VERSION.
+
+  def util_pin_ruby_to_abi(ruby_abi)
+    util_set_RUBY_VERSION "#{ruby_abi}.0", 0, RUBY_REVISION, "ruby #{ruby_abi}.0"
+  end
+
   def util_restore_RUBY_VERSION
     util_clear_RUBY_VERSION
 

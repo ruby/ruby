@@ -425,8 +425,8 @@ class TestGemDependencyInstaller < Gem::TestCase
   end
 
   def test_install_local_by_name_preserves_content_address
-    ruby_abi = Gem.ruby_version.segments.first(2).join(".")
-    util_set_RUBY_VERSION "#{ruby_abi}.0", 0, RUBY_REVISION, "ruby #{ruby_abi}.0"
+    ruby_abi = Gem.ruby_abi
+    util_pin_ruby_to_abi ruby_abi
     _spec, ca_gem = util_gem("ca", "1.0.0", ruby_abi: ruby_abi) do |spec|
       spec.platform = Gem::Platform.local
     end

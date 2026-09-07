@@ -338,7 +338,8 @@ class TestGemResolver < Gem::TestCase
 
   def test_prefers_compatible_content_addressed_gem_over_more_specific_platform
     util_set_arch "arm64-darwin-27"
-    current_abi = "#{Gem.ruby_version.segments[0]}.#{Gem.ruby_version.segments[1]}"
+    current_abi = Gem.ruby_abi
+    util_pin_ruby_to_abi current_abi
 
     ca_spec = util_spec "a", "1"
     fat_spec = util_spec "a", "1"
@@ -352,6 +353,8 @@ class TestGemResolver < Gem::TestCase
     dependency = make_dep "a"
     resolver = Gem::Resolver.new([dependency], s)
     assert_resolves_to [ca_spec], resolver
+  ensure
+    util_restore_RUBY_VERSION
   end
 
   def test_prefers_more_specific_platform_over_content_addressed_gem_for_another_ruby
@@ -419,7 +422,8 @@ class TestGemResolver < Gem::TestCase
   end
 
   def test_prefers_compatible_content_addressed_gem_when_multiple_abis_available
-    current_abi = "#{Gem.ruby_version.segments[0]}.#{Gem.ruby_version.segments[1]}"
+    current_abi = Gem.ruby_abi
+    util_pin_ruby_to_abi current_abi
 
     ca_compatible = util_spec "a", "1"
     ca_incompatible = util_spec "a", "1"
@@ -435,6 +439,8 @@ class TestGemResolver < Gem::TestCase
     dependency = make_dep "a"
     resolver = Gem::Resolver.new([dependency], s)
     assert_resolves_to [ca_compatible], resolver
+  ensure
+    util_restore_RUBY_VERSION
   end
 
   def test_raises_when_only_content_addressed_gem_is_incompatible
