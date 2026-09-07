@@ -1356,8 +1356,11 @@ clean-build-tool:
 
 $(srcdir)/revision.h$(no_baseruby:no=~disabled~): $(REVISION_H)
 
+REVISION_H_CMD = $(BASERUBY) $(tooldir)/file2lastrev.rb -q --revision.h \
+	--srcdir="$(srcdir)" --output=revision.h --timestamp=$(REVISION_H)
+
 $(REVISION_H)$(no_baseruby:no=~disabled~):
-	$(Q) $(BASERUBY) $(tooldir)/file2lastrev.rb -q --revision.h --srcdir="$(srcdir)" --output=revision.h --timestamp=$@
+	$(Q) $(REVISION_H_CMD)
 $(REVISION_H)$(yes_baseruby:yes=~disabled~):
 	$(Q) exit > $@
 
@@ -1520,6 +1523,11 @@ after-update:: update-default-gemspecs
 update-src::
 	$(Q) $(RM) $(REVISION_H) revision.h "$(srcdir)/$(REVISION_H)" "$(srcdir)/revision.h"
 	$(Q) exit > "$(srcdir)/revision.h"
+
+# $(REVISION_H) can have been made already in this run, as a prerequisite
+# of the included dependency file, and make does not make it twice.
+update-src$(no_baseruby:no=~disabled~)::
+	$(Q) $(REVISION_H_CMD)
 
 update-remote:: update-src update-download
 update-download:: $(ALWAYS_UPDATE_UNICODE:yes=update-unicode)
