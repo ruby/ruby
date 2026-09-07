@@ -781,6 +781,7 @@ begin
     end
     submakeopts << 'EXTLDFLAGS="$(EXTLDFLAGS)"'
     submakeopts << 'EXTINITS="$(EXTINITS)"'
+    submakeopts << 'PROGRAM_EXTS='
     submakeopts << 'SHOWFLAGS='
     mf.macro "SUBMAKEOPTS", submakeopts
     mf.macro "NOTE_MESG", %w[$(RUBY) $(top_srcdir)/tool/lib/colorize.rb skip]
