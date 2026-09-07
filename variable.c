@@ -1025,13 +1025,10 @@ trace_en(VALUE v)
     return Qnil;		/* not reached */
 }
 
-static VALUE
-rb_gvar_set_entry(struct rb_global_entry *entry, VALUE val)
+static void
+gvar_trace(struct rb_global_variable *var, VALUE val)
 {
     struct trace_data trace;
-    struct rb_global_variable *var = entry->var;
-
-    (*var->setter)(val, entry->id, var->data);
 
     if (var->trace && !var->block_trace) {
         var->block_trace = 1;
@@ -1039,6 +1036,15 @@ rb_gvar_set_entry(struct rb_global_entry *entry, VALUE val)
         trace.val = val;
         rb_ensure(trace_ev, (VALUE)&trace, trace_en, (VALUE)var);
     }
+}
+
+static VALUE
+rb_gvar_set_entry(struct rb_global_entry *entry, VALUE val)
+{
+    struct rb_global_variable *var = entry->var;
+
+    (*var->setter)(val, entry->id, var->data);
+    gvar_trace(var, val);
     return val;
 }
 
@@ -1066,13 +1072,15 @@ rb_gvar_set(ID id, VALUE val)
             use_box_tbl = true;
             rb_hash_aset(box->gvar_tbl, rb_id2sym(entry->id), val);
             retval = val;
-            // TODO: think about trace
         }
     }
 
     if (isolation_error) global_entry_isolation_error(id);
 
-    if (!use_box_tbl) {
+    if (use_box_tbl) {
+        gvar_trace(entry->var, val);
+    }
+    else {
         retval = rb_gvar_set_entry(entry, val);
     }
     return retval;
