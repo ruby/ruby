@@ -1,0 +1,72 @@
+#!/bin/sh
+
+: ${git=git}
+
+date_type=cd
+width=10
+
+usage() {
+    echo "usage: $0 [options] [working-directory [head]]
+options:
+  -g, --git=git-command         specify the git command[$git]
+  -d, --date=author|committer   specify date type
+  -w, --width=width             abbreviation width [default=$width]
+"
+    exit ${1}
+}
+
+die () {
+    echo "${0##*/}: $1" 1>&2
+    usage 1 1>&2
+}
+
+while getopts g:d:w:h-: opt; do
+    optarg="$OPTARG"
+    if [ "$opt" = "-" ]; then
+        opt="-${optarg%%=*}"
+        case "$optarg" in
+            *=*)
+                optarg="${optarg#*=}";;
+            *)
+                eval 'optarg="${'$OPTIND'}"'
+                case "${optarg}" in
+                    -*)
+                        optarg=;;
+                    *)
+                        shift $OPTIND; OPTIND=1;;
+                esac
+        esac
+    fi
+
+    case "-$opt" in
+        -g|--git)
+            git="$optarg";;
+        -d|--date)
+            case author in "$optarg"*) date_type=ad; :;; *) false;; esac ||
+            case committer in "$optarg"*) date_type=cd; :;; *) false;; esac ||
+            die "Unknown date $optarg";;
+        -w|--width)
+            width="$optarg";;
+        -h|--help)
+            usage;;
+        --)
+            break;;
+        -*)
+            die "Unknown option $1";;
+    esac
+done
+shift $((OPTIND-1))
+
+gitdir="${1-.}" head="${2-HEAD}"
+
+branch=`${git} -C "${gitdir}" symbolic-ref --short "${head}" 2>/dev/null` || branch="$head"
+set `${git} -C "${gitdir}" log -1 --no-show-signature "--abbrev=${width}" \
+     "--date=format-local:%FT%TZ %Y %m %d" "--format=%h %H %${date_type}" "${head}" --`
+
+echo "#define RUBY_REVISION \"$1\""
+echo "#define RUBY_FULL_REVISION \"${2}\""
+echo "#define RUBY_BRANCH_NAME \"${branch}\""
+echo "#define RUBY_RELEASE_DATETIME \"${3}\""
+echo "#define RUBY_RELEASE_YEAR ${4}"
+echo "#define RUBY_RELEASE_MONTH ${5#0}"
+echo "#define RUBY_RELEASE_DAY ${6#0}"

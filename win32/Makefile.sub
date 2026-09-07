@@ -124,6 +124,7 @@ LRAMA = $(BASERUBY) $(top_srcdir)/tool/lrama/exe/lrama
 AR = lib -nologo
 PURIFY =
 AUTOCONF = autoconf
+LASTREV = $(COMSPEC) /C $(srcdir:/=\)\win32\lastrev.bat
 IFCHANGE = $(COMSPEC) /C $(srcdir:/=\)\win32\ifchange.bat
 RM = $(COMSPEC) /C $(srcdir:/=\)\win32\rm.bat
 RM1 = del
