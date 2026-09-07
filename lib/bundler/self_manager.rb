@@ -75,7 +75,12 @@ module Bundler
 
       argv0 = File.exist?($PROGRAM_NAME) ? $PROGRAM_NAME : Process.argv0
       cmd = [argv0, *ARGV]
-      cmd.unshift(Gem.ruby) unless File.executable?(argv0)
+      unless File.executable?(argv0)
+        # Gem.ruby is quoted if it contains whitespace, so split it into argv
+        # elements to keep the quotes out of the exec'd command.
+        require "shellwords"
+        cmd.unshift(*Shellwords.split(Gem.ruby))
+      end
 
       Bundler.with_original_env do
         Kernel.exec(
