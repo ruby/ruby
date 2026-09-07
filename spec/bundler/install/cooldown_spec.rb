@@ -108,6 +108,18 @@ RSpec.describe "bundle install with the cooldown setting" do
           s.date = now - (30 * 86_400)
         end
 
+        # an adoptable version sits between the installed one and the
+        # in-cooldown newest one
+        build_gem "mid_gem", "1.0.0" do |s|
+          s.date = now - (30 * 86_400)
+        end
+        build_gem "mid_gem", "1.5.0" do |s|
+          s.date = now - (30 * 86_400)
+        end
+        build_gem "mid_gem", "2.0.0" do |s|
+          s.date = now - (1 * 86_400)
+        end
+
         # every published version is inside the cooldown window
         build_gem "fresh_gem", "0.3.1" do |s|
           s.date = now - (1 * 86_400)
@@ -464,6 +476,151 @@ RSpec.describe "bundle install with the cooldown setting" do
       bundle "outdated --cooldown 7 --parseable", artifice: "compact_index_cooldown", raise_on_error: false
 
       expect(out).to match(/ripe_gem.*in cooldown for \d+ more day/)
+    end
+
+    it "shows the newest out-of-cooldown version next to the in-cooldown newest one" do
+      gemfile <<-G
+        source "https://gem.repo3"
+        gem "mid_gem", "1.0.0"
+      G
+
+      lockfile <<-L
+        GEM
+          remote: https://gem.repo3/
+          specs:
+            mid_gem (1.0.0)
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          mid_gem (= 1.0.0)
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      bundle "outdated --cooldown 7 --parseable", artifice: "compact_index_cooldown", raise_on_error: false
+
+      expect(out).to match(/mid_gem \(newest 2\.0\.0, installed 1\.0\.0.*in cooldown for \d+ more days, newest out of cooldown 1\.5\.0\)/)
+
+      bundle "outdated --cooldown 7", artifice: "compact_index_cooldown", raise_on_error: false
+
+      expect(out).to match(/mid_gem.*2\.0\.0 \(cooldown \d+d, 1\.5\.0 out of cooldown\)/)
+    end
+
+    it "shows the resolved version without cooldown notes in strict mode" do
+      gemfile <<-G
+        source "https://gem.repo3"
+        gem "mid_gem"
+      G
+
+      lockfile <<-L
+        GEM
+          remote: https://gem.repo3/
+          specs:
+            mid_gem (1.0.0)
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          mid_gem
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      bundle "outdated --strict --cooldown 7 --parseable", artifice: "compact_index_cooldown", raise_on_error: false
+
+      # in strict mode "newest" is the resolved (cooldown-filtered) version
+      # itself, so the annotations have nothing to add
+      expect(out).to match(/mid_gem \(newest 1\.5\.0, installed 1\.0\.0/)
+      expect(out).not_to include("cooldown")
+    end
+
+    it "shows no out-of-cooldown note when every version is inside the window" do
+      gemfile <<-G
+        source "https://gem.repo3"
+        gem "fresh_gem", "0.3.1"
+      G
+
+      lockfile <<-L
+        GEM
+          remote: https://gem.repo3/
+          specs:
+            fresh_gem (0.3.1)
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          fresh_gem (= 0.3.1)
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      bundle "outdated --cooldown 7 --parseable", artifice: "compact_index_cooldown", raise_on_error: false
+
+      expect(out).to match(/fresh_gem.*in cooldown for \d+ more day/)
+      expect(out).not_to include("out of cooldown")
+    end
+
+    it "uses the singular form when one cooldown day remains" do
+      gemfile <<-G
+        source "https://gem.repo3"
+        gem "mid_gem", "1.0.0"
+      G
+
+      lockfile <<-L
+        GEM
+          remote: https://gem.repo3/
+          specs:
+            mid_gem (1.0.0)
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          mid_gem (= 1.0.0)
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      # mid_gem 2.0.0 is one day old, so a two-day window leaves one day
+      bundle "outdated --cooldown 2 --parseable", artifice: "compact_index_cooldown", raise_on_error: false
+
+      expect(out).to match(/mid_gem \(newest 2\.0\.0, installed 1\.0\.0.*in cooldown for 1 more day, newest out of cooldown 1\.5\.0\)/)
+    end
+
+    it "leaves bundle outdated output untouched when cooldown is not enabled" do
+      gemfile <<-G
+        source "https://gem.repo3"
+        gem "mid_gem", "1.0.0"
+      G
+
+      lockfile <<-L
+        GEM
+          remote: https://gem.repo3/
+          specs:
+            mid_gem (1.0.0)
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          mid_gem (= 1.0.0)
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      bundle "outdated --parseable", artifice: "compact_index_cooldown", raise_on_error: false
+
+      expect(out).to match(/mid_gem \(newest 2\.0\.0, installed 1\.0\.0/)
+      expect(out).not_to include("cooldown")
     end
 
     it "excludes a locally-installed version that is still within the cooldown window" do

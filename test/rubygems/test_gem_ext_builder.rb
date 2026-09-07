@@ -194,6 +194,24 @@ install:
     assert_equal "STDIN: \"\"\n", command_output
   end
 
+  def test_class_run_removes_ruby_box_from_env
+    ENV["RUBY_BOX"] = "1"
+
+    results = []
+
+    Gem::Ext::Builder.run([Gem.ruby, "-e", 'puts ENV.key?("RUBY_BOX")'], results)
+
+    assert_equal "false\n", results.last
+  end
+
+  def test_class_run_removes_ruby_box_passed_by_caller
+    results = []
+
+    Gem::Ext::Builder.run([Gem.ruby, "-e", 'puts ENV.key?("RUBY_BOX")'], results, nil, Dir.pwd, { "RUBY_BOX" => "1" })
+
+    assert_equal "false\n", results.last
+  end
+
   def test_build_extensions
     pend "terminates on mswin" if vc_windows? && ruby_repo?
 

@@ -193,7 +193,13 @@ module Bundler
             return out if status.success?
 
             if err.include?("couldn't find remote ref") || err.include?("not our ref")
-              raise MissingGitRevisionError.new(command_with_no_credentials, path, commit || explicit_ref, credential_filtered_uri)
+              default_branch = renamed_remote_default_branch if tracking_remote_default_branch?
+              if default_branch
+                out = follow_remote_default_branch(args, default_branch)
+                return out if out
+              end
+
+              raise MissingGitRevisionError.new(command_with_no_credentials, path, commit || explicit_ref || current_branch, credential_filtered_uri)
             else
               if shallow?
                 args -= depth_args
@@ -296,6 +302,61 @@ module Bundler
 
         def not_pinned?
           branch_option || ref.nil?
+        end
+
+        def tracking_remote_default_branch?
+          explicit_ref.nil? && commit.nil?
+        end
+
+        # Returns nil on any failure, leaving HEAD untouched so the caller reports
+        # the original fetch failure. Runs inside the retry block, so it must not
+        # touch the caller's command locals.
+        def follow_remote_default_branch(args, default_branch)
+          reference = "refs/heads/#{default_branch}"
+          command = fetch_command(args, "#{reference}:#{reference}")
+          check_allowed(command)
+
+          out, err, status = capture(command, path)
+          unless status.success?
+            Bundler.ui.debug "Could not fetch #{reference} from #{credential_filtered_uri}: #{err}"
+            return
+          end
+
+          previous_branch = current_branch
+          begin
+            git "symbolic-ref", "HEAD", reference, dir: path
+          rescue GitError => e
+            Bundler.ui.debug "Could not repoint the cached clone at #{reference}: #{e.message}"
+            return
+          end
+          @current_branch = nil
+          Bundler.ui.warn "#{credential_filtered_uri} no longer has #{previous_branch}, " \
+            "now following its default branch #{default_branch}"
+          out
+        end
+
+        # The cached clone's HEAD branch is gone from the remote, so the remote's
+        # own idea of its default branch is the only thing left to follow.
+        def renamed_remote_default_branch
+          default_branch = remote_default_branch
+          return if default_branch.nil? || default_branch == current_branch
+
+          default_branch
+        end
+
+        def remote_default_branch
+          command = ["ls-remote", "--symref", "--", configured_uri, "HEAD"]
+          check_allowed(command)
+
+          out, err, status = capture(command, path)
+          unless status.success?
+            Bundler.ui.debug "Could not ask #{credential_filtered_uri} for its default branch: #{err}"
+            return
+          end
+
+          # A remote is free to advertise a ref name that is not valid UTF-8, and
+          # matching that as text raises out of the GitError family.
+          out.b[%r{^ref:\s+refs/heads/(.+?)\s+HEAD}, 1]
         end
 
         def pinned_to_full_sha?
@@ -465,8 +526,8 @@ module Bundler
           args
         end
 
-        def fetch_command(args)
-          ["fetch", "--force", "--quiet", "--no-tags", *args, "--", configured_uri, refspec].compact
+        def fetch_command(args, spec = refspec)
+          ["fetch", "--force", "--quiet", "--no-tags", *args, "--", configured_uri, spec].compact
         end
 
         def clone_command(args)

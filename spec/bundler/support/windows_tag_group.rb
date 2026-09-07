@@ -142,6 +142,7 @@ module Spec
         "spec/bundler/ci_detector_spec.rb",
       ],
       windows_d: [
+        "spec/bundler/cli/exec_spec.rb",
         "spec/bundler/compact_index_client/cache_file_spec.rb",
         "spec/bundler/compact_index_client/cache_spec.rb",
         "spec/bundler/rubygems_ext_spec.rb",

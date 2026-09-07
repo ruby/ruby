@@ -38,6 +38,9 @@ If you run `bundle platform` on Ruby 3.1.2, it displays the following output:
 if the `ruby` directive requirement has been met. If `ruby` directive doesn't
 match the running Ruby VM, it tells you what part does not.
 
+For a detailed explanation of how bundler handles platforms, see the
+`PLATFORMS` section in Gemfile(5).
+
 ## OPTIONS
 
 * `--ruby`:
@@ -47,3 +50,4 @@ match the running Ruby VM, it tells you what part does not.
 ## SEE ALSO
 
 * [bundle-lock(1)](bundle-lock.1.html)
+* [Gemfile(5)](gemfile.5.html)

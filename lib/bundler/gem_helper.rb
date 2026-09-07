@@ -32,7 +32,7 @@ module Bundler
 
     def initialize(base = nil, name = nil)
       @base = File.expand_path(base || SharedHelpers.pwd)
-      gemspecs = name ? [File.join(@base, "#{name}.gemspec")] : Gem::Util.glob_files_in_dir("{,*}.gemspec", @base)
+      gemspecs = name ? [File.join(@base, "#{name}.gemspec")] : SharedHelpers.glob_files_in_dir("{,*}.gemspec", @base)
       raise "Unable to determine name from existing gemspec. Use :name => 'gemname' in #install_tasks to manually set it." unless gemspecs.size == 1
       @spec_path = gemspecs.first
       @gemspec = Bundler.load_gemspec(@spec_path)
@@ -124,7 +124,7 @@ module Bundler
     end
 
     def built_gem_path
-      Gem::Util.glob_files_in_dir("#{name}-*.gem", base).sort_by {|f| File.mtime(f) }.last
+      SharedHelpers.glob_files_in_dir("#{name}-*.gem", base).sort_by {|f| File.mtime(f) }.last
     end
 
     def git_push(remote = nil)

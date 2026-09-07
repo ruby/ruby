@@ -161,7 +161,7 @@ module Bundler
 
         if File.directory?(expanded_path)
           # We sort depth-first since `<<` will override the earlier-found specs
-          Gem::Util.glob_files_in_dir(@glob, expanded_path).sort_by {|p| -p.split(File::SEPARATOR).size }.each do |file|
+          SharedHelpers.glob_files_in_dir(@glob, expanded_path).sort_by {|p| -p.split(File::SEPARATOR).size }.each do |file|
             next unless spec = load_gemspec(file)
             spec.source = self
 

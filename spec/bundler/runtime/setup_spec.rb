@@ -1705,4 +1705,40 @@ end
       expect(err).to include("Your lockfile is missing the current platform, but can't be updated because file system is read-only")
     end
   end
+
+  context "when Ruby::Box is enabled" do
+    before do
+      skip "requires Ruby 4.0.6+, where each box loads its own RubyGems" unless defined?(Ruby::Box) && Gem.ruby_version >= Gem::Version.new("4.0.6")
+
+      build_lib "foo", "1.0", path: bundled_app
+
+      install_gemfile <<-G
+        source "https://gem.repo1"
+        gemspec
+      G
+    end
+
+    it "evaluates gemspecs in the box Bundler is loaded in" do
+      ruby <<~RUBY, env: { "RUBY_BOX" => "1" }
+        box = Ruby::Box.new
+        box.eval(<<~'BOX')
+          require "bundler/setup"
+          require "foo"
+          puts FOO
+        BOX
+      RUBY
+
+      expect(out).to eq("1.0")
+    end
+
+    it "still evaluates gemspecs when no box is created" do
+      ruby <<~RUBY, env: { "RUBY_BOX" => "1" }
+        require "bundler/setup"
+        require "foo"
+        puts FOO
+      RUBY
+
+      expect(out).to eq("1.0")
+    end
+  end
 end

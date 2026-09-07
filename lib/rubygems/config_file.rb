@@ -26,9 +26,20 @@ require "rbconfig"
 # RubyGems options use symbol keys.  Valid options are:
 #
 # +:backtrace+:: See #backtrace
-# +:sources+:: Sets Gem::sources
+# +:bulk_threshold+:: See #bulk_threshold
 # +:verbose+:: See #verbose
+# +:update_sources+:: See #update_sources
 # +:concurrent_downloads+:: See #concurrent_downloads
+# +:cert_expiration_length_days+:: See #cert_expiration_length_days
+# +:install_extension_in_lib+:: See #install_extension_in_lib
+# +:ipv4_fallback_enabled+:: See #ipv4_fallback_enabled
+# +:gemhome+:: See #home
+# +:gempath+:: See #path
+# +:sources+:: Sets Gem::sources
+# +:disable_default_gem_server+:: See #disable_default_gem_server
+# +:ssl_verify_mode+:: See #ssl_verify_mode
+# +:ssl_ca_cert+:: See #ssl_ca_cert
+# +:ssl_client_cert+:: See #ssl_client_cert
 #
 # gemrc files may exist in various locations and are read and merged in
 # the following order:
@@ -193,8 +204,8 @@ class Gem::ConfigFile
     @install_extension_in_lib = DEFAULT_INSTALL_EXTENSION_IN_LIB
     @ipv4_fallback_enabled = ENV["IPV4_FALLBACK_ENABLED"] == "true" || DEFAULT_IPV4_FALLBACK_ENABLED
 
-    operating_system_config = Marshal.load Marshal.dump(OPERATING_SYSTEM_DEFAULTS)
-    platform_config = Marshal.load Marshal.dump(PLATFORM_DEFAULTS)
+    operating_system_config = Gem::Util.deep_dup(OPERATING_SYSTEM_DEFAULTS)
+    platform_config = Gem::Util.deep_dup(PLATFORM_DEFAULTS)
     system_config = load_file SYSTEM_WIDE_CONFIG_FILE
     user_config = load_file config_file_name
 
@@ -562,13 +573,13 @@ if you believe they were disclosed to a third party.
 
   def self.deep_transform_config_keys!(config)
     config.transform_keys! do |k|
-      if k.match?(/\A:(.*)\Z/)
+      if k.match?(/\A:(.*)\z/)
         k[1..-1].to_sym
-      elsif k.include?("__") || k.match?(%r{/\Z})
+      elsif k.include?("__") || k.end_with?("/")
         if k.is_a?(Symbol)
-          k.to_s.gsub(/__/,".").gsub(%r{/\Z}, "").to_sym
+          k.to_s.gsub(/__/,".").delete_suffix("/").to_sym
         else
-          k.dup.gsub(/__/,".").gsub(%r{/\Z}, "")
+          k.dup.gsub(/__/,".").delete_suffix("/")
         end
       else
         k
@@ -577,11 +588,11 @@ if you believe they were disclosed to a third party.
 
     config.transform_values! do |v|
       if v.is_a?(String)
-        if v.match?(/\A:(.*)\Z/)
+        if v.match?(/\A:(.*)\z/)
           v[1..-1].to_sym
-        elsif v.match?(/\A[+-]?\d+\Z/)
+        elsif v.match?(/\A[+-]?\d+\z/)
           v.to_i
-        elsif v.match?(/\Atrue|false\Z/)
+        elsif v.match?(/\A(?:true|false)\z/)
           v == "true"
         elsif v.empty?
           nil

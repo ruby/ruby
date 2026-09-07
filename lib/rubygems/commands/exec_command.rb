@@ -79,7 +79,7 @@ to the same gem path as user-installed gems.
   def handle_options(args)
     args = add_extra_args(args)
     check_deprecated_options(args)
-    @options = Marshal.load Marshal.dump @defaults # deep copy
+    @options = Gem::Util.deep_dup @defaults
     parser.order!(args) do |v|
       # put the non-option back at the front of the list of arguments
       args.unshift(v)

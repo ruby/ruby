@@ -109,9 +109,7 @@ class Gem::Security::Signer
     subject_alt_name = cert.extensions.find {|e| e.oid == "subjectAltName" }
 
     if subject_alt_name
-      /\Aemail:/ =~ subject_alt_name.value # rubocop:disable Performance/StartWith
-
-      $' || subject_alt_name.value
+      subject_alt_name.value.delete_prefix("email:")
     else
       cert.subject
     end
