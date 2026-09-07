@@ -325,6 +325,12 @@ Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for det
 
   [[Feature #21861]]
 
+### Ractor-scoped GC address registration
+
+* `rb_gc_register_address` and `rb_global_variable` now registers the address directly with the 
+  calling Ractor. Each Ractor's GC only marks objects whose addresses it registered itself, so 
+  native extensions must only use this API from the Ractor that owns the object being registered.
+
 ### Removed APIs
 
 The following APIs, which have been deprecated for many years, are removed.
