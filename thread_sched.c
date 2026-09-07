@@ -104,6 +104,18 @@ static bool timeslice_scan(rb_vm_t *vm, bool interrupt);
 static void timer_thread_wakeup(void);
 static void timer_thread_wakeup_locked(rb_vm_t *vm);
 static void timer_thread_wakeup_force(void);
+// RUBY_MN_THREADS: -1 = nothing is M:N, not even a Ractor's threads;
+// 0 = the default (a Ractor's threads are, the main Ractor's are not);
+// 1 = the main Ractor's threads too; 2 = the main thread as well.
+static int mn_threads_mode = 0;
+
+// Only consulted from USE_MN_THREADS code; the platform gate is not defined yet here.
+static bool
+mn_threads_enabled_p(void)
+{
+    return mn_threads_mode >= 0;
+}
+
 static void nt_snts_join(rb_vm_t *vm, struct rb_native_thread *nt);
 static void nt_snts_leave(rb_vm_t *vm, struct rb_native_thread *nt);
 static bool nt_shared_loop(struct rb_native_thread *nt);
@@ -1159,7 +1171,9 @@ rb_thread_sched_init(struct rb_thread_sched *sched, bool atfork)
     ccan_list_node_init(&sched->timeslice_node);
 
 #if USE_MN_THREADS
-    if (!atfork) sched->enable_mn_threads = true; // MN is enabled on Ractors
+    // A Ractor's threads are M:N unless RUBY_MN_THREADS turns it off entirely;
+    // the main Ractor's setting is decided in ruby_mn_threads_params().
+    if (!atfork) sched->enable_mn_threads = mn_threads_enabled_p();
 #endif
 }
 
@@ -1813,11 +1827,14 @@ ruby_mn_threads_params(void)
     rb_vm_t *vm = GET_VM();
     rb_ractor_t *main_ractor = GET_RACTOR();
 
-    // RUBY_MN_THREADS: 1 = threads created in the main Ractor are M:N,
-    //                  2 = the main thread too (see thread_sched_main_to_shared)
+    // RUBY_MN_THREADS: -1 = nothing is M:N, 0 = the default, 1 = the main
+    // Ractor's threads too, 2 = the main thread as well (see
+    // thread_sched_main_to_shared).  The main Ractor's sched already exists
+    // here, so it is set rather than defaulted.
     const char *mn_threads_cstr = getenv("RUBY_MN_THREADS");
     int mn_threads = (USE_MN_THREADS && mn_threads_cstr) ? atoi(mn_threads_cstr) : 0;
 
+    mn_threads_mode = mn_threads;
     if (mn_threads > 0) {
         ruby_mn_threads_enabled = mn_threads;
     }
