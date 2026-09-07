@@ -356,6 +356,52 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
   * `ObjectSpace.define_finalizer` on another Ractor's object raises
     `Ractor::IsolationError`.
 
+### M:N thread scheduler
+
+* The scheduler scales with the number of waiters and of Ractors, where it
+  used to walk a list or take one lock for all of them:
+
+  * A timed wait sits in a hierarchical timer wheel rather than on a list
+    sorted by deadline, which was inserted into by a linear scan.
+  * An fd stays armed in the backend between waits, instead of being added
+    before each wait and removed after each wake.
+  * The io-wait bookkeeping is sharded by fd, rather than serialized on one
+    lock across every fd.
+  * A timed wait on an fd rides the scheduler instead of going to a blocking
+    region, which cost a native thread handoff per wait.
+  * A context switch, and leaving or rejoining the shared pool, no longer take
+    the scheduler's global lock.
+
+* The `RUBY_MN_THREADS` environment variable now runs from no M:N scheduling
+  at all to all of it.  `-1` is new: a Ractor's threads have been M:N since
+  the scheduler was added, with no way to turn that off.  `0` and `1` are
+  unchanged.
+
+  | | main thread | the main Ractor's other threads | a Ractor's threads |
+  |---|---|---|---|
+  | `-1` | 1:1 | 1:1 | 1:1 |
+  | `0` or unset | 1:1 | 1:1 | M:N |
+  | `1` | 1:1 | M:N | M:N |
+  | `2` | M:N | M:N | M:N |
+
+* `RUBY_MN_THREADS=2` is new.  The main thread is resumed like any other M:N
+  thread rather than woken on a native thread of its own, which costs an order
+  of magnitude more.  It pays off when the main thread drives the work, and
+  does nothing for one that only starts other threads and waits.
+
+  The main thread is then no longer bound to one OS thread, which is what the
+  M:N scheduler already meant for every other thread:
+
+  * A C extension that keeps state per OS thread has to call
+    `rb_thread_lock_native_thread()`.
+  * What must run on the process's initial thread does not work at all,
+    pinning included: macOS AppKit and CFRunLoop, and hosts that embed Ruby
+    and return into their own main loop.
+
+* The OS thread name is no longer set from the Ruby thread for M:N threads:
+  one native thread runs many of them over its life.  `Thread#name=` was
+  already skipped for the same reason.
+
 ## JIT
 
 [Bug #18947]: https://bugs.ruby-lang.org/issues/18947
