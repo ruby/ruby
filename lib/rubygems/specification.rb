@@ -946,6 +946,8 @@ class Gem::Specification < Gem::BasicSpecification
     reset
 
     @@dirs = Gem::SpecificationRecord.dirs_from(Array(dirs))
+    # reset may have memoized the record from gem_path while checking unresolved deps
+    @specification_record = nil
   end
 
   extend Enumerable
