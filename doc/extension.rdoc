@@ -1092,6 +1092,12 @@ or the objects themselves by
 
   void rb_gc_register_mark_object(VALUE object)
 
+Registration is scoped to the calling Ractor.  You must call these from the
+same Ractor that owns the object, or before the object is exposed to any
+other Ractor.  If another Ractor's object is registered, the owning Ractor's
+GC does not see the registration and can free the object while the address
+still refers to it, which results in a use-after-free crash.
+
 === Prepare extconf.rb
 
 If the file named extconf.rb exists, it will be executed to generate
@@ -1552,6 +1558,9 @@ golf_prelude.rb         :: goruby specific libraries.
 <tt>void rb_global_variable(VALUE *var)</tt> ::
 
   Tells GC to protect C global variable, which holds Ruby value to be marked.
+  The registration belongs to the calling Ractor: call it from the Ractor
+  that owns the object, or the owning Ractor's GC can free the object while
+  the variable still refers to it (use-after-free).
 
 <tt>void rb_gc_register_mark_object(VALUE object)</tt> ::
 

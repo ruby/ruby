@@ -406,11 +406,23 @@ void rb_gc_adjust_memory_usage(ssize_t diff);
  * Because this  registration itself has  a possibility  to trigger a  GC, this
  * function  must be  called  before any  GC-able objects  is  assigned to  the
  * address pointed by `valptr`.
+ *
+ * Registration is scoped to the calling Ractor:  the calling Ractor owns the
+ * registered address, and only that Ractor's GC marks the object stored in
+ * it.  You must call  this function  from the  same Ractor  that owns  the
+ * object pointed by `valptr` (or before  the object is exposed to any other
+ * Ractor).  If a  Ractor registers  an address that  points to  an object
+ * owned by another  Ractor, the owning  Ractor's GC  does not see  the
+ * registration and can  free the object  while the address  still refers
+ * to it, which results in a use-after-free crash.
  */
 void rb_gc_register_address(VALUE *valptr);
 
 /**
- * An alias for `rb_gc_register_address()`.
+ * An alias for `rb_gc_register_address()`.  The same Ractor-ownership
+ * requirement applies:  call it from  the Ractor that  owns the object
+ * stored in  the variable, or  the object can  be freed while  the
+ * address still refers to it.
  */
 void rb_global_variable(VALUE *);
 
