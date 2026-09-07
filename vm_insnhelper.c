@@ -1559,7 +1559,10 @@ vm_getclassvariable(const rb_iseq_t *iseq, const rb_control_frame_t *reg_cfp, ID
     const rb_cref_t *cref;
     cref = vm_get_cref(GET_EP());
 
-    if (ic->entry && ic->entry->global_cvar_state == GET_GLOBAL_CVAR_STATE() && ic->entry->cref == cref && LIKELY(rb_ractor_main_p())) {
+    // The fast path skips rb_cvar_find's checks, so it is for class_value's owner:
+    // the sole writer, and the only one allowed to see an unshareable value.
+    if (ic->entry && ic->entry->global_cvar_state == GET_GLOBAL_CVAR_STATE() && ic->entry->cref == cref &&
+        LIKELY(rb_class_owned_p(ic->entry->class_value))) {
         RB_DEBUG_COUNTER_INC(cvar_read_inline_hit);
 
         VALUE v = rb_ivar_lookup(ic->entry->class_value, id, Qundef);
@@ -1585,7 +1588,9 @@ vm_setclassvariable(const rb_iseq_t *iseq, const rb_control_frame_t *reg_cfp, ID
     const rb_cref_t *cref;
     cref = vm_get_cref(GET_EP());
 
-    if (ic->entry && ic->entry->global_cvar_state == GET_GLOBAL_CVAR_STATE() && ic->entry->cref == cref && LIKELY(rb_ractor_main_p())) {
+    // as on the read side: the fast path writes straight into class_value
+    if (ic->entry && ic->entry->global_cvar_state == GET_GLOBAL_CVAR_STATE() && ic->entry->cref == cref &&
+        LIKELY(rb_class_owned_p(ic->entry->class_value))) {
         RB_DEBUG_COUNTER_INC(cvar_write_inline_hit);
 
         rb_class_ivar_set(ic->entry->class_value, id, val);
