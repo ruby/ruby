@@ -327,29 +327,36 @@ class Gem::Specification < Gem::BasicSpecification
   ##
   # The license for this gem.
   #
-  # The license must be no more than 64 characters.
-  #
-  # This should just be the name of your license. The full text of the license
-  # should be inside of the gem (at the top level) when you build it.
-  #
-  # The simplest way is to specify the standard SPDX ID
-  # https://spdx.org/licenses/ for the license.
+  # The license must be no more than 64 characters, and should be a single
+  # SPDX license identifier from https://spdx.org/licenses/.
   # Ideally, you should pick one that is OSI (Open Source Initiative)
   # https://opensource.org/licenses/ approved.
   #
   # The most commonly used OSI-approved licenses are MIT and Apache-2.0.
   # GitHub also provides a license picker at https://choosealicense.com/.
   #
-  # You can also use a custom license file along with your gemspec and specify
-  # a LicenseRef-<idstring>, where idstring is the name of the file containing
+  # The full text of the license should be inside of the gem (at the top
+  # level) when you build it.
+  #
+  # RubyGems validates the license against the SPDX license list when you
+  # run <tt>gem build</tt> and warns about unknown or deprecated identifiers.
+  # An identifier may carry a trailing <tt>+</tt> (this version or any later
+  # version) and a license exception joined with WITH, for example
+  # <tt>Apache-2.0 WITH LLVM-exception</tt>.
+  #
+  # Compound SPDX license expressions such as <tt>MIT OR Apache-2.0</tt> are
+  # not currently supported. RubyGems treats the whole string as a single
+  # identifier and warns that it is invalid. For a gem available under more
+  # than one license, set each license as a separate entry with #licenses=.
+  #
+  # For a license that has no SPDX identifier, use Nonstandard, or
+  # LicenseRef-<idstring> where idstring is the name of the file containing
   # the license text.
   #
   # You should specify a license for your gem so that people know how they are
   # permitted to use it and any restrictions you're placing on it.  Not
   # specifying a license means all rights are reserved; others have no right
   # to use the code for any purpose.
-  #
-  # You can set multiple licenses with #licenses=
   #
   # Usage:
   #   spec.license = 'MIT'
@@ -361,15 +368,20 @@ class Gem::Specification < Gem::BasicSpecification
   ##
   # The license(s) for the library.
   #
-  # Each license must be a short name, no more than 64 characters.
+  # Each entry must be a single SPDX license identifier, no more than 64
+  # characters. Entries are validated independently, so a compound expression
+  # such as <tt>MIT OR Apache-2.0</tt> is not valid as an entry. Listing the
+  # identifiers as separate array elements is currently the only way RubyGems
+  # supports declaring a dual- or multi-licensed gem.
   #
-  # This should just be the name of your license. The full
-  # text of the license should be inside of the gem when you build it.
+  # Note that the array itself does not state how the licenses combine.
+  # Include the full text of each license in the gem and describe the exact
+  # terms there.
   #
   # See #license= for more discussion
   #
   # Usage:
-  #   spec.licenses = ['MIT', 'GPL-2.0']
+  #   spec.licenses = ['MIT', 'GPL-2.0-only']
 
   def licenses=(licenses)
     @licenses = Array licenses

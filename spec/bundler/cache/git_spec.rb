@@ -402,7 +402,7 @@ RSpec.describe "bundle cache with git" do
     G
     lockfile <<~L
       GIT
-        remote: #{git_path}/
+        remote: #{git_path}
         revision: #{locked_revision}
         specs:
           foo (1.0)

@@ -366,6 +366,12 @@ module Bundler
       sources.git_sources.filter_map {|s| File.realpath(s.path) if File.exist?(s.path) }
     end
 
+    # Versions excluded by cooldown during the last resolution, one entry per
+    # gem with the newest skipped version. Empty when no resolution ran.
+    def cooldown_skipped
+      @cooldown_skipped || []
+    end
+
     def groups
       dependencies.flat_map(&:groups).uniq
     end
@@ -404,7 +410,7 @@ module Bundler
         updating_major = locked_major < current_major
       end
 
-      preserve_unknown_sections ||= !updating_major && (Bundler.frozen_bundle? || !(unlocking? || @unlocking_bundler))
+      preserve_unknown_sections ||= Bundler.frozen_bundle? || (!updating_major && !(unlocking? || @unlocking_bundler))
 
       if File.exist?(file) && lockfiles_equal?(@lockfile_contents, contents, preserve_unknown_sections)
         return if Bundler.frozen_bundle?
@@ -413,8 +419,10 @@ module Bundler
       end
 
       if Bundler.frozen_bundle?
-        Bundler.ui.error "Cannot write a changed lockfile while frozen."
-        return
+        msg = lockfile_changes_summary("frozen mode is set") ||
+              "Your lockfile needs to be updated, but it can't be because frozen mode is set.\n\n" \
+              "Run `bundle install` elsewhere and add the updated #{SharedHelpers.relative_lockfile_path} to version control."
+        raise ProductionError, msg
       end
 
       # Convert to \r\n if the existing lock has them, i.e., Windows with
@@ -769,6 +777,8 @@ module Bundler
       @platforms << Bundler.local_platform if local_platform_needed_for_resolvability
 
       result = SpecSet.new(resolver.start)
+
+      @cooldown_skipped = resolver.cooldown_skipped
 
       @resolved_bundler_version = result.find {|spec| spec.name == "bundler" }&.version
 

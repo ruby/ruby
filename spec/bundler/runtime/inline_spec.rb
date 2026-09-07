@@ -682,6 +682,38 @@ RSpec.describe "bundler/inline#gemfile" do
     expect(out).to include("The stringio gem was resolved to 999")
   end
 
+  it "sets up custom require paths for gems installed in the same process" do
+    build_repo4 do
+      build_gem "securerandom", "999"
+
+      build_gem "unusual_paths", "1.0.0", no_default: true do |s|
+        s.require_paths = ["lib/unusual_paths"]
+        s.write "lib/unusual_paths/unusual_paths.rb", "UNUSUAL_PATHS = 'loaded'"
+      end
+    end
+
+    script <<-RUBY, env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+      # Simulate a platform where installing in a subprocess is not possible, so
+      # that the conflicting default gem forces a re-resolution in this process,
+      # after the gems have been installed.
+      class << Process
+        undef_method :fork
+      end
+
+      gemfile(true) do
+        source "https://gem.repo4"
+        gem "securerandom"
+        gem "unusual_paths"
+      end
+
+      puts UNUSUAL_PATHS
+    RUBY
+
+    expect(out).to include("Installing unusual_paths 1.0.0")
+    expect(out).to include("loaded")
+    expect(err).to be_empty
+  end
+
   it "leaves a lockfile in the same directory as the inline script alone" do
     install_gemfile <<~G
       source "https://gem.repo1"
