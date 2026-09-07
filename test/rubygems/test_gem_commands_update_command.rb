@@ -882,6 +882,23 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
     assert_empty out
   end
 
+  def test_highest_installed_gems_user_install_with_unresolved_deps
+    a = util_spec "a", 1
+    b = util_spec "b", 1
+    install_gem_user a
+    install_gem b
+
+    Gem::Specification.unresolved_deps["b"] = Gem::Dependency.new("b", ">= 0")
+    @cmd.handle_options %w[--user-install]
+
+    hig = nil
+    capture_output do
+      hig = @cmd.highest_installed_gems
+    end
+
+    assert_equal %w[a], hig.keys
+  end
+
   def test_fetch_remote_gems
     specs = spec_fetcher do |fetcher|
       fetcher.gem "a", 1
