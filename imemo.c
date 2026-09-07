@@ -298,7 +298,7 @@ rb_imemo_memsize(VALUE obj)
       case imemo_memo:
         break;
       case imemo_ment:
-        size += sizeof(((rb_method_entry_t *)obj)->def);
+        size += sizeof(struct rb_method_definition_struct);
 
         break;
       case imemo_svar:
