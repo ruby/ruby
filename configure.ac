@@ -3178,15 +3178,15 @@ AC_ARG_WITH(static-linked-ext,
             [AS_CASE([$withval],[yes],[STATIC=;EXTSTATIC=static],[no],[],[EXTSTATIC="$withval"])])
 AS_CASE([",$EXTSTATIC,"], [,static,|*,enc,*], [
   ENCOBJS='enc/encinit.$(OBJEXT) enc/libenc.$(LIBEXT) enc/libtrans.$(LIBEXT)'
-  EXTOBJS='ext/extinit.$(OBJEXT)'
   AC_DEFINE_UNQUOTED(EXTSTATIC, 1)
   AC_SUBST(ENCSTATIC, static)
 ], [
   ENCOBJS='dmyenc.$(OBJEXT)'
-  EXTOBJS='dmyext.$(OBJEXT)'
 ])
+EXTOBJS='dmyext.$(OBJEXT)'
 AC_SUBST(ENCOBJS)
 AC_SUBST(EXTOBJS)
+AC_SUBST(PROGRAM_EXTS, [${EXTSTATIC:+exts}])
 
 : "rpath" && {
     AS_CASE(["$target_os"],
