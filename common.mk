@@ -20,6 +20,8 @@ mflags = $(MFLAGS)
 gnumake_recursive =
 sequential = $(gnumake:yes=-sequential)
 enable_shared = $(ENABLE_SHARED:no=)
+yes_git = $(WITH_GIT:no=)
+no_git = $(WITH_GIT:yes=)
 
 UNICODE_VERSION = 17.0.0
 UNICODE_EMOJI_VERSION_0 = $(UNICODE_VERSION)///
@@ -1356,14 +1358,14 @@ clean-build-tool:
 	- cd build-tool 2> $(NULL) && $(MAKE) clean 2> $(NULL) || $(NULLCMD)
 	- $(RMDIR) build-tool 2> $(NULL) || $(NULLCMD)
 
-$(srcdir)/revision.h$(no_baseruby:no=~disabled~): $(REVISION_H)
+$(srcdir)/revision.h$(no_git:no=~disabled~): $(REVISION_H)
 
-REVISION_H_CMD = $(BASERUBY) $(tooldir)/file2lastrev.rb -q --revision.h \
-	--srcdir="$(srcdir)" --output=revision.h --timestamp=$(REVISION_H)
+REVISION_H_CMD = $(LASTREV) | $(IFCHANGE) --timestamp=.revision.time revision.h -
 
-$(REVISION_H)$(no_baseruby:no=~disabled~):
+$(REVISION_H)$(no_git:no=~disabled~):
 	$(Q) $(REVISION_H_CMD)
-$(REVISION_H)$(yes_baseruby:yes=~disabled~):
+$(REVISION_H)$(yes_git:yes=~disabled~):
+	$(Q) exit >> revision.h
 	$(Q) exit > $@
 
 # uncommon.mk: $(REVISION_H)
