@@ -3307,6 +3307,31 @@ rb_vm_frame_flag_set_box_require(const rb_execution_context_t *ec)
     VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_BOX_REQUIRE);
 }
 
+static const rb_box_t *current_box_on_cfp(const rb_execution_context_t *ec, const rb_control_frame_t *cfp);
+
+/**
+ * Returns the nearest user box in the caller frames, or NULL if there is none.
+ *
+ * Builtin methods written in Ruby are defined in the master box, so their own
+ * frame tells nothing about the caller. Those marked with
+ * `Primitive.attr! :caller_user_box` need the box owning the caller code, and the
+ * frames in between may belong to the master or the root box, e.g. when another
+ * builtin method or a proc made in the root box calls them.
+ */
+static const rb_box_t *
+caller_user_box_on_cfp(const rb_execution_context_t *ec, const rb_control_frame_t *cfp)
+{
+    const rb_control_frame_t * const eocfp = RUBY_VM_END_CONTROL_FRAME(ec);
+
+    while (RUBY_VM_VALID_CONTROL_FRAME_P(cfp, eocfp)) {
+        const rb_box_t *box = current_box_on_cfp(ec, cfp);
+        if (BOX_USER_P(box))
+            return box;
+        cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
+    }
+    return NULL;
+}
+
 static const rb_box_t *
 current_box_on_cfp(const rb_execution_context_t *ec, const rb_control_frame_t *cfp)
 {
@@ -3321,12 +3346,12 @@ current_box_on_cfp(const rb_execution_context_t *ec, const rb_control_frame_t *c
         VM_BOX_ASSERT(cme, "cme should be valid");
         VM_BOX_ASSERT(cme->def, "cme->def shold be valid");
         if (cme->def->type == VM_METHOD_TYPE_ISEQ &&
-            (ISEQ_BODY(cme->def->body.iseq.iseqptr)->builtin_attrs & BUILTIN_ATTR_CALLER_BOX)) {
-            // Builtin methods with `Primitive.attr! :caller_box` operate on the caller box,
-            // just like CFUNC frames. See the comment in VM_EP_RUBY_LEP().
+            (ISEQ_BODY(cme->def->body.iseq.iseqptr)->builtin_attrs & BUILTIN_ATTR_CALLER_USER_BOX)) {
             const rb_control_frame_t *owner_cfp = rb_vm_search_cf_from_ep(ec, cfp, lep);
             if (owner_cfp) {
-                return current_box_on_cfp(ec, RUBY_VM_PREVIOUS_CONTROL_FRAME(owner_cfp));
+                box = caller_user_box_on_cfp(ec, RUBY_VM_PREVIOUS_CONTROL_FRAME(owner_cfp));
+                if (box)
+                    return box;
             }
         }
         return cme->def->box;
