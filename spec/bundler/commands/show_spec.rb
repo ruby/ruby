@@ -164,7 +164,13 @@ RSpec.describe "bundle show" do
     before :each do
       build_git "foo", path: lib_path("foo")
       File.open(lib_path("foo/Gemfile"), "w") {|f| f.puts "gemspec" }
-      sys_exec "rm -rf .git && git init", dir: lib_path("foo")
+      # sys_exec does not go through a shell, so this cannot be a single
+      # `rm -rf .git && git init` command: `&&` would be passed to `rm` as a
+      # literal argument, silently skipping the `git init` part and leaving a
+      # non-repository directory from which git would discover the rubygems
+      # checkout itself.
+      FileUtils.rm_rf lib_path("foo/.git")
+      git "init", lib_path("foo")
     end
 
     it "does not output git errors" do

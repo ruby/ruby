@@ -115,6 +115,14 @@ RSpec.configure do |config|
       ENV["GIT_CONFIG_NOSYSTEM"] = "1"
     end
 
+    # Prevent git commands spawned by specs (directly or through Bundler)
+    # from discovering the rubygems checkout itself when run in a directory
+    # that is not a fixture repository, e.g. a fixture whose .git has been
+    # deleted by a concurrent cleanup. Without this, repository discovery
+    # walks up into the checkout and a stray `git config` writes the fixture
+    # identity to the checkout's own (possibly worktree-shared) .git/config.
+    ENV["GIT_CEILING_DIRECTORIES"] = [Spec::Path.tmp_root.to_s, Spec::Path.source_root.to_s].uniq.join(File::PATH_SEPARATOR)
+
     # Disable git background maintenance. Since Git 2.46, commands like
     # `git commit` spawn a detached `git maintenance run --auto` process,
     # which briefly creates `.git/objects/maintenance.lock`. That races with

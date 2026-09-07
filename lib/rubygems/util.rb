@@ -81,7 +81,10 @@ module Gem::Util
   # +base_path+ are not treated as part of the pattern.
 
   def self.glob_files_in_dir(glob, base_path)
-    Dir.glob(glob, base: base_path).map! {|f| File.expand_path(f, base_path) }
+    expanded_path = nil
+    Dir.glob(glob, base: base_path).map! do |f|
+      File.expand_path(f, expanded_path ||= File.expand_path(base_path))
+    end
   end
 
   ##

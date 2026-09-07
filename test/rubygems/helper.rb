@@ -327,6 +327,12 @@ class Gem::TestCase < Test::Unit::TestCase
 
     @tempdir = Dir.mktmpdir("test_rubygems_", @tmp)
 
+    # @tmp lives inside the checkout by default, so stop git repository
+    # discovery from walking up into the checkout itself. Otherwise a git
+    # command run in a non-repository directory under @tempdir could mutate
+    # the checkout's own (possibly worktree-shared) .git/config.
+    ENV["GIT_CEILING_DIRECTORIES"] = File.realpath(top_srcdir)
+
     ENV["GEM_VENDOR"] = nil
     ENV["GEMRC"] = nil
     ENV["XDG_CACHE_HOME"] = nil
@@ -615,9 +621,9 @@ class Gem::TestCase < Test::Unit::TestCase
 
     Dir.chdir directory do
       unless File.exist? ".git"
-        system @git, "init", "--quiet"
-        system @git, "config", "user.name",  "RubyGems Tests"
-        system @git, "config", "user.email", "rubygems@example"
+        system @git, "init", "--quiet", exception: true
+        system @git, "config", "user.name",  "RubyGems Tests", exception: true
+        system @git, "config", "user.email", "rubygems@example", exception: true
       end
 
       system @git, "add", gemspec

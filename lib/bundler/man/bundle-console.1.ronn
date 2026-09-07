@@ -9,7 +9,7 @@ bundle-console(1) -- Open an IRB session with the bundle pre-loaded
 
 Starts an interactive Ruby console session in the context of the current bundle.
 
-If no `GROUP` is specified, all gems in the `default` group in the [Gemfile(5)](https://bundler.io/man/gemfile.5.html) are
+If no `GROUP` is specified, all gems in the `default` group in the [Gemfile(5)](https://guides.rubygems.org/gemfile/) are
 preliminarily loaded.
 
 If `GROUP` is specified, all gems in the given group in the Gemfile in addition
@@ -36,4 +36,4 @@ the shell from the following:
 
 ## SEE ALSO
 
-[Gemfile(5)](https://bundler.io/man/gemfile.5.html)
+[Gemfile(5)](https://guides.rubygems.org/gemfile/)
