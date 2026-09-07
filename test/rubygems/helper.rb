@@ -20,6 +20,8 @@ begin
       skip ".gemspec"
     end
 
+    SimpleCov.print_error_status = false
+
     # Prevent SimpleCov from running in subprocesses spawned by assert_separately
     ENV["SIMPLECOV_SUBPROCESS"] = "1"
   end
