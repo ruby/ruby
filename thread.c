@@ -573,7 +573,12 @@ rb_thread_free_native_thread(void *th_ptr)
 {
     rb_thread_t *th = th_ptr;
 
-    native_thread_destroy_atfork(th->nt);
+    // A thread with a coroutine context does not own its native thread: that
+    // one is in the shared pool, listed there and with its altstack registered
+    // on whichever pthread is running this.  See rb_threadptr_sched_free().
+    if (th->sched.context == NULL) {
+        native_thread_destroy_atfork(th->nt);
+    }
     th->nt = NULL;
 }
 

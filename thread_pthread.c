@@ -637,6 +637,29 @@ static struct {
     VALUE *stack_start;
 } native_main_thread;
 
+// Whether the calling native thread may leave the shared pool.  The process's
+// main pthread cannot: under RUBY_MN_THREADS=2 its loop runs on a stack only
+// it could free (thread_sched_main_to_shared).  By pthread_self(), not
+// nt->thread_id, which pthread_create may still be writing.
+static bool
+native_thread_self_can_retire_p(void)
+{
+    return !pthread_equal(pthread_self(), native_main_thread.id);
+}
+
+#if defined(HAVE_WORKING_FORK)
+// The forking thread's pthread is the child's only one, hence its main one
+static void
+native_main_thread_atfork(void)
+{
+    native_main_thread.id = pthread_self();
+    // The stack recorded here is the parent's initial one; this thread's is
+    // another.  Nothing reads it for a thread that is already running, and
+    // saying "unknown" beats saying the wrong bounds.
+    native_main_thread.stack_maxsize = 0;
+}
+#endif
+
 #ifdef STACK_END_ADDRESS
 extern void *STACK_END_ADDRESS;
 #endif
@@ -739,21 +762,24 @@ native_thread_init_stack(rb_thread_t *th, void *local_in_parent_frame)
         native_thread_init_main_thread_stack(local_in_parent_frame);
     }
 
-    if (pthread_equal(curr, native_main_thread.id)) {
+    if (th->sched.context != NULL) {
+        // an M:N thread runs on the pool stack native_thread_create_shared
+        // recorded, whichever native thread (the main one included) hosts it.
+        // Not by nt->dedicated: a RESUMED hook may have pinned the nt already.
+    }
+    else if (pthread_equal(curr, native_main_thread.id)) {
         th->ec->machine.stack_start = native_main_thread.stack_start;
         th->ec->machine.stack_maxsize = native_main_thread.stack_maxsize;
     }
     else {
 #ifdef STACKADDR_AVAILABLE
-        if (th_has_dedicated_nt(th)) {
-            void *start;
-            size_t size;
+        void *start;
+        size_t size;
 
-            if (get_stack(&start, &size) == 0) {
-                uintptr_t diff = (uintptr_t)start - (uintptr_t)local_in_parent_frame;
-                th->ec->machine.stack_start = local_in_parent_frame;
-                th->ec->machine.stack_maxsize = size - diff;
-            }
+        if (get_stack(&start, &size) == 0) {
+            uintptr_t diff = (uintptr_t)start - (uintptr_t)local_in_parent_frame;
+            th->ec->machine.stack_start = local_in_parent_frame;
+            th->ec->machine.stack_maxsize = size - diff;
         }
 #else
         rb_raise(rb_eNotImpError, "ruby engine can initialize only in the main thread");
@@ -1031,6 +1057,13 @@ native_set_thread_name(rb_thread_t *th)
 {
 #ifdef SET_CURRENT_THREAD_NAME
     VALUE loc;
+
+    // An M:N thread does not own the native thread it runs on: naming it here
+    // would name whichever nt started it (under RUBY_MN_THREADS=2 that can be
+    // the process's main one, whose name is the process's).  Thread#name= is
+    // skipped for the same reason (rb_thread_setname).
+    if (!th->has_dedicated_nt) return;
+
     if (!NIL_P(loc = th->name)) {
         SET_CURRENT_THREAD_NAME(RSTRING_PTR(loc));
     }
