@@ -685,7 +685,7 @@ module Net::HTTPHeader
   end
 
   # Returns +true+ if field <tt>'Transfer-Encoding'</tt>
-  # exists and has value <tt>'chunked'</tt>,
+  # exists and has <tt>'chunked'</tt> as its final transfer coding,
   # +false+ otherwise;
   # see {Transfer-Encoding response header}[https://en.wikipedia.org/wiki/List_of_HTTP_header_fields#transfer-encoding-response-header]:
   #
@@ -693,10 +693,13 @@ module Net::HTTPHeader
   #   res['Transfer-Encoding'] # => "chunked"
   #   res.chunked?             # => true
   #
+  # <tt>'gzip, chunked'</tt> is chunked but <tt>'chunked, gzip'</tt> is not,
+  # because only the final transfer coding frames the message.
+  # See {RFC 9112 Section 6.3}[https://www.rfc-editor.org/rfc/rfc9112.html#section-6.3].
   def chunked?
     return false unless @header['transfer-encoding']
     field = self['Transfer-Encoding']
-    (/(?:\A|[^\-\w])chunked(?![\-\w])/i =~ field) ? true : false
+    (/(?:\A|[^\-\w])chunked(?![\-\w])\s*(?:,\s*)*\z/i =~ field) ? true : false
   end
 
   # Returns a Range object representing the value of field
