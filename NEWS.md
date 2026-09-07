@@ -273,6 +273,21 @@ Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for det
 
 ## Compatibility issues
 
+* A class or module can now be modified only by the Ractor which created it,
+  its *owner*.  Defining, removing or undefining methods, `alias`, changing
+  visibility, `include`/`prepend`, `Module#refine`, defining or removing
+  constants, registering an `autoload`, writing the class's own instance
+  variables and class variables, `Module#freeze` and
+  `Module#set_temporary_name` raise `Ractor::IsolationError` in any other
+  Ractor.  Reading is unchanged.  Everything defined at boot or by the main
+  Ractor, `require`d libraries included, is owned by the main Ractor, so a
+  non-main Ractor can no longer monkey-patch it; and since defining a constant
+  in a foreign class is prohibited, it can not define a top-level class or
+  module name either.  In exchange a Ractor has full use of the classes it
+  creates itself, including unshareable constant, instance variable and class
+  variable values, which not even the main Ractor could do before.  See
+  doc/language/ractor.md. [[Feature #22226]]
+
 * `Kernel#at_exit` and `END {}` now raise `Ractor::IsolationError` when called
   in a non-main Ractor.  Previously the registered handler ran in the main
   Ractor at process exit, which was confusing. [[Feature #22139]]
@@ -428,6 +443,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #22175]: https://bugs.ruby-lang.org/issues/22175
 [Feature #22185]: https://bugs.ruby-lang.org/issues/22185
 [Feature #22205]: https://bugs.ruby-lang.org/issues/22205
+[Feature #22226]: https://bugs.ruby-lang.org/issues/22226
 [Feature #22238]: https://bugs.ruby-lang.org/issues/22238
 [PR #17201]: https://github.com/ruby/ruby/pull/17201
 [GH-psych #805]: https://github.com/ruby/psych/pull/805
