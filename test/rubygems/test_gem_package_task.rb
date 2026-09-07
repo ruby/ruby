@@ -44,6 +44,9 @@ class TestGemPackageTask < Gem::TestCase
   end
 
   def test_moves_filename_returned_by_build
+    original_rake_fileutils_verbosity = RakeFileUtils.verbose_flag
+    RakeFileUtils.verbose_flag = false
+
     gem = Gem::Specification.new do |g|
       g.name = "pkgr"
       g.version = "1.2.3"
@@ -82,6 +85,8 @@ class TestGemPackageTask < Gem::TestCase
       assert_equal "pkg/pkgr-1.2.3-01234567.gem", built_files.first
       assert_path_not_exist "pkg/pkgr-1.2.3-arm64-darwin.gem"
     end
+  ensure
+    RakeFileUtils.verbose_flag = original_rake_fileutils_verbosity
   end
 
   def test_gem_package_prints_to_stdout_by_default

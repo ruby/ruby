@@ -255,10 +255,13 @@ Removed file plugins/a_badly_named_file.rb
 
     doctor = Gem::Doctor.new @gemhome
 
-    use_ui @ui do
-      doctor.doctor
+    _, err = capture_output do
+      use_ui @ui do
+        doctor.doctor
+      end
     end
 
+    assert_include err, "Invalid gemspec"
     assert_path_exist abi_dir
     assert_path_exist gemspec_path
     assert_path_not_exist corrupt_path
@@ -297,10 +300,13 @@ Removed file plugins/a_badly_named_file.rb
 
     doctor = Gem::Doctor.new @gemhome
 
-    use_ui @ui do
-      doctor.doctor
+    _, err = capture_output do
+      use_ui @ui do
+        doctor.doctor
+      end
     end
 
+    assert_include err, "Invalid gemspec"
     assert File.symlink?(link)
     assert_path_exist outside_path
   end
