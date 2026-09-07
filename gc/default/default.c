@@ -2327,21 +2327,22 @@ heap_page_free(rb_objspace_t *objspace, struct heap_page *page)
 static void
 heap_pages_free_batch(rb_objspace_t *objspace, struct heap_page *pages)
 {
-    if (HEAP_PAGE_ALLOC_USE_MMAP) {
-#ifdef HAVE_MMAP
-        rb_global_objspace_t *g = global_objspace;
+    rb_global_objspace_t *g = global_objspace;
 
-        rb_native_mutex_lock(&g->page_pool.lock);
-        for (struct heap_page *page = pages; page != NULL; page = page->free_next) {
-            global_page_index_remove_locked(page);
+    rb_native_mutex_lock(&g->page_pool.lock);
+    for (struct heap_page *page = pages; page != NULL; page = page->free_next) {
+        global_page_index_remove_locked(page);
+        if (HEAP_PAGE_ALLOC_USE_MMAP) {
+#ifdef HAVE_MMAP
             page_pool_release_locked(page->body, page->arena);
-        }
-        rb_native_mutex_unlock(&g->page_pool.lock);
 #endif
+        }
     }
-    else {
+    rb_native_mutex_unlock(&g->page_pool.lock);
+
+    if (!HEAP_PAGE_ALLOC_USE_MMAP) {
+        /* gc_aligned_free does not need the pool lock. */
         for (struct heap_page *page = pages; page != NULL; page = page->free_next) {
-            global_page_index_remove(page);
             heap_page_body_free(page->body, page->arena);
         }
     }
