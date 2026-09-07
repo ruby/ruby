@@ -872,6 +872,12 @@ native_reset_timer_thread(void)
  * the ones that rb_bug().
  * ------------------------------------------------------------------------- */
 
+static bool
+native_thread_self_can_retire_p(void)
+{
+    return true;
+}
+
 static int
 native_thread_create_shared(rb_thread_t *th)
 {
