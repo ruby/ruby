@@ -2469,6 +2469,31 @@ rb_thread_lock_native_thread(void)
     return is_snt;
 }
 
+// rb_ractor_terminate_all() waits for the Ractors it interrupted on a condvar
+// of its own, holding the VM lock, which it drops for the wait and takes back
+// after.  An M:N thread would hold the shared native thread it runs on for the
+// whole wait as well, leaving those Ractors with nothing to run on, so give
+// that native thread back the way a blocking region does.
+void
+rb_ractor_sched_wait_terminate(rb_vm_t *vm, rb_nativethread_cond_t *cond, unsigned long msec)
+{
+    ASSERT_vm_locking();
+
+    rb_thread_t *th = GET_THREAD();
+    unsigned int lock_rec = vm->ractor.sync.lock_rec;
+    rb_ractor_t *lock_owner = vm->ractor.sync.lock_owner;
+
+    vm->ractor.sync.lock_rec = 0;
+    vm->ractor.sync.lock_owner = NULL;
+
+    native_thread_dedicated_inc(vm, th->ractor, th->nt);
+    rb_native_cond_timedwait(cond, &vm->ractor.sync.lock, msec);
+    native_thread_dedicated_dec(vm, th->ractor, th->nt);
+
+    vm->ractor.sync.lock_rec = lock_rec;
+    vm->ractor.sync.lock_owner = lock_owner;
+}
+
 void
 rb_thread_malloc_stack_set(rb_thread_t *th, void *stack, size_t stack_size)
 {

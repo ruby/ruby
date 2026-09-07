@@ -262,6 +262,7 @@ struct rb_ractor_sched {
 
 void rb_ractor_sched_wait(struct rb_execution_context_struct *ec, struct rb_ractor_struct *cr, rb_unblock_function_t *ptr, void *arg);
 void rb_ractor_sched_wakeup(struct rb_ractor_struct *r, struct rb_thread_struct *th);
+void rb_ractor_sched_wait_terminate(struct rb_vm_struct *vm, rb_nativethread_cond_t *cond, unsigned long msec);
 void rb_thread_wake_fence(struct rb_thread_struct *th);
 
 #endif /* RUBY_THREAD_SCHED_H */
