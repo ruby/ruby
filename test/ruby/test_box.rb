@@ -652,6 +652,16 @@ class TestBox < Test::Unit::TestCase
     end
   end
 
+  def test_frozen_loaded_features_in_box
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      box = Ruby::Box.new
+      assert_raise_with_message(RuntimeError, /\$LOADED_FEATURES is frozen; cannot append feature/) do
+        box.eval('$LOADED_FEATURES.freeze; require "erb"')
+      end
+    end;
+  end
+
   def test_match_variables_are_not_cached_in_box
     assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
     begin;
