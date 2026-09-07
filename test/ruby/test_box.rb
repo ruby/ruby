@@ -456,7 +456,7 @@ class TestBox < Test::Unit::TestCase
     end;
   end
 
-  def test_marshal_resolves_classes_in_the_caller_box
+  def test_marshal_resolves_classes_in_the_caller_user_box
     setup_box
 
     obj = @box.eval("class BoxMarshalBar; end; Marshal.load(Marshal.dump(BoxMarshalBar.new))")
@@ -467,6 +467,16 @@ class TestBox < Test::Unit::TestCase
     assert_raise_with_message(ArgumentError, /undefined class\/module BoxMarshalBar/) do
       Marshal.load(dump)
     end
+  end
+
+  def test_marshal_skips_root_box_frames_in_the_caller_stack
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      class BoxMarshalBaz; end
+      # the proc runs in the root box, where BoxMarshalBaz is invisible
+      loader = Ruby::Box.root.eval("->(dump) { Marshal.load(dump) }")
+      assert_instance_of BoxMarshalBaz, loader.call(Marshal.dump(BoxMarshalBaz.new))
+    end;
   end
 end
 
