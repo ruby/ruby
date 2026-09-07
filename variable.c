@@ -551,6 +551,7 @@ struct rb_global_variable {
     rb_gvar_marker_t *marker;
     rb_gvar_compact_t *compactor;
     struct trace_var *trace;
+    ID id;
     bool box_ready;
     bool box_dynamic;
 };
@@ -638,6 +639,7 @@ global_entry_lookup(ID id, bool create_entry, bool *isolation_error)
             entry->id = id;
             entry->var = var;
             entry->ractor_local = false;
+            var->id = id;
             var->counter = 1;
             var->data = 0;
             var->getter = rb_gvar_undef_getter;
@@ -1064,7 +1066,7 @@ rb_gvar_set(ID id, VALUE val)
 
         if (!isolation_error && gvar_use_box_tbl(box, entry)) {
             use_box_tbl = true;
-            rb_hash_aset(box->gvar_tbl, rb_id2sym(entry->id), val);
+            rb_hash_aset(box->gvar_tbl, rb_id2sym(entry->var->id), val);
             retval = val;
             // TODO: think about trace
         }
@@ -1104,7 +1106,7 @@ rb_gvar_get(ID id)
             if (gvar_use_box_tbl(box, entry)) {
                 use_box_tbl = true;
                 gvars = box->gvar_tbl;
-                key = rb_id2sym(entry->id);
+                key = rb_id2sym(var->id);
                 if (RTEST(rb_hash_has_key(gvars, key))) { // this gvar is already cached
                     retval = rb_hash_aref(gvars, key);
                 }
@@ -1158,7 +1160,7 @@ rb_gvar_defined(ID id)
 
         defined = entry->var->getter != rb_gvar_undef_getter ||
             (gvar_use_box_tbl(box, entry) &&
-             RTEST(rb_hash_has_key(box->gvar_tbl, rb_id2sym(id))));
+             RTEST(rb_hash_has_key(box->gvar_tbl, rb_id2sym(entry->var->id))));
     }
     return RBOOL(defined);
 }
