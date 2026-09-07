@@ -1195,11 +1195,31 @@ class TestTranscode < Test::Unit::TestCase
     assert_invalid_in(%w/fffeb7df/.pack("H*"), "UTF-16")
   end
 
+  def test_utf_16_bom_partial_output
+    ec = Encoding::Converter.new("UTF-8", "UTF-16")
+    src = "\u{1F600}"
+    dst = "\0" * 64
+    assert_equal(:destination_buffer_full, ec.primitive_convert(src, dst, 0, 4))
+    assert_equal(4, dst.bytesize)
+    assert_equal(:finished, ec.primitive_convert(src, dst, 4, 4))
+    assert_equal("\xFE\xFF\xD8\x3D\xDE\x00", dst.b)
+  end
+
   def test_utf_32_bom
     expected = "\u{3042}\u{3044}\u{20bb7}"
     assert_equal(expected, %w/fffe00004230000044300000b70b0200/.pack("H*").encode("UTF-8","UTF-32"))
     check_both_ways(expected, %w/0000feff000030420000304400020bb7/.pack("H*"), "UTF-32")
     assert_invalid_in(%w/0000feff00110000/.pack("H*"), "UTF-32")
+  end
+
+  def test_utf_32_bom_partial_output
+    ec = Encoding::Converter.new("UTF-8", "UTF-32")
+    src = "A"
+    dst = "\0" * 64
+    assert_equal(:destination_buffer_full, ec.primitive_convert(src, dst, 0, 4))
+    assert_equal(4, dst.bytesize)
+    assert_equal(:finished, ec.primitive_convert(src, dst, 4, 4))
+    assert_equal("\x00\x00\xFE\xFF\x00\x00\x00A", dst.b)
   end
 
   def check_utf_32_both_ways(utf8, raw)
