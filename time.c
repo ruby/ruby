@@ -739,8 +739,9 @@ static struct {
 } w32_tz;
 
 static char *
-get_tzname(int dst)
+get_tzname(int dst, rb_encoding **enc)
 {
+    *enc = NULL;
     if (w32_tz.use_tzkey) {
         if (w32_tz.name[0]) {
             return w32_tz.name;
@@ -765,6 +766,11 @@ get_tzname(int dst)
             }
         }
     }
+    /* CRT timezone names are encoded in the active code page, which
+     * may differ from the locale (console) code page */
+    char cp[(sizeof(UINT) * 8 / 3) + 4];
+    snprintf(cp, sizeof(cp), "CP%u", GetACP());
+    *enc = rb_enc_find(cp);
     return _tzname[_daylight && dst];
 }
 #endif
@@ -1002,7 +1008,7 @@ timegmw_noleapsecond(struct vtm *vtm)
 }
 
 static VALUE
-zone_str(const char *zone)
+zone_str_enc(const char *zone, rb_encoding *enc)
 {
     const char *p;
     int ascii_only = 1;
@@ -1023,6 +1029,9 @@ zone_str(const char *zone)
     if (ascii_only) {
         return rb_enc_interned_str(zone, len, rb_usascii_encoding());
     }
+    else if (enc) {
+        return rb_enc_interned_str(zone, len, enc);
+    }
     else {
 #ifdef _WIN32
         VALUE str = rb_utf8_str_new(zone, len);
@@ -1033,6 +1042,12 @@ zone_str(const char *zone)
         return rb_enc_interned_str(zone, len, rb_locale_encoding());
 #endif
     }
+}
+
+static inline VALUE
+zone_str(const char *zone)
+{
+    return zone_str_enc(zone, NULL);
 }
 
 static void
@@ -1730,7 +1745,9 @@ localtime_with_gmtoff_zone(const time_t *t, struct tm *result, long *gmtoff, VAL
 #if defined(HAVE_TM_ZONE)
             *zone = zone_str(tm.tm_zone);
 #elif defined(_WIN32)
-            *zone = zone_str(get_tzname(tm.tm_isdst));
+            rb_encoding *enc;
+            const char *name = get_tzname(tm.tm_isdst, &enc);
+            *zone = zone_str_enc(name, enc);
 #elif defined(HAVE_TZNAME) && defined(HAVE_DAYLIGHT)
             /* this needs tzset or localtime, instead of localtime_r */
             *zone = zone_str(tzname[daylight && tm.tm_isdst]);
