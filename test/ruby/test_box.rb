@@ -652,6 +652,21 @@ class TestBox < Test::Unit::TestCase
     end
   end
 
+  def test_trace_var_in_box
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      traced = []
+      trace_var(:$traced_in_box) {|v| traced << v}
+      $traced_in_box = 1
+      assert_equal [1], traced
+      Ruby::Box.new.eval("$traced_in_box = 2")
+      assert_equal [1, 2], traced
+
+      trace_var(:$raise_in_trace) { raise "traced" }
+      assert_raise_with_message(RuntimeError, "traced") { $raise_in_trace = 1 }
+    end;
+  end
+
   def test_match_variables_are_not_cached_in_box
     assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
     begin;
