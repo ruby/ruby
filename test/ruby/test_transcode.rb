@@ -1662,6 +1662,27 @@ class TestTranscode < Test::Unit::TestCase
                  "\x8E\xA1\x8E\xFE".encode("cp50220", "cp51932"))
   end
 
+  def test_to_cp50220_partial_output
+    # A katakana held back for a possible sound mark is flushed with its own
+    # designation (5 bytes) before the designation and data of the character
+    # that ended the hold (4 bytes).
+    ec = Encoding::Converter.new("CP51932", "CP50220")
+    src = "\x8E\xB6\x8E\xE0"
+    dst = "\0" * 64
+    assert_equal(:destination_buffer_full, ec.primitive_convert(src, dst, 0, 8))
+    assert_equal(8, dst.bytesize)
+    assert_equal(:finished, ec.primitive_convert(src, dst, 8, 8))
+    assert_equal("\e$B\x25\x2B\e(I\x60\e(B", dst.b)
+
+    ec = Encoding::Converter.new("CP51932", "CP50220")
+    src = "\x8E\xB6"
+    dst = "\0" * 64
+    assert_equal(:destination_buffer_full, ec.primitive_convert(src, dst, 0, 5))
+    assert_equal(5, dst.bytesize)
+    assert_equal(:finished, ec.primitive_convert(src, dst, 5, 5))
+    assert_equal("\e$B\x25\x2B\e(B", dst.b)
+  end
+
   def test_iso_2022_jp_1
     # check_both_ways("\u9299", "\x1b$(Dd!\x1b(B", "iso-2022-jp-1") # JIS X 0212 区68 点01 銙
   end
