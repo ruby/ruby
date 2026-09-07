@@ -79,7 +79,7 @@ ASSERT_ractor_locking(rb_ractor_t *r)
 static void
 ractor_lock(rb_ractor_t *r, const char *file, int line)
 {
-    RUBY_DEBUG_LOG2(file, line, "locking r:%u%s", r->pub.id, rb_current_ractor_raw(false) == r ? " (self)" : "");
+    RUBY_DEBUG_LOG2(file, line, "locking r:%"PRI_SERIALT_PREFIX"u%s", r->pub.id, rb_current_ractor_raw(false) == r ? " (self)" : "");
 
     ASSERT_ractor_unlocking(r);
     rb_native_mutex_lock(&r->sync.lock);
@@ -98,7 +98,7 @@ ractor_lock(rb_ractor_t *r, const char *file, int line)
     }
 #endif
 
-    RUBY_DEBUG_LOG2(file, line, "locked  r:%u%s", r->pub.id, rb_current_ractor_raw(false) == r ? " (self)" : "");
+    RUBY_DEBUG_LOG2(file, line, "locked  r:%"PRI_SERIALT_PREFIX"u%s", r->pub.id, rb_current_ractor_raw(false) == r ? " (self)" : "");
 }
 
 static void
@@ -128,7 +128,7 @@ ractor_unlock(rb_ractor_t *r, const char *file, int line)
 
     rb_native_mutex_unlock(&r->sync.lock);
 
-    RUBY_DEBUG_LOG2(file, line, "r:%u%s", r->pub.id, rb_current_ractor_raw(false) == r ? " (self)" : "");
+    RUBY_DEBUG_LOG2(file, line, "r:%"PRI_SERIALT_PREFIX"u%s", r->pub.id, rb_current_ractor_raw(false) == r ? " (self)" : "");
 }
 
 static void
@@ -175,7 +175,7 @@ ractor_status_str(enum ractor_status status)
 static void
 ractor_status_set(rb_ractor_t *r, enum ractor_status status)
 {
-    RUBY_DEBUG_LOG("r:%u [%s]->[%s]", r->pub.id, ractor_status_str(r->status_), ractor_status_str(status));
+    RUBY_DEBUG_LOG("r:%"PRI_SERIALT_PREFIX"u [%s]->[%s]", r->pub.id, ractor_status_str(r->status_), ractor_status_str(status));
 
     // check 1
     if (r->status_ != ractor_created) {
@@ -424,7 +424,7 @@ static void
 ractor_free(void *ptr)
 {
     rb_ractor_t *r = (rb_ractor_t *)ptr;
-    RUBY_DEBUG_LOG("free r:%d", rb_ractor_id(r));
+    RUBY_DEBUG_LOG("free r:%"PRI_SERIALT_PREFIX"u", rb_ractor_id(r));
 
     free_targeted_hooks(&r->pub.targeted_hooks);
     rb_thread_sched_destroy(&r->threads.sched);
@@ -520,26 +520,27 @@ RACTOR_PTR(VALUE self)
 }
 
 #define MAIN_RACTOR_ID 1
-static rb_atomic_t ractor_last_id = MAIN_RACTOR_ID;
+static rb_serial_t ractor_last_id = MAIN_RACTOR_ID;
 
 #include "ractor_sync.c"
 
 // creation/termination
 
-static uint32_t
+/* Ids are never reused, so they must not wrap either: 64 bits, which rules out an
+ * atomic (there is no portable 64-bit one).  Serialized by the VM lock, or by the
+ * GVL before there is a second Ractor to take it against -- the same condition
+ * vm_insert_ractor0 asserts. */
+static rb_serial_t
 ractor_next_id(void)
 {
-    uint32_t id;
-
-    id = (uint32_t)(RUBY_ATOMIC_FETCH_ADD(ractor_last_id, 1) + 1);
-
-    return id;
+    VM_ASSERT(RB_VM_LOCKED_P() || !rb_multi_ractor_p());
+    return ++ractor_last_id;
 }
 
 static void
 vm_insert_ractor0(rb_vm_t *vm, rb_ractor_t *r, bool single_ractor_mode)
 {
-    RUBY_DEBUG_LOG("r:%u ractor.cnt:%u++", r->pub.id, vm->ractor.cnt);
+    RUBY_DEBUG_LOG("r:%"PRI_SERIALT_PREFIX"u ractor.cnt:%u++", r->pub.id, vm->ractor.cnt);
     VM_ASSERT(single_ractor_mode || RB_VM_LOCKED_P());
 
     /* Incremental marking only runs in a single-objspace world, and nothing later can
@@ -846,8 +847,10 @@ ractor_create(rb_execution_context_t *ec, VALUE self, VALUE loc, VALUE name, VAL
     rb_ractor_t *r = RACTOR_PTR(rv);
     ractor_init(r, name, loc);
 
-    r->pub.id = ractor_next_id();
-    RUBY_DEBUG_LOG("r:%u", r->pub.id);
+    RB_VM_LOCKING() {
+        r->pub.id = ractor_next_id();
+    }
+    RUBY_DEBUG_LOG("r:%"PRI_SERIALT_PREFIX"u", r->pub.id);
 
     rb_ractor_t *cr = rb_ec_ractor_ptr(ec);
     r->verbose = cr->verbose;
@@ -973,7 +976,7 @@ rb_ractor_living_threads_insert(rb_ractor_t *r, rb_thread_t *th)
 
     RACTOR_LOCK(r);
     {
-        RUBY_DEBUG_LOG("r(%d)->threads.cnt:%d++", r->pub.id, r->threads.cnt);
+        RUBY_DEBUG_LOG("r(%"PRI_SERIALT_PREFIX"u)->threads.cnt:%d++", r->pub.id, r->threads.cnt);
         ccan_list_add_tail(&r->threads.set, &th->lt_node);
         r->threads.cnt++;
     }
@@ -1145,7 +1148,7 @@ ractor_terminal_interrupt_all(rb_vm_t *vm)
         rb_ractor_t *r = 0;
         ccan_list_for_each(&vm->ractor.set, r, vmlr_node) {
             if (r != vm->ractor.main_ractor) {
-                RUBY_DEBUG_LOG("r:%d", rb_ractor_id(r));
+                RUBY_DEBUG_LOG("r:%"PRI_SERIALT_PREFIX"u", rb_ractor_id(r));
                 rb_ractor_terminate_interrupt_main_thread(r);
             }
         }
@@ -1362,7 +1365,7 @@ rb_ractor_dump(void)
 
     ccan_list_for_each(&vm->ractor.set, r, vmlr_node) {
         if (r != vm->ractor.main_ractor) {
-            fprintf(stderr, "r:%u (%s)\n", r->pub.id, ractor_status_str(r->status_));
+            fprintf(stderr, "r:%"PRI_SERIALT_PREFIX"u (%s)\n", r->pub.id, ractor_status_str(r->status_));
         }
     }
 }

@@ -334,7 +334,7 @@ rb_ractor_set_current_ec_(rb_ractor_t *cr, rb_execution_context_t *ec, const cha
 void rb_vm_ractor_blocking_cnt_inc(rb_vm_t *vm, rb_ractor_t *cr, const char *file, int line);
 void rb_vm_ractor_blocking_cnt_dec(rb_vm_t *vm, rb_ractor_t *cr, const char *file, int line);
 
-static inline uint32_t
+static inline rb_serial_t
 rb_ractor_id(const rb_ractor_t *r)
 {
     return r->pub.id;

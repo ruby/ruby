@@ -1359,7 +1359,7 @@ ractor_wakeup_all(rb_ractor_t *r, enum ractor_wakeup_status wakeup_status)
 {
     ASSERT_ractor_unlocking(r);
 
-    RUBY_DEBUG_LOG("r:%u wakeup:%s", rb_ractor_id(r), wakeup_status_str(wakeup_status));
+    RUBY_DEBUG_LOG("r:%"PRI_SERIALT_PREFIX"u wakeup:%s", rb_ractor_id(r), wakeup_status_str(wakeup_status));
 
     bool wakeup_p = false;
 
@@ -1622,7 +1622,7 @@ ractor_send_basket(rb_execution_context_t *ec, const struct ractor_port *rp, str
 {
     bool closed = false;
 
-    RUBY_DEBUG_LOG("port:%u@r%u b:%s v:%p", (unsigned int)ractor_port_id(rp), rb_ractor_id(rp->r), basket_type_name(b->type), (void *)b->p.v);
+    RUBY_DEBUG_LOG("port:%u@r%"PRI_SERIALT_PREFIX"u b:%s v:%p", (unsigned int)ractor_port_id(rp), rb_ractor_id(rp->r), basket_type_name(b->type), (void *)b->p.v);
 
     RACTOR_LOCK(rp->r);
     {
@@ -1644,7 +1644,7 @@ ractor_send_basket(rb_execution_context_t *ec, const struct ractor_port *rp, str
         ractor_wakeup_all(rp->r, wakeup_by_send);
     }
     else {
-        RUBY_DEBUG_LOG("closed:%u@r%u", (unsigned int)ractor_port_id(rp), rb_ractor_id(rp->r));
+        RUBY_DEBUG_LOG("closed:%u@r%"PRI_SERIALT_PREFIX"u", (unsigned int)ractor_port_id(rp), rb_ractor_id(rp->r));
 
         /* Nothing took the basket: it was not enqueued, so free it whether or not the
          * caller wants the error raised. */
