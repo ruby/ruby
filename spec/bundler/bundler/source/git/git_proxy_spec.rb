@@ -438,6 +438,36 @@ RSpec.describe Bundler::Source::Git::GitProxy do
         end
       end
 
+      context "when the remote no longer has the branch HEAD points at" do
+        let(:cached_branch) { "main" }
+        let(:missing_ref) { ["", "fatal: couldn't find remote ref refs/heads/#{cached_branch}", fail_result] }
+        let(:symref_advertisement) { ["ref: refs/heads/renamed\tHEAD\n", "", clone_result] }
+
+        before do
+          allow(git_proxy).to receive(:git_local).with("--version").and_return("git version 2.14.0")
+          allow(git_proxy).to receive(:git_local).with("rev-parse", "--abbrev-ref", "HEAD", dir: path).and_return(cached_branch)
+          allow(git_proxy).to receive(:capture).with([*base_fetch_args, "--", uri, "refs/heads/#{cached_branch}:refs/heads/#{cached_branch}"], path).and_return(missing_ref)
+        end
+
+        it "follows the branch the remote now points HEAD at" do
+          expect(git_proxy).to receive(:capture).with(["ls-remote", "--symref", "--", uri, "HEAD"], path).and_return(symref_advertisement)
+          expect(git_proxy).to receive(:capture).with([*base_fetch_args, "--", uri, "refs/heads/renamed:refs/heads/renamed"], path).and_return(["", "", clone_result])
+          expect(git_proxy).to receive(:git).with("symbolic-ref", "HEAD", "refs/heads/renamed", dir: path)
+          subject.checkout
+        end
+
+        context "and a revision is locked" do
+          let(:revision) { Digest::SHA1.hexdigest("ruby") }
+
+          it "does not ask the remote for its default branch" do
+            expect(git_proxy).to receive(:git).with("cat-file", "-e", revision, dir: path).and_raise(Bundler::GitError)
+            expect(git_proxy).to receive(:capture).with([*base_fetch_args, "--", uri, "#{revision}:refs/#{revision}-sha"], path).and_return(missing_ref)
+            expect(git_proxy).not_to receive(:capture).with(["ls-remote", "--symref", "--", uri, "HEAD"], path)
+            expect { subject.checkout }.to raise_error(Bundler::Source::Git::MissingGitRevisionError)
+          end
+        end
+      end
+
       context "URI is HTTP" do
         let(:uri) { "http://github.com/ruby/rubygems.git" }
 

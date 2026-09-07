@@ -52,6 +52,7 @@ class TestGemConfigFile < Gem::TestCase
       fp.puts ":sources:"
       fp.puts "  - http://more-gems.example.com"
       fp.puts "install: --wrappers"
+      fp.puts ":gemhome: /tmp/gems"
       fp.puts ":gempath:"
       fp.puts "- /usr/ruby/1.8/lib/ruby/gems/1.8"
       fp.puts "- /var/ruby/1.8/gem_home"
@@ -69,6 +70,7 @@ class TestGemConfigFile < Gem::TestCase
     assert_equal false, @cfg.update_sources
     assert_equal %w[http://more-gems.example.com], @cfg.sources
     assert_equal "--wrappers", @cfg[:install]
+    assert_equal "/tmp/gems", @cfg.home
     assert_equal(["/usr/ruby/1.8/lib/ruby/gems/1.8", "/var/ruby/1.8/gem_home"],
                  @cfg.path)
     assert_equal 0, @cfg.ssl_verify_mode
@@ -494,6 +496,20 @@ if you believe they were disclosed to a third party.
 
     util_config_file
 
+    assert_equal false, @cfg.verbose
+  end
+
+  def test_gemrc_coerces_only_exact_boolean_spellings
+    File.open @temp_conf, "w" do |fp|
+      fp.puts ":ssl_client_cert: truecert"
+      fp.puts ":ssl_ca_cert: /home/me/certs-false"
+      fp.puts ":verbose: false"
+    end
+
+    util_config_file
+
+    assert_equal "truecert", @cfg.ssl_client_cert
+    assert_equal "/home/me/certs-false", @cfg.ssl_ca_cert
     assert_equal false, @cfg.verbose
   end
 

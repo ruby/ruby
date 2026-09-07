@@ -141,7 +141,7 @@ module Bundler
         end
       end
 
-      Gem::Util.glob_files_in_dir("*/.git", cache_path.to_s).each do |git_dir|
+      SharedHelpers.glob_files_in_dir("*/.git", cache_path.to_s).each do |git_dir|
         FileUtils.rm_rf(git_dir)
         FileUtils.touch(File.expand_path("../.bundlecache", git_dir))
       end
@@ -159,13 +159,13 @@ module Bundler
     end
 
     def clean(dry_run = false)
-      gem_bins             = Gem::Util.glob_files_in_dir("bin/*", Gem.dir)
-      git_dirs             = Gem::Util.glob_files_in_dir("bundler/gems/*", Gem.dir)
-      git_cache_dirs       = Gem::Util.glob_files_in_dir("cache/bundler/git/*", Gem.dir)
-      gem_dirs             = Gem::Util.glob_files_in_dir("gems/*", Gem.dir)
-      gem_files            = Gem::Util.glob_files_in_dir("cache/*.gem", Gem.dir)
-      gemspec_files        = Gem::Util.glob_files_in_dir("specifications/*.gemspec", Gem.dir)
-      extension_dirs       = Gem::Util.glob_files_in_dir("extensions/*/*/*", Gem.dir) + Gem::Util.glob_files_in_dir("bundler/gems/extensions/*/*/*", Gem.dir)
+      gem_bins             = SharedHelpers.glob_files_in_dir("bin/*", Gem.dir)
+      git_dirs             = SharedHelpers.glob_files_in_dir("bundler/gems/*", Gem.dir)
+      git_cache_dirs       = SharedHelpers.glob_files_in_dir("cache/bundler/git/*", Gem.dir)
+      gem_dirs             = SharedHelpers.glob_files_in_dir("gems/*", Gem.dir)
+      gem_files            = SharedHelpers.glob_files_in_dir("cache/*.gem", Gem.dir)
+      gemspec_files        = SharedHelpers.glob_files_in_dir("specifications/*.gemspec", Gem.dir)
+      extension_dirs       = SharedHelpers.glob_files_in_dir("extensions/*/*/*", Gem.dir) + SharedHelpers.glob_files_in_dir("bundler/gems/extensions/*/*/*", Gem.dir)
       spec_gem_paths       = []
       # need to keep git sources around
       spec_git_paths       = @definition.spec_git_paths
@@ -232,7 +232,7 @@ module Bundler
     private
 
     def prune_gem_cache(resolve, cache_path)
-      cached = Gem::Util.glob_files_in_dir("*.gem", cache_path.to_s)
+      cached = SharedHelpers.glob_files_in_dir("*.gem", cache_path.to_s)
 
       cached = cached.delete_if do |path|
         spec = Bundler.rubygems.spec_from_gem path
@@ -257,7 +257,7 @@ module Bundler
     end
 
     def prune_git_and_path_cache(resolve, cache_path)
-      cached = Gem::Util.glob_files_in_dir("*/.bundlecache", cache_path.to_s)
+      cached = SharedHelpers.glob_files_in_dir("*/.bundlecache", cache_path.to_s)
 
       cached = cached.delete_if do |path|
         name = File.basename(File.dirname(path))
@@ -283,7 +283,7 @@ module Bundler
       # Add man/ subdirectories from activated bundles to MANPATH for man(1)
       manuals = $LOAD_PATH.filter_map do |path|
         man_subdir = path.sub(/lib$/, "man")
-        man_subdir unless Dir.glob("man?/", base: man_subdir).empty?
+        man_subdir unless SharedHelpers.glob_files_in_dir("man?/", man_subdir).empty?
       end
 
       return if manuals.empty?

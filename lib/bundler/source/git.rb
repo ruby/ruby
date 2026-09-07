@@ -91,9 +91,9 @@ module Bundler
 
       def to_s
         begin
-          at = humanized_ref || current_branch
-
-          rev = "at #{at}@#{shortref_for_display(revision)}"
+          at = humanized_ref
+          at = "#{at}@" if at
+          rev = "at #{at}#{shortref_for_display(revision)}"
         rescue GitError
           ""
         end
@@ -320,7 +320,7 @@ module Bundler
 
       def serialize_gemspecs_in(destination)
         destination = destination.expand_path(Bundler.root) if destination.relative?
-        Gem::Util.glob_files_in_dir(@glob, destination.to_s).each do |spec_path|
+        SharedHelpers.glob_files_in_dir(@glob, destination.to_s).each do |spec_path|
           # Evaluate gemspecs and cache the result. Gemspecs
           # in git might require git or other dependencies.
           # The gemspecs we cache should already be evaluated.

@@ -10,7 +10,7 @@ RSpec.describe "bundle install" do
         gem "foo", :git => "#{lib_path("foo")}"
       G
 
-      expect(out).to include("Using foo 1.0 from #{lib_path("foo")} (at main@#{revision_for(lib_path("foo"))[0..6]})")
+      expect(out).to include("Using foo 1.0 from #{lib_path("foo")} (at #{revision_for(lib_path("foo"))[0..6]})")
       expect(the_bundle).to include_gems "foo 1.0", source: "git@#{lib_path("foo")}"
     end
 
@@ -23,7 +23,7 @@ RSpec.describe "bundle install" do
         gem "foo", :git => "#{relative_path}"
       G
 
-      expect(out).to include("Using foo 1.0 from #{relative_path} (at main@#{revision_for(lib_path("foo"))[0..6]})")
+      expect(out).to include("Using foo 1.0 from #{relative_path} (at #{revision_for(lib_path("foo"))[0..6]})")
       expect(the_bundle).to include_gems "foo 1.0", source: "git@#{lib_path("foo")}"
     end
 
@@ -35,7 +35,7 @@ RSpec.describe "bundle install" do
         gem "foo", :git => "#{lib_path("foo")}"
       G
 
-      expect(out).to include("Using foo 1.0 from #{lib_path("foo")} (at non-standard@#{revision_for(lib_path("foo"))[0..6]})")
+      expect(out).to include("Using foo 1.0 from #{lib_path("foo")} (at #{revision_for(lib_path("foo"))[0..6]})")
       expect(the_bundle).to include_gems "foo 1.0", source: "git@#{lib_path("foo")}"
     end
 
@@ -195,7 +195,7 @@ RSpec.describe "bundle install" do
         gem "foo", :git => "#{lib_path("foo")}"
       G
 
-      expect(out).to include("Using foo 1.0 from #{lib_path("foo")} (at main@#{rev[0..6]})")
+      expect(out).to include("Using foo 1.0 from #{lib_path("foo")} (at #{rev[0..6]})")
       expect(the_bundle).to include_gems "foo 1.0", source: "git@#{lib_path("foo")}"
 
       old_lockfile = lockfile
@@ -204,20 +204,20 @@ RSpec.describe "bundle install" do
       rev2 = revision_for(lib_path("foo"))
 
       bundle :update, all: true, verbose: true
-      expect(out).to include("Using foo 2.0 (was 1.0) from #{lib_path("foo")} (at main@#{rev2[0..6]})")
+      expect(out).to include("Using foo 2.0 (was 1.0) from #{lib_path("foo")} (at #{rev2[0..6]})")
       expect(out).to include("Removing foo (#{rev[0..11]})")
       expect(the_bundle).to include_gems "foo 2.0", source: "git@#{lib_path("foo")}"
 
       lockfile(old_lockfile)
 
       bundle :install, verbose: true
-      expect(out).to include("Using foo 1.0 from #{lib_path("foo")} (at main@#{rev[0..6]})")
+      expect(out).to include("Using foo 1.0 from #{lib_path("foo")} (at #{rev[0..6]})")
       expect(the_bundle).to include_gems "foo 1.0", source: "git@#{lib_path("foo")}"
     end
 
     context "when install directory exists" do
       let(:checkout_confirmation_log_message) { "Checking out revision" }
-      let(:using_foo_confirmation_log_message) { "Using foo 1.0 from #{lib_path("foo")} (at main@#{revision_for(lib_path("foo"))[0..6]})" }
+      let(:using_foo_confirmation_log_message) { "Using foo 1.0 from #{lib_path("foo")} (at #{revision_for(lib_path("foo"))[0..6]})" }
 
       context "and no contents besides .git directory are present" do
         it "reinstalls gem" do

@@ -392,7 +392,7 @@ gem "rails", git: "https://rails@bitbucket\.org/rails/rails\.git"
 .P
 Since the \fBbitbucket\fR method is a specialization of \fBgit_source\fR, it accepts a \fB:branch\fR named argument\.
 .SS "PATH"
-You can specify that a gem is located in a particular location on the file system\. Relative paths are resolved relative to the directory containing the \fBGemfile\fR\.
+You can specify that a gem is located in a particular location on the file system\. Relative paths are resolved relative to the directory containing the \fBGemfile\fR\. The path must point to a directory containing the gem's unpacked source code, not to a packaged \fB\.gem\fR file\.
 .P
 Similar to the semantics of the \fB:git\fR option, the \fB:path\fR option requires that the directory in question either contains a \fB\.gemspec\fR for the gem, or that you specify an explicit version that bundler should use\.
 .P
