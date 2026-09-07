@@ -537,6 +537,11 @@ class TestRequire < Test::Unit::TestCase
                       bug3756)
   end
 
+  def test_frozen_loaded_features_while_rebuilding_index
+    assert_in_out_err(['-e', '$LOADED_FEATURES << "dummy.rb"; $LOADED_FEATURES.freeze; require "erb"'], "",
+                      [], /\$LOADED_FEATURES is frozen; cannot append feature \(RuntimeError\)$/)
+  end
+
   def test_race_exception
     bug5754 = '[ruby-core:41618]'
     path = nil
