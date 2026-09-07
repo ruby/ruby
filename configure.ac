@@ -1237,6 +1237,7 @@ main()
 		AS_IF([test -n "$dsymutil"], [
 		    POSTLINK="$dsymutil \$@ 2>/dev/null${POSTLINK:+; $POSTLINK}"
 		])
+		: ${POSTLINK:=:}
 		AC_CHECK_HEADERS(crt_externs.h, [], [], [
 		    #include <crt_externs.h>
 		])
