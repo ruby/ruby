@@ -292,6 +292,12 @@ rb_del_running_thread(rb_thread_t *th)
 }
 
 void
+rb_ractor_sched_wait_terminate(rb_vm_t *vm, rb_nativethread_cond_t *cond, unsigned long msec)
+{
+    // do nothing: with no threads there is no other Ractor to wait for
+}
+
+void
 rb_threadptr_sched_free(rb_thread_t *th)
 {
     // do nothing
