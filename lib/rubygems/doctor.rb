@@ -117,7 +117,7 @@ class Gem::Doctor
 
       if sub_directory == "specifications" && File.directory?(child) &&
          Gem::ContentAddress.valid_ruby_abi?(ent)
-        doctor_child(File.join(sub_directory, ent), extension) if ent == Gem.ruby_abi && !File.symlink?(child)
+        doctor_child(File.join(sub_directory, ent), *extensions) if ent == Gem.ruby_abi && !File.symlink?(child)
         next
       end
 
