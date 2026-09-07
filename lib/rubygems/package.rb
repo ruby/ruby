@@ -449,10 +449,7 @@ EOM
           directories << mkdir
         end
 
-        real_mkdir = File.realpath(mkdir)
-        unless real_mkdir == destination_dir || normalize_path(real_mkdir).start_with?(normalize_path(destination_dir + "/"))
-          raise Gem::Package::PathError.new(real_mkdir, destination_dir)
-        end
+        verify_extraction_dir mkdir, destination_dir
 
         if entry.file?
           File.open(destination, "wb") do |out|
@@ -657,6 +654,20 @@ EOM
   end
 
   private
+
+  ##
+  # Raises an exception unless +dir+, with symlinks resolved, is
+  # +destination_dir+ or a directory inside it.  +destination_dir+ must
+  # already be resolved with File.realpath by the caller.
+
+  def verify_extraction_dir(dir, destination_dir) # :nodoc:
+    real_dir = File.realpath(dir)
+
+    return if real_dir == destination_dir ||
+              normalize_path(real_dir).start_with?(normalize_path(destination_dir + "/"))
+
+    raise Gem::Package::PathError.new(real_dir, destination_dir)
+  end
 
   ##
   # Verifies the +checksums+ against the +digests+.  This check is not

@@ -8,6 +8,11 @@ require "bundler"
 RSpec.describe Bundler::ParallelInstaller do
   describe "priority queue" do
     before do
+      # Anchor the vendored Persistent classes on the real Gem::Net::HTTP
+      # before Artifice replaces it, see Artifice.activate_with. Requiring
+      # support/artifice/compact_index already activates Artifice, so this
+      # must come first.
+      require "bundler/vendored_persistent"
       require "support/artifice/compact_index"
       Artifice.activate_with(CompactIndexAPI)
 
@@ -93,6 +98,11 @@ RSpec.describe Bundler::ParallelInstaller do
         skip "This example does not work under a parent make jobserver"
       end
 
+      # Anchor the vendored Persistent classes on the real Gem::Net::HTTP
+      # before Artifice replaces it, see Artifice.activate_with. Requiring
+      # support/artifice/compact_index already activates Artifice, so this
+      # must come first.
+      require "bundler/vendored_persistent"
       require "support/artifice/compact_index"
       Artifice.activate_with(CompactIndexAPI)
 
@@ -219,6 +229,26 @@ RSpec.describe Bundler::ParallelInstaller do
     ensure
       Bundler::RubyGemsGemInstaller.remove_method(:build_jobs)
       Bundler::RubyGemsGemInstaller.define_method(:build_jobs, old_method)
+    end
+  end
+
+  describe "require tree in error reports" do
+    # require_tree_for_spec runs while reporting an install error. When no
+    # Gemfile can be located, default_gemfile raises GemfileNotFound, which
+    # would mask the original install error entirely.
+    it "falls back to a generic header when no Gemfile can be located" do
+      parallel_installer = Bundler::ParallelInstaller.new(nil, [], 1, false, false)
+
+      spec = double("spec", name: "mygem", version: Gem::Version.new("1.0"))
+      spec_set = double("spec_set", what_required: [spec])
+      parallel_installer.instance_variable_set(:@spec_set, spec_set)
+
+      allow(Bundler::SharedHelpers).to receive(:default_gemfile).
+        and_raise(Bundler::GemfileNotFound, "Could not locate Gemfile")
+
+      tree = parallel_installer.send(:require_tree_for_spec, spec)
+      expect(tree).to start_with("In Gemfile:\n")
+      expect(tree).to include("mygem")
     end
   end
 

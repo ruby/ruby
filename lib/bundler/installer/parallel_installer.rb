@@ -255,7 +255,15 @@ module Bundler
 
     def require_tree_for_spec(spec)
       tree = @spec_set.what_required(spec)
-      t = String.new("In #{File.basename(SharedHelpers.default_gemfile)}:\n")
+      gemfile_name = begin
+        File.basename(SharedHelpers.default_gemfile)
+      rescue GemfileNotFound
+        # This runs while reporting an install error. When no Gemfile can be
+        # located (e.g. Bundler used as a library), raising here would mask
+        # the original error, so fall back to a generic header instead.
+        "Gemfile"
+      end
+      t = String.new("In #{gemfile_name}:\n")
       tree.each_with_index do |s, depth|
         t << "  " * depth.succ << s.name
         unless tree.last == s

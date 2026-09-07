@@ -26,7 +26,7 @@ require_relative "bundler/build_metadata"
 # or Bundler.setup to setup environment where only specified gems and their
 # specified versions could be used.
 #
-# See {Bundler website}[https://bundler.io/docs.html] for extensive documentation
+# See {Bundler documentation}[https://guides.rubygems.org/command-reference/bundle/] for extensive documentation
 # on gemfiles creation and Bundler usage.
 #
 # As a standard library inside project, Bundler could be used for introspection

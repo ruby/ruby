@@ -88,5 +88,5 @@ Adds the named gem to the [`Gemfile(5)`][Gemfile(5)] and run `bundle install`.
 
 ## SEE ALSO
 
-[Gemfile(5)](https://bundler.io/man/gemfile.5.html),
+[Gemfile(5)](https://guides.rubygems.org/gemfile/),
 [bundle-remove(1)](bundle-remove.1.html)
