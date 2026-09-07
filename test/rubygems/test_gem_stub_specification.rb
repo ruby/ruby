@@ -118,6 +118,31 @@ class TestStubSpecification < Gem::TestCase
     assert_equal code_rb, stub.matches_for_glob("code*").first
   end
 
+  def test_matches_for_glob_with_glob_metacharacters_in_gem_dir
+    base_dir = File.join @tempdir, "dir[1]"
+    gems_dir = File.join base_dir, "gems"
+    spec_dir = File.join base_dir, "specifications"
+    FileUtils.mkdir_p spec_dir
+
+    spec = File.join spec_dir, "stub-2.gemspec"
+    File.write spec, <<~STUB
+      # -*- encoding: utf-8 -*-
+      # stub: stub 2 ruby lib
+
+      Gem::Specification.new do |s|
+        s.name = 'stub'
+        s.version = Gem::Version.new '2'
+      end
+    STUB
+
+    stub = Gem::StubSpecification.gemspec_stub spec, base_dir, gems_dir
+    code_rb = File.join stub.gem_dir, "lib", "code.rb"
+    FileUtils.mkdir_p File.dirname code_rb
+    FileUtils.touch code_rb
+
+    assert_equal code_rb, stub.matches_for_glob("code*").first
+  end
+
   def test_matches_for_glob_with_bundler_inline
     stub = stub_with_extension
     code_rb = File.join stub.gem_dir, "lib", "code.rb"

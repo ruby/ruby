@@ -142,6 +142,7 @@ module Spec
         "spec/bundler/ci_detector_spec.rb",
       ],
       windows_d: [
+        "spec/bundler/compact_index_client/cache_file_spec.rb",
         "spec/bundler/rubygems_ext_spec.rb",
         "spec/bundler/resolver/cooldown_spec.rb",
         "spec/install/cooldown_spec.rb",
@@ -190,6 +191,9 @@ module Spec
         "spec/bundler/fetcher/gem_remote_fetcher_spec.rb",
         "spec/bundler/uri_normalizer_spec.rb",
         "spec/bundler/fetcher/gem_remote_fetcher_local_ssl_server_spec.rb",
+        "spec/bundler/plugin/unloaded_source_spec.rb",
+        "spec/bundler/cli/open_spec.rb",
+        "spec/bundler/self_manager_spec.rb",
       ],
     }.freeze
   end

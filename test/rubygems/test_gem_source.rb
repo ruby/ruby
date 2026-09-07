@@ -121,6 +121,19 @@ class TestGemSource < Gem::TestCase
     assert_equal @specs["a-1"].full_name, spec.full_name
   end
 
+  def test_fetch_spec_path_traversal
+    escape = File.expand_path(File.join(Gem.spec_cache_dir, "..", "owned.gemspec"))
+
+    name_tuple = tuple("../owned", Gem::Version.new(1), "ruby")
+
+    e = assert_raise Gem::Exception do
+      @source.fetch_spec name_tuple
+    end
+
+    assert_includes e.message, "malformed spec name"
+    refute File.exist?(escape), "spec must not be written outside the spec cache"
+  end
+
   def test_load_specs
     released = @source.load_specs(:released).map(&:full_name)
     assert_equal %W[a-2 a-1 b-2], released

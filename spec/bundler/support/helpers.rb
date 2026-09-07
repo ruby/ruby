@@ -212,6 +212,19 @@ module Spec
       config(config, home(".bundle/config"))
     end
 
+    def bundle_config(config = nil, path = bundled_app(".bundle/config"))
+      if config.is_a?(String)
+        key, value = config.split(" ", 2)
+        config = { Bundler::Settings.key_for(key) => value }
+      end
+
+      config(config, path)
+    end
+
+    def bundle_config_global(config = nil)
+      bundle_config(config, home(".bundle/config"))
+    end
+
     def create_file(path, contents = "")
       contents = strip_whitespace(contents)
       path = Pathname.new(path).expand_path(bundled_app) unless path.is_a?(Pathname)
