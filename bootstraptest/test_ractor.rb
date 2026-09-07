@@ -1045,8 +1045,8 @@ assert_equal '1234', %q{
   values.join
 }
 
-# Reading non-shareable cvar from non-main Ractor is not allowed
-assert_equal 'can not read non-shareable class variable @@cv from non-main Ractors (C)', %q{
+# Reading non-shareable cvar of a class created by another Ractor is not allowed
+assert_equal 'can not read non-shareable class variable @@cv of C, which was created by another Ractor', %q{
   class C
     @@cv = 'str'
   end
@@ -1064,8 +1064,8 @@ assert_equal 'can not read non-shareable class variable @@cv from non-main Racto
   end
 }
 
-# also cached non-shareable cvar read from non-main Ractor is not allowed
-assert_equal 'can not read non-shareable class variable @@cv from non-main Ractors (C)', %q{
+# also cached non-shareable cvar read of a foreign class is not allowed
+assert_equal 'can not read non-shareable class variable @@cv of C, which was created by another Ractor', %q{
   class C
     @@cv = 'str'
     def self.cv
@@ -1129,8 +1129,8 @@ assert_equal 'hello', %q{
   Ractor.new { C.cv }.value
 }
 
-# Writing cvar from non-main Ractor is not allowed
-assert_equal 'can not set class variables from non-main Ractors (@@cv from C)', %q{
+# Writing a cvar of a class created by another Ractor is not allowed
+assert_equal 'can not set class variable @@cv of C, which was created by another Ractor', %q{
   class C
     @@cv = 'str'
     def self.cv=(v)
