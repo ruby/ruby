@@ -1,3 +1,5 @@
+#ifndef RUBY_RACTOR_CORE_H
+#define RUBY_RACTOR_CORE_H
 #include "internal/gc.h"
 #include "ruby/ruby.h"
 #include "ruby/ractor.h"
@@ -389,3 +391,5 @@ rb_ractor_ignore_belonging(bool flag)
 #define rb_ractor_confirm_belonging(obj) obj
 #define rb_ractor_ignore_belonging(flag) (0)
 #endif
+
+#endif /* RUBY_RACTOR_CORE_H */

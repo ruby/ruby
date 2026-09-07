@@ -12,6 +12,7 @@
 #include "id_table.h"           /* for struct rb_id_table */
 #include "internal/box.h"
 #include "internal/serial.h"    /* for rb_serial_t */
+#include "ractor_core.h"        /* for rb_ractor_main_p */
 #include "internal/static_assert.h"
 #include "internal/variable.h"  /* for rb_class_ivar_set */
 #include "ruby/internal/stdbool.h"     /* for bool */
@@ -65,6 +66,11 @@ struct rb_classext_struct {
             const VALUE includer;
         } iclass;
     } as;
+    /* Id of the Ractor that created this class/module; only that Ractor may modify
+     * it.  0 is the main Ractor, so a program that never leaves it stores nothing.
+     * Ids are never reused, so a terminated owner leaves the class read-only for
+     * everybody.  Prime classext only; always 0 for T_ICLASS. */
+    rb_serial_t owner_ractor_id;
     uint16_t superclass_depth;
     attr_index_t max_iv_count;
     uint8_t variation_count;
@@ -114,6 +120,35 @@ static inline void RCLASS_SET_PRIME_CLASSEXT_WRITABLE(VALUE obj, bool writable);
 
 #define RCLASS_EXT_PRIME(c) (&((struct RClass_and_rb_classext_t*)(c))->classext)
 #define RCLASS_EXT_PRIME_P(ext, c) (&((struct RClass_and_rb_classext_t*)(c))->classext == ext)
+
+// Class ownership. See rb_classext_struct::owner_ractor_id.
+#define RCLASSEXT_OWNER_RACTOR_ID(ext) (ext->owner_ractor_id)
+
+static inline rb_serial_t
+RCLASS_OWNER_RACTOR_ID(VALUE klass)
+{
+    return RCLASS_EXT_PRIME(klass)->owner_ractor_id;
+}
+
+static inline void
+RCLASS_SET_OWNER_RACTOR_ID(VALUE klass, rb_serial_t ractor_id)
+{
+    // not a VALUE: no write barrier, nothing for the GC to mark or move
+    RCLASS_EXT_PRIME(klass)->owner_ractor_id = ractor_id;
+}
+
+bool rb_class_owned_by_ractor_p(rb_serial_t owner_id); // rb_class_owned_p's slow half
+void rb_class_owner_check(VALUE klass);      // raise Ractor::IsolationError unless rb_class_owned_p(klass)
+
+// true if the current Ractor created klass.  Inline because the class ivar and
+// constant read paths take it on every access.
+static inline bool
+rb_class_owned_p(VALUE klass)
+{
+    rb_serial_t owner_id = RCLASS_OWNER_RACTOR_ID(klass);
+    if (LIKELY(!owner_id)) return rb_ractor_main_p(); // the only case single-Ractor programs take
+    return rb_class_owned_by_ractor_p(owner_id);
+}
 
 static inline rb_classext_t * RCLASS_EXT_READABLE_IN_BOX(VALUE obj, const rb_box_t *box);
 static inline rb_classext_t * RCLASS_EXT_READABLE(VALUE obj);
