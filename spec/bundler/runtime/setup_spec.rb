@@ -259,6 +259,24 @@ RSpec.describe "Bundler.setup" do
     expect(bundled_app_lock).to exist
   end
 
+  it "does not resolve again for the empty CHECKSUMS entries it locked itself" do
+    system_gems "myrack-1.0.0"
+
+    gemfile <<-G
+      source "https://gem.repo1"
+      gem "myrack"
+    G
+
+    ruby "require 'bundler'; Bundler.setup"
+    expect(out).to include("Resolving dependencies...")
+    lockfile = File.read(bundled_app_lock)
+    expect(lockfile).to include("CHECKSUMS\n  myrack (1.0.0)\n")
+
+    ruby "require 'bundler'; Bundler.setup"
+    expect(out).not_to include("Resolving dependencies...")
+    expect(File.read(bundled_app_lock)).to eq(lockfile)
+  end
+
   describe "$BUNDLE_GEMFILE" do
     context "user provides an absolute path" do
       it "uses BUNDLE_GEMFILE to locate the gemfile if present" do
