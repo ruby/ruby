@@ -925,6 +925,8 @@ native_thread_check_and_create_shared(rb_vm_t *vm)
 {
     bool need_to_make = false;
 
+    if (!mn_threads_enabled_p()) return 0; // no thread is M:N: the pool serves nobody
+
     ractor_sched_lock(vm, NULL); // NULL: the timer thread also calls this
     {
         unsigned int schedulable_ractor_cnt = vm->ractor.cnt;
