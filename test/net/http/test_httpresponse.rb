@@ -159,6 +159,27 @@ EOS
     assert_equal "5\r\nhello\r\n0\r\n\r\n", body
   end
 
+  def test_read_body_transfer_encoding_overrides_content_length
+    io = dummy_io(<<EOS)
+HTTP/1.1 200 OK
+Connection: close
+Transfer-Encoding: chunked, gzip
+Content-Length: 2
+
+hello
+EOS
+
+    res = Net::HTTPResponse.read_new(io)
+
+    body = nil
+
+    res.reading_body io, true do
+      body = res.read_body
+    end
+
+    assert_equal "hello\r\n", body
+  end
+
   def test_read_body_invalid_content_length
     io = dummy_io(<<EOS)
 HTTP/1.1 200 OK
