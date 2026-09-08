@@ -2369,7 +2369,7 @@ To make a "Ractor-safe" C extension, we need to check the following points:
 
 == Appendix G. Embedded TypedData
 
-Here is an example of how to use +RUBY_TYPED_EMBEDDABLE+::
+Here is an example of how to use +RUBY_TYPED_EMBEDDABLE+:
 
   struct my_data {
       struct timespec created_at;
@@ -2383,17 +2383,17 @@ Here is an example of how to use +RUBY_TYPED_EMBEDDABLE+::
       struct my_data *data = (struct my_data *)ptr;
 
       // Deliberately don't free `ptr` if it is embeddable.
-      // Only auxiliary memory need to be freed.
+      // Only auxiliary memory needs to be freed.
       ruby_xfree(data->buffer);
   }
 
   static size_t
   my_data_size(const void *ptr)
   {
-    const struct my_data *data = (const struct my_data *)ptr;
-    // We don't need to account for `sizeof(struct my_struct)` because it is embedded inside the Ruby object.
-    // Only auxiliary memory need to be reported.
-    return data->buffer_capa;
+      const struct my_data *data = (const struct my_data *)ptr;
+      // We don't need to account for `sizeof(struct my_data)` because it is embedded inside the Ruby object.
+      // Only auxiliary memory needs to be reported.
+      return data->buffer_capa;
   }
 
   static const rb_data_type_t my_type = {
@@ -2401,7 +2401,7 @@ Here is an example of how to use +RUBY_TYPED_EMBEDDABLE+::
       .function = {
         .dfree = my_data_free,
         .dsize = my_data_size,
-      }
+      },
       .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_EMBEDDABLE,
   };
 
@@ -2411,41 +2411,41 @@ Here is an example of how to use +RUBY_TYPED_EMBEDDABLE+::
       struct my_data *data;
       VALUE obj = TypedData_Make_Struct(klass, struct my_data, &my_type, data);
 
-      // Is it fine to pass pointers into the embedded struct, for as long as
-      // the called function won't use it after the Ruby object have left the stack.
+      // It is fine to pass pointers into the embedded struct, for as long as
+      // the called function won't use it after the Ruby object has left the stack.
       clock_gettime(CLOCK_REALTIME, &data->created_at);
       data->buffer_capa = 1024;
       data->buffer = ZALLOC_N(char, data->buffer_capa);
 
-      return obj
-  }
-
-  static VALUE
-  my_data_m_parse(VALUE klass)
-  {
-      struct my_data *data;
-      VALUE my_data_obj = my_data_alloc(klass);
-      TypedData_Get_Struct(obj, struct my_data, &my_type, data);
-
-      // `my_data_obj` was allocated from C, `RB_GC_GUARD` must be used to
-      // ensure the compiler will keep its reference on the stack.
-      RB_GC_GUARD(my_data_obj)
+      return obj;
   }
 
   static VALUE
   my_data_read(VALUE self)
   {
       struct my_data *data;
-      TypedData_Get_Struct(obj, struct my_data, &my_type, data);
+      TypedData_Get_Struct(self, struct my_data, &my_type, data);
 
       // `self` is received from `rb_define_method` so `RB_GC_GUARD` isn't necessary.
-      return rb_str_new(data->buffer, data->buffer_capa)
+      return rb_str_new(data->buffer, data->buffer_capa);
+  }
+
+  static VALUE
+  my_data_m_parse(VALUE klass)
+  {
+      VALUE my_data_obj = my_data_alloc(klass);
+      VALUE result = my_data_read(my_data_obj);
+
+      // `my_data_obj` was allocated from C, `RB_GC_GUARD` must be used to
+      // ensure the compiler will keep its reference on the stack.
+      RB_GC_GUARD(my_data_obj);
+      return result;
   }
 
   void
   Init_my_data(void)
   {
-      VALUE cMyData = rb_define_class("MyData");
+      VALUE cMyData = rb_define_class("MyData", rb_cObject);
       rb_define_method(cMyData, "read", my_data_read, 0);
       rb_define_singleton_method(cMyData, "parse", my_data_m_parse, 0);
   }
