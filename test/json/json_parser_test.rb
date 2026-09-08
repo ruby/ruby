@@ -1,11 +1,6 @@
 # frozen_string_literal: true
+
 require_relative 'test_helper'
-require 'stringio'
-require 'tempfile'
-begin
-  require 'bigdecimal'
-rescue LoadError
-end
 
 class JSONParserTest < Test::Unit::TestCase
   include JSON
