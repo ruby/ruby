@@ -3916,6 +3916,18 @@ rb_gc_registered_addrs_unenroll_without_gc(rb_vm_t *vm, rb_ractor_t *r)
     r->registered_addrs_listed = false;
 }
 
+void
+rb_gc_each_registered_addr(rb_gc_registered_addr_cb func, void *data)
+{
+    rb_vm_t *vm = GET_VM();
+    for (size_t i = 0; i < vm->gc.registered_addrs.registry_cnt; i++) {
+        rb_ractor_t *r = vm->gc.registered_addrs.registry[i];
+        for (size_t j = 0; j < r->registered_addrs_cnt; j++) {
+            func(r->registered_addrs[j], (void *)r->objspace, data);
+        }
+    }
+}
+
 static bool
 gc_registered_addrs_remove(rb_ractor_t *r, VALUE *addr)
 {
