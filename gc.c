@@ -3307,12 +3307,40 @@ rb_gc_mark_registered_addrs(rb_ractor_t *r, bool need_lock)
 {
     if (r->registered_addrs_cnt == 0) return;
 
-    rb_vm_t *vm = GET_VM();
-    if (need_lock) rb_native_mutex_lock(&vm->gc.registered_addrs.lock);
-    for (size_t i = 0; i < r->registered_addrs_cnt; i++) {
-        rb_gc_mark_maybe(*r->registered_addrs[i]);
+    if (rb_gc_impl_during_gc_p(rb_gc_get_objspace())) {
+        rb_vm_t *vm = GET_VM();
+        if (need_lock) rb_native_mutex_lock(&vm->gc.registered_addrs.lock);
+        for (size_t i = 0; i < r->registered_addrs_cnt; i++) {
+            rb_gc_mark_maybe(*r->registered_addrs[i]);
+        }
+        if (need_lock) rb_native_mutex_unlock(&vm->gc.registered_addrs.lock);
+        return;
     }
-    if (need_lock) rb_native_mutex_unlock(&vm->gc.registered_addrs.lock);
+
+    VALUE stack_snap[16];
+    VALUE *snap = stack_snap;
+    size_t capa = numberof(stack_snap);
+
+    rb_vm_t *vm = GET_VM();
+    rb_native_mutex_lock(&vm->gc.registered_addrs.lock);
+    size_t cnt = r->registered_addrs_cnt;
+    if (RB_UNLIKELY(cnt > capa)) {
+        rb_native_mutex_unlock(&vm->gc.registered_addrs.lock);
+        snap = ALLOC_N(VALUE, cnt);
+        capa = cnt;
+        rb_native_mutex_lock(&vm->gc.registered_addrs.lock);
+        cnt = r->registered_addrs_cnt;
+        VM_ASSERT(cnt <= capa);
+    }
+    for (size_t i = 0; i < cnt; i++) {
+        snap[i] = *r->registered_addrs[i];
+    }
+    rb_native_mutex_unlock(&vm->gc.registered_addrs.lock);
+
+    for (size_t i = 0; i < cnt; i++) {
+        rb_gc_mark_maybe(snap[i]);
+    }
+    if (snap != stack_snap) xfree(snap);
 }
 
 void
