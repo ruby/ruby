@@ -2108,7 +2108,7 @@ rb_check_backtrace(VALUE bt)
  *      # hiding the parts of the backtrace related to the internals
  *      # of the "json" library
  *
- *      # The error has both #backtace and #backtrace_locations set
+ *      # The error has both #backtrace and #backtrace_locations set
  *      # consistently:
  *      begin
  *        parse_payload('{"wrong: "json"')

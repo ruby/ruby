@@ -767,7 +767,7 @@ location_to_str_m(VALUE self)
 
 /*
  * Returns the same as calling +inspect+ on the string representation of
- * #to_str
+ * #to_s
  */
 static VALUE
 location_inspect_m(VALUE self)
