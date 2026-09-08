@@ -1152,6 +1152,19 @@ CODE
     assert_raise(FrozenError) { S("\x00").freeze.bitwise_xor!(S("\x00")) }
   end
 
+  def test_getbyte_setbyte_out_of_long_range
+    bug20269 = '[Bug #20269]'
+    s = S('foo')
+    [2**31, 2**32, 2**62].each do |big|
+      assert_nil(s.getbyte(big), bug20269)
+      assert_nil(s.getbyte(-big), bug20269)
+      assert_raise(IndexError, bug20269) { s.setbyte(big, 0) }
+      assert_raise(IndexError, bug20269) { s.setbyte(-big, 0) }
+    end
+    assert_raise(RangeError) { s.getbyte(2**63) }
+    assert_raise(RangeError) { s.setbyte(2**63, 0) }
+  end
+
   def test_each_codepoint
     # Single byte optimization
     assert_equal 65, S("ABC").each_codepoint.next
@@ -3657,6 +3670,99 @@ CODE
     assert_equal(false, ("\u3042"*10).byteslice(0, 20).valid_encoding?, bug7954)
   end
 
+  def test_byteslice_out_of_long_range
+    bug20269 = '[Bug #20269]'
+    s = S("hello")
+    [2**31 - 1, 2**31, 2**32 - 1, 2**32, 2**62].each do |big|
+      assert_equal("hello", s.byteslice(0, big), bug20269)
+      assert_equal("llo", s.byteslice(2, big), bug20269)
+      assert_nil(s.byteslice(big), bug20269)
+      assert_nil(s.byteslice(big, 1), bug20269)
+      assert_nil(s.byteslice(-big), bug20269)
+      assert_nil(s.byteslice(-big, 1), bug20269)
+      assert_nil(s.byteslice(0, -big), bug20269)
+    end
+    assert_equal("", S("").byteslice(0, 2547483647), bug20269)
+    assert_nil(s.byteslice(0, -2**63), bug20269)
+    assert_raise(RangeError) { s.byteslice(2**63) }
+    assert_raise(RangeError) { s.byteslice(2**63, 1) }
+    assert_raise(RangeError) { s.byteslice(0, 2**63) }
+    assert_raise(RangeError) { s.byteslice(0, -2**63 - 1) }
+  end
+
+  def test_byteslice_range_out_of_long_range
+    bug20269 = '[Bug #20269]'
+    s = S("hello")
+    # LONG_MAX itself is left out: rb_range_component_beg_len overflows
+    # incrementing an inclusive end there, on every platform.
+    [2**31, 2**32, 2**62].each do |big|
+      assert_equal("hello", s.byteslice(0..big), bug20269)
+      assert_equal("hello", s.byteslice(0...big), bug20269)
+      assert_equal("llo", s.byteslice(2..big), bug20269)
+      assert_nil(s.byteslice(big..), bug20269)
+      assert_nil(s.byteslice(-big..0), bug20269)
+    end
+    assert_raise(RangeError) { s.byteslice(0..2**63) }
+    assert_raise(RangeError) { s.byteslice(2**63..) }
+  end
+
+  def test_byte_apis_reread_length_after_to_int
+    bug20269 = '[Bug #20269]'
+    # #to_int runs during conversion and may resize the receiver, so the
+    # size the saturation and the bounds check use has to be read after it
+    grown = S("hello")
+    o = Object.new
+    o.define_singleton_method(:to_int) { grown << "world"; 2**40 }
+    assert_nil(grown.byteslice(o), bug20269)
+
+    one = S("あ")
+    shrunk = S("あ" * 2000)
+    p = Object.new
+    p.define_singleton_method(:to_int) { shrunk.replace(one); 2**40 }
+    assert_equal(0, shrunk.byterindex(one, p), bug20269)
+
+    shrunk2 = S("あ" * 2000)
+    q = Object.new
+    q.define_singleton_method(:to_int) { shrunk2.replace(one); 5000 }
+    assert_equal(0, shrunk2.byterindex(one, q), bug20269)
+
+    # a later argument can grow the string too, so a saturated value must
+    # not be one the string can grow past
+    grown2 = S("hello")
+    g = Object.new
+    g.define_singleton_method(:to_int) { grown2 << "world"; 1 }
+    assert_nil(grown2.byteslice(2**40, g), bug20269)
+
+    grown3 = S("hello")
+    g2 = Object.new
+    g2.define_singleton_method(:to_int) { grown3 << "world"; 1 }
+    assert_raise(IndexError, bug20269) { grown3.bytesplice(2**40, g2, S("bye")) }
+  end
+
+  def test_byteslice_float_out_of_long_range
+    bug20269 = '[Bug #20269]'
+    s = S("hello")
+    assert_equal("hello", s.byteslice(0, 1e18), bug20269)
+    assert_nil(s.byteslice(1e18), bug20269)
+    assert_raise(RangeError) { s.byteslice(0, 1e30) }
+  end
+
+  def test_byte_apis_accept_to_int
+    bug20269 = '[Bug #20269]'
+    s = S("hello")
+    obj = Object.new
+    def obj.to_int; 2; end
+    assert_equal("l", s.byteslice(obj, 1), bug20269)
+
+    str = Class.new(String) { def to_int; 2; end }.new
+    assert_equal("l", s.byteslice(str, 1), bug20269)
+    assert_equal(108, s.getbyte(str), bug20269)
+    assert_equal(2, s.byteindex(S("l"), str), bug20269)
+    assert_equal(2, s.byterindex(S("l"), str), bug20269)
+    assert_equal(120, S("hello").setbyte(str, 120), bug20269)
+    assert_bytesplice_result("ello", S("hello"), 0, 2, "bye", str, 1)
+  end
+
   def test_shared_middle_string_terminator
     ten = "0123456789"
     hundred = ten * 10
@@ -3959,6 +4065,19 @@ CODE
     assert_byterindex(nil, S(""), S("こんにちは"))
   end
 
+  def test_byteindex_byterindex_out_of_long_range
+    bug20269 = '[Bug #20269]'
+    s = S("hello")
+    [2**31 - 1, 2**31, 2**32, 2**62].each do |big|
+      assert_nil(s.byteindex("l", big), bug20269)
+      assert_nil(s.byteindex("l", -big), bug20269)
+      assert_equal(3, s.byterindex("l", big), bug20269)
+      assert_nil(s.byterindex("l", -big), bug20269)
+    end
+    assert_raise(RangeError) { s.byteindex("l", 2**63) }
+    assert_raise(RangeError) { s.byterindex("l", 2**63) }
+  end
+
   def test_bytesplice
     assert_bytesplice_raise(IndexError, S("hello"), -6, 0, "bye")
     assert_bytesplice_result("byehello", S("hello"), -5, 0, "bye")
@@ -4034,6 +4153,30 @@ CODE
     assert_bytesplice_raise(ArgumentError, S("hello"), 0, 5, "bye", 0)
     assert_bytesplice_raise(ArgumentError, S("hello"), 0, 5, "bye", 0..-1)
     assert_bytesplice_raise(ArgumentError, S("hello"), 0..-1, "bye", 0, 3)
+  end
+
+  def test_bytesplice_out_of_long_range
+    [2**31, 2**32, 2**62].each do |big|
+      assert_bytesplice_raise(IndexError, S("hello"), big, 1, "bye")
+      assert_bytesplice_raise(IndexError, S("hello"), -big, 1, "bye")
+      assert_bytesplice_raise(IndexError, S("hello"), 0, -big, "bye")
+      assert_bytesplice_result("bye", S("hello"), 0, big, "bye")
+      assert_bytesplice_result("byehello", S("hello"), 0, 0, "bye", 0, big)
+      assert_bytesplice_raise(IndexError, S("hello"), 0, 0, "bye", -big, 1)
+    end
+    assert_bytesplice_raise(RangeError, S("hello"), 2**63, 1, "bye")
+  end
+
+  def test_bytesplice_range_out_of_long_range
+    # see test_byteslice_range_out_of_long_range for the omitted LONG_MAX
+    [2**31, 2**32, 2**62].each do |big|
+      assert_bytesplice_result("bye", S("hello"), 0..big, "bye")
+      assert_bytesplice_result("bye", S("hello"), 0...big, "bye")
+      assert_bytesplice_result("hebye", S("hello"), 2..big, "bye")
+      assert_bytesplice_result("HELLOllo", S("hello"), 0..1, "HELLO", 0..big)
+      assert_bytesplice_raise(RangeError, S("hello"), -big..0, "bye")
+    end
+    assert_bytesplice_raise(RangeError, S("hello"), 0..2**63, "bye")
   end
 
   def test_append_bytes_into_binary
