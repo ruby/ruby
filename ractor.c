@@ -2542,6 +2542,21 @@ move_neutralize_source(VALUE obj)
         wipe_body = !rb_str_embedded_shared_root_p(obj);
         break;
       case T_ARRAY:
+        if (!ARY_EMBED_P(obj) && !ARY_SHARED_P(obj) && (ARY_SHARED_ROOT_P(obj) || OBJ_FROZEN(obj))) {
+            /* A heap (non-embedded), shared root array keeps its buffer because
+             * other arrays reference this shared root. It needs to keep T_ARRAY
+             * because otherwise the GC will not free the buffer when this object
+             * dies which will leak memory. */
+            RBASIC_SET_CLASS_RAW(obj, rb_cRactorMovedObject);
+            RBASIC(obj)->flags |= FL_FREEZE;
+            RBASIC_SET_FULL_SHAPE_ID(obj, (shape_id & ~SHAPE_ID_LAYOUT_MASK) | SHAPE_ID_LAYOUT_OTHER);
+            if (!ARY_SHARED_ROOT_P(obj)) {
+                /* Present as empty to stale readers.  Not for a shared root: its
+                 * len doubles as the buffer capacity that ARY_HEAP_SIZE frees by. */
+                RARRAY(obj)->as.heap.len = 0;
+            }
+            return;
+        }
         wipe_body = !rb_ary_embedded_shared_root_p(obj);
         break;
       default:
