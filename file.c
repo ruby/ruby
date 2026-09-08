@@ -1883,18 +1883,16 @@ rb_file_pipe_p(VALUE obj, VALUE fname)
  * call-seq:
  *   File.symlink?(path) -> true or false
  *
- * Returns whether the entry at `path` is a symbolic link:
+ * Returns whether the entry at `path`
+ * is a [symbolic link](rdoc-ref:file/symbolic_links.md):
  *
  * ```ruby
- * # Create paths.
- * file_path = 'doc/extension.rdoc'         # => "doc/extension.rdoc"
- * target_path = File.join('..', file_path) # => "../doc/extension.rdoc"
- * link_path = 'lib/u.tmp'                  # => "lib/u.tmp"
- * File.symlink?(link_path)                 # => false
- * # Create link and verify.
- * File.symlink(target_path, link_path)
- * File.symlink?(link_path)                 # => true
- * File.delete(link_path)                   # Clean up.
+ * filepath = 'README.md'
+ * linkpath = 'foo'
+ * File.symlink(filepath, linkpath)
+ * File.symlink?(filepath) # => false
+ * File.symlink?(linkpath) # => true
+ * File.unlink(linkpath)   # Clean up.
  * ```
  *
  */
@@ -6721,18 +6719,17 @@ rb_stat_p(VALUE obj)
  *  call-seq:
  *    symlink? -> true or false
  *
- *  Returns whether the entry in `self` is a symbolic link:
+ *  Returns whether the entry in `self`
+ *  is a [symbolic link](rdoc-ref:file/symbolic_links.md):
  *
  *  ```ruby
- *  path = 'doc/t.tmp'
- *  link_path = 'lib/u.tmp'
- *  File.write(path, 'foo')
- *  File.symlink(path, link_path)
- *  File.stat(path).symlink?       # => false
- *  File.stat(link_path).symlink?  # Raises Errno::ENOENT; entry is not a file.
- *  File.lstat(link_path).symlink? # => true
- *  File.delete(path)
- *  File.delete(link_path)
+ *  filepath = 'README.md'
+ *  linkpath = 'foo'
+ *  File.symlink(filepath, linkpath)
+ *  File.stat(filepath).symlink?  # => false
+ *  File.stat(linkpath).symlink?  # => false  # stat followed symlink.
+ *  File.lstat(linkpath).symlink? # => true   # lstat did not follow symlink.
+ *  File.unlink(linkpath)         # Clean up.
  *  ```
  *
  */
