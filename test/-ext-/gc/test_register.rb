@@ -21,26 +21,24 @@ class Test_GCRegisterAddress < Test::Unit::TestCase
     Bug::GC.unregister_static
   end
 
-  def make_registered_weakref(level = 10)
-    if level > 0
-      make_registered_weakref(level - 1)
-    else
-      Bug::GC.register_static(v = "main owns this".dup)
-      WeakRef.new(v)
-    end
-  end
-
   def test_unregister_address_from_another_ractor
-    ref = make_registered_weakref
-    assert_predicate(ref, :weakref_alive?)
+    alive = 5.times.count do
+      ref = Thread.new {
+        v = "main owns this".dup
+        Bug::GC.register_static(v)
+        WeakRef.new(v)
+      }.value
+      assert_predicate(ref, :weakref_alive?)
 
-    assert_equal(true, Ractor.new { Bug::GC.unregister_static; true }.value)
+      assert_equal(true, Ractor.new { Bug::GC.unregister_static; true }.value)
 
-    10.times do
-      GC.start(full_mark: true)
-      break unless ref.weakref_alive?
+      3.times do
+        GC.start(full_mark: true)
+        break unless ref.weakref_alive?
+      end
+      ref.weakref_alive?
     end
-    refute_predicate(ref, :weakref_alive?)
+    assert_operator(alive, :<, 5, "value stayed alive after unregister in every trial")
   ensure
     Bug::GC.unregister_static
   end
