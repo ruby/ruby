@@ -596,6 +596,13 @@ st_init_existing_table_with_size(st_table *tab, const struct st_hash_type *type,
     tab->bin_power = features[n].bin_power;
     tab->size_ind = features[n].size_ind;
 
+    /* The table may be embedded in an object the GC can already reach (T_HASH,
+       imemo_cdhash), in which case the allocation below can mark it. Empty it
+       first, marking walks entries[entries_start..entries_bound). */
+    tab->entries = NULL;
+    tab->num_entries = 0;
+    tab->entries_start = tab->entries_bound = 0;
+
     size_t memsize = get_allocated_entries(tab) * sizeof(st_table_entry);
     if (tab->entry_power > MAX_POWER2_FOR_TABLES_WITHOUT_BINS) {
         memsize += bins_size(tab);
