@@ -2305,6 +2305,7 @@ AC_CHECK_FUNCS(truncate)
 AC_CHECK_FUNCS(truncate64)		# used for Win32
 AC_CHECK_FUNCS(tzset)
 AC_CHECK_FUNCS(umask)
+AC_CHECK_FUNCS(unlinkat)
 AC_CHECK_FUNCS(unsetenv)
 AC_CHECK_FUNCS(utimensat)
 AC_CHECK_FUNCS(utimes)
@@ -2619,6 +2620,13 @@ AS_IF([test "$ac_cv_func_setpgid:$ac_cv_func_setpgrp" = no:yes], [
   # https://lists.gnu.org/archive/html/bug-autoconf/2013-02/msg00002.html
   # "AC_FUNC_SETPGRP fails to work properly when cross-compiling"
 AC_FUNC_SETPGRP
+])
+
+AC_CHECK_MEMBERS([struct dirent.d_namlen], [], [], [
+#include <sys/types.h>
+#ifdef HAVE_DIRENT_H
+# include <dirent.h>
+#endif
 ])
 
 AS_IF([test x"$ac_cv_func_dirfd" = xno], [
