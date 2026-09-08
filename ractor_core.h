@@ -173,7 +173,7 @@ enum ractor_wakeup_status {
     wakeup_none,
     wakeup_by_send,
     wakeup_by_interrupt,
-    // wakeup_by_close,
+    wakeup_by_close,
 };
 
 struct ractor_waiter {
