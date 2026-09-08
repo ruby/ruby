@@ -1159,6 +1159,7 @@ static struct rb_io_buffer *
 get_io_buffer_for_writing(VALUE self)
 {
     struct rb_io_buffer *buffer = get_io_buffer(self);
+    rb_check_frozen(self);
     io_buffer_validate_for_writing(buffer);
     return buffer;
 }
@@ -1180,7 +1181,7 @@ io_buffer_get_bytes_for_writing(struct rb_io_buffer *buffer, void **base, size_t
 void
 rb_io_buffer_get_bytes_for_writing(VALUE self, void **base, size_t *size)
 {
-    struct rb_io_buffer *buffer = get_io_buffer(self);
+    struct rb_io_buffer *buffer = get_io_buffer_for_writing(self);
 
     io_buffer_get_bytes_for_writing(buffer, base, size);
 }
@@ -3302,7 +3303,7 @@ io_buffer_set_string(int argc, VALUE *argv, VALUE self)
 {
     rb_check_arity(argc, 1, 4);
 
-    struct rb_io_buffer *buffer = get_io_buffer(self);
+    struct rb_io_buffer *buffer = get_io_buffer_for_writing(self);
 
     VALUE string = rb_str_to_str(argv[0]);
 
@@ -3317,7 +3318,7 @@ io_buffer_set_string(int argc, VALUE *argv, VALUE self)
 void
 rb_io_buffer_clear(VALUE self, uint8_t value, size_t offset, size_t length)
 {
-    struct rb_io_buffer *buffer = get_io_buffer(self);
+    struct rb_io_buffer *buffer = get_io_buffer_for_writing(self);
 
     void *base;
     size_t size;
@@ -3474,8 +3475,7 @@ rb_io_buffer_read(VALUE self, VALUE io, size_t offset, size_t length)
 {
     io = rb_io_get_io(io);
 
-    struct rb_io_buffer *buffer = get_io_buffer(self);
-    io_buffer_validate_for_writing(buffer);
+    struct rb_io_buffer *buffer = get_io_buffer_for_writing(self);
     io_buffer_validate_range(buffer, offset, length);
 
     if (length == 0) return SIZET2NUM(0);
@@ -3565,8 +3565,7 @@ rb_io_buffer_pread(VALUE self, VALUE io, rb_off_t from, size_t offset, size_t le
 {
     io = rb_io_get_io(io);
 
-    struct rb_io_buffer *buffer = get_io_buffer(self);
-    io_buffer_validate_for_writing(buffer);
+    struct rb_io_buffer *buffer = get_io_buffer_for_writing(self);
     io_buffer_validate_range(buffer, offset, length);
 
     if (length == 0) return SIZET2NUM(0);
@@ -4032,7 +4031,7 @@ memory_and_inplace(unsigned char * restrict base, size_t size, unsigned char * r
 static VALUE
 io_buffer_and_inplace(VALUE self, VALUE mask)
 {
-    struct rb_io_buffer *buffer = get_io_buffer(self);
+    struct rb_io_buffer *buffer = get_io_buffer_for_writing(self);
 
     struct rb_io_buffer *mask_buffer = get_io_buffer(mask);
 
@@ -4080,7 +4079,7 @@ memory_or_inplace(unsigned char * restrict base, size_t size, unsigned char * re
 static VALUE
 io_buffer_or_inplace(VALUE self, VALUE mask)
 {
-    struct rb_io_buffer *buffer = get_io_buffer(self);
+    struct rb_io_buffer *buffer = get_io_buffer_for_writing(self);
 
     struct rb_io_buffer *mask_buffer = get_io_buffer(mask);
 
@@ -4128,7 +4127,7 @@ memory_xor_inplace(unsigned char * restrict base, size_t size, unsigned char * r
 static VALUE
 io_buffer_xor_inplace(VALUE self, VALUE mask)
 {
-    struct rb_io_buffer *buffer = get_io_buffer(self);
+    struct rb_io_buffer *buffer = get_io_buffer_for_writing(self);
 
     struct rb_io_buffer *mask_buffer = get_io_buffer(mask);
 
@@ -4176,7 +4175,7 @@ memory_not_inplace(unsigned char * restrict base, size_t size)
 static VALUE
 io_buffer_not_inplace(VALUE self)
 {
-    struct rb_io_buffer *buffer = get_io_buffer(self);
+    struct rb_io_buffer *buffer = get_io_buffer_for_writing(self);
 
     void *base;
     size_t size;

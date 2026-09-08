@@ -59,4 +59,15 @@ describe "IO::Buffer#or!" do
       end
     end
   end
+
+  ruby_version_is "4.1" do
+    it "raises FrozenError without modifying a frozen buffer" do
+      buffer = IO::Buffer.new(4)
+      buffer.set_string("test")
+      buffer.freeze
+
+      -> { buffer.or!(IO::Buffer.new(4)) }.should.raise(FrozenError)
+      buffer.get_string.should == "test"
+    end
+  end
 end

@@ -679,6 +679,69 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_equal string, buffer.get_string
   end
 
+  def test_write_frozen
+    buffer = IO::Buffer.new(4)
+    buffer.set_string("test")
+    buffer.freeze
+
+    assert_raise(FrozenError) {buffer.set_string("fail")}
+    assert_raise(FrozenError) {buffer.set_value(:U8, 0, 0)}
+    assert_raise(FrozenError) {buffer.set_values([:U8], 0, [0])}
+    assert_raise(FrozenError) {buffer.copy(IO::Buffer.for("fail"), 0)}
+    assert_raise(FrozenError) {buffer.clear}
+    assert_raise(FrozenError) {buffer.and!(IO::Buffer.new(4))}
+    assert_raise(FrozenError) {buffer.or!(IO::Buffer.new(4))}
+    assert_raise(FrozenError) {buffer.xor!(IO::Buffer.new(4))}
+    assert_raise(FrozenError) {buffer.not!}
+
+    assert_equal "test", buffer.get_string
+  end
+
+  def test_write_frozen_read
+    buffer = IO::Buffer.new(4)
+    buffer.set_string("test")
+    buffer.freeze
+
+    File.open(__FILE__) do |file|
+      assert_raise(FrozenError) {buffer.read(file, 4)}
+      assert_raise(FrozenError) {buffer.pread(file, 0, 4)}
+    end
+
+    assert_equal "test", buffer.get_string
+  end
+
+  def test_write_frozen_external
+    string = +"Hello World"
+
+    IO::Buffer.for(string) do |buffer|
+      buffer.freeze
+
+      assert_raise(FrozenError) {buffer.set_string("Goodbye")}
+    end
+
+    assert_equal "Hello World", string
+  end
+
+  def test_write_frozen_clone
+    buffer = IO::Buffer.new(4)
+    buffer.set_string("test")
+
+    clone = buffer.freeze.clone
+    assert_predicate clone, :frozen?
+
+    assert_raise(FrozenError) {clone.set_string("fail")}
+    assert_equal "test", clone.get_string
+  end
+
+  def test_write_frozen_readonly
+    buffer = IO::Buffer.for("Hello World".freeze)
+
+    assert_raise(IO::Buffer::AccessError) {buffer.set_string("Goodbye")}
+
+    buffer.freeze
+    assert_raise(FrozenError) {buffer.set_string("Goodbye")}
+  end
+
   def test_compare_same_size
     buffer1 = IO::Buffer.new(1)
     assert_equal buffer1, buffer1
