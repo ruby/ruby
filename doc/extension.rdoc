@@ -2390,10 +2390,10 @@ Here is an example of how to use +RUBY_TYPED_EMBEDDABLE+:
   static size_t
   my_data_size(const void *ptr)
   {
-    const struct my_data *data = (const struct my_data *)ptr;
-    // We don't need to account for `sizeof(struct my_data)` because it is embedded inside the Ruby object.
-    // Only auxiliary memory need to be reported.
-    return data->buffer_capa;
+      const struct my_data *data = (const struct my_data *)ptr;
+      // We don't need to account for `sizeof(struct my_data)` because it is embedded inside the Ruby object.
+      // Only auxiliary memory need to be reported.
+      return data->buffer_capa;
   }
 
   static const rb_data_type_t my_type = {
