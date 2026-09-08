@@ -1147,6 +1147,36 @@ class TestGemPackage < Gem::Package::TarTestCase
     assert_path_not_exist File.join(destination_subdir, "lib/link")
   end
 
+  def test_extract_symlink_parent_absolute_path
+    package = Gem::Package.new @gem
+
+    # Extract into a subdirectory of @destination; if this test fails it writes
+    # a file outside destination_subdir, but we want the file to remain inside
+    # @destination so it will be cleaned up.
+    destination_subdir = File.join @destination, "subdir"
+    FileUtils.mkdir_p destination_subdir
+
+    pend "TMPDIR seems too long to add it as symlink into tar" if destination_subdir.size > 90
+
+    tgz_io = util_tar_gz do |tar|
+      tar.mkdir       "lib", 0o755
+      tar.add_symlink "lib/link", File.join(destination_subdir, ".."), 0o644
+      tar.add_file    "lib/link/outside.txt", 0o644 do |io|
+        io.write "hi"
+      end
+    end
+
+    e = assert_raise(Gem::Package::SymlinkError) do
+      package.extract_tar_gz tgz_io, destination_subdir
+    end
+
+    assert_equal("installing symlink 'lib/link' pointing to parent path #{@destination} of " \
+                "#{destination_subdir} is not allowed", e.message)
+
+    assert_path_not_exist File.join(@destination, "outside.txt")
+    assert_path_not_exist File.join(destination_subdir, "lib/link")
+  end
+
   def test_extract_symlink_parent_doesnt_delete_user_dir
     package = Gem::Package.new @gem
 
