@@ -369,8 +369,6 @@ rb_ractor_mark_local_roots(rb_ractor_t *r)
      * marks only its own residents and leaves foreign or shareable entries to their
      * owner or to the global GC. */
     rb_gc_mark_vm_stack_values((long)r->registered_marks_cnt, r->registered_marks);
-
-    rb_gc_mark_registered_addrs(r, true);
 }
 
 /* Mark and pin a terminated, unfreed Ractor's return value (legacy); the global GC

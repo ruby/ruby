@@ -3337,12 +3337,18 @@ rb_gc_mark_roots(void *objspace, const char **categoryp)
         rb_ractor_t *r;
         ccan_list_for_each(&vm->ractor.set, r, vmlr_node) {
             rb_ractor_mark_local_roots(r);
+            MARK_CHECKPOINT("registered_addrs");
+            rb_gc_mark_registered_addrs(r, true);
+            MARK_CHECKPOINT("ractor");
         }
 
         /* Early in boot (before rb_ractor_main_setup) main is not in vm->ractor.set
          * yet; do not drop its registered_marks in a single-objspace boot GC. */
         if (vm->ractor.cnt == 0 && vm->ractor.main_ractor) {
             rb_ractor_mark_local_roots(vm->ractor.main_ractor);
+            MARK_CHECKPOINT("registered_addrs");
+            rb_gc_mark_registered_addrs(vm->ractor.main_ractor, true);
+            MARK_CHECKPOINT("ractor");
         }
         /* A Ractor that terminated (left vm->ractor.set) but whose struct is not freed
          * still owns rb_gc_register_mark_object pins.  Keep them alive until
@@ -3353,7 +3359,9 @@ rb_gc_mark_roots(void *objspace, const char **categoryp)
             if (owner) {
                 rb_gc_mark_vm_stack_values((long)owner->registered_marks_cnt,
                                            owner->registered_marks);
+                MARK_CHECKPOINT("registered_addrs");
                 rb_gc_mark_registered_addrs(owner, true);
+                MARK_CHECKPOINT("ractor");
             }
         }
 
@@ -3366,13 +3374,18 @@ rb_gc_mark_roots(void *objspace, const char **categoryp)
             ccan_list_for_each(&vm->ractor.terminated_set, tr, vmlr_node) {
                 rb_gc_mark_vm_stack_values((long)tr->registered_marks_cnt,
                                            tr->registered_marks);
+                MARK_CHECKPOINT("registered_addrs");
                 rb_gc_mark_registered_addrs(tr, false);
+                MARK_CHECKPOINT("ractor");
             }
             rb_native_mutex_unlock(&vm->gc.registered_addrs.lock);
         }
     }
     else {
-        rb_ractor_mark_local_roots(rb_ec_ractor_ptr(ec));
+        rb_ractor_t *cr = rb_ec_ractor_ptr(ec);
+        rb_ractor_mark_local_roots(cr);
+        MARK_CHECKPOINT("registered_addrs");
+        rb_gc_mark_registered_addrs(cr, true);
     }
 
     /* Trap handlers live in the VM-global vm->trap_list.cmd[], a fixed array of aligned
