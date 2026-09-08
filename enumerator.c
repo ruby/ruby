@@ -2196,6 +2196,9 @@ static const lazyenum_funcs lazy_select_funcs = {
  *     lazy.filter   { |obj| block } -> lazy_enumerator
  *
  *  Like Enumerable#select, but chains operation to be lazy-evaluated.
+ *
+ *     (1..Float::INFINITY).lazy.select {|i| i.even? }.first(3)
+ *     #=> [2, 4, 6]
  */
 static VALUE
 lazy_select(VALUE obj)
@@ -2252,6 +2255,9 @@ static const lazyenum_funcs lazy_reject_funcs = {
  *     lazy.reject { |obj| block } -> lazy_enumerator
  *
  *  Like Enumerable#reject, but chains operation to be lazy-evaluated.
+ *
+ *     (1..Float::INFINITY).lazy.reject {|i| i.even? }.first(3)
+ *     #=> [1, 3, 5]
  */
 
 static VALUE
@@ -2298,6 +2304,15 @@ static const lazyenum_funcs lazy_grep_funcs = {
  *     lazy.grep(pattern) { |obj| block }  -> lazy_enumerator
  *
  *  Like Enumerable#grep, but chains operation to be lazy-evaluated.
+ *
+ *     (1..Float::INFINITY).lazy.grep(3..8).first(3)
+ *     #=> [3, 4, 5]
+ *
+ *  With a block given, calls the block with each matching element and
+ *  chains the block's return values instead:
+ *
+ *     (1..Float::INFINITY).lazy.grep(3..8) {|i| i * 2 }.first(3)
+ *     #=> [6, 8, 10]
  */
 
 static VALUE
@@ -2345,6 +2360,15 @@ static const lazyenum_funcs lazy_grep_v_funcs = {
  *     lazy.grep_v(pattern) { |obj| block }  -> lazy_enumerator
  *
  *  Like Enumerable#grep_v, but chains operation to be lazy-evaluated.
+ *
+ *     (1..Float::INFINITY).lazy.grep_v(3..8).first(5)
+ *     #=> [1, 2, 9, 10, 11]
+ *
+ *  With a block given, calls the block with each non-matching element and
+ *  chains the block's return values instead:
+ *
+ *     (1..Float::INFINITY).lazy.grep_v(3..8) {|i| i * 2 }.first(5)
+ *     #=> [2, 4, 18, 20, 22]
  */
 
 static VALUE
