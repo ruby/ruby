@@ -1460,6 +1460,14 @@ ractor_check_received(rb_ractor_t *cr, struct ractor_queue *messages)
 
 // Returns false if the deadline `end` passed with nothing to deliver.  Incoming
 // messages are delivered even then, so the caller retries its queue once more.
+// A wait can end on a wakeup meant for another port, so the caller keeps the
+// deadline: a stream of them must not hold a timed receive past its time.
+static bool
+ractor_deadline_passed_p(const rb_hrtime_t *end)
+{
+    return end != NULL && rb_hrtime_now() >= *end;
+}
+
 static bool
 ractor_wait_receive(rb_execution_context_t *ec, rb_ractor_t *cr, const rb_hrtime_t *end)
 {
@@ -1543,6 +1551,11 @@ ractor_receive(rb_execution_context_t *ec, const struct ractor_port *rp, const r
         }
         else if (!ractor_wait_receive(ec, cr, end)) {
             return Qundef;
+        }
+        else if (ractor_deadline_passed_p(end)) {
+            // The wait ended on a wakeup meant for another port, which says
+            // nothing about the clock.  One more look, then the deadline stands.
+            return ractor_try_receive(ec, cr, rp);
         }
     }
 }
@@ -1850,6 +1863,10 @@ ractor_selector__wait(rb_execution_context_t *ec, VALUE selector, const rb_hrtim
         }
         else if (!ractor_wait_receive(ec, cr, end)) {
             return Qnil;
+        }
+        else if (ractor_deadline_passed_p(end)) {
+            st_foreach(s->ports, ractor_selector_wait_i, (st_data_t)&data);
+            return data.found ? rb_ary_new_from_args(2, data.rpv, data.v) : Qnil;
         }
     }
 }
