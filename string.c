@@ -11128,6 +11128,8 @@ smart_chomp(VALUE str, const char *e, const char *p)
 {
     rb_encoding *enc = rb_enc_get(str);
     if (rb_enc_mbminlen(enc) > 1) {
+        /* a receiver shorter than one character has nothing to chomp */
+        if (e - p < rb_enc_mbminlen(enc)) return e - p;
         const char *pp = rb_enc_left_char_head(p, e-rb_enc_mbminlen(enc), e, enc);
         if (rb_enc_is_newline(pp, e, enc)) {
             e = pp;
@@ -11175,7 +11177,7 @@ chompped_length(VALUE str, VALUE rs)
     RSTRING_GETMEM(rs, rsptr, rslen);
     if (rslen == 0) {
         if (rb_enc_mbminlen(enc) > 1) {
-            while (e > p) {
+            while (e - p >= rb_enc_mbminlen(enc)) {
                 pp = rb_enc_left_char_head(p, e-rb_enc_mbminlen(enc), e, enc);
                 if (!rb_enc_is_newline(pp, e, enc)) break;
                 e = pp;
