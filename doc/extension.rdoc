@@ -2369,7 +2369,7 @@ To make a "Ractor-safe" C extension, we need to check the following points:
 
 == Appendix G. Embedded TypedData
 
-Here is an example of how to use +RUBY_TYPED_EMBEDDABLE+::
+Here is an example of how to use +RUBY_TYPED_EMBEDDABLE+:
 
   struct my_data {
       struct timespec created_at;
