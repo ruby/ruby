@@ -324,8 +324,8 @@ module JSON
   #   parse(File.read(path), **)
   #
   # See method #parse.
-  def load_file(filespec, ...)
-    parse(File.read(filespec, encoding: Encoding::UTF_8), ...)
+  def load_file(filespec, **options)
+    parse(File.read(filespec, encoding: Encoding::UTF_8), **options)
   end
 
   # :call-seq:
@@ -335,8 +335,8 @@ module JSON
   #   JSON.parse!(File.read(path), **)
   #
   # See method #parse!
-  def load_file!(filespec, ...)
-    parse!(File.read(filespec, encoding: Encoding::UTF_8), ...)
+  def load_file!(filespec, **options)
+    parse!(File.read(filespec, encoding: Encoding::UTF_8), **options)
   end
 
   # :call-seq:

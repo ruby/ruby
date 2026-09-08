@@ -771,7 +771,7 @@ class JSONParserTest < Test::Unit::TestCase
       @attrs[k.to_sym] = v
     end
 
-    def method_missing(name, ...)
+    def method_missing(name, *)
       @attrs.fetch(name) do
         super
       end
