@@ -143,11 +143,11 @@ module JSON
   # This exception is raised if a parser error occurs.
   class ParserError < JSONError
     # Line number where the parser encountered an error.
-    # Is <tt>nil</tt> when raised by JSON::ResumableParser.
+    # Is +nil+ when raised by JSON::ResumableParser.
     attr_reader :line
 
     # Column number where the parser encountered an error.
-    # Is <tt>nil</tt> when raised by JSON::ResumableParser.
+    # Is +nil+ when raised by JSON::ResumableParser.
     attr_reader :column
 
     # Returns a best effort JSONPath string representing where in the document
@@ -290,7 +290,7 @@ module JSON
   # ---
   #
   # Raises an exception if +source+ is not valid JSON:
-  #   # Raises JSON::ParserError unexpected character: 'invalid' at line 1 column 1 :
+  #   # Raises JSON::ParserError (unexpected character: 'invalid' at line 1 column 1):
   #   JSON.parse('invalid')
   #
   def parse(source, on_load: nil, object_class: nil, array_class: nil, **options)
@@ -372,7 +372,7 @@ module JSON
   #
   # Raises an exception if +obj+ contains circular references:
   #   a = []; b = []; a.push(b); b.push(a)
-  #   # Raises JSON::NestingError (nesting of 100 is too deep):
+  #   # Raises JSON::NestingError (nesting of 100 is too deep. Did you try to serialize objects with circular references?):
   #   JSON.generate(a)
   #
   def generate(obj, opts = nil)
