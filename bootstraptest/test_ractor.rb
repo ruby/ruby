@@ -3243,3 +3243,17 @@ assert_equal '[:closed, :closed]', %q{
 
   [untimed_result, th2.value]
 }
+
+# last_cwd is set on init in the main Ractor, but Dir.pwd attempts to store into
+# it. When this is done on a child Ractor we violate the invariant that the
+# owning and registering Ractor must be the same. On a normal build the
+# use-after-free is invisible, because we only zero out the flags, so the chache
+# check compares the slot bytes as usual and just thinks it's a cache miss.
+#
+# This test exists becaise it will hit a use-after-poison on ASAN builds
+assert_equal 'ok', %q{
+  Dir.chdir("..")
+  Ractor.new { Dir.pwd; 500_000.times { "y" * 300 } }.join
+  Dir.pwd
+  'ok'
+}
