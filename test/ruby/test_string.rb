@@ -476,6 +476,19 @@ CODE
     assert_equal("foo", s.chomp("\n"))
     s = "foo\r"
     assert_equal("foo", s.chomp("\n"))
+
+    # capacity forces a heap buffer, so a read before the receiver leaves it
+    WIDE_ENCODINGS.each do |enc|
+      ["A", "AB", "ABC"].each do |bytes|
+        s = S(capacity: 4096)
+        s << bytes
+        s.force_encoding(enc)
+        label = "#{enc.name} #{bytes.bytesize}"
+        assert_equal(bytes.b, s.chomp.b, label)
+        assert_equal(bytes.b, s.chomp("").b, label)
+        assert_nil(s.chomp!, label)
+      end
+    end
   ensure
     $/ = save
     $VERBOSE = verbose
