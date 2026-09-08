@@ -2875,7 +2875,7 @@ fn jit_chain_guard(
     jcc: JCCKinds,
     jit: &mut JITState,
     asm: &mut Assembler,
-    depth_limit: u8,
+    depth_limit: u16,
     counter: Counter,
 ) {
     let target0_gen_fn = match jcc {
@@ -2902,22 +2902,22 @@ fn jit_chain_guard(
 }
 
 // up to 8 different shapes for each
-pub const GET_IVAR_MAX_DEPTH: u8 = 8;
+pub const GET_IVAR_MAX_DEPTH: u16 = 8;
 
 // up to 8 different shapes for each
-pub const SET_IVAR_MAX_DEPTH: u8 = 8;
+pub const SET_IVAR_MAX_DEPTH: u16 = 8;
 
 // hashes and arrays
-pub const OPT_AREF_MAX_CHAIN_DEPTH: u8 = 2;
+pub const OPT_AREF_MAX_CHAIN_DEPTH: u16 = 2;
 
 // expandarray
-pub const EXPANDARRAY_MAX_CHAIN_DEPTH: u8 = 4;
+pub const EXPANDARRAY_MAX_CHAIN_DEPTH: u16 = 4;
 
 // up to 5 different methods for send
-pub const SEND_MAX_DEPTH: u8 = 5;
+pub const SEND_MAX_DEPTH: u16 = 5;
 
-// up to 20 different offsets for case-when
-pub const CASE_WHEN_MAX_DEPTH: u8 = 20;
+// Specialize every value of a byte-sized case expression
+pub const CASE_WHEN_MAX_DEPTH: u16 = 256;
 
 pub const MAX_SPLAT_LENGTH: i32 = 127;
 
@@ -2928,7 +2928,7 @@ pub const MAX_SPLAT_LENGTH: i32 = 127;
 fn gen_get_ivar(
     jit: &mut JITState,
     asm: &mut Assembler,
-    max_chain_depth: u8,
+    max_chain_depth: u16,
     comptime_receiver: VALUE,
     ivar_name: ID,
     recv: Opnd,
@@ -4982,7 +4982,7 @@ fn jit_guard_known_klass(
     obj_opnd: Opnd,
     insn_opnd: YARVOpnd,
     sample_instance: VALUE,
-    max_chain_depth: u8,
+    max_chain_depth: u16,
     counter: Counter,
 ) {
     let known_klass = sample_instance.class_of();
@@ -7031,7 +7031,7 @@ fn gen_send_cfunc(
     if variable_splat {
         let splat_array_idx = i32::from(kw_splat) + i32::from(block_arg);
         let comptime_splat_array = jit.peek_at_stack(&asm.ctx, splat_array_idx as isize);
-        if unsafe { rb_yjit_ruby2_keywords_splat_p(comptime_splat_array) } != 0 {
+        if unsafe { rb_jit_ruby2_keywords_splat_p(comptime_splat_array) } != 0 {
             gen_counter_incr(jit, asm, Counter::send_cfunc_splat_varg_ruby2_keywords);
             return None;
         }
@@ -7450,9 +7450,9 @@ fn gen_send_bmethod(
     let procv = unsafe { rb_get_def_bmethod_proc((*cme).def) };
 
     let proc = unsafe { rb_jit_get_proc_ptr(procv) };
-    let proc_block = unsafe { &(*proc).block };
+    let proc_block = unsafe { (*proc).block.as_ref() };
 
-    if proc_block.type_ != block_type_iseq {
+    if proc_block.type_() != block_type_iseq {
         return None;
     }
 
@@ -7932,7 +7932,7 @@ fn gen_send_iseq(
         // All splats need to guard for ruby2_keywords hash. Check with a function call when
         // splatting into a rest param since the index for the last item in the array is dynamic.
         asm_comment!(asm, "guard no ruby2_keywords hash in splat");
-        let bad_splat = asm.ccall(rb_yjit_ruby2_keywords_splat_p as _, vec![asm.stack_opnd(splat_pos)]);
+        let bad_splat = asm.ccall(rb_jit_ruby2_keywords_splat_p as _, vec![asm.stack_opnd(splat_pos)]);
         asm.cmp(bad_splat, 0.into());
         asm.jnz(Target::side_exit(Counter::guard_send_splatarray_last_ruby2_keywords));
     }

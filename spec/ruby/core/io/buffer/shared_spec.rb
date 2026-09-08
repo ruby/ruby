@@ -7,7 +7,7 @@ describe "IO::Buffer#shared?" do
   end
 
   it "is true for a buffer created with SHARED flag" do
-    @buffer = IO::Buffer.new(12, IO::Buffer::INTERNAL | IO::Buffer::SHARED)
+    @buffer = IO::Buffer.new(12, IO::Buffer::MAPPED | IO::Buffer::SHARED)
     @buffer.shared?.should == true
   end
 

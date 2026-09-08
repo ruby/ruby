@@ -237,7 +237,7 @@ define rp
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_IMEMO
     printf "%sT_IMEMO%s(", $color_type, $color_end
-    output (enum imemo_type)(($flags>>RUBY_FL_USHIFT)&RUBY_IMEMO_MASK)
+    output (enum imemo_type)(($flags&RUBY_IMEMO_MASK)>>RUBY_FL_USHIFT)
     printf "): "
     rp_imemo $arg0
   else
@@ -539,7 +539,7 @@ document rp_class
 end
 
 define rp_imemo
-  set $flags = (enum imemo_type)((((struct RBasic *)($arg0))->flags >> RUBY_FL_USHIFT) & RUBY_IMEMO_MASK)
+  set $flags = (enum imemo_type)((((struct RBasic *)($arg0))->flags & RUBY_IMEMO_MASK) >> RUBY_FL_USHIFT)
   if $flags == imemo_cref
     printf "(rb_cref_t *) %p\n", (void*)$arg0
     print *(rb_cref_t *)$arg0
@@ -983,49 +983,35 @@ define print_lineno
   set $index = 0
   set $size = $iseq->body->insns_info.size
   set $table = $iseq->body->insns_info.body
-  set $positions = $iseq->body->insns_info.positions
   #printf "size: %d\n", $size
   if $size == 0
   else
   if $size == 1
     printf "%d", $table[0].line_no
   else
-    if $positions
-      # get_insn_info_linear_search
-      set $index = 1
-      while $index < $size
-        #printf "table[%d]: position: %d, line: %d, pos: %d\n", $i, $positions[$i], $table[$i].line_no, $pos
-        if $positions[$index] > $pos
-          loop_break
-        end
-        set $index = $index + 1
-        if $positions[$index] == $pos
-          loop_break
-        end
-      end
+    # get_insn_info_succinct_bitvector (VM_INSN_INFO_TABLE_IMPL == 2).
+    # insns_info.positions and insns_info.succ_index_table share a union, and
+    # an iseq running on the stack always has succ_index_table.
+    set $sd = $iseq->body->insns_info.positions_or_succ_index_table.succ_index_table
+    set $immediate_table_size = sizeof($sd->imm_part) / sizeof(uint64_t) * 9
+    if $pos < $immediate_table_size
+      set $i = $pos / 9
+      set $j = $pos % 9
+      set $index = ((int)($sd->imm_part[$i] >> ($j * 7))) & 0x7f
     else
-      # get_insn_info_succinct_bitvector
-      set $sd = $iseq->body->insns_info.succ_index_table
-      set $immediate_table_size = sizeof($sd->imm_part) / sizeof(uint64_t) * 9
-      if $pos < $immediate_table_size
-        set $i = $pos / 9
-        set $j = $pos % 9
-        set $index = ((int)($sd->imm_part[$i] >> ($j * 7))) & 0x7f
-      else
-        set $block_index = ($pos - $immediate_table_size) / 512
-        set $block = &$sd->succ_part[$block_index]
-        set $block_bit_index = ($pos - $immediate_table_size) % 512
-        set $small_block_index = $block_bit_index / 64
-        set $small_block_popcount = $small_block_index == 0 ? 0 : (((int)($block->small_block_ranks >> (($small_block_index - 1) * 9))) & 0x1ff)
-        set $x = $block->bits[$small_block_index] << (63 - $block_bit_index % 64)
-        set $x = ($x & 0x5555555555555555) + ($x >> 1 & 0x5555555555555555)
-        set $x = ($x & 0x3333333333333333) + ($x >> 2 & 0x3333333333333333)
-        set $x = ($x & 0x0707070707070707) + ($x >> 4 & 0x0707070707070707)
-        set $x = ($x & 0x001f001f001f001f) + ($x >> 8 & 0x001f001f001f001f)
-        set $x = ($x & 0x0000003f0000003f) + ($x >>16 & 0x0000003f0000003f)
-        set $popcnt = ($x & 0x7f) + ($x >>32 & 0x7f)
-        set $index = $block->rank + $small_block_popcount + $popcnt
-      end
+      set $block_index = ($pos - $immediate_table_size) / 512
+      set $block = &$sd->succ_part[$block_index]
+      set $block_bit_index = ($pos - $immediate_table_size) % 512
+      set $small_block_index = $block_bit_index / 64
+      set $small_block_popcount = $small_block_index == 0 ? 0 : (((int)($block->small_block_ranks >> (($small_block_index - 1) * 9))) & 0x1ff)
+      set $x = $block->bits[$small_block_index] << (63 - $block_bit_index % 64)
+      set $x = ($x & 0x5555555555555555) + ($x >> 1 & 0x5555555555555555)
+      set $x = ($x & 0x3333333333333333) + ($x >> 2 & 0x3333333333333333)
+      set $x = ($x & 0x0707070707070707) + ($x >> 4 & 0x0707070707070707)
+      set $x = ($x & 0x001f001f001f001f) + ($x >> 8 & 0x001f001f001f001f)
+      set $x = ($x & 0x0000003f0000003f) + ($x >>16 & 0x0000003f0000003f)
+      set $popcnt = ($x & 0x7f) + ($x >>32 & 0x7f)
+      set $index = $block->rank + $small_block_popcount + $popcnt
     end
     printf "%d", $table[$index-1].line_no
   end
@@ -1114,7 +1100,7 @@ define rb_ps_thread
   while $cfp < $cfpend
     if $cfp->_iseq
       set $iseq = rb_get_cfp_iseq($cfp)
-      if !((VALUE)$iseq & RUBY_IMMEDIATE_MASK) && (((imemo_ifunc << RUBY_FL_USHIFT) | RUBY_T_IMEMO)==$iseq->flags & ((RUBY_IMEMO_MASK << RUBY_FL_USHIFT) | RUBY_T_MASK))
+      if !((VALUE)$iseq & RUBY_IMMEDIATE_MASK) && (((imemo_ifunc << RUBY_FL_USHIFT) | RUBY_T_IMEMO)==$iseq->flags & (RUBY_IMEMO_MASK | RUBY_T_MASK))
         printf "%d:ifunc ", $cfpend-$cfp
         set print symbol-filename on
         output/a $iseq.body

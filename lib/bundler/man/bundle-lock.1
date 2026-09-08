@@ -61,7 +61,7 @@ If updating, do not allow any gem to be updated past latest \-\-patch | \-\-mino
 If updating, use bundle install conservative update behavior and do not allow shared dependencies to be updated\.
 .TP
 \fB\-\-cooldown=<number>\fR
-Only consider gem versions published at least \fInumber\fR days ago when resolving\. Pass \fB0\fR to disable cooldown for this run, overriding any per\-source or global configuration\. See \fBcooldown\fR in bundle\-config(1)\.
+Only consider gem versions published at least \fInumber\fR days ago when resolving\. Pass \fB0\fR to disable cooldown for this run, overriding every other cooldown setting, RubyGems' own included\. See \fBcooldown\fR in bundle\-config(1)\.
 .SH "UPDATING ALL GEMS"
 If you run \fBbundle lock\fR with \fB\-\-update\fR option without list of gems, bundler will ignore any previously installed gems and resolve all dependencies again based on the latest versions of all gems available in the sources\.
 .SH "UPDATING A LIST OF GEMS"

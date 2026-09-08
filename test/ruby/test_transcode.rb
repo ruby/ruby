@@ -1195,11 +1195,31 @@ class TestTranscode < Test::Unit::TestCase
     assert_invalid_in(%w/fffeb7df/.pack("H*"), "UTF-16")
   end
 
+  def test_utf_16_bom_partial_output
+    ec = Encoding::Converter.new("UTF-8", "UTF-16")
+    src = "\u{1F600}"
+    dst = "\0" * 64
+    assert_equal(:destination_buffer_full, ec.primitive_convert(src, dst, 0, 4))
+    assert_equal(4, dst.bytesize)
+    assert_equal(:finished, ec.primitive_convert(src, dst, 4, 4))
+    assert_equal("\xFE\xFF\xD8\x3D\xDE\x00", dst.b)
+  end
+
   def test_utf_32_bom
     expected = "\u{3042}\u{3044}\u{20bb7}"
     assert_equal(expected, %w/fffe00004230000044300000b70b0200/.pack("H*").encode("UTF-8","UTF-32"))
     check_both_ways(expected, %w/0000feff000030420000304400020bb7/.pack("H*"), "UTF-32")
     assert_invalid_in(%w/0000feff00110000/.pack("H*"), "UTF-32")
+  end
+
+  def test_utf_32_bom_partial_output
+    ec = Encoding::Converter.new("UTF-8", "UTF-32")
+    src = "A"
+    dst = "\0" * 64
+    assert_equal(:destination_buffer_full, ec.primitive_convert(src, dst, 0, 4))
+    assert_equal(4, dst.bytesize)
+    assert_equal(:finished, ec.primitive_convert(src, dst, 4, 4))
+    assert_equal("\x00\x00\xFE\xFF\x00\x00\x00A", dst.b)
   end
 
   def check_utf_32_both_ways(utf8, raw)
@@ -1640,6 +1660,27 @@ class TestTranscode < Test::Unit::TestCase
                  encode("cp50220", "sjis"))
     assert_equal("\e$B\x21\x23\e(I\x7E\e(B".force_encoding("cp50220"),
                  "\x8E\xA1\x8E\xFE".encode("cp50220", "cp51932"))
+  end
+
+  def test_to_cp50220_partial_output
+    # A katakana held back for a possible sound mark is flushed with its own
+    # designation (5 bytes) before the designation and data of the character
+    # that ended the hold (4 bytes).
+    ec = Encoding::Converter.new("CP51932", "CP50220")
+    src = "\x8E\xB6\x8E\xE0"
+    dst = "\0" * 64
+    assert_equal(:destination_buffer_full, ec.primitive_convert(src, dst, 0, 8))
+    assert_equal(8, dst.bytesize)
+    assert_equal(:finished, ec.primitive_convert(src, dst, 8, 8))
+    assert_equal("\e$B\x25\x2B\e(I\x60\e(B", dst.b)
+
+    ec = Encoding::Converter.new("CP51932", "CP50220")
+    src = "\x8E\xB6"
+    dst = "\0" * 64
+    assert_equal(:destination_buffer_full, ec.primitive_convert(src, dst, 0, 5))
+    assert_equal(5, dst.bytesize)
+    assert_equal(:finished, ec.primitive_convert(src, dst, 5, 5))
+    assert_equal("\e$B\x25\x2B\e(B", dst.b)
   end
 
   def test_iso_2022_jp_1
@@ -2230,6 +2271,16 @@ class TestTranscode < Test::Unit::TestCase
   def test_fallback_proc
     fallback = proc {|x| "U+%.4X" % x.unpack("U")}
     assert_equal("U+3042", "\u{3042}".encode("US-ASCII", fallback: fallback))
+  end
+
+  def test_fallback_grow_insert_buffer
+    # A later fallback insertion larger than the first one's buffer grows it
+    # in rb_econv_insert_output; the sized realloc there passed a wrong old
+    # size (caught by RUBY_DEBUG builds).
+    n = 0
+    r = "\u{3042}\u{3044}\u{3046}".encode("US-ASCII",
+          fallback: proc {|x| n += 1; "Y" * (5000 * n)})
+    assert_equal(30000, r.bytesize)
   end
 
   def test_fallback_method

@@ -125,6 +125,29 @@ class TestGemRemoteFetcher < Gem::TestCase
     assert File.exist?(a1_cache_gem)
   end
 
+  def test_download_and_install_content_addressed_gem
+    require "digest"
+
+    ca_spec, ca_gem = util_gem "a", "1" do |s|
+      s.required_ruby_version = "~> 3.4.0"
+      s.platform = "x86_64-linux"
+    end
+
+    address = Digest::SHA256.file(ca_gem).hexdigest[0, 10]
+    ca_spec.content_address = address
+    gem_data = File.binread ca_gem
+    gem_url = "http://gems.example.com/gems/a-1-#{address}.gem"
+    fetcher = fake_fetcher(gem_url, gem_data)
+
+    gem_path = fetcher.download(ca_spec, "http://gems.example.com")
+    installed_spec = Gem::Installer.at(gem_path, install_dir: @gemhome, force: true).install
+
+    assert_equal gem_url, fetcher.paths.last
+    assert_equal address, installed_spec.content_address
+    assert_equal "a-1-#{address}", installed_spec.full_name
+    assert_path_exist installed_spec.full_gem_path
+  end
+
   def test_download_with_auth
     a1_data = File.open @a1_gem, "rb", &:read
     a1_url = "http://user:password@gems.example.com/gems/a-1.gem"
@@ -271,6 +294,49 @@ class TestGemRemoteFetcher < Gem::TestCase
       FileUtils.chmod 0o755, @gemhome
       FileUtils.chmod 0o755, @a1.cache_dir
     end
+  end
+
+  def test_download_content_addressed_gem_does_not_fall_back_to_platform_name
+    ca_spec, = util_gem "a", "1" do |s|
+      s.required_ruby_version = "~> 3.4.0"
+      s.platform = "x86_64-linux"
+    end
+    ca_spec.content_address = "abcdef12"
+
+    fetcher = Gem::RemoteFetcher.fetcher
+    def fetcher.fetch_path(uri, *rest)
+      @tried_uris ||= []
+      @tried_uris << uri.to_s
+      raise Gem::RemoteFetcher::FetchError.new("not found", uri)
+    end
+
+    assert_raise Gem::RemoteFetcher::FetchError do
+      fetcher.download(ca_spec, "http://gems.example.com")
+    end
+
+    tried_uris = fetcher.instance_variable_get(:@tried_uris)
+    assert_equal ["http://gems.example.com/gems/a-1-abcdef12.gem"], tried_uris
+    assert_path_not_exist ca_spec.cache_file
+  end
+
+  def test_download_does_not_retry_identical_alternate_name
+    a1_spec, = util_gem "a", "1" do |s|
+      s.platform = "x86_64-linux"
+    end
+
+    fetcher = Gem::RemoteFetcher.fetcher
+    def fetcher.fetch_path(uri, *rest)
+      @tried_uris ||= []
+      @tried_uris << uri.to_s
+      raise Gem::RemoteFetcher::FetchError.new("not found", uri)
+    end
+
+    assert_raise Gem::RemoteFetcher::FetchError do
+      fetcher.download(a1_spec, "http://gems.example.com")
+    end
+
+    tried_uris = fetcher.instance_variable_get(:@tried_uris)
+    assert_equal ["http://gems.example.com/gems/a-1-x86_64-linux.gem"], tried_uris
   end
 
   def test_download_platform_legacy
@@ -640,6 +706,234 @@ class TestGemRemoteFetcher < Gem::TestCase
       # Verify gem was NOT copied to global cache
       global_cache_gem = File.join(test_cache_dir, @a1.file_name)
       refute File.exist?(global_cache_gem), "Gem should not be copied to global cache when disabled"
+    end
+  end
+
+  def test_download_with_global_gem_cache_fetches_to_current_directory
+    test_cache_dir = File.join(@tempdir, "global_gem_cache_test")
+
+    Gem.stub :global_gem_cache_path, test_cache_dir do
+      Gem.configuration.global_gem_cache = true
+
+      fetcher = Gem::RemoteFetcher.fetcher
+      def fetcher.fetch_path(uri, *rest)
+        File.binread File.join(@test_gem_dir, "a-1.gem")
+      end
+      fetcher.instance_variable_set(:@test_gem_dir, File.dirname(@a1_gem))
+
+      fetch_dir = File.join @tempdir, "fetch_dir"
+      FileUtils.mkdir_p fetch_dir
+
+      # gem fetch downloads into the current directory, see fetch_command
+      fetched_gem = Dir.chdir fetch_dir do
+        fetcher.download(@a1, "http://gems.example.com", fetch_dir)
+      end
+
+      assert_equal File.join(fetch_dir, @a1.file_name), fetched_gem
+      assert File.exist?(fetched_gem)
+      refute File.exist?(test_cache_dir),
+             "gem fetch output should not be diverted to the global cache"
+    end
+  ensure
+    Gem.configuration.global_gem_cache = false
+  end
+
+  def test_download_local_takes_the_source_permissions_through_the_umask
+    omit "File.chmod doesn't work on Windows" if Gem.win_platform?
+    omit "doesn't work if tempdir has +" if @tempdir.include?("+")
+
+    FileUtils.mv @a1_gem, @tempdir
+    local_path = File.join @tempdir, @a1.file_name
+    FileUtils.chmod 0o666, local_path
+    inst = nil
+
+    Dir.chdir @tempdir do
+      inst = Gem::RemoteFetcher.fetcher
+    end
+
+    assert_equal @a1.cache_file, inst.download(@a1, local_path)
+    assert_equal 0o666 & ~File.umask, File.stat(@a1.cache_file).mode & 0o777
+  end
+
+  def test_download_local_keeps_a_restrictive_source_permission
+    omit "File.chmod doesn't work on Windows" if Gem.win_platform?
+    omit "doesn't work if tempdir has +" if @tempdir.include?("+")
+
+    FileUtils.mv @a1_gem, @tempdir
+    local_path = File.join @tempdir, @a1.file_name
+    FileUtils.chmod 0o600, local_path
+    inst = nil
+
+    Dir.chdir @tempdir do
+      inst = Gem::RemoteFetcher.fetcher
+    end
+
+    # a mode the writer would not produce on its own, so dropping the chmod
+    # would show up here
+    assert_equal @a1.cache_file, inst.download(@a1, local_path)
+    assert_equal 0o600, File.stat(@a1.cache_file).mode & 0o777
+  end
+
+  def test_download_local_keeps_the_replaced_cache_file_permissions
+    omit "File.chmod doesn't work on Windows" if Gem.win_platform?
+    omit "doesn't work if tempdir has +" if @tempdir.include?("+")
+
+    FileUtils.mv @a1_gem, @tempdir
+    local_path = File.join @tempdir, @a1.file_name
+    FileUtils.chmod 0o666, local_path
+    inst = nil
+
+    FileUtils.mkdir_p File.dirname(@a1.cache_file)
+    FileUtils.touch @a1.cache_file
+    FileUtils.chmod 0o640, @a1.cache_file
+
+    Dir.chdir @tempdir do
+      inst = Gem::RemoteFetcher.fetcher
+    end
+
+    assert_equal @a1.cache_file, inst.download(@a1, local_path)
+    assert_equal 0o640, File.stat(@a1.cache_file).mode & 0o777
+  end
+
+  def test_download_to_current_directory_reached_through_a_symlink
+    omit "symlinks are not usable on Windows" if Gem.win_platform?
+
+    fetch_dir = File.join @tempdir, "fetch_dir"
+    FileUtils.mkdir_p fetch_dir
+    linked_dir = File.join @tempdir, "linked_dir"
+    File.symlink fetch_dir, linked_dir
+
+    fetcher = Gem::RemoteFetcher.fetcher
+    def fetcher.fetch_path(uri, *rest)
+      File.binread File.join(@test_gem_dir, "a-1.gem")
+    end
+    fetcher.instance_variable_set(:@test_gem_dir, File.dirname(@a1_gem))
+
+    # gem fetch passes the working directory as install_dir, and the two can
+    # name the same directory through different paths
+    fetched_gem = Dir.chdir fetch_dir do
+      fetcher.download(@a1, "http://gems.example.com", linked_dir)
+    end
+
+    assert_equal File.join(linked_dir, @a1.file_name), fetched_gem
+    assert File.exist?(fetched_gem)
+  end
+
+  def test_download_local_with_global_gem_cache
+    omit "doesn't work if tempdir has +" if @tempdir.include?("+")
+    test_cache_dir = File.join(@tempdir, "global_gem_cache_test")
+
+    Gem.stub :global_gem_cache_path, test_cache_dir do
+      Gem.configuration.global_gem_cache = true
+
+      FileUtils.mv @a1_gem, @tempdir
+      local_path = File.join @tempdir, @a1.file_name
+      inst = nil
+
+      Dir.chdir @tempdir do
+        inst = Gem::RemoteFetcher.fetcher
+      end
+
+      assert_equal @a1.cache_file, inst.download(@a1, local_path)
+      refute File.exist?(test_cache_dir),
+             "local gems should not be copied to the global cache"
+    end
+  ensure
+    Gem.configuration.global_gem_cache = false
+  end
+
+  def test_download_file_scheme_with_global_gem_cache
+    test_cache_dir = File.join(@tempdir, "global_gem_cache_test")
+
+    Gem.stub :global_gem_cache_path, test_cache_dir do
+      Gem.configuration.global_gem_cache = true
+
+      repo_dir = File.join @tempdir, "repo"
+      FileUtils.mkdir_p File.join(repo_dir, "gems")
+      FileUtils.cp @a1_gem, File.join(repo_dir, "gems", @a1.file_name)
+
+      uri_path = repo_dir.start_with?("/") ? repo_dir : "/#{repo_dir}"
+      inst = Gem::RemoteFetcher.fetcher
+
+      assert_equal @a1.cache_file, inst.download(@a1, "file://#{uri_path}")
+      assert File.exist?(@a1.cache_file)
+      refute File.exist?(test_cache_dir),
+             "local gems should not be copied to the global cache"
+    end
+  ensure
+    Gem.configuration.global_gem_cache = false
+  end
+
+  unless Gem.win_platform? || Process.uid.zero? # File.chmod doesn't work
+    def test_download_with_global_gem_cache_not_writable
+      test_cache_dir = File.join(@tempdir, "global_gem_cache_test")
+      FileUtils.mkdir_p test_cache_dir
+      FileUtils.chmod 0o555, test_cache_dir
+
+      Gem.stub :global_gem_cache_path, test_cache_dir do
+        Gem.configuration.global_gem_cache = true
+
+        fetcher = Gem::RemoteFetcher.fetcher
+        def fetcher.fetch_path(uri, *rest)
+          File.binread File.join(@test_gem_dir, "a-1.gem")
+        end
+        fetcher.instance_variable_set(:@test_gem_dir, File.dirname(@a1_gem))
+
+        a1_cache_gem = @a1.cache_file
+        assert_equal a1_cache_gem, fetcher.download(@a1, "http://gems.example.com")
+        assert File.exist?(a1_cache_gem)
+        assert_empty Dir.children(test_cache_dir)
+      end
+    ensure
+      FileUtils.chmod 0o755, test_cache_dir if File.exist?(test_cache_dir)
+      Gem.configuration.global_gem_cache = false
+    end
+
+    def test_download_with_global_gem_cache_not_creatable
+      parent_dir = File.join(@tempdir, "global_gem_cache_parent")
+      FileUtils.mkdir_p parent_dir
+      FileUtils.chmod 0o555, parent_dir
+      test_cache_dir = File.join(parent_dir, "gems")
+
+      Gem.stub :global_gem_cache_path, test_cache_dir do
+        Gem.configuration.global_gem_cache = true
+
+        fetcher = Gem::RemoteFetcher.fetcher
+        def fetcher.fetch_path(uri, *rest)
+          File.binread File.join(@test_gem_dir, "a-1.gem")
+        end
+        fetcher.instance_variable_set(:@test_gem_dir, File.dirname(@a1_gem))
+
+        a1_cache_gem = @a1.cache_file
+        assert_equal a1_cache_gem, fetcher.download(@a1, "http://gems.example.com")
+        assert File.exist?(a1_cache_gem)
+        refute File.exist?(test_cache_dir)
+      end
+    ensure
+      FileUtils.chmod 0o755, parent_dir if File.exist?(parent_dir)
+      Gem.configuration.global_gem_cache = false
+    end
+
+    def test_download_local_replaces_read_only_cache_file
+      omit "doesn't work if tempdir has +" if @tempdir.include?("+")
+      FileUtils.mv @a1_gem, @tempdir
+      local_path = File.join @tempdir, @a1.file_name
+      inst = nil
+
+      FileUtils.mkdir_p File.dirname(@a1.cache_file)
+      FileUtils.touch @a1.cache_file
+      FileUtils.chmod 0o444, @a1.cache_file
+
+      Dir.chdir @tempdir do
+        inst = Gem::RemoteFetcher.fetcher
+      end
+
+      # the atomic replacement of the cache copy must not depend on the
+      # permissions of the previous file
+      assert_equal @a1.cache_file, inst.download(@a1, local_path)
+      assert_equal File.binread(local_path), File.binread(@a1.cache_file)
+    ensure
+      FileUtils.chmod 0o644, @a1.cache_file if File.exist?(@a1.cache_file)
     end
   end
 

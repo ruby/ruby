@@ -59,6 +59,7 @@ jobs:
       CPPFLAGS: '-D_FORTIFY_SOURCE=2 -D__USE_MINGW_ANSI_STDIO=1 -DFD_SETSIZE=2048'
       LDFLAGS: '-pipe'
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
+      NoDefaultCurrentDirectoryInExePath: 1
 
     strategy:
       matrix:

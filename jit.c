@@ -562,6 +562,19 @@ rb_jit_array_len(VALUE a)
     return rb_array_len(a);
 }
 
+// Return non-zero when `obj` is an array and its last item is a
+// `ruby2_keywords` hash. The JITs don't support this kind of splat.
+size_t
+rb_jit_ruby2_keywords_splat_p(VALUE obj)
+{
+    if (!RB_TYPE_P(obj, T_ARRAY)) return 0;
+    long len = RARRAY_LEN(obj);
+    if (len == 0) return 0;
+    VALUE last = RARRAY_AREF(obj, len - 1);
+    if (!RB_TYPE_P(last, T_HASH)) return 0;
+    return FL_TEST_RAW(last, RHASH_PASS_AS_KEYWORDS);
+}
+
 void
 rb_set_cfp_pc(struct rb_control_frame_struct *cfp, const VALUE *pc)
 {
@@ -609,6 +622,27 @@ void
 rb_jit_vm_unlock(unsigned int *recursive_lock_level, const char *file, int line)
 {
     rb_vm_lock_leave(recursive_lock_level, file, line);
+}
+
+void *
+rb_iseq_get_jit_payload(const rb_iseq_t *iseq)
+{
+    RUBY_ASSERT_ALWAYS(IMEMO_TYPE_P(iseq, imemo_iseq));
+    if (ISEQ_BODY(iseq)) {
+        return ISEQ_BODY(iseq)->jit_payload;
+    }
+    else {
+        return NULL;
+    }
+}
+
+void
+rb_iseq_set_jit_payload(const rb_iseq_t *iseq, void *payload)
+{
+    RUBY_ASSERT_ALWAYS(IMEMO_TYPE_P(iseq, imemo_iseq));
+    RUBY_ASSERT_ALWAYS(ISEQ_BODY(iseq));
+    RUBY_ASSERT_ALWAYS(NULL == ISEQ_BODY(iseq)->jit_payload);
+    ISEQ_BODY(iseq)->jit_payload = payload;
 }
 
 void
@@ -670,9 +704,9 @@ rb_jit_get_page_size(void)
 }
 
 #if defined(MAP_FIXED_NOREPLACE) && defined(_SC_PAGESIZE)
-// Align the current write position to a multiple of bytes
-static uint8_t *
-align_ptr(uint8_t *ptr, uint32_t multiple)
+// Round `ptr` up to the next multiple of `multiple` bytes. Shared with zjit.c.
+uint8_t *
+rb_jit_align_ptr(uint8_t *ptr, uint32_t multiple)
 {
     // Compute the pointer modulo the given alignment boundary
     uint32_t rem = ((uint32_t)(uintptr_t)ptr) % multiple;
@@ -702,7 +736,7 @@ rb_jit_reserve_addr_space(uint32_t mem_size)
         uint8_t *const cfunc_sample_addr = (void *)(uintptr_t)&rb_jit_reserve_addr_space;
         uint8_t *const probe_region_end = cfunc_sample_addr + INT32_MAX;
         // Align the requested address to page size
-        uint8_t *req_addr = align_ptr(cfunc_sample_addr, page_size);
+        uint8_t *req_addr = rb_jit_align_ptr(cfunc_sample_addr, page_size);
 
         // Probe for addresses close to this function using MAP_FIXED_NOREPLACE
         // to improve odds of being in range for 32-bit relative call instructions.

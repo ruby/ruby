@@ -69,12 +69,48 @@ class TestGemSecuritySigner < Gem::TestCase
     assert_equal PRIVATE_KEY.to_s, signer.key.to_s
   end
 
+  def test_initialize_key_path_ml_dsa_65
+    omit_unless_support_ml_dsa_key
+
+    key_file = ML_DSA_65_PRIVATE_KEY_FILE
+
+    signer = Gem::Security::Signer.new key_file, nil
+
+    assert_equal ML_DSA_65_PRIVATE_KEY.private_to_pem, signer.key.private_to_pem
+  end
+
+  def test_initialize_key_path_ml_dsa_65_without_ml_dsa_support
+    omit_if_support_ml_dsa_key
+
+    key_file = ML_DSA_65_PRIVATE_KEY_FILE
+
+    e = assert_raise Gem::Security::Exception do
+      Gem::Security::Signer.new key_file, nil
+    end
+
+    assert_match(
+      /^private key could not be loaded: .+ ML-DSA requires OpenSSL >= 3\.5/,
+      e.message
+    )
+  end
+
   def test_initialize_encrypted_key_path
     key_file = ENCRYPTED_PRIVATE_KEY_FILE
 
     signer = Gem::Security::Signer.new key_file, nil, PRIVATE_KEY_PASSPHRASE
 
     assert_equal ENCRYPTED_PRIVATE_KEY.to_s, signer.key.to_s
+  end
+
+  def test_initialize_encrypted_key_path_ml_dsa_65
+    omit_unless_support_ml_dsa_key
+
+    key_file = ML_DSA_65_ENCRYPTED_PRIVATE_KEY_FILE
+
+    signer = Gem::Security::Signer.new key_file, nil, PRIVATE_KEY_PASSPHRASE
+
+    assert_equal ML_DSA_65_ENCRYPTED_PRIVATE_KEY.private_to_pem,
+                 signer.key.private_to_pem
   end
 
   def test_extract_name
@@ -114,6 +150,16 @@ class TestGemSecuritySigner < Gem::TestCase
 
     digest = OpenSSL::Digest.new(Gem::Security::DIGEST_NAME)
     assert PRIVATE_KEY.verify(digest, signature, "hello")
+  end
+
+  def test_sign_ml_dsa_65
+    omit_unless_support_ml_dsa_key
+
+    signer = Gem::Security::Signer.new ML_DSA_65_PRIVATE_KEY, [ML_DSA_65_PUBLIC_CERT]
+
+    signature = signer.sign "hello"
+
+    assert ML_DSA_65_PRIVATE_KEY.verify(nil, signature, "hello")
   end
 
   def test_sign_expired

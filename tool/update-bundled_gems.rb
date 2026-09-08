@@ -5,7 +5,7 @@ BEGIN {
   # STDOUT is not usable in inplace edit mode
   output = $-i ? STDOUT : STDERR
   # Gems to skip auto-updating (e.g. when a new major version breaks CI)
-  pinned = %w[rbs]
+  pinned = %w[]
 }
 output = STDERR if ARGF.file == STDIN
 END {

@@ -39,6 +39,7 @@
 #include "internal/proc.h"
 #include "internal/re.h"
 #include "internal/sanitizers.h"
+#include "internal/simd.h"
 #include "internal/string.h"
 #include "internal/transcode.h"
 #include "probes.h"
@@ -1208,6 +1209,23 @@ VALUE
 rb_str_new_static(const char *ptr, long len)
 {
     return str_new_static(rb_cString, ptr, len, 0);
+}
+
+/* Take an xmalloc'd buffer as the String's body without copying it; the String owns it
+ * from here and frees it like any other heap string.  ptr must hold capa bytes plus the
+ * terminator for encindex, which is what a Ractor courier's string node carries. */
+VALUE
+rb_str_new_owned(char *ptr, long len, long capa, int encindex)
+{
+    RUBY_DTRACE_CREATE_HOOK(STRING, len);
+    VALUE str = str_alloc_heap(rb_cString);
+    RSTRING(str)->len = len;
+    RSTRING(str)->as.heap.ptr = ptr;
+    /* Freed by size (STR_HEAP_SIZE = capa + terminator), so capa must describe the
+     * allocation the caller made, not just the bytes in use. */
+    RSTRING(str)->as.heap.aux.capa = capa;
+    rb_enc_associate_index(str, encindex);
+    return str;
 }
 
 VALUE
@@ -4828,7 +4846,7 @@ str_rindex(VALUE str, VALUE sub, const char *s, rb_encoding *enc)
     c = *t & 0xff;
     searchlen = s - sbeg + 1;
 
-    if (memcmp(s, t, slen) == 0) {
+    if (s + slen <= e && memcmp(s, t, slen) == 0) {
         return s - sbeg;
     }
 
@@ -4840,7 +4858,7 @@ str_rindex(VALUE str, VALUE sub, const char *s, rb_encoding *enc)
             searchlen = adjusted - sbeg;
             continue;
         }
-        if (memcmp(hit, t, slen) == 0)
+        if (hit + slen <= e && memcmp(hit, t, slen) == 0)
             return hit - sbeg;
         searchlen = adjusted - sbeg;
     } while (searchlen > 0);
@@ -4865,16 +4883,20 @@ rb_str_rindex(VALUE str, VALUE sub, long pos)
 
     /* substring longer than string */
     if (len < slen) return -1;
+    /* character counts, so the byte tail can still be shorter than sub */
     if (len - pos < slen) pos = len - slen;
     if (len == 0) return pos;
 
     sbeg = RSTRING_PTR(str);
 
     if (pos == 0) {
-        if (memcmp(sbeg, RSTRING_PTR(sub), RSTRING_LEN(sub)) == 0)
+        if (RSTRING_LEN(sub) <= RSTRING_LEN(str) &&
+            memcmp(sbeg, RSTRING_PTR(sub), RSTRING_LEN(sub)) == 0) {
             return 0;
-        else
+        }
+        else {
             return -1;
+        }
     }
 
     s = str_nth(sbeg, RSTRING_END(str), pos, enc, singlebyte);
@@ -9141,11 +9163,10 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
                 SIZED_REALLOC_N(buf, unsigned char, max + termlen, old);
                 t = buf + offset;
             }
-            if (s != t) {
-                rb_enc_mbcput(c, t, enc);
-                if (may_modify && memcmp(s, t, tlen) != 0) {
-                    modify = 1;
-                }
+
+            rb_enc_mbcput(c, t, enc);
+            if (may_modify && memcmp(s, t, tlen) != 0) {
+                modify = 1;
             }
             CHECK_IF_ASCII(c);
             s += clen;
@@ -9170,10 +9191,445 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
     return Qnil;
 }
 
+struct tr_buffer {
+    unsigned char *buf;
+    unsigned char *ptr;
+    size_t capa;
+    size_t initial_capa;
+};
+
+static inline void
+tr_buffer_init(struct tr_buffer *buffer, size_t initial_capa)
+{
+    if (initial_capa < 32) {
+        initial_capa = 32;
+    }
+    *buffer = (struct tr_buffer){ .initial_capa = initial_capa };
+}
+
+static inline void
+tr_buffer_ensure_capa(struct tr_buffer *buffer, size_t extra_capa)
+{
+    size_t offset = buffer->ptr - buffer->buf;
+    size_t required_capa = offset + extra_capa;
+    if (UNLIKELY(buffer->capa < required_capa)) {
+        size_t new_capa = buffer->capa ? buffer->capa : buffer->initial_capa;
+        RUBY_ASSERT(new_capa >= 32); // Lower would cause infinite loop
+        while (new_capa < required_capa) {
+            new_capa = (size_t)(new_capa * 1.2);
+        }
+        SIZED_REALLOC_N(buffer->buf, unsigned char, new_capa, buffer->capa);
+        buffer->ptr = buffer->buf + offset;
+        buffer->capa = new_capa;
+    }
+}
+
+static inline void
+tr_buffer_append(struct tr_buffer *buffer, const unsigned char *ptr, size_t len)
+{
+    if (len) {
+        tr_buffer_ensure_capa(buffer, len);
+        memcpy(buffer->ptr, ptr, len);
+        buffer->ptr += len;
+    }
+}
+
+static inline void
+tr_buffer_append_str(struct tr_buffer *buffer, VALUE str)
+{
+    tr_buffer_append(buffer, (unsigned char *)RSTRING_PTR(str), RSTRING_LEN(str));
+}
+
+static inline void
+tr_buffer_mbcput(struct tr_buffer *buffer, int codepoint, rb_encoding *enc)
+{
+    tr_buffer_ensure_capa(buffer, 4);
+    buffer->ptr += rb_enc_mbcput(codepoint, buffer->ptr, enc);
+}
+
+static inline void
+tr_buffer_free(struct tr_buffer *buffer)
+{
+    if (buffer->buf) {
+        SIZED_FREE_N(buffer->buf, buffer->capa);
+    }
+}
+
+struct tr_pair {
+    VALUE search;
+    VALUE replace;
+};
+
+struct tr_trans_pairs_coerce_args {
+    struct tr_pair *pairs;
+    size_t index;
+    rb_encoding *enc;
+    int cr;
+};
+
+static int
+tr_trans_pairs_coerce_i(st_data_t key, st_data_t value, st_data_t _args)
+{
+    struct tr_trans_pairs_coerce_args *args = (struct tr_trans_pairs_coerce_args *)_args;
+    struct tr_pair *pair = &args->pairs[args->index];
+    args->index++;
+
+    VALUE search = (VALUE)key;
+    VALUE replace = (VALUE)value;
+    StringValue(search);
+    StringValue(replace);
+
+    if (RSTRING_LEN(search) != 1 && str_strlen(search, NULL) != 1) {
+        rb_raise(rb_eArgError, "keys must be of size 1"); // TODO: better error message
+    }
+
+    args->enc = rb_enc_check_multi_str(args->enc, &args->cr, search);
+    args->enc = rb_enc_check_multi_str(args->enc, &args->cr, replace);
+
+    pair->search = search;
+    pair->replace = replace;
+    return ST_CONTINUE;
+}
+
+#define TR_TRANS_PAIRS_SIMD_MAX_NEEDLES 16
+
+struct tr_trans_pairs_search {
+    const unsigned char *s;
+    const unsigned char *send;
+
+#ifdef HAVE_SIMD
+    unsigned char needles[TR_TRANS_PAIRS_SIMD_MAX_NEEDLES];
+    int needles_count;
+#ifdef HAVE_SIMD_NEON
+    uint64_t matches_bitmap;
+#endif
+#ifdef HAVE_SIMD_SSE2
+    int matches_bitmap;
+#endif
+#endif
+
+    VALUE trans_table[256];
+};
+
+static inline VALUE
+tr_trans_pairs_search_basic(struct tr_trans_pairs_search *search)
+{
+    while (search->s < search->send) {
+        VALUE repl = search->trans_table[*search->s];
+        if (UNLIKELY(repl)) {
+            return repl;
+        }
+
+        search->s++;
+    }
+
+    return 0;
+}
+
+#ifdef HAVE_SIMD_SSE2
+static inline bool
+tr_trans_pairs_next_match_sse2(struct tr_trans_pairs_search *search)
+{
+    size_t next_match_offset = ntz_int32(search->matches_bitmap);
+    search->matches_bitmap >>= (next_match_offset + 1);
+    search->s += next_match_offset;
+    if (search->s > search->send) {
+        search->s = search->send;
+        return false;
+    }
+    return true;
+}
+
+static inline VALUE
+tr_trans_pairs_search_sse2(struct tr_trans_pairs_search *search)
+{
+    RBIMPL_ASSERT_OR_ASSUME(search->needles_count > 0);
+    RBIMPL_ASSERT_OR_ASSUME(search->needles_count < TR_TRANS_PAIRS_SIMD_MAX_NEEDLES);
+
+    if (search->matches_bitmap) {
+        return tr_trans_pairs_next_match_sse2(search);
+    }
+
+    if ((size_t)(search->send - search->s) >= sizeof(__m128i)) {
+        int i;
+        __m128i masks[TR_TRANS_PAIRS_SIMD_MAX_NEEDLES];
+        for (i = 0; i < search->needles_count; i++) {
+            masks[i] = _mm_set1_epi8(search->needles[i]);
+        }
+
+        do {
+            const __m128i bytes = _mm_loadu_si128((__m128i const *)search->s);
+
+            __m128i matches[TR_TRANS_PAIRS_SIMD_MAX_NEEDLES];
+            for (i = 0; i < search->needles_count; i++) {
+                matches[i] = _mm_cmpeq_epi8(bytes, masks[i]);
+            }
+
+            for (i = i; i < search->needles_count; i++) {
+                matches[0] = _mm_or_si128(matches[0], matches[i]);
+            }
+
+            const int bitmap = _mm_movemask_epi8(matches[0]);
+
+            if (bitmap) {
+                search->matches_bitmap = bitmap;
+                return tr_trans_pairs_next_match_sse2(search);
+            }
+            search->s += sizeof(__m128i);
+        } while ((size_t)(search->send - search->s) >= sizeof(__m128i));
+    }
+    return tr_trans_pairs_search_basic(search);
+}
+
+#define tr_trans_pairs_search_impl tr_trans_pairs_search_sse2
+#endif
+
+#ifdef HAVE_SIMD_NEON
+static inline bool
+tr_trans_pairs_next_match_neon(struct tr_trans_pairs_search *search)
+{
+    size_t next_match_offset = ntz_int64(search->matches_bitmap) / 4;
+    search->matches_bitmap >>= (next_match_offset + 1) * 4;
+    search->s += next_match_offset;
+    if (search->s > search->send) {
+        search->s = search->send;
+        return false;
+    }
+    return true;
+}
+
+static inline VALUE
+tr_trans_pairs_search_neon(struct tr_trans_pairs_search *search)
+{
+    if (search->needles_count) {
+        RBIMPL_ASSERT_OR_ASSUME(search->needles_count > 0);
+        RBIMPL_ASSERT_OR_ASSUME(search->needles_count <= TR_TRANS_PAIRS_SIMD_MAX_NEEDLES);
+
+        if (search->matches_bitmap) {
+            return tr_trans_pairs_next_match_neon(search);
+        }
+
+        if ((size_t)(search->send - search->s) >= sizeof(uint8x16_t)) {
+            int i;
+            uint8x16_t masks[TR_TRANS_PAIRS_SIMD_MAX_NEEDLES];
+            for (i = 0; i < search->needles_count; i++) {
+                masks[i] = vdupq_n_u8(search->needles[i]);
+            }
+
+            do {
+                const uint8x16_t bytes = vld1q_u8(search->s);
+
+                uint8x16_t matches[TR_TRANS_PAIRS_SIMD_MAX_NEEDLES];
+                for (i = 0; i < search->needles_count; i++) {
+                    matches[i] = vceqq_u8(bytes, masks[i]);
+                }
+
+                for (i = i; i < search->needles_count; i++) {
+                    matches[0] = vorrq_u8(matches[0], matches[i]);
+                }
+
+                const uint8x8_t res = vshrn_n_u16(vreinterpretq_u16_u8(matches[0]), 4);
+                const uint64_t bitmap = vget_lane_u64(vreinterpret_u64_u8(res), 0) & 0x8888888888888888ull;
+
+                if (bitmap) {
+                    search->matches_bitmap = bitmap;
+                    return tr_trans_pairs_next_match_neon(search);
+                }
+                search->s += sizeof(uint8x16_t);
+            } while ((size_t)(search->send - search->s) >= sizeof(uint8x16_t));
+        }
+    }
+    return tr_trans_pairs_search_basic(search);
+}
+
+#define tr_trans_pairs_search_impl tr_trans_pairs_search_neon
+#endif
+
+#ifndef tr_trans_pairs_search_impl
+#define tr_trans_pairs_search_impl tr_trans_pairs_search_basic
+#endif
+
+static VALUE
+tr_trans_pairs(VALUE str, VALUE pairs_val)
+{
+    Check_Type(pairs_val, T_HASH);
+    size_t pairs_count = RHASH_SIZE(pairs_val);
+    rb_str_modify(str);
+
+    if (RSTRING_LEN(str) == 0 || !RSTRING_PTR(str) || pairs_count == 0) return Qnil;
+
+    VALUE pairs_handle;
+    struct tr_pair *pairs = ALLOCV_N(struct tr_pair, pairs_handle, pairs_count);
+
+    int cr = rb_enc_str_coderange(str);
+    rb_encoding *enc = rb_str_enc_get(str);
+
+    struct tr_trans_pairs_coerce_args coerce_args = {
+        .pairs = pairs,
+        .enc = enc,
+        .cr = cr,
+    };
+    rb_hash_foreach(pairs_val, tr_trans_pairs_coerce_i, (VALUE)&coerce_args);
+    rb_encoding *e1 = coerce_args.enc;
+
+    VALUE hash = 0;
+
+    const unsigned char *sstart = (unsigned char *)RSTRING_PTR(str);
+    long str_len = RSTRING_LEN(str);
+    int termlen = rb_enc_mbminlen(e1);
+
+    struct tr_buffer buffer;
+    tr_buffer_init(&buffer, str_len);
+    bool modify = false;
+
+    if (RB_LIKELY(rb_str_encindex_fastpath(rb_enc_to_index(e1)))) {
+        struct tr_trans_pairs_search search = {
+            .s = sstart,
+            .send = sstart + str_len,
+        };
+
+        for (size_t index = 0; index < pairs_count; index++) {
+            struct tr_pair *pair = &pairs[index];
+
+            char *ptr = RSTRING_PTR(pair->search);
+            unsigned int codepoint = rb_enc_mbc_to_codepoint(ptr, RSTRING_END(pair->search), e1);
+
+            const unsigned char first_byte = (unsigned char)*ptr;
+
+#ifdef HAVE_SIMD
+            if (pairs_count <= TR_TRANS_PAIRS_SIMD_MAX_NEEDLES) {
+                search.needles[index] = first_byte;
+                search.needles_count++;
+            }
+#endif
+
+            if (rb_enc_codelen(codepoint, e1) == 1) {
+                search.trans_table[first_byte] = pair->replace;
+            }
+            else {
+                search.trans_table[first_byte] = Qundef;
+                if (!hash) {
+                    hash = rb_obj_hide(rb_hash_new_capa(pairs_count));
+                }
+                rb_hash_aset(hash, UINT2NUM(codepoint), pair->replace);
+            }
+        }
+
+        const unsigned char *checkpoint = search.s;
+        VALUE repl;
+        while ((repl = tr_trans_pairs_search_impl(&search))) {
+            int clen = 1;
+
+            if (UNLIKELY(repl == Qundef)) {
+                unsigned int c = rb_enc_mbc_to_codepoint((char *)search.s, (char *)search.send, e1);
+                clen = rb_enc_codelen(c, e1);
+                repl = rb_hash_lookup2(hash, UINT2NUM(c), 0);
+                if (!repl) {
+                    search.s += clen;
+                    continue;
+                }
+            }
+
+            modify = true;
+
+            if (checkpoint < search.s) {
+                tr_buffer_append(&buffer, checkpoint, search.s - checkpoint);
+            }
+            tr_buffer_append_str(&buffer, repl);
+            search.s += clen;
+            checkpoint = search.s;
+
+            if (cr == ENC_CODERANGE_7BIT && rb_enc_str_coderange(repl) != ENC_CODERANGE_7BIT) {
+                cr = ENC_CODERANGE_VALID;
+            }
+        }
+
+        if (modify && checkpoint < search.s) {
+            tr_buffer_append(&buffer, checkpoint, search.s - checkpoint);
+        }
+    }
+    else {
+        const unsigned char *s = sstart;
+        const unsigned char *send = sstart + str_len;
+
+        hash = rb_obj_hide(rb_hash_new_capa(pairs_count));
+
+        for (size_t index = 0; index < pairs_count; index++) {
+            struct tr_pair *pair = &pairs[index];
+
+            unsigned int codepoint = rb_enc_mbc_to_codepoint(RSTRING_PTR(pair->search), RSTRING_END(pair->search), e1);
+            rb_hash_aset(hash, UINT2NUM(codepoint), pair->replace);
+        }
+
+        while (s < send) {
+            bool may_modify = false;
+
+            int r = rb_enc_precise_mbclen((char *)s, (char *)send, e1);
+            if (!MBCLEN_CHARFOUND_P(r)) {
+                tr_buffer_free(&buffer);
+                rb_raise(rb_eArgError, "invalid byte sequence in %s", rb_enc_name(e1));
+            }
+            int clen = MBCLEN_CHARFOUND_LEN(r);
+            unsigned int c = rb_enc_mbc_to_codepoint((char *)s, (char *)send, e1);
+            unsigned int c0 = c;
+
+            long tlen = enc == e1 ? clen : rb_enc_codelen(c, e1);
+
+            VALUE replacement = rb_hash_lookup(hash, UINT2NUM(c));
+            if (NIL_P(replacement)) {
+                tlen = enc == e1 ? clen : rb_enc_codelen(c, enc);
+                c = c0;
+                if (enc != e1) may_modify = true;
+            }
+            else {
+                tlen = RSTRING_LEN(replacement);
+                modify = true;
+            }
+
+            if (NIL_P(replacement)) {
+                tr_buffer_mbcput(&buffer, c, enc);
+            }
+            else {
+                tr_buffer_append_str(&buffer, replacement);
+            }
+
+            if (may_modify && memcmp(s, buffer.ptr - tlen, tlen) != 0) {
+                modify = true;
+            }
+
+            if (cr == ENC_CODERANGE_7BIT && !rb_isascii(c)) {
+                cr = ENC_CODERANGE_VALID;
+            }
+
+            s += clen;
+        }
+    }
+
+    if (!STR_EMBED_P(str)) {
+        SIZED_FREE_N(STR_HEAP_PTR(str), STR_HEAP_SIZE(str));
+    }
+    tr_buffer_ensure_capa(&buffer, termlen);
+    TERM_FILL((char *)buffer.ptr, termlen);
+    RSTRING(str)->as.heap.ptr = (char *)buffer.buf;
+    STR_SET_LEN(str, buffer.ptr - buffer.buf);
+    STR_SET_NOEMBED(str);
+    RSTRING(str)->as.heap.aux.capa = buffer.capa - termlen;
+
+    RB_GC_GUARD(hash);
+
+    if (modify) {
+        if (cr != ENC_CODERANGE_BROKEN)
+            ENC_CODERANGE_SET(str, cr);
+        rb_enc_associate(str, e1);
+        return str;
+    }
+    return Qnil;
+}
 
 /*
  *  call-seq:
  *    tr!(selector, replacements) -> self or nil
+ *    tr!(pairs) -> self or nil
  *
  *  Like String#tr, except:
  *
@@ -9184,8 +9640,16 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
  */
 
 static VALUE
-rb_str_tr_bang(VALUE str, VALUE src, VALUE repl)
+rb_str_tr_bang(int argc, VALUE *argv, VALUE str)
 {
+    rb_check_arity(argc, 1, 2);
+
+    if (argc == 1) {
+        VALUE pairs = argv[0];
+        return tr_trans_pairs(str, pairs);
+    }
+
+    VALUE src = argv[0], repl = argv[1];
     return tr_trans(str, src, repl, 0);
 }
 
@@ -9228,9 +9692,18 @@ rb_str_tr_bang(VALUE str, VALUE src, VALUE repl)
  */
 
 static VALUE
-rb_str_tr(VALUE str, VALUE src, VALUE repl)
+rb_str_tr(int argc, VALUE *argv, VALUE str)
 {
+    rb_check_arity(argc, 1, 2);
+
     str = str_duplicate(rb_cString, str);
+
+    if (argc == 1) {
+        VALUE pairs = argv[0];
+        return tr_trans_pairs(str, pairs);
+    }
+
+    VALUE src = argv[0], repl = argv[1];
     tr_trans(str, src, repl, 0);
     return str;
 }
@@ -10135,7 +10608,7 @@ rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, VALUE ary)
         subptr = hit;
     }
 
-    if (subptr != pend) {
+    if (subptr < pend) {
         if (chomp) {
             if (rsnewline) {
                 pend = chomp_newline(subptr, pend, enc);
@@ -10655,6 +11128,8 @@ smart_chomp(VALUE str, const char *e, const char *p)
 {
     rb_encoding *enc = rb_enc_get(str);
     if (rb_enc_mbminlen(enc) > 1) {
+        /* a receiver shorter than one character has nothing to chomp */
+        if (e - p < rb_enc_mbminlen(enc)) return e - p;
         const char *pp = rb_enc_left_char_head(p, e-rb_enc_mbminlen(enc), e, enc);
         if (rb_enc_is_newline(pp, e, enc)) {
             e = pp;
@@ -10702,7 +11177,7 @@ chompped_length(VALUE str, VALUE rs)
     RSTRING_GETMEM(rs, rsptr, rslen);
     if (rslen == 0) {
         if (rb_enc_mbminlen(enc) > 1) {
-            while (e > p) {
+            while (e - p >= rb_enc_mbminlen(enc)) {
                 pp = rb_enc_left_char_head(p, e-rb_enc_mbminlen(enc), e, enc);
                 if (!rb_enc_is_newline(pp, e, enc)) break;
                 e = pp;
@@ -11840,10 +12315,12 @@ rb_str_partition(VALUE str, VALUE sep)
         pos = rb_str_index(str, sep, 0);
         if (pos < 0) goto failed;
     }
+
+    long rpos = pos + RSTRING_LEN(sep);
+    if (rpos > RSTRING_LEN(str)) goto failed;
     return rb_ary_new3(3, rb_str_subseq(str, 0, pos),
                           sep,
-                          rb_str_subseq(str, pos+RSTRING_LEN(sep),
-                                             RSTRING_LEN(str)-pos-RSTRING_LEN(sep)));
+                          rb_str_subseq(str, rpos, RSTRING_LEN(str)-rpos));
 
   failed:
     return rb_ary_new3(3, str_duplicate(rb_cString, str), str_new_empty_String(str), str_new_empty_String(str));
@@ -11880,10 +12357,11 @@ rb_str_rpartition(VALUE str, VALUE sep)
         }
     }
 
+    long rpos = pos + RSTRING_LEN(sep);
+    if (rpos > RSTRING_LEN(str)) goto failed;
     return rb_ary_new3(3, rb_str_subseq(str, 0, pos),
                           sep,
-                          rb_str_subseq(str, pos+RSTRING_LEN(sep),
-                                        RSTRING_LEN(str)-pos-RSTRING_LEN(sep)));
+                          rb_str_subseq(str, rpos, RSTRING_LEN(str)-rpos));
   failed:
     return rb_ary_new3(3, str_new_empty_String(str), str_new_empty_String(str), str_duplicate(rb_cString, str));
 }
@@ -13519,13 +13997,13 @@ Init_String(void)
     rb_define_method(rb_cString, "delete_prefix!", rb_str_delete_prefix_bang, 1);
     rb_define_method(rb_cString, "delete_suffix!", rb_str_delete_suffix_bang, 1);
 
-    rb_define_method(rb_cString, "tr", rb_str_tr, 2);
+    rb_define_method(rb_cString, "tr", rb_str_tr, -1);
     rb_define_method(rb_cString, "tr_s", rb_str_tr_s, 2);
     rb_define_method(rb_cString, "delete", rb_str_delete, -1);
     rb_define_method(rb_cString, "squeeze", rb_str_squeeze, -1);
     rb_define_method(rb_cString, "count", rb_str_count, -1);
 
-    rb_define_method(rb_cString, "tr!", rb_str_tr_bang, 2);
+    rb_define_method(rb_cString, "tr!", rb_str_tr_bang, -1);
     rb_define_method(rb_cString, "tr_s!", rb_str_tr_s_bang, 2);
     rb_define_method(rb_cString, "delete!", rb_str_delete_bang, -1);
     rb_define_method(rb_cString, "squeeze!", rb_str_squeeze_bang, -1);

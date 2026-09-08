@@ -79,7 +79,7 @@ class Gem::CompactIndexClient
     # validated, so refuse anything that would escape the cache
     # directory when used as a path component.
     def validate_name!(name)
-      return if File.basename(name) == name
+      return unless name.empty? || name.include?("\0") || name == "." || name == ".." || File.basename(name) != name
 
       raise Gem::Exception, "malformed gem name: #{name.inspect}"
     end

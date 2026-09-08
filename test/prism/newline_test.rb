@@ -24,6 +24,7 @@ module Prism
       ruby/parser_test.rb
       ruby/ripper_test.rb
       ruby/ruby_parser_test.rb
+      ruby/parameters_signature_test.rb
     ]
 
     base = __dir__

@@ -41,6 +41,7 @@ void rb_reset_coverages(void);
 void rb_resume_coverages(void);
 void rb_suspend_coverages(void);
 void rb_coverage_each_method(rb_coverage_method_callback callback, void *data);
+bool rb_coverage_method_data_of(VALUE me, VALUE count, struct rb_coverage_method_data *out);
 
 RUBY_SYMBOL_EXPORT_END
 

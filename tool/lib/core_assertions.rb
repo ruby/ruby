@@ -18,11 +18,11 @@ module Test
 
       unless $DEBUG then
         bt.each do |line|
-          break if pattern.match?(line)
+          break if pattern =~ line
           new_bt << line
         end
 
-        new_bt = bt.reject { |line| pattern.match?(line) } if new_bt.empty?
+        new_bt = bt.reject { |line| pattern =~ line } if new_bt.empty?
         new_bt = bt.dup if new_bt.empty?
       else
         new_bt = bt.dup
@@ -327,8 +327,8 @@ module Test
         at_exit {
           assertions = assertions_ivar_get.call(:@_assertions)
           out_write.call <<~OUT
-          <error id="#{token}" assertions=#{integer_to_s.bind_call(assertions)}>
-          #{array_pack.bind_call([marshal_dump.call($!)], 'm0')}
+          <error id="#{token}" assertions=#{integer_to_s.bind(assertions).call}>
+          #{array_pack.bind([marshal_dump.call($!)]).call('m0')}
           </error id="#{token}">
           OUT
         }
@@ -365,7 +365,7 @@ eom
         args.insert((Hash === args.first ? 1 : 0), "-w", "--disable=gems", *$:.map {|l| "-I#{l}"})
         args << "--debug" if RUBY_ENGINE == 'jruby' # warning: tracing (e.g. set_trace_func) will not capture all events without --debug flag
         # power_assert 3 requires ruby 3.1 or later
-        args << "-W:no-experimental" if RUBY_VERSION < "3.1."
+        args << "-W:no-experimental" if ("2.7."..."3.1.").cover?(RUBY_VERSION)
         stdout, stderr, status = EnvUtil.invoke_ruby(args, src, capture_stdout, true, **opt)
 
         if sanitizers&.lsan_enabled?
@@ -388,21 +388,23 @@ eom
         assert(!abort, FailDesc[status, nil, stderr])
         res.scan(/^<error id="#{token_re}" assertions=(\d+)>\n(.*?)\n(?=<\/error id="#{token_re}">$)/m) do
           self._assertions += $1.to_i
-          res = Marshal.load($2.unpack1("m")) or next
-        rescue => marshal_error
-          ignore_stderr = nil
-          res = nil
-        else
-          next if SystemExit === res
-          if bt = res.backtrace
-            bt.each do |l|
-              l.sub!(/\A-:(\d+)/){"#{file}:#{line + $1.to_i}"}
-            end
-            bt.concat(caller)
+          begin
+            res = Marshal.load($2.unpack1("m")) or next
+          rescue => marshal_error
+            ignore_stderr = nil
+            res = nil
           else
-            res.set_backtrace(caller)
+            next if SystemExit === res
+            if bt = res.backtrace
+              bt.each do |l|
+                l.sub!(/\A-:(\d+)/){"#{file}:#{line + $1.to_i}"}
+              end
+              bt.concat(caller)
+            else
+              res.set_backtrace(caller)
+            end
+            raise res
           end
-          raise res
         end
 
         # really did it succeed?

@@ -136,6 +136,22 @@ class TestGemCompactIndexClientCache < Gem::TestCase
     assert_empty fetcher.requests
   end
 
+  def test_info_rejects_dot_dot_name
+    assert_rejects_malformed_name ".."
+  end
+
+  def test_info_rejects_dot_name
+    assert_rejects_malformed_name "."
+  end
+
+  def test_info_rejects_empty_name
+    assert_rejects_malformed_name ""
+  end
+
+  def test_info_rejects_name_with_null_byte
+    assert_rejects_malformed_name "a\0b"
+  end
+
   def test_info_with_special_characters_uses_hashed_path
     fetcher = FakeFetcher.new("1.0.0\n")
     cache = Gem::CompactIndexClient::Cache.new(@dir, fetcher)
@@ -145,5 +161,25 @@ class TestGemCompactIndexClientCache < Gem::TestCase
     hashed = "Rails-#{Digest::MD5.hexdigest("Rails").downcase}"
     assert_equal "1.0.0\n", @dir.join("info-special-characters", hashed).read
     refute @dir.join("info", "Rails").exist?
+  end
+
+  private
+
+  def assert_rejects_malformed_name(name)
+    fetcher = FakeFetcher.new("1.0.0\n")
+    cache = Gem::CompactIndexClient::Cache.new(@dir, fetcher)
+    before = Dir.glob("**/*", File::FNM_DOTMATCH, base: @tempdir).sort
+
+    e = assert_raise Gem::Exception do
+      cache.info(name, "no-match")
+    end
+    assert_includes e.message, "malformed gem name"
+
+    assert_raise Gem::Exception do
+      cache.fetch_info(name)
+    end
+
+    assert_empty fetcher.requests
+    assert_equal before, Dir.glob("**/*", File::FNM_DOTMATCH, base: @tempdir).sort
   end
 end

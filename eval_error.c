@@ -378,7 +378,7 @@ rb_ec_error_print_detailed0(rb_execution_context_t *const ec, const VALUE errinf
     volatile bool written = false;
     volatile VALUE emesg = emesg0;
 
-    volatile VALUE opt = rb_hash_new();
+    volatile VALUE opt = rb_hash_new_capa(1);
     volatile VALUE highlight = rb_stderr_tty_p() ? Qtrue : Qfalse;
     rb_hash_aset(opt, ID2SYM(rb_intern_const("highlight")), highlight);
 

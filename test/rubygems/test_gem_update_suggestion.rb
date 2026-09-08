@@ -55,9 +55,10 @@ class TestUpdateSuggestion < Gem::TestCase
   def test_update_suggestion
     Gem.stub :rubygems_version, Gem::Version.new("1.2.3") do
       Gem.stub :latest_rubygems_version, Gem::Version.new("2.0.0") do
-        assert_equal @cmd.update_suggestion, <<~SUGGESTION
+        assert_equal <<~SUGGESTION, @cmd.update_suggestion
 
           A new release of RubyGems is available: 1.2.3 → 2.0.0!
+          See https://github.com/ruby/rubygems/blob/v2.0.0/CHANGELOG.md for the changes since 1.2.3.
           Run `gem update --system 2.0.0` to update your installation.
 
         SUGGESTION

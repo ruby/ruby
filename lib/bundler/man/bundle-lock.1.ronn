@@ -87,8 +87,9 @@ Lock the gems specified in Gemfile.
 
 * `--cooldown=<number>`:
   Only consider gem versions published at least <number> days ago when
-  resolving. Pass `0` to disable cooldown for this run, overriding any
-  per-source or global configuration. See `cooldown` in bundle-config(1).
+  resolving. Pass `0` to disable cooldown for this run, overriding every
+  other cooldown setting, RubyGems' own included. See `cooldown` in
+  bundle-config(1).
 
 ## UPDATING ALL GEMS
 

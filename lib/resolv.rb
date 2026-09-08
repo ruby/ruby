@@ -562,7 +562,21 @@ class Resolv
             next if !sender
             senders[[candidate, requester, nameserver, port]] = sender
           end
-          reply, reply_name = requester.request(sender, tout)
+          begin
+            reply, reply_name = requester.request(sender, tout)
+          rescue ResolvTimeout
+            # Giving up part way through a frame loses stream sync, and a peer
+            # seen going away leaves the socket dead.  Either way the requester
+            # says so, and the next attempt has to open a fresh connection.  A
+            # timeout with the stream still on a frame boundary keeps it; a
+            # peer that leaves while nothing is being read goes unnoticed here
+            # and only shows up when the next request is written.
+            unless requester.reusable?
+              requesters.delete([nameserver, port])
+              requester.close
+            end
+            raise
+          end
           case reply.rcode
           when RCode::NoError
             if reply.tc == 1 and not Requester::TCP === requester
@@ -698,6 +712,12 @@ class Resolv
         @socks = nil
       end
 
+      # Whether another request may be sent over the same transport.  Only a
+      # stream transport can end up in a state that rules this out.
+      def reusable?
+        true
+      end
+
       def request(sender, tout)
         start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
         timelimit = start + tout
@@ -724,7 +744,7 @@ class Resolv
             raise ResolvTimeout
           end
           begin
-            reply, from = recv_reply(select_result[0])
+            reply, from = recv_reply(select_result[0], timelimit)
           rescue Errno::ECONNREFUSED, # GNU/Linux, FreeBSD
                  Errno::ECONNRESET, # Windows
                  EOFError
@@ -801,7 +821,7 @@ class Resolv
           self
         end
 
-        def recv_reply(readable_socks)
+        def recv_reply(readable_socks, timelimit = nil)
           lazy_initialize
           reply, from = readable_socks[0].recvfrom(UDPSize)
           return reply, [from[3],from[1]]
@@ -870,7 +890,7 @@ class Resolv
           self
         end
 
-        def recv_reply(readable_socks)
+        def recv_reply(readable_socks, timelimit = nil)
           lazy_initialize
           reply = readable_socks[0].recv(UDPSize)
           return reply, nil
@@ -933,15 +953,28 @@ class Resolv
           sock = TCPSocket.new(@host, @port)
           @socks = [sock]
           @senders = {}
+          @reusable = true
         end
 
-        def recv_reply(readable_socks)
-          len_data = readable_socks[0].read(2)
+        def reusable?
+          @reusable
+        end
+
+        def recv_reply(readable_socks, timelimit = nil)
+          sock = readable_socks[0]
+          len_data = read_exactly(sock, 2, timelimit)
           raise EOFError if len_data.nil? || len_data.bytesize != 2
           len = len_data.unpack('n')[0]
-          reply = @socks[0].read(len)
+          reply = read_exactly(sock, len, timelimit)
           raise EOFError if reply.nil? || reply.bytesize != len
+          @reusable = true
           return reply, nil
+        rescue EOFError, SystemCallError
+          # Whatever the kernel reported, this socket cannot be trusted for
+          # another frame.  In practice that is the peer closing or resetting;
+          # the rest is rare enough that erring towards reconnecting is right.
+          @reusable = false
+          raise
         end
 
         def sender(msg, data, host=@host, port=@port)
@@ -963,10 +996,39 @@ class Resolv
         end
 
         def close
+          @reusable = false
           super
           @senders.each_key {|from,id|
             DNS.free_request_id(@host, @port, id)
           }
+        end
+
+        private
+
+        # Read +len+ bytes, giving up with ResolvTimeout once +timelimit+ (a
+        # CLOCK_MONOTONIC value) has passed.  A shorter result means the peer
+        # closed the connection, which the caller turns into an EOFError.
+        # Consuming any byte marks the requester unusable until the whole frame
+        # has been read, since giving up in between loses frame sync.  Without a
+        # +timelimit+ the read blocks instead and keeps no such mark; that is
+        # only for a caller still using the one argument form of #recv_reply.
+        def read_exactly(sock, len, timelimit)
+          return sock.read(len) unless timelimit
+          buf = String.new
+          while buf.bytesize < len
+            case chunk = sock.read_nonblock(len - buf.bytesize, exception: false)
+            when :wait_readable
+              remaining = timelimit - Process.clock_gettime(Process::CLOCK_MONOTONIC)
+              raise ResolvTimeout if remaining <= 0
+              sock.wait_readable(remaining) or raise ResolvTimeout
+            when nil
+              break
+            else
+              @reusable = false
+              buf << chunk
+            end
+          end
+          buf
         end
       end
 
@@ -1253,6 +1315,13 @@ class Resolv
 
       class Str # :nodoc:
         def initialize(string)
+          # A label is limited to 63 octets. [RFC 1035 2.3.4] Checking it here
+          # makes it an invariant of the object: every label, however it was
+          # built, fits in its length octet and cannot wrap it. Callers turn
+          # this into the error their own contract promises.
+          if string.bytesize > 63
+            raise ArgumentError, "DNS label is too long (#{string.bytesize} bytes, max 63): #{string.inspect}"
+          end
           @string = string
           # case insensivity of DNS labels doesn't apply non-ASCII characters. [RFC 4343]
           # This assumes @string is given in ASCII compatible encoding.
@@ -1298,7 +1367,26 @@ class Resolv
         when Name
           return arg
         when String
-          return Name.new(Label.split(arg), /\.\z/ =~ arg ? true : false)
+          # A hostname is runtime data rather than a programming mistake, so
+          # both size limits surface as ResolvError to stay rescuable alongside
+          # the rest of name resolution. The type check below is a caller
+          # mistake and keeps raising ArgumentError.
+          begin
+            labels = Label.split(arg)
+          rescue ArgumentError => e
+            raise ResolvError.new(e.message)
+          end
+          # Label::Str enforces the per-label limit. Only the total is knowable
+          # here, and it counts the encoded form, so size starts at 1 for the
+          # root label's terminating zero octet. [RFC 1035 2.3.4, 3.1]
+          size = 1
+          labels.each do |label|
+            size += 1 + label.string.bytesize
+            if size > 255
+              raise ResolvError.new("DNS name is too long (#{size} octets, max 255): #{arg.inspect}")
+            end
+          end
+          return Name.new(labels, /\.\z/ =~ arg ? true : false)
         else
           raise ArgumentError.new("cannot interpret as DNS name: #{arg.inspect}")
         end
@@ -1420,10 +1508,22 @@ class Resolv
                @rd == other.rd &&
                @ra == other.ra &&
                @rcode == other.rcode &&
-               @question == other.question &&
+               question_equal?(other.question) &&
                @answer == other.answer &&
                @authority == other.authority &&
                @additional == other.additional
+      end
+
+      # A question holds the resource class itself, and decoding creates a fresh
+      # class for each unknown type, so the classes cannot be compared by
+      # identity alone.
+      private def question_equal?(other_question) # :nodoc:
+        return false unless @question.length == other_question.length
+        @question.zip(other_question) {|(name, typeclass), (o_name, o_typeclass)|
+          return false unless name == o_name &&
+                              Resource::Generic.type_class_equal?(typeclass, o_typeclass)
+        }
+        return true
       end
 
       def add_question(name, typeclass)
@@ -1532,8 +1632,15 @@ class Resolv
         end
 
         def put_string(d)
-          self.put_pack("C", d.length)
-          @data << d
+          s = d.to_s
+          # A character-string is prefixed by a single length octet, so it can
+          # hold at most 255 octets. [RFC 1035 3.3] Reject anything longer to
+          # avoid silently truncating the length to its low 8 bits (mod 256).
+          if s.bytesize > 255
+            raise ArgumentError, "character-string is too long (#{s.bytesize} bytes, max 255): #{s.inspect}"
+          end
+          self.put_pack("C", s.bytesize)
+          @data << s
         end
 
         def put_string_list(ds)
@@ -1563,7 +1670,17 @@ class Resolv
         end
 
         def put_label(d)
-          self.put_string(d.to_s)
+          s = d.to_s
+          # Label::Str applies this limit when a label is built, so what is left
+          # for here is a raw string handed straight to put_labels. The two ways
+          # an over-long label goes wrong differ: 64 to 255 octets write a length
+          # octet in the reserved or compression pointer range, and 256 or more
+          # wrap it mod 256. Either way the encoded name stops being the name the
+          # caller asked for. [RFC 1035 2.3.4, 4.1.4]
+          if s.bytesize > 63
+            raise ArgumentError, "DNS label is too long (#{s.bytesize} bytes, max 63): #{s.inspect}"
+          end
+          self.put_string(s)
         end
       end
 
@@ -1689,7 +1806,9 @@ class Resolv
           prev_index = @index
           save_index = nil
           d = []
-          size = -1
+          # size counts the encoded form, so it starts at 1 for the root
+          # label's terminating zero octet. [RFC 1035 3.1]
+          size = 1
           while true
             raise DecodeError.new("limit exceeded") if @limit <= @index
             case @data.getbyte(@index)
@@ -1720,6 +1839,11 @@ class Resolv
 
         def get_label
           return Label::Str.new(self.get_string)
+        rescue ArgumentError => e
+          # A length octet of 64..191 is reserved rather than a label length,
+          # but this decoder used to read it as one. [RFC 1035 4.1.4] Report it
+          # the way the rest of a malformed message is reported.
+          raise DecodeError.new(e.message)
         end
 
         def get_question
@@ -1907,8 +2031,9 @@ class Resolv
           key_name = :"key#{key_number}"
           c.const_set(:KeyName, key_name)
           c.const_set(:KeyNumber, key_number)
-          self.const_set(:"Key#{key_number}", c)
-          ClassHash[key_name] = ClassHash[key_number] = c
+          # Not registered in a constant or in ClassHash. ClassHash creates a
+          # class for every unknown SvcParamKey, so registering them
+          # permanently would let a malicious response exhaust memory.
           return c
         end
       end
@@ -2215,12 +2340,28 @@ class Resolv
           return self.new(msg.get_bytes)
         end
 
+        # create makes a fresh class for each decoded resource, so the type and
+        # class values have to be compared instead of the class itself.
+        def self.type_class_equal?(klass, other) # :nodoc:
+          return true if klass.equal?(other)
+          Generic > klass && Generic > other &&
+            klass::TypeValue == other::TypeValue &&
+            klass::ClassValue == other::ClassValue
+        end
+
+        def ==(other) # :nodoc:
+          return other.is_a?(Generic) &&
+                 Generic.type_class_equal?(self.class, other.class) &&
+                 @data == other.data
+        end
+
         def self.create(type_value, class_value) # :nodoc:
           c = Class.new(Generic)
           c.const_set(:TypeValue, type_value)
           c.const_set(:ClassValue, class_value)
-          Generic.const_set("Type#{type_value}_Class#{class_value}", c)
-          ClassHash[[type_value, class_value]] = c
+          # Not registered in a constant or in ClassHash. get_class creates a
+          # class for every unknown (type, class) pair, so registering them
+          # permanently would let a malicious response exhaust memory.
           return c
         end
       end

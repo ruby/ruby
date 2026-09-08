@@ -1606,8 +1606,6 @@ Init_prism(void) {
     rb_ext_ractor_safe(true);
 #endif
 
-    /* Grab up references to all of the constants that we are going to need to
-     * reference throughout this extension. */
     rb_cPrism = rb_define_module("Prism");
     rb_cPrismNode = rb_define_class_under(rb_cPrism, "Node", rb_cObject);
     rb_cPrismSource = rb_define_class_under(rb_cPrism, "Source", rb_cObject);

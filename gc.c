@@ -686,7 +686,6 @@ typedef struct gc_function_map {
     void (*writebarrier_unprotect)(void *objspace_ptr, VALUE obj);
     void (*writebarrier_remember)(void *objspace_ptr, VALUE obj);
     void (*obj_became_shareable)(void *objspace_ptr, VALUE obj);
-    void (*pin_in_flight_message)(void *objspace_ptr, VALUE obj);
     // Heap walking
     void (*each_objects)(void *objspace_ptr, int (*callback)(void *, void *, size_t, void *), void *data);
     void (*each_objects_shareable)(void *objspace_ptr, int (*callback)(void *, void *, size_t, void *), void *data);
@@ -882,7 +881,6 @@ ruby_modular_gc_init(void)
     load_modular_gc_func(writebarrier_unprotect);
     load_modular_gc_func(writebarrier_remember);
     load_modular_gc_func(obj_became_shareable);
-    load_modular_gc_func(pin_in_flight_message);
     // Heap walking
     load_modular_gc_func(each_objects);
     load_modular_gc_func(each_objects_shareable);
@@ -987,7 +985,6 @@ ruby_modular_gc_init(void)
 # define rb_gc_impl_writebarrier_unprotect rb_gc_functions.writebarrier_unprotect
 # define rb_gc_impl_writebarrier_remember rb_gc_functions.writebarrier_remember
 # define rb_gc_impl_obj_became_shareable rb_gc_functions.obj_became_shareable
-# define rb_gc_impl_pin_in_flight_message rb_gc_functions.pin_in_flight_message
 // Heap walking
 # define rb_gc_impl_each_objects rb_gc_functions.each_objects
 # define rb_gc_impl_each_objects_shareable rb_gc_functions.each_objects_shareable
@@ -2734,7 +2731,7 @@ count_objects(int argc, VALUE *argv, VALUE os)
     rb_gc_impl_each_object(rb_gc_get_objspace(), count_objects_i, &data);
 
     if (NIL_P(hash)) {
-        hash = rb_hash_new();
+        hash = rb_hash_new_capa(2 + T_MASK);
     }
     else if (!RHASH_EMPTY_P(hash)) {
         rb_hash_stlike_foreach(hash, set_zero, hash);
@@ -3267,14 +3264,12 @@ rb_gc_mark_roots(void *objspace, const char **categoryp)
                            !rb_gc_impl_multi_objspace_p();
 
     /* Mark the current Ractor's roots from its C structs (a local GC must not depend on
-     * heap wrapper traversal).  A global GC does the same for every Ractor and re-pins
-     * the in-flight payloads whose shrefs its clear pass dropped. */
+     * heap wrapper traversal).  A global GC does the same for every Ractor. */
     MARK_CHECKPOINT("ractor");
     if (global_gc) {
         rb_ractor_t *r;
         ccan_list_for_each(&vm->ractor.set, r, vmlr_node) {
             rb_ractor_mark_local_roots(r);
-            rb_ractor_repin_in_flight(r);
         }
 
         /* Early in boot (before rb_ractor_main_setup) main is not in vm->ractor.set
@@ -3284,15 +3279,13 @@ rb_gc_mark_roots(void *objspace, const char **categoryp)
         }
         /* A Ractor that terminated (left vm->ractor.set) but whose struct is not freed
          * still owns rb_gc_register_mark_object pins.  Keep them alive until
-         * ractor_free hands them to main; an orphan (owner == NULL) was moved above. */
+         * ractor_free hands them to main; an orphan (owner == NULL) was moved above.
+         * The join value is not rooted here: ractor_mark marks it from the wrapper. */
         for (size_t i = 0; i < vm->gc.zombie_objspaces_count; i++) {
             rb_ractor_t *owner = vm->gc.zombie_objspaces[i].owner;
             if (owner) {
                 rb_gc_mark_vm_stack_values((long)owner->registered_marks_cnt,
                                            owner->registered_marks);
-                /* Keep a terminated Ractor's join value (read by Ractor#value) alive
-                 * without depending on wrapper reachability.  Threads are not walked. */
-                rb_ractor_mark_terminated_join_value(owner);
             }
         }
 
@@ -3345,15 +3338,6 @@ rb_gc_mark_roots(void *objspace, const char **categoryp)
         unsigned int vm_mark_lock_lev = 0;
         if (vm_mark_needs_lock) vm_mark_lock_lev = RB_GC_VM_LOCK_NO_BARRIER();
         rb_vm_mark(vm);
-
-        if (global_gc) {
-            /* Mark and pin the shareable REFs of in-flight (off-heap) move couriers,
-             * covering the transient window between queue and materialize frame.  Only
-             * a global GC frees shareable objects, so only it needs this pass. */
-            MARK_CHECKPOINT("move_couriers");
-            void rb_ractor_move_courier_registry_mark(void);
-            rb_ractor_move_courier_registry_mark();
-        }
 
         MARK_CHECKPOINT("global_tbl");
         rb_gc_mark_global_tbl();
@@ -3715,10 +3699,15 @@ rb_gc_obj_optimal_size(VALUE obj)
 
       case T_HASH:
         {
-            if (RB_OBJ_FROZEN(obj) && RHASH_AR_TABLE_P(obj)) {
-                return sizeof(struct RHash) + offsetof(ar_table, pairs) + RHASH_AR_TABLE_BOUND(obj) * sizeof(ar_table_pair);
+            if (RHASH_AR_TABLE_P(obj)) {
+                const unsigned bound = RHASH_AR_TABLE_BOUND(obj);
+                const size_t ar_size = RHASH_AR_SLOT_SIZE(bound);
+                if (ar_size > RHASH_ST_SLOT_SIZE || OBJ_FROZEN(obj)) {
+                    return ar_size;
+                }
             }
-            return sizeof(struct RHash) + (RHASH_ST_TABLE_P(obj) ? sizeof(st_table) : sizeof(ar_table));
+
+            return RHASH_ST_SLOT_SIZE;
         }
 
       default:
@@ -3757,14 +3746,6 @@ rb_gc_obj_became_shareable(VALUE obj)
 
 /* Pin an in-flight message payload in its owner's (the sender's) objspace, so the
  * sender's local GC keeps it alive while it sits in a queue the sender does not walk. */
-void
-rb_gc_pin_in_flight_message(VALUE obj)
-{
-    if (RB_SPECIAL_CONST_P(obj)) return;
-
-    rb_gc_impl_pin_in_flight_message(rb_gc_get_objspace(), obj);
-}
-
 void
 rb_gc_copy_attributes(VALUE dest, VALUE obj)
 {
@@ -4159,11 +4140,8 @@ rb_gc_vm_refresh_zombie_pages(void)
     vm->gc.zombie_total_pages = total;
 }
 
-/* Incremental marking only runs single-objspace; vm_insert_ractor0 calls this just
- * before a second Ractor becomes visible so any cycle in progress finishes; a settle
- * cannot resume, nor inheritance extend, another objspace's partial mark. */
 void
-rb_gc_finish_in_flight_gc(void)
+rb_gc_rest(void)
 {
     rb_gc_impl_gc_rest(rb_gc_get_objspace());
 }
@@ -4210,9 +4188,12 @@ rb_gc_obj_foreign_p(VALUE obj)
 bool
 rb_gc_single_objspace_p(void)
 {
-    if (!rb_gc_impl_multi_objspace_p() || ruby_single_main_ractor) return true;
+    if (!rb_gc_impl_multi_objspace_p()) return true;
     rb_vm_t *vm = GET_VM();
-    return vm->ractor.cnt == 1 && vm->gc.zombie_objspaces_count == 0 && gc_absorbing_zombie == 0 &&
+    /* One Ractor is not one objspace: a forked child re-enters single-Ractor mode while
+     * the pre-fork Ractors' objspaces are still parked in zombie_objspaces. */
+    return (ruby_single_main_ractor != NULL || vm->ractor.cnt == 1) &&
+           vm->gc.zombie_objspaces_count == 0 && gc_absorbing_zombie == 0 &&
            !gc_absorbed_since_global_gc &&
            (vm->ractor.main_ractor == NULL ||
             vm->ractor.main_ractor->creating_child_objspace == NULL);
@@ -4952,13 +4933,6 @@ rb_gc_vm_generic_fields_drain_dead(bool (*is_dead)(VALUE key))
 {
     struct gf_drain_ctx ctx = { is_dead };
     rb_generic_fields_tables_foreach(gf_drain_table_cb, &ctx);
-}
-
-/* A wrapper exported from gc.c so a modular build's gc-impl can call it. */
-bool
-rb_gc_current_ractor_materializing_p(void)
-{
-    return rb_ractor_materializing_p();
 }
 
 VALUE

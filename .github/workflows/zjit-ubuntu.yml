@@ -30,6 +30,8 @@ env:
   # Work around transient crates.io download failures (curl HTTP/2 framing / partial transfer)
   CARGO_NET_RETRY: 10
   CARGO_HTTP_MULTIPLEXING: false
+  RUST_BACKTRACE: 1
+  ZJIT_RB_BUG: 1
 
 jobs:
   lint:
@@ -125,8 +127,6 @@ jobs:
       TESTOPTS: ${{ matrix.testopts }}
       RUBY_DEBUG: ci
       BUNDLE_JOBS: 8 # for yjit-bench
-      RUST_BACKTRACE: 1
-      ZJIT_RB_BUG: 1
 
     runs-on: ${{ matrix.runs-on || 'ubuntu-22.04' }}
 
@@ -152,7 +152,7 @@ jobs:
           ruby-version: '3.1'
           bundler: none
 
-      - uses: taiki-e/install-action@288e746965032cfcc232e09af2daf5f23c14d780 # v2.86.1
+      - uses: taiki-e/install-action@7b8d4719ee4aaa279bdf55df38dacb9ebfe12a6c # v2.87.6
         with:
           tool: nextest@0.9
         if: ${{ matrix.test_task == 'zjit-check' }}

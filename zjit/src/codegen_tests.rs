@@ -6,7 +6,7 @@ use crate::backend::lir::Assembler;
 use crate::codegen::max_iseq_versions;
 use crate::cruby::*;
 use crate::hir::{Insn, iseq_to_hir};
-use crate::options::{get_option, rb_zjit_prepare_options, set_call_threshold, set_inline_threshold, set_max_versions};
+use crate::options::{get_option, rb_zjit_prepare_options, set_call_threshold, set_inline_threshold, set_max_versions, set_mem_bytes};
 use crate::payload::IseqVersion;
 use crate::hir::tests::hir_build_tests::assert_contains_opcode;
 use crate::payload::*;
@@ -830,6 +830,206 @@ fn test_yield_non_local_return() {
 }
 
 #[test]
+fn test_throw_break_with_value_from_each() {
+    set_call_threshold(2);
+    eval("
+        def test(a) = a.each { |x| break x * 10 if x == 3 }
+        test([1, 2, 3, 4])
+        test([1, 2, 3, 4])
+    ");
+    assert_snapshot!(assert_compiles_allowing_exits("test([1, 2, 3, 4])"), @"30");
+}
+
+#[test]
+fn test_throw_no_break_returns_receiver() {
+    set_call_threshold(2);
+    eval("
+        def test(a) = a.each { |x| break x if x == 99 }
+        test([1, 2])
+        test([1, 2])
+    ");
+    assert_snapshot!(assert_compiles_allowing_exits("test([1, 2])"), @"[1, 2]");
+}
+
+#[test]
+fn test_throw_break_across_jit_to_jit_call() {
+    set_call_threshold(2);
+    eval("
+        def inner = yield
+        def outer = inner { break 7 }
+        def test = outer
+        test
+        test
+    ");
+    assert_snapshot!(assert_compiles_allowing_exits("test"), @"7");
+}
+
+#[test]
+fn test_throw_break_three_frames_deep() {
+    set_call_threshold(2);
+    eval("
+        def innermost(a) = a.each { |x| break x if x.even? }
+        def middle(a) = innermost(a)
+        def test(a) = middle(a)
+        test([1, 2, 3])
+        test([1, 2, 3])
+    ");
+    assert_snapshot!(assert_compiles_allowing_exits("test([1, 2, 3])"), @"2");
+}
+
+#[test]
+fn test_throw_break_value_used_by_caller() {
+    set_call_threshold(2);
+    eval("
+        def test(a)
+          v = a.each { |x| break x + 100 if x > 1 }
+          v.to_s
+        end
+        test([1, 2, 3])
+        test([1, 2, 3])
+    ");
+    assert_snapshot!(assert_compiles_allowing_exits("test([1, 2, 3])"), @r#""102""#);
+}
+
+#[test]
+fn test_throw_break_search_loop() {
+    set_call_threshold(2);
+    eval("
+        def test(a) = a.each_with_index { |x, i| break i if x == :b }
+        test([:a, :b, :c])
+        test([:a, :b, :c])
+    ");
+    assert_snapshot!(assert_compiles_allowing_exits("test([:a, :b, :c])"), @"1");
+}
+
+#[test]
+fn test_throw_break_runs_ensure() {
+    set_call_threshold(2);
+    eval("
+        def test(a)
+          log = []
+          r = a.each do |x|
+            begin
+              break x if x == 2
+            ensure
+              log << x
+            end
+          end
+          [r, log]
+        end
+        test([1, 2, 3])
+        test([1, 2, 3])
+    ");
+    assert_snapshot!(assert_compiles_allowing_exits("test([1, 2, 3])"), @"[2, [1, 2]]");
+}
+
+#[test]
+fn test_throw_return_from_proc() {
+    set_call_threshold(2);
+    eval("
+        def test
+          p = proc { return 5 }
+          p.call
+          99
+        end
+        test
+        test
+    ");
+    assert_snapshot!(assert_compiles_allowing_exits("test"), @"5");
+}
+
+#[test]
+fn test_throw_return_from_lambda() {
+    set_call_threshold(2);
+    eval("
+        def test
+          l = lambda { return 5 }
+          l.call + 1
+        end
+        test
+        test
+    ");
+    assert_snapshot!(assert_compiles_allowing_exits("test"), @"6");
+}
+
+#[test]
+fn test_throw_orphan_break_raises_local_jump_error() {
+    set_call_threshold(2);
+    eval("
+        def test
+          pr = proc { break 1 }
+          begin
+            pr.call
+          rescue LocalJumpError => e
+            e.class
+          end
+        end
+        test
+        test
+    ");
+    assert_snapshot!(assert_compiles_allowing_exits("test"), @"LocalJumpError");
+}
+
+#[test]
+fn test_throw_retry_in_rescue() {
+    set_call_threshold(2);
+    eval("
+        def test
+          tries = 0
+          begin
+            tries += 1
+            raise 'boom' if tries < 3
+            tries
+          rescue
+            retry
+          end
+        end
+        test
+        test
+    ");
+    assert_snapshot!(assert_compiles_allowing_exits("test"), @"3");
+}
+
+#[test]
+fn test_throw_next_with_ensure() {
+    set_call_threshold(2);
+    eval("
+        def test(a)
+          a.map do |x|
+            begin
+              next x * 2
+            ensure
+              nil
+            end
+          end
+        end
+        test([1, 2, 3])
+        test([1, 2, 3])
+    ");
+    assert_snapshot!(assert_compiles_allowing_exits("test([1, 2, 3])"), @"[2, 4, 6]");
+}
+
+#[test]
+fn test_throw_break_inner_loop_repeatedly() {
+    set_call_threshold(2);
+    eval("
+        def test(a)
+          sum = 0
+          a.each do |x|
+            a.each do |y|
+              break if y > 2
+              sum += x * y
+            end
+          end
+          sum
+        end
+        test([1, 2, 3])
+        test([1, 2, 3])
+    ");
+    assert_snapshot!(assert_compiles_allowing_exits("test([1, 2, 3])"), @"18");
+}
+
+#[test]
 fn test_yield_autosplat() {
     // {|a, b|} auto-splats a single Array arg for yield (falls back).
     set_call_threshold(2);
@@ -1103,6 +1303,41 @@ fn test_no_ep_escape_patch_point_after_send_does_not_repeat_send() {
     "#);
     assert_contains_opcode("test", YARVINSN_send);
     assert_snapshot!(assert_compiles_allowing_exits("[test, test, test]"), @"[1, 2, 3]");
+}
+
+#[test]
+fn test_no_ep_escape_side_exit_restores_locals_while_oom() {
+    // A regression test for stub compilation failures on OOM. Functions patched by NoEPEscape
+    // is unsafe to enter (FrameState uses without_locals() and doesn't spill the entry state),
+    // so even under OOM, the re-stub after invalidation must succeed.
+    set_mem_bytes(2 * 1024 * 1024);
+    set_inline_threshold(0);
+    set_call_threshold(2);
+    assert_snapshot!(inspect(r#"
+        class Foo
+          def initialize = @perm = 7
+          def callee(esc, local_to_spill = "spilled", perm = @perm)
+            binding if esc
+            local_to_spill
+          end
+        end
+        def kaller(foo, esc) = foo.callee(esc)
+
+        foo = Foo.new
+        300.times { kaller(foo, false) } # compile callee (with its NoEPEscape patch point) and the kaller->callee edge
+
+        # Fill the code region so the re-stub after the EP escape fails with OutOfMemory.
+        1000.times do |i|
+          body = (0...25).map { |k| "u#{k} = #{i} + #{k}; s += u#{k}" }.join("; ")
+          eval "def big#{i}(a = 1); s = 0; #{body}; s; end"
+        end
+        1000.times { |i| 2.times { send(:"big#{i}") } }
+
+        kaller(foo, true) # escape callee's EP; the kaller->callee re-stub OOMs
+        # Re-enter the patched callee. Each call must still return "spilled"; on the buggy
+        # build local_to_spill is read from a stale stack slot and comes back as junk.
+        300.times.all? { kaller(foo, false) == "spilled" }
+    "#), @"true");
 }
 
 #[test]
@@ -2861,6 +3096,29 @@ fn test_opt_minus_overflow() {
 
         [r1, r2, r3]
     "), @"[2, 4611686018427387904, -4611686018427387905]");
+}
+
+#[test]
+fn test_fixnum_lshift() {
+    assert_snapshot!(inspect("
+        def test(a) = a << 3
+        test(1) # profile opt_ltlt
+
+        [test(5), test(0), test(-5)]
+    "), @"[40, 0, -40]");
+}
+
+#[test]
+fn test_fixnum_lshift_overflow() {
+    assert_snapshot!(inspect("
+        def test(a) = a << 3
+        test(1) # profile opt_ltlt
+
+        r1 = test(1 << 60)
+        r2 = test(-(1 << 60))
+
+        [r1, r2]
+    "), @"[9223372036854775808, -9223372036854775808]");
 }
 
 #[test]
@@ -6865,13 +7123,108 @@ fn test_send_on_heap_object_in_spilled_arg() {
 }
 
 #[test]
-fn test_send_splat() {
-    assert_snapshot!(inspect("
+fn test_send_caller_splat_arguments() {
+    eval("
         def test(a, b) = [a, b]
-        def entry(arr) = test(*arr)
+        def entry(args) = test(*args)
         entry([1, 2])
+    ");
+    assert_snapshot!(assert_compiles("entry([1, 2])"), @"[1, 2]");
+}
+
+#[test]
+fn test_send_empty_caller_splat_arguments() {
+    eval("
+        def test(a = 1) = a
+        def entry(args) = test(*args)
+        entry([])
+    ");
+    assert_snapshot!(assert_compiles("entry([])"), @"1");
+}
+
+#[test]
+fn test_send_caller_splat_arguments_with_positional_prefix() {
+    eval("
+        def test(a, b, c) = [a, b, c]
+        def entry(args) = test(1, *args)
+        entry([2, 3])
+    ");
+    assert_snapshot!(assert_compiles("entry([2, 3])"), @"[1, 2, 3]");
+}
+
+#[test]
+fn test_send_many_caller_splat_arguments_to_rest_parameter() {
+    eval("
+        def test(*args) = args.length
+        def entry(args) = test(*args)
+        entry([1, 2, 3, 4, 5, 6, 7])
+    ");
+    assert_snapshot!(assert_compiles("entry([1, 2, 3, 4, 5, 6, 7])"), @"7");
+}
+
+#[test]
+fn test_send_caller_splat_arguments_to_complex_parameters() {
+    eval("
+        def test(a, b = 2, *rest, z, k: 40) = [a, b, rest, z, k]
+        def entry(args) = test(1, *args)
+        entry([3, 4, 5])
+    ");
+    assert_snapshot!(assert_compiles("entry([3, 4, 5])"), @"[1, 3, [4], 5, 40]");
+}
+
+#[test]
+fn test_send_caller_splat_arguments_with_required_keyword() {
+    eval("
+        def test(*args, k:) = [args, k]
+        def entry(args) = test(*args, k: 40)
         entry([1, 2])
-    "), @"[1, 2]");
+    ");
+    assert_snapshot!(assert_compiles("entry([1, 2])"), @"[[1, 2], 40]");
+}
+
+#[test]
+fn test_send_caller_splat_arguments_with_block_literal() {
+    eval("
+        def test(*args) = yield args.length
+        def entry(args) = test(*args) { |n| n + 4 }
+        entry([1, 2, 3])
+    ");
+    assert_snapshot!(assert_compiles("entry([1, 2, 3])"), @"7");
+}
+
+#[test]
+fn test_send_caller_splat_length_mismatch_side_exits() {
+    eval("
+        def test(*args) = args
+        def entry(args) = test(*args)
+        entry([1, 2])
+    ");
+    assert_snapshot!(assert_compiles_allowing_exits("entry([1, 2, 3])"), @"[1, 2, 3]");
+}
+
+#[test]
+fn test_send_caller_splat_with_ruby2_keywords_hash_side_exits() {
+    eval("
+        def capture(*args) = args
+        ruby2_keywords(:capture)
+        def test(arg = :default, k: nil) = [arg, k]
+        def entry(args) = test(*args)
+        entry(capture(k: 1))
+    ");
+    assert_snapshot!(assert_compiles_allowing_exits("entry(capture(k: 1))"), @"[:default, 1]");
+}
+
+#[test]
+fn test_send_caller_splat_result_used_by_hash_aset() {
+    eval("
+        def test(value) = value
+        def entry(args)
+          hash = {}
+          hash[:value] = test(*args)
+        end
+        entry([1])
+    ");
+    assert_snapshot!(assert_compiles("entry([2])"), @"2");
 }
 
 #[test]

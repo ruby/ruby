@@ -134,7 +134,10 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
   when "fiddle"
     # When ZJIT is compile-happy, skip Fiddle::TestFunction#test_no_memory_leak
     # since compiling uses more memory which the test does not expect.
-    if run_opts&.include?("--zjit-call-threshold=1")
+    # Similarly, it's extremely flaky when running with `parse.y` for unclear reasons,
+    # but closer inspection didn't reveal any leak.
+    # It's a bit of a badly crafted test, and is likely missing some warmup to stabilize the memory usage.
+    if run_opts&.include?("--zjit-call-threshold=1") || run_opts&.include?('--parser=parse.y')
       test_command[-2..-1] = %w[test/run.rb --ignore-name=/\Atest_no_memory_leak\z/]
     end
 

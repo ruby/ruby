@@ -140,6 +140,8 @@ rb_vm_cc_table_create(size_t capa)
     return rb_managed_id_table_create(&cc_table_type, capa);
 }
 
+static void vm_ccs_invalidate(struct rb_class_cc_entries *ccs);
+
 static enum rb_id_table_iterator_result
 vm_cc_table_dup_i(ID key, VALUE old_ccs_ptr, void *data)
 {
@@ -147,8 +149,13 @@ vm_cc_table_dup_i(ID key, VALUE old_ccs_ptr, void *data)
     struct rb_class_cc_entries *old_ccs = (struct rb_class_cc_entries *)old_ccs_ptr;
 
     if (METHOD_ENTRY_INVALIDATED(old_ccs->cme)) {
-        // Invalidated CME. This entry will be removed from the old table on
-        // the next GC mark, so it's unsafe (and undesirable) to copy
+        // At this point, old_ccs is valid and hasn't been freed.
+        // However once we allocate below, mark_cc_entry_i may free the entries
+        // If this is invalidated, we should avoid the copy, and invalidate the CCs
+        // since later we will CAS the new cc_table, disconnecting old_ccs and it
+        // may not be marked.
+        // We don't want to copy this anyways since it's invalidated.
+        vm_ccs_invalidate(old_ccs);
         return ID_TABLE_CONTINUE;
     }
 
@@ -187,6 +194,7 @@ vm_ccs_invalidate(struct rb_class_cc_entries *ccs)
 {
     for (int i=0; i<ccs->len; i++) {
         const struct rb_callcache *cc = ccs->entries[i].cc;
+        if (cc->klass == Qundef) continue; // already invalidated
         VM_ASSERT(!vm_cc_super_p(cc) && !vm_cc_refinement_p(cc));
         vm_cc_invalidate(cc);
     }
@@ -1696,6 +1704,8 @@ rb_check_overloaded_cme(const rb_callable_method_entry_t *cme, const struct rb_c
     return cme;
 }
 
+static inline void stack_check(rb_execution_context_t *ec);
+
 #define CALL_METHOD_HOOK(klass, hook, mid) do {		\
         const VALUE arg = ID2SYM(mid);			\
         VALUE recv_class = (klass);			\
@@ -1704,7 +1714,7 @@ rb_check_overloaded_cme(const rb_callable_method_entry_t *cme, const struct rb_c
             recv_class = RCLASS_ATTACHED_OBJECT((klass));	\
             hook_id = singleton_##hook;			\
         }						\
-        rb_funcallv(recv_class, hook_id, 1, &arg);	\
+        rb_funcallv_uncached(recv_class, hook_id, 1, &arg);	\
     } while (0)
 
 static void
@@ -1922,6 +1932,34 @@ prepare_callable_method_entry(VALUE defined_class, ID id, const rb_method_entry_
     else {
         return NULL;
     }
+}
+
+/* A hook like this fires from C with no call site to cache into except for the gccct table,
+ * which is often cleared anyway. It would leave a permanent CC behind (tied to the class) if it
+ * created one, so we try to avoid it. */
+VALUE
+rb_funcallv_uncached(VALUE recv, ID mid, int argc, const VALUE *argv)
+{
+    VALUE defined_class;
+    const rb_method_entry_t *me = search_method(CLASS_OF(recv), mid, &defined_class);
+
+    if (UNLIKELY(UNDEFINED_METHOD_ENTRY_P(me))) {
+        return rb_funcallv(recv, mid, argc, argv);
+    }
+
+    const rb_callable_method_entry_t *cme;
+
+    if (UNLIKELY(me->defined_class == 0)) {
+        // produce a transient CME that will get collected
+        cme = rb_method_entry_complement_defined_class(me, me->called_id, defined_class);
+    }
+    else {
+        cme = (const rb_callable_method_entry_t *)me;
+    }
+
+    rb_execution_context_t *ec = GET_EC();
+    stack_check(ec);
+    return rb_vm_call_kw(ec, recv, mid, argc, argv, cme, RB_NO_KEYWORDS);
 }
 
 static const rb_callable_method_entry_t *

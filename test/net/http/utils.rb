@@ -209,9 +209,9 @@ module TestNetHTTPUtils
       def build_response_headers
         response = "HTTP/1.1 #{@status} #{status_message(@status)}\r\n"
         if @chunked
-          @headers['Transfer-Encoding'] = 'chunked'
+          self['Transfer-Encoding'] = 'chunked'
         else
-          @headers['Content-Length'] = @body.bytesize.to_s
+          self['Content-Length'] ||= @body.bytesize.to_s
         end
         @headers.each do |key, value|
           response << "#{key}: #{value}\r\n"

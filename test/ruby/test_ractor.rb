@@ -166,6 +166,29 @@ class TestRactor < Test::Unit::TestCase
       refute_equal main_ractor_id, ractor_id
     end;
   end
+  def test_ractor_with_live_threads_terminates_without_waiting
+    assert_separately([], __FILE__, __LINE__, <<-'RUBY')
+      Warning[:experimental] = false
+      # A Ractor that ends while a thread of its own is still running used to sit out
+      # the one second poll in rb_thread_terminate_all(), once per Ractor.  Measure
+      # against the same Ractors without a live thread, so that a busy machine, which
+      # makes both of them slow, does not decide this.
+      n = 5
+      elapsed = ->(&blk) {
+        t0 = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+        n.times { blk.call }
+        Process.clock_gettime(Process::CLOCK_MONOTONIC) - t0
+      }
+
+      base = elapsed.call { assert_equal :done, Ractor.new { :done }.value }
+      live = elapsed.call { assert_equal :done, Ractor.new { Thread.new { sleep 10 }; :done }.value }
+
+      # the bug costs a second per Ractor, so #{n} seconds here
+      assert_operator live, :<, base + 2.0,
+                      "#{n} Ractors with a live thread took #{live}s, without one #{base}s"
+    RUBY
+  end
+
 
   def test_class_instance_variables
     assert_ractor(<<~'RUBY')
@@ -248,6 +271,21 @@ class TestRactor < Test::Unit::TestCase
       r.join
     RUBY
   end
+
+  def test_fork_child_gc_pins_shareable_objects
+    # A forked child re-enters single-Ractor mode while the Ractors it had before the
+    # fork leave their objspaces behind, so its local GC still has to pin shareable
+    # objects instead of collecting them.
+    assert_ractor(<<~'RUBY')
+      port = Ractor::Port.new
+      Ractor.new(port) { |p| p << Ractor::Port.new; Ractor.receive }
+      foreign_port = port.receive # a Port owned by, and allocated in, the other Ractor
+      pid = fork { 100_000.times { +"x" }; exit!(0) }
+      _, status = Process.waitpid2(pid)
+      assert_predicate status, :success?
+      assert_instance_of Ractor::Port, foreign_port
+    RUBY
+  end if Process.respond_to?(:fork)
 
   def test_fork_raise_isolation_error
     assert_ractor(<<~'RUBY')
@@ -556,6 +594,66 @@ class TestRactor < Test::Unit::TestCase
       assert_equal 4, ports.size
     RUBY
   end
+  def test_port_receive_timeout
+    assert_separately([], __FILE__, __LINE__, <<-'RUBY')
+      Warning[:experimental] = false
+      port = Ractor::Port.new
+
+      t0 = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      assert_nil port.receive(timeout: 0.1)
+      assert_operator Process.clock_gettime(Process::CLOCK_MONOTONIC) - t0, :>=, 0.1
+
+      # a message that is already there wins over the timeout
+      port << :a
+      assert_equal :a, port.receive(timeout: 10)
+
+      # timeout: 0 polls
+      assert_nil port.receive(timeout: 0)
+      port << :b
+      assert_equal :b, port.receive(timeout: 0)
+    RUBY
+  end
+
+  def test_receive_timeout_on_mn_thread
+    assert_separately([], __FILE__, __LINE__, <<-'RUBY')
+      Warning[:experimental] = false
+      # a Ractor's thread is an M:N thread: the timeout must not need a native thread
+      r = Ractor.new do
+        t0 = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+        [Ractor.receive(timeout: 0.1), Process.clock_gettime(Process::CLOCK_MONOTONIC) - t0]
+      end
+      v, elapsed = r.value
+      assert_nil v
+      assert_operator elapsed, :>=, 0.1
+    RUBY
+  end
+
+  def test_select_timeout
+    assert_separately([], __FILE__, __LINE__, <<-'RUBY')
+      Warning[:experimental] = false
+      p1, p2 = Ractor::Port.new, Ractor::Port.new
+      assert_nil Ractor.select(p1, p2, timeout: 0.1)
+
+      p2 << :b
+      assert_equal [p2, :b], Ractor.select(p1, p2, timeout: 10)
+    RUBY
+  end
+
+  def test_receive_timeout_racing_with_send
+    assert_separately([], __FILE__, __LINE__, <<-'RUBY')
+      Warning[:experimental] = false
+      # the timeout and a send aim at the same instant: both wake the waiter
+      results = []
+      300.times do
+        port = Ractor::Port.new
+        th = Thread.new(port) {|p| sleep 0.001; p << :msg }
+        results << port.receive(timeout: 0.001)
+        th.join
+      end
+      assert_empty results.uniq - [:msg, nil]
+    RUBY
+  end
+
 
   # Moving a Hash that has Hash keys must not lose entries (regression guard for inserting a
   # key before its contents are filled in, which corrupts its hash value).
@@ -794,4 +892,20 @@ class TestRactor < Test::Unit::TestCase
       assert_equal :ok, r.value
     RUBY
   end
+  def test_port_queue_dropped_when_port_unreachable
+    omit 'not fixed for mmtk: it never calls rb_ractor_finish_marking, where the reap runs' unless GC.config[:implementation] == 'default'
+    assert_ractor(<<~'RUBY')
+      200.times do
+        port = Ractor::Port.new
+        Ractor.new(port) { |p| p << Ractor::Port.new; nil }.join
+      end
+      8.times { GC.start }
+      # A dropped message holding a port used to root the sending Ractor, and with it
+      # that Ractor's whole objspace, for the life of the process: every one of the 200
+      # survived.  A few of the last still can -- the reap needs a second full mark, and
+      # a conservative stack scan holds whatever it holds -- so this is not exact.
+      assert_operator ObjectSpace.each_object(Ractor).count, :<, 20
+    RUBY
+  end
+
 end

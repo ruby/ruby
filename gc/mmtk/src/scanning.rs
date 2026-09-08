@@ -25,10 +25,10 @@ impl Scanning<Ruby> for VMScanning {
         false
     }
 
-    fn scan_object<EV: SlotVisitor<RubySlot>>(
+    fn scan_object(
         _tls: VMWorkerThread,
         _object: ObjectReference,
-        _slot_visitor: &mut EV,
+        _slot_visitor: &mut impl SlotVisitor<RubySlot>,
     ) {
         unreachable!("We have not enabled slot enqueuing for any types, yet.");
     }

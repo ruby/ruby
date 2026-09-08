@@ -30,6 +30,7 @@ module Bundler
 
         @copied     = false
         @local      = false
+        @cached_app_cache_path = nil
       end
 
       def remote!
@@ -91,9 +92,9 @@ module Bundler
 
       def to_s
         begin
-          at = humanized_ref || current_branch
-
-          rev = "at #{at}@#{shortref_for_display(revision)}"
+          at = humanized_ref
+          at = "#{at}@" if at
+          rev = "at #{at}#{shortref_for_display(revision)}"
         rescue GitError
           ""
         end
@@ -277,6 +278,11 @@ module Bundler
 
         app_cache_path = app_cache_path(custom_path)
 
+        # When several gems share a single git source, this is called once per
+        # gem. Copying the repository is expensive for large repos, so skip it
+        # if we already populated this cache during the same command.
+        return if @cached_app_cache_path == app_cache_path
+
         migrate = try_migrate ? bare_repo?(app_cache_path) : false
 
         set_cache_path!(nil) if migrate
@@ -288,6 +294,8 @@ module Bundler
         git_proxy.checkout if migrate || requires_checkout?
         git_proxy.copy_to(app_cache_path, @submodules)
         serialize_gemspecs_in(app_cache_path)
+
+        @cached_app_cache_path = app_cache_path
       end
 
       def checkout
@@ -325,7 +333,7 @@ module Bundler
 
       def serialize_gemspecs_in(destination)
         destination = destination.expand_path(Bundler.root) if destination.relative?
-        Gem::Util.glob_files_in_dir(@glob, destination.to_s).each do |spec_path|
+        SharedHelpers.glob_files_in_dir(@glob, destination.to_s).each do |spec_path|
           # Evaluate gemspecs and cache the result. Gemspecs
           # in git might require git or other dependencies.
           # The gemspecs we cache should already be evaluated.
@@ -424,10 +432,12 @@ module Bundler
       def validate_spec(_spec); end
 
       def load_gemspec(file)
-        dirname = Pathname.new(file).dirname
-        SharedHelpers.chdir(dirname.to_s) do
-          stub = Gem::StubSpecification.gemspec_stub(file, install_path.parent, install_path.parent)
-          stub.full_gem_path = dirname.expand_path(root).to_s
+        # Expand the path before the chdir below, since resolving it inside the
+        # block would base it on the gemspec directory instead of `root`.
+        gemspec_path = Pathname.new(file).expand_path(root)
+        SharedHelpers.chdir(gemspec_path.dirname.to_s) do
+          stub = Gem::StubSpecification.gemspec_stub(gemspec_path.to_s, install_path.parent, install_path.parent)
+          stub.full_gem_path = gemspec_path.dirname.to_s
           StubSpecification.from_stub(stub)
         end
       end

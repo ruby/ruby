@@ -2,7 +2,9 @@
 
 require 'tempfile'
 require 'rbconfig/sizeof'
+require 'io/nonblock'
 require '-test-/io_buffer'
+require "-test-/memory_view"
 
 class TestIOBuffer < Test::Unit::TestCase
   experimental = Warning[:experimental]
@@ -21,15 +23,23 @@ class TestIOBuffer < Test::Unit::TestCase
     assert(value > 0, "Expected #{value} to be positive!")
   end
 
+  def test_version
+    assert_equal 3, IO::Buffer::VERSION
+  end
+
   def test_flags
     assert_equal 1, IO::Buffer::EXTERNAL
     assert_equal 2, IO::Buffer::INTERNAL
     assert_equal 4, IO::Buffer::MAPPED
 
-    assert_equal 32, IO::Buffer::LOCKED
     assert_equal 64, IO::Buffer::PRIVATE
 
     assert_equal 128, IO::Buffer::READONLY
+  end
+
+  def test_map_alignment
+    assert_kind_of Integer, IO::Buffer::MAP_ALIGNMENT
+    assert_positive IO::Buffer::MAP_ALIGNMENT
   end
 
   def test_internal_for_reading_with_string
@@ -37,12 +47,15 @@ class TestIOBuffer < Test::Unit::TestCase
 
     assert_equal "hello", Bug::IOBuffer.for_reading_get_string(string)
     assert_equal true, Bug::IOBuffer.for_reading_readonly?(string)
+    assert_equal true, Bug::IOBuffer.for_reading_locked?(string)
   end
 
   def test_internal_for_reading_with_io_buffer
     buffer = IO::Buffer.for("hello")
 
     assert_equal buffer.object_id, Bug::IOBuffer.for_reading_object_id(buffer)
+    assert_equal true, Bug::IOBuffer.for_reading_locked?(buffer)
+    refute_predicate buffer, :locked?
   end
 
   def test_internal_for_writing_with_string
@@ -52,6 +65,14 @@ class TestIOBuffer < Test::Unit::TestCase
 
     assert_equal "world", string
     assert_equal false, Bug::IOBuffer.for_writing_readonly?(string)
+    assert_equal true, Bug::IOBuffer.for_writing_locked?(string)
+  end
+
+  def test_internal_for_writing_with_io_buffer
+    buffer = IO::Buffer.new(5)
+
+    assert_equal true, Bug::IOBuffer.for_writing_locked?(buffer)
+    refute_predicate buffer, :locked?
   end
 
   def test_internal_for_writing_rejects_readonly_buffer
@@ -82,6 +103,92 @@ class TestIOBuffer < Test::Unit::TestCase
 
     string << "!"
     assert_equal "hello!", string
+  end
+
+  def test_internal_for_reading_unlocks_io_buffer_after_callback_exception
+    buffer = IO::Buffer.new(5)
+
+    assert_raise(RuntimeError) do
+      Bug::IOBuffer.for_reading_raise(buffer)
+    end
+
+    refute_predicate buffer, :locked?
+  end
+
+  def test_internal_for_writing_unlocks_io_buffer_after_callback_exception
+    buffer = IO::Buffer.new(5)
+
+    assert_raise(RuntimeError) do
+      Bug::IOBuffer.for_writing_raise(buffer)
+    end
+
+    refute_predicate buffer, :locked?
+  end
+
+  def test_internal_for_reading_preserves_existing_lock
+    buffer = IO::Buffer.new(5)
+    Bug::IOBuffer.lock(buffer)
+
+    assert_equal true, Bug::IOBuffer.for_reading_locked?(buffer)
+    assert_predicate buffer, :locked?
+  ensure
+    Bug::IOBuffer.unlock(buffer) if buffer&.locked?
+  end
+
+  def test_internal_for_writing_preserves_existing_lock
+    buffer = IO::Buffer.new(5)
+    Bug::IOBuffer.lock(buffer)
+
+    assert_equal true, Bug::IOBuffer.for_writing_locked?(buffer)
+    assert_predicate buffer, :locked?
+  ensure
+    Bug::IOBuffer.unlock(buffer) if buffer&.locked?
+  end
+
+  def test_internal_locked_for_reading
+    buffer = IO::Buffer.for("hello")
+
+    assert_equal [true, 5, "h".ord], Bug::IOBuffer.locked_for_reading(buffer)
+    refute_predicate buffer, :locked?
+  end
+
+  def test_internal_locked_for_reading_unlocks_after_callback_exception
+    buffer = IO::Buffer.for("hello")
+
+    assert_raise(RuntimeError) do
+      Bug::IOBuffer.locked_for_reading_raise(buffer)
+    end
+
+    refute_predicate buffer, :locked?
+  end
+
+  def test_internal_locked_for_writing
+    buffer = IO::Buffer.new(5)
+    buffer.set_string("hello")
+
+    assert_equal true, Bug::IOBuffer.locked_for_writing(buffer)
+    assert_equal "xello", buffer.get_string
+    refute_predicate buffer, :locked?
+  end
+
+  def test_internal_locked_for_writing_rejects_readonly_buffer
+    buffer = IO::Buffer.for("hello")
+
+    assert_raise(IO::Buffer::AccessError) do
+      Bug::IOBuffer.locked_for_writing(buffer)
+    end
+
+    refute_predicate buffer, :locked?
+  end
+
+  def test_internal_locked_for_writing_unlocks_after_callback_exception
+    buffer = IO::Buffer.new(5)
+
+    assert_raise(RuntimeError) do
+      Bug::IOBuffer.locked_for_writing_raise(buffer)
+    end
+
+    refute_predicate buffer, :locked?
   end
 
   def test_endian
@@ -125,6 +232,74 @@ class TestIOBuffer < Test::Unit::TestCase
     end
   end
 
+  def test_new_invalid_flags
+    assert_raise(ArgumentError) do
+      IO::Buffer.new(128, IO::Buffer::EXTERNAL)
+    end
+
+    assert_raise(ArgumentError) do
+      IO::Buffer.new(128, IO::Buffer::INTERNAL | IO::Buffer::MAPPED)
+    end
+
+    assert_raise(ArgumentError) do
+      IO::Buffer.new(128, IO::Buffer::INTERNAL | IO::Buffer::SHARED)
+    end
+
+    assert_raise(ArgumentError) do
+      IO::Buffer.new(128, IO::Buffer::INTERNAL | IO::Buffer::PRIVATE)
+    end
+
+    assert_raise(ArgumentError) do
+      IO::Buffer.new(128, IO::Buffer::MAPPED | IO::Buffer::SHARED | IO::Buffer::PRIVATE)
+    end
+  end
+
+  def test_new_infers_allocation_mode_with_flags
+    internal = IO::Buffer.new(128, IO::Buffer::READONLY)
+    assert_predicate internal, :internal?
+    assert_predicate internal, :readonly?
+
+    mapped = IO::Buffer.new(IO::Buffer::PAGE_SIZE, IO::Buffer::READONLY)
+    assert_predicate mapped, :mapped?
+    assert_predicate mapped, :readonly?
+
+    shared = IO::Buffer.new(128, IO::Buffer::SHARED)
+    assert_predicate shared, :mapped?
+    assert_predicate shared, :shared?
+
+    private_buffer = IO::Buffer.new(128, IO::Buffer::PRIVATE)
+    assert_predicate private_buffer, :mapped?
+    assert_predicate private_buffer, :private?
+  end
+
+  def test_map_invalid_flags
+    File.open(__FILE__) do |file|
+      assert_raise(ArgumentError) do
+        IO::Buffer.map(file, nil, 0, IO::Buffer::INTERNAL)
+      end
+
+      assert_raise(ArgumentError) do
+        IO::Buffer.map(file, nil, 0, IO::Buffer::EXTERNAL)
+      end
+
+      assert_raise(ArgumentError) do
+        IO::Buffer.map(file, nil, 0, IO::Buffer::SHARED | IO::Buffer::PRIVATE)
+      end
+    end
+  end
+
+  def test_map_allows_redundant_mapped_flag
+    buffer = File.open(__FILE__) do |file|
+      IO::Buffer.map(file, nil, 0, IO::Buffer::MAPPED | IO::Buffer::READONLY)
+    end
+
+    assert_predicate buffer, :mapped?
+    assert_predicate buffer, :shared?
+    assert_predicate buffer, :readonly?
+  ensure
+    buffer&.free
+  end
+
   def test_file_mapped
     buffer = File.open(__FILE__) {|file| IO::Buffer.map(file, nil, 0, IO::Buffer::READONLY)}
     assert_equal File.size(__FILE__), buffer.size
@@ -141,6 +316,33 @@ class TestIOBuffer < Test::Unit::TestCase
     contents = buffer.get_string
     assert_equal "# frozen_string_literal: false", contents
     assert_equal Encoding::BINARY, contents.encoding
+  end
+
+  def test_file_mapped_with_aligned_offset
+    alignment = IO::Buffer::MAP_ALIGNMENT
+
+    Tempfile.create do |file|
+      file.binmode
+      file.write("\0" * alignment)
+      file.write("test")
+      file.flush
+
+      buffer = IO::Buffer.map(file, 4, alignment, IO::Buffer::READONLY)
+      assert_equal "test", buffer.get_string
+    ensure
+      buffer&.free
+    end
+  end
+
+  def test_file_mapped_with_unaligned_offset
+    alignment = IO::Buffer::MAP_ALIGNMENT
+    message = "Offset (1) must be a multiple of IO::Buffer::MAP_ALIGNMENT (#{alignment})!"
+
+    File.open(__FILE__) do |file|
+      assert_raise_with_message(ArgumentError, message) do
+        IO::Buffer.map(file, 1, 1, IO::Buffer::READONLY)
+      end
+    end
   end
 
   def test_file_mapped_size_too_large
@@ -168,19 +370,19 @@ class TestIOBuffer < Test::Unit::TestCase
 
   def test_file_mapped_offset_too_large
     file_size = File.size(__FILE__)
-    page_count = file_size / IO::Buffer::PAGE_SIZE
-    offset = IO::Buffer::PAGE_SIZE * (page_count + 1)
+    alignment_count = file_size / IO::Buffer::MAP_ALIGNMENT
+    offset = IO::Buffer::MAP_ALIGNMENT * (alignment_count + 1)
     message = "Offset (#{offset}) can't be larger than file size (#{file_size})"
     assert_raise_with_message ArgumentError, message do
       File.open(__FILE__) {|file| IO::Buffer.map(file, nil, offset, IO::Buffer::READONLY)}
     end
 
-    if page_count > 0
-      offset = IO::Buffer::PAGE_SIZE * page_count
+    if alignment_count > 0
+      offset = IO::Buffer::MAP_ALIGNMENT * alignment_count
       available_size = file_size - offset
       size = available_size + 1
-      maximum_page_count = (file_size - size) / IO::Buffer::PAGE_SIZE
-      maximum_offset = IO::Buffer::PAGE_SIZE * maximum_page_count
+      maximum_alignment_count = (file_size - size) / IO::Buffer::MAP_ALIGNMENT
+      maximum_offset = IO::Buffer::MAP_ALIGNMENT * maximum_alignment_count
       message = "Offset (#{offset}) can't be larger than #{maximum_offset} " +
                 "for requested size (#{size})"
       assert_raise_with_message ArgumentError, message do
@@ -309,6 +511,83 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_equal 1, buffer.size
   end
 
+  def test_resize_zero_mapped
+    buffer = IO::Buffer.new(IO::Buffer::PAGE_SIZE)
+    assert_predicate buffer, :mapped?
+
+    buffer.resize(0)
+    assert_predicate buffer, :null?
+    assert_equal "", buffer.get_string
+
+    buffer.resize(1)
+    assert_equal 1, buffer.size
+  end
+
+  def test_resize_zero_slice
+    buffer = IO::Buffer.new(64)
+    slice = buffer.slice(0, 8)
+
+    slice.resize(0)
+    refute_predicate slice, :null?
+    assert_predicate slice, :empty?
+    assert_predicate slice, :valid?
+    assert_equal 64, buffer.size
+
+    slice.resize(1)
+    assert_equal 1, slice.size
+    assert_predicate slice, :valid?
+  end
+
+  def test_resize_slice_changes_view
+    buffer = IO::Buffer.for("abcdef").dup
+    slice = buffer.slice(2, 2)
+
+    assert_same slice, slice.resize(4)
+    assert_equal "cdef", slice.get_string
+
+    slice.set_string("X")
+    assert_equal "abXdef", buffer.get_string
+
+    slice.resize(1)
+    assert_equal "X", slice.get_string
+  end
+
+  def test_resize_slice_beyond_source
+    buffer = IO::Buffer.for("abcdef").dup
+    slice = buffer.slice(2, 2)
+
+    error = assert_raise(ArgumentError) do
+      slice.resize(5)
+    end
+
+    assert_equal "Resized slice exceeds its source buffer!", error.message
+    assert_equal 2, slice.size
+    assert_equal "cd", slice.get_string
+  end
+
+  def test_resize_locked_slice
+    buffer = IO::Buffer.for("abcdef").dup
+    slice = buffer.slice(2, 2)
+
+    slice.locked do
+      slice.resize(4)
+      assert_equal "cdef", slice.get_string
+
+      assert_raise(IO::Buffer::LockedError) do
+        buffer.resize(8)
+      end
+    end
+  end
+
+  def test_resize_nested_slice_uses_root_bounds
+    buffer = IO::Buffer.for("abcdef").dup
+    parent = buffer.slice(1, 2)
+    slice = parent.slice(1, 1)
+
+    slice.resize(4)
+    assert_equal "cdef", slice.get_string
+  end
+
   def test_resize_zero_external
     buffer = IO::Buffer.for('1')
 
@@ -325,6 +604,79 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_raise(IO::Buffer::InvalidatedError) do
       slice.resize(16)
     end
+  end
+
+  def test_resize_after_free
+    buffer = IO::Buffer.new(4)
+    buffer.set_string("test")
+    buffer.free
+    assert_predicate buffer, :null?
+
+    buffer.resize(8)
+    assert_equal 8, buffer.size
+    refute_predicate buffer, :null?
+  end
+
+  def test_free_frozen
+    buffer = IO::Buffer.new(4)
+    buffer.set_string("test")
+    buffer.freeze
+
+    assert_raise(FrozenError) do
+      buffer.free
+    end
+
+    refute_predicate buffer, :null?
+    assert_equal "test", buffer.get_string
+  end
+
+  def test_free_frozen_external
+    string = "Hello World".freeze
+    buffer = IO::Buffer.for(string)
+    buffer.freeze
+
+    assert_raise(FrozenError) do
+      buffer.free
+    end
+
+    refute_predicate buffer, :null?
+    assert_equal string, buffer.get_string
+  end
+
+  def test_free_frozen_in_block
+    string = +"Hello World"
+
+    buffer = IO::Buffer.for(string, &:freeze)
+    assert_predicate buffer, :null?
+
+    # The string is no longer locked by the buffer:
+    assert_equal "Hello World!", string << "!"
+  end
+
+  def test_resize_frozen
+    buffer = IO::Buffer.new(4)
+    buffer.set_string("test")
+    buffer.freeze
+
+    assert_raise(FrozenError) do
+      buffer.resize(8)
+    end
+
+    assert_equal 4, buffer.size
+    assert_equal "test", buffer.get_string
+  end
+
+  def test_resize_frozen_external
+    string = "Hello World".freeze
+    buffer = IO::Buffer.for(string)
+    buffer.freeze
+
+    assert_raise(FrozenError) do
+      buffer.resize(8)
+    end
+
+    assert_equal string.bytesize, buffer.size
+    assert_equal string, buffer.get_string
   end
 
   def test_compare_same_size
@@ -350,9 +702,11 @@ class TestIOBuffer < Test::Unit::TestCase
   def test_compare_zero_length
     buffer1 = IO::Buffer.new(0)
     buffer2 = IO::Buffer.new(1)
+    buffer3 = IO::Buffer.new(0)
 
     assert_negative buffer1 <=> buffer2
     assert_positive buffer2 <=> buffer1
+    assert_equal 0, buffer1 <=> buffer3
   end
 
   def test_slice
@@ -396,12 +750,49 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_equal "Hello World", hello
   end
 
+  def test_string_backed_slice_is_invalidated_when_root_is_freed
+    buffer = IO::Buffer.for("Hello World")
+    slice = buffer.slice(0, 5)
+
+    assert_predicate slice, :valid?
+    buffer.free
+    refute_predicate slice, :valid?
+    assert_raise(IO::Buffer::InvalidatedError) {slice.get_string}
+  ensure
+    slice&.free unless slice&.null?
+    buffer&.free unless buffer&.null?
+  end
+
+  def test_string_backed_slice_escaping_block_is_invalidated
+    slice = nil
+
+    IO::Buffer.for(+"Hello World") do |buffer|
+      slice = buffer.slice(0, 5)
+      assert_predicate slice, :valid?
+    end
+
+    refute_predicate slice, :valid?
+    assert_raise(IO::Buffer::InvalidatedError) {slice.get_string}
+  ensure
+    slice&.free unless slice&.null?
+  end
+
   def test_transfer
     hello = %w"Hello World".join(" ")
     buffer = IO::Buffer.for(hello)
     transferred = buffer.transfer
     assert_equal "Hello World", transferred.get_string
     assert_predicate buffer, :null?
+    assert_predicate buffer, :empty?
+    assert_predicate buffer, :valid?
+    refute_predicate buffer, :external?
+    refute_predicate buffer, :internal?
+    refute_predicate buffer, :mapped?
+    refute_predicate buffer, :shared?
+    refute_predicate buffer, :private?
+    refute_predicate buffer, :readonly?
+    assert_equal "", buffer.get_string
+    assert_equal 0, buffer.set_string("")
     assert_raise IO::Buffer::AccessError do
       transferred.set_string("Goodbye")
     end
@@ -421,20 +812,128 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_equal "Ciao! World", hello
   end
 
-  def test_locked
-    buffer = IO::Buffer.new(128, IO::Buffer::INTERNAL|IO::Buffer::LOCKED)
+  def test_transfer_frozen
+    buffer = IO::Buffer.new(4)
+    buffer.set_string("test")
+    buffer.freeze
 
-    assert_raise IO::Buffer::LockedError do
-      buffer.resize(256)
+    assert_raise(FrozenError) do
+      buffer.transfer
     end
 
-    assert_equal 128, buffer.size
+    refute_predicate buffer, :null?
+    assert_equal "test", buffer.get_string
+  end
 
-    assert_raise IO::Buffer::LockedError do
-      buffer.free
+  def test_transfer_frozen_external
+    string = "Hello World".freeze
+    buffer = IO::Buffer.for(string)
+    buffer.freeze
+
+    assert_raise(FrozenError) do
+      buffer.transfer
     end
 
-    assert_equal 128, buffer.size
+    refute_predicate buffer, :null?
+    assert_equal string, buffer.get_string
+  end
+
+  def test_counted_locking
+    buffer = IO::Buffer.new(128)
+
+    Bug::IOBuffer.lock(buffer)
+    Bug::IOBuffer.lock(buffer)
+
+    assert_predicate buffer, :locked?
+    assert_raise(IO::Buffer::LockedError) {buffer.free}
+
+    Bug::IOBuffer.unlock(buffer)
+
+    assert_predicate buffer, :locked?
+    assert_raise(IO::Buffer::LockedError) {buffer.resize(256)}
+
+    Bug::IOBuffer.unlock(buffer)
+
+    refute_predicate buffer, :locked?
+    buffer.resize(256)
+    assert_equal 256, buffer.size
+  ensure
+    Bug::IOBuffer.unlock(buffer) while buffer&.locked?
+    buffer&.free
+  end
+
+  def test_new_locked
+    buffer = Bug::IOBuffer.new_locked(128)
+
+    assert_predicate buffer, :locked?
+    assert_raise(IO::Buffer::LockedError) {buffer.free}
+
+    Bug::IOBuffer.free_locked(buffer)
+
+    refute_predicate buffer, :locked?
+    assert_predicate buffer, :null?
+  ensure
+    Bug::IOBuffer.free_locked(buffer) if buffer&.locked?
+    buffer&.free unless buffer&.null?
+  end
+
+  def test_slice_and_root_share_lock_count
+    buffer = IO::Buffer.new(128)
+    slice = buffer.slice(0, 64)
+
+    Bug::IOBuffer.lock(buffer)
+    Bug::IOBuffer.lock(slice)
+
+    Bug::IOBuffer.unlock(buffer)
+
+    assert_predicate buffer, :locked?
+    assert_predicate slice, :locked?
+    assert_raise(IO::Buffer::LockedError) {buffer.free}
+
+    Bug::IOBuffer.unlock(slice)
+
+    refute_predicate buffer, :locked?
+    refute_predicate slice, :locked?
+    buffer.free
+    refute_predicate slice, :valid?
+  ensure
+    Bug::IOBuffer.unlock(buffer) while buffer&.locked?
+    slice&.free unless slice&.null?
+    buffer&.free unless buffer&.null?
+  end
+
+  def test_invalid_slice_does_not_lock_source
+    buffer = IO::Buffer.new(128)
+    slice = buffer.slice(0, 64)
+
+    buffer.free
+
+    yielded = false
+    assert_raise(IO::Buffer::InvalidatedError) do
+      slice.locked do
+        yielded = true
+      end
+    end
+
+    refute yielded
+    refute_predicate buffer, :locked?
+    refute_predicate slice, :locked?
+  ensure
+    slice&.free unless slice&.null?
+    buffer&.free unless buffer&.null?
+  end
+
+  def test_string_backed_slice_shares_root_lock
+    buffer = IO::Buffer.for("test")
+    slice = buffer.slice(0, 2)
+
+    slice.locked do
+      assert_predicate buffer, :locked?
+      assert_raise(IO::Buffer::LockedError) {buffer.free}
+    end
+  ensure
+    slice&.free unless slice&.null?
+    buffer&.free unless buffer&.null?
   end
 
   def test_get_string
@@ -596,6 +1095,39 @@ class TestIOBuffer < Test::Unit::TestCase
     end
   end
 
+  def test_each_locks_backing_allocation
+    buffer = IO::Buffer.for("Hello World").dup
+
+    assert_raise(IO::Buffer::LockedError) do
+      buffer.each(:U8) do
+        buffer.free
+      end
+    end
+
+    assert_equal "Hello World", buffer.get_string
+    refute_predicate buffer, :locked?
+  ensure
+    buffer&.free
+  end
+
+  def test_each_on_slice_locks_root_allocation
+    buffer = IO::Buffer.for("Hello World").dup
+    slice = buffer.slice
+
+    assert_raise(IO::Buffer::LockedError) do
+      slice.each(:U8) do
+        buffer.resize(32)
+      end
+    end
+
+    assert_equal "Hello World", slice.get_string
+    refute_predicate buffer, :locked?
+    refute_predicate slice, :locked?
+  ensure
+    slice&.free
+    buffer&.free
+  end
+
   def test_zero_length_each
     buffer = IO::Buffer.new(0)
 
@@ -608,6 +1140,21 @@ class TestIOBuffer < Test::Unit::TestCase
 
     assert_equal string.bytes, buffer.each_byte.to_a
     assert_equal string.bytes[3, 5], buffer.each_byte(3, 5).to_a
+  end
+
+  def test_each_byte_locks_backing_allocation
+    buffer = IO::Buffer.for("Hello World").dup
+
+    assert_raise(IO::Buffer::LockedError) do
+      buffer.each_byte do
+        buffer.transfer
+      end
+    end
+
+    assert_equal "Hello World", buffer.get_string
+    refute_predicate buffer, :locked?
+  ensure
+    buffer&.free
   end
 
   def test_each_byte_bounds_error
@@ -643,6 +1190,13 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_raise(ArgumentError) {buffer.clear(0, SIZE_MAX-7, 10)}
   end
 
+  def test_clear_zero_length
+    buffer = IO::Buffer.new(0)
+
+    assert_same buffer, buffer.clear
+    assert_predicate buffer, :empty?
+  end
+
   def test_invalidation
     input, output = IO.pipe
 
@@ -669,6 +1223,42 @@ class TestIOBuffer < Test::Unit::TestCase
     input.close
   end
 
+  def test_overlapping_reads_retain_independent_locks
+    input1, output1 = IO.pipe
+    input2, output2 = IO.pipe
+    input1.nonblock = false
+    input2.nonblock = false
+    buffer = IO::Buffer.new(2)
+
+    thread1 = Thread.new {buffer.read(input1, 0, 1)}
+    thread2 = Thread.new {buffer.read(input2, 1, 1)}
+
+    Thread.pass until thread1.stop? && thread2.stop?
+
+    assert_predicate buffer, :locked?
+
+    output1.write("A")
+    assert_equal 1, thread1.value
+
+    assert_predicate thread2, :alive?
+    assert_predicate buffer, :locked?
+    assert_raise(IO::Buffer::LockedError) {buffer.free}
+
+    output2.write("B")
+    assert_equal 1, thread2.value
+
+    refute_predicate buffer, :locked?
+    assert_equal "AB", buffer.get_string
+  ensure
+    thread1&.kill&.join
+    thread2&.kill&.join
+    input1&.close
+    output1&.close
+    input2&.close
+    output2&.close
+    buffer&.free unless buffer&.null?
+  end
+
   def hello_world_tempfile(repeats = 1)
     io = Tempfile.new
     repeats.times do
@@ -689,18 +1279,31 @@ class TestIOBuffer < Test::Unit::TestCase
     end
   end
 
-  def test_read_with_with_length
+  def test_read_with_length
     hello_world_tempfile do |io|
       buffer = IO::Buffer.new(128)
-      buffer.read(io, 5)
+      buffer.read(io, 0, 5)
       assert_equal "Hello", buffer.get_string(0, 5)
     end
   end
 
-  def test_read_with_with_offset
+  def test_read_returns_short_result
+    input, output = IO.pipe
+    input.nonblock = true
+    output.write("abc")
+
+    buffer = IO::Buffer.new(5)
+    assert_equal 3, buffer.read(input, 0, 5)
+    assert_equal "abc", buffer.get_string(0, 3)
+  ensure
+    input&.close
+    output&.close
+  end
+
+  def test_read_with_offset
     hello_world_tempfile do |io|
       buffer = IO::Buffer.new(128)
-      buffer.read(io, nil, 6)
+      buffer.read(io, 6)
       assert_equal "Hello", buffer.get_string(6, 5)
     end
   end
@@ -709,7 +1312,7 @@ class TestIOBuffer < Test::Unit::TestCase
     hello_world_tempfile(100) do |io|
       buffer = IO::Buffer.new(1024)
       # Only read 24 bytes from the file, as we are starting at offset 1000 in the buffer.
-      assert_equal 24, buffer.read(io, 0, 1000)
+      assert_equal 24, buffer.read(io, 1000)
       assert_equal "Hello World", buffer.get_string(1000, 11)
     end
   end
@@ -732,10 +1335,35 @@ class TestIOBuffer < Test::Unit::TestCase
 
     buffer = IO::Buffer.new(5)
     buffer.set_string("Hello")
-    buffer.write(io, 4, 1)
+    buffer.write(io, 1, 4)
 
     io.seek(0)
     assert_equal "ello", io.read(4)
+  ensure
+    io.close!
+  end
+
+  def test_zero_length_io
+    io = Tempfile.new
+
+    assert_zero_length_io = proc do |buffer, offset = 0|
+      assert_equal 0, buffer.read(io, offset, 0)
+      assert_equal 0, buffer.pread(io, 0, offset, 0)
+      assert_equal 0, buffer.write(io, offset, 0)
+      assert_equal 0, buffer.pwrite(io, 0, offset, 0)
+    end
+
+    buffer = IO::Buffer.new(0)
+    assert_predicate buffer, :null?
+    assert_zero_length_io.call(buffer)
+
+    IO::Buffer.for("") do |buffer|
+      refute_predicate buffer, :null?
+      assert_zero_length_io.call(buffer)
+    end
+
+    buffer = IO::Buffer.new(8)
+    assert_zero_length_io.call(buffer, buffer.size)
   ensure
     io.close!
   end
@@ -746,7 +1374,7 @@ class TestIOBuffer < Test::Unit::TestCase
     io.seek(0)
 
     buffer = IO::Buffer.new(128)
-    buffer.pread(io, 6, 5)
+    buffer.pread(io, 6, 0, 5)
 
     assert_equal "World", buffer.get_string(0, 5)
     assert_equal 0, io.tell
@@ -760,7 +1388,7 @@ class TestIOBuffer < Test::Unit::TestCase
     io.seek(0)
 
     buffer = IO::Buffer.new(128)
-    buffer.pread(io, 6, 5, 6)
+    buffer.pread(io, 6, 6, 5)
 
     assert_equal "World", buffer.get_string(6, 5)
     assert_equal 0, io.tell
@@ -773,7 +1401,7 @@ class TestIOBuffer < Test::Unit::TestCase
 
     buffer = IO::Buffer.new(128)
     buffer.set_string("World")
-    buffer.pwrite(io, 6, 5)
+    buffer.pwrite(io, 6, 0, 5)
 
     assert_equal 0, io.tell
 
@@ -788,7 +1416,7 @@ class TestIOBuffer < Test::Unit::TestCase
 
     buffer = IO::Buffer.new(128)
     buffer.set_string("Hello World")
-    buffer.pwrite(io, 6, 5, 6)
+    buffer.pwrite(io, 6, 6, 5)
 
     assert_equal 0, io.tell
 
@@ -1188,6 +1816,251 @@ class TestIOBuffer < Test::Unit::TestCase
     # Width must be at least 1
     assert_raise(ArgumentError) do
       buffer.hexdump(0, 1, 0)
+    end
+  end
+
+  def test_memory_view_null
+    buffer = IO::Buffer.new(0)
+    assert_false(MemoryViewTestUtils.available?(buffer))
+  end
+
+  def test_memory_view_available
+    buffer = IO::Buffer.new(8)
+    assert_true(MemoryViewTestUtils.available?(buffer))
+  end
+
+  def test_memory_view_get_simple
+    data = +"\x00\x01\x02\x03"
+    IO::Buffer.for(data) do |buffer|
+      info = MemoryViewTestUtils.get_memory_view_info(buffer)
+      assert_equal({
+                     obj: buffer,
+                     byte_size: data.bytesize,
+                     readonly: true,
+                     format: nil,
+                     item_size: 1,
+                     ndim: 1,
+                     shape: nil,
+                     strides: nil,
+                     sub_offsets: nil,
+                   },
+                   info)
+    end
+  end
+
+  def test_memory_view_get_writable
+    data = +"\x00\x01\x02\x03"
+    IO::Buffer.for(data) do |buffer|
+      flags = MemoryViewTestUtils::WRITABLE
+      info = MemoryViewTestUtils.get_memory_view_info(buffer, flags)
+      assert_equal({
+                     obj: buffer,
+                     byte_size: data.bytesize,
+                     readonly: false,
+                     format: nil,
+                     item_size: 1,
+                     ndim: 1,
+                     shape: nil,
+                     strides: nil,
+                     sub_offsets: nil,
+                   },
+                   info)
+    end
+  end
+
+  def test_memory_view_get_format
+    data = "\x00\x01\x02\x03".freeze
+    IO::Buffer.for(data) do |buffer|
+      flags = MemoryViewTestUtils::FORMAT
+      info = MemoryViewTestUtils.get_memory_view_info(buffer, flags)
+      assert_equal({
+                     obj: buffer,
+                     byte_size: data.bytesize,
+                     readonly: true,
+                     format: "C",
+                     item_size: 1,
+                     ndim: 1,
+                     shape: nil,
+                     strides: nil,
+                     sub_offsets: nil,
+                   },
+                   info)
+    end
+  end
+
+  def test_memory_view_get_multi_dimensional
+    data = "\x00\x01\x02\x03".freeze
+    IO::Buffer.for(data) do |buffer|
+      flags = MemoryViewTestUtils::MULTI_DIMENSIONAL
+      info = MemoryViewTestUtils.get_memory_view_info(buffer, flags)
+      assert_equal({
+                     obj: buffer,
+                     byte_size: data.bytesize,
+                     readonly: true,
+                     format: nil,
+                     item_size: 1,
+                     ndim: 1,
+                     shape: [data.bytesize],
+                     strides: nil,
+                     sub_offsets: nil,
+                   },
+                   info)
+    end
+  end
+
+  def test_memory_view_get_strides
+    data = "\x00\x01\x02\x03".freeze
+    IO::Buffer.for(data) do |buffer|
+      flags = MemoryViewTestUtils::STRIDES
+      info = MemoryViewTestUtils.get_memory_view_info(buffer, flags)
+      assert_equal({
+                     obj: buffer,
+                     byte_size: data.bytesize,
+                     readonly: true,
+                     format: nil,
+                     item_size: 1,
+                     ndim: 1,
+                     shape: [data.bytesize],
+                     strides: [1],
+                     sub_offsets: nil,
+                   },
+                   info)
+    end
+  end
+
+  def test_memory_view_get_row_major
+    data = "\x00\x01\x02\x03".freeze
+    IO::Buffer.for(data) do |buffer|
+      flags = MemoryViewTestUtils::ROW_MAJOR
+      info = MemoryViewTestUtils.get_memory_view_info(buffer, flags)
+      assert_equal({
+                     obj: buffer,
+                     byte_size: data.bytesize,
+                     readonly: true,
+                     format: nil,
+                     item_size: 1,
+                     ndim: 1,
+                     shape: [data.bytesize],
+                     strides: [1],
+                     sub_offsets: nil,
+                   },
+                   info)
+    end
+  end
+
+  def test_memory_view_get_column_major
+    data = "\x00\x01\x02\x03".freeze
+    IO::Buffer.for(data) do |buffer|
+      flags = MemoryViewTestUtils::COLUMN_MAJOR
+      info = MemoryViewTestUtils.get_memory_view_info(buffer, flags)
+      assert_equal({
+                     obj: buffer,
+                     byte_size: data.bytesize,
+                     readonly: true,
+                     format: nil,
+                     item_size: 1,
+                     ndim: 1,
+                     shape: [data.bytesize],
+                     strides: [1],
+                     sub_offsets: nil,
+                   },
+                   info)
+    end
+  end
+
+  def test_memory_view_get_any_contiguous
+    data = "\x00\x01\x02\x03".freeze
+    IO::Buffer.for(data) do |buffer|
+      flags = MemoryViewTestUtils::ANY_CONTIGUOUS
+      info = MemoryViewTestUtils.get_memory_view_info(buffer, flags)
+      assert_equal({
+                     obj: buffer,
+                     byte_size: data.bytesize,
+                     readonly: true,
+                     format: nil,
+                     item_size: 1,
+                     ndim: 1,
+                     shape: [data.bytesize],
+                     strides: [1],
+                     sub_offsets: nil,
+                   },
+                   info)
+    end
+  end
+
+  def test_memory_view_get_indirect
+    data = "\x00\x01\x02\x03".freeze
+    IO::Buffer.for(data) do |buffer|
+      flags = MemoryViewTestUtils::INDIRECT
+      info = MemoryViewTestUtils.get_memory_view_info(buffer, flags)
+      assert_equal({
+                     obj: buffer,
+                     byte_size: data.bytesize,
+                     readonly: true,
+                     format: nil,
+                     item_size: 1,
+                     ndim: 1,
+                     shape: [data.bytesize],
+                     strides: [1],
+                     sub_offsets: nil,
+                   },
+                   info)
+    end
+  end
+
+  def test_memory_view_readonly
+    data = "\x00\x01\x02\x03".freeze
+    buffer = IO::Buffer.for(data)
+    # rb_memory_view_get(RUBY_MEMORY_VIEW_WRITABLE) is failed with
+    # readonly IO::Buffer.
+    assert_nil(MemoryViewTestUtils.set_data(buffer, 1, 0x11))
+    assert_equal(data, MemoryViewTestUtils.get_data(buffer, 0..(data.bytesize)))
+  end
+
+  def test_memory_view_writable
+    IO::Buffer.for(+"\x00\x01\x02\x03") do |buffer|
+      assert_true(MemoryViewTestUtils.set_data(buffer, 1, 0x11))
+      assert_equal(0x11, buffer.get_value(:U8, 1))
+    end
+  end
+
+  def test_memory_view_locked
+    IO::Buffer.for("\x00\x01\x02\x03".freeze) do |buffer|
+      flags = MemoryViewTestUtils::SIMPLE
+      MemoryViewTestUtils.get(buffer, flags) do
+        assert_predicate buffer, :locked?
+      end
+      refute_predicate buffer, :locked?
+    end
+  end
+
+  def test_memory_view_nested_locked
+    IO::Buffer.for("\x00\x01\x02\x03".freeze) do |buffer|
+      flags = MemoryViewTestUtils::SIMPLE
+      MemoryViewTestUtils.get(buffer, flags) do
+        MemoryViewTestUtils.get(buffer, flags) do
+          assert_predicate buffer, :locked?
+        end
+        assert_predicate buffer, :locked?
+      end
+      refute_predicate buffer, :locked?
+    end
+  end
+
+  def test_memory_view_sliced_nested_locked
+    IO::Buffer.for("\x00\x01\x02\x03".freeze) do |buffer|
+      sliced = buffer.slice(1, 2)
+      flags = MemoryViewTestUtils::SIMPLE
+      MemoryViewTestUtils.get(sliced, flags) do
+        MemoryViewTestUtils.get(sliced, flags) do
+          assert_predicate sliced, :locked?
+          assert_predicate buffer, :locked?
+        end
+        assert_predicate sliced, :locked?
+        assert_predicate buffer, :locked?
+      end
+      refute_predicate sliced, :locked?
+      refute_predicate buffer, :locked?
     end
   end
 end

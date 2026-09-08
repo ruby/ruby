@@ -81,6 +81,7 @@ void rb_check_stack_overflow(void);
 VALUE rb_block_call2(VALUE obj, ID mid, int argc, const VALUE *argv, rb_block_call_func_t bl_proc, VALUE data2, long flags);
 struct vm_ifunc *rb_current_ifunc(void);
 VALUE rb_gccct_clear_table(void);
+VALUE rb_funcallv_uncached(VALUE recv, ID mid, int argc, const VALUE *argv);
 VALUE rb_eval_cmd_call_kw(VALUE cmd, int argc, const VALUE *argv, int kw_splat);
 
 #if USE_YJIT || USE_ZJIT
@@ -115,6 +116,9 @@ VALUE rb_make_backtrace(void);
 void rb_backtrace_print_as_bugreport(FILE*);
 int rb_backtrace_p(VALUE obj);
 VALUE rb_backtrace_dup(VALUE btobj);
+void *rb_backtrace_blob_dump(VALUE btobj, int *size_out);
+VALUE rb_backtrace_blob_load(const void *blob, int size);
+void rb_backtrace_blob_mark(const void *blob, int size);
 VALUE rb_backtrace_to_str_ary(VALUE obj);
 VALUE rb_backtrace_to_location_ary(VALUE obj);
 VALUE rb_location_ary_to_backtrace(VALUE ary);

@@ -25,6 +25,7 @@ module Bundler
         @checksum_store = Checksum::Store.new
         @gem_installers = {}
         @gem_installers_mutex = Mutex.new
+        @remote_spec_for_mutex = Mutex.new
         @remote_specs_mutex = Mutex.new
 
         cooldown = options["cooldown"]
@@ -196,6 +197,8 @@ module Bundler
              "the security policy didn't allow it, with the message: #{e.message}"
           end
 
+          s.content_address = spec.content_address if spec.content_address
+
           spec.__swap__(s)
         end
 
@@ -230,8 +233,12 @@ module Bundler
         spec.post_install_message
       end
 
+      def uncached?(spec)
+        caches.none? {|cache| File.exist?(package_path(cache, spec)) }
+      end
+
       def cache(spec, custom_path = nil)
-        cached_path = Bundler.settings[:cache_all_platforms] ? fetch_gem_if_possible(spec) : cached_gem(spec)
+        cached_path = fetch_gem_if_possible(spec)
         raise GemNotFound, "Missing gem file '#{spec.file_name}'." unless cached_path
         return if File.dirname(cached_path) == Bundler.app_cache.to_s
         Bundler.ui.info "  * #{File.basename(cached_path)}"
@@ -406,7 +413,7 @@ module Bundler
         @cached_specs ||= begin
           idx = Index.new
 
-          Gem::Util.glob_files_in_dir("*.gem", cache_path.to_s).each do |gemfile|
+          SharedHelpers.glob_files_in_dir("*.gem", cache_path.to_s).each do |gemfile|
             s ||= Bundler.rubygems.spec_from_gem(gemfile)
             s.source = self
             idx << s
@@ -437,12 +444,14 @@ module Bundler
       # Looks up a single spec in the remote sources, fetching only its own
       # name when the full remote index is not already materialized.
       def remote_spec_for(spec)
-        return remote_specs.search(spec).first if @remote_specs || api_fetchers.empty?
+        @remote_spec_for_mutex.synchronize do
+          return remote_specs.search(spec).first if @remote_specs || api_fetchers.empty?
 
-        index = Index.build do |idx|
-          fetch_names(api_fetchers, [spec.name], idx)
+          index = Index.build do |idx|
+            fetch_names(api_fetchers, [spec.name], idx)
+          end
+          index.search(spec).first
         end
-        index.search(spec).first
       end
 
       def fetch_names(fetchers, dependency_names, index)
@@ -462,8 +471,22 @@ module Bundler
         if spec.remote
           fetch_gem(spec, previous_spec)
         else
-          cached_gem(spec)
+          cached_gem(spec) || refetch_gem(spec, previous_spec)
         end
+      end
+
+      # An installed gem materializes without a remote, so a reinstall forced by
+      # `--redownload` has to look the gem up in the remote index again before it
+      # can download the archive that the cache no longer holds.
+      def refetch_gem(spec, previous_spec = nil)
+        return unless @allow_remote
+
+        remote_spec = remote_spec_for(spec)
+        return unless remote_spec && remote_spec.full_name == spec.full_name
+
+        path = fetch_gem(remote_spec, previous_spec)
+        spec.remote = remote_spec.remote
+        path
       end
 
       def fetch_gem(spec, previous_spec = nil)
@@ -599,6 +622,7 @@ module Bundler
 
           installer = Bundler::RubyGemsGemInstaller.at(
             path,
+            content_address: (spec.content_address if Gem::ContentAddress.content_addressed?(spec, validate_ruby_abi: false)),
             security_policy: Bundler.rubygems.security_policies[Bundler.settings["trust-policy"]],
             install_dir: rubygems_dir.to_s,
             bin_dir: Bundler.system_bindir.to_s,

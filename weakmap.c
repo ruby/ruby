@@ -50,8 +50,6 @@ wmap_memsize(const void *ptr)
     size_t size = 0;
     if (w->table) {
         size += st_memsize(w->table);
-        /* The key and value of the table each take sizeof(VALUE) in size. */
-        size += st_table_size(w->table) * (2 * sizeof(VALUE));
     }
 
     return size;
@@ -561,8 +559,6 @@ wkmap_memsize(const void *ptr)
     size_t size = 0;
     if (w->table) {
         size += st_memsize(w->table);
-        /* Each key of the table takes sizeof(VALUE) in size. */
-        size += st_table_size(w->table) * sizeof(VALUE);
     }
 
     return size;

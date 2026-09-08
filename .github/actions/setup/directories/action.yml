@@ -218,7 +218,7 @@ runs:
         INPUT_MAKE_COMMAND: ${{ inputs.make-command }}
 
     - name: clean
-      uses: gacts/run-and-post-run@598d7a875d5620e0457490555b5e18e46082aa47 # v1.4.4
+      uses: gacts/run-and-post-run@fc6503862aba998e2f2123225ad63c09a92ed46e # v1.4.5
       with:
         working-directory:
         post: |

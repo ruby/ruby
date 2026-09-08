@@ -45,7 +45,10 @@ class Gem::Commands::CertCommand < Gem::Command
     end
 
     add_option("-A", "--key-algorithm ALGORITHM",
-               "Select which key algorithm to use for --build") do |algorithm, options|
+               "Select key algorithm for --build from",
+               "RSA, DSA, EC, ML-DSA-44, ML-DSA-65,",
+               "or ML-DSA-87. Defaults to "\
+               "#{Gem::Security::DEFAULT_KEY_ALGORITHM}.") do |algorithm, options|
       options[:key_algorithm] = algorithm
     end
 
@@ -100,7 +103,8 @@ class Gem::Commands::CertCommand < Gem::Command
   rescue Errno::ENOENT
     raise Gem::OptionParser::InvalidArgument, "#{key_file}: does not exist"
   rescue OpenSSL::PKey::PKeyError, ArgumentError
-    raise Gem::OptionParser::InvalidArgument, "#{key_file}: invalid RSA, DSA, or EC key"
+    raise Gem::OptionParser::InvalidArgument, "#{key_file}: invalid "\
+      "RSA, DSA, EC, ML-DSA-44, ML-DSA-65, or ML-DSA-87 key"
   end
 
   def execute

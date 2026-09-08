@@ -1124,15 +1124,6 @@ static void generate_json_fallback(FBuffer *buffer, struct generate_json_data *d
     }
 }
 
-static inline void generate_json_symbol(FBuffer *buffer, struct generate_json_data *data, VALUE obj)
-{
-    if (data->state->strict) {
-        generate_json_string(buffer, data, rb_sym2str(obj));
-    } else {
-        generate_json_fallback(buffer, data, obj);
-    }
-}
-
 static void generate_json_null(FBuffer *buffer, struct generate_json_data *data, VALUE obj)
 {
     fbuffer_append(buffer, "null", 4);
@@ -1218,7 +1209,13 @@ start:
         } else if (RB_FLONUM_P(obj)) {
             generate_json_float(buffer, data, obj);
         } else if (RB_STATIC_SYM_P(obj)) {
-            generate_json_symbol(buffer, data, obj);
+            if (data->state->strict) {
+                obj = rb_sym2str(obj);
+                JSON_ASSERT(RBASIC_CLASS(obj) == rb_cString);
+                goto generate_string;
+            }
+
+            generate_json_fallback(buffer, data, obj);
         } else {
             goto general;
         }
@@ -1239,6 +1236,7 @@ start:
             case T_STRING:
                 if (fallback && klass != rb_cString) goto general;
 
+            generate_string:
                 if (RB_LIKELY(valid_json_string_p(obj))) {
                     raw_generate_json_string(buffer, data, obj);
                 } else if (as_json_called) {
@@ -1250,7 +1248,13 @@ start:
                 }
                 break;
             case T_SYMBOL:
-                generate_json_symbol(buffer, data, obj);
+                if (data->state->strict) {
+                    obj = rb_sym2str(obj);
+                    JSON_ASSERT(RBASIC_CLASS(obj) == rb_cString);
+                    goto generate_string;
+                }
+
+                generate_json_fallback(buffer, data, obj);
                 break;
             case T_FLOAT:
                 if (fallback && klass != rb_cFloat) goto general;

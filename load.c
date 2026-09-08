@@ -1071,7 +1071,7 @@ rb_require_relative_entrypoint(VALUE fname)
  * raised. Returns +true+ if the file was loaded and +false+ if the file was
  * already loaded before.
  */
-VALUE
+static VALUE
 rb_f_require_relative(VALUE obj, VALUE fname)
 {
     return rb_require_relative_entrypoint(fname);
@@ -1218,12 +1218,13 @@ load_ext(VALUE path, VALUE fname)
     const rb_box_t *box = rb_loading_box();
     VALUE cleanup = 0;
     if (BOX_USER_P(box)) {
-        loaded = rb_box_local_extension(box->box_object, fname, path, &cleanup);
+        loaded = rb_box_local_extension(box->box_object, path, &cleanup);
     }
     rb_scope_visibility_set(METHOD_VISI_PUBLIC);
     void *handle = dln_load_feature(RSTRING_PTR(loaded), RSTRING_PTR(fname));
     if (cleanup) {
         rb_box_cleanup_local_extension(cleanup);
+        rb_box_defer_unload_local_extension(handle);
     }
     RB_GC_GUARD(loaded);
     RB_GC_GUARD(fname);

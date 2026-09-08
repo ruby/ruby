@@ -76,10 +76,6 @@ module Bundler
         level("debug")
       end
 
-      def quiet?
-        level("quiet")
-      end
-
       def ask(msg)
         @shell.ask(msg, :green)
       end

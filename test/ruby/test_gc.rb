@@ -302,6 +302,13 @@ class TestGc < Test::Unit::TestCase
     assert_equal stat[:heap_available_slots], stat_heap_sum[:heap_eden_slots]
     assert_equal stat[:total_allocated_objects], stat_heap_sum[:total_allocated_objects]
     assert_equal stat[:total_freed_objects], stat_heap_sum[:total_freed_objects]
+  rescue Test::Unit::AssertionFailedError
+    # GC.stat and GC.stat_heap are separate reads of the same counters, so
+    # anything allocated between them makes the two disagree.  An accounting
+    # bug disagrees on the retry too.
+    raise if @retried
+    @retried = true
+    retry
   end
 
   def test_page_pool_stat_consistency

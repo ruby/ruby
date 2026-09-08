@@ -35,7 +35,7 @@ require 'rbconfig'
 class Gem::Resolv
 
   # The version string
-  VERSION = "0.7.0"
+  VERSION = "0.7.1"
 
   ##
   # Looks up the first IP address for +name+.
@@ -487,13 +487,18 @@ class Gem::Resolv
     # * Gem::Resolv::DNS::Resource::IN::A
     # * Gem::Resolv::DNS::Resource::IN::AAAA
     # * Gem::Resolv::DNS::Resource::IN::ANY
+    # * Gem::Resolv::DNS::Resource::IN::CAA
     # * Gem::Resolv::DNS::Resource::IN::CNAME
     # * Gem::Resolv::DNS::Resource::IN::HINFO
+    # * Gem::Resolv::DNS::Resource::IN::HTTPS
+    # * Gem::Resolv::DNS::Resource::IN::LOC
     # * Gem::Resolv::DNS::Resource::IN::MINFO
     # * Gem::Resolv::DNS::Resource::IN::MX
     # * Gem::Resolv::DNS::Resource::IN::NS
     # * Gem::Resolv::DNS::Resource::IN::PTR
     # * Gem::Resolv::DNS::Resource::IN::SOA
+    # * Gem::Resolv::DNS::Resource::IN::SRV
+    # * Gem::Resolv::DNS::Resource::IN::SVCB
     # * Gem::Resolv::DNS::Resource::IN::TXT
     # * Gem::Resolv::DNS::Resource::IN::WKS
     #
@@ -721,7 +726,8 @@ class Gem::Resolv
           begin
             reply, from = recv_reply(select_result[0])
           rescue Errno::ECONNREFUSED, # GNU/Linux, FreeBSD
-                 Errno::ECONNRESET # Windows
+                 Errno::ECONNRESET, # Windows
+                 EOFError
             # No name server running on the server?
             # Don't wait anymore.
             raise ResolvTimeout
@@ -930,8 +936,11 @@ class Gem::Resolv
         end
 
         def recv_reply(readable_socks)
-          len = readable_socks[0].read(2).unpack('n')[0]
+          len_data = readable_socks[0].read(2)
+          raise EOFError if len_data.nil? || len_data.bytesize != 2
+          len = len_data.unpack('n')[0]
           reply = @socks[0].read(len)
+          raise EOFError if reply.nil? || reply.bytesize != len
           return reply, nil
         end
 

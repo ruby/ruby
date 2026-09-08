@@ -235,6 +235,7 @@ id_entry_dir_free(void *ptr)
 {
     struct id_entry_dir *dir = ptr;
     SIZED_FREE_N(dir->entries, dir->capa);
+    xfree(dir);
 }
 
 static size_t

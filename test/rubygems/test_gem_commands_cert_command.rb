@@ -157,6 +157,67 @@ Added '/CN=alternate/DC=example'
     assert cert.public_key.is_a? OpenSSL::PKey::EC
   end
 
+  def test_execute_build_key_algorithm_ml_dsa_65_key
+    omit_unless_support_ml_dsa_cert
+
+    passphrase = "Foo bar"
+
+    @cmd.handle_options %W[--build nobody@example.com --key-algorithm ml-dsa-65]
+
+    @build_ui = Gem::MockGemUi.new "#{passphrase}\n#{passphrase}"
+
+    use_ui @build_ui do
+      @cmd.execute
+    end
+
+    output = @build_ui.output.squeeze("\n").split "\n"
+
+    assert_equal "Passphrase for your Private Key:  ",
+                 output.shift
+    assert_equal "Please repeat the passphrase for your Private Key:  ",
+                 output.shift
+    assert_equal "Certificate: #{File.join @tempdir, "gem-public_cert.pem"}",
+                 output.shift
+    assert_equal "Private Key: #{File.join @tempdir, "gem-private_key.pem"}",
+                 output.shift
+
+    assert_equal "Don't forget to move the key file to somewhere private!",
+                 output.shift
+
+    assert_empty output
+    assert_empty @build_ui.error
+
+    assert_path_exist File.join(@tempdir, "gem-private_key.pem")
+
+    cert_path = File.join(@tempdir, "gem-public_cert.pem")
+    assert_path_exist cert_path
+    cert = OpenSSL::X509::Certificate.new(File.read(cert_path))
+    assert cert.public_key.is_a? OpenSSL::PKey::PKey
+    assert_equal "ML-DSA-65",
+                 Gem::PQCUtilities.key_algorithm_name(cert.public_key)
+  end
+
+  def test_execute_build_key_algorithm_ml_dsa_65_key_without_ml_dsa_support
+    omit_if_support_ml_dsa_key
+
+    passphrase = "Foo bar"
+
+    @cmd.handle_options %W[--build nobody@example.com --key-algorithm ml-dsa-65]
+
+    @build_ui = Gem::MockGemUi.new "#{passphrase}\n#{passphrase}"
+
+    use_ui @build_ui do
+      e = assert_raise Gem::Security::Exception do
+        @cmd.execute
+      end
+
+      assert_match(
+        /^ML-DSA-65 key generation failed: ML-DSA-65 requires OpenSSL >= 3\.5/,
+        e.message
+      )
+    end
+  end
+
   def test_execute_build_bad_email_address
     passphrase = "Foo bar"
     email = "nobody@"
@@ -329,6 +390,53 @@ Added '/CN=alternate/DC=example'
     assert_equal "incorrect signing key for signing", e.message
   end
 
+  def test_execute_build_ml_dsa_65_key
+    omit_unless_support_ml_dsa_cert
+
+    @cmd.handle_options %W[
+      --build nobody@example.com
+      --private-key #{ML_DSA_65_PRIVATE_KEY_FILE}
+    ]
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    output = @ui.output.split "\n"
+
+    assert_equal "Certificate: #{File.join @tempdir, "gem-public_cert.pem"}",
+                 output.shift
+
+    assert_empty output
+    assert_empty @ui.error
+
+    assert_path_exist File.join(@tempdir, "gem-public_cert.pem")
+    assert_path_not_exist File.join(@tempdir, "gem-private_key.pem")
+  end
+
+  def test_execute_build_encrypted_ml_dsa_65_key
+    omit_unless_support_ml_dsa_cert
+
+    @cmd.handle_options %W[
+      --build nobody@example.com
+      --private-key #{ML_DSA_65_ENCRYPTED_PRIVATE_KEY_FILE}
+    ]
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    output = @ui.output.split "\n"
+
+    assert_equal "Certificate: #{File.join @tempdir, "gem-public_cert.pem"}",
+                 output.shift
+
+    assert_empty output
+    assert_empty @ui.error
+
+    assert_path_exist File.join(@tempdir, "gem-public_cert.pem")
+  end
+
   def test_execute_certificate
     use_ui @ui do
       @cmd.handle_options %W[--certificate #{PUBLIC_CERT_FILE}]
@@ -338,6 +446,19 @@ Added '/CN=alternate/DC=example'
     assert_equal "", @ui.error
 
     assert_equal PUBLIC_CERT.to_pem, @cmd.options[:issuer_cert].to_pem
+  end
+
+  def test_execute_certificate_ml_dsa_65
+    omit_unless_support_ml_dsa_key
+
+    use_ui @ui do
+      @cmd.handle_options %W[--certificate #{ML_DSA_65_PUBLIC_CERT_FILE}]
+    end
+
+    assert_equal "", @ui.output
+    assert_equal "", @ui.error
+
+    assert_equal ML_DSA_65_PUBLIC_CERT.to_pem, @cmd.options[:issuer_cert].to_pem
   end
 
   def test_execute_list
@@ -389,6 +510,47 @@ Added '/CN=alternate/DC=example'
     assert_equal "", @ui.error
 
     assert_equal ENCRYPTED_PRIVATE_KEY.private_to_pem, @cmd.options[:key].private_to_pem
+  end
+
+  def test_execute_private_ml_dsa_65_key
+    omit_unless_support_ml_dsa_key
+
+    use_ui @ui do
+      @cmd.send :handle_options, %W[--private-key #{ML_DSA_65_PRIVATE_KEY_FILE}]
+    end
+
+    assert_equal "", @ui.output
+    assert_equal "", @ui.error
+
+    assert_equal ML_DSA_65_PRIVATE_KEY.private_to_pem,
+                 @cmd.options[:key].private_to_pem
+  end
+
+  def test_execute_private_ml_dsa_65_key_without_ml_dsa_support
+    omit_if_support_ml_dsa_key
+
+    use_ui @ui do
+      e = assert_raise Gem::OptionParser::InvalidArgument do
+        @cmd.send :handle_options, %W[--private-key #{ML_DSA_65_PRIVATE_KEY_FILE}]
+      end
+
+      assert_match(/invalid .+ key/, e.message)
+    end
+  end
+
+  def test_execute_encrypted_private_ml_dsa_65_key
+    omit_unless_support_ml_dsa_key
+
+    use_ui @ui do
+      @cmd.send :handle_options,
+                %W[--private-key #{ML_DSA_65_ENCRYPTED_PRIVATE_KEY_FILE}]
+    end
+
+    assert_equal "", @ui.output
+    assert_equal "", @ui.error
+
+    assert_equal ML_DSA_65_ENCRYPTED_PRIVATE_KEY.private_to_pem,
+                 @cmd.options[:key].private_to_pem
   end
 
   def test_execute_remove
@@ -811,7 +973,9 @@ ERROR:  --private-key not specified and ~/.gem/gem-private_key.pem does not exis
       @cmd.handle_options %W[--private-key #{bad}]
     end
 
-    assert_equal "invalid argument: --private-key #{bad}: invalid RSA, DSA, or EC key",
+    assert_equal "invalid argument: "\
+                 "--private-key #{bad}: "\
+                 "invalid RSA, DSA, EC, ML-DSA-44, ML-DSA-65, or ML-DSA-87 key",
                  e.message
   end
 

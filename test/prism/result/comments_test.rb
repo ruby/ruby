@@ -39,6 +39,16 @@ module Prism
       )
     end
 
+    def test_comment_trailing
+      comment = Prism.parse_comments("x # trailing")[0]
+      assert_predicate(comment, :trailing?)
+    end
+
+    def test_comment_syntax_invalid_bytes_trailing
+      comment = Prism.parse_comments("\xFF\xFE# not trailing")[0]
+      refute_predicate(comment, :trailing?)
+    end
+
     def test___END__
       result = Prism.parse(<<~RUBY)
         __END__

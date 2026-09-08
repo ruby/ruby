@@ -137,6 +137,7 @@ class << RubyVM::ZJIT
       :empty_inline_frame_count,
       :non_variadic_cfunc_optimized_send_count,
       :variadic_cfunc_optimized_send_count,
+      :caller_splat_optimized,
     ], buf:, stats:, right_align: true, base: :send_count)
     print_counters([
       :dynamic_setivar_count,
@@ -181,9 +182,13 @@ class << RubyVM::ZJIT
       :load_field_count,
       :store_field_count,
 
+      :throw_count,
+
       :side_exit_size,
-      :code_region_bytes,
       :side_exit_size_ratio,
+      :jit_frame_heap_bytes,
+      :jit_frame_region_bytes,
+      :code_region_bytes,
       :zjit_alloc_bytes,
       :total_mem_bytes,
       :total_native_stack_bytes,

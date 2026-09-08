@@ -26,7 +26,9 @@
 #include "internal/class.h"
 #include "internal/error.h"
 #include "internal/eval.h"
+#include "internal/hash.h"
 #include "internal/inits.h"
+#include "internal/hash.h"
 #include "internal/numeric.h"
 #include "internal/object.h"
 #include "internal/struct.h"
@@ -484,7 +486,7 @@ clone_freeze_kwarg_hash(VALUE *cache, VALUE freeze_value)
 {
     VALUE h = RUBY_ATOMIC_VALUE_LOAD(*cache);
     if (!h) {
-        h = rb_hash_new();
+        h = rb_hash_alloc_fixed_size(rb_cHash, 1);
         rb_hash_aset(h, ID2SYM(idFreeze), freeze_value);
         rb_obj_freeze(h);
         rb_vm_register_global_object(h); /* pin before publishing */
@@ -611,7 +613,16 @@ rb_obj_dup(VALUE obj)
     if (special_object_p(obj)) {
         return obj;
     }
-    dup = rb_obj_alloc(rb_obj_class(obj));
+
+    switch (OBJ_BUILTIN_TYPE(obj)) {
+      case T_HASH:
+        dup = rb_hash_alloc_copy(rb_obj_class(obj), obj);
+        break;
+      default:
+        dup = rb_obj_alloc(rb_obj_class(obj));
+        break;
+    }
+
     return rb_obj_dup_setup(obj, dup);
 }
 
@@ -1461,7 +1472,7 @@ nil_to_a(VALUE obj)
 static VALUE
 nil_to_h(VALUE obj)
 {
-    return rb_hash_new();
+    return rb_hash_new_capa(0);
 }
 
 /*
@@ -4023,11 +4034,11 @@ rb_Hash(VALUE val)
 {
     VALUE tmp;
 
-    if (NIL_P(val)) return rb_hash_new();
+    if (NIL_P(val)) return rb_hash_new_capa(0);
     tmp = rb_check_hash_type(val);
     if (NIL_P(tmp)) {
         if (RB_TYPE_P(val, T_ARRAY) && RARRAY_LEN(val) == 0)
-            return rb_hash_new();
+            return rb_hash_new_capa(0);
         rb_cant_convert(val, "Hash");
     }
     return tmp;

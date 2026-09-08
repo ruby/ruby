@@ -5,8 +5,8 @@ describe "Hash#rehash" do
   it "reorganizes the Hash by recomputing all key hash codes" do
     k1 = Object.new
     k2 = Object.new
-    def k1.hash; 0; end
-    def k2.hash; 1; end
+    def k1.hash; 5; end
+    def k2.hash; 6; end
 
     h = {}
     h[k1] = :v1

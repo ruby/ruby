@@ -592,7 +592,7 @@ newhash
         val = rb_hash_new_with_bulk_insert(num, STACK_ADDR_FROM_TOP(num));
     }
     else {
-        val = rb_hash_new();
+        val = rb_hash_new_capa(0);
     }
 }
 

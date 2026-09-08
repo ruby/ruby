@@ -944,16 +944,20 @@ ossl_crypto_fixed_length_secure_compare(VALUE dummy, VALUE str1, VALUE str2)
  *   context.cert = cert
  *   context.key = key
  *
- * Then create an OpenSSL::SSL::SSLServer with a TCP server socket and the
- * context.  Use the SSLServer like an ordinary TCP server.
+ * After establishing a TCP connection, the socket is wrapped in an
+ * OpenSSL::SSL::SSLSocket with the context. OpenSSL::SSL::SSLSocket#accept
+ * is called to perform the TLS handshake.
  *
  *   require 'socket'
  *
  *   tcp_server = TCPServer.new 5000
- *   ssl_server = OpenSSL::SSL::SSLServer.new tcp_server, context
  *
  *   loop do
- *     ssl_connection = ssl_server.accept
+ *     tcp_connection = tcp_server.accept
+ *     ssl_connection = OpenSSL::SSL::SSLSocket.new tcp_connection, context
+ *     # Or you can close tcp_connection manually after ssl_connection.close
+ *     ssl_connection.sync_close = true
+ *     ssl_connection.accept
  *
  *     data = ssl_connection.gets
  *

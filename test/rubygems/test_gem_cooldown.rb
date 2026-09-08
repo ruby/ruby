@@ -4,6 +4,19 @@ require_relative "helper"
 require "rubygems/cooldown"
 
 class TestGemCooldown < Gem::TestCase
+  def setup
+    super
+
+    without_any_upwards_gemfiles
+    @orig_cooldown = Gem.configuration.cooldown
+  end
+
+  def teardown
+    Gem.configuration.cooldown = @orig_cooldown
+
+    super
+  end
+
   def test_skip_eh
     now = Time.now
     cooldown = Gem::Cooldown.new 7, now: now
@@ -32,14 +45,172 @@ class TestGemCooldown < Gem::TestCase
   end
 
   def test_from_options
-    orig_cooldown = Gem.configuration.cooldown
     Gem.configuration.cooldown = 5
 
     assert_equal 5, Gem::Cooldown.from_options({}).days
     assert_equal 7, Gem::Cooldown.from_options(cooldown: 7).days
     refute Gem::Cooldown.from_options(cooldown: 0).active?
+  end
+
+  def test_from_options_uses_the_bundler_setting_when_the_gemrc_has_none
+    ENV["BUNDLE_COOLDOWN"] = "7"
+
+    assert_equal 7, Gem::Cooldown.from_options({}).days
+  end
+
+  def test_from_options_takes_the_longer_of_the_two_settings
+    ENV["BUNDLE_COOLDOWN"] = "7"
+    Gem.configuration.cooldown = 3
+
+    assert_equal 7, Gem::Cooldown.from_options({}).days
+
+    Gem.configuration.cooldown = 14
+
+    assert_equal 14, Gem::Cooldown.from_options({}).days
+  end
+
+  def test_from_options_takes_a_configured_zero_as_a_value_not_as_unset
+    ENV["BUNDLE_COOLDOWN"] = "7"
+    Gem.configuration.cooldown = 0
+
+    assert_equal 7, Gem::Cooldown.from_options({}).days
+
+    ENV["BUNDLE_COOLDOWN"] = "0"
+    Gem.configuration.cooldown = 7
+
+    assert_equal 7, Gem::Cooldown.from_options({}).days
+  end
+
+  def test_from_options_lets_the_command_line_bypass_the_bundler_setting
+    ENV["BUNDLE_COOLDOWN"] = "7"
+    Gem.configuration.cooldown = 3
+
+    refute Gem::Cooldown.from_options(cooldown: 0).active?
+    assert_equal 1, Gem::Cooldown.from_options(cooldown: 1).days
+  end
+
+  def test_from_options_reads_the_bundler_config_file
+    File.write File.join(@tempdir, "Gemfile"), ""
+    FileUtils.mkdir_p File.join(@tempdir, ".bundle")
+    File.write File.join(@tempdir, ".bundle", "config"), "BUNDLE_COOLDOWN: \"7\"\n"
+
+    assert_equal 7, Gem::Cooldown.from_options({}).days
+  end
+
+  def test_from_options_warns_about_an_invalid_bundler_setting
+    ENV["BUNDLE_COOLDOWN"] = "seven"
+    Gem.configuration.cooldown = 3
+
+    cooldown = use_ui(@ui) { Gem::Cooldown.from_options({}) }
+
+    assert_equal 3, cooldown.days
+    assert_match %q(Invalid cooldown value "seven" in Bundler's configuration), @ui.error
+  end
+
+  def test_from_options_names_each_invalid_source_separately
+    ENV["BUNDLE_COOLDOWN"] = "seven"
+    Gem.configuration.cooldown = "three"
+
+    refute use_ui(@ui) { Gem::Cooldown.from_options({}) }.active?
+
+    assert_match %q(Invalid cooldown value "three" in the gemrc file), @ui.error
+    assert_match %q(Invalid cooldown value "seven" in Bundler's configuration), @ui.error
+  end
+
+  def test_from_options_warns_about_an_invalid_gemrc_setting
+    Gem.configuration.cooldown = "seven"
+    ENV["BUNDLE_COOLDOWN"] = "3"
+
+    cooldown = use_ui(@ui) { Gem::Cooldown.from_options({}) }
+
+    assert_equal 3, cooldown.days
+    assert_match %q(Invalid cooldown value "seven" in the gemrc file), @ui.error
+  end
+
+  def test_invalid_days_warns_once_and_fails_open
+    use_ui @ui do
+      refute Gem::Cooldown.new("abc").active?
+      refute Gem::Cooldown.new("abc").active?
+    end
+
+    assert_equal 1, @ui.error.scan("Invalid cooldown value").size
+    assert_match 'Invalid cooldown value "abc" in the cooldown setting, so it is ignored.', @ui.error
+    assert_match "Expected a non-negative integer number of days.", @ui.error
+  end
+
+  def test_negative_days_warns_and_fails_open
+    use_ui @ui do
+      refute Gem::Cooldown.new(-5).active?
+    end
+
+    assert_match "Invalid cooldown value -5", @ui.error
+  end
+
+  def test_partly_numeric_days_warns_and_fails_open
+    use_ui @ui do
+      refute Gem::Cooldown.new("7days").active?
+    end
+
+    assert_match 'Invalid cooldown value "7days"', @ui.error
+  end
+
+  def test_non_numeric_type_warns_instead_of_raising
+    use_ui @ui do
+      [true, [7], :sym].each do |value|
+        refute Gem::Cooldown.new(value).active?
+      end
+    end
+
+    assert_match "Invalid cooldown value true", @ui.error
+  end
+
+  def test_valid_days_do_not_warn
+    use_ui @ui do
+      Gem::Cooldown.new 7
+      Gem::Cooldown.new 0
+      Gem::Cooldown.new "3"
+      Gem::Cooldown.new nil
+    end
+
+    assert_empty @ui.error
+  end
+
+  def test_parse_created_at_without_offset_is_utc
+    with_tz "Asia/Tokyo" do
+      assert_equal Time.utc(2026, 6, 5, 10, 30, 45),
+                   Gem::Cooldown.parse_created_at("2026-06-05T10:30:45")
+    end
+  end
+
+  def test_parse_created_at_keeps_explicit_offset
+    assert_equal Time.utc(2026, 6, 5, 8, 30, 45),
+                 Gem::Cooldown.parse_created_at("2026-06-05T10:30:45+02:00")
+
+    assert_equal Time.utc(2026, 6, 5, 10, 30, 45),
+                 Gem::Cooldown.parse_created_at("2026-06-05T10:30:45Z")
+  end
+
+  def test_parse_created_at_invalid
+    assert_nil Gem::Cooldown.parse_created_at("not a timestamp")
+    assert_nil Gem::Cooldown.parse_created_at("2026")
+    assert_nil Gem::Cooldown.parse_created_at("2026-06-05T10")
+    assert_nil Gem::Cooldown.parse_created_at(nil)
+    assert_nil Gem::Cooldown.parse_created_at(7)
+  end
+
+  def test_parse_created_at_rejects_years_outside_four_digits
+    # Time.iso8601 accepts these, but the distance from now overflows Float.
+    assert_nil Gem::Cooldown.parse_created_at("#{"9" * 400}-01-01T00:00:00Z")
+    assert_nil Gem::Cooldown.parse_created_at("-2026-06-05T10:30:45Z")
+    assert_nil Gem::Cooldown.parse_created_at("02026-06-05T10:30:45Z")
+  end
+
+  def with_tz(tz)
+    orig_tz = ENV["TZ"]
+    ENV["TZ"] = tz
+    yield
   ensure
-    Gem.configuration.cooldown = orig_cooldown
+    ENV["TZ"] = orig_tz
   end
 
   def test_warn_missing_created_at_warns_once

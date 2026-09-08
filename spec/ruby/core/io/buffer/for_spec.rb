@@ -59,6 +59,20 @@ describe "IO::Buffer.for" do
       @buffer.should.null?
     end
 
+    ruby_version_is "4.1" do
+      it "invalidates slices when the block ends" do
+        slice = nil
+
+        IO::Buffer.for(@string) do |buffer|
+          slice = buffer.slice(0, 2)
+          slice.should.valid?
+        end
+
+        slice.should_not.valid?
+        -> { slice.get_string }.should.raise(IO::Buffer::InvalidatedError)
+      end
+    end
+
     context "if string is not frozen" do
       it "creates a modifiable string-backed buffer" do
         IO::Buffer.for(@string) do |buffer|

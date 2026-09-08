@@ -391,6 +391,58 @@ RSpec.describe "bundle clean" do
     expect(vendored_gems("bin/myrackup")).not_to exist
   end
 
+  it "removes orphaned gemspecs from ABI-scoped specification dirs", rubygems: ">= 4.1.0.dev" do
+    gemfile <<-G
+      source "https://gem.repo1"
+
+      gem "foo"
+    G
+
+    bundle_config "path vendor/bundle"
+    bundle "install"
+
+    abi_dir = vendored_gems("specifications/#{Gem.ruby_abi}")
+    FileUtils.mkdir_p(abi_dir)
+    orphaned_gemspec = File.join(abi_dir, "orphaned-1.0-deadbeef.gemspec")
+    File.write(orphaned_gemspec, "orphaned")
+
+    bundle :clean
+
+    expect(File.exist?(orphaned_gemspec)).to be false
+    should_have_gems "foo-1.0"
+  end
+
+  it "does not remove gemspecs for content-addressed gems in the bundle", :compact_index, rubygems: ">= 4.1.0.dev" do
+    skip "Gem::ContentAddress not available" if ruby_core?
+
+    simulate_platform "x86_64-linux" do
+      build_repo2 do
+        build_gem "mygem", "1.0" do |s|
+          s.platform = Gem::Platform.new("x86_64-linux")
+          s.write "lib/mygem.rb", "MYGEM = '1.0 not_content_addressed'"
+        end
+      end
+
+      build_gem "mygem", "1.0", ruby_abi: Gem.ruby_abi, path: gem_repo2("gems") do |s|
+        s.platform = Gem::Platform.new("x86_64-linux")
+        s.required_ruby_version = "~> #{Gem.ruby_abi}.0"
+        s.write "lib/mygem.rb", "MYGEM = '1.0 content_addressed'"
+      end
+
+      bundle_config "path vendor/bundle"
+      install_gemfile <<~G, artifice: "compact_index_v2", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }
+        source "https://gem.repo2"
+
+        gem "mygem"
+      G
+
+      bundle :clean
+
+      abi_gemspecs = Dir.glob(vendored_gems("specifications/#{Gem.ruby_abi}/*.gemspec").to_s)
+      expect(abi_gemspecs.size).to eq(1), "expected content-addressed gemspec to be preserved, found: #{abi_gemspecs}"
+    end
+  end
+
   it "does not call clean automatically when using system gems" do
     bundle_config "path.system true"
 

@@ -2848,3 +2848,18 @@ assert_equal '[[:obj, true], [:str, true], [:strct, true]]', %q{
   [o, s, st].each { |x| r.send(x, move: true) }
   r.value.inspect
 }
+
+# A port that is still reachable keeps its queue, whether or not it was closed.  (Dropping
+# the queue of a port that is gone is not fixed for mmtk, so that case is a test-all one
+# that omits itself: see test_port_queue_dropped_when_port_unreachable.)
+assert_equal '[[0, 1, 2], [:a, :b]]', %q{
+  taken = 3.times.map do |i|
+    port = Ractor::Port.new
+    Ractor.new(port, i) { |p, n| p << n; nil }.join
+    port
+  end
+  closed = Ractor::Port.new
+  closed.send(:a); closed.send(:b); closed.close
+  6.times { GC.start }
+  [taken.map(&:receive), [closed.receive, closed.receive]]
+}
