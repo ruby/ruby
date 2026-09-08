@@ -752,6 +752,19 @@ class TestBignum < Test::Unit::TestCase
     assert_not_equal(0, @fmax2.fdiv(@fmax2))
     assert_in_delta(0.5, @fmax.fdiv(@fmax2), 0.01)
     assert_in_delta(1.0, @fmax2.fdiv(@fmax2), 0.01)
+    assert_send([@big.fdiv(Float::NAN), :nan?])
+    assert_equal(Float::INFINITY, 1.0 / @big.fdiv(Float::INFINITY))
+    assert_equal(-Float::INFINITY, 1.0 / (-@big).fdiv(Float::INFINITY))
+    assert_equal(-Float::INFINITY, 1.0 / @big.fdiv(-Float::INFINITY))
+    assert_equal(Float::INFINITY, 1.0 / (-@big).fdiv(-Float::INFINITY))
+    assert_equal(Float::INFINITY, @big.fdiv(0.0))
+    assert_equal(-Float::INFINITY, @big.fdiv(-0.0))
+    assert_equal(Float::INFINITY, @big.fdiv(0.0))
+    assert_equal(-Float::INFINITY, @big.fdiv(-0.0))
+    assert_equal(3.333333333333333e39, (10**40).fdiv(3), "Bug #22246")
+    assert_equal(3.333333333333333e39, (10**40).fdiv(3.0), "Bug #22246")
+    assert_equal(65803600.513127826, 65803600513127829623.fdiv(10**12), "Bug #22246")
+    assert_equal(10000000.0, (10**24).fdiv(10**17 + 9), "Bug #22246")
   end
 
   def test_float_fdiv
