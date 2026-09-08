@@ -419,6 +419,9 @@ void Init_io_spec(void) {
   rb_define_const(cls, "FMODE_SYNC", INT2FIX(FMODE_SYNC));
   rb_define_const(cls, "FMODE_BINMODE", INT2FIX(FMODE_BINMODE));
   rb_define_const(cls, "FMODE_TEXTMODE", INT2FIX(FMODE_TEXTMODE));
+  rb_define_const(cls, "FMODE_CREATE", INT2FIX(FMODE_CREATE));
+  rb_define_const(cls, "FMODE_APPEND", INT2FIX(FMODE_APPEND));
+  rb_define_const(cls, "FMODE_TRUNC", INT2FIX(FMODE_TRUNC));
   rb_define_const(cls, "ECONV_UNIVERSAL_NEWLINE_DECORATOR", INT2FIX(ECONV_UNIVERSAL_NEWLINE_DECORATOR));
 }
 

@@ -113,7 +113,7 @@ describe "IO#read_nonblock" do
     buffer.should == "hello world"
   end
 
-  it "discards the existing buffer content upon error" do
+  it "discards the existing buffer content upon EOFError" do
     buffer = +"existing content"
     @write.close
     -> { @read.read_nonblock(1, buffer) }.should.raise(EOFError)
@@ -148,5 +148,11 @@ describe "IO#read_nonblock" do
     @read.read_nonblock(10, buffer)
 
     buffer.encoding.should == Encoding::ISO_8859_1
+  end
+
+  it "does not modify the buffer if a read error (other than EOF) occurs" do
+    buffer = +"existing content"
+    -> { IOSpecs.closed_io.read_nonblock(1, buffer) }.should.raise(IOError)
+    buffer.should == "existing content"
   end
 end
