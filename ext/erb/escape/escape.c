@@ -1,7 +1,7 @@
 #include "ruby.h"
 #include "ruby/encoding.h"
 
-static VALUE rb_cERB, rb_mEscape, rb_cCGI;
+static VALUE rb_cCGI;
 static ID id_escapeHTML;
 
 #define HTML_ESCAPE_MAX_LEN 6
@@ -105,8 +105,8 @@ Init_escape(void)
     rb_ext_ractor_safe(true);
 #endif
 
-    rb_cERB = rb_define_class("ERB", rb_cObject);
-    rb_mEscape = rb_define_module_under(rb_cERB, "Escape");
+    VALUE rb_cERB = rb_define_class("ERB", rb_cObject);
+    VALUE rb_mEscape = rb_define_module_under(rb_cERB, "Escape");
     rb_define_module_function(rb_mEscape, "html_escape", erb_escape_html, 1);
 
     rb_cCGI = rb_define_class("CGI", rb_cObject);
