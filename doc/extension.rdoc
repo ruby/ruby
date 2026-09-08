@@ -2425,7 +2425,7 @@ Here is an example of how to use +RUBY_TYPED_EMBEDDABLE+:
   {
       struct my_data *data;
       VALUE my_data_obj = my_data_alloc(klass);
-      TypedData_Get_Struct(obj, struct my_data, &my_type, data);
+      TypedData_Get_Struct(my_data_obj, struct my_data, &my_type, data);
 
       // `my_data_obj` was allocated from C, `RB_GC_GUARD` must be used to
       // ensure the compiler will keep its reference on the stack.
@@ -2436,7 +2436,7 @@ Here is an example of how to use +RUBY_TYPED_EMBEDDABLE+:
   my_data_read(VALUE self)
   {
       struct my_data *data;
-      TypedData_Get_Struct(obj, struct my_data, &my_type, data);
+      TypedData_Get_Struct(self, struct my_data, &my_type, data);
 
       // `self` is received from `rb_define_method` so `RB_GC_GUARD` isn't necessary.
       return rb_str_new(data->buffer, data->buffer_capa);
