@@ -731,6 +731,46 @@ realpath_internal_cached(VALUE hash, VALUE path)
     return realpath;
 }
 
+struct load_prism_args {
+    pm_parse_result_t result;
+    VALUE fname;
+    VALUE realpath_map;
+    const rb_iseq_t *iseq;
+    VALUE error;
+};
+
+static VALUE
+load_prism_parse(VALUE args_ptr)
+{
+    struct load_prism_args *args = (struct load_prism_args *)args_ptr;
+    pm_parse_result_t *result = &args->result;
+    VALUE fname = args->fname;
+
+    VALUE error = pm_load_parse_file(result, fname, NULL);
+    if (error != Qnil) {
+        args->error = error;
+        return Qnil;
+    }
+
+    int error_state;
+    args->iseq = pm_iseq_new_top(&result->node, rb_fstring_lit("<top (required)>"), fname,
+                                 realpath_internal_cached(args->realpath_map, fname), NULL, &error_state);
+    if (error_state) {
+        RUBY_ASSERT(args->iseq == NULL);
+        rb_jump_tag(error_state);
+    }
+
+    return Qnil;
+}
+
+static VALUE
+load_prism_free_result(VALUE args_ptr)
+{
+    struct load_prism_args *args = (struct load_prism_args *)args_ptr;
+    pm_parse_result_free(&args->result);
+    return Qnil;
+}
+
 static inline void
 load_iseq_eval(rb_execution_context_t *ec, VALUE fname)
 {
@@ -744,29 +784,27 @@ load_iseq_eval(rb_execution_context_t *ec, VALUE fname)
         VALUE realpath_map = box->loaded_features_realpath_map;
 
         if (rb_ruby_prism_p()) {
-            pm_parse_result_t result;
-            pm_parse_result_init(&result);
-            result.node.coverage_enabled = 1;
+            struct load_prism_args args = {
+                .fname = fname,
+                .realpath_map = realpath_map,
+                .iseq = NULL,
+                .error = Qnil,
+            };
+            pm_parse_result_init(&args.result);
+            args.result.node.coverage_enabled = 1;
 
-            VALUE error = pm_load_parse_file(&result, fname, NULL);
+            /* The parse result must be freed even if parsing or compiling
+             * raises (e.g. an asynchronously raised IOError while reading a
+             * pipe), so wrap it in rb_ensure. */
+            rb_ensure(load_prism_parse, (VALUE)&args, load_prism_free_result, (VALUE)&args);
 
-            if (error == Qnil) {
-                int error_state;
-                iseq = pm_iseq_new_top(&result.node, rb_fstring_lit("<top (required)>"), fname, realpath_internal_cached(realpath_map, fname), NULL, &error_state);
-
-                pm_parse_result_free(&result);
-
-                if (error_state) {
-                    RUBY_ASSERT(iseq == NULL);
-                    rb_jump_tag(error_state);
-                }
-            }
-            else {
+            if (args.error != Qnil) {
                 rb_vm_pop_frame(ec);
                 RB_GC_GUARD(v);
-                pm_parse_result_free(&result);
-                rb_exc_raise(error);
+                rb_exc_raise(args.error);
             }
+
+            iseq = args.iseq;
         }
         else {
             rb_ast_t *ast;
