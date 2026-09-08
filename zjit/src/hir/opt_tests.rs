@@ -17285,6 +17285,34 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_fold_singleton_class_superclass() {
+        eval(r#"
+            class C; end
+            C1 = C.new.singleton_class.singleton_class
+            def test = C1.superclass
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:4:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint StableConstantNames(0x1000, C1)
+          v11:ClassSubclass[Class@0x1008] = Const Value(VALUE(0x1008))
+          PatchPoint MethodRedefined(Class@0x1010, superclass@0x1018, cme:0x1020)
+          v22:ClassSubclass[Class@0x1048] = Const Value(VALUE(0x1048))
+          CheckInterrupts
+          Return v22
+        ");
+    }
+
+    #[test]
     fn test_dont_fold_uninitialized_class_superclass() {
         eval(r#"
             C = Class.allocate
