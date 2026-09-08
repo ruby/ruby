@@ -19,12 +19,6 @@ static const struct {
 #undef HTML_ESCAPE
 };
 
-static inline void
-preserve_original_state(VALUE orig, VALUE dest)
-{
-    rb_enc_associate(dest, rb_enc_get(orig));
-}
-
 static inline long
 escaped_length(VALUE str)
 {
@@ -70,8 +64,7 @@ optimized_escape_html(VALUE str)
             memcpy(dest, segment_start, segment_len);
             dest += segment_len;
         }
-        escaped = rb_str_new(buf, dest - buf);
-        preserve_original_state(str, escaped);
+        escaped = rb_enc_str_new(buf, dest - buf, rb_enc_get(str));
         ALLOCV_END(vbuf);
     }
     return escaped;
