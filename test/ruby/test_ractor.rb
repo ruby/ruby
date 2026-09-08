@@ -563,6 +563,34 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+  # A thread that released the GVL keeps its EC, so it still resolves an objspace to
+  # charge its frees to.  It must not be sent to the objspace of a child Ractor being
+  # built by another thread of the same Ractor: a stillborn child frees that objspace.
+  def test_stillborn_ractor_with_free_off_gvl
+    assert_ractor(<<~'RUBY', require: '-test-/gvl/call_without_gvl', timeout: 60)
+      x = 42 # capturing an outer local makes Ractor.new raise IsolationError
+      stop = false
+      ready = Queue.new
+      freers = 4.times.map do
+        Thread.new do
+          ready << :up
+          Bug::Thread.xfree_without_gvl(2_000) until stop
+        end
+      end
+      freers.size.times { ready.pop } # all of them are churning before we start
+      2_000.times do
+        begin
+          Ractor.new { x }
+        rescue Ractor::IsolationError
+        end
+      end
+      stop = true
+      freers.each(&:join)
+      GC.start
+      GC.verify_internal_consistency
+    RUBY
+  end
+
   # Moving a CoW shared-root String must not steal its buffer (regression guard for the
   # remaining sharers reading freed memory).
   def test_move_shared_root_string_keeps_buffer

@@ -68,6 +68,31 @@ thread_ubf_async_safe(VALUE thread, VALUE notify_fd)
     return Qnil;
 }
 
+/* Churn the malloc accounting from a thread that released the GVL but kept its EC.
+ * The block is over GC_MALLOC_INCREASE_LOCAL_THRESHOLD so every free reaches the
+ * objspace instead of the thread-local counter; freeing it sized keeps that true
+ * where malloc_usable_size is unavailable. */
+#define XFREE_LOOP_SIZE (16 * 1024)
+
+static void *
+xfree_loop(void *p)
+{
+    for (long i = *(long *)p; i > 0; i--) {
+        ruby_xfree_sized(ruby_xmalloc(XFREE_LOOP_SIZE), XFREE_LOOP_SIZE);
+    }
+    return NULL;
+}
+
+static VALUE
+thread_xfree_without_gvl(VALUE klass, VALUE count)
+{
+    long n = NUM2LONG(count);
+
+    rb_thread_call_without_gvl(xfree_loop, &n, RUBY_UBF_IO, NULL);
+
+    return Qnil;
+}
+
 void
 Init_call_without_gvl(void)
 {
@@ -75,4 +100,5 @@ Init_call_without_gvl(void)
     VALUE klass = rb_define_module_under(mBug, "Thread");
     rb_define_singleton_method(klass, "runnable_sleep", thread_runnable_sleep, 1);
     rb_define_singleton_method(klass, "ubf_async_safe", thread_ubf_async_safe, 1);
+    rb_define_singleton_method(klass, "xfree_without_gvl", thread_xfree_without_gvl, 1);
 }
