@@ -329,7 +329,8 @@ usage(const char *name, int help, int highlight, int columns)
         M("-Cdirpath",     "",			   "Execute program in specified directory."),
         M("-d",		   ", --debug",		   "Set debugging flag ($DEBUG) and $VERBOSE to true."),
         M("-e 'code'",     "",			   "Execute given Ruby code; multiple -e allowed."),
-        M("-Eex[:in]",     ", --encoding=ex[:in]", "Set default external and internal encodings."),
+        M("-Eex[:in]",     ", --encoding=ex[:in]", "Set default external and internal encodings.\n"
+          "With no encoding argument, prints out available encodings."),
         M("-Fpattern",	   "",			   "Set input field separator ($;); used with -a."),
         M("-i[extension]", "",			   "Set ARGF in-place mode;\n"
             "create backup files with given extension."),
@@ -342,6 +343,8 @@ usage(const char *name, int help, int highlight, int columns)
         M("-rlibrary",	   "",			   "Require the given library."),
         M("-s",		   "",			   "Define global variables using switches following program path."),
         M("-S",		   "",			   "Search directories found in the PATH environment variable."),
+        M("-U",		   "",			   "Set default internal encoding to UTF-8. "
+          "Use twice to set external."),
         M("-v",		   "",			   "Print version; set $VERBOSE to true."),
         M("-w",		   "",			   "Synonym for -W1."),
         M("-W[level=2|:category]", "",             "Set warning flag ($-W):\n"
@@ -1708,13 +1711,29 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
 
           case 'E':
             if (!*++s && (!--argc || !(s = *++argv))) {
-                rb_raise(rb_eRuntimeError, "missing argument for -E");
+                // cheat! I can't call rb_eval_string at this point of init
+                opt->e_script =
+                  rb_str_new2("puts 'Available Encodings:'; puts;"
+                              "puts Encoding.list.map(&:name).uniq"
+                              ".grep_v(/stateless|-(?:DoCoMo|KDDI|SoftBank)/)"
+                              ".sort_by { |s| s.downcase.split(/(\\d+)/)"
+                              "                .map { |e| [e.to_i, e] }"
+                              "}.join(', ')"
+                              ".scan(/.{,72}(?:, |\\z)/)"
+                              ".map {|s| '    ' + s}; "
+                              "exit"
+                             );
+                opt->script = "-e";
             }
-            proc_encoding_option(opt, s, "-E");
+            else
+                proc_encoding_option(opt, s, "-E");
             break;
 
           case 'U':
-            set_internal_encoding_once(opt, "UTF-8", 0);
+            if (RTEST(opt->intern.enc.name)) // handle second -U
+                set_external_encoding_once(opt, "UTF-8", 0);
+            else
+                set_internal_encoding_once(opt, "UTF-8", 0);
             ++s;
             goto reswitch;
 
