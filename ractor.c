@@ -2528,6 +2528,17 @@ move_neutralize_source(VALUE obj)
     bool wipe_body = true;
     switch (BUILTIN_TYPE(obj)) {
       case T_STRING:
+        if (!STR_EMBED_P(obj) && !rb_str_reembeddable_p(obj)) {
+            /* A heap (non-embedded), shared root string keeps its buffer because
+             * other strings reference this shared root. It needs to keep T_STRING
+             * because otherwise the GC will not free the buffer when this object
+             * dies which will leak memory. */
+            RBASIC_SET_CLASS_RAW(obj, rb_cRactorMovedObject);
+            RBASIC(obj)->flags |= FL_FREEZE;
+            RBASIC_SET_FULL_SHAPE_ID(obj, (shape_id & ~SHAPE_ID_LAYOUT_MASK) | SHAPE_ID_LAYOUT_OTHER);
+            RSTRING(obj)->len = 0;
+            return;
+        }
         wipe_body = !rb_str_embedded_shared_root_p(obj);
         break;
       case T_ARRAY:
