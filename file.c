@@ -3777,20 +3777,21 @@ rb_file_s_symlink(VALUE klass, VALUE from, VALUE to)
  *  :markup: markdown
  *
  *  call-seq:
- *     File.readlink(link_path) -> path
+ *    File.readlink(link_path) -> string
  *
- *  Returns the string path to the entry referenced by the given `link_path`:
+ *  Returns the string path to the entry referenced
+ *  by the [symbolic link](rdoc-ref:file/symbolic_links.md) at `link_path`:
  *
  *  ```ruby
- *  # Create paths.
- *  file_path = 'doc/extension.rdoc'         # => "doc/extension.rdoc"
- *  target_path = File.join('..', file_path) # => "../doc/extension.rdoc"
- *  link_path = 'lib/u.tmp'                  # => "lib/u.tmp"
- *  File.symlink(target_path, link_path)
- *  File.readlink(link_path)                 # => "../doc/extension.rdoc"
- *  File.delete(link_path)                   # Clean up.
+ *  filepath = 'README.md'
+ *  linkpath = 'foo'
+ *  File.symlink(filepath, linkpath)
+ *  File.readlink(linkpath) # => "README.md"
+ *  File.unlink(linkpath)   # Clean up.
  *  ```
  *
+ *  Raises Errno::EINVAL if the entry referenced by `link_path`
+ *  is not a symbolic link.
  */
 
 static VALUE
