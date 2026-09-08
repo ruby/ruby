@@ -726,16 +726,14 @@ module JSON
   end
 
   # :call-seq:
-  #   JSON.dump(obj, io = nil, options = nil)
+  #   JSON.dump(obj, io = nil, _deprecated_limit = nil, options = nil)
   #
   # Dumps +obj+ as a \JSON string, i.e. calls generate on the object and returns the result.
-  #
-  # The default options can be changed via method JSON.dump_default_options.
   #
   # - Argument +io+, if given, should respond to method +write+;
   #   the \JSON \String is written to +io+, and +io+ is returned.
   #   If +io+ is not given, the \JSON \String is returned.
-  #
+  # - Argument +_deprecated_limit+ is deprecated, pass the +:max_nesting+ option instead.
   # ---
   #
   # When argument +io+ is not given, returns the \JSON \String generated from +obj+:
@@ -751,21 +749,31 @@ module JSON
   #   puts File.read(path)
   # Output:
   #   {"foo":[0,1],"bar":{"baz":2,"bat":3},"bam":"bad"}
-  def dump(obj, anIO = nil, kwargs = nil)
+  def dump(obj, anIO = nil, _deprecated_limit = nil, kwargs = nil)
     if kwargs.nil?
-      if anIO.is_a?(Hash)
-        kwargs = anIO
-        anIO = nil
+      if _deprecated_limit.nil?
+        if anIO.is_a?(Hash)
+          kwargs = anIO
+          anIO = nil
+        end
+      elsif _deprecated_limit.is_a?(Hash)
+        kwargs = _deprecated_limit
+        _deprecated_limit = nil
       end
     end
 
-    if anIO&.respond_to?(:to_io)
-      anIO = anIO.to_io
+    unless anIO.nil?
+      if anIO.respond_to?(:to_io)
+        anIO = anIO.to_io
+      elsif _deprecated_limit.nil? && !anIO.respond_to?(:write)
+        anIO, _deprecated_limit = nil, anIO
+      end
     end
 
     opts = {
       allow_nan: true,
     }
+    opts[:max_nesting] = _deprecated_limit if _deprecated_limit
     opts.merge!(kwargs) if kwargs
 
     State.generate(obj, opts, anIO)

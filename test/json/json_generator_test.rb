@@ -86,6 +86,12 @@ class JSONGeneratorTest < Test::Unit::TestCase
     assert_equal '{"hello":"world"}', dump({ hello: :world }, strict: true)
   end
 
+  def test_dump_deprecated_limit
+    io = StringIO.new
+    JSON.dump([1], io, 0)
+    assert_equal '[1]', io.string
+  end
+
   def test_not_frozen
     [
       [[], '[]'],
