@@ -3929,7 +3929,7 @@ rb_execution_context_mark(const rb_execution_context_t *ec)
 void rb_fiber_mark_self(rb_fiber_t *fib);
 void rb_fiber_update_self(rb_fiber_t *fib);
 void rb_threadptr_root_fiber_setup(rb_thread_t *th);
-void rb_root_fiber_obj_setup(rb_thread_t *th);
+void rb_root_fiber_obj_setup(rb_thread_t *th, void *objspace);
 void rb_threadptr_root_fiber_release(rb_thread_t *th);
 
 static void
@@ -4083,10 +4083,9 @@ rb_obj_is_thread(VALUE obj)
 }
 
 static VALUE
-thread_alloc(VALUE klass)
+thread_alloc(VALUE klass, void *objspace)
 {
-    rb_thread_t *th;
-    return TypedData_Make_Struct(klass, rb_thread_t, &thread_data_type, th);
+    return rb_data_typed_object_zalloc_in_objspace(objspace, klass, sizeof(rb_thread_t), &thread_data_type);
 }
 
 void
@@ -4198,14 +4197,20 @@ th_init(rb_thread_t *th, VALUE self, rb_vm_t *vm)
 }
 
 VALUE
-rb_thread_alloc(VALUE klass)
+rb_thread_alloc_in_objspace(VALUE klass, void *objspace)
 {
-    VALUE self = thread_alloc(klass);
+    VALUE self = thread_alloc(klass, objspace);
     rb_thread_t *target_th = rb_thread_ptr(self);
     target_th->ractor = GET_RACTOR();
     th_init(target_th, self, target_th->vm = GET_VM());
-    rb_root_fiber_obj_setup(target_th);
+    rb_root_fiber_obj_setup(target_th, objspace);
     return self;
+}
+
+VALUE
+rb_thread_alloc(VALUE klass)
+{
+    return rb_thread_alloc_in_objspace(klass, GET_RACTOR()->objspace);
 }
 
 #define REWIND_CFP(expr) do { \
@@ -4822,7 +4827,7 @@ Init_VM(void)
         th->top_wrapper = 0;
         th->top_self = rb_vm_top_self();
 
-        rb_root_fiber_obj_setup(th);
+        rb_root_fiber_obj_setup(th, th->ractor->objspace);
 
         rb_vm_register_global_object((VALUE)iseq);
         th->ec->cfp->_iseq = iseq;

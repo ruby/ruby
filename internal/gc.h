@@ -308,6 +308,13 @@ bool rb_gc_multi_objspace_p(void);
 bool rb_gc_obj_foreign_p(VALUE obj);
 void *rb_gc_objspace_alloc(void);
 void rb_gc_objspace_retire_gc(void);
+/* Build an object, or suppress GC, in a named objspace rather than the current
+ * Ractor's.  Only create_ractor_alloc_thread() needs these. */
+VALUE rb_data_typed_object_wrap_in_objspace(void *objspace, VALUE klass, void *datap, const rb_data_type_t *type);
+VALUE rb_data_typed_object_zalloc_in_objspace(void *objspace, VALUE klass, size_t size, const rb_data_type_t *type);
+VALUE rb_gc_objspace_disable_no_rest(void *objspace);
+VALUE rb_gc_objspace_enable(void *objspace);
+
 void rb_gc_objspace_retire(void **objspace_slot);
 void rb_gc_objspace_postmortem_self(void);
 void rb_gc_objspace_absorb_into_current(void **objspace_slot);

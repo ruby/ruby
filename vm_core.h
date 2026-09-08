@@ -2022,6 +2022,9 @@ VM_BH_FROM_PROC(VALUE procval)
 
 /* VM related object allocate functions */
 VALUE rb_thread_alloc(VALUE klass);
+/* Build the Thread out of objects a named objspace owns; only a Ractor building its
+ * child needs this (create_ractor_alloc_thread). */
+VALUE rb_thread_alloc_in_objspace(VALUE klass, void *objspace);
 VALUE rb_binding_alloc(VALUE klass);
 VALUE rb_proc_alloc(VALUE klass, enum rb_block_type block_type);
 VALUE rb_proc_dup(VALUE self);
