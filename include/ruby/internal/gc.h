@@ -407,22 +407,28 @@ void rb_gc_adjust_memory_usage(ssize_t diff);
  * function  must be  called  before any  GC-able objects  is  assigned to  the
  * address pointed by `valptr`.
  *
- * Registration is scoped to the calling Ractor:  the calling Ractor owns the
- * registered address, and only that Ractor's GC marks the object stored in
- * it.  You must call  this function  from the  same Ractor  that owns  the
- * object pointed by `valptr` (or before  the object is exposed to any other
- * Ractor).  If a  Ractor registers  an address that  points to  an object
- * owned by another  Ractor, the owning  Ractor's GC  does not see  the
- * registration and can  free the object  while the address  still refers
- * to it, which results in a use-after-free crash.
+ * Registration is scoped to the calling Ractor. The calling Ractor owns the
+ * registered address, and only that Ractor's GC marks the object stored in it.
+ * Any Ractor may call this function to register an address but the value at
+ * that address must be a special constant, a shareable object, or an
+ * unshareable object owned by the registering Ractor.
+ *
+ * The owning Ractor's GC cannot see the registration, so if the object at the
+ * registered address is unshareable, and owned by another ractor, the owning
+ * Ractor could free it while the address still refers to it, which results in a
+ * use-after-free crash, when the address is next accessed. If the address has
+ * process lifetime (a static VALUE), register it from the main Ractor or keep
+ * the stored values shareable.
+ *
+ * When Ractors are joined, their registrations move to the joining Ractor.
  */
 void rb_gc_register_address(VALUE *valptr);
 
 /**
  * An alias for `rb_gc_register_address()`.  The same Ractor-ownership
- * requirement applies:  call it from  the Ractor that  owns the object
- * stored in  the variable, or  the object can  be freed while  the
- * address still refers to it.
+ * rule applies to the value stored in the variable:  a special constant,
+ * a shareable object, or an unshareable object owned by the registering
+ * Ractor.
  */
 void rb_global_variable(VALUE *);
 
