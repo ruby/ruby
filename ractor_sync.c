@@ -428,10 +428,13 @@ ractor_queue_size(const struct ractor_queue *rq)
     return size;
 }
 
-static void
+// Returns whether this call is the one that closed it.
+static bool
 ractor_queue_close(struct ractor_queue *rq)
 {
+    bool closed_now = !rq->closed;
     rq->closed = true;
+    return closed_now;
 }
 
 static void
@@ -612,18 +615,21 @@ ractor_closed_port_p(rb_execution_context_t *ec, rb_ractor_t *r, const struct ra
 static void ractor_deliver_incoming_messages(rb_execution_context_t *ec, rb_ractor_t *cr);
 static bool ractor_queue_empty_p(rb_ractor_t *r, const struct ractor_queue *rq);
 
+static bool ractor_wakeup_all(rb_ractor_t *r, enum ractor_wakeup_status wakeup_status);
+
 static bool
 ractor_close_port(rb_execution_context_t *ec, rb_ractor_t *cr, const struct ractor_port *rp)
 {
     VM_ASSERT(cr == rp->r);
     struct ractor_queue *rq = NULL;
+    bool closed_now = false;
 
     RACTOR_LOCK_SELF(cr);
     {
         ractor_deliver_incoming_messages(ec, cr); // check incoming messages
 
         if (st_lookup(rp->r->sync.ports, ractor_port_id(rp), (st_data_t *)&rq)) {
-            ractor_queue_close(rq);
+            closed_now = ractor_queue_close(rq);
 
             if (ractor_queue_empty_p(cr, rq)) {
                 // delete from the table
@@ -634,6 +640,12 @@ ractor_close_port(rb_execution_context_t *ec, rb_ractor_t *cr, const struct ract
         }
     }
     RACTOR_UNLOCK_SELF(cr);
+
+    if (closed_now) {
+        // Only when this call closed it: waking the Ractor is not free to the
+        // other waiters, and a re-close of a closed port is news to nobody.
+        ractor_wakeup_all(cr, wakeup_by_close);
+    }
 
     return rq != NULL;
 }
@@ -1281,7 +1293,7 @@ wakeup_status_str(enum ractor_wakeup_status wakeup_status)
       case wakeup_none: return "none";
       case wakeup_by_send: return "by_send";
       case wakeup_by_interrupt: return "by_interrupt";
-      // case wakeup_by_close: return "by_close";
+      case wakeup_by_close: return "by_close";
     }
     rb_bug("unreachable");
 }
