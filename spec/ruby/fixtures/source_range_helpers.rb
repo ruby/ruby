@@ -3,6 +3,15 @@ def source_range_values(range)
 end
 
 def keep_source(value = true)
+  always_keeps_source = RUBY_ENGINE == "truffleruby"
+  if always_keeps_source
+    if value
+      yield
+    else
+      skip "This Ruby implementation always keeps the source in memory so cannot run specs which rely on not keeping it"
+    end
+  end
+
   return yield unless defined?(RubyVM.keep_script_lines)
 
   previous = RubyVM.keep_script_lines
@@ -44,7 +53,7 @@ def check_source_range(marked_source)
   result.source_location[1].should == expected[0]
 end
 
-def capture_backtrace_location_source_range(marked_source, frame: 0)
+def capture_backtrace_location_source_range(marked_source, prism_class, frame: 0)
   source, expected = source_range_source(marked_source)
   path = tmp("backtrace_location_source_range.rb")
   File.binwrite(path, source)
@@ -59,10 +68,32 @@ def capture_backtrace_location_source_range(marked_source, frame: 0)
 
   raise "Expected source to raise an exception" unless exception
 
-  location = exception.backtrace_locations.fetch(frame)
+  total_frames = 0
+  user_frames = 0
+  while true
+    location = exception.backtrace_locations.fetch(total_frames)
+    if location.path.start_with?("<internal:")
+      total_frames += 1
+    else
+      break if user_frames == frame
+      user_frames += 1
+      total_frames += 1
+    end
+  end
+
   range = location.source_range
   range.should.instance_of?(Ruby::SourceRange)
   source_range_values(range).should == expected
+
+  # Check the Prism node at that location is the one we expect
+  expected_class_name = "Prism::#{prism_class or raise "prism_class must be passed"}"
+
+  # Also check #syntax_tree is consistent
+  if location.respond_to?(:syntax_tree)
+    node = location.syntax_tree
+    node.class.name.should == expected_class_name
+    source_range_values(node).should == expected
+  end
 
   [location, range, path, absolute_path]
 ensure

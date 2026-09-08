@@ -106,6 +106,16 @@ describe "C-API Encoding function" do
     end
   end
 
+  describe "rb_enc_dummy_p" do
+    it "returns true for a dummy encoding" do
+      @s.rb_enc_dummy_p(Encoding::UTF_16).should == true
+    end
+
+    it "returns false for a non-dummy encoding" do
+      @s.rb_enc_dummy_p(Encoding::UTF_8).should == false
+    end
+  end
+
   describe "rb_enc_find" do
     it "returns the encoding of an Encoding" do
       @s.rb_enc_find("UTF-8").should == "UTF-8"

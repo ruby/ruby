@@ -180,6 +180,19 @@ describe "Data#initialize" do
       ScratchPad.recorded.should == [:initialize, [], {amount: 42, unit: "m"}]
     end
 
+    it "receives the block passed to .new" do
+      klass = Data.define(:amount) do
+        def initialize(amount:, &block)
+          super(amount: block.call(amount))
+        end
+      end
+
+      klass.new(1) { |amount| amount * 2 }.amount.should == 2
+      klass.new(amount: 1) { |amount| amount * 2 }.amount.should == 2
+      klass[1] { |amount| amount * 2 }.amount.should == 2
+      klass[amount: 1] { |amount| amount * 2 }.amount.should == 2
+    end
+
     it "accepts positional arguments with empty keyword arguments" do
       data = DataSpecs::SingleWithOverriddenName.new(42, **{})
 
