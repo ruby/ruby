@@ -1908,36 +1908,71 @@ nogvl_rmdir(void *ptr)
     return (void *)(VALUE)rmdir(path);
 }
 
-/*
- * :markup: markdown
- *
- * call-seq:
- *   Dir.delete(dirpath) -> 0
- *   Dir.rmdir(dirpath) -> 0
- *   Dir.unlink(dirpath) -> 0
- *
- * Removes the directory entry ([hard link](rdoc-ref:file/hard_links.md)) at `dirpath`,
- * along with its associated inode:
- *
- * ```ruby
- * dirpath = '/tmp/tmpdir'
- * Dir.mkdir(dirpath)
- * Dir.rmdir(dirpath) # => 0
- * ```
- *
- * Raises an exception if the directory is not empty.
- */
-static VALUE
-dir_s_rmdir(VALUE obj, VALUE dir)
+struct rmdirs_arg {
+    char *path, *pend;
+    rb_encoding *enc;
+    bool ignore_parents;
+};
+
+static void *
+nogvl_rmdirs(void *ptr)
 {
-    const char *p;
+    struct rmdirs_arg *m = ptr;
+    char *path = m->path, *p = m->pend;
+    rb_encoding *enc = m->enc;
+    const char *root = rb_enc_path_skip_prefix_root(path, p, enc);
+    int ret = rmdir(path);
+
+    while (ret == 0 && (p = rb_enc_path_last_separator(root, p, enc)) != NULL) {
+        if (p == path + 1 && path[0] == '.') break;
+        const char sep = *p;
+        *p = '\0';
+        ret = rmdir(path);
+        *p = sep;
+        if (ret < 0 && m->ignore_parents) {
+            int e = errno;
+            if (e == ENOTEMPTY || e == EEXIST || e == ENOENT) {
+                return (void *)0;
+            }
+        }
+    }
+    return (void *)(VALUE)ret;
+}
+
+static VALUE
+dir_s_rmdir(rb_execution_context_t *ec, VALUE self, VALUE dir, VALUE parents, VALUE ignore_non_empty)
+{
+    VALUE arg_path;
     int r;
 
-    dir = check_dirname(dir, 0);
-    p = RSTRING_PTR(dir);
-    r = IO_WITHOUT_GVL_INT(nogvl_rmdir, (void *)p);
-    if (r < 0)
-        rb_sys_fail_path(dir);
+    dir = check_dirname(dir, &arg_path);
+    bool ignore = ignore_non_empty == Qtrue;
+    bool ignore_parents = ignore_non_empty == ID2SYM(rb_intern("parents"));
+    if (!ignore && !ignore_parents && ignore_non_empty != Qfalse) {
+        rb_raise(rb_eArgError, "expected true, false or :parents as ignore_non_empty: %"PRIsVALUE,
+                 rb_inspect(ignore_non_empty));
+    }
+    if (RTEST(rb_bool_expected(parents, "parents", TRUE))) {
+        if (dir == arg_path) dir = rb_str_dup(dir);
+        rb_str_modify(dir);
+        rb_obj_hide(dir);
+        struct rmdirs_arg m = {
+            .path = RSTRING_PTR(dir),
+            .pend = RSTRING_END(dir),
+            .enc = rb_enc_get(dir),
+            .ignore_parents = ignore_parents,
+        };
+        r = IO_WITHOUT_GVL_INT(nogvl_rmdirs, &m);
+    }
+    else {
+        r = IO_WITHOUT_GVL_INT(nogvl_rmdir, RSTRING_PTR(dir));
+    }
+    RB_GC_GUARD(dir);
+    if (r < 0) {
+        int e = errno;
+        if (!(ignore && (e == ENOTEMPTY || e == EEXIST)))
+            rb_syserr_fail_path(e, arg_path);
+    }
 
     return INT2FIX(0);
 }
@@ -4238,9 +4273,6 @@ Init_Dir(void)
     rb_define_singleton_method(rb_cDir,"getwd", dir_s_getwd, 0);
     rb_define_singleton_method(rb_cDir,"pwd", dir_s_getwd, 0);
     rb_define_singleton_method(rb_cDir,"chroot", dir_s_chroot, 1);
-    rb_define_singleton_method(rb_cDir,"rmdir", dir_s_rmdir, 1);
-    rb_define_singleton_method(rb_cDir,"delete", dir_s_rmdir, 1);
-    rb_define_singleton_method(rb_cDir,"unlink", dir_s_rmdir, 1);
     rb_define_singleton_method(rb_cDir,"home", dir_s_home, -1);
 
     rb_define_singleton_method(rb_cDir,"exist?", rb_file_directory_p, 1);

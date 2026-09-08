@@ -365,6 +365,180 @@ class TestDir < Test::Unit::TestCase
     threads&.each(&:join)
   end
 
+  def test_rmdir_parents_false
+    path = File.join(@root, "remove/child")
+    Dir.mkdir(path, parents: true)
+    assert_equal(0, Dir.rmdir(path, parents: false))
+    assert_file.not_exist?(path)
+    assert_file.directory?(File.dirname(path))
+  end
+
+  def test_rmdir_parents_argument
+    path = File.join(@root, "remove")
+    Dir.mkdir(path)
+    assert_raise(ArgumentError) {Dir.rmdir(path, parents: 1)}
+    assert_raise(ArgumentError) {Dir.rmdir(path, parents: nil)}
+    assert_raise(ArgumentError) {Dir.rmdir(path, ignore_non_empty: 1)}
+    assert_raise(ArgumentError) {Dir.rmdir(path, ignore_non_empty: nil)}
+    assert_raise(ArgumentError) {Dir.rmdir(path, ignore_non_empty: :invalid)}
+    assert_raise(ArgumentError) {Dir.rmdir(path, ignore_non_empty: "parents")}
+    assert_file.directory?(path)
+  end
+
+  def test_rmdir_parents_relative
+    Dir.chdir(@root) do
+      ["remove/a/b", "./remove/a/b", "remove//a///b/"].each do |path|
+        Dir.mkdir(path, parents: true)
+        assert_equal(0, Dir.rmdir(path, parents: true), path)
+        assert_file.not_exist?("remove")
+        assert_file.directory?(".")
+      end
+    end
+  end
+
+  def test_rmdir_parents_leaf_errors
+    path = File.join(@root, "remove")
+    assert_raise(Errno::ENOENT) {Dir.rmdir(path, parents: true)}
+    Dir.mkdir(path)
+    File.write("#{path}/file", "content")
+    assert_raise(Errno::ENOTEMPTY, Errno::EEXIST) {Dir.rmdir(path, parents: true)}
+    assert_raise(Errno::ENOTDIR) {Dir.rmdir("#{path}/file", parents: true)}
+    assert_equal("content", File.read("#{path}/file"))
+  end
+
+  def test_rmdir_parents_nonempty_parent
+    path = File.join(@root, "remove/a/b")
+    [{}, {ignore_non_empty: false}, {ignore_non_empty: true}, {ignore_non_empty: :parents}].each do |options|
+      Dir.mkdir(path, parents: true)
+      File.write(File.join(@root, "remove/keep"), "content")
+      if options[:ignore_non_empty]
+        assert_equal(0, Dir.rmdir(path, parents: true, **options))
+      else
+        assert_raise(Errno::ENOTEMPTY, Errno::EEXIST) {Dir.rmdir(path, parents: true, **options)}
+      end
+      assert_file.not_exist?(File.dirname(path))
+      assert_equal("content", File.read(File.join(@root, "remove/keep")))
+    end
+  end
+
+  def test_rmdir_ignore_non_empty
+    path = File.join(@root, "remove")
+    Dir.mkdir("#{path}/child", parents: true)
+    [false, true].each do |parents|
+      assert_raise(Errno::ENOTEMPTY, Errno::EEXIST) do
+        Dir.rmdir(path, parents: parents, ignore_non_empty: false)
+      end
+      assert_equal(0, Dir.rmdir(path, parents: parents, ignore_non_empty: true))
+      assert_file.directory?("#{path}/child")
+    end
+    assert_equal(0, Dir.rmdir("#{path}/child", ignore_non_empty: true))
+    assert_file.not_exist?("#{path}/child")
+    assert_file.directory?(path)
+  end
+
+  def test_rmdir_ignore_non_empty_other_errors
+    path = File.join(@root, "remove")
+    [false, true].each do |parents|
+      assert_raise(Errno::ENOENT) do
+        Dir.rmdir(path, parents: parents, ignore_non_empty: true)
+      end
+      File.write(path, "content")
+      assert_raise(Errno::ENOTDIR) do
+        Dir.rmdir(path, parents: parents, ignore_non_empty: true)
+      end
+      assert_equal("content", File.read(path))
+      File.unlink(path)
+    end
+  end
+
+  def test_rmdir_ignore_non_empty_parents_target
+    path = File.join(@root, "remove")
+    [false, true].each do |parents|
+      assert_raise(Errno::ENOENT) do
+        Dir.rmdir(path, parents: parents, ignore_non_empty: :parents)
+      end
+      File.write(path, "content")
+      assert_raise(Errno::ENOTDIR) do
+        Dir.rmdir(path, parents: parents, ignore_non_empty: :parents)
+      end
+      File.unlink(path)
+    end
+    Dir.mkdir("#{path}/child", parents: true)
+    [false, true].each do |parents|
+      assert_raise(Errno::ENOTEMPTY, Errno::EEXIST) do
+        Dir.rmdir(path, parents: parents, ignore_non_empty: :parents)
+      end
+      assert_file.directory?("#{path}/child")
+    end
+    assert_equal(0, Dir.rmdir("#{path}/child", ignore_non_empty: :parents))
+    assert_file.directory?(path)
+  end
+
+  def test_rmdir_ignore_non_empty_missing_parent
+    omit "requires POSIX path resolution" if windows?
+    Dir.chdir(@root) do
+      [false, true, :parents].each do |ignore|
+        Dir.mkdir("remove")
+        # Removing the target makes the parent path "remove/.." disappear.
+        path = "remove/../remove"
+        if ignore == :parents
+          assert_equal(0, Dir.rmdir(path, parents: true, ignore_non_empty: ignore))
+        else
+          assert_raise(Errno::ENOENT) {Dir.rmdir(path, parents: true, ignore_non_empty: ignore)}
+        end
+        assert_file.not_exist?("remove")
+        assert_file.directory?(".")
+      end
+    end
+  end
+
+  def test_rmdir_parents_frozen_path
+    path = File.join(@root, "remove/a/b").freeze
+    original = path.dup
+    Dir.mkdir(path, parents: true)
+    arg = Object.new
+    arg.define_singleton_method(:to_path) {path}
+    assert_equal(0, Dir.rmdir(arg, parents: true, ignore_non_empty: true))
+    assert_equal(original, path)
+    assert_file.not_exist?(File.join(@root, "remove"))
+  end
+
+  def test_rmdir_parents_nonascii_path
+    path = File.join(@root, "日本語/親/子")
+    Dir.mkdir(path, parents: true)
+    assert_equal(0, Dir.rmdir(path, parents: true, ignore_non_empty: true))
+    assert_file.not_exist?(File.join(@root, "日本語"))
+  rescue EncodingError => e
+    omit e.message
+  end
+
+  def test_rmdir_parents_aliases
+    assert_equal(Dir.method(:rmdir), Dir.method(:delete))
+    assert_equal(Dir.method(:rmdir), Dir.method(:unlink))
+    [:delete, :unlink].each do |method|
+      path = File.join(@root, "remove/a/b")
+      Dir.mkdir(path, parents: true)
+      assert_equal(0, Dir.public_send(method, path, parents: true, ignore_non_empty: true))
+      assert_file.not_exist?(File.join(@root, "remove"))
+    end
+  end
+
+  def test_rmdir_parents_permission_error
+    omit "directory permissions are not supported" if windows? || Process.euid == 0
+    parent = File.join(@root, "protected")
+    path = File.join(parent, "a/b")
+    [true, :parents].each do |ignore|
+      Dir.mkdir(path, parents: true)
+      File.chmod(0o500, parent)
+      assert_raise(Errno::EACCES) {Dir.rmdir(path, parents: true, ignore_non_empty: ignore)}
+      assert_file.not_exist?(path)
+      assert_file.directory?(File.dirname(path))
+      File.chmod(0o700, parent)
+    end
+  ensure
+    File.chmod(0o700, parent) if parent && File.directory?(parent)
+  end
+
   def test_glob
     assert_equal((%w(.) + ("a".."z").to_a).map{|f| File.join(@root, f) },
                  Dir.glob(File.join(@root, "*"), File::FNM_DOTMATCH))
