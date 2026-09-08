@@ -9,6 +9,9 @@ Backport:
 jit:
 - all:
   - base-branch: '^master$'
+  # Skip dependabot's PRs, which bump actions in the CI files.
+  # They're noisy in notifications, and they're auto-merged anyway.
+  - head-branch: '^(?!dependabot/)'
   - changed-files:
     - any-glob-to-any-file:
       # JIT sources (Rust + C + Ruby)
