@@ -1201,10 +1201,10 @@ $(LIBRUBY_SO):	$(LIBRUBY_A) $(DLDOBJS) $(RUBYDEF) $(RUBY_SO_NAME).res
 			$(LIBRUBY_DLDFLAGS)
 		@$(RM) dummy.lib dummy.exp
 
-$(RUBYDEF):	$(LIBRUBY_A) $(RBCONFIG)
+$(RUBYDEF):	$(LIBRUBY_A) $(DLDOBJS) $(RBCONFIG)
 		$(ECHO) generating $(@:\=/)
 		$(Q) $(BOOTSTRAPRUBY_COMMAND) $(srcdir)/win32/mkexports.rb \
-		  -output=$@ -arch=$(ARCH) $(LIBRUBY_A)
+		  -output=$@ -arch=$(ARCH) $(LIBRUBY_A) -- $(DLDOBJS)
 
 {$(win_srcdir)}.def.lib:
 		$(Q) $(AR) $(ARFLAGS)$@ -def:$<
