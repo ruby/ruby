@@ -1533,6 +1533,8 @@ YYLTYPE yylloc = yyloc_default;
 
   /* The locations where the error started and ended.  */
   YYLTYPE yyerror_range[3];
+  int yyis_recovery_token = 0;
+  YY_USE (yyis_recovery_token);
 <%- if output.error_recovery -%>
   yy_repair_terms *rep_terms = 0;
   yy_term term_backup;
@@ -1683,6 +1685,7 @@ yybackup:
             {
               YYDPRINTF ((stderr, "An error recovery token is used\n"));
               yy_term term = rep_terms->terms[rep_terms_index];
+              yyis_recovery_token = 1;
               yytoken = term.kind;
               yylval = term.value;
               yylloc = term.location;
@@ -1696,6 +1699,7 @@ yybackup:
               yytoken = term_backup.kind;
               yylval = term_backup.value;
               yylloc = term_backup.location;
+              yyis_recovery_token = 0;
               yychar = yychar_backup;
               YY_SYMBOL_PRINT ("Next token is", yytoken, &yylval, &yylloc<%= output.user_args %>);
 
@@ -1710,6 +1714,7 @@ yybackup:
   if (yychar == YYEMPTY)
     {
       YYDPRINTF ((stderr, "Reading a token\n"));
+      yyis_recovery_token = 0;
       yychar = yylex <%= output.yylex_formals %>;
     }
 
@@ -1762,6 +1767,10 @@ yybackup:
   *++yyvsp = yylval;
   YY_IGNORE_MAYBE_UNINITIALIZED_END
   *++yylsp = yylloc;
+  /* Let parser-specific bookkeeping distinguish recovery tokens. */
+#ifdef YY_BEFORE_SHIFT
+  YY_BEFORE_SHIFT (<%= output.parse_param_name %>, yyis_recovery_token);
+#endif
 <%= output.after_shift_function("/* %after-shift code. */") %>
 
   /* Discard the shifted token.  */
@@ -2065,4 +2074,3 @@ yyreturnlab:
 #line <%= output.aux.epilogue_first_lineno - 1 %> "<%= output.grammar_file_path %>"
 <%= output.aux.epilogue -%>
 <%- end -%>
-
