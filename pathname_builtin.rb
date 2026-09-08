@@ -2661,18 +2661,16 @@ class Pathname    # * FileTest *
   # call-seq:
   #   symlink? -> true or false
   #
-  # Returns whether the entry at the path in `self` is a symbolic link:
+  # Returns whether the entry at the path in `self`
+  # is a [symbolic link](rdoc-ref:file/symbolic_links.md):
   #
   # ```ruby
-  # # Create Pathnames.
-  # file_pn = Pathname('doc/extension.rdoc') # => #<Pathname:doc/extension.rdoc>
-  # target_pn = Pathname('..').join(file_pn) # => #<Pathname:../doc/extension.rdoc>
-  # link_pn = Pathname('lib/u.tmp')          # => #<Pathname:lib/u.tmp>
-  # link_pn.symlink?                         # => false
-  # # Create link.
-  # link_pn.make_symlink(target_pn)
-  # link_pn.symlink?                         # => true
-  # link_pn.delete                           # Clean up.
+  # file_pn = Pathname('README.md')
+  # link_pn = Pathname('foo')
+  # link_pn.make_symlink(file_pn)
+  # file_pn.symlink? # => false
+  # link_pn.symlink? # => true
+  # link_pn.unlink   # Clean up.
   # ```
   #
   def symlink?() FileTest.symlink?(@path) end
