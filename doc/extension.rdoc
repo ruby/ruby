@@ -2445,7 +2445,7 @@ Here is an example of how to use +RUBY_TYPED_EMBEDDABLE+:
   void
   Init_my_data(void)
   {
-      VALUE cMyData = rb_define_class("MyData");
+      VALUE cMyData = rb_define_class("MyData", rb_cObject);
       rb_define_method(cMyData, "read", my_data_read, 0);
       rb_define_singleton_method(cMyData, "parse", my_data_m_parse, 0);
   }
