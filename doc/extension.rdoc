@@ -2401,7 +2401,7 @@ Here is an example of how to use +RUBY_TYPED_EMBEDDABLE+:
       .function = {
         .dfree = my_data_free,
         .dsize = my_data_size,
-      }
+      },
       .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_EMBEDDABLE,
   };
 
@@ -2417,7 +2417,7 @@ Here is an example of how to use +RUBY_TYPED_EMBEDDABLE+:
       data->buffer_capa = 1024;
       data->buffer = ZALLOC_N(char, data->buffer_capa);
 
-      return obj
+      return obj;
   }
 
   static VALUE
@@ -2429,7 +2429,7 @@ Here is an example of how to use +RUBY_TYPED_EMBEDDABLE+:
 
       // `my_data_obj` was allocated from C, `RB_GC_GUARD` must be used to
       // ensure the compiler will keep its reference on the stack.
-      RB_GC_GUARD(my_data_obj)
+      RB_GC_GUARD(my_data_obj);
   }
 
   static VALUE
@@ -2439,7 +2439,7 @@ Here is an example of how to use +RUBY_TYPED_EMBEDDABLE+:
       TypedData_Get_Struct(obj, struct my_data, &my_type, data);
 
       // `self` is received from `rb_define_method` so `RB_GC_GUARD` isn't necessary.
-      return rb_str_new(data->buffer, data->buffer_capa)
+      return rb_str_new(data->buffer, data->buffer_capa);
   }
 
   void
