@@ -249,6 +249,7 @@ pub fn init() -> Annotations {
     annotate!(rb_cBasicObject, "!=", inline_basic_object_neq, types::BoolExact);
     annotate!(rb_cBasicObject, "initialize", inline_basic_object_initialize);
     annotate!(rb_cClass, "allocate", inline_class_allocate);
+    annotate!(rb_cClass, "superclass", inline_class_superclass, types::Class.union(types::NilClass));
     annotate!(rb_cInteger, "succ", inline_integer_succ);
     annotate!(rb_cInteger, "^", inline_integer_xor);
     annotate!(rb_cInteger, "==", inline_integer_eq);
@@ -906,6 +907,22 @@ fn inline_class_allocate(fun: &mut hir::Function, block: hir::BlockId, recv: hir
 
     // Inline only in the case we have a leaf allocator
     fun.try_inline_object_alloc(block, recv, state)
+}
+
+fn inline_class_superclass(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[] = args else { return None; };
+    // A class's superclass cannot change after the class is created (prepending a module only
+    // inserts ICLASSes, which superclass skips), so fold the lookup when the receiver is a
+    // compile-time constant.
+    let recv_class = fun.type_of(recv).ruby_object()?;
+    if !unsafe { RB_TYPE_P(recv_class, RUBY_T_CLASS) } { return None; }
+    // rb_class_superclass raises TypeError on an uninitialized class (Class.allocate); leave
+    // that case to the fallback call.
+    if recv_class != unsafe { rb_cBasicObject } && unsafe { rb_class_get_superclass(recv_class) } == VALUE(0) {
+        return None;
+    }
+    let superclass = unsafe { rb_class_superclass(recv_class) };
+    Some(fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(superclass) }))
 }
 
 fn inline_basic_object_initialize(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
