@@ -240,6 +240,42 @@ class Dir
     Primitive.attr! :use_block
     Primitive.dir_s_glob(pattern, flags, base, sort)
   end
+
+  # call-seq:
+  #   Dir.mkdir(dirpath, permissions = 0777, perm: permissions, parents: false) -> 0
+  #
+  # Creates a directory in the underlying file system
+  # at +dirpath+ with the given +permissions+ or +perm+;
+  # see {File Permissions}[rdoc-ref:File@File+Permissions]:
+  #
+  #   Dir.mkdir('foo')
+  #   File.stat(Dir.new('foo')).mode.to_s(8) # => "40775"
+  #   Dir.mkdir('bar', 0644)
+  #   File.stat(Dir.new('bar')).mode.to_s(8) # => "40644"
+  #   Dir.mkdir('baz', perm: 0700)
+  #   File.stat(Dir.new('baz')).mode.to_s(8) # => "40700"
+  #   Dir.rmdir('foo')
+  #   Dir.rmdir('bar')
+  #   Dir.rmdir('baz')
+  #
+  # If +parents+ is +true+, creates missing parent directories and returns 0
+  # if +dirpath+ is already a directory. An existing file raises an error.
+  # The +permissions+ argument applies only to the final directory;
+  # parent directories are created with permissions 0777, modified by
+  # the process umask. Existing directories keep their permissions.
+  #
+  #   Dir.mkdir('zot')
+  #   Dir.mkdir('zot')                          # Raises Errno::EEXIST
+  #   Dir.mkdir('zot', parents: true)            # => 0
+  #   Dir.mkdir('zot/foo/bar')                  # Raises Errno::ENOENT
+  #   Dir.mkdir('zot/foo/bar', parents: true)    # => 0
+  #   Dir.exist?('zot/foo/bar')                 # => true
+  #
+  # See {File Permissions}[rdoc-ref:File@File+Permissions].
+  # Argument +permissions+ is ignored on Windows.
+  def self.mkdir(dirpath, permissions = 0o777, perm: permissions, parents: false)
+    Primitive.dir_s_mkdir(dirpath, perm, parents)
+  end
 end
 
 class << File

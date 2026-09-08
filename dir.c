@@ -76,8 +76,26 @@ char *strchr(char*,char);
 #include <sys/attr.h>
 #endif
 
+#ifndef S_ISDIR
+#   define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR)
+#endif
+
+#ifndef S_ISLNK
+#  ifndef S_IFLNK
+#    define S_ISLNK(m) (0)
+#  else
+#    define S_ISLNK(m) (((m) & S_IFMT) == S_IFLNK)
+#  endif
+#endif
+
 #define USE_NAME_ON_FS_REAL_BASENAME 1	/* platform dependent APIs to
                                          * get real basenames */
+
+#ifdef DOSISH
+#define isdirsep(x) ((x) == '/' || (x) == '\\')
+#else
+#define isdirsep(x) ((x) == '/')
+#endif
 
 #ifdef HAVE_GETATTRLIST
 # define USE_NAME_ON_FS USE_NAME_ON_FS_REAL_BASENAME
@@ -1705,7 +1723,7 @@ dir_s_getwd(VALUE dir)
 }
 
 static VALUE
-check_dirname(VALUE dir)
+check_dirname(VALUE dir, VALUE *arg)
 {
     VALUE d = dir;
     char *path, *pend;
@@ -1713,6 +1731,7 @@ check_dirname(VALUE dir)
     rb_encoding *enc;
 
     FilePathValue(d);
+    if (arg) *arg = d;
     enc = rb_enc_get(d);
     RSTRING_GETMEM(d, path, len);
     pend = path + len;
@@ -1746,7 +1765,7 @@ nogvl_chroot(void *dirname)
 static VALUE
 dir_s_chroot(VALUE dir, VALUE path)
 {
-    path = check_dirname(path);
+    path = check_dirname(path, 0);
     if (IO_WITHOUT_GVL_INT(nogvl_chroot, (void *)RSTRING_PTR(path)) == -1)
         rb_sys_fail_path(path);
 
@@ -1759,6 +1778,7 @@ dir_s_chroot(VALUE dir, VALUE path)
 struct mkdir_arg {
     const char *path;
     mode_t mode;
+    int base;
 };
 
 static void *
@@ -1766,45 +1786,116 @@ nogvl_mkdir(void *ptr)
 {
     struct mkdir_arg *m = ptr;
 
-    return (void *)(VALUE)mkdir(m->path, m->mode);
+#ifdef HAVE_MKDIRAT
+    int ret = mkdirat(m->base, m->path, m->mode);
+#else
+    int ret = mkdir(m->path, m->mode);
+#endif
+    return (void *)(VALUE)ret;
 }
 
-/*
- * call-seq:
- *   Dir.mkdir(dirpath, permissions = 0775) -> 0
- *
- * Creates a directory in the underlying file system
- * at +dirpath+ with the given +permissions+;
- * see {File Permissions}[rdoc-ref:File@File+Permissions]:
- *
- *   Dir.mkdir('foo')
- *   File.stat(Dir.new('foo')).mode.to_s(8) # => "40775"
- *   Dir.mkdir('bar', 0644)
- *   File.stat(Dir.new('bar')).mode.to_s(8) # => "40644"
- *   Dir.rmdir('foo')
- *   Dir.rmdir('bar')
- *
- * Argument +permissions+ is ignored on Windows.
- */
-static VALUE
-dir_s_mkdir(int argc, VALUE *argv, VALUE obj)
+struct makedirs_arg {
+    char *path, *pend;
+    rb_encoding *enc;
+    mode_t mode;
+    int base;
+};
+
+static int
+makedirs_1(int base, const char *path, mode_t mode)
 {
-    struct mkdir_arg m;
-    VALUE path, vmode;
+#ifdef HAVE_MKDIRAT
+    int ret = mkdirat(base, path, mode);
+#else
+    int ret = mkdir(path, mode);
+    (void)base;
+#endif
+    if (ret == 0) return 0;
+    if (errno == EEXIST) {
+        struct stat st;
+#ifdef HAVE_FSTATAT
+        ret = fstatat(base, path, &st, 0);
+#else
+        ret = stat(path, &st);
+#endif
+        if (ret == 0 && S_ISDIR(st.st_mode)) return 0;
+        errno = EEXIST;
+    }
+    return -1;
+}
+
+static void *
+nogvl_makedirs(void *ptr)
+{
+    struct makedirs_arg *m = ptr;
+    char *path = m->path, *pend = m->pend, *p = pend;
+    rb_encoding *enc = m->enc;
+    mode_t mode = m->mode;
+    int base = m->base;
+    const mode_t default_mode = 0777;
+
+    char *root = rb_enc_path_skip_prefix_root(path, pend, enc);
+    int ret = makedirs_1(base, path, mode);
+    if (ret == 0) return (void *)0;
+    while (ret != 0 && errno == ENOENT) {
+        char *parent = rb_enc_path_last_separator(root, p, enc);
+        if (!parent) break;
+        p = parent;
+        const char sep = *p;
+        *p = '\0';
+        ret = makedirs_1(base, path, default_mode);
+        *p = sep;
+    }
+    while (ret == 0 && p < pend) {
+        while (isdirsep(*p) && ++p < pend);
+        p = rb_enc_path_next(p, pend, enc);
+        const char sep = *p;
+        *p = '\0';
+        ret = makedirs_1(base, path, p < pend ? default_mode : mode);
+        *p = sep;
+    }
+
+    return (void *)(VALUE)ret;
+}
+
+static VALUE
+dir_s_mkdir(rb_execution_context_t *ec, VALUE self, VALUE path, VALUE vmode, VALUE parents)
+{
+    VALUE arg_path;
+    path = check_dirname(path, &arg_path);
+    mode_t mode = NIL_P(vmode) ? 0777 : NUM2MODET(vmode);
+    if (arg_path == path) path = rb_str_dup(path);
+    rb_str_modify(path);
+    rb_obj_hide(path);
+    rb_encoding *enc = rb_enc_get(path);
+    long len = RSTRING_LEN(path);
+    char *ptr = RSTRING_PTR(path), *pbeg = ptr, *pend = ptr + len;
     int r;
 
-    if (rb_scan_args(argc, argv, "11", &path, &vmode) == 2) {
-        m.mode = NUM2MODET(vmode);
+    if (RTEST(rb_bool_expected(parents, "parents", TRUE))) {
+        /* only the last component is affected by `permissions` option */
+        struct makedirs_arg m = {
+            .path = pbeg,
+            .pend = rb_enc_path_end(ptr, pend, enc),
+            .enc = enc,
+            .mode = mode,
+            .base = AT_FDCWD,
+        };
+        r = IO_WITHOUT_GVL_INT(nogvl_makedirs, &m);
     }
     else {
-        m.mode = 0777;
+        struct mkdir_arg m = {
+            .path = pbeg,
+            .mode = mode,
+            .base = AT_FDCWD,
+        };
+
+        r = IO_WITHOUT_GVL_INT(nogvl_mkdir, &m);
     }
 
-    path = check_dirname(path);
-    m.path = RSTRING_PTR(path);
-    r = IO_WITHOUT_GVL_INT(nogvl_mkdir, &m);
+    RB_GC_GUARD(path);
     if (r < 0)
-        rb_sys_fail_path(path);
+        rb_sys_fail_path(arg_path);
 
     return INT2FIX(0);
 }
@@ -1842,7 +1933,7 @@ dir_s_rmdir(VALUE obj, VALUE dir)
     const char *p;
     int r;
 
-    dir = check_dirname(dir);
+    dir = check_dirname(dir, 0);
     p = RSTRING_PTR(dir);
     r = IO_WITHOUT_GVL_INT(nogvl_rmdir, (void *)p);
     if (r < 0)
@@ -2542,18 +2633,6 @@ replace_real_basename(char *path, long base, rb_encoding *enc, int norm_p, int f
 }
 #elif USE_NAME_ON_FS == USE_NAME_ON_FS_REAL_BASENAME
 # error not implemented
-#endif
-
-#ifndef S_ISDIR
-#   define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR)
-#endif
-
-#ifndef S_ISLNK
-#  ifndef S_IFLNK
-#    define S_ISLNK(m) (0)
-#  else
-#    define S_ISLNK(m) (((m) & S_IFMT) == S_IFLNK)
-#  endif
 #endif
 
 struct glob_args {
@@ -4159,7 +4238,6 @@ Init_Dir(void)
     rb_define_singleton_method(rb_cDir,"getwd", dir_s_getwd, 0);
     rb_define_singleton_method(rb_cDir,"pwd", dir_s_getwd, 0);
     rb_define_singleton_method(rb_cDir,"chroot", dir_s_chroot, 1);
-    rb_define_singleton_method(rb_cDir,"mkdir", dir_s_mkdir, -1);
     rb_define_singleton_method(rb_cDir,"rmdir", dir_s_rmdir, 1);
     rb_define_singleton_method(rb_cDir,"delete", dir_s_rmdir, 1);
     rb_define_singleton_method(rb_cDir,"unlink", dir_s_rmdir, 1);

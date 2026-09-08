@@ -248,6 +248,123 @@ class TestDir < Test::Unit::TestCase
     assert_raise(IOError) { d.scan { |*| d.close } }
   end
 
+  def test_mkdir_parents
+    Dir.mktmpdir do |dirname|
+      assert_raise(Errno::EEXIST) {Dir.mkdir(dirname)}
+      assert_raise(Errno::EEXIST) {Dir.mkdir(dirname, parents: false)}
+      assert_nothing_raised(Errno::EEXIST) {Dir.mkdir(dirname, parents: true)}
+      assert_raise(ArgumentError) {Dir.mkdir(dirname, parents: 1)}
+
+      path = dirname + "/a/b/c"
+      assert_raise(Errno::ENOENT) {Dir.mkdir(path)}
+      assert_raise(Errno::ENOENT) {Dir.mkdir(path, parents: false)}
+      assert_nothing_raised(Errno::ENOENT) {Dir.mkdir(path, parents: true)}
+      assert_file.directory?(path)
+    end
+  end
+
+  def test_mkdir_parents_paths
+    Dir.chdir(@root) do
+      ["new", "deep/a/b/c", "repeated//a///b/", "./relative/a/../b"].each do |path|
+        assert_equal(0, Dir.mkdir(path, parents: true), path)
+        assert_file.directory?(path)
+        assert_equal(0, Dir.mkdir(path, parents: true), path)
+      end
+      assert_equal(0, Dir.mkdir(".", parents: true))
+      assert_raise(Errno::ENOENT) {Dir.mkdir("", parents: true)}
+    end
+  end
+
+  def test_mkdir_parents_nonascii_path
+    path = File.join(@root, "日本語/親/子")
+    assert_equal(0, Dir.mkdir(path, parents: true))
+    assert_file.directory?(path)
+    assert_equal(0, Dir.mkdir(path, parents: true))
+  rescue EncodingError => e
+    omit e.message
+  end
+
+  def test_mkdir_parents_file
+    path = File.join(@root, "file")
+    File.write(path, "content")
+    assert_raise(Errno::EEXIST) {Dir.mkdir(path, parents: true)}
+    assert_raise(Errno::ENOTDIR) {Dir.mkdir("#{path}/child", parents: true)}
+    assert_equal("content", File.read(path))
+  end
+
+  def test_mkdir_parents_permissions
+    return if windows?
+    mask = File.umask
+    path = File.join(@root, "parent/child")
+    assert_equal(0, Dir.mkdir(path, 0o700, parents: true))
+    assert_equal(0o777 & ~mask, File.stat(File.dirname(path)).mode & 0o777)
+    assert_equal(0o700 & ~mask, File.stat(path).mode & 0o777)
+    assert_equal(0, Dir.mkdir(path, 0o777, parents: true))
+    assert_equal(0o700 & ~mask, File.stat(path).mode & 0o777)
+  end
+
+  def test_mkdir_perm
+    path = File.join(@root, "keyword")
+    assert_equal(0, Dir.mkdir(path, perm: 0o700))
+    assert_file.directory?(path)
+    assert_equal(0o700 & ~File.umask, File.stat(path).mode & 0o777) unless windows?
+
+    path = File.join(@root, "override")
+    assert_equal(0, Dir.mkdir(path, 0o777, perm: 0o700))
+    assert_file.directory?(path)
+    assert_equal(0o700 & ~File.umask, File.stat(path).mode & 0o777) unless windows?
+  end
+
+  def test_mkdir_perm_conversion
+    path = File.join(@root, "keyword")
+    perm = Object.new
+    def perm.to_int; 0o700; end
+    assert_equal(0, Dir.mkdir(path, perm: perm))
+    assert_file.directory?(path)
+    assert_equal(0o700 & ~File.umask, File.stat(path).mode & 0o777) unless windows?
+    assert_raise(TypeError) {Dir.mkdir(File.join(@root, "invalid"), perm: Object.new)}
+  end
+
+  def test_mkdir_parents_perm
+    path = File.join(@root, "parent/child")
+    assert_equal(0, Dir.mkdir(path, perm: 0o700, parents: true))
+    assert_file.directory?(path)
+    unless windows?
+      mask = File.umask
+      assert_equal(0o777 & ~mask, File.stat(File.dirname(path)).mode & 0o777)
+      assert_equal(0o700 & ~mask, File.stat(path).mode & 0o777)
+    end
+    assert_equal(0, Dir.mkdir(path, perm: 0o777, parents: true))
+    assert_equal(0o700 & ~File.umask, File.stat(path).mode & 0o777) unless windows?
+  end
+
+  def test_mkdir_parents_symlink
+    target = File.join(@root, "target")
+    link = File.join(@root, "link")
+    Dir.mkdir(target)
+    begin
+      File.symlink(target, link)
+    rescue NotImplementedError, Errno::EACCES
+      omit "symlink is not supported"
+    end
+    assert_equal(0, Dir.mkdir(link, parents: true))
+    assert_equal(0, Dir.mkdir("#{link}/a/b", parents: true))
+    assert_file.directory?("#{target}/a/b")
+    File.symlink(File.join(@root, "missing"), "#{link}-dangling")
+    assert_raise(Errno::EEXIST) {Dir.mkdir("#{link}-dangling", parents: true)}
+  end
+
+  def test_mkdir_parents_concurrent
+    path = File.join(@root, "concurrent/a/b/c").freeze
+    threads = 8.times.map do
+      Thread.new {Dir.mkdir(path, parents: true)}
+    end
+    assert_equal([0] * threads.size, threads.map(&:value))
+    assert_file.directory?(path)
+  ensure
+    threads&.each(&:join)
+  end
+
   def test_glob
     assert_equal((%w(.) + ("a".."z").to_a).map{|f| File.join(@root, f) },
                  Dir.glob(File.join(@root, "*"), File::FNM_DOTMATCH))
