@@ -2383,7 +2383,7 @@ Here is an example of how to use +RUBY_TYPED_EMBEDDABLE+:
       struct my_data *data = (struct my_data *)ptr;
 
       // Deliberately don't free `ptr` if it is embeddable.
-      // Only auxiliary memory need to be freed.
+      // Only auxiliary memory needs to be freed.
       ruby_xfree(data->buffer);
   }
 
@@ -2392,7 +2392,7 @@ Here is an example of how to use +RUBY_TYPED_EMBEDDABLE+:
   {
       const struct my_data *data = (const struct my_data *)ptr;
       // We don't need to account for `sizeof(struct my_data)` because it is embedded inside the Ruby object.
-      // Only auxiliary memory need to be reported.
+      // Only auxiliary memory needs to be reported.
       return data->buffer_capa;
   }
 
@@ -2411,8 +2411,8 @@ Here is an example of how to use +RUBY_TYPED_EMBEDDABLE+:
       struct my_data *data;
       VALUE obj = TypedData_Make_Struct(klass, struct my_data, &my_type, data);
 
-      // Is it fine to pass pointers into the embedded struct, for as long as
-      // the called function won't use it after the Ruby object have left the stack.
+      // It is fine to pass pointers into the embedded struct, for as long as
+      // the called function won't use it after the Ruby object has left the stack.
       clock_gettime(CLOCK_REALTIME, &data->created_at);
       data->buffer_capa = 1024;
       data->buffer = ZALLOC_N(char, data->buffer_capa);
