@@ -3984,6 +3984,7 @@ rb_gc_unregister_address(VALUE *addr)
 
     rb_native_mutex_lock(&vm->gc.registered_addrs.lock);
     rb_ractor_t *cr = rb_current_ractor_raw(false);
+    if (cr == NULL) cr = vm->ractor.main_ractor;
     if (cr && gc_registered_addrs_remove(cr, addr)) goto done;
     for (size_t i = 0; i < vm->gc.registered_addrs.registry_cnt; i++) {
         if (vm->gc.registered_addrs.registry[i] != cr &&
