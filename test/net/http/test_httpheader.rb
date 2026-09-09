@@ -384,6 +384,16 @@ class HTTPHeaderTest < Test::Unit::TestCase
     try_chunked false, 'chunked-but-not-chunked'
   end
 
+  def test_chunked_final_transfer_coding
+    try_chunked true, 'gzip, chunked'
+    try_chunked true, 'chunked,'
+    try_chunked true, 'gzip , chunked , '
+
+    try_chunked false, 'chunked, gzip'
+    try_chunked false, 'chunked, identity'
+    try_chunked false, 'gzip'
+  end
+
   def try_chunked(bool, str)
     @c['transfer-encoding'] = str
     assert_equal bool, @c.chunked?

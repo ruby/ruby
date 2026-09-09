@@ -114,6 +114,12 @@ class Gem::Installer
 
     def copy_to(path)
     end
+
+    def gem
+    end
+
+    def content_address
+    end
   end
 
   ##
@@ -266,6 +272,7 @@ class Gem::Installer
   #     specifications/<gem-version>.gemspec #=> the Gem::Specification
 
   def install
+    assign_content_address
     pre_install_checks
 
     run_pre_install_hooks
@@ -301,7 +308,11 @@ class Gem::Installer
 
     say clean_text(spec.post_install_message.to_s) if options[:post_install_message] && !spec.post_install_message.nil?
 
-    Gem::Specification.add_spec(spec) unless @install_dir
+    if incompatible_abi_install?
+      say "#{spec.full_name} is scoped to Ruby ABI #{spec.ruby_abi} and will not be visible to the running Ruby (ABI #{Gem.ruby_abi})"
+    else
+      Gem::Specification.add_spec(spec) unless @install_dir
+    end
 
     load_plugin unless options[:install_plugin] == false
 
@@ -350,9 +361,11 @@ class Gem::Installer
     @installed_specs ||= begin
       specs = []
 
-      Gem::Util.glob_files_in_dir("*.gemspec", File.join(gem_home, "specifications")).each do |path|
-        spec = Gem::Specification.load path
-        specs << spec if spec
+      Gem::SpecificationRecord.dirs_from([gem_home]).each do |dir|
+        Gem::Util.glob_files_in_dir("*.gemspec", dir).each do |path|
+          spec = Gem::Specification.load path
+          specs << spec if spec
+        end
       end
 
       specs
@@ -388,7 +401,7 @@ class Gem::Installer
   #
 
   def spec_file
-    File.join gem_home, "specifications", "#{spec.full_name}.gemspec"
+    File.join Gem::SpecificationRecord.specification_dir_for(spec, gem_home), "#{spec.full_name}.gemspec"
   end
 
   def default_spec_dir
@@ -412,7 +425,24 @@ class Gem::Installer
   def write_spec
     spec.installed_by_version = Gem.rubygems_version
 
-    Gem.write_binary(spec_file, spec.to_ruby_for_cache)
+    spec_file = self.spec_file
+    spec_dir = File.dirname spec_file
+    dir_mode = options[:dir_mode]
+    content_addressed = Gem::ContentAddress.content_addressed?(spec)
+
+    if File.directory? spec_dir
+      if content_addressed && dir_mode && !File.writable?(spec_dir)
+        File.chmod(0o755, spec_dir)
+      end
+    else
+      ensure_writable_dir spec_dir
+    end
+
+    begin
+      Gem.write_binary(spec_file, spec.to_ruby_for_cache)
+    ensure
+      File.chmod(dir_mode, spec_dir) if dir_mode && content_addressed
+    end
   end
 
   ##
@@ -965,6 +995,23 @@ class Gem::Installer
   end
 
   private
+
+  def incompatible_abi_install?
+    Gem::ContentAddress.content_addressed?(spec) && spec.ruby_abi != Gem.ruby_abi
+  end
+
+  def assign_content_address
+    address = @package.content_address
+    expected = options[:content_address]
+
+    if expected && address != expected
+      raise Gem::InstallError, "content address mismatch for #{spec.full_name}: " \
+        "expected #{expected}, got #{address || "no content address"}"
+    end
+
+    @gem_dir = nil if address != spec.content_address
+    spec.content_address = address
+  end
 
   def user_install_dir
     # never install to user home in --build-root mode

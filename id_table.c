@@ -515,7 +515,7 @@ marked_id_table_compact_check_i(VALUE value, void *data)
 static enum rb_id_table_iterator_result
 marked_id_table_compact_replace_i(VALUE *value, void *data, int existing)
 {
-    *value = rb_gc_location(*value);
+    rb_gc_update_moved(value);
     return ID_TABLE_CONTINUE;
 }
 

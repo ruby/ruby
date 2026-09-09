@@ -187,83 +187,98 @@ module Bundler
       # However, if the new checksum is from a different source, we register like normal.
       # This ensures a mismatch error where there are multiple top level sources
       # that contain the same gem with different checksums.
+      # The store is keyed by full name rather than lock name because a
+      # content-addressable build and the ordinary platform build of the same
+      # name, version, and platform share a lock name while being different
+      # files with different checksums.
       def replace(spec, checksum)
         return unless checksum
 
-        lock_name = spec.lock_name
+        full_name = spec.full_name
         @store_mutex.synchronize do
-          existing = fetch_checksum(lock_name, checksum.algo)
+          existing = fetch_checksum(full_name, checksum.algo)
           if !existing || existing.same_source?(checksum)
-            store_checksum(lock_name, checksum)
+            store_checksum(full_name, checksum)
           else
-            merge_checksum(lock_name, checksum, existing)
+            merge_checksum(full_name, checksum, existing, spec.lock_name)
           end
         end
       end
 
       def missing?(spec)
-        @store[spec.lock_name].nil?
+        @store[spec.full_name].nil?
       end
 
       def empty?(spec)
         return false unless spec.source.is_a?(Bundler::Source::Rubygems)
 
-        @store[spec.lock_name].empty?
+        @store[spec.full_name].empty?
       end
 
       def register(spec, checksum)
-        register_checksum(spec.lock_name, checksum)
+        register_checksum(spec.full_name, checksum, spec.lock_name)
       end
 
       def merge!(other)
-        other.store.each do |lock_name, checksums|
+        other.store.each do |full_name, checksums|
           checksums.each do |_algo, checksum|
-            register_checksum(lock_name, checksum)
+            register_checksum(full_name, checksum)
           end
         end
       end
 
       def to_lock(spec)
         lock_name = spec.lock_name
-        checksums = @store[lock_name]
-        if checksums&.any?
-          "#{lock_name} #{checksums.values.map(&:to_lock).sort.join(",")}"
+        checksums = checksums_to_lock(platform_full_name(spec))
+        if checksums
+          "#{lock_name} #{checksums}"
         else
           lock_name
         end
       end
 
+      def checksums_to_lock(full_name)
+        checksums = @store[full_name]
+        return unless checksums&.any?
+
+        checksums.values.map(&:to_lock).sort.join(",")
+      end
+
       private
 
-      def register_checksum(lock_name, checksum)
+      def platform_full_name(spec)
+        Gem::NameTuple.new(spec.name, spec.version, spec.platform).full_name
+      end
+
+      def register_checksum(full_name, checksum, display_name = full_name)
         @store_mutex.synchronize do
           if checksum
-            existing = fetch_checksum(lock_name, checksum.algo)
+            existing = fetch_checksum(full_name, checksum.algo)
             if existing
-              merge_checksum(lock_name, checksum, existing)
+              merge_checksum(full_name, checksum, existing, display_name)
             else
-              store_checksum(lock_name, checksum)
+              store_checksum(full_name, checksum)
             end
           else
-            init_checksum(lock_name)
+            init_checksum(full_name)
           end
         end
       end
 
-      def merge_checksum(lock_name, checksum, existing)
-        existing.merge!(checksum) || raise(ChecksumMismatchError.new(lock_name, existing, checksum))
+      def merge_checksum(full_name, checksum, existing, display_name = full_name)
+        existing.merge!(checksum) || raise(ChecksumMismatchError.new(display_name, existing, checksum))
       end
 
-      def store_checksum(lock_name, checksum)
-        init_checksum(lock_name)[checksum.algo] = checksum
+      def store_checksum(full_name, checksum)
+        init_checksum(full_name)[checksum.algo] = checksum
       end
 
-      def init_checksum(lock_name)
-        @store[lock_name] ||= {}
+      def init_checksum(full_name)
+        @store[full_name] ||= {}
       end
 
-      def fetch_checksum(lock_name, algo)
-        @store[lock_name]&.fetch(algo, nil)
+      def fetch_checksum(full_name, algo)
+        @store[full_name]&.fetch(algo, nil)
       end
     end
   end

@@ -2022,6 +2022,9 @@ VM_BH_FROM_PROC(VALUE procval)
 
 /* VM related object allocate functions */
 VALUE rb_thread_alloc(VALUE klass);
+/* Build the Thread out of objects a named objspace owns; only a Ractor building its
+ * child needs this (create_ractor_alloc_thread). */
+VALUE rb_thread_alloc_in_objspace(VALUE klass, void *objspace);
 VALUE rb_binding_alloc(VALUE klass);
 VALUE rb_proc_alloc(VALUE klass, enum rb_block_type block_type);
 VALUE rb_proc_dup(VALUE self);
@@ -2353,10 +2356,6 @@ void rb_execution_context_mark(const rb_execution_context_t *ec);
 void rb_fiber_close(rb_fiber_t *fib);
 void Init_native_thread(rb_thread_t *th);
 int rb_vm_check_ints_blocking(rb_execution_context_t *ec);
-
-// vm_sync.h
-void rb_vm_cond_wait(rb_vm_t *vm, rb_nativethread_cond_t *cond);
-void rb_vm_cond_timedwait(rb_vm_t *vm, rb_nativethread_cond_t *cond, unsigned long msec);
 
 #define RUBY_VM_CHECK_INTS(ec) rb_vm_check_ints(ec)
 static inline void

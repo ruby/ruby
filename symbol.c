@@ -197,7 +197,7 @@ sym_id_entry_list_compact(void *ptr)
 
     struct sym_id_entry *entry;
     rb_darray_foreach(ary, i, entry) {
-        entry->str = rb_gc_location(entry->str);
+        rb_gc_update_moved(&entry->str);
     }
 }
 
@@ -251,7 +251,7 @@ id_entry_dir_compact(void *ptr)
     struct id_entry_dir *dir = ptr;
     for (long i = 0; i < dir->capa; i++) {
         if (dir->entries[i]) {
-            dir->entries[i] = rb_gc_location(dir->entries[i]);
+            rb_gc_update_moved(&dir->entries[i]);
         }
     }
 }

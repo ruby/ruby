@@ -342,6 +342,7 @@ module Bundler
     D
     method_option "paths", type: :boolean, banner: "List the paths of all gems that are required by your Gemfile."
     method_option "outdated", type: :boolean, banner: "Show verbose output including whether gems are outdated (removed)."
+    method_option "exact-match", type: :boolean, banner: "Only match gems whose names exactly match the given name"
     def show(gem_name = nil)
       if ARGV.include?("--outdated")
         removed_message = "the `--outdated` flag to `bundle show` has been removed in favor of `bundle show --verbose`"
@@ -367,6 +368,7 @@ module Bundler
     desc "info GEM [OPTIONS]", "Show information for the given gem"
     method_option "path", type: :boolean, banner: "Print full path to gem"
     method_option "version", type: :boolean, banner: "Print gem version"
+    method_option "exact-match", type: :boolean, banner: "Only match gems whose names exactly match the given name"
     def info(gem_name)
       require_relative "cli/info"
       Info.new(options, gem_name).run
@@ -530,6 +532,7 @@ module Bundler
 
     desc "open GEM", "Opens the source directory of the given bundled gem"
     method_option "path", type: :string, lazy_default: "", banner: "Open relative path of the gem source."
+    method_option "exact-match", type: :boolean, banner: "Only match gems whose names exactly match the given name"
     def open(name)
       require_relative "cli/open"
       Open.new(options, name).run

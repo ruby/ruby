@@ -1505,12 +1505,28 @@ rb_stat(VALUE file, struct stat *st)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *    File.stat(filepath) ->  stat
+ *    File.stat(path) -> file_stat
  *
- *  Returns a File::Stat object for the file at +filepath+ (see File::Stat):
+ *  Returns a new File::Stat object for the entry at `path`.
+ *  Follows [symbolic links](file/symbolic_links.md);
+ *  therefore if the entry is a symbolic link,
+ *  the returned object contains information for the target entry, not the symbolic link:
  *
- *    File.stat('t.txt').class # => File::Stat
+ *  ```ruby
+ *  filepath = 'README.md'
+ *  linkpath = 'foo'
+ *  File.symlink(filepath, linkpath)
+ *  # Method File.stat follows the symlink, so the birthtimes are the same.
+ *  File.stat(filepath).birthtime  # => 2026-09-01 09:09:28.378987388 -0500
+ *  File.stat(linkpath).birthtime  # => 2026-09-01 09:09:28.378987388 -0500
+ *  # Method File.lstat does not follow the symlink, so the birthtimes are different.
+ *  File.lstat(filepath).birthtime # => 2026-09-01 09:09:28.378987388 -0500
+ *  File.lstat(linkpath).birthtime # => 2026-09-04 10:29:45.884317953 -0500
+ *  File.unlink(linkpath)          # Clean up.
+ *  ```
  *
  */
 
@@ -1579,24 +1595,24 @@ lstat_without_gvl(const char *path, struct stat *st)
  *  :markup: markdown
  *
  *  call-seq:
- *    File.lstat(path) -> new_stat
+ *    File.lstat(path) -> file_stat
  *
- *  Returns a File::Stat object for the entry at `path`;
- *  does not follow symbolic links,
- *  and therefore returns the stat object for `path`,
- *  regardless of whether it is a symbolic link:
+ *  Returns a new File::Stat object for the entry at `path`.
+ *  Does not follow [symbolic links](file/symbolic_links.md);
+ *  therefore the returned object contains information for the entry at `path`,
+ *  regardless of whether is a symbolic link:
  *
  *  ```ruby
- *  File.write('t.tmp', '')
- *  sleep(1)
- *  File.symlink('t.tmp', 'link')
- *  file = File.new('link', 'r')
- *  # Method stat: follows link to 't.tmp'.
- *  file.stat.ctime  # => 2026-06-13 15:05:16.996527996 -0500
- *  # Method lstat; does not follow link.
- *  file.lstat.ctime # => 2026-06-13 15:05:17.997527947 -0500
- *  File.delete('t.tmp')
- *  File.delete('link')
+ *  filepath = 'README.md'
+ *  linkpath = 'foo'
+ *  File.symlink(filepath, linkpath)
+ *  # Method File.stat follows the symlink, so the birthtimes are the same.
+ *  File.stat(filepath).birthtime  # => 2026-09-01 09:09:28.378987388 -0500
+ *  File.stat(linkpath).birthtime  # => 2026-09-01 09:09:28.378987388 -0500
+ *  # Method File.lstat does not follow the symlink, so the birthtimes are different.
+ *  File.lstat(filepath).birthtime # => 2026-09-01 09:09:28.378987388 -0500
+ *  File.lstat(linkpath).birthtime # => 2026-09-04 10:29:45.884317953 -0500
+ *  File.unlink(linkpath)          # Clean up.
  *  ```
  *
  */
@@ -1867,18 +1883,16 @@ rb_file_pipe_p(VALUE obj, VALUE fname)
  * call-seq:
  *   File.symlink?(path) -> true or false
  *
- * Returns whether the entry at `path` is a symbolic link:
+ * Returns whether the entry at `path`
+ * is a [symbolic link](rdoc-ref:file/symbolic_links.md):
  *
  * ```ruby
- * # Create paths.
- * file_path = 'doc/extension.rdoc'         # => "doc/extension.rdoc"
- * target_path = File.join('..', file_path) # => "../doc/extension.rdoc"
- * link_path = 'lib/u.tmp'                  # => "lib/u.tmp"
- * File.symlink?(link_path)                 # => false
- * # Create link and verify.
- * File.symlink(target_path, link_path)
- * File.symlink?(link_path)                 # => true
- * File.delete(link_path)                   # Clean up.
+ * filepath = 'README.md'
+ * linkpath = 'foo'
+ * File.symlink(filepath, linkpath)
+ * File.symlink?(filepath) # => false
+ * File.symlink?(linkpath) # => true
+ * File.unlink(linkpath)   # Clean up.
  * ```
  *
  */
@@ -3119,7 +3133,7 @@ lchmod_internal(const char *path, void *mode)
  *  call-seq:
  *    File.lchmod(mode, *paths) -> paths_count
  *
- *  Not supported on some platforms (raises Errno:: ENOTSUP).
+ *  Not supported on some platforms (raises NotImplementedError).
  *
  *  When supported: like File::chmod, but does not follow symbolic links,
  *  and therefore changes the mode of the entries given by `paths`;
@@ -6705,18 +6719,17 @@ rb_stat_p(VALUE obj)
  *  call-seq:
  *    symlink? -> true or false
  *
- *  Returns whether the entry in `self` is a symbolic link:
+ *  Returns whether the entry in `self`
+ *  is a [symbolic link](rdoc-ref:file/symbolic_links.md):
  *
  *  ```ruby
- *  path = 'doc/t.tmp'
- *  link_path = 'lib/u.tmp'
- *  File.write(path, 'foo')
- *  File.symlink(path, link_path)
- *  File.stat(path).symlink?       # => false
- *  File.stat(link_path).symlink?  # Raises Errno::ENOENT; entry is not a file.
- *  File.lstat(link_path).symlink? # => true
- *  File.delete(path)
- *  File.delete(link_path)
+ *  filepath = 'README.md'
+ *  linkpath = 'foo'
+ *  File.symlink(filepath, linkpath)
+ *  File.stat(filepath).symlink?  # => false
+ *  File.stat(linkpath).symlink?  # => false  # stat followed symlink.
+ *  File.lstat(linkpath).symlink? # => true   # lstat did not follow symlink.
+ *  File.unlink(linkpath)         # Clean up.
  *  ```
  *
  */

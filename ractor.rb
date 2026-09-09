@@ -297,6 +297,9 @@ class Ractor
   #    # r1 done
   #    # r0 done
   #
+  # Closing one of the given ports raises Ractor::ClosedError, whether it was
+  # closed before the call or while it waits.
+  #
   # The following example is almost equivalent to <code>ractors.map(&:value)</code> except the thread
   # is unblocked when any of the ractors has terminated as opposed to waiting for their termination in
   # the array element order.
@@ -759,11 +762,17 @@ class Ractor
     # is already there and returns +nil+ otherwise.
     #
     # If the port is closed and there are no more messages in the message queue,
-    # the method raises Ractor::ClosedError.
+    # the method raises Ractor::ClosedError. Closing a port while this method
+    # waits on it ends the wait the same way; messages queued before the close
+    # are received first.
     #
     #     port = Ractor::Port.new
     #     port.close
     #     port.receive #=> raise Ractor::ClosedError
+    #
+    #     port = Ractor::Port.new
+    #     Thread.new { sleep 0.1; port.close }
+    #     port.receive #=> raise Ractor::ClosedError, after 0.1 seconds
     #
     def receive(timeout: nil)
       __builtin_cexpr! %q{
@@ -822,6 +831,11 @@ class Ractor
     #
     # Closes the port. Sending to a closed port is prohibited.
     # Receiving is also prohibited if there are no messages in its message queue.
+    #
+    # Messages already in the queue are kept: a receiver takes them before the
+    # port reports itself closed. A Ractor::Port#receive waiting on the port when
+    # it closes stops there and raises Ractor::ClosedError, rather than waiting
+    # for a message that can no longer arrive.
     #
     # Only the Ractor which created the port is allowed to close it.
     #

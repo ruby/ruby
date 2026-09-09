@@ -1265,6 +1265,21 @@ ELEM_SWAP(LINK_ELEMENT *first, LINK_ELEMENT *second)
 
     second->prev = first->prev;
     first->prev = second;
+
+    if (IS_INSN(first) && IS_INSN(second)) {
+        INSN *first_insn = (INSN*)first;
+        INSN *second_insn = (INSN*)second;
+
+        // [Bug #22299] If both instructions are on the same line and the first one carries
+        // a line event we need to swap the event as well.
+        if (first_insn->insn_info.line_no == second_insn->insn_info.line_no) {
+            rb_event_flag_t mask = (RUBY_EVENT_LINE | RUBY_EVENT_COVERAGE_LINE);
+            rb_event_flag_t first_events = first_insn->insn_info.events & mask;
+            rb_event_flag_t second_events = second_insn->insn_info.events & mask;
+            first_insn->insn_info.events = (first_insn->insn_info.events & ~mask) | second_events;
+            second_insn->insn_info.events = (second_insn->insn_info.events & ~mask) | first_events;
+        }
+    }
 }
 
 static LINK_ELEMENT *

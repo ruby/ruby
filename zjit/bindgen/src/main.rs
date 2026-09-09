@@ -100,6 +100,7 @@ fn main() {
         .allowlist_var("RB_GC_ZJIT_FASTPATH_.*")
 
         .allowlist_type("ruby_rstring_flags")
+        .allowlist_type("ruby_rstruct_flags")
 
         // This function prints info about a value and is useful for debugging
         .allowlist_function("rb_raw_obj_info")
@@ -276,6 +277,7 @@ fn main() {
         .allowlist_function("rb_callable_method_entry")
         .allowlist_function("rb_callable_method_entry_or_negative")
         .allowlist_function("rb_vm_frame_method_entry")
+        .allowlist_function("rb_vm_once_done_value")
         .allowlist_type("IVC") // pointer to iseq_inline_iv_cache_entry
         .allowlist_type("IC")  // pointer to iseq_inline_constant_cache
         .allowlist_type("iseq_inline_constant_cache_entry")
@@ -308,6 +310,7 @@ fn main() {
         .allowlist_function("rb_iseq_opcode_at_pc")
         .allowlist_function("rb_iseq_bare_opcode_at_pc")
         .allowlist_function("rb_jit_reserve_addr_space")
+        .allowlist_function("rb_zjit_reserve_low_addr_space")
         .allowlist_function("rb_jit_mark_writable")
         .allowlist_function("rb_jit_mark_executable")
         .allowlist_function("rb_jit_mark_unused")
@@ -497,16 +500,21 @@ fn main() {
     // Write to a Vec for post-processing
     let mut bindings_string = Vec::new();
     bindings.write(Box::new(&mut bindings_string)).expect("Couldn't write bindings!");
+    let mut bindings_string = String::from_utf8(bindings_string).expect("bindings should be UTF-8");
 
-    // Use i32 for this type since that's what the assembler APIs expect
-    const JIT_CONSTANTS_NEEDLE: &[u8]      = b"pub type jit_bindgen_constants = u32;";
-    const JIT_CONSTANTS_REPLACEMENT: &[u8] = b"pub type jit_bindgen_constants = i32;";
+    // Give some generated type aliases an integer type that is nicer to use from
+    // Rust than the one bindgen derives from C.
+    const TYPE_REPLACEMENTS: &[(&str, &str)] = &[
+        // i32 is what the assembler APIs expect
+        ("pub type jit_bindgen_constants = u32;", "pub type jit_bindgen_constants = i32;"),
+        // usize is what VALUE() takes, so flag masks need no cast at their use sites
+        ("pub type ruby_rstruct_flags = u32;", "pub type ruby_rstruct_flags = usize;"),
+    ];
+    // Each needle is a whole line of the output, so plain replacement is unambiguous.
     // Yes, this search-and-replace could be faster, but it's a small file.
-    for line in bindings_string.as_mut_slice().split_mut(|&byte| byte == b'\n') {
-        if line == JIT_CONSTANTS_NEEDLE {
-            line.copy_from_slice(JIT_CONSTANTS_REPLACEMENT);
-            break;
-        }
+    for (needle, replacement) in TYPE_REPLACEMENTS {
+        assert!(bindings_string.contains(needle), "no line to replace: {needle}");
+        bindings_string = bindings_string.replace(needle, replacement);
     }
 
     // Write out to file

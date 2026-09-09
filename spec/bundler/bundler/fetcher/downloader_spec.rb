@@ -59,6 +59,19 @@ RSpec.describe Bundler::Fetcher::Downloader do
           subject.fetch(uri, options, counter)
         end
       end
+
+      context "when the redirect uri downgrades https to http" do
+        let(:uri) { Gem::URI("https://username:password@www.uri-to-fetch.com/api/v2/endpoint") }
+
+        before { http_response["location"] = "http://www.uri-to-fetch.com/api/v2/endpoint" }
+
+        it "should raise a Bundler::HTTPError instead of following the redirect" do
+          expect(subject).to receive(:fetch).with(uri, options, 0).and_call_original
+          expect(subject).not_to receive(:fetch).with(Gem::URI("http://username:password@www.uri-to-fetch.com/api/v2/endpoint"), options, 1)
+          expect { subject.fetch(uri, options, counter) }.to raise_error(Bundler::HTTPError,
+            "Redirecting to a non-https URI is not allowed: http://www.uri-to-fetch.com/api/v2/endpoint")
+        end
+      end
     end
 
     context "when the request response is a Gem::Net::HTTPSuccess" do

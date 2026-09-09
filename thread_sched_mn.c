@@ -919,11 +919,18 @@ nt_free_stack(void *mstack)
     rb_native_mutex_unlock(&nt_machine_stack_lock);
 }
 
+static bool
+mn_threads_enabled_p(void)
+{
+    return mn_threads_mode >= 0;
+}
 
 static int
 native_thread_check_and_create_shared(rb_vm_t *vm)
 {
     bool need_to_make = false;
+
+    if (!mn_threads_enabled_p()) return 0; // no thread is M:N: the pool serves nobody
 
     ractor_sched_lock(vm, NULL); // NULL: the timer thread also calls this
     {
@@ -1343,23 +1350,16 @@ fd_waiters_arm(int fd, struct rb_fd_waiters *e, uint32_t want, bool consumed)
 }
 
 static bool
-fd_readable_nonblock(int fd)
+fd_ready_nonblock(int fd, short events)
 {
     struct pollfd pfd = {
         .fd = fd,
-        .events = POLLIN,
+        .events = events,
     };
-    return poll(&pfd, 1, 0) != 0;
-}
 
-static bool
-fd_writable_nonblock(int fd)
-{
-    struct pollfd pfd = {
-        .fd = fd,
-        .events = POLLOUT,
-    };
-    return poll(&pfd, 1, 0) != 0;
+    // A "ready" answer makes the caller report the requested event, so a
+    // closed fd (POLLNVAL) must not count: it owes the caller EBADF.
+    return poll(&pfd, 1, 0) > 0 && !(pfd.revents & POLLNVAL);
 }
 
 static void
@@ -1479,16 +1479,16 @@ timer_thread_register_waiting(rb_thread_t *th, int fd, enum thread_sched_waiting
     }
 
     if (flags & thread_sched_waiting_io_read) {
-        if (!(flags & thread_sched_waiting_io_force) && fd_readable_nonblock(fd)) {
-            RUBY_DEBUG_LOG("fd_readable_nonblock");
+        if (!(flags & thread_sched_waiting_io_force) && fd_ready_nonblock(fd, POLLIN)) {
+            RUBY_DEBUG_LOG("fd readable");
             return timer_thread_already_ready;
         }
         VM_ASSERT(fd >= 0);
     }
 
     if (flags & thread_sched_waiting_io_write) {
-        if (!(flags & thread_sched_waiting_io_force) && fd_writable_nonblock(fd)) {
-            RUBY_DEBUG_LOG("fd_writable_nonblock");
+        if (!(flags & thread_sched_waiting_io_force) && fd_ready_nonblock(fd, POLLOUT)) {
+            RUBY_DEBUG_LOG("fd writable");
             return timer_thread_already_ready;
         }
         VM_ASSERT(fd >= 0);

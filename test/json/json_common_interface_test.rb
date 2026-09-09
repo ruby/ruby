@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
 require_relative 'test_helper'
-require 'stringio'
-require 'tempfile'
 
 class JSONCommonInterfaceTest < Test::Unit::TestCase
   include JSON

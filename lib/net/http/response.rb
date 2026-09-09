@@ -616,15 +616,20 @@ class Net::HTTPResponse
 
       @socket = inflate_body_io
 
-      clen = content_length()
-      if clen
-        @socket.read clen, dest, @ignore_eof
-        return
-      end
-      clen = range_length()
-      if clen
-        @socket.read clen, dest
-        return
+      # Transfer-Encoding overrides Content-Length, so a body that is not
+      # chunk-framed runs until the server closes the connection.
+      # See RFC 9112 Section 6.3.
+      unless @header['transfer-encoding']
+        clen = content_length()
+        if clen
+          @socket.read clen, dest, @ignore_eof
+          return
+        end
+        clen = range_length()
+        if clen
+          @socket.read clen, dest
+          return
+        end
       end
       @socket.read_all dest
     end

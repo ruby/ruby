@@ -1042,9 +1042,41 @@ bug_report_end(FILE *out, rb_pid_t pid)
     finish_report(out, pid);
 }
 
+/* Only the first thread to get here writes a report.  A second one -- another Ractor
+ * failing the same assertion, say -- would interleave into it and leave both
+ * unreadable [Bug #21146], so it waits for the writer to abort the process instead.
+ * The writer is let through again, for the crash-while-reporting path. */
+static const rb_execution_context_t *bug_reporter_ec;
+static rb_atomic_t bug_reporter_claimed;
+
+static bool
+bug_report_claim(void)
+{
+    const rb_execution_context_t *ec = rb_current_execution_context(false);
+
+    if (RUBY_ATOMIC_CAS(bug_reporter_claimed, 0, 1) == 0) {
+        bug_reporter_ec = ec;
+        return true;
+    }
+    if (ec != NULL && ec == bug_reporter_ec) {
+        return true;
+    }
+
+    /* Bounded, so a writer that hangs ends as a crash and not as a hang. */
+    for (int i = 0; i < 100; i++) {
+#ifdef _WIN32
+        Sleep(100);
+#else
+        struct timespec ts = { 0, 100 * 1000 * 1000 };
+        nanosleep(&ts, NULL);
+#endif
+    }
+    return false;
+}
+
 #define report_bug(file, line, fmt, ctx) do { \
     rb_pid_t pid = -1; \
-    FILE *out = bug_report_file(file, line, &pid); \
+    FILE *out = bug_report_claim() ? bug_report_file(file, line, &pid) : NULL; \
     if (out) { \
         bug_report_begin(out, fmt); \
         rb_vm_bugreport(ctx, out); \
@@ -1054,7 +1086,7 @@ bug_report_end(FILE *out, rb_pid_t pid)
 
 #define report_bug_valist(file, line, fmt, ctx, args) do { \
     rb_pid_t pid = -1; \
-    FILE *out = bug_report_file(file, line, &pid); \
+    FILE *out = bug_report_claim() ? bug_report_file(file, line, &pid) : NULL; \
     if (out) { \
         bug_report_begin_valist(out, fmt, args); \
         rb_vm_bugreport(ctx, out); \
@@ -1207,7 +1239,7 @@ rb_assert_failure_detail(const char *file, int line, const char *name, const cha
                          const char *fmt, ...)
 {
     rb_pid_t pid = -1;
-    FILE *out = bug_report_file(file, line, &pid);
+    FILE *out = bug_report_claim() ? bug_report_file(file, line, &pid) : NULL;
     if (out) {
         fputs("Assertion Failed: ", out);
         if (name) fprintf(out, "%s:", name);

@@ -23,6 +23,34 @@ class TestStubSpecification < Gem::TestCase
     assert @foo.stubbed?
   end
 
+  def test_initialize_with_target
+    stub = stub_with_target
+
+    assert_equal "stub_with_target", stub.name
+    assert_equal v(2), stub.version
+    assert_equal Gem::Platform.new("x86_64-linux"), stub.platform
+    assert_equal [stub.extension_dir, "lib"], stub.require_paths
+    assert_equal %w[ext/stub_with_target/extconf.rb], stub.extensions
+    assert_equal "ab12345678", stub.content_address
+    assert_equal "stub_with_target-2-ab12345678", stub.full_name
+  end
+
+  def test_initialize_hex_suffix_without_target_is_not_content_addressable
+    stub = stub_without_target
+
+    assert_nil stub.content_address
+    assert_equal Gem::Platform.new("ab12345678"), stub.platform
+    assert_equal "stub_without_target-2-ab12345678", stub.full_name
+  end
+
+  def test_content_addressable_stubs_are_distinct
+    first = stub_with_target "ab12345678"
+    second = stub_with_target "cd12345678"
+
+    refute_equal first, second
+    assert_equal 2, [first, second].uniq.size
+  end
+
   def test_initialize_extension
     stub = stub_with_extension
 
@@ -278,6 +306,54 @@ class TestStubSpecification < Gem::TestCase
         Gem::Specification.new do |s|
           s.name = 'stub_v'
           s.version = ""
+        end
+      STUB
+
+      io.flush
+
+      stub = Gem::StubSpecification.gemspec_stub io.path, @gemhome, File.join(@gemhome, "gems")
+
+      yield stub if block_given?
+
+      return stub
+    end
+  end
+
+  def stub_with_target(content_address = "ab12345678")
+    spec = File.join @gemhome, "specifications", "stub_with_target-#{content_address}.gemspec"
+    File.open spec, "w" do |io|
+      io.write <<~STUB
+        # -*- encoding: utf-8 -*-
+        # stub: stub_with_target 2 #{content_address} lib
+        # stub: ext/stub_with_target/extconf.rb
+        # stub-target: platform=x86_64-linux
+
+        Gem::Specification.new do |s|
+          s.name = 'stub_with_target'
+          s.version = Gem::Version.new '2'
+        end
+      STUB
+
+      io.flush
+
+      stub = Gem::StubSpecification.gemspec_stub io.path, @gemhome, File.join(@gemhome, "gems")
+
+      yield stub if block_given?
+
+      return stub
+    end
+  end
+
+  def stub_without_target(suffix = "ab12345678")
+    spec = File.join @gemhome, "specifications", "stub_without_target-#{suffix}.gemspec"
+    File.open spec, "w" do |io|
+      io.write <<~STUB
+        # -*- encoding: utf-8 -*-
+        # stub: stub_without_target 2 #{suffix} lib
+
+        Gem::Specification.new do |s|
+          s.name = 'stub_without_target'
+          s.version = Gem::Version.new '2'
         end
       STUB
 

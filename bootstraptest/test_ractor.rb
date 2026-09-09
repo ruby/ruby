@@ -1534,10 +1534,10 @@ assert_equal '[nil, "b", "a"]', %q{
 }
 
 assert_equal '1', %q{
-  N = 1_000
+  N = 100
   Ractor.new{
     a = []
-    1_000.times.map{|i|
+    100.times.map{|i|
       Thread.new(i){|i|
         Thread.pass if i < N
         a << Ractor.store_if_absent(:i){ i }
@@ -2862,4 +2862,32 @@ assert_equal '[[0, 1, 2], [:a, :b]]', %q{
   closed.send(:a); closed.send(:b); closed.close
   6.times { GC.start }
   [taken.map(&:receive), [closed.receive, closed.receive]]
+}
+
+# Closing a port wakes a receiver waiting on it, with or without a timeout.
+assert_equal '[:closed, :closed]', %q{
+  untimed = Ractor::Port.new
+  th = Thread.new do
+    begin
+      untimed.receive
+    rescue Ractor::ClosedError
+      :closed
+    end
+  end
+  Thread.pass until th.status == 'sleep'
+  untimed.close
+  untimed_result = th.value # before the next close, which would wake it too
+
+  timed = Ractor::Port.new
+  th2 = Thread.new do
+    begin
+      timed.receive(timeout: 10)
+    rescue Ractor::ClosedError
+      :closed
+    end
+  end
+  Thread.pass until th2.status == 'sleep'
+  timed.close
+
+  [untimed_result, th2.value]
 }

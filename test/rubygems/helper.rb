@@ -20,6 +20,8 @@ begin
       skip ".gemspec"
     end
 
+    SimpleCov.print_error_status = false
+
     # Prevent SimpleCov from running in subprocesses spawned by assert_separately
     ENV["SIMPLECOV_SUBPROCESS"] = "1"
   end
@@ -873,7 +875,7 @@ class Gem::TestCase < Test::Unit::TestCase
   # Builds a gem from +spec+ and places it in <tt>File.join @gemhome,
   # 'cache'</tt>.  Automatically creates files based on +spec.files+
 
-  def util_build_gem(spec)
+  def util_build_gem(spec, ruby_abi: nil)
     dir = spec.gem_dir
     FileUtils.mkdir_p dir
 
@@ -887,12 +889,14 @@ class Gem::TestCase < Test::Unit::TestCase
         end
       end
 
+      built_gem_name = nil
       use_ui Gem::MockGemUi.new do
-        Gem::Package.build spec
+        built_gem_name = Gem::Package.build spec, false, false, nil, ruby_abi
       end
 
-      cache = spec.cache_file
+      cache = File.join File.dirname(spec.cache_file), File.basename(built_gem_name)
       FileUtils.mv File.basename(cache), cache
+      cache
     end
   end
 
@@ -1009,12 +1013,31 @@ class Gem::TestCase < Test::Unit::TestCase
   end
 
   ##
-  # Creates a gem with +name+, +version+ and +deps+.  The specification will
-  # be yielded before gem creation for customization.  The gem will be placed
-  # in <tt>File.join @tempdir, 'gems'</tt>.  The specification and .gem file
-  # location are returned.
+  # Creates a content-addressable spec for compact index testing. Requires
+  # either +ruby_abi+ (sets +required_ruby_version+ to "~> X.Y.0") or an
+  # explicit +required_ruby_version+. No gem file is built.
 
-  def util_gem(name, version, deps = nil, &block)
+  def util_ca_spec(name, version, content_address, ruby_abi: nil, platform: "x86_64-linux", required_ruby_version: nil, &block)
+    unless ruby_abi || required_ruby_version
+      raise ArgumentError, "util_ca_spec requires either ruby_abi or required_ruby_version"
+    end
+
+    util_spec(name, version) do |s|
+      s.platform = Gem::Platform.new(platform)
+      s.content_address = content_address
+      s.required_ruby_version = required_ruby_version || "~> #{ruby_abi}.0"
+      yield(s) if block
+    end
+  end
+
+  ##
+  # Creates a gem with +name+, +version+ and +deps+.  The specification will
+  # be yielded before gem creation for customization.  When +ruby_abi+ is set,
+  # the gem is built using a content-addressable file name for that Ruby ABI.
+  # The gem will be placed in <tt>File.join @tempdir, 'gems'</tt>.  The
+  # specification and .gem file location are returned.
+
+  def util_gem(name, version, deps = nil, ruby_abi: nil, &block)
     if deps
       block = proc do |s|
         deps.keys.each do |n|
@@ -1025,16 +1048,41 @@ class Gem::TestCase < Test::Unit::TestCase
 
     spec = quick_gem(name, version, &block)
 
-    util_build_gem spec
+    built_gem_path = util_build_gem spec, ruby_abi: ruby_abi
 
-    cache_file = File.join @tempdir, "gems", "#{spec.original_name}.gem"
+    cache_file = File.join @tempdir, "gems", File.basename(built_gem_path)
     FileUtils.mkdir_p File.dirname cache_file
-    FileUtils.mv spec.cache_file, cache_file
+    FileUtils.mv built_gem_path, cache_file
     FileUtils.rm spec.spec_file
 
     spec.loaded_from = nil
 
     [spec, cache_file]
+  end
+
+  ##
+  # Builds a platform gem and serves it through compact index as a
+  # content-addressable gem. Returns the specification, gem path, and content
+  # address.
+
+  def util_setup_content_addressable_compact_index_gem(name, version, platform: "x86_64-linux", required_ruby_version: "~> #{Gem.ruby_abi}.0", &block)
+    spec, gem_path = util_gem(name, version) do |s|
+      s.platform = platform
+      s.required_ruby_version = required_ruby_version
+      yield(s) if block
+    end
+
+    content_address = Digest::SHA256.file(gem_path).hexdigest[0, 8]
+    ca_gem_path = File.join(File.dirname(gem_path), "#{spec.name}-#{spec.version}-#{content_address}.gem")
+    FileUtils.cp gem_path, ca_gem_path
+    spec.content_address = content_address
+
+    util_setup_compact_index spec
+    @fetcher.data["#{@gem_repo}quick/Marshal.#{Gem.marshal_version}/#{spec.full_name}.gemspec.rz"] = util_zip(Marshal.dump(spec))
+    add_to_fetcher spec, ca_gem_path
+    Gem::SpecFetcher.fetcher = nil
+
+    [spec, ca_gem_path, content_address]
   end
 
   ##
@@ -1226,7 +1274,7 @@ Also, a list:
         info_body << util_compact_index_info_line(spec, created_at[spec.original_name]) << "\n"
       end
 
-      versions_list = by_name[name].map {|spec| spec.original_name.delete_prefix("#{spec.name}-") }.join(",")
+      versions_list = by_name[name].map {|spec| spec.content_address ? "#{spec.version}-#{spec.content_address}" : spec.original_name.delete_prefix("#{spec.name}-") }.join(",")
       versions_body << "#{name} #{versions_list} #{Digest::MD5.hexdigest(info_body)}\n"
       names_body << "#{name}\n"
 
@@ -1248,7 +1296,11 @@ Also, a list:
   # A compact index info file line for +spec+, including v2 metadata.
 
   def util_compact_index_info_line(spec, created_at = nil)
-    version = spec.original_name.delete_prefix("#{spec.name}-")
+    version = if spec.content_address
+      "#{spec.version}-#{spec.content_address}"
+    else
+      spec.original_name.delete_prefix("#{spec.name}-")
+    end
 
     dependencies = spec.runtime_dependencies.map do |dependency|
       "#{dependency.name}:#{util_compact_index_requirement(dependency.requirement)}"
@@ -1260,6 +1312,9 @@ Also, a list:
     end
     unless spec.required_rubygems_version.nil? || spec.required_rubygems_version.none?
       metadata << ",rubygems:#{util_compact_index_requirement(spec.required_rubygems_version)}"
+    end
+    if spec.content_address
+      metadata << ",platform:#{spec.platform}"
     end
     metadata << ",created_at:#{created_at}" if created_at
 
@@ -1286,7 +1341,11 @@ Also, a list:
     v = Gem.marshal_version
 
     all_specs.each do |spec|
-      path = "#{@gem_repo}quick/Marshal.#{v}/#{spec.original_name}.gemspec.rz"
+      # For content-addressed specs the gemspec is fetched by its
+      # content-addressed name, not its platform-suffixed name
+      name_tuple = Gem::NameTuple.new(spec.name, spec.version, spec.original_platform,
+                                      content_address: spec.content_address)
+      path = "#{@gem_repo}quick/Marshal.#{v}/#{name_tuple.spec_name}.rz"
       data = Marshal.dump spec
       data_deflate = Zlib::Deflate.deflate data
       @fetcher.data[path] = data_deflate
@@ -1320,6 +1379,15 @@ Also, a list:
     Object.const_set :RUBY_DESCRIPTION,    description
     Object.const_set :RUBY_ENGINE,         engine
     Object.const_set :RUBY_ENGINE_VERSION, engine_version
+  end
+
+  ##
+  # Pins the running Ruby to the first release of +ruby_abi+, so that the
+  # "~> X.Y.0" requirement a content addressed gem pins its ABI with is
+  # satisfied on a prerelease Ruby too. Pair with util_restore_RUBY_VERSION.
+
+  def util_pin_ruby_to_abi(ruby_abi)
+    util_set_RUBY_VERSION "#{ruby_abi}.0", 0, RUBY_REVISION, "ruby #{ruby_abi}.0"
   end
 
   def util_restore_RUBY_VERSION

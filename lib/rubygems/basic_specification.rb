@@ -140,16 +140,28 @@ class Gem::BasicSpecification
   end
 
   ##
-  # Returns the full name (name-version) of this Gem.  Platform information
-  # is included (name-version-platform) if it is specified and not the
+  # Returns the full name (name-version) of this Gem.
+  # Content address is included (name-version-content_address) if the gem
+  # is content-addressed (eligible and has a valid content address).
+  # Platform information is included (name-version-platform) if it is specified and not the
   # default Ruby platform.
 
   def full_name
-    if platform == Gem::Platform::RUBY || platform.nil?
+    if Gem::ContentAddress.content_addressed?(self)
+      "#{name}-#{version}-#{content_address}"
+    elsif platform == Gem::Platform::RUBY || platform.nil?
       "#{name}-#{version}"
     else
       "#{name}-#{version}-#{platform}"
     end
+  end
+
+  ##
+  # The content address of this gem, or +nil+ when it is not
+  # content-addressable.
+
+  def content_address
+    nil
   end
 
   ##

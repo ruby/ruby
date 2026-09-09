@@ -81,6 +81,7 @@ void rb_check_stack_overflow(void);
 VALUE rb_block_call2(VALUE obj, ID mid, int argc, const VALUE *argv, rb_block_call_func_t bl_proc, VALUE data2, long flags);
 struct vm_ifunc *rb_current_ifunc(void);
 VALUE rb_gccct_clear_table(void);
+VALUE rb_funcallv_uncached(VALUE recv, ID mid, int argc, const VALUE *argv);
 VALUE rb_eval_cmd_call_kw(VALUE cmd, int argc, const VALUE *argv, int kw_splat);
 
 #if USE_YJIT || USE_ZJIT

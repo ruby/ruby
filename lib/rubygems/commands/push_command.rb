@@ -2,11 +2,13 @@
 
 require_relative "../command"
 require_relative "../local_remote_options"
+require_relative "../version_option"
 require_relative "../gemcutter_utilities"
 require_relative "../package"
 
 class Gem::Commands::PushCommand < Gem::Command
   include Gem::LocalRemoteOptions
+  include Gem::VersionOption
   include Gem::GemcutterUtilities
 
   def description # :nodoc:
@@ -47,6 +49,14 @@ The API key to send is resolved in this order: the GEM_HOST_API_KEY environment 
       @user_defined_host = true
     end
 
+    add_option("--platform PLATFORM",
+               "Push a gem for a specific platform",
+               "  (e.g. x86_64-darwin-20)") do |value, options|
+      options[:platform] = value
+    end
+
+    add_ruby_abi_option("push", "  (e.g. 3.4)")
+
     add_option("--attestation FILE",
                 "Push with sigstore attestations",
                 "  (FILE must be a JSON sigstore bundle)") do |value, options|
@@ -57,7 +67,12 @@ The API key to send is resolved in this order: the GEM_HOST_API_KEY environment 
   end
 
   def execute
-    gem_name = get_one_gem_name
+    gem_name = if options[:platform] || options[:ruby_abi]
+      resolve_gem_name(get_all_gem_names)
+    else
+      get_one_gem_name
+    end
+
     default_gem_server, push_host = get_hosts_for(gem_name)
 
     @host = if @user_defined_host
@@ -93,6 +108,50 @@ The API key to send is resolved in this order: the GEM_HOST_API_KEY environment 
   end
 
   private
+
+  def resolve_gem_name(names)
+    platform = options[:platform] && Gem::Platform.new(options[:platform])
+    ruby_abi = options[:ruby_abi]
+
+    candidates = names.filter_map do |name|
+      [name, Gem::Package.new(name).spec]
+    rescue Gem::Package::FormatError => e
+      alert_warning "Skipping #{name}: #{e.message}"
+      nil
+    end
+
+    matches = candidates.select do |_, spec|
+      (!platform || spec.platform == platform) &&
+        (!ruby_abi || (Gem::ContentAddress.eligible?(spec) && spec.ruby_abi == ruby_abi))
+    end
+
+    raise Gem::CommandLineError, "No gem matched #{gem_name_selector_description}" if matches.empty?
+    raise Gem::CommandLineError, multiple_matches_message(matches) if matches.length > 1
+
+    matches.first.first
+  end
+
+  def gem_name_selector_description
+    selectors = []
+    selectors << "platform #{options[:platform]}" if options[:platform]
+    selectors << "Ruby ABI #{options[:ruby_abi]}" if options[:ruby_abi]
+    selectors.join(" and ")
+  end
+
+  def multiple_matches_message(matches)
+    message = "Multiple gems matched #{gem_name_selector_description}: #{matches.map(&:first).join(", ")}"
+
+    if options[:platform] && !options[:ruby_abi]
+      ruby_abis = matches.filter_map {|_, spec| spec.ruby_abi }.uniq.sort
+      message += "\nSpecify --ruby-abi with one of: #{ruby_abis.join(", ")}" unless ruby_abis.empty?
+      message += "\nTo push a gem without a Ruby ABI, pass the exact filename." if matches.any? {|_, spec| spec.ruby_abi.nil? }
+    elsif options[:ruby_abi] && !options[:platform]
+      platforms = matches.map {|_, spec| spec.platform.to_s }.uniq.sort
+      message += "\nSpecify --platform with one of: #{platforms.join(", ")}" unless platforms.empty?
+    end
+
+    message
+  end
 
   def send_push_request(name, args)
     # Always honor explicit --attestation option

@@ -563,6 +563,34 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+  # A thread that released the GVL keeps its EC, so it still resolves an objspace to
+  # charge its frees to.  It must not be sent to the objspace of a child Ractor being
+  # built by another thread of the same Ractor: a stillborn child frees that objspace.
+  def test_stillborn_ractor_with_free_off_gvl
+    assert_ractor(<<~'RUBY', require: '-test-/gvl/call_without_gvl', timeout: 60)
+      x = 42 # capturing an outer local makes Ractor.new raise IsolationError
+      stop = false
+      ready = Queue.new
+      freers = 4.times.map do
+        Thread.new do
+          ready << :up
+          Bug::Thread.xfree_without_gvl(2_000) until stop
+        end
+      end
+      freers.size.times { ready.pop } # all of them are churning before we start
+      2_000.times do
+        begin
+          Ractor.new { x }
+        rescue Ractor::IsolationError
+        end
+      end
+      stop = true
+      freers.each(&:join)
+      GC.start
+      GC.verify_internal_consistency
+    RUBY
+  end
+
   # Moving a CoW shared-root String must not steal its buffer (regression guard for the
   # remaining sharers reading freed memory).
   def test_move_shared_root_string_keeps_buffer
@@ -908,4 +936,70 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+
+  def test_move_object_with_finalizer
+    # The moved-from shell keeps its finalizer table entry, so it has to keep
+    # FL_FINALIZE with it; the two disagreeing failed an assertion at shutdown.
+    assert_normal_exit(<<~'RUBY', '[Bug #21368]')
+      Warning[:experimental] = false
+      r = Ractor.new { Ractor.receive }
+      1000.times do
+        o = Object.new
+        ObjectSpace.define_finalizer(o, proc { |id| })
+        r.send(o, move: true)
+      end
+    RUBY
+
+    assert_in_out_err(%w[-W0], <<~'RUBY', %w[sent finalized], [], '[Bug #21368]')
+      r = Ractor.new { Ractor.receive }
+      o = Object.new
+      ObjectSpace.define_finalizer(o, proc { |id| $stdout.puts "finalized" })
+      r.send(o, move: true)
+      $stdout.puts "sent"
+    RUBY
+  end
+
+  def test_attached_object_of_unshareable_object
+    omit 'objspace per Ractor is how an object\'s owner is known' unless GC.config[:implementation] == 'default'
+    assert_ractor(<<~'RUBY')
+      # A singleton class is shareable whatever it is attached to, so sending one used to
+      # hand the attached object to another Ractor through #attached_object.
+      o = Object.new
+      assert_equal true, Ractor.shareable?(o.singleton_class)
+      assert_same o, o.singleton_class.attached_object
+
+      r = Ractor.new(o.singleton_class) do |sc|
+        begin
+          sc.attached_object
+        rescue Ractor::IsolationError
+          :isolated
+        end
+      end
+      assert_equal :isolated, r.value
+
+      # A shareable attached object, and a Ractor's own unshareable one, are fine.
+      shareable = Ractor.make_shareable(Object.new)
+      assert_same shareable, Ractor.new(shareable.singleton_class) { |sc| sc.attached_object }.value
+      assert_same String, Ractor.new(String.singleton_class) { |sc| sc.attached_object }.value
+      assert_equal true, Ractor.new { own = Object.new; own.singleton_class.attached_object.equal?(own) }.value
+    RUBY
+  end
+
+  def test_port_undelivered_message_does_not_leak
+    omit 'not fixed for mmtk: it never calls rb_ractor_finish_marking, where the reap runs' unless GC.config[:implementation] == 'default'
+    # A message is only moved out of the receiving Ractor's incoming queue when it
+    # receives or closes.  One addressed to a port that became unreachable first used to
+    # stay there for the life of the process, off-heap and invisible to ObjectSpace.
+    assert_no_memory_leak([], <<~'PREP', <<~'CODE', '[Bug #22122]', rss: true)
+      def t
+        port = Ractor::Port.new
+        5.times { port << ("z" * (4 << 20)) }
+      end
+      # A few large payloads rather than many small ones, and a baseline taken at the
+      # high-water mark: small-allocation RSS creep alone reached 2.5x on macOS.
+      5.times { t; GC.start }
+    PREP
+      30.times { t; GC.start }
+    CODE
+  end
 end

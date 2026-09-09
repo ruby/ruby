@@ -20,8 +20,14 @@ class Exports
     klass.new(*args, &block)
   end
 
+  # Files after "--" contribute only the symbols they ask the linker to
+  # export, not everything they define.
   def self.extract(objs, *rest)
-    create(objs).exports(*rest)
+    dllexports = []
+    if i = objs.index("--")
+      objs, dllexports = objs[0, i], objs[(i + 1)..-1]
+    end
+    create(objs, dllexports).exports(*rest)
   end
 
   def self.output(output = $output, &block)
@@ -32,13 +38,16 @@ class Exports
     end
   end
 
-  def initialize(objs)
+  def initialize(objs, dllexports = [])
     syms = {}
     winapis = {}
     syms["ruby_sysinit_real"] = "ruby_sysinit"
     each_export(objs) do |internal, export|
       syms[internal] = export
       winapis[$1] = internal if /^_?(rb_w32_\w+)(?:@\d+)?$/ =~ internal
+    end
+    each_dllexport(dllexports) do |internal, export|
+      syms[internal] = export
     end
     incdir = File.join(File.dirname(File.dirname(__FILE__)), "include/ruby")
     read_substitution(incdir+"/win32.h", syms, winapis)
@@ -79,6 +88,9 @@ class Exports
   end
 
   def each_export(objs)
+  end
+
+  def each_dllexport(objs)
   end
 
   def objdump(objs, &block)
@@ -133,6 +145,20 @@ class Exports::Mswin < Exports
     end
     yield "strcasecmp", "msvcrt.stricmp"
     yield "strncasecmp", "msvcrt.strnicmp"
+  end
+
+  def each_dllexport(objs)
+    return if objs.empty?
+    objs = objs.collect {|s| s.tr('/', '\\')}
+    IO.popen(%w"dumpbin -directives" + objs) do |f|
+      f.each do |l|
+        next unless /^\s*\/EXPORT:(\S+)/ =~ l
+        name, kind = $1.split(',', 2)
+        next if /^_?#{PrivateNames}/o =~ name
+        name.sub!(/^[@_]/, '') if /@\d+$/ !~ name
+        yield name, kind == "DATA"
+      end
+    end
   end
 end
 

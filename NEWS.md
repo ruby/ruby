@@ -177,9 +177,9 @@ They are still available on rubygems.org and can be installed with
 
 ### The following default gems are updated.
 
-* RubyGems 4.1.0.dev
-  * 4.0.3 to [v4.0.4][RubyGems-v4.0.4], [v4.0.5][RubyGems-v4.0.5], [v4.0.6][RubyGems-v4.0.6], [v4.0.7][RubyGems-v4.0.7], [v4.0.8][RubyGems-v4.0.8], [v4.0.9][RubyGems-v4.0.9], [v4.0.10][RubyGems-v4.0.10], [v4.0.11][RubyGems-v4.0.11], [v4.0.12][RubyGems-v4.0.12], [v4.0.13][RubyGems-v4.0.13], [v4.0.14][RubyGems-v4.0.14], [v4.0.15][RubyGems-v4.0.15], [v4.0.16][RubyGems-v4.0.16], [v4.0.17][RubyGems-v4.0.17], [v4.0.18][RubyGems-v4.0.18], [v4.0.19][RubyGems-v4.0.19], [v4.0.20][RubyGems-v4.0.20]
-* bundler 4.1.0.dev
+* RubyGems 4.1.0.beta1
+  * 4.0.3 to [v4.0.4][RubyGems-v4.0.4], [v4.0.5][RubyGems-v4.0.5], [v4.0.6][RubyGems-v4.0.6], [v4.0.7][RubyGems-v4.0.7], [v4.0.8][RubyGems-v4.0.8], [v4.0.9][RubyGems-v4.0.9], [v4.0.10][RubyGems-v4.0.10], [v4.0.11][RubyGems-v4.0.11], [v4.0.12][RubyGems-v4.0.12], [v4.0.13][RubyGems-v4.0.13], [v4.0.14][RubyGems-v4.0.14], [v4.0.15][RubyGems-v4.0.15], [v4.0.16][RubyGems-v4.0.16], [v4.0.17][RubyGems-v4.0.17], [v4.0.18][RubyGems-v4.0.18], [v4.0.19][RubyGems-v4.0.19], [v4.0.20][RubyGems-v4.0.20], [v4.1.0.beta1][RubyGems-v4.1.0.beta1]
+* bundler 4.1.0.beta1
   * 4.0.3 to [v4.0.4][bundler-v4.0.4], [v4.0.5][bundler-v4.0.5], [v4.0.6][bundler-v4.0.6], [v4.0.7][bundler-v4.0.7], [v4.0.8][bundler-v4.0.8], [v4.0.9][bundler-v4.0.9], [v4.0.10][bundler-v4.0.10], [v4.0.11][bundler-v4.0.11], [v4.0.12][bundler-v4.0.12], [v4.0.13][bundler-v4.0.13], [v4.0.14][bundler-v4.0.14], [v4.0.15][bundler-v4.0.15], [v4.0.16][bundler-v4.0.16], [v4.0.17][bundler-v4.0.17]
 * erb 6.0.7
   * 6.0.1 to [v6.0.1.1][erb-v6.0.1.1], [v6.0.2][erb-v6.0.2], [v6.0.3][erb-v6.0.3], [v6.0.4][erb-v6.0.4], [v6.0.5][erb-v6.0.5], [v6.0.6][erb-v6.0.6], [v6.0.7][erb-v6.0.7]
@@ -188,8 +188,8 @@ They are still available on rubygems.org and can be installed with
   * 0.8.2 to [v0.9.0][io-console-v0.9.0], [v0.9.1][io-console-v0.9.1], [v0.9.2][io-console-v0.9.2]
 * ipaddr 1.2.9
   * 1.2.8 to [v1.2.9][ipaddr-v1.2.9]
-* json 3.0.0.rc1
-  * 2.18.0 to [v2.18.1][json-v2.18.1], [v2.19.0][json-v2.19.0], [v2.19.1][json-v2.19.1], [v2.19.2][json-v2.19.2], [v2.19.3][json-v2.19.3], [v2.19.4][json-v2.19.4], [v2.19.5][json-v2.19.5], [v2.19.6][json-v2.19.6], [v2.19.7][json-v2.19.7], [v2.19.8][json-v2.19.8], [v2.19.9][json-v2.19.9], [v2.20.0][json-v2.20.0], [v2.21.0][json-v2.21.0], [v2.21.2][json-v2.21.2], [v3.0.0.rc1][json-v3.0.0.rc1]
+* json 3.0.2
+  * 2.18.0 to [v2.18.1][json-v2.18.1], [v2.19.0][json-v2.19.0], [v2.19.1][json-v2.19.1], [v2.19.2][json-v2.19.2], [v2.19.3][json-v2.19.3], [v2.19.4][json-v2.19.4], [v2.19.5][json-v2.19.5], [v2.19.6][json-v2.19.6], [v2.19.7][json-v2.19.7], [v2.19.8][json-v2.19.8], [v2.19.9][json-v2.19.9], [v2.20.0][json-v2.20.0], [v2.21.0][json-v2.21.0], [v2.21.2][json-v2.21.2], [v3.0.0.rc1][json-v3.0.0.rc1], [v3.0.0][json-v3.0.0]
 * net-protocol 0.3.0
   * 0.2.2 to [v0.3.0][net-protocol-v0.3.0]
 * openssl 4.0.2
@@ -226,7 +226,7 @@ They are still available on rubygems.org and can be installed with
   * 0.6.2 to [v0.6.3][net-imap-v0.6.3], [v0.6.4][net-imap-v0.6.4], [v0.6.4.1][net-imap-v0.6.4.1], [v0.6.5][net-imap-v0.6.5], [v0.6.6][net-imap-v0.6.6]
 * rbs 4.2.0
   * 3.10.0 to [v3.10.1][rbs-v3.10.1], [v3.10.2][rbs-v3.10.2], [v3.10.3][rbs-v3.10.3], [v3.10.4][rbs-v3.10.4], [v4.0.0.dev.1][rbs-v4.0.0.dev.1], [v4.0.0.dev.2][rbs-v4.0.0.dev.2], [v4.0.0.dev.3][rbs-v4.0.0.dev.3], [v4.0.0.dev.4][rbs-v4.0.0.dev.4], [v4.0.0.dev.5][rbs-v4.0.0.dev.5], [v4.0.0][rbs-v4.0.0], [v4.0.1.dev.1][rbs-v4.0.1.dev.1], [v4.0.1.dev.2][rbs-v4.0.1.dev.2], [v4.0.1][rbs-v4.0.1], [v4.0.2][rbs-v4.0.2], [v4.0.3][rbs-v4.0.3], [v4.1.0.pre.1][rbs-v4.1.0.pre.1], [v4.1.0.pre.2][rbs-v4.1.0.pre.2], [v4.1.0][rbs-v4.1.0], [v4.1.1.pre.1][rbs-v4.1.1.pre.1], [v4.1.1][rbs-v4.1.1], [v4.1.2][rbs-v4.1.2], [v4.1.3][rbs-v4.1.3], [v4.2.0.pre.1][rbs-v4.2.0.pre.1], [v4.2.0][rbs-v4.2.0]
-* typeprof 0.32.0
+* typeprof 0.33.1
 * mutex_m 0.3.0
 * bigdecimal 4.1.2
   * 4.0.1 to [v4.1.0][bigdecimal-v4.1.0], [v4.1.1][bigdecimal-v4.1.1], [v4.1.2][bigdecimal-v4.1.2]
@@ -283,6 +283,10 @@ Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for det
   still refer to unshareable objects through the members of `rb_io_t`.
 
 ## Stdlib compatibility issues
+
+* `Etc.getlogin` on Windows now returns the login name determined when the
+  process starts, from the `USER` or `USERNAME` environment variable or
+  `GetUserName()`.  It used to follow later changes to `ENV['USER']`.
 
 ## C API updates
 
@@ -352,6 +356,52 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
   * `ObjectSpace.define_finalizer` on another Ractor's object raises
     `Ractor::IsolationError`.
 
+### M:N thread scheduler
+
+* The scheduler scales with the number of waiters and of Ractors, where it
+  used to walk a list or take one lock for all of them:
+
+  * A timed wait sits in a hierarchical timer wheel rather than on a list
+    sorted by deadline, which was inserted into by a linear scan.
+  * An fd stays armed in the backend between waits, instead of being added
+    before each wait and removed after each wake.
+  * The io-wait bookkeeping is sharded by fd, rather than serialized on one
+    lock across every fd.
+  * A timed wait on an fd rides the scheduler instead of going to a blocking
+    region, which cost a native thread handoff per wait.
+  * A context switch, and leaving or rejoining the shared pool, no longer take
+    the scheduler's global lock.
+
+* The `RUBY_MN_THREADS` environment variable now runs from no M:N scheduling
+  at all to all of it.  `-1` is new: a Ractor's threads have been M:N since
+  the scheduler was added, with no way to turn that off.  `0` and `1` are
+  unchanged.
+
+  | | main thread | the main Ractor's other threads | a Ractor's threads |
+  |---|---|---|---|
+  | `-1` | 1:1 | 1:1 | 1:1 |
+  | `0` or unset | 1:1 | 1:1 | M:N |
+  | `1` | 1:1 | M:N | M:N |
+  | `2` | M:N | M:N | M:N |
+
+* `RUBY_MN_THREADS=2` is new.  The main thread is resumed like any other M:N
+  thread rather than woken on a native thread of its own, which costs an order
+  of magnitude more.  It pays off when the main thread drives the work, and
+  does nothing for one that only starts other threads and waits.
+
+  The main thread is then no longer bound to one OS thread, which is what the
+  M:N scheduler already meant for every other thread:
+
+  * A C extension that keeps state per OS thread has to call
+    `rb_thread_lock_native_thread()`.
+  * What must run on the process's initial thread does not work at all,
+    pinning included: macOS AppKit and CFRunLoop, and hosts that embed Ruby
+    and return into their own main loop.
+
+* The OS thread name is no longer set from the Ruby thread for M:N threads:
+  one native thread runs many of them over its life.  `Thread#name=` was
+  already skipped for the same reason.
+
 ## JIT
 
 [Bug #18947]: https://bugs.ruby-lang.org/issues/18947
@@ -398,6 +448,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [RubyGems-v4.0.18]: https://github.com/rubygems/rubygems/releases/tag/v4.0.18
 [RubyGems-v4.0.19]: https://github.com/rubygems/rubygems/releases/tag/v4.0.19
 [RubyGems-v4.0.20]: https://github.com/rubygems/rubygems/releases/tag/v4.0.20
+[RubyGems-v4.1.0.beta1]: https://github.com/rubygems/rubygems/releases/tag/v4.1.0.beta1
 [bundler-v4.0.4]: https://github.com/rubygems/rubygems/releases/tag/bundler-v4.0.4
 [bundler-v4.0.5]: https://github.com/rubygems/rubygems/releases/tag/bundler-v4.0.5
 [bundler-v4.0.6]: https://github.com/rubygems/rubygems/releases/tag/bundler-v4.0.6
@@ -438,6 +489,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [json-v2.21.0]: https://github.com/ruby/json/releases/tag/v2.21.0
 [json-v2.21.2]: https://github.com/ruby/json/releases/tag/v2.21.2
 [json-v3.0.0.rc1]: https://github.com/ruby/json/releases/tag/v3.0.0.rc1
+[json-v3.0.0]: https://github.com/ruby/json/releases/tag/v3.0.0
 [net-protocol-v0.3.0]: https://github.com/ruby/net-protocol/releases/tag/v0.3.0
 [openssl-v4.0.1]: https://github.com/ruby/openssl/releases/tag/v4.0.1
 [openssl-v4.0.2]: https://github.com/ruby/openssl/releases/tag/v4.0.2

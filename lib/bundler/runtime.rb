@@ -166,7 +166,9 @@ module Bundler
       git_cache_dirs       = SharedHelpers.glob_files_in_dir("cache/bundler/git/*", Gem.dir)
       gem_dirs             = SharedHelpers.glob_files_in_dir("gems/*", Gem.dir)
       gem_files            = SharedHelpers.glob_files_in_dir("cache/*.gem", Gem.dir)
-      gemspec_files        = SharedHelpers.glob_files_in_dir("specifications/*.gemspec", Gem.dir)
+      gemspec_files        = Gem::SpecificationRecord.dirs_from([Gem.dir]).flat_map do |dir|
+        SharedHelpers.glob_files_in_dir("*.gemspec", dir)
+      end
       extension_dirs       = SharedHelpers.glob_files_in_dir("extensions/*/*/*", Gem.dir) + SharedHelpers.glob_files_in_dir("bundler/gems/extensions/*/*/*", Gem.dir)
       spec_gem_paths       = []
       # need to keep git sources around

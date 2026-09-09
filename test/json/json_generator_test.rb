@@ -1,4 +1,3 @@
-#!/usr/bin/env ruby
 # frozen_string_literal: true
 
 require_relative 'test_helper'
@@ -84,6 +83,12 @@ class JSONGeneratorTest < Test::Unit::TestCase
     assert_equal '"World"', "World".to_json(strict: true)
     assert_equal '["hello"]', dump([:hello], strict: true)
     assert_equal '{"hello":"world"}', dump({ hello: :world }, strict: true)
+  end
+
+  def test_dump_deprecated_limit
+    io = StringIO.new
+    JSON.dump([1], io, 0)
+    assert_equal '[1]', io.string
   end
 
   def test_not_frozen
@@ -509,6 +514,47 @@ class JSONGeneratorTest < Test::Unit::TestCase
     assert_equal '3', state2.space_before
     assert_equal '4', state2.object_nl
     assert_equal '5', state2.array_nl
+  end
+
+  def test_configure_only_writes_the_string_options_it_is_given
+    state = JSON.state.new(indent: '1', space: '2', space_before: '3', object_nl: '4', array_nl: '5')
+    state.configure(space: '9')
+    assert_equal '1', state.indent
+    assert_equal '9', state.space
+    assert_equal '3', state.space_before
+    assert_equal '4', state.object_nl
+    assert_equal '5', state.array_nl
+    state.merge(array_nl: '8')
+    assert_equal '1', state.indent
+    assert_equal '9', state.space
+    assert_equal '3', state.space_before
+    assert_equal '4', state.object_nl
+    assert_equal '8', state.array_nl
+  end
+
+  def test_configure_keeps_the_layout_of_a_pretty_state
+    state = JSON.state.new(indent: '  ', object_nl: "\n", array_nl: "\n")
+    state.configure(depth: 0)
+    assert_equal %({\n  "foo":[\n    1\n  ]\n}), state.generate({ 'foo' => [1] })
+  end
+
+  def test_configure_only_writes_the_other_options_it_is_given
+    omit 'JRuby resets the non-string options' if RUBY_ENGINE == 'jruby'
+    state = JSON.state.new(max_nesting: 3, allow_nan: true, ascii_only: true, script_safe: true)
+    state.configure(indent: '1')
+    assert_equal '1', state.indent
+    assert_equal 3, state.max_nesting
+    assert_equal true, state.allow_nan?
+    assert_equal true, state.ascii_only?
+    assert_equal true, state.script_safe?
+  end
+
+  def test_configure_writes_a_string_option_given_as_nil
+    omit 'JRuby keeps the previous value for an explicit nil' if RUBY_ENGINE == 'jruby'
+    state = JSON.state.new(indent: '1', space: '2')
+    state.configure(indent: nil)
+    assert_equal '', state.indent
+    assert_equal '2', state.space
   end
 
   def test_configure_hash_conversion

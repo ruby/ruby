@@ -1041,6 +1041,9 @@ NOINLINE(static) VALUE json_string_unescape(JSON_ParserState *state, JSON_Parser
                         raise_syntax_error_at("incomplete surrogate pair at %s", state, p);
                         break;
                     }
+                } else if ((ch & 0xFC00) == 0xDC00) {
+                    raise_syntax_error_at("unpaired trailing surrogate at %s", state, p);
+                    break;
                 }
 
                 int unescape_len = convert_UTF32_to_UTF8(buffer, ch);

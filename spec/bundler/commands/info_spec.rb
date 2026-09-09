@@ -207,7 +207,31 @@ RSpec.describe "bundle info" do
   end
 
   context "with a valid regexp for gem name" do
-    it "presents alternatives", :readline do
+    it "returns the exact match without prompting when requested" do
+      install_gemfile <<-G
+        source "https://gem.repo1"
+        gem "myrack"
+        gem "myrack-obama"
+      G
+
+      bundle "info myrack --exact-match"
+      expect(out).to include("* myrack (1.0.0)")
+      expect(out).not_to include("0 : - exit -")
+    end
+
+    it "does not fall back to regexp matching when exact matching is requested" do
+      install_gemfile <<-G
+        source "https://gem.repo1"
+        gem "myrack"
+        gem "myrack-obama"
+      G
+
+      bundle "info rac --exact-match", raise_on_error: false
+      expect(err).to include("Could not find gem 'rac'.")
+      expect(out).not_to include("0 : - exit -")
+    end
+
+    it "presents alternatives without the exact match flag", :readline do
       install_gemfile <<-G
         source "https://gem.repo1"
         gem "myrack"
@@ -215,7 +239,9 @@ RSpec.describe "bundle info" do
       G
 
       bundle "info rac"
-      expect(out).to match(/\A1 : myrack\n2 : myrack-obama\n0 : - exit -(\n>|\z)/)
+      expect(out).to include("1 : myrack")
+      expect(out).to include("2 : myrack-obama")
+      expect(out).to include("0 : - exit -")
     end
   end
 

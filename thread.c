@@ -573,7 +573,12 @@ rb_thread_free_native_thread(void *th_ptr)
 {
     rb_thread_t *th = th_ptr;
 
-    native_thread_destroy_atfork(th->nt);
+    // A thread with a coroutine context does not own its native thread: that
+    // one is in the shared pool, listed there and with its altstack registered
+    // on whichever pthread is running this.  See rb_threadptr_sched_free().
+    if (th->sched.context == NULL) {
+        native_thread_destroy_atfork(th->nt);
+    }
     th->nt = NULL;
 }
 
@@ -1129,49 +1134,48 @@ rb_thread_create(VALUE (*fn)(void *), void *arg)
 static VALUE
 create_ractor_alloc_thread(rb_ractor_t *r, rb_ractor_t *cr, rb_execution_context_t *ec)
 {
-    /* Allocate the child's main Thread and root Fiber wrappers directly in the child's
-     * objspace, so the thread is built of objects it owns.  Whole-VM walks read
-     * cr->objspace: swap it under the VM lock, unobservable to others. */
+    /* Build the child's main Thread and root Fiber wrappers in the child's objspace,
+     * so the thread is made of objects it owns.  Hand that objspace down rather than
+     * pointing cr->objspace at it: threads holding no GVL read that slot to charge
+     * their frees, and one of them must never be sent to a heap a stillborn child is
+     * about to free.
+     *
+     * The child's objspace is not in vm->ractor.set yet, so cover it through its
+     * creator before the first allocation and keep the cover until vm_insert_ractor
+     * clears it under the VM lock.  One slot suffices: one Ractor creates children
+     * serially. */
+    void *const child_objspace = r->objspace;
     volatile VALUE thval = Qundef;
     const bool multi_objspace = rb_gc_multi_objspace_p();
     enum ruby_tag_type alloc_state = TAG_NONE;
     RB_VM_LOCKING() {
-        void *const parent_objspace = cr->objspace;
-        if (multi_objspace) cr->objspace = r->objspace;
-        /* The wrapper allocations must not re-enter GC: while cr->objspace points at
-         * the child, the creator's own objspace is invisible to every walk, so a global
-         * GC would skip it and leave stale mark bits (a UAF).  Single allocations;
-         * suppressing GC costs only a little growth. */
-        VALUE gc_was_disabled = rb_gc_local_disable_no_rest();
-        /* The alloc can raise NoMemoryError; a longjmp here would skip both the unlock
-         * of RB_VM_LOCKING and the objspace restore, so catch and rethrow outside. */
+        if (multi_objspace) {
+            RUBY_ASSERT(cr->creating_child_objspace == NULL);
+            cr->creating_child_objspace = child_objspace;
+        }
+        /* Suppress the child's GC, not the creator's: a cycle here would collect a
+         * half-built child.  Single allocations; this costs only a little growth. */
+        VALUE gc_was_disabled = rb_gc_objspace_disable_no_rest(child_objspace);
+        /* The alloc can raise NoMemoryError; a longjmp here would skip the unlock of
+         * RB_VM_LOCKING, so catch and rethrow outside. */
         EC_PUSH_TAG(ec);
         if ((alloc_state = EC_EXEC_TAG()) == TAG_NONE) {
-            thval = rb_thread_alloc(rb_cThread);
+            thval = rb_thread_alloc_in_objspace(rb_cThread, child_objspace);
         }
         EC_POP_TAG();
-        if (gc_was_disabled == Qfalse) rb_gc_local_enable();
-        if (multi_objspace) cr->objspace = parent_objspace;
-        /* The child's objspace holds the wrappers but is not in vm->ractor.set yet:
-         * keep it enumerable until vm_insert_ractor clears this under the VM lock.  One
-         * slot suffices: the GVL is never released between set and clear and one
-         * Ractor creates children serially, so no overwrite (asserted: releasing the
-         * GVL here in the future would break it). */
-        if (alloc_state == TAG_NONE && multi_objspace) {
-            RUBY_ASSERT(cr->creating_child_objspace == NULL);
-            cr->creating_child_objspace = r->objspace;
-        }
-    }
-    if (alloc_state != TAG_NONE) {
-        /* No cover was set; park the child objspace for the orphan merge and re-raise. */
-        RB_VM_LOCKING() {
+        if (gc_was_disabled == Qfalse) rb_gc_objspace_enable(child_objspace);
+        if (alloc_state != TAG_NONE) {
+            /* Drop the cover and park the objspace in this same section: between two of
+             * them another Ractor's global GC would find a populated objspace that is
+             * neither covered nor a zombie. */
+            if (multi_objspace) cr->creating_child_objspace = NULL;
             if (r->objspace) {
                 rb_gc_objspace_disown(r->objspace);
                 r->objspace = NULL;
             }
         }
-        EC_JUMP_TAG(ec, alloc_state);
     }
+    if (alloc_state != TAG_NONE) EC_JUMP_TAG(ec, alloc_state);
     return thval;
 }
 

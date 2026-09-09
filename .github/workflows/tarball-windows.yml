@@ -44,6 +44,7 @@ jobs:
       OS_VER: windows-${{ matrix.os }}
       VCPKG_DEFAULT_TRIPLET: x64-windows
       FEED_URL: https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json
+      NoDefaultCurrentDirectoryInExePath: 1
     steps:
       - run: md build
         working-directory:

@@ -24,10 +24,12 @@
 #include "internal/box.h"
 #include "internal/class.h"
 #include "internal/eval.h"
+#include "internal/gc.h"
 #include "internal/hash.h"
 #include "internal/object.h"
 #include "internal/string.h"
 #include "internal/variable.h"
+#include "internal/vm.h"
 #include "ruby/st.h"
 #include "vm_core.h"
 #include "ruby/ractor.h"
@@ -1404,7 +1406,7 @@ rb_class_inherited(VALUE super, VALUE klass)
     ID inherited;
     if (!super) super = rb_cObject;
     CONST_ID(inherited, "inherited");
-    return rb_funcall(super, inherited, 1, klass);
+    return rb_funcallv_uncached(super, inherited, 1, &klass);
 }
 
 #ifdef rb_define_class
@@ -2260,6 +2262,9 @@ rb_mod_descendants(VALUE mod)
  *
  *  Raises an TypeError if the class is not a singleton class.
  *
+ *  Raises a Ractor::IsolationError if the attached object is not shareable and
+ *  belongs to another Ractor.
+ *
  *     class Foo; end
  *
  *     Foo.singleton_class.attached_object        #=> Foo
@@ -2276,7 +2281,18 @@ rb_class_attached_object(VALUE klass)
         rb_raise(rb_eTypeError, "'%"PRIsVALUE"' is not a singleton class", klass);
     }
 
-    return RCLASS_ATTACHED_OBJECT(klass);
+    const VALUE obj = RCLASS_ATTACHED_OBJECT(klass);
+
+    /* A singleton class is shareable whatever it is attached to, so another Ractor can
+     * hold one attached to an unshareable object.  Returning it would share it. */
+    if (rb_objspace_foreign_object_p(obj) && !RB_OBJ_SHAREABLE_P(obj)) {
+        /* No klass in the message: naming a singleton class inspects the very object we
+         * must not touch from here. */
+        rb_raise(rb_eRactorIsolationError,
+                 "can not get an unshareable attached object from another Ractor");
+    }
+
+    return obj;
 }
 
 static void
