@@ -17342,7 +17342,6 @@ mod hir_opt_tests {
 
     #[test]
     fn test_dont_fold_unknown_receiver_superclass() {
-        // TODO(max): I think this should fold to String. Debug and fix.
         eval(r#"
             def test(c) = c.superclass
             test(String)
