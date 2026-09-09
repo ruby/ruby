@@ -18,6 +18,7 @@ use crate::invariants::{
 use crate::gc::append_gc_offsets;
 use crate::payload::{IseqCodePtrs, IseqStatus, IseqVersion, IseqVersionRef, JITFrame, get_or_create_iseq_payload};
 use crate::profile::reset_profiles_remaining;
+use crate::perf;
 use crate::state::{rb_zjit_compiling_p, ZJITState};
 use crate::stats::{CompileError, exit_counter_for_compile_error, exit_counter_for_unhandled_hir_insn, incr_counter, incr_counter_by, send_fallback_counter, send_fallback_counter_for_method_type, send_fallback_counter_for_super_method_type, send_fallback_counter_ptr_for_opcode, send_fallback_counter_for_optimized_method_type};
 use crate::stats::{counter_ptr, with_time_stat, trace_compile_phase, Counter, Counter::{compile_time_ns, exit_compile_error}};
@@ -332,7 +333,7 @@ pub fn gen_entry_trampoline(cb: &mut CodeBlock) -> Result<CodePtr, CompileError>
 
     let (code_ptr, gc_offsets) = asm.compile(cb)?;
     assert!(gc_offsets.is_empty());
-    crate::perf::register_current_code_range_with_perf(cb, "entry trampoline", code_ptr);
+    perf::register_current_code_range(cb, "entry trampoline", code_ptr);
     Ok(code_ptr)
 }
 
@@ -488,7 +489,7 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
             // Compile all instructions
             for (insn_idx, &insn_id) in block.insns().enumerate() {
                 let insn = function.find(insn_id);
-                let perf_symbol = crate::perf::hir_perf_symbol_range_start(&mut asm, &insn);
+                let symbol_range = perf::hir_symbol_range_start(&mut asm, &insn);
 
                 let result = match &insn {
                     Insn::CondBranch { val, if_true, if_false } => {
@@ -532,12 +533,12 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
                 };
 
                 // Close the current perf range for the HIR instruction.
-                if let Some(perf_symbol) = &perf_symbol {
+                if let Some(symbol_range) = &symbol_range {
                     if result.is_ok() && insn.is_terminator() {
                         assert!(asm.current_block().insns.last().is_some_and(|insn| insn.is_terminator()));
-                        crate::perf::perf_symbol_range_end_at_block_end(&mut asm, perf_symbol);
+                        perf::symbol_range_end_at_block_end(&mut asm, symbol_range);
                     } else {
-                        crate::perf::perf_symbol_range_end(&mut asm, perf_symbol);
+                        perf::symbol_range_end(&mut asm, symbol_range);
                     }
                 }
 
@@ -575,7 +576,7 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
             let end_usize = cb.get_write_ptr().raw_addr(cb);
             let code_size = end_usize - start_usize;
             let iseq_name = iseq_get_location(iseq, 0);
-            crate::perf::register_with_perf(iseq_name, start_usize, code_size);
+            perf::register(iseq_name, start_usize, code_size);
         }
         if ZJITState::should_log_compiled_iseqs() {
             let iseq_name = iseq_get_location(iseq, 0);
@@ -4064,7 +4065,7 @@ pub fn gen_function_stub_hit_trampoline(cb: &mut CodeBlock) -> Result<CodePtr, C
 
     asm.compile(cb).map(|(code_ptr, gc_offsets)| {
         assert_eq!(gc_offsets.len(), 0);
-        crate::perf::register_current_code_range_with_perf(cb, "function_stub_hit trampoline", code_ptr);
+        perf::register_current_code_range(cb, "function_stub_hit trampoline", code_ptr);
         code_ptr
     })
 }
@@ -4080,7 +4081,7 @@ pub fn gen_exit_trampoline(cb: &mut CodeBlock) -> Result<CodePtr, CompileError> 
 
     asm.compile(cb).map(|(code_ptr, gc_offsets)| {
         assert_eq!(gc_offsets.len(), 0);
-        crate::perf::register_current_code_range_with_perf(cb, "exit trampoline", code_ptr);
+        perf::register_current_code_range(cb, "exit trampoline", code_ptr);
         code_ptr
     })
 }
@@ -4107,7 +4108,7 @@ pub fn gen_materialize_exit_trampoline(cb: &mut CodeBlock, exit_trampoline: Code
 
     asm.compile(cb).map(|(code_ptr, gc_offsets)| {
         assert_eq!(gc_offsets.len(), 0);
-        crate::perf::register_current_code_range_with_perf(cb, "materialize_exit trampoline", code_ptr);
+        perf::register_current_code_range(cb, "materialize_exit trampoline", code_ptr);
         code_ptr
     })
 }
@@ -4123,7 +4124,7 @@ pub fn gen_materialize_exit_trampoline_with_counter(cb: &mut CodeBlock, material
 
     asm.compile(cb).map(|(code_ptr, gc_offsets)| {
         assert_eq!(gc_offsets.len(), 0);
-        crate::perf::register_current_code_range_with_perf(cb, "materialize_exit_with_counter trampoline", code_ptr);
+        perf::register_current_code_range(cb, "materialize_exit_with_counter trampoline", code_ptr);
         code_ptr
     })
 }

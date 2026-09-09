@@ -5,7 +5,7 @@ use std::fmt;
 use std::mem::take;
 use std::rc::Rc;
 use crate::bitset::BitSet;
-use crate::perf::{perf_symbol_range_end, perf_symbol_range_start, register_with_perf};
+use crate::perf;
 use crate::cruby::{IseqPtr, RUBY_OFFSET_CFP_ISEQ, RUBY_OFFSET_CFP_JIT_RETURN, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32, VALUE, ZJIT_STACK_MAP_BASE_PTR_INDEX_MASK, ZJIT_STACK_MAP_BASE_PTR_SIZE_SHIFT, ZJIT_STACK_MAP_BASE_PTR_TAG, ZJIT_STACK_MAP_SHIFT, ZJIT_STACK_MAP_SKIP_TAG, ZJIT_STACK_MAP_VREG_TAG, vm_stack_canary, YarvInsnIdx, zjit_jit_frame, local_size_and_idx_to_ep_offset};
 use crate::hir::{Invariant, SideExitReason};
 use crate::hir;
@@ -2058,7 +2058,7 @@ impl Assembler
                     let start_addr = start.raw_addr(cb);
                     let end_addr = end.raw_addr(cb);
                     if start_addr < end_addr {
-                        register_with_perf(symbol_name.clone(), start_addr, end_addr - start_addr);
+                        perf::register(symbol_name.clone(), start_addr, end_addr - start_addr);
                     }
                 }
             })));
@@ -3233,8 +3233,8 @@ impl Assembler
         let mut compiled_exits: HashMap<SideExit, Label> = HashMap::with_capacity(targets.len());
 
         // Start a new perf range for side exits
-        let perf_symbol = if get_option!(perf) == Some(PerfMap::HIR) {
-            Some(perf_symbol_range_start(self, "side exit"))
+        let symbol_range = if get_option!(perf) == Some(PerfMap::HIR) {
+            Some(perf::symbol_range_start(self, "side exit"))
         } else {
             None
         };
@@ -3318,8 +3318,8 @@ impl Assembler
         }
 
         // Close the current perf range for side exits
-        if let Some(perf_symbol) = &perf_symbol {
-            perf_symbol_range_end(self, perf_symbol);
+        if let Some(symbol_range) = &symbol_range {
+            perf::symbol_range_end(self, symbol_range);
         }
 
         // Extract exit instructions and restore the previous current block
