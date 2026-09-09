@@ -29,11 +29,18 @@
 #  /* Conforming C23 situation; e.g. recent clang */
 #  define RBIMPL_HAVE_STDCKDINT_H
 # endif
-#endif
-
-#ifdef HAVE_STDCKDINT_H
-# /* Some OSes (most notably FreeBSD) have this file. */
-# define RBIMPL_HAVE_STDCKDINT_H
+#else
+# ifdef HAVE_STDCKDINT_H
+#  /* Some OSes (most notably FreeBSD) have this file.  We can only trust
+#   * this compile-time flag when the compiler lacks __has_include, because
+#   * HAVE_STDCKDINT_H is baked into config.h at the time Ruby itself was
+#   * built.  A relocatable/portable Ruby build can ship that config.h to a
+#   * machine with a different SDK or toolchain, where the flag no longer
+#   * reflects reality; __has_include (checked above) asks the compiler
+#   * actually being used right now, so it takes precedence whenever it's
+#   * available. */
+#  define RBIMPL_HAVE_STDCKDINT_H
+# endif
 #endif
 
 #ifdef __cplusplus
