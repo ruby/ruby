@@ -2563,7 +2563,11 @@ move_neutralize_source(VALUE obj)
         break;
     }
 
-    VALUE flags = T_OBJECT | FL_FREEZE | (RBASIC(obj)->flags & FL_PROMOTED);
+    /* Keep FL_FINALIZE: the finalizer table entry stays keyed on this slot, and a
+     * shell without the flag makes the two disagree (rb_gc_impl_shutdown_call_finalizer_i
+     * asserts on it).  The finalizer runs when the shell dies, in the Ractor that
+     * defined it; the rebuilt object gets fresh flags and does not inherit it. */
+    VALUE flags = T_OBJECT | FL_FREEZE | (RBASIC(obj)->flags & (FL_PROMOTED | FL_FINALIZE));
     /* Read the slot size before the header is rewritten. */
     size_t slot_size = rb_gc_obj_slot_size(obj);
     RBASIC_SET_CLASS_RAW(obj, rb_cRactorMovedObject);
