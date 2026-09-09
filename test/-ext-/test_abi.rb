@@ -10,7 +10,7 @@ class TestABI < Test::Unit::TestCase
       err = assert_raise(LoadError) { require "-test-/abi" }
       assert_match(/incompatible ABI version/, err.message)
       if Ruby::Box.enabled?
-        assert_include err.message, "_-test-+abi."
+        assert_match(/[0-9]+_[0-9]+_abi[.]/, err.message)
       else
         assert_include err.message, "/-test-/abi."
       end
@@ -32,7 +32,7 @@ class TestABI < Test::Unit::TestCase
       err = assert_raise(LoadError) { require "-test-/abi" }
       assert_match(/incompatible ABI version/, err.message)
       if Ruby::Box.enabled?
-        assert_include err.message, "_-test-+abi."
+        assert_match(/[0-9]+_[0-9]+_abi[.]/, err.message)
       else
         assert_include err.message, "/-test-/abi."
       end
