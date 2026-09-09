@@ -1370,6 +1370,16 @@ class TestBox < Test::Unit::TestCase
     end
   end
 
+  def test_top_level_definition_methods_in_a_box
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      path = File.join(ENV["TEST_DIR"], "box", "top_level_methods.rb")
+
+      assert Ruby::Box.new.load(path)
+      assert load(path, true)
+    end;
+  end
+
   def test_require_list_loaded_only_in_main_box
     Tempfile.create(["req_a", ".rb"]) do |t1|
       Tempfile.create(["req_b", ".rb"]) do |t2|
