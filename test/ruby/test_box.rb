@@ -1327,6 +1327,10 @@ class TestBox < Test::Unit::TestCase
     end
   end
 
+  def test_free_at_exit_in_a_box
+    assert_ruby_status([ENV_ENABLE_BOX.merge("RUBY_FREE_AT_EXIT" => "1"), "-e;"], timeout: 30)
+  end
+
   def test_bundler_setup_not_loaded_while_decorator_gems_are_autoloaded
     with_bundler_setup_log do |env|
       # assert_separately w/ ENV_ENABLE_BOX and --enable=gems causes timeouts on CI @ Windows
