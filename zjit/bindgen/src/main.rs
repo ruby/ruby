@@ -276,6 +276,7 @@ fn main() {
         .allowlist_function("rb_callable_method_entry")
         .allowlist_function("rb_callable_method_entry_or_negative")
         .allowlist_function("rb_vm_frame_method_entry")
+        .allowlist_function("rb_vm_once_done_value")
         .allowlist_type("IVC") // pointer to iseq_inline_iv_cache_entry
         .allowlist_type("IC")  // pointer to iseq_inline_constant_cache
         .allowlist_type("iseq_inline_constant_cache_entry")
