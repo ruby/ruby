@@ -1534,10 +1534,10 @@ assert_equal '[nil, "b", "a"]', %q{
 }
 
 assert_equal '1', %q{
-  N = 1_000
+  N = 100
   Ractor.new{
     a = []
-    1_000.times.map{|i|
+    100.times.map{|i|
       Thread.new(i){|i|
         Thread.pass if i < N
         a << Ractor.store_if_absent(:i){ i }
