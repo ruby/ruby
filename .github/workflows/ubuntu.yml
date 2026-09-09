@@ -51,6 +51,12 @@ jobs:
             timeout: 60
           - test_task: check
             os: ubuntu-26.04-arm
+          # Ruby::Box is experimental, so run the suite with it enabled to keep
+          # the main box behaving like a Ruby without boxes.  RUBYOPT=-w is left
+          # out below, because -w turns the experimental warning back on and it
+          # lands in the output these tests capture from the ruby they spawn.
+          - test_task: check
+            box: Ruby::Box
       fail-fast: false
 
     env: &make-env
@@ -162,10 +168,11 @@ jobs:
 
           $SETARCH make -s ${{ matrix.test_task }} \
           ${TESTS:+TESTS="$TESTS"} \
-          ${{ !contains(matrix.test_task, 'bundle') && 'RUBYOPT=-w' || '' }}
+          ${{ !matrix.box && !contains(matrix.test_task, 'bundle') && 'RUBYOPT=-w' || '' }}
         timeout-minutes: ${{ matrix.timeout || 40 }}
         env:
           RUBY_TESTOPTS: '-q --tty=no'
+          RUBY_BOX: ${{ matrix.box && '1' || '' }}
           TEST_BUNDLED_GEMS_ALLOW_FAILURES: ''
           PRECHECK_BUNDLED_GEMS: 'no'
           LAUNCHABLE_STDOUT: ${{ steps.launchable.outputs.stdout_report_path }}
@@ -196,7 +203,7 @@ jobs:
 
       - uses: ./.github/actions/slack
         with:
-          label: ${{ matrix.test_task }} ${{ matrix.configure }}${{ matrix.arch }}${{ matrix.os }}
+          label: ${{ matrix.test_task }} ${{ matrix.box && 'RUBY_BOX=1' }}${{ matrix.configure }}${{ matrix.arch }}${{ matrix.os }}
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
         if: ${{ failure() }}
 
