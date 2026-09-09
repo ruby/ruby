@@ -3558,7 +3558,6 @@ ruby_vm_destruct(rb_vm_t *vm)
             rb_free_vm_opt_tables();
             rb_free_warning();
             rb_free_rb_global_tbl();
-            free(vm->gc.registered_addrs.registry);
 
             rb_id_table_free_items(&vm->negative_cme_table);
             st_free_embedded_table(&vm->overloaded_cme_table);
@@ -3596,6 +3595,10 @@ ruby_vm_destruct(rb_vm_t *vm)
                 rb_free_default_rand_key();
             }
             rb_objspace_free(objspace);
+        }
+
+        if (rb_free_at_exit) {
+            free(vm->gc.registered_addrs.registry);
         }
         rb_native_mutex_destroy(&vm->once_lock);
         rb_native_cond_destroy(&vm->once_cond);
