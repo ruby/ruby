@@ -80,7 +80,7 @@ module JSON
     def generator=(generator) # :nodoc:
       old, $VERBOSE = $VERBOSE, nil
 
-      unless generator::State.respond_to?(:default_sort_keys_proc_unchecked=)
+      unless generator::State.respond_to?(:default_sort_keys_proc_unchecked=, true)
         generator::State.singleton_class.class_eval do
           alias_method :default_sort_keys_proc_unchecked=, :default_sort_keys_proc=
           private :default_sort_keys_proc_unchecked=
