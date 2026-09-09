@@ -946,7 +946,7 @@ class TestBox < Test::Unit::TestCase
   # Tests which run always (w/o RUBY_BOX=1 globally)
 
   def test_prelude_gems_and_loaded_features
-    assert_in_out_err([ENV_ENABLE_BOX, "--enable=gems"], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
+    assert_in_out_err([ENV_ENABLE_BOX, "--enable=gems", "-W:experimental"], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
       begin;
         puts ["before:", $LOADED_FEATURES.select{ it.end_with?("/bundled_gems.rb") }&.first].join
         puts ["before:", $LOADED_FEATURES.select{ it.end_with?("/error_highlight.rb") }&.first].join
@@ -970,7 +970,7 @@ class TestBox < Test::Unit::TestCase
   end
 
   def test_prelude_gems_and_loaded_features_with_disable_gems
-    assert_in_out_err([ENV_ENABLE_BOX, "--disable=gems"], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
+    assert_in_out_err([ENV_ENABLE_BOX, "--disable=gems", "-W:experimental"], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
       begin;
         puts ["before:", $LOADED_FEATURES.select{ it.end_with?("/bundled_gems.rb") }&.first].join
         puts ["before:", $LOADED_FEATURES.select{ it.end_with?("/error_highlight.rb") }&.first].join
