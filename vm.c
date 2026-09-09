@@ -3558,6 +3558,7 @@ ruby_vm_destruct(rb_vm_t *vm)
             rb_free_vm_opt_tables();
             rb_free_warning();
             rb_free_rb_global_tbl();
+            free(vm->gc.registered_addrs.registry);
 
             rb_id_table_free_items(&vm->negative_cme_table);
             st_free_embedded_table(&vm->overloaded_cme_table);
