@@ -3999,9 +3999,12 @@ impl Function {
         let Some(splat_length_summary) = get_or_create_iseq_payload(frame_state.iseq).profile.get_splat_length_summary(frame_state.insn_idx) else {
             return vec![];
         };
+        // A single observed length uses the existing guarded specialization without dispatch.
         if splat_length_summary.is_monomorphic() {
             return splat_length_summary.bucket(0).into_iter().collect();
         }
+        // Only build length dispatch for polymorphic or skewed-polymorphic profiles.
+        // Leave megamorphic profiles, including skewed ones, unspecialized.
         if !(splat_length_summary.is_polymorphic() || splat_length_summary.is_skewed_polymorphic()) {
             return vec![];
         }
