@@ -291,6 +291,9 @@ class_duplicate_iclass_classext(VALUE iclass, rb_classext_t *mod_ext, const rb_b
 
     RCLASSEXT_BOX(ext) = box;
 
+    VM_ASSERT(FL_TEST_RAW(iclass, RCLASS_BOXABLE));
+    first_set = RCLASS_SET_BOX_CLASSEXT(iclass, box, ext);
+
     RCLASSEXT_SUPER(ext) = RCLASSEXT_SUPER(src);
 
     // See also: rb_include_class_new()
@@ -316,16 +319,13 @@ class_duplicate_iclass_classext(VALUE iclass, rb_classext_t *mod_ext, const rb_b
 
     RCLASSEXT_SET_INCLUDER(ext, iclass, RCLASSEXT_INCLUDER(src));
 
-    VM_ASSERT(FL_TEST_RAW(iclass, RCLASS_BOXABLE));
-
-    first_set = RCLASS_SET_BOX_CLASSEXT(iclass, box, ext);
     if (first_set) {
         RCLASS_SET_PRIME_CLASSEXT_WRITABLE(iclass, false);
     }
 }
 
 rb_classext_t *
-rb_class_duplicate_classext(rb_classext_t *orig, VALUE klass, const rb_box_t *box)
+rb_class_duplicate_classext(rb_classext_t *orig, VALUE klass, const rb_box_t *box, int *first_set)
 {
     VM_ASSERT(RB_TYPE_P(klass, T_CLASS) || RB_TYPE_P(klass, T_MODULE) || RB_TYPE_P(klass, T_ICLASS));
 
@@ -333,6 +333,10 @@ rb_class_duplicate_classext(rb_classext_t *orig, VALUE klass, const rb_box_t *bo
     bool dup_iclass = RB_TYPE_P(klass, T_MODULE) ? true : false;
 
     RCLASSEXT_BOX(ext) = box;
+
+    /* Everything made below is reachable only through this classext, so put
+     * it where the GC can find it before allocating any of it. */
+    *first_set = RCLASS_SET_BOX_CLASSEXT(klass, box, ext);
 
     RCLASSEXT_SUPER(ext) = RCLASSEXT_SUPER(orig);
 
