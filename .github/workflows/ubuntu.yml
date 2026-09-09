@@ -161,6 +161,12 @@ jobs:
           echo "SYNTAX_SUGGEST_TIMEOUT=60" >> $GITHUB_ENV
         if: ${{ endsWith(matrix.os, 'ppc64le') || endsWith(matrix.os, 's390x') }}
 
+      # Set it here rather than in the step env, because an empty value is
+      # still a value and a test that asks for ENV["RUBY_BOX"] would see it.
+      - name: Enable Ruby::Box
+        run: echo "RUBY_BOX=1" >> $GITHUB_ENV
+        if: ${{ matrix.box }}
+
       - name: make ${{ matrix.test_task }}
         run: |
           test -n "${LAUNCHABLE_STDOUT}" && exec 1> >(tee "${LAUNCHABLE_STDOUT}")
@@ -172,7 +178,6 @@ jobs:
         timeout-minutes: ${{ matrix.timeout || 40 }}
         env:
           RUBY_TESTOPTS: '-q --tty=no'
-          RUBY_BOX: ${{ matrix.box && '1' || '' }}
           TEST_BUNDLED_GEMS_ALLOW_FAILURES: ''
           PRECHECK_BUNDLED_GEMS: 'no'
           LAUNCHABLE_STDOUT: ${{ steps.launchable.outputs.stdout_report_path }}
