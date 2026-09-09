@@ -3976,12 +3976,25 @@ fn gen_function_stub(cb: &mut CodeBlock, iseq_call: IseqCallRef) -> Result<CodeP
     // If the stubbed ISEQ fails to compile, function_stub_hit exits to the
     // interpreter with this callee frame. Direct JIT-to-JIT calls pass arguments
     // in C argument registers and the rest on the native stack, so spill the
-    // packed argument locals first. The fallback path will reshape these around
+    // packed argument locals first. prepare_for_exit() will reshape these around
     // any optional positional gaps.
     let argc = iseq_call.argc.to_usize();
     let local_size = unsafe { get_iseq_body_local_table_size(iseq_call.iseq.get()) }.to_usize();
-    for arg_idx in 0..argc {
-        let src = match lir::c_arg_location(arg_idx + 1) { // +1 for self
+
+    // Mirror the argument layout of gen_send_direct: self, then the packed
+    // positional arguments, and the block handler if it exists.
+    // TODO: Unify the argument order to avoid having to manually keep in sync
+    let params = unsafe { iseq_call.iseq.get().params() };
+    let block_spill = (params.flags.has_block() != 0).then(|| {
+        let block_local_idx: usize = params.block_start.try_into()
+            .expect("ISEQ block_start should be non-negative");
+        (argc + 1, block_local_idx) // +1 for self
+    });
+
+    let spills = (0..argc).map(|arg_idx| (arg_idx + 1, arg_idx)) // +1 for self
+        .chain(block_spill);
+    for (c_arg_idx, local_idx) in spills {
+        let src = match lir::c_arg_location(c_arg_idx) {
             CArgLocation::Reg(reg) => reg,
             CArgLocation::StackSlot(slot) => {
                 // The stub runs before any frame setup, so stack-passed arguments
@@ -3993,7 +4006,7 @@ fn gen_function_stub(cb: &mut CodeBlock, iseq_call: IseqCallRef) -> Result<CodeP
             }
         };
         asm.store(
-            Opnd::mem(64, SP, -local_size_and_idx_to_bp_offset(local_size, arg_idx) * SIZEOF_VALUE_I32),
+            Opnd::mem(64, SP, -local_size_and_idx_to_bp_offset(local_size, local_idx) * SIZEOF_VALUE_I32),
             src,
         );
     }
