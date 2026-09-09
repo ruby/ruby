@@ -3987,10 +3987,11 @@ fn gen_function_stub(cb: &mut CodeBlock, iseq_call: IseqCallRef) -> Result<CodeP
     let block_spill = (params.flags.has_block() != 0).then(|| {
         let block_local_idx: usize = params.block_start.try_into()
             .expect("ISEQ block_start should be non-negative");
-        (argc + 1, block_local_idx)
+        (argc + 1, block_local_idx) // +1 for self
     });
 
-    let spills = (0..argc).map(|arg_idx| (arg_idx + 1, arg_idx)).chain(block_spill);
+    let spills = (0..argc).map(|arg_idx| (arg_idx + 1, arg_idx)) // +1 for self
+        .chain(block_spill);
     for (c_arg_idx, local_idx) in spills {
         let src = match lir::c_arg_location(c_arg_idx) {
             CArgLocation::Reg(reg) => reg,
