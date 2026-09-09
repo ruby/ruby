@@ -650,11 +650,6 @@ pub enum SideExitReason {
     PatchPoint(Invariant),
     CalleeSideExit,
     Interrupt,
-    BlockParamProxyNotIseqOrIfunc,
-    BlockParamProxyNotNil,
-    BlockParamProxyNotProc,
-    BlockParamProxyFallbackMiss,
-    BlockParamProxyProfileNotCovered,
     BlockParamProxyUnknownHandler,
     InvokeBlockHandlerNotIseq,
     InvokeBlockIseqChanged,
@@ -4787,7 +4782,7 @@ impl Function {
                                         // blocks re-profiles the block arg and drops this speculation
                                         // (falling back to a dynamic send) instead of paying the guard
                                         // side exit repeatedly. This matches the receiver GuardType
-                                        // below and the getblockparamproxy BlockParamProxyNotNil guard.
+                                        // below.
                                         self.push_insn(block, Insn::GuardBitEquals {
                                             val: block_arg,
                                             expected: Const::Value(Qnil),
@@ -9012,36 +9007,6 @@ fn add_iseq_to_hir(
                         } else {
                             fun.count(block, Counter::invokeblock_handler_no_profiles);
                         }
-                    }
-                }
-            } else if opcode == YARVINSN_getblockparamproxy || opcode == YARVINSN_trace_getblockparamproxy {
-                if get_option!(stats) {
-                    let iseq_insn_idx = exit_state.insn_idx;
-                    if let Some([block_handler_distribution]) = payload.profile.get_operand_types(iseq_insn_idx) {
-                        let summary = TypeDistributionSummary::new(block_handler_distribution);
-
-                        if summary.is_monomorphic() {
-                            let obj = summary.bucket(0).class();
-                            if unsafe { rb_IMEMO_TYPE_P(obj, imemo_iseq) == 1} {
-                                fun.count(block, Counter::getblockparamproxy_handler_iseq);
-                            } else if unsafe { rb_IMEMO_TYPE_P(obj, imemo_ifunc) == 1} {
-                                fun.count(block, Counter::getblockparamproxy_handler_ifunc);
-                            }
-                            else if obj.nil_p() {
-                                fun.count(block, Counter::getblockparamproxy_handler_nil);
-                            }
-                            else if obj.symbol_p() {
-                                fun.count(block, Counter::getblockparamproxy_handler_symbol);
-                            } else if unsafe { rb_obj_is_proc(obj).test() } {
-                                fun.count(block, Counter::getblockparamproxy_handler_proc);
-                            }
-                        } else if summary.is_polymorphic() || summary.is_skewed_polymorphic() {
-                          fun.count(block, Counter::getblockparamproxy_handler_polymorphic);
-                        } else if summary.is_megamorphic() || summary.is_skewed_megamorphic() {
-                          fun.count(block, Counter::getblockparamproxy_handler_megamorphic);
-                        }
-                    } else {
-                        fun.count(block, Counter::getblockparamproxy_handler_no_profiles);
                     }
                 }
             }
