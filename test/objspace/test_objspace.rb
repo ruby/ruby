@@ -405,6 +405,12 @@ class TestObjSpace < Test::Unit::TestCase
     JSON.parse(info) if defined?(JSON)
   end
 
+  def test_dump_flags_wb_protected
+    [Object.new, "str", [1], {a: 1}, (1..2), Struct.new(:a).new(1)].each do |obj|
+      assert_include(ObjectSpace.dump(obj), '"wb_protected":true', obj.class.name)
+    end
+  end
+
   def test_dump_flag_age
     EnvUtil.without_gc do
       o = Object.new
