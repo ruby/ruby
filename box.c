@@ -175,7 +175,9 @@ box_entry_initialize(rb_box_t *box)
     box->box_object = 0;
     box->box_id = 0;
 
-    box->top_self = rb_obj_alloc(rb_cObject);
+    // Clone the master top self so that the box gets the top-level singleton
+    // methods (include, using, public, private, ...) defined during setup.
+    box->top_self = rb_obj_clone(master->top_self);
     rb_define_singleton_method(box->top_self, "to_s", box_main_to_s, 0);
     rb_define_alias(rb_singleton_class(box->top_self), "inspect", "to_s");
     box->load_path = rb_ary_dup(master->load_path);
