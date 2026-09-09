@@ -958,4 +958,30 @@ class TestRactor < Test::Unit::TestCase
       $stdout.puts "sent"
     RUBY
   end
+
+  def test_attached_object_of_unshareable_object
+    omit 'objspace per Ractor is how an object\'s owner is known' unless GC.config[:implementation] == 'default'
+    assert_ractor(<<~'RUBY')
+      # A singleton class is shareable whatever it is attached to, so sending one used to
+      # hand the attached object to another Ractor through #attached_object.
+      o = Object.new
+      assert_equal true, Ractor.shareable?(o.singleton_class)
+      assert_same o, o.singleton_class.attached_object
+
+      r = Ractor.new(o.singleton_class) do |sc|
+        begin
+          sc.attached_object
+        rescue Ractor::IsolationError
+          :isolated
+        end
+      end
+      assert_equal :isolated, r.value
+
+      # A shareable attached object, and a Ractor's own unshareable one, are fine.
+      shareable = Ractor.make_shareable(Object.new)
+      assert_same shareable, Ractor.new(shareable.singleton_class) { |sc| sc.attached_object }.value
+      assert_same String, Ractor.new(String.singleton_class) { |sc| sc.attached_object }.value
+      assert_equal true, Ractor.new { own = Object.new; own.singleton_class.attached_object.equal?(own) }.value
+    RUBY
+  end
 end
