@@ -1545,6 +1545,10 @@ env_copy(const VALUE *src_ep, VALUE read_only_variables)
         RB_OBJ_WRITTEN(copied_env, Qundef, new_prev_env);
         VM_ENV_FLAGS_UNSET(ep, VM_ENV_FLAG_LOCAL);
     }
+    else if (VM_ENV_BOXED_P(src_ep)) {
+        /* the specval holds a box here, see VM_CF_BLOCK_HANDLER */
+        ep[VM_ENV_DATA_INDEX_SPECVAL] = src_ep[VM_ENV_DATA_INDEX_SPECVAL];
+    }
     else {
         ep[VM_ENV_DATA_INDEX_SPECVAL] = VM_BLOCK_HANDLER_NONE;
     }

@@ -1012,6 +1012,16 @@ class TestBox < Test::Unit::TestCase
     end;
   end
 
+  def test_shareable_proc_made_in_a_module_body
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      module ShareableProcHolder
+        PROC = Ractor.make_shareable(->(s) { s.upcase })
+      end
+      assert_equal "HI", ShareableProcHolder::PROC.call("hi")
+    end;
+  end
+
   def test_boxes_have_different_rubygems
     # assert_separately w/ ENV_ENABLE_BOX and --enable=gems causes timeouts on CI @ Windows
     assert_in_out_err([ENV_ENABLE_BOX, "--enable=gems"], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
