@@ -687,11 +687,33 @@ ractor_reap_dead_ports_i(st_data_t port_id, st_data_t val, st_data_t dat)
     }
 }
 
+/* A message is only moved from recv_queue to its port queue when the owner receives or
+ * closes, so one addressed to a port that died first is left here, out of the sweep
+ * above.  Its port is gone from the table by now: drop it. */
+static void
+ractor_reap_undeliverable_messages(rb_ractor_t *r)
+{
+    struct ractor_queue *recv_q = r->sync.recv_queue;
+    if (recv_q == NULL) return;
+
+    struct ractor_basket *b, *nxt;
+    ccan_list_for_each_safe(&recv_q->set, b, nxt, node) {
+        if (!st_lookup(r->sync.ports, b->port_id, NULL)) {
+            ccan_list_del_init(&b->node);
+            ractor_basket_free(b);
+        }
+    }
+}
+
 void
 rb_ractor_reap_dead_ports(rb_ractor_t *r)
 {
+    /* No sync lock here: the caller's gate is what keeps foreign senders out. */
+    VM_ASSERT(rb_gc_single_objspace_p() || rb_gc_during_global_gc_p());
+
     if (r->sync.ports) {
         st_foreach(r->sync.ports, ractor_reap_dead_ports_i, 0);
+        ractor_reap_undeliverable_messages(r);
     }
 }
 
