@@ -8294,7 +8294,8 @@ impl Display for FrameStatePrinter<'_> {
             let name: ID = unsafe { rb_zjit_local_id(inner.iseq, idx.try_into().unwrap()) };
             let name = name.contents_lossy();
             if idx > 0 { write!(f, ", ")?; }
-            write!(f, "{name}={local}")?;
+            let sep = if inner.spilled_locals.get(idx) { ":=" } else { "=" };
+            write!(f, "{name}{sep}{local}")?;
         }
         write!(f, "]")?;
         if let Some(caller) = inner.caller {
