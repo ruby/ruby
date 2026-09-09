@@ -812,9 +812,9 @@ module JSON
     private_constant :EXCLUDED_GENERATOR_OPTIONS
 
     # :call-seq:
-    #   JSON.new(options = nil, &block)
+    #   JSON::Coder.new(**options, &block)
     #
-    # Argument +options+, if given, contains a \Hash of options for both parsing and generating.
+    # Keyword arguments +options+, if given, are options for both parsing and generating.
     # See {Parsing Options}[rdoc-ref:JSON@Parsing+Options],
     # and {Generating Options}[rdoc-ref:JSON@Generating+Options].
     #
