@@ -1877,6 +1877,10 @@ class TestYJIT < Test::Unit::TestCase
   end
 
   def test_yjit_option_uses_array_each_in_ruby
+    # RubyVM::YJIT.enable runs the `with_jit` hooks, whose blocks were made
+    # in the master box, so the replacement lands there and no other box
+    # sees Array#each implemented in Ruby.
+    pend "the with_jit hooks run in the master box" if defined?(Ruby::Box) && Ruby::Box.enabled?
     assert_separately(["--yjit"], <<~'RUBY')
       # Array#each should be implemented in Ruby for YJIT
       assert_equal "<internal:array>", Array.instance_method(:each).source_location.first
@@ -1891,6 +1895,10 @@ class TestYJIT < Test::Unit::TestCase
   end
 
   def test_yjit_enable_replaces_array_each
+    # RubyVM::YJIT.enable runs the `with_jit` hooks, whose blocks were made
+    # in the master box, so the replacement lands there and no other box
+    # sees Array#each implemented in Ruby.
+    pend "the with_jit hooks run in the master box" if defined?(Ruby::Box) && Ruby::Box.enabled?
     assert_separately([*("--disable=yjit" if RubyVM::YJIT.enabled?)], <<~'RUBY')
       # Array#each should be implemented in C for the interpreter
       assert_nil Array.instance_method(:each).source_location
