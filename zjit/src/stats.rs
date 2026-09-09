@@ -473,6 +473,9 @@ make_counters! {
     load_field_count,
     store_field_count,
 
+    elided_array_aref_count,
+    elided_array_length_count,
+
     invokeblock_handler_monomorphic_iseq,
     invokeblock_handler_monomorphic_ifunc,
     invokeblock_handler_monomorphic_other,
