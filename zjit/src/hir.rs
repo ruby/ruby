@@ -9399,7 +9399,6 @@ fn add_iseq_to_hir(
                         let val = fun.push_insn(block, Insn::Const { val: Const::Value(value) });
                         state.stack_push(val);
                     } else {
-                        // Exit
                         fun.push_insn(block, Insn::SideExit { state: exit_id, reason: Box::new(SideExitReason::OnceNotDone), recompile: Some(Recompile) });
                         break;  // End the block
                     }
