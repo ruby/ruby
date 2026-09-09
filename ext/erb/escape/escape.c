@@ -6,17 +6,12 @@ static ID id_escapeHTML;
 
 #define HTML_ESCAPE_MAX_LEN 6
 
-static const struct {
-    uint8_t len;
-    char str[HTML_ESCAPE_MAX_LEN+1];
-} html_escape_table[UCHAR_MAX+1] = {
-#define HTML_ESCAPE(c, str) [c] = {rb_strlen_lit(str), str}
-    HTML_ESCAPE('\'', "&#39;"),
-    HTML_ESCAPE('&', "&amp;"),
-    HTML_ESCAPE('"', "&quot;"),
-    HTML_ESCAPE('<', "&lt;"),
-    HTML_ESCAPE('>', "&gt;"),
-#undef HTML_ESCAPE
+static const bool html_escape_table[UCHAR_MAX+1] = {
+    ['\''] = true,
+    ['&'] = true,
+    ['"'] = true,
+    ['<'] = true,
+    ['>'] = true,
 };
 
 static inline long
@@ -72,8 +67,7 @@ static inline bool
 find_next_basic(search_state *search)
 {
     while (search->cstr < search->end) {
-        const unsigned char c = *search->cstr;
-        if (html_escape_table[c].len) {
+        if (html_escape_table[*search->cstr]) {
             return true;
         }
         search->cstr++;
@@ -247,7 +241,6 @@ optimized_escape_html(VALUE str)
 
     while (find_next(&search)) {
         const unsigned char c = *search.cstr;
-        uint8_t len = html_escape_table[c].len;
         size_t segment_len = search.cstr - segment_start;
         search.cstr++;
 
@@ -260,8 +253,24 @@ optimized_escape_html(VALUE str)
             dest += segment_len;
         }
         segment_start = search.cstr;
-        memcpy(dest, html_escape_table[c].str, len);
-        dest += len;
+
+        switch(c) {
+            #define HTML_ESCAPE(c, str) \
+            case c: \
+                memcpy(dest, str, rb_strlen_lit(str)); \
+                dest += rb_strlen_lit(str); \
+                break
+
+            HTML_ESCAPE('\'', "&#39;");
+            HTML_ESCAPE('&', "&amp;");
+            HTML_ESCAPE('"', "&quot;");
+            HTML_ESCAPE('<', "&lt;");
+            HTML_ESCAPE('>', "&gt;");
+            default:
+                UNREACHABLE_RETURN(Qundef);
+
+            #undef HTML_ESCAPE
+        }
     }
 
     VALUE escaped = str;
