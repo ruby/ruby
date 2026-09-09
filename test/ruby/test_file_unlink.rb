@@ -5,11 +5,7 @@ require 'fileutils'
 
 class TestFileUnlinkRecursive < Test::Unit::TestCase
   def setup
-    begin
-      File.unlink(recursive: true)
-    rescue NotImplementedError
-      omit "recursive unlink is not supported"
-    end
+    File.unlink(recursive: true)
     @root = File.realpath(Dir.mktmpdir('ruby-unlink'))
   end
 
@@ -37,13 +33,36 @@ class TestFileUnlinkRecursive < Test::Unit::TestCase
   def test_entry_names
     path = File.join(@root, 'tree')
     Dir.mkdir(path)
-    ['a', '.a', '..a', '...', 'a' * 200].each do |name|
+    names = ['a', '.a', '..a', 'a' * 200]
+    names << '...' unless windows?
+    names.each do |name|
       Dir.mkdir("#{path}/#{name}")
       File.write("#{path}/#{name}/file", 'content')
     end
     assert_equal(1, File.unlink(path, recursive: true))
     assert_file.not_exist?(path)
   end
+
+  def test_descriptor_exhaustion
+    path = File.join(@root, 'tree')
+    FileUtils.mkdir_p(path + '/a' * 64)
+    assert_separately([], <<~RUBY)
+      path = #{path.dump}
+      soft, hard = Process.getrlimit(:NOFILE)
+      before = Dir.children('/dev/fd').size
+      begin
+        Process.setrlimit(:NOFILE, [soft, 32].min, hard)
+        3.times do
+          assert_raise(Errno::EMFILE) {File.unlink(path, recursive: true)}
+        end
+      ensure
+        Process.setrlimit(:NOFILE, soft, hard)
+      end
+      assert_equal(before, Dir.children('/dev/fd').size)
+      assert_equal(1, File.unlink(path, recursive: true))
+    RUBY
+    assert_file.not_exist?(path)
+  end if !windows? && File.directory?('/dev/fd')
 
   def test_files_and_multiple_paths
     paths = %w[file tree].map {|name| File.join(@root, name)}
@@ -57,8 +76,8 @@ class TestFileUnlinkRecursive < Test::Unit::TestCase
   def test_default_and_false
     path = File.join(@root, 'tree')
     Dir.mkdir(path)
-    assert_raise(Errno::EPERM, Errno::EISDIR) {File.unlink(path)}
-    assert_raise(Errno::EPERM, Errno::EISDIR) {File.unlink(path, recursive: false)}
+    assert_raise(Errno::EPERM, Errno::EISDIR, Errno::EACCES) {File.unlink(path)}
+    assert_raise(Errno::EPERM, Errno::EISDIR, Errno::EACCES) {File.unlink(path, recursive: false)}
     assert_file.directory?(path)
     file = File.join(path, 'file')
     File.write(file, 'content')
@@ -128,7 +147,11 @@ class TestFileUnlinkRecursive < Test::Unit::TestCase
     Dir.mkdir(outside)
     Dir.mkdir(tree)
     File.write("#{outside}/keep", 'content')
-    File.symlink(outside, "#{tree}/link")
+    begin
+      File.symlink(outside, "#{tree}/link")
+    rescue NotImplementedError, Errno::EACCES, Errno::EPERM
+      omit 'symlink is not supported'
+    end
     File.symlink('missing', "#{tree}/dangling")
     File.symlink('.', "#{tree}/loop")
     assert_equal(1, File.unlink(tree, recursive: true))
@@ -151,7 +174,6 @@ class TestFileUnlinkRecursive < Test::Unit::TestCase
   end
 
   def test_permission_error
-    omit 'requires directory permissions' if Process.euid == 0
     path = File.join(@root, 'tree')
     Dir.mkdir(path)
     File.write("#{path}/keep", 'content')
@@ -160,5 +182,17 @@ class TestFileUnlinkRecursive < Test::Unit::TestCase
     assert_equal('content', File.read("#{path}/keep"))
   ensure
     File.chmod(0o700, path) if path && File.directory?(path)
+  end if !windows? && Process.euid != 0
+
+  if windows?
+    def test_windows_paths
+      [File.expand_path('/'), 'C:', 'C:\\', '\\\\server\\share\\'].each do |path|
+        assert_raise(Errno::EBUSY) {File.unlink(path, recursive: true)}
+      end
+      path = File.join(@root, 'tree')
+      FileUtils.mkdir_p("#{path}/a/b")
+      assert_equal(1, File.unlink(path.tr('/', '\\') + '\\', recursive: true))
+      assert_file.not_exist?(path)
+    end
   end
 end
