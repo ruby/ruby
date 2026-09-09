@@ -908,4 +908,26 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+
+  def test_move_object_with_finalizer
+    # The moved-from shell keeps its finalizer table entry, so it has to keep
+    # FL_FINALIZE with it; the two disagreeing failed an assertion at shutdown.
+    assert_normal_exit(<<~'RUBY', '[Bug #21368]')
+      Warning[:experimental] = false
+      r = Ractor.new { Ractor.receive }
+      1000.times do
+        o = Object.new
+        ObjectSpace.define_finalizer(o, proc { |id| })
+        r.send(o, move: true)
+      end
+    RUBY
+
+    assert_in_out_err(%w[-W0], <<~'RUBY', %w[sent finalized], [], '[Bug #21368]')
+      r = Ractor.new { Ractor.receive }
+      o = Object.new
+      ObjectSpace.define_finalizer(o, proc { |id| $stdout.puts "finalized" })
+      r.send(o, move: true)
+      $stdout.puts "sent"
+    RUBY
+  end
 end
