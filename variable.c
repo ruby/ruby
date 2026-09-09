@@ -548,6 +548,7 @@ struct rb_global_variable {
     rb_gvar_marker_t *marker;
     rb_gvar_compact_t *compactor;
     struct trace_var *trace;
+    ID id;
     bool box_ready;
     bool box_dynamic;
 };
@@ -659,6 +660,7 @@ rb_global_entry(ID id)
             entry->id = id;
             entry->var = var;
             entry->ractor_local = false;
+            var->id = id;
             var->counter = 1;
             var->data = 0;
             var->getter = rb_gvar_undef_getter;
@@ -1022,6 +1024,13 @@ rb_gvar_set_entry(struct rb_global_entry *entry, VALUE val)
 static inline bool
 gvar_use_box_tbl(const rb_box_t *box, const struct rb_global_entry *entry)
 {
+    /* The main box has to behave like a non-box Ruby, so a variable defined
+     * from C keeps its single C storage there.  Optional boxes get a copy. */
+    if (BOX_MAIN_P(box) &&
+        entry->var->setter != rb_gvar_undef_setter &&
+        entry->var->setter != rb_gvar_val_setter)
+        return false;
+
     return BOX_USER_P(box) &&
         !entry->var->box_dynamic &&
         (!entry->var->box_ready || entry->var->setter != rb_gvar_readonly_setter);
@@ -1040,7 +1049,7 @@ rb_gvar_set(ID id, VALUE val)
 
         if (gvar_use_box_tbl(box, entry)) {
             use_box_tbl = true;
-            rb_hash_aset(box->gvar_tbl, rb_id2sym(entry->id), val);
+            rb_hash_aset(box->gvar_tbl, rb_id2sym(entry->var->id), val);
             retval = val;
             // TODO: think about trace
         }
@@ -1074,7 +1083,7 @@ rb_gvar_get(ID id)
         if (gvar_use_box_tbl(box, entry)) {
             use_box_tbl = true;
             gvars = box->gvar_tbl;
-            key = rb_id2sym(entry->id);
+            key = rb_id2sym(var->id);
             if (RTEST(rb_hash_has_key(gvars, key))) { // this gvar is already cached
                 retval = rb_hash_aref(gvars, key);
             }
