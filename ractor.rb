@@ -556,6 +556,7 @@ class Ractor
 
     # internal method that is called when the first "Ractor.new" is called
     def _activated # :nodoc:
+      Primitive.attr! :caller_user_box
       Kernel.prepend Module.new{|m|
         m.set_temporary_name '<RactorRequire>'
 
