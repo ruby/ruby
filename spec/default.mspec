@@ -3,6 +3,8 @@ $VERBOSE = false
 if (opt = ENV["RUBYOPT"]) and (opt = opt.dup).sub!(/(?:\A|\s)-w(?=\z|\s)/, '')
   ENV["RUBYOPT"] = opt
 end
+# The specs assert the output of the ruby processes they spawn verbatim.
+ENV["RUBYOPT"] = (["-W:no-experimental"] | ENV["RUBYOPT"].to_s.split).join(" ")
 
 # Enable constant leak checks by ruby/mspec
 ENV["CHECK_CONSTANT_LEAKS"] ||= "true"
