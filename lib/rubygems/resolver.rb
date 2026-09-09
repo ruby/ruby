@@ -482,10 +482,15 @@ class Gem::Resolver
       next installed.first if installed.length == 1
       candidates = installed if installed.any?
 
-      # Among remaining candidates, prefer the most specific platform, then the
-      # earlier-supplied source.
+      # Among remaining candidates, prefer a content-addressed candidate
+      # built for the running Ruby, then the most specific platform, then the
+      # earlier-supplied source. The Ruby ABI ranks before platform
+      # specificity so that gem install and bundle install choose the same
+      # artifact: Bundler prefers compatible content-addressed candidates
+      # before sorting by platform.
       candidates.min_by do |s|
-        [Gem::Platform.platform_specificity_match(s.platform, Gem::Platform.local),
+        [Gem::ContentAddress.ruby_abi_specificity_match(s),
+         Gem::Platform.platform_specificity_match(s.platform, Gem::Platform.local),
          source_rank[s.source]]
       end
     end

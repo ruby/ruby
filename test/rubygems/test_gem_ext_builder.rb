@@ -244,7 +244,9 @@ install:
 
       assert_path_exist @spec.extension_dir
       assert_path_exist @spec.gem_build_complete_path
-      assert_path_exist File.join @spec.extension_dir, "gem_make.out"
+      assert_path_not_exist File.join @spec.extension_dir, "gem_make.out"
+      assert_path_not_exist File.join @spec.extension_dir, "mkmf.log"
+      assert_path_not_exist File.join @spec.gem_dir, "ext", "mkmf.log"
       assert_path_exist File.join @spec.extension_dir, "a.rb"
       assert_path_exist File.join @spec.gem_dir, "lib", "a.rb"
       assert_path_exist File.join @spec.gem_dir, "lib", "a", "b.rb"
@@ -298,7 +300,9 @@ install:
 
       assert_path_exist @spec.extension_dir
       assert_path_exist @spec.gem_build_complete_path
-      assert_path_exist File.join @spec.extension_dir, "gem_make.out"
+      assert_path_not_exist File.join @spec.extension_dir, "gem_make.out"
+      assert_path_not_exist File.join @spec.extension_dir, "mkmf.log"
+      assert_path_not_exist File.join @spec.gem_dir, "ext", "mkmf.log"
       assert_path_exist File.join @spec.extension_dir, "a.rb"
       assert_path_not_exist File.join @spec.gem_dir, "lib", "a.rb"
       assert_path_not_exist File.join @spec.gem_dir, "lib", "a", "b.rb"
@@ -351,11 +355,211 @@ install:
       assert_path_exist @spec.extension_dir
       assert_path_exist @spec.gem_build_complete_path
       assert_path_exist File.join @spec.gem_dir, "ext", "foo"
-      assert_path_exist File.join @spec.extension_dir, "gem_make.out"
+      assert_path_not_exist File.join @spec.extension_dir, "gem_make.out"
+      assert_path_not_exist File.join @spec.extension_dir, "mkmf.log"
+      assert_path_not_exist File.join @spec.gem_dir, "ext", "mkmf.log"
       assert_path_exist File.join @spec.extension_dir, "a.rb"
       assert_path_exist File.join @spec.gem_dir, "lib", "a.rb"
       assert_path_exist File.join @spec.gem_dir, "lib", "a", "b.rb"
     end
+  end
+
+  def test_build_extensions_does_not_install_logs_on_success
+    pend "terminates on mswin" if vc_windows? && ruby_repo?
+
+    @spec.extensions << "ext/extconf.rb"
+
+    ext_dir = File.join @spec.gem_dir, "ext"
+    FileUtils.mkdir_p ext_dir
+
+    File.open File.join(ext_dir, "extconf.rb"), "w" do |f|
+      f.write <<-'RUBY'
+        require 'mkmf'
+
+        create_makefile 'a'
+      RUBY
+    end
+
+    use_ui @ui do
+      @builder.build_extensions
+    end
+
+    assert_path_exist @spec.gem_build_complete_path
+
+    # No build logs are left anywhere in the installation tree.
+    assert_path_not_exist File.join @spec.extension_dir, "gem_make.out"
+    assert_path_not_exist File.join @spec.extension_dir, "mkmf.log"
+    assert_path_not_exist File.join ext_dir, "mkmf.log"
+    assert_path_not_exist File.join ext_dir, "gem_make.out"
+    assert_path_not_exist File.join @spec.build_info_dir, "#{@spec.full_name}.mkmf.log"
+    assert_path_not_exist File.join @spec.build_info_dir, "#{@spec.full_name}.gem_make.out"
+  end
+
+  def test_build_extensions_logs_to_build_info_on_make_failure
+    pend "terminates on mswin" if vc_windows? && ruby_repo?
+
+    @spec.extensions << "ext/extconf.rb"
+
+    ext_dir = File.join @spec.gem_dir, "ext"
+    FileUtils.mkdir_p ext_dir
+
+    # have_header makes mkmf actually write an mkmf.log. extconf then succeeds,
+    # so "make clean" runs before the build and would delete that log unless it
+    # has been parked out of the way first.
+    File.open File.join(ext_dir, "extconf.rb"), "w" do |f|
+      f.write <<-'RUBY'
+        require 'mkmf'
+
+        have_header 'stdio.h'
+
+        File.write 'a.c', "#error forced build failure for test\n"
+
+        create_makefile 'a'
+      RUBY
+    end
+
+    e = assert_raise Gem::Ext::BuildError do
+      use_ui @ui do
+        @builder.build_extensions
+      end
+    end
+
+    mkmf_log = File.join @spec.build_info_dir, "#{@spec.full_name}.mkmf.log"
+
+    assert_path_exist mkmf_log
+    assert_includes e.message, mkmf_log
+
+    assert_path_not_exist File.join @spec.extension_dir, "mkmf.log"
+    assert_path_not_exist File.join ext_dir, "mkmf.log"
+  end
+
+  def test_build_extensions_removes_stale_build_info_logs_on_success
+    pend "terminates on mswin" if vc_windows? && ruby_repo?
+
+    @spec.extensions << "ext/extconf.rb"
+
+    ext_dir = File.join @spec.gem_dir, "ext"
+    FileUtils.mkdir_p ext_dir
+
+    File.open File.join(ext_dir, "extconf.rb"), "w" do |f|
+      f.write <<-'RUBY'
+        require 'mkmf'
+
+        create_makefile 'a'
+      RUBY
+    end
+
+    # Logs left in build_info by an earlier failed build, and in the extension
+    # directory by a RubyGems old enough to install them there.
+    FileUtils.mkdir_p @spec.build_info_dir
+    FileUtils.mkdir_p @spec.extension_dir
+    stale = [
+      File.join(@spec.build_info_dir, "#{@spec.full_name}.mkmf.log"),
+      File.join(@spec.build_info_dir, "#{@spec.full_name}.gem_make.out"),
+      File.join(@spec.extension_dir, "gem_make.out"),
+    ]
+    FileUtils.touch stale
+
+    use_ui @ui do
+      @builder.build_extensions
+    end
+
+    assert_path_exist @spec.gem_build_complete_path
+
+    stale.each {|path| assert_path_not_exist path }
+  end
+
+  def test_build_extensions_keeps_logs_when_no_makefile_is_generated
+    pend "terminates on mswin" if vc_windows? && ruby_repo?
+
+    @spec.extensions << "ext/extconf.rb"
+
+    ext_dir = File.join @spec.gem_dir, "ext"
+    FileUtils.mkdir_p ext_dir
+
+    # extconf exits cleanly but generates no Makefile, the way one that bails out
+    # early on an unsupported platform does. The extension is then skipped rather
+    # than built, and the log is the only record of why.
+    File.open File.join(ext_dir, "extconf.rb"), "w" do |f|
+      f.write "# nothing to build on this platform\n"
+    end
+
+    use_ui @ui do
+      @builder.build_extensions
+    end
+
+    gem_make_out = File.join @spec.build_info_dir, "#{@spec.full_name}.gem_make.out"
+
+    assert_path_exist gem_make_out
+    assert_includes File.read(gem_make_out), "no Makefile was found"
+
+    # Skipping still leaves nothing behind in the installation tree.
+    assert_path_not_exist File.join @spec.extension_dir, "mkmf.log"
+    assert_path_not_exist File.join @spec.extension_dir, "gem_make.out"
+    assert_path_not_exist File.join ext_dir, "mkmf.log"
+  end
+
+  def test_build_extensions_reports_build_error_when_logs_cannot_be_written
+    @spec.extensions << "extconf.rb"
+
+    FileUtils.mkdir_p @spec.gem_dir
+
+    # A plain file where build_info belongs makes every log write fail.
+    FileUtils.rm_rf @spec.build_info_dir
+    File.write @spec.build_info_dir, ""
+
+    e = assert_raise Gem::Ext::BuildError do
+      use_ui @ui do
+        @builder.build_extensions
+      end
+    end
+
+    # The build failure survives instead of being replaced by the log failure.
+    assert_match(/\AERROR: Failed to build gem native extension.$/, e.message)
+    assert_match(/: No such file/, e.message)
+    refute_includes e.message, "Results logged to"
+  end
+
+  def test_build_extensions_logs_to_build_info_on_failure
+    pend "terminates on mswin" if vc_windows? && ruby_repo?
+
+    @spec.extensions << "ext/extconf.rb"
+
+    ext_dir = File.join @spec.gem_dir, "ext"
+    FileUtils.mkdir_p ext_dir
+
+    File.open File.join(ext_dir, "extconf.rb"), "w" do |f|
+      f.write <<-'RUBY'
+        require 'mkmf'
+
+        have_library 'nonexistent' or abort 'need libnonexistent'
+
+        create_makefile 'a'
+      RUBY
+    end
+
+    e = assert_raise Gem::Ext::BuildError do
+      use_ui @ui do
+        @builder.build_extensions
+      end
+    end
+
+    mkmf_log = File.join @spec.build_info_dir, "#{@spec.full_name}.mkmf.log"
+    gem_make_out = File.join @spec.build_info_dir, "#{@spec.full_name}.gem_make.out"
+
+    assert_path_exist mkmf_log
+    assert_path_exist gem_make_out
+
+    # Logs are not left in the installation tree.
+    assert_path_not_exist File.join @spec.extension_dir, "mkmf.log"
+    assert_path_not_exist File.join @spec.extension_dir, "gem_make.out"
+    assert_path_not_exist File.join ext_dir, "mkmf.log"
+
+    # The error message points at the new build_info paths.
+    assert_includes e.message, gem_make_out
+    assert_includes e.message, mkmf_log
+
+    assert_path_not_exist @spec.gem_build_complete_path
   end
 
   def test_build_extensions_none
@@ -401,11 +605,13 @@ install:
     assert_equal "Building native extensions. This could take a while...\n", @ui.output
     assert_equal "", @ui.error
 
-    gem_make_out = File.join @spec.extension_dir, "gem_make.out"
+    gem_make_out = File.join @spec.build_info_dir, "#{@spec.full_name}.gem_make.out"
     cmd_make_out = File.read(gem_make_out)
 
     assert_match %r{#{Regexp.escape Gem.ruby} .* extconf\.rb}, cmd_make_out
     assert_match(/: No such file/, cmd_make_out)
+
+    assert_path_not_exist File.join @spec.extension_dir, "gem_make.out"
 
     assert_path_not_exist @spec.gem_build_complete_path
 
@@ -414,7 +620,7 @@ install:
 
   def test_build_extensions_unsupported
     FileUtils.mkdir_p @spec.gem_dir
-    gem_make_out = File.join @spec.extension_dir, "gem_make.out"
+    gem_make_out = File.join @spec.build_info_dir, "#{@spec.full_name}.gem_make.out"
     @spec.extensions << nil
 
     e = assert_raise Gem::Ext::BuildError do

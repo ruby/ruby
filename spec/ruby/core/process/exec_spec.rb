@@ -240,20 +240,23 @@ describe "Process.exec" do
   end
 
   describe "options validation" do
+    # Use a non-existent command to prevent unexpected execve() calls and
+    # provide clearer failures if options aren't validated.
+
     it "raises an ArgumentError if :unsetenv_others option is not a boolean or nil" do
-      -> { Process.exec("true", unsetenv_others: 1) }.should.raise(ArgumentError, /expected true or false/)
-      -> { Process.exec("true", unsetenv_others: "true") }.should.raise(ArgumentError, /expected true or false/)
+      -> { Process.exec("should_raise_before_and_not_run", unsetenv_others: 1) }.should.raise(ArgumentError, /expected true or false/)
+      -> { Process.exec("should_raise_before_and_not_run", unsetenv_others: "true") }.should.raise(ArgumentError, /expected true or false/)
     end
 
     it "raises an ArgumentError if :close_others option is not a boolean or nil" do
-      -> { Process.exec("true", close_others: 1) }.should.raise(ArgumentError, /expected true or false/)
-      -> { Process.exec("true", close_others: "true") }.should.raise(ArgumentError, /expected true or false/)
+      -> { Process.exec("should_raise_before_and_not_run", close_others: 1) }.should.raise(ArgumentError, /expected true or false/)
+      -> { Process.exec("should_raise_before_and_not_run", close_others: "true") }.should.raise(ArgumentError, /expected true or false/)
     end
 
     platform_is :windows do
       it "raises an ArgumentError if :new_pgroup option is not a boolean or nil" do
-        -> { Process.exec("true", new_pgroup: 1) }.should.raise(ArgumentError, /expected true or false/)
-        -> { Process.exec("true", new_pgroup: "true") }.should.raise(ArgumentError, /expected true or false/)
+        -> { Process.exec("should_raise_before_and_not_run", new_pgroup: 1) }.should.raise(ArgumentError, /expected true or false/)
+        -> { Process.exec("should_raise_before_and_not_run", new_pgroup: "true") }.should.raise(ArgumentError, /expected true or false/)
       end
     end
   end

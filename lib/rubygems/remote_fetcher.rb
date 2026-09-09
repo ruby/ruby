@@ -161,7 +161,8 @@ class Gem::RemoteFetcher
 
           cache_update_path remote_gem_path, local_gem_path
         rescue FetchError
-          raise if spec.original_platform == spec.platform
+          raise if Gem::ContentAddress.content_addressed?(spec, validate_ruby_abi: false)
+          raise if spec.original_platform.to_s == spec.platform.to_s
 
           alternate_name = "#{spec.original_name}.gem"
 

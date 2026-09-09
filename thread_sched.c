@@ -104,8 +104,21 @@ static bool timeslice_scan(rb_vm_t *vm, bool interrupt);
 static void timer_thread_wakeup(void);
 static void timer_thread_wakeup_locked(rb_vm_t *vm);
 static void timer_thread_wakeup_force(void);
+// RUBY_MN_THREADS: -1 = nothing is M:N, not even a Ractor's threads;
+// 0 = the default (a Ractor's threads are, the main Ractor's are not);
+// 1 = the main Ractor's threads too; 2 = the main thread as well.
+static int mn_threads_mode = 0;
+
+static void nt_snts_join(rb_vm_t *vm, struct rb_native_thread *nt);
+static void nt_snts_leave(rb_vm_t *vm, struct rb_native_thread *nt);
+static bool nt_shared_loop(struct rb_native_thread *nt);
+static bool native_thread_self_can_retire_p(void);
 
 #include THREAD_IMPL_SRC
+
+#if USE_MN_THREADS
+static void thread_sched_main_to_shared(rb_thread_t *th);
+#endif
 
 // Defaults for what the platform above did not opt out of.
 
@@ -1151,7 +1164,9 @@ rb_thread_sched_init(struct rb_thread_sched *sched, bool atfork)
     ccan_list_node_init(&sched->timeslice_node);
 
 #if USE_MN_THREADS
-    if (!atfork) sched->enable_mn_threads = true; // MN is enabled on Ractors
+    // A Ractor's threads are M:N unless RUBY_MN_THREADS turns it off entirely;
+    // the main Ractor's setting is decided in ruby_mn_threads_params().
+    if (!atfork) sched->enable_mn_threads = mn_threads_enabled_p();
 #endif
 }
 
@@ -1206,7 +1221,9 @@ thread_sched_switch(rb_thread_t *cth, rb_thread_t *next_th)
     struct rb_native_thread *nt = cth->nt;
     native_thread_assign(NULL, cth);
     RUBY_DEBUG_LOG("th:%u->%u on nt:%d", rb_th_serial(cth), rb_th_serial(next_th), nt->serial);
-    thread_sched_switch0(cth->sched.context, next_th, nt, cth->status == THREAD_KILLED);
+    // never final: a thread ends only through co_start's epilogue transfer.  The
+    // main thread is THREAD_KILLED (rb_ec_cleanup) while it still parks here.
+    thread_sched_switch0(cth->sched.context, next_th, nt, false);
 }
 
 #if VM_CHECK_MODE > 0
@@ -1344,7 +1361,7 @@ ractor_sched_enq(rb_vm_t *vm, rb_ractor_t *r)
 #define SNT_KEEP_MINIMUM (MINIMUM_SNT > 1 ? MINIMUM_SNT : 1)
 
 static rb_ractor_t *
-ractor_sched_deq(rb_vm_t *vm, rb_ractor_t *cr)
+ractor_sched_deq(rb_vm_t *vm, rb_ractor_t *cr, bool can_retire)
 {
     rb_ractor_t *r;
     int idle_streak = 0;   // consecutive pops that found the queue empty
@@ -1360,7 +1377,7 @@ ractor_sched_deq(rb_vm_t *vm, rb_ractor_t *cr)
         while ((r = ccan_list_pop(&vm->ractor.sched.grq, rb_ractor_t, threads.sched.grq_node)) == NULL) {
             RUBY_DEBUG_LOG("wait grq_cnt:%d", (int)vm->ractor.sched.grq_cnt);
 
-            if (SNT_IDLE_RETIRE >= 0 && ++idle_streak > SNT_IDLE_RETIRE &&
+            if (can_retire && SNT_IDLE_RETIRE >= 0 && ++idle_streak > SNT_IDLE_RETIRE &&
                 (int)RUBY_ATOMIC_LOAD(vm->ractor.sched.snt_cnt) > SNT_KEEP_MINIMUM) {
                 RUBY_ATOMIC_DEC(vm->ractor.sched.snt_cnt);
                 RUBY_DEBUG_LOG("retire, snt_cnt:%d", (int)vm->ractor.sched.snt_cnt);
@@ -1753,6 +1770,9 @@ thread_sched_atfork(struct rb_thread_sched *sched)
     rb_native_mutex_initialize(&vm->ractor.sched.timeslice.lock);
     ccan_list_head_init(&vm->ractor.sched.timeslice.scheds);
     rb_native_mutex_initialize(&th->nt->running_th_lock); // a scan could hold it at fork
+    th->nt->running_th = NULL;  // th re-records itself below
+    th->nt->retiring = false;   // the pool it had no room in is gone
+    native_main_thread_atfork(); // this pthread is the process's main one now
     // Fork can copy nodes linked (or torn mid-link); re-init every sched's
     // node so rb_thread_sched_destroy's del_init stays a no-op for them.
     rb_ractor_t *r;
@@ -1800,14 +1820,20 @@ ruby_mn_threads_params(void)
     rb_vm_t *vm = GET_VM();
     rb_ractor_t *main_ractor = GET_RACTOR();
 
+    // RUBY_MN_THREADS: -1 = nothing is M:N, 0 = the default, 1 = the main
+    // Ractor's threads too, 2 = the main thread as well (see
+    // thread_sched_main_to_shared).  The main Ractor's sched already exists
+    // here, so it is set rather than defaulted.
     const char *mn_threads_cstr = getenv("RUBY_MN_THREADS");
-    bool enable_mn_threads = false;
+    int mn_threads = (USE_MN_THREADS && mn_threads_cstr) ? atoi(mn_threads_cstr) : 0;
 
-    if (USE_MN_THREADS && mn_threads_cstr && (enable_mn_threads = atoi(mn_threads_cstr) > 0)) {
-        // enabled
-        ruby_mn_threads_enabled = 1;
+    mn_threads_mode = mn_threads;
+    if (mn_threads > 0) {
+        ruby_mn_threads_enabled = mn_threads;
     }
-    main_ractor->threads.sched.enable_mn_threads = enable_mn_threads;
+    // =2 publishes it from thread_sched_main_to_shared, with the main nt's
+    // pool entry, so that the timer thread cannot mint an snt in between
+    main_ractor->threads.sched.enable_mn_threads = mn_threads == 1;
 
     const char *max_cpu_cstr = getenv("RUBY_MAX_CPU");
     int max_cpu = native_thread_default_max_cpu();
@@ -1820,6 +1846,12 @@ ruby_mn_threads_params(void)
     }
 
     vm->ractor.sched.max_cpu = max_cpu;
+
+#if USE_MN_THREADS
+    if (mn_threads >= 2) {
+        thread_sched_main_to_shared(GET_THREAD());
+    }
+#endif
 }
 
 static void
@@ -1857,10 +1889,13 @@ native_thread_dedicated_dec(rb_vm_t *vm, rb_ractor_t *cr, struct rb_native_threa
 
     if (nt->dedicated == 0) {
         // Rejoin under the max_cpu cap; with no room this nt retires and
-        // belongs to neither count until it ends.
+        // belongs to neither count until it ends.  The process's main nt
+        // cannot end (its loop runs on a stack it would have to free), so
+        // it always rejoins.
+        const bool can_retire = native_thread_self_can_retire_p();
         while (1) {
             rb_atomic_t snt = RUBY_ATOMIC_LOAD(vm->ractor.sched.snt_cnt);
-            if (snt < vm->ractor.sched.max_cpu || (int)snt <= MINIMUM_SNT) {
+            if (!can_retire || snt < vm->ractor.sched.max_cpu || (int)snt <= MINIMUM_SNT) {
                 if (RUBY_ATOMIC_CAS(vm->ractor.sched.snt_cnt, snt, snt + 1) == snt) break;
             }
             else {
@@ -1958,122 +1993,239 @@ nt_start(void *ptr)
 
     RUBY_DEBUG_LOG("nt:%u", nt->serial);
 
-    bool in_snts = false;
+    if (nt->dedicated) {
+        // wait running turn
+        rb_thread_t *th = nt->running_thread;
+        struct rb_thread_sched *sched = TH_SCHED(th);
 
-    if (!nt->dedicated) {
+        RUBY_DEBUG_LOG("on dedicated th:%u", rb_th_serial(th));
+        ruby_thread_set_native(th);
+
+        thread_sched_lock(sched, th);
+        {
+            if (sched->running == th) {
+                thread_sched_add_running_thread(sched, th);
+            }
+            thread_sched_wait_running_turn(sched, th, false, NULL);
+        }
+        thread_sched_unlock(sched, th);
+
+        // start threads
+        call_thread_start_func_2(th);
+        // TODO: allow to change to the SNT
+    }
+    else {
         coroutine_initialize_main(nt->nt_context);
+        nt_snts_join(vm, nt);
 
-        // join the snt list that the barrier/timeslice scans walk
-        rb_native_mutex_lock(&vm->ractor.sched.ntlist.lock);
-        {
-            ccan_list_add(&vm->ractor.sched.ntlist.snts, &nt->snts_node);
+        bool retired = nt_shared_loop(nt);
+        nt_snts_leave(vm, nt);
+
+        if (retired) {
+            // The counts dropped this nt already; nothing can reference it now.
+            RUBY_DEBUG_LOG("retired nt:%u", nt->serial);
+            native_thread_destroy_self(nt);
         }
-        rb_native_mutex_unlock(&vm->ractor.sched.ntlist.lock);
-        in_snts = true;
-    }
-
-    bool retired = false;
-
-    while (1) {
-        if (nt->dedicated) {
-            // wait running turn
-            rb_thread_t *th = nt->running_thread;
-            struct rb_thread_sched *sched = TH_SCHED(th);
-
-            RUBY_DEBUG_LOG("on dedicated th:%u", rb_th_serial(th));
-            ruby_thread_set_native(th);
-
-            thread_sched_lock(sched, th);
-            {
-                if (sched->running == th) {
-                    thread_sched_add_running_thread(sched, th);
-                }
-                thread_sched_wait_running_turn(sched, th, false, NULL);
-            }
-            thread_sched_unlock(sched, th);
-
-            // start threads
-            call_thread_start_func_2(th);
-            break; // TODO: allow to change to the SNT
-        }
-        else {
-            RUBY_DEBUG_LOG("check next");
-            if (nt->retiring) {   // came back with no room in the shared pool
-                retired = true;
-                break;
-            }
-
-            rb_ractor_t *r = ractor_sched_deq(vm, NULL);
-
-            if (r) {
-                struct rb_thread_sched *sched = &r->threads.sched;
-
-                bool locked = true;
-
-                thread_sched_lock(sched, NULL);
-                {
-                    rb_thread_t *next_th = sched->running;
-
-                    if (next_th && next_th->nt == NULL) {
-                        RUBY_DEBUG_LOG("nt:%d next_th:%d", (int)nt->serial, (int)next_th->serial);
-#if USE_MN_THREADS
-                        thread_sched_switch0(nt->nt_context, next_th, nt, false);
-
-                        // If a coroutine terminated during the transfer, co_start
-                        // recorded it in nt->dead_co (switch0's return value is
-                        // backend-dependent, unusable; see thread_pthread.h).
-                        struct coroutine_context *dead_co = nt->dead_co;
-                        nt->dead_co = NULL;
-                        if (thread_sched_reclaim(dead_co)) {
-                            // it already released the sched lock before its
-                            // transfer (its Ractor may be gone): leave sched be.
-                            locked = false;
-                        }
-#else
-                        thread_sched_switch0(nt->nt_context, next_th, nt, false);
-#endif
-                    }
-                    else {
-                        RUBY_DEBUG_LOG("no schedulable threads -- next_th:%p", next_th);
-                    }
-                }
-                if (locked) {
-                    thread_sched_unlock(sched, NULL);
-                }
-            }
-            else {
-                // ractor_sched_deq retired this nt.
-                retired = true;
-                break;
-            }
-
-            if (nt->dedicated) {
-                // SNT becomes DNT while running
-                break;
-            }
-        }
-    }
-
-    if (in_snts) {
-        // Leaving the shared loop: every path back here deregistered first
-        // (park and death both precede the transfer), so only the snts entry
-        // is left to remove.
-        VM_ASSERT(nt->running_th == NULL);
-        rb_native_mutex_lock(&vm->ractor.sched.ntlist.lock);
-        {
-            ccan_list_del_init(&nt->snts_node);
-        }
-        rb_native_mutex_unlock(&vm->ractor.sched.ntlist.lock);
-    }
-
-    if (retired) {
-        // The counts dropped this nt already; nothing can reference it now.
-        RUBY_DEBUG_LOG("retired nt:%u", nt->serial);
-        native_thread_destroy_self(nt);
     }
 
     return NULL;
 }
+
+// join the snt list that the barrier/timeslice scans walk
+static void
+nt_snts_join(rb_vm_t *vm, struct rb_native_thread *nt)
+{
+    rb_native_mutex_lock(&vm->ractor.sched.ntlist.lock);
+    {
+        ccan_list_add(&vm->ractor.sched.ntlist.snts, &nt->snts_node);
+    }
+    rb_native_mutex_unlock(&vm->ractor.sched.ntlist.lock);
+}
+
+// Leaving the shared loop: every path back here deregistered first
+// (park and death both precede the transfer), so only the snts entry
+// is left to remove.
+static void
+nt_snts_leave(rb_vm_t *vm, struct rb_native_thread *nt)
+{
+    VM_ASSERT(nt->running_th == NULL);
+    rb_native_mutex_lock(&vm->ractor.sched.ntlist.lock);
+    {
+        ccan_list_del_init(&nt->snts_node);
+    }
+    rb_native_mutex_unlock(&vm->ractor.sched.ntlist.lock);
+}
+
+// The shared nt's scheduling loop: serve Ractors from the grq until this nt
+// retires (returns true) or goes dedicated while running (returns false).
+static bool
+nt_shared_loop(struct rb_native_thread *nt)
+{
+    rb_vm_t *vm = nt->vm;
+
+    while (1) {
+        RUBY_DEBUG_LOG("check next");
+        if (nt->retiring) {   // came back with no room in the shared pool
+            return true;
+        }
+
+        // asked every time: a fork leaves this loop's native thread as the
+        // child's main one, which may not retire
+        rb_ractor_t *r = ractor_sched_deq(vm, NULL, native_thread_self_can_retire_p());
+
+        if (r) {
+            struct rb_thread_sched *sched = &r->threads.sched;
+
+            bool locked = true;
+
+            thread_sched_lock(sched, NULL);
+            {
+                rb_thread_t *next_th = sched->running;
+
+                if (next_th && next_th->nt == NULL) {
+                    RUBY_DEBUG_LOG("nt:%d next_th:%d", (int)nt->serial, (int)next_th->serial);
+#if USE_MN_THREADS
+                    thread_sched_switch0(nt->nt_context, next_th, nt, false);
+
+                    // If a coroutine terminated during the transfer, co_start
+                    // recorded it in nt->dead_co (switch0's return value is
+                    // backend-dependent, unusable; see thread_pthread.h).
+                    struct coroutine_context *dead_co = nt->dead_co;
+                    nt->dead_co = NULL;
+                    if (thread_sched_reclaim(dead_co)) {
+                        // it already released the sched lock before its
+                        // transfer (its Ractor may be gone): leave sched be.
+                        locked = false;
+                    }
+#else
+                    thread_sched_switch0(nt->nt_context, next_th, nt, false);
+#endif
+                }
+                else {
+                    RUBY_DEBUG_LOG("no schedulable threads -- next_th:%p", next_th);
+                }
+            }
+            if (locked) {
+                thread_sched_unlock(sched, NULL);
+            }
+        }
+        else {
+            // ractor_sched_deq retired this nt.
+            return true;
+        }
+
+        if (nt->dedicated) {
+            // SNT becomes DNT while running
+            return false;
+        }
+    }
+}
+
+#if USE_MN_THREADS
+// The scheduling loop of the process's main nt, entered when RUBY_MN_THREADS=2
+// turned it shared: the process stack belongs to the main thread's context,
+// so this loop runs on a coroutine of its own (thread_sched_main_to_shared).
+static COROUTINE
+nt_loop_co(struct coroutine_context *from, struct coroutine_context *self)
+{
+#ifdef RUBY_ASAN_ENABLED
+    __sanitizer_finish_switch_fiber(self->fake_stack,
+                                    (const void**)&from->stack_base, &from->stack_size);
+#endif
+    struct rb_native_thread *nt = (struct rb_native_thread *)self->argument;
+
+    // The first entry is a transfer that in nt_shared_loop would return from
+    // thread_sched_switch0: a parked thread left its sched lock held for the
+    // loop to release, or a terminated one (dead_co) released it itself.
+    struct coroutine_context *dead_co = nt->dead_co;
+    nt->dead_co = NULL;
+    if (!thread_sched_reclaim(dead_co)) {
+        rb_thread_t *parked_th = (rb_thread_t *)from->argument;
+        thread_sched_unlock(TH_SCHED(parked_th), NULL);
+    }
+
+    // as after a switch0 return: the thread may have pinned this nt
+    // (rb_thread_lock_native_thread) before it ended
+    if (!nt->dedicated) {
+        if (nt_shared_loop(nt)) rb_bug("main nt retired"); // native_thread_self_can_retire_p() is false here
+    }
+    nt_snts_leave(nt->vm, nt);
+
+    // Went dedicated while running (rb_thread_lock_native_thread) and that
+    // thread ended.  Nothing can resume this context; sleep out the process.
+    while (1) {
+        pause();
+    }
+}
+
+// RUBY_MN_THREADS=2: make the running main thread an M:N thread in place.
+// Its context becomes the process stack (as nt_start's own stack is an snt's
+// context) and its nt joins the shared pool with a fresh stack for its loop.
+// Nothing changes for the thread until it first blocks: that transfer
+// starts nt_loop_co on this nt, and any snt may resume the thread later.
+static void
+thread_sched_main_to_shared(rb_thread_t *th)
+{
+    rb_vm_t *vm = th->vm;
+    struct rb_native_thread *nt = th->nt;
+    struct rb_thread_sched *sched = TH_SCHED(th);
+
+    VM_ASSERT(th == vm->ractor.main_thread);
+    VM_ASSERT(nt->dedicated == 1 && th->has_dedicated_nt);
+    VM_ASSERT(sched->running == th);
+
+    // the loop's stack (the vm stack half of the pool slot goes unused)
+    void *vm_stack, *machine_stack;
+    int err = nt_alloc_stack(vm, &vm_stack, &machine_stack);
+    if (err) {
+        rb_warn("RUBY_MN_THREADS=2: cannot allocate the main nt's stack (%s); the main thread stays dedicated", strerror(err));
+        th->ractor->threads.sched.enable_mn_threads = true; // as =1
+        return;
+    }
+    size_t machine_stack_size = vm->default_params.thread_machine_stack_size - sizeof(struct nt_machine_stack_footer);
+    // the main nt is ZALLOC'd by Init_BareVM, not native_thread_alloc: no context yet
+    nt->nt_context = ruby_xmalloc(sizeof(struct coroutine_context));
+    coroutine_initialize(nt->nt_context, nt_loop_co, machine_stack, machine_stack_size);
+    nt->nt_context->argument = nt;
+
+    // the thread's context is the process stack it already runs on
+    struct rb_thread_context *tctx = ruby_xmalloc(sizeof(struct rb_thread_context));
+    tctx->stack = NULL; // not a pool stack: never freed
+    tctx->dead = false;
+    tctx->nt = NULL;
+    coroutine_initialize_main(&tctx->co);
+    tctx->co.argument = th;
+    th->sched.context = &tctx->co;
+
+    thread_sched_lock(sched, th);
+    {
+        // re-record the running thread as an snt's (running_dnts -> nt->running_th)
+        thread_sched_del_running_thread(sched, th);
+        nt->dedicated = 0;
+        th->has_dedicated_nt = 0;
+        nt_snts_join(vm, nt);
+        // the pool's first snt; under the lock native_thread_check_and_create_shared
+        // takes, so that it never mints one for the main Ractor alongside
+        ractor_sched_lock(vm, th->ractor);
+        {
+            // The pool is still empty: the timer thread has been up since
+            // Init_Thread and would mint one here, but its timeout branch is
+            // the only path there and it sleeps untimed with nothing waiting.
+            VM_ASSERT(RUBY_ATOMIC_LOAD(vm->ractor.sched.snt_cnt) == 0);
+            RUBY_ATOMIC_INC(vm->ractor.sched.snt_cnt);
+            th->ractor->threads.sched.enable_mn_threads = true;
+        }
+        ractor_sched_unlock(vm, th->ractor);
+#if USE_RUBY_DEBUG_LOG
+        vm->ractor.sched.dnt_cnt--;
+#endif
+        thread_sched_add_running_thread(sched, th);
+    }
+    thread_sched_unlock(sched, th);
+
+    RUBY_DEBUG_LOG("main th:%u on nt:%d is now shared", rb_th_serial(th), nt->serial);
+}
+#endif
 
 static int native_thread_create_shared(rb_thread_t *th);
 
@@ -2115,13 +2267,15 @@ rb_threadptr_sched_free(rb_thread_t *th)
 {
     timer_thread_wake_fence(th);
 #if USE_MN_THREADS
-    if (th->sched.malloc_stack) {
-        // has dedicated
-        SIZED_FREE_N((VALUE *)th->sched.context_stack, th->sched.context_stack_size);
-        native_thread_destroy(th->nt);
-    }
-    else if (th->sched.context != NULL) {
-        // a coroutine thread that never reached its epilogue (never started);
+    // A thread with a coroutine context runs on a native thread it shares and
+    // does not own: one made for the shared pool, or the main thread made
+    // shared.  nt->dedicated does not say so, rb_thread_lock_native_thread()
+    // raising it on a shared native thread that stays in the pool.
+    const bool owns_nt = th->sched.context == NULL;
+
+    if (th->sched.context != NULL) {
+        // a coroutine thread that never reached its epilogue (never started),
+        // or the main thread made shared (its stack is the process stack);
         // a terminated one is reclaimed by whoever resumed from its final
         // transfer (thread_sched_reclaim), and cleared this pointer.
         struct rb_thread_context *tctx = (struct rb_thread_context *)th->sched.context;
@@ -2129,6 +2283,12 @@ rb_threadptr_sched_free(rb_thread_t *th)
         SIZED_FREE(tctx);
         th->sched.context = NULL;
         // TODO: how to free nt and nt->altstack?
+    }
+    if (th->sched.malloc_stack) {
+        SIZED_FREE_N((VALUE *)th->sched.context_stack, th->sched.context_stack_size);
+        if (th->nt && owns_nt) {
+            native_thread_destroy(th->nt);
+        }
     }
 #else
     SIZED_FREE_N((VALUE *)th->sched.context_stack, th->sched.context_stack_size);
@@ -2467,6 +2627,31 @@ rb_thread_lock_native_thread(void)
     native_thread_dedicated_inc(th->vm, th->ractor, th->nt);
 
     return is_snt;
+}
+
+// rb_ractor_terminate_all() waits for the Ractors it interrupted on a condvar
+// of its own, holding the VM lock, which it drops for the wait and takes back
+// after.  An M:N thread would hold the shared native thread it runs on for the
+// whole wait as well, leaving those Ractors with nothing to run on, so give
+// that native thread back the way a blocking region does.
+void
+rb_ractor_sched_wait_terminate(rb_vm_t *vm, rb_nativethread_cond_t *cond, unsigned long msec)
+{
+    ASSERT_vm_locking();
+
+    rb_thread_t *th = GET_THREAD();
+    unsigned int lock_rec = vm->ractor.sync.lock_rec;
+    rb_ractor_t *lock_owner = vm->ractor.sync.lock_owner;
+
+    vm->ractor.sync.lock_rec = 0;
+    vm->ractor.sync.lock_owner = NULL;
+
+    native_thread_dedicated_inc(vm, th->ractor, th->nt);
+    rb_native_cond_timedwait(cond, &vm->ractor.sync.lock, msec);
+    native_thread_dedicated_dec(vm, th->ractor, th->nt);
+
+    vm->ractor.sync.lock_rec = lock_rec;
+    vm->ractor.sync.lock_owner = lock_owner;
 }
 
 void

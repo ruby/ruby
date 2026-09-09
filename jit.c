@@ -704,9 +704,9 @@ rb_jit_get_page_size(void)
 }
 
 #if defined(MAP_FIXED_NOREPLACE) && defined(_SC_PAGESIZE)
-// Align the current write position to a multiple of bytes
-static uint8_t *
-align_ptr(uint8_t *ptr, uint32_t multiple)
+// Round `ptr` up to the next multiple of `multiple` bytes. Shared with zjit.c.
+uint8_t *
+rb_jit_align_ptr(uint8_t *ptr, uint32_t multiple)
 {
     // Compute the pointer modulo the given alignment boundary
     uint32_t rem = ((uint32_t)(uintptr_t)ptr) % multiple;

@@ -66,7 +66,11 @@ use with other commands.
       end
     end
 
-    ss.map {|tuple, source| source.fetch_spec(tuple) }
+    fetcher.decode_content_addressable_tuples(ss).map do |tuple, source|
+      spec = source.fetch_spec(tuple)
+      spec.content_address = tuple.content_address if tuple.content_address
+      spec
+    end
   end
 
   def fetch_specs(name_pattern, requirement, prerelease) # :nodoc:
@@ -85,7 +89,7 @@ use with other commands.
 
     ensure_specs specs
 
-    specs.uniq.sort
+    specs.uniq(&:full_name).sort
   end
 
   def display_pipe(specs) # :nodoc:
@@ -148,9 +152,17 @@ use with other commands.
     terminate_interaction 1
   end
 
+  def content_address_annotation(spec) # :nodoc:
+    return "" unless Gem::ContentAddress.content_addressed?(spec)
+
+    parts = ["Platform: #{spec.platform}"]
+    parts << "Ruby ABI: #{spec.ruby_abi}" if spec.ruby_abi
+    " (#{parts.join(" ")})"
+  end
+
   def print_dependencies(spec, level = 0) # :nodoc:
     response = String.new
-    response << "  " * level + "Gem #{spec.full_name}\n"
+    response << "  " * level + "Gem #{spec.full_name}#{content_address_annotation(spec)}\n"
     unless spec.dependencies.empty?
       spec.dependencies.sort_by(&:name).each do |dep|
         response << "  " * level + "  #{dep}\n"

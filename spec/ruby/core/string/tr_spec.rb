@@ -15,6 +15,9 @@ describe "String#tr" do
     "123456789".tr("2-5","abcdefg").should == "1abcd6789"
     "hello ^-^".tr("e-", "__").should == "h_llo ^_^"
     "hello ^-^".tr("---", "_").should == "hello ^_^"
+    "hello ^-^".tr("-e", "_a").should == "hallo ^_^"
+    "hel-012".tr("--2", "a-f").should == "heladef"
+    "hel-()".tr("(--", "a-f").should == "helfab"
   end
 
   it "accepts c1-c1 notation to denote range of one character" do
@@ -29,12 +32,26 @@ describe "String#tr" do
     "hello".tr("a-z", "A-H.").should == "HE..."
   end
 
-  it "raises an ArgumentError a descending range in the replacement as containing just the start character" do
+  it "raises an ArgumentError when given wrong number of arguments" do
+    -> { "hello".tr }.should.raise(ArgumentError)
+    ruby_version_is ""..."4.1" do
+      -> { "hello".tr("a") }.should.raise(ArgumentError)
+    end
+    -> { "hello".tr("a", "b", "c") }.should.raise(ArgumentError)
+  end
+
+  it "raises an ArgumentError when the replacement contains a descending range" do
     -> { "hello".tr("a-y", "z-b") }.should.raise(ArgumentError)
   end
 
-  it "raises an ArgumentError a descending range in the source as empty" do
+  it "raises an ArgumentError when the source contains a descending range" do
     -> { "hello".tr("l-a", "z") }.should.raise(ArgumentError)
+  end
+
+  it "returns self (or a copy) when from_string or to_string is empty" do
+    "hello".tr("", "a").should == "hello"
+    "hello".tr("a", "").should == "hello"
+    "hello".tr("", "").should == "hello"
   end
 
   it "translates chars not in from_string when it starts with a ^" do
@@ -55,7 +72,7 @@ describe "String#tr" do
     "hello".tr("helo", "1212").should == "12112"
   end
 
-  it "tries to convert from_str and to_str to strings using to_str" do
+  it "tries to convert each argument to a string using to_str" do
     from_str = mock('ab')
     from_str.should_receive(:to_str).and_return("ab")
 
@@ -65,7 +82,7 @@ describe "String#tr" do
     "bla".tr(from_str, to_str).should == "BlA"
   end
 
-  it "returns Stringinstances when called on a subclass" do
+  it "returns String instances when called on a subclass" do
     StringSpecs::MyString.new("hello").tr("e", "a").should.instance_of?(String)
   end
 
@@ -93,9 +110,28 @@ describe "String#tr" do
     str.tr(a, b).should == "椎名深夏"
   end
 
-  it "raises Encoding::CompatibilityError when from_string or to_string parameters have an incompatible encoding" do
-    -> { "fée".tr("é".encode(Encoding::ISO_8859_1), "e") }.should.raise(Encoding::CompatibilityError)
-    -> { "fée".tr("e", "é".encode(Encoding::ISO_8859_1)) }.should.raise(Encoding::CompatibilityError)
+  it "respects backslash for escaping" do
+    "a-b".tr("a\\-b", "123").should == "123"
+    "^".tr("\\^", "1").should == "1"
+    "\\".tr("\\\\", "1").should == "1"
+  end
+
+  it "raises a TypeError when an argument can't be converted to a string" do
+    -> { "hello".tr(100, "a") }.should.raise(TypeError)
+    -> { "hello".tr("a", [])  }.should.raise(TypeError)
+  end
+
+  it "returns a String in the same encoding as self" do
+    "hello".encode("US-ASCII").tr("l", "r").encoding.should == Encoding::US_ASCII
+  end
+
+  it "raises an Encoding::CompatibilityError when the encodings are incompatible" do
+    -> { "hello".tr("e".encode("UTF-16LE"), "a") }.should.raise(Encoding::CompatibilityError)
+    -> { "hello".encode("UTF-16LE").tr("e", "a") }.should.raise(Encoding::CompatibilityError)
+  end
+
+  it "deletes the characters in from_str if to_str is empty" do
+    "hello".tr("el", "").should == "ho"
   end
 
   ruby_version_is "4.1" do

@@ -673,6 +673,7 @@ pub enum SideExitReason {
     NoProfileGetIvar,
     NoProfileSetIvar,
     InvokeBlockNotIfunc,
+    OnceNotDone,
 }
 
 /// Marks a side exit as triggering profiling and recompilation.
@@ -2522,6 +2523,22 @@ impl<'a> FunctionPrinter<'a> {
         let mut printer = Self::without_snapshot(fun);
         printer.display_snapshot_and_tp_patchpoints = true;
         printer
+    }
+}
+
+/// Write a HIR dump to the file given by --zjit-dump-hir=some_directory, or to stdout if no path
+/// was given.
+fn print_hir_dump(label: &str, body: &dyn std::fmt::Display) {
+    match crate::options::get_option_ref!(dump_hir_file) {
+        Some(path) => {
+            use std::io::Write;
+            let result = std::fs::OpenOptions::new().create(true).append(true).open(path)
+                .and_then(|mut file| writeln!(file, "{label}:\n{body}"));
+            if let Err(e) = result {
+                eprintln!("ZJIT: Failed to write HIR dump to '{}': {}", path.display(), e);
+            }
+        }
+        None => println!("{label}:\n{body}"),
     }
 }
 
@@ -7488,9 +7505,9 @@ impl Function {
     pub fn dump_hir(&self) {
         // Dump HIR after optimization
         match get_option!(dump_hir_opt) {
-            Some(DumpHIR::WithoutSnapshot) => println!("Optimized HIR:\n{}", FunctionPrinter::without_snapshot(self)),
-            Some(DumpHIR::All) => println!("Optimized HIR:\n{}", FunctionPrinter::with_snapshot(self)),
-            Some(DumpHIR::Debug) => println!("Optimized HIR:\n{:#?}", &self),
+            Some(DumpHIR::WithoutSnapshot) => print_hir_dump("Optimized HIR", &FunctionPrinter::without_snapshot(self)),
+            Some(DumpHIR::All) => print_hir_dump("Optimized HIR", &FunctionPrinter::with_snapshot(self)),
+            Some(DumpHIR::Debug) => print_hir_dump("Optimized HIR", &format_args!("{:#?}", self)),
             None => {},
         }
     }
@@ -9388,6 +9405,20 @@ fn add_iseq_to_hir(
                         }
                     }
                 }
+                YARVINSN_once => {
+                    let iseq: *const rb_iseq_t = get_arg(pc, 0).as_ptr();
+                    let ise: *mut iseq_inline_storage_entry = get_arg(pc, 1).as_mut_ptr();
+                    debug_assert!(!iseq.is_null());
+                    debug_assert!(!ise.is_null());
+                    let mut value = Qnil;
+                    if unsafe { rb_vm_once_done_value(ise, &mut value) } {
+                        let val = fun.push_insn(block, Insn::Const { val: Const::Value(value) });
+                        state.stack_push(val);
+                    } else {
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: Box::new(SideExitReason::OnceNotDone), recompile: Some(Recompile) });
+                        break;  // End the block
+                    }
+                }
                 YARVINSN_branchunless | YARVINSN_branchunless_without_ints => {
                     let offset = get_arg(pc, 0).as_i64();
                     if opcode == YARVINSN_branchunless && offset < 0 {
@@ -10744,9 +10775,9 @@ fn add_iseq_to_hir(
         fun.infer_types();
 
         match get_option!(dump_hir_init) {
-            Some(DumpHIR::WithoutSnapshot) => println!("Initial HIR:\n{}", FunctionPrinter::without_snapshot(fun)),
-            Some(DumpHIR::All) => println!("Initial HIR:\n{}", FunctionPrinter::with_snapshot(fun)),
-            Some(DumpHIR::Debug) => println!("Initial HIR:\n{:#?}", fun),
+            Some(DumpHIR::WithoutSnapshot) => print_hir_dump("Initial HIR", &FunctionPrinter::without_snapshot(fun)),
+            Some(DumpHIR::All) => print_hir_dump("Initial HIR", &FunctionPrinter::with_snapshot(fun)),
+            Some(DumpHIR::Debug) => print_hir_dump("Initial HIR", &format_args!("{:#?}", fun)),
             None => {},
         }
     }

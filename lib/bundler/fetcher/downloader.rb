@@ -51,6 +51,11 @@ module Bundler
           response
         when Gem::Net::HTTPRedirection
           new_uri = Gem::URI.parse(response["location"])
+          # Following a downgrade would put the credentials this request carries
+          # on a plaintext connection, so refuse it like Gem::RemoteFetcher does.
+          if https?(uri) && !https?(new_uri)
+            raise HTTPError, "Redirecting to a non-https URI is not allowed: #{URICredentialsFilter.credential_filtered_uri(new_uri)}"
+          end
           if new_uri.host == uri.host
             new_uri.user = uri.user
             new_uri.password = uri.password
@@ -118,6 +123,10 @@ module Bundler
         host = host_port if filtered_uri.to_s.include?(host_port)
         NetworkDownError.new("Could not reach host #{host}. Check your network " \
           "connection and try again.")
+      end
+
+      def https?(uri)
+        uri.scheme&.casecmp("https")&.zero?
       end
 
       def validate_uri_scheme!(uri)

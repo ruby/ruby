@@ -26,6 +26,27 @@ class TestWait < Test::Unit::TestCase
     RUBY
   end
 
+  def test_wait_for_invalid_fd_in_ractor
+    # Threads of a Ractor always run on the M:N scheduler, whose readiness
+    # probe must not report a closed fd as ready.
+    assert_ractor(<<~'RUBY')
+      error = Ractor.new do
+        r, w = IO.pipe
+        r.close
+        IO.for_fd(w.fileno).close
+
+        begin
+          w.wait_writable
+          nil
+        rescue SystemCallError => e
+          e.class
+        end
+      end.value
+
+      assert_equal Errno::EBADF, error
+    RUBY
+  end
+
   def test_wait_for_closed_pipe
     IO.pipe do |r,w|
       w.close

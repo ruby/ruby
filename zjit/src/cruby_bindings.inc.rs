@@ -1649,6 +1649,7 @@ pub type vm_special_object_type = u32;
 pub type IC = *mut iseq_inline_constant_cache;
 pub type IVC = *mut iseq_inline_iv_cache_entry;
 pub type ICVARC = *mut iseq_inline_cvar_cache_entry;
+pub type ISE = *mut iseq_inline_storage_entry;
 pub const VM_FRAME_MAGIC_METHOD: vm_frame_env_flags = 286326785;
 pub const VM_FRAME_MAGIC_BLOCK: vm_frame_env_flags = 572653569;
 pub const VM_FRAME_MAGIC_CLASS: vm_frame_env_flags = 858980353;
@@ -2446,6 +2447,7 @@ unsafe extern "C" {
     pub fn rb_profile_frame_full_label(frame: VALUE) -> VALUE;
     pub fn rb_jit_cont_each_iseq(callback: rb_iseq_callback, data: *mut ::std::os::raw::c_void);
     pub static rb_zjit_runtime_offsets: rb_zjit_runtime_offsets;
+    pub fn rb_zjit_reserve_low_addr_space(size: usize) -> *mut ::std::os::raw::c_void;
     pub fn rb_zjit_profile_disable(iseq: *const rb_iseq_t);
     pub fn rb_zjit_insn_to_bare_insn(insn: ::std::os::raw::c_int) -> ::std::os::raw::c_int;
     pub fn rb_vm_base_ptr(cfp: *mut rb_control_frame_struct) -> *mut VALUE;
@@ -2475,6 +2477,7 @@ unsafe extern "C" {
     pub fn rb_zjit_class_has_default_allocator(klass: VALUE) -> bool;
     pub fn rb_vm_untag_block_handler(block_handler: VALUE) -> VALUE;
     pub fn rb_vm_get_untagged_block_handler(reg_cfp: *mut rb_control_frame_t) -> VALUE;
+    pub fn rb_vm_once_done_value(is: ISE, result: *mut VALUE) -> bool;
     pub fn rb_iseq_encoded_size(iseq: *const rb_iseq_t) -> ::std::os::raw::c_uint;
     pub fn rb_iseq_pc_at_idx(iseq: *const rb_iseq_t, insn_idx: u32) -> *mut VALUE;
     pub fn rb_iseq_opcode_at_pc(iseq: *const rb_iseq_t, pc: *const VALUE) -> ::std::os::raw::c_int;

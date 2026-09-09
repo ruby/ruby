@@ -1359,16 +1359,14 @@ pm_check_value_expression(pm_parser_t *parser, pm_node_t *node) {
                 node = UP(cast->statements);
                 break;
             }
-            case PM_AND_NODE: {
-                pm_and_node_t *cast = (pm_and_node_t *) node;
-                node = cast->left;
-                break;
-            }
-            case PM_OR_NODE: {
-                pm_or_node_t *cast = (pm_or_node_t *) node;
-                node = cast->left;
-                break;
-            }
+            case PM_AND_NODE:
+            case PM_OR_NODE:
+                // The left operand of an and/or node was already checked for a
+                // value when the node was created, so descending into it again
+                // would re-report the same void value and, in a chain such as
+                // `a && a && ...`, walk the whole left branch on every operator,
+                // which is quadratic in the length of the chain.
+                return NULL;
             case PM_LOCAL_VARIABLE_WRITE_NODE: {
                 pm_local_variable_write_node_t *cast = (pm_local_variable_write_node_t *) node;
 
@@ -9064,7 +9062,7 @@ escape_write_escape_encoded(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_
     }
 
     if (width == 1) {
-        if (*parser->current.end == '\n') pm_line_offset_list_append(&parser->metadata_arena, &parser->line_offsets, PM_TOKEN_END(parser, &parser->current) + 1);
+        if (parser->heredoc_end == NULL && *parser->current.end == '\n') pm_line_offset_list_append(&parser->metadata_arena, &parser->line_offsets, PM_TOKEN_END(parser, &parser->current) + 1);
         escape_write_byte(parser, buffer, regular_expression_buffer, flags, escape_byte(*parser->current.end++, flags));
     } else if (width > 1) {
         // Valid multibyte character.  Just ignore escape.
@@ -9381,7 +9379,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
                         return;
                     }
 
-                    if (peeked == '\n') pm_line_offset_list_append(&parser->metadata_arena, &parser->line_offsets, PM_TOKEN_END(parser, &parser->current) + 1);
+                    if (parser->heredoc_end == NULL && peeked == '\n') pm_line_offset_list_append(&parser->metadata_arena, &parser->line_offsets, PM_TOKEN_END(parser, &parser->current) + 1);
                     parser->current.end++;
                     escape_write_byte(parser, buffer, regular_expression_buffer, flags, escape_byte(peeked, flags | PM_ESCAPE_FLAG_CONTROL));
                     return;
@@ -9440,7 +9438,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
                         return;
                     }
 
-                    if (peeked == '\n') pm_line_offset_list_append(&parser->metadata_arena, &parser->line_offsets, PM_TOKEN_END(parser, &parser->current) + 1);
+                    if (parser->heredoc_end == NULL && peeked == '\n') pm_line_offset_list_append(&parser->metadata_arena, &parser->line_offsets, PM_TOKEN_END(parser, &parser->current) + 1);
                     parser->current.end++;
                     escape_write_byte(parser, buffer, regular_expression_buffer, flags, escape_byte(peeked, flags | PM_ESCAPE_FLAG_CONTROL));
                     return;
@@ -9494,7 +9492,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
                         return;
                     }
 
-                    if (peeked == '\n') pm_line_offset_list_append(&parser->metadata_arena, &parser->line_offsets, PM_TOKEN_END(parser, &parser->current) + 1);
+                    if (parser->heredoc_end == NULL && peeked == '\n') pm_line_offset_list_append(&parser->metadata_arena, &parser->line_offsets, PM_TOKEN_END(parser, &parser->current) + 1);
                     parser->current.end++;
                     escape_write_byte(parser, buffer, regular_expression_buffer, flags, escape_byte(peeked, flags | PM_ESCAPE_FLAG_META));
                     return;
@@ -9502,7 +9500,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expre
         }
         case '\r': {
             if (peek_offset(parser, 1) == '\n') {
-                pm_line_offset_list_append(&parser->metadata_arena, &parser->line_offsets, PM_TOKEN_END(parser, &parser->current) + 2);
+                if (parser->heredoc_end == NULL) pm_line_offset_list_append(&parser->metadata_arena, &parser->line_offsets, PM_TOKEN_END(parser, &parser->current) + 2);
                 parser->current.end += 2;
                 escape_write_byte_encoded(parser, buffer, flags, escape_byte('\n', flags));
                 return;

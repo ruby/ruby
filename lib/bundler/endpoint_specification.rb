@@ -5,24 +5,33 @@ module Bundler
   class EndpointSpecification < Gem::Specification
     include MatchRemoteMetadata
 
-    attr_reader :name, :version, :platform, :checksum, :created_at
+    attr_reader :name, :version, :platform, :checksum, :created_at, :content_address
     attr_writer :dependencies
     attr_accessor :remote, :locked_platform
 
-    def initialize(name, version, platform, spec_fetcher, dependencies, metadata = nil)
+    def initialize(name, version, suffix, spec_fetcher, dependencies, metadata = nil)
       super()
       @name         = name
       @version      = Gem::Version.create version
-      @platform     = Gem::Platform.new(platform)
       @spec_fetcher = spec_fetcher
       @dependencies = nil
       @unbuilt_dependencies = dependencies
+      @content_address = nil
+      @required_platform = nil
 
       @loaded_from          = nil
       @remote_specification = nil
       @locked_platform = nil
 
       parse_metadata(metadata)
+
+      if Gem::ContentAddress.content_addressed_row?(suffix, @required_platform, @required_ruby_version)
+        @content_address = suffix
+        @platform = @required_platform
+        @required_rubygems_version ||= Gem::Requirement.default
+      else
+        @platform = Gem::Platform.new(suffix)
+      end
     end
 
     def insecurely_materialized?
@@ -147,11 +156,13 @@ module Bundler
     private
 
     def _remote_specification
-      @_remote_specification ||= @spec_fetcher.fetch_spec([@name, @version, @platform])
+      suffix = @content_address || @platform
+      @_remote_specification ||= @spec_fetcher.fetch_spec([@name, @version, suffix])
     end
 
     def local_specification_path
-      "#{base_dir}/specifications/#{full_name}.gemspec"
+      File.join(Gem::SpecificationRecord.specification_dir_for(self, base_dir),
+                "#{full_name}.gemspec")
     end
 
     def parse_metadata(data)
@@ -183,6 +194,8 @@ module Bundler
           @required_ruby_version = Gem::Requirement.new(v)
         when "created_at"
           @created_at = parse_created_at(v.is_a?(Array) ? v.last : v)&.freeze
+        when "platform"
+          @required_platform = required_platform_from(Array(v).last)
         end
       end
     rescue StandardError => e
@@ -214,6 +227,13 @@ module Bundler
 
     def build_dependency(name, requirements)
       Dependency.new(name, requirements)
+    end
+
+    def required_platform_from(value)
+      value = value.to_s
+      return if value.empty?
+
+      Gem::Platform.new(value)
     end
   end
 end

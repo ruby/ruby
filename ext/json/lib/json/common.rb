@@ -143,11 +143,11 @@ module JSON
   # This exception is raised if a parser error occurs.
   class ParserError < JSONError
     # Line number where the parser encountered an error.
-    # Is <tt>nil</tt> when raised by JSON::ResumableParser.
+    # Is +nil+ when raised by JSON::ResumableParser.
     attr_reader :line
 
     # Column number where the parser encountered an error.
-    # Is <tt>nil</tt> when raised by JSON::ResumableParser.
+    # Is +nil+ when raised by JSON::ResumableParser.
     attr_reader :column
 
     # Returns a best effort JSONPath string representing where in the document
@@ -290,7 +290,7 @@ module JSON
   # ---
   #
   # Raises an exception if +source+ is not valid JSON:
-  #   # Raises JSON::ParserError unexpected character: 'invalid' at line 1 column 1 :
+  #   # Raises JSON::ParserError (unexpected character: 'invalid' at line 1 column 1):
   #   JSON.parse('invalid')
   #
   def parse(source, on_load: nil, object_class: nil, array_class: nil, **options)
@@ -324,8 +324,8 @@ module JSON
   #   parse(File.read(path), **)
   #
   # See method #parse.
-  def load_file(filespec, ...)
-    parse(File.read(filespec, encoding: Encoding::UTF_8), ...)
+  def load_file(filespec, **options)
+    parse(File.read(filespec, encoding: Encoding::UTF_8), **options)
   end
 
   # :call-seq:
@@ -335,8 +335,8 @@ module JSON
   #   JSON.parse!(File.read(path), **)
   #
   # See method #parse!
-  def load_file!(filespec, ...)
-    parse!(File.read(filespec, encoding: Encoding::UTF_8), ...)
+  def load_file!(filespec, **options)
+    parse!(File.read(filespec, encoding: Encoding::UTF_8), **options)
   end
 
   # :call-seq:
@@ -372,7 +372,7 @@ module JSON
   #
   # Raises an exception if +obj+ contains circular references:
   #   a = []; b = []; a.push(b); b.push(a)
-  #   # Raises JSON::NestingError (nesting of 100 is too deep):
+  #   # Raises JSON::NestingError (nesting of 100 is too deep. Did you try to serialize objects with circular references?):
   #   JSON.generate(a)
   #
   def generate(obj, opts = nil)
@@ -726,16 +726,14 @@ module JSON
   end
 
   # :call-seq:
-  #   JSON.dump(obj, io = nil, options = nil)
+  #   JSON.dump(obj, io = nil, _deprecated_limit = nil, options = nil)
   #
   # Dumps +obj+ as a \JSON string, i.e. calls generate on the object and returns the result.
-  #
-  # The default options can be changed via method JSON.dump_default_options.
   #
   # - Argument +io+, if given, should respond to method +write+;
   #   the \JSON \String is written to +io+, and +io+ is returned.
   #   If +io+ is not given, the \JSON \String is returned.
-  #
+  # - Argument +_deprecated_limit+ is deprecated, pass the +:max_nesting+ option instead.
   # ---
   #
   # When argument +io+ is not given, returns the \JSON \String generated from +obj+:
@@ -751,21 +749,31 @@ module JSON
   #   puts File.read(path)
   # Output:
   #   {"foo":[0,1],"bar":{"baz":2,"bat":3},"bam":"bad"}
-  def dump(obj, anIO = nil, kwargs = nil)
+  def dump(obj, anIO = nil, _deprecated_limit = nil, kwargs = nil)
     if kwargs.nil?
-      if anIO.is_a?(Hash)
-        kwargs = anIO
-        anIO = nil
+      if _deprecated_limit.nil?
+        if anIO.is_a?(Hash)
+          kwargs = anIO
+          anIO = nil
+        end
+      elsif _deprecated_limit.is_a?(Hash)
+        kwargs = _deprecated_limit
+        _deprecated_limit = nil
       end
     end
 
-    if anIO&.respond_to?(:to_io)
-      anIO = anIO.to_io
+    unless anIO.nil?
+      if anIO.respond_to?(:to_io)
+        anIO = anIO.to_io
+      elsif _deprecated_limit.nil? && !anIO.respond_to?(:write)
+        anIO, _deprecated_limit = nil, anIO
+      end
     end
 
     opts = {
       allow_nan: true,
     }
+    opts[:max_nesting] = _deprecated_limit if _deprecated_limit
     opts.merge!(kwargs) if kwargs
 
     State.generate(obj, opts, anIO)
@@ -804,9 +812,9 @@ module JSON
     private_constant :EXCLUDED_GENERATOR_OPTIONS
 
     # :call-seq:
-    #   JSON.new(options = nil, &block)
+    #   JSON::Coder.new(**options, &block)
     #
-    # Argument +options+, if given, contains a \Hash of options for both parsing and generating.
+    # Keyword arguments +options+, if given, are options for both parsing and generating.
     # See {Parsing Options}[rdoc-ref:JSON@Parsing+Options],
     # and {Generating Options}[rdoc-ref:JSON@Generating+Options].
     #

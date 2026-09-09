@@ -275,7 +275,7 @@ module Bundler
 
     def all_versions_for(package)
       name = package.name
-      results = (@base[name] + filter_specs(@all_specs[name], package)).uniq {|spec| [spec.version.hash, spec.platform] }
+      results = (@base[name] + filter_specs(@all_specs[name], package)).uniq {|spec| [spec.version.hash, spec.platform, spec.content_address] }
 
       if name == "bundler" && !bundler_pinned_to_current_version?
         bundler_spec = Gem.loaded_specs["bundler"]

@@ -276,6 +276,7 @@ fn main() {
         .allowlist_function("rb_callable_method_entry")
         .allowlist_function("rb_callable_method_entry_or_negative")
         .allowlist_function("rb_vm_frame_method_entry")
+        .allowlist_function("rb_vm_once_done_value")
         .allowlist_type("IVC") // pointer to iseq_inline_iv_cache_entry
         .allowlist_type("IC")  // pointer to iseq_inline_constant_cache
         .allowlist_type("iseq_inline_constant_cache_entry")
@@ -308,6 +309,7 @@ fn main() {
         .allowlist_function("rb_iseq_opcode_at_pc")
         .allowlist_function("rb_iseq_bare_opcode_at_pc")
         .allowlist_function("rb_jit_reserve_addr_space")
+        .allowlist_function("rb_zjit_reserve_low_addr_space")
         .allowlist_function("rb_jit_mark_writable")
         .allowlist_function("rb_jit_mark_executable")
         .allowlist_function("rb_jit_mark_unused")

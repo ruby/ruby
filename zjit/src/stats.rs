@@ -156,6 +156,7 @@ make_counters! {
     default {
         compiled_iseq_count,
         failed_iseq_count,
+        jit_frame_heap_bytes,
         skipped_native_stack_full,
 
         compile_time_ns,
@@ -251,6 +252,7 @@ make_counters! {
         exit_directive_induced,
         exit_send_while_tracing,
         exit_invokeblock_not_ifunc,
+        exit_once_not_done,
     }
 
     // Send fallback counters that are summed as dynamic_send_count
@@ -673,6 +675,7 @@ pub fn side_exit_counter(reason: crate::hir::SideExitReason) -> Counter {
         NoProfileGetIvar              => exit_no_profile_getivar,
         NoProfileSetIvar              => exit_no_profile_setivar,
         InvokeBlockNotIfunc           => exit_invokeblock_not_ifunc,
+        OnceNotDone                   => exit_once_not_done,
     }
 }
 
@@ -859,10 +862,12 @@ pub extern "C" fn rb_zjit_stats(_ec: EcPtr, _self: VALUE, target_key: VALUE) -> 
     }
 
     // Memory usage stats
+    let jit_frame_region_bytes = ZJITState::get_jit_frame_allocator().map_or(0, |allocator| allocator.mapped_bytes());
     let code_region_bytes = ZJITState::get_code_block().mapped_region_size();
+    set_stat_usize!(hash, "jit_frame_region_bytes", jit_frame_region_bytes);
     set_stat_usize!(hash, "code_region_bytes", code_region_bytes);
     set_stat_usize!(hash, "zjit_alloc_bytes", zjit_alloc_bytes());
-    set_stat_usize!(hash, "total_mem_bytes", code_region_bytes + zjit_alloc_bytes());
+    set_stat_usize!(hash, "total_mem_bytes", code_region_bytes + jit_frame_region_bytes + zjit_alloc_bytes());
 
     // End of default stats. Every counter beyond this is provided only for --zjit-stats.
     if !get_option!(stats) {

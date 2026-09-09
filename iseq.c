@@ -436,7 +436,7 @@ rb_iseq_mark_and_move(rb_iseq_t *iseq, bool reference_updating)
                 }
 
                 if (reference_updating) {
-                    rb_gc_move_ptr(&cds[i].cc);
+                    rb_gc_update_moved_ptr(&cds[i].cc);
                 }
                 else {
                     if (cc_is_active(cc)) {

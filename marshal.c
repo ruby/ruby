@@ -1971,6 +1971,11 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE klass, VALUE ex
 
                 if (TYPE(v) != TYPE(tmp)) goto format_error;
             }
+            if (RB_TYPE_P(v, T_STRUCT) &&
+                RSTRUCT_LEN_RAW(v) != RARRAY_LEN(rb_struct_s_members(c))) {
+                rb_raise(rb_eTypeError, "struct %"PRIsVALUE" not compatible (struct size differs)",
+                         rb_class_name(c));
+            }
             RBASIC_SET_CLASS(v, c);
         }
         break;

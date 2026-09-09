@@ -282,7 +282,7 @@ struct rb_data_type_struct {
          * ::rb_data_type_struct::dmark, you need to  update references to Ruby
          * objects inside of your structs.
          *
-         * @see      rb_gc_location()
+         * @see      rb_gc_update_moved(), rb_gc_location()
          * @warning  This  is called  during GC  runs.  Object  allocations are
          *           impossible at that moment (that is why GC runs).
          */

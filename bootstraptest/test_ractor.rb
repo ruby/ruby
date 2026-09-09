@@ -2863,3 +2863,31 @@ assert_equal '[[0, 1, 2], [:a, :b]]', %q{
   6.times { GC.start }
   [taken.map(&:receive), [closed.receive, closed.receive]]
 }
+
+# Closing a port wakes a receiver waiting on it, with or without a timeout.
+assert_equal '[:closed, :closed]', %q{
+  untimed = Ractor::Port.new
+  th = Thread.new do
+    begin
+      untimed.receive
+    rescue Ractor::ClosedError
+      :closed
+    end
+  end
+  Thread.pass until th.status == 'sleep'
+  untimed.close
+  untimed_result = th.value # before the next close, which would wake it too
+
+  timed = Ractor::Port.new
+  th2 = Thread.new do
+    begin
+      timed.receive(timeout: 10)
+    rescue Ractor::ClosedError
+      :closed
+    end
+  end
+  Thread.pass until th2.status == 'sleep'
+  timed.close
+
+  [untimed_result, th2.value]
+}

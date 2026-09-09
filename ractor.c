@@ -1181,7 +1181,7 @@ rb_ractor_terminate_all(void)
             // wait for 1sec
             rb_vm_ractor_blocking_cnt_inc(vm, cr, __FILE__, __LINE__);
             rb_del_running_thread(rb_ec_thread_ptr(cr->threads.running_ec));
-            rb_vm_cond_timedwait(vm, &vm->ractor.sync.terminate_cond, 1000 /* ms */);
+            rb_ractor_sched_wait_terminate(vm, &vm->ractor.sync.terminate_cond, 1000 /* ms */);
             while (vm->ractor.sched.barrier_is_waiting) {
                 // A barrier is waiting. Threads relinquish the VM lock before joining the barrier and
                 // since we just acquired the VM lock back, we're blocking other threads from joining it.
@@ -2528,16 +2528,46 @@ move_neutralize_source(VALUE obj)
     bool wipe_body = true;
     switch (BUILTIN_TYPE(obj)) {
       case T_STRING:
+        if (!STR_EMBED_P(obj) && !rb_str_reembeddable_p(obj)) {
+            /* A heap (non-embedded), shared root string keeps its buffer because
+             * other strings reference this shared root. It needs to keep T_STRING
+             * because otherwise the GC will not free the buffer when this object
+             * dies which will leak memory. */
+            RBASIC_SET_CLASS_RAW(obj, rb_cRactorMovedObject);
+            RBASIC(obj)->flags |= FL_FREEZE;
+            RBASIC_SET_FULL_SHAPE_ID(obj, (shape_id & ~SHAPE_ID_LAYOUT_MASK) | SHAPE_ID_LAYOUT_OTHER);
+            RSTRING(obj)->len = 0;
+            return;
+        }
         wipe_body = !rb_str_embedded_shared_root_p(obj);
         break;
       case T_ARRAY:
+        if (!ARY_EMBED_P(obj) && !ARY_SHARED_P(obj) && (ARY_SHARED_ROOT_P(obj) || OBJ_FROZEN(obj))) {
+            /* A heap (non-embedded), shared root array keeps its buffer because
+             * other arrays reference this shared root. It needs to keep T_ARRAY
+             * because otherwise the GC will not free the buffer when this object
+             * dies which will leak memory. */
+            RBASIC_SET_CLASS_RAW(obj, rb_cRactorMovedObject);
+            RBASIC(obj)->flags |= FL_FREEZE;
+            RBASIC_SET_FULL_SHAPE_ID(obj, (shape_id & ~SHAPE_ID_LAYOUT_MASK) | SHAPE_ID_LAYOUT_OTHER);
+            if (!ARY_SHARED_ROOT_P(obj)) {
+                /* Present as empty to stale readers.  Not for a shared root: its
+                 * len doubles as the buffer capacity that ARY_HEAP_SIZE frees by. */
+                RARRAY(obj)->as.heap.len = 0;
+            }
+            return;
+        }
         wipe_body = !rb_ary_embedded_shared_root_p(obj);
         break;
       default:
         break;
     }
 
-    VALUE flags = T_OBJECT | FL_FREEZE | (RBASIC(obj)->flags & FL_PROMOTED);
+    /* Keep FL_FINALIZE: the finalizer table entry stays keyed on this slot, and a
+     * shell without the flag makes the two disagree (rb_gc_impl_shutdown_call_finalizer_i
+     * asserts on it).  The finalizer runs when the shell dies, in the Ractor that
+     * defined it; the rebuilt object gets fresh flags and does not inherit it. */
+    VALUE flags = T_OBJECT | FL_FREEZE | (RBASIC(obj)->flags & (FL_PROMOTED | FL_FINALIZE));
     /* Read the slot size before the header is rewritten. */
     size_t slot_size = rb_gc_obj_slot_size(obj);
     RBASIC_SET_CLASS_RAW(obj, rb_cRactorMovedObject);

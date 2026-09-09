@@ -1,9 +1,11 @@
 # frozen_string_literal: false
 # fallback to console window size
 def IO.default_console_size
+  lines = ENV["LINES"].to_i
+  columns = ENV["COLUMNS"].to_i
   [
-    ENV["LINES"].to_i.nonzero? || 25,
-    ENV["COLUMNS"].to_i.nonzero? || 80,
+    lines.positive? ? lines : 25,
+    columns.positive? ? columns : 80,
   ]
 end
 

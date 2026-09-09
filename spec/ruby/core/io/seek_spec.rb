@@ -88,6 +88,13 @@ describe "IO#seek" do
       @io.seek(1, IO::SEEK_SET)
       @io.getc.should == "o".encode(Encoding::UTF_16LE)
     end
+
+    it "clears the character buffer even when ungotten characters exceed consumed characters" do
+      @io.getc.should == "V"
+      @io.ungetc("123456")
+      @io.seek(1, IO::SEEK_SET)
+      @io.getc.should == "o"
+    end
   end
 
   platform_is :darwin do
