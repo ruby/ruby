@@ -11,7 +11,7 @@ use crate::options::debug;
 use crate::virtualmem::CodePtr;
 
 /// Write an entry to the perf map in /tmp.
-pub(crate) fn register_with_perf(symbol_name: String, start_ptr: usize, code_size: usize) {
+pub(crate) fn register(symbol_name: String, start_ptr: usize, code_size: usize) {
     use std::io::Write;
     let perf_map = format!("/tmp/perf-{}.map", std::process::id());
     let Ok(file) = std::fs::OpenOptions::new().create(true).append(true).open(&perf_map) else {
@@ -27,55 +27,55 @@ pub(crate) fn register_with_perf(symbol_name: String, start_ptr: usize, code_siz
 
 /// Register the code emitted from `start` through the current write pointer
 /// under `symbol_name` in the perf map, if perf output is enabled.
-pub(crate) fn register_current_code_range_with_perf(cb: &CodeBlock, symbol_name: &str, start: CodePtr) {
+pub(crate) fn register_current_code_range(cb: &CodeBlock, symbol_name: &str, start: CodePtr) {
     if get_option!(perf).is_some() {
         let start_ptr = start.raw_addr(cb);
         let end_ptr = cb.get_write_ptr().raw_addr(cb);
-        register_with_perf(symbol_name.to_string(), start_ptr, end_ptr - start_ptr);
+        register(symbol_name.to_string(), start_ptr, end_ptr - start_ptr);
     }
 }
 
-pub(crate) type PerfSymbol = Rc<RefCell<Option<(CodePtr, String)>>>;
+type SymbolRange = Rc<RefCell<Option<(CodePtr, String)>>>;
 
 /// Start a HIR perf symbol range when --zjit-perf=hir is enabled.
-pub(crate) fn hir_perf_symbol_range_start(asm: &mut Assembler, insn: &Insn) -> Option<PerfSymbol> {
+pub(crate) fn hir_symbol_range_start(asm: &mut Assembler, insn: &Insn) -> Option<SymbolRange> {
     if get_option!(perf) == Some(PerfMap::HIR) {
         let insn_name = format!("{insn}").split_whitespace().next().unwrap().to_string();
-        Some(perf_symbol_range_start(asm, &insn_name))
+        Some(symbol_range_start(asm, &insn_name))
     } else {
         None
     }
 }
 
 /// Mark the start of a perf symbol range via pos_marker.
-/// Returns a handle to pass to perf_symbol_range_end.
-pub(crate) fn perf_symbol_range_start(asm: &mut Assembler, symbol_name: &str) -> PerfSymbol {
+/// Returns a handle to pass to `symbol_range_end`.
+pub(crate) fn symbol_range_start(asm: &mut Assembler, symbol_name: &str) -> SymbolRange {
     let symbol_name = symbol_name.to_string();
-    let perf_symbol: PerfSymbol = Rc::new(RefCell::new(None));
-    let current = perf_symbol.clone();
+    let symbol_range: SymbolRange = Rc::new(RefCell::new(None));
+    let current = symbol_range.clone();
     asm.pos_marker(move |start, _| {
         let mut current = current.borrow_mut();
         assert!(current.is_none(), "perf symbol range already open");
         *current = Some((start, symbol_name.clone()));
     });
-    perf_symbol
+    symbol_range
 }
 
 /// Mark the end of a perf symbol range via pos_marker.
-pub(crate) fn perf_symbol_range_end(asm: &mut Assembler, perf_symbol: &PerfSymbol) {
-    let current = perf_symbol.clone();
+pub(crate) fn symbol_range_end(asm: &mut Assembler, symbol_range: &SymbolRange) {
+    let current = symbol_range.clone();
     asm.pos_marker(move |end, cb| {
         if let Some((start, name)) = current.borrow_mut().take() {
             let start_addr = start.raw_addr(cb);
             let code_size = end.raw_addr(cb) - start_addr;
-            register_with_perf(name, start_addr, code_size);
+            register(name, start_addr, code_size);
         }
     });
 }
 
 /// Mark the end of a perf symbol range at the end of the current LIR block.
-pub(crate) fn perf_symbol_range_end_at_block_end(asm: &mut Assembler, perf_symbol: &PerfSymbol) {
-    let current = perf_symbol.clone();
+pub(crate) fn symbol_range_end_at_block_end(asm: &mut Assembler, symbol_range: &SymbolRange) {
+    let current = symbol_range.clone();
     asm.pos_marker_at_block_end(move |end, cb| {
         if let Some((start, name)) = current.borrow_mut().take() {
             let start_addr = start.raw_addr(cb);
@@ -84,7 +84,7 @@ pub(crate) fn perf_symbol_range_end_at_block_end(asm: &mut Assembler, perf_symbo
             // linear block, leaving no code between the range start and the
             // block-end marker. Skip zero-sized perf map entries.
             if start_addr < end_addr {
-                register_with_perf(name, start_addr, end_addr - start_addr);
+                register(name, start_addr, end_addr - start_addr);
             }
         }
     });
