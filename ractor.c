@@ -813,6 +813,12 @@ rb_ractor_terminate_atfork(rb_vm_t *vm, rb_ractor_t *r)
     r->status_ = ractor_terminated;
     // a termination epilogue in the parent did not survive the fork
     r->threads.dying_th = NULL;
+    if (!rb_gc_multi_objspace_p()) {
+        ccan_list_del(&r->vmlr_node);
+        ccan_list_add(&vm->ractor.terminated_set, &r->vmlr_node);
+        r->in_terminated_set = true;
+    }
+
     /* In a forked child every other Ractor is terminated-unjoined, so keep its objspace
      * enumerable until a join or a global GC merges it. */
     if (r->objspace) {

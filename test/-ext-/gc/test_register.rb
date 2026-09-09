@@ -57,6 +57,38 @@ class Test_GCRegisterAddress < Test::Unit::TestCase
     Bug::GC.unregister_static
   end
 
+  def test_ractor_registered_value_survives_fork
+    omit "fork not supported" unless Process.respond_to?(:fork)
+    assert_separately([], <<~'RUBY')
+      Warning[:experimental] = false
+      require '-test-/gc/register'
+
+      port = Ractor::Port.new
+      # Not joined: the registration must stay with the dead Ractor until
+      # ractor_free, and keeping r referenced prevents an early ractor_free.
+      r = Ractor.new(port) { |port|
+        Bug::GC.register_static("MARKER" * 10)
+        port.send(:ok)
+      }
+      port.receive
+
+      err = "#{ENV['TMPDIR'] || '/tmp'}/reg_fork_#{Process.pid}.log"
+      pid = fork do
+        $stderr.reopen(err, "w")
+        GC.start
+        100_000.times { "x" * 100 }
+        exit!(Bug::GC.static_slot_eq?("MARKER" * 10) ? 0 : 1)
+      end
+      _, status = Process.wait2(pid)
+      unless status.success?
+        detail = File.exist?(err) ? File.read(err) : ""
+        flunk(detail.empty? ? "registered value lost after fork+GC (#{status})" : detail)
+      end
+      File.unlink(err)
+      r.value  # joins only after the scenario ran; keeps the wrapper alive until then
+    RUBY
+  end
+
   def test_verify_internal_consistency_with_ractor_stored_values
     omit "needs GC.verify_internal_consistency" unless GC.respond_to?(:verify_internal_consistency)
     Bug::GC.register_static(0)

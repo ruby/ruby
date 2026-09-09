@@ -76,6 +76,13 @@ gc_static_slot_value(VALUE self)
 }
 
 static VALUE
+gc_static_slot_eq(VALUE self, VALUE v)
+{
+    if (!RB_TYPE_P(static_slot, T_STRING) || !RB_TYPE_P(v, T_STRING)) return Qfalse;
+    return rb_str_equal(static_slot, v);
+}
+
+static VALUE
 gc_assign_static(VALUE self, VALUE v)
 {
     static_slot = v;
@@ -95,4 +102,5 @@ Init_register(void)
     rb_define_singleton_method(mGC, "unregister_static", gc_unregister_static, 0);
     rb_define_singleton_method(mGC, "static_slot_value", gc_static_slot_value, 0);
     rb_define_singleton_method(mGC, "assign_static", gc_assign_static, 1);
+    rb_define_singleton_method(mGC, "static_slot_eq?", gc_static_slot_eq, 1);
 }
