@@ -409,12 +409,29 @@ fn main() {
         // Unwrap the Result and panic on failure.
         .expect("Unable to generate bindings");
 
+    // Write to a Vec for post-processing
+    let mut bindings_string = Vec::new();
+    bindings.write(Box::new(&mut bindings_string)).expect("Couldn't write bindings!");
+    let mut bindings_string = String::from_utf8(bindings_string).expect("bindings should be UTF-8");
+
+    // Give some generated type aliases an integer type that is nicer to use from
+    // Rust than the one bindgen derives from C.
+    const TYPE_REPLACEMENTS: &[(&str, &str)] = &[
+        // usize is what VALUE() takes, so flag masks need no cast at their use sites
+        ("pub type ruby_rstruct_flags = u32;", "pub type ruby_rstruct_flags = usize;"),
+    ];
+    // Each needle is a whole line of the output, so plain replacement is unambiguous.
+    // Yes, this search-and-replace could be faster, but it's a small file.
+    for (needle, replacement) in TYPE_REPLACEMENTS {
+        assert!(bindings_string.contains(needle), "no line to replace: {needle}");
+        bindings_string = bindings_string.replace(needle, replacement);
+    }
+
+    // Write out to file
     let mut out_path: PathBuf = src_root;
     out_path.push("yjit");
     out_path.push("src");
     out_path.push("cruby_bindings.inc.rs");
 
-    bindings
-        .write_to_file(out_path)
-        .expect("Couldn't write bindings!");
+    std::fs::write(out_path, bindings_string).expect("file output failed");
 }
