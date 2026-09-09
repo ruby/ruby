@@ -119,7 +119,12 @@ rb_load_gem_prelude(VALUE box)
 void
 rb_load_prelude(VALUE box)
 {
-    load_with_builtin_functions("prelude", NULL, (const rb_box_t *)box);
+    // A non-NULL table is what makes ibf_load_iseq complete the method iseqs
+    // eagerly, which rb_method_definition_set relies on under USE_LAZY_LOAD.
+    static const struct rb_builtin_function prelude_table[] = {
+        RB_BUILTIN_FUNCTION(-1, NULL, NULL, 0),
+    };
+    load_with_builtin_functions("prelude", prelude_table, (const rb_box_t *)box);
 }
 
 #endif
