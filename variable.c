@@ -1024,6 +1024,13 @@ rb_gvar_set_entry(struct rb_global_entry *entry, VALUE val)
 static inline bool
 gvar_use_box_tbl(const rb_box_t *box, const struct rb_global_entry *entry)
 {
+    /* The main box has to behave like a non-box Ruby, so a variable defined
+     * from C keeps its single C storage there.  Optional boxes get a copy. */
+    if (BOX_MAIN_P(box) &&
+        entry->var->setter != rb_gvar_undef_setter &&
+        entry->var->setter != rb_gvar_val_setter)
+        return false;
+
     return BOX_USER_P(box) &&
         !entry->var->box_dynamic &&
         (!entry->var->box_ready || entry->var->setter != rb_gvar_readonly_setter);
