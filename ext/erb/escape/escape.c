@@ -223,7 +223,7 @@ find_next_neon(search_state *search)
 #endif // HAVE_SIMD_NEON
 
 #ifndef find_next
-#define find_next_basic
+#define find_next find_next_basic
 #endif
 
 static VALUE
