@@ -916,8 +916,7 @@ fn inline_class_superclass(fun: &mut hir::Function, block: hir::BlockId, recv: h
     // compile-time constant.
     let recv_class = fun.type_of(recv).ruby_object()?;
     if !unsafe { RB_TYPE_P(recv_class, RUBY_T_CLASS) } { return None; }
-    // rb_class_superclass raises TypeError on an uninitialized class (Class.allocate); leave
-    // that case to the fallback call.
+    // rb_class_superclass raises TypeError on an uninitialized class (Class.allocate); don't fold.
     if recv_class != unsafe { rb_cBasicObject } && unsafe { rb_class_get_superclass(recv_class) } == VALUE(0) {
         return None;
     }
