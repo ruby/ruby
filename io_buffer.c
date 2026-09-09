@@ -176,22 +176,6 @@ io_buffer_map_file(struct rb_io_buffer *buffer, int descriptor, size_t size, rb_
 }
 
 static void
-io_buffer_experimental(void)
-{
-    static int warned = 0;
-
-    if (warned) return;
-
-    warned = 1;
-
-    if (rb_warning_category_enabled_p(RB_WARN_CATEGORY_EXPERIMENTAL)) {
-        rb_category_warn(RB_WARN_CATEGORY_EXPERIMENTAL,
-          "IO::Buffer is experimental and both the Ruby and C interface may change in the future!"
-        );
-    }
-}
-
-static void
 io_buffer_zero(struct rb_io_buffer *buffer)
 {
     buffer->base = NULL;
@@ -508,8 +492,6 @@ io_buffer_extract_offset_length(VALUE self, int argc, VALUE argv[], size_t *offs
 VALUE
 rb_io_buffer_type_allocate(VALUE self)
 {
-    io_buffer_experimental();
-
     struct rb_io_buffer *buffer = NULL;
     VALUE instance = TypedData_Make_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
 
@@ -4411,10 +4393,6 @@ static const rb_memory_view_entry_t io_buffer_memory_view_entry = {
  *    # => 3 -- bytes written
  *    File.read('test.txt')
  *    # => "t--- data"
- *
- *  <b>The class is experimental and the interface is subject to change, this
- *  is especially true of file mappings which may be removed entirely in
- *  the future.</b>
  */
 void
 Init_IO_Buffer(void)

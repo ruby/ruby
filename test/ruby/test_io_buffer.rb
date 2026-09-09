@@ -7,14 +7,6 @@ require '-test-/io_buffer'
 require "-test-/memory_view"
 
 class TestIOBuffer < Test::Unit::TestCase
-  experimental = Warning[:experimental]
-  begin
-    Warning[:experimental] = false
-    IO::Buffer.new(0)
-  ensure
-    Warning[:experimental] = experimental
-  end
-
   def assert_negative(value)
     assert(value < 0, "Expected #{value} to be negative!")
   end
@@ -25,6 +17,12 @@ class TestIOBuffer < Test::Unit::TestCase
 
   def test_version
     assert_equal 3, IO::Buffer::VERSION
+  end
+
+  def test_not_experimental
+    assert_warning("") do
+      IO::Buffer.new(0)
+    end
   end
 
   def test_flags
