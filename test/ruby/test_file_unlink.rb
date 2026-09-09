@@ -194,5 +194,37 @@ class TestFileUnlinkRecursive < Test::Unit::TestCase
       assert_equal(1, File.unlink(path.tr('/', '\\') + '\\', recursive: true))
       assert_file.not_exist?(path)
     end
+
+    def test_windows_readonly_file
+      path = File.join(@root, 'tree')
+      Dir.mkdir(path)
+      File.write("#{path}/file", 'content')
+      File.chmod(0o444, "#{path}/file")
+      assert_equal(1, File.unlink(path, recursive: true))
+      assert_file.not_exist?(path)
+    end
+
+    def test_windows_sharing_violation
+      path = File.join(@root, 'file')
+      File.write(path, 'content')
+      File.open(path, File::RDONLY | File::SHARE_DELETE) do |file|
+        assert_raise(Errno::EACCES) {File.unlink(path, recursive: true)}
+        assert_equal('content', file.read)
+      end
+      assert_equal(1, File.unlink(path, recursive: true))
+    end
+
+    def test_windows_junction
+      target = File.join(@root, 'outside')
+      link = File.join(@root, 'link')
+      Dir.mkdir(target)
+      File.write("#{target}/keep", 'content')
+      assert(system('mklink', '/J', link.tr('/', '\\'), target.tr('/', '\\'),
+                    out: File::NULL, err: File::NULL))
+      assert_raise(Errno::ENOTDIR) {File.unlink("#{link}/keep", recursive: true)}
+      assert_equal('content', File.read("#{target}/keep"))
+      assert_equal(1, File.unlink(link, recursive: true))
+      assert_equal('content', File.read("#{target}/keep"))
+    end
   end
 end

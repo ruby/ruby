@@ -96,7 +96,8 @@ int flock(int, int);
 #endif
 #endif
 
-#if defined(HAVE_DIRENT_H) && !defined(_WIN32)
+#ifndef _WIN32
+#if defined(HAVE_DIRENT_H)
 # include <dirent.h>
 #elif defined(HAVE_DIRECT_H) && !defined(_WIN32)
 # include <direct.h>
@@ -111,6 +112,7 @@ int flock(int, int);
 # elif defined(HAVE_NDIR_H)
 #  include <ndir.h>
 # endif
+#endif
 #endif
 
 #if defined(HAVE_SYS_TIME_H)
@@ -4450,6 +4452,13 @@ unlink_internal(const char *path, void *arg)
     return unlink(path);
 }
 
+#ifdef _WIN32
+static int
+unlink_recursive_internal(const char *path, void *arg)
+{
+    return rb_w32_uunlink_recursive(path);
+}
+#else
 struct unlink_tree {
     DIR *dir;
     struct unlink_tree *parent;
@@ -4788,6 +4797,8 @@ unlink_recursive_internal(const char *path, void *arg)
 }
 #endif
 
+#endif
+
 /*
  *  :markup: markdown
  *
@@ -4842,8 +4853,14 @@ unlink_recursive_internal(const char *path, void *arg)
  *  that is moved during traversal may still have its contents removed through
  *  its descriptor.
  *  Concurrent changes can cause an exception after partial removal.
- *  The root directory and paths ending in +.+ or +..+ are rejected.
- *  Mounted filesystems within a tree are traversed.
+ *  The root directory and paths ending in `.` or `..` are rejected.
+ *  On non-Windows platforms, mounted filesystems within a tree are traversed.
+ *
+ *  On Windows, directories are opened with sharing disabled and are removed
+ *  through their handles. Ancestor directories are also kept open; reparse
+ *  points in the ancestor path are rejected. A reparse point at or within
+ *  the removal target is removed without traversing it. Existing handles
+ *  that conflict with exclusive access cause a sharing violation.
  *
  *  Other platforms use path-based traversal, similar to FileUtils.remove_entry.
  *  This fallback cannot prevent following a symbolic link substituted for a
