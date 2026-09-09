@@ -29,6 +29,7 @@ mod backend;
 #[cfg(feature = "disasm")]
 mod disasm;
 mod options;
+mod perf;
 mod profile;
 mod invariants;
 mod bitset;

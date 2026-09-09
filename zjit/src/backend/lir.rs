@@ -5,7 +5,7 @@ use std::fmt;
 use std::mem::take;
 use std::rc::Rc;
 use crate::bitset::BitSet;
-use crate::codegen::{perf_symbol_range_start, perf_symbol_range_end, register_with_perf};
+use crate::perf::{perf_symbol_range_end, perf_symbol_range_start, register_with_perf};
 use crate::cruby::{IseqPtr, RUBY_OFFSET_CFP_ISEQ, RUBY_OFFSET_CFP_JIT_RETURN, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32, VALUE, ZJIT_STACK_MAP_BASE_PTR_INDEX_MASK, ZJIT_STACK_MAP_BASE_PTR_SIZE_SHIFT, ZJIT_STACK_MAP_BASE_PTR_TAG, ZJIT_STACK_MAP_SHIFT, ZJIT_STACK_MAP_SKIP_TAG, ZJIT_STACK_MAP_VREG_TAG, vm_stack_canary, YarvInsnIdx, zjit_jit_frame, local_size_and_idx_to_ep_offset};
 use crate::hir::{Invariant, SideExitReason};
 use crate::hir;
