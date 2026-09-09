@@ -285,6 +285,12 @@ free_classext_for_box(st_data_t key, st_data_t _value, st_data_t box_arg)
     VALUE obj = (VALUE)key;
     const rb_box_t *box = (const rb_box_t *)box_arg;
 
+    if (RB_TYPE_P(obj, T_NONE)) {
+        /* RUBY_FREE_AT_EXIT can free a class before the box that refers to
+         * it, and freeing a class already freed its classext for this box. */
+        return ST_CONTINUE;
+    }
+
     if (RB_TYPE_P(obj, T_CLASS) || RB_TYPE_P(obj, T_MODULE)) {
         ext = rb_class_unlink_classext(obj, box);
         rb_class_classext_free(obj, ext, false);
