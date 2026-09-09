@@ -3976,7 +3976,7 @@ fn gen_function_stub(cb: &mut CodeBlock, iseq_call: IseqCallRef) -> Result<CodeP
     // If the stubbed ISEQ fails to compile, function_stub_hit exits to the
     // interpreter with this callee frame. Direct JIT-to-JIT calls pass arguments
     // in C argument registers and the rest on the native stack, so spill the
-    // packed argument locals first. The fallback path will reshape these around
+    // packed argument locals first. prepare_for_exit() will reshape these around
     // any optional positional gaps.
     let argc = iseq_call.argc.to_usize();
     let local_size = unsafe { get_iseq_body_local_table_size(iseq_call.iseq.get()) }.to_usize();
