@@ -227,6 +227,7 @@ class Ractor
   #    #=> #<Ractor:#3 my ractor test.rb:1 terminated>
   #
   def self.new(*args, name: nil, &block)
+    Primitive.attr! :caller_user_box
     b = block # TODO: builtin bug
     raise ArgumentError, "must be called with a block" unless block
     if __builtin_cexpr!("RBOOL(ruby_single_main_ractor)")

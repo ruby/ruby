@@ -1311,6 +1311,16 @@ class TestBox < Test::Unit::TestCase
     end;
   end
 
+  def test_ractor_copies_arguments_in_the_caller_box
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      Warning[:experimental] = false
+      require "date"
+      d = Date.parse("Aug 23:55")
+      assert_equal d, Ractor.new(d) {|x| x }.value
+    end;
+  end
+
   def test_boxes_have_different_rubygems
     # assert_separately w/ ENV_ENABLE_BOX and --enable=gems causes timeouts on CI @ Windows
     assert_in_out_err([ENV_ENABLE_BOX, "--enable=gems"], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
