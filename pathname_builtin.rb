@@ -1830,7 +1830,7 @@ class Pathname    # * File *
   # call-seq:
   #   stat -> stat
   #
-  # Returns a new File::Stat object for the entry at the path inb `self`.
+  # Returns a new File::Stat object for the entry at the path in `self`.
   # Follows [symbolic links](file/symbolic_links.md);
   # therefore if the entry is a symbolic link,
   # the returned object contains information for the target entry, not the symbolic link:
