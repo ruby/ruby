@@ -3244,7 +3244,7 @@ impl Assembler
             self.pos_marker(move |start_pos, cb| {
                 let end_pos = cb.get_write_ptr();
                 let size = end_pos.as_offset() - start_pos.as_offset();
-                crate::stats::incr_counter_by(crate::stats::Counter::side_exit_size, size as u64);
+                crate::stats::incr_counter_by(crate::stats::Counter::side_exit_size_bytes, size as u64);
             });
         }
 

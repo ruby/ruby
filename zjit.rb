@@ -87,7 +87,7 @@ class << RubyVM::ZJIT
       stats[:guard_shape_exit_ratio] = stats[:exit_guard_shape_failure].to_f / stats[:guard_shape_count] * 100
     end
     if stats[:code_region_bytes]&.nonzero?
-      stats[:side_exit_size_ratio] = stats[:side_exit_size].to_f / stats[:code_region_bytes] * 100
+      stats[:side_exit_size_ratio] = stats[:side_exit_size_bytes].to_f / stats[:code_region_bytes] * 100
     end
     if stats[:compile_time_ns]&.nonzero?
       stats[:compile_side_exit_time_ratio] = stats[:compile_side_exit_time_ns].to_f / stats[:compile_time_ns] * 100
@@ -184,7 +184,7 @@ class << RubyVM::ZJIT
 
       :throw_count,
 
-      :side_exit_size,
+      :side_exit_size_bytes,
       :side_exit_size_ratio,
       :jit_frame_heap_bytes,
       :jit_frame_region_bytes,
