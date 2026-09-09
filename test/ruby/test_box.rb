@@ -884,14 +884,14 @@ class TestBox < Test::Unit::TestCase
     setup_box
 
     # Define a class in the box via eval
-    @box.eval("class TestClass; def hello; 'from box'; end; end")
+    @box.eval("class BoxEvalTestClass; def hello; 'from box'; end; end")
 
     # Class should be accessible in the box
-    instance = @box::TestClass.new
+    instance = @box::BoxEvalTestClass.new
     assert_equal "from box", instance.hello
 
     # Class should not be visible in main box
-    assert_raise(NameError) { TestClass }
+    assert_raise(NameError) { BoxEvalTestClass }
   end
 
   def test_eval_isolation
