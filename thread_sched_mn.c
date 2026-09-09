@@ -919,6 +919,11 @@ nt_free_stack(void *mstack)
     rb_native_mutex_unlock(&nt_machine_stack_lock);
 }
 
+static bool
+mn_threads_enabled_p(void)
+{
+    return mn_threads_mode >= 0;
+}
 
 static int
 native_thread_check_and_create_shared(rb_vm_t *vm)

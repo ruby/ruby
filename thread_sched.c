@@ -109,13 +109,6 @@ static void timer_thread_wakeup_force(void);
 // 1 = the main Ractor's threads too; 2 = the main thread as well.
 static int mn_threads_mode = 0;
 
-// Only consulted from USE_MN_THREADS code; the platform gate is not defined yet here.
-static bool
-mn_threads_enabled_p(void)
-{
-    return mn_threads_mode >= 0;
-}
-
 static void nt_snts_join(rb_vm_t *vm, struct rb_native_thread *nt);
 static void nt_snts_leave(rb_vm_t *vm, struct rb_native_thread *nt);
 static bool nt_shared_loop(struct rb_native_thread *nt);
