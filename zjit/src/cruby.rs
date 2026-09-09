@@ -678,7 +678,7 @@ impl VALUE {
     pub fn struct_embedded_p(self) -> bool {
         unsafe {
             RB_TYPE_P(self, RUBY_T_STRUCT) &&
-            FL_TEST_RAW(self, VALUE(RSTRUCT_EMBED_LEN_MASK as usize)) != VALUE(0)
+            FL_TEST_RAW(self, VALUE(RSTRUCT_EMBED_LEN_MASK)) != VALUE(0)
         }
     }
 
