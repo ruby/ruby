@@ -92,6 +92,9 @@ static void clean_hooks(rb_hook_list_t *list);
 void
 rb_hook_list_free(rb_hook_list_t *hooks)
 {
+    for (rb_event_hook_t *hook = hooks->hooks; hook; hook = hook->next) {
+        hook->hook_flags |= RUBY_EVENT_HOOK_FLAG_DELETED;
+    }
     hooks->need_clean = true;
 
     if (hooks->running == 0) {
