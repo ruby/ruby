@@ -1021,7 +1021,6 @@ static const char szInternalCmds[][InternalCmdsMax+2] = {
     "\1" "lock",
     "\3" "md",
     "\3" "mkdir",
-    "\2" "mklink",
     "\2" "move",
     "\3" "path",
     "\3" "pause",

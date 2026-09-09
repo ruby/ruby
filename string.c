@@ -9327,17 +9327,14 @@ tr_trans_pairs_search_basic(struct tr_trans_pairs_search *search)
 }
 
 #ifdef HAVE_SIMD_SSE2
-static inline bool
+static inline VALUE
 tr_trans_pairs_next_match_sse2(struct tr_trans_pairs_search *search)
 {
     size_t next_match_offset = ntz_int32(search->matches_bitmap);
     search->matches_bitmap >>= (next_match_offset + 1);
     search->s += next_match_offset;
-    if (search->s > search->send) {
-        search->s = search->send;
-        return false;
-    }
-    return true;
+    RUBY_ASSERT(search->s <= search->send);
+    return search->trans_table[*search->s];
 }
 
 static inline VALUE
@@ -9385,17 +9382,14 @@ tr_trans_pairs_search_sse2(struct tr_trans_pairs_search *search)
 #endif
 
 #ifdef HAVE_SIMD_NEON
-static inline bool
+static inline VALUE
 tr_trans_pairs_next_match_neon(struct tr_trans_pairs_search *search)
 {
     size_t next_match_offset = ntz_int64(search->matches_bitmap) / 4;
     search->matches_bitmap >>= (next_match_offset + 1) * 4;
     search->s += next_match_offset;
-    if (search->s > search->send) {
-        search->s = search->send;
-        return false;
-    }
-    return true;
+    RUBY_ASSERT(search->s <= search->send);
+    return search->trans_table[*search->s];
 }
 
 static inline VALUE
@@ -9529,6 +9523,7 @@ tr_trans_pairs(VALUE str, VALUE pairs_val)
                     continue;
                 }
             }
+            RUBY_ASSERT(RB_TYPE_P(repl, T_STRING));
 
             modify = true;
 
