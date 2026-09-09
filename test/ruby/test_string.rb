@@ -2688,6 +2688,11 @@ CODE
     assert_equal(S("XYC"), S("ABC").tr("A-AB", "XY"))
   end
 
+  def test_tr_hash
+    assert_equal S(("A"*16  + "x" + "B"*3)), S(("A"*16  + "<" + "B"*3)).tr({"<"=>"x"})
+    assert_equal S(("x"+"A"*16 + "B"*3)), S(("<"+"A"*16 + "B"*3)).tr({"<"=>"x"})
+  end
+
   def test_tr!
     a = S("hello")
     b = a.dup
