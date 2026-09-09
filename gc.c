@@ -2052,17 +2052,14 @@ os_obj_of(VALUE of)
  *  Because every live object is visited, this method is mainly useful for
  *  debugging, profiling, and introspecting a running process.
  *
- *  Due to a current Ractor implementation issue, this method does not yield
- *  Ractor-unshareable objects when the process is in multi-Ractor mode.
- *  Multi-Ractor mode is enabled when Ractor.new has been called for the first
- *  time. See https://bugs.ruby-lang.org/issues/19387 for more information.
+ *  In multi-Ractor mode this method yields every object of the current Ractor, plus
+ *  the objects of the other Ractors that have been made Ractor-shareable.  Another
+ *  Ractor's unshareable objects are never yielded: they belong to that Ractor and the
+ *  current one must not touch them.
  *
- *     a = 12345678987654321 # shareable
- *     b = [].freeze         # shareable
- *     c = {}                # not shareable
- *     ObjectSpace.each_object {|x| x } # yields a, b, and c
- *     Ractor.new {}                    # enter multi-Ractor mode
- *     ObjectSpace.each_object {|x| x } # does not yield c
+ *     c = {}                            # not shareable, belongs to the main Ractor
+ *     r = Ractor.new { d = {}; receive } # d belongs to r
+ *     ObjectSpace.each_object {|x| x }  # yields c, but not d
  *
  */
 
