@@ -327,9 +327,21 @@ Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for det
 
 ### Ractor-scoped GC address registration
 
-* `rb_gc_register_address` and `rb_global_variable` now registers the address directly with the 
-  calling Ractor. Each Ractor's GC only marks objects whose addresses it registered itself, so 
-  native extensions must only use this API from the Ractor that owns the object being registered.
+* `rb_gc_register_address` and `rb_global_variable` now register the address
+  with the calling Ractor, and only that Ractor's GC marks the stored object.
+
+  Any Ractor may register an address, but the value stored through it must be a
+  special constant, a shareable object, or an unshareable object owned by the
+  registering Ractor. Storing another Ractor's unshareable object can result in
+  the object being freed while the address still refers to it (use-after-free).
+
+  If the address has process lifetime (a static VALUE), register it from the
+  main Ractor or keep the stored values shareable. 
+
+  When the registering Ractor is joined, remaining registrations move to the
+  joining Ractor.
+
+  [[Feature #22277]]
 
 ### Removed APIs
 
