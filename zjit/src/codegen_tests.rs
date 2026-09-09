@@ -1315,7 +1315,7 @@ fn test_function_stub_exit_initializes_block_param() {
         # stub hit fails with OutOfMemory and falls back to the interpreter.
         body = (0...400).map { |k| "u#{k} = #{k} + n" }.join("
 ")
-        # Using a bmethod makes &blk observable on the captured EP rather than a block handler.
+        # Using a bmethod forces a Proc allocation for &blk in the EP at call time
         Integer.class_eval <<~BMETHOD
           define_method(:zjit_blk_callee) do |n, &blk|
             #{body}
