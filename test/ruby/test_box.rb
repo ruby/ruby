@@ -866,7 +866,7 @@ class TestBox < Test::Unit::TestCase
   end
 
   def test_verbose_nil_silences_warnings_in_box
-    assert_in_out_err([ENV_ENABLE_BOX, "--disable=gems"], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
+    assert_in_out_err([ENV_ENABLE_BOX, "--disable=gems", "-W:experimental"], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
       begin;
         old, $VERBOSE = $VERBOSE, nil
         warn "silenced"
