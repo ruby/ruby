@@ -533,7 +533,9 @@ class TestBox < Test::Unit::TestCase
   def test_add_constants_in_box
     setup_box
 
-    @box.require('envutil')
+    # A new box copies the master box's $LOAD_PATH, so the tool/lib entry that
+    # tool/test/init.rb adds to the main box at boot is not visible here.
+    @box.require(File.expand_path("../../tool/lib/envutil", __dir__))
 
     String.const_set(:STR_CONST0, 999)
     assert_equal 999, String::STR_CONST0
