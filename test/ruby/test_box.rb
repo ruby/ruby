@@ -1455,4 +1455,18 @@ class TestBox < Test::Unit::TestCase
       Module.new.include?(Module.new)
     end;
   end
+
+  def test_builtin_module_copied_into_box_survives_gc_stress
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      GC.stress = true
+      module Enumerable
+        def _test_defined_in_main_box; end
+      end
+      GC.start
+      GC.stress = false
+
+      assert_include Enumerable.instance_methods(false), :_test_defined_in_main_box
+    end;
+  end
 end
