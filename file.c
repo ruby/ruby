@@ -5178,6 +5178,16 @@ rb_check_realpath_emulate(VALUE basedir, VALUE path, rb_encoding *origenc, enum 
     char *ptr, *prefixptr = NULL, *pend;
     long len;
 
+#ifdef DOSISH_DRIVE_LETTER
+    RSTRING_GETMEM(path, ptr, len);
+    if (len >= 2 && has_drive_letter(ptr) && (len == 2 || !isdirsep(ptr[2]))) {
+        /* Expand a drive-relative path against the current directory
+         * of the drive, as File.expand_path does */
+        path = rb_file_expand_path(path, basedir);
+        basedir = Qnil;
+    }
+#endif
+
     unresolved_path = rb_str_dup_frozen(path);
 
     if (!NIL_P(basedir)) {
