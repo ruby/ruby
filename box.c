@@ -175,7 +175,9 @@ box_entry_initialize(rb_box_t *box)
     box->box_object = 0;
     box->box_id = 0;
 
-    box->top_self = rb_obj_alloc(rb_cObject);
+    // Clone the master top self so that the box gets the top-level singleton
+    // methods (include, using, public, private, ...) defined during setup.
+    box->top_self = rb_obj_clone(master->top_self);
     rb_define_singleton_method(box->top_self, "to_s", box_main_to_s, 0);
     rb_define_alias(rb_singleton_class(box->top_self), "inspect", "to_s");
     box->load_path = rb_ary_dup(master->load_path);
@@ -1030,6 +1032,10 @@ rb_initialize_mandatory_boxes(void)
 
     vm->root_box = root_box = rb_get_box_t(root_box_value);
     vm->main_box = main_box = rb_get_box_t(main_box_value);
+
+    // `main` stays one object for the process as it is without boxes, so
+    // that extending it is visible to a load that wraps it.
+    root_box->top_self = main_box->top_self = master_box->top_self;
 
     // create the writable classext of ::Object explicitly to finalize the set of visible top-level constants
     RCLASS_EXT_WRITABLE_IN_BOX(rb_cObject, root_box);
