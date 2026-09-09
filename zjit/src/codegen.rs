@@ -3983,6 +3983,7 @@ fn gen_function_stub(cb: &mut CodeBlock, iseq_call: IseqCallRef) -> Result<CodeP
 
     // Mirror the argument layout of gen_send_direct: self, then the packed
     // positional arguments, and the block handler if it exists.
+    // TODO: Unify the argument order to avoid having to manually keep in sync
     let params = unsafe { iseq_call.iseq.get().params() };
     let block_spill = (params.flags.has_block() != 0).then(|| {
         let block_local_idx: usize = params.block_start.try_into()
