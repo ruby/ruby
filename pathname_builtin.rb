@@ -1859,7 +1859,7 @@ class Pathname    # * File *
   #  Returns a File::Stat object for the entry at the path in `self`.
   #  Follows [symbolic links](file/symbolic_links.md);
   #  therefore if the entry is a symbolic link,
-  #  the returned object contains information for the target entry, not the symbolic link:  #
+  #  the returned object contains information for the target entry, not the symbolic link:
   #
   #  ```ruby
   #  file_pn = Pathname('README.md')
