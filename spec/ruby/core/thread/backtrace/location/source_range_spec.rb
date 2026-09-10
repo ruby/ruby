@@ -371,14 +371,13 @@ ruby_version_is "4.1" do
       end
       RUBY
 
-      # Aborts the test process on CRuby's CI with ZJIT
-      # "interpolated symbol" => [<<-RUBY, :InterpolatedSymbolNode],
-      # value = Object.new
-      # def value.to_s
-      #   (+"\\xFF").force_encoding(Encoding::UTF_8)
-      # end
-      # %I[$\#{value}$]
-      # RUBY
+      "interpolated symbol" => [<<-RUBY, :InterpolatedSymbolNode],
+      value = Object.new
+      def value.to_s
+      (+"\\xFF").force_encoding(Encoding::UTF_8)
+      end
+      %I[$\#{value}$]
+      RUBY
     }.each_pair do |description, (source, prism_class, frame)|
       it "returns the precise range for #{description}" do
         capture_backtrace_location_source_range(source, prism_class, frame: frame || 0)
