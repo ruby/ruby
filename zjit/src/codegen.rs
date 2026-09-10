@@ -3744,6 +3744,8 @@ c_callable! {
     /// The first exit invalidates the version right away. Invalidation resets the
     /// ISEQ's call counter and re-stubs incoming JIT-to-JIT calls, so every entry
     /// runs the profiling window in the interpreter before the next compile.
+    ///
+    /// TODO: Allow waiting for a configured number of exits before invalidating the ISEQ.
     pub(crate) fn exit_recompile(compiled_iseq_raw: VALUE) {
         // Fast check before taking the VM lock: skip if the compiled unit is already
         // invalidated or at the version limit. This avoids expensive lock acquisition
