@@ -611,6 +611,8 @@ class TestBox < Test::Unit::TestCase
     assert_raise(NameError) { String::STR_CONST2 }
     assert_raise(NameError) { String::STR_CONST3 }
     assert_raise(NameError) { Integer::INT_CONST1 }
+  ensure
+    String.__send__(:remove_const, :STR_CONST0) if String.const_defined?(:STR_CONST0, false)
   end
 
   def test_global_variables
