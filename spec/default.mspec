@@ -69,6 +69,38 @@ class MSpecScript
   prepend JobServer
 end
 
+if ENV["RUBY_BOX"] == "1"
+  # Ruby::Box prints this at startup of every child process when RUBY_BOX=1
+  # is inherited from the environment.
+  module MSpecScript::StripBoxExperimentalWarning
+    WARNING = /^.*: warning: Ruby::Box is experimental, and the behavior may change in the future!\nSee https:\/\/docs\.ruby-lang\.org\/\S+ for known issues, etc\.\n/
+
+    # At load time this would resolve RUBY_EXE before mspec exports the flags.
+    def setup_env
+      super
+      require "mspec/helpers/ruby_exe"
+      Object.class_eval do
+        # Not a prepend, which the Module ancestor specs would see.
+        alias_method :ruby_exe_with_box_warning, :ruby_exe
+        private :ruby_exe_with_box_warning
+
+        private def ruby_exe(code = :not_given, opts = {})
+          output = ruby_exe_with_box_warning(code, opts)
+          if code != :not_given and !opts[:env]&.any? {|k,| k.to_s == "RUBY_BOX"}
+            # on the bytes, since the output is not always valid in its encoding
+            output = output.b.gsub(WARNING, "").force_encoding(output.encoding)
+          end
+          output
+        end
+      end
+    end
+  end
+
+  class MSpecScript
+    prepend StripBoxExperimentalWarning
+  end
+end
+
 require 'mspec/runner/formatters/dotted'
 
 class DottedFormatter
