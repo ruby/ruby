@@ -12,6 +12,12 @@ Note that each entry is kept to a minimum, see links for details.
   original class, consistent with inheritance and mixins.
   [[Feature #21981]]
 
+* `alias` and `Module#alias_method` in a module emit a deprecation warning
+  when the original method is not a method of the module or its ancestors
+  and is only found through the fallback to `Object`. The fallback will be
+  removed in Ruby 4.3, and such an alias will raise a `NameError`.
+  [[Bug #22276]]
+
 ## Core classes updates
 
 Note: We're only listing outstanding class updates.
@@ -420,6 +426,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 ## JIT
 
 [Bug #18947]: https://bugs.ruby-lang.org/issues/18947
+[Bug #22276]: https://bugs.ruby-lang.org/issues/22276
 [Feature #8948]: https://bugs.ruby-lang.org/issues/8948
 [Feature #9779]: https://bugs.ruby-lang.org/issues/9779
 [Feature #15330]: https://bugs.ruby-lang.org/issues/15330
