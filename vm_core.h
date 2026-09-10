@@ -778,9 +778,6 @@ typedef struct rb_vm_struct {
 
     int src_encoding_index;
 
-    /* workqueue (thread-safe, NOT async-signal-safe) */
-    struct ccan_list_head workqueue; /* <=> rb_workqueue_job.jnode */
-    rb_nativethread_lock_t workqueue_lock;
 
     /* `once` completion event (see vm_once_dispatch) */
     rb_nativethread_lock_t once_lock;
@@ -2093,7 +2090,6 @@ void rb_thread_wakeup_timer_thread(int);
 static inline void
 rb_vm_living_threads_init(rb_vm_t *vm)
 {
-    ccan_list_head_init(&vm->workqueue);
     ccan_list_head_init(&vm->ractor.set);
     ccan_list_head_init(&vm->ractor.terminated_set);
 }
@@ -2495,7 +2491,7 @@ int rb_thread_check_trap_pending(void);
 #define RUBY_EVENT_COVERAGE_LINE                0x010000
 #define RUBY_EVENT_COVERAGE_BRANCH              0x020000
 
-void rb_postponed_job_flush(rb_vm_t *vm);
+void rb_postponed_job_flush(void);
 void rb_postponed_job_trigger_for_ractor(unsigned int h, VALUE running_ractor);
 
 // ractor.c
