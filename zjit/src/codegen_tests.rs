@@ -193,7 +193,7 @@ fn test_getglobal_with_warning() {
         test
     "#);
     assert_contains_opcode("test", YARVINSN_getglobal);
-    assert_snapshot!(assert_compiles(r#"test"#), @r#""rescued""#);
+    assert_snapshot!(assert_compiles_allowing_exits(r#"test"#), @r#""rescued""#);
 }
 
 #[test]
@@ -313,7 +313,7 @@ fn test_setglobal_with_trace_var_exception() {
         test
     "#);
     assert_contains_opcode("test", YARVINSN_setglobal);
-    assert_snapshot!(assert_compiles(r#"test"#), @r#""rescued""#);
+    assert_snapshot!(assert_compiles_allowing_exits(r#"test"#), @r#""rescued""#);
 }
 
 #[test]
@@ -1580,7 +1580,7 @@ fn test_send_no_kwarg_to_positional_hash_fallback() {
         end
         entry
     ");
-    assert_snapshot!(assert_compiles("entry"), @":argument_error");
+    assert_snapshot!(assert_compiles_allowing_exits("entry"), @":argument_error");
 }
 
 #[test]
@@ -5710,7 +5710,7 @@ fn test_defined_with_method_call() {
         test
     "#);
     assert_contains_opcode("test", YARVINSN_defined);
-    assert_snapshot!(assert_compiles(r#"test"#), @r#"["method", nil]"#);
+    assert_snapshot!(assert_compiles_allowing_exits(r#"test"#), @r#"["method", nil]"#);
 }
 
 #[test]
@@ -6921,7 +6921,7 @@ fn test_ccall_variadic_with_no_args_causing_argument_error() {
         test
     ");
     assert_contains_opcode("test", YARVINSN_opt_send_without_block);
-    assert_snapshot!(assert_compiles("test"), @":error");
+    assert_snapshot!(assert_compiles_allowing_exits("test"), @":error");
 }
 
 #[test]
@@ -7955,7 +7955,7 @@ fn test_inlined_method_with_rescue_caught_in_callee() {
     // callee. The runtime exception walker must find the rescue clause via the
     // inlined callee's CFP.
     with_inlining(|| {
-        assert_snapshot!(assert_inlines(r#"
+        assert_snapshot!(assert_inlines_allowing_exits(r#"
             def callee(x)
               begin
                 raise "boom" if x.negative?
@@ -7977,7 +7977,7 @@ fn test_inlined_method_with_rescue_caught_in_caller() {
     // The callee re-raises and the caller catches the exception after unwinding
     // the inlined callee frame.
     with_inlining(|| {
-        assert_snapshot!(assert_inlines(r#"
+        assert_snapshot!(assert_inlines_allowing_exits(r#"
             def callee(x)
               raise "boom" if x.negative?
               0
@@ -7999,7 +7999,8 @@ fn test_inlined_method_with_rescue_caught_in_caller() {
 #[test]
 fn test_inlined_method_with_ensure_runs_on_propagation() {
     with_inlining(|| {
-        assert_snapshot!(assert_inlines(r##"
+        // The newly compiled ensure and rescue entries can exit on code without profiles.
+        assert_snapshot!(assert_inlines_allowing_exits(r##"
             $log = []
             def callee(x)
               begin
@@ -8030,7 +8031,7 @@ fn test_inlined_method_with_retry_resumes_begin_block() {
     // The begin/rescue/retry callee is larger than the default test inline budget,
     // so raise the threshold enough for it to be inlined.
     with_inlining_threshold(100, || {
-        assert_snapshot!(assert_inlines(r#"
+        assert_snapshot!(assert_inlines_allowing_exits(r#"
             def callee(counter)
               begin
                 counter[0] += 1

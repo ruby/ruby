@@ -6,7 +6,7 @@
 #![allow(clippy::if_same_then_else)]
 #![allow(clippy::match_like_matches_macro)]
 use crate::{
-    cast::IntoUsize, codegen::max_iseq_versions, cruby::*, invariants::{self, iseq_seen_ep_escape}, json::Json, options::{DumpHIR, InlineDepth, debug, get_option}, payload::get_or_create_iseq_payload, profile::reset_profiles_remaining, state::{self, ZJITState},
+    cast::IntoUsize, codegen::max_iseq_versions, cruby::*, invariants::{self, iseq_seen_ep_escape}, json::Json, options::{DumpHIR, InlineDepth, debug, get_option}, payload::{ExceptionEntrySpec, get_or_create_iseq_payload}, profile::reset_profiles_remaining, state::{self, ZJITState},
 };
 use std::{
     cell::RefCell, collections::{HashMap, HashSet, VecDeque}, ffi::{c_void, c_uint, c_int, CStr}, fmt::Display, ptr, slice::Iter,
@@ -2864,6 +2864,8 @@ pub struct Function {
     /// Entry block for JIT-to-JIT calls. Length will be `opt_num+1`, for callers
     /// fulfilling `(0..=opt_num)` optional parameters.
     jit_entry_blocks: Vec<BlockId>,
+    /// Entry blocks for the observed exception-handler PCs.
+    exception_entry_blocks: Vec<BlockId>,
     profiles: Option<ProfileOracle>,
     /// Rough estimate for the number of (actually executable) instructions in the function. Does
     /// not count Snapshot, PatchPoint, etc.
@@ -3126,6 +3128,7 @@ impl Function {
             entries_block: BlockId(0),
             entry_block: BlockId(1),
             jit_entry_blocks: vec![],
+            exception_entry_blocks: vec![],
             param_types: vec![],
             profiles: None,
             num_instructions: 0,
@@ -7242,15 +7245,18 @@ impl Function {
         }
     }
 
-    /// Return a list that has entry_block and then jit_entry_blocks
+    /// Return all entry blocks for this function.
     fn entry_blocks(&self) -> Vec<BlockId> {
         let mut entry_blocks = self.jit_entry_blocks.clone();
+        entry_blocks.extend(self.exception_entry_blocks.iter().copied());
         entry_blocks.insert(0, self.entry_block);
         entry_blocks
     }
 
     pub fn is_entry_block(&self, block_id: BlockId) -> bool {
-        self.entry_block == block_id || self.jit_entry_blocks.contains(&block_id)
+        self.entry_block == block_id
+            || self.jit_entry_blocks.contains(&block_id)
+            || self.exception_entry_blocks.contains(&block_id)
     }
 
     /// Populate the entries superblock with an Entries instruction targeting all entry blocks.
@@ -8707,11 +8713,10 @@ pub const SELF_PARAM_IDX: usize = 0;
 
 /// Controls how an ISEQ's bytecode is added to HIR.
 #[derive(Clone, Copy)]
-enum AddIseqMode {
+enum AddIseqMode<'a> {
     Standalone,
     Exception {
-        insn_idx: u16,
-        stack_size: u8,
+        entries: &'a [ExceptionEntrySpec],
     },
     Inlined {
         return_block: BlockId,
@@ -8747,12 +8752,13 @@ pub fn iseq_to_hir(iseq: IseqPtr) -> Result<Function, ParseError> {
     iseq_to_hir_with_mode(iseq, AddIseqMode::Standalone)
 }
 
-/// Compile an ISEQ into High-level IR for an exception entry.
-pub fn iseq_to_hir_exception(iseq: IseqPtr, insn_idx: u16, stack_size: u8) -> Result<Function, ParseError> {
-    iseq_to_hir_with_mode(iseq, AddIseqMode::Exception { insn_idx, stack_size })
+/// Compile an ISEQ into High-level IR for observed exception entries.
+pub fn iseq_to_hir_exception(iseq: IseqPtr, entries: &[ExceptionEntrySpec]) -> Result<Function, ParseError> {
+    assert!(!entries.is_empty());
+    iseq_to_hir_with_mode(iseq, AddIseqMode::Exception { entries })
 }
 
-fn iseq_to_hir_with_mode(iseq: IseqPtr, mode: AddIseqMode) -> Result<Function, ParseError> {
+fn iseq_to_hir_with_mode(iseq: IseqPtr, mode: AddIseqMode<'_>) -> Result<Function, ParseError> {
     if !ZJITState::can_compile_iseq(iseq) {
         return Err(ParseError::NotAllowed);
     }
@@ -8760,10 +8766,11 @@ fn iseq_to_hir_with_mode(iseq: IseqPtr, mode: AddIseqMode) -> Result<Function, P
     let mut fun = Function::new(iseq);
     fun.was_invalidated_for_singleton_class_creation = payload.was_invalidated_for_singleton_class_creation;
     fun.self_is_heap_object = payload.self_is_heap_object;
-    if let AddIseqMode::Exception { insn_idx, .. } = mode {
+    if let AddIseqMode::Exception { entries } = mode {
+        let first_insn_idx = entries[0].insn_idx;
         fun.policy = CompilePolicy::from_versions(
             payload.exception_entries.iter()
-                .filter(|entry| entry.insn_idx == insn_idx)
+                .filter(|entry| entry.spec.insn_idx == first_insn_idx)
                 .map(|entry| entry.version),
         );
     }
@@ -8798,7 +8805,7 @@ fn iseq_to_hir_with_mode(iseq: IseqPtr, mode: AddIseqMode) -> Result<Function, P
 fn add_iseq_to_hir(
     fun: &mut Function,
     iseq: *const rb_iseq_t,
-    mode: AddIseqMode,
+    mode: AddIseqMode<'_>,
 ) -> Result<AddIseqResult, ParseError> {
     let payload = get_or_create_iseq_payload(iseq);
     let mut profiles = ProfileOracle::new();
@@ -8808,7 +8815,7 @@ fn add_iseq_to_hir(
     // because every Snapshot emitted for the callee is cloned from one of these
     // initial states, those values propagate to the whole inlined body without a
     // separate rewrite pass.
-    fn new_frame_state(mode: AddIseqMode, iseq: IseqPtr) -> FrameState {
+    fn new_frame_state(mode: AddIseqMode<'_>, iseq: IseqPtr) -> FrameState {
         match mode {
             AddIseqMode::Inlined { caller, depth, .. } => FrameState::inlined(iseq, caller, depth),
             AddIseqMode::Standalone | AddIseqMode::Exception { .. } => FrameState::new(iseq),
@@ -8824,8 +8831,8 @@ fn add_iseq_to_hir(
     // Those entries are known to be unreachable so slicing them off here avoids
     // translating prologue blocks that would only be discarded later, rather
     // than emitting them and relying on a downstream pass to prune the dead CFG.
-    let jit_entry_insns = match mode {
-        AddIseqMode::Exception { insn_idx, .. } => vec![u32::from(insn_idx)],
+    let jit_entry_insns: Vec<u32> = match mode {
+        AddIseqMode::Exception { entries } => entries.iter().map(|entry| u32::from(entry.insn_idx)).collect(),
         AddIseqMode::Standalone | AddIseqMode::Inlined { .. } => {
             let jit_entry_start = match mode {
                 AddIseqMode::Standalone => 0,
@@ -8876,7 +8883,7 @@ fn add_iseq_to_hir(
         AddIseqMode::Inlined { .. } => Some(insn_idx_to_block[&jit_entry_insns[0]]),
     };
 
-    let exception_entry_state = match mode {
+    let exception_entry_states = match mode {
         AddIseqMode::Standalone => {
             // Compile an entry_block for the interpreter
             compile_entry_block(fun, jit_entry_insns.as_slice(), &insn_idx_to_block);
@@ -8890,13 +8897,24 @@ fn add_iseq_to_hir(
                     compile_jit_entry_block(fun, jit_entry_idx, target_block);
                 }
             }
-            None
+            vec![]
         }
-        AddIseqMode::Exception { insn_idx, stack_size } => {
-            let target_block = insn_idx_to_block[&u32::from(insn_idx)];
-            Some(compile_exception_entry_block(fun, insn_idx, stack_size, target_block))
+        AddIseqMode::Exception { entries } => {
+            let mut states = Vec::with_capacity(entries.len());
+            for (entry_idx, entry) in entries.iter().enumerate() {
+                let entry_block = if entry_idx == 0 {
+                    fun.entry_block
+                } else {
+                    let entry_block = fun.new_block(entry.insn_idx.into());
+                    fun.exception_entry_blocks.push(entry_block);
+                    entry_block
+                };
+                let target_block = insn_idx_to_block[&u32::from(entry.insn_idx)];
+                states.push(compile_exception_entry_block(fun, entry_block, entry, target_block));
+            }
+            states
         }
-        AddIseqMode::Inlined { .. } => None,
+        AddIseqMode::Inlined { .. } => vec![],
     };
 
     // Check if the EP is escaped for the ISEQ from the beginning. We give up
@@ -8910,12 +8928,14 @@ fn add_iseq_to_hir(
     // Iteratively fill out basic blocks using a queue.
     // TODO(max): Basic block arguments at edges
     let mut queue = VecDeque::new();
-    if let Some(entry_state) = exception_entry_state {
-        let insn_idx = u32::try_from(entry_state.insn_idx()).unwrap();
-        queue.push_back((entry_state, insn_idx_to_block[&insn_idx], insn_idx, false));
-    } else {
+    if exception_entry_states.is_empty() {
         for &insn_idx in jit_entry_insns.iter() {
             queue.push_back((new_frame_state(mode, iseq), insn_idx_to_block[&insn_idx], insn_idx, false));
+        }
+    } else {
+        for entry_state in exception_entry_states {
+            let insn_idx = u32::try_from(entry_state.insn_idx()).unwrap();
+            queue.push_back((entry_state, insn_idx_to_block[&insn_idx], insn_idx, false));
         }
     }
 
@@ -10934,18 +10954,18 @@ fn compile_entry_state(fun: &mut Function) -> (InsnId, FrameState) {
 /// Compile an entry that restores the interpreter state at an exception handler PC.
 fn compile_exception_entry_block(
     fun: &mut Function,
-    insn_idx: u16,
-    stack_size: u8,
+    entry_block: BlockId,
+    entry: &ExceptionEntrySpec,
     target_block: BlockId,
 ) -> FrameState {
-    let entry_block = fun.entry_block;
-    fun.push_insn(entry_block, Insn::ExceptionEntryPoint { insn_idx, stack_size });
+    let ExceptionEntrySpec { insn_idx, stack_size, value_types } = entry;
+    fun.push_insn(entry_block, Insn::ExceptionEntryPoint { insn_idx: *insn_idx, stack_size: *stack_size });
 
     let iseq = fun.iseq;
     let self_param = fun.load_self(entry_block);
     let mut entry_state = FrameState::new(iseq);
-    entry_state.insn_idx = insn_idx.into();
-    entry_state.pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx.into()) };
+    entry_state.insn_idx = (*insn_idx).into();
+    entry_state.pc = unsafe { rb_iseq_pc_at_idx(iseq, (*insn_idx).into()) };
 
     // Exception entries resume an existing frame. Load every local from its EP.
     let ep = fun.get_ep(entry_block, 0);
@@ -10958,9 +10978,9 @@ fn compile_exception_entry_block(
     }
 
     // The exception entry point moves SP to the bottom of the operand stack.
-    if stack_size > 0 {
+    if *stack_size > 0 {
         let sp = fun.load_sp(entry_block);
-        for stack_idx in 0..u16::from(stack_size) {
+        for stack_idx in 0..u16::from(*stack_size) {
             let val = fun.load_field(
                 entry_block,
                 sp,
@@ -10969,6 +10989,19 @@ fn compile_exception_entry_block(
                 types::BasicObject,
             );
             entry_state.stack_push(val);
+        }
+    }
+
+    assert_eq!(value_types.len(), entry_state.locals.len() + entry_state.stack.len());
+    let snapshot = fun.push_insn(entry_block, Insn::Snapshot { state: Box::new(entry_state.clone()) });
+    for (value, guard_type) in entry_state.locals.iter_mut().chain(entry_state.stack.iter_mut()).zip(value_types) {
+        if !guard_type.bit_equal(types::BasicObject) {
+            *value = fun.push_insn(entry_block, Insn::GuardType {
+                val: *value,
+                guard_type: *guard_type,
+                state: snapshot,
+                recompile: Some(Recompile),
+            });
         }
     }
 

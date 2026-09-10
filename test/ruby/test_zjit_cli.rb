@@ -219,6 +219,23 @@ class TestZJITCLI < Test::Unit::TestCase
     RUBY
   end
 
+  def test_exception_handler_with_typed_local
+    assert_compiles '[18, 18, 18]', <<~RUBY, call_threshold: 2
+      def nested_break(values)
+        sum = 0
+        values.each do |left|
+          values.each do |right|
+            break if right > 2
+            sum += left * right
+          end
+        end
+        sum
+      end
+
+      3.times.map { nested_break([1, 2, 3]) }
+    RUBY
+  end
+
   def test_send_exit_with_uninitialized_locals
     assert_runs 'nil', %q{
       def entry(init)
