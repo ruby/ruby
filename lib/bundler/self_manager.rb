@@ -149,6 +149,11 @@ module Bundler
     end
 
     def find_latest_matching_spec_from_collection(specs, requirement)
+      # A requirement that does not mention a prerelease only matches released
+      # versions, so that `bundle update --bundler` with no argument does not
+      # jump onto a beta, the same way `gem update --system` does not.
+      specs = specs.reject {|spec| spec.version.prerelease? } unless requirement.prerelease?
+
       specs.sort.reverse_each.find {|spec| requirement.satisfied_by?(spec.version) }
     end
 
