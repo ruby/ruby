@@ -2689,8 +2689,9 @@ CODE
   end
 
   def test_tr_hash
-    assert_equal S(("A"*16  + "x" + "B"*3)), S(("A"*16  + "<" + "B"*3)).tr({"<"=>"x"})
+    assert_equal S(("A"*16 + "x" + "B"*3)), S(("A"*16  + "<" + "B"*3)).tr({"<"=>"x"})
     assert_equal S(("x"+"A"*16 + "B"*3)), S(("<"+"A"*16 + "B"*3)).tr({"<"=>"x"})
+    assert_equal S(("."*15 + "<" * 17)), S(("."*15  + "x"*17)).tr({"x"=>"<"})
   end
 
   def test_tr!
