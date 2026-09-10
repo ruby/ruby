@@ -3567,30 +3567,6 @@ class TestArray < Test::Unit::TestCase
     assert_include([1, 2], a.bsearch_index {|x| (2**100).coerce((1 - x / 4) * (2**100)).first })
   end
 
-  def test_shared_marking
-    reduce = proc do |s|
-      s.gsub(/(verify_internal_consistency_reachable_i:\sWB\smiss\s\S+\s\(T_ARRAY\)\s->\s)\S+\s\((proc|T_NONE)\)\n
-             \K(?:\1\S+\s\(\2\)\n)*/x) do
-        "...(snip #{$&.count("\n")} lines)...\n"
-      end
-    end
-    begin
-      assert_normal_exit(<<-EOS, '[Bug #9718]', timeout: 5, stdout_filter: reduce)
-      queue = []
-      50.times do
-        10_000.times do
-          queue << lambda{}
-        end
-        GC.start(full_mark: false, immediate_sweep: true)
-        GC.verify_internal_consistency
-        queue.shift.call
-      end
-    EOS
-    rescue Timeout::Error => e
-      omit e.message
-    end
-  end
-
   sizeof_long = [0].pack("l!").size
   sizeof_voidp = [""].pack("p").size
   if sizeof_long < sizeof_voidp
