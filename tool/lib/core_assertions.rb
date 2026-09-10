@@ -876,10 +876,15 @@ eom
       end
       alias all_assertions_foreach assert_all_assertions_foreach
 
-      %w[
+      clocks = %w[
         CLOCK_THREAD_CPUTIME_ID CLOCK_PROCESS_CPUTIME_ID
         CLOCK_MONOTONIC
-      ].find do |c|
+      ]
+      # CLOCK_THREAD_CPUTIME_ID is per native thread, and an M:N thread moves
+      # between native threads, so it can go backwards and yield a negative
+      # elapsed time.  Measure process CPU time there instead.
+      clocks.shift if RUBY_DESCRIPTION.include?("+MN")
+      clocks.find do |c|
         if Process.const_defined?(c)
           [c.to_sym, Process.const_get(c)].find do |clk|
             begin
