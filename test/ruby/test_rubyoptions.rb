@@ -1132,6 +1132,7 @@ class TestRubyOptions < Test::Unit::TestCase
       ruby = EnvUtil.rubybin
       cmd = %["#{ruby}" -e "puts ARGV" "foo""bar" "foo"" bar" "foo""bar""baz" a""b "a\\"b" "" "a"""" b" """" c 'a''b' "a"" b c]
       out = IO.popen(cmd, &:read).lines(chomp: true)
+      assert_predicate($?, :success?, bug11142)
       assert_equal(['foo"bar', 'foo" bar', 'foo"bar"baz', 'ab', 'a"b', '', 'a"" b', '"', 'c', 'ab', 'a" b c'],
                    out, bug11142)
     end
