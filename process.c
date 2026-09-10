@@ -8124,6 +8124,13 @@ ruby_real_ms_time(void)
  *  +:CLOCK_MONOTONIC+, +:CLOCK_PROCESS_CPUTIME_ID+,
  *  and +:CLOCK_THREAD_CPUTIME_ID+ are optional.
  *
+ *  +:CLOCK_THREAD_CPUTIME_ID+ measures the native thread that reads it, not
+ *  the Ruby thread.  Under the M:N thread scheduler (see +RUBY_MN_THREADS+) a
+ *  Ruby thread can move between native threads, so two reads taken from one
+ *  Ruby thread may come from different native threads, and the later read can
+ *  be smaller than the earlier one.  To measure elapsed time there, use
+ *  +:CLOCK_PROCESS_CPUTIME_ID+ or +:CLOCK_MONOTONIC+.
+ *
  *  Certain emulations are used when the given +clock_id+
  *  is not supported directly:
  *
