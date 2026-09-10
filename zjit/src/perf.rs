@@ -9,22 +9,8 @@ use crate::hir::Insn;
 use crate::options::{get_option, PerfMap};
 use crate::options::debug;
 use crate::virtualmem::CodePtr;
-type SymbolRange = Rc<RefCell<Option<(CodePtr, String)>>>;
 
-/// Write an entry to the perf map in /tmp.
-fn register(symbol_name: String, start_ptr: usize, code_size: usize) {
-    use std::io::Write;
-    let perf_map = format!("/tmp/perf-{}.map", std::process::id());
-    let Ok(file) = std::fs::OpenOptions::new().create(true).append(true).open(&perf_map) else {
-        debug!("Failed to open perf map file: {perf_map}");
-        return;
-    };
-    let mut file = std::io::BufWriter::new(file);
-    let Ok(_) = writeln!(file, "{start_ptr:#x} {code_size:#x} ZJIT: {symbol_name}") else {
-        debug!("Failed to write {symbol_name} to perf map file: {perf_map}");
-        return;
-    };
-}
+type SymbolRange = Rc<RefCell<Option<(CodePtr, String)>>>;
 
 /// Register a non-empty code range under `symbol_name` in the perf map.
 pub(crate) fn register_range(cb: &CodeBlock, symbol_name: String, start: CodePtr, end: CodePtr) {
@@ -42,7 +28,6 @@ pub(crate) fn register_current_code_range(cb: &CodeBlock, symbol_name: &str, sta
         register_range(cb, symbol_name.to_string(), start, cb.get_write_ptr());
     }
 }
-
 
 /// Start a HIR perf symbol range when --zjit-perf=hir is enabled.
 pub(crate) fn hir_symbol_range_start(asm: &mut Assembler, insn: &Insn) -> Option<SymbolRange> {
@@ -68,14 +53,6 @@ pub(crate) fn symbol_range_start(asm: &mut Assembler, symbol_name: &str) -> Symb
     symbol_range
 }
 
-fn symbol_range_end_marker(symbol_range: &SymbolRange) -> impl Fn(CodePtr, &CodeBlock) + 'static {
-    let current = symbol_range.clone();
-    move |end, cb| {
-        if let Some((start, name)) = current.borrow_mut().take() {
-            register_range(cb, name, start, end);
-        }
-    }
-}
 
 /// Mark the end of a perf symbol range via pos_marker.
 pub(crate) fn symbol_range_end(asm: &mut Assembler, symbol_range: &SymbolRange) {
@@ -87,4 +64,28 @@ pub(crate) fn symbol_range_end(asm: &mut Assembler, symbol_range: &SymbolRange) 
 /// This can leave an empty range. `register_range` skips that entry.
 pub(crate) fn symbol_range_end_at_block_end(asm: &mut Assembler, symbol_range: &SymbolRange) {
     asm.pos_marker_at_block_end(symbol_range_end_marker(symbol_range));
+}
+
+/// Write an entry to the perf map in /tmp.
+fn register(symbol_name: String, start_ptr: usize, code_size: usize) {
+    use std::io::Write;
+    let perf_map = format!("/tmp/perf-{}.map", std::process::id());
+    let Ok(file) = std::fs::OpenOptions::new().create(true).append(true).open(&perf_map) else {
+        debug!("Failed to open perf map file: {perf_map}");
+        return;
+    };
+    let mut file = std::io::BufWriter::new(file);
+    let Ok(_) = writeln!(file, "{start_ptr:#x} {code_size:#x} ZJIT: {symbol_name}") else {
+        debug!("Failed to write {symbol_name} to perf map file: {perf_map}");
+        return;
+    };
+}
+
+fn symbol_range_end_marker(symbol_range: &SymbolRange) -> impl Fn(CodePtr, &CodeBlock) + 'static {
+    let current = symbol_range.clone();
+    move |end, cb| {
+        if let Some((start, name)) = current.borrow_mut().take() {
+            register_range(cb, name, start, end);
+        }
+    }
 }
