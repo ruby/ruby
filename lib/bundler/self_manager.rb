@@ -145,7 +145,7 @@ module Bundler
       remote_result = find_latest_matching_spec_from_collection(remote_specs, requirement)
       return remote_result if local_result.nil?
 
-      [local_result, remote_result].max
+      [local_result, remote_result].compact.max
     end
 
     def find_latest_matching_spec_from_collection(specs, requirement)
