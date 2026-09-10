@@ -40,6 +40,12 @@ class ErrorHighlightTest < Test::Unit::TestCase
     end
   end
 
+  # A moving GC can relocate the receiver between the expected message baking
+  # `#inspect` and the error being raised, so the two addresses need not agree.
+  def mask_addresses(msg)
+    msg.gsub(/0x\h+/, "0xXXXX")
+  end
+
   if Exception.method_defined?(:detailed_message)
     def assert_error_message(klass, expected_msg, &blk)
       omit unless klass < ErrorHighlight::CoreExt
@@ -55,13 +61,14 @@ class ErrorHighlightTest < Test::Unit::TestCase
           assert_kind_of(Array, spot[:script_lines])
         end
       end
-      assert_equal(preprocess(expected_msg).chomp, err.detailed_message(highlight: false).sub(/ \((?:NoMethod|Name)Error\)/, ""))
+      actual_msg = err.detailed_message(highlight: false).sub(/ \((?:NoMethod|Name)Error\)/, "")
+      assert_equal(mask_addresses(preprocess(expected_msg).chomp), mask_addresses(actual_msg))
     end
   else
     def assert_error_message(klass, expected_msg, &blk)
       omit unless klass < ErrorHighlight::CoreExt
       err = assert_raise(klass, &blk)
-      assert_equal(preprocess(expected_msg).chomp, err.message)
+      assert_equal(mask_addresses(preprocess(expected_msg).chomp), mask_addresses(err.message))
     end
   end
 
