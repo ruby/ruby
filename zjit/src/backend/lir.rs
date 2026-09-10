@@ -2055,11 +2055,7 @@ impl Assembler
 
             insns.push(Insn::PosMarker(Rc::new(move |end, cb| {
                 if let Some(start) = start.borrow_mut().take() {
-                    let start_addr = start.raw_addr(cb);
-                    let end_addr = end.raw_addr(cb);
-                    if start_addr < end_addr {
-                        perf::register(symbol_name.clone(), start_addr, end_addr - start_addr);
-                    }
+                    perf::register_range(cb, symbol_name.clone(), start, end);
                 }
             })));
         }
