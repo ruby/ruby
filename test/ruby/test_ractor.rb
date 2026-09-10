@@ -425,7 +425,7 @@ class TestRactor < Test::Unit::TestCase
         p.send 'c'
       end
       sleep 0.1 # ensure the messages are sent before we call receive_all
-      msgs = port.receive_all(2)
+      msgs = port.receive_all(limit: 2)
       assert_equal 2, msgs.length
       assert_equal ['a', 'b'], msgs
       r.join
@@ -436,7 +436,7 @@ class TestRactor < Test::Unit::TestCase
   def test_receive_all_zero_raises_error
     assert_ractor(<<~'RUBY')
       port = Ractor::Port.new
-      assert_raise(ArgumentError) { port.receive_all(0) }
+      assert_raise(ArgumentError) { port.receive_all(limit: 0) }
     RUBY
   end
 
@@ -455,8 +455,91 @@ class TestRactor < Test::Unit::TestCase
   # [Feature #21869]
   def test_ractor_receive_all_with_invalid_limit
     assert_ractor(<<~'RUBY')
-      assert_raise(ArgumentError) { Ractor.receive_all(0) }
-      assert_raise(ArgumentError) { Ractor.receive_all(-5) }
+      assert_raise(ArgumentError) { Ractor.receive_all(limit: 0) }
+      assert_raise(ArgumentError) { Ractor.receive_all(limit: -5) }
+    RUBY
+  end
+
+  # [Feature #21869]
+  def test_receive_all_timeout
+    assert_separately([], __FILE__, __LINE__, <<-'RUBY')
+      Warning[:experimental] = false
+      port = Ractor::Port.new
+
+      t0 = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      assert_nil port.receive_all(timeout: 0.1)
+      assert_operator Process.clock_gettime(Process::CLOCK_MONOTONIC) - t0, :>=, 0.1
+
+      # messages that are already there win over the timeout
+      port << :a
+      port << :b
+      assert_equal [:a, :b], port.receive_all(timeout: 10)
+
+      # limit and timeout combine
+      port << :a
+      port << :b
+      assert_equal [:a], port.receive_all(timeout: 10, limit: 1)
+      assert_equal [:b], port.receive_all(timeout: 0) # the rest is still queued
+
+      # timeout: 0 polls
+      assert_nil port.receive_all(timeout: 0)
+      port << :c
+      assert_equal [:c], port.receive_all(timeout: 0)
+
+      # a negative timeout is invalid
+      assert_raise(ArgumentError) { port.receive_all(timeout: -1) }
+    RUBY
+  end
+
+  # [Feature #21869]
+  def test_receive_all_timeout_on_mn_thread
+    assert_separately([], __FILE__, __LINE__, <<-'RUBY')
+      Warning[:experimental] = false
+      # a Ractor's thread is an M:N thread: the timeout must not need a native thread
+      r = Ractor.new do
+        t0 = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+        [Ractor.receive_all(timeout: 0.1), Process.clock_gettime(Process::CLOCK_MONOTONIC) - t0]
+      end
+      v, elapsed = r.value
+      assert_nil v
+      assert_operator elapsed, :>=, 0.1
+    RUBY
+  end
+
+  # [Feature #21869]
+  def test_receive_all_timeout_racing_with_send
+    assert_separately([], __FILE__, __LINE__, <<-'RUBY')
+      Warning[:experimental] = false
+      # the timeout and a send aim at the same instant: both wake the waiter
+      results = []
+      300.times do
+        port = Ractor::Port.new
+        th = Thread.new(port) {|p| sleep 0.001; p << :msg }
+        results << port.receive_all(timeout: 0.001)
+        th.join
+      end
+      # either the send or the timeout wins; nothing is lost or duplicated
+      assert_empty results.uniq - [[:msg], nil]
+    RUBY
+  end
+
+  # [Feature #21869]
+  def test_receive_all_does_not_wait_for_more_messages_after_first
+    assert_separately([], __FILE__, __LINE__, <<-'RUBY')
+      Warning[:experimental] = false
+      # once the first message arrived within the timeout, the queue is
+      # drained without blocking for messages that have not been sent yet
+      port = Ractor::Port.new
+      r = Ractor.new(port) do |p|
+        p << :first
+        Ractor.receive # wait until the main ractor is done
+        p << :second
+      end
+      t0 = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      assert_equal [:first], port.receive_all(timeout: 2)
+      assert_operator Process.clock_gettime(Process::CLOCK_MONOTONIC) - t0, :<, 1
+      r.send(:go)
+      r.value
     RUBY
   end
 

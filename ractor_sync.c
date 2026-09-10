@@ -15,7 +15,7 @@ ractor_port_id(const struct ractor_port *rp)
 static VALUE rb_cRactorPort;
 
 static VALUE ractor_receive(rb_execution_context_t *ec, const struct ractor_port *rp, const rb_hrtime_t *end);
-static VALUE ractor_receive_all(rb_execution_context_t *ec, const struct ractor_port *rp, long limit);
+static VALUE ractor_receive_all(rb_execution_context_t *ec, const struct ractor_port *rp, long limit, const rb_hrtime_t *end);
 static VALUE ractor_send(rb_execution_context_t *ec, const struct ractor_port *rp, VALUE obj, VALUE move);
 static struct ractor_basket *ractor_basket_new_ref(VALUE shareable);
 static void ractor_send_basket(rb_execution_context_t *ec, const struct ractor_port *rp, struct ractor_basket *b, bool raise_on_error);
@@ -173,13 +173,16 @@ ractor_port_receive(rb_execution_context_t *ec, VALUE self, VALUE timeout)
 }
 
 static VALUE
-ractor_port_receive_all(rb_execution_context_t *ec, VALUE limit_value, VALUE self)
+ractor_port_receive_all(rb_execution_context_t *ec, VALUE timeout, VALUE limit_value, VALUE self)
 {
     const struct ractor_port *rp = RACTOR_PORT_PTR(self);
 
     if (rp->r != rb_ec_ractor_ptr(ec)) {
         rb_raise(rb_eRactorError, "only allowed from the creator Ractor of this port");
     }
+
+    rb_hrtime_t deadline;
+    const rb_hrtime_t *end = ractor_timeout_deadline(timeout, &deadline);
 
     long limit = -1;
     if (limit_value != Qnil) {
@@ -194,7 +197,11 @@ ractor_port_receive_all(rb_execution_context_t *ec, VALUE limit_value, VALUE sel
         }
     }
 
-    return ractor_receive_all(ec, rp, limit);
+    VALUE v = ractor_receive_all(ec, rp, limit, end);
+    RB_GC_GUARD(self);
+
+    // no message before the timeout
+    return UNDEF_P(v) ? Qnil : v;
 }
 
 static VALUE
@@ -1621,8 +1628,11 @@ ractor_receive(rb_execution_context_t *ec, const struct ractor_port *rp, const r
     }
 }
 
+// Returns Qundef if the deadline passed before any message arrived.  Like
+// ractor_receive, the deadline only bounds the wait for the first message;
+// once one arrives the rest of the queue is drained without blocking.
 static VALUE
-ractor_receive_all(rb_execution_context_t *ec, const struct ractor_port *rp, long limit)
+ractor_receive_all(rb_execution_context_t *ec, const struct ractor_port *rp, long limit, const rb_hrtime_t *end)
 {
     rb_ractor_t *cr = rb_ec_ractor_ptr(ec);
     VM_ASSERT(cr == rp->r);
@@ -1636,7 +1646,9 @@ ractor_receive_all(rb_execution_context_t *ec, const struct ractor_port *rp, lon
 
         if (v == Qundef) {
             if (RARRAY_LENINT(ary) == 0) {
-                ractor_wait_receive(ec, cr, NULL);
+                if (!ractor_wait_receive(ec, cr, end)) {
+                    return Qundef;
+                }
                 continue;
             }
             else {
