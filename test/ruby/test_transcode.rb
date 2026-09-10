@@ -2398,7 +2398,6 @@ class TestTranscode < Test::Unit::TestCase
   end
 
   def test_ractor_lazy_load_encoding_random
-    omit 'unstable on s390x' if RUBY_PLATFORM =~ /s390x/
     assert_ractor("#{<<~"begin;"}\n#{<<~'end;'}", timeout: 30)
     begin;
       rs = []
