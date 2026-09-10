@@ -2540,10 +2540,10 @@ static struct heap_page_body *
 page_pool_acquire(struct page_arena **arena_out)
 {
     struct heap_page_body *body = NULL;
-    bool need_reuse = false;
 
     if (HEAP_PAGE_ALLOC_USE_MMAP) {
 #ifdef HAVE_MMAP
+        bool need_reuse = false;
         rb_global_objspace_t *g = global_objspace;
 
         rb_native_mutex_lock(&g->page_pool.lock);
