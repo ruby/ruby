@@ -2637,8 +2637,12 @@ pub enum ValidationError {
 /// Set of flags incompatible with direct sends to forwardable callees.
 const FORWARDABLE_CALLEE_BLOCKERS: u32 =
     // `gen_send_iseq_direct` currently handles only the interpreter's `vm_call_iseq_forwardable`
-    // fastpath case, which the interpreter itself rejects on VM_CALL_FORWARDING. The callinfo
-    // to hand over lives in the caller's `...` local, so it should be handled differently.
+    // fastpath case on forwardable ISEQs: pass non-`...` arguments to a `...` callee, which sets
+    // the callinfo of non-`...` arguments into the callee's local variable `...`.
+    //
+    // On the other hand, that fastpath and `gen_send_iseq_direct` don't handle the VM_CALL_FORWARDING
+    // case: pass `...` to a `...` callee, which sets the caller's callinfo into the callee's `...`
+    // local variable. It needs to be specialized differently.
     VM_CALL_FORWARDING
     // We only support `def foo(...)` cases for now.
     | VM_CALL_ARGS_SPLAT | VM_CALL_KW_SPLAT | VM_CALL_ARGS_BLOCKARG;
