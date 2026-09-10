@@ -453,6 +453,7 @@ pub struct iseq_inline_constant_cache_entry {
     pub flags: VALUE,
     pub value: VALUE,
     pub ic_cref: *const rb_cref_t,
+    pub ractor_id: rb_serial_t,
 }
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]

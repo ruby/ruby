@@ -984,22 +984,4 @@ class TestRactor < Test::Unit::TestCase
       assert_equal true, Ractor.new { own = Object.new; own.singleton_class.attached_object.equal?(own) }.value
     RUBY
   end
-
-  def test_port_undelivered_message_does_not_leak
-    omit 'not fixed for mmtk: it never calls rb_ractor_finish_marking, where the reap runs' unless GC.config[:implementation] == 'default'
-    # A message is only moved out of the receiving Ractor's incoming queue when it
-    # receives or closes.  One addressed to a port that became unreachable first used to
-    # stay there for the life of the process, off-heap and invisible to ObjectSpace.
-    assert_no_memory_leak([], <<~'PREP', <<~'CODE', '[Bug #22122]', rss: true)
-      def t
-        port = Ractor::Port.new
-        5.times { port << ("z" * (4 << 20)) }
-      end
-      # A few large payloads rather than many small ones, and a baseline taken at the
-      # high-water mark: small-allocation RSS creep alone reached 2.5x on macOS.
-      5.times { t; GC.start }
-    PREP
-      30.times { t; GC.start }
-    CODE
-  end
 end

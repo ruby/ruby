@@ -1142,10 +1142,10 @@ vm_get_ev_const(rb_execution_context_t *ec, VALUE orig_klass, ID id, bool allow_
                             return 1;
                         }
                         else {
-                            if (UNLIKELY(!rb_ractor_main_p())) {
+                            if (UNLIKELY(!rb_class_owned_p(klass))) {
                                 if (!rb_ractor_shareable_p(val)) {
                                     rb_raise(rb_eRactorIsolationError,
-                                             "can not access non-shareable objects in constant %"PRIsVALUE"::%"PRIsVALUE" by non-main ractor.", rb_class_path(klass), rb_id2str(id));
+                                             "can not access non-shareable objects in constant %"PRIsVALUE"::%"PRIsVALUE" of a class/module created by another Ractor.", rb_class_path(klass), rb_id2str(id));
                                 }
                             }
                             return val;
@@ -1255,10 +1255,10 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
       case T_CLASS:
       case T_MODULE:
         {
-            if (UNLIKELY(!rb_ractor_main_p())) {
-                // For two reasons we can only use the fast path on the main
-                // ractor.
-                // First, only the main ractor is allowed to set ivars on classes
+            if (UNLIKELY(!rb_class_owned_p(obj))) {
+                // For two reasons we can only use the fast path on the Ractor
+                // that owns the class.
+                // First, only the owner Ractor is allowed to set ivars on classes
                 // and modules. So we can skip locking.
                 // Second, other ractors need to check the shareability of the
                 // values returned from the class ivars.
@@ -1428,7 +1428,7 @@ NOINLINE(static VALUE vm_setivar_class(VALUE obj, VALUE val, rb_setivar_cache ca
 static VALUE
 vm_setivar_class(VALUE obj, VALUE val, rb_setivar_cache cache)
 {
-    if (UNLIKELY(!rb_ractor_main_p())) {
+    if (UNLIKELY(!rb_class_owned_p(obj))) {
         return Qundef;
     }
 
@@ -1559,7 +1559,10 @@ vm_getclassvariable(const rb_iseq_t *iseq, const rb_control_frame_t *reg_cfp, ID
     const rb_cref_t *cref;
     cref = vm_get_cref(GET_EP());
 
-    if (ic->entry && ic->entry->global_cvar_state == GET_GLOBAL_CVAR_STATE() && ic->entry->cref == cref && LIKELY(rb_ractor_main_p())) {
+    // The fast path skips rb_cvar_find's checks, so it is for class_value's owner:
+    // the sole writer, and the only one allowed to see an unshareable value.
+    if (ic->entry && ic->entry->global_cvar_state == GET_GLOBAL_CVAR_STATE() && ic->entry->cref == cref &&
+        LIKELY(rb_class_owned_p(ic->entry->class_value))) {
         RB_DEBUG_COUNTER_INC(cvar_read_inline_hit);
 
         VALUE v = rb_ivar_lookup(ic->entry->class_value, id, Qundef);
@@ -1585,7 +1588,9 @@ vm_setclassvariable(const rb_iseq_t *iseq, const rb_control_frame_t *reg_cfp, ID
     const rb_cref_t *cref;
     cref = vm_get_cref(GET_EP());
 
-    if (ic->entry && ic->entry->global_cvar_state == GET_GLOBAL_CVAR_STATE() && ic->entry->cref == cref && LIKELY(rb_ractor_main_p())) {
+    // as on the read side: the fast path writes straight into class_value
+    if (ic->entry && ic->entry->global_cvar_state == GET_GLOBAL_CVAR_STATE() && ic->entry->cref == cref &&
+        LIKELY(rb_class_owned_p(ic->entry->class_value))) {
         RB_DEBUG_COUNTER_INC(cvar_write_inline_hit);
 
         rb_class_ivar_set(ic->entry->class_value, id, val);
@@ -6708,9 +6713,11 @@ vm_ic_track_const_chain(rb_control_frame_t *cfp, IC ic, const ID *segments)
 
 // For JIT inlining
 static inline bool
-vm_inlined_ic_hit_p(VALUE flags, VALUE value, const rb_cref_t *ic_cref, const VALUE *reg_ep)
+vm_inlined_ic_hit_p(VALUE flags, VALUE value, const rb_cref_t *ic_cref, rb_serial_t ractor_id, const VALUE *reg_ep)
 {
-    if ((flags & IMEMO_CONST_CACHE_SHAREABLE) || rb_ractor_main_p()) {
+    // Not rb_ractor_main_p(): an owner Ractor may now cache an unshareable constant
+    // of its own class, and only it may be handed that value back.
+    if ((flags & IMEMO_CONST_CACHE_SHAREABLE) || ractor_id == rb_ractor_id(GET_RACTOR())) {
         VM_ASSERT(ractor_incidental_shareable_p(flags & IMEMO_CONST_CACHE_SHAREABLE, value));
 
         return (ic_cref == NULL || // no need to check CREF
@@ -6723,7 +6730,7 @@ static bool
 vm_ic_hit_p(const struct iseq_inline_constant_cache_entry *ice, const VALUE *reg_ep)
 {
     VM_ASSERT(IMEMO_TYPE_P(ice, imemo_constcache));
-    return vm_inlined_ic_hit_p(ice->flags, ice->value, ice->ic_cref, reg_ep);
+    return vm_inlined_ic_hit_p(ice->flags, ice->value, ice->ic_cref, ice->ractor_id, reg_ep);
 }
 
 // YJIT needs this function to never allocate and never raise
@@ -6745,6 +6752,7 @@ vm_ic_update(const rb_iseq_t *iseq, IC ic, VALUE val, const VALUE *reg_ep, const
     struct iseq_inline_constant_cache_entry *ice = SHAREABLE_IMEMO_NEW(struct iseq_inline_constant_cache_entry, imemo_constcache, 0);
     RB_OBJ_WRITE(ice, &ice->value, val);
     ice->ic_cref = vm_get_const_key_cref(reg_ep);
+    ice->ractor_id = rb_ractor_id(GET_RACTOR());
 
     if (rb_ractor_shareable_p(val)) {
         RUBY_ASSERT((rb_gc_verify_shareable(val), 1));

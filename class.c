@@ -33,6 +33,7 @@
 #include "ruby/st.h"
 #include "vm_core.h"
 #include "ruby/ractor.h"
+#include "ractor_core.h"
 #include "yjit.h"
 #include "zjit.h"
 
@@ -601,6 +602,12 @@ class_alloc0(enum ruby_value_type type, VALUE klass, bool boxable)
 
     memset(RCLASS_EXT_PRIME(obj), 0, sizeof(rb_classext_t));
 
+    // The creating Ractor owns the new class/module; an iclass has no owner.
+    // Singleton classes of classes/modules override this below.
+    if (type != T_ICLASS && UNLIKELY(!rb_ractor_main_p())) {
+        RCLASS_SET_OWNER_RACTOR_ID((VALUE)obj, rb_ractor_id(GET_RACTOR()));
+    }
+
     /* ZALLOC
       RCLASS_CONST_TBL(obj) = 0;
       RCLASS_M_TBL(obj) = 0;
@@ -628,6 +635,56 @@ class_alloc(enum ruby_value_type type, VALUE klass)
 {
     bool boxable = rb_box_available() && BOX_MASTER_P(rb_current_box());
     return class_alloc0(type, klass, boxable);
+}
+
+bool
+rb_class_owned_by_ractor_p(rb_serial_t owner_id)
+{
+    return owner_id == rb_ractor_id(GET_RACTOR());
+}
+
+/* A singleton class has no class path of its own, so name it by the object it
+ * belongs to, as rb_class_modify_check does for a frozen one.  No dispatch: the
+ * object belongs to another Ractor. */
+static VALUE
+class_owner_name(VALUE klass)
+{
+    if (!RCLASS_SINGLETON_P(klass)) return rb_class_path(klass);
+
+    VALUE obj = RCLASS_ATTACHED_OBJECT(klass);
+    return (RB_TYPE_P(obj, T_CLASS) || RB_TYPE_P(obj, T_MODULE)) ? rb_class_path(obj) : rb_any_to_s(obj);
+}
+
+/* The eigenclass of klass, if it has one of its own, else 0. */
+static VALUE
+class_own_metaclass(VALUE klass)
+{
+    VALUE meta = METACLASS_OF(klass);
+    return (RCLASS_SINGLETON_P(meta) && RCLASS_ATTACHED_OBJECT(meta) == klass) ? meta : 0;
+}
+
+/* Only for a singleton class whose attached object has just changed hands through
+ * Ractor#send(move: true).  Deliberately unreachable from Ruby. */
+void
+rb_class_take_ownership(VALUE klass)
+{
+    // keep class_alloc0's "0 means main" encoding
+    rb_serial_t id = rb_ractor_main_p() ? 0 : rb_ractor_id(GET_RACTOR());
+
+    // and up the eigenclass chain: each one belongs to the class below it
+    do {
+        RCLASS_SET_OWNER_RACTOR_ID(klass, id);
+    } while ((klass = class_own_metaclass(klass)) != 0);
+}
+
+void
+rb_class_owner_check(VALUE klass)
+{
+    if (UNLIKELY(!rb_class_owned_p(klass))) {
+        rb_raise(rb_eRactorIsolationError,
+                 "can not modify %"PRIsVALUE" because it is created by another Ractor",
+                 class_owner_name(klass));
+    }
 }
 
 static VALUE
@@ -942,6 +999,90 @@ rb_module_check_initializable(VALUE mod)
     }
 }
 
+static enum rb_id_table_iterator_result
+init_copy_check_const_i(ID id, VALUE v, void *data)
+{
+    const rb_const_entry_t *ce = (const rb_const_entry_t *)v;
+    if (!UNDEF_P(ce->value) && !rb_ractor_shareable_p(ce->value)) {
+        rb_raise(rb_eRactorIsolationError,
+                 "can not copy a class/module created by another Ractor because "
+                 "constant %"PRIsVALUE" refers to an unshareable object", rb_id2str(id));
+    }
+    return ID_TABLE_CONTINUE;
+}
+
+static int
+init_copy_check_field_i(ID id, VALUE val, st_data_t arg)
+{
+    if ((rb_is_instance_id(id) || rb_is_class_id(id)) && !rb_ractor_shareable_p(val)) {
+        rb_raise(rb_eRactorIsolationError,
+                 "can not copy a class/module created by another Ractor because "
+                 "variable %"PRIsVALUE" refers to an unshareable object", rb_id2str(id));
+    }
+    return ST_CONTINUE;
+}
+
+// The copy belongs to the copying Ractor, so it must not carry over unshareable
+// objects owned by the source's Ractor.
+static enum rb_id_table_iterator_result
+move_check_const_i(ID id, VALUE v, void *data)
+{
+    const rb_const_entry_t *ce = (const rb_const_entry_t *)v;
+    if (!UNDEF_P(ce->value) && !rb_ractor_shareable_p(ce->value)) {
+        rb_raise(rb_eRactorIsolationError,
+                 "can not move an object whose singleton class has constant %"PRIsVALUE
+                 " referring to an unshareable object", rb_id2str(id));
+    }
+    return ID_TABLE_CONTINUE;
+}
+
+static int
+move_check_field_i(ID id, VALUE val, st_data_t arg)
+{
+    if ((rb_is_instance_id(id) || rb_is_class_id(id)) && !rb_ractor_shareable_p(val)) {
+        rb_raise(rb_eRactorIsolationError,
+                 "can not move an object whose singleton class has variable %"PRIsVALUE
+                 " referring to an unshareable object", rb_id2str(id));
+    }
+    return ST_CONTINUE;
+}
+
+/* The receiver of a moved object becomes the owner of its singleton class
+ * (rb_class_take_ownership), so nothing the sender keeps may stay readable there. */
+void
+rb_class_check_singleton_movable(VALUE klass)
+{
+    do {
+        if (RCLASS_CONST_TBL(klass)) {
+            rb_id_table_foreach(RCLASS_CONST_TBL(klass), move_check_const_i, NULL);
+        }
+        rb_ivar_foreach_buffered(klass, move_check_field_i, 0);
+    } while ((klass = class_own_metaclass(klass)) != 0);
+}
+
+static void
+init_copy_check_tables(VALUE klass)
+{
+    if (RCLASS_CONST_TBL(klass)) {
+        rb_id_table_foreach(RCLASS_CONST_TBL(klass), init_copy_check_const_i, NULL);
+    }
+    rb_ivar_foreach_buffered(klass, init_copy_check_field_i, 0);
+}
+
+static void
+init_copy_owner_check(VALUE orig)
+{
+    if (!rb_class_owned_p(orig)) {
+        init_copy_check_tables(orig);
+
+        // rb_singleton_class_clone_and_attach copies the metaclass's tables too
+        VALUE meta = METACLASS_OF(orig);
+        if (RCLASS_SINGLETON_P(meta)) {
+            init_copy_check_tables(meta);
+        }
+    }
+}
+
 /* :nodoc: */
 VALUE
 rb_mod_init_copy(VALUE clone, VALUE orig)
@@ -963,6 +1104,8 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
 
     RUBY_ASSERT(RB_TYPE_P(orig, T_CLASS) || RB_TYPE_P(orig, T_MODULE));
     RUBY_ASSERT(BUILTIN_TYPE(clone) == BUILTIN_TYPE(orig));
+
+    init_copy_owner_check(orig);
 
     rb_class_set_initialized(clone);
 
@@ -1189,6 +1332,8 @@ make_metaclass(VALUE klass)
     VALUE metaclass = class_boot_boxable(Qundef, FL_TEST_RAW(klass, RCLASS_BOXABLE));
 
     FL_SET(metaclass, FL_SINGLETON);
+    // owned by the attached class's owner, not by whoever triggered the lazy creation
+    RCLASS_SET_OWNER_RACTOR_ID(metaclass, RCLASS_OWNER_RACTOR_ID(klass));
     rb_singleton_class_attached(metaclass, klass);
 
     if (META_CLASS_OF_CLASS_CLASS_P(klass)) {
@@ -1224,6 +1369,15 @@ make_singleton_class(VALUE obj)
     VALUE orig_class = METACLASS_OF(obj);
     VALUE klass = class_alloc0(T_CLASS, rb_cClass, FL_TEST_RAW(orig_class, RCLASS_BOXABLE));
     FL_SET(klass, FL_SINGLETON);
+    if (RB_TYPE_P(obj, T_MODULE)) {
+        // as in make_metaclass: the module's owner, not the lazy creator
+        RCLASS_SET_OWNER_RACTOR_ID(klass, RCLASS_OWNER_RACTOR_ID(obj));
+    }
+    else if (rb_ractor_shareable_p(obj)) {
+        // A shareable object is no single Ractor's, so its singleton class stays the
+        // main Ractor's rather than being claimed by whoever materialized it.
+        RCLASS_SET_OWNER_RACTOR_ID(klass, 0);
+    }
     class_initialize_method_table(klass);
     class_associate_super(klass, orig_class, true);
     if (orig_class && !UNDEF_P(orig_class)) {

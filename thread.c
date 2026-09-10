@@ -976,7 +976,7 @@ thread_create_core(VALUE thval, struct thread_create_params *params)
         RBASIC_CLEAR_CLASS(th->pending_interrupt_mask_stack);
     }
 
-    RUBY_DEBUG_LOG("r:%u th:%u", rb_ractor_id(th->ractor), rb_th_serial(th));
+    RUBY_DEBUG_LOG("r:%"PRI_SERIALT_PREFIX"u th:%u", rb_ractor_id(th->ractor), rb_th_serial(th));
 
     rb_ractor_living_threads_insert(th->ractor, th);
 
@@ -4895,7 +4895,25 @@ COMPILER_WARNING_POP
     // A zero timeout is a plain probe; ppoll answers it without parking.
     bool mn_wait = timeout == NULL || timeout->tv_sec != 0 || timeout->tv_usec != 0;
 
-    switch (mn_wait ? thread_io_wait_events(th, fd, events, timeout, false) : io_wait_unhandled) {
+    enum io_wait_result mn_result = io_wait_unhandled;
+    struct timeval tv_rest;
+    if (mn_wait) {
+        rb_hrtime_t started = timeout ? rb_hrtime_now() : 0;
+        mn_result = thread_io_wait_events(th, fd, events, timeout, false);
+
+        // The M:N wait may hand an interrupted wait back to the blocking path
+        // below.  Charge what it already waited against the timeout, so the
+        // deadline is the one the caller asked for.
+        if (mn_result == io_wait_unhandled && timeout) {
+            rb_hrtime_t total = rb_timeval2hrtime(timeout);
+            rb_hrtime_t spent = rb_hrtime_sub(rb_hrtime_now(), started);
+            rb_hrtime_t rest = spent < total ? total - spent : 0;
+            rb_hrtime2timeval(&tv_rest, &rest);
+            timeout = &tv_rest;
+        }
+    }
+
+    switch (mn_result) {
       case io_wait_ready:
         fds[0].revents = events;
         errno = 0;
@@ -5254,6 +5272,7 @@ rb_thread_atfork_internal(rb_thread_t *th, void (*atfork)(rb_thread_t *, const r
     rb_native_mutex_initialize(&th->interrupt_lock);
     rb_native_mutex_initialize(&vm->once_lock);
     rb_native_cond_initialize(&vm->once_cond);
+    rb_jit_cont_init(); // cont.c's jit_cont_lock, likewise
     rb_gc_zombie_objspaces_atfork();
     rb_gc_atfork_global_locks();
     rb_generic_fields_lock_atfork();

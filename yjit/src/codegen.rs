@@ -10254,8 +10254,8 @@ fn gen_intern(
     jit: &mut JITState,
     asm: &mut Assembler,
 ) -> Option<CodegenStatus> {
-    // Save the PC and SP because we might allocate
-    jit_prepare_call_with_gc(jit, asm);
+    // rb_str_intern can allocate and raise EncodingError.
+    jit_prepare_non_leaf_call(jit, asm);
 
     let str = asm.stack_opnd(0);
     let sym = asm.ccall(rb_str_intern as *const u8, vec![str]);

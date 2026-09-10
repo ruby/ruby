@@ -263,10 +263,13 @@ struct iseq_inline_constant_cache_entry {
 
     VALUE value;
     const rb_cref_t *ic_cref;
+    /* Ractor that filled this entry.  An unshareable value may be handed out again
+     * only to that Ractor: it is the one that passed the owner check. */
+    rb_serial_t ractor_id;
 };
 STATIC_ASSERT(sizeof_iseq_inline_constant_cache_entry,
-              (offsetof(struct iseq_inline_constant_cache_entry, ic_cref) +
-               sizeof(const rb_cref_t *)) <= RVALUE_SIZE);
+              (offsetof(struct iseq_inline_constant_cache_entry, ractor_id) +
+               sizeof(rb_serial_t)) <= RVALUE_SIZE);
 
 struct iseq_inline_constant_cache {
     struct iseq_inline_constant_cache_entry *entry;
@@ -2433,7 +2436,7 @@ rb_exec_event_hook_orig(rb_execution_context_t *ec, rb_hook_list_t *hooks, rb_ev
 
 struct rb_ractor_pub {
     VALUE self;
-    uint32_t id;
+    rb_serial_t id;
     rb_hook_list_t hooks;
     st_table targeted_hooks; // also called "local hooks". {ISEQ => hook_list, def => hook_list...}
     unsigned int targeted_hooks_cnt; // ex: tp.enabled(target: method(:puts))

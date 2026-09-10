@@ -456,6 +456,7 @@ rb_class_modify_check(VALUE klass)
         }
         rb_error_frozen_object(klass);
     }
+    rb_class_owner_check(klass);
 }
 
 NORETURN(static void rb_longjmp(rb_execution_context_t *, enum ruby_tag_type, volatile VALUE, VALUE));
@@ -1635,6 +1636,11 @@ rb_mod_refine(VALUE module, VALUE klass)
     }
 
     ensure_class_or_module(klass);
+
+    // refine installs refined method entries into the target's method table, and
+    // rb_refinement_setup writes the refinement tables into the receiver
+    rb_class_owner_check(module);
+    rb_class_owner_check(klass);
 
     rb_refinement_setup(&data, module, klass);
 

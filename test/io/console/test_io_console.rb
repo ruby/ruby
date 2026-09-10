@@ -78,8 +78,6 @@ class TestIO_Console < Test::Unit::TestCase
   TTY_MODE_STTY = IO.private_method_defined?(:_io_console_stty)
 
   def test_stty_mode_arguments
-    omit "stty backend only" unless TTY_MODE_STTY
-
     mode = IO::Console::Mode.new(
       "saved\n",
       "echo icanon isig opost; min = 1; time = 0;",
@@ -87,7 +85,7 @@ class TestIO_Console < Test::Unit::TestCase
     mode.raw!(min: 2, time: 0.3)
 
     assert_equal(["saved", "raw", "min", "2", "time", "3"], mode.arguments)
-  end
+  end if TTY_MODE_STTY
 
   def test_tty?
     pend "not supported" unless TTY_ENHANCED
@@ -346,7 +344,7 @@ class TestIO_Console
       end
       assert_not_empty(mode)
     end
-  end if IO.private_method_defined?(:_io_console_stty)
+  end if TTY_MODE_STTY
 
   def test_tty_on_pty
     pend "not supported" unless TTY_ENHANCED
@@ -610,6 +608,10 @@ class TestIO_Console
     end
   end
 
+  def test_getch_timeout
+    assert_equal(["nil"], run_pty("p IO.console.getch(intr: true, time: 0.1, min: 0)"))
+  end
+
   unless IO.console
     def test_close
       assert_equal(["true"], run_pty("IO.console.close; p IO.console.fileno >= 0"))
@@ -719,7 +721,7 @@ class TestIO_Console
 
   def test_getch_timeout
     assert_nil(IO.console.getch(intr: true, time: 0.1, min: 0))
-  end
+  end if ENV["CI"]
 
   def test_ttyname
     return unless IO.method_defined?(:ttyname)

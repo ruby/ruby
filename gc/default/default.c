@@ -2540,10 +2540,10 @@ static struct heap_page_body *
 page_pool_acquire(struct page_arena **arena_out)
 {
     struct heap_page_body *body = NULL;
-    bool need_reuse = false;
 
     if (HEAP_PAGE_ALLOC_USE_MMAP) {
 #ifdef HAVE_MMAP
+        bool need_reuse = false;
         rb_global_objspace_t *g = global_objspace;
 
         rb_native_mutex_lock(&g->page_pool.lock);
@@ -8597,11 +8597,13 @@ current_thread_time(struct timespec *ts)
 #if defined(HAVE_CLOCK_GETTIME) && defined(CLOCK_THREAD_CPUTIME_ID)
     {
         static int try_clock_gettime = 1;
-        if (try_clock_gettime && clock_gettime(CLOCK_THREAD_CPUTIME_ID, ts) == 0) {
-            return true;
-        }
-        else {
-            try_clock_gettime = 0;
+        if (try_clock_gettime) {
+            if (clock_gettime(CLOCK_THREAD_CPUTIME_ID, ts) == 0) {
+                return true;
+            }
+            else {
+                try_clock_gettime = 0;
+            }
         }
     }
 #endif
@@ -11292,11 +11294,13 @@ current_process_time(struct timespec *ts)
 #if defined(HAVE_CLOCK_GETTIME) && defined(CLOCK_PROCESS_CPUTIME_ID)
     {
         static int try_clock_gettime = 1;
-        if (try_clock_gettime && clock_gettime(CLOCK_PROCESS_CPUTIME_ID, ts) == 0) {
-            return true;
-        }
-        else {
-            try_clock_gettime = 0;
+        if (try_clock_gettime) {
+            if (clock_gettime(CLOCK_PROCESS_CPUTIME_ID, ts) == 0) {
+                return true;
+            }
+            else {
+                try_clock_gettime = 0;
+            }
         }
     }
 #endif
@@ -12609,7 +12613,6 @@ rb_gc_impl_objspace_init(void *objspace_ptr)
 
     gc_config_full_mark_set(TRUE);
 
-    objspace->flags.measure_gc = true;
     malloc_limit = gc_params.malloc_limit_min;
     objspace->shareable_objects_limit = SHAREABLE_OBJECTS_LIMIT_MIN;
 #ifdef MALLOC_COUNTERS_NEED_LOCK
@@ -12648,6 +12651,10 @@ rb_gc_impl_objspace_init(void *objspace_ptr)
 #endif
         gc_params.heap_init_bytes = GC_HEAP_INIT_BYTES;
     }
+    // GC.measure_total_time= sets the caller's objspace only; a new Ractor's follows
+    // its creator's, which is the objspace running this init (main starts it on).
+    objspace->flags.measure_gc = global_objspace->main_objspace == objspace ? true
+                                 : ((rb_objspace_t *)rb_gc_get_objspace())->flags.measure_gc;
 
     rb_darray_make_without_gc(&objspace->heap_pages.sorted, 0);
     rb_darray_make_without_gc(&objspace->weak_references, 0);

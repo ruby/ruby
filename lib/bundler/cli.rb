@@ -319,7 +319,7 @@ module Bundler
     method_option "source", type: :array, banner: "Update a specific source (and all gems associated with it)"
     method_option "force", type: :boolean, aliases: "--redownload", banner: "Force reinstalling every gem, even if already installed"
     method_option "ruby", type: :boolean, banner: "Update ruby specified in Gemfile.lock"
-    method_option "bundler", type: :string, lazy_default: "> 0.a", banner: "Update the locked version of bundler"
+    method_option "bundler", type: :string, lazy_default: ">= #{Bundler::VERSION}", banner: "Update the locked version of bundler"
     method_option "patch", type: :boolean, banner: "Prefer updating only to next patch version"
     method_option "minor", type: :boolean, banner: "Prefer updating only to next minor version"
     method_option "major", type: :boolean, banner: "Prefer updating to next major version (default)"
@@ -647,7 +647,7 @@ module Bundler
     method_option "pre", type: :boolean, banner: "If updating, always choose the highest allowed version, regardless of prerelease status"
     method_option "strict", type: :boolean, banner: "If updating, do not allow any gem to be updated past latest --patch | --minor | --major"
     method_option "conservative", type: :boolean, banner: "If updating, use bundle install conservative update behavior and do not allow shared dependencies to be updated"
-    method_option "bundler", type: :string, lazy_default: "> 0.a", banner: "Update the locked version of bundler"
+    method_option "bundler", type: :string, lazy_default: ">= #{Bundler::VERSION}", banner: "Update the locked version of bundler"
     method_option "cooldown", type: :numeric, banner: "Only consider gem versions published at least N days ago. Use 0 to disable."
     def lock
       require_relative "cli/lock"
