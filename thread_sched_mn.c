@@ -609,6 +609,9 @@ thread_sched_wait_events(struct rb_thread_sched *sched, rb_thread_t *th, int fd,
     if (reg == timer_thread_unavailable) return thread_sched_wait_unavailable;
     // A ready fd never registered, so it never timed out either.
     if (reg == timer_thread_already_ready) return thread_sched_wait_event;
+    // No event fired and we are interrupted: that is an interrupt, not a
+    // timeout.  Hand the wait back so the caller runs it and re-polls the fd.
+    if (timedout && RUBY_VM_INTERRUPTED(th->ec)) return thread_sched_wait_unavailable;
     return timedout ? thread_sched_wait_timeout : thread_sched_wait_event;
 }
 
