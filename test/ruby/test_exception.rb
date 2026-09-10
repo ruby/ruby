@@ -1478,8 +1478,6 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
   end
 
   def test_detailed_message_under_gc_compact_stress
-    omit "compaction doesn't work well on s390x" if RUBY_PLATFORM =~ /s390x/ # https://github.com/ruby/ruby/pull/5077
-
     # The first error display lazily requires did_you_mean and friends; inside the
     # block that library load costs one full mark+compact per allocation, enough to
     # trip the parallel runner's no-response timeout.  Load it here instead.
