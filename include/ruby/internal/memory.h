@@ -42,6 +42,7 @@
 # include <intrin.h>
 # if defined(_M_AMD64)
 # pragma intrinsic(_umul128)
+# pragma intrinsic(_addcarry_u64)
 # endif
 # if defined(_M_ARM64)
 # pragma intrinsic(__umulh)
@@ -663,6 +664,12 @@ rbimpl_size_add_overflow(size_t x, size_t y)
     RB_GNUC_EXTENSION DSIZE_T dz = dx + dy;
     ret.overflowed = dz > SIZE_MAX;
     ret.result = (size_t)dz;
+
+#elif defined(_MSC_VER) && defined(_M_AMD64)
+    unsigned __int64 dz = 0;
+    unsigned char carry = _addcarry_u64(0, x, y, &dz);
+    ret.overflowed = RBIMPL_CAST((bool)carry);
+    ret.result = RBIMPL_CAST((size_t)dz);
 
 #else
     ret.result = x + y;
