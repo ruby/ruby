@@ -610,6 +610,10 @@ class TestIO_Console
     end
   end
 
+  def test_getch_timeout
+    assert_equal(["nil"], run_pty("p IO.console.getch(intr: true, time: 0.1, min: 0)"))
+  end
+
   unless IO.console
     def test_close
       assert_equal(["true"], run_pty("IO.console.close; p IO.console.fileno >= 0"))
@@ -719,7 +723,7 @@ class TestIO_Console
 
   def test_getch_timeout
     assert_nil(IO.console.getch(intr: true, time: 0.1, min: 0))
-  end
+  end if ENV["CI"]
 
   def test_ttyname
     return unless IO.method_defined?(:ttyname)
