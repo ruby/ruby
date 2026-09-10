@@ -34,18 +34,6 @@
 #endif
 
 /**
- * Retrieves the internal table.
- *
- * @param[in]  h  An instance of RHash.
- * @pre        `h` must be of ::RUBY_T_HASH.
- * @return     A struct st_table which has the contents of this hash.
- * @note       Nowadays as Ruby  evolved over ages, RHash  has multiple backend
- *             storage  engines.   `h`'s backend  is  not  guaranteed to  be  a
- *             st_table.  This function creates one when necessary.
- */
-#define RHASH_TBL(h)                rb_hash_tbl(h, __FILE__, __LINE__)
-
-/**
  * @private
  *
  * @deprecated  This macro once was a thing in the old days, but makes no sense
@@ -115,7 +103,26 @@ size_t rb_hash_size_num(VALUE hash);
  * @pre        `hash` must be of ::RUBY_T_HASH.
  * @return     Table that has the contents of the hash.
  */
-struct st_table *rb_hash_tbl(VALUE hash, const char *file, int line);
+struct st_table *rb_hash_tbl(VALUE hash);
+
+RBIMPL_ATTR_DEPRECATED(("other `rb_hash_*` APIs"))
+/**
+ * Retrieves the internal table.
+ *
+ * @param[in]  h  An instance of RHash.
+ * @pre        `h` must be of ::RUBY_T_HASH.
+ * @return     A struct st_table which has the contents of this hash.
+ * @note       Nowadays as Ruby  evolved over ages, RHash  has multiple backend
+ *             storage  engines.   `h`'s backend  is  not  guaranteed to  be  a
+ *             st_table.  This function creates one when necessary.
+ * @deprecated This imposes that RHash can backed by a `struct st_table` which is limiting
+ *             runtime optimizations.
+ */
+static inline st_table *
+RHASH_TBL(VALUE h)
+{
+    return rb_hash_tbl(h);
+}
 
 /**
  * This is the  implementation detail of #RHASH_SET_IFNONE.   People don't call

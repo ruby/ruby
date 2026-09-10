@@ -759,7 +759,7 @@ ar_each_key(ar_table *ar, int max, enum ar_each_key_type type, st_data_t *dst_ke
 }
 
 static st_table *
-ar_force_convert_table(VALUE hash, const char *file, int line)
+ar_force_convert_table(VALUE hash)
 {
     if (RHASH_ST_TABLE_P(hash)) {
         return RHASH_ST_TABLE(hash);
@@ -1792,16 +1792,16 @@ rb_hash_modify_check(VALUE hash)
 }
 
 struct st_table *
-rb_hash_tbl_raw(VALUE hash, const char *file, int line)
+rb_hash_tbl_raw(VALUE hash)
 {
-    return ar_force_convert_table(hash, file, line);
+    return ar_force_convert_table(hash);
 }
 
 struct st_table *
-rb_hash_tbl(VALUE hash, const char *file, int line)
+rb_hash_tbl(VALUE hash)
 {
     OBJ_WB_UNPROTECT(hash);
-    return rb_hash_tbl_raw(hash, file, line);
+    return rb_hash_tbl_raw(hash);
 }
 
 static void
@@ -1852,7 +1852,7 @@ rb_hash_stlike_update(VALUE hash, st_data_t key, st_update_callback_func *func, 
     if (RHASH_AR_TABLE_P(hash)) {
         int result = ar_update(hash, key, func, arg);
         if (result == -1) {
-            ar_force_convert_table(hash, __FILE__, __LINE__);
+            ar_force_convert_table(hash);
         }
         else {
             return result;
