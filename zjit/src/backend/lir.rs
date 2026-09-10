@@ -2037,7 +2037,7 @@ impl Assembler
             // Entry blocks shouldn't ever be preceded by something that can
             // stomp on this block.
             if !block.is_entry {
-                perf::push_insns_with_hir_symbol(&mut insns, "BoundaryPad", |insns| {
+                perf::push_insns_with_synthetic_symbol(&mut insns, "BoundaryPad", |insns| {
                     insns.push(Insn::BoundaryPad);
                 });
             }
@@ -2070,7 +2070,7 @@ impl Assembler
             }
         }
         // Make sure we don't stomp on the next function
-        perf::push_insns_with_hir_symbol(&mut insns, "BoundaryPad", |insns| {
+        perf::push_insns_with_synthetic_symbol(&mut insns, "BoundaryPad", |insns| {
             insns.push(Insn::BoundaryPad);
         });
 
