@@ -63,13 +63,15 @@ pub(crate) fn symbol_range_end_at_block_end(asm: &mut Assembler, symbol_range: &
     asm.pos_marker_at_block_end(symbol_range_end_marker(symbol_range));
 }
 
-/// Push instructions and register their code range when HIR perf output is enabled.
-pub(crate) fn push_insns_with_hir_symbol(
+/// Push instructions under a synthetic HIR perf symbol.
+/// HIR output maps each HIR instruction to its emitted code range.
+/// This records code with no HIR instruction, such as `BoundaryPad`, under `symbol_name`.
+pub(crate) fn push_insns_with_synthetic_symbol(
     insns: &mut Vec<LirInsn>,
     symbol_name: &str,
     push_insns: impl FnOnce(&mut Vec<LirInsn>),
 ) {
-    let Some(symbol_range) = symbol_range_start_for_insns(insns, symbol_name) else {
+    let Some(symbol_range) = start_synthetic_hir_symbol_range(insns, symbol_name) else {
         push_insns(insns);
         return;
     };
@@ -93,14 +95,18 @@ fn register(symbol_name: String, start_ptr: usize, code_size: usize) {
     };
 }
 
-fn new_hir_symbol_range() -> Option<SymbolRange> {
-    (get_option!(perf) == Some(PerfMap::HIR)).then(|| Rc::new(RefCell::new(None)))
-}
-
-fn symbol_range_start_for_insns(insns: &mut Vec<LirInsn>, symbol_name: &str) -> Option<SymbolRange> {
+/// Add a start marker for a synthetic HIR symbol if HIR output is enabled.
+fn start_synthetic_hir_symbol_range(
+    insns: &mut Vec<LirInsn>,
+    symbol_name: &str,
+) -> Option<SymbolRange> {
     let symbol_range = new_hir_symbol_range()?;
     insns.push(LirInsn::PosMarker(Rc::new(symbol_range_start_marker(&symbol_range, symbol_name.to_string()))));
     Some(symbol_range)
+}
+
+fn new_hir_symbol_range() -> Option<SymbolRange> {
+    (get_option!(perf) == Some(PerfMap::HIR)).then(|| Rc::new(RefCell::new(None)))
 }
 
 fn install_symbol_range_start(
