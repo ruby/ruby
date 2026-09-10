@@ -12,6 +12,7 @@ rules:
     ignore:
       - auto_request_review.yml
       - auto_review_pr.yml
+      - jit_pr_title.yml
       - labeler.yml
       - pr-playground.yml
   dependabot-cooldown:
