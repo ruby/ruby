@@ -1813,7 +1813,7 @@ w32_cmdvector(const WCHAR *cmd, char ***vec, UINT cp, rb_encoding *enc)
                 // If we're not already in a string, start one.
                 // A pair of double quotes inside a double-quoted string
                 // is an escaped double quote, and does not terminate the
-                // string, following MSVCRT/UCRT parse_cmdline rather
+                // string, following UCRT parse_cmdline rather
                 // than shell32's CommandLineToArgvW. See [Bug #11142]
                 //
 
