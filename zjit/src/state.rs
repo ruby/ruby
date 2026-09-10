@@ -1,6 +1,6 @@
 //! Runtime state of ZJIT.
 
-use crate::codegen::{gen_entry_trampoline, gen_exception_entry_stub_exit, gen_exception_entry_stub_hit_trampoline, gen_exit_trampoline, gen_function_stub_hit_trampoline, gen_materialize_exit_trampoline, gen_materialize_exit_trampoline_with_counter};
+use crate::codegen::{gen_entry_trampoline, gen_exception_entry_stub_exit, gen_exception_entry_stub_hit_trampoline, gen_exception_entry_trampoline, gen_exit_trampoline, gen_function_stub_hit_trampoline, gen_materialize_exit_trampoline, gen_materialize_exit_trampoline_with_counter};
 use crate::cruby::{self, rb_bug_panic_hook, rb_vm_insn_count, src_loc, EcPtr, Qnil, Qtrue, rb_profile_frames, rb_profile_frame_full_label, rb_profile_frame_absolute_path, rb_profile_frame_path, VALUE, VM_INSTRUCTION_SIZE, with_vm_lock, rust_str_to_id, rb_funcallv, rb_const_get, rb_cRubyVM};
 use crate::cruby_methods;
 use cruby::{ID, rb_callable_method_entry, get_def_method_serial, rb_gc_register_mark_object, ruby_str_to_rust_string_result};
@@ -19,6 +19,11 @@ use std::ptr::null;
 #[allow(non_upper_case_globals)]
 #[unsafe(no_mangle)]
 pub static mut rb_zjit_entry: *const u8 = null();
+
+/// Shared trampoline to enter ZJIT from jit_exec_exception().
+#[allow(non_upper_case_globals)]
+#[unsafe(no_mangle)]
+pub static mut rb_zjit_exception_entry: *const u8 = null();
 
 /// Whether ZJIT is compiling. Starts as false until ZJIT is enabled, so the
 /// interpreter doesn't need to check rb_zjit_enabled_p before it. Set back to
@@ -123,8 +128,8 @@ enum InitializationState {
 static mut ZJIT_STATE: InitializationState = InitializationState::Uninitialized;
 
 impl ZJITState {
-    /// Initialize the ZJIT globals. Return the address of the JIT entry trampoline.
-    pub fn init() -> *const u8 {
+    /// Initialize the ZJIT globals. Return the JIT entry trampoline addresses.
+    pub fn init() -> (*const u8, *const u8) {
         use InitializationState::*;
 
         let initialization_state = unsafe {
@@ -148,6 +153,7 @@ impl ZJITState {
         };
 
         let entry_trampoline = gen_entry_trampoline(&mut cb).unwrap().raw_ptr(&cb);
+        let exception_entry_trampoline = gen_exception_entry_trampoline(&mut cb).unwrap().raw_ptr(&cb);
         let exit_trampoline = gen_exit_trampoline(&mut cb).unwrap();
         let materialize_exit_trampoline = gen_materialize_exit_trampoline(&mut cb, exit_trampoline).unwrap();
         let function_stub_hit_trampoline = gen_function_stub_hit_trampoline(&mut cb).unwrap();
@@ -194,7 +200,7 @@ impl ZJITState {
             ZJITState::get_instance().materialize_exit_trampoline_with_counter = code_ptr;
         }
 
-        entry_trampoline
+        (entry_trampoline, exception_entry_trampoline)
     }
 
     /// Return true if zjit_state has been initialized
@@ -440,7 +446,7 @@ fn zjit_enable() {
     // See https://doc.rust-lang.org/nomicon/exception-safety.html
     let result = std::panic::catch_unwind(|| {
         // Initialize ZJIT states
-        let zjit_entry = ZJITState::init();
+        let (zjit_entry, zjit_exception_entry) = ZJITState::init();
 
         // Install a panic hook for ZJIT
         rb_bug_panic_hook();
@@ -450,8 +456,10 @@ fn zjit_enable() {
 
         // ZJIT enabled and initialized successfully
         assert!(unsafe{ rb_zjit_entry == null() });
+        assert!(unsafe { rb_zjit_exception_entry == null() });
         unsafe {
             rb_zjit_entry = zjit_entry;
+            rb_zjit_exception_entry = zjit_exception_entry;
             rb_zjit_compiling_p = true;
         }
     });
