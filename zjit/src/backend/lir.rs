@@ -1,4 +1,4 @@
-use std::cell::{Cell, RefCell};
+use std::cell::Cell;
 use std::collections::hash_map::Entry;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::fmt;
@@ -9,7 +9,7 @@ use crate::perf;
 use crate::cruby::{IseqPtr, RUBY_OFFSET_CFP_ISEQ, RUBY_OFFSET_CFP_JIT_RETURN, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32, VALUE, ZJIT_STACK_MAP_BASE_PTR_INDEX_MASK, ZJIT_STACK_MAP_BASE_PTR_SIZE_SHIFT, ZJIT_STACK_MAP_BASE_PTR_TAG, ZJIT_STACK_MAP_SHIFT, ZJIT_STACK_MAP_SKIP_TAG, ZJIT_STACK_MAP_VREG_TAG, vm_stack_canary, YarvInsnIdx, zjit_jit_frame, local_size_and_idx_to_ep_offset};
 use crate::hir::{Invariant, SideExitReason};
 use crate::hir;
-use crate::options::{TraceExits, PerfMap, get_option};
+use crate::options::{TraceExits, get_option};
 use crate::payload::{IseqVersionRef, get_or_create_iseq_payload};
 use crate::stats::{exit_counter_ptr, exit_counter_ptr_for_opcode, side_exit_counter, CompileError};
 use crate::virtualmem::CodePtr;
@@ -2027,38 +2027,6 @@ impl Assembler
     }
 
     pub fn linearize_instructions(&self) -> Vec<Insn> {
-        // Wrap instructions emitted by `push_insns` with PosMarkers and record
-        // the emitted byte range under `symbol_name` in the perf map.
-        fn push_insns_with_perf_symbol(
-            insns: &mut Vec<Insn>,
-            symbol_name: &str,
-            push_insns: impl FnOnce(&mut Vec<Insn>),
-        ) {
-            // ISEQ perf symbols cover the whole compiled ISEQ, including this
-            // padding. HIR perf needs a separate symbol because the padding
-            // doesn't belong to any HIR instruction.
-            if get_option!(perf) != Some(PerfMap::HIR) {
-                push_insns(insns);
-                return;
-            }
-
-            let symbol_name = symbol_name.to_string();
-            let start = Rc::new(RefCell::new(None));
-            let current = start.clone();
-            insns.push(Insn::PosMarker(Rc::new(move |code_ptr, _| {
-                let mut current = current.borrow_mut();
-                assert!(current.is_none(), "perf symbol range already open");
-                *current = Some(code_ptr);
-            })));
-
-            push_insns(insns);
-
-            insns.push(Insn::PosMarker(Rc::new(move |end, cb| {
-                if let Some(start) = start.borrow_mut().take() {
-                    perf::register_range(cb, symbol_name.clone(), start, end);
-                }
-            })));
-        }
 
         // Emit instructions with labels, expanding branch parameters
         let mut insns = Vec::with_capacity(ASSEMBLER_INSNS_CAPACITY);
@@ -2069,7 +2037,7 @@ impl Assembler
             // Entry blocks shouldn't ever be preceded by something that can
             // stomp on this block.
             if !block.is_entry {
-                push_insns_with_perf_symbol(&mut insns, "BoundaryPad", |insns| {
+                perf::push_insns_with_hir_symbol(&mut insns, "BoundaryPad", |insns| {
                     insns.push(Insn::BoundaryPad);
                 });
             }
@@ -2102,7 +2070,7 @@ impl Assembler
             }
         }
         // Make sure we don't stomp on the next function
-        push_insns_with_perf_symbol(&mut insns, "BoundaryPad", |insns| {
+        perf::push_insns_with_hir_symbol(&mut insns, "BoundaryPad", |insns| {
             insns.push(Insn::BoundaryPad);
         });
 
@@ -3228,12 +3196,8 @@ impl Assembler
         // Map from SideExit to compiled Label. This table is used to deduplicate side exit code.
         let mut compiled_exits: HashMap<SideExit, Label> = HashMap::with_capacity(targets.len());
 
-        // Start a new perf range for side exits
-        let symbol_range = if get_option!(perf) == Some(PerfMap::HIR) {
-            Some(perf::symbol_range_start(self, "side exit"))
-        } else {
-            None
-        };
+        // Start a new perf range for side exits.
+        let symbol_range = perf::symbol_range_start(self, "side exit");
 
         // Mark the start of side-exit code so we can measure its size
         if !targets.is_empty() {

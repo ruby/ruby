@@ -4,7 +4,8 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use crate::asm::CodeBlock;
-use crate::backend::lir::Assembler;
+use crate::cruby::{IseqPtr, iseq_get_location};
+use crate::backend::lir::{Assembler, Insn as LirInsn};
 use crate::hir::Insn;
 use crate::options::{get_option, PerfMap};
 use crate::options::debug;
@@ -29,41 +30,52 @@ pub(crate) fn register_current_code_range(cb: &CodeBlock, symbol_name: &str, sta
     }
 }
 
-/// Start a HIR perf symbol range when --zjit-perf=hir is enabled.
-pub(crate) fn hir_symbol_range_start(asm: &mut Assembler, insn: &Insn) -> Option<SymbolRange> {
-    if get_option!(perf) == Some(PerfMap::HIR) {
-        let insn_name = format!("{insn}").split_whitespace().next().unwrap().to_string();
-        Some(symbol_range_start(asm, &insn_name))
-    } else {
-        None
+/// Register an ISEQ code range when ISEQ perf output is enabled.
+pub(crate) fn register_current_iseq_range(cb: &CodeBlock, iseq: IseqPtr, start: CodePtr) {
+    if get_option!(perf) == Some(PerfMap::ISEQ) {
+        register_range(cb, iseq_get_location(iseq, 0), start, cb.get_write_ptr());
     }
 }
 
-/// Mark the start of a perf symbol range via pos_marker.
-/// Returns a handle to pass to `symbol_range_end`.
-pub(crate) fn symbol_range_start(asm: &mut Assembler, symbol_name: &str) -> SymbolRange {
-    let symbol_name = symbol_name.to_string();
-    let symbol_range: SymbolRange = Rc::new(RefCell::new(None));
-    let current = symbol_range.clone();
-    asm.pos_marker(move |start, _| {
-        let mut current = current.borrow_mut();
-        assert!(current.is_none(), "perf symbol range already open");
-        *current = Some((start, symbol_name.clone()));
-    });
-    symbol_range
+/// Start a HIR symbol range when HIR perf output is enabled.
+pub(crate) fn hir_symbol_range_start(asm: &mut Assembler, insn: &Insn) -> Option<SymbolRange> {
+    let symbol_range = new_hir_symbol_range()?;
+    let insn_name = format!("{insn}");
+    Some(install_symbol_range_start(asm, symbol_range, insn_name.split_whitespace().next().unwrap()))
 }
 
+/// Mark the start of a symbol range when HIR perf output is enabled.
+/// Returns None otherwise.
+pub(crate) fn symbol_range_start(asm: &mut Assembler, symbol_name: &str) -> Option<SymbolRange> {
+    let symbol_range = new_hir_symbol_range()?;
+    Some(install_symbol_range_start(asm, symbol_range, symbol_name))
+}
 
-/// Mark the end of a perf symbol range via pos_marker.
+/// Mark the end of a symbol range via pos_marker.
 pub(crate) fn symbol_range_end(asm: &mut Assembler, symbol_range: &SymbolRange) {
     asm.pos_marker(symbol_range_end_marker(symbol_range));
 }
 
-/// Mark the end of a perf symbol range at the end of the current LIR block.
+/// Mark the end of a symbol range at the end of the current LIR block.
 /// A terminator jump can be removed when it targets the next linear block.
 /// This can leave an empty range. `register_range` skips that entry.
 pub(crate) fn symbol_range_end_at_block_end(asm: &mut Assembler, symbol_range: &SymbolRange) {
     asm.pos_marker_at_block_end(symbol_range_end_marker(symbol_range));
+}
+
+/// Push instructions and register their code range when HIR perf output is enabled.
+pub(crate) fn push_insns_with_hir_symbol(
+    insns: &mut Vec<LirInsn>,
+    symbol_name: &str,
+    push_insns: impl FnOnce(&mut Vec<LirInsn>),
+) {
+    let Some(symbol_range) = symbol_range_start_for_insns(insns, symbol_name) else {
+        push_insns(insns);
+        return;
+    };
+
+    push_insns(insns);
+    insns.push(LirInsn::PosMarker(Rc::new(symbol_range_end_marker(&symbol_range))));
 }
 
 /// Write an entry to the perf map in /tmp.
@@ -79,6 +91,37 @@ fn register(symbol_name: String, start_ptr: usize, code_size: usize) {
         debug!("Failed to write {symbol_name} to perf map file: {perf_map}");
         return;
     };
+}
+
+fn new_hir_symbol_range() -> Option<SymbolRange> {
+    (get_option!(perf) == Some(PerfMap::HIR)).then(|| Rc::new(RefCell::new(None)))
+}
+
+fn symbol_range_start_for_insns(insns: &mut Vec<LirInsn>, symbol_name: &str) -> Option<SymbolRange> {
+    let symbol_range = new_hir_symbol_range()?;
+    insns.push(LirInsn::PosMarker(Rc::new(symbol_range_start_marker(&symbol_range, symbol_name.to_string()))));
+    Some(symbol_range)
+}
+
+fn install_symbol_range_start(
+    asm: &mut Assembler,
+    symbol_range: SymbolRange,
+    symbol_name: &str,
+) -> SymbolRange {
+    asm.pos_marker(symbol_range_start_marker(&symbol_range, symbol_name.to_string()));
+    symbol_range
+}
+
+fn symbol_range_start_marker(
+    symbol_range: &SymbolRange,
+    symbol_name: String,
+) -> impl Fn(CodePtr, &CodeBlock) + 'static {
+    let current = symbol_range.clone();
+    move |start, _| {
+        let mut current = current.borrow_mut();
+        assert!(current.is_none(), "perf symbol range already open");
+        *current = Some((start, symbol_name.clone()));
+    }
 }
 
 fn symbol_range_end_marker(symbol_range: &SymbolRange) -> impl Fn(CodePtr, &CodeBlock) + 'static {
