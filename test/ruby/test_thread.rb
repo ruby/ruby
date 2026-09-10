@@ -1009,8 +1009,6 @@ _eom
   end
 
   def test_thread_timer_and_interrupt
-    omit "[Bug #18613]" if /freebsd/ =~ RUBY_PLATFORM
-
     bug5757 = '[ruby-dev:44985]'
     pid = nil
     cmd = 'Signal.trap(:INT, "DEFAULT"); pipe=IO.pipe; Thread.start {Thread.pass until Thread.main.stop?; puts; STDOUT.flush}; pipe[0].read'
@@ -1528,10 +1526,6 @@ q.pop
     if /mswin|mingw/ =~ RUBY_PLATFORM
       omit "can't trap a signal from another process on Windows"
       # opt = {new_pgroup: true}
-    end
-
-    if /freebsd/ =~ RUBY_PLATFORM
-      omit "[Bug #18613]"
     end
 
     assert_separately([], "#{<<~"{#"}\n#{<<~'};'}", timeout: 120)

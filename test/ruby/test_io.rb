@@ -3606,8 +3606,6 @@ __END__
   end
 
   def test_cross_thread_close_stdio
-    omit "[Bug #18613]" if /freebsd/ =~ RUBY_PLATFORM
-
     assert_separately([], <<-'end;')
       IO.pipe do |r,w|
         $stdin.reopen(r)
@@ -4302,8 +4300,6 @@ __END__
   end
 
   def test_race_closed_stream
-    omit "[Bug #18613]" if /freebsd/ =~ RUBY_PLATFORM
-
     assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}")
     begin;
       bug13158 = '[ruby-core:79262] [Bug #13158]'
@@ -4398,8 +4394,6 @@ __END__
     end
 
     def test_closed_stream_in_rescue
-      omit "[Bug #18613]" if /freebsd/ =~ RUBY_PLATFORM
-
       assert_separately([], "#{<<-"begin;"}\n#{<<~"end;"}")
       begin;
       10.times do
