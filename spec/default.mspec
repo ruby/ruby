@@ -3,8 +3,11 @@ $VERBOSE = false
 if (opt = ENV["RUBYOPT"]) and (opt = opt.dup).sub!(/(?:\A|\s)-w(?=\z|\s)/, '')
   ENV["RUBYOPT"] = opt
 end
-# The specs assert the output of the ruby processes they spawn verbatim.
-ENV["RUBYOPT"] = (["-W:no-experimental"] | ENV["RUBYOPT"].to_s.split).join(" ")
+# The specs assert the output of the ruby processes they spawn verbatim.  See
+# tool/test/init.rb for why the switch goes where it does.
+rubyopt = ENV["RUBYOPT"].to_s.split - ["-W:no-experimental"]
+rubyopt.insert(rubyopt.index("-") || rubyopt.size, "-W:no-experimental")
+ENV["RUBYOPT"] = rubyopt.join(" ")
 
 # Enable constant leak checks by ruby/mspec
 ENV["CHECK_CONSTANT_LEAKS"] ||= "true"
