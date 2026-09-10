@@ -572,11 +572,7 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
     let result = asm.compile(cb);
     if let Ok((start_ptr, _)) = result {
         if get_option!(perf) == Some(PerfMap::ISEQ) {
-            let start_usize = start_ptr.raw_addr(cb);
-            let end_usize = cb.get_write_ptr().raw_addr(cb);
-            let code_size = end_usize - start_usize;
-            let iseq_name = iseq_get_location(iseq, 0);
-            perf::register(iseq_name, start_usize, code_size);
+            perf::register_range(cb, iseq_get_location(iseq, 0), start_ptr, cb.get_write_ptr());
         }
         if ZJITState::should_log_compiled_iseqs() {
             let iseq_name = iseq_get_location(iseq, 0);
