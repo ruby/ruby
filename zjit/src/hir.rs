@@ -11606,6 +11606,27 @@ mod validation_tests {
         assert_matches_err(function.validate(), ValidationError::DuplicateInstruction(exit, val));
     }
 
+    #[test]
+    fn irreducible_loop() {
+        // left and right jump to each other and both are reachable from the
+        // entry block: a loop with two entry points. Neither block dominates
+        // the other, so the CFG is irreducible.
+        let mut function = Function::new(std::ptr::null());
+        let entry = function.entry_block;
+        let left = function.new_block(0);
+        let right = function.new_block(0);
+        let val = function.push_insn(entry, Insn::Const { val: Const::CBool(true) });
+        function.push_insn(entry, Insn::CondBranch {
+            val,
+            if_true: BranchEdge { target: left, args: vec![] },
+            if_false: BranchEdge { target: right, args: vec![] },
+        });
+        function.push_insn(left, Insn::Jump(BranchEdge { target: right, args: vec![] }));
+        function.push_insn(right, Insn::Jump(BranchEdge { target: left, args: vec![] }));
+        function.seal_entries();
+        assert_matches_err(function.validate(), ValidationError::IrreducibleLoopEdge(left, right));
+    }
+
     // The heap-fields pointer (`as_heap`, a CPtr) and the first embedded
     // instance variable both live at ROBJECT_OFFSET_AS_HEAP_FIELDS ==
     // ROBJECT_OFFSET_AS_ARY == 0x10 on a Ruby object. They are distinct fields
