@@ -2376,6 +2376,7 @@ enum courier_node_kind {
     COURIER_KIND_STRUCT,
     COURIER_KIND_MATCH,
     COURIER_KIND_IO,
+    COURIER_KIND_REGEXP,    /* recompiled from its source and options (copy only) */
 };
 
 struct courier_node {
@@ -2395,6 +2396,7 @@ struct courier_node {
         struct { long len; uint32_t *elems; VALUE klass; } strct; /* owns elems */
         struct { uint32_t regexp_id, str_id; int num_regs; void *regs; VALUE klass; } match; /* owns regs */
         struct { void *blob; int size; } bt;                                 /* the courier owns blob */
+        struct { VALUE src; int options; VALUE klass; } re;    /* src is an fstring: shareable */
         struct {
             struct rb_io *fptr;  /* carried by pointer (it owns the fd) */
             VALUE klass;
@@ -2837,6 +2839,20 @@ courier_capture(struct courier_build *b, VALUE obj)
         break;
       }
 
+      case T_REGEXP:
+        /* Copy only: the receiver compiles the source again, as Marshal does.  Move
+         * would have to take the onig pattern apart. */
+        if (b->copy) {
+            /* The source is an fstring (reg_set_source), so it can be carried as is. */
+            VALUE src = RREGEXP_SRC(obj);
+            VM_ASSERT(rb_ractor_shareable_p(src));
+            b->c->nodes[id].kind = COURIER_KIND_REGEXP;
+            b->c->nodes[id].u.re.klass = RBASIC_CLASS(obj);
+            b->c->nodes[id].u.re.src = src;
+            b->c->nodes[id].u.re.options = rb_reg_options(obj);
+            break;
+        }
+        /* fall through */
       case T_DATA:
         /* Only an exception's backtrace, and only for a copy: move still refuses every
          * T_DATA (its source would have to be taken apart). */
@@ -3018,6 +3034,7 @@ copy_courier_supported_p(VALUE obj, struct copy_support_ctx *ctx)
     switch (BUILTIN_TYPE(obj)) {
       case T_STRING:
       case T_OBJECT:
+      case T_REGEXP:
         break;                       /* children are ivars only (below) */
       case T_MATCH: {
         struct RMatch *rm = RMATCH(obj);
@@ -3196,6 +3213,12 @@ rb_ractor_courier_materialize(struct rb_ractor_courier *c)
           case COURIER_KIND_BACKTRACE:
             shell = rb_backtrace_blob_load(n->u.bt.blob, n->u.bt.size);
             break;
+          case COURIER_KIND_REGEXP:
+            /* Allocated as its real class up front, as Marshal does: initializing a
+             * plain Regexp freezes it, and the freeze pass below decides that here. */
+            shell = rb_reg_init_str(rb_reg_s_alloc(rb_class_real(n->u.re.klass)), n->u.re.src, n->u.re.options);
+            courier_apply_klass(shell, n->u.re.klass);
+            break;
           case COURIER_KIND_IO:
             shell = rb_obj_alloc(rb_class_real(n->u.io.klass));
             courier_apply_klass(shell, n->u.io.klass);
@@ -3370,6 +3393,10 @@ rb_ractor_courier_mark(struct rb_ractor_courier *c)
         }
         else if (n->kind == COURIER_KIND_HASH) {
             rb_gc_mark(n->u.hash.klass);
+        }
+        else if (n->kind == COURIER_KIND_REGEXP) {
+            rb_gc_mark(n->u.re.src);
+            rb_gc_mark(n->u.re.klass);
         }
     }
 }

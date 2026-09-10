@@ -244,6 +244,41 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+  def test_sending_regexps
+    assert_ractor(<<~'RUBY')
+      def echo(obj)
+        Ractor.new { Ractor.receive }.send(obj).value
+      end
+
+      # A Regexp is frozen from birth, so shareable: only a subclass instance is copied.
+      re = /a/
+      assert_same re, echo(re)
+      assert_same re, echo([re])[0]
+      class MyRegexp < Regexp; end
+      re = MyRegexp.new("a", "i")
+      re.instance_variable_set(:@ivar, +"ivar")
+      copy = echo(re)
+      refute_same re, copy
+      assert_instance_of MyRegexp, copy
+      assert_equal re, copy
+      assert_equal Regexp::IGNORECASE, copy.options
+      assert_equal "ivar", copy.instance_variable_get(:@ivar)
+      refute_same re.instance_variable_get(:@ivar), copy.instance_variable_get(:@ivar)
+      copy = echo([re, re])
+      assert_same copy[0], copy[1]
+
+      re = MyRegexp.new("\u3042")
+      copy = echo(re)
+      assert_equal Encoding::UTF_8, copy.encoding
+      assert_predicate copy, :fixed_encoding?
+      assert_equal "\u3042".b, copy.source.b
+
+      # A frozen one is shareable again, however its class.
+      re = MyRegexp.new("a").freeze
+      assert_same re, echo(re)
+    RUBY
+  end
+
   def test_sending_hash_with_shared_key
     # A key that was already reached elsewhere in the graph must be complete before the
     # hash inserts it, or it is inserted under the wrong #hash.
