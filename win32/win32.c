@@ -6008,7 +6008,10 @@ winnt_stat(const WCHAR *path, struct stati128 *st, BOOL lstat)
             break;
           default:
             if (attr & FILE_ATTRIBUTE_DIRECTORY) {
-                if (check_valid_dir(path)) return -1;
+                if (check_valid_dir(path)) {
+                    CloseHandle(f);
+                    return -1;
+                }
             }
             if (attr & FILE_ATTRIBUTE_REPARSE_POINT) {
                 FILE_ATTRIBUTE_TAG_INFO attr_info;
