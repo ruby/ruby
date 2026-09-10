@@ -38,6 +38,8 @@ enum zjit_struct_offsets {
     ISEQ_BODY_OFFSET_PARAM = offsetof(struct rb_iseq_constant_body, param),
     ISEQ_BODY_OFFSET_OUTER_VARIABLES = offsetof(struct rb_iseq_constant_body, outer_variables),
     RUBY_OFFSET_THREAD_RACTOR = offsetof(rb_thread_t, ractor),
+    TDATA_OFFSET_DATA = offsetof(struct RTypedData, data),
+    RUBY_OFFSET_ENCODING_INDEX = offsetof(rb_encoding, ruby_encoding_index),
 };
 
 // Struct offsets that cannot be constants in the checked-in bindgen output

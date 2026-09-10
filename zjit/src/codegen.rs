@@ -679,6 +679,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::ObjectAllocClass { class, state } => gen_object_alloc_class(jit, asm, function, class, &function.frame_state(state)),
         Insn::StringCopy { val, chilled, state } => gen_string_copy(jit, asm, function, *val, opnd!(val), *chilled, &function.frame_state(*state)),
         Insn::StringConcat { strings, state } => gen_string_concat(jit, asm, function, opnds!(strings), &function.frame_state(*state)),
+        Insn::StringForceEncoding { string, encoding, state } => gen_string_force_encoding(jit, asm, function, opnd!(string), opnd!(encoding), &function.frame_state(*state)),
         &Insn::StringGetbyte { string, index } => gen_string_getbyte(asm, opnd!(string), opnd!(index)),
         Insn::StringSetbyteFixnum { string, index, value } => gen_string_setbyte_fixnum(asm, opnd!(string), opnd!(index), opnd!(value)),
         Insn::StringAppend { recv, other, state } => gen_string_append(jit, asm, function, opnd!(recv), opnd!(other), &function.frame_state(*state)),
@@ -4188,6 +4189,61 @@ fn gen_string_concat(jit: &mut JITState, asm: &mut Assembler, function: &Functio
 
     let first_string_ptr = gen_push_opnds(jit, asm, &strings);
     asm_ccall!(asm, rb_str_concat_literals, strings.len().into(), first_string_ptr)
+}
+
+fn gen_string_force_encoding(jit: &mut JITState, asm: &mut Assembler, function: &Function, string: Opnd, encoding: Opnd, state: &FrameState) -> Opnd {
+    asm_comment!(asm, "String#force_encoding fast path");
+    let string = asm.load_mem(string);
+    let encoding = asm.load_mem(encoding);
+    let unmodifiable_exit = side_exit(jit, function, state, GuardNotFrozen);
+
+    let flags = asm.load(Opnd::mem(VALUE_BITS, string, RUBY_OFFSET_RBASIC_FLAGS));
+    let unmodifiable_mask = RUBY_FL_FREEZE as u64 | RUBY_FL_USER2 as u64 | RUBY_FL_USER7 as u64;
+    asm.test(flags, Opnd::UImm(unmodifiable_mask));
+    asm.jnz(jit, unmodifiable_exit);
+
+    let encoding_ptr = asm.load(Opnd::mem(VALUE_BITS, encoding, TDATA_OFFSET_DATA as i32));
+    let unsupported_encoding_exit = side_exit(jit, function, state, GuardGreaterEq);
+    let encoding_index = asm.load(Opnd::mem(32, encoding_ptr, RUBY_OFFSET_ENCODING_INDEX as i32));
+    asm.cmp(encoding_index, Opnd::UImm(RUBY_ENCODING_INLINE_MAX as u64));
+    asm.jge(jit, unsupported_encoding_exit.clone());
+
+    let string_encoding = asm.and(flags, Opnd::UImm(RUBY_ENCODING_MASK as u64));
+    let string_encoding = asm.rshift(string_encoding, Opnd::UImm(RUBY_ENCODING_SHIFT as u64));
+
+    let hir_block_id = asm.current_block().hir_block_id;
+    let rpo_idx = asm.current_block().rpo_index;
+    let result_block = asm.new_block(hir_block_id, false, rpo_idx);
+    let result_edge = Target::Block(Box::new(lir::BranchEdge { target: result_block, args: vec![] }));
+    asm.cmp(string_encoding.with_num_bits(32), encoding_index);
+    asm.je(jit, result_edge.clone());
+    // The three preserved ASCII-compatible encodings all use one-byte terminators.
+    // Other encoding changes require rb_str_change_terminator_length.
+    asm.cmp(encoding_index, Opnd::UImm(RUBY_ENCINDEX_UTF_16BE as u64));
+    asm.jge(jit, unsupported_encoding_exit.clone());
+    asm.cmp(string_encoding, Opnd::UImm(RUBY_ENCINDEX_UTF_16BE as u64));
+    asm.jge(jit, unsupported_encoding_exit);
+
+    let flags_without_encoding = asm.and(flags, Opnd::UImm(!(RUBY_ENCODING_MASK as u64)));
+    let flags_without_encoding_or_coderange = asm.and(
+        flags,
+        Opnd::UImm(!(RUBY_ENCODING_MASK as u64 | RUBY_ENC_CODERANGE_MASK as u64)),
+    );
+    let coderange = asm.and(flags, Opnd::UImm(RUBY_ENC_CODERANGE_MASK as u64));
+    asm.cmp(coderange, Opnd::UImm(RUBY_ENC_CODERANGE_7BIT as u64));
+    let updated_flags = asm.csel_e(flags_without_encoding, flags_without_encoding_or_coderange);
+    let encoding_bits = asm.lshift(
+        encoding_index.with_num_bits(VALUE_BITS),
+        Opnd::UImm(RUBY_ENCODING_SHIFT as u64),
+    );
+    let new_flags = asm.or(updated_flags, encoding_bits);
+    asm.store(Opnd::mem(VALUE_BITS, string, RUBY_OFFSET_RBASIC_FLAGS), new_flags);
+    asm.jmp(result_edge);
+
+    asm.set_current_block(result_block);
+    let label = jit.get_label(asm, result_block, hir_block_id);
+    asm.write_label(label);
+    string
 }
 
 // Generate RSTRING_PTR

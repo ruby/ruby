@@ -218,6 +218,7 @@ pub fn init() -> Annotations {
     annotate!(rb_mKernel, "===", inline_eqq);
     annotate!(rb_mKernel, "is_a?", inline_kernel_is_a_p);
     annotate!(rb_cString, "bytesize", inline_string_bytesize);
+    annotate!(rb_cString, "force_encoding", inline_string_force_encoding, types::String);
     annotate!(rb_cString, "size", types::Fixnum, no_gc, leaf, elidable);
     annotate!(rb_cString, "length", types::Fixnum, no_gc, leaf, elidable);
     annotate!(rb_cString, "getbyte", inline_string_getbyte);
@@ -469,6 +470,23 @@ fn inline_hash_aset(fun: &mut hir::Function, block: hir::BlockId, recv: hir::Ins
     } else {
         None
     }
+}
+
+fn inline_string_force_encoding(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[enc] = args else { return None; };
+    let enc_type = Type::from_class(unsafe { rb_cEncoding });
+    if !fun.likely_a(recv, types::String, state) || !fun.likely_a(enc, enc_type, state) {
+        return None;
+    }
+
+    let string = fun.coerce_to(block, recv, types::String, state);
+    let encoding = fun.coerce_to(block, enc, enc_type, state);
+    let _ = fun.push_insn(block, hir::Insn::StringForceEncoding {
+        string,
+        encoding,
+        state,
+    });
+    Some(string)
 }
 
 fn inline_string_bytesize(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
