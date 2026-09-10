@@ -28,6 +28,7 @@
 #include "internal/encoding.h"
 #include "internal/error.h"
 #include "internal/hash.h"
+#include "internal/marshal.h"
 #include "internal/numeric.h"
 #include "internal/object.h"
 #include "internal/re.h"
@@ -153,6 +154,21 @@ rb_marshal_define_compat(VALUE newclass, VALUE oldclass, VALUE (*dumper)(VALUE),
     st_insert(compat_allocator_table(), (st_data_t)allocator, (st_data_t)compat);
     RB_OBJ_WRITTEN(compat_allocator_tbl_wrapper, Qundef, newclass);
     RB_OBJ_WRITTEN(compat_allocator_tbl_wrapper, Qundef, oldclass);
+}
+
+/* The rb_marshal_define_compat entry for an instance of klass, if any, so the Ractor
+ * courier can dump and load it the way Marshal does. */
+bool
+rb_marshal_compat_lookup(VALUE klass, VALUE (**dumper)(VALUE), VALUE (**loader)(VALUE, VALUE))
+{
+    st_data_t data;
+    rb_alloc_func_t allocator = RCLASS_SINGLETON_P(klass) ? 0 : rb_get_alloc_func(klass);
+    if (!allocator || !st_lookup(compat_allocator_tbl, (st_data_t)allocator, &data)) return false;
+    marshal_compat_t *compat = (marshal_compat_t *)data;
+    if (!compat->dumper || !compat->loader) return false;
+    if (dumper) *dumper = compat->dumper;
+    if (loader) *loader = compat->loader;
+    return true;
 }
 
 struct dump_arg {
