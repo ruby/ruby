@@ -2587,7 +2587,7 @@ EOS
       bin = "#{EnvUtil.rubybin}"
       args = Array.new(256) {"x"}
       GC.stress = true
-      system(bin, "--disable=gems", "-w", "-e", "puts ARGV", *args)
+      system(bin, "--disable=gems", "-w", "-W:no-experimental", "-e", "puts ARGV", *args)
     end;
   end
 
