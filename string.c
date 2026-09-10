@@ -37,6 +37,7 @@
 #include "internal/numeric.h"
 #include "internal/object.h"
 #include "internal/proc.h"
+#include "internal/range.h"
 #include "internal/re.h"
 #include "internal/sanitizers.h"
 #include "internal/simd.h"
@@ -4726,6 +4727,75 @@ str_ensure_byte_pos(VALUE str, long pos)
     }
 }
 
+#if SIZEOF_LONG < SIZEOF_LONG_LONG
+/* Index and length arguments saturate here.  It has to stay clear of
+ * LONG_MAX so that rb_range_component_beg_len can increment an inclusive
+ * end, and it must not depend on the size of the string: another
+ * argument's #to_int can grow the string afterwards, and a saturated
+ * value that the string grew past would become a valid offset. */
+#define STR_CLAMPED_MAX (LONG_MAX - 1)
+#endif
+
+/* Convert an index or length argument to `long`, saturating a value too
+ * large for `long` instead of raising, so that it behaves as it does
+ * where `long` is 64-bit: an index is out of range, a length is
+ * truncated to the end of the string.  A value that already fits passes
+ * through untouched, and one that does not fit in `long long` still
+ * raises RangeError.
+ * [Bug #20269] */
+static long
+str_num2long_clamped(VALUE str, VALUE num)
+{
+#if SIZEOF_LONG < SIZEOF_LONG_LONG
+    /* NUM2LL rejects String and boolean before trying #to_int, unlike
+     * NUM2LONG, so normalize them first.  #to_int can resize str, so
+     * str is only looked at afterwards. */
+    if (!RB_INTEGER_TYPE_P(num) && !RB_FLOAT_TYPE_P(num)) {
+        num = rb_to_int(num);
+    }
+    /* a string that long can be indexed up to the saturated value, so it
+     * keeps raising RangeError as it did before */
+    if (RSTRING_LEN(str) < STR_CLAMPED_MAX) {
+        LONG_LONG n = NUM2LL(num);
+        if (n > LONG_MAX) return STR_CLAMPED_MAX;
+        if (n < LONG_MIN) return LONG_MIN;
+        return (long)n;
+    }
+#endif
+    return NUM2LONG(num);
+}
+
+/* Saturate a Range bound so that rb_range_component_beg_len can convert
+ * it with NUM2LONG.  See str_num2long_clamped(). */
+static VALUE
+str_num_clamped(VALUE str, VALUE num)
+{
+#if SIZEOF_LONG < SIZEOF_LONG_LONG
+    if (!NIL_P(num)) num = LONG2NUM(str_num2long_clamped(str, num));
+#endif
+    return num;
+}
+
+/* rb_range_beg_len with the bounds saturated. */
+static VALUE
+str_byte_range_beg_len(VALUE str, VALUE range, long *begp, long *lenp, long len, int err)
+{
+    VALUE b, e;
+    int excl;
+
+    if (!rb_range_values(range, &b, &e, &excl)) return Qfalse;
+
+    /* sequenced, so that #to_int on the bounds runs in written order */
+    b = str_num_clamped(str, b);
+    e = str_num_clamped(str, e);
+
+    VALUE res = rb_range_component_beg_len(b, e, excl, begp, lenp, len, err);
+    if (NIL_P(res) && err) {
+        rb_raise(rb_eRangeError, "%+"PRIsVALUE" out of range", range);
+    }
+    return res;
+}
+
 /*
  *  call-seq:
  *    byteindex(object, offset = 0) -> integer or nil
@@ -4801,8 +4871,9 @@ rb_str_byteindex_m(int argc, VALUE *argv, VALUE str)
     long pos;
 
     if (rb_scan_args(argc, argv, "11", &sub, &initpos) == 2) {
+        pos = str_num2long_clamped(str, initpos);
+        /* the conversion can run #to_int, which can resize str */
         long slen = RSTRING_LEN(str);
-        pos = NUM2LONG(initpos);
         if (pos < 0 ? (pos += slen) < 0 : pos > slen) {
             if (RB_TYPE_P(sub, T_REGEXP)) {
                 rb_backref_set(Qnil);
@@ -5079,7 +5150,9 @@ rb_str_byterindex_m(int argc, VALUE *argv, VALUE str)
     long pos, len = RSTRING_LEN(str);
 
     if (rb_scan_args(argc, argv, "11", &sub, &initpos) == 2) {
-        pos = NUM2LONG(initpos);
+        pos = str_num2long_clamped(str, initpos);
+        /* the conversion can run #to_int, which can resize str */
+        len = RSTRING_LEN(str);
         if (pos < 0 && (pos += len) < 0) {
             if (RB_TYPE_P(sub, T_REGEXP)) {
                 rb_backref_set(Qnil);
@@ -6710,7 +6783,7 @@ rb_str_chr(VALUE str)
 VALUE
 rb_str_getbyte(VALUE str, VALUE index)
 {
-    long pos = NUM2LONG(index);
+    long pos = str_num2long_clamped(str, index);
 
     if (pos < 0)
         pos += RSTRING_LEN(str);
@@ -6736,7 +6809,7 @@ rb_str_getbyte(VALUE str, VALUE index)
 VALUE
 rb_str_setbyte(VALUE str, VALUE index, VALUE value)
 {
-    long pos = NUM2LONG(index);
+    long pos = str_num2long_clamped(str, index);
     long len = RSTRING_LEN(str);
     char *ptr, *head, *left = 0;
     rb_encoding *enc;
@@ -7315,7 +7388,9 @@ str_byte_substr(VALUE str, long beg, long len, int empty)
 VALUE
 rb_str_byte_substr(VALUE str, VALUE beg, VALUE len)
 {
-    return str_byte_substr(str, NUM2LONG(beg), NUM2LONG(len), TRUE);
+    long b = str_num2long_clamped(str, beg);
+    long n = str_num2long_clamped(str, len);
+    return str_byte_substr(str, b, n, TRUE);
 }
 
 static VALUE
@@ -7329,7 +7404,7 @@ str_byte_aref(VALUE str, VALUE indx)
         /* check if indx is Range */
         long beg, len = RSTRING_LEN(str);
 
-        switch (rb_range_beg_len(indx, &beg, &len, len, 0)) {
+        switch (str_byte_range_beg_len(str, indx, &beg, &len, len, 0)) {
           case Qfalse:
             break;
           case Qnil:
@@ -7338,7 +7413,7 @@ str_byte_aref(VALUE str, VALUE indx)
             return str_byte_substr(str, beg, len, TRUE);
         }
 
-        idx = NUM2LONG(indx);
+        idx = str_num2long_clamped(str, indx);
     }
     return str_byte_substr(str, idx, 1, FALSE);
 }
@@ -7355,8 +7430,8 @@ static VALUE
 rb_str_byteslice(int argc, VALUE *argv, VALUE str)
 {
     if (argc == 2) {
-        long beg = NUM2LONG(argv[0]);
-        long len = NUM2LONG(argv[1]);
+        long beg = str_num2long_clamped(str, argv[0]);
+        long len = str_num2long_clamped(str, argv[1]);
         return str_byte_substr(str, beg, len, TRUE);
     }
     rb_check_arity(argc, 1, 2);
@@ -7408,7 +7483,7 @@ rb_str_bytesplice(int argc, VALUE *argv, VALUE str)
         rb_raise(rb_eArgError, "wrong number of arguments (given %d, expected 2, 3, or 5)", argc);
     }
     if (argc == 2 || (argc == 3 && !RB_INTEGER_TYPE_P(argv[0]))) {
-        if (!rb_range_beg_len(argv[0], &beg, &len, RSTRING_LEN(str), 2)) {
+        if (!str_byte_range_beg_len(str, argv[0], &beg, &len, RSTRING_LEN(str), 2)) {
             rb_raise(rb_eTypeError, "wrong argument type %s (expected Range)",
                      rb_builtin_class_name(argv[0]));
         }
@@ -7421,15 +7496,15 @@ rb_str_bytesplice(int argc, VALUE *argv, VALUE str)
         }
         else {
             /* bytesplice(range, str, str_range) */
-            if (!rb_range_beg_len(argv[2], &vbeg, &vlen, RSTRING_LEN(val), 2)) {
+            if (!str_byte_range_beg_len(val, argv[2], &vbeg, &vlen, RSTRING_LEN(val), 2)) {
                 rb_raise(rb_eTypeError, "wrong argument type %s (expected Range)",
                          rb_builtin_class_name(argv[2]));
             }
         }
     }
     else {
-        beg = NUM2LONG(argv[0]);
-        len = NUM2LONG(argv[1]);
+        beg = str_num2long_clamped(str, argv[0]);
+        len = str_num2long_clamped(str, argv[1]);
         val = argv[2];
         StringValue(val);
         if (argc == 3) {
@@ -7439,8 +7514,8 @@ rb_str_bytesplice(int argc, VALUE *argv, VALUE str)
         }
         else {
             /* bytesplice(index, length, str, str_index, str_length) */
-            vbeg = NUM2LONG(argv[3]);
-            vlen = NUM2LONG(argv[4]);
+            vbeg = str_num2long_clamped(val, argv[3]);
+            vlen = str_num2long_clamped(val, argv[4]);
         }
     }
     str_check_beg_len(str, &beg, &len);
