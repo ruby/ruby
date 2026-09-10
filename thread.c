@@ -4895,7 +4895,25 @@ COMPILER_WARNING_POP
     // A zero timeout is a plain probe; ppoll answers it without parking.
     bool mn_wait = timeout == NULL || timeout->tv_sec != 0 || timeout->tv_usec != 0;
 
-    switch (mn_wait ? thread_io_wait_events(th, fd, events, timeout, false) : io_wait_unhandled) {
+    enum io_wait_result mn_result = io_wait_unhandled;
+    struct timeval tv_rest;
+    if (mn_wait) {
+        rb_hrtime_t started = timeout ? rb_hrtime_now() : 0;
+        mn_result = thread_io_wait_events(th, fd, events, timeout, false);
+
+        // The M:N wait may hand an interrupted wait back to the blocking path
+        // below.  Charge what it already waited against the timeout, so the
+        // deadline is the one the caller asked for.
+        if (mn_result == io_wait_unhandled && timeout) {
+            rb_hrtime_t total = rb_timeval2hrtime(timeout);
+            rb_hrtime_t spent = rb_hrtime_sub(rb_hrtime_now(), started);
+            rb_hrtime_t rest = spent < total ? total - spent : 0;
+            rb_hrtime2timeval(&tv_rest, &rest);
+            timeout = &tv_rest;
+        }
+    }
+
+    switch (mn_result) {
       case io_wait_ready:
         fds[0].revents = events;
         errno = 0;
