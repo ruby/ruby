@@ -1840,7 +1840,12 @@ module Test
               "Failure:\n#{klass}##{meth} [#{location e}]:\n#{e.message}\n"
             when Timeout::Error
               @errors += 1
-              "Timeout:\n#{klass}##{meth}\n"
+              # A worker that stopped responding is reported with a bare
+              # Timeout::Error and has nothing to say.  One raised inside the
+              # test says what expired and carries the output of the
+              # subprocess that hung, which is all there is to go on.
+              detail = e.message == e.class.name ? "" : "#{e.message}\n"
+              "Timeout:\n#{klass}##{meth}\n#{detail}"
             else
               @errors += 1
               bt = Test::filter_backtrace(e.backtrace).join "\n    "
