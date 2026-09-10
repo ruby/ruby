@@ -1135,7 +1135,6 @@ class TestRubyOptions < Test::Unit::TestCase
       assert_equal(['foo"bar', 'foo" bar', 'foo"bar"baz', 'ab', 'a"b', '', 'a"" b', '"', 'c'],
                    out, bug11142)
     end
-
   when /cygwin/
     def test_command_line_non_ascii
       assert_separately([{"LC_ALL"=>"ja_JP.SJIS"}, "-", "\u{3042}".encode("SJIS")], <<-"end;")
