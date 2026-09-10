@@ -108,6 +108,7 @@ w32_error(const char *func)
 #define w32_event_debug if (0) printf
 #endif
 
+#ifdef USE_WIN32_MUTEX
 static int
 w32_mutex_lock(HANDLE lock, bool try)
 {
@@ -154,6 +155,7 @@ w32_mutex_create(void)
     }
     return lock;
 }
+#endif
 
 static void
 w32_close_handle(HANDLE handle)
