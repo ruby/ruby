@@ -5166,6 +5166,18 @@ vm_find_next_ancestor_after_refined_module(const rb_control_frame_t *cfp, VALUE 
     return vm_superclass_after_module(CLASS_OF(recv), module);
 }
 
+static VALUE
+vm_search_super_class(const rb_control_frame_t *cfp, const rb_callable_method_entry_t *me, VALUE recv)
+{
+    VALUE klass = vm_search_normal_superclass(me->defined_class);
+
+    if (klass == rb_cBasicObject && vm_refined_module_iclass_p(me->defined_class)) {
+        klass = vm_find_next_ancestor_after_refined_module(cfp, recv, RBASIC(me->defined_class)->klass,
+                                                            me->def->original_id);
+    }
+    return klass;
+}
+
 NORETURN(static void vm_super_outside(void));
 
 static void
@@ -5231,12 +5243,7 @@ vm_search_super_method(const rb_control_frame_t *reg_cfp, struct rb_call_data *c
 
     const struct rb_callcache *cc;
 
-    VALUE klass = vm_search_normal_superclass(me->defined_class);
-
-    if (klass == rb_cBasicObject && vm_refined_module_iclass_p(me->defined_class)) {
-        klass = vm_find_next_ancestor_after_refined_module(reg_cfp, recv,
-            RBASIC(me->defined_class)->klass, me->def->original_id);
-    }
+    VALUE klass = vm_search_super_class(reg_cfp, me, recv);
 
     if (!klass) {
         /* bound instance method of module */
@@ -5834,7 +5841,7 @@ vm_defined(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_num_t op_
             const rb_callable_method_entry_t *me = rb_vm_frame_method_entry(GET_CFP());
 
             if (me) {
-                VALUE klass = vm_search_normal_superclass(me->defined_class);
+                VALUE klass = vm_search_super_class(GET_CFP(), me, GET_SELF());
                 if (!klass) return false;
 
                 ID id = me->def->original_id;

@@ -1038,20 +1038,32 @@ class TestRefinement < Test::Unit::TestCase
   def test_super_in_refined_module_method
     assert_separately([], <<-"end;")
       class BasicObject
-        def a; "B" end
+        def a
+          raise 'defined?(super) true, should be false' if defined?(super)
+          "B"
+        end
       end
 
       module G
-        def a; "G" + super end
+        def a
+          raise 'defined?(super) false, should be true' unless defined?(super)
+          "G" + super
+        end
       end
 
       module F
         include G
-        def a; "F" + super end
+        def a
+          raise 'defined?(super) false, should be true' unless defined?(super)
+          "F" + super
+        end
       end
 
       class A
-        def a; "A" + super end
+        def a
+          raise 'defined?(super) false, should be true' unless defined?(super)
+          "A" + super
+        end
       end
 
       class B < A
@@ -1060,7 +1072,10 @@ class TestRefinement < Test::Unit::TestCase
 
       module R
        refine F do
-         def a; "R"+super end
+         def a
+          raise 'defined?(super) false, should be true' unless defined?(super)
+           "R"+super
+         end
        end
       end
       using R
@@ -1072,17 +1087,26 @@ class TestRefinement < Test::Unit::TestCase
   def test_super_in_refined_prepended_module_method
     assert_separately([], <<-"end;")
       module M
-        def m = [:M, *super]
+        def m
+          raise 'defined?(super) false, should be true' unless defined?(super)
+          [:M, *super]
+        end
       end
 
       class C
         prepend M
-        def m = :C
+        def m
+          raise 'defined?(super) true, should be false' if defined?(super)
+          :C
+        end
       end
 
       module R
         refine M do
-          def m = [:R, *super]
+          def m
+            raise 'defined?(super) false, should be true' unless defined?(super)
+            [:R, *super]
+          end
         end
       end
       using R
@@ -1094,7 +1118,10 @@ class TestRefinement < Test::Unit::TestCase
   def test_super_in_refined_prepended_module_method_called_by_other_method_same_object
     assert_separately([], <<-"end;")
       module M
-        def m = [:M, *super]
+        def m
+          raise 'defined?(super) false, should be true' unless defined?(super)
+          [:M, *super]
+        end
       end
 
       module N
@@ -1102,18 +1129,27 @@ class TestRefinement < Test::Unit::TestCase
       end
 
       class C
-        def m = :C
+        def m
+          raise 'defined?(super) true, should be false' if defined?(super)
+          :C
+        end
       end
 
       class SC < C
         include N
         prepend M
-        def m = [:SC, *super]
+        def m
+          raise 'defined?(super) false, should be true' unless defined?(super)
+          [:SC, *super]
+        end
       end
 
       module R
         refine M do
-          def m = [:R, *super]
+          def m
+            raise 'defined?(super) false, should be true' unless defined?(super)
+            [:R, *super]
+          end
         end
       end
       using R
@@ -1131,16 +1167,34 @@ class TestRefinement < Test::Unit::TestCase
   def test_super_in_refined_prepended_module_method_with_aliases
     assert_separately([], <<-"end;")
       module M
-        def m = [:Mm, *super]
-        def n = [:Mn, *super]
-        def o = [:Mo, *super]
+        def m
+          raise 'defined?(super) false, should be true' unless defined?(super)
+          [:Mm, *super]
+        end
+        def n
+          raise 'defined?(super) false, should be true' unless defined?(super)
+          [:Mn, *super]
+        end
+        def o
+          raise 'defined?(super) false, should be true' unless defined?(super)
+          [:Mo, *super]
+        end
       end
 
       module R
         refine M do
-          def m = [:Rm, *super]
-          def n = [:Rn, *super]
-          def o = [:Ro, *super]
+          def m
+            raise 'defined?(super) false, should be true' unless defined?(super)
+            [:Rm, *super]
+          end
+          def n
+            raise 'defined?(super) false, should be true' unless defined?(super)
+            [:Rn, *super]
+          end
+          def o
+            raise 'defined?(super) false, should be true' unless defined?(super)
+            [:Ro, *super]
+          end
         end
       end
       using R
@@ -1152,7 +1206,10 @@ class TestRefinement < Test::Unit::TestCase
 
       class C
         prepend M
-        def m = :C
+        def m
+          raise 'defined?(super) true, should be false' if defined?(super)
+          :C
+        end
       end
 
       class SC < C
@@ -1163,7 +1220,10 @@ class TestRefinement < Test::Unit::TestCase
 
       class SSC < SC
         prepend M
-        def n = [:SSC, *super]
+        def n
+          raise 'defined?(super) false, should be true' unless defined?(super)
+          [:SSC, *super]
+        end
       end
 
       class SSSC < SSC
@@ -1173,7 +1233,10 @@ class TestRefinement < Test::Unit::TestCase
 
       class SSSSC < SSSC
         prepend M
-        def o = [:SSSSC, *super]
+        def o
+          raise 'defined?(super) false, should be true' unless defined?(super)
+          [:SSSSC, *super]
+        end
       end
 
       assert_equal([:Ro, :Mo, :SSSSC, :Ro, :Mo, :Mn, :Mn, :SSC, :Rn, :Mn, :Mm, :Mm, :C], SSSSC.new.o)
@@ -1183,17 +1246,26 @@ class TestRefinement < Test::Unit::TestCase
   def test_super_in_refined_prepended_module_method_called_by_other_object
     assert_separately([], <<-"end;")
       module M
-        def m = [:M, *super]
+        def m
+          raise 'defined?(super) false, should be true' unless defined?(super)
+          [:M, *super]
+        end
       end
 
       class C
         prepend M
-        def m = :C
+        def m
+          raise 'defined?(super) true, should be false' if defined?(super)
+          :C
+        end
       end
 
       module R
         refine M do
-          def m = [:R, *super]
+          def m
+            raise 'defined?(super) false, should be true' unless defined?(super)
+            [:R, *super]
+          end
         end
       end
       using R
@@ -1207,24 +1279,36 @@ class TestRefinement < Test::Unit::TestCase
   def test_super_in_refined_prepended_module_method_refined_multiple_times
     assert_separately([], <<-"end;")
       module M
-        def m = [:M, *super]
+        def m
+          raise 'defined?(super) false, should be true' unless defined?(super)
+          [:M, *super]
+        end
       end
 
       class C
         prepend M
-        def m = :C
+        def m
+          raise 'defined?(super) true, should be false' if defined?(super)
+          :C
+        end
       end
 
       module R1
         refine M do
-          def m = [:R1, *super]
+          def m
+            raise 'defined?(super) false, should be true' unless defined?(super)
+            [:R1, *super]
+          end
         end
       end
       using R1
 
       module R2
         refine M do
-          def m = [:R2, *super]
+          def m
+            raise 'defined?(super) false, should be true' unless defined?(super)
+            [:R2, *super]
+          end
         end
       end
       using R2
@@ -1236,24 +1320,36 @@ class TestRefinement < Test::Unit::TestCase
   def test_super_in_refined_module_method_prepended_multiple_times
     assert_separately([], <<-"end;")
       module M
-        def m = [:M, *super]
+        def m
+          raise 'defined?(super) false, should be true' unless defined?(super)
+          [:M, *super]
+        end
       end
 
       module R
         refine M do
-          def m = [:R, *super]
+          def m
+            raise 'defined?(super) false, should be true' unless defined?(super)
+            [:R, *super]
+          end
         end
       end
       using R
 
       class C
         prepend M
-        def m = :C
+        def m
+          raise 'defined?(super) true, should be false' if defined?(super)
+          :C
+        end
       end
 
       class SC < C
         prepend M
-        def m = [:SC, *super]
+        def m
+          raise 'defined?(super) false, should be true' unless defined?(super)
+          [:SC, *super]
+        end
       end
 
       assert_equal([:R, :M, :SC, :R, :M, :C], SC.new.m)
@@ -1263,20 +1359,32 @@ class TestRefinement < Test::Unit::TestCase
   def test_super_in_refined_module_method_with_multiple_refined_modules
     assert_separately([], <<-"end;")
       module M
-        def m = [:M, *super]
+        def m
+          raise 'defined?(super) false, should be true' unless defined?(super)
+          [:M, *super]
+        end
       end
 
       module N
-        def m = [:N, *super]
+        def m
+          raise 'defined?(super) false, should be true' unless defined?(super)
+          [:N, *super]
+        end
       end
 
       module R
         refine M do
-          def m = [:RM, *super]
+          def m
+            raise 'defined?(super) false, should be true' unless defined?(super)
+            [:RM, *super]
+          end
         end
 
         refine N do
-          def m = [:RN, *super]
+          def m
+            raise 'defined?(super) false, should be true' unless defined?(super)
+            [:RN, *super]
+          end
         end
       end
       using R
@@ -1284,13 +1392,19 @@ class TestRefinement < Test::Unit::TestCase
       class C
         prepend M
         prepend N
-        def m = :C
+        def m
+          raise 'defined?(super) true, should be false' if defined?(super)
+          :C
+        end
       end
 
       class SC < C
         prepend N
         prepend M
-        def m = [:SC, *super]
+        def m
+          raise 'defined?(super) false, should be true' unless defined?(super)
+          [:SC, *super]
+        end
       end
 
       assert_equal([:RM, :M, :N, :SC, :RN, :N, :M, :C], SC.new.m)
@@ -1304,23 +1418,35 @@ class TestRefinement < Test::Unit::TestCase
 
       module R
         refine M do
-          def m = [:R, *super]
+          def m
+            raise 'defined?(super) false, should be true' unless defined?(super)
+            [:R, *super]
+          end
         end
       end
       using R
 
       module M
-        def m = [:M, *super]
+        def m
+          raise 'defined?(super) false, should be true' unless defined?(super)
+          [:M, *super]
+        end
       end
 
       class C
         prepend M
-        def m = :C
+        def m
+          raise 'defined?(super) true, should be false' if defined?(super)
+          :C
+        end
       end
 
       class SC < C
         prepend M
-        def m = [:SC, *super]
+        def m
+          raise 'defined?(super) false, should be true' unless defined?(super)
+          [:SC, *super]
+        end
       end
 
       assert_equal([:R, :M, :SC, :R, :M, :C], SC.new.m)
@@ -1337,33 +1463,51 @@ class TestRefinement < Test::Unit::TestCase
 
       module R
         refine M do
-          def m = [:RM, *super]
+          def m
+            raise 'defined?(super) false, should be true' unless defined?(super)
+            [:RM, *super]
+          end
         end
 
         refine N do
-          def m = [:RN, *super]
+          def m
+            raise 'defined?(super) false, should be true' unless defined?(super)
+            [:RN, *super]
+          end
         end
       end
       using R
 
       module M
-        def m = [:M, *super]
+        def m
+          raise 'defined?(super) false, should be true' unless defined?(super)
+          [:M, *super]
+        end
       end
 
       module N
-        def m = [:N, *super]
+        def m
+          raise 'defined?(super) false, should be true' unless defined?(super)
+          [:N, *super]
+        end
       end
 
       class C
         prepend M
         prepend N
-        def m = :C
+        def m
+          raise 'defined?(super) true, should be false' if defined?(super)
+          :C
+        end
       end
 
       class SC < C
         prepend N
         prepend M
-        def m = [:SC, *super]
+        def m
+          raise 'defined?(super) false, should be true' unless defined?(super)
+          [:SC, *super]
+        end
       end
 
       assert_equal([:RM, :M, :RN, :N, :SC, :RN, :N, :RM, :M, :C], SC.new.m)
@@ -1373,24 +1517,36 @@ class TestRefinement < Test::Unit::TestCase
   def test_super_in_refined_module_method_in_nested_block
     assert_separately([], <<-"end;")
       module M
-        def m = ->{Array.new(1){[:M, *super]}.flatten}.call
+        def m
+          raise 'defined?(super) false, should be true' unless defined?(super)
+          ->{Array.new(1){[:M, *super]}.flatten}.call
+        end
       end
 
       module R
         refine M do
-          def m = ->{Array.new(1){[:R, *super]}.flatten}.call
+          def m
+            raise 'defined?(super) false, should be true' unless defined?(super)
+            ->{Array.new(1){[:R, *super]}.flatten}.call
+          end
         end
       end
       using R
 
       class C
         prepend M
-        def m = :C
+        def m
+          raise 'defined?(super) true, should be false' if defined?(super)
+          :C
+        end
       end
 
       class SC < C
         prepend M
-        def m = [:SC, *super]
+        def m
+          raise 'defined?(super) false, should be true' unless defined?(super)
+          [:SC, *super]
+        end
       end
 
       assert_equal([:R, :M, :SC, :R, :M, :C], SC.new.m)
@@ -1400,43 +1556,70 @@ class TestRefinement < Test::Unit::TestCase
   def test_super_in_refined_module_method_combined_cases
     assert_separately([], <<-"end;")
       module M
-        define_method(:m){->{Array.new(1){[:M, *super()]}.flatten}.call}
+        define_method(:m) do
+          raise 'defined?(super) false, should be true' unless defined?(super)
+          ->{Array.new(1){[:M, *super()]}.flatten}.call
+        end
       end
 
       module N
-        def m = ->{Array.new(1){[:N, *super]}.flatten}.call
+        def m
+          raise 'defined?(super) false, should be true' unless defined?(super)
+          ->{Array.new(1){[:N, *super]}.flatten}.call
+        end
       end
 
       module P
-        def m = ->{Array.new(1){[:P, *super]}.flatten}.call
+        def m
+          raise 'defined?(super) false, should be true' unless defined?(super)
+          ->{Array.new(1){[:P, *super]}.flatten}.call
+        end
       end
 
       module R1
         refine M do
-          def m = ->{Array.new(1){[:R1M, *super]}.flatten}.call
+          def m
+            raise 'defined?(super) false, should be true' unless defined?(super)
+            ->{Array.new(1){[:R1M, *super]}.flatten}.call
+          end
         end
 
         refine N do
-          define_method(:m){->{Array.new(1){[:R1N, *super()]}.flatten}.call}
+          define_method(:m) do
+            raise 'defined?(super) false, should be true' unless defined?(super)
+            ->{Array.new(1){[:R1N, *super()]}.flatten}.call
+          end
         end
 
         refine P do
-          def m = ->{Array.new(1){[:R1P, *super]}.flatten}.call
+          def m
+            raise 'defined?(super) false, should be true' unless defined?(super)
+            ->{Array.new(1){[:R1P, *super]}.flatten}.call
+          end
         end
       end
       using R1
 
       module R2
         refine M do
-          define_method(:m){->{Array.new(1){[:R2M, *super()]}.flatten}.call}
+          define_method(:m) do
+            raise 'defined?(super) false, should be true' unless defined?(super)
+            ->{Array.new(1){[:R2M, *super()]}.flatten}.call
+          end
         end
 
         refine N do
-          def m = ->{Array.new(1){[:R2N, *super]}.flatten}.call
+          def m
+            raise 'defined?(super) false, should be true' unless defined?(super)
+            ->{Array.new(1){[:R2N, *super]}.flatten}.call
+          end
         end
 
         refine P do
-          define_method(:m){->{Array.new(1){[:R2P, *super()]}.flatten}.call}
+          define_method(:m) do
+            raise 'defined?(super) false, should be true' unless defined?(super)
+            ->{Array.new(1){[:R2P, *super()]}.flatten}.call
+          end
         end
       end
       using R2
@@ -1444,18 +1627,27 @@ class TestRefinement < Test::Unit::TestCase
       class C
         prepend M
         prepend N
-        def m = :C
+        def m
+          raise 'defined?(super) true, should be false' if defined?(super)
+          :C
+        end
       end
 
       class SC < C
         include P
-        def m = ->{Array.new(1){[:SC, *super]}.flatten}.call
+        def m
+          raise 'defined?(super) false, should be true' unless defined?(super)
+          ->{Array.new(1){[:SC, *super]}.flatten}.call
+        end
       end
 
       class SSC < SC
         prepend N
         prepend M
-        def m = ->{Array.new(1){[:SSC, *super]}.flatten}.call
+        def m
+          raise 'defined?(super) false, should be true' unless defined?(super)
+          ->{Array.new(1){[:SSC, *super]}.flatten}.call
+        end
       end
 
       o = Object.new
@@ -1470,6 +1662,7 @@ class TestRefinement < Test::Unit::TestCase
       M = Module.new do
         define_method(:m) do
           called << :M
+          raise 'defined?(super) true, should be false' if defined?(super)
           super()
         end
       end
@@ -1482,6 +1675,7 @@ class TestRefinement < Test::Unit::TestCase
         refine M do
           define_method(:m) do
             called << :R
+            raise 'defined?(super) false, should be true' unless defined?(super)
             super()
           end
         end
