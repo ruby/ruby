@@ -557,15 +557,6 @@ class TestIO_Console
   end
 
   def test_intr
-    # This test fails randomly on FreeBSD 13
-    # http://rubyci.s3.amazonaws.com/freebsd13/ruby-master/log/20220304T163001Z.fail.html.gz
-    #
-    #   1) Failure:
-    # TestIO_Console#test_intr [/usr/home/chkbuild/chkbuild/tmp/build/20220304T163001Z/ruby/test/io/console/test_io_console.rb:387]:
-    # <"25"> expected but was
-    # <"-e:12:in `p': \e[1mexecution expired (\e[1;4mTimeout::Error\e[m\e[1m)\e[m">.
-    omit if host_os?(/freebsd/)
-
     run_pty("#{<<~"begin;"}\n#{<<~'end;'}") do |r, w, _|
       begin;
         require 'timeout'
