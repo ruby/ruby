@@ -180,6 +180,7 @@ pub use rb_get_ec_cfp as get_ec_cfp;
 pub use rb_get_cfp_iseq as get_cfp_iseq;
 pub use rb_get_cfp_pc as get_cfp_pc;
 pub use rb_get_cfp_sp as get_cfp_sp;
+pub use rb_get_cfp_ep as get_cfp_ep;
 pub use rb_get_cfp_ep_level as get_cfp_ep_level;
 pub use rb_get_cme_def_type as get_cme_def_type;
 pub use rb_get_cme_def_body_attr_id as get_cme_def_body_attr_id;
@@ -206,6 +207,12 @@ pub use rb_vm_ci_flag as vm_ci_flag;
 pub use rb_METHOD_ENTRY_VISI as METHOD_ENTRY_VISI;
 pub use rb_RCLASS_ORIGIN as RCLASS_ORIGIN;
 pub use rb_jit_fix_mod_fix as rb_fix_mod_fix;
+/// Check whether a control frame has an escaped environment.
+pub unsafe fn cfp_env_has_escaped(cfp: CfpPtr) -> bool {
+    let ep = unsafe { get_cfp_ep(cfp) };
+    (unsafe { ep.offset(VM_ENV_DATA_INDEX_FLAGS as isize).read().0 } & VM_ENV_FLAG_ESCAPED.to_usize()) != 0
+}
+
 
 /// A YARV instruction opcode (`ruby_vminsn_type`), stored as a `u16` since there are only
 /// `VM_INSTRUCTION_SIZE` (~259) instructions. Keeps enums that embed an opcode (e.g.

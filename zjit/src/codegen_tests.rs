@@ -6748,8 +6748,6 @@ fn test_checkmatch_when_splat_array() {
 
 #[test]
 fn test_checkmatch_rescue() {
-    // Rescue behavior is tested functionally here. It still side-exits because
-    // JIT exception handling is not supported yet.
     eval(r#"
         def test
           begin

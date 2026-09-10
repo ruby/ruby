@@ -618,41 +618,66 @@ jit_compile_exception(rb_execution_context_t *ec)
     struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
 
 #if USE_ZJIT
-    // rb_zjit_compiling_p is false until ZJIT is enabled, so no
-    // rb_zjit_enabled_p check is needed here.
-    if (body->jit_exception == NULL && rb_zjit_compiling_p) {
-        body->jit_exception_calls++;
+    if (rb_zjit_enabled_p) {
+        if (body->jit_exception == NULL && rb_zjit_compiling_p) {
+            // Count calls until the first exception entry reaches the compile threshold.
+            if (body->jit_exception_calls < rb_zjit_call_threshold) {
+                body->jit_exception_calls++;
 
-        // At profile-threshold, rewrite some of the YARV instructions
-        // to zjit_* instructions to profile these instructions.
-        if (body->jit_exception_calls == rb_zjit_profile_threshold) {
-            rb_zjit_profile_enable(iseq);
+                // At profile-threshold, rewrite some of the YARV instructions
+                // to zjit_* instructions to profile these instructions.
+                if (body->jit_exception_calls == rb_zjit_profile_threshold) {
+                    rb_zjit_profile_enable(iseq);
+                }
+            }
+
+            if (body->jit_exception_calls >= rb_zjit_call_threshold) {
+                rb_zjit_compile_iseq(iseq, ec, true);
+            }
         }
 
-        // At call-threshold, compile the ISEQ with ZJIT.
-        if (body->jit_exception_calls == rb_zjit_call_threshold) {
-            rb_zjit_compile_iseq(iseq, ec, true);
-        }
+        return body->jit_exception;
     }
 #endif
 
 #if USE_YJIT
     // Increment the ISEQ's call counter and trigger JIT compilation if not compiled.
-    // Like the ZJIT branch above, no rb_yjit_enabled_p check is needed here.
     if (body->jit_exception == NULL && rb_yjit_compiling_p) {
         body->jit_exception_calls++;
         if (body->jit_exception_calls == rb_yjit_call_threshold) {
             rb_yjit_compile_iseq(iseq, ec, true);
         }
     }
-#endif
     return body->jit_exception;
+#else
+    return NULL;
+#endif
 }
 
 // Execute JIT code compiled by jit_compile_exception()
 static inline VALUE
 jit_exec_exception(rb_execution_context_t *ec)
 {
+#if USE_ZJIT
+    if (rb_zjit_enabled_p) {
+        void *zjit_entry = rb_zjit_entry;
+        if (zjit_entry) {
+            rb_jit_func_t func = jit_compile_exception(ec);
+            if (func) {
+                // The JIT pops the handler frame on leave. Save its FINISH flag first.
+                bool finish = VM_FRAME_FINISHED_P(ec->cfp);
+                VALUE result = ((rb_zjit_func_t)zjit_entry)(ec, ec->cfp, func);
+                if (!UNDEF_P(result) && !finish) {
+                    *ec->cfp->sp++ = result;
+                    return Qundef;
+                }
+                return result;
+            }
+        }
+        return Qundef;
+    }
+#endif
+
     rb_jit_func_t func = jit_compile_exception(ec);
     if (func) {
         // Call the JIT code

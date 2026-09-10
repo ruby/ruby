@@ -140,7 +140,9 @@ rb_zjit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec, bool jit
         uintptr_t code_ptr = (uintptr_t)rb_zjit_iseq_gen_entry_point(iseq, ec, jit_exception);
 
         if (jit_exception) {
-            ISEQ_BODY(iseq)->jit_exception = (rb_jit_func_t)code_ptr;
+            if (code_ptr != 0) {
+                ISEQ_BODY(iseq)->jit_exception = (rb_jit_func_t)code_ptr;
+            }
         }
         else {
             ISEQ_BODY(iseq)->jit_entry = (rb_jit_func_t)code_ptr;

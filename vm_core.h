@@ -577,6 +577,7 @@ struct rb_iseq_constant_body {
     rb_jit_func_t jit_entry;
     // Function pointer for JIT code on jit_exec_exception()
     rb_jit_func_t jit_exception;
+
     void *jit_payload;
 #endif
 
