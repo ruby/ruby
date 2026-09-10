@@ -546,21 +546,40 @@ bsock_remote_address(VALUE sock)
 }
 
 /*
+ * Document-method: send
  * call-seq:
  *   basicsocket.send(mesg, flags [, dest_sockaddr]) => numbytes_sent
  *
- * send _mesg_ via _basicsocket_.
+ * Send a message through the socket using the appropirate system call:
+ * * send(2) for connected socket without a +dest_sockaddr+
+ * * sendto(2) for connectionless sockets (e.g., UDP) or when a +dest_sockaddr+ is provided.
  *
- * _mesg_ should be a string.
+ * === Parameters
+ * * +mesg+ a string containing the data to be transmitted through the socket.
  *
- * _flags_ should be a bitwise OR of Socket::MSG_* constants.
+ * * +flags+ should be a bitwise OR of +Socket::MSG_+ constants.
+ *   For a comprehensive list of available flags, refer to Socket::Constants.
  *
- * _dest_sockaddr_ should be a packed sockaddr string or an addrinfo.
+ * * +dest_sockaddr+ is a destination socket address for connection-less socket.
+ *   It should be a sockaddr such as a result of Socket.sockaddr_in.
+ *   An Addrinfo object can be used too.
+ *
+ * The return value, _numbytes_sent_ is an integer which is the number of bytes sent.
+ *
+ * === Examples
+ *
+ * Sending a simple HTTP request via TCP
  *
  *   TCPSocket.open("localhost", 80) {|s|
  *     s.send "GET / HTTP/1.0\r\n\r\n", 0
  *     p s.read
  *   }
+ *
+ * Non-blocking UDP send with specific destination
+ *
+ *   udp_socket = UDPSocket.new
+ *   dest_addr = Socket.pack_sockaddr_in(8080, '127.0.0.1')
+ *   udp_socket.send "Hello, UDP!", Socket::MSG_DONTWAIT, dest_addr
  */
 VALUE
 rsock_bsock_send(int argc, VALUE *argv, VALUE socket)
