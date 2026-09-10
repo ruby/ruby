@@ -13,7 +13,7 @@ module Bundler
 
       update_bundler = options[:bundler]
 
-      Bundler.self_manager.update_bundler_and_restart_with_it_if_needed(update_bundler) if update_bundler
+      Bundler.self_manager.update_bundler_and_restart_with_it_if_needed(update_bundler, pre: options[:pre]) if update_bundler
 
       sources = Array(options[:source])
       groups  = Array(options[:group]).map(&:to_sym)

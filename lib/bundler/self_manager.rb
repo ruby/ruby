@@ -30,8 +30,8 @@ module Bundler
       install_and_restart_with(restart_version)
     end
 
-    def update_bundler_and_restart_with_it_if_needed(target)
-      spec = resolve_update_version_from(target)
+    def update_bundler_and_restart_with_it_if_needed(target, pre: false)
+      spec = resolve_update_version_from(target, pre: pre)
       return unless spec
 
       version = spec.version
@@ -108,9 +108,9 @@ module Bundler
         lockfile_version
     end
 
-    def resolve_update_version_from(target)
+    def resolve_update_version_from(target, pre: false)
       requirement = Gem::Requirement.new(target)
-      update_candidate = find_latest_matching_spec(requirement)
+      update_candidate = find_latest_matching_spec(requirement, pre: pre)
 
       if update_candidate.nil?
         raise InvalidOption, "The `bundle update --bundler` target version (#{target}) does not exist"
@@ -137,22 +137,23 @@ module Bundler
       end
     end
 
-    def find_latest_matching_spec(requirement)
+    def find_latest_matching_spec(requirement, pre: false)
       Bundler.configure
-      local_result = find_latest_matching_spec_from_collection(local_specs, requirement)
+      # A bare `bundle update --bundler` must stay on releases, like `gem update
+      # --system`, so only `--pre` or a prerelease requirement opts into one.
+      allow_prerelease = pre || requirement.prerelease?
+
+      local_result = find_latest_matching_spec_from_collection(local_specs, requirement, allow_prerelease)
       return local_result if local_result && requirement.specific?
 
-      remote_result = find_latest_matching_spec_from_collection(remote_specs, requirement)
+      remote_result = find_latest_matching_spec_from_collection(remote_specs, requirement, allow_prerelease)
       return remote_result if local_result.nil?
 
       [local_result, remote_result].compact.max
     end
 
-    def find_latest_matching_spec_from_collection(specs, requirement)
-      # A requirement that does not mention a prerelease only matches released
-      # versions, so that `bundle update --bundler` with no argument does not
-      # jump onto a beta, the same way `gem update --system` does not.
-      specs = specs.reject {|spec| spec.version.prerelease? } unless requirement.prerelease?
+    def find_latest_matching_spec_from_collection(specs, requirement, allow_prerelease)
+      specs = specs.reject {|spec| spec.version.prerelease? } unless allow_prerelease
 
       specs.sort.reverse_each.find {|spec| requirement.satisfied_by?(spec.version) }
     end

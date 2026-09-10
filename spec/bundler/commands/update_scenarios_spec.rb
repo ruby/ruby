@@ -661,6 +661,48 @@ RSpec.describe "bundle update --bundler" do
     L
   end
 
+  it "updates the bundler version in the lockfile to a prerelease version when --pre is given", :ruby_repo do
+    bundle_config "path.system true"
+
+    pristine_system_gems "bundler-9.0.0"
+
+    build_repo4 do
+      build_gem "myrack", "1.0"
+
+      build_bundler "999.0.0.beta1"
+    end
+
+    checksums = checksums_section do |c|
+      c.checksum(gem_repo4, "myrack", "1.0")
+      c.checksum(gem_repo4, "bundler", "999.0.0.beta1")
+    end
+
+    install_gemfile <<-G
+      source "https://gem.repo4"
+      gem "myrack"
+    G
+
+    bundle :update, bundler: true, pre: true, verbose: true
+
+    expect(out).to include("Updating bundler to 999.0.0.beta1")
+
+    expect(lockfile).to eq <<~L
+      GEM
+        remote: https://gem.repo4/
+        specs:
+          myrack (1.0)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        myrack
+      #{checksums}
+      BUNDLED WITH
+        999.0.0.beta1
+    L
+  end
+
   it "errors if the explicit target version does not exist" do
     pristine_system_gems "bundler-9.9.9"
 
