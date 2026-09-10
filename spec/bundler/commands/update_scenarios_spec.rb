@@ -661,6 +661,55 @@ RSpec.describe "bundle update --bundler" do
     L
   end
 
+  it "goes back to a released version given explicitly when the lockfile is locked to a prerelease", :ruby_repo do
+    bundle_config "path.system true"
+
+    pristine_system_gems "bundler-9.0.0.beta1"
+
+    build_repo4 do
+      build_gem "myrack", "1.0"
+
+      build_bundler "9.0.0"
+    end
+
+    checksums = checksums_section do |c|
+      c.checksum(gem_repo4, "myrack", "1.0")
+      c.checksum(gem_repo4, "bundler", "9.0.0")
+    end
+
+    install_gemfile <<-G
+      source "https://gem.repo4"
+      gem "myrack"
+    G
+
+    # Auto switching puts the beta back in charge on every command, so an
+    # explicit target is the only way out of a lockfile that names one.
+    expect(lockfile).to match(/BUNDLED WITH\n\s+9\.0\.0\.beta1\n/)
+
+    bundle "update --bundler 9.0.0 --verbose"
+
+    expect(out).to include("Updating bundler to 9.0.0")
+
+    expect(lockfile).to eq <<~L
+      GEM
+        remote: https://gem.repo4/
+        specs:
+          myrack (1.0)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        myrack
+      #{checksums}
+      BUNDLED WITH
+        9.0.0
+    L
+
+    bundle "--version"
+    expect(out).to include("9.0.0")
+  end
+
   it "updates the bundler version in the lockfile to a prerelease version when --pre is given", :ruby_repo do
     bundle_config "path.system true"
 
