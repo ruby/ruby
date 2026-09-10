@@ -987,93 +987,67 @@ FindFreeChildSlot(void)
 }
 
 
-/*
-  ruby -lne 'BEGIN{$cmds = Hash.new(0); $mask = 1}'
-   -e '$cmds[$_.downcase] |= $mask' -e '$mask <<= 1 if ARGF.eof'
-   -e 'END{$cmds.sort.each{|n,f|puts "    \"\\#{f.to_s(8)}\" #{n.dump} + 1,"}}'
-   98cmd ntcmd
- */
 #define InternalCmdsMax 8
-static const char szInternalCmds[][InternalCmdsMax+2] = {
-    "\2" "assoc",
-    "\3" "break",
-    "\3" "call",
-    "\3" "cd",
-    "\1" "chcp",
-    "\3" "chdir",
-    "\3" "cls",
-    "\2" "color",
-    "\3" "copy",
-    "\1" "ctty",
-    "\3" "date",
-    "\3" "del",
-    "\3" "dir",
-    "\3" "echo",
-    "\2" "endlocal",
-    "\3" "erase",
-    "\3" "exit",
-    "\3" "for",
-    "\2" "ftype",
-    "\3" "goto",
-    "\3" "if",
-    "\1" "lfnfor",
-    "\1" "lh",
-    "\1" "lock",
-    "\3" "md",
-    "\3" "mkdir",
-    "\2" "mklink",
-    "\2" "move",
-    "\3" "path",
-    "\3" "pause",
-    "\2" "popd",
-    "\3" "prompt",
-    "\2" "pushd",
-    "\3" "rd",
-    "\3" "rem",
-    "\3" "ren",
-    "\3" "rename",
-    "\3" "rmdir",
-    "\3" "set",
-    "\2" "setlocal",
-    "\3" "shift",
-    "\2" "start",
-    "\3" "time",
-    "\2" "title",
-    "\1" "truename",
-    "\3" "type",
-    "\1" "unlock",
-    "\3" "ver",
-    "\3" "verify",
-    "\3" "vol",
+static const char szInternalCmds[][InternalCmdsMax+1] = {
+    "assoc",
+    "break",
+    "call",
+    "cd",
+    "chdir",
+    "cls",
+    "color",
+    "copy",
+    "date",
+    "del",
+    "dir",
+    "echo",
+    "endlocal",
+    "erase",
+    "exit",
+    "for",
+    "ftype",
+    "goto",
+    "if",
+    "md",
+    "mkdir",
+    "mklink",
+    "move",
+    "path",
+    "pause",
+    "popd",
+    "prompt",
+    "pushd",
+    "rd",
+    "rem",
+    "ren",
+    "rename",
+    "rmdir",
+    "set",
+    "setlocal",
+    "shift",
+    "start",
+    "time",
+    "title",
+    "type",
+    "ver",
+    "verify",
+    "vol",
 };
 
 /* License: Ruby's */
 static int
 internal_match(const void *key, const void *elem)
 {
-    return strncmp(key, ((const char *)elem) + 1, InternalCmdsMax);
+    return strncmp(key, elem, InternalCmdsMax);
 }
+
+static int internal_cmd_match(const char *cmdname);
 
 /* License: Ruby's */
 static int
-is_command_com(const char *interp)
+is_internal_cmd(const char *cmd)
 {
-    int i = strlen(interp) - 11;
-
-    if ((i == 0 || (i > 0 && isdirsep(interp[i-1]))) &&
-        strcasecmp(interp+i, "command.com") == 0) {
-        return 1;
-    }
-    return 0;
-}
-
-static int internal_cmd_match(const char *cmdname, int nt);
-
-/* License: Ruby's */
-static int
-is_internal_cmd(const char *cmd, int nt)
-{
-    char cmdname[9], *b = cmdname, c;
+    char cmdname[InternalCmdsMax+1], *b = cmdname, c;
 
     do {
         if (!(c = *cmd++)) return 0;
@@ -1095,22 +1069,21 @@ is_internal_cmd(const char *cmd, int nt)
         return 0;
     }
     *b = 0;
-    return internal_cmd_match(cmdname, nt);
+    return internal_cmd_match(cmdname);
 }
 
 /* License: Ruby's */
 static int
-internal_cmd_match(const char *cmdname, int nt)
+internal_cmd_match(const char *cmdname)
 {
     char *nm;
 
     nm = bsearch(cmdname, szInternalCmds,
-                 sizeof(szInternalCmds) / sizeof(*szInternalCmds),
+                 numberof(szInternalCmds),
                  sizeof(*szInternalCmds),
                  internal_match);
-    if (!nm || !(nm[0] & (nt ? 2 : 1)))
-        return 0;
-    return 1;
+
+    return !!nm;
 }
 
 /* License: Ruby's */
@@ -1363,7 +1336,6 @@ w32_spawn(int mode, const char *cmd, const char *prog, UINT cp)
     }
     else {
         int redir = -1;
-        int nt;
         while (ISSPACE(*cmd)) cmd++;
         if ((shell = w32_getenv("RUBYSHELL", cp)) && (redir = has_redirection(cmd, cp))) {
             size_t shell_len = strlen(shell);
@@ -1375,12 +1347,10 @@ w32_spawn(int mode, const char *cmd, const char *prog, UINT cp)
             cmd = tmp;
         }
         else if ((shell = w32_getenv("COMSPEC", cp)) &&
-                 (nt = !is_command_com(shell),
-                  (redir < 0 ? has_redirection(cmd, cp) : redir) ||
-                  is_internal_cmd(cmd, nt))) {
-            size_t cmd_len = strlen(shell) + strlen(cmd) + sizeof(" /c ") + (nt ? 2 : 0);
+                 ((redir < 0 ? has_redirection(cmd, cp) : redir) || is_internal_cmd(cmd))) {
+            size_t cmd_len = strlen(shell) + strlen(cmd) + sizeof(" /c \"\"");
             char *tmp = ALLOCV(v, cmd_len);
-            snprintf(tmp, cmd_len, nt ? "%s /c \"%s\"" : "%s /c %s", shell, cmd);
+            snprintf(tmp, cmd_len, "%s /c \"%s\"", shell, cmd);
             cmd = tmp;
         }
         else {
@@ -1486,7 +1456,6 @@ w32_spawn_process(int mode, const char *prog, char *const *argv,
 {
     int c_switch = 0;
     size_t len;
-    BOOL ntcmd = FALSE, tmpnt;
     const char *shell;
     char *cmd, fbuf[PATH_MAX];
     WCHAR *wcmd = NULL, *wprog = NULL;
@@ -1508,9 +1477,7 @@ w32_spawn_process(int mode, const char *prog, char *const *argv,
     }
 
     if (!prog) prog = argv[0];
-    if ((shell = w32_getenv("COMSPEC", cp)) &&
-        internal_cmd_match(prog, tmpnt = !is_command_com(shell))) {
-        ntcmd = tmpnt;
+    if ((shell = w32_getenv("COMSPEC", cp)) && internal_cmd_match(prog)) {
         prog = shell;
         c_switch = 1;
     }
@@ -1532,14 +1499,14 @@ w32_spawn_process(int mode, const char *prog, char *const *argv,
         char *progs[2];
         progs[0] = (char *)prog;
         progs[1] = NULL;
-        len = join_argv(NULL, progs, ntcmd, cp, 1, FALSE);
+        len = join_argv(NULL, progs, TRUE, cp, 1, FALSE);
         if (c_switch) len += 3;
         else ++argv;
-        if (argv[0]) len += join_argv(NULL, argv, ntcmd, cp, 0, FALSE);
+        if (argv[0]) len += join_argv(NULL, argv, TRUE, cp, 0, FALSE);
         cmd = ALLOCV(v, len);
-        join_argv(cmd, progs, ntcmd, cp, 1, FALSE);
+        join_argv(cmd, progs, TRUE, cp, 1, FALSE);
         if (c_switch) strlcat(cmd, " /c", len);
-        if (argv[0]) join_argv(cmd + strlcat(cmd, " ", len), argv, ntcmd, cp, 0, FALSE);
+        if (argv[0]) join_argv(cmd + strlcat(cmd, " ", len), argv, TRUE, cp, 0, FALSE);
         prog = c_switch ? shell : 0;
     }
     else {
