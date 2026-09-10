@@ -100,10 +100,7 @@ find_next_match_sse2(search_state *search)
     int next_match_offset = trailing_zeros(search->matches_bitmap);
     search->matches_bitmap >>= (next_match_offset + 1);
     search->cstr += next_match_offset;
-    if (search->cstr > search->end) {
-        search->cstr = search->end;
-        return false;
-    }
+    RUBY_ASSERT(search->cstr <= search->end);
     return true;
 }
 
@@ -170,12 +167,16 @@ static inline uint32_t trailing_zeros64(uint64_t input)
 static inline bool
 find_next_match_neon(search_state *search)
 {
-    size_t next_match_offset = trailing_zeros64(search->matches_bitmap) / 4;
-    search->matches_bitmap >>= (next_match_offset + 1) * 4;
-    search->cstr += next_match_offset;
-    if (search->cstr > search->end) {
-        search->cstr = search->end;
-        return false;
+    uint32_t trailing_zeros = trailing_zeros64(search->matches_bitmap);
+
+    // uint64_t >>= 64 is undefined behaviour
+    if (trailing_zeros >= 63) {
+        search->matches_bitmap = 0;
+        search->cstr += 15;
+    }
+    else {
+        search->matches_bitmap >>= (trailing_zeros + 1);
+        search->cstr += trailing_zeros / 4;
     }
     return true;
 }
@@ -207,10 +208,10 @@ find_next_neon(search_state *search)
         const uint8x16_t matches = vorrq_u8(mask2, mask3);
 
         const uint8x8_t res = vshrn_n_u16(vreinterpretq_u16_u8(matches), 4);
-        const uint64_t bitmap = vget_lane_u64(vreinterpret_u64_u8(res), 0) & 0x8888888888888888ull;
+        const uint64_t bitmap = vget_lane_u64(vreinterpret_u64_u8(res), 0);
 
         if (bitmap) {
-            search->matches_bitmap = bitmap;
+            search->matches_bitmap = bitmap & 0x8888888888888888ull;
             return find_next_match_neon(search);
         }
         search->cstr += sizeof(uint8x16_t);
