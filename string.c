@@ -9385,9 +9385,18 @@ tr_trans_pairs_search_sse2(struct tr_trans_pairs_search *search)
 static inline VALUE
 tr_trans_pairs_next_match_neon(struct tr_trans_pairs_search *search)
 {
-    size_t next_match_offset = ntz_int64(search->matches_bitmap) / 4;
-    search->matches_bitmap >>= (next_match_offset + 1) * 4;
-    search->s += next_match_offset;
+    int trailing_zeros = ntz_int64(search->matches_bitmap);
+
+    // uint64_t >>= 64 would be undefined behaviour
+    if (trailing_zeros >= 63) {
+        search->matches_bitmap = 0;
+        search->s += 15;
+    }
+    else {
+        search->matches_bitmap >>= (trailing_zeros + 1);
+        search->s += trailing_zeros / 4;
+    }
+
     RUBY_ASSERT(search->s <= search->send);
     return search->trans_table[*search->s];
 }
@@ -9423,10 +9432,10 @@ tr_trans_pairs_search_neon(struct tr_trans_pairs_search *search)
                 }
 
                 const uint8x8_t res = vshrn_n_u16(vreinterpretq_u16_u8(matches[0]), 4);
-                const uint64_t bitmap = vget_lane_u64(vreinterpret_u64_u8(res), 0) & 0x8888888888888888ull;
+                const uint64_t bitmap = vget_lane_u64(vreinterpret_u64_u8(res), 0);
 
                 if (bitmap) {
-                    search->matches_bitmap = bitmap;
+                    search->matches_bitmap = bitmap & 0x8888888888888888ull;
                     return tr_trans_pairs_next_match_neon(search);
                 }
                 search->s += sizeof(uint8x16_t);
