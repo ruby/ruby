@@ -2109,6 +2109,8 @@ pub type rb_iseq_callback = ::std::option::Option<
 pub const ISEQ_BODY_OFFSET_PARAM: zjit_struct_offsets = 16;
 pub const ISEQ_BODY_OFFSET_OUTER_VARIABLES: zjit_struct_offsets = 240;
 pub const RUBY_OFFSET_THREAD_RACTOR: zjit_struct_offsets = 24;
+pub const TDATA_OFFSET_DATA: zjit_struct_offsets = 32;
+pub const RUBY_OFFSET_ENCODING_INDEX: zjit_struct_offsets = 128;
 pub type zjit_struct_offsets = u32;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -2133,6 +2135,8 @@ pub const RUBY_OFFSET_EC_CFP: jit_bindgen_constants = 16;
 pub const RUBY_OFFSET_EC_INTERRUPT_FLAG: jit_bindgen_constants = 32;
 pub const RUBY_OFFSET_EC_INTERRUPT_MASK: jit_bindgen_constants = 36;
 pub const RUBY_OFFSET_EC_THREAD_PTR: jit_bindgen_constants = 48;
+pub const RUBY_STR_CHILLED: jit_bindgen_constants = 16384;
+pub const RUBY_STR_TMPLOCK: jit_bindgen_constants = 524288;
 pub const RUBY_OFFSET_EC_RACTOR_ID: jit_bindgen_constants = 64;
 pub type jit_bindgen_constants = i32;
 pub const rb_invalid_shape_id: shape_id_t = 524287;
@@ -2215,6 +2219,7 @@ unsafe extern "C" {
     pub static mut rb_cObject: VALUE;
     pub static mut rb_cArray: VALUE;
     pub static mut rb_cClass: VALUE;
+    pub static mut rb_cEncoding: VALUE;
     pub static mut rb_cFalseClass: VALUE;
     pub static mut rb_cFloat: VALUE;
     pub static mut rb_cHash: VALUE;

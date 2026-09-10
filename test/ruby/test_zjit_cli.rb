@@ -372,6 +372,36 @@ class TestZJITCLI < Test::Unit::TestCase
     RUBY
   end
 
+  def test_force_encoding_with_non_builtin_encodings
+    # Exercise UTF-16BE and a dummy UTF-16 encoding in the full Ruby CLI
+    # harness, without relying on miniruby's loaded encoding modules.
+    expected = '[[true, [0, 65], "UTF-16BE", true], [true, [0, 65], "ASCII-8BIT", true], [true, [0, 65], "UTF-16"], [true, 160, [0, 65], "UTF-16BE", true]]'
+    assert_compiles expected, <<~'RUBY', call_threshold: 2
+      def test(str, encoding) = str.force_encoding(encoding)
+
+      target = "\0A".b
+      test(target, Encoding::UTF_16BE)
+      target_result = test(target, Encoding::UTF_16BE)
+
+      current = "\0A".b.force_encoding(Encoding::UTF_16BE)
+      test(current, Encoding::BINARY)
+      current_result = test(current, Encoding::BINARY)
+      dummy_target = "\0A".b
+      dummy_encoding = Encoding.find("UTF-16")
+      test(dummy_target, dummy_encoding)
+      dummy_result = test(dummy_target, dummy_encoding)
+
+      heap = ("\0A" * 80).b
+      heap_result = test(heap, Encoding::UTF_16BE)
+      [
+        [target_result.equal?(target), target.bytes, target.encoding.name, target.valid_encoding?],
+        [current_result.equal?(current), current.bytes, current.encoding.name, current.valid_encoding?],
+        [dummy_result.equal?(dummy_target), dummy_target.bytes, dummy_target.encoding.name],
+        [heap_result.equal?(heap), heap.bytesize, heap.byteslice(-2, 2).bytes, heap.encoding.name, heap.valid_encoding?],
+      ]
+    RUBY
+  end
+
   private
 
   # Assert that every method call in `test_script` can be compiled by ZJIT
