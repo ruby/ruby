@@ -658,34 +658,25 @@ jit_compile_exception(rb_execution_context_t *ec)
 static inline VALUE
 jit_exec_exception(rb_execution_context_t *ec)
 {
-#if USE_ZJIT
-    if (rb_zjit_enabled_p) {
-        void *zjit_entry = rb_zjit_entry;
-        if (zjit_entry) {
-            rb_jit_func_t func = jit_compile_exception(ec);
-            if (func) {
-                // The JIT pops the handler frame on leave. Save its FINISH flag first.
-                bool finish = VM_FRAME_FINISHED_P(ec->cfp);
-                VALUE result = ((rb_zjit_func_t)zjit_entry)(ec, ec->cfp, func);
-                if (!UNDEF_P(result) && !finish) {
-                    *ec->cfp->sp++ = result;
-                    return Qundef;
-                }
-                return result;
-            }
-        }
+    rb_jit_func_t func = jit_compile_exception(ec);
+    if (!func) {
         return Qundef;
+    }
+
+#if USE_YJIT
+    if (rb_yjit_enabled_p) {
+        return func(ec, ec->cfp);
     }
 #endif
 
-    rb_jit_func_t func = jit_compile_exception(ec);
-    if (func) {
-        // Call the JIT code
-        return func(ec, ec->cfp);
+#if USE_ZJIT
+    const void *zjit_exception_entry = rb_zjit_exception_entry;
+    if (zjit_exception_entry) {
+        return ((rb_zjit_func_t)zjit_exception_entry)(ec, ec->cfp, func);
     }
-    else {
-        return Qundef;
-    }
+#endif
+
+    return Qundef;
 }
 #else
 # define jit_compile_exception(ec) ((rb_jit_func_t)0)

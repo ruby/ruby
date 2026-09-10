@@ -175,11 +175,17 @@ class TestZJITCLI < Test::Unit::TestCase
   end
 
   def test_exception_handlers
-    assert_compiles '[[0, 1, 2, 3], [:ensure, :ensure, :ensure], 0]', <<~RUBY, call_threshold: 2, stats: true
+    assert_compiles '[[0, 1, 2, 3], [:ensure, :ensure, :ensure], 0, 3]', <<~RUBY, call_threshold: 2, stats: true
       def rescued_value(hash)
         hash.fetch(:missing)
       rescue KeyError
         hash[:answer]
+      end
+
+      def rescued_value_caller(hash)
+        value = rescued_value(hash)
+        ::RubyVM::ZJIT.induce_side_exit!
+        value
       end
 
       def ensure_value(log)
@@ -187,7 +193,7 @@ class TestZJITCLI < Test::Unit::TestCase
       ensure
         log << :ensure
       end
-      values = 4.times.map { |value| rescued_value(answer: value) }
+      values = 4.times.map { |value| rescued_value_caller(answer: value) }
       log = []
       3.times do
         begin
@@ -195,7 +201,7 @@ class TestZJITCLI < Test::Unit::TestCase
         rescue RuntimeError
         end
       end
-      [values, log, RubyVM::ZJIT.stats(:exit_exception_handler)]
+      [values, log, RubyVM::ZJIT.stats(:exit_exception_handler), RubyVM::ZJIT.stats(:exit_directive_induced)]
     RUBY
   end
 

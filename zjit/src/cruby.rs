@@ -213,6 +213,12 @@ pub unsafe fn cfp_env_has_escaped(cfp: CfpPtr) -> bool {
     (unsafe { ep.offset(VM_ENV_DATA_INDEX_FLAGS as isize).read().0 } & VM_ENV_FLAG_ESCAPED.to_usize()) != 0
 }
 
+/// Check whether a control frame has the FINISH flag.
+pub unsafe fn cfp_finished_p(cfp: CfpPtr) -> bool {
+    let ep = unsafe { get_cfp_ep(cfp) };
+    (unsafe { ep.offset(VM_ENV_DATA_INDEX_FLAGS as isize).read().0 } & VM_FRAME_FLAG_FINISH.to_usize()) != 0
+}
+
 
 /// A YARV instruction opcode (`ruby_vminsn_type`), stored as a `u16` since there are only
 /// `VM_INSTRUCTION_SIZE` (~259) instructions. Keeps enums that embed an opcode (e.g.
@@ -1265,7 +1271,7 @@ pub use manual_defs::*;
 pub mod test_utils {
     use std::{ptr::null, sync::Once};
 
-    use crate::{options::{DEFAULT_CALL_THRESHOLD, rb_zjit_call_threshold, rb_zjit_prepare_options, set_call_threshold}, state::{ZJITState, rb_zjit_compiling_p, rb_zjit_entry}};
+    use crate::{options::{DEFAULT_CALL_THRESHOLD, rb_zjit_call_threshold, rb_zjit_prepare_options, set_call_threshold}, state::{ZJITState, rb_zjit_compiling_p, rb_zjit_entry, rb_zjit_exception_entry}};
 
     use super::*;
 
@@ -1314,11 +1320,12 @@ pub mod test_utils {
         }
 
         // Set up globals for convenience
-        let zjit_entry = ZJITState::init();
+        let (zjit_entry, zjit_exception_entry) = ZJITState::init();
 
         // Enable zjit_* instructions
         unsafe {
             rb_zjit_entry = zjit_entry;
+            rb_zjit_exception_entry = zjit_exception_entry;
             rb_zjit_compiling_p = true;
         }
     }

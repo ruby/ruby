@@ -273,6 +273,17 @@ fn gen_exception_entry_for_current_frame(
         return Ok(next_entry);
     }
 
+    let (insn_idx, target) = gen_exception_entry_target_for_current_frame(cb, iseq, ec)?;
+
+    gen_exception_entry_guard(cb, iseq, insn_idx, target, previous_entry)
+}
+
+/// Compile or reuse the target for the current exception-entry PC.
+fn gen_exception_entry_target_for_current_frame(
+    cb: &mut CodeBlock,
+    iseq: IseqPtr,
+    ec: EcPtr,
+) -> Result<(u16, CodePtr), CompileError> {
     let cfp = unsafe { get_ec_cfp(ec) };
     let pc = unsafe { get_cfp_pc(cfp) };
     let insn_idx = iseq_pc_to_insn_idx(iseq, pc)
@@ -297,8 +308,7 @@ fn gen_exception_entry_for_current_frame(
             }
         }
     };
-
-    gen_exception_entry_guard(cb, iseq, insn_idx, target, previous_entry)
+    Ok((insn_idx, target))
 }
 
 /// Compile or reuse the handler body for one bytecode instruction.
@@ -490,6 +500,60 @@ pub fn gen_entry_trampoline(cb: &mut CodeBlock) -> Result<CodePtr, CompileError>
     let (code_ptr, gc_offsets) = asm.compile(cb)?;
     assert!(gc_offsets.is_empty());
     register_current_code_range_with_perf(cb, "entry trampoline", code_ptr);
+    Ok(code_ptr)
+}
+
+/// Compile the shared entry trampoline for exception handlers and caller OSR.
+pub fn gen_exception_entry_trampoline(cb: &mut CodeBlock) -> Result<CodePtr, CompileError> {
+    let (mut asm, scratch_reg) = Assembler::new_with_scratch_reg();
+    let entry_block = asm.new_block(BlockId(0), true, 0);
+    let dispatch_block = asm.new_block(BlockId(1), false, 1);
+    let check_exit_block = asm.new_block(BlockId(2), false, 2);
+    let finished_block = asm.new_block(BlockId(3), false, 3);
+    let exit_block = asm.new_block(BlockId(4), false, 4);
+    let edge = |target| Target::Block(Box::new(lir::BranchEdge { target, args: vec![] }));
+
+    asm.set_current_block(entry_block);
+    let entry_label = asm.new_label("exception_entry_trampoline");
+    asm.write_label(entry_label);
+    gen_entry_prologue(&mut asm);
+    asm.mov(scratch_reg, C_ARG_OPNDS[2]);
+    asm.jmp(edge(dispatch_block));
+
+    asm.set_current_block(dispatch_block);
+    let dispatch_label = asm.new_label("exception_entry_dispatch");
+    asm.write_label(dispatch_label);
+    let result = asm.ccall_reg(scratch_reg, VALUE_BITS);
+    let next_entry = asm_ccall!(asm, exception_osr_entry, EC, result);
+    asm.cmp(next_entry, Opnd::UImm(EXCEPTION_OSR_FINISHED as u64));
+    asm.push_insn(lir::Insn::Je(edge(finished_block)));
+    asm.jmp(edge(check_exit_block));
+
+    asm.set_current_block(check_exit_block);
+    let check_exit_label = asm.new_label("exception_entry_check_exit");
+    asm.write_label(check_exit_label);
+    asm.mov(CFP, Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP));
+    asm.mov(SP, Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP));
+    asm.mov(scratch_reg, next_entry);
+    asm.cmp(next_entry, Opnd::UImm(EXCEPTION_OSR_EXIT as u64));
+    asm.push_insn(lir::Insn::Je(edge(exit_block)));
+    asm.jmp(edge(dispatch_block));
+
+    asm.set_current_block(finished_block);
+    let finished_label = asm.new_label("exception_entry_finished");
+    asm.write_label(finished_label);
+    asm.frame_teardown(lir::JIT_PRESERVED_REGS);
+    asm.cret(result);
+
+    asm.set_current_block(exit_block);
+    let exit_label = asm.new_label("exception_entry_exit");
+    asm.write_label(exit_label);
+    asm.frame_teardown(lir::JIT_PRESERVED_REGS);
+    asm.cret(Qundef.into());
+
+    let (code_ptr, gc_offsets) = asm.compile(cb)?;
+    assert!(gc_offsets.is_empty());
+    register_current_code_range_with_perf(cb, "exception entry trampoline", code_ptr);
     Ok(code_ptr)
 }
 
@@ -3887,6 +3951,9 @@ macro_rules! c_callable {
 #[cfg(test)]
 pub(crate) use c_callable;
 
+const EXCEPTION_OSR_FINISHED: usize = 0;
+const EXCEPTION_OSR_EXIT: usize = 1;
+
 c_callable! {
     /// Compile another exception entry after a PC guard misses.
     fn exception_entry_stub_hit(entry_ptr: *const ExceptionEntryGuard, ec: EcPtr) -> *const u8 {
@@ -3928,6 +3995,70 @@ c_callable! {
             }
             cb.mark_all_executable();
             code_ptr.map_or(fallback, |ptr| ptr.raw_ptr(cb))
+        })
+    }
+}
+
+c_callable! {
+    /// Continue caller frames in JIT code after an exception handler returns.
+    fn exception_osr_entry(ec: EcPtr, result: VALUE) -> usize {
+        if result == Qundef {
+            return EXCEPTION_OSR_EXIT;
+        }
+
+        let cfp = unsafe { get_ec_cfp(ec) };
+        let returned_cfp = unsafe { cfp.sub(1) };
+        if unsafe { cfp_finished_p(returned_cfp) } {
+            return EXCEPTION_OSR_FINISHED;
+        }
+
+        let sp = unsafe { get_cfp_sp(cfp) };
+        unsafe {
+            sp.write(result);
+            rb_set_cfp_sp(cfp, sp.add(1));
+        }
+
+        if unsafe { !rb_zjit_compiling_p } {
+            return EXCEPTION_OSR_EXIT;
+        }
+        if unsafe { rb_ec_stack_check(ec as _) } != 0 {
+            incr_counter!(skipped_native_stack_full);
+            return EXCEPTION_OSR_EXIT;
+        }
+        let iseq = unsafe { get_cfp_iseq(cfp) };
+        if iseq.is_null() {
+            return EXCEPTION_OSR_EXIT;
+        }
+        if unsafe { cfp_env_has_escaped(cfp) } {
+            incr_counter!(skipped_exceptional_entry_escaped_env);
+            return EXCEPTION_OSR_EXIT;
+        }
+
+        let exception_entry = unsafe { rb_zjit_get_iseq_exception_entry(iseq) };
+        if !exception_entry.is_null() {
+            return exception_entry as usize;
+        }
+
+        with_vm_lock(src_loc!(), || {
+            // A prior frame can install the first guard before we acquire the VM lock.
+            let exception_entry = unsafe { rb_zjit_get_iseq_exception_entry(iseq) };
+            if !exception_entry.is_null() {
+                return exception_entry as usize;
+            }
+
+            let cb = ZJITState::get_code_block();
+            let code_ptr = with_time_stat(compile_time_ns, || {
+                gen_exception_entry_for_current_frame(cb, iseq, ec, None)
+            });
+            if matches!(&code_ptr, Err(CompileError::OutOfMemory)) {
+                unsafe { rb_zjit_compiling_p = false; }
+            }
+            cb.mark_all_executable();
+            code_ptr.map_or(EXCEPTION_OSR_EXIT, |ptr| {
+                let entry = ptr.raw_ptr(cb);
+                unsafe { rb_zjit_set_iseq_exception_entry(iseq, entry.cast()) };
+                entry as usize
+            })
         })
     }
 }

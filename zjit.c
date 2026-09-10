@@ -150,6 +150,18 @@ rb_zjit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec, bool jit
     }
 }
 
+const void *
+rb_zjit_get_iseq_exception_entry(const rb_iseq_t *iseq)
+{
+    return (const void *)ISEQ_BODY(iseq)->jit_exception;
+}
+
+void
+rb_zjit_set_iseq_exception_entry(const rb_iseq_t *iseq, const void *entry)
+{
+    ISEQ_BODY(iseq)->jit_exception = (rb_jit_func_t)entry;
+}
+
 extern VALUE *rb_vm_base_ptr(struct rb_control_frame_struct *cfp);
 
 // Convert a given ISEQ's instructions to zjit_* instructions
