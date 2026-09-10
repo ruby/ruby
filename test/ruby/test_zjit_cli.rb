@@ -174,6 +174,31 @@ class TestZJITCLI < Test::Unit::TestCase
     assert_equal "[1, 3, 4]", out
   end
 
+  def test_exception_handlers
+    assert_compiles '[[0, 1, 2, 3], [:ensure, :ensure, :ensure], 0]', <<~RUBY, call_threshold: 2, stats: true
+      def rescued_value(hash)
+        hash.fetch(:missing)
+      rescue KeyError
+        hash[:answer]
+      end
+
+      def ensure_value(log)
+        raise "boom"
+      ensure
+        log << :ensure
+      end
+      values = 4.times.map { |value| rescued_value(answer: value) }
+      log = []
+      3.times do
+        begin
+          ensure_value(log)
+        rescue RuntimeError
+        end
+      end
+      [values, log, RubyVM::ZJIT.stats(:exit_exception_handler)]
+    RUBY
+  end
+
   def test_send_exit_with_uninitialized_locals
     assert_runs 'nil', %q{
       def entry(init)

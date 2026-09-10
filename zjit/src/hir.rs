@@ -922,6 +922,7 @@ pub enum FieldName {
     thread_ptr,
     len,
     SelfParam,
+    Stack(u16),
     Id(ID),
 }
 
@@ -932,6 +933,7 @@ impl std::fmt::Display for FieldName {
             Id(id) if id_is_empty(*id) => f.write_str("<empty>"),
             Id(id) => f.write_str(&id.contents_lossy()),
             SelfParam => f.write_str("self"),
+            Stack(index) => write!(f, "stack[{index}]"),
             _ => write!(f, "{self:?}"),
         }
     }
@@ -1267,6 +1269,8 @@ pub enum Insn {
 
     /// Set up frame. Remember the address as the JIT entry for the insn_idx in `jit_entry_insns()[jit_entry_idx]`.
     EntryPoint { jit_entry_idx: Option<usize> },
+    /// Set up a frame entered from jit_exec_exception() at the given instruction.
+    ExceptionEntryPoint { insn_idx: u16, stack_size: u8 },
     /// Control flow instructions
     Return { val: InsnId },
     /// Non-local control flow. See the throw YARV instruction
@@ -1361,6 +1365,7 @@ macro_rules! for_each_operand_impl {
             | Insn::LoadArg { .. }
             | Insn::Entries { .. }
             | Insn::EntryPoint { .. }
+            | Insn::ExceptionEntryPoint { .. }
             | Insn::LoadPC
             | Insn::LoadSP
             | Insn::LoadEC
@@ -1689,7 +1694,7 @@ impl Insn {
             Insn::Comment { .. }
             | Insn::Jump(_)
             | Insn::Entries { .. }
-            | Insn::CondBranch { .. } | Insn::EntryPoint { .. } | Insn::Return { .. }
+            | Insn::CondBranch { .. } | Insn::EntryPoint { .. } | Insn::ExceptionEntryPoint { .. } | Insn::Return { .. }
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::SetClassVar { .. } | Insn::ArrayExtend { .. }
             | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetGlobal { .. }
             | Insn::SetLocal { .. } | Insn::Throw { .. } | Insn::IncrCounter(_) | Insn::IncrCounterPtr { .. }
@@ -1888,6 +1893,7 @@ impl Insn {
             ),
             Insn::InvokeBuiltin { .. } => effects::Any,
             Insn::EntryPoint { .. } => effects::Any,
+            Insn::ExceptionEntryPoint { .. } => effects::Any,
             Insn::Return { .. } => effects::Any,
             Insn::Throw { .. } => effects::Any,
             Insn::FixnumAdd { .. } => effects::Empty,
@@ -2281,6 +2287,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             }
             &Insn::EntryPoint { jit_entry_idx: Some(idx) } => write!(f, "EntryPoint JIT({idx})"),
             &Insn::EntryPoint { jit_entry_idx: None } => write!(f, "EntryPoint interpreter"),
+            &Insn::ExceptionEntryPoint { insn_idx, stack_size } => write!(f, "EntryPoint exception({insn_idx}, stack_size={stack_size})"),
             Insn::Return { val } => { write!(f, "Return {val}") }
             Insn::FixnumAdd  { left, right, .. } => { write!(f, "FixnumAdd {left}, {right}") },
             Insn::FixnumSub  { left, right, .. } => { write!(f, "FixnumSub {left}, {right}") },
@@ -2774,6 +2781,8 @@ struct CompilePolicy {
     /// side-exit, and instead use fallback paths (e.g. C calls) on mismatch.
     /// Set when this is the final version of an ISEQ after recompilation.
     no_side_exits: bool,
+    /// Whether this entry can create another version after a profiling side exit.
+    allow_recompile: bool,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -2784,18 +2793,23 @@ struct SetIvarSpec {
 }
 
 impl CompilePolicy {
-    fn new(iseq: *const rb_iseq_t) -> Self {
-        // When a previous version was invalidated and we've reached the version
-        // limit, avoid speculative optimizations that may side-exit.
-        let no_side_exits = if iseq.is_null() {
-            false
+    fn from_versions(versions: impl Iterator<Item = crate::payload::IseqVersionRef>) -> Self {
+        let (version_count, has_invalidated_version) = versions.fold((0, false), |(count, invalidated), version| {
+            (count + 1, invalidated || unsafe { version.as_ref() }.is_invalidated())
+        });
+        let allow_recompile = version_count + 1 < max_iseq_versions();
+        Self {
+            no_side_exits: has_invalidated_version && !allow_recompile,
+            allow_recompile,
+        }
+    }
+
+    fn new(iseq: IseqPtr) -> Self {
+        if iseq.is_null() {
+            Self { no_side_exits: false, allow_recompile: true }
         } else {
-            let payload = get_or_create_iseq_payload(iseq);
-            payload.versions.iter().any(
-                |v| unsafe { v.as_ref() }.is_invalidated()
-            ) && payload.versions.len() + 1 >= max_iseq_versions()
-        };
-        Self { no_side_exits }
+            Self::from_versions(get_or_create_iseq_payload(iseq).versions.iter().copied())
+        }
     }
 }
 
@@ -3588,7 +3602,7 @@ impl Function {
         match &self.insns[insn] {
             Insn::Param => unimplemented!("params should not be present in block.insns"),
             Insn::LoadArg { val_type, .. } => *val_type,
-            Insn::SetGlobal { .. } | Insn::Jump(_) | Insn::Entries { .. } | Insn::EntryPoint { .. }
+            Insn::SetGlobal { .. } | Insn::Jump(_) | Insn::Entries { .. } | Insn::EntryPoint { .. } | Insn::ExceptionEntryPoint { .. }
             | Insn::Comment { .. }
             | Insn::CondBranch { .. } | Insn::Return { .. } | Insn::Throw { .. }
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::SetClassVar { .. } | Insn::ArrayExtend { .. }
@@ -6258,8 +6272,7 @@ impl Function {
         // On the final version, recompilation is not possible, so converting sends to
         // SideExits would just add overhead (the exit fires every time without benefit).
         // Keep them as Send fallbacks so the interpreter handles them directly.
-        let payload = get_or_create_iseq_payload(self.iseq);
-        if payload.versions.len() + 1 >= crate::codegen::max_iseq_versions() {
+        if !self.policy.allow_recompile {
             return;
         }
         for block in self.reverse_post_order() {
@@ -7714,6 +7727,7 @@ impl Function {
             | Insn::Jump { .. }
             | Insn::Entries { .. }
             | Insn::EntryPoint { .. }
+            | Insn::ExceptionEntryPoint { .. }
             | Insn::PatchPoint { .. }
             | Insn::SideExit { .. }
             | Insn::IncrCounter { .. }
@@ -8695,6 +8709,10 @@ pub const SELF_PARAM_IDX: usize = 0;
 #[derive(Clone, Copy)]
 enum AddIseqMode {
     Standalone,
+    Exception {
+        insn_idx: u16,
+        stack_size: u8,
+    },
     Inlined {
         return_block: BlockId,
         /// The caller's post-send `Snapshot`. Allows side-exits to restore the outer frame.
@@ -8724,8 +8742,17 @@ struct AddIseqResult {
     profiles: ProfileOracle,
 }
 
-/// Compile ISEQ into High-level IR
-pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
+/// Compile an ISEQ into High-level IR for a normal interpreter entry.
+pub fn iseq_to_hir(iseq: IseqPtr) -> Result<Function, ParseError> {
+    iseq_to_hir_with_mode(iseq, AddIseqMode::Standalone)
+}
+
+/// Compile an ISEQ into High-level IR for an exception entry.
+pub fn iseq_to_hir_exception(iseq: IseqPtr, insn_idx: u16, stack_size: u8) -> Result<Function, ParseError> {
+    iseq_to_hir_with_mode(iseq, AddIseqMode::Exception { insn_idx, stack_size })
+}
+
+fn iseq_to_hir_with_mode(iseq: IseqPtr, mode: AddIseqMode) -> Result<Function, ParseError> {
     if !ZJITState::can_compile_iseq(iseq) {
         return Err(ParseError::NotAllowed);
     }
@@ -8733,8 +8760,15 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
     let mut fun = Function::new(iseq);
     fun.was_invalidated_for_singleton_class_creation = payload.was_invalidated_for_singleton_class_creation;
     fun.self_is_heap_object = payload.self_is_heap_object;
+    if let AddIseqMode::Exception { insn_idx, .. } = mode {
+        fun.policy = CompilePolicy::from_versions(
+            payload.exception_entries.iter()
+                .filter(|entry| entry.insn_idx == insn_idx)
+                .map(|entry| entry.version),
+        );
+    }
 
-    let result = add_iseq_to_hir(&mut fun, iseq, AddIseqMode::Standalone)?;
+    let result = add_iseq_to_hir(&mut fun, iseq, mode)?;
     fun.profiles = Some(result.profiles);
 
     if let Err(err) = crate::stats::trace_compile_phase("validate", || fun.validate()) {
@@ -8777,7 +8811,7 @@ fn add_iseq_to_hir(
     fn new_frame_state(mode: AddIseqMode, iseq: IseqPtr) -> FrameState {
         match mode {
             AddIseqMode::Inlined { caller, depth, .. } => FrameState::inlined(iseq, caller, depth),
-            AddIseqMode::Standalone => FrameState::new(iseq),
+            AddIseqMode::Standalone | AddIseqMode::Exception { .. } => FrameState::new(iseq),
         }
     }
 
@@ -8790,14 +8824,20 @@ fn add_iseq_to_hir(
     // Those entries are known to be unreachable so slicing them off here avoids
     // translating prologue blocks that would only be discarded later, rather
     // than emitting them and relying on a downstream pass to prune the dead CFG.
-    let jit_entry_start = match mode {
-        AddIseqMode::Standalone => 0,
-        AddIseqMode::Inlined { jit_entry_idx, .. } => jit_entry_idx,
+    let jit_entry_insns = match mode {
+        AddIseqMode::Exception { insn_idx, .. } => vec![u32::from(insn_idx)],
+        AddIseqMode::Standalone | AddIseqMode::Inlined { .. } => {
+            let jit_entry_start = match mode {
+                AddIseqMode::Standalone => 0,
+                AddIseqMode::Inlined { jit_entry_idx, .. } => jit_entry_idx,
+                AddIseqMode::Exception { .. } => unreachable!(),
+            };
+            unsafe { iseq.params() }.opt_table_slice()
+                .get(jit_entry_start..)
+                .expect("JIT entry index must be within the callee opt table")
+                .iter().copied().map(VALUE::as_u32).collect()
+        }
     };
-    let jit_entry_insns = unsafe { iseq.params() }.opt_table_slice()
-        .get(jit_entry_start..)
-        .expect("JIT entry index must be within the callee opt table")
-        .iter().copied().map(VALUE::as_u32).collect::<Vec<_>>();
     let BytecodeInfo { jump_targets } = compute_bytecode_info(iseq, &jit_entry_insns);
 
     let compile_jit_entries = matches!(mode, AddIseqMode::Standalone) && iseq_supports_jit_entry(iseq);
@@ -8832,25 +8872,32 @@ fn add_iseq_to_hir(
     // optionals, reached from this one by fallthrough rather than targeted directly.
     // Standalone compilation has no single body entry block, so it produces none.
     let body_entry_block = match mode {
-        AddIseqMode::Standalone => None,
+        AddIseqMode::Standalone | AddIseqMode::Exception { .. } => None,
         AddIseqMode::Inlined { .. } => Some(insn_idx_to_block[&jit_entry_insns[0]]),
     };
 
-    if matches!(mode, AddIseqMode::Standalone) {
-        // Compile an entry_block for the interpreter
-        compile_entry_block(fun, jit_entry_insns.as_slice(), &insn_idx_to_block);
+    let exception_entry_state = match mode {
+        AddIseqMode::Standalone => {
+            // Compile an entry_block for the interpreter
+            compile_entry_block(fun, jit_entry_insns.as_slice(), &insn_idx_to_block);
 
-        if compile_jit_entries {
-            // Compile all JIT-to-JIT entry blocks
-            for (jit_entry_idx, insn_idx) in jit_entry_insns.iter().enumerate() {
-                let target_block = insn_idx_to_block.get(insn_idx)
-                    .copied()
-                    .expect("we make a block for each jump target and \
-                             each entry in the ISEQ opt_table is a jump target");
-                compile_jit_entry_block(fun, jit_entry_idx, target_block);
+            if compile_jit_entries {
+                // Compile all JIT-to-JIT entry blocks
+                for (jit_entry_idx, insn_idx) in jit_entry_insns.iter().enumerate() {
+                    let target_block = insn_idx_to_block.get(insn_idx)
+                        .copied()
+                        .expect("we make a block for each jump target and each entry in the ISEQ opt_table is a jump target");
+                    compile_jit_entry_block(fun, jit_entry_idx, target_block);
+                }
             }
+            None
         }
-    }
+        AddIseqMode::Exception { insn_idx, stack_size } => {
+            let target_block = insn_idx_to_block[&u32::from(insn_idx)];
+            Some(compile_exception_entry_block(fun, insn_idx, stack_size, target_block))
+        }
+        AddIseqMode::Inlined { .. } => None,
+    };
 
     // Check if the EP is escaped for the ISEQ from the beginning. We give up
     // optimizing locals in that case because they're shared with other frames.
@@ -8863,8 +8910,13 @@ fn add_iseq_to_hir(
     // Iteratively fill out basic blocks using a queue.
     // TODO(max): Basic block arguments at edges
     let mut queue = VecDeque::new();
-    for &insn_idx in jit_entry_insns.iter() {
-        queue.push_back((new_frame_state(mode, iseq), insn_idx_to_block[&insn_idx], /*insn_idx=*/insn_idx, /*local_inval=*/false));
+    if let Some(entry_state) = exception_entry_state {
+        let insn_idx = u32::try_from(entry_state.insn_idx()).unwrap();
+        queue.push_back((entry_state, insn_idx_to_block[&insn_idx], insn_idx, false));
+    } else {
+        for &insn_idx in jit_entry_insns.iter() {
+            queue.push_back((new_frame_state(mode, iseq), insn_idx_to_block[&insn_idx], insn_idx, false));
+        }
     }
 
     // Keep compiling blocks until the queue becomes empty
@@ -10043,7 +10095,7 @@ fn add_iseq_to_hir(
                     fun.push_insn(block, Insn::CheckInterrupts { state: exit_id });
                     let val = state.stack_pop()?;
                     match mode {
-                        AddIseqMode::Standalone => fun.push_insn(block, Insn::Return { val }),
+                        AddIseqMode::Standalone | AddIseqMode::Exception { .. } => fun.push_insn(block, Insn::Return { val }),
                         AddIseqMode::Inlined { return_block, .. } => { fun.push_insn(block, Insn::Jump(BranchEdge { target: return_block, args: vec![val] })) }
                     };
                     break;  // Don't enqueue the next block as a successor
@@ -10767,7 +10819,7 @@ fn add_iseq_to_hir(
         }
     }
 
-    if matches!(mode, AddIseqMode::Standalone) {
+    if matches!(mode, AddIseqMode::Standalone | AddIseqMode::Exception { .. }) {
         // Populate the entries superblock with an Entries instruction targeting all entry blocks
         fun.seal_entries();
 
@@ -10877,6 +10929,54 @@ fn compile_entry_state(fun: &mut Function) -> (InsnId, FrameState) {
         }
     }
     (self_param, entry_state)
+}
+
+/// Compile an entry that restores the interpreter state at an exception handler PC.
+fn compile_exception_entry_block(
+    fun: &mut Function,
+    insn_idx: u16,
+    stack_size: u8,
+    target_block: BlockId,
+) -> FrameState {
+    let entry_block = fun.entry_block;
+    fun.push_insn(entry_block, Insn::ExceptionEntryPoint { insn_idx, stack_size });
+
+    let iseq = fun.iseq;
+    let self_param = fun.load_self(entry_block);
+    let mut entry_state = FrameState::new(iseq);
+    entry_state.insn_idx = insn_idx.into();
+    entry_state.pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx.into()) };
+
+    // Exception entries resume an existing frame. Load every local from its EP.
+    let ep = fun.get_ep(entry_block, 0);
+    for local_idx in 0..num_locals(iseq) {
+        let ep_offset = local_idx_to_ep_offset(iseq, local_idx);
+        let ep_offset = u32::try_from(ep_offset)
+            .unwrap_or_else(|_| panic!("Could not convert ep_offset {ep_offset} to u32"));
+        let local = fun.get_local_from_ep(entry_block, iseq, ep, ep_offset, 0, types::BasicObject);
+        entry_state.locals.push(local);
+    }
+
+    // The exception entry point moves SP to the bottom of the operand stack.
+    if stack_size > 0 {
+        let sp = fun.load_sp(entry_block);
+        for stack_idx in 0..u16::from(stack_size) {
+            let val = fun.load_field(
+                entry_block,
+                sp,
+                FieldName::Stack(stack_idx),
+                SIZEOF_VALUE_I32 * i32::from(stack_idx),
+                types::BasicObject,
+            );
+            entry_state.stack_push(val);
+        }
+    }
+
+    if get_option!(stats) {
+        fun.count_iseq_calls(entry_block);
+    }
+    fun.push_insn(entry_block, Insn::Jump(BranchEdge { target: target_block, args: entry_state.as_args(self_param) }));
+    entry_state
 }
 
 /// Compile a jit_entry_block
