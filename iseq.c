@@ -429,7 +429,8 @@ rb_iseq_mark_and_move(rb_iseq_t *iseq, bool reference_updating)
                 if (cds[i].ci) rb_gc_mark_and_move_ptr(&cds[i].ci);
 
                 const struct rb_callcache *cc = cds[i].cc;
-                if (!cc || cc == rb_vm_empty_cc() || cc == rb_vm_empty_cc_for_super()) {
+                if (!cc || cc == &rb_vm_empty_cc || cc == &rb_vm_empty_cc_for_super ||
+                    cc == &rb_vm_uncached_cc) {
                     // No need for marking, reference updating, or clearing
                     // We also want to avoid reassigning to improve CoW
                     continue;
@@ -445,7 +446,7 @@ rb_iseq_mark_and_move(rb_iseq_t *iseq, bool reference_updating)
                     else {
                         // Either the CC or CME has been invalidated. Replace
                         // it with the empty CC so that it can be GC'd.
-                        cds[i].cc = rb_vm_empty_cc();
+                        cds[i].cc = &rb_vm_empty_cc;
                     }
                 }
             }
