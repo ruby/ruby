@@ -5783,43 +5783,22 @@ fileattr_to_unixmode(DWORD attr, const WCHAR *path, unsigned mode)
 static int
 check_valid_dir(const WCHAR *path)
 {
-    WIN32_FIND_DATAW fd;
-    HANDLE fh;
-    WCHAR full[PATH_MAX];
-    WCHAR *p, *q;
+    const WCHAR *p = path, *q;
 
-    /* GetFileAttributes() determines "..." as directory. */
-    /* We recheck it by FindFirstFile(). */
-    if (!(p = wcsstr(path, L"...")))
-        return 0;
-    q = p + wcsspn(p, L".");
-    if ((p == path || wcschr(L":/\\", *(p - 1))) &&
-        (!*q || wcschr(L":/\\", *q))) {
-        errno = ENOENT;
-        return -1;
+    /* CreateFile() and GetFileAttributes() strip trailing dots and
+     * spaces of the last path component, so a component of dots
+     * followed by spaces only, which cannot actually exist, falsely
+     * resolves to its parent directory.  A match inside a name, as in
+     * "a...b", does not end the search. */
+    while ((p = wcsstr(p, L"...")) != NULL) {
+        q = p + wcsspn(p, L". ");
+        if ((p == path || wcschr(L":/\\", *(p - 1))) &&
+            (!*q || wcschr(L":/\\", *q))) {
+            errno = ENOENT;
+            return -1;
+        }
+        p = q;
     }
-
-    /* if the specified path is the root of a drive and the drive is empty, */
-    /* FindFirstFile() returns INVALID_HANDLE_VALUE. */
-    DWORD len = GetFullPathNameW(path, numberof(full), full, NULL);
-    if (len >= numberof(full)) {
-        WCHAR *fullpath = malloc(len * sizeof(WCHAR));
-        if (!fullpath) return -1;
-        len = GetFullPathNameW(path, len, fullpath, NULL);
-        if (len == 3) MEMCPY(full, fullpath, WCHAR, len+1);
-        free(fullpath);
-    }
-    if (!len) {
-        errno = map_errno(GetLastError());
-        return -1;
-    }
-    if (len == 3 && full[1] == L':' && GetDriveTypeW(full) != DRIVE_NO_ROOT_DIR)
-        return 0;               /* x:\ only */
-
-    fh = open_dir_handle(path, &fd);
-    if (fh == INVALID_HANDLE_VALUE)
-        return -1;
-    FindClose(fh);
     return 0;
 }
 
