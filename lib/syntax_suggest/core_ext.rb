@@ -33,8 +33,8 @@ module SyntaxSuggest
         end
       rescue => e
         if ENV["SYNTAX_SUGGEST_DEBUG"]
-          $stderr.warn(e.message)
-          $stderr.warn(e.backtrace)
+          warn(e.message)
+          warn(e.backtrace)
         end
 
         # Ignore internal errors
