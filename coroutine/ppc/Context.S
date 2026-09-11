@@ -19,7 +19,7 @@
 PREFIXED_SYMBOL(coroutine_transfer):
 	; Make space on the stack for caller registers
 	; (Should we rather use red zone? See libphobos example.)
-	subi r1,r1,84
+	subi r1,r1,80
 
 	; Get LR
 	mflr r0
@@ -48,9 +48,9 @@ PREFIXED_SYMBOL(coroutine_transfer):
 	; Save return address
 	stw r0,76(r1)
 
-	; Save caller CR register
+	; Save nonvolatile CR fields in the caller linkage area
 	mfcr r0
-	stw r0,80(r1)
+	stw r0,84(r1)
 
 	; Save stack pointer to first argument
 	stw r1,0(r3)
@@ -85,14 +85,12 @@ PREFIXED_SYMBOL(coroutine_transfer):
 	; Set LR
 	mtlr r0
 
-	; Load CR register
-	lwz r0,80(r1)
-	; While it is feasible to deal with select fields of CR,
-	; it is easier and potentially faster to use the whole of it.
-	mtcr r0
+	; Restore nonvolatile CR2-CR4
+	lwz r0,84(r1)
+	mtcrf 56,r0
 
 	; Pop stack frame
-	addi r1,r1,84
+	addi r1,r1,80
 
 	; Jump to return address
 	blr

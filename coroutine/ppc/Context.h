@@ -13,8 +13,8 @@
 
 enum {
   COROUTINE_REGISTERS =
-  21  /* 19 general purpose registers (r13-r31), 1 special register (cr) and 1 return address */
-  + 4  /* space for fiber_entry() to store the link register */
+  20  /* 19 general purpose registers (r13-r31) and 1 return address */
+  + 4  /* caller linkage area, including the condition register save slot */
 };
 
 struct coroutine_context
