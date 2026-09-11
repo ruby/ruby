@@ -539,18 +539,32 @@ class JSONGeneratorTest < Test::Unit::TestCase
   end
 
   def test_configure_only_writes_the_other_options_it_is_given
-    omit 'JRuby resets the non-string options' if RUBY_ENGINE == 'jruby'
-    state = JSON.state.new(max_nesting: 3, allow_nan: true, ascii_only: true, script_safe: true)
+    state = JSON.state.new(max_nesting: 3, allow_nan: true, ascii_only: true, script_safe: true,
+                           strict: true, buffer_initial_length: 32)
     state.configure(indent: '1')
     assert_equal '1', state.indent
     assert_equal 3, state.max_nesting
     assert_equal true, state.allow_nan?
     assert_equal true, state.ascii_only?
     assert_equal true, state.script_safe?
+    assert_equal true, state.strict?
+    assert_equal 32, state.buffer_initial_length
+  end
+
+  def test_configure_keeps_sort_keys
+    state = JSON.state.new(sort_keys: true)
+    state.configure(depth: 0)
+    assert_equal '{"a":2,"b":1}', state.generate({ 'b' => 1, 'a' => 2 })
+  end
+
+  def test_configure_keeps_as_json
+    as_json = ->(object, _is_key) { object.to_s }
+    state = JSON.state.new(strict: true, as_json: as_json)
+    state.configure(depth: 0)
+    assert_equal as_json, state.as_json
   end
 
   def test_configure_writes_a_string_option_given_as_nil
-    omit 'JRuby keeps the previous value for an explicit nil' if RUBY_ENGINE == 'jruby'
     state = JSON.state.new(indent: '1', space: '2')
     state.configure(indent: nil)
     assert_equal '', state.indent
