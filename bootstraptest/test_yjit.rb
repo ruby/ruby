@@ -3853,7 +3853,7 @@ assert_equal '[nil, false, true]', %q{
   [s.a, s.b, s.c]
 }
 
-# struct aset writing heap objects exercises the write barrier and survives GC (non-embedded)
+# struct aset writing heap objects exercises the write barrier and survives GC (embedded)
 assert_equal '["foo", [1, 2], {k: :v}, "bar", "baz"]', %q{
   def foo(s, a, b, c, d, e)
     s.m1 = a
@@ -3863,13 +3863,7 @@ assert_equal '["foo", [1, 2], {k: :v}, "bar", "baz"]', %q{
     s.m5 = e
   end
 
-  max_alloc_size, rbasic_size, rvalue_overhead = GC::INTERNAL_CONSTANTS.fetch_values(
-        :RVARGC_MAX_ALLOCATE_SIZE,
-        :RBASIC_SIZE,
-        :RVALUE_OVERHEAD
-      ) { skip(:ok) }
-  max_embedded_members = (max_alloc_size - rbasic_size - rvalue_overhead) / 8
-  S = Struct.new(*(1..(max_embedded_members + 1)).map { |i| :"m#{i}" })
+  S = Struct.new(*(1..5).map { |i| :"m#{i}" })
   s = S.new
   foo(s, "f", [], {}, "b", "z") # compile
   GC.start
