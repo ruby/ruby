@@ -18,6 +18,7 @@ use crate::invariants::{
 use crate::gc::append_gc_offsets;
 use crate::payload::{IseqCodePtrs, IseqStatus, IseqVersion, IseqVersionRef, JITFrame, get_or_create_iseq_payload};
 use crate::profile::reset_profiles_remaining;
+use crate::perf;
 use crate::state::{rb_zjit_compiling_p, ZJITState};
 use crate::stats::{CompileError, exit_counter_for_compile_error, exit_counter_for_unhandled_hir_insn, incr_counter, incr_counter_by, send_fallback_counter, send_fallback_counter_for_method_type, send_fallback_counter_for_super_method_type, send_fallback_counter_ptr_for_opcode, send_fallback_counter_for_optimized_method_type};
 use crate::stats::{counter_ptr, with_time_stat, trace_compile_phase, Counter, Counter::{compile_time_ns, exit_compile_error}};
@@ -26,7 +27,7 @@ use crate::backend::lir::{self, Assembler, CArgLocation, C_ARG_OPNDS, C_RET_OPND
 use crate::hir::{self, iseq_to_hir, BlockId, Invariant, RangeType, SideExitReason::{self, *}, SpecialBackrefSymbol, SpecialObjectType};
 use crate::hir::{BlockHandler, CCallVariadicData, CCallWithFrameData, Const, FieldName, FrameState, Function, Insn, InsnId, Recompile, SendDirectData, SendFallbackReason, qualified_method_name};
 use crate::hir_type::{types, Type};
-use crate::options::{get_option, InlineDepth, PerfMap, DEFAULT_MAX_VERSIONS};
+use crate::options::{get_option, InlineDepth, DEFAULT_MAX_VERSIONS};
 use crate::cast::IntoUsize;
 
 /// Maximum number of compiled versions per ISEQ.
@@ -313,31 +314,6 @@ pub fn gen_iseq_call(cb: &mut CodeBlock, iseq_call: &IseqCallRef) -> Result<(), 
     })
 }
 
-/// Write an entry to the perf map in /tmp
-pub(crate) fn register_with_perf(symbol_name: String, start_ptr: usize, code_size: usize) {
-    use std::io::Write;
-    let perf_map = format!("/tmp/perf-{}.map", std::process::id());
-    let Ok(file) = std::fs::OpenOptions::new().create(true).append(true).open(&perf_map) else {
-        debug!("Failed to open perf map file: {perf_map}");
-        return;
-    };
-    let mut file = std::io::BufWriter::new(file);
-    let Ok(_) = writeln!(file, "{start_ptr:#x} {code_size:#x} ZJIT: {symbol_name}") else {
-        debug!("Failed to write {symbol_name} to perf map file: {perf_map}");
-        return;
-    };
-}
-
-/// Register the code emitted from `start` through the current write pointer
-/// under `symbol_name` in the perf map, if perf output is enabled.
-fn register_current_code_range_with_perf(cb: &CodeBlock, symbol_name: &str, start: CodePtr) {
-    if get_option!(perf).is_some() {
-        let start_ptr = start.raw_addr(cb);
-        let end_ptr = cb.get_write_ptr().raw_addr(cb);
-        register_with_perf(symbol_name.to_string(), start_ptr, end_ptr - start_ptr);
-    }
-}
-
 /// Compile a shared JIT entry trampoline
 pub fn gen_entry_trampoline(cb: &mut CodeBlock) -> Result<CodePtr, CompileError> {
     // Set up registers for CFP, EC, SP, and basic block arguments
@@ -357,7 +333,7 @@ pub fn gen_entry_trampoline(cb: &mut CodeBlock) -> Result<CodePtr, CompileError>
 
     let (code_ptr, gc_offsets) = asm.compile(cb)?;
     assert!(gc_offsets.is_empty());
-    register_current_code_range_with_perf(cb, "entry trampoline", code_ptr);
+    perf::register_current_code_range(cb, "entry trampoline", code_ptr);
     Ok(code_ptr)
 }
 
@@ -513,7 +489,7 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
             // Compile all instructions
             for (insn_idx, &insn_id) in block.insns().enumerate() {
                 let insn = function.find(insn_id);
-                let perf_symbol = hir_perf_symbol_range_start(&mut asm, &insn);
+                let symbol_range = perf::hir_symbol_range_start(&mut asm, &insn);
 
                 let result = match &insn {
                     Insn::CondBranch { val, if_true, if_false } => {
@@ -557,12 +533,12 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
                 };
 
                 // Close the current perf range for the HIR instruction.
-                if let Some(perf_symbol) = &perf_symbol {
+                if let Some(symbol_range) = &symbol_range {
                     if result.is_ok() && insn.is_terminator() {
                         assert!(asm.current_block().insns.last().is_some_and(|insn| insn.is_terminator()));
-                        perf_symbol_range_end_at_block_end(&mut asm, perf_symbol);
+                        perf::symbol_range_end_at_block_end(&mut asm, symbol_range);
                     } else {
-                        perf_symbol_range_end(&mut asm, perf_symbol);
+                        perf::symbol_range_end(&mut asm, symbol_range);
                     }
                 }
 
@@ -595,13 +571,7 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
     // Generate code if everything can be compiled
     let result = asm.compile(cb);
     if let Ok((start_ptr, _)) = result {
-        if get_option!(perf) == Some(PerfMap::ISEQ) {
-            let start_usize = start_ptr.raw_addr(cb);
-            let end_usize = cb.get_write_ptr().raw_addr(cb);
-            let code_size = end_usize - start_usize;
-            let iseq_name = iseq_get_location(iseq, 0);
-            register_with_perf(iseq_name, start_usize, code_size);
-        }
+        perf::register_current_iseq_range(cb, iseq, start_ptr);
         if ZJITState::should_log_compiled_iseqs() {
             let iseq_name = iseq_get_location(iseq, 0);
             ZJITState::log_compile(iseq_name);
@@ -4089,7 +4059,7 @@ pub fn gen_function_stub_hit_trampoline(cb: &mut CodeBlock) -> Result<CodePtr, C
 
     asm.compile(cb).map(|(code_ptr, gc_offsets)| {
         assert_eq!(gc_offsets.len(), 0);
-        register_current_code_range_with_perf(cb, "function_stub_hit trampoline", code_ptr);
+        perf::register_current_code_range(cb, "function_stub_hit trampoline", code_ptr);
         code_ptr
     })
 }
@@ -4105,7 +4075,7 @@ pub fn gen_exit_trampoline(cb: &mut CodeBlock) -> Result<CodePtr, CompileError> 
 
     asm.compile(cb).map(|(code_ptr, gc_offsets)| {
         assert_eq!(gc_offsets.len(), 0);
-        register_current_code_range_with_perf(cb, "exit trampoline", code_ptr);
+        perf::register_current_code_range(cb, "exit trampoline", code_ptr);
         code_ptr
     })
 }
@@ -4132,7 +4102,7 @@ pub fn gen_materialize_exit_trampoline(cb: &mut CodeBlock, exit_trampoline: Code
 
     asm.compile(cb).map(|(code_ptr, gc_offsets)| {
         assert_eq!(gc_offsets.len(), 0);
-        register_current_code_range_with_perf(cb, "materialize_exit trampoline", code_ptr);
+        perf::register_current_code_range(cb, "materialize_exit trampoline", code_ptr);
         code_ptr
     })
 }
@@ -4148,7 +4118,7 @@ pub fn gen_materialize_exit_trampoline_with_counter(cb: &mut CodeBlock, material
 
     asm.compile(cb).map(|(code_ptr, gc_offsets)| {
         assert_eq!(gc_offsets.len(), 0);
-        register_current_code_range_with_perf(cb, "materialize_exit_with_counter trampoline", code_ptr);
+        perf::register_current_code_range(cb, "materialize_exit_with_counter trampoline", code_ptr);
         code_ptr
     })
 }
@@ -4428,60 +4398,6 @@ impl IseqCall {
     }
 }
 
-type PerfSymbol = Rc<RefCell<Option<(CodePtr, String)>>>;
-
-/// Start a HIR perf symbol range when --zjit-perf=hir is enabled.
-fn hir_perf_symbol_range_start(asm: &mut Assembler, insn: &Insn) -> Option<PerfSymbol> {
-    if get_option!(perf) == Some(PerfMap::HIR) {
-        let insn_name = format!("{insn}").split_whitespace().next().unwrap().to_string();
-        Some(perf_symbol_range_start(asm, &insn_name))
-    } else {
-        None
-    }
-}
-
-/// Mark the start of a perf symbol range via pos_marker.
-/// Returns a handle to pass to perf_symbol_range_end.
-pub fn perf_symbol_range_start(asm: &mut Assembler, symbol_name: &str) -> PerfSymbol {
-    let symbol_name = symbol_name.to_string();
-    let perf_symbol: PerfSymbol = Rc::new(RefCell::new(None));
-    let current = perf_symbol.clone();
-    asm.pos_marker(move |start, _| {
-        let mut current = current.borrow_mut();
-        assert!(current.is_none(), "perf symbol range already open");
-        *current = Some((start, symbol_name.clone()));
-    });
-    perf_symbol
-}
-
-/// Mark the end of a perf symbol range via pos_marker.
-pub fn perf_symbol_range_end(asm: &mut Assembler, perf_symbol: &PerfSymbol) {
-    let current = perf_symbol.clone();
-    asm.pos_marker(move |end, cb| {
-        if let Some((start, name)) = current.borrow_mut().take() {
-            let start_addr = start.raw_addr(cb);
-            let code_size = end.raw_addr(cb) - start_addr;
-            register_with_perf(name, start_addr, code_size);
-        }
-    });
-}
-
-/// Mark the end of a perf symbol range at the end of the current LIR block.
-pub fn perf_symbol_range_end_at_block_end(asm: &mut Assembler, perf_symbol: &PerfSymbol) {
-    let current = perf_symbol.clone();
-    asm.pos_marker_at_block_end(move |end, cb| {
-        if let Some((start, name)) = current.borrow_mut().take() {
-            let start_addr = start.raw_addr(cb);
-            let end_addr = end.raw_addr(cb);
-            // A terminator's jump can be removed when it targets the next
-            // linear block, leaving no code between the range start and the
-            // block-end marker. Skip zero-sized perf map entries.
-            if start_addr < end_addr {
-                register_with_perf(name, start_addr, end_addr - start_addr);
-            }
-        }
-    });
-}
 
 #[cfg(test)]
 #[path = "codegen_tests.rs"]
