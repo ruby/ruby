@@ -8832,3 +8832,74 @@ fn test_forward_fallback_with_lightweight_frame_reads_cfp() {
       :done
     "#), @":done");
 }
+
+#[test]
+fn test_regression_stub_frame_sp_published_for_gc() {
+    rb_zjit_prepare_options();
+    set_inline_threshold(0); // don't inline the callee; we need a function stub
+    set_call_threshold(2000);
+    eval("nil"); // boot the VM before touching ZJITState
+
+    assert_snapshot!(inspect(r#"
+        class Integer
+          def zjit_stub_gc_callee(x) = x + 1
+        end
+
+        def zjit_stub_gc_caller(run, x)
+          1.zjit_stub_gc_callee(x) if run
+        end
+
+        def zjit_stub_gc_deep(n)
+          if n > 0
+            # Only reachable from this frame's VM stack slots
+            victim = "victim number #{n}"
+            tail = [n, n + 1, n + 2]
+            got = zjit_stub_gc_deep(n - 1)
+            got + victim.length + tail.sum
+          else
+            # Arm an incremental mark that can't finish in one step. Nothing
+            # allocates between here and the function stub hit below, so the
+            # pending mark is still in progress when the stub takes the VM lock.
+            GC.start(full_mark: true, immediate_mark: false, immediate_sweep: false)
+            $zjit_stub_gc_armed += 1 if GC.latest_gc_info(:state) == :marking
+            zjit_stub_gc_caller(true, 0) # JIT-to-JIT call through the function stub
+            0
+          end
+        end
+
+        def zjit_stub_gc_expect(n)
+          total = 0
+          n.downto(1) { |k| total += "victim number #{k}".length + (3 * k + 3) }
+          total
+        end
+
+        # Warm the caller past the call threshold so it compiles with a function
+        # stub for the still-uncompiled callee.
+        i = 0
+        while i < 2100
+          zjit_stub_gc_caller(false, nil)
+          i += 1
+        end
+
+        # Give the incremental mark enough work that it can't finish in one step.
+        $zjit_stub_gc_bloat = Array.new(300_000) { Object.new }
+        $zjit_stub_gc_armed = 0
+
+        bad = []
+        depth = 12
+        6.times do
+          want = zjit_stub_gc_expect(depth)
+          got = zjit_stub_gc_deep(depth)
+          bad << [depth, want, got] if got != want
+          depth += 12 # go deeper than any frame used so far
+        end
+        [bad, $zjit_stub_gc_armed > 0]
+    "#), @"[[], true]");
+
+    // Guard the shape of the repro: the caller must really call the callee
+    // through a JIT-to-JIT function stub.
+    let caller_iseq = get_method_iseq("self", "zjit_stub_gc_caller");
+    let caller_payload = get_or_create_iseq_payload(caller_iseq);
+    let caller_version = unsafe { caller_payload.versions.last().unwrap().as_ref() };
+    assert_eq!(1, caller_version.outgoing.len(), "expected a JIT-to-JIT function stub");
+}
