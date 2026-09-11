@@ -1802,6 +1802,8 @@ fn gen_send_iseq_direct(
     // keep the caller's arguments as part of the callee's extra locals.
     let forwarding = unsafe { rb_get_iseq_flags_forwardable(iseq) };
     let forwarded_argc = if forwarding { args.len() } else { 0 };
+    // Bake the callinfo as a GC offset since a non-packed (`vm_ci_packed_p`) callinfo is a movable imemo_callinfo.
+    let forwarded_ci = Opnd::Value(unsafe { (*cd).ci }.into());
     let local_size = unsafe { get_iseq_body_local_table_size(iseq) }.to_usize() + forwarded_argc;
     let stack_growth = state.stack_size() + local_size + unsafe { get_iseq_body_stack_max(iseq) }.to_usize();
     gen_stack_overflow_check(jit, asm, function, state, stack_growth);
@@ -1875,10 +1877,9 @@ fn gen_send_iseq_direct(
         for (idx, &arg) in args.iter().enumerate() {
             asm.store(Opnd::mem(64, SP, ((locals_base + idx) * SIZEOF_VALUE) as i32), arg);
         }
-        let ci = unsafe { (*cd).ci };
         asm.store(
             Opnd::mem(64, SP, ((locals_base + forwarded_argc) * SIZEOF_VALUE) as i32),
-            Opnd::const_ptr(ci as *const u8),
+            forwarded_ci,
         );
     }
 
@@ -1908,7 +1909,7 @@ fn gen_send_iseq_direct(
     if forwarding {
         // The JIT entry of a forwardable ISEQ takes exactly one parameter, the `...` local.
         // The forwarded arguments were written to the VM stack slots above.
-        c_args.push(Opnd::const_ptr(unsafe { (*cd).ci } as *const u8));
+        c_args.push(forwarded_ci);
     } else {
         c_args.extend(&args);
     }
