@@ -40,9 +40,9 @@ PREFIXED_SYMBOL(coroutine_transfer):
 	mflr 0
 	std 0,144(1)
 
-        # Save caller special register
-        mfcr 0
-        std 0, 152(1)
+	# Save caller special register
+	mfcr 0
+	std 0, 152(1)
 
 	# Save non-volatile FP registers f14-f31 (ELFv2 callee-saved). GCC keeps
 	# GPR values in them under pressure (mtvsrdd/mffprd spills).
@@ -166,11 +166,11 @@ PREFIXED_SYMBOL(coroutine_transfer):
 	ld 0,144(1)
 	mtlr 0
 
-        # Load special registers
-        ld 0,152(1)
-        # Restore cr register cr2, cr3 and cr4 (field index 3,4,5)
-        # (field index is 1-based, field 1 = cr0) using a mask (32|16|8 = 56)
-        mtcrf 56,0
+	# Load special registers
+	ld 0,152(1)
+	# Restore cr register cr2, cr3 and cr4 (field index 3,4,5)
+	# (field index is 1-based, field 1 = cr0) using a mask (32|16|8 = 56)
+	mtcrf 56,0
 
 	# Pop stack frame
 	addi 1,1,496
