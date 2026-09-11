@@ -16926,6 +16926,36 @@ mod hir_opt_tests {
         ");
     }
 
+    // A literal block goes through a different path than `&block`: it stays a direct send,
+    // with the blockiseq (the second SendDirect operand, 0x0 without a block) passed along.
+    #[test]
+    fn call_method_forwardable_param_with_block_literal() {
+        eval("
+           def target(a) = yield(a)
+           def forwardable(...) = target(...)
+           def call_forwardable = forwardable(1) { |v| v }
+           call_forwardable
+        ");
+        assert_snapshot!(hir_string("call_forwardable"), @"
+        fn call_forwardable@<compiled>:4:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v11:Fixnum[1] = Const Value(1)
+          PatchPoint MethodRedefined(Object@0x1000, forwardable@0x1008, cme:0x1010)
+          v20:ObjectSubclass[class_exact*:Object@VALUE(0x1000)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1000)] recompile
+          v21:BasicObject = SendDirect v20, 0x1038, :forwardable (0x1058), v11
+          CheckInterrupts
+          Return v21
+        ");
+    }
+
     #[test]
     fn call_method_forwardable_param_with_splat() {
         eval("
