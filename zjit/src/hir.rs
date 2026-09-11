@@ -10040,8 +10040,10 @@ fn add_iseq_to_hir(
                     state.stack_push(recv);
                 }
                 YARVINSN_leave => {
-                    fun.push_insn(block, Insn::CheckInterrupts { state: exit_id });
                     let val = state.stack_pop()?;
+                    // In the interpreter, the interrupt fires after popping the value off the stack.
+                    let exit_id = fun.push_insn(block, Insn::Snapshot { state: Box::new(state.clone()) });
+                    fun.push_insn(block, Insn::CheckInterrupts { state: exit_id });
                     match mode {
                         AddIseqMode::Standalone => fun.push_insn(block, Insn::Return { val }),
                         AddIseqMode::Inlined { return_block, .. } => { fun.push_insn(block, Insn::Jump(BranchEdge { target: return_block, args: vec![val] })) }

@@ -138,10 +138,10 @@ mod snapshot_tests {
           v12:Fixnum[2] = Const Value(2)
           v13:Any = Snapshot FrameState { pc: 0x1008, stack: [v10, v12], locals: [] }
           PatchPoint MethodRedefined(Integer@0x1010, +@0x1018, cme:0x1020)
-          v35:Fixnum[6] = Const Value(6)
-          v21:Any = Snapshot FrameState { pc: 0x1048, stack: [v35], locals: [] }
+          v36:Fixnum[6] = Const Value(6)
+          v23:Any = Snapshot FrameState { pc: 0x1048, stack: [], locals: [] }
           CheckInterrupts
-          Return v35
+          Return v36
         ");
     }
 
@@ -174,6 +174,7 @@ mod snapshot_tests {
           v19:ArrayExact = NewArray v12, v13
           v20:Any = Snapshot FrameState { pc: 0x1028, stack: [v19], locals: [a=v12, b=v13] }
           PatchPoint NoTracePoint
+          v22:Any = Snapshot FrameState { pc: 0x1028, stack: [], locals: [a=v12, b=v13] }
           CheckInterrupts
           Return v19
         ");
@@ -207,17 +208,17 @@ mod snapshot_tests {
           v15:Fixnum[2] = Const Value(2)
           v16:Any = Snapshot FrameState { pc: 0x1008, stack: [v6, v11, v13, v15], locals: [] }
           PatchPoint MethodRedefined(Object@0x1010, foo@0x1018, cme:0x1020)
-          v24:ObjectSubclass[class_exact*:Object@VALUE(0x1010)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1010)] recompile
-          v25:Any = Snapshot FrameState { pc: 0x1008, stack: [v24, v13, v15, v11], locals: [] }
-          v44:Fixnum[0] = Const Value(0)
-          v27:Any = Snapshot FrameState { pc: 0x1008, stack: [], locals: [] }
-          PushInlineFrame :foo, v24 (0x1048), num_args=3
-          v38:Any = Snapshot FrameState { pc: 0x1068, stack: [v13, v15, v11], locals: [a=v13, b=v15, c=v11, ID(0)=v44], caller: v27 }
-          v39:ArrayExact = NewArray v13, v15, v11
-          v40:Any = Snapshot FrameState { pc: 0x1070, stack: [v39], locals: [a=v13, b=v15, c=v11, ID(0)=v44], caller: v27 }
+          v25:ObjectSubclass[class_exact*:Object@VALUE(0x1010)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1010)] recompile
+          v26:Any = Snapshot FrameState { pc: 0x1008, stack: [v25, v13, v15, v11], locals: [] }
+          v46:Fixnum[0] = Const Value(0)
+          v28:Any = Snapshot FrameState { pc: 0x1008, stack: [], locals: [] }
+          PushInlineFrame :foo, v25 (0x1048), num_args=3
+          v39:Any = Snapshot FrameState { pc: 0x1068, stack: [v13, v15, v11], locals: [a=v13, b=v15, c=v11, ID(0)=v46], caller: v28 }
+          v40:ArrayExact = NewArray v13, v15, v11
+          v43:Any = Snapshot FrameState { pc: 0x1070, stack: [], locals: [a=v13, b=v15, c=v11, ID(0)=v46], caller: v28 }
           CheckInterrupts
           PopInlineFrame
-          Return v39
+          Return v40
         ");
     }
 
@@ -248,16 +249,16 @@ mod snapshot_tests {
           v13:Fixnum[2] = Const Value(2)
           v14:Any = Snapshot FrameState { pc: 0x1008, stack: [v6, v11, v13], locals: [] }
           PatchPoint MethodRedefined(Object@0x1010, foo@0x1018, cme:0x1020)
-          v22:ObjectSubclass[class_exact*:Object@VALUE(0x1010)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1010)] recompile
-          v39:Fixnum[0] = Const Value(0)
-          v24:Any = Snapshot FrameState { pc: 0x1008, stack: [], locals: [] }
-          PushInlineFrame :foo, v22 (0x1048), num_args=2
-          v33:Any = Snapshot FrameState { pc: 0x1068, stack: [v11, v13], locals: [a=v11, b=v13, ID(0)=v39], caller: v24 }
-          v34:ArrayExact = NewArray v11, v13
-          v35:Any = Snapshot FrameState { pc: 0x1070, stack: [v34], locals: [a=v11, b=v13, ID(0)=v39], caller: v24 }
+          v23:ObjectSubclass[class_exact*:Object@VALUE(0x1010)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1010)] recompile
+          v41:Fixnum[0] = Const Value(0)
+          v25:Any = Snapshot FrameState { pc: 0x1008, stack: [], locals: [] }
+          PushInlineFrame :foo, v23 (0x1048), num_args=2
+          v34:Any = Snapshot FrameState { pc: 0x1068, stack: [v11, v13], locals: [a=v11, b=v13, ID(0)=v41], caller: v25 }
+          v35:ArrayExact = NewArray v11, v13
+          v38:Any = Snapshot FrameState { pc: 0x1070, stack: [], locals: [a=v11, b=v13, ID(0)=v41], caller: v25 }
           CheckInterrupts
           PopInlineFrame
-          Return v34
+          Return v35
         ");
     }
 
@@ -294,17 +295,17 @@ mod snapshot_tests {
           v25:Fixnum[8] = Const Value(8)
           v26:Any = Snapshot FrameState { pc: 0x1008, stack: [v6, v11, v13, v15, v17, v19, v21, v23, v25], locals: [] }
           PatchPoint MethodRedefined(Object@0x1010, foo@0x1018, cme:0x1020)
-          v34:ObjectSubclass[class_exact*:Object@VALUE(0x1010)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1010)] recompile
-          v35:Any = Snapshot FrameState { pc: 0x1008, stack: [v34, v11, v13, v19, v21, v17, v15, v23, v25], locals: [] }
-          v64:Fixnum[0] = Const Value(0)
-          v37:Any = Snapshot FrameState { pc: 0x1008, stack: [], locals: [] }
-          PushInlineFrame :foo, v34 (0x1048), num_args=8
-          v58:Any = Snapshot FrameState { pc: 0x1068, stack: [v19, v21, v17, v15, v11, v13, v23, v25], locals: [five=v11, six=v13, a=v19, b=v21, c=v17, d=v15, e=v23, f=v25, ID(0)=v64], caller: v37 }
-          v59:ArrayExact = NewArray v19, v21, v17, v15, v11, v13, v23, v25
-          v60:Any = Snapshot FrameState { pc: 0x1070, stack: [v59], locals: [five=v11, six=v13, a=v19, b=v21, c=v17, d=v15, e=v23, f=v25, ID(0)=v64], caller: v37 }
+          v35:ObjectSubclass[class_exact*:Object@VALUE(0x1010)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1010)] recompile
+          v36:Any = Snapshot FrameState { pc: 0x1008, stack: [v35, v11, v13, v19, v21, v17, v15, v23, v25], locals: [] }
+          v66:Fixnum[0] = Const Value(0)
+          v38:Any = Snapshot FrameState { pc: 0x1008, stack: [], locals: [] }
+          PushInlineFrame :foo, v35 (0x1048), num_args=8
+          v59:Any = Snapshot FrameState { pc: 0x1068, stack: [v19, v21, v17, v15, v11, v13, v23, v25], locals: [five=v11, six=v13, a=v19, b=v21, c=v17, d=v15, e=v23, f=v25, ID(0)=v66], caller: v38 }
+          v60:ArrayExact = NewArray v19, v21, v17, v15, v11, v13, v23, v25
+          v63:Any = Snapshot FrameState { pc: 0x1070, stack: [], locals: [five=v11, six=v13, a=v19, b=v21, c=v17, d=v15, e=v23, f=v25, ID(0)=v66], caller: v38 }
           CheckInterrupts
           PopInlineFrame
-          Return v59
+          Return v60
         ");
     }
 }
@@ -489,10 +490,10 @@ pub(crate) mod hir_build_tests {
           v23:CBool = Test v21
           v24:Truthy = RefineType v21, Truthy
           CondBranch v23, bb4(v9, v10, v14, v10), bb5()
-        bb4(v36:BasicObject, v37:BasicObject, v38:NilClass, v39:BasicObject):
-          v44:Fixnum[1] = Const Value(1)
+        bb4(v37:BasicObject, v38:BasicObject, v39:NilClass, v40:BasicObject):
+          v45:Fixnum[1] = Const Value(1)
           CheckInterrupts
-          Return v44
+          Return v45
         bb5():
           v26:Falsy = RefineType v21, Falsy
           v31:Fixnum[2] = Const Value(2)
@@ -535,10 +536,10 @@ pub(crate) mod hir_build_tests {
           v21:CBool = Test v19
           v22:Truthy = RefineType v19, Truthy
           CondBranch v21, bb4(v9, v10, v10), bb5()
-        bb4(v33:BasicObject, v34:BasicObject, v35:BasicObject):
-          v40:Fixnum[1] = Const Value(1)
+        bb4(v34:BasicObject, v35:BasicObject, v36:BasicObject):
+          v41:Fixnum[1] = Const Value(1)
           CheckInterrupts
-          Return v40
+          Return v41
         bb5():
           v24:Falsy = RefineType v19, Falsy
           v28:Fixnum[2] = Const Value(2)
@@ -579,10 +580,10 @@ pub(crate) mod hir_build_tests {
           v17:CBool = Test v15
           v18:Truthy = RefineType v15, Truthy
           CondBranch v17, bb4(v6), bb5()
-        bb4(v28:BasicObject):
-          v32:Fixnum[1] = Const Value(1)
+        bb4(v29:BasicObject):
+          v33:Fixnum[1] = Const Value(1)
           CheckInterrupts
-          Return v32
+          Return v33
         bb5():
           v20:Falsy = RefineType v15, Falsy
           v23:Fixnum[2] = Const Value(2)
@@ -1464,10 +1465,10 @@ pub(crate) mod hir_build_tests {
           v18:Fixnum[3] = Const Value(3)
           CheckInterrupts
           Return v18
-        bb4(v23:BasicObject):
-          v27:Fixnum[4] = Const Value(4)
+        bb4(v24:BasicObject):
+          v28:Fixnum[4] = Const Value(4)
           CheckInterrupts
-          Return v27
+          Return v28
         ");
     }
 
@@ -1581,10 +1582,10 @@ pub(crate) mod hir_build_tests {
           v21:Fixnum[3] = Const Value(3)
           CheckInterrupts
           Return v21
-        bb4(v26:BasicObject, v27:Falsy):
-          v31:Fixnum[4] = Const Value(4)
+        bb4(v27:BasicObject, v28:Falsy):
+          v32:Fixnum[4] = Const Value(4)
           CheckInterrupts
-          Return v31
+          Return v32
         ");
     }
 
@@ -1961,12 +1962,12 @@ pub(crate) mod hir_build_tests {
           v37:CBool = Test v34
           v38:Truthy = RefineType v34, Truthy
           CondBranch v37, bb4(v25, v26, v27), bb6()
-        bb4(v50:BasicObject, v51:BasicObject, v52:BasicObject):
-          v57:Fixnum[1] = Const Value(1)
-          v60:BasicObject = Send v51, :+, v57 # SendFallbackReason: Uncategorized(opt_plus)
-          v65:Fixnum[1] = Const Value(1)
-          v68:BasicObject = Send v52, :-, v65 # SendFallbackReason: Uncategorized(opt_minus)
-          Jump bb5(v50, v60, v68)
+        bb4(v51:BasicObject, v52:BasicObject, v53:BasicObject):
+          v58:Fixnum[1] = Const Value(1)
+          v61:BasicObject = Send v52, :+, v58 # SendFallbackReason: Uncategorized(opt_plus)
+          v66:Fixnum[1] = Const Value(1)
+          v69:BasicObject = Send v53, :-, v66 # SendFallbackReason: Uncategorized(opt_minus)
+          Jump bb5(v51, v61, v69)
         bb6():
           v40:Falsy = RefineType v34, Falsy
           v42:NilClass = Const Value(nil)
@@ -2038,10 +2039,10 @@ pub(crate) mod hir_build_tests {
           v24:Fixnum[3] = Const Value(3)
           CheckInterrupts
           Return v24
-        bb4(v29, v30):
-          v34 = Const Value(4)
+        bb4(v30, v31):
+          v35 = Const Value(4)
           CheckInterrupts
-          Return v34
+          Return v35
         ");
     }
 
@@ -4991,12 +4992,12 @@ pub(crate) mod hir_build_tests {
           v28:BasicObject = Send v26, :itself # SendFallbackReason: Uncategorized(opt_send_without_block)
           CheckInterrupts
           Return v28
-        bb4(v33:BasicObject, v34:Falsy):
-          v38:Fixnum[4] = Const Value(4)
-          Jump bb5(v33, v34, v38)
-        bb5(v40:BasicObject, v41:Falsy, v42:Fixnum[4]):
+        bb4(v34:BasicObject, v35:Falsy):
+          v39:Fixnum[4] = Const Value(4)
+          Jump bb5(v34, v35, v39)
+        bb5(v41:BasicObject, v42:Falsy, v43:Fixnum[4]):
           CheckInterrupts
-          Return v42
+          Return v43
         ");
     }
 
@@ -5051,18 +5052,18 @@ pub(crate) mod hir_build_tests {
           v35:Fixnum[3] = Const Value(3)
           CheckInterrupts
           Return v35
-        bb4(v60, v61):
-          v65 = Const Value(4)
+        bb4(v63, v64):
+          v68 = Const Value(4)
           CheckInterrupts
-          Return v65
-        bb5(v50, v51):
-          v55 = Const Value(5)
+          Return v68
+        bb5(v52, v53):
+          v57 = Const Value(5)
           CheckInterrupts
-          Return v55
-        bb6(v40:BasicObject, v41:Falsy):
-          v45:Fixnum[6] = Const Value(6)
+          Return v57
+        bb6(v41:BasicObject, v42:Falsy):
+          v46:Fixnum[6] = Const Value(6)
           CheckInterrupts
-          Return v45
+          Return v46
         ");
     }
 
@@ -5220,9 +5221,9 @@ pub(crate) mod hir_build_tests {
           v56:BasicObject = InvokeBuiltin dir_s_close, v18, v27
           CheckInterrupts
           Return v53
-        bb4(v62:BasicObject, v63:BasicObject, v64:BasicObject, v65:BasicObject, v66:BasicObject, v67:BasicObject):
+        bb4(v63:BasicObject, v64:BasicObject, v65:BasicObject, v66:BasicObject, v67:BasicObject, v68:BasicObject):
           CheckInterrupts
-          Return v67
+          Return v68
         ");
     }
 
@@ -5356,9 +5357,9 @@ pub(crate) mod hir_build_tests {
           v25:CBool = Test v22
           v26:Truthy = RefineType v22, Truthy
           CondBranch v25, bb4(v9, v10, v14, v10, v17, v19, v26), bb5()
-        bb4(v40:BasicObject, v41:BasicObject, v42:NilClass, v43:BasicObject, v44:Fixnum[0], v45:Fixnum[1], v46:Truthy):
+        bb4(v41:BasicObject, v42:BasicObject, v43:NilClass, v44:BasicObject, v45:Fixnum[0], v46:Fixnum[1], v47:Truthy):
           CheckInterrupts
-          Return v46
+          Return v47
         bb5():
           v28:Falsy = RefineType v22, Falsy
           v31:Fixnum[2] = Const Value(2)
@@ -6039,28 +6040,28 @@ pub(crate) mod hir_build_tests {
         bb6(v30:BasicObject, v31:NilClass):
           v35:Fixnum[0] = Const Value(0)
           Jump bb8(v30, v35)
-        bb8(v48:BasicObject, v49:Fixnum):
-          v52:Array = RefineType v48, Array
-          v53:CInt64 = ArrayLength v52
-          v54:Fixnum = BoxFixnum v53
-          v55:BoolExact = FixnumGe v49, v54
-          v57:CBool = Test v55
-          v58:FalseClass = RefineType v55, Falsy
-          CondBranch v57, bb11(), bb7(v48, v49)
+        bb8(v49:BasicObject, v50:Fixnum):
+          v53:Array = RefineType v49, Array
+          v54:CInt64 = ArrayLength v53
+          v55:Fixnum = BoxFixnum v54
+          v56:BoolExact = FixnumGe v50, v55
+          v58:CBool = Test v56
+          v59:FalseClass = RefineType v56, Falsy
+          CondBranch v58, bb11(), bb7(v49, v50)
         bb11():
-          v60:TrueClass = RefineType v55, Truthy
-          v62:NilClass = Const Value(nil)
+          v61:TrueClass = RefineType v56, Truthy
+          v63:NilClass = Const Value(nil)
           CheckInterrupts
-          Return v48
-        bb7(v70:BasicObject, v71:Fixnum):
-          v75:Array = RefineType v70, Array
-          v76:CInt64 = UnboxFixnum v71
-          v77:BasicObject = ArrayAref v75, v76
-          v79:BasicObject = InvokeBlock v77 # SendFallbackReason: InvokeBlock: not yet specialized
-          v83:Fixnum[1] = Const Value(1)
-          v84:Fixnum = FixnumAdd v71, v83
+          Return v49
+        bb7(v72:BasicObject, v73:Fixnum):
+          v77:Array = RefineType v72, Array
+          v78:CInt64 = UnboxFixnum v73
+          v79:BasicObject = ArrayAref v77, v78
+          v81:BasicObject = InvokeBlock v79 # SendFallbackReason: InvokeBlock: not yet specialized
+          v85:Fixnum[1] = Const Value(1)
+          v86:Fixnum = FixnumAdd v73, v85
           PatchPoint NoEPEscape(each)
-          Jump bb8(v70, v84)
+          Jump bb8(v72, v86)
         bb4(v23:BasicObject, v24:NilClass):
           v28:BasicObject = InvokeBuiltin <inline_expr>, v23
           Jump bb5(v23, v24, v28)
