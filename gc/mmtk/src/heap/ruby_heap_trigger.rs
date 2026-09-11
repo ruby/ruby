@@ -43,29 +43,25 @@ impl GCTriggerPolicy<Ruby> for RubyHeapTrigger {
     fn on_pause_end(&self, mmtk: &'static MMTK<Ruby>) {
         if let Some(plan) = mmtk.get_plan().generational() {
             if plan.is_current_gc_nursery() {
-                // Nursery GC
-            } else {
-                // Full GC
+                return;
             }
+        }
 
-            panic!("TODO: support for generational GC not implemented")
-        } else {
-            let used_pages = mmtk.get_plan().get_used_pages();
+        let used_pages = mmtk.get_plan().get_used_pages();
 
-            let target_min =
-                (used_pages as f64 * (1.0 + Self::get_config().heap_pages_min_ratio)) as usize;
-            let target_max =
-                (used_pages as f64 * (1.0 + Self::get_config().heap_pages_max_ratio)) as usize;
-            let new_target =
-                (((used_pages as f64) * (1.0 + Self::get_config().heap_pages_goal_ratio)) as usize)
-                    .clamp(
-                        Self::get_config().min_heap_pages,
-                        Self::get_config().max_heap_pages,
-                    );
+        let target_min =
+            (used_pages as f64 * (1.0 + Self::get_config().heap_pages_min_ratio)) as usize;
+        let target_max =
+            (used_pages as f64 * (1.0 + Self::get_config().heap_pages_max_ratio)) as usize;
+        let new_target = (((used_pages as f64) * (1.0 + Self::get_config().heap_pages_goal_ratio))
+            as usize)
+            .clamp(
+                Self::get_config().min_heap_pages,
+                Self::get_config().max_heap_pages,
+            );
 
-            if used_pages < target_min || used_pages > target_max {
-                self.target_heap_pages.store(new_target, Ordering::Relaxed);
-            }
+        if used_pages < target_min || used_pages > target_max {
+            self.target_heap_pages.store(new_target, Ordering::Relaxed);
         }
     }
 
