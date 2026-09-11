@@ -84,7 +84,9 @@ Note: We're only listing outstanding class updates.
     * `Module#descendants` is added.  It returns an array of classes and
       modules that have the receiver in their ancestors.  [[Feature #9779]]
     * `Module#ruby2_keywords` and top-level `ruby2_keywords` are
-      deprecated and will be removed in Ruby 4.4. [[Feature #22205]]
+      deprecated and will be removed in Ruby 4.4.  [[Feature #22205]]
+    * `Module#method_defined?` now accepts a third optional argument to also
+      match private methods.  [[Feature #22297]]
 
 * ObjectSpace
 
@@ -445,6 +447,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #22205]: https://bugs.ruby-lang.org/issues/22205
 [Feature #22226]: https://bugs.ruby-lang.org/issues/22226
 [Feature #22238]: https://bugs.ruby-lang.org/issues/22238
+[Feature #22297]: https://bugs.ruby-lang.org/issues/22297
 [PR #17201]: https://github.com/ruby/ruby/pull/17201
 [GH-psych #805]: https://github.com/ruby/psych/pull/805
 [RubyGems-v4.0.4]: https://github.com/rubygems/rubygems/releases/tag/v4.0.4

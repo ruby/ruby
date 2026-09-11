@@ -2589,28 +2589,14 @@ rb_mod_undef_method(int argc, VALUE *argv, VALUE mod)
 }
 
 static rb_method_visibility_t
-check_definition_visibility(VALUE mod, int argc, VALUE *argv)
+check_definition_visibility(VALUE mod, VALUE mid, bool inc_super)
 {
-    const rb_method_entry_t *me;
-    VALUE mid, include_super, lookup_mod = mod;
-    int inc_super;
-    ID id;
-
-    rb_scan_args(argc, argv, "11", &mid, &include_super);
-    id = rb_check_id(&mid);
+    ID id = rb_check_id(&mid);
     if (!id) return METHOD_VISI_UNDEF;
 
-    if (argc == 1) {
-        inc_super = 1;
-    }
-    else {
-        inc_super = RTEST(include_super);
-        if (!inc_super) {
-            lookup_mod = RCLASS_ORIGIN(mod);
-        }
-    }
+    VALUE lookup_mod = inc_super ? mod : RCLASS_ORIGIN(mod);
 
-    me = rb_method_entry_without_refinements(lookup_mod, id, NULL);
+    const rb_method_entry_t *me = rb_method_entry_without_refinements(lookup_mod, id, NULL);
     if (me) {
         if (me->def->type == VM_METHOD_TYPE_NOTIMPLEMENTED) return METHOD_VISI_UNDEF;
         if (!inc_super && me->owner != mod) return METHOD_VISI_UNDEF;
@@ -2621,12 +2607,14 @@ check_definition_visibility(VALUE mod, int argc, VALUE *argv)
 
 /*
  *  call-seq:
- *     mod.method_defined?(symbol, inherit=true)    -> true or false
- *     mod.method_defined?(string, inherit=true)    -> true or false
+ *     mod.method_defined?(symbol, inherit=true, include_all = false)    -> true or false
+ *     mod.method_defined?(string, inherit=true, include_all = false)    -> true or false
  *
  *  Returns +true+ if the named method is defined by
  *  _mod_.  If _inherit_ is set, the lookup will also search _mod_'s
- *  ancestors. Public and protected methods are matched.
+ *  ancestors.
+ *  By default only public and protected methods are matched, but if _include_all_
+ *  is set the lookup will also consider private methods.
  *  String arguments are converted to symbols.
  *
  *     module A
@@ -2644,28 +2632,55 @@ check_definition_visibility(VALUE mod, int argc, VALUE *argv)
  *       def method3()  end
  *     end
  *
- *     A.method_defined? :method1              #=> true
- *     C.method_defined? "method1"             #=> true
- *     C.method_defined? "method2"             #=> true
- *     C.method_defined? "method2", true       #=> true
- *     C.method_defined? "method2", false      #=> false
- *     C.method_defined? "method3"             #=> true
- *     C.method_defined? "protected_method1"   #=> true
- *     C.method_defined? "method4"             #=> false
- *     C.method_defined? "private_method2"     #=> false
+ *     A.method_defined? :method1                       #=> true
+ *     C.method_defined? "method1"                      #=> true
+ *     C.method_defined? "method2"                      #=> true
+ *     C.method_defined? "method2", true                #=> true
+ *     C.method_defined? "method2", false               #=> false
+ *     C.method_defined? "method3"                      #=> true
+ *     C.method_defined? "protected_method1"            #=> true
+ *     C.method_defined? "method4"                      #=> false
+ *     C.method_defined? "private_method2"              #=> false
+ *     C.method_defined? "private_method2", true, true  #=> true
+ *     C.method_defined? "private_method2", false, true #=> false
  */
 
 static VALUE
 rb_mod_method_defined(int argc, VALUE *argv, VALUE mod)
 {
-    rb_method_visibility_t visi = check_definition_visibility(mod, argc, argv);
-    return RBOOL(visi == METHOD_VISI_PUBLIC || visi == METHOD_VISI_PROTECTED);
+    VALUE mid, include_super, include_private;
+
+    rb_scan_args(argc, argv, "12", &mid, &include_super, &include_private);
+    if (argc < 3) {
+        include_private = Qfalse;
+        if (argc < 2) {
+            include_super = Qtrue;
+        }
+    }
+
+    rb_method_visibility_t visi = check_definition_visibility(mod, mid, RTEST(include_super));
+    switch (visi) {
+      case METHOD_VISI_UNDEF:
+        return Qfalse;
+      case METHOD_VISI_PUBLIC:
+      case METHOD_VISI_PROTECTED:
+        return Qtrue;
+      case METHOD_VISI_PRIVATE:
+        return RBOOL(RTEST(include_private));
+      default:
+        UNREACHABLE_RETURN(Qundef);
+    }
 }
 
 static VALUE
 check_definition(VALUE mod, int argc, VALUE *argv, rb_method_visibility_t visi)
 {
-    return RBOOL(check_definition_visibility(mod, argc, argv) == visi);
+    VALUE mid, include_super;
+    rb_scan_args(argc, argv, "11", &mid, &include_super);
+    if (argc < 2) {
+        include_super = Qtrue;
+    }
+    return RBOOL(check_definition_visibility(mod, mid, RTEST(include_super)) == visi);
 }
 
 /*
