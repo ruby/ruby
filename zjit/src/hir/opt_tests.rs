@@ -9963,6 +9963,62 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_optimize_multiple_setivar() {
+        eval("
+            class C
+              def initialize(a, b, c)
+                @a = a
+                @b = b
+                @c = c
+              end
+            end
+
+            C.new(1, 2, 3)
+        ");
+        assert_snapshot!(hir_string_proc("C.instance_method(:initialize)"), @"
+        fn initialize@<compiled>:4:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          v4:BasicObject = LoadField v2, :b@0x1001
+          v5:BasicObject = LoadField v2, :c@0x1002
+          Jump bb3(v1, v3, v4, v5)
+        bb2():
+          EntryPoint JIT(0)
+          v8:BasicObject = LoadArg :self@0
+          v9:BasicObject = LoadArg :a@1
+          v10:BasicObject = LoadArg :b@2
+          v11:BasicObject = LoadArg :c@3
+          Jump bb3(v8, v9, v10, v11)
+        bb3(v13:BasicObject, v14:BasicObject, v15:BasicObject, v16:BasicObject):
+          PatchPoint SingleRactorMode
+          v22:HeapBasicObject = GuardType v13, HeapBasicObject
+          v23:CShape = LoadField v22, :shape_id@0x1003
+          v24:CShape[0x1004] = GuardBitEquals v23, CShape(0x1004) recompile
+          StoreField v22, :@a@0x1005, v14
+          WriteBarrier v22, v14
+          v27:CShape[0x1006] = Const CShape(0x1006)
+          StoreField v22, :shape_id@0x1003, v27
+          PatchPoint NoEPEscape(initialize)
+          PatchPoint SingleRactorMode
+          StoreField v22, :@b@0x1007, v15
+          WriteBarrier v22, v15
+          v41:CShape[0x1008] = Const CShape(0x1008)
+          StoreField v22, :shape_id@0x1003, v41
+          PatchPoint NoEPEscape(initialize)
+          PatchPoint SingleRactorMode
+          StoreField v22, :@c@0x1009, v16
+          WriteBarrier v22, v16
+          v56:CShape[0x100a] = Const CShape(0x100a)
+          StoreField v22, :shape_id@0x1003, v56
+          CheckInterrupts
+          Return v16
+        ");
+    }
+
+    #[test]
     fn test_optimize_getivar_complex() {
         eval(r#"
             class C
