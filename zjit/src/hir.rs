@@ -4911,13 +4911,7 @@ impl Function {
                                     send_frame_state = self.push_insn(block, Insn::Snapshot { state: Box::new(new_state) });
                                 } else if block_arg_profiled_type.is_some_and(|pt| pt.is_proc()) {
                                     // Guard the Proc and pass it through as the callee frame's
-                                    // specval. Check `can_direct_send` before emitting the guard
-                                    // so a callee that would be rejected anyway doesn't pay for it.
-                                    let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
-                                    if let Err(failure) = can_direct_send(iseq, ci, &args[..args.len() - 1], true) {
-                                        failure.record(self, block, insn_id, SendDirectFallbackContext::Send);
-                                        self.push_insn_id(block, insn_id); continue;
-                                    }
+                                    // specval.
                                     let guarded = self.guard_type_recompile(
                                         block, block_arg,
                                         Type::from_profiled_type(block_arg_profiled_type.unwrap()),
