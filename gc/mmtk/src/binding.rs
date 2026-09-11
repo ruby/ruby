@@ -4,6 +4,7 @@ use std::sync::Mutex;
 use std::thread::JoinHandle;
 
 use mmtk::util::ObjectReference;
+use mmtk::vm::ObjectModel;
 use mmtk::MMTK;
 
 use crate::abi;
@@ -105,4 +106,38 @@ impl RubyBinding {
         let objects = self.wb_unprotected_objects.lock().unwrap();
         objects.contains(&object)
     }
+}
+
+pub(crate) fn object_survives_current_gc(object: ObjectReference) -> bool {
+    let plan = crate::mmtk().get_plan();
+
+    let is_nursery_gc = plan
+        .generational()
+        .is_some_and(|gen| gen.is_current_gc_nursery());
+
+    if !is_nursery_gc {
+        return object.is_reachable();
+    }
+
+    if !object.is_reachable() {
+        return false;
+    }
+
+    if !is_los_object(object) {
+        return true;
+    }
+
+    let byte = crate::object_model::VMObjectModel::LOCAL_LOS_MARK_NURSERY_SPEC
+        .load_atomic::<Ruby, u8>(object, None, std::sync::atomic::Ordering::SeqCst);
+    const NURSERY_BIT: u8 = 0b10;
+    byte & NURSERY_BIT == 0
+}
+
+fn is_los_object(object: ObjectReference) -> bool {
+    let access = abi::RubyObjectAccess::from_objref(object);
+    access.payload_size() + abi::OBJREF_OFFSET
+        > crate::mmtk()
+            .get_plan()
+            .constraints()
+            .max_non_los_default_alloc_bytes
 }
