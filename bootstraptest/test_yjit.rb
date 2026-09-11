@@ -3819,6 +3819,9 @@ assert_equal 'ok', %q{
     s.m1 = 1
   end
 
+  # Modular GCs like MMTk don't expose RVARGC_MAX_ALLOCATE_SIZE
+  skip :ok unless GC::INTERNAL_CONSTANTS[:RVARGC_MAX_ALLOCATE_SIZE]
+
   max_embedded_members = (GC::INTERNAL_CONSTANTS[:RVARGC_MAX_ALLOCATE_SIZE] -
                           GC::INTERNAL_CONSTANTS[:RBASIC_SIZE] -
                           GC::INTERNAL_CONSTANTS[:RVALUE_OVERHEAD]) / 8
@@ -3859,6 +3862,9 @@ assert_equal '["foo", [1, 2], {k: :v}, "bar", "baz"]', %q{
     s.m4 = d
     s.m5 = e
   end
+
+  # Modular GCs like MMTk don't expose RVARGC_MAX_ALLOCATE_SIZE
+  skip ["foo", [1, 2], { k: :v }, "bar", "baz"] unless GC::INTERNAL_CONSTANTS[:RVARGC_MAX_ALLOCATE_SIZE]
 
   max_embedded_members = (GC::INTERNAL_CONSTANTS[:RVARGC_MAX_ALLOCATE_SIZE] -
                           GC::INTERNAL_CONSTANTS[:RBASIC_SIZE] -
