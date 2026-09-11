@@ -1872,15 +1872,13 @@ fn gen_send_iseq_direct(
     // (see vm_adjust_stack_forwarding()), so we write these stack slots before the call. The callinfo
     // goes into the `...` local, which sits directly above them.
     if forwarding {
-        asm_comment!(asm, "copy forwarded arguments and callinfo to callee frame");
+        asm_comment!(asm, "copy forwarded arguments to callee frame");
         let locals_base = state.stack().len() - args.len();
         for (idx, &arg) in args.iter().enumerate() {
             asm.store(Opnd::mem(64, SP, ((locals_base + idx) * SIZEOF_VALUE) as i32), arg);
         }
-        asm.store(
-            Opnd::mem(64, SP, ((locals_base + forwarded_argc) * SIZEOF_VALUE) as i32),
-            forwarded_ci,
-        );
+        // The `...` local on top of the above argument is a method parameter of the callee, so
+        // the callee will spill the callinfo passed as part of `c_args` into the `...` local.
     }
 
     asm_comment!(asm, "switch to new SP register");
