@@ -2402,6 +2402,13 @@ unsafe extern "C" {
     pub fn rb_iseq_label(iseq: *const rb_iseq_t) -> VALUE;
     pub fn rb_iseq_defined_string(type_: defined_type) -> VALUE;
     pub fn rb_zjit_profile_enable(iseq: *const rb_iseq_t);
+    pub fn rb_zjit_get_iseq_exception_entry(
+        iseq: *const rb_iseq_t,
+    ) -> *const ::std::os::raw::c_void;
+    pub fn rb_zjit_set_iseq_exception_entry(
+        iseq: *const rb_iseq_t,
+        entry: *const ::std::os::raw::c_void,
+    );
     pub fn rb_zjit_hash_new_size(flags_out: *mut VALUE, size: usize) -> usize;
     pub fn rb_zjit_new_obj_shape(flags: VALUE, alloc_size: usize) -> VALUE;
     pub fn rb_zjit_class_allocate_instance_fastpath(

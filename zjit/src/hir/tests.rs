@@ -387,6 +387,34 @@ pub(crate) mod hir_build_tests {
     }
 
     #[test]
+    fn test_compile_multiple_exception_entries() {
+        eval("
+            def test(left)
+                if left
+                    1.times { break :left }
+                else
+                    1.times { break :right }
+                end
+            end
+        ");
+        let iseq = crate::cruby::with_rubyvm(|| get_method_iseq("self", "test"));
+        unsafe { crate::cruby::rb_zjit_profile_disable(iseq) };
+        let function = iseq_to_hir_exception(iseq, &[
+            ExceptionEntrySpec { insn_idx: 8, stack_size: 1, value_types: vec![types::BasicObject; 2] },
+            ExceptionEntrySpec { insn_idx: 13, stack_size: 1, value_types: vec![types::BasicObject; 2] },
+        ]).unwrap();
+        let mut entries = Vec::new();
+        for block_id in function.entry_blocks() {
+            for &insn_id in function.block(block_id).insns() {
+                if let Insn::ExceptionEntryPoint { insn_idx, stack_size } = function.find_ref(insn_id) {
+                    entries.push((*insn_idx, *stack_size));
+                }
+            }
+        }
+        assert_eq!(entries, [(8, 1), (13, 1)]);
+    }
+
+    #[test]
     fn test_compile_optional() {
         eval("def test(x=1) = 123");
         assert_snapshot!(hir_string("test"), @"
@@ -6057,10 +6085,11 @@ pub(crate) mod hir_build_tests {
           v76:CInt64 = UnboxFixnum v71
           v77:BasicObject = ArrayAref v75, v76
           v79:BasicObject = InvokeBlock v77 # SendFallbackReason: InvokeBlock: not yet specialized
-          v83:Fixnum[1] = Const Value(1)
-          v84:Fixnum = FixnumAdd v71, v83
+          v83:Fixnum = RefineType v71, Fixnum
+          v84:Fixnum[1] = Const Value(1)
+          v85:Fixnum = FixnumAdd v83, v84
           PatchPoint NoEPEscape(each)
-          Jump bb8(v70, v84)
+          Jump bb8(v70, v85)
         bb4(v23:BasicObject, v24:NilClass):
           v28:BasicObject = InvokeBuiltin <inline_expr>, v23
           Jump bb5(v23, v24, v28)

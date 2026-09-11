@@ -158,6 +158,7 @@ make_counters! {
         failed_iseq_count,
         jit_frame_heap_bytes,
         skipped_native_stack_full,
+        skipped_exceptional_entry_escaped_env,
 
         compile_time_ns,
         profile_time_ns,

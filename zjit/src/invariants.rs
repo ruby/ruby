@@ -456,7 +456,7 @@ pub extern "C" fn rb_zjit_tracing_invalidate_all() {
         for_each_iseq(|iseq| {
             let payload = get_or_create_iseq_payload(iseq);
 
-            if let Some(version) = payload.versions.last_mut() {
+            for mut version in payload.all_versions() {
                 unsafe { version.as_mut() }.status = IseqStatus::Invalidated;
             }
             unsafe { rb_iseq_reset_jit_func(iseq) };
