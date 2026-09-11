@@ -6278,6 +6278,7 @@ impl Function {
                 }
             }
         }
+    }
 
    /// ZJIT uses block parameters in HIR SSA representation.
     /// Sometimes, we can prove that a block param is only called with a single value.
@@ -6347,18 +6348,17 @@ impl Function {
                     Insn::Jump(edge) => {
                         predecessors[edge.target].push(EdgeKey { block_id, insn_idx, edge: None });
                     }
-                    _ => {}
+                    _ => ()
             }
         }
 
         // TODO: Figure out if this should be FIFO or some different algorithmic structure
+        // TODO: Figure out if we should start with reverse post order here instead of 0..n
         // Instantiate the worklist with blocks that have at least one predecessor and at least one block param.
         // No predecessors or no block params => nothing to optimize
         let mut worklist: VecDeque<BlockId> = predecessors.iter().enumerate().filter_map(|(i, preds)| {
             (preds.len() > 0 && self.blocks[i].params().len() > 0).then_some(BlockId(i as u32))
         }).collect();
-
-        let blocks = self.reverse_post_order();
 
         while worklist.len() > 0 {
             let target_block = worklist.pop_front().unwrap();
@@ -6381,10 +6381,32 @@ impl Function {
             }
 
             // Collect all trivial indices and replace uses with the concretized value.
+            // If any replacements update BranchEdges leaving the target block, then add their successors to the worklist.
             let mut trivial_indices: Vec<usize> = Vec::with_capacity(abstract_domain.len());
             for (index, value) in abstract_domain.into_iter().enumerate() {
-                if let AbstractValue::One(insn_id) = value {
-                    self.make_equal_to(self.blocks[target_block].params[index], insn_id);
+                let old_insn_id = self.blocks[target_block].params[index];
+                if let AbstractValue::One(new_insn_id) = value {
+                    let terminator = self.blocks[target_block].insns.last().unwrap();
+                    // If any outgoing edge gets updated, add the successor block to the worklist for analysis
+                    // TODO: Additionally, there might be a special case to consider if the edge points to the block itself. We want to make sure we're not infinitely adding to the worklist
+                    match self.resolve(*terminator).insn(self) {
+                        Insn::Jump(edge) => {
+                            if edge.args.contains(&old_insn_id) && !worklist.contains(&edge.target) {
+                                worklist.push_back(edge.target);
+                            }
+                        },
+                        Insn::CondBranch { if_true, if_false, .. } => {
+                            if if_true.args.contains(&old_insn_id) && !worklist.contains(&if_true.target) {
+                                worklist.push_back(if_true.target);
+                            }
+                            if if_false.args.contains(&old_insn_id) && !worklist.contains(&if_false.target) {
+                                worklist.push_back(if_false.target);
+                            }
+                        }
+                        _ => ()
+                    };
+                    // TODO: Check edges for
+                    self.make_equal_to(old_insn_id, new_insn_id);
                     trivial_indices.push(index);
                 }
             }
@@ -6402,8 +6424,6 @@ impl Function {
 
             // Remove trivial params from the block definition
             prune_vec_by_indices(&mut self.blocks[target_block].params, &trivial_indices);
-
-            // TODO: Add blocks that had updated outgoing edges to our worklist
         }
     }
 
