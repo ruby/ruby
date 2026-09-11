@@ -22,7 +22,7 @@ describe "Kernel#require" do
       provided += %w[set pathname]
     end
     ruby_version_is "4.1" do
-      provided += %w[monitor]
+      provided += %w[monitor io/wait]
     end
 
     out = ruby_exe("puts $LOADED_FEATURES", options: '--disable-gems --disable-did-you-mean')

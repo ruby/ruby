@@ -16070,4 +16070,17 @@ Init_IO(void)
     sym_wait_writable = ID2SYM(rb_intern_const("wait_writable"));
 }
 
+static void init_builtin_io(void);
+#define Init_builtin_io init_builtin_io
 #include "io.rbinc"
+#undef Init_builtin_io
+
+void
+Init_builtin_io(void)
+{
+    init_builtin_io();
+
+    /* Init_IO is called earlier than `loaded_features` is initialized */
+    rb_provide("io/wait.rb");
+    rb_provide("io/wait.so");
+}
