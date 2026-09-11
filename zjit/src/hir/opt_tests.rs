@@ -8028,7 +8028,6 @@ mod hir_opt_tests {
           v18:CShape[0x1003] = Const CShape(0x1003)
           StoreField v13, :shape_id@0x1000, v18
           v23:Fixnum[2] = Const Value(2)
-          PatchPoint SingleRactorMode
           StoreField v13, :@bar@0x1004, v23
           v32:CShape[0x1005] = Const CShape(0x1005)
           StoreField v13, :shape_id@0x1000, v32
@@ -10002,13 +10001,10 @@ mod hir_opt_tests {
           v27:CShape[0x1006] = Const CShape(0x1006)
           StoreField v22, :shape_id@0x1003, v27
           PatchPoint NoEPEscape(initialize)
-          PatchPoint SingleRactorMode
           StoreField v22, :@b@0x1007, v15
           WriteBarrier v22, v15
           v41:CShape[0x1008] = Const CShape(0x1008)
           StoreField v22, :shape_id@0x1003, v41
-          PatchPoint NoEPEscape(initialize)
-          PatchPoint SingleRactorMode
           StoreField v22, :@c@0x1009, v16
           WriteBarrier v22, v16
           v56:CShape[0x100a] = Const CShape(0x100a)
