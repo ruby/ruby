@@ -4782,13 +4782,7 @@ impl Function {
                                     send_frame_state = self.push_insn(block, Insn::Snapshot { state: Box::new(new_state) });
                                 } else if block_arg_profiled_type.is_some_and(|pt| pt.is_proc()) {
                                     // Guard the Proc and pass it through as the callee frame's
-                                    // specval. Check `can_direct_send` before emitting the guard
-                                    // so a callee that would be rejected anyway doesn't pay for it.
-                                    let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
-                                    if let Err(failure) = can_direct_send(iseq, ci, &args[..args.len() - 1], true) {
-                                        failure.record(self, block, insn_id, SendDirectFallbackContext::Send);
-                                        self.push_insn_id(block, insn_id); continue;
-                                    }
+                                    // specval.
                                     let guarded = self.guard_type_recompile(
                                         block, block_arg,
                                         Type::from_profiled_type(block_arg_profiled_type.unwrap()),
@@ -4810,7 +4804,7 @@ impl Function {
                         // If the call site info indicates that the `Function` has overly complex arguments, then do not optimize into a `SendDirect`.
                         // Optimized methods(`VM_METHOD_TYPE_OPTIMIZED`) and C methods handle their own argument constraints (e.g., kw_splat for Proc call).
                         // Mask out ARGS_BLOCKARG only if we've already handled the nil/Proc block arg case above.
-                        let mut flags_for_check = if stripped_block_arg { flags & !VM_CALL_ARGS_BLOCKARG } else { flags };
+                        let flags_for_check = if stripped_block_arg { flags & !VM_CALL_ARGS_BLOCKARG } else { flags };
                         if def_type != VM_METHOD_TYPE_OPTIMIZED && def_type != VM_METHOD_TYPE_CFUNC && unspecializable_call_type(flags_for_check) {
                             self.count_complex_call_features(block, flags, state);
                             self.set_dynamic_send_reason(insn_id, ComplexArgPass);
