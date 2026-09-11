@@ -6450,7 +6450,8 @@ impl Function {
             let mut compile_time_heap: HashMap<InsnId, usize>  = HashMap::new();
             let old_insns = std::mem::take(&mut self.blocks[block].insns);
             let mut new_insns = Vec::with_capacity(old_insns.len());
-            for insn_id in old_insns {
+            'block: for insn_id in old_insns {
+
                 let replacement_insn: InsnId = match self.resolve(insn_id).insn(self) {
                     Insn::NewArray { elements, .. } => {
                         compile_time_heap.insert(self.find_id(insn_id), elements.len());
@@ -6470,33 +6471,37 @@ impl Function {
                             insn_id
                         }
                     },
-                    Insn::ArrayAref { array, index } => {
-                        if let Some(size) = compile_time_heap.get(&self.chase_insn(*array)) {
-                            let size = *size;
-                            let array = *array;
+                    Insn::ArrayAref { array, index } => 'array_aref: {
+                        // Do we have a size?
+                        let Some(size) = compile_time_heap.get(&self.chase_insn(*array)) else {
+                            break 'array_aref insn_id;
+                        };
 
-                            if let Some(index_const) = self.type_of(*index).cint64_value() {
-                                if index_const >= 0 && index_const < size as i64 {
-                                    let array_id = self.chase_insn(array);
-                                    if let Insn::NewArray { elements, .. } = &self.insns[array_id] {
-                                        let new_insn_id = elements[index_const as usize];
-                                        self.make_equal_to(insn_id, new_insn_id);
-                                        if get_option!(stats) {
-                                            self.new_insn(Insn::IncrCounter(Counter::elided_array_aref_count))
-                                        } else {
-                                            continue;
-                                        }
-                                    } else {
-                                        insn_id
-                                    }
-                                } else {
-                                    insn_id
-                                }
-                            } else {
-                                insn_id
-                            }
+                        // Can we get an index for the aref?
+                        let Some(index_const) = self.type_of(*index).cint64_value() else {
+                            break 'array_aref insn_id;
+                        };
+
+                        let size = *size;
+                        let array = *array;
+
+                        // Is it in bounds?
+                        if !(index_const >= 0 && index_const < size as i64) {
+                            break 'array_aref insn_id;
+                        };
+
+                        let array_id = self.chase_insn(array);
+                        let Insn::NewArray { elements, .. } = &self.insns[array_id] else {
+                            break 'array_aref insn_id;
+                        };
+
+                        let new_insn_id = elements[index_const as usize];
+                        self.make_equal_to(insn_id, new_insn_id);
+
+                        if get_option!(stats) {
+                            self.new_insn(Insn::IncrCounter(Counter::elided_array_aref_count))
                         } else {
-                            insn_id
+                            continue 'block
                         }
                     },
                     insn => {
