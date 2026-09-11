@@ -6085,10 +6085,11 @@ pub(crate) mod hir_build_tests {
           v76:CInt64 = UnboxFixnum v71
           v77:BasicObject = ArrayAref v75, v76
           v79:BasicObject = InvokeBlock v77 # SendFallbackReason: InvokeBlock: not yet specialized
-          v83:Fixnum[1] = Const Value(1)
-          v84:Fixnum = FixnumAdd v71, v83
+          v83:Fixnum = RefineType v71, Fixnum
+          v84:Fixnum[1] = Const Value(1)
+          v85:Fixnum = FixnumAdd v83, v84
           PatchPoint NoEPEscape(each)
-          Jump bb8(v70, v84)
+          Jump bb8(v70, v85)
         bb4(v23:BasicObject, v24:NilClass):
           v28:BasicObject = InvokeBuiltin <inline_expr>, v23
           Jump bb5(v23, v24, v28)
