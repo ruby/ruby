@@ -1768,18 +1768,19 @@ class Pathname    # * File *
   # call-seq:
   #   readlink -> new_pathname
   #
-  # Returns a new pathname containing the path to the entry represented by `self`:
+  # Returns a new pathname containing the path stored
+  # in the [symbolic link](rdoc-ref:file/symbolic_links.md) entry
+  # at the path stored in `self`:
   #
   # ```ruby
-  # # Create Pathnames.
-  # file_pn = Pathname('doc/extension.rdoc') # => #<Pathname:doc/extension.rdoc>
-  # target_pn = Pathname('..').join(file_pn) # => #<Pathname:../doc/extension.rdoc>
-  # link_pn = Pathname('lib/u.tmp')          # => #<Pathname:lib/u.tmp>
-  # link_pn.make_symlink(target_pn)
-  # link_pn.readlink                         # => #<Pathname:../doc/extension.rdoc>
-  # link_pn.delete
+  # file_pn = Pathname('README.md')
+  # link_pn = Pathname('foo')
+  # link_pn.make_symlink(file_pn)
+  # link_pn.readlink # => #<Pathname:README.md>
+  # link_pn.unlink   # Clean up.
   # ```
   #
+  # Raises Errno::EINVAL if the path in `self` is not the path to a symbolic link.
   def readlink() self.class.new(File.readlink(@path)) end
 
   # :markup: markdown
