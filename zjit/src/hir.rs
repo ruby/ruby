@@ -2799,40 +2799,26 @@ impl CompilePolicy {
     }
 }
 
-enum VirtualArray {
-    Insns(Vec<InsnId>),
-    FrozenSource(VALUE),
+enum VirtualObject {
+    Array(Vec<ArrayElement>),
 }
 
-enum VirtualElement {
+#[derive(Debug, Clone, Copy)]
+enum ArrayElement {
+    Object(VALUE),
     Insn(InsnId),
-    Value(VALUE),
 }
 
-// VirtualArray modeling Array access in optimize-load-aaron
-impl VirtualArray {
+impl VirtualObject {
     fn len(&self) -> usize {
         match self {
-            VirtualArray::Insns(elements) => elements.len(),
-            VirtualArray::FrozenSource(obj) => unsafe { rb_jit_array_len(*obj) as usize },
+            VirtualObject::Array(elements) => elements.len(),
         }
     }
 
-    fn at(&self, index: i64) -> Option<VirtualElement> {
-        if index as usize >= self.len() { return None; }
+    fn at(&self, index: i64) -> Option<ArrayElement> {
         match self {
-            VirtualArray::Insns(elements) => Some(VirtualElement::Insn(elements[index as usize])),
-            VirtualArray::FrozenSource(obj) => {
-                Some(VirtualElement::Value(unsafe { rb_ary_entry(*obj, index as i64) }))
-            }
-        }
-    }
-
-    fn set(&mut self, index: i64, val: InsnId) -> bool {
-        let VirtualArray::Insns(elements) = self else { return false };
-        match elements.get_mut(index as usize) {
-            Some(slot) => { *slot = val; true }
-            None => false,
+            VirtualObject::Array(elements) => elements.get(index as usize).copied(),
         }
     }
 }
@@ -6484,20 +6470,25 @@ impl Function {
 
     fn optimize_load_aaron(&mut self) {
         for block in self.reverse_post_order() {
-            let mut virtual_heap: HashMap<InsnId, VirtualArray> = HashMap::new();
+            let mut virtual_heap: HashMap<InsnId, VirtualObject> = HashMap::new();
             let old_insns = std::mem::take(&mut self.blocks[block].insns);
             let mut new_insns = Vec::with_capacity(old_insns.len());
             'block: for insn_id in old_insns {
                 let replacement_insn: InsnId = match self.resolve(insn_id).insn(self) {
                     Insn::NewArray { elements, .. } => {
-                        let elements = elements.clone();
-                        virtual_heap.insert(self.find_id(insn_id), VirtualArray::Insns(elements));
+                        let elements: Vec<ArrayElement> =
+                            elements.iter().map(|&insn| ArrayElement::Insn(insn)).collect();
+                        virtual_heap.insert(self.find_id(insn_id), VirtualObject::Array(elements));
                         insn_id
                     },
                     &Insn::ArrayDup { val, .. } => {
                         if let Some(obj) = self.type_of(val).ruby_object() {
                             if obj.is_frozen() {
-                                virtual_heap.insert(self.find_id(insn_id), VirtualArray::FrozenSource(obj));
+                                let len = unsafe { rb_jit_array_len(obj) };
+                                let elements: Vec<ArrayElement> = (0..len)
+                                    .map(|i| ArrayElement::Object(unsafe { rb_ary_entry(obj, i) }))
+                                    .collect();
+                                virtual_heap.insert(self.find_id(insn_id), VirtualObject::Array(elements));
                             }
                         }
                         insn_id
@@ -6528,8 +6519,8 @@ impl Function {
                         match element {
                             Some(element) => {
                                 let element_id = match element {
-                                    VirtualElement::Insn(element_id) => element_id,
-                                    VirtualElement::Value(val) => {
+                                    ArrayElement::Insn(element_id) => element_id,
+                                    ArrayElement::Object(val) => {
                                         let const_id = self.new_insn(Insn::Const { val: Const::Value(val) });
                                         self.insn_types[const_id] = self.infer_type(const_id);
                                         new_insns.push(const_id);
