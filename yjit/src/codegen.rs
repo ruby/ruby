@@ -1230,6 +1230,46 @@ fn gen_check_ints(
     asm.jnz(Target::side_exit(counter));
 }
 
+// Generate code to check for interrupts and handle them inline, without
+// taking a side exit. This is used at backward branches (loops) so that
+// YJIT can continue running compiled code after handling interrupts such
+// as those from signal-based profilers using rb_postponed_job_trigger.
+fn gen_check_ints_inline(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+) {
+    asm_comment!(asm, "RUBY_VM_CHECK_INTS(ec) - inline");
+
+    // Spill register temps to memory unconditionally so that both the fast
+    // path (no interrupt) and slow path (interrupt taken) have values in
+    // memory at the label. This avoids the need to reload after the ccall.
+    asm.spill_regs();
+
+    // Save SP before the branch so both paths have the same SP state.
+    // gen_save_sp() also updates the SP register (x21 on arm64) and resets
+    // sp_offset to 0, which keeps CFP.sp consistent with x21 + sp_offset.
+    // Without this, writing sp_opnd(0) to CFP.sp in the slow path would
+    // desync CFP.sp from the (x21, sp_offset) pair, causing branch_stub_hit
+    // to compute the wrong reconned_sp.
+    gen_save_sp(asm);
+
+    let interrupt_flag = asm.load(Opnd::mem(32, EC, RUBY_OFFSET_EC_INTERRUPT_FLAG as i32));
+    asm.test(interrupt_flag, interrupt_flag);
+
+    let no_interrupt = asm.new_label("no_interrupt");
+    asm.jz(no_interrupt);
+
+    jit_save_pc(jit, asm);
+
+    asm.ccall(rb_yjit_execute_interrupts as *const u8, vec![EC]);
+
+    // The interrupt handler can set locals through Kernel#binding,
+    // rb_debug_inspector API, etc. (same rationale as jit_prepare_non_leaf_call).
+    asm.ctx.clear_local_types();
+
+    asm.write_label(no_interrupt);
+}
+
 // Generate a stubbed unconditional jump to the next bytecode instruction.
 // Blocks that are part of a guard chain can use this to share the same successor.
 fn jump_to_next_insn(
@@ -4694,7 +4734,7 @@ fn gen_branchif(
 
     // Check for interrupts, but only on backward branches that may create loops
     if jump_offset < 0 && jit.get_opcode() != YARVINSN_branchif_without_ints as usize {
-        gen_check_ints(asm, Counter::branchif_interrupted);
+        gen_check_ints_inline(jit, asm);
     }
 
     // Get the branch target instruction offsets
@@ -4746,7 +4786,7 @@ fn gen_branchunless(
 
     // Check for interrupts, but only on backward branches that may create loops
     if jump_offset < 0 && jit.get_opcode() != YARVINSN_branchunless_without_ints as usize {
-        gen_check_ints(asm, Counter::branchunless_interrupted);
+        gen_check_ints_inline(jit, asm);
     }
 
     // Get the branch target instruction offsets
@@ -4799,7 +4839,7 @@ fn gen_branchnil(
 
     // Check for interrupts, but only on backward branches that may create loops
     if jump_offset < 0 && jit.get_opcode() != YARVINSN_branchnil_without_ints as usize {
-        gen_check_ints(asm, Counter::branchnil_interrupted);
+        gen_check_ints_inline(jit, asm);
     }
 
     // Get the branch target instruction offsets
@@ -4954,7 +4994,7 @@ fn gen_jump(
 
     // Check for interrupts, but only on backward branches that may create loops
     if jump_offset < 0 && jit.get_opcode() != YARVINSN_jump_without_ints as usize {
-        gen_check_ints(asm, Counter::jump_interrupted);
+        gen_check_ints_inline(jit, asm);
     }
 
     // Get the branch target instruction offsets
