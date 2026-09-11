@@ -1,4 +1,5 @@
 #include "ruby.h"
+#include "ruby/internal/has/feature.h"
 
 /*
  * Regression test for a heap-use-after-free in rb_gc_unregister_address().
@@ -89,6 +90,25 @@ gc_assign_static(VALUE self, VALUE v)
     return v;
 }
 
+static VALUE
+gc_register_current_static(VALUE self)
+{
+    rb_gc_register_address(&static_slot);
+    return Qnil;
+}
+
+/* Mirrors the VM-side RB_GC_REGISTERED_ADDR_CHECK definition without including a
+ * private GC header: debug and ASAN builds record the registration-time value. */
+static VALUE
+gc_registered_address_check_enabled_p(VALUE self)
+{
+#if RUBY_DEBUG || defined(__SANITIZE_ADDRESS__) || RBIMPL_HAS_FEATURE(address_sanitizer)
+    return Qtrue;
+#else
+    return Qfalse;
+#endif
+}
+
 void
 Init_register(void)
 {
@@ -103,4 +123,8 @@ Init_register(void)
     rb_define_singleton_method(mGC, "static_slot_value", gc_static_slot_value, 0);
     rb_define_singleton_method(mGC, "assign_static", gc_assign_static, 1);
     rb_define_singleton_method(mGC, "static_slot_eq?", gc_static_slot_eq, 1);
+    rb_define_singleton_method(mGC, "register_current_static",
+                               gc_register_current_static, 0);
+    rb_define_singleton_method(mGC, "registered_address_check_enabled?",
+                               gc_registered_address_check_enabled_p, 0);
 }

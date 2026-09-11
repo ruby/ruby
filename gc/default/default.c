@@ -6850,10 +6850,14 @@ gc_verify_heap_pages(rb_objspace_t *objspace)
 }
 
 static void
-verify_registered_addr(VALUE *slot, void *owner_objspace, void *d)
+verify_registered_addr(VALUE *slot, VALUE initial_value, void *owner_objspace, void *d)
 {
+    struct verify_internal_consistency_struct *data = d;
     VALUE v = *slot;
 
+    /* Conservative registration permits uninitialized data and pre-registration
+     * values; only a store made after registration is a violation. */
+    if (v == initial_value) return;
     if (SPECIAL_CONST_P(v)) return;
     if (!verify_pointer_in_any_heap_p((void *)v)) return;
 
@@ -6863,12 +6867,21 @@ verify_registered_addr(VALUE *slot, void *owner_objspace, void *d)
     }
     if (!live) return;
 
-    if (GET_HEAP_OBJSPACE(v) == (rb_objspace_t *)owner_objspace) return;
+    rb_objspace_t *value_objspace = GET_HEAP_OBJSPACE(v);
+    if (value_objspace == (rb_objspace_t *)owner_objspace) return;
+    /* Join and orphan handling move a registration to the inheritor before the
+     * source objspace merge; a global GC scans every registry while the zombie
+     * exists, so this is a safe transient exemption. */
+    if (rb_gc_vm_zombie_objspace_p(value_objspace)) return;
     if (MARKED_IN_BITMAP(GET_HEAP_SHAREABLE_BITS(v), v)) return;
     if (MARKED_IN_BITMAP(GET_HEAP_SHREF_BITS(v), v)) return;
+    /* When multiple Ractors register one address, ownership by any registrant is
+     * enough to root the value. */
+    if (rb_gc_registered_addr_owned_by_registrant_p(slot, value_objspace)) return;
 
-    fprintf(stderr, "registered address %p may hold an unshareable object owned by another Ractor: %s\n",
+    fprintf(stderr, "registered address %p changed since registration to an unshareable object owned by another Ractor: %s\n",
             (void *)slot, rb_obj_info(v));
+    data->err_count++;
 }
 
 static void

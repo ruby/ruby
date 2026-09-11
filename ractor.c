@@ -416,13 +416,14 @@ rb_ractor_absorb_registered_addrs_without_gc(rb_ractor_t *dst, rb_ractor_t *src)
         if (need > dst->registered_addrs_capa) {
             size_t nc = dst->registered_addrs_capa ? dst->registered_addrs_capa : 64;
             while (nc < need) nc *= 2;
-            VALUE **p = realloc(dst->registered_addrs, nc * sizeof(VALUE *));
+            struct rb_ractor_registered_addr *p =
+                realloc(dst->registered_addrs, nc * sizeof(struct rb_ractor_registered_addr));
             if (!p) rb_bug("rb_ractor_absorb_registered_addrs_without_gc: out of memory");
             dst->registered_addrs = p;
             dst->registered_addrs_capa = nc;
         }
         MEMCPY(dst->registered_addrs + dst->registered_addrs_cnt,
-               src->registered_addrs, VALUE *, src->registered_addrs_cnt);
+               src->registered_addrs, struct rb_ractor_registered_addr, src->registered_addrs_cnt);
         dst->registered_addrs_cnt = need;
         src->registered_addrs_cnt = 0;
         rb_gc_registered_addrs_enroll_without_gc(vm, dst);
