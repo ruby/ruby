@@ -3664,9 +3664,20 @@ impl Function {
             Insn::FixnumAdd  { .. } => types::Fixnum,
             Insn::FixnumSub  { .. } => types::Fixnum,
             Insn::FixnumMult { .. } => types::Fixnum,
-            // FIXNUM_MIN / -1 overflows to a Bignum, so the result is Integer, not Fixnum.
-            // Downstream Fixnum ops insert their own GuardType(Fixnum)
-            Insn::FixnumDiv  { .. } => types::Integer,
+            Insn::FixnumDiv { left, right, .. } => {
+                let left = self.type_of(*left).fixnum_value();
+                let right = self.type_of(*right).fixnum_value();
+
+                // FIXNUM_MIN / -1 overflows to a Bignum, but no other combination does. If we know
+                // that either operand does not match that case, we can safely assume Fixnum.
+                if left.is_some_and(|left| left != RUBY_FIXNUM_MIN as i64)
+                    || right.is_some_and(|right| right != -1)
+                {
+                    types::Fixnum
+                } else {
+                    types::Integer
+                }
+            }
             Insn::FixnumMod  { .. } => types::Fixnum,
             Insn::FloatAdd   { .. } => types::Float,
             Insn::FloatSub   { .. } => types::Float,
