@@ -18,6 +18,15 @@ class TestERBEscape < Test::Unit::TestCase
     assert_equal(65536+5, ERB::Util.html_escape("&" + "x"*65536).size)
   end
 
+  def test_html_escape_string_subclass
+    klass = Class.new(String) do
+      def to_s
+        "<to_s>"
+      end
+    end
+    assert_equal("&lt;b&gt;", ERB::Util.html_escape(klass.new("<b>")))
+  end
+
   def test_html_escape_to_s
     object = Object.new
     def object.to_s
