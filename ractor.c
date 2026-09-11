@@ -1452,11 +1452,6 @@ rb_ractor_stderr_set(VALUE err)
     }
 }
 
-rb_hook_list_t *
-rb_ractor_hooks(rb_ractor_t *cr)
-{
-    return &cr->pub.hooks;
-}
 
 st_table *
 rb_ractor_targeted_hooks(rb_ractor_t *cr)

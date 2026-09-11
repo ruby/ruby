@@ -208,7 +208,7 @@ module SyntaxSuggest
             puts "haha"
         EOM
 
-        out = `SYNTAX_SUGGEST_DEBUG=1 #{ruby} -I#{lib_dir} -rsyntax_suggest -r#{monkeypatch} #{script} 2>&1`
+        out = IO.popen({"SYNTAX_SUGGEST_DEBUG" => "1"}, "#{ruby} -I#{lib_dir} -rsyntax_suggest -r#{monkeypatch} #{script} 2>&1", &:read)
 
         expect($?.success?).to be_falsey
         expect(out).to include("boom from monkeypatch")

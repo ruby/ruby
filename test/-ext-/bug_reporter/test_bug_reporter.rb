@@ -6,7 +6,6 @@ require_relative '../../lib/parser_support'
 
 class TestBugReporter < Test::Unit::TestCase
   def test_bug_reporter_add
-    omit if macos? && ENV["CI"] # we're getting timeouts even after 100s in CI
     description = RUBY_DESCRIPTION
     description = description.sub(/\+PRISM /, '') unless ParserSupport.prism_enabled_in_subprocess?
     expected_stderr = [
@@ -26,7 +25,8 @@ class TestBugReporter < Test::Unit::TestCase
     args.push("--zjit") if JITSupport.zjit_enabled?
     args.unshift({"RUBY_ON_BUG" => nil, "RUBY_CRASH_REPORT" => nil})
     stdin = "#{no_core}register_sample_bug_reporter(12345); Bug.segv"
-    assert_in_out_err(args, stdin, [], expected_stderr, encoding: "ASCII-8BIT")
+    # Writing the report is slow, see TestRubyOptions#assert_segv.
+    assert_in_out_err(args, stdin, [], expected_stderr, encoding: "ASCII-8BIT", timeout: 60)
   ensure
     FileUtils.rm_rf(tmpdir) if tmpdir
   end
