@@ -501,6 +501,76 @@ fn test_forwardable_callee_literal_block() {
 }
 
 #[test]
+fn test_forwardable_callee_block_arg_proc() {
+    assert_snapshot!(inspect("
+        def target(x) = yield(x)
+        def fwd(...) = target(...)
+        block = proc { |v| v * 2 }
+        5.times.map { fwd(4, &block) }.uniq
+    "), @"[8]");
+}
+
+#[test]
+fn test_forwardable_callee_block_arg_lambda() {
+    assert_snapshot!(inspect("
+        def target(x) = yield(x)
+        def fwd(...) = target(...)
+        block = ->(v) { v * 3 }
+        5.times.map { fwd(4, &block) }.uniq
+    "), @"[12]");
+}
+
+#[test]
+fn test_forwardable_callee_block_arg_symbol() {
+    assert_snapshot!(inspect(r#"
+        def target(x) = yield(x)
+        def fwd(...) = target(...)
+        5.times.map { fwd("hello", &:upcase) }.uniq
+    "#), @r#"["HELLO"]"#);
+}
+
+#[test]
+fn test_forwardable_callee_block_arg_method() {
+    assert_snapshot!(inspect("
+        def target(x) = yield(x)
+        def fwd(...) = target(...)
+        def double(v) = v * 2
+        5.times.map { fwd(4, &method(:double)) }.uniq
+    "), @"[8]");
+}
+
+#[test]
+fn test_forwardable_callee_block_arg_to_proc() {
+    assert_snapshot!(inspect("
+        class Doubler
+          def to_proc = proc { |v| v * 2 }
+        end
+        def target(x) = yield(x)
+        def fwd(...) = target(...)
+        doubler = Doubler.new
+        5.times.map { fwd(4, &doubler) }.uniq
+    "), @"[8]");
+}
+
+#[test]
+fn test_forwardable_callee_block_arg_nil() {
+    assert_snapshot!(inspect("
+        def target(x) = block_given? ? yield(x) : [:no_block, x]
+        def fwd(...) = target(...)
+        5.times.map { fwd(4, &nil) }.uniq
+    "), @"[[:no_block, 4]]");
+}
+
+#[test]
+fn test_forwardable_callee_block_arg_not_callable() {
+    assert_snapshot!(inspect(r#"
+        def target(x) = yield(x)
+        def fwd(...) = target(...)
+        5.times.map { (fwd(4, &42) rescue $!.class) }.uniq
+    "#), @"[TypeError]");
+}
+
+#[test]
 fn test_forwardable_callee_splat_call_site_stays_dynamic() {
     assert_snapshot!(inspect("
         def target(*a, **k) = [a, k]
