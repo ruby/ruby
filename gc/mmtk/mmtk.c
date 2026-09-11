@@ -1745,16 +1745,18 @@ rb_gc_impl_stat_heap(void *objspace_ptr, VALUE heap_name, VALUE hash_or_sym)
 
 // Miscellaneous
 
-#define RB_GC_OBJECT_METADATA_ENTRY_COUNT 1
+#define RB_GC_OBJECT_METADATA_ENTRY_COUNT 2
 static struct rb_gc_object_metadata_entry object_metadata_entries[RB_GC_OBJECT_METADATA_ENTRY_COUNT + 1];
 
 struct rb_gc_object_metadata_entry *
 rb_gc_impl_object_metadata(void *objspace_ptr, VALUE obj)
 {
+    static ID ID_wb_protected;
     static ID ID_object_id;
 
     if (!ID_object_id) {
 #define I(s) ID_##s = rb_intern(#s);
+        I(wb_protected);
         I(object_id);
 #undef I
     }
@@ -1768,6 +1770,7 @@ rb_gc_impl_object_metadata(void *objspace_ptr, VALUE obj)
     n++; \
 } while (0)
 
+    if (!mmtk_object_wb_unprotected_p((MMTk_ObjectReference)obj)) SET_ENTRY(wb_protected, Qtrue);
     if (rb_obj_id_p(obj)) SET_ENTRY(object_id, rb_obj_id(obj));
 
     object_metadata_entries[n].name = 0;
