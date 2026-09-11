@@ -1281,23 +1281,26 @@ fd_waiters_arm(int fd, struct rb_fd_waiters *e, uint32_t want, bool consumed)
     }
 #elif HAVE_SYS_EPOLL_H
     if (want == 0) {
-        // A delivered oneshot event has already disarmed the fd; otherwise
-        // disarm by MOD to no events.  Either way the registration stays, so
-        // the next wait is one MOD instead of DEL + ADD.
+        // A delivered oneshot event has already disarmed the fd; otherwise DEL
+        // it.  MOD to no events would not do: EPOLLHUP and EPOLLERR are
+        // reported whatever the mask asks for, and without EPOLLONESHOT they
+        // are reported level-triggered, so a registration left behind by a
+        // waiter that gave up (kill, interrupt, timeout) spins the timer
+        // thread once the fd hangs up -- and a spinning timer thread never
+        // reaches its timeout branch, the only place that mints an snt.
         if (!consumed && e->registered) {
-            struct epoll_event off = { .events = 0, .data = { .u64 = 0 } };
-            if (epoll_ctl(timer_th.event_fd, EPOLL_CTL_MOD, fd, &off) == -1) {
+            if (epoll_ctl(timer_th.event_fd, EPOLL_CTL_DEL, fd, NULL) == -1) {
                 switch (errno) {
                   case EBADF:
                   case ENOENT:
                     // the fd is already closed or gone from the set
-                    e->registered = false;
                     break;
                   default:
                     perror("epoll_ctl");
                     rb_bug("fd_waiters_arm/epoll_ctl disarm failed (fd:%d errno:%d)", fd, errno);
                 }
             }
+            e->registered = false;
         }
         // Anything epoll_wait already queued for the old arming is stale now.
         e->generation++;

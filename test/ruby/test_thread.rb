@@ -1687,6 +1687,26 @@ q.pop
     end;
   end
 
+  def test_mn_threads_killed_io_waiter_does_not_spin
+    assert_separately([{'RUBY_MN_THREADS' => '1'}], "#{<<~"begin;"}\n#{<<~'end;'}", timeout: 30)
+    begin;
+      r, w = IO.pipe
+      th = Thread.new { r.read(1) }
+      sleep 0.1 # let th park in the M:N poller
+      th.kill
+      th.join
+      w.close # r hangs up while the poller still holds a registration for it
+
+      t0 = Process.clock_gettime(Process::CLOCK_PROCESS_CPUTIME_ID)
+      sleep 0.3
+      cpu = Process.clock_gettime(Process::CLOCK_PROCESS_CPUTIME_ID) - t0
+      # A spinning timer thread never reaches its timeout branch, which under
+      # RUBY_MN_THREADS=2 is the only thing that can serve the exiting Ractor.
+      assert_operator cpu, :<, 0.15, "timer thread spins on an fd nobody waits on"
+      r.close
+    end;
+  end
+
   # [Bug #21926]
   def test_thread_join_during_finalizers
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}", timeout: 60)
