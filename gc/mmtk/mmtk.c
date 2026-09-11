@@ -1054,6 +1054,10 @@ rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags
     alloc_obj[0] = flags;
     alloc_obj[1] = klass;
 
+    if (RB_UNLIKELY(!wb_protected)) {
+        mmtk_register_wb_unprotected_object((MMTk_ObjectReference)alloc_obj);
+    }
+
     if (semantics == MMTK_ALLOCATION_SEMANTICS_LOS || ractor_cache->bump_pointer == NULL) {
         mmtk_post_alloc(ractor_cache->mutator, (void*)alloc_obj, total_size, semantics);
     }
