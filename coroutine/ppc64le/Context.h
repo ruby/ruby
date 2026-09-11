@@ -13,6 +13,8 @@
 enum {
   COROUTINE_REGISTERS =
   20  /* 18 general purpose registers (r14-r31), 1 special register (cr) and 1 return address */
+  + 18 /* non-volatile FP registers f14-f31 */
+  + 24 /* non-volatile vector registers v20-v31, 16 bytes each */
   + 4  /* space for fiber_entry() to store the link register */
 };
 
