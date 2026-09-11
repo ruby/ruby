@@ -17,8 +17,8 @@
 PREFIXED_SYMBOL(coroutine_transfer):
 
 #if defined(__CET__) && (__CET__ & 0x01) != 0
-        /* IBT landing pad */
-        endbr64
+	/* IBT landing pad */
+	endbr64
 #endif
 
 	# Make space on the stack for 6 registers:
