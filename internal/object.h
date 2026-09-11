@@ -12,6 +12,7 @@
 
 /* object.c */
 
+VALUE rb_obj_alloc_copy(VALUE obj);
 VALUE rb_class_allocate_instance(VALUE klass);
 VALUE rb_class_allocate_instance_capa(VALUE klass, uint8_t /* attr_index_t */ max_iv_count);
 VALUE rb_class_search_ancestor(VALUE klass, VALUE super);
