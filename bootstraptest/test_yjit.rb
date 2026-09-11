@@ -3819,9 +3819,12 @@ assert_equal 'ok', %q{
     s.m1 = 1
   end
 
-  max_embedded_members = (GC::INTERNAL_CONSTANTS[:RVARGC_MAX_ALLOCATE_SIZE] -
-                          GC::INTERNAL_CONSTANTS[:RBASIC_SIZE] -
-                          GC::INTERNAL_CONSTANTS[:RVALUE_OVERHEAD]) / 8
+  max_alloc_size, rbasic_size, rvalue_overhead = GC::INTERNAL_CONSTANTS.fetch_values(
+        :RVARGC_MAX_ALLOCATE_SIZE,
+        :RBASIC_SIZE,
+        :RVALUE_OVERHEAD
+      ) { skip(:ok) }
+  max_embedded_members = (max_alloc_size - rbasic_size - rvalue_overhead) / 8
   S = Struct.new(*(1..(max_embedded_members + 1)).map { |i| :"m#{i}" })
   foo(S.new) # compile the inline store on a non-frozen receiver
   foo(S.new)
@@ -3860,9 +3863,12 @@ assert_equal '["foo", [1, 2], {k: :v}, "bar", "baz"]', %q{
     s.m5 = e
   end
 
-  max_embedded_members = (GC::INTERNAL_CONSTANTS[:RVARGC_MAX_ALLOCATE_SIZE] -
-                          GC::INTERNAL_CONSTANTS[:RBASIC_SIZE] -
-                          GC::INTERNAL_CONSTANTS[:RVALUE_OVERHEAD]) / 8
+  max_alloc_size, rbasic_size, rvalue_overhead = GC::INTERNAL_CONSTANTS.fetch_values(
+        :RVARGC_MAX_ALLOCATE_SIZE,
+        :RBASIC_SIZE,
+        :RVALUE_OVERHEAD
+      ) { skip(:ok) }
+  max_embedded_members = (max_alloc_size - rbasic_size - rvalue_overhead) / 8
   S = Struct.new(*(1..(max_embedded_members + 1)).map { |i| :"m#{i}" })
   s = S.new
   foo(s, "f", [], {}, "b", "z") # compile
