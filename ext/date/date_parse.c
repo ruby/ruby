@@ -2590,7 +2590,11 @@ date__iso8601(VALUE str)
 }
 
 #undef SNUM
-#define SNUM 8
+#define SNUM 9
+
+#ifndef HAVE_RB_CATEGORY_WARN
+#define rb_category_warn(category, fmt) rb_warn(fmt)
+#endif
 
 static int
 rfc3339_cb(VALUE m, VALUE hash)
@@ -2604,16 +2608,24 @@ rfc3339_cb(VALUE m, VALUE hash)
 	    s[i] = rb_reg_nth_match(i, m);
     }
 
+    {
+	int c = RSTRING_PTR(s[4])[0];
+	if (c != 't' && c != 'T' && c != ' ')
+	    rb_category_warn(RB_WARN_CATEGORY_DEPRECATED,
+			     "Invalid RFC3339 date time separator provided, "
+			     "this will raise an error in a future version.");
+    }
+
     set_hash("year", str2num(s[1]));
     set_hash("mon", str2num(s[2]));
     set_hash("mday", str2num(s[3]));
-    set_hash("hour", str2num(s[4]));
-    set_hash("min", str2num(s[5]));
-    set_hash("sec", str2num(s[6]));
-    set_hash("zone", s[8]);
-    set_hash("offset", date_zone_to_diff(s[8]));
-    if (!NIL_P(s[7]))
-	set_hash("sec_fraction", sec_fraction(s[7]));
+    set_hash("hour", str2num(s[5]));
+    set_hash("min", str2num(s[6]));
+    set_hash("sec", str2num(s[7]));
+    set_hash("zone", s[9]);
+    set_hash("offset", date_zone_to_diff(s[9]));
+    if (!NIL_P(s[8]))
+	set_hash("sec_fraction", sec_fraction(s[8]));
 
     return 1;
 }
@@ -2623,7 +2635,7 @@ rfc3339(VALUE str, VALUE hash)
 {
     static const char pat_source[] =
 	"\\A\\s*(-?\\d{4})-(\\d{2})-(\\d{2})"
-	"(?:t|\\s)"
+	"(t|\\s)"
 	"(\\d{2}):(\\d{2}):(\\d{2})(?:\\.(\\d+))?"
 	"(z|[-+]\\d{2}:\\d{2})\\s*\\z";
     static VALUE pat = Qnil;
