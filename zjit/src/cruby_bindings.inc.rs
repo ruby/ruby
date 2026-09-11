@@ -2108,6 +2108,8 @@ pub struct zjit_jit_frame {
 pub const ISEQ_BODY_OFFSET_PARAM: zjit_struct_offsets = 16;
 pub const ISEQ_BODY_OFFSET_OUTER_VARIABLES: zjit_struct_offsets = 240;
 pub const RUBY_OFFSET_THREAD_RACTOR: zjit_struct_offsets = 24;
+pub const TDATA_OFFSET_DATA: zjit_struct_offsets = 32;
+pub const RUBY_OFFSET_ENCODING_INDEX: zjit_struct_offsets = 128;
 pub type zjit_struct_offsets = u32;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -2214,6 +2216,7 @@ unsafe extern "C" {
     pub static mut rb_cObject: VALUE;
     pub static mut rb_cArray: VALUE;
     pub static mut rb_cClass: VALUE;
+    pub static mut rb_cEncoding: VALUE;
     pub static mut rb_cFalseClass: VALUE;
     pub static mut rb_cFloat: VALUE;
     pub static mut rb_cHash: VALUE;

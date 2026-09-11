@@ -16356,6 +16356,120 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_string_force_encoding_inlines_for_exact_arity_and_types() {
+        eval(r#"
+            def test(s, enc) = s.force_encoding(enc)
+            test(String.new("abc"), Encoding::UTF_8)
+            test(String.new("abc"), Encoding::UTF_8)
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :s@0x1000
+          v4:BasicObject = LoadField v2, :enc@0x1001
+          Jump bb3(v1, v3, v4)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :s@1
+          v9:BasicObject = LoadArg :enc@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint NoSingletonClass(String@0x1008)
+          PatchPoint MethodRedefined(String@0x1008, force_encoding@0x1010, cme:0x1018)
+          v28:StringExact = GuardType v12, StringExact recompile
+          v29:ObjectSubclass[class_exact:Encoding] = GuardType v13, ObjectSubclass[class_exact:Encoding]
+          v30:StringExact = StringForceEncoding v28, v29
+          CheckInterrupts
+          Return v28
+        ");
+    }
+
+    #[test]
+    fn test_string_force_encoding_does_not_inline_wrong_arity() {
+        eval(r#"
+            def test_no_args(s) = s.force_encoding
+            def test_two_args(s) = s.force_encoding(Encoding::UTF_8, Encoding::UTF_8)
+            test_no_args(String.new("abc")) rescue nil
+            test_two_args(String.new("abc")) rescue nil
+        "#);
+        assert_snapshot!(hir_strings!("test_no_args", "test_two_args"), @"
+        fn test_no_args@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :s@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :s@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:BasicObject = Send v10, :force_encoding # SendFallbackReason: Argument count does not match parameter count
+          CheckInterrupts
+          Return v15
+
+        fn test_two_args@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :s@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :s@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint StableConstantNames(0x1008, Encoding::UTF_8)
+          v16:ObjectSubclass[VALUE(0x1010)] = Const Value(VALUE(0x1010))
+          PatchPoint StableConstantNames(0x1018, Encoding::UTF_8)
+          v19:ObjectSubclass[VALUE(0x1010)] = Const Value(VALUE(0x1010))
+          v21:BasicObject = Send v10, :force_encoding, v16, v19 # SendFallbackReason: Argument count does not match parameter count
+          CheckInterrupts
+          Return v21
+        ");
+    }
+
+    #[test]
+    fn test_string_force_encoding_does_not_inline_string_name() {
+        eval(r#"
+            def test(s, enc) = s.force_encoding(enc)
+            test(String.new("abc"), "UTF-8")
+            test(String.new("abc"), "UTF-8")
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :s@0x1000
+          v4:BasicObject = LoadField v2, :enc@0x1001
+          Jump bb3(v1, v3, v4)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :s@1
+          v9:BasicObject = LoadArg :enc@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint NoSingletonClass(String@0x1008)
+          PatchPoint MethodRedefined(String@0x1008, force_encoding@0x1010, cme:0x1018)
+          v28:StringExact = GuardType v12, StringExact recompile
+          v29:String = CCallWithFrame v28, :String#force_encoding@0x1040, v13
+          CheckInterrupts
+          Return v29
+        ");
+    }
+
+    #[test]
     fn test_inline_string_bytesize() {
         eval(r#"
             def test(s)

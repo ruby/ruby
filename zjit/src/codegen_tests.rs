@@ -6,7 +6,7 @@ use crate::backend::lir::Assembler;
 use crate::codegen::max_iseq_versions;
 use crate::cruby::*;
 use crate::hir::{Insn, iseq_to_hir};
-use crate::options::{get_option, rb_zjit_prepare_options, set_call_threshold, set_inline_threshold, set_max_versions, set_mem_bytes};
+use crate::options::{enable_zjit_stats, get_option, rb_zjit_prepare_options, set_call_threshold, set_inline_threshold, set_max_versions, set_mem_bytes};
 use crate::payload::IseqVersion;
 use crate::hir::tests::hir_build_tests::assert_contains_opcode;
 use crate::payload::*;
@@ -4224,6 +4224,59 @@ fn test_string_append_broken_coderange() {
         test(s, "\xFF".dup.force_encoding(Encoding::UTF_8))
         [s.bytesize, s.valid_encoding?]
     "#), @"[4, false]");
+}
+
+#[test]
+fn test_string_force_encoding_fastpath() {
+    enable_zjit_stats();
+    eval(r#"
+        def test(str, enc) = str.force_encoding(enc)
+    "#);
+    let counters = crate::state::ZJITState::get_counters();
+    let optimized_send_count_before = counters.inline_cfunc_optimized_send_count;
+    assert_snapshot!(assert_compiles(r#"
+        test("\xFF".b, Encoding::UTF_8)
+        test("\xFF".b, Encoding::UTF_8)
+        str = "\xFF".b
+        result = test(str, Encoding::UTF_8)
+        [result.equal?(str), str.bytes, str.encoding.name, str.valid_encoding?]
+    "#), @r#"[true, [255], "UTF-8", false]"#);
+    assert!(
+        counters.inline_cfunc_optimized_send_count > optimized_send_count_before,
+        "expected String#force_encoding to use the LIR fast path"
+    );
+}
+
+#[test]
+fn test_string_force_encoding_fastpath_fallbacks() {
+    eval(r#"
+        def test(str, enc) = str.force_encoding(enc)
+    "#);
+    assert_snapshot!(assert_compiles_allowing_exits(r#"
+        test(String.new("abc"), Encoding::UTF_8)
+        test(String.new("abc"), Encoding::UTF_8)
+
+        changed = "\xFF".b
+        changed_result = test(changed, Encoding::UTF_8)
+
+        frozen = String.new("abc").freeze
+        frozen_result = begin
+          test(frozen, Encoding::UTF_8)
+        rescue FrozenError
+          :frozen_error
+        end
+
+        chilled = "abc"
+        chilled_result = test(chilled, Encoding::UTF_8)
+
+        [
+          changed_result.equal?(changed),
+          changed.encoding.name,
+          changed.valid_encoding?,
+          frozen_result,
+          chilled_result.equal?(chilled),
+        ]
+    "#), @r#"[true, "UTF-8", false, :frozen_error, true]"#);
 }
 
 #[test]
