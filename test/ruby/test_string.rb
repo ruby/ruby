@@ -2689,6 +2689,7 @@ CODE
     assert_equal S(("."*15 + "<" * 17)), S(("."*15  + "x"*17)).tr({"x"=>"<"})
 
     assert_equal(S("01@3456789abcdefgHij"), S("0123456789abcdefghij").tr("h" => "H", "2" => "@"))
+    assert_equal(S("UL" * 16 ), S("\u2028<" * 16).tr("\u2028" => "U", "<" => "L"))
   end
 
   def test_tr!
