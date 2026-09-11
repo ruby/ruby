@@ -11272,12 +11272,9 @@ chomp_rs(int argc, const VALUE *argv)
     }
 }
 
-VALUE
-rb_str_chomp_string(VALUE str, VALUE rs)
+static VALUE
+str_shrink(VALUE str, long len)
 {
-    long olen = RSTRING_LEN(str);
-    long len = chompped_length(str, rs);
-    if (len >= olen) return Qnil;
     str_modify_keep_cr(str);
     STR_SET_LEN(str, len);
     TERM_FILL(&RSTRING_PTR(str)[len], TERM_LEN(str));
@@ -11285,6 +11282,15 @@ rb_str_chomp_string(VALUE str, VALUE rs)
         ENC_CODERANGE_CLEAR(str);
     }
     return str;
+}
+
+VALUE
+rb_str_chomp_string(VALUE str, VALUE rs)
+{
+    long olen = RSTRING_LEN(str);
+    long len = chompped_length(str, rs);
+    if (len >= olen) return Qnil;
+    return str_shrink(str, len);
 }
 
 /*
@@ -12602,21 +12608,13 @@ deleted_suffix_length(VALUE str, VALUE suffix)
 static VALUE
 rb_str_delete_suffix_bang(VALUE str, VALUE suffix)
 {
-    long olen, suffixlen, len;
+    long suffixlen;
     str_modifiable(str);
 
     suffixlen = deleted_suffix_length(str, suffix);
     if (suffixlen <= 0) return Qnil;
 
-    olen = RSTRING_LEN(str);
-    str_modify_keep_cr(str);
-    len = olen - suffixlen;
-    STR_SET_LEN(str, len);
-    TERM_FILL(&RSTRING_PTR(str)[len], TERM_LEN(str));
-    if (ENC_CODERANGE(str) != ENC_CODERANGE_7BIT) {
-        ENC_CODERANGE_CLEAR(str);
-    }
-    return str;
+    return str_shrink(str, RSTRING_LEN(str) - suffixlen);
 }
 
 /*
