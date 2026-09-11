@@ -846,14 +846,7 @@ parse_lex_token(pm_parser_t *parser, pm_token_t *token, void *data) {
     parse_lex_data_t *parse_lex_data = (parse_lex_data_t *) data;
 
     VALUE value = pm_token_new(parser, token, parse_lex_data->encoding, parse_lex_data->source, parse_lex_data->freeze);
-    VALUE yields = rb_assoc_new(value, INT2FIX(pm_parser_lex_state(parser)));
-
-    if (parse_lex_data->freeze) {
-        rb_obj_freeze(value);
-        rb_obj_freeze(yields);
-    }
-
-    rb_ary_push(parse_lex_data->tokens, yields);
+    rb_ary_push(parse_lex_data->tokens, value);
 }
 
 /**
@@ -874,9 +867,7 @@ parse_lex_encoding_changed_callback(pm_parser_t *parser) {
     VALUE next_tokens = rb_ary_new();
 
     for (long index = 0; index < RARRAY_LEN(tokens); index++) {
-        VALUE yields = rb_ary_entry(tokens, index);
-        VALUE token = rb_ary_entry(yields, 0);
-
+        VALUE token = rb_ary_entry(tokens, index);
         VALUE value = rb_ivar_get(token, rb_intern("@value"));
         VALUE next_value = rb_str_dup(value);
 
@@ -887,18 +878,17 @@ parse_lex_encoding_changed_callback(pm_parser_t *parser) {
             parse_lex_data->source,
             rb_ivar_get(token, rb_intern("@type")),
             next_value,
-            rb_ivar_get(token, rb_intern("@location"))
+            rb_ivar_get(token, rb_intern("@location")),
+            rb_ivar_get(token, rb_intern("@state")),
         };
 
-        VALUE next_token = rb_class_new_instance(4, next_token_argv, rb_cPrismToken);
-        VALUE next_yields = rb_assoc_new(next_token, rb_ary_entry(yields, 1));
+        VALUE next_token = rb_class_new_instance(5, next_token_argv, rb_cPrismToken);
 
         if (parse_lex_data->freeze) {
             rb_obj_freeze(next_token);
-            rb_obj_freeze(next_yields);
         }
 
-        rb_ary_push(next_tokens, next_yields);
+        rb_ary_push(next_tokens, next_token);
     }
 
     rb_ary_replace(parse_lex_data->tokens, next_tokens);
@@ -1616,8 +1606,6 @@ Init_prism(void) {
     rb_ext_ractor_safe(true);
 #endif
 
-    /* Grab up references to all of the constants that we are going to need to
-     * reference throughout this extension. */
     rb_cPrism = rb_define_module("Prism");
     rb_cPrismNode = rb_define_class_under(rb_cPrism, "Node", rb_cObject);
     rb_cPrismSource = rb_define_class_under(rb_cPrism, "Source", rb_cObject);

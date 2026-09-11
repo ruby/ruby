@@ -88,12 +88,10 @@ lcov*.info
 /config.status
 /config.status.lineno
 /configure
-/coverage/simplecov
-/coverage/simplecov-html
-/coverage/doclie
 /coverage/.last_run.json
+/coverage/.report_stamp
 /coverage/.resultset.json*
-/coverage/assets
+/coverage/coverage.json
 /coverage/index.html
 /doc/capi
 /enc.mk

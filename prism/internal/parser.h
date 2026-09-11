@@ -690,15 +690,6 @@ struct pm_parser_t {
     pm_context_node_t *current_context;
 
     /*
-     * The hash keys for the hash that is currently being parsed. This is not
-     * usually necessary because it can pass it down the various call chains,
-     * but in the event that you're parsing a hash that is being directly
-     * pushed into another hash with **, we need to share the hash keys so that
-     * we can warn for the nested hash as well.
-     */
-    pm_static_literals_t *current_hash_keys;
-
-    /*
      * The encoding functions for the current file is attached to the parser as
      * it's parsing so that it can change with a magic comment.
      */

@@ -81,6 +81,18 @@ describe "IO::Buffer#transfer" do
     @buffer.null?.should == false
   end
 
+  ruby_version_is "4.1" do
+    it "raises FrozenError without transferring a frozen buffer" do
+      buffer = IO::Buffer.new(4)
+      buffer.set_string("test")
+      buffer.freeze
+
+      -> { buffer.transfer }.should.raise(FrozenError)
+      buffer.null?.should == false
+      buffer.get_string.should == "test"
+    end
+  end
+
   it "is disallowed while locked, raising IO::Buffer::LockedError" do
     @buffer = IO::Buffer.new(4)
     @buffer.locked do

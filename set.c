@@ -395,17 +395,22 @@ set_insert_wb(VALUE set, VALUE key)
 }
 
 static VALUE
-set_alloc_with_size(VALUE klass, st_index_t size)
+set_alloc_with_size_and_type(VALUE klass, st_index_t size, const struct st_hash_type *type)
 {
     VALUE set;
     struct set_object *sobj;
 
     set = TypedData_Make_Struct(klass, struct set_object, &set_data_type, sobj);
-    set_init_table_with_size(&sobj->table, &objhash, size);
+    set_init_table_with_size(&sobj->table, type, size);
 
     return set;
 }
 
+static VALUE
+set_alloc_with_size(VALUE klass, st_index_t size)
+{
+    return set_alloc_with_size_and_type(klass, size, &objhash);
+}
 
 static VALUE
 set_s_alloc(VALUE klass)
@@ -2215,13 +2220,13 @@ set_to_hash_i(st_data_t key, st_data_t arg)
 static VALUE
 set_i_to_h(VALUE set)
 {
-    st_index_t size = RSET_SIZE(set);
+    long size = RSET_SIZE(set);
     VALUE hash;
     if (RSET_COMPARE_BY_IDENTITY(set)) {
-        hash = rb_ident_hash_new_with_size(size);
+        hash = rb_ident_hash_new_capa(size);
     }
     else {
-        hash = rb_hash_new_with_size(size);
+        hash = rb_hash_new_capa(size);
     }
     rb_hash_set_default(hash, Qfalse);
 
@@ -2262,6 +2267,14 @@ static VALUE
 compat_loader(VALUE self, VALUE a)
 {
     return set_i_from_hash(self, rb_ivar_get(a, id_i_hash));
+}
+
+/* Internal C-API functions */
+
+VALUE
+rb_ident_set_new(void)
+{
+    return set_alloc_with_size_and_type(rb_cSet, 0, &identhash);
 }
 
 /* C-API functions */

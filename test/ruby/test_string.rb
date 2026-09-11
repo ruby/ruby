@@ -476,6 +476,19 @@ CODE
     assert_equal("foo", s.chomp("\n"))
     s = "foo\r"
     assert_equal("foo", s.chomp("\n"))
+
+    # capacity forces a heap buffer, so a read before the receiver leaves it
+    WIDE_ENCODINGS.each do |enc|
+      ["A", "AB", "ABC"].each do |bytes|
+        s = S(capacity: 4096)
+        s << bytes
+        s.force_encoding(enc)
+        label = "#{enc.name} #{bytes.bytesize}"
+        assert_equal(bytes.b, s.chomp.b, label)
+        assert_equal(bytes.b, s.chomp("").b, label)
+        assert_nil(s.chomp!, label)
+      end
+    end
   ensure
     $/ = save
     $VERBOSE = verbose
@@ -913,7 +926,6 @@ CODE
   end
 
   def test_undump_gc_compact_stress
-    omit "compaction doesn't work well on s390x" if RUBY_PLATFORM =~ /s390x/ # https://github.com/ruby/ruby/pull/5077
     a = S("Test") << 1 << 2 << 3 << 9 << 13 << 10
     EnvUtil.under_gc_compact_stress do
       assert_equal(a, S('"Test\\x01\\x02\\x03\\t\\r\\n"').undump)
@@ -1394,6 +1406,11 @@ CODE
     assert_equal s.object_id, s.lines {|x| res << x }.object_id
     assert_equal(S("hello\n"), res[0])
     assert_equal(S("world"),  res[1])
+
+    s = S("AB").force_encoding(Encoding::UTF_32LE)
+    sep = S("B").force_encoding(Encoding::UTF_32LE)
+
+    assert_empty(s.lines(sep).to_a)
   end
 
   def test_empty?
@@ -1433,7 +1450,6 @@ CODE
   end
 
   def test_gsub_gc_compact_stress
-    omit "compaction doesn't work well on s390x" if RUBY_PLATFORM =~ /s390x/ # https://github.com/ruby/ruby/pull/5077
     EnvUtil.under_gc_compact_stress { assert_equal(S("h<e>ll<o>"), S("hello").gsub(/([aeiou])/, S('<\1>'))) }
   end
 
@@ -1481,7 +1497,6 @@ CODE
   end
 
   def test_gsub_bang_gc_compact_stress
-    omit "compaction doesn't work well on s390x" if RUBY_PLATFORM =~ /s390x/ # https://github.com/ruby/ruby/pull/5077
     EnvUtil.under_gc_compact_stress do
       a = S("hello")
       a.gsub!(/([aeiou])/, S('<\1>'))
@@ -1797,6 +1812,19 @@ CODE
     assert_rindex(nil, S("こんにち"), S("こんにちは"))
     assert_rindex(nil, S("こ"), S("こんにちは"))
     assert_rindex(nil, S(""), S("こんにちは"))
+
+    assert_rindex(nil, S("A" * 1024), S("\u{3042}"))
+
+    # exact-size allocations, so a comparison past the last byte leaves them
+    assert_rindex(nil, S("A" * 1020 + "\u{3042}A"), S("\u{3042}\u{3044}"))
+    assert_rindex(nil, S("\u{3042}" + "A" * 1021), S("\u{3042}" * 1022))
+
+    WIDE_ENCODINGS.each do |enc|
+      pattern = "A".encode(enc)
+      stray = pattern.b[0]
+      assert_nil(S(stray).force_encoding(enc).rindex(pattern), enc.name)
+      assert_nil(S("B".encode(enc).b * 2 + stray).force_encoding(enc).rindex(pattern), enc.name)
+    end
   end
 
   def test_rjust
@@ -1839,7 +1867,6 @@ CODE
   end
 
   def test_scan_gc_compact_stress
-    omit "compaction doesn't work well on s390x" if RUBY_PLATFORM =~ /s390x/ # https://github.com/ruby/ruby/pull/5077
     EnvUtil.under_gc_compact_stress { assert_equal([["1a"], ["2b"], ["3c"]], S("1a2b3c").scan(/(\d.)/)) }
   end
 
@@ -2387,7 +2414,6 @@ CODE
   end
 
   def test_sub_gc_compact_stress
-    omit "compaction doesn't work well on s390x" if RUBY_PLATFORM =~ /s390x/ # https://github.com/ruby/ruby/pull/5077
     EnvUtil.under_gc_compact_stress do
       m = /&(?<foo>.*?);/.match(S("aaa &amp; yyy"))
       assert_equal("amp", m["foo"])
@@ -2655,6 +2681,14 @@ CODE
     assert_not_predicate(result, :ascii_only?, bug13950)
 
     assert_equal(S("XYC"), S("ABC").tr("A-AB", "XY"))
+  end
+
+  def test_tr_hash
+    assert_equal S(("A"*16 + "x" + "B"*3)), S(("A"*16  + "<" + "B"*3)).tr({"<"=>"x"})
+    assert_equal S(("x"+"A"*16 + "B"*3)), S(("<"+"A"*16 + "B"*3)).tr({"<"=>"x"})
+    assert_equal S(("."*15 + "<" * 17)), S(("."*15  + "x"*17)).tr({"x"=>"<"})
+
+    assert_equal(S("01@3456789abcdefgHij"), S("0123456789abcdefghij").tr("h" => "H", "2" => "@"))
   end
 
   def test_tr!
@@ -3021,6 +3055,10 @@ CODE
     assert_equal(["", "", "foo"], S("foo").partition(/^=*/))
 
     assert_equal([S("ab"), S("c"), S("dbce")], S("abcdbce").partition(/b\Kc/))
+
+    s = S("A").force_encoding(Encoding::UTF_16LE)
+    sep = S("A\x00").force_encoding(s.encoding)
+    assert_equal([s, "", ""], s.partition(sep))
   end
 
   def test_rpartition
@@ -3047,6 +3085,10 @@ CODE
     assert_equal("hello", hello, bug)
 
     assert_equal([S("abcdb"), S("c"), S("e")], S("abcdbce").rpartition(/b\Kc/))
+
+    s = S("A").force_encoding(Encoding::UTF_16LE)
+    sep = S("A\x00").force_encoding(s.encoding)
+    assert_equal(["", "", s], s.rpartition(sep))
   end
 
   def test_rs

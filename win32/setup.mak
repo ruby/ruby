@@ -55,10 +55,14 @@ prefix = $(prefix:\=/)
 	@cd $(srcdir:/=\)\tool && $(BASERUBY:/=\) missing-baseruby.bat --verbose || exit $(HAVE_BASERUBY:yes=non-)0
 !endif
 
+# Unlike -baseruby-, this runs in the build directory, where a just
+# built `ruby.exe` would be found prior to $PATH but cannot load the
+# standard library yet.
 -dependencies-: -baseruby-
 !if "$(HAVE_BASERUBY)" != "no"
-	@$(WIN32DIR:/=\)\rm.bat -f -r .deps
-	@$(BASERUBY:/=\) $(srcdir)/tool/mkdepend.rb --root=$(srcdir) --scope=core --nmake --output=.deps
+	@$(COMSPEC) /C "set NoDefaultCurrentDirectoryInExePath=1& \
+	$(BASERUBY:/=\) $(srcdir)/tool/mkdepend.rb --root=$(srcdir) \
+	    --scope=core --nmake --output=.deps"
 !endif
 
 -gmp-:
@@ -178,7 +182,7 @@ revision_opt = -DRUBY_REVISION=0
 
 verconf.mk: nul
 	@findstr /R /C:"^#define RUBY_ABI_VERSION " $(srcdir:/=\)\include\ruby\internal\abi.h > $(@)
-	@$(CPP) -I$(srcdir) -I$(srcdir)/include $(revision_opt) <<"Creating $(@)" > $(*F).bat && cmd /c $(*F).bat > $(@)
+	@$(CPP) -I$(srcdir) -I$(srcdir)/include $(revision_opt) <<"Creating $(@)" > $(*F).bat && cmd /c .\$(*F).bat > $(@)
 @echo off
 #define STRINGIZE0(expr) #expr
 #define STRINGIZE(x) STRINGIZE0(x)

@@ -729,6 +729,159 @@ ERROR:  Possible alternatives: non_existent_with_hint
     assert_match "1 gem installed", @ui.output
   end
 
+  def util_setup_cooldown_repo(created_at: {})
+    spec_fetcher
+
+    a1, a1_gem = util_gem "a", 1
+    a2, a2_gem = util_gem "a", 2
+
+    util_setup_compact_index a1, a2, created_at: created_at
+
+    add_to_fetcher a1, a1_gem
+    add_to_fetcher a2, a2_gem
+  end
+
+  def util_cooldown_time(days_ago)
+    (Time.now - days_ago * 86_400).utc.strftime("%Y-%m-%dT%H:%M:%SZ")
+  end
+
+  def test_execute_remote_cooldown_falls_back_to_older_version
+    util_setup_cooldown_repo created_at: {
+      "a-1" => util_cooldown_time(30),
+      "a-2" => util_cooldown_time(1),
+    }
+
+    @cmd.options[:cooldown] = 7
+    @cmd.options[:args] = %w[a]
+
+    use_ui @ui do
+      assert_raise Gem::MockGemUi::SystemExitException, @ui.error do
+        @cmd.execute
+      end
+    end
+
+    assert_equal %w[a-1], @cmd.installed_specs.map(&:full_name)
+    assert_match "The following gem versions were skipped by the cooldown setting:", @ui.output
+    assert_match "* a 2 (available in 6 days), resolved 1 instead", @ui.output
+  end
+
+  def test_execute_remote_cooldown_explicit_version_error
+    util_setup_cooldown_repo created_at: {
+      "a-1" => util_cooldown_time(30),
+      "a-2" => util_cooldown_time(1),
+    }
+
+    @cmd.options[:cooldown] = 7
+    @cmd.options[:version] = Gem::Requirement.new("= 2")
+    @cmd.options[:args] = %w[a]
+
+    use_ui @ui do
+      e = assert_raise Gem::MockGemUi::TermError do
+        @cmd.execute
+      end
+
+      assert_equal 2, e.exit_code
+    end
+
+    assert_empty @cmd.installed_specs
+    assert_match "cooldown period (7 days)", @ui.error
+    assert_match "--cooldown 0", @ui.error
+  end
+
+  def test_execute_remote_cooldown_unparsable_created_at_fails_open
+    util_setup_cooldown_repo created_at: {
+      "a-1" => util_cooldown_time(30),
+      "a-2" => "#{"9" * 400}-01-01T00:00:00Z",
+    }
+
+    @cmd.options[:cooldown] = 7
+    @cmd.options[:args] = %w[a]
+
+    use_ui @ui do
+      assert_raise Gem::MockGemUi::SystemExitException, @ui.error do
+        @cmd.execute
+      end
+    end
+
+    assert_equal %w[a-2], @cmd.installed_specs.map(&:full_name)
+    refute_match "skipped by the cooldown setting", @ui.output
+  end
+
+  def test_execute_remote_cooldown_missing_created_at_fails_open
+    util_setup_cooldown_repo
+
+    @cmd.options[:cooldown] = 7
+    @cmd.options[:args] = %w[a]
+
+    use_ui @ui do
+      assert_raise Gem::MockGemUi::SystemExitException, @ui.error do
+        @cmd.execute
+      end
+    end
+
+    assert_equal %w[a-2], @cmd.installed_specs.map(&:full_name)
+    assert_equal 1, @ui.error.scan("publish times").size
+  end
+
+  def test_execute_remote_cooldown_from_gemrc
+    util_setup_cooldown_repo created_at: {
+      "a-1" => util_cooldown_time(30),
+      "a-2" => util_cooldown_time(1),
+    }
+
+    orig_cooldown = Gem.configuration.cooldown
+    Gem.configuration.cooldown = 7
+
+    @cmd.options[:args] = %w[a]
+
+    use_ui @ui do
+      assert_raise Gem::MockGemUi::SystemExitException, @ui.error do
+        @cmd.execute
+      end
+    end
+
+    assert_equal %w[a-1], @cmd.installed_specs.map(&:full_name)
+  ensure
+    Gem.configuration.cooldown = orig_cooldown
+  end
+
+  def test_execute_remote_cooldown_zero_overrides_gemrc
+    util_setup_cooldown_repo created_at: {
+      "a-1" => util_cooldown_time(30),
+      "a-2" => util_cooldown_time(1),
+    }
+
+    orig_cooldown = Gem.configuration.cooldown
+    Gem.configuration.cooldown = 7
+
+    @cmd.options[:cooldown] = 0
+    @cmd.options[:args] = %w[a]
+
+    use_ui @ui do
+      assert_raise Gem::MockGemUi::SystemExitException, @ui.error do
+        @cmd.execute
+      end
+    end
+
+    assert_equal %w[a-2], @cmd.installed_specs.map(&:full_name)
+  ensure
+    Gem.configuration.cooldown = orig_cooldown
+  end
+
+  def test_cooldown_option
+    @cmd.handle_options %w[--cooldown 7 a]
+
+    assert_equal 7, @cmd.options[:cooldown]
+  end
+
+  def test_cooldown_option_negative
+    e = assert_raise Gem::OptionParser::InvalidArgument do
+      @cmd.handle_options %w[--cooldown -7 a]
+    end
+
+    assert_match "--cooldown", e.message
+  end
+
   def test_execute_with_invalid_gem_file
     FileUtils.touch("a.gem")
 
@@ -1587,6 +1740,9 @@ ERROR:  Possible alternatives: non_existent_with_hint
 
         write_file(extconf_path) do |io|
           io.puts "require 'mkmf'"
+          # Force the build to fail at the make stage so the build log is
+          # written. The make command line (including -j) is recorded there.
+          io.puts "File.write('a.c', '#error forced build failure for test')"
           io.puts "create_makefile '#{spec.name}'"
         end
 
@@ -1595,12 +1751,12 @@ ERROR:  Possible alternatives: non_existent_with_hint
     end
 
     use_ui @ui do
-      assert_raise Gem::MockGemUi::SystemExitException, @ui.error do
+      assert_raise Gem::MockGemUi::TermError, @ui.error do
         @cmd.invoke "a", "-j4"
       end
     end
 
-    gem_make_out = File.read(File.join(gemspec.extension_dir, "gem_make.out"))
+    gem_make_out = File.read(File.join(gemspec.build_info_dir, "#{gemspec.full_name}.gem_make.out"))
     if vc_windows? && nmake_found?
       refute_includes(gem_make_out, " -j4")
     else

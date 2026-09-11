@@ -46,7 +46,7 @@ module Prism
     end
 
     def test_first_lexed_token
-      encoding = Prism.lex("# encoding: ascii-8bit").value[0][0].value.encoding
+      encoding = Prism.lex("# encoding: ascii-8bit").value[0].value.encoding
       assert_equal Encoding::ASCII_8BIT, encoding
     end
 

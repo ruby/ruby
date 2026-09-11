@@ -1327,6 +1327,11 @@ class TestHash < Test::Unit::TestCase
     assert_equal({1=>8, 2=>4, 3=>4, 5=>7}, h1.merge(h2, h3) {|k, v1, v2| k + v1 + v2 })
   end
 
+  def test_merge_during_gc
+    hash = @cls[a: 1, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7, h: 8]
+    assert_equal(9, EnvUtil.under_gc_stress(0x04) { hash.merge(i: 9) }[:i])
+  end
+
   def test_merge_on_identhash
     h = @cls[1=>2,3=>4,5=>6]
     h.compare_by_identity
@@ -1958,10 +1963,23 @@ class TestHashOnly < Test::Unit::TestCase
       end
     end
     obj.hash_calls = 0
-    hash = {obj => 42}
+
+    ar_hash = {obj => 42}
     assert_equal(1, obj.hash_calls)
-    yield hash
+    yield ar_hash
     assert_equal(1, obj.hash_calls)
+
+    st_hash = {a:1, b:2, c:3, d:4, e:5, f:6, g:7, h:8, obj => 42}
+    assert_equal(2, obj.hash_calls)
+    yield st_hash
+    assert_equal(2, obj.hash_calls)
+
+    st_hash.keys.first(8).each do |key|
+      st_hash.delete(key)
+    end
+    assert_equal(2, obj.hash_calls)
+    yield st_hash
+    assert_equal(2, obj.hash_calls)
   end
 
   def test_select_reject_will_not_rehash
@@ -2102,6 +2120,36 @@ class TestHashOnly < Test::Unit::TestCase
     h1 = { a: 1, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7, h: 8, i: 9 }
     # AR hash
     h2 = { a: 1, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7 }
+    # Replace ST hash with AR hash
+    h1.replace(h2)
+    assert_equal(h2, h1)
+  end
+
+  def test_replace_ar_with_st
+    # AR hash
+    h1 = { a: 1, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7 }
+    # ST hash
+    h2 = { a: 1, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7, h: 8, i: 9 }
+    # Replace AR hash with ST hash
+    h1.replace(h2)
+    assert_equal(h2, h1)
+  end
+
+  def test_replace_ar_with_ar
+    # AR hash
+    h1 = { a: 1, b: 2 }
+    # AR hash
+    h2 = { a: 1 }
+    # Replace AR hash with AR hash
+    h1.replace(h2)
+    assert_equal(h2, h1)
+  end
+
+  def test_replace_st_with_st
+    # ST hash
+    h1 = { a: 1, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7, h: 8, i: 9 }
+    # ST hash
+    h2 = { a: 9, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7, h: 8, i: 9 }
     # Replace ST hash with AR hash
     h1.replace(h2)
     assert_equal(h2, h1)

@@ -354,6 +354,7 @@ ruby "0"
             a (1)
             b (1)
               a (~> 1.0)
+            b (3-x86_64-linux)
 
         PLATFORMS
           #{Gem::Platform::RUBY}
@@ -365,9 +366,56 @@ ruby "0"
 
     rs.load_gemdeps "gem.deps.rb"
 
+    assert_equal [dep("b")], rs.dependencies
+
     lock_set = rs.sets.find {|set| Gem::Resolver::LockSet === set }
     refute_nil lock_set, "LockSet should be created from GEM section"
-    assert_equal %w[a-1 b-1], lock_set.specs.map(&:full_name).sort
+    assert_equal %w[a-1 b-1 b-3], lock_set.specs.map(&:full_name).sort
+
+    expected = [
+      Gem::Platform::RUBY,
+      Gem::Platform::RUBY,
+      Gem::Platform.new("x86_64-linux"),
+    ]
+
+    assert_equal expected, lock_set.specs.sort_by(&:full_name).map(&:platform)
+
+    spec = lock_set.specs.find {|s| s.full_name == "b-1" }
+
+    assert_equal [dep("a", "~> 1.0")], spec.dependencies
+  end
+
+  def test_load_gemdeps_with_lockfile_gem_section_multiple_remotes
+    rs = Gem::RequestSet.new
+
+    File.open "gem.deps.rb", "w" do |io|
+      io.puts 'gem "a"'
+    end
+
+    File.open "gem.deps.rb.lock", "w" do |io|
+      io.puts <<~LOCKFILE
+        GEM
+          remote: https://gems.example/
+          remote: https://other.example/
+          specs:
+            a (2)
+
+        PLATFORMS
+          #{Gem::Platform::RUBY}
+
+        DEPENDENCIES
+          a
+      LOCKFILE
+    end
+
+    rs.load_gemdeps "gem.deps.rb"
+
+    lock_set = rs.sets.find {|set| Gem::Resolver::LockSet === set }
+    refute_nil lock_set, "LockSet should be created from GEM section"
+    assert_equal %w[a-2], lock_set.specs.map(&:full_name)
+
+    assert_equal %w[https://gems.example/ https://other.example/],
+                 lock_set.specs.flat_map {|s| s.sources.map {|src| src.uri.to_s } }
   end
 
   def test_load_gemdeps_with_lockfile_git_section
@@ -383,7 +431,9 @@ ruby "0"
           remote: git://example/a.git
           revision: deadbeef
           specs:
-            a (1)
+            a (2)
+              b (>= 3)
+              c
 
         PLATFORMS
           #{Gem::Platform::RUBY}
@@ -395,9 +445,42 @@ ruby "0"
 
     rs.load_gemdeps "gem.deps.rb"
 
+    assert_equal [dep("a", "= 2")], rs.dependencies
+
     git_set = rs.sets.find {|set| Gem::Resolver::GitSet === set }
     refute_nil git_set, "GitSet should be created from GIT section"
-    assert_includes git_set.specs.keys, "a"
+    assert_equal %w[a-2], git_set.specs.values.map(&:full_name)
+
+    assert_equal [dep("b", ">= 3"), dep("c")],
+                 git_set.specs.values.first.dependencies
+  end
+
+  def test_load_gemdeps_with_lockfile_git_section_prerelease
+    rs = Gem::RequestSet.new
+
+    File.open "gem.deps.rb", "w" do |io|
+      io.puts 'gem "a", :git => "git://example/a.git"'
+    end
+
+    File.open "gem.deps.rb.lock", "w" do |io|
+      io.puts <<~LOCKFILE
+        GIT
+          remote: git://example/a.git
+          revision: deadbeef
+          specs:
+            a (1.0.0.pre1)
+
+        PLATFORMS
+          #{Gem::Platform::RUBY}
+
+        DEPENDENCIES
+          a!
+      LOCKFILE
+    end
+
+    rs.load_gemdeps "gem.deps.rb"
+
+    assert_equal [dep("a", "= 1.0.0.pre1")], rs.dependencies
   end
 
   def test_load_gemdeps_with_lockfile_path_section
@@ -426,9 +509,147 @@ ruby "0"
 
     rs.load_gemdeps "gem.deps.rb"
 
+    assert_equal [dep("a", "= 1")], rs.dependencies
+
     vendor_set = rs.sets.find {|set| Gem::Resolver::VendorSet === set }
     refute_nil vendor_set, "VendorSet should be created from PATH section"
     assert_equal %w[a-1], vendor_set.specs.values.map(&:full_name)
+  end
+
+  def test_load_gemdeps_with_lockfile_path_section_newer_than_lockfile
+    _, _, directory = vendor_gem "a", 2
+
+    rs = Gem::RequestSet.new
+
+    File.open "gem.deps.rb", "w" do |io|
+      io.puts "gem \"a\", :path => #{directory.inspect}"
+    end
+
+    File.open "gem.deps.rb.lock", "w" do |io|
+      io.puts <<~LOCKFILE
+        PATH
+          remote: #{directory}
+          specs:
+            a (1)
+
+        PLATFORMS
+          #{Gem::Platform::RUBY}
+
+        DEPENDENCIES
+          a!
+      LOCKFILE
+    end
+
+    rs.load_gemdeps "gem.deps.rb"
+
+    assert_equal [dep("a", "= 2")], rs.dependencies
+
+    vendor_set = rs.sets.find {|set| Gem::Resolver::VendorSet === set }
+    assert_equal %w[a-2], vendor_set.specs.values.map(&:full_name)
+    assert_equal %w[a-2], vendor_set.find_all(dep("a", "= 2")).map(&:full_name)
+  end
+
+  def test_load_lockfile_does_not_load_plugins_for_a_plugin_source_section
+    require "bundler"
+    require "bundler/plugin"
+
+    plugin = File.join @tempdir, ".bundle", "plugin", "plugins", "example"
+    loaded = File.join @tempdir, "plugin-was-loaded"
+
+    FileUtils.mkdir_p File.join(plugin, "lib")
+
+    File.open File.join(@tempdir, "Gemfile"), "w" do |io|
+      io.puts 'source "https://rubygems.org"'
+    end
+
+    File.open File.join(plugin, "plugins.rb"), "w" do |io|
+      io.puts "File.write #{loaded.dump}, \"loaded\""
+      io.puts "class ExampleSource"
+      io.puts "  include Bundler::Plugin::API::Source"
+      io.puts "end"
+      io.puts 'Bundler::Plugin::API.source("example_type", ExampleSource)'
+    end
+
+    File.open File.join(@tempdir, ".bundle", "plugin", "index"), "w" do |io|
+      io.puts <<~INDEX
+        ---
+        commands:
+        hooks:
+        load_paths:
+          example:
+          - plugins/example/lib
+        plugin_paths:
+          example: plugins/example
+        sources:
+          example_type: example
+      INDEX
+    end
+
+    File.open "gem.deps.rb.lock", "w" do |io|
+      io.puts <<~LOCKFILE
+        PLUGIN SOURCE
+          remote: https://gems.example/
+          type: example_type
+          specs:
+            a (1)
+
+        PLATFORMS
+          #{Gem::Platform::RUBY}
+
+        DEPENDENCIES
+          a!
+      LOCKFILE
+    end
+
+    Bundler::Plugin.reset!
+
+    rs = Gem::RequestSet.new
+    rs.load_lockfile "gem.deps.rb.lock"
+
+    assert_path_not_exist loaded
+    assert_equal [dep("a")], rs.dependencies
+  ensure
+    Bundler::Plugin.reset!
+  end
+
+  def test_load_lockfile_keeps_bundler_root_when_it_cannot_be_swapped
+    require "bundler"
+
+    previous_root = Bundler.instance_variable_get(:@root)
+    Bundler.instance_variable_set(:@root, Pathname.new(@tempdir))
+
+    rs = Gem::RequestSet.new
+    def rs.require(*)
+      raise LoadError
+    end
+
+    assert_raise LoadError do
+      rs.load_lockfile "gem.deps.rb.lock"
+    end
+
+    assert_equal Pathname.new(@tempdir), Bundler.instance_variable_get(:@root)
+  ensure
+    Bundler.instance_variable_set(:@root, previous_root)
+  end
+
+  def test_load_lockfile_restores_bundler_root_when_parsing_fails
+    require "bundler"
+
+    previous_root = Bundler.instance_variable_get(:@root)
+    Bundler.instance_variable_set(:@root, Pathname.new(File.join(@tempdir, "elsewhere")))
+
+    File.open "gem.deps.rb.lock", "w" do |io|
+      io.puts "<<<<<<< HEAD"
+    end
+
+    assert_raise Bundler::LockfileError do
+      Gem::RequestSet.new.load_lockfile "gem.deps.rb.lock"
+    end
+
+    assert_equal Pathname.new(File.join(@tempdir, "elsewhere")),
+                 Bundler.instance_variable_get(:@root)
+  ensure
+    Bundler.instance_variable_set(:@root, previous_root)
   end
 
   def test_load_gemdeps_with_missing_lockfile

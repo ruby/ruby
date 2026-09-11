@@ -134,8 +134,6 @@ class TestThreadInstrumentation < Test::Unit::TestCase
   end
 
   def test_blocking_on_ractor
-    # TODO: turn back on and fix when ractor-local GC (rlgc) lands
-    omit "this is failing CI and rlgc will change how this works so let's wait until it lands to fix it" if ENV["GITHUB_WORKFLOW"]
     assert_ractor(<<-"RUBY", require_relative: "helper", require: "-test-/thread/instrumentation")
       include ThreadInstrumentation::TestHelper
 
@@ -163,9 +161,6 @@ class TestThreadInstrumentation < Test::Unit::TestCase
   end
 
   def test_sleeping_inside_ractor
-    # TODO: turn back and fix when ractor-local GC (rlgc) lands
-    omit "This test is flaky and intermittently failing" if ENV['GITHUB_WORKFLOW']
-
     assert_ractor(<<-"RUBY", require_relative: "helper", require: "-test-/thread/instrumentation")
       include ThreadInstrumentation::TestHelper
 

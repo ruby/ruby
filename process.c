@@ -591,7 +591,7 @@ static const rb_data_type_t rb_process_status_type = {
         .dfree = RUBY_DEFAULT_FREE,
         .dsize = NULL,
     },
-    .flags = RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE,
+    .flags = RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE | RUBY_TYPED_FROZEN_SHAREABLE,
 };
 
 static VALUE
@@ -8123,6 +8123,13 @@ ruby_real_ms_time(void)
  *  SUS defines +:CLOCK_REALTIME+ as mandatory but
  *  +:CLOCK_MONOTONIC+, +:CLOCK_PROCESS_CPUTIME_ID+,
  *  and +:CLOCK_THREAD_CPUTIME_ID+ are optional.
+ *
+ *  +:CLOCK_THREAD_CPUTIME_ID+ measures the native thread that reads it, not
+ *  the Ruby thread.  Under the M:N thread scheduler (see +RUBY_MN_THREADS+) a
+ *  Ruby thread can move between native threads, so two reads taken from one
+ *  Ruby thread may come from different native threads, and the later read can
+ *  be smaller than the earlier one.  To measure elapsed time there, use
+ *  +:CLOCK_PROCESS_CPUTIME_ID+ or +:CLOCK_MONOTONIC+.
  *
  *  Certain emulations are used when the given +clock_id+
  *  is not supported directly:

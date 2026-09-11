@@ -2497,11 +2497,17 @@ module Net   #:nodoc:
             # still read the received response.
           end
 
+          informational_count = 0
           begin
             res = HTTPResponse.read_new(@socket)
             res.decode_content = req.decode_content
             res.body_encoding = @response_body_encoding
             res.ignore_eof = @ignore_eof
+            if res.kind_of?(HTTPInformation)
+              informational_count += 1
+              raise HTTPBadResponse, 'too many informational responses' if
+                informational_count > HTTPResponse::MAX_INFORMATIONAL_RESPONSES
+            end
           end while res.kind_of?(HTTPInformation)
 
           res.uri = req.uri

@@ -3,12 +3,20 @@
 RSpec.describe Bundler::EndpointSpecification do
   let(:name)         { "foo" }
   let(:version)      { "1.0.0" }
-  let(:platform)     { Gem::Platform::RUBY }
+  let(:suffix)       { Gem::Platform::RUBY }
   let(:dependencies) { [] }
   let(:spec_fetcher) { double(:spec_fetcher) }
   let(:metadata)     { nil }
 
-  subject(:spec) { described_class.new(name, version, platform, spec_fetcher, dependencies, metadata) }
+  subject(:spec) { described_class.new(name, version, suffix, spec_fetcher, dependencies, metadata) }
+
+  def with_tz(tz)
+    orig_tz = ENV["TZ"]
+    ENV["TZ"] = tz
+    yield
+  ensure
+    ENV["TZ"] = orig_tz
+  end
 
   describe "#build_dependency" do
     let(:name)           { "foo" }
@@ -36,6 +44,55 @@ RSpec.describe Bundler::EndpointSpecification do
   end
 
   describe "#parse_metadata" do
+    context "when a content-addressed suffix has platform metadata" do
+      let(:suffix) { "abc1234567" }
+      let(:metadata) { { "platform" => ["arm64-darwin"], "ruby" => ["~> 3.4.0"] } }
+
+      it "uses the platform from the metadata" do
+        expect(spec.platform).to eq(Gem::Platform.new("arm64-darwin"))
+        expect(spec.content_address).to eq("abc1234567")
+      end
+
+      it "includes the content address in full_name" do
+        expect(spec.full_name).to eq("foo-1.0.0-abc1234567")
+      end
+    end
+
+    context "when the suffix is an ordinary platform" do
+      let(:suffix) { "x86_64-linux" }
+
+      it "uses the suffix as the platform without a content address" do
+        expect(spec.platform).to eq(Gem::Platform.new("x86_64-linux"))
+        expect(spec.content_address).to be_nil
+      end
+    end
+
+    context "when a content-addressed suffix has no platform metadata" do
+      let(:suffix) { "abc1234567" }
+
+      it "treats the suffix as a platform without a content address" do
+        expect(spec.content_address).to be_nil
+      end
+    end
+
+    context "when a content-addressed suffix has no ruby metadata" do
+      let(:suffix) { "abc1234567" }
+      let(:metadata) { { "platform" => ["arm64-darwin"] } }
+
+      it "does not assign a content address" do
+        expect(spec.content_address).to be_nil
+      end
+    end
+
+    context "when a content-addressed suffix has non-ABI ruby metadata" do
+      let(:suffix) { "abc1234567" }
+      let(:metadata) { { "platform" => ["arm64-darwin"], "ruby" => [">= 3.0"] } }
+
+      it "does not assign a content address" do
+        expect(spec.content_address).to be_nil
+      end
+    end
+
     context "when the metadata has malformed requirements" do
       let(:metadata) { { "rubygems" => ">\n" } }
       it "raises a helpful error message" do
@@ -63,10 +120,36 @@ RSpec.describe Bundler::EndpointSpecification do
       end
     end
 
+    context "when created_at has no time zone offset" do
+      let(:metadata) { { "created_at" => "2026-05-12T10:00:00" } }
+
+      it "is interpreted as UTC regardless of the local time zone" do
+        with_tz("Asia/Tokyo") do
+          expect(subject.created_at).to eq(Time.utc(2026, 5, 12, 10, 0, 0))
+        end
+      end
+    end
+
+    context "when created_at has an explicit offset" do
+      let(:metadata) { { "created_at" => "2026-05-12T10:00:00+02:00" } }
+
+      it "keeps the offset" do
+        expect(subject.created_at).to eq(Time.utc(2026, 5, 12, 8, 0, 0))
+      end
+    end
+
     context "when created_at is truncated (older rubygems splits on colons)" do
       let(:metadata) { { "created_at" => "2026-05-12T10" } }
 
       it "leaves created_at as nil instead of raising" do
+        expect(subject.created_at).to be_nil
+      end
+    end
+
+    context "when created_at has a year that overflows Float arithmetic" do
+      let(:metadata) { { "created_at" => ["#{"9" * 400}-01-01T00:00:00Z"] } }
+
+      it "leaves created_at as nil" do
         expect(subject.created_at).to be_nil
       end
     end
@@ -118,33 +201,32 @@ RSpec.describe Bundler::EndpointSpecification do
 
   describe "#required_ruby_version" do
     context "required_ruby_version is already set on endpoint specification" do
-      existing_value = "already set value"
-      let(:required_ruby_version) { existing_value }
+      let(:metadata) { { "ruby" => [">= 3.0"] } }
 
-      it "should return the current value when already set on endpoint specification" do
-        expect(spec.required_ruby_version). eql?(existing_value)
+      it "returns the value from metadata without fetching the remote spec" do
+        expect(spec_fetcher).not_to receive(:fetch_spec)
+        expect(spec.required_ruby_version).to eq(Gem::Requirement.new(">= 3.0"))
       end
     end
 
-    it "should return the remote spec value when not set on endpoint specification and remote spec has one" do
-      remote_value = "remote_value"
-      remote_spec = double(:remote_spec, required_ruby_version: remote_value, required_rubygems_version: nil)
-      allow(spec_fetcher).to receive(:fetch_spec).and_return(remote_spec)
-
-      expect(spec.required_ruby_version). eql?(remote_value)
+    it "returns nil when not set on endpoint specification and metadata is nil" do
+      expect(spec_fetcher).not_to receive(:fetch_spec)
+      expect(spec.required_ruby_version).to be_nil
     end
 
-    it "should use the default Gem Requirement value when not set on endpoint specification and not set on remote spec" do
-      remote_spec = double(:remote_spec, required_ruby_version: nil, required_rubygems_version: nil)
+    it "loads required_ruby_version from the remote spec via matches_current_ruby?" do
+      remote_spec = double(:remote_spec, required_ruby_version: Gem::Requirement.new(">= 3.0"), required_rubygems_version: nil)
       allow(spec_fetcher).to receive(:fetch_spec).and_return(remote_spec)
-      expect(spec.required_ruby_version). eql?(Gem::Requirement.default)
+
+      spec.matches_current_ruby?
+      expect(spec.required_ruby_version).to eq(Gem::Requirement.new(">= 3.0"))
     end
   end
 
   it "supports equality comparison" do
     remote_spec = double(:remote_spec, required_ruby_version: nil, required_rubygems_version: nil)
     allow(spec_fetcher).to receive(:fetch_spec).and_return(remote_spec)
-    other_spec = described_class.new("bar", version, platform, spec_fetcher, dependencies, metadata)
+    other_spec = described_class.new("bar", version, suffix, spec_fetcher, dependencies, metadata)
     expect(spec).to eql(spec)
     expect(spec).to_not eql(other_spec)
   end

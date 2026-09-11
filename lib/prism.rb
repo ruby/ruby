@@ -43,7 +43,7 @@ module Prism
   # Raised when requested to parse as the currently running Ruby version but Prism has no support for it.
   class CurrentVersionError < ArgumentError
     # Initialize a new exception for the given ruby version string.
-    #--
+    #
     #: (String version) -> void
     def initialize(version)
       message = +"invalid version: Requested to parse as `version: 'current'`; "
@@ -69,7 +69,7 @@ module Prism
   # resembles the return value of Ripper.lex.
   #
   # For supported options, see Prism.parse.
-  #--
+  #
   #: (String source, **untyped options) -> LexCompat::Result
   def self.lex_compat(source, **options)
     LexCompat.new(source, **options).result # steep:ignore
@@ -79,7 +79,7 @@ module Prism
   #   load(source, serialized, freeze) -> ParseResult
   #
   # Load the serialized AST using the source as a reference into a tree.
-  #--
+  #
   #: (String source, String serialized, ?bool freeze) -> ParseResult
   def self.load(source, serialized, freeze = false)
     Serialize.load_parse(source, serialized, freeze)
@@ -89,10 +89,10 @@ module Prism
   # returns the Prism node representing it. On CRuby, this uses node_id for
   # an exact match. On other implementations, it falls back to best-effort
   # matching by source location line number.
-  #--
-  #: (Method | UnboundMethod | Proc | Thread::Backtrace::Location callable, ?rubyvm: bool) -> Node?
-  def self.find(callable, rubyvm: !!defined?(RubyVM))
-    NodeFind.find(callable, rubyvm)
+  #
+  #: (Method | UnboundMethod | Proc | Thread::Backtrace::Location callable) -> Node?
+  def self.find(callable)
+    NodeFind.find(callable)
   end
 
   # @rbs!

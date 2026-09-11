@@ -198,7 +198,7 @@ module Bundler
 
       sources.cached!
 
-      if options[:add_checksums] || (!options[:local] && install_needed?)
+      if options[:add_checksums] || (!options[:local] && (install_needed? || refetch_needed?(options)))
         sources.remote!
         true
       else
@@ -416,7 +416,7 @@ module Bundler
         updating_major = locked_major < current_major
       end
 
-      preserve_unknown_sections ||= !updating_major && (Bundler.frozen_bundle? || !(unlocking? || @unlocking_bundler))
+      preserve_unknown_sections ||= Bundler.frozen_bundle? || (!updating_major && !(unlocking? || @unlocking_bundler))
 
       if File.exist?(file) && lockfiles_equal?(@lockfile_contents, contents, preserve_unknown_sections)
         return if Bundler.frozen_bundle?
@@ -425,8 +425,10 @@ module Bundler
       end
 
       if Bundler.frozen_bundle?
-        Bundler.ui.error "Cannot write a changed lockfile while frozen."
-        return
+        msg = lockfile_changes_summary("frozen mode is set") ||
+              "Your lockfile needs to be updated, but it can't be because frozen mode is set.\n\n" \
+              "Run `bundle install` elsewhere and add the updated #{SharedHelpers.relative_lockfile_path} to version control."
+        raise ProductionError, msg
       end
 
       # Convert to \r\n if the existing lock has them, i.e., Windows with
@@ -623,6 +625,17 @@ module Bundler
 
     def install_needed?
       resolve_needed? || missing_specs?
+    end
+
+    # Reinstalling installs from the cached archive, and `bundle cache` copies it
+    # into the app cache, so a cache emptied by the `prune` setting or by hand has
+    # to go back to the remotes to refill it.
+    def refetch_needed?(options)
+      return false unless options[:force] || options["cache-archives"]
+
+      resolve.for(requested_dependencies, [Bundler.local_platform]).any? do |spec|
+        spec.source.is_a?(Source::Rubygems) && spec.source.uncached?(spec)
+      end
     end
 
     def something_changed?

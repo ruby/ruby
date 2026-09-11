@@ -59,8 +59,16 @@ describe "C-API Hash function" do
       @s.rb_hash_new_capa(3) {}.default_proc.should == nil
     end
 
-    it "raises RuntimeError when negative index is provided" do
-      -> { @s.rb_hash_new_capa(-1) }.should.raise(RuntimeError, "st_table too big")
+    ruby_version_is ""..."4.1" do
+      it "raises RuntimeError when negative index is provided" do
+        -> { @s.rb_hash_new_capa(-1) }.should.raise(RuntimeError, "st_table too big")
+      end
+    end
+
+    ruby_version_is "4.1" do
+      it "raises ArgumentError when negative index is provided" do
+        -> { @s.rb_hash_new_capa(-1) }.should.raise(ArgumentError, "negative hash size (or size too big)")
+      end
     end
   end
 

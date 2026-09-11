@@ -64,7 +64,8 @@ class Gem::Uninstaller
     @gem                = gem
     @version            = options[:version] || Gem::Requirement.default
     @install_dir        = options[:install_dir]
-    @gem_home           = File.realpath(@install_dir || Gem.dir)
+    gem_home            = @install_dir || Gem.dir
+    @gem_home           = File.exist?(gem_home) ? File.realpath(gem_home) : gem_home
     @user_dir           = File.exist?(Gem.user_dir) ? File.realpath(Gem.user_dir) : Gem.user_dir
     @force_executables  = options[:executables]
     @force_all          = options[:all]
@@ -271,6 +272,8 @@ class Gem::Uninstaller
 
     safe_delete { rm_r full_gem_path, exclusions: exclusions }
     safe_delete { FileUtils.rm_r spec.extension_dir }
+    safe_delete { FileUtils.rm_f File.join(spec.build_info_dir, "#{spec.full_name}.mkmf.log") }
+    safe_delete { FileUtils.rm_f File.join(spec.build_info_dir, "#{spec.full_name}.gem_make.out") }
 
     old_platform_name = spec.original_name
 

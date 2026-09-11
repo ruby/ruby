@@ -275,7 +275,7 @@ module Bundler
 
     def all_versions_for(package)
       name = package.name
-      results = (@base[name] + filter_specs(@all_specs[name], package)).uniq {|spec| [spec.version.hash, spec.platform] }
+      results = (@base[name] + filter_specs(@all_specs[name], package)).uniq {|spec| [spec.version.hash, spec.platform, spec.content_address] }
 
       if name == "bundler" && !bundler_pinned_to_current_version?
         bundler_spec = Gem.loaded_specs["bundler"]
@@ -469,9 +469,9 @@ module Bundler
     def cooldown_excluded?(spec)
       return false unless spec.respond_to?(:created_at) && spec.created_at
       return false unless spec.respond_to?(:remote) && spec.remote
-      return false if locked_by_lockfile?(spec)
       days = spec.remote.effective_cooldown
       return false if days.nil? || days <= 0
+      return false if locked_by_lockfile?(spec)
       (cooldown_now - spec.created_at) < (days * 86_400)
     end
 

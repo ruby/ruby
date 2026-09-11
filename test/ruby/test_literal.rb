@@ -521,6 +521,10 @@ class TestRubyLiteral < Test::Unit::TestCase
     ) do |key|
       assert_warning(/key #{Regexp.quote(eval(key).inspect)} is duplicated/) { eval("{#{key} => :bar, #{key} => :foo}") }
     end
+
+    assert_warning(/key :foo is duplicated/, "[Bug #22264]") do
+      eval("{**{}, foo: :bar, **{foo: :foo}}")
+    end
   end
 
   def test_hash_frozen_key_id

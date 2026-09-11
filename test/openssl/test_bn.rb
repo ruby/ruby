@@ -315,6 +315,14 @@ class OpenSSL::TestBN < OpenSSL::TestCase
     assert_instance_of(String, @e1.hash.to_s)
   end
 
+  def test_marshal
+    assert_equal(@e1, Marshal.load(Marshal.dump(@e1)))
+    assert_equal(@e2, Marshal.load(Marshal.dump(@e2)))
+
+    obj = Marshal.load("\x04\x08U:\x10OpenSSL::BNi\xfe\x01\x00")
+    assert_equal(-0xffff, obj)
+  end
+
   def test_argument_error
     bug15760 = '[ruby-core:92231] [Bug #15760]'
     assert_raise(ArgumentError, bug15760) { OpenSSL::BN.new(nil, 2) }

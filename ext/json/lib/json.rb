@@ -44,13 +44,13 @@ require 'json/common'
 #
 # You can parse a \String containing \JSON data using
 # either of two methods:
-# - <tt>JSON.parse(source, opts)</tt>
-# - <tt>JSON.parse!(source, opts)</tt>
+# - <tt>JSON.parse(source, **opts)</tt>
+# - <tt>JSON.parse!(source, **opts)</tt>
 #
 # where
 # - +source+ is a Ruby object.
-# - +opts+ is a \Hash object containing options
-#   that control both input allowed and output formatting.
+# - +opts+ are keyword arguments that control both input
+#   allowed and output formatting.
 #
 # The difference between the two methods
 # is that JSON.parse! omits some checks
@@ -102,7 +102,7 @@ require 'json/common'
 #   ruby # => 1.0
 #   ruby.class # => Float
 #   ruby = JSON.parse('2.0e2')
-#   ruby # => 200
+#   ruby # => 200.0
 #   ruby.class # => Float
 # Boolean:
 #   ruby = JSON.parse('true')
@@ -131,10 +131,10 @@ require 'json/common'
 #   ruby # => [0, [1, [2, [3]]]]
 # Too deep:
 #   # Raises JSON::NestingError (nesting of 2 is too deep):
-#   JSON.parse(source, {max_nesting: 1})
+#   JSON.parse(source, max_nesting: 1)
 # Bad value:
-#   # Raises TypeError (wrong argument type Symbol (expected Fixnum)):
-#   JSON.parse(source, {max_nesting: :foo})
+#   # Raises TypeError (no implicit conversion of Symbol into Integer):
+#   JSON.parse(source, max_nesting: :foo)
 #
 # ---
 #
@@ -142,11 +142,11 @@ require 'json/common'
 # should be ignored or cause an error to be raised:
 #
 # When set to +false+, the default:
-#   JSON.parse('{"a": 1, "a":2}') => duplicate key at line 1 column 1 (JSON::ParserError)
+#   JSON.parse('{"a": 1, "a": 2}') # duplicate key "a" at line 1 column 1 (JSON::ParserError)
 #
 # When set to +true+:
 #   # The last value is used.
-#   JSON.parse('{"a": 1, "a":2}', allow_duplicate_key: true) => {"a" => 2}
+#   JSON.parse('{"a": 1, "a": 2}', allow_duplicate_key: true) # => {"a" => 2}
 #
 # ---
 #
@@ -155,15 +155,15 @@ require 'json/common'
 # defaults to +false+.
 #
 # With the default, +false+:
-#   # Raises JSON::ParserError (225: unexpected token at '[NaN]'):
+#   # Raises JSON::ParserError (unexpected token 'NaN]' at line 1 column 2):
 #   JSON.parse('[NaN]')
-#   # Raises JSON::ParserError (232: unexpected token at '[Infinity]'):
+#   # Raises JSON::ParserError (unexpected token 'Infinity]' at line 1 column 2):
 #   JSON.parse('[Infinity]')
-#   # Raises JSON::ParserError (248: unexpected token at '[-Infinity]'):
+#   # Raises JSON::ParserError (invalid number: '-Infinity]' at line 1 column 2):
 #   JSON.parse('[-Infinity]')
 # Allow:
 #   source = '[NaN, Infinity, -Infinity]'
-#   ruby = JSON.parse(source, {allow_nan: true})
+#   ruby = JSON.parse(source, allow_nan: true)
 #   ruby # => [NaN, Infinity, -Infinity]
 #
 # ---
@@ -185,10 +185,10 @@ require 'json/common'
 # defaults to +false+.
 #
 # When set to +false+, the default:
-#   JSON.parse('/* comment */ {"a": 1, "a":2}') # unexpected character: '/' at line 1 column 1 (JSON::ParserError)
+#   JSON.parse('/* comment */ {"a": 1, "a": 2}') # unexpected token '/*' at line 1 column 1 (JSON::ParserError)
 #
 # When set to +true+, comments are ignored:
-#   JSON.parse('/* comment */ {"a": 1, "a":2} // more comment') # => {"a" => 2}
+#   JSON.parse('/* comment */ {"a": 1} // more comment', allow_comments: true) # => {"a" => 1}
 #
 # ---
 #
@@ -197,7 +197,7 @@ require 'json/common'
 # defaults to +false+.
 #
 # With the default, +false+:
-#   JSON.parse(%{"Hello\nWorld"}) # invalid ASCII control character in string (JSON::ParserError)
+#   JSON.parse(%{"Hello\nWorld"}) # invalid ASCII control character in string: \nWorld" at line 2 column 0 (JSON::ParserError)
 #
 # When enabled:
 #   JSON.parse(%{"Hello\nWorld"}, allow_control_characters: true) # => "Hello\nWorld"
@@ -209,7 +209,7 @@ require 'json/common'
 # defaults to +false+.
 #
 # With the default, +false+:
-#   JSON.parse('"Hell\o"') # invalid escape character in string (JSON::ParserError)
+#   JSON.parse('"Hell\o"') # invalid escape character in string: '\o"' at line 1 column 6 (JSON::ParserError)
 #
 # When enabled:
 #   JSON.parse('"Hell\o"', allow_invalid_escape: true) # => "Hello"
@@ -228,8 +228,8 @@ require 'json/common'
 #   ruby = JSON.parse(source)
 #   ruby # => {"a"=>"foo", "b"=>1.0, "c"=>true, "d"=>false, "e"=>nil}
 # Use Symbols:
-#   ruby = JSON.parse(source, {symbolize_names: true})
-#   ruby # => {:a=>"foo", :b=>1.0, :c=>true, :d=>false, :e=>nil}
+#   ruby = JSON.parse(source, symbolize_names: true)
+#   ruby # => {a: "foo", b: 1.0, c: true, d: false, e: nil}
 #
 # ---
 #
@@ -242,7 +242,7 @@ require 'json/common'
 #   ruby = JSON.parse(source)
 #   ruby.class # => Hash
 # Use class \OpenStruct:
-#   ruby = JSON.parse(source, {object_class: OpenStruct})
+#   ruby = JSON.parse(source, object_class: OpenStruct)
 #   ruby # => #<OpenStruct a="foo", b=1.0, c=true, d=false, e=nil>
 #
 # ---
@@ -256,8 +256,8 @@ require 'json/common'
 #   ruby = JSON.parse(source)
 #   ruby.class # => Array
 # Use class \Set:
-#   ruby = JSON.parse(source, {array_class: Set})
-#   ruby # => #<Set: {"foo", 1.0, true, false, nil}>
+#   ruby = JSON.parse(source, array_class: Set)
+#   ruby # => Set["foo", 1.0, true, false, nil]
 #
 # === Generating \JSON
 #
@@ -319,22 +319,22 @@ require 'json/common'
 # a \String containing a \JSON string representation of the source:
 #   JSON.generate(:foo) # => '"foo"'
 #   JSON.generate(Complex(0, 0)) # => '"0+0i"'
-#   JSON.generate(Dir.new('.')) # => '"#<Dir>"'
+#   JSON.generate(Dir.new('.')) # => '"#<Dir:0x...>"'
 #
 # ==== Generating Options
 #
 # ====== Input Options
 #
 # Option +allow_nan+ (boolean) specifies whether
-# +NaN+, +Infinity+, and <tt>-Infinity</tt> may be generated;
+# +NaN+, +Infinity+, and +-Infinity+ may be generated;
 # defaults to +false+.
 #
 # With the default, +false+:
-#   # Raises JSON::GeneratorError (920: NaN not allowed in JSON):
+#   # Raises JSON::GeneratorError (NaN not allowed in JSON):
 #   JSON.generate(JSON::NaN)
-#   # Raises JSON::GeneratorError (917: Infinity not allowed in JSON):
+#   # Raises JSON::GeneratorError (Infinity not allowed in JSON):
 #   JSON.generate(JSON::Infinity)
-#   # Raises JSON::GeneratorError (917: -Infinity not allowed in JSON):
+#   # Raises JSON::GeneratorError (-Infinity not allowed in JSON):
 #   JSON.generate(JSON::MinusInfinity)
 #
 # Allow:
@@ -345,14 +345,14 @@ require 'json/common'
 #
 # Option +allow_duplicate_key+ (boolean) specifies whether
 # hashes with duplicate keys should be allowed or produce an error.
-# defaults to emit a deprecation warning.
+# Defaults to +false+, which raises an error.
 #
-# With the default, <tt>false</tt>:
-#   JSON.generate({ foo: 1, "foo" => 2 })
+# With the default, +false+:
+#   JSON.generate({foo: 1, "foo" => 2})
 #   # detected duplicate key "foo" in {foo: 1, "foo" => 2} (JSON::GeneratorError)
 #
-# With <tt>true</tt>
-#   JSON.generate({ foo: 1, "foo" => 2 }, allow_duplicate_key: true)
+# With +true+:
+#   JSON.generate({foo: 1, "foo" => 2}, allow_duplicate_key: true)
 #   # => '{"foo":1,"foo":2}'
 #
 # ---
@@ -365,13 +365,13 @@ require 'json/common'
 #   JSON.generate(obj) # => '[[[[[[0]]]]]]'
 #
 # Too deep:
-#   # Raises JSON::NestingError (nesting of 2 is too deep):
+#   # Raises JSON::NestingError (nesting of 2 is too deep. Did you try to serialize objects with circular references?):
 #   JSON.generate(obj, max_nesting: 2)
 #
 # With +false+:
 #   obj = []
 #   obj[0] = obj
-#   # Raises  SystemStackError: stack level too deep
+#   # Raises SystemStackError (stack level too deep):
 #   JSON.generate(obj, max_nesting: false)
 #
 # Setting +max_nesting+ to +false+ or a very large number can lead to a stack overflow
@@ -410,7 +410,7 @@ require 'json/common'
 #   inserted before the colon in each \JSON object's pair;
 #   defaults to the empty \String, <tt>''</tt>.
 # - Option +sort_keys+ (boolean or \Proc) controls whether and how the keys of a
-#   hash are sorted when generating the output; defaults to <tt>false</tt>.
+#   hash are sorted when generating the output; defaults to +false+.
 #   When +true+, keys are sorted lexicographically. When a \Proc, it receives
 #   the entire \Hash and must return a \Hash with its pairs in the desired
 #   order, allowing for arbitrary sort orders.
@@ -439,7 +439,7 @@ require 'json/common'
 #     "foo" : [
 #       "bar",
 #       "baz"
-#   ],
+#     ],
 #     "bat" : {
 #       "bam" : 0,
 #       "bad" : 1

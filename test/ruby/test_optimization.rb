@@ -211,7 +211,7 @@ class TestRubyOptimization < Test::Unit::TestCase
                 :&, :|, :[], :[]=, :length, :empty?, :nil?, :succ, :!, :=~]
     [:c_call, :c_return].each do |type|
       methods = []
-      tp = TracePoint.new(type) { |tp| methods << tp.method_id }
+      tp = TracePoint.new(type) { |tp| methods << tp.method_id if tp.path == __FILE__ }
       tp.enable do
         x = "a"; x = -x
         [1].max
@@ -243,7 +243,7 @@ class TestRubyOptimization < Test::Unit::TestCase
     end
 
     methods = []
-    tp = TracePoint.new(:c_call, :c_return) { |tp| methods << tp.method_id }
+    tp = TracePoint.new(:c_call, :c_return) { |tp| methods << tp.method_id if tp.path == __FILE__ }
     tp.enable do
       x = 1
       x != 42

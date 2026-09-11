@@ -39,11 +39,11 @@ RSpec.describe "bundle version" do
 
       it "outputs the version, virtual version if set, and build metadata" do
         bundle "version"
-        expect(out).to match(/\A4\.9\.9 \(2100-01-01 commit #{COMMIT_HASH}\)\z/)
+        expect(out).to match(/\A4\.9\.9 \(#{Spec::Builders::BundlerBuilder::RELEASED_BUILT_AT} commit #{COMMIT_HASH}\)\z/)
 
         bundle_config "simulate_version 5"
         bundle "version"
-        expect(out).to match(/\A4\.9\.9 \(simulating Bundler 5\) \(2100-01-01 commit #{COMMIT_HASH}\)\z/)
+        expect(out).to match(/\A4\.9\.9 \(simulating Bundler 5\) \(#{Spec::Builders::BundlerBuilder::RELEASED_BUILT_AT} commit #{COMMIT_HASH}\)\z/)
       end
     end
 

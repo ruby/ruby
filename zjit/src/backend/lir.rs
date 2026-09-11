@@ -1,4 +1,5 @@
 use std::cell::{Cell, RefCell};
+use std::collections::hash_map::Entry;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::fmt;
 use std::mem::take;
@@ -250,11 +251,32 @@ pub use crate::backend::current::{
     mem_base_reg,
     Reg,
     EC, CFP, SP,
-    NATIVE_BASE_PTR,
+    NATIVE_BASE_PTR, NATIVE_STACK_PTR,
     C_ARG_OPNDS, C_RET_OPND,
 };
 
 pub static JIT_PRESERVED_REGS: &[Opnd] = &[CFP, SP, EC];
+
+/// Where the C calling convention passes an argument.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum CArgLocation {
+    /// In one of the argument registers.
+    Reg(Opnd),
+    /// In the stack slot that the caller reserves at the bottom of its frame.
+    /// The slot address depends on the reader: the caller writes it relative
+    /// to the native SP at the call, and the callee reads it from above its
+    /// return address and saved frame pointer.
+    StackSlot(usize),
+}
+
+/// Return where the C calling convention passes argument `idx`.
+pub fn c_arg_location(idx: usize) -> CArgLocation {
+    if idx < C_ARG_OPNDS.len() {
+        CArgLocation::Reg(C_ARG_OPNDS[idx])
+    } else {
+        CArgLocation::StackSlot(idx - C_ARG_OPNDS.len())
+    }
+}
 
 // Memory operand base
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Hash, Ord, PartialOrd)]
@@ -1470,13 +1492,6 @@ impl Interval {
         self.end() <= pos
     }
 
-    /// Check if the interval is alive at position
-    /// Panics if the range is not set
-    pub fn survives(&self, position: usize) -> bool {
-        assert!(self.ranges.len() > 0, "survives called on interval with no range");
-        self.ranges.iter().any(|range| range.from < position && position < range.to)
-    }
-
     /// Returns true if position falls inside one of the ranges in this
     /// interval.
     pub fn covers(&self, position: usize) -> bool {
@@ -2475,14 +2490,12 @@ impl Assembler
 
         // Count predecessors for each block
         let mut num_predecessors: HashMap<BlockId, usize> = HashMap::new();
-        for block_id in self.block_order() {
+        let block_order = self.block_order();
+        for &block_id in &block_order {
             for succ in self.basic_blocks[block_id.0].successors() {
                 *num_predecessors.entry(succ).or_insert(0) += 1;
             }
         }
-
-        // Collect block order upfront so we don't borrow self while mutating
-        let block_order = self.block_order();
 
         // This code is iterating over each block in our CFG and inserting
         // copy instructions at each edge.
@@ -2582,33 +2595,22 @@ impl Assembler
             if self.basic_blocks[block_id.0].is_dummy() { continue; }
             let params = self.basic_blocks[block_id.0].parameters.clone();
 
-            // JIT-to-JIT entries that would need more argument registers should
-            // be unreachable because can_direct_send() refuses to call them.
-            // Keep compiling the function body, but make the unsupported entry
-            // abort if control ever reaches it. TODO: Remove this (Shopify/ruby#916)
-            if params.len() > C_ARG_OPNDS.len() {
-                let insert_pos = self.basic_blocks[block_id.0].insns.iter()
-                    .position(|insn| matches!(insn, Insn::FrameSetup { .. }))
-                    .or_else(|| self.basic_blocks[block_id.0].insns.iter().position(|insn| matches!(insn, Insn::Label(_))).map(|idx| idx + 1))
-                    .unwrap_or(0);
-                self.basic_blocks[block_id.0].insns.insert(insert_pos, Insn::Abort);
-                self.basic_blocks[block_id.0].insn_ids.insert(insert_pos, None);
-                continue;
-            }
-
-            // Rewrite VRegs to physical registers before sequentialization
-            // so the parcopy algorithm can detect physical register conflicts.
-            let reg_copies: Vec<parcopy::RegisterCopy<Opnd>> = params.iter().enumerate()
+            // Rewrite VRegs to physical registers or stack slots before sequentialization
+            // so the parcopy algorithm can detect conflicts between them.
+            let copies: Vec<parcopy::RegisterCopy<Opnd>> = params.iter().enumerate()
                 .map(|(i, param)| parcopy::RegisterCopy::<Opnd> {
-                    source: C_ARG_OPNDS[i],
+                    source: match c_arg_location(i) {
+                        CArgLocation::Reg(reg) => reg,
+                        CArgLocation::StackSlot(slot) => Opnd::mem(64, NATIVE_BASE_PTR, Self::frame_size() + slot as i32 * SIZEOF_VALUE_I32),
+                    },
                     destination: Self::rewritten_opnd(*param, intervals, regs),
                 })
                 .filter(|copy| copy.source != copy.destination)
                 .collect();
 
-            debug_assert!(reg_copies.iter().all(|c| !c.source.is_vreg() && !c.destination.is_vreg()),
-                "parcopy must operate on physical registers, not VRegs");
-            let sequentialized = parcopy::sequentialize_register(&reg_copies, Opnd::Reg(SCRATCH_REG));
+            debug_assert!(copies.iter().all(|c| !c.source.is_vreg() && !c.destination.is_vreg()),
+                "parcopy must operate on physical locations, not VRegs");
+            let sequentialized = parcopy::sequentialize_register(&copies, Opnd::Reg(SCRATCH_REG));
             let moves: Vec<Insn> = sequentialized
                 .iter()
                 .map(|copy| match copy.source {
@@ -2623,9 +2625,13 @@ impl Assembler
                 })
                 .collect();
 
-            // Find the position after FrameSetup to insert moves
+            // Find the position after FrameSetup to insert moves. They must come
+            // after FrameSetup (not before) because spilled destinations and
+            // stack-passed parameter sources are NATIVE_BASE_PTR-relative, and
+            // NATIVE_BASE_PTR points at the caller's frame until FrameSetup.
             let insert_pos = self.basic_blocks[block_id.0].insns.iter()
                 .position(|insn| matches!(insn, Insn::FrameSetup { .. }))
+                .map(|idx| idx + 1)
                 .or_else(|| self.basic_blocks[block_id.0].insns.iter().position(|insn| matches!(insn, Insn::Label(_))).map(|idx| idx + 1))
                 .unwrap_or(0);
 
@@ -2646,7 +2652,7 @@ impl Assembler
             }
         }
 
-        self.rewrite_instructions(intervals, regs);
+        self.rewrite_instructions(&block_order, intervals, regs);
     }
 
     /// Handle caller-saved registers around CCall instructions.
@@ -2697,19 +2703,28 @@ impl Assembler
                         HashSet::default()
                     };
 
-                    // Find survivors: intervals that survive this Call instruction
-                    // We need to preserve the "surviving" registers past the ccall,
-                    // so we're going to push them all on the stack, then pop
-                    // after we make the ccall
+                    // Find survivors: intervals that are live across this Call
+                    // instruction. We need to preserve the "surviving" registers
+                    // past the ccall, so we're going to push them all on the
+                    // stack, then pop after we make the ccall
+                    let out_vreg_id = out.is_vreg().then(|| out.vreg_idx());
+                    debug_assert!(
+                        out_vreg_id.is_none_or(|id| !intervals[id].has_bounds() || intervals[id].born_at(insn_number)),
+                        "a CCall's output interval must start at the CCall"
+                    );
                     let survivors: Vec<VRegId> = intervals.iter()
                         .filter(|interval| {
                             // We need to spill register intervals on this CCall in two cases:
-                            // 1) The VReg is referenced in an instruction after the CCall
-                            let survives_call = interval.has_bounds() && interval.survives(insn_number);
+                            // 1) The VReg is live across the CCall. The VReg this CCall
+                            //    defines is not one of them: its range starts here, so it
+                            //    holds no value yet and there is nothing to preserve.
+                            let live_across_call = Some(interval.vreg_id) != out_vreg_id
+                                && interval.covers(insn_number);
+
                             // 2) The VReg is referenced by the stack map for the CCall
                             let stack_map_reg = stack_vreg_ids.contains(&interval.vreg_id);
                             let is_register = interval.assigned.get().and_then(|alloc| alloc.alloc_pool_index(alloc_regs)).is_some();
-                            is_register && (survives_call || stack_map_reg)
+                            is_register && (live_across_call || stack_map_reg)
                         })
                         .map(|interval| interval.vreg_id)
                         .collect();
@@ -2935,7 +2950,7 @@ impl Assembler
             StackMapEntry::Opnd(Opnd::UImm(value)) => !VALUE(*value as usize).special_const_p(),
             StackMapEntry::Opnd(Opnd::VReg { idx, .. }) => {
                 matches!(
-                    intervals[idx.to_usize()].assigned.get().expect("StackMap VReg should have an allocation"),
+                    intervals[*idx].assigned.get().expect("StackMap VReg should have an allocation"),
                     Allocation::Reg(_)
                 )
             }
@@ -2946,8 +2961,8 @@ impl Assembler
 
     /// Walk every instruction and replace VReg operands with the physical
     /// register (or stack slot) assigned to the VReg's interval.
-    fn rewrite_instructions(&mut self, intervals: &[Interval], regs: &RegPool) {
-        for block_id in self.block_order() {
+    fn rewrite_instructions(&mut self, block_order: &[BlockId], intervals: &[Interval], regs: &RegPool) {
+        for &block_id in block_order {
             for insn in self.basic_blocks[block_id.0].insns.iter_mut() {
                 insn.for_each_operand_mut(|opnd| {
                     Self::rewrite_opnd(opnd, intervals, regs);
@@ -3222,7 +3237,7 @@ impl Assembler
         let exit_block = self.new_block_without_id("side_exits");
 
         // Map from SideExit to compiled Label. This table is used to deduplicate side exit code.
-        let mut compiled_exits: HashMap<SideExit, Label> = HashMap::new();
+        let mut compiled_exits: HashMap<SideExit, Label> = HashMap::with_capacity(targets.len());
 
         // Start a new perf range for side exits
         let perf_symbol = if get_option!(perf) == Some(PerfMap::HIR) {
@@ -3236,7 +3251,7 @@ impl Assembler
             self.pos_marker(move |start_pos, cb| {
                 let end_pos = cb.get_write_ptr();
                 let size = end_pos.as_offset() - start_pos.as_offset();
-                crate::stats::incr_counter_by(crate::stats::Counter::side_exit_size, size as u64);
+                crate::stats::incr_counter_by(crate::stats::Counter::side_exit_size_bytes, size as u64);
             });
         }
 
@@ -3286,15 +3301,16 @@ impl Assembler
                 };
 
                 // Compile the shared side exit if not compiled yet
-                let compiled_exit = if let Some(&compiled_exit) = compiled_exits.get(&exit) {
-                    Target::Label(compiled_exit)
-                } else {
-                    let new_exit = self.new_label("side_exit");
-                    self.write_label(new_exit.clone());
-                    asm_comment!(self, "Exit: {}", exit.pc);
-                    compile_exit(self, &exit, None);
-                    compiled_exits.insert(exit, new_exit.unwrap_label());
-                    new_exit
+                let compiled_exit = match compiled_exits.entry(exit) {
+                    Entry::Occupied(entry) => Target::Label(*entry.get()),
+                    Entry::Vacant(entry) => {
+                        let new_exit = self.new_label("side_exit");
+                        self.write_label(new_exit.clone());
+                        asm_comment!(self, "Exit: {}", entry.key().pc);
+                        compile_exit(self, entry.key(), None);
+                        entry.insert(new_exit.unwrap_label());
+                        new_exit
+                    }
                 };
 
                 *self.basic_blocks[block_id].insns[idx].target_mut().unwrap() = counted_exit.unwrap_or(compiled_exit);
@@ -4771,12 +4787,12 @@ mod tests {
         assert_eq!(interval.end(), 25);
 
         // The vreg is not live inside the hole ...
-        assert!(!interval.survives(10));
-        assert!(!interval.survives(15));
+        assert!(!interval.covers(10));
+        assert!(!interval.covers(15));
         // ... but the interval is not over, so it must keep its register.
         assert!(interval.end() > 15);
         // ... and it is live again on the far side.
-        assert!(interval.survives(22));
+        assert!(interval.covers(22));
 
         // A range that abuts the last one merges into it.
         interval.add_range(25, 30);
@@ -4802,15 +4818,15 @@ mod tests {
     }
 
     #[test]
-    fn test_interval_survives() {
+    fn test_interval_covers() {
         let mut interval = Interval::new(VRegId(1));
         interval.add_range(3, 10);
 
-        assert!(!interval.survives(2));  // Before range
-        assert!(!interval.survives(3));  // At start (exclusive)
-        assert!(interval.survives(5));   // Inside range
-        assert!(!interval.survives(10)); // At end (exclusive)
-        assert!(!interval.survives(11)); // After range
+        assert!(!interval.covers(2));  // Before range
+        assert!(interval.covers(3));   // At start (inclusive: the def position)
+        assert!(interval.covers(5));   // Inside range
+        assert!(!interval.covers(10)); // At end (exclusive)
+        assert!(!interval.covers(11)); // After range
     }
 
     #[test]
@@ -4822,7 +4838,6 @@ mod tests {
         // so position 11 belongs to no instruction.
         interval.set_from(10);
         assert_eq!(interval.ranges, vec![LiveRange { from: 10, to: 11 }]);
-        assert!(!interval.survives(10));
         assert!(interval.is_dead());
 
         // With existing range, updates start but keeps end
@@ -4854,13 +4869,6 @@ mod tests {
     fn test_interval_add_range_invalid() {
         let mut interval = Interval::new(VRegId(1));
         interval.add_range(10, 5);
-    }
-
-    #[test]
-    #[should_panic(expected = "survives called on interval with no range")]
-    fn test_interval_survives_panics_without_range() {
-        let interval = Interval::new(VRegId(1));
-        interval.survives(5);
     }
 
     #[test]
@@ -4899,7 +4907,7 @@ mod tests {
         ]);
         assert_eq!(intervals[r12_idx].start(), 20);
         assert_eq!(intervals[r12_idx].end(), 38);
-        assert!(!intervals[r12_idx].survives(32));
+        assert!(!intervals[r12_idx].covers(32));
 
         assert_eq!(intervals[r13_idx].ranges, vec![LiveRange { from: 20, to: 32 }]);
 
@@ -5150,18 +5158,26 @@ mod tests {
     }
 
     #[test]
-    fn test_resolve_ssa_entry_params_too_many_abort() {
+    fn test_resolve_ssa_entry_params_beyond_arg_regs_use_stack() {
         let mut asm = Assembler::new();
         let block = asm.new_block(hir::BlockId(0), true, 0);
         asm.set_current_block(block);
         let label = asm.new_label("bb0");
         asm.write_label(label);
 
-        for _ in 0..=C_ARG_OPNDS.len() {
+        let params: Vec<Opnd> = (0..=C_ARG_OPNDS.len()).map(|_| {
             let param = asm.new_vreg(64);
             asm.basic_blocks[block.0].add_parameter(param);
+            param
+        }).collect();
+        // Use every parameter so they are all live and get allocations.
+        let mut acc = params[0];
+        for &param in &params[1..] {
+            let out = asm.new_vreg(64);
+            asm.basic_blocks[block.0].push_insn(Insn::Add { left: acc, right: param, out });
+            acc = out;
         }
-        asm.basic_blocks[block.0].push_insn(Insn::CRet(Opnd::UImm(0)));
+        asm.basic_blocks[block.0].push_insn(Insn::CRet(acc));
 
         let live_in = asm.analyze_liveness();
         asm.number_instructions(0);
@@ -5172,7 +5188,16 @@ mod tests {
 
         asm.resolve_ssa(&intervals, &regs);
 
-        assert!(matches!(asm.basic_blocks[block.0].insns[1], Insn::Abort));
+        // The parameter that doesn't fit in argument registers is loaded from
+        // the caller's outgoing-argument area, right above this frame's
+        // return address and saved frame pointer.
+        let insns = &asm.basic_blocks[block.0].insns;
+        assert!(!insns.iter().any(|insn| matches!(insn, Insn::Abort)), "no entry should abort");
+        let expected_src = Opnd::mem(64, NATIVE_BASE_PTR, Assembler::frame_size());
+        assert!(
+            insns.iter().any(|insn| matches!(insn, Insn::Mov { src, .. } if *src == expected_src)),
+            "expected a load from {expected_src:?}, got: {insns:?}"
+        );
     }
 
     fn build_critical_edge() -> (Assembler, Opnd, Opnd, Opnd, Opnd, Opnd, BlockId, BlockId, BlockId) {

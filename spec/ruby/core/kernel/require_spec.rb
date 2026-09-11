@@ -33,15 +33,16 @@ describe "Kernel#require" do
     when "jruby"
       features -= %w[java.rb jruby/util.rb]
     when "ruby"
-      so = RbConfig::CONFIG['DLEXT']
-      features.reject! { |feature| feature.end_with?("windows_1252.#{so}", "windows_31j.#{so}") }
-      features.reject! { |feature| feature.end_with? "encdb.#{so}" }
-      features.reject! { |feature| feature.end_with? "transdb.#{so}" }
-      features.reject! { |feature| feature.include?('-fake') }
+      # remove all external libraries first
+      features.reject! { |feature| File.absolute_path?(feature) }
+
+      # for statically-linked ruby
+      features -= [ "encdb.so", "trans/transdb.so" ] # the suffixes are always ".so"
+      features.reject! { |feature| feature.start_with?("enc/") } # and "enc/trans/"
     end
 
-    features_no_ext = features.map { |path| File.basename(path, '.*') }
-    features_no_ext.sort.should == provided.sort
+    features_no_ext = features.map { |path| path.sub(/\.(?:rb|so)\z/, '') }
+    features_no_ext.sort.uniq.should == provided.sort
 
     requires = features
     code = requires.map { |f| "puts require #{f.inspect}\n" }.join

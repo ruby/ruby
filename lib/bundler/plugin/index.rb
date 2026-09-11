@@ -176,11 +176,15 @@ module Bundler
           # older Bundler versions, which dumped empty hashes as a bare key.
           index = Gem::YAMLSerializer.load(data) || {}
 
-          @commands.merge!(index["commands"] || {})
-          @hooks.merge!(index["hooks"] || {})
-          @load_paths.merge!(transform_index_paths(index["load_paths"]) {|p| absolutize_path(p, base) })
-          @plugin_paths.merge!(transform_index_paths(index["plugin_paths"]) {|p| absolutize_path(p, base) })
-          @sources.merge!(index["sources"] || {}) unless global
+          escaping = escaping_plugins(index, base)
+          hooks = (index["hooks"] || {}).transform_values {|names| Array(names) - escaping }
+
+          @commands.merge!(owned_by(index["commands"] || {}, escaping))
+          # An event whose plugins all escaped is left out rather than merged in empty.
+          @hooks.merge!(hooks.reject {|_, names| names.empty? })
+          @load_paths.merge!(named(transform_index_paths(index["load_paths"]) {|p| absolutize_path(p, base) }, escaping))
+          @plugin_paths.merge!(named(transform_index_paths(index["plugin_paths"]) {|p| absolutize_path(p, base) }, escaping))
+          @sources.merge!(owned_by(index["sources"] || {}, escaping)) unless global
         end
       end
 
@@ -209,6 +213,41 @@ module Bundler
         global ? Plugin.global_root : Plugin.root
       end
 
+      # A relative path only means anything inside the root, so an entry that escapes is not one Bundler installed.
+      def escaping_plugins(index, base)
+        names = []
+
+        %w[load_paths plugin_paths].each do |key|
+          (index[key] || {}).each do |name, value|
+            escapes = Array(value).any? do |path|
+              !Pathname.new(path).absolute? && !contained_in?(absolutize_path(path, base), base)
+            end
+
+            names << name if escapes
+          end
+        end
+
+        names.uniq
+      end
+
+      # Expanded here, not by the caller: what gets stored stays joined, because
+      # #installed_in_plugin_root? matches it against Plugin.root as written.
+      def contained_in?(path, base)
+        path = File.expand_path(path)
+        base = File.expand_path(base)
+
+        path == base || path.start_with?("#{base}#{File::SEPARATOR}")
+      end
+
+      # commands and sources are keyed by what they provide, load_paths and plugin_paths by the plugin.
+      def owned_by(mapping, names)
+        mapping.reject {|_, plugin| names.include?(plugin) }
+      end
+
+      def named(mapping, names)
+        mapping.reject {|plugin, _| names.include?(plugin) }
+      end
+
       def transform_index_paths(paths)
         return {} unless paths
 
@@ -225,12 +264,9 @@ module Bundler
         pathname = Pathname.new(path)
         return path unless pathname.absolute?
 
-        base_path = Pathname.new(base)
-        if pathname == base_path || pathname.to_s.start_with?(base_path.to_s + File::SEPARATOR)
-          pathname.relative_path_from(base_path).to_s
-        else
-          path
-        end
+        return path unless contained_in?(pathname.to_s, base)
+
+        pathname.relative_path_from(Pathname.new(base)).to_s
       end
 
       def absolutize_path(path, base)

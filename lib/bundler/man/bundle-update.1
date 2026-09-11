@@ -27,7 +27,7 @@ Do not attempt to fetch gems remotely and use the gem cache instead\.
 Update the locked version of Ruby to the current version of Ruby\.
 .TP
 \fB\-\-bundler[=BUNDLER]\fR
-Update the locked version of bundler to the invoked bundler version\.
+Update the locked version of bundler\. BUNDLER can be a version such as \fB4\.0\.20\fR, or a requirement such as \fB"> 0\.a"\fR\. With no argument, update to the latest released version, which never selects a prerelease\.
 .TP
 \fB\-\-force\fR, \fB\-\-redownload\fR
 Force reinstalling every gem, even if already installed\.
@@ -66,7 +66,7 @@ Do not allow any gem to be updated past latest \fB\-\-patch\fR | \fB\-\-minor\fR
 Use bundle install conservative update behavior and do not allow indirect dependencies to be updated\.
 .TP
 \fB\-\-cooldown=<number>\fR
-Only consider gem versions published at least \fInumber\fR days ago when resolving\. Pass \fB0\fR to disable cooldown for this run, overriding any per\-source or global configuration\. Combine with \fB\-\-conservative\fR to minimize transitive churn when bypassing cooldown for an urgent update\. See \fBcooldown\fR in bundle\-config(1)\.
+Only consider gem versions published at least \fInumber\fR days ago when resolving\. Pass \fB0\fR to disable cooldown for this run, overriding every other cooldown setting, RubyGems' own included\. Combine with \fB\-\-conservative\fR to minimize transitive churn when bypassing cooldown for an urgent update\. See \fBcooldown\fR in bundle\-config(1)\.
 .SH "UPDATING ALL GEMS"
 If you run \fBbundle update \-\-all\fR, bundler will ignore any previously installed gems and resolve all dependencies again based on the latest versions of all gems available in the sources\.
 .P

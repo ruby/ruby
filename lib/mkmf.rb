@@ -539,7 +539,6 @@ MSG
   end
 
   def link_config(ldflags, opt="", libpath=$DEFLIBPATH|$LIBPATH)
-    librubyarg = $extmk ? $LIBRUBYARG_STATIC : "$(LIBRUBYARG)"
     conf = RbConfig::CONFIG.merge('hdrdir' => $hdrdir.quote,
                                   'src' => "#{conftest_source}",
                                   'arch_hdrdir' => $arch_hdrdir.quote,
@@ -550,7 +549,7 @@ MSG
                                   'ARCH_FLAG' => "#$ARCH_FLAG",
                                   'LDFLAGS' => "#$LDFLAGS #{ldflags}",
                                   'LOCAL_LIBS' => "#$LOCAL_LIBS #$libs",
-                                  'LIBS' => "#{librubyarg} #{opt} #$LIBS")
+                                  'LIBS' => "$(LIBRUBYARG) #{opt} #$LIBS")
     conf['LIBPATH'] = libpathflag(libpath.map {|s| RbConfig::expand(s.dup, conf)})
     conf
   end
@@ -2764,9 +2763,6 @@ site-install-rb: install-rb
     if $warnflags = CONFIG['warnflags'] and CONFIG['GCC'] == 'yes'
       # turn warnings into errors only for bundled extensions.
       config['warnflags'] = $warnflags.gsub(/(?:\A|\s)-W\Kerror[-=](?!implicit-function-declaration)/, '')
-      if /icc\z/ =~ config['CC']
-        config['warnflags'].gsub!(/(\A|\s)-W(?:division-by-zero|deprecated-declarations)/, '\1')
-      end
       RbConfig.expand(rbconfig['warnflags'] = config['warnflags'].dup)
       config.each do |key, val|
         RbConfig.expand(rbconfig[key] = val.dup) if /warnflags/ =~ val

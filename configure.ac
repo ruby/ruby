@@ -698,7 +698,18 @@ RUBY_WERROR_FLAG([
 	[
 	cd .. && rm -fr tmp.$$.try_link
 	AC_MSG_RESULT(no)
-	AC_MSG_ERROR([something wrong with LDFLAGS="$LDFLAGS"])
+	rb_ldflags_nodir= rb_ldflags_Lopt=
+	for rb_ldflags_arg in $LDFLAGS; do
+	    AS_IF([test "$rb_ldflags_Lopt"], [rb_ldflags_Lopt=],
+		  [AS_CASE(["$rb_ldflags_arg"],
+			   [-L?*], [rb_ldflags_arg="${rb_ldflags_arg@%:@-L}" rb_ldflags_Lopt=],
+			   [-L], [rb_ldflags_Lopt=yes; continue],
+			   [continue])])
+	    AS_IF([test -d "${rb_ldflags_arg}"], [],
+		  [rb_ldflags_nodir="$rb_ldflags_nodir ${rb_ldflags_arg}"])
+	done
+	AC_MSG_ERROR([something wrong with LDFLAGS="$LDFLAGS"]dnl
+[${rb_ldflags_nodir:+; no such directory:$rb_ldflags_nodir}])
 	]
     )
     cd .. && rm -fr tmp.$$.try_link
@@ -1226,6 +1237,7 @@ main()
 		AS_IF([test -n "$dsymutil"], [
 		    POSTLINK="$dsymutil \$@ 2>/dev/null${POSTLINK:+; $POSTLINK}"
 		])
+		: ${POSTLINK:=:}
 		AC_CHECK_HEADERS(crt_externs.h, [], [], [
 		    #include <crt_externs.h>
 		])
@@ -2366,6 +2378,7 @@ RUBY_CHECK_BUILTIN_FUNC(__builtin_assume_aligned, [__builtin_assume_aligned((voi
 RUBY_CHECK_BUILTIN_FUNC(__builtin_bswap16, [__builtin_bswap16(0)])
 RUBY_CHECK_BUILTIN_FUNC(__builtin_bswap32, [__builtin_bswap32(0)])
 RUBY_CHECK_BUILTIN_FUNC(__builtin_bswap64, [__builtin_bswap64(0)])
+test "$ac_cv_sizeof___int128" = 0 || RUBY_CHECK_BUILTIN_FUNC(__builtin_bswap128, [__builtin_bswap128(0)])
 RUBY_CHECK_BUILTIN_FUNC(__builtin_popcount, [__builtin_popcount(0)])
 RUBY_CHECK_BUILTIN_FUNC(__builtin_popcountll, [__builtin_popcountll(0)])
 RUBY_CHECK_BUILTIN_FUNC(__builtin_clz, [__builtin_clz(0)])
@@ -3165,15 +3178,15 @@ AC_ARG_WITH(static-linked-ext,
             [AS_CASE([$withval],[yes],[STATIC=;EXTSTATIC=static],[no],[],[EXTSTATIC="$withval"])])
 AS_CASE([",$EXTSTATIC,"], [,static,|*,enc,*], [
   ENCOBJS='enc/encinit.$(OBJEXT) enc/libenc.$(LIBEXT) enc/libtrans.$(LIBEXT)'
-  EXTOBJS='ext/extinit.$(OBJEXT)'
   AC_DEFINE_UNQUOTED(EXTSTATIC, 1)
   AC_SUBST(ENCSTATIC, static)
 ], [
   ENCOBJS='dmyenc.$(OBJEXT)'
-  EXTOBJS='dmyext.$(OBJEXT)'
 ])
+EXTOBJS='dmyext.$(OBJEXT)'
 AC_SUBST(ENCOBJS)
 AC_SUBST(EXTOBJS)
+AC_SUBST(PROGRAM_EXTS, [${EXTSTATIC:+exts}])
 
 : "rpath" && {
     AS_CASE(["$target_os"],
@@ -4756,12 +4769,6 @@ AS_IF([test ! -f "$srcdir/revision.h"], [
 
 AS_IF([test "x$HAVE_BASERUBY" = xyes], [
     X_DEPENDENCIES_DIR=.deps
-    AC_MSG_NOTICE([generating build dependencies])
-    rm -rf "$ac_pwd/.deps"
-    AS_MKDIR_P([.deps])
-    RUBYOPT=- $BASERUBY "$srcdir/tool/mkdepend.rb" \
-        --root="$srcdir" --scope=core --output="$ac_pwd/.deps" ||
-        AC_MSG_ERROR([failed to generate build dependencies])
 ], [
     X_DEPENDENCIES_DIR='$(srcdir)'
 ])
@@ -4794,14 +4801,18 @@ AC_CONFIG_FILES(Makefile:template/Makefile.in, [
         done
 	sed '/^MISSING/s/\$U\././g;/^VCS *=/s#@VCS@#'"$VCS"'#;/^VCSUP *=/s#@VCSUP@#'"$VCSUP"'#' Makefile
 	echo; test x"$EXEEXT" = x || echo 'miniruby: miniruby$(EXEEXT)'
+	AS_IF([test "x$X_DEPENDENCIES_DIR" = x.deps -a "x$HAVE_BASERUBY" = xyes], [
+	    AC_MSG_NOTICE([generating build dependencies])
+	    ${MAKE-make} -f "$srcdir/depend" BASERUBY="$BASERUBY" \
+		srcdir="$srcdir" update-dependencies >&AS_MESSAGE_FD ||
+		AC_MSG_ERROR([failed to generate build dependencies])
+	    dependency_dir="$ac_pwd/.deps"
+	], [
+	    dependency_dir=.
+	])
 	AS_IF([test "$gnumake" != yes], [
 	    # extract NMake-style include list
 	    set = `sed -n 's/^!include  *//p' ${srcdir}/common.mk`
-	    AS_IF([test "x$X_DEPENDENCIES_DIR" = x.deps], [
-		dependency_dir="$ac_pwd/.deps"
-	    ], [
-		dependency_dir=.
-	    ])
 	    echo common_mk_includes "@S|@*" # generate the macro assignment
 	    shift
 	    common_mk_includes="`echo \"@S|@*\" | sed \
@@ -4819,7 +4830,8 @@ AC_CONFIG_FILES(Makefile:template/Makefile.in, [
 	echo; echo '$(srcdir)/$(CONFIGURE):RUBY_M4_INCLUDED \
 	$(empty)'
     } > $tmpmk && mv -f $tmpmk Makefile],
-[EXEEXT='$EXEEXT' MAKE='${MAKE-make}' gnumake='$gnumake' GIT='$GIT' YJIT_SUPPORT='$YJIT_SUPPORT' X_DEPENDENCIES_DIR='$X_DEPENDENCIES_DIR'])
+[EXEEXT='$EXEEXT' MAKE='${MAKE-make}' gnumake='$gnumake' GIT='$GIT' YJIT_SUPPORT='$YJIT_SUPPORT'
+ X_DEPENDENCIES_DIR='$X_DEPENDENCIES_DIR' BASERUBY='$BASERUBY' HAVE_BASERUBY='$HAVE_BASERUBY'])
 
 AC_ARG_WITH([ruby-pc],
 	    AS_HELP_STRING([--with-ruby-pc=FILENAME], [pc file basename]),

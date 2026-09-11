@@ -410,7 +410,7 @@ program: $(SHOWFLAGS) $(DOT_WAIT) $(PROGRAM)
 wprogram: $(SHOWFLAGS) $(DOT_WAIT) $(WPROGRAM)
 mini: PHONY miniruby$(EXEEXT)
 
-$(PROGRAM) $(WPROGRAM): $(LIBRUBY) $(MAINOBJ) $(OBJS) $(EXTOBJS) $(SETUP) $(PREP)
+$(PROGRAM) $(WPROGRAM): $(LIBRUBY) $(MAINOBJ) $(OBJS) $(EXTOBJS) $(SETUP) $(PREP) $(PROGRAM_EXTS)
 
 $(LIBRUBY_A):	$(LIBRUBY_A_OBJS) $(MAINOBJ) $(INITOBJS) $(ARCHFILE)
 
@@ -1050,8 +1050,8 @@ $(ENC_MK): $(srcdir)/enc/make_encmake.rb $(srcdir)/enc/Makefile.in $(srcdir)/enc
 
 PHONY:
 
-{$(VPATH)}parse.c: {$(VPATH)}parse.y {$(VPATH)}id.h
-{$(VPATH)}parse.h: {$(VPATH)}parse.c
+parse.c: {$(VPATH)}parse.y {$(VPATH)}id.h
+parse.h: {$(VPATH)}parse.c
 
 {$(srcdir)}.y.c:
 	$(ECHO) generating $@
@@ -1065,7 +1065,7 @@ $(PLATFORM_D):
 exe/$(PROGRAM): $(TIMESTAMPDIR)/$(arch)/.time
 exe/$(PROGRAM): ruby-runner.c ruby-runner.h exe/.time $(PREP) {$(VPATH)}config.h
 	$(Q) $(CC) $(CFLAGS) $(INCFLAGS) $(CPPFLAGS) -DRUBY_INSTALL_NAME=$(@F) $(COUTFLAG)ruby-runner.$(OBJEXT) -c $(CSRCFLAG)$(srcdir)/ruby-runner.c
-	$(Q) $(PURIFY) $(CC) $(CFLAGS) $(LDFLAGS) $(OUTFLAG)$@ ruby-runner.$(OBJEXT) $(LIBS)
+	$(Q) $(PURIFY) $(CC) $(CFLAGS) $(LDFLAGS) $(XLDFLAGS) $(OUTFLAG)$@ ruby-runner.$(OBJEXT) $(LIBS)
 	$(Q) $(POSTLINK)
 	$(Q) $(BOOTSTRAPRUBY) \
 	    -e 'prog, dest, inst = ARGV; dest += "/ruby"' \
@@ -1310,9 +1310,7 @@ $(MAINOBJ): $(srcdir)/$(MAINSRC)
 	$(ECHO) compiling $(srcdir)/$(MAINSRC)
 	$(Q) $(CC) $(MAINCPPFLAGS) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(CSRCFLAG)$(srcdir)/$(MAINSRC)
 
-{$(VPATH)}probes.dmyh: {$(srcdir)}probes.d $(tooldir)/gen_dummy_probes.rb
-
-probes.dmyh:
+probes.dmyh: {$(srcdir)}probes.d $(tooldir)/gen_dummy_probes.rb
 	$(BASERUBY) $(tooldir)/gen_dummy_probes.rb $(srcdir)/probes.d > $@
 
 probes.h: {$(VPATH)}probes.$(DTRACE_EXT) $(srcdir)/vm_opts.h
@@ -1353,13 +1351,16 @@ build-tool/dump_ast$(BUILD_EXEEXT): build-tool/Makefile
 
 clean-local:: clean-build-tool
 clean-build-tool:
-	- cd build-tool && $(MAKE) clean 2> $(NULL) || $(NULLCMD)
-	- $(RMDIR) build-tool
+	- cd build-tool 2> $(NULL) && $(MAKE) clean 2> $(NULL) || $(NULLCMD)
+	- $(RMDIR) build-tool 2> $(NULL) || $(NULLCMD)
 
 $(srcdir)/revision.h$(no_baseruby:no=~disabled~): $(REVISION_H)
 
+REVISION_H_CMD = $(BASERUBY) $(tooldir)/file2lastrev.rb -q --revision.h \
+	--srcdir="$(srcdir)" --output=revision.h --timestamp=$(REVISION_H)
+
 $(REVISION_H)$(no_baseruby:no=~disabled~):
-	$(Q) $(BASERUBY) $(tooldir)/file2lastrev.rb -q --revision.h --srcdir="$(srcdir)" --output=revision.h --timestamp=$@
+	$(Q) $(REVISION_H_CMD)
 $(REVISION_H)$(yes_baseruby:yes=~disabled~):
 	$(Q) exit > $@
 
@@ -1519,9 +1520,15 @@ after-update:: extract-extlibs
 after-update:: extract-gems
 after-update:: update-default-gemspecs
 
+# Do not remove or empty revision.h itself, whose content file2lastrev.rb
+# keeps when the source tree has no VCS.
 update-src::
-	$(Q) $(RM) $(REVISION_H) revision.h "$(srcdir)/$(REVISION_H)" "$(srcdir)/revision.h"
-	$(Q) exit > "$(srcdir)/revision.h"
+	$(Q) $(RM) $(REVISION_H) "$(srcdir)/$(REVISION_H)"
+
+# $(REVISION_H) can have been made already in this run, as a prerequisite
+# of the included dependency file, and make does not make it twice.
+update-src$(no_baseruby:no=~disabled~)::
+	$(Q) $(REVISION_H_CMD)
 
 update-remote:: update-src update-download
 update-download:: $(ALWAYS_UPDATE_UNICODE:yes=update-unicode)
@@ -1537,7 +1544,7 @@ update-config_files: PHONY
 
 update-coverage: main PHONY
 	$(XRUBY) -C "$(srcdir)" bin/gem install --no-document \
-		--install-dir .bundle --conservative "simplecov"
+		--install-dir .bundle --conservative "simplecov" -v "~> 1.1"
 
 refresh-gems: update-bundled_gems prepare-gems
 # can't recall exactly, but `make` somewhere (not GNU or nmake)
@@ -2045,7 +2052,7 @@ clean-modular-gc: gc/clean
 distclean-modular-gc: gc/distclean
 realclean-modular-gc: gc/realclean
 distclean-modular-gc realclean-modular-gc:
-	-$(Q) $(RMDIR) gc
+	-$(Q) $(RMDIR) gc 2> $(NULL) || $(NULLCMD)
 
 help: PHONY
 	$(MESSAGE_BEGIN) \

@@ -90,7 +90,6 @@ MODULAR_GC_FN void rb_gc_vm_weak_table_foreach(vm_table_foreach_callback_func ca
 MODULAR_GC_FN void rb_gc_vm_generic_fields_mark_foreach(int (*cb)(VALUE key, VALUE val, void *arg), void *arg);
 MODULAR_GC_FN void rb_gc_vm_generic_fields_drain_dead(bool (*is_dead)(VALUE key));
 /* Exemptions for the shareable containment verifier (called from a gc-impl). */
-MODULAR_GC_FN bool rb_gc_current_ractor_materializing_p(void);
 MODULAR_GC_FN VALUE rb_gc_vm_top_self(void);
 MODULAR_GC_FN void rb_gc_update_object_references(void *objspace, VALUE obj);
 MODULAR_GC_FN void rb_gc_update_vm_references(void *objspace);
@@ -134,7 +133,7 @@ MODULAR_GC_FN void rb_gc_print_backtrace();
 RUBY_SYMBOL_EXPORT_END
 #endif
 
-void rb_ractor_finish_marking(void);
+void rb_ractor_finish_marking(bool full_mark);
 
 // -------------------Private section begin------------------------
 // Functions in this section are private to the default GC and gc.c
@@ -172,7 +171,7 @@ hash_foreach_replace_value(st_data_t key, st_data_t value, st_data_t argp, int e
 static int
 hash_replace_ref_value(st_data_t *key, st_data_t *value, st_data_t argp, int existing)
 {
-    *value = rb_gc_location((VALUE)*value);
+    rb_gc_update_moved((VALUE *)value);
 
     return ST_CONTINUE;
 }
@@ -220,15 +219,8 @@ hash_foreach_replace(st_data_t key, st_data_t value, st_data_t argp, int error)
 static int
 hash_replace_ref(st_data_t *key, st_data_t *value, st_data_t argp, int existing)
 {
-    VALUE new_key = rb_gc_location((VALUE)*key);
-    if (new_key != (VALUE)*key) {
-        *key = new_key;
-    }
-
-    VALUE new_value = rb_gc_location((VALUE)*value);
-    if (new_value != (VALUE)*value) {
-        *value = new_value;
-    }
+    rb_gc_update_moved((VALUE *)key);
+    rb_gc_update_moved((VALUE *)value);
 
     return ST_CONTINUE;
 }

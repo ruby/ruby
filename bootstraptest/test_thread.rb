@@ -571,3 +571,125 @@ assert_equal 'ok', %q{
     got == 'x' ? 'ok' : got.inspect
   end.value
 }
+
+# A ractor made runnable while every shared native thread is dedicated to a
+# blocking region must still be served: ractor_sched_enq has to wake the timer
+# thread, whose untimed sleep otherwise never ends.  [Bug #21504]
+assert_equal 'ok', %q{
+  lockpath = "mn_enq_wake_#{$$}.lock"
+  flagpath = "mn_enq_wake_#{$$}.flag"
+  begin
+    File.write(lockpath, "")
+    lock = File.open(lockpath, "r+")
+    lock.flock(File::LOCK_EX)
+    r = Ractor.new(lockpath, flagpath) do |lockpath, flagpath|
+      f = File.open(lockpath, "r+")
+      t = Thread.new do
+        sleep 0.2   # let the Ractor.receive below park first
+        # Stay off the scheduler until the timer thread is in its untimed sleep;
+        # blocking right away would be repaired by the pending 10ms timeout.
+        t0 = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+        nil while Process.clock_gettime(Process::CLOCK_MONOTONIC) - t0 < 0.05
+        f.flock(File::LOCK_EX)   # the last shared native thread goes dedicated
+      end
+      msg = Ractor.receive
+      File.write(flagpath, "")
+      t.join
+      msg
+    end
+    sleep 1   # r is parked, its flock thread is dedicated, the timer sleeps untimed
+    r.send(:ok)
+    served = false
+    deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 5
+    until served || Process.clock_gettime(Process::CLOCK_MONOTONIC) > deadline
+      served = File.exist?(flagpath)
+      sleep 0.05
+    end
+    lock.flock(File::LOCK_UN)
+    served ? r.value.to_s : 'the enqueued ractor was never served'
+  ensure
+    File.unlink(lockpath) rescue nil
+    File.unlink(flagpath) rescue nil
+  end
+}
+
+# Creating a thread when no native thread can be spawned must fail cleanly:
+# the thread must not be published to the scheduler before its native thread
+# exists, or an existing shared thread runs it to death concurrently with the
+# creator's failure path (living-set removal races its own).
+assert_equal 'ok', %q{
+  can_limit = begin
+    Process.setrlimit(:NPROC, Process.getrlimit(:NPROC)[0])
+    true
+  rescue StandardError, NotImplementedError
+    false
+  end
+  if !can_limit
+    'ok'   # cannot make thread creation fail on this platform; nothing to test
+  else
+    # One warm ractor parks one shared native thread in the pool.  Exactly one:
+    # the pool is widened only while snt_cnt < max_cpu, so with two parked
+    # threads a 2-CPU host would never attempt pthread_create below and the
+    # rlimit would go unnoticed.
+    warm = Ractor.new { nil until Ractor.receive == :quit }
+    sleep 0.3   # the pool now has a shared native thread parked for the warm ractor
+    Process.setrlimit(:NPROC, 1)
+    # RLIMIT_NPROC binds neither root (CI containers) nor macOS threads;
+    # probe that thread creation actually fails before asserting on it.
+    limited = begin
+      Thread.new {}.join
+      false
+    rescue ThreadError
+      true
+    end
+    result =
+      if !limited
+        'ok'
+      else
+        errs = 0
+        20.times do
+          begin
+            Ractor.new { :born }
+          rescue ThreadError
+            errs += 1
+          end
+        end
+        sleep 0.5   # a wrongly-published thread would be served and die about now
+        # On a single-CPU host the pool is already at max_cpu, widening is never
+        # attempted and nothing raises; everywhere else every attempt must fail.
+        # A mixed count means a failed attempt was not rolled back cleanly.
+        (errs == 20 || errs == 0) ? 'ok' : "#{errs} of 20 raised"
+      end
+    warm.send(:quit)
+    warm.value
+    GC.start
+    result
+  end
+}
+
+# An M:N thread's sleep must survive a spurious wakeup: an interrupt that
+# handle_interrupt defers wakes the sleeper, whose status must stay
+# THREAD_STOPPED so that sleep_hrtime sleeps the remaining time, as it does
+# on a dedicated native thread.
+assert_equal 'ok', %q{
+  Ractor.new do
+    elapsed = nil
+    th = Thread.new do
+      Thread.handle_interrupt(RuntimeError => :never) do
+        t0 = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+        sleep 1.0
+        elapsed = Process.clock_gettime(Process::CLOCK_MONOTONIC) - t0
+      end
+    end
+    sleep 0.3
+    begin th.raise(RuntimeError, "deferred"); rescue RuntimeError; end
+    begin th.join; rescue RuntimeError; end
+    if elapsed.nil?
+      'the sleeper died inside handle_interrupt :never'
+    elsif elapsed >= 0.9
+      'ok'
+    else
+      "slept only %.2fs of 1.0s" % elapsed
+    end
+  end.value
+}

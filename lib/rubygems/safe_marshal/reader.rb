@@ -26,6 +26,9 @@ module Gem
       class NegativeLengthError < Error
       end
 
+      class LengthTooLongError < Error
+      end
+
       def initialize(io)
         @io = io
         @object_links = {}
@@ -91,6 +94,18 @@ module Gem
             signed - 5
           end
         end
+      end
+
+      # Reads an element count and validates it against the number of bytes
+      # remaining in the input, since each element to be read consumes at
+      # least one byte. This prevents allocating huge backing stores for
+      # maliciously crafted lengths that could never be satisfied.
+      def read_count
+        count = read_integer
+        raise NegativeLengthError if count < 0
+        remaining = @io.size - @io.pos
+        raise LengthTooLongError, "expected #{count} elements, but only #{remaining} bytes remain" if count > remaining
+        count
       end
 
       def read_element
@@ -172,9 +187,8 @@ module Gem
       private_constant :EMPTY_ARRAY
 
       def read_array
-        length = read_integer
+        length = read_count
         return EMPTY_ARRAY if length == 0
-        raise NegativeLengthError if length < 0
         elements = Array.new(length) do
           read_element
         end
@@ -183,8 +197,7 @@ module Gem
 
       def read_object_with_ivars
         object = read_element
-        length = read_integer
-        raise NegativeLengthError if length < 0
+        length = read_count
         ivars = Array.new(length) do
           [read_element, read_element]
         end
@@ -211,7 +224,7 @@ module Gem
       private_constant :EMPTY_HASH
 
       def read_hash
-        length = read_integer
+        length = read_count
         return EMPTY_HASH if length == 0
         pairs = Array.new(length) do
           [read_element, read_element]
@@ -220,8 +233,7 @@ module Gem
       end
 
       def read_hash_with_default_value
-        length = read_integer
-        raise NegativeLengthError if length < 0
+        length = read_count
         pairs = Array.new(length) do
           [read_element, read_element]
         end
@@ -232,8 +244,7 @@ module Gem
       def read_object
         name = read_element
         object = Elements::Object.new(name)
-        length = read_integer
-        raise NegativeLengthError if length < 0
+        length = read_count
         ivars = Array.new(length) do
           [read_element, read_element]
         end

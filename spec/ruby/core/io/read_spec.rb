@@ -319,6 +319,12 @@ describe "IO#read" do
     buf.should == ''
   end
 
+  it "does not modify the buffer if a read error occurs" do
+    buffer = +"existing content"
+    -> { IOSpecs.closed_io.read(1, buffer) }.should.raise(IOError)
+    buffer.should == "existing content"
+  end
+
   it "returns the empty string when there is nothing to read and lenght=0 is given" do
     @io.read(11)
     @io.read(0).should == ""

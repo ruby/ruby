@@ -198,6 +198,9 @@ $(SCRIPTBINDIR)%$(EXEEXT): bin/% $(STUBPROGRAM) \
 $(SCRIPTBINDIR):
 	$(Q) mkdir $@
 
+encdb.h: $(wildcard $(srcdir)/enc/*.[ch])
+transdb.h: $(wildcard $(srcdir)/enc/trans/*.trans)
+
 .PHONY: commit
 COMMIT_PREPARE := $(subst :,\:,$(filter-out commit do-commit,$(MAKECMDGOALS))) up
 

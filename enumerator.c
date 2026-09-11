@@ -4671,7 +4671,7 @@ InitVM_Enumerator(void)
     rb_define_method(rb_cLazy, "with_index", lazy_with_index, -1);
     rb_define_method(rb_cLazy, "tap_each", lazy_tap_each, 0);
 
-    lazy_use_super_method = rb_hash_new_with_size(18);
+    lazy_use_super_method = rb_hash_new_capa(18);
     rb_hash_aset(lazy_use_super_method, sym("map"), sym("_enumerable_map"));
     rb_hash_aset(lazy_use_super_method, sym("collect"), sym("_enumerable_collect"));
     rb_hash_aset(lazy_use_super_method, sym("flat_map"), sym("_enumerable_flat_map"));

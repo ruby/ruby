@@ -255,6 +255,24 @@ RSpec.describe "major deprecations" do
     end
   end
 
+  context "bundle config no_prune" do
+    before do
+      install_gemfile <<-G
+        source "https://gem.repo1"
+        gem "myrack"
+      G
+
+      bundle_config "no_prune true"
+      bundle :cache
+    end
+
+    it "warns that the setting has been renamed" do
+      expect(deprecations).to include(
+        "The `no_prune` setting has been renamed to `keep_outdated_cache` and will be removed in Bundler 5. Use `keep_outdated_cache` instead."
+      )
+    end
+  end
+
   context "bundle cache --no-prune" do
     before do
       gemfile <<-G
@@ -269,7 +287,7 @@ RSpec.describe "major deprecations" do
       expect(err).to include(
         "The `--no-prune` flag has been removed because it relied on being " \
         "remembered across bundler invocations, which bundler no longer " \
-        "does. Instead please use `bundle config set no_prune true`, " \
+        "does. Instead please use `bundle config set keep_outdated_cache true`, " \
         "and stop using this flag"
       )
     end
@@ -448,7 +466,7 @@ RSpec.describe "major deprecations" do
       "deployment" => ["deployment", "true"],
       "frozen" => ["frozen", "true"],
       "no-deployment" => ["deployment", "false"],
-      "no-prune" => ["no_prune", "true"],
+      "no-prune" => ["keep_outdated_cache", "true"],
       "path" => ["path", "'vendor/bundle'"],
       "shebang" => ["shebang", "'ruby27'"],
       "system" => ["path.system", "true"],

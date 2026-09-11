@@ -590,6 +590,22 @@ class TestDir < Test::Unit::TestCase
       assert_empty(entries - Dir.glob("#{wild}/Common*", File::FNM_SHORTNAME), bug10819)
     end
 
+    def test_glob_long_path
+      bug18923 = '[Bug #18923]'
+      # the whole path is longer than MAX_PATH, while each component is
+      # within the 255 chars limit of NTFS
+      deep = File.join(@root, "a" * 200, "b" * 200)
+      begin
+        FileUtils.mkdir_p(deep)
+      rescue SystemCallError
+        omit "long path names are not available"
+      end
+      file = File.join(deep, "c.txt")
+      File.write(file, "")
+      assert_equal([file], Dir.glob(File.join(@root, "**", "*.txt")), bug18923)
+      assert_equal(["c.txt"], Dir.children(deep), bug18923)
+    end
+
     def test_home_windows
       setup_envs(%w[HOME USERPROFILE HOMEDRIVE HOMEPATH])
 

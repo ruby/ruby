@@ -212,6 +212,19 @@ class TestMarshal < Test::Unit::TestCase
     self.class.__send__(:remove_const, :C3) if self.class.const_defined?(:C3)
   end
 
+  UserClassWideStruct = Struct.new(:a, :b, :c, :d, :e)
+  UserClassNarrowStruct = Struct.new(:a)
+
+  def test_user_class_struct_size
+    wide = Marshal.dump(UserClassWideStruct.new(1, 2, 3, 4, 5)).byteslice(2..)
+    narrow = Marshal.dump(UserClassNarrowStruct.new(6)).byteslice(2..)
+    # An array of both structs, then a user class marker relabelling the
+    # narrow struct (object link "@\a") as the wide class (symbol link ";\0").
+    data = "\x04\b[\b".b + wide + narrow + "C;\0@\a".b
+    message = /\Astruct #{UserClassWideStruct.name} not compatible \(struct size differs\)/
+    assert_raise_with_message(TypeError, message) {Marshal.load(data)}
+  end
+
   class C4
     def initialize(gc)
       @gc = gc
@@ -769,6 +782,14 @@ class TestMarshal < Test::Unit::TestCase
     assert_equal object, Marshal.load(Marshal.dump(object), :freeze.to_proc)
   end
 
+  def test_marshal_false_proc
+    object = []
+    object << object
+
+    loaded = Marshal.load(Marshal.dump(object), false)
+    assert_same loaded, loaded.first
+  end
+
   def test_marshal_load_extended_class_crash
     assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}")
     begin;
@@ -951,6 +972,28 @@ class TestMarshal < Test::Unit::TestCase
     end.new
 
     assert_equal([nil, nil], Marshal.load(input))
+  end
+
+  def test_load_overread_string_body
+    input = Struct.new(:bytes, :count) do
+      def initialize
+        super("\x04\x08[\x07".bytes, 0)
+      end
+
+      def getbyte
+        bytes.shift
+      end
+
+      def read(_len, _outbuf = nil)
+        self.count += 1
+        case count
+        when 1 then "\"\x06" # TYPE_STRING, length 1
+        when 2 then "a" + "0" * (1024 * 128)
+        end
+      end
+    end.new
+
+    assert_equal(["a", nil], Marshal.load(input))
   end
 
   def test_bignum_len_overflow

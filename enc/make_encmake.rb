@@ -6,7 +6,7 @@ dir = File.expand_path("../..", __FILE__)
 # baseruby's cgi/escape.so and source cgi/escape.rb via erb.
 $:.unshift("#{dir}/lib") unless defined?(CROSS_COMPILING)
 $:.unshift(Dir.pwd, "#{dir}/tool/lib")
-if $".grep(/mkmf/).empty?
+unless $".any? {|feat| File.basename(feat) == "/mkmf.rb"}
   $" << "mkmf.rb"
   load File.expand_path("lib/mkmf.rb", dir)
 end

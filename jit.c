@@ -20,6 +20,7 @@
 #include "internal/string.h"
 #include "internal/class.h"
 #include "internal/imemo.h"
+#include "internal/struct.h"
 #include "ruby/internal/core/rtypeddata.h"
 #include "zjit.h"
 
@@ -40,6 +41,10 @@ enum jit_bindgen_constants {
 
     // Field offset for the RHash struct
     RUBY_OFFSET_RHASH_IFNONE = offsetof(struct RHash, ifnone),
+
+    // Field offsets for the embedded ar_table in a hash
+    RUBY_OFFSET_RHASH_AR_HINT = sizeof(struct RHash) + offsetof(ar_table, ar_hint),
+    RUBY_OFFSET_RHASH_AR_PAIRS = sizeof(struct RHash) + offsetof(ar_table, pairs),
 
     // Max pairs an embedded ar_table hash holds before it converts to an st_table
     RUBY_RHASH_AR_TABLE_MAX_SIZE = RHASH_AR_TABLE_MAX_SIZE,
@@ -66,7 +71,7 @@ const shape_id_t rb_invalid_shape_id = INVALID_SHAPE_ID;
 unsigned int
 rb_iseq_encoded_size(const rb_iseq_t *iseq)
 {
-    return iseq->body->iseq_size;
+    return ISEQ_BODY(iseq)->iseq_size;
 }
 
 // Get the PC for a given index in an iseq
@@ -74,8 +79,8 @@ VALUE *
 rb_iseq_pc_at_idx(const rb_iseq_t *iseq, uint32_t insn_idx)
 {
     RUBY_ASSERT_ALWAYS(IMEMO_TYPE_P(iseq, imemo_iseq));
-    RUBY_ASSERT_ALWAYS(insn_idx < iseq->body->iseq_size);
-    VALUE *encoded = iseq->body->iseq_encoded;
+    RUBY_ASSERT_ALWAYS(insn_idx < ISEQ_BODY(iseq)->iseq_size);
+    VALUE *encoded = ISEQ_BODY(iseq)->iseq_encoded;
     VALUE *pc = &encoded[insn_idx];
     return pc;
 }
@@ -241,21 +246,21 @@ rb_optimized_call(VALUE recv, rb_execution_context_t *ec, int argc, VALUE *argv,
 unsigned int
 rb_jit_iseq_builtin_attrs(const rb_iseq_t *iseq)
 {
-    return iseq->body->builtin_attrs;
+    return ISEQ_BODY(iseq)->builtin_attrs;
 }
 
 // Relaxed memory ordering, but called by the JIT with VM lock and barrier.
 void
 rb_jit_iseq_mark_ep_escape_recorded(const rb_iseq_t *iseq)
 {
-    rbimpl_atomic_store(&iseq->body->jit_ep_escape_recorded, 1, RBIMPL_ATOMIC_RELAXED);
+    rbimpl_atomic_store(&ISEQ_BODY(iseq)->jit_ep_escape_recorded, 1, RBIMPL_ATOMIC_RELAXED);
 }
 
 // Whether an EP escape of this iseq has been reported to the enabled JIT.
 bool
 rb_jit_iseq_ep_escape_recorded_p(const rb_iseq_t *iseq)
 {
-    return rbimpl_atomic_load(&iseq->body->jit_ep_escape_recorded, RBIMPL_ATOMIC_RELAXED) != 0;
+    return rbimpl_atomic_load(&ISEQ_BODY(iseq)->jit_ep_escape_recorded, RBIMPL_ATOMIC_RELAXED) != 0;
 }
 
 int
@@ -279,109 +284,109 @@ rb_get_def_iseq_ptr(rb_method_definition_t *def)
 const rb_iseq_t *
 rb_get_iseq_body_local_iseq(const rb_iseq_t *iseq)
 {
-    return iseq->body->local_iseq;
+    return ISEQ_BODY(iseq)->local_iseq;
 }
 
 const rb_iseq_t *
 rb_get_iseq_body_parent_iseq(const rb_iseq_t *iseq)
 {
-    return iseq->body->parent_iseq;
+    return ISEQ_BODY(iseq)->parent_iseq;
 }
 
 unsigned int
 rb_get_iseq_body_local_table_size(const rb_iseq_t *iseq)
 {
-    return iseq->body->local_table_size;
+    return ISEQ_BODY(iseq)->local_table_size;
 }
 
 VALUE *
 rb_get_iseq_body_iseq_encoded(const rb_iseq_t *iseq)
 {
-    return iseq->body->iseq_encoded;
+    return ISEQ_BODY(iseq)->iseq_encoded;
 }
 
 unsigned
 rb_get_iseq_body_stack_max(const rb_iseq_t *iseq)
 {
-    return iseq->body->stack_max;
+    return ISEQ_BODY(iseq)->stack_max;
 }
 
 enum rb_iseq_type
 rb_get_iseq_body_type(const rb_iseq_t *iseq)
 {
-    return iseq->body->type;
+    return ISEQ_BODY(iseq)->type;
 }
 
 bool
 rb_get_iseq_flags_has_lead(const rb_iseq_t *iseq)
 {
-    return iseq->body->param.flags.has_lead;
+    return ISEQ_BODY(iseq)->param.flags.has_lead;
 }
 
 bool
 rb_get_iseq_flags_has_opt(const rb_iseq_t *iseq)
 {
-    return iseq->body->param.flags.has_opt;
+    return ISEQ_BODY(iseq)->param.flags.has_opt;
 }
 
 bool
 rb_get_iseq_flags_has_kw(const rb_iseq_t *iseq)
 {
-    return iseq->body->param.flags.has_kw;
+    return ISEQ_BODY(iseq)->param.flags.has_kw;
 }
 
 bool
 rb_get_iseq_flags_has_post(const rb_iseq_t *iseq)
 {
-    return iseq->body->param.flags.has_post;
+    return ISEQ_BODY(iseq)->param.flags.has_post;
 }
 
 bool
 rb_get_iseq_flags_has_kwrest(const rb_iseq_t *iseq)
 {
-    return iseq->body->param.flags.has_kwrest;
+    return ISEQ_BODY(iseq)->param.flags.has_kwrest;
 }
 
 bool
 rb_get_iseq_flags_anon_kwrest(const rb_iseq_t *iseq)
 {
-    return iseq->body->param.flags.anon_kwrest;
+    return ISEQ_BODY(iseq)->param.flags.anon_kwrest;
 }
 
 bool
 rb_get_iseq_flags_has_rest(const rb_iseq_t *iseq)
 {
-    return iseq->body->param.flags.has_rest;
+    return ISEQ_BODY(iseq)->param.flags.has_rest;
 }
 
 bool
 rb_get_iseq_flags_ruby2_keywords(const rb_iseq_t *iseq)
 {
-    return iseq->body->param.flags.ruby2_keywords;
+    return ISEQ_BODY(iseq)->param.flags.ruby2_keywords;
 }
 
 bool
 rb_get_iseq_flags_has_block(const rb_iseq_t *iseq)
 {
-    return iseq->body->param.flags.has_block;
+    return ISEQ_BODY(iseq)->param.flags.has_block;
 }
 
 bool
 rb_get_iseq_flags_ambiguous_param0(const rb_iseq_t *iseq)
 {
-    return iseq->body->param.flags.ambiguous_param0;
+    return ISEQ_BODY(iseq)->param.flags.ambiguous_param0;
 }
 
 bool
 rb_get_iseq_flags_accepts_no_kwarg(const rb_iseq_t *iseq)
 {
-    return iseq->body->param.flags.accepts_no_kwarg;
+    return ISEQ_BODY(iseq)->param.flags.accepts_no_kwarg;
 }
 
 bool
 rb_get_iseq_flags_forwardable(const rb_iseq_t *iseq)
 {
-    return iseq->body->param.flags.forwardable;
+    return ISEQ_BODY(iseq)->param.flags.forwardable;
 }
 
 // This is defined only as a named struct inside rb_iseq_constant_body.
@@ -392,31 +397,31 @@ typedef struct rb_iseq_param_keyword rb_iseq_param_keyword_struct;
 const rb_iseq_param_keyword_struct *
 rb_get_iseq_body_param_keyword(const rb_iseq_t *iseq)
 {
-    return iseq->body->param.keyword;
+    return ISEQ_BODY(iseq)->param.keyword;
 }
 
 unsigned
 rb_get_iseq_body_param_size(const rb_iseq_t *iseq)
 {
-    return iseq->body->param.size;
+    return ISEQ_BODY(iseq)->param.size;
 }
 
 int
 rb_get_iseq_body_param_lead_num(const rb_iseq_t *iseq)
 {
-    return iseq->body->param.lead_num;
+    return ISEQ_BODY(iseq)->param.lead_num;
 }
 
 int
 rb_get_iseq_body_param_opt_num(const rb_iseq_t *iseq)
 {
-    return iseq->body->param.opt_num;
+    return ISEQ_BODY(iseq)->param.opt_num;
 }
 
 const VALUE *
 rb_get_iseq_body_param_opt_table(const rb_iseq_t *iseq)
 {
-    return iseq->body->param.opt_table;
+    return ISEQ_BODY(iseq)->param.opt_table;
 }
 
 struct rb_control_frame_struct *
@@ -558,6 +563,19 @@ rb_jit_array_len(VALUE a)
     return rb_array_len(a);
 }
 
+// Return non-zero when `obj` is an array and its last item is a
+// `ruby2_keywords` hash. The JITs don't support this kind of splat.
+size_t
+rb_jit_ruby2_keywords_splat_p(VALUE obj)
+{
+    if (!RB_TYPE_P(obj, T_ARRAY)) return 0;
+    long len = RARRAY_LEN(obj);
+    if (len == 0) return 0;
+    VALUE last = RARRAY_AREF(obj, len - 1);
+    if (!RB_TYPE_P(last, T_HASH)) return 0;
+    return FL_TEST_RAW(last, RHASH_PASS_AS_KEYWORDS);
+}
+
 void
 rb_set_cfp_pc(struct rb_control_frame_struct *cfp, const VALUE *pc)
 {
@@ -582,6 +600,12 @@ rb_jit_multi_ractor_p(void)
     return rb_multi_ractor_p();
 }
 
+bool
+rb_jit_constcache_shareable(const struct iseq_inline_constant_cache_entry *ice)
+{
+    return (ice->flags & IMEMO_CONST_CACHE_SHAREABLE) != 0;
+}
+
 // Acquire the VM lock and then signal all other Ruby threads (ractors) to
 // contend for the VM lock, putting them to sleep. ZJIT and YJIT use this to
 // evict threads running inside generated code so among other things, it can
@@ -601,16 +625,37 @@ rb_jit_vm_unlock(unsigned int *recursive_lock_level, const char *file, int line)
     rb_vm_lock_leave(recursive_lock_level, file, line);
 }
 
+void *
+rb_iseq_get_jit_payload(const rb_iseq_t *iseq)
+{
+    RUBY_ASSERT_ALWAYS(IMEMO_TYPE_P(iseq, imemo_iseq));
+    if (ISEQ_BODY(iseq)) {
+        return ISEQ_BODY(iseq)->jit_payload;
+    }
+    else {
+        return NULL;
+    }
+}
+
+void
+rb_iseq_set_jit_payload(const rb_iseq_t *iseq, void *payload)
+{
+    RUBY_ASSERT_ALWAYS(IMEMO_TYPE_P(iseq, imemo_iseq));
+    RUBY_ASSERT_ALWAYS(ISEQ_BODY(iseq));
+    RUBY_ASSERT_ALWAYS(NULL == ISEQ_BODY(iseq)->jit_payload);
+    ISEQ_BODY(iseq)->jit_payload = payload;
+}
+
 void
 rb_iseq_reset_jit_func(const rb_iseq_t *iseq)
 {
     RUBY_ASSERT_ALWAYS(IMEMO_TYPE_P(iseq, imemo_iseq));
-    iseq->body->jit_entry = NULL;
-    iseq->body->jit_exception = NULL;
+    ISEQ_BODY(iseq)->jit_entry = NULL;
+    ISEQ_BODY(iseq)->jit_exception = NULL;
     // Enable re-compiling this ISEQ. Event when it's invalidated for TracePoint,
     // we'd like to re-compile ISEQs that haven't been converted to trace_* insns.
-    iseq->body->jit_entry_calls = 0;
-    iseq->body->jit_exception_calls = 0;
+    ISEQ_BODY(iseq)->jit_entry_calls = 0;
+    ISEQ_BODY(iseq)->jit_exception_calls = 0;
 }
 
 // Callback data for rb_jit_for_each_iseq
@@ -660,9 +705,9 @@ rb_jit_get_page_size(void)
 }
 
 #if defined(MAP_FIXED_NOREPLACE) && defined(_SC_PAGESIZE)
-// Align the current write position to a multiple of bytes
-static uint8_t *
-align_ptr(uint8_t *ptr, uint32_t multiple)
+// Round `ptr` up to the next multiple of `multiple` bytes. Shared with zjit.c.
+uint8_t *
+rb_jit_align_ptr(uint8_t *ptr, uint32_t multiple)
 {
     // Compute the pointer modulo the given alignment boundary
     uint32_t rem = ((uint32_t)(uintptr_t)ptr) % multiple;
@@ -692,7 +737,7 @@ rb_jit_reserve_addr_space(uint32_t mem_size)
         uint8_t *const cfunc_sample_addr = (void *)(uintptr_t)&rb_jit_reserve_addr_space;
         uint8_t *const probe_region_end = cfunc_sample_addr + INT32_MAX;
         // Align the requested address to page size
-        uint8_t *req_addr = align_ptr(cfunc_sample_addr, page_size);
+        uint8_t *req_addr = rb_jit_align_ptr(cfunc_sample_addr, page_size);
 
         // Probe for addresses close to this function using MAP_FIXED_NOREPLACE
         // to improve odds of being in range for 32-bit relative call instructions.
@@ -751,12 +796,8 @@ rb_jit_reserve_addr_space(uint32_t mem_size)
 
     // Check that the memory mapping was successful
     if (mem_block == MAP_FAILED) {
-        perror("ruby: jit: mmap:");
-        if(errno == ENOMEM) {
-            // No crash report if it's only insufficient memory
-            exit(EXIT_FAILURE);
-        }
-        rb_bug("mmap failed");
+        perror("ruby: jit: Fatal mmap failure:");
+        abort();
     }
 
     return mem_block;

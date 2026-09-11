@@ -1,4 +1,3 @@
-#!/usr/bin/env ruby
 # frozen_string_literal: true
 
 require_relative 'test_helper'
@@ -84,6 +83,12 @@ class JSONGeneratorTest < Test::Unit::TestCase
     assert_equal '"World"', "World".to_json(strict: true)
     assert_equal '["hello"]', dump([:hello], strict: true)
     assert_equal '{"hello":"world"}', dump({ hello: :world }, strict: true)
+  end
+
+  def test_dump_deprecated_limit
+    io = StringIO.new
+    JSON.dump([1], io, 0)
+    assert_equal '[1]', io.string
   end
 
   def test_not_frozen
@@ -175,7 +180,7 @@ class JSONGeneratorTest < Test::Unit::TestCase
   end
 
   def test_generate_pretty_custom
-    state = State.new(:space_before => "<psb>", :space => "<ps>", :indent => "<pi>", :object_nl => "\n<po_nl>\n", :array_nl => "<pa_nl>")
+    state = State.new(space_before: "<psb>", space: "<ps>", indent: "<pi>", object_nl: "\n<po_nl>\n", array_nl: "<pa_nl>")
     json = pretty_generate({1=>{}, 2=>['a','b'], 3=>4}, state)
     assert_equal(<<~'JSON'.chomp, json)
       {
@@ -244,7 +249,7 @@ class JSONGeneratorTest < Test::Unit::TestCase
   end
 
   def test_generate_custom
-    state = State.new(:space_before => " ", :space => "   ", :indent => "<i>", :object_nl => "\n", :array_nl => "<a_nl>")
+    state = State.new(space_before: " ", space: "   ", indent: "<i>", object_nl: "\n", array_nl: "<a_nl>")
     json = generate({1=>{2=>3,4=>[5,6]}}, state)
     assert_equal(<<~'JSON'.chomp, json)
       {
@@ -307,62 +312,62 @@ class JSONGeneratorTest < Test::Unit::TestCase
   def test_state_defaults
     state = JSON::State.new
     assert_equal({
-      :allow_duplicate_key   => false,
-      :allow_nan             => false,
-      :array_nl              => "",
-      :as_json               => false,
-      :ascii_only            => false,
-      :buffer_initial_length => 1024,
-      :depth                 => 0,
-      :script_safe           => false,
-      :strict                => false,
-      :indent                => "",
-      :max_nesting           => 100,
-      :object_nl             => "",
-      :space                 => "",
-      :space_before          => "",
-      :sort_keys             => false,
+      allow_duplicate_key: false,
+      allow_nan: false,
+      array_nl: "",
+      as_json: false,
+      ascii_only: false,
+      buffer_initial_length: 1024,
+      depth: 0,
+      script_safe: false,
+      strict: false,
+      indent: "",
+      max_nesting: 100,
+      object_nl: "",
+      space: "",
+      space_before: "",
+      sort_keys: false,
     }.sort_by { |n,| n.to_s }.to_h, state.to_h.sort_by { |n,| n.to_s }.to_h)
 
     state = JSON::State.new(allow_duplicate_key: true)
     assert_equal({
-      :allow_duplicate_key   => true,
-      :allow_nan             => false,
-      :array_nl              => "",
-      :as_json               => false,
-      :ascii_only            => false,
-      :buffer_initial_length => 1024,
-      :depth                 => 0,
-      :script_safe           => false,
-      :strict                => false,
-      :indent                => "",
-      :max_nesting           => 100,
-      :object_nl             => "",
-      :space                 => "",
-      :space_before          => "",
-      :sort_keys             => false,
+      allow_duplicate_key: true,
+      allow_nan: false,
+      array_nl: "",
+      as_json: false,
+      ascii_only: false,
+      buffer_initial_length: 1024,
+      depth: 0,
+      script_safe: false,
+      strict: false,
+      indent: "",
+      max_nesting: 100,
+      object_nl: "",
+      space: "",
+      space_before: "",
+      sort_keys: false,
     }.sort_by { |n,| n.to_s }, state.to_h.sort_by { |n,| n.to_s })
   end
 
   def test_allow_nan
     error = assert_raise(GeneratorError) { generate([JSON::NaN]) }
     assert_same JSON::NaN, error.invalid_object
-    assert_equal '[NaN]', generate([JSON::NaN], :allow_nan => true)
+    assert_equal '[NaN]', generate([JSON::NaN], allow_nan: true)
     assert_raise(GeneratorError) { generate([JSON::NaN]) }
     assert_raise(GeneratorError) { pretty_generate([JSON::NaN]) }
-    assert_equal "[\n  NaN\n]", pretty_generate([JSON::NaN], :allow_nan => true)
+    assert_equal "[\n  NaN\n]", pretty_generate([JSON::NaN], allow_nan: true)
     error = assert_raise(GeneratorError) { generate([JSON::Infinity]) }
     assert_same JSON::Infinity, error.invalid_object
-    assert_equal '[Infinity]', generate([JSON::Infinity], :allow_nan => true)
+    assert_equal '[Infinity]', generate([JSON::Infinity], allow_nan: true)
     assert_raise(GeneratorError) { generate([JSON::Infinity]) }
     assert_raise(GeneratorError) { pretty_generate([JSON::Infinity]) }
-    assert_equal "[\n  Infinity\n]", pretty_generate([JSON::Infinity], :allow_nan => true)
+    assert_equal "[\n  Infinity\n]", pretty_generate([JSON::Infinity], allow_nan: true)
     error = assert_raise(GeneratorError) { generate([JSON::MinusInfinity]) }
     assert_same JSON::MinusInfinity, error.invalid_object
-    assert_equal '[-Infinity]', generate([JSON::MinusInfinity], :allow_nan => true)
+    assert_equal '[-Infinity]', generate([JSON::MinusInfinity], allow_nan: true)
     assert_raise(GeneratorError) { generate([JSON::MinusInfinity]) }
     assert_raise(GeneratorError) { pretty_generate([JSON::MinusInfinity]) }
-    assert_equal "[\n  -Infinity\n]", pretty_generate([JSON::MinusInfinity], :allow_nan => true)
+    assert_equal "[\n  -Infinity\n]", pretty_generate([JSON::MinusInfinity], allow_nan: true)
   end
 
   # An object that changes state.depth when it receives to_json(state)
@@ -489,11 +494,11 @@ class JSONGeneratorTest < Test::Unit::TestCase
 
   def test_configure_using_configure_and_merge
     numbered_state = {
-      :indent       => "1",
-      :space        => '2',
-      :space_before => '3',
-      :object_nl    => '4',
-      :array_nl     => '5'
+      indent: "1",
+      space: '2',
+      space_before: '3',
+      object_nl: '4',
+      array_nl: '5'
     }
     state1 = JSON.state.new
     state1.merge(numbered_state)
@@ -511,9 +516,64 @@ class JSONGeneratorTest < Test::Unit::TestCase
     assert_equal '5', state2.array_nl
   end
 
+  def test_configure_only_writes_the_string_options_it_is_given
+    state = JSON.state.new(indent: '1', space: '2', space_before: '3', object_nl: '4', array_nl: '5')
+    state.configure(space: '9')
+    assert_equal '1', state.indent
+    assert_equal '9', state.space
+    assert_equal '3', state.space_before
+    assert_equal '4', state.object_nl
+    assert_equal '5', state.array_nl
+    state.merge(array_nl: '8')
+    assert_equal '1', state.indent
+    assert_equal '9', state.space
+    assert_equal '3', state.space_before
+    assert_equal '4', state.object_nl
+    assert_equal '8', state.array_nl
+  end
+
+  def test_configure_keeps_the_layout_of_a_pretty_state
+    state = JSON.state.new(indent: '  ', object_nl: "\n", array_nl: "\n")
+    state.configure(depth: 0)
+    assert_equal %({\n  "foo":[\n    1\n  ]\n}), state.generate({ 'foo' => [1] })
+  end
+
+  def test_configure_only_writes_the_other_options_it_is_given
+    state = JSON.state.new(max_nesting: 3, allow_nan: true, ascii_only: true, script_safe: true,
+                           strict: true, buffer_initial_length: 32)
+    state.configure(indent: '1')
+    assert_equal '1', state.indent
+    assert_equal 3, state.max_nesting
+    assert_equal true, state.allow_nan?
+    assert_equal true, state.ascii_only?
+    assert_equal true, state.script_safe?
+    assert_equal true, state.strict?
+    assert_equal 32, state.buffer_initial_length
+  end
+
+  def test_configure_keeps_sort_keys
+    state = JSON.state.new(sort_keys: true)
+    state.configure(depth: 0)
+    assert_equal '{"a":2,"b":1}', state.generate({ 'b' => 1, 'a' => 2 })
+  end
+
+  def test_configure_keeps_as_json
+    as_json = ->(object, _is_key) { object.to_s }
+    state = JSON.state.new(strict: true, as_json: as_json)
+    state.configure(depth: 0)
+    assert_equal as_json, state.as_json
+  end
+
+  def test_configure_writes_a_string_option_given_as_nil
+    state = JSON.state.new(indent: '1', space: '2')
+    state.configure(indent: nil)
+    assert_equal '', state.indent
+    assert_equal '2', state.space
+  end
+
   def test_configure_hash_conversion
     state = JSON.state.new
-    state.configure(:indent => '1')
+    state.configure(indent: '1')
     assert_equal '1', state.indent
     state = JSON.state.new
     foo = 'foo'.dup
@@ -595,14 +655,14 @@ class JSONGeneratorTest < Test::Unit::TestCase
     too_deep = '[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[["Too deep"]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]'
     too_deep_ary = eval too_deep
     assert_raise(JSON::NestingError) { generate too_deep_ary }
-    assert_raise(JSON::NestingError) { generate too_deep_ary, :max_nesting => 100 }
-    ok = generate too_deep_ary, :max_nesting => 101
+    assert_raise(JSON::NestingError) { generate too_deep_ary, max_nesting: 100 }
+    ok = generate too_deep_ary, max_nesting: 101
     assert_equal too_deep, ok
-    ok = generate too_deep_ary, :max_nesting => nil
+    ok = generate too_deep_ary, max_nesting: nil
     assert_equal too_deep, ok
-    ok = generate too_deep_ary, :max_nesting => false
+    ok = generate too_deep_ary, max_nesting: false
     assert_equal too_deep, ok
-    ok = generate too_deep_ary, :max_nesting => 0
+    ok = generate too_deep_ary, max_nesting: 0
     assert_equal too_deep, ok
 
     assert_raise(TypeError) { generate too_deep_ary, max_nesting: "garbage" }
@@ -631,27 +691,27 @@ class JSONGeneratorTest < Test::Unit::TestCase
     #
     data = [ '/' ]
     json = '["\/"]'
-    assert_equal json, generate(data, :script_safe => true)
+    assert_equal json, generate(data, script_safe: true)
     #
     data = [ '///////////' ]
     json = '["\/\/\/\/\/\/\/\/\/\/\/"]'
-    assert_equal json, generate(data, :script_safe => true)
+    assert_equal json, generate(data, script_safe: true)
     #
     data = [ '///////////////////////////////////////////////////////' ]
     json = '["\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/"]'
-    assert_equal json, generate(data, :script_safe => true)
+    assert_equal json, generate(data, script_safe: true)
     #
     data = [ "\u2028\u2029" ]
     json = '["\u2028\u2029"]'
-    assert_equal json, generate(data, :script_safe => true)
+    assert_equal json, generate(data, script_safe: true)
     #
     data = [ "ABC \u2028 DEF \u2029 GHI" ]
     json = '["ABC \u2028 DEF \u2029 GHI"]'
-    assert_equal json, generate(data, :script_safe => true)
+    assert_equal json, generate(data, script_safe: true)
     #
     data = [ "/\u2028\u2029" ]
     json = '["\/\u2028\u2029"]'
-    assert_equal json, generate(data, :script_safe => true)
+    assert_equal json, generate(data, script_safe: true)
     #
     data = ['"']
     json = '["\""]'

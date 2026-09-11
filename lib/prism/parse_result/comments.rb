@@ -109,7 +109,7 @@ module Prism
 
       # Create a new Comments object that will attach comments to the given
       # parse result.
-      #--
+      #
       #: (ParseResult parse_result) -> void
       def initialize(parse_result)
         @parse_result = parse_result
@@ -117,7 +117,7 @@ module Prism
 
       # Attach the comments to their respective locations in the tree by
       # mutating the parse result.
-      #--
+      #
       #: () -> void
       def attach!
         parse_result.comments.each do |comment|
@@ -146,7 +146,7 @@ module Prism
 
       # Responsible for finding the nearest targets to the given comment within
       # the context of the given encapsulating node.
-      #--
+      #
       #: (node node, Comment comment) -> [_CommentTarget?, _CommentTarget?, _CommentTarget?]
       def nearest_targets(node, comment)
         comment_start = comment.location.start_offset

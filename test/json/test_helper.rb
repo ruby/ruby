@@ -29,6 +29,12 @@ end
 
 require 'json'
 require 'test/unit'
+require 'stringio'
+require 'tempfile'
+begin
+  require 'bigdecimal'
+rescue LoadError
+end
 
 if ENV["JSON_COMPACT"]
   if GC.respond_to?(:verify_compaction_references)

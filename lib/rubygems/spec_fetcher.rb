@@ -82,13 +82,17 @@ class Gem::SpecFetcher
   # Find and fetch gem name tuples that match +dependency+.
   #
   # If +matching_platform+ is false, gems for all platforms are returned.
+  #
+  # +type+ overrides the index type derived from +dependency+.  See
+  # #available_specs for the list of types.
 
-  def search_for_dependency(dependency, matching_platform = true)
+  def search_for_dependency(dependency, matching_platform = true, type: nil)
     found = {}
 
     rejected_specs = {}
 
-    list, errors = available_specs(dependency.identity)
+    specs_type = type || dependency.identity
+    list, errors = available_specs(specs_type)
 
     list.each do |source, specs|
       if dependency.name.is_a?(String) && specs.respond_to?(:bsearch)
@@ -97,17 +101,20 @@ class Gem::SpecFetcher
         specs = specs[start_index...end_index] if start_index && end_index
       end
 
+      specs = specs.select {|tup| dependency.match?(tup) }
+      specs = decode_source_content_addressable_tuples(source, specs, latest: specs_type == :latest)
+
       found[source] = specs.select do |tup|
-        if dependency.match?(tup)
-          if matching_platform && !Gem::Platform.match_gem?(tup.platform, tup.name)
-            pm = (
-              rejected_specs[dependency] ||= \
-                Gem::PlatformMismatch.new(tup.name, tup.version))
-            pm.add_platform tup.platform
-            false
-          else
-            true
-          end
+        if matching_platform && !Gem::Platform.match_gem?(tup.platform, tup.name)
+          pm = (
+            rejected_specs[dependency] ||= \
+              Gem::PlatformMismatch.new(tup.name, tup.version))
+          pm.add_platform tup.platform
+          false
+        elsif matching_platform && !ruby_abi_match?(tup)
+          false
+        else
+          true
         end
       end
     end
@@ -156,6 +163,7 @@ class Gem::SpecFetcher
     specs = []
     tuples.each do |tup, source|
       spec = source.fetch_spec(tup)
+      spec.content_address = tup.content_address if tup.content_address
     rescue Gem::RemoteFetcher::FetchError => e
       errors << Gem::SourceFetchProblem.new(source, e)
     else
@@ -163,6 +171,17 @@ class Gem::SpecFetcher
     end
 
     [specs, errors]
+  end
+
+  ##
+  # Decodes the content-addressable tuples in +spec_tuples+ ([tuple, source]
+  # pairs) to carry their real platform and Ruby ABI via each source.
+
+  def decode_content_addressable_tuples(spec_tuples, latest: false)
+    spec_tuples.group_by {|_, source| source }.flat_map do |source, source_tuples|
+      tuples = source_tuples.map(&:first)
+      decode_source_content_addressable_tuples(source, tuples, latest: latest).map {|tuple| [tuple, source] }
+    end
   end
 
   ##
@@ -286,5 +305,21 @@ class Gem::SpecFetcher
   rescue Gem::RemoteFetcher::FetchError
     raise unless gracefully_ignore
     []
+  end
+
+  private
+
+  def decode_source_content_addressable_tuples(source, tuples, latest: false) # :nodoc:
+    return tuples unless source.respond_to?(:decode_content_addressable_tuples)
+
+    source.decode_content_addressable_tuples(tuples, latest: latest)
+  end
+
+  def ruby_abi_match?(tuple) # :nodoc:
+    !tuple.ruby_abi || tuple.ruby_abi == current_ruby_abi
+  end
+
+  def current_ruby_abi # :nodoc:
+    @current_ruby_abi ||= Gem.ruby_abi
   end
 end

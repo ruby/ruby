@@ -1223,6 +1223,26 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_opt_case_dispatch_all_byte_values
+    branches = 256.times.map { |value| "when #{value} then #{value}" }.join("\n")
+    assert_compiles(<<~RUBY, exits: :any, result: :ok)
+      def case_dispatch(value)
+        case value
+        #{branches}
+        end
+      end
+
+      values = (0...256).to_a
+      return :wrong_result unless values.map { |value| case_dispatch(value) } == values
+
+      stats = RubyVM::YJIT.runtime_stats
+      return :early_fallback if stats[:all_stats] && !stats[:num_opt_case_dispatch_megamorphic].zero?
+      return :wrong_else unless 2.times.map { case_dispatch(256) } == [nil, nil]
+      return :ok unless stats[:all_stats]
+      RubyVM::YJIT.runtime_stats[:num_opt_case_dispatch_megamorphic].positive? ? :ok : :missing_fallback
+    RUBY
+  end
+
   def test_code_gc
     assert_compiles(code_gc_helpers + <<~'RUBY', exits: :any, result: :ok)
       return :not_paged unless add_pages(100) # prepare freeable pages

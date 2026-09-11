@@ -302,6 +302,33 @@ class TestGc < Test::Unit::TestCase
     assert_equal stat[:heap_available_slots], stat_heap_sum[:heap_eden_slots]
     assert_equal stat[:total_allocated_objects], stat_heap_sum[:total_allocated_objects]
     assert_equal stat[:total_freed_objects], stat_heap_sum[:total_freed_objects]
+  rescue Test::Unit::AssertionFailedError
+    # GC.stat and GC.stat_heap are separate reads of the same counters, so
+    # anything allocated between them makes the two disagree.  An accounting
+    # bug disagrees on the retry too.
+    raise if @retried
+    @retried = true
+    retry
+  end
+
+  def test_page_pool_stat_consistency
+    omit 'no page pool' unless GC.stat.key?(:page_pool_total_pages)
+
+    # Freeing arenas back to the OS must keep page_pool_discarded_pages in range.
+    # An underflowed counter wraps to a huge value, which also makes GC.stat
+    # allocate a Bignum and perturb the object counts it reports.
+    assert_separately([], __FILE__, __LINE__, <<~RUBY, timeout: 60)
+      3.times do
+        ary = 200_000.times.map { "x" * 40 }
+        ary.clear
+        GC.start(full_mark: true, immediate_sweep: true)
+        GC.start(full_mark: true, immediate_sweep: true)
+      end
+
+      stat = GC.stat
+      assert_operator stat[:page_pool_discarded_pages], :<=, stat[:page_pool_total_pages]
+      assert_operator stat[:page_pool_arenas], :>=, 0 # arenas is always 0 if doesn't have mmap
+    RUBY
   end
 
   def test_measure_total_time

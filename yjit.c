@@ -49,6 +49,12 @@ STATIC_ASSERT(size_t_no_padding_bits, sizeof(size_t) == sizeof(uint64_t));
 // support one scheme for simplicity.
 STATIC_ASSERT(pointer_tagging_scheme, USE_FLONUM);
 
+enum yjit_bindgen_constants {
+    // ISEQ_TRANSLATED expands to an enum value through a chain of macros,
+    // which bindgen cannot evaluate, so it needs to be re-exposed here.
+    YJIT_ISEQ_TRANSLATED = ISEQ_TRANSLATED,
+};
+
 // NOTE: We can trust that uint8_t has no "padding bits" since the C spec
 // guarantees it. Wording about padding bits is more explicit in C11 compared
 // to C99. See C11 7.20.1.1p2. All this is to say we have _some_ standards backing to
@@ -193,29 +199,6 @@ rb_full_cfunc_return(rb_execution_context_t *ec, VALUE return_value)
     ec->cfp->sp++;
 }
 
-// TODO(alan): consider using an opaque pointer for the payload rather than a void pointer
-void *
-rb_iseq_get_yjit_payload(const rb_iseq_t *iseq)
-{
-    RUBY_ASSERT_ALWAYS(IMEMO_TYPE_P(iseq, imemo_iseq));
-    if (iseq->body) {
-        return iseq->body->yjit_payload;
-    }
-    else {
-        // Body is NULL when constructing the iseq.
-        return NULL;
-    }
-}
-
-void
-rb_iseq_set_yjit_payload(const rb_iseq_t *iseq, void *payload)
-{
-    RUBY_ASSERT_ALWAYS(IMEMO_TYPE_P(iseq, imemo_iseq));
-    RUBY_ASSERT_ALWAYS(iseq->body);
-    RUBY_ASSERT_ALWAYS(NULL == iseq->body->yjit_payload);
-    iseq->body->yjit_payload = payload;
-}
-
 // This is defined only as a named struct inside rb_iseq_constant_body.
 // By giving it a separate typedef, we make it nameable by rust-bindgen.
 // Bindgen's temp/anon name isn't guaranteed stable.
@@ -227,11 +210,11 @@ ID rb_get_symbol_id(VALUE namep);
 static bool
 invokebuiltin_delegate_leave_p(const rb_iseq_t *iseq)
 {
-    int insn1 = rb_vm_insn_addr2opcode((void *)iseq->body->iseq_encoded[0]);
-    if ((int)iseq->body->iseq_size != insn_len(insn1) + insn_len(BIN(leave))) {
+    int insn1 = rb_vm_insn_addr2opcode((void *)ISEQ_BODY(iseq)->iseq_encoded[0]);
+    if ((int)ISEQ_BODY(iseq)->iseq_size != insn_len(insn1) + insn_len(BIN(leave))) {
         return false;
     }
-    int insn2 = rb_vm_insn_addr2opcode((void *)iseq->body->iseq_encoded[insn_len(insn1)]);
+    int insn2 = rb_vm_insn_addr2opcode((void *)ISEQ_BODY(iseq)->iseq_encoded[insn_len(insn1)]);
     return (insn1 == BIN(opt_invokebuiltin_delegate) || insn1 == BIN(opt_invokebuiltin_delegate_leave)) &&
             insn2 == BIN(leave);
 }
@@ -241,7 +224,7 @@ const struct rb_builtin_function *
 rb_yjit_builtin_function(const rb_iseq_t *iseq)
 {
     if (invokebuiltin_delegate_leave_p(iseq)) {
-        return (const struct rb_builtin_function *)iseq->body->iseq_encoded[1];
+        return (const struct rb_builtin_function *)ISEQ_BODY(iseq)->iseq_encoded[1];
     }
     else {
         return NULL;
@@ -263,19 +246,6 @@ rb_yjit_rb_ary_subseq_length(VALUE ary, long beg)
 {
     long len = RARRAY_LEN(ary);
     return rb_ary_subseq(ary, beg, len);
-}
-
-// Return non-zero when `obj` is an array and its last item is a
-// `ruby2_keywords` hash. We don't support this kind of splat.
-size_t
-rb_yjit_ruby2_keywords_splat_p(VALUE obj)
-{
-    if (!RB_TYPE_P(obj, T_ARRAY)) return 0;
-    long len = RARRAY_LEN(obj);
-    if (len == 0) return 0;
-    VALUE last = RARRAY_AREF(obj, len - 1);
-    if (!RB_TYPE_P(last, T_HASH)) return 0;
-    return FL_TEST_RAW(last, RHASH_PASS_AS_KEYWORDS);
 }
 
 // Checks to establish preconditions for rb_yjit_splat_varg_cfunc()
@@ -347,9 +317,9 @@ num_digits(int integer)
 char *
 rb_yjit_iseq_inspect(const rb_iseq_t *iseq)
 {
-    const char *label = RSTRING_PTR(iseq->body->location.label);
+    const char *label = RSTRING_PTR(ISEQ_BODY(iseq)->location.label);
     const char *path = RSTRING_PTR(rb_iseq_path(iseq));
-    int lineno = iseq->body->location.code_location.beg_pos.lineno;
+    int lineno = ISEQ_BODY(iseq)->location.code_location.beg_pos.lineno;
 
     const size_t size = strlen(label) + strlen(path) + num_digits(lineno) + 3;
     char *buf = ZALLOC_N(char, size);
@@ -373,12 +343,6 @@ rb_ENCODING_GET(VALUE obj)
     return RB_ENCODING_GET(obj);
 }
 
-bool
-rb_yjit_constcache_shareable(const struct iseq_inline_constant_cache_entry *ice)
-{
-    return (ice->flags & IMEMO_CONST_CACHE_SHAREABLE) != 0;
-}
-
 // For running write barriers from Rust. Required when we add a new edge in the
 // object graph from `old` to `young`.
 void
@@ -398,10 +362,10 @@ rb_yjit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec, bool jit
         uintptr_t code_ptr = (uintptr_t)rb_yjit_iseq_gen_entry_point(iseq, ec, jit_exception);
 
         if (jit_exception) {
-            iseq->body->jit_exception = (rb_jit_func_t)code_ptr;
+            ISEQ_BODY(iseq)->jit_exception = (rb_jit_func_t)code_ptr;
         }
         else {
-            iseq->body->jit_entry = (rb_jit_func_t)code_ptr;
+            ISEQ_BODY(iseq)->jit_entry = (rb_jit_func_t)code_ptr;
         }
     }
 }

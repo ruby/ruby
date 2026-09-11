@@ -26,12 +26,16 @@ class Gem::CompactIndexClient
     private
 
     def fetch(uri, headers, redirects_remaining)
-      response = @remote_fetcher.request(uri, Gem::Net::HTTP::Get) do |req|
-        headers.each {|name, value| req[name] = value }
-      end
+      response = request(uri, headers)
 
       case response
-      when Gem::Net::HTTPSuccess, Gem::Net::HTTPNotModified
+      when Gem::Net::HTTPNotModified
+        response
+      when Gem::Net::HTTPSuccess
+        # The callers write the body into the cache, so a body-less success
+        # such as 204 would truncate the cached file.
+        raise bad_response(response, uri) unless response.class.body_permitted?
+
         response
       when Gem::Net::HTTPMovedPermanently, Gem::Net::HTTPFound, Gem::Net::HTTPSeeOther,
            Gem::Net::HTTPTemporaryRedirect, Gem::Net::HTTPPermanentRedirect
@@ -40,15 +44,45 @@ class Gem::CompactIndexClient
         location = response["Location"]
         raise Gem::RemoteFetcher::FetchError.new("redirecting but no redirect location was given", uri) unless location
 
-        fetch(uri + location, headers, redirects_remaining - 1)
-      when Gem::Net::HTTPRangeNotSatisfiable
-        raise Gem::RemoteFetcher::FetchError.new("bad response #{response.message} #{response.code}", uri) unless headers.key?("Range")
+        redirect = uri + location
+        if https?(uri) && !https?(redirect)
+          raise Gem::RemoteFetcher::FetchError.new("redirecting to non-https resource: #{Gem::Uri.redact(redirect)}", uri)
+        end
+        # An absolute Location on the same host drops the credentials that a
+        # relative one would have kept.
+        redirect.userinfo = uri.userinfo if redirect.host == uri.host && !redirect.userinfo
 
-        # The local cache is longer than the remote file, refetch it whole.
-        fetch(uri, headers.except("Range"), redirects_remaining)
+        fetch(redirect, headers, redirects_remaining - 1)
+      when Gem::Net::HTTPRangeNotSatisfiable
+        raise bad_response(response, uri) unless headers.key?("Range")
+
+        # The local cache is longer than the remote file, refetch it whole. A
+        # matching ETag would otherwise turn the retry into a 304 and keep the
+        # oversized cache.
+        fetch(uri, headers.except("Range", "If-None-Match"), redirects_remaining)
       else
-        raise Gem::RemoteFetcher::FetchError.new("bad response #{response.message} #{response.code}", uri)
+        raise bad_response(response, uri)
       end
+    end
+
+    # The callers fall back to the Marshal index when a fetch fails, and they
+    # only recognize a failure that arrives as a FetchError.
+    def request(uri, headers)
+      @remote_fetcher.request(uri, Gem::Net::HTTP::Get) do |req|
+        headers.each {|name, value| req[name] = value }
+      end
+    rescue Gem::Timeout::Error, IOError, SocketError, SystemCallError,
+           *(OpenSSL::SSL::SSLError if Gem::HAVE_OPENSSL) => e
+      raise Gem::RemoteFetcher::FetchError.new("#{e.class}: #{e}", uri)
+    end
+
+    def bad_response(response, uri)
+      detail = response["X-Error-Message"] || response.message
+      Gem::RemoteFetcher::FetchError.new("bad response #{detail} #{response.code}", uri)
+    end
+
+    def https?(uri)
+      uri.scheme == "https"
     end
   end
 end

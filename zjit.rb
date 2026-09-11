@@ -87,7 +87,7 @@ class << RubyVM::ZJIT
       stats[:guard_shape_exit_ratio] = stats[:exit_guard_shape_failure].to_f / stats[:guard_shape_count] * 100
     end
     if stats[:code_region_bytes]&.nonzero?
-      stats[:side_exit_size_ratio] = stats[:side_exit_size].to_f / stats[:code_region_bytes] * 100
+      stats[:side_exit_size_ratio] = stats[:side_exit_size_bytes].to_f / stats[:code_region_bytes] * 100
     end
     if stats[:compile_time_ns]&.nonzero?
       stats[:compile_side_exit_time_ratio] = stats[:compile_side_exit_time_ns].to_f / stats[:compile_time_ns] * 100
@@ -137,6 +137,7 @@ class << RubyVM::ZJIT
       :empty_inline_frame_count,
       :non_variadic_cfunc_optimized_send_count,
       :variadic_cfunc_optimized_send_count,
+      :caller_splat_optimized,
     ], buf:, stats:, right_align: true, base: :send_count)
     print_counters([
       :dynamic_setivar_count,
@@ -181,9 +182,13 @@ class << RubyVM::ZJIT
       :load_field_count,
       :store_field_count,
 
-      :side_exit_size,
-      :code_region_bytes,
+      :throw_count,
+
+      :side_exit_size_bytes,
       :side_exit_size_ratio,
+      :jit_frame_heap_bytes,
+      :jit_frame_region_bytes,
+      :code_region_bytes,
       :zjit_alloc_bytes,
       :total_mem_bytes,
       :total_native_stack_bytes,

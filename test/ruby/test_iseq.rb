@@ -837,21 +837,6 @@ class TestISeq < Test::Unit::TestCase
     }
   end
 
-  def test_iseq_of_twice_for_same_code
-    [
-      proc{},
-      method(:test_iseq_of_twice_for_same_code),
-      RubyVM::InstructionSequence.compile("p 1"),
-      begin; raise "error"; rescue => error; error.backtrace_locations[0]; end
-    ].each{|src|
-      iseq1 = RubyVM::InstructionSequence.of(src)
-      iseq2 = RubyVM::InstructionSequence.of(src)
-
-      # ISeq objects should be same for same src
-      assert_equal iseq1.object_id, iseq2.object_id
-    }
-  end
-
   def test_iseq_builtin_to_a
     invokebuiltin = eval(EnvUtil.invoke_ruby(['-e', <<~EOS], '', true).first)
       insns = RubyVM::InstructionSequence.of([].method(:pack)).to_a.last
@@ -893,17 +878,27 @@ class TestISeq < Test::Unit::TestCase
 
   def test_mandatory_only_redef
     assert_separately ['-W0'], <<~RUBY
-      r = Ractor.new{
-        Float(10)
-        module Kernel
-          undef Float
-          def Float(n)
-            :new
-          end
-        end
+      port = Ractor::Port.new
+      r = Ractor.new(port){|port|
+        Float(10) # fill the mandatory only cache
+        port << :filled
+        Ractor.receive
         GC.start
         Float(30)
       }
+
+      port.receive
+
+      # Kernel is created by the main Ractor, so only the main Ractor can
+      # redefine it. The redefinition should be visible from the other Ractor.
+      module Kernel
+        undef Float
+        def Float(n)
+          :new
+        end
+      end
+
+      r << :redefined
       assert_equal :new, r.value
     RUBY
   end

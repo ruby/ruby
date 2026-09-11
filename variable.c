@@ -34,6 +34,7 @@
 #include "internal/symbol.h"
 #include "internal/thread.h"
 #include "internal/variable.h"
+#include "internal/vm.h"
 #include "ruby/encoding.h"
 #include "ruby/st.h"
 #include "ruby/util.h"
@@ -311,6 +312,8 @@ set_sub_temporary_name(VALUE mod, VALUE name)
 VALUE
 rb_mod_set_temporary_name(VALUE mod, VALUE name)
 {
+    rb_class_owner_check(mod);
+
     // We don't allow setting the name if the classpath is already permanent:
     if (RCLASS_PERMANENT_CLASSPATH_P(mod)) {
         rb_raise(rb_eRuntimeError, "can't change permanent name");
@@ -688,13 +691,8 @@ rb_gvar_val_compactor(void *_var)
 {
     struct rb_global_variable *var = (struct rb_global_variable *)_var;
 
-    VALUE obj = (VALUE)var->data;
-
-    if (obj) {
-        VALUE new = rb_gc_location(obj);
-        if (new != obj) {
-            var->data = (void*)new;
-        }
+    if (var->data) {
+        rb_gc_update_moved_ptr(&var->data);
     }
 }
 
@@ -1213,29 +1211,32 @@ rb_alias_variable(ID name1, ID name2)
 }
 
 static void
-IVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(ID id)
+class_ivar_set_ractor_check(VALUE klass, ID id)
 {
-    if (UNLIKELY(!rb_ractor_main_p())) {
-        if (rb_is_instance_id(id)) { // check only normal ivars
-            rb_raise(rb_eRactorIsolationError, "can not set instance variables of classes/modules by non-main Ractors");
-        }
+    if (rb_is_instance_id(id) && // check only normal ivars
+        UNLIKELY(!rb_class_owned_p(klass))) {
+        rb_raise(rb_eRactorIsolationError, "can not set instance variables of classes/modules created by another Ractor");
     }
 }
 
+// klass is the class the variable is stored in, not the receiver: which one that
+// is can migrate (cvar_overtaken), and it is the one with a single writer.
 static void
-CVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(VALUE klass, ID id)
+cvar_set_ractor_check(VALUE klass, ID id)
 {
-    if (UNLIKELY(!rb_ractor_main_p())) {
-        rb_raise(rb_eRactorIsolationError, "can not set class variables from non-main Ractors (%"PRIsVALUE" from %"PRIsVALUE")", rb_id2str(id), klass);
+    if (UNLIKELY(!rb_class_owned_p(klass))) {
+        rb_raise(rb_eRactorIsolationError,
+                 "can not set class variable %"PRIsVALUE" of %"PRIsVALUE", which was created by another Ractor",
+                 rb_id2str(id), klass);
     }
 }
 
 static void
 cvar_read_ractor_check(VALUE klass, ID id, VALUE val)
 {
-    if (UNLIKELY(!rb_ractor_main_p()) && !rb_ractor_shareable_p(val)) {
+    if (UNLIKELY(!rb_class_owned_p(klass)) && !rb_ractor_shareable_p(val)) {
         rb_raise(rb_eRactorIsolationError,
-                 "can not read non-shareable class variable %"PRIsVALUE" from non-main Ractors (%"PRIsVALUE")",
+                 "can not read non-shareable class variable %"PRIsVALUE" of %"PRIsVALUE", which was created by another Ractor",
                  rb_id2str(id), klass);
     }
 }
@@ -1248,6 +1249,10 @@ ivar_ractor_check(VALUE obj, ID id)
         UNLIKELY(!rb_ractor_main_p()) &&
         UNLIKELY(rb_ractor_shareable_p(obj))) {
 
+        if (RB_TYPE_P(obj, T_CLASS) || RB_TYPE_P(obj, T_MODULE)) {
+            // classes/modules are owner-checked at each read/write site instead
+            return;
+        }
         rb_raise(rb_eRactorIsolationError, "can not access instance variables of shareable objects from non-main Ractors");
     }
 }
@@ -1560,11 +1565,11 @@ rb_ivar_lookup(VALUE obj, ID id, VALUE undef)
     }
 
     if (is_class && val != undef && rb_is_instance_id(id)) {
-        if (UNLIKELY(!rb_ractor_main_p()) && !rb_ractor_shareable_p(val)) {
+        if (UNLIKELY(!rb_class_owned_p(obj)) && !rb_ractor_shareable_p(val)) {
             rb_raise(
                 rb_eRactorIsolationError,
-                "can not get unshareable values from instance variables of classes/modules from "
-                "non-main Ractors (%"PRIsVALUE" from %"PRIsVALUE")",
+                "can not get unshareable values from instance variables of classes/modules "
+                "created by another Ractor (%"PRIsVALUE" from %"PRIsVALUE")",
                 rb_id2str(id),
                 obj
             );
@@ -1597,9 +1602,9 @@ rb_ivar_get_at(VALUE obj, attr_index_t index, ID id)
             VALUE fields_obj = RCLASS_WRITABLE_FIELDS_OBJ(obj);
             VALUE val = rb_imemo_fields_ptr(fields_obj)[index];
 
-            if (UNLIKELY(!rb_ractor_main_p()) && !rb_ractor_shareable_p(val)) {
+            if (UNLIKELY(!rb_class_owned_p(obj)) && !rb_ractor_shareable_p(val)) {
                 rb_raise(rb_eRactorIsolationError,
-                        "can not get unshareable values from instance variables of classes/modules from non-main Ractors");
+                        "can not get unshareable values from instance variables of classes/modules created by another Ractor");
             }
 
             return val;
@@ -1652,7 +1657,7 @@ rb_ivar_delete(VALUE obj, ID id, VALUE undef)
     int type = BUILTIN_TYPE(obj);
 
     if (type == T_CLASS || type == T_MODULE) {
-        IVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(id);
+        class_ivar_set_ractor_check(obj, id);
 
         if (rb_multi_ractor_p()) {
             concurrent = true;
@@ -2046,7 +2051,7 @@ ivar_set(VALUE obj, ID id, VALUE val)
       case T_CLASS:
       case T_MODULE:
         {
-            IVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(id);
+            class_ivar_set_ractor_check(obj, id);
             bool dontcare;
             return class_ivar_set(obj, id, val, &dontcare);
         }
@@ -2332,7 +2337,8 @@ rb_field_foreach(VALUE obj, rb_ivar_foreach_callback_func *func, st_data_t arg, 
       case T_CLASS:
       case T_MODULE:
         {
-            IVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(0);
+            // No owner check: every caller of this walk uses the names only for a
+            // class/module.  Values are checked where they are read (rb_ivar_lookup).
             VALUE fields_obj = RCLASS_WRITABLE_FIELDS_OBJ(obj);
             if (fields_obj) {
                 imemo_fields_each(fields_obj, func, arg, ivar_only);
@@ -2784,15 +2790,6 @@ get_autoload_data(VALUE autoload_const_value, struct autoload_const **autoload_c
     return autoload_data;
 }
 
-void
-rb_autoload(VALUE module, ID name, const char *feature)
-{
-    if (!feature || !*feature) {
-        rb_raise(rb_eArgError, "empty feature name");
-    }
-
-    rb_autoload_str(module, name, rb_fstring_cstr(feature));
-}
 
 static void const_set(VALUE klass, ID id, VALUE val);
 static void const_added(VALUE klass, ID const_name);
@@ -2894,6 +2891,8 @@ rb_autoload_str(VALUE module, ID name, VALUE feature)
     if (!rb_is_const_id(name)) {
         rb_raise(rb_eNameError, "autoload must be constant name: %"PRIsVALUE"", QUOTE_ID(name));
     }
+
+    rb_class_owner_check(module);
 
     Check_Type(feature, T_STRING);
     if (!RSTRING_LEN(feature)) {
@@ -3164,10 +3163,16 @@ autoload_apply_constants(VALUE _arguments)
 }
 
 static VALUE
+autoload_feature_require_in_box(VALUE receiver, VALUE feature)
+{
+    rb_vm_frame_flag_set_box_require(GET_EC());
+
+    return rb_funcall(receiver, rb_intern("require"), 1, feature);
+}
+
+static VALUE
 autoload_feature_require(VALUE _arguments)
 {
-    VALUE receiver = rb_vm_top_self();
-
     struct autoload_load_arguments *arguments = (struct autoload_load_arguments*)_arguments;
 
     struct autoload_const *autoload_const = arguments->autoload_const;
@@ -3175,9 +3180,6 @@ autoload_feature_require(VALUE _arguments)
 
     // We save this for later use in autoload_apply_constants:
     arguments->autoload_data = rb_check_typeddata(autoload_const->autoload_data_value, &autoload_data_type);
-
-    if (rb_box_available() && BOX_OBJ_P(autoload_box_value))
-        receiver = autoload_box_value;
 
     /*
      * Clear the global cc cache table because the require method can be different from the current
@@ -3187,7 +3189,25 @@ autoload_feature_require(VALUE _arguments)
      */
     rb_gccct_clear_table();
 
-    VALUE result = rb_funcall(receiver, rb_intern("require"), 1, arguments->autoload_data->feature);
+    VALUE feature = arguments->autoload_data->feature;
+    rb_box_t *box = NULL;
+    if (rb_box_available() && BOX_OBJ_P(autoload_box_value)) {
+        box = rb_get_box_t(autoload_box_value);
+    }
+
+    VALUE result;
+    if (box && box->top_self) {
+        /*
+         * Call `require` on the top self of the box that registered the autoload, in a frame
+         * running in that box, so that `Kernel#require` decorations in the box (RubyGems,
+         * Zeitwerk, etc.) are dispatched and the feature is loaded into that box.
+         */
+        result = rb_vm_call_cfunc_in_box(box->top_self, autoload_feature_require_in_box,
+                                         box->top_self, feature, feature, box);
+    }
+    else {
+        result = rb_funcall(rb_vm_top_self(), rb_intern("require"), 1, feature);
+    }
 
     if (RTEST(result)) {
         return rb_mutex_synchronize(autoload_mutex, autoload_apply_constants, _arguments);
@@ -3315,9 +3335,9 @@ rb_const_get_0(VALUE klass, ID id, int exclude, int recurse, int visibility)
     VALUE found_in;
     VALUE c = rb_const_search(klass, id, exclude, recurse, visibility, &found_in);
     if (!UNDEF_P(c)) {
-        if (UNLIKELY(!rb_ractor_main_p())) {
+        if (UNLIKELY(!rb_class_owned_p(found_in))) {
             if (!rb_ractor_shareable_p(c)) {
-                rb_raise(rb_eRactorIsolationError, "can not access non-shareable objects in constant %"PRIsVALUE"::%"PRIsVALUE" by non-main Ractor.", rb_class_path(found_in), rb_id2str(id));
+                rb_raise(rb_eRactorIsolationError, "can not access non-shareable objects in constant %"PRIsVALUE"::%"PRIsVALUE" of a class/module created by another Ractor.", rb_class_path(found_in), rb_id2str(id));
             }
         }
         return c;
@@ -3529,6 +3549,7 @@ rb_const_remove(VALUE mod, ID id)
     rb_const_entry_t *ce;
 
     rb_check_frozen(mod);
+    rb_class_owner_check(mod);
 
     ce = rb_const_lookup(mod, id);
 
@@ -3810,8 +3831,8 @@ static void
 const_added(VALUE klass, ID const_name)
 {
     if (GET_VM()->running) {
-        VALUE name = ID2SYM(const_name);
-        rb_funcallv(klass, idConst_added, 1, &name);
+        VALUE arg = ID2SYM(const_name);
+        rb_funcallv_uncached(klass, idConst_added, 1, &arg);
     }
 }
 
@@ -3825,8 +3846,8 @@ const_set(VALUE klass, ID id, VALUE val)
                  QUOTE_ID(id));
     }
 
-    if (!rb_ractor_main_p() && !rb_ractor_shareable_p(val)) {
-        rb_raise(rb_eRactorIsolationError, "can not set constants with non-shareable objects by non-main Ractors");
+    if (UNLIKELY(!rb_class_owned_p(klass))) {
+        rb_raise(rb_eRactorIsolationError, "can not set constants of classes/modules created by another Ractor");
     }
 
     check_before_mod_set(klass, id, val, "constant");
@@ -4159,7 +4180,8 @@ cvar_overtaken(VALUE front, VALUE target, ID id)
                        ID2SYM(id), rb_class_name(original_module(front)),
                        rb_class_name(original_module(target)));
         }
-        if (BUILTIN_TYPE(front) == T_CLASS) {
+        if (BUILTIN_TYPE(front) == T_CLASS && rb_class_owned_p(front)) {
+            // only clean-up, and reachable from reads: never write a foreign class
             rb_ivar_delete(front, id, Qundef);
         }
     }
@@ -4194,8 +4216,6 @@ find_cvar(VALUE klass, VALUE * front, VALUE * target, ID id)
 void
 rb_cvar_set(VALUE klass, ID id, VALUE val)
 {
-    CVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(klass, id);
-
     VALUE tmp, front = 0, target = 0;
 
     tmp = klass;
@@ -4210,6 +4230,7 @@ rb_cvar_set(VALUE klass, ID id, VALUE val)
     if (RB_TYPE_P(target, T_ICLASS)) {
         target = RBASIC(target)->klass;
     }
+    cvar_set_ractor_check(target, id);
     check_before_mod_set(target, id, val, "class variable");
 
     bool new_cvar = rb_class_ivar_set(target, id, val);
@@ -4264,7 +4285,10 @@ rb_cvar_find(VALUE klass, ID id, VALUE *front)
                           klass, ID2SYM(id));
     }
     cvar_overtaken(*front, target, id);
-    cvar_read_ractor_check(klass, id, value);
+    if (RB_TYPE_P(target, T_ICLASS)) {
+        target = RBASIC(target)->klass;
+    }
+    cvar_read_ractor_check(target, id, value);
     return (VALUE)value;
 }
 
@@ -4443,6 +4467,7 @@ rb_mod_remove_cvar(VALUE mod, VALUE name)
         goto not_defined;
     }
     rb_check_frozen(mod);
+    cvar_set_ractor_check(mod, id);
     val = rb_ivar_delete(mod, id, Qundef);
     if (!UNDEF_P(val)) {
         return (VALUE)val;

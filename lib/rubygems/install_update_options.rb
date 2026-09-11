@@ -7,12 +7,14 @@
 #++
 
 require_relative "../rubygems"
+require_relative "cooldown_option"
 require_relative "security_option"
 
 ##
 # Mixin methods for install and update options for Gem::Commands
 
 module Gem::InstallUpdateOptions
+  include Gem::CooldownOption
   include Gem::SecurityOption
 
   ##
@@ -204,6 +206,8 @@ module Gem::InstallUpdateOptions
                 "Defaults to true") do |v, _o|
       options[:install_plugin] = v
     end
+
+    add_cooldown_option :"Install/Update"
   end
 
   ##

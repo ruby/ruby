@@ -1411,7 +1411,7 @@ rb_tracepoint_enable_for_target(VALUE tpval, VALUE target, VALUE target_line)
             rb_hash_aset(tp->local_target_set, (VALUE)iseq, Qtrue);
 
             if ((tp->events & (RUBY_EVENT_CALL | RUBY_EVENT_RETURN)) &&
-                iseq->body->builtin_attrs & BUILTIN_ATTR_SINGLE_NOARG_LEAF) {
+                ISEQ_BODY(iseq)->builtin_attrs & BUILTIN_ATTR_SINGLE_NOARG_LEAF) {
                 rb_clear_bf_ccs();
             }
 
@@ -1794,61 +1794,11 @@ Init_vm_trace(void)
 }
 
 /*
- * Ruby actually has two separate mechanisms for enqueueing work from contexts
- * where it is not safe to run Ruby code, to run later on when it is safe. One
- * is async-signal-safe but more limited, and accessed through the
- * `rb_postponed_job_preregister` and `rb_postponed_job_trigger` functions. The
- * other is more flexible but cannot be used in signal handlers, and is accessed
- * through the `rb_workqueue_register` function.
- *
- * The postponed job functions form part of Ruby's extension API, but the
- * workqueue functions are for internal use only.
+ * Work enqueued from a context where it is not safe to run Ruby code, to run
+ * later on when it is safe.  Registering is async-signal-safe, and is part of
+ * Ruby's extension API: rb_postponed_job_preregister and
+ * rb_postponed_job_trigger.
  */
-
-struct rb_workqueue_job {
-    struct ccan_list_node jnode; /* <=> vm->workqueue */
-    rb_postponed_job_func_t func;
-    void *data;
-};
-
-// Used for VM memsize reporting. Returns the size of a list of rb_workqueue_job
-// structs. Defined here because the struct definition lives here as well.
-size_t
-rb_vm_memsize_workqueue(struct ccan_list_head *workqueue)
-{
-    struct rb_workqueue_job *work = 0;
-    size_t size = 0;
-
-    ccan_list_for_each(workqueue, work, jnode) {
-        size += sizeof(struct rb_workqueue_job);
-    }
-
-    return size;
-}
-
-/*
- * thread-safe and called from non-Ruby thread
- * returns FALSE on failure (ENOMEM), TRUE otherwise
- */
-int
-rb_workqueue_register(unsigned flags, rb_postponed_job_func_t func, void *data)
-{
-    struct rb_workqueue_job *wq_job = malloc(sizeof(*wq_job));
-    rb_vm_t *vm = GET_VM();
-
-    if (!wq_job) return FALSE;
-    wq_job->func = func;
-    wq_job->data = data;
-
-    rb_nativethread_lock_lock(&vm->workqueue_lock);
-    ccan_list_add_tail(&vm->workqueue, &wq_job->jnode);
-    rb_nativethread_lock_unlock(&vm->workqueue_lock);
-
-    // TODO: current implementation affects only main ractor
-    RUBY_VM_SET_POSTPONED_JOB_INTERRUPT(rb_vm_main_ractor_ec(vm));
-
-    return TRUE;
-}
 
 #define PJOB_TABLE_SIZE              (sizeof(rb_atomic_t) * CHAR_BIT)
 /* pre-registered jobs table, for async-safe jobs */
@@ -1971,20 +1921,13 @@ rb_postponed_job_trigger_for_ractor(unsigned int h, VALUE running_ractor)
 }
 
 void
-rb_postponed_job_flush(rb_vm_t *vm)
+rb_postponed_job_flush(void)
 {
     rb_postponed_job_queues_t *pjq = &postponed_job_queue;
     rb_execution_context_t *ec = GET_EC();
     const rb_atomic_t block_mask = POSTPONED_JOB_INTERRUPT_MASK | TRAP_INTERRUPT_MASK;
     volatile rb_atomic_t saved_mask = ec->interrupt_mask & block_mask;
     VALUE volatile saved_errno = ec->errinfo;
-    struct ccan_list_head tmp;
-
-    ccan_list_head_init(&tmp);
-
-    rb_nativethread_lock_lock(&vm->workqueue_lock);
-    ccan_list_append_list(&tmp, &vm->workqueue);
-    rb_nativethread_lock_unlock(&vm->workqueue_lock);
 
     volatile rb_atomic_t triggered_bits = RUBY_ATOMIC_EXCHANGE(pjq->triggered_bitset, 0);
 
@@ -2007,16 +1950,6 @@ rb_postponed_job_flush(rb_vm_t *vm)
                 void *data = RUBY_ATOMIC_PTR_LOAD(pjq->table[i].data);
                 (func)(data);
             }
-
-            /* execute workqueue jobs */
-            struct rb_workqueue_job *wq_job;
-            while ((wq_job = ccan_list_pop(&tmp, struct rb_workqueue_job, jnode))) {
-                rb_postponed_job_func_t func = wq_job->func;
-                void *data = wq_job->data;
-
-                free(wq_job);
-                (func)(data);
-            }
         }
         EC_POP_TAG();
     }
@@ -2024,17 +1957,8 @@ rb_postponed_job_flush(rb_vm_t *vm)
     ec->interrupt_mask &= ~(saved_mask ^ block_mask);
     ec->errinfo = saved_errno;
 
-    /* If we threw an exception, there might be leftover workqueue items; carry them over
-     * to a subsequent execution of flush */
-    if (!ccan_list_empty(&tmp)) {
-        rb_nativethread_lock_lock(&vm->workqueue_lock);
-        ccan_list_prepend_list(&vm->workqueue, &tmp);
-        rb_nativethread_lock_unlock(&vm->workqueue_lock);
-
-        RUBY_VM_SET_POSTPONED_JOB_INTERRUPT(GET_EC());
-    }
-    /* likewise with any remaining-to-be-executed bits of the preregistered postponed
-     * job table.  A merged bit can carry a Ractor-directed job that must not run on another
+    /* If we threw an exception, carry the bits that did not run yet over to a subsequent
+     * flush.  A merged bit can carry a Ractor-directed job that must not run on another
      * Ractor (rb_postponed_job_trigger_for_ractor), so re-post it to this Ractor's own mask
      * rather than to the global bitset. */
     if (triggered_bits) {

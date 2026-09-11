@@ -1,23 +1,56 @@
 # \Filesystem Timestamps
 
 A filesystem entry (the name of a file or directory)
-has several times (called timestamps) associated with it.
+has several associated times, called timestamps.
 
 A Ruby method that returns a filesystem timestamp (as a Time object)
 is actually returning "whatever the filesystem says";
 the returned times may vary among filesystems, even on the same machine.
 
-These timestamps methods are:
+Each of these methods returns a Time object:
 
-|               Name               | Meaning                                | Changes       |
-|:--------------------------------:|----------------------------------------|---------------|
-|  [`birthtime`](#birth-time)      | Create time.                           | Never.        |
-|  [`mtime`](#modification-time)   | Modification time.                     | When written. |
-|     [`atime`](#access-time)      | Access time.                           | When read.    |
-| [`ctime`](#metadata-change-time) | Metadata-change time (or create time). | See below.    |
+|               Name               | Meaning                                | Changes                               |
+|:--------------------------------:|----------------------------------------|---------------------------------------|
+|    [`birthtime`](#birth-time)    | Create time.                           | Never.                                |
+|  [`mtime`](#modification-time)   | Modification time.                     | When written; see Note 1.             |
+|     [`atime`](#access-time)      | Access time.                           | When read; see Note 2.                |
+| [`ctime`](#metadata-change-time) | Metadata-change time (or create time). | See [`ctime`](#metadata-change-time). |
 
-A method raises an exception if the filesystem does not support
-the corresponding timestamp.
+Notes:
+
+1. Modification time update may be delayed by the filesystem.
+2. Access time may occur immediately, later, or never, depending on filesystem settings.
+
+Each of these methods updates the access time and modification time for an entry:
+
+- File::utime, Pathname#utime: follow symbolic links.
+- File::lutime, Pathname#lutime: do not follow symbolic links.
+
+## \File Timestamps
+
+|     Operation      | Affects<br>birthtime  | Affects<br>ctime | Affects<br>mtime |      Affects<br>atime      |
+|:------------------:|:---------------------:|:----------------:|:----------------:|:--------------------------:|
+|       Create       |        **Yes**        |     **Yes**      |     **Yes**      |          **Yes**           |
+|   Write content    |          No           |        No        |       **Yes**    |             No             |
+|    Read content    |          No           |        No        |        No        | *Filesystem-<br>dependent* |
+|      Rename/Move   |          No           |     **Yes**      |        No        |             No             |
+| Change permissions |          No           |     **Yes**      |        No        |             No             |
+|  Change ownership  |          No           |     **Yes**      |        No        |             No             |
+
+
+## Directory Timestamps
+
+|     Operation      | Affects<br>birthtime | Affects<br>ctime | Affects<br>mtime |      Affects<br>atime      |
+|:------------------:|:--------------------:|:----------------:|:----------------:|:--------------------------:|
+|       Create       |       **Yes**        |     **Yes**      |   **Yes**        |          **Yes**           |
+|   Write entries    |          No          |        No        |     **Yes**      |             No             |
+|    Read entries    |          No          |        No        |        No        | *Filesystem-<br>dependent* |
+|     Rename/Move    |          No          |     **Yes**      |        No        |             No             |
+| Change permissions |          No          |     **Yes**      |        No        |             No             |
+|  Change ownership  |          No          |     **Yes**      |        No        |             No             |
+
+
+
 
 ## Birth \Time
 
@@ -64,6 +97,15 @@ The modification time (along with the access time) may also be updated explicitl
 The access time for an entry is the time of the most recent read for the entry,
 as reported by the underlying filesystem.
 
+Depending on a filesystem's settings, reading an entry may cause the access time
+to be updated immediately, later, or never.
+
+The access time for a file is commonly the most recent time the file was read,
+or if never read, the time it was created.
+
+The access time for a directory is commonly the most recent time its entries were read,
+or if never read, the time it was created.
+
 Each of these methods returns the access time for an entry as a Time object:
 
 - File::atime.
@@ -77,41 +119,6 @@ The access time (along with the modification time) may also be updated explicitl
 - File::utime.
 - Pathname#lutime.
 - Pathname#utime.
-
-Depending on a filesystem's settings, reading an entry may cause the access time
-to be updated immediately, later, or never;
-thus in the tables below, some entries say "Filesystem-dependent."
-
-### File
-
-The access time for a file is commonly the most recent time the file was read,
-or if never read, the time it was created:
-
-|     Operation      | Updates Access \Time |
-|:------------------:|:--------------------:|
-|       Create       |         Yes          |
-|        Read        | Filesystem-dependent |
-|       Write        |          No          |
-|       Rename       |          No          |
-|        Move        |          No          |
-| Change permissions |          No          |
-|  Change ownership  |          No          |
-
-
-### Directory
-
-The access time for a directory is commonly the most recent time its entries were read,
-or if never read, the time it was created:
-
-|     Operation      | Updates Access \Time |
-|:------------------:|:--------------------:|
-|       Create       |         Yes          |
-|    Read entries    | Filesystem-dependent |
-|   Write entries    |          No          |
-|       Rename       |          No          |
-|        Move        |          No          |
-| Change permissions |          No          |
-|  Change ownership  |          No          |
 
 ## Metadata-Change \Time
 

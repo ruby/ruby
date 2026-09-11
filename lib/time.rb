@@ -510,7 +510,7 @@ class Time
     #     require 'time'
     #
     #     Time.rfc2822("Wed, 05 Oct 2011 22:26:12 -0400")
-    #     #=> 2010-10-05 22:26:12 -0400
+    #     #=> 2011-10-05 22:26:12 -0400
     #
     # You must require 'time' to use this method.
     #
@@ -658,7 +658,7 @@ class Time
     def rfc3339(time)
       pattern = /\A\s*
           (-?\d{4})-(\d\d)-(\d\d)
-          [T\s]
+          [T ]
           (\d\d):(\d\d):(\d\d)
           (\.\d+)?
           (Z|[+-]\d\d:\d\d)

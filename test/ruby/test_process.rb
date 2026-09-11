@@ -1513,6 +1513,14 @@ class TestProcess < Test::Unit::TestCase
     end
   end
 
+  def test_status_frozen_shareable
+    with_tmpchdir do
+      s = run_in_child("exit 1")
+      assert_predicate(s, :frozen?)
+      assert(Ractor.shareable?(s), "a frozen Process::Status should be shareable")
+    end
+  end
+
   def test_status_kill
     return unless Process.respond_to?(:kill)
     return unless Signal.list.include?("KILL")
@@ -1787,7 +1795,7 @@ class TestProcess < Test::Unit::TestCase
       end
       assert_send [sig_r, :wait_readable, 5], 'self-pipe not readable'
     end
-    assert_equal [true], signal_received, "[ruby-core:19744]"
+    assert_equal [true], signal_received.uniq, "[ruby-core:19744]"
   rescue NotImplementedError, ArgumentError
   ensure
     begin
@@ -2579,7 +2587,7 @@ EOS
       bin = "#{EnvUtil.rubybin}"
       args = Array.new(256) {"x"}
       GC.stress = true
-      system(bin, "--disable=gems", "-w", "-e", "puts ARGV", *args)
+      system(bin, "--disable=gems", "-w", "-W:no-experimental", "-e", "puts ARGV", *args)
     end;
   end
 

@@ -13,7 +13,7 @@ module Bundler
 
       update_bundler = options[:bundler]
 
-      Bundler.self_manager.update_bundler_and_restart_with_it_if_needed(update_bundler) if update_bundler
+      Bundler.self_manager.update_bundler_and_restart_with_it_if_needed(update_bundler, pre: options[:pre]) if update_bundler
 
       sources = Array(options[:source])
       groups  = Array(options[:group]).map(&:to_sym)
@@ -74,8 +74,7 @@ module Bundler
       opts["force"] = options[:redownload] if options[:redownload]
 
       Bundler.settings.set_command_option_if_given :jobs, opts["jobs"]
-      Bundler::CLI::Common.validate_cooldown!(options[:cooldown])
-      Bundler.settings.set_command_option_if_given :cooldown, options[:cooldown]
+      Bundler::CLI::Common.configure_cooldown(options)
 
       Bundler.definition.validate_runtime!
 
@@ -92,6 +91,8 @@ module Bundler
       if CLI::Common.clean_after_install?
         require_relative "clean"
         Bundler::CLI::Clean.new(options).run
+      else
+        CLI::Common.prune(options)
       end
 
       if locked_gems

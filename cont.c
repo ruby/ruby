@@ -16,13 +16,6 @@
 #include <sys/mman.h>
 #endif
 
-// On Solaris, madvise() is NOT declared for SUS (XPG4v2) or later,
-// but MADV_* macros are defined when __EXTENSIONS__ is defined.
-#ifdef NEED_MADVICE_PROTOTYPE_USING_CADDR_T
-#include <sys/types.h>
-extern int madvise(caddr_t, size_t, int);
-#endif
-
 #include COROUTINE_H
 
 #include "eval_intern.h"
@@ -34,6 +27,7 @@ extern int madvise(caddr_t, size_t, int);
 #include "internal/gc.h"
 #include "internal/proc.h"
 #include "internal/sanitizers.h"
+#include "internal/vm_map.h"
 #include "internal/warnings.h"
 #include "ruby/fiber/scheduler.h"
 #include "yjit.h"
@@ -501,12 +495,7 @@ fiber_pool_allocate_memory(size_t * count, size_t stride)
         }
         else {
             ruby_annotate_mmap(base, mmap_size, "Ruby:fiber_pool_allocate_memory");
-#if defined(MADV_FREE_REUSE)
-            // On Mac MADV_FREE_REUSE is necessary for the task_info api
-            // to keep the accounting accurate as possible when a page is marked as reusable
-            // it can possibly not occurring at first call thus re-iterating if necessary.
-            while (madvise(base, mmap_size, MADV_FREE_REUSE) == -1 && errno == EAGAIN);
-#endif
+            rb_vm_map_reuse(base, mmap_size);
             return base;
         }
 #endif
@@ -820,7 +809,7 @@ fiber_pool_stack_acquire(struct fiber_pool * fiber_pool)
 }
 
 // We advise the operating system that the stack memory pages are no longer being used.
-// This introduce some performance overhead but allows system to relaim memory when there is pressure.
+// This introduces some performance overhead but allows the system to reclaim memory when there is pressure.
 static inline void
 fiber_pool_stack_free(struct fiber_pool_stack * stack)
 {
@@ -843,37 +832,7 @@ fiber_pool_stack_free(struct fiber_pool_stack * stack)
     // In addition, it's actually slightly desirable to not do anything here,
     // but that results in higher memory usage.
 
-#ifdef __wasi__
-    // WebAssembly doesn't support madvise, so we just don't do anything.
-#elif VM_CHECK_MODE > 0 && defined(MADV_DONTNEED)
-    if (!advice) advice = MADV_DONTNEED;
-    // This immediately discards the pages and the memory is reset to zero.
-    madvise(base, size, advice);
-#elif defined(MADV_FREE_REUSABLE)
-    if (!advice) advice = MADV_FREE_REUSABLE;
-    // Darwin / macOS / iOS.
-    // Acknowledge the kernel down to the task info api we make this
-    // page reusable for future use.
-    // As for MADV_FREE_REUSABLE below we ensure in the rare occasions the task was not
-    // completed at the time of the call to re-iterate.
-    while (madvise(base, size, advice) == -1 && errno == EAGAIN);
-#elif defined(MADV_FREE)
-    if (!advice) advice = MADV_FREE;
-    // Recent Linux.
-    madvise(base, size, advice);
-#elif defined(MADV_DONTNEED)
-    if (!advice) advice = MADV_DONTNEED;
-    // Old Linux.
-    madvise(base, size, advice);
-#elif defined(POSIX_MADV_DONTNEED)
-    if (!advice) advice = POSIX_MADV_DONTNEED;
-    // Solaris?
-    posix_madvise(base, size, advice);
-#elif defined(_WIN32)
-    VirtualAlloc(base, size, MEM_RESET, PAGE_READWRITE);
-    // Not available in all versions of Windows.
-    //DiscardVirtualMemory(base, size);
-#endif
+    rb_vm_map_reusable_lazy(base, size, advice);
 
 #if defined(COROUTINE_SANITIZE_ADDRESS)
     __asan_poison_memory_region(fiber_pool_stack_poison_base(stack), fiber_pool_stack_poison_size(stack));
@@ -1148,9 +1107,9 @@ cont_compact(void *ptr)
     rb_context_t *cont = ptr;
 
     if (cont->self) {
-        cont->self = rb_gc_location(cont->self);
+        rb_gc_update_moved(&cont->self);
     }
-    cont->value = rb_gc_location(cont->value);
+    rb_gc_update_moved(&cont->value);
     rb_execution_context_update(&cont->saved_ec);
 }
 
@@ -1261,7 +1220,7 @@ void
 rb_fiber_update_self(rb_fiber_t *fiber)
 {
     if (fiber->cont.self) {
-        fiber->cont.self = rb_gc_location(fiber->cont.self);
+        rb_gc_update_moved(&fiber->cont.self);
     }
     else {
         rb_execution_context_update(&fiber->cont.saved_ec);
@@ -1278,7 +1237,7 @@ static void
 fiber_compact(void *ptr)
 {
     rb_fiber_t *fiber = ptr;
-    fiber->first_proc = rb_gc_location(fiber->first_proc);
+    rb_gc_update_moved(&fiber->first_proc);
 
     if (fiber->prev) rb_fiber_update_self(fiber->prev);
 
@@ -2165,10 +2124,18 @@ static const rb_data_type_t rb_fiber_data_type = {
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
+static VALUE fiber_alloc_in(VALUE klass, void *objspace);
+
 static VALUE
 fiber_alloc(VALUE klass)
 {
-    VALUE obj = TypedData_Wrap_Struct(klass, &rb_fiber_data_type, 0);
+    return fiber_alloc_in(klass, GET_RACTOR()->objspace);
+}
+
+static VALUE
+fiber_alloc_in(VALUE klass, void *objspace)
+{
+    VALUE obj = rb_data_typed_object_wrap_in_objspace(objspace, klass, 0, &rb_fiber_data_type);
     rb_gc_declare_weak_references(obj);
     return obj;
 }
@@ -2742,10 +2709,10 @@ rb_threadptr_root_fiber_setup(rb_thread_t *th)
 }
 
 void
-rb_root_fiber_obj_setup(rb_thread_t *th)
+rb_root_fiber_obj_setup(rb_thread_t *th, void *objspace)
 {
     rb_fiber_t *fiber = th->ec->fiber_ptr;
-    VALUE fiber_value = fiber_alloc(rb_cFiber);
+    VALUE fiber_value = fiber_alloc_in(rb_cFiber, objspace);
     DATA_PTR(fiber_value) = fiber;
     fiber->cont.self = fiber_value;
 }

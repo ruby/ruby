@@ -2725,9 +2725,9 @@ fn gen_newhash(
     jit_prepare_call_with_gc(jit, asm);
 
     if num != 0 {
-        // val = rb_hash_new_with_size(num / 2);
+        // val = rb_hash_new_capa(num / 2);
         let new_hash = asm.ccall(
-            rb_hash_new_with_size as *const u8,
+            rb_hash_new_capa as *const u8,
             vec![Opnd::UImm(num / 2)]
         );
 
@@ -2875,7 +2875,7 @@ fn jit_chain_guard(
     jcc: JCCKinds,
     jit: &mut JITState,
     asm: &mut Assembler,
-    depth_limit: u8,
+    depth_limit: u16,
     counter: Counter,
 ) {
     let target0_gen_fn = match jcc {
@@ -2902,22 +2902,22 @@ fn jit_chain_guard(
 }
 
 // up to 8 different shapes for each
-pub const GET_IVAR_MAX_DEPTH: u8 = 8;
+pub const GET_IVAR_MAX_DEPTH: u16 = 8;
 
 // up to 8 different shapes for each
-pub const SET_IVAR_MAX_DEPTH: u8 = 8;
+pub const SET_IVAR_MAX_DEPTH: u16 = 8;
 
 // hashes and arrays
-pub const OPT_AREF_MAX_CHAIN_DEPTH: u8 = 2;
+pub const OPT_AREF_MAX_CHAIN_DEPTH: u16 = 2;
 
 // expandarray
-pub const EXPANDARRAY_MAX_CHAIN_DEPTH: u8 = 4;
+pub const EXPANDARRAY_MAX_CHAIN_DEPTH: u16 = 4;
 
 // up to 5 different methods for send
-pub const SEND_MAX_DEPTH: u8 = 5;
+pub const SEND_MAX_DEPTH: u16 = 5;
 
-// up to 20 different offsets for case-when
-pub const CASE_WHEN_MAX_DEPTH: u8 = 20;
+// Specialize every value of a byte-sized case expression
+pub const CASE_WHEN_MAX_DEPTH: u16 = 256;
 
 pub const MAX_SPLAT_LENGTH: i32 = 127;
 
@@ -2928,7 +2928,7 @@ pub const MAX_SPLAT_LENGTH: i32 = 127;
 fn gen_get_ivar(
     jit: &mut JITState,
     asm: &mut Assembler,
-    max_chain_depth: u8,
+    max_chain_depth: u16,
     comptime_receiver: VALUE,
     ivar_name: ID,
     recv: Opnd,
@@ -4982,7 +4982,7 @@ fn jit_guard_known_klass(
     obj_opnd: Opnd,
     insn_opnd: YARVOpnd,
     sample_instance: VALUE,
-    max_chain_depth: u8,
+    max_chain_depth: u16,
     counter: Counter,
 ) {
     let known_klass = sample_instance.class_of();
@@ -6770,7 +6770,7 @@ fn c_method_tracing_currently_enabled(jit: &JITState) -> bool {
 unsafe extern "C" fn build_kwhash(ci: *const rb_callinfo, sp: *const VALUE) -> VALUE {
     let kw_arg = vm_ci_kwarg(ci);
     let kw_len: usize = get_cikw_keyword_len(kw_arg).try_into().unwrap();
-    let hash = rb_hash_new_with_size(kw_len as u64);
+    let hash = rb_hash_new_capa(kw_len as i64);
 
     for kwarg_idx in 0..kw_len {
         let key = get_cikw_keywords_idx(kw_arg, kwarg_idx.try_into().unwrap());
@@ -7031,7 +7031,7 @@ fn gen_send_cfunc(
     if variable_splat {
         let splat_array_idx = i32::from(kw_splat) + i32::from(block_arg);
         let comptime_splat_array = jit.peek_at_stack(&asm.ctx, splat_array_idx as isize);
-        if unsafe { rb_yjit_ruby2_keywords_splat_p(comptime_splat_array) } != 0 {
+        if unsafe { rb_jit_ruby2_keywords_splat_p(comptime_splat_array) } != 0 {
             gen_counter_incr(jit, asm, Counter::send_cfunc_splat_varg_ruby2_keywords);
             return None;
         }
@@ -7450,9 +7450,9 @@ fn gen_send_bmethod(
     let procv = unsafe { rb_get_def_bmethod_proc((*cme).def) };
 
     let proc = unsafe { rb_jit_get_proc_ptr(procv) };
-    let proc_block = unsafe { &(*proc).block };
+    let proc_block = unsafe { (*proc).block.as_ref() };
 
-    if proc_block.type_ != block_type_iseq {
+    if proc_block.type_() != block_type_iseq {
         return None;
     }
 
@@ -7932,7 +7932,7 @@ fn gen_send_iseq(
         // All splats need to guard for ruby2_keywords hash. Check with a function call when
         // splatting into a rest param since the index for the last item in the array is dynamic.
         asm_comment!(asm, "guard no ruby2_keywords hash in splat");
-        let bad_splat = asm.ccall(rb_yjit_ruby2_keywords_splat_p as _, vec![asm.stack_opnd(splat_pos)]);
+        let bad_splat = asm.ccall(rb_jit_ruby2_keywords_splat_p as _, vec![asm.stack_opnd(splat_pos)]);
         asm.cmp(bad_splat, 0.into());
         asm.jnz(Target::side_exit(Counter::guard_send_splatarray_last_ruby2_keywords));
     }
@@ -8588,7 +8588,7 @@ fn gen_iseq_kw_call(
 
                 // Use the total number of supplied keywords as a size upper bound
                 let keyword_len = unsafe { (*keywords).keyword_len } as usize;
-                let hash = unsafe { rb_hash_new_with_size(keyword_len as u64) };
+                let hash = unsafe { rb_hash_new_capa(keyword_len as i64) };
 
                 // Put pairs into the kwrest hash as the mask describes
                 for kwarg_idx in 0..keyword_len {
@@ -10254,8 +10254,8 @@ fn gen_intern(
     jit: &mut JITState,
     asm: &mut Assembler,
 ) -> Option<CodegenStatus> {
-    // Save the PC and SP because we might allocate
-    jit_prepare_call_with_gc(jit, asm);
+    // rb_str_intern can allocate and raise EncodingError.
+    jit_prepare_non_leaf_call(jit, asm);
 
     let str = asm.stack_opnd(0);
     let sym = asm.ccall(rb_str_intern as *const u8, vec![str]);
@@ -10481,7 +10481,7 @@ fn gen_opt_getconstant_path(
     }
 
     let cref_sensitive = !unsafe { (*ice).ic_cref }.is_null();
-    let is_shareable = unsafe { rb_yjit_constcache_shareable(ice) };
+    let is_shareable = unsafe { rb_jit_constcache_shareable(ice) };
     let needs_checks = cref_sensitive || (!is_shareable && !assume_single_ractor_mode(jit, asm));
 
     if needs_checks {

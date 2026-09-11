@@ -45,10 +45,6 @@ module Bundler
         false
       end
 
-      def quiet?
-        false
-      end
-
       def warn?
         false
       end

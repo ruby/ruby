@@ -19,7 +19,7 @@ A raised exception transfers program execution, one way or another.
 
 ### Unrescued Exceptions
 
-If an exception not _rescued_
+If an exception is not _rescued_
 (see [Rescued Exceptions](#label-Rescued+Exceptions) below),
 execution transfers to code in the Ruby interpreter
 that prints a message and exits the program (or thread):
@@ -63,7 +63,7 @@ An exception handler has several elements:
 | One or more rescue clauses. | Each contains "rescuing" code, which is to be executed for certain exceptions.           |
 | Else clause (optional).     | Contains code to be executed if no exception is raised.                                  |
 | Ensure clause (optional).   | Contains code to be executed whether or not an exception is raised, or is rescued.       |
-| <tt>end</tt> statement.     | Ends the handler.  `                                                                     |
+| <tt>end</tt> statement.     | Ends the handler.                                        |
 
 #### Begin Clause
 
@@ -159,7 +159,7 @@ Rescued Errno::ENOENT
 
 A `rescue` statement may specify a variable
 whose value becomes the rescued exception
-(an instance of Exception or one of its subclasses:
+(an instance of Exception or one of its subclasses):
 
 ```rb
 begin

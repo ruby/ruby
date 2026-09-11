@@ -156,6 +156,7 @@ make_counters! {
     default {
         compiled_iseq_count,
         failed_iseq_count,
+        jit_frame_heap_bytes,
         skipped_native_stack_full,
 
         compile_time_ns,
@@ -164,7 +165,7 @@ make_counters! {
         invalidation_time_ns,
 
         compiled_side_exit_count,
-        side_exit_size,
+        side_exit_size_bytes,
         compile_side_exit_time_ns,
 
         compile_hir_time_ns,
@@ -230,7 +231,6 @@ make_counters! {
         exit_patchpoint_root_box_only,
         exit_callee_side_exit,
         exit_interrupt,
-        exit_throw,
         exit_stackoverflow,
         exit_block_param_proxy_not_iseq_or_ifunc,
         exit_block_param_proxy_not_nil,
@@ -247,9 +247,12 @@ make_counters! {
         exit_splatkw_not_nil_or_hash,
         exit_splatkw_polymorphic,
         exit_splatkw_not_profiled,
+        exit_caller_splat_length_mismatch,
+        exit_caller_splat_ruby2_keywords,
         exit_directive_induced,
         exit_send_while_tracing,
         exit_invokeblock_not_ifunc,
+        exit_once_not_done,
     }
 
     // Send fallback counters that are summed as dynamic_send_count
@@ -257,7 +260,7 @@ make_counters! {
         // send_fallback_: Fallback reasons for send-ish instructions
         send_fallback_send_cfunc_not_variadic,
         send_fallback_send_not_optimized_method_type_optimized,
-        send_fallback_too_many_args_for_lir,
+        send_fallback_operand_too_large,
         send_fallback_send_bop_redefined,
         send_fallback_send_operands_not_fixnum,
         send_fallback_send_polymorphic_fallback,
@@ -271,7 +274,6 @@ make_counters! {
         send_fallback_send_not_optimized_method_type,
         send_fallback_send_not_optimized_need_permission,
         send_fallback_send_block_arg_not_nil,
-        send_fallback_ccall_with_frame_too_many_args,
         send_fallback_argc_param_mismatch,
         // The call has at least one feature on the caller or callee side
         // that the optimizer does not support.
@@ -444,6 +446,9 @@ make_counters! {
     caller_splat_profile_megamorphic,
     caller_splat_profile_skewed_megamorphic,
 
+    // Caller splat specialization
+    caller_splat_optimized,
+
     // Contexts in which SendDirect argument planning failed. These are kept
     // outside dynamic_send because the detailed fallback reason is also counted.
     send_direct_fallback_context_send,
@@ -457,6 +462,9 @@ make_counters! {
     vm_write_to_parent_iseq_local_count,
     // TODO(max): Implement
     // vm_reify_stack_count,
+
+    // The number of throw instructions executed in JIT code
+    throw_count,
 
     // The number of times we ran a dynamic check
     guard_type_count,
@@ -628,7 +636,6 @@ pub fn side_exit_counter(reason: crate::hir::SideExitReason) -> Counter {
         GuardSuperMethodEntry         => exit_guard_super_method_entry,
         CalleeSideExit                => exit_callee_side_exit,
         Interrupt                     => exit_interrupt,
-        Throw                         => exit_throw,
         StackOverflow                 => exit_stackoverflow,
         BlockParamProxyNotIseqOrIfunc => exit_block_param_proxy_not_iseq_or_ifunc,
         BlockParamProxyNotNil         => exit_block_param_proxy_not_nil,
@@ -642,6 +649,8 @@ pub fn side_exit_counter(reason: crate::hir::SideExitReason) -> Counter {
         SplatKwNotNilOrHash           => exit_splatkw_not_nil_or_hash,
         SplatKwPolymorphic            => exit_splatkw_polymorphic,
         SplatKwNotProfiled            => exit_splatkw_not_profiled,
+        CallerSplatLengthMismatch     => exit_caller_splat_length_mismatch,
+        CallerSplatRuby2Keywords      => exit_caller_splat_ruby2_keywords,
         DirectiveInduced              => exit_directive_induced,
         PatchPoint(Invariant::BOPRedefined { .. })
                                       => exit_patchpoint_bop_redefined,
@@ -666,6 +675,7 @@ pub fn side_exit_counter(reason: crate::hir::SideExitReason) -> Counter {
         NoProfileGetIvar              => exit_no_profile_getivar,
         NoProfileSetIvar              => exit_no_profile_setivar,
         InvokeBlockNotIfunc           => exit_invokeblock_not_ifunc,
+        OnceNotDone                   => exit_once_not_done,
     }
 }
 
@@ -681,7 +691,7 @@ pub fn send_fallback_counter(reason: crate::hir::SendFallbackReason) -> Counter 
         SendCfuncNotVariadic                      => send_fallback_send_cfunc_not_variadic,
         SendNotOptimizedMethodTypeOptimized(_)
                                                   => send_fallback_send_not_optimized_method_type_optimized,
-        TooManyArgsForLir                         => send_fallback_too_many_args_for_lir,
+        OperandTooLarge                           => send_fallback_operand_too_large,
         SendBopRedefined                          => send_fallback_send_bop_redefined,
         SendOperandsNotFixnum                     => send_fallback_send_operands_not_fixnum,
         SendPolymorphicFallback                   => send_fallback_send_polymorphic_fallback,
@@ -702,7 +712,6 @@ pub fn send_fallback_counter(reason: crate::hir::SendFallbackReason) -> Counter 
         SendNotOptimizedMethodType(_)             => send_fallback_send_not_optimized_method_type,
         SendNotOptimizedNeedPermission            => send_fallback_send_not_optimized_need_permission,
         SendBlockArgNotNil                        => send_fallback_send_block_arg_not_nil,
-        CCallWithFrameTooManyArgs                 => send_fallback_ccall_with_frame_too_many_args,
         ObjToStringNotString                      => send_fallback_obj_to_string_not_string,
         SuperCallWithBlock                        => send_fallback_super_call_with_block,
         SuperFromBlock                            => send_fallback_super_from_block,
@@ -853,10 +862,12 @@ pub extern "C" fn rb_zjit_stats(_ec: EcPtr, _self: VALUE, target_key: VALUE) -> 
     }
 
     // Memory usage stats
+    let jit_frame_region_bytes = ZJITState::get_jit_frame_allocator().map_or(0, |allocator| allocator.mapped_bytes());
     let code_region_bytes = ZJITState::get_code_block().mapped_region_size();
+    set_stat_usize!(hash, "jit_frame_region_bytes", jit_frame_region_bytes);
     set_stat_usize!(hash, "code_region_bytes", code_region_bytes);
     set_stat_usize!(hash, "zjit_alloc_bytes", zjit_alloc_bytes());
-    set_stat_usize!(hash, "total_mem_bytes", code_region_bytes + zjit_alloc_bytes());
+    set_stat_usize!(hash, "total_mem_bytes", code_region_bytes + jit_frame_region_bytes + zjit_alloc_bytes());
 
     // End of default stats. Every counter beyond this is provided only for --zjit-stats.
     if !get_option!(stats) {

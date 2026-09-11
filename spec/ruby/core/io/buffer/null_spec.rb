@@ -24,4 +24,13 @@ describe "IO::Buffer#null?" do
     @buffer = IO::Buffer.new(4)
     @buffer.slice(3, 0).null?.should == false
   end
+
+  it "is false for an invalid slice with a recorded address" do
+    @buffer = IO::Buffer.new(4)
+    slice = @buffer.slice(0, 2)
+    @buffer.free
+
+    slice.valid?.should == false
+    slice.null?.should == false
+  end
 end

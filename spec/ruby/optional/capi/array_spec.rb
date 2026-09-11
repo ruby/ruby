@@ -273,6 +273,17 @@ describe "C-API Array function" do
       b.should == [1, 2, 3]
       a.should == [1, 2, 3] # check a was not modified
     end
+
+    it "keeps Float elements alive across GC and later accesses" do
+      a = [1.5, 2.5, 3.5]
+      @s.RARRAY_PTR_iterate(a) { |e| }
+      GC.start
+      b = []
+      @s.RARRAY_PTR_iterate(a) do |e|
+        b << e
+      end
+      b.should == [1.5, 2.5, 3.5]
+    end
   end
 
   describe "RARRAY_LEN" do

@@ -31,6 +31,15 @@ describe "IO::Buffer.map" do
     File.open(@big_file_name, "rb+")
   end
 
+  def open_map_aligned_file_fixture
+    unless @map_aligned_file_name
+      @map_aligned_file_name = tmp("map_aligned_file")
+      File.write(@map_aligned_file_name, "12345678" * (IO::Buffer::MAP_ALIGNMENT / 8 + 2))
+      @tmp_files << @map_aligned_file_name
+    end
+    File.open(@map_aligned_file_name, "rb+")
+  end
+
   after :each do
     @buffer&.free
     @buffer = nil
@@ -179,8 +188,32 @@ describe "IO::Buffer.map" do
   end
 
   context "with size and offset arguments" do
-    # Neither Windows nor macOS have clear, stable behavior with non-zero offset.
-    # https://bugs.ruby-lang.org/issues/21700
+    ruby_version_is "4.1" do
+      it "maps a file from an offset aligned to MAP_ALIGNMENT" do
+        @file = open_map_aligned_file_fixture
+        @buffer = IO::Buffer.map(@file, 14, IO::Buffer::MAP_ALIGNMENT)
+
+        @buffer.size.should == 14
+        @buffer.get_string(0, 14).should == "12345678123456"
+      end
+
+      it "maps the rest of a file from an offset aligned to MAP_ALIGNMENT" do
+        @file = open_map_aligned_file_fixture
+        @buffer = IO::Buffer.map(@file, nil, IO::Buffer::MAP_ALIGNMENT)
+
+        @buffer.get_string(0, 1).should == "1"
+        @buffer.size.should == (@file.size - IO::Buffer::MAP_ALIGNMENT)
+      end
+
+      it "raises ArgumentError if offset is not aligned to MAP_ALIGNMENT" do
+        @file = open_fixture
+        message = "Offset (1) must be a multiple of IO::Buffer::MAP_ALIGNMENT (#{IO::Buffer::MAP_ALIGNMENT})!"
+
+        -> { IO::Buffer.map(@file, 1, 1) }.should.raise(ArgumentError, message)
+      end
+    end
+
+    # Before MAP_ALIGNMENT was exposed, these offsets were only portable to Linux.
     platform_is :linux do
       context "if offset is an allowed value for system call" do
         it "maps the span specified by size starting from the offset" do
@@ -252,10 +285,10 @@ describe "IO::Buffer.map" do
 
     ruby_version_is "4.1" do
       it "raises ArgumentError if offset+size is larger than file size" do
-        @file = open_big_file_fixture
+        @file = open_map_aligned_file_fixture
         size = 17
-        maximum_page_size = 0
-        -> { IO::Buffer.map(@file, size, IO::Buffer::PAGE_SIZE) }.should.raise(ArgumentError, "Offset (#{IO::Buffer::PAGE_SIZE}) can't be larger than #{maximum_page_size} for requested size (#{size})")
+        maximum_offset = 0
+        -> { IO::Buffer.map(@file, size, IO::Buffer::MAP_ALIGNMENT) }.should.raise(ArgumentError, "Offset (#{IO::Buffer::MAP_ALIGNMENT}) can't be larger than #{maximum_offset} for requested size (#{size})")
       ensure
         # Windows requires the file to be closed before deletion.
         @file.close unless @file.closed?
@@ -284,6 +317,42 @@ describe "IO::Buffer.map" do
   end
 
   context "with flags argument" do
+    ruby_version_is "4.1" do
+      it "allows the redundant MAPPED flag" do
+        @file = open_fixture
+        @buffer = IO::Buffer.map(@file, nil, 0, IO::Buffer::MAPPED)
+
+        @buffer.should.mapped?
+        @buffer.should.shared?
+      end
+
+      it "raises ArgumentError if INTERNAL is specified" do
+        @file = open_fixture
+        -> { IO::Buffer.map(@file, nil, 0, IO::Buffer::INTERNAL) }.should.raise(
+          ArgumentError,
+          "IO::Buffer::INTERNAL can't be used with IO::Buffer.map!"
+        )
+      end
+
+      it "raises ArgumentError if EXTERNAL is specified" do
+        @file = open_fixture
+        -> { IO::Buffer.map(@file, nil, 0, IO::Buffer::EXTERNAL) }.should.raise(
+          ArgumentError,
+          "IO::Buffer::EXTERNAL can't be used with IO::Buffer.map!"
+        )
+      end
+
+      it "raises ArgumentError if both SHARED and PRIVATE are specified" do
+        @file = open_fixture
+        flags = IO::Buffer::SHARED | IO::Buffer::PRIVATE
+
+        -> { IO::Buffer.map(@file, nil, 0, flags) }.should.raise(
+          ArgumentError,
+          "Flags can't include both IO::Buffer::SHARED and IO::Buffer::PRIVATE!"
+        )
+      end
+    end
+
     context "when READONLY flag is specified" do
       it "sets readonly flag on the buffer, allowing only reads" do
         @file = open_fixture

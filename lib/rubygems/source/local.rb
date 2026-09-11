@@ -41,7 +41,8 @@ class Gem::Source::Local < Gem::Source
       Dir["*.gem"].each do |file|
         pkg = Gem::Package.new(file)
         spec = pkg.spec
-      rescue SystemCallError, Gem::Package::FormatError
+        spec.content_address = pkg.content_address
+      rescue SystemCallError, Gem::Package::FormatError, Gem::InstallError
         # ignore
       else
         tup = spec.name_tuple

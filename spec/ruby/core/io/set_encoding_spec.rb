@@ -313,6 +313,7 @@ describe "IO#set_encoding" do
 
   it "raises ArgumentError when argument is not ASCII compatible" do
     -> { @io.set_encoding("utf-8".encode(Encoding::UTF_16BE)) }.should.raise(ArgumentError)
+    -> { @io.set_encoding("utf-8", "utf-8".encode(Encoding::UTF_16BE)) }.should.raise(ArgumentError)
   end
 
   it "raises TypeError when the first argument is nil and the second is not nil" do
@@ -335,6 +336,10 @@ describe "IO#set_encoding" do
 
     -> {
       io.set_encoding(Encoding::UTF_16BE)
+    }.should.raise(ArgumentError, "ASCII incompatible encoding needs binmode")
+
+    -> {
+      io.set_encoding("utf-16be")
     }.should.raise(ArgumentError, "ASCII incompatible encoding needs binmode")
 
     Encoding.default_external = Encoding::UTF_16BE
@@ -392,6 +397,15 @@ describe "IO#set_encoding" do
     @io.binmode
     -> {
       @io.set_encoding("utf-8", newline: :lf)
+    }.should.raise(ArgumentError, "newline decorator with binary mode")
+    -> {
+      @io.set_encoding("utf-8", universal_newline: true)
+    }.should.raise(ArgumentError, "newline decorator with binary mode")
+    -> {
+      @io.set_encoding("utf-8", crlf_newline: true)
+    }.should.raise(ArgumentError, "newline decorator with binary mode")
+    -> {
+      @io.set_encoding("utf-8", cr_newline: true)
     }.should.raise(ArgumentError, "newline decorator with binary mode")
   end
 
