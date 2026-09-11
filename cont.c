@@ -1107,9 +1107,9 @@ cont_compact(void *ptr)
     rb_context_t *cont = ptr;
 
     if (cont->self) {
-        cont->self = rb_gc_location(cont->self);
+        rb_gc_update_moved(&cont->self);
     }
-    cont->value = rb_gc_location(cont->value);
+    rb_gc_update_moved(&cont->value);
     rb_execution_context_update(&cont->saved_ec);
 }
 
@@ -1220,7 +1220,7 @@ void
 rb_fiber_update_self(rb_fiber_t *fiber)
 {
     if (fiber->cont.self) {
-        fiber->cont.self = rb_gc_location(fiber->cont.self);
+        rb_gc_update_moved(&fiber->cont.self);
     }
     else {
         rb_execution_context_update(&fiber->cont.saved_ec);
@@ -1237,7 +1237,7 @@ static void
 fiber_compact(void *ptr)
 {
     rb_fiber_t *fiber = ptr;
-    fiber->first_proc = rb_gc_location(fiber->first_proc);
+    rb_gc_update_moved(&fiber->first_proc);
 
     if (fiber->prev) rb_fiber_update_self(fiber->prev);
 
@@ -2124,10 +2124,18 @@ static const rb_data_type_t rb_fiber_data_type = {
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
+static VALUE fiber_alloc_in(VALUE klass, void *objspace);
+
 static VALUE
 fiber_alloc(VALUE klass)
 {
-    VALUE obj = TypedData_Wrap_Struct(klass, &rb_fiber_data_type, 0);
+    return fiber_alloc_in(klass, GET_RACTOR()->objspace);
+}
+
+static VALUE
+fiber_alloc_in(VALUE klass, void *objspace)
+{
+    VALUE obj = rb_data_typed_object_wrap_in_objspace(objspace, klass, 0, &rb_fiber_data_type);
     rb_gc_declare_weak_references(obj);
     return obj;
 }
@@ -2701,10 +2709,10 @@ rb_threadptr_root_fiber_setup(rb_thread_t *th)
 }
 
 void
-rb_root_fiber_obj_setup(rb_thread_t *th)
+rb_root_fiber_obj_setup(rb_thread_t *th, void *objspace)
 {
     rb_fiber_t *fiber = th->ec->fiber_ptr;
-    VALUE fiber_value = fiber_alloc(rb_cFiber);
+    VALUE fiber_value = fiber_alloc_in(rb_cFiber, objspace);
     DATA_PTR(fiber_value) = fiber;
     fiber->cont.self = fiber_value;
 }

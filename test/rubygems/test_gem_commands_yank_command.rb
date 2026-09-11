@@ -27,17 +27,18 @@ class TestGemCommandsYankCommand < Gem::TestCase
   end
 
   def test_handle_options
-    @cmd.handle_options %w[a --version 1.0 --platform x86-darwin -k KEY --host HOST]
+    @cmd.handle_options %w[a --version 1.0 --platform x86-darwin --ruby-abi 3.4 -k KEY --host HOST]
 
     assert_equal %w[a],        @cmd.options[:args]
     assert_equal :KEY,         @cmd.options[:key]
     assert_equal "HOST",       @cmd.options[:host]
     assert_nil                 @cmd.options[:platform]
+    assert_equal "3.4",        @cmd.options[:ruby_abi]
     assert_equal req("= 1.0"), @cmd.options[:version]
   end
 
   def test_handle_options_missing_argument
-    %w[-v --version -p --platform].each do |option|
+    %w[-v --version -p --platform --ruby-abi].each do |option|
       assert_raise Gem::OptionParser::MissingArgument do
         @cmd.handle_options %W[a #{option}]
       end
@@ -66,6 +67,78 @@ class TestGemCommandsYankCommand < Gem::TestCase
     assert_equal "key", @fetcher.last_request["Authorization"]
 
     assert_equal [yank_uri], @fetcher.paths
+  end
+
+  def test_execute_with_ruby_abi_sends_platform_and_ruby_abi_to_yank_api
+    original_platforms = Gem.platforms.dup
+    yank_uri = "http://example/api/v1/gems/yank"
+    @fetcher.data[yank_uri] = HTTPResponseFactory.create(body: "Successfully yanked", code: 200, msg: "OK")
+
+    @cmd.options[:args] = %w[a]
+    @cmd.options[:version] = req("= 1.0")
+    @cmd.options[:ruby_abi] = "3.4"
+    Gem.platforms = [Gem::Platform::RUBY, Gem::Platform.new("x86_64-linux")]
+    @cmd.options[:added_platform] = true
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    body = @fetcher.last_request.body.split("&").sort
+    assert_equal %w[gem_name=a platform=x86_64-linux ruby_abi=3.4 version=1.0], body
+    assert_match(/Successfully yanked/, @ui.output)
+    assert_equal [yank_uri], @fetcher.paths
+  ensure
+    Gem.platforms = original_platforms
+  end
+
+  def test_execute_with_ruby_abi_without_platform_sends_ruby_abi_to_yank_api
+    yank_uri = "http://example/api/v1/gems/yank"
+    @fetcher.data[yank_uri] = HTTPResponseFactory.create(
+      body: "The platform param is required when ruby_abi is specified.",
+      code: 400,
+      msg: "Bad Request"
+    )
+
+    @cmd.options[:args] = %w[a]
+    @cmd.options[:version] = req("= 1.0")
+    @cmd.options[:ruby_abi] = "3.4"
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    body = @fetcher.last_request.body.split("&").sort
+    assert_equal %w[gem_name=a ruby_abi=3.4 version=1.0], body
+    assert_match(/The platform param is required when ruby_abi is specified/, @ui.output)
+    assert_equal [yank_uri], @fetcher.paths
+  end
+
+  def test_execute_with_ruby_abi_and_platform_no_matching_gem_displays_error
+    original_platforms = Gem.platforms.dup
+    yank_uri = "http://example/api/v1/gems/yank"
+    @fetcher.data[yank_uri] = HTTPResponseFactory.create(
+      body: "The version 1.0 (x86_64-linux) (Ruby ABI 3.9) does not exist.",
+      code: 404,
+      msg: "Not Found"
+    )
+
+    @cmd.options[:args] = %w[a]
+    @cmd.options[:version] = req("= 1.0")
+    @cmd.options[:ruby_abi] = "3.9"
+    Gem.platforms = [Gem::Platform::RUBY, Gem::Platform.new("x86_64-linux")]
+    @cmd.options[:added_platform] = true
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    body = @fetcher.last_request.body.split("&").sort
+    assert_equal %w[gem_name=a platform=x86_64-linux ruby_abi=3.9 version=1.0], body
+    assert_match(/The version 1\.0 \(x86_64-linux\) \(Ruby ABI 3\.9\) does not exist/, @ui.output)
+    assert_equal [yank_uri], @fetcher.paths
+  ensure
+    Gem.platforms = original_platforms
   end
 
   def test_execute_with_otp_success

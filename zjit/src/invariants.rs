@@ -194,11 +194,6 @@ pub extern "C" fn rb_zjit_bop_redefined(klass: RedefinitionFlag, bop: ruby_basic
 /// equal to base pointer.
 #[unsafe(no_mangle)]
 pub extern "C" fn rb_zjit_invalidate_no_ep_escape(iseq: IseqPtr) {
-    // Skip tracking EP escapes on boot. We don't need to invalidate anything during boot.
-    if !ZJITState::has_instance() {
-        return;
-    }
-
     with_vm_lock(src_loc!(), || {
         // Remember that this ISEQ may escape EP
         unsafe { rb_jit_iseq_mark_ep_escape_recorded(iseq) };

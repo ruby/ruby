@@ -428,10 +428,13 @@ ractor_queue_size(const struct ractor_queue *rq)
     return size;
 }
 
-static void
+// Returns whether this call is the one that closed it.
+static bool
 ractor_queue_close(struct ractor_queue *rq)
 {
+    bool closed_now = !rq->closed;
     rq->closed = true;
+    return closed_now;
 }
 
 static void
@@ -536,8 +539,27 @@ ractor_add_port(rb_ractor_t *r, st_data_t id)
         // The table is full. Rebuild it outside of the ractor lock (mutators
         // are serialized by the per-ractor GVL) and swap it under the lock
         // to exclude the readers (other ractors).
-        st_table *const new_tab = st_copy(old_tab);
-        st_insert(new_tab, id, (st_data_t)rq);
+        st_table *new_tab;
+
+        // Those allocations can run a global GC, whose reap frees dead ports and
+        // drops them from old_tab; a copy taken across one would republish the
+        // freed queues.  Only the owner inserts into its own table, so a changed
+        // count means a reap ran.  Check after each allocation: st_copy fills the
+        // header before it allocates the entries, so a reap in between leaves the
+        // copy counting rows it does not have, which st_insert must not be given.
+        while (1) {
+            const st_index_t entries = st_table_size(old_tab);
+
+            new_tab = st_copy(old_tab);
+
+            if (st_table_size(old_tab) == entries) {
+                st_insert(new_tab, id, (st_data_t)rq);
+
+                if (st_table_size(old_tab) == entries) break;
+            }
+
+            st_free_table(new_tab);
+        }
 
         RACTOR_LOCK(r);
         {
@@ -612,18 +634,21 @@ ractor_closed_port_p(rb_execution_context_t *ec, rb_ractor_t *r, const struct ra
 static void ractor_deliver_incoming_messages(rb_execution_context_t *ec, rb_ractor_t *cr);
 static bool ractor_queue_empty_p(rb_ractor_t *r, const struct ractor_queue *rq);
 
+static bool ractor_wakeup_all(rb_ractor_t *r, enum ractor_wakeup_status wakeup_status);
+
 static bool
 ractor_close_port(rb_execution_context_t *ec, rb_ractor_t *cr, const struct ractor_port *rp)
 {
     VM_ASSERT(cr == rp->r);
     struct ractor_queue *rq = NULL;
+    bool closed_now = false;
 
     RACTOR_LOCK_SELF(cr);
     {
         ractor_deliver_incoming_messages(ec, cr); // check incoming messages
 
         if (st_lookup(rp->r->sync.ports, ractor_port_id(rp), (st_data_t *)&rq)) {
-            ractor_queue_close(rq);
+            closed_now = ractor_queue_close(rq);
 
             if (ractor_queue_empty_p(cr, rq)) {
                 // delete from the table
@@ -634,6 +659,12 @@ ractor_close_port(rb_execution_context_t *ec, rb_ractor_t *cr, const struct ract
         }
     }
     RACTOR_UNLOCK_SELF(cr);
+
+    if (closed_now) {
+        // Only when this call closed it: waking the Ractor is not free to the
+        // other waiters, and a re-close of a closed port is news to nobody.
+        ractor_wakeup_all(cr, wakeup_by_close);
+    }
 
     return rq != NULL;
 }
@@ -656,11 +687,33 @@ ractor_reap_dead_ports_i(st_data_t port_id, st_data_t val, st_data_t dat)
     }
 }
 
+/* A message is only moved from recv_queue to its port queue when the owner receives or
+ * closes, so one addressed to a port that died first is left here, out of the sweep
+ * above.  Its port is gone from the table by now: drop it. */
+static void
+ractor_reap_undeliverable_messages(rb_ractor_t *r)
+{
+    struct ractor_queue *recv_q = r->sync.recv_queue;
+    if (recv_q == NULL) return;
+
+    struct ractor_basket *b, *nxt;
+    ccan_list_for_each_safe(&recv_q->set, b, nxt, node) {
+        if (!st_lookup(r->sync.ports, b->port_id, NULL)) {
+            ccan_list_del_init(&b->node);
+            ractor_basket_free(b);
+        }
+    }
+}
+
 void
 rb_ractor_reap_dead_ports(rb_ractor_t *r)
 {
+    /* No sync lock here: the caller's gate is what keeps foreign senders out. */
+    VM_ASSERT(rb_gc_single_objspace_p() || rb_gc_during_global_gc_p());
+
     if (r->sync.ports) {
         st_foreach(r->sync.ports, ractor_reap_dead_ports_i, 0);
+        ractor_reap_undeliverable_messages(r);
     }
 }
 
@@ -945,9 +998,6 @@ ractor_sync_init(rb_ractor_t *r)
 
     // no receive is rebuilding a payload yet
 
-#ifndef RUBY_THREAD_PTHREAD_H
-    rb_native_cond_initialize(&r->sync.wakeup_cond);
-#endif
 }
 
 /* Create the default port.  Call only after the Ractor joined vm->ractor.set, so the
@@ -1284,7 +1334,7 @@ wakeup_status_str(enum ractor_wakeup_status wakeup_status)
       case wakeup_none: return "none";
       case wakeup_by_send: return "by_send";
       case wakeup_by_interrupt: return "by_interrupt";
-      // case wakeup_by_close: return "by_close";
+      case wakeup_by_close: return "by_close";
     }
     rb_bug("unreachable");
 }
@@ -1304,79 +1354,12 @@ basket_type_name(enum ractor_basket_type type)
 
 #endif // USE_RUBY_DEBUG_LOG
 
-#ifdef RUBY_THREAD_PTHREAD_H
-
-//
-
-#else // win32
-
-static void
-ractor_cond_wait(rb_ractor_t *r, const rb_hrtime_t *end)
-{
-#if RACTOR_CHECK_MODE > 0
-    VALUE locked_by = r->sync.locked_by;
-    r->sync.locked_by = Qnil;
-#endif
-    if (end) {
-        rb_hrtime_t now = rb_hrtime_now();
-        rb_hrtime_t rel = *end > now ? *end - now : 0;
-        // the condvar takes msec: never round a live timeout down to 0
-        unsigned long msec = (unsigned long)(rel / RB_HRTIME_PER_MSEC);
-        rb_native_cond_timedwait(&r->sync.wakeup_cond, &r->sync.lock, msec > 0 ? msec : 1);
-    }
-    else {
-        rb_native_cond_wait(&r->sync.wakeup_cond, &r->sync.lock);
-    }
-
-#if RACTOR_CHECK_MODE > 0
-    r->sync.locked_by = locked_by;
-#endif
-}
-
-static void *
-ractor_wait_no_gvl(void *ptr)
-{
-    struct ractor_waiter *waiter = (struct ractor_waiter *)ptr;
-    rb_ractor_t *cr = waiter->th->ractor;
-
-    RACTOR_LOCK_SELF(cr);
-    {
-        if (waiter->wakeup_status == wakeup_none) {
-            ractor_cond_wait(cr, waiter->end);
-        }
-    }
-    RACTOR_UNLOCK_SELF(cr);
-    return NULL;
-}
-
-static void
-rb_ractor_sched_wait(rb_execution_context_t *ec, rb_ractor_t *cr, rb_unblock_function_t *ubf, void *ptr)
-{
-    struct ractor_waiter *waiter = (struct ractor_waiter *)ptr;
-
-    RACTOR_UNLOCK(cr);
-    {
-        rb_nogvl(ractor_wait_no_gvl, waiter,
-                 ubf, waiter,
-                 RB_NOGVL_UBF_ASYNC_SAFE | RB_NOGVL_INTR_FAIL);
-    }
-    RACTOR_LOCK(cr);
-}
-
-static void
-rb_ractor_sched_wakeup(rb_ractor_t *r, rb_thread_t *th)
-{
-    // ractor lock is acquired
-    rb_native_cond_broadcast(&r->sync.wakeup_cond);
-}
-#endif
-
 static bool
 ractor_wakeup_all(rb_ractor_t *r, enum ractor_wakeup_status wakeup_status)
 {
     ASSERT_ractor_unlocking(r);
 
-    RUBY_DEBUG_LOG("r:%u wakeup:%s", rb_ractor_id(r), wakeup_status_str(wakeup_status));
+    RUBY_DEBUG_LOG("r:%"PRI_SERIALT_PREFIX"u wakeup:%s", rb_ractor_id(r), wakeup_status_str(wakeup_status));
 
     bool wakeup_p = false;
 
@@ -1511,6 +1494,14 @@ ractor_check_received(rb_ractor_t *cr, struct ractor_queue *messages)
 
 // Returns false if the deadline `end` passed with nothing to deliver.  Incoming
 // messages are delivered even then, so the caller retries its queue once more.
+// A wait can end on a wakeup meant for another port, so the caller keeps the
+// deadline: a stream of them must not hold a timed receive past its time.
+static bool
+ractor_deadline_passed_p(const rb_hrtime_t *end)
+{
+    return end != NULL && rb_hrtime_now() >= *end;
+}
+
 static bool
 ractor_wait_receive(rb_execution_context_t *ec, rb_ractor_t *cr, const rb_hrtime_t *end)
 {
@@ -1595,6 +1586,11 @@ ractor_receive(rb_execution_context_t *ec, const struct ractor_port *rp, const r
         else if (!ractor_wait_receive(ec, cr, end)) {
             return Qundef;
         }
+        else if (ractor_deadline_passed_p(end)) {
+            // The wait ended on a wakeup meant for another port, which says
+            // nothing about the clock.  One more look, then the deadline stands.
+            return ractor_try_receive(ec, cr, rp);
+        }
     }
 }
 
@@ -1626,7 +1622,7 @@ ractor_send_basket(rb_execution_context_t *ec, const struct ractor_port *rp, str
 {
     bool closed = false;
 
-    RUBY_DEBUG_LOG("port:%u@r%u b:%s v:%p", (unsigned int)ractor_port_id(rp), rb_ractor_id(rp->r), basket_type_name(b->type), (void *)b->p.v);
+    RUBY_DEBUG_LOG("port:%u@r%"PRI_SERIALT_PREFIX"u b:%s v:%p", (unsigned int)ractor_port_id(rp), rb_ractor_id(rp->r), basket_type_name(b->type), (void *)b->p.v);
 
     RACTOR_LOCK(rp->r);
     {
@@ -1648,7 +1644,7 @@ ractor_send_basket(rb_execution_context_t *ec, const struct ractor_port *rp, str
         ractor_wakeup_all(rp->r, wakeup_by_send);
     }
     else {
-        RUBY_DEBUG_LOG("closed:%u@r%u", (unsigned int)ractor_port_id(rp), rb_ractor_id(rp->r));
+        RUBY_DEBUG_LOG("closed:%u@r%"PRI_SERIALT_PREFIX"u", (unsigned int)ractor_port_id(rp), rb_ractor_id(rp->r));
 
         /* Nothing took the basket: it was not enqueued, so free it whether or not the
          * caller wants the error raised. */
@@ -1901,6 +1897,10 @@ ractor_selector__wait(rb_execution_context_t *ec, VALUE selector, const rb_hrtim
         }
         else if (!ractor_wait_receive(ec, cr, end)) {
             return Qnil;
+        }
+        else if (ractor_deadline_passed_p(end)) {
+            st_foreach(s->ports, ractor_selector_wait_i, (st_data_t)&data);
+            return data.found ? rb_ary_new_from_args(2, data.rpv, data.v) : Qnil;
         }
     }
 }

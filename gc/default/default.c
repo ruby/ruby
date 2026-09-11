@@ -852,14 +852,35 @@ static void objspace_absorb(rb_objspace_t *dst, rb_objspace_t *src);
 
 static struct heap_page_body *page_pool_acquire(struct page_arena **arena_out);
 static void page_pool_release(struct heap_page_body *body, struct page_arena *arena);
+#ifdef HAVE_MMAP
+static void page_pool_release_locked(struct heap_page_body *body, struct page_arena *arena);
+#endif
 static void page_pool_reclaim(rb_global_objspace_t *g);
+
+#if RGENGC_CHECK_MODE && !defined(_WIN32) && !defined(__wasi__) && defined(HAVE_PTHREAD_H)
+# define PAGE_POOL_LOCK_ERRORCHECK 1
+#endif
+
+static void
+page_pool_lock_initialize(rb_nativethread_lock_t *lock)
+{
+#ifdef PAGE_POOL_LOCK_ERRORCHECK
+    pthread_mutexattr_t attr;
+    pthread_mutexattr_init(&attr);
+    pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_ERRORCHECK);
+    pthread_mutex_init(lock, &attr);
+    pthread_mutexattr_destroy(&attr);
+#else
+    rb_native_mutex_initialize(lock);
+#endif
+}
 
 static void
 global_objspace_init(void)
 {
     if (global_objspace == NULL) {
         rb_global_objspace_t *g = &rb_global_objspace_instance;
-        rb_native_mutex_initialize(&g->page_pool.lock);
+        page_pool_lock_initialize(&g->page_pool.lock);
         g->page_pool.hot_list = NULL;
         g->page_pool.hot_count = 0;
         g->page_pool.arenas = NULL;
@@ -2224,6 +2245,12 @@ heap_page_body_free(struct heap_page_body *page_body, struct page_arena *arena)
     page_pool_release(page_body, arena);
 }
 
+#ifdef PAGE_POOL_LOCK_ERRORCHECK
+# define ASSERT_PAGE_POOL_LOCKED(g) GC_ASSERT(pthread_mutex_lock(&(g)->page_pool.lock) == EDEADLK)
+#else
+# define ASSERT_PAGE_POOL_LOCKED(g) ((void)0)
+#endif
+
 /* Insert into page_index.  Writers serialize on page_pool.lock; lomem and himem are a
  * monotonically growing over-approximation used for a quick reject. */
 static void
@@ -2259,12 +2286,13 @@ global_page_index_insert(struct heap_page *page)
 }
 
 static void
-global_page_index_remove(const struct heap_page *page)
+global_page_index_remove_locked(const struct heap_page *page)
 {
     rb_global_objspace_t *g = global_objspace;
     uintptr_t body = (uintptr_t)page->body;
 
-    rb_native_mutex_lock(&g->page_pool.lock);
+    ASSERT_PAGE_POOL_LOCKED(g);
+
     size_t lo = 0, hi = g->page_index.n_pages;
     while (lo < hi) {
         size_t mid = (lo + hi) / 2;
@@ -2275,6 +2303,15 @@ global_page_index_remove(const struct heap_page *page)
     memmove(&g->page_index.pages[lo], &g->page_index.pages[lo + 1],
             (g->page_index.n_pages - lo - 1) * sizeof(struct heap_page *));
     g->page_index.n_pages--;
+}
+
+static void
+global_page_index_remove(const struct heap_page *page)
+{
+    rb_global_objspace_t *g = global_objspace;
+
+    rb_native_mutex_lock(&g->page_pool.lock);
+    global_page_index_remove_locked(page);
     rb_native_mutex_unlock(&g->page_pool.lock);
 }
 
@@ -2288,6 +2325,37 @@ heap_page_free(rb_objspace_t *objspace, struct heap_page *page)
 }
 
 static void
+heap_pages_free_batch(rb_objspace_t *objspace, struct heap_page *pages)
+{
+    rb_global_objspace_t *g = global_objspace;
+
+    rb_native_mutex_lock(&g->page_pool.lock);
+    for (struct heap_page *page = pages; page != NULL; page = page->free_next) {
+        global_page_index_remove_locked(page);
+        if (HEAP_PAGE_ALLOC_USE_MMAP) {
+#ifdef HAVE_MMAP
+            page_pool_release_locked(page->body, page->arena);
+#endif
+        }
+    }
+    rb_native_mutex_unlock(&g->page_pool.lock);
+
+    if (!HEAP_PAGE_ALLOC_USE_MMAP) {
+        /* gc_aligned_free does not need the pool lock. */
+        for (struct heap_page *page = pages; page != NULL; page = page->free_next) {
+            heap_page_body_free(page->body, page->arena);
+        }
+    }
+
+    while (pages != NULL) {
+        struct heap_page *next = pages->free_next;
+        objspace->heap_pages.freed_pages++;
+        free(pages);
+        pages = next;
+    }
+}
+
+static void
 heap_pages_free_unused_pages(rb_objspace_t *objspace)
 {
     if (objspace->empty_pages != NULL && heap_pages_freeable_pages > 0) {
@@ -2296,11 +2364,13 @@ heap_pages_free_unused_pages(rb_objspace_t *objspace)
         objspace->empty_pages_count = 0;
 
         size_t i, j;
+        struct heap_page *to_free = NULL;
         for (i = j = 0; i < rb_darray_size(objspace->heap_pages.sorted); i++) {
             struct heap_page *page = rb_darray_get(objspace->heap_pages.sorted, i);
 
             if (heap_page_in_global_empty_pages_pool(objspace, page) && heap_pages_freeable_pages > 0) {
-                heap_page_free(objspace, page);
+                page->free_next = to_free;
+                to_free = page;
                 heap_pages_freeable_pages--;
             }
             else {
@@ -2336,6 +2406,8 @@ heap_pages_free_unused_pages(rb_objspace_t *objspace)
             heap_pages_lomem = 0;
             heap_pages_himem = 0;
         }
+
+        heap_pages_free_batch(objspace, to_free);
     }
 }
 
@@ -2468,10 +2540,10 @@ static struct heap_page_body *
 page_pool_acquire(struct page_arena **arena_out)
 {
     struct heap_page_body *body = NULL;
-    bool need_reuse = false;
 
     if (HEAP_PAGE_ALLOC_USE_MMAP) {
 #ifdef HAVE_MMAP
+        bool need_reuse = false;
         rb_global_objspace_t *g = global_objspace;
 
         rb_native_mutex_lock(&g->page_pool.lock);
@@ -2529,6 +2601,33 @@ page_pool_acquire(struct page_arena **arena_out)
     return body;
 }
 
+#ifdef HAVE_MMAP
+static void
+page_pool_release_locked(struct heap_page_body *body, struct page_arena *arena)
+{
+    rb_global_objspace_t *g = global_objspace;
+
+    ASSERT_PAGE_POOL_LOCKED(g);
+
+    /* A body in the empty-pages pool stays fully poisoned (see gc_sweep_page), so
+     * unpoison the scratch area (link + arena tag) before writing. */
+    asan_unpoison_memory_region(body, PAGE_POOL_SCRATCH_SIZE, false);
+    arena->free_count++;
+    PAGE_POOL_BODY_ARENA(body) = arena;
+    if (g->page_pool.hot_count < PAGE_POOL_HOT_MAX) {
+        *(uintptr_t *)body = (uintptr_t)g->page_pool.hot_list;
+        g->page_pool.hot_list = body;
+        g->page_pool.hot_count++;
+    }
+    else {
+        *(uintptr_t *)body = (uintptr_t)arena->cold_freelist;
+        arena->cold_freelist = body;
+        arena->cold_count++;
+    }
+    asan_poison_memory_region(body, HEAP_PAGE_SIZE);
+}
+#endif
+
 static void
 page_pool_release(struct heap_page_body *body, struct page_arena *arena)
 {
@@ -2537,22 +2636,7 @@ page_pool_release(struct heap_page_body *body, struct page_arena *arena)
         rb_global_objspace_t *g = global_objspace;
 
         rb_native_mutex_lock(&g->page_pool.lock);
-        /* A body in the empty-pages pool stays fully poisoned (see gc_sweep_page), so
-         * unpoison the scratch area (link + arena tag) before writing. */
-        asan_unpoison_memory_region(body, PAGE_POOL_SCRATCH_SIZE, false);
-        arena->free_count++;
-        PAGE_POOL_BODY_ARENA(body) = arena;
-        if (g->page_pool.hot_count < PAGE_POOL_HOT_MAX) {
-            *(uintptr_t *)body = (uintptr_t)g->page_pool.hot_list;
-            g->page_pool.hot_list = body;
-            g->page_pool.hot_count++;
-        }
-        else {
-            *(uintptr_t *)body = (uintptr_t)arena->cold_freelist;
-            arena->cold_freelist = body;
-            arena->cold_count++;
-        }
-        asan_poison_memory_region(body, HEAP_PAGE_SIZE);
+        page_pool_release_locked(body, arena);
         rb_native_mutex_unlock(&g->page_pool.lock);
 #endif
     }
@@ -8502,10 +8586,34 @@ gc_enter_count(enum gc_enter_event event)
 
 static bool current_process_time(struct timespec *ts);
 
+/* A gc phase must be timed on the collecting thread's own cpu.  A local gc runs
+ * while the other ractors keep going, and process cpu time counts their work as
+ * gc: with eight busy ractors the same ten collections were reported as 131ms
+ * instead of 3ms, more than the wall clock they ran in.  The kernel also answers
+ * this one without walking every thread in the process. */
+static bool
+current_thread_time(struct timespec *ts)
+{
+#if defined(HAVE_CLOCK_GETTIME) && defined(CLOCK_THREAD_CPUTIME_ID)
+    {
+        static int try_clock_gettime = 1;
+        if (try_clock_gettime) {
+            if (clock_gettime(CLOCK_THREAD_CPUTIME_ID, ts) == 0) {
+                return true;
+            }
+            else {
+                try_clock_gettime = 0;
+            }
+        }
+    }
+#endif
+    return current_process_time(ts);
+}
+
 static void
 gc_clock_start(struct timespec *ts)
 {
-    if (!current_process_time(ts)) {
+    if (!current_thread_time(ts)) {
         ts->tv_sec = 0;
         ts->tv_nsec = 0;
     }
@@ -8517,7 +8625,7 @@ gc_clock_end(struct timespec *ts)
     struct timespec end_time;
 
     if ((ts->tv_sec > 0 || ts->tv_nsec > 0) &&
-            current_process_time(&end_time) &&
+            current_thread_time(&end_time) &&
             end_time.tv_sec >= ts->tv_sec) {
         return (unsigned long long)(end_time.tv_sec - ts->tv_sec) * (1000 * 1000 * 1000) +
                     (end_time.tv_nsec - ts->tv_nsec);
@@ -9852,7 +9960,7 @@ gc_update_references_weak_table_i(VALUE obj, void *data)
 static int
 gc_update_references_weak_table_replace_i(VALUE *obj, void *data)
 {
-    *obj = rb_gc_location(*obj);
+    rb_gc_update_moved(obj);
 
     return ST_CONTINUE;
 }
@@ -11186,11 +11294,13 @@ current_process_time(struct timespec *ts)
 #if defined(HAVE_CLOCK_GETTIME) && defined(CLOCK_PROCESS_CPUTIME_ID)
     {
         static int try_clock_gettime = 1;
-        if (try_clock_gettime && clock_gettime(CLOCK_PROCESS_CPUTIME_ID, ts) == 0) {
-            return true;
-        }
-        else {
-            try_clock_gettime = 0;
+        if (try_clock_gettime) {
+            if (clock_gettime(CLOCK_PROCESS_CPUTIME_ID, ts) == 0) {
+                return true;
+            }
+            else {
+                try_clock_gettime = 0;
+            }
         }
     }
 #endif
@@ -12428,7 +12538,7 @@ rb_gc_impl_after_fork(void *objspace_ptr, rb_pid_t pid)
         heap_alloc_state_clear(objspace);
         /* The forking Ractor becomes the child process's main Ractor. */
         global_objspace->main_objspace = objspace;
-        rb_native_mutex_initialize(&rb_global_objspace_instance.page_pool.lock);
+        page_pool_lock_initialize(&rb_global_objspace_instance.page_pool.lock);
     }
 }
 
@@ -12503,7 +12613,6 @@ rb_gc_impl_objspace_init(void *objspace_ptr)
 
     gc_config_full_mark_set(TRUE);
 
-    objspace->flags.measure_gc = true;
     malloc_limit = gc_params.malloc_limit_min;
     objspace->shareable_objects_limit = SHAREABLE_OBJECTS_LIMIT_MIN;
 #ifdef MALLOC_COUNTERS_NEED_LOCK
@@ -12542,6 +12651,10 @@ rb_gc_impl_objspace_init(void *objspace_ptr)
 #endif
         gc_params.heap_init_bytes = GC_HEAP_INIT_BYTES;
     }
+    // GC.measure_total_time= sets the caller's objspace only; a new Ractor's follows
+    // its creator's, which is the objspace running this init (main starts it on).
+    objspace->flags.measure_gc = global_objspace->main_objspace == objspace ? true
+                                 : ((rb_objspace_t *)rb_gc_get_objspace())->flags.measure_gc;
 
     rb_darray_make_without_gc(&objspace->heap_pages.sorted, 0);
     rb_darray_make_without_gc(&objspace->weak_references, 0);

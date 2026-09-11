@@ -1,5 +1,8 @@
 # frozen_string_literal: true
 
+require "rubygems/credential_store"
+require_relative "../../../support/fake_credential_backend"
+
 RSpec.describe Bundler::Source::Git::GitProxy do
   let(:path) { Pathname("path") }
   let(:uri) { "https://github.com/ruby/rubygems.git" }
@@ -89,6 +92,36 @@ RSpec.describe Bundler::Source::Git::GitProxy do
 
     it "keeps original userinfo" do
       Bundler.settings.temporary("github.com" => "u:p") do
+        original = "https://orig:info@github.com/ruby/rubygems.git"
+        git_proxy = described_class.new(Pathname("path"), original, options)
+        allow(git_proxy).to receive(:git_local).with("--version").and_return("git version 2.14.0")
+        expect(git_proxy).to receive(:capture).with([*base_clone_args, "--", original, path.to_s], nil).and_return(["", "", clone_result])
+        git_proxy.checkout
+      end
+    end
+  end
+
+  context "with credentials in the credential store" do
+    let(:fake_store) { Gem::CredentialStore.new(backend: FakeCredentialBackend.new) }
+
+    before do
+      Gem::CredentialStore.instance = fake_store
+      fake_store.set(Bundler::Settings.key_for("github.com"), "u:p")
+    end
+
+    after { Gem::CredentialStore.reset! }
+
+    it "adds username and password from the store to URI for host" do
+      Bundler.settings.temporary("credential_store" => "true") do
+        expect(Bundler.settings["github.com"]).to be_nil
+        allow(git_proxy).to receive(:git_local).with("--version").and_return("git version 2.14.0")
+        expect(git_proxy).to receive(:capture).with([*base_clone_args, "--", "https://u:p@github.com/ruby/rubygems.git", path.to_s], nil).and_return(["", "", clone_result])
+        subject.checkout
+      end
+    end
+
+    it "keeps original userinfo" do
+      Bundler.settings.temporary("credential_store" => "true") do
         original = "https://orig:info@github.com/ruby/rubygems.git"
         git_proxy = described_class.new(Pathname("path"), original, options)
         allow(git_proxy).to receive(:git_local).with("--version").and_return("git version 2.14.0")
@@ -435,6 +468,36 @@ RSpec.describe Bundler::Source::Git::GitProxy do
           allow(git_proxy).to receive(:git_local).with("--version").and_return("git version 2.14.0")
           expect(git_proxy).to receive(:capture).with(["fetch", "--force", "--quiet", "--no-tags", "--", uri, "refs/*:refs/*"], path).and_return(["", "", clone_result])
           subject.checkout
+        end
+      end
+
+      context "when the remote no longer has the branch HEAD points at" do
+        let(:cached_branch) { "main" }
+        let(:missing_ref) { ["", "fatal: couldn't find remote ref refs/heads/#{cached_branch}", fail_result] }
+        let(:symref_advertisement) { ["ref: refs/heads/renamed\tHEAD\n", "", clone_result] }
+
+        before do
+          allow(git_proxy).to receive(:git_local).with("--version").and_return("git version 2.14.0")
+          allow(git_proxy).to receive(:git_local).with("rev-parse", "--abbrev-ref", "HEAD", dir: path).and_return(cached_branch)
+          allow(git_proxy).to receive(:capture).with([*base_fetch_args, "--", uri, "refs/heads/#{cached_branch}:refs/heads/#{cached_branch}"], path).and_return(missing_ref)
+        end
+
+        it "follows the branch the remote now points HEAD at" do
+          expect(git_proxy).to receive(:capture).with(["ls-remote", "--symref", "--", uri, "HEAD"], path).and_return(symref_advertisement)
+          expect(git_proxy).to receive(:capture).with([*base_fetch_args, "--", uri, "refs/heads/renamed:refs/heads/renamed"], path).and_return(["", "", clone_result])
+          expect(git_proxy).to receive(:git).with("symbolic-ref", "HEAD", "refs/heads/renamed", dir: path)
+          subject.checkout
+        end
+
+        context "and a revision is locked" do
+          let(:revision) { Digest::SHA1.hexdigest("ruby") }
+
+          it "does not ask the remote for its default branch" do
+            expect(git_proxy).to receive(:git).with("cat-file", "-e", revision, dir: path).and_raise(Bundler::GitError)
+            expect(git_proxy).to receive(:capture).with([*base_fetch_args, "--", uri, "#{revision}:refs/#{revision}-sha"], path).and_return(missing_ref)
+            expect(git_proxy).not_to receive(:capture).with(["ls-remote", "--symref", "--", uri, "HEAD"], path)
+            expect { subject.checkout }.to raise_error(Bundler::Source::Git::MissingGitRevisionError)
+          end
         end
       end
 

@@ -344,6 +344,41 @@ class TestGemSafeMarshal < Gem::TestCase
     end
   end
 
+  def test_name_tuple_unmarshal_content_addressable_metadata
+    tuple = Gem::NameTuple.new(
+      "a",
+      Gem::Version.new("1"),
+      "x86_64-linux",
+      content_address: "abcdef12",
+      ruby_abi: "3.3"
+    )
+
+    unmarshalled_tuple = Gem::SafeMarshal.safe_load(Marshal.dump(tuple))
+
+    assert_equal "a", unmarshalled_tuple.name
+    assert_equal Gem::Version.new("1"), unmarshalled_tuple.version
+    assert_equal "x86_64-linux", unmarshalled_tuple.platform
+    assert_equal "abcdef12", unmarshalled_tuple.content_address
+    assert_equal "3.3", unmarshalled_tuple.ruby_abi
+    assert_equal "a-1-abcdef12", unmarshalled_tuple.full_name
+  end
+
+  def test_name_tuple_unmarshal_legacy_payload_without_content_addressable_metadata
+    tuple = Gem::NameTuple.allocate
+    tuple.instance_variable_set :@name, "a"
+    tuple.instance_variable_set :@version, Gem::Version.new("1")
+    tuple.instance_variable_set :@platform, "x86_64-linux"
+
+    unmarshalled_tuple = Gem::SafeMarshal.safe_load(Marshal.dump(tuple))
+
+    assert_equal "a", unmarshalled_tuple.name
+    assert_equal Gem::Version.new("1"), unmarshalled_tuple.version
+    assert_equal "x86_64-linux", unmarshalled_tuple.platform
+    assert_nil unmarshalled_tuple.content_address
+    assert_nil unmarshalled_tuple.ruby_abi
+    assert_equal "a-1-x86_64-linux", unmarshalled_tuple.full_name
+  end
+
   def test_gem_spec_unmarshall_license
     spec = Gem::Specification.new do |s|
       s.name = "hi"

@@ -30,6 +30,7 @@ void rb_enc_set_base(const char *name, const char *orig);
 int rb_enc_set_dummy(int index);
 void rb_enc_raw_set(VALUE obj, rb_encoding *enc);
 int rb_enc_registered(const char *name);
+rb_encoding *rb_enc_check_multi_str(rb_encoding *enc1, int *cr, VALUE str2);
 
 PUREFUNC(int rb_data_is_encoding(VALUE obj));
 

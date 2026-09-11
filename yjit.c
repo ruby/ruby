@@ -49,6 +49,12 @@ STATIC_ASSERT(size_t_no_padding_bits, sizeof(size_t) == sizeof(uint64_t));
 // support one scheme for simplicity.
 STATIC_ASSERT(pointer_tagging_scheme, USE_FLONUM);
 
+enum yjit_bindgen_constants {
+    // ISEQ_TRANSLATED expands to an enum value through a chain of macros,
+    // which bindgen cannot evaluate, so it needs to be re-exposed here.
+    YJIT_ISEQ_TRANSLATED = ISEQ_TRANSLATED,
+};
+
 // NOTE: We can trust that uint8_t has no "padding bits" since the C spec
 // guarantees it. Wording about padding bits is more explicit in C11 compared
 // to C99. See C11 7.20.1.1p2. All this is to say we have _some_ standards backing to
@@ -193,29 +199,6 @@ rb_full_cfunc_return(rb_execution_context_t *ec, VALUE return_value)
     ec->cfp->sp++;
 }
 
-// TODO(alan): consider using an opaque pointer for the payload rather than a void pointer
-void *
-rb_iseq_get_yjit_payload(const rb_iseq_t *iseq)
-{
-    RUBY_ASSERT_ALWAYS(IMEMO_TYPE_P(iseq, imemo_iseq));
-    if (ISEQ_BODY(iseq)) {
-        return ISEQ_BODY(iseq)->yjit_payload;
-    }
-    else {
-        // Body is NULL when constructing the iseq.
-        return NULL;
-    }
-}
-
-void
-rb_iseq_set_yjit_payload(const rb_iseq_t *iseq, void *payload)
-{
-    RUBY_ASSERT_ALWAYS(IMEMO_TYPE_P(iseq, imemo_iseq));
-    RUBY_ASSERT_ALWAYS(ISEQ_BODY(iseq));
-    RUBY_ASSERT_ALWAYS(NULL == ISEQ_BODY(iseq)->yjit_payload);
-    ISEQ_BODY(iseq)->yjit_payload = payload;
-}
-
 // This is defined only as a named struct inside rb_iseq_constant_body.
 // By giving it a separate typedef, we make it nameable by rust-bindgen.
 // Bindgen's temp/anon name isn't guaranteed stable.
@@ -263,19 +246,6 @@ rb_yjit_rb_ary_subseq_length(VALUE ary, long beg)
 {
     long len = RARRAY_LEN(ary);
     return rb_ary_subseq(ary, beg, len);
-}
-
-// Return non-zero when `obj` is an array and its last item is a
-// `ruby2_keywords` hash. We don't support this kind of splat.
-size_t
-rb_yjit_ruby2_keywords_splat_p(VALUE obj)
-{
-    if (!RB_TYPE_P(obj, T_ARRAY)) return 0;
-    long len = RARRAY_LEN(obj);
-    if (len == 0) return 0;
-    VALUE last = RARRAY_AREF(obj, len - 1);
-    if (!RB_TYPE_P(last, T_HASH)) return 0;
-    return FL_TEST_RAW(last, RHASH_PASS_AS_KEYWORDS);
 }
 
 // Checks to establish preconditions for rb_yjit_splat_varg_cfunc()

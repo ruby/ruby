@@ -34,8 +34,7 @@ class TestGemSecurity < Gem::TestCase
     assert_equal "CA:FALSE", constraints.value
 
     key_usage = cert.extensions.find {|ext| ext.oid == "keyUsage" }
-    assert_equal "Digital Signature, Key Encipherment, Data Encipherment",
-                 key_usage.value
+    assert_include key_usage.value, "Digital Signature"
 
     key_ident = cert.extensions.find {|ext| ext.oid == "subjectKeyIdentifier" }
     assert_equal 59, key_ident.value.length
@@ -80,11 +79,22 @@ class TestGemSecurity < Gem::TestCase
     assert_equal "CA:FALSE", constraints.value
 
     key_usage = cert.extensions.find {|ext| ext.oid == "keyUsage" }
-    assert_equal "Digital Signature, Key Encipherment, Data Encipherment",
-                 key_usage.value
+    assert_include key_usage.value, "Digital Signature"
 
     key_ident = cert.extensions.find {|ext| ext.oid == "subjectKeyIdentifier" }
     assert_equal 59, key_ident.value.length
+  end
+
+  def test_class_create_cert_email_ml_dsa_65_without_cert_support
+    omit_unless_support_ml_dsa_key
+    omit_if_support_ml_dsa_cert
+
+    e = assert_raise Gem::Security::Exception do
+      Gem::Security.create_cert_email "nobody@example",
+                                      ML_DSA_65_PRIVATE_KEY, 60
+    end
+
+    assert_match(/^certificate signing failed: /, e.message)
   end
 
   def test_class_create_key
@@ -99,13 +109,119 @@ class TestGemSecurity < Gem::TestCase
     assert_kind_of OpenSSL::PKey::DSA, key
   end
 
+  def test_class_create_key_ec
+    key = Gem::Security.create_key "ec"
+
+    assert_kind_of OpenSSL::PKey::EC, key
+  end
+
+  def test_class_create_key_ml_dsa_44
+    omit_unless_support_ml_dsa_key
+
+    key = Gem::Security.create_key "ml-dsa-44"
+
+    assert_kind_of OpenSSL::PKey::PKey, key
+    assert_equal "ML-DSA-44", Gem::PQCUtilities.key_algorithm_name(key)
+  end
+
+  def test_class_create_key_ml_dsa_65
+    omit_unless_support_ml_dsa_key
+
+    key = Gem::Security.create_key "ml-dsa-65"
+
+    assert_kind_of OpenSSL::PKey::PKey, key
+    assert_equal "ML-DSA-65", Gem::PQCUtilities.key_algorithm_name(key)
+  end
+
+  def test_class_create_key_ml_dsa_87
+    omit_unless_support_ml_dsa_key
+
+    key = Gem::Security.create_key "ml-dsa-87"
+
+    assert_kind_of OpenSSL::PKey::PKey, key
+    assert_equal "ML-DSA-87", Gem::PQCUtilities.key_algorithm_name(key)
+  end
+
+  def test_class_create_key_ml_dsa_44_without_ml_dsa_support
+    omit_if_support_ml_dsa_key
+
+    e = assert_raise Gem::Security::Exception do
+      Gem::Security.create_key "ml-dsa-44"
+    end
+
+    assert_match(
+      /^ML-DSA-44 key generation failed: ML-DSA-44 requires OpenSSL >= 3\.5/,
+      e.message
+    )
+  end
+
+  def test_class_create_key_ml_dsa_65_without_ml_dsa_support
+    omit_if_support_ml_dsa_key
+
+    e = assert_raise Gem::Security::Exception do
+      Gem::Security.create_key "ml-dsa-65"
+    end
+
+    assert_match(
+      /^ML-DSA-65 key generation failed: ML-DSA-65 requires OpenSSL >= 3\.5/,
+      e.message
+    )
+  end
+
+  def test_class_create_key_ml_dsa_87_without_ml_dsa_support
+    omit_if_support_ml_dsa_key
+
+    e = assert_raise Gem::Security::Exception do
+      Gem::Security.create_key "ml-dsa-87"
+    end
+
+    assert_match(
+      /^ML-DSA-87 key generation failed: ML-DSA-87 requires OpenSSL >= 3\.5/,
+      e.message
+    )
+  end
+
   def test_class_create_key_raises_unknown_algorithm
     e = assert_raise Gem::Security::Exception do
       Gem::Security.create_key "NOT_RSA"
     end
 
-    assert_equal "NOT_RSA algorithm not found. RSA, DSA, and EC algorithms are supported.",
+    assert_equal "NOT_RSA algorithm not found. RSA, DSA, EC, "\
+                 "ML-DSA-44, ML-DSA-65, and ML-DSA-87 "\
+                 "algorithms are supported.",
                  e.message
+  end
+
+  def test_class_digest_required_rsa
+    assert Gem::Security.digest_required?(Gem::Security.create_key("rsa"))
+  end
+
+  def test_class_digest_required_dsa
+    assert Gem::Security.digest_required?(Gem::Security.create_key("dsa"))
+  end
+
+  def test_class_digest_required_ec
+    assert Gem::Security.digest_required?(Gem::Security.create_key("ec"))
+  end
+
+  def test_class_digest_required_raises_unsupported_algorithm
+    key = begin
+      OpenSSL::PKey.generate_key("X25519")
+    rescue OpenSSL::PKey::PKeyError, NoMethodError
+      omit "X25519 is not available"
+    end
+
+    e = assert_raise Gem::Security::Exception do
+      Gem::Security.digest_required?(key)
+    end
+
+    assert_match(/^unsupported key algorithm\./, e.message)
+  end
+
+  def test_class_digest_required_ml_dsa_65
+    omit_unless_support_ml_dsa_key
+
+    refute Gem::Security.digest_required?(Gem::Security.create_key("ml-dsa-65"))
   end
 
   def test_class_get_public_key_rsa
@@ -116,6 +232,14 @@ class TestGemSecurity < Gem::TestCase
 
   def test_class_get_public_key_ec
     pkey = Gem::Security.get_public_key(EC_PRIVATE_KEY)
+
+    assert_respond_to pkey, :public_to_pem
+  end
+
+  def test_class_get_public_key_ml_dsa_65
+    omit_unless_support_ml_dsa_key
+
+    pkey = Gem::Security.get_public_key(ML_DSA_65_PRIVATE_KEY)
 
     assert_respond_to pkey, :public_to_pem
   end
@@ -179,43 +303,7 @@ class TestGemSecurity < Gem::TestCase
   end
 
   def test_class_sign
-    issuer = PUBLIC_CERT.subject
-    signee = OpenSSL::X509::Name.new([["CN", "signee"], ["DC", "example"]])
-
-    key  = PRIVATE_KEY
-    cert = OpenSSL::X509::Certificate.new
-    cert.subject = signee
-
-    cert.subject    = signee
-    cert.public_key = key.public_key
-
-    signed = Gem::Security.sign cert, key, PUBLIC_CERT, 60
-
-    assert_equal    key.public_key.public_to_pem, signed.public_key.public_to_pem
-    assert_equal    signee.to_s,           signed.subject.to_s
-    assert_equal    issuer.to_s,           signed.issuer.to_s
-
-    assert_in_delta Time.now,              signed.not_before, 10
-    assert_in_delta Time.now + 60,         signed.not_after, 10
-
-    assert_equal 4, signed.extensions.length,
-                 signed.extensions.map {|e| e.to_a.first }
-
-    constraints = signed.extensions.find {|ext| ext.oid == "issuerAltName" }
-    assert_equal "email:nobody@example", constraints.value, "issuerAltName"
-
-    constraints = signed.extensions.find {|ext| ext.oid == "basicConstraints" }
-    assert_equal "CA:FALSE", constraints.value
-
-    key_usage = signed.extensions.find {|ext| ext.oid == "keyUsage" }
-    assert_equal "Digital Signature, Key Encipherment, Data Encipherment",
-                 key_usage.value
-
-    key_ident =
-      signed.extensions.find {|ext| ext.oid == "subjectKeyIdentifier" }
-    assert_equal 59, key_ident.value.length
-
-    assert signed.verify key
+    assert_sign PUBLIC_CERT, PRIVATE_KEY
   end
 
   def test_class_sign_AltName
@@ -248,14 +336,19 @@ class TestGemSecurity < Gem::TestCase
     assert_equal "CA:FALSE", constraints.value
 
     key_usage = signed.extensions.find {|ext| ext.oid == "keyUsage" }
-    assert_equal "Digital Signature, Key Encipherment, Data Encipherment",
-                 key_usage.value
+    assert_include key_usage.value, "Digital Signature"
 
     key_ident =
       signed.extensions.find {|ext| ext.oid == "subjectKeyIdentifier" }
     assert_equal 59, key_ident.value.length
 
     assert signed.verify PUBLIC_KEY
+  end
+
+  def test_class_sign_ml_dsa_65
+    omit_unless_support_ml_dsa_cert
+
+    assert_sign ML_DSA_65_PUBLIC_CERT, ML_DSA_65_PRIVATE_KEY
   end
 
   def test_class_trust_dir
@@ -270,6 +363,22 @@ class TestGemSecurity < Gem::TestCase
     key = Gem::Security.create_key "rsa"
 
     path = File.join @tempdir, "test-private_key.pem"
+
+    Gem::Security.write_private_key key, path
+
+    assert_path_exist path
+
+    key_from_file = File.read path
+
+    assert_equal key.private_to_pem, key_from_file
+  end
+
+  def test_class_write_private_key_ml_dsa_65
+    omit_unless_support_ml_dsa_key
+
+    key = Gem::Security.create_key "ml-dsa-65"
+
+    path = File.join @tempdir, "test-ml-dsa-private_key.pem"
 
     Gem::Security.write_private_key key, path
 
@@ -296,6 +405,24 @@ class TestGemSecurity < Gem::TestCase
     assert_equal key.private_to_pem, key_from_file.private_to_pem
   end
 
+  def test_class_write_private_key_encrypted_ml_dsa_65
+    omit_unless_support_ml_dsa_key
+
+    key = Gem::Security.create_key "ml-dsa-65"
+
+    path = File.join @tempdir, "test-ml-dsa-private_encrypted_key.pem"
+
+    passphrase = "It should be long."
+
+    Gem::Security.write_private_key key, path, 0o600, passphrase
+
+    assert_path_exist path
+
+    key_from_file = OpenSSL::PKey.read File.read(path), passphrase
+
+    assert_equal key.private_to_pem, key_from_file.private_to_pem
+  end
+
   def test_class_write_private_key_encrypted_cipher
     key = Gem::Security.create_key "rsa"
 
@@ -317,6 +444,31 @@ class TestGemSecurity < Gem::TestCase
     assert_equal key.private_to_pem, key_from_file.private_to_pem
   end
 
+  def test_class_write_private_key_encrypted_cipher_ml_dsa_65
+    omit_unless_support_ml_dsa_key
+
+    key = Gem::Security.create_key "ml-dsa-65"
+
+    path = File.join @tempdir,
+      "test-ml-dsa-private_encrypted_with_non_default_cipher_key.pem"
+
+    passphrase = "It should be long."
+
+    cipher = OpenSSL::Cipher.new "AES-192-CBC"
+
+    Gem::Security.write_private_key key, path, 0o600, passphrase, cipher
+
+    assert_path_exist path
+
+    # Unlike RSA's traditional PEM format where the cipher name appears in a
+    # plaintext DEK-Info header, ML-DSA uses private_to_pem which outputs PKCS#8
+    # format where there is no header, and the cipher name doesn't appear as a
+    # text. So we cannot assert the cipher name in the PEM text.
+    key_from_file = OpenSSL::PKey.read File.read(path), passphrase
+
+    assert_equal key.private_to_pem, key_from_file.private_to_pem
+  end
+
   def test_class_write_certificate
     path = File.join @tempdir, "test-public_cert.pem"
 
@@ -327,5 +479,46 @@ class TestGemSecurity < Gem::TestCase
     cert_from_file = File.read path
 
     assert_equal PUBLIC_CERT.to_pem, cert_from_file
+  end
+
+  private
+
+  def assert_sign(signing_cert, signing_key)
+    issuer = signing_cert.subject
+    signee = OpenSSL::X509::Name.new([["CN", "signee"], ["DC", "example"]])
+
+    key  = signing_key
+    cert = OpenSSL::X509::Certificate.new
+    cert.subject = signee
+    public_key = Gem::Security.get_public_key(key)
+    cert.public_key = public_key
+
+    signed = Gem::Security.sign cert, key, signing_cert, 60
+    signed_public_key = Gem::Security.get_public_key(signed)
+
+    assert_equal    public_key.public_to_pem, signed_public_key.public_to_pem
+    assert_equal    signee.to_s,           signed.subject.to_s
+    assert_equal    issuer.to_s,           signed.issuer.to_s
+
+    assert_in_delta Time.now,              signed.not_before, 10
+    assert_in_delta Time.now + 60,         signed.not_after, 10
+
+    assert_equal 4, signed.extensions.length,
+                 signed.extensions.map {|e| e.to_a.first }
+
+    constraints = signed.extensions.find {|ext| ext.oid == "issuerAltName" }
+    assert_equal "email:nobody@example", constraints.value, "issuerAltName"
+
+    constraints = signed.extensions.find {|ext| ext.oid == "basicConstraints" }
+    assert_equal "CA:FALSE", constraints.value
+
+    key_usage = signed.extensions.find {|ext| ext.oid == "keyUsage" }
+    assert_include key_usage.value, "Digital Signature"
+
+    key_ident =
+      signed.extensions.find {|ext| ext.oid == "subjectKeyIdentifier" }
+    assert_equal 59, key_ident.value.length
+
+    assert signed.verify key
   end
 end if Gem::HAVE_OPENSSL && !Gem.java_platform?

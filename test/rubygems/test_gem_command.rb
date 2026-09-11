@@ -403,8 +403,6 @@ ERROR:  Possible alternatives: non_existent_with_hint
 
   def test_gem_cli_runs_under_ruby_box
     omit "Ruby::Box is not available" unless defined?(Ruby::Box)
-    # A boxed subprocess crashes with SIGSEGV during finalization on Windows
-    omit "Ruby::Box is unstable on Windows" if Gem.win_platform?
     # Ruby 4.0 resolves Gem::NameTuple from the root box and fails autoload
     omit "Ruby::Box is too unstable before 4.1" if Gem.ruby_version < Gem::Version.new("4.1.0.a")
 

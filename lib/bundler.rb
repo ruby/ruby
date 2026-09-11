@@ -527,11 +527,11 @@ module Bundler
     end
 
     def load_gemspec_uncached(file, validate = false)
-      path = Pathname.new(file)
-      contents = read_file(file)
+      path = Pathname.new(file).expand_path
+      contents = read_file(path.to_s)
       spec = eval_gemspec(path, contents)
       return unless spec
-      spec.loaded_from = path.expand_path.to_s
+      spec.loaded_from = path.to_s
       Bundler.rubygems.validate(spec) if validate
       spec
     end
@@ -646,7 +646,9 @@ module Bundler
         eval_yaml_gemspec(path, contents)
       else
         # Eval the gemspec from its parent directory, because some gemspecs
-        # depend on "./" relative paths.
+        # depend on "./" relative paths. The caller expands `path` first, since
+        # expanding it here would resolve against the gemspec directory once
+        # the chdir is active.
         SharedHelpers.chdir(path.dirname.to_s) do
           # TOPLEVEL_BINDING always belongs to the main box, so inside a
           # Ruby::Box use a binding from the box Bundler is loaded in, where
@@ -656,7 +658,7 @@ module Bundler
           else
             TOPLEVEL_BINDING.dup
           end
-          eval(contents, eval_binding, path.expand_path.to_s)
+          eval(contents, eval_binding, path.to_s)
         end
       end
     rescue ScriptError, StandardError => e

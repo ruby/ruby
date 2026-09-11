@@ -314,6 +314,47 @@ describe "Marshal.load" do
       object.string.should == "a".encode("utf-32le")
     end
 
+    it "loads an object extended with a module" do
+      obj = UserDefined.new
+      dump = "\x04\be:\nMethsu:\x10UserDefined\x12\x04\b[\a:\nstuff;\x00"
+      dump.should == "\x04\be:\nMeths" + Marshal.dump(obj)[2..-1]
+      loaded = Marshal.load(dump)
+      loaded.should.instance_of?(UserDefined)
+      loaded.singleton_class.ancestors[@num_self_class, 2].should == [Meths, UserDefined]
+    end
+
+    it "does not leak the extending module to nested objects when loading an extended user-defined _dump/_load object" do
+      obj = MarshalSpec::UserDefinedWithPayload.new(Object.new)
+      dump = "\x04\be:\nMethsu:(MarshalSpec::UserDefinedWithPayload\x11\x04\bo:\vObject\x00"
+      dump.should == "\x04\be:\nMeths" + Marshal.dump(obj)[2..-1]
+      loaded = Marshal.load(dump)
+      loaded.should.is_a?(Meths)
+      loaded.payload.should_not.is_a?(Meths)
+    end
+
+    it "isolates extending modules between an extended user-defined _dump/_load object and a nested object extended with another module" do
+      obj = MarshalSpec::UserDefinedWithPayload.new(Object.new.extend(MethsMore))
+      dump = "\x04\be:\nMethsu:(MarshalSpec::UserDefinedWithPayload\x1D\x04\be:\x0EMethsMoreo:\vObject\x00"
+      dump.should == "\x04\be:\nMeths" + Marshal.dump(obj)[2..-1]
+      loaded = Marshal.load(dump)
+      loaded.should.is_a?(Meths)
+      loaded.should_not.is_a?(MethsMore)
+      loaded.payload.should.is_a?(MethsMore)
+      loaded.payload.should_not.is_a?(Meths)
+    end
+
+    it "isolates extending modules between an extended user-defined _dump/_load object and a nested user-defined payload extended with another module" do
+      payload = UserDefined.new
+      nested_dump = "\x04\be:\x0EMethsMore" + Marshal.dump(payload)[2..-1]
+      dump = "\x04\be:\nMethsu:(MarshalSpec::UserDefinedWithPayload/\x04\be:\x0EMethsMoreu:\x10UserDefined\x12\x04\b[\a:\nstuff;\x00"
+      dump.should == "\x04\be:\nMethsu:(MarshalSpec::UserDefinedWithPayload" + [nested_dump.bytesize + 5].pack("C") + nested_dump
+      loaded = Marshal.load(dump)
+      loaded.should.is_a?(Meths)
+      loaded.should_not.is_a?(MethsMore)
+      loaded.payload.should.is_a?(MethsMore)
+      loaded.payload.should_not.is_a?(Meths)
+    end
+
     describe "that returns an immediate value" do
       it "loads an array containing an instance of the object, followed by multiple instances of another object" do
         str = "string"
@@ -476,6 +517,26 @@ describe "Marshal.load" do
       new_obj_ancestors = class << new_obj; ancestors[1..-1]; end
       obj_ancestors.should == new_obj_ancestors
     end
+
+    it "does not leak the extending module to nested elements when loading an extended Array" do
+      obj = [Object.new].extend(Meths)
+      dump = "\x04\be:\nMeths[\x06o:\vObject\x00"
+      dump.should == Marshal.dump(obj)
+      loaded = Marshal.load(dump)
+      loaded.should.is_a?(Meths)
+      loaded[0].should_not.is_a?(Meths)
+    end
+
+    it "isolates extending modules between an extended Array and a nested element extended with another module" do
+      obj = [Object.new.extend(MethsMore)].extend(Meths)
+      dump = "\x04\be:\nMeths[\x06e:\x0EMethsMoreo:\vObject\x00"
+      dump.should == Marshal.dump(obj)
+      loaded = Marshal.load(dump)
+      loaded.should.is_a?(Meths)
+      loaded.should_not.is_a?(MethsMore)
+      loaded[0].should.is_a?(MethsMore)
+      loaded[0].should_not.is_a?(Meths)
+    end
   end
 
   describe "for a Hash" do
@@ -499,6 +560,26 @@ describe "Marshal.load" do
       new_obj_metaclass_ancestors = class << new_obj; ancestors; end
       new_obj_metaclass_ancestors[@num_self_class].should == Meths
       new_obj_metaclass_ancestors[@num_self_class+1].should == Hash
+    end
+
+    it "does not leak the extending module to nested objects when loading an extended Hash" do
+      obj = { key: Object.new }.extend(Meths)
+      dump = "\x04\be:\nMeths{\x06:\bkeyo:\vObject\x00"
+      dump.should == Marshal.dump(obj)
+      loaded = Marshal.load(dump)
+      loaded.should.is_a?(Meths)
+      loaded[:key].should_not.is_a?(Meths)
+    end
+
+    it "isolates extending modules between an extended Hash and a nested object extended with another module" do
+      obj = { key: Object.new.extend(MethsMore) }.extend(Meths)
+      dump = "\x04\be:\nMeths{\x06:\bkeye:\x0EMethsMoreo:\vObject\x00"
+      dump.should == Marshal.dump(obj)
+      loaded = Marshal.load(dump)
+      loaded.should.is_a?(Meths)
+      loaded.should_not.is_a?(MethsMore)
+      loaded[:key].should.is_a?(MethsMore)
+      loaded[:key].should_not.is_a?(Meths)
     end
 
     it "preserves hash ivars when hash contains a string having ivar" do
@@ -678,6 +759,51 @@ describe "Marshal.load" do
       result.should == str
     end
 
+    it "loads an extended String" do
+      dump = "\x04\be:\nMeths\"\bfoo"
+      loaded = Marshal.load(dump)
+      loaded.should == "foo"
+      loaded.singleton_class.ancestors[@num_self_class, 2].should == [Meths, String]
+    end
+
+    it "loads an extended String with instance variables" do
+      dump = "\x04\bIe:\nMeths\"\bfoo\x06:\a@xT"
+      loaded = Marshal.load(dump)
+      loaded.should == "foo"
+      loaded.instance_variable_get(:@x).should == true
+      loaded.singleton_class.ancestors[@num_self_class, 2].should == [Meths, String]
+    end
+
+    it "loads an extended String subclass" do
+      dump = "\x04\be:\nMethsC:\x0FUserString\"\bfoo"
+      loaded = Marshal.load(dump)
+      loaded.should.instance_of?(UserString)
+      loaded.should == "foo"
+      loaded.singleton_class.ancestors[@num_self_class, 3].should == [Meths, UserString, String]
+    end
+
+    it "does not leak the extending module to instance variables when loading an extended String" do
+      obj = "hello".dup.force_encoding("BINARY").extend(Meths)
+      obj.instance_variable_set(:@ivar, Object.new)
+      dump = "\x04\bIe:\nMeths\"\nhello\x06:\n@ivaro:\vObject\x00"
+      dump.should == Marshal.dump(obj)
+      loaded = Marshal.load(dump)
+      loaded.should.is_a?(Meths)
+      loaded.instance_variable_get(:@ivar).should_not.is_a?(Meths)
+    end
+
+    it "isolates extending modules between an extended String and an instance variable extended with another module" do
+      obj = "hello".dup.force_encoding("BINARY").extend(Meths)
+      obj.instance_variable_set(:@ivar, Object.new.extend(MethsMore))
+      dump = "\x04\bIe:\nMeths\"\nhello\x06:\n@ivare:\x0EMethsMoreo:\vObject\x00"
+      dump.should == Marshal.dump(obj)
+      loaded = Marshal.load(dump)
+      loaded.should.is_a?(Meths)
+      loaded.should_not.is_a?(MethsMore)
+      loaded.instance_variable_get(:@ivar).should.is_a?(MethsMore)
+      loaded.instance_variable_get(:@ivar).should_not.is_a?(Meths)
+    end
+
     it "raises ArgumentError when end of byte sequence reached before string characters end" do
       Marshal.dump("hello").should == "\x04\b\"\nhello"
 
@@ -699,6 +825,26 @@ describe "Marshal.load" do
       dump = "\004\be:\nMethsS:\025Struct::Extended\a:\006a[\a;\a\"\ahi:\006b[\a;\000@\a"
       Marshal.load(dump).should == obj
       Struct.send(:remove_const, :Extended)
+    end
+
+    it "does not leak the extending module to member objects when loading an extended Struct" do
+      obj = Struct::Useful.new(Object.new, nil).extend(Meths)
+      dump = "\x04\be:\nMethsS:\x13Struct::Useful\a:\x06ao:\vObject\x00:\x06b0"
+      dump.should == Marshal.dump(obj)
+      loaded = Marshal.load(dump)
+      loaded.should.is_a?(Meths)
+      loaded.a.should_not.is_a?(Meths)
+    end
+
+    it "isolates extending modules between an extended Struct and a member object extended with another module" do
+      obj = Struct::Useful.new(Object.new.extend(MethsMore), nil).extend(Meths)
+      dump = "\x04\be:\nMethsS:\x13Struct::Useful\a:\x06ae:\x0EMethsMoreo:\vObject\x00:\x06b0"
+      dump.should == Marshal.dump(obj)
+      loaded = Marshal.load(dump)
+      loaded.should.is_a?(Meths)
+      loaded.should_not.is_a?(MethsMore)
+      loaded.a.should.is_a?(MethsMore)
+      loaded.a.should_not.is_a?(Meths)
     end
 
     it "loads a struct having ivar" do
@@ -820,6 +966,38 @@ describe "Marshal.load" do
       new_obj_metaclass_ancestors[@num_self_class, 2].should == [Meths, Object]
     end
 
+    it "does not leak the extending module to instance variables when loading an extended Object" do
+      obj = Object.new.extend(Meths)
+      obj.instance_variable_set(:@ivar, Object.new)
+      dump = "\x04\be:\nMethso:\vObject\x06:\n@ivaro;\x06\x00"
+      dump.should == Marshal.dump(obj)
+      loaded = Marshal.load(dump)
+      loaded.should.is_a?(Meths)
+      loaded.instance_variable_get(:@ivar).should_not.is_a?(Meths)
+    end
+
+    it "does not leak the extending module to a user-marshaled instance variable when loading an extended Object" do
+      obj = Object.new.extend(Meths)
+      obj.instance_variable_set(:@ivar, UserMarshal.new)
+      dump = "\x04\be:\nMethso:\vObject\x06:\n@ivarU:\x10UserMarshal:\tdata"
+      dump.should == Marshal.dump(obj)
+      loaded = Marshal.load(dump)
+      loaded.should.is_a?(Meths)
+      loaded.instance_variable_get(:@ivar).should_not.is_a?(Meths)
+    end
+
+    it "isolates extending modules between an extended Object and an instance variable extended with another module" do
+      obj = Object.new.extend(Meths)
+      obj.instance_variable_set(:@ivar, Object.new.extend(MethsMore))
+      dump = "\x04\be:\nMethso:\vObject\x06:\n@ivare:\x0EMethsMoreo;\x06\x00"
+      dump.should == Marshal.dump(obj)
+      loaded = Marshal.load(dump)
+      loaded.should.is_a?(Meths)
+      loaded.should_not.is_a?(MethsMore)
+      loaded.instance_variable_get(:@ivar).should.is_a?(MethsMore)
+      loaded.instance_variable_get(:@ivar).should_not.is_a?(Meths)
+    end
+
     it "loads an object having ivar" do
       s = 'hi'
       arr = [:so, :so, s, s]
@@ -864,6 +1042,60 @@ describe "Marshal.load" do
       dump.should == "\x04\b[\aU:\x10UserMarshal:\tdata;\x06"
       reloaded = Marshal.load(dump)
       reloaded.should == value
+    end
+
+    it "loads a user-marshaled object extended with a module" do
+      obj = UserMarshal.new
+      obj.data = :data
+      dump = "\x04\be:\nMethsU:\x10UserMarshal:\tdata"
+      dump.should == "\x04\be:\nMeths" + Marshal.dump(obj)[2..-1]
+      loaded = Marshal.load(dump)
+      loaded.should.instance_of?(UserMarshal)
+      loaded.data.should == :data
+      loaded.singleton_class.ancestors[@num_self_class, 2].should == [Meths, UserMarshal]
+    end
+
+    it "extends the module before calling #marshal_load on a user-marshaled object" do
+      obj = MarshalSpec::UserMarshalWithModuleCheck.new
+      dump = "\x04\be:\nMethsU:,MarshalSpec::UserMarshalWithModuleCheck:\tdata"
+      dump.should == "\x04\be:\nMeths" + Marshal.dump(obj)[2..-1]
+      ScratchPad.record nil
+      loaded = Marshal.load(dump)
+      ScratchPad.recorded.should == true
+      loaded.should.is_a?(Meths)
+    end
+
+    it "does not leak the extending module to nested payload objects when loading an extended user-marshaled object" do
+      obj = MarshalSpec::UserMarshalWithPayload.new(Object.new)
+      dump = "\x04\be:\nMethsU:(MarshalSpec::UserMarshalWithPayloado:\vObject\x00"
+      dump.should == "\x04\be:\nMeths" + Marshal.dump(obj)[2..-1]
+      loaded = Marshal.load(dump)
+      loaded.should.is_a?(Meths)
+      loaded.payload.should_not.is_a?(Meths)
+    end
+
+    it "isolates extending modules between an extended user-marshaled object and a nested payload object extended with another module" do
+      obj = MarshalSpec::UserMarshalWithPayload.new(Object.new.extend(MethsMore))
+      dump = "\x04\be:\nMethsU:(MarshalSpec::UserMarshalWithPayloade:\x0EMethsMoreo:\vObject\x00"
+      dump.should == "\x04\be:\nMeths" + Marshal.dump(obj)[2..-1]
+      loaded = Marshal.load(dump)
+      loaded.should.is_a?(Meths)
+      loaded.should_not.is_a?(MethsMore)
+      loaded.payload.should.is_a?(MethsMore)
+      loaded.payload.should_not.is_a?(Meths)
+    end
+
+    it "isolates extending modules between an extended user-marshaled object and a nested user-marshaled payload extended with another module" do
+      payload = UserMarshal.new
+      payload.data = :data
+      nested_dump = "\x04\be:\x0EMethsMore" + Marshal.dump(payload)[2..-1]
+      dump = "\x04\be:\nMethsU:(MarshalSpec::UserMarshalWithPayloade:\x0EMethsMoreU:\x10UserMarshal:\tdata"
+      dump.should == "\x04\be:\nMethsU:(MarshalSpec::UserMarshalWithPayload" + nested_dump[2..-1]
+      loaded = Marshal.load(dump)
+      loaded.should.is_a?(Meths)
+      loaded.should_not.is_a?(MethsMore)
+      loaded.payload.should.is_a?(MethsMore)
+      loaded.payload.should_not.is_a?(Meths)
     end
   end
 
@@ -1265,6 +1497,26 @@ describe "Marshal.load" do
       data = "\004\bd:\020UserDefined\0"
 
       -> { Marshal.load(data) }.should.raise(ArgumentError)
+    end
+  end
+
+  describe "for an object extended with a module" do
+    it "loads an object extended with multiple modules preserving the module ancestor order" do
+      dump = "\x04\be:\nMethse:\x0EMethsMoreo:\vObject\x00"
+      loaded = Marshal.load(dump)
+      loaded.singleton_class.ancestors[@num_self_class, 3].should == [Meths, MethsMore, Object]
+    end
+
+    it "raises ArgumentError when the extending module does not exist" do
+      -> {
+        Marshal.load("\x04\be:\x16NonExistentModuleo:\vObject\x00")
+      }.should.raise(ArgumentError, /undefined class\/module/)
+    end
+
+    it "raises ArgumentError when the extending constant is a Class instead of a Module" do
+      -> {
+        Marshal.load("\x04\be:\vStringo:\vObject\x00")
+      }.should.raise(ArgumentError)
     end
   end
 

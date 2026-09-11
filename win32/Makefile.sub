@@ -476,13 +476,15 @@ COMMON_HEADERS = winsock2.h ws2tcpip.h windows.h
 
 !if "$(EXTSTATIC)" == "static"
 ENCOBJS = enc/encinit.$(OBJEXT) enc/libenc.lib enc/libtrans.lib
-EXTOBJS = ext/extinit.$(OBJEXT)
 ! if !defined(ENCSTATIC)
 ENCSTATIC = static
 ! endif
 !else
 ENCOBJS = dmyenc.$(OBJEXT)
+!endif
 EXTOBJS = dmyext.$(OBJEXT)
+!if "$(EXTSTATIC)" != ""
+PROGRAM_EXTS = exts
 !endif
 
 ext_hdrdir = $(EXTOUT)/include
@@ -1140,7 +1142,7 @@ miniruby$(EXEEXT):
 		$(Q) $(PURIFY) $(CC) $(MAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(LIBS) \
 			$(OUTFLAG)$@ -link $(LDFLAGS) $(XLDFLAGS)
 		@$(RM) miniruby.lib miniruby.exp
-		$(Q) miniruby.exe -v
+		$(Q) .\miniruby.exe -v
 		$(Q) $(LDSHARED_1)
 		$(Q) $(LDSHARED_2)
 
@@ -1149,9 +1151,14 @@ miniruby.rc:
 
 !if "$(PROGRAM)" != ""
 $(PROGRAM):	$(MAINOBJ) $(LIBRUBY_SO) $(RUBY_INSTALL_NAME).res
+! if "$(PROGRAM_EXTS)" == ""
 		$(ECHO) linking $(@:\=/)
 		$(Q) $(PURIFY) $(CC) $(MAINOBJ) $(EXTOBJS) $(RUBY_INSTALL_NAME).res \
 			$(OUTFLAG)$@ $(LIBRUBYARG) -link $(LDFLAGS) $(XLDFLAGS)
+! else
+# without a command nmake would infer $(PROGRAM) from ruby.c
+		@$(NULLCMD)
+! endif
 !endif
 
 !if "$(WPROGRAM)" != ""
@@ -1194,10 +1201,10 @@ $(LIBRUBY_SO):	$(LIBRUBY_A) $(DLDOBJS) $(RUBYDEF) $(RUBY_SO_NAME).res
 			$(LIBRUBY_DLDFLAGS)
 		@$(RM) dummy.lib dummy.exp
 
-$(RUBYDEF):	$(LIBRUBY_A) $(RBCONFIG)
+$(RUBYDEF):	$(LIBRUBY_A) $(DLDOBJS) $(RBCONFIG)
 		$(ECHO) generating $(@:\=/)
 		$(Q) $(BOOTSTRAPRUBY_COMMAND) $(srcdir)/win32/mkexports.rb \
-		  -output=$@ -arch=$(ARCH) $(LIBRUBY_A)
+		  -output=$@ -arch=$(ARCH) $(LIBRUBY_A) -- $(DLDOBJS)
 
 {$(win_srcdir)}.def.lib:
 		$(Q) $(AR) $(ARFLAGS)$@ -def:$<

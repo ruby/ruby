@@ -1198,6 +1198,47 @@ enc_compatible_latter(VALUE str1, VALUE str2, int idx1, int idx2)
     return 0;
 }
 
+rb_encoding *
+rb_enc_check_multi_str(rb_encoding *enc1, int *cr, VALUE str2)
+{
+    RUBY_ASSERT(*cr != ENC_CODERANGE_UNKNOWN);
+
+    if (RSTRING_LEN(str2) == 0) {
+        return enc1;
+    }
+
+    int idx2 = enc_get_index_str(str2);
+    rb_encoding *enc2 = rb_enc_from_index(idx2);
+
+    int cr1 = *cr;
+
+    if (enc1 == enc2) {
+        if (cr1 == ENC_CODERANGE_7BIT) {
+            *cr = rb_enc_str_coderange(str2);
+        }
+        return enc1;
+    }
+
+    if (!rb_enc_asciicompat(enc1) || !rb_enc_asciicompat(enc2)) {
+        rb_raise(rb_eEncCompatError, "incompatible character encodings: %s and %s",
+                 rb_enc_inspect_name(enc1),
+                 rb_enc_inspect_name(enc2));
+    }
+
+    if (enc2 == global_enc_us_ascii || rb_enc_str_asciionly_p(str2)) {
+        return enc1;
+    }
+
+    if (enc1 == global_enc_us_ascii || cr1 == ENC_CODERANGE_7BIT) {
+        *cr = rb_enc_str_coderange(str2);
+        return enc2;
+    }
+
+    rb_raise(rb_eEncCompatError, "incompatible character encodings: %s and %s",
+             rb_enc_inspect_name(enc1),
+             rb_enc_inspect_name(enc2));
+}
+
 static rb_encoding*
 enc_compatible_str(VALUE str1, VALUE str2)
 {

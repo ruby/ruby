@@ -103,10 +103,10 @@ describe "IO#sysread on a file" do
     buffer.should == "01234567890"
   end
 
-  it "discards the existing buffer content upon error" do
+  it "discards the existing buffer content upon EOFError" do
     buffer = +"existing content"
     @file.seek(0, IO::SEEK_END)
-    -> { @file.sysread(1, buffer) }.should.raise(EOFError)
+    -> { @file.sysread(1, buffer) }.should.raise(EOFError, "end of file reached")
     buffer.should.empty?
   end
 
@@ -133,7 +133,9 @@ describe "IO#sysread" do
     @read.sysread(3).should == "ab"
   end
 
-  it "raises ArgumentError when length is less than 0" do
-    -> { @read.sysread(-1) }.should.raise(ArgumentError)
+  it "does not modify the buffer if a read error (other than EOF) occurs" do
+    buffer = +"existing content"
+    -> { IOSpecs.closed_io.sysread(1, buffer) }.should.raise(IOError)
+    buffer.should == "existing content"
   end
 end

@@ -18,7 +18,7 @@ Include gems for all platforms present in the lockfile, not only the current one
 Specify a different cache path than the default (vendor/cache)\.
 .TP
 \fB\-\-cooldown=<number>\fR
-Only consider gem versions published at least \fInumber\fR days ago when resolving before caching\. Pass \fB0\fR to disable cooldown for this run, overriding any per\-source or global configuration\. See \fBcooldown\fR in bundle\-config(1)\.
+Only consider gem versions published at least \fInumber\fR days ago when resolving before caching\. Pass \fB0\fR to disable cooldown for this run, overriding every other cooldown setting, RubyGems' own included\. See \fBcooldown\fR in bundle\-config(1)\.
 .TP
 \fB\-\-gemfile=GEMFILE\fR
 Use the specified gemfile instead of Gemfile\.

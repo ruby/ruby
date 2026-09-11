@@ -8,10 +8,10 @@ module Spec
     include Spec::Path
     include Spec::Helpers
 
-    def write_build_metadata(dir: source_root, version: Bundler::VERSION)
+    def write_build_metadata(dir: source_root, built_at: release_date)
       build_metadata = {
         git_commit_sha: git_commit_sha,
-        built_at: release_date_for(version, dir: dir),
+        built_at: built_at,
       }
 
       replace_build_metadata(build_metadata, dir: dir)
@@ -43,9 +43,11 @@ module Spec
       ruby_core_tarball? ? "unknown" : git("rev-parse --short HEAD", source_root).strip
     end
 
-    def release_date_for(version, dir:)
-      changelog = File.expand_path("CHANGELOG-bundler.md", dir)
-      File.readlines(changelog)[2].scan(%r{^## #{Regexp.escape(version)} / (.*)$}).first&.first if File.exist?(changelog)
+    # Required lazily because ruby/ruby ships this helper without tool/changelog.rb.
+    def release_date
+      require source_root.join("tool/changelog").to_s
+
+      ChangelogHeader.from_config.release_date
     end
 
     extend self

@@ -25,6 +25,73 @@ describe "String#rstrip" do
   it "returns a copy of self with all trailing whitespace and NULL bytes removed" do
     "\x00 \x00hello\x00 \x00".rstrip.should == "\x00 \x00hello"
   end
+
+  ruby_version_is "4.0" do
+    context "when given character selectors arguments" do
+      it "removes trailing characters in the intersection of sets removed" do
+        "  hello  ".rstrip(" ").should == "  hello"
+        "llo".rstrip("o", "lo").should == "ll"
+        "hell yeah".rstrip("").should == "hell yeah"
+      end
+
+      it "negates sets starting with ^" do
+        "ello".rstrip("aeiou", "^o").should == "ello"
+        "hello".rstrip("^h").should == "h"
+      end
+
+      it "removes trailing characters in a sequence" do
+        "hello".rstrip("l-o").should == "he"
+        "hel-lo".rstrip("h-").should == "hel-lo"
+        "abcdefgh".rstrip("a-ce-fh").should == "abcdefg"
+        "abcde".rstrip("ac-e").should == "ab"
+      end
+
+      it "removes trailing multibyte characters" do
+        "四月".rstrip("月").should == "四"
+        "哥哥我倒".rstrip("倒").should == "哥哥我"
+      end
+
+      it "respects backslash for escaping" do
+        "a-b".rstrip("a\\-b").should == ""
+        "^".rstrip("\\^").should == ""
+        "\\".rstrip("\\\\").should == ""
+      end
+
+      it "raises an ArgumentError when the sequence is invalid" do
+        -> { "hello".rstrip("h-e") }.should.raise(ArgumentError)
+        -> { "hello".rstrip("^h-e") }.should.raise(ArgumentError)
+      end
+
+      it "tries to convert each argument to a string using to_str" do
+        other_string = mock('d')
+        other_string.should_receive(:to_str).and_return("d")
+
+        other_string2 = mock('ld')
+        other_string2.should_receive(:to_str).and_return("ld")
+
+        "hello world".rstrip(other_string, other_string2).should == "hello worl"
+      end
+
+      it "raises a TypeError when an argument can't be converted to a string" do
+        -> { "hello world".rstrip(100)       }.should.raise(TypeError)
+        -> { "hello world".rstrip([])        }.should.raise(TypeError)
+        -> { "hello world".rstrip(mock('x')) }.should.raise(TypeError)
+      end
+
+      it "returns String instances when called on a subclass" do
+        StringSpecs::MyString.new("oh no!!!").rstrip("!").should.instance_of?(String)
+      end
+
+      it "returns a String in the same encoding as self" do
+        "hello".encode("US-ASCII").rstrip("o").encoding.should == Encoding::US_ASCII
+      end
+
+      it "raises an Encoding::CompatibilityError when the encodings are incompatible" do
+        -> { "hello".rstrip("e".encode("UTF-16LE")) }.should.raise(Encoding::CompatibilityError)
+        -> { "hello".encode("UTF-16LE").rstrip("e") }.should.raise(Encoding::CompatibilityError)
+      end
+    end
+  end
 end
 
 describe "String#rstrip!" do

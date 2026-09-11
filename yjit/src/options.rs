@@ -3,10 +3,10 @@ use crate::{backend::current::TEMP_REGS, cruby::*, stats::Counter};
 use std::os::raw::{c_char, c_int, c_uint};
 
 // Call threshold for small deployments and command-line apps
-pub static SMALL_CALL_THRESHOLD: u64 = 30;
+pub static SMALL_CALL_THRESHOLD: u32 = 30;
 
 // Call threshold for larger deployments and production-sized applications
-pub static LARGE_CALL_THRESHOLD: u64 = 120;
+pub static LARGE_CALL_THRESHOLD: u32 = 120;
 
 // Number of live ISEQs after which we consider an app to be large
 pub static LARGE_ISEQ_COUNT: u64 = 40_000;
@@ -15,13 +15,13 @@ pub static LARGE_ISEQ_COUNT: u64 = 40_000;
 // Number of method calls after which to start generating code
 // Threshold==1 means compile on first execution
 #[no_mangle]
-pub static mut rb_yjit_call_threshold: u64 = SMALL_CALL_THRESHOLD;
+pub static mut rb_yjit_call_threshold: u32 = SMALL_CALL_THRESHOLD;
 
 // This option is exposed to the C side in a global variable for performance, see vm.c
 // Number of execution requests after which a method is no longer
 // considered hot. Raising this results in more generated code.
 #[no_mangle]
-pub static mut rb_yjit_cold_threshold: u64 = 200_000;
+pub static mut rb_yjit_cold_threshold: u32 = 200_000;
 
 // Command-line options
 #[derive(Debug)]

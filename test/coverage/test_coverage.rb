@@ -489,6 +489,26 @@ def test_branch_coverage_for_eval_repeated
     end;
   end
 
+  def test_line_coverage_for_implicit_nil_return
+    result = {
+      :lines => [1, 1, nil, nil, 1, 1, 1, nil, nil, nil, 1, 1]
+    }
+    assert_coverage(<<~"end;", { lines: true }, result) # Bug #22302
+      def a
+        nil
+      end
+
+      def b(x)
+        if x
+          nil
+        end
+      end
+
+      a
+      b(true)
+    end;
+  end
+
   def test_branch_coverage_for_if_statement
     result = {
       :branches => {
@@ -1018,6 +1038,35 @@ def test_branch_coverage_for_eval_repeated
         end
 
         assert_equal([0, 0, 0, nil, 0, nil, nil], Coverage.line_stub("test.rb"))
+      }
+    }
+  end
+
+  def test_line_stub_does_not_clobber_existing_coverage
+    Dir.mktmpdir {|tmp|
+      Dir.chdir(tmp) {
+        File.open("test.rb", "w") do |f|
+          f.puts <<-EOS
+            def coverage_test_snapshot
+              :ok
+            end
+          EOS
+        end
+
+        assert_in_out_err(ARGV, <<-"end;", ["[1, 1, nil]", "[1, 1, nil]", "[1, 2, nil]"], [])
+          Coverage.start
+          tmp = Dir.pwd
+          f = tmp + "/test.rb"
+          require f
+          coverage_test_snapshot
+          cov = Coverage.peek_result[f]
+          Coverage.line_stub(f)
+          cov2 = Coverage.peek_result[f]
+          coverage_test_snapshot
+          p cov
+          p cov2
+          p Coverage.result[f]
+        end;
       }
     }
   end

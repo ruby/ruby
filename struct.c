@@ -831,12 +831,7 @@ struct_alloc(VALUE klass)
 {
     long n = num_members(klass);
     size_t embedded_size = offsetof(struct RStruct, as.ary) + (sizeof(VALUE) * n);
-    if (RCLASS_MAX_IV_COUNT(klass) > 0) {
-        embedded_size += sizeof(VALUE);
-    }
-
     VALUE flags = T_STRUCT;
-
     const long embed_len_max = RSTRUCT_EMBED_LEN_MASK >> RSTRUCT_EMBED_LEN_SHIFT;
 
     if (n > 0 && n <= embed_len_max && rb_gc_size_allocatable_p(embedded_size)) {

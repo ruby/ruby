@@ -1,3 +1,5 @@
+#ifndef RUBY_RACTOR_CORE_H
+#define RUBY_RACTOR_CORE_H
 #include "internal/gc.h"
 #include "ruby/ruby.h"
 #include "ruby/ractor.h"
@@ -22,10 +24,6 @@ struct rb_ractor_sync {
 
 #if RACTOR_CHECK_MODE > 0
     VALUE locked_by;
-#endif
-
-#ifndef RUBY_THREAD_PTHREAD_H
-    rb_nativethread_cond_t wakeup_cond;
 #endif
 
     // incoming messages
@@ -101,6 +99,9 @@ struct rb_ractor_struct {
         struct rb_thread_sched sched;
         rb_execution_context_t *running_ec;
         rb_thread_t *main;
+        // MN termination epilogue: keeps the dying thread marked (like a set
+        // member) between leaving the living set and its last use
+        rb_thread_t *dying_th;
 
         // `main` is in rb_thread_terminate_all(), waiting for the others to go
         bool terminating;
@@ -174,7 +175,7 @@ enum ractor_wakeup_status {
     wakeup_none,
     wakeup_by_send,
     wakeup_by_interrupt,
-    // wakeup_by_close,
+    wakeup_by_close,
 };
 
 struct ractor_waiter {
@@ -335,7 +336,7 @@ rb_ractor_set_current_ec_(rb_ractor_t *cr, rb_execution_context_t *ec, const cha
 void rb_vm_ractor_blocking_cnt_inc(rb_vm_t *vm, rb_ractor_t *cr, const char *file, int line);
 void rb_vm_ractor_blocking_cnt_dec(rb_vm_t *vm, rb_ractor_t *cr, const char *file, int line);
 
-static inline uint32_t
+static inline rb_serial_t
 rb_ractor_id(const rb_ractor_t *r)
 {
     return r->pub.id;
@@ -390,3 +391,5 @@ rb_ractor_ignore_belonging(bool flag)
 #define rb_ractor_confirm_belonging(obj) obj
 #define rb_ractor_ignore_belonging(flag) (0)
 #endif
+
+#endif /* RUBY_RACTOR_CORE_H */

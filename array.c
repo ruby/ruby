@@ -2786,8 +2786,9 @@ rb_ary_each(VALUE ary)
     long i;
     ary_verify(ary);
     RETURN_SIZED_ENUMERATOR(ary, 0, 0, ary_enum_length);
+    rb_execution_context_t *ec = GET_EC();
     for (i=0; i<RARRAY_LEN(ary); i++) {
-        rb_yield(RARRAY_AREF(ary, i));
+        rb_ec_yield(ec, RARRAY_AREF(ary, i));
     }
     return ary;
 }
@@ -6916,7 +6917,7 @@ rb_ary_flatten_bang(int argc, VALUE *argv, VALUE ary)
         }
     }
 
-    if (!(mod = ARY_EMBED_P(result) && result != child)) rb_ary_freeze(result);
+    if (result != child && !(mod = ARY_EMBED_P(result))) rb_ary_freeze(result);
     rb_ary_replace(ary, result);
     if (mod) ARY_SET_EMBED_LEN(result, 0);
 

@@ -1712,7 +1712,7 @@ rb_econv_insert_output(rb_econv_t *ec,
             size_t s = (*data_end_p - *buf_start_p) + need;
             if (s < need)
                 goto fail;
-            buf = ruby_xrealloc_sized(*buf_start_p, s, buf_end_p - buf_start_p);
+            buf = ruby_xrealloc_sized(*buf_start_p, s, *buf_end_p - *buf_start_p);
             *data_start_p = buf;
             *data_end_p = buf + (*data_end_p - *buf_start_p);
             *buf_start_p = buf;
@@ -2439,6 +2439,7 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
         if (!UNDEF_P(rep) && !NIL_P(rep)) {
             ret = rb_econv_insert_output(ec, (const unsigned char *)RSTRING_PTR(rep),
                     RSTRING_LEN(rep), rb_enc_name(rb_enc_get(rep)));
+            RB_GC_GUARD(rep); // insert_output may GC while reading rep's bytes
             if ((int)ret == -1) {
                 rb_econv_close(ec);
                 rb_raise(rb_eArgError, "too big fallback string");

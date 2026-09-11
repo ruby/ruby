@@ -39,8 +39,15 @@ class TestGemCompactIndexClientHTTPFetcher < Gem::TestCase
   end
 
   class FakeNotFound < Gem::Net::HTTPNotFound
-    def initialize
+    def initialize(error_message = nil)
       super("1.1", "404", "Not Found")
+      self["X-Error-Message"] = error_message if error_message
+    end
+  end
+
+  class FakeNoContent < Gem::Net::HTTPNoContent
+    def initialize
+      super("1.1", "204", "No Content")
     end
   end
 
@@ -223,6 +230,17 @@ class TestGemCompactIndexClientHTTPFetcher < Gem::TestCase
     assert_equal "s3cr3t", remote.requests.last.first.password
   end
 
+  def test_call_keeps_credentials_on_an_absolute_same_host_redirect
+    remote = FakeRemoteFetcher.new(
+      "https://user:s3cr3t@index.example/versions" => FakeRedirect.new("https://index.example/v2/versions"),
+      "https://user:s3cr3t@index.example/v2/versions" => FakeResponse.new("data")
+    )
+    fetcher = Gem::CompactIndexClient::HTTPFetcher.new("https://user:s3cr3t@index.example", remote)
+
+    assert_equal "data", fetcher.call("versions").body
+    assert_equal "s3cr3t", remote.requests.last.first.password
+  end
+
   def test_call_drops_credentials_on_a_cross_host_redirect
     remote = FakeRemoteFetcher.new(
       "https://user:s3cr3t@index.example/versions" => FakeRedirect.new("https://mirror.example/versions"),
@@ -246,14 +264,20 @@ class TestGemCompactIndexClientHTTPFetcher < Gem::TestCase
     assert_match(/too many redirects/, error.message)
   end
 
-  def test_call_retries_without_range_on_range_not_satisfiable
+  def test_call_retries_without_range_and_etag_on_range_not_satisfiable
     requests = []
     remote = Object.new
     remote.define_singleton_method(:request) do |uri, request_class, &block|
       request = request_class.new(uri)
       block&.call(request)
       requests << request
-      request["Range"] ? FakeRangeNotSatisfiable.new : FakeResponse.new("full data")
+      if request["Range"]
+        FakeRangeNotSatisfiable.new
+      elsif request["If-None-Match"]
+        Gem::Net::HTTPNotModified.new("1.1", "304", "Not Modified")
+      else
+        FakeResponse.new("full data")
+      end
     end
 
     fetcher = Gem::CompactIndexClient::HTTPFetcher.new("https://index.example", remote)
@@ -262,7 +286,7 @@ class TestGemCompactIndexClientHTTPFetcher < Gem::TestCase
     assert_equal "full data", response.body
     assert_equal 2, requests.size
     assert_nil requests.last["Range"]
-    assert_equal '"abc"', requests.last["If-None-Match"]
+    assert_nil requests.last["If-None-Match"]
   end
 
   def test_call_raises_on_range_not_satisfiable_without_range
@@ -275,6 +299,16 @@ class TestGemCompactIndexClientHTTPFetcher < Gem::TestCase
     assert_match(/bad response Range Not Satisfiable 416/, error.message)
   end
 
+  def test_call_raises_fetch_error_on_no_content
+    fetcher, _remote = fetcher_for("https://index.example/versions" => FakeNoContent.new)
+
+    error = assert_raise Gem::RemoteFetcher::FetchError do
+      fetcher.call("versions")
+    end
+
+    assert_match(/bad response No Content 204/, error.message)
+  end
+
   def test_call_raises_fetch_error_on_failure_response
     fetcher, _remote = fetcher_for("https://index.example/versions" => FakeNotFound.new)
 
@@ -283,5 +317,17 @@ class TestGemCompactIndexClientHTTPFetcher < Gem::TestCase
     end
 
     assert_match(/bad response Not Found 404/, error.message)
+  end
+
+  def test_call_includes_x_error_message_in_fetch_error
+    fetcher, _remote = fetcher_for(
+      "https://index.example/versions" => FakeNotFound.new("blocked by corporate proxy policy")
+    )
+
+    error = assert_raise Gem::RemoteFetcher::FetchError do
+      fetcher.call("versions")
+    end
+
+    assert_match(/bad response blocked by corporate proxy policy 404/, error.message)
   end
 end

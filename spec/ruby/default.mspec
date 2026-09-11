@@ -50,5 +50,6 @@ class MSpecScript
     /\wSpecs?$/,
     /^CS_CONST/,
     /^CSL_CONST/,
+    /^Prism$/,
   ]
 end

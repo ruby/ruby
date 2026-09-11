@@ -105,11 +105,11 @@ compact_cc_entry_i(VALUE ccs_ptr, void *data)
 {
     struct rb_class_cc_entries *ccs = (struct rb_class_cc_entries *)ccs_ptr;
 
-    ccs->cme = (const struct rb_callable_method_entry_struct *)rb_gc_location((VALUE)ccs->cme);
+    rb_gc_update_moved_ptr(&ccs->cme);
     VM_ASSERT(vm_ccs_p(ccs));
 
     for (int i=0; i<ccs->len; i++) {
-        ccs->entries[i].cc = (const struct rb_callcache *)rb_gc_location((VALUE)ccs->entries[i].cc);
+        rb_gc_update_moved_ptr(&ccs->entries[i].cc);
     }
 
     return ID_TABLE_CONTINUE;
@@ -140,6 +140,8 @@ rb_vm_cc_table_create(size_t capa)
     return rb_managed_id_table_create(&cc_table_type, capa);
 }
 
+static void vm_ccs_invalidate(struct rb_class_cc_entries *ccs);
+
 static enum rb_id_table_iterator_result
 vm_cc_table_dup_i(ID key, VALUE old_ccs_ptr, void *data)
 {
@@ -147,8 +149,13 @@ vm_cc_table_dup_i(ID key, VALUE old_ccs_ptr, void *data)
     struct rb_class_cc_entries *old_ccs = (struct rb_class_cc_entries *)old_ccs_ptr;
 
     if (METHOD_ENTRY_INVALIDATED(old_ccs->cme)) {
-        // Invalidated CME. This entry will be removed from the old table on
-        // the next GC mark, so it's unsafe (and undesirable) to copy
+        // At this point, old_ccs is valid and hasn't been freed.
+        // However once we allocate below, mark_cc_entry_i may free the entries
+        // If this is invalidated, we should avoid the copy, and invalidate the CCs
+        // since later we will CAS the new cc_table, disconnecting old_ccs and it
+        // may not be marked.
+        // We don't want to copy this anyways since it's invalidated.
+        vm_ccs_invalidate(old_ccs);
         return ID_TABLE_CONTINUE;
     }
 
@@ -187,6 +194,7 @@ vm_ccs_invalidate(struct rb_class_cc_entries *ccs)
 {
     for (int i=0; i<ccs->len; i++) {
         const struct rb_callcache *cc = ccs->entries[i].cc;
+        if (cc->klass == Qundef) continue; // already invalidated
         VM_ASSERT(!vm_cc_super_p(cc) && !vm_cc_refinement_p(cc));
         vm_cc_invalidate(cc);
     }
@@ -768,7 +776,7 @@ cc_refinement_set_compact(void *ptr)
 {
     struct cc_refinement_entries *e = ptr;
     for (size_t i = 0; i < e->len; i++) {
-        e->entries[i] = rb_gc_location(e->entries[i]);
+        rb_gc_update_moved(&e->entries[i]);
     }
 }
 
@@ -1696,6 +1704,8 @@ rb_check_overloaded_cme(const rb_callable_method_entry_t *cme, const struct rb_c
     return cme;
 }
 
+static inline void stack_check(rb_execution_context_t *ec);
+
 #define CALL_METHOD_HOOK(klass, hook, mid) do {		\
         const VALUE arg = ID2SYM(mid);			\
         VALUE recv_class = (klass);			\
@@ -1704,7 +1714,7 @@ rb_check_overloaded_cme(const rb_callable_method_entry_t *cme, const struct rb_c
             recv_class = RCLASS_ATTACHED_OBJECT((klass));	\
             hook_id = singleton_##hook;			\
         }						\
-        rb_funcallv(recv_class, hook_id, 1, &arg);	\
+        rb_funcallv_uncached(recv_class, hook_id, 1, &arg);	\
     } while (0)
 
 static void
@@ -1922,6 +1932,34 @@ prepare_callable_method_entry(VALUE defined_class, ID id, const rb_method_entry_
     else {
         return NULL;
     }
+}
+
+/* A hook like this fires from C with no call site to cache into except for the gccct table,
+ * which is often cleared anyway. It would leave a permanent CC behind (tied to the class) if it
+ * created one, so we try to avoid it. */
+VALUE
+rb_funcallv_uncached(VALUE recv, ID mid, int argc, const VALUE *argv)
+{
+    VALUE defined_class;
+    const rb_method_entry_t *me = search_method(CLASS_OF(recv), mid, &defined_class);
+
+    if (UNLIKELY(UNDEFINED_METHOD_ENTRY_P(me))) {
+        return rb_funcallv(recv, mid, argc, argv);
+    }
+
+    const rb_callable_method_entry_t *cme;
+
+    if (UNLIKELY(me->defined_class == 0)) {
+        // produce a transient CME that will get collected
+        cme = rb_method_entry_complement_defined_class(me, me->called_id, defined_class);
+    }
+    else {
+        cme = (const rb_callable_method_entry_t *)me;
+    }
+
+    rb_execution_context_t *ec = GET_EC();
+    stack_check(ec);
+    return rb_vm_call_kw(ec, recv, mid, argc, argv, cme, RB_NO_KEYWORDS);
 }
 
 static const rb_callable_method_entry_t *
@@ -2551,28 +2589,14 @@ rb_mod_undef_method(int argc, VALUE *argv, VALUE mod)
 }
 
 static rb_method_visibility_t
-check_definition_visibility(VALUE mod, int argc, VALUE *argv)
+check_definition_visibility(VALUE mod, VALUE mid, bool inc_super)
 {
-    const rb_method_entry_t *me;
-    VALUE mid, include_super, lookup_mod = mod;
-    int inc_super;
-    ID id;
-
-    rb_scan_args(argc, argv, "11", &mid, &include_super);
-    id = rb_check_id(&mid);
+    ID id = rb_check_id(&mid);
     if (!id) return METHOD_VISI_UNDEF;
 
-    if (argc == 1) {
-        inc_super = 1;
-    }
-    else {
-        inc_super = RTEST(include_super);
-        if (!inc_super) {
-            lookup_mod = RCLASS_ORIGIN(mod);
-        }
-    }
+    VALUE lookup_mod = inc_super ? mod : RCLASS_ORIGIN(mod);
 
-    me = rb_method_entry_without_refinements(lookup_mod, id, NULL);
+    const rb_method_entry_t *me = rb_method_entry_without_refinements(lookup_mod, id, NULL);
     if (me) {
         if (me->def->type == VM_METHOD_TYPE_NOTIMPLEMENTED) return METHOD_VISI_UNDEF;
         if (!inc_super && me->owner != mod) return METHOD_VISI_UNDEF;
@@ -2583,12 +2607,14 @@ check_definition_visibility(VALUE mod, int argc, VALUE *argv)
 
 /*
  *  call-seq:
- *     mod.method_defined?(symbol, inherit=true)    -> true or false
- *     mod.method_defined?(string, inherit=true)    -> true or false
+ *     mod.method_defined?(symbol, inherit=true, include_all = false)    -> true or false
+ *     mod.method_defined?(string, inherit=true, include_all = false)    -> true or false
  *
  *  Returns +true+ if the named method is defined by
  *  _mod_.  If _inherit_ is set, the lookup will also search _mod_'s
- *  ancestors. Public and protected methods are matched.
+ *  ancestors.
+ *  By default only public and protected methods are matched, but if _include_all_
+ *  is set the lookup will also consider private methods.
  *  String arguments are converted to symbols.
  *
  *     module A
@@ -2606,28 +2632,55 @@ check_definition_visibility(VALUE mod, int argc, VALUE *argv)
  *       def method3()  end
  *     end
  *
- *     A.method_defined? :method1              #=> true
- *     C.method_defined? "method1"             #=> true
- *     C.method_defined? "method2"             #=> true
- *     C.method_defined? "method2", true       #=> true
- *     C.method_defined? "method2", false      #=> false
- *     C.method_defined? "method3"             #=> true
- *     C.method_defined? "protected_method1"   #=> true
- *     C.method_defined? "method4"             #=> false
- *     C.method_defined? "private_method2"     #=> false
+ *     A.method_defined? :method1                       #=> true
+ *     C.method_defined? "method1"                      #=> true
+ *     C.method_defined? "method2"                      #=> true
+ *     C.method_defined? "method2", true                #=> true
+ *     C.method_defined? "method2", false               #=> false
+ *     C.method_defined? "method3"                      #=> true
+ *     C.method_defined? "protected_method1"            #=> true
+ *     C.method_defined? "method4"                      #=> false
+ *     C.method_defined? "private_method2"              #=> false
+ *     C.method_defined? "private_method2", true, true  #=> true
+ *     C.method_defined? "private_method2", false, true #=> false
  */
 
 static VALUE
 rb_mod_method_defined(int argc, VALUE *argv, VALUE mod)
 {
-    rb_method_visibility_t visi = check_definition_visibility(mod, argc, argv);
-    return RBOOL(visi == METHOD_VISI_PUBLIC || visi == METHOD_VISI_PROTECTED);
+    VALUE mid, include_super, include_private;
+
+    rb_scan_args(argc, argv, "12", &mid, &include_super, &include_private);
+    if (argc < 3) {
+        include_private = Qfalse;
+        if (argc < 2) {
+            include_super = Qtrue;
+        }
+    }
+
+    rb_method_visibility_t visi = check_definition_visibility(mod, mid, RTEST(include_super));
+    switch (visi) {
+      case METHOD_VISI_UNDEF:
+        return Qfalse;
+      case METHOD_VISI_PUBLIC:
+      case METHOD_VISI_PROTECTED:
+        return Qtrue;
+      case METHOD_VISI_PRIVATE:
+        return RBOOL(RTEST(include_private));
+      default:
+        UNREACHABLE_RETURN(Qundef);
+    }
 }
 
 static VALUE
 check_definition(VALUE mod, int argc, VALUE *argv, rb_method_visibility_t visi)
 {
-    return RBOOL(check_definition_visibility(mod, argc, argv) == visi);
+    VALUE mid, include_super;
+    rb_scan_args(argc, argv, "11", &mid, &include_super);
+    if (argc < 2) {
+        include_super = Qtrue;
+    }
+    return RBOOL(check_definition_visibility(mod, mid, RTEST(include_super)) == visi);
 }
 
 /*
@@ -2962,7 +3015,10 @@ set_method_visibility(VALUE self, int argc, const VALUE *argv, rb_method_visibil
 {
     int i;
 
+    // Not rb_class_modify_check: that also marks a module initialized, which this
+    // path has never done.
     rb_check_frozen(self);
+    rb_class_owner_check(self);
     if (argc == 0) {
         rb_warning("%"PRIsVALUE" with no argument is just ignored",
                    QUOTE_ID(rb_frame_callee()));
@@ -3158,6 +3214,7 @@ rb_mod_ruby2_keywords(int argc, VALUE *argv, VALUE module)
 
     rb_check_arity(argc, 1, UNLIMITED_ARGUMENTS);
     rb_check_frozen(module);
+    rb_class_owner_check(module);
 
     for (i = 0; i < argc; i++) {
         VALUE v = argv[i];

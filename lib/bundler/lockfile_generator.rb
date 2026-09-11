@@ -19,6 +19,7 @@ module Bundler
       add_sources
       add_platforms
       add_dependencies
+      add_content_addresses
       add_checksums
       add_locked_ruby_version
       add_bundled_with
@@ -66,10 +67,31 @@ module Bundler
       end
     end
 
+    def add_content_addresses
+      content_addresses = definition.resolve.filter_map do |spec|
+        next unless Gem::ContentAddress.content_addressed?(spec, validate_ruby_abi: false)
+
+        line = "#{spec.lock_name} #{spec.content_address}"
+
+        if definition.locked_checksums
+          checksums = spec.source.checksum_store.checksums_to_lock(spec.full_name)
+          line += " #{checksums}" if checksums
+        end
+
+        line
+      end
+
+      add_section("CONTENT ADDRESSES", content_addresses) unless content_addresses.empty?
+    end
+
     def add_checksums
       return unless definition.locked_checksums
-      checksums = definition.resolve.map do |spec|
-        spec.source.checksum_store.to_lock(spec)
+      checksums = definition.resolve.filter_map do |spec|
+        line = spec.source.checksum_store.to_lock(spec)
+
+        next if line == spec.lock_name && Gem::ContentAddress.content_addressed?(spec, validate_ruby_abi: false)
+
+        line
       end
 
       add_section("CHECKSUMS", checksums + bundler_checksum)

@@ -788,6 +788,25 @@ ERROR:  Possible alternatives: non_existent_with_hint
     assert_match "--cooldown 0", @ui.error
   end
 
+  def test_execute_remote_cooldown_unparsable_created_at_fails_open
+    util_setup_cooldown_repo created_at: {
+      "a-1" => util_cooldown_time(30),
+      "a-2" => "#{"9" * 400}-01-01T00:00:00Z",
+    }
+
+    @cmd.options[:cooldown] = 7
+    @cmd.options[:args] = %w[a]
+
+    use_ui @ui do
+      assert_raise Gem::MockGemUi::SystemExitException, @ui.error do
+        @cmd.execute
+      end
+    end
+
+    assert_equal %w[a-2], @cmd.installed_specs.map(&:full_name)
+    refute_match "skipped by the cooldown setting", @ui.output
+  end
+
   def test_execute_remote_cooldown_missing_created_at_fails_open
     util_setup_cooldown_repo
 
@@ -1721,6 +1740,9 @@ ERROR:  Possible alternatives: non_existent_with_hint
 
         write_file(extconf_path) do |io|
           io.puts "require 'mkmf'"
+          # Force the build to fail at the make stage so the build log is
+          # written. The make command line (including -j) is recorded there.
+          io.puts "File.write('a.c', '#error forced build failure for test')"
           io.puts "create_makefile '#{spec.name}'"
         end
 
@@ -1729,12 +1751,12 @@ ERROR:  Possible alternatives: non_existent_with_hint
     end
 
     use_ui @ui do
-      assert_raise Gem::MockGemUi::SystemExitException, @ui.error do
+      assert_raise Gem::MockGemUi::TermError, @ui.error do
         @cmd.invoke "a", "-j4"
       end
     end
 
-    gem_make_out = File.read(File.join(gemspec.extension_dir, "gem_make.out"))
+    gem_make_out = File.read(File.join(gemspec.build_info_dir, "#{gemspec.full_name}.gem_make.out"))
     if vc_windows? && nmake_found?
       refute_includes(gem_make_out, " -j4")
     else

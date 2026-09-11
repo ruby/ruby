@@ -102,11 +102,381 @@ class TestGemCommandsPushCommand < Gem::TestCase
                  @fetcher.last_request["Content-Type"]
   end
 
+  def test_handle_options_platform_and_ruby_abi
+    @cmd.handle_options %w[--platform arm64-darwin --ruby-abi 3.4 demo.gem]
+
+    assert_equal "arm64-darwin", @cmd.options[:platform]
+    assert_equal "3.4", @cmd.options[:ruby_abi]
+    assert_equal ["demo.gem"], @cmd.options[:args]
+  end
+
+  def test_execute_with_platform_selector_selects_matching_gem
+    _, matching_path = util_gem "platform-match", "1.0.0", ruby_abi: "3.4" do |spec|
+      spec.files = ["lib/platform-match.rb"]
+      spec.platform = "arm64-darwin"
+    end
+    _, other_path = util_gem "platform-other", "1.0.0", ruby_abi: "3.4" do |spec|
+      spec.files = ["lib/platform-other.rb"]
+      spec.platform = "x86_64-linux"
+    end
+
+    @response = "Successfully registered gem: platform-match (1.0.0)"
+    @fetcher.data["#{Gem.host}/api/v1/gems"] = HTTPResponseFactory.create(body: @response, code: 200, msg: "OK")
+
+    @cmd.options[:args] = [other_path, matching_path]
+    @cmd.options[:platform] = "arm64-darwin"
+
+    @cmd.execute
+
+    assert_equal Gem::Net::HTTP::Post, @fetcher.last_request.class
+    assert_equal Gem.read_binary(matching_path), @fetcher.last_request.body
+  end
+
+  def test_execute_with_ruby_selector_selects_matching_gem
+    _, other_path = util_gem "ruby-other", "1.0.0", ruby_abi: "3.3" do |spec|
+      spec.files = ["lib/ruby-other.rb"]
+      spec.platform = "arm64-darwin"
+    end
+    _, matching_path = util_gem "ruby-match", "1.0.0", ruby_abi: "3.4" do |spec|
+      spec.files = ["lib/ruby-match.rb"]
+      spec.platform = "arm64-darwin"
+    end
+
+    @response = "Successfully registered gem: ruby-match (1.0.0)"
+    @fetcher.data["#{Gem.host}/api/v1/gems"] = HTTPResponseFactory.create(body: @response, code: 200, msg: "OK")
+
+    @cmd.options[:args] = [other_path, matching_path]
+    @cmd.options[:ruby_abi] = "3.4"
+
+    @cmd.execute
+
+    assert_equal Gem::Net::HTTP::Post, @fetcher.last_request.class
+    assert_equal Gem.read_binary(matching_path), @fetcher.last_request.body
+  end
+
+  def test_execute_with_selectors_skips_invalid_gem_package
+    invalid_path = File.join @tempdir, "invalid.gem"
+    File.binwrite invalid_path, "not a gem"
+    _, matching_path = util_gem "skip-invalid", "1.0.0", ruby_abi: "3.4" do |spec|
+      spec.files = ["lib/skip-invalid.rb"]
+      spec.platform = "arm64-darwin"
+    end
+
+    @response = "Successfully registered gem: skip-invalid (1.0.0)"
+    @fetcher.data["#{Gem.host}/api/v1/gems"] = HTTPResponseFactory.create(body: @response, code: 200, msg: "OK")
+
+    @cmd.options[:args] = [invalid_path, matching_path]
+    @cmd.options[:platform] = "arm64-darwin"
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    assert_match(/Skipping #{Regexp.escape(invalid_path)}: package metadata is missing/, @ui.error)
+    assert_equal Gem::Net::HTTP::Post, @fetcher.last_request.class
+    assert_equal Gem.read_binary(matching_path), @fetcher.last_request.body
+  end
+
+  def test_execute_with_platform_and_ruby_selectors_selects_matching_gem
+    _, wrong_platform_path = util_gem "both-wrong-platform", "1.0.0", ruby_abi: "3.4" do |spec|
+      spec.files = ["lib/both-wrong-platform.rb"]
+      spec.platform = "x86_64-linux"
+    end
+    _, wrong_ruby_path = util_gem "both-wrong-ruby", "1.0.0", ruby_abi: "3.3" do |spec|
+      spec.files = ["lib/both-wrong-ruby.rb"]
+      spec.platform = "arm64-darwin"
+    end
+    _, matching_path = util_gem "both-match", "1.0.0", ruby_abi: "3.4" do |spec|
+      spec.files = ["lib/both-match.rb"]
+      spec.platform = "arm64-darwin"
+    end
+
+    @response = "Successfully registered gem: both-match (1.0.0)"
+    @fetcher.data["#{Gem.host}/api/v1/gems"] = HTTPResponseFactory.create(body: @response, code: 200, msg: "OK")
+
+    @cmd.options[:args] = [wrong_platform_path, wrong_ruby_path, matching_path]
+    @cmd.options[:platform] = "arm64-darwin"
+    @cmd.options[:ruby_abi] = "3.4"
+
+    @cmd.execute
+
+    assert_equal Gem::Net::HTTP::Post, @fetcher.last_request.class
+    assert_equal Gem.read_binary(matching_path), @fetcher.last_request.body
+  end
+
+  def test_execute_with_same_name_version_platform_selects_matching_ruby_abi
+    _, ruby_33_path = util_gem "same-target", "1.0.0", ruby_abi: "3.3" do |spec|
+      spec.files = ["lib/same-target.rb"]
+      spec.platform = "arm64-darwin"
+    end
+    _, ruby_34_path = util_gem "same-target", "1.0.0", ruby_abi: "3.4" do |spec|
+      spec.files = ["lib/same-target.rb"]
+      spec.platform = "arm64-darwin"
+    end
+
+    @response = "Successfully registered gem: same-target (1.0.0)"
+    @fetcher.data["#{Gem.host}/api/v1/gems"] = HTTPResponseFactory.create(body: @response, code: 200, msg: "OK")
+
+    @cmd.options[:args] = [ruby_33_path, ruby_34_path]
+    @cmd.options[:platform] = "arm64-darwin"
+    @cmd.options[:ruby_abi] = "3.4"
+
+    @cmd.execute
+
+    assert_equal Gem::Net::HTTP::Post, @fetcher.last_request.class
+    assert_equal Gem.read_binary(ruby_34_path), @fetcher.last_request.body
+  end
+
+  def test_execute_with_non_and_content_addressable_candidates_selects_content_addressable_for_ruby_abi
+    _, non_content_addressable_path = util_gem "mixed-target", "1.0.0" do |spec|
+      spec.platform = "arm64-darwin"
+      spec.required_ruby_version = ">= 3.1"
+    end
+    _, content_addressable_path = util_gem "mixed-target", "1.0.0", ruby_abi: "3.4" do |spec|
+      spec.files = ["lib/mixed-target.rb"]
+      spec.platform = "arm64-darwin"
+    end
+
+    @response = "Successfully registered gem: mixed-target (1.0.0)"
+    @fetcher.data["#{Gem.host}/api/v1/gems"] = HTTPResponseFactory.create(body: @response, code: 200, msg: "OK")
+
+    @cmd.options[:args] = [non_content_addressable_path, content_addressable_path]
+    @cmd.options[:platform] = "arm64-darwin"
+    @cmd.options[:ruby_abi] = "3.4"
+
+    @cmd.execute
+
+    assert_equal Gem::Net::HTTP::Post, @fetcher.last_request.class
+    assert_equal Gem.read_binary(content_addressable_path), @fetcher.last_request.body
+  end
+
+  def test_execute_with_ruby_abi_selector_does_not_match_non_content_addressable_ruby_requirement
+    _, gem_path = util_gem "non-content-addressable-ruby", "1.0.0" do |spec|
+      spec.platform = "arm64-darwin"
+      spec.required_ruby_version = ">= 3.1"
+    end
+
+    @cmd.options[:args] = [gem_path]
+    @cmd.options[:platform] = "arm64-darwin"
+    @cmd.options[:ruby_abi] = "3.4"
+
+    error = assert_raise Gem::CommandLineError do
+      @cmd.execute
+    end
+
+    assert_equal "No gem matched platform arm64-darwin and Ruby ABI 3.4", error.message
+  end
+
+  def test_execute_with_selectors_raises_when_no_gems_match
+    _, gem_path = util_gem "no-match", "1.0.0", ruby_abi: "3.4" do |spec|
+      spec.files = ["lib/no-match.rb"]
+      spec.platform = "arm64-darwin"
+    end
+
+    @cmd.options[:args] = [gem_path]
+    @cmd.options[:platform] = "x86_64-linux"
+    @cmd.options[:ruby_abi] = "3.4"
+
+    error = assert_raise Gem::CommandLineError do
+      @cmd.execute
+    end
+
+    assert_equal "No gem matched platform x86_64-linux and Ruby ABI 3.4", error.message
+  end
+
+  def test_execute_with_selectors_raises_when_multiple_gems_match
+    _, first_path = util_gem "ambiguous-one", "1.0.0", ruby_abi: "3.4" do |spec|
+      spec.files = ["lib/ambiguous-one.rb"]
+      spec.platform = "arm64-darwin"
+    end
+    _, second_path = util_gem "ambiguous-two", "1.0.0", ruby_abi: "3.4" do |spec|
+      spec.files = ["lib/ambiguous-two.rb"]
+      spec.platform = "arm64-darwin"
+    end
+
+    @cmd.options[:args] = [first_path, second_path]
+    @cmd.options[:platform] = "arm64-darwin"
+    @cmd.options[:ruby_abi] = "3.4"
+
+    error = assert_raise Gem::CommandLineError do
+      @cmd.execute
+    end
+
+    assert_match "Multiple gems matched platform arm64-darwin and Ruby ABI 3.4", error.message
+    assert_match first_path, error.message
+    assert_match second_path, error.message
+  end
+
+  def test_execute_with_platform_selector_raises_when_multiple_ruby_abis_match
+    _, ruby_33_path = util_gem "ambiguous-target", "1.0.0", ruby_abi: "3.3" do |spec|
+      spec.files = ["lib/ambiguous-target.rb"]
+      spec.platform = "arm64-darwin"
+    end
+    _, ruby_34_path = util_gem "ambiguous-target", "1.0.0", ruby_abi: "3.4" do |spec|
+      spec.files = ["lib/ambiguous-target.rb"]
+      spec.platform = "arm64-darwin"
+    end
+
+    @cmd.options[:args] = [ruby_33_path, ruby_34_path]
+    @cmd.options[:platform] = "arm64-darwin"
+
+    error = assert_raise Gem::CommandLineError do
+      @cmd.execute
+    end
+
+    assert_match "Multiple gems matched platform arm64-darwin", error.message
+    assert_match ruby_33_path, error.message
+    assert_match ruby_34_path, error.message
+    assert_match "Specify --ruby-abi with one of: 3.3, 3.4", error.message
+  end
+
+  def test_execute_with_ruby_abi_selector_raises_when_multiple_platforms_match
+    _, arm_path = util_gem "ambiguous-platform", "1.0.0", ruby_abi: "3.4" do |spec|
+      spec.files = ["lib/ambiguous-platform.rb"]
+      spec.platform = "arm64-darwin"
+    end
+    _, linux_path = util_gem "ambiguous-platform", "1.0.0", ruby_abi: "3.4" do |spec|
+      spec.files = ["lib/ambiguous-platform.rb"]
+      spec.platform = "x86_64-linux"
+    end
+
+    @cmd.options[:args] = [arm_path, linux_path]
+    @cmd.options[:ruby_abi] = "3.4"
+
+    error = assert_raise Gem::CommandLineError do
+      @cmd.execute
+    end
+
+    assert_match "Multiple gems matched Ruby ABI 3.4", error.message
+    assert_match arm_path, error.message
+    assert_match linux_path, error.message
+    assert_match "Specify --platform with one of: arm64-darwin, x86_64-linux", error.message
+  end
+
+  def test_execute_with_platform_selector_suggests_exact_filename_for_gem_without_ruby_abi
+    _, non_content_addressable_path = util_gem "ambiguous-non-content-addressable", "1.0.0" do |spec|
+      spec.platform = "arm64-darwin"
+      spec.required_ruby_version = ">= 3.1"
+    end
+    _, content_addressable_path = util_gem "ambiguous-non-content-addressable", "1.0.0", ruby_abi: "3.4" do |spec|
+      spec.files = ["lib/ambiguous-non-content-addressable.rb"]
+      spec.platform = "arm64-darwin"
+    end
+
+    @cmd.options[:args] = [non_content_addressable_path, content_addressable_path]
+    @cmd.options[:platform] = "arm64-darwin"
+
+    error = assert_raise Gem::CommandLineError do
+      @cmd.execute
+    end
+
+    assert_match "Multiple gems matched platform arm64-darwin", error.message
+    assert_match non_content_addressable_path, error.message
+    assert_match content_addressable_path, error.message
+    assert_match "Specify --ruby-abi with one of: 3.4", error.message
+    assert_match "To push a gem without a Ruby ABI, pass the exact filename.", error.message
+  end
+
+  def test_execute_without_selectors_still_rejects_multiple_gems
+    _, other_path = util_gem "extra-gem", "1.0.0", ruby_abi: "3.4" do |spec|
+      spec.files = ["lib/extra-gem.rb"]
+      spec.platform = "arm64-darwin"
+    end
+
+    @cmd.options[:args] = [@path, other_path]
+
+    error = assert_raise Gem::CommandLineError do
+      @cmd.execute
+    end
+
+    assert_match "Too many gem names", error.message
+  end
+
+  def test_execute_with_both_selectors_raises_when_multiple_gems_match_without_suggestion
+    _, first_path = util_gem "dual-ambiguous-one", "1.0.0", ruby_abi: "3.4" do |spec|
+      spec.files = ["lib/dual-ambiguous-one.rb"]
+      spec.platform = "arm64-darwin"
+    end
+    _, second_path = util_gem "dual-ambiguous-two", "1.0.0", ruby_abi: "3.4" do |spec|
+      spec.files = ["lib/dual-ambiguous-two.rb"]
+      spec.platform = "arm64-darwin"
+    end
+
+    @cmd.options[:args] = [first_path, second_path]
+    @cmd.options[:platform] = "arm64-darwin"
+    @cmd.options[:ruby_abi] = "3.4"
+
+    error = assert_raise Gem::CommandLineError do
+      @cmd.execute
+    end
+
+    assert_match "Multiple gems matched platform arm64-darwin and Ruby ABI 3.4", error.message
+    assert_match first_path, error.message
+    assert_match second_path, error.message
+    refute_match(/Specify/, error.message)
+  end
+
+  def test_execute_with_both_selectors_selects_single_matching_gem
+    _, matching_path = util_gem "dual-match", "1.0.0", ruby_abi: "3.4" do |spec|
+      spec.files = ["lib/dual-match.rb"]
+      spec.platform = "arm64-darwin"
+    end
+
+    @response = "Successfully registered gem: dual-match (1.0.0)"
+    @fetcher.data["#{Gem.host}/api/v1/gems"] = HTTPResponseFactory.create(body: @response, code: 200, msg: "OK")
+
+    @cmd.options[:args] = [matching_path]
+    @cmd.options[:platform] = "arm64-darwin"
+    @cmd.options[:ruby_abi] = "3.4"
+
+    @cmd.execute
+
+    assert_equal Gem::Net::HTTP::Post, @fetcher.last_request.class
+    assert_equal Gem.read_binary(matching_path), @fetcher.last_request.body
+  end
+
+  def test_execute_with_platform_selector_selects_single_non_content_addressable_gem
+    _, non_content_addressable_path = util_gem "non-content-addressable-only", "1.0.0" do |spec|
+      spec.platform = "arm64-darwin"
+      spec.required_ruby_version = ">= 3.1"
+    end
+
+    @response = "Successfully registered gem: non-content-addressable-only (1.0.0)"
+    @fetcher.data["#{Gem.host}/api/v1/gems"] = HTTPResponseFactory.create(body: @response, code: 200, msg: "OK")
+
+    @cmd.options[:args] = [non_content_addressable_path]
+    @cmd.options[:platform] = "arm64-darwin"
+
+    @cmd.execute
+
+    assert_equal Gem::Net::HTTP::Post, @fetcher.last_request.class
+    assert_equal Gem.read_binary(non_content_addressable_path), @fetcher.last_request.body
+  end
+
+  def test_execute_with_ruby_abi_selector_rejects_source_gem
+    _, source_path = util_gem "source-ruby", "1.0.0" do |spec|
+      spec.files = ["lib/source-ruby.rb"]
+      spec.required_ruby_version = "~> 3.4.0"
+    end
+
+    @response = "Successfully registered gem: source-ruby (1.0.0)"
+    @fetcher.data["#{Gem.host}/api/v1/gems"] = HTTPResponseFactory.create(body: @response, code: 200, msg: "OK")
+
+    @cmd.options[:args] = [source_path]
+    @cmd.options[:ruby_abi] = "3.4"
+
+    error = assert_raise(Gem::CommandLineError) do
+      @cmd.execute
+    end
+
+    assert_match(/No gem matched/, error.message)
+  end
+
   def test_execute_attestation
     @response = "Successfully registered gem: freewill (1.0.0)"
     @fetcher.data["#{Gem.host}/api/v1/gems"] = HTTPResponseFactory.create(body: @response, code: 200, msg: "OK")
 
-    File.write("#{@path}.sigstore.json", "attestation")
+    File.write("#{@path}.sigstore.json", '{"attestation":true}')
     @cmd.options[:args] = [@path]
     @cmd.options[:attestations] = ["#{@path}.sigstore.json"]
 
@@ -118,59 +488,166 @@ class TestGemCommandsPushCommand < Gem::TestCase
     assert_attestation_multipart Gem.read_binary("#{@path}.sigstore.json")
   end
 
+  def test_execute_attestation_multiple
+    @response = "Successfully registered gem: freewill (1.0.0)"
+    @fetcher.data["#{Gem.host}/api/v1/gems"] = HTTPResponseFactory.create(body: @response, code: 200, msg: "OK")
+
+    File.write("#{@path}.a.sigstore.json", '{"attestation":"a"}')
+    File.write("#{@path}.b.sigstore.json", '{"attestation":"b"}')
+    @cmd.options[:args] = [@path]
+    @cmd.options[:attestations] = ["#{@path}.a.sigstore.json", "#{@path}.b.sigstore.json"]
+
+    @cmd.execute
+
+    assert_attestation_multipart '{"attestation":"a"},{"attestation":"b"}'
+  end
+
   def test_execute_attestation_auto
     omit if RUBY_ENGINE == "jruby"
 
     ENV["GITHUB_ACTIONS"] = "true"
-    begin
-      @response = "Successfully registered gem: freewill (1.0.0)"
-      @fetcher.data["#{Gem.host}/api/v1/gems"] = HTTPResponseFactory.create(body: @response, code: 200, msg: "OK")
 
-      attestation_path = "#{@path}.sigstore.json"
-      attestation_content = "auto-attestation"
-      File.write(attestation_path, attestation_content)
-      @cmd.options[:args] = [@path]
+    @response = "Successfully registered gem: freewill (1.0.0)"
+    @fetcher.data["#{Gem.host}/api/v1/gems"] = HTTPResponseFactory.create(body: @response, code: 200, msg: "OK")
 
-      @cmd.stub(:attest!, attestation_path) do
-        @cmd.execute
-      end
+    attestation_content = '{"auto":"attestation"}'
+    @cmd.options[:args] = [@path]
 
-      assert_equal Gem::Net::HTTP::Post, @fetcher.last_request.class
-      content_length = @fetcher.last_request["Content-Length"].to_i
-      assert_equal content_length, @fetcher.last_request.body.length
-      assert_attestation_multipart attestation_content
-    ensure
-      ENV.delete("GITHUB_ACTIONS")
+    @cmd.stub(:attest!, attestation_content) do
+      @cmd.execute
     end
+
+    assert_equal Gem::Net::HTTP::Post, @fetcher.last_request.class
+    content_length = @fetcher.last_request["Content-Length"].to_i
+    assert_equal content_length, @fetcher.last_request.body.length
+    assert_attestation_multipart attestation_content
   end
 
   def test_execute_attestation_fallback
     omit if RUBY_ENGINE == "jruby"
 
     ENV["GITHUB_ACTIONS"] = "true"
-    begin
-      @response = "Successfully registered gem: freewill (1.0.0)"
-      @fetcher.data["#{Gem.host}/api/v1/gems"] = HTTPResponseFactory.create(body: @response, code: 200, msg: "OK")
 
-      @cmd.options[:args] = [@path]
+    @response = "Successfully registered gem: freewill (1.0.0)"
+    @fetcher.data["#{Gem.host}/api/v1/gems"] = HTTPResponseFactory.create(body: @response, code: 200, msg: "OK")
 
-      @cmd.stub(:attest!, proc { raise Gem::Exception, "boom" }) do
+    @cmd.options[:args] = [@path]
+
+    @cmd.stub(:attest!, proc { raise Gem::Exception, "boom" }) do
+      use_ui @ui do
+        @cmd.execute
+      end
+    end
+
+    assert_match "Failed to create an attestation, pushing without one.", @ui.error
+    assert_equal Gem::Net::HTTP::Post, @fetcher.last_request.class
+    assert_equal Gem.read_binary(@path), @fetcher.last_request.body
+    assert_equal "application/octet-stream",
+                 @fetcher.last_request["Content-Type"]
+  end
+
+  def test_execute_attestation_explicit_missing_file
+    @fetcher.data["#{Gem.host}/api/v1/gems"] = HTTPResponseFactory.create(body: "", code: 200, msg: "OK")
+
+    @cmd.options[:args] = [@path]
+    @cmd.options[:attestations] = ["#{@path}.sigstore.json"]
+
+    e = assert_raise Gem::Exception do
+      use_ui @ui do
+        @cmd.execute
+      end
+    end
+
+    assert_match "Failed to read attestation", e.message
+    refute_match "pushing without one", @ui.error
+    assert_nil @fetcher.last_request
+  end
+
+  def test_execute_attestation_explicit_invalid_json
+    @fetcher.data["#{Gem.host}/api/v1/gems"] = HTTPResponseFactory.create(body: "", code: 200, msg: "OK")
+
+    File.write("#{@path}.sigstore.json", "not json")
+    @cmd.options[:args] = [@path]
+    @cmd.options[:attestations] = ["#{@path}.sigstore.json"]
+
+    e = assert_raise Gem::Exception do
+      use_ui @ui do
+        @cmd.execute
+      end
+    end
+
+    assert_match "is not valid JSON", e.message
+    refute_match "pushing without one", @ui.error
+    assert_nil @fetcher.last_request
+  end
+
+  def test_execute_attestation_explicit_json_scalar
+    @fetcher.data["#{Gem.host}/api/v1/gems"] = HTTPResponseFactory.create(body: "", code: 200, msg: "OK")
+
+    File.write("#{@path}.sigstore.json", "null")
+    @cmd.options[:args] = [@path]
+    @cmd.options[:attestations] = ["#{@path}.sigstore.json"]
+
+    e = assert_raise Gem::Exception do
+      use_ui @ui do
+        @cmd.execute
+      end
+    end
+
+    assert_match "is not a JSON object", e.message
+    assert_nil @fetcher.last_request
+  end
+
+  def test_execute_attestation_network_error_not_retried_without_attestation
+    omit if RUBY_ENGINE == "jruby"
+
+    ENV["GITHUB_ACTIONS"] = "true"
+
+    requests = 0
+    @fetcher.data["#{Gem.host}/api/v1/gems"] = proc do
+      requests += 1
+      raise Gem::RemoteFetcher::FetchError.new("timed out", "#{Gem.host}/api/v1/gems")
+    end
+
+    @cmd.options[:args] = [@path]
+
+    assert_raise Gem::RemoteFetcher::FetchError do
+      @cmd.stub(:attest!, '{"auto":"attestation"}') do
         use_ui @ui do
           @cmd.execute
         end
       end
-
-      assert_match "Failed to push with attestation, retrying without attestation.", @ui.error
-      assert_equal Gem::Net::HTTP::Post, @fetcher.last_request.class
-      assert_equal Gem.read_binary(@path), @fetcher.last_request.body
-      assert_equal "application/octet-stream",
-                   @fetcher.last_request["Content-Type"]
-    ensure
-      ENV.delete("GITHUB_ACTIONS")
     end
+
+    assert_equal 1, requests
+    refute_match "pushing without one", @ui.error
+  end
+
+  def test_execute_attestation_auto_skipped_unless_github_actions_true
+    omit if RUBY_ENGINE == "jruby"
+
+    ENV["GITHUB_ACTIONS"] = "false"
+
+    @response = "Successfully registered gem: freewill (1.0.0)"
+    @fetcher.data["#{Gem.host}/api/v1/gems"] = HTTPResponseFactory.create(body: @response, code: 200, msg: "OK")
+
+    @cmd.options[:args] = [@path]
+
+    attest_called = false
+    @cmd.stub(:attest!, proc { attest_called = true }) do
+      @cmd.execute
+    end
+
+    refute attest_called, "attest! should not be called when GITHUB_ACTIONS is not \"true\""
+    assert_equal "application/octet-stream",
+                 @fetcher.last_request["Content-Type"]
   end
 
   def test_execute_attestation_skipped_on_non_rubygems_host
+    omit if RUBY_ENGINE == "jruby"
+
+    ENV["GITHUB_ACTIONS"] = "true"
+
     @spec, @path = util_gem "freebird", "1.0.1" do |spec|
       spec.metadata["allowed_push_host"] = "https://privategemserver.example"
     end
@@ -193,6 +670,8 @@ class TestGemCommandsPushCommand < Gem::TestCase
   end
 
   def test_execute_attestation_skipped_on_jruby
+    ENV["GITHUB_ACTIONS"] = "true"
+
     @response = "Successfully registered gem: freewill (1.0.0)"
     @fetcher.data["#{Gem.host}/api/v1/gems"] = HTTPResponseFactory.create(body: @response, code: 200, msg: "OK")
 
@@ -234,6 +713,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
     captured = nil
     capture_stub = lambda do |*args, **_kwargs|
       captured = args
+      File.write(args[args.index("--bundle") + 1], "{}")
       ["", fake_status]
     end
     Gem.stub(:ruby, '"/path with space/bin/ruby"') do
@@ -247,6 +727,77 @@ class TestGemCommandsPushCommand < Gem::TestCase
     assert_equal "/path with space/bin/ruby", captured[1]
     refute_includes captured[1], '"'
     assert_equal "-S", captured[2]
+  end
+
+  def test_attest_aborts_when_signing_fails
+    require "open3"
+
+    fake_status = Object.new
+    def fake_status.success?
+      false
+    end
+
+    bundle_path = nil
+    capture_stub = lambda do |*args, **_kwargs|
+      bundle_path = args[args.index("--bundle") + 1]
+      ["sigstore-cli: no identity token available", fake_status]
+    end
+
+    e = assert_raise Gem::Exception do
+      Open3.stub(:capture2e, capture_stub) do
+        @cmd.send(:attest!, @path)
+      end
+    end
+
+    assert_match "Failed to sign gem", e.message
+    assert_match "no identity token available", e.message
+    refute_nil bundle_path, "signing command should have been spawned"
+    refute File.exist?(bundle_path), "bundle tempfile should be removed"
+  end
+
+  def test_attest_rejects_a_bundle_that_is_not_json
+    require "open3"
+
+    fake_status = Object.new
+    def fake_status.success?
+      true
+    end
+
+    capture_stub = lambda do |*args, **_kwargs|
+      File.write(args[args.index("--bundle") + 1], "not json")
+      ["", fake_status]
+    end
+
+    e = assert_raise Gem::Exception do
+      Open3.stub(:capture2e, capture_stub) do
+        @cmd.send(:attest!, @path)
+      end
+    end
+
+    assert_match "is not valid JSON", e.message
+  end
+
+  def test_attest_returns_bundle_content_and_removes_tempfile
+    require "open3"
+
+    fake_status = Object.new
+    def fake_status.success?
+      true
+    end
+
+    bundle_path = nil
+    capture_stub = lambda do |*args, **_kwargs|
+      bundle_path = args[args.index("--bundle") + 1]
+      File.write(bundle_path, '{"signed":true}')
+      ["", fake_status]
+    end
+
+    content = Open3.stub(:capture2e, capture_stub) do
+      @cmd.send(:attest!, @path)
+    end
+
+    assert_equal '{"signed":true}', content
+    refute File.exist?(bundle_path), "bundle tempfile should be removed"
   end
 
   def test_execute_allowed_push_host

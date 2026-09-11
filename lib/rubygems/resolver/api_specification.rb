@@ -33,14 +33,13 @@ class Gem::Resolver::APISpecification < Gem::Resolver::Specification
     @set = set
     @name = api_data[:name]
     @version = Gem::Version.new(api_data[:number]).freeze
-    @platform = Gem::Platform.new(api_data[:platform]).freeze
-    @original_platform = api_data[:platform].freeze
     @dependencies = api_data[:dependencies].map do |name, ver|
       Gem::Dependency.new(name, ver.split(/\s*,\s*/)).freeze
     end.freeze
     @required_ruby_version = Gem::Requirement.new(api_data.dig(:requirements, :ruby)).freeze
     @required_rubygems_version = Gem::Requirement.new(api_data.dig(:requirements, :rubygems)).freeze
     @created_at = parse_created_at(api_data.dig(:requirements, :created_at))&.freeze
+    assign_platform(api_data)
   end
 
   def ==(other) # :nodoc:
@@ -48,15 +47,17 @@ class Gem::Resolver::APISpecification < Gem::Resolver::Specification
       @set          == other.set &&
       @name         == other.name &&
       @version      == other.version &&
-      @platform     == other.platform
+      @platform     == other.platform &&
+      @content_address == other.content_address
   end
 
   def hash
-    @set.hash ^ @name.hash ^ @version.hash ^ @platform.hash
+    @set.hash ^ @name.hash ^ @version.hash ^ @platform.hash ^ @content_address.hash
   end
 
   def fetch_development_dependencies # :nodoc:
-    spec = source.fetch_spec Gem::NameTuple.new @name, @version, @platform
+    suffix = @content_address || @platform
+    spec = source.fetch_spec Gem::NameTuple.new @name, @version, suffix
 
     @dependencies = spec.dependencies
   end
@@ -101,6 +102,7 @@ class Gem::Resolver::APISpecification < Gem::Resolver::Specification
       s.original_platform = @original_platform
       s.required_ruby_version = @required_ruby_version
       s.required_rubygems_version = @required_rubygems_version
+      s.content_address = @content_address
 
       @dependencies.each do |dependency|
         s.add_runtime_dependency dependency.name, *dependency.requirement.as_list
@@ -113,6 +115,28 @@ class Gem::Resolver::APISpecification < Gem::Resolver::Specification
   end
 
   private
+
+  def assign_platform(api_data)
+    suffix = api_data[:suffix]
+    required_platform = required_platform_from(api_data.dig(:requirements, :platform))
+
+    if Gem::ContentAddress.content_addressed_row?(suffix, required_platform, @required_ruby_version)
+      @content_address = suffix.freeze
+      @platform = required_platform.freeze
+      @original_platform = required_platform.to_s.freeze
+    else
+      @content_address = nil
+      @platform = Gem::Platform.new(suffix).freeze
+      @original_platform = suffix.freeze
+    end
+  end
+
+  def required_platform_from(requirement)
+    platform = Array(requirement).last
+    return if platform.nil? || platform.empty?
+
+    Gem::Platform.new(platform)
+  end
 
   def parse_created_at(value)
     value = value.first if value.is_a?(Array)

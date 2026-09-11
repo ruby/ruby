@@ -194,7 +194,7 @@ command to remove old versions.
     return spec_tuples unless @cooldown&.active?
 
     with_times = spec_tuples.map do |tup, source|
-      [tup, source, source.created_at(tup.name, tup.version, tup.platform)]
+      [tup, source, source.created_at_for_tuple(tup)]
     end
 
     if !with_times.empty? && with_times.none? {|_, _, created_at| created_at }

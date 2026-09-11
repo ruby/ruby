@@ -29,6 +29,7 @@ RUBY_EXTERN const int ruby_api_version[];
 #define ISEQ_LVAR_STATE_BITS 2
 #define ISEQ_LVAR_STATES_PER_BYTE (CHAR_BIT / ISEQ_LVAR_STATE_BITS)
 #define ISEQ_LVAR_STATES_BUFLEN(size) roomof(size, ISEQ_LVAR_STATES_PER_BYTE)
+#define ISEQ_LVAR_STATES_EMBED_P(size) (ISEQ_LVAR_STATES_BUFLEN(size) <= sizeof(uint8_t *))
 STATIC_ASSERT(lvar_state_fits_in_iseq_lvar_state_bits, lvar_reassigned < (1 << ISEQ_LVAR_STATE_BITS));
 
 static inline enum lvar_state
@@ -57,6 +58,23 @@ typedef struct rb_iseq_struct rb_iseq_t;
 typedef void (*rb_iseq_callback)(const rb_iseq_t *, void *);
 
 extern const ID rb_iseq_shared_exc_local_tbl[];
+
+static inline bool
+iseq_has_lvar_states_p(const struct rb_iseq_constant_body *body)
+{
+    return body->local_table_size > 0 && body->local_table != rb_iseq_shared_exc_local_tbl;
+}
+
+static inline uint8_t *
+iseq_lvar_states(const struct rb_iseq_constant_body *body)
+{
+    if (ISEQ_LVAR_STATES_EMBED_P(body->local_table_size)) {
+        return (uint8_t *)body->lvar_states.single;
+    }
+    else {
+        return body->lvar_states.list;
+    }
+}
 
 /* Ensure body->variable is allocated, returning the struct. */
 struct rb_iseq_variable *rb_iseq_variable_ensure(rb_iseq_t *iseq);

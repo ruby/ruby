@@ -263,10 +263,13 @@ struct iseq_inline_constant_cache_entry {
 
     VALUE value;
     const rb_cref_t *ic_cref;
+    /* Ractor that filled this entry.  An unshareable value may be handed out again
+     * only to that Ractor: it is the one that passed the owner check. */
+    rb_serial_t ractor_id;
 };
 STATIC_ASSERT(sizeof_iseq_inline_constant_cache_entry,
-              (offsetof(struct iseq_inline_constant_cache_entry, ic_cref) +
-               sizeof(const rb_cref_t *)) <= RVALUE_SIZE);
+              (offsetof(struct iseq_inline_constant_cache_entry, ractor_id) +
+               sizeof(rb_serial_t)) <= RVALUE_SIZE);
 
 struct iseq_inline_constant_cache {
     struct iseq_inline_constant_cache_entry *entry;
@@ -338,7 +341,6 @@ struct rb_execution_context_struct;
 
 typedef struct rb_iseq_location_struct {
     VALUE pathobj;      /* String (path) or Array [path, realpath]. Frozen. */
-    VALUE base_label;   /* String */
     VALUE label;        /* String */
     int first_lineno;
     int node_id;
@@ -525,7 +527,10 @@ struct rb_iseq_constant_body {
 
     const ID *local_table;		/* must free */
 
-    uint8_t *lvar_states;
+    union {
+        uint8_t *list;
+        uint8_t single[sizeof(uint8_t *)];
+    } lvar_states;
 
     /* catch table */
     struct iseq_catch_table *catch_table;
@@ -564,26 +569,20 @@ struct rb_iseq_constant_body {
     const rb_iseq_t *mandatory_only_iseq;
 
 #if USE_YJIT || USE_ZJIT
+    // Number of calls on jit_exec()
+    unsigned int jit_entry_calls;
+    // Number of calls on jit_exec_exception()
+    unsigned int jit_exception_calls;
     // Function pointer for JIT code on jit_exec()
     rb_jit_func_t jit_entry;
-    // Number of calls on jit_exec()
-    long unsigned jit_entry_calls;
     // Function pointer for JIT code on jit_exec_exception()
     rb_jit_func_t jit_exception;
-    // Number of calls on jit_exec_exception()
-    long unsigned jit_exception_calls;
+    void *jit_payload;
 #endif
 
 #if USE_YJIT
-    // YJIT stores some data on each iseq.
-    void *yjit_payload;
     // Used to estimate how frequently this ISEQ gets called
-    uint64_t yjit_calls_at_interv;
-#endif
-
-#if USE_ZJIT
-    // ZJIT stores some data on each iseq.
-    void *zjit_payload;
+    unsigned int yjit_calls_at_interv;
 #endif
 
     // Hash of the source this iseq was compiled from, or 0 if it is
@@ -596,11 +595,10 @@ struct rb_iseq_constant_body {
 /* typedef rb_iseq_t is in method.h */
 struct rb_iseq_struct {
     VALUE flags; /* 1 */
-    VALUE wrapper; /* 2 */
 
-    struct rb_iseq_constant_body *body;  /* 3 */
+    struct rb_iseq_constant_body *body;  /* 2 */
 
-    union { /* 4, 5 words */
+    union { /* 3, 4 words */
         struct iseq_compile_data *compile_data; /* used at compile time */
 
         struct {
@@ -733,69 +731,14 @@ typedef struct rb_vm_struct {
             // join at exit
             rb_nativethread_cond_t terminate_cond;
             bool terminate_waiting;
-
-#ifndef RUBY_THREAD_PTHREAD_H
-            // win32
-            bool barrier_waiting;
-            unsigned int barrier_cnt;
-            rb_nativethread_cond_t barrier_complete_cond;
-            rb_nativethread_cond_t barrier_release_cond;
-#endif
         } sync;
 
         /* VM-wide locks for the Ractor transfer/inheritance machinery.  All of them
          * are leaf locks: no safepoint inside a critical section. */
         rb_nativethread_lock_t generic_fields_lock;   /* the shared generic-fields table in variable.c */
 
-#ifdef RUBY_THREAD_PTHREAD_H
-        // ractor scheduling
-        struct {
-            rb_nativethread_lock_t lock;
-            struct rb_ractor_struct *lock_owner;
-            bool locked;
-
-            rb_nativethread_cond_t cond; // GRQ
-            rb_atomic_t snt_cnt;  // count of shared NTs; lock-free (see native_thread_dedicated_inc)
-            unsigned int dnt_cnt; // count of dedicated NTs; logging only (USE_RUBY_DEBUG_LOG), not atomic
-
-
-            unsigned int max_cpu;
-            struct ccan_list_head grq; // // Global Ready Queue
-            rb_atomic_t winding_cnt; // native threads between a coroutine epilogue and its reclaim; ruby_vm_destruct waits for 0
-            unsigned int grq_cnt;
-
-            // What the barrier walk visits: threads running on dedicated
-            // nts, and the shared nts (whose running_th fields hold the rest).
-            struct {
-                rb_nativethread_lock_t lock;
-                struct ccan_list_head running_dnts;
-                struct ccan_list_head snts;
-            } ntlist;
-
-            // scheds whose readyq holds waiters: the timer ticks their
-            // running thread (timeslice_scan) and prunes drained entries.
-            struct {
-                rb_nativethread_lock_t lock;
-                struct ccan_list_head scheds;
-            } timeslice;
-
-            // true if timeslice timer is not enable
-            bool timeslice_wait_inf;
-
-            // barrier
-            rb_nativethread_cond_t barrier_complete_cond;
-            rb_nativethread_cond_t barrier_release_cond;
-            // bool; nonzero while a stop-the-world section is active.  Set
-            // before the barrier walks the running records; a record moved
-            // after the walk sees it (thread_sched_setup_running_threads).
-            rb_atomic_t barrier_is_waiting;
-            unsigned int barrier_joined_cnt; // threads joined so far; under sched.lock
-            unsigned int barrier_running_cnt; // runners counted by the barrier's walk; under sched.lock
-            unsigned int barrier_serial;
-            struct rb_ractor_struct *barrier_ractor;
-            unsigned int barrier_lock_rec;
-        } sched;
-#endif
+        // ractor scheduling; see thread_sched.h
+        struct rb_ractor_sched sched;
     } ractor;
 
 #ifdef USE_SIGALTSTACK
@@ -835,9 +778,6 @@ typedef struct rb_vm_struct {
 
     int src_encoding_index;
 
-    /* workqueue (thread-safe, NOT async-signal-safe) */
-    struct ccan_list_head workqueue; /* <=> rb_workqueue_job.jnode */
-    rb_nativethread_lock_t workqueue_lock;
 
     /* `once` completion event (see vm_once_dispatch) */
     rb_nativethread_lock_t once_lock;
@@ -2082,6 +2022,9 @@ VM_BH_FROM_PROC(VALUE procval)
 
 /* VM related object allocate functions */
 VALUE rb_thread_alloc(VALUE klass);
+/* Build the Thread out of objects a named objspace owns; only a Ractor building its
+ * child needs this (create_ractor_alloc_thread). */
+VALUE rb_thread_alloc_in_objspace(VALUE klass, void *objspace);
 VALUE rb_binding_alloc(VALUE klass);
 VALUE rb_proc_alloc(VALUE klass, enum rb_block_type block_type);
 VALUE rb_proc_dup(VALUE self);
@@ -2147,7 +2090,6 @@ void rb_thread_wakeup_timer_thread(int);
 static inline void
 rb_vm_living_threads_init(rb_vm_t *vm)
 {
-    ccan_list_head_init(&vm->workqueue);
     ccan_list_head_init(&vm->ractor.set);
     ccan_list_head_init(&vm->ractor.terminated_set);
 }
@@ -2414,10 +2356,6 @@ void rb_fiber_close(rb_fiber_t *fib);
 void Init_native_thread(rb_thread_t *th);
 int rb_vm_check_ints_blocking(rb_execution_context_t *ec);
 
-// vm_sync.h
-void rb_vm_cond_wait(rb_vm_t *vm, rb_nativethread_cond_t *cond);
-void rb_vm_cond_timedwait(rb_vm_t *vm, rb_nativethread_cond_t *cond, unsigned long msec);
-
 #define RUBY_VM_CHECK_INTS(ec) rb_vm_check_ints(ec)
 static inline void
 rb_vm_check_ints(rb_execution_context_t *ec)
@@ -2494,7 +2432,7 @@ rb_exec_event_hook_orig(rb_execution_context_t *ec, rb_hook_list_t *hooks, rb_ev
 
 struct rb_ractor_pub {
     VALUE self;
-    uint32_t id;
+    rb_serial_t id;
     rb_hook_list_t hooks;
     st_table targeted_hooks; // also called "local hooks". {ISEQ => hook_list, def => hook_list...}
     unsigned int targeted_hooks_cnt; // ex: tp.enabled(target: method(:puts))
@@ -2553,7 +2491,7 @@ int rb_thread_check_trap_pending(void);
 #define RUBY_EVENT_COVERAGE_LINE                0x010000
 #define RUBY_EVENT_COVERAGE_BRANCH              0x020000
 
-void rb_postponed_job_flush(rb_vm_t *vm);
+void rb_postponed_job_flush(void);
 void rb_postponed_job_trigger_for_ractor(unsigned int h, VALUE running_ractor);
 
 // ractor.c

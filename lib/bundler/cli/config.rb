@@ -97,7 +97,7 @@ module Bundler
             confirm(name)
           end
 
-          if current_value.nil? && !Bundler.settings.credential_stored?(name)
+          if current_value.nil? && !Bundler.settings.stored_outside_config_files?(name)
             exit 1
           else
             return

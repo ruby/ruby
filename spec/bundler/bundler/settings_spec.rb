@@ -136,6 +136,207 @@ that would suck --ehhh=oh geez it looks like i might have broken bundler somehow
       end
     end
 
+    describe "#pretty_values_for" do
+      it "reports a gemrc cooldown that no Bundler layer configures" do
+        allow(Gem.configuration).to receive(:each).and_yield(:cooldown, 7)
+
+        expect(settings.pretty_values_for(:cooldown)).to eq(
+          ["Set in the RubyGems configuration as `:cooldown:`: 7"]
+        )
+      end
+
+      it "explains the max rule only when a Bundler layer configures one too" do
+        allow(Gem.configuration).to receive(:each).and_yield(:cooldown, 7)
+        settings.set_local :cooldown, "3"
+
+        expect(settings.pretty_values_for(:cooldown).last).to eq(
+          "Set in the RubyGems configuration as `:cooldown:`: 7. The longer of that and the top value applies"
+        )
+      end
+
+      it "leaves out a gemrc value that takes no part in the resolution" do
+        allow(Gem.configuration).to receive(:each).and_yield(:cooldown, "abc")
+        allow(Bundler.ui).to receive(:warn)
+
+        expect(settings.pretty_values_for(:cooldown)).to eq(["You have not configured a value for `cooldown`"])
+      end
+
+      it "says nothing about RubyGems when it configures no cooldown" do
+        allow(Gem.configuration).to receive(:each)
+
+        expect(settings.pretty_values_for(:cooldown)).to eq(["You have not configured a value for `cooldown`"])
+      end
+    end
+
+    describe "#stored_outside_config_files?" do
+      it "is true for a cooldown only the gemrc configures" do
+        allow(Gem.configuration).to receive(:each).and_yield(:cooldown, 7)
+
+        expect(settings.stored_outside_config_files?(:cooldown)).to be true
+      end
+
+      it "is false for a gemrc value that takes no part in the resolution" do
+        allow(Gem.configuration).to receive(:each).and_yield(:cooldown, "abc")
+        allow(Bundler.ui).to receive(:warn)
+
+        expect(settings.stored_outside_config_files?(:cooldown)).to be false
+      end
+
+      it "is false for another key the gemrc knows nothing about" do
+        allow(Gem.configuration).to receive(:each).and_yield(:cooldown, 7)
+
+        expect(settings.stored_outside_config_files?(:jobs)).to be false
+      end
+    end
+
+    describe "#all_including_stored_credentials" do
+      it "lists a cooldown only the gemrc configures" do
+        allow(Gem.configuration).to receive(:each).and_yield(:cooldown, 7)
+
+        expect(settings.all_including_stored_credentials).to include("cooldown")
+      end
+
+      it "leaves it out when the gemrc configures none" do
+        allow(Gem.configuration).to receive(:each)
+
+        expect(settings.all_including_stored_credentials).not_to include("cooldown")
+      end
+    end
+
+    describe "#rubygems_cooldown" do
+      it "warns once when the gemrc value is not a number" do
+        allow(Gem.configuration).to receive(:each).and_yield(:cooldown, "abc")
+
+        expect(Bundler.ui).to receive(:warn).with(/Invalid cooldown value "abc"/).once
+        2.times { settings.rubygems_cooldown }
+      end
+
+      it "stays quiet for a usable value" do
+        allow(Gem.configuration).to receive(:each).and_yield(:cooldown, 7)
+
+        expect(Bundler.ui).not_to receive(:warn)
+        expect(settings.rubygems_cooldown).to be 7
+      end
+
+      it "reads a value that Gem::ConfigFile#[] cannot look up" do
+        # RubyGems 3.4 behaves this way. See Settings#gemrc_cooldown.
+        allow(Gem.configuration).to receive(:[]).with(:cooldown).and_return(nil)
+        allow(Gem.configuration).to receive(:each).and_yield(:cooldown, 7)
+
+        expect(settings.rubygems_cooldown).to be 7
+      end
+
+      it "reads a value stored under a string key" do
+        allow(Gem.configuration).to receive(:each).and_yield("cooldown", 7)
+
+        expect(settings.rubygems_cooldown).to be 7
+      end
+    end
+
+    describe "#cooldown_for" do
+      before { allow(settings).to receive(:rubygems_cooldown).and_return(nil) }
+
+      it "is nil when nothing is configured" do
+        expect(settings.cooldown_for).to be_nil
+      end
+
+      it "returns the per-source value when the setting is unset" do
+        expect(settings.cooldown_for(7)).to be 7
+      end
+
+      it "prefers the setting over the per-source value" do
+        settings.set_local :cooldown, "14"
+
+        expect(settings.cooldown_for(7)).to be 14
+      end
+
+      it "keeps the per-source value when the setting is not a number" do
+        settings.set_local :cooldown, "abc"
+
+        expect(settings.cooldown_for(7)).to be 7
+      end
+
+      context "when RubyGems configures a cooldown too" do
+        it "uses it when Bundler configures none" do
+          allow(settings).to receive(:rubygems_cooldown).and_return(7)
+
+          expect(settings.cooldown_for).to be 7
+        end
+
+        it "takes the longer of the two" do
+          allow(settings).to receive(:rubygems_cooldown).and_return(7)
+          settings.set_local :cooldown, "3"
+
+          expect(settings.cooldown_for).to be 7
+
+          settings.set_local :cooldown, "14"
+
+          expect(settings.cooldown_for).to be 14
+        end
+
+        it "raises a per-source value to it" do
+          allow(settings).to receive(:rubygems_cooldown).and_return(7)
+
+          expect(settings.cooldown_for(3)).to be 7
+        end
+
+        it "leaves a longer per-source value alone" do
+          allow(settings).to receive(:rubygems_cooldown).and_return(7)
+
+          expect(settings.cooldown_for(14)).to be 14
+        end
+
+        it "counts a configured 0 as a value rather than as unset" do
+          allow(settings).to receive(:rubygems_cooldown).and_return(7)
+          settings.set_local :cooldown, "0"
+
+          expect(settings.cooldown_for).to be 7
+
+          allow(settings).to receive(:rubygems_cooldown).and_return(0)
+          settings.set_local :cooldown, "7"
+
+          expect(settings.cooldown_for).to be 7
+        end
+
+        it "ignores a value that is not a number" do
+          allow(settings).to receive(:rubygems_cooldown).and_return("abc")
+          settings.set_local :cooldown, "7"
+
+          expect(settings.cooldown_for).to be 7
+        end
+
+        it "lets --cooldown win outright so 0 bypasses it" do
+          allow(settings).to receive(:rubygems_cooldown).and_return(7)
+
+          settings.temporary(cooldown: 0) do
+            expect(settings.cooldown_for(14)).to be 0
+          end
+        end
+      end
+    end
+
+    context "when the setting has been renamed" do
+      it "reads the value set under the old name" do
+        settings.set_local :no_prune, "true"
+
+        expect(settings[:keep_outdated_cache]).to be true
+      end
+
+      it "prefers the current name set at the same level" do
+        settings.set_local :no_prune, "true"
+        settings.set_local :keep_outdated_cache, "false"
+
+        expect(settings[:keep_outdated_cache]).to be false
+      end
+
+      it "prefers the old name set at a higher priority level" do
+        settings.set_global :keep_outdated_cache, "false"
+        settings.set_local :no_prune, "true"
+
+        expect(settings[:keep_outdated_cache]).to be true
+      end
+    end
+
     context "when it's not possible to create the settings directory" do
       it "raises an PermissionError with explanation" do
         settings_dir = settings.send(:local_config_file).dirname
@@ -249,6 +450,53 @@ that would suck --ehhh=oh geez it looks like i might have broken bundler somehow
         it "normalizes the URI" do
           expect(settings.mirror_for("file:/foo/BAR/baz/qUx")).to eq(mirror_uri)
         end
+      end
+    end
+  end
+
+  describe "#credential_store_spec" do
+    it "is off when the setting is unset" do
+      expect(settings.send(:credential_store_spec)).to be_nil
+    end
+
+    it "reads the same false spellings as every other Bundler boolean" do
+      ["", "false", "FALSE", "f", "no", "n", "0"].each do |off|
+        settings.set_local "credential_store", off
+
+        expect(settings.send(:credential_store_spec)).to be_nil, "#{off.inspect} should turn the store off"
+      end
+    end
+
+    it "reads the boolean true spellings as this platform's native store" do
+      %w[true TRUE t yes y on 1].each do |on|
+        settings.set_local "credential_store", on
+
+        expect(settings.send(:credential_store_spec)).to be(true), "#{on.inspect} should select the native store"
+      end
+    end
+
+    it "reads anything else as a backend name, `off` included" do
+      %w[1password off 1Password].each do |name|
+        settings.set_local "credential_store", name
+
+        expect(settings.send(:credential_store_spec)).to eq(name)
+      end
+    end
+
+    it "lets a host override the global setting" do
+      settings.set_local "credential_store", "1password"
+      settings.set_local "credential_store.gemserver.example.org", "false"
+
+      expect(settings.send(:credential_store_spec, "gemserver.example.org")).to be_nil
+      expect(settings.send(:credential_store_spec, "other.example.org")).to eq("1password")
+    end
+
+    it "survives an undecodable environment variable" do
+      # #to_bool refuses these bytes too, not just String#downcase.
+      without_env_side_effects do
+        ENV["BUNDLE_CREDENTIAL_STORE"] = "\xff".dup.force_encoding("UTF-8")
+
+        expect(settings.send(:credential_store_spec)).to eq(ENV["BUNDLE_CREDENTIAL_STORE"])
       end
     end
   end

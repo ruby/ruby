@@ -53,9 +53,9 @@ module Gem
         if old_stat
           # Set correct permissions on new file
           begin
-            File.chown(old_stat.uid, old_stat.gid, tmp_path)
+            temp_file.chown(old_stat.uid, old_stat.gid)
             # This operation will affect filesystem ACL's
-            File.chmod(old_stat.mode, tmp_path)
+            temp_file.chmod(old_stat.mode)
           rescue Errno::EPERM, Errno::EACCES
             # Changing file ownership failed, moving on.
           end

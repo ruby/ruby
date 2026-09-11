@@ -237,7 +237,7 @@ define rp
   else
   if ($flags & RUBY_T_MASK) == RUBY_T_IMEMO
     printf "%sT_IMEMO%s(", $color_type, $color_end
-    output (enum imemo_type)(($flags>>RUBY_FL_USHIFT)&RUBY_IMEMO_MASK)
+    output (enum imemo_type)(($flags&RUBY_IMEMO_MASK)>>RUBY_FL_USHIFT)
     printf "): "
     rp_imemo $arg0
   else
@@ -539,7 +539,7 @@ document rp_class
 end
 
 define rp_imemo
-  set $flags = (enum imemo_type)((((struct RBasic *)($arg0))->flags >> RUBY_FL_USHIFT) & RUBY_IMEMO_MASK)
+  set $flags = (enum imemo_type)((((struct RBasic *)($arg0))->flags & RUBY_IMEMO_MASK) >> RUBY_FL_USHIFT)
   if $flags == imemo_cref
     printf "(rb_cref_t *) %p\n", (void*)$arg0
     print *(rb_cref_t *)$arg0
@@ -1100,7 +1100,7 @@ define rb_ps_thread
   while $cfp < $cfpend
     if $cfp->_iseq
       set $iseq = rb_get_cfp_iseq($cfp)
-      if !((VALUE)$iseq & RUBY_IMMEDIATE_MASK) && (((imemo_ifunc << RUBY_FL_USHIFT) | RUBY_T_IMEMO)==$iseq->flags & ((RUBY_IMEMO_MASK << RUBY_FL_USHIFT) | RUBY_T_MASK))
+      if !((VALUE)$iseq & RUBY_IMMEDIATE_MASK) && (((imemo_ifunc << RUBY_FL_USHIFT) | RUBY_T_IMEMO)==$iseq->flags & (RUBY_IMEMO_MASK | RUBY_T_MASK))
         printf "%d:ifunc ", $cfpend-$cfp
         set print symbol-filename on
         output/a $iseq.body

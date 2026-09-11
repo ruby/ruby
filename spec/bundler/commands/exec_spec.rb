@@ -343,6 +343,32 @@ RSpec.describe "bundle exec" do
     expect(out).to include(rubylib)
   end
 
+  it "does not duplicate a relative path prefix when exec'ing to a relative path" do
+    skip "https://github.com/ruby/rubygems/issues/3351" if Gem.win_platform?
+
+    create_file("script", "#!/usr/bin/env ruby\nputs $0")
+
+    install_gemfile <<-G
+      source "https://gem.repo1"
+    G
+
+    bundle "exec ./script", env: { "BUNDLE_DISABLE_EXEC_LOAD" => "true" }
+    expect(out).to eq("./script")
+  end
+
+  it "prepends a relative path prefix when exec'ing to a hidden file in the current directory" do
+    skip "https://github.com/ruby/rubygems/issues/3351" if Gem.win_platform?
+
+    create_file(".script", "#!/usr/bin/env ruby\nputs $0")
+
+    install_gemfile <<-G
+      source "https://gem.repo1"
+    G
+
+    bundle "exec .script", env: { "BUNDLE_DISABLE_EXEC_LOAD" => "true" }
+    expect(out).to eq("./.script")
+  end
+
   it "errors nicely when the argument doesn't exist" do
     install_gemfile <<-G
       source "https://gem.repo1"

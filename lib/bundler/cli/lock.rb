@@ -16,8 +16,7 @@ module Bundler
 
       check_for_conflicting_options
 
-      Bundler::CLI::Common.validate_cooldown!(options[:cooldown])
-      Bundler.settings.set_command_option_if_given :cooldown, options[:cooldown]
+      Bundler::CLI::Common.configure_cooldown(options)
 
       print = options[:print]
       previous_output_stream = Bundler.ui.output_stream

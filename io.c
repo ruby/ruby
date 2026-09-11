@@ -7428,11 +7428,6 @@ rb_io_synchronized(rb_io_t *fptr)
     fptr->mode |= FMODE_SYNC;
 }
 
-void
-rb_io_unbuffered(rb_io_t *fptr)
-{
-    rb_io_synchronized(fptr);
-}
 
 int
 rb_pipe(int *pipes)

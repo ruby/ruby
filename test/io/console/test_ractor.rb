@@ -5,7 +5,7 @@ require 'rbconfig'
 class TestIOConsoleInRactor < Test::Unit::TestCase
   def test_ractor
     ext = "/io/console.#{RbConfig::CONFIG['DLEXT']}"
-    path = $".find {|path| path.end_with?(ext)}
+    path = $".find {|path| path.end_with?(ext)} || "io/console"
     assert_in_out_err(%W[-r#{path}], "#{<<~"begin;"}\n#{<<~'end;'}", ["true"], [])
     begin;
       class Ractor

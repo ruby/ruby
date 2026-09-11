@@ -1856,6 +1856,10 @@ rb_mod_to_s(VALUE klass)
 static VALUE
 rb_mod_freeze(VALUE mod)
 {
+    // a permanent modification; already frozen changes no state, so stays a no-op
+    if (!OBJ_FROZEN(mod)) {
+        rb_class_owner_check(mod);
+    }
     rb_class_name(mod);
     return rb_obj_freeze(mod);
 }
@@ -2205,6 +2209,8 @@ rb_class_initialize(int argc, VALUE *argv, VALUE klass)
 {
     VALUE super;
 
+    // an uninitialized class is still somebody's, and this writes its superclass
+    rb_class_modify_check(klass);
     if (RCLASS_SUPER(klass) != 0 || klass == rb_cBasicObject) {
         rb_raise(rb_eTypeError, "already initialized class");
     }

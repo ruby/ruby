@@ -148,8 +148,8 @@ consensus on ruby-core/ruby-dev.
 
 #### lib/erb.rb
 
-* Masatoshi SEKI ([seki])
 * Takashi Kokubun ([k0kubun])
+* Jean Boussier ([byroot])
 * https://github.com/ruby/erb
 * https://rubygems.org/gems/erb
 

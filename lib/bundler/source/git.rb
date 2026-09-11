@@ -432,10 +432,12 @@ module Bundler
       def validate_spec(_spec); end
 
       def load_gemspec(file)
-        dirname = Pathname.new(file).dirname
-        SharedHelpers.chdir(dirname.to_s) do
-          stub = Gem::StubSpecification.gemspec_stub(file, install_path.parent, install_path.parent)
-          stub.full_gem_path = dirname.expand_path(root).to_s
+        # Expand the path before the chdir below, since resolving it inside the
+        # block would base it on the gemspec directory instead of `root`.
+        gemspec_path = Pathname.new(file).expand_path(root)
+        SharedHelpers.chdir(gemspec_path.dirname.to_s) do
+          stub = Gem::StubSpecification.gemspec_stub(gemspec_path.to_s, install_path.parent, install_path.parent)
+          stub.full_gem_path = gemspec_path.dirname.to_s
           StubSpecification.from_stub(stub)
         end
       end

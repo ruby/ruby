@@ -1142,10 +1142,10 @@ vm_get_ev_const(rb_execution_context_t *ec, VALUE orig_klass, ID id, bool allow_
                             return 1;
                         }
                         else {
-                            if (UNLIKELY(!rb_ractor_main_p())) {
+                            if (UNLIKELY(!rb_class_owned_p(klass))) {
                                 if (!rb_ractor_shareable_p(val)) {
                                     rb_raise(rb_eRactorIsolationError,
-                                             "can not access non-shareable objects in constant %"PRIsVALUE"::%"PRIsVALUE" by non-main ractor.", rb_class_path(klass), rb_id2str(id));
+                                             "can not access non-shareable objects in constant %"PRIsVALUE"::%"PRIsVALUE" of a class/module created by another Ractor.", rb_class_path(klass), rb_id2str(id));
                                 }
                             }
                             return val;
@@ -1255,10 +1255,10 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
       case T_CLASS:
       case T_MODULE:
         {
-            if (UNLIKELY(!rb_ractor_main_p())) {
-                // For two reasons we can only use the fast path on the main
-                // ractor.
-                // First, only the main ractor is allowed to set ivars on classes
+            if (UNLIKELY(!rb_class_owned_p(obj))) {
+                // For two reasons we can only use the fast path on the Ractor
+                // that owns the class.
+                // First, only the owner Ractor is allowed to set ivars on classes
                 // and modules. So we can skip locking.
                 // Second, other ractors need to check the shareability of the
                 // values returned from the class ivars.
@@ -1428,7 +1428,7 @@ NOINLINE(static VALUE vm_setivar_class(VALUE obj, VALUE val, rb_setivar_cache ca
 static VALUE
 vm_setivar_class(VALUE obj, VALUE val, rb_setivar_cache cache)
 {
-    if (UNLIKELY(!rb_ractor_main_p())) {
+    if (UNLIKELY(!rb_class_owned_p(obj))) {
         return Qundef;
     }
 
@@ -1559,7 +1559,10 @@ vm_getclassvariable(const rb_iseq_t *iseq, const rb_control_frame_t *reg_cfp, ID
     const rb_cref_t *cref;
     cref = vm_get_cref(GET_EP());
 
-    if (ic->entry && ic->entry->global_cvar_state == GET_GLOBAL_CVAR_STATE() && ic->entry->cref == cref && LIKELY(rb_ractor_main_p())) {
+    // The fast path skips rb_cvar_find's checks, so it is for class_value's owner:
+    // the sole writer, and the only one allowed to see an unshareable value.
+    if (ic->entry && ic->entry->global_cvar_state == GET_GLOBAL_CVAR_STATE() && ic->entry->cref == cref &&
+        LIKELY(rb_class_owned_p(ic->entry->class_value))) {
         RB_DEBUG_COUNTER_INC(cvar_read_inline_hit);
 
         VALUE v = rb_ivar_lookup(ic->entry->class_value, id, Qundef);
@@ -1585,7 +1588,9 @@ vm_setclassvariable(const rb_iseq_t *iseq, const rb_control_frame_t *reg_cfp, ID
     const rb_cref_t *cref;
     cref = vm_get_cref(GET_EP());
 
-    if (ic->entry && ic->entry->global_cvar_state == GET_GLOBAL_CVAR_STATE() && ic->entry->cref == cref && LIKELY(rb_ractor_main_p())) {
+    // as on the read side: the fast path writes straight into class_value
+    if (ic->entry && ic->entry->global_cvar_state == GET_GLOBAL_CVAR_STATE() && ic->entry->cref == cref &&
+        LIKELY(rb_class_owned_p(ic->entry->class_value))) {
         RB_DEBUG_COUNTER_INC(cvar_write_inline_hit);
 
         rb_class_ivar_set(ic->entry->class_value, id, val);
@@ -1874,10 +1879,29 @@ vm_throw(const rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
     }
 }
 
+// Fallback for YJIT. Prepare throw data and return it.
 VALUE
 rb_vm_throw(const rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_num_t throw_state, VALUE throwobj)
 {
     return vm_throw(ec, reg_cfp, throw_state, throwobj);
+}
+
+NORETURN(VALUE rb_zjit_throw(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_num_t throw_state, VALUE throwobj));
+
+// Fallback for ZJIT. Make a longjmp and unwind to the most recent vm_exec().
+VALUE
+rb_zjit_throw(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_num_t throw_state, VALUE throwobj)
+{
+    VALUE val = vm_throw(ec, reg_cfp, throw_state, throwobj);
+
+    // vm_throw() has set ec->tag->state. On the longjmp path, vm_exec() reads the throw data from
+    // ec->errinfo instead of vm_exec_core()'s return value like THROW_EXCEPTION()'s path does, so
+    // we need to put it there instead.
+    enum ruby_tag_type state = ec->tag->state;
+    ec->errinfo = val;
+    EC_JUMP_TAG(ec, state);
+
+    UNREACHABLE_RETURN(Qundef);
 }
 
 static inline void
@@ -3160,7 +3184,7 @@ warn_unused_block(const rb_callable_method_entry_t *cme, const rb_iseq_t *iseq, 
     }
     else if (RTEST(ruby_verbose) || strict_unused_block) {
         VALUE m_loc = rb_method_entry_location((const rb_method_entry_t *)cme);
-        VALUE name = rb_gen_method_name(cme->defined_class, ISEQ_BODY(iseq)->location.base_label);
+        VALUE name = rb_gen_method_name(cme->defined_class, rb_iseq_base_label(iseq));
 
         if (!NIL_P(m_loc)) {
             rb_warn("the block passed to '%"PRIsVALUE"' defined at %"PRIsVALUE":%"PRIsVALUE" may be ignored",
@@ -5261,7 +5285,72 @@ rb_vm_yield_with_cfunc(rb_execution_context_t *ec, const struct rb_captured_bloc
 static VALUE
 vm_yield_with_symbol(rb_execution_context_t *ec,  VALUE symbol, int argc, const VALUE *argv, int kw_splat, VALUE block_handler)
 {
-    return rb_sym_proc_call(SYM2ID(symbol), argc, argv, kw_splat, rb_vm_bh_to_procval(ec, block_handler));
+    VALUE passed_proc = rb_vm_bh_to_procval(ec, block_handler);
+
+    if (!rb_box_available()) {
+        return rb_sym_proc_call(SYM2ID(symbol), argc, argv, kw_splat, passed_proc);
+    }
+
+    const rb_control_frame_t *reg_cfp = ec->cfp;
+    const rb_control_frame_t *ruby_cfp = rb_vm_get_ruby_level_next_cfp(ec, reg_cfp);
+    const rb_box_t *box = NULL;
+
+    /*
+     * Traverse the frames until a user box (Main or Optional Box) is found.
+     * Frames for built-in methods like <internal:xxx> run in the Root or Master Box,
+     */
+    while (ruby_cfp) {
+        box = current_box_on_cfp(ec, ruby_cfp);
+        if (BOX_USER_P(box)) {
+            break;
+        }
+        ruby_cfp = rb_vm_get_ruby_level_next_cfp(ec, RUBY_VM_PREVIOUS_CONTROL_FRAME(ruby_cfp));
+    }
+
+    // Fallback to the normal call if no user box is found
+    if (!ruby_cfp || !box) {
+        return rb_sym_proc_call(SYM2ID(symbol), argc, argv, kw_splat, passed_proc);
+    }
+
+    /*
+     * Push a dummy block frame whose outer env is `ruby_cfp` so that the
+     * method resolves in the caller's box (via the ep chain) and the
+     * backtrace reads like a usual block invocation at the caller's site.
+     */
+    const rb_iseq_t *caller_iseq = CFP_ISEQ(ruby_cfp);
+    VALUE name = rb_sprintf("block in %"PRIsVALUE, rb_iseq_label(caller_iseq));
+    const rb_iseq_t *iseq = rb_iseq_new_with_opt(Qnil, name,
+                                                 rb_iseq_path(caller_iseq), rb_iseq_realpath(caller_iseq),
+                                                 rb_vm_get_sourceline(ruby_cfp), caller_iseq, 0,
+                                                 ISEQ_TYPE_BLOCK, NULL, Qnil);
+    volatile VALUE val = Qnil;
+    enum ruby_tag_type state;
+
+    vm_push_frame(ec, iseq, VM_FRAME_MAGIC_BLOCK | VM_FRAME_FLAG_FINISH,
+                  ruby_cfp->self, VM_GUARDED_PREV_EP(ruby_cfp->ep),
+                  Qfalse, /* cref or me */
+                  ISEQ_BODY(iseq)->iseq_encoded, reg_cfp->sp,
+                  ISEQ_BODY(iseq)->local_table_size, ISEQ_BODY(iseq)->stack_max);
+
+    /*
+     * The pushed frame is finished (owned by no vm_exec loop), so catch the
+     * non-local exit here, pop the frame, and let the caller's handlers see
+     * the exception.
+     */
+    EC_PUSH_TAG(ec);
+    if ((state = EC_EXEC_TAG()) == TAG_NONE) {
+        val = rb_sym_proc_call(SYM2ID(symbol), argc, argv, kw_splat, passed_proc);
+    }
+    EC_POP_TAG();
+
+    if (state != TAG_NONE) {
+        rb_vm_rewind_cfp(ec, (rb_control_frame_t *)reg_cfp);
+        EC_JUMP_TAG(ec, state);
+    }
+
+    rb_vm_pop_frame(ec);
+
+    return val;
 }
 
 static inline int
@@ -6567,11 +6656,6 @@ rb_vm_opt_newarray_pack_buffer(rb_execution_context_t *ec, rb_num_t array_len, c
     return vm_opt_newarray_pack_buffer(ec, array_len, ptr, fmt, buffer);
 }
 
-VALUE
-rb_vm_opt_newarray_pack(rb_execution_context_t *ec, rb_num_t array_len, const VALUE *ptr, VALUE fmt)
-{
-    return vm_opt_newarray_pack_buffer(ec, array_len, ptr, fmt, Qundef);
-}
 
 #undef id_cmp
 
@@ -6624,9 +6708,11 @@ vm_ic_track_const_chain(rb_control_frame_t *cfp, IC ic, const ID *segments)
 
 // For JIT inlining
 static inline bool
-vm_inlined_ic_hit_p(VALUE flags, VALUE value, const rb_cref_t *ic_cref, const VALUE *reg_ep)
+vm_inlined_ic_hit_p(VALUE flags, VALUE value, const rb_cref_t *ic_cref, rb_serial_t ractor_id, const VALUE *reg_ep)
 {
-    if ((flags & IMEMO_CONST_CACHE_SHAREABLE) || rb_ractor_main_p()) {
+    // Not rb_ractor_main_p(): an owner Ractor may now cache an unshareable constant
+    // of its own class, and only it may be handed that value back.
+    if ((flags & IMEMO_CONST_CACHE_SHAREABLE) || ractor_id == rb_ractor_id(GET_RACTOR())) {
         VM_ASSERT(ractor_incidental_shareable_p(flags & IMEMO_CONST_CACHE_SHAREABLE, value));
 
         return (ic_cref == NULL || // no need to check CREF
@@ -6639,7 +6725,7 @@ static bool
 vm_ic_hit_p(const struct iseq_inline_constant_cache_entry *ice, const VALUE *reg_ep)
 {
     VM_ASSERT(IMEMO_TYPE_P(ice, imemo_constcache));
-    return vm_inlined_ic_hit_p(ice->flags, ice->value, ice->ic_cref, reg_ep);
+    return vm_inlined_ic_hit_p(ice->flags, ice->value, ice->ic_cref, ice->ractor_id, reg_ep);
 }
 
 // YJIT needs this function to never allocate and never raise
@@ -6661,6 +6747,7 @@ vm_ic_update(const rb_iseq_t *iseq, IC ic, VALUE val, const VALUE *reg_ep, const
     struct iseq_inline_constant_cache_entry *ice = SHAREABLE_IMEMO_NEW(struct iseq_inline_constant_cache_entry, imemo_constcache, 0);
     RB_OBJ_WRITE(ice, &ice->value, val);
     ice->ic_cref = vm_get_const_key_cref(reg_ep);
+    ice->ractor_id = rb_ractor_id(GET_RACTOR());
 
     if (rb_ractor_shareable_p(val)) {
         RUBY_ASSERT((rb_gc_verify_shareable(val), 1));
@@ -6697,6 +6784,20 @@ rb_vm_opt_getconstant_path(rb_execution_context_t *ec, rb_control_frame_t *const
         vm_ic_update(CFP_ISEQ(GET_CFP()), ic, val, GET_EP(), CFP_PC(GET_CFP()) - 2);
     }
     return val;
+}
+
+// Return true if the once value is already computed and set *result to the value.
+// Otherwise, return false.
+// Used for ZJIT. Keep in sync with `vm_once_dispatch` below.
+bool
+rb_vm_once_done_value(ISE is, VALUE *result)
+{
+    rb_thread_t *running_th = rbimpl_atomic_ptr_load((void**)&is->once.running_thread, RBIMPL_ATOMIC_ACQUIRE);
+    if (running_th == RUNNING_THREAD_ONCE_DONE) {
+        *result = is->once.value;
+        return true;
+    }
+    return false;
 }
 
 static VALUE

@@ -145,26 +145,46 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
    The effective cooldown for any given gem is resolved from three
    layers, highest precedence first:
 
-     1. CLI flag `--cooldown N` on `install`, `update`, `add`, and
-        `outdated`.
+     1. CLI flag `--cooldown N` on `install`, `update`, `add`, `cache`,
+        `lock`, and `outdated`.
      2. This setting (`bundle config set cooldown N` or
         `BUNDLE_COOLDOWN=N`).
      3. The per-source `cooldown:` keyword in the Gemfile, such as
         `source "https://rubygems.org", cooldown: 7`.
 
    The CLI flag and this setting apply uniformly to every source,
-   including ones declared with their own `cooldown:` value. To keep a
-   private registry permanently exempt while still cooling down public
-   gems, declare `source "https://internal", cooldown: 0` in the
-   Gemfile; remember that `--cooldown N` on the command line will
-   still override it for that single run.
+   including ones declared with their own `cooldown:` value. To exempt a
+   private registry while still cooling down public gems, declare
+   `source "https://internal", cooldown: 0` in the Gemfile. That
+   exemption is not absolute. `--cooldown N` on the command line
+   overrides it for a single run, and a gemrc cooldown raises it the
+   same way it raises any other layer, as described below. Where a
+   gemrc cooldown is configured, `--cooldown 0` is the only way to get
+   the exemption back.
+
+   RubyGems has a cooldown of its own, set with `gem`'s `--cooldown`
+   flag or the `:cooldown:` key in the gemrc file, and the two are read
+   together. Whatever the three layers above resolve to is raised to the
+   gemrc value, and the longer of the two wins. It carries the other way
+   round as well. `gem install`, `gem update` and `gem outdated` read
+   this setting and `BUNDLE_COOLDOWN`, so a cooldown configured for
+   either tool covers both. The Gemfile per-source `cooldown:` is the
+   exception, since `gem` never reads a Gemfile. A configured `0` takes
+   part like any other value rather than switching the cooldown off, so
+   `bundle config set cooldown 0` does not cancel a gemrc cooldown. The
+   `--cooldown` flag is what bypasses the other tool's setting. It wins
+   outright, which is why `--cooldown 0` remains the escape hatch for an
+   urgent update.
 
    The value must be a non-negative integer. `--cooldown` rejects
-   anything else outright, while a value coming from this setting or
-   from `BUNDLE_COOLDOWN` only warns, because a typo left in a config
-   file should not make every command fail. Such a value disables the
-   cooldown for every source, including sources that declare their own
-   `cooldown:` in the Gemfile.
+   anything else outright, while a value coming from this setting, from
+   `BUNDLE_COOLDOWN` or from the gemrc file only warns, because a typo
+   left in a config file should not make every command fail. Such a
+   value takes no part in the resolution above, so a per-source
+   `cooldown:` in the Gemfile, or a usable value configured for the
+   other tool, still applies. The warning names where the value came
+   from, since either tool reports the other's setting as well as its
+   own.
 
    Cooldown filtering depends on the gem server providing a per-version
    `created_at` timestamp in the v2 compact-index format. Versions
@@ -192,6 +212,14 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
    automatically; re-run `bundle config set <host> <user:pass>` with the
    setting enabled to move each one into the store. Being experimental, the
    name and behavior of this setting may change in a future release.
+
+   The value is read in three ways. An empty value and the false values
+   Bundler takes everywhere else (`false`, `f`, `no`, `n`, `0`) turn the
+   store off. `true`, `t`, `yes`, `y`, `on` and `1` select the native store.
+   Case does not matter for any of those. Anything else is a backend name,
+   taken as written, and only lowercase letters, digits, `_` and `-` are
+   recognized in one. So `off` names a backend rather than turning the store
+   off, which `false` does.
 
    A credential kept in the store is never printed back. `bundle config get
    <host>` and `bundle config list` name the key and say that its value lives
@@ -276,6 +304,9 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
 * `jobs` (`BUNDLE_JOBS`):
    The number of gems Bundler can download and install in parallel.
    Defaults to the number of available processors.
+* `keep_outdated_cache` (`BUNDLE_KEEP_OUTDATED_CACHE`):
+   Whether Bundler should leave outdated gems unpruned when caching. Defaults
+   to false.
 * `lockfile` (`BUNDLE_LOCKFILE`):
    The path to the lockfile that bundler should use. By default, Bundler adds
    `.lock` to the end of the `gemfile` entry. Can be set to `false` in the
@@ -295,7 +326,9 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
    When set, plugin files are not written to the plugins directory.
    To install plugins later, unset this setting and run `bundle pristine <gem>`.
 * `no_prune` (`BUNDLE_NO_PRUNE`):
-   Whether Bundler should leave outdated gems unpruned when caching.
+   Deprecated name for `keep_outdated_cache`. Each priority level is checked
+   for `keep_outdated_cache` and then for `no_prune`, and the first value
+   found wins. `no_prune` will be removed in Bundler 5.
 * `only` (`BUNDLE_ONLY`):
    A space-separated list of groups to install only gems of the specified groups.
    Please check carefully if you want to install also gems without a group, because
@@ -317,6 +350,23 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
    Enable Bundler's experimental plugin system.
 * `prefer_patch` (`BUNDLE_PREFER_PATCH`):
    Prefer updating only to next patch version during updates. Makes `bundle update` calls equivalent to `bundler update --patch`.
+* `prune` (`BUNDLE_PRUNE`):
+   A space-separated or `:`-separated list of Bundler-managed artifacts to
+   delete after a successful `bundle install`, `bundle update` or `bundle
+   cache`, and on `bundle clean`. `cache` removes the download cache under the
+   bundle path, which holds both the cached `.gem` files and the git mirrors.
+   `git` removes the `.git` directory of every checked out git gem. Any value
+   that is not a category name is read as a boolean, so `BUNDLE_PRUNE=1` selects
+   every category and keeps doing so as categories are added. This is meant for
+   container images and other throwaway
+   environments. **The setting only takes effect when a bundle path is set.**
+   Without one Bundler installs into the system gem directory, where the cache
+   is shared with RubyGems and holds gem files Bundler never put there, so
+   pruning is skipped with a warning. Set a path with `BUNDLE_PATH` or `bundle
+   config set path <dir>`. A pruned artifact comes back only when Bundler has to
+   install that gem again, so a later `bundle install` does not restore it on
+   its own. `bundle install --redownload` does, and `bundle pristine` works once
+   it has, though with `prune` still set the reinstall prunes again at the end.
 * `redirect` (`BUNDLE_REDIRECT`):
    The number of redirects allowed for network requests. Defaults to `5`.
 * `retry` (`BUNDLE_RETRY`):

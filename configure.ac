@@ -698,7 +698,18 @@ RUBY_WERROR_FLAG([
 	[
 	cd .. && rm -fr tmp.$$.try_link
 	AC_MSG_RESULT(no)
-	AC_MSG_ERROR([something wrong with LDFLAGS="$LDFLAGS"])
+	rb_ldflags_nodir= rb_ldflags_Lopt=
+	for rb_ldflags_arg in $LDFLAGS; do
+	    AS_IF([test "$rb_ldflags_Lopt"], [rb_ldflags_Lopt=],
+		  [AS_CASE(["$rb_ldflags_arg"],
+			   [-L?*], [rb_ldflags_arg="${rb_ldflags_arg@%:@-L}" rb_ldflags_Lopt=],
+			   [-L], [rb_ldflags_Lopt=yes; continue],
+			   [continue])])
+	    AS_IF([test -d "${rb_ldflags_arg}"], [],
+		  [rb_ldflags_nodir="$rb_ldflags_nodir ${rb_ldflags_arg}"])
+	done
+	AC_MSG_ERROR([something wrong with LDFLAGS="$LDFLAGS"]dnl
+[${rb_ldflags_nodir:+; no such directory:$rb_ldflags_nodir}])
 	]
     )
     cd .. && rm -fr tmp.$$.try_link
@@ -1226,6 +1237,7 @@ main()
 		AS_IF([test -n "$dsymutil"], [
 		    POSTLINK="$dsymutil \$@ 2>/dev/null${POSTLINK:+; $POSTLINK}"
 		])
+		: ${POSTLINK:=:}
 		AC_CHECK_HEADERS(crt_externs.h, [], [], [
 		    #include <crt_externs.h>
 		])
@@ -3166,15 +3178,15 @@ AC_ARG_WITH(static-linked-ext,
             [AS_CASE([$withval],[yes],[STATIC=;EXTSTATIC=static],[no],[],[EXTSTATIC="$withval"])])
 AS_CASE([",$EXTSTATIC,"], [,static,|*,enc,*], [
   ENCOBJS='enc/encinit.$(OBJEXT) enc/libenc.$(LIBEXT) enc/libtrans.$(LIBEXT)'
-  EXTOBJS='ext/extinit.$(OBJEXT)'
   AC_DEFINE_UNQUOTED(EXTSTATIC, 1)
   AC_SUBST(ENCSTATIC, static)
 ], [
   ENCOBJS='dmyenc.$(OBJEXT)'
-  EXTOBJS='dmyext.$(OBJEXT)'
 ])
+EXTOBJS='dmyext.$(OBJEXT)'
 AC_SUBST(ENCOBJS)
 AC_SUBST(EXTOBJS)
+AC_SUBST(PROGRAM_EXTS, [${EXTSTATIC:+exts}])
 
 : "rpath" && {
     AS_CASE(["$target_os"],
