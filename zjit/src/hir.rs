@@ -2647,23 +2647,6 @@ const FORWARDABLE_CALLEE_BLOCKERS: u32 =
     // We only support `def foo(...)` cases for now.
     | VM_CALL_ARGS_SPLAT | VM_CALL_KW_SPLAT | VM_CALL_ARGS_BLOCKARG;
 
-/// Check if we can emit SendDirect to a forwardable (`def foo(...)`) ISEQ.
-fn can_direct_send_forwardable(caller_args: &CallerArguments) -> Result<(), SendDirectFailure> {
-    use Counter::*;
-    if caller_args.flags & FORWARDABLE_CALLEE_BLOCKERS != 0 {
-        return Err(SendDirectFailure::with_counters(
-            ComplexArgPass,
-            vec![complex_arg_pass_param_forwardable],
-        ));
-    }
-    // The frame is grown by exactly the call site's argument count.
-    // `IseqCall` stores argc as u16, and the callee frame has to fit the copied arguments.
-    if u16::try_from(caller_args.original.len()).is_err() {
-        return Err(SendDirectFailure::new(OperandTooLarge));
-    }
-    Ok(())
-}
-
 /// Check if we can emit SendDirect to the given ISEQ with the given arguments.
 fn can_direct_send(iseq: *const rb_iseq_t, caller_args: &CallerArguments, has_block: bool, caller_splat: Option<CallerSplat>) -> Result<(), SendDirectFailure> {
     let mut complex_arg_counters = vec![];
@@ -2674,9 +2657,9 @@ fn can_direct_send(iseq: *const rb_iseq_t, caller_args: &CallerArguments, has_bl
     let caller_passes_block_arg = has_block && (caller_args.flags & VM_CALL_ARGS_BLOCKARG) != 0;
 
     use Counter::*;
-    if 0 != params.flags.forwardable() {
-        return can_direct_send_forwardable(caller_args);
-    }
+    let forwardable = 0 != params.flags.forwardable();
+    if forwardable && caller_args.flags & FORWARDABLE_CALLEE_BLOCKERS != 0
+                                       { count_failure(complex_arg_pass_param_forwardable) }
     if callee_has_block_param && caller_passes_block_arg
                                        { count_failure(complex_arg_pass_param_block) }
     if 0 != params.flags.has_kwrest()  { count_failure(complex_arg_pass_param_kwrest) }
@@ -2696,6 +2679,16 @@ fn can_direct_send(iseq: *const rb_iseq_t, caller_args: &CallerArguments, has_bl
             ComplexArgPass,
             complex_arg_counters,
         ));
+    }
+
+    // A forwardable callee has a single `...` parameter that takes the caller's arguments, and its frame is
+    // grown by exactly the call site's argument count, so none of the parameter matching below applies to it.
+    if forwardable {
+        // `IseqCall` stores argc as u16, and the callee frame has to fit the copied arguments.
+        if u16::try_from(caller_args.original.len()).is_err() {
+            return Err(SendDirectFailure::new(OperandTooLarge));
+        }
+        return Ok(());
     }
 
     let lead_num = params.lead_num;
