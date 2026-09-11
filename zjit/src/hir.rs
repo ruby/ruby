@@ -7178,14 +7178,14 @@ impl Function {
     }
 
     /// Remove duplicate CheckInterrupts instructions within each basic block.
-    /// Only the first CheckInterrupts in a block is needed unless an intervening
+    /// Only the last CheckInterrupts in a block is needed unless an intervening
     /// instruction writes to InterruptFlag (e.g. a call), which resets tracking.
     fn remove_duplicate_check_interrupts(&mut self) {
         for block_id in self.reverse_post_order() {
             let mut seen = false;
             let insns = std::mem::take(&mut self.blocks[block_id].insns);
             let mut new_insns = Vec::with_capacity(insns.len());
-            for insn_id in insns {
+            for insn_id in insns.into_iter().rev() {
                 let insn = &self.insns[insn_id];
                 if matches!(insn, Insn::CheckInterrupts { .. }) {
                     if seen { continue; }
@@ -7195,6 +7195,7 @@ impl Function {
                 }
                 new_insns.push(insn_id);
             }
+            new_insns.reverse();
             self.blocks[block_id].insns = new_insns;
         }
     }
