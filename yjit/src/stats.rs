@@ -380,6 +380,7 @@ make_counters! {
     send_args_splat_bmethod,
     send_args_splat_aref,
     send_args_splat_aset,
+    send_struct_aset_offset_too_large,
     send_args_splat_opt_call,
     send_iseq_splat_arity_error,
     send_splat_too_long,
