@@ -17200,6 +17200,207 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_fold_class_superclass() {
+        eval(r#"
+            class A; end
+            class B < A; end
+            def test = B.superclass
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:4:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint StableConstantNames(0x1000, B)
+          v11:ClassSubclass[B@0x1008] = Const Value(VALUE(0x1008))
+          PatchPoint MethodRedefined(Class@0x1010, superclass@0x1018, cme:0x1020)
+          v22:ClassSubclass[A@0x1048] = Const Value(VALUE(0x1048))
+          CheckInterrupts
+          Return v22
+        ");
+    }
+
+    #[test]
+    fn test_fold_basic_object_superclass() {
+        eval(r#"
+            def test = BasicObject.superclass
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint StableConstantNames(0x1000, BasicObject)
+          v11:ClassSubclass[BasicObject@0x1008] = Const Value(VALUE(0x1008))
+          PatchPoint MethodRedefined(Class@0x1010, superclass@0x1018, cme:0x1020)
+          v22:NilClass = Const Value(nil)
+          CheckInterrupts
+          Return v22
+        ");
+    }
+
+    #[test]
+    fn test_fold_class_superclass_skips_prepended_module() {
+        eval(r#"
+            class A; end
+            module M; end
+            class B < A
+              prepend M
+            end
+            def test = B.superclass
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:7:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint StableConstantNames(0x1000, B)
+          v11:ClassSubclass[B@0x1008] = Const Value(VALUE(0x1008))
+          PatchPoint MethodRedefined(Class@0x1010, superclass@0x1018, cme:0x1020)
+          v22:ClassSubclass[A@0x1048] = Const Value(VALUE(0x1048))
+          CheckInterrupts
+          Return v22
+        ");
+    }
+
+    #[test]
+    fn test_fold_singleton_class_superclass() {
+        eval(r#"
+            class C; end
+            C1 = C.new.singleton_class.singleton_class
+            def test = C1.superclass
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:4:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint StableConstantNames(0x1000, C1)
+          v11:ClassSubclass[Class@0x1008] = Const Value(VALUE(0x1008))
+          PatchPoint MethodRedefined(Class@0x1010, superclass@0x1018, cme:0x1020)
+          v22:ClassSubclass[Class@0x1048] = Const Value(VALUE(0x1048))
+          CheckInterrupts
+          Return v22
+        ");
+    }
+
+    #[test]
+    fn test_dont_fold_uninitialized_class_superclass() {
+        eval(r#"
+            C = Class.allocate
+            def test = C.superclass
+            begin; test; rescue TypeError; end
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint StableConstantNames(0x1000, C)
+          v11:ClassExact[C@0x1008] = Const Value(VALUE(0x1008))
+          PatchPoint NoSingletonClass(Class@0x1010)
+          PatchPoint MethodRedefined(Class@0x1010, superclass@0x1018, cme:0x1020)
+          v23:NilClass|Class = CCallWithFrame v11, :Class#superclass@0x1048
+          CheckInterrupts
+          Return v23
+        ");
+    }
+
+    #[test]
+    fn test_dont_fold_unknown_receiver_superclass() {
+        eval(r#"
+            def test(c) = c.superclass
+            test(String)
+            test(String)
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :c@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :c@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint MethodRedefined(Class@0x1008, superclass@0x1010, cme:0x1018)
+          v23:ClassSubclass[class_exact*:Class@VALUE(0x1008)] = GuardType v10, ClassSubclass[class_exact*:Class@VALUE(0x1008)] recompile
+          v24:NilClass|Class = CCallWithFrame v23, :Class#superclass@0x1040
+          CheckInterrupts
+          Return v24
+        ");
+    }
+
+    #[test]
+    fn test_fold_profiled_receiver_class_superclass() {
+        eval(r#"
+            def test(o) = o.class.superclass
+            test("abc")
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint NoSingletonClass(String@0x1008)
+          PatchPoint MethodRedefined(String@0x1008, class@0x1010, cme:0x1018)
+          v25:StringExact = GuardType v10, StringExact recompile
+          v26:ClassSubclass[String@0x1008] = Const Value(VALUE(0x1008))
+          PatchPoint MethodRedefined(Class@0x1040, superclass@0x1048, cme:0x1050)
+          v30:ClassSubclass[Object@0x1078] = Const Value(VALUE(0x1078))
+          CheckInterrupts
+          Return v30
+        ");
+    }
+
+    #[test]
     fn test_print_nil_module_name() {
         eval(r#"
             X = [Module.new].freeze

@@ -167,6 +167,7 @@ fn main() {
         .allowlist_function("rb_singleton_class")
         .allowlist_function("rb_define_class")
         .allowlist_function("rb_class_get_superclass")
+        .allowlist_function("rb_class_superclass")
         .allowlist_function("rb_gc_disable")
         .allowlist_function("rb_gc_enable")
         .allowlist_function("rb_gc_mark")
