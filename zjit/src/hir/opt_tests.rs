@@ -19365,7 +19365,7 @@ mod hir_opt_tests {
           v5:BasicObject = LoadArg :self@0
           Jump bb3(v5)
         bb3(v8:BasicObject):
-          v99:NilClass = Const Value(nil)
+          v100:NilClass = Const Value(nil)
           v13:NilClass = Const Value(nil)
           v15:TrueClass|NilClass = Defined yield, v13
           v17:CBool = Test v15
@@ -19397,10 +19397,10 @@ mod hir_opt_tests {
           v86:CPtr = LoadField v85, :code_iseq@0x1001
           v87:CPtr[CPtr(0x1002)] = GuardBitEquals v86, CPtr(0x1002) recompile
           v88:BasicObject = InvokeBlockIseqDirect (0x1002), v85, v77
-          v92:Fixnum[1] = Const Value(1)
-          v93:Fixnum = FixnumAdd v49, v92
+          v93:Fixnum[1] = Const Value(1)
+          v94:Fixnum = FixnumAdd v49, v93
           PatchPoint NoEPEscape(each)
-          Jump bb8(v93)
+          Jump bb8(v94)
         bb4():
           v28:BasicObject = InvokeBuiltin <inline_expr>, v8
           CheckInterrupts
@@ -19507,10 +19507,10 @@ mod hir_opt_tests {
           v97:CInt64[-4] = Const CInt64(-4)
           v98:CInt64 = IntAnd v96, v97
           v99:BasicObject = InvokeBlockIseqDirect (0x1068), v98, v93
-          v103:Fixnum[1] = Const Value(1)
-          v104:Fixnum = FixnumAdd v65, v103
+          v104:Fixnum[1] = Const Value(1)
+          v105:Fixnum = FixnumAdd v65, v104
           PatchPoint NoEPEscape(each)
-          Jump bb10(v104)
+          Jump bb10(v105)
         ");
     }
 
