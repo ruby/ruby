@@ -6280,21 +6280,12 @@ impl Function {
         }
     }
 
-   /// ZJIT uses block parameters in HIR SSA representation.
+    /// ZJIT uses block parameters in HIR SSA representation.
     /// Sometimes, we can prove that a block param is only called with a single value.
     /// This pass identifies such trivial block params and replaces them with the concretized value.
     /// This produces a minimal SSA representation amenable to further optimizations.
     /// The implementation is inspired from algorithm 2 in <https://c9x.me/compile/bib/braun13cc.pdf>.
     fn remove_trivial_block_params(&mut self) {
-        // For each entry in the worklist, we:
-        // 1. remove the block from the worklist
-        // 2. run abstract interpretation (or Kokubun's test) using preds information
-        // 3. update any trivial block params. Update all the predecssor information. Add blocks with UPDATED OUTGOING EDGES to the worklist
-        //
-        // two primitives:
-        // 1. detect trivial (abstract interpretation)
-        // 2. graph rewrite (should have an API for modifying block params)
-
         // TODO: Is there a way we can get mutable references to each of the edges so we don't need to keep looking them up?
         #[derive(Copy, Clone)]
         struct EdgeKey {
@@ -6317,7 +6308,15 @@ impl Function {
         }
 
         impl AbstractValue {
-            fn update(&mut self, value: InsnId) {
+            // Update the abstract value based on new predecessor param information.
+            // Assumption: value and self_loop_value have been normalized in the union find with something like `find_id`
+            fn update(&mut self, value: InsnId, self_loop_value: InsnId) {
+                // Values provided from the block definition came from inside the block and add no new information
+                // This likely does not happen in ZJIT source because blocks do not directly refer to themselves as of this writing.
+                // We could remove this check if we ensure that `predecessors` (defined below) does not contain any self loops.
+                if value == self_loop_value {
+                    return
+                }
                 *self = match *self {
                     AbstractValue::None => AbstractValue::One(value),
                     AbstractValue::One(original) if original != value => AbstractValue::Many,
@@ -6336,8 +6335,9 @@ impl Function {
             })
         }
 
+        // TODO: Ensure no self loops are captured in the predecessor keys. When this is done, simplify the update function and leave a comment about how this looks different from the paper.
         // Populate each block with a vec of instructions that call the block
-        let mut predecessors: Vec<Vec<EdgeKey>> = vec![];
+        let mut predecessors: Vec<Vec<EdgeKey>> = vec![vec![]; self.num_blocks()];
         for block_id in self.reverse_post_order() {
             let insn_idx = self.blocks[block_id].insns().len() - 1;
             match self.resolve(self.blocks[block_id].insns[insn_idx]).insn(self) {
@@ -6375,8 +6375,10 @@ impl Function {
                 };
 
                 // Perform abstract interpretation to determine trivial params
-                for (dom, param) in abstract_domain.iter_mut().zip(params) {
-                    dom.update(*param);
+                for i in 0..params.len() {
+                    let param = self.find_id(params[i]);
+                    let self_loop_param = self.find_id(self.blocks[target_block].params[i]);
+                    abstract_domain[i].update(param, self_loop_param);
                 }
             }
 
@@ -6385,30 +6387,39 @@ impl Function {
             let mut trivial_indices: Vec<usize> = Vec::with_capacity(abstract_domain.len());
             for (index, value) in abstract_domain.into_iter().enumerate() {
                 let old_insn_id = self.blocks[target_block].params[index];
-                if let AbstractValue::One(new_insn_id) = value {
-                    let terminator = self.blocks[target_block].insns.last().unwrap();
-                    // If any outgoing edge gets updated, add the successor block to the worklist for analysis
-                    // TODO: Additionally, there might be a special case to consider if the edge points to the block itself. We want to make sure we're not infinitely adding to the worklist
-                    match self.resolve(*terminator).insn(self) {
-                        Insn::Jump(edge) => {
-                            if edge.args.contains(&old_insn_id) && !worklist.contains(&edge.target) {
-                                worklist.push_back(edge.target);
-                            }
-                        },
-                        Insn::CondBranch { if_true, if_false, .. } => {
-                            if if_true.args.contains(&old_insn_id) && !worklist.contains(&if_true.target) {
-                                worklist.push_back(if_true.target);
-                            }
-                            if if_false.args.contains(&old_insn_id) && !worklist.contains(&if_false.target) {
-                                worklist.push_back(if_false.target);
-                            }
-                        }
-                        _ => ()
-                    };
-                    // TODO: Check edges for
-                    self.make_equal_to(old_insn_id, new_insn_id);
-                    trivial_indices.push(index);
+                let new_insn_id: InsnId;
+                if let AbstractValue::One(id) = value {
+                    new_insn_id = id;
                 }
+                else if let Some(obj) = self.type_of(old_insn_id).ruby_object() {
+                    new_insn_id = self.prepend_insn(target_block, Insn::Const { val: Const::Value(obj) });
+                    self.insn_types[new_insn_id] = self.infer_type(new_insn_id);
+                }
+                else {
+                    // If the predecessors do not reduce to a trivial value or the type is not a ruby object, we cannot optimize the block params.
+                    continue
+                }
+                let terminator = self.blocks[target_block].insns.last().unwrap();
+                // If any outgoing edge gets updated, add the successor block to the worklist for analysis
+                // TODO: Additionally, there might be a special case to consider if the edge points to the block itself. We want to make sure we're not infinitely adding to the worklist
+                match self.resolve(*terminator).insn(self) {
+                    Insn::Jump(edge) => {
+                        if edge.args.contains(&old_insn_id) && !worklist.contains(&edge.target) {
+                            worklist.push_back(edge.target);
+                        }
+                    },
+                    Insn::CondBranch { if_true, if_false, .. } => {
+                        if if_true.args.contains(&old_insn_id) && !worklist.contains(&if_true.target) {
+                            worklist.push_back(if_true.target);
+                        }
+                        if if_false.args.contains(&old_insn_id) && !worklist.contains(&if_false.target) {
+                            worklist.push_back(if_false.target);
+                        }
+                    }
+                    _ => ()
+                };
+                self.make_equal_to(old_insn_id, new_insn_id);
+                trivial_indices.push(index);
             }
 
             // Remove trivial params from the incoming edges
