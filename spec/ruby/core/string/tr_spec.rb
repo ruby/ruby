@@ -32,6 +32,11 @@ describe "String#tr" do
     "hello".tr("a-z", "A-H.").should == "HE..."
   end
 
+  it "raises an ArgumentError when the receiver has broken encoding" do
+    -> { "\xFF".tr("€", "b") }.should.raise(ArgumentError)
+    -> { "\xFF".tr("", "") }.should.raise(ArgumentError)
+  end
+
   it "raises an ArgumentError when given wrong number of arguments" do
     -> { "hello".tr }.should.raise(ArgumentError)
     ruby_version_is ""..."4.1" do
@@ -141,6 +146,10 @@ describe "String#tr" do
         "h€llø".tr("€" => "e", "ø" => "o").should == "hello"
       end
 
+      it "returns a copy of self if the translation hash is empty" do
+        "hello".tr({}).should == "hello"
+      end
+
       it "returns a string in the combined encoding" do
         str = "hello".encode(Encoding::US_ASCII).tr("e" => "é")
         str.should == "héllo"
@@ -158,6 +167,11 @@ describe "String#tr" do
           "€".encode(Encoding::UTF_16LE) => "e".encode(Encoding::UTF_16LE),
           "ø".encode(Encoding::UTF_16LE) => "o".encode(Encoding::UTF_16LE),
         ).should == "hello".encode(Encoding::UTF_16LE)
+      end
+
+      it "raises ArgumentError the string encoding is broken" do
+        -> { "\xFF".tr("€" => "b") }.should.raise(ArgumentError)
+        -> { "\xFF".tr({}) }.should.raise(ArgumentError)
       end
 
       it "raises ArgumentError if a key is more than one codepoint" do
@@ -231,7 +245,18 @@ describe "String#tr!" do
       end
 
       it "returns nil if the string wasn't modified" do
-        "hello".tr!("€" => "", "Ø" => "").should == nil
+        s = "hello"
+        s.tr!({}).should == nil
+        s.should == "hello"
+
+        s = "hello"
+        s.tr!("€" => "", "Ø" => "").should == nil
+        s.should == "hello"
+      end
+
+      it "raises ArgumentError the string encoding is broken" do
+        -> { "\xFF".tr!("€" => "b") }.should.raise(ArgumentError)
+        -> { "\xFF".tr!({}) }.should.raise(ArgumentError)
       end
 
       it "raises ArgumentError if a key is more than one codepoint" do
