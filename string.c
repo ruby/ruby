@@ -9542,8 +9542,8 @@ tr_trans_pairs(VALUE str, VALUE pairs_val)
                 tr_buffer_append(&buffer, checkpoint, search.s - checkpoint);
             }
             tr_buffer_append_str(&buffer, repl);
-            search.s += clen;
-            checkpoint = search.s;
+            checkpoint = search.s + clen;
+            search.s++;
 
             if (cr == ENC_CODERANGE_7BIT && rb_enc_str_coderange(repl) != ENC_CODERANGE_7BIT) {
                 cr = ENC_CODERANGE_VALID;
