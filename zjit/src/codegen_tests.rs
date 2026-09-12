@@ -8903,3 +8903,76 @@ fn test_regression_stub_frame_sp_published_for_gc() {
     let caller_version = unsafe { caller_payload.versions.last().unwrap().as_ref() };
     assert_eq!(1, caller_version.outgoing.len(), "expected a JIT-to-JIT function stub");
 }
+
+#[test]
+fn test_regression_stub_frame_block_code_cleared_for_gc() {
+    rb_zjit_prepare_options();
+    set_inline_threshold(0); // don't inline the callee; we need a function stub
+    set_call_threshold(2000);
+    eval("nil"); // boot the VM before touching ZJITState
+
+    assert_snapshot!(inspect(r#"
+        class Integer
+          # No send/invokesuper/invokeblock, so iseq_may_write_block_code() is false
+          # and gen_push_frame() leaves this frame's cfp->block_code alone.
+          def zjit_bc_callee(x) = x + 1
+        end
+
+        def zjit_bc_caller(run, x)
+          1.zjit_bc_callee(x) if run
+        end
+
+        def zjit_bc_deep(n)
+          if n > 0
+            zjit_bc_deep(n - 1)
+          else
+            # Arm an incremental mark that can't finish in one step. Nothing
+            # allocates between here and the function stub hit below, so the
+            # pending mark is still in progress when the stub takes the VM lock.
+            GC.start(full_mark: true, immediate_mark: false, immediate_sweep: false)
+            $zjit_bc_armed += 1 if GC.latest_gc_info(:state) == :marking
+            zjit_bc_caller(true, 0) # JIT-to-JIT call through the function stub
+          end
+        end
+
+        # Warm the caller past the call threshold so it compiles with a function
+        # stub for the still-uncompiled callee.
+        i = 0
+        while i < 2100
+          zjit_bc_caller(false, nil)
+          i += 1
+        end
+
+        # Give the incremental mark enough work that it can't finish in one step.
+        $zjit_bc_bloat = Array.new(300_000) { Object.new }
+        $zjit_bc_armed = 0
+
+        # Leave a pointer to this block ISEQ in 60 consecutive CFP slots.
+        # The module is anonymous and the entry call lives inside the eval'd code,
+        # so nothing outside keeps the module, the method or the block ISEQ alive.
+        Module.new.module_eval(<<~PLANT)
+          def self.plant(n)
+            plant(n - 1) { } if n > 0
+          end
+          plant(60)
+        PLANT
+
+        # FREE: the block ISEQ is garbage now, so those slots dangle at a T_NONE slot.
+        GC.start
+
+        results = []
+        depth = 20
+        6.times do
+          results << zjit_bc_deep(depth)
+          depth += 1 # land on a planted slot no frame has pushed over since
+        end
+        [results.uniq, $zjit_bc_armed > 0]
+    "#), @"[[1], true]");
+
+    // Guard the shape of the repro: the caller must really call the callee
+    // through a JIT-to-JIT function stub.
+    let caller_iseq = get_method_iseq("self", "zjit_bc_caller");
+    let caller_payload = get_or_create_iseq_payload(caller_iseq);
+    let caller_version = unsafe { caller_payload.versions.last().unwrap().as_ref() };
+    assert_eq!(1, caller_version.outgoing.len(), "expected a JIT-to-JIT function stub");
+}
