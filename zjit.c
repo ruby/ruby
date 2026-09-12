@@ -178,7 +178,7 @@ rb_zjit_profile_enable(const rb_iseq_t *iseq)
 // Return false if a function stub has not collected enough profiles yet, enabling
 // profiling instructions as needed. Return true once enough profiles are collected.
 bool
-rb_zjit_profile_stub_hit(const rb_iseq_t *iseq)
+rb_zjit_iseq_has_profiled_enough(const rb_iseq_t *iseq)
 {
     struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
 

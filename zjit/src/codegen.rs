@@ -3912,7 +3912,7 @@ c_callable! {
             }
 
             // Exit to the interpreter until the callee ISEQ collects enough profiles.
-            if !unsafe { rb_zjit_profile_stub_hit(iseq) } {
+            if !unsafe { rb_zjit_iseq_has_profiled_enough(iseq) } {
                 // Preserve the reference owned by the stub when iseq_call is dropped.
                 unsafe { Rc::increment_strong_count(iseq_call_ptr as *const IseqCall); }
                 prepare_for_exit(iseq, cfp, sp, argc, num_opts_filled, None);
