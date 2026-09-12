@@ -848,10 +848,6 @@ class TestThread < Test::Unit::TestCase
   end
 
   def test_handle_interrupt_masks_sigint
-    if /mswin|mingw/ =~ RUBY_PLATFORM
-      omit "SIGINT handling differs on Windows"
-    end
-
     assert_in_out_err([], <<-INPUT, %w(outer false), [])
       waiting = Thread::Queue.new
       release = Thread::Queue.new
