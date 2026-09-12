@@ -14826,19 +14826,25 @@ new_op_assign(struct parser_params *p, NODE *lhs, ID op, NODE *rhs, struct lex_c
     if (lhs) {
         ID vid = get_nd_vid(p, lhs);
         YYLTYPE lhs_loc = lhs->nd_loc;
+        /* A constant read can raise NameError. Prism has no separate read node
+         * for `Const op= value` and reports the whole expression, so give the
+         * NODE_CONST the location of the whole operator assignment as well,
+         * for consistent Thread::Backtrace::Location#source_range between both
+         * parsers. */
+        const YYLTYPE *read_loc = nd_type_p(lhs, NODE_CDECL) ? loc : &lhs_loc;
         if (op == tOROP) {
             set_nd_value(p, lhs, rhs);
             nd_set_loc(lhs, loc);
-            asgn = NEW_OP_ASGN_OR(gettable(p, vid, &lhs_loc), lhs, loc);
+            asgn = NEW_OP_ASGN_OR(gettable(p, vid, read_loc), lhs, loc);
         }
         else if (op == tANDOP) {
             set_nd_value(p, lhs, rhs);
             nd_set_loc(lhs, loc);
-            asgn = NEW_OP_ASGN_AND(gettable(p, vid, &lhs_loc), lhs, loc);
+            asgn = NEW_OP_ASGN_AND(gettable(p, vid, read_loc), lhs, loc);
         }
         else {
             asgn = lhs;
-            rhs = NEW_CALL(gettable(p, vid, &lhs_loc), op, NEW_LIST(rhs, &rhs->nd_loc), loc);
+            rhs = NEW_CALL(gettable(p, vid, read_loc), op, NEW_LIST(rhs, &rhs->nd_loc), loc);
             set_nd_value(p, asgn, rhs);
             nd_set_loc(asgn, loc);
         }

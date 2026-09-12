@@ -376,9 +376,6 @@ ruby_version_is "4.1" do
       RUBY
     }.each_pair do |description, (source, prism_class, frame)|
       it "returns the precise range for #{description}" do
-        # Currently fails with parse.y, needs to be fixed
-        skip "parse.y" if description == "top-level constant operator assignments" && !syntax_tree_returns_prism_node
-
         capture_backtrace_location_source_range(source, prism_class, frame: frame || 0)
       end
     end
