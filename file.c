@@ -3915,13 +3915,70 @@ no_gvl_rename(void *ptr)
 }
 
 /*
- *  call-seq:
- *     File.rename(old_name, new_name)   -> 0
+ * :markup: markdown
  *
- *  Renames the given file to the new name. Raises a SystemCallError
- *  if the file cannot be renamed.
+ * call-seq:
+ *   File.rename(path, new_path) -> 0
  *
- *     File.rename("afile", "afile.bak")   #=> 0
+ * Moves the entry at the given `path` to the given `new_path`.
+ *
+ * Does not follow [symbolic links](rdoc-ref:file/symbolic_links.md);
+ * if the entry is a symlink, the link itself is renamed.
+ *
+ * The examples below use two temporary directories:
+ *
+ * ```ruby
+ * src_dirpath = '/tmp/src/' # => "/tmp/src/"
+ * dst_dirpath = '/tmp/dst/' # => "/tmp/dst/"
+ * Dir.mkdir(src_dirpath)
+ * Dir.mkdir(dst_dirpath)
+ * ```
+ *
+ * The entry to be renamed may be a file:
+ *
+ * ```ruby
+ * src_filepath = File.join(src_dirpath, 't.tmp') # => "/tmp/src/t.tmp"
+ * File.write(src_filepath, 'foo')
+ * dst_filepath = File.join(dst_dirpath, 'u.tmp') # => "/tmp/dst/u.tmp"
+ * File.rename(src_filepath, dst_filepath)
+ * File.exist?(src_filepath)                      # => false
+ * File.exist?(dst_filepath)                      # => true
+ * File.delete(dst_filepath)                      # Clean up.
+ * ```
+ *
+ * The entry to be renamed may be a symbolic link:
+ *
+ * ```ruby
+ * filepath = File.join(src_dirpath, 't.tmp') # => "/tmp/src/t.tmp"
+ * File.write(src_filepath, 'foo')
+ * linkpath = File.join(src_dirpath, 'u.tmp') # => "/tmp/src/u.tmp"
+ * File.symlink(filepath, linkpath)
+ * File.readlink(linkpath)                    # => "/tmp/src/t.tmp"
+ * newpath = File.join(dst_dirpath, 'v.tmp')  # => "/tmp/dst/v.tmp"
+ * File.rename(linkpath, newpath)             # Symlink not followed.
+ * File.readlink(newpath)                     # => "/tmp/src/t.tmp"
+ * File.delete(filepath, newpath)             # Clean up.
+ * ```
+ *
+ * The entry to be renamed may be a directory:
+ *
+ * ```ruby
+ * old_dirpath = File.join(src_dirpath, 'olddir') # => "/tmp/src/olddir"
+ * Dir.mkdir(old_dirpath)
+ * new_dirpath = File.join(dst_dirpath, 'newdir') # => "/tmp/dst/newdir"
+ * File.rename(old_dirpath, new_dirpath)
+ * File.directory?(new_dirpath)                   # => true
+ * Dir.rmdir(new_dirpath)                         # Clean up.
+ * ```
+ *
+ * Clean up:
+ *
+ * ```ruby
+ * FileUtils.rm_rf(src_dirpath) # => ["/tmp/src/"]
+ * FileUtils.rm_rf(dst_dirpath)  # => ["/tmp/dst/"]
+ * ```
+ *
+ * Raises SystemCallError if the file cannot be renamed.
  */
 
 static VALUE
