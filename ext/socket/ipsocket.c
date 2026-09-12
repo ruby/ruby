@@ -1269,9 +1269,11 @@ init_fast_fallback_inetsock_internal(VALUE v)
     }
 
     if (NIL_P(arg->io)) {
-        /* The attempts race each other non-blocking, but the socket handed
-         * back has to behave like any other TCPSocket. */
+#ifdef _WIN32
+        /* Any other socket is blocking on Windows, so undo the non-blocking
+         * mode the attempts raced in. */
         nonblock_set(connected_fd, false);
+#endif
 
         /* create new instance */
         arg->io = rsock_init_sock(arg->self, connected_fd);

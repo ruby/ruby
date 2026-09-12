@@ -311,9 +311,6 @@ Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for det
       Windows as well, so a host that answers with both an IPv6 and an IPv4
       address no longer waits for the IPv6 attempt to time out.
 
-    * `TCPSocket.new` no longer hands back a socket left in non-blocking
-      mode by the Happy Eyeballs Version 2 connection attempts.
-
     * On Windows, a connection that is refused or unreachable now raises the
       matching `Errno` class as soon as Winsock reports it, instead of
       `Errno::ETIMEDOUT` once the whole `connect_timeout` has passed. Code

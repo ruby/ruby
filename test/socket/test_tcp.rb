@@ -3,6 +3,7 @@
 begin
   require "socket"
   require "test/unit"
+  require "io/nonblock"
 rescue LoadError
 end
 
@@ -204,6 +205,26 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
       test_mode_settings: { delay: { ipv6: 1000 } }
     )
     assert_true(socket.remote_address.ipv4?)
+  ensure
+    server_thread&.value&.close
+    server&.close
+    socket&.close
+  end
+
+  def test_initialize_fast_fallback_returns_nonblocking_socket
+    omit "IO#nonblock? is not available on Windows" if RUBY_PLATFORM =~ /mswin|mingw/
+
+    server = TCPServer.new("127.0.0.1", 0)
+    port = server.addr[1]
+
+    server_thread = Thread.new { server.accept }
+    socket = TCPSocket.new(
+      "localhost",
+      port,
+      fast_fallback: true,
+      test_mode_settings: { delay: { ipv6: 1000 } }
+    )
+    assert_predicate(socket, :nonblock?)
   ensure
     server_thread&.value&.close
     server&.close
