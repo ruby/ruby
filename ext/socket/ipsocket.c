@@ -1342,7 +1342,7 @@ fast_fallback_inetsock_cleanup(VALUE v)
             getsockopt(connection_attempt_fd, SOL_SOCKET, SO_ERROR, (void *)&error, &len);
             if (error == 0) shutdown(connection_attempt_fd, SHUT_RDWR);
             close(connection_attempt_fd);
-       }
+        }
     }
 
     if (arg->readfds.fdset) rb_fd_term(&arg->readfds);
