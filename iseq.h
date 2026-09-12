@@ -55,7 +55,6 @@ iseq_lvar_state_set(uint8_t *buf, unsigned int i, enum lvar_state state)
 typedef struct rb_iseq_struct rb_iseq_t;
 #define rb_iseq_t rb_iseq_t
 #endif
-typedef void (*rb_iseq_callback)(const rb_iseq_t *, void *);
 
 extern const ID rb_iseq_shared_exc_local_tbl[];
 

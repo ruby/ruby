@@ -2014,9 +2014,6 @@ pub const YARVINSN_zjit_opt_not: ruby_vminsn_type = 257;
 pub const YARVINSN_zjit_opt_regexpmatch2: ruby_vminsn_type = 258;
 pub const VM_INSTRUCTION_SIZE: ruby_vminsn_type = 259;
 pub type ruby_vminsn_type = u32;
-pub type rb_iseq_callback = ::std::option::Option<
-    unsafe extern "C" fn(arg1: *const rb_iseq_t, arg2: *mut ::std::os::raw::c_void),
->;
 #[repr(C)]
 #[repr(align(8))]
 #[derive(Debug, Copy, Clone)]
@@ -2105,6 +2102,9 @@ pub struct zjit_jit_frame {
     pub stack_size: u32,
     pub stack: __IncompleteArrayField<VALUE>,
 }
+pub type rb_iseq_callback = ::std::option::Option<
+    unsafe extern "C" fn(arg1: *const rb_iseq_t, arg2: *mut ::std::os::raw::c_void),
+>;
 pub const ISEQ_BODY_OFFSET_PARAM: zjit_struct_offsets = 16;
 pub const ISEQ_BODY_OFFSET_OUTER_VARIABLES: zjit_struct_offsets = 240;
 pub const RUBY_OFFSET_THREAD_RACTOR: zjit_struct_offsets = 24;
@@ -2450,6 +2450,7 @@ unsafe extern "C" {
     pub fn rb_profile_frame_absolute_path(frame: VALUE) -> VALUE;
     pub fn rb_profile_frame_full_label(frame: VALUE) -> VALUE;
     pub fn rb_jit_cont_each_iseq(callback: rb_iseq_callback, data: *mut ::std::os::raw::c_void);
+    pub fn rb_jit_for_each_iseq(callback: rb_iseq_callback, data: *mut ::std::os::raw::c_void);
     pub static rb_zjit_runtime_offsets: rb_zjit_runtime_offsets;
     pub fn rb_zjit_reserve_low_addr_space(size: usize) -> *mut ::std::os::raw::c_void;
     pub fn rb_zjit_profile_disable(iseq: *const rb_iseq_t);
@@ -2599,7 +2600,6 @@ unsafe extern "C" {
     pub fn rb_iseq_reset_jit_func(iseq: *const rb_iseq_t);
     pub fn rb_jit_get_page_size() -> u32;
     pub fn rb_jit_reserve_addr_space(mem_size: u32) -> *mut u8;
-    pub fn rb_jit_for_each_iseq(callback: rb_iseq_callback, data: *mut ::std::os::raw::c_void);
     pub fn rb_jit_mark_writable(mem_block: *mut ::std::os::raw::c_void, mem_size: u32) -> bool;
     pub fn rb_jit_mark_executable(mem_block: *mut ::std::os::raw::c_void, mem_size: u32);
     pub fn rb_jit_mark_unused(mem_block: *mut ::std::os::raw::c_void, mem_size: u32) -> bool;

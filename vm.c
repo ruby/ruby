@@ -21,6 +21,7 @@
 #include "internal/eval.h"
 #include "internal/gc.h"
 #include "internal/inits.h"
+#include "internal/jit.h"
 #include "internal/missing.h"
 #include "internal/object.h"
 #include "internal/proc.h"
