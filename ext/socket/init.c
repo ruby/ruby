@@ -124,8 +124,14 @@ recvfrom_blocking(void *data)
     ret = recvfrom(arg->fd, RSTRING_PTR(arg->str), arg->length,
                    arg->flags, &arg->buf.addr, &arg->alen);
 
-    if (ret != -1 && len0 < arg->alen)
-        arg->alen = len0;
+    /*
+     * No sockaddr comes near the size of the buffer, so a length still at the
+     * whole buffer means the platform reported no sender and left the buffer
+     * uninitialised: macOS does that for IP, Windows for AF_UNIX.  A longer
+     * length is a truncated address, equally unusable.
+     */
+    if (ret != -1 && arg->alen >= len0)
+        arg->alen = 0;
 
     return (VALUE)ret;
 }
@@ -229,7 +235,7 @@ rsock_s_recvfrom(VALUE socket, int argc, VALUE *argv, enum sock_recv_type from)
             rb_raise(rb_eTypeError, "sockaddr size differs - should not happen");
         }
 #endif
-        if (arg.alen && arg.alen != sizeof(arg.buf)) /* OSX doesn't return a from result for connection-oriented sockets */
+        if (arg.alen)
             return rb_assoc_new(str, rsock_ipaddr(&arg.buf.addr, arg.alen, fptr->mode & FMODE_NOREVLOOKUP));
         else
             return rb_assoc_new(str, Qnil);
@@ -281,8 +287,8 @@ rsock_s_recvfrom_nonblock(VALUE sock, VALUE len, VALUE flg, VALUE str,
 
     len0 = alen;
     slen = recvfrom(fd, RSTRING_PTR(str), buflen, flags, &buf.addr, &alen);
-    if (slen != -1 && len0 < alen)
-        alen = len0;
+    if (slen != -1 && alen >= len0) /* see recvfrom_blocking */
+        alen = 0;
 
     if (slen == 0 && !rsock_is_dgram(fptr)) {
         return Qnil;
@@ -309,7 +315,7 @@ rsock_s_recvfrom_nonblock(VALUE sock, VALUE len, VALUE flg, VALUE str,
         return str;
 
       case RECV_IP:
-        if (alen && alen != sizeof(buf)) /* connection-oriented socket may not return a from result */
+        if (alen)
             addr = rsock_ipaddr(&buf.addr, alen, fptr->mode & FMODE_NOREVLOOKUP);
         break;
 
