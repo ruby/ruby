@@ -175,7 +175,9 @@ box_entry_initialize(rb_box_t *box)
     box->box_object = 0;
     box->box_id = 0;
 
-    box->top_self = rb_obj_alloc(rb_cObject);
+    // Clone the master top self so that the box gets the top-level singleton
+    // methods (include, using, public, private, ...) defined during setup.
+    box->top_self = rb_obj_clone(master->top_self);
     rb_define_singleton_method(box->top_self, "to_s", box_main_to_s, 0);
     rb_define_alias(rb_singleton_class(box->top_self), "inspect", "to_s");
     box->load_path = rb_ary_dup(master->load_path);
@@ -284,6 +286,12 @@ free_classext_for_box(st_data_t key, st_data_t _value, st_data_t box_arg)
     rb_classext_t *ext;
     VALUE obj = (VALUE)key;
     const rb_box_t *box = (const rb_box_t *)box_arg;
+
+    if (RB_TYPE_P(obj, T_NONE)) {
+        /* RUBY_FREE_AT_EXIT can free a class before the box that refers to
+         * it, and freeing a class already freed its classext for this box. */
+        return ST_CONTINUE;
+    }
 
     if (RB_TYPE_P(obj, T_CLASS) || RB_TYPE_P(obj, T_MODULE)) {
         ext = rb_class_unlink_classext(obj, box);
@@ -429,6 +437,7 @@ box_initialize(VALUE box_value)
     rb_ivar_set(box_value, id_box_entry, entry);
 
     if (ruby_box_init_done) {
+        rb_load_prelude((VALUE)box);
         if (box_gem_flags->gem) {
             rb_vm_call_cfunc_in_box(Qnil, rb_define_gem_modules, (VALUE)box_gem_flags, Qnil,
                                     rb_str_new_cstr("before_prelude.user.dummy"), (const rb_box_t *)box);
@@ -1030,6 +1039,10 @@ rb_initialize_mandatory_boxes(void)
 
     vm->root_box = root_box = rb_get_box_t(root_box_value);
     vm->main_box = main_box = rb_get_box_t(main_box_value);
+
+    // `main` stays one object for the process as it is without boxes, so
+    // that extending it is visible to a load that wraps it.
+    root_box->top_self = main_box->top_self = master_box->top_self;
 
     // create the writable classext of ::Object explicitly to finalize the set of visible top-level constants
     RCLASS_EXT_WRITABLE_IN_BOX(rb_cObject, root_box);

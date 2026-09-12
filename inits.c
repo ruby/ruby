@@ -11,9 +11,6 @@
 
 #include "internal/inits.h"
 #include "ruby.h"
-#include "builtin.h"
-static void Init_builtin_prelude(void);
-#include "prelude.rbinc"
 
 #define CALL(n) {void Init_##n(void); Init_##n();}
 
@@ -112,6 +109,6 @@ rb_call_builtin_inits(void)
     BUILTIN(nilclass);
     BUILTIN(marshal);
     BUILTIN(jit_undef);
-    Init_builtin_prelude();
+    // prelude is loaded per box in Init_builtin_features
 }
 #undef CALL
