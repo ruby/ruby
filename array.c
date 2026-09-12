@@ -6017,8 +6017,6 @@ rb_ary_union_hash(VALUE hash, VALUE ary2)
 static VALUE
 rb_ary_or(VALUE ary1, VALUE ary2)
 {
-    VALUE hash;
-
     ary2 = to_ary(ary2);
     if (RARRAY_LEN(ary1) + RARRAY_LEN(ary2) <= SMALL_ARRAY_LEN) {
         VALUE ary3 = rb_ary_new();
@@ -6027,10 +6025,15 @@ rb_ary_or(VALUE ary1, VALUE ary2)
         return ary3;
     }
 
-    hash = ary_make_hash(ary1);
-    rb_ary_union_hash(hash, ary2);
+    VALUE set = rb_obj_hide(rb_set_new_capa(RARRAY_LEN(ary1) + RARRAY_LEN(ary2)));
+    for (long i = 0; i < RARRAY_LEN(ary1); i++) {
+        rb_set_add_no_check(set, RARRAY_AREF(ary1, i));
+    }
+    for (long i = 0; i < RARRAY_LEN(ary2); i++) {
+        rb_set_add_no_check(set, RARRAY_AREF(ary2, i));
+    }
 
-    return rb_hash_values(hash);
+    return rb_set_to_a(set);
 }
 
 /*
