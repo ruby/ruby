@@ -1543,23 +1543,11 @@ class Pathname    # * File *
   #  call-seq:
   #    lchmod(mode) -> 1
   #
-  #  Not supported on some platforms (raises NotImplementedError).
+  #  Not supported on Linux or Windows (raises NotImplementedError).
   #
-  #  When supported: like Pathname::chmod, but does not follow symbolic links,
-  #  and therefore changes the mode of the entry specified by `self`:
-  #
-  #  ```ruby
-  #  File.write('t.tmp', '')
-  #  File.symlink('t.tmp', 'link')
-  #  File.stat('t.tmp').mode.to_s(8) # => "100664"
-  #  File.stat('link').mode.to_s(8)  # => "100664"
-  #  Pathname('link').lchmod(0777)
-  #  File.stat('t.tmp').mode.to_s(8) # => "100664"
-  #  File.stat('link').mode.to_s(8)  # => "100777"
-  #  File.delete('t.tmp')
-  #  File.delete('link')
-  #  ```
-  #
+  #  When supported: like Pathname#chmod,
+  #  but does not follow [symbolic links](rdoc-ref:file/symbolic_links.md),
+  #  and therefore changes the mode of the entry specified by `self`.
   def lchmod(mode) File.lchmod(mode, @path) end
 
   # :markup: markdown

@@ -3133,24 +3133,12 @@ lchmod_internal(const char *path, void *mode)
  *  call-seq:
  *    File.lchmod(mode, *paths) -> paths_count
  *
- *  Not supported on some platforms (raises NotImplementedError).
+ *  Not supported on Linux or Windows (raises NotImplementedError).
  *
- *  When supported: like File::chmod, but does not follow symbolic links,
+ *  When supported: like File::chmod,
+ *  but does not follow [symbolic links](rdoc-ref:file/symbolic_links.md),
  *  and therefore changes the mode of the entries given by `paths`;
- *  returns the number of paths given:
- *
- *  ```ruby
- *  File.write('t.tmp', '')
- *  File.symlink('t.tmp', 'link')
- *  File.stat('t.tmp').mode.to_s(8) # => "100664"
- *  File.stat('link').mode.to_s(8)  # => "100664"
- *  File.lchmod(0777, 'link')
- *  File.stat('t.tmp').mode.to_s(8) # => "100664"
- *  File.stat('link').mode.to_s(8)  # => "100777"
- *  File.delete('t.tmp')
- *  File.delete('link')
- *  ```
- *
+ *  returns the number of paths given.
  */
 
 static VALUE
