@@ -3614,7 +3614,8 @@ rb_file_s_utime(int argc, VALUE *argv, VALUE _)
  * call-seq:
  *   File.lutime(atime, mtime, *paths) -> path_count
  *
- * Like File#utime, but does not follow symbolic links,
+ * Like File::utime,
+ * but does not follow [symbolic links](rdoc-ref:file/symbolic_links.md),
  * and therefore changes the times of the entries given by `paths`,
  * regardless of whether they are symbolic links;
  * returns the number of `paths` given:

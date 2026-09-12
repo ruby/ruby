@@ -1972,7 +1972,8 @@ class Pathname    # * File *
   # call-seq:
   #   lutime(atime, mtime) -> 1
   #
-  # Like Pathname#utime, but does not follow symbolic links,
+  # Like Pathname#utime,
+  # but does not follow [symbolic links](rdoc-ref:file/symbolic_links.md),
   # and therefore changes the times of the entry in `self`,
   # regardless of whether it is a symbolic link:
   #
