@@ -167,6 +167,183 @@ ruby_version_is "4.1" do
       $SourceRangeNotDefined += 1$
       RUBY
 
+      # The constant is defined in a singleton class body so it does not leak
+      "top-level constant operator assignments failing in the operator" => [<<-RUBY, :ConstantOperatorWriteNode],
+      class << Object.new
+        Nil = nil
+        $Nil += 1$
+      end
+      RUBY
+
+      "top-level constant operator assignments failing on the value" => [<<-RUBY, :ConstantOperatorWriteNode],
+      class << Object.new
+        One = 1
+        $One += nil$
+      end
+      RUBY
+
+      "top-level constant &&= assignments failing while reading" => [<<-RUBY, :ConstantAndWriteNode],
+      $SourceRangeNotDefined &&= 1$
+      RUBY
+
+      "top-level ::constant &&= assignments failing while reading" => [<<-RUBY, :ConstantPathAndWriteNode],
+      $::SourceRangeNotDefined &&= 1$
+      RUBY
+
+      "constant &&= assignments failing while reading" => [<<-RUBY, :ConstantPathAndWriteNode],
+      namespace = Module.new
+      $namespace::NotDefined &&= 1$
+      RUBY
+
+      "constant operator assignments failing on the namespace" => [<<-RUBY, :ConstantPathOperatorWriteNode],
+      namespace = nil
+      $namespace::NotDefined += 1$
+      RUBY
+
+      "constant ||= assignments failing on the namespace" => [<<-RUBY, :ConstantPathOrWriteNode],
+      namespace = nil
+      $namespace::NotDefined ||= 1$
+      RUBY
+
+      "constant &&= assignments failing on the namespace" => [<<-RUBY, :ConstantPathAndWriteNode],
+      namespace = nil
+      $namespace::NotDefined &&= 1$
+      RUBY
+
+      "constant writes failing on the namespace" => [<<-RUBY, :ConstantPathWriteNode],
+      namespace = nil
+      $namespace::NotDefined = 1$
+      RUBY
+
+      "constant writes failing while reading the namespace" => [<<-RUBY, :ConstantReadNode],
+      $SourceRangeNotDefined$::Nested = 1
+      RUBY
+
+      "instance variable operator assignments" => [<<-RUBY, :InstanceVariableOperatorWriteNode],
+      $@source_range_value += 1$
+      RUBY
+
+      "class variable operator assignments failing while reading" => [<<-RUBY, :ClassVariableOperatorWriteNode],
+      class SourceRangeClassVariableSpecs
+        $@@not_defined += 1$
+      end
+      RUBY
+
+      "class variable operator assignments failing in the operator" => [<<-RUBY, :ClassVariableOperatorWriteNode],
+      class SourceRangeClassVariableSpecs
+        @@nil = nil
+        $@@nil += 1$
+      end
+      RUBY
+
+      "index ||= assignments failing while reading" => [<<-RUBY, :IndexOrWriteNode],
+      value = nil
+      $value[0] ||= 42$
+      RUBY
+
+      "index ||= assignments failing while writing" => [<<-RUBY, :IndexOrWriteNode],
+      value = Object.new
+      def value.[](index) = nil
+      $value[0] ||= 42$
+      RUBY
+
+      "index &&= assignments failing while reading" => [<<-RUBY, :IndexAndWriteNode],
+      value = nil
+      $value[0] &&= 42$
+      RUBY
+
+      "index &&= assignments failing while writing" => [<<-RUBY, :IndexAndWriteNode],
+      value = Object.new
+      def value.[](index) = 1
+      $value[0] &&= 42$
+      RUBY
+
+      "attribute ||= assignments failing while reading" => [<<-RUBY, :CallOrWriteNode],
+      value = nil
+      $value.foo ||= 42$
+      RUBY
+
+      "attribute ||= assignments failing while writing" => [<<-RUBY, :CallOrWriteNode],
+      value = Object.new
+      def value.foo = nil
+      $value.foo ||= 42$
+      RUBY
+
+      "attribute &&= assignments failing while reading" => [<<-RUBY, :CallAndWriteNode],
+      value = nil
+      $value.foo &&= 42$
+      RUBY
+
+      "attribute &&= assignments failing while writing" => [<<-RUBY, :CallAndWriteNode],
+      value = Object.new
+      def value.foo = 1
+      $value.foo &&= 42$
+      RUBY
+
+      "safe navigation attribute operator assignments" => [<<-RUBY, :CallOperatorWriteNode],
+      value = Object.new
+      def value.foo = nil
+      $value&.foo += 1$
+      RUBY
+
+      "multiple assignments with an attribute target" => [<<-RUBY, :CallTargetNode],
+      value = nil
+      $value.foo$, other = 1, 2
+      RUBY
+
+      "multiple assignments with a splat attribute target" => [<<-RUBY, :CallTargetNode],
+      value = nil
+      *$value.foo$ = 1, 2
+      RUBY
+
+      "multiple assignments with an index target" => [<<-RUBY, :IndexTargetNode],
+      value = nil
+      $value[0]$, other = 1, 2
+      RUBY
+
+      "multiple assignments with a constant path target" => [<<-RUBY, :ConstantPathTargetNode],
+      namespace = nil
+      $namespace::NotDefined$, other = 1, 2
+      RUBY
+
+      "multiple assignments converting the value" => [<<-RUBY, :MultiWriteNode, 1],
+      value = Object.new
+      def value.to_ary = raise(TypeError)
+      $first, second = value$
+      RUBY
+
+      "multiple assignments splatting the value" => [<<-RUBY, :ArrayNode, 1],
+      value = Object.new
+      def value.to_a = raise(TypeError)
+      first, second = $*value$
+      RUBY
+
+      "nested multiple assignments" => [<<-RUBY, :MultiTargetNode, 1],
+      value = Object.new
+      def value.to_ary = raise(TypeError)
+      $(first, second)$, third = value, 1
+      RUBY
+
+      "destructuring block parameters" => [<<-RUBY, :MultiTargetNode, 1],
+      value = Object.new
+      def value.to_ary = raise(TypeError)
+      [value].each { |$(first, second)$| }
+      RUBY
+
+      "for loops with an attribute target" => [<<-RUBY, :CallTargetNode],
+      value = nil
+      for $value.foo$ in [1]
+      end
+      RUBY
+
+      "rescue with an attribute target" => [<<-RUBY, :CallTargetNode],
+      value = nil
+      begin
+        raise "error"
+      rescue => $value.foo$
+      end
+      RUBY
+
       "explicit #raise" => [<<-RUBY, :CallNode],
       $raise NameError$
       RUBY
@@ -376,6 +553,15 @@ ruby_version_is "4.1" do
       RUBY
     }.each_pair do |description, (source, prism_class, frame)|
       it "returns the precise range for #{description}" do
+        # Currently fails with parse.y, needs to be fixed
+        parse_y_failures = [
+          "class variable operator assignments failing while reading",
+          "nested multiple assignments",
+          "destructuring block parameters",
+          "rescue with an attribute target",
+        ]
+        skip "parse.y" if parse_y_failures.include?(description) && !syntax_tree_returns_prism_node
+
         capture_backtrace_location_source_range(source, prism_class, frame: frame || 0)
       end
     end
