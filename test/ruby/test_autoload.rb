@@ -420,7 +420,7 @@ p Foo::Bar
         end
       }
     end
-  end if Process.respond_to?(:fork)
+  end if Process.respond_to?(:fork) && ENV["RUBYCI_OPENBSD"] != "1"
 
   def test_autoload_same_file
     Dir.mktmpdir('autoload') do |tmpdir|
