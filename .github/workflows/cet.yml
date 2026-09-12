@@ -25,7 +25,7 @@ jobs:
     runs-on: ubuntu-24.04
 
     container:
-      image: fedora:44
+      image: fedora:rawhide
 
     env:
       CONFIGURE_TTY: never
@@ -55,6 +55,8 @@ jobs:
 
       - name: Require userspace shadow-stack support
         run: |
+          ldd --version | head -1
+          /lib64/ld-linux-x86-64.so.2 --list-tunables | grep '^glibc.cpu.x86_shstk:'
           if ! grep -qw user_shstk /proc/cpuinfo; then
             echo '::error::The runner does not expose Intel CET shadow-stack support.'
             exit 1
@@ -74,6 +76,7 @@ jobs:
           GLIBC_TUNABLES: glibc.cpu.x86_shstk=on
           RUBY_TESTOPTS: '-q --tty=no'
         run: |
+          readelf --notes ./miniruby | grep 'x86 feature: SHSTK'
           ./miniruby -e '
             line = File.foreach("/proc/self/status").find { |entry| entry.start_with?("x86_Thread_features:") }
             features = line&.split(":", 2)&.last&.split || []
