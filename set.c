@@ -2278,6 +2278,22 @@ rb_ident_set_new(void)
     return set_alloc_with_size_and_type(rb_cSet, 0, &identhash);
 }
 
+bool
+rb_set_add_no_check(VALUE set, VALUE element)
+{
+    if (set_insert(RSET_TABLE(set), (st_data_t)element) == 0) {
+        RB_OBJ_WRITTEN(set, Qundef, element);
+        return true;
+    }
+    return false;
+}
+
+VALUE
+rb_set_to_a(VALUE set)
+{
+    return set_i_to_a(set);
+}
+
 /* C-API functions */
 
 void
