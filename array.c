@@ -23,6 +23,7 @@
 #include "internal/object.h"
 #include "internal/proc.h"
 #include "internal/rational.h"
+#include "internal/set.h"
 #include "internal/string.h"
 #include "internal/vm.h"
 #include "probes.h"
@@ -6750,8 +6751,6 @@ rb_ary_count(int argc, VALUE *argv, VALUE ary)
 
     return LONG2NUM(n);
 }
-
-VALUE rb_ident_set_new(void);
 
 static VALUE
 flatten(VALUE ary, int level)
