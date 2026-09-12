@@ -33,6 +33,13 @@ jobs:
       RUBY_DEBUG: ci
 
     steps:
+      - name: Install SHSTK-enabled glibc
+        run: |
+          dnf install -y dnf5-plugins
+          dnf copr enable -y submachine/glibc-x86_64-SHSTK-Testing
+          dnf upgrade -y 'glibc*'
+        working-directory:
+
       - name: Install dependencies
         run: >-
           dnf install -y
