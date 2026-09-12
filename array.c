@@ -5733,6 +5733,14 @@ rb_ary_union_set(VALUE set, VALUE ary)
     }
 }
 
+static VALUE
+ary_to_set(VALUE ary)
+{
+    VALUE set = rb_obj_hide(rb_set_new_capa(RARRAY_LEN(ary)));
+    rb_ary_union_set(set, ary);
+    return set;
+}
+
 /*
  *  call-seq:
  *    self - other_array -> new_array
@@ -5767,8 +5775,7 @@ rb_ary_diff(VALUE ary1, VALUE ary2)
         return ary3;
     }
 
-    VALUE set = rb_obj_hide(rb_set_new_capa(RARRAY_LEN(ary2)));
-    rb_ary_union_set(set, ary2);
+    VALUE set = ary_to_set(ary2);
     for (long i = 0; i < RARRAY_LEN(ary1); i++) {
         if (rb_set_lookup(set, RARRAY_AREF(ary1, i))) continue;
         rb_ary_push(ary3, rb_ary_elt(ary1, i));
@@ -5808,9 +5815,7 @@ rb_ary_difference_multi(int argc, VALUE *argv, VALUE ary)
         argv[i] = to_ary(argv[i]);
         is_set[i] = (length > SMALL_ARRAY_LEN && RARRAY_LEN(argv[i]) > SMALL_ARRAY_LEN);
         if (is_set[i]) {
-            VALUE set = rb_obj_hide(rb_set_new_capa(RARRAY_LEN(argv[i])));
-            rb_ary_union_set(set, argv[i]);
-            argv[i] = set;
+            argv[i] = ary_to_set(argv[i]);
         }
     }
 
@@ -5876,8 +5881,7 @@ rb_ary_and(VALUE ary1, VALUE ary2)
         return ary3;
     }
 
-    VALUE set = rb_obj_hide(rb_set_new_capa(RARRAY_LEN(ary2)));
-    rb_ary_union_set(set, ary2);
+    VALUE set = ary_to_set(ary2);
 
     for (long i = 0; i < RARRAY_LEN(ary1); i++) {
         VALUE v = RARRAY_AREF(ary1, i);
@@ -6050,8 +6054,7 @@ rb_ary_intersect_p(VALUE ary1, VALUE ary2)
         shorter = ary2;
     }
 
-    VALUE set = rb_obj_hide(rb_set_new_capa(RARRAY_LEN(shorter)));
-    rb_ary_union_set(set, shorter);
+    VALUE set = ary_to_set(shorter);
     VALUE result = Qfalse;
 
     for (long i = 0; i < RARRAY_LEN(longer); i++) {
@@ -6505,8 +6508,7 @@ rb_ary_uniq_bang(VALUE ary)
         return ary;
     }
 
-    VALUE set = rb_obj_hide(rb_set_new_capa(RARRAY_LEN(ary)));
-    rb_ary_union_set(set, ary);
+    VALUE set = ary_to_set(ary);
     long size = (long)rb_set_size(set);
     if (RARRAY_LEN(ary) == size) {
         return Qnil;
