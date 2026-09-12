@@ -10,7 +10,7 @@ end
 class TestIO_Console < Test::Unit::TestCase
   def test_console_namespace
     assert_kind_of(Module, IO::Console)
-  end unless RUBY_ENGINE == "jruby" && RbConfig::CONFIG["host_os"] !~ /mswin|mingw/
+  end
 
   HOST_OS = RbConfig::CONFIG['host_os']
 
