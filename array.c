@@ -5754,6 +5754,14 @@ ary_make_hash(VALUE ary)
     return ary_add_hash(hash, ary);
 }
 
+static void
+rb_ary_union_set(VALUE set, VALUE ary)
+{
+    for (long i = 0; i < RARRAY_LEN(ary); i++) {
+        rb_set_add_no_check(set, RARRAY_AREF(ary, i));
+    }
+}
+
 static VALUE
 ary_add_hash_by(VALUE hash, VALUE ary)
 {
@@ -5794,16 +5802,12 @@ ary_make_hash_by(VALUE ary)
 VALUE
 rb_ary_diff(VALUE ary1, VALUE ary2)
 {
-    VALUE ary3;
-    VALUE hash;
-    long i;
-
     ary2 = to_ary(ary2);
     if (RARRAY_LEN(ary2) == 0) { return ary_make_shared_copy(ary1); }
-    ary3 = rb_ary_new();
+    VALUE ary3 = rb_ary_new();
 
     if (RARRAY_LEN(ary1) <= SMALL_ARRAY_LEN || RARRAY_LEN(ary2) <= SMALL_ARRAY_LEN) {
-        for (i=0; i<RARRAY_LEN(ary1); i++) {
+        for (long i = 0; i < RARRAY_LEN(ary1); i++) {
             VALUE elt = rb_ary_elt(ary1, i);
             if (rb_ary_includes_by_eql(ary2, elt)) continue;
             rb_ary_push(ary3, elt);
@@ -5811,9 +5815,10 @@ rb_ary_diff(VALUE ary1, VALUE ary2)
         return ary3;
     }
 
-    hash = ary_make_hash(ary2);
-    for (i=0; i<RARRAY_LEN(ary1); i++) {
-        if (rb_hash_stlike_lookup(hash, RARRAY_AREF(ary1, i), NULL)) continue;
+    VALUE set = rb_obj_hide(rb_set_new_capa(RARRAY_LEN(ary2)));
+    rb_ary_union_set(set, ary2);
+    for (long i = 0; i < RARRAY_LEN(ary1); i++) {
+        if (rb_set_lookup(set, RARRAY_AREF(ary1, i))) continue;
         rb_ary_push(ary3, rb_ary_elt(ary1, i));
     }
 
@@ -5976,14 +5981,6 @@ rb_ary_union(VALUE ary_union, VALUE ary)
         VALUE elt = rb_ary_elt(ary, i);
         if (rb_ary_includes_by_eql(ary_union, elt)) continue;
         rb_ary_push(ary_union, elt);
-    }
-}
-
-static void
-rb_ary_union_set(VALUE set, VALUE ary)
-{
-    for (long i = 0; i < RARRAY_LEN(ary); i++) {
-        rb_set_add_no_check(set, RARRAY_AREF(ary, i));
     }
 }
 
