@@ -1032,6 +1032,28 @@ EOT
          end)
   end
 
+  def test_set_encoding_enc_newline_option
+    bug22209 = '[Bug #22209]'
+    with_tmpdir {
+      generate_file("t.crlf", "a\r\nb\r\n")
+      open("t.crlf", "r") {|f|
+        f.set_encoding(Encoding::UTF_8, newline: :universal)
+        assert_equal("a\nb\n", f.read, bug22209)
+      }
+    }
+  end
+
+  def test_set_encoding_nil_newline_option
+    bug22209 = '[Bug #22209]'
+    with_tmpdir {
+      generate_file("t.crlf", "a\r\nb\r\n")
+      open("t.crlf", "r") {|f|
+        f.set_encoding(nil, newline: :universal)
+        assert_equal("a\nb\n", f.read, bug22209)
+      }
+    }
+  end
+
   def test_set_encoding_invalid
     pipe(proc do |w|
            w << "\x80"

@@ -55,6 +55,12 @@ Note: We're only listing outstanding class updates.
       binary representation of a non-negative integer (its population count).
       [[Feature #20163]]
 
+* IO
+
+    * `IO#set_encoding` now honors conversion options like `newline:` also
+      when the encoding is given as an `Encoding` object or `nil`, not only
+      as a String. [[Bug #22209]]
+
 * IO::Buffer
 
     * `read`, `write`, `pread`, and `pwrite` now perform one IO operation using
@@ -422,6 +428,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 ## JIT
 
 [Bug #18947]: https://bugs.ruby-lang.org/issues/18947
+[Bug #22209]: https://bugs.ruby-lang.org/issues/22209
 [Feature #8948]: https://bugs.ruby-lang.org/issues/8948
 [Feature #9779]: https://bugs.ruby-lang.org/issues/9779
 [Feature #15330]: https://bugs.ruby-lang.org/issues/15330
