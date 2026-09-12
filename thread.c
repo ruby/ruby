@@ -6615,7 +6615,7 @@ rb_internal_thread_specific_key_create(void)
     if (specific_key_count == 0 && vm->ractor.cnt > 1) {
         rb_raise(rb_eThreadError, "The first rb_internal_thread_specific_key_create() is called with multiple ractors");
     }
-    else if (specific_key_count > RB_INTERNAL_THREAD_SPECIFIC_KEY_MAX) {
+    else if (specific_key_count >= RB_INTERNAL_THREAD_SPECIFIC_KEY_MAX) {
         rb_raise(rb_eThreadError, "rb_internal_thread_specific_key_create() is called more than %d times", RB_INTERNAL_THREAD_SPECIFIC_KEY_MAX);
     }
     else {
