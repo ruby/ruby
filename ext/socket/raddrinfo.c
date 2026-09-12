@@ -3198,8 +3198,9 @@ do_fast_fallback_getaddrinfo(void *ptr)
     /* for testing HEv2 */
     if (entry->test_sleep_ms > 0) {
 #ifdef _WIN32
-        /* Not Sleep(3): ruby/win32.h redirects that into the Ruby thread
-         * scheduler, which this thread does not belong to. */
+        /* Not Sleep(), which the ruby DLL exports as rb_w32_Sleep().  That
+         * waits through the Ruby thread scheduler, which this thread does
+         * not belong to. */
         SleepEx((DWORD)entry->test_sleep_ms, FALSE);
 #else
         struct timespec sleep_ts;
