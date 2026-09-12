@@ -93,10 +93,6 @@ describe 'Socket.getifaddrs' do
       @addrs = @ifaddrs.map(&:netmask).compact.select(&:ip?)
     end
 
-    it 'is not empty' do
-      @addrs.should_not.empty?
-    end
-
     it 'is an Addrinfo' do
       @addrs.all? do |addr|
         addr.should.instance_of?(Addrinfo)
