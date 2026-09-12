@@ -38,7 +38,7 @@ jobs:
           dnf install -y
           autoconf automake gcc gcc-c++ git libffi-devel libtool
           libyaml-devel make ncurses-devel openssl-devel procps-ng
-          readline-devel ruby ruby-devel zlib-devel
+          readline-devel ruby ruby-devel strace zlib-devel
         working-directory:
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -55,19 +55,22 @@ jobs:
           clean: true
 
       - name: Require userspace shadow-stack support
-        env:
-          GLIBC_TUNABLES: glibc.cpu.x86_shstk=on
         run: |
           ldd --version | head -1
-          /lib64/ld-linux-x86-64.so.2 --list-tunables | grep '^glibc.cpu.x86_shstk:'
+          GLIBC_TUNABLES=glibc.cpu.x86_shstk=on \
+            /lib64/ld-linux-x86-64.so.2 --list-tunables | grep '^glibc.cpu.x86_shstk: on'
           if ! grep -qw user_shstk /proc/cpuinfo; then
             echo '::error::The runner does not expose Intel CET shadow-stack support.'
             exit 1
           fi
-          ruby -e '
+          if ! strace -o /tmp/shstk.strace -e trace=arch_prctl,map_shadow_stack \
+            env GLIBC_TUNABLES=glibc.cpu.x86_shstk=on ruby -e '
             line = File.foreach("/proc/self/status").find { |entry| entry.start_with?("x86_Thread_features:") }
             abort "The container cannot activate SHSTK" unless line&.split&.include?("shstk")
-          '
+          '; then
+            cat /tmp/shstk.strace
+            exit 1
+          fi
 
       - name: Run configure
         run: >-
