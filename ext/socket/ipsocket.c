@@ -1417,6 +1417,7 @@ rsock_init_inetsock(
 
             struct fast_fallback_inetsock_arg fast_fallback_arg;
             memset(&fast_fallback_arg, 0, sizeof(fast_fallback_arg));
+            fast_fallback_arg.wait = -1;
 
             fast_fallback_arg.self = self;
             fast_fallback_arg.io = Qnil;

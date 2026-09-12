@@ -96,6 +96,15 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
     end
   end
 
+  def test_initialize_invalid_open_timeout_keeps_stdin_open
+    assert_separately %w[-rsocket -W1], <<~RUBY
+    assert_raise(ArgumentError) do
+      TCPSocket.new("localhost", 12345, open_timeout: -1, fast_fallback: true)
+    end
+    assert_nothing_raised { STDIN.stat }
+    RUBY
+  end
+
   def test_initialize_connect_timeout
     assert_raise(IO::TimeoutError, Errno::ENETUNREACH, Errno::EACCES) do
       TCPSocket.new("192.0.2.1", 80, connect_timeout: 0)
