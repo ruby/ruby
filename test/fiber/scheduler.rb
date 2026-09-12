@@ -427,6 +427,31 @@ class IOErrorScheduler < Scheduler
   end
 end
 
+class FailingIOScheduler < Scheduler
+  # Expose the last temporary IO::Buffer to test escaping scenarios.
+  attr_reader :buffer
+
+  def io_read(io, buffer, offset, length)
+    @buffer = buffer
+    raise "scheduler read error"
+  end
+
+  def io_write(io, buffer, offset, length)
+    @buffer = buffer
+    raise "scheduler write error"
+  end
+
+  def io_pread(io, buffer, from, offset, length)
+    @buffer = buffer
+    raise "scheduler pread error"
+  end
+
+  def io_pwrite(io, buffer, from, offset, length)
+    @buffer = buffer
+    raise "scheduler pwrite error"
+  end
+end
+
 # This scheduler has a broken implementation of `unblock`` in the sense that it
 # raises an exception. This is used to test the behavior of the scheduler when
 # unblock raises an exception.
