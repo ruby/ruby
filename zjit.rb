@@ -140,6 +140,9 @@ class << RubyVM::ZJIT
       :caller_splat_optimized,
     ], buf:, stats:, right_align: true, base: :send_count)
     print_counters([
+      :elided_array_aref_count,
+      :elided_array_length_count,
+
       :dynamic_setivar_count,
       :dynamic_getivar_count,
       :dynamic_definedivar_count,
@@ -156,6 +159,7 @@ class << RubyVM::ZJIT
       :compile_hir_strength_reduce_time_ns,
       :compile_hir_inline_methods_time_ns,
       :compile_hir_remove_trivial_block_params_time_ns,
+      :compile_hir_optimize_load_aaron_time_ns,
       :compile_hir_optimize_load_store_time_ns,
       :compile_hir_canonicalize_time_ns,
       :compile_hir_fold_constants_time_ns,

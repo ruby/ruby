@@ -2836,6 +2836,30 @@ impl CompilePolicy {
     }
 }
 
+enum VirtualObject {
+    Array(Vec<ArrayElement>),
+}
+
+#[derive(Debug, Clone, Copy)]
+enum ArrayElement {
+    Object(VALUE),
+    Insn(InsnId),
+}
+
+impl VirtualObject {
+    fn len(&self) -> usize {
+        match self {
+            VirtualObject::Array(elements) => elements.len(),
+        }
+    }
+
+    fn at(&self, index: i64) -> Option<ArrayElement> {
+        match self {
+            VirtualObject::Array(elements) => elements.get(index as usize).copied(),
+        }
+    }
+}
+
 /// A wrapper around [`InsnId`] that indicates the instruction's operands have been resolved.
 #[derive(Debug, Clone, Copy)]
 pub struct ResolvedInsnId(pub InsnId);
@@ -6501,6 +6525,90 @@ impl Function {
         }
     }
 
+    fn optimize_load_aaron(&mut self) {
+        for block in self.reverse_post_order() {
+            let mut virtual_heap: HashMap<InsnId, VirtualObject> = HashMap::new();
+            let old_insns = std::mem::take(&mut self.blocks[block].insns);
+            let mut new_insns = Vec::with_capacity(old_insns.len());
+            'block: for insn_id in old_insns {
+                let replacement_insn: InsnId = match self.resolve(insn_id).insn(self) {
+                    Insn::NewArray { elements, .. } => {
+                        let elements: Vec<ArrayElement> =
+                            elements.iter().map(|&insn| ArrayElement::Insn(insn)).collect();
+                        virtual_heap.insert(self.find_id(insn_id), VirtualObject::Array(elements));
+                        insn_id
+                    },
+                    &Insn::ArrayDup { val, .. } => {
+                        if let Some(obj) = self.type_of(val).ruby_object() {
+                            if obj.is_frozen() {
+                                let len = unsafe { rb_jit_array_len(obj) };
+                                let elements: Vec<ArrayElement> = (0..len)
+                                    .map(|i| ArrayElement::Object(unsafe { rb_ary_entry(obj, i) }))
+                                    .collect();
+                                virtual_heap.insert(self.find_id(insn_id), VirtualObject::Array(elements));
+                            }
+                        }
+                        insn_id
+                    },
+                    &Insn::ArrayLength { array } => {
+                        if let Some(array) = virtual_heap.get(&self.chase_insn(array)) {
+                            let len = array.len() as i64;
+                            let const_id = self.new_insn(Insn::Const { val: Const::CInt64(len) });
+                            self.insn_types[const_id] = self.infer_type(const_id);
+                            if get_option!(stats) {
+                                new_insns.push(self.new_insn(Insn::IncrCounter(Counter::elided_array_length_count)));
+                            }
+                            self.make_equal_to(insn_id, const_id);
+                            const_id
+                        } else {
+                            insn_id
+                        }
+                    },
+                    &Insn::ArrayAref { array, index } => {
+                        let array_id = self.chase_insn(array);
+                        let index = self.type_of(index).cint64_value();
+                        let mut element = None;
+                        if let Some(index) = index {
+                            if let Some(array) = virtual_heap.get(&array_id) {
+                                element = array.at(index);
+                            }
+                        }
+                        match element {
+                            Some(element) => {
+                                let element_id = match element {
+                                    ArrayElement::Insn(element_id) => element_id,
+                                    ArrayElement::Object(val) => {
+                                        let const_id = self.new_insn(Insn::Const { val: Const::Value(val) });
+                                        self.insn_types[const_id] = self.infer_type(const_id);
+                                        new_insns.push(const_id);
+                                        const_id
+                                    }
+                                };
+                                self.make_equal_to(insn_id, element_id);
+                                if !get_option!(stats) { continue 'block }
+                                self.new_insn(Insn::IncrCounter(Counter::elided_array_aref_count))
+                            }
+                            None => {
+                                // FIXME: Do we need to clear the virtual heap?
+                                // The effect is currently "any"
+                                virtual_heap.clear();
+                                insn_id
+                            }
+                        }
+                    },
+                    insn => {
+                        if insn.effects_of().includes(Effect::write(abstract_heaps::Memory)) {
+                            virtual_heap.clear();
+                        }
+                        insn_id
+                    }
+                };
+
+                new_insns.push(replacement_insn);
+            }
+            self.blocks[block].insns = new_insns;
+        }
+    }
 
     fn optimize_load_store(&mut self) {
         for block in self.reverse_post_order() {
@@ -7127,14 +7235,14 @@ impl Function {
     }
 
     /// Remove duplicate CheckInterrupts instructions within each basic block.
-    /// Only the first CheckInterrupts in a block is needed unless an intervening
+    /// Only the last CheckInterrupts in a block is needed unless an intervening
     /// instruction writes to InterruptFlag (e.g. a call), which resets tracking.
     fn remove_duplicate_check_interrupts(&mut self) {
         for block_id in self.reverse_post_order() {
             let mut seen = false;
             let insns = std::mem::take(&mut self.blocks[block_id].insns);
             let mut new_insns = Vec::with_capacity(insns.len());
-            for insn_id in insns {
+            for insn_id in insns.into_iter().rev() {
                 let insn = &self.insns[insn_id];
                 if matches!(insn, Insn::CheckInterrupts { .. }) {
                     if seen { continue; }
@@ -7144,6 +7252,7 @@ impl Function {
                 }
                 new_insns.push(insn_id);
             }
+            new_insns.reverse();
             self.blocks[block_id].insns = new_insns;
         }
     }
@@ -7486,6 +7595,7 @@ impl Function {
             // End strength reduction bucket
             (inline_methods) => { Counter::compile_hir_inline_methods_time_ns };
             (remove_trivial_block_params) => { Counter::compile_hir_remove_trivial_block_params_time_ns };
+            (optimize_load_aaron) => { Counter::compile_hir_optimize_load_store_time_ns };
             (optimize_load_store) => { Counter::compile_hir_optimize_load_store_time_ns };
             (canonicalize) => { Counter::compile_hir_canonicalize_time_ns };
             (fold_constants) => { Counter::compile_hir_fold_constants_time_ns };
@@ -7540,6 +7650,7 @@ impl Function {
             run_pass!(remove_trivial_block_params);
             run_pass!(optimize_load_store);
             run_pass!(canonicalize);
+            run_pass!(optimize_load_aaron);
             run_pass!(fold_constants);
             run_pass!(clean_cfg);
             run_pass!(remove_redundant_patch_points);
