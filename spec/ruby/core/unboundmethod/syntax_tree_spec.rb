@@ -1,4 +1,5 @@
 require_relative '../../spec_helper'
+require_relative '../../fixtures/source_range_helpers'
 require_relative '../method/shared/syntax_tree'
 
 ruby_version_is "4.1" do
@@ -6,7 +7,7 @@ ruby_version_is "4.1" do
     before :each do
       @object = -> method { method.unbind }
 
-      skip "parse.y" if method(:it).unbind.syntax_tree.is_a?(RubyVM::AbstractSyntaxTree::Node)
+      skip "parse.y" unless syntax_tree_returns_prism_node
     end
 
     it_behaves_like :method_syntax_tree, :syntax_tree

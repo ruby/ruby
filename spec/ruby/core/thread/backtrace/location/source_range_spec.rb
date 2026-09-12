@@ -3,10 +3,6 @@ require_relative '../../../../fixtures/source_range_helpers'
 
 ruby_version_is "4.1" do
   describe "Thread::Backtrace::Location#source_range" do
-    before do
-      skip "parse.y" if proc {}.syntax_tree.is_a?(RubyVM::AbstractSyntaxTree::Node)
-    end
-
     it "returns a Ruby::SourceRange with the location paths" do
       location, range, path, absolute_path = capture_backtrace_location_source_range(<<-RUBY, :CallNode)
       $nil.foo$
@@ -380,6 +376,9 @@ ruby_version_is "4.1" do
       RUBY
     }.each_pair do |description, (source, prism_class, frame)|
       it "returns the precise range for #{description}" do
+        # Currently fails with parse.y, needs to be fixed
+        skip "parse.y" if description == "top-level constant operator assignments" && !syntax_tree_returns_prism_node
+
         capture_backtrace_location_source_range(source, prism_class, frame: frame || 0)
       end
     end

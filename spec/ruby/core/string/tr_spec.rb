@@ -39,10 +39,19 @@ describe "String#tr" do
 
   it "raises an ArgumentError when given wrong number of arguments" do
     -> { "hello".tr }.should.raise(ArgumentError)
-    ruby_version_is ""..."4.1" do
+    -> { "hello".tr("a", "b", "c") }.should.raise(ArgumentError)
+  end
+
+  ruby_version_is ""..."4.1" do
+    it "raises an ArgumentError when given 1 argument" do
       -> { "hello".tr("a") }.should.raise(ArgumentError)
     end
-    -> { "hello".tr("a", "b", "c") }.should.raise(ArgumentError)
+  end
+
+  ruby_version_is "4.1" do
+    it "raises an ArgumentError when given 1 argument" do
+      -> { "hello".tr("a") }.should.raise(TypeError)
+    end
   end
 
   it "raises an ArgumentError when the replacement contains a descending range" do
