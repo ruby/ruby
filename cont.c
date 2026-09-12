@@ -3738,6 +3738,13 @@ ruby_Init_Continuation_body(void)
     rb_undef_method(CLASS_OF(rb_cContinuation), "new");
     rb_define_method(rb_cContinuation, "call", rb_cont_call, -1);
     rb_define_method(rb_cContinuation, "[]", rb_cont_call, -1);
+#ifdef COROUTINE_SHADOW_STACK
+    if (coroutine_shadow_stack_enabled()) {
+        /* Continuations cannot restore previously unwound shadow stack frames. */
+        rb_define_global_function("callcc", rb_f_notimplement, 0);
+        return;
+    }
+#endif
     rb_define_global_function("callcc", rb_callcc, 0);
 }
 
