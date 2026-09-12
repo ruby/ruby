@@ -899,7 +899,6 @@ class TestRactor < Test::Unit::TestCase
   end
 
   def test_io_priority_wait_on_mn_thread
-    omit 'POLLPRI/MSG_OOB semantics differ on windows' if RUBY_PLATFORM =~ /mswin|mingw/
     # A timeout-less IO#wait(IO::PRIORITY) on an M:N thread must take the
     # blocking path: the M:N scheduler has no event for POLLPRI and used to
     # register nothing yet park the thread forever.
