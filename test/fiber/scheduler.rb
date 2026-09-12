@@ -337,6 +337,29 @@ class Scheduler
     io.write_nonblock('.')
   end
 
+  class BlockingOperationInterrupt
+    def initialize(operation)
+      @operation = operation
+    end
+
+    def alive?
+      @operation.active?
+    end
+
+    def transfer
+      @operation.interrupt
+    end
+  end
+
+  def blocking_operation_interrupt(operation, _exception)
+    @lock.synchronize do
+      @ready << BlockingOperationInterrupt.new(operation)
+    end
+
+    io = @urgent.last
+    io.write_nonblock('.')
+  end
+
   # This hook is invoked by `Fiber.schedule`. Strictly speaking, you should use
   # it to create scheduled fibers, but it is not required in practice;
   # `Fiber.new` is usually sufficient.

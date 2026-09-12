@@ -41,8 +41,9 @@ Note: We're only listing outstanding class updates.
 
 * Fiber::Scheduler
 
-    * The `fiber_interrupt` hook is now required. Schedulers which do not
-      implement it can no longer be installed with `Fiber.set_scheduler`.
+    * The `blocking_operation_interrupt` hook is added for operation-scoped
+      interruption. A scheduler must implement either this hook or the legacy
+      `fiber_interrupt` hook.
 
 * Hash
 

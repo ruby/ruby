@@ -1,8 +1,13 @@
 # frozen_string_literal: true
 require 'test/unit'
+require 'io/wait'
 require_relative 'scheduler'
 
 class TestFiberIOClose < Test::Unit::TestCase
+  class LegacyScheduler < Scheduler
+    undef_method :blocking_operation_interrupt
+  end
+
   def with_socket_pair(&block)
     omit "UNIXSocket is not defined!" unless defined?(UNIXSocket)
 
@@ -19,28 +24,70 @@ class TestFiberIOClose < Test::Unit::TestCase
   def test_io_close_across_fibers
     # omit "Interrupting a io_wait read is not supported!" if RUBY_PLATFORM =~ /mswin|mingw/
 
-    with_socket_pair do |i, o|
-      error = nil
+    [Scheduler, LegacyScheduler].each do |scheduler_class|
+      with_socket_pair do |i, o|
+        error = nil
 
-      thread = Thread.new do
-        scheduler = Scheduler.new
-        Fiber.set_scheduler scheduler
+        thread = Thread.new do
+          scheduler = scheduler_class.new
+          Fiber.set_scheduler scheduler
 
-        Fiber.schedule do
-          i.read
-        rescue => error
-          # Ignore.
+          Fiber.schedule do
+            i.read
+          rescue => error
+            # Ignore.
+          end
+
+          Fiber.schedule do
+            i.close
+          end
         end
 
-        Fiber.schedule do
-          i.close
+        thread.join
+
+        assert_instance_of IOError, error
+        assert_match(/closed/, error.message)
+      end
+    end
+  end
+
+  def test_io_close_interrupt_does_not_escape_blocking_operation
+    with_socket_pair do |source, source_peer|
+      with_socket_pair do |unrelated, unrelated_peer|
+        errors = []
+
+        thread = Thread.new do
+          scheduler = Scheduler.new
+          Fiber.set_scheduler scheduler
+
+          5.times do
+            Fiber.schedule do
+              begin
+                source.wait_readable(0.01)
+                source.close
+              rescue => error
+                errors << [:source, error]
+              end
+
+              begin
+                unrelated.wait_readable(0.01)
+              rescue => error
+                errors << [:unrelated, error]
+              end
+            end
+          end
+        end
+
+        thread.join
+
+        assert_equal 4, errors.size
+        assert_equal [:source], errors.map(&:first).uniq
+        errors.each do |location, error|
+          assert_equal :source, location
+          assert_instance_of IOError, error
+          assert_match(/closed/, error.message)
         end
       end
-
-      thread.join
-
-      assert_instance_of IOError, error
-      assert_match(/closed/, error.message)
     end
   end
 

@@ -106,7 +106,7 @@ class TestFiberScheduler < Test::Unit::TestCase
     thread.join
   end
 
-  def test_fiber_interrupt_is_required
+  def test_interruption_hook_is_required
     scheduler = Object.new
 
     [:block, :unblock, :io_wait, :kernel_sleep].each do |method|
@@ -117,7 +117,21 @@ class TestFiberScheduler < Test::Unit::TestCase
       Fiber.set_scheduler scheduler
     end
 
-    assert_equal "Scheduler must implement #fiber_interrupt", error.message
+    assert_equal "Scheduler must implement #blocking_operation_interrupt or #fiber_interrupt", error.message
+  end
+
+  def test_blocking_operation_interrupt_can_replace_fiber_interrupt
+    scheduler = Object.new
+
+    [:block, :unblock, :io_wait, :kernel_sleep, :blocking_operation_interrupt].each do |method|
+      scheduler.define_singleton_method(method) {}
+    end
+
+    thread = Thread.new do
+      Fiber.set_scheduler scheduler
+    end
+
+    thread.join
   end
 
   def test_current_scheduler

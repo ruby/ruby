@@ -87,6 +87,7 @@
 #include "internal/object.h"
 #include "internal/proc.h"
 #include "ruby/fiber/scheduler.h"
+#include "internal/scheduler.h"
 #include "internal/signal.h"
 #include "internal/thread.h"
 #include "internal/time.h"
@@ -2023,6 +2024,10 @@ rb_io_blocking_operation_exit(struct rb_io *io, struct rb_io_blocking_operation 
     // Indicate that the blocking operation is no longer active:
     blocking_operation->ec = NULL;
 
+    if (!NIL_P(blocking_operation->scheduler_operation)) {
+        rb_fiber_scheduler_io_operation_invalidate(blocking_operation->scheduler_operation);
+    }
+
     if (RB_TEST(wakeup_mutex)) {
         struct io_blocking_operation_arguments arguments = {
             .io = io,
@@ -2047,6 +2052,30 @@ rb_thread_io_blocking_operation_ensure(VALUE _argument)
     return Qnil;
 }
 
+struct thread_io_blocking_operation_arguments {
+    VALUE (*function)(VALUE);
+    VALUE argument;
+    struct rb_io_blocking_operation *blocking_operation;
+};
+
+static VALUE
+rb_thread_io_blocking_operation_body(VALUE _arguments)
+{
+    struct thread_io_blocking_operation_arguments *arguments = (void *)_arguments;
+    VALUE result = arguments->function(arguments->argument);
+    VALUE operation = arguments->blocking_operation->scheduler_operation;
+
+    if (!NIL_P(operation)) {
+        VALUE exception = rb_fiber_scheduler_io_operation_exception(operation);
+
+        if (!NIL_P(exception)) {
+            rb_exc_raise(exception);
+        }
+    }
+
+    return result;
+}
+
 /*
  * Executes a function that performs a blocking IO operation, while properly tracking
  * the operation in the IO's blocking_operations list. This ensures proper cleanup
@@ -2069,6 +2098,7 @@ rb_thread_io_blocking_operation(VALUE self, VALUE(*function)(VALUE), VALUE argum
     rb_execution_context_t *ec = GET_EC();
     struct rb_io_blocking_operation blocking_operation = {
         .ec = ec,
+        .scheduler_operation = Qnil,
     };
     rb_io_blocking_operation_enter(io, &blocking_operation);
 
@@ -2077,7 +2107,13 @@ rb_thread_io_blocking_operation(VALUE self, VALUE(*function)(VALUE), VALUE argum
         .blocking_operation = &blocking_operation
     };
 
-    return rb_ensure(function, argument, rb_thread_io_blocking_operation_ensure, (VALUE)&io_blocking_operation_arguments);
+    struct thread_io_blocking_operation_arguments arguments = {
+        .function = function,
+        .argument = argument,
+        .blocking_operation = &blocking_operation,
+    };
+
+    return rb_ensure(rb_thread_io_blocking_operation_body, (VALUE)&arguments, rb_thread_io_blocking_operation_ensure, (VALUE)&io_blocking_operation_arguments);
 }
 
 static bool
@@ -2187,6 +2223,7 @@ rb_thread_io_blocking_call(struct rb_io* io, rb_blocking_function_t *func, void 
 
     struct rb_io_blocking_operation blocking_operation = {
         .ec = ec,
+        .scheduler_operation = Qnil,
     };
     rb_io_blocking_operation_enter(io, &blocking_operation);
 
@@ -3061,7 +3098,8 @@ rb_ec_reset_raised(rb_execution_context_t *ec)
  * - Set up wakeup_mutex for synchronization
  * - Iterate through all blocking operations in io->blocking_operations
  * - For each blocked fiber with a scheduler:
- *   - Notify via rb_fiber_scheduler_fiber_interrupt
+ *   - Notify via rb_fiber_scheduler_blocking_operation_interrupt, or
+ *     rb_fiber_scheduler_fiber_interrupt for compatibility
  * - For each blocked thread without a scheduler:
  *   - Enqueue IOError via rb_threadptr_pending_interrupt_enque
  *   - Wake via rb_threadptr_interrupt
@@ -3086,7 +3124,22 @@ thread_io_close_notify_all(VALUE _io)
             rb_thread_t *thread = ec->thread_ptr;
 
             if (thread->scheduler != Qnil) {
-                rb_fiber_scheduler_fiber_interrupt(thread->scheduler, rb_fiberptr_self(ec->fiber_ptr), error);
+                VALUE fiber = rb_fiberptr_self(ec->fiber_ptr);
+
+                if (rb_fiber_scheduler_supports_blocking_operation_interrupt(thread->scheduler)) {
+                    VALUE operation = blocking_operation->scheduler_operation;
+
+                    if (NIL_P(operation)) {
+                        operation = rb_fiber_scheduler_io_operation_new(fiber, error);
+                        blocking_operation->scheduler_operation = operation;
+                    }
+
+                    rb_fiber_scheduler_blocking_operation_interrupt(thread->scheduler, operation, error);
+                    RB_GC_GUARD(operation);
+                }
+                else {
+                    rb_fiber_scheduler_fiber_interrupt(thread->scheduler, fiber, error);
+                }
             }
             else {
                 // If the thread is not the current thread, we need to enqueue an error:
@@ -4884,6 +4937,7 @@ thread_io_wait(rb_thread_t *th, struct rb_io *io, int fd, int events, struct tim
 
     if (io) {
         blocking_operation.ec = ec;
+        blocking_operation.scheduler_operation = Qnil;
 COMPILER_WARNING_PUSH
 #if RBIMPL_COMPILER_SINCE(GCC, 12, 0, 0)
 COMPILER_WARNING_IGNORED(-Wdangling-pointer)
@@ -5054,12 +5108,14 @@ thread_io_wait(rb_thread_t *th, struct rb_io *io, int fd, int events, struct tim
     if (io) {
         args.io = io;
         blocking_operation.ec = th->ec;
+        blocking_operation.scheduler_operation = Qnil;
         rb_io_blocking_operation_enter(io, &blocking_operation);
         args.blocking_operation = &blocking_operation;
     }
     else {
         args.io = NULL;
         blocking_operation.ec = NULL;
+        blocking_operation.scheduler_operation = Qnil;
         args.blocking_operation = NULL;
     }
 

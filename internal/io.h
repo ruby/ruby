@@ -27,6 +27,9 @@ struct rb_io_blocking_operation {
 
     // The execution context of the blocking operation.
     struct rb_execution_context_struct *ec;
+
+    // An opaque scheduler operation, created if the operation is interrupted.
+    VALUE scheduler_operation;
 };
 
 /** Ruby's IO, metadata and buffers. */

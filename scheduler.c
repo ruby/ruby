@@ -17,6 +17,7 @@
 #include "ruby/thread.h"
 
 // For `ruby_thread_has_gvl_p`:
+#include "internal/scheduler.h"
 #include "internal/thread.h"
 
 // For atomic operations:
@@ -45,12 +46,117 @@ static ID id_io_close;
 static ID id_address_resolve;
 
 static ID id_blocking_operation_wait;
+static ID id_blocking_operation_interrupt;
 static ID id_fiber_interrupt;
 
 static ID id_fiber_schedule;
 
 // Our custom blocking operation class
 static VALUE rb_cFiberSchedulerBlockingOperation;
+static VALUE rb_cFiberSchedulerIOOperation;
+
+struct rb_fiber_scheduler_io_operation {
+    VALUE fiber;
+    VALUE exception;
+    bool active;
+};
+
+static void
+io_operation_mark(void *ptr)
+{
+    struct rb_fiber_scheduler_io_operation *operation = ptr;
+
+    rb_gc_mark(operation->fiber);
+    rb_gc_mark(operation->exception);
+}
+
+static size_t
+io_operation_memsize(const void *ptr)
+{
+    return sizeof(struct rb_fiber_scheduler_io_operation);
+}
+
+static const rb_data_type_t io_operation_data_type = {
+    "Fiber::Scheduler::IOOperation",
+    {
+        io_operation_mark,
+        RUBY_DEFAULT_FREE,
+        io_operation_memsize,
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+};
+
+static struct rb_fiber_scheduler_io_operation *
+get_io_operation(VALUE self)
+{
+    struct rb_fiber_scheduler_io_operation *operation;
+    TypedData_Get_Struct(self, struct rb_fiber_scheduler_io_operation, &io_operation_data_type, operation);
+    return operation;
+}
+
+static VALUE
+io_operation_active_p(VALUE self)
+{
+    return RBOOL(get_io_operation(self)->active);
+}
+
+/*
+ * Raise the pending exception in the fiber if this operation is still active.
+ * This method is intended to be invoked on the scheduler's owning thread.
+ */
+static VALUE
+io_operation_interrupt(VALUE self)
+{
+    struct rb_fiber_scheduler_io_operation *operation = get_io_operation(self);
+
+    if (!operation->active) {
+        return Qfalse;
+    }
+
+    VALUE exception = operation->exception;
+    return rb_fiber_raise(operation->fiber, 1, &exception);
+}
+
+VALUE
+rb_fiber_scheduler_io_operation_new(VALUE fiber, VALUE exception)
+{
+    struct rb_fiber_scheduler_io_operation *operation;
+    VALUE self = TypedData_Make_Struct(rb_cFiberSchedulerIOOperation, struct rb_fiber_scheduler_io_operation, &io_operation_data_type, operation);
+
+    operation->fiber = fiber;
+    operation->exception = exception;
+    operation->active = true;
+
+    return self;
+}
+
+VALUE
+rb_fiber_scheduler_io_operation_exception(VALUE self)
+{
+    struct rb_fiber_scheduler_io_operation *operation = get_io_operation(self);
+
+    if (operation->active) {
+        return operation->exception;
+    }
+
+    return Qnil;
+}
+
+void
+rb_fiber_scheduler_io_operation_invalidate(VALUE self)
+{
+    struct rb_fiber_scheduler_io_operation *operation = get_io_operation(self);
+
+    operation->active = false;
+    operation->fiber = Qnil;
+    operation->exception = Qnil;
+}
+
+bool
+rb_fiber_scheduler_supports_blocking_operation_interrupt(VALUE scheduler)
+{
+    return rb_respond_to(scheduler, id_blocking_operation_interrupt);
+}
 
 /*
  * Custom blocking operation structure for blocking operations
@@ -289,12 +395,14 @@ rb_fiber_scheduler_blocking_operation_new(void *(*function)(void *), void *data,
  *  * #address_resolve
  *  * #block and #unblock
  *  * #blocking_operation_wait
+ *  * #blocking_operation_interrupt
  *  * #fiber_interrupt
  *  * #yield
  *  * (the list is expanded as Ruby developers make more methods having non-blocking calls)
  *
- *  The #block, #unblock, #kernel_sleep, #io_wait, and #fiber_interrupt hooks are mandatory.
- *  Other hooks are optional unless specified otherwise.
+ *  The #block, #unblock, #kernel_sleep, and #io_wait hooks are mandatory. Schedulers must also
+ *  implement either #blocking_operation_interrupt or #fiber_interrupt. Other hooks are optional
+ *  unless specified otherwise.
  *
  *  It is also strongly recommended that the scheduler implements the #fiber method, which is
  *  delegated to by Fiber.schedule.
@@ -331,6 +439,7 @@ Init_Fiber_Scheduler(void)
     id_address_resolve = rb_intern_const("address_resolve");
 
     id_blocking_operation_wait = rb_intern_const("blocking_operation_wait");
+    id_blocking_operation_interrupt = rb_intern_const("blocking_operation_interrupt");
     id_fiber_interrupt = rb_intern_const("fiber_interrupt");
 
     id_fiber_schedule = rb_intern_const("fiber");
@@ -343,6 +452,14 @@ Init_Fiber_Scheduler(void)
 
     // Register the anonymous class as a GC root so it doesn't get collected
     rb_gc_register_mark_object(rb_cFiberSchedulerBlockingOperation);
+
+    // Define an anonymous IO operation class. Instances are passed to
+    // blocking_operation_interrupt and cannot be instantiated directly.
+    rb_cFiberSchedulerIOOperation = rb_class_new(rb_cObject);
+    rb_undef_alloc_func(rb_cFiberSchedulerIOOperation);
+    rb_define_method(rb_cFiberSchedulerIOOperation, "active?", io_operation_active_p, 0);
+    rb_define_method(rb_cFiberSchedulerIOOperation, "interrupt", io_operation_interrupt, 0);
+    rb_gc_register_mark_object(rb_cFiberSchedulerIOOperation);
 
 #if 0 /* for RDoc */
     rb_cFiberScheduler = rb_define_class_under(rb_cFiber, "Scheduler", rb_cObject);
@@ -361,6 +478,7 @@ Init_Fiber_Scheduler(void)
     rb_define_method(rb_cFiberScheduler, "unblock", rb_fiber_scheduler_unblock, 2);
     rb_define_method(rb_cFiberScheduler, "fiber", rb_fiber_scheduler_fiber, -2);
     rb_define_method(rb_cFiberScheduler, "blocking_operation_wait", rb_fiber_scheduler_blocking_operation_wait, -2);
+    rb_define_method(rb_cFiberScheduler, "blocking_operation_interrupt", rb_fiber_scheduler_blocking_operation_interrupt, 2);
     rb_define_method(rb_cFiberScheduler, "yield", rb_fiber_scheduler_yield, 0);
     rb_define_method(rb_cFiberScheduler, "fiber_interrupt", rb_fiber_scheduler_fiber_interrupt, 2);
     rb_define_method(rb_cFiberScheduler, "io_close", rb_fiber_scheduler_io_close, 1);
@@ -397,8 +515,8 @@ verify_interface(VALUE scheduler)
         rb_raise(rb_eArgError, "Scheduler must implement #io_wait");
     }
 
-    if (!rb_respond_to(scheduler, id_fiber_interrupt)) {
-        rb_raise(rb_eArgError, "Scheduler must implement #fiber_interrupt");
+    if (!rb_respond_to(scheduler, id_blocking_operation_interrupt) && !rb_respond_to(scheduler, id_fiber_interrupt)) {
+        rb_raise(rb_eArgError, "Scheduler must implement #blocking_operation_interrupt or #fiber_interrupt");
     }
 }
 
@@ -1152,25 +1270,13 @@ VALUE rb_fiber_scheduler_blocking_operation_wait(VALUE scheduler, void* (*functi
     return result;
 }
 
-/*
- * Document-method: Fiber::Scheduler#fiber_interrupt
- * call-seq: fiber_interrupt(fiber, exception)
- *
- * Invoked by Ruby's core methods to notify the scheduler that the blocked fiber should be interrupted
- * with an exception. For example, IO#close uses this method to interrupt fibers that are performing
- * blocking IO operations.
- *
- */
-VALUE rb_fiber_scheduler_fiber_interrupt(VALUE scheduler, VALUE fiber, VALUE exception)
+static VALUE
+fiber_scheduler_interrupt(VALUE scheduler, ID method, int argc, const VALUE *arguments)
 {
-    VALUE arguments[] = {
-        fiber, exception
-    };
-
     VALUE result;
     enum ruby_tag_type state;
 
-    // We must prevent interrupts while invoking the fiber_interrupt method, because otherwise fibers can be left permanently blocked if an interrupt occurs during the execution of user code. See also `rb_fiber_scheduler_unblock`.
+    // We must prevent interrupts while invoking the scheduler, because otherwise fibers can be left permanently blocked if an interrupt occurs during the execution of user code. See also `rb_fiber_scheduler_unblock`.
     rb_execution_context_t * volatile ec = GET_EC();
     volatile int saved_interrupt_mask = ec->interrupt_mask;
     ec->interrupt_mask |= PENDING_INTERRUPT_MASK;
@@ -1178,7 +1284,7 @@ VALUE rb_fiber_scheduler_fiber_interrupt(VALUE scheduler, VALUE fiber, VALUE exc
     rb_control_frame_t *volatile cfp = ec->cfp;
     EC_PUSH_TAG(ec);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
-        result = rb_funcallv(scheduler, id_fiber_interrupt, 2, arguments);
+        result = rb_funcallv(scheduler, method, argc, arguments);
     }
     else {
         rb_vm_rewind_cfp(ec, cfp);
@@ -1194,6 +1300,51 @@ VALUE rb_fiber_scheduler_fiber_interrupt(VALUE scheduler, VALUE fiber, VALUE exc
     RUBY_VM_CHECK_INTS(ec);
 
     return result;
+}
+
+/*
+ * Document-method: Fiber::Scheduler#blocking_operation_interrupt
+ * call-seq: blocking_operation_interrupt(operation, exception)
+ *
+ * Invoked by IO#close to interrupt a specific blocking operation. The opaque
+ * +operation+ responds to #active? and #interrupt. Because this hook may be
+ * invoked from another thread, the scheduler should enqueue +operation+ on its
+ * owning thread and invoke #interrupt there. If the operation completed before
+ * the queued interruption runs, #active? returns false and #interrupt has no
+ * effect.
+ *
+ * This hook is preferred over #fiber_interrupt because the interruption cannot
+ * escape the operation which caused it.
+ */
+VALUE
+rb_fiber_scheduler_blocking_operation_interrupt(VALUE scheduler, VALUE operation, VALUE exception)
+{
+    VALUE arguments[] = {
+        operation, exception
+    };
+
+    return fiber_scheduler_interrupt(scheduler, id_blocking_operation_interrupt, 2, arguments);
+}
+
+/*
+ * Document-method: Fiber::Scheduler#fiber_interrupt
+ * call-seq: fiber_interrupt(fiber, exception)
+ *
+ * Invoked by Ruby's core methods to notify the scheduler that the blocked fiber should be interrupted
+ * with an exception. For example, IO#close uses this method to interrupt fibers that are performing
+ * blocking IO operations.
+ *
+ * This hook is retained for compatibility. New schedulers should implement
+ * #blocking_operation_interrupt instead.
+ */
+VALUE
+rb_fiber_scheduler_fiber_interrupt(VALUE scheduler, VALUE fiber, VALUE exception)
+{
+    VALUE arguments[] = {
+        fiber, exception
+    };
+
+    return fiber_scheduler_interrupt(scheduler, id_fiber_interrupt, 2, arguments);
 }
 
 /*
