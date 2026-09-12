@@ -6213,9 +6213,9 @@ impl Function {
     fn gen_post_send_no_ep_escape_patch_point(&mut self, block: BlockId, state: &FrameState, insn_idx: u32) {
         let iseq = state.iseq;
         let mut reload_state = state.clone();
-        reload_state.insn_idx = insn_idx as usize;
+        reload_state.insn_idx = insn_idx.to_usize();
         reload_state.pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx) };
-        let reload_exit_id = self.push_insn(block, Insn::Snapshot { state: Box::new(reload_state.without_locals()) });
+        let reload_exit_id = self.push_insn(block, Insn::Snapshot { state: Box::new(reload_state) });
         self.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoEPEscape(iseq), state: reload_exit_id });
     }
 
@@ -8354,13 +8354,6 @@ impl FrameState {
         self.insn_idx
     }
 
-    /// Return itself without locals. Useful for side-exiting without spilling locals.
-    fn without_locals(&self) -> Self {
-        let mut state = self.clone();
-        state.locals.clear();
-        state
-    }
-
     /// Return itself without stack. Used by leaf calls with GC to reset SP to the base pointer.
     pub fn without_stack(&self) -> Self {
         let mut state = self.clone();
@@ -9405,7 +9398,6 @@ fn add_iseq_to_hir(
                         let ep = fun.get_ep(block, 0);
                         fun.get_local_from_ep(block, iseq, ep, ep_offset, 0, types::BasicObject)
                     } else {
-                        let exit_id = fun.push_insn(block, Insn::Snapshot { state: Box::new(exit_state.without_locals()) });
                         fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoEPEscape(iseq), state: exit_id });
                         local_inval = false;
                         state.getlocal(ep_offset)
@@ -9632,7 +9624,6 @@ fn add_iseq_to_hir(
                         assert!(local_inval); // if check above
                         // There has been some non-leaf call since JIT entry or the last patch point,
                         // so add a patch point to make sure locals have not been escaped.
-                        let exit_id = fun.push_insn(block, Insn::Snapshot { state: Box::new(exit_state.without_locals()) }); // skip spilling locals
                         fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoEPEscape(iseq), state: exit_id });
                         local_inval = false;
 
@@ -9650,7 +9641,6 @@ fn add_iseq_to_hir(
                     } else if local_inval {
                         // If there has been any non-leaf call since JIT entry or the last patch point,
                         // add a patch point to make sure locals have not been escaped.
-                        let exit_id = fun.push_insn(block, Insn::Snapshot { state: Box::new(exit_state.without_locals()) }); // skip spilling locals
                         fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoEPEscape(iseq), state: exit_id });
                         local_inval = false;
                     }
