@@ -301,6 +301,40 @@ class TestFileExhaustive < Test::Unit::TestCase
     end
   end if NTFS
 
+  def test_stat_dotted_infix # [Bug #12040]
+    Dir.mktmpdir do |dir|
+      path = File.join(dir, "x...y")
+      Dir.mkdir(path)
+      assert_nothing_raised { File.stat(path) }
+      assert_raise(Errno::ENOENT) { File.stat(File.join(path, "...")) }
+      assert_raise(Errno::ENOENT) { File.stat(File.join(path, "....")) }
+      assert_raise(Errno::ENOENT) { File.stat(File.join(path, "... ")) }
+    end
+  end if NTFS
+
+  def test_stat_dotted_infix_unlistable # [Bug #12040]
+    user = ENV["USERNAME"]
+    omit "USERNAME is not set or empty" if user.nil? or user.empty?
+    Dir.mktmpdir do |dir|
+      path = File.join(dir, "x...y")
+      Dir.mkdir(path)
+      # Imitate a mount point root, which exists but cannot be enumerated.
+      case system("icacls", path, "/deny", "#{user}:(RD)", out: File::NULL, err: File::NULL)
+      when nil then omit "icacls is not available"
+      when false then omit "icacls failed to deny the listing"
+      end
+      begin
+        Dir.children(path)
+      rescue Errno::EACCES
+        assert_nothing_raised { File.stat(path) }
+      else
+        omit "denying the listing did not take effect"
+      ensure
+        system("icacls", path, "/remove:d", user, out: File::NULL, err: File::NULL)
+      end
+    end
+  end if NTFS
+
   def test_lstat
     return unless symlinkfile
     assert_equal(false, File.stat(symlinkfile).symlink?)
