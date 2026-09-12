@@ -1,0 +1,81 @@
+name: CET
+
+on:
+  push:
+    paths-ignore:
+      - 'doc/**'
+      - '**/man/*'
+      - '**.md'
+      - '**.rdoc'
+      - '**/.document'
+      - '.*.yml'
+  pull_request:
+  merge_group:
+
+concurrency:
+  group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
+  cancel-in-progress: ${{ startsWith(github.event_name, 'pull') }}
+
+permissions:
+  contents: read
+
+jobs:
+  shstk:
+    name: SHSTK
+    runs-on: ubuntu-24.04
+
+    env:
+      CONFIGURE_TTY: never
+      RUBY_DEBUG: ci
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout-cone-mode: false
+          sparse-checkout: /.github
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup/ubuntu
+
+      - uses: ruby/setup-ruby@95ef2b042f9d7a56d8268cba8559e2842e2ad01b # v1.321.0
+        with:
+          ruby-version: '3.1'
+          bundler: none
+
+      - uses: ./.github/actions/setup/directories
+        with:
+          srcdir: src
+          builddir: build
+          makeup: true
+          clean: true
+
+      - name: Require userspace shadow-stack support
+        run: |
+          if ! grep -qw user_shstk /proc/cpuinfo; then
+            echo '::error::The runner does not expose Intel CET shadow-stack support.'
+            exit 1
+          fi
+
+      - name: Run configure
+        run: >-
+          ../src/configure -C
+          --enable-debug-env
+          --disable-install-doc
+          --with-gcc="gcc -fcf-protection=return"
+
+      - run: make
+
+      - name: Test with shadow stacks enabled
+        env:
+          GLIBC_TUNABLES: glibc.cpu.x86_shstk=on
+          RUBY_TESTOPTS: '-q --tty=no'
+        run: |
+          ./miniruby -e '
+            features = File.read("/proc/self/status")[/^x86_Thread_features:\s*(.*)$/, 1]
+            abort "SHSTK is not active (x86_Thread_features: #{features || "missing"})" unless features&.split&.include?("shstk")
+          '
+          make -s test-all TESTS='test/ruby/test_fiber.rb test/ruby/test_continuation.rb'
+
+defaults:
+  run:
+    working-directory: build
