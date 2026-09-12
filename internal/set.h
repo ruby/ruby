@@ -13,6 +13,7 @@
 
 VALUE rb_ident_set_new(void);
 bool rb_set_add_no_check(VALUE set, VALUE element);
+bool rb_set_delete_no_check(VALUE set, VALUE element);
 VALUE rb_set_to_a(VALUE set);
 
 #endif /* INTERNAL_SET_H */
