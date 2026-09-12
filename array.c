@@ -5968,14 +5968,6 @@ rb_ary_intersection_multi(int argc, VALUE *argv, VALUE ary)
     return result;
 }
 
-static int
-ary_hash_orset(st_data_t *key, st_data_t *value, st_data_t arg, int existing)
-{
-    if (existing) return ST_STOP;
-    *key = *value = (VALUE)arg;
-    return ST_CONTINUE;
-}
-
 static void
 rb_ary_union(VALUE ary_union, VALUE ary)
 {
@@ -5988,14 +5980,10 @@ rb_ary_union(VALUE ary_union, VALUE ary)
 }
 
 static void
-rb_ary_union_hash(VALUE hash, VALUE ary2)
+rb_ary_union_set(VALUE set, VALUE ary)
 {
-    long i;
-    for (i = 0; i < RARRAY_LEN(ary2); i++) {
-        VALUE elt = RARRAY_AREF(ary2, i);
-        if (!rb_hash_stlike_update(hash, (st_data_t)elt, ary_hash_orset, (st_data_t)elt)) {
-            RB_OBJ_WRITTEN(hash, Qundef, elt);
-        }
+    for (long i = 0; i < RARRAY_LEN(ary); i++) {
+        rb_set_add_no_check(set, RARRAY_AREF(ary, i));
     }
 }
 
@@ -6026,12 +6014,8 @@ rb_ary_or(VALUE ary1, VALUE ary2)
     }
 
     VALUE set = rb_obj_hide(rb_set_new_capa(RARRAY_LEN(ary1) + RARRAY_LEN(ary2)));
-    for (long i = 0; i < RARRAY_LEN(ary1); i++) {
-        rb_set_add_no_check(set, RARRAY_AREF(ary1, i));
-    }
-    for (long i = 0; i < RARRAY_LEN(ary2); i++) {
-        rb_set_add_no_check(set, RARRAY_AREF(ary2, i));
-    }
+    rb_ary_union_set(set, ary1);
+    rb_ary_union_set(set, ary2);
 
     return rb_set_to_a(set);
 }
@@ -6062,12 +6046,8 @@ rb_ary_or(VALUE ary1, VALUE ary2)
 static VALUE
 rb_ary_union_multi(int argc, VALUE *argv, VALUE ary)
 {
-    int i;
-    long sum;
-    VALUE hash;
-
-    sum = RARRAY_LEN(ary);
-    for (i = 0; i < argc; i++) {
+    long sum = RARRAY_LEN(ary);
+    for (int i = 0; i < argc; i++) {
         argv[i] = to_ary(argv[i]);
         sum += RARRAY_LEN(argv[i]);
     }
@@ -6076,15 +6056,16 @@ rb_ary_union_multi(int argc, VALUE *argv, VALUE ary)
         VALUE ary_union = rb_ary_new();
 
         rb_ary_union(ary_union, ary);
-        for (i = 0; i < argc; i++) rb_ary_union(ary_union, argv[i]);
+        for (int i = 0; i < argc; i++) rb_ary_union(ary_union, argv[i]);
 
         return ary_union;
     }
 
-    hash = ary_make_hash(ary);
-    for (i = 0; i < argc; i++) rb_ary_union_hash(hash, argv[i]);
+    VALUE set = rb_obj_hide(rb_set_new_capa(sum));
+    rb_ary_union_set(set, ary);
+    for (int i = 0; i < argc; i++) rb_ary_union_set(set, argv[i]);
 
-    return rb_hash_values(hash);
+    return rb_set_to_a(set);
 }
 
 /*
