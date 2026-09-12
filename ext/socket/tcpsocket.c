@@ -20,7 +20,7 @@
  *
  * Starting from Ruby 3.4, this method operates according to the
  * Happy Eyeballs Version 2 ({RFC 8305}[https://datatracker.ietf.org/doc/html/rfc8305])
- * algorithm by default, except on Windows.
+ * algorithm by default, except on MinGW builds of Windows.
  *
  * For details on Happy Eyeballs Version 2,
  * see {Socket.tcp_fast_fallback=}[rdoc-ref:Socket.tcp_fast_fallback=].
@@ -30,7 +30,7 @@
  * Or, setting Socket.tcp_fast_fallback=false will disable
  * Happy Eyeballs Version 2 not only for this method but for all Socket globally.
  *
- * When using TCPSocket.new on Windows, Happy Eyeballs Version 2 is not provided,
+ * When using TCPSocket.new on MinGW builds of Windows, Happy Eyeballs Version 2 is not provided,
  * and it behaves the same as in Ruby 3.3 and earlier.
  *
  * [:resolv_timeout] Specifies the timeout in seconds from when the hostname resolution starts.
