@@ -26,6 +26,7 @@ jobs:
 
     container:
       image: fedora:rawhide
+      options: --security-opt seccomp=unconfined
 
     env:
       CONFIGURE_TTY: never
@@ -54,6 +55,8 @@ jobs:
           clean: true
 
       - name: Require userspace shadow-stack support
+        env:
+          GLIBC_TUNABLES: glibc.cpu.x86_shstk=on
         run: |
           ldd --version | head -1
           /lib64/ld-linux-x86-64.so.2 --list-tunables | grep '^glibc.cpu.x86_shstk:'
@@ -61,6 +64,10 @@ jobs:
             echo '::error::The runner does not expose Intel CET shadow-stack support.'
             exit 1
           fi
+          ruby -e '
+            line = File.foreach("/proc/self/status").find { |entry| entry.start_with?("x86_Thread_features:") }
+            abort "The container cannot activate SHSTK" unless line&.split&.include?("shstk")
+          '
 
       - name: Run configure
         run: >-
