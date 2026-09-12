@@ -115,7 +115,10 @@ char *strchr(char*,char);
 #include "internal/object.h"
 #include "internal/imemo.h"
 #include "internal/vm.h"
+#include "vm_core.h"
 #include "ruby/encoding.h"
+#include "ruby/ractor.h"
+
 #include "ruby/ruby.h"
 #include "ruby/thread.h"
 #include "ruby/util.h"
@@ -1246,12 +1249,12 @@ dir_chdir0(VALUE path)
 }
 
 static struct {
-    VALUE thread;
+    rb_thread_t *thread; /* only ever compared, never dereferenced */
     VALUE path;
     int line;
     int blocking;
 } chdir_lock = {
-    .blocking = 0, .thread = Qnil,
+    .blocking = 0, .thread = NULL,
     .path = Qnil, .line = 0,
 };
 
@@ -1259,11 +1262,16 @@ static void
 chdir_enter(void)
 {
     if (chdir_lock.blocking == 0) {
-        chdir_lock.path = rb_source_location(&chdir_lock.line);
+        VALUE path = rb_source_location(&chdir_lock.line);
+        /* chdir_lock.path is registered on the main Ractor, but the source
+         * location string belongs to the calling Ractor. To avoid the dangling
+         * reference on local GC, this needs to be shareable
+         */
+        chdir_lock.path = NIL_P(path) ? Qnil : RB_OBJ_SET_FROZEN_SHAREABLE(rb_str_dup(path));
     }
     chdir_lock.blocking++;
-    if (NIL_P(chdir_lock.thread)) {
-        chdir_lock.thread = rb_thread_current();
+    if (chdir_lock.thread == NULL) {
+        chdir_lock.thread = rb_thread_ptr(rb_thread_current());
     }
 }
 
@@ -1272,7 +1280,7 @@ chdir_leave(void)
 {
     chdir_lock.blocking--;
     if (chdir_lock.blocking == 0) {
-        chdir_lock.thread = Qnil;
+        chdir_lock.thread = NULL;
         chdir_lock.path = Qnil;
         chdir_lock.line = 0;
     }
@@ -1283,7 +1291,7 @@ chdir_alone_block_p(void)
 {
     int block_given = rb_block_given_p();
     if (chdir_lock.blocking > 0) {
-        if (rb_thread_current() != chdir_lock.thread)
+        if (rb_thread_ptr(rb_thread_current()) != chdir_lock.thread)
             rb_raise(rb_eRuntimeError, "conflicting chdir during another chdir block");
         if (!block_given) {
             if (!NIL_P(chdir_lock.path)) {
@@ -1634,6 +1642,7 @@ rb_dir_getwd_ospath(void)
         cached_cwd = rb_str_new(path, (long)len);
 #endif
         rb_str_freeze(cached_cwd);
+        RB_OBJ_SET_SHAREABLE(cached_cwd);
         RUBY_ATOMIC_VALUE_SET(last_cwd, cached_cwd);
     }
     return cached_cwd;
@@ -4061,7 +4070,6 @@ Init_Dir(void)
 #endif
 
     rb_gc_register_address(&chdir_lock.path);
-    rb_gc_register_address(&chdir_lock.thread);
     rb_gc_register_address(&last_cwd);
 
     rb_cDir = rb_define_class("Dir", rb_cObject);

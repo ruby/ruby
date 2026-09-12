@@ -3597,6 +3597,10 @@ ruby_vm_destruct(rb_vm_t *vm)
             }
             rb_objspace_free(objspace);
         }
+
+        if (rb_free_at_exit) {
+            free(vm->gc.registered_addrs.registry);
+        }
         rb_native_mutex_destroy(&vm->once_lock);
         rb_native_cond_destroy(&vm->once_cond);
         /* after freeing objspace, you *can't* use ruby_xfree() */
@@ -4895,6 +4899,7 @@ Init_BareVM(void)
     /* The boot objspace belongs to the main Ractor, so the main Ractor has to exist
      * before rb_gc_init_objspaces allocates it. */
     vm->ractor.main_ractor = rb_ractor_main_alloc();
+    rb_native_mutex_initialize(&vm->gc.registered_addrs.lock);
     rb_gc_init_objspaces();
     vm->ractor.main_ractor->newobj_cache = rb_gc_ractor_cache_alloc(vm->ractor.main_ractor);
     rb_id_table_init(&vm->negative_cme_table, 16);
@@ -4919,7 +4924,6 @@ Init_BareVM(void)
     rb_native_mutex_initialize(&vm->ractor.sync.lock);
     rb_native_cond_initialize(&vm->ractor.sync.terminate_cond);
     rb_native_mutex_initialize(&vm->ractor.generic_fields_lock);
-    rb_native_mutex_initialize(&vm->gc.registered_globals.lock);
     vm->gc.orphan_merge_pjob = POSTPONED_JOB_HANDLE_INVALID;
 
     vm_opt_method_def_table = st_init_numtable();

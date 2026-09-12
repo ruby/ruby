@@ -123,4 +123,33 @@ class JSONInRactorTest < Test::Unit::TestCase
     _, status = Process.waitpid2(pid)
     assert_predicate status, :success?
   end if Ractor.respond_to?(:shareable_proc)
+
+  def test_default_sort_keys_proc_ractor_safety
+    pid = fork do
+      Warning[:experimental] = false
+      results = Ractor.new do
+        outcomes = []
+
+        begin
+          JSON::State.default_sort_keys_proc = ->(hash) { hash.sort.to_h }
+          outcomes << :accepted
+        rescue Ractor::IsolationError
+          outcomes << :rejected
+        end
+
+        # A shareable Proc is allowed from any Ractor.
+        JSON::State.default_sort_keys_proc = Ractor.shareable_lambda { |hash| hash.sort.reverse.to_h }
+        outcomes << JSON.generate({b: 1, a: 2}, sort_keys: true)
+        outcomes
+      end.value
+
+      # The main Ractor owns the slot, so it may install any Proc.
+      JSON::State.default_sort_keys_proc = ->(hash) { hash.sort.to_h }
+      main_result = JSON.generate({b: 1, a: 2}, sort_keys: true)
+
+      exit(results == [:rejected, '{"b":1,"a":2}'] && main_result == '{"a":2,"b":1}' ? 0 : 1)
+    end
+    _, status = Process.waitpid2(pid)
+    assert_predicate status, :success?
+  end if Ractor.respond_to?(:shareable_lambda)
 end if defined?(Ractor) && Process.respond_to?(:fork)

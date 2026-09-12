@@ -6608,11 +6608,7 @@ root_scope_check_i(const char *category, VALUE obj, void *ptr)
     if (strcmp(category, "machine_context") == 0 ||
         strcmp(category, "vm_registered_objects") == 0 ||
         strcmp(category, "end_proc") == 0 ||
-        strcmp(category, "trap_list") == 0 ||
-        /* Every Ractor's root scan walks the one VM-wide registered-globals list (a slot
-         * can hold another objspace's value); rb_gc_mark_maybe filters to its own
-         * objspace, so a foreign entry here is by design, not a leak. */
-        strcmp(category, "registered_globals") == 0) {
+        strcmp(category, "trap_list") == 0) {
         return;
     }
 
@@ -6830,6 +6826,28 @@ gc_verify_heap_pages(rb_objspace_t *objspace)
 }
 
 static void
+verify_registered_addr(VALUE *slot, void *owner_objspace, void *d)
+{
+    VALUE v = *slot;
+
+    if (SPECIAL_CONST_P(v)) return;
+    if (!verify_pointer_in_any_heap_p((void *)v)) return;
+
+    bool live = false;
+    asan_unpoisoning_object(v) {
+        live = BUILTIN_TYPE(v) != T_NONE && BUILTIN_TYPE(v) != T_ZOMBIE;
+    }
+    if (!live) return;
+
+    if (GET_HEAP_OBJSPACE(v) == (rb_objspace_t *)owner_objspace) return;
+    if (MARKED_IN_BITMAP(GET_HEAP_SHAREABLE_BITS(v), v)) return;
+    if (MARKED_IN_BITMAP(GET_HEAP_SHREF_BITS(v), v)) return;
+
+    fprintf(stderr, "registered address %p may hold an unshareable object owned by another Ractor: %s\n",
+            (void *)slot, rb_obj_info(v));
+}
+
+static void
 gc_verify_internal_consistency_(rb_objspace_t *objspace, bool world_stopped)
 {
     struct verify_internal_consistency_struct data = {0};
@@ -6855,6 +6873,10 @@ gc_verify_internal_consistency_(rb_objspace_t *objspace, bool world_stopped)
     if (!rb_gc_single_objspace_p() && objspace == rb_gc_get_objspace() &&
         !rb_gc_impl_during_global_gc_p(objspace)) {
         rb_objspace_reachable_objects_from_root(root_scope_check_i, &data);
+    }
+
+    if (data.world_stopped && !global_objspace->during_absorb) {
+        rb_gc_each_registered_addr(verify_registered_addr, &data);
     }
 
     if (data.err_count != 0) {

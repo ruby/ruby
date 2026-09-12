@@ -5256,7 +5256,8 @@ rb_thread_atfork_internal(rb_thread_t *th, void (*atfork)(rb_thread_t *, const r
     rb_signal_atfork();
 
     // OK. Only this thread accesses:
-    ccan_list_for_each(&vm->ractor.set, r, vmlr_node) {
+    rb_ractor_t *r_next;
+    ccan_list_for_each_safe(&vm->ractor.set, r, r_next, vmlr_node) {
         if (r != vm->ractor.main_ractor) {
             rb_ractor_terminate_atfork(vm, r);
         }
@@ -5264,7 +5265,8 @@ rb_thread_atfork_internal(rb_thread_t *th, void (*atfork)(rb_thread_t *, const r
             atfork(i, th);
         }
     }
-    rb_vm_living_threads_init(vm);
+
+    ccan_list_head_init(&vm->ractor.set);
 
     rb_ractor_atfork(vm, th);
     rb_vm_postponed_job_atfork();
