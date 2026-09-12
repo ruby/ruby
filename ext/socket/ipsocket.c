@@ -529,7 +529,6 @@ pick_addrinfo(struct hostname_resolution_store *resolution_store, int last_famil
 }
 
 #ifdef _WIN32
-int rb_w32_set_nonblock2(int fd, int nonblock);
 #define pipe(fds) rb_w32_pipe(fds)
 #endif
 
@@ -537,7 +536,8 @@ static void
 nonblock_set(int fd, int nonblock)
 {
 #ifdef _WIN32
-    if (rb_w32_set_nonblock2(fd, nonblock) < 0) rb_syserr_fail(errno, "ioctlsocket(2)");
+    /* Windows fcntl() lacks F_GETFL, and its F_SETFL only toggles O_NONBLOCK. */
+    int newflags = nonblock ? O_NONBLOCK : 0;
 #else
     int flags = fcntl(fd, F_GETFL);
 
@@ -545,9 +545,9 @@ nonblock_set(int fd, int nonblock)
 
     int newflags = nonblock ? (flags | O_NONBLOCK) : (flags & ~O_NONBLOCK);
     if (newflags == flags) return;
+#endif
 
     if (fcntl(fd, F_SETFL, newflags) < 0) rb_syserr_fail(errno, "fcntl(2)");
-#endif
     return;
 }
 
