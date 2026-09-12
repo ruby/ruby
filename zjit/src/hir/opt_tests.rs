@@ -10459,6 +10459,7 @@ mod hir_opt_tests {
     #[test]
     fn test_setivar_shape_guard_recompile() {
         set_max_versions(2);
+        set_num_exits_until_invalidate(1);
         // Call with one shape to compile, then call with a different shape to
         // trigger shape guard exits and recompilation. The recompiled version
         // specializes both profiled shapes.
