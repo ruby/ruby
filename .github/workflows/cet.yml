@@ -46,7 +46,7 @@ jobs:
           sparse-checkout: /.github
           persist-credentials: false
 
-      - uses: ./.github/actions/setup/directories
+      - uses: $/.github/actions/setup/directories
         with:
           srcdir: src
           builddir: build
