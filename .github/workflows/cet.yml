@@ -63,14 +63,6 @@ jobs:
             echo '::error::The runner does not expose Intel CET shadow-stack support.'
             exit 1
           fi
-          if ! strace -o /tmp/shstk.strace -e trace=arch_prctl,map_shadow_stack \
-            env GLIBC_TUNABLES=glibc.cpu.x86_shstk=on ruby -e '
-            line = File.foreach("/proc/self/status").find { |entry| entry.start_with?("x86_Thread_features:") }
-            abort "The container cannot activate SHSTK" unless line&.split&.include?("shstk")
-          '; then
-            cat /tmp/shstk.strace
-            exit 1
-          fi
 
       - name: Run configure
         run: >-
@@ -87,11 +79,15 @@ jobs:
           RUBY_TESTOPTS: '-q --tty=no'
         run: |
           readelf --notes ./miniruby | grep 'x86 feature: SHSTK'
-          ./miniruby -e '
+          if ! strace -o /tmp/shstk.strace -e trace=arch_prctl,map_shadow_stack \
+            ./miniruby -e '
             line = File.foreach("/proc/self/status").find { |entry| entry.start_with?("x86_Thread_features:") }
             features = line&.split(":", 2)&.last&.split || []
             abort "SHSTK is not active (x86_Thread_features: #{features.join(" ")})" unless features.include?("shstk")
-          '
+          '; then
+            cat /tmp/shstk.strace
+            exit 1
+          fi
           make -s test-all TESTS='test/ruby/test_fiber.rb test/ruby/test_continuation.rb'
 
 defaults:
