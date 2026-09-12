@@ -2288,6 +2288,12 @@ rb_set_add_no_check(VALUE set, VALUE element)
     return false;
 }
 
+bool
+rb_set_delete_no_check(VALUE set, VALUE element)
+{
+    return set_table_delete(RSET_TABLE(set), (st_data_t *)&element) != 0;
+}
+
 VALUE
 rb_set_to_a(VALUE set)
 {
