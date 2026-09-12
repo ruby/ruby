@@ -5725,60 +5725,12 @@ rb_ary_cmp(VALUE ary1, VALUE ary2)
     return INT2FIX(-1);
 }
 
-static VALUE
-ary_add_hash(VALUE hash, VALUE ary)
-{
-    long i;
-
-    for (i=0; i<RARRAY_LEN(ary); i++) {
-        VALUE elt = RARRAY_AREF(ary, i);
-        rb_hash_add_new_element(hash, elt, elt);
-    }
-    return hash;
-}
-
-static inline VALUE
-ary_tmp_hash_new(VALUE ary)
-{
-    long size = RARRAY_LEN(ary);
-    VALUE hash = rb_hash_new_capa(size);
-
-    RBASIC_CLEAR_CLASS(hash);
-    return hash;
-}
-
-static VALUE
-ary_make_hash(VALUE ary)
-{
-    VALUE hash = ary_tmp_hash_new(ary);
-    return ary_add_hash(hash, ary);
-}
-
 static void
 rb_ary_union_set(VALUE set, VALUE ary)
 {
     for (long i = 0; i < RARRAY_LEN(ary); i++) {
         rb_set_add_no_check(set, RARRAY_AREF(ary, i));
     }
-}
-
-static VALUE
-ary_add_hash_by(VALUE hash, VALUE ary)
-{
-    long i;
-
-    for (i = 0; i < RARRAY_LEN(ary); ++i) {
-        VALUE v = rb_ary_elt(ary, i), k = rb_yield(v);
-        rb_hash_add_new_element(hash, k, v);
-    }
-    return hash;
-}
-
-static VALUE
-ary_make_hash_by(VALUE ary)
-{
-    VALUE hash = ary_tmp_hash_new(ary);
-    return ary_add_hash_by(hash, ary);
 }
 
 /*
@@ -6499,9 +6451,9 @@ rb_ary_minmax(VALUE ary)
 }
 
 static int
-push_value(st_data_t key, st_data_t val, st_data_t ary)
+push_value_i(VALUE elt, VALUE ary)
 {
-    rb_ary_push((VALUE)ary, (VALUE)val);
+    rb_ary_push(ary, elt);
     return ST_CONTINUE;
 }
 
@@ -6535,19 +6487,28 @@ push_value(st_data_t key, st_data_t val, st_data_t ary)
 static VALUE
 rb_ary_uniq_bang(VALUE ary)
 {
-    VALUE hash;
-    long hash_size;
-
     rb_ary_modify_check(ary);
     if (RARRAY_LEN(ary) <= 1)
         return Qnil;
-    if (rb_block_given_p())
-        hash = ary_make_hash_by(ary);
-    else
-        hash = ary_make_hash(ary);
 
-    hash_size = RHASH_SIZE(hash);
-    if (RARRAY_LEN(ary) == hash_size) {
+    if (rb_block_given_p()) {
+        VALUE set = rb_obj_hide(rb_set_new_capa(RARRAY_LEN(ary)));
+        VALUE uniq = rb_ary_new_capa(RARRAY_LEN(ary));
+        for (long i = 0; i < RARRAY_LEN(ary); i++) {
+            VALUE elt = rb_ary_elt(ary, i);
+            if (rb_set_add_no_check(set, rb_yield(elt)))
+                rb_ary_push(uniq, elt);
+        }
+        if (RARRAY_LEN(ary) == RARRAY_LEN(uniq))
+            return Qnil;
+        rb_ary_replace(ary, uniq);
+        return ary;
+    }
+
+    VALUE set = rb_obj_hide(rb_set_new_capa(RARRAY_LEN(ary)));
+    rb_ary_union_set(set, ary);
+    long size = (long)rb_set_size(set);
+    if (RARRAY_LEN(ary) == size) {
         return Qnil;
     }
     rb_ary_modify_check(ary);
@@ -6556,8 +6517,8 @@ rb_ary_uniq_bang(VALUE ary)
         rb_ary_unshare(ary);
         FL_SET_EMBED(ary);
     }
-    ary_resize_capa(ary, hash_size);
-    rb_hash_foreach(hash, push_value, ary);
+    ary_resize_capa(ary, size);
+    rb_set_foreach(set, push_value_i, ary);
 
     return ary;
 }
