@@ -2943,7 +2943,7 @@ class Pathname    # * mixed *
   #
   # Removes the entry represented by `self`;
   # returns `0` if a directory, `1` otherwise.
-  # 
+  #
   # Does not follow [symbolic links](rdoc-ref:file/symbolic_links.md);
   # if the entry is a symlink, the link itself is removed.
   #
