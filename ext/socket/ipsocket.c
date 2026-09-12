@@ -530,6 +530,7 @@ pick_addrinfo(struct hostname_resolution_store *resolution_store, int last_famil
 
 #ifdef _WIN32
 int rb_w32_set_nonblock2(int fd, int nonblock);
+#define pipe(fds) rb_w32_pipe(fds)
 #endif
 
 static void
@@ -548,21 +549,6 @@ nonblock_set(int fd, int nonblock)
     if (fcntl(fd, F_SETFL, newflags) < 0) rb_syserr_fail(errno, "fcntl(2)");
 #endif
     return;
-}
-
-/* Winsock's select(2) watches sockets alone, so the hostname resolution
- * threads report through a loopback socket pair there instead of a pipe. */
-static void
-open_hostname_resolution_notifier(int fds[2])
-{
-#ifdef _WIN32
-    if (socketpair(AF_INET, SOCK_STREAM, 0, fds) != 0) rb_syserr_fail(errno, "socketpair(2)");
-    /* The notifying end has no Ruby thread behind it to block on. */
-    nonblock_set(fds[1], true);
-#else
-    if (pipe(fds) != 0) rb_syserr_fail(errno, "pipe(2)");
-#endif
-    nonblock_set(fds[0], true);
 }
 
 static int
@@ -701,8 +687,9 @@ init_fast_fallback_inetsock_internal(VALUE v)
         }
         resolution_store.is_all_finished = true;
     } else {
-        open_hostname_resolution_notifier(pipefd);
+        if (pipe(pipefd) != 0) rb_syserr_fail(errno, "pipe(2)");
         hostname_resolution_waiter = pipefd[0];
+        nonblock_set(hostname_resolution_waiter, true);
         arg->wait = hostname_resolution_waiter;
         hostname_resolution_notifier = pipefd[1];
 
