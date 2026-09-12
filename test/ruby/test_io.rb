@@ -1076,10 +1076,6 @@ class TestIO < Test::Unit::TestCase
   end if defined? UNIXSocket
 
   def test_copy_stream_socket4
-    if RUBY_PLATFORM =~ /mingw|mswin/
-      omit "pread(2) is not implemented."
-    end
-
     with_bigsrc {|bigsrc, bigcontent|
       File.open(bigsrc) {|f|
         assert_equal(0, f.pos)
@@ -1099,10 +1095,6 @@ class TestIO < Test::Unit::TestCase
   end
 
   def test_copy_stream_socket5
-    if RUBY_PLATFORM =~ /mingw|mswin/
-      omit "pread(2) is not implemented."
-    end
-
     with_bigsrc {|bigsrc, bigcontent|
       File.open(bigsrc) {|f|
         assert_equal(bigcontent[0,100], f.read(100))
@@ -1123,10 +1115,6 @@ class TestIO < Test::Unit::TestCase
   end
 
   def test_copy_stream_socket6
-    if RUBY_PLATFORM =~ /mingw|mswin/
-      omit "pread(2) is not implemented."
-    end
-
     mkcdtmpdir {
       megacontent = "abc" * 1234567
       File.open("megasrc", "w") {|f| f << megacontent }
@@ -1150,9 +1138,7 @@ class TestIO < Test::Unit::TestCase
   end
 
   def test_copy_stream_socket7
-    if RUBY_PLATFORM =~ /mingw|mswin/
-      omit "pread(2) is not implemented."
-    end
+    omit "fork is not supported" unless Process.respond_to?(:fork)
 
     GC.start
     mkcdtmpdir {
