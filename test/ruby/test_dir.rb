@@ -288,7 +288,9 @@ class TestDir < Test::Unit::TestCase
     path = File.join(@root, "file")
     File.write(path, "content")
     assert_raise(Errno::EEXIST) {Dir.mkdir(path, parents: true)}
-    assert_raise(Errno::ENOTDIR) {Dir.mkdir("#{path}/child", parents: true)}
+    errors = [Errno::ENOTDIR]
+    errors << Errno::EEXIST if windows?
+    assert_raise(*errors) {Dir.mkdir("#{path}/child", parents: true)}
     assert_equal("content", File.read(path))
   end
 
