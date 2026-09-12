@@ -5847,25 +5847,27 @@ rb_ary_diff(VALUE ary1, VALUE ary2)
 static VALUE
 rb_ary_difference_multi(int argc, VALUE *argv, VALUE ary)
 {
-    VALUE ary_diff;
-    long i, length;
     volatile VALUE t0;
-    bool *is_hash = ALLOCV_N(bool, t0, argc);
-    ary_diff = rb_ary_new();
-    length = RARRAY_LEN(ary);
+    bool *is_set = ALLOCV_N(bool, t0, argc);
+    VALUE ary_diff = rb_ary_new();
+    long length = RARRAY_LEN(ary);
 
-    for (i = 0; i < argc; i++) {
+    for (long i = 0; i < argc; i++) {
         argv[i] = to_ary(argv[i]);
-        is_hash[i] = (length > SMALL_ARRAY_LEN && RARRAY_LEN(argv[i]) > SMALL_ARRAY_LEN);
-        if (is_hash[i]) argv[i] = ary_make_hash(argv[i]);
+        is_set[i] = (length > SMALL_ARRAY_LEN && RARRAY_LEN(argv[i]) > SMALL_ARRAY_LEN);
+        if (is_set[i]) {
+            VALUE set = rb_obj_hide(rb_set_new_capa(RARRAY_LEN(argv[i])));
+            rb_ary_union_set(set, argv[i]);
+            argv[i] = set;
+        }
     }
 
-    for (i = 0; i < RARRAY_LEN(ary); i++) {
+    for (long i = 0; i < RARRAY_LEN(ary); i++) {
         int j;
         VALUE elt = rb_ary_elt(ary, i);
         for (j = 0; j < argc; j++) {
-            if (is_hash[j]) {
-                if (rb_hash_stlike_lookup(argv[j], elt, NULL))
+            if (is_set[j]) {
+                if (rb_set_lookup(argv[j], elt))
                     break;
             }
             else {
