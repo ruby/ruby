@@ -74,8 +74,6 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   def test_tcp_initialize_open_timeout
-    return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
-
     server = TCPServer.new("127.0.0.1", 0)
     port = server.connect_address.ip_port
     server.close
@@ -170,8 +168,6 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   def test_initialize_v6_hostname_resolved_earlier
-    return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
-
     begin
       # Verify that "localhost" can be resolved to an IPv6 address
       Socket.getaddrinfo("localhost", 0, Socket::AF_INET6)
@@ -197,8 +193,6 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   def test_initialize_v4_hostname_resolved_earlier
-    return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
-
     server = TCPServer.new("127.0.0.1", 0)
     port = server.addr[1]
 
@@ -217,8 +211,6 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   def test_initialize_v6_hostname_resolved_in_resolution_delay
-    return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
-
     begin
       # Verify that "localhost" can be resolved to an IPv6 address
       Socket.getaddrinfo("localhost", 0, Socket::AF_INET6)
@@ -251,8 +243,6 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   def test_initialize_v6_hostname_resolved_earlier_and_v6_server_is_not_listening
-    return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
-
     ipv4_address = "127.0.0.1"
     server = Socket.new(Socket::AF_INET, :STREAM)
     server.bind(Socket.pack_sockaddr_in(0, ipv4_address))
@@ -279,8 +269,6 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   def test_initialize_v6_hostname_resolved_later_and_v6_server_is_not_listening
-    return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
-
     server = Socket.new(Socket::AF_INET, :STREAM)
     server.bind(Socket.pack_sockaddr_in(0, "127.0.0.1"))
     port = server.connect_address.ip_port
@@ -306,8 +294,6 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   def test_initialize_v6_hostname_resolution_failed_and_v4_hostname_resolution_is_success
-    return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
-
     server = TCPServer.new("127.0.0.1", 0)
     port = server.addr[1]
 
@@ -326,7 +312,11 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   def test_initialize_resolv_timeout_with_connection_failure
-    return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
+    if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
+      omit "Windows reports a refused loopback connection two seconds after " \
+           "connect(2), so the IPv6 attempt is still in flight when " \
+           "resolv_timeout expires"
+    end
 
     begin
       server = TCPServer.new("::1", 0)
@@ -349,8 +339,6 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   def test_initialize_with_hostname_resolution_failure_after_connection_failure
-    return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
-
     begin
       server = TCPServer.new("::1", 0)
     rescue Errno::EADDRNOTAVAIL # IPv6 is not supported
@@ -371,8 +359,6 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   def test_initialize_with_connection_failure_after_hostname_resolution_failure
-    return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
-
     server = TCPServer.new("127.0.0.1", 0)
     port = server.connect_address.ip_port
     server.close
@@ -388,8 +374,6 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   def test_initialize_v6_connected_socket_with_v6_address
-    return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
-
     begin
       server = TCPServer.new("::1", 0)
     rescue Errno::EADDRNOTAVAIL # IPv6 is not supported
@@ -408,8 +392,6 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   def test_initialize_v4_connected_socket_with_v4_address
-    return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
-
     server = TCPServer.new("127.0.0.1", 0)
     server_thread = Thread.new { server.accept }
     port = server.addr[1]
@@ -423,8 +405,6 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   def test_initialize_fast_fallback_is_false
-    return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
-
     server = TCPServer.new("127.0.0.1", 0)
     _, port, = server.addr
     server_thread = Thread.new { server.accept }
