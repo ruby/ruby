@@ -51,8 +51,8 @@ class TestIO_M17N < Test::Unit::TestCase
     raise re if re
   end
 
-  def with_pipe(*args)
-    r, w = IO.pipe(*args)
+  def with_pipe(*args, **opts)
+    r, w = IO.pipe(*args, **opts)
     begin
       yield r, w
     ensure
@@ -1052,6 +1052,64 @@ EOT
         assert_equal("a\nb\n", f.read, bug22209)
       }
     }
+  end
+
+  def test_pipe_conversion_options_enc
+    bug22209 = '[Bug #22209]'
+    with_pipe(Encoding::UTF_8, newline: :universal) {|r, w|
+      w.write("a\r\nb\r\n")
+      w.close
+      assert_equal("a\nb\n", r.read, bug22209)
+    }
+  end
+
+  def test_pipe_conversion_options_nil
+    bug22209 = '[Bug #22209]'
+    with_pipe(newline: :universal) {|r, w|
+      w.write("a\r\nb\r\n")
+      w.close
+      assert_equal("a\nb\n", r.read, bug22209)
+    }
+  end
+
+  def test_cr_decorator_on_stdout_encoding_arg
+    bug22209 = '[Bug #22209]'
+    with_pipe do |in_r, in_w|
+      with_pipe do |out_r, out_w|
+        pid = Process.spawn({}, EnvUtil.rubybin, in: in_r, out: out_w)
+        in_r.close
+        out_w.close
+        in_w.write <<-EOS
+          STDOUT.set_encoding(Encoding::UTF_8, newline: :cr)
+          STDOUT.puts "abc"
+          STDOUT.flush
+        EOS
+        in_w.close
+        Process.wait pid
+        assert_equal("abc\r", out_r.binmode.read, bug22209)
+        out_r.close
+      end
+    end
+  end
+
+  def test_cr_decorator_on_stdout_nil_arg
+    bug22209 = '[Bug #22209]'
+    with_pipe do |in_r, in_w|
+      with_pipe do |out_r, out_w|
+        pid = Process.spawn({}, EnvUtil.rubybin, in: in_r, out: out_w)
+        in_r.close
+        out_w.close
+        in_w.write <<-EOS
+          STDOUT.set_encoding(nil, newline: :cr)
+          STDOUT.puts "abc"
+          STDOUT.flush
+        EOS
+        in_w.close
+        Process.wait pid
+        assert_equal("abc\r", out_r.binmode.read, bug22209)
+        out_r.close
+      end
+    end
   end
 
   def test_set_encoding_invalid
