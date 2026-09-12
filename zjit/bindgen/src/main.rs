@@ -111,6 +111,8 @@ fn main() {
         .allowlist_function("ruby_executable_node")
         .allowlist_function("rb_funcallv")
         .allowlist_function("rb_protect")
+        .allowlist_function("rb_zjit_iseq_has_profiled_enough")
+        .allowlist_function("rb_zjit_iseq_set_jit_entry")
         .allowlist_function("rb_zjit_profile_disable")
         .allowlist_function("rb_zjit_profile_enable")
         .allowlist_function("rb_zjit_insn_to_bare_insn")
