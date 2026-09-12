@@ -145,25 +145,30 @@ fn test_function_stub_profiles_before_compiling() {
     let target_iseq = get_method_iseq("1", "zjit_profile_stub_target");
     assert!(get_or_create_iseq_payload(target_iseq).versions.is_empty());
 
-    // Every stub hit in the profiling window should interpret the callee
+    // The first stub hit should interpret the callee without compiling it.
+    assert_eq!(VALUE::fixnum_from_usize(2), eval("zjit_profile_stub_entry(true)"));
+    assert!(get_or_create_iseq_payload(target_iseq).versions.is_empty());
+
+    // That hit also enabled profiling instructions, so find `+` by looking for the profiling variant.
+    let mut insn_idx = 0;
+    let iseq_size = unsafe { get_iseq_encoded_size(target_iseq) };
+    let plus_idx = loop {
+        assert!(insn_idx < iseq_size, "target ISEQ is not profiling opt_plus");
+        let opcode = iseq_opcode_at_idx(target_iseq, insn_idx);
+        if opcode == YARVINSN_zjit_opt_plus {
+            break insn_idx as usize;
+        }
+        insn_idx += insn_len(opcode as usize);
+    };
+
+    // Every remaining stub hit in the profiling window should interpret the callee
     // without compiling it.
-    for _ in 0..num_profiles {
+    for _ in 1..num_profiles {
         assert_eq!(VALUE::fixnum_from_usize(2), eval("zjit_profile_stub_entry(true)"));
         assert!(get_or_create_iseq_payload(target_iseq).versions.is_empty());
     }
 
     // Verify that the interpreted executions populated the profile for `+`.
-    let mut insn_idx = 0;
-    let iseq_size = unsafe { get_iseq_encoded_size(target_iseq) };
-    let plus_idx = loop {
-        assert!(insn_idx < iseq_size, "target ISEQ does not contain opt_plus");
-        let opcode = iseq_opcode_at_idx(target_iseq, insn_idx);
-        let bare_opcode = unsafe { rb_zjit_insn_to_bare_insn(opcode as i32) } as u32;
-        if bare_opcode == YARVINSN_opt_plus {
-            break insn_idx as usize;
-        }
-        insn_idx += insn_len(bare_opcode as usize);
-    };
     assert_eq!(
         2,
         get_or_create_iseq_payload(target_iseq)
