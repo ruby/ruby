@@ -12,6 +12,7 @@
 #include "internal/object.h"
 #include "internal/proc.h"
 #include "internal/sanitizers.h"
+#include "internal/set.h"
 #include "internal/set_table.h"
 #include "internal/symbol.h"
 #include "internal/variable.h"
