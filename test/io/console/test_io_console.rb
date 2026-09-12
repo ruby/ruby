@@ -528,7 +528,7 @@ class TestIO_Console
       assert_equal("b", read.getc)
       assert_false(read.input_pending?)
     end
-  end unless RUBY_ENGINE == "jruby"
+  end
 
   def assert_ctrl(expect, cc, r, w)
     sleep 0.1
