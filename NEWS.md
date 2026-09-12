@@ -310,6 +310,8 @@ Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for det
     * `TCPSocket.new` now connects through Happy Eyeballs Version 2 on
       mswin as well, so a host that answers with both an IPv6 and an IPv4
       address no longer waits for the IPv6 attempt to time out.
+      `resolv_timeout`, which used to be ignored there, now bounds the
+      hostname resolution and raises `IO::TimeoutError` once it expires.
 
     * On Windows, a connection that is refused or unreachable now raises the
       matching `Errno` class as soon as Winsock reports it, instead of
