@@ -315,13 +315,12 @@ Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for det
       matching `Errno` class as soon as Winsock reports it, instead of
       `Errno::ETIMEDOUT` once the whole `connect_timeout` has passed. Code
       rescuing `Errno::ETIMEDOUT` there has to rescue the real error instead.
+      [[Bug #18661]]
 
     * On Windows, `BasicSocket#getsockopt(:SOCKET, :ERROR)` now reports an
       errno as it does on the other platforms, instead of the raw WinSock
       error code. Code comparing it with a `WSAE*` value has to compare it
-      with the matching `Errno::*::Errno` instead.
-
-    [[Bug #18661]]
+      with the matching `Errno::*::Errno` instead. [[Bug #18661]]
 
 ## C API updates
 
