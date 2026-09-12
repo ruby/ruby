@@ -595,6 +595,20 @@ struct fast_fallback_error
     int ecode;
 };
 
+/* A host that simply has no address in the family being resolved is not a
+ * failure while the other family is still on its way.  Winsock has no
+ * EAI_ADDRFAMILY and answers such a host with EAI_NONAME, which is
+ * indistinguishable from an unknown host and has to stay an error. */
+static int
+no_address_in_family_p(int err)
+{
+#ifdef EAI_ADDRFAMILY
+    return err == EAI_ADDRFAMILY;
+#else
+    return false;
+#endif
+}
+
 static VALUE
 init_fast_fallback_inetsock_internal(VALUE v)
 {
@@ -1036,7 +1050,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
                     int err;
                     socklen_t len = sizeof(err);
 
-                    status = getsockopt(fd, SOL_SOCKET, SO_ERROR, &err, &len);
+                    status = getsockopt(fd, SOL_SOCKET, SO_ERROR, (void *)&err, &len);
 
                     if (status < 0) {
                         last_error.type = SYSCALL_ERROR;
@@ -1119,7 +1133,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
                             resolution_store.v6.finished = true;
 
                             if (arg->getaddrinfo_entries[IPV6_ENTRY_POS]->err &&
-                                arg->getaddrinfo_entries[IPV6_ENTRY_POS]->err != EAI_ADDRFAMILY) {
+                                !no_address_in_family_p(arg->getaddrinfo_entries[IPV6_ENTRY_POS]->err)) {
                                 if (!resolution_store.v4.finished || resolution_store.v4.has_error) {
                                     last_error.type = RESOLUTION_ERROR;
                                     last_error.ecode = arg->getaddrinfo_entries[IPV6_ENTRY_POS]->err;
@@ -1325,7 +1339,7 @@ fast_fallback_inetsock_cleanup(VALUE v)
         if (connection_attempt_fd >= 0) {
             int error = 0;
             socklen_t len = sizeof(error);
-            getsockopt(connection_attempt_fd, SOL_SOCKET, SO_ERROR, &error, &len);
+            getsockopt(connection_attempt_fd, SOL_SOCKET, SO_ERROR, (void *)&error, &len);
             if (error == 0) shutdown(connection_attempt_fd, SHUT_RDWR);
             close(connection_attempt_fd);
        }
