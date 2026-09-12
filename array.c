@@ -6080,35 +6080,31 @@ rb_ary_union_multi(int argc, VALUE *argv, VALUE ary)
 static VALUE
 rb_ary_intersect_p(VALUE ary1, VALUE ary2)
 {
-    VALUE hash, v, result, shorter, longer;
-    st_data_t vv;
-    long i;
-
     ary2 = to_ary(ary2);
     if (RARRAY_LEN(ary1) == 0 || RARRAY_LEN(ary2) == 0) return Qfalse;
 
     if (RARRAY_LEN(ary1) <= SMALL_ARRAY_LEN && RARRAY_LEN(ary2) <= SMALL_ARRAY_LEN) {
-        for (i=0; i<RARRAY_LEN(ary1); i++) {
-            v = RARRAY_AREF(ary1, i);
+        for (long i = 0; i < RARRAY_LEN(ary1); i++) {
+            VALUE v = RARRAY_AREF(ary1, i);
             if (rb_ary_includes_by_eql(ary2, v)) return Qtrue;
         }
         return Qfalse;
     }
 
-    shorter = ary1;
-    longer = ary2;
+    VALUE shorter = ary1;
+    VALUE longer = ary2;
     if (RARRAY_LEN(ary1) > RARRAY_LEN(ary2)) {
         longer = ary1;
         shorter = ary2;
     }
 
-    hash = ary_make_hash(shorter);
-    result = Qfalse;
+    VALUE set = rb_obj_hide(rb_set_new_capa(RARRAY_LEN(shorter)));
+    rb_ary_union_set(set, shorter);
+    VALUE result = Qfalse;
 
-    for (i=0; i<RARRAY_LEN(longer); i++) {
-        v = RARRAY_AREF(longer, i);
-        vv = (st_data_t)v;
-        if (rb_hash_stlike_lookup(hash, vv, 0)) {
+    for (long i = 0; i < RARRAY_LEN(longer); i++) {
+        VALUE v = RARRAY_AREF(longer, i);
+        if (rb_set_lookup(set, v)) {
             result = Qtrue;
             break;
         }
