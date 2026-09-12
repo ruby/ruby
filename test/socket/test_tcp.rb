@@ -75,6 +75,8 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   def test_tcp_initialize_open_timeout
+    omit_unless_fast_fallback
+
     server = TCPServer.new("127.0.0.1", 0)
     port = server.connect_address.ip_port
     server.close
@@ -178,6 +180,8 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   def test_initialize_v6_hostname_resolved_earlier
+    omit_unless_fast_fallback
+
     begin
       # Verify that "localhost" can be resolved to an IPv6 address
       Socket.getaddrinfo("localhost", 0, Socket::AF_INET6)
@@ -203,6 +207,8 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   def test_initialize_v4_hostname_resolved_earlier
+    omit_unless_fast_fallback
+
     server = TCPServer.new("127.0.0.1", 0)
     port = server.addr[1]
 
@@ -241,6 +247,8 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   def test_initialize_v6_hostname_resolved_in_resolution_delay
+    omit_unless_fast_fallback
+
     begin
       # Verify that "localhost" can be resolved to an IPv6 address
       Socket.getaddrinfo("localhost", 0, Socket::AF_INET6)
@@ -273,6 +281,8 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   def test_initialize_v6_hostname_resolved_earlier_and_v6_server_is_not_listening
+    omit_unless_fast_fallback
+
     ipv4_address = "127.0.0.1"
     server = Socket.new(Socket::AF_INET, :STREAM)
     server.bind(Socket.pack_sockaddr_in(0, ipv4_address))
@@ -299,6 +309,8 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   def test_initialize_v6_hostname_resolved_later_and_v6_server_is_not_listening
+    omit_unless_fast_fallback
+
     server = Socket.new(Socket::AF_INET, :STREAM)
     server.bind(Socket.pack_sockaddr_in(0, "127.0.0.1"))
     port = server.connect_address.ip_port
@@ -324,6 +336,8 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   def test_initialize_v6_hostname_resolution_failed_and_v4_hostname_resolution_is_success
+    omit_unless_fast_fallback
+
     server = TCPServer.new("127.0.0.1", 0)
     port = server.addr[1]
 
@@ -342,7 +356,8 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   def test_initialize_resolv_timeout_with_connection_failure
-    if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
+    omit_unless_fast_fallback
+    if RUBY_PLATFORM =~ /mswin|cygwin/
       omit "Windows reports a refused loopback connection two seconds after " \
            "connect(2), so the IPv6 attempt is still in flight when " \
            "resolv_timeout expires"
@@ -369,6 +384,8 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   def test_initialize_with_hostname_resolution_failure_after_connection_failure
+    omit_unless_fast_fallback
+
     begin
       server = TCPServer.new("::1", 0)
     rescue Errno::EADDRNOTAVAIL # IPv6 is not supported
@@ -389,6 +406,8 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   def test_initialize_with_connection_failure_after_hostname_resolution_failure
+    omit_unless_fast_fallback
+
     server = TCPServer.new("127.0.0.1", 0)
     port = server.connect_address.ip_port
     server.close
@@ -448,6 +467,10 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   private
+
+  def omit_unless_fast_fallback
+    omit "TCPSocket.new does not provide Happy Eyeballs Version 2 on MinGW" if RUBY_PLATFORM =~ /mingw/
+  end
 
   # On success, wait for the accept thread to finish. If the test failed
   # before the client connected, `server.accept` never returns, so kill
