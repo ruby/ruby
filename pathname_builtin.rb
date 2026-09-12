@@ -1624,7 +1624,8 @@ class Pathname    # * File *
   #
   #  Calling process must have superuser privileges.
   #
-  #  When supported: like Pathname#chown, but does not follow symbolic links,
+  #  When supported: like Pathname#chown,
+  #  but does not follow [symbolic links](rdoc-ref:file/symbolic_links.md),
   #  and therefore changes the ownership of the entry at the path in `self`:
   #
   # ```ruby
