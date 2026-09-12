@@ -1786,18 +1786,27 @@ class Pathname    # * File *
   # :markup: markdown
   #
   # call-seq:
-  #   rename(new_name)
+  #   rename(new_path) -> 0
   #
-  # Renames the entry at the path in `self` to the entry given in `new_name`,
-  # which may be either a path or another pathname:
+  # Moves the entry at the path in `self` to the given `new_path`,
+  # which may be either a path or another pathname.
+  #
+  # Does not follow [symbolic links](rdoc-ref:file/symbolic_links.md);
+  # if the entry is a symlink, the link itself is renamed.
+  #
+  # The examples below use two temporary directories:
   #
   # ```ruby
-  # # Create source and destination pathnames and directories.
-  # pn_srcdir = Pathname('/tmp/src')     # => #<Pathname:/tmp/src>
+  # pn_srcdir = Pathname('/tmp/src/')  # => #<Pathname:/tmp/src/>
+  # pn_dstdir = Pathname('/tmp/dst/')  # => #<Pathname:/tmp/dst/>
   # pn_srcdir.mkdir
-  # pn_dstdir = Pathname('/tmp/dst')     # => #<Pathname:/tmp/dst>
   # pn_dstdir.mkdir
-  # # Create source file pathname and file.
+  # ```
+  #
+  # The entry to be renamed may be a file:
+  #
+  # ```ruby
+  # # Create source pathname and file.
   # pn_srcfile = pn_srcdir.join('t.tmp') # => #<Pathname:/tmp/src/t.tmp>
   # pn_srcfile.write('foo')
   # # Create destination file pathname.
@@ -1806,22 +1815,44 @@ class Pathname    # * File *
   # pn_srcfile.rename(pn_dstfile)
   # pn_srcfile.exist?                    # => false
   # pn_dstfile.exist?                    # => true
+  # pn_srcfile                           # => #<Pathname:/tmp/src/t.tmp> # Not changed.
+  # pn_dstfile.delete                    # Clean up.
   # ```
   #
-  # Works for directories, too:
+  # The entry to be renames may be a symbolic link:
   #
   # ```ruby
-  # pn_dstdir.rename('/tmp/foo')
-  # pn_dstdir.exist?            # => false
-  # Pathname('/tmp/foo').exist? # => true
+  # # Create source pathname and file.
+  # pn_srcfile = pn_srcdir.join('t.tmp') # => #<Pathname:/tmp/src/t.tmp>
+  # pn_srcfile.write('foo')
+  # # Create link pathname and link.
+  # pn_lnkfile = pn_dstdir.join('u.tmp') pn_lnkfile = pn_dstdir.join('u.tmp')
+  # pn_lnkfile.make_symlink(pn_srcfile)
+  # pn_lnkfile.readlink                  # => #<Pathname:/tmp/src/t.tmp>
+  # pn_renamed = Pathname('lib/v.tmp')   # => #<Pathname:lib/v.tmp>
+  # pn_lnkfile.rename(pn_renamed)        # Symlink not followed.
+  # pn_renamed.symlink?                  # => true
+  # pn_renamed.readlink                  # => #<Pathname:/tmp/src/t.tmp>
+  # pn_lnkfile                           # => #<Pathname:/tmp/dst/u.tmp>  # Not changed.
+  # # Clean up.
+  # pn_renamed.delete
+  # pn_srcfile.delete
   # ```
   #
-  # Clean up.
+  # The entry to be renamed may be a directory:
   #
   # ```ruby
-  # pn_srcdir.rmtree
-  # Pathname('/tmp/foo').rmtree
+  # pn_renamed = Pathname('/tmp/foo') # => #<Pathname:/tmp/foo>
+  # pn_dstdir.rename(pn_renamed)
   # ```
+  #
+  # Clean up:
+  #
+  # ```ruby
+  # pn_renamed.rmtree                 # => #<Pathname:/tmp/foo>
+  # pn_srcdir.rmtree                  # => #<Pathname:/tmp/src/>
+  # ```
+  #
   #
   # Raises SystemCallError if the entry cannot be renamed.
   def rename(to) File.rename(@path, to) end

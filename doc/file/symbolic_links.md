@@ -197,7 +197,7 @@ File.delete(linkpath)
 
 ### `rename`
 
-Each of these methods changes the name of an entry (which need not be a symlink):
+Each of these methods changes the name of an entry (which may be a symlink):
 
 - File::rename
 - Pathname#rename
