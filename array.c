@@ -6591,22 +6591,25 @@ rb_ary_uniq_bang(VALUE ary)
 static VALUE
 rb_ary_uniq(VALUE ary)
 {
-    VALUE hash, uniq;
-
     if (RARRAY_LEN(ary) <= 1) {
-        hash = 0;
-        uniq = rb_ary_dup(ary);
+        return rb_ary_dup(ary);
     }
-    else if (rb_block_given_p()) {
-        hash = ary_make_hash_by(ary);
-        uniq = rb_hash_values(hash);
+
+    VALUE set = rb_obj_hide(rb_set_new_capa(RARRAY_LEN(ary)));
+
+    if (rb_block_given_p()) {
+        VALUE uniq = rb_ary_new_capa(RARRAY_LEN(ary));
+        for (long i = 0; i < RARRAY_LEN(ary); i++) {
+            VALUE elt = rb_ary_elt(ary, i);
+            if (rb_set_add_no_check(set, rb_yield(elt)))
+                rb_ary_push(uniq, elt);
+        }
+        return uniq;
     }
     else {
-        hash = ary_make_hash(ary);
-        uniq = rb_hash_values(hash);
+        rb_ary_union_set(set, ary);
+        return rb_set_to_a(set);
     }
-
-    return uniq;
 }
 
 /*
