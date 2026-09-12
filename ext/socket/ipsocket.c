@@ -528,17 +528,25 @@ pick_addrinfo(struct hostname_resolution_store *resolution_store, int last_famil
     return selected_ai;
 }
 
+#ifdef _WIN32
+int rb_w32_set_nonblock2(int fd, int nonblock);
+#endif
+
 static void
-socket_nonblock_set(int fd)
+nonblock_set(int fd, int nonblock)
 {
+#ifdef _WIN32
+    if (rb_w32_set_nonblock2(fd, nonblock) < 0) rb_syserr_fail(errno, "ioctlsocket(2)");
+#else
     int flags = fcntl(fd, F_GETFL);
 
     if (flags < 0) rb_syserr_fail(errno, "fcntl(2)");
-    if ((flags & O_NONBLOCK) != 0) return;
 
-    flags |= O_NONBLOCK;
+    int newflags = nonblock ? (flags | O_NONBLOCK) : (flags & ~O_NONBLOCK);
+    if (newflags == flags) return;
 
-    if (fcntl(fd, F_SETFL, flags) < 0) rb_syserr_fail(errno, "fcntl(2)");
+    if (fcntl(fd, F_SETFL, newflags) < 0) rb_syserr_fail(errno, "fcntl(2)");
+#endif
     return;
 }
 
@@ -849,7 +857,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
                 if (any_addrinfos(&resolution_store) ||
                     in_progress_fds(arg->connection_attempt_fds_size) ||
                     !resolution_store.is_all_finished) {
-                    socket_nonblock_set(fd);
+                    nonblock_set(fd, true);
                     status = connect(fd, remote_ai->ai_addr, remote_ai->ai_addrlen);
                     last_family = remote_ai->ai_family;
                 } else {
@@ -1229,6 +1237,10 @@ init_fast_fallback_inetsock_internal(VALUE v)
     }
 
     if (NIL_P(arg->io)) {
+        /* The attempts race each other non-blocking, but the socket handed
+         * back has to behave like any other TCPSocket. */
+        nonblock_set(connected_fd, false);
+
         /* create new instance */
         arg->io = rsock_init_sock(arg->self, connected_fd);
     }
