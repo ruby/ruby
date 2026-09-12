@@ -7,8 +7,37 @@ prelude: |
   big2 = [1, 2, 3] * 64
   big3 = [1, 2] * 64
 
+  # The smallest shape that reaches the hash-based paths: a user-supplied key
+  # list & model attribute names (e.g. ActiveModel#serializable_hash(only:)).
+  attr_names = (1..50).map { |i| "attribute_%02d" % i }
+  only_keys  = [1, 10, 20, 30, 40, 50].map { |i| "attribute_%02d" % i }
+
+  # Synthetic id lists, modeled on has_many collection replacement, which
+  # intersects the new and the original target arrays; all present, spread
+  # evenly.  A receiver 1/1000 as long as the argument.
+  ids_long     = Array.new(10_000) { |i| i * 3 }
+  ids_short_10 = Array.new(10) { |i| i * 30 }
+
+  # Near-equal sizes with high overlap: two similar id lists.  Stays on the
+  # existing path, and guards against the length rule flipping too early.
+  ids_near = Array.new(9_999) { |i| i * 3 }
+
+  # At the exact 2x cut, where the length rule is least informed.  With
+  # distinct values the new path builds the smaller table; with a
+  # duplicate-heavy argument the old path has less to hash, which is the
+  # least favorable measured shape for the new path.
+  ids_5k        = Array.new(5_000) { |i| i * 3 }
+  receiver_2x   = Array.new(5_000) { |i| i * 6 + 3 }
+  mixed_arg_10k = Array.new(10_000) { |i| (i % 100) * 3 }
+
 benchmark:
   small-&: small1 & small2 & small3 & small4
   small-intersection: small1.intersection(small2, small3, small4)
   big-&: big1 & big2 & big3
   big-intersection: big1.intersection(big2, big3)
+  attr-filter-6-and-50: only_keys & attr_names
+  short-receiver-10-and-10k: ids_short_10 & ids_long
+  long-receiver-control-10k-and-10: ids_long & ids_short_10
+  near-equal-10k: ids_near & ids_long
+  ratio-2.0-5000-and-10k: receiver_2x & ids_long
+  partial-dup-arg-5k-and-10k: ids_5k & mixed_arg_10k

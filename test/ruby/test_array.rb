@@ -248,6 +248,153 @@ class TestArray < Test::Unit::TestCase
     assert_equal(@cls[],     @cls[ 1, 2, 3 ]*64 & @cls[ 4, 5, 6 ]*64)
   end
 
+  def test_AND_short_receiver_big_argument # '&'
+    # receiver shorter than half the argument, both above the small-array limit
+    assert_equal(@cls[*(21..30).to_a], @cls[*(1..30).to_a] & @cls[*(21..300).to_a])
+    assert_equal(@cls[], @cls[*(1..20).to_a] & @cls[*(21..220).to_a])
+
+    # threshold boundary: results agree just below, at, and above the 2x
+    # cut (test_AND_short_receiver_path_selection keeps both branches
+    # covered)
+    receiver_20 = (1..20).to_a
+    assert_equal(@cls[*receiver_20], @cls[*receiver_20] & @cls[*(1..39).to_a])
+    assert_equal(@cls[*receiver_20], @cls[*receiver_20] & @cls[*(1..40).to_a])
+    assert_equal(@cls[*receiver_20], @cls[*receiver_20] & @cls[*(1..41).to_a])
+
+    # the seen buffer above the 1024-byte ALLOCV limit goes to the heap
+    receiver_1100 = (1..1100).map { |i| "heap_#{i}" }
+    assert_equal(@cls[*receiver_1100], @cls[*receiver_1100] & @cls[*(1..2200).map { |i| "heap_#{i}" }])
+
+    # duplicates collapse to the first occurrence, order is preserved from self
+    assert_equal(@cls[5, 1, 2, 3], @cls[5, 1, 5, 2, 5, 3] * 5 & @cls[*(1..200).to_a])
+
+    # result contains self's objects (first occurrence), not the argument's
+    receiver_objects = (1..20).map { |i| i.to_s }
+    argument_objects = (1..200).map { |i| i.to_s }
+    result = @cls[*receiver_objects] & @cls[*argument_objects]
+    assert_equal(receiver_objects, result)
+    result.each_with_index { |s, i| assert_same(receiver_objects[i], s) }
+
+    # recursive arrays hash and compare on the new path
+    rec = @cls[]
+    rec << rec
+    assert_equal([rec], @cls[*[rec] * 20] & @cls[*[rec] * 40])
+  end
+
+  def test_AND_short_receiver_path_selection # '&'
+    # implementation-coverage guard, not part of the Array#& contract: it
+    # keeps the tests above from silently covering one path only.  The
+    # shapes stay well away from the 2x cut, so tuning the cut does not
+    # break them.  Update freely if the strategy changes.
+    hash_order_class = Class.new do
+      attr_reader :v
+      define_method(:initialize) { |v, log, tag| @v = v; @log = log; @tag = tag }
+      define_method(:hash) { @log << @tag; @v.hash }
+      def eql?(other); other.instance_of?(self.class) && other.v == @v; end
+    end
+    build_operand = ->(log, tag, range) { @cls[*range.map { |i| hash_order_class.new(i, log, tag) }] }
+    far_above = []
+    build_operand.call(far_above, :receiver, 1..20) & build_operand.call(far_above, :argument, 1..200)
+    assert_equal(:receiver, far_above.first) # much shorter receiver: it is hashed
+    far_below = []
+    build_operand.call(far_below, :receiver, 1..20) & build_operand.call(far_below, :argument, 1..30)
+    assert_equal(:argument, far_below.first) # comparable lengths: the argument is hashed
+  end
+
+  def test_AND_short_receiver_hash_collision # '&'
+    collision_element_class = Class.new do
+      attr_reader :x
+      def initialize(x); @x = x; end
+      def hash; 0; end
+      def eql?(other); @x == other.x; end
+    end
+    receiver_objects = (1..20).map { |i| collision_element_class.new(i) }
+    argument_objects = (1..40).map { |i| collision_element_class.new(i * 2) }
+    result = @cls[*receiver_objects] & @cls[*argument_objects]
+    assert_equal(receiver_objects.select { |o| o.x.even? }, result)
+  end
+
+  def test_AND_short_receiver_compaction # '&'
+    begin
+      GC.compact
+    rescue NotImplementedError
+      omit "GC.compact is not supported on this platform"
+    end
+    # user #hash forces compaction (with reference verification and heap
+    # expansion, so objects genuinely move) while the result array holds
+    # the receiver's candidates: halfway through the receiver, and again
+    # on the first element of the other operand.  The result must still
+    # contain the receiver's own objects in order.
+    receiver_values = (1..1200).to_a
+    argument_values = (1..2600).to_a
+    compaction_points = { receiver: receiver_values.length / 2, argument: 1 }
+    hashed = Hash.new(0)
+    compacted = []
+    element_class = Class.new do
+      define_method(:initialize) { |v, side| @v = v; @side = side }
+      attr_reader :v
+      define_method(:hash) do
+        hashed[@side] += 1
+        if hashed[@side] == compaction_points[@side]
+          compacted << @side
+          GC.verify_compaction_references(expand_heap: true, toward: :empty)
+        end
+        @v.hash
+      end
+      def eql?(other); other.instance_of?(self.class) && other.v == @v; end
+    end
+    receiver = receiver_values.map { |i| element_class.new(i, :receiver) }
+    argument = argument_values.map { |i| element_class.new(i, :argument) }
+    result = @cls[*receiver] & @cls[*argument]
+    assert_equal([:argument, :receiver], compacted.sort, "both compaction points must be reached")
+    assert_equal(receiver.length, result.length)
+    result.each_with_index { |o, i| assert_same(receiver[i], o) }
+  end
+
+  def test_AND_short_receiver_mutating_hash # '&'
+    # results under mid-operation operand mutation are unspecified; each
+    # scenario asserts that the mutating callback really ran (the latch)
+    # and that the operation completes safely: the result holds the
+    # receiver's elements in receiver order, without duplicates
+    cleared = false
+    argument_mutator = Object.new
+    mutated_argument = @cls[*(1..40).to_a]
+    argument_mutator.define_singleton_method(:hash) { cleared = true; mutated_argument.clear; 0 }
+    mutated_argument[2] = argument_mutator
+    receiver = @cls[*(1..20).to_a]
+    result = receiver & mutated_argument
+    assert(cleared, "the argument-clearing #hash did not run")
+    assert_equal(receiver.select { |e| result.include?(e) }, result)
+    assert_equal(result.uniq, result)
+
+    appended = false
+    receiver_mutator = Object.new
+    mutated_receiver = @cls[*(1..19).to_a]
+    receiver_mutator.define_singleton_method(:hash) { appended = true; mutated_receiver << 999; 0 }
+    mutated_receiver << receiver_mutator
+    result = mutated_receiver & @cls[*(1..40).to_a]
+    assert(appended, "the receiver-growing #hash did not run")
+    assert_equal(mutated_receiver.select { |e| result.include?(e) }, result)
+    assert_equal(result.uniq, result)
+
+    # a receiver element whose #hash appends a matching element to the
+    # argument while the receiver is being hashed: the scan that follows
+    # may see the grown argument and match it (hashing the argument
+    # first, as before the change, returned []); either reachable result
+    # is accepted
+    growing_argument = @cls[*(101..140).to_a]
+    added = false
+    argument_grower = Object.new
+    argument_grower.define_singleton_method(:hash) do
+      growing_argument << argument_grower unless added
+      added = true
+      0
+    end
+    result = @cls[*(1..19).to_a, argument_grower] & growing_argument
+    assert(added, "the argument-growing #hash did not run")
+    assert_include([[], [argument_grower]], result)
+  end
+
   def test_intersection
     assert_equal(@cls[1, 2], @cls[1, 2, 3].intersection(@cls[1, 2]))
     assert_equal(@cls[ ], @cls[1].intersection(@cls[ ]))
@@ -263,6 +410,7 @@ class TestArray < Test::Unit::TestCase
     assert_equal(@cls[ ], @cls[ ].intersection(@cls[1] * 64))
     assert_equal(@cls[1], (@cls[1, 2, 3] * 64).intersection((@cls[1, 2] * 64), (@cls[1] * 64)))
     assert_equal(@cls[ ], (@cls[1, 2, 3] * 64).intersection(@cls[4, 5, 6] * 64))
+    assert_equal(@cls[1, 2], (@cls[1, 2] * 32).intersection(@cls[*(1..200).to_a], @cls[*(1..50).to_a]))
   end
 
   def test_MUL # '*'
