@@ -321,6 +321,10 @@ Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for det
 
 ## C API updates
 
+* `rb_internal_thread_add_event_hook` now works on Windows.  It used to be a
+  no-op there, so a profiler built on the thread event hooks recorded nothing.
+  [[Feature #18339]]
+
 ### Embedded TypedData
 
 * The `RUBY_TYPED_EMBEDDABLE` flag is now public and documented and can be used by C extensions.
@@ -440,6 +444,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #8948]: https://bugs.ruby-lang.org/issues/8948
 [Feature #9779]: https://bugs.ruby-lang.org/issues/9779
 [Feature #15330]: https://bugs.ruby-lang.org/issues/15330
+[Feature #18339]: https://bugs.ruby-lang.org/issues/18339
 [Feature #20163]: https://bugs.ruby-lang.org/issues/20163
 [Feature #21390]: https://bugs.ruby-lang.org/issues/21390
 [Feature #21768]: https://bugs.ruby-lang.org/issues/21768
