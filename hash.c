@@ -36,6 +36,7 @@
 #include "internal/hash.h"
 #include "internal/object.h"
 #include "internal/proc.h"
+#include "internal/ractor.h"
 #include "internal/st.h"
 #include "internal/symbol.h"
 #include "internal/thread.h"

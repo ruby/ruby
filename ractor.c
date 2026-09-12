@@ -715,8 +715,7 @@ ractor_alloc(VALUE klass)
 {
     rb_ractor_t *r;
     VALUE rv = TypedData_Make_Struct(klass, rb_ractor_t, &ractor_data_type, r);
-    FL_SET_RAW(rv, RUBY_FL_SHAREABLE);
-    rb_gc_obj_became_shareable(rv);
+    RB_OBJ_SET_SHAREABLE(rv);
     r->pub.self = rv;
     r->next_ec_serial = 1;
     VM_ASSERT(ractor_status_p(r, ractor_created));
@@ -831,8 +830,7 @@ void
 rb_ractor_main_setup(rb_vm_t *vm, rb_ractor_t *r, rb_thread_t *th)
 {
     VALUE rv = r->pub.self = TypedData_Wrap_Struct(rb_cRactor, &ractor_data_type, r);
-    FL_SET_RAW(r->pub.self, RUBY_FL_SHAREABLE);
-    rb_gc_obj_became_shareable(r->pub.self);
+    RB_OBJ_SET_SHAREABLE(r->pub.self);
     ractor_init(r, Qnil, Qnil);
     r->threads.main = th;
     rb_ractor_living_threads_insert(r, th);
@@ -1469,6 +1467,16 @@ rb_obj_set_shareable_no_assert(VALUE obj)
     FL_SET_RAW(obj, FL_SHAREABLE);
     rb_gc_obj_became_shareable(obj);
 
+    /* Ivars on a shareable object would be mutable shared state, so freeze them
+     * (not obj itself).  A T_IMEMO has no shape id to transition. */
+    bool froze_ivars = false;
+    if (!RB_OBJ_FROZEN_RAW(obj) && !RB_TYPE_P(obj, T_IMEMO) &&
+        !RB_TYPE_P(obj, T_CLASS) && !RB_TYPE_P(obj, T_MODULE) && !RB_TYPE_P(obj, T_ICLASS)) {
+
+        RBASIC_SET_SHAPE_ID(obj, rb_shape_transition_frozen(RBASIC_SHAPE_ID(obj)));
+        froze_ivars = true;
+    }
+
     /* A T_OBJECT can have a fields imemo too (too_complex and friends), and an imemo
      * born while its owner was unshareable stays unshareable
      * (imemo_fields_complex_from_obj), so align it here. */
@@ -1481,6 +1489,8 @@ rb_obj_set_shareable_no_assert(VALUE obj)
             // no recursive mark
             FL_SET_RAW(fields, FL_SHAREABLE);
             rb_gc_obj_became_shareable(fields);
+            // the imemo carries its owner's shape id, frozen bit included
+            if (froze_ivars) RBASIC_SET_SHAPE_ID(fields, RBASIC_SHAPE_ID(obj));
             // Field values the traversal never reaches (hidden internal ivars, say)
             // can stay unshareable, so record their shrefs to keep the shareable
             // fields imemo's edges correct.
@@ -3422,9 +3432,12 @@ ractor_native_shallow_copy(VALUE obj)
     }
 
     /* The traversal rewrites the children inside the copy with raw stores, so the frozen
-     * bit can be set now: by the time leave runs the original is out of sight. */
+     * bit can be set now: by the time leave runs the original is out of sight. The shape
+     * has to be transitioned along with the flag, because field writes are refused based
+     * on the shape (see rb_check_ivar_modifiable). */
     if (OBJ_FROZEN(obj)) {
         RB_FL_SET_RAW(copy, RUBY_FL_FREEZE);
+        RBASIC_SET_SHAPE_ID(copy, rb_obj_shape_transition_frozen(copy));
     }
     return copy;
 }

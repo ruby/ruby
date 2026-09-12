@@ -30,6 +30,7 @@
 #include "internal/object.h"
 #include "internal/gc.h"
 #include "internal/re.h"
+#include "internal/string.h"
 #include "internal/struct.h"
 #include "internal/symbol.h"
 #include "internal/thread.h"
@@ -1242,19 +1243,16 @@ cvar_read_ractor_check(VALUE klass, ID id, VALUE val)
 }
 
 static inline void
-ivar_ractor_check(VALUE obj, ID id)
+ivar_ractor_assert(VALUE obj, ID id)
 {
-    if (LIKELY(rb_is_instance_id(id)) /* not internal ID */ &&
-        !RB_OBJ_FROZEN_RAW(obj) &&
-        UNLIKELY(!rb_ractor_main_p()) &&
-        UNLIKELY(rb_ractor_shareable_p(obj))) {
-
-        if (RB_TYPE_P(obj, T_CLASS) || RB_TYPE_P(obj, T_MODULE)) {
-            // classes/modules are owner-checked at each read/write site instead
-            return;
-        }
-        rb_raise(rb_eRactorIsolationError, "can not access instance variables of shareable objects from non-main Ractors");
-    }
+    RUBY_ASSERT(!rb_is_instance_id(id) /* internal ID */ ||
+                SPECIAL_CONST_P(obj) ||
+                !rb_ractor_shareable_p(obj) ||
+                RB_OBJ_FROZEN_RAW(obj) ||
+                RB_TYPE_P(obj, T_CLASS) || RB_TYPE_P(obj, T_MODULE) ||
+                RB_TYPE_P(obj, T_ICLASS) || RB_TYPE_P(obj, T_IMEMO) ||
+                rb_shape_frozen_p(RBASIC_SHAPE_ID(obj)),
+                "shareable object must not have writable instance variables");
 }
 
 struct st_table *
@@ -1340,7 +1338,7 @@ obj_use_generic_fields_tbl_p(VALUE obj)
 VALUE
 rb_obj_fields(VALUE obj, ID field_name)
 {
-    ivar_ractor_check(obj, field_name);
+    ivar_ractor_assert(obj, field_name);
 
     switch (BUILTIN_TYPE(obj)) {
       case T_IMEMO:
@@ -1429,7 +1427,7 @@ rb_free_generic_ivar(VALUE obj)
 static void
 rb_obj_set_fields(VALUE obj, VALUE fields_obj, ID field_name, VALUE original_fields_obj)
 {
-    ivar_ractor_check(obj, field_name);
+    ivar_ractor_assert(obj, field_name);
 
     if (!fields_obj) {
         RUBY_ASSERT(original_fields_obj);
@@ -1997,6 +1995,25 @@ obj_ivar_set(VALUE obj, ID id, VALUE val)
     return obj_field_set(obj, target_shape_id, id, val);
 }
 
+void
+rb_check_ivar_modifiable(VALUE obj)
+{
+    if (UNLIKELY(!RB_FL_ABLE(obj) || rb_shape_frozen_p(RBASIC_SHAPE_ID(obj)))) {
+        rb_check_frozen(obj);
+
+        RUBY_ASSERT(RB_OBJ_SHAREABLE_P(obj), "unfrozen object with a frozen shape must be shareable");
+
+        rb_raise(rb_eRactorIsolationError,
+                 "can't modify instance variables of a shareable %"PRIsVALUE,
+                 rb_obj_class(obj));
+    }
+    else if (UNLIKELY(CHILLED_STRING_P(obj))) {
+        CHILLED_STRING_MUTATED(obj);
+    }
+
+    RUBY_ASSERT(!RB_OBJ_FROZEN_RAW(obj), "frozen object with an unfrozen shape");
+}
+
 /* Set the instance variable +val+ on object +obj+ at ivar name +id+.
  * This function only works with T_OBJECT objects, so make sure
  * +obj+ is of type T_OBJECT before using this function.
@@ -2004,7 +2021,7 @@ obj_ivar_set(VALUE obj, ID id, VALUE val)
 VALUE
 rb_vm_set_ivar_id(VALUE obj, ID id, VALUE val)
 {
-    rb_check_frozen(obj);
+    rb_check_ivar_modifiable(obj);
     obj_ivar_set(obj, id, val);
     return val;
 }
@@ -2063,7 +2080,7 @@ ivar_set(VALUE obj, ID id, VALUE val)
 VALUE
 rb_ivar_set(VALUE obj, ID id, VALUE val)
 {
-    rb_check_frozen(obj);
+    rb_check_ivar_modifiable(obj);
     ivar_set(obj, id, val);
     return val;
 }

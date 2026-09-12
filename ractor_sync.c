@@ -1007,8 +1007,7 @@ rb_ractor_setup_default_port(rb_ractor_t *r)
 {
     VM_ASSERT(r->sync.default_port_value == Qfalse);
     r->sync.default_port_value = ractor_port_new(r);
-    FL_SET_RAW(r->sync.default_port_value, RUBY_FL_SHAREABLE); // only default ports are shareable
-    rb_gc_obj_became_shareable(r->sync.default_port_value);
+    RB_OBJ_SET_SHAREABLE(r->sync.default_port_value);
 }
 
 // Ractor#value

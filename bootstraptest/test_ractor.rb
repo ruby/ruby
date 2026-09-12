@@ -888,50 +888,19 @@ assert_equal "can not get unshareable values from instance variables of classes/
   end
 RUBY
 
-# ivar in shareable-objects are not allowed to access from non-main Ractor
-assert_equal 'can not access instance variables of shareable objects from non-main Ractors', %q{
+# setting an ivar on a shareable but unfrozen object is not allowed, by instance_variable_set
+assert_equal "can't modify instance variables of a shareable Ractor", %q{
   shared = Ractor.new{}
-  shared.instance_variable_set(:@iv, 'str')
-
-  r = Ractor.new shared do |shared|
-    p shared.instance_variable_get(:@iv)
-  end
 
   begin
-    r.value
-  rescue Ractor::RemoteError => e
-    e.cause.message
+    shared.instance_variable_set(:@iv, 'str')
+  rescue Ractor::IsolationError => e
+    e.message
   end
 }
 
-# ivar in shareable-objects are not allowed to access from non-main Ractor, by @iv (get)
-assert_equal 'can not access instance variables of shareable objects from non-main Ractors', %q{
-  class Ractor
-    def setup
-      @foo = ''
-    end
-
-    def foo
-      @foo
-    end
-  end
-
-  shared = Ractor.new{}
-  shared.setup
-
-  r = Ractor.new shared do |shared|
-    p shared.foo
-  end
-
-  begin
-    r.value
-  rescue Ractor::RemoteError => e
-    e.cause.message
-  end
-}
-
-# ivar in shareable-objects are not allowed to access from non-main Ractor, by @iv (set)
-assert_equal 'can not access instance variables of shareable objects from non-main Ractors', %q{
+# setting an ivar on a shareable but unfrozen object is not allowed, by @iv = ...
+assert_equal "can't modify instance variables of a shareable Ractor", %q{
   class Ractor
     def setup
       @foo = ''
@@ -940,8 +909,36 @@ assert_equal 'can not access instance variables of shareable objects from non-ma
 
   shared = Ractor.new{}
 
+  begin
+    shared.setup
+  rescue Ractor::IsolationError => e
+    e.message
+  end
+}
+
+# ivars of a shareable object are frozen, so they can be read from a non-main Ractor
+assert_equal 'nil', %q{
+  shared = Ractor.new{}
+
   r = Ractor.new shared do |shared|
-    p shared.setup
+    shared.instance_variable_get(:@iv)
+  end
+
+  r.value.inspect
+}
+
+# setting an ivar on a shareable object is not allowed from a non-main Ractor either
+assert_equal "can't modify instance variables of a shareable Ractor", %q{
+  class Ractor
+    def setup
+      @foo = ''
+    end
+  end
+
+  shared = Ractor.new{}
+
+  r = Ractor.new shared do |shared|
+    shared.setup
   end
 
   begin
