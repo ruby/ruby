@@ -1232,7 +1232,7 @@ q.pop
     assert_operator(size_default, :>=, size_0, "0 size")
     size_large = invoke_rec script, vm_stack_size, 1024 * 1024 * 10
     assert_operator(size_default, :<=, size_large, "large size")
-  end unless /mswin|mingw/ =~ RUBY_PLATFORM
+  end
 
   def test_blocking_mutex_unlocked_on_fork
     bug8433 = '[ruby-core:55102] [Bug #8433]'
