@@ -293,7 +293,7 @@ struct fast_fallback_inetsock_arg
     int additional_flags;
     struct fast_fallback_getaddrinfo_entry *getaddrinfo_entries[2];
     struct fast_fallback_getaddrinfo_shared *getaddrinfo_shared;
-    rb_fdset_t readfds, writefds;
+    rb_fdset_t readfds, writefds, exceptfds;
     int wait;
     int connection_attempt_fds_size;
     int *connection_attempt_fds;
@@ -985,6 +985,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
 
         nfds = 0;
         rb_fd_zero(&arg->writefds);
+        rb_fd_zero(&arg->exceptfds);
         if (in_progress_fds(arg->connection_attempt_fds_size)) {
             int n = 0;
             for (int i = 0; i < arg->connection_attempt_fds_size; i++) {
@@ -992,6 +993,11 @@ init_fast_fallback_inetsock_internal(VALUE v)
                 if (cfd < 0) continue;
                 if (cfd > n) n = cfd;
                 rb_fd_set(cfd, &arg->writefds);
+#ifdef _WIN32
+                /* Winsock reports a refused connect(2) through the exceptfds
+                 * alone, never through the writefds. [Bug #18661] */
+                rb_fd_set(cfd, &arg->exceptfds);
+#endif
             }
             if (n > 0) n++;
             nfds = n;
@@ -1006,7 +1012,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
             }
         }
 
-        status = rb_thread_fd_select(nfds, &arg->readfds, &arg->writefds, NULL, delay_p);
+        status = rb_thread_fd_select(nfds, &arg->readfds, &arg->writefds, &arg->exceptfds, delay_p);
 
         now = current_clocktime_ts();
         if (is_timeout_tv(resolution_delay_expires_at, now)) {
@@ -1023,7 +1029,9 @@ init_fast_fallback_inetsock_internal(VALUE v)
             if (in_progress_fds(arg->connection_attempt_fds_size)) {
                 for (int i = 0; i < arg->connection_attempt_fds_size; i++) {
                     int fd = arg->connection_attempt_fds[i];
-                    if (fd < 0 || !rb_fd_isset(fd, &arg->writefds)) continue;
+                    if (fd < 0) continue;
+                    if (!rb_fd_isset(fd, &arg->writefds) &&
+                        !rb_fd_isset(fd, &arg->exceptfds)) continue;
 
                     int err;
                     socklen_t len = sizeof(err);
@@ -1325,6 +1333,7 @@ fast_fallback_inetsock_cleanup(VALUE v)
 
     if (arg->readfds.fdset) rb_fd_term(&arg->readfds);
     if (arg->writefds.fdset) rb_fd_term(&arg->writefds);
+    if (arg->exceptfds.fdset) rb_fd_term(&arg->exceptfds);
 
     if (arg->connection_attempt_fds) {
         free(arg->connection_attempt_fds);
@@ -1423,6 +1432,7 @@ rsock_init_inetsock(
 
             rb_fd_init(&fast_fallback_arg.readfds);
             rb_fd_init(&fast_fallback_arg.writefds);
+            rb_fd_init(&fast_fallback_arg.exceptfds);
 
             return rb_ensure(init_fast_fallback_inetsock_internal, (VALUE)&fast_fallback_arg,
                              fast_fallback_inetsock_cleanup, (VALUE)&fast_fallback_arg);
