@@ -308,7 +308,7 @@ Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for det
 * Socket
 
     * `TCPSocket.new` now connects through Happy Eyeballs Version 2 on
-      Windows as well, so a host that answers with both an IPv6 and an IPv4
+      mswin as well, so a host that answers with both an IPv6 and an IPv4
       address no longer waits for the IPv6 attempt to time out.
 
     * On Windows, a connection that is refused or unreachable now raises the
