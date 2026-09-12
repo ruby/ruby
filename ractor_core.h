@@ -135,6 +135,17 @@ struct rb_ractor_struct {
     struct rb_id_table *idkey_local_storage;
     VALUE local_storage_store_lock;
 
+    /* Cached scratch table for the courier walks' seen-sets.  Only this Ractor's own
+     * threads touch it (they are serialized by the per-ractor GVL); it is empty
+     * whenever it sits here, and NULL while borrowed or never used. */
+    st_table *courier_scratch;
+
+    /* The node/ref counts of this Ractor's last copy courier: the copy path has no
+     * sizing pre-walk, so the next send reserves these and only grows past them when
+     * the payload got bigger.  Senders tend to repeat a payload shape. */
+    uint32_t courier_nodes_hint;
+    uint32_t courier_refs_hint;
+
     /* 0 until first use: rb_ractor_stdin and friends build them lazily, with plain
      * stores (rooted via ractor_mark_unshareable_parts; a write barrier on the
      * shareable wrapper would shref-pin them). */

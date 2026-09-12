@@ -431,6 +431,10 @@ ractor_free(void *ptr)
     rb_thread_sched_destroy(&r->threads.sched);
     rb_native_mutex_destroy(&r->sync.lock);
     ractor_local_storage_free(r);
+    if (r->courier_scratch) {
+        st_free_table(r->courier_scratch);
+        r->courier_scratch = NULL;
+    }
     rb_hook_list_free(&r->pub.hooks);
     rb_st_free_embedded_table(&r->pub.targeted_hooks);
 
@@ -2417,6 +2421,10 @@ struct courier_build {
     /* Copy mode: read the sources instead of taking them apart.  No husk, no buffer
      * hand-over, no freeing of the source's internals. */
     bool copy;
+    /* Copy mode only: the walk met a node only the on-heap snapshot path handles.
+     * Copy capture reads without mutating, so the walk just unwinds and the caller
+     * throws the partial courier away and falls back. */
+    bool failed;
 };
 
 static uint32_t courier_capture(struct courier_build *b, VALUE obj);
@@ -2596,7 +2604,7 @@ courier_capture_hash_i(st_data_t key, st_data_t val, st_data_t arg)
     uint32_t vid = courier_capture(hc->b, (VALUE)val);
     hc->kv[hc->i++] = kid;
     hc->kv[hc->i++] = vid;
-    return ST_CONTINUE;
+    return hc->b->failed ? ST_STOP : ST_CONTINUE;
 }
 
 struct courier_obj_ctx {
@@ -2643,6 +2651,10 @@ courier_capture_ivars(struct courier_build *b, VALUE obj, uint32_t id)
 static uint32_t
 courier_capture(struct courier_build *b, VALUE obj)
 {
+    if (RB_UNLIKELY(b->failed)) {
+        return 0;
+    }
+
     /* An immediate is never in seen (only captured objects are inserted), so it can
      * skip the lookup entirely: that is the whole cost of an array of numbers. */
     if (RB_SPECIAL_CONST_P(obj)) {
@@ -2660,6 +2672,36 @@ courier_capture(struct courier_build *b, VALUE obj)
 
     if (rb_ractor_shareable_p(obj)) {
         return courier_alloc_ref(b->c, obj);
+    }
+
+    /* Copy mode has no preflight, so the support decisions the move path makes in
+     * move_preflight are made here, before this node joins the courier.  A singleton
+     * class is a send error (the on-heap copier refuses it and Marshal then raises);
+     * the courier would happily carry it, so keep it off this path.  Everything else
+     * this says no to (IO, any other T_DATA) stays on the on-heap snapshot path via
+     * the failed flag. */
+    if (b->copy) {
+        VALUE klass = RBASIC_CLASS(obj);
+        if (klass == 0 || FL_TEST_RAW(klass, FL_SINGLETON)) {
+            b->failed = true;
+            return 0;
+        }
+        switch (BUILTIN_TYPE(obj)) {
+          case T_STRING:
+          case T_OBJECT:
+          case T_MATCH:
+          case T_ARRAY:
+          case T_HASH:
+          case T_STRUCT:
+            break;
+          case T_DATA:
+            /* An exception's backtrace is the one T_DATA the courier carries. */
+            if (rb_backtrace_p(obj)) break;
+            /* fall through */
+          default:
+            b->failed = true;
+            return 0;
+        }
     }
 
     uint32_t id = courier_alloc_node(b->c);
@@ -2792,7 +2834,7 @@ courier_capture(struct courier_build *b, VALUE obj)
 
       case T_FILE:
       {
-        VM_ASSERT(!b->copy);   /* copy_courier_supported_p rejects it */
+        VM_ASSERT(!b->copy);   /* the copy-mode support check above rejects T_FILE */
         /* Carry the whole fptr (fd included) by pointer; the source shell does not
          * close it.  fptr's VALUE members lose their root once the source is T_MOVED,
          * so capture them as ordinary child nodes, detached; rebuild writes them back. */
@@ -2844,7 +2886,9 @@ courier_capture(struct courier_build *b, VALUE obj)
     return id;
 }
 
-/* Like the copy walk, this also sizes the courier: see copy_support_ctx. */
+/* The pre-walk also sizes the courier: one node per distinct unshareable object, one
+ * ref per occurrence of a shareable one -- exactly what courier_capture allocates, so
+ * the arrays never have to grow while the graph is being captured. */
 struct move_preflight_ctx {
     st_table *seen;
     uint32_t nodes, refs;
@@ -2943,114 +2987,53 @@ move_preflight(VALUE obj, struct move_preflight_ctx *ctx)
     rb_ivar_foreach(obj, move_preflight_ivar_i, (st_data_t)ctx);
 }
 
-/* The walk also sizes the courier: one node per distinct unshareable object, one ref
- * per occurrence of a shareable one -- exactly what courier_capture allocates, so the
- * arrays never have to grow while the graph is being captured. */
-struct copy_support_ctx {
-    st_table *seen;
-    uint32_t nodes, refs;
-    bool ok;
-};
-
-static bool copy_courier_supported_p(VALUE obj, struct copy_support_ctx *ctx);
-
-static int
-copy_support_val_i(st_data_t val, st_data_t arg)
+/* Borrow the current Ractor's cached seen-table for a courier walk.  A borrow when
+ * the slot is empty (first use, or a reentrant walk) falls back to a fresh table,
+ * and a return to an occupied slot frees, so pairing is safe however the walks
+ * nest. */
+static st_table *
+courier_scratch_take(void)
 {
-    struct copy_support_ctx *ctx = (struct copy_support_ctx *)arg;
-    if (!copy_courier_supported_p((VALUE)val, ctx)) {
-        ctx->ok = false;
-        return ST_STOP;
+    rb_ractor_t *cr = GET_RACTOR();
+    st_table *tab = cr->courier_scratch;
+
+    if (tab != NULL) {
+        cr->courier_scratch = NULL;
+        return tab;   /* cleared when it was returned */
     }
-    return ST_CONTINUE;
+    return st_init_numtable();
 }
 
-static int
-copy_support_ivar_i(ID name, VALUE val, st_data_t arg)
+static void
+courier_scratch_give(st_table *tab)
 {
-    return copy_support_val_i((st_data_t)val, arg);
-}
+    rb_ractor_t *cr = GET_RACTOR();
 
-static int
-copy_support_hash_i(st_data_t key, st_data_t val, st_data_t arg)
-{
-    if (copy_support_val_i(key, arg) == ST_STOP) return ST_STOP;
-    return copy_support_val_i(val, arg);
-}
-
-/* Read-only walk: can the copy courier carry obj's whole graph?  Everything it says no
- * to (MatchData, IO, any other T_DATA, a singleton class) stays on the older on-heap
- * snapshot path, which keeps handling or rejecting it exactly as before. */
-static bool
-copy_courier_supported_p(VALUE obj, struct copy_support_ctx *ctx)
-{
-    st_table *const seen = ctx->seen;
-
-    if (RB_SPECIAL_CONST_P(obj) || rb_ractor_shareable_p(obj)) {
-        ctx->refs++;
-        return true;
+    /* An oversized graph would leave a big bins array to memset on every later
+     * clear: cache only tables that stayed small. */
+    if (cr->courier_scratch == NULL && st_table_size(tab) <= 512) {
+        st_clear(tab);
+        cr->courier_scratch = tab;
     }
-    if (st_lookup(seen, (st_data_t)obj, NULL)) return true;   /* cycle */
-    st_insert(seen, (st_data_t)obj, 0);
-    ctx->nodes++;
-
-    /* A singleton class is a send error today (the native copier refuses it and Marshal
-     * then raises); the courier would happily carry it, so keep it off this path. */
-    VALUE klass = RBASIC_CLASS(obj);
-    if (klass == 0 || FL_TEST_RAW(klass, FL_SINGLETON)) return false;
-
-    switch (BUILTIN_TYPE(obj)) {
-      case T_STRING:
-      case T_OBJECT:
-        break;                       /* children are ivars only (below) */
-      case T_MATCH: {
-        struct RMatch *rm = RMATCH(obj);
-        if (!copy_courier_supported_p(rm->regexp, ctx)) return false;
-        if (!copy_courier_supported_p(rm->str, ctx)) return false;
-        break;
-      }
-      case T_DATA:
-        /* An exception's backtrace is the one T_DATA the courier carries. */
-        if (!rb_backtrace_p(obj)) return false;
-        break;
-      case T_ARRAY:
-        for (long i = 0; i < RARRAY_LEN(obj); i++) {
-            if (!copy_courier_supported_p(RARRAY_AREF(obj, i), ctx)) return false;
-        }
-        break;
-      case T_HASH:
-        rb_hash_stlike_foreach(obj, copy_support_hash_i, (st_data_t)ctx);
-        if (!ctx->ok) return false;
-        if (!copy_courier_supported_p(RHASH_IFNONE(obj), ctx)) return false;
-        break;
-      case T_STRUCT:
-        for (long i = 0; i < RSTRUCT_LEN(obj); i++) {
-            if (!copy_courier_supported_p(RSTRUCT_GET(obj, (int)i), ctx)) return false;
-        }
-        break;
-      default:
-        return false;
+    else {
+        st_free_table(tab);
     }
-
-    rb_ivar_foreach(obj, copy_support_ivar_i, (st_data_t)ctx);
-    return ctx->ok;
 }
 
 /* Build a courier holding a copy of obj's graph, leaving the sources untouched.
- * Returns NULL when the graph has a type only the on-heap snapshot path handles. */
+ * Returns NULL when the graph has a type only the on-heap snapshot path handles.
+ *
+ * One pass, no preflight: copy capture reads the sources without mutating anything,
+ * so meeting an unsupported node midway costs only the partial courier, which is
+ * thrown away.  (Move capture cannot skip its pre-walk: it husks sources as it
+ * goes.) */
 struct rb_ractor_courier *
 rb_ractor_courier_build_copy(VALUE obj, struct rb_ractor_courier **slot)
 {
-    struct copy_support_ctx scan = { st_init_numtable(), 0, 0, true };
-    {
-        bool ok = copy_courier_supported_p(obj, &scan);
-        st_free_table(scan.seen);
-        if (!ok) return NULL;
-    }
-
+    rb_ractor_t *cr = GET_RACTOR();
     struct rb_ractor_courier *c = ZALLOC(struct rb_ractor_courier);
-    courier_reserve(c, scan.nodes, scan.refs);
-    struct courier_build b = { c, st_init_numtable(), true };
+    courier_reserve(c, cr->courier_nodes_hint, cr->courier_refs_hint);
+    struct courier_build b = { c, courier_scratch_take(), true, false };
 
     /* Publish it into the caller's basket before capturing anything: from here the
      * shareable payloads it collects are rooted by the basket's holder. */
@@ -3063,9 +3046,19 @@ rb_ractor_courier_build_copy(VALUE obj, struct rb_ractor_courier **slot)
         c->root = courier_capture(&b, obj);
     }
     EC_POP_TAG();
-    st_free_table(b.seen);
+    courier_scratch_give(b.seen);
     /* Published above, so the basket owns it even half-built: it frees it. */
     if (state != TAG_NONE) EC_JUMP_TAG(ec, state);
+
+    if (RB_UNLIKELY(b.failed)) {
+        /* Unpublish before freeing, so the basket never points at a freed courier. */
+        *slot = NULL;
+        rb_ractor_courier_free(c);
+        return NULL;
+    }
+
+    cr->courier_nodes_hint = c->count;
+    cr->courier_refs_hint = c->refs_count;
     return c;
 }
 
@@ -3076,7 +3069,7 @@ rb_ractor_courier_build_move(VALUE obj, struct rb_ractor_courier **slot)
 {
     /* Two phases, preflight then commit, so an unmovable object is raised from the
      * read-only walk while the graph is still intact. */
-    struct move_preflight_ctx scan = { st_init_numtable(), 0, 0 };
+    struct move_preflight_ctx scan = { courier_scratch_take(), 0, 0 };
     {
         enum ruby_tag_type state;
         rb_execution_context_t *ec = GET_EC();
@@ -3085,13 +3078,13 @@ rb_ractor_courier_build_move(VALUE obj, struct rb_ractor_courier **slot)
             move_preflight(obj, &scan);
         }
         EC_POP_TAG();
-        st_free_table(scan.seen);
+        courier_scratch_give(scan.seen);
         if (state != TAG_NONE) EC_JUMP_TAG(ec, state);
     }
 
     struct rb_ractor_courier *c = ZALLOC(struct rb_ractor_courier);
     courier_reserve(c, scan.nodes, scan.refs);
-    struct courier_build b = { c, st_init_numtable(), false };
+    struct courier_build b = { c, courier_scratch_take(), false, false };
 
     /* Publish it into the caller's basket before the sources become T_MOVED: from here
      * the basket's holder roots what the courier carries, and partial nodes are
@@ -3105,7 +3098,7 @@ rb_ractor_courier_build_move(VALUE obj, struct rb_ractor_courier **slot)
         c->root = courier_capture(&b, obj);
     }
     EC_POP_TAG();
-    st_free_table(b.seen);
+    courier_scratch_give(b.seen);
     if (state != TAG_NONE) {
         /* courier_capture raised (an unmovable type, an interrupt).  The courier belongs
          * to the basket from the publish above, so leave it there and re-raise: the
