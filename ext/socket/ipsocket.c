@@ -713,7 +713,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
                 VALUE test_delay_setting = rb_hash_aref(test_mode_settings, ID2SYM(rb_intern("delay")));
                 if (!NIL_P(test_delay_setting)) {
                     VALUE rb_test_delay_ms = rb_hash_aref(test_delay_setting, ID2SYM(rb_intern(family_sym)));
-                    long test_delay_ms = NIL_P(rb_test_delay_ms) ? 0 : rb_test_delay_ms;
+                    long test_delay_ms = NIL_P(rb_test_delay_ms) ? 0 : NUM2LONG(rb_test_delay_ms);
                     arg->getaddrinfo_entries[i]->test_sleep_ms = test_delay_ms;
                 }
 
