@@ -447,6 +447,231 @@ fn test_kwargs_with_max_direct_send_arg_count() {
 }
 
 #[test]
+fn test_forwardable_callee_positional_args() {
+    assert_snapshot!(inspect("
+        def target(a, b) = a + b
+        def fwd(...) = target(...)
+        5.times.map { fwd(1, 2) }.uniq
+    "), @"[3]");
+}
+
+#[test]
+fn test_forwardable_callee_no_args() {
+    assert_snapshot!(inspect("
+        def target = :ok
+        def fwd(...) = target(...)
+        5.times.map { fwd }.uniq
+    "), @"[:ok]");
+}
+
+#[test]
+fn test_forwardable_callee_kwargs() {
+    assert_snapshot!(inspect("
+        def target(a, b:, c: 3) = [a, b, c]
+        def fwd(...) = target(...)
+        5.times.flat_map { [fwd(1, b: 2), fwd(1, c: 9, b: 2)] }.uniq
+    "), @"[[1, 2, 3], [1, 2, 9]]");
+}
+
+#[test]
+fn test_forwardable_callee_wrong_number_of_arguments() {
+    assert_snapshot!(inspect(r#"
+        def target(a, b) = a + b
+        def fwd(...) = target(...)
+        5.times.map { (fwd(1) rescue $!.message) }.uniq
+    "#), @r#"["wrong number of arguments (given 1, expected 2)"]"#);
+}
+
+#[test]
+fn test_forwardable_callee_unknown_keyword() {
+    assert_snapshot!(inspect(r#"
+        def target(a, b:) = [a, b]
+        def fwd(...) = target(...)
+        5.times.map { (fwd(1, z: 2) rescue $!.message) }.uniq
+    "#), @r#"["missing keyword: :b"]"#);
+}
+
+#[test]
+fn test_forwardable_callee_literal_block() {
+    assert_snapshot!(inspect("
+        def target(x) = yield(x)
+        def fwd(...) = target(...)
+        5.times.map { fwd(4) { |v| v * 2 } }.uniq
+    "), @"[8]");
+}
+
+// Enabling a TracePoint invalidates the callee's PatchPoint NoTracePoint, so the interpreter takes
+// over the frame that the direct send pushed and runs the forwarding call itself.
+#[test]
+fn test_forwardable_callee_side_exit() {
+    assert_snapshot!(inspect("
+        def target(a, b:) = [a, b]
+        def fwd(...) = target(...)
+        def call_fwd = fwd(1, b: 2)
+        5.times { call_fwd }
+        tp = TracePoint.new(:line) { |_| }
+        tp.enable { 5.times.map { call_fwd }.uniq }
+    "), @"[[1, 2]]");
+}
+
+#[test]
+fn test_forwardable_callee_block_arg_proc() {
+    assert_snapshot!(inspect("
+        def target(x) = yield(x)
+        def fwd(...) = target(...)
+        block = proc { |v| v * 2 }
+        5.times.map { fwd(4, &block) }.uniq
+    "), @"[8]");
+}
+
+#[test]
+fn test_forwardable_callee_block_arg_lambda() {
+    assert_snapshot!(inspect("
+        def target(x) = yield(x)
+        def fwd(...) = target(...)
+        block = ->(v) { v * 3 }
+        5.times.map { fwd(4, &block) }.uniq
+    "), @"[12]");
+}
+
+#[test]
+fn test_forwardable_callee_block_arg_symbol() {
+    assert_snapshot!(inspect(r#"
+        def target(x) = yield(x)
+        def fwd(...) = target(...)
+        5.times.map { fwd("hello", &:upcase) }.uniq
+    "#), @r#"["HELLO"]"#);
+}
+
+#[test]
+fn test_forwardable_callee_block_arg_method() {
+    assert_snapshot!(inspect("
+        def target(x) = yield(x)
+        def fwd(...) = target(...)
+        def double(v) = v * 2
+        5.times.map { fwd(4, &method(:double)) }.uniq
+    "), @"[8]");
+}
+
+#[test]
+fn test_forwardable_callee_block_arg_to_proc() {
+    assert_snapshot!(inspect("
+        class Doubler
+          def to_proc = proc { |v| v * 2 }
+        end
+        def target(x) = yield(x)
+        def fwd(...) = target(...)
+        doubler = Doubler.new
+        5.times.map { fwd(4, &doubler) }.uniq
+    "), @"[8]");
+}
+
+#[test]
+fn test_forwardable_callee_block_arg_nil() {
+    assert_snapshot!(inspect("
+        def target(x) = block_given? ? yield(x) : [:no_block, x]
+        def fwd(...) = target(...)
+        5.times.map { fwd(4, &nil) }.uniq
+    "), @"[[:no_block, 4]]");
+}
+
+#[test]
+fn test_forwardable_callee_block_arg_not_callable() {
+    assert_snapshot!(inspect(r#"
+        def target(x) = yield(x)
+        def fwd(...) = target(...)
+        5.times.map { (fwd(4, &42) rescue $!.class) }.uniq
+    "#), @"[TypeError]");
+}
+
+#[test]
+fn test_forwardable_callee_splat_call_site_stays_dynamic() {
+    assert_snapshot!(inspect("
+        def target(*a, **k) = [a, k]
+        def fwd(...) = target(...)
+        args = [1, 2]
+        opts = { x: 1 }
+        5.times.flat_map { [fwd(*args), fwd(**opts), fwd(&nil)] }.uniq
+    "), @"[[[1, 2], {}], [[], {x: 1}], [[], {}]]");
+}
+
+#[test]
+fn test_forwardable_callee_ruby2_keywords_flag_survives() {
+    assert_snapshot!(inspect("
+        def target(*a, **k) = [a, k]
+        def fwd(...) = target(...)
+        ruby2_keywords def r2k(*a) = fwd(*a)
+        5.times.map { r2k(1, k: 2) }.uniq
+    "), @"[[[1], {k: 2}]]");
+}
+
+#[test]
+fn test_forwardable_callee_chained_forwarding() {
+    assert_snapshot!(inspect("
+        def target(a, b:) = [a, b]
+        def inner(...) = target(...)
+        def outer(...) = inner(...)
+        5.times.map { outer(1, b: 2) }.uniq
+    "), @"[[1, 2]]");
+}
+
+#[test]
+fn test_forwardable_callee_with_extra_locals() {
+    assert_snapshot!(inspect("
+        def target(a) = a * 2
+        def fwd(...)
+          extra = 10
+          extra + target(...)
+        end
+        5.times.map { fwd(3) }.uniq
+    "), @"[16]");
+}
+
+#[test]
+fn test_forwardable_callee_super() {
+    assert_snapshot!(inspect(r#"
+        class Base
+          def run(*a, **k) = ["base", a, k]
+        end
+        class Child < Base
+          def run(...) = super
+        end
+        c = Child.new
+        5.times.map { c.run(1, k: 2) }.uniq
+    "#), @r#"[["base", [1], {k: 2}]]"#);
+}
+
+#[test]
+fn test_explicit_super_to_forwardable_callee() {
+    assert_snapshot!(inspect(r#"
+        class Base
+          def run(...) = fin(...)
+          def fin(a, b) = ["base", a, b]
+        end
+        class Child < Base
+          def run(a, b) = super(a, b)
+        end
+        c = Child.new
+        5.times.map { c.run(1, 2) }.uniq
+    "#), @r#"[["base", 1, 2]]"#);
+}
+
+#[test]
+fn test_zsuper_to_forwardable_callee() {
+    assert_snapshot!(inspect(r#"
+        class Base
+          def run(...) = fin(...)
+          def fin(a, b) = ["base", a, b]
+        end
+        class Child < Base
+          def run(a, b) = super
+        end
+        c = Child.new
+        5.times.map { c.run(3, 4) }.uniq
+    "#), @r#"[["base", 3, 4]]"#);
+}
+
+#[test]
 fn test_setlocal_on_eval() {
     assert_snapshot!(inspect("
         @b = binding
