@@ -24,23 +24,27 @@ jobs:
     name: SHSTK
     runs-on: ubuntu-24.04
 
+    container:
+      image: fedora:44
+
     env:
       CONFIGURE_TTY: never
       RUBY_DEBUG: ci
 
     steps:
+      - name: Install dependencies
+        run: >-
+          dnf install -y
+          autoconf automake gcc gcc-c++ git libffi-devel libtool
+          libyaml-devel make ncurses-devel openssl-devel procps-ng
+          readline-devel ruby zlib-devel
+        working-directory:
+
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github
           persist-credentials: false
-
-      - uses: ./.github/actions/setup/ubuntu
-
-      - uses: ruby/setup-ruby@95ef2b042f9d7a56d8268cba8559e2842e2ad01b # v1.321.0
-        with:
-          ruby-version: '3.1'
-          bundler: none
 
       - uses: ./.github/actions/setup/directories
         with:
@@ -71,8 +75,9 @@ jobs:
           RUBY_TESTOPTS: '-q --tty=no'
         run: |
           ./miniruby -e '
-            features = File.read("/proc/self/status")[/^x86_Thread_features:\s*(.*)$/, 1]
-            abort "SHSTK is not active (x86_Thread_features: #{features || "missing"})" unless features&.split&.include?("shstk")
+            line = File.foreach("/proc/self/status").find { |entry| entry.start_with?("x86_Thread_features:") }
+            features = line&.split(":", 2)&.last&.split || []
+            abort "SHSTK is not active (x86_Thread_features: #{features.join(" ")})" unless features.include?("shstk")
           '
           make -s test-all TESTS='test/ruby/test_fiber.rb test/ruby/test_continuation.rb'
 
