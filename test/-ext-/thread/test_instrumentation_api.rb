@@ -6,15 +6,12 @@ class TestThreadInstrumentation < Test::Unit::TestCase
   include ThreadInstrumentation::TestHelper
 
   def setup
-    pend("No windows support") if /mswin|mingw|bccwin/ =~ RUBY_PLATFORM
-
     require '-test-/thread/instrumentation'
 
     cleanup_threads
   end
 
   def teardown
-    return if /mswin|mingw|bccwin/ =~ RUBY_PLATFORM
     Bug::ThreadInstrumentation.unregister_callback
     cleanup_threads
   end
@@ -225,7 +222,7 @@ class TestThreadInstrumentation < Test::Unit::TestCase
   end
 
   def test_thread_instrumentation_fork_safe
-    skip "No fork()" unless Process.respond_to?(:fork)
+    omit "No fork()" unless Process.respond_to?(:fork)
 
     thread_statuses = full_timeline = nil
     IO.popen("-") do |read_pipe|
