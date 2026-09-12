@@ -970,6 +970,7 @@ raddrinfo_port_str(VALUE port, char *pbuf, size_t pbuflen, int *flags_ptr)
     }
 }
 
+#ifdef RSOCK_HAVE_FIBER_SCHEDULER_ADDRESS_RESOLVE
 static int
 rb_scheduler_getaddrinfo(VALUE scheduler, VALUE host, const char *service,
     const struct addrinfo *hints, struct rb_addrinfo **res)
@@ -1019,6 +1020,7 @@ rb_scheduler_getaddrinfo(VALUE scheduler, VALUE host, const char *service,
         return EAI_NONAME;
     }
 }
+#endif
 
 struct rb_addrinfo*
 rsock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints, int socktype_hack, VALUE timeout)
@@ -1044,6 +1046,7 @@ rsock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints, int socktype_h
         res->allocated_by_malloc = 1;
         res->ai = ai;
     } else {
+#ifdef RSOCK_HAVE_FIBER_SCHEDULER_ADDRESS_RESOLVE
         VALUE scheduler = rb_fiber_scheduler_current();
         int resolved = 0;
 
@@ -1054,6 +1057,9 @@ rsock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints, int socktype_h
                 resolved = 1;
             }
         }
+#else
+        int resolved = 0;
+#endif
 
         if (!resolved) {
             int t = NIL_P(timeout) ? -1 : rsock_value_timeout_to_msec(timeout);
