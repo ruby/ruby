@@ -329,13 +329,16 @@ native_cond_timedwait(rb_nativethread_cond_t *cond, rb_nativethread_lock_t *mute
 
     if (*abs <= now) return ETIMEDOUT;
 
-    rb_hrtime_t rel = *abs - now;
-    unsigned long msec = (unsigned long)(rel / RB_HRTIME_PER_MSEC);
+    // unsigned long is 32 bits here, and INFINITE would never time out.
+    rb_hrtime_t ms = roomof(*abs - now, RB_HRTIME_PER_MSEC);
+    unsigned long msec = ms < INFINITE ? (unsigned long)ms : INFINITE - 1;
+    int r = native_cond_timedwait_ms(cond, mutex, msec);
 
-    // do not busy loop on a sub-millisecond deadline
-    if (msec == 0) msec = 1;
+    // The wait runs on another clock than rb_hrtime_now() and can end early.
+    // Report that as spurious, the way pthread_cond_timedwait would.
+    if (r == ETIMEDOUT && rb_hrtime_now() < *abs) return 0;
 
-    return native_cond_timedwait_ms(cond, mutex, msec);
+    return r;
 }
 
 void
