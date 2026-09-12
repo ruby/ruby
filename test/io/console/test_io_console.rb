@@ -535,7 +535,7 @@ class TestIO_Console
       assert_equal("b", read.getc)
       assert_false(read.input_pending?)
     end
-  end unless RbConfig::CONFIG["host_os"] =~ /mswin|mingw/ || RUBY_ENGINE == "jruby"
+  end unless RUBY_ENGINE == "jruby"
 
   def assert_ctrl(expect, cc, r, w)
     sleep 0.1
