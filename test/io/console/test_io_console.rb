@@ -74,7 +74,6 @@ class TestIO_Console < Test::Unit::TestCase
     end
   end
 
-  TTY_ENHANCED = IO.instance_method(:tty?).arity != 0
   TTY_MODE_STTY = IO.private_method_defined?(:_io_console_stty)
 
   def test_stty_mode_arguments
@@ -88,8 +87,6 @@ class TestIO_Console < Test::Unit::TestCase
   end if TTY_MODE_STTY
 
   def test_tty?
-    pend "not supported" unless TTY_ENHANCED
-
     tty = STDIN.tty?(:any)
     assert_include([true, false], tty)
     assert_equal(tty, STDIN.tty?(:any, :any))
@@ -98,8 +95,6 @@ class TestIO_Console < Test::Unit::TestCase
   end
 
   def test_tty_non_tty
-    pend "not supported" unless TTY_ENHANCED
-
     File.open(IO::NULL) do |f|
       assert_not_predicate(f, :tty?)
       assert_not_operator(f, :tty?, :any)
@@ -347,8 +342,6 @@ class TestIO_Console
   end if TTY_MODE_STTY
 
   def test_tty_on_pty
-    pend "not supported" unless TTY_ENHANCED
-
     helper {|_, s|
       assert_predicate(s, :tty?)
       assert_operator(s, :tty?, :any)
