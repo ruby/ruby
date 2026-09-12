@@ -373,7 +373,14 @@ $(srcdir)/.bundle/.timestamp:
 define build-gem
 $(srcdir)/gems/src/$(1)/.git: | $(srcdir)/gems/src
 	$(ECHO) Cloning $(4)
-	$(Q) $(GIT) clone --depth=1 --no-tags $(4) $$(@D)
+	$(Q) for _retry in 1 2 3; do \
+	    $(GIT) clone --depth=1 --no-tags $(4) $$(@D) && break; \
+	    test $$_retry -lt 3 \
+	      && { echo "Clone failed (attempt $$_retry/3), retrying..."; \
+	           $(RMDIR) "$$(@D)" 2>/dev/null || rm -rf "$$(@D)"; \
+	           sleep $$(($$_retry * 5)); } \
+	      || { echo "Clone failed (attempt $$_retry/3), giving up."; exit 1; }; \
+	done
 
 $(bundled-gem-revision): \
 	$(if $(if $(wildcard $$(@)),$(filter $(3),$(shell cat $$(@)))),,PHONY) \
