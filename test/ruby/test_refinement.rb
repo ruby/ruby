@@ -1081,6 +1081,24 @@ class TestRefinement < Test::Unit::TestCase
       using R
 
       assert_equal("RFGAB", B.new.a)
+
+      super_method = ->(m) do
+        sm = m.super_method
+        assert_equal(m.unbind.super_method, sm.unbind) if m.is_a?(Method)
+        sm
+      end
+      [B.new.method(:a), B.instance_method(:a)].each do |m|
+        assert_equal(F, m.owner.target)
+        m = super_method.(m)
+        assert_equal(F, m.owner)
+        m = super_method.(m)
+        assert_equal(G, m.owner)
+        m = super_method.(m)
+        assert_equal(A, m.owner)
+        m = super_method.(m)
+        assert_equal(BasicObject, m.owner)
+        assert_nil(m.super_method)
+      end
     end;
   end
 
@@ -1112,6 +1130,20 @@ class TestRefinement < Test::Unit::TestCase
       using R
 
       assert_equal([:R, :M, :C], C.new.m)
+
+      super_method = ->(m) do
+        sm = m.super_method
+        assert_equal(m.unbind.super_method, sm.unbind) if m.is_a?(Method)
+        sm
+      end
+      [C.new.method(:m), C.instance_method(:m)].each do |m|
+        assert_equal(M, m.owner.target)
+        m = super_method.(m)
+        assert_equal(M, m.owner)
+        m = super_method.(m)
+        assert_equal(C, m.owner)
+        assert_nil(m.super_method)
+      end
     end;
   end
 
@@ -1161,6 +1193,24 @@ class TestRefinement < Test::Unit::TestCase
       end
 
       assert_equal([:R, :M, :SC, :M, :C], SC.new.n)
+
+      super_method = ->(m) do
+        sm = m.super_method
+        assert_equal(m.unbind.super_method, sm.unbind) if m.is_a?(Method)
+        sm
+      end
+      [SC.new.method(:m), SC.instance_method(:m)].each do |m|
+        assert_equal(M, m.owner.target)
+        m = super_method.(m)
+        assert_equal(M, m.owner)
+        m = super_method.(m)
+        assert_equal(SC, m.owner)
+        m = super_method.(m)
+        assert_equal(M, m.owner)
+        m = super_method.(m)
+        assert_equal(C, m.owner)
+        assert_nil(m.super_method)
+      end
     end;
   end
 
@@ -1240,6 +1290,40 @@ class TestRefinement < Test::Unit::TestCase
       end
 
       assert_equal([:Ro, :Mo, :SSSSC, :Ro, :Mo, :Mn, :Mn, :SSC, :Rn, :Mn, :Mm, :Mm, :C], SSSSC.new.o)
+
+      super_method = ->(m) do
+        sm = m.super_method
+        assert_equal(m.unbind.super_method, sm.unbind) if m.is_a?(Method)
+        sm
+      end
+      [SSSSC.new.method(:o), SSSSC.instance_method(:o)].each do |m|
+        assert_equal(M, m.owner.target)
+        m = super_method.(m)
+        assert_equal(M, m.owner)
+        m = super_method.(m)
+        assert_equal(SSSSC, m.owner)
+        m = super_method.(m)
+        assert_equal(M, m.owner.target)
+        m = super_method.(m)
+        assert_equal(M, m.owner)
+        m = super_method.(m)
+        assert_equal(SSSC, m.owner)
+        m = super_method.(m)
+        assert_equal(M, m.owner)
+        m = super_method.(m)
+        assert_equal(SSC, m.owner)
+        m = super_method.(m)
+        assert_equal(M, m.owner.target)
+        m = super_method.(m)
+        assert_equal(M, m.owner)
+        m = super_method.(m)
+        assert_equal(SC, m.owner)
+        m = super_method.(m)
+        assert_equal(M, m.owner)
+        m = super_method.(m)
+        assert_equal(C, m.owner)
+        assert_nil(m.super_method)
+      end
     end;
   end
 
@@ -1314,6 +1398,22 @@ class TestRefinement < Test::Unit::TestCase
       using R2
 
       assert_equal([:R2, :R1, :M, :C], C.new.m)
+
+      super_method = ->(m) do
+        sm = m.super_method
+        assert_equal(m.unbind.super_method, sm.unbind) if m.is_a?(Method)
+        sm
+      end
+      [C.new.method(:m), C.instance_method(:m)].each do |m|
+        assert_equal(M, m.owner.target)
+        m = super_method.(m)
+        assert_equal(M, m.owner.target)
+        m = super_method.(m)
+        assert_equal(M, m.owner)
+        m = super_method.(m)
+        assert_equal(C, m.owner)
+        assert_nil(m.super_method)
+      end
     end;
   end
 
@@ -1353,6 +1453,26 @@ class TestRefinement < Test::Unit::TestCase
       end
 
       assert_equal([:R, :M, :SC, :R, :M, :C], SC.new.m)
+
+      super_method = ->(m) do
+        sm = m.super_method
+        assert_equal(m.unbind.super_method, sm.unbind) if m.is_a?(Method)
+        sm
+      end
+      [SC.new.method(:m), SC.instance_method(:m)].each do |m|
+        assert_equal(M, m.owner.target)
+        m = super_method.(m)
+        assert_equal(M, m.owner)
+        m = super_method.(m)
+        assert_equal(SC, m.owner)
+        m = super_method.(m)
+        assert_equal(M, m.owner.target)
+        m = super_method.(m)
+        assert_equal(M, m.owner)
+        m = super_method.(m)
+        assert_equal(C, m.owner)
+        assert_nil(m.super_method)
+      end
     end;
   end
 
@@ -1408,6 +1528,30 @@ class TestRefinement < Test::Unit::TestCase
       end
 
       assert_equal([:RM, :M, :N, :SC, :RN, :N, :M, :C], SC.new.m)
+
+      super_method = ->(m) do
+        sm = m.super_method
+        assert_equal(m.unbind.super_method, sm.unbind) if m.is_a?(Method)
+        sm
+      end
+      [SC.new.method(:m), SC.instance_method(:m)].each do |m|
+        assert_equal(M, m.owner.target)
+        m = super_method.(m)
+        assert_equal(M, m.owner)
+        m = super_method.(m)
+        assert_equal(N, m.owner)
+        m = super_method.(m)
+        assert_equal(SC, m.owner)
+        m = super_method.(m)
+        assert_equal(N, m.owner.target)
+        m = super_method.(m)
+        assert_equal(N, m.owner)
+        m = super_method.(m)
+        assert_equal(M, m.owner)
+        m = super_method.(m)
+        assert_equal(C, m.owner)
+        assert_nil(m.super_method)
+      end
     end;
   end
 
@@ -1450,6 +1594,26 @@ class TestRefinement < Test::Unit::TestCase
       end
 
       assert_equal([:R, :M, :SC, :R, :M, :C], SC.new.m)
+
+      super_method = ->(m) do
+        sm = m.super_method
+        assert_equal(m.unbind.super_method, sm.unbind) if m.is_a?(Method)
+        sm
+      end
+      [SC.new.method(:m), SC.instance_method(:m)].each do |m|
+        assert_equal(M, m.owner.target)
+        m = super_method.(m)
+        assert_equal(M, m.owner)
+        m = super_method.(m)
+        assert_equal(SC, m.owner)
+        m = super_method.(m)
+        assert_equal(M, m.owner.target)
+        m = super_method.(m)
+        assert_equal(M, m.owner)
+        m = super_method.(m)
+        assert_equal(C, m.owner)
+        assert_nil(m.super_method)
+      end
     end;
   end
 
@@ -1511,6 +1675,34 @@ class TestRefinement < Test::Unit::TestCase
       end
 
       assert_equal([:RM, :M, :RN, :N, :SC, :RN, :N, :RM, :M, :C], SC.new.m)
+
+      super_method = ->(m) do
+        sm = m.super_method
+        assert_equal(m.unbind.super_method, sm.unbind) if m.is_a?(Method)
+        sm
+      end
+      [SC.new.method(:m), SC.instance_method(:m)].each do |m|
+        assert_equal(M, m.owner.target)
+        m = super_method.(m)
+        assert_equal(M, m.owner)
+        m = super_method.(m)
+        assert_equal(N, m.owner.target)
+        m = super_method.(m)
+        assert_equal(N, m.owner)
+        m = super_method.(m)
+        assert_equal(SC, m.owner)
+        m = super_method.(m)
+        assert_equal(N, m.owner.target)
+        m = super_method.(m)
+        assert_equal(N, m.owner)
+        m = super_method.(m)
+        assert_equal(M, m.owner.target)
+        m = super_method.(m)
+        assert_equal(M, m.owner)
+        m = super_method.(m)
+        assert_equal(C, m.owner)
+        assert_nil(m.super_method)
+      end
     end;
   end
 
@@ -1550,6 +1742,26 @@ class TestRefinement < Test::Unit::TestCase
       end
 
       assert_equal([:R, :M, :SC, :R, :M, :C], SC.new.m)
+
+      super_method = ->(m) do
+        sm = m.super_method
+        assert_equal(m.unbind.super_method, sm.unbind) if m.is_a?(Method)
+        sm
+      end
+      [SC.new.method(:m), SC.instance_method(:m)].each do |m|
+        assert_equal(M, m.owner.target)
+        m = super_method.(m)
+        assert_equal(M, m.owner)
+        m = super_method.(m)
+        assert_equal(SC, m.owner)
+        m = super_method.(m)
+        assert_equal(M, m.owner.target)
+        m = super_method.(m)
+        assert_equal(M, m.owner)
+        m = super_method.(m)
+        assert_equal(C, m.owner)
+        assert_nil(m.super_method)
+      end
     end;
   end
 
@@ -1653,6 +1865,38 @@ class TestRefinement < Test::Unit::TestCase
       o = Object.new
       def o.m = SSC.new.m
       assert_equal([:R2M, :R1M, :M, :N, :SSC, :SC, :R2P, :R1P, :P, :N, :M, :C], o.m)
+
+      super_method = ->(m) do
+        sm = m.super_method
+        assert_equal(m.unbind.super_method, sm.unbind) if m.is_a?(Method)
+        sm
+      end
+      [SSC.new.method(:m), SSC.instance_method(:m)].each do |m|
+        assert_equal(M, m.owner.target)
+        m = super_method.(m)
+        assert_equal(M, m.owner.target)
+        m = super_method.(m)
+        assert_equal(M, m.owner)
+        m = super_method.(m)
+        assert_equal(N, m.owner)
+        m = super_method.(m)
+        assert_equal(SSC, m.owner)
+        m = super_method.(m)
+        assert_equal(SC, m.owner)
+        m = super_method.(m)
+        assert_equal(P, m.owner.target)
+        m = super_method.(m)
+        assert_equal(P, m.owner.target)
+        m = super_method.(m)
+        assert_equal(P, m.owner)
+        m = super_method.(m)
+        assert_equal(N, m.owner)
+        m = super_method.(m)
+        assert_equal(M, m.owner)
+        m = super_method.(m)
+        assert_equal(C, m.owner)
+        assert_nil(m.super_method)
+      end
     end;
   end
 
@@ -1684,6 +1928,18 @@ class TestRefinement < Test::Unit::TestCase
 
       assert_raise(NoMethodError) { C.new.m }
       assert_equal([:R, :M], called)
+
+      super_method = ->(m) do
+        sm = m.super_method
+        assert_equal(m.unbind.super_method, sm.unbind) if m.is_a?(Method)
+        sm
+      end
+      [C.new.method(:m), C.instance_method(:m)].each do |m|
+        assert_equal(M, m.owner.target)
+        m = super_method.(m)
+        assert_equal(M, m.owner)
+        assert_nil(m.super_method)
+      end
     end;
   end
 
