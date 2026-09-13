@@ -1780,6 +1780,9 @@ class Pathname    # * File *
   # link_pn.unlink   # Clean up.
   # ```
   #
+  # If the entry at the path stored in `self` is a symlink,
+  # that link is _not_ followed.
+  #
   # Raises Errno::EINVAL if the path in `self` is not the path to a symbolic link.
   def readlink() self.class.new(File.readlink(@path)) end
 
