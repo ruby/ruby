@@ -1,4 +1,4 @@
-_VERSION = "0.4.0"
+_VERSION = "999.999.999"
 
 Gem::Specification.new do |spec|
   spec.name          = "io-wait"
@@ -10,7 +10,7 @@ Gem::Specification.new do |spec|
   spec.description   = %q{Deprecated: All functionality ships with Ruby 3.2 and higher.}
   spec.homepage      = "https://github.com/ruby/io-wait"
   spec.licenses      = ["Ruby", "BSD-2-Clause"]
-  spec.required_ruby_version = Gem::Requirement.new(">= 3.2")
+  spec.required_ruby_version = Gem::Requirement.new(">= 4.1")
 
   spec.metadata["homepage_uri"] = spec.homepage
   spec.metadata["source_code_uri"] = spec.homepage
