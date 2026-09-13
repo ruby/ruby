@@ -419,7 +419,9 @@ char *raddrinfo_port_str(VALUE port, char *pbuf, size_t pbuflen, int *flags_ptr)
 int raddrinfo_thread_create(void *(*start_routine) (void *), void *arg);
 
 #ifndef FAST_FALLBACK_INIT_INETSOCK_IMPL
-#  if !defined(HAVE_PTHREAD_CREATE) || !defined(HAVE_PTHREAD_DETACH) || defined(__MINGW32__) || defined(__MINGW64__)
+   /* _WIN32 spawns the resolution threads with _beginthreadex(3) instead. */
+#  if (!defined(_WIN32) && (!defined(HAVE_PTHREAD_CREATE) || !defined(HAVE_PTHREAD_DETACH))) || \
+      defined(__MINGW32__) || defined(__MINGW64__)
 #    define FAST_FALLBACK_INIT_INETSOCK_IMPL 0
 #  else
 #    include "ruby/thread_native.h"
