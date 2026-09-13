@@ -6656,11 +6656,6 @@ rb_vm_opt_newarray_pack_buffer(rb_execution_context_t *ec, rb_num_t array_len, c
     return vm_opt_newarray_pack_buffer(ec, array_len, ptr, fmt, buffer);
 }
 
-VALUE
-rb_vm_opt_newarray_pack(rb_execution_context_t *ec, rb_num_t array_len, const VALUE *ptr, VALUE fmt)
-{
-    return vm_opt_newarray_pack_buffer(ec, array_len, ptr, fmt, Qundef);
-}
 
 #undef id_cmp
 

@@ -4094,6 +4094,47 @@ gc_abort(void *objspace_ptr)
     gc_mode_set(objspace, gc_mode_none);
 }
 
+#if VERIFY_FREE_SIZE
+# ifdef RB_THREAD_LOCAL_SPECIFIER
+#  define GC_FREEING_OBJ_TLS RB_THREAD_LOCAL_SPECIFIER
+# else
+#  define GC_FREEING_OBJ_TLS
+# endif
+
+static GC_FREEING_OBJ_TLS VALUE gc_freeing_obj;
+
+/* Remember what we are tearing down so that a bad xfree() underneath can name
+ * the object and not just the buffer.  Saved and restored because a dfree
+ * callback can free another object. */
+static bool
+gc_obj_free(void *objspace, VALUE obj)
+{
+    VALUE prev = gc_freeing_obj;
+    gc_freeing_obj = obj;
+
+    bool freed = rb_gc_obj_free(objspace, obj);
+
+    gc_freeing_obj = prev;
+    return freed;
+}
+
+static const char *
+gc_freeing_obj_info(void)
+{
+    /* Not thread-local: only reachable from a rb_bug() path, where a second
+     * thread racing us is already unrecoverable. */
+    static char buf[128];
+
+    if (!gc_freeing_obj) return NULL;
+
+    snprintf(buf, sizeof(buf), "%p %s", (void *)gc_freeing_obj, rb_obj_info(gc_freeing_obj));
+    return buf;
+}
+#else
+# define gc_obj_free(objspace, obj) rb_gc_obj_free((objspace), (obj))
+# define gc_freeing_obj_info() NULL
+#endif
+
 void
 rb_gc_impl_shutdown_free_objects(void *objspace_ptr)
 {
@@ -4110,7 +4151,7 @@ rb_gc_impl_shutdown_free_objects(void *objspace_ptr)
             asan_unpoisoning_object(vp) {
                 if (RB_BUILTIN_TYPE(vp) != T_NONE) {
                     rb_gc_obj_free_vm_weak_references(vp);
-                    if (rb_gc_obj_free(objspace, vp)) {
+                    if (gc_obj_free(objspace, vp)) {
                         RBASIC(vp)->flags = 0;
                     }
                 }
@@ -4184,7 +4225,7 @@ rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr)
             asan_unpoisoning_object(vp) {
                 if (rb_gc_shutdown_call_finalizer_p(vp)) {
                     rb_gc_obj_free_vm_weak_references(vp);
-                    if (rb_gc_obj_free(objspace, vp)) {
+                    if (gc_obj_free(objspace, vp)) {
                         RBASIC(vp)->flags = 0;
                     }
                 }
@@ -4723,7 +4764,7 @@ gc_sweep_plane(rb_objspace_t *objspace, rb_heap_t *heap, uintptr_t p, bits_t bit
                     gc_report(2, objspace, "page_sweep: free %p\n", (void *)p);
 
                     rb_gc_obj_free_vm_weak_references(vp);
-                    if (rb_gc_obj_free(objspace, vp)) {
+                    if (gc_obj_free(objspace, vp)) {
                         (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)p, slot_size);
                         gc_sweep_register_free_slot(objspace, sweep_page, ctx, p, slot_size);
                         gc_report(3, objspace, "page_sweep: %s is freed\n", rb_obj_info(vp));
@@ -11125,11 +11166,15 @@ rb_gc_impl_free(void *objspace_ptr, void *ptr, size_t old_size)
     struct malloc_obj_info *info = (struct malloc_obj_info *)ptr - 1;
 #if VERIFY_FREE_SIZE
     if (!info->size) {
-        rb_bug("buffer %p has no recorded size. Was it allocated with ruby_mimalloc? If so it should be freed with ruby_mimfree", ptr);
+        const char *freeing = gc_freeing_obj_info();
+        rb_bug("buffer %p has no recorded size%s%s. Was it allocated with ruby_mimalloc? If so it should be freed with ruby_mimfree", ptr,
+               freeing ? ", while freeing " : "", freeing ? freeing : "");
     }
 
     if (old_size && (old_size + sizeof(struct malloc_obj_info)) != info->size) {
-        rb_bug("buffer %p freed with old_size=%zu, but was allocated with size=%zu", ptr, old_size, info->size - sizeof(struct malloc_obj_info));
+        const char *freeing = gc_freeing_obj_info();
+        rb_bug("buffer %p freed with old_size=%zu, but was allocated with size=%zu%s%s", ptr, old_size, info->size - sizeof(struct malloc_obj_info),
+               freeing ? ", while freeing " : "", freeing ? freeing : "");
     }
 #endif
     ptr = info;
@@ -11240,7 +11285,9 @@ rb_gc_impl_realloc(void *objspace_ptr, void *ptr, size_t new_size, size_t old_si
         ptr = info;
 #if VERIFY_FREE_SIZE
         if (old_size && (old_size + sizeof(struct malloc_obj_info)) != info->size) {
-            rb_bug("buffer %p realloced with old_size=%zu, but was allocated with size=%zu", ptr, old_size, info->size - sizeof(struct malloc_obj_info));
+            const char *freeing = gc_freeing_obj_info();
+            rb_bug("buffer %p realloced with old_size=%zu, but was allocated with size=%zu%s%s", ptr, old_size, info->size - sizeof(struct malloc_obj_info),
+                   freeing ? ", while freeing " : "", freeing ? freeing : "");
         }
 #endif
         old_size = info->size;

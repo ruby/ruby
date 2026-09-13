@@ -574,7 +574,7 @@ class TestSocket < Test::Unit::TestCase
   ensure
     serv_thread.value.close
     server.close
-  end unless RUBY_PLATFORM.include?("freebsd")
+  end
 
   def test_connect_timeout
     host = "127.0.0.1"
@@ -612,7 +612,7 @@ class TestSocket < Test::Unit::TestCase
     assert_raise(Errno::ECONNREFUSED) do
       Socket.tcp("127.0.0.1", port, connect_timeout: 5)
     end
-  end unless /mswin|mingw/ =~ RUBY_PLATFORM
+  end
 
   def test_getifaddrs
     begin
@@ -1029,8 +1029,7 @@ class TestSocket < Test::Unit::TestCase
 
     server.close
 
-    # SystemCallError is a workaround for Windows environment
-    assert_raise(Errno::ECONNREFUSED, SystemCallError) do
+    assert_raise(Errno::ECONNREFUSED) do
       Socket.tcp("localhost", port)
     end
     RUBY

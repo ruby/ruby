@@ -844,8 +844,12 @@ class TestRubyOptions < Test::Unit::TestCase
     KILL_SELF = "Bug.segv"
   end
 
-  def assert_segv(args, message=nil, list: SEGVTest::ExpectedStderrList, **opt, &block)
-    omit if macos? && ENV["CI"] # we're getting timeouts even after 100s in CI, not sure why.
+  # Turning the C level backtrace into file:line pairs walks the whole of the
+  # binary's debug info, and that is nearly all of what a crash costs: 0.8s of
+  # CPU with the dSYM in place against 0.01s without it, on an idle arm64 macOS
+  # host.  The default subprocess budget of 10 seconds is meant for a child
+  # that does none of that work.
+  def assert_segv(args, message=nil, list: SEGVTest::ExpectedStderrList, timeout: 60, **opt, &block)
     # We want YJIT to be enabled in the subprocess if it's enabled for us
     # so that the Ruby description matches.
     env = Hash === args.first ? args.shift : {}
@@ -867,7 +871,7 @@ class TestRubyOptions < Test::Unit::TestCase
     end
 
     assert_in_out_err(args, test_stdin, *tests, encoding: "ASCII-8BIT",
-                      **SEGVTest::ExecOptions, **opt, &block)
+                      timeout: timeout, **SEGVTest::ExecOptions, **opt, &block)
   end
 
   def test_segv_test

@@ -2763,9 +2763,6 @@ site-install-rb: install-rb
     if $warnflags = CONFIG['warnflags'] and CONFIG['GCC'] == 'yes'
       # turn warnings into errors only for bundled extensions.
       config['warnflags'] = $warnflags.gsub(/(?:\A|\s)-W\Kerror[-=](?!implicit-function-declaration)/, '')
-      if /icc\z/ =~ config['CC']
-        config['warnflags'].gsub!(/(\A|\s)-W(?:division-by-zero|deprecated-declarations)/, '\1')
-      end
       RbConfig.expand(rbconfig['warnflags'] = config['warnflags'].dup)
       config.each do |key, val|
         RbConfig.expand(rbconfig[key] = val.dup) if /warnflags/ =~ val

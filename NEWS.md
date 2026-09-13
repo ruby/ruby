@@ -84,7 +84,9 @@ Note: We're only listing outstanding class updates.
     * `Module#descendants` is added.  It returns an array of classes and
       modules that have the receiver in their ancestors.  [[Feature #9779]]
     * `Module#ruby2_keywords` and top-level `ruby2_keywords` are
-      deprecated and will be removed in Ruby 4.4. [[Feature #22205]]
+      deprecated and will be removed in Ruby 4.4.  [[Feature #22205]]
+    * `Module#method_defined?` now accepts a third optional argument to also
+      match private methods.  [[Feature #22297]]
 
 * ObjectSpace
 
@@ -186,6 +188,7 @@ They are still available on rubygems.org and can be installed with
 * error_highlight 0.7.2
 * io-console 0.9.2
   * 0.8.2 to [v0.9.0][io-console-v0.9.0], [v0.9.1][io-console-v0.9.1], [v0.9.2][io-console-v0.9.2]
+* io-wait 999.999.999
 * ipaddr 1.2.9
   * 1.2.8 to [v1.2.9][ipaddr-v1.2.9]
 * json 3.0.2
@@ -222,7 +225,7 @@ They are still available on rubygems.org and can be installed with
   * 3.7.5 to [3.7.6][test-unit-3.7.6], [3.7.7][test-unit-3.7.7], [3.7.8][test-unit-3.7.8]
 * rss 0.3.3
   * 0.3.2 to [0.3.3][rss-0.3.3]
-* net-imap 0.6.6
+* net-imap 0.6.7
   * 0.6.2 to [v0.6.3][net-imap-v0.6.3], [v0.6.4][net-imap-v0.6.4], [v0.6.4.1][net-imap-v0.6.4.1], [v0.6.5][net-imap-v0.6.5], [v0.6.6][net-imap-v0.6.6]
 * rbs 4.2.0
   * 3.10.0 to [v3.10.1][rbs-v3.10.1], [v3.10.2][rbs-v3.10.2], [v3.10.3][rbs-v3.10.3], [v3.10.4][rbs-v3.10.4], [v4.0.0.dev.1][rbs-v4.0.0.dev.1], [v4.0.0.dev.2][rbs-v4.0.0.dev.2], [v4.0.0.dev.3][rbs-v4.0.0.dev.3], [v4.0.0.dev.4][rbs-v4.0.0.dev.4], [v4.0.0.dev.5][rbs-v4.0.0.dev.5], [v4.0.0][rbs-v4.0.0], [v4.0.1.dev.1][rbs-v4.0.1.dev.1], [v4.0.1.dev.2][rbs-v4.0.1.dev.2], [v4.0.1][rbs-v4.0.1], [v4.0.2][rbs-v4.0.2], [v4.0.3][rbs-v4.0.3], [v4.1.0.pre.1][rbs-v4.1.0.pre.1], [v4.1.0.pre.2][rbs-v4.1.0.pre.2], [v4.1.0][rbs-v4.1.0], [v4.1.1.pre.1][rbs-v4.1.1.pre.1], [v4.1.1][rbs-v4.1.1], [v4.1.2][rbs-v4.1.2], [v4.1.3][rbs-v4.1.3], [v4.2.0.pre.1][rbs-v4.2.0.pre.1], [v4.2.0][rbs-v4.2.0]
@@ -302,6 +305,20 @@ Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for det
 * `Etc.getlogin` on Windows now returns the login name determined when the
   process starts, from the `USER` or `USERNAME` environment variable or
   `GetUserName()`.  It used to follow later changes to `ENV['USER']`.
+
+* Socket
+
+    * On Windows, a connection that is refused or unreachable now raises the
+      matching `Errno` class as soon as Winsock reports it, instead of
+      `Errno::ETIMEDOUT` once the whole `connect_timeout` has passed. Code
+      rescuing `Errno::ETIMEDOUT` there has to rescue the real error instead.
+
+    * On Windows, `BasicSocket#getsockopt(:SOCKET, :ERROR)` now reports an
+      errno as it does on the other platforms, instead of the raw WinSock
+      error code. Code comparing it with a `WSAE*` value has to compare it
+      with the matching `Errno::*::Errno` instead.
+
+    [[Bug #18661]]
 
 ## C API updates
 
@@ -419,6 +436,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 
 ## JIT
 
+[Bug #18661]: https://bugs.ruby-lang.org/issues/18661
 [Bug #18947]: https://bugs.ruby-lang.org/issues/18947
 [Feature #8948]: https://bugs.ruby-lang.org/issues/8948
 [Feature #9779]: https://bugs.ruby-lang.org/issues/9779
@@ -445,6 +463,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #22205]: https://bugs.ruby-lang.org/issues/22205
 [Feature #22226]: https://bugs.ruby-lang.org/issues/22226
 [Feature #22238]: https://bugs.ruby-lang.org/issues/22238
+[Feature #22297]: https://bugs.ruby-lang.org/issues/22297
 [PR #17201]: https://github.com/ruby/ruby/pull/17201
 [GH-psych #805]: https://github.com/ruby/psych/pull/805
 [RubyGems-v4.0.4]: https://github.com/rubygems/rubygems/releases/tag/v4.0.4

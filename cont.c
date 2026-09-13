@@ -21,6 +21,7 @@
 #include "eval_intern.h"
 #include "internal.h"
 #include "internal/cont.h"
+#include "internal/jit.h"
 #include "internal/thread.h"
 #include "internal/error.h"
 #include "internal/eval.h"
@@ -29,6 +30,7 @@
 #include "internal/sanitizers.h"
 #include "internal/vm_map.h"
 #include "internal/warnings.h"
+#include "iseq.h"
 #include "ruby/fiber/scheduler.h"
 #include "yjit.h"
 #include "vm_core.h"
@@ -299,8 +301,15 @@ static ID fiber_initialize_keywords[3] = {0};
  */
 #if defined(MAP_STACK) && !defined(__FreeBSD__) && !defined(__FreeBSD_kernel__)
 #define FIBER_STACK_FLAGS (MAP_PRIVATE | MAP_ANON | MAP_STACK)
+#define FIBER_PROT_FLAGS (PROT_READ | PROT_WRITE)
 #else
 #define FIBER_STACK_FLAGS (MAP_PRIVATE | MAP_ANON)
+#ifdef PROT_MAX
+#define FIBER_BASE_PROT_FLAGS PROT_READ | PROT_WRITE
+#define FIBER_PROT_FLAGS (FIBER_BASE_PROT_FLAGS | PROT_MAX(FIBER_BASE_PROT_FLAGS))
+#else
+#define FIBER_PROT_FLAGS (PROT_READ | PROT_WRITE)
+#endif
 #endif
 
 #define ERRNOMSG strerror(errno)
@@ -487,7 +496,7 @@ fiber_pool_allocate_memory(size_t * count, size_t stride)
 #else
         errno = 0;
         size_t mmap_size = (*count)*stride;
-        void * base = mmap(NULL, mmap_size, PROT_READ | PROT_WRITE, FIBER_STACK_FLAGS, -1, 0);
+        void * base = mmap(NULL, mmap_size, FIBER_PROT_FLAGS, FIBER_STACK_FLAGS, -1, 0);
 
         if (base == MAP_FAILED) {
             // If the allocation fails, count = count / 2, and try again.
@@ -3738,6 +3747,13 @@ ruby_Init_Continuation_body(void)
     rb_undef_method(CLASS_OF(rb_cContinuation), "new");
     rb_define_method(rb_cContinuation, "call", rb_cont_call, -1);
     rb_define_method(rb_cContinuation, "[]", rb_cont_call, -1);
+#ifdef COROUTINE_SHADOW_STACK
+    if (coroutine_shadow_stack_enabled()) {
+        /* Continuations cannot restore previously unwound shadow stack frames. */
+        rb_define_global_function("callcc", rb_f_notimplement, 0);
+        return;
+    }
+#endif
     rb_define_global_function("callcc", rb_callcc, 0);
 }
 

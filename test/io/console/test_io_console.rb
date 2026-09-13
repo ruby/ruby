@@ -10,7 +10,7 @@ end
 class TestIO_Console < Test::Unit::TestCase
   def test_console_namespace
     assert_kind_of(Module, IO::Console)
-  end unless RUBY_ENGINE == "jruby" && RbConfig::CONFIG["host_os"] !~ /mswin|mingw/
+  end
 
   HOST_OS = RbConfig::CONFIG['host_os']
 
@@ -74,12 +74,9 @@ class TestIO_Console < Test::Unit::TestCase
     end
   end
 
-  TTY_ENHANCED = IO.instance_method(:tty?).arity != 0
   TTY_MODE_STTY = IO.private_method_defined?(:_io_console_stty)
 
   def test_stty_mode_arguments
-    omit "stty backend only" unless TTY_MODE_STTY
-
     mode = IO::Console::Mode.new(
       "saved\n",
       "echo icanon isig opost; min = 1; time = 0;",
@@ -87,11 +84,9 @@ class TestIO_Console < Test::Unit::TestCase
     mode.raw!(min: 2, time: 0.3)
 
     assert_equal(["saved", "raw", "min", "2", "time", "3"], mode.arguments)
-  end
+  end if TTY_MODE_STTY
 
   def test_tty?
-    pend "not supported" unless TTY_ENHANCED
-
     tty = STDIN.tty?(:any)
     assert_include([true, false], tty)
     assert_equal(tty, STDIN.tty?(:any, :any))
@@ -100,8 +95,6 @@ class TestIO_Console < Test::Unit::TestCase
   end
 
   def test_tty_non_tty
-    pend "not supported" unless TTY_ENHANCED
-
     File.open(IO::NULL) do |f|
       assert_not_predicate(f, :tty?)
       assert_not_operator(f, :tty?, :any)
@@ -346,11 +339,9 @@ class TestIO_Console
       end
       assert_not_empty(mode)
     end
-  end if IO.private_method_defined?(:_io_console_stty)
+  end if TTY_MODE_STTY
 
   def test_tty_on_pty
-    pend "not supported" unless TTY_ENHANCED
-
     helper {|_, s|
       assert_predicate(s, :tty?)
       assert_operator(s, :tty?, :any)
@@ -537,7 +528,7 @@ class TestIO_Console
       assert_equal("b", read.getc)
       assert_false(read.input_pending?)
     end
-  end unless RbConfig::CONFIG["host_os"] =~ /mswin|mingw/ || RUBY_ENGINE == "jruby"
+  end
 
   def assert_ctrl(expect, cc, r, w)
     sleep 0.1
@@ -557,15 +548,6 @@ class TestIO_Console
   end
 
   def test_intr
-    # This test fails randomly on FreeBSD 13
-    # http://rubyci.s3.amazonaws.com/freebsd13/ruby-master/log/20220304T163001Z.fail.html.gz
-    #
-    #   1) Failure:
-    # TestIO_Console#test_intr [/usr/home/chkbuild/chkbuild/tmp/build/20220304T163001Z/ruby/test/io/console/test_io_console.rb:387]:
-    # <"25"> expected but was
-    # <"-e:12:in `p': \e[1mexecution expired (\e[1;4mTimeout::Error\e[m\e[1m)\e[m">.
-    omit if host_os?(/freebsd/)
-
     run_pty("#{<<~"begin;"}\n#{<<~'end;'}") do |r, w, _|
       begin;
         require 'timeout'
@@ -608,6 +590,10 @@ class TestIO_Console
         assert_ctrl("#{cc.ord}", cc, r, w)
       end
     end
+  end
+
+  def test_getch_timeout
+    assert_equal(["nil"], run_pty("p IO.console.getch(intr: true, time: 0.1, min: 0)"))
   end
 
   unless IO.console
@@ -719,7 +705,7 @@ class TestIO_Console
 
   def test_getch_timeout
     assert_nil(IO.console.getch(intr: true, time: 0.1, min: 0))
-  end
+  end if ENV["CI"]
 
   def test_ttyname
     return unless IO.method_defined?(:ttyname)

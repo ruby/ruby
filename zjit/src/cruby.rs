@@ -887,6 +887,12 @@ impl From<*const rb_callable_method_entry_t> for VALUE {
     }
 }
 
+impl From<*const rb_callinfo> for VALUE {
+    fn from(ci: *const rb_callinfo) -> Self {
+        VALUE(ci as usize)
+    }
+}
+
 impl From<&str> for VALUE {
     fn from(value: &str) -> Self {
         rust_str_to_ruby(value)

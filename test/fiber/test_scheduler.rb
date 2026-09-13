@@ -397,4 +397,129 @@ class TestFiberScheduler < Test::Unit::TestCase
     thread.kill rescue nil
     FileUtils.rm_f(path)
   end
+
+  def test_io_read_exception_frees_temporary_buffer
+    r, w = IO.pipe
+    scheduler = FailingIOScheduler.new
+    error = nil
+
+    thread = Thread.new do
+      Fiber.set_scheduler(scheduler)
+
+      Fiber.schedule do
+        begin
+          r.read(1)
+        rescue RuntimeError => exception
+          error = exception
+        end
+      end
+
+      Fiber.set_scheduler(nil)
+    end
+
+    thread.join
+
+    assert_kind_of RuntimeError, error
+    assert_equal "scheduler read error", error.message
+    assert_predicate scheduler.buffer, :null?
+    assert_not_predicate scheduler.buffer, :locked?
+  ensure
+    thread&.kill
+    r&.close
+    w&.close
+  end
+
+  def test_io_write_exception_frees_temporary_buffer
+    r, w = IO.pipe
+    w.sync = true
+    scheduler = FailingIOScheduler.new
+    error = nil
+
+    thread = Thread.new do
+      Fiber.set_scheduler(scheduler)
+
+      Fiber.schedule do
+        begin
+          w.write("Hello World")
+        rescue RuntimeError => exception
+          error = exception
+        end
+      end
+
+      Fiber.set_scheduler(nil)
+    end
+
+    thread.join
+
+    assert_kind_of RuntimeError, error
+    assert_equal "scheduler write error", error.message
+    assert_predicate scheduler.buffer, :null?
+    assert_not_predicate scheduler.buffer, :locked?
+  ensure
+    thread&.kill
+    r&.close
+    w&.close
+  end
+
+  def test_io_pread_exception_frees_temporary_buffer
+    r, w = IO.pipe
+    scheduler = FailingIOScheduler.new
+    error = nil
+
+    thread = Thread.new do
+      Fiber.set_scheduler(scheduler)
+
+      Fiber.schedule do
+        begin
+          r.pread(1, 0)
+        rescue RuntimeError => exception
+          error = exception
+        end
+      end
+
+      Fiber.set_scheduler(nil)
+    end
+
+    thread.join
+
+    assert_kind_of RuntimeError, error
+    assert_equal "scheduler pread error", error.message
+    assert_predicate scheduler.buffer, :null?
+    assert_not_predicate scheduler.buffer, :locked?
+  ensure
+    thread&.kill
+    r&.close
+    w&.close
+  end
+
+  def test_io_pwrite_exception_frees_temporary_buffer
+    r, w = IO.pipe
+    scheduler = FailingIOScheduler.new
+    error = nil
+
+    thread = Thread.new do
+      Fiber.set_scheduler(scheduler)
+
+      Fiber.schedule do
+        begin
+          w.pwrite("Hello World", 0)
+        rescue RuntimeError => exception
+          error = exception
+        end
+      end
+
+      Fiber.set_scheduler(nil)
+    end
+
+    thread.join
+
+    assert_kind_of RuntimeError, error
+    assert_equal "scheduler pwrite error", error.message
+    assert_predicate scheduler.buffer, :null?
+    assert_not_predicate scheduler.buffer, :locked?
+  ensure
+    thread&.kill
+    r&.close
+    w&.close
+  end
 end

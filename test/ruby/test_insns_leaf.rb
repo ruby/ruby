@@ -43,4 +43,19 @@ class TestInsnsLeaf < Test::Unit::TestCase
     assert Namespace.test?(Id.new(1)), "IDS should include 1"
     assert !Namespace.test?(Id.new(5)), "IDS should not include 5"
   end
+
+  def test_intern_is_not_leaf
+    assert_separately([], <<~'RUBY')
+      class EncodingError
+        def initialize(...)
+          $encoding_error_initialize_called = true
+          super
+        end
+      end
+
+      invalid_utf8 = (+"\xFF").force_encoding(Encoding::UTF_8)
+      assert_raise(EncodingError) { :"#{invalid_utf8}" }
+      assert $encoding_error_initialize_called
+    RUBY
+  end
 end

@@ -14,6 +14,7 @@
 #include "iseq.h"
 #include "internal/compile.h"
 #include "internal/gc.h"
+#include "internal/jit.h"
 #include "vm_sync.h"
 #include "internal/fixnum.h"
 #include "internal/hash.h"

@@ -1226,21 +1226,6 @@ static int timer_thread_set_timeout(rb_vm_t *vm);
 
 #include "thread_sched_mn.c"
 
-
-void
-rb_assert_sig(void)
-{
-    sigset_t oldmask;
-    pthread_sigmask(0, NULL, &oldmask);
-    if (sigismember(&oldmask, SIGVTALRM)) {
-        rb_bug("!!!");
-    }
-    else {
-        RUBY_DEBUG_LOG("ok");
-    }
-}
-
-
 /* only use signal-safe system calls here */
 static void
 signal_communication_pipe(int fd)

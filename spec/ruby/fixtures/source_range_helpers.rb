@@ -23,6 +23,18 @@ def keep_source(value = true)
   end
 end
 
+# #syntax_tree on CRuby currently returns RubyVM::AbstractSyntaxTree::Node with --parser=parse.y.
+# We must not refer to RubyVM in ruby/spec as it only exists on CRuby.
+def syntax_tree_returns_prism_node
+  receiver = -> {}
+  if receiver.respond_to?(:syntax_tree)
+    node = receiver.syntax_tree
+    defined?(Prism) && node.is_a?(Prism::Node)
+  else
+    true
+  end
+end
+
 def source_range_source(source)
   raise "Expected 2 '$' to mark start and end of source_range" unless source.count('$') == 2
   from = source.byteindex('$')
@@ -89,7 +101,7 @@ def capture_backtrace_location_source_range(marked_source, prism_class, frame: 0
   expected_class_name = "Prism::#{prism_class or raise "prism_class must be passed"}"
 
   # Also check #syntax_tree is consistent
-  if location.respond_to?(:syntax_tree)
+  if location.respond_to?(:syntax_tree) && syntax_tree_returns_prism_node
     node = location.syntax_tree
     node.class.name.should == expected_class_name
     source_range_values(node).should == expected

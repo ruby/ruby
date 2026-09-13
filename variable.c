@@ -2790,15 +2790,6 @@ get_autoload_data(VALUE autoload_const_value, struct autoload_const **autoload_c
     return autoload_data;
 }
 
-void
-rb_autoload(VALUE module, ID name, const char *feature)
-{
-    if (!feature || !*feature) {
-        rb_raise(rb_eArgError, "empty feature name");
-    }
-
-    rb_autoload_str(module, name, rb_fstring_cstr(feature));
-}
 
 static void const_set(VALUE klass, ID id, VALUE val);
 static void const_added(VALUE klass, ID const_name);

@@ -356,7 +356,7 @@ class TestRactor < Test::Unit::TestCase
 
   # [Bug #21398]
   def test_port_receive_dnt_with_port_send
-    omit 'unstable on windows and macos-14' if RUBY_PLATFORM =~ /mswin|mingw|darwin/
+    omit 'unstable on windows' if RUBY_PLATFORM =~ /mswin|mingw/
     assert_ractor(<<~'RUBY', timeout: 90)
       THREADS = 10
       JOBS_PER_THREAD = 50
@@ -1041,7 +1041,6 @@ class TestRactor < Test::Unit::TestCase
   end
 
   def test_io_priority_wait_on_mn_thread
-    omit 'POLLPRI/MSG_OOB semantics differ on windows' if RUBY_PLATFORM =~ /mswin|mingw/
     # A timeout-less IO#wait(IO::PRIORITY) on an M:N thread must take the
     # blocking path: the M:N scheduler has no event for POLLPRI and used to
     # register nothing yet park the thread forever.

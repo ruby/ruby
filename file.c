@@ -3133,24 +3133,24 @@ lchmod_internal(const char *path, void *mode)
  *  call-seq:
  *    File.lchmod(mode, *paths) -> paths_count
  *
- *  Not supported on some platforms (raises NotImplementedError).
+ *  Not supported on Linux or Windows (raises NotImplementedError).
  *
- *  When supported: like File::chmod, but does not follow symbolic links,
+ *  When supported: like File::chmod,
+ *  but does not follow [symbolic links](rdoc-ref:file/symbolic_links.md),
  *  and therefore changes the mode of the entries given by `paths`;
  *  returns the number of paths given:
  *
  *  ```ruby
  *  File.write('t.tmp', '')
  *  File.symlink('t.tmp', 'link')
- *  File.stat('t.tmp').mode.to_s(8) # => "100664"
- *  File.stat('link').mode.to_s(8)  # => "100664"
+ *  File.lstat('t.tmp').mode.to_s(8) # => "100664"
+ *  File.lstat('link').mode.to_s(8)  # => "120755"
  *  File.lchmod(0777, 'link')
- *  File.stat('t.tmp').mode.to_s(8) # => "100664"
- *  File.stat('link').mode.to_s(8)  # => "100777"
+ *  File.lstat('t.tmp').mode.to_s(8) # => "100664"
+ *  File.lstat('link').mode.to_s(8)  # => "120777"
  *  File.delete('t.tmp')
  *  File.delete('link')
  *  ```
- *
  */
 
 static VALUE
@@ -3358,7 +3358,8 @@ lchown_internal(const char *path, void *arg)
  *
  *  Calling process must have superuser privileges.
  *
- *  When supported: like File::chown, but does not follow symbolic links,
+ *  When supported: like File::chown,
+ *  but does not follow [symbolic links](rdoc-ref:file/symbolic_links.md),
  *  and therefore changes the ownership of the entries given by `paths`;
  *  returns the number of paths given:
  *
@@ -3614,7 +3615,8 @@ rb_file_s_utime(int argc, VALUE *argv, VALUE _)
  * call-seq:
  *   File.lutime(atime, mtime, *paths) -> path_count
  *
- * Like File#utime, but does not follow symbolic links,
+ * Like File::utime,
+ * but does not follow [symbolic links](rdoc-ref:file/symbolic_links.md),
  * and therefore changes the times of the entries given by `paths`,
  * regardless of whether they are symbolic links;
  * returns the number of `paths` given:
@@ -3791,20 +3793,21 @@ rb_file_s_symlink(VALUE klass, VALUE from, VALUE to)
  *  :markup: markdown
  *
  *  call-seq:
- *     File.readlink(link_path) -> path
+ *    File.readlink(link_path) -> string
  *
- *  Returns the string path to the entry referenced by the given `link_path`:
+ *  Returns the string path to the entry referenced
+ *  by the [symbolic link](rdoc-ref:file/symbolic_links.md) at `link_path`:
  *
  *  ```ruby
- *  # Create paths.
- *  file_path = 'doc/extension.rdoc'         # => "doc/extension.rdoc"
- *  target_path = File.join('..', file_path) # => "../doc/extension.rdoc"
- *  link_path = 'lib/u.tmp'                  # => "lib/u.tmp"
- *  File.symlink(target_path, link_path)
- *  File.readlink(link_path)                 # => "../doc/extension.rdoc"
- *  File.delete(link_path)                   # Clean up.
+ *  filepath = 'README.md'
+ *  linkpath = 'foo'
+ *  File.symlink(filepath, linkpath)
+ *  File.readlink(linkpath) # => "README.md"
+ *  File.unlink(linkpath)   # Clean up.
  *  ```
  *
+ *  Raises Errno::EINVAL if the entry referenced by `link_path`
+ *  is not a symbolic link.
  */
 
 static VALUE
@@ -3878,19 +3881,28 @@ unlink_internal(const char *path, void *arg)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *    File.delete(*filepaths) -> integer
- *    File.unlink(*filepaths) -> integer
+ *    File.delete(*paths) -> integer
+ *    File.unlink(*paths) -> integer
  *
- *  Removes the file entry at each path in +filepaths+;
- *  returns the number of removed files.
+ *  Removes the entry at each path in `paths`;
+ *  returns the count of removed entries.
  *
- *    File.write('t.tmp', 'foo')
- *    File.write('u.tmp', 'bar')
- *    File.delete('t.tmp', 'u.tmp') # => 2
+ *  Does not follow [symbolic links](rdoc-ref:file/symbolic_links.md);
+ *  if an entry is a symlink, the link itself is removed.
+ *
+ *  ```ruby
+ *  File.write('t.tmp', 'foo')
+ *  File.write('u.tmp', 'bar')
+ *  File.delete('t.tmp', 'u.tmp') # => 2
+ *  File.symlink('README.md', 'foo')
+ *  File.unlink('foo')            # => 1
+ *  ```
  *
  *  Raises an exception on any error;
- *  some files may have been deleted before the path causing the error.
+ *  some entries may have been deleted before the path causing the error.
  */
 
 static VALUE
@@ -3913,13 +3925,70 @@ no_gvl_rename(void *ptr)
 }
 
 /*
- *  call-seq:
- *     File.rename(old_name, new_name)   -> 0
+ * :markup: markdown
  *
- *  Renames the given file to the new name. Raises a SystemCallError
- *  if the file cannot be renamed.
+ * call-seq:
+ *   File.rename(path, new_path) -> 0
  *
- *     File.rename("afile", "afile.bak")   #=> 0
+ * Moves the entry at the given `path` to the given `new_path`.
+ *
+ * Does not follow [symbolic links](rdoc-ref:file/symbolic_links.md);
+ * if the entry is a symlink, the link itself is renamed.
+ *
+ * The examples below use two temporary directories:
+ *
+ * ```ruby
+ * src_dirpath = '/tmp/src/' # => "/tmp/src/"
+ * dst_dirpath = '/tmp/dst/' # => "/tmp/dst/"
+ * Dir.mkdir(src_dirpath)
+ * Dir.mkdir(dst_dirpath)
+ * ```
+ *
+ * The entry to be renamed may be a file:
+ *
+ * ```ruby
+ * src_filepath = File.join(src_dirpath, 't.tmp') # => "/tmp/src/t.tmp"
+ * File.write(src_filepath, 'foo')
+ * dst_filepath = File.join(dst_dirpath, 'u.tmp') # => "/tmp/dst/u.tmp"
+ * File.rename(src_filepath, dst_filepath)
+ * File.exist?(src_filepath)                      # => false
+ * File.exist?(dst_filepath)                      # => true
+ * File.delete(dst_filepath)                      # Clean up.
+ * ```
+ *
+ * The entry to be renamed may be a symbolic link:
+ *
+ * ```ruby
+ * filepath = File.join(src_dirpath, 't.tmp') # => "/tmp/src/t.tmp"
+ * File.write(src_filepath, 'foo')
+ * linkpath = File.join(src_dirpath, 'u.tmp') # => "/tmp/src/u.tmp"
+ * File.symlink(filepath, linkpath)
+ * File.readlink(linkpath)                    # => "/tmp/src/t.tmp"
+ * newpath = File.join(dst_dirpath, 'v.tmp')  # => "/tmp/dst/v.tmp"
+ * File.rename(linkpath, newpath)             # Symlink not followed.
+ * File.readlink(newpath)                     # => "/tmp/src/t.tmp"
+ * File.delete(filepath, newpath)             # Clean up.
+ * ```
+ *
+ * The entry to be renamed may be a directory:
+ *
+ * ```ruby
+ * old_dirpath = File.join(src_dirpath, 'olddir') # => "/tmp/src/olddir"
+ * Dir.mkdir(old_dirpath)
+ * new_dirpath = File.join(dst_dirpath, 'newdir') # => "/tmp/dst/newdir"
+ * File.rename(old_dirpath, new_dirpath)
+ * File.directory?(new_dirpath)                   # => true
+ * Dir.rmdir(new_dirpath)                         # Clean up.
+ * ```
+ *
+ * Clean up:
+ *
+ * ```ruby
+ * FileUtils.rm_rf(src_dirpath) # => ["/tmp/src/"]
+ * FileUtils.rm_rf(dst_dirpath)  # => ["/tmp/dst/"]
+ * ```
+ *
+ * Raises SystemCallError if the file cannot be renamed.
  */
 
 static VALUE

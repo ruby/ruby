@@ -29,6 +29,7 @@
 #include "iseq.h"
 #include "ruby/debug.h"
 #include "internal/cont.h"
+#include "internal/jit.h"
 
 // For mmapp(), sysconf()
 #ifndef _WIN32
@@ -523,4 +524,3 @@ static VALUE yjit_c_builtin_p(rb_execution_context_t *ec, VALUE self) { return Q
 
 // Preprocessed yjit.rb generated during build
 #include "yjit.rbinc"
-

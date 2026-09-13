@@ -21,6 +21,7 @@
 #include "internal/eval.h"
 #include "internal/gc.h"
 #include "internal/inits.h"
+#include "internal/jit.h"
 #include "internal/missing.h"
 #include "internal/object.h"
 #include "internal/proc.h"
@@ -3596,7 +3597,6 @@ ruby_vm_destruct(rb_vm_t *vm)
             }
             rb_objspace_free(objspace);
         }
-        rb_native_mutex_destroy(&vm->workqueue_lock);
         rb_native_mutex_destroy(&vm->once_lock);
         rb_native_cond_destroy(&vm->once_cond);
         /* after freeing objspace, you *can't* use ruby_xfree() */
@@ -3614,7 +3614,6 @@ ruby_vm_destruct(rb_vm_t *vm)
     return 0;
 }
 
-size_t rb_vm_memsize_workqueue(struct ccan_list_head *workqueue); // vm_trace.c
 
 // Used for VM memsize reporting. Returns the size of the at_exit list by
 // looping through the linked list and adding up the size of the structs.
@@ -3669,7 +3668,6 @@ vm_memsize(const void *ptr)
     return (
         sizeof(rb_vm_t) +
         rb_vm_memsize_postponed_job_queue() +
-        rb_vm_memsize_workqueue(&vm->workqueue) +
         vm_memsize_at_exit_list(vm->at_exit) +
         (rb_st_memsize(&vm->ci_table) - sizeof(struct st_table)) +
         vm_memsize_builtin_function_table(vm->builtin_function_table) +

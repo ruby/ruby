@@ -6371,11 +6371,6 @@ rb_big_fdiv_double(VALUE x, VALUE y)
     return NUM2DBL(v);
 }
 
-VALUE
-rb_big_fdiv(VALUE x, VALUE y)
-{
-    return DBL2NUM(rb_big_fdiv_double(x, y));
-}
 
 VALUE
 rb_big_pow(VALUE x, VALUE y)

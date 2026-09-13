@@ -617,7 +617,10 @@ class TestHash < Test::Unit::TestCase
   end
 
   def hash_hint hv
-    hv & 0xff
+    hint = hv & 0xff
+    # hash.c's ar_do_hash_hint() substitutes RHASH_AR_CLEARED_HINT (0x00)
+    # with RHASH_AR_SUBSTITUTION_HINT (0x01), so those two alias.
+    hint == 0 ? 1 : hint
   end
 
   def test_rehash

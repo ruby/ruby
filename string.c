@@ -9362,7 +9362,7 @@ tr_trans_pairs_search_sse2(struct tr_trans_pairs_search *search)
                 matches[i] = _mm_cmpeq_epi8(bytes, masks[i]);
             }
 
-            for (i = i; i < search->needles_count; i++) {
+            for (i = 1; i < search->needles_count; i++) {
                 matches[0] = _mm_or_si128(matches[0], matches[i]);
             }
 
@@ -9427,7 +9427,7 @@ tr_trans_pairs_search_neon(struct tr_trans_pairs_search *search)
                     matches[i] = vceqq_u8(bytes, masks[i]);
                 }
 
-                for (i = i; i < search->needles_count; i++) {
+                for (i = 1; i < search->needles_count; i++) {
                     matches[0] = vorrq_u8(matches[0], matches[i]);
                 }
 
@@ -9457,6 +9457,7 @@ tr_trans_pairs(VALUE str, VALUE pairs_val)
 {
     Check_Type(pairs_val, T_HASH);
     size_t pairs_count = RHASH_SIZE(pairs_val);
+    mustnot_broken(str);
     rb_str_modify(str);
 
     if (RSTRING_LEN(str) == 0 || !RSTRING_PTR(str) || pairs_count == 0) return Qnil;
@@ -9486,6 +9487,7 @@ tr_trans_pairs(VALUE str, VALUE pairs_val)
     bool modify = false;
 
     if (RB_LIKELY(rb_str_encindex_fastpath(rb_enc_to_index(e1)))) {
+
         struct tr_trans_pairs_search search = {
             .s = sstart,
             .send = sstart + str_len,
@@ -9540,8 +9542,8 @@ tr_trans_pairs(VALUE str, VALUE pairs_val)
                 tr_buffer_append(&buffer, checkpoint, search.s - checkpoint);
             }
             tr_buffer_append_str(&buffer, repl);
-            search.s += clen;
-            checkpoint = search.s;
+            checkpoint = search.s + clen;
+            search.s++;
 
             if (cr == ENC_CODERANGE_7BIT && rb_enc_str_coderange(repl) != ENC_CODERANGE_7BIT) {
                 cr = ENC_CODERANGE_VALID;
@@ -9609,6 +9611,10 @@ tr_trans_pairs(VALUE str, VALUE pairs_val)
         }
     }
 
+    if (!modify) {
+        return Qnil;
+    }
+
     if (!STR_EMBED_P(str)) {
         SIZED_FREE_N(STR_HEAP_PTR(str), STR_HEAP_SIZE(str));
     }
@@ -9621,13 +9627,10 @@ tr_trans_pairs(VALUE str, VALUE pairs_val)
 
     RB_GC_GUARD(hash);
 
-    if (modify) {
-        if (cr != ENC_CODERANGE_BROKEN)
-            ENC_CODERANGE_SET(str, cr);
-        rb_enc_associate(str, e1);
-        return str;
-    }
-    return Qnil;
+    if (cr != ENC_CODERANGE_BROKEN)
+        ENC_CODERANGE_SET(str, cr);
+    rb_enc_associate(str, e1);
+    return str;
 }
 
 /*
@@ -9661,9 +9664,24 @@ rb_str_tr_bang(int argc, VALUE *argv, VALUE str)
 /*
  *  call-seq:
  *    tr(selector, replacements) -> new_string
+ *    tr(pairs) -> new_string
  *
- *  Returns a copy of +self+ with each character specified by string +selector+
- *  translated to the corresponding character in string +replacements+.
+ *  Accepts either a +selector+ and a +replacements+ string,
+ *  or a single +pairs+ Hash.
+ *
+ *  When a +pairs+ Hash is provided the keys, returns a copy of +self+ with
+ *  the keys of the hash replaced by the values.
+ *
+ *  - They keys must be strings containing a single codepoints.
+ *  - The values can be of any length.
+ *
+ *  Example:
+ *
+ *    'hello'.tr('e' => 'er', 'l' => '', 'o' => 'o !') #=> "hero !"
+ *
+ *  When +selector+ and +replacements+are provided, returns a copy of +self+
+ *  with each character specified by string +selector+ translated to the
+ *  corresponding character in string +replacements+.
  *  The correspondence is _positional_:
  *
  *  - Each occurrence of the first character specified by +selector+
@@ -9704,7 +9722,9 @@ rb_str_tr(int argc, VALUE *argv, VALUE str)
 
     if (argc == 1) {
         VALUE pairs = argv[0];
-        return tr_trans_pairs(str, pairs);
+        VALUE result = tr_trans_pairs(str, pairs);
+        if (NIL_P(result)) result = str;
+        return str;
     }
 
     VALUE src = argv[0], repl = argv[1];
@@ -11252,12 +11272,9 @@ chomp_rs(int argc, const VALUE *argv)
     }
 }
 
-VALUE
-rb_str_chomp_string(VALUE str, VALUE rs)
+static VALUE
+str_shrink(VALUE str, long len)
 {
-    long olen = RSTRING_LEN(str);
-    long len = chompped_length(str, rs);
-    if (len >= olen) return Qnil;
     str_modify_keep_cr(str);
     STR_SET_LEN(str, len);
     TERM_FILL(&RSTRING_PTR(str)[len], TERM_LEN(str));
@@ -11265,6 +11282,15 @@ rb_str_chomp_string(VALUE str, VALUE rs)
         ENC_CODERANGE_CLEAR(str);
     }
     return str;
+}
+
+VALUE
+rb_str_chomp_string(VALUE str, VALUE rs)
+{
+    long olen = RSTRING_LEN(str);
+    long len = chompped_length(str, rs);
+    if (len >= olen) return Qnil;
+    return str_shrink(str, len);
 }
 
 /*
@@ -12582,21 +12608,13 @@ deleted_suffix_length(VALUE str, VALUE suffix)
 static VALUE
 rb_str_delete_suffix_bang(VALUE str, VALUE suffix)
 {
-    long olen, suffixlen, len;
+    long suffixlen;
     str_modifiable(str);
 
     suffixlen = deleted_suffix_length(str, suffix);
     if (suffixlen <= 0) return Qnil;
 
-    olen = RSTRING_LEN(str);
-    str_modify_keep_cr(str);
-    len = olen - suffixlen;
-    STR_SET_LEN(str, len);
-    TERM_FILL(&RSTRING_PTR(str)[len], TERM_LEN(str));
-    if (ENC_CODERANGE(str) != ENC_CODERANGE_7BIT) {
-        ENC_CODERANGE_CLEAR(str);
-    }
-    return str;
+    return str_shrink(str, RSTRING_LEN(str) - suffixlen);
 }
 
 /*
