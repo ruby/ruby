@@ -528,6 +528,10 @@ pick_addrinfo(struct hostname_resolution_store *resolution_store, int last_famil
     return selected_ai;
 }
 
+#ifdef _WIN32
+#define pipe(fds) rb_w32_pipe(fds)
+#endif
+
 static void
 nonblock_set(int fd, int nonblock)
 {
@@ -671,11 +675,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
     } else {
         if (pipe(pipefd) != 0) rb_syserr_fail(errno, "pipe(2)");
         hostname_resolution_waiter = pipefd[0];
-        int waiter_flags = fcntl(hostname_resolution_waiter, F_GETFL, 0);
-        if (waiter_flags < 0) rb_syserr_fail(errno, "fcntl(2)");
-        if ((fcntl(hostname_resolution_waiter, F_SETFL, waiter_flags | O_NONBLOCK)) < 0) {
-            rb_syserr_fail(errno, "fcntl(2)");
-        }
+        nonblock_set(hostname_resolution_waiter, true);
         arg->wait = hostname_resolution_waiter;
         hostname_resolution_notifier = pipefd[1];
 
