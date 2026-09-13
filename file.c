@@ -3881,19 +3881,28 @@ unlink_internal(const char *path, void *arg)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *    File.delete(*filepaths) -> integer
- *    File.unlink(*filepaths) -> integer
+ *    File.delete(*paths) -> integer
+ *    File.unlink(*paths) -> integer
  *
- *  Removes the file entry at each path in +filepaths+;
- *  returns the number of removed files.
+ *  Removes the entry at each path in `paths`;
+ *  returns the count of removed entries.
  *
- *    File.write('t.tmp', 'foo')
- *    File.write('u.tmp', 'bar')
- *    File.delete('t.tmp', 'u.tmp') # => 2
+ *  Does not follow [symbolic links](rdoc-ref:file/symbolic_links.md);
+ *  if an entry is a symlink, the link itself is removed.
+ *
+ *  ```ruby
+ *  File.write('t.tmp', 'foo')
+ *  File.write('u.tmp', 'bar')
+ *  File.delete('t.tmp', 'u.tmp') # => 2
+ *  File.symlink('README.md', 'foo')
+ *  File.unlink('foo')            # => 1
+ *  ```
  *
  *  Raises an exception on any error;
- *  some files may have been deleted before the path causing the error.
+ *  some entries may have been deleted before the path causing the error.
  */
 
 static VALUE

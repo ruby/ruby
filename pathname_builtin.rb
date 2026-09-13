@@ -2975,11 +2975,18 @@ class Pathname    # * mixed *
   #   unlink -> 0 or 1
   #
   # Removes the entry represented by `self`;
-  # returns `0` if a directory, `1` if a file:
+  # returns `0` if a directory, `1` otherwise.
+  #
+  # Does not follow [symbolic links](rdoc-ref:file/symbolic_links.md);
+  # if the entry is a symlink, the link itself is removed.
   #
   # ```ruby
   # Pathname(Pathname.mktmpdir).unlink # => 0
   # Pathname(Tempfile.create).unlink   # => 1
+  # pn_target = Pathname('README.md')  # => #<Pathname:README.md>
+  # pn_link = Pathname('foo')          # => #<Pathname:foo>
+  # pn_link.make_symlink(pn_target)
+  # pn_link.delete
   # ```
   #
   def unlink()
