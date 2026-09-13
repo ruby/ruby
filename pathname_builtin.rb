@@ -1880,10 +1880,10 @@ class Pathname    # * File *
   # :markup: markdown
   #
   # call-seq:
-  #   make_symlink(path) -> 0
+  #   make_symlink(target_path) -> 0
   #
   # Creates a [symbolic link](rdoc-ref:file/symbolic_links.md)
-  # at the path in `self` to the entry at `path`:
+  # at the path in `self` to the entry at `target_path`:
   #
   # ```ruby
   # # Create Pathnames.
@@ -1895,6 +1895,9 @@ class Pathname    # * File *
   # file_pn.read == link_pn.read             # => true
   # link_pn.delete                           # Clean up.
   # ```
+  #
+  # If the entry at `target_path` is itself a symlink, that link is _not_ followed;
+  # thus the created symlink always points to `target_path`.
   #
   # See also: #read, #readlink, #symlink?.
   def make_symlink(old) File.symlink(old, @path) end

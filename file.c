@@ -3749,12 +3749,12 @@ rb_file_s_link(VALUE klass, VALUE from, VALUE to)
  * :markup: markdown
  *
  *  call-seq:
- *    File.symlink(path, link_path) -> 0
+ *    File.symlink(target_path, link_path) -> 0
  *
  *  Not supported on some platforms.
  *
  *  Creates a [symbolic link](rdoc-ref:file/symbolic_links.md)
- *  at `link_path` to the entry at `path`:
+ *  at `link_path` to the entry at `target_path`:
  *
  *  ```ruby
  *  # Create paths.
@@ -3766,6 +3766,9 @@ rb_file_s_link(VALUE klass, VALUE from, VALUE to)
  *  File.read(file_path) == File.read(link_path) # => true
  *  File.delete(link_path)                       # Clean up.
  *  ```
+ *
+ *  If the entry at `target_path` is itself a symlink, that link is _not_ followed;
+ *  thus the created symlink always points to `target_path`.
  *
  *  See also: ::read, ::readlink, ::symlink?.
  */
