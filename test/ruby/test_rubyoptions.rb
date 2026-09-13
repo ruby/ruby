@@ -973,6 +973,35 @@ class TestRubyOptions < Test::Unit::TestCase
     end
   end
 
+  # The sender pid is only reported for a signal another process sent us.
+  def abrt_crash_report(code)
+    Dir.mktmpdir("ruby_crash_report") do |dir|
+      IO.popen([{"RUBY_CRASH_REPORT" => "abrt.log", "RUBY_ON_BUG" => nil},
+                EnvUtil.rubybin, "--disable-gems", "-e", "STDOUT.sync = true; puts; #{code}"],
+               chdir: dir, err: File::NULL, rlimit_core: 0) do |child|
+        child.gets
+        yield child if block_given?
+      end
+      break File.read(File.join(dir, "abrt.log"))
+    end
+  end
+
+  def test_crash_report_sender_pid
+    omit "needs siginfo" unless (macos? || linux?)
+
+    report = abrt_crash_report("sleep") {|child| Process.kill(:ABRT, child.pid)}
+    assert_include(report, "[BUG] Aborted")
+    assert_include(report, "(sent by pid #{Process.pid})")
+  end
+
+  def test_crash_report_no_sender_pid_when_self_inflicted
+    omit "needs siginfo" unless (macos? || linux?)
+
+    report = abrt_crash_report("Process.kill(:ABRT, $$)")
+    assert_include(report, "[BUG] Aborted")
+    assert_not_include(report, "sent by pid")
+  end
+
   def test_DATA
     Tempfile.create(["test_ruby_test_rubyoption", ".rb"]) {|t|
       t.puts "puts DATA.read.inspect"

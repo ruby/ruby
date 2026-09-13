@@ -896,7 +896,41 @@ check_stack_overflow(int sig, const void *addr)
 #   else
 #     define CHECK_STACK_OVERFLOW_() check_stack_overflow(sig, FAULT_ADDRESS)
 #   endif
-#   define MESSAGE_FAULT_ADDRESS " at %p", FAULT_ADDRESS
+
+/* Only the si_code values whose siginfo_t carries a sender pid; SI_TIMER and
+ * SI_SIGIO overlay si_tid/si_band at si_pid's offset. */
+static bool
+is_user_generated(const siginfo_t *info)
+{
+    int code = info->si_code;
+    if (code == SI_USER) return true;
+#   ifdef SI_QUEUE
+    if (code == SI_QUEUE) return true;
+#   endif
+#   ifdef SI_TKILL
+    if (code == SI_TKILL) return true;
+#   endif
+    return code == 0;
+}
+
+static const char *
+signal_sender_message(const siginfo_t *info)
+{
+    /* check_reserved_signal_ lets only the first fatal signal get this far. */
+    static char buf[64];
+
+    if (info && is_user_generated(info)) {
+        rb_pid_t pid = info->si_pid;
+        if (pid == getpid()) return "";
+        /* si_pid is 0 when the sender is not visible in our PID namespace. */
+        if (pid == 0) return " (sent by another process)";
+        snprintf(buf, sizeof(buf), " (sent by pid %"PRI_PIDT_PREFIX"d)", pid);
+        return buf;
+    }
+    return "";
+}
+
+#   define MESSAGE_FAULT_ADDRESS " at %p%s", FAULT_ADDRESS, signal_sender_message(info)
 #   define SIGNAL_FROM_USER_P() ((info)->si_code == SI_USER)
 #   define CHECK_STACK_OVERFLOW() (SIGNAL_FROM_USER_P() ? (void)0 : CHECK_STACK_OVERFLOW_())
 # endif
