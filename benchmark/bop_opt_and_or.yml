@@ -1,0 +1,14 @@
+benchmark:
+  true_and_true:  true & true
+  true_and_false: true & false
+  true_and_nil:   true & nil
+  false_and_true: false & true
+  true_or_false:  true | false
+  false_or_true:  false | true
+  false_or_nil:   false | nil
+  nil_or_true:    nil | true
+  nil_or_nil:     nil | nil
+  integer_and:    123 & 456
+
+loop_count:
+  2000000
