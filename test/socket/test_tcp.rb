@@ -424,6 +424,24 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
     end
   end
 
+  def test_initialize_connect_timeout_with_connection_failure
+    omit "needs a loopback connection refused later than connect_timeout, as on mswin" unless RUBY_PLATFORM =~ /mswin/
+
+    server = TCPServer.new("127.0.0.1", 0)
+    port = server.connect_address.ip_port
+    server.close
+
+    assert_raise(IO::TimeoutError) do
+      TCPSocket.new(
+        "localhost",
+        port,
+        connect_timeout: 0.1,
+        fast_fallback: true,
+        test_mode_settings: { delay: { ipv4: 100 }, error: { ipv6: Socket::EAI_FAIL } }
+      )
+    end
+  end
+
   def test_initialize_v6_connected_socket_with_v6_address
     begin
       server = TCPServer.new("::1", 0)

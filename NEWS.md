@@ -312,7 +312,9 @@ Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for det
       address no longer waits for the IPv6 attempt to time out. When it
       resolves the IPv6 and IPv4 addresses in parallel, the hostname
       resolution, which used to ignore `resolv_timeout` and `open_timeout`
-      there, now raises `IO::TimeoutError` once the timeout expires.
+      there, now raises `IO::TimeoutError` once the timeout expires. Its
+      connection attempts do the same for `connect_timeout` and
+      `open_timeout` instead of waiting for Winsock to give up.
 
     * On Windows, a connection that is refused or unreachable now raises the
       matching `Errno` class as soon as Winsock reports it, instead of

@@ -892,7 +892,14 @@ init_fast_fallback_inetsock_internal(VALUE v)
                     }
 
                     io = arg->io = rsock_init_sock(arg->self, fd);
+#ifdef _WIN32
+                    /* rsock_connect() cannot time out a blocking connect(2). */
+                    nonblock_set(fd, true);
+#endif
                     status = rsock_connect(io, remote_ai->ai_addr, remote_ai->ai_addrlen, 0, timeout);
+#ifdef _WIN32
+                    if (status == 0) nonblock_set(fd, false);
+#endif
                 }
 
                 if (status == 0) {
