@@ -388,6 +388,28 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
   * `ObjectSpace.define_finalizer` on another Ractor's object raises
     `Ractor::IsolationError`.
 
+* `Ractor#monitor` now sends an Array naming the Ractor and what happened to
+  it, `[ractor, :exited]` or `[ractor, :aborted]`, where it used to send the
+  bare Symbol `:exited` or `:aborted`.  Several Ractors can then report to one
+  port and the receiver still knows which one finished.  The Array is built for
+  the receiving Ractor, so watching many Ractors leaves no shareable objects
+  behind.
+
+      r = Ractor.new { :ok }
+      r.monitor(port = Ractor::Port.new)
+      port.receive #=> [r, :exited]
+
+  One port can therefore watch a whole group, which is all a supervisor
+  needs:
+
+      workers.each { |r| r.monitor port }
+
+      until workers.empty?
+        r, status = port.receive
+        workers.delete(r)
+        workers << restart(r) if status == :aborted
+      end
+
 ### M:N thread scheduler
 
 * The scheduler scales with the number of waiters and of Ractors, where it
