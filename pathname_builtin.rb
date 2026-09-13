@@ -1882,7 +1882,8 @@ class Pathname    # * File *
   # call-seq:
   #   make_symlink(path) -> 0
   #
-  # Creates a symbolic link at the path in `self` to the entry at `path`:
+  # Creates a [symbolic link](rdoc-ref:file/symbolic_links.md)
+  # at the path in `self` to the entry at `path`:
   #
   # ```ruby
   # # Create Pathnames.

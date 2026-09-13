@@ -3753,7 +3753,8 @@ rb_file_s_link(VALUE klass, VALUE from, VALUE to)
  *
  *  Not supported on some platforms.
  *
- *  Creates a symbolic link at `link_path` to the entry at `path`:
+ *  Creates a [symbolic link](rdoc-ref:file/symbolic_links.md)
+ *  at `link_path` to the entry at `path`:
  *
  *  ```ruby
  *  # Create paths.
