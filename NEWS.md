@@ -188,6 +188,7 @@ They are still available on rubygems.org and can be installed with
 * error_highlight 0.7.2
 * io-console 0.9.2
   * 0.8.2 to [v0.9.0][io-console-v0.9.0], [v0.9.1][io-console-v0.9.1], [v0.9.2][io-console-v0.9.2]
+* io-wait 999.999.999
 * ipaddr 1.2.9
   * 1.2.8 to [v1.2.9][ipaddr-v1.2.9]
 * json 3.0.2
