@@ -2805,7 +2805,9 @@ class TestModule < Test::Unit::TestCase
       def m; "B"+super; end
       alias m2 m
       prepend p
-      alias m3 m
+    end
+    assert_deprecated_warning(/aliasing .*#m defined in a prepended module .* is deprecated/) do
+      b.class_eval { alias m3 m }
     end
     assert_equal("BA", b.new.m2, bug7842)
     assert_equal("PBA", b.new.m3, bug7842)
