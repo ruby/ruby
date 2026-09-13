@@ -1130,6 +1130,16 @@ class TestRubyOptions < Test::Unit::TestCase
         assert_e_script_encoding(s, %W[-E#{locale.name}])
       end
     end
+
+    def test_command_line_quote_pair
+      bug11142 = '[Bug #11142]'
+      ruby = EnvUtil.rubybin
+      cmd = %["#{ruby}" -e "puts ARGV" "foo""bar" "foo"" bar" "foo""bar""baz" a""b "a\\"b" "" "a"""" b" """" c 'a''b' "a"" b c]
+      out = IO.popen(cmd, &:read).lines(chomp: true)
+      assert_predicate($?, :success?, bug11142)
+      assert_equal(['foo"bar', 'foo" bar', 'foo"bar"baz', 'ab', 'a"b', '', 'a"" b', '"', 'c', 'ab', 'a" b c'],
+                   out, bug11142)
+    end
   when /cygwin/
     def test_command_line_non_ascii
       assert_separately([{"LC_ALL"=>"ja_JP.SJIS"}, "-", "\u{3042}".encode("SJIS")], <<-"end;")
