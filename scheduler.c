@@ -17,6 +17,7 @@
 #include "ruby/thread.h"
 
 // For `ruby_thread_has_gvl_p`:
+#include "internal/scheduler.h"
 #include "internal/thread.h"
 
 // For atomic operations:
@@ -51,6 +52,118 @@ static ID id_fiber_schedule;
 
 // Our custom blocking operation class
 static VALUE rb_cFiberSchedulerBlockingOperation;
+static VALUE rb_cFiberSchedulerInterruptTarget;
+
+struct rb_fiber_scheduler_interrupt_target {
+    VALUE fiber;
+    VALUE exception;
+    bool active;
+};
+
+static void
+interrupt_target_mark(void *ptr)
+{
+    struct rb_fiber_scheduler_interrupt_target *target = ptr;
+
+    rb_gc_mark(target->fiber);
+    rb_gc_mark(target->exception);
+}
+
+static size_t
+interrupt_target_memsize(const void *ptr)
+{
+    return sizeof(struct rb_fiber_scheduler_interrupt_target);
+}
+
+static const rb_data_type_t interrupt_target_data_type = {
+    "Fiber::Scheduler::InterruptTarget",
+    {
+        interrupt_target_mark,
+        RUBY_DEFAULT_FREE,
+        interrupt_target_memsize,
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+};
+
+static struct rb_fiber_scheduler_interrupt_target *
+get_interrupt_target(VALUE self)
+{
+    struct rb_fiber_scheduler_interrupt_target *target;
+    TypedData_Get_Struct(self, struct rb_fiber_scheduler_interrupt_target, &interrupt_target_data_type, target);
+    return target;
+}
+
+static VALUE
+interrupt_target_alive_p(VALUE self)
+{
+    struct rb_fiber_scheduler_interrupt_target *target = get_interrupt_target(self);
+
+    if (!target->active) {
+        return Qfalse;
+    }
+
+    return rb_fiber_alive_p(target->fiber);
+}
+
+static VALUE
+interrupt_target_raise(int argc, VALUE *argv, VALUE self)
+{
+    struct rb_fiber_scheduler_interrupt_target *target = get_interrupt_target(self);
+
+    if (!target->active) {
+        return Qnil;
+    }
+
+    return rb_fiber_raise(target->fiber, argc, argv);
+}
+
+static VALUE
+interrupt_target_transfer(VALUE self)
+{
+    struct rb_fiber_scheduler_interrupt_target *target = get_interrupt_target(self);
+
+    if (!target->active || !RTEST(rb_fiber_alive_p(target->fiber))) {
+        return Qnil;
+    }
+
+    VALUE exception = target->exception;
+    return rb_fiber_raise(target->fiber, 1, &exception);
+}
+
+VALUE
+rb_fiber_scheduler_interrupt_target_new(VALUE fiber, VALUE exception)
+{
+    struct rb_fiber_scheduler_interrupt_target *target;
+    VALUE self = TypedData_Make_Struct(rb_cFiberSchedulerInterruptTarget, struct rb_fiber_scheduler_interrupt_target, &interrupt_target_data_type, target);
+
+    target->fiber = fiber;
+    target->exception = exception;
+    target->active = true;
+
+    return self;
+}
+
+VALUE
+rb_fiber_scheduler_interrupt_target_exception(VALUE self)
+{
+    struct rb_fiber_scheduler_interrupt_target *target = get_interrupt_target(self);
+
+    if (target->active) {
+        return target->exception;
+    }
+
+    return Qnil;
+}
+
+void
+rb_fiber_scheduler_interrupt_target_invalidate(VALUE self)
+{
+    struct rb_fiber_scheduler_interrupt_target *target = get_interrupt_target(self);
+
+    target->active = false;
+    target->fiber = Qnil;
+    target->exception = Qnil;
+}
 
 /*
  * Custom blocking operation structure for blocking operations
@@ -343,6 +456,15 @@ Init_Fiber_Scheduler(void)
 
     // Register the anonymous class as a GC root so it doesn't get collected
     rb_gc_register_mark_object(rb_cFiberSchedulerBlockingOperation);
+
+    // Define an anonymous interrupt target class. Instances are passed to
+    // fiber_interrupt and cannot be instantiated directly.
+    rb_cFiberSchedulerInterruptTarget = rb_class_new(rb_cObject);
+    rb_undef_alloc_func(rb_cFiberSchedulerInterruptTarget);
+    rb_define_method(rb_cFiberSchedulerInterruptTarget, "alive?", interrupt_target_alive_p, 0);
+    rb_define_method(rb_cFiberSchedulerInterruptTarget, "raise", interrupt_target_raise, -1);
+    rb_define_method(rb_cFiberSchedulerInterruptTarget, "transfer", interrupt_target_transfer, 0);
+    rb_gc_register_mark_object(rb_cFiberSchedulerInterruptTarget);
 
 #if 0 /* for RDoc */
     rb_cFiberScheduler = rb_define_class_under(rb_cFiber, "Scheduler", rb_cObject);
@@ -1154,17 +1276,21 @@ VALUE rb_fiber_scheduler_blocking_operation_wait(VALUE scheduler, void* (*functi
 
 /*
  * Document-method: Fiber::Scheduler#fiber_interrupt
- * call-seq: fiber_interrupt(fiber, exception)
+ * call-seq: fiber_interrupt(target, exception)
  *
- * Invoked by Ruby's core methods to notify the scheduler that the blocked fiber should be interrupted
- * with an exception. For example, IO#close uses this method to interrupt fibers that are performing
- * blocking IO operations.
+ * Invoked by Ruby's core methods to notify the scheduler that a blocked fiber
+ * should be interrupted with an exception. For IO operations, +target+ is an
+ * operation-scoped proxy which responds to #alive?, #raise, and #transfer. The
+ * scheduler should enqueue the target on its owning thread and use only those
+ * methods. #transfer raises the interruption's stored exception in the target.
+ * Once the operation completes, #alive? returns false and #raise has no effect,
+ * preventing a delayed exception from escaping into a later operation.
  *
  */
-VALUE rb_fiber_scheduler_fiber_interrupt(VALUE scheduler, VALUE fiber, VALUE exception)
+VALUE rb_fiber_scheduler_fiber_interrupt(VALUE scheduler, VALUE target, VALUE exception)
 {
     VALUE arguments[] = {
-        fiber, exception
+        target, exception
     };
 
     VALUE result;
