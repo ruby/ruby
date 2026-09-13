@@ -3840,12 +3840,14 @@ module Prism
       # ^^^^
       def visit_symbol_node(node)
         with_string_bounds(node) do
-          if node.value_loc.nil?
-            bounds(node.location)
-            on_dyna_symbol(on_string_content)
-          elsif (opening = node.opening)&.match?(/^%s|['"]:?$/)
+          if (opening = node.opening)&.match?(/^%s|['"]:?$/)
             bounds(node.value_loc)
-            content = on_string_add(on_string_content, on_tstring_content(node.value))
+            content = on_string_content
+
+            if !(value = node.value).empty?
+              content = on_string_add(content, on_tstring_content(value))
+            end
+
             bounds(node.location)
             on_dyna_symbol(content)
           elsif (closing = node.closing) == ":"
