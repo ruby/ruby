@@ -121,9 +121,19 @@ class TestFiberIOClose < Test::Unit::TestCase
 
     with_socket_pair do |i, o|
       error = nil
+      scheduler = nil
+
+      scheduler_class = Class.new(Scheduler) do
+        attr_reader :interrupt_target
+
+        def fiber_interrupt(target, exception)
+          @interrupt_target = target
+          super
+        end
+      end
 
       thread = Thread.new do
-        scheduler = Scheduler.new
+        scheduler = scheduler_class.new
         Fiber.set_scheduler scheduler
 
         Fiber.schedule do
@@ -143,6 +153,11 @@ class TestFiberIOClose < Test::Unit::TestCase
 
       assert_instance_of IOError, error
       assert_match(/closed/, error.message)
+
+      interrupt_target = scheduler.interrupt_target
+      assert_not_predicate interrupt_target, :alive?
+      assert_nil interrupt_target.transfer
+      assert_nil interrupt_target.raise(IOError.new)
     end
   end
 end
