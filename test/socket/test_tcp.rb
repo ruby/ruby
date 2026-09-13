@@ -232,7 +232,8 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
     server = TCPServer.new("127.0.0.1", 0)
     port = server.addr[1]
 
-    server_thread = Thread.new { server.accept }
+    accepted = nil
+    server_thread = Thread.new { accepted = server.accept }
     socket = TCPSocket.new(
       "localhost",
       port,
@@ -241,7 +242,8 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
     )
     assert_predicate(socket, :nonblock?)
   ensure
-    server_thread&.value&.close
+    stop_accept_thread(server_thread, socket)
+    accepted&.close
     server&.close
     socket&.close
   end
