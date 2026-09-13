@@ -5281,8 +5281,9 @@ gc_sweep_step(rb_objspace_t *objspace, rb_heap_t *heap)
 
         heap->sweeping_page = ccan_list_next(&heap->pages, sweep_page, page_node);
 
-        if (free_slots == sweep_page->total_slots) {
-            /* There are no living objects, so move this page to the global empty pages. */
+        if (free_slots == sweep_page->total_slots && heap->total_pages > 1) {
+            /* There are no living objects, so move this page to the global empty pages.
+             * The last one stays: nothing grows a heap that has no pages at all. */
             heap_unlink_page(objspace, heap, sweep_page);
 
             sweep_page->start = 0;
