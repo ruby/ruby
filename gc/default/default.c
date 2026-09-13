@@ -10184,17 +10184,51 @@ rb_gc_impl_gc_count(void *objspace_ptr)
     return objspace->profile.count;
 }
 
+/* Filled by setup_gc_latest_gc_info_symbols() at boot, not on first use. */
+static VALUE sym_major_by, sym_gc_by, sym_immediate_sweep, sym_have_finalizer, sym_state, sym_need_major_by;
+static VALUE sym_nofree, sym_oldgen, sym_shady, sym_force, sym_stress;
+#if RGENGC_ESTIMATE_OLDMALLOC
+static VALUE sym_oldmalloc;
+#endif
+static VALUE sym_newobj, sym_malloc, sym_method, sym_capi;
+static VALUE sym_none, sym_marking, sym_sweeping;
+static VALUE sym_weak_references_count;
+
+static void
+setup_gc_latest_gc_info_symbols(void)
+{
+#define S(s) sym_##s = ID2SYM(rb_intern_const(#s))
+    S(major_by);
+    S(gc_by);
+    S(immediate_sweep);
+    S(have_finalizer);
+    S(state);
+    S(need_major_by);
+
+    S(stress);
+    S(nofree);
+    S(oldgen);
+    S(shady);
+    S(force);
+#if RGENGC_ESTIMATE_OLDMALLOC
+    S(oldmalloc);
+#endif
+    S(newobj);
+    S(malloc);
+    S(method);
+    S(capi);
+
+    S(none);
+    S(marking);
+    S(sweeping);
+
+    S(weak_references_count);
+#undef S
+}
+
 static VALUE
 gc_info_decode(rb_objspace_t *objspace, const VALUE hash_or_key, const unsigned int orig_flags)
 {
-    static VALUE sym_major_by = Qnil, sym_gc_by, sym_immediate_sweep, sym_have_finalizer, sym_state, sym_need_major_by;
-    static VALUE sym_nofree, sym_oldgen, sym_shady, sym_force, sym_stress;
-#if RGENGC_ESTIMATE_OLDMALLOC
-    static VALUE sym_oldmalloc;
-#endif
-    static VALUE sym_newobj, sym_malloc, sym_method, sym_capi;
-    static VALUE sym_none, sym_marking, sym_sweeping;
-    static VALUE sym_weak_references_count;
     VALUE hash = Qnil, key = Qnil;
     VALUE major_by, need_major_by;
     unsigned int flags = orig_flags ? orig_flags : objspace->profile.latest_gc_info;
@@ -10207,36 +10241,6 @@ gc_info_decode(rb_objspace_t *objspace, const VALUE hash_or_key, const unsigned 
     }
     else {
         rb_bug("gc_info_decode: non-hash or symbol given");
-    }
-
-    if (NIL_P(sym_major_by)) {
-#define S(s) sym_##s = ID2SYM(rb_intern_const(#s))
-        S(major_by);
-        S(gc_by);
-        S(immediate_sweep);
-        S(have_finalizer);
-        S(state);
-        S(need_major_by);
-
-        S(stress);
-        S(nofree);
-        S(oldgen);
-        S(shady);
-        S(force);
-#if RGENGC_ESTIMATE_OLDMALLOC
-        S(oldmalloc);
-#endif
-        S(newobj);
-        S(malloc);
-        S(method);
-        S(capi);
-
-        S(none);
-        S(marking);
-        S(sweeping);
-
-        S(weak_references_count);
-#undef S
     }
 
 #define SET(name, attr) \
@@ -10362,56 +10366,54 @@ static VALUE gc_stat_symbols[gc_stat_sym_last];
 static void
 setup_gc_stat_symbols(void)
 {
-    if (gc_stat_symbols[0] == 0) {
 #define S(s) gc_stat_symbols[gc_stat_sym_##s] = ID2SYM(rb_intern_const(#s))
-        S(count);
-        S(time);
-        S(marking_time),
-        S(sweeping_time),
-        S(heap_allocated_pages);
-        S(heap_empty_pages);
-        S(heap_allocatable_bytes);
-        S(heap_available_slots);
-        S(heap_live_slots);
-        S(heap_free_slots);
-        S(heap_final_slots);
-        S(heap_marked_slots);
-        S(heap_eden_pages);
-        S(total_allocated_pages);
-        S(total_freed_pages);
-        S(total_allocated_objects);
-        S(total_freed_objects);
-        S(total_malloc_bytes);
-        S(total_free_bytes);
-        S(malloc_increase_bytes);
-        S(malloc_increase_bytes_limit);
-        S(minor_gc_count);
-        S(major_gc_count);
-        S(compact_count);
-        S(read_barrier_faults);
-        S(total_moved_objects);
-        S(remembered_wb_unprotected_objects);
-        S(remembered_wb_unprotected_objects_limit);
-        S(old_objects);
-        S(old_objects_limit);
+    S(count);
+    S(time);
+    S(marking_time),
+    S(sweeping_time),
+    S(heap_allocated_pages);
+    S(heap_empty_pages);
+    S(heap_allocatable_bytes);
+    S(heap_available_slots);
+    S(heap_live_slots);
+    S(heap_free_slots);
+    S(heap_final_slots);
+    S(heap_marked_slots);
+    S(heap_eden_pages);
+    S(total_allocated_pages);
+    S(total_freed_pages);
+    S(total_allocated_objects);
+    S(total_freed_objects);
+    S(total_malloc_bytes);
+    S(total_free_bytes);
+    S(malloc_increase_bytes);
+    S(malloc_increase_bytes_limit);
+    S(minor_gc_count);
+    S(major_gc_count);
+    S(compact_count);
+    S(read_barrier_faults);
+    S(total_moved_objects);
+    S(remembered_wb_unprotected_objects);
+    S(remembered_wb_unprotected_objects_limit);
+    S(old_objects);
+    S(old_objects_limit);
 #if RGENGC_ESTIMATE_OLDMALLOC
-        S(oldmalloc_increase_bytes);
-        S(oldmalloc_increase_bytes_limit);
+    S(oldmalloc_increase_bytes);
+    S(oldmalloc_increase_bytes_limit);
 #endif
 #if RGENGC_PROFILE
-        S(total_generated_normal_object_count);
-        S(total_generated_shady_object_count);
-        S(total_shade_operation_count);
-        S(total_promoted_count);
-        S(total_remembered_normal_object_count);
-        S(total_remembered_shady_object_count);
+    S(total_generated_normal_object_count);
+    S(total_generated_shady_object_count);
+    S(total_shade_operation_count);
+    S(total_promoted_count);
+    S(total_remembered_normal_object_count);
+    S(total_remembered_shady_object_count);
 #endif /* RGENGC_PROFILE */
-        S(page_pool_arenas);
-        S(page_pool_arenas_freed);
-        S(page_pool_total_pages);
-        S(page_pool_discarded_pages);
+    S(page_pool_arenas);
+    S(page_pool_arenas_freed);
+    S(page_pool_total_pages);
+    S(page_pool_discarded_pages);
 #undef S
-    }
 }
 
 static uint64_t
@@ -10427,8 +10429,6 @@ rb_gc_impl_stat(void *objspace_ptr, VALUE hash_or_sym)
 {
     rb_objspace_t *objspace = objspace_ptr;
     VALUE hash = Qnil, key = Qnil;
-
-    setup_gc_stat_symbols();
 
     malloc_increase_local_flush(objspace);
 
@@ -10552,22 +10552,20 @@ static VALUE gc_stat_heap_symbols[gc_stat_heap_sym_last];
 static void
 setup_gc_stat_heap_symbols(void)
 {
-    if (gc_stat_heap_symbols[0] == 0) {
 #define S(s) gc_stat_heap_symbols[gc_stat_heap_sym_##s] = ID2SYM(rb_intern_const(#s))
-        S(slot_size);
-        S(heap_live_slots);
-        S(heap_free_slots);
-        S(heap_final_slots);
-        S(heap_eden_pages);
-        S(heap_eden_slots);
-        S(heap_allocatable_slots);
-        S(total_allocated_pages);
-        S(force_major_gc_count);
-        S(force_incremental_marking_finish_count);
-        S(total_allocated_objects);
-        S(total_freed_objects);
+    S(slot_size);
+    S(heap_live_slots);
+    S(heap_free_slots);
+    S(heap_final_slots);
+    S(heap_eden_pages);
+    S(heap_eden_slots);
+    S(heap_allocatable_slots);
+    S(total_allocated_pages);
+    S(force_major_gc_count);
+    S(force_incremental_marking_finish_count);
+    S(total_allocated_objects);
+    S(total_freed_objects);
 #undef S
-    }
 }
 
 static VALUE
@@ -10605,8 +10603,6 @@ VALUE
 rb_gc_impl_stat_heap(void *objspace_ptr, VALUE heap_name, VALUE hash_or_sym)
 {
     rb_objspace_t *objspace = objspace_ptr;
-
-    setup_gc_stat_heap_symbols();
 
     if (NIL_P(heap_name)) {
         if (!RB_TYPE_P(hash_or_sym, T_HASH)) {
@@ -12721,6 +12717,13 @@ rb_gc_impl_objspace_init(void *objspace_ptr)
 void
 rb_gc_impl_init(void)
 {
+    /* Fill the symbol tables here, where no other ractor exists yet: they used to
+     * be filled on first use, guarded by their own first element, so a second
+     * ractor could see a half-filled table and GC.stat raised on the rest. */
+    setup_gc_stat_symbols();
+    setup_gc_stat_heap_symbols();
+    setup_gc_latest_gc_info_symbols();
+
     VALUE gc_constants = rb_hash_new();
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("DEBUG")), GC_DEBUG ? Qtrue : Qfalse);
     /* Minimum slot size that fits a standard RVALUE */
