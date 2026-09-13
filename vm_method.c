@@ -2981,6 +2981,28 @@ rb_alias(VALUE klass, ID alias_name, ID original_name)
 
     if (visi == METHOD_VISI_UNDEF) visi = METHOD_ENTRY_VISI(orig_me);
 
+    if (!NIL_P(ruby_verbose) && rb_warning_category_enabled_p(RB_WARN_CATEGORY_DEPRECATED)) {
+        VALUE owner_class = orig_me->defined_class ? orig_me->defined_class : defined_class;
+        VALUE origin = RCLASS_ORIGIN(target_klass);
+        bool in_prepended_module = false;
+
+        if (origin != target_klass) {
+            for (VALUE p = RCLASS_SUPER(target_klass); !in_prepended_module && p && p != origin; p = RCLASS_SUPER(p)) {
+                if (p == owner_class) {
+                    in_prepended_module = true;
+                }
+            }
+        }
+
+        if (in_prepended_module) {
+            rb_warn_deprecated_to_remove_at(4.3,
+                "aliasing %"PRIsVALUE"#%"PRIsVALUE" defined in a prepended module %"PRIsVALUE,
+                NULL,
+                rb_class_path(target_klass), QUOTE_ID(original_name),
+                rb_class_path(orig_me->owner));
+        }
+    }
+
     if (orig_me->defined_class == 0) {
         struct method_entry_warnings warnings = {0};
         const rb_method_entry_t *alias_me =
