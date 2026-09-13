@@ -496,56 +496,6 @@ cancel_getaddrinfo(void *ptr)
     rb_nativethread_lock_unlock(&arg->lock);
 }
 
-int
-raddrinfo_pthread_create(pthread_t *th, void *(*start_routine) (void *), void *arg)
-{
-    int limit = 3, ret;
-    int saved_errno;
-#ifdef HAVE_PTHREAD_ATTR_SETDETACHSTATE
-    pthread_attr_t attr;
-    pthread_attr_t *attr_p = &attr;
-    int err;
-    int init_retries = 0;
-    int init_retries_max = 3;
-retry_attr_init:
-    if ((err = pthread_attr_init(attr_p)) != 0) {
-        if (err == ENOMEM && init_retries < init_retries_max) {
-            init_retries++;
-            rb_gc();
-            goto retry_attr_init;
-        }
-        return err;
-    }
-    if ((err = pthread_attr_setdetachstate(attr_p, PTHREAD_CREATE_DETACHED)) != 0) {
-        saved_errno = errno;
-        pthread_attr_destroy(attr_p);
-        errno = saved_errno;
-        return err; // EINVAL - shouldn't happen
-    }
-#else
-    pthread_attr_t *attr_p = NULL;
-#endif
-    do {
-        // It is said that pthread_create may fail spuriously, so we follow the JDK and retry several times.
-        //
-        // https://bugs.openjdk.org/browse/JDK-8268605
-        // https://github.com/openjdk/jdk/commit/e35005d5ce383ddd108096a3079b17cb0bcf76f1
-        ret = pthread_create(th, attr_p, start_routine, arg);
-    } while (ret == EAGAIN && limit-- > 0);
-#ifdef HAVE_PTHREAD_ATTR_SETDETACHSTATE
-    saved_errno = errno;
-    pthread_attr_destroy(attr_p);
-    if (ret != 0) {
-        errno = saved_errno;
-    }
-#else
-    if (ret == 0) {
-        pthread_detach(th); // this can race with shutdown routine of thread in some glibc versions
-    }
-#endif
-    return ret;
-}
-
 static void *
 fork_safe_do_getaddrinfo(void *ptr)
 {
@@ -567,8 +517,7 @@ start:
         return EAI_MEMORY;
     }
 
-    pthread_t th;
-    if (raddrinfo_pthread_create(&th, fork_safe_do_getaddrinfo, arg) != 0) {
+    if (raddrinfo_thread_create(fork_safe_do_getaddrinfo, arg) != 0) {
         int err = errno;
         free_getaddrinfo_arg(arg);
         errno = err;
@@ -806,8 +755,7 @@ start:
         return EAI_MEMORY;
     }
 
-    pthread_t th;
-    if (raddrinfo_pthread_create(&th, do_getnameinfo, arg) != 0) {
+    if (raddrinfo_thread_create(do_getnameinfo, arg) != 0) {
         int err = errno;
         free_getnameinfo_arg(arg);
         errno = err;
@@ -850,6 +798,105 @@ start:
     if (gni_errno) errno = gni_errno;
     return err;
 }
+
+#endif
+
+#if GETADDRINFO_IMPL == 2 || FAST_FALLBACK_INIT_INETSOCK_IMPL == 1
+
+#ifdef _WIN32
+
+struct raddrinfo_thread_arg
+{
+    void *(*start_routine)(void *);
+    void *arg;
+};
+
+static unsigned __stdcall
+raddrinfo_thread_start(void *ptr)
+{
+    struct raddrinfo_thread_arg *th_arg = ptr;
+    void *(*start_routine)(void *) = th_arg->start_routine;
+    void *arg = th_arg->arg;
+
+    free(th_arg);
+    start_routine(arg);
+    return 0;
+}
+
+int
+raddrinfo_thread_create(void *(*start_routine) (void *), void *arg)
+{
+    struct raddrinfo_thread_arg *th_arg = malloc(sizeof(struct raddrinfo_thread_arg));
+    if (!th_arg) return ENOMEM;
+    th_arg->start_routine = start_routine;
+    th_arg->arg = arg;
+
+    // _beginthreadex(3), not CreateThread, because the thread calls the CRT.
+    uintptr_t th = _beginthreadex(NULL, 0, raddrinfo_thread_start, th_arg, 0, NULL);
+    if (!th) {
+        int err = errno;
+        free(th_arg);
+        return err;
+    }
+    // Nobody joins the thread, so drop the handle and let the system reap it.
+    CloseHandle((HANDLE)th);
+    return 0;
+}
+
+#else
+
+int
+raddrinfo_thread_create(void *(*start_routine) (void *), void *arg)
+{
+    int limit = 3, ret;
+    int saved_errno;
+    pthread_t th;
+#ifdef HAVE_PTHREAD_ATTR_SETDETACHSTATE
+    pthread_attr_t attr;
+    pthread_attr_t *attr_p = &attr;
+    int err;
+    int init_retries = 0;
+    int init_retries_max = 3;
+retry_attr_init:
+    if ((err = pthread_attr_init(attr_p)) != 0) {
+        if (err == ENOMEM && init_retries < init_retries_max) {
+            init_retries++;
+            rb_gc();
+            goto retry_attr_init;
+        }
+        return err;
+    }
+    if ((err = pthread_attr_setdetachstate(attr_p, PTHREAD_CREATE_DETACHED)) != 0) {
+        saved_errno = errno;
+        pthread_attr_destroy(attr_p);
+        errno = saved_errno;
+        return err; // EINVAL - shouldn't happen
+    }
+#else
+    pthread_attr_t *attr_p = NULL;
+#endif
+    do {
+        // It is said that pthread_create may fail spuriously, so we follow the JDK and retry several times.
+        //
+        // https://bugs.openjdk.org/browse/JDK-8268605
+        // https://github.com/openjdk/jdk/commit/e35005d5ce383ddd108096a3079b17cb0bcf76f1
+        ret = pthread_create(&th, attr_p, start_routine, arg);
+    } while (ret == EAGAIN && limit-- > 0);
+#ifdef HAVE_PTHREAD_ATTR_SETDETACHSTATE
+    saved_errno = errno;
+    pthread_attr_destroy(attr_p);
+    if (ret != 0) {
+        errno = saved_errno;
+    }
+#else
+    if (ret == 0) {
+        pthread_detach(th); // this can race with shutdown routine of thread in some glibc versions
+    }
+#endif
+    return ret;
+}
+
+#endif
 
 #endif
 
@@ -3128,10 +3175,12 @@ do_fast_fallback_getaddrinfo(void *ptr)
     int err = 0, shared_need_free = 0;
     struct addrinfo *ai = NULL;
 
+#ifndef _WIN32
     sigset_t set;
     sigemptyset(&set);
     sigaddset(&set, SIGPIPE);
     pthread_sigmask(SIG_BLOCK, &set, NULL);
+#endif
 
     err = numeric_getaddrinfo(shared->node, shared->service, &entry->hints, &entry->ai);
 
@@ -3148,6 +3197,12 @@ do_fast_fallback_getaddrinfo(void *ptr)
 
     /* for testing HEv2 */
     if (entry->test_sleep_ms > 0) {
+#ifdef _WIN32
+        /* Not Sleep(), which the ruby DLL exports as rb_w32_Sleep().  That
+         * waits through the Ruby thread scheduler, which this thread does
+         * not belong to. */
+        SleepEx((DWORD)entry->test_sleep_ms, FALSE);
+#else
         struct timespec sleep_ts;
         sleep_ts.tv_sec = entry->test_sleep_ms / 1000;
         sleep_ts.tv_nsec = (entry->test_sleep_ms % 1000) * 1000000L;
@@ -3156,6 +3211,7 @@ do_fast_fallback_getaddrinfo(void *ptr)
             sleep_ts.tv_nsec = sleep_ts.tv_nsec % 1000000000L;
         }
         nanosleep(&sleep_ts, NULL);
+#endif
     }
     if (entry->test_ecode != 0) {
         err = entry->test_ecode;
