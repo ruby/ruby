@@ -511,7 +511,12 @@ wait_connectable(VALUE self, VALUE timeout, const struct sockaddr *sockaddr, int
      *
      * Note: rb_wait_for_single_fd already retries on EINTR/ERESTART
      */
-    VALUE result = rb_io_wait(self, RB_INT2NUM(RUBY_IO_READABLE|RUBY_IO_WRITABLE), timeout);
+    int events = RUBY_IO_READABLE|RUBY_IO_WRITABLE;
+#ifdef _WIN32
+    /* Winsock reports a failed connect(2) through the exceptfds alone. [Bug #18661] */
+    events |= RUBY_IO_PRIORITY;
+#endif
+    VALUE result = rb_io_wait(self, RB_INT2NUM(events), timeout);
 
     if (result == Qfalse) {
         VALUE rai = rsock_addrinfo_new((struct sockaddr *)sockaddr, len, PF_UNSPEC, 0, 0, Qnil, Qnil);

@@ -7457,6 +7457,7 @@ rb_w32_read_internal(int fd, void *buf, size_t size, rb_off_t *offset)
         err = GetLastError();
         if (err == ERROR_NO_DATA && (_osfile(fd) & FPIPE)) {
             DWORD state;
+            CloseHandle(ol.hEvent);
             if (GetNamedPipeHandleState((HANDLE)_osfhnd(fd), &state, NULL, NULL, NULL, NULL, 0) && (state & PIPE_NOWAIT)) {
                 errno = EWOULDBLOCK;
             }

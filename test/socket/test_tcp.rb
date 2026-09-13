@@ -3,6 +3,7 @@
 begin
   require "socket"
   require "test/unit"
+  require "io/nonblock"
 rescue LoadError
 end
 
@@ -74,7 +75,7 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   def test_tcp_initialize_open_timeout
-    return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
+    omit_unless_fast_fallback
 
     server = TCPServer.new("127.0.0.1", 0)
     port = server.connect_address.ip_port
@@ -95,6 +96,15 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
     assert_raise(ArgumentError) do
       TCPSocket.new("localhost", 12345, open_timeout: 0.01, resolv_timeout: 0.01)
     end
+  end
+
+  def test_initialize_invalid_open_timeout_keeps_stdin_open
+    assert_separately %w[-rsocket -W1], <<~RUBY
+    assert_raise(ArgumentError) do
+      TCPSocket.new("localhost", 12345, open_timeout: -1, fast_fallback: true)
+    end
+    assert_nothing_raised { STDIN.stat }
+    RUBY
   end
 
   def test_initialize_connect_timeout
@@ -170,7 +180,7 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   def test_initialize_v6_hostname_resolved_earlier
-    return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
+    omit_unless_fast_fallback
 
     begin
       # Verify that "localhost" can be resolved to an IPv6 address
@@ -197,7 +207,7 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   def test_initialize_v4_hostname_resolved_earlier
-    return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
+    omit_unless_fast_fallback
 
     server = TCPServer.new("127.0.0.1", 0)
     port = server.addr[1]
@@ -216,8 +226,30 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
     socket&.close
   end
 
+  def test_initialize_fast_fallback_returns_nonblocking_socket
+    omit "IO#nonblock? is not available on Windows" if RUBY_PLATFORM =~ /mswin|mingw/
+
+    server = TCPServer.new("127.0.0.1", 0)
+    port = server.addr[1]
+
+    accepted = nil
+    server_thread = Thread.new { accepted = server.accept }
+    socket = TCPSocket.new(
+      "localhost",
+      port,
+      fast_fallback: true,
+      test_mode_settings: { delay: { ipv6: 1000 } }
+    )
+    assert_predicate(socket, :nonblock?)
+  ensure
+    stop_accept_thread(server_thread, socket)
+    accepted&.close
+    server&.close
+    socket&.close
+  end
+
   def test_initialize_v6_hostname_resolved_in_resolution_delay
-    return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
+    omit_unless_fast_fallback
 
     begin
       # Verify that "localhost" can be resolved to an IPv6 address
@@ -251,7 +283,7 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   def test_initialize_v6_hostname_resolved_earlier_and_v6_server_is_not_listening
-    return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
+    omit_unless_fast_fallback
 
     ipv4_address = "127.0.0.1"
     server = Socket.new(Socket::AF_INET, :STREAM)
@@ -279,7 +311,7 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   def test_initialize_v6_hostname_resolved_later_and_v6_server_is_not_listening
-    return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
+    omit_unless_fast_fallback
 
     server = Socket.new(Socket::AF_INET, :STREAM)
     server.bind(Socket.pack_sockaddr_in(0, "127.0.0.1"))
@@ -306,7 +338,7 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   def test_initialize_v6_hostname_resolution_failed_and_v4_hostname_resolution_is_success
-    return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
+    omit_unless_fast_fallback
 
     server = TCPServer.new("127.0.0.1", 0)
     port = server.addr[1]
@@ -326,7 +358,12 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   def test_initialize_resolv_timeout_with_connection_failure
-    return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
+    omit_unless_fast_fallback
+    if RUBY_PLATFORM =~ /mswin|cygwin/
+      omit "Windows reports a refused loopback connection two seconds after " \
+           "connect(2), so the IPv6 attempt is still in flight when " \
+           "resolv_timeout expires"
+    end
 
     begin
       server = TCPServer.new("::1", 0)
@@ -349,7 +386,7 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   def test_initialize_with_hostname_resolution_failure_after_connection_failure
-    return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
+    omit_unless_fast_fallback
 
     begin
       server = TCPServer.new("::1", 0)
@@ -371,7 +408,7 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   def test_initialize_with_connection_failure_after_hostname_resolution_failure
-    return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
+    omit_unless_fast_fallback
 
     server = TCPServer.new("127.0.0.1", 0)
     port = server.connect_address.ip_port
@@ -387,9 +424,25 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
     end
   end
 
-  def test_initialize_v6_connected_socket_with_v6_address
-    return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
+  def test_initialize_connect_timeout_with_connection_failure
+    omit "needs a loopback connection refused later than connect_timeout, as on mswin" unless RUBY_PLATFORM =~ /mswin/
 
+    server = TCPServer.new("127.0.0.1", 0)
+    port = server.connect_address.ip_port
+    server.close
+
+    assert_raise(IO::TimeoutError) do
+      TCPSocket.new(
+        "localhost",
+        port,
+        connect_timeout: 0.1,
+        fast_fallback: true,
+        test_mode_settings: { delay: { ipv4: 100 }, error: { ipv6: Socket::EAI_FAIL } }
+      )
+    end
+  end
+
+  def test_initialize_v6_connected_socket_with_v6_address
     begin
       server = TCPServer.new("::1", 0)
     rescue Errno::EADDRNOTAVAIL # IPv6 is not supported
@@ -408,8 +461,6 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   def test_initialize_v4_connected_socket_with_v4_address
-    return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
-
     server = TCPServer.new("127.0.0.1", 0)
     server_thread = Thread.new { server.accept }
     port = server.addr[1]
@@ -423,8 +474,6 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   def test_initialize_fast_fallback_is_false
-    return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
-
     server = TCPServer.new("127.0.0.1", 0)
     _, port, = server.addr
     server_thread = Thread.new { server.accept }
@@ -438,6 +487,10 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
   end
 
   private
+
+  def omit_unless_fast_fallback
+    omit "TCPSocket.new does not provide Happy Eyeballs Version 2 on MinGW" if RUBY_PLATFORM =~ /mingw/
+  end
 
   # On success, wait for the accept thread to finish. If the test failed
   # before the client connected, `server.accept` never returns, so kill

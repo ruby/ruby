@@ -307,17 +307,25 @@ Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for det
 
 * Socket
 
+    * `TCPSocket.new` now connects through Happy Eyeballs Version 2 on
+      mswin as well, so a host that answers with both an IPv6 and an IPv4
+      address no longer waits for the IPv6 attempt to time out. When it
+      resolves the IPv6 and IPv4 addresses in parallel, the hostname
+      resolution, which used to ignore `resolv_timeout` and `open_timeout`
+      there, now raises `IO::TimeoutError` once the timeout expires. Its
+      connection attempts do the same for `connect_timeout` and
+      `open_timeout` instead of waiting for Winsock to give up.
+
     * On Windows, a connection that is refused or unreachable now raises the
       matching `Errno` class as soon as Winsock reports it, instead of
       `Errno::ETIMEDOUT` once the whole `connect_timeout` has passed. Code
       rescuing `Errno::ETIMEDOUT` there has to rescue the real error instead.
+      [[Bug #18661]]
 
     * On Windows, `BasicSocket#getsockopt(:SOCKET, :ERROR)` now reports an
       errno as it does on the other platforms, instead of the raw WinSock
       error code. Code comparing it with a `WSAE*` value has to compare it
-      with the matching `Errno::*::Errno` instead.
-
-    [[Bug #18661]]
+      with the matching `Errno::*::Errno` instead. [[Bug #18661]]
 
 ## C API updates
 

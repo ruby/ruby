@@ -416,9 +416,12 @@ void rsock_discard_cmsg_resource(struct msghdr *mh, int msg_peek_p);
 
 char *raddrinfo_host_str(VALUE host, char *hbuf, size_t hbuflen, int *flags_ptr);
 char *raddrinfo_port_str(VALUE port, char *pbuf, size_t pbuflen, int *flags_ptr);
+int raddrinfo_thread_create(void *(*start_routine) (void *), void *arg);
 
 #ifndef FAST_FALLBACK_INIT_INETSOCK_IMPL
-#  if !defined(HAVE_PTHREAD_CREATE) || !defined(HAVE_PTHREAD_DETACH) || defined(__MINGW32__) || defined(__MINGW64__)
+   /* _WIN32 spawns the resolution threads with _beginthreadex(3) instead. */
+#  if (!defined(_WIN32) && (!defined(HAVE_PTHREAD_CREATE) || !defined(HAVE_PTHREAD_DETACH))) || \
+      defined(__MINGW32__) || defined(__MINGW64__)
 #    define FAST_FALLBACK_INIT_INETSOCK_IMPL 0
 #  else
 #    include "ruby/thread_native.h"
@@ -446,7 +449,6 @@ struct fast_fallback_getaddrinfo_shared
     struct fast_fallback_getaddrinfo_entry getaddrinfo_entries[FLEX_ARY_LEN];
 };
 
-int raddrinfo_pthread_create(pthread_t *th, void *(*start_routine) (void *), void *arg);
 void *fork_safe_do_fast_fallback_getaddrinfo(void *ptr);
 void free_fast_fallback_getaddrinfo_entry(struct fast_fallback_getaddrinfo_entry **entry);
 void free_fast_fallback_getaddrinfo_shared(struct fast_fallback_getaddrinfo_shared **shared);
