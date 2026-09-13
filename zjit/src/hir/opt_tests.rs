@@ -4851,8 +4851,8 @@ mod hir_opt_tests {
           PushInlineFrame :foo, v24 (0x1038), num_args=1
           PatchPoint NoSingletonClass(Array@0x1058)
           PatchPoint MethodRedefined(Array@0x1058, length@0x1060, cme:0x1068)
-          v49:CInt64 = ArrayLength v25
-          v50:Fixnum = BoxFixnum v49
+          v51:CInt64[3] = Const CInt64(3)
+          v50:Fixnum = BoxFixnum v51
           CheckInterrupts
           PopInlineFrame
           Return v50
@@ -4891,8 +4891,8 @@ mod hir_opt_tests {
           PushInlineFrame :foo, v32 (0x1038), num_args=1
           PatchPoint NoSingletonClass(Array@0x1058)
           PatchPoint MethodRedefined(Array@0x1058, length@0x1060, cme:0x1068)
-          v57:CInt64 = ArrayLength v33
-          v58:Fixnum = BoxFixnum v57
+          v59:CInt64[7] = Const CInt64(7)
+          v58:Fixnum = BoxFixnum v59
           CheckInterrupts
           PopInlineFrame
           Return v58
@@ -4927,8 +4927,8 @@ mod hir_opt_tests {
           PushInlineFrame :foo, v24 (0x1038), num_args=1
           PatchPoint NoSingletonClass(Array@0x1058)
           PatchPoint MethodRedefined(Array@0x1058, length@0x1060, cme:0x1068)
-          v55:CInt64 = ArrayLength v25
-          v56:Fixnum = BoxFixnum v55
+          v57:CInt64[3] = Const CInt64(3)
+          v56:Fixnum = BoxFixnum v57
           v38:CPtr = GetEP 0
           v39:CInt64 = LoadField v38, :VM_ENV_DATA_INDEX_SPECVAL@0x1090
           v40:CInt64[-4] = Const CInt64(-4)
@@ -5020,8 +5020,8 @@ mod hir_opt_tests {
           PushInlineFrame :foo, v26 (0x1038), num_args=3
           PatchPoint NoSingletonClass(Array@0x1058)
           PatchPoint MethodRedefined(Array@0x1058, length@0x1060, cme:0x1068)
-          v61:CInt64 = ArrayLength v27
-          v62:Fixnum = BoxFixnum v61
+          v71:CInt64[2] = Const CInt64(2)
+          v62:Fixnum = BoxFixnum v71
           PatchPoint MethodRedefined(Integer@0x1090, +@0x1098, cme:0x10a0)
           v66:Fixnum = FixnumAdd v62, v11
           v70:Fixnum = FixnumAdd v66, v17
@@ -5060,8 +5060,8 @@ mod hir_opt_tests {
           PushInlineFrame :foo, v24 (0x1038), num_args=2
           PatchPoint NoSingletonClass(Array@0x1058)
           PatchPoint MethodRedefined(Array@0x1058, length@0x1060, cme:0x1068)
-          v56:CInt64 = ArrayLength v25
-          v57:Fixnum = BoxFixnum v56
+          v62:CInt64[2] = Const CInt64(2)
+          v57:Fixnum = BoxFixnum v62
           PatchPoint MethodRedefined(Integer@0x1090, +@0x1098, cme:0x10a0)
           v61:Fixnum = FixnumAdd v57, v15
           CheckInterrupts
@@ -5099,8 +5099,8 @@ mod hir_opt_tests {
           PushInlineFrame :foo, v22 (0x1038), num_args=2
           PatchPoint NoSingletonClass(Array@0x1058)
           PatchPoint MethodRedefined(Array@0x1058, length@0x1060, cme:0x1068)
-          v55:CInt64 = ArrayLength v23
-          v56:Fixnum = BoxFixnum v55
+          v61:CInt64[2] = Const CInt64(2)
+          v56:Fixnum = BoxFixnum v61
           PatchPoint MethodRedefined(Integer@0x1090, +@0x1098, cme:0x10a0)
           v60:Fixnum = FixnumAdd v56, v24
           CheckInterrupts
@@ -6728,8 +6728,8 @@ mod hir_opt_tests {
           v19:ArrayExact = NewArray v12, v13
           PatchPoint NoSingletonClass(Array@0x1008)
           PatchPoint MethodRedefined(Array@0x1008, length@0x1010, cme:0x1018)
-          v31:CInt64 = ArrayLength v19
-          v32:Fixnum = BoxFixnum v31
+          v33:CInt64[2] = Const CInt64(2)
+          v32:Fixnum = BoxFixnum v33
           CheckInterrupts
           Return v32
         ");
@@ -6759,8 +6759,8 @@ mod hir_opt_tests {
           v19:ArrayExact = NewArray v12, v13
           PatchPoint NoSingletonClass(Array@0x1008)
           PatchPoint MethodRedefined(Array@0x1008, size@0x1010, cme:0x1018)
-          v31:CInt64 = ArrayLength v19
-          v32:Fixnum = BoxFixnum v31
+          v33:CInt64[2] = Const CInt64(2)
+          v32:Fixnum = BoxFixnum v33
           CheckInterrupts
           Return v32
         ");
@@ -12296,10 +12296,8 @@ mod hir_opt_tests {
           v19:Fixnum[0] = Const Value(0)
           PatchPoint NoSingletonClass(Array@0x1008)
           PatchPoint MethodRedefined(Array@0x1008, []@0x1010, cme:0x1018)
-          v39:CInt64[0] = Const CInt64(0)
-          v32:CInt64 = ArrayLength v14
-          v33:CInt64[0] = GuardLess v39, v32
-          v37:BasicObject = ArrayAref v14, v33
+          v40:CInt64[0] = Const CInt64(0)
+          v37:BasicObject = ArrayAref v14, v40
           CheckInterrupts
           Return v37
         ");
@@ -15303,8 +15301,8 @@ mod hir_opt_tests {
           PushInlineFrame :foo, v29 (0x1040), num_args=1
           PatchPoint NoSingletonClass(Array@0x1060)
           PatchPoint MethodRedefined(Array@0x1060, length@0x1068, cme:0x1070)
-          v68:CInt64 = ArrayLength v44
-          v69:Fixnum = BoxFixnum v68
+          v70:CInt64[7] = Const CInt64(7)
+          v69:Fixnum = BoxFixnum v70
           CheckInterrupts
           PopInlineFrame
           Return v69
@@ -15439,8 +15437,8 @@ mod hir_opt_tests {
           PushInlineFrame :foo, v31 (0x1040), num_args=1
           PatchPoint NoSingletonClass(Array@0x1060)
           PatchPoint MethodRedefined(Array@0x1060, length@0x1068, cme:0x1070)
-          v68:CInt64 = ArrayLength v38
-          v69:Fixnum = BoxFixnum v68
+          v70:CInt64[3] = Const CInt64(3)
+          v69:Fixnum = BoxFixnum v70
           v51:CPtr = GetEP 0
           v52:CInt64 = LoadField v51, :VM_ENV_DATA_INDEX_SPECVAL@0x1098
           v53:CInt64[-4] = Const CInt64(-4)
