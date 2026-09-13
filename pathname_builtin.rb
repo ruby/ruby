@@ -1547,7 +1547,21 @@ class Pathname    # * File *
   #
   #  When supported: like Pathname#chmod,
   #  but does not follow [symbolic links](rdoc-ref:file/symbolic_links.md),
-  #  and therefore changes the mode of the entry specified by `self`.
+  #  and therefore changes the mode of the entry specified by `self`:
+  #
+  #  ```ruby
+  #  file = Pathname('t.tmp')
+  #  file.write('')
+  #  File.symlink('t.tmp', 'link')
+  #  symlink = Pathname('link')
+  #  file.lstat.mode.to_s(8) # => "100644"
+  #  symlink.lstat.mode.to_s(8) # => "120755"
+  #  symlink.lchmod(0777)
+  #  file.lstat.mode.to_s(8) # => "100644"
+  #  symlink.lstat.mode.to_s(8) # => "120777"
+  #  file.delete
+  #  symlink.delete
+  #  ````
   def lchmod(mode) File.lchmod(mode, @path) end
 
   # :markup: markdown
