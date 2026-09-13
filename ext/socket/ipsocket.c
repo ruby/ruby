@@ -688,16 +688,13 @@ init_fast_fallback_inetsock_internal(VALUE v)
             arg->getaddrinfo_entries[i] = &arg->getaddrinfo_shared->getaddrinfo_entries[i];
             arg->getaddrinfo_entries[i]->shared = arg->getaddrinfo_shared;
 
-            struct addrinfo getaddrinfo_hints[arg->family_size];
-
             init_fast_fallback_getaddrinfo_hints(
-                &getaddrinfo_hints[i],
+                &arg->getaddrinfo_entries[i]->hints,
                 arg->families[i],
                 remote_addrinfo_hints,
                 arg->additional_flags
             );
 
-            arg->getaddrinfo_entries[i]->hints = getaddrinfo_hints[i];
             arg->getaddrinfo_entries[i]->ai = NULL;
             arg->getaddrinfo_entries[i]->family = arg->families[i];
             arg->getaddrinfo_entries[i]->refcount = 2;
@@ -1274,7 +1271,7 @@ fast_fallback_inetsock_cleanup(VALUE v)
 
     if (getaddrinfo_shared) {
         int shared_need_free = 0;
-        struct addrinfo *ais[arg->family_size];
+        struct addrinfo *ais[numberof(arg->getaddrinfo_entries)];
         for (int i = 0; i < arg->family_size; i++) ais[i] = NULL;
 
         rb_nativethread_lock_lock(&getaddrinfo_shared->lock);
@@ -1406,7 +1403,7 @@ rsock_init_inetsock(
             fast_fallback_arg.portp = portp;
             fast_fallback_arg.additional_flags = additional_flags;
 
-            int resolving_families[resolving_family_size];
+            int resolving_families[numberof(target_families)];
             int resolving_family_index = 0;
             for (int i = 0; 2 > i; i++) {
                 if (target_families[i] != 0) {
