@@ -8962,6 +8962,11 @@ fn add_iseq_to_hir(
             state.pc = pc;
             let exit_state = state.clone();
 
+            let add_line_numbers = get_option!(dump_hir_map);
+            if add_line_numbers {
+                hir_comment!(fun, block, "{}", iseq_get_location(iseq, insn_idx));
+            }
+
             // Strip any ZJIT profiling instrumentation so we read the ISEQ's original opcodes,
             // leaving trace variants intact for the handling below.
             // try_into() call below is unfortunate. Maybe pick i32 instead of usize for opcodes.
