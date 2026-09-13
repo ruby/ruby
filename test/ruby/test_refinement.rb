@@ -1035,24 +1035,35 @@ class TestRefinement < Test::Unit::TestCase
     RUBY
   end
 
-  def test_prohibit_super_in_refined_module_method
+  def test_super_in_refined_module_method
     assert_separately([], <<-"end;")
-      bug22071 = '[ruby-core:125511] [Bug #22071]'
       class BasicObject
-        def a; "B" end
+        def a
+          raise 'defined?(super) true, should be false' if defined?(super)
+          "B"
+        end
       end
 
       module G
-        def a; "G" + super end
+        def a
+          raise 'defined?(super) false, should be true' unless defined?(super)
+          "G" + super
+        end
       end
 
       module F
         include G
-        def a; "F" + super end
+        def a
+          raise 'defined?(super) false, should be true' unless defined?(super)
+          "F" + super
+        end
       end
 
       class A
-        def a; "A" + super end
+        def a
+          raise 'defined?(super) false, should be true' unless defined?(super)
+          "A" + super
+        end
       end
 
       class B < A
@@ -1061,14 +1072,874 @@ class TestRefinement < Test::Unit::TestCase
 
       module R
        refine F do
-         def a; "R"+super end
+         def a
+          raise 'defined?(super) false, should be true' unless defined?(super)
+           "R"+super
+         end
        end
       end
       using R
 
-      msg = "super in a method in a module that has been refined and that is called via super" +
-        " from a refinement method is not supported."
-      assert_raise(NoMethodError, msg, bug22071) { B.new.a }
+      assert_equal("RFGAB", B.new.a)
+
+      super_method = ->(m) do
+        sm = m.super_method
+        assert_equal(m.unbind.super_method, sm.unbind) if m.is_a?(Method)
+        sm
+      end
+      [B.new.method(:a), B.instance_method(:a)].each do |m|
+        assert_equal(F, m.owner.target)
+        m = super_method.(m)
+        assert_equal(F, m.owner)
+        m = super_method.(m)
+        assert_equal(G, m.owner)
+        m = super_method.(m)
+        assert_equal(A, m.owner)
+        m = super_method.(m)
+        assert_equal(BasicObject, m.owner)
+        assert_nil(m.super_method)
+      end
+    end;
+  end
+
+  def test_super_in_refined_prepended_module_method
+    assert_separately([], <<-"end;")
+      module M
+        def m
+          raise 'defined?(super) false, should be true' unless defined?(super)
+          [:M, *super]
+        end
+      end
+
+      class C
+        prepend M
+        def m
+          raise 'defined?(super) true, should be false' if defined?(super)
+          :C
+        end
+      end
+
+      module R
+        refine M do
+          def m
+            raise 'defined?(super) false, should be true' unless defined?(super)
+            [:R, *super]
+          end
+        end
+      end
+      using R
+
+      assert_equal([:R, :M, :C], C.new.m)
+
+      super_method = ->(m) do
+        sm = m.super_method
+        assert_equal(m.unbind.super_method, sm.unbind) if m.is_a?(Method)
+        sm
+      end
+      [C.new.method(:m), C.instance_method(:m)].each do |m|
+        assert_equal(M, m.owner.target)
+        m = super_method.(m)
+        assert_equal(M, m.owner)
+        m = super_method.(m)
+        assert_equal(C, m.owner)
+        assert_nil(m.super_method)
+      end
+    end;
+  end
+
+  def test_super_in_refined_prepended_module_method_called_by_other_method_same_object
+    assert_separately([], <<-"end;")
+      module M
+        def m
+          raise 'defined?(super) false, should be true' unless defined?(super)
+          [:M, *super]
+        end
+      end
+
+      module N
+        include M
+      end
+
+      class C
+        def m
+          raise 'defined?(super) true, should be false' if defined?(super)
+          :C
+        end
+      end
+
+      class SC < C
+        include N
+        prepend M
+        def m
+          raise 'defined?(super) false, should be true' unless defined?(super)
+          [:SC, *super]
+        end
+      end
+
+      module R
+        refine M do
+          def m
+            raise 'defined?(super) false, should be true' unless defined?(super)
+            [:R, *super]
+          end
+        end
+      end
+      using R
+
+      module N
+        def n
+          m
+        end
+      end
+
+      assert_equal([:R, :M, :SC, :M, :C], SC.new.n)
+
+      super_method = ->(m) do
+        sm = m.super_method
+        assert_equal(m.unbind.super_method, sm.unbind) if m.is_a?(Method)
+        sm
+      end
+      [SC.new.method(:m), SC.instance_method(:m)].each do |m|
+        assert_equal(M, m.owner.target)
+        m = super_method.(m)
+        assert_equal(M, m.owner)
+        m = super_method.(m)
+        assert_equal(SC, m.owner)
+        m = super_method.(m)
+        assert_equal(M, m.owner)
+        m = super_method.(m)
+        assert_equal(C, m.owner)
+        assert_nil(m.super_method)
+      end
+    end;
+  end
+
+  def test_super_in_refined_prepended_module_method_with_aliases
+    assert_separately([], <<-"end;")
+      module M
+        def m
+          raise 'defined?(super) false, should be true' unless defined?(super)
+          [:Mm, *super]
+        end
+        def n
+          raise 'defined?(super) false, should be true' unless defined?(super)
+          [:Mn, *super]
+        end
+        def o
+          raise 'defined?(super) false, should be true' unless defined?(super)
+          [:Mo, *super]
+        end
+      end
+
+      module R
+        refine M do
+          def m
+            raise 'defined?(super) false, should be true' unless defined?(super)
+            [:Rm, *super]
+          end
+          def n
+            raise 'defined?(super) false, should be true' unless defined?(super)
+            [:Rn, *super]
+          end
+          def o
+            raise 'defined?(super) false, should be true' unless defined?(super)
+            [:Ro, *super]
+          end
+        end
+      end
+      using R
+
+      module N
+        include M
+        def n = m
+      end
+
+      class C
+        prepend M
+        def m
+          raise 'defined?(super) true, should be false' if defined?(super)
+          :C
+        end
+      end
+
+      class SC < C
+        include N
+        prepend M
+        alias n m
+      end
+
+      class SSC < SC
+        prepend M
+        def n
+          raise 'defined?(super) false, should be true' unless defined?(super)
+          [:SSC, *super]
+        end
+      end
+
+      class SSSC < SSC
+        prepend M
+        alias o n
+      end
+
+      class SSSSC < SSSC
+        prepend M
+        def o
+          raise 'defined?(super) false, should be true' unless defined?(super)
+          [:SSSSC, *super]
+        end
+      end
+
+      assert_equal([:Ro, :Mo, :SSSSC, :Ro, :Mo, :Mn, :Mn, :SSC, :Rn, :Mn, :Mm, :Mm, :C], SSSSC.new.o)
+
+      super_method = ->(m) do
+        sm = m.super_method
+        assert_equal(m.unbind.super_method, sm.unbind) if m.is_a?(Method)
+        sm
+      end
+      [SSSSC.new.method(:o), SSSSC.instance_method(:o)].each do |m|
+        assert_equal(M, m.owner.target)
+        m = super_method.(m)
+        assert_equal(M, m.owner)
+        m = super_method.(m)
+        assert_equal(SSSSC, m.owner)
+        m = super_method.(m)
+        assert_equal(M, m.owner.target)
+        m = super_method.(m)
+        assert_equal(M, m.owner)
+        m = super_method.(m)
+        assert_equal(SSSC, m.owner)
+        m = super_method.(m)
+        assert_equal(M, m.owner)
+        m = super_method.(m)
+        assert_equal(SSC, m.owner)
+        m = super_method.(m)
+        assert_equal(M, m.owner.target)
+        m = super_method.(m)
+        assert_equal(M, m.owner)
+        m = super_method.(m)
+        assert_equal(SC, m.owner)
+        m = super_method.(m)
+        assert_equal(M, m.owner)
+        m = super_method.(m)
+        assert_equal(C, m.owner)
+        assert_nil(m.super_method)
+      end
+    end;
+  end
+
+  def test_super_in_refined_prepended_module_method_called_by_other_object
+    assert_separately([], <<-"end;")
+      module M
+        def m
+          raise 'defined?(super) false, should be true' unless defined?(super)
+          [:M, *super]
+        end
+      end
+
+      class C
+        prepend M
+        def m
+          raise 'defined?(super) true, should be false' if defined?(super)
+          :C
+        end
+      end
+
+      module R
+        refine M do
+          def m
+            raise 'defined?(super) false, should be true' unless defined?(super)
+            [:R, *super]
+          end
+        end
+      end
+      using R
+
+      o = Object.new
+      def o.m = C.new.m
+      assert_equal([:R, :M, :C], o.m)
+    end;
+  end
+
+  def test_super_in_refined_prepended_module_method_refined_multiple_times
+    assert_separately([], <<-"end;")
+      module M
+        def m
+          raise 'defined?(super) false, should be true' unless defined?(super)
+          [:M, *super]
+        end
+      end
+
+      class C
+        prepend M
+        def m
+          raise 'defined?(super) true, should be false' if defined?(super)
+          :C
+        end
+      end
+
+      module R1
+        refine M do
+          def m
+            raise 'defined?(super) false, should be true' unless defined?(super)
+            [:R1, *super]
+          end
+        end
+      end
+      using R1
+
+      module R2
+        refine M do
+          def m
+            raise 'defined?(super) false, should be true' unless defined?(super)
+            [:R2, *super]
+          end
+        end
+      end
+      using R2
+
+      assert_equal([:R2, :R1, :M, :C], C.new.m)
+
+      super_method = ->(m) do
+        sm = m.super_method
+        assert_equal(m.unbind.super_method, sm.unbind) if m.is_a?(Method)
+        sm
+      end
+      [C.new.method(:m), C.instance_method(:m)].each do |m|
+        assert_equal(M, m.owner.target)
+        m = super_method.(m)
+        assert_equal(M, m.owner.target)
+        m = super_method.(m)
+        assert_equal(M, m.owner)
+        m = super_method.(m)
+        assert_equal(C, m.owner)
+        assert_nil(m.super_method)
+      end
+    end;
+  end
+
+  def test_super_in_refined_module_method_prepended_multiple_times
+    assert_separately([], <<-"end;")
+      module M
+        def m
+          raise 'defined?(super) false, should be true' unless defined?(super)
+          [:M, *super]
+        end
+      end
+
+      module R
+        refine M do
+          def m
+            raise 'defined?(super) false, should be true' unless defined?(super)
+            [:R, *super]
+          end
+        end
+      end
+      using R
+
+      class C
+        prepend M
+        def m
+          raise 'defined?(super) true, should be false' if defined?(super)
+          :C
+        end
+      end
+
+      class SC < C
+        prepend M
+        def m
+          raise 'defined?(super) false, should be true' unless defined?(super)
+          [:SC, *super]
+        end
+      end
+
+      assert_equal([:R, :M, :SC, :R, :M, :C], SC.new.m)
+
+      super_method = ->(m) do
+        sm = m.super_method
+        assert_equal(m.unbind.super_method, sm.unbind) if m.is_a?(Method)
+        sm
+      end
+      [SC.new.method(:m), SC.instance_method(:m)].each do |m|
+        assert_equal(M, m.owner.target)
+        m = super_method.(m)
+        assert_equal(M, m.owner)
+        m = super_method.(m)
+        assert_equal(SC, m.owner)
+        m = super_method.(m)
+        assert_equal(M, m.owner.target)
+        m = super_method.(m)
+        assert_equal(M, m.owner)
+        m = super_method.(m)
+        assert_equal(C, m.owner)
+        assert_nil(m.super_method)
+      end
+    end;
+  end
+
+  def test_super_in_refined_module_method_with_multiple_refined_modules
+    assert_separately([], <<-"end;")
+      module M
+        def m
+          raise 'defined?(super) false, should be true' unless defined?(super)
+          [:M, *super]
+        end
+      end
+
+      module N
+        def m
+          raise 'defined?(super) false, should be true' unless defined?(super)
+          [:N, *super]
+        end
+      end
+
+      module R
+        refine M do
+          def m
+            raise 'defined?(super) false, should be true' unless defined?(super)
+            [:RM, *super]
+          end
+        end
+
+        refine N do
+          def m
+            raise 'defined?(super) false, should be true' unless defined?(super)
+            [:RN, *super]
+          end
+        end
+      end
+      using R
+
+      class C
+        prepend M
+        prepend N
+        def m
+          raise 'defined?(super) true, should be false' if defined?(super)
+          :C
+        end
+      end
+
+      class SC < C
+        prepend N
+        prepend M
+        def m
+          raise 'defined?(super) false, should be true' unless defined?(super)
+          [:SC, *super]
+        end
+      end
+
+      assert_equal([:RM, :M, :N, :SC, :RN, :N, :M, :C], SC.new.m)
+
+      super_method = ->(m) do
+        sm = m.super_method
+        assert_equal(m.unbind.super_method, sm.unbind) if m.is_a?(Method)
+        sm
+      end
+      [SC.new.method(:m), SC.instance_method(:m)].each do |m|
+        assert_equal(M, m.owner.target)
+        m = super_method.(m)
+        assert_equal(M, m.owner)
+        m = super_method.(m)
+        assert_equal(N, m.owner)
+        m = super_method.(m)
+        assert_equal(SC, m.owner)
+        m = super_method.(m)
+        assert_equal(N, m.owner.target)
+        m = super_method.(m)
+        assert_equal(N, m.owner)
+        m = super_method.(m)
+        assert_equal(M, m.owner)
+        m = super_method.(m)
+        assert_equal(C, m.owner)
+        assert_nil(m.super_method)
+      end
+    end;
+  end
+
+  def test_super_in_refined_module_method_with_super_method_after_refinement
+    assert_separately([], <<-"end;")
+      module M
+      end
+
+      module R
+        refine M do
+          def m
+            raise 'defined?(super) false, should be true' unless defined?(super)
+            [:R, *super]
+          end
+        end
+      end
+      using R
+
+      module M
+        def m
+          raise 'defined?(super) false, should be true' unless defined?(super)
+          [:M, *super]
+        end
+      end
+
+      class C
+        prepend M
+        def m
+          raise 'defined?(super) true, should be false' if defined?(super)
+          :C
+        end
+      end
+
+      class SC < C
+        prepend M
+        def m
+          raise 'defined?(super) false, should be true' unless defined?(super)
+          [:SC, *super]
+        end
+      end
+
+      assert_equal([:R, :M, :SC, :R, :M, :C], SC.new.m)
+
+      super_method = ->(m) do
+        sm = m.super_method
+        assert_equal(m.unbind.super_method, sm.unbind) if m.is_a?(Method)
+        sm
+      end
+      [SC.new.method(:m), SC.instance_method(:m)].each do |m|
+        assert_equal(M, m.owner.target)
+        m = super_method.(m)
+        assert_equal(M, m.owner)
+        m = super_method.(m)
+        assert_equal(SC, m.owner)
+        m = super_method.(m)
+        assert_equal(M, m.owner.target)
+        m = super_method.(m)
+        assert_equal(M, m.owner)
+        m = super_method.(m)
+        assert_equal(C, m.owner)
+        assert_nil(m.super_method)
+      end
+    end;
+  end
+
+  def test_super_in_refined_module_method_with_multiple_refined_modules_with_super_method_after_refinement
+    assert_separately([], <<-"end;")
+      module M
+      end
+
+      module N
+      end
+
+      module R
+        refine M do
+          def m
+            raise 'defined?(super) false, should be true' unless defined?(super)
+            [:RM, *super]
+          end
+        end
+
+        refine N do
+          def m
+            raise 'defined?(super) false, should be true' unless defined?(super)
+            [:RN, *super]
+          end
+        end
+      end
+      using R
+
+      module M
+        def m
+          raise 'defined?(super) false, should be true' unless defined?(super)
+          [:M, *super]
+        end
+      end
+
+      module N
+        def m
+          raise 'defined?(super) false, should be true' unless defined?(super)
+          [:N, *super]
+        end
+      end
+
+      class C
+        prepend M
+        prepend N
+        def m
+          raise 'defined?(super) true, should be false' if defined?(super)
+          :C
+        end
+      end
+
+      class SC < C
+        prepend N
+        prepend M
+        def m
+          raise 'defined?(super) false, should be true' unless defined?(super)
+          [:SC, *super]
+        end
+      end
+
+      assert_equal([:RM, :M, :RN, :N, :SC, :RN, :N, :RM, :M, :C], SC.new.m)
+
+      super_method = ->(m) do
+        sm = m.super_method
+        assert_equal(m.unbind.super_method, sm.unbind) if m.is_a?(Method)
+        sm
+      end
+      [SC.new.method(:m), SC.instance_method(:m)].each do |m|
+        assert_equal(M, m.owner.target)
+        m = super_method.(m)
+        assert_equal(M, m.owner)
+        m = super_method.(m)
+        assert_equal(N, m.owner.target)
+        m = super_method.(m)
+        assert_equal(N, m.owner)
+        m = super_method.(m)
+        assert_equal(SC, m.owner)
+        m = super_method.(m)
+        assert_equal(N, m.owner.target)
+        m = super_method.(m)
+        assert_equal(N, m.owner)
+        m = super_method.(m)
+        assert_equal(M, m.owner.target)
+        m = super_method.(m)
+        assert_equal(M, m.owner)
+        m = super_method.(m)
+        assert_equal(C, m.owner)
+        assert_nil(m.super_method)
+      end
+    end;
+  end
+
+  def test_super_in_refined_module_method_in_nested_block
+    assert_separately([], <<-"end;")
+      module M
+        def m
+          raise 'defined?(super) false, should be true' unless defined?(super)
+          ->{Array.new(1){[:M, *super]}.flatten}.call
+        end
+      end
+
+      module R
+        refine M do
+          def m
+            raise 'defined?(super) false, should be true' unless defined?(super)
+            ->{Array.new(1){[:R, *super]}.flatten}.call
+          end
+        end
+      end
+      using R
+
+      class C
+        prepend M
+        def m
+          raise 'defined?(super) true, should be false' if defined?(super)
+          :C
+        end
+      end
+
+      class SC < C
+        prepend M
+        def m
+          raise 'defined?(super) false, should be true' unless defined?(super)
+          [:SC, *super]
+        end
+      end
+
+      assert_equal([:R, :M, :SC, :R, :M, :C], SC.new.m)
+
+      super_method = ->(m) do
+        sm = m.super_method
+        assert_equal(m.unbind.super_method, sm.unbind) if m.is_a?(Method)
+        sm
+      end
+      [SC.new.method(:m), SC.instance_method(:m)].each do |m|
+        assert_equal(M, m.owner.target)
+        m = super_method.(m)
+        assert_equal(M, m.owner)
+        m = super_method.(m)
+        assert_equal(SC, m.owner)
+        m = super_method.(m)
+        assert_equal(M, m.owner.target)
+        m = super_method.(m)
+        assert_equal(M, m.owner)
+        m = super_method.(m)
+        assert_equal(C, m.owner)
+        assert_nil(m.super_method)
+      end
+    end;
+  end
+
+  def test_super_in_refined_module_method_combined_cases
+    assert_separately([], <<-"end;")
+      module M
+        define_method(:m) do
+          raise 'defined?(super) false, should be true' unless defined?(super)
+          ->{Array.new(1){[:M, *super()]}.flatten}.call
+        end
+      end
+
+      module N
+        def m
+          raise 'defined?(super) false, should be true' unless defined?(super)
+          ->{Array.new(1){[:N, *super]}.flatten}.call
+        end
+      end
+
+      module P
+        def m
+          raise 'defined?(super) false, should be true' unless defined?(super)
+          ->{Array.new(1){[:P, *super]}.flatten}.call
+        end
+      end
+
+      module R1
+        refine M do
+          def m
+            raise 'defined?(super) false, should be true' unless defined?(super)
+            ->{Array.new(1){[:R1M, *super]}.flatten}.call
+          end
+        end
+
+        refine N do
+          define_method(:m) do
+            raise 'defined?(super) false, should be true' unless defined?(super)
+            ->{Array.new(1){[:R1N, *super()]}.flatten}.call
+          end
+        end
+
+        refine P do
+          def m
+            raise 'defined?(super) false, should be true' unless defined?(super)
+            ->{Array.new(1){[:R1P, *super]}.flatten}.call
+          end
+        end
+      end
+      using R1
+
+      module R2
+        refine M do
+          define_method(:m) do
+            raise 'defined?(super) false, should be true' unless defined?(super)
+            ->{Array.new(1){[:R2M, *super()]}.flatten}.call
+          end
+        end
+
+        refine N do
+          def m
+            raise 'defined?(super) false, should be true' unless defined?(super)
+            ->{Array.new(1){[:R2N, *super]}.flatten}.call
+          end
+        end
+
+        refine P do
+          define_method(:m) do
+            raise 'defined?(super) false, should be true' unless defined?(super)
+            ->{Array.new(1){[:R2P, *super()]}.flatten}.call
+          end
+        end
+      end
+      using R2
+
+      class C
+        prepend M
+        prepend N
+        def m
+          raise 'defined?(super) true, should be false' if defined?(super)
+          :C
+        end
+      end
+
+      class SC < C
+        include P
+        def m
+          raise 'defined?(super) false, should be true' unless defined?(super)
+          ->{Array.new(1){[:SC, *super]}.flatten}.call
+        end
+      end
+
+      class SSC < SC
+        prepend N
+        prepend M
+        def m
+          raise 'defined?(super) false, should be true' unless defined?(super)
+          ->{Array.new(1){[:SSC, *super]}.flatten}.call
+        end
+      end
+
+      o = Object.new
+      def o.m = SSC.new.m
+      assert_equal([:R2M, :R1M, :M, :N, :SSC, :SC, :R2P, :R1P, :P, :N, :M, :C], o.m)
+
+      super_method = ->(m) do
+        sm = m.super_method
+        assert_equal(m.unbind.super_method, sm.unbind) if m.is_a?(Method)
+        sm
+      end
+      [SSC.new.method(:m), SSC.instance_method(:m)].each do |m|
+        assert_equal(M, m.owner.target)
+        m = super_method.(m)
+        assert_equal(M, m.owner.target)
+        m = super_method.(m)
+        assert_equal(M, m.owner)
+        m = super_method.(m)
+        assert_equal(N, m.owner)
+        m = super_method.(m)
+        assert_equal(SSC, m.owner)
+        m = super_method.(m)
+        assert_equal(SC, m.owner)
+        m = super_method.(m)
+        assert_equal(P, m.owner.target)
+        m = super_method.(m)
+        assert_equal(P, m.owner.target)
+        m = super_method.(m)
+        assert_equal(P, m.owner)
+        m = super_method.(m)
+        assert_equal(N, m.owner)
+        m = super_method.(m)
+        assert_equal(M, m.owner)
+        m = super_method.(m)
+        assert_equal(C, m.owner)
+        assert_nil(m.super_method)
+      end
+    end;
+  end
+
+  def test_super_in_refined_module_bmethod_with_no_super_method
+    assert_separately([], <<-"end;")
+      called = []
+      M = Module.new do
+        define_method(:m) do
+          called << :M
+          raise 'defined?(super) true, should be false' if defined?(super)
+          super()
+        end
+      end
+
+      class C
+        prepend M
+      end
+
+      R = Module.new do
+        refine M do
+          define_method(:m) do
+            called << :R
+            raise 'defined?(super) false, should be true' unless defined?(super)
+            super()
+          end
+        end
+      end
+      using R
+
+      assert_raise(NoMethodError) { C.new.m }
+      assert_equal([:R, :M], called)
+
+      super_method = ->(m) do
+        sm = m.super_method
+        assert_equal(m.unbind.super_method, sm.unbind) if m.is_a?(Method)
+        sm
+      end
+      [C.new.method(:m), C.instance_method(:m)].each do |m|
+        assert_equal(M, m.owner.target)
+        m = super_method.(m)
+        assert_equal(M, m.owner)
+        assert_nil(m.super_method)
+      end
     end;
   end
 
