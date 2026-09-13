@@ -661,7 +661,6 @@ init_fast_fallback_inetsock_internal(VALUE v)
 
     /* start of hostname resolution */
     if (arg->family_size == 1) {
-        arg->wait = -1;
         arg->getaddrinfo_shared = NULL;
 
         int family = arg->families[0];
