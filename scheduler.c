@@ -117,6 +117,19 @@ interrupt_target_raise(int argc, VALUE *argv, VALUE self)
     return rb_fiber_raise(target->fiber, argc, argv);
 }
 
+static VALUE
+interrupt_target_transfer(VALUE self)
+{
+    struct rb_fiber_scheduler_interrupt_target *target = get_interrupt_target(self);
+
+    if (!target->active || !RTEST(rb_fiber_alive_p(target->fiber))) {
+        return Qnil;
+    }
+
+    VALUE exception = target->exception;
+    return rb_fiber_raise(target->fiber, 1, &exception);
+}
+
 VALUE
 rb_fiber_scheduler_interrupt_target_new(VALUE fiber, VALUE exception)
 {
@@ -450,6 +463,7 @@ Init_Fiber_Scheduler(void)
     rb_undef_alloc_func(rb_cFiberSchedulerInterruptTarget);
     rb_define_method(rb_cFiberSchedulerInterruptTarget, "alive?", interrupt_target_alive_p, 0);
     rb_define_method(rb_cFiberSchedulerInterruptTarget, "raise", interrupt_target_raise, -1);
+    rb_define_method(rb_cFiberSchedulerInterruptTarget, "transfer", interrupt_target_transfer, 0);
     rb_gc_register_mark_object(rb_cFiberSchedulerInterruptTarget);
 
 #if 0 /* for RDoc */
@@ -1266,8 +1280,9 @@ VALUE rb_fiber_scheduler_blocking_operation_wait(VALUE scheduler, void* (*functi
  *
  * Invoked by Ruby's core methods to notify the scheduler that a blocked fiber
  * should be interrupted with an exception. For IO operations, +target+ is an
- * operation-scoped proxy which responds to #alive? and #raise. The scheduler
- * should enqueue the target on its owning thread and use only those methods.
+ * operation-scoped proxy which responds to #alive?, #raise, and #transfer. The
+ * scheduler should enqueue the target on its owning thread and use only those
+ * methods. #transfer raises the interruption's stored exception in the target.
  * Once the operation completes, #alive? returns false and #raise has no effect,
  * preventing a delayed exception from escaping into a later operation.
  *

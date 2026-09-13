@@ -479,8 +479,10 @@ VALUE rb_fiber_scheduler_blocking_operation_wait(VALUE scheduler, void* (*functi
  * Interrupt a target by raising an exception. You can construct an exception using `rb_make_exception`.
  *
  * The target is usually a Fiber. For an IO operation, it may instead be an
- * operation-scoped proxy which responds to `alive?` and `raise`. Schedulers
- * should restrict their use of the target to those methods.
+ * operation-scoped proxy which responds to `alive?`, `raise`, and `transfer`.
+ * Calling `transfer` raises the stored exception in the target Fiber, allowing
+ * the proxy to be queued directly. Schedulers should restrict their use of the
+ * target to those methods.
  *
  * This hook may be invoked by a different thread.
  *

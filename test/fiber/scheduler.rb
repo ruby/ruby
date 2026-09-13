@@ -313,24 +313,9 @@ class Scheduler
     io.write_nonblock('.')
   end
 
-  class FiberInterrupt
-    def initialize(fiber, exception)
-      @fiber = fiber
-      @exception = exception
-    end
-
-    def alive?
-      @fiber.alive?
-    end
-
-    def transfer
-      @fiber.raise(@exception)
-    end
-  end
-
-  def fiber_interrupt(fiber, exception)
+  def fiber_interrupt(target, _exception)
     @lock.synchronize do
-      @ready << FiberInterrupt.new(fiber, exception)
+      @ready << target
     end
 
     io = @urgent.last
