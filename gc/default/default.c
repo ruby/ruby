@@ -10873,7 +10873,8 @@ rb_gc_impl_set_params(void *objspace_ptr)
     rb_objspace_t *objspace = objspace_ptr;
     get_envparam_size("RUBY_GC_HEAP_FREE_SLOTS", &gc_params.heap_free_slots, 0);
 
-    get_envparam_size("RUBY_GC_HEAP_INIT_BYTES", &gc_params.heap_init_bytes, 0);
+    get_envparam_size("RUBY_GC_HEAP_INIT_BYTES", &gc_params.heap_init_bytes,
+                      heap_init_bytes_min() - 1);
     get_envparam_size("RUBY_GC_RACTOR_HEAP_INIT_BYTES", &gc_params.ractor_heap_init_bytes,
                       heap_init_bytes_min() - 1);
 
