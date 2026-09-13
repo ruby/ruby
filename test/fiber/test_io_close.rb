@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 require 'test/unit'
+require 'io/wait'
 require_relative 'scheduler'
 
 class TestFiberIOClose < Test::Unit::TestCase
@@ -41,6 +42,46 @@ class TestFiberIOClose < Test::Unit::TestCase
 
       assert_instance_of IOError, error
       assert_match(/closed/, error.message)
+    end
+  end
+
+  def test_io_close_interrupt_does_not_escape_blocking_operation
+    with_socket_pair do |source, source_peer|
+      with_socket_pair do |unrelated, unrelated_peer|
+        errors = []
+
+        thread = Thread.new do
+          scheduler = Scheduler.new
+          Fiber.set_scheduler scheduler
+
+          5.times do
+            Fiber.schedule do
+              begin
+                source.wait_readable(0.01)
+                source.close
+              rescue => error
+                errors << [:source, error]
+              end
+
+              begin
+                unrelated.wait_readable(0.01)
+              rescue => error
+                errors << [:unrelated, error]
+              end
+            end
+          end
+        end
+
+        thread.join
+
+        assert_equal 4, errors.size
+        assert_equal [:source], errors.map(&:first).uniq
+        errors.each do |location, error|
+          assert_equal :source, location
+          assert_instance_of IOError, error
+          assert_match(/closed/, error.message)
+        end
+      end
     end
   end
 

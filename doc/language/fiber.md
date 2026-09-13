@@ -234,7 +234,7 @@ non-blocking*, the operation will invoke the scheduler.
 
 Closing an IO interrupts all blocking operations on that IO. When a thread calls `IO#close`, it first attempts to interrupt any threads or fibers that are blocked on that IO. The closing thread waits until all blocked threads and fibers have been properly interrupted and removed from the IO's blocking list. Each interrupted thread or fiber receives an `IOError` and is cleanly removed from the blocking operation. Only after all blocking operations have been interrupted and cleaned up will the actual file descriptor be closed, ensuring proper resource cleanup and preventing potential race conditions.
 
-For fibers managed by a scheduler, the interruption process involves calling `rb_fiber_scheduler_fiber_interrupt` on the scheduler. The corresponding `Fiber::Scheduler#fiber_interrupt` hook is required. This allows the scheduler to handle the interruption in a way that's appropriate for its event loop implementation. The scheduler can then notify the fiber, which will receive an `IOError` and be removed from the blocking operation. This mechanism ensures that fiber-based concurrency works correctly with IO operations, even when those operations are interrupted by `IO#close`.
+For fibers managed by a scheduler, the interruption process involves calling `rb_fiber_scheduler_fiber_interrupt` on the scheduler. The corresponding `Fiber::Scheduler#fiber_interrupt` hook is required. For IO operations, the first argument is an operation-scoped proxy which responds to `alive?` and `raise`, matching the subset of the Fiber interface needed to deliver an interruption. The scheduler should enqueue the target on its owning thread and use only those methods. If the operation completes before the queued interruption is processed, `alive?` returns false and `raise` has no effect. This prevents a delayed exception from escaping the operation which caused it and interrupting a later operation on the same fiber.
 
 ```mermaid
 sequenceDiagram
@@ -266,16 +266,16 @@ sequenceDiagram
     ThreadB->>IO: thread_io_close_notify_all
     Note over ThreadB: rb_mutex_sleep
 
-    IO->>Scheduler: rb_fiber_scheduler_fiber_interrupt(Fiber1)
-    Scheduler->>Fiber1: fiber_interrupt with IOError
+    IO->>Scheduler: rb_fiber_scheduler_fiber_interrupt(Target1)
+    Scheduler->>Target1: raise IOError if alive?
     activate Fiber1
     Note over IO: fiber_interrupt causes removal from blocking list
     Fiber1->>IO: rb_io_blocking_operation_exit()
     IO-->>ThreadB: Wakeup thread
     deactivate Fiber1
 
-    IO->>Scheduler: rb_fiber_scheduler_fiber_interrupt(Fiber2)
-    Scheduler->>Fiber2: fiber_interrupt with IOError
+    IO->>Scheduler: rb_fiber_scheduler_fiber_interrupt(Target2)
+    Scheduler->>Target2: raise IOError if alive?
     activate Fiber2
     Note over IO: fiber_interrupt causes removal from blocking list
     Fiber2->>IO: rb_io_blocking_operation_exit()

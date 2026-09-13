@@ -44,6 +44,10 @@ Note: We're only listing outstanding class updates.
     * The `fiber_interrupt` hook is now required. Schedulers which do not
       implement it can no longer be installed with `Fiber.set_scheduler`.
 
+    * For an interrupted IO operation, the first argument to `fiber_interrupt`
+      is an operation-scoped proxy supporting `alive?` and `raise`. This keeps
+      delayed interruptions from affecting later operations on the same Fiber.
+
 * Hash
 
     * `Hash.ruby2_keywords_hash?` and `Hash.ruby2_keywords_hash` are

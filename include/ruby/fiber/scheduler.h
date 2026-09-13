@@ -25,7 +25,8 @@ RBIMPL_SYMBOL_EXPORT_BEGIN()
 
 // Version 3: Adds support for `fiber_interrupt`.
 // Version 4: IO hooks use single-transfer `(offset, length)` semantics.
-#define RUBY_FIBER_SCHEDULER_VERSION 4
+// Version 5: `fiber_interrupt` may receive an operation-scoped proxy.
+#define RUBY_FIBER_SCHEDULER_VERSION 5
 
 struct timeval;
 struct rb_thread_struct;
@@ -475,16 +476,20 @@ int rb_fiber_scheduler_blocking_operation_cancel(rb_fiber_scheduler_blocking_ope
 VALUE rb_fiber_scheduler_blocking_operation_wait(VALUE scheduler, void* (*function)(void *), void *data, rb_unblock_function_t *unblock_function, void *data2, int flags, struct rb_fiber_scheduler_blocking_operation_state *state);
 
 /**
- * Interrupt a fiber by raising an exception. You can construct an exception using `rb_make_exception`.
+ * Interrupt a target by raising an exception. You can construct an exception using `rb_make_exception`.
+ *
+ * The target is usually a Fiber. For an IO operation, it may instead be an
+ * operation-scoped proxy which responds to `alive?` and `raise`. Schedulers
+ * should restrict their use of the target to those methods.
  *
  * This hook may be invoked by a different thread.
  *
  * @param[in]  scheduler  Target scheduler.
- * @param[in]  fiber      The fiber to interrupt.
+ * @param[in]  target     The Fiber or operation-scoped proxy to interrupt.
  * @param[in]  exception  The exception to raise in the fiber.
  * @return     What `scheduler.fiber_interrupt` returns.
  */
-VALUE rb_fiber_scheduler_fiber_interrupt(VALUE scheduler, VALUE fiber, VALUE exception);
+VALUE rb_fiber_scheduler_fiber_interrupt(VALUE scheduler, VALUE target, VALUE exception);
 
 /**
  * Create and schedule a non-blocking fiber.
