@@ -21,6 +21,7 @@
  * Starting from Ruby 3.4, this method operates according to the
  * Happy Eyeballs Version 2 ({RFC 8305}[https://datatracker.ietf.org/doc/html/rfc8305])
  * algorithm by default, except on MinGW builds of Windows.
+ * On mswin builds of Windows, it does so starting from Ruby 4.1.
  *
  * For details on Happy Eyeballs Version 2,
  * see {Socket.tcp_fast_fallback=}[rdoc-ref:Socket.tcp_fast_fallback=].
