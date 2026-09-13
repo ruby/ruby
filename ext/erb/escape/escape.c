@@ -77,7 +77,7 @@ find_next_basic(search_state *search)
 
 #ifdef HAVE_SIMD_SSE2
 
-static inline int trailing_zeros(int input)
+static inline int trailing_zeros32(int input)
 {
     RUBY_ASSERT(input > 0); // __builtin_ctz(0) is undefined behavior
 
@@ -97,9 +97,9 @@ static inline int trailing_zeros(int input)
 static inline bool
 find_next_match_sse2(search_state *search)
 {
-    int next_match_offset = trailing_zeros(search->matches_bitmap);
-    search->matches_bitmap >>= (next_match_offset + 1);
-    search->cstr += next_match_offset;
+    uint32_t trailing_zeros = trailing_zeros32(search->matches_bitmap);
+    search->matches_bitmap >>= trailing_zeros;
+    search->cstr += trailing_zeros;
     RUBY_ASSERT(search->cstr <= search->end);
     return true;
 }
@@ -170,14 +170,10 @@ find_next_match_neon(search_state *search)
     uint32_t trailing_zeros = trailing_zeros64(search->matches_bitmap);
 
     // uint64_t >>= 64 is undefined behaviour
-    if (trailing_zeros >= 63) {
-        search->matches_bitmap = 0;
-        search->cstr += 15;
-    }
-    else {
-        search->matches_bitmap >>= (trailing_zeros + 1);
-        search->cstr += trailing_zeros / 4;
-    }
+    RUBY_ASSERT(trailing_zeros < 64);
+    search->matches_bitmap >>= trailing_zeros;
+    search->cstr += trailing_zeros / 4;
+    RUBY_ASSERT(search->cstr <= search->end);
     return true;
 }
 
@@ -223,6 +219,15 @@ find_next_neon(search_state *search)
 #define find_next find_next_neon
 #endif // HAVE_SIMD_NEON
 
+static inline void
+consume_match(search_state *search)
+{
+#ifdef HAVE_SIMD
+    search->matches_bitmap >>= 1;
+#endif
+    search->cstr++;
+}
+
 #ifndef find_next
 #define find_next find_next_basic
 #endif
@@ -242,9 +247,8 @@ optimized_escape_html(VALUE str)
 
     while (find_next(&search)) {
         const unsigned char c = *search.cstr;
-        size_t segment_len = search.cstr - segment_start;
-        search.cstr++;
 
+        size_t segment_len = search.cstr - segment_start;
         if (!buf) {
             buf = ALLOCV_N(char, vbuf, escaped_length(str));
             dest = buf;
@@ -253,7 +257,6 @@ optimized_escape_html(VALUE str)
             memcpy(dest, segment_start, segment_len);
             dest += segment_len;
         }
-        segment_start = search.cstr;
 
         switch(c) {
             #define HTML_ESCAPE(c, str) \
@@ -272,6 +275,8 @@ optimized_escape_html(VALUE str)
 
             #undef HTML_ESCAPE
         }
+        consume_match(&search);
+        segment_start = search.cstr;
     }
 
     VALUE escaped = str;
