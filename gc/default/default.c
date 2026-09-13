@@ -7188,7 +7188,10 @@ gc_marks_finish(rb_objspace_t *objspace)
 #endif
 
     {
-        const unsigned long ractor_cnt = rb_gc_vm_ractor_count();
+        /* Only this objspace's own Ractor allocates from it.  The main objspace
+         * keeps the VM-wide count it has used since before per-Ractor GC. */
+        const unsigned long ractor_cnt = objspace == global_objspace->main_objspace
+            ? rb_gc_vm_ractor_count() : 1;
         const unsigned long r_mul = ractor_cnt > 8 ? 8 : ractor_cnt; // upto 8
 
         size_t total_slots = objspace_available_slots(objspace);
