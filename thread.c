@@ -741,15 +741,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
 
     if (!fiber_scheduler_closed) {
         fiber_scheduler_closed = 1;
-
-        if (state == TAG_FATAL && th->ec->errinfo == INT2FIX(TAG_FATAL)) {
-            th->ec->errinfo = th->vm->special_exceptions[ruby_error_thread_killed];
-            rb_fiber_scheduler_set(Qnil);
-            th->ec->errinfo = INT2FIX(TAG_FATAL);
-        }
-        else {
-            rb_fiber_scheduler_set(Qnil);
-        }
+        rb_fiber_scheduler_set(Qnil);
     }
 
     if (!event_thread_end_hooked) {
@@ -770,6 +762,11 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
         if (state == TAG_FATAL) {
             if (th->invoke_type == thread_invoke_type_ractor_proc) {
                 rb_ractor_atexit(th->ec, Qnil);
+            }
+
+            if (errinfo == th->vm->special_exceptions[ruby_error_thread_killed]) {
+                /* Thread#kill terminates normally and is not propagated to the main thread. */
+                errinfo = Qnil;
             }
             /* fatal error within this thread, need to stop whole script */
         }
@@ -1352,7 +1349,12 @@ thread_join(rb_thread_t *target_th, VALUE timeout, rb_hrtime_t *limit)
     if (target_th->ec->errinfo != Qnil) {
         VALUE err = target_th->ec->errinfo;
 
-        if (FIXNUM_P(err)) {
+        if (err == target_th->vm->special_exceptions[ruby_error_thread_killed]) {
+            RUBY_DEBUG_LOG("terminated target_th:%u status:%s", rb_th_serial(target_th), thread_status_name(target_th, TRUE));
+
+            /* OK. killed. */
+        }
+        else if (FIXNUM_P(err)) {
             switch (err) {
               case INT2FIX(TAG_FATAL):
                 RUBY_DEBUG_LOG("terminated target_th:%u status:%s", rb_th_serial(target_th), thread_status_name(target_th, TRUE));
@@ -2852,7 +2854,7 @@ rb_threadptr_to_kill(rb_thread_t *th)
     rb_threadptr_pending_interrupt_clear(th);
     th->status = THREAD_RUNNABLE;
     th->to_kill = 1;
-    th->ec->errinfo = INT2FIX(TAG_FATAL);
+    th->ec->errinfo = th->vm->special_exceptions[ruby_error_thread_killed];
     EC_JUMP_TAG(th->ec, TAG_FATAL);
 }
 
@@ -3888,7 +3890,8 @@ rb_thread_status(VALUE thread)
 
     if (rb_threadptr_dead(target_th)) {
         if (!NIL_P(target_th->ec->errinfo) &&
-            !FIXNUM_P(target_th->ec->errinfo)) {
+            !FIXNUM_P(target_th->ec->errinfo) &&
+            target_th->ec->errinfo != target_th->vm->special_exceptions[ruby_error_thread_killed]) {
             return Qnil;
         }
         else {
