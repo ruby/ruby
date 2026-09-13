@@ -45,7 +45,7 @@ escaped_length(VALUE str)
 #endif
 #endif
 
-#if defined(__ARM_NEON) || defined(__ARM_NEON__) || defined(__aarch64__) || defined(_M_ARM64)
+#if defined(__aarch64__) || defined(_M_ARM64)
 #define HAVE_SIMD 1
 #define HAVE_SIMD_NEON 1
 #include <arm_neon.h>
@@ -172,9 +172,91 @@ find_next_match_neon(search_state *search)
     // uint64_t >>= 64 is undefined behaviour
     RUBY_ASSERT(trailing_zeros < 64);
     search->matches_bitmap >>= trailing_zeros;
-    search->cstr += trailing_zeros / 4;
+    search->cstr += trailing_zeros;
     RUBY_ASSERT(search->cstr <= search->end);
     return true;
+}
+
+// This 16-byte lookup table is indexed into by using the
+// low nibble of each input byte.
+// Note: index 0 is intentionally set to a character that will not match
+// the NULL byte.
+static const uint8x16_t escape_char_by_low_nibble = {
+    '\'', 0,    '"',  0,
+    0,    0,    '&',  '\'',
+    0,    0,    0,    0,
+    '<',  0,    '>',  0,
+};
+
+static inline uint8x16_t
+neon_escape_matches(const uint8x16_t bytes)
+{
+    // An example to demonstrate how this works. The goal is to get a uint8x16_t
+    // with each lane to equal 0xFF if the corresponding byte in 'bytes' needs
+    // to be escaped, or 0x00 otherwise.
+    //
+    // To keep things very simple, I'm going to assume a vector of length 6, in
+    // reality, the vector would be 16 bytes wide.
+    //
+    // Assume the string is: "<br />"
+    // Converted to integers:
+    //   [0x3c 0x62 0x72 0x20 0x2f 0x3e]
+    //
+    // Next, we mask off the top nibble so we are left only with the low nibble
+    // of each byte. We do this by AND'ing each byte with 0x0F.
+    //
+    // The result:
+    //   [0x0c 0x02 0x02 0x00 0x0f 0x0e]
+    //
+    // Now, we use these low nibbles as indexes into the
+    // escape_char_by_low_nibble array and find the full byte
+    // value we expect to match in the input.
+    //
+    // The result:
+    //   [0x3c 0x22 0x22 0x27 0x00 0x3e]
+    //
+    // Finally, we compare the bytes we expect with the actual input bytes.
+    //
+    // The result:
+    //   [0xFF 0x00 0x00 0x00 0x00 0xFF]
+    const uint8x16_t low_nibbles = vandq_u8(bytes, vdupq_n_u8(0x0F));
+    const uint8x16_t looked_up = vqtbl1q_u8(escape_char_by_low_nibble, low_nibbles);
+    return vceqq_u8(looked_up, bytes);
+}
+
+static inline uint64_t
+neon_matches_to_bitmap16(const uint8x16_t matches)
+{
+    static const uint8x16_t bit_mask = {
+        0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80,
+        0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80,
+    };
+
+    uint8x16_t folded = vandq_u8(matches, bit_mask);
+    folded = vpaddq_u8(folded, folded);
+    folded = vpaddq_u8(folded, folded);
+    folded = vpaddq_u8(folded, folded);
+
+    return vgetq_lane_u16(vreinterpretq_u16_u8(folded), 0);
+}
+
+static inline uint64_t
+neon_matches_to_bitmap64(const uint8x16_t m0, const uint8x16_t m1, const uint8x16_t m2, const uint8x16_t m3)
+{
+    static const uint8x16_t bit_mask = {
+        0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80,
+        0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80,
+    };
+
+    const uint8x16_t t0 = vandq_u8(m0, bit_mask);
+    const uint8x16_t t1 = vandq_u8(m1, bit_mask);
+    const uint8x16_t t2 = vandq_u8(m2, bit_mask);
+    const uint8x16_t t3 = vandq_u8(m3, bit_mask);
+
+    uint8x16_t folded = vpaddq_u8(vpaddq_u8(t0, t1), vpaddq_u8(t2, t3));
+    folded = vpaddq_u8(folded, folded);
+
+    return vgetq_lane_u64(vreinterpretq_u64_u8(folded), 0);
 }
 
 static inline bool
@@ -184,30 +266,34 @@ find_next_neon(search_state *search)
         return find_next_match_neon(search);
     }
 
-    const uint8x16_t single_quote = vdupq_n_u8('\'');
-    const uint8x16_t double_quote = vdupq_n_u8('"');
-    const uint8x16_t ampersand = vdupq_n_u8('&');
-    const uint8x16_t lt = vdupq_n_u8('<');
-    const uint8x16_t gt = vdupq_n_u8('>');
+    while ((size_t)(search->end - search->cstr) >= sizeof(uint8x16x4_t)) {
+        const uint8x16_t bytes0 = vld1q_u8(search->cstr +  0);
+        const uint8x16_t bytes1 = vld1q_u8(search->cstr + 16);
+        const uint8x16_t bytes2 = vld1q_u8(search->cstr + 32);
+        const uint8x16_t bytes3 = vld1q_u8(search->cstr + 48);
+
+        const uint8x16_t m0 = neon_escape_matches(bytes0);
+        const uint8x16_t m1 = neon_escape_matches(bytes1);
+        const uint8x16_t m2 = neon_escape_matches(bytes2);
+        const uint8x16_t m3 = neon_escape_matches(bytes3);
+
+        const uint64_t bitmap = neon_matches_to_bitmap64(m0, m1, m2, m3);
+
+        if (bitmap) {
+            search->matches_bitmap = bitmap;
+            return find_next_match_neon(search);
+        }
+
+        search->cstr += 64;
+    }
 
     while ((size_t)(search->end - search->cstr) >= sizeof(uint8x16_t)) {
         const uint8x16_t bytes = vld1q_u8(search->cstr);
-        const uint8x16_t match1 = vceqq_u8(bytes, single_quote);
-        const uint8x16_t match2 = vceqq_u8(bytes, double_quote);
-        const uint8x16_t match3 = vceqq_u8(bytes, ampersand);
-        const uint8x16_t match4 = vceqq_u8(bytes, lt);
-        const uint8x16_t match5 = vceqq_u8(bytes, gt);
-
-        const uint8x16_t mask1 = vorrq_u8(match1, match2);
-        const uint8x16_t mask2 = vorrq_u8(match3, match4);
-        const uint8x16_t mask3 = vorrq_u8(mask1, match5);
-        const uint8x16_t matches = vorrq_u8(mask2, mask3);
-
-        const uint8x8_t res = vshrn_n_u16(vreinterpretq_u16_u8(matches), 4);
-        const uint64_t bitmap = vget_lane_u64(vreinterpret_u64_u8(res), 0);
+        const uint8x16_t matches = neon_escape_matches(bytes);
+        const uint64_t bitmap = neon_matches_to_bitmap16(matches);
 
         if (bitmap) {
-            search->matches_bitmap = bitmap & 0x8888888888888888ull;
+            search->matches_bitmap = bitmap;
             return find_next_match_neon(search);
         }
         search->cstr += sizeof(uint8x16_t);
