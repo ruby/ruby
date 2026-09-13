@@ -661,7 +661,6 @@ init_fast_fallback_inetsock_internal(VALUE v)
 
     /* start of hostname resolution */
     if (arg->family_size == 1) {
-        arg->wait = -1;
         arg->getaddrinfo_shared = NULL;
 
         int family = arg->families[0];
@@ -1404,6 +1403,7 @@ rsock_init_inetsock(
 
             struct fast_fallback_inetsock_arg fast_fallback_arg;
             memset(&fast_fallback_arg, 0, sizeof(fast_fallback_arg));
+            fast_fallback_arg.wait = -1;
 
             fast_fallback_arg.self = self;
             fast_fallback_arg.io = Qnil;
