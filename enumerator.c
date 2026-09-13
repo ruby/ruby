@@ -29,6 +29,7 @@
 #include "internal/numeric.h"
 #include "internal/range.h"
 #include "internal/rational.h"
+#include "internal/set.h"
 #include "ruby/ruby.h"
 
 /*
@@ -2642,14 +2643,14 @@ lazy_drop_while(VALUE obj)
 static int
 lazy_uniq_check(VALUE chain, VALUE memos, long memo_index)
 {
-    VALUE hash = rb_ary_entry(memos, memo_index);
+    VALUE set = rb_ary_entry(memos, memo_index);
 
-    if (NIL_P(hash)) {
-        hash = rb_obj_hide(rb_hash_new());
-        rb_ary_store(memos, memo_index, hash);
+    if (NIL_P(set)) {
+        set = rb_obj_hide(rb_set_new());
+        rb_ary_store(memos, memo_index, set);
     }
 
-    return rb_hash_add_new_element(hash, chain, Qfalse);
+    return !rb_set_add_no_check(set, chain);
 }
 
 static struct MEMO *
