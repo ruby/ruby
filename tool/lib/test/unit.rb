@@ -1825,8 +1825,6 @@ module Test
         @@installed_at_exit = true
       end
 
-      alias orig_run_suite _run_suite
-
       # Overriding of Test::Unit::Runner#puke
       def puke klass, meth, e
         n = report.size
