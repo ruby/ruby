@@ -180,7 +180,7 @@ find_next_match_neon(search_state *search)
 // This 16-byte lookup table is indexed into by using the
 // low nibble of each input byte.
 // Note: index 0 is intentionally set to a character that will not match
-// the NULL byte. 
+// the NULL byte.
 static const uint8x16_t escape_char_by_low_nibble = {
     '\'', 0,    '"',  0,
     0,    0,    '&',  '\'',
@@ -199,7 +199,7 @@ neon_escape_matches(const uint8x16_t bytes)
     // reality, the vector would be 16 bytes wide.
     //
     // Assume the string is: "<br />"
-    // Converted to integers: 
+    // Converted to integers:
     //   [0x3c 0x62 0x72 0x20 0x2f 0x3e]
     //
     // Next, we mask off the top nibble so we are left only with the low nibble
