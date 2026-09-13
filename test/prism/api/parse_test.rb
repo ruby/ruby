@@ -69,6 +69,12 @@ module Prism
       end
     end
 
+    def test_parse_pathname
+      pathname = Pathname.new(__FILE__)
+      node = Prism.parse_file(pathname).value
+      assert_kind_of ProgramNode, node
+    end
+
     if RUBY_ENGINE != "truffleruby"
       def test_parse_nonascii
         Dir.mktmpdir do |dir|

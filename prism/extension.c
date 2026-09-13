@@ -393,9 +393,11 @@ file_options(int argc, VALUE *argv, pm_options_t *options, VALUE *encoded_filepa
     VALUE keywords;
     rb_scan_args(argc, argv, "1:", &filepath, &keywords);
 
-    if (!RB_TYPE_P(filepath, T_STRING)) {
+    int state = 0;
+    filepath = rb_protect(rb_get_path, filepath, &state);
+    if (state != 0) {
         pm_options_free(options);
-        rb_raise(rb_eTypeError, "wrong argument type %"PRIsVALUE" (expected String)", rb_obj_class(filepath));
+        rb_jump_tag(state);
     }
 
     *encoded_filepath = rb_str_encode_ospath(filepath);
