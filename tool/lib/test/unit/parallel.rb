@@ -49,7 +49,7 @@ module Test
         e, f, s = @errors, @failures, @skips
 
         begin
-          result = orig_run_suite(suite, type)
+          result = super
         rescue Interrupt
           @need_exit = true
           result = [nil,nil]
