@@ -1696,6 +1696,7 @@ module Test
         }
         return assertions.size, assertions.inject(0) { |sum, n| sum + n }
       end
+      alias orig_run_suite _run_suite
 
       def _start_method(inst)
       end
@@ -1824,8 +1825,6 @@ module Test
         } unless @@installed_at_exit
         @@installed_at_exit = true
       end
-
-      alias orig_run_suite _run_suite
 
       # Overriding of Test::Unit::Runner#puke
       def puke klass, meth, e
