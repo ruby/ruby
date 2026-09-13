@@ -3891,11 +3891,13 @@ unlink_internal(const char *path, void *arg)
  *  Does not follow [symbolic links](rdoc-ref:file/symbolic_links.md);
  *  if an entry is a symlink, the link itself is removed.
  *
- *    File.write('t.tmp', 'foo')
- *    File.write('u.tmp', 'bar')
- *    File.delete('t.tmp', 'u.tmp') # => 2
- *    File.symlink('README.md', 'foo')
- *    File.unlink('foo')            # => 1
+ *  ```ruby
+ *  File.write('t.tmp', 'foo')
+ *  File.write('u.tmp', 'bar')
+ *  File.delete('t.tmp', 'u.tmp') # => 2
+ *  File.symlink('README.md', 'foo')
+ *  File.unlink('foo')            # => 1
+ *  ```
  *
  *  Raises an exception on any error;
  *  some entries may have been deleted before the path causing the error.
