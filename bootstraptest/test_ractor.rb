@@ -2710,7 +2710,7 @@ assert_equal 'ok', %q{
 
 ## Ractor#monitor
 
-# monitor port returns `:exited` when the monitering Ractor terminated.
+# monitor port returns [ractor, :exited] when the monitering Ractor terminated.
 assert_equal 'true', %q{
   r = Ractor.new do
     Ractor.main << :ok1
@@ -2719,10 +2719,10 @@ assert_equal 'true', %q{
 
   r.monitor port = Ractor::Port.new
   Ractor.receive # :ok1
-  port.receive == :exited
+  port.receive == [r, :exited]
 }
 
-# monitor port returns `:exited` even if the monitoring Ractor was terminated.
+# monitor port returns [ractor, :exited] even if the monitoring Ractor was terminated.
 assert_equal 'true', %q{
   r = Ractor.new do
     :ok
@@ -2731,7 +2731,7 @@ assert_equal 'true', %q{
   r.join # wait for r's terminateion
 
   r.monitor port = Ractor::Port.new
-  port.receive == :exited
+  port.receive == [r, :exited]
 }
 
 # monitor returns false if the monitoring Ractor was terminated.
@@ -2745,7 +2745,7 @@ assert_equal 'false', %q{
   r.monitor Ractor::Port.new
 }
 
-# monitor port returns `:aborted` when the monitering Ractor is aborted.
+# monitor port returns [ractor, :aborted] when the monitering Ractor is aborted.
 assert_equal 'true', %q{
   r = Ractor.new do
     Ractor.main << :ok1
@@ -2754,10 +2754,10 @@ assert_equal 'true', %q{
 
   r.monitor port = Ractor::Port.new
   Ractor.receive # :ok1
-  port.receive == :aborted
+  port.receive == [r, :aborted]
 }
 
-# monitor port returns `:aborted` even if the monitoring Ractor was aborted.
+# monitor port returns [ractor, :aborted] even if the monitoring Ractor was aborted.
 assert_equal 'true', %q{
   r = Ractor.new do
     raise 'ok'
@@ -2770,7 +2770,7 @@ assert_equal 'true', %q{
   end
 
   r.monitor port = Ractor::Port.new
-  port.receive == :aborted
+  port.receive == [r, :aborted]
 }
 
 assert_equal 'ok', %q{

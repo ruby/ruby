@@ -751,7 +751,7 @@ class TestRactor < Test::Unit::TestCase
       b = Ractor.new(target) do |t|
         t.monitor(p = Ractor::Port.new)
         Ractor.main << :ready
-        p.receive
+        p.receive == [t, :exited]
       end
 
       Ractor.receive  # b's monitor is registered
@@ -765,7 +765,7 @@ class TestRactor < Test::Unit::TestCase
       end
 
       assert_equal :ok, a.value
-      assert_equal :exited, b.value
+      assert_equal true, b.value
     RUBY
   end
 
