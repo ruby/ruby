@@ -1284,7 +1284,9 @@ class TestMethod < Test::Unit::TestCase
         [:C1_m1] + super
       end
       prepend m
-      alias m2 m1
+    end
+    assert_deprecated_warning(/aliasing .*#m1 defined in a prepended module .* is deprecated/) do
+      c1.class_eval { alias m2 m1 }
     end
 
     o1 = c1.new
