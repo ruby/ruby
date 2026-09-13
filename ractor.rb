@@ -314,38 +314,48 @@ class Ractor
   def self.select(*ports, timeout: nil)
     raise ArgumentError, 'specify at least one Ractor::Port or Ractor' if ports.empty?
 
-    monitors = {} # Ractor::Port => Ractor
-
-    ports = ports.map do |arg|
-      case arg
-      when Ractor
-        port = Ractor::Port.new
-        monitors[port] = arg
-        arg.monitor port
-        port
-      when Ractor::Port
-        arg
-      else
-        raise ArgumentError, "should be Ractor::Port or Ractor"
-      end
-    end
+    monitored = []
+    others = []
+    mp = nil
 
     begin
-      result = __builtin_ractor_select_internal(ports, timeout)
-      return nil if result.nil? # timed out
-
-      result_port, obj = result
-
-      if r = monitors[result_port]
-        [r, r.value]
-      else
-        [result_port, obj]
+      ports.each do |arg|
+        case arg
+        when Ractor
+          monitored << arg
+        when Ractor::Port
+          others << arg
+        else
+          raise ArgumentError, "should be Ractor::Port or Ractor"
+        end
       end
+
+      # One port for every watched ractor rather than one each: the exit token
+      # names the ractor, so there is nothing to look the result up in.
+      unless monitored.empty?
+        mp = Ractor::Port.new
+        monitored.each { |r| r.monitor mp }
+      end
+
+      if others.empty?
+        # Nothing but ractors: one port to wait on, so no selector is built.
+        token = mp.receive(timeout: timeout)
+        return nil if token.nil?
+      else
+        result = __builtin_ractor_select_internal(mp ? [mp, *others] : others, timeout)
+        return nil if result.nil?
+
+        port, obj = result
+        return [port, obj] unless port.equal?(mp)
+        token = obj
+      end
+
+      r = token[0]
+      [r, r.value]
     ensure
-      # close all ports for join
-      monitors.each do |port, r|
-        r.unmonitor port
-        port.close
+      if mp
+        monitored.each { |r| r.unmonitor mp }
+        mp.close
       end
     end
   end
