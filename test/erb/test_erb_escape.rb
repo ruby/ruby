@@ -58,6 +58,85 @@ class TestERBEscape < Test::Unit::TestCase
     assert_equal '&lt;' * 32, h('<' * 32)
   end
 
+  def test_html_escape_simd_block_boundary
+    # Ensure we only escape the characters that need to be escaped.
+    (0...128).each do |pos|
+      s = "a" * 128
+      s[pos] = "<"
+      expected = "a" * pos + "&lt;" + "a" * (128 - pos - 1)
+      assert_equal(expected, ERB::Util.html_escape(s), "escape at position #{pos}")
+    end
+  end
+
+  HTML_ESCAPE_ENTITIES = {"'" => "&#39;", '"' => "&quot;", "&" => "&amp;", "<" => "&lt;", ">" => "&gt;"}
+
+  def test_html_escape_simd_multiple_matches_per_block
+    chars = ["'", '"', '&', '<', '>']
+    (0..15).each do |a|
+      (0..15).each do |b|
+        next if a == b
+        s = "a" * 32
+        s[a] = chars[a % chars.size]
+        s[b] = chars[b % chars.size]
+        expected = Array.new(32, "a")
+        expected[a] = HTML_ESCAPE_ENTITIES[chars[a % chars.size]]
+        expected[b] = HTML_ESCAPE_ENTITIES[chars[b % chars.size]]
+        assert_equal(expected.join, ERB::Util.html_escape(s), "positions #{a}, #{b}")
+      end
+    end
+  end
+
+  def test_html_escape_simd_tail_lengths
+    (1..128).each do |len|
+      (0...len).each do |pos|
+        s = "a" * len
+        s[pos] = ">"
+        expected = "a" * pos + "&gt;" + "a" * (len - pos - 1)
+        assert_equal(expected, ERB::Util.html_escape(s), "len=#{len} pos=#{pos}")
+      end
+    end
+  end
+
+  def test_html_escape_simd_wide_block_boundary
+    # Ensure a 64-byte-wide SIMD fast path correctly locates a match
+    # at every byte position, including the last byte of the block
+    # (which is special-cased in find_next_match_neon).
+    (0...128).each do |pos|
+      s = "a" * 128
+      s[pos] = "<"
+      expected = "a" * pos + "&lt;" + "a" * (128 - pos - 1)
+      assert_equal(expected, ERB::Util.html_escape(s), "escape at position #{pos}")
+    end
+  end
+
+  def test_html_escape_simd_wide_block_multiple_matches
+    chars = ["'", '"', '&', '<', '>']
+    boundary_positions = [0, 1, 15, 16, 17, 31, 32, 33, 47, 48, 49, 62, 63]
+    boundary_positions.each do |a|
+      boundary_positions.each do |b|
+        next if a == b
+        s = "a" * 64
+        s[a] = chars[a % chars.size]
+        s[b] = chars[b % chars.size]
+        expected = Array.new(64, "a")
+        expected[a] = HTML_ESCAPE_ENTITIES[chars[a % chars.size]]
+        expected[b] = HTML_ESCAPE_ENTITIES[chars[b % chars.size]]
+        assert_equal(expected.join, ERB::Util.html_escape(s), "positions #{a}, #{b}")
+      end
+    end
+  end
+
+  def test_html_escape_simd_wide_block_tail_lengths
+    ([*56..72] + [*120..136]).each do |len|
+      (0...len).each do |pos|
+        s = "a" * len
+        s[pos] = ">"
+        expected = "a" * pos + "&gt;" + "a" * (len - pos - 1)
+        assert_equal(expected, ERB::Util.html_escape(s), "len=#{len} pos=#{pos}")
+      end
+    end
+  end
+
   private
 
   def h(...)
