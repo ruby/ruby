@@ -2451,7 +2451,7 @@ rb_hash_bulk_insert_into_st_table(long argc, const VALUE *argv, VALUE hash)
     st_index_t n, size = argc / 2;
     st_table *tab = RHASH_ST_TABLE(hash);
 
-    tab = RHASH_TBL_RAW(hash);
+    tab = rb_hash_tbl_raw(hash);
     n = tab->entries_bound + size;
     st_expand_table(tab, n);
     if (UNLIKELY(tab->num_entries))

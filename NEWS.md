@@ -24,6 +24,7 @@ Note: We're only listing outstanding class updates.
       interrupts, including interrupts masked by `Thread.handle_interrupt`.
       As with the existing skip path, `errno` is `0` because the function was
       never called.
+    * `RHASH_TBL` is deprecated.  [[Feature #22232]]
 
 * Array
 
@@ -461,6 +462,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #22185]: https://bugs.ruby-lang.org/issues/22185
 [Feature #22205]: https://bugs.ruby-lang.org/issues/22205
 [Feature #22226]: https://bugs.ruby-lang.org/issues/22226
+[Feature #22232]: https://bugs.ruby-lang.org/issues/22232
 [Feature #22238]: https://bugs.ruby-lang.org/issues/22238
 [Feature #22297]: https://bugs.ruby-lang.org/issues/22297
 [PR #17201]: https://github.com/ruby/ruby/pull/17201
