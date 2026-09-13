@@ -300,6 +300,62 @@ struct fast_fallback_inetsock_arg
     VALUE test_mode_settings;
 };
 
+static VALUE
+fdset_to_io_array(int nfds, rb_fdset_t *fdset)
+{
+    VALUE ios = rb_ary_new();
+
+    for (int fd = 0; fd < nfds; fd++) {
+        if (rb_fd_isset(fd, fdset)) {
+            rb_ary_push(ios, rb_io_open_descriptor(rb_cIO, fd, FMODE_EXTERNAL, Qnil, Qnil, NULL));
+        }
+    }
+
+    return ios;
+}
+
+static long
+io_array_to_fdset(VALUE ios, rb_fdset_t *fdset)
+{
+    Check_Type(ios, T_ARRAY);
+    long size = RARRAY_LEN(ios);
+
+    for (long i = 0; i < size; i++) {
+        rb_fd_set(rb_io_descriptor(rb_ary_entry(ios, i)), fdset);
+    }
+
+    return size;
+}
+
+static int
+fast_fallback_fd_select(int nfds, rb_fdset_t *readfds, rb_fdset_t *writefds, struct timeval *timeout)
+{
+    VALUE scheduler = rb_fiber_scheduler_current();
+    if (scheduler == Qnil) {
+        return rb_thread_fd_select(nfds, readfds, writefds, NULL, timeout);
+    }
+
+    VALUE readables = fdset_to_io_array(nfds, readfds);
+    VALUE writables = fdset_to_io_array(nfds, writefds);
+    VALUE result = rb_fiber_scheduler_io_select(
+        scheduler, readables, writables, Qnil, rb_fiber_scheduler_make_timeout(timeout)
+    );
+    if (UNDEF_P(result)) {
+        return rb_thread_fd_select(nfds, readfds, writefds, NULL, timeout);
+    }
+
+    rb_fd_zero(readfds);
+    rb_fd_zero(writefds);
+
+    if (NIL_P(result)) return 0;
+    Check_Type(result, T_ARRAY);
+
+    return (int)(
+        io_array_to_fdset(rb_ary_entry(result, 0), readfds) +
+        io_array_to_fdset(rb_ary_entry(result, 1), writefds)
+    );
+}
+
 static struct fast_fallback_getaddrinfo_shared *
 allocate_fast_fallback_getaddrinfo_shared(int family_size)
 {
@@ -992,7 +1048,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
             }
         }
 
-        status = rb_thread_fd_select(nfds, &arg->readfds, &arg->writefds, NULL, delay_p);
+        status = fast_fallback_fd_select(nfds, &arg->readfds, &arg->writefds, delay_p);
 
         now = current_clocktime_ts();
         if (is_timeout_tv(resolution_delay_expires_at, now)) {

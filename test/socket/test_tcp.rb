@@ -3,6 +3,7 @@
 begin
   require "socket"
   require "test/unit"
+  require_relative "../fiber/scheduler"
 rescue LoadError
 end
 
@@ -89,6 +90,35 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
         test_mode_settings: { delay: { ipv4: 1000 } }
       )
     end
+  end
+
+  def test_initialize_fast_fallback_does_not_block_fiber_scheduler
+    return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
+
+    order = []
+
+    thread = Thread.new do
+      Fiber.set_scheduler(Scheduler.new)
+
+      Fiber.schedule do
+        begin
+          TCPSocket.new(
+            "localhost", 0,
+            fast_fallback: true,
+            test_mode_settings: { delay: { ipv4: 500, ipv6: 500 } }
+          ).close
+        rescue SystemCallError, SocketError
+        end
+        order << :connect_finished
+      end
+
+      order << :scheduler_got_control_back
+    end
+
+    assert thread.join(30), "TCPSocket.new blocked the fiber scheduler thread"
+    assert_equal [:scheduler_got_control_back, :connect_finished], order
+  ensure
+    thread&.kill&.join
   end
 
   def test_initialize_open_timeout_with_other_timeouts
