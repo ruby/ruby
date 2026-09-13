@@ -3138,7 +3138,19 @@ lchmod_internal(const char *path, void *mode)
  *  When supported: like File::chmod,
  *  but does not follow [symbolic links](rdoc-ref:file/symbolic_links.md),
  *  and therefore changes the mode of the entries given by `paths`;
- *  returns the number of paths given.
+ *  returns the number of paths given:
+ *
+ *  ```ruby
+ *  File.write('t.tmp', '')
+ *  File.symlink('t.tmp', 'link')
+ *  File.lstat('t.tmp').mode.to_s(8) # => "100664"
+ *  File.lstat('link').mode.to_s(8)  # => "120755"
+ *  File.lchmod(0777, 'link')
+ *  File.lstat('t.tmp').mode.to_s(8) # => "100664"
+ *  File.lstat('link').mode.to_s(8)  # => "120777"
+ *  File.delete('t.tmp')
+ *  File.delete('link')
+ *  ```
  */
 
 static VALUE
