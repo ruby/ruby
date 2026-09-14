@@ -1255,7 +1255,11 @@ init_fast_fallback_inetsock_internal(VALUE v)
         arg->io = rsock_init_sock(arg->self, connected_fd);
     }
 
-    return arg->io;
+    /* Don't close the socket in the cleanup if we are returning it */
+    io = arg->io;
+    arg->io = Qnil;
+
+    return io;
 }
 
 static VALUE
@@ -1329,6 +1333,11 @@ fast_fallback_inetsock_cleanup(VALUE v)
     if (arg->connection_attempt_fds) {
         free(arg->connection_attempt_fds);
         arg->connection_attempt_fds = NULL;
+    }
+
+    if (!NIL_P(arg->io)) {
+        rb_io_close(arg->io);
+        arg->io = Qnil;
     }
 
     return Qnil;
