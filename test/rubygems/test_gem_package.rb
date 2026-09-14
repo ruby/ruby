@@ -1538,6 +1538,7 @@ class TestGemPackage < Gem::Package::TarTestCase
   end
 
   def test_verify_corrupt_tar_metadata_entry
+    pend_for_ruby_box_stdio_capture
     gem = tar_file_header("metadata.gz", "", 0, 999, Time.now)
 
     File.open "corrupt.gem", "wb" do |io|
@@ -1574,6 +1575,7 @@ class TestGemPackage < Gem::Package::TarTestCase
   end
 
   def test_verify_corrupt_tar_data_entry
+    pend_for_ruby_box_stdio_capture
     gem = tar_file_header("data.tar.gz", "", 0, 100, Time.now)
 
     File.open "corrupt.gem", "wb" do |io|

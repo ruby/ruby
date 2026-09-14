@@ -314,6 +314,7 @@ if you believe they were disclosed to a third party.
   end
 
   def test_handle_arguments_debug
+    pend_for_ruby_box_stdio_capture
     assert_equal false, $DEBUG
 
     args = %w[--debug]

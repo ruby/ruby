@@ -21,6 +21,7 @@ class TestGemCommandsOpenCommand < Gem::TestCase
   end
 
   def test_execute
+    pend_for_ruby_box_stdio_capture
     omit "JRuby on Windows spawns the editor with a different cwd" if Gem.win_platform? && Gem.java_platform?
 
     @cmd.options[:args] = %w[foo]

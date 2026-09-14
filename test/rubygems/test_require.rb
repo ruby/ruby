@@ -718,6 +718,7 @@ class TestGemRequire < Gem::TestCase
 
   ["", "Kernel."].each do |prefix|
     define_method "test_no_kernel_require_in_#{prefix.tr(".", "_")}warn_with_uplevel" do
+      pend_for_ruby_box_stdio_capture
       Dir.mktmpdir("warn_test") do |dir|
         File.write(dir + "/sub.rb", "#{prefix}warn 'uplevel', 'test', uplevel: 1\n")
         File.write(dir + "/main.rb", "require 'sub'\n")
@@ -733,6 +734,7 @@ class TestGemRequire < Gem::TestCase
     end
 
     define_method "test_no_other_behavioral_changes_with_#{prefix.tr(".", "_")}warn" do
+      pend_for_ruby_box_stdio_capture
       Dir.mktmpdir("warn_test") do |dir|
         File.write(dir + "/main.rb", "#{prefix}warn({x:1}, {y:2}, [])\n")
         _, err = capture_subprocess_io do
@@ -748,6 +750,7 @@ class TestGemRequire < Gem::TestCase
   end
 
   def test_no_crash_when_overriding_warn_with_warning_module
+    pend_for_ruby_box_stdio_capture
     Dir.mktmpdir("warn_test") do |dir|
       File.write(dir + "/main.rb", "module Warning; def warn(str); super; end; end; warn 'Foo Bar'")
       _, err = capture_subprocess_io do
@@ -762,6 +765,7 @@ class TestGemRequire < Gem::TestCase
   end
 
   def test_expected_backtrace_location_when_inheriting_from_basic_object_and_including_kernel
+    pend_for_ruby_box_stdio_capture
     Dir.mktmpdir("warn_test") do |dir|
       File.write(dir + "/main.rb", "\nrequire 'sub'\n")
       File.write(dir + "/sub.rb", <<-'RUBY')

@@ -383,6 +383,7 @@ class TestGemCommandsBuildCommand < Gem::TestCase
   end
 
   def test_execute_bad_spec
+    pend_for_ruby_box_stdio_capture
     @gem.date = "2010-11-08"
 
     gemspec_file = File.join(@tempdir, @gem.spec_name)
