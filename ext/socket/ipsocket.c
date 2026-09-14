@@ -1020,6 +1020,12 @@ init_fast_fallback_inetsock_internal(VALUE v)
                         last_error.type = SYSCALL_ERROR;
                         last_error.ecode = errno;
                         close(fd);
+                        remove_connection_attempt_fd(
+                            arg->connection_attempt_fds,
+                            &arg->connection_attempt_fds_size,
+                            fd
+                        );
+                        i--;
 
                         if (any_addrinfos(&resolution_store)) continue;
                         if (in_progress_fds(arg->connection_attempt_fds_size)) break;
