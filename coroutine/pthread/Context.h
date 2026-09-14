@@ -35,7 +35,7 @@ struct coroutine_context
     void *stack;
     size_t size;
 
-    /* The caller pthread for a main context, or the context's worker pthread. */
+    /* The current caller for a main context, or the context's worker pthread. */
     pthread_t id;
 
     /* Whether the lazily created worker pthread must be cancelled and joined.
