@@ -1789,20 +1789,59 @@ propagate_alloc_func(VALUE subclass, VALUE arg)
         !RCLASS_SINGLETON_P(subclass) &&
         !FL_TEST_RAW(subclass, RCLASS_ALLOCATOR_DEFINED)) {
         RCLASS_SET_ALLOCATOR(subclass, (rb_alloc_func_t)arg);
+        RCLASS_SET_COPY_ALLOCATOR(subclass, NULL);
         rb_class_foreach_subclass(subclass, propagate_alloc_func, arg);
     }
 }
 
 void
-rb_define_alloc_func(VALUE klass, VALUE (*func)(VALUE))
+rb_define_alloc_func(VALUE klass, rb_alloc_func_t func)
 {
     Check_Type(klass, T_CLASS);
     if (RCLASS_SINGLETON_P(klass)) {
         rb_raise(rb_eTypeError, "can't define an allocator for a singleton class");
     }
     RCLASS_SET_ALLOCATOR(klass, func);
+    RCLASS_SET_COPY_ALLOCATOR(klass, NULL);
     FL_SET_RAW(klass, RCLASS_ALLOCATOR_DEFINED);
     rb_class_foreach_subclass(klass, propagate_alloc_func, (VALUE)func);
+}
+
+struct propagate_copy_alloc_func_args {
+    rb_alloc_func_t alloc_func;
+    rb_copy_alloc_func_t copy_alloc_func;
+};
+
+static void
+propagate_copy_alloc_func(VALUE subclass, VALUE arg)
+{
+    if (RB_TYPE_P(subclass, T_CLASS) &&
+        !RCLASS_SINGLETON_P(subclass) &&
+        !FL_TEST_RAW(subclass, RCLASS_ALLOCATOR_DEFINED)) {
+
+        struct propagate_copy_alloc_func_args *args = (struct propagate_copy_alloc_func_args *)arg;
+        RCLASS_SET_ALLOCATOR(subclass, args->alloc_func);
+        RCLASS_SET_COPY_ALLOCATOR(subclass, args->copy_alloc_func);
+        rb_class_foreach_subclass(subclass, propagate_copy_alloc_func, arg);
+    }
+}
+
+void
+rb_define_copy_alloc_func(VALUE klass, rb_copy_alloc_func_t copy_func, rb_alloc_func_t func)
+{
+    Check_Type(klass, T_CLASS);
+    if (RCLASS_SINGLETON_P(klass)) {
+        rb_raise(rb_eTypeError, "can't define a copy allocator for a singleton class");
+    }
+    RCLASS_SET_ALLOCATOR(klass, func);
+    RCLASS_SET_COPY_ALLOCATOR(klass, copy_func);
+    FL_SET_RAW(klass, RCLASS_ALLOCATOR_DEFINED);
+
+    struct propagate_copy_alloc_func_args args = {
+        .alloc_func = func,
+        .copy_alloc_func = copy_func,
+    };
+    rb_class_foreach_subclass(klass, propagate_copy_alloc_func, (VALUE)&args);
 }
 
 void
@@ -1821,8 +1860,53 @@ rb_get_alloc_func(VALUE klass)
 
     rb_alloc_func_t allocator = RCLASS_ALLOCATOR(klass);
     if (allocator == UNDEF_ALLOC_FUNC) return 0;
-    RUBY_ASSERT(allocator);
-    return allocator;
+    if (allocator) {
+        return allocator;
+    }
+
+    VALUE *superclasses = RCLASS_SUPERCLASSES(klass);
+    size_t depth = RCLASS_SUPERCLASS_DEPTH(klass);
+
+    for (size_t i = depth; i > 0; i--) {
+        klass = superclasses[i - 1];
+        RBIMPL_ASSERT_TYPE(klass, T_CLASS);
+
+        allocator = RCLASS_ALLOCATOR(klass);
+        if (allocator == UNDEF_ALLOC_FUNC) break;
+        if (allocator) return allocator;
+    }
+    return 0;
+}
+
+void
+rb_init_alloc_func(VALUE klass)
+{
+    RBIMPL_ASSERT_TYPE(klass, T_CLASS);
+
+    if (RCLASS_ALLOCATOR(klass)) {
+        return;
+    }
+
+    VALUE *superclasses = RCLASS_SUPERCLASSES(klass);
+    size_t depth = RCLASS_SUPERCLASS_DEPTH(klass);
+
+    for (size_t i = depth; i > 0; i--) {
+        VALUE superclass = superclasses[i - 1];
+        RBIMPL_ASSERT_TYPE(superclass, T_CLASS);
+
+        rb_alloc_func_t allocator = RCLASS_ALLOCATOR(superclass);
+        if (allocator) {
+            RCLASS_SET_ALLOCATOR(klass, allocator);
+            return;
+        }
+
+        rb_copy_alloc_func_t allocator2 = RCLASS_COPY_ALLOCATOR(superclass);
+        if (allocator2) {
+            RCLASS_SET_COPY_ALLOCATOR(klass, allocator2);
+            return;
+        }
+    }
+
 }
 
 const rb_method_entry_t *
