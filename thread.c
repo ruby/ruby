@@ -4705,10 +4705,7 @@ rb_fd_init_copy(rb_fdset_t *dst, rb_fdset_t *src)
 static inline size_t
 fdset_memsize(int capa)
 {
-    if (capa == FD_SETSIZE) {
-        return sizeof(fd_set);
-    }
-    return sizeof(unsigned int) + (capa * sizeof(SOCKET));
+    return offsetof(fd_set, fd_array) + (capa * sizeof(SOCKET));
 }
 
 void
@@ -4734,7 +4731,7 @@ rb_fd_set(int fd, rb_fdset_t *set)
         set->capa = (set->fdset->fd_count / FD_SETSIZE + 1) * FD_SETSIZE;
         set->fdset =
             rb_xrealloc_mul_add(
-                set->fdset, set->capa, sizeof(SOCKET), sizeof(unsigned int));
+                set->fdset, set->capa, sizeof(SOCKET), offsetof(fd_set, fd_array));
     }
     set->fdset->fd_array[set->fdset->fd_count++] = s;
 }

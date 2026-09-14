@@ -2954,7 +2954,7 @@ rb_w32_fd_copy(rb_fdset_t *dst, const fd_set *src, int max)
     max = min(src->fd_count, (UINT)max);
     if ((UINT)dst->capa < (UINT)max) {
         dst->capa = (src->fd_count / FD_SETSIZE + 1) * FD_SETSIZE;
-        dst->fdset = xrealloc(dst->fdset, sizeof(unsigned int) + sizeof(SOCKET) * dst->capa);
+        dst->fdset = xrealloc(dst->fdset, offsetof(fd_set, fd_array) + sizeof(SOCKET) * dst->capa);
     }
 
     memcpy(dst->fdset->fd_array, src->fd_array,
@@ -2968,7 +2968,7 @@ rb_w32_fd_dup(rb_fdset_t *dst, const rb_fdset_t *src)
 {
     if ((UINT)dst->capa < src->fdset->fd_count) {
         dst->capa = (src->fdset->fd_count / FD_SETSIZE + 1) * FD_SETSIZE;
-        dst->fdset = xrealloc(dst->fdset, sizeof(unsigned int) + sizeof(SOCKET) * dst->capa);
+        dst->fdset = xrealloc(dst->fdset, offsetof(fd_set, fd_array) + sizeof(SOCKET) * dst->capa);
     }
 
     memcpy(dst->fdset->fd_array, src->fdset->fd_array,
@@ -3006,7 +3006,7 @@ extract_fd(rb_fdset_t *dst, fd_set *src, int (*func)(SOCKET))
                 if (d == dst->fdset->fd_count) {
                     if ((int)dst->fdset->fd_count >= dst->capa) {
                         dst->capa = (dst->fdset->fd_count / FD_SETSIZE + 1) * FD_SETSIZE;
-                        dst->fdset = xrealloc(dst->fdset, sizeof(unsigned int) + sizeof(SOCKET) * dst->capa);
+                        dst->fdset = xrealloc(dst->fdset, offsetof(fd_set, fd_array) + sizeof(SOCKET) * dst->capa);
                     }
                     dst->fdset->fd_array[dst->fdset->fd_count++] = fd;
                 }
