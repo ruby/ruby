@@ -3804,8 +3804,6 @@ rb_file_s_symlink(VALUE klass, VALUE from, VALUE to)
  *  File.unlink(linkpath)   # Clean up.
  *  ```
  *
- *  If the entry at `link_path` is a symlink, that link is _not_ followed.
- *
  *  Raises Errno::EINVAL if the entry referenced by `link_path`
  *  is not a symbolic link.
  */
