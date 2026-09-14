@@ -117,6 +117,40 @@ class TestFiber < Test::Unit::TestCase
     assert_not_predicate mutex, :locked?
   end
 
+  def test_mutexes_owned_by_fibers_migrate_independently
+    mutexes = 3.times.map { Mutex.new }
+    fibers = mutexes.map do |mutex|
+      Fiber.new do
+        mutex.lock
+        Fiber.yield
+        assert_predicate mutex, :owned?
+        mutex.unlock
+      end
+    end
+
+    Thread.new { fibers.each(&:resume) }.value
+    mutexes.each { assert_predicate _1, :locked? }
+
+    threads = fibers.map { |fiber| Thread.new { fiber.resume } }
+    threads.each(&:value)
+
+    mutexes.each { assert_not_predicate _1, :locked? }
+  end
+
+  def test_mutex_ownership_is_not_transferred_when_fiber_terminates
+    mutex = Mutex.new
+
+    Thread.new do
+      Fiber.new { mutex.lock }.resume
+
+      assert_predicate mutex, :locked?
+      assert_not_predicate mutex, :owned?
+      assert_raise(ThreadError) { mutex.unlock }
+    end.value
+
+    assert_not_predicate mutex, :locked?
+  end
+
   def test_handle_interrupt_across_threads
     fiber = Fiber.new do
       Thread.handle_interrupt(RuntimeError => :never) do

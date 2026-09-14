@@ -4172,6 +4172,7 @@ th_init(rb_thread_t *th, VALUE self, rb_vm_t *vm)
     th->self = self;
 
     ccan_list_head_init(&th->interrupt_exec_tasks);
+    ccan_list_head_init(&th->execution_contexts);
     // initialized here (not at thread creation) so that every Thread object
     // -- including allocated-but-never-started ones -- owns a valid mutex:
     // thread_free destroys it unconditionally

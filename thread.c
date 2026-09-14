@@ -465,64 +465,62 @@ rb_threadptr_join_list_wakeup(rb_thread_t *thread)
 void
 rb_threadptr_unlock_all_locking_mutexes(rb_thread_t *th)
 {
-    rb_serial_t ec_serial = rb_ec_serial(th->ec);
-    rb_mutex_t *mutex = th->keeping_mutexes;
+    while (th->ec->keeping_mutexes) {
+        rb_mutex_t *mutex = th->ec->keeping_mutexes;
 
-    while (mutex) {
-        rb_mutex_t *next = mutex->next_mutex;
-
-        /* A suspended fiber can outlive this thread and resume elsewhere, so
-         * only release mutexes owned by the current or a terminated fiber. */
-        if (mutex->ec_serial == ec_serial || mutex->release_on_thread_exit) {
-            // rb_warn("mutex #<%p> was not unlocked by thread #<%p>", (void *)mutex, (void*)th);
-            VM_ASSERT(mutex->ec_serial);
-            const char *error_message = rb_mutex_unlock_th(mutex, th, 0);
-            if (error_message) rb_bug("invalid keeping_mutexes: %s", error_message);
-        }
-
-        mutex = next;
+        // rb_warn("mutex #<%p> was not unlocked by thread #<%p>", (void *)mutex, (void*)th);
+        VM_ASSERT(mutex->ec == th->ec);
+        VM_ASSERT(mutex->ec_serial);
+        const char *error_message = rb_mutex_unlock_ec(mutex, NULL);
+        if (error_message) rb_bug("invalid keeping_mutexes: %s", error_message);
     }
 }
 
 void
 rb_threadptr_unlock_all_mutexes(rb_thread_t *th)
 {
-    while (th->keeping_mutexes) {
-        rb_mutex_t *mutex = th->keeping_mutexes;
+    rb_execution_context_t *ec, *next;
 
-        VM_ASSERT(mutex->ec_serial);
-        const char *error_message = rb_mutex_unlock_th(mutex, th, 0);
-        if (error_message) rb_bug("invalid keeping_mutexes: %s", error_message);
+    ccan_list_for_each_safe(&th->execution_contexts, ec, next, thread_node) {
+        while (ec->keeping_mutexes) {
+            rb_mutex_t *mutex = ec->keeping_mutexes;
+
+            VM_ASSERT(mutex->ec == ec);
+            VM_ASSERT(mutex->ec_serial);
+            const char *error_message = rb_mutex_unlock_ec(mutex, NULL);
+            if (error_message) rb_bug("invalid keeping_mutexes: %s", error_message);
+        }
+
+        ccan_list_del_init(&ec->thread_node);
     }
 }
 
 void
-rb_threadptr_migrate_fiber_mutexes(rb_thread_t *from, rb_thread_t *to, rb_serial_t ec_serial)
+rb_ec_move_mutexes(rb_execution_context_t *from, rb_execution_context_t *to)
 {
-    rb_mutex_t **keeping_mutexes = &from->keeping_mutexes;
+    if (from == to) return;
 
-    while (*keeping_mutexes) {
-        rb_mutex_t *mutex = *keeping_mutexes;
+    while (from->keeping_mutexes) {
+        rb_mutex_t *mutex = from->keeping_mutexes;
 
-        if (mutex->ec_serial == ec_serial) {
-            *keeping_mutexes = mutex->next_mutex;
-            mutex->next_mutex = to->keeping_mutexes;
-            mutex->th = to;
-            to->keeping_mutexes = mutex;
-        }
-        else {
-            keeping_mutexes = &mutex->next_mutex;
-        }
+        from->keeping_mutexes = mutex->next_mutex;
+        mutex->next_mutex = to->keeping_mutexes;
+        mutex->ec = to;
+        to->keeping_mutexes = mutex;
     }
 }
 
 void
-rb_threadptr_mark_fiber_mutexes_for_release(rb_thread_t *th, rb_serial_t ec_serial)
+rb_ec_abandon_mutexes(rb_execution_context_t *ec)
 {
-    for (rb_mutex_t *mutex = th->keeping_mutexes; mutex; mutex = mutex->next_mutex) {
-        if (mutex->ec_serial == ec_serial) {
-            mutex->release_on_thread_exit = 1;
-        }
+    while (ec->keeping_mutexes) {
+        rb_mutex_t *mutex = ec->keeping_mutexes;
+
+        ec->keeping_mutexes = mutex->next_mutex;
+        mutex->ec = NULL;
+        mutex->ec_serial = 0;
+        mutex->next_mutex = NULL;
+        ccan_list_head_init(&mutex->waitq);
     }
 }
 
@@ -5416,7 +5414,10 @@ terminate_atfork_i(rb_thread_t *th, const rb_thread_t *current_th)
         th->scheduler = Qnil;
 
         rb_native_mutex_initialize(&th->interrupt_lock);
-        rb_mutex_abandon_keeping_mutexes(th);
+        rb_execution_context_t *ec;
+        ccan_list_for_each(&th->execution_contexts, ec, thread_node) {
+            rb_ec_abandon_mutexes(ec);
+        }
         rb_mutex_abandon_locking_mutex(th);
         thread_cleanup_func(th, TRUE);
     }
@@ -6238,7 +6239,8 @@ debug_deadlock_check(rb_ractor_t *r, VALUE msg)
         if (th->locking_mutex) {
             rb_mutex_t *mutex = mutex_ptr(th->locking_mutex);
             rb_str_catf(msg, " mutex:%llu cond:%"PRIuSIZE,
-                        (unsigned long long)mutex->ec_serial, rb_mutex_num_waiting(mutex));
+                        (unsigned long long)mutex->ec_serial,
+                        rb_mutex_num_waiting(mutex));
         }
 
         {

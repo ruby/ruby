@@ -1171,6 +1171,43 @@ fiber_is_root_p(const rb_fiber_t *fiber)
 
 static void jit_cont_free(struct rb_jit_cont *cont);
 
+static bool
+ec_registered_p(const rb_execution_context_t *ec)
+{
+    return ec->thread_node.next != &ec->thread_node;
+}
+
+static bool
+fiber_root_p(const rb_fiber_t *fiber)
+{
+    rb_thread_t *th = fiber->cont.saved_ec.thread_ptr;
+
+    return th->root_fiber ? th->root_fiber == fiber : !fiber->first_proc;
+}
+
+static void
+fiber_unregister_ec(rb_fiber_t *fiber)
+{
+    rb_execution_context_t *ec = &fiber->cont.saved_ec;
+
+    if (!ec_registered_p(ec)) return;
+
+    if (!fiber_root_p(fiber)) {
+        rb_thread_t *th = ec->thread_ptr;
+        rb_execution_context_t *root_ec = th->root_fiber ?
+            &th->root_fiber->cont.saved_ec : th->ec;
+
+        rb_ec_move_mutexes(ec, root_ec);
+        ccan_list_del_init(&ec->thread_node);
+    }
+    else {
+        /* The root EC can be swept before other unreachable fibers belonging
+         * to the same thread.  Detach every EC now so their later frees never
+         * dereference the root EC or thread. */
+        rb_threadptr_unlock_all_mutexes(ec->thread_ptr);
+    }
+}
+
 static void
 cont_free(void *ptr)
 {
@@ -1289,6 +1326,8 @@ rb_fiber_free_body(void *ptr)
     RUBY_FREE_ENTER("fiber");
 
     if (DEBUG) fprintf(stderr, "fiber_free: %p[%p]\n", (void *)fiber, fiber->stack.base);
+
+    fiber_unregister_ec(fiber);
 
     if (fiber->cont.saved_ec.local_storage) {
         rb_id_table_free(fiber->cont.saved_ec.local_storage);
@@ -1517,6 +1556,8 @@ cont_init(rb_context_t *cont, rb_thread_t *th)
     /* save thread context */
     cont_save_thread(cont, th);
     cont->saved_ec.thread_ptr = th;
+    ccan_list_node_init(&cont->saved_ec.thread_node);
+    cont->saved_ec.keeping_mutexes = NULL;
     cont->saved_ec.local_storage = NULL;
     cont->saved_ec.local_storage_recursive_hash = Qnil;
     cont->saved_ec.local_storage_recursive_hash_for_trace = Qnil;
@@ -2184,6 +2225,7 @@ fiber_t_alloc(VALUE fiber_value, unsigned int blocking)
     fiber->cont.saved_ec.fiber_ptr = fiber;
     fiber->cont.saved_ec.serial = next_ec_serial(th->ractor);
     rb_ec_clear_vm_stack(&fiber->cont.saved_ec);
+    ccan_list_add_tail(&th->execution_contexts, &fiber->cont.saved_ec.thread_node);
 
     fiber->prev = NULL;
 
@@ -2718,6 +2760,8 @@ rb_threadptr_root_fiber_setup(rb_thread_t *th)
     fiber->cont.saved_ec.fiber_ptr = fiber;
     fiber->cont.saved_ec.serial = next_ec_serial(th->ractor);
     fiber->cont.saved_ec.thread_ptr = th;
+    ccan_list_node_init(&fiber->cont.saved_ec.thread_node);
+    ccan_list_add_tail(&th->execution_contexts, &fiber->cont.saved_ec.thread_node);
     fiber->blocking = 1;
     fiber->killed = 0;
     fiber_status_set(fiber, FIBER_RESUMED); /* skip CREATED */
@@ -2887,8 +2931,9 @@ fiber_switch(rb_fiber_t *fiber, int argc, const VALUE *argv, int kw_splat, rb_fi
             rb_raise(rb_eFiberError, "attempt to switch to a root fiber across threads");
         }
 
-        rb_threadptr_migrate_fiber_mutexes(cont->saved_ec.thread_ptr, th, rb_ec_serial(&cont->saved_ec));
+        ccan_list_del_init(&cont->saved_ec.thread_node);
         cont->saved_ec.thread_ptr = th;
+        ccan_list_add_tail(&th->execution_contexts, &cont->saved_ec.thread_node);
     }
 
     /*
@@ -3073,7 +3118,7 @@ rb_fiber_close(rb_fiber_t *fiber)
 {
     rb_execution_context_t *ec = &fiber->cont.saved_ec;
 
-    rb_threadptr_mark_fiber_mutexes_for_release(ec->thread_ptr, rb_ec_serial(ec));
+    if (!fiber_root_p(fiber)) fiber_unregister_ec(fiber);
     fiber_status_set(fiber, FIBER_TERMINATED);
     rb_ec_close(ec);
 }

@@ -6,13 +6,13 @@ static VALUE rb_cMutex, rb_eClosedQueueError;
 
 /* Mutex */
 typedef struct rb_mutex_struct {
+    /* Logical owner, retained after a terminated fiber's list is folded into
+     * its thread's root EC. */
     rb_serial_t ec_serial;
-    rb_thread_t *th; // even if the fiber is collected, we might need access to the thread in mutex_free
+    /* EC whose keeping_mutexes list contains this mutex. */
+    rb_execution_context_t *ec;
     struct rb_mutex_struct *next_mutex;
     struct ccan_list_head waitq; /* protected by GVL */
-    /* The owning fiber has terminated, so release this mutex when its current
-     * thread exits even though the owner EC is no longer that thread's EC. */
-    unsigned int release_on_thread_exit : 1;
 } rb_mutex_t;
 
 /* sync_waiter is always on-stack */
@@ -79,11 +79,9 @@ wakeup_all(struct ccan_list_head *head)
 }
 
 #if defined(HAVE_WORKING_FORK)
-static void rb_mutex_abandon_all(rb_mutex_t *mutexes);
-static void rb_mutex_abandon_keeping_mutexes(rb_thread_t *th);
 static void rb_mutex_abandon_locking_mutex(rb_thread_t *th);
 #endif
-static const char* rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t *th, rb_serial_t ec_serial);
+static const char* rb_mutex_unlock_ec(rb_mutex_t *mutex, rb_execution_context_t *ec);
 
 static size_t
 rb_mutex_num_waiting(rb_mutex_t *mutex)
@@ -106,14 +104,14 @@ mutex_locked_p(rb_mutex_t *mutex)
     return mutex->ec_serial != 0;
 }
 
-static void thread_mutex_remove(rb_thread_t *thread, rb_mutex_t *mutex);
+static void ec_mutex_remove(rb_execution_context_t *ec, rb_mutex_t *mutex);
 
 static void
 mutex_free(void *ptr)
 {
     rb_mutex_t *mutex = ptr;
     if (mutex_locked_p(mutex)) {
-        thread_mutex_remove(mutex->th, mutex);
+        ec_mutex_remove(mutex->ec, mutex);
     }
     ruby_xfree(ptr);
 }
@@ -155,7 +153,6 @@ mutex_alloc(VALUE klass)
     obj = TypedData_Make_Struct(klass, rb_mutex_t, &mutex_data_type, mutex);
 
     ccan_list_head_init(&mutex->waitq);
-    mutex->release_on_thread_exit = 0;
     return obj;
 }
 
@@ -174,20 +171,20 @@ rb_mutex_locked_p(VALUE self)
 }
 
 static void
-thread_mutex_insert(rb_thread_t *thread, rb_mutex_t *mutex)
+ec_mutex_insert(rb_execution_context_t *ec, rb_mutex_t *mutex)
 {
     RUBY_ASSERT(!mutex->next_mutex);
-    if (thread->keeping_mutexes) {
-        mutex->next_mutex = thread->keeping_mutexes;
+    if (ec->keeping_mutexes) {
+        mutex->next_mutex = ec->keeping_mutexes;
     }
 
-    thread->keeping_mutexes = mutex;
+    ec->keeping_mutexes = mutex;
 }
 
 static void
-thread_mutex_remove(rb_thread_t *thread, rb_mutex_t *mutex)
+ec_mutex_remove(rb_execution_context_t *ec, rb_mutex_t *mutex)
 {
-    rb_mutex_t **keeping_mutexes = &thread->keeping_mutexes;
+    rb_mutex_t **keeping_mutexes = &ec->keeping_mutexes;
 
     while (*keeping_mutexes && *keeping_mutexes != mutex) {
         // Move to the next mutex in the list:
@@ -201,27 +198,26 @@ thread_mutex_remove(rb_thread_t *thread, rb_mutex_t *mutex)
 }
 
 static void
-mutex_set_owner(rb_mutex_t *mutex, rb_thread_t *th, rb_serial_t ec_serial)
+mutex_set_owner(rb_mutex_t *mutex, rb_execution_context_t *ec)
 {
-    mutex->th = th;
-    mutex->ec_serial = ec_serial;
-    mutex->release_on_thread_exit = 0;
+    mutex->ec = ec;
+    mutex->ec_serial = rb_ec_serial(ec);
 }
 
 static void
-mutex_locked(rb_mutex_t *mutex, rb_thread_t *th, rb_serial_t ec_serial)
+mutex_locked(rb_mutex_t *mutex, rb_execution_context_t *ec)
 {
-    mutex_set_owner(mutex, th, ec_serial);
-    thread_mutex_insert(th, mutex);
+    mutex_set_owner(mutex, ec);
+    ec_mutex_insert(ec, mutex);
 }
 
 static inline bool
-do_mutex_trylock(rb_mutex_t *mutex, rb_thread_t *th, rb_serial_t ec_serial)
+do_mutex_trylock(rb_mutex_t *mutex, rb_execution_context_t *ec)
 {
     if (mutex->ec_serial == 0) {
         RUBY_DEBUG_LOG("%p ok", mutex);
 
-        mutex_locked(mutex, th, ec_serial);
+        mutex_locked(mutex, ec);
         return true;
     }
     else {
@@ -233,7 +229,7 @@ do_mutex_trylock(rb_mutex_t *mutex, rb_thread_t *th, rb_serial_t ec_serial)
 static VALUE
 rb_mut_trylock(rb_execution_context_t *ec, VALUE self)
 {
-    return RBOOL(do_mutex_trylock(mutex_ptr(self), ec->thread_ptr, rb_ec_serial(ec)));
+    return RBOOL(do_mutex_trylock(mutex_ptr(self), ec));
 }
 
 VALUE
@@ -296,7 +292,7 @@ do_mutex_lock(struct mutex_args *args, int interruptible_p)
         rb_raise(rb_eThreadError, "can't be called from trap context");
     }
 
-    if (!do_mutex_trylock(mutex, th, ec_serial)) {
+    if (!do_mutex_trylock(mutex, ec)) {
         if (mutex->ec_serial == ec_serial) {
             rb_raise(rb_eThreadError, "deadlock; recursive locking");
         }
@@ -317,11 +313,11 @@ do_mutex_lock(struct mutex_args *args, int interruptible_p)
                 rb_ensure(call_rb_fiber_scheduler_block, self, delete_from_waitq, (VALUE)&sync_waiter);
 
                 if (!mutex->ec_serial) {
-                    mutex_set_owner(mutex, th, ec_serial);
+                    mutex_set_owner(mutex, ec);
                 }
             }
             else {
-                if (!th->vm->thread_ignore_deadlock && mutex->th == th) {
+                if (!th->vm->thread_ignore_deadlock && mutex->ec->thread_ptr == th) {
                     rb_raise(rb_eThreadError, "deadlock; lock already owned by another fiber belonging to the same thread");
                 }
 
@@ -358,7 +354,7 @@ do_mutex_lock(struct mutex_args *args, int interruptible_p)
 
                 // unlocked by another thread while sleeping
                 if (!mutex->ec_serial) {
-                    mutex_set_owner(mutex, th, ec_serial);
+                    mutex_set_owner(mutex, ec);
                 }
 
                 rb_ractor_sleeper_threads_dec(th->ractor);
@@ -372,12 +368,12 @@ do_mutex_lock(struct mutex_args *args, int interruptible_p)
                 /* release mutex before checking for interrupts...as interrupt checking
                  * code might call rb_raise() */
                 if (mutex->ec_serial == ec_serial) {
-                    mutex->th = NULL;
+                    mutex->ec = NULL;
                     mutex->ec_serial = 0;
                 }
                 RUBY_VM_CHECK_INTS_BLOCKING(th->ec); /* may release mutex */
                 if (!mutex->ec_serial) {
-                    mutex_set_owner(mutex, th, ec_serial);
+                    mutex_set_owner(mutex, ec);
                 }
             }
             else {
@@ -396,7 +392,7 @@ do_mutex_lock(struct mutex_args *args, int interruptible_p)
         }
 
         if (saved_ints) th->ec->interrupt_flag = saved_ints;
-        if (mutex->ec_serial == ec_serial) mutex_locked(mutex, th, ec_serial);
+        if (mutex->ec_serial == ec_serial) mutex_locked(mutex, ec);
     }
 
     RUBY_DEBUG_LOG("%p locked", mutex);
@@ -447,22 +443,23 @@ rb_mutex_owned_p(VALUE self)
 }
 
 static const char *
-rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t *th, rb_serial_t ec_serial)
+rb_mutex_unlock_ec(rb_mutex_t *mutex, rb_execution_context_t *ec)
 {
     RUBY_DEBUG_LOG("%p", mutex);
 
     if (mutex->ec_serial == 0) {
         return "Attempt to unlock a mutex which is not locked";
     }
-    else if (ec_serial && mutex->ec_serial != ec_serial) {
+    else if (ec && mutex->ec_serial != rb_ec_serial(ec)) {
         return "Attempt to unlock a mutex which is locked by another thread/fiber";
     }
 
     struct sync_waiter *cur = 0, *next;
 
+    rb_execution_context_t *owner = mutex->ec;
+    mutex->ec = NULL;
     mutex->ec_serial = 0;
-    mutex->release_on_thread_exit = 0;
-    thread_mutex_remove(th, mutex);
+    ec_mutex_remove(owner, mutex);
 
     ccan_list_for_each_safe(&mutex->waitq, cur, next, node) {
         ccan_list_del_init(&cur->node);
@@ -497,9 +494,8 @@ do_mutex_unlock(struct mutex_args *args)
 {
     const char *err;
     rb_mutex_t *mutex = args->mutex;
-    rb_thread_t *th = rb_ec_thread_ptr(args->ec);
 
-    err = rb_mutex_unlock_th(mutex, th, rb_ec_serial(args->ec));
+    err = rb_mutex_unlock_ec(mutex, args->ec);
     if (err) rb_raise(rb_eThreadError, "%s", err);
 }
 
@@ -533,13 +529,6 @@ rb_mut_unlock(rb_execution_context_t *ec, VALUE self)
 
 #if defined(HAVE_WORKING_FORK)
 static void
-rb_mutex_abandon_keeping_mutexes(rb_thread_t *th)
-{
-    rb_mutex_abandon_all(th->keeping_mutexes);
-    th->keeping_mutexes = NULL;
-}
-
-static void
 rb_mutex_abandon_locking_mutex(rb_thread_t *th)
 {
     if (th->locking_mutex) {
@@ -547,22 +536,6 @@ rb_mutex_abandon_locking_mutex(rb_thread_t *th)
 
         ccan_list_head_init(&mutex->waitq);
         th->locking_mutex = Qfalse;
-    }
-}
-
-static void
-rb_mutex_abandon_all(rb_mutex_t *mutexes)
-{
-    rb_mutex_t *mutex;
-
-    while (mutexes) {
-        mutex = mutexes;
-        mutexes = mutex->next_mutex;
-        mutex->ec_serial = 0;
-        mutex->th = NULL;
-        mutex->next_mutex = 0;
-        mutex->release_on_thread_exit = 0;
-        ccan_list_head_init(&mutex->waitq);
     }
 }
 #endif
