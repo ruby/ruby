@@ -1096,9 +1096,9 @@ init_fast_fallback_inetsock_internal(VALUE v)
                         if (resolved_type[0] == IPV6_HOSTNAME_RESOLVED) {
                             resolution_store.v6.finished = true;
 
-                            if (arg->getaddrinfo_entries[IPV6_ENTRY_POS]->err &&
-                                arg->getaddrinfo_entries[IPV6_ENTRY_POS]->err != EAI_ADDRFAMILY) {
-                                if (!resolution_store.v4.finished || resolution_store.v4.has_error) {
+                            if (arg->getaddrinfo_entries[IPV6_ENTRY_POS]->err) {
+                                if (arg->getaddrinfo_entries[IPV6_ENTRY_POS]->err != EAI_ADDRFAMILY &&
+                                    (!resolution_store.v4.finished || resolution_store.v4.has_error)) {
                                     last_error.type = RESOLUTION_ERROR;
                                     last_error.ecode = arg->getaddrinfo_entries[IPV6_ENTRY_POS]->err;
                                     syscall = "getaddrinfo(3)";
@@ -1161,7 +1161,8 @@ init_fast_fallback_inetsock_internal(VALUE v)
                 resolution_store.v6.finished = true;
 
                 if (arg->getaddrinfo_entries[IPV6_ENTRY_POS]->err) {
-                    if (!resolution_store.v4.finished || resolution_store.v4.has_error) {
+                    if (arg->getaddrinfo_entries[IPV6_ENTRY_POS]->err != EAI_ADDRFAMILY &&
+                        (!resolution_store.v4.finished || resolution_store.v4.has_error)) {
                         last_error.type = RESOLUTION_ERROR;
                         last_error.ecode = arg->getaddrinfo_entries[IPV6_ENTRY_POS]->err;
                         syscall = "getaddrinfo(3)";
