@@ -722,7 +722,8 @@ end
     end
 
     assert_match(/b \(>= 0\)\n.*\n      - 1\n/, err)
-    assert_equal Gem::SpecificationRecord.dirs_from([Gem.user_dir]), Gem::Specification.dirs
+    # JRuby replaces dirs= in rubygems/defaults/jruby.rb without the ABI scoped spec dir
+    assert_equal Gem::SpecificationRecord.dirs_from([Gem.user_dir]), Gem::Specification.dirs unless Gem.java_platform?
     assert_equal %w[a-1], Gem::Specification.map(&:full_name)
   end
 
