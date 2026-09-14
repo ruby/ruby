@@ -7544,7 +7544,11 @@ impl Function {
             run_pass!(clean_cfg);
             run_pass!(remove_redundant_patch_points);
             run_pass!(remove_duplicate_check_interrupts);
-            run_pass!(eliminate_empty_inline_frames);
+            // Eliminate empty frames if any methods were inlined. By definition, if iteration is >
+            // 0 a method must have been inlined.
+            if did_inline || iteration > 0 {
+                run_pass!(eliminate_empty_inline_frames);
+            }
             run_pass!(eliminate_dead_code);
 
             if !did_inline {
