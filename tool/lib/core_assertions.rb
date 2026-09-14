@@ -438,7 +438,7 @@ eom
           require = "#{require}; require #{full_path.inspect}"
         end
 
-        assert_separately(args, file, line, <<~RUBY, ignore_stderr: ignore_stderr, **opt)
+        preamble = <<~RUBY
           #{shim_value}
           #{shim_join}
           #{require}
@@ -446,8 +446,19 @@ eom
           $VERBOSE = nil
           Ractor.new {} # trigger initial warning
           $VERBOSE = previous_verbose
-          #{src}
         RUBY
+
+        # Report failures against the caller's line, not this method's: the
+        # preamble above shifts src, and assert_separately would otherwise
+        # default file/line to the assert_separately call below.
+        unless file and line
+          loc, = caller_locations(1, 1)
+          file ||= loc.path
+          line ||= loc.lineno
+        end
+        line -= preamble.count("\n")
+
+        assert_separately(args, file, line, preamble + src, ignore_stderr: ignore_stderr, **opt)
       end
 
       # :call-seq:
