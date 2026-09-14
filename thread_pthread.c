@@ -67,10 +67,6 @@ static const void *const condattr_monotonic = NULL;
 // otherwise the caller has to restate the deadline in the condvar's clock.
 #define RB_NATIVE_COND_HRTIME_DEADLINE_P() (condattr_monotonic != NULL)
 
-/* A retiring shared native thread frees its own context while the threads it
- * parked are still suspended with that context as their target. */
-#define COROUTINE_TARGET_MAY_BE_FREED 1
-
 #include COROUTINE_H
 
 #ifndef HAVE_SYS_EVENT_H
