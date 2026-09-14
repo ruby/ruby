@@ -1673,10 +1673,14 @@ static VALUE
 strscan_matched_size(VALUE self)
 {
     struct strscanner *p;
+    long beg, end;
 
     GET_SCANNER(self, p);
     if (! MATCHED_P(p)) return Qnil;
-    return LONG2NUM(p->regs.end[0] - p->regs.beg[0]);
+    beg = adjust_register_position(p, p->regs.beg[0]);
+    if (beg > S_LEN(p)) return Qnil;
+    end = minl(adjust_register_position(p, p->regs.end[0]), S_LEN(p));
+    return LONG2NUM(end - beg);
 }
 
 static int
