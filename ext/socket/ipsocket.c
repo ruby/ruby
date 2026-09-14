@@ -1258,15 +1258,15 @@ fast_fallback_inetsock_cleanup(VALUE v)
     if (arg->wait != -1) close(arg->wait);
 
     if (getaddrinfo_shared) {
-        if (getaddrinfo_shared->notify != -1) close(getaddrinfo_shared->notify);
-        getaddrinfo_shared->notify = -1;
-
         int shared_need_free = 0;
         struct addrinfo *ais[arg->family_size];
         for (int i = 0; i < arg->family_size; i++) ais[i] = NULL;
 
         rb_nativethread_lock_lock(&getaddrinfo_shared->lock);
         {
+            if (getaddrinfo_shared->notify != -1) close(getaddrinfo_shared->notify);
+            getaddrinfo_shared->notify = -1;
+
             for (int i = 0; i < arg->family_size; i++) {
                 struct fast_fallback_getaddrinfo_entry *getaddrinfo_entry = arg->getaddrinfo_entries[i];
 
