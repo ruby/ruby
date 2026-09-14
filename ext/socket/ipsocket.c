@@ -707,18 +707,18 @@ init_fast_fallback_inetsock_internal(VALUE v)
             arg->getaddrinfo_entries[i]->test_ecode = 0;
 
             /* for testing HEv2 */
-            if (!NIL_P(test_mode_settings) && RB_TYPE_P(test_mode_settings, T_HASH)) {
+            if (RB_TYPE_P(test_mode_settings, T_HASH)) {
                 const char *family_sym = arg->families[i] == AF_INET6 ? "ipv6" : "ipv4";
 
                 VALUE test_delay_setting = rb_hash_aref(test_mode_settings, ID2SYM(rb_intern("delay")));
-                if (!NIL_P(test_delay_setting)) {
+                if (RB_TYPE_P(test_delay_setting, T_HASH)) {
                     VALUE rb_test_delay_ms = rb_hash_aref(test_delay_setting, ID2SYM(rb_intern(family_sym)));
                     long test_delay_ms = NIL_P(rb_test_delay_ms) ? 0 : NUM2LONG(rb_test_delay_ms);
                     arg->getaddrinfo_entries[i]->test_sleep_ms = test_delay_ms;
                 }
 
                 VALUE test_error_setting = rb_hash_aref(test_mode_settings, ID2SYM(rb_intern("error")));
-                if (!NIL_P(test_error_setting)) {
+                if (RB_TYPE_P(test_error_setting, T_HASH)) {
                     VALUE rb_test_ecode = rb_hash_aref(test_error_setting, ID2SYM(rb_intern(family_sym)));
                     if (!NIL_P(rb_test_ecode)) {
                         arg->getaddrinfo_entries[i]->test_ecode = NUM2INT(rb_test_ecode);
