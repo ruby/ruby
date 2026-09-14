@@ -2,6 +2,13 @@
 
 module Spec
   class CommandExecution
+    # Under RUBY_BOX, every spawned ruby prints an experimental warning to
+    # stderr, breaking specs that assert clean stderr.
+    RUBY_BOX_WARNING = Regexp.union(
+      /^[^\n]*: warning: Ruby::Box is experimental, and the behavior may change in the future!\n?/,
+      %r{^See https://docs\.ruby-lang\.org/\S+ for known issues, etc\.\n?}
+    )
+
     def initialize(command, timeout:)
       @command = command
       @timeout = timeout
@@ -72,7 +79,13 @@ module Spec
     attr_reader :failure_reason
 
     def normalize(string)
-      string.dup.force_encoding(Encoding::UTF_8).scrub.strip.gsub("\r\n", "\n")
+      string = string.dup.force_encoding(Encoding::UTF_8).scrub.gsub("\r\n", "\n")
+      string = string.gsub(RUBY_BOX_WARNING, "") if ruby_box_enabled?
+      string.strip
+    end
+
+    def ruby_box_enabled?
+      defined?(Ruby::Box) && Ruby::Box.enabled?
     end
   end
 end
