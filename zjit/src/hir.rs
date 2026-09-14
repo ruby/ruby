@@ -6355,7 +6355,6 @@ impl Function {
     /// This produces a minimal SSA representation amenable to further optimizations.
     /// The implementation is inspired from algorithm 2 in <https://c9x.me/compile/bib/braun13cc.pdf>.
     fn remove_trivial_block_params(&mut self) {
-        // TODO: Is there a way we can get mutable references to each of the edges so we don't need to keep looking them up?
         #[derive(Copy, Clone)]
         struct EdgeKey {
             block_id: BlockId,
@@ -6419,8 +6418,8 @@ impl Function {
             }
         }
 
-        // TODO: Figure out if this should be FIFO or some different algorithmic structure
-        // TODO: Figure out if we should start with reverse post order here instead of 0..n
+        // TODO: Remove worklist and iterate until fixpoint
+        // TODO: Do the thing that Max did in infer_types because this is mostly linear and we don't need to be that fast in the loop case
         // Instantiate the worklist with blocks that have at least one predecessor and at least one block param.
         // No predecessors or no block params => nothing to optimize
         let mut worklist: VecDeque<BlockId> = predecessors.iter().enumerate().filter_map(|(i, preds)| {
@@ -6469,7 +6468,6 @@ impl Function {
                 }
                 let terminator = self.blocks[target_block].insns.last().unwrap();
                 // If any outgoing edge gets updated, add the successor block to the worklist for analysis
-                // TODO: Additionally, there might be a special case to consider if the edge points to the block itself. We want to make sure we're not infinitely adding to the worklist
                 match self.resolve(*terminator).insn(self) {
                     Insn::Jump(edge) => {
                         if edge.args.contains(&old_insn_id) && !worklist.contains(&edge.target) {
