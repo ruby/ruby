@@ -15,7 +15,6 @@ static VALUE rb_cRactorPort;
 
 static VALUE ractor_receive(rb_execution_context_t *ec, const struct ractor_port *rp, const rb_hrtime_t *end);
 static VALUE ractor_send(rb_execution_context_t *ec, const struct ractor_port *rp, VALUE obj, VALUE move);
-static struct ractor_basket *ractor_basket_new_ref(VALUE shareable);
 static struct ractor_basket *ractor_basket_new_exit(VALUE sender, VALUE token);
 static void ractor_send_basket(rb_execution_context_t *ec, const struct ractor_port *rp, struct ractor_basket *b, bool raise_on_error);
 static void ractor_add_port(rb_ractor_t *r, st_data_t id);
@@ -1670,28 +1669,10 @@ ractor_send_basket(rb_execution_context_t *ec, const struct ractor_port *rp, str
     }
 }
 
-/* A shareable payload needs no preparation, so this skips the tag ractor_basket_new
- * pushes.  The exit tokens travel this way: they are sent from a thread whose EC has
- * already lost its VM stack, and EC_PUSH_TAG reads ec->cfp under ZJIT. */
-static struct ractor_basket *
-ractor_basket_new_ref(VALUE shareable)
-{
-    struct ractor_basket *b = ractor_basket_alloc();
-
-    b->type = basket_type_ref;
-    b->sender = Qnil;
-    b->p.v = shareable;
-    b->p.exception = false;
-    b->p.marshaled = false;
-    b->p.courier = NULL;
-    b->p.mbuf = NULL;
-    b->p.mlen = 0;
-
-    return b;
-}
-
 /* sender is the ractor the token is about; both it and the token are shareable,
- * so nothing is copied until the receiver builds the pair. */
+ * so nothing is copied until the receiver builds the pair.  It also skips the tag
+ * ractor_basket_new pushes: the tokens go out from a thread whose EC has already
+ * lost its VM stack, and EC_PUSH_TAG reads ec->cfp under ZJIT. */
 static struct ractor_basket *
 ractor_basket_new_exit(VALUE sender, VALUE token)
 {
