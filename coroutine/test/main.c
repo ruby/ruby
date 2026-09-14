@@ -4,8 +4,8 @@
 
 #include <stdlib.h>
 
-int
-main(void)
+static int
+run_tests(void)
 {
     int result = EXIT_SUCCESS;
 
@@ -15,3 +15,17 @@ main(void)
 
     return result;
 }
+
+int
+main(void)
+{
+    return run_tests();
+}
+
+#if defined(_WIN32)
+int
+wmain(void)
+{
+    return run_tests();
+}
+#endif
