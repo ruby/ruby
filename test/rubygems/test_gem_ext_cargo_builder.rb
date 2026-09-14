@@ -199,7 +199,7 @@ class TestGemExtCargoBuilder < Gem::TestCase
     pend "jruby not supported" if Gem.java_platform?
     pend "truffleruby not supported (yet)" if RUBY_ENGINE == "truffleruby"
     system(@rust_envs, "cargo", "-V", out: IO::NULL, err: [:child, :out])
-    pend "cargo not present" unless $?.success?
+    pend "cargo not present" unless Process.last_status.success?
     pend "ruby.h is not provided by ruby repo" if ruby_repo?
     pend "rust toolchain of mingw is broken" if mingw_windows?
   end
