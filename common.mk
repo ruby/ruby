@@ -98,6 +98,7 @@ COROUTINE_TEST = coroutine-test$(EXEEXT)
 COROUTINE_TEST_OBJS = coroutine-main.$(OBJEXT) \
 		coroutine-stack.$(OBJEXT) \
 		coroutine-test_initialize_destroy.$(OBJEXT) \
+		coroutine-test_pthread_resume.$(OBJEXT) \
 		coroutine-test_transfer_repeat.$(OBJEXT) \
 		coroutine-test_transfer_return.$(OBJEXT)
 
@@ -1167,6 +1168,10 @@ coroutine-stack.$(OBJEXT): {$(VPATH)}coroutine/test/stack.c
 coroutine-test_initialize_destroy.$(OBJEXT): {$(VPATH)}coroutine/test/test_initialize_destroy.c
 	$(ECHO) compiling $(srcdir)/coroutine/test/test_initialize_destroy.c
 	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(CSRCFLAG)$(srcdir)/coroutine/test/test_initialize_destroy.c
+
+coroutine-test_pthread_resume.$(OBJEXT): {$(VPATH)}coroutine/test/test_pthread_resume.c
+	$(ECHO) compiling $(srcdir)/coroutine/test/test_pthread_resume.c
+	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(CSRCFLAG)$(srcdir)/coroutine/test/test_pthread_resume.c
 
 coroutine-test_transfer_repeat.$(OBJEXT): {$(VPATH)}coroutine/test/test_transfer_repeat.c
 	$(ECHO) compiling $(srcdir)/coroutine/test/test_transfer_repeat.c

@@ -24,20 +24,18 @@
 
 struct coroutine_context;
 
-struct coroutine_shared
+enum coroutine_state
 {
-    pthread_mutex_t guard;
-    struct coroutine_context * main;
-
-    size_t count;
+    COROUTINE_CREATED,
+    COROUTINE_RUNNING,
+    COROUTINE_SUSPENDED,
+    COROUTINE_DESTROYED
 };
 
 typedef COROUTINE(* coroutine_start)(struct coroutine_context *from, struct coroutine_context *self);
 
 struct coroutine_context
 {
-    struct coroutine_shared * shared;
-
     coroutine_start start;
     void *argument;
 
@@ -45,7 +43,11 @@ struct coroutine_context
     size_t size;
 
     pthread_t id;
+    pthread_mutex_t guard;
     pthread_cond_t schedule;
+    enum coroutine_state state;
+    int initialized;
+    int thread_created;
     struct coroutine_context * from;
 };
 
