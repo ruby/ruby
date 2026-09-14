@@ -1054,6 +1054,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
                             &arg->connection_attempt_fds_size,
                             fd
                         );
+                        i--;
                         last_error.type = SYSCALL_ERROR;
                         last_error.ecode = err;
                     }
