@@ -99,11 +99,11 @@ describe "A Symbol literal" do
   it "raises an EncodingError when an interpolated symbol has invalid bytes" do
     -> {
       :"#{(+"\xFF").force_encoding(Encoding::UTF_8)}"
-    }.should.raise(EncodingError, 'invalid symbol in encoding UTF-8 :"\xFF"')
+    }.should raise_error(EncodingError, 'invalid symbol in encoding UTF-8 :"\xFF"')
 
     -> {
       %I[#{(+"\xFF").force_encoding(Encoding::UTF_8)}]
-    }.should.raise(EncodingError, 'invalid symbol in encoding UTF-8 :"\xFF"')
+    }.should raise_error(EncodingError, 'invalid symbol in encoding UTF-8 :"\xFF"')
   end
 
   ruby_bug "#20280", ""..."3.4" do
