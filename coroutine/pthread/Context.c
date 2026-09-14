@@ -193,6 +193,7 @@ struct coroutine_context * coroutine_transfer(struct coroutine_context * current
     assert(current->shared);
 
     struct coroutine_context * previous = target->from;
+    int result = 0;
     target->from = current;
 
     if (DEBUG) fprintf(stderr, "coroutine_transfer:pthread_mutex_lock(guard=%p is_locked=%d)\n", &current->shared->guard, is_locked(&current->shared->guard));
@@ -204,25 +205,34 @@ struct coroutine_context * coroutine_transfer(struct coroutine_context * current
         target->shared = current->shared;
 
         if (DEBUG) fprintf(stderr, "coroutine_transfer:coroutine_create_thread...\n");
-        if (coroutine_create_thread(target)) {
+        result = coroutine_create_thread(target);
+        if (result != 0) {
             if (DEBUG) fprintf(stderr, "coroutine_transfer:coroutine_create_thread failed\n");
             target->shared = NULL;
             target->from = previous;
-            return NULL;
         }
     } else {
         if (DEBUG) fprintf(stderr, "coroutine_transfer:pthread_cond_signal(target)\n");
         pthread_cond_signal(&target->schedule);
     }
 
-    // A side effect of acting upon a cancellation request while in a condition wait is that the mutex is (in effect) re-acquired before calling the first cancellation cleanup handler. If cancelled, pthread_cond_wait immediately invokes cleanup handlers.
-    if (DEBUG) fprintf(stderr, "coroutine_transfer:pthread_cond_wait(schedule=%p, guard=%p, is_locked=%d)\n", &current->schedule, &current->shared->guard, is_locked(&current->shared->guard));
-    check("coroutine_transfer:pthread_cond_wait",
-        pthread_cond_wait(&current->schedule, &current->shared->guard)
-    );
+    if (result == 0) {
+        // A side effect of acting upon a cancellation request while in a condition wait is that the mutex is (in effect) re-acquired before calling the first cancellation cleanup handler. If cancelled, pthread_cond_wait immediately invokes cleanup handlers.
+        if (DEBUG) fprintf(stderr, "coroutine_transfer:pthread_cond_wait(schedule=%p, guard=%p, is_locked=%d)\n", &current->schedule, &current->shared->guard, is_locked(&current->shared->guard));
+        check("coroutine_transfer:pthread_cond_wait",
+            pthread_cond_wait(&current->schedule, &current->shared->guard)
+        );
+    }
 
     if (DEBUG) fprintf(stderr, "coroutine_transfer:pthread_cleanup_pop\n");
     pthread_cleanup_pop(1);
+
+    /* Keep the push/pop pair in the same lexical scope and unlock the guard
+     * before reporting a setup failure. */
+    if (result != 0) {
+        errno = result;
+        return NULL;
+    }
 
 #ifdef __FreeBSD__
     // Apparently required for FreeBSD:
