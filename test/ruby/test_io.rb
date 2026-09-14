@@ -4452,6 +4452,10 @@ __END__
     # best effort to write after select has polled once, which Ruby cannot observe
     th = Thread.new {sleep 0.2; pairs.last.first.write("x")}
     assert_equal([[readers.last], [], []], IO.select(readers, nil, pairs.map(&:first), 10))
+    IO.pipe do |r, w|
+      writers = [*pairs.map(&:first), w]
+      assert_equal([[], writers, []], IO.select(nil, writers, nil, 10))
+    end
   ensure
     th&.join
     pairs.flatten.each(&:close)
