@@ -1136,11 +1136,11 @@ init_fast_fallback_inetsock_internal(VALUE v)
                         } else {
                             /* Retry to read from hostname_resolution_waiter */
                         }
-                    } else if (resolved_type_size < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+                    } else if (resolved_type_size == 0 || errno == EAGAIN || errno == EWOULDBLOCK) {
                         errno = 0;
                         break;
-                    } else {
-                        /* Retry to read from hostname_resolution_waiter */
+                    } else if (errno != EINTR) {
+                        rb_syserr_fail(errno, "read(2)");
                     }
 
                     if (!resolution_store.v6.finished &&
