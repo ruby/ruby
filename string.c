@@ -9330,9 +9330,13 @@ tr_trans_pairs_search_basic(struct tr_trans_pairs_search *search)
 static inline VALUE
 tr_trans_pairs_next_match_sse2(struct tr_trans_pairs_search *search)
 {
-    size_t next_match_offset = ntz_int32(search->matches_bitmap);
-    search->matches_bitmap >>= (next_match_offset + 1);
-    search->s += next_match_offset;
+    RUBY_ASSERT(search->matches_bitmap > 0);
+    size_t trailing_zeros = (size_t)ntz_int32(search->matches_bitmap);
+
+    RUBY_ASSERT(trailing_zeros < (sizeof(search->matches_bitmap) * CHAR_BIT));
+    search->matches_bitmap >>= trailing_zeros;
+    search->s += trailing_zeros;
+
     RUBY_ASSERT(search->s <= search->send);
     return search->trans_table[*search->s];
 }
@@ -9340,40 +9344,42 @@ tr_trans_pairs_next_match_sse2(struct tr_trans_pairs_search *search)
 static inline VALUE
 tr_trans_pairs_search_sse2(struct tr_trans_pairs_search *search)
 {
-    RBIMPL_ASSERT_OR_ASSUME(search->needles_count > 0);
-    RBIMPL_ASSERT_OR_ASSUME(search->needles_count < TR_TRANS_PAIRS_SIMD_MAX_NEEDLES);
+    if (search->needles_count) {
+        RBIMPL_ASSERT_OR_ASSUME(search->needles_count > 0);
+        RBIMPL_ASSERT_OR_ASSUME(search->needles_count < TR_TRANS_PAIRS_SIMD_MAX_NEEDLES);
 
-    if (search->matches_bitmap) {
-        return tr_trans_pairs_next_match_sse2(search);
-    }
-
-    if ((size_t)(search->send - search->s) >= sizeof(__m128i)) {
-        int i;
-        __m128i masks[TR_TRANS_PAIRS_SIMD_MAX_NEEDLES];
-        for (i = 0; i < search->needles_count; i++) {
-            masks[i] = _mm_set1_epi8(search->needles[i]);
+        if (search->matches_bitmap) {
+            return tr_trans_pairs_next_match_sse2(search);
         }
 
-        do {
-            const __m128i bytes = _mm_loadu_si128((__m128i const *)search->s);
-
-            __m128i matches[TR_TRANS_PAIRS_SIMD_MAX_NEEDLES];
+        if ((size_t)(search->send - search->s) >= sizeof(__m128i)) {
+            int i;
+            __m128i masks[TR_TRANS_PAIRS_SIMD_MAX_NEEDLES];
             for (i = 0; i < search->needles_count; i++) {
-                matches[i] = _mm_cmpeq_epi8(bytes, masks[i]);
+                masks[i] = _mm_set1_epi8(search->needles[i]);
             }
 
-            for (i = 1; i < search->needles_count; i++) {
-                matches[0] = _mm_or_si128(matches[0], matches[i]);
-            }
+            do {
+                const __m128i bytes = _mm_loadu_si128((__m128i const *)search->s);
 
-            const int bitmap = _mm_movemask_epi8(matches[0]);
+                __m128i matches[TR_TRANS_PAIRS_SIMD_MAX_NEEDLES];
+                for (i = 0; i < search->needles_count; i++) {
+                    matches[i] = _mm_cmpeq_epi8(bytes, masks[i]);
+                }
 
-            if (bitmap) {
-                search->matches_bitmap = bitmap;
-                return tr_trans_pairs_next_match_sse2(search);
-            }
-            search->s += sizeof(__m128i);
-        } while ((size_t)(search->send - search->s) >= sizeof(__m128i));
+                for (i = 1; i < search->needles_count; i++) {
+                    matches[0] = _mm_or_si128(matches[0], matches[i]);
+                }
+
+                const int bitmap = _mm_movemask_epi8(matches[0]);
+
+                if (bitmap) {
+                    search->matches_bitmap = bitmap;
+                    return tr_trans_pairs_next_match_sse2(search);
+                }
+                search->s += sizeof(__m128i);
+            } while ((size_t)(search->send - search->s) >= sizeof(__m128i));
+        }
     }
     return tr_trans_pairs_search_basic(search);
 }
@@ -9385,17 +9391,13 @@ tr_trans_pairs_search_sse2(struct tr_trans_pairs_search *search)
 static inline VALUE
 tr_trans_pairs_next_match_neon(struct tr_trans_pairs_search *search)
 {
-    int trailing_zeros = ntz_int64(search->matches_bitmap);
+    RUBY_ASSERT(search->matches_bitmap > 0);
+    size_t trailing_zeros = (size_t)ntz_int64(search->matches_bitmap);
 
     // uint64_t >>= 64 would be undefined behaviour
-    if (trailing_zeros >= 63) {
-        search->matches_bitmap = 0;
-        search->s += 15;
-    }
-    else {
-        search->matches_bitmap >>= (trailing_zeros + 1);
-        search->s += trailing_zeros / 4;
-    }
+    RUBY_ASSERT(trailing_zeros < (sizeof(search->matches_bitmap) * CHAR_BIT));
+    search->matches_bitmap >>= trailing_zeros;
+    search->s += trailing_zeros / 4;
 
     RUBY_ASSERT(search->s <= search->send);
     return search->trans_table[*search->s];
@@ -9451,6 +9453,15 @@ tr_trans_pairs_search_neon(struct tr_trans_pairs_search *search)
 #ifndef tr_trans_pairs_search_impl
 #define tr_trans_pairs_search_impl tr_trans_pairs_search_basic
 #endif
+
+static inline void
+tr_trans_pairs_consume_match(struct tr_trans_pairs_search *search)
+{
+    search->s++;
+#ifdef HAVE_SIMD
+    search->matches_bitmap >>= 1;
+#endif
+}
 
 static VALUE
 tr_trans_pairs(VALUE str, VALUE pairs_val)
@@ -9530,7 +9541,7 @@ tr_trans_pairs(VALUE str, VALUE pairs_val)
                 clen = rb_enc_codelen(c, e1);
                 repl = rb_hash_lookup2(hash, UINT2NUM(c), 0);
                 if (!repl) {
-                    search.s += clen;
+                    tr_trans_pairs_consume_match(&search);
                     continue;
                 }
             }
@@ -9543,7 +9554,7 @@ tr_trans_pairs(VALUE str, VALUE pairs_val)
             }
             tr_buffer_append_str(&buffer, repl);
             checkpoint = search.s + clen;
-            search.s++;
+            tr_trans_pairs_consume_match(&search);
 
             if (cr == ENC_CODERANGE_7BIT && rb_enc_str_coderange(repl) != ENC_CODERANGE_7BIT) {
                 cr = ENC_CODERANGE_VALID;

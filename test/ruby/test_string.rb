@@ -2690,6 +2690,13 @@ CODE
 
     assert_equal(S("01@3456789abcdefgHij"), S("0123456789abcdefghij").tr("h" => "H", "2" => "@"))
     assert_equal(S("UL" * 16 ), S("\u2028<" * 16).tr("\u2028" => "U", "<" => "L"))
+    assert_equal(S("U\u2029" * 16 ), S("\u2028\u2029" * 16).tr("\u2028" => "U"))
+
+    # Many keys
+    expected = S(("a".."z").to_a.join)
+    replacements = ("A".."Z").to_h { |k| [k, k.downcase] }
+    actual = S(("A".."Z").to_a.join.tr(replacements))
+    assert_equal(expected, actual)
   end
 
   def test_tr!
