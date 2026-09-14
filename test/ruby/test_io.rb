@@ -4491,6 +4491,21 @@ __END__
     end
   end if Socket.const_defined?(:MSG_OOB)
 
+  def test_select_many_sockets
+    pairs = []
+    TCPServer.open('localhost', 0) do |svr|
+      # more than FD_SETSIZE on Windows
+      70.times {pairs << [TCPSocket.new('localhost', svr.addr[1]), svr.accept]}
+    end
+    readers = pairs.map(&:last)
+    # best effort to write after select has polled once, which Ruby cannot observe
+    th = Thread.new {sleep 0.2; pairs.last.first.write("x")}
+    assert_equal([[readers.last], [], []], IO.select(readers, nil, pairs.map(&:first), 10))
+  ensure
+    th&.join
+    pairs.flatten.each(&:close)
+  end
+
   def test_select_timeout
     assert_equal(nil, IO.select(nil,nil,nil,0))
     assert_equal(nil, IO.select(nil,nil,nil,0.0))
