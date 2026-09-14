@@ -20006,7 +20006,6 @@ mod hir_opt_tests {
           v24:CShape[0x1003] = Const CShape(0x1003)
           StoreField v19, :shape_id@0x1000, v24
           PatchPoint NoEPEscape(initialize)
-          PatchPoint SingleRactorMode
           CheckInterrupts
           Return v13
         ");
@@ -20052,7 +20051,6 @@ mod hir_opt_tests {
           PatchPoint NoEPEscape(initialize)
           PatchPoint MethodRedefined(Integer@0x1008, +@0x1010, cme:0x1018)
           v65:Fixnum[6] = Const Value(6)
-          PatchPoint SingleRactorMode
           CheckInterrupts
           Return v16
         ");
@@ -20093,7 +20091,6 @@ mod hir_opt_tests {
           v24:CShape[0x1003] = Const CShape(0x1003)
           StoreField v19, :shape_id@0x1000, v24
           PatchPoint NoEPEscape(initialize)
-          PatchPoint SingleRactorMode
           CheckInterrupts
           Return v13
         ");
@@ -22908,7 +22905,6 @@ mod hir_opt_tests {
           v121:CShape[0x108b] = Const CShape(0x108b)
           StoreField v85, :shape_id@0x1088, v121
           PatchPoint NoEPEscape(initialize)
-          PatchPoint SingleRactorMode
           StoreField v85, :@y@0x108c, v17
           v136:CShape[0x108d] = Const CShape(0x108d)
           StoreField v85, :shape_id@0x1088, v136
@@ -22919,28 +22915,20 @@ mod hir_opt_tests {
           v45:ClassSubclass[Point@0x1008] = Const Value(VALUE(0x1008))
           v47:Fixnum[1] = Const Value(1)
           v49:Fixnum[2] = Const Value(2)
-          PatchPoint MethodRedefined(Point@0x1008, new@0x1009, cme:0x1010)
           v95:ObjectSubclass[class_exact:Point] = ObjectAllocClass Point:VALUE(0x1008)
-          PatchPoint NoSingletonClass(Point@0x1008)
-          PatchPoint MethodRedefined(Point@0x1008, initialize@0x1038, cme:0x1040)
           PushInlineFrame :initialize, v95 (0x1068), num_args=2
-          PatchPoint SingleRactorMode
           v157:CShape = LoadField v95, :shape_id@0x1088
           v158:CShape[0x1089] = GuardBitEquals v157, CShape(0x1089) recompile
           StoreField v95, :@x@0x108a, v47
           v161:CShape[0x108b] = Const CShape(0x108b)
           StoreField v95, :shape_id@0x1088, v161
-          PatchPoint NoEPEscape(initialize)
-          PatchPoint SingleRactorMode
           StoreField v95, :@y@0x108c, v49
           v176:CShape[0x108d] = Const CShape(0x108d)
           StoreField v95, :shape_id@0x1088, v176
           CheckInterrupts
           PopInlineFrame
-          PatchPoint NoSingletonClass(Point@0x1008)
           PatchPoint MethodRedefined(Point@0x1008, ==@0x1098, cme:0x10a0)
           PushInlineFrame :==, v85 (0x10c8), num_args=1
-          PatchPoint SingleRactorMode
           v195:CShape = LoadField v85, :shape_id@0x1088
           v196:CShape[0x108d] = GuardBitEquals v195, CShape(0x108d) recompile
           v197:BasicObject = LoadField v85, :@x@0x108a
@@ -23104,7 +23092,6 @@ mod hir_opt_tests {
           v71:Fixnum = GuardType v15, Fixnum recompile
           v72:Fixnum = FixnumAdd v71, v17
           StoreField v14, :@hclk@0x1003, v72
-          PatchPoint SingleRactorMode
           v37:BasicObject = LoadField v14, :@hclk_target@0x1040
           PatchPoint MethodRedefined(Integer@0x1008, <=@0x1041, cme:0x1048)
           v75:Fixnum = GuardType v37, Fixnum recompile
