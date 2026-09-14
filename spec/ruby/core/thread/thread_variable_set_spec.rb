@@ -41,8 +41,9 @@ describe "Thread#thread_variable_set" do
 
   it "removes a key if the value is nil" do
     @t.thread_variable_set(:a, 52)
-    @t.thread_variable_set(:a, nil)
+    @t.thread_variable_set(:a, nil).should == nil
     @t.thread_variable?(:a).should == false
+    @t.thread_variables.should_not.include?(:a)
   end
 
   it "raises a FrozenError if the thread is frozen" do
