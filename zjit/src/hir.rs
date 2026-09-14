@@ -6403,7 +6403,6 @@ impl Function {
             })
         }
 
-        // TODO: Ensure no self loops are captured in the predecessor keys. When this is done, simplify the update function and leave a comment about how this looks different from the paper.
         // Populate each block with a vec of instructions that call the block
         let mut predecessors: Vec<Vec<EdgeKey>> = vec![vec![]; self.num_blocks()];
         for block_id in self.reverse_post_order() {
