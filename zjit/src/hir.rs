@@ -6347,7 +6347,6 @@ impl Function {
         #[derive(Copy, Clone)]
         struct EdgeKey {
             block_id: BlockId,
-            insn_idx: usize, // This always represents the final insn of the block but we want to avoid repeated lookups
             edge: Option<bool>
         }
 
@@ -6399,11 +6398,11 @@ impl Function {
             let insn_idx = self.blocks[block_id].insns().len() - 1;
             match self.resolve(self.blocks[block_id].insns[insn_idx]).insn(self) {
                     Insn::CondBranch { if_true, if_false, .. } => {
-                        predecessors[if_true.target].push(EdgeKey { block_id, insn_idx, edge: Some(true) });
-                        predecessors[if_false.target].push(EdgeKey { block_id, insn_idx, edge: Some(false) });
+                        predecessors[if_true.target].push(EdgeKey { block_id, edge: Some(true) });
+                        predecessors[if_false.target].push(EdgeKey { block_id, edge: Some(false) });
                     }
                     Insn::Jump(edge) => {
-                        predecessors[edge.target].push(EdgeKey { block_id, insn_idx, edge: None });
+                        predecessors[edge.target].push(EdgeKey { block_id, edge: None });
                     }
                     _ => ()
             }
@@ -6423,7 +6422,8 @@ impl Function {
 
             for pred in &predecessors[target_block] {
                 // Collect the params for abstract interpretation. The params are args of the BranchEdges extracted from block terminators.
-                let insn = self.resolve(self.blocks[pred.block_id].insns[pred.insn_idx]).insn(self);
+                let insn_idx = self.blocks[pred.block_id].insns.len() - 1;
+                let insn = self.resolve(self.blocks[pred.block_id].insns[insn_idx]).insn(self);
                 let params = match (insn, pred.edge) {
                     (Insn::Jump(edge), None) => &edge.args,
                     (Insn::CondBranch { if_true, .. }, Some(true)) => &if_true.args,
@@ -6481,7 +6481,8 @@ impl Function {
 
             // Remove trivial params from the incoming edges
             for pred in &predecessors[target_block] {
-                let insn = self.resolve(self.blocks[pred.block_id].insns[pred.insn_idx]).insn_mut(self);
+                let insn_idx = self.blocks[pred.block_id].insns.len() - 1;
+                let insn = self.resolve(self.blocks[pred.block_id].insns[insn_idx]).insn_mut(self);
                 match (insn, pred.edge) {
                     (Insn::Jump(edge), None) => prune_vec_by_indices(&mut edge.args, &trivial_indices),
                     (Insn::CondBranch { if_true, .. }, Some(true)) => prune_vec_by_indices(&mut if_true.args, &trivial_indices),
