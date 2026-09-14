@@ -4510,6 +4510,19 @@ __END__
     pairs.flatten.each(&:close)
   end
 
+  def test_select_buffered_socket
+    pairs = []
+    TCPServer.open('localhost', 0) do |svr|
+      2.times {pairs << [TCPSocket.new('localhost', svr.addr[1]), svr.accept]}
+    end
+    readers = pairs.map(&:last)
+    pairs.first.first.write("xy")
+    assert_equal("x", readers.first.getc)
+    assert_equal([[readers.first], [], []], IO.select(readers, nil, nil, 1))
+  ensure
+    pairs.flatten.each(&:close)
+  end
+
   def test_select_timeout
     assert_equal(nil, IO.select(nil,nil,nil,0))
     assert_equal(nil, IO.select(nil,nil,nil,0.0))
