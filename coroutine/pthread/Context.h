@@ -38,6 +38,10 @@ struct coroutine_context
     /* The caller pthread for a main context, or the context's worker pthread. */
     pthread_t id;
 
+    /* Whether the lazily created worker pthread must be cancelled and joined.
+     * This remains false for a main context, whose id is the caller's pthread. */
+    int thread_created;
+
     /* Serializes updates to suspended and from, and is paired with schedule. */
     pthread_mutex_t guard;
 
@@ -50,10 +54,6 @@ struct coroutine_context
 
     /* Whether guard and schedule have been initialized and remain valid. */
     int initialized;
-
-    /* Whether the lazily created worker pthread must be cancelled and joined.
-     * This remains false for a main context, whose id is the caller's pthread. */
-    int thread_created;
 
     /* The context that most recently transferred control to this context. */
     struct coroutine_context * from;
