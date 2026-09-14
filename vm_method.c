@@ -2926,6 +2926,9 @@ rb_alias(VALUE klass, ID alias_name, ID original_name)
              UNDEFINED_METHOD_ENTRY_P(orig_me))) {
             rb_print_undef(target_klass, original_name, METHOD_VISI_UNDEF);
         }
+        rb_warn_deprecated_to_remove_at(4.3,
+                                        "the fallback to Object for alias of '%"PRIsVALUE"' in module '%"PRIsVALUE"'",
+                                        NULL, QUOTE_ID(original_name), rb_class_path(target_klass));
     }
 
     switch (orig_me->def->type) {
@@ -2973,19 +2976,20 @@ rb_alias(VALUE klass, ID alias_name, ID original_name)
  *  Makes <i>new_name</i> a new copy of the method <i>old_name</i>. This can
  *  be used to retain access to methods that are overridden.
  *
- *     module Mod
- *       alias_method :orig_exit, :exit #=> :orig_exit
- *       def exit(code=0)
- *         puts "Exiting with code #{code}"
- *         orig_exit(code)
+ *     class Greeter
+ *       def hello
+ *         "hello"
+ *       end
+ *       alias_method :orig_hello, :hello #=> :orig_hello
+ *       def hello
+ *         "#{orig_hello}, world"
  *       end
  *     end
- *     include Mod
- *     exit(99)
+ *     Greeter.new.hello #=> "hello, world"
  *
- *  <em>produces:</em>
- *
- *     Exiting with code 99
+ *  In a module, <i>old_name</i> must be a method of the module or its
+ *  ancestors. Aliasing a method found only through the fallback to
+ *  Object is deprecated, and will raise a NameError in Ruby 4.3.
  */
 
 static VALUE
