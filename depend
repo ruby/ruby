@@ -58,6 +58,7 @@ cont.$(OBJEXT): {$(VPATH)}cont.c
 coroutine-main.$(OBJEXT): {$(VPATH)}coroutine/test/main.c
 coroutine-stack.$(OBJEXT): {$(VPATH)}coroutine/test/stack.c
 coroutine-test_initialize_destroy.$(OBJEXT): {$(VPATH)}coroutine/test/test_initialize_destroy.c
+coroutine-test_pthread_resume.$(OBJEXT): {$(VPATH)}coroutine/test/test_pthread_resume.c
 coroutine-test_transfer_repeat.$(OBJEXT): {$(VPATH)}coroutine/test/test_transfer_repeat.c
 coroutine-test_transfer_return.$(OBJEXT): {$(VPATH)}coroutine/test/test_transfer_return.c
 debug.$(OBJEXT): {$(VPATH)}debug.c
