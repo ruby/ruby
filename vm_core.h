@@ -1236,6 +1236,7 @@ typedef struct rb_thread_struct {
     VALUE locking_mutex;
     struct rb_mutex_struct *keeping_mutexes;
     struct ccan_list_head interrupt_exec_tasks;
+    rb_atomic_t interrupt_exec_tasks_pending;
 
     struct rb_waiting_list *join_list;
 
