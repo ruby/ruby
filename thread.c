@@ -212,7 +212,7 @@ static inline int
 vm_check_ints_blocking(rb_execution_context_t *ec)
 {
 #ifdef RUBY_ASSERT_CRITICAL_SECTION
-    VM_ASSERT(ruby_assert_critical_section_entered == 0);
+    VM_ASSERT(ec->assert_critical_section_entered == 0);
 #endif
 
     rb_thread_t *th = rb_ec_thread_ptr(ec);
@@ -1702,7 +1702,7 @@ blocking_region_begin(rb_thread_t *th, struct rb_blocking_region_buffer *region,
                       rb_unblock_function_t *ubf, void *arg, int flags)
 {
 #ifdef RUBY_ASSERT_CRITICAL_SECTION
-    VM_ASSERT(ruby_assert_critical_section_entered == 0);
+    VM_ASSERT(th->ec->assert_critical_section_entered == 0);
 #endif
     VM_ASSERT(th == GET_THREAD());
 
