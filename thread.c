@@ -465,14 +465,64 @@ rb_threadptr_join_list_wakeup(rb_thread_t *thread)
 void
 rb_threadptr_unlock_all_locking_mutexes(rb_thread_t *th)
 {
+    rb_serial_t ec_serial = rb_ec_serial(th->ec);
+    rb_mutex_t *mutex = th->keeping_mutexes;
+
+    while (mutex) {
+        rb_mutex_t *next = mutex->next_mutex;
+
+        /* A suspended fiber can outlive this thread and resume elsewhere, so
+         * only release mutexes owned by the current or a terminated fiber. */
+        if (mutex->ec_serial == ec_serial || mutex->release_on_thread_exit) {
+            // rb_warn("mutex #<%p> was not unlocked by thread #<%p>", (void *)mutex, (void*)th);
+            VM_ASSERT(mutex->ec_serial);
+            const char *error_message = rb_mutex_unlock_th(mutex, th, 0);
+            if (error_message) rb_bug("invalid keeping_mutexes: %s", error_message);
+        }
+
+        mutex = next;
+    }
+}
+
+void
+rb_threadptr_unlock_all_mutexes(rb_thread_t *th)
+{
     while (th->keeping_mutexes) {
         rb_mutex_t *mutex = th->keeping_mutexes;
-        th->keeping_mutexes = mutex->next_mutex;
 
-        // rb_warn("mutex #<%p> was not unlocked by thread #<%p>", (void *)mutex, (void*)th);
         VM_ASSERT(mutex->ec_serial);
         const char *error_message = rb_mutex_unlock_th(mutex, th, 0);
         if (error_message) rb_bug("invalid keeping_mutexes: %s", error_message);
+    }
+}
+
+void
+rb_threadptr_migrate_fiber_mutexes(rb_thread_t *from, rb_thread_t *to, rb_serial_t ec_serial)
+{
+    rb_mutex_t **keeping_mutexes = &from->keeping_mutexes;
+
+    while (*keeping_mutexes) {
+        rb_mutex_t *mutex = *keeping_mutexes;
+
+        if (mutex->ec_serial == ec_serial) {
+            *keeping_mutexes = mutex->next_mutex;
+            mutex->next_mutex = to->keeping_mutexes;
+            mutex->th = to;
+            to->keeping_mutexes = mutex;
+        }
+        else {
+            keeping_mutexes = &mutex->next_mutex;
+        }
+    }
+}
+
+void
+rb_threadptr_mark_fiber_mutexes_for_release(rb_thread_t *th, rb_serial_t ec_serial)
+{
+    for (rb_mutex_t *mutex = th->keeping_mutexes; mutex; mutex = mutex->next_mutex) {
+        if (mutex->ec_serial == ec_serial) {
+            mutex->release_on_thread_exit = 1;
+        }
     }
 }
 
@@ -2718,7 +2768,9 @@ rb_thread_s_handle_interrupt(VALUE self, VALUE mask_arg)
         RUBY_VM_SET_INTERRUPT(th->ec);
     }
 
-    EC_PUSH_TAG(th->ec);
+    /* ec belongs to the executing fiber and remains stable if the fiber moves
+     * to another thread. th still identifies the interrupt mask we pushed. */
+    EC_PUSH_TAG(ec);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
         r = rb_yield(Qnil);
     }
@@ -2730,10 +2782,10 @@ rb_thread_s_handle_interrupt(VALUE self, VALUE mask_arg)
         RUBY_VM_SET_INTERRUPT(th->ec);
     }
 
-    RUBY_VM_CHECK_INTS(th->ec);
+    RUBY_VM_CHECK_INTS(ec);
 
     if (state) {
-        EC_JUMP_TAG(th->ec, state);
+        EC_JUMP_TAG(ec, state);
     }
 
     return r;

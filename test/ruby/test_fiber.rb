@@ -66,16 +66,146 @@ class TestFiber < Test::Unit::TestCase
     SRC
   end
 
+  def test_resume_across_threads
+    fiber = Fiber.new do
+      3.times { Fiber.yield Thread.current }
+      Thread.current
+    end
+
+    threads = 4.times.map do
+      Thread.new { fiber.resume }.tap(&:join)
+    end
+
+    assert_equal threads, threads.map(&:value)
+  end
+
+  def test_fiber_and_thread_storage_across_threads
+    fiber = Fiber.new do
+      Thread.current[:fiber_local] = :fiber
+
+      3.times do
+        Fiber.yield [Thread.current, Thread.current[:fiber_local], Thread.current.thread_variable_get(:thread_local)]
+      end
+    end
+
+    results = 3.times.map do |i|
+      thread = Thread.new do
+        Thread.current.thread_variable_set(:thread_local, i)
+        fiber.resume
+      end
+
+      thread.value
+    end
+
+    assert_equal [:fiber, :fiber, :fiber], results.map { _1[1] }
+    assert_equal [0, 1, 2], results.map { _1[2] }
+    assert_equal results.map(&:first), results.map(&:first).uniq
+  end
+
+  def test_mutex_owned_by_fiber_across_threads
+    mutex = Mutex.new
+    fiber = Fiber.new do
+      mutex.lock
+      Fiber.yield
+      mutex.unlock
+    end
+
+    Thread.new { fiber.resume }.value
+    assert_predicate mutex, :locked?
+
+    Thread.new { fiber.resume }.value
+    assert_not_predicate mutex, :locked?
+  end
+
+  def test_handle_interrupt_across_threads
+    fiber = Fiber.new do
+      Thread.handle_interrupt(RuntimeError => :never) do
+        Fiber.yield
+        raise "error"
+      end
+    end
+
+    Thread.new { fiber.resume }.value
+    thread = Thread.new { fiber.resume }
+    thread.report_on_exception = false
+
+    assert_raise_with_message(RuntimeError, "error") { thread.value }
+  end
+
+  def test_transfer_across_threads
+    fiber = Fiber.new do |return_to|
+      loop do
+        return_to = return_to.transfer(Thread.current)
+      end
+    end
+
+    threads = 3.times.map do
+      Thread.new { fiber.transfer(Fiber.current) }.tap(&:join)
+    end
+
+    assert_equal threads, threads.map(&:value)
+  end
+
+  def test_concurrent_transfer_across_threads
+    ready = Thread::Queue.new
+    finish = Thread::Queue.new
+    fiber = Fiber.new do
+      ready << true
+      finish.pop
+    end
+
+    running = Thread.new { fiber.transfer }
+    ready.pop
+
+    thread = Thread.new { fiber.transfer }
+    thread.report_on_exception = false
+    assert_raise(FiberError) { thread.value }
+
+    finish << true
+    running.value
+  end
+
+  def test_concurrent_resume_across_threads
+    ready = Thread::Queue.new
+    finish = Thread::Queue.new
+    fiber = Fiber.new do
+      ready << true
+      finish.pop
+    end
+
+    running = Thread.new { fiber.resume }
+    ready.pop
+
+    thread = Thread.new { fiber.resume }
+    thread.report_on_exception = false
+    assert_raise(FiberError) { thread.value }
+
+    finish << true
+    running.value
+  end
+
+  def test_root_fiber_cannot_transfer_across_threads
+    ready = Thread::Queue.new
+    finish = Thread::Queue.new
+    thread = Thread.new do
+      root_fiber = Fiber.current
+      Fiber.new do
+        ready << root_fiber
+        finish.pop
+      end.transfer
+    end
+
+    root_fiber = ready.pop
+    assert_raise_with_message(FiberError, /root fiber across threads/) { root_fiber.transfer }
+  ensure
+    finish << true
+    thread&.join
+  end
+
   def test_error
     assert_raise(ArgumentError){
       Fiber.new # Fiber without block
     }
-    f = Fiber.new{}
-    Thread.new{
-      assert_raise(FiberError){ # Fiber yielding across thread
-        f.resume
-      }
-    }.join
     assert_raise(FiberError){
       f = Fiber.new{}
       f.resume

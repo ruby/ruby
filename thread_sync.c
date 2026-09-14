@@ -10,6 +10,9 @@ typedef struct rb_mutex_struct {
     rb_thread_t *th; // even if the fiber is collected, we might need access to the thread in mutex_free
     struct rb_mutex_struct *next_mutex;
     struct ccan_list_head waitq; /* protected by GVL */
+    /* The owning fiber has terminated, so release this mutex when its current
+     * thread exits even though the owner EC is no longer that thread's EC. */
+    unsigned int release_on_thread_exit : 1;
 } rb_mutex_t;
 
 /* sync_waiter is always on-stack */
@@ -152,6 +155,7 @@ mutex_alloc(VALUE klass)
     obj = TypedData_Make_Struct(klass, rb_mutex_t, &mutex_data_type, mutex);
 
     ccan_list_head_init(&mutex->waitq);
+    mutex->release_on_thread_exit = 0;
     return obj;
 }
 
@@ -201,6 +205,7 @@ mutex_set_owner(rb_mutex_t *mutex, rb_thread_t *th, rb_serial_t ec_serial)
 {
     mutex->th = th;
     mutex->ec_serial = ec_serial;
+    mutex->release_on_thread_exit = 0;
 }
 
 static void
@@ -456,6 +461,7 @@ rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t *th, rb_serial_t ec_serial)
     struct sync_waiter *cur = 0, *next;
 
     mutex->ec_serial = 0;
+    mutex->release_on_thread_exit = 0;
     thread_mutex_remove(th, mutex);
 
     ccan_list_for_each_safe(&mutex->waitq, cur, next, node) {
@@ -553,7 +559,9 @@ rb_mutex_abandon_all(rb_mutex_t *mutexes)
         mutex = mutexes;
         mutexes = mutex->next_mutex;
         mutex->ec_serial = 0;
+        mutex->th = NULL;
         mutex->next_mutex = 0;
+        mutex->release_on_thread_exit = 0;
         ccan_list_head_init(&mutex->waitq);
     }
 }
