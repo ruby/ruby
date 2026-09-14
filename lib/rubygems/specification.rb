@@ -946,8 +946,6 @@ class Gem::Specification < Gem::BasicSpecification
     reset
 
     @@dirs = Gem::SpecificationRecord.dirs_from(Array(dirs))
-    # reset may have memoized the record from gem_path while checking unresolved deps
-    @specification_record = nil
   end
 
   extend Enumerable
@@ -1257,6 +1255,8 @@ class Gem::Specification < Gem::BasicSpecification
       end
 
       unresolved_deps.clear
+      # find_all_by_name above memoized the record, which would outlive dirs= and ignore its new dirs
+      @specification_record = nil
     end
     Gem.post_reset_hooks.each(&:call)
   end
