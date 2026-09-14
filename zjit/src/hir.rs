@@ -5360,7 +5360,11 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 
     // Check if the EP is escaped for the ISEQ from the beginning. We give up
     // optimizing locals in that case because they're shared with other frames.
-    let ep_escaped = iseq_escapes_ep(iseq);
+    let ep_starts_escaped = iseq_escapes_ep(iseq);
+    // Check if the EP has been escaped at some point in the ISEQ. If it has, then we assume that
+    // its EP is shared with other frames.
+    let ep_has_been_escaped = crate::invariants::iseq_escapes_ep(iseq);
+    let ep_escaped = ep_starts_escaped || ep_has_been_escaped;
 
     // Iteratively fill out basic blocks using a queue.
     // TODO(max): Basic block arguments at edges

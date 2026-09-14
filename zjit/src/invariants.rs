@@ -5,7 +5,7 @@ use std::{collections::{HashMap, HashSet}, mem};
 use crate::{backend::lir::{Assembler, asm_comment}, cruby::{ID, IseqPtr, RedefinitionFlag, VALUE, iseq_name, rb_callable_method_entry_t, rb_gc_location, ruby_basic_operators, src_loc, with_vm_lock}, hir::Invariant, options::debug, state::{ZJITState, zjit_enabled_p}, virtualmem::CodePtr};
 use crate::payload::{IseqVersionRef, IseqStatus, get_or_create_iseq_payload};
 use crate::codegen::{MAX_ISEQ_VERSIONS, gen_iseq_call};
-use crate::cruby::{rb_iseq_reset_jit_func, iseq_get_location};
+use crate::cruby::{rb_iseq_reset_jit_func, iseq_get_location, rb_jit_iseq_ep_escape_recorded_p, rb_jit_iseq_mark_ep_escape_recorded};
 use crate::stats::with_time_stat;
 use crate::stats::Counter::invalidation_time_ns;
 use crate::gc::remove_gc_offsets;
@@ -71,9 +71,6 @@ impl PatchPoint {
 /// about the state of the virtual machine.
 #[derive(Default)]
 pub struct Invariants {
-    /// Set of ISEQs that are known to escape EP
-    ep_escape_iseqs: HashSet<IseqPtr>,
-
     /// Map from ISEQ that's assumed to not escape EP to a set of patch points
     no_ep_escape_iseq_patch_points: HashMap<IseqPtr, HashSet<PatchPoint>>,
 
@@ -100,7 +97,6 @@ pub struct Invariants {
 impl Invariants {
     /// Update object references in Invariants
     pub fn update_references(&mut self) {
-        self.update_ep_escape_iseqs();
         self.update_no_ep_escape_iseq_patch_points();
         self.update_cme_patch_points();
         self.update_no_singleton_class_patch_points();
@@ -113,7 +109,6 @@ impl Invariants {
         // Why not patch the patch points? If the ISEQ is dead then the GC also proved that all
         // generated code referencing the ISEQ are unreachable. We mark the ISEQs baked into
         // generated code.
-        self.ep_escape_iseqs.remove(&iseq);
         self.no_ep_escape_iseq_patch_points.remove(&iseq);
     }
 
@@ -125,15 +120,6 @@ impl Invariants {
     /// Forget a class when freeing it. See [Self::forget_iseq] for reasoning.
     pub fn forget_klass(&mut self, klass: VALUE) {
         self.no_singleton_class_patch_points.remove(&klass);
-    }
-
-    /// Update ISEQ references in Invariants::ep_escape_iseqs
-    fn update_ep_escape_iseqs(&mut self) {
-        let updated = std::mem::take(&mut self.ep_escape_iseqs)
-            .into_iter()
-            .map(|iseq| unsafe { rb_gc_location(iseq.into()) }.as_iseq())
-            .collect();
-        self.ep_escape_iseqs = updated;
     }
 
     /// Update ISEQ references in Invariants::no_ep_escape_iseq_patch_points
@@ -205,20 +191,22 @@ pub extern "C" fn rb_zjit_invalidate_no_ep_escape(iseq: IseqPtr) {
         return;
     }
 
-    // Remember that this ISEQ may escape EP
-    let invariants = ZJITState::get_invariants();
-    invariants.ep_escape_iseqs.insert(iseq);
+    with_vm_lock(src_loc!(), || {
+        // Remember that this ISEQ may escape EP
+        unsafe { rb_jit_iseq_mark_ep_escape_recorded(iseq) };
+        let invariants = ZJITState::get_invariants();
 
-    // If the ISEQ has been compiled assuming it doesn't escape EP, invalidate the JIT code.
-    if let Some(patch_points) = invariants.no_ep_escape_iseq_patch_points.get(&iseq) {
-        debug!("EP is escaped: {}", iseq_name(iseq));
+        // If the ISEQ has been compiled assuming it doesn't escape EP, invalidate the JIT code.
+        if let Some(patch_points) = invariants.no_ep_escape_iseq_patch_points.get(&iseq) {
+            debug!("EP is escaped: {}", iseq_name(iseq));
 
-        // Invalidate the patch points for this ISEQ
-        let cb = ZJITState::get_code_block();
-        compile_patch_points!(cb, patch_points, "EP is escaped: {}", iseq_name(iseq));
+            // Invalidate the patch points for this ISEQ
+            let cb = ZJITState::get_code_block();
+            compile_patch_points!(cb, patch_points, "EP is escaped: {}", iseq_name(iseq));
 
-        cb.mark_all_executable();
-    }
+            cb.mark_all_executable();
+        }
+    });
 }
 
 /// Track that JIT code for a ISEQ will assume that base pointer is equal to environment pointer.
@@ -238,7 +226,7 @@ pub fn track_no_ep_escape_assumption(
 
 /// Returns true if a given ISEQ has previously escaped environment pointer.
 pub fn iseq_escapes_ep(iseq: IseqPtr) -> bool {
-    ZJITState::get_invariants().ep_escape_iseqs.contains(&iseq)
+    unsafe { rb_jit_iseq_ep_escape_recorded_p(iseq) }
 }
 
 /// Track a patch point for a basic operator in a given class.
