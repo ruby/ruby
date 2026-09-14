@@ -3040,7 +3040,7 @@ copy_fd(fd_set *dst, fd_set *src)
             if (dst->fd_array[d] == fd)
                 break;
         }
-        if (d == dst->fd_count && d < FD_SETSIZE) {
+        if (d == dst->fd_count) {
             dst->fd_array[dst->fd_count++] = fd;
         }
     }
@@ -3323,6 +3323,7 @@ rb_w32_select_with_thread(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
             if (else_rd.fdset->fd_count || else_wr.fdset->fd_count) {
                 r = do_select(nfds, rd, wr, ex, &zero); // polling
                 if (r < 0) break; // XXX: should I ignore error and return signaled handles?
+                // else_{rd,wr} came out of {rd,wr}, which have room for them
                 r += copy_fd(rd, else_rd.fdset);
                 r += copy_fd(wr, else_wr.fdset);
                 if (ex)
