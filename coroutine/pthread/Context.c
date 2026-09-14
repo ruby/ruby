@@ -31,6 +31,7 @@ int check(const char * message, int result) {
 
 void coroutine_initialize_main(struct coroutine_context * context) {
     context->id = pthread_self();
+    context->start = NULL;
 
     check("coroutine_initialize_main:pthread_mutex_init",
         pthread_mutex_init(&context->guard, NULL)
@@ -40,7 +41,7 @@ void coroutine_initialize_main(struct coroutine_context * context) {
         pthread_cond_init(&context->schedule, NULL)
     );
 
-    context->state = COROUTINE_RUNNING;
+    context->suspended = 0;
     context->initialized = 1;
     context->thread_created = 0;
     context->from = NULL;
@@ -67,7 +68,9 @@ void coroutine_initialize(
         pthread_cond_init(&context->schedule, NULL)
     );
 
-    context->state = COROUTINE_CREATED;
+    /* A worker is initially resumable even though its pthread is created
+     * lazily by the first transfer. */
+    context->suspended = 1;
     context->initialized = 1;
     context->thread_created = 0;
     context->from = NULL;
@@ -174,25 +177,21 @@ struct coroutine_context * coroutine_transfer(struct coroutine_context * current
 
     coroutine_lock_pair(current, target);
 
-    assert(current->state == COROUTINE_RUNNING);
-    assert(target->state == COROUTINE_CREATED || target->state == COROUTINE_SUSPENDED);
+    assert(!current->suspended);
+    assert(target->suspended);
 
     struct coroutine_context * previous = target->from;
-    enum coroutine_state target_state = target->state;
 
-    current->state = COROUTINE_SUSPENDED;
-    target->state = COROUTINE_RUNNING;
+    current->suspended = 1;
+    target->suspended = 0;
     target->from = current;
 
     // First transfer:
-    if (target_state == COROUTINE_CREATED) {
+    if (target->start != NULL && !target->thread_created) {
         if (DEBUG) fprintf(stderr, "coroutine_transfer:coroutine_create_thread...\n");
         result = coroutine_create_thread(target);
         if (result != 0) {
             if (DEBUG) fprintf(stderr, "coroutine_transfer:coroutine_create_thread failed\n");
-            target->from = previous;
-            target->state = COROUTINE_CREATED;
-            current->state = COROUTINE_RUNNING;
         }
     } else {
         if (DEBUG) fprintf(stderr, "coroutine_transfer:pthread_cond_signal(target)\n");
@@ -201,8 +200,8 @@ struct coroutine_context * coroutine_transfer(struct coroutine_context * current
 
     if (result != 0) {
         target->from = previous;
-        target->state = target_state;
-        current->state = COROUTINE_RUNNING;
+        target->suspended = 1;
+        current->suspended = 0;
         coroutine_unlock_pair(current, target);
         errno = result;
         return NULL;
@@ -214,7 +213,7 @@ struct coroutine_context * coroutine_transfer(struct coroutine_context * current
 
     pthread_cleanup_push(coroutine_guard_unlock, current);
 
-    while (current->state == COROUTINE_SUSPENDED) {
+    while (current->suspended) {
         // A side effect of acting upon a cancellation request while in a condition wait is that the mutex is (in effect) re-acquired before calling the first cancellation cleanup handler. If cancelled, pthread_cond_wait immediately invokes cleanup handlers.
         if (DEBUG) fprintf(stderr, "coroutine_transfer:pthread_cond_wait(schedule=%p, guard=%p, is_locked=%d)\n", &current->schedule, &current->guard, is_locked(&current->guard));
         check("coroutine_transfer:pthread_cond_wait",
@@ -269,6 +268,5 @@ void coroutine_destroy(struct coroutine_context * context)
     if (DEBUG) fprintf(stderr, "coroutine_destroy:pthread_cond_destroy(%p)\n", &context->schedule);
     pthread_cond_destroy(&context->schedule);
     pthread_mutex_destroy(&context->guard);
-    context->state = COROUTINE_DESTROYED;
     context->initialized = 0;
 }

@@ -24,25 +24,11 @@
 
 struct coroutine_context;
 
-enum coroutine_state
-{
-    /* Initialized, but its worker pthread has not been started yet. */
-    COROUTINE_CREATED,
-
-    /* Currently executing and therefore not a valid transfer target. */
-    COROUTINE_RUNNING,
-
-    /* Waiting on schedule and ready to be resumed by another context. */
-    COROUTINE_SUSPENDED,
-
-    /* Its synchronization primitives have been destroyed. */
-    COROUTINE_DESTROYED
-};
-
 typedef COROUTINE(* coroutine_start)(struct coroutine_context *from, struct coroutine_context *self);
 
 struct coroutine_context
 {
+    /* NULL for a main context; otherwise the worker pthread entry point. */
     coroutine_start start;
     void *argument;
 
@@ -52,14 +38,15 @@ struct coroutine_context
     /* The caller pthread for a main context, or the context's worker pthread. */
     pthread_t id;
 
-    /* Serializes updates to state and from, and is paired with schedule. */
+    /* Serializes updates to suspended and from, and is paired with schedule. */
     pthread_mutex_t guard;
 
     /* Wakes this context when another context transfers control to it. */
     pthread_cond_t schedule;
 
-    /* The transfer lifecycle, read and updated while holding guard. */
-    enum coroutine_state state;
+    /* Whether this context is inactive and can be resumed. This is also the
+     * predicate protected by guard and checked when waiting on schedule. */
+    int suspended;
 
     /* Whether guard and schedule have been initialized and remain valid. */
     int initialized;
