@@ -177,6 +177,8 @@ struct coroutine_context * coroutine_transfer(struct coroutine_context * current
 
     coroutine_lock_pair(current, target);
 
+    assert(current->start == NULL || current->thread_created);
+    assert(pthread_equal(current->id, pthread_self()));
     assert(!current->suspended);
     assert(target->suspended);
 
