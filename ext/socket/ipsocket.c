@@ -301,14 +301,23 @@ struct fast_fallback_inetsock_arg
 };
 
 static struct fast_fallback_getaddrinfo_shared *
-allocate_fast_fallback_getaddrinfo_shared(int family_size)
+allocate_fast_fallback_getaddrinfo_shared(int family_size, const char *hostp, const char *portp)
 {
     struct fast_fallback_getaddrinfo_shared *shared;
+    size_t entries_size = (family_size == 1 ? 0 : 2) * sizeof(struct fast_fallback_getaddrinfo_entry);
+    size_t hostp_size = hostp ? strlen(hostp) + 1 : 0;
+    size_t portp_size = portp ? strlen(portp) + 1 : 0;
 
+    /* The resolver thread may free this without the GVL, so no xmalloc. */
     shared = (struct fast_fallback_getaddrinfo_shared *)calloc(
         1,
-        sizeof(struct fast_fallback_getaddrinfo_shared) + (family_size == 1 ? 0 : 2) * sizeof(struct fast_fallback_getaddrinfo_entry)
+        sizeof(struct fast_fallback_getaddrinfo_shared) + entries_size + hostp_size + portp_size
     );
+    if (!shared) return NULL;
+
+    char *buf = (char *)shared + sizeof(struct fast_fallback_getaddrinfo_shared) + entries_size;
+    if (hostp) shared->node = memcpy(buf, hostp, hostp_size);
+    if (portp) shared->service = memcpy(buf + hostp_size, portp, portp_size);
 
     return shared;
 }
@@ -675,14 +684,11 @@ init_fast_fallback_inetsock_internal(VALUE v)
         arg->wait = hostname_resolution_waiter;
         hostname_resolution_notifier = pipefd[1];
 
-        arg->getaddrinfo_shared = allocate_fast_fallback_getaddrinfo_shared(arg->family_size);
+        arg->getaddrinfo_shared = allocate_fast_fallback_getaddrinfo_shared(arg->family_size, arg->hostp, arg->portp);
         if (!arg->getaddrinfo_shared) rb_syserr_fail(errno, "calloc(3)");
 
         rb_nativethread_lock_initialize(&arg->getaddrinfo_shared->lock);
         arg->getaddrinfo_shared->notify = hostname_resolution_notifier;
-
-        arg->getaddrinfo_shared->node = arg->hostp ? ruby_strdup(arg->hostp) : NULL;
-        arg->getaddrinfo_shared->service = arg->portp ? ruby_strdup(arg->portp) : NULL;
         arg->getaddrinfo_shared->refcount = arg->family_size + 1;
 
         for (int i = 0; i < arg->family_size; i++) {
