@@ -4230,6 +4230,7 @@ rb_thread_local_aset(VALUE thread, ID id, VALUE val)
  *
  *  Attribute Assignment---Sets or creates the value of a fiber-local variable,
  *  using either a symbol or a string.
+ *  Assigning +nil+ deletes the variable.
  *
  *  See also Thread#[].
  *
@@ -4291,19 +4292,33 @@ rb_thread_variable_get(VALUE thread, VALUE key)
  *  Sets a thread local with +key+ to +value+.  Note that these are local to
  *  threads, and not to fibers.  Please see Thread#thread_variable_get and
  *  Thread#[] for more information.
+ *  Assigning +nil+ deletes the variable.
  */
 
 static VALUE
 rb_thread_variable_set(VALUE thread, VALUE key, VALUE val)
 {
     VALUE locals;
+    VALUE symbol;
 
     if (OBJ_FROZEN(thread)) {
         rb_frozen_error_raise(thread, "can't modify frozen thread locals");
     }
 
+    symbol = rb_to_symbol(key);
+
+    if (NIL_P(val)) {
+        if (LIKELY(!THREAD_LOCAL_STORAGE_INITIALISED_P(thread))) {
+            return Qnil;
+        }
+
+        locals = rb_thread_local_storage(thread);
+        rb_hash_delete(locals, symbol);
+        return Qnil;
+    }
+
     locals = rb_thread_local_storage(thread);
-    return rb_hash_aset(locals, rb_to_symbol(key), val);
+    return rb_hash_aset(locals, symbol, val);
 }
 
 /*

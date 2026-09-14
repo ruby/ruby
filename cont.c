@@ -2346,6 +2346,7 @@ rb_fiber_storage_aref(VALUE class, VALUE key)
  *
  *  Assign +value+ to the fiber storage variable identified by +key+.
  *  The variable is created if it doesn't exist.
+ *  Assigning +nil+ deletes the variable.
  *
  *  +key+ must be a Symbol, otherwise a TypeError is raised.
  *
