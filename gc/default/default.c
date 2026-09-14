@@ -3984,8 +3984,8 @@ get_final(long i, void *data)
     return RARRAY_AREF(table, i + 1);
 }
 
-static unsigned int
-run_final(rb_objspace_t *objspace, VALUE zombie, unsigned int lev)
+static void
+run_final(rb_objspace_t *objspace, VALUE zombie)
 {
     if (RZOMBIE(zombie)->dfree) {
         RZOMBIE(zombie)->dfree(RZOMBIE(zombie)->data);
@@ -3996,9 +3996,7 @@ run_final(rb_objspace_t *objspace, VALUE zombie, unsigned int lev)
         FL_UNSET(zombie, FL_FINALIZE);
         st_data_t table;
         if (st_delete(finalizer_table, &key, &table)) {
-            RB_GC_VM_UNLOCK(lev);
             rb_gc_run_obj_finalizer(RARRAY_AREF(table, 0), RARRAY_LEN(table) - 1, get_final, (void *)table);
-            lev = RB_GC_VM_LOCK();
         }
         else {
             rb_bug("FL_FINALIZE flag is set, but finalizers are not found");
@@ -4007,7 +4005,6 @@ run_final(rb_objspace_t *objspace, VALUE zombie, unsigned int lev)
     else {
         GC_ASSERT(!st_lookup(finalizer_table, key, NULL));
     }
-    return lev;
 }
 
 static void
@@ -4020,9 +4017,7 @@ finalize_list(rb_objspace_t *objspace, VALUE zombie)
         next_zombie = RZOMBIE(zombie)->next;
         page = GET_HEAP_PAGE(zombie);
 
-        unsigned int lev = RB_GC_VM_LOCK();
-
-        lev = run_final(objspace, zombie, lev);
+        run_final(objspace, zombie);
         {
             GC_ASSERT(BUILTIN_TYPE(zombie) == T_ZOMBIE);
             GC_ASSERT(page->heap->final_slots_count > 0);
@@ -4035,7 +4030,6 @@ finalize_list(rb_objspace_t *objspace, VALUE zombie)
             heap_page_add_free_region(objspace, page, zombie);
             page->heap->total_freed_objects++;
         }
-        RB_GC_VM_UNLOCK(lev);
 
         zombie = next_zombie;
     }
