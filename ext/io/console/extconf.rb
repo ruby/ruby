@@ -61,11 +61,11 @@ when true
         console.#$OBJEXT: $(VK_HEADER)
       MK
     end
-    if vk_tool
+    if vk_tool and vk_mk = (File.read("#$srcdir/win32_vk.mk") rescue nil)
       unless conf.any? {|c| /^ *top_srcdir *=/.match?(c)}
         conf << "top_srcdir = $(srcdir)/../../..\n"
       end
-      conf.concat(depend_rules(File.read("#$srcdir/win32_vk.mk")))
+      conf.concat(depend_rules(vk_mk))
     end
     conf
   }
