@@ -43,7 +43,10 @@ describe "Thread#thread_variable_set" do
     @t.thread_variable_set(:a, 52)
     @t.thread_variable_set(:a, nil).should == nil
     @t.thread_variable?(:a).should == false
-    @t.thread_variables.should_not.include?(:a)
+
+    ruby_version_is "4.1" do
+      @t.thread_variables.should_not.include?(:a)
+    end
   end
 
   it "raises a FrozenError if the thread is frozen" do
