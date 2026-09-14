@@ -18,9 +18,6 @@
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 
-// WARNING: This entire interface is experimental and may change in the future!
-#define RB_IO_BUFFER_EXPERIMENTAL 1
-
 // Version 3: IO operations use single-transfer `(offset, length)` semantics.
 #define RUBY_IO_BUFFER_VERSION 3
 

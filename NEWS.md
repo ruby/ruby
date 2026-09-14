@@ -57,6 +57,8 @@ Note: We're only listing outstanding class updates.
 
 * IO::Buffer
 
+    * IO::Buffer and its C interface are no longer experimental.
+
     * `read`, `write`, `pread`, and `pwrite` now perform one IO operation using
       `(offset, length)`, where `length` is the maximum transfer size. Short
       transfers are returned directly.
