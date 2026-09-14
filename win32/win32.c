@@ -3016,6 +3016,22 @@ copy_fd(fd_set *dst, fd_set *src)
 }
 
 /* License: Ruby's */
+static void
+save_fd(SOCKET *dst, const fd_set *src)
+{
+    if (src) memcpy(dst, src->fd_array, src->fd_count * sizeof(SOCKET));
+}
+
+/* License: Ruby's */
+static void
+restore_fd(fd_set *dst, const SOCKET *src, UINT count)
+{
+    if (!dst) return;
+    memcpy(dst->fd_array, src, count * sizeof(SOCKET));
+    dst->fd_count = count;
+}
+
+/* License: Ruby's */
 static int
 is_not_socket(SOCKET sock)
 {
@@ -3250,6 +3266,15 @@ rb_w32_select_with_thread(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
         struct timeval rest;
         const struct timeval wait = {0, 10 * 1000}; // 10ms
         struct timeval zero = {0, 0};		    // 0ms
+        // the sets may hold more than FD_SETSIZE sockets
+        UINT nrd = rd ? rd->fd_count : 0;
+        UINT nwr = wr ? wr->fd_count : 0;
+        UINT nex = ex ? ex->fd_count : 0;
+        SOCKET *orig = ALLOC_N(SOCKET, nrd + nwr + nex);
+
+        save_fd(orig, rd);
+        save_fd(orig + nrd, wr);
+        save_fd(orig + nrd + nwr, ex);
         for (;;) {
             if (th && rb_w32_check_interrupt(th) != WAIT_TIMEOUT) {
                 r = -1;
@@ -3274,22 +3299,11 @@ rb_w32_select_with_thread(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
             else {
                 const struct timeval *dowait = &wait;
 
-                fd_set orig_rd;
-                fd_set orig_wr;
-                fd_set orig_ex;
-
-                FD_ZERO(&orig_rd);
-                FD_ZERO(&orig_wr);
-                FD_ZERO(&orig_ex);
-
-                if (rd) copy_fd(&orig_rd, rd);
-                if (wr) copy_fd(&orig_wr, wr);
-                if (ex) copy_fd(&orig_ex, ex);
                 r = do_select(nfds, rd, wr, ex, &zero);	// polling
                 if (r != 0) break; // signaled or error
-                if (rd) copy_fd(rd, &orig_rd);
-                if (wr) copy_fd(wr, &orig_wr);
-                if (ex) copy_fd(ex, &orig_ex);
+                restore_fd(rd, orig, nrd);
+                restore_fd(wr, orig + nrd, nwr);
+                restore_fd(ex, orig + nrd + nwr, nex);
 
                 if (timeout) {
                     struct timeval now;
@@ -3301,6 +3315,7 @@ rb_w32_select_with_thread(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
                 Sleep(dowait->tv_sec * 1000 + (dowait->tv_usec + 999) / 1000);
             }
         }
+        ruby_xfree_sized(orig, sizeof(SOCKET) * (nrd + nwr + nex));
     }
 
     rb_fd_term(&except);
