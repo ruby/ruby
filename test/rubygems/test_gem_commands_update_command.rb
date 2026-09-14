@@ -882,6 +882,34 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
     assert_empty out
   end
 
+  def test_execute_user_install_with_dependency_in_system_dir
+    spec_fetcher do |fetcher|
+      fetcher.download "b", 1
+      fetcher.download "a", 2 do |s|
+        s.add_dependency "b", ">= 1"
+      end
+    end
+
+    b = util_spec "b", 1
+    a = util_spec("a", 1) {|s| s.add_dependency "b", ">= 1" }
+    install_gem b
+    install_gem_user a
+
+    @cmd.handle_options %w[--user-install]
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    out = @ui.output.split "\n"
+    assert_equal "Updating installed gems", out.shift
+    assert_equal "Updating a", out.shift
+    assert_equal "Gems updated: a", out.shift
+    assert_empty out
+
+    assert_path_not_exist File.join(Gem.user_dir, "specifications", "b-1.gemspec")
+  end
+
   def test_highest_installed_gems_user_install_with_unresolved_deps
     a = util_spec "a", 1
     b = util_spec "b", 1
