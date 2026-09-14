@@ -976,10 +976,9 @@ init_fast_fallback_inetsock_internal(VALUE v)
             for (int i = 0; i < arg->connection_attempt_fds_size; i++) {
                 int cfd = arg->connection_attempt_fds[i];
                 if (cfd < 0) continue;
-                if (cfd > n) n = cfd;
+                if (cfd + 1 > n) n = cfd + 1;
                 rb_fd_set(cfd, &arg->writefds);
             }
-            if (n > 0) n++;
             nfds = n;
         }
 
