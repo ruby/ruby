@@ -314,7 +314,7 @@ allocate_fast_fallback_getaddrinfo_shared(int family_size)
 }
 
 static void
-allocate_fast_fallback_getaddrinfo_hints(struct addrinfo *hints, int family, int remote_addrinfo_hints, int additional_flags)
+init_fast_fallback_getaddrinfo_hints(struct addrinfo *hints, int family, int remote_addrinfo_hints, int additional_flags)
 {
     MEMZERO(hints, struct addrinfo, 1);
     hints->ai_family = family;
@@ -691,7 +691,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
 
             struct addrinfo getaddrinfo_hints[arg->family_size];
 
-            allocate_fast_fallback_getaddrinfo_hints(
+            init_fast_fallback_getaddrinfo_hints(
                 &getaddrinfo_hints[i],
                 arg->families[i],
                 remote_addrinfo_hints,
