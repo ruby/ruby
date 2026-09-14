@@ -3326,7 +3326,11 @@ rb_gc_mark_registered_addrs(rb_ractor_t *r, bool need_lock)
     size_t cnt = r->registered_addrs_cnt;
     if (RB_UNLIKELY(cnt > capa)) {
         rb_native_mutex_unlock(&vm->gc.registered_addrs.lock);
+        rb_ractor_t *cr = rb_current_ractor_raw(false);
+        bool saved_malloc_gc_disabled = cr ? cr->malloc_gc_disabled : false;
+        if (cr) cr->malloc_gc_disabled = true;
         snap = ALLOC_N(VALUE, cnt);
+        if (cr) cr->malloc_gc_disabled = saved_malloc_gc_disabled;
         capa = cnt;
         rb_native_mutex_lock(&vm->gc.registered_addrs.lock);
         cnt = r->registered_addrs_cnt;

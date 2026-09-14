@@ -198,4 +198,26 @@ class Test_GCRegisterAddress < Test::Unit::TestCase
       r.value
     RUBY
   end
+
+  def test_verify_internal_consistency_with_many_registered_addresses_and_gc_stress
+    omit "needs GC.verify_internal_consistency" unless GC.respond_to?(:verify_internal_consistency)
+    assert_separately([], <<~RUBY)
+      Warning[:experimental] = false
+      require '-test-/gc/register'
+      port = Ractor::Port.new
+      r = Ractor.new(port) { |port| port.send(:ready); Ractor.receive }
+      17.times { Bug::GC.register_static(0) }
+      port.receive
+      begin
+        GC.stress = true
+        GC.verify_internal_consistency
+      ensure
+        GC.stress = false
+        17.times { Bug::GC.unregister_static }
+      end
+
+      r.send(:done)
+      r.value
+    RUBY
+  end
 end
