@@ -688,7 +688,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
 
         rb_nativethread_lock_initialize(&arg->getaddrinfo_shared->lock);
         arg->getaddrinfo_shared->notify = hostname_resolution_notifier;
-        arg->getaddrinfo_shared->refcount = arg->family_size + 1;
+        arg->getaddrinfo_shared->refcount = 1;
 
         for (int i = 0; i < arg->family_size; i++) {
             arg->getaddrinfo_entries[i] = &arg->getaddrinfo_shared->getaddrinfo_entries[i];
@@ -731,7 +731,18 @@ init_fast_fallback_inetsock_internal(VALUE v)
                 }
             }
 
+            rb_nativethread_lock_lock(&arg->getaddrinfo_shared->lock);
+            {
+                arg->getaddrinfo_shared->refcount++;
+            }
+            rb_nativethread_lock_unlock(&arg->getaddrinfo_shared->lock);
+
             if (raddrinfo_pthread_create(&threads[i], fork_safe_do_fast_fallback_getaddrinfo, arg->getaddrinfo_entries[i]) != 0) {
+                rb_nativethread_lock_lock(&arg->getaddrinfo_shared->lock);
+                {
+                    arg->getaddrinfo_shared->refcount--;
+                }
+                rb_nativethread_lock_unlock(&arg->getaddrinfo_shared->lock);
                 rsock_raise_resolution_error("getaddrinfo(3)", EAI_AGAIN);
             }
         }
