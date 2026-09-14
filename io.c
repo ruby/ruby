@@ -7025,11 +7025,6 @@ rb_io_extract_modeenc(VALUE *vmode_p, VALUE *vperm_p, VALUE opthash,
             if (!has_enc)
                 rb_io_ext_int_to_encs(rb_ascii8bit_encoding(), NULL, &enc, &enc2, fmode);
         }
-#if DEFAULT_TEXTMODE
-        else if (NIL_P(vmode)) {
-            fmode |= DEFAULT_TEXTMODE;
-        }
-#endif
         v = rb_hash_aref(opthash, sym_perm);
         if (!NIL_P(v)) {
             if (vperm_p) {
@@ -7049,6 +7044,11 @@ rb_io_extract_modeenc(VALUE *vmode_p, VALUE *vperm_p, VALUE opthash,
         ecflags |= (fmode & FMODE_WRITABLE) ?
             MODE_BTMODE(TEXTMODE_NEWLINE_DECORATOR_ON_WRITE,
                         0, TEXTMODE_NEWLINE_DECORATOR_ON_WRITE) : 0;
+#endif
+#if DEFAULT_TEXTMODE
+        if (!(fmode & FMODE_BINMODE) && NIL_P(vmode)) {
+            fmode |= DEFAULT_TEXTMODE;
+        }
 #endif
 
         if (rb_io_extract_encoding_option(opthash, &enc, &enc2, &fmode)) {
