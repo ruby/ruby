@@ -325,6 +325,28 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
     socket&.close
   end
 
+  def test_initialize_ignores_malformed_test_mode_settings
+    return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
+
+    server = TCPServer.new("127.0.0.1", 0)
+    port = server.addr[1]
+
+    accepted = nil
+    server_thread = Thread.new { accepted = server.accept }
+    socket = TCPSocket.new(
+      "localhost",
+      port,
+      fast_fallback: true,
+      test_mode_settings: { delay: 1, error: 1 }
+    )
+    assert_equal(port, socket.remote_address.ip_port)
+  ensure
+    stop_accept_thread(server_thread, socket)
+    accepted&.close
+    server&.close
+    socket&.close
+  end
+
   def test_initialize_resolv_timeout_with_connection_failure
     return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
 
