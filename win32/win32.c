@@ -3302,17 +3302,17 @@ rb_w32_select_with_thread(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
 
                 r = do_select(nfds, rd, wr, ex, &zero);	// polling
                 if (r != 0) break; // signaled or error
-                restore_fd(rd, orig, nrd);
-                restore_fd(wr, orig + nrd, nwr);
-                restore_fd(ex, orig + nrd + nwr, nex);
 
                 if (timeout) {
                     struct timeval now;
                     gettimeofday(&now, NULL);
                     rest = limit;
-                    if (!rb_w32_time_subtract(&rest, &now)) break;
+                    if (!rb_w32_time_subtract(&rest, &now)) break; // leave the sets empty
                     if (compare(&rest, &wait) < 0) dowait = &rest;
                 }
+                restore_fd(rd, orig, nrd);
+                restore_fd(wr, orig + nrd, nwr);
+                restore_fd(ex, orig + nrd + nwr, nex);
                 Sleep(dowait->tv_sec * 1000 + (dowait->tv_usec + 999) / 1000);
             }
         }
