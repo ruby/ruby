@@ -81,7 +81,7 @@ describe "Array.new with (size, object=nil)" do
   end
 
   it "raises an ArgumentError if size is too large" do
-    -> { Array.new(fixnum_max+1) }.should.raise(ArgumentError)
+    -> { Array.new(max_length) }.should.raise(ArgumentError)
   end
 
   it "calls #to_int to convert the size argument to an Integer when object is given" do
