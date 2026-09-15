@@ -893,6 +893,34 @@ class TestStringIO < Test::Unit::TestCase
     end
   end
 
+  def test_getc_broken_multibyte
+    # A character the remaining bytes cannot complete yields one byte, and never
+    # reads or seeks past the end of the string.
+    truncated = "x\u3042".byteslice(0, 2)
+    s = StringIO.new(truncated)
+    assert_equal("x", s.getc)
+    assert_equal("\xE3".b, s.getc.b)
+    assert_equal(2, s.pos)
+    assert_nil(s.getc)
+
+    # The same holds starting inside a complete character.
+    s = StringIO.new("\u3042")
+    s.pos = 1
+    assert_equal("\x81".b, s.getc.b)
+    assert_equal(2, s.pos)
+
+    # A whole character is still returned whole.
+    s = StringIO.new("\u3042")
+    assert_equal("\u3042", s.getc)
+    assert_equal(3, s.pos)
+
+    # A string that shares a backing buffer with a longer one must be measured at
+    # its own offset, not the buffer's start.
+    s = StringIO.new("\u3042\u3044\u3046".byteslice(1, 3))
+    assert_equal("\x81".b, s.getc.b)
+    assert_equal(1, s.pos)
+  end
+
   def test_ungetc_padding
     s = StringIO.new()
     s.pos = 2
