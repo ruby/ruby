@@ -8,6 +8,16 @@
 
 #define RUBY_ATOMIC_VALUE_LOAD(x) rbimpl_atomic_value_load(&(x), RBIMPL_ATOMIC_SEQ_CST)
 
+/* Padding granularity for keeping concurrently written fields off one another's cache
+ * line.  Apple silicon and ppc64 really do have 128-byte lines; 64 elsewhere. */
+#if defined(__x86_64__) || defined(_M_X64) || defined(__i386__) || defined(_M_IX86)
+# define RUBY_CACHE_LINE_SIZE 64
+#elif defined(__aarch64__) || defined(_M_ARM64) || defined(__powerpc64__)
+# define RUBY_CACHE_LINE_SIZE 128
+#else
+# define RUBY_CACHE_LINE_SIZE 64
+#endif
+
 /* shim macros only */
 #define ATOMIC_ADD(var, val) RUBY_ATOMIC_ADD(var, val)
 #define ATOMIC_CAS(var, oldval, newval) RUBY_ATOMIC_CAS(var, oldval, newval)
