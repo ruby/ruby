@@ -292,6 +292,28 @@ class TestGemCommandsBuildCommand < Gem::TestCase
     assert_match spec.platform, "java"
   end
 
+  def test_execute_platform_option_local
+    local = Gem::Platform.local.to_s
+
+    util_test_build_gem_with_platform_option local, suffix: local
+  end
+
+  def test_execute_platform_option_non_local
+    util_test_build_gem_with_platform_option "java", suffix: "java"
+  end
+
+  def test_execute_platform_option_local_with_gemspec_platform
+    @gem.platform = "arm64-darwin"
+
+    util_test_build_gem_with_platform_option Gem::Platform.local.to_s, suffix: "arm64-darwin"
+  end
+
+  def test_execute_platform_option_non_local_with_gemspec_platform
+    @gem.platform = "arm64-darwin"
+
+    util_test_build_gem_with_platform_option "java", suffix: "arm64-darwin"
+  end
+
   def test_execute_bad_name
     [".", "-", "_"].each do |special_char|
       gem = util_spec "some_gem_with_bad_name" do |s|
@@ -751,6 +773,23 @@ class TestGemCommandsBuildCommand < Gem::TestCase
     assert_equal "some_gem", spec.name
     assert_equal "this is a summary", spec.summary
     spec
+  end
+
+  def util_test_build_gem_with_platform_option(platform, suffix:)
+    gemspec_file = File.join(@tempdir, @gem.spec_name)
+
+    File.open gemspec_file, "w" do |gs|
+      gs.write @gem.to_ruby
+    end
+
+    platforms = Gem.platforms.dup
+    begin
+      @cmd.handle_options [gemspec_file, "--platform", platform]
+
+      util_test_build_gem @gem, suffix: suffix
+    ensure
+      Gem.platforms = platforms
+    end
   end
 
   def test_execute_force
