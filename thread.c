@@ -77,6 +77,7 @@
 #include "internal.h"
 #include "internal/class.h"
 #include "internal/cont.h"
+#include "internal/jit.h"
 #include "internal/coverage.h"
 #include "internal/error.h"
 #include "internal/eval.h"
@@ -86,6 +87,7 @@
 #include "internal/object.h"
 #include "internal/proc.h"
 #include "ruby/fiber/scheduler.h"
+#include "internal/scheduler.h"
 #include "internal/signal.h"
 #include "internal/thread.h"
 #include "internal/time.h"
@@ -212,7 +214,7 @@ static inline int
 vm_check_ints_blocking(rb_execution_context_t *ec)
 {
 #ifdef RUBY_ASSERT_CRITICAL_SECTION
-    VM_ASSERT(ruby_assert_critical_section_entered == 0);
+    VM_ASSERT(ec->assert_critical_section_entered == 0);
 #endif
 
     rb_thread_t *th = rb_ec_thread_ptr(ec);
@@ -976,7 +978,7 @@ thread_create_core(VALUE thval, struct thread_create_params *params)
         RBASIC_CLEAR_CLASS(th->pending_interrupt_mask_stack);
     }
 
-    RUBY_DEBUG_LOG("r:%u th:%u", rb_ractor_id(th->ractor), rb_th_serial(th));
+    RUBY_DEBUG_LOG("r:%"PRI_SERIALT_PREFIX"u th:%u", rb_ractor_id(th->ractor), rb_th_serial(th));
 
     rb_ractor_living_threads_insert(th->ractor, th);
 
@@ -1702,7 +1704,7 @@ blocking_region_begin(rb_thread_t *th, struct rb_blocking_region_buffer *region,
                       rb_unblock_function_t *ubf, void *arg, int flags)
 {
 #ifdef RUBY_ASSERT_CRITICAL_SECTION
-    VM_ASSERT(ruby_assert_critical_section_entered == 0);
+    VM_ASSERT(th->ec->assert_critical_section_entered == 0);
 #endif
     VM_ASSERT(th == GET_THREAD());
 
@@ -2022,6 +2024,10 @@ rb_io_blocking_operation_exit(struct rb_io *io, struct rb_io_blocking_operation 
     // Indicate that the blocking operation is no longer active:
     blocking_operation->ec = NULL;
 
+    if (!NIL_P(blocking_operation->scheduler_interrupt_target)) {
+        rb_fiber_scheduler_interrupt_target_invalidate(blocking_operation->scheduler_interrupt_target);
+    }
+
     if (RB_TEST(wakeup_mutex)) {
         struct io_blocking_operation_arguments arguments = {
             .io = io,
@@ -2046,6 +2052,30 @@ rb_thread_io_blocking_operation_ensure(VALUE _argument)
     return Qnil;
 }
 
+struct thread_io_blocking_operation_arguments {
+    VALUE (*function)(VALUE);
+    VALUE argument;
+    struct rb_io_blocking_operation *blocking_operation;
+};
+
+static VALUE
+rb_thread_io_blocking_operation_body(VALUE _arguments)
+{
+    struct thread_io_blocking_operation_arguments *arguments = (void *)_arguments;
+    VALUE result = arguments->function(arguments->argument);
+    VALUE target = arguments->blocking_operation->scheduler_interrupt_target;
+
+    if (!NIL_P(target)) {
+        VALUE exception = rb_fiber_scheduler_interrupt_target_exception(target);
+
+        if (!NIL_P(exception)) {
+            rb_exc_raise(exception);
+        }
+    }
+
+    return result;
+}
+
 /*
  * Executes a function that performs a blocking IO operation, while properly tracking
  * the operation in the IO's blocking_operations list. This ensures proper cleanup
@@ -2068,6 +2098,7 @@ rb_thread_io_blocking_operation(VALUE self, VALUE(*function)(VALUE), VALUE argum
     rb_execution_context_t *ec = GET_EC();
     struct rb_io_blocking_operation blocking_operation = {
         .ec = ec,
+        .scheduler_interrupt_target = Qnil,
     };
     rb_io_blocking_operation_enter(io, &blocking_operation);
 
@@ -2076,7 +2107,13 @@ rb_thread_io_blocking_operation(VALUE self, VALUE(*function)(VALUE), VALUE argum
         .blocking_operation = &blocking_operation
     };
 
-    return rb_ensure(function, argument, rb_thread_io_blocking_operation_ensure, (VALUE)&io_blocking_operation_arguments);
+    struct thread_io_blocking_operation_arguments arguments = {
+        .function = function,
+        .argument = argument,
+        .blocking_operation = &blocking_operation,
+    };
+
+    return rb_ensure(rb_thread_io_blocking_operation_body, (VALUE)&arguments, rb_thread_io_blocking_operation_ensure, (VALUE)&io_blocking_operation_arguments);
 }
 
 static bool
@@ -2186,6 +2223,7 @@ rb_thread_io_blocking_call(struct rb_io* io, rb_blocking_function_t *func, void 
 
     struct rb_io_blocking_operation blocking_operation = {
         .ec = ec,
+        .scheduler_interrupt_target = Qnil,
     };
     rb_io_blocking_operation_enter(io, &blocking_operation);
 
@@ -2861,7 +2899,7 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
         }
 
         if (postponed_job_interrupt) {
-            rb_postponed_job_flush(th->vm);
+            rb_postponed_job_flush();
         }
 
         if (trap_interrupt) {
@@ -3085,7 +3123,16 @@ thread_io_close_notify_all(VALUE _io)
             rb_thread_t *thread = ec->thread_ptr;
 
             if (thread->scheduler != Qnil) {
-                rb_fiber_scheduler_fiber_interrupt(thread->scheduler, rb_fiberptr_self(ec->fiber_ptr), error);
+                VALUE target = blocking_operation->scheduler_interrupt_target;
+
+                if (NIL_P(target)) {
+                    VALUE fiber = rb_fiberptr_self(ec->fiber_ptr);
+                    target = rb_fiber_scheduler_interrupt_target_new(fiber, error);
+                    blocking_operation->scheduler_interrupt_target = target;
+                }
+
+                rb_fiber_scheduler_fiber_interrupt(thread->scheduler, target, error);
+                RB_GC_GUARD(target);
             }
             else {
                 // If the thread is not the current thread, we need to enqueue an error:
@@ -4183,6 +4230,7 @@ rb_thread_local_aset(VALUE thread, ID id, VALUE val)
  *
  *  Attribute Assignment---Sets or creates the value of a fiber-local variable,
  *  using either a symbol or a string.
+ *  Assigning +nil+ deletes the variable.
  *
  *  See also Thread#[].
  *
@@ -4244,19 +4292,33 @@ rb_thread_variable_get(VALUE thread, VALUE key)
  *  Sets a thread local with +key+ to +value+.  Note that these are local to
  *  threads, and not to fibers.  Please see Thread#thread_variable_get and
  *  Thread#[] for more information.
+ *  Assigning +nil+ deletes the variable.
  */
 
 static VALUE
 rb_thread_variable_set(VALUE thread, VALUE key, VALUE val)
 {
     VALUE locals;
+    VALUE symbol;
 
     if (OBJ_FROZEN(thread)) {
         rb_frozen_error_raise(thread, "can't modify frozen thread locals");
     }
 
+    symbol = rb_to_symbol(key);
+
+    if (NIL_P(val)) {
+        if (LIKELY(!THREAD_LOCAL_STORAGE_INITIALISED_P(thread))) {
+            return Qnil;
+        }
+
+        locals = rb_thread_local_storage(thread);
+        rb_hash_delete(locals, symbol);
+        return Qnil;
+    }
+
     locals = rb_thread_local_storage(thread);
-    return rb_hash_aset(locals, rb_to_symbol(key), val);
+    return rb_hash_aset(locals, symbol, val);
 }
 
 /*
@@ -4883,6 +4945,7 @@ thread_io_wait(rb_thread_t *th, struct rb_io *io, int fd, int events, struct tim
 
     if (io) {
         blocking_operation.ec = ec;
+        blocking_operation.scheduler_interrupt_target = Qnil;
 COMPILER_WARNING_PUSH
 #if RBIMPL_COMPILER_SINCE(GCC, 12, 0, 0)
 COMPILER_WARNING_IGNORED(-Wdangling-pointer)
@@ -4895,7 +4958,25 @@ COMPILER_WARNING_POP
     // A zero timeout is a plain probe; ppoll answers it without parking.
     bool mn_wait = timeout == NULL || timeout->tv_sec != 0 || timeout->tv_usec != 0;
 
-    switch (mn_wait ? thread_io_wait_events(th, fd, events, timeout, false) : io_wait_unhandled) {
+    enum io_wait_result mn_result = io_wait_unhandled;
+    struct timeval tv_rest;
+    if (mn_wait) {
+        rb_hrtime_t started = timeout ? rb_hrtime_now() : 0;
+        mn_result = thread_io_wait_events(th, fd, events, timeout, false);
+
+        // The M:N wait may hand an interrupted wait back to the blocking path
+        // below.  Charge what it already waited against the timeout, so the
+        // deadline is the one the caller asked for.
+        if (mn_result == io_wait_unhandled && timeout) {
+            rb_hrtime_t total = rb_timeval2hrtime(timeout);
+            rb_hrtime_t spent = rb_hrtime_sub(rb_hrtime_now(), started);
+            rb_hrtime_t rest = spent < total ? total - spent : 0;
+            rb_hrtime2timeval(&tv_rest, &rest);
+            timeout = &tv_rest;
+        }
+    }
+
+    switch (mn_result) {
       case io_wait_ready:
         fds[0].revents = events;
         errno = 0;
@@ -4906,10 +4987,11 @@ COMPILER_WARNING_POP
         break;
       case io_wait_unhandled:
         EC_PUSH_TAG(ec);
+        struct timeval *volatile blocking_timeout = timeout;
         if ((state = EC_EXEC_TAG()) == TAG_NONE) {
             rb_hrtime_t *to, rel, end = 0;
             RUBY_VM_CHECK_INTS_BLOCKING(ec);
-            timeout_prepare(&to, &rel, &end, timeout);
+            timeout_prepare(&to, &rel, &end, blocking_timeout);
             do {
                 nfds = numberof(fds);
                 result = wait_for_single_fd_blocking_region(th, fds, nfds, to, &lerrno);
@@ -5035,12 +5117,14 @@ thread_io_wait(rb_thread_t *th, struct rb_io *io, int fd, int events, struct tim
     if (io) {
         args.io = io;
         blocking_operation.ec = th->ec;
+        blocking_operation.scheduler_interrupt_target = Qnil;
         rb_io_blocking_operation_enter(io, &blocking_operation);
         args.blocking_operation = &blocking_operation;
     }
     else {
         args.io = NULL;
         blocking_operation.ec = NULL;
+        blocking_operation.scheduler_interrupt_target = Qnil;
         args.blocking_operation = NULL;
     }
 
@@ -5254,6 +5338,7 @@ rb_thread_atfork_internal(rb_thread_t *th, void (*atfork)(rb_thread_t *, const r
     rb_native_mutex_initialize(&th->interrupt_lock);
     rb_native_mutex_initialize(&vm->once_lock);
     rb_native_cond_initialize(&vm->once_cond);
+    rb_jit_cont_init(); // cont.c's jit_cont_lock, likewise
     rb_gc_zombie_objspaces_atfork();
     rb_gc_atfork_global_locks();
     rb_generic_fields_lock_atfork();
@@ -5928,7 +6013,6 @@ Init_Thread_Mutex(void)
 {
     rb_thread_t *th = GET_THREAD();
 
-    rb_native_mutex_initialize(&th->vm->workqueue_lock);
     rb_native_mutex_initialize(&th->vm->once_lock);
     rb_native_cond_initialize(&th->vm->once_cond);
     rb_native_mutex_initialize(&th->interrupt_lock);

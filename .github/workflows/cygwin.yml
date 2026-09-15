@@ -58,7 +58,8 @@ jobs:
 
       - name: configure
         run: |
-          ./autogen.sh
+          # The autoreconf wrapper in autoconf-20260320-1 has a shell syntax error
+          AUTORECONF=autoreconf-2.73 ./autogen.sh
           ./configure --disable-install-doc
         shell: C:\cygwin\bin\bash.EXE --noprofile --norc -e -o igncr -o pipefail {0}
 

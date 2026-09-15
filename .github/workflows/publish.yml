@@ -112,3 +112,18 @@ jobs:
             -H "X-GitHub-Api-Version: 2022-11-28" \
             https://api.github.com/repos/ruby/all-ruby/dispatches \
             -d '{"event_type": "update"}'
+
+      - uses: ruby/action-slack@d260b61aa817726d5bedd22dd6cc305787fa4cdd # v4.0.0
+        with:
+          payload: |
+            {
+              "attachments": [{
+                "title": "Publish Ruby ${{ github.event.client_payload.version || github.event.inputs.version }}",
+                "title_link": "https://cache.ruby-lang.org/pub/ruby/",
+                "text": "${{ job.status }}: <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.workflow }} at ${{ github.event.client_payload.version || github.event.inputs.version }}>",
+                "color": "${{ job.status == 'success' && 'good' || 'danger' }}"
+              }]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SNAPSHOT_SLACK_WEBHOOK_URL }}
+        if: always()

@@ -1044,11 +1044,7 @@ zone_str_enc(const char *zone, rb_encoding *enc)
     }
 }
 
-static inline VALUE
-zone_str(const char *zone)
-{
-    return zone_str_enc(zone, NULL);
-}
+#define zone_str(zone) zone_str_enc(zone, NULL)
 
 static void
 gmtimew_noleapsecond(wideval_t timew, struct vtm *vtm)

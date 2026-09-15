@@ -314,38 +314,48 @@ class Ractor
   def self.select(*ports, timeout: nil)
     raise ArgumentError, 'specify at least one Ractor::Port or Ractor' if ports.empty?
 
-    monitors = {} # Ractor::Port => Ractor
-
-    ports = ports.map do |arg|
-      case arg
-      when Ractor
-        port = Ractor::Port.new
-        monitors[port] = arg
-        arg.monitor port
-        port
-      when Ractor::Port
-        arg
-      else
-        raise ArgumentError, "should be Ractor::Port or Ractor"
-      end
-    end
+    monitored = []
+    others = []
+    mp = nil
 
     begin
-      result = __builtin_ractor_select_internal(ports, timeout)
-      return nil if result.nil? # timed out
-
-      result_port, obj = result
-
-      if r = monitors[result_port]
-        [r, r.value]
-      else
-        [result_port, obj]
+      ports.each do |arg|
+        case arg
+        when Ractor
+          monitored << arg
+        when Ractor::Port
+          others << arg
+        else
+          raise ArgumentError, "should be Ractor::Port or Ractor"
+        end
       end
+
+      # One port for every watched ractor rather than one each: the exit token
+      # names the ractor, so there is nothing to look the result up in.
+      unless monitored.empty?
+        mp = Ractor::Port.new
+        monitored.each { |r| r.monitor mp }
+      end
+
+      if others.empty?
+        # Nothing but ractors: one port to wait on, so no selector is built.
+        token = mp.receive(timeout: timeout)
+        return nil if token.nil?
+      else
+        result = __builtin_ractor_select_internal(mp ? [mp, *others] : others, timeout)
+        return nil if result.nil?
+
+        port, obj = result
+        return [port, obj] unless port.equal?(mp)
+        token = obj
+      end
+
+      r = token[0]
+      [r, r.value]
     ensure
-      # close all ports for join
-      monitors.each do |port, r|
-        r.unmonitor port
-        port.close
+      if mp
+        monitored.each { |r| r.unmonitor mp }
+        mp.close
       end
     end
   end
@@ -383,7 +393,7 @@ class Ractor
   def inspect
     loc  = __builtin_cexpr! %q{ RACTOR_PTR(self)->loc }
     name = __builtin_cexpr! %q{ RACTOR_PTR(self)->name }
-    id   = __builtin_cexpr! %q{ UINT2NUM(rb_ractor_id(RACTOR_PTR(self))) }
+    id   = __builtin_cexpr! %q{ ULL2NUM(rb_ractor_id(RACTOR_PTR(self))) }
     status = __builtin_cexpr! %q{
       rb_str_new2(RACTOR_PTR(self)->status_ == ractor_terminated ? "terminated" : "running")
     }
@@ -599,7 +609,7 @@ class Ractor
     port = Port.new
 
     self.monitor port
-    if port.receive == :aborted
+    if port.receive[1] == :aborted
       __builtin_ractor_value
     end
 
@@ -632,23 +642,28 @@ class Ractor
   # call-seq:
   #    ractor.monitor(port) -> true or false
   #
-  # Registers the port as a monitoring port for this ractor. When the ractor terminates,
-  # the port receives a Symbol object.
+  # Registers the port as a monitoring port for this ractor. When the ractor
+  # terminates, the port receives an Array naming the ractor and what happened to
+  # it, so that several ractors can report to one port.
   #
-  # * +:exited+ is sent if the ractor terminates without an unhandled exception.
-  # * +:aborted+ is sent if the ractor terminates by an unhandled exception.
+  # * <tt>[ractor, :exited]</tt> if the ractor terminated without an unhandled
+  #   exception.
+  # * <tt>[ractor, :aborted]</tt> if it terminated by one.
+  #
+  # The Array is built for the receiving ractor, so watching many ractors does not
+  # leave shareable objects behind.
   #
   # Returns +true+ if the monitor was registered (the ractor is still running).
   # Returns +false+ if the ractor had already terminated; in that case the
-  # termination message (+:exited+ or +:aborted+) is sent to the port immediately.
+  # termination message is sent to the port immediately.
   #
   #     r = Ractor.new{ some_task() }
   #     r.monitor(port = Ractor::Port.new)
-  #     port.receive #=> :exited and r is terminated
+  #     port.receive #=> [r, :exited]
   #
   #     r = Ractor.new{ raise "foo" }
   #     r.monitor(port = Ractor::Port.new)
-  #     port.receive #=> :aborted and r is terminated by the RuntimeError "foo"
+  #     port.receive #=> [r, :aborted]
   #
   def monitor port
     __builtin_ractor_monitor(port)
@@ -866,7 +881,7 @@ class Ractor
     #    port.inspect -> string
     def inspect
       "#<Ractor::Port to:\##{
-        __builtin_cexpr! "SIZET2NUM(rb_ractor_id(ractor_port_ptr_check(self)->r))"
+        __builtin_cexpr! "ULL2NUM(rb_ractor_id(ractor_port_ptr_check(self)->r))"
       } id:#{
         __builtin_cexpr! "SIZET2NUM(ractor_port_id(RACTOR_PORT_PTR(self)))"
       }>"

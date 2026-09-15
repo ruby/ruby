@@ -24,28 +24,38 @@
 
 struct coroutine_context;
 
-struct coroutine_shared
-{
-    pthread_mutex_t guard;
-    struct coroutine_context * main;
-
-    size_t count;
-};
-
 typedef COROUTINE(* coroutine_start)(struct coroutine_context *from, struct coroutine_context *self);
 
 struct coroutine_context
 {
-    struct coroutine_shared * shared;
-
+    /* NULL for a main context; otherwise the worker pthread entry point. */
     coroutine_start start;
     void *argument;
 
     void *stack;
     size_t size;
 
+    /* The current caller for a main context, or the context's worker pthread. */
     pthread_t id;
+
+    /* Whether the lazily created worker pthread must be cancelled and joined.
+     * This remains false for a main context, whose id is the caller's pthread. */
+    int thread_created;
+
+    /* Serializes updates to suspended and from, and is paired with schedule. */
+    pthread_mutex_t guard;
+
+    /* Wakes this context when another context transfers control to it. */
     pthread_cond_t schedule;
+
+    /* Whether this context is inactive and can be resumed. This is also the
+     * predicate protected by guard and checked when waiting on schedule. */
+    int suspended;
+
+    /* Whether guard and schedule have been initialized and remain valid. */
+    int initialized;
+
+    /* The context that most recently transferred control to this context. */
     struct coroutine_context * from;
 };
 

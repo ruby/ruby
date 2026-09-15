@@ -886,6 +886,26 @@ RSpec.describe "bundle lock" do
     expect(lockfile).to end_with("BUNDLED WITH\n  99\n")
   end
 
+  it "does not update the bundler version in the lockfile to a prerelease version, unless the target version allows prereleases" do
+    build_repo4 do
+      build_gem "bundler", "55"
+      build_gem "bundler", "56.0.0.beta1"
+    end
+
+    system_gems "bundler-55", gem_repo: gem_repo4
+
+    install_gemfile <<-G, artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+      source "https://gem.repo4"
+    G
+    lockfile lockfile.sub(/(^\s*)#{Bundler::VERSION}($)/, '\11.0.0\2')
+
+    bundle "lock --update --bundler --verbose", artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+    expect(lockfile).to end_with("BUNDLED WITH\n  55\n")
+
+    bundle "lock --update --bundler '> 0.a' --verbose", artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+    expect(lockfile).to end_with("BUNDLED WITH\n  56.0.0.beta1\n")
+  end
+
   it "supports adding new platforms when there's no previous lockfile" do
     gemfile_with_rails_weakling_and_foo_from_repo4
 

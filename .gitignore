@@ -59,6 +59,7 @@ lcov*.info
 /*-fake.rb
 /*.dll
 /*.exe
+/coroutine-test
 /*.ilk
 /*.res
 /*.pc

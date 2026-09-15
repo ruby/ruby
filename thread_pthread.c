@@ -67,10 +67,6 @@ static const void *const condattr_monotonic = NULL;
 // otherwise the caller has to restate the deadline in the condvar's clock.
 #define RB_NATIVE_COND_HRTIME_DEADLINE_P() (condattr_monotonic != NULL)
 
-/* A retiring shared native thread frees its own context while the threads it
- * parked are still suspended with that context as their target. */
-#define COROUTINE_TARGET_MAY_BE_FREED 1
-
 #include COROUTINE_H
 
 #ifndef HAVE_SYS_EVENT_H
@@ -1225,21 +1221,6 @@ static bool timeslice_scan(rb_vm_t *vm, bool interrupt);
 static int timer_thread_set_timeout(rb_vm_t *vm);
 
 #include "thread_sched_mn.c"
-
-
-void
-rb_assert_sig(void)
-{
-    sigset_t oldmask;
-    pthread_sigmask(0, NULL, &oldmask);
-    if (sigismember(&oldmask, SIGVTALRM)) {
-        rb_bug("!!!");
-    }
-    else {
-        RUBY_DEBUG_LOG("ok");
-    }
-}
-
 
 /* only use signal-safe system calls here */
 static void

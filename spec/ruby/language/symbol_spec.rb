@@ -96,7 +96,6 @@ describe "A Symbol literal" do
     %I{a b #{"c"}}.should == [:a, :b, :c]
   end
 
-  quarantine! do # Aborts the test process on CRuby's CI
   it "raises an EncodingError when an interpolated symbol has invalid bytes" do
     -> {
       :"#{(+"\xFF").force_encoding(Encoding::UTF_8)}"
@@ -105,7 +104,6 @@ describe "A Symbol literal" do
     -> {
       %I[#{(+"\xFF").force_encoding(Encoding::UTF_8)}]
     }.should.raise(EncodingError, 'invalid symbol in encoding UTF-8 :"\xFF"')
-  end
   end
 
   ruby_bug "#20280", ""..."3.4" do

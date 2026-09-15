@@ -1231,6 +1231,9 @@ static
 VALUE class_allocate_complex_instance(VALUE klass, uint32_t capacity)
 {
     VALUE obj = rb_newobj_of_with_shape(klass, T_OBJECT, rb_shape_transition_extended(ROOT_COMPLEX_SHAPE_ID), sizeof(struct RObject));
+    // The shape already says extended, so a GC during the allocation below
+    // would mark an uninitialized as.extended.
+    ROBJECT(obj)->as.extended = Qfalse;
     VALUE fields_obj = rb_imemo_fields_new_complex(obj, ROOT_COMPLEX_SHAPE_ID, capacity, false);
     ROBJECT_SET_EXTENDED(obj, fields_obj);
     return obj;
@@ -5800,7 +5803,7 @@ rb_raw_obj_info_buitin_type(char *const buff, const size_t buff_size, const VALU
             else if (rb_ractor_p(obj)) {
                 rb_ractor_t *r = (void *)DATA_PTR(obj);
                 if (r) {
-                    APPEND_F("r:%d", r->pub.id);
+                    APPEND_F("r:%"PRI_SERIALT_PREFIX"u", r->pub.id);
                 }
             }
             break;

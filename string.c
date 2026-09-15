@@ -6849,17 +6849,114 @@ str_bit_offset_from_index(VALUE index)
     return offset;
 }
 
+/*
+ * Bit lengths share the offset's representable range.
+ * A negative length is an ArgumentError rather than an IndexError.
+ */
+static uint64_t
+str_bit_length_from_index(VALUE index)
+{
+    VALUE integer = rb_to_int(index);
+
+    if (FIXNUM_P(integer)) {
+        long value = FIX2LONG(integer);
+        if (value < 0) {
+            rb_raise(rb_eArgError, "negative bit length");
+        }
+        return (uint64_t)value;
+    }
+
+    RUBY_ASSERT(RB_TYPE_P(integer, T_BIGNUM));
+    if (rb_int_negative_p(integer)) {
+        rb_raise(rb_eArgError, "negative bit length");
+    }
+    if (rb_cmpint(rb_int_cmp(integer, ULL2NUM(UINT64_MAX)), integer, ULL2NUM(UINT64_MAX)) > 0) {
+        rb_raise(rb_eArgError, "bit length out of representable range");
+    }
+    return (uint64_t)NUM2ULL(integer);
+}
+
+static inline uint64_t
+str_bit_size(long byte_len)
+{
+    /*
+     * byte_len * CHAR_BIT overflows uint64_t only for byte_len >= 2**61 which cannot
+     * be allocated. Saturate so that unreachable cases cannot wrap.
+     */
+    if ((uint64_t)byte_len > UINT64_MAX / CHAR_BIT) return UINT64_MAX;
+    return (uint64_t)byte_len * CHAR_BIT;
+}
+
+struct str_bit_range {
+    uint64_t beg;
+    uint64_t end_exclusive;  /* meaningful only when end_open is false */
+    bool end_open;           /* a nil end: the region runs to the end of self */
+};
+
+/*
+ * Coerce a bit Range's endpoints to bit offsets. This may run arbitrary Ruby
+ * (Integer#to_int on the endpoints), so it does NOT read the string's length:
+ * The caller must resolve the length only after this returns, otherwise
+ * to_int that reallocates self would leave a stale size.
+ */
+static void
+str_bit_range_to_offsets(VALUE range, struct str_bit_range *out)
+{
+    VALUE beg_v, end_v;
+    int excl;
+
+    /*
+     * We don't use rb_range_beg_len: it counts negative endpoints from the end,
+     * which is an IndexError for bit positions, and it is limited to long instead
+     * of uint64_t.
+     */
+    rb_range_values(range, &beg_v, &end_v, &excl);
+
+    out->beg = NIL_P(beg_v) ? 0 : str_bit_offset_from_index(beg_v).value;
+    if (NIL_P(end_v)) {
+        out->end_open = true;
+        out->end_exclusive = 0;
+    }
+    else {
+        uint64_t end = str_bit_offset_from_index(end_v).value;
+        out->end_open = false;
+        /*
+         * The saturation loses one position only for an inclusive end of
+         * 2**64-1, which lies beyond any real string either way.
+         */
+        out->end_exclusive = (excl || end == UINT64_MAX) ? end : end + 1;
+    }
+}
+
+/*
+ * Turn a coerced Range into (beg, len) against the now-current total bit size.
+ * The length is deliberately not clamped to the bits available, so a reading
+ * caller can clamp while a writing caller detects the overrun and raises.
+ */
 static bool
-str_lsb_first(int argc, VALUE *argv, VALUE *index)
+str_bit_range_resolve(const struct str_bit_range *range, uint64_t total_bits, uint64_t *begp, uint64_t *lenp)
+{
+    uint64_t beg = range->beg;
+    if (beg > total_bits) return false;
+
+    uint64_t end_exclusive = range->end_open ? total_bits : range->end_exclusive;
+    if (end_exclusive < beg) end_exclusive = beg;
+
+    *begp = beg;
+    *lenp = end_exclusive - beg;
+    return true;
+}
+
+static bool
+str_lsb_first_from_opts(VALUE opts)
 {
     static ID keywords[1];
-    VALUE opts, vlsb_first;
+    VALUE vlsb_first;
 
     if (!keywords[0]) {
         keywords[0] = rb_intern_const("lsb_first");
     }
 
-    rb_scan_args(argc, argv, "1:", index, &opts);
     rb_get_kwargs(opts, keywords, 0, 1, &vlsb_first);
     if (vlsb_first == Qundef || vlsb_first == Qtrue) {
         return true;
@@ -6869,6 +6966,15 @@ str_lsb_first(int argc, VALUE *argv, VALUE *index)
     }
     rb_raise(rb_eArgError, "lsb_first must be true or false");
     UNREACHABLE_RETURN(false);
+}
+
+static bool
+str_lsb_first(int argc, VALUE *argv, VALUE *index)
+{
+    VALUE opts;
+
+    rb_scan_args(argc, argv, "1:", index, &opts);
+    return str_lsb_first_from_opts(opts);
 }
 
 static inline uint64_t
@@ -6967,11 +7073,83 @@ enum str_bit_mutation {
     STR_BIT_FLIP
 };
 
-static VALUE
-str_mutate_bit(int argc, VALUE *argv, VALUE str, enum str_bit_mutation mutation)
+/*
+ * Mask for the logical in-byte positions lo..hi (0 <= lo <= hi <= 7) of one
+ * byte.  A contiguous logical run stays contiguous within a byte under both
+ * numbering conventions; MSB-first only mirrors it.
+ */
+static inline unsigned char
+str_bit_region_byte_mask(unsigned int lo, unsigned int hi, bool lsb_first)
 {
-    VALUE index;
-    bool lsb_first = str_lsb_first(argc, argv, &index);
+    if (lsb_first) {
+        return (unsigned char)((0xFFu >> (7 - hi)) & (0xFFu << lo));
+    }
+    else {
+        return (unsigned char)((0xFFu >> lo) & (0xFFu << (7 - hi)));
+    }
+}
+
+static inline void
+str_apply_bit_mask(unsigned char *byte, unsigned char mask, enum str_bit_mutation mutation)
+{
+    switch (mutation) {
+      case STR_BIT_SET:
+        *byte |= mask;
+        break;
+      case STR_BIT_CLEAR:
+        *byte &= (unsigned char)~mask;
+        break;
+      case STR_BIT_FLIP:
+        *byte ^= mask;
+        break;
+    }
+}
+
+/* The caller has bounds-checked [beg, beg+len) and called rb_str_modify. */
+static void
+str_mutate_bit_region(unsigned char *ptr, uint64_t beg, uint64_t len, bool lsb_first, enum str_bit_mutation mutation)
+{
+    uint64_t first_bit = beg;
+    uint64_t last_bit = beg + len - 1;
+    long first_byte = (long)(first_bit / CHAR_BIT);
+    long last_byte = (long)(last_bit / CHAR_BIT);
+    unsigned int first_off = (unsigned int)(first_bit % CHAR_BIT);
+    unsigned int last_off = (unsigned int)(last_bit % CHAR_BIT);
+
+    if (first_byte == last_byte) {
+        str_apply_bit_mask(ptr + first_byte, str_bit_region_byte_mask(first_off, last_off, lsb_first), mutation);
+        return;
+    }
+
+    str_apply_bit_mask(ptr + first_byte, str_bit_region_byte_mask(first_off, 7, lsb_first), mutation);
+    long middle_len = last_byte - first_byte - 1;
+    if (middle_len > 0) {
+        unsigned char *middle = ptr + first_byte + 1;
+        switch (mutation) {
+          case STR_BIT_SET:
+            memset(middle, 0xFF, middle_len);
+            break;
+          case STR_BIT_CLEAR:
+            memset(middle, 0, middle_len);
+            break;
+          case STR_BIT_FLIP:
+            /*
+             * Byte loop on purpose: the compiler auto-vectorizes it (verified on gcc 13.3
+             * and clang 18.1 with x86_64), and being read-modify-write, the flip is memory-bound,
+             * so a manual word-at-a-time XOR loop was measured to be no faster.
+             */
+            for (long i = 0; i < middle_len; i++) {
+                middle[i] ^= 0xFF;
+            }
+            break;
+        }
+    }
+    str_apply_bit_mask(ptr + last_byte, str_bit_region_byte_mask(0, last_off, lsb_first), mutation);
+}
+
+static VALUE
+str_mutate_single_bit(VALUE str, VALUE index, bool lsb_first, enum str_bit_mutation mutation)
+{
     struct str_bit_offset offset = str_bit_offset_from_index(index);
     struct str_bit_location location;
     long bit_index;
@@ -6994,24 +7172,70 @@ str_mutate_bit(int argc, VALUE *argv, VALUE str, enum str_bit_mutation mutation)
         mask = (unsigned char)(1u << location.bit_offset);
     }
 
-    switch (mutation) {
-      case STR_BIT_SET:
-        ptr[location.byte_index] |= mask;
-        break;
-      case STR_BIT_CLEAR:
-        ptr[location.byte_index] &= (unsigned char)~mask;
-        break;
-      case STR_BIT_FLIP:
-        ptr[location.byte_index] ^= mask;
-        break;
+    str_apply_bit_mask(ptr + location.byte_index, mask, mutation);
+    return str;
+}
+
+static VALUE
+str_mutate_bit(int argc, VALUE *argv, VALUE str, enum str_bit_mutation mutation)
+{
+    VALUE target, length_v, opts;
+    uint64_t beg = 0, len = 0;
+
+    /* Count positional arguments so that an explicit nil is not mistaken for an omitted one. */
+    int nargs = rb_scan_args(argc, argv, "11:", &target, &length_v, &opts);
+    bool lsb_first = str_lsb_first_from_opts(opts);
+
+    bool is_range = rb_obj_is_kind_of(target, rb_cRange);
+    if (nargs == 1 && !is_range) {
+        return str_mutate_single_bit(str, target, lsb_first, mutation);
     }
 
+    struct str_bit_range range = {0};
+    struct str_bit_offset offset;
+    if (is_range) {
+        if (nargs == 2) {
+            rb_raise(rb_eArgError, "bit length not allowed with a Range");
+        }
+        str_bit_range_to_offsets(target, &range);
+    }
+    else {
+        offset = str_bit_offset_from_index(target);
+        len = str_bit_length_from_index(length_v);
+    }
+
+    /*
+     * A region that begins past the end is out of range even when it is
+     * empty, and one that runs past the end is not allowed to silently
+     * shrink: both are errors for a mutation, unlike the clamping reads.
+     * An empty region whose start is within 0..bitsize writes nothing.
+     */
+    uint64_t total_bits = str_bit_size(RSTRING_LEN(str));
+    if (is_range) {
+        if (!str_bit_range_resolve(&range, total_bits, &beg, &len) || len > total_bits - beg) {
+            rb_raise(rb_eIndexError, "bit range out of range");
+        }
+    }
+    else {
+        beg = offset.value;
+        if (beg > total_bits || len > total_bits - beg) {
+            rb_raise(rb_eIndexError, "bit range out of range");
+        }
+    }
+    /* Even a zero-length write requires a mutable receiver. */
+    rb_check_frozen(str);
+    if (len == 0) return str;
+
+    rb_str_modify(str);
+    str_mutate_bit_region((unsigned char *)RSTRING_PTR(str), beg, len, lsb_first, mutation);
     return str;
 }
 
 /*
  *  call-seq:
  *    bit_set(offset, lsb_first: true) -> self
+ *    bit_set(offset, length, lsb_first: true) -> self
+ *    bit_set(range, lsb_first: true) -> self
  *
  *  :include: doc/string/bit_set.rdoc
  *
@@ -7025,6 +7249,8 @@ rb_str_bit_set(int argc, VALUE *argv, VALUE str)
 /*
  *  call-seq:
  *    bit_clear(offset, lsb_first: true) -> self
+ *    bit_clear(offset, length, lsb_first: true) -> self
+ *    bit_clear(range, lsb_first: true) -> self
  *
  *  :include: doc/string/bit_clear.rdoc
  *
@@ -7038,6 +7264,8 @@ rb_str_bit_clear(int argc, VALUE *argv, VALUE str)
 /*
  *  call-seq:
  *    bit_flip(offset, lsb_first: true) -> self
+ *    bit_flip(offset, length, lsb_first: true) -> self
+ *    bit_flip(range, lsb_first: true) -> self
  *
  *  :include: doc/string/bit_flip.rdoc
  *
@@ -7089,17 +7317,84 @@ str_count_bits(const unsigned char *ptr, long len)
     return count;
 }
 
+static uint64_t
+str_count_bits_region(const unsigned char *ptr, uint64_t beg, uint64_t len, bool lsb_first)
+{
+    uint64_t first_bit = beg;
+    uint64_t last_bit = beg + len - 1;
+    long first_byte = (long)(first_bit / CHAR_BIT);
+    long last_byte = (long)(last_bit / CHAR_BIT);
+    unsigned int first_off = (unsigned int)(first_bit % CHAR_BIT);
+    unsigned int last_off = (unsigned int)(last_bit % CHAR_BIT);
+
+    if (first_byte == last_byte) {
+        return rb_popcount32((uint32_t)(ptr[first_byte] & str_bit_region_byte_mask(first_off, last_off, lsb_first)));
+    }
+
+    uint64_t count = rb_popcount32((uint32_t)(ptr[first_byte] & str_bit_region_byte_mask(first_off, 7, lsb_first)));
+    count += str_count_bits(ptr + first_byte + 1, last_byte - first_byte - 1);
+    count += rb_popcount32((uint32_t)(ptr[last_byte] & str_bit_region_byte_mask(0, last_off, lsb_first)));
+    return count;
+}
+
 /*
  *  call-seq:
  *    bit_count -> integer
+ *    bit_count(offset, length, lsb_first: true) -> integer
+ *    bit_count(range, lsb_first: true) -> integer
  *
  *  :include: doc/string/bit_count.rdoc
  *
  */
 static VALUE
-rb_str_bit_count(VALUE str)
+rb_str_bit_count(int argc, VALUE *argv, VALUE str)
 {
-    return ULL2NUM(str_count_bits((const unsigned char *)RSTRING_PTR(str), RSTRING_LEN(str)));
+    VALUE v0, v1, opts;
+    uint64_t beg = 0, len = 0;
+
+    /* Count positional arguments so that an explicit nil is not mistaken for an omitted one. */
+    int nargs = rb_scan_args(argc, argv, "02:", &v0, &v1, &opts);
+    /*
+     * A whole-string popcount is independent of bit numbering.
+     * no-(offset|range)-argument form only validates lsb_first.
+     */
+    bool lsb_first = str_lsb_first_from_opts(opts);
+
+    if (nargs == 0) {
+        return ULL2NUM(str_count_bits((const unsigned char *)RSTRING_PTR(str), RSTRING_LEN(str)));
+    }
+
+    bool is_range = rb_obj_is_kind_of(v0, rb_cRange);
+    struct str_bit_range range = {0};
+    if (is_range) {
+        if (nargs == 2) {
+            rb_raise(rb_eArgError, "bit length not allowed with a Range");
+        }
+        str_bit_range_to_offsets(v0, &range);
+    }
+    else if (nargs == 1) {
+        rb_raise(rb_eArgError, "no bit length given");
+    }
+    else {
+        beg = str_bit_offset_from_index(v0).value;
+        len = str_bit_length_from_index(v1);
+    }
+
+    const unsigned char *ptr = (const unsigned char *)RSTRING_PTR(str);
+    uint64_t total_bits = str_bit_size(RSTRING_LEN(str));
+    if (is_range) {
+        if (!str_bit_range_resolve(&range, total_bits, &beg, &len)) {
+            return INT2FIX(0);
+        }
+    }
+    else if (beg >= total_bits) {
+        return INT2FIX(0);
+    }
+
+    /* Reads clamp: only the part of the region that exists is counted. */
+    if (len > total_bits - beg) len = total_bits - beg;
+    if (len == 0) return INT2FIX(0);
+    return ULL2NUM(str_count_bits_region(ptr, beg, len, lsb_first));
 }
 
 static void
@@ -9330,9 +9625,13 @@ tr_trans_pairs_search_basic(struct tr_trans_pairs_search *search)
 static inline VALUE
 tr_trans_pairs_next_match_sse2(struct tr_trans_pairs_search *search)
 {
-    size_t next_match_offset = ntz_int32(search->matches_bitmap);
-    search->matches_bitmap >>= (next_match_offset + 1);
-    search->s += next_match_offset;
+    RUBY_ASSERT(search->matches_bitmap > 0);
+    size_t trailing_zeros = (size_t)ntz_int32(search->matches_bitmap);
+
+    RUBY_ASSERT(trailing_zeros < (sizeof(search->matches_bitmap) * CHAR_BIT));
+    search->matches_bitmap >>= trailing_zeros;
+    search->s += trailing_zeros;
+
     RUBY_ASSERT(search->s <= search->send);
     return search->trans_table[*search->s];
 }
@@ -9340,40 +9639,42 @@ tr_trans_pairs_next_match_sse2(struct tr_trans_pairs_search *search)
 static inline VALUE
 tr_trans_pairs_search_sse2(struct tr_trans_pairs_search *search)
 {
-    RBIMPL_ASSERT_OR_ASSUME(search->needles_count > 0);
-    RBIMPL_ASSERT_OR_ASSUME(search->needles_count < TR_TRANS_PAIRS_SIMD_MAX_NEEDLES);
+    if (search->needles_count) {
+        RBIMPL_ASSERT_OR_ASSUME(search->needles_count > 0);
+        RBIMPL_ASSERT_OR_ASSUME(search->needles_count < TR_TRANS_PAIRS_SIMD_MAX_NEEDLES);
 
-    if (search->matches_bitmap) {
-        return tr_trans_pairs_next_match_sse2(search);
-    }
-
-    if ((size_t)(search->send - search->s) >= sizeof(__m128i)) {
-        int i;
-        __m128i masks[TR_TRANS_PAIRS_SIMD_MAX_NEEDLES];
-        for (i = 0; i < search->needles_count; i++) {
-            masks[i] = _mm_set1_epi8(search->needles[i]);
+        if (search->matches_bitmap) {
+            return tr_trans_pairs_next_match_sse2(search);
         }
 
-        do {
-            const __m128i bytes = _mm_loadu_si128((__m128i const *)search->s);
-
-            __m128i matches[TR_TRANS_PAIRS_SIMD_MAX_NEEDLES];
+        if ((size_t)(search->send - search->s) >= sizeof(__m128i)) {
+            int i;
+            __m128i masks[TR_TRANS_PAIRS_SIMD_MAX_NEEDLES];
             for (i = 0; i < search->needles_count; i++) {
-                matches[i] = _mm_cmpeq_epi8(bytes, masks[i]);
+                masks[i] = _mm_set1_epi8(search->needles[i]);
             }
 
-            for (i = i; i < search->needles_count; i++) {
-                matches[0] = _mm_or_si128(matches[0], matches[i]);
-            }
+            do {
+                const __m128i bytes = _mm_loadu_si128((__m128i const *)search->s);
 
-            const int bitmap = _mm_movemask_epi8(matches[0]);
+                __m128i matches[TR_TRANS_PAIRS_SIMD_MAX_NEEDLES];
+                for (i = 0; i < search->needles_count; i++) {
+                    matches[i] = _mm_cmpeq_epi8(bytes, masks[i]);
+                }
 
-            if (bitmap) {
-                search->matches_bitmap = bitmap;
-                return tr_trans_pairs_next_match_sse2(search);
-            }
-            search->s += sizeof(__m128i);
-        } while ((size_t)(search->send - search->s) >= sizeof(__m128i));
+                for (i = 1; i < search->needles_count; i++) {
+                    matches[0] = _mm_or_si128(matches[0], matches[i]);
+                }
+
+                const int bitmap = _mm_movemask_epi8(matches[0]);
+
+                if (bitmap) {
+                    search->matches_bitmap = bitmap;
+                    return tr_trans_pairs_next_match_sse2(search);
+                }
+                search->s += sizeof(__m128i);
+            } while ((size_t)(search->send - search->s) >= sizeof(__m128i));
+        }
     }
     return tr_trans_pairs_search_basic(search);
 }
@@ -9385,9 +9686,14 @@ tr_trans_pairs_search_sse2(struct tr_trans_pairs_search *search)
 static inline VALUE
 tr_trans_pairs_next_match_neon(struct tr_trans_pairs_search *search)
 {
-    size_t next_match_offset = ntz_int64(search->matches_bitmap) / 4;
-    search->matches_bitmap >>= (next_match_offset + 1) * 4;
-    search->s += next_match_offset;
+    RUBY_ASSERT(search->matches_bitmap > 0);
+    size_t trailing_zeros = (size_t)ntz_int64(search->matches_bitmap);
+
+    // uint64_t >>= 64 would be undefined behaviour
+    RUBY_ASSERT(trailing_zeros < (sizeof(search->matches_bitmap) * CHAR_BIT));
+    search->matches_bitmap >>= trailing_zeros;
+    search->s += trailing_zeros / 4;
+
     RUBY_ASSERT(search->s <= search->send);
     return search->trans_table[*search->s];
 }
@@ -9418,15 +9724,15 @@ tr_trans_pairs_search_neon(struct tr_trans_pairs_search *search)
                     matches[i] = vceqq_u8(bytes, masks[i]);
                 }
 
-                for (i = i; i < search->needles_count; i++) {
+                for (i = 1; i < search->needles_count; i++) {
                     matches[0] = vorrq_u8(matches[0], matches[i]);
                 }
 
                 const uint8x8_t res = vshrn_n_u16(vreinterpretq_u16_u8(matches[0]), 4);
-                const uint64_t bitmap = vget_lane_u64(vreinterpret_u64_u8(res), 0) & 0x8888888888888888ull;
+                const uint64_t bitmap = vget_lane_u64(vreinterpret_u64_u8(res), 0);
 
                 if (bitmap) {
-                    search->matches_bitmap = bitmap;
+                    search->matches_bitmap = bitmap & 0x8888888888888888ull;
                     return tr_trans_pairs_next_match_neon(search);
                 }
                 search->s += sizeof(uint8x16_t);
@@ -9443,11 +9749,21 @@ tr_trans_pairs_search_neon(struct tr_trans_pairs_search *search)
 #define tr_trans_pairs_search_impl tr_trans_pairs_search_basic
 #endif
 
+static inline void
+tr_trans_pairs_consume_match(struct tr_trans_pairs_search *search)
+{
+    search->s++;
+#ifdef HAVE_SIMD
+    search->matches_bitmap >>= 1;
+#endif
+}
+
 static VALUE
 tr_trans_pairs(VALUE str, VALUE pairs_val)
 {
     Check_Type(pairs_val, T_HASH);
     size_t pairs_count = RHASH_SIZE(pairs_val);
+    mustnot_broken(str);
     rb_str_modify(str);
 
     if (RSTRING_LEN(str) == 0 || !RSTRING_PTR(str) || pairs_count == 0) return Qnil;
@@ -9477,6 +9793,7 @@ tr_trans_pairs(VALUE str, VALUE pairs_val)
     bool modify = false;
 
     if (RB_LIKELY(rb_str_encindex_fastpath(rb_enc_to_index(e1)))) {
+
         struct tr_trans_pairs_search search = {
             .s = sstart,
             .send = sstart + str_len,
@@ -9519,7 +9836,7 @@ tr_trans_pairs(VALUE str, VALUE pairs_val)
                 clen = rb_enc_codelen(c, e1);
                 repl = rb_hash_lookup2(hash, UINT2NUM(c), 0);
                 if (!repl) {
-                    search.s += clen;
+                    tr_trans_pairs_consume_match(&search);
                     continue;
                 }
             }
@@ -9531,8 +9848,8 @@ tr_trans_pairs(VALUE str, VALUE pairs_val)
                 tr_buffer_append(&buffer, checkpoint, search.s - checkpoint);
             }
             tr_buffer_append_str(&buffer, repl);
-            search.s += clen;
-            checkpoint = search.s;
+            checkpoint = search.s + clen;
+            tr_trans_pairs_consume_match(&search);
 
             if (cr == ENC_CODERANGE_7BIT && rb_enc_str_coderange(repl) != ENC_CODERANGE_7BIT) {
                 cr = ENC_CODERANGE_VALID;
@@ -9600,6 +9917,10 @@ tr_trans_pairs(VALUE str, VALUE pairs_val)
         }
     }
 
+    if (!modify) {
+        return Qnil;
+    }
+
     if (!STR_EMBED_P(str)) {
         SIZED_FREE_N(STR_HEAP_PTR(str), STR_HEAP_SIZE(str));
     }
@@ -9612,13 +9933,10 @@ tr_trans_pairs(VALUE str, VALUE pairs_val)
 
     RB_GC_GUARD(hash);
 
-    if (modify) {
-        if (cr != ENC_CODERANGE_BROKEN)
-            ENC_CODERANGE_SET(str, cr);
-        rb_enc_associate(str, e1);
-        return str;
-    }
-    return Qnil;
+    if (cr != ENC_CODERANGE_BROKEN)
+        ENC_CODERANGE_SET(str, cr);
+    rb_enc_associate(str, e1);
+    return str;
 }
 
 /*
@@ -9652,9 +9970,24 @@ rb_str_tr_bang(int argc, VALUE *argv, VALUE str)
 /*
  *  call-seq:
  *    tr(selector, replacements) -> new_string
+ *    tr(pairs) -> new_string
  *
- *  Returns a copy of +self+ with each character specified by string +selector+
- *  translated to the corresponding character in string +replacements+.
+ *  Accepts either a +selector+ and a +replacements+ string,
+ *  or a single +pairs+ Hash.
+ *
+ *  When a +pairs+ Hash is provided the keys, returns a copy of +self+ with
+ *  the keys of the hash replaced by the values.
+ *
+ *  - They keys must be strings containing a single codepoints.
+ *  - The values can be of any length.
+ *
+ *  Example:
+ *
+ *    'hello'.tr('e' => 'er', 'l' => '', 'o' => 'o !') #=> "hero !"
+ *
+ *  When +selector+ and +replacements+are provided, returns a copy of +self+
+ *  with each character specified by string +selector+ translated to the
+ *  corresponding character in string +replacements+.
  *  The correspondence is _positional_:
  *
  *  - Each occurrence of the first character specified by +selector+
@@ -9695,7 +10028,9 @@ rb_str_tr(int argc, VALUE *argv, VALUE str)
 
     if (argc == 1) {
         VALUE pairs = argv[0];
-        return tr_trans_pairs(str, pairs);
+        VALUE result = tr_trans_pairs(str, pairs);
+        if (NIL_P(result)) result = str;
+        return str;
     }
 
     VALUE src = argv[0], repl = argv[1];
@@ -11243,12 +11578,9 @@ chomp_rs(int argc, const VALUE *argv)
     }
 }
 
-VALUE
-rb_str_chomp_string(VALUE str, VALUE rs)
+static VALUE
+str_shrink(VALUE str, long len)
 {
-    long olen = RSTRING_LEN(str);
-    long len = chompped_length(str, rs);
-    if (len >= olen) return Qnil;
     str_modify_keep_cr(str);
     STR_SET_LEN(str, len);
     TERM_FILL(&RSTRING_PTR(str)[len], TERM_LEN(str));
@@ -11256,6 +11588,15 @@ rb_str_chomp_string(VALUE str, VALUE rs)
         ENC_CODERANGE_CLEAR(str);
     }
     return str;
+}
+
+VALUE
+rb_str_chomp_string(VALUE str, VALUE rs)
+{
+    long olen = RSTRING_LEN(str);
+    long len = chompped_length(str, rs);
+    if (len >= olen) return Qnil;
+    return str_shrink(str, len);
 }
 
 /*
@@ -12573,21 +12914,13 @@ deleted_suffix_length(VALUE str, VALUE suffix)
 static VALUE
 rb_str_delete_suffix_bang(VALUE str, VALUE suffix)
 {
-    long olen, suffixlen, len;
+    long suffixlen;
     str_modifiable(str);
 
     suffixlen = deleted_suffix_length(str, suffix);
     if (suffixlen <= 0) return Qnil;
 
-    olen = RSTRING_LEN(str);
-    str_modify_keep_cr(str);
-    len = olen - suffixlen;
-    STR_SET_LEN(str, len);
-    TERM_FILL(&RSTRING_PTR(str)[len], TERM_LEN(str));
-    if (ENC_CODERANGE(str) != ENC_CODERANGE_7BIT) {
-        ENC_CODERANGE_CLEAR(str);
-    }
-    return str;
+    return str_shrink(str, RSTRING_LEN(str) - suffixlen);
 }
 
 /*
@@ -13901,7 +14234,7 @@ Init_String(void)
     rb_define_method(rb_cString, "bit_set", rb_str_bit_set, -1);
     rb_define_method(rb_cString, "bit_clear", rb_str_bit_clear, -1);
     rb_define_method(rb_cString, "bit_flip", rb_str_bit_flip, -1);
-    rb_define_method(rb_cString, "bit_count", rb_str_bit_count, 0);
+    rb_define_method(rb_cString, "bit_count", rb_str_bit_count, -1);
     rb_define_method(rb_cString, "bitwise_not", rb_str_bitwise_not, 0);
     rb_define_method(rb_cString, "bitwise_not!", rb_str_bitwise_not_bang, 0);
     rb_define_method(rb_cString, "bitwise_and", rb_str_bitwise_and, 1);

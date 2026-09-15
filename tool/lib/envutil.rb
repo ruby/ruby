@@ -43,6 +43,16 @@ module EnvUtil
 
   RUBYLIB = ENV["RUBYLIB"]
 
+  # Ruby::Box prints this at startup of every child process when RUBY_BOX=1
+  # is inherited from the environment.
+  BOX_EXPERIMENTAL_WARNING = /^.*: warning: Ruby::Box is experimental, and the behavior may change in the future!\nSee https:\/\/docs\.ruby-lang\.org\/\S+ for known issues, etc\.\n/
+
+  def strip_box_warning(str)
+    # on the bytes, since captured output is not always valid in its encoding
+    str.b.gsub(BOX_EXPERIMENTAL_WARNING, "").force_encoding(str.encoding) if str
+  end
+  module_function :strip_box_warning
+
   class << self
     attr_accessor :timeout_scale
     attr_reader :original_internal_encoding, :original_external_encoding,
@@ -266,6 +276,10 @@ module EnvUtil
       out_p.close if capture_stdout
       err_p.close if capture_stderr && capture_stderr != :merge_to_stdout
       status ||= Process.wait2(pid)[1]
+      if ENV["RUBY_BOX"] == "1" and !child_env.key?("RUBY_BOX")
+        stdout = strip_box_warning(stdout) if capture_stderr == :merge_to_stdout
+        stderr = strip_box_warning(stderr)
+      end
       stdout = stdout_filter.call(stdout) if stdout_filter
       stderr = stderr_filter.call(stderr) if stderr_filter
       if timeout_error
@@ -351,8 +365,6 @@ module EnvUtil
   module_function :under_gc_stress
 
   def under_gc_compact_stress(val = :empty, &block)
-    raise "compaction doesn't work well on s390x. Omit the test in the caller." if RUBY_PLATFORM =~ /s390x/ # https://github.com/ruby/ruby/pull/5077
-
     if GC.respond_to?(:auto_compact)
       auto_compact = GC.auto_compact
       GC.auto_compact = val

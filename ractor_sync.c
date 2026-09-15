@@ -15,7 +15,7 @@ static VALUE rb_cRactorPort;
 
 static VALUE ractor_receive(rb_execution_context_t *ec, const struct ractor_port *rp, const rb_hrtime_t *end);
 static VALUE ractor_send(rb_execution_context_t *ec, const struct ractor_port *rp, VALUE obj, VALUE move);
-static struct ractor_basket *ractor_basket_new_ref(VALUE shareable);
+static struct ractor_basket *ractor_basket_new_exit(VALUE sender, VALUE token);
 static void ractor_send_basket(rb_execution_context_t *ec, const struct ractor_port *rp, struct ractor_basket *b, bool raise_on_error);
 static void ractor_add_port(rb_ractor_t *r, st_data_t id);
 
@@ -235,6 +235,10 @@ enum ractor_basket_type {
     basket_type_ref,
     basket_type_copy,
     basket_type_move,
+    /* A ractor's exit token.  The pair it becomes is built on the receiving side,
+     * so a terminating ractor adds no shareable object to the vm, and building it
+     * needs neither a tag nor a courier -- which the sender has no stack for. */
+    basket_type_exit,
 };
 
 struct ractor_basket {
@@ -291,6 +295,9 @@ ractor_basket_mark(const struct ractor_basket *b)
         /* Marshaled bytes are off-heap and hold nothing to mark. */
         rb_gc_mark(b->p.v);
     }
+
+    /* An exit token names a ractor that may be reachable from nothing else. */
+    rb_gc_mark(b->sender);
 }
 
 static void
@@ -770,10 +777,12 @@ ractor_mark_monitors(rb_ractor_t *r)
     }
 }
 
+/* Paired with the ractor it is about when it is received, so that many ractors
+ * can report to one port. */
 static VALUE
-ractor_exit_token(bool exc)
+ractor_exit_token(const rb_ractor_t *r)
 {
-    if (exc) {
+    if (r->sync.legacy_exc) {
         RUBY_DEBUG_LOG("aborted");
         return ID2SYM(idAborted);
     }
@@ -807,7 +816,7 @@ ractor_monitor(rb_execution_context_t *ec, VALUE self, VALUE port)
 
     if (terminated) {
         SIZED_FREE(rm);
-        ractor_port_send(ec, port, ractor_exit_token(r->sync.legacy_exc), Qfalse);
+        ractor_send_basket(ec, rp, ractor_basket_new_exit(self, ractor_exit_token(r)), false);
 
         return Qfalse;
     }
@@ -867,14 +876,14 @@ ractor_notify_exit(rb_execution_context_t *ec, rb_ractor_t *cr, VALUE legacy, bo
 static void
 ractor_send_exit_tokens(rb_execution_context_t *ec, rb_ractor_t *cr)
 {
-    VALUE token = ractor_exit_token(cr->sync.legacy_exc);
+    VALUE token = ractor_exit_token(cr);
     struct ractor_monitor *rm, *nxt;
 
     ccan_list_for_each_safe(&cr->sync.monitors, rm, nxt, node)
     {
         RUBY_DEBUG_LOG("port:%u@r%u", (unsigned int)ractor_port_id(&rm->port), (unsigned int)rb_ractor_id(rm->port.r));
 
-        ractor_send_basket(ec, &rm->port, ractor_basket_new_ref(token), false);
+        ractor_send_basket(ec, &rm->port, ractor_basket_new_exit(cr->pub.self, token), false);
 
         ccan_list_del(&rm->node);
         SIZED_FREE(rm);
@@ -1208,6 +1217,9 @@ ractor_basket_value(struct ractor_basket *b)
     switch (b->type) {
       case basket_type_ref:
         break;
+      case basket_type_exit:
+        /* Allocated here, in the receiving ractor: a copy, not a shared object. */
+        return rb_ary_new_from_args(2, b->sender, b->p.v);
       case basket_type_copy: {
         /* An off-heap copy courier rebuilds exactly like a move one; only the sources
          * differ (still alive here, already shells there). */
@@ -1347,6 +1359,7 @@ basket_type_name(enum ractor_basket_type type)
       case basket_type_ref: return "ref";
       case basket_type_copy: return "copy";
       case basket_type_move: return "move";
+      case basket_type_exit: return "exit";
     }
     VM_ASSERT(0);
     return NULL;
@@ -1359,7 +1372,7 @@ ractor_wakeup_all(rb_ractor_t *r, enum ractor_wakeup_status wakeup_status)
 {
     ASSERT_ractor_unlocking(r);
 
-    RUBY_DEBUG_LOG("r:%u wakeup:%s", rb_ractor_id(r), wakeup_status_str(wakeup_status));
+    RUBY_DEBUG_LOG("r:%"PRI_SERIALT_PREFIX"u wakeup:%s", rb_ractor_id(r), wakeup_status_str(wakeup_status));
 
     bool wakeup_p = false;
 
@@ -1622,7 +1635,7 @@ ractor_send_basket(rb_execution_context_t *ec, const struct ractor_port *rp, str
 {
     bool closed = false;
 
-    RUBY_DEBUG_LOG("port:%u@r%u b:%s v:%p", (unsigned int)ractor_port_id(rp), rb_ractor_id(rp->r), basket_type_name(b->type), (void *)b->p.v);
+    RUBY_DEBUG_LOG("port:%u@r%"PRI_SERIALT_PREFIX"u b:%s v:%p", (unsigned int)ractor_port_id(rp), rb_ractor_id(rp->r), basket_type_name(b->type), (void *)b->p.v);
 
     RACTOR_LOCK(rp->r);
     {
@@ -1644,7 +1657,7 @@ ractor_send_basket(rb_execution_context_t *ec, const struct ractor_port *rp, str
         ractor_wakeup_all(rp->r, wakeup_by_send);
     }
     else {
-        RUBY_DEBUG_LOG("closed:%u@r%u", (unsigned int)ractor_port_id(rp), rb_ractor_id(rp->r));
+        RUBY_DEBUG_LOG("closed:%u@r%"PRI_SERIALT_PREFIX"u", (unsigned int)ractor_port_id(rp), rb_ractor_id(rp->r));
 
         /* Nothing took the basket: it was not enqueued, so free it whether or not the
          * caller wants the error raised. */
@@ -1656,22 +1669,18 @@ ractor_send_basket(rb_execution_context_t *ec, const struct ractor_port *rp, str
     }
 }
 
-/* A shareable payload needs no preparation, so this skips the tag ractor_basket_new
- * pushes.  The exit tokens travel this way: they are sent from a thread whose EC has
- * already lost its VM stack, and EC_PUSH_TAG reads ec->cfp under ZJIT. */
+/* sender is the ractor the token is about; both it and the token are shareable,
+ * so nothing is copied until the receiver builds the pair.  It also skips the tag
+ * ractor_basket_new pushes: the tokens go out from a thread whose EC has already
+ * lost its VM stack, and EC_PUSH_TAG reads ec->cfp under ZJIT. */
 static struct ractor_basket *
-ractor_basket_new_ref(VALUE shareable)
+ractor_basket_new_exit(VALUE sender, VALUE token)
 {
     struct ractor_basket *b = ractor_basket_alloc();
 
-    b->type = basket_type_ref;
-    b->sender = Qnil;
-    b->p.v = shareable;
-    b->p.exception = false;
-    b->p.marshaled = false;
-    b->p.courier = NULL;
-    b->p.mbuf = NULL;
-    b->p.mlen = 0;
+    b->type = basket_type_exit;
+    b->sender = sender;
+    b->p.v = token;
 
     return b;
 }

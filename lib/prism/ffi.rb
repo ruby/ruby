@@ -214,7 +214,12 @@ module Prism # :nodoc:
       end
 
       # Yields a PrismSource to the given block, backed by a pm_source_t.
-      def self.with_file(filepath)
+      def self.with_file(filepath, options)
+        unless filepath.is_a?(String)
+          filepath = filepath.to_path if filepath.respond_to?(:to_path)
+          filepath = filepath.to_str if filepath.respond_to?(:to_str)
+        end
+        options[:filepath] = filepath
         raise TypeError unless filepath.is_a?(String)
 
         # On Windows and Mac, it's expected that filepaths will be encoded in
@@ -265,8 +270,7 @@ module Prism # :nodoc:
 
     # Mirror the Prism.dump_file API by using the serialization API.
     def dump_file(filepath, **options)
-      options[:filepath] = filepath
-      LibRubyParser::PrismSource.with_file(filepath) { |string| dump_common(string, options) }
+      LibRubyParser::PrismSource.with_file(filepath, options) { |string| dump_common(string, options) }
     end
 
     # Mirror the Prism.lex API by using the serialization API.
@@ -276,8 +280,7 @@ module Prism # :nodoc:
 
     # Mirror the Prism.lex_file API by using the serialization API.
     def lex_file(filepath, **options)
-      options[:filepath] = filepath
-      LibRubyParser::PrismSource.with_file(filepath) { |string| lex_common(string, string.read, options) }
+      LibRubyParser::PrismSource.with_file(filepath, options) { |string| lex_common(string, string.read, options) }
     end
 
     # Mirror the Prism.parse API by using the serialization API.
@@ -289,8 +292,7 @@ module Prism # :nodoc:
     # native strings instead of Ruby strings because it allows us to use mmap
     # when it is available.
     def parse_file(filepath, **options)
-      options[:filepath] = filepath
-      LibRubyParser::PrismSource.with_file(filepath) { |string| parse_common(string, string.read, options) }
+      LibRubyParser::PrismSource.with_file(filepath, options) { |string| parse_common(string, string.read, options) }
     end
 
     # Mirror the Prism.parse_stream API by using the serialization API.
@@ -349,8 +351,7 @@ module Prism # :nodoc:
     # API. This uses native strings instead of Ruby strings because it allows us
     # to use mmap when it is available.
     def parse_file_comments(filepath, **options)
-      options[:filepath] = filepath
-      LibRubyParser::PrismSource.with_file(filepath) { |string| parse_comments_common(string, string.read, options) }
+      LibRubyParser::PrismSource.with_file(filepath, options) { |string| parse_comments_common(string, string.read, options) }
     end
 
     # Mirror the Prism.parse_lex API by using the serialization API.
@@ -360,8 +361,7 @@ module Prism # :nodoc:
 
     # Mirror the Prism.parse_lex_file API by using the serialization API.
     def parse_lex_file(filepath, **options)
-      options[:filepath] = filepath
-      LibRubyParser::PrismSource.with_file(filepath) { |string| parse_lex_common(string, string.read, options) }
+      LibRubyParser::PrismSource.with_file(filepath, options) { |string| parse_lex_common(string, string.read, options) }
     end
 
     # Mirror the Prism.parse_success? API by using the serialization API.
@@ -376,8 +376,7 @@ module Prism # :nodoc:
 
     # Mirror the Prism.parse_file_success? API by using the serialization API.
     def parse_file_success?(filepath, **options)
-      options[:filepath] = filepath
-      LibRubyParser::PrismSource.with_file(filepath) { |string| parse_file_success_common(string, options) }
+      LibRubyParser::PrismSource.with_file(filepath, options) { |string| parse_file_success_common(string, options) }
     end
 
     # Mirror the Prism.parse_file_failure? API by using the serialization API.
@@ -401,9 +400,7 @@ module Prism # :nodoc:
 
     # Mirror the Prism.profile_file API by using the serialization API.
     def profile_file(filepath, **options)
-      LibRubyParser::PrismSource.with_file(filepath) do |string|
-        options[:filepath] = filepath
-
+      LibRubyParser::PrismSource.with_file(filepath, options) do |string|
         if (format_type = raise_error_format_type(options))
           raise_error(string, options, format_type)
         end

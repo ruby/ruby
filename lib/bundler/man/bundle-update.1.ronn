@@ -53,7 +53,9 @@ gem.
   Update the locked version of Ruby to the current version of Ruby.
 
 * `--bundler[=BUNDLER]`:
-  Update the locked version of bundler to the invoked bundler version.
+  Update the locked version of bundler. BUNDLER can be a version such as
+  `4.0.20`, or a requirement such as `"> 0.a"`. With no argument, update to the
+  latest released version, which never selects a prerelease.
 
 * `--force`, `--redownload`:
   Force reinstalling every gem, even if already installed.

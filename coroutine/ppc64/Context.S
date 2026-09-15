@@ -45,8 +45,11 @@ PREFIXED_SYMBOL(coroutine_transfer):
 	std r13,144(r1)
 
 	; Save return address
-	; Possibly should rather be saved into linkage area, see libphobos and IBM docs
 	std r0,152(r1)
+
+	; Save nonvolatile CR fields in the caller linkage area
+	mfcr r0
+	std r0,168(r1)
 
 	; Save stack pointer to first argument
 	std r1,0(r3)
@@ -80,6 +83,10 @@ PREFIXED_SYMBOL(coroutine_transfer):
 
 	; Set LR
 	mtlr r0
+
+	; Restore nonvolatile CR2-CR4
+	ld r0,168(r1)
+	mtcrf 56,r0
 
 	; Pop stack frame
 	addi r1,r1,160

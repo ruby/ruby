@@ -404,6 +404,10 @@ class Gem::TestCase < Test::Unit::TestCase
     ENV["BUNDLE_COOLDOWN"] = nil
     ENV["RUBYGEMS_PREVENT_UPDATE_SUGGESTION"] = "true"
 
+    # Child ruby processes inherit RUBY_BOX and print an experimental
+    # warning on startup, breaking assertions on subprocess stderr.
+    ENV["RUBYOPT"] = [ENV["RUBYOPT"], "-W:no-experimental"].compact.join(" ") if ruby_box_enabled?
+
     @current_dir = Dir.pwd
     @fetcher     = nil
 
@@ -1438,6 +1442,23 @@ Also, a list:
 
   def ruby_repo?
     !ENV["GEM_COMMAND"].nil?
+  end
+
+  ##
+  # Is this test running under Ruby::Box (RUBY_BOX=1)?
+
+  def ruby_box_enabled?
+    defined?(Ruby::Box) && Ruby::Box.enabled?
+  end
+
+  ##
+  # Ruby::Box gives each box detached copies of the stdio globals, so
+  # reassigning $stdout/$stderr cannot capture output written by Kernel#warn,
+  # Kernel#puts or subprocesses. Pends until the ruby-core fix for
+  # https://bugs.ruby-lang.org/issues/21867 lands.
+
+  def pend_for_ruby_box_stdio_capture
+    pend "Ruby::Box breaks $stdout/$stderr capture (https://bugs.ruby-lang.org/issues/21867)" if ruby_box_enabled?
   end
 
   ##

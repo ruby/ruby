@@ -1,11 +1,6 @@
 # frozen_string_literal: true
 require 'test/unit'
 
-if RUBY_PLATFORM =~ /s390x/
-  warn "Currently, it is known that the compaction does not work well on s390x; contribution is welcome https://github.com/ruby/ruby/pull/5077"
-  return
-end
-
 class TestGCCompact < Test::Unit::TestCase
   module CompactionSupportInspector
     def supports_compact?

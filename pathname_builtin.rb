@@ -1543,23 +1543,25 @@ class Pathname    # * File *
   #  call-seq:
   #    lchmod(mode) -> 1
   #
-  #  Not supported on some platforms (raises NotImplementedError).
+  #  Not supported on Linux or Windows (raises NotImplementedError).
   #
-  #  When supported: like Pathname::chmod, but does not follow symbolic links,
+  #  When supported: like Pathname#chmod,
+  #  but does not follow [symbolic links](rdoc-ref:file/symbolic_links.md),
   #  and therefore changes the mode of the entry specified by `self`:
   #
   #  ```ruby
-  #  File.write('t.tmp', '')
+  #  file = Pathname('t.tmp')
+  #  file.write('')
   #  File.symlink('t.tmp', 'link')
-  #  File.stat('t.tmp').mode.to_s(8) # => "100664"
-  #  File.stat('link').mode.to_s(8)  # => "100664"
-  #  Pathname('link').lchmod(0777)
-  #  File.stat('t.tmp').mode.to_s(8) # => "100664"
-  #  File.stat('link').mode.to_s(8)  # => "100777"
-  #  File.delete('t.tmp')
-  #  File.delete('link')
-  #  ```
-  #
+  #  symlink = Pathname('link')
+  #  file.lstat.mode.to_s(8) # => "100644"
+  #  symlink.lstat.mode.to_s(8) # => "120755"
+  #  symlink.lchmod(0777)
+  #  file.lstat.mode.to_s(8) # => "100644"
+  #  symlink.lstat.mode.to_s(8) # => "120777"
+  #  file.delete
+  #  symlink.delete
+  #  ````
   def lchmod(mode) File.lchmod(mode, @path) end
 
   # :markup: markdown
@@ -1624,7 +1626,8 @@ class Pathname    # * File *
   #
   #  Calling process must have superuser privileges.
   #
-  #  When supported: like Pathname#chown, but does not follow symbolic links,
+  #  When supported: like Pathname#chown,
+  #  but does not follow [symbolic links](rdoc-ref:file/symbolic_links.md),
   #  and therefore changes the ownership of the entry at the path in `self`:
   #
   # ```ruby
@@ -1768,35 +1771,45 @@ class Pathname    # * File *
   # call-seq:
   #   readlink -> new_pathname
   #
-  # Returns a new pathname containing the path to the entry represented by `self`:
+  # Returns a new pathname containing the path stored
+  # in the [symbolic link](rdoc-ref:file/symbolic_links.md) entry
+  # at the path stored in `self`:
   #
   # ```ruby
-  # # Create Pathnames.
-  # file_pn = Pathname('doc/extension.rdoc') # => #<Pathname:doc/extension.rdoc>
-  # target_pn = Pathname('..').join(file_pn) # => #<Pathname:../doc/extension.rdoc>
-  # link_pn = Pathname('lib/u.tmp')          # => #<Pathname:lib/u.tmp>
-  # link_pn.make_symlink(target_pn)
-  # link_pn.readlink                         # => #<Pathname:../doc/extension.rdoc>
-  # link_pn.delete
+  # file_pn = Pathname('README.md')
+  # link_pn = Pathname('foo')
+  # link_pn.make_symlink(file_pn)
+  # link_pn.readlink # => #<Pathname:README.md>
+  # link_pn.unlink   # Clean up.
   # ```
   #
+  # Raises Errno::EINVAL if the path in `self` is not the path to a symbolic link.
   def readlink() self.class.new(File.readlink(@path)) end
 
   # :markup: markdown
   #
   # call-seq:
-  #   rename(new_name)
+  #   rename(new_path) -> 0
   #
-  # Renames the entry at the path in `self` to the entry given in `new_name`,
-  # which may be either a path or another pathname:
+  # Moves the entry at the path in `self` to the given `new_path`,
+  # which may be either a path or another pathname.
+  #
+  # Does not follow [symbolic links](rdoc-ref:file/symbolic_links.md);
+  # if the entry is a symlink, the link itself is renamed.
+  #
+  # The examples below use two temporary directories:
   #
   # ```ruby
-  # # Create source and destination pathnames and directories.
-  # pn_srcdir = Pathname('/tmp/src')     # => #<Pathname:/tmp/src>
+  # pn_srcdir = Pathname('/tmp/src/')  # => #<Pathname:/tmp/src/>
+  # pn_dstdir = Pathname('/tmp/dst/')  # => #<Pathname:/tmp/dst/>
   # pn_srcdir.mkdir
-  # pn_dstdir = Pathname('/tmp/dst')     # => #<Pathname:/tmp/dst>
   # pn_dstdir.mkdir
-  # # Create source file pathname and file.
+  # ```
+  #
+  # The entry to be renamed may be a file:
+  #
+  # ```ruby
+  # # Create source pathname and file.
   # pn_srcfile = pn_srcdir.join('t.tmp') # => #<Pathname:/tmp/src/t.tmp>
   # pn_srcfile.write('foo')
   # # Create destination file pathname.
@@ -1805,22 +1818,44 @@ class Pathname    # * File *
   # pn_srcfile.rename(pn_dstfile)
   # pn_srcfile.exist?                    # => false
   # pn_dstfile.exist?                    # => true
+  # pn_srcfile                           # => #<Pathname:/tmp/src/t.tmp> # Not changed.
+  # pn_dstfile.delete                    # Clean up.
   # ```
   #
-  # Works for directories, too:
+  # The entry to be renames may be a symbolic link:
   #
   # ```ruby
-  # pn_dstdir.rename('/tmp/foo')
-  # pn_dstdir.exist?            # => false
-  # Pathname('/tmp/foo').exist? # => true
+  # # Create source pathname and file.
+  # pn_srcfile = pn_srcdir.join('t.tmp') # => #<Pathname:/tmp/src/t.tmp>
+  # pn_srcfile.write('foo')
+  # # Create link pathname and link.
+  # pn_lnkfile = pn_dstdir.join('u.tmp') pn_lnkfile = pn_dstdir.join('u.tmp')
+  # pn_lnkfile.make_symlink(pn_srcfile)
+  # pn_lnkfile.readlink                  # => #<Pathname:/tmp/src/t.tmp>
+  # pn_renamed = Pathname('lib/v.tmp')   # => #<Pathname:lib/v.tmp>
+  # pn_lnkfile.rename(pn_renamed)        # Symlink not followed.
+  # pn_renamed.symlink?                  # => true
+  # pn_renamed.readlink                  # => #<Pathname:/tmp/src/t.tmp>
+  # pn_lnkfile                           # => #<Pathname:/tmp/dst/u.tmp>  # Not changed.
+  # # Clean up.
+  # pn_renamed.delete
+  # pn_srcfile.delete
   # ```
   #
-  # Clean up.
+  # The entry to be renamed may be a directory:
   #
   # ```ruby
-  # pn_srcdir.rmtree
-  # Pathname('/tmp/foo').rmtree
+  # pn_renamed = Pathname('/tmp/foo') # => #<Pathname:/tmp/foo>
+  # pn_dstdir.rename(pn_renamed)
   # ```
+  #
+  # Clean up:
+  #
+  # ```ruby
+  # pn_renamed.rmtree                 # => #<Pathname:/tmp/foo>
+  # pn_srcdir.rmtree                  # => #<Pathname:/tmp/src/>
+  # ```
+  #
   #
   # Raises SystemCallError if the entry cannot be renamed.
   def rename(to) File.rename(@path, to) end
@@ -1828,15 +1863,24 @@ class Pathname    # * File *
   # :markup: markdown
   #
   # call-seq:
-  #   stat -> File::Stat
+  #   stat -> stat
   #
-  # Returns a File::Stat object for the entry at the path in `self`:
+  # Returns a new File::Stat object for the entry at the path in `self`.
+  # Follows [symbolic links](file/symbolic_links.md);
+  # therefore if the entry is a symbolic link,
+  # the returned object contains information for the target entry, not the symbolic link:
   #
   # ```ruby
-  # Pathname('README.md').stat.inspect
-  # => "#<File::Stat dev=0x10302, ino=22941341, mode=0100664, nlink=1, uid=1000, gid=1000, rdev=0x0, size=3469, blksize=4096, blocks=8, atime=2026-07-10 15:24:17.476506084 -0500, mtime=2026-07-07 10:23:27.320088262 -0500, ctime=2026-07-07 10:23:27.320088262 -0500>"
-  # Pathname('doc').stat.inspect
-  # => "#<File::Stat dev=0x10302, ino=22941930, mode=040775, nlink=22, uid=1000, gid=1000, rdev=0x0, size=4096, blksize=4096, blocks=8, atime=2026-07-11 10:05:20.480330738 -0500, mtime=2026-07-11 10:05:06.34333645 -0500, ctime=2026-07-11 10:05:06.34333645 -0500>"
+  # file_pn = Pathname('README.md')
+  # link_pn = Pathname('foo')
+  # link_pn.make_symlink(file_pn)
+  # # Method stat follows the symlink, so the birthtimes are the same.
+  # file_pn.stat.birthtime  # => 2026-09-07 13:36:38.939798737 -0500
+  # link_pn.stat.birthtime  # => 2026-09-07 13:36:38.939798737 -0500
+  # # Method lstat does not follow the symlink, so the birthtimes are different.
+  # file_pn.lstat.birthtime # => 2026-09-07 13:36:38.939798737 -0500
+  # link_pn.lstat.birthtime # => 2026-09-08 10:53:41.027337999 -0500
+  # link_pn.unlink          # Clean up.
   # ```
   #
   def stat() File.stat(@path) end
@@ -1845,25 +1889,24 @@ class Pathname    # * File *
   #  :markup: markdown
   #
   #  call-seq:
-  #    lstat -> new_stat
+  #    lstat -> stat
   #
-  #  Returns a File::Stat object for the path in `self`;
-  #  does not follow symbolic links,
-  #  and therefore returns the stat object for that path,
+  #  Returns a File::Stat object for the entry at the path in `self`.
+  #  Does not follow [symbolic links](file/symbolic_links.md);
+  #  therefore the returned object contains information for that entry,
   #  regardless of whether it is a symbolic link:
   #
   #  ```ruby
-  #  File.write('t.tmp', '')
-  #  sleep(1)
-  #  File.symlink('t.tmp', 'link')
-  #  pn = Pathname('link')
-  #  # => #<Pathname:link>
-  #  # Method stat: follows link to 't.tmp'.
-  #  pn.stat.ctime  # => 2026-06-13 15:02:46.562620885 -0500
-  #  # Method lstat; does not follow link.
-  #  pn.lstat.ctime # => 2026-06-13 15:02:47.563619647 -0500
-  #  File.delete('t.tmp')
-  #  File.delete('link')
+  #  file_pn = Pathname('README.md')
+  #  link_pn = Pathname('foo')
+  #  link_pn.make_symlink(file_pn)
+  #  # Method stat follows the symlink, so the birthtimes are the same.
+  #  file_pn.stat.birthtime  # => 2026-09-07 13:36:38.939798737 -0500
+  #  link_pn.stat.birthtime  # => 2026-09-07 13:36:38.939798737 -0500
+  #  # Method lstat does not follow the symlink, so the birthtimes are different.
+  #  file_pn.lstat.birthtime # => 2026-09-07 13:36:38.939798737 -0500
+  #  link_pn.lstat.birthtime # => 2026-09-08 10:53:41.027337999 -0500
+  #  link_pn.unlink          # Clean up.
   #  ```
   #
   def lstat() File.lstat(@path) end
@@ -1871,9 +1914,10 @@ class Pathname    # * File *
   # :markup: markdown
   #
   # call-seq:
-  #   make_symlink(path) -> 0
+  #   make_symlink(target_path) -> 0
   #
-  # Creates a symbolic link at the path in `self` to the entry at `path`:
+  # Creates a [symbolic link](rdoc-ref:file/symbolic_links.md)
+  # at the path in `self` to the entry at `target_path`:
   #
   # ```ruby
   # # Create Pathnames.
@@ -1885,6 +1929,9 @@ class Pathname    # * File *
   # file_pn.read == link_pn.read             # => true
   # link_pn.delete                           # Clean up.
   # ```
+  #
+  # If the entry at `target_path` is itself a symlink, that link is _not_ followed;
+  # thus the created symlink always points to `target_path`.
   #
   # See also: #read, #readlink, #symlink?.
   def make_symlink(old) File.symlink(old, @path) end
@@ -1963,7 +2010,8 @@ class Pathname    # * File *
   # call-seq:
   #   lutime(atime, mtime) -> 1
   #
-  # Like Pathname#utime, but does not follow symbolic links,
+  # Like Pathname#utime,
+  # but does not follow [symbolic links](rdoc-ref:file/symbolic_links.md),
   # and therefore changes the times of the entry in `self`,
   # regardless of whether it is a symbolic link:
   #
@@ -2933,11 +2981,18 @@ class Pathname    # * mixed *
   #   unlink -> 0 or 1
   #
   # Removes the entry represented by `self`;
-  # returns `0` if a directory, `1` if a file:
+  # returns `0` if a directory, `1` otherwise.
+  #
+  # Does not follow [symbolic links](rdoc-ref:file/symbolic_links.md);
+  # if the entry is a symlink, the link itself is removed.
   #
   # ```ruby
   # Pathname(Pathname.mktmpdir).unlink # => 0
   # Pathname(Tempfile.create).unlink   # => 1
+  # pn_target = Pathname('README.md')  # => #<Pathname:README.md>
+  # pn_link = Pathname('foo')          # => #<Pathname:foo>
+  # pn_link.make_symlink(pn_target)
+  # pn_link.delete
   # ```
   #
   def unlink()

@@ -362,7 +362,10 @@ BEGIN {
 #{line -= __LINE__; src}
 eom
         args = args.dup
-        args.insert((Hash === args.first ? 1 : 0), "-w", "--disable=gems", *$:.map {|l| "-I#{l}"})
+        # -W:no-experimental after the -w, which would otherwise turn the category
+        # back on.  The option itself needs 2.7 or later.
+        warn_opts = RUBY_VERSION >= "2.7." ? ["-w", "-W:no-experimental"] : ["-w"]
+        args.insert((Hash === args.first ? 1 : 0), *warn_opts, "--disable=gems", *$:.map {|l| "-I#{l}"})
         args << "--debug" if RUBY_ENGINE == 'jruby' # warning: tracing (e.g. set_trace_func) will not capture all events without --debug flag
         # power_assert 3 requires ruby 3.1 or later
         args << "-W:no-experimental" if ("2.7."..."3.1.").cover?(RUBY_VERSION)
@@ -873,10 +876,15 @@ eom
       end
       alias all_assertions_foreach assert_all_assertions_foreach
 
-      %w[
+      clocks = %w[
         CLOCK_THREAD_CPUTIME_ID CLOCK_PROCESS_CPUTIME_ID
         CLOCK_MONOTONIC
-      ].find do |c|
+      ]
+      # CLOCK_THREAD_CPUTIME_ID is per native thread, and an M:N thread moves
+      # between native threads, so it can go backwards and yield a negative
+      # elapsed time.  Measure process CPU time there instead.
+      clocks.shift if RUBY_DESCRIPTION.include?("+MN")
+      clocks.find do |c|
         if Process.const_defined?(c)
           [c.to_sym, Process.const_get(c)].find do |clk|
             begin

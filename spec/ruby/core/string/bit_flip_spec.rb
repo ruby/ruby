@@ -23,9 +23,30 @@ ruby_version_is "4.1" do
       str.should == "\x00\x80"
     end
 
+    it "flips a region given as offset and length and returns self" do
+      str = +"\x00\xFF"
+      str.bit_flip(4, 8).should.equal?(str)
+      str.should == "\xF0\xF0"
+    end
+
+    it "flips a region given as a Range" do
+      str = +"\x00\xFF"
+      str.bit_flip(4..11)
+      str.should == "\xF0\xF0"
+    end
+
     it "raises an IndexError for an out of range bit offset" do
       -> { "\x00".bit_flip(8) }.should.raise(IndexError)
       -> { "\x00".bit_flip(-1) }.should.raise(IndexError)
+    end
+
+    it "raises an IndexError when a region extends past the end" do
+      -> { "\x00".bit_flip(0, 9) }.should.raise(IndexError)
+      -> { "\x00".bit_flip(0..8) }.should.raise(IndexError)
+    end
+
+    it "raises an ArgumentError for a negative length" do
+      -> { "\x00".bit_flip(0, -1) }.should.raise(ArgumentError)
     end
 
     it "raises a FrozenError if self is frozen" do

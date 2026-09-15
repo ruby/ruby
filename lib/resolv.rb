@@ -880,20 +880,37 @@ class Resolv
           @mutex.synchronize {
             next if @initialized
             @initialized = true
-            is_ipv6 = @host.index(':')
-            sock = UDPSocket.new(is_ipv6 ? Socket::AF_INET6 : Socket::AF_INET)
-            @socks = [sock]
-            sock.do_not_reverse_lookup = true
-            DNS.bind_random_port(sock, is_ipv6 ? "::" : "0.0.0.0")
-            sock.connect(@host, @port)
+            connect_socket
           }
           self
+        end
+
+        # The socket to talk to the nameserver over, opening one if there is
+        # none yet.  #recv_reply may have replaced it since a sender was
+        # created, so senders ask for it per request instead of holding on to
+        # one.
+        def sock
+          lazy_initialize
+          @socks[0]
         end
 
         def recv_reply(readable_socks, timelimit = nil)
           lazy_initialize
           reply = readable_socks[0].recv(UDPSize)
           return reply, nil
+        rescue Errno::ECONNREFUSED, Errno::ECONNRESET
+          # The kernel reports these from an ICMP message, and a second one for
+          # the same pair of endpoints is not always passed on: macOS 26.1 and
+          # later deliver every other one.  A retry over this socket would then
+          # wait out its whole timeout rather than fail at once, so start over
+          # from a new source port.
+          @mutex.synchronize {
+            if @initialized
+              @socks&.each(&:close)
+              connect_socket
+            end
+          }
+          raise
         end
 
         def sender(msg, data, host=@host, port=@port)
@@ -904,7 +921,7 @@ class Resolv
           id = DNS.allocate_request_id(@host, @port)
           request = msg.encode
           request[0,2] = [id].pack('n')
-          return @senders[[nil,id]] = Sender.new(request, data, @socks[0])
+          return @senders[[nil,id]] = Sender.new(request, data, self)
         end
 
         def close
@@ -919,10 +936,23 @@ class Resolv
           end
         end
 
+        private def connect_socket
+          is_ipv6 = @host.index(':')
+          sock = UDPSocket.new(is_ipv6 ? Socket::AF_INET6 : Socket::AF_INET)
+          @socks = [sock]
+          sock.do_not_reverse_lookup = true
+          DNS.bind_random_port(sock, is_ipv6 ? "::" : "0.0.0.0")
+          sock.connect(@host, @port)
+        end
+
         class Sender < Requester::Sender # :nodoc:
+          def initialize(msg, data, requester)
+            super(msg, data, nil)
+            @requester = requester
+          end
+
           def send
-            raise "@sock is nil." if @sock.nil?
-            @sock.send(@msg, 0)
+            @requester.sock.send(@msg, 0)
           end
           attr_reader :data
         end

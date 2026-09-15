@@ -312,6 +312,8 @@ set_sub_temporary_name(VALUE mod, VALUE name)
 VALUE
 rb_mod_set_temporary_name(VALUE mod, VALUE name)
 {
+    rb_class_owner_check(mod);
+
     // We don't allow setting the name if the classpath is already permanent:
     if (RCLASS_PERMANENT_CLASSPATH_P(mod)) {
         rb_raise(rb_eRuntimeError, "can't change permanent name");
@@ -597,25 +599,69 @@ rb_free_generic_fields_tbl_(void)
     st_free_table(generic_fields_tbl_);
 }
 
+static void
+rb_gvar_undef_compactor(void *var)
+{
+}
+
+NORETURN(static void global_entry_isolation_error(ID id));
+
+static void
+global_entry_isolation_error(ID id)
+{
+    rb_raise(rb_eRactorIsolationError, "can not access global variable %s from non-main Ractor", rb_id2name(id));
+}
+
+/* Sets *isolation_error when the caller must raise; the caller has to do that
+ * once it no longer holds the VM lock. */
 static struct rb_global_entry*
-rb_find_global_entry(ID id)
+global_entry_lookup(ID id, bool create_entry, bool *isolation_error)
 {
     struct rb_global_entry *entry;
     VALUE data;
 
     RB_VM_LOCKING() {
-        if (!rb_id_table_lookup(rb_global_tbl, id, &data)) {
-            entry = NULL;
-        }
-        else {
+        if (rb_id_table_lookup(rb_global_tbl, id, &data)) {
             entry = (struct rb_global_entry *)data;
             RUBY_ASSERT(entry != NULL);
         }
+        else {
+            entry = NULL;
+        }
+
+        *isolation_error = UNLIKELY(!rb_ractor_main_p()) && (!entry || !entry->ractor_local);
+
+        if (!entry && create_entry && !*isolation_error) {
+            struct rb_global_variable *var = ALLOC(struct rb_global_variable);
+            entry = ALLOC(struct rb_global_entry);
+            entry->id = id;
+            entry->var = var;
+            entry->ractor_local = false;
+            var->counter = 1;
+            var->data = 0;
+            var->getter = rb_gvar_undef_getter;
+            var->setter = rb_gvar_undef_setter;
+            var->marker = rb_gvar_undef_marker;
+            var->compactor = rb_gvar_undef_compactor;
+
+            var->block_trace = 0;
+            var->trace = 0;
+            var->box_ready = false;
+            var->box_dynamic = false;
+            rb_id_table_insert(rb_global_tbl, id, (VALUE)entry);
+        }
     }
 
-    if (UNLIKELY(!rb_ractor_main_p()) && (!entry || !entry->ractor_local)) {
-        rb_raise(rb_eRactorIsolationError, "can not access global variable %s from non-main Ractor", rb_id2name(id));
-    }
+    return entry;
+}
+
+static struct rb_global_entry*
+rb_find_global_entry(ID id)
+{
+    bool isolation_error;
+    struct rb_global_entry *entry = global_entry_lookup(id, false, &isolation_error);
+
+    if (isolation_error) global_entry_isolation_error(id);
 
     return entry;
 }
@@ -641,38 +687,14 @@ rb_gvar_box_dynamic(const char *name)
     entry->var->box_dynamic = true;
 }
 
-static void
-rb_gvar_undef_compactor(void *var)
-{
-}
-
 static struct rb_global_entry*
 rb_global_entry(ID id)
 {
-    struct rb_global_entry *entry;
-    RB_VM_LOCKING() {
-        entry = rb_find_global_entry(id);
-        if (!entry) {
-            struct rb_global_variable *var;
-            entry = ALLOC(struct rb_global_entry);
-            var = ALLOC(struct rb_global_variable);
-            entry->id = id;
-            entry->var = var;
-            entry->ractor_local = false;
-            var->counter = 1;
-            var->data = 0;
-            var->getter = rb_gvar_undef_getter;
-            var->setter = rb_gvar_undef_setter;
-            var->marker = rb_gvar_undef_marker;
-            var->compactor = rb_gvar_undef_compactor;
+    bool isolation_error;
+    struct rb_global_entry *entry = global_entry_lookup(id, true, &isolation_error);
 
-            var->block_trace = 0;
-            var->trace = 0;
-            var->box_ready = false;
-            var->box_dynamic = false;
-            rb_id_table_insert(rb_global_tbl, id, (VALUE)entry);
-        }
-    }
+    if (isolation_error) global_entry_isolation_error(id);
+
     return entry;
 }
 
@@ -1034,17 +1056,20 @@ rb_gvar_set(ID id, VALUE val)
     struct rb_global_entry *entry = NULL;
     const rb_box_t *box = rb_current_box();
     bool use_box_tbl = false;
+    bool isolation_error = false;
 
     RB_VM_LOCKING() {
-        entry = rb_global_entry(id);
+        entry = global_entry_lookup(id, true, &isolation_error);
 
-        if (gvar_use_box_tbl(box, entry)) {
+        if (!isolation_error && gvar_use_box_tbl(box, entry)) {
             use_box_tbl = true;
             rb_hash_aset(box->gvar_tbl, rb_id2sym(entry->id), val);
             retval = val;
             // TODO: think about trace
         }
     }
+
+    if (isolation_error) global_entry_isolation_error(id);
 
     if (!use_box_tbl) {
         retval = rb_gvar_set_entry(entry, val);
@@ -1064,33 +1089,41 @@ rb_gvar_get(ID id)
     VALUE retval, gvars, key;
     const rb_box_t *box = rb_current_box();
     bool use_box_tbl = false;
+    bool isolation_error = false;
     struct rb_global_entry *entry = NULL;
     struct rb_global_variable *var = NULL;
-    // TODO: use lock-free rb_id_table when it's available for use (doesn't yet exist)
-    RB_VM_LOCKING() {
-        entry = rb_global_entry(id);
-        var = entry->var;
 
-        if (gvar_use_box_tbl(box, entry)) {
-            use_box_tbl = true;
-            gvars = box->gvar_tbl;
-            key = rb_id2sym(entry->id);
-            if (RTEST(rb_hash_has_key(gvars, key))) { // this gvar is already cached
-                retval = rb_hash_aref(gvars, key);
-            }
-            else {
-                RB_VM_UNLOCK();
-                {
-                    retval = (*var->getter)(entry->id, var->data);
-                    if (rb_obj_respond_to(retval, rb_intern("clone"), 1)) {
-                        retval = rb_funcall(retval, rb_intern("clone"), 0);
-                    }
+    RB_VM_LOCKING() {
+        // TODO: use lock-free rb_id_table when it's available for use (doesn't yet exist)
+        entry = global_entry_lookup(id, true, &isolation_error);
+
+        if (!isolation_error) {
+            var = entry->var;
+
+            if (gvar_use_box_tbl(box, entry)) {
+                use_box_tbl = true;
+                gvars = box->gvar_tbl;
+                key = rb_id2sym(entry->id);
+                if (RTEST(rb_hash_has_key(gvars, key))) { // this gvar is already cached
+                    retval = rb_hash_aref(gvars, key);
                 }
-                RB_VM_LOCK();
-                rb_hash_aset(gvars, key, retval);
+                else {
+                    RB_VM_UNLOCK();
+                    {
+                        retval = (*var->getter)(entry->id, var->data);
+                        if (rb_obj_respond_to(retval, rb_intern("clone"), 1)) {
+                            retval = rb_funcall(retval, rb_intern("clone"), 0);
+                        }
+                    }
+                    RB_VM_LOCK();
+                    rb_hash_aset(gvars, key, retval);
+                }
             }
         }
     }
+
+    if (isolation_error) global_entry_isolation_error(id);
+
     if (!use_box_tbl) {
         retval = (*var->getter)(entry->id, var->data);
     }
@@ -1178,13 +1211,17 @@ rb_alias_variable(ID name1, ID name2)
     struct rb_global_entry *entry1 = NULL, *entry2;
     VALUE data1;
     struct rb_id_table *gtbl = rb_global_tbl;
+    bool tracer_error = false;
 
     if (!rb_ractor_main_p()) {
         rb_raise(rb_eRactorIsolationError, "can not access global variables from non-main Ractors");
     }
 
     RB_VM_LOCKING() {
-        entry2 = rb_global_entry(name2);
+        bool isolation_error;
+        entry2 = global_entry_lookup(name2, true, &isolation_error);
+        VM_ASSERT(!isolation_error); /* main Ractor, checked above */
+
         if (!rb_id_table_lookup(gtbl, name1, &data1)) {
             entry1 = ZALLOC(struct rb_global_entry);
             entry1->id = name1;
@@ -1193,45 +1230,51 @@ rb_alias_variable(ID name1, ID name2)
         else if ((entry1 = (struct rb_global_entry *)data1)->var != entry2->var) {
             struct rb_global_variable *var = entry1->var;
             if (var->block_trace) {
-                RB_VM_UNLOCK();
-                rb_raise(rb_eRuntimeError, "can't alias in tracer");
+                tracer_error = true;
             }
-            var->counter--;
-            if (var->counter == 0) {
-                free_global_variable(var);
+            else {
+                var->counter--;
+                if (var->counter == 0) {
+                    free_global_variable(var);
+                }
             }
         }
-        if (entry1->var != entry2->var) {
+        if (!tracer_error && entry1->var != entry2->var) {
             entry2->var->counter++;
             entry1->var = entry2->var;
         }
     }
+
+    if (tracer_error) rb_raise(rb_eRuntimeError, "can't alias in tracer");
 }
 
 static void
-IVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(ID id)
+class_ivar_set_ractor_check(VALUE klass, ID id)
 {
-    if (UNLIKELY(!rb_ractor_main_p())) {
-        if (rb_is_instance_id(id)) { // check only normal ivars
-            rb_raise(rb_eRactorIsolationError, "can not set instance variables of classes/modules by non-main Ractors");
-        }
+    if (rb_is_instance_id(id) && // check only normal ivars
+        UNLIKELY(!rb_class_owned_p(klass))) {
+        rb_raise(rb_eRactorIsolationError, "can not set instance variables of classes/modules created by another Ractor");
     }
 }
 
+// klass is the class the variable is stored in, not the receiver: which one that
+// is can migrate (cvar_overtaken), and it is the one with a single writer.
 static void
-CVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(VALUE klass, ID id)
+cvar_set_ractor_check(VALUE klass, ID id)
 {
-    if (UNLIKELY(!rb_ractor_main_p())) {
-        rb_raise(rb_eRactorIsolationError, "can not set class variables from non-main Ractors (%"PRIsVALUE" from %"PRIsVALUE")", rb_id2str(id), klass);
+    if (UNLIKELY(!rb_class_owned_p(klass))) {
+        rb_raise(rb_eRactorIsolationError,
+                 "can not set class variable %"PRIsVALUE" of %"PRIsVALUE", which was created by another Ractor",
+                 rb_id2str(id), klass);
     }
 }
 
 static void
 cvar_read_ractor_check(VALUE klass, ID id, VALUE val)
 {
-    if (UNLIKELY(!rb_ractor_main_p()) && !rb_ractor_shareable_p(val)) {
+    if (UNLIKELY(!rb_class_owned_p(klass)) && !rb_ractor_shareable_p(val)) {
         rb_raise(rb_eRactorIsolationError,
-                 "can not read non-shareable class variable %"PRIsVALUE" from non-main Ractors (%"PRIsVALUE")",
+                 "can not read non-shareable class variable %"PRIsVALUE" of %"PRIsVALUE", which was created by another Ractor",
                  rb_id2str(id), klass);
     }
 }
@@ -1244,6 +1287,10 @@ ivar_ractor_check(VALUE obj, ID id)
         UNLIKELY(!rb_ractor_main_p()) &&
         UNLIKELY(rb_ractor_shareable_p(obj))) {
 
+        if (RB_TYPE_P(obj, T_CLASS) || RB_TYPE_P(obj, T_MODULE)) {
+            // classes/modules are owner-checked at each read/write site instead
+            return;
+        }
         rb_raise(rb_eRactorIsolationError, "can not access instance variables of shareable objects from non-main Ractors");
     }
 }
@@ -1556,11 +1603,11 @@ rb_ivar_lookup(VALUE obj, ID id, VALUE undef)
     }
 
     if (is_class && val != undef && rb_is_instance_id(id)) {
-        if (UNLIKELY(!rb_ractor_main_p()) && !rb_ractor_shareable_p(val)) {
+        if (UNLIKELY(!rb_class_owned_p(obj)) && !rb_ractor_shareable_p(val)) {
             rb_raise(
                 rb_eRactorIsolationError,
-                "can not get unshareable values from instance variables of classes/modules from "
-                "non-main Ractors (%"PRIsVALUE" from %"PRIsVALUE")",
+                "can not get unshareable values from instance variables of classes/modules "
+                "created by another Ractor (%"PRIsVALUE" from %"PRIsVALUE")",
                 rb_id2str(id),
                 obj
             );
@@ -1593,9 +1640,9 @@ rb_ivar_get_at(VALUE obj, attr_index_t index, ID id)
             VALUE fields_obj = RCLASS_WRITABLE_FIELDS_OBJ(obj);
             VALUE val = rb_imemo_fields_ptr(fields_obj)[index];
 
-            if (UNLIKELY(!rb_ractor_main_p()) && !rb_ractor_shareable_p(val)) {
+            if (UNLIKELY(!rb_class_owned_p(obj)) && !rb_ractor_shareable_p(val)) {
                 rb_raise(rb_eRactorIsolationError,
-                        "can not get unshareable values from instance variables of classes/modules from non-main Ractors");
+                        "can not get unshareable values from instance variables of classes/modules created by another Ractor");
             }
 
             return val;
@@ -1648,7 +1695,7 @@ rb_ivar_delete(VALUE obj, ID id, VALUE undef)
     int type = BUILTIN_TYPE(obj);
 
     if (type == T_CLASS || type == T_MODULE) {
-        IVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(id);
+        class_ivar_set_ractor_check(obj, id);
 
         if (rb_multi_ractor_p()) {
             concurrent = true;
@@ -2042,7 +2089,7 @@ ivar_set(VALUE obj, ID id, VALUE val)
       case T_CLASS:
       case T_MODULE:
         {
-            IVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(id);
+            class_ivar_set_ractor_check(obj, id);
             bool dontcare;
             return class_ivar_set(obj, id, val, &dontcare);
         }
@@ -2328,7 +2375,8 @@ rb_field_foreach(VALUE obj, rb_ivar_foreach_callback_func *func, st_data_t arg, 
       case T_CLASS:
       case T_MODULE:
         {
-            IVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(0);
+            // No owner check: every caller of this walk uses the names only for a
+            // class/module.  Values are checked where they are read (rb_ivar_lookup).
             VALUE fields_obj = RCLASS_WRITABLE_FIELDS_OBJ(obj);
             if (fields_obj) {
                 imemo_fields_each(fields_obj, func, arg, ivar_only);
@@ -2780,15 +2828,6 @@ get_autoload_data(VALUE autoload_const_value, struct autoload_const **autoload_c
     return autoload_data;
 }
 
-void
-rb_autoload(VALUE module, ID name, const char *feature)
-{
-    if (!feature || !*feature) {
-        rb_raise(rb_eArgError, "empty feature name");
-    }
-
-    rb_autoload_str(module, name, rb_fstring_cstr(feature));
-}
 
 static void const_set(VALUE klass, ID id, VALUE val);
 static void const_added(VALUE klass, ID const_name);
@@ -2890,6 +2929,8 @@ rb_autoload_str(VALUE module, ID name, VALUE feature)
     if (!rb_is_const_id(name)) {
         rb_raise(rb_eNameError, "autoload must be constant name: %"PRIsVALUE"", QUOTE_ID(name));
     }
+
+    rb_class_owner_check(module);
 
     Check_Type(feature, T_STRING);
     if (!RSTRING_LEN(feature)) {
@@ -3332,9 +3373,9 @@ rb_const_get_0(VALUE klass, ID id, int exclude, int recurse, int visibility)
     VALUE found_in;
     VALUE c = rb_const_search(klass, id, exclude, recurse, visibility, &found_in);
     if (!UNDEF_P(c)) {
-        if (UNLIKELY(!rb_ractor_main_p())) {
+        if (UNLIKELY(!rb_class_owned_p(found_in))) {
             if (!rb_ractor_shareable_p(c)) {
-                rb_raise(rb_eRactorIsolationError, "can not access non-shareable objects in constant %"PRIsVALUE"::%"PRIsVALUE" by non-main Ractor.", rb_class_path(found_in), rb_id2str(id));
+                rb_raise(rb_eRactorIsolationError, "can not access non-shareable objects in constant %"PRIsVALUE"::%"PRIsVALUE" of a class/module created by another Ractor.", rb_class_path(found_in), rb_id2str(id));
             }
         }
         return c;
@@ -3546,6 +3587,7 @@ rb_const_remove(VALUE mod, ID id)
     rb_const_entry_t *ce;
 
     rb_check_frozen(mod);
+    rb_class_owner_check(mod);
 
     ce = rb_const_lookup(mod, id);
 
@@ -3842,8 +3884,8 @@ const_set(VALUE klass, ID id, VALUE val)
                  QUOTE_ID(id));
     }
 
-    if (!rb_ractor_main_p() && !rb_ractor_shareable_p(val)) {
-        rb_raise(rb_eRactorIsolationError, "can not set constants with non-shareable objects by non-main Ractors");
+    if (UNLIKELY(!rb_class_owned_p(klass))) {
+        rb_raise(rb_eRactorIsolationError, "can not set constants of classes/modules created by another Ractor");
     }
 
     check_before_mod_set(klass, id, val, "constant");
@@ -4176,7 +4218,8 @@ cvar_overtaken(VALUE front, VALUE target, ID id)
                        ID2SYM(id), rb_class_name(original_module(front)),
                        rb_class_name(original_module(target)));
         }
-        if (BUILTIN_TYPE(front) == T_CLASS) {
+        if (BUILTIN_TYPE(front) == T_CLASS && rb_class_owned_p(front)) {
+            // only clean-up, and reachable from reads: never write a foreign class
             rb_ivar_delete(front, id, Qundef);
         }
     }
@@ -4211,8 +4254,6 @@ find_cvar(VALUE klass, VALUE * front, VALUE * target, ID id)
 void
 rb_cvar_set(VALUE klass, ID id, VALUE val)
 {
-    CVAR_ACCESSOR_SHOULD_BE_MAIN_RACTOR(klass, id);
-
     VALUE tmp, front = 0, target = 0;
 
     tmp = klass;
@@ -4227,6 +4268,7 @@ rb_cvar_set(VALUE klass, ID id, VALUE val)
     if (RB_TYPE_P(target, T_ICLASS)) {
         target = RBASIC(target)->klass;
     }
+    cvar_set_ractor_check(target, id);
     check_before_mod_set(target, id, val, "class variable");
 
     bool new_cvar = rb_class_ivar_set(target, id, val);
@@ -4281,7 +4323,10 @@ rb_cvar_find(VALUE klass, ID id, VALUE *front)
                           klass, ID2SYM(id));
     }
     cvar_overtaken(*front, target, id);
-    cvar_read_ractor_check(klass, id, value);
+    if (RB_TYPE_P(target, T_ICLASS)) {
+        target = RBASIC(target)->klass;
+    }
+    cvar_read_ractor_check(target, id, value);
     return (VALUE)value;
 }
 
@@ -4460,6 +4505,7 @@ rb_mod_remove_cvar(VALUE mod, VALUE name)
         goto not_defined;
     }
     rb_check_frozen(mod);
+    cvar_set_ractor_check(mod, id);
     val = rb_ivar_delete(mod, id, Qundef);
     if (!UNDEF_P(val)) {
         return (VALUE)val;

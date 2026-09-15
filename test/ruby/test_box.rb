@@ -439,6 +439,45 @@ class TestBox < Test::Unit::TestCase
       assert_equal 42, 42.itself
     end;
   end
+
+  def test_marshal_round_trip_in_main_box
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      class BoxMarshalFoo
+        attr_reader :value
+        def initialize(value)
+          @value = value
+        end
+      end
+      obj = Marshal.load(Marshal.dump(BoxMarshalFoo.new(42))) # [Bug #22090]
+      assert_instance_of BoxMarshalFoo, obj
+      assert_equal 42, obj.value
+      assert_instance_of BoxMarshalFoo, Marshal.load(Marshal.dump(BoxMarshalFoo.new(1)), freeze: true)
+    end;
+  end
+
+  def test_marshal_resolves_classes_in_the_caller_user_box
+    setup_box
+
+    obj = @box.eval("class BoxMarshalBar; end; Marshal.load(Marshal.dump(BoxMarshalBar.new))")
+    assert_equal "BoxMarshalBar", obj.class.name
+
+    # a class defined only in the box is invisible from the main box
+    dump = @box.eval("Marshal.dump(BoxMarshalBar.new)")
+    assert_raise_with_message(ArgumentError, /undefined class\/module BoxMarshalBar/) do
+      Marshal.load(dump)
+    end
+  end
+
+  def test_marshal_skips_root_box_frames_in_the_caller_stack
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      class BoxMarshalBaz; end
+      # the proc runs in the root box, where BoxMarshalBaz is invisible
+      loader = Ruby::Box.root.eval("->(dump) { Marshal.load(dump) }")
+      assert_instance_of BoxMarshalBaz, loader.call(Marshal.dump(BoxMarshalBaz.new))
+    end;
+  end
 end
 
 class TestBoxDescendantsMain
@@ -533,7 +572,9 @@ class TestBox < Test::Unit::TestCase
   def test_add_constants_in_box
     setup_box
 
-    @box.require('envutil')
+    # A new box copies the master box's $LOAD_PATH, so the tool/lib entry that
+    # tool/test/init.rb adds to the main box at boot is not visible here.
+    @box.require(File.expand_path("../../tool/lib/envutil", __dir__))
 
     String.const_set(:STR_CONST0, 999)
     assert_equal 999, String::STR_CONST0
@@ -609,6 +650,8 @@ class TestBox < Test::Unit::TestCase
     assert_raise(NameError) { String::STR_CONST2 }
     assert_raise(NameError) { String::STR_CONST3 }
     assert_raise(NameError) { Integer::INT_CONST1 }
+  ensure
+    String.__send__(:remove_const, :STR_CONST0) if String.const_defined?(:STR_CONST0, false)
   end
 
   def test_global_variables
@@ -884,14 +927,14 @@ class TestBox < Test::Unit::TestCase
     setup_box
 
     # Define a class in the box via eval
-    @box.eval("class TestClass; def hello; 'from box'; end; end")
+    @box.eval("class BoxEvalTestClass; def hello; 'from box'; end; end")
 
     # Class should be accessible in the box
-    instance = @box::TestClass.new
+    instance = @box::BoxEvalTestClass.new
     assert_equal "from box", instance.hello
 
     # Class should not be visible in main box
-    assert_raise(NameError) { TestClass }
+    assert_raise(NameError) { BoxEvalTestClass }
   end
 
   def test_eval_isolation
@@ -942,7 +985,7 @@ class TestBox < Test::Unit::TestCase
   # Tests which run always (w/o RUBY_BOX=1 globally)
 
   def test_prelude_gems_and_loaded_features
-    assert_in_out_err([ENV_ENABLE_BOX, "--enable=gems"], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
+    assert_in_out_err([ENV_ENABLE_BOX, "--enable=gems", "-W:experimental"], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
       begin;
         puts ["before:", $LOADED_FEATURES.select{ it.end_with?("/bundled_gems.rb") }&.first].join
         puts ["before:", $LOADED_FEATURES.select{ it.end_with?("/error_highlight.rb") }&.first].join
@@ -966,7 +1009,7 @@ class TestBox < Test::Unit::TestCase
   end
 
   def test_prelude_gems_and_loaded_features_with_disable_gems
-    assert_in_out_err([ENV_ENABLE_BOX, "--disable=gems"], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
+    assert_in_out_err([ENV_ENABLE_BOX, "--disable=gems", "-W:experimental"], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
       begin;
         puts ["before:", $LOADED_FEATURES.select{ it.end_with?("/bundled_gems.rb") }&.first].join
         puts ["before:", $LOADED_FEATURES.select{ it.end_with?("/error_highlight.rb") }&.first].join
@@ -1302,8 +1345,7 @@ class TestBox < Test::Unit::TestCase
   end
 
   def test_loading_extension_libs_in_main_box_2
-    pend if /mswin|mingw/ =~ RUBY_PLATFORM # timeout on windows environments
-    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true, timeout: 60)
     begin;
       require "zlib"
       require "open3"
@@ -1453,6 +1495,19 @@ class TestBox < Test::Unit::TestCase
       RUBY
 
       Module.new.include?(Module.new)
+    end;
+  end
+
+  def test_method_call_in_isolated_proc_from_class_frame
+    # A TOP/CLASS local env stores its box in the SPECVAL slot (VM_ENV_BOX);
+    # Ractor.make_shareable's env copy must preserve it, or any method call
+    # inside the isolated proc dereferences a NULL box and crashes the VM.
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      module BoxIsolatedProcTest
+        PROC = Ractor.make_shareable(->(x){ x.to_s })
+      end
+      assert_equal "42", BoxIsolatedProcTest::PROC.call(42)
     end;
   end
 

@@ -55,6 +55,12 @@ compile.$(OBJEXT): {$(VPATH)}compile.c
 complex.$(OBJEXT): {$(VPATH)}complex.c
 concurrent_set.$(OBJEXT): {$(VPATH)}concurrent_set.c
 cont.$(OBJEXT): {$(VPATH)}cont.c
+coroutine-main.$(OBJEXT): {$(VPATH)}coroutine/test/main.c
+coroutine-stack.$(OBJEXT): {$(VPATH)}coroutine/test/stack.c
+coroutine-test_initialize_destroy.$(OBJEXT): {$(VPATH)}coroutine/test/test_initialize_destroy.c
+coroutine-test_pthread_resume.$(OBJEXT): {$(VPATH)}coroutine/test/test_pthread_resume.c
+coroutine-test_transfer_repeat.$(OBJEXT): {$(VPATH)}coroutine/test/test_transfer_repeat.c
+coroutine-test_transfer_return.$(OBJEXT): {$(VPATH)}coroutine/test/test_transfer_return.c
 debug.$(OBJEXT): {$(VPATH)}debug.c
 debug_counter.$(OBJEXT): {$(VPATH)}debug_counter.c
 dir.$(OBJEXT): {$(VPATH)}dir.c

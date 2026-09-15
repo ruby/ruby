@@ -651,6 +651,10 @@ class TC_Operator < Test::Unit::TestCase
   def test_link_local_multicast?
     assert_equal(true, IPAddr.new('224.0.0.0').link_local_multicast?)
     assert_equal(true, IPAddr.new('224.0.0.0/24').link_local_multicast?)
+    assert_equal(true, IPAddr.new('224.0.0.255').link_local_multicast?)
+
+    assert_equal(false, IPAddr.new('224.0.1.1').link_local_multicast?)
+    assert_equal(false, IPAddr.new('224.1.0.0').link_local_multicast?)
 
     assert_equal(false, IPAddr.new('225.0.0.0').link_local_multicast?)
     assert_equal(false, IPAddr.new('225.0.0.0/24').link_local_multicast?)
@@ -668,6 +672,9 @@ class TC_Operator < Test::Unit::TestCase
     assert_equal(false, IPAddr.new('::').link_local_multicast?)
 
     assert_equal(true, IPAddr.new('::ffff:224.0.0.0').link_local_multicast?)
+    assert_equal(true, IPAddr.new('::ffff:224.0.0.255').link_local_multicast?)
+    assert_equal(false, IPAddr.new('::ffff:224.0.1.1').link_local_multicast?)
+    assert_equal(false, IPAddr.new('::ffff:224.1.0.0').link_local_multicast?)
     assert_equal(false, IPAddr.new('::ffff:225.0.0.0').link_local_multicast?)
   end
 

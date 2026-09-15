@@ -838,6 +838,30 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_equal string, buffer.get_string
   end
 
+  def test_write_frozen
+    buffer = IO::Buffer.new(8)
+    buffer.freeze
+
+    mask = IO::Buffer.new(8)
+
+    assert_raise(FrozenError) {buffer.set_string("x")}
+    assert_raise(FrozenError) {buffer.copy(IO::Buffer.new(8))}
+    assert_raise(FrozenError) {buffer.clear}
+    assert_raise(FrozenError) {buffer.set_value(:U8, 0, 1)}
+    assert_raise(FrozenError) {buffer.set_values([:U8], 0, [1])}
+    assert_raise(FrozenError) {buffer.and!(mask)}
+    assert_raise(FrozenError) {buffer.or!(mask)}
+    assert_raise(FrozenError) {buffer.xor!(mask)}
+    assert_raise(FrozenError) {buffer.not!}
+
+    File.open(__FILE__) do |file|
+      assert_raise(FrozenError) {buffer.read(file)}
+      assert_raise(FrozenError) {buffer.pread(file, 0)}
+    end
+
+    assert_equal "\0" * 8, buffer.get_string
+  end
+
   def test_counted_locking
     buffer = IO::Buffer.new(128)
 

@@ -844,8 +844,12 @@ class TestRubyOptions < Test::Unit::TestCase
     KILL_SELF = "Bug.segv"
   end
 
-  def assert_segv(args, message=nil, list: SEGVTest::ExpectedStderrList, **opt, &block)
-    omit if macos? && ENV["CI"] # we're getting timeouts even after 100s in CI, not sure why.
+  # Turning the C level backtrace into file:line pairs walks the whole of the
+  # binary's debug info, and that is nearly all of what a crash costs: 0.8s of
+  # CPU with the dSYM in place against 0.01s without it, on an idle arm64 macOS
+  # host.  The default subprocess budget of 10 seconds is meant for a child
+  # that does none of that work.
+  def assert_segv(args, message=nil, list: SEGVTest::ExpectedStderrList, timeout: 60, **opt, &block)
     # We want YJIT to be enabled in the subprocess if it's enabled for us
     # so that the Ruby description matches.
     env = Hash === args.first ? args.shift : {}
@@ -867,7 +871,7 @@ class TestRubyOptions < Test::Unit::TestCase
     end
 
     assert_in_out_err(args, test_stdin, *tests, encoding: "ASCII-8BIT",
-                      **SEGVTest::ExecOptions, **opt, &block)
+                      timeout: timeout, **SEGVTest::ExecOptions, **opt, &block)
   end
 
   def test_segv_test
@@ -967,6 +971,35 @@ class TestRubyOptions < Test::Unit::TestCase
         end
       end
     end
+  end
+
+  # The sender pid is only reported for a signal another process sent us.
+  def abrt_crash_report(code)
+    Dir.mktmpdir("ruby_crash_report") do |dir|
+      IO.popen([{"RUBY_CRASH_REPORT" => "abrt.log", "RUBY_ON_BUG" => nil},
+                EnvUtil.rubybin, "--disable-gems", "-e", "STDOUT.sync = true; puts; #{code}"],
+               chdir: dir, err: File::NULL, rlimit_core: 0) do |child|
+        child.gets
+        yield child if block_given?
+      end
+      break File.read(File.join(dir, "abrt.log"))
+    end
+  end
+
+  def test_crash_report_sender_pid
+    omit "needs siginfo" unless (macos? || linux?)
+
+    report = abrt_crash_report("sleep") {|child| Process.kill(:ABRT, child.pid)}
+    assert_include(report, "[BUG] Aborted")
+    assert_include(report, "(sent by pid #{Process.pid})")
+  end
+
+  def test_crash_report_no_sender_pid_when_self_inflicted
+    omit "needs siginfo" unless (macos? || linux?)
+
+    report = abrt_crash_report("Process.kill(:ABRT, $$)")
+    assert_include(report, "[BUG] Aborted")
+    assert_not_include(report, "sent by pid")
   end
 
   def test_DATA

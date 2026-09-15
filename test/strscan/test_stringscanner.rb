@@ -738,6 +738,27 @@ module StringScannerTests
     assert_nil(s.matched_size)
   end
 
+  def test_matched_size_when_shrunk
+    # matched_size must agree with matched, which extract_range clamps to the
+    # current length of the stored string.
+    s = create_string_scanner(+"before 29 after")
+    s.skip_until(" ")
+    assert_equal("29", s.scan(/\d+/))
+    assert_equal(2, s.matched_size)
+
+    s.string.replace("before 2")
+    assert_equal("2", s.matched)
+    assert_equal(1, s.matched_size)
+
+    s.string.replace("before ")
+    assert_equal("", s.matched)
+    assert_equal(0, s.matched_size)
+
+    s.string.replace("before")
+    assert_nil(s.matched)
+    assert_nil(s.matched_size)
+  end
+
   def test_empty_encoding_utf8
     ss = create_string_scanner('')
     assert_equal(Encoding::UTF_8, ss.rest.encoding)

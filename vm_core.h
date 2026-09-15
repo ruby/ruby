@@ -94,9 +94,8 @@ RUBY_ASSERT_CRITICAL_SECTION_LEAVE();
 If `rb_vm_check_ints()` is called between the `RUBY_ASSERT_CRITICAL_SECTION_ENTER()` and
 `RUBY_ASSERT_CRITICAL_SECTION_LEAVE()`, a failed assertion will result.
 */
-extern int ruby_assert_critical_section_entered;
-#define RUBY_ASSERT_CRITICAL_SECTION_ENTER() do{ruby_assert_critical_section_entered += 1;}while(false)
-#define RUBY_ASSERT_CRITICAL_SECTION_LEAVE() do{VM_ASSERT(ruby_assert_critical_section_entered > 0);ruby_assert_critical_section_entered -= 1;}while(false)
+#define RUBY_ASSERT_CRITICAL_SECTION_ENTER() do{GET_EC()->assert_critical_section_entered += 1;}while(false)
+#define RUBY_ASSERT_CRITICAL_SECTION_LEAVE() do{rb_execution_context_t *ec__ = GET_EC();VM_ASSERT(ec__->assert_critical_section_entered > 0);ec__->assert_critical_section_entered -= 1;}while(false)
 #else
 #define RUBY_ASSERT_CRITICAL_SECTION_ENTER()
 #define RUBY_ASSERT_CRITICAL_SECTION_LEAVE()
@@ -263,10 +262,13 @@ struct iseq_inline_constant_cache_entry {
 
     VALUE value;
     const rb_cref_t *ic_cref;
+    /* Ractor that filled this entry.  An unshareable value may be handed out again
+     * only to that Ractor: it is the one that passed the owner check. */
+    rb_serial_t ractor_id;
 };
 STATIC_ASSERT(sizeof_iseq_inline_constant_cache_entry,
-              (offsetof(struct iseq_inline_constant_cache_entry, ic_cref) +
-               sizeof(const rb_cref_t *)) <= RVALUE_SIZE);
+              (offsetof(struct iseq_inline_constant_cache_entry, ractor_id) +
+               sizeof(rb_serial_t)) <= RVALUE_SIZE);
 
 struct iseq_inline_constant_cache {
     struct iseq_inline_constant_cache_entry *entry;
@@ -404,6 +406,8 @@ enum rb_builtin_attr {
     BUILTIN_ATTR_C_TRACE = 0x08,
     // The iseq uses noint branch/jump opcodes that skip interrupt checking.
     BUILTIN_ATTR_WITHOUT_INTERRUPTS = 0x10,
+    // The iseq operates on the nearest user box in its caller frames.
+    BUILTIN_ATTR_CALLER_USER_BOX = 0x20,
 };
 
 typedef VALUE (*rb_jit_func_t)(struct rb_execution_context_struct *, struct rb_control_frame_struct *);
@@ -775,9 +779,6 @@ typedef struct rb_vm_struct {
 
     int src_encoding_index;
 
-    /* workqueue (thread-safe, NOT async-signal-safe) */
-    struct ccan_list_head workqueue; /* <=> rb_workqueue_job.jnode */
-    rb_nativethread_lock_t workqueue_lock;
 
     /* `once` completion event (see vm_once_dispatch) */
     rb_nativethread_lock_t once_lock;
@@ -1145,6 +1146,10 @@ struct rb_execution_context_struct {
         void *asan_fake_stack_handle;
 #endif
     } machine;
+
+#ifdef RUBY_ASSERT_CRITICAL_SECTION
+    int assert_critical_section_entered;
+#endif
 };
 
 #ifndef rb_execution_context_t
@@ -2090,7 +2095,6 @@ void rb_thread_wakeup_timer_thread(int);
 static inline void
 rb_vm_living_threads_init(rb_vm_t *vm)
 {
-    ccan_list_head_init(&vm->workqueue);
     ccan_list_head_init(&vm->ractor.set);
     ccan_list_head_init(&vm->ractor.terminated_set);
 }
@@ -2362,7 +2366,7 @@ static inline void
 rb_vm_check_ints(rb_execution_context_t *ec)
 {
 #ifdef RUBY_ASSERT_CRITICAL_SECTION
-    VM_ASSERT(ruby_assert_critical_section_entered == 0);
+    VM_ASSERT(ec->assert_critical_section_entered == 0);
 #endif
 
     VM_ASSERT(ec == rb_current_ec_noinline());
@@ -2433,7 +2437,7 @@ rb_exec_event_hook_orig(rb_execution_context_t *ec, rb_hook_list_t *hooks, rb_ev
 
 struct rb_ractor_pub {
     VALUE self;
-    uint32_t id;
+    rb_serial_t id;
     rb_hook_list_t hooks;
     st_table targeted_hooks; // also called "local hooks". {ISEQ => hook_list, def => hook_list...}
     unsigned int targeted_hooks_cnt; // ex: tp.enabled(target: method(:puts))
@@ -2492,7 +2496,7 @@ int rb_thread_check_trap_pending(void);
 #define RUBY_EVENT_COVERAGE_LINE                0x010000
 #define RUBY_EVENT_COVERAGE_BRANCH              0x020000
 
-void rb_postponed_job_flush(rb_vm_t *vm);
+void rb_postponed_job_flush(void);
 void rb_postponed_job_trigger_for_ractor(unsigned int h, VALUE running_ractor);
 
 // ractor.c

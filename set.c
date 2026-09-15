@@ -12,6 +12,7 @@
 #include "internal/object.h"
 #include "internal/proc.h"
 #include "internal/sanitizers.h"
+#include "internal/set.h"
 #include "internal/set_table.h"
 #include "internal/symbol.h"
 #include "internal/variable.h"
@@ -2275,6 +2276,28 @@ VALUE
 rb_ident_set_new(void)
 {
     return set_alloc_with_size_and_type(rb_cSet, 0, &identhash);
+}
+
+bool
+rb_set_add_no_check(VALUE set, VALUE element)
+{
+    if (set_insert(RSET_TABLE(set), (st_data_t)element) == 0) {
+        RB_OBJ_WRITTEN(set, Qundef, element);
+        return true;
+    }
+    return false;
+}
+
+bool
+rb_set_delete_no_check(VALUE set, VALUE element)
+{
+    return set_table_delete(RSET_TABLE(set), (st_data_t *)&element) != 0;
+}
+
+VALUE
+rb_set_to_a(VALUE set)
+{
+    return set_i_to_a(set);
 }
 
 /* C-API functions */
