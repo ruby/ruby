@@ -650,7 +650,6 @@ pub enum SideExitReason {
     PatchPoint(Invariant),
     CalleeSideExit,
     Interrupt,
-    BlockParamProxyUnknownHandler,
     InvokeBlockHandlerNotIseq,
     InvokeBlockIseqChanged,
     BlockParamWbRequired,
@@ -1128,6 +1127,8 @@ pub enum Insn {
     IsBlockParamModified { flags: InsnId },
     /// Get the block parameter as a Proc.
     GetBlockParam { level: u32, ep_offset: u32, state: InsnId },
+    /// Get the block parameter, which is known to be a symbol, as a Proc.
+    SymToProc { level: u32, ep_offset: u32, state: InsnId },
     /// Set a local variable in a higher scope or the heap
     SetLocal { level: u32, ep_offset: u32, val: InsnId, state: InsnId },
     GetSpecialSymbol { symbol_type: SpecialBackrefSymbol, state: InsnId },
@@ -1383,6 +1384,7 @@ macro_rules! for_each_operand_impl {
             | Insn::CheckInterrupts { state }
             | Insn::PutSpecialObject { state, .. }
             | Insn::GetBlockParam { state, .. }
+            | Insn::SymToProc { state, .. }
             | Insn::GetConstantPath { state, .. } => {
                 $visit_one!(*state);
             }
@@ -1841,6 +1843,7 @@ impl Insn {
             Insn::SetClassVar { .. } => effects::Any,
             Insn::IsBlockParamModified { .. } => effects::Empty,
             Insn::GetBlockParam { .. } => effects::Any,
+            Insn::SymToProc { .. } => effects::Any,
             Insn::Snapshot { .. } => effects::Empty,
             Insn::Jump(_) => effects::Any,
             Insn::CondBranch { .. } => effects::Any,
@@ -2347,6 +2350,12 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 let name = get_local_var_name_for_printer(iseq, level, ep_offset)
                     .map_or(String::new(), |x| format!("{x}, "));
                 write!(f, "GetBlockParam {name}l{level}, EP@{ep_offset}")
+            },
+            &Insn::SymToProc { level, ep_offset, state, .. } => {
+                let iseq = self.fun.map(|fun| fun.frame_state_iseq(state));
+                let name = get_local_var_name_for_printer(iseq, level, ep_offset)
+                    .map_or(String::new(), |x| format!("{x}, "));
+                write!(f, "SymToProc {name}l{level}, EP@{ep_offset}")
             },
             Insn::PatchPoint { invariant, .. } => { write!(f, "PatchPoint {}", invariant.print(self.ptr_map)) },
             Insn::GetConstant { klass, id, allow_nil, .. } => {
@@ -3770,6 +3779,7 @@ impl Function {
             Insn::AnyToString { .. } => types::StringExact,
             Insn::IsBlockParamModified { .. } => types::CBool,
             Insn::GetBlockParam { .. } => types::BasicObject,
+            Insn::SymToProc { .. } => types::BasicObject,
             // The type of Snapshot doesn't really matter; it's never materialized. It's used only
             // as a reference for FrameState, which we use to generate side-exit code.
             Insn::Snapshot { .. } => types::Any,
@@ -7777,6 +7787,7 @@ impl Function {
             | Insn::GetSpecialNumber { .. }
             | Insn::GetSpecialSymbol { .. }
             | Insn::GetBlockParam { .. }
+            | Insn::SymToProc { .. }
             | Insn::StoreField { .. } => {
                 Ok(())
             }
@@ -9741,41 +9752,55 @@ fn add_iseq_to_hir(
 
                     // Handle VM_BLOCK_HANDLER_NONE: the block param is nil.
                     let nil_block = fun.new_block(branch_insn_idx);
-                    let proc_check_block = fun.new_block(branch_insn_idx);
+                    let sym_or_proc_block = fun.new_block(branch_insn_idx);
                     let none_handler = fun.push_insn(nil_check_block, Insn::Const { val: Const::CInt64(VM_BLOCK_HANDLER_NONE.into()) });
                     let is_none = fun.push_insn(nil_check_block, Insn::IsBitEqual { left: block_handler, right: none_handler });
                     fun.push_insn(nil_check_block, Insn::CondBranch {
                         val: is_none,
                         if_true: BranchEdge { target: nil_block, args: vec![] },
-                        if_false: BranchEdge { target: proc_check_block, args: vec![] },
+                        if_false: BranchEdge { target: sym_or_proc_block, args: vec![] },
                     });
                     let nil_val = fun.push_insn(nil_block, Insn::Const { val: Const::Value(Qnil) });
                     jump_to_join_block(fun, nil_block, nil_val);
 
-                    // Handle a Proc block handler.
+                    // Prepare blocks for other cases: Everything left is a symbol or a Proc block handler.
+                    let sym_block = fun.new_block(branch_insn_idx);
+                    let dynsym_check_block = fun.new_block(branch_insn_idx);
                     let proc_block = fun.new_block(branch_insn_idx);
-                    let unknown_block = fun.new_block(branch_insn_idx);
-                    let proc_val = fun.load_ep_env_field(proc_check_block, ep, FieldName::VM_ENV_DATA_INDEX_SPECVAL, VM_ENV_DATA_INDEX_SPECVAL, types::BasicObject);
-                    let proc_result = fun.push_insn(proc_check_block, Insn::CCall {
-                        cfunc: rb_obj_is_proc as *const u8,
-                        recv: proc_val,
-                        args: vec![],
-                        name: ID!(rb_obj_is_proc),
-                        owner: Qnil,
-                        return_type: types::BoolExact,
-                        elidable: true,
-                    });
-                    let true_val = fun.push_insn(proc_check_block, Insn::Const { val: Const::Value(Qtrue) });
-                    let is_proc = fun.push_insn(proc_check_block, Insn::IsBitEqual { left: proc_result, right: true_val });
-                    fun.push_insn(proc_check_block, Insn::CondBranch {
-                        val: is_proc,
-                        if_true: BranchEdge { target: proc_block, args: vec![] },
-                        if_false: BranchEdge { target: unknown_block, args: vec![] },
-                    });
-                    jump_to_join_block(fun, proc_block, proc_val);
 
-                    // Otherwise, exit to the interpreter.
-                    fun.push_insn(unknown_block, Insn::SideExit { state: exit_id, reason: Box::new(SideExitReason::BlockParamProxyUnknownHandler), recompile: None });
+                    // RB_STATIC_SYM_P(): (block_handler & 0xff) == RUBY_SYMBOL_FLAG
+                    let sym_mask = fun.push_insn(sym_or_proc_block, Insn::Const { val: Const::CInt64((1 << RUBY_SPECIAL_SHIFT) - 1) });
+                    let sym_bits = fun.push_insn(sym_or_proc_block, Insn::IntAnd { left: block_handler, right: sym_mask });
+                    let sym_flag = fun.push_insn(sym_or_proc_block, Insn::Const { val: Const::CInt64(RUBY_SYMBOL_FLAG.into()) });
+                    let is_static_sym = fun.push_insn(sym_or_proc_block, Insn::IsBitEqual { left: sym_bits, right: sym_flag });
+                    fun.push_insn(sym_or_proc_block, Insn::CondBranch {
+                        val: is_static_sym,
+                        if_true: BranchEdge { target: sym_block, args: vec![] },
+                        if_false: BranchEdge { target: dynsym_check_block, args: vec![] },
+                    });
+
+                    // RB_DYNAMIC_SYM_P(): a dynamic symbol or a Proc is a heap object, so its builtin type can be read from the RBasic flags.
+                    let rbasic_flags = fun.load_rbasic_flags(dynsym_check_block, block_handler);
+                    let t_mask = fun.push_insn(dynsym_check_block, Insn::Const { val: Const::CUInt64(RUBY_T_MASK.into()) });
+                    let t_bits = fun.push_insn(dynsym_check_block, Insn::IntAnd { left: rbasic_flags, right: t_mask });
+                    let t_symbol = fun.push_insn(dynsym_check_block, Insn::Const { val: Const::CUInt64(RUBY_T_SYMBOL.into()) });
+                    let is_dynamic_sym = fun.push_insn(dynsym_check_block, Insn::IsBitEqual { left: t_bits, right: t_symbol });
+                    fun.push_insn(dynsym_check_block, Insn::CondBranch {
+                        val: is_dynamic_sym,
+                        if_true: BranchEdge { target: sym_block, args: vec![] },
+                        if_false: BranchEdge { target: proc_block, args: vec![] },
+                    });
+
+                    // block_handler_type_symbol: Let SymToProc call rb_sym_to_proc() and memoize the result in EP.
+                    let sym_val = fun.push_insn(sym_block, Insn::SymToProc { ep_offset, level, state: exit_id });
+                    // Unlike the branches above, this wrote the Proc to the EP local.
+                    let mut sym_args = vec![sym_val];
+                    if level == 0 { sym_args.push(sym_val); }
+                    fun.push_insn(sym_block, Insn::Jump(BranchEdge { target: join_block, args: sym_args }));
+
+                    // block_handler_type_proc: VM_BH_TO_PROC() is an identity cast, so no C call is needed.
+                    let proc_val = fun.load_ep_env_field(proc_block, ep, FieldName::VM_ENV_DATA_INDEX_SPECVAL, VM_ENV_DATA_INDEX_SPECVAL, types::BasicObject);
+                    jump_to_join_block(fun, proc_block, proc_val);
 
                     if let Some(local_param) = join_local {
                         state.setlocal(ep_offset, local_param);

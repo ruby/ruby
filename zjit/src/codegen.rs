@@ -786,7 +786,8 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::SetGlobal { id, val, state } => no_output!(gen_setglobal(jit, asm, function, *id, opnd!(val), &function.frame_state(*state))),
         Insn::GetGlobal { id, state } => gen_getglobal(jit, asm, function, *id, &function.frame_state(*state)),
         &Insn::IsBlockParamModified { flags } => gen_is_block_param_modified(asm, opnd!(flags)),
-        &Insn::GetBlockParam { ep_offset, level, state } => gen_getblockparam(jit, asm, function, ep_offset, level, &function.frame_state(state)),
+        &Insn::GetBlockParam { ep_offset, level, state } => gen_getblockparam(jit, asm, function, ep_offset, level, &function.frame_state(state), false),
+        &Insn::SymToProc { ep_offset, level, state } => gen_getblockparam(jit, asm, function, ep_offset, level, &function.frame_state(state), true),
         &Insn::SetLocal { val, ep_offset, level, .. } => no_output!(gen_setlocal(asm, opnd!(val), function.type_of(val), ep_offset, level)),
         Insn::GetConstant { klass, id, allow_nil, state } => gen_getconstant(jit, asm, function, opnd!(klass), *id, opnd!(allow_nil), &function.frame_state(*state)),
         Insn::GetConstantPath { ic, state } => gen_get_constant_path(jit, asm, function, *ic, &function.frame_state(*state)),
@@ -928,7 +929,11 @@ fn gen_is_block_param_modified(asm: &mut Assembler, flags: Opnd) -> Opnd {
 
 /// Get the block parameter as a Proc, write it to the environment,
 /// and mark the flag as modified.
-fn gen_getblockparam(jit: &mut JITState, asm: &mut Assembler, function: &Function, ep_offset: u32, level: u32, state: &FrameState) -> Opnd {
+fn gen_getblockparam(jit: &mut JITState, asm: &mut Assembler, function: &Function, ep_offset: u32, level: u32, state: &FrameState, known_symbol: bool) -> Opnd {
+    unsafe extern "C" {
+        fn rb_sym_to_proc(sym: VALUE) -> VALUE;
+    }
+
     gen_prepare_leaf_call_with_gc(asm, state);
     // Bail out if write barrier is required.
     let ep = gen_get_ep(asm, level);
@@ -936,9 +941,14 @@ fn gen_getblockparam(jit: &mut JITState, asm: &mut Assembler, function: &Functio
     asm.test(flags, VM_ENV_FLAG_WB_REQUIRED.into());
     asm.jnz(jit, side_exit(jit, function, state, SideExitReason::BlockParamWbRequired));
 
-    // Convert block handler to Proc.
+    // Convert block handler to Proc. When the caller proved the block handler is a symbol,
+    // VM_BH_TO_SYMBOL() is an identity cast, so call rb_sym_to_proc() on it directly.
     let block_handler = asm.load(Opnd::mem(VALUE_BITS, ep, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL));
-    let proc = asm_ccall!(asm, rb_vm_bh_to_procval, EC, block_handler);
+    let proc = if known_symbol {
+        asm_ccall!(asm, rb_sym_to_proc, block_handler)
+    } else {
+        asm_ccall!(asm, rb_vm_bh_to_procval, EC, block_handler)
+    };
 
     let local_ep_offset = c_int::try_from(ep_offset).unwrap_or_else(|_| {
         panic!("Could not convert local_ep_offset {ep_offset} to i32")
