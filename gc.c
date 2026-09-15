@@ -123,6 +123,7 @@
 #include "vm_sync.h"
 #include "vm_callinfo.h"
 #include "ractor_core.h"
+#include "internal/ractor.h"
 #include "yjit.h"
 #include "zjit.h"
 
@@ -342,6 +343,12 @@ rb_gc_trigger_finalize_deferred(void *objspace, rb_postponed_job_handle_t pjob)
         }
     }
     rb_postponed_job_trigger(pjob);
+}
+
+void
+rb_gc_trigger_postponed_job_on_main(rb_postponed_job_handle_t pjob)
+{
+    rb_postponed_job_trigger_for_ractor(pjob, GET_VM()->ractor.main_ractor->pub.self);
 }
 
 void
@@ -1389,8 +1396,12 @@ typed_data_zalloc_in(void *objspace, VALUE klass, size_t size, const rb_data_typ
             rb_raise(rb_eTypeError, "Embeddable TypedData must be freed immediately");
         }
 
+        /* A deferred free outlives the slot: the sweep copies the type and data pointer
+         * out and hands the slot straight back, which it can only do when the payload is
+         * not in the slot.  Force such a type onto the heap -- an embeddable type already
+         * has to cope with that, since a payload too large for a slot lands there too. */
         size_t embed_size = offsetof(struct RTypedData, data) + size;
-        if (rb_gc_size_allocatable_p(embed_size)) {
+        if (rb_gc_size_allocatable_p(embed_size) && !rb_gc_data_type_deferred_free_p(type)) {
             VALUE obj = typed_data_alloc_in(objspace, klass, TYPED_DATA_EMBEDDED, 0, type, embed_size);
             memset((char *)obj + offsetof(struct RTypedData, data), 0, size);
             return obj;
@@ -4040,6 +4051,7 @@ static void gc_orphan_merge_job(void *unused);
 static void
 zombie_objspaces_push(rb_vm_t *vm, void *objspace, void **owner_slot, struct rb_ractor_struct *owner)
 {
+    ASSERT_vm_locking();
     if (vm->gc.zombie_objspaces_count == vm->gc.zombie_objspaces_capa) {
         size_t new_capa = vm->gc.zombie_objspaces_capa ? vm->gc.zombie_objspaces_capa * 2 : 16;
         struct rb_objspace_zombie *grown =
@@ -4118,6 +4130,7 @@ void
 rb_gc_objspace_disown(void *objspace)
 {
     if (!rb_gc_impl_multi_objspace_p()) return;
+    ASSERT_vm_locking();
     rb_vm_t *vm = GET_VM();
     bool found = false;
 
@@ -4152,6 +4165,7 @@ rb_gc_during_global_gc_p(void)
 static void
 rb_gc_vm_forget_zombie(void *objspace)
 {
+    ASSERT_vm_locking();
     rb_vm_t *vm = GET_VM();
     size_t n = vm->gc.zombie_objspaces_count;
     for (size_t i = 0; i < n; i++) {
