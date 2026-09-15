@@ -250,6 +250,7 @@ pub fn init() -> Annotations {
     annotate!(rb_cBasicObject, "!", inline_basic_object_not, types::BoolExact, no_gc, leaf, elidable);
     annotate!(rb_cBasicObject, "!=", inline_basic_object_neq, types::BoolExact);
     annotate!(rb_cBasicObject, "initialize", inline_basic_object_initialize);
+    annotate!(rb_cStruct, "initialize", inline_struct_initialize);
     annotate!(rb_cClass, "allocate", inline_class_allocate);
     annotate!(rb_cClass, "superclass", inline_class_superclass, types::Class.union(types::NilClass));
     annotate!(rb_cInteger, "succ", inline_integer_succ);
@@ -954,6 +955,66 @@ fn inline_basic_object_initialize(fun: &mut hir::Function, block: hir::BlockId, 
     if !args.is_empty() { return None; }
     let result = fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(Qnil) });
     Some(result)
+}
+
+/// Inline the positional (non-`keyword_init`) case of `Struct#initialize`
+/// (`rb_struct_initialize_m`): store each argument into its member slot and nil out the members
+/// the caller left off the end.
+fn inline_struct_initialize(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    // The member count, the member names, and where the members live are all properties of the
+    // exact class, so we can only do this when we know it.
+    let class = fun.type_of(recv).exact_ruby_class()?;
+    if !unsafe { rb_zjit_class_has_struct_allocator(class) } { return None; }
+    let num_members = unsafe { rb_zjit_struct_num_members(class) };
+    if num_members < 0 { return None; }
+    // More values than the struct has members raises ArgumentError; leave that to the interpreter.
+    if args.len() as i64 > num_members { return None; }
+    // A `keyword_init: true` class takes keywords only, and callers that pass keywords never get
+    // this far (`unspecializable_c_call_type` rejects them), so any argument here would raise
+    // ArgumentError. Zero arguments nil out every member before `keyword_init` is consulted at
+    // all, so that case is fine either way.
+    if !args.is_empty() && unsafe { rb_struct_s_keyword_init(class) }.test() { return None; }
+    // Embeddedness depends only on the member count, so every instance of the class agrees on it
+    // and no shape guard is needed. See struct_alloc.
+    let embedded = unsafe { rb_zjit_struct_embedded_p(class) };
+    let base_offset = if embedded { RUBY_OFFSET_RSTRUCT_AS_ARY } else { 0 };
+    // StoreField encodes its offset as a 4-byte immediate. Check the last slot up front, because
+    // bailing out after pushing instructions would leave them stranded in the scratch block.
+    if num_members > 0 && base_offset as i64 + SIZEOF_VALUE as i64 * (num_members - 1) > i32::MAX as i64 {
+        return None;
+    }
+
+    // rb_struct_modify
+    fun.guard_not_frozen(block, recv, state);
+
+    // rb_struct_initialize_m returns nil, and so does every member past the end of the argument
+    // list.
+    let nil = fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(Qnil) });
+    if num_members > 0 {
+        let target = if embedded {
+            recv
+        } else {
+            fun.load_field(block, recv, FieldName::as_heap, RUBY_OFFSET_RSTRUCT_AS_HEAP_PTR, types::CPtr)
+        };
+        let num_bits = types::BasicObject.num_bits();
+        for index in 0..num_members {
+            // Name the slots after their members so these stores line up with the LoadFields that
+            // the struct reader methods compile to.
+            let id = unsafe { rb_zjit_struct_member_id(class, index) }.into();
+            let offset = base_offset + SIZEOF_VALUE_I32 * index as i32;
+            match args.get(index as usize) {
+                Some(&val) => {
+                    fun.push_insn(block, hir::Insn::StoreField { recv: target, id, offset, val, num_bits });
+                    fun.push_insn(block, hir::Insn::WriteBarrier { recv, val });
+                }
+                // nil is an immediate, so the tail needs no write barrier.
+                None => {
+                    fun.push_insn(block, hir::Insn::StoreField { recv: target, id, offset, val: nil, num_bits });
+                }
+            }
+        }
+    }
+    Some(nil)
 }
 
 fn inline_nilclass_nil_p(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {

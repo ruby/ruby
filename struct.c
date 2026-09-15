@@ -866,6 +866,40 @@ rb_zjit_class_has_struct_allocator(VALUE klass)
     return rb_get_alloc_func(klass) == struct_alloc;
 }
 
+// Number of members of the Struct class `klass`, or -1 if it has no well-formed members array.
+// Unlike num_members(), does not raise, so ZJIT can call it while compiling.
+long
+rb_zjit_struct_num_members(VALUE klass)
+{
+    VALUE members = struct_ivar_get(klass, id_members);
+    if (!RB_TYPE_P(members, T_ARRAY)) return -1;
+    return RARRAY_LEN(members);
+}
+
+// The ID of the `index`th member of the Struct class `klass`. `index` must be in bounds
+// according to rb_zjit_struct_num_members().
+ID
+rb_zjit_struct_member_id(VALUE klass, long index)
+{
+    VALUE members = struct_ivar_get(klass, id_members);
+    RUBY_ASSERT(RB_TYPE_P(members, T_ARRAY));
+    RUBY_ASSERT(index >= 0 && index < RARRAY_LEN(members));
+    return SYM2ID(RARRAY_AREF(members, index));
+}
+
+// Whether instances of the Struct class `klass` keep their members inline in the object rather
+// than in a separately allocated buffer. This depends only on the member count, so every
+// instance of a given class agrees on it. Keep in sync with struct_alloc().
+bool
+rb_zjit_struct_embedded_p(VALUE klass)
+{
+    long n = rb_zjit_struct_num_members(klass);
+    if (n < 0) return false;
+    const long embed_len_max = RSTRUCT_EMBED_LEN_MASK >> RSTRUCT_EMBED_LEN_SHIFT;
+    size_t embedded_size = offsetof(struct RStruct, as.ary) + (sizeof(VALUE) * n);
+    return n > 0 && n <= embed_len_max && rb_gc_size_allocatable_p(embedded_size);
+}
+
 VALUE
 rb_struct_alloc(VALUE klass, VALUE values)
 {
