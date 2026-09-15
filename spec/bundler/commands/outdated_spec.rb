@@ -231,6 +231,30 @@ RSpec.describe "bundle outdated" do
 
       expect(out).to end_with(expected_output)
     end
+
+    it "returns a sorted list of outdated gems from one group spread over several group sets" do
+      install_gemfile <<-G
+        source "https://gem.repo2"
+
+        gem "weakling", "~> 0.0.1"
+        group :development do
+          gem "terranova", '8'
+        end
+        group :development, :test do
+          gem 'activesupport', '2.3.5'
+        end
+      G
+
+      test_group_option("development")
+
+      expected_output = <<~TABLE.strip
+        Gem            Current  Latest  Requested  Groups             Release Date
+        activesupport  2.3.5    3.0     = 2.3.5    development, test
+        terranova      8        9       = 8        development
+      TABLE
+
+      expect(out).to end_with(expected_output)
+    end
   end
 
   describe "with --groups option and outdated transitive dependencies" do

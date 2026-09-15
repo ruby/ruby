@@ -101,13 +101,10 @@ module Bundler
         }
       end
 
-      relevant_outdated_gems = if options_include_groups
-        outdated_gems.group_by {|g| g[:groups] }.sort.flat_map do |groups, gems|
-          contains_group = groups.split(", ").include?(options[:group])
-          next unless options[:groups] || contains_group
-
-          gems
-        end.compact
+      relevant_outdated_gems = if options[:groups]
+        outdated_gems.group_by {|g| g[:groups] }.sort.flat_map(&:last)
+      elsif options_include_groups
+        outdated_gems.select {|g| g[:groups].split(", ").include?(options[:group]) }
       else
         outdated_gems
       end
@@ -209,7 +206,7 @@ module Bundler
         )
       end
 
-      print_indented([table_header] + data, !options_include_groups)
+      print_indented([table_header] + data)
     end
 
     def print_gem(current_spec, active_spec, dependency, groups)
@@ -323,7 +320,7 @@ module Bundler
       version_section.to_a[0].to_i
     end
 
-    def print_indented(matrix, sort = true)
+    def print_indented(matrix)
       header = matrix[0]
       data = matrix[1..-1]
 
@@ -332,8 +329,6 @@ module Bundler
       end
 
       Bundler.ui.info justify(header, column_sizes)
-
-      data.sort_by! {|row| row[0] } if sort
 
       data.each do |row|
         Bundler.ui.info justify(row, column_sizes)
