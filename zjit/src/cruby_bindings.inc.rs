@@ -2256,7 +2256,6 @@ unsafe extern "C" {
     pub fn rb_hash_aref(hash: VALUE, key: VALUE) -> VALUE;
     pub fn rb_hash_aset(hash: VALUE, key: VALUE, val: VALUE) -> VALUE;
     pub fn rb_hash_bulk_insert(argc: ::std::os::raw::c_long, argv: *const VALUE, hash: VALUE);
-    pub fn rb_obj_is_proc(recv: VALUE) -> VALUE;
     pub fn rb_protect(
         func: ::std::option::Option<unsafe extern "C" fn(args: VALUE) -> VALUE>,
         args: VALUE,
