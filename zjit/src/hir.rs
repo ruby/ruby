@@ -680,7 +680,7 @@ pub enum SideExitReason {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Recompile;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum MethodType {
     Iseq,
     Cfunc,
@@ -717,7 +717,7 @@ impl From<u32> for MethodType {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum OptimizedMethodType {
     Send,
     Call,
@@ -779,7 +779,7 @@ pub enum ReceiverTypeResolution {
 }
 
 /// Reason why a send-ish instruction cannot be optimized from a fallback instruction
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum SendFallbackReason {
     SendCfuncNotVariadic,
     SendNotOptimizedMethodTypeOptimized(OptimizedMethodType),
@@ -3595,7 +3595,13 @@ impl Function {
             | InvokeSuper { reason, .. }
             | InvokeSuperForward { reason, .. }
             | InvokeBlock { reason, .. }
-            => *reason = dynamic_send_reason,
+            => {
+                // Ignore the case where the instruction is intentionally a fallback for a
+                // polymorphic send. We already know that case is a lost cause.
+                if *reason != SendFallbackReason::SendPolymorphicFallback {
+                    *reason = dynamic_send_reason;
+                }
+            }
             _ => unreachable!("unexpected instruction {} at {insn_id}", self.find(insn_id))
         }
     }

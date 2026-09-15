@@ -9818,7 +9818,7 @@ mod hir_opt_tests {
           v60:TrueClass = Const Value(true)
           Jump bb7(v60)
         bb11():
-          v48:BasicObject = Send v31, :! # SendFallbackReason: Send: polymorphic call site
+          v48:BasicObject = Send v31, :! # SendFallbackReason: Send: polymorphic fallback
           Jump bb7(v48)
         bb7(v35:BasicObject):
           CheckInterrupts
@@ -10563,7 +10563,7 @@ mod hir_opt_tests {
           SetIvar v24, :@foo, v17
           Jump bb4(v17)
         bb6():
-          v27:BasicObject = Send v10, :foo=, v17 # SendFallbackReason: Send: polymorphic call site
+          v27:BasicObject = Send v10, :foo=, v17 # SendFallbackReason: Send: polymorphic fallback
           Jump bb4(v27)
         bb4(v20:BasicObject):
           CheckInterrupts
@@ -11146,7 +11146,7 @@ mod hir_opt_tests {
           v31:BasicObject = GetIvar v19, :@foo
           Jump bb4(v31)
         bb6():
-          v22:BasicObject = Send v10, :foo # SendFallbackReason: Send: polymorphic call site
+          v22:BasicObject = Send v10, :foo # SendFallbackReason: Send: polymorphic fallback
           Jump bb4(v22)
         bb4(v15:BasicObject):
           CheckInterrupts
@@ -15171,7 +15171,7 @@ mod hir_opt_tests {
           PopInlineFrame
           Jump bb4(v60)
         bb8():
-          v34:BasicObject = Send v12, :target, v19 # SendFallbackReason: Send: polymorphic call site
+          v34:BasicObject = Send v12, :target, v19 # SendFallbackReason: Send: polymorphic fallback
           Jump bb4(v34)
         bb4(v21:BasicObject):
           CheckInterrupts
@@ -16856,7 +16856,7 @@ mod hir_opt_tests {
           v46:TrueClass = Const Value(true)
           Jump bb4(v46)
         bb8():
-          v31:BasicObject = Send v10, :is_a?, v16 # SendFallbackReason: Send: polymorphic call site
+          v31:BasicObject = Send v10, :is_a?, v16 # SendFallbackReason: Send: polymorphic fallback
           Jump bb4(v31)
         bb4(v18:BasicObject):
           CheckInterrupts
@@ -19185,7 +19185,7 @@ mod hir_opt_tests {
           v45:Fixnum[4] = Const Value(4)
           Jump bb4(v45)
         bb8():
-          v28:BasicObject = Send v10, :foo # SendFallbackReason: Send: polymorphic call site
+          v28:BasicObject = Send v10, :foo # SendFallbackReason: Send: polymorphic fallback
           Jump bb4(v28)
         bb4(v15:BasicObject):
           v31:Fixnum[2] = Const Value(2)
@@ -19238,7 +19238,7 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(Integer@0x1040, itself@0x1010, cme:0x1018)
           Jump bb4(v25)
         bb8():
-          v28:BasicObject = Send v10, :itself # SendFallbackReason: Send: polymorphic call site
+          v28:BasicObject = Send v10, :itself # SendFallbackReason: Send: polymorphic fallback
           Jump bb4(v28)
         bb4(v15:BasicObject):
           CheckInterrupts
@@ -19344,7 +19344,7 @@ mod hir_opt_tests {
           v54:BasicObject = HashAref v30, v13
           Jump bb4(v54)
         bb8():
-          v33:BasicObject = Send v12, :[], v13 # SendFallbackReason: Send: polymorphic call site
+          v33:BasicObject = Send v12, :[], v13 # SendFallbackReason: Send: polymorphic fallback
           Jump bb4(v33)
         bb4(v20:BasicObject):
           CheckInterrupts
@@ -19400,7 +19400,7 @@ mod hir_opt_tests {
           v40:StringExact = CCallVariadic v25, :Integer#to_s@0x1040
           Jump bb4(v40)
         bb8():
-          v28:BasicObject = Send v10, :to_s # SendFallbackReason: Send: polymorphic call site
+          v28:BasicObject = Send v10, :to_s # SendFallbackReason: Send: polymorphic fallback
           Jump bb4(v28)
         bb4(v15:BasicObject):
           CheckInterrupts
@@ -19453,7 +19453,7 @@ mod hir_opt_tests {
           v40:BasicObject = CCallWithFrame v25, :Float#to_s@0x1040
           Jump bb4(v40)
         bb8():
-          v28:BasicObject = Send v10, :to_s # SendFallbackReason: Send: polymorphic call site
+          v28:BasicObject = Send v10, :to_s # SendFallbackReason: Send: polymorphic fallback
           Jump bb4(v28)
         bb4(v15:BasicObject):
           CheckInterrupts
@@ -19506,7 +19506,7 @@ mod hir_opt_tests {
           v38:StringExact = InvokeBuiltin leaf <inline_expr>, v25
           Jump bb4(v38)
         bb8():
-          v28:BasicObject = Send v10, :to_s # SendFallbackReason: Send: polymorphic call site
+          v28:BasicObject = Send v10, :to_s # SendFallbackReason: Send: polymorphic fallback
           Jump bb4(v28)
         bb4(v15:BasicObject):
           CheckInterrupts
@@ -19555,7 +19555,7 @@ mod hir_opt_tests {
           v31:Fixnum[3] = Const Value(3)
           Jump bb4(v31)
         bb6():
-          v22:BasicObject = Send v10, :foo # SendFallbackReason: Send: polymorphic call site
+          v22:BasicObject = Send v10, :foo # SendFallbackReason: Send: polymorphic fallback
           Jump bb4(v22)
         bb4(v15:BasicObject):
           CheckInterrupts
@@ -21093,7 +21093,7 @@ mod hir_opt_tests {
           v46:Float = FloatMul v30, v45
           Jump bb4(v46)
         bb8():
-          v33:BasicObject = Send v12, :*, v13 # SendFallbackReason: Send: polymorphic call site
+          v33:BasicObject = Send v12, :*, v13 # SendFallbackReason: Send: polymorphic fallback
           Jump bb4(v33)
         bb4(v20:BasicObject):
           CheckInterrupts
@@ -23345,7 +23345,7 @@ mod hir_opt_tests {
           PopInlineFrame
           Jump bb4(v97)
         bb10():
-          v34:BasicObject = Send v10, 0x1068, :foo # SendFallbackReason: Send: polymorphic call site
+          v34:BasicObject = Send v10, 0x1068, :foo # SendFallbackReason: Send: polymorphic fallback
           Jump bb4(v34)
         bb4(v15:BasicObject):
           PatchPoint NoEPEscape(test)
