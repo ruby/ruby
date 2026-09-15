@@ -2660,6 +2660,9 @@ pub enum ValidationError {
     DuplicateInstruction(BlockId, InsnId),
     /// The offending instruction, its operand, expected type string, actual type string
     MismatchedOperandType(InsnId, InsnId, String, String),
+    // There is an irreducible loop indicated by the backedge from the first block to the second
+    // block.
+    IrreducibleLoopEdge(BlockId, BlockId),
     MiscValidationError(InsnId, String),
 }
 
@@ -7644,6 +7647,31 @@ impl Function {
         Ok(())
     }
 
+    /// Check that we have a reducible control-flow graph. Some optimizations and assumptions
+    /// assume reducibility (TODO: which?).
+    ///
+    /// A CFG is irreducible if it contains a back-edge `B->H` to a loop header `H` where `B` is
+    /// not dominated by `H`.
+    fn validate_reducible(&self) -> Result<(), ValidationError> {
+        let rpo = self.reverse_post_order();
+        let mut rpo_index = vec![0; self.blocks.len()];
+        for (idx, &block) in rpo.iter().enumerate() {
+            rpo_index[block] = idx;
+        }
+        let dominators = Dominators::new(self);
+        for block in rpo {
+            for target in self.successors(block) {
+                if rpo_index[target] <= rpo_index[block] {
+                    // This is a back-edge. Check that the target dominates the source.
+                    if !dominators.is_dominated_by(block, target) {
+                        return Err(ValidationError::IrreducibleLoopEdge(block, target));
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
+
     // This performs a dataflow def-analysis over the entire CFG to detect any
     // possibly undefined instruction operands.
     fn validate_definite_assignment(&self) -> Result<(), ValidationError> {
@@ -8106,6 +8134,7 @@ impl Function {
     /// Run all validation passes we have.
     pub fn validate(&self) -> Result<(), ValidationError> {
         self.validate_block_terminators_and_jumps()?;
+        self.validate_reducible()?;
         self.validate_definite_assignment()?;
         self.validate_insn_uniqueness()?;
         self.validate_types()?;
@@ -11637,6 +11666,27 @@ mod validation_tests {
         function.push_insn(exit, Insn::Return { val });
         function.seal_entries();
         assert_matches_err(function.validate(), ValidationError::DuplicateInstruction(exit, val));
+    }
+
+    #[test]
+    fn irreducible_loop() {
+        // left and right jump to each other and both are reachable from the
+        // entry block: a loop with two entry points. Neither block dominates
+        // the other, so the CFG is irreducible.
+        let mut function = Function::new(std::ptr::null());
+        let entry = function.entry_block;
+        let left = function.new_block(0);
+        let right = function.new_block(0);
+        let val = function.push_insn(entry, Insn::Const { val: Const::CBool(true) });
+        function.push_insn(entry, Insn::CondBranch {
+            val,
+            if_true: BranchEdge { target: left, args: vec![] },
+            if_false: BranchEdge { target: right, args: vec![] },
+        });
+        function.push_insn(left, Insn::Jump(BranchEdge { target: right, args: vec![] }));
+        function.push_insn(right, Insn::Jump(BranchEdge { target: left, args: vec![] }));
+        function.seal_entries();
+        assert_matches_err(function.validate(), ValidationError::IrreducibleLoopEdge(left, right));
     }
 
     // The heap-fields pointer (`as_heap`, a CPtr) and the first embedded
