@@ -23353,4 +23353,75 @@ mod hir_opt_tests {
           Return v15
         ");
     }
+
+    #[test]
+    fn test_specialize_polymorphic_nil_block() {
+        set_call_threshold(3);
+        eval(r#"
+            class A
+              def foo(&blk) = 42
+            end
+            class B
+              def foo(&blk) = 43
+            end
+            def test(obj, &blk)
+              obj.foo(&blk)
+            end
+
+            test(A.new); test(B.new)
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:9:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :obj@0x1000
+          v4:BasicObject = LoadField v2, :blk@0x1001
+          Jump bb3(v1, v3, v4)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :obj@1
+          v9:BasicObject = LoadArg :blk@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          v20:CPtr = GetEP 0
+          v21:CUInt64 = LoadField v20, :VM_ENV_DATA_INDEX_FLAGS@0x1002
+          v22:CBool = IsBlockParamModified v21
+          CondBranch v22, bb4(), bb5()
+        bb4():
+          v24:BasicObject = LoadField v20, :blk@0x1003
+          Jump bb6(v24, v24)
+        bb5():
+          v26:CInt64 = LoadField v20, :VM_ENV_DATA_INDEX_SPECVAL@0x1004
+          v27:CInt64[0] = GuardBitEquals v26, CInt64(0) recompile
+          v28:NilClass = Const Value(nil)
+          Jump bb6(v28, v13)
+        bb6(v18:BasicObject, v19:BasicObject):
+          v32:CBool = HasType v12, ObjectSubclass[class_exact:B]
+          CondBranch v32, bb8(), bb9()
+        bb8():
+          v51:NilClass = GuardBitEquals v18, Value(nil) recompile
+          PatchPoint NoSingletonClass(B@0x1008)
+          PatchPoint MethodRedefined(B@0x1008, foo@0x1010, cme:0x1018)
+          v55:Fixnum[43] = Const Value(43)
+          Jump bb7(v55)
+        bb9():
+          v38:CBool = HasType v12, ObjectSubclass[class_exact:A]
+          CondBranch v38, bb10(), bb11()
+        bb10():
+          v56:NilClass = GuardBitEquals v18, Value(nil) recompile
+          PatchPoint NoSingletonClass(A@0x1040)
+          PatchPoint MethodRedefined(A@0x1040, foo@0x1010, cme:0x1048)
+          v60:Fixnum[42] = Const Value(42)
+          Jump bb7(v60)
+        bb11():
+          v44:BasicObject = Send v12, &block, :foo, v18 # SendFallbackReason: Send: polymorphic fallback
+          Jump bb7(v44)
+        bb7(v31:BasicObject):
+          CheckInterrupts
+          Return v31
+        ");
+    }
 }
