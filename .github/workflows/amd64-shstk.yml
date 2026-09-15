@@ -33,23 +33,15 @@ jobs:
     runs-on: ubuntu-24.04
 
     container:
-      image: fedora:45
-      options: --security-opt seccomp=unconfined
+      image: fedora:44
 
     env:
       CONFIGURE_TTY: never
-      GLIBC_TUNABLES: glibc.cpu.x86_shstk=on
+      GLIBC_TUNABLES: glibc.cpu.hwcaps=SHSTK
       GNUMAKEFLAGS: -sj4
       RUBY_DEBUG: ci
 
     steps:
-      - name: Install SHSTK-enabled glibc
-        run: |
-          dnf install -y dnf5-plugins
-          dnf copr enable -y submachine/glibc-x86_64-SHSTK-Testing
-          dnf upgrade -y --refresh 'glibc*'
-        working-directory:
-
       - name: Install dependencies
         run: >-
           dnf install -y
