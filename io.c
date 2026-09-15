@@ -116,6 +116,10 @@
 
 #endif
 
+#if defined __APPLE__
+# include <AvailabilityMacros.h>
+#endif
+
 #include "ruby/internal/stdbool.h"
 #include "ccan/list/list.h"
 #include "dln.h"
@@ -242,6 +246,39 @@ struct argf {
     struct rb_io_encoding encs;
     int8_t init_p, next_p, binmode;
 };
+
+
+#if defined(__APPLE__) && \
+    (!defined(MAC_OS_VERSION_27_0) || (MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_VERSION_27_0))
+
+# if __has_attribute(availability) && __has_warning("-Wunguarded-availability-new")
+
+RBIMPL_WARNING_PUSH()
+RBIMPL_WARNING_IGNORED(-Wunguarded-availability-new)
+
+#   ifdef HAVE_DUP3
+static inline int (*rb_dup3(void))(int, int, int) {return &dup3;}
+#     define dup3 rb_dup3()
+#   endif
+
+#   ifdef HAVE_PIPE2
+static inline int (*rb_pipe2(void))(int [2], int) {return &pipe2;}
+#     define pipe2 rb_pipe2()
+#   endif
+
+RBIMPL_WARNING_POP()
+
+# else /* __API_AVAILABLE macro does nothing on gcc */
+
+#   ifdef HAVE_DUP3
+__attribute__((weak)) int dup3(int, int, int);
+#   endif
+#   ifdef HAVE_PIPE2
+__attribute__((weak)) int pipe2(int [2], int);
+#   endif
+
+# endif
+#endif /* __APPLE__ && < MAC_OS_X_VERSION_27_0 */
 
 static rb_atomic_t max_file_descriptor = NOFILE;
 void
@@ -382,23 +419,28 @@ rb_cloexec_dup2(int oldfd, int newfd)
     }
     else {
 #if defined(HAVE_DUP3) && defined(O_CLOEXEC)
-        static int try_dup3 = 1;
-        if (2 < newfd && try_dup3) {
+# if defined(__APPLE__)
+#   define try_dup3 (dup3 != NULL)
+#   define abandon_dup3() true
+# else
+        static bool try_dup3 = true;
+#   define abandon_dup3() (errno != ENOSYS || !!(try_dup3 = false))
+# endif
+        if (newfd <= 2) {
+            /* pass stdin, stdout and stderr to children  */
+        }
+        else if (try_dup3) {
             ret = dup3(oldfd, newfd, O_CLOEXEC);
+            /* dup3 is available since:
+             * - Linux 2.6.27, glibc 2.9
+             * - macOS 27.0
+             */
             if (ret != -1)
                 return ret;
-            /* dup3 is available since Linux 2.6.27, glibc 2.9. */
-            if (errno == ENOSYS) {
-                try_dup3 = 0;
-                ret = dup2(oldfd, newfd);
-            }
+            if (abandon_dup3()) return ret;
         }
-        else {
-            ret = dup2(oldfd, newfd);
-        }
-#else
-        ret = dup2(oldfd, newfd);
 #endif
+        ret = dup2(oldfd, newfd);
         if (ret < 0) return ret;
     }
     rb_maygvl_fd_fix_cloexec(ret);
@@ -423,16 +465,25 @@ rb_fd_set_nonblock(int fd)
     return 0;
 }
 
-int
-rb_cloexec_pipe(int descriptors[2])
+static inline int
+cloexec_pipe(int descriptors[2], int flags, bool force_cloexec)
 {
+    int result = -1;
 #ifdef HAVE_PIPE2
-    int result = pipe2(descriptors, O_CLOEXEC | O_NONBLOCK);
-#else
-    int result = pipe(descriptors);
+# if defined(__APPLE__)
+#   define try_pipe2 (pipe2 != NULL)
+#   define abandon_pipe2() true
+# else
+    static bool try_pipe2 = true;
+#   define abandon_pipe2() (errno != ENOSYS || !!(try_pipe2 = false))
+# endif
+    if (try_pipe2) {
+        result = pipe2(descriptors, O_CLOEXEC | flags);
+        if (result == 0) return result;
+        if (abandon_pipe2()) return result;
+    }
 #endif
-
-    if (result < 0)
+    if (result < 0 && (result = pipe(descriptors)) < 0)
         return result;
 
 #ifdef __CYGWIN__
@@ -444,7 +495,9 @@ rb_cloexec_pipe(int descriptors[2])
     }
 #endif
 
-#ifndef HAVE_PIPE2
+    if (!force_cloexec) return result;
+
+    /* no pipe2 or fallenback to dup */
     rb_maygvl_fd_fix_cloexec(descriptors[0]);
     rb_maygvl_fd_fix_cloexec(descriptors[1]);
 
@@ -452,9 +505,14 @@ rb_cloexec_pipe(int descriptors[2])
     rb_fd_set_nonblock(descriptors[0]);
     rb_fd_set_nonblock(descriptors[1]);
 #endif
-#endif
 
     return result;
+}
+
+int
+rb_cloexec_pipe(int descriptors[2])
+{
+    return cloexec_pipe(descriptors, O_NONBLOCK, true);
 }
 
 int
@@ -8087,14 +8145,8 @@ ruby_popen_writer(char *const *argv, rb_pid_t *pid)
     int write_pair[2];
 # endif
 
-#ifdef HAVE_PIPE2
-    int result = pipe2(write_pair, O_CLOEXEC);
-#else
-    int result = pipe(write_pair);
-#endif
-
     *pid = -1;
-    if (result == 0) {
+    if (cloexec_pipe(write_pair, 0, false) == 0) {
 # ifdef HAVE_WORKING_FORK
         pw.argv = argv;
         int status;
