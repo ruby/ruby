@@ -710,6 +710,7 @@ end
   end
 
   def test_self_dirs_equals_with_unresolved_deps
+    pend_for_ruby_box_stdio_capture
     a = util_spec "a", 1
     b = util_spec "b", 1
     install_gem_user a
