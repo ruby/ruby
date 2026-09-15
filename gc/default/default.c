@@ -6873,6 +6873,7 @@ verify_registered_addr(VALUE *slot, VALUE initial_value, void *owner_objspace, v
      * source objspace merge; a global GC scans every registry while the zombie
      * exists, so this is a safe transient exemption. */
     if (rb_gc_vm_zombie_objspace_p(value_objspace)) return;
+    if (value_objspace->flags.during_postmortem) return;
     if (MARKED_IN_BITMAP(GET_HEAP_SHAREABLE_BITS(v), v)) return;
     if (MARKED_IN_BITMAP(GET_HEAP_SHREF_BITS(v), v)) return;
     /* When multiple Ractors register one address, ownership by any registrant is
