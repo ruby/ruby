@@ -291,6 +291,31 @@ RSpec.describe "bundle outdated" do
 
       expect(out).to end_with(expected_output)
     end
+
+    it "lists the outdated gems without groups after the grouped ones" do
+      install_gemfile <<-G
+        source "https://gem.repo2"
+
+        gem "bar_dependant", '7.0'
+        gem "myrack_middleware"
+        gem "terranova", '8'
+      G
+
+      update_repo2 do
+        build_gem "terranova", "9"
+      end
+
+      bundle "outdated --groups", raise_on_error: false
+
+      expected_output = <<~TABLE.strip
+        Gem        Current  Latest  Requested  Groups   Release Date
+        terranova  8        9       = 8        default
+        bar        2.0.0    3.0.0
+        myrack     0.9.1    1.0.0
+      TABLE
+
+      expect(out).to end_with(expected_output)
+    end
   end
 
   describe "with --groups option" do

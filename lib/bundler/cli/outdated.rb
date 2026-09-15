@@ -104,7 +104,8 @@ module Bundler
       end
 
       relevant_outdated_gems = if options[:groups]
-        outdated_gems.group_by {|g| g[:groups] }.sort.flat_map(&:last)
+        without_groups, with_groups = outdated_gems.partition {|g| g[:groups].empty? }
+        with_groups.group_by {|g| g[:groups] }.sort.flat_map(&:last) + without_groups
       elsif options_include_groups
         outdated_gems.select {|g| g[:groups].split(", ").include?(options[:group]) }
       else
