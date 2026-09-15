@@ -1435,6 +1435,31 @@ rb_zsuper_to_super(int argc, VALUE *argv, VALUE self)
 }
 
 static inline rb_method_entry_t* search_method0(VALUE klass, ID id, VALUE *defined_class_ptr, bool skip_refined);
+static void
+method_entry_modify_check(VALUE klass, rb_method_type_t type)
+{
+    ASSERT_vm_unlocking();
+    if (type != VM_METHOD_TYPE_REFINED) {
+        rb_class_modify_check(NIL_P(klass) ? rb_cObject : klass);
+    }
+}
+
+/* rb_method_entry_make() runs under the VM lock, where it must not warn:
+ * rb_warn() dispatches Warning.warn and writes to $stderr, either of which can
+ * check for interrupts.  It formats the message instead, and the caller emits
+ * it once the lock is released. */
+struct method_entry_warnings {
+    VALUE redefined; /* $VERBOSE only */
+    VALUE problem;
+};
+
+static void
+method_entry_warnings_emit(const struct method_entry_warnings *warnings)
+{
+    if (warnings->redefined) rb_warning("%"PRIsVALUE, warnings->redefined);
+    if (warnings->problem) rb_warn("%"PRIsVALUE, warnings->problem);
+}
+
 /*
  * klass->method_table[mid] = method_entry(defined_class, visi, def)
  *
@@ -1443,7 +1468,8 @@ static inline rb_method_entry_t* search_method0(VALUE klass, ID id, VALUE *defin
  */
 static rb_method_entry_t *
 rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibility_t visi,
-                     rb_method_type_t type, rb_method_definition_t *def, ID original_id, void *opts)
+                     rb_method_type_t type, rb_method_definition_t *def, ID original_id, void *opts,
+                     struct method_entry_warnings *warnings)
 {
     rb_method_entry_t *me;
     struct rb_id_table *mtbl;
@@ -1468,10 +1494,6 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
           case idRespond_to_missing:
             visi = METHOD_VISI_PRIVATE;
         }
-    }
-
-    if (type != VM_METHOD_TYPE_REFINED) {
-       rb_class_modify_check(klass);
     }
 
     if (RB_TYPE_P(klass, T_MODULE) && FL_TEST(klass, RMODULE_IS_REFINEMENT)) {
@@ -1524,7 +1546,7 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
                 break;
             }
             if (iseq) {
-                rb_warning(
+                warnings->redefined = rb_sprintf(
                     "method redefined; discarding old %"PRIsVALUE"\n%"PRIsVALUE":%d: warning: previous definition of %"PRIsVALUE" was here",
                     rb_id2str(mid),
                     rb_iseq_path(iseq),
@@ -1533,7 +1555,7 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
                 );
             }
             else {
-                rb_warning("method redefined; discarding old %"PRIsVALUE, rb_id2str(mid));
+                warnings->redefined = rb_sprintf("method redefined; discarding old %"PRIsVALUE, rb_id2str(mid));
             }
         }
     }
@@ -1561,13 +1583,13 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
           case idRespond_to_missing:
           case idMethodMissing:
           case idRespond_to:
-            rb_warn("redefining Object#%s may cause infinite loop", rb_id2name(mid));
+            warnings->problem = rb_sprintf("redefining Object#%s may cause infinite loop", rb_id2name(mid));
         }
     }
     /* check mid */
     if (mid == object_id || mid == id__id__ || mid == id__send__) {
         if (type != VM_METHOD_TYPE_CFUNC && search_method(klass, mid, 0)) {
-            rb_warn("redefining '%s' may cause serious problems", rb_id2name(mid));
+            warnings->problem = rb_sprintf("redefining '%s' may cause serious problems", rb_id2name(mid));
         }
     }
 
@@ -1733,9 +1755,15 @@ void
 rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *opts, rb_method_visibility_t visi)
 {
     const rb_method_entry_t *me;
+    struct method_entry_warnings warnings = {0};
+
+    method_entry_modify_check(klass, type);
+
     RB_VM_LOCKING() {
-        me = rb_method_entry_make(klass, mid, klass, visi, type, NULL, mid, opts);
+        me = rb_method_entry_make(klass, mid, klass, visi, type, NULL, mid, opts, &warnings);
     }
+
+    method_entry_warnings_emit(&warnings);
 
     if (type != VM_METHOD_TYPE_UNDEF && type != VM_METHOD_TYPE_REFINED) {
         method_added(klass, mid, me);
@@ -1761,14 +1789,20 @@ method_entry_set(VALUE klass, ID mid, const rb_method_entry_t *me,
                  rb_method_visibility_t visi, VALUE defined_class)
 {
     rb_method_entry_t *newme;
+    struct method_entry_warnings warnings = {0};
+
+    method_entry_modify_check(klass, me->def->type);
+
     RB_VM_LOCKING() {
         newme = rb_method_entry_make(klass, mid, defined_class, visi,
-                me->def->type, me->def, 0, NULL);
+                me->def->type, me->def, 0, NULL, &warnings);
         if (newme == me) {
             me->def->no_redef_warning = TRUE;
             METHOD_ENTRY_FLAGS_SET(newme, visi, FALSE);
         }
     }
+
+    method_entry_warnings_emit(&warnings);
 
     method_added(klass, mid, newme);
     return newme;
@@ -2910,7 +2944,7 @@ rb_alias(VALUE klass, ID alias_name, ID original_name)
         rb_raise(rb_eTypeError, "no class to make alias");
     }
 
-    rb_class_modify_check(klass);
+    rb_class_modify_check(target_klass);
 
   again:
     orig_me = search_method(klass, original_name, &defined_class);
@@ -2945,10 +2979,14 @@ rb_alias(VALUE klass, ID alias_name, ID original_name)
     if (visi == METHOD_VISI_UNDEF) visi = METHOD_ENTRY_VISI(orig_me);
 
     if (orig_me->defined_class == 0) {
+        struct method_entry_warnings warnings = {0};
         const rb_method_entry_t *alias_me =
+            // TODO: needs vm lock?
             rb_method_entry_make(target_klass, alias_name, target_klass, visi,
                                  VM_METHOD_TYPE_ALIAS, NULL, orig_me->called_id,
-                                 (void *)rb_method_entry_clone(orig_me));
+                                 (void *)rb_method_entry_clone(orig_me), &warnings);
+
+        method_entry_warnings_emit(&warnings);
         method_added(target_klass, alias_name, alias_me);
     }
     else {
