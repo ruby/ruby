@@ -859,6 +859,13 @@ struct_alloc(VALUE klass)
     }
 }
 
+// Whether `klass` allocates its instances with struct_alloc.
+bool
+rb_zjit_class_has_struct_allocator(VALUE klass)
+{
+    return rb_get_alloc_func(klass) == struct_alloc;
+}
+
 VALUE
 rb_struct_alloc(VALUE klass, VALUE values)
 {

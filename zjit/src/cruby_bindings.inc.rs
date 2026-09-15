@@ -2485,6 +2485,7 @@ unsafe extern "C" {
     ) -> *const rb_callable_method_entry_struct;
     pub fn rb_zjit_class_initialized_p(klass: VALUE) -> bool;
     pub fn rb_zjit_class_get_alloc_func(klass: VALUE) -> rb_alloc_func_t;
+    pub fn rb_zjit_class_has_struct_allocator(klass: VALUE) -> bool;
     pub fn rb_zjit_class_has_default_allocator(klass: VALUE) -> bool;
     pub fn rb_vm_untag_block_handler(block_handler: VALUE) -> VALUE;
     pub fn rb_vm_get_untagged_block_handler(reg_cfp: *mut rb_control_frame_t) -> VALUE;
