@@ -141,18 +141,18 @@ class TestRactor < Test::Unit::TestCase
   end
 
   def test_sending_object_with_broken_clone
-    # Copying a message does not call the user-visible #clone, so a broken #clone cannot
-    # break sending; the singleton class that defining #clone creates makes it uncopyable.
+    # Ractor copy used to call the user-visible #clone, and one returning self handed
+    # the receiver the sender's object. #clone is no longer called at all; the
+    # singleton class that defining it creates is dropped, as #dup would.
     assert_ractor(<<~'RUBY')
       o = Object.new
       def o.clone
-        self
+        raise "clone called"
       end
-      ractor = Ractor.new { Ractor.receive }
-      error = assert_raise Ractor::Error do
-        ractor.send(o)
-      end
-      assert_match "can not copy", error.message
+      copy = Ractor.new(o) { |x| x }.value
+      refute_same o, copy
+      assert_instance_of Object, copy
+      assert_empty copy.singleton_methods
     RUBY
   end
 
