@@ -13026,6 +13026,83 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_inline_struct_initialize_keyword_init_nil() {
+        eval(r#"
+            C = Struct.new(:a, :b, keyword_init: nil)
+            def test = C.new(1)
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:NilClass = Const Value(nil)
+          PatchPoint StableConstantNames(0x1000, C)
+          v13:ClassSubclass[C@0x1008] = Const Value(VALUE(0x1008))
+          v15:Fixnum[1] = Const Value(1)
+          PatchPoint MethodRedefined(C@0x1008, new@0x1009, cme:0x1010)
+          v45:ObjectSubclass[class_exact:C] = ObjectAllocClass C:VALUE(0x1008)
+          PatchPoint NoSingletonClass(C@0x1008)
+          PatchPoint MethodRedefined(C@0x1008, initialize@0x1038, cme:0x1040)
+          v50:CUInt64 = LoadField v45, :RBASIC_FLAGS@0x1068
+          v51:CUInt64 = GuardNoBitsSet v50, RUBY_FL_FREEZE=CUInt64(2048)
+          v52:NilClass = Const Value(nil)
+          StoreField v45, :a@0x1069, v15
+          StoreField v45, :b@0x106a, v52
+          CheckInterrupts
+          Return v45
+        ");
+    }
+
+    #[test]
+    fn test_inline_struct_initialize_keyword_init_nil_with_positional_hash() {
+        // A single Hash argument is the only case where `keyword_init: nil` differs from
+        // `keyword_init: false`: it initializes from the hash if the caller passed keywords. Callers
+        // that pass keywords never reach an inline hook, so this stores the hash positionally.
+        eval(r#"
+            C = Struct.new(:a, :b, keyword_init: nil)
+            def test = C.new({x: 1})
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:NilClass = Const Value(nil)
+          PatchPoint StableConstantNames(0x1000, C)
+          v13:ClassSubclass[C@0x1008] = Const Value(VALUE(0x1008))
+          v15:HashExact[VALUE(0x1010)] = Const Value(VALUE(0x1010))
+          v16:HashExact = HashDup v15
+          PatchPoint MethodRedefined(C@0x1008, new@0x1018, cme:0x1020)
+          v46:ObjectSubclass[class_exact:C] = ObjectAllocClass C:VALUE(0x1008)
+          PatchPoint NoSingletonClass(C@0x1008)
+          PatchPoint MethodRedefined(C@0x1008, initialize@0x1048, cme:0x1050)
+          v51:CUInt64 = LoadField v46, :RBASIC_FLAGS@0x1078
+          v52:CUInt64 = GuardNoBitsSet v51, RUBY_FL_FREEZE=CUInt64(2048)
+          v53:NilClass = Const Value(nil)
+          StoreField v46, :a@0x1079, v16
+          WriteBarrier v46, v16
+          StoreField v46, :b@0x107a, v53
+          CheckInterrupts
+          Return v46
+        ");
+    }
+
+    #[test]
     fn test_inline_struct_initialize_positional_hash() {
         eval(r#"
             C = Struct.new(:a, :b)
