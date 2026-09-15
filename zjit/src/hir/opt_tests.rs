@@ -4297,7 +4297,7 @@ mod hir_opt_tests {
           Jump bb8(v50, v67)
         bb12():
           v52:BasicObject = LoadField v34, :VM_ENV_DATA_INDEX_SPECVAL@0x105a
-          v53:BasicObject = CCall v52, :rb_obj_is_proc@0x1068
+          v53:BoolExact = CCall v52, :rb_obj_is_proc@0x1068
           v54:TrueClass = Const Value(true)
           v55:CBool = IsBitEqual v53, v54
           CondBranch v55, bb13(), bb14()
@@ -5013,7 +5013,7 @@ mod hir_opt_tests {
           Jump bb8(v53, v72)
         bb12():
           v55:BasicObject = LoadField v37, :VM_ENV_DATA_INDEX_SPECVAL@0x105a
-          v56:BasicObject = CCall v55, :rb_obj_is_proc@0x1068
+          v56:BoolExact = CCall v55, :rb_obj_is_proc@0x1068
           v57:TrueClass = Const Value(true)
           v58:CBool = IsBitEqual v56, v57
           CondBranch v58, bb13(), bb14()
@@ -6852,7 +6852,7 @@ mod hir_opt_tests {
           Jump bb6(v33, v10)
         bb10():
           v35:BasicObject = LoadField v17, :VM_ENV_DATA_INDEX_SPECVAL@0x1003
-          v36:BasicObject = CCall v35, :rb_obj_is_proc@0x1010
+          v36:BoolExact = CCall v35, :rb_obj_is_proc@0x1010
           v37:TrueClass = Const Value(true)
           v38:CBool = IsBitEqual v36, v37
           CondBranch v38, bb11(), bb12()
@@ -6915,7 +6915,7 @@ mod hir_opt_tests {
           Jump bb6(v34, v10)
         bb10():
           v36:BasicObject = LoadField v18, :VM_ENV_DATA_INDEX_SPECVAL@0x1003
-          v37:BasicObject = CCall v36, :rb_obj_is_proc@0x1010
+          v37:BoolExact = CCall v36, :rb_obj_is_proc@0x1010
           v38:TrueClass = Const Value(true)
           v39:CBool = IsBitEqual v37, v38
           CondBranch v39, bb11(), bb12()
@@ -6991,7 +6991,7 @@ mod hir_opt_tests {
           Jump bb8(v44, v13)
         bb12():
           v46:BasicObject = LoadField v28, :VM_ENV_DATA_INDEX_SPECVAL@0x1004
-          v47:BasicObject = CCall v46, :rb_obj_is_proc@0x1010
+          v47:BoolExact = CCall v46, :rb_obj_is_proc@0x1010
           v48:TrueClass = Const Value(true)
           v49:CBool = IsBitEqual v47, v48
           CondBranch v49, bb13(), bb14()
@@ -7070,7 +7070,7 @@ mod hir_opt_tests {
           Jump bb9(v48, v17)
         bb13():
           v50:BasicObject = LoadField v32, :VM_ENV_DATA_INDEX_SPECVAL@0x1003
-          v51:BasicObject = CCall v50, :rb_obj_is_proc@0x1010
+          v51:BoolExact = CCall v50, :rb_obj_is_proc@0x1010
           v52:TrueClass = Const Value(true)
           v53:CBool = IsBitEqual v51, v52
           CondBranch v53, bb14(), bb15()
@@ -7141,7 +7141,7 @@ mod hir_opt_tests {
           Jump bb9(v43)
         bb13():
           v45:BasicObject = LoadField v27, :VM_ENV_DATA_INDEX_SPECVAL@0x1002
-          v46:BasicObject = CCall v45, :rb_obj_is_proc@0x1010
+          v46:BoolExact = CCall v45, :rb_obj_is_proc@0x1010
           v47:TrueClass = Const Value(true)
           v48:CBool = IsBitEqual v46, v47
           CondBranch v48, bb14(), bb15()
@@ -7206,7 +7206,7 @@ mod hir_opt_tests {
           Jump bb6(v34, v10)
         bb10():
           v36:BasicObject = LoadField v18, :VM_ENV_DATA_INDEX_SPECVAL@0x1003
-          v37:BasicObject = CCall v36, :rb_obj_is_proc@0x1010
+          v37:BoolExact = CCall v36, :rb_obj_is_proc@0x1010
           v38:TrueClass = Const Value(true)
           v39:CBool = IsBitEqual v37, v38
           CondBranch v39, bb11(), bb12()
@@ -7274,7 +7274,7 @@ mod hir_opt_tests {
           Jump bb6(v34, v10)
         bb10():
           v36:BasicObject = LoadField v18, :VM_ENV_DATA_INDEX_SPECVAL@0x1003
-          v37:BasicObject = CCall v36, :rb_obj_is_proc@0x1010
+          v37:BoolExact = CCall v36, :rb_obj_is_proc@0x1010
           v38:TrueClass = Const Value(true)
           v39:CBool = IsBitEqual v37, v38
           CondBranch v39, bb11(), bb12()
@@ -11458,7 +11458,7 @@ mod hir_opt_tests {
           Jump bb6(v34, v10)
         bb10():
           v36:BasicObject = LoadField v18, :VM_ENV_DATA_INDEX_SPECVAL@0x1003
-          v37:BasicObject = CCall v36, :rb_obj_is_proc@0x1010
+          v37:BoolExact = CCall v36, :rb_obj_is_proc@0x1010
           v38:TrueClass = Const Value(true)
           v39:CBool = IsBitEqual v37, v38
           CondBranch v39, bb11(), bb12()
@@ -11519,7 +11519,7 @@ mod hir_opt_tests {
           Jump bb6(v34, v10)
         bb10():
           v36:BasicObject = LoadField v18, :VM_ENV_DATA_INDEX_SPECVAL@0x1003
-          v37:BasicObject = CCall v36, :rb_obj_is_proc@0x1010
+          v37:BoolExact = CCall v36, :rb_obj_is_proc@0x1010
           v38:TrueClass = Const Value(true)
           v39:CBool = IsBitEqual v37, v38
           CondBranch v39, bb11(), bb12()
@@ -11584,7 +11584,7 @@ mod hir_opt_tests {
           Jump bb6(v29)
         bb10():
           v31:BasicObject = LoadField v13, :VM_ENV_DATA_INDEX_SPECVAL@0x1002
-          v32:BasicObject = CCall v31, :rb_obj_is_proc@0x1010
+          v32:BoolExact = CCall v31, :rb_obj_is_proc@0x1010
           v33:TrueClass = Const Value(true)
           v34:CBool = IsBitEqual v32, v33
           CondBranch v34, bb11(), bb12()
@@ -11688,7 +11688,7 @@ mod hir_opt_tests {
           Jump bb9(v44, v101)
         bb13():
           v46:BasicObject = LoadField v28, :VM_ENV_DATA_INDEX_SPECVAL@0x105a
-          v47:BasicObject = CCall v46, :rb_obj_is_proc@0x1068
+          v47:BoolExact = CCall v46, :rb_obj_is_proc@0x1068
           v48:TrueClass = Const Value(true)
           v49:CBool = IsBitEqual v47, v48
           CondBranch v49, bb14(), bb15()
@@ -11723,7 +11723,7 @@ mod hir_opt_tests {
           Jump bb19(v77, v27)
         bb23():
           v79:BasicObject = LoadField v61, :VM_ENV_DATA_INDEX_SPECVAL@0x105a
-          v80:BasicObject = CCall v79, :rb_obj_is_proc@0x1068
+          v80:BoolExact = CCall v79, :rb_obj_is_proc@0x1068
           v81:TrueClass = Const Value(true)
           v82:CBool = IsBitEqual v80, v81
           CondBranch v82, bb24(), bb25()
@@ -11894,7 +11894,7 @@ mod hir_opt_tests {
           Jump bb6(v33, v10)
         bb10():
           v35:BasicObject = LoadField v17, :VM_ENV_DATA_INDEX_SPECVAL@0x1003
-          v36:BasicObject = CCall v35, :rb_obj_is_proc@0x1010
+          v36:BoolExact = CCall v35, :rb_obj_is_proc@0x1010
           v37:TrueClass = Const Value(true)
           v38:CBool = IsBitEqual v36, v37
           CondBranch v38, bb11(), bb12()
@@ -16182,7 +16182,7 @@ mod hir_opt_tests {
           Jump bb6(v34, v10)
         bb10():
           v36:BasicObject = LoadField v18, :VM_ENV_DATA_INDEX_SPECVAL@0x1003
-          v37:BasicObject = CCall v36, :rb_obj_is_proc@0x1010
+          v37:BoolExact = CCall v36, :rb_obj_is_proc@0x1010
           v38:TrueClass = Const Value(true)
           v39:CBool = IsBitEqual v37, v38
           CondBranch v39, bb11(), bb12()
@@ -23032,7 +23032,7 @@ mod hir_opt_tests {
           Jump bb8(v52, v68)
         bb12():
           v54:BasicObject = LoadField v36, :VM_ENV_DATA_INDEX_SPECVAL@0x1062
-          v55:BasicObject = CCall v54, :rb_obj_is_proc@0x1070
+          v55:BoolExact = CCall v54, :rb_obj_is_proc@0x1070
           v56:TrueClass = Const Value(true)
           v57:CBool = IsBitEqual v55, v56
           CondBranch v57, bb13(), bb14()
@@ -23117,7 +23117,7 @@ mod hir_opt_tests {
           Jump bb8(v54, v69)
         bb12():
           v56:BasicObject = LoadField v38, :VM_ENV_DATA_INDEX_SPECVAL@0x1062
-          v57:BasicObject = CCall v56, :rb_obj_is_proc@0x1070
+          v57:BoolExact = CCall v56, :rb_obj_is_proc@0x1070
           v58:TrueClass = Const Value(true)
           v59:CBool = IsBitEqual v57, v58
           CondBranch v59, bb13(), bb14()

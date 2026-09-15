@@ -9761,7 +9761,7 @@ fn add_iseq_to_hir(
                         args: vec![],
                         name: ID!(rb_obj_is_proc),
                         owner: Qnil,
-                        return_type: types::BasicObject,
+                        return_type: types::BoolExact,
                         elidable: true,
                     });
                     let true_val = fun.push_insn(proc_check_block, Insn::Const { val: Const::Value(Qtrue) });
