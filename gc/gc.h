@@ -98,6 +98,7 @@ MODULAR_GC_FN void *rb_gc_get_objspace(void);
 MODULAR_GC_FN void rb_gc_run_obj_finalizer(VALUE objid, long count, VALUE (*callback)(long i, void *data), void *data);
 MODULAR_GC_FN void rb_gc_set_pending_interrupt(void);
 MODULAR_GC_FN void rb_gc_trigger_finalize_deferred(void *objspace, rb_postponed_job_handle_t pjob);
+MODULAR_GC_FN void rb_gc_trigger_postponed_job_on_main(rb_postponed_job_handle_t pjob);
 MODULAR_GC_FN void rb_gc_unset_pending_interrupt(void);
 MODULAR_GC_FN void rb_gc_obj_free_vm_weak_references(VALUE obj);
 MODULAR_GC_FN bool rb_gc_obj_free(void *objspace, VALUE obj);
@@ -120,6 +121,17 @@ MODULAR_GC_FN bool rb_gc_obj_shareable_p(VALUE);
 MODULAR_GC_FN void rb_gc_rp(VALUE);
 MODULAR_GC_FN void rb_gc_handle_weak_references(VALUE obj);
 MODULAR_GC_FN bool rb_gc_obj_needs_cleanup_p(VALUE obj);
+
+/* True when a dead T_DATA of this type cannot have its dfree run during a parallel
+ * local sweep. Such a type is never embedded, which lets the sweep reclaim the slot
+ * immediately. */
+static inline bool
+rb_gc_data_type_deferred_free_p(const rb_data_type_t *type)
+{
+    void (*dfree)(void *) = type->function.dfree;
+    if (!dfree || dfree == RUBY_DEFAULT_FREE) return false;
+    return !(type->flags & RUBY_TYPED_THREAD_SAFE_FREE);
+}
 
 void rb_gc_initialize_vm_context(struct rb_gc_vm_context *context);
 #if USE_MODULAR_GC
