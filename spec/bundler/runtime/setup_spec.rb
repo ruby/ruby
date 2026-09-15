@@ -270,7 +270,7 @@ RSpec.describe "Bundler.setup" do
     ruby "require 'bundler'; Bundler.setup"
     expect(out).to include("Resolving dependencies...")
     lockfile = File.read(bundled_app_lock)
-    expect(lockfile).to include("CHECKSUMS\n  myrack (1.0.0)\n")
+    expect(lockfile).to match(/^CHECKSUMS\n(?:  .+\n)*  myrack \(1\.0\.0\)\n/)
 
     ruby "require 'bundler'; Bundler.setup"
     expect(out).not_to include("Resolving dependencies...")
