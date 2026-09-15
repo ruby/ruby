@@ -114,6 +114,9 @@ pub struct Options {
     /// Dump High-level IR in Iongraph JSON format after optimization to /tmp/zjit-iongraph-{$PID}
     pub dump_hir_iongraph: bool,
 
+    /// Add line number mappings to HIR.
+    pub dump_hir_map: bool,
+
     /// Dump low-level IR
     pub dump_lir: Option<HashSet<DumpLIR>>,
 
@@ -209,6 +212,7 @@ impl Default for Options {
             dump_hir_file: None,
             dump_hir_graphviz: None,
             dump_hir_iongraph: false,
+            dump_hir_map: false,
             dump_lir: None,
             dump_disasm: None,
             trace_side_exits: None,
@@ -565,6 +569,8 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
         ("dump-hir-init", "") => options.dump_hir_init = Some(DumpHIR::WithoutSnapshot),
         ("dump-hir-init", "all") => options.dump_hir_init = Some(DumpHIR::All),
         ("dump-hir-init", "debug") => options.dump_hir_init = Some(DumpHIR::Debug),
+
+        ("dump-hir-map", "") => options.dump_hir_map = true,
 
         ("dump-hir-graphviz", "") => options.dump_hir_graphviz = Some("/dev/stderr".into()),
         ("dump-hir-graphviz", _) => {
