@@ -2732,6 +2732,13 @@ courier_capture_hooked(struct courier_build *b, VALUE obj, uint32_t id, enum cou
     b->c->nodes[id].u.hooked.payload_id = payload_id;
 }
 
+/* A move carries the singleton class with its object; a copy drops it, like #dup. */
+static inline VALUE
+courier_klass(struct courier_build *b, VALUE obj)
+{
+    return b->copy ? rb_obj_class(obj) : RBASIC_CLASS(obj);
+}
+
 /* Capture obj into the courier, recurse into its children, return its node id.  The id
  * is registered before recursing (a cycle back resolves to the same node); node fields
  * are written after (recursion can realloc c->nodes); a move neutralizes the source
@@ -2799,7 +2806,7 @@ courier_capture(struct courier_build *b, VALUE obj)
             capa = len;
         }
         b->c->nodes[id].kind = COURIER_KIND_STRING;
-        b->c->nodes[id].u.str.klass = RBASIC_CLASS(obj);
+        b->c->nodes[id].u.str.klass = courier_klass(b, obj);
         b->c->nodes[id].u.str.ptr = ptr;
         b->c->nodes[id].u.str.len = len;
         b->c->nodes[id].u.str.capa = capa;
@@ -2814,7 +2821,7 @@ courier_capture(struct courier_build *b, VALUE obj)
             elems[i] = courier_capture(b, RARRAY_AREF(obj, i));
         }
         b->c->nodes[id].kind = COURIER_KIND_ARRAY;
-        b->c->nodes[id].u.ary.klass = RBASIC_CLASS(obj);
+        b->c->nodes[id].u.ary.klass = courier_klass(b, obj);
         b->c->nodes[id].u.ary.len = len;
         b->c->nodes[id].u.ary.elems = elems;
         /* Free the source's heap buffer now that the children were read, but only when it
@@ -2833,7 +2840,7 @@ courier_capture(struct courier_build *b, VALUE obj)
         struct courier_hash_ctx hc = { b, kv, 0 };
         rb_hash_stlike_foreach(obj, courier_capture_hash_i, (st_data_t)&hc);
         b->c->nodes[id].kind = COURIER_KIND_HASH;
-        b->c->nodes[id].u.hash.klass = RBASIC_CLASS(obj);
+        b->c->nodes[id].u.hash.klass = courier_klass(b, obj);
         b->c->nodes[id].u.hash.size = size;
         b->c->nodes[id].u.hash.kv = kv;
         b->c->nodes[id].u.hash.ifnone_id = ifnone_id;
@@ -2846,10 +2853,7 @@ courier_capture(struct courier_build *b, VALUE obj)
 
       case T_OBJECT:
         b->c->nodes[id].kind = COURIER_KIND_OBJECT;
-        /* Keep the real class: even a singleton class is shareable, so a cross-objspace
-         * reference is safe.  rebuild re-attaches it after allocating with a
-         * non-singleton class. */
-        b->c->nodes[id].u.obj.klass = RBASIC_CLASS(obj);
+        b->c->nodes[id].u.obj.klass = courier_klass(b, obj);
         break;
 
       case T_STRUCT: {
@@ -2861,7 +2865,7 @@ courier_capture(struct courier_build *b, VALUE obj)
         b->c->nodes[id].kind = COURIER_KIND_STRUCT;
         b->c->nodes[id].u.strct.len = len;
         b->c->nodes[id].u.strct.elems = elems;
-        b->c->nodes[id].u.strct.klass = RBASIC_CLASS(obj);
+        b->c->nodes[id].u.strct.klass = courier_klass(b, obj);
         /* Free the source's private heap buffer (an embedded struct has none) */
         if (!b->copy && RSTRUCT_EMBED_LEN(obj) == 0) {
             ruby_xfree((void *)RSTRUCT_CONST_PTR(obj));
@@ -2882,7 +2886,7 @@ courier_capture(struct courier_build *b, VALUE obj)
         b->c->nodes[id].u.match.str_id = sid;
         b->c->nodes[id].u.match.num_regs = nregs;
         b->c->nodes[id].u.match.regs = regs;
-        b->c->nodes[id].u.match.klass = RBASIC_CLASS(obj);
+        b->c->nodes[id].u.match.klass = courier_klass(b, obj);
         break;
       }
 
@@ -2910,7 +2914,7 @@ courier_capture(struct courier_build *b, VALUE obj)
         fptr->tied_io_for_writing = 0;  /* io.c tests it as a C boolean, so 0 rather than Qnil */
         b->c->nodes[id].kind = COURIER_KIND_IO;
         b->c->nodes[id].u.io.fptr = fptr;
-        b->c->nodes[id].u.io.klass = RBASIC_CLASS(obj);
+        b->c->nodes[id].u.io.klass = courier_klass(b, obj);
         b->c->nodes[id].u.io.pathv_id = pathv_id;
         b->c->nodes[id].u.io.ecopts_id = ecopts_id;
         b->c->nodes[id].u.io.wc_pre_ecopts_id = wc_pre_id;
@@ -2927,7 +2931,7 @@ courier_capture(struct courier_build *b, VALUE obj)
             VALUE src = RREGEXP_SRC(obj);
             VM_ASSERT(rb_ractor_shareable_p(src));
             b->c->nodes[id].kind = COURIER_KIND_REGEXP;
-            b->c->nodes[id].u.re.klass = RBASIC_CLASS(obj);
+            b->c->nodes[id].u.re.klass = courier_klass(b, obj);
             b->c->nodes[id].u.re.src = src;
             b->c->nodes[id].u.re.options = rb_reg_options(obj);
             break;
@@ -3112,10 +3116,7 @@ copy_courier_supported_p(VALUE obj, struct copy_support_ctx *ctx)
     st_insert(seen, (st_data_t)obj, 0);
     ctx->nodes++;
 
-    /* A singleton class is a send error today (the native copier refuses it and Marshal
-     * then raises); the courier would happily carry it, so keep it off this path. */
-    VALUE klass = RBASIC_CLASS(obj);
-    if (klass == 0 || FL_TEST_RAW(klass, FL_SINGLETON)) return false;
+    if (RBASIC_CLASS(obj) == 0) return false;
 
     switch (BUILTIN_TYPE(obj)) {
       case T_STRING:
