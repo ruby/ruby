@@ -29,7 +29,9 @@
 #include "internal/numeric.h"
 #include "internal/object.h"
 #include "internal/range.h"
+#include "internal/vm.h"
 #include "shape.h"
+#include "vm_core.h"
 #include "zjit.h"
 
 VALUE rb_cRange;
@@ -1102,8 +1104,9 @@ RBIMPL_ATTR_NORETURN()
 static void
 range_each_fixnum_endless(VALUE beg)
 {
+    rb_execution_context_t *ec = GET_EC();
     for (long i = FIX2LONG(beg); FIXABLE(i); i++) {
-        rb_yield(LONG2FIX(i));
+        rb_ec_yield(ec, LONG2FIX(i));
     }
 
     range_each_bignum_endless(LONG2NUM(RUBY_FIXNUM_MAX + 1));
@@ -1113,9 +1116,10 @@ range_each_fixnum_endless(VALUE beg)
 static VALUE
 range_each_fixnum_loop(VALUE beg, VALUE end, VALUE range)
 {
+    rb_execution_context_t *ec = GET_EC();
     long lim = FIX2LONG(end) + !EXCL(range);
     for (long i = FIX2LONG(beg); i < lim; i++) {
-        rb_yield(LONG2FIX(i));
+        rb_ec_yield(ec, LONG2FIX(i));
     }
     return range;
 }
@@ -1287,10 +1291,11 @@ range_reverse_each_fixnum_section(VALUE beg, VALUE end)
         end = LONG2FIX(FIXNUM_MAX);
     }
 
+    rb_execution_context_t *ec = GET_EC();
     long b = FIX2LONG(beg);
     long e = FIX2LONG(end);
     for (long i = e; i >= b; --i) {
-        rb_yield(LONG2FIX(i));
+        rb_ec_yield(ec, LONG2FIX(i));
     }
 }
 
