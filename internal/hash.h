@@ -121,8 +121,7 @@ VALUE rb_hash_keys(VALUE hash);
 VALUE rb_hash_has_key(VALUE hash, VALUE key);
 VALUE rb_hash_compare_by_id_p(VALUE hash);
 
-st_table *rb_hash_tbl_raw(VALUE hash, const char *file, int line);
-#define RHASH_TBL_RAW(h) rb_hash_tbl_raw(h, __FILE__, __LINE__)
+st_table *rb_hash_tbl_raw(VALUE hash);
 
 VALUE rb_hash_compare_by_id(VALUE hash);
 
