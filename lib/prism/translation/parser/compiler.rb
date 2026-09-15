@@ -140,7 +140,7 @@ module Prism
                 if key.opening.nil?
                   builder.match_hash_var([key.unescaped, srange(key.location)])
                 else
-                  builder.match_hash_var_from_str(token(key.opening_loc), [builder.string_internal([key.unescaped, srange(key.value_loc)])], token(key.closing_loc))
+                  builder.match_hash_var_from_str(token(key.opening_loc), [builder.string_internal([key.unescaped, srange(key.content_loc)])], token(key.closing_loc))
                 end
               else
                 builder.match_hash_var_from_str(token(key.opening_loc), visit_all(key.parts), token(key.closing_loc))
@@ -151,9 +151,9 @@ module Prism
               implicit_value = if value.is_a?(CallNode)
                 builder.call_method(nil, nil, [value.name, srange(value.message_loc)])
               elsif value.is_a?(ConstantReadNode)
-                builder.const([value.name, srange(key.value_loc)])
+                builder.const([value.name, srange(key.content_loc)])
               else
-                builder.ident([value.name, srange(key.value_loc)]).updated(:lvar)
+                builder.ident([value.name, srange(key.content_loc)]).updated(:lvar)
               end
 
               builder.pair_keyword([key.unescaped, srange(key)], implicit_value)
@@ -165,13 +165,13 @@ module Prism
           else
             parts =
               if key.is_a?(SymbolNode)
-                value = key.value
-                if value == ""
+                content = key.content
+                if content == ""
                   []
-                elsif value.include?("\n")
-                  string_nodes_from_line_continuations(key.unescaped, value, key.value_loc.start_offset, key.opening)
+                elsif content.include?("\n")
+                  string_nodes_from_line_continuations(key.unescaped, content, key.content_loc.start_offset, key.opening)
                 else
-                  [builder.string_internal([key.unescaped, srange(key.value_loc)])]
+                  [builder.string_internal([key.unescaped, srange(key.content_loc)])]
                 end
               else
                 visit_all(key.parts)
@@ -1775,12 +1775,12 @@ module Prism
             end
           else
             parts =
-              if node.value == ""
+              if node.content == ""
                 []
-              elsif node.value.include?("\n")
-                string_nodes_from_line_continuations(node.unescaped, node.value, node.value_loc.start_offset, node.opening)
+              elsif node.content.include?("\n")
+                string_nodes_from_line_continuations(node.unescaped, node.content, node.content_loc.start_offset, node.opening)
               else
-                [builder.string_internal([node.unescaped, srange(node.value_loc)])]
+                [builder.string_internal([node.unescaped, srange(node.content_loc)])]
               end
 
             builder.symbol_compose(
