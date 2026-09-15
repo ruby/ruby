@@ -54,7 +54,7 @@ class TestGemSecurityPolicy < Gem::TestCase
   end
 
   def test_check_data_ml_dsa_65
-    omit_unless_support_ml_dsa_key
+    omit_unless_support_ml_dsa_key_load
 
     data = digest "hello"
 
@@ -78,7 +78,7 @@ class TestGemSecurityPolicy < Gem::TestCase
   end
 
   def test_check_data_invalid_ml_dsa_65
-    omit_unless_support_ml_dsa_key
+    omit_unless_support_ml_dsa_key_load
 
     data = digest "hello"
 
@@ -249,7 +249,7 @@ class TestGemSecurityPolicy < Gem::TestCase
   end
 
   def test_check_trust_ml_dsa_65
-    omit_unless_support_ml_dsa_key
+    omit_unless_support_ml_dsa_key_load
 
     Gem::Security.trust_dir.trust_cert ML_DSA_65_PUBLIC_CERT
 
@@ -427,7 +427,7 @@ class TestGemSecurityPolicy < Gem::TestCase
   end
 
   def test_verify_ml_dsa_65_without_ml_dsa_support
-    omit_if_support_ml_dsa_key
+    omit_if_support_ml_dsa_key_load
 
     e = assert_raise Gem::Security::Exception do
       @high.verify [ML_DSA_65_PUBLIC_CERT], nil, *dummy_signatures

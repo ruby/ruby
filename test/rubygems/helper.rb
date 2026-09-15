@@ -1779,6 +1779,11 @@ Also, a list:
       Gem::PQCUtilities.support_ml_dsa_key?
   end
 
+  def omit_unless_support_ml_dsa_key_load
+    omit "OpenSSL cannot load ML-DSA keys" unless
+      Gem::PQCUtilities.support_ml_dsa_key_load?
+  end
+
   def omit_unless_support_ml_dsa_cert
     omit "Ruby OpenSSL cannot sign a certificate with an ML-DSA key" unless
       Gem::PQCUtilities.support_ml_dsa_cert?
@@ -1791,6 +1796,11 @@ Also, a list:
 
   def omit_if_support_ml_dsa_key
     omit "OpenSSL supports ML-DSA" if Gem::PQCUtilities.support_ml_dsa_key?
+  end
+
+  def omit_if_support_ml_dsa_key_load
+    omit "OpenSSL loads ML-DSA keys" if
+      Gem::PQCUtilities.support_ml_dsa_key_load?
   end
 end
 
