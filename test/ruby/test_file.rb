@@ -285,6 +285,24 @@ class TestFile < Test::Unit::TestCase
     }
   end
 
+  def test_realdirpath_encoding
+    fsenc = Encoding.find("filesystem")
+    name = "test_dir_\u{1f98a}".encode(fsenc)
+    origenc = Encoding.find("ISO-8859-1")
+
+    Dir.mktmpdir('rubytest-realdirpath') {|tmpdir|
+      Dir.mkdir(File.join(tmpdir, name))
+      path = ".".encode(origenc)
+      expected = File.realpath(path, File.join(tmpdir, name))
+      actual = File.realdirpath(path, File.join(tmpdir, name))
+
+      assert_equal(expected, actual)
+      assert_equal(origenc, actual.encoding)
+    }
+  rescue Encoding::UndefinedConversionError
+    omit "filesystem encoding cannot represent the test path"
+  end
+
   def test_realpath_special_symlink
     IO.pipe do |r, w|
       if File.pipe?(path = "/dev/fd/#{r.fileno}")
