@@ -1157,7 +1157,16 @@ init_fast_fallback_inetsock_internal(VALUE v)
 
         /* For cases where write(2) fails in child threads */
         if (!resolution_store.is_all_finished) {
-            if (!resolution_store.v6.finished && arg->getaddrinfo_entries[IPV6_ENTRY_POS]->has_syserr) {
+            int v6_has_syserr, v4_has_syserr;
+
+            rb_nativethread_lock_lock(&arg->getaddrinfo_shared->lock);
+            {
+                v6_has_syserr = arg->getaddrinfo_entries[IPV6_ENTRY_POS]->has_syserr;
+                v4_has_syserr = arg->getaddrinfo_entries[IPV4_ENTRY_POS]->has_syserr;
+            }
+            rb_nativethread_lock_unlock(&arg->getaddrinfo_shared->lock);
+
+            if (!resolution_store.v6.finished && v6_has_syserr) {
                 resolution_store.v6.finished = true;
 
                 if (arg->getaddrinfo_entries[IPV6_ENTRY_POS]->err) {
@@ -1177,7 +1186,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
                     user_specified_resolv_timeout_at = NULL;
                 }
             }
-            if (!resolution_store.v4.finished && arg->getaddrinfo_entries[IPV4_ENTRY_POS]->has_syserr) {
+            if (!resolution_store.v4.finished && v4_has_syserr) {
                 resolution_store.v4.finished = true;
 
                 if (arg->getaddrinfo_entries[IPV4_ENTRY_POS]->err) {
@@ -1258,15 +1267,15 @@ fast_fallback_inetsock_cleanup(VALUE v)
     if (arg->wait != -1) close(arg->wait);
 
     if (getaddrinfo_shared) {
-        if (getaddrinfo_shared->notify != -1) close(getaddrinfo_shared->notify);
-        getaddrinfo_shared->notify = -1;
-
         int shared_need_free = 0;
         struct addrinfo *ais[arg->family_size];
         for (int i = 0; i < arg->family_size; i++) ais[i] = NULL;
 
         rb_nativethread_lock_lock(&getaddrinfo_shared->lock);
         {
+            if (getaddrinfo_shared->notify != -1) close(getaddrinfo_shared->notify);
+            getaddrinfo_shared->notify = -1;
+
             for (int i = 0; i < arg->family_size; i++) {
                 struct fast_fallback_getaddrinfo_entry *getaddrinfo_entry = arg->getaddrinfo_entries[i];
 
