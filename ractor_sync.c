@@ -1116,7 +1116,7 @@ ractor_prepare_payload(rb_execution_context_t *ec, VALUE obj, enum ractor_basket
             /* Snapshot the object on the sender side without calling the user-visible
              * #clone.  The courier is off-heap, so an in-flight payload is never a GC
              * object and needs no pin: nothing of the sender's heap stays alive while
-             * the message waits (design_v2.md 4.5). */
+             * the message waits. */
             *ptype = basket_type_copy;
             if (rb_ractor_courier_build_copy(obj, pcourier) == NULL) {
                 rb_raise(rb_eRactorError, "can not copy %"PRIsVALUE" object.", rb_class_of(obj));
