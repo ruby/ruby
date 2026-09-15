@@ -37,7 +37,7 @@ module SyntaxSuggest
     #     code_lines: code_lines
     #   ).call()
     #
-    class BeforeAfterKeywordEnds
+    class BeforeAfterKeywordEnds # :nodoc:
       def initialize(code_lines:, block:)
         @scanner = ScanHistory.new(code_lines: code_lines, block: block)
         @original_indent = block.current_indent

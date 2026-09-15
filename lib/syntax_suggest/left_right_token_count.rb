@@ -21,7 +21,7 @@ module SyntaxSuggest
   #   end
   #   left_right.missing.first
   #   # => "}"
-  class LeftRightTokenCount
+  class LeftRightTokenCount # :nodoc:
     def initialize
       @kw_count = 0
       @end_count = 0
