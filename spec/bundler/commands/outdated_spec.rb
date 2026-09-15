@@ -339,6 +339,37 @@ RSpec.describe "bundle outdated" do
 
       expect(out).to end_with(expected_output)
     end
+
+    it "puts together the gems from the same groups declared in a different order" do
+      install_gemfile <<-G
+        source "https://gem.repo2"
+
+        gem "terranova", '8'
+        group :test, :development do
+          gem 'activesupport', '2.3.5'
+        end
+        group :development, :test do
+          gem "duradura", '7.0'
+        end
+      G
+
+      update_repo2 do
+        build_gem "activesupport", "3.0"
+        build_gem "terranova", "9"
+        build_gem "duradura", "8.0"
+      end
+
+      bundle "outdated --groups", raise_on_error: false
+
+      expected_output = <<~TABLE.strip
+        Gem            Current  Latest  Requested  Groups             Release Date
+        terranova      8        9       = 8        default
+        activesupport  2.3.5    3.0     = 2.3.5    development, test
+        duradura       7.0      8.0     = 7.0      development, test
+      TABLE
+
+      expect(out).to end_with(expected_output)
+    end
   end
 
   describe "with --local option" do

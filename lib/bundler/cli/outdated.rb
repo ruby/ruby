@@ -90,7 +90,9 @@ module Bundler
         dependency = current_dependencies[current_spec.name]
         groups = ""
         if dependency && !options[:parseable]
-          groups = dependency.groups.join(", ")
+          groups = dependency.groups
+          groups = groups.sort if options_include_groups
+          groups = groups.join(", ")
         end
 
         outdated_gems << {
