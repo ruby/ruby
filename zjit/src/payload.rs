@@ -1,7 +1,7 @@
 use std::ffi::c_void;
 use std::ptr::NonNull;
 use crate::codegen::IseqCallRef;
-use crate::options::get_option;
+use crate::options::{get_option, NumExits};
 use crate::stats::CompileError;
 use crate::{cruby::*, profile::IseqProfile, virtualmem::CodePtr};
 
@@ -26,7 +26,7 @@ pub struct IseqPayload {
     /// See [`crate::cruby::iseq_self_is_heap_object`].
     pub self_is_heap_object: bool,
     /// Number of recompile exits before invalidating the current version. See `exit_recompile`.
-    pub num_exits_until_invalidate: u32,
+    pub num_exits_until_invalidate: NumExits,
 }
 
 impl IseqPayload {

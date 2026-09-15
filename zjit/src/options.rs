@@ -23,7 +23,8 @@ const DEFAULT_NUM_PROFILES: NumProfiles = 5;
 pub type NumProfiles = u16;
 
 /// Default --zjit-num-exits-until-invalidate
-const DEFAULT_NUM_EXITS_UNTIL_INVALIDATE: u32 = 5;
+const DEFAULT_NUM_EXITS_UNTIL_INVALIDATE: NumExits = 5;
+pub type NumExits = u32;
 
 /// Default --zjit-call-threshold. This should be large enough to avoid compiling
 /// warmup code, but small enough to perform well on micro-benchmarks.
@@ -84,7 +85,7 @@ pub struct Options {
     pub num_profiles: NumProfiles,
 
     /// Number of recompile exits before invalidating the current version. See `exit_recompile`.
-    pub num_exits_until_invalidate: u32,
+    pub num_exits_until_invalidate: NumExits,
 
     /// Enable ZJIT statistics
     pub stats: bool,
@@ -449,7 +450,7 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
             Err(_) => return None,
         },
 
-        ("num-exits-until-invalidate", _) => match opt_val.parse::<u32>() {
+        ("num-exits-until-invalidate", _) => match opt_val.parse::<NumExits>() {
             // Normalize 0 to 1, which invaidates a version on the first exit.
             Ok(n) => options.num_exits_until_invalidate = n.max(1),
             Err(_) => return None,
@@ -692,7 +693,7 @@ pub fn set_call_threshold(call_threshold: CallThreshold) {
 
 /// Update --zjit-num-exits-until-invalidate for testing
 #[cfg(test)]
-pub fn set_num_exits_until_invalidate(num_exits_until_invalidate: u32) {
+pub fn set_num_exits_until_invalidate(num_exits_until_invalidate: NumExits) {
     rb_zjit_prepare_options();
     unsafe { OPTIONS.as_mut().unwrap().num_exits_until_invalidate = num_exits_until_invalidate; }
 }
