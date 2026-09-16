@@ -1113,7 +1113,10 @@ etc_nprocessors(VALUE obj)
         rb_sys_fail("sysconf(_SC_NPROCESSORS_ONLN)");
     }
 #else
-    /* GetSystemInfo() counts the current processor group only, and GetActiveProcessorCount() is declared only for Windows 7 or later */
+# ifndef ALL_PROCESSOR_GROUPS
+#   define ALL_PROCESSOR_GROUPS 0xffff
+# endif
+    /* GetSystemInfo() counts the current processor group only, and mingw-w64 declares GetActiveProcessorCount() only for _WIN32_WINNT >= 0x0601 */
     typedef DWORD (WINAPI *GetActiveProcessorCount_t)(WORD);
     GetActiveProcessorCount_t pGetActiveProcessorCount =
         (GetActiveProcessorCount_t)GetProcAddress(GetModuleHandleW(L"kernel32.dll"), "GetActiveProcessorCount");
