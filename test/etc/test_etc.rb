@@ -168,7 +168,7 @@ class TestEtc < Test::Unit::TestCase
     n = Etc.nprocessors
     assert_operator(1, :<=, n)
     if /mswin|mingw/ =~ RUBY_PLATFORM
-      assert_operator(ENV["NUMBER_OF_PROCESSORS"].to_i, :<=, n)
+      assert_operator(Integer(ENV.fetch("NUMBER_OF_PROCESSORS")), :<=, n)
     end
   end
 
