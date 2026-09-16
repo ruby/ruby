@@ -20,6 +20,10 @@ class TestUri < Gem::TestCase
     assert_equal "https://REDACTED@example.com", Gem::Uri.new("https://token@example.com").redacted.to_s
   end
 
+  def test_redacted_with_token_and_empty_password
+    assert_equal "https://REDACTED@example.com", Gem::Uri.new("https://token:@example.com").redacted.to_s
+  end
+
   def test_redacted_with_user_x_oauth_basic
     assert_equal "https://REDACTED@example.com", Gem::Uri.new("https://token:x-oauth-basic@example.com").redacted.to_s
   end
