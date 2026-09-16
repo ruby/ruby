@@ -4928,12 +4928,6 @@ impl Function {
                             let replacement = self.try_inline_send_direct(block, Insn::SendDirect(Box::new(SendDirectData { recv, cd, cme, iseq, args: send_args, kw_bits, jit_entry_idx, state: send_state, block: None })));
                             self.make_equal_to(insn_id, replacement);
                         } else if !has_block && def_type == VM_METHOD_TYPE_IVAR && args.is_empty() {
-                            // Check if we're accessing ivars of a Class or Module object as they require single-ractor mode.
-                            // We omit gen_prepare_non_leaf_call on gen_getivar, so it's unsafe to raise for multi-ractor mode.
-                            if klass.is_metaclass() && !self.assume_single_ractor_mode(block, state) {
-                                self.set_dynamic_send_reason(insn_id, SingleRactorModeRequired);
-                                self.push_insn_id(block, insn_id); continue;
-                            }
                             // Check singleton class assumption first, before emitting other patchpoints
                             if !self.assume_no_singleton_classes(block, klass, state) {
                                 self.set_dynamic_send_reason(insn_id, SingletonClassSeen);
@@ -4960,13 +4954,6 @@ impl Function {
                                 self.make_equal_to(insn_id, getivar);
                             }
                         } else if let (false, VM_METHOD_TYPE_ATTRSET, &[val]) = (has_block, def_type, args.as_slice()) {
-                            // Check if we're accessing ivars of a Class or Module object as they require single-ractor mode.
-                            // We omit gen_prepare_non_leaf_call on gen_getivar, so it's unsafe to raise for multi-ractor mode.
-                            if klass.is_metaclass() && !self.assume_single_ractor_mode(block, state) {
-                                self.set_dynamic_send_reason(insn_id, SingleRactorModeRequired);
-                                self.push_insn_id(block, insn_id); continue;
-                            }
-
                             self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
                             let id = unsafe { get_cme_def_body_attr_id(cme) };
                             if let Some(profiled_type) = profiled_type {
@@ -6002,8 +5989,7 @@ impl Function {
     }
 
     fn load_ivar_c_call(&mut self, block: BlockId, recv: InsnId, ivar_index: attr_index_t) -> InsnId {
-        // NOTE: it's fine to use rb_ivar_get_at_no_ractor_check because
-        // getinstancevariable does assume_single_ractor_mode()
+        // rb_ivar_get_at can raise Ractor::IsolationError on classes and modules.
         let ivar_index_insn = self.push_insn(block, Insn::Const { val: Const::CAttrIndex(ivar_index) });
         self.push_insn(block, Insn::CCall {
             cfunc: rb_ivar_get_at_no_ractor_check as *const u8,
@@ -6040,6 +6026,8 @@ impl Function {
         }
 
         let layout = recv_type.shape().layout();
+        // Callers must take the SingleRactorMode patch point before specializing a class read.
+        debug_assert!(layout != ShapeLayout::RClass || !unsafe { rb_jit_multi_ractor_p() });
 
         match layout {
             ShapeLayout::RClass | ShapeLayout::Extended => {
@@ -6058,8 +6046,6 @@ impl Function {
             },
             ShapeLayout::Other => {
                 // Non-T_OBJECT, non-class/module, non-typed-data: fall back to C call
-                // NOTE: it's fine to use rb_ivar_get_at_no_ractor_check because
-                // getinstancevariable does assume_single_ractor_mode()
                 self.load_ivar_c_call(block, self_val, ivar_index)
             }
         }
@@ -6074,6 +6060,14 @@ impl Function {
             ReceiverTypeResolution::NoProfile => Counter::getivar_fallback_no_profile,
             _ => Counter::getivar_fallback_not_monomorphic,
         }
+    }
+
+    /// Reading an ivar off a class or module is Ractor-dependent: only the owner Ractor may
+    /// write them, and a non-owner must check that the value it reads is shareable. Any other
+    /// receiver is Ractor-independent, because a shareable object's ivars can no longer change
+    /// and an unshareable one is only reachable from its own Ractor.
+    fn assume_ivar_read_ractor_independent(&mut self, block: BlockId, shape: ShapeId, state: InsnId) -> bool {
+        shape.layout() != ShapeLayout::RClass || self.assume_single_ractor_mode(block, state)
     }
 
     fn try_emit_optimized_getivar(&mut self, block: BlockId, self_val: InsnId, id: ID, profiled_type: ProfiledType, state: InsnId) -> Result<InsnId, Counter> {
@@ -6092,6 +6086,9 @@ impl Function {
             // GetIvar C call fallback for getinstancevariable, so we don't
             // need to wrap it again here.
             return Err(Counter::getivar_fallback_no_side_exits);
+        }
+        if !self.assume_ivar_read_ractor_independent(block, profiled_type.shape(), state) {
+            return Err(Counter::getivar_fallback_multi_ractor);
         }
         let self_val = self.guard_heap(block, self_val, state);
         let shape = self.load_shape(block, self_val);
@@ -8244,7 +8241,14 @@ impl Function {
             Counter::getivar_fallback_no_side_exits,
             true,
             |profiled_type| profiled_type.shape(),
-            |fun, block, profiled_type| Some(fun.load_ivar(block, self_param, profiled_type, id)),
+            |fun, block, profiled_type| Some(
+                if fun.assume_ivar_read_ractor_independent(block, profiled_type.shape(), exit_id) {
+                    fun.load_ivar(block, self_param, profiled_type, id)
+                } else {
+                    fun.count(block, Counter::getivar_fallback_multi_ractor);
+                    fun.push_insn(block, Insn::GetIvar { self_val: self_param, id, ic, state: exit_id })
+                }
+            ),
             |fun, block| Some(fun.push_insn(block, Insn::GetIvar { self_val: self_param, id, ic, state: exit_id })),
         )?;
         Some((block, result.unwrap()))
@@ -10549,13 +10553,6 @@ fn add_iseq_to_hir(
                     let id = ID(get_arg(pc, 0).as_u64());
                     let ic = get_arg(pc, 1).as_ptr();
                     // ic is in arg 1
-                    // Assume single-Ractor mode to omit gen_prepare_non_leaf_call on gen_getivar
-                    // TODO: We only really need this if self_val is a class/module
-                    if !fun.assume_single_ractor_mode(block, exit_id) {
-                        // gen_getivar assumes single Ractor; side-exit into the interpreter
-                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: Box::new(SideExitReason::UnhandledYARVInsn(opcode)), recompile: None });
-                        break;  // End the block
-                    }
                     let summary = fun.profile_summary(&profiles, self_param, exit_id);
                     let self_param = fun.guard_heap(block, self_param, exit_id);
                     // Filter out profiled types we don't care to optimize
@@ -10596,13 +10593,6 @@ fn add_iseq_to_hir(
                 YARVINSN_setinstancevariable => {
                     let id = ID(get_arg(pc, 0).as_u64());
                     let ic: *const iseq_inline_iv_cache_entry = get_arg(pc, 1).as_ptr();
-                    // Assume single-Ractor mode to omit gen_prepare_non_leaf_call on gen_setivar
-                    // TODO: We only really need this if self_val is a class/module
-                    if !fun.assume_single_ractor_mode(block, exit_id) {
-                        // gen_setivar assumes single Ractor; side-exit into the interpreter
-                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: Box::new(SideExitReason::UnhandledYARVInsn(opcode)), recompile: None });
-                        break;  // End the block
-                    }
                     let val = state.stack_pop()?;
                     let unrefined_self_param = self_param;
                     let summary = fun.profile_summary(&profiles, self_param, exit_id);

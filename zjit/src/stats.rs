@@ -340,6 +340,7 @@ make_counters! {
         getivar_fallback_not_t_object,
         getivar_fallback_complex,
         getivar_fallback_no_side_exits,
+        getivar_fallback_multi_ractor,
     }
 
     // Ivar fallback counters that are summed as dynamic_definedivar_count
