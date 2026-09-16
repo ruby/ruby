@@ -1943,7 +1943,7 @@ rb_ary_aref1(VALUE ary, VALUE arg)
       default:
         if (step == 0) rb_raise(rb_eArgError, "slice step cannot be zero");
         len = ary_subseq_len(ary, beg, len);
-        if (len == 0) return ary_new(klass, 0);
+        if (len <= 0) return ary_new(klass, 0);
         if (step == 1) return ary_make_partial(ary, klass, beg, len);
         return ary_make_partial_step(ary, klass, beg, len, step);
     }
