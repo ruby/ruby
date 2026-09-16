@@ -3772,6 +3772,7 @@ rb_gzwriter_initialize(int argc, VALUE *argv, VALUE obj)
 
     rb_scan_args(argc, argv, "12", &io, &level, &strategy);
     TypedData_Get_Struct(obj, struct gzfile, &gzfile_data_type, gz);
+    rb_check_funcall(io, id_binmode, 0, 0);
 
     /* this is undocumented feature of zlib */
     gz->level = ARG_LEVEL(level);
@@ -3780,7 +3781,6 @@ rb_gzwriter_initialize(int argc, VALUE *argv, VALUE obj)
     if (err != Z_OK) {
 	raise_zlib_error(err, gz->z.stream.msg);
     }
-    rb_check_funcall(io, id_binmode, 0, 0);
     gz->io = io;
     ZSTREAM_READY(&gz->z);
     rb_gzfile_ecopts(gz, opt);
@@ -4037,13 +4037,13 @@ rb_gzreader_initialize(int argc, VALUE *argv, VALUE obj)
 
     TypedData_Get_Struct(obj, struct gzfile, &gzfile_data_type, gz);
     rb_scan_args(argc, argv, "1:", &io, &opt);
+    rb_check_funcall(io, id_binmode, 0, 0);
 
     /* this is undocumented feature of zlib */
     err = inflateInit2(&gz->z.stream, -MAX_WBITS);
     if (err != Z_OK) {
 	raise_zlib_error(err, gz->z.stream.msg);
     }
-    rb_check_funcall(io, id_binmode, 0, 0);
     gz->io = io;
     ZSTREAM_READY(&gz->z);
     gzfile_read_header(gz, Qnil);
