@@ -1074,6 +1074,7 @@ etc_nprocessors_affin(void)
  * This method is implemented using:
  * - sched_getaffinity(): Linux
  * - sysconf(_SC_NPROCESSORS_ONLN): GNU/Linux, NetBSD, FreeBSD, OpenBSD, DragonFly BSD, OpenIndiana, Mac OS X, AIX
+ * - GetActiveProcessorCount(ALL_PROCESSOR_GROUPS): Windows
  *
  * *Example:*
  *
@@ -1112,9 +1113,21 @@ etc_nprocessors(VALUE obj)
         rb_sys_fail("sysconf(_SC_NPROCESSORS_ONLN)");
     }
 #else
-    SYSTEM_INFO si;
-    GetSystemInfo(&si);
-    ret = (long)si.dwNumberOfProcessors;
+    /* GetSystemInfo() counts the current processor group only, and GetActiveProcessorCount() is declared only for Windows 7 or later */
+    typedef DWORD (WINAPI *GetActiveProcessorCount_t)(WORD);
+    GetActiveProcessorCount_t pGetActiveProcessorCount =
+        (GetActiveProcessorCount_t)GetProcAddress(GetModuleHandleW(L"kernel32.dll"), "GetActiveProcessorCount");
+    DWORD n = 0;
+
+    if (pGetActiveProcessorCount) {
+        n = pGetActiveProcessorCount(ALL_PROCESSOR_GROUPS);
+    }
+    if (n == 0) {
+        SYSTEM_INFO si;
+        GetSystemInfo(&si);
+        n = si.dwNumberOfProcessors;
+    }
+    ret = (long)n;
 #endif
     return LONG2NUM(ret);
 }
