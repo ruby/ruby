@@ -4535,6 +4535,26 @@ fn test_string_append_encoding_mismatch() {
 }
 
 #[test]
+fn test_string_append_encoding_mutation_between_appends() {
+    eval(r#"
+        def test(string, first, second)
+          string << first
+          string << second
+        end
+    "#);
+    assert_contains_opcode("test", YARVINSN_opt_ltlt);
+    assert_snapshot!(assert_compiles(r#"
+        string = String.new(encoding: Encoding::BINARY)
+        begin
+          test(string, "é", "\xFF".b)
+          :no_error
+        rescue Encoding::CompatibilityError
+          [string.bytes, string.encoding.name, string.valid_encoding?]
+        end
+    "#), @"[[195, 169], \"UTF-8\", true]");
+}
+
+#[test]
 fn test_string_append_incompatible_encoding() {
     eval(r#"
         def test(s, x) = s << x
