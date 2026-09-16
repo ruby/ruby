@@ -3830,15 +3830,18 @@ c_callable! {
             let entry_insn_idx = params.opt_table_slice().get(entry_idx)
                 .unwrap_or_else(|| panic!("function_stub: opt_table out of bounds. {params:#?}, entry_idx={entry_idx}"))
                 .as_u32();
-            // gen_push_frame() doesn't set PC or ISEQ, so we need to set them before exit.
+            // gen_push_frame() doesn't set PC, ISEQ, or block_code, so we need to set them before exit.
             // function_stub_hit_body() may allocate and call gc_validate_pc(), so we always set PC and ISEQ.
             // Clear jit_return so the interpreter reads cfp->pc and cfp->iseq directly.
+            // cfp->sp is set to the base pointer, so it needs to be fixed before exit.
             let pc = unsafe { rb_iseq_pc_at_idx(iseq, entry_insn_idx) };
             unsafe { rb_set_cfp_pc(cfp, pc) };
             unsafe { (*cfp)._iseq = iseq };
             unsafe { (*cfp).jit_return = std::ptr::null_mut() };
+            unsafe { (*cfp).block_code = std::ptr::null() };
             let ec_cfp = unsafe { ec.byte_add(RUBY_OFFSET_EC_CFP as usize) as *mut CfpPtr };
             unsafe { *ec_cfp = cfp };
+            unsafe { rb_set_cfp_sp(cfp, sp) };
         }
 
         with_vm_lock(src_loc!(), || {
