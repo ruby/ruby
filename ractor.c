@@ -2446,11 +2446,13 @@ struct rb_ractor_courier {
     uint32_t refs_count;
     uint32_t refs_capa;
     uint32_t root;
+    /* src VALUE -> (node id + 1), only while building.  Marked so that a key cannot
+     * die (a dump hook's payload has no other owner) or move (compaction). */
+    st_table *seen;
 };
 
 struct courier_build {
     struct rb_ractor_courier *c;
-    st_table *seen;   /* src VALUE -> (node id + 1) */
     /* Copy mode: read the sources instead of taking them apart.  No husk, no buffer
      * hand-over, no freeing of the source's internals. */
     bool copy;
@@ -2745,7 +2747,7 @@ courier_capture(struct courier_build *b, VALUE obj)
      * Testing shareable first would embed the husk instead of resolving the second
      * occurrence to the node the first one built. */
     st_data_t existing;
-    if (st_lookup(b->seen, (st_data_t)obj, &existing)) {
+    if (st_lookup(b->c->seen, (st_data_t)obj, &existing)) {
         return (uint32_t)existing - 1;
     }
 
@@ -2754,7 +2756,7 @@ courier_capture(struct courier_build *b, VALUE obj)
     }
 
     uint32_t id = courier_alloc_node(b->c);
-    st_insert(b->seen, (st_data_t)obj, (st_data_t)(uintptr_t)(id + 1));
+    st_insert(b->c->seen, (st_data_t)obj, (st_data_t)(uintptr_t)(id + 1));
 
     /* Reject an unmovable object before anything is mutated. */
     if (BUILTIN_TYPE(obj) == T_FILE && RFILE(obj)->fptr == NULL) {
@@ -3162,7 +3164,8 @@ rb_ractor_courier_build_copy(VALUE obj, struct rb_ractor_courier **slot)
 
     struct rb_ractor_courier *c = ZALLOC(struct rb_ractor_courier);
     courier_reserve(c, scan.nodes, scan.refs);
-    struct courier_build b = { c, st_init_numtable(), true };
+    c->seen = st_init_numtable();
+    struct courier_build b = { c, true };
 
     /* Publish it into the caller's basket before capturing anything: from here the
      * shareable payloads it collects are rooted by the basket's holder. */
@@ -3175,7 +3178,8 @@ rb_ractor_courier_build_copy(VALUE obj, struct rb_ractor_courier **slot)
         c->root = courier_capture(&b, obj);
     }
     EC_POP_TAG();
-    st_free_table(b.seen);
+    st_free_table(c->seen);
+    c->seen = NULL;
     /* Published above, so the basket owns it even half-built: it frees it. */
     if (state != TAG_NONE) EC_JUMP_TAG(ec, state);
     return c;
@@ -3203,7 +3207,8 @@ rb_ractor_courier_build_move(VALUE obj, struct rb_ractor_courier **slot)
 
     struct rb_ractor_courier *c = ZALLOC(struct rb_ractor_courier);
     courier_reserve(c, scan.nodes, scan.refs);
-    struct courier_build b = { c, st_init_numtable(), false };
+    c->seen = st_init_numtable();
+    struct courier_build b = { c, false };
 
     /* Publish it into the caller's basket before the sources become T_MOVED: from here
      * the basket's holder roots what the courier carries, and partial nodes are
@@ -3217,7 +3222,8 @@ rb_ractor_courier_build_move(VALUE obj, struct rb_ractor_courier **slot)
         c->root = courier_capture(&b, obj);
     }
     EC_POP_TAG();
-    st_free_table(b.seen);
+    st_free_table(c->seen);
+    c->seen = NULL;
     if (state != TAG_NONE) {
         /* courier_capture raised (an unmovable type, an interrupt).  The courier belongs
          * to the basket from the publish above, so leave it there and re-raise: the
@@ -3483,11 +3489,13 @@ rb_ractor_courier_free(struct rb_ractor_courier *c)
 
 /* Mark the only VALUEs a courier holds: shareable objects and immediates (REF) and the
  * classes of its objects.  All of them are shareable, so marking cannot race, and the
- * global GC keeps them reachable through the courier. */
+ * global GC keeps them reachable through the courier.  While it is being built it also
+ * holds the sender's sources in seen; the basket is on the sender's own list then. */
 void
 rb_ractor_courier_mark(struct rb_ractor_courier *c)
 {
     if (!c) return;
+    if (c->seen) rb_mark_set(c->seen);
     for (uint32_t i = 0; i < c->refs_count; i++) {
         rb_gc_mark(c->refs[i]);
     }

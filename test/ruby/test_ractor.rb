@@ -372,6 +372,41 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+  def test_sending_hook_payloads_under_gc_stress
+    # A dump hook's payload is garbage once captured. A later payload allocated into
+    # its slot must not be taken for the one already seen.
+    assert_ractor(<<~'RUBY', timeout: 60)
+      GC.stress = true
+      times = Array.new(200) { |i| Time.at(i) }
+      assert_equal (0...200).to_a, Ractor.new(times) { |x| x.map(&:to_i) }.value
+    RUBY
+  end
+
+  def test_sending_object_compacted_during_build
+    # A source captured before a dump hook compacts the heap is still found when the
+    # message references it again after.
+    assert_ractor(<<~'RUBY')
+      class CompactingTime < Time
+        def _dump(limit)
+          begin
+            GC.compact
+          rescue NotImplementedError
+          end
+          super
+        end
+      end
+      junk = Array.new(50_000) { +"j" }
+      str = +"x" * 1000
+      msg = [str, CompactingTime.now, str]
+      junk.clear
+      GC.start(full_mark: false, immediate_sweep: true)
+      port = Ractor::Port.new
+      port.send(msg)
+      copy = port.receive
+      assert_same copy[0], copy[2]
+    RUBY
+  end
+
   def test_move_nested_hash_during_gc_with_yjit
     assert_ractor(<<~'RUBY', timeout: 20, args: [{ "RUBY_YJIT_ENABLE" => "1" }])
       GC.stress = true
