@@ -896,32 +896,16 @@ module Bundler
       "#{prefix}#{uri}#{suffix}"
     end
 
-    # This is a hot method, so avoid respond_to? checks on every invocation
-    if :read.respond_to?(:name)
-      def self.key_to_s(key)
-        case key
-        when String
-          key
-        when Symbol
-          key.name
-        when Gem::URI::HTTP
-          key.to_s
-        else
-          raise ArgumentError, "Invalid key: #{key.inspect}"
-        end
-      end
-    else
-      def self.key_to_s(key)
-        case key
-        when String
-          key
-        when Symbol
-          key.to_s
-        when Gem::URI::HTTP
-          key.to_s
-        else
-          raise ArgumentError, "Invalid key: #{key.inspect}"
-        end
+    def self.key_to_s(key)
+      case key
+      when String
+        key
+      when Symbol
+        key.name
+      when Gem::URI::HTTP
+        key.to_s
+      else
+        raise ArgumentError, "Invalid key: #{key.inspect}"
       end
     end
   end

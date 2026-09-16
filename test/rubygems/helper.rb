@@ -1828,7 +1828,7 @@ class Object
       end
     end
 
-    metaclass.send(:ruby2_keywords, name) if metaclass.respond_to?(:ruby2_keywords, true)
+    metaclass.send(:ruby2_keywords, name)
 
     yield self
   ensure
