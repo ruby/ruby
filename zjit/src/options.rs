@@ -450,9 +450,8 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
             Err(_) => return None,
         },
 
-        ("num-exits-until-invalidate", _) => match opt_val.parse::<NumExits>() {
-            // Normalize 0 to 1, which invaidates a version on the first exit.
-            Ok(n) => options.num_exits_until_invalidate = n.max(1),
+        ("num-exits-until-invalidate", _) => match opt_val.parse() {
+            Ok(n) => options.num_exits_until_invalidate = n,
             Err(_) => return None,
         },
 

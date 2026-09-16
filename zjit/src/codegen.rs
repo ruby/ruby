@@ -3800,11 +3800,10 @@ c_callable! {
             }
 
             // Wait for the configured number of recompile exits before invalidation.
-            if payload.num_exits_until_invalidate > 1 {
-                payload.num_exits_until_invalidate -= 1;
+            payload.num_exits_until_invalidate = payload.num_exits_until_invalidate.saturating_sub(1);
+            if payload.num_exits_until_invalidate > 0 {
                 return;
             }
-            payload.num_exits_until_invalidate = 0;
         }
 
         with_vm_lock(src_loc!(), || {
