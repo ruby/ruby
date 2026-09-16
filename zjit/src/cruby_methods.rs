@@ -389,7 +389,8 @@ fn inline_array_aref(fun: &mut hir::Function, block: hir::BlockId, recv: hir::In
             let zero = fun.push_insn(block, hir::Insn::Const { val: hir::Const::CInt64(0) });
             use crate::hir::SideExitReason;
             let index = fun.push_insn(block, hir::Insn::GuardGreaterEq { left: index, right: zero, reason: Box::new(SideExitReason::GuardGreaterEq), state });
-            let result = fun.push_insn(block, hir::Insn::ArrayAref { array: recv, index });
+            let ptr = fun.push_insn(block, hir::Insn::ArrayPtr { array: recv });
+            let result = fun.push_insn(block, hir::Insn::ArrayAref { ptr, index });
             return Some(result);
         }
     }
@@ -1088,7 +1089,8 @@ fn inline_ary_at(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnI
     let &[recv, index] = args else { return None; };
     let recv = fun.push_insn(block, hir::Insn::RefineType { val: recv, new_type: types::Array });
     let index = fun.push_insn(block, hir::Insn::UnboxFixnum { val: index });
-    let result = fun.push_insn(block, hir::Insn::ArrayAref { array: recv, index });
+    let ptr = fun.push_insn(block, hir::Insn::ArrayPtr { array: recv });
+    let result = fun.push_insn(block, hir::Insn::ArrayAref { ptr, index });
     Some(result)
 }
 

@@ -669,7 +669,8 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::NewRangeFixnum { low, high, flag, state } => gen_new_range_fixnum(jit, asm, function, opnd!(low), opnd!(high), *flag, &function.frame_state(*state)),
         Insn::ArrayDup { val, state } => gen_array_dup(jit, asm, function, *val, opnd!(val), &function.frame_state(*state)),
         Insn::AdjustBounds { index, length } => gen_adjust_bounds(asm, opnd!(index), opnd!(length)),
-        Insn::ArrayAref { array, index, .. } => gen_array_aref(asm, opnd!(array), opnd!(index)),
+        Insn::ArrayPtr { array } => gen_array_ptr(asm, opnd!(array)),
+        Insn::ArrayAref { ptr, index, .. } => gen_array_aref(asm, opnd!(ptr), opnd!(index)),
         Insn::ArrayAset { array, index, val } => {
             no_output!(gen_array_aset(asm, opnd!(array), opnd!(index), opnd!(val)))
         }
@@ -2330,12 +2331,11 @@ fn gen_adjust_bounds(asm: &mut Assembler, index: Opnd, length: Opnd) -> lir::Opn
 /// Compile array access (`array[index]`)
 fn gen_array_aref(
     asm: &mut Assembler,
-    array: Opnd,
+    array_ptr: Opnd,
     index: Opnd,
 ) -> lir::Opnd {
     let unboxed_idx = asm.load_mem(index);
-    let array = asm.load_mem(array);
-    let array_ptr = gen_array_ptr(asm, array);
+    let array_ptr = asm.load_mem(array_ptr);
     let elem_offset = asm.lshift(unboxed_idx, Opnd::UImm(SIZEOF_VALUE.trailing_zeros() as u64));
     let elem_ptr = asm.add(array_ptr, elem_offset);
     asm.load(Opnd::mem(VALUE_BITS, elem_ptr, 0))
