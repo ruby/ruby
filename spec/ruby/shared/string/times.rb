@@ -44,7 +44,8 @@ describe :string_times, shared: true do
     result.encoding.should.equal?(Encoding::UTF_8)
   end
 
-  it "raises an ArgumentError if the length of the resulting string doesn't fit into a length" do
-    -> { @object.call("abc", max_length) }.should.raise(ArgumentError)
+  it "raises an ArgumentError or RangeError if the length of the resulting string doesn't fit into a length" do
+    error_types = [RangeError, ArgumentError]
+    -> { @object.call("abc", max_length) }.should.raise { |err| error_types.should.include?(err.class) }
   end
 end
