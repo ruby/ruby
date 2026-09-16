@@ -2412,7 +2412,7 @@ rb_inflate_set_dictionary(VALUE obj, VALUE dic)
 #define OS_CODE  OS_UNIX
 #endif
 
-static ID id_write, id_readpartial, id_flush, id_seek, id_close, id_path, id_input;
+static ID id_write, id_readpartial, id_flush, id_seek, id_close, id_path, id_input, id_binmode;
 static VALUE cGzError, cNoFooter, cCRCError, cLengthError;
 
 
@@ -3751,7 +3751,8 @@ rb_gzwriter_s_open(int argc, VALUE *argv, VALUE klass)
  * Creates a GzipWriter object associated with +io+. +level+ and +strategy+
  * should be the same as the arguments of Zlib::Deflate.new.  The GzipWriter
  * object writes gzipped data to +io+.  +io+ must respond to the
- * +write+ method that behaves the same as IO#write.
+ * +write+ method that behaves the same as IO#write.  If +io+ responds to
+ * +binmode+, it is set to binary mode.
  *
  * The +options+ hash may be used to set the encoding of the data.
  * +:external_encoding+, +:internal_encoding+ and +:encoding+ may be set as in
@@ -3779,6 +3780,7 @@ rb_gzwriter_initialize(int argc, VALUE *argv, VALUE obj)
     if (err != Z_OK) {
 	raise_zlib_error(err, gz->z.stream.msg);
     }
+    rb_check_funcall(io, id_binmode, 0, 0);
     gz->io = io;
     ZSTREAM_READY(&gz->z);
     rb_gzfile_ecopts(gz, opt);
@@ -4016,7 +4018,8 @@ rb_gzreader_s_zcat(int argc, VALUE *argv, VALUE klass)
  *
  * Creates a GzipReader object associated with +io+. The GzipReader object reads
  * gzipped data from +io+, and parses/decompresses it.  The +io+ must
- * have a +read+ method that behaves same as the IO#read.
+ * have a +read+ method that behaves same as the IO#read.  If +io+ responds
+ * to +binmode+, it is set to binary mode.
  *
  * The +options+ hash may be used to set the encoding of the data.
  * +:external_encoding+, +:internal_encoding+ and +:encoding+ may be set as in
@@ -4040,6 +4043,7 @@ rb_gzreader_initialize(int argc, VALUE *argv, VALUE obj)
     if (err != Z_OK) {
 	raise_zlib_error(err, gz->z.stream.msg);
     }
+    rb_check_funcall(io, id_binmode, 0, 0);
     gz->io = io;
     ZSTREAM_READY(&gz->z);
     gzfile_read_header(gz, Qnil);
@@ -4906,6 +4910,7 @@ Init_zlib(void)
     id_close = rb_intern("close");
     id_path = rb_intern("path");
     id_input = rb_intern("@input");
+    id_binmode = rb_intern("binmode");
 
     cGzipFile = rb_define_class_under(mZlib, "GzipFile", rb_cObject);
     cGzError = rb_define_class_under(cGzipFile, "Error", cZError);
