@@ -494,7 +494,7 @@ class TestGemSecurity < Gem::TestCase
     cert.public_key = public_key
 
     signed = Gem::Security.sign cert, key, signing_cert, 60
-    signed_public_key = Gem::Security.get_public_key(signed)
+    signed_public_key = signed.public_key
 
     assert_equal    public_key.public_to_pem, signed_public_key.public_to_pem
     assert_equal    signee.to_s,           signed.subject.to_s

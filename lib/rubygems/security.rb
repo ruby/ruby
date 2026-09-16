@@ -440,13 +440,7 @@ module Gem::Security
   # Gets the right public key from a PKey instance
 
   def self.get_public_key(key)
-    # Ruby 3.0 (Ruby/OpenSSL 2.2) or later
-    return OpenSSL::PKey.read(key.public_to_der) if key.respond_to?(:public_to_der)
-    return key.public_key unless key.is_a?(OpenSSL::PKey::EC)
-
-    ec_key = OpenSSL::PKey::EC.new(key.group.curve_name)
-    ec_key.public_key = key.public_key
-    ec_key
+    OpenSSL::PKey.read(key.public_to_der)
   end
 
   ##
