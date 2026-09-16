@@ -6632,11 +6632,7 @@ root_scope_check_i(const char *category, VALUE obj, void *ptr)
     if (strcmp(category, "machine_context") == 0 ||
         strcmp(category, "vm_registered_objects") == 0 ||
         strcmp(category, "end_proc") == 0 ||
-        strcmp(category, "trap_list") == 0 ||
-        /* Every Ractor's root scan walks the one VM-wide registered-globals list (a slot
-         * can hold another objspace's value); rb_gc_mark_maybe filters to its own
-         * objspace, so a foreign entry here is by design, not a leak. */
-        strcmp(category, "registered_globals") == 0) {
+        strcmp(category, "trap_list") == 0) {
         return;
     }
 
@@ -6854,6 +6850,42 @@ gc_verify_heap_pages(rb_objspace_t *objspace)
 }
 
 static void
+verify_registered_addr(VALUE *slot, VALUE initial_value, void *owner_objspace, void *d)
+{
+    struct verify_internal_consistency_struct *data = d;
+    VALUE v = *slot;
+
+    /* Conservative registration permits uninitialized data and pre-registration
+     * values; only a store made after registration is a violation. */
+    if (v == initial_value) return;
+    if (SPECIAL_CONST_P(v)) return;
+    if (!verify_pointer_in_any_heap_p((void *)v)) return;
+
+    bool live = false;
+    asan_unpoisoning_object(v) {
+        live = BUILTIN_TYPE(v) != T_NONE && BUILTIN_TYPE(v) != T_ZOMBIE;
+    }
+    if (!live) return;
+
+    rb_objspace_t *value_objspace = GET_HEAP_OBJSPACE(v);
+    if (value_objspace == (rb_objspace_t *)owner_objspace) return;
+    /* Join and orphan handling move a registration to the inheritor before the
+     * source objspace merge; a global GC scans every registry while the zombie
+     * exists, so this is a safe transient exemption. */
+    if (rb_gc_vm_zombie_objspace_p(value_objspace)) return;
+    if (value_objspace->flags.during_postmortem) return;
+    if (MARKED_IN_BITMAP(GET_HEAP_SHAREABLE_BITS(v), v)) return;
+    if (MARKED_IN_BITMAP(GET_HEAP_SHREF_BITS(v), v)) return;
+    /* When multiple Ractors register one address, ownership by any registrant is
+     * enough to root the value. */
+    if (rb_gc_registered_addr_owned_by_registrant_p(slot, value_objspace)) return;
+
+    fprintf(stderr, "registered address %p changed since registration to an unshareable object owned by another Ractor: %s\n",
+            (void *)slot, rb_obj_info(v));
+    data->err_count++;
+}
+
+static void
 gc_verify_internal_consistency_(rb_objspace_t *objspace, bool world_stopped)
 {
     struct verify_internal_consistency_struct data = {0};
@@ -6879,6 +6911,10 @@ gc_verify_internal_consistency_(rb_objspace_t *objspace, bool world_stopped)
     if (!rb_gc_single_objspace_p() && objspace == rb_gc_get_objspace() &&
         !rb_gc_impl_during_global_gc_p(objspace)) {
         rb_objspace_reachable_objects_from_root(root_scope_check_i, &data);
+    }
+
+    if (data.world_stopped && !global_objspace->during_absorb) {
+        rb_gc_each_registered_addr(verify_registered_addr, &data);
     }
 
     if (data.err_count != 0) {

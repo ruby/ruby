@@ -50,8 +50,15 @@ jobs:
             configure: 'CC=clang-18 cflags=-fsanitize=address cppflags=-DUSE_MN_THREADS=0'
             timeout: 60
           - test_task: check
+            os: ubuntu-24.04
+            configure: 'CC=clang-18 cflags=-fsanitize=address cppflags=-DUSE_MN_THREADS=0 CPPFLAGS=-DRGENGC_CHECK_MODE=2'
+            timeout: 120
+            continue-on-error: true
+            timeout_scale: 5
+          - test_task: check
             os: ubuntu-26.04-arm
       fail-fast: false
+    continue-on-error: ${{ matrix.continue-on-error || false }}
 
     env: &make-env
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
@@ -155,6 +162,9 @@ jobs:
           echo "SYNTAX_SUGGEST_TIMEOUT=60" >> $GITHUB_ENV
         if: ${{ endsWith(matrix.os, 'ppc64le') || endsWith(matrix.os, 's390x') }}
 
+      - name: Set timeout scale for per-GC consistency verification
+        if: ${{ matrix.timeout_scale }}
+        run: echo "RUBY_TEST_TIMEOUT_SCALE=${{ matrix.timeout_scale }}" >> "$GITHUB_ENV"
       - name: make ${{ matrix.test_task }}
         run: |
           test -n "${LAUNCHABLE_STDOUT}" && exec 1> >(tee "${LAUNCHABLE_STDOUT}")
