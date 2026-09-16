@@ -17902,6 +17902,62 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_elide_kernel_dup_rational() {
+        eval(r#"
+            def test(o) = o.dup
+            test(1.to_r)
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint NoSingletonClass(Rational@0x1008)
+          PatchPoint MethodRedefined(Rational@0x1008, dup@0x1010, cme:0x1018)
+          v23:NumericSubclass[class_exact:Rational] = GuardType v10, NumericSubclass[class_exact:Rational] recompile
+          CheckInterrupts
+          Return v23
+        ");
+    }
+
+    #[test]
+    fn test_elide_kernel_dup_complex() {
+        eval(r#"
+            def test(o) = o.dup
+            test(Complex.rect(3, 4))
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint NoSingletonClass(Complex@0x1008)
+          PatchPoint MethodRedefined(Complex@0x1008, dup@0x1010, cme:0x1018)
+          v23:NumericSubclass[class_exact:Complex] = GuardType v10, NumericSubclass[class_exact:Complex] recompile
+          CheckInterrupts
+          Return v23
+        ");
+    }
+
+    #[test]
     fn test_no_elide_kernel_dup_heap_object() {
         eval(r#"
             def test(o) = o.dup
