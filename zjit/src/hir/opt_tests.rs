@@ -11908,6 +11908,37 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_specialize_struct_new_generates_object_alloc_class() {
+        eval(r#"
+            C = Struct.new
+            def test = C.new
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:NilClass = Const Value(nil)
+          PatchPoint StableConstantNames(0x1000, C)
+          v13:ClassSubclass[C@0x1008] = Const Value(VALUE(0x1008))
+          PatchPoint MethodRedefined(C@0x1008, new@0x1009, cme:0x1010)
+          v42:ObjectSubclass[class_exact:C] = ObjectAllocClass C:VALUE(0x1008)
+          PatchPoint NoSingletonClass(C@0x1008)
+          PatchPoint MethodRedefined(C@0x1008, initialize@0x1038, cme:0x1040)
+          v47:BasicObject = CCallVariadic v42, :Struct#initialize@0x1068
+          CheckInterrupts
+          Return v42
+        ");
+    }
+
+    #[test]
     fn test_inline_struct_aref_embedded() {
         eval(r#"
             C = Struct.new(:foo)

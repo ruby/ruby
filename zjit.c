@@ -347,6 +347,9 @@ rb_zjit_class_initialized_p(VALUE klass)
 
 rb_alloc_func_t rb_zjit_class_get_alloc_func(VALUE klass);
 
+// Defined in struct.c, where struct_alloc is visible.
+bool rb_zjit_class_has_struct_allocator(VALUE klass);
+
 VALUE rb_class_allocate_instance(VALUE klass);
 
 bool
