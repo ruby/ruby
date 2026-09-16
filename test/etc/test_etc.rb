@@ -167,6 +167,9 @@ class TestEtc < Test::Unit::TestCase
   def test_nprocessors
     n = Etc.nprocessors
     assert_operator(1, :<=, n)
+    if /mswin|mingw/ =~ RUBY_PLATFORM
+      assert_operator(ENV["NUMBER_OF_PROCESSORS"].to_i, :<=, n)
+    end
   end
 
   def test_sysconfdir
