@@ -3963,6 +3963,9 @@ append_values_at_single(VALUE result, VALUE ary, long olen, VALUE idx)
     /* check if idx is Range */
     else if (rb_range_beg_len(idx, &beg, &len, olen, 1)) {
         if (len > 0) {
+            // rb_range_beg_len may run arbitrary code that modifies ary, so we
+            // need to re-calculate olen
+            const long olen = RARRAY_LEN(ary);
             const VALUE *const src = RARRAY_CONST_PTR(ary);
             const long end = beg + len;
             const long prevlen = RARRAY_LEN(result);

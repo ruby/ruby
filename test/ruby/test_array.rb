@@ -2977,6 +2977,18 @@ class TestArray < Test::Unit::TestCase
     assert_equal([nil], a.values_at(2**31-1))
   end
 
+  def test_values_at_ary_modify
+    a = (0..100_000).to_a
+    obj = Object.new
+    obj.define_singleton_method(:begin) do
+      a.clear
+      0
+    end
+    obj.define_singleton_method(:end) { 10_000 }
+    obj.define_singleton_method(:exclude_end?) { false }
+    assert_equal(10_001, a.values_at(obj).length)
+  end
+
   def test_select
     assert_equal([0, 2], [0, 1, 2, 3].select {|x| x % 2 == 0 })
   end
