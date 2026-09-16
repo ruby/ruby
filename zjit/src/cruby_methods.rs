@@ -590,7 +590,9 @@ fn inline_string_append(fun: &mut hir::Function, block: hir::BlockId, recv: hir:
     if fun.likely_a(recv, types::StringExact, state) && fun.likely_a(other, types::String, state) {
         let recv = fun.coerce_to(block, recv, types::StringExact, state);
         let other = fun.coerce_to(block, other, types::String, state);
-        let _ = fun.push_insn(block, hir::Insn::StringAppend { recv, other, state });
+        let recv_flags = fun.load_rbasic_flags(block, recv);
+        let other_flags = fun.load_rbasic_flags(block, other);
+        let _ = fun.push_insn(block, hir::Insn::StringAppend { recv, other, recv_flags, other_flags, state });
         return Some(recv);
     }
     if fun.likely_a(recv, types::StringExact, state) && fun.likely_a(other, types::Fixnum, state) {
