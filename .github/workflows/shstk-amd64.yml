@@ -1,4 +1,4 @@
-name: AMD64 SHSTK
+name: SHSTK AMD64
 
 on:
   push:
