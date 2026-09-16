@@ -133,11 +133,11 @@ mod snapshot_tests {
           Jump bb3(v4)
         bb3(v6:BasicObject):
           v8:Any = Snapshot FrameState { pc: 0x1000, stack: [], locals: [] }
-          PatchPoint NoTracePoint
+          PatchPoint NoTracePoint, v8
           v10:Fixnum[1] = Const Value(1)
           v12:Fixnum[2] = Const Value(2)
           v13:Any = Snapshot FrameState { pc: 0x1008, stack: [v10, v12], locals: [] }
-          PatchPoint MethodRedefined(Integer@0x1010, +@0x1018, cme:0x1020)
+          PatchPoint MethodRedefined(Integer@0x1010, +@0x1018, cme:0x1020), v13
           v35:Fixnum[6] = Const Value(6)
           v21:Any = Snapshot FrameState { pc: 0x1048, stack: [v35], locals: [] }
           CheckInterrupts
@@ -168,12 +168,12 @@ mod snapshot_tests {
         bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
           v14:Any = Snapshot FrameState { pc: 0x1008, stack: [], locals: [a=v12, b=v13] }
           v15:Any = Snapshot FrameState { pc: 0x1010, stack: [], locals: [a=v12, b=v13] }
-          PatchPoint NoTracePoint
+          PatchPoint NoTracePoint, v15
           v17:Any = Snapshot FrameState { pc: 0x1018, stack: [v12], locals: [a=v12, b=v13] }
           v18:Any = Snapshot FrameState { pc: 0x1020, stack: [v12, v13], locals: [a=v12, b=v13] }
           v19:ArrayExact = NewArray v12, v13
           v20:Any = Snapshot FrameState { pc: 0x1028, stack: [v19], locals: [a=v12, b=v13] }
-          PatchPoint NoTracePoint
+          PatchPoint NoTracePoint, v20
           CheckInterrupts
           Return v19
         ");
@@ -201,12 +201,12 @@ mod snapshot_tests {
           Jump bb3(v4)
         bb3(v6:BasicObject):
           v8:Any = Snapshot FrameState { pc: 0x1000, stack: [], locals: [] }
-          PatchPoint NoTracePoint
+          PatchPoint NoTracePoint, v8
           v11:Fixnum[3] = Const Value(3)
           v13:Fixnum[1] = Const Value(1)
           v15:Fixnum[2] = Const Value(2)
           v16:Any = Snapshot FrameState { pc: 0x1008, stack: [v6, v11, v13, v15], locals: [] }
-          PatchPoint MethodRedefined(Object@0x1010, foo@0x1018, cme:0x1020)
+          PatchPoint MethodRedefined(Object@0x1010, foo@0x1018, cme:0x1020), v16
           v24:ObjectSubclass[class_exact*:Object@VALUE(0x1010)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1010)] recompile
           v25:Any = Snapshot FrameState { pc: 0x1008, stack: [v24, v13, v15, v11], locals: [] }
           v44:Fixnum[0] = Const Value(0)
@@ -243,11 +243,11 @@ mod snapshot_tests {
           Jump bb3(v4)
         bb3(v6:BasicObject):
           v8:Any = Snapshot FrameState { pc: 0x1000, stack: [], locals: [] }
-          PatchPoint NoTracePoint
+          PatchPoint NoTracePoint, v8
           v11:Fixnum[1] = Const Value(1)
           v13:Fixnum[2] = Const Value(2)
           v14:Any = Snapshot FrameState { pc: 0x1008, stack: [v6, v11, v13], locals: [] }
-          PatchPoint MethodRedefined(Object@0x1010, foo@0x1018, cme:0x1020)
+          PatchPoint MethodRedefined(Object@0x1010, foo@0x1018, cme:0x1020), v14
           v22:ObjectSubclass[class_exact*:Object@VALUE(0x1010)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1010)] recompile
           v39:Fixnum[0] = Const Value(0)
           v24:Any = Snapshot FrameState { pc: 0x1008, stack: [], locals: [] }
@@ -283,7 +283,7 @@ mod snapshot_tests {
           Jump bb3(v4)
         bb3(v6:BasicObject):
           v8:Any = Snapshot FrameState { pc: 0x1000, stack: [], locals: [] }
-          PatchPoint NoTracePoint
+          PatchPoint NoTracePoint, v8
           v11:Fixnum[5] = Const Value(5)
           v13:Fixnum[6] = Const Value(6)
           v15:Fixnum[4] = Const Value(4)
@@ -293,7 +293,7 @@ mod snapshot_tests {
           v23:Fixnum[7] = Const Value(7)
           v25:Fixnum[8] = Const Value(8)
           v26:Any = Snapshot FrameState { pc: 0x1008, stack: [v6, v11, v13, v15, v17, v19, v21, v23, v25], locals: [] }
-          PatchPoint MethodRedefined(Object@0x1010, foo@0x1018, cme:0x1020)
+          PatchPoint MethodRedefined(Object@0x1010, foo@0x1018, cme:0x1020), v26
           v34:ObjectSubclass[class_exact*:Object@VALUE(0x1010)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1010)] recompile
           v35:Any = Snapshot FrameState { pc: 0x1008, stack: [v34, v11, v13, v19, v21, v17, v15, v23, v25], locals: [] }
           v64:Fixnum[0] = Const Value(0)
