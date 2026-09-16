@@ -1662,7 +1662,9 @@ vm_throw_continue(const rb_execution_context_t *ec, VALUE err)
 {
     /* continue throw */
 
-    if (FIXNUM_P(err)) {
+    /* Keep Thread#kill fatal while allowing its exception to be exposed through $!. */
+    if (FIXNUM_P(err) ||
+        (ec->thread_ptr->to_kill && err == rb_ec_vm_ptr(ec)->special_exceptions[ruby_error_thread_killed])) {
         ec->tag->state = RUBY_TAG_FATAL;
     }
     else if (SYMBOL_P(err)) {
