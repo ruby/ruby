@@ -2319,6 +2319,7 @@ Init_eval(void)
 
     rb_vm_register_special_exception(ruby_error_reenter, rb_eFatal, "exception reentered");
     rb_vm_register_special_exception(ruby_error_stackfatal, rb_eFatal, "machine stack overflow in critical region");
+    rb_vm_register_special_exception(ruby_error_thread_killed, rb_eFatal, "thread killed");
 
     id_signo = rb_intern_const("signo");
     id_status = rb_intern_const("status");
