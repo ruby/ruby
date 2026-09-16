@@ -1723,6 +1723,14 @@ impl Insn {
         }
     }
 
+    pub fn outgoing_edges(&self) -> impl Iterator<Item = &BranchEdge> + '_ {
+        match self {
+            Insn::CondBranch { if_true, if_false, .. } => [Some(if_true), Some(if_false)],
+            Insn::Jump(edge) => [Some(edge), None],
+            _ => [None, None],
+        }.into_iter().flatten()
+    }
+
     /// Call `f` on each operand (InsnId) of this instruction.
     pub fn for_each_operand(&self, mut f: impl FnMut(InsnId)) {
         macro_rules! visit_one { ($p:expr) => { f($p) }; }
@@ -6355,10 +6363,18 @@ impl Function {
     /// This produces a minimal SSA representation amenable to further optimizations.
     /// The implementation is inspired from algorithm 2 in <https://c9x.me/compile/bib/braun13cc.pdf>.
     fn remove_trivial_block_params(&mut self) {
+
+        #[derive(Copy, Clone)]
+        enum Edge {
+            True,
+            False,
+            Unconditional
+        }
+
         #[derive(Copy, Clone)]
         struct EdgeKey {
             block_id: BlockId,
-            edge: Option<bool>
+            edge: Edge
         }
 
         // Each block param is lifted to an abstract domain of ParamValues.
@@ -6402,17 +6418,19 @@ impl Function {
             })
         }
 
+        let blocks = self.reverse_post_order();
+
         // Populate each block with a vec of instructions that call the block
         let mut predecessors: Vec<Vec<EdgeKey>> = vec![vec![]; self.num_blocks()];
-        for block_id in self.reverse_post_order() {
-            let insn_idx = self.blocks[block_id].insns().len() - 1;
-            match self.resolve(self.blocks[block_id].insns[insn_idx]).insn(self) {
+        for block_id in blocks.iter().cloned() {
+            let insn_id = self.blocks[block_id].insns().last().unwrap();
+            match self.resolve(*insn_id).insn(self) {
                     Insn::CondBranch { if_true, if_false, .. } => {
-                        predecessors[if_true.target].push(EdgeKey { block_id, edge: Some(true) });
-                        predecessors[if_false.target].push(EdgeKey { block_id, edge: Some(false) });
+                        predecessors[if_true.target].push(EdgeKey { block_id, edge: Edge::True });
+                        predecessors[if_false.target].push(EdgeKey { block_id, edge: Edge::False });
                     }
                     Insn::Jump(edge) => {
-                        predecessors[edge.target].push(EdgeKey { block_id, edge: None });
+                        predecessors[edge.target].push(EdgeKey { block_id, edge: Edge::Unconditional });
                     }
                     _ => ()
             }
@@ -6422,8 +6440,8 @@ impl Function {
         // TODO: Do the thing that Max did in infer_types because this is mostly linear and we don't need to be that fast in the loop case
         // Instantiate the worklist with blocks that have at least one predecessor and at least one block param.
         // No predecessors or no block params => nothing to optimize
-        let mut worklist: VecDeque<BlockId> = predecessors.iter().enumerate().filter_map(|(i, preds)| {
-            (preds.len() > 0 && self.blocks[i].params().len() > 0).then_some(BlockId(i as u32))
+        let mut worklist: VecDeque<BlockId> = blocks.iter().filter_map(|i| {
+            (predecessors[i.0 as usize].len() > 0 && self.blocks[i.0 as usize].params().len() > 0).then_some(*i)
         }).collect();
 
         while worklist.len() > 0 {
@@ -6435,9 +6453,9 @@ impl Function {
                 let insn_idx = self.blocks[pred.block_id].insns.len() - 1;
                 let insn = self.resolve(self.blocks[pred.block_id].insns[insn_idx]).insn(self);
                 let params = match (insn, pred.edge) {
-                    (Insn::Jump(edge), None) => &edge.args,
-                    (Insn::CondBranch { if_true, .. }, Some(true)) => &if_true.args,
-                    (Insn::CondBranch { if_false, .. }, Some(false)) => &if_false.args,
+                    (Insn::Jump(edge), Edge::Unconditional) => &edge.args,
+                    (Insn::CondBranch { if_true, .. }, Edge::True) => &if_true.args,
+                    (Insn::CondBranch { if_false, .. }, Edge::False) => &if_false.args,
                     (_, _) => unreachable!("Predecessors should only be Jump or CondBranch with a corresponding EdgeKey bool.")
                 };
 
@@ -6493,9 +6511,9 @@ impl Function {
                 let insn_idx = self.blocks[pred.block_id].insns.len() - 1;
                 let insn = self.resolve(self.blocks[pred.block_id].insns[insn_idx]).insn_mut(self);
                 match (insn, pred.edge) {
-                    (Insn::Jump(edge), None) => prune_vec_by_indices(&mut edge.args, &trivial_indices),
-                    (Insn::CondBranch { if_true, .. }, Some(true)) => prune_vec_by_indices(&mut if_true.args, &trivial_indices),
-                    (Insn::CondBranch { if_false, .. }, Some(false)) => prune_vec_by_indices(&mut if_false.args, &trivial_indices),
+                    (Insn::Jump(edge), Edge::Unconditional) => prune_vec_by_indices(&mut edge.args, &trivial_indices),
+                    (Insn::CondBranch { if_true, .. }, Edge::True) => prune_vec_by_indices(&mut if_true.args, &trivial_indices),
+                    (Insn::CondBranch { if_false, .. }, Edge::False) => prune_vec_by_indices(&mut if_false.args, &trivial_indices),
                     (_, _) => unreachable!("Predecessors should only be Jump or CondBranch with a corresponding EdgeKey bool.")
                 };
             }
