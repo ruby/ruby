@@ -18457,9 +18457,8 @@ mod hir_opt_tests {
         bb3(v9:BasicObject, v10:BasicObject):
           PatchPoint MethodRedefined(NilClass@0x1008, dup@0x1010, cme:0x1018)
           v23:NilClass = GuardType v10, NilClass recompile
-          v24:BasicObject = CCallWithFrame v23, :Kernel#dup@0x1040
           CheckInterrupts
-          Return v24
+          Return v23
         ");
     }
 
@@ -18485,9 +18484,8 @@ mod hir_opt_tests {
         bb3(v9:BasicObject, v10:BasicObject):
           PatchPoint MethodRedefined(TrueClass@0x1008, dup@0x1010, cme:0x1018)
           v23:TrueClass = GuardType v10, TrueClass recompile
-          v24:BasicObject = CCallWithFrame v23, :Kernel#dup@0x1040
           CheckInterrupts
-          Return v24
+          Return v23
         ");
     }
 
@@ -18513,9 +18511,8 @@ mod hir_opt_tests {
         bb3(v9:BasicObject, v10:BasicObject):
           PatchPoint MethodRedefined(FalseClass@0x1008, dup@0x1010, cme:0x1018)
           v23:FalseClass = GuardType v10, FalseClass recompile
-          v24:BasicObject = CCallWithFrame v23, :Kernel#dup@0x1040
           CheckInterrupts
-          Return v24
+          Return v23
         ");
     }
 
@@ -18541,9 +18538,8 @@ mod hir_opt_tests {
         bb3(v9:BasicObject, v10:BasicObject):
           PatchPoint MethodRedefined(Symbol@0x1008, dup@0x1010, cme:0x1018)
           v23:StaticSymbol = GuardType v10, StaticSymbol recompile
-          v24:BasicObject = CCallWithFrame v23, :Kernel#dup@0x1040
           CheckInterrupts
-          Return v24
+          Return v23
         ");
     }
 
