@@ -1747,7 +1747,7 @@ impl Insn {
         Ok(())
     }
 
-    pub fn print<'a>(&self, ptr_map: &'a PtrPrintMap, fun: Option<&'a Function>) -> InsnPrinter<'a> {
+    pub fn print<'a>(&self, ptr_map: &'a PtrPrintMap, fun: Option<&'a FunctionPrinter>) -> InsnPrinter<'a> {
         InsnPrinter { inner: self.clone(), ptr_map, fun }
     }
 
@@ -1989,7 +1989,7 @@ impl Insn {
 
 /// Print adaptor for [`Insn`]. See [`PtrPrintMap`].
 pub struct InsnPrinter<'a> {
-    fun: Option<&'a Function>,
+    fun: Option<&'a FunctionPrinter<'a>>,
     inner: Insn,
     ptr_map: &'a PtrPrintMap,
 }
@@ -2347,12 +2347,18 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::GuardLess { left, right, .. } => write!(f, "GuardLess {left}, {right}"),
             Insn::GuardGreaterEq { left, right, .. } => write!(f, "GuardGreaterEq {left}, {right}"),
             &Insn::GetBlockParam { level, ep_offset, state, .. } => {
-                let iseq = self.fun.map(|fun| fun.frame_state_iseq(state));
+                let iseq = self.fun.map(|fun| fun.fun.frame_state_iseq(state));
                 let name = get_local_var_name_for_printer(iseq, level, ep_offset)
                     .map_or(String::new(), |x| format!("{x}, "));
                 write!(f, "GetBlockParam {name}l{level}, EP@{ep_offset}")
             },
-            Insn::PatchPoint { invariant, .. } => { write!(f, "PatchPoint {}", invariant.print(self.ptr_map)) },
+            Insn::PatchPoint { invariant, state } => {
+                write!(f, "PatchPoint {}", invariant.print(self.ptr_map))?;
+                if let Some(FunctionPrinter { display_snapshot_and_tp_patchpoints: true, .. }) = self.fun {
+                    write!(f, ", {}", state)?;
+                }
+                Ok(())
+            }
             Insn::GetConstant { klass, id, allow_nil, .. } => {
                 write!(f, "GetConstant {klass}, :{}, {allow_nil}", id.contents_lossy())
             }
@@ -2438,7 +2444,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 write!(f, "IsBlockParamModified {flags}")
             },
             &Insn::SetLocal { val, level, ep_offset, state } => {
-                let iseq = self.fun.map(|fun| fun.frame_state_iseq(state));
+                let iseq = self.fun.map(|fun| fun.fun.frame_state_iseq(state));
                 let name = get_local_var_name_for_printer(iseq, level, ep_offset).map_or(String::new(), |x| format!("{x}, "));
                 write!(f, "SetLocal {name}l{level}, EP@{ep_offset}, {val}")
             },
@@ -7436,7 +7442,7 @@ impl Function {
                 };
 
 
-                let opcode = insn.print(&ptr_map, Some(self)).to_string();
+                let opcode = insn.print(&ptr_map, Some(&FunctionPrinter::without_snapshot(self))).to_string();
 
                 // Collect inputs for a given instruction.
                 let mut inputs = Vec::new();
@@ -8317,7 +8323,7 @@ impl<'a> std::fmt::Display for FunctionPrinter<'a> {
                         write!(f, "{insn_id}:{} = ", insn_type.print(&self.ptr_map))?;
                     }
                 }
-                writeln!(f, "{}", insn.print(&self.ptr_map, Some(fun)))?;
+                writeln!(f, "{}", insn.print(&self.ptr_map, Some(self)))?;
             }
         }
         Ok(())
