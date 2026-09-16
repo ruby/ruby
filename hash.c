@@ -1555,7 +1555,7 @@ hash_alloc(VALUE klass, VALUE flags, VALUE ifnone, size_t size, bool frozen)
 
     RHASH_AR_TABLE(hash)->ar_hint.word = 0;
 
-#ifdef RUBY_DEBUG
+#if RUBY_DEBUG
     if (hash_slot_size(size, frozen) >= sizeof(struct RHash) + sizeof(st_table)) {
         RHASH_ST_TABLE(hash)->num_entries = 0;
         RHASH_ST_TABLE(hash)->entries = NULL;
