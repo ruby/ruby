@@ -44,6 +44,7 @@ fn with_inlining_threshold<T>(threshold: usize, mut ruby_fragment: impl FnMut() 
 /// interpreter. Asserting on `inline_method_count` fails the test in that case.
 #[track_caller]
 fn assert_inlines(program: &str) -> String {
+    ensure_rubyvm(); // ZJITState is not available until the VM is booted
     let counters = crate::state::ZJITState::get_counters();
     let inline_count_before = counters.inline_method_count;
     let result = assert_compiles(program);
@@ -57,6 +58,7 @@ fn assert_inlines(program: &str) -> String {
 /// of a literal block.
 #[track_caller]
 fn assert_inlines_allowing_exits(program: &str) -> String {
+    ensure_rubyvm(); // ZJITState is not available until the VM is booted
     let counters = crate::state::ZJITState::get_counters();
     let inline_count_before = counters.inline_method_count;
     let result = assert_compiles_allowing_exits(program);
