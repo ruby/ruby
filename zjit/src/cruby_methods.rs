@@ -245,6 +245,7 @@ pub fn init() -> Annotations {
     annotate!(rb_cNilClass, "nil?", inline_nilclass_nil_p);
     annotate!(rb_mKernel, "nil?", inline_kernel_nil_p);
     annotate!(rb_mKernel, "respond_to?", inline_kernel_respond_to_p);
+    annotate!(rb_mKernel, "dup", inline_kernel_dup);
     annotate!(rb_cBasicObject, "==", inline_basic_object_eq, types::BoolExact, no_gc, leaf, elidable);
     annotate!(rb_cBasicObject, "!", inline_basic_object_not, types::BoolExact, no_gc, leaf, elidable);
     annotate!(rb_cBasicObject, "!=", inline_basic_object_neq, types::BoolExact);
@@ -1064,6 +1065,14 @@ fn inline_kernel_respond_to_p(
         }, state
     });
     Some(fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(result) }))
+}
+
+fn inline_kernel_dup(fun: &mut hir::Function, _block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[] = args else { return None; };
+    if fun.is_a(recv, types::Immediate) {
+        return Some(recv);
+    }
+    None
 }
 
 fn inline_kernel_class(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
