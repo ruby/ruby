@@ -304,9 +304,17 @@ module SyncDefaultGems
       ["test/zlib", "test/zlib"],
       ["zlib.gemspec", "ext/zlib/zlib.gemspec"],
     ]),
+    # Most files under tool/lib and tool/test belong to ruby/ruby, so map
+    # each upstream file rather than the directories.
     "test-unit-ruby-core":repo("ruby/test-unit-ruby-core", [
-      ["lib", "tool/lib"],
-      ["test", "tool/test"],
+      ["lib/core_assertions.rb", "tool/lib/core_assertions.rb"],
+      ["lib/envutil.rb", "tool/lib/envutil.rb"],
+      ["lib/find_executable.rb", "tool/lib/find_executable.rb"],
+      ["lib/memory_status.rb", "tool/lib/memory_status.rb"],
+      ["test/test_core_assertions.rb", "tool/test/test_core_assertions.rb"],
+      ["test/test_envutil.rb", "tool/test/test_envutil.rb"],
+      ["test/test_find_executable.rb", "tool/test/test_find_executable.rb"],
+      ["test/test_memory_status.rb", "tool/test/test_memory_status.rb"],
     ]),
   }.transform_keys(&:to_s)
 
