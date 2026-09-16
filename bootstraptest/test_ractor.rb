@@ -948,6 +948,69 @@ assert_equal "can't modify instance variables of a shareable Ractor", %q{
   end
 }
 
+# a Proc which already has ivars can not be isolated
+assert_equal 'can not isolate a Proc because it has instance variables', %q{
+  pr = Proc.new{}
+  pr.instance_variable_set(:@iv, Object.new)
+
+  begin
+    Ractor.new(&pr)
+  rescue Ractor::IsolationError => e
+    e.message
+  end
+}
+
+# freezing the Proc first does not skip the check
+assert_equal 'can not isolate a Proc because it has instance variables', %q{
+  pr = Proc.new{}
+  pr.instance_variable_set(:@iv, Object.new)
+  pr.freeze
+
+  begin
+    Ractor.new(&pr)
+  rescue Ractor::IsolationError => e
+    e.message
+  end
+}
+
+# an ivar set by Proc#refined is internal, so it does not block isolation
+assert_equal 'r', %q{
+  module M
+    refine String do
+      def foo; 'r'; end
+    end
+  end
+
+  rp = Proc.new{ ''.foo }.refined(M)
+  Ractor.new(&rp).value
+}
+
+# a Proc made shareable by Ractor.new can not be given ivars afterwards
+assert_equal "can't modify instance variables of a shareable Proc", %q{
+  HAX = -> { }
+  Ractor.new(&HAX).join
+
+  begin
+    HAX.instance_variable_set(:@foo, Object.new)
+  rescue Ractor::IsolationError => e
+    e.message
+  end
+}
+
+# freezing a shareable object from another Ractor can not expose an ivar, since
+# none could be set after it became shareable
+assert_equal 'nil', %q{
+  HAX = -> { }
+  Ractor.new(&HAX).join
+
+  r = Ractor.new do
+    HAX.freeze
+    HAX.instance_variable_get(:@foo)
+  end
+
+  r.value.inspect
+}
+
 # But a shareable object is frozen, it is allowed to access ivars from non-main Ractor
 assert_equal '11', %q{
   [Object.new, [], ].map{|obj|

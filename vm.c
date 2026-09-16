@@ -1570,6 +1570,16 @@ proc_isolate_env(VALUE self, rb_proc_t *proc, VALUE read_only_variables)
     RB_OBJ_WRITTEN(self, Qundef, env);
 }
 
+static int
+proc_has_ivar_i(ID name, VALUE val, st_data_t arg)
+{
+    if (rb_is_instance_id(name)) {
+        *(bool *)arg = true;
+        return ST_STOP;
+    }
+    return ST_CONTINUE;
+}
+
 static VALUE
 proc_shared_outer_variables(struct rb_id_table *outer_variables, bool isolate, const char *message)
 {
@@ -1625,6 +1635,16 @@ rb_proc_isolate_bang(VALUE self, VALUE replace_self)
         proc_isolate_env(self, proc, Qfalse);
         proc->header.is_isolated = TRUE;
         RB_OBJ_WRITE(self, &proc->block.as.captured.self, Qnil);
+    }
+
+    /* ivars are not traversed here, so their values may be unshareable */
+    if (UNLIKELY(rb_obj_shape_has_ivars(self))) {
+        bool has_ivar = false;
+        rb_ivar_foreach(self, proc_has_ivar_i, (st_data_t)&has_ivar);
+
+        if (has_ivar) {
+            rb_raise(rb_eRactorIsolationError, "can not isolate a Proc because it has instance variables");
+        }
     }
 
     RB_OBJ_SET_SHAREABLE(self);
