@@ -82,6 +82,7 @@ ruby_setup(void)
     rb_w32_init_long_paths();
 #endif
     Init_BareVM();
+    Init_default_shapes();
     rb_vm_encoded_insn_data_table_init();
     Init_enable_box();
     Init_vm_objects();
