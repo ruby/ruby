@@ -235,6 +235,20 @@ File.open(path, "w").close
     end
   end unless /mswin|mingw/ =~ RUBY_PLATFORM
 
+  def test_finalizer_ignores_eacces_on_unlink
+    assert_in_out_err("-r#{LIB_TEMPFILE_RB_PATH}", <<~'RUBY') do |(filename,*), (error,*)|
+      def File.unlink(*)
+        raise Errno::EACCES
+      end
+      file = Tempfile.new("foo")
+      puts file.path
+    RUBY
+      assert_file.exist?(filename)
+      File.unlink(filename)
+      assert_nil error
+    end
+  end
+
   def test_close_does_not_make_path_nil
     t = tempfile("foo")
     t.close
