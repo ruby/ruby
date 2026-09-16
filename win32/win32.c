@@ -1959,8 +1959,6 @@ open_special(const WCHAR *path, DWORD access, DWORD flags)
 #define BitOfIsRep(n) ((n) * 2 + 1)
 #define DIRENT_PER_CHAR (CHAR_BIT / 2)
 
-static const WCHAR namespace_prefix[] = {L'\\', L'\\', L'?', L'\\'};
-
 /* License: Ruby's */
 /* returns 0 on failure, otherwise stores tha path in `*pathptr` and
  * returns the length of that path.  The path must be freed. */
@@ -5673,6 +5671,7 @@ stati128_handle(HANDLE h, struct stati128 *st)
         st->st_ctime = filetime_to_unixtime(&info.ftCreationTime);
         st->st_ctimensec = filetime_to_nsec(&info.ftCreationTime);
         st->st_nlink = info.nNumberOfLinks;
+        st->st_dev = st->st_rdev = info.dwVolumeSerialNumber;
         attr = info.dwFileAttributes;
         if (get_ino(h, &fii)) {
             st->st_ino = *((unsigned __int64 *)&fii.FileId);
@@ -5826,14 +5825,18 @@ stat_by_find(const WCHAR *path, struct stati128 *st)
 }
 
 /* License: Ruby's */
-static int
-path_drive(const WCHAR *path)
+/* For stat_by_find, which has no handle to ask.  32 bits, unlike
+ * path_drive_serial, and does not need GetFileInformationByName. */
+static DWORD
+path_volume_serial(const WCHAR *path)
 {
-    if (path[0] && path[1] == L':') {
-        if (iswalpha(path[0])) return towupper(path[0]) - L'A';
-        return (int)path[0];
-    }
-    return _getdrive() - 1;
+    WCHAR root[PATH_MAX];
+    DWORD serial;
+
+    if (!GetVolumePathNameW(path, root, numberof(root)) ||
+        !GetVolumeInformationW(root, NULL, 0, &serial, NULL, NULL, NULL, 0))
+        return 0;
+    return serial;
 }
 
 #if !defined(NTDDI_WIN11_ZN) || NTDDI_VERSION < NTDDI_WIN11_ZN
@@ -5958,7 +5961,9 @@ stat_by_name(const WCHAR *path, struct stati128 *st)
     st->st_ctime = large_integer_to_unixtime(&info.CreationTime, &st->st_ctimensec);
     st->st_nlink = info.NumberOfLinks;
     st->st_mode = fileattr_to_unixmode(info.FileAttributes, path, 0);
-    st->st_dev = st->st_rdev = path_drive(path);
+    /* The low 32 bits are the dwVolumeSerialNumber that
+     * GetFileInformationByHandle and GetVolumeInformation report. */
+    st->st_dev = st->st_rdev = info.VolumeSerialNumber.LowPart;
     return 0;
 }
 
@@ -5968,7 +5973,6 @@ winnt_stat(const WCHAR *path, struct stati128 *st, BOOL lstat)
 {
     DWORD flags = lstat ? FILE_FLAG_OPEN_REPARSE_POINT : 0;
     HANDLE f;
-    WCHAR *finalname = 0;
     int open_error;
 
     memset(st, 0, sizeof(*st));
@@ -6027,14 +6031,8 @@ winnt_stat(const WCHAR *path, struct stati128 *st, BOOL lstat)
                 }
             }
         }
-        const DWORD len = get_handle_pathname(f, &finalname, 0);
         CloseHandle(f);
         st->st_mode = fileattr_to_unixmode(attr, path, mode);
-        if (len) {
-            path = finalname;
-            if (wcsncmp(path, namespace_prefix, numberof(namespace_prefix)) == 0)
-                path += numberof(namespace_prefix);
-        }
     }
     else {
         switch (open_error) {
@@ -6048,10 +6046,8 @@ winnt_stat(const WCHAR *path, struct stati128 *st, BOOL lstat)
         }
 
         if (stat_by_find(path, st)) return -1;
+        st->st_dev = st->st_rdev = path_volume_serial(path);
     }
-
-    st->st_dev = st->st_rdev = path_drive(path);
-    if (finalname) free(finalname);
 
     return 0;
 }
