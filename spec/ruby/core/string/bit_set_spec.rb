@@ -34,17 +34,17 @@ ruby_version_is "4.1" do
     end
 
     it "raises an IndexError for an out of range bit offset" do
-      -> { "\x00".bit_set(8) }.should.raise(IndexError)
-      -> { "\x00".bit_set(-1) }.should.raise(IndexError)
+      -> { (+"\x00").bit_set(8) }.should.raise(IndexError)
+      -> { (+"\x00").bit_set(-1) }.should.raise(IndexError)
     end
 
     it "raises an IndexError when a region extends past the end" do
-      -> { "\x00".bit_set(0, 9) }.should.raise(IndexError)
-      -> { "\x00".bit_set(0..8) }.should.raise(IndexError)
+      -> { (+"\x00").bit_set(0, 9) }.should.raise(IndexError)
+      -> { (+"\x00").bit_set(0..8) }.should.raise(IndexError)
     end
 
     it "raises an ArgumentError for a negative length" do
-      -> { "\x00".bit_set(0, -1) }.should.raise(ArgumentError)
+      -> { (+"\x00").bit_set(0, -1) }.should.raise(ArgumentError)
     end
 
     it "raises a FrozenError if self is frozen" do

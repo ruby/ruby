@@ -1201,12 +1201,85 @@ CODE
     assert_raise(FrozenError) { S("\x00").freeze.bit_set(0, 0) }
     assert_raise(FrozenError) { S("\x00").freeze.bit_clear(0...0) }
     assert_raise(FrozenError) { S("\x00").freeze.bit_flip(8..) }
-    assert_raise(IndexError) { S("\x00").freeze.bit_set(9, 0) }
+    assert_raise(FrozenError) { S("\x00").freeze.bit_set(9, 0) }
 
     # Copy-on-write: mutating must not affect a shared sibling.
     shared = S("fooXbar").split(S("X")).last
     shared.bit_set(0..7)
     assert_equal(S("\xFFar").b, shared.b)
+  end
+
+  def test_bit_set_single_chilled_string_warning
+    return unless @cls == String
+    assert_bit_op_chilled_string_warning(:bit_set, 7000 * 8)
+  end
+
+  def test_bit_clear_single_chilled_string_warning
+    return unless @cls == String
+    assert_bit_op_chilled_string_warning(:bit_clear, 7000 * 8)
+  end
+
+  def test_bit_flip_single_chilled_string_warning
+    return unless @cls == String
+    assert_bit_op_chilled_string_warning(:bit_flip, 7000 * 8)
+  end
+
+  def test_bit_set_region_chilled_string_warning
+    return unless @cls == String
+    assert_bit_op_chilled_string_warning(:bit_set, 7000 * 8, 2)
+  end
+
+  def test_bit_clear_region_chilled_string_warning
+    return unless @cls == String
+    assert_bit_op_chilled_string_warning(:bit_clear, 7000 * 8, 2)
+  end
+
+  def test_bit_flip_region_chilled_string_warning
+    return unless @cls == String
+    assert_bit_op_chilled_string_warning(:bit_flip, 7000 * 8, 2)
+  end
+
+  def test_bit_set_range_chilled_string_warning
+    return unless @cls == String
+    assert_bit_op_chilled_string_warning(:bit_set, (7000 * 8)..(7100 * 8))
+  end
+
+  def test_bit_clear_range_chilled_string_warning
+    return unless @cls == String
+    assert_bit_op_chilled_string_warning(:bit_clear, (7000 * 8)..(7100 * 8))
+  end
+
+  def test_bit_flip_range_chilled_string_warning
+    return unless @cls == String
+    assert_bit_op_chilled_string_warning(:bit_flip, (7000 * 8)..(7100 * 8))
+  end
+
+  def assert_bit_op_chilled_string_warning(op, *args)
+    assert_separately([], "#{<<-"{#"}\n#{<<-'};'}")
+    $target = <<~STR            # chilled string
+    #{("A"*63+"\n")*128}        # 64*128 = 8192
+    STR
+    END {
+      assert_raise(IndexError) {$target.#{op}(#{args.map(&:inspect).join(", ")})}
+    }
+    {#
+      $reentered = false
+
+      module ReallocateWarning
+        def warn(message, category: nil, **kwargs)
+          if category == :deprecated && !$reentered
+            $reentered = true
+            $target.clear
+            $target << ("B" * 1024)
+            return nil
+          end
+
+          super
+        end
+      end
+
+      Warning.extend(ReallocateWarning)
+    };
   end
 
   def test_bit_count

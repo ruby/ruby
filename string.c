@@ -7156,6 +7156,8 @@ str_mutate_single_bit(VALUE str, VALUE index, bool lsb_first, enum str_bit_mutat
     unsigned char *ptr;
     unsigned char mask;
 
+    rb_check_frozen(str);
+
     if (str_bit_offset_out_of_range(RSTRING_LEN(str), offset.value)) {
         rb_raise(rb_eIndexError, "bit index out of range");
     }
@@ -7204,6 +7206,9 @@ str_mutate_bit(int argc, VALUE *argv, VALUE str, enum str_bit_mutation mutation)
         len = str_bit_length_from_index(length_v);
     }
 
+    /* Even a zero-length write requires a mutable receiver. */
+    rb_check_frozen(str);
+
     /*
      * A region that begins past the end is out of range even when it is
      * empty, and one that runs past the end is not allowed to silently
@@ -7222,8 +7227,7 @@ str_mutate_bit(int argc, VALUE *argv, VALUE str, enum str_bit_mutation mutation)
             rb_raise(rb_eIndexError, "bit range out of range");
         }
     }
-    /* Even a zero-length write requires a mutable receiver. */
-    rb_check_frozen(str);
+
     if (len == 0) return str;
 
     rb_str_modify(str);
