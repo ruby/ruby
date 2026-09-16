@@ -56,6 +56,16 @@ class TestEncodingConverter < Test::Unit::TestCase
     assert_kind_of(Encoding::Converter, Encoding::Converter.new(Encoding::UTF_8, Encoding::EUC_JP))
   end
 
+  def test_inspect
+    ec = Encoding::Converter.new("", "xml_attr_content_escape")
+    GC.start(full_mark: true, immediate_sweep: true)
+    assert_equal(
+      "#<Encoding::Converter: xml_attr_content_escape>",
+      ec.inspect,
+      "[ruby-core:126738] [Bug #22322]"
+    )
+  end
+
   def test_s_new_convpath
     assert_equal([], Encoding::Converter.new([]).convpath)
     assert_equal([[Encoding::UTF_8, Encoding::EUC_JP]],

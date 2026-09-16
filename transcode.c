@@ -1035,7 +1035,6 @@ rb_econv_open0(const char *sname, const char *dname, int ecflags)
     if (*sname == '\0' && *dname == '\0') {
         num_trans = 0;
         entries = NULL;
-        sname = dname = "";
     }
     else {
         struct trans_open_t toarg = {0};
@@ -1053,8 +1052,14 @@ rb_econv_open0(const char *sname, const char *dname, int ecflags)
         return NULL;
 
     ec->flags = ecflags;
-    ec->source_encoding_name = sname;
-    ec->destination_encoding_name = dname;
+    if (num_trans == 0) {
+        ec->source_encoding_name = "";
+        ec->destination_encoding_name = "";
+    }
+    else {
+        ec->source_encoding_name = ec->elems[0].tc->transcoder->src_encoding;
+        ec->destination_encoding_name = ec->elems[ec->num_trans-1].tc->transcoder->dst_encoding;
+    }
 
     return ec;
 }
