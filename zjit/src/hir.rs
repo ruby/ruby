@@ -1044,7 +1044,9 @@ pub enum Insn {
     ArrayExtend { left: InsnId, right: InsnId, state: InsnId },
     /// Push `val` onto `array`, where `array` is already `Array`.
     ArrayPush { array: InsnId, val: InsnId, state: InsnId },
-    ArrayAref { array: InsnId, index: InsnId },
+    /// Get an array, produce a base from which we can index in to
+    ArrayPtr { array: InsnId },
+    ArrayAref { ptr: InsnId, index: InsnId },
     ArrayAset { array: InsnId, index: InsnId, val: InsnId },
     ArrayPop { array: InsnId, state: InsnId },
     /// Return the length of the array as a C `long` ([`types::CInt64`])
@@ -1547,8 +1549,11 @@ macro_rules! for_each_operand_impl {
                 $visit_one!(*val);
                 $visit_one!(*state);
             }
-            Insn::ArrayAref { array, index } => {
+            Insn::ArrayPtr { array } => {
                 $visit_one!(*array);
+            }
+            Insn::ArrayAref { ptr, index } => {
+                $visit_one!(*ptr);
                 $visit_one!(*index);
             }
             Insn::ArrayAset { array, index, val } => {
@@ -1795,7 +1800,8 @@ impl Insn {
             Insn::DupArrayInclude { .. } => effects::Any,
             Insn::ArrayExtend { .. } => effects::Any,
             Insn::ArrayPush { .. } => effects::Any,
-            Insn::ArrayAref { ..  } => effects::Any,
+            Insn::ArrayPtr { ..  } => effects::Any,
+            Insn::ArrayAref { ..  } => Effect::read_write(abstract_heaps::Memory, abstract_heaps::Empty),
             Insn::ArrayAset { .. } => effects::Any,
             Insn::ArrayPop { ..  } => effects::Any,
             Insn::ArrayLength { .. } => Effect::write(abstract_heaps::Empty),
@@ -2076,8 +2082,11 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 write_separated!(f, " ", ", ", elements);
                 Ok(())
             }
-            Insn::ArrayAref { array, index, .. } => {
-                write!(f, "ArrayAref {array}, {index}")
+            Insn::ArrayPtr { array } => {
+                write!(f, "ArrayPtr {array}")
+            }
+            Insn::ArrayAref { ptr, index, .. } => {
+                write!(f, "ArrayAref {ptr}, {index}")
             }
             Insn::ArrayAset { array, index, val, ..} => {
                 write!(f, "ArrayAset {array}, {index}, {val}")
@@ -3674,6 +3683,7 @@ impl Function {
             Insn::ToRegexp { .. } => types::RegexpExact,
             Insn::NewArray { .. } => types::ArrayExact,
             Insn::ArrayDup { .. } => types::ArrayExact,
+            Insn::ArrayPtr { .. } => types::CPtr,
             Insn::ArrayAref { .. } => types::BasicObject,
             Insn::ArrayPop { .. } => types::BasicObject,
             Insn::ArrayLength { .. } => types::CInt64,
@@ -4010,7 +4020,8 @@ impl Function {
             SendDirectArg::Existing(value) => value,
             SendDirectArg::SplatElement { array, index } => {
                 let index = self.push_insn(block, Insn::Const { val: Const::CInt64(i64::from(index)) });
-                self.push_insn(block, Insn::ArrayAref { array, index })
+                let ptr = self.push_insn(block, Insn::ArrayPtr { array });
+                self.push_insn(block, Insn::ArrayAref { ptr, index })
             }
             SendDirectArg::Constant(value) => {
                 self.push_insn(block, Insn::Const { val: Const::Value(value) })
@@ -6505,13 +6516,27 @@ impl Function {
     fn optimize_load_store(&mut self) {
         for block in self.reverse_post_order() {
             let mut compile_time_heap: HashMap<(InsnId, i32), InsnId>  = HashMap::new();
+            let mut arrayptr: HashMap<InsnId, InsnId>  = HashMap::new();
+
             let old_insns = std::mem::take(&mut self.blocks[block].insns);
             let mut new_insns = Vec::with_capacity(old_insns.len());
             for insn_id in old_insns {
                 let replacement_insn: InsnId = match self.resolve(insn_id).insn(self) {
+                    &Insn::ArrayPtr { array } => {
+                        let key = self.chase_insn(array);
+                        let heap_entry = arrayptr.get(&key).copied();
+                        if let Some(val) = heap_entry {
+                            self.make_equal_to(insn_id, val);
+                            continue
+                        } else {
+                            arrayptr.insert(key, insn_id);
+                        }
+                        insn_id
+                    }
                     &Insn::StoreField { recv, offset, val, .. } => {
                         let key = (self.chase_insn(recv), offset);
                         let heap_entry = compile_time_heap.get(&key).copied();
+                        arrayptr.clear();
                         // TODO(Jacob): Switch from actual to partial equality
                         if Some(val) == heap_entry {
                             // If the value is already stored, short circuit and don't add an instruction to the block
@@ -6566,6 +6591,7 @@ impl Function {
                         // If an instruction affects memory and we haven't modeled it, the compile_time_heap is invalidated
                         if insn.effects_of().includes(Effect::write(abstract_heaps::Memory)) {
                             compile_time_heap.clear();
+                            arrayptr.clear();
                         }
                         insn_id
                     }
@@ -6933,18 +6959,21 @@ impl Function {
                             _ => None,
                         })
                     }
-                    &Insn::ArrayAref { array, index }
-                        if self.type_of(array).ruby_object_known()
-                            && self.type_of(index).is_subtype(types::CInt64) => {
-                        let array_obj = self.type_of(array).ruby_object().unwrap();
-                        match (array_obj.is_frozen(), self.type_of(index).cint64_value()) {
-                            (true, Some(index)) => {
-                                let val = unsafe { rb_yarv_ary_entry_internal(array_obj, index) };
-                                self.new_insn(Insn::Const { val: Const::Value(val) })
-                            }
-                            _ => insn_id,
-                        }
-                    }
+                    // FIXME: Aaron
+                    // &Insn::ArrayPointer { array } => {
+                    // }
+                    // &Insn::ArrayAref { array, index }
+                    //     if self.type_of(array).ruby_object_known()
+                    //         && self.type_of(index).is_subtype(types::CInt64) => {
+                    //     let array_obj = self.type_of(array).ruby_object().unwrap();
+                    //     match (array_obj.is_frozen(), self.type_of(index).cint64_value()) {
+                    //         (true, Some(index)) => {
+                    //             let val = unsafe { rb_yarv_ary_entry_internal(array_obj, index) };
+                    //             self.new_insn(Insn::Const { val: Const::Value(val) })
+                    //         }
+                    //         _ => insn_id,
+                    //     }
+                    // }
                     &Insn::AdjustBounds { index, .. } => {
                         // If index is known nonnegative, then we don't need to adjust bounds.
                         if self.type_of(index).known_nonnegative() {
@@ -7922,8 +7951,11 @@ impl Function {
             | Insn::ArrayLength { array, .. } => {
                 self.assert_subtype(insn_id, array, types::Array)
             }
-            Insn::ArrayAref { array, index } => {
-                self.assert_subtype(insn_id, array, types::Array)?;
+            Insn::ArrayPtr { array } => {
+                self.assert_subtype(insn_id, array, types::Array)
+            }
+            Insn::ArrayAref { ptr, index } => {
+                self.assert_subtype(insn_id, ptr, types::CPtr)?;
                 self.assert_subtype(insn_id, index, types::CInt64)
             }
             Insn::ArrayAset { array, index, .. } => {
@@ -10809,7 +10841,8 @@ fn add_iseq_to_hir(
                         // We do not emit a length guard here because in-bounds is already
                         // ensured by the expandarray length check above.
                         let index = fun.push_insn(block, Insn::Const { val: Const::CInt64(i.try_into().unwrap()) });
-                        let element = fun.push_insn(block, Insn::ArrayAref { array, index });
+                        let ptr = fun.push_insn(block, Insn::ArrayPtr { array });
+                        let element = fun.push_insn(block, Insn::ArrayAref { ptr, index });
                         state.stack_push(element);
                     }
                 }

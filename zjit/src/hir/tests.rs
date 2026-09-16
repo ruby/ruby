@@ -5806,9 +5806,11 @@ pub(crate) mod hir_build_tests {
           v24:CInt64[2] = Const CInt64(2)
           v25:CInt64 = GuardGreaterEq v23, v24
           v26:CInt64[1] = Const CInt64(1)
-          v27:BasicObject = ArrayAref v22, v26
-          v28:CInt64[0] = Const CInt64(0)
-          v29:BasicObject = ArrayAref v22, v28
+          v27:CPtr = ArrayPtr v22
+          v28:BasicObject = ArrayAref v27, v26
+          v29:CInt64[0] = Const CInt64(0)
+          v30:CPtr = ArrayPtr v22
+          v31:BasicObject = ArrayAref v30, v29
           PatchPoint NoEPEscape(test)
           CheckInterrupts
           Return v14
@@ -6055,12 +6057,13 @@ pub(crate) mod hir_build_tests {
         bb7(v70:BasicObject, v71:Fixnum):
           v75:Array = RefineType v70, Array
           v76:CInt64 = UnboxFixnum v71
-          v77:BasicObject = ArrayAref v75, v76
-          v79:BasicObject = InvokeBlock v77 # SendFallbackReason: InvokeBlock: not yet specialized
-          v83:Fixnum[1] = Const Value(1)
-          v84:Fixnum = FixnumAdd v71, v83
+          v77:CPtr = ArrayPtr v75
+          v78:BasicObject = ArrayAref v77, v76
+          v80:BasicObject = InvokeBlock v78 # SendFallbackReason: InvokeBlock: not yet specialized
+          v84:Fixnum[1] = Const Value(1)
+          v85:Fixnum = FixnumAdd v71, v84
           PatchPoint NoEPEscape(each)
-          Jump bb8(v70, v84)
+          Jump bb8(v70, v85)
         bb4(v23:BasicObject, v24:NilClass):
           v28:BasicObject = InvokeBuiltin <inline_expr>, v23
           Jump bb5(v23, v24, v28)
