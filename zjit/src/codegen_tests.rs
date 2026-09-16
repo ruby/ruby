@@ -8560,7 +8560,6 @@ fn test_uncached_getconstant_path() {
 #[test]
 fn test_line_tracepoint_on_c_method() {
     set_call_threshold(1);
-    eval("nil"); // boot the VM before assert_compiles_allowing_exits touches ZJITState
     assert_snapshot!(assert_compiles_allowing_exits(r#"
         events = []
         events.instance_variable_set(
@@ -8587,7 +8586,6 @@ fn test_line_tracepoint_on_c_method() {
 #[test]
 fn test_targeted_line_tracepoint_in_c_method_call() {
     set_call_threshold(1);
-    eval("nil"); // boot the VM before assert_compiles_allowing_exits touches ZJITState
     assert_snapshot!(assert_compiles_allowing_exits(r#"
         events = []
         events.instance_variable_set(:@tp, TracePoint.new(:line) { |tp| events << tp.lineno })
@@ -8612,7 +8610,6 @@ fn test_targeted_line_tracepoint_in_c_method_call() {
 #[test]
 fn test_regression_cfp_sp_set_correctly_before_leaf_gc_call() {
     set_call_threshold(14);
-    eval("nil"); // boot the VM before assert_compiles_allowing_exits touches ZJITState
     assert_snapshot!(assert_compiles_allowing_exits(r#"
         def check(l, r)
           return 1 unless l
@@ -8643,7 +8640,6 @@ fn test_regression_cfp_sp_set_correctly_before_leaf_gc_call() {
 
 #[test]
 fn test_regression_gc_stress_with_lazy_block_code() {
-    eval("nil"); // boot the VM before assert_compiles_allowing_exits touches ZJITState
     assert_snapshot!(assert_compiles_allowing_exits(r#"
         def allocate_array
           [1, 2, 3]
@@ -8757,7 +8753,6 @@ fn test_no_ep_escape_invalidation_at_max_versions() {
 #[test]
 fn test_float_arithmetic() {
     set_call_threshold(1);
-    eval("nil"); // boot the VM before assert_compiles_allowing_exits touches ZJITState
     assert_snapshot!(assert_compiles_allowing_exits("def test = 1.5 + 2.5; test"), @"4.0");
     assert_snapshot!(assert_compiles_allowing_exits("def test = 2.0 * 3.0; test"), @"6.0");
     assert_snapshot!(assert_compiles_allowing_exits("def test = 3.5 - 2.0; test"), @"1.5");
@@ -8771,7 +8766,6 @@ fn test_float_arithmetic() {
 
 #[test]
 fn test_send_backtrace() {
-    eval("nil"); // boot the VM before assert_compiles_allowing_exits touches ZJITState
     assert_snapshot!(assert_compiles_allowing_exits(r#"
         def jit_frame2 = caller     # 1
         def jit_frame1 = jit_frame2 # 2
@@ -8840,7 +8834,6 @@ fn test_regression_stub_frame_sp_published_for_gc() {
     rb_zjit_prepare_options();
     set_inline_threshold(0); // don't inline the callee; we need a function stub
     set_call_threshold(2000);
-    eval("nil"); // boot the VM before touching ZJITState
 
     assert_snapshot!(inspect(r#"
         class Integer
@@ -8911,7 +8904,6 @@ fn test_regression_stub_frame_block_code_cleared_for_gc() {
     rb_zjit_prepare_options();
     set_inline_threshold(0); // don't inline the callee; we need a function stub
     set_call_threshold(2000);
-    eval("nil"); // boot the VM before touching ZJITState
 
     assert_snapshot!(inspect(r#"
         class Integer
