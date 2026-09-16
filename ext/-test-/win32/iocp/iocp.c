@@ -32,12 +32,10 @@ iocp_port(VALUE self)
 static VALUE
 iocp_associate(VALUE self, VALUE io)
 {
-    rb_io_t *fptr;
-    HANDLE h;
+    int fd = rb_io_descriptor(io);
+    HANDLE h = (HANDLE)rb_w32_get_osfhandle(fd);
 
-    RB_IO_POINTER(io, fptr);
-    h = (HANDLE)rb_w32_get_osfhandle(fptr->fd);
-    if (!CreateIoCompletionPort(h, iocp_port(self), (ULONG_PTR)fptr->fd, 0)) {
+    if (!CreateIoCompletionPort(h, iocp_port(self), (ULONG_PTR)fd, 0)) {
         rb_syserr_fail(rb_w32_map_errno(GetLastError()), "CreateIoCompletionPort");
     }
     return io;
@@ -56,7 +54,7 @@ iocp_poll(VALUE self, VALUE timeout)
         if (err == WAIT_TIMEOUT) return Qnil;
         rb_syserr_fail(rb_w32_map_errno(err), "GetQueuedCompletionStatus");
     }
-    return rb_ary_new_from_args(3, SIZET2NUM((size_t)key), UINT2NUM(bytes), SIZET2NUM((size_t)ol));
+    return rb_ary_new_from_args(3, SIZET2NUM((size_t)key), UINT2NUM(bytes), PTR2NUM(ol));
 }
 
 void
