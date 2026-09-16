@@ -1587,6 +1587,30 @@ class TestModule < Test::Unit::TestCase
     INPUT
   end
 
+  def test_alias_prepended_module_warning
+    assert_in_out_err([], <<-INPUT, [], /aliasing C#foo defined in a prepended module M is deprecated/)
+      Warning[:deprecated] = true
+      module M
+        def foo = :foo
+      end
+      class C
+        prepend M
+        alias bar foo
+      end
+    INPUT
+
+    assert_in_out_err([], <<-INPUT, [], /aliasing C#foo defined in a prepended module M is deprecated/)
+      Warning[:deprecated] = true
+      module M
+        def foo = :foo
+      end
+      class C
+        prepend M
+        alias_method :bar, :foo
+      end
+    INPUT
+  end
+
   def test_mod_constants
     m = Module.new
     m.const_set(:Foo, :foo)
@@ -2781,7 +2805,9 @@ class TestModule < Test::Unit::TestCase
       def m; "B"+super; end
       alias m2 m
       prepend p
-      alias m3 m
+    end
+    assert_deprecated_warning(/aliasing .*#m defined in a prepended module .* is deprecated/) do
+      b.class_eval { alias m3 m }
     end
     assert_equal("BA", b.new.m2, bug7842)
     assert_equal("PBA", b.new.m3, bug7842)

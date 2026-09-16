@@ -12,6 +12,12 @@ Note that each entry is kept to a minimum, see links for details.
   original class, consistent with inheritance and mixins.
   [[Feature #21981]]
 
+* `alias` and `Module#alias_method` emit a deprecation warning when the
+  original method is defined in a prepended module. This behavior will
+  be removed in Ruby 4.3, and alias lookup will start at the origin
+  class (after prepended modules).
+  [[Bug #22273]]
+
 ## Core classes updates
 
 Note: We're only listing outstanding class updates.
@@ -465,6 +471,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 
 [Bug #18661]: https://bugs.ruby-lang.org/issues/18661
 [Bug #18947]: https://bugs.ruby-lang.org/issues/18947
+[Bug #22273]: https://bugs.ruby-lang.org/issues/22273
 [Feature #8948]: https://bugs.ruby-lang.org/issues/8948
 [Feature #9779]: https://bugs.ruby-lang.org/issues/9779
 [Feature #15330]: https://bugs.ruby-lang.org/issues/15330
