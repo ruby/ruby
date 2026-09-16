@@ -132,6 +132,7 @@ class TestGemDeprecate < Gem::TestCase
   end
 
   def test_deprecated_method_outputs_a_warning
+    pend_for_ruby_box_stdio_capture
     out, err = capture_output do
       thing = Thing.new
       thing.foo
@@ -165,6 +166,7 @@ class TestGemDeprecate < Gem::TestCase
   end
 
   def test_deprecated_method_outputs_a_warning_old_way
+    pend_for_ruby_box_stdio_capture
     out, err = capture_output do
       thing = OtherThing.new
       thing.foo
@@ -180,6 +182,7 @@ class TestGemDeprecate < Gem::TestCase
   end
 
   def test_deprecated_method_when_class_overrides_format
+    pend_for_ruby_box_stdio_capture
     out, err = capture_output do
       thing = ThingWithFormat.new
       thing.foo

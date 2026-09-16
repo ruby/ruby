@@ -12,7 +12,7 @@ module SyntaxSuggest
   #    puts PathnameFromMessage.new(message).call.name
   #    # => "/tmp/scratch.rb"
   #
-  class PathnameFromMessage
+  class PathnameFromMessage # :nodoc:
     EVAL_RE = /^\(eval.*\):\d+/
     STREAMING_RE = /^-:\d+/
     attr_reader :name

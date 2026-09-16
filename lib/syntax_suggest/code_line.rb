@@ -21,7 +21,7 @@ module SyntaxSuggest
   #   line.mark_invisible
   #   line.visible? # => false
   #
-  class CodeLine
+  class CodeLine # :nodoc:
     TRAILING_SLASH = ("\\" + $/).freeze
 
     # Returns an array of CodeLine objects

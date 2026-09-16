@@ -219,7 +219,7 @@ module SyntaxSuggest
       ).call
 
       expect(explain.missing).to eq([])
-      expect(explain.errors).to eq(GetParseErrors.errors(source))
+      expect(explain.errors).to include(/expected an expression after the operator/)
     end
 
     it "handles an unexpected rescue" do

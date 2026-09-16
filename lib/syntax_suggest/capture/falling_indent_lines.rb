@@ -32,7 +32,7 @@ module SyntaxSuggest
     #     @lines_to_output << line
     #   end
     #
-    class FallingIndentLines
+    class FallingIndentLines # :nodoc:
       def initialize(code_lines:, block:)
         @lines = nil
         @scanner = ScanHistory.new(code_lines: code_lines, block: block)

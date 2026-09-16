@@ -101,7 +101,9 @@ class Gem::Ext::Builder
 
       require "open3"
       # Set $SOURCE_DATE_EPOCH for the subprocess.
-      # Under Ruby::Box mkmf makes RbConfig.expand recurse until SystemStackError.
+      # Under Ruby::Box defined?($gvar) does not see assignments made inside the
+      # box, so mkmf have_devel? never memoizes and recurses until SystemStackError
+      # (https://bugs.ruby-lang.org/issues/22283).
       # Drop $RUBY_BOX last so no caller can restore it.
       build_env = { "SOURCE_DATE_EPOCH" => Gem.source_date_epoch_string }.merge(env).merge("RUBY_BOX" => nil)
       # A single-element command would be parsed as a shell command line,

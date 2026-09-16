@@ -1255,6 +1255,8 @@ class Gem::Specification < Gem::BasicSpecification
       end
 
       unresolved_deps.clear
+      # find_all_by_name above memoized the record, which would outlive dirs= and ignore its new dirs
+      @specification_record = nil
     end
     Gem.post_reset_hooks.each(&:call)
   end

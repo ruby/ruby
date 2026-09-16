@@ -94,6 +94,7 @@ class TestStubSpecification < Gem::TestCase
   end
 
   def test_contains_requirable_file_eh_extension
+    pend_for_ruby_box_stdio_capture
     stub_with_extension do |stub|
       _, err = capture_output do
         if RUBY_ENGINE == "jruby"

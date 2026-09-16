@@ -167,13 +167,13 @@ RSpec.describe "env helpers" do
       create_file("source.rb", <<-'RUBY')
         Bundler.original_system("ruby", "-e", "exit(42) if ENV['BUNDLE_FOO'] == 'bar'")
 
-        exit $?.exitstatus
+        exit Process.last_status.exitstatus
       RUBY
     end
 
     it "runs system inside with_original_env" do
       run_bundler_script({ "BUNDLE_FOO" => "bar" }, bundled_app("source.rb"))
-      expect($?.exitstatus).to eq(42)
+      expect(Process.last_status.exitstatus).to eq(42)
     end
   end
 
@@ -182,13 +182,13 @@ RSpec.describe "env helpers" do
       create_file("source.rb", <<-'RUBY')
         Bundler.unbundled_system("ruby", "-e", "exit(42) unless ENV['BUNDLE_FOO'] == 'bar'")
 
-        exit $?.exitstatus
+        exit Process.last_status.exitstatus
       RUBY
     end
 
     it "runs system inside with_unbundled_env" do
       run_bundler_script({ "BUNDLE_FOO" => "bar" }, bundled_app("source.rb"))
-      expect($?.exitstatus).to eq(42)
+      expect(Process.last_status.exitstatus).to eq(42)
     end
   end
 
@@ -209,7 +209,7 @@ RSpec.describe "env helpers" do
       skip "Fork not implemented" if Gem.win_platform?
 
       run_bundler_script({ "BUNDLE_FOO" => "bar" }, bundled_app("source.rb"))
-      expect($?.exitstatus).to eq(0)
+      expect(Process.last_status.exitstatus).to eq(0)
     end
   end
 
@@ -230,7 +230,7 @@ RSpec.describe "env helpers" do
       skip "Fork not implemented" if Gem.win_platform?
 
       run_bundler_script({ "BUNDLE_FOO" => "bar" }, bundled_app("source.rb"))
-      expect($?.exitstatus).to eq(1)
+      expect(Process.last_status.exitstatus).to eq(1)
     end
   end
 end

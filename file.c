@@ -2885,7 +2885,7 @@ rb_file_ctime(VALUE obj)
  *
  */
 
-VALUE
+static VALUE
 rb_file_s_birthtime(VALUE klass, VALUE fname)
 {
     rb_io_stat_data st;

@@ -90,7 +90,9 @@ module Bundler
         dependency = current_dependencies[current_spec.name]
         groups = ""
         if dependency && !options[:parseable]
-          groups = dependency.groups.join(", ")
+          groups = dependency.groups
+          groups = groups.sort if options_include_groups
+          groups = groups.join(", ")
         end
 
         outdated_gems << {
@@ -101,13 +103,11 @@ module Bundler
         }
       end
 
-      relevant_outdated_gems = if options_include_groups
-        outdated_gems.group_by {|g| g[:groups] }.sort.flat_map do |groups, gems|
-          contains_group = groups.split(", ").include?(options[:group])
-          next unless options[:groups] || contains_group
-
-          gems
-        end.compact
+      relevant_outdated_gems = if options[:groups]
+        without_groups, with_groups = outdated_gems.partition {|g| g[:groups].empty? }
+        with_groups.group_by {|g| g[:groups] }.sort.flat_map(&:last) + without_groups
+      elsif options_include_groups
+        outdated_gems.select {|g| g[:groups].split(", ").include?(options[:group]) }
       else
         outdated_gems
       end
@@ -332,8 +332,6 @@ module Bundler
       end
 
       Bundler.ui.info justify(header, column_sizes)
-
-      data.sort_by! {|row| row[0] }
 
       data.each do |row|
         Bundler.ui.info justify(row, column_sizes)

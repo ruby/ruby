@@ -2,7 +2,7 @@
 
 require 'socket'
 require 'timeout'
-require 'io/wait'
+require 'io/wait' if RUBY_VERSION < '3.2'
 require 'securerandom'
 require 'rbconfig'
 

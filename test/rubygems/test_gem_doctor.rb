@@ -240,6 +240,7 @@ Removed file plugins/a_badly_named_file.rb
   end
 
   def test_doctor_removes_corrupt_abi_scoped_gemspec
+    pend_for_ruby_box_stdio_capture
     install_specs util_spec "regular_gem"
 
     spec = util_ca_spec "ca_gem", "1", "aabbccdd",
@@ -286,6 +287,7 @@ Removed file plugins/a_badly_named_file.rb
   end
 
   def test_doctor_does_not_recurse_into_abi_symlink
+    pend_for_ruby_box_stdio_capture
     pend "symlinks not supported" unless symlink_supported?
 
     install_specs util_spec "regular_gem"

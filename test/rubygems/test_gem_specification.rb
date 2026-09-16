@@ -709,6 +709,40 @@ end
     assert_equal expected_value, actual_value
   end
 
+  def test_self_dirs_equals_with_unresolved_deps
+    pend_for_ruby_box_stdio_capture
+    a = util_spec "a", 1
+    b = util_spec "b", 1
+    install_gem_user a
+    install_gem b
+
+    Gem::Specification.unresolved_deps["b"] = Gem::Dependency.new("b", ">= 0")
+
+    _, err = capture_output do
+      Gem::Specification.dirs = Gem.user_dir
+    end
+
+    assert_match(/b \(>= 0\)\n.*\n      - 1\n/, err)
+    # JRuby replaces dirs= in rubygems/defaults/jruby.rb without the ABI scoped spec dir
+    assert_equal Gem::SpecificationRecord.dirs_from([Gem.user_dir]), Gem::Specification.dirs unless Gem.java_platform?
+    assert_equal %w[a-1], Gem::Specification.map(&:full_name)
+  end
+
+  def test_self_dirs_equals_keeps_specs_set_by_post_reset_hooks
+    b = util_spec "b", 1
+    install_gem b
+    stub = util_spec "stub", 1
+
+    Gem.post_reset { Gem::Specification.all = [stub] }
+    Gem::Specification.unresolved_deps["b"] = Gem::Dependency.new("b", ">= 0")
+
+    capture_output do
+      Gem::Specification.dirs = Gem.user_dir
+    end
+
+    assert_equal %w[stub-1], Gem::Specification.map(&:full_name)
+  end
+
   def test_self__load_future
     spec = Gem::Specification.new
     spec.name = "a"
@@ -1576,6 +1610,7 @@ dependencies: []
   end
 
   def test_contains_requirable_file_eh_extension
+    pend_for_ruby_box_stdio_capture
     ext_spec
 
     _, err = capture_output do
@@ -3386,6 +3421,7 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
   end
 
   def test_unresolved_specs
+    pend_for_ruby_box_stdio_capture
     specification = Gem::Specification.clone
 
     set_orig specification
@@ -3412,6 +3448,7 @@ Please report a bug if this causes problems.
   end
 
   def test_unresolved_specs_with_versions
+    pend_for_ruby_box_stdio_capture
     specification = Gem::Specification.clone
 
     set_orig specification
@@ -3444,6 +3481,7 @@ Please report a bug if this causes problems.
   end
 
   def test_unresolved_specs_with_duplicated_versions
+    pend_for_ruby_box_stdio_capture
     specification = Gem::Specification.clone
 
     set_orig specification
@@ -3497,6 +3535,7 @@ Please report a bug if this causes problems.
   end
 
   def test_duplicate_runtime_dependency
+    pend_for_ruby_box_stdio_capture
     expected = "WARNING: duplicated b dependency [\"~> 3.0\", \"~> 3.0\"]\n"
     out, err = capture_output do
       @a1.add_dependency "b", "~> 3.0", "~> 3.0"

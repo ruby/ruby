@@ -12,7 +12,9 @@ module Gem
     # want other processes or threads to see half-written files.
 
     def self.open(file_name)
-      require "securerandom" unless defined?(SecureRandom)
+      # Vendored, because activating the securerandom default gem here pins it for
+      # the rest of the process and conflicts with gems that need a newer one.
+      require_relative "../vendored_securerandom" unless defined?(Gem::SecureRandom)
 
       old_stat = begin
                    File.stat(file_name)
@@ -21,7 +23,7 @@ module Gem
                  end
 
       # Names can't be longer than 255B
-      tmp_suffix = ".tmp.#{SecureRandom.hex}"
+      tmp_suffix = ".tmp.#{Gem::SecureRandom.hex}"
       dirname = File.dirname(file_name)
       basename = File.basename(file_name)
       base_slice = byteslice_at_char_boundary(basename, 254 - tmp_suffix.bytesize)

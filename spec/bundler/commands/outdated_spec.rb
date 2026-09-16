@@ -231,6 +231,30 @@ RSpec.describe "bundle outdated" do
 
       expect(out).to end_with(expected_output)
     end
+
+    it "returns a sorted list of outdated gems from one group spread over several group sets" do
+      install_gemfile <<-G
+        source "https://gem.repo2"
+
+        gem "weakling", "~> 0.0.1"
+        group :development do
+          gem "terranova", '8'
+        end
+        group :development, :test do
+          gem 'activesupport', '2.3.5'
+        end
+      G
+
+      test_group_option("development")
+
+      expected_output = <<~TABLE.strip
+        Gem            Current  Latest  Requested  Groups             Release Date
+        activesupport  2.3.5    3.0     = 2.3.5    development, test
+        terranova      8        9       = 8        development
+      TABLE
+
+      expect(out).to end_with(expected_output)
+    end
   end
 
   describe "with --groups option and outdated transitive dependencies" do
@@ -267,6 +291,31 @@ RSpec.describe "bundle outdated" do
 
       expect(out).to end_with(expected_output)
     end
+
+    it "lists the outdated gems without groups after the grouped ones" do
+      install_gemfile <<-G
+        source "https://gem.repo2"
+
+        gem "bar_dependant", '7.0'
+        gem "myrack_middleware"
+        gem "terranova", '8'
+      G
+
+      update_repo2 do
+        build_gem "terranova", "9"
+      end
+
+      bundle "outdated --groups", raise_on_error: false
+
+      expected_output = <<~TABLE.strip
+        Gem        Current  Latest  Requested  Groups   Release Date
+        terranova  8        9       = 8        default
+        bar        2.0.0    3.0.0
+        myrack     0.9.1    1.0.0
+      TABLE
+
+      expect(out).to end_with(expected_output)
+    end
   end
 
   describe "with --groups option" do
@@ -274,6 +323,7 @@ RSpec.describe "bundle outdated" do
       build_repo2 do
         build_git "foo", path: lib_path("foo")
         build_git "zebra", path: lib_path("zebra")
+        build_gem "zondrian", "1.2"
       end
 
       install_gemfile <<-G
@@ -284,6 +334,7 @@ RSpec.describe "bundle outdated" do
         group :development, :test do
           gem 'activesupport', '2.3.5'
           gem "duradura", '7.0'
+          gem "zondrian", '1.2'
         end
       G
     end
@@ -298,15 +349,48 @@ RSpec.describe "bundle outdated" do
         build_gem "activesupport", "3.0"
         build_gem "terranova", "9"
         build_gem "duradura", "8.0"
+        build_gem "zondrian", "1.3"
       end
 
       bundle "outdated --groups", raise_on_error: false
 
       expected_output = <<~TABLE.strip
         Gem            Current  Latest  Requested  Groups             Release Date
+        terranova      8        9       = 8        default
         activesupport  2.3.5    3.0     = 2.3.5    development, test
         duradura       7.0      8.0     = 7.0      development, test
+        zondrian       1.2      1.3     = 1.2      development, test
+      TABLE
+
+      expect(out).to end_with(expected_output)
+    end
+
+    it "puts together the gems from the same groups declared in a different order" do
+      install_gemfile <<-G
+        source "https://gem.repo2"
+
+        gem "terranova", '8'
+        group :test, :development do
+          gem 'activesupport', '2.3.5'
+        end
+        group :development, :test do
+          gem "duradura", '7.0'
+        end
+      G
+
+      update_repo2 do
+        build_gem "activesupport", "3.0"
+        build_gem "terranova", "9"
+        build_gem "duradura", "8.0"
+      end
+
+      bundle "outdated --groups", raise_on_error: false
+
+      expected_output = <<~TABLE.strip
+        Gem            Current  Latest  Requested  Groups             Release Date
         terranova      8        9       = 8        default
+        activesupport  2.3.5    3.0     = 2.3.5    development, test
+        duradura       7.0      8.0     = 7.0      development, test
       TABLE
 
       expect(out).to end_with(expected_output)

@@ -1297,6 +1297,7 @@ class TestGem < Gem::TestCase
   end
 
   def test_self_try_activate_missing_extensions
+    pend_for_ruby_box_stdio_capture
     spec = util_spec "ext", "1" do |s|
       s.extensions = %w[ext/extconf.rb]
       s.installed_by_version = v("2.2")
@@ -1352,6 +1353,7 @@ class TestGem < Gem::TestCase
   end
 
   def test_deprecated_paths=
+    pend_for_ruby_box_stdio_capture
     stdout, stderr = capture_output do
       Gem.paths = { "GEM_HOME" => Gem.paths.home,
                     "GEM_PATH" => [Gem.paths.home, "foo"] }
