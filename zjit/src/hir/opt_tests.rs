@@ -11963,11 +11963,9 @@ mod hir_opt_tests {
           Jump bb20(v100, v27)
         bb20(v67:BasicObject, v68:BasicObject):
           v103:BasicObject = Send v67, :call # SendFallbackReason: Send: no profile data available
-          CheckInterrupts
           Jump bb4(v103)
         bb6():
           v112:Fixnum[42] = Const Value(42)
-          CheckInterrupts
           Jump bb4(v112)
         bb4(v118:BasicObject):
           PopInlineFrame
@@ -15659,7 +15657,6 @@ mod hir_opt_tests {
           v48:BasicObject = ArrayAref v19, v47
           v49:ArrayExact = NewArray v48
           PushInlineFrame :target, v25 (0x1040), num_args=1
-          CheckInterrupts
           PopInlineFrame
           Jump bb4(v49)
         bb6():
@@ -15677,7 +15674,6 @@ mod hir_opt_tests {
           v59:BasicObject = ArrayAref v19, v58
           v60:ArrayExact = NewArray v59
           PushInlineFrame :target, v31 (0x1090), num_args=1
-          CheckInterrupts
           PopInlineFrame
           Jump bb4(v60)
         bb8():
@@ -22054,10 +22050,8 @@ mod hir_opt_tests {
           CondBranch v37, bb7(), bb6()
         bb7():
           v42:Fixnum[0] = Const Value(0)
-          CheckInterrupts
           Jump bb4(v42)
         bb6():
-          CheckInterrupts
           Jump bb4(v62)
         bb4(v56:Fixnum):
           PopInlineFrame
@@ -23453,7 +23447,6 @@ mod hir_opt_tests {
           StoreField v95, :@y@0x108c, v49
           v172:CShape[0x108d] = Const CShape(0x108d)
           StoreField v95, :shape_id@0x1088, v172
-          CheckInterrupts
           PopInlineFrame
           PatchPoint MethodRedefined(Point@0x1008, ==@0x1098, cme:0x10a0)
           PushInlineFrame :==, v85 (0x10c8), num_args=1
@@ -23874,7 +23867,6 @@ mod hir_opt_tests {
           v59:CInt64[-4] = Const CInt64(-4)
           v60:CInt64 = IntAnd v58, v59
           v61:BasicObject = InvokeBlockIseqDirect (0x1068), v60
-          CheckInterrupts
           PopInlineFrame
           Jump bb4(v61)
         bb6():
@@ -23890,7 +23882,6 @@ mod hir_opt_tests {
           v77:CInt64[-4] = Const CInt64(-4)
           v78:CInt64 = IntAnd v76, v77
           v79:BasicObject = InvokeBlockIseqDirect (0x1068), v78
-          CheckInterrupts
           PopInlineFrame
           Jump bb4(v79)
         bb8():
@@ -23906,7 +23897,6 @@ mod hir_opt_tests {
           v95:CInt64[-4] = Const CInt64(-4)
           v96:CInt64 = IntAnd v94, v95
           v97:BasicObject = InvokeBlockIseqDirect (0x1068), v96
-          CheckInterrupts
           PopInlineFrame
           Jump bb4(v97)
         bb10():
@@ -24017,6 +24007,32 @@ mod hir_opt_tests {
         bb14(v54:BasicObject):
           CheckInterrupts
           Return v54
+        ");
+    }
+
+    #[test]
+    fn test_keep_check_interrupts_in_self_loop() {
+        // A `while true` loop with an empty body compiles to a single basic block that jumps
+        // to itself. That self edge is a back edge, so its CheckInterrupts must not be removed
+        // as a duplicate even though it is the last instruction in the block.
+        eval("
+            TEST = proc { nil while true }
+        ");
+        assert_snapshot!(hir_string_proc("TEST"), @"
+        fn block in <compiled>@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          Jump bb4()
+        bb4():
+          CheckInterrupts
+          Jump bb4()
         ");
     }
 }

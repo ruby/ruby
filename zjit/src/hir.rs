@@ -1845,8 +1845,8 @@ impl Insn {
             Insn::GetBlockParam { .. } => effects::Any,
             Insn::SymToProc { .. } => effects::Any,
             Insn::Snapshot { .. } => effects::Empty,
-            Insn::Jump(_) => effects::Any,
-            Insn::CondBranch { .. } => effects::Any,
+            Insn::Jump(_) => effects::Control,
+            Insn::CondBranch { .. } => effects::Control,
             Insn::CCall { elidable, .. } => {
                 if *elidable {
                     Effect::write(abstract_heaps::Allocator)
@@ -7138,26 +7138,68 @@ impl Function {
         }
     }
 
-    /// Remove duplicate CheckInterrupts instructions within each basic block.
-    /// Only the last CheckInterrupts in a block is needed unless an intervening
-    /// instruction writes to InterruptFlag (e.g. a call), which resets tracking.
+    /// Remove duplicate CheckInterrupts instructions globally.
     fn remove_duplicate_check_interrupts(&mut self) {
-        for block_id in self.reverse_post_order() {
-            let mut seen = false;
-            let insns = std::mem::take(&mut self.blocks[block_id].insns);
-            let mut new_insns = Vec::with_capacity(insns.len());
-            for insn_id in insns.into_iter().rev() {
-                let insn = &self.insns[insn_id];
-                if matches!(insn, Insn::CheckInterrupts { .. }) {
-                    if seen { continue; }
-                    seen = true;
-                } else if insn.effects_of().write_bits().overlaps(abstract_heaps::InterruptFlag) {
-                    seen = false;
-                }
-                new_insns.push(insn_id);
+        let cfi = ControlFlowInfo::new(self);
+        let rpo = cfi.reverse_post_order();
+
+        // For detecting back edges
+        let rpo_index = {
+            let mut order = vec![usize::MAX; self.blocks.len()];
+            for (i, &block_id) in rpo.iter().enumerate() {
+                order[block_id] = i;
             }
-            new_insns.reverse();
-            self.blocks[block_id].insns = new_insns;
+            order
+        };
+
+        // Start by assuming all blocks are unchecked.
+        let mut checked = vec![false; self.blocks.len()];
+
+        // Iterate until fixpoint: when no CheckInterrupts instruction is removed, and the checked
+        // status of all blocks stays the same.
+        let mut changed = true;
+        while changed {
+            changed = false;
+
+            for &block_id in rpo.iter().rev() {
+                let successors = cfi.successors(block_id);
+
+                // A block can initially be considered checked if
+                // - it has successors
+                // - all successors have been checked
+                // - none of the successors are back edges (i.e. have a lower RPO index than the current block)
+                let mut block_checked = !successors.is_empty()
+                    && successors.iter().all(|&succ| checked[succ] && !(rpo_index[succ] <= rpo_index[block_id]));
+
+                let insns = std::mem::take(&mut self.blocks[block_id].insns);
+                let mut new_insns = Vec::with_capacity(insns.len());
+
+                // Only the last CheckInterrupts in a block is needed unless an intervening
+                // instruction writes to InterruptFlag (e.g. a call), which resets tracking.
+                // Checking as late as possible keeps fewer values live in the check's frame state,
+                // which lets other passes elide more.
+                for insn_id in insns.into_iter().rev() {
+                    let insn = &self.insns[insn_id];
+                    if matches!(insn, Insn::CheckInterrupts { .. }) {
+                        if block_checked {
+                            changed = true;
+                            continue;
+                        }
+                        block_checked = true;
+                    } else if insn.effects_of().write_bits().overlaps(abstract_heaps::InterruptFlag) {
+                        block_checked = false;
+                    }
+                    new_insns.push(insn_id);
+                }
+
+                new_insns.reverse();
+                self.blocks[block_id].insns = new_insns;
+
+                if checked[block_id] != block_checked {
+                    changed = true;
+                    checked[block_id] = block_checked;
+                }
+            }
         }
     }
 
