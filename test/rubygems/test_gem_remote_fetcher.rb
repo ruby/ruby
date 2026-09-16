@@ -604,6 +604,74 @@ class TestGemRemoteFetcher < Gem::TestCase
     assert_equal "too many redirects (#{url})", e.message
   end
 
+  def test_fetch_http_redirects_relative_location
+    fetcher = Gem::RemoteFetcher.new nil
+    @fetcher = fetcher
+    url = "https://gems.example.com/redirect"
+
+    def fetcher.request(uri, request_class, last_modified = nil)
+      (@requested ||= []) << uri.to_s
+      if @requested.size > 1
+        res = Gem::Net::HTTPOK.new nil, 200, nil
+        def res.body
+          "real_path"
+        end
+      else
+        res = Gem::Net::HTTPPermanentRedirect.new nil, 308, nil
+        res.add_field "Location", "/real"
+      end
+      res
+    end
+
+    data = fetcher.fetch_http Gem::URI.parse(url)
+
+    assert_equal "real_path", data
+    assert_equal [url, "https://gems.example.com/real"], fetcher.instance_variable_get(:@requested)
+  end
+
+  def test_fetch_http_redirects_keep_userinfo_on_same_host
+    fetcher = Gem::RemoteFetcher.new nil
+    @fetcher = fetcher
+    url = "https://user:pass@gems.example.com/redirect"
+
+    def fetcher.request(uri, request_class, last_modified = nil)
+      (@requested ||= []) << uri.to_s
+      if @requested.size > 1
+        res = Gem::Net::HTTPOK.new nil, 200, nil
+        def res.body
+          "real_path"
+        end
+      else
+        res = Gem::Net::HTTPFound.new nil, 302, nil
+        res.add_field "Location", "https://gems.example.com/real"
+      end
+      res
+    end
+
+    data = fetcher.fetch_http Gem::URI.parse(url)
+
+    assert_equal "real_path", data
+    assert_equal [url, "https://user:pass@gems.example.com/real"], fetcher.instance_variable_get(:@requested)
+  end
+
+  def test_fetch_http_redirects_to_non_https_redacts_location
+    fetcher = Gem::RemoteFetcher.new nil
+    @fetcher = fetcher
+    url = "https://gems.example.com/redirect"
+
+    def fetcher.request(uri, request_class, last_modified = nil)
+      res = Gem::Net::HTTPFound.new nil, 302, nil
+      res.add_field "Location", "http://user:secret@mirror.example.com/real"
+      res
+    end
+
+    e = assert_raise Gem::RemoteFetcher::FetchError do
+      fetcher.fetch_http Gem::URI.parse(url)
+    end
+
+    assert_equal "redirecting to non-https resource: http://user:REDACTED@mirror.example.com/real (#{url})", e.message
+  end
+
   def test_fetch_http_redirects_without_location
     fetcher = Gem::RemoteFetcher.new nil
     @fetcher = fetcher

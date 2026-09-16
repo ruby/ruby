@@ -232,17 +232,19 @@ class Gem::RemoteFetcher
       response.uri = uri
       head ? response : response.body
     when Gem::Net::HTTPMovedPermanently, Gem::Net::HTTPFound, Gem::Net::HTTPSeeOther,
-         Gem::Net::HTTPTemporaryRedirect then
+         Gem::Net::HTTPTemporaryRedirect, Gem::Net::HTTPPermanentRedirect then
       raise FetchError.new("too many redirects", uri) if depth > 10
 
       unless location = response["Location"]
         raise FetchError.new("redirecting but no redirect location was given", uri)
       end
-      location = Gem::Uri.new location
+      location = uri + location
 
       if https?(uri) && !https?(location)
-        raise FetchError.new("redirecting to non-https resource: #{location}", uri)
+        raise FetchError.new("redirecting to non-https resource: #{Gem::Uri.redact(location)}", uri)
       end
+      # see Gem::CompactIndexClient::HTTPFetcher#fetch
+      location.userinfo = uri.userinfo if location.host == uri.host && !location.userinfo
 
       fetch_http(location, last_modified, head, depth + 1)
     else
