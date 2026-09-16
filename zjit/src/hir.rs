@@ -2836,6 +2836,44 @@ impl CompilePolicy {
     }
 }
 
+enum VirtualArray {
+    Insns(Vec<InsnId>),
+    FrozenSource(VALUE),
+}
+
+enum VirtualElement {
+    Insn(InsnId),
+    Value(VALUE),
+}
+
+// VirtualArray modeling Array access in optimize-load-aaron
+impl VirtualArray {
+    fn len(&self) -> usize {
+        match self {
+            VirtualArray::Insns(elements) => elements.len(),
+            VirtualArray::FrozenSource(obj) => unsafe { rb_jit_array_len(*obj) as usize },
+        }
+    }
+
+    fn at(&self, index: i64) -> Option<VirtualElement> {
+        if index as usize >= self.len() { return None; }
+        match self {
+            VirtualArray::Insns(elements) => Some(VirtualElement::Insn(elements[index as usize])),
+            VirtualArray::FrozenSource(obj) => {
+                Some(VirtualElement::Value(unsafe { rb_ary_entry(*obj, index as i64) }))
+            }
+        }
+    }
+
+    fn set(&mut self, index: i64, val: InsnId) -> bool {
+        let VirtualArray::Insns(elements) = self else { return false };
+        match elements.get_mut(index as usize) {
+            Some(slot) => { *slot = val; true }
+            None => false,
+        }
+    }
+}
+
 /// A wrapper around [`InsnId`] that indicates the instruction's operands have been resolved.
 #[derive(Debug, Clone, Copy)]
 pub struct ResolvedInsnId(pub InsnId);
@@ -6501,6 +6539,85 @@ impl Function {
         }
     }
 
+    fn optimize_load_aaron(&mut self) {
+        for block in self.reverse_post_order() {
+            let mut virtual_heap: HashMap<InsnId, VirtualArray> = HashMap::new();
+            let old_insns = std::mem::take(&mut self.blocks[block].insns);
+            let mut new_insns = Vec::with_capacity(old_insns.len());
+            'block: for insn_id in old_insns {
+                let replacement_insn: InsnId = match self.resolve(insn_id).insn(self) {
+                    Insn::NewArray { elements, .. } => {
+                        let elements = elements.clone();
+                        virtual_heap.insert(self.find_id(insn_id), VirtualArray::Insns(elements));
+                        insn_id
+                    },
+                    &Insn::ArrayDup { val, .. } => {
+                        if let Some(obj) = self.type_of(val).ruby_object() {
+                            if obj.is_frozen() {
+                                virtual_heap.insert(self.find_id(insn_id), VirtualArray::FrozenSource(obj));
+                            }
+                        }
+                        insn_id
+                    },
+                    &Insn::ArrayLength { array } => {
+                        if let Some(array) = virtual_heap.get(&self.chase_insn(array)) {
+                            let len = array.len() as i64;
+                            let const_id = self.new_insn(Insn::Const { val: Const::CInt64(len) });
+                            self.insn_types[const_id] = self.infer_type(const_id);
+                            if get_option!(stats) {
+                                new_insns.push(self.new_insn(Insn::IncrCounter(Counter::elided_array_length_count)));
+                            }
+                            self.make_equal_to(insn_id, const_id);
+                            const_id
+                        } else {
+                            insn_id
+                        }
+                    },
+                    &Insn::ArrayAref { array, index } => {
+                        let array_id = self.chase_insn(array);
+                        let index = self.type_of(index).cint64_value();
+                        let mut element = None;
+                        if let Some(index) = index {
+                            if let Some(array) = virtual_heap.get(&array_id) {
+                                element = array.at(index);
+                            }
+                        }
+                        match element {
+                            Some(element) => {
+                                let element_id = match element {
+                                    VirtualElement::Insn(element_id) => element_id,
+                                    VirtualElement::Value(val) => {
+                                        let const_id = self.new_insn(Insn::Const { val: Const::Value(val) });
+                                        self.insn_types[const_id] = self.infer_type(const_id);
+                                        new_insns.push(const_id);
+                                        const_id
+                                    }
+                                };
+                                self.make_equal_to(insn_id, element_id);
+                                if !get_option!(stats) { continue 'block }
+                                self.new_insn(Insn::IncrCounter(Counter::elided_array_aref_count))
+                            }
+                            None => {
+                                // FIXME: Do we need to clear the virtual heap?
+                                // The effect is currently "any"
+                                virtual_heap.clear();
+                                insn_id
+                            }
+                        }
+                    },
+                    insn => {
+                        if insn.effects_of().includes(Effect::write(abstract_heaps::Memory)) {
+                            virtual_heap.clear();
+                        }
+                        insn_id
+                    }
+                };
+
+                new_insns.push(replacement_insn);
+            }
+            self.blocks[block].insns = new_insns;
+        }
+    }
 
     fn optimize_load_store(&mut self) {
         for block in self.reverse_post_order() {
@@ -7486,6 +7603,7 @@ impl Function {
             // End strength reduction bucket
             (inline_methods) => { Counter::compile_hir_inline_methods_time_ns };
             (remove_trivial_block_params) => { Counter::compile_hir_remove_trivial_block_params_time_ns };
+            (optimize_load_aaron) => { Counter::compile_hir_optimize_load_store_time_ns };
             (optimize_load_store) => { Counter::compile_hir_optimize_load_store_time_ns };
             (canonicalize) => { Counter::compile_hir_canonicalize_time_ns };
             (fold_constants) => { Counter::compile_hir_fold_constants_time_ns };
@@ -7540,6 +7658,7 @@ impl Function {
             run_pass!(remove_trivial_block_params);
             run_pass!(optimize_load_store);
             run_pass!(canonicalize);
+            run_pass!(optimize_load_aaron);
             run_pass!(fold_constants);
             run_pass!(clean_cfg);
             run_pass!(remove_redundant_patch_points);
