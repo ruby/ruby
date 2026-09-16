@@ -492,7 +492,41 @@ module SyncDefaultGems
       "lib/#{gem.split("-").join("/")}/#{gem}.gemspec",
     ].find{|gemspec| File.exist?(gemspec)}
     spec = Gem::Specification.load(gemspec)
-    puts "#{gem}-#{spec.version} is not latest version of rubygems.org" if spec.version.to_s != latest_version
+    version = spec.version
+    return if version.to_s == latest_version
+
+    if !version.prerelease? and Gem::Version.correct?(latest_version) and
+       version > Gem::Version.new(latest_version) and
+       prerelease = mark_as_prerelease(gem, version)
+      puts "#{gem}-#{version} is not released yet, marked as #{prerelease}"
+    else
+      puts "#{gem}-#{version} is not latest version of rubygems.org"
+    end
+  end
+
+  # Upstream bumps the version just after a release, so the synced tree holds a
+  # version nobody can install yet, and `bundle install` against it would lock
+  # to that version.  Turn it into a prerelease instead.
+  def mark_as_prerelease(gem, version)
+    literal = %["#{version}"]
+    files = REPOSITORIES[gem].mappings.flat_map do |_src, dst|
+      File.directory?(dst) ? Dir.glob("#{dst}/**/*.{c,rb,gemspec}") : [dst]
+    end
+    found = files.uniq.filter_map do |file|
+      next unless File.file?(file)
+      source = File.binread(file)
+      definition = source.lines.find {|line| line.include?(literal) and line.include?("VERSION")}
+      [file, source, definition] if definition
+    end
+    unless found.size == 1
+      puts "Cannot tell where #{gem}-#{version} is defined"
+      return nil
+    end
+
+    file, source, definition = found[0]
+    prerelease = "#{version}.dev"
+    File.binwrite(file, source.sub(definition) {definition.sub(literal) {%["#{prerelease}"]}})
+    prerelease
   end
 
   def message_filter(repo, sha, log, context: nil)

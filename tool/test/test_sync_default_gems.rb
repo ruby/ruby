@@ -252,6 +252,23 @@ module Test_SyncDefaultGems
       MAKE
     end
 
+    def test_mark_as_prerelease
+      File.write("src/lib/common.rb", %[VERSION = "1.2.3"\n])
+      Dir.chdir("src") do
+        assert_equal("1.2.3.dev", SyncDefaultGems.mark_as_prerelease(@target, Gem::Version.new("1.2.3")))
+      end
+      assert_equal(%[VERSION = "1.2.3.dev"\n], File.read("src/lib/common.rb"))
+    end
+
+    def test_mark_as_prerelease_undefined
+      out = capture_process_output_to([STDOUT]) do
+        Dir.chdir("src") do
+          assert_nil(SyncDefaultGems.mark_as_prerelease(@target, Gem::Version.new("1.2.3")))
+        end
+      end
+      assert_match(/Cannot tell where/, out)
+    end
+
     def test_unknown_repository
       assert_raise_with_message(RuntimeError, /unknown/) do
         SyncDefaultGems::REPOSITORIES["not-exist"]
