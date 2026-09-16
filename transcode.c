@@ -901,6 +901,15 @@ rb_transcoding_memsize(rb_transcoding *tc)
     return size;
 }
 
+static char *
+econv_strdup(const char *str)
+{
+    size_t len = strlen(str) + 1;
+    char *copy = ruby_xmalloc(len);
+    memcpy(copy, str, len);
+    return copy;
+}
+
 static rb_econv_t *
 rb_econv_alloc(int n_hint)
 {
@@ -1053,8 +1062,8 @@ rb_econv_open0(const char *sname, const char *dname, int ecflags)
         return NULL;
 
     ec->flags = ecflags;
-    ec->source_encoding_name = sname;
-    ec->destination_encoding_name = dname;
+    ec->source_encoding_name = econv_strdup(sname);
+    ec->destination_encoding_name = econv_strdup(dname);
 
     return ec;
 }
@@ -1751,6 +1760,8 @@ rb_econv_close(rb_econv_t *ec)
         ruby_xfree_sized(ec->elems[i].out_buf_start, ec->elems[i].out_buf_end - ec->elems[i].out_buf_start);
     }
     SIZED_FREE_N(ec->in_buf_start, ec->in_buf_end - ec->in_buf_start);
+    ruby_xfree((void *)ec->source_encoding_name);
+    ruby_xfree((void *)ec->destination_encoding_name);
     SIZED_FREE_N(ec->elems, ec->num_allocated);
     SIZED_FREE(ec);
 }
@@ -1764,6 +1775,10 @@ rb_econv_memsize(rb_econv_t *ec)
     if (ec->replacement_allocated) {
         size += ec->replacement_len;
     }
+    if (ec->source_encoding_name)
+        size += strlen(ec->source_encoding_name) + 1;
+    if (ec->destination_encoding_name)
+        size += strlen(ec->destination_encoding_name) + 1;
     for (i = 0; i < ec->num_trans; i++) {
         size += rb_transcoding_memsize(ec->elems[i].tc);
 
@@ -3379,8 +3394,8 @@ rb_econv_init_by_convpath(VALUE self, VALUE convpath,
         *dname_p = "";
     }
 
-    ec->source_encoding_name = *sname_p;
-    ec->destination_encoding_name = *dname_p;
+    ec->source_encoding_name = econv_strdup(*sname_p);
+    ec->destination_encoding_name = econv_strdup(*dname_p);
 
     return ec;
 }
