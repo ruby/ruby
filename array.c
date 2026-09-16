@@ -6697,7 +6697,7 @@ static VALUE
 flatten(VALUE ary, int level)
 {
     long i;
-    VALUE stack, result, tmp = 0, elt;
+    VALUE stack, result, tmp = Qnil, elt;
     VALUE memo = Qfalse;
 
     for (i = 0; i < RARRAY_LEN(ary); i++) {
@@ -6707,8 +6707,13 @@ flatten(VALUE ary, int level)
             break;
         }
     }
-    if (i == RARRAY_LEN(ary)) {
+    if (NIL_P(tmp)) {
         return ary;
+    }
+    if (i > RARRAY_LEN(ary)) {
+        /* ary was shrunk while converting an element with #to_ary, so
+           the scanned elements may no longer exist in ary */
+        i = RARRAY_LEN(ary);
     }
 
     result = ary_new(0, RARRAY_LEN(ary));
