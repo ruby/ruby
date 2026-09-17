@@ -320,4 +320,53 @@ class TestProtocol < Test::Unit::TestCase
     assert_equal "negative length -1 given", e.message
     assert_equal "bcdef", io.read_all
   end
+
+  # OpenSSL::Buffering#write_nonblock documents :wait_readable, which a
+  # renegotiation produces. Takes the write only once the caller has
+  # waited, and caps the attempts so a regression fails instead of
+  # spinning until CI gives up.
+  class WaitReadableWriteIO
+    MAX_WRITES = 3
+
+    attr_reader :string, :waits
+
+    def initialize(becomes_readable: true)
+      @becomes_readable = becomes_readable
+      @string = "".b
+      @writes = 0
+      @waits = 0
+    end
+
+    def to_io; self; end
+
+    def wait_readable(_timeout)
+      @waits += 1
+      @becomes_readable
+    end
+
+    def write_nonblock(str, exception: true)
+      @writes += 1
+      raise "write0 ignored :wait_readable: #{@writes} attempts" if @writes > MAX_WRITES
+      return :wait_readable if @waits.zero?
+      @string << str
+      str.bytesize
+    end
+  end
+
+  def test_write0_waits_for_readability # https://github.com/ruby/net-protocol/pull/70
+    mockio = WaitReadableWriteIO.new
+    io = Net::BufferedIO.new(mockio)
+    io.write_timeout = 0.1
+    assert_equal 5, io.write("hello")
+    assert_equal "hello", mockio.string
+    assert_equal 1, mockio.waits
+  end
+
+  def test_write0_times_out_waiting_for_readability # https://github.com/ruby/net-protocol/pull/70
+    mockio = WaitReadableWriteIO.new(becomes_readable: false)
+    io = Net::BufferedIO.new(mockio)
+    io.write_timeout = 0.1
+    assert_raise(Net::WriteTimeout) { io.write("hello") }
+    assert_equal 1, mockio.waits
+  end
 end
