@@ -4128,8 +4128,8 @@ rb_gc_impl_define_finalizer(void *objspace_ptr, VALUE obj, VALUE block)
         RB_GC_VM_UNLOCK(lev);
         /* avoid duplicate block, table is usually small */
         {
-            long len = RARRAY_LEN(table);
-            long i;
+            rb_long_t len = RARRAY_LEN(table);
+            rb_long_t i;
 
             for (i = 0; i < len; i++) {
                 VALUE recv = RARRAY_AREF(dup_table, i);
