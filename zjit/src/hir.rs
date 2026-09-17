@@ -8902,7 +8902,7 @@ fn add_iseq_to_hir(
 
             let add_line_numbers = get_option!(dump_hir_map);
             if add_line_numbers {
-                hir_comment!(fun, block, "{}", iseq_get_location(iseq, insn_idx));
+                hir_comment!(fun, block, "Line {}", iseq_get_location(iseq, insn_idx));
             }
 
             // Strip any ZJIT profiling instrumentation so we read the ISEQ's original opcodes,
