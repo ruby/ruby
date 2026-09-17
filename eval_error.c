@@ -85,7 +85,7 @@ static const char reset[] = CSI_BEGIN""CSI_SGR;
 static void
 print_errinfo(const VALUE eclass, const VALUE errat, const VALUE emesg, const VALUE str, int highlight)
 {
-    long elen = 0;
+    rb_long_t elen = 0;
     VALUE mesg;
 
     if (NIL_P(errat) || RARRAY_LEN(errat) == 0 ||
@@ -128,7 +128,7 @@ VALUE
 rb_decorate_message(const VALUE eclass, VALUE emesg, int highlight)
 {
     const char *einfo = "";
-    long elen = 0;
+    rb_long_t elen = 0;
     rb_encoding *eenc;
 
     VALUE str = rb_usascii_str_new_cstr("");
@@ -219,21 +219,21 @@ static void
 print_backtrace(const VALUE eclass, const VALUE errat, const VALUE str, int reverse, long backtrace_limit)
 {
     if (!NIL_P(errat)) {
-        long i;
-        long len = RARRAY_LEN(errat);
+        rb_long_t i;
+        rb_long_t len = RARRAY_LEN(errat);
         const int threshold = 1000000000;
         int width = (len <= 1) ? INT_MIN : ((int)log10((double)(len > threshold ?
                                          ((len - 1) / threshold) :
                                          len - 1)) +
                      (len < threshold ? 0 : 9) + 1);
 
-        long skip_start = -1, skip_len = 0;
+        rb_long_t skip_start = -1, skip_len = 0;
 
         // skip for stackoverflow
         if (eclass == rb_eSysStackError) {
-            long trace_head = 9;
-            long trace_tail = 4;
-            long trace_max = trace_head + trace_tail + 5;
+            rb_long_t trace_head = 9;
+            rb_long_t trace_tail = 4;
+            rb_long_t trace_max = trace_head + trace_tail + 5;
             if (len > trace_max) {
                 skip_start = trace_head;
                 skip_len = len - trace_max + 5;
@@ -248,14 +248,14 @@ print_backtrace(const VALUE eclass, const VALUE errat, const VALUE str, int reve
 
         for (i = 1; i < len; i++) {
             if (i == skip_start) {
-                write_warn_str(str, rb_sprintf("\t ... %ld levels...\n", skip_len));
+                write_warn_str(str, rb_sprintf("\t ... %"PRIdLONGT" levels...\n", skip_len));
                 i += skip_len;
                 if (i >= len) break;
             }
             VALUE line = RARRAY_AREF(errat, reverse ? len - i : i);
             if (RB_TYPE_P(line, T_STRING)) {
                 VALUE bt = rb_str_new_cstr("\t");
-                if (reverse) rb_str_catf(bt, "%*ld: ", width, len - i);
+                if (reverse) rb_str_catf(bt, "%*"PRIdLONGT": ", width, len - i);
                 write_warn_str(str, rb_str_catf(bt, "from %"PRIsVALUE"\n", line));
             }
         }

@@ -2774,7 +2774,7 @@ vm_caller_setup_arg_splat(rb_control_frame_t *cfp, struct rb_calling_info *calli
 
     if (!NIL_P(ary)) {
         const VALUE *ptr = RARRAY_CONST_PTR(ary);
-        long len = RARRAY_LEN(ary);
+        rb_long_t len = RARRAY_LEN(ary);
         int argc = calling->argc;
 
         if (UNLIKELY(max_args <= ALLOW_HEAP_ARGV && len + argc > VM_ARGC_STACK_MAX)) {
@@ -5358,7 +5358,7 @@ static inline int
 vm_callee_setup_block_arg_arg0_splat(rb_control_frame_t *cfp, const rb_iseq_t *iseq, VALUE *argv, VALUE ary)
 {
     int i;
-    long len = RARRAY_LEN(ary);
+    rb_long_t len = RARRAY_LEN(ary);
 
     CHECK_VM_STACK_OVERFLOW(cfp, ISEQ_BODY(iseq)->param.lead_num);
 
@@ -5919,8 +5919,8 @@ vm_check_match(rb_execution_context_t *ec, VALUE target, VALUE pattern, rb_num_t
     enum vm_check_match_type type = ((int)flag) & VM_CHECKMATCH_TYPE_MASK;
 
     if (flag & VM_CHECKMATCH_ARRAY) {
-        long i;
-        const long n = RARRAY_LEN(pattern);
+        rb_long_t i;
+        const rb_long_t n = RARRAY_LEN(pattern);
 
         for (i = 0; i < n; i++) {
             VALUE v = RARRAY_AREF(pattern, i);
@@ -6601,7 +6601,7 @@ rb_vm_opt_newarray_hash(rb_execution_context_t *ec, rb_num_t array_len, const VA
     return vm_opt_newarray_hash(ec, array_len, ptr);
 }
 
-VALUE rb_setup_fake_ary(struct RArray *fake_ary, const VALUE *list, long len);
+VALUE rb_setup_fake_ary(struct RArray *fake_ary, const VALUE *list, rb_long_t len);
 VALUE rb_ec_pack_ary(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer);
 
 static VALUE
@@ -7265,7 +7265,7 @@ vm_opt_length(VALUE recv, int bop)
     else if (RBASIC_CLASS(recv) == rb_cString &&
              BASIC_OP_UNREDEFINED_P(bop, STRING_REDEFINED_OP_FLAG)) {
         if (bop == BOP_EMPTY_P) {
-            return LONG2NUM(RSTRING_LEN(recv));
+            return LONGT2NUM(RSTRING_LEN(recv));
         }
         else {
             return rb_str_length(recv);
@@ -7273,7 +7273,7 @@ vm_opt_length(VALUE recv, int bop)
     }
     else if (RBASIC_CLASS(recv) == rb_cArray &&
              BASIC_OP_UNREDEFINED_P(bop, ARRAY_REDEFINED_OP_FLAG)) {
-        return LONG2NUM(RARRAY_LEN(recv));
+        return LONGT2NUM(RARRAY_LEN(recv));
     }
     else if (RBASIC_CLASS(recv) == rb_cHash &&
              BASIC_OP_UNREDEFINED_P(bop, HASH_REDEFINED_OP_FLAG)) {

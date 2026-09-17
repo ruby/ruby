@@ -423,8 +423,8 @@ collect_per_box_origins_i(rb_classext_t *ext, bool is_prime, VALUE box_value, vo
     if (origin == arg->owner || origin == arg->klass_housing_cme) {
         return;
     }
-    long len = RARRAY_LEN(arg->origins);
-    for (long i = 0; i < len; i++) {
+    rb_long_t len = RARRAY_LEN(arg->origins);
+    for (rb_long_t i = 0; i < len; i++) {
         if (RARRAY_AREF(arg->origins, i) == origin) {
             return;
         }
@@ -533,7 +533,7 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
                                 .origins = origins,
                             };
                             rb_class_classext_foreach(owner, collect_per_box_origins_i, &origins_arg);
-                            for (long i = 0; i < RARRAY_LEN(origins); i++) {
+                            for (rb_long_t i = 0; i < RARRAY_LEN(origins); i++) {
                                 invalidate_callable_method_entry_in_every_m_table(RARRAY_AREF(origins, i), mid, cme);
                             }
                             RB_GC_GUARD(origins);
@@ -3093,7 +3093,7 @@ set_method_visibility(VALUE self, int argc, const VALUE *argv, rb_method_visibil
     VALUE v;
 
     if (argc == 1 && (v = rb_check_array_type(argv[0])) != Qnil) {
-        long j;
+        rb_long_t j;
 
         for (j = 0; j < RARRAY_LEN(v); j++) {
             check_and_export_method(self, RARRAY_AREF(v, j), visi);

@@ -292,13 +292,13 @@ static bool
 refinement_recipe_eq(VALUE r1, VALUE r2)
 {
     if (r1 == r2) return true;
-    long len = RARRAY_LEN(r1);
+    rb_long_t len = RARRAY_LEN(r1);
     if (RARRAY_LEN(r2) != len) return false;
     if (RARRAY_AREF(r1, REFINEMENT_RECIPE_BASE_CREF) !=
         RARRAY_AREF(r2, REFINEMENT_RECIPE_BASE_CREF)) return false;
     if (RARRAY_AREF(r1, REFINEMENT_RECIPE_SRC_ISEQ) !=
         RARRAY_AREF(r2, REFINEMENT_RECIPE_SRC_ISEQ)) return false;
-    for (long i = REFINEMENT_RECIPE_MODS; i < len; i++) {
+    for (rb_long_t i = REFINEMENT_RECIPE_MODS; i < len; i++) {
         if (RARRAY_AREF(r1, i) != RARRAY_AREF(r2, i)) return false;
     }
     return true;
@@ -469,7 +469,7 @@ refinement_memo_set(const rb_iseq_t *src_iseq, VALUE recipe, const rb_iseq_t *co
     }
 }
 
-static long
+static rb_long_t
 refinement_recipe_modc(VALUE recipe)
 {
     return NIL_P(recipe) ? 0 : RARRAY_LEN(recipe) - REFINEMENT_RECIPE_MODS;
@@ -479,7 +479,7 @@ static bool
 refinement_recipe_match(VALUE recipe, const rb_cref_t *base_cref, VALUE src_recipe,
                         long argc, const VALUE *mods)
 {
-    long inherited = refinement_recipe_modc(src_recipe);
+    rb_long_t inherited = refinement_recipe_modc(src_recipe);
     if (RARRAY_AREF(recipe, REFINEMENT_RECIPE_BASE_CREF) != (VALUE)base_cref) return false;
     if (refinement_recipe_modc(recipe) != inherited + argc) return false;
     for (long i = 0; i < inherited; i++) {
@@ -497,7 +497,7 @@ refinement_recipe_new(const rb_cref_t *base_cref, const rb_cref_t *cref,
                       const rb_iseq_t *src_iseq, VALUE src_recipe,
                       long argc, const VALUE *mods)
 {
-    long inherited = refinement_recipe_modc(src_recipe);
+    rb_long_t inherited = refinement_recipe_modc(src_recipe);
     VALUE recipe = rb_ary_hidden_new(REFINEMENT_RECIPE_MODS + inherited + argc);
     rb_ary_push(recipe, (VALUE)base_cref);
     rb_ary_push(recipe, (VALUE)cref);
@@ -1701,11 +1701,11 @@ proc_call(int argc, VALUE *argv, VALUE procval)
 
 #if SIZEOF_LONG > SIZEOF_INT
 static inline int
-check_argc(long argc)
+check_argc(rb_long_t argc)
 {
     if (argc > INT_MAX || argc < 0) {
-        rb_raise(rb_eArgError, "too many arguments (%lu)",
-                 (unsigned long)argc);
+        rb_raise(rb_eArgError, "too many arguments (%"PRIuLONGT")",
+                 (rb_ulong_t)argc);
     }
     return (int)argc;
 }
@@ -2262,10 +2262,10 @@ rb_hash_proc(st_index_t hash, VALUE prc)
             /* from the recipe, not the block iseq: the latter flips from the
              * source to the copy on the first call, and the hash must not */
             VALUE recipe = rb_proc_refinements_recipe(prc);
-            long len = RARRAY_LEN(recipe);
+            rb_long_t len = RARRAY_LEN(recipe);
             hash = rb_st_hash_uint(hash, (st_index_t)RARRAY_AREF(recipe, REFINEMENT_RECIPE_BASE_CREF));
             hash = iseq_location_hash(hash, (const rb_iseq_t *)RARRAY_AREF(recipe, REFINEMENT_RECIPE_SRC_ISEQ));
-            for (long i = REFINEMENT_RECIPE_MODS; i < len; i++) {
+            for (rb_long_t i = REFINEMENT_RECIPE_MODS; i < len; i++) {
                 hash = rb_st_hash_uint(hash, (st_index_t)RARRAY_AREF(recipe, i));
             }
         }
