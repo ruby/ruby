@@ -50,7 +50,18 @@ when true
   end
   have_func("rb_category_warn")
   have_const("RB_WARN_CATEGORY_DEPRECATED")
-  win32 or have_func("ttyname_r") or have_func("ttyname")
+  unless win32
+    if have_func("ttyname_r")
+      ret = checking_for("type of ttyname_r()", "%s") {try_link(<<~C) ? "int" : "char *"}
+          #{cpp_include %<unistd.h>}
+          int t(void) {char name[1024]; return ttyname_r(0, name, sizeof(name)) % 1024;}
+          #{MAIN_DOES_NOTHING('t')}
+        C
+      $defs << "-DTTYNAME_R_RETURNS_#{ret.tr_cpp}"
+    else
+      have_func("ttyname")
+    end
+  end
   have_func("rb_prepend_module") # not exported by TruffleRuby
   vk_tool = find_executable("gperf")
   create_makefile("io/console") {|conf|

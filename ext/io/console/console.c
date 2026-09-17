@@ -2314,6 +2314,9 @@ console_ttyname(VALUE io)
     return rb_usascii_str_new_lit("con");
 # elif defined HAVE_TTYNAME_R
     {
+# ifdef TTYNAME_R_RETURNS_CHAR_P
+#   define ttyname_r(fd, name, size) (ttyname_r(fd, name, size) == NULL ? errno : 0)
+# endif
 	char termname[1024], *tn = termname;
 	size_t size = sizeof(termname);
 	int e;
