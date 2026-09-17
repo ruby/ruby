@@ -26,7 +26,7 @@ require 'io/wait' if RUBY_VERSION < '3.2'
 module Net # :nodoc:
 
   class Protocol   #:nodoc: internal use only
-    VERSION = "0.3.0"
+    VERSION = "0.4.0"
 
     private
     def Protocol.protocol_param(name, val)
