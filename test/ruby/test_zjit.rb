@@ -2775,6 +2775,13 @@ class TestZJIT < Test::Unit::TestCase
     }, stats: true
   end
 
+  def test_reset_stats_with_zjit_off
+    # [Bug #22327]
+    assert_runs 'nil', <<~RUBY, zjit: false
+      RubyVM::ZJIT.reset_stats!
+    RUBY
+  end
+
   def test_zjit_option_uses_array_each_in_ruby
     omit 'ZJIT wrongly compiles Array#each, so it is disabled for now'
     assert_runs '"<internal:array>"', %q{
