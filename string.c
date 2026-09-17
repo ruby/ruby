@@ -6737,19 +6737,19 @@ VALUE
 rb_str_setbyte(VALUE str, VALUE index, VALUE value)
 {
     long pos = NUM2LONG(index);
-    long len = RSTRING_LEN(str);
     char *ptr, *head, *left = 0;
     rb_encoding *enc;
     int cr = ENC_CODERANGE_UNKNOWN, width, nlen;
 
+    VALUE v = rb_to_int(value);
+    VALUE w = rb_int_and(v, INT2FIX(0xff));
+    char byte = (char)(NUM2INT(w) & 0xFF);
+
+    long len = RSTRING_LEN(str);
     if (pos < -len || len <= pos)
         rb_raise(rb_eIndexError, "index %ld out of string", pos);
     if (pos < 0)
         pos += len;
-
-    VALUE v = rb_to_int(value);
-    VALUE w = rb_int_and(v, INT2FIX(0xff));
-    char byte = (char)(NUM2INT(w) & 0xFF);
 
     if (!str_independent(str))
         str_make_independent(str);
