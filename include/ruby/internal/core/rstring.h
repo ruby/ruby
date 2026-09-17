@@ -21,7 +21,7 @@
  * @brief      Defines struct ::RString.
  */
 #include "ruby/internal/config.h"
-#include "ruby/internal/arithmetic/long.h"
+#include "ruby/internal/arithmetic/long_t.h"
 #include "ruby/internal/attr/artificial.h"
 #include "ruby/internal/attr/pure.h"
 #include "ruby/internal/cast.h"
@@ -203,7 +203,7 @@ struct RString {
      *
      * @note  This is in bytes.
      */
-    long len;
+    rb_long_t len;
 
     /** String's specific fields. */
     union {
@@ -229,7 +229,7 @@ struct RString {
                  * `capa` bytes  is expected to  exist at `*ptr`.  This  can be
                  * bigger than `len`.
                  */
-                long capa;
+                rb_long_t capa;
 
                 /**
                  * Parent  of the  string.   Nowadays strings  can share  their
@@ -363,7 +363,7 @@ RBIMPL_ATTR_ARTIFICIAL()
  * @return     Its length, in bytes.
  * @pre        `str` must be an instance of ::RString.
  */
-static inline long
+static inline rb_long_t
 RSTRING_LEN(VALUE str)
 {
     return RSTRING(str)->len;
@@ -411,7 +411,7 @@ RSTRING_END(VALUE str)
     char *ptr = RB_FL_TEST_RAW(str, RSTRING_NOEMBED) ?
         RSTRING(str)->as.heap.ptr :
         RSTRING(str)->as.embed.ary;
-    long len = RSTRING_LEN(str);
+    rb_long_t len = RSTRING_LEN(str);
 
     if (RUBY_DEBUG && RB_UNLIKELY(!ptr)) {
         /* Ditto. */
@@ -437,7 +437,7 @@ RBIMPL_ATTR_ARTIFICIAL()
 static inline int
 RSTRING_LENINT(VALUE str)
 {
-    return rb_long2int(RSTRING_LEN(str));
+    return rb_longt2int(RSTRING_LEN(str));
 }
 
 /**
