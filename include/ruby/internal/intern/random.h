@@ -70,7 +70,7 @@ void rb_reset_random_seed(void);
  * The arguments are just silently ignored and the default RNG is used instead,
  * if they are non-RNG.
  */
-VALUE rb_random_bytes(VALUE rnd, long n);
+VALUE rb_random_bytes(VALUE rnd, rb_long_t n);
 
 /**
  * Identical to rb_genrand_int32(), except it generates using the passed RNG.

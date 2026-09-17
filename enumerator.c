@@ -3985,7 +3985,7 @@ rb_arithmetic_sequence_extract(VALUE obj, rb_arithmetic_sequence_components_t *c
 }
 
 VALUE
-rb_arithmetic_sequence_beg_len_step(VALUE obj, long *begp, long *lenp, long *stepp, long len, int err)
+rb_arithmetic_sequence_beg_len_step(VALUE obj, rb_long_t *begp, rb_long_t *lenp, rb_long_t *stepp, rb_long_t len, int err)
 {
     RBIMPL_NONNULL_ARG(begp);
     RBIMPL_NONNULL_ARG(lenp);

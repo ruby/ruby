@@ -1620,7 +1620,7 @@ hash_new_capa(VALUE klass, size_t capa)
 }
 
 VALUE
-rb_hash_new_capa(long capa)
+rb_hash_new_capa(rb_long_t capa)
 {
     if (capa < 0) {
         rb_raise(rb_eArgError, "negative hash size (or size too big)");
@@ -5012,7 +5012,7 @@ rb_ident_hash_new(void)
 }
 
 VALUE
-rb_ident_hash_new_capa(long size)
+rb_ident_hash_new_capa(rb_long_t size)
 {
     VALUE hash = rb_hash_new_capa(0);
     FL_SET_RAW(hash, RHASH_COMPARE_BY_IDENTITY);
@@ -5390,7 +5390,7 @@ ar_bulk_insert(VALUE hash, long argc, const VALUE *argv)
 }
 
 void
-rb_hash_bulk_insert(long argc, const VALUE *argv, VALUE hash)
+rb_hash_bulk_insert(rb_long_t argc, const VALUE *argv, VALUE hash)
 {
     HASH_ASSERT(argc % 2 == 0);
     if (argc > 0) {

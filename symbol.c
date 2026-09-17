@@ -855,7 +855,7 @@ rb_enc_symname_type(const char *name, long len, rb_encoding *enc, unsigned int a
 }
 
 int
-rb_enc_symname2_p(const char *name, long len, rb_encoding *enc)
+rb_enc_symname2_p(const char *name, rb_long_t len, rb_encoding *enc)
 {
     return rb_enc_symname_type(name, len, enc, IDSET_ATTRSET_FOR_SYNTAX) != -1;
 }
@@ -991,7 +991,7 @@ lookup_str_id(VALUE str)
 }
 
 ID
-rb_intern3(const char *name, long len, rb_encoding *enc)
+rb_intern3(const char *name, rb_long_t len, rb_encoding *enc)
 {
     struct RString fake_str = {RBASIC_INIT};
     VALUE str = rb_setup_fake_str(&fake_str, name, len, enc);
@@ -1002,7 +1002,7 @@ rb_intern3(const char *name, long len, rb_encoding *enc)
 }
 
 ID
-rb_intern2(const char *name, long len)
+rb_intern2(const char *name, rb_long_t len)
 {
     return rb_intern3(name, len, rb_usascii_encoding());
 }
@@ -1378,7 +1378,7 @@ rb_check_symbol(volatile VALUE *namep)
 }
 
 ID
-rb_check_id_cstr(const char *ptr, long len, rb_encoding *enc)
+rb_check_id_cstr(const char *ptr, rb_long_t len, rb_encoding *enc)
 {
     struct RString fake_str = {RBASIC_INIT};
     const VALUE name = rb_setup_fake_str(&fake_str, ptr, len, enc);
@@ -1389,7 +1389,7 @@ rb_check_id_cstr(const char *ptr, long len, rb_encoding *enc)
 }
 
 VALUE
-rb_check_symbol_cstr(const char *ptr, long len, rb_encoding *enc)
+rb_check_symbol_cstr(const char *ptr, rb_long_t len, rb_encoding *enc)
 {
     VALUE sym;
     struct RString fake_str = {RBASIC_INIT};

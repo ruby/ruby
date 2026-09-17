@@ -135,7 +135,7 @@ RBIMPL_ATTR_NONNULL((1, 4))
  * @post           `alllen`, if passed, is updated to be the number of bytes of
  *                 strings not considered as the basename.
  */
-const char *ruby_enc_find_basename(const char *name, long *baselen, long *alllen, rb_encoding *enc);
+const char *ruby_enc_find_basename(const char *name, rb_long_t *baselen, rb_long_t *alllen, rb_encoding *enc);
 
 RBIMPL_ATTR_NONNULL((1, 3))
 /**
@@ -177,7 +177,7 @@ RBIMPL_ATTR_NONNULL((1, 3))
  * @return         See above.
  * @post           `len`, if passed, is updated (see above).
  */
-const char *ruby_enc_find_extname(const char *name, long *len, rb_encoding *enc);
+const char *ruby_enc_find_extname(const char *name, rb_long_t *len, rb_encoding *enc);
 
 RBIMPL_SYMBOL_EXPORT_END()
 

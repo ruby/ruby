@@ -9448,7 +9448,7 @@ rb_stderr_to_original_p(VALUE err)
 }
 
 void
-rb_write_error2(const char *mesg, long len)
+rb_write_error2(const char *mesg, rb_long_t len)
 {
     VALUE out = rb_ractor_stderr();
     if (rb_stderr_to_original_p(out)) {
