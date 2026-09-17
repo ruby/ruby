@@ -1994,6 +1994,13 @@ pub struct InsnPrinter<'a> {
     ptr_map: &'a PtrPrintMap,
 }
 
+impl<'a> InsnPrinter<'a> {
+    /// Showing all the instructions without filtering?
+    fn show_all(&self) -> bool {
+        matches!(self.fun, Some(FunctionPrinter { display_snapshot_and_tp_patchpoints: true, .. }))
+    }
+}
+
 fn get_local_var_id(iseq: IseqPtr, level: u32, ep_offset: u32) -> ID {
     let mut current_iseq = iseq;
     for _ in 0..level {
@@ -2354,7 +2361,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             },
             Insn::PatchPoint { invariant, state } => {
                 write!(f, "PatchPoint {}", invariant.print(self.ptr_map))?;
-                if let Some(FunctionPrinter { display_snapshot_and_tp_patchpoints: true, .. }) = self.fun {
+                if self.show_all() {
                     write!(f, ", {}", state)?;
                 }
                 Ok(())
