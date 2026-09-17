@@ -6485,6 +6485,9 @@ impl Function {
                     continue
                 }
                 let terminator = self.blocks[target_block].insns.last().unwrap();
+                // TODO: Update this to include all new outgoing edges that are updated
+                // TODO: Benchmark afterwards
+                // TODO: And then fix it the way we do type specialize
                 // If any outgoing edge gets updated, add the successor block to the worklist for analysis
                 match self.resolve(*terminator).insn(self) {
                     Insn::Jump(edge) => {
