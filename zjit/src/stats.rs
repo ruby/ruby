@@ -372,6 +372,7 @@ make_counters! {
     compile_error_validation_duplicate_instruction,
     compile_error_validation_type_check_failure,
     compile_error_validation_misc_validation_error,
+    compile_error_validation_cfg_not_reducible,
 
     // unhandled_hir_insn_: Unhandled HIR instructions
     unhandled_hir_insn_invokebuiltin,
@@ -580,6 +581,7 @@ pub fn exit_counter_for_compile_error(compile_error: &CompileError) -> Counter {
                 OperandNotDefined(_, _, _)    => compile_error_validation_operand_not_defined,
                 DuplicateInstruction(_, _)    => compile_error_validation_duplicate_instruction,
                 MismatchedOperandType(..)     => compile_error_validation_type_check_failure,
+                IrreducibleLoopEdge(..)       => compile_error_validation_cfg_not_reducible,
                 MiscValidationError(..)       => compile_error_validation_misc_validation_error,
             },
         }
