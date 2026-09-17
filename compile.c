@@ -2660,9 +2660,9 @@ static ID *
 array_to_idlist(VALUE arr)
 {
     RUBY_ASSERT(RB_TYPE_P(arr, T_ARRAY));
-    long size = RARRAY_LEN(arr);
+    rb_len_t size = RARRAY_LEN(arr);
     ID *ids = (ID *)ALLOC_N(ID, size + 1);
-    for (long i = 0; i < size; i++) {
+    for (rb_len_t i = 0; i < size; i++) {
         VALUE sym = RARRAY_AREF(arr, i);
         ids[i] = SYM2ID(sym);
     }
@@ -12274,7 +12274,7 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *const anchor,
                          VALUE body, VALUE node_ids, VALUE labels_wrapper)
 {
     /* TODO: body should be frozen */
-    long i, len = RARRAY_LEN(body);
+    rb_len_t i, len = RARRAY_LEN(body);
     struct st_table *labels_table = RTYPEDDATA_DATA(labels_wrapper);
     int j;
     int line_no = 0, node_id = -1, insn_idx = 0;
@@ -12897,7 +12897,7 @@ pinned_list_new(long size)
 static ibf_offset_t
 ibf_dump_pos(struct ibf_dump *dump)
 {
-    long pos = RSTRING_LEN(dump->current_buffer->str);
+    rb_len_t pos = RSTRING_LEN(dump->current_buffer->str);
 #if SIZEOF_LONG > SIZEOF_INT
     if (pos >= UINT_MAX) {
         rb_raise(rb_eRuntimeError, "dump size exceeds");
@@ -14457,7 +14457,7 @@ static void
 ibf_dump_object_string(struct ibf_dump *dump, VALUE obj)
 {
     long encindex = (long)rb_enc_get_index(obj);
-    long len = RSTRING_LEN(obj);
+    rb_len_t len = RSTRING_LEN(obj);
     const char *ptr = RSTRING_PTR(obj);
 
     if (encindex > RUBY_ENCINDEX_BUILTIN_MAX) {
@@ -14529,7 +14529,7 @@ ibf_load_object_regexp(const struct ibf_load *load, const struct ibf_object_head
 static void
 ibf_dump_object_array(struct ibf_dump *dump, VALUE obj)
 {
-    long i, len = RARRAY_LEN(obj);
+    rb_len_t i, len = RARRAY_LEN(obj);
     ibf_dump_write_small_value(dump, len);
     for (i=0; i<len; i++) {
         long index = (long)ibf_dump_object(dump, RARRAY_AREF(obj, i));
