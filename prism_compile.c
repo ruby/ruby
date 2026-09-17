@@ -11144,7 +11144,7 @@ pm_node_source_location(VALUE source, VALUE filepath, int start_line,
     return found;
 }
 
-VALUE rb_io_gets_limit_internal(VALUE io, long limit);
+VALUE rb_io_gets_limit_internal(VALUE io, rb_long_t limit);
 
 /**
  * Report whether the stream has reached EOF. The stream reader uses this to
