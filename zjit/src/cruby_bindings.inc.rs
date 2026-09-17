@@ -242,6 +242,7 @@ pub const ZJIT_STACK_MAP_BASE_PTR_SIZE_SHIFT: u32 = 32;
 pub const ZJIT_STACK_MAP_BASE_PTR_INDEX_MASK: u32 = 16777215;
 pub const ZJIT_JIT_RETURN_C_FRAME: u32 = 1;
 pub const RB_GC_ZJIT_FASTPATH_DATA_WORDS: u32 = 19;
+pub type rb_long_t = ::std::os::raw::c_long;
 pub type rb_alloc_func_t = ::std::option::Option<unsafe extern "C" fn(klass: VALUE) -> VALUE>;
 pub const RUBY_Qfalse: ruby_special_consts = 0;
 pub const RUBY_Qnil: ruby_special_consts = 4;
@@ -357,13 +358,13 @@ pub struct RArray__bindgen_ty_1 {
 }
 #[repr(C)]
 pub struct RArray__bindgen_ty_1__bindgen_ty_1 {
-    pub len: ::std::os::raw::c_long,
+    pub len: rb_long_t,
     pub aux: RArray__bindgen_ty_1__bindgen_ty_1__bindgen_ty_1,
     pub ptr: *const VALUE,
 }
 #[repr(C)]
 pub struct RArray__bindgen_ty_1__bindgen_ty_1__bindgen_ty_1 {
-    pub capa: __BindgenUnionField<::std::os::raw::c_long>,
+    pub capa: __BindgenUnionField<rb_long_t>,
     pub shared_root: __BindgenUnionField<VALUE>,
     pub bindgen_union_field: u64,
 }
@@ -2242,21 +2243,21 @@ unsafe extern "C" {
     pub fn ruby_init_stack(addr: *mut ::std::os::raw::c_void);
     pub fn rb_define_class(name: *const ::std::os::raw::c_char, super_: VALUE) -> VALUE;
     pub fn rb_obj_class(obj: VALUE) -> VALUE;
-    pub fn rb_ary_new_capa(capa: ::std::os::raw::c_long) -> VALUE;
-    pub fn rb_ary_store(ary: VALUE, key: ::std::os::raw::c_long, val: VALUE);
+    pub fn rb_ary_new_capa(capa: rb_long_t) -> VALUE;
+    pub fn rb_ary_store(ary: VALUE, key: rb_long_t, val: VALUE);
     pub fn rb_ary_dup(ary: VALUE) -> VALUE;
     pub fn rb_ary_resurrect(ary: VALUE) -> VALUE;
-    pub fn rb_ary_cat(ary: VALUE, train: *const VALUE, len: ::std::os::raw::c_long) -> VALUE;
+    pub fn rb_ary_cat(ary: VALUE, train: *const VALUE, len: rb_long_t) -> VALUE;
     pub fn rb_ary_push(ary: VALUE, elem: VALUE) -> VALUE;
     pub fn rb_ary_pop(ary: VALUE) -> VALUE;
-    pub fn rb_ary_entry(ary: VALUE, off: ::std::os::raw::c_long) -> VALUE;
+    pub fn rb_ary_entry(ary: VALUE, off: rb_long_t) -> VALUE;
     pub fn rb_ary_clear(ary: VALUE) -> VALUE;
     pub fn rb_ary_concat(lhs: VALUE, rhs: VALUE) -> VALUE;
     pub fn rb_hash_new() -> VALUE;
-    pub fn rb_hash_new_capa(capa: ::std::os::raw::c_long) -> VALUE;
+    pub fn rb_hash_new_capa(capa: rb_long_t) -> VALUE;
     pub fn rb_hash_aref(hash: VALUE, key: VALUE) -> VALUE;
     pub fn rb_hash_aset(hash: VALUE, key: VALUE, val: VALUE) -> VALUE;
-    pub fn rb_hash_bulk_insert(argc: ::std::os::raw::c_long, argv: *const VALUE, hash: VALUE);
+    pub fn rb_hash_bulk_insert(argc: rb_long_t, argv: *const VALUE, hash: VALUE);
     pub fn rb_protect(
         func: ::std::option::Option<unsafe extern "C" fn(args: VALUE) -> VALUE>,
         args: VALUE,
@@ -2265,7 +2266,7 @@ unsafe extern "C" {
     pub fn rb_sym2id(obj: VALUE) -> ID;
     pub fn rb_id2sym(id: ID) -> VALUE;
     pub fn rb_intern(name: *const ::std::os::raw::c_char) -> ID;
-    pub fn rb_intern2(name: *const ::std::os::raw::c_char, len: ::std::os::raw::c_long) -> ID;
+    pub fn rb_intern2(name: *const ::std::os::raw::c_char, len: rb_long_t) -> ID;
     pub fn rb_id2str(id: ID) -> VALUE;
     pub fn rb_sym2str(symbol: VALUE) -> VALUE;
     pub fn rb_class2name(klass: VALUE) -> *const ::std::os::raw::c_char;
@@ -2288,10 +2289,7 @@ unsafe extern "C" {
     pub fn rb_reg_match_pre(md: VALUE) -> VALUE;
     pub fn rb_reg_match_post(md: VALUE) -> VALUE;
     pub fn rb_reg_match_last(md: VALUE) -> VALUE;
-    pub fn rb_utf8_str_new(
-        ptr: *const ::std::os::raw::c_char,
-        len: ::std::os::raw::c_long,
-    ) -> VALUE;
+    pub fn rb_utf8_str_new(ptr: *const ::std::os::raw::c_char, len: rb_long_t) -> VALUE;
     pub fn rb_str_buf_append(dst: VALUE, src: VALUE) -> VALUE;
     pub fn rb_str_dup(str_: VALUE) -> VALUE;
     pub fn rb_str_intern(str_: VALUE) -> VALUE;
@@ -2304,7 +2302,7 @@ unsafe extern "C" {
     pub fn rb_class_allocate_instance(klass: VALUE) -> VALUE;
     pub fn rb_obj_equal(obj1: VALUE, obj2: VALUE) -> VALUE;
     pub fn rb_reg_new_from_values(
-        cnt: ::std::os::raw::c_long,
+        cnt: rb_long_t,
         elements: *const VALUE,
         opt: ::std::os::raw::c_int,
     ) -> VALUE;
@@ -2321,14 +2319,10 @@ unsafe extern "C" {
         id: ID,
         valp: *mut VALUE,
     ) -> ::std::os::raw::c_int;
-    pub fn rb_ary_tmp_new_from_values(
-        arg1: VALUE,
-        arg2: ::std::os::raw::c_long,
-        arg3: *const VALUE,
-    ) -> VALUE;
+    pub fn rb_ary_tmp_new_from_values(arg1: VALUE, arg2: rb_long_t, arg3: *const VALUE) -> VALUE;
     pub fn rb_ec_ary_new_from_values(
         ec: *mut rb_execution_context_struct,
-        n: ::std::os::raw::c_long,
+        n: rb_long_t,
         elts: *const VALUE,
     ) -> VALUE;
     pub fn rb_shape_id_offset() -> i32;
@@ -2415,17 +2409,17 @@ unsafe extern "C" {
         chilled: bool,
         size_out: *mut usize,
         flags_out: *mut VALUE,
-        len_out: *mut ::std::os::raw::c_long,
+        len_out: *mut rb_long_t,
         byte_size_out: *mut usize,
     ) -> bool;
     pub fn rb_zjit_array_dup_can_fastpath(
         ary: VALUE,
         alloc_size_out: *mut usize,
         flags_out: *mut VALUE,
-        len_out: *mut ::std::os::raw::c_long,
+        len_out: *mut rb_long_t,
     ) -> bool;
     pub fn rb_zjit_array_new_can_fastpath(
-        len: ::std::os::raw::c_long,
+        len: rb_long_t,
         alloc_size_out: *mut usize,
         flags_out: *mut VALUE,
     ) -> bool;
@@ -2578,8 +2572,8 @@ unsafe extern "C" {
     pub fn rb_assert_holding_vm_lock();
     pub fn rb_IMEMO_TYPE_P(imemo: VALUE, imemo_type: imemo_type) -> ::std::os::raw::c_int;
     pub fn rb_assert_cme_handle(handle: VALUE);
-    pub fn rb_yarv_ary_entry_internal(ary: VALUE, offset: ::std::os::raw::c_long) -> VALUE;
-    pub fn rb_jit_array_len(a: VALUE) -> ::std::os::raw::c_long;
+    pub fn rb_yarv_ary_entry_internal(ary: VALUE, offset: rb_long_t) -> VALUE;
+    pub fn rb_jit_array_len(a: VALUE) -> rb_long_t;
     pub fn rb_jit_ruby2_keywords_splat_p(obj: VALUE) -> usize;
     pub fn rb_set_cfp_pc(cfp: *mut rb_control_frame_struct, pc: *const VALUE);
     pub fn rb_set_cfp_sp(cfp: *mut rb_control_frame_struct, sp: *mut VALUE);
