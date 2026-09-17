@@ -55,13 +55,13 @@ enum expand_type {
    string objects in $LOAD_PATH are frozen.
  */
 static void
-rb_construct_expanded_load_path(rb_box_t *box, enum expand_type type, int *has_relative, int *has_non_cache, long *maxlen_out)
+rb_construct_expanded_load_path(rb_box_t *box, enum expand_type type, int *has_relative, int *has_non_cache, rb_long_t *maxlen_out)
 {
     VALUE load_path = box->load_path;
     VALUE expanded_load_path = box->expanded_load_path;
     VALUE snapshot;
     VALUE ary;
-    long i, maxlen = 0;
+    rb_long_t i, maxlen = 0;
 
     ary = rb_ary_hidden_new(RARRAY_LEN(load_path));
     for (i = 0; i < RARRAY_LEN(load_path); ++i) {
@@ -82,7 +82,7 @@ rb_construct_expanded_load_path(rb_box_t *box, enum expand_type type, int *has_r
                 (type == EXPAND_NON_CACHE)) {
                     /* Use cached expanded path. */
                     expanded_path = RARRAY_AREF(expanded_load_path, i);
-                    long len = RSTRING_LEN(expanded_path);
+                    rb_long_t len = RSTRING_LEN(expanded_path);
                     if (len > maxlen) maxlen = len;
                     rb_ary_push(ary, expanded_path);
                     continue;
@@ -98,7 +98,7 @@ rb_construct_expanded_load_path(rb_box_t *box, enum expand_type type, int *has_r
         as_str = rb_get_path_check_convert(as_str);
         expanded_path = rb_check_realpath(Qnil, as_str, NULL);
         if (NIL_P(expanded_path)) expanded_path = as_str;
-        long len = RSTRING_LEN(expanded_path);
+        rb_long_t len = RSTRING_LEN(expanded_path);
         if (len > maxlen) maxlen = len;
         rb_ary_push(ary, rb_fstring(expanded_path));
     }
@@ -117,7 +117,7 @@ get_expanded_load_path(rb_box_t *box)
     const VALUE non_cache = Qtrue;
     const VALUE load_path_snapshot = box->load_path_snapshot;
     const VALUE load_path = box->load_path;
-    long maxlen = 0;
+    rb_long_t maxlen = 0;
 
     if (!rb_ary_shared_with_p(load_path_snapshot, load_path)) {
         /* The load path was modified. Rebuild the expanded load path. */
@@ -163,7 +163,7 @@ get_expanded_load_path(rb_box_t *box)
 }
 
 VALUE
-rb_get_expanded_load_path(long *maxlen)
+rb_get_expanded_load_path(rb_long_t *maxlen)
 {
     rb_box_t *box = (rb_box_t *)rb_loading_box();
     VALUE load_path = get_expanded_load_path((rb_box_t *)box);
@@ -208,8 +208,8 @@ feature_key(const char *str, size_t len)
 static bool
 is_rbext_path(VALUE feature_path)
 {
-    long len = RSTRING_LEN(feature_path);
-    long rbext_len = rb_strlen_lit(".rb");
+    rb_long_t len = RSTRING_LEN(feature_path);
+    rb_long_t rbext_len = rb_strlen_lit(".rb");
     if (len <= rbext_len) return false;
     return IS_RBEXT(RSTRING_PTR(feature_path) + len - rbext_len);
 }
@@ -401,7 +401,7 @@ get_loaded_features_index(const rb_box_t *box)
         reset_loaded_features_snapshot(box);
 
         features = box->loaded_features_snapshot;
-        long j = RARRAY_LEN(features);
+        rb_long_t j = RARRAY_LEN(features);
         for (i = 0; i < j; i++) {
             VALUE as_str = rb_ary_entry(features, i);
             VALUE realpath = rb_hash_aref(previous_realpath_map, as_str);
@@ -429,11 +429,11 @@ get_loaded_features_index(const rb_box_t *box)
    or have any value matching `%r{^\.[^./]*$}`.
 */
 static VALUE
-loaded_feature_path(const char *name, long vlen, const char *feature, long len,
+loaded_feature_path(const char *name, rb_long_t vlen, const char *feature, rb_long_t len,
                     int type, VALUE load_path)
 {
-    long i;
-    long plen;
+    rb_long_t i;
+    rb_long_t plen;
     const char *e;
 
     if (vlen < len+1) return 0;
@@ -463,7 +463,7 @@ loaded_feature_path(const char *name, long vlen, const char *feature, long len,
     for (i = 0; i < RARRAY_LEN(load_path); ++i) {
         VALUE p = RARRAY_AREF(load_path, i);
         const char *s = StringValuePtr(p);
-        long n = RSTRING_LEN(p);
+        rb_long_t n = RSTRING_LEN(p);
 
         if (n != plen) continue;
         if (n && strncmp(name, s, n)) continue;
@@ -474,7 +474,7 @@ loaded_feature_path(const char *name, long vlen, const char *feature, long len,
 
 struct loaded_feature_searching {
     const char *name;
-    long len;
+    rb_long_t len;
     int type;
     VALUE load_path;
     const char *result;
@@ -503,7 +503,7 @@ rb_feature_p(const rb_box_t *box, const char *feature, const char *ext, int rb, 
 {
     VALUE features, this_feature_index = Qnil, v, p, load_path = 0;
     const char *f, *e;
-    long i, len, elen, n;
+    rb_long_t i, len, elen, n;
     st_table *loading_tbl, *features_index;
     st_data_t data;
     st_data_t key;
@@ -1118,7 +1118,7 @@ rb_f_require_relative(VALUE obj, VALUE fname)
 static char *
 find_ext(VALUE str, char **ptr, const char **end)
 {
-    long len = RSTRING_LEN(str);
+    rb_long_t len = RSTRING_LEN(str);
     *ptr = RSTRING_PTR(str);
     *end = *ptr + len;
     return memrchr(*ptr, '.', len);

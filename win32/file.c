@@ -312,10 +312,10 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 
     /* convert char * to wchar_t */
     if (!NIL_P(path)) {
-        const long path_len = RSTRING_LEN(path);
+        const rb_long_t path_len = RSTRING_LEN(path);
 #if SIZEOF_INT < SIZEOF_LONG
-        if ((long)(int)path_len != path_len) {
-            rb_raise(rb_eRangeError, "path (%ld bytes) is too long",
+        if ((rb_long_t)(int)path_len != path_len) {
+            rb_raise(rb_eRangeError, "path (%"PRIdLONGT" bytes) is too long",
                      path_len);
         }
 #endif
@@ -390,11 +390,11 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 
         /* convert char * to wchar_t */
         if (!NIL_P(dir)) {
-            const long dir_len = RSTRING_LEN(dir);
+            const rb_long_t dir_len = RSTRING_LEN(dir);
 #if SIZEOF_INT < SIZEOF_LONG
-            if ((long)(int)dir_len != dir_len) {
+            if ((rb_long_t)(int)dir_len != dir_len) {
                 free(wpath);
-                rb_raise(rb_eRangeError, "base directory (%ld bytes) is too long",
+                rb_raise(rb_eRangeError, "base directory (%"PRIdLONGT" bytes) is too long",
                          dir_len);
             }
 #endif
@@ -622,12 +622,12 @@ rb_freopen(VALUE fname, const char *mode, FILE *file)
     WCHAR *wname, wmode[4];
     VALUE wtmp;
     char *name;
-    long len;
+    rb_long_t len;
     int e = 0, n = MultiByteToWideChar(CP_ACP, 0, mode, -1, NULL, 0);
     if (n > numberof(wmode)) return EINVAL;
     MultiByteToWideChar(CP_ACP, 0, mode, -1, wmode, numberof(wmode));
     RSTRING_GETMEM(fname, name, len);
-    n = rb_long2int(len);
+    n = rb_longt2int(len);
     len = MultiByteToWideChar(CP_UTF8, 0, name, n, NULL, 0);
     wname = ALLOCV_N(WCHAR, wtmp, len + 1);
     len = MultiByteToWideChar(CP_UTF8, 0, name, n, wname, len);

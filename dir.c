@@ -1681,7 +1681,7 @@ check_dirname(VALUE dir)
 {
     VALUE d = dir;
     char *path, *pend;
-    long len;
+    rb_long_t len;
     rb_encoding *enc;
 
     FilePathValue(d);
@@ -3501,7 +3501,7 @@ static VALUE
 dir_globs(VALUE args, VALUE base, int flags)
 {
     VALUE ary = rb_ary_new();
-    long i;
+    rb_long_t i;
 
     for (i = 0; i < RARRAY_LEN(args); ++i) {
         int status;
