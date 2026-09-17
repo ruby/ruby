@@ -1183,6 +1183,21 @@ class TestResolvDNS < Test::Unit::TestCase
     Timeout.timeout(EnvUtil.apply_timeout_scale(10)) { t.accept }
   end
 
+  # Answers one query on +u+ with an empty reply that has TC set, asking the
+  # client to retry the same nameserver over TCP.
+  def answer_truncated(u)
+    msg, (_, client_port, _, client_address) =
+      Timeout.timeout(EnvUtil.apply_timeout_scale(10)) { u.recvfrom(4096) }
+    id, word2, = msg.unpack('nnnnnn')
+    opcode = (word2 & 0x7800) >> 11
+    rd = (word2 & 0x0100) >> 8
+    qr = 1
+    tc = 1
+    ra = 1
+    word2 = (qr << 15) | (opcode << 11) | (tc << 9) | (rd << 8) | (ra << 7)
+    u.send([id, word2, 0, 0, 0, 0].pack('nnnnnn'), 0, client_address, client_port)
+  end
+
   # Reads one length prefixed DNS message from +sock+.
   def read_framed_query(sock)
     len_data = sock.read(2)
@@ -1354,18 +1369,7 @@ class TestResolvDNS < Test::Unit::TestCase
         end
       end
 
-      udp_server_thread = Thread.new do
-        msg, (_, client_port, _, client_address) =
-          Timeout.timeout(EnvUtil.apply_timeout_scale(10)) { u.recvfrom(4096) }
-        id, word2, = msg.unpack('nnnnnn')
-        opcode = (word2 & 0x7800) >> 11
-        rd = (word2 & 0x0100) >> 8
-        qr = 1
-        tc = 1 # ask the client to retry over TCP
-        ra = 1
-        word2 = (qr << 15) | (opcode << 11) | (tc << 9) | (rd << 8) | (ra << 7)
-        u.send([id, word2, 0, 0, 0, 0].pack('nnnnnn'), 0, client_address, client_port)
-      end
+      udp_server_thread = Thread.new { answer_truncated(u) }
 
       tcp_server_thread = Thread.new do
         ct = accept_within_timeout(t)
@@ -1399,18 +1403,7 @@ class TestResolvDNS < Test::Unit::TestCase
         end
       end
 
-      udp_server_thread = Thread.new do
-        msg, (_, client_port, _, client_address) =
-          Timeout.timeout(EnvUtil.apply_timeout_scale(10)) { u.recvfrom(4096) }
-        id, word2, = msg.unpack('nnnnnn')
-        opcode = (word2 & 0x7800) >> 11
-        rd = (word2 & 0x0100) >> 8
-        qr = 1
-        tc = 1 # ask the client to retry over TCP
-        ra = 1
-        word2 = (qr << 15) | (opcode << 11) | (tc << 9) | (rd << 8) | (ra << 7)
-        u.send([id, word2, 0, 0, 0, 0].pack('nnnnnn'), 0, client_address, client_port)
-      end
+      udp_server_thread = Thread.new { answer_truncated(u) }
 
       tcp_server_thread = Thread.new do
         partial = accept_within_timeout(t)
@@ -1456,18 +1449,7 @@ class TestResolvDNS < Test::Unit::TestCase
         end
       end
 
-      udp_server_thread = Thread.new do
-        msg, (_, client_port, _, client_address) =
-          Timeout.timeout(EnvUtil.apply_timeout_scale(10)) { u.recvfrom(4096) }
-        id, word2, = msg.unpack('nnnnnn')
-        opcode = (word2 & 0x7800) >> 11
-        rd = (word2 & 0x0100) >> 8
-        qr = 1
-        tc = 1 # ask the client to retry over TCP
-        ra = 1
-        word2 = (qr << 15) | (opcode << 11) | (tc << 9) | (rd << 8) | (ra << 7)
-        u.send([id, word2, 0, 0, 0, 0].pack('nnnnnn'), 0, client_address, client_port)
-      end
+      udp_server_thread = Thread.new { answer_truncated(u) }
 
       tcp_server_thread = Thread.new do
         ct = accept_within_timeout(t)
