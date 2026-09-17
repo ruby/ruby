@@ -9645,7 +9645,7 @@ tr_trans_pairs_search_sse2(struct tr_trans_pairs_search *search)
 {
     if (search->needles_count) {
         RBIMPL_ASSERT_OR_ASSUME(search->needles_count > 0);
-        RBIMPL_ASSERT_OR_ASSUME(search->needles_count < TR_TRANS_PAIRS_SIMD_MAX_NEEDLES);
+        RBIMPL_ASSERT_OR_ASSUME(search->needles_count <= TR_TRANS_PAIRS_SIMD_MAX_NEEDLES);
 
         if (search->matches_bitmap) {
             return tr_trans_pairs_next_match_sse2(search);
