@@ -1,5 +1,6 @@
 # frozen_string_literal: false
 require 'test/unit'
+require 'rbconfig/sizeof'
 
 class TestRand < Test::Unit::TestCase
   def assert_random_int(m, init = 0, iterate: 5)
@@ -421,6 +422,15 @@ class TestRand < Test::Unit::TestCase
       assert_kind_of(String, v)
       assert_equal(size, v.bytesize)
     end
+  end
+
+  def test_urandom_size_errors
+    beyond_long = 2 ** (RbConfig::SIZEOF['long'] * 8 - 1)
+    assert_raise(ArgumentError) { Random.urandom(-1) }
+    assert_raise(RangeError) { Random.urandom(beyond_long) }
+    # Random#bytes converts its size the same way, so the classes have to agree
+    assert_raise(ArgumentError) { Random.new.bytes(-1) }
+    assert_raise(RangeError) { Random.new.bytes(beyond_long) }
   end
 
   def test_new_seed
