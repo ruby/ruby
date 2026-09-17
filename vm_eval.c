@@ -2913,7 +2913,7 @@ rb_current_realfilepath(void)
         }
 
         // [Feature #19755] implicit eval location is "(eval at #{__FILE__}:#{__LINE__})"
-        const long len = RSTRING_LEN(path);
+        const rb_long_t len = RSTRING_LEN(path);
         if (len > EVAL_LOCATION_MARK_LEN+1) {
             const char *const ptr = RSTRING_PTR(path);
             if (ptr[len - 1] == ')' &&

@@ -79,7 +79,7 @@ static inline void
 args_reduce(struct args_info *args, int over_argc)
 {
     if (args->rest) {
-        const long len = RARRAY_LEN(args->rest);
+        const rb_long_t len = RARRAY_LEN(args->rest);
 
         if (len > over_argc) {
             arg_rest_dup(args);
@@ -230,7 +230,7 @@ args_setup_lead_parameters(struct args_info *args, int argc, VALUE *locals)
 static inline void
 args_setup_post_parameters(struct args_info *args, int argc, VALUE *locals)
 {
-    long len;
+    rb_long_t len;
     len = RARRAY_LEN(args->rest);
     MEMCPY(locals, RARRAY_CONST_PTR(args->rest) + len - argc, VALUE, argc);
     rb_ary_resize(args->rest, len - argc);

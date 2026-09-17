@@ -1139,7 +1139,7 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
         VALUE origin_stack = rb_ary_hidden_new(2);
         VALUE origin[2];
         VALUE clone_p = 0;
-        long origin_len;
+        rb_long_t origin_len;
         int add_subclass;
         VALUE clone_origin;
 
@@ -1854,7 +1854,7 @@ do_include_modules_at(const VALUE klass, VALUE c, VALUE module, int search_super
 {
     VALUE p, iclass, origin_stack = 0;
     int method_changed = 0;
-    long origin_len;
+    rb_long_t origin_len;
     VALUE klass_origin = RCLASS_ORIGIN(klass);
     VALUE original_klass = klass;
 
@@ -2075,7 +2075,7 @@ rb_prepend_module(VALUE klass, VALUE module)
             /* Register after the loop. Registering during it would visit the
              * new iclass and prepend module into it a second time. */
             if (new_origins) {
-                for (long i = 0; i < RARRAY_LEN(new_origins); i++) {
+                for (rb_long_t i = 0; i < RARRAY_LEN(new_origins); i++) {
                     rb_module_add_to_subclasses_list(klass, RARRAY_AREF(new_origins, i));
                 }
             }
@@ -3107,7 +3107,7 @@ rb_define_attr(VALUE klass, const char *name, int read, int write)
 VALUE
 rb_keyword_error_new(const char *error, VALUE keys)
 {
-    long i = 0, len = RARRAY_LEN(keys);
+    rb_long_t i = 0, len = RARRAY_LEN(keys);
     VALUE error_message = rb_sprintf("%s keyword%.*s", error, len > 1, "s");
 
     if (len > 0) {
