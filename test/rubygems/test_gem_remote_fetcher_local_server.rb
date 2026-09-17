@@ -104,6 +104,28 @@ gems:
     @proxies.each_with_index {|k, i| ENV[k] = @old_proxies[i] }
   end
 
+  def test_server_survives_client_connection_reset
+    socket = TCPSocket.new("localhost", @normal_server[:server].addr[1])
+    socket.setsockopt(Socket::SOL_SOCKET, Socket::SO_LINGER, [1, 0].pack("ii"))
+    socket.close
+
+    assert_nil @normal_server.join(1), "the server stopped accepting connections"
+
+    use_ui @stub_ui do
+      assert_data_from_server @fetcher.fetch_path(@server_uri)
+    end
+  end
+
+  def test_server_survives_client_hanging_up_without_a_request
+    TCPSocket.new("localhost", @normal_server[:server].addr[1]).close
+
+    assert_nil @normal_server.join(1), "the server stopped accepting connections"
+
+    use_ui @stub_ui do
+      assert_data_from_server @fetcher.fetch_path(@server_uri)
+    end
+  end
+
   def test_no_proxy
     use_ui @stub_ui do
       assert_data_from_server @fetcher.fetch_path(@server_uri)
@@ -193,6 +215,7 @@ gems:
       loop do
         client = server.accept
         handle_request(client, data)
+      rescue Errno::ECONNABORTED, Errno::ECONNRESET
       end
     end
     thread[:server] = server
@@ -201,6 +224,8 @@ gems:
 
   def handle_request(client, data)
     request_line = client.gets
+    return unless request_line
+
     headers = {}
     while (line = client.gets) && line != "\r\n"
       key, value = line.split(": ", 2)
@@ -215,6 +240,7 @@ gems:
     else
       client.print "HTTP/1.1 404 Not Found\r\nContent-Type: text/html\r\n\r\n<h1>NOT FOUND</h1>"
     end
+  ensure
     client.close
   end
 end
