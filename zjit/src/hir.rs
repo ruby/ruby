@@ -6418,11 +6418,43 @@ impl Function {
             })
         }
 
-        let blocks = self.reverse_post_order();
+        fn block_terminator(fun: &Function, block_id: BlockId) -> InsnId {
+            *fun.blocks[block_id].insns().last().unwrap()
+        }
+
+        macro_rules! edges_of {
+            ($insn:expr) => {
+                match $insn {
+                    Insn::Jump(edge) => [Some(edge), None],
+                    Insn::CondBranch { if_true, if_false, .. } => [Some(if_true), Some(if_false)],
+                    _ => [None, None],
+                }.into_iter().flatten()
+            };
+        }
+
+        fn outgoing_edges(fun: &Function, block_id: BlockId) -> impl Iterator<Item = &BranchEdge> {
+            let insn_id = block_terminator(fun, block_id);
+            edges_of!(&fun.insns[insn_id])
+        }
+
+        fn outgoing_edges_mut(fun: &mut Function, block_id: BlockId) -> impl Iterator<Item = &mut BranchEdge> {
+            let insn_id = block_terminator(fun, block_id);
+            edges_of!(&mut fun.insns[insn_id])
+        }
+
+        // Search `fn infer_types` for more on optimizations relating to rpo and rpo_order.
+        // We reuse these optimizations here. While it is potentially faster in the general case to use a worklist, most cases do not have loops.
+        // A fixpoint loop with backedge detection is simpler and faster for the vast majority of cases.
+        let rpo = self.reverse_post_order();
+        let mut rpo_order = vec![usize::MAX; self.blocks.len()];
+        for (idx, &block_id) in rpo.iter().enumerate() {
+            rpo_order[block_id] = idx;
+        }
+
 
         // Populate each block with a vec of instructions that call the block
         let mut predecessors: Vec<Vec<EdgeKey>> = vec![vec![]; self.num_blocks()];
-        for block_id in blocks.iter().cloned() {
+        for block_id in rpo.iter().cloned() {
             let insn_id = self.blocks[block_id].insns().last().unwrap();
             match self.resolve(*insn_id).insn(self) {
                     Insn::CondBranch { if_true, if_false, .. } => {
@@ -6436,93 +6468,77 @@ impl Function {
             }
         }
 
-        // TODO: Remove worklist and iterate until fixpoint
-        // TODO: Do the thing that Max did in infer_types because this is mostly linear and we don't need to be that fast in the loop case
-        // Instantiate the worklist with blocks that have at least one predecessor and at least one block param.
-        // No predecessors or no block params => nothing to optimize
-        let mut worklist: VecDeque<BlockId> = blocks.iter().filter_map(|i| {
-            (predecessors[i.0 as usize].len() > 0 && self.blocks[i.0 as usize].params().len() > 0).then_some(*i)
-        }).collect();
+        let has_back_edge = rpo.iter()
+            .any(|&block| outgoing_edges(self, block)
+                .any(|edge| rpo_order[edge.target] <= rpo_order[block]));
 
-        while worklist.len() > 0 {
-            let target_block = worklist.pop_front().unwrap();
-            let mut abstract_domain = vec![AbstractValue::None; self.blocks[target_block].params.len()];
+        loop {
+            let mut changed = false;
+            for target in rpo.iter().copied() {
+                let mut abstract_domain = vec![AbstractValue::None; self.blocks[target].params.len()];
 
-            for pred in &predecessors[target_block] {
-                // Collect the params for abstract interpretation. The params are args of the BranchEdges extracted from block terminators.
-                let insn_idx = self.blocks[pred.block_id].insns.len() - 1;
-                let insn = self.resolve(self.blocks[pred.block_id].insns[insn_idx]).insn(self);
-                let params = match (insn, pred.edge) {
-                    (Insn::Jump(edge), Edge::Unconditional) => &edge.args,
-                    (Insn::CondBranch { if_true, .. }, Edge::True) => &if_true.args,
-                    (Insn::CondBranch { if_false, .. }, Edge::False) => &if_false.args,
-                    (_, _) => unreachable!("Predecessors should only be Jump or CondBranch with a corresponding EdgeKey bool.")
-                };
+                for pred in &predecessors[target] {
+                    // Collect the params for abstract interpretation. The params are args of the BranchEdges extracted from block terminators.
+                    let insn_idx = self.blocks[pred.block_id].insns.len() - 1;
+                    let insn = self.resolve(self.blocks[pred.block_id].insns[insn_idx]).insn(self);
+                    let params = match (insn, pred.edge) {
+                        (Insn::Jump(edge), Edge::Unconditional) => &edge.args,
+                        (Insn::CondBranch { if_true, .. }, Edge::True) => &if_true.args,
+                        (Insn::CondBranch { if_false, .. }, Edge::False) => &if_false.args,
+                        (_, _) => unreachable!("Predecessors should only be Jump or CondBranch with a corresponding EdgeKey bool.")
+                    };
 
-                // Perform abstract interpretation to determine trivial params
-                for i in 0..params.len() {
-                    let param = self.find_id(params[i]);
-                    let self_loop_param = self.find_id(self.blocks[target_block].params[i]);
-                    abstract_domain[i].update(param, self_loop_param);
-                }
-            }
-
-            // Collect all trivial indices and replace uses with the concretized value.
-            // If any replacements update BranchEdges leaving the target block, then add their successors to the worklist.
-            let mut trivial_indices: Vec<usize> = Vec::with_capacity(abstract_domain.len());
-            for (index, value) in abstract_domain.into_iter().enumerate() {
-                let old_insn_id = self.blocks[target_block].params[index];
-                let new_insn_id: InsnId;
-                if let AbstractValue::One(id) = value {
-                    new_insn_id = id;
-                }
-                else if let Some(obj) = self.type_of(old_insn_id).ruby_object() {
-                    new_insn_id = self.prepend_insn(target_block, Insn::Const { val: Const::Value(obj) });
-                    self.insn_types[new_insn_id] = self.infer_type(new_insn_id);
-                }
-                else {
-                    // If the predecessors do not reduce to a trivial value or the type is not a ruby object, we cannot optimize the block params.
-                    continue
-                }
-                let terminator = self.blocks[target_block].insns.last().unwrap();
-                // TODO: Update this to include all new outgoing edges that are updated
-                // TODO: Benchmark afterwards
-                // TODO: And then fix it the way we do type specialize
-                // If any outgoing edge gets updated, add the successor block to the worklist for analysis
-                match self.resolve(*terminator).insn(self) {
-                    Insn::Jump(edge) => {
-                        if edge.args.contains(&old_insn_id) && !worklist.contains(&edge.target) {
-                            worklist.push_back(edge.target);
-                        }
-                    },
-                    Insn::CondBranch { if_true, if_false, .. } => {
-                        if if_true.args.contains(&old_insn_id) && !worklist.contains(&if_true.target) {
-                            worklist.push_back(if_true.target);
-                        }
-                        if if_false.args.contains(&old_insn_id) && !worklist.contains(&if_false.target) {
-                            worklist.push_back(if_false.target);
-                        }
+                    // Perform abstract interpretation to determine trivial params
+                    for i in 0..params.len() {
+                        let param = self.find_id(params[i]);
+                        let self_loop_param = self.find_id(self.blocks[target].params[i]);
+                        abstract_domain[i].update(param, self_loop_param);
                     }
-                    _ => ()
-                };
-                self.make_equal_to(old_insn_id, new_insn_id);
-                trivial_indices.push(index);
+                }
+
+                // Collect all trivial indices and replace uses with the concretized value.
+                // If any replacements update BranchEdges leaving the target block, then add their successors to the worklist.
+                let mut trivial_indices: Vec<usize> = Vec::with_capacity(abstract_domain.len());
+                for (index, value) in abstract_domain.into_iter().enumerate() {
+                    let old_insn_id = self.blocks[target].params[index];
+                    let new_insn_id: InsnId;
+                    if let AbstractValue::One(id) = value {
+                        new_insn_id = id;
+                    }
+                    else if let Some(obj) = self.type_of(old_insn_id).ruby_object() {
+                        new_insn_id = self.prepend_insn(target, Insn::Const { val: Const::Value(obj) });
+                        self.insn_types[new_insn_id] = self.infer_type(new_insn_id);
+                    }
+                    else {
+                        // If the predecessors do not reduce to a trivial value or the type is not a ruby object, we cannot optimize the block params.
+                        continue
+                    }
+                    changed = true;
+                    self.make_equal_to(old_insn_id, new_insn_id);
+                    trivial_indices.push(index);
+                }
+
+                // Remove trivial params from the incoming edges
+                for pred in &predecessors[target] {
+                    let insn_idx = self.blocks[pred.block_id].insns.len() - 1;
+                    let insn = self.resolve(self.blocks[pred.block_id].insns[insn_idx]).insn_mut(self);
+                    match (insn, pred.edge) {
+                        (Insn::Jump(edge), Edge::Unconditional) => prune_vec_by_indices(&mut edge.args, &trivial_indices),
+                        (Insn::CondBranch { if_true, .. }, Edge::True) => prune_vec_by_indices(&mut if_true.args, &trivial_indices),
+                        (Insn::CondBranch { if_false, .. }, Edge::False) => prune_vec_by_indices(&mut if_false.args, &trivial_indices),
+                        (_, _) => unreachable!("Predecessors should only be Jump or CondBranch with a corresponding EdgeKey bool.")
+                    };
+                }
+
+                // Remove trivial params from the block definition
+                prune_vec_by_indices(&mut self.blocks[target].params, &trivial_indices);
             }
 
-            // Remove trivial params from the incoming edges
-            for pred in &predecessors[target_block] {
-                let insn_idx = self.blocks[pred.block_id].insns.len() - 1;
-                let insn = self.resolve(self.blocks[pred.block_id].insns[insn_idx]).insn_mut(self);
-                match (insn, pred.edge) {
-                    (Insn::Jump(edge), Edge::Unconditional) => prune_vec_by_indices(&mut edge.args, &trivial_indices),
-                    (Insn::CondBranch { if_true, .. }, Edge::True) => prune_vec_by_indices(&mut if_true.args, &trivial_indices),
-                    (Insn::CondBranch { if_false, .. }, Edge::False) => prune_vec_by_indices(&mut if_false.args, &trivial_indices),
-                    (_, _) => unreachable!("Predecessors should only be Jump or CondBranch with a corresponding EdgeKey bool.")
-                };
+            // If there are no back edges, then there are no loops. Reverse post order ensures we considered all block dependencies and there can be no future optimizations.
+            // However, if there are back edges and the pass removed some block params, then more passes are necessary.
+            if !(changed && has_back_edge) {
+                break;
             }
-
-            // Remove trivial params from the block definition
-            prune_vec_by_indices(&mut self.blocks[target_block].params, &trivial_indices);
         }
     }
 
