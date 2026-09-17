@@ -2057,8 +2057,8 @@ os_obj_of(VALUE of)
         }
         rb_gc_critical_enable();
 
-        long len = RARRAY_LEN(ocs.buffer);
-        for (long i = 0; i < len; i++) {
+        rb_long_t len = RARRAY_LEN(ocs.buffer);
+        for (rb_long_t i = 0; i < len; i++) {
             rb_yield(RARRAY_AREF(ocs.buffer, i));
             oes.num++;
         }
@@ -3582,9 +3582,9 @@ rb_gc_mark_children(void *objspace, VALUE obj)
             }
         }
         else {
-            long len = RARRAY_LEN(obj);
+            rb_long_t len = RARRAY_LEN(obj);
             const VALUE *ptr = RARRAY_CONST_PTR(obj);
-            for (long i = 0; i < len; i++) {
+            for (rb_long_t i = 0; i < len; i++) {
                 gc_mark_internal(ptr[i]);
             }
         }
@@ -3689,10 +3689,10 @@ rb_gc_mark_children(void *objspace, VALUE obj)
         break;
 
       case T_STRUCT: {
-        const long len = RSTRUCT_LEN(obj);
+        const rb_long_t len = RSTRUCT_LEN(obj);
         const VALUE * const ptr = RSTRUCT_CONST_PTR(obj);
 
-        for (long i = 0; i < len; i++) {
+        for (rb_long_t i = 0; i < len; i++) {
             gc_mark_internal(ptr[i]);
         }
 
@@ -4400,11 +4400,11 @@ gc_ref_update_array(void *objspace, VALUE v)
         }
     }
     else {
-        long len = RARRAY_LEN(v);
+        rb_long_t len = RARRAY_LEN(v);
 
         if (len > 0) {
             VALUE *ptr = (VALUE *)RARRAY_CONST_PTR(v);
-            for (long i = 0; i < len; i++) {
+            for (rb_long_t i = 0; i < len; i++) {
                 UPDATE_IF_MOVED(objspace, ptr[i]);
             }
         }
@@ -5156,7 +5156,7 @@ rb_gc_update_object_references(void *objspace, VALUE obj)
 
       case T_STRUCT:
         {
-            long i, len = RSTRUCT_LEN(obj);
+            rb_long_t i, len = RSTRUCT_LEN(obj);
             VALUE *ptr = (VALUE *)RSTRUCT_CONST_PTR(obj);
 
             for (i = 0; i < len; i++) {
@@ -5607,7 +5607,7 @@ rb_raw_iseq_info(char *const buff, const size_t buff_size, const rb_iseq_t *iseq
 static int
 str_len_no_raise(VALUE str)
 {
-    long len = RSTRING_LEN(str);
+    rb_long_t len = RSTRING_LEN(str);
     if (len < 0) return 0;
     if (len > INT_MAX) return INT_MAX;
     return (int)len;
@@ -5705,11 +5705,11 @@ rb_raw_obj_info_buitin_type(char *const buff, const size_t buff_size, const VALU
                          C(ARY_SHARED_ROOT_P(obj), "R"));
 
                 if (ARY_EMBED_P(obj)) {
-                    APPEND_F("len: %ld (embed)",
+                    APPEND_F("len: %"PRIdLONGT" (embed)",
                              RARRAY_LEN(obj));
                 }
                 else {
-                    APPEND_F("len: %ld, capa:%ld ptr:%p",
+                    APPEND_F("len: %"PRIdLONGT", capa:%"PRIdLONGT" ptr:%p",
                              RARRAY_LEN(obj),
                              RARRAY(obj)->as.heap.aux.capa,
                              (void *)RARRAY_CONST_PTR(obj));
@@ -5722,12 +5722,12 @@ rb_raw_obj_info_buitin_type(char *const buff, const size_t buff_size, const VALU
                      C(RB_OBJ_FROZEN(obj), "R"));
 
             if (STR_SHARED_P(obj)) {
-                APPEND_F(" [shared] len: %ld", RSTRING_LEN(obj));
+                APPEND_F(" [shared] len: %"PRIdLONGT, RSTRING_LEN(obj));
             }
             else {
                 if (STR_EMBED_P(obj)) APPEND_S(" [embed]");
 
-                APPEND_F(" len: %ld, capa: %" PRIdSIZE, RSTRING_LEN(obj), rb_str_capacity(obj));
+                APPEND_F(" len: %"PRIdLONGT", capa: %" PRIdSIZE, RSTRING_LEN(obj), rb_str_capacity(obj));
             }
             APPEND_F(" \"%.*s\"", str_len_no_raise(obj), RSTRING_PTR(obj));
             break;
