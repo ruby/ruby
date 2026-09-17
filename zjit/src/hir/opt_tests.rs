@@ -1927,18 +1927,18 @@ mod hir_opt_tests {
           v11:BasicObject = LoadArg :mode@3
           Jump bb3(v8, v9, v10, v11)
         bb3(v13:BasicObject, v14:BasicObject, v15:BasicObject, v16:BasicObject):
-          CondBranchHasType v15, ObjectSubclass[class_exact:B], bb8(), bb9()
+          CondBranchHasType v15, ObjectSubclass[class_exact:A], bb8(), bb9()
         bb8():
-          PatchPoint NoSingletonClass(B@0x1008)
-          PatchPoint MethodRedefined(B@0x1008, foo@0x1010, cme:0x1018)
-          v167:Fixnum[2] = Const Value(2)
+          PatchPoint NoSingletonClass(A@0x1008)
+          PatchPoint MethodRedefined(A@0x1008, foo@0x1010, cme:0x1018)
+          v167:Fixnum[1] = Const Value(1)
           Jump bb7(v167)
         bb9():
-          CondBranchHasType v15, ObjectSubclass[class_exact:A], bb10(), bb11()
+          CondBranchHasType v15, ObjectSubclass[class_exact:B], bb10(), bb11()
         bb10():
-          PatchPoint NoSingletonClass(A@0x1040)
-          PatchPoint MethodRedefined(A@0x1040, foo@0x1010, cme:0x1048)
-          v170:Fixnum[1] = Const Value(1)
+          PatchPoint NoSingletonClass(B@0x1040)
+          PatchPoint MethodRedefined(B@0x1040, foo@0x1010, cme:0x1048)
+          v170:Fixnum[2] = Const Value(2)
           Jump bb7(v170)
         bb11():
           v32:BasicObject = Send v15, :foo # SendFallbackReason: Send: polymorphic call site
