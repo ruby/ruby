@@ -6452,6 +6452,11 @@ impl Function {
         loop {
             let mut changed = false;
             for target in rpo.iter().copied() {
+                // If there are no predecessors or no params, nothing can be optimized.
+                if predecessors[target].len() == 0 || self.blocks[target].params.len() == 0 {
+                    continue
+                }
+
                 let mut abstract_domain = vec![AbstractValue::None; self.blocks[target].params.len()];
 
                 for &block_id in &predecessors[target] {
