@@ -6363,6 +6363,16 @@ impl Function {
     /// This produces a minimal SSA representation amenable to further optimizations.
     /// The implementation is inspired from algorithm 2 in <https://c9x.me/compile/bib/braun13cc.pdf>.
     fn remove_trivial_block_params(&mut self) {
+        // This pass works as follows:
+        // In a loop until no further optimizations are possible, do:
+        // 1. Find a block that has predecessors and non-zero block params
+        // 2. Perform abstract interpretation to determine trivial block params.
+        //    A param is "trivial" if all edges passing this param use the same value.
+        // 3. Replace each trivial param in the following places.
+        //    - at the block definition (remove this param)
+        //    - for each predecessor edge of the block (remove this param)
+        //    - at each use of the param (replace this param with the concretized value)
+
         // Each block param is lifted to an abstract domain of ParamValues.
         // The lattice is simple. None is Bottom, Multiple is Top, and One is between both.
         // During analysis, all block params start with None.
@@ -6404,6 +6414,7 @@ impl Function {
             })
         }
 
+        // ZJIT usese basic blocks, so each branching instruction must be at the block terminator.
         fn block_terminator(fun: &Function, block_id: BlockId) -> InsnId {
             *fun.blocks[block_id].insns().last().unwrap()
         }
@@ -6436,18 +6447,18 @@ impl Function {
         for (idx, &block_id) in rpo.iter().enumerate() {
             rpo_order[block_id] = idx;
         }
+        let has_back_edge = rpo.iter()
+            .any(|&block| outgoing_edges(self, block)
+                .any(|edge| rpo_order[edge.target] <= rpo_order[block]));
 
-        // Populate each block with a vec of instructions that call the block
+
+        // Populate each block with a vec of instructions that call said block
         let mut predecessors: Vec<Vec<BlockId>> = vec![vec![]; self.num_blocks()];
         for block_id in rpo.iter().cloned() {
             for edge in outgoing_edges(self, block_id) {
                 predecessors[edge.target].push(block_id);
             }
         }
-
-        let has_back_edge = rpo.iter()
-            .any(|&block| outgoing_edges(self, block)
-                .any(|edge| rpo_order[edge.target] <= rpo_order[block]));
 
         loop {
             let mut changed = false;
@@ -6457,8 +6468,8 @@ impl Function {
                     continue
                 }
 
+                // Perform abstract interpretation to identify trivial params.
                 let mut abstract_domain = vec![AbstractValue::None; self.blocks[target].params.len()];
-
                 for &block_id in &predecessors[target] {
                     // In almost all cases, there is only one edge that returns from this filter. However, there's one thorny edge case.
                     // Technically, a CondBranch could pass two sets of different parameters to the same target. Both of these are predecessors and both must be checked.
@@ -6474,8 +6485,7 @@ impl Function {
                     }
                 }
 
-                // Collect all trivial indices and replace uses with the concretized value.
-                // If any replacements update BranchEdges leaving the target block, then add their successors to the worklist.
+                // Remove trivial params and replace uses with concretized values.
                 let mut trivial_indices: Vec<usize> = Vec::with_capacity(abstract_domain.len());
                 for (index, value) in abstract_domain.into_iter().enumerate() {
                     let old_insn_id = self.blocks[target].params[index];
@@ -6496,7 +6506,6 @@ impl Function {
                     trivial_indices.push(index);
                 }
 
-                // Remove trivial params from the incoming edges
                 for &block_id in &predecessors[target] {
                     for edge in outgoing_edges_mut(self, block_id) {
                         if edge.target == target {
@@ -6505,12 +6514,10 @@ impl Function {
                     }
                 }
 
-                // Remove trivial params from the block definition
                 prune_vec_by_indices(&mut self.blocks[target].params, &trivial_indices);
             }
 
-            // If there are no back edges, then there are no loops. Reverse post order ensures we considered all block dependencies and there can be no future optimizations.
-            // However, if there are back edges and the pass removed some block params, then more passes are necessary.
+            // End the analysis if there are no changes the CFG has no back edges.
             if !(changed && has_back_edge) {
                 break;
             }
