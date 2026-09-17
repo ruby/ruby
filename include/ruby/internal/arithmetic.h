@@ -27,6 +27,7 @@
 #include "ruby/internal/arithmetic/gid_t.h"
 #include "ruby/internal/arithmetic/int.h"
 #include "ruby/internal/arithmetic/intptr_t.h"
+#include "ruby/internal/arithmetic/len_t.h"
 #include "ruby/internal/arithmetic/long.h"
 #include "ruby/internal/arithmetic/long_long.h"
 #include "ruby/internal/arithmetic/mode_t.h"
