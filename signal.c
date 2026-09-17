@@ -212,7 +212,7 @@ signm2signo(VALUE *sig_ptr, int negative, int exit, int *prefix_ptr)
     const struct signals *sigs;
     VALUE vsig = *sig_ptr;
     const char *nm;
-    long len, nmlen;
+    rb_long_t len, nmlen;
     int prefix = 0;
 
     if (RB_SYMBOL_P(vsig)) {
@@ -245,7 +245,7 @@ signm2signo(VALUE *sig_ptr, int negative, int exit, int *prefix_ptr)
         if (memcmp(nm + prefix, signame_prefix, signame_prefix_len) == 0)
             prefix += signame_prefix_len;
     }
-    if (len <= (long)prefix) {
+    if (len <= (rb_long_t)prefix) {
         goto unsupported;
     }
 
@@ -1253,7 +1253,7 @@ trap_handler(VALUE *cmd, int sig)
         }
         if (!NIL_P(command)) {
             const char *cptr;
-            long len;
+            rb_long_t len;
             StringValue(command);
             *cmd = command;
             RSTRING_GETMEM(command, cptr, len);
