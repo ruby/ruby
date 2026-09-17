@@ -66,7 +66,7 @@ rb_str_enc_get(VALUE str)
 VALUE rb_str_dup_m(VALUE str);
 VALUE rb_fstring(VALUE);
 VALUE rb_fstring_cstr(const char *str);
-VALUE rb_fstring_enc_new(const char *ptr, long len, rb_encoding *enc);
+VALUE rb_fstring_enc_new(const char *ptr, rb_long_t len, rb_encoding *enc);
 int rb_str_buf_cat_escaped_char(VALUE result, unsigned int c, int unicode_p);
 int rb_str_symname_p(VALUE);
 VALUE rb_str_quote_unprintable(VALUE);
@@ -75,7 +75,7 @@ void rb_str_change_terminator_length(VALUE str, const int oldtermlen, const int 
 VALUE rb_str_locktmp_ensure(VALUE str, VALUE (*func)(VALUE), VALUE arg);
 VALUE rb_str_chomp_string(VALUE str, VALUE chomp);
 VALUE rb_external_str_with_enc(VALUE str, rb_encoding *eenc);
-VALUE rb_str_cat_conv_enc_opts(VALUE newstr, long ofs, const char *ptr, long len,
+VALUE rb_str_cat_conv_enc_opts(VALUE newstr, rb_long_t ofs, const char *ptr, rb_long_t len,
                                rb_encoding *from, int ecflags, VALUE ecopts);
 VALUE rb_enc_str_scrub(rb_encoding *enc, VALUE str, VALUE repl);
 VALUE rb_str_escape(VALUE str);
@@ -115,22 +115,22 @@ RUBY_SYMBOL_EXPORT_BEGIN
 /* string.c (export) */
 VALUE rb_str_tmp_frozen_acquire(VALUE str);
 void rb_str_tmp_frozen_release(VALUE str, VALUE tmp);
-VALUE rb_setup_fake_str(struct RString *fake_str, const char *name, long len, rb_encoding *enc);
+VALUE rb_setup_fake_str(struct RString *fake_str, const char *name, rb_long_t len, rb_encoding *enc);
 RUBY_SYMBOL_EXPORT_END
 
-VALUE rb_fstring_new(const char *ptr, long len);
+VALUE rb_fstring_new(const char *ptr, rb_long_t len);
 void rb_gc_free_fstring(VALUE obj);
 bool rb_obj_is_fstring_table(VALUE obj);
 void Init_fstring_table();
 VALUE rb_obj_as_string_result(VALUE str, VALUE obj);
 VALUE rb_str_opt_plus(VALUE x, VALUE y);
-VALUE rb_str_new_owned(char *ptr, long len, long capa, int encindex);
+VALUE rb_str_new_owned(char *ptr, rb_long_t len, rb_long_t capa, int encindex);
 VALUE rb_str_concat_literals(size_t num, const VALUE *strary);
 VALUE rb_str_format_ary(int argc, const VALUE *argv, VALUE fmt, VALUE ary);
 VALUE rb_str_eql(VALUE str1, VALUE str2);
 VALUE rb_id_quote_unprintable(ID);
 VALUE rb_sym_proc_call(ID mid, int argc, const VALUE *argv, int kw_splat, VALUE passed_proc);
-VALUE rb_enc_literal_str(const char *ptr, long len, rb_encoding *enc);
+VALUE rb_enc_literal_str(const char *ptr, rb_long_t len, rb_encoding *enc);
 
 struct rb_execution_context_struct;
 VALUE rb_ec_str_resurrect(struct rb_execution_context_struct *ec, VALUE str, bool chilled);
@@ -211,7 +211,7 @@ at_char_right_boundary(const char *s, const char *p, const char *e, rb_encoding 
 static inline VALUE
 rb_str_eql_internal(const VALUE str1, const VALUE str2)
 {
-    const long len = RSTRING_LEN(str1);
+    const rb_long_t len = RSTRING_LEN(str1);
     const char *ptr1, *ptr2;
 
     if (len != RSTRING_LEN(str2)) return Qfalse;
@@ -234,7 +234,7 @@ rb_streql_cstr(VALUE str, const char *lit, size_t len)
 #if __has_builtin(__builtin_constant_p)
 # define rb_fstring_cstr(str) \
     (__builtin_constant_p(str) ? \
-        rb_fstring_new((str), (long)strlen(str)) : \
+        rb_fstring_new((str), (rb_long_t)strlen(str)) : \
         (rb_fstring_cstr)(str))
 #endif
 #endif /* INTERNAL_STRING_H */
