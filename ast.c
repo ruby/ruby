@@ -188,7 +188,7 @@ static bool
 node_find_with_parent(VALUE self, VALUE parent, const int node_id, struct node_find_result *result)
 {
     VALUE ary;
-    long i;
+    rb_long_t i;
     struct ASTNodeData *data;
     TypedData_Get_Struct(self, struct ASTNodeData, &rb_node_type, data);
 
