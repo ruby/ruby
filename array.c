@@ -7008,7 +7008,7 @@ ary_sample(rb_execution_context_t *ec, VALUE ary, VALUE randgen, VALUE nv, VALUE
     len = RARRAY_LEN(ary);
     if (len < k && n <= numberof(idx)) {
         for (i = 0; i < n; ++i) {
-            if (rnds[i] >= len) return rb_ary_new_capa(0);
+            if (rnds[i] >= len - 1) return rb_ary_new_capa(0);
         }
     }
     if (n > len) n = len;

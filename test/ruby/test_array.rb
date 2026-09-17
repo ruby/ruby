@@ -3367,6 +3367,19 @@ class TestArray < Test::Unit::TestCase
     }
   end
 
+  def test_sample_modify_array_out_of_bounds
+    ary = (1..1_000).to_a
+    obj = Object.new
+    obj.define_singleton_method(:to_int) do
+      ary.replace((1..50).to_a)
+      10
+    end
+    gen = Object.new
+    # 49 will be out-of-bounds when ary.replace is called
+    def gen.rand(lim) = 49
+    assert_equal([], ary.sample(obj, random: gen))
+  end
+
   def test_cycle
     a = []
     [0, 1, 2].cycle do |i|
