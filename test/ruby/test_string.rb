@@ -1038,6 +1038,17 @@ CODE
     assert_raise(FrozenError) { S('foo').freeze.setbyte(0, 0x61) }
   end
 
+  def test_setbyte_shrink_during_conversion
+    s = S('a' * 10_000_000)
+    obj = Object.new
+    obj.define_singleton_method(:to_int) do
+      s.clear
+      s.concat("x" * 50)
+      0
+    end
+    assert_raise(IndexError) { s.setbyte(9_999_999, obj) }
+  end
+
   def test_bit_get
     s = S("\xAA\x80")
     assert_equal(0, s.bit_get(0))
