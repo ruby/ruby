@@ -884,12 +884,6 @@ module SyncDefaultGems
         `git remote add ruby-core git@github.com:ruby/ruby.git`
       end
       `git fetch ruby-core master --no-tags`
-      unless `git branch`.match(/ruby\-core/)
-        `git checkout ruby-core/master`
-        `git branch ruby-core`
-      end
-      `git checkout ruby-core`
-      `git rebase ruby-core/master`
       `git fetch origin --tags`
 
       if release
