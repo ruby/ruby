@@ -778,6 +778,7 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
                     size_t numbytes, nlz_bits;
                     int sign, extra = 0;
                     char *cp;
+                    const long start = RSTRING_LEN(res);
 
                     from = NEXTFROM;
                     from = rb_to_int(from);
@@ -794,8 +795,6 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
                         extra = 1;
                     }
                     rb_str_modify_expand(res, numbytes + extra);
-
-                    long start = RSTRING_LEN(res);
 
                     cp = RSTRING_PTR(res) + start;
                     sign = rb_integer_pack(from, cp, numbytes, 1, 1, pack_flags);
