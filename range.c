@@ -1932,7 +1932,7 @@ rb_range_values(VALUE range, VALUE *begp, VALUE *endp, int *exclp)
  */
 VALUE
 rb_range_component_beg_len(VALUE b, VALUE e, int excl,
-                           long *begp, long *lenp, long len, int err)
+                           rb_long_t *begp, rb_long_t *lenp, rb_long_t len, int err)
 {
     long beg, end;
 
@@ -1967,7 +1967,7 @@ rb_range_component_beg_len(VALUE b, VALUE e, int excl,
 }
 
 VALUE
-rb_range_beg_len(VALUE range, long *begp, long *lenp, long len, int err)
+rb_range_beg_len(VALUE range, rb_long_t *begp, rb_long_t *lenp, rb_long_t len, int err)
 {
     VALUE b, e;
     int excl;

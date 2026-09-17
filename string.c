@@ -840,7 +840,7 @@ coderange_scan(const char *p, long len, rb_encoding *enc)
     return ENC_CODERANGE_VALID;
 }
 
-long
+rb_long_t
 rb_str_coderange_scan_restartable(const char *s, const char *e, rb_encoding *enc, int *cr)
 {
     const char *p = s;
@@ -1124,25 +1124,25 @@ str_new(VALUE klass, const char *ptr, long len)
 }
 
 VALUE
-rb_str_new(const char *ptr, long len)
+rb_str_new(const char *ptr, rb_long_t len)
 {
     return str_new(rb_cString, ptr, len);
 }
 
 VALUE
-rb_usascii_str_new(const char *ptr, long len)
+rb_usascii_str_new(const char *ptr, rb_long_t len)
 {
     return str_enc_new(rb_cString, ptr, len, rb_usascii_encoding());
 }
 
 VALUE
-rb_utf8_str_new(const char *ptr, long len)
+rb_utf8_str_new(const char *ptr, rb_long_t len)
 {
     return str_enc_new(rb_cString, ptr, len, rb_utf8_encoding());
 }
 
 VALUE
-rb_enc_str_new(const char *ptr, long len, rb_encoding *enc)
+rb_enc_str_new(const char *ptr, rb_long_t len, rb_encoding *enc)
 {
     return str_enc_new(rb_cString, ptr, len, enc);
 }
@@ -1206,7 +1206,7 @@ str_new_static(VALUE klass, const char *ptr, long len, int encindex)
 }
 
 VALUE
-rb_str_new_static(const char *ptr, long len)
+rb_str_new_static(const char *ptr, rb_long_t len)
 {
     return str_new_static(rb_cString, ptr, len, 0);
 }
@@ -1229,19 +1229,19 @@ rb_str_new_owned(char *ptr, long len, long capa, int encindex)
 }
 
 VALUE
-rb_usascii_str_new_static(const char *ptr, long len)
+rb_usascii_str_new_static(const char *ptr, rb_long_t len)
 {
     return str_new_static(rb_cString, ptr, len, ENCINDEX_US_ASCII);
 }
 
 VALUE
-rb_utf8_str_new_static(const char *ptr, long len)
+rb_utf8_str_new_static(const char *ptr, rb_long_t len)
 {
     return str_new_static(rb_cString, ptr, len, ENCINDEX_UTF_8);
 }
 
 VALUE
-rb_enc_str_new_static(const char *ptr, long len, rb_encoding *enc)
+rb_enc_str_new_static(const char *ptr, rb_long_t len, rb_encoding *enc)
 {
     return str_new_static(rb_cString, ptr, len, rb_enc_to_index(enc));
 }
@@ -1382,7 +1382,7 @@ rb_str_conv_enc(VALUE str, rb_encoding *from, rb_encoding *to)
 }
 
 VALUE
-rb_external_str_new_with_enc(const char *ptr, long len, rb_encoding *eenc)
+rb_external_str_new_with_enc(const char *ptr, rb_long_t len, rb_encoding *eenc)
 {
     rb_encoding *ienc;
     VALUE str;
@@ -1433,7 +1433,7 @@ rb_external_str_with_enc(VALUE str, rb_encoding *eenc)
 }
 
 VALUE
-rb_external_str_new(const char *ptr, long len)
+rb_external_str_new(const char *ptr, rb_long_t len)
 {
     return rb_external_str_new_with_enc(ptr, len, rb_default_external_encoding());
 }
@@ -1445,7 +1445,7 @@ rb_external_str_new_cstr(const char *ptr)
 }
 
 VALUE
-rb_locale_str_new(const char *ptr, long len)
+rb_locale_str_new(const char *ptr, rb_long_t len)
 {
     return rb_external_str_new_with_enc(ptr, len, rb_locale_encoding());
 }
@@ -1457,7 +1457,7 @@ rb_locale_str_new_cstr(const char *ptr)
 }
 
 VALUE
-rb_filesystem_str_new(const char *ptr, long len)
+rb_filesystem_str_new(const char *ptr, rb_long_t len)
 {
     return rb_external_str_new_with_enc(ptr, len, rb_filesystem_encoding());
 }
@@ -1736,7 +1736,7 @@ str_new_frozen_buffer(VALUE klass, VALUE orig, int copy_encoding)
 }
 
 VALUE
-rb_str_new_with_class(VALUE obj, const char *ptr, long len)
+rb_str_new_with_class(VALUE obj, const char *ptr, rb_long_t len)
 {
     return str_enc_new(rb_obj_class(obj), ptr, len, STR_ENC_GET(obj));
 }
@@ -1752,7 +1752,7 @@ str_new_empty_String(VALUE str)
 #define STR_BUF_MIN_SIZE 63
 
 VALUE
-rb_str_buf_new(long capa)
+rb_str_buf_new(rb_long_t capa)
 {
     if (STR_EMBEDDABLE_P(capa, 1)) {
         return str_alloc_embed(rb_cString, capa + 1);
@@ -1780,7 +1780,7 @@ rb_str_buf_new_cstr(const char *ptr)
 }
 
 VALUE
-rb_str_tmp_new(long len)
+rb_str_tmp_new(rb_long_t len)
 {
     return str_new(0, 0, len);
 }
@@ -2386,7 +2386,7 @@ enc_strlen(const char *p, const char *e, rb_encoding *enc, int cr)
     return c;
 }
 
-long
+rb_long_t
 rb_enc_strlen(const char *p, const char *e, rb_encoding *enc)
 {
     return enc_strlen(p, e, enc, ENC_CODERANGE_UNKNOWN);
@@ -2473,7 +2473,7 @@ str_strlen(VALUE str, rb_encoding *enc)
     }
 }
 
-long
+rb_long_t
 rb_str_strlen(VALUE str)
 {
     return str_strlen(str, NULL);
@@ -2798,7 +2798,7 @@ rb_str_modify(VALUE str)
 }
 
 void
-rb_str_modify_expand(VALUE str, long expand)
+rb_str_modify_expand(VALUE str, rb_long_t expand)
 {
     RUBY_ASSERT(ruby_thread_has_gvl_p());
 
@@ -3057,7 +3057,7 @@ rb_str_s_try_convert(VALUE dummy, VALUE str)
 }
 
 static char*
-str_nth_len(const char *p, const char *e, long *nthp, rb_encoding *enc)
+str_nth_len(const char *p, const char *e, rb_long_t *nthp, rb_encoding *enc)
 {
     long nth = *nthp;
     if (rb_enc_mbmaxlen(enc) == 1) {
@@ -3105,13 +3105,13 @@ str_nth_len(const char *p, const char *e, long *nthp, rb_encoding *enc)
 }
 
 char*
-rb_enc_nth(const char *p, const char *e, long nth, rb_encoding *enc)
+rb_enc_nth(const char *p, const char *e, rb_long_t nth, rb_encoding *enc)
 {
     return str_nth_len(p, e, &nth, enc);
 }
 
 static char*
-str_nth(const char *p, const char *e, long nth, rb_encoding *enc, int singlebyte)
+str_nth(const char *p, const char *e, rb_long_t nth, rb_encoding *enc, int singlebyte)
 {
     if (singlebyte)
         p += nth;
@@ -3132,8 +3132,8 @@ str_offset(const char *p, const char *e, long nth, rb_encoding *enc, int singleb
     return pp - p;
 }
 
-long
-rb_str_offset(VALUE str, long pos)
+rb_long_t
+rb_str_offset(VALUE str, rb_long_t pos)
 {
     return str_offset(RSTRING_PTR(str), RSTRING_END(str), pos,
                       STR_ENC_GET(str), single_byte_optimizable(str));
@@ -3141,7 +3141,7 @@ rb_str_offset(VALUE str, long pos)
 
 #ifdef NONASCII_MASK
 static char *
-str_utf8_nth(const char *p, const char *e, long *nthp)
+str_utf8_nth(const char *p, const char *e, rb_long_t *nthp)
 {
     long nth = *nthp;
     if ((int)SIZEOF_VOIDP * 2 < e - p && (int)SIZEOF_VOIDP * 2 < nth) {
@@ -3171,7 +3171,7 @@ str_utf8_nth(const char *p, const char *e, long *nthp)
 }
 
 static long
-str_utf8_offset(const char *p, const char *e, long nth)
+str_utf8_offset(const char *p, const char *e, rb_long_t nth)
 {
     const char *pp = str_utf8_nth(p, e, &nth);
     return pp - p;
@@ -3179,8 +3179,8 @@ str_utf8_offset(const char *p, const char *e, long nth)
 #endif
 
 /* byte offset to char offset */
-long
-rb_str_sublen(VALUE str, long pos)
+rb_long_t
+rb_str_sublen(VALUE str, rb_long_t pos)
 {
     if (single_byte_optimizable(str) || pos < 0)
         return pos;
@@ -3248,7 +3248,7 @@ str_subseq(VALUE str, long beg, long len)
 }
 
 VALUE
-rb_str_subseq(VALUE str, long beg, long len)
+rb_str_subseq(VALUE str, rb_long_t beg, rb_long_t len)
 {
     VALUE str2 = str_subseq(str, beg, len);
     rb_enc_cr_str_copy_for_substr(str2, str);
@@ -3256,7 +3256,7 @@ rb_str_subseq(VALUE str, long beg, long len)
 }
 
 char *
-rb_str_subpos(VALUE str, long beg, long *lenp)
+rb_str_subpos(VALUE str, rb_long_t beg, rb_long_t *lenp)
 {
     long len = *lenp;
     long slen = -1L;
@@ -3342,10 +3342,10 @@ rb_str_subpos(VALUE str, long beg, long *lenp)
     return (char *)p;
 }
 
-static VALUE str_substr(VALUE str, long beg, long len, int empty);
+static VALUE str_substr(VALUE str, rb_long_t beg, rb_long_t len, int empty);
 
 VALUE
-rb_str_substr(VALUE str, long beg, long len)
+rb_str_substr(VALUE str, rb_long_t beg, rb_long_t len)
 {
     return str_substr(str, beg, len, TRUE);
 }
@@ -3357,7 +3357,7 @@ rb_str_substr_two_fixnums(VALUE str, VALUE beg, VALUE len, int empty)
 }
 
 static VALUE
-str_substr(VALUE str, long beg, long len, int empty)
+str_substr(VALUE str, rb_long_t beg, rb_long_t len, int empty)
 {
     const char *p = rb_str_subpos(str, beg, &len);
 
@@ -3482,7 +3482,7 @@ rb_str_locktmp_ensure(VALUE str, VALUE (*func)(VALUE), VALUE arg)
 }
 
 void
-rb_str_set_len(VALUE str, long len)
+rb_str_set_len(VALUE str, rb_long_t len)
 {
     RUBY_ASSERT(ruby_thread_has_gvl_p());
 
@@ -3532,7 +3532,7 @@ rb_str_set_len(VALUE str, long len)
 }
 
 VALUE
-rb_str_resize(VALUE str, long len)
+rb_str_resize(VALUE str, rb_long_t len)
 {
     if (len < 0) {
         rb_raise(rb_eArgError, "negative string size (or size too big)");
@@ -3663,7 +3663,7 @@ str_buf_cat4(VALUE str, const char *ptr, long len, bool keep_cr)
 #define str_buf_cat2(str, ptr) str_buf_cat4((str), (ptr), rb_strlen_lit(ptr), false)
 
 VALUE
-rb_str_cat(VALUE str, const char *ptr, long len)
+rb_str_cat(VALUE str, const char *ptr, rb_long_t len)
 {
     if (len == 0) return str;
     if (len < 0) {
@@ -3735,7 +3735,7 @@ rb_str_buf_cat_byte(VALUE str, unsigned char byte)
     }
 }
 
-RUBY_ALIAS_FUNCTION(rb_str_buf_cat(VALUE str, const char *ptr, long len), rb_str_cat, (str, ptr, len))
+RUBY_ALIAS_FUNCTION(rb_str_buf_cat(VALUE str, const char *ptr, rb_long_t len), rb_str_cat, (str, ptr, len))
 RUBY_ALIAS_FUNCTION(rb_str_buf_cat2(VALUE str, const char *ptr), rb_str_cat_cstr, (str, ptr))
 RUBY_ALIAS_FUNCTION(rb_str_cat2(VALUE str, const char *ptr), rb_str_cat_cstr, (str, ptr))
 
@@ -3830,7 +3830,7 @@ rb_enc_cr_str_buf_cat(VALUE str, const char *ptr, long len,
 }
 
 VALUE
-rb_enc_str_buf_cat(VALUE str, const char *ptr, long len, rb_encoding *ptr_enc)
+rb_enc_str_buf_cat(VALUE str, const char *ptr, rb_long_t len, rb_encoding *ptr_enc)
 {
     return rb_enc_cr_str_buf_cat(str, ptr, len,
         rb_enc_to_index(ptr_enc), ENC_CODERANGE_UNKNOWN, NULL);
@@ -5796,7 +5796,7 @@ rb_str_aref(VALUE str, VALUE indx)
     }
     else {
         /* check if indx is Range */
-        long beg, len = str_strlen(str, NULL);
+        rb_long_t beg, len = str_strlen(str, NULL);
         switch (rb_range_beg_len(indx, &beg, &len, len, 0)) {
           case Qfalse:
             break;
@@ -5840,7 +5840,7 @@ rb_str_aref_m(int argc, VALUE *argv, VALUE str)
 }
 
 VALUE
-rb_str_drop_bytes(VALUE str, long len)
+rb_str_drop_bytes(VALUE str, rb_long_t len)
 {
     char *ptr = RSTRING_PTR(str);
     long olen = RSTRING_LEN(str), nlen;
@@ -5925,7 +5925,7 @@ rb_str_update_0(VALUE str, long beg, long len, VALUE val)
 }
 
 void
-rb_str_update(VALUE str, long beg, long len, VALUE val)
+rb_str_update(VALUE str, rb_long_t beg, rb_long_t len, VALUE val)
 {
     long slen;
     char *p, *e;
@@ -6020,7 +6020,7 @@ rb_str_aset(VALUE str, VALUE indx, VALUE val)
       default:
         /* check if indx is Range */
         {
-            long beg, len;
+            rb_long_t beg, len;
             if (rb_range_beg_len(indx, &beg, &len, str_strlen(str, NULL), 2)) {
                 rb_str_update(str, beg, len, val);
                 return val;
@@ -6116,7 +6116,7 @@ rb_str_slice_bang(int argc, VALUE *argv, VALUE str)
 {
     VALUE result = Qnil;
     VALUE indx;
-    long beg, len = 1;
+    rb_long_t beg, len = 1;
     char *p;
 
     rb_check_arity(argc, 1, 2);
@@ -7626,7 +7626,7 @@ str_byte_aref(VALUE str, VALUE indx)
     }
     else {
         /* check if indx is Range */
-        long beg, len = RSTRING_LEN(str);
+        rb_long_t beg, len = RSTRING_LEN(str);
 
         switch (rb_range_beg_len(indx, &beg, &len, len, 0)) {
           case Qfalse:
@@ -7663,7 +7663,7 @@ rb_str_byteslice(int argc, VALUE *argv, VALUE str)
 }
 
 static void
-str_check_beg_len(VALUE str, long *beg, long *len)
+str_check_beg_len(VALUE str, rb_long_t *beg, rb_long_t *len)
 {
     long end, slen = RSTRING_LEN(str);
 
@@ -7698,7 +7698,7 @@ str_check_beg_len(VALUE str, long *beg, long *len)
 static VALUE
 rb_str_bytesplice(int argc, VALUE *argv, VALUE str)
 {
-    long beg, len, vbeg, vlen;
+    rb_long_t beg, len, vbeg, vlen;
     VALUE val;
     int cr;
 
@@ -13080,7 +13080,7 @@ rb_str_is_ascii_only_p(VALUE str)
 }
 
 VALUE
-rb_str_ellipsize(VALUE str, long len)
+rb_str_ellipsize(VALUE str, rb_long_t len)
 {
     static const char ellipsis[] = "...";
     const long ellipsislen = sizeof(ellipsis) - 1;
@@ -14112,7 +14112,7 @@ rb_str_to_interned_str(VALUE str)
 }
 
 VALUE
-rb_interned_str(const char *ptr, long len)
+rb_interned_str(const char *ptr, rb_long_t len)
 {
     struct RString fake_str = {RBASIC_INIT};
     int encidx = ENCINDEX_US_ASCII;
@@ -14133,7 +14133,7 @@ rb_interned_str_cstr(const char *ptr)
 }
 
 VALUE
-rb_enc_interned_str(const char *ptr, long len, rb_encoding *enc)
+rb_enc_interned_str(const char *ptr, rb_long_t len, rb_encoding *enc)
 {
     if (enc != NULL && UNLIKELY(rb_enc_autoload_p(enc))) {
         rb_enc_autoload(enc);

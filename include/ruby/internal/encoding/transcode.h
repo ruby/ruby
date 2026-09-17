@@ -380,7 +380,7 @@ VALUE rb_econv_str_convert(rb_econv_t *ec, VALUE src, int flags);
  * @exception      rb_eUndefinedConversionError  Conversion undefined.
  * @return         The conversion result.
  */
-VALUE rb_econv_substr_convert(rb_econv_t *ec, VALUE src, long byteoff, long bytesize, int flags);
+VALUE rb_econv_substr_convert(rb_econv_t *ec, VALUE src, rb_long_t byteoff, rb_long_t bytesize, int flags);
 
 /**
  * Identical to rb_econv_str_convert(), except it appends the conversion result
@@ -416,7 +416,7 @@ VALUE rb_econv_str_append(rb_econv_t *ec, VALUE src, VALUE dst, int flags);
  * @exception      rb_eUndefinedConversionError  Conversion undefined.
  * @return         The conversion result.
  */
-VALUE rb_econv_substr_append(rb_econv_t *ec, VALUE src, long byteoff, long bytesize, VALUE dst, int flags);
+VALUE rb_econv_substr_append(rb_econv_t *ec, VALUE src, rb_long_t byteoff, rb_long_t bytesize, VALUE dst, int flags);
 
 /**
  * Converts  the passed  C's pointer  according to  the passed  converter, then
@@ -433,7 +433,7 @@ VALUE rb_econv_substr_append(rb_econv_t *ec, VALUE src, long byteoff, long bytes
  * @exception      rb_eUndefinedConversionError  Conversion undefined.
  * @return         The conversion result.
  */
-VALUE rb_econv_append(rb_econv_t *ec, const char *bytesrc, long bytesize, VALUE dst, int flags);
+VALUE rb_econv_append(rb_econv_t *ec, const char *bytesrc, rb_long_t bytesize, VALUE dst, int flags);
 
 /**
  * This badly named  function does not set the destination  encoding to binary,

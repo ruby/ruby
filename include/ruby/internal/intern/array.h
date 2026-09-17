@@ -40,7 +40,7 @@ RBIMPL_ATTR_NOALIAS()
  * @param[in]   len  Number of objects of `buf`.
  * @post        `buf` is filled with ::RUBY_Qnil.
  */
-void rb_mem_clear(VALUE *buf, long len)
+void rb_mem_clear(VALUE *buf, rb_long_t len)
     RBIMPL_ATTR_NOEXCEPT(true)
     ;
 
@@ -86,7 +86,7 @@ VALUE rb_ary_new(void);
  * @param[in]  capa  Designed capacity of the generating array.
  * @return     An empty array, whose capacity is `capa`.
  */
-VALUE rb_ary_new_capa(long capa);
+VALUE rb_ary_new_capa(rb_long_t capa);
 
 /**
  * Constructs an array from the passed objects.
@@ -95,7 +95,7 @@ VALUE rb_ary_new_capa(long capa);
  * @param[in]  ...  Arbitrary ruby objects, filled into the returning array.
  * @return     An array of size `n`, whose contents are the passed objects.
  */
-VALUE rb_ary_new_from_args(long n, ...);
+VALUE rb_ary_new_from_args(rb_long_t n, ...);
 
 /**
  * Identical to rb_ary_new_from_args(), except how objects are passed.
@@ -104,7 +104,7 @@ VALUE rb_ary_new_from_args(long n, ...);
  * @param[in]  elts  Arbitrary ruby objects, filled into the returning array.
  * @return     An array of size `n`, whose contents are the passed objects.
  */
-VALUE rb_ary_new_from_values(long n, const VALUE *elts);
+VALUE rb_ary_new_from_values(rb_long_t n, const VALUE *elts);
 
 /**
  * Allocates a hidden (no class) empty array.
@@ -113,7 +113,7 @@ VALUE rb_ary_new_from_values(long n, const VALUE *elts);
  * @return     A hidden, empty array.
  * @see        rb_obj_hide()
  */
-VALUE rb_ary_hidden_new(long capa);
+VALUE rb_ary_hidden_new(rb_long_t capa);
 #define rb_ary_tmp_new rb_ary_hidden_new
 
 /**
@@ -211,7 +211,7 @@ VALUE rb_ary_aref(int argc, const VALUE *argv, VALUE ary);
  * @note       Return  array  can  be  shorter than  `len`  when  for  instance
  *             `[0, 1, 2, 3]`'s 4th to 1,000,000,000th is requested.
  */
-VALUE rb_ary_subseq(VALUE ary, long beg, long len);
+VALUE rb_ary_subseq(VALUE ary, rb_long_t beg, rb_long_t len);
 
 /**
  * Destructively stores  the passed value  to the passed array's  passed index.
@@ -228,7 +228,7 @@ VALUE rb_ary_subseq(VALUE ary, long beg, long len);
  *              can  also create  a series  of "hole"  positions inside  of the
  *              backend storage.  They are filled with ::RUBY_Qnil.
  */
-void rb_ary_store(VALUE ary, long key, VALUE val);
+void rb_ary_store(VALUE ary, rb_long_t key, VALUE val);
 
 /**
  * Duplicates an array.
@@ -288,7 +288,7 @@ VALUE rb_ary_to_s(VALUE ary);
  * @return      The passed `ary`.
  * @post        `ary` has contents from `train` appended at its end.
  */
-VALUE rb_ary_cat(VALUE ary, const VALUE *train, long len);
+VALUE rb_ary_cat(VALUE ary, const VALUE *train, rb_long_t len);
 
 /**
  * Special case of rb_ary_cat() that it adds only one element.
@@ -356,7 +356,7 @@ RBIMPL_ATTR_PURE()
  *             what is stored at `off`-th position of `ary`.
  * @note       `ary`'s `off`-th element can happen to be ::RUBY_Qnil.
  */
-VALUE rb_ary_entry(VALUE ary, long off);
+VALUE rb_ary_entry(VALUE ary, rb_long_t off);
 
 /**
  * Iteratively yields each element of the passed array to the implicitly passed
@@ -407,7 +407,7 @@ VALUE rb_ary_reverse(VALUE ary);
  * @retval      ary              Rotated.
  * @post        `ary` is rotated.
  */
-VALUE rb_ary_rotate(VALUE ary, long rot);
+VALUE rb_ary_rotate(VALUE ary, rb_long_t rot);
 
 /**
  * Creates a copy  of the passed array, whose elements  are sorted according to
@@ -472,7 +472,7 @@ VALUE rb_ary_delete(VALUE ary, VALUE elem);
  * @note        There is no  way to distinguish whether `pos` is  out of bound,
  *              or `pos` did exist but stored ::RUBY_Qnil as an ordinal value.
  */
-VALUE rb_ary_delete_at(VALUE ary, long pos);
+VALUE rb_ary_delete_at(VALUE ary, rb_long_t pos);
 
 /**
  * Destructively removes everything form an array.
@@ -633,7 +633,7 @@ VALUE rb_ary_replace(VALUE copy, VALUE orig);
  * `Array#values_at` no  longer uses this  function.  There is no  reason apart
  * from historical ones to list this function here.
  */
-VALUE rb_get_values_at(VALUE obj, long olen, int argc, const VALUE *argv, VALUE (*func)(VALUE obj, long oidx));
+VALUE rb_get_values_at(VALUE obj, rb_long_t olen, int argc, const VALUE *argv, VALUE (*func)(VALUE obj, rb_long_t oidx));
 
 /**
  * Expands or shrinks the passed array to the passed length.
@@ -652,7 +652,7 @@ VALUE rb_get_values_at(VALUE obj, long olen, int argc, const VALUE *argv, VALUE 
  *
  * `len` is signed.  Intentional or...?
  */
-VALUE rb_ary_resize(VALUE ary, long len);
+VALUE rb_ary_resize(VALUE ary, rb_long_t len);
 
 #define rb_ary_new2 rb_ary_new_capa         /**< @old{rb_ary_new_capa} */
 #define rb_ary_new3 rb_ary_new_from_args    /**< @old{rb_ary_new_from_args} */

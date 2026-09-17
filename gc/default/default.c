@@ -12615,7 +12615,7 @@ rb_gc_impl_after_fork(void *objspace_ptr, rb_pid_t pid)
     }
 }
 
-VALUE rb_ident_hash_new_capa(long size);
+VALUE rb_ident_hash_new_capa(rb_long_t size);
 
 #if GC_DEBUG_STRESS_TO_CLASS
 /*

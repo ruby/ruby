@@ -1898,7 +1898,7 @@ r_object0(struct load_arg *arg, bool partial, int *ivp, VALUE extmod)
 static VALUE
 r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE klass, VALUE extmod, int type)
 {
-    VALUE (*hash_new_capa)(long) = rb_hash_new_capa;
+    VALUE (*hash_new_capa)(rb_long_t) = rb_hash_new_capa;
     VALUE v = Qnil;
     long id;
     st_data_t link;

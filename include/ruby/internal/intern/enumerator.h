@@ -136,7 +136,7 @@ RBIMPL_ATTR_NONNULL(())
  *                                - `0`: returns ::RUBY_Qnil.
  *                                - `1`: raises  ::rb_eRangeError.
  *                                - `2`: `beg` and `len` expanded accordingly.
- * @exception   rb_eRangeError  `as` cannot fit into `long`.
+ * @exception   rb_eRangeError  `as` cannot fit into ::rb_long_t.
  * @retval      RUBY_Qfalse     `as` is not `Enumerator::ArithmericSequence`.
  * @retval      RUBY_Qnil       `len` is out of `as` but `err` is zero.
  * @retval      RUBY_Qtrue      Otherwise.
@@ -148,7 +148,7 @@ RBIMPL_ATTR_NONNULL(())
  * Currently no 3rd party applications of this function is found.  But that can
  * be because this function is relatively new.
  */
-VALUE rb_arithmetic_sequence_beg_len_step(VALUE as, long *begp, long *lenp, long *stepp, long len, int err);
+VALUE rb_arithmetic_sequence_beg_len_step(VALUE as, rb_long_t *begp, rb_long_t *lenp, rb_long_t *stepp, rb_long_t len, int err);
 
 RBIMPL_SYMBOL_EXPORT_END()
 

@@ -2446,7 +2446,7 @@ st_insert_generic(st_table *tab, long argc, const VALUE *argv, VALUE hash)
 /* Mimics ruby's { foo => bar } syntax. This function is subpart
    of rb_hash_bulk_insert. */
 void
-rb_hash_bulk_insert_into_st_table(long argc, const VALUE *argv, VALUE hash)
+rb_hash_bulk_insert_into_st_table(rb_long_t argc, const VALUE *argv, VALUE hash)
 {
     st_index_t n, size = argc / 2;
     st_table *tab = RHASH_ST_TABLE(hash);
