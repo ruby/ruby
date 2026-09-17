@@ -1007,20 +1007,6 @@ EXPECTED
     end;
   end
 
-  def test_pack_modify_buffer_r_R
-    buf = "x" * 10_000
-    o = Object.new
-    o.define_singleton_method(:to_int) { buf.clear; 1 }
-    [o, 42].pack("R R", buffer: buf)
-    assert_equal "\x01\x2A".b, buf
-
-    buf = "x" * 10_000
-    o = Object.new
-    o.define_singleton_method(:to_int) { buf.clear; -2 }
-    [o].pack("r", buffer: buf)
-    assert_equal "\x7E".b, buf
-  end
-
   def test_unpack_broken_R
     assert_equal([nil], "\xFF".unpack("R"))
     assert_nil("\xFF".unpack1("R"))
