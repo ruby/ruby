@@ -261,9 +261,8 @@ def generate_cexpr(ofile, lineno, line_file, body_lineno, text, locals, func_nam
 
   # Avoid generating fetches of lvars we don't need. This is imperfect as it
   # will match text inside strings or other false positives.
-  local_ptrs = []
   local_candidates = text.gsub(/\bLOCAL_PTR\(\K[a-zA-Z_][a-zA-Z0-9_]*(?=\))/) {
-    local_ptrs << $&; ''
+    ''
   }.scan(/[a-zA-Z_][a-zA-Z0-9_]*/)
 
   f.puts '{'
@@ -273,7 +272,7 @@ def generate_cexpr(ofile, lineno, line_file, body_lineno, text, locals, func_nam
     next unless Symbol === param
     param = param.to_s
     lvar = local_candidates.include?(param)
-    next unless lvar or local_ptrs.include?(param)
+    next unless lvar
     f.puts "const VALUE *const #{param}__ptr = &ec->cfp->ep[#{-3 - i}];"
     f.puts "MAYBE_UNUSED(const VALUE) #{param} = *#{param}__ptr;" if lvar
     lineno += lvar ? 2 : 1
