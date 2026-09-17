@@ -105,6 +105,10 @@ def visit_call_node(source, node, name, locals, requires, bs, inlines)
       end
 
       return true
+    when "local_self"
+      raise "`local_self` args must be empty" if argc != 0
+      raise "`local_self` requires `self` local to be present" unless locals.include?(:self)
+      return true
     when "mandatory_only"
       # This is a call to Primitive.mandatory_only?. This method does not
       # require any further processing.
