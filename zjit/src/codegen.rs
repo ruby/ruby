@@ -2827,7 +2827,6 @@ fn gen_throw(jit: &mut JITState, asm: &mut Assembler, function: &Function, throw
     // rb_zjit_throw() never returns. Trap in case it somehow does, and end the
     // LIR block with an unreachable ret to give it a normal terminator.
     asm.abort();
-    asm.cret(C_RET_OPND);
 }
 
 /// Compile Fixnum + Fixnum
