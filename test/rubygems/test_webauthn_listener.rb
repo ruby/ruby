@@ -25,6 +25,21 @@ class WebauthnListenerTest < Gem::TestCase
     assert_equal "xyz", thread[:otp]
   end
 
+  def test_listener_thread_ignores_a_connection_without_a_request
+    @thread = Gem::GemcutterUtilities::WebauthnListener.listener_thread(Gem.host, @server)
+
+    TCPSocket.new("localhost", @port).close
+
+    socket = TCPSocket.new("localhost", @port)
+    socket.setsockopt(Socket::SOL_SOCKET, Socket::SO_LINGER, [1, 0].pack("ii"))
+    socket.close
+
+    Gem::MockBrowser.get Gem::URI("http://localhost:#{@port}?code=xyz")
+
+    @thread.join
+    assert_equal "xyz", @thread[:otp]
+  end
+
   def test_listener_thread_sets_error
     thread = Gem::GemcutterUtilities::WebauthnListener.listener_thread(Gem.host, @server)
     Gem::MockBrowser.post Gem::URI("http://localhost:#{@port}?code=xyz")
