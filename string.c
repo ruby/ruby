@@ -5992,7 +5992,12 @@ rb_str_subpat_set(VALUE str, VALUE re, VALUE backref, VALUE val)
     }
     end = RMATCH_END(match, nth);
     len = end - start;
+
     StringValue(val);
+    if (start + len > RSTRING_LEN(str)) {
+        rb_raise(rb_eRuntimeError, "string modified");
+    }
+
     enc = rb_enc_check_str(str, val);
     rb_str_update_0(str, start, len, val);
     rb_enc_associate(str, enc);

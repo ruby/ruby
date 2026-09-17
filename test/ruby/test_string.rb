@@ -242,6 +242,16 @@ CODE
     assert_raise(IndexError) {"foo"[RbConfig::LIMITS["LONG_MIN"]] = "l"}
   end
 
+  def test_ASET_string_modified_during_conversion
+    str = S("hello" * 100)
+    obj = Object.new
+    obj.define_singleton_method(:to_str) do
+      str.replace("")
+      "x"
+    end
+    assert_raise(RuntimeError) { str[/h.l/] = obj }
+  end
+
   def test_CMP # '<=>'
     assert_equal(1, S("abcdef") <=> S("abcde"))
     assert_equal(0, S("abcdef") <=> S("abcdef"))
