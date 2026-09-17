@@ -250,6 +250,27 @@ RSpec.describe Bundler do
     end
   end
 
+  describe "#bin_path" do
+    # Creating the directory here meant that merely asking where binstubs go
+    # made one, and raised on a read-only filesystem. See #9197.
+    it "returns the path without creating the directory" do
+      allow(Bundler).to receive(:root).and_return(bundled_app)
+      Bundler.reset_paths!
+
+      expect(Bundler.bin_path).to eq(bundled_app("bin"))
+      expect(bundled_app("bin")).not_to exist
+    end
+
+    it "does not touch the filesystem" do
+      allow(Bundler).to receive(:root).and_return(bundled_app)
+      Bundler.reset_paths!
+
+      expect(Bundler).not_to receive(:mkdir_p)
+
+      Bundler.bin_path
+    end
+  end
+
   describe "#mkdir_p" do
     it "creates a folder at the given path" do
       install_gemfile <<-G
