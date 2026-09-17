@@ -1911,7 +1911,7 @@ nurat_marshal_load(VALUE self, VALUE a)
 
     Check_Type(a, T_ARRAY);
     if (RARRAY_LEN(a) != 2)
-        rb_raise(rb_eArgError, "marshaled rational must have an array whose length is 2 but %ld", RARRAY_LEN(a));
+        rb_raise(rb_eArgError, "marshaled rational must have an array whose length is 2 but %"PRIdLONGT, RARRAY_LEN(a));
 
     num = RARRAY_AREF(a, 0);
     den = RARRAY_AREF(a, 1);

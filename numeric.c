@@ -980,7 +980,7 @@ flo_to_s(VALUE flt)
             rb_str_cat(s, buf, digs + 1);
         }
         else if (decpt <= DBL_DIG) {
-            long len;
+            rb_long_t len;
             char *ptr;
             rb_str_cat(s, buf, digs);
             rb_str_resize(s, (len = RSTRING_LEN(s)) + decpt - digs + 2);
@@ -996,7 +996,7 @@ flo_to_s(VALUE flt)
         }
     }
     else if (decpt > -4) {
-        long len;
+        rb_long_t len;
         char *ptr;
         rb_str_cat(s, "0.", 2);
         rb_str_resize(s, (len = RSTRING_LEN(s)) - decpt + digs);
@@ -5840,7 +5840,7 @@ rb_int_digits_bigbase(VALUE num, VALUE base)
     digits = rb_ary_new_from_args(1, num);
     while (RARRAY_LEN(bases)) {
         VALUE b = rb_ary_pop(bases);
-        long i, last_idx = RARRAY_LEN(digits) - 1;
+        rb_long_t i, last_idx = RARRAY_LEN(digits) - 1;
         for(i = last_idx; i >= 0; i--) {
             VALUE n = RARRAY_AREF(digits, i);
             VALUE divmod = rb_int_divmod(n, b);
