@@ -29,7 +29,7 @@ struct RStruct {
     VALUE fields_obj;
     union {
         struct {
-            long len;
+            rb_long_t len;
             const VALUE *ptr;
         } heap;
         /* This is a length 1 array because:
@@ -49,22 +49,22 @@ VALUE rb_struct_lookup(VALUE s, VALUE idx);
 VALUE rb_struct_s_keyword_init(VALUE klass);
 void rb_struct_define_aref_method(VALUE nstr, ID name, unsigned int off);
 
-static inline long RSTRUCT_EMBED_LEN(VALUE st);
-static inline long RSTRUCT_LEN_RAW(VALUE st);
+static inline rb_long_t RSTRUCT_EMBED_LEN(VALUE st);
+static inline rb_long_t RSTRUCT_LEN_RAW(VALUE st);
 static inline int RSTRUCT_LENINT(VALUE st);
 static inline const VALUE *RSTRUCT_CONST_PTR(VALUE st);
-static inline void RSTRUCT_SET_RAW(VALUE st, long k, VALUE v);
-static inline VALUE RSTRUCT_GET_RAW(VALUE st, long k);
+static inline void RSTRUCT_SET_RAW(VALUE st, rb_long_t k, VALUE v);
+static inline VALUE RSTRUCT_GET_RAW(VALUE st, rb_long_t k);
 
-static inline long
+static inline rb_long_t
 RSTRUCT_EMBED_LEN(VALUE st)
 {
-    long ret = FL_TEST_RAW(st, RSTRUCT_EMBED_LEN_MASK);
+    rb_long_t ret = FL_TEST_RAW(st, RSTRUCT_EMBED_LEN_MASK);
     ret >>= RSTRUCT_EMBED_LEN_SHIFT;
     return ret;
 }
 
-static inline long
+static inline rb_long_t
 RSTRUCT_LEN_RAW(VALUE st)
 {
     if (FL_TEST_RAW(st, RSTRUCT_EMBED_LEN_MASK)) {
@@ -78,7 +78,7 @@ RSTRUCT_LEN_RAW(VALUE st)
 static inline int
 RSTRUCT_LENINT(VALUE st)
 {
-    return rb_long2int(RSTRUCT_LEN_RAW(st));
+    return rb_longt2int(RSTRUCT_LEN_RAW(st));
 }
 
 static inline const VALUE *
@@ -95,13 +95,13 @@ RSTRUCT_CONST_PTR(VALUE st)
 }
 
 static inline void
-RSTRUCT_SET_RAW(VALUE st, long k,  VALUE v)
+RSTRUCT_SET_RAW(VALUE st, rb_long_t k,  VALUE v)
 {
     RB_OBJ_WRITE(st, &RSTRUCT_CONST_PTR(st)[k], v);
 }
 
 static inline VALUE
-RSTRUCT_GET_RAW(VALUE st, long k)
+RSTRUCT_GET_RAW(VALUE st, rb_long_t k)
 {
     return RSTRUCT_CONST_PTR(st)[k];
 }
