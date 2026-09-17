@@ -192,7 +192,7 @@ They are still available on rubygems.org and can be installed with
   * 6.0.1 to [v6.0.1.1][erb-v6.0.1.1], [v6.0.2][erb-v6.0.2], [v6.0.3][erb-v6.0.3], [v6.0.4][erb-v6.0.4], [v6.0.5][erb-v6.0.5], [v6.0.6][erb-v6.0.6], [v6.0.7][erb-v6.0.7]
 * error_highlight 0.7.2
 * io-console 0.9.3
-  * 0.8.2 to [v0.9.0][io-console-v0.9.0], [v0.9.1][io-console-v0.9.1], [v0.9.2][io-console-v0.9.2]
+  * 0.8.2 to [v0.9.0][io-console-v0.9.0], [v0.9.1][io-console-v0.9.1], [v0.9.2][io-console-v0.9.2], [v0.9.3][io-console-v0.9.3]
 * io-wait 999.999.999
 * ipaddr 1.2.9
   * 1.2.8 to [v1.2.9][ipaddr-v1.2.9]
@@ -209,7 +209,7 @@ They are still available on rubygems.org and can be installed with
 * psych 5.5.0
   * 5.3.1 to [v5.4.0][psych-v5.4.0], [v5.5.0][psych-v5.5.0]
 * resolv 0.7.2
-  * 0.7.0 to [v0.7.1][resolv-v0.7.1]
+  * 0.7.0 to [v0.7.1][resolv-v0.7.1], [v0.7.2][resolv-v0.7.2]
 * stringio 3.2.1.dev
 * strscan 3.1.9.dev
   * 3.1.6 to [v3.1.7][strscan-v3.1.7], [v3.1.8][strscan-v3.1.8]
@@ -536,6 +536,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [io-console-v0.9.0]: https://github.com/ruby/io-console/releases/tag/v0.9.0
 [io-console-v0.9.1]: https://github.com/ruby/io-console/releases/tag/v0.9.1
 [io-console-v0.9.2]: https://github.com/ruby/io-console/releases/tag/v0.9.2
+[io-console-v0.9.3]: https://github.com/ruby/io-console/releases/tag/v0.9.3
 [ipaddr-v1.2.9]: https://github.com/ruby/ipaddr/releases/tag/v1.2.9
 [json-v2.18.1]: https://github.com/ruby/json/releases/tag/v2.18.1
 [json-v2.19.0]: https://github.com/ruby/json/releases/tag/v2.19.0
@@ -563,6 +564,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [psych-v5.4.0]: https://github.com/ruby/psych/releases/tag/v5.4.0
 [psych-v5.5.0]: https://github.com/ruby/psych/releases/tag/v5.5.0
 [resolv-v0.7.1]: https://github.com/ruby/resolv/releases/tag/v0.7.1
+[resolv-v0.7.2]: https://github.com/ruby/resolv/releases/tag/v0.7.2
 [strscan-v3.1.7]: https://github.com/ruby/strscan/releases/tag/v3.1.7
 [strscan-v3.1.8]: https://github.com/ruby/strscan/releases/tag/v3.1.8
 [timeout-v0.6.1]: https://github.com/ruby/timeout/releases/tag/v0.6.1
