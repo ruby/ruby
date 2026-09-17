@@ -1903,10 +1903,10 @@ rb_econv_append(rb_econv_t *ec, const char *ss, rb_long_t len, VALUE dst, int fl
 
     do {
         int cr;
-        long dlen = RSTRING_LEN(dst);
+        rb_long_t dlen = RSTRING_LEN(dst);
         if (rb_str_capacity(dst) - dlen < (size_t)len + max_output) {
-            unsigned long new_capa = (unsigned long)dlen + len + max_output;
-            if (LONG_MAX < new_capa)
+            rb_ulong_t new_capa = (rb_ulong_t)dlen + len + max_output;
+            if (RB_LONGT_MAX < new_capa)
                 rb_raise(rb_eArgError, "too long string");
             rb_str_modify_expand(dst, new_capa - dlen);
         }
@@ -2804,7 +2804,7 @@ str_transcode0(int argc, VALUE *argv, VALUE *self, int ecflags, VALUE ecopts)
     VALUE dest;
     VALUE str = *self;
     VALUE arg1, arg2;
-    long blen, slen;
+    rb_long_t blen, slen;
     unsigned char *buf, *bp, *sp;
     const unsigned char *fromp;
     rb_encoding *senc, *denc;
@@ -3317,7 +3317,7 @@ rb_econv_init_by_convpath(VALUE self, VALUE convpath,
     rb_encoding **senc_p, rb_encoding**denc_p)
 {
     rb_econv_t *ec;
-    long i;
+    rb_long_t i;
     int ret, first=1;
     VALUE elt;
     rb_encoding *senc = 0, *denc = 0;
@@ -3821,8 +3821,8 @@ econv_primitive_convert(int argc, VALUE *argv, VALUE self)
     rb_econv_result_t res;
     const unsigned char *ip, *is;
     unsigned char *op, *os;
-    long output_byteoffset, output_bytesize;
-    unsigned long output_byteend;
+    rb_long_t output_byteoffset, output_bytesize;
+    rb_ulong_t output_byteend;
     int flags;
 
     argc = rb_scan_args(argc, argv, "23:", &input, &output, &output_byteoffset_v, &output_bytesize_v, &flags_v, &opt);
@@ -3830,12 +3830,12 @@ econv_primitive_convert(int argc, VALUE *argv, VALUE self)
     if (NIL_P(output_byteoffset_v))
         output_byteoffset = 0; /* dummy */
     else
-        output_byteoffset = NUM2LONG(output_byteoffset_v);
+        output_byteoffset = NUM2LONGT(output_byteoffset_v);
 
     if (NIL_P(output_bytesize_v))
         output_bytesize = 0; /* dummy */
     else
-        output_bytesize = NUM2LONG(output_bytesize_v);
+        output_bytesize = NUM2LONGT(output_bytesize_v);
 
     if (!NIL_P(flags_v)) {
         if (!NIL_P(opt)) {
@@ -3883,11 +3883,11 @@ econv_primitive_convert(int argc, VALUE *argv, VALUE self)
     if (output_bytesize < 0)
         rb_raise(rb_eArgError, "negative output_bytesize");
 
-    output_byteend = (unsigned long)output_byteoffset +
-                     (unsigned long)output_bytesize;
+    output_byteend = (rb_ulong_t)output_byteoffset +
+                     (rb_ulong_t)output_bytesize;
 
-    if (output_byteend < (unsigned long)output_byteoffset ||
-        LONG_MAX < output_byteend)
+    if (output_byteend < (rb_ulong_t)output_byteoffset ||
+        RB_LONGT_MAX < output_byteend)
         rb_raise(rb_eArgError, "output_byteoffset+output_bytesize too big");
 
     if (rb_str_capacity(output) < output_byteend)
@@ -3911,7 +3911,7 @@ econv_primitive_convert(int argc, VALUE *argv, VALUE self)
     }
 
     if (NIL_P(output_bytesize_v) && res == econv_destination_buffer_full) {
-        if (LONG_MAX / 2 < output_bytesize)
+        if (RB_LONGT_MAX / 2 < output_bytesize)
             rb_raise(rb_eArgError, "too long conversion result");
         output_bytesize *= 2;
         output_byteoffset_v = Qnil;
@@ -4305,7 +4305,7 @@ econv_get_replacement(VALUE self)
     }
 
     enc = rb_enc_find(ec->replacement_enc);
-    return rb_enc_str_new((const char *)ec->replacement_str, (long)ec->replacement_len, enc);
+    return rb_enc_str_new((const char *)ec->replacement_str, (rb_long_t)ec->replacement_len, enc);
 }
 
 /*
