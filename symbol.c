@@ -45,7 +45,7 @@
 
 #define STATIC_SYM2ID(sym) RSHIFT((VALUE)(sym), RUBY_SPECIAL_SHIFT)
 
-static ID register_static_symid(ID, const char *, long, rb_encoding *);
+static ID register_static_symid(ID, const char *, rb_long_t, rb_encoding *);
 #define REGISTER_SYMID(id, name) register_static_symid((id), (name), strlen(name), enc)
 #include "id.c"
 
@@ -318,7 +318,7 @@ static int
 rb_str_symname_type(VALUE name, unsigned int allowed_attrset)
 {
     const char *ptr = StringValuePtr(name);
-    long len = RSTRING_LEN(name);
+    rb_long_t len = RSTRING_LEN(name);
     int type = rb_enc_symname_type(ptr, len, rb_enc_get(name), allowed_attrset);
     RB_GC_GUARD(name);
     return type;
@@ -661,7 +661,7 @@ rb_enc_symname_p(const char *name, rb_encoding *enc)
 }
 
 static int
-rb_sym_constant_char_p(const char *name, long nlen, rb_encoding *enc)
+rb_sym_constant_char_p(const char *name, rb_long_t nlen, rb_encoding *enc)
 {
     int c, len;
     const char *end = name + nlen;
@@ -699,13 +699,13 @@ rb_sym_constant_char_p(const char *name, long nlen, rb_encoding *enc)
 struct enc_synmane_type_leading_chars_tag {
     const enum { invalid, stophere, needmore, } kind;
     const enum ruby_id_types type;
-    const long nread;
+    const rb_long_t nread;
 };
 
 #define t struct enc_synmane_type_leading_chars_tag
 
 static struct enc_synmane_type_leading_chars_tag
-enc_synmane_type_leading_chars(const char *name, long len, rb_encoding *enc, int allowed_attrset)
+enc_synmane_type_leading_chars(const char *name, rb_long_t len, rb_encoding *enc, int allowed_attrset)
 {
     const char *m = name;
     const char *e = m + len;
@@ -814,7 +814,7 @@ enc_synmane_type_leading_chars(const char *name, long len, rb_encoding *enc, int
 #undef t
 
 int
-rb_enc_symname_type(const char *name, long len, rb_encoding *enc, unsigned int allowed_attrset)
+rb_enc_symname_type(const char *name, rb_long_t len, rb_encoding *enc, unsigned int allowed_attrset)
 {
     const struct enc_synmane_type_leading_chars_tag f =
         enc_synmane_type_leading_chars(name, len, enc, allowed_attrset);
@@ -926,7 +926,7 @@ rb_id_serial_to_id(rb_id_serial_t num)
 }
 
 static ID
-register_static_symid(ID id, const char *name, long len, rb_encoding *enc)
+register_static_symid(ID id, const char *name, rb_long_t len, rb_encoding *enc)
 {
     VALUE str = rb_enc_str_new(name, len, enc);
     OBJ_FREEZE(str);
@@ -1406,15 +1406,15 @@ rb_check_symbol_cstr(const char *ptr, rb_long_t len, rb_encoding *enc)
 
 #undef rb_sym_intern_ascii_cstr
 #ifdef __clang__
-NOINLINE(VALUE rb_sym_intern(const char *ptr, long len, rb_encoding *enc));
+NOINLINE(VALUE rb_sym_intern(const char *ptr, rb_long_t len, rb_encoding *enc));
 #else
-FUNC_MINIMIZED(VALUE rb_sym_intern(const char *ptr, long len, rb_encoding *enc));
-FUNC_MINIMIZED(VALUE rb_sym_intern_ascii(const char *ptr, long len));
+FUNC_MINIMIZED(VALUE rb_sym_intern(const char *ptr, rb_long_t len, rb_encoding *enc));
+FUNC_MINIMIZED(VALUE rb_sym_intern_ascii(const char *ptr, rb_long_t len));
 FUNC_MINIMIZED(VALUE rb_sym_intern_ascii_cstr(const char *ptr));
 #endif
 
 VALUE
-rb_sym_intern(const char *ptr, long len, rb_encoding *enc)
+rb_sym_intern(const char *ptr, rb_long_t len, rb_encoding *enc)
 {
     struct RString fake_str = {RBASIC_INIT};
     const VALUE name = rb_setup_fake_str(&fake_str, ptr, len, enc);
@@ -1422,7 +1422,7 @@ rb_sym_intern(const char *ptr, long len, rb_encoding *enc)
 }
 
 VALUE
-rb_sym_intern_ascii(const char *ptr, long len)
+rb_sym_intern_ascii(const char *ptr, rb_long_t len)
 {
     return rb_sym_intern(ptr, len, rb_usascii_encoding());
 }
