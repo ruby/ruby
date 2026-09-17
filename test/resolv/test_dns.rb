@@ -137,6 +137,23 @@ class TestResolvDNS < Test::Unit::TestCase
     assert_equal 'example.com.local', candidates[1].to_s
   end
 
+  def test_conf_search_root_domain
+    # Label.split turns both '.' and '' into the root label list
+    ['.', ''].each do |domain|
+      [0, 1, 2].each do |ndots|
+        conf = Resolv::DNS::Config.new(nameserver: '127.0.0.1', search: [domain], ndots: ndots)
+        conf.lazy_initialize
+        candidates = conf.generate_candidates('example.com')
+        assert_equal ['example.com'], candidates.map(&:to_s)
+      end
+    end
+
+    conf = Resolv::DNS::Config.new(nameserver: '127.0.0.1', search: ['.', 'local'])
+    conf.lazy_initialize
+    candidates = conf.generate_candidates('example.com')
+    assert_equal ['example.com', 'example.com.local'], candidates.map(&:to_s)
+  end
+
   def test_query_ipv4_address
     begin
       OpenSSL

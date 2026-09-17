@@ -1235,9 +1235,9 @@ class Resolv
           abs = Name.new(name.to_a)
           search = @search.map {|domain| Name.new(name.to_a + domain)}
           if @ndots <= name.length - 1
-            [abs, *search]
+            [abs, *search].uniq
           else
-            [*search, abs]
+            [*search, abs].uniq
           end
         end
       end
