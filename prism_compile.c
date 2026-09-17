@@ -10971,7 +10971,7 @@ pm_load_file(pm_parse_result_t *result, VALUE filepath, bool load_error)
 
         if (!RB_TYPE_P(contents, T_STRING)) goto error_generic;
 
-        long len = RSTRING_LEN(contents);
+        rb_long_t len = RSTRING_LEN(contents);
         if (len < 0) goto error_generic;
 
         size_t length = (size_t) len;
@@ -11191,7 +11191,7 @@ pm_parse_stdin_fgets(char *string, int size, void *stream)
     }
 
     const char *cstr = RSTRING_PTR(line);
-    long length = RSTRING_LEN(line);
+    rb_long_t length = RSTRING_LEN(line);
 
     /*
      * Defensively clamp the copy. The line reader relaxes the limit to avoid
