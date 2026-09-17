@@ -273,9 +273,8 @@ def generate_cexpr(ofile, lineno, line_file, body_lineno, text, locals, func_nam
     param = param.to_s
     lvar = local_candidates.include?(param)
     next unless lvar
-    f.puts "const VALUE *const #{param}__ptr = &ec->cfp->ep[#{-3 - i}];"
-    f.puts "MAYBE_UNUSED(const VALUE) #{param} = *#{param}__ptr;" if lvar
-    lineno += lvar ? 2 : 1
+    f.puts "MAYBE_UNUSED(const VALUE) #{param} = ec->cfp->ep[#{-3 - i}];"
+    lineno += 1
   }
   f.puts "#line #{body_lineno} \"#{line_file}\""
   lineno += 1
