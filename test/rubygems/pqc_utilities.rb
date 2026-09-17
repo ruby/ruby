@@ -115,7 +115,9 @@ module Gem::PQCUtilities
     server_thread = Thread.new do
       client = ssl_server.accept
       client.close
-    rescue OpenSSL::OpenSSLError
+    rescue StandardError
+      # The client side below decides the verdict, and the join in ensure would
+      # re-raise anything left here past this method's own rescue.
       nil
     end
 
