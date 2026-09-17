@@ -1071,4 +1071,30 @@ class TestGc < Test::Unit::TestCase
       end
     RUBY
   end
+
+  def test_gc_start_ractor_global_false
+    omit "no GC.stat(:global_gc_count)" unless GC.stat.key?(:global_gc_count)
+    assert_ractor(<<~'RUBY')
+      r = Ractor.new { Ractor.receive }
+      before = GC.stat(:global_gc_count)
+      GC.start(global: false)
+      after = GC.stat(:global_gc_count)
+      assert_equal 0, after - before
+      r.send(:done)
+    RUBY
+  end
+
+  def test_gc_start_ractor_global_true
+    omit "no GC.stat(:global_gc_count)" unless GC.stat.key?(:global_gc_count)
+    assert_ractor(<<~'RUBY')
+      r = Ractor.new { Ractor.receive }
+      [{global: true}, {}].each do |opts|
+        before = GC.stat(:global_gc_count)
+        GC.start(**opts)
+        after = GC.stat(:global_gc_count)
+        assert_operator after - before, :>=, 1
+      end
+      r.send(:done)
+    RUBY
+  end
 end
