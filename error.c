@@ -2096,7 +2096,7 @@ exc_backtrace_locations(VALUE exc)
 static VALUE
 rb_check_backtrace(VALUE bt)
 {
-    long i;
+    rb_long_t i;
     static const char err[] = "backtrace must be an Array of String or an Array of Thread::Backtrace::Location";
 
     if (!NIL_P(bt)) {

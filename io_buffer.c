@@ -2506,7 +2506,7 @@ io_buffer_size_of(VALUE klass, VALUE buffer_type)
 {
     if (RB_TYPE_P(buffer_type, T_ARRAY)) {
         size_t total = 0;
-        for (long i = 0; i < RARRAY_LEN(buffer_type); i++) {
+        for (rb_long_t i = 0; i < RARRAY_LEN(buffer_type); i++) {
             total += io_buffer_buffer_type_size(TYPE_ID(RARRAY_AREF(buffer_type, i)));
         }
         return SIZET2NUM(total);
@@ -2627,7 +2627,7 @@ io_buffer_get_values(VALUE self, VALUE buffer_types, VALUE _offset)
 
     VALUE array = rb_ary_new_capa(RARRAY_LEN(buffer_types));
 
-    for (long i = 0; i < RARRAY_LEN(buffer_types); i++) {
+    for (rb_long_t i = 0; i < RARRAY_LEN(buffer_types); i++) {
         VALUE type = rb_ary_entry(buffer_types, i);
         VALUE value = rb_io_buffer_get_value(base, size, TYPE_ID(type), &offset);
         rb_ary_push(array, value);
@@ -2955,7 +2955,7 @@ io_buffer_set_values(VALUE self, VALUE buffer_types, VALUE _offset, VALUE values
         rb_raise(rb_eArgError, "Argument buffer_types and values should have the same length!");
     }
 
-    for (long i = 0; i < RARRAY_LEN(buffer_types); i++) {
+    for (rb_long_t i = 0; i < RARRAY_LEN(buffer_types); i++) {
         VALUE type = rb_ary_entry(buffer_types, i);
         VALUE value = rb_ary_entry(values, i);
         rb_io_buffer_set_value(buffer, type, &offset, value);
