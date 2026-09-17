@@ -471,10 +471,6 @@ RBIMPL_ATTR_NONNULL(())
  * @param[in]  parent  A data type supposed to be a parent of `child`.
  * @retval     true    `child` is a descendent of `parent`.
  * @retval     false   Otherwise.
- *
- * @internal
- *
- * You can path NULL to both arguments, don't know what that means though.
  */
 int rb_typeddata_inherited_p(const rb_data_type_t *child, const rb_data_type_t *parent);
 
