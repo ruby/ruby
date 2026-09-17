@@ -706,9 +706,7 @@ class Ractor
   def self.shareable_proc self: nil
     Primitive.attr! :use_block
 
-    __builtin_cexpr!(%Q{
-      ractor_shareable_proc(ec, *LOCAL_PTR(self), false)
-    })
+    Primitive.rb_builtin_shareable_proc(self)
   end
 
   #
@@ -720,9 +718,7 @@ class Ractor
   def self.shareable_lambda self: nil
     Primitive.attr! :use_block
 
-    __builtin_cexpr!(%Q{
-      ractor_shareable_proc(ec, *LOCAL_PTR(self), true)
-    })
+    Primitive.rb_builtin_shareable_lambda(self)
   end
 
   # \Port objects transmit messages between Ractors.
