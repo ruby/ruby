@@ -568,9 +568,7 @@ class Resolv
             # Giving up part way through a frame loses stream sync, and a peer
             # seen going away leaves the socket dead.  Either way the requester
             # says so, and the next attempt has to open a fresh connection.  A
-            # timeout with the stream still on a frame boundary keeps it; a
-            # peer that leaves while nothing is being read goes unnoticed here
-            # and only shows up when the next request is written.
+            # timeout with the stream still on a frame boundary keeps it.
             unless requester.reusable?
               requesters.delete([nameserver, port])
               requester.close
@@ -718,13 +716,21 @@ class Resolv
         true
       end
 
+      # A request could not be written.  Only a stream transport can be left
+      # unusable by that; see #reusable?.
+      def send_failed
+      end
+
       def request(sender, tout)
         start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
         timelimit = start + tout
         begin
           sender.send
         rescue Errno::EHOSTUNREACH, # multi-homed IPv6 may generate this
-               Errno::ENETUNREACH
+               Errno::ENETUNREACH,
+               Errno::EPIPE, # a peer that went away between requests
+               Errno::ECONNRESET # the same, as Windows reports it
+          send_failed
           raise ResolvTimeout
         end
         while true
@@ -988,6 +994,10 @@ class Resolv
 
         def reusable?
           @reusable
+        end
+
+        def send_failed
+          @reusable = false
         end
 
         def recv_reply(readable_socks, timelimit = nil)

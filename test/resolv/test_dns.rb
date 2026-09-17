@@ -1183,6 +1183,12 @@ class TestResolvDNS < Test::Unit::TestCase
     Timeout.timeout(EnvUtil.apply_timeout_scale(10)) { t.accept }
   end
 
+  # Closes +sock+ so that the peer sees a reset rather than an orderly close.
+  def reset_connection(sock)
+    sock.setsockopt(Socket::Option.linger(true, 0))
+    sock.close
+  end
+
   # Answers one query on +u+ with an empty reply that has TC set, asking the
   # client to retry the same nameserver over TCP.
   def answer_truncated(u)
@@ -1468,6 +1474,129 @@ class TestResolvDNS < Test::Unit::TestCase
 
       result, = assert_join_threads([client_thread, udp_server_thread, tcp_server_thread])
       assert_equal(['192.0.2.1'], result.map {|rr| rr.address.to_s })
+    end
+  end
+
+  # A peer that goes away while another nameserver is being tried leaves a
+  # socket nobody is watching, so the loss only surfaces when the next request
+  # is written to it.  That write has to be reported the way a timeout is, or
+  # the nameservers left to try never get their turn.
+  def test_tcp_peer_lost_while_idle_falls_back_to_the_next_nameserver
+    with_udp_and_tcp('127.0.0.1', 0) do |u1, t1|
+      with_udp_and_tcp('127.0.0.1', 0) do |u2, t2|
+        u2.close # only the TCP side of the second nameserver is used
+        _, server1_port, _, server1_address = u1.addr
+        _, server2_port, _, server2_address = t2.addr
+        moved_on = Thread::Queue.new
+        done = Thread::Queue.new
+
+        client_thread = Thread.new do
+          begin
+            Resolv::DNS.open(nameserver_port: [[server1_address, server1_port],
+                                               [server2_address, server2_port]],
+                             raise_timeout_errors: true) do |dns|
+              dns.timeouts = [EnvUtil.apply_timeout_scale(0.5),
+                              EnvUtil.apply_timeout_scale(5)]
+              Timeout.timeout(EnvUtil.apply_timeout_scale(20)) do
+                dns.getresources('foo.example.org', Resolv::DNS::Resource::IN::A)
+              end
+            end
+          ensure
+            done.push(true)
+          end
+        end
+
+        udp_server1_thread = Thread.new { answer_truncated(u1) }
+
+        tcp_server1_thread = Thread.new do
+          ct = accept_within_timeout(t1)
+          read_framed_query(ct)
+          moved_on.pop # the client is waiting on the other nameserver by now
+          reset_connection(ct)
+        end
+
+        tcp_server2_thread = Thread.new do
+          ct = accept_within_timeout(t2)
+          begin
+            read_framed_query(ct)
+            moved_on.push(true)
+            # Answer the retry only, so that reaching this reply means the
+            # write to the first nameserver was survived rather than skipped.
+            query = Timeout.timeout(EnvUtil.apply_timeout_scale(10)) { read_framed_query(ct) }
+            ct.write(framed(reply_for_query(query, '192.0.2.1')))
+            done.pop
+          ensure
+            ct.close
+          end
+        end
+
+        result, = assert_join_threads([client_thread, udp_server1_thread,
+                                       tcp_server1_thread, tcp_server2_thread])
+        assert_equal(['192.0.2.1'], result.map {|rr| rr.address.to_s })
+      end
+    end
+  end
+
+  # The write that failed leaves the socket dead, so the round after it has to
+  # start from a new connection.  The reply below only reaches the client if it
+  # does.
+  def test_tcp_peer_lost_while_idle_is_not_used_again
+    with_udp_and_tcp('127.0.0.1', 0) do |u1, t1|
+      with_udp_and_tcp('127.0.0.1', 0) do |u2, t2|
+        u2.close # only the TCP side of the second nameserver is used
+        _, server1_port, _, server1_address = u1.addr
+        _, server2_port, _, server2_address = t2.addr
+        moved_on = Thread::Queue.new
+        done = Thread::Queue.new
+
+        client_thread = Thread.new do
+          begin
+            Resolv::DNS.open(nameserver_port: [[server1_address, server1_port],
+                                               [server2_address, server2_port]],
+                             raise_timeout_errors: true) do |dns|
+              dns.timeouts = [EnvUtil.apply_timeout_scale(0.5),
+                              EnvUtil.apply_timeout_scale(0.5),
+                              EnvUtil.apply_timeout_scale(5)]
+              Timeout.timeout(EnvUtil.apply_timeout_scale(20)) do
+                dns.getresources('foo.example.org', Resolv::DNS::Resource::IN::A)
+              end
+            end
+          ensure
+            done.close
+          end
+        end
+
+        udp_server1_thread = Thread.new { answer_truncated(u1) }
+
+        tcp_server1_thread = Thread.new do
+          lost = accept_within_timeout(t1)
+          read_framed_query(lost)
+          moved_on.pop # the client is waiting on the other nameserver by now
+          reset_connection(lost)
+          fresh = accept_within_timeout(t1)
+          begin
+            fresh.write(framed(reply_for_query(read_framed_query(fresh), '192.0.2.1')))
+            done.pop
+          ensure
+            fresh.close
+          end
+        end
+
+        tcp_server2_thread = Thread.new do
+          ct = accept_within_timeout(t2)
+          begin
+            read_framed_query(ct)
+            moved_on.push(true)
+            done.pop # never answer, but stay open so the retries are read
+          ensure
+            ct.close
+          end
+        end
+
+        result, = assert_join_threads([client_thread, udp_server1_thread,
+                                       tcp_server1_thread, tcp_server2_thread])
+        assert_equal(['192.0.2.1'], result.map {|rr| rr.address.to_s })
+      end
     end
   end
 end
