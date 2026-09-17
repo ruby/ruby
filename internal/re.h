@@ -39,13 +39,13 @@ RMATCH_END_PTR(VALUE match)
     }
 }
 
-static inline long
+static inline rb_long_t
 RMATCH_BEG(VALUE match, int i)
 {
     return RMATCH_BEG_PTR(match)[i];
 }
 
-static inline long
+static inline rb_long_t
 RMATCH_END(VALUE match, int i)
 {
     return RMATCH_END_PTR(match)[i];
@@ -61,8 +61,8 @@ RMATCH_NREGS(VALUE match)
 VALUE rb_reg_s_alloc(VALUE klass);
 VALUE rb_reg_compile(VALUE str, int options, const char *sourcefile, int sourceline);
 VALUE rb_reg_check_preprocess(VALUE);
-long rb_reg_search0(VALUE, VALUE, long, int, int, VALUE *);
-VALUE rb_reg_match_p(VALUE re, VALUE str, long pos);
+rb_long_t rb_reg_search0(VALUE, VALUE, rb_long_t, int, int, VALUE *);
+VALUE rb_reg_match_p(VALUE re, VALUE str, rb_long_t pos);
 VALUE rb_reg_regsub_match(VALUE str, VALUE src, VALUE match);
 VALUE rb_match_init_copy(VALUE copy, VALUE orig);
 /* MatchData transfer for the Ractor courier (ractor.c). */
@@ -73,10 +73,10 @@ void rb_match_blob_free(void *blob);
 bool rb_reg_start_with_p(VALUE re, VALUE str);
 VALUE rb_reg_hash(VALUE re);
 VALUE rb_reg_equal(VALUE re1, VALUE re2);
-VALUE rb_backref_set_string(VALUE string, long pos, long len);
+VALUE rb_backref_set_string(VALUE string, rb_long_t pos, rb_long_t len);
 void rb_match_unbusy(VALUE);
 int rb_match_count(VALUE match);
-VALUE rb_reg_new_from_values(long cnt, const VALUE *elements, int opt);
+VALUE rb_reg_new_from_values(rb_long_t cnt, const VALUE *elements, int opt);
 VALUE rb_reg_last_defined(VALUE match);
 
 #define ARG_REG_OPTION_MASK \
