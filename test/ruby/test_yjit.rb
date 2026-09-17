@@ -1243,6 +1243,32 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_max_compile_time
+    assert_compiles(code_gc_helpers + <<~'RUBY', exits: :any, result: :ok)
+      def compile_for(ns)
+        total = RubyVM::YJIT.total_compile_time_ns
+        target = total + ns
+        while true
+          return unless eval('compiled_iseq? { nil.to_i }')
+          return if RubyVM::YJIT.total_compile_time_ns > target
+        end
+      end
+
+      return :not_compiled1 unless eval('compiled_iseq? { nil.to_i }')
+
+      RubyVM::YJIT.max_compile_time_ns = RubyVM::YJIT.total_compile_time_ns + 1_000_000
+
+      return :not_compiled2 unless eval('compiled_iseq? { nil.to_i }')
+      compile_for(2_000_000)
+
+      return :not_over unless RubyVM::YJIT.total_compile_time_ns >= RubyVM::YJIT.max_compile_time_ns
+
+      return :did_compile1 if eval('compiled_iseq? { nil.to_i }')
+
+      :ok
+    RUBY
+  end
+
   def test_code_gc
     assert_compiles(code_gc_helpers + <<~'RUBY', exits: :any, result: :ok)
       return :not_paged unless add_pages(100) # prepare freeable pages
@@ -2015,10 +2041,24 @@ class TestYJIT < Test::Unit::TestCase
         failures == RubyVM::YJIT.runtime_stats[:compilation_failure]
       end
 
+      def compiled_iseq?
+        count = RubyVM::YJIT.runtime_stats(:compiled_iseq_count)
+        yield
+        RubyVM::YJIT.runtime_stats(:compiled_iseq_count) > count
+      end
+
       def add_pages(num_jits)
         pages = RubyVM::YJIT.runtime_stats[:live_page_count]
         num_jits.times { return false unless eval('compiles { nil.to_i }') }
         pages.nil? || pages < RubyVM::YJIT.runtime_stats[:live_page_count]
+      end
+
+      def compiles_for_ns(ns)
+        target = RubyVM::YJIT.total_compile_time_ns + ns
+        while RubyVM::YJIT.total_compile_time_ns < target
+          return false unless eval('compiles { nil.to_i }')
+        end
+        true
       end
     RUBY
   end
