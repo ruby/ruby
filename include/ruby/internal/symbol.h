@@ -98,7 +98,7 @@ ID rb_intern(const char *name);
  *             is up  to you to avoid  memory leaks.  Think twice  before using
  *             it.
  */
-ID rb_intern2(const char *name, long len);
+ID rb_intern2(const char *name, rb_long_t len);
 
 /**
  * Identical to rb_intern(), except it takes a `T_STRING` object.
@@ -285,7 +285,7 @@ static inline ID
 rb_intern_const(const char *str)
 {
     size_t len = strlen(str);
-    return rb_intern2(str, RBIMPL_CAST((long)len));
+    return rb_intern2(str, RBIMPL_CAST((rb_long_t)len));
 }
 
 RBIMPL_ATTR_NOALIAS()

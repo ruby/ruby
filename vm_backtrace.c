@@ -1576,7 +1576,7 @@ ec_backtrace_range(const rb_execution_context_t *ec, int argc, const VALUE *argv
         break;
       case 1:
         {
-            long beg, len, bt_size = backtrace_size(ec);
+            rb_long_t beg, len, bt_size = backtrace_size(ec);
             switch (rb_range_beg_len(level, &beg, &len, bt_size - lev_plus, 0)) {
               case Qfalse:
                 lev = NUM2LONG(level);
@@ -2057,28 +2057,28 @@ frame_get(const rb_debug_inspector_t *dc, long index)
 }
 
 VALUE
-rb_debug_inspector_frame_self_get(const rb_debug_inspector_t *dc, long index)
+rb_debug_inspector_frame_self_get(const rb_debug_inspector_t *dc, rb_long_t index)
 {
     VALUE frame = frame_get(dc, index);
     return rb_ary_entry(frame, CALLER_BINDING_SELF);
 }
 
 VALUE
-rb_debug_inspector_frame_class_get(const rb_debug_inspector_t *dc, long index)
+rb_debug_inspector_frame_class_get(const rb_debug_inspector_t *dc, rb_long_t index)
 {
     VALUE frame = frame_get(dc, index);
     return rb_ary_entry(frame, CALLER_BINDING_CLASS);
 }
 
 VALUE
-rb_debug_inspector_frame_binding_get(const rb_debug_inspector_t *dc, long index)
+rb_debug_inspector_frame_binding_get(const rb_debug_inspector_t *dc, rb_long_t index)
 {
     VALUE frame = frame_get(dc, index);
     return rb_ary_entry(frame, CALLER_BINDING_BINDING);
 }
 
 VALUE
-rb_debug_inspector_frame_iseq_get(const rb_debug_inspector_t *dc, long index)
+rb_debug_inspector_frame_iseq_get(const rb_debug_inspector_t *dc, rb_long_t index)
 {
     VALUE frame = frame_get(dc, index);
     VALUE iseq = rb_ary_entry(frame, CALLER_BINDING_ISEQ);
@@ -2087,7 +2087,7 @@ rb_debug_inspector_frame_iseq_get(const rb_debug_inspector_t *dc, long index)
 }
 
 VALUE
-rb_debug_inspector_frame_depth(const rb_debug_inspector_t *dc, long index)
+rb_debug_inspector_frame_depth(const rb_debug_inspector_t *dc, rb_long_t index)
 {
     VALUE frame = frame_get(dc, index);
     return rb_ary_entry(frame, CALLER_BINDING_DEPTH);

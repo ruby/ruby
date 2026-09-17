@@ -115,7 +115,7 @@ VALUE rb_hash_new(void);
  * @param[in]  capa  Designed capacity of the hash.
  * @return     An empty Hash, whose capacity is `capa`.
  */
-VALUE rb_hash_new_capa(long capa);
+VALUE rb_hash_new_capa(rb_long_t capa);
 
 /**
  * Duplicates a hash.
@@ -256,7 +256,7 @@ VALUE rb_hash_delete(VALUE hash, VALUE key);
  * accept the newest (rightmost) one.  This behaviour also mimics repeated call
  * of rb_hash_aset().
  */
-void rb_hash_bulk_insert(long argc, const VALUE *argv, VALUE hash);
+void rb_hash_bulk_insert(rb_long_t argc, const VALUE *argv, VALUE hash);
 
 /**
  * Type of callback functions to pass to rb_hash_update_by().

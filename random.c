@@ -1262,7 +1262,7 @@ rb_rand_bytes_int32(rb_random_get_int32_func *get_int32,
 }
 
 VALUE
-rb_random_bytes(VALUE obj, long n)
+rb_random_bytes(VALUE obj, rb_long_t n)
 {
     const rb_random_interface_t *rng;
     rb_random_t *rnd = try_get_rnd(obj, &rng);
@@ -1717,7 +1717,7 @@ rb_hash_start(st_index_t h)
 }
 
 st_index_t
-rb_memhash(const void *ptr, long len)
+rb_memhash(const void *ptr, rb_long_t len)
 {
     sip_uint64_t h = sip_hash13(hash_salt.key.sip, ptr, len);
 #if SIZEOF_ST_INDEX_T >= 8

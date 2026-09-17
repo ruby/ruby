@@ -42,8 +42,8 @@ VALUE rb_range_new(VALUE beg, VALUE end, int excl);
 
 RBIMPL_ATTR_NONNULL(())
 /**
- * Deconstructs  a numerical  range.  As  the  arguments are  `long` based,  it
- * expects everything are in the `long` domain.
+ * Deconstructs a  numerical range.  As the arguments are ::rb_long_t based, it
+ * expects everything are in the ::rb_long_t domain.
  *
  * @param[in]   range           A range of numerical endpoints.
  * @param[out]  begp            Return value buffer.
@@ -54,7 +54,7 @@ RBIMPL_ATTR_NONNULL(())
  *                                - `1`: raises  ::rb_eRangeError.
  *                                - `2`: `beg` and `len` expanded accordingly.
  * @exception   rb_eTypeError   `range` is not a numerical range.
- * @exception   rb_eRangeError  `range` cannot fit into `long`.
+ * @exception   rb_eRangeError  `range` cannot fit into ::rb_long_t.
  * @retval      RUBY_Qfalse     `range` is not an ::rb_cRange.
  * @retval      RUBY_Qnil       `len` is out of `range` but `err` is zero.
  * @retval      RUBY_Qtrue      Otherwise.
@@ -66,7 +66,7 @@ RBIMPL_ATTR_NONNULL(())
  * The complex  error handling  switch reflects the  fact that  `Array#[]=` and
  * `String#[]=` behave differently when they take ranges.
  */
-VALUE rb_range_beg_len(VALUE range, long *begp, long *lenp, long len, int err);
+VALUE rb_range_beg_len(VALUE range, rb_long_t *begp, rb_long_t *lenp, rb_long_t len, int err);
 
 RBIMPL_ATTR_NONNULL(())
 /**

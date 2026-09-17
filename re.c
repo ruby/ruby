@@ -125,7 +125,7 @@ static const char casetable[] = {
 rb_hrtime_t rb_reg_match_time_limit = 0;
 
 int
-rb_memcicmp(const void *x, const void *y, long len)
+rb_memcicmp(const void *x, const void *y, rb_long_t len)
 {
     const unsigned char *p1 = x, *p2 = y;
     int tmp;
@@ -281,8 +281,8 @@ rb_memsearch_qchar(const unsigned char *xs, long m, const unsigned char *ys, lon
     return rb_memsearch_with_char_size(xs, m, ys, n, 4);
 }
 
-long
-rb_memsearch(const void *x0, long m, const void *y0, long n, rb_encoding *enc)
+rb_long_t
+rb_memsearch(const void *x0, rb_long_t m, const void *y0, rb_long_t n, rb_encoding *enc)
 {
     const unsigned char *x = x0, *y = y0;
 
@@ -1873,8 +1873,8 @@ rb_reg_onig_match(VALUE re, VALUE str,
     return result;
 }
 
-long
-rb_reg_adjust_startpos(VALUE re, VALUE str, long pos, int reverse)
+rb_long_t
+rb_reg_adjust_startpos(VALUE re, VALUE str, rb_long_t pos, int reverse)
 {
     long range;
     rb_encoding *enc;
@@ -1996,8 +1996,8 @@ rb_reg_search0(VALUE re, VALUE str, long pos, int reverse, int set_backref_str, 
     return rb_reg_search_set_match(re, str, pos, reverse, set_backref_str, match);
 }
 
-long
-rb_reg_search(VALUE re, VALUE str, long pos, int reverse)
+rb_long_t
+rb_reg_search(VALUE re, VALUE str, rb_long_t pos, int reverse)
 {
     return rb_reg_search_set_match(re, str, pos, reverse, 1, NULL);
 }
@@ -2362,7 +2362,7 @@ match_ary_subseq(VALUE match, long beg, long len, VALUE result)
 static VALUE
 match_ary_aref(VALUE match, VALUE idx, VALUE result)
 {
-    long beg, len;
+    rb_long_t beg, len;
     int num_regs = RMATCH_NREGS(match);
 
     /* check if idx is Range */
@@ -3636,7 +3636,7 @@ rb_reg_new_from_values(long cnt, const VALUE *elements, int opt)
 }
 
 VALUE
-rb_enc_reg_new(const char *s, long len, rb_encoding *enc, int options)
+rb_enc_reg_new(const char *s, rb_long_t len, rb_encoding *enc, int options)
 {
     VALUE re = rb_reg_alloc();
     onig_errmsg_buffer err = "";
@@ -3650,7 +3650,7 @@ rb_enc_reg_new(const char *s, long len, rb_encoding *enc, int options)
 }
 
 VALUE
-rb_reg_new(const char *s, long len, int options)
+rb_reg_new(const char *s, rb_long_t len, int options)
 {
     return rb_enc_reg_new(s, len, rb_ascii8bit_encoding(), options);
 }
@@ -4140,7 +4140,7 @@ rb_reg_match_p(VALUE re, VALUE str, long pos)
             if (pos < 0) return Qfalse;
         }
         if (pos > 0) {
-            long len = 1;
+            rb_long_t len = 1;
             const char *beg = rb_str_subpos(str, pos, &len);
             if (!beg) return Qfalse;
             pos = beg - RSTRING_PTR(str);

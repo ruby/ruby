@@ -438,7 +438,7 @@ RBIMPL_ATTR_NONNULL(())
  * @return      Allocated `len` bytes array.
  * @post        `store` holds the corresponding tmp buffer object.
  */
-void *rb_alloc_tmp_buffer(volatile VALUE *store, long len, bool mark);
+void *rb_alloc_tmp_buffer(volatile VALUE *store, rb_long_t len, bool mark);
 
 /**
  * @private
@@ -715,10 +715,10 @@ rbimpl_size_add_or_raise(size_t x, size_t y)
  * We might want to deprecate this function and make a `rbimpl_` counterpart.
  */
 static inline void *
-rb_alloc_tmp_buffer2(volatile VALUE *store, long count, size_t elsize)
+rb_alloc_tmp_buffer2(volatile VALUE *store, rb_long_t count, size_t elsize)
 {
     const size_t total_size = rbimpl_size_mul_or_raise(RBIMPL_CAST((size_t)count), elsize);
-    return rb_alloc_tmp_buffer(store, (long)total_size, elsize >= sizeof(VALUE));
+    return rb_alloc_tmp_buffer(store, (rb_long_t)total_size, elsize >= sizeof(VALUE));
 }
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()

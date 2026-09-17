@@ -57,7 +57,7 @@ RBIMPL_SYMBOL_EXPORT_BEGIN()
  *
  * Can accept NULLs as long as n is also 0, and returns 0.
  */
-int rb_memcicmp(const void *s1,const void *s2, long n);
+int rb_memcicmp(const void *s1,const void *s2, rb_long_t n);
 
 /**
  * Asserts  that  the given  MatchData  is  "occupied".  MatchData  shares  its
@@ -176,7 +176,7 @@ RBIMPL_ATTR_NONNULL(())
  * @param[in]  opts             Options e.g. ONIG_OPTION_MULTILINE.
  * @return     Allocated new instance of ::rb_cRegexp.
  */
-VALUE rb_reg_new(const char *src, long len, int opts);
+VALUE rb_reg_new(const char *src, rb_long_t len, int opts);
 
 /**
  * Allocates an instance of ::rb_cRegexp.

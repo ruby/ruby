@@ -45,7 +45,7 @@ RBIMPL_SYMBOL_EXPORT_BEGIN()
  * @note       `enc` can be a  null pointer.  It can also be  seen as a routine
  *             identical to rb_usascii_str_new() then.
  */
-VALUE rb_enc_str_new(const char *ptr, long len, rb_encoding *enc);
+VALUE rb_enc_str_new(const char *ptr, rb_long_t len, rb_encoding *enc);
 
 RBIMPL_ATTR_NONNULL((1))
 /**
@@ -84,7 +84,7 @@ VALUE rb_enc_str_new_cstr(const char *ptr, rb_encoding *enc);
  * @note       `enc` can be a  null pointer.  It can also be  seen as a routine
  *             identical to rb_usascii_str_new_static() then.
  */
-VALUE rb_enc_str_new_static(const char *ptr, long len, rb_encoding *enc);
+VALUE rb_enc_str_new_static(const char *ptr, rb_long_t len, rb_encoding *enc);
 
 /**
  * Identical to rb_enc_str_new(),  except it returns a "f"string.   It can also
@@ -103,7 +103,7 @@ VALUE rb_enc_str_new_static(const char *ptr, long len, rb_encoding *enc);
  *             accessible via `ptr`.
  * @note       `enc` can be a null  pointer.
  */
-VALUE rb_enc_interned_str(const char *ptr, long len, rb_encoding *enc);
+VALUE rb_enc_interned_str(const char *ptr, rb_long_t len, rb_encoding *enc);
 
 RBIMPL_ATTR_NONNULL((1))
 /**
@@ -133,7 +133,7 @@ VALUE rb_enc_interned_str_cstr(const char *ptr, rb_encoding *enc);
  * @return     Number of characters exist in  `head` .. `tail`.  The definition
  *             of "character" depends on the passed `enc`.
  */
-long rb_enc_strlen(const char *head, const char *tail, rb_encoding *enc);
+rb_long_t rb_enc_strlen(const char *head, const char *tail, rb_encoding *enc);
 
 /**
  * Queries the n-th character.  Like  rb_enc_strlen() this function can be fast
@@ -149,7 +149,7 @@ long rb_enc_strlen(const char *head, const char *tail, rb_encoding *enc);
  *             character (OOB  etc).  The definition of  "character" depends on
  *             the passed `enc`.
  */
-char *rb_enc_nth(const char *head, const char *tail, long nth, rb_encoding *enc);
+char *rb_enc_nth(const char *head, const char *tail, rb_long_t nth, rb_encoding *enc);
 
 /**
  * Identical to rb_enc_get_index(), except the return type.
@@ -173,7 +173,7 @@ VALUE rb_obj_encoding(VALUE obj);
  * @post        The  contents  of  `ptr`  is copied,  transcoded  into  `dst`'s
  *              encoding, then pasted into `dst`'s end.
  */
-VALUE rb_enc_str_buf_cat(VALUE str, const char *ptr, long len, rb_encoding *enc);
+VALUE rb_enc_str_buf_cat(VALUE str, const char *ptr, rb_long_t len, rb_encoding *enc);
 
 /**
  * Encodes the passed code point into a series of bytes.
@@ -221,7 +221,7 @@ VALUE rb_enc_uint_chr(unsigned int code, rb_encoding *enc);
  * that  others obey.   It  seems to  him  that this  should  have been  called
  * `rb_enc_external_str_new`.
  */
-VALUE rb_external_str_new_with_enc(const char *ptr, long len, rb_encoding *enc);
+VALUE rb_external_str_new_with_enc(const char *ptr, rb_long_t len, rb_encoding *enc);
 
 /**
  * Identical to rb_str_export(), except it additionally takes an encoding.
@@ -318,7 +318,7 @@ rb_enc_str_coderange_inline(VALUE str)
  * @return      Distance between `str` and first such byte where broken.
  * @post        `cr` has the code range type.
  */
-long rb_str_coderange_scan_restartable(const char *str, const char *end, rb_encoding *enc, int *cr);
+rb_long_t rb_str_coderange_scan_restartable(const char *str, const char *end, rb_encoding *enc, int *cr);
 
 /**
  * Queries if  the passed string  is "ASCII only".  An  ASCII only string  is a
@@ -345,14 +345,14 @@ RBIMPL_ATTR_NONNULL(())
  * @retval     otherwise  Found index in `y`.
  * @note       This API can match at a non-character-boundary.
  */
-long rb_memsearch(const void *x, long m, const void *y, long n, rb_encoding *enc);
+rb_long_t rb_memsearch(const void *x, rb_long_t m, const void *y, rb_long_t n, rb_encoding *enc);
 
 /** @cond INTERNAL_MACRO */
 RBIMPL_ATTR_NONNULL(())
 static inline VALUE
 rbimpl_enc_str_new_cstr(const char *str, rb_encoding *enc)
 {
-    long len = rbimpl_strlen(str);
+    rb_long_t len = rbimpl_strlen(str);
 
     return rb_enc_str_new_static(str, len, enc);
 }

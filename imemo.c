@@ -86,7 +86,7 @@ rb_imemo_tmpbuf_new(void)
 }
 
 void *
-rb_alloc_tmp_buffer(volatile VALUE *store, long len, bool marked)
+rb_alloc_tmp_buffer(volatile VALUE *store, rb_long_t len, bool marked)
 {
     if (len < 0) {
         rb_raise(rb_eArgError, "negative buffer size (or size too big)");
@@ -111,7 +111,7 @@ rb_free_tmp_buffer(volatile VALUE *store)
     rb_imemo_tmpbuf_t *s = (rb_imemo_tmpbuf_t*)ATOMIC_VALUE_EXCHANGE(*store, 0);
     if (s) {
         void *ptr = ATOMIC_PTR_EXCHANGE(s->ptr, 0);
-        long size = s->size;
+        size_t size = s->size;
         s->size = 0;
         ruby_xfree_sized(ptr, size);
     }

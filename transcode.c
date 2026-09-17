@@ -1875,7 +1875,7 @@ rb_econv_asciicompat_encoding(const char *ascii_incompat_name)
  * `dst`, `dst` may not be valid encoding.
  */
 VALUE
-rb_econv_append(rb_econv_t *ec, const char *ss, long len, VALUE dst, int flags)
+rb_econv_append(rb_econv_t *ec, const char *ss, rb_long_t len, VALUE dst, int flags)
 {
     unsigned const char *sp, *se;
     unsigned char *ds, *dp, *de;
@@ -1938,7 +1938,7 @@ rb_econv_append(rb_econv_t *ec, const char *ss, long len, VALUE dst, int flags)
 }
 
 VALUE
-rb_econv_substr_append(rb_econv_t *ec, VALUE src, long off, long len, VALUE dst, int flags)
+rb_econv_substr_append(rb_econv_t *ec, VALUE src, rb_long_t off, rb_long_t len, VALUE dst, int flags)
 {
     src = rb_str_new_frozen(src);
     dst = rb_econv_append(ec, RSTRING_PTR(src) + off, len, dst, flags);
@@ -1953,7 +1953,7 @@ rb_econv_str_append(rb_econv_t *ec, VALUE src, VALUE dst, int flags)
 }
 
 VALUE
-rb_econv_substr_convert(rb_econv_t *ec, VALUE src, long byteoff, long bytesize, int flags)
+rb_econv_substr_convert(rb_econv_t *ec, VALUE src, rb_long_t byteoff, rb_long_t bytesize, int flags)
 {
     return rb_econv_substr_append(ec, src, byteoff, bytesize, Qnil, flags);
 }
