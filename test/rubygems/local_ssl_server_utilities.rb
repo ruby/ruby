@@ -59,8 +59,8 @@ module Gem::LocalSSLServerUtilities
         ensure
           client.close
         end
-      rescue OpenSSL::SSL::SSLError
-        # Ignore SSL errors because we're testing them implicitly
+      rescue OpenSSL::SSL::SSLError, Errno::ECONNABORTED, Errno::ECONNRESET
+        # Ignore handshake failures the client causes; a reset arrives as Errno, not SSLError
       end
     end
     @ssl_server
