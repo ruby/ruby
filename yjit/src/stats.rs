@@ -9,7 +9,7 @@ use std::collections::HashMap;
 use crate::codegen::CodegenGlobals;
 use crate::cruby::*;
 use crate::options::*;
-use crate::yjit::{yjit_enabled_p, YJIT_INIT_TIME};
+use crate::yjit::{yjit_enabled_p, rb_yjit_compiling_p, out_of_memory_p, YJIT_INIT_TIME};
 
 #[cfg(feature = "stats_allocator")]
 #[path = "../../jit/src/lib.rs"]
@@ -22,6 +22,14 @@ pub static mut rb_yjit_live_iseq_count: u64 = 0;
 /// Monotonically increasing total of how many ISEQs were allocated
 #[no_mangle]
 pub static mut rb_yjit_iseq_alloc_count: u64 = 0;
+
+/// Monotonically increasing total of time spent compiling.
+#[no_mangle]
+pub static mut rb_yjit_total_compile_time_ns: u64 = 0;
+
+// Time allocated for compilation. When going over, compilation is paused.
+#[no_mangle]
+pub static mut rb_yjit_max_compile_time_ns: u64 = 0;
 
 /// The number of bytes YJIT has allocated on the Rust heap.
 pub fn yjit_alloc_size() -> usize {
@@ -1039,6 +1047,19 @@ pub extern "C" fn rb_yjit_reset_stats_bang(_ec: EcPtr, _ruby_self: VALUE) -> VAL
 }
 
 #[no_mangle]
+pub extern "C" fn rb_yjit_update_max_compile_time_ns(max_compile_time_ns: u64) {
+    unsafe {
+        rb_yjit_max_compile_time_ns = max_compile_time_ns;
+
+        if rb_yjit_max_compile_time_ns == 0 || rb_yjit_max_compile_time_ns > rb_yjit_total_compile_time_ns {
+            rb_yjit_compiling_p = !out_of_memory_p();
+        } else {
+            rb_yjit_compiling_p = false;
+        }
+    }
+}
+
+#[no_mangle]
 pub extern "C" fn rb_yjit_collect_binding_alloc() {
     incr_counter!(binding_allocations);
 }
@@ -1069,5 +1090,9 @@ pub fn with_compile_time<F, R>(func: F) -> R where F: FnOnce() -> R {
     let ret = func();
     let nanos = Instant::now().duration_since(start).as_nanos();
     incr_counter_by!(compile_time_ns, nanos);
+
+    unsafe {
+        rb_yjit_total_compile_time_ns += nanos as u64;
+    }
     ret
 }
