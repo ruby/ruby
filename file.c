@@ -5732,7 +5732,7 @@ rmext(const char *p, long l0, long l1, const char *e, long l2, rb_encoding *enc)
 }
 
 static inline const char *
-enc_find_basename(const char *name, long *baselen, long *alllen, bool mb_enc, rb_encoding *enc)
+enc_find_basename(const char *name, rb_len_t *baselen, rb_len_t *alllen, bool mb_enc, rb_encoding *enc)
 {
     const char *p, *q, *e, *end;
     long f = 0, n = -1;
@@ -5810,7 +5810,7 @@ enc_find_basename(const char *name, long *baselen, long *alllen, bool mb_enc, rb
 }
 
 const char *
-ruby_enc_find_basename(const char *name, long *baselen, long *alllen, rb_encoding *enc)
+ruby_enc_find_basename(const char *name, rb_len_t *baselen, rb_len_t *alllen, rb_encoding *enc)
 {
     return enc_find_basename(name, baselen, alllen, enc_mbclen_needed(enc), enc);
 }
@@ -5857,7 +5857,7 @@ rb_file_s_basename(int argc, VALUE *argv, VALUE _)
 {
     VALUE fname, fext = Qnil;
     const char *name, *p, *fp = 0;
-    long f = 0, n;
+    rb_len_t f = 0, n;
     rb_encoding *enc;
 
     argc = rb_check_arity(argc, 1, 2);
@@ -5990,7 +5990,7 @@ rb_file_dirname_n(VALUE fname, int n)
 }
 
 static inline const char *
-enc_find_extname(const char *name, long *len, bool mb_enc, rb_encoding *enc)
+enc_find_extname(const char *name, rb_len_t *len, bool mb_enc, rb_encoding *enc)
 {
     const char *p, *e, *end = name + (len ? *len : (long)strlen(name));
 
@@ -6055,7 +6055,7 @@ enc_find_extname(const char *name, long *len, bool mb_enc, rb_encoding *enc)
  *
  */
 const char *
-ruby_enc_find_extname(const char *name, long *len, rb_encoding *enc)
+ruby_enc_find_extname(const char *name, rb_len_t *len, rb_encoding *enc)
 {
     return enc_find_extname(name, len, enc_mbclen_needed(enc), enc);
 }
@@ -6105,7 +6105,7 @@ rb_file_s_extname(VALUE klass, VALUE fname)
 {
     const char *name;
     CheckPath(fname, name);
-    long len = RSTRING_LEN(fname);
+    rb_len_t len = RSTRING_LEN(fname);
 
     if (len < 1) {
         return rb_enc_str_new(0, 0, rb_str_enc_get(fname));

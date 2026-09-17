@@ -1350,7 +1350,7 @@ rb_struct_lookup_default(VALUE s, VALUE idx, VALUE notfound, bool name_only)
 }
 
 static VALUE
-struct_entry(VALUE s, long n)
+struct_entry(VALUE s, rb_len_t n)
 {
     return rb_struct_aref(s, LONG2NUM(n));
 }
