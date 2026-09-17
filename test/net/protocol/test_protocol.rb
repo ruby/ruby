@@ -310,4 +310,14 @@ class TestProtocol < Test::Unit::TestCase
     assert_equal "ab\r", io.readuntil("\r")
     assert_equal "\n\r\nc", io.readuntil("\r\n\r\n", true)
   end
+
+  # The length reaches rbuf_consume, which walks @rbuf_offset backwards by
+  # it, so a negative one has to be rejected before the buffer moves.
+  def test_read_rejects_a_negative_length # https://github.com/ruby/net-protocol/pull/69
+    io = Net::BufferedIO.new(StringIO.new("abcdef".dup))
+    assert_equal "a", io.read(1)
+    e = assert_raise(ArgumentError) { io.read(-1) }
+    assert_equal "negative length -1 given", e.message
+    assert_equal "bcdef", io.read_all
+  end
 end
