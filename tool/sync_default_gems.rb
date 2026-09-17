@@ -176,6 +176,7 @@ module SyncDefaultGems
       "ext/json/lib/json/truffle_ruby",
       "test/json/lib",
       "ext/json/extconf.rb",
+      "ext/json/depend",
     ]),
     mmtk: repo(["ruby/mmtk", "main"], [
       ["gc/mmtk", "gc/mmtk"],
