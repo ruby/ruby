@@ -369,4 +369,61 @@ class TestProtocol < Test::Unit::TestCase
     assert_raise(Net::WriteTimeout) { io.write("hello") }
     assert_equal 1, mockio.waits
   end
+
+  def test_write_message_by_block # https://github.com/ruby/net-protocol/pull/71
+    sio = StringIO.new("".dup)
+    imio = Net::InternetMessageIO.new(sio)
+    assert_equal 10, imio.write_message_by_block { |dest| dest.write("hello\r\n") }
+    assert_equal "hello\r\n.\r\n", sio.string
+  end
+
+  # `break' leaves through write_message_by_block itself, so the message
+  # stays unterminated and the method answers nil.
+  def test_write_message_by_block_allows_break # https://github.com/ruby/net-protocol/pull/71
+    sio = StringIO.new("".dup)
+    imio = Net::InternetMessageIO.new(sio)
+    assert_nil imio.write_message_by_block { |dest| dest.write("a\r\n"); break }
+    assert_equal "a\r\n", sio.string
+  end
+
+  def test_write_message_by_block_restores_logging_when_the_block_raises # https://github.com/ruby/net-protocol/pull/71
+    sio = StringIO.new("".dup)
+    imio = Net::InternetMessageIO.new(sio)
+    debug = "".dup
+    imio.debug_output = debug
+
+    assert_raise(RuntimeError) do
+      imio.write_message_by_block { |dest| dest.write("partial"); raise "boom" }
+    end
+
+    assert_same debug, imio.debug_output
+    # Nothing outside reaches the half-written line or the byte count, so
+    # they have to be read back from the inside.
+    assert_nil imio.instance_variable_get(:@wbuf)
+    assert_nil imio.instance_variable_get(:@written_bytes)
+  end
+
+  def test_write_message_restores_logging_when_the_source_raises # https://github.com/ruby/net-protocol/pull/71
+    sio = StringIO.new("".dup)
+    imio = Net::InternetMessageIO.new(sio)
+    debug = "".dup
+    imio.debug_output = debug
+
+    src = Object.new
+    def src.each; yield "partial"; raise "boom"; end
+
+    assert_raise(RuntimeError) { imio.write_message(src) }
+
+    assert_same debug, imio.debug_output
+  end
+
+  def test_each_message_chunk_restores_logging_when_the_block_raises # https://github.com/ruby/net-protocol/pull/71
+    imio = Net::InternetMessageIO.new(StringIO.new("line\r\n.\r\n".dup))
+    debug = "".dup
+    imio.debug_output = debug
+
+    assert_raise(RuntimeError) { imio.each_message_chunk { raise "boom" } }
+
+    assert_same debug, imio.debug_output
+  end
 end
