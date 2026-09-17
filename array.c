@@ -316,7 +316,7 @@ rb_ary_ptr_use_end(VALUE ary)
 }
 
 void
-rb_mem_clear(VALUE *mem, long size)
+rb_mem_clear(VALUE *mem, rb_len_t size)
 {
     while (size--) {
         *mem++ = Qnil;
@@ -759,7 +759,7 @@ ary_new(VALUE klass, long capa)
 }
 
 VALUE
-rb_ary_new_capa(long capa)
+rb_ary_new_capa(rb_len_t capa)
 {
     return ary_new(rb_cArray, capa);
 }
@@ -771,7 +771,7 @@ rb_ary_new(void)
 }
 
 VALUE
-(rb_ary_new_from_args)(long n, ...)
+(rb_ary_new_from_args)(rb_len_t n, ...)
 {
     va_list ar;
     VALUE ary;
@@ -804,7 +804,7 @@ rb_ary_tmp_new_from_values(VALUE klass, long n, const VALUE *elts)
 }
 
 VALUE
-rb_ary_new_from_values(long n, const VALUE *elts)
+rb_ary_new_from_values(rb_len_t n, const VALUE *elts)
 {
     return rb_ary_tmp_new_from_values(rb_cArray, n, elts);
 }
@@ -875,7 +875,7 @@ rb_ec_ary_new_from_values(rb_execution_context_t *ec, long n, const VALUE *elts)
 }
 
 VALUE
-rb_ary_hidden_new(long capa)
+rb_ary_hidden_new(rb_len_t capa)
 {
     VALUE ary = ary_new(0, capa);
     return ary;
@@ -1225,7 +1225,7 @@ rb_ary_s_create(int argc, VALUE *argv, VALUE klass)
 }
 
 void
-rb_ary_store(VALUE ary, long idx, VALUE val)
+rb_ary_store(VALUE ary, rb_len_t idx, VALUE val)
 {
     long len = RARRAY_LEN(ary);
 
@@ -1421,7 +1421,7 @@ rb_ary_push(VALUE ary, VALUE item)
 }
 
 VALUE
-rb_ary_cat(VALUE ary, const VALUE *argv, long len)
+rb_ary_cat(VALUE ary, const VALUE *argv, rb_len_t len)
 {
     long oldlen = RARRAY_LEN(ary);
     VALUE target_ary = ary_ensure_room_for_push(ary, len);
@@ -1763,7 +1763,7 @@ rb_ary_elt(VALUE ary, long offset)
 }
 
 VALUE
-rb_ary_entry(VALUE ary, long offset)
+rb_ary_entry(VALUE ary, rb_len_t offset)
 {
     return rb_ary_entry_internal(ary, offset);
 }
@@ -1784,7 +1784,7 @@ ary_subseq_len(VALUE ary, long beg, long len)
 }
 
 VALUE
-rb_ary_subseq(VALUE ary, long beg, long len)
+rb_ary_subseq(VALUE ary, rb_len_t beg, rb_len_t len)
 {
     const VALUE klass = rb_cArray;
     len = ary_subseq_len(ary, beg, len);
@@ -1937,7 +1937,7 @@ rb_ary_aref2(VALUE ary, VALUE b, VALUE e)
 VALUE
 rb_ary_aref1(VALUE ary, VALUE arg)
 {
-    long beg, len, step;
+    rb_len_t beg, len, step;
     const VALUE klass = rb_cArray;
 
     /* special case - speeding up */
@@ -2429,7 +2429,7 @@ rb_ary_modify_expand(VALUE ary, long expand)
 }
 
 VALUE
-rb_ary_resize(VALUE ary, long len)
+rb_ary_resize(VALUE ary, rb_len_t len)
 {
     long olen;
 
@@ -2633,7 +2633,7 @@ ary_aset_by_rb_ary_splice(VALUE ary, long beg, long len, VALUE val)
 static VALUE
 rb_ary_aset(int argc, VALUE *argv, VALUE ary)
 {
-    long offset, beg, len;
+    rb_len_t offset, beg, len;
 
     rb_check_arity(argc, 2, 3);
     rb_ary_modify_check(ary);
@@ -3458,7 +3458,7 @@ ary_rotate_ptr(VALUE *ptr, long len, long cnt)
 }
 
 VALUE
-rb_ary_rotate(VALUE ary, long cnt)
+rb_ary_rotate(VALUE ary, rb_len_t cnt)
 {
     rb_ary_modify(ary);
 
@@ -3945,10 +3945,10 @@ rb_ary_collect_bang(VALUE ary)
 }
 
 VALUE
-rb_get_values_at(VALUE obj, long olen, int argc, const VALUE *argv, VALUE (*func) (VALUE, long))
+rb_get_values_at(VALUE obj, rb_len_t olen, int argc, const VALUE *argv, VALUE (*func) (VALUE, rb_len_t))
 {
     VALUE result = rb_ary_new2(argc);
-    long beg, len, i, j;
+    rb_len_t beg, len, i, j;
 
     for (i=0; i<argc; i++) {
         if (FIXNUM_P(argv[i])) {
@@ -3971,9 +3971,9 @@ rb_get_values_at(VALUE obj, long olen, int argc, const VALUE *argv, VALUE (*func
 }
 
 static VALUE
-append_values_at_single(VALUE result, VALUE ary, long olen, VALUE idx)
+append_values_at_single(VALUE result, VALUE ary, rb_len_t olen, VALUE idx)
 {
-    long beg, len;
+    rb_len_t beg, len;
     if (FIXNUM_P(idx)) {
         beg = FIX2LONG(idx);
     }
@@ -4365,7 +4365,7 @@ rb_ary_delete_same(VALUE ary, VALUE item)
 }
 
 VALUE
-rb_ary_delete_at(VALUE ary, long pos)
+rb_ary_delete_at(VALUE ary, rb_len_t pos)
 {
     long len = RARRAY_LEN(ary);
     VALUE del;
@@ -4546,7 +4546,7 @@ static VALUE
 rb_ary_slice_bang(int argc, VALUE *argv, VALUE ary)
 {
     VALUE arg1;
-    long pos, len;
+    rb_len_t pos, len;
 
     rb_ary_modify_check(ary);
     rb_check_arity(argc, 1, 2);
@@ -5196,7 +5196,7 @@ static VALUE
 rb_ary_fill(int argc, VALUE *argv, VALUE ary)
 {
     VALUE item = Qundef, arg1, arg2;
-    long beg = 0, end = 0, len = 0;
+    rb_len_t beg = 0, end = 0, len = 0;
 
     if (rb_block_given_p()) {
         rb_scan_args(argc, argv, "02", &arg1, &arg2);
