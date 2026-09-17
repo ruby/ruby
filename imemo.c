@@ -118,7 +118,7 @@ rb_free_tmp_buffer(volatile VALUE *store)
 }
 
 struct MEMO *
-rb_imemo_memo_new(VALUE a, VALUE b, long c)
+rb_imemo_memo_new(VALUE a, VALUE b, rb_long_t c)
 {
     struct MEMO *memo = IMEMO_NEW(struct MEMO, imemo_memo, 0);
 

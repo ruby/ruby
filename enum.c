@@ -75,7 +75,7 @@ enum_yield(int argc, VALUE ary)
 static VALUE
 enum_yield_array(VALUE ary)
 {
-    long len = RARRAY_LEN(ary);
+    rb_long_t len = RARRAY_LEN(ary);
 
     if (len > 1)
         return rb_yield_force_blockarg(ary);
@@ -224,8 +224,7 @@ imemo_count_up(struct MEMO *memo)
     }
     else if (++memo->u3.cnt == 0) {
         /* overflow */
-        unsigned long buf[2] = {0, 1};
-        MEMO_V3_SET(memo, rb_big_unpack(buf, 2));
+        MEMO_V3_SET(memo, rb_int_succ(ULONGT2NUM(RB_ULONGT_MAX)));
     }
 }
 
@@ -237,7 +236,7 @@ imemo_count_value(struct MEMO *memo)
         return memo->u3.value;
     }
     else {
-        return ULONG2NUM(memo->u3.cnt);
+        return ULONGT2NUM(memo->u3.cnt);
     }
 }
 
@@ -495,22 +494,22 @@ enum_size(VALUE self, VALUE args, VALUE eobj)
     return rb_check_funcall_default(self, id_size, 0, 0, Qnil);
 }
 
-static long
-limit_by_enum_size(VALUE obj, long n)
+static rb_long_t
+limit_by_enum_size(VALUE obj, rb_long_t n)
 {
-    unsigned long limit;
+    rb_ulong_t limit;
     VALUE size = rb_check_funcall(obj, id_size, 0, 0);
     if (!FIXNUM_P(size)) return n;
     limit = FIX2ULONG(size);
-    return ((unsigned long)n > limit) ? (long)limit : n;
+    return ((rb_ulong_t)n > limit) ? (rb_long_t)limit : n;
 }
 
 static int
-enum_size_over_p(VALUE obj, long n)
+enum_size_over_p(VALUE obj, rb_long_t n)
 {
     VALUE size = rb_check_funcall(obj, id_size, 0, 0);
     if (!FIXNUM_P(size)) return 0;
-    return ((unsigned long)n > FIX2ULONG(size));
+    return ((rb_ulong_t)n > FIX2ULONG(size));
 }
 
 /*
@@ -842,7 +841,8 @@ ary_inject_op(VALUE ary, VALUE init, VALUE op)
 {
     ID id;
     VALUE v, e;
-    long i, n;
+    rb_long_t i;
+    long n;
 
     if (RARRAY_LEN(ary) == 0)
         return UNDEF_P(init) ? Qnil : init;
@@ -1714,12 +1714,12 @@ enum_sort_by(VALUE obj)
 {
     VALUE ary, buf;
     struct MEMO *memo;
-    long i;
+    rb_long_t i;
     struct sort_by_data *data;
 
     RETURN_SIZED_ENUMERATOR(obj, 0, 0, enum_size);
 
-    if (RB_TYPE_P(obj, T_ARRAY) && RARRAY_LEN(obj) <= LONG_MAX/2) {
+    if (RB_TYPE_P(obj, T_ARRAY) && RARRAY_LEN(obj) <= RB_LONGT_MAX/2) {
         ary = rb_ary_new2(RARRAY_LEN(obj)*2);
     }
     else {
@@ -1946,9 +1946,9 @@ DEFINE_ENUMFUNCS(one)
 }
 
 struct nmin_data {
-    long n;
-    long bufmax;
-    long curlen;
+    rb_long_t n;
+    rb_long_t bufmax;
+    rb_long_t curlen;
     VALUE buf;
     VALUE limit;
     int (*cmpfunc)(const void *, const void *, void *);
@@ -1990,15 +1990,15 @@ nmin_block_cmp(const void *ap, const void *bp, void *_data)
 static void
 nmin_filter(struct nmin_data *data)
 {
-    long n;
+    rb_long_t n;
     VALUE *beg;
     int eltsize;
-    long numelts;
+    rb_long_t numelts;
 
-    long left, right;
-    long store_index;
+    rb_long_t left, right;
+    rb_long_t store_index;
 
-    long i, j;
+    rb_long_t i, j;
 
     if (data->curlen <= data->n)
         return;
@@ -2021,8 +2021,8 @@ nmin_filter(struct nmin_data *data)
 } while (0)
 
     while (1) {
-        long pivot_index = left + (right-left)/2;
-        long num_pivots = 1;
+        rb_long_t pivot_index = left + (right-left)/2;
+        rb_long_t num_pivots = 1;
 
         SWAP(pivot_index, right);
         pivot_index = right;
@@ -2110,12 +2110,12 @@ rb_nmin_run(VALUE obj, VALUE num, int by, int rev, int ary)
     VALUE result;
     struct nmin_data data;
 
-    data.n = NUM2LONG(num);
+    data.n = NUM2LONGT(num);
     if (data.n < 0)
-        rb_raise(rb_eArgError, "negative size (%ld)", data.n);
+        rb_raise(rb_eArgError, "negative size (%"PRIdLONGT")", data.n);
     if (data.n == 0)
         return rb_ary_new2(0);
-    if (LONG_MAX/4/(by ? 2 : 1) < data.n)
+    if (RB_LONGT_MAX/4/(by ? 2 : 1) < data.n)
         rb_raise(rb_eArgError, "too big size");
     data.bufmax = data.n * 4;
     data.curlen = 0;
@@ -2127,7 +2127,7 @@ rb_nmin_run(VALUE obj, VALUE num, int by, int rev, int ary)
     data.rev = rev;
     data.by = by;
     if (ary) {
-        long i;
+        rb_long_t i;
         for (i = 0; i < RARRAY_LEN(obj); i++) {
             VALUE args[1];
             args[0] = RARRAY_AREF(obj, i);
@@ -2140,7 +2140,7 @@ rb_nmin_run(VALUE obj, VALUE num, int by, int rev, int ary)
     nmin_filter(&data);
     result = data.buf;
     if (by) {
-        long i;
+        rb_long_t i;
         RARRAY_PTR_USE(result, ptr, {
             ruby_qsort(ptr,
                        RARRAY_LEN(result)/2,
@@ -3068,7 +3068,7 @@ static VALUE
 enum_reverse_each(int argc, VALUE *argv, VALUE obj)
 {
     VALUE ary;
-    long len;
+    rb_long_t len;
 
     RETURN_SIZED_ENUMERATOR(obj, argc, argv, enum_size);
 
@@ -3076,7 +3076,7 @@ enum_reverse_each(int argc, VALUE *argv, VALUE obj)
 
     len = RARRAY_LEN(ary);
     while (len--) {
-        long nlen;
+        rb_long_t nlen;
         rb_yield(RARRAY_AREF(ary, len));
         nlen = RARRAY_LEN(ary);
         if (nlen < len) {
@@ -3143,17 +3143,17 @@ enum_each_entry(int argc, VALUE *argv, VALUE obj)
 }
 
 static VALUE
-add_int(VALUE x, long n)
+add_int(VALUE x, rb_long_t n)
 {
-    const VALUE y = LONG2NUM(n);
+    const VALUE y = LONGT2NUM(n);
     if (RB_INTEGER_TYPE_P(x)) return rb_int_plus(x, y);
     return rb_funcallv(x, '+', 1, &y);
 }
 
 static VALUE
-div_int(VALUE x, long n)
+div_int(VALUE x, rb_long_t n)
 {
-    const VALUE y = LONG2NUM(n);
+    const VALUE y = LONGT2NUM(n);
     if (RB_INTEGER_TYPE_P(x)) return rb_int_idiv(x, y);
     return rb_funcallv(x, id_div, 1, &y);
 }
@@ -3166,7 +3166,7 @@ each_slice_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, m))
     struct MEMO *memo = MEMO_CAST(m);
     VALUE ary = memo->v1;
     VALUE v = Qnil;
-    long size = memo->u3.cnt;
+    rb_long_t size = memo->u3.cnt;
     ENUM_WANT_SVALUE();
 
     rb_ary_push(ary, i);
@@ -3189,7 +3189,7 @@ static VALUE
 enum_each_slice_size(VALUE obj, VALUE args, VALUE eobj)
 {
     VALUE n, size;
-    long slice_size = NUM2LONG(RARRAY_AREF(args, 0));
+    rb_long_t slice_size = NUM2LONGT(RARRAY_AREF(args, 0));
     ID infinite_p;
     CONST_ID(infinite_p, "infinite?");
     if (slice_size <= 0) rb_raise(rb_eArgError, "invalid slice size");
@@ -3227,7 +3227,7 @@ enum_each_slice_size(VALUE obj, VALUE args, VALUE eobj)
 static VALUE
 enum_each_slice(VALUE obj, VALUE n)
 {
-    long size = NUM2LONG(n);
+    rb_long_t size = NUM2LONGT(n);
     VALUE ary;
     struct MEMO *memo;
     int arity;
@@ -3251,7 +3251,7 @@ each_cons_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
     struct MEMO *memo = MEMO_CAST(args);
     VALUE ary = memo->v1;
     VALUE v = Qnil;
-    long size = memo->u3.cnt;
+    rb_long_t size = memo->u3.cnt;
     ENUM_WANT_SVALUE();
 
     if (RARRAY_LEN(ary) == size) {
@@ -3272,7 +3272,7 @@ enum_each_cons_size(VALUE obj, VALUE args, VALUE eobj)
 {
     const VALUE zero = LONG2FIX(0);
     VALUE n, size;
-    long cons_size = NUM2LONG(RARRAY_AREF(args, 0));
+    rb_long_t cons_size = NUM2LONGT(RARRAY_AREF(args, 0));
     if (cons_size <= 0) rb_raise(rb_eArgError, "invalid size");
 
     size = enum_size(obj, 0, 0);
@@ -3305,7 +3305,7 @@ enum_each_cons_size(VALUE obj, VALUE args, VALUE eobj)
 static VALUE
 enum_each_cons(VALUE obj, VALUE n)
 {
-    long size = NUM2LONG(n);
+    rb_long_t size = NUM2LONGT(n);
     struct MEMO *memo;
     int arity;
 
@@ -3359,7 +3359,7 @@ zip_ary(RB_BLOCK_CALL_FUNC_ARGLIST(val, memoval))
     struct MEMO *memo = (struct MEMO *)memoval;
     VALUE result = memo->v1;
     VALUE args = memo->v2;
-    long n = memo->u3.cnt++;
+    rb_long_t n = memo->u3.cnt++;
     VALUE tmp;
     int i;
 
@@ -3577,7 +3577,7 @@ enum_take(VALUE obj, VALUE n)
 {
     struct MEMO *memo;
     VALUE result;
-    long len = NUM2LONG(n);
+    rb_long_t len = NUM2LONGT(n);
 
     if (len < 0) {
         rb_raise(rb_eArgError, "attempt to take negative size");
@@ -3666,7 +3666,7 @@ enum_drop(VALUE obj, VALUE n)
 {
     VALUE result;
     struct MEMO *memo;
-    long len = NUM2LONG(n);
+    rb_long_t len = NUM2LONGT(n);
 
     if (len < 0) {
         rb_raise(rb_eArgError, "attempt to drop negative size");
@@ -3800,7 +3800,8 @@ enum_cycle(int argc, VALUE *argv, VALUE obj)
 {
     VALUE ary;
     VALUE nv = Qnil;
-    long n, i, len;
+    long n;
+    rb_long_t i, len;
 
     rb_check_arity(argc, 0, 1);
 
