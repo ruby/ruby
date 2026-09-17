@@ -88,10 +88,16 @@ void rb_box_gc_update_references(void *ptr);
 rb_box_t * rb_get_box_t(VALUE ns);
 VALUE rb_get_box_object(rb_box_t *ns);
 
-VALUE rb_box_local_extension(VALUE box, VALUE fname, VALUE path, VALUE *cleanup);
+VALUE rb_box_local_extension(VALUE box, VALUE path, VALUE *cleanup);
 void rb_box_cleanup_local_extension(VALUE cleanup);
+void rb_box_defer_unload_local_extension(void *handle);
+void rb_box_unload_local_extensions(void);
 
 void rb_initialize_mandatory_boxes(void);
 void rb_box_init_done(void);
 void rb_box_set_gem_flags(rb_box_gem_flags_t *);
+
+/* variable.c */
+void rb_autoload_copy_table_for_box(st_table *, const rb_box_t *);
+
 #endif /* INTERNAL_BOX_H */

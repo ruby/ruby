@@ -203,6 +203,7 @@ struct rb_method_definition_struct {
     } body;
 
     ID original_id;
+    VALUE original_module; /* module in which the method definition is; see location_original_module() */
     uintptr_t method_serial;
     const rb_box_t *box;
 };
@@ -237,6 +238,8 @@ const rb_method_entry_t *rb_resolve_refined_method(VALUE refinements, const rb_m
 RUBY_SYMBOL_EXPORT_BEGIN
 const rb_method_entry_t *rb_resolve_me_location(const rb_method_entry_t *, VALUE[5]);
 RUBY_SYMBOL_EXPORT_END
+
+void rb_vm_coverage_record_me(const rb_method_entry_t *me);
 
 const rb_callable_method_entry_t *rb_callable_method_entry(VALUE klass, ID id);
 const rb_callable_method_entry_t *rb_callable_method_entry_or_negative(VALUE klass, ID id);

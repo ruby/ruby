@@ -223,9 +223,9 @@ class Array
           return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 0, 0, ary_enum_length)'
         end
         i = 0
-        until Primitive.rb_jit_ary_at_end(i)
-          yield Primitive.rb_jit_ary_at(i)
-          i = Primitive.rb_jit_fixnum_inc(i)
+        until Primitive.rb_builtin_ary_at_end(i)
+          yield Primitive.rb_builtin_ary_at(i)
+          i = Primitive.rb_builtin_fixnum_inc(i)
         end
         self
       end
@@ -243,10 +243,10 @@ class Array
 
         i = 0
         result = Primitive.ary_sized_alloc
-        until Primitive.rb_jit_ary_at_end(i)
-          value = yield(Primitive.rb_jit_ary_at(i))
+        until Primitive.rb_builtin_ary_at_end(i)
+          value = yield(Primitive.rb_builtin_ary_at(i))
           Primitive.rb_jit_ary_push(result, value)
-          i = Primitive.rb_jit_fixnum_inc(i)
+          i = Primitive.rb_builtin_fixnum_inc(i)
         end
         result
       end
@@ -269,12 +269,12 @@ class Array
 
         i = 0
         result = Primitive.ary_sized_alloc
-        until Primitive.rb_jit_ary_at_end(i)
-          value = Primitive.rb_jit_ary_at(i)
+        until Primitive.rb_builtin_ary_at_end(i)
+          value = Primitive.rb_builtin_ary_at(i)
           if yield value
             Primitive.rb_jit_ary_push(result, value)
           end
-          i = Primitive.rb_jit_fixnum_inc(i)
+          i = Primitive.rb_builtin_fixnum_inc(i)
         end
         result
       end
@@ -296,10 +296,10 @@ class Array
     #       return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 0, 0, ary_enum_length)'
     #     end
     #     i = 0
-    #     until Primitive.rb_jit_ary_at_end(i)
-    #       value = Primitive.rb_jit_ary_at(i)
+    #     until Primitive.rb_builtin_ary_at_end(i)
+    #       value = Primitive.rb_builtin_ary_at(i)
     #       return value if yield(value)
-    #       i = Primitive.rb_jit_fixnum_inc(i)
+    #       i = Primitive.rb_builtin_fixnum_inc(i)
     #     end
     #     if_none_proc&.call
     #   end

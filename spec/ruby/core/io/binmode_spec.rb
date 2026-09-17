@@ -31,6 +31,142 @@ describe "IO#binmode" do
     @io.binmode
     @io.internal_encoding.should == nil
   end
+
+  it "disables newline conversion for #read" do
+    data = "line1\r\nline2\r\n"
+
+    @io = new_io(@name, "wb")
+    @io.write(data)
+    @io.close
+
+    @io = new_io(@name, "rt")
+    @io.set_encoding("utf-8:ISO-8859-1", newline: :universal)
+    @io.binmode
+    @io.read.should == data
+  end
+
+  it "disables newline conversion for #gets" do
+    data = "line1\r\nline2\r\n"
+
+    @io = new_io(@name, "wb")
+    @io.write(data)
+    @io.close
+
+    @io = new_io(@name, "rt")
+    @io.set_encoding("utf-8:ISO-8859-1", newline: :universal)
+    @io.binmode
+    @io.gets.should == "line1\r\n"
+    @io.gets.should == "line2\r\n"
+  end
+
+  it "disables newline conversion for #readline" do
+    data = "line1\r\nline2\r\n"
+
+    @io = new_io(@name, "wb")
+    @io.write(data)
+    @io.close
+
+    @io = new_io(@name, "rt")
+    @io.set_encoding("utf-8:ISO-8859-1", newline: :universal)
+    @io.binmode
+    @io.readline.should == "line1\r\n"
+    @io.readline.should == "line2\r\n"
+  end
+
+  it "disables newline conversion for #readlines" do
+    data = "line1\r\nline2\r\n"
+
+    @io = new_io(@name, "wb")
+    @io.write(data)
+    @io.close
+
+    @io = new_io(@name, "rt")
+    @io.set_encoding("utf-8:ISO-8859-1", newline: :universal)
+    @io.binmode
+    @io.readlines.should == ["line1\r\n", "line2\r\n"]
+  end
+
+  it "disables newline conversion for #each" do
+    data = "line1\r\nline2\r\n"
+
+    @io = new_io(@name, "wb")
+    @io.write(data)
+    @io.close
+
+    @io = new_io(@name, "rt")
+    @io.set_encoding("utf-8:ISO-8859-1", newline: :universal)
+    @io.binmode
+    @io.each.to_a.should == ["line1\r\n", "line2\r\n"]
+  end
+
+  it "disables newline conversion for #each_line" do
+    data = "line1\r\nline2\r\n"
+
+    @io = new_io(@name, "wb")
+    @io.write(data)
+    @io.close
+
+    @io = new_io(@name, "rt")
+    @io.set_encoding("utf-8:ISO-8859-1", newline: :universal)
+    @io.binmode
+    @io.each_line.to_a.should == ["line1\r\n", "line2\r\n"]
+  end
+
+  it "disables newline conversion for #getc" do
+    data = "line1\r\n"
+
+    @io = new_io(@name, "wb")
+    @io.write(data)
+    @io.close
+
+    @io = new_io(@name, "rt")
+    @io.set_encoding("utf-8:ISO-8859-1", newline: :universal)
+    @io.binmode
+    5.times { @io.getc }
+    @io.getc.should == "\r"
+    @io.getc.should == "\n"
+  end
+
+  it "disables newline conversion for #readchar" do
+    data = "line1\r\n"
+
+    @io = new_io(@name, "wb")
+    @io.write(data)
+    @io.close
+
+    @io = new_io(@name, "rt")
+    @io.set_encoding("utf-8:ISO-8859-1", newline: :universal)
+    @io.binmode
+    5.times { @io.readchar }
+    @io.readchar.should == "\r"
+    @io.readchar.should == "\n"
+  end
+
+  it "disables newline conversion for #each_char" do
+    data = "line1\r\n"
+
+    @io = new_io(@name, "wb")
+    @io.write(data)
+    @io.close
+
+    @io = new_io(@name, "rt")
+    @io.set_encoding("utf-8:ISO-8859-1", newline: :universal)
+    @io.binmode
+    @io.each_char.to_a.should == ["l", "i", "n", "e", "1", "\r", "\n"]
+  end
+
+  it "disables newline conversion for #each_codepoint" do
+    data = "line1\r\n"
+
+    @io = new_io(@name, "wb")
+    @io.write(data)
+    @io.close
+
+    @io = new_io(@name, "rt")
+    @io.set_encoding("utf-8:ISO-8859-1", newline: :universal)
+    @io.binmode
+    @io.each_codepoint.to_a.should == [108, 105, 110, 101, 49, 13, 10]
+  end
 end
 
 describe "IO#binmode?" do

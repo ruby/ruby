@@ -55,15 +55,13 @@ describe "Addrinfo#unix?" do
     end
   end
 
-  platform_is_not :windows do
-    describe "for a unix socket" do
-      before :each do
-        @addrinfo = Addrinfo.unix("/tmp/sock")
-      end
+  describe "for a unix socket" do
+    before :each do
+      @addrinfo = Addrinfo.unix("/tmp/sock")
+    end
 
-      it "returns true" do
-        @addrinfo.unix?.should == true
-      end
+    it "returns true" do
+      @addrinfo.unix?.should == true
     end
   end
 end

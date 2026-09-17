@@ -8,7 +8,7 @@ use std::sync::atomic::Ordering;
 use crate::invariants::Invariants;
 use crate::asm::CodeBlock;
 use crate::options::{get_option, rb_zjit_prepare_options};
-use crate::jit_frame::JITFrame;
+use crate::jit_frame::{JITFrame, JITFrameAllocator};
 use crate::stats::{Counters, InsnCounters, PerfettoTracer};
 use crate::virtualmem::CodePtr;
 use std::sync::atomic::AtomicUsize;
@@ -19,6 +19,15 @@ use std::ptr::null;
 #[allow(non_upper_case_globals)]
 #[unsafe(no_mangle)]
 pub static mut rb_zjit_entry: *const u8 = null();
+
+/// Whether ZJIT is compiling. Starts as false until ZJIT is enabled, so the
+/// interpreter doesn't need to check rb_zjit_enabled_p before it. Set back to
+/// false when we run out of executable memory, in which case the interpreter
+/// stops incrementing ISEQ call counters so that ISEQs that will never be
+/// compiled stop dirtying CoW pages after fork.
+#[allow(non_upper_case_globals)]
+#[unsafe(no_mangle)]
+pub static mut rb_zjit_compiling_p: bool = false;
 
 /// Like rb_zjit_enabled_p, but for Rust code.
 pub fn zjit_enabled_p() -> bool {
@@ -77,6 +86,11 @@ pub struct ZJITState {
 
     /// Frame metadata for ISEQ and C calls that are known at compile time
     jit_frames: Vec<*mut JITFrame>,
+
+    /// Bump allocator that serves JITFrame allocations from address space below
+    /// INT32_MAX, so that call sites can store frame pointers as 32-bit immediates.
+    /// None when the platform cannot provide low memory.
+    jit_frame_allocator: Option<JITFrameAllocator>,
 }
 
 /// Tracks the initialization progress
@@ -132,7 +146,7 @@ impl ZJITState {
         let materialize_exit_trampoline = gen_materialize_exit_trampoline(&mut cb, exit_trampoline).unwrap();
         let function_stub_hit_trampoline = gen_function_stub_hit_trampoline(&mut cb).unwrap();
 
-        let perfetto_tracer = if get_option!(trace_side_exits).is_some() || get_option!(trace_compiles) || get_option!(trace_invalidation) {
+        let perfetto_tracer = if get_option!(trace_side_exits).is_some() || get_option!(trace_compiles) || get_option!(trace_invalidation) || get_option!(trace_fallbacks) {
             Some(PerfettoTracer::new())
         } else {
             None
@@ -157,6 +171,7 @@ impl ZJITState {
             iseq_calls_count_pointers: HashMap::new(),
             perfetto_tracer,
             jit_frames: vec![],
+            jit_frame_allocator: JITFrameAllocator::new(),
         };
         unsafe { ZJIT_STATE = Enabled(zjit_state); }
 
@@ -198,6 +213,11 @@ impl ZJITState {
 
     pub fn get_jit_frames() -> &'static mut Vec<*mut JITFrame> {
         &mut ZJITState::get_instance().jit_frames
+    }
+
+    /// Get a mutable reference to the JITFrame allocator
+    pub fn get_jit_frame_allocator() -> Option<&'static mut JITFrameAllocator> {
+        ZJITState::get_instance().jit_frame_allocator.as_mut()
     }
 
     pub fn get_method_annotations() -> &'static cruby_methods::Annotations {
@@ -410,7 +430,10 @@ fn zjit_enable() {
 
         // ZJIT enabled and initialized successfully
         assert!(unsafe{ rb_zjit_entry == null() });
-        unsafe { rb_zjit_entry = zjit_entry; }
+        unsafe {
+            rb_zjit_entry = zjit_entry;
+            rb_zjit_compiling_p = true;
+        }
     });
 
     if result.is_err() {
@@ -449,7 +472,7 @@ pub extern "C" fn rb_zjit_assert_compiles(_ec: EcPtr, _self: VALUE) -> VALUE {
 }
 
 /// Resolve a profile frame VALUE to a human-readable "label (path)" string.
-fn resolve_frame_label(frame: VALUE) -> String {
+fn resolve_frame_label(frame: VALUE, line_number: i32) -> String {
     unsafe {
         let label_str = ruby_str_to_rust_string_result(rb_profile_frame_full_label(frame)).unwrap_or("<unknown>".into());
 
@@ -457,7 +480,7 @@ fn resolve_frame_label(frame: VALUE) -> String {
         let path = if path.nil_p() { rb_profile_frame_path(frame) } else { path };
         let path_str = ruby_str_to_rust_string_result(path).unwrap_or("<unknown>".into());
 
-        format!("{label_str} ({path_str})")
+        format!("{label_str} ({path_str}:{line_number})")
     }
 }
 
@@ -494,6 +517,41 @@ pub extern "C" fn rb_zjit_record_exit_stack(reason: *const std::ffi::c_char) {
     };
 
     tracer.write_event("side_exit", reason_str, &frames);
+}
+
+/// Record a backtrace with ZJIT fallbacks as a Perfetto trace event
+#[unsafe(no_mangle)]
+pub extern "C" fn rb_zjit_record_fallback_stack(reason: *const std::ffi::c_char) {
+    if !zjit_enabled_p() || !get_option!(trace_fallbacks) {
+        return;
+    }
+
+    let tracer = match ZJITState::get_tracer() {
+        Some(t) => t,
+        None => return,
+    };
+
+    // When `trace_fallbacks_sample_interval` is non-zero, apply sampling.
+    if get_option!(trace_fallbacks_sample_interval) != 0 {
+        if tracer.skipped_samples < get_option!(trace_fallbacks_sample_interval) {
+            tracer.skipped_samples += 1;
+            return;
+        } else {
+            tracer.skipped_samples = 0;
+        }
+    }
+
+    // Collect profile frames
+    let frames = capture_ruby_frames();
+
+    // Get the reason string
+    let reason_str = if reason.is_null() {
+        "unknown"
+    } else {
+        unsafe { std::ffi::CStr::from_ptr(reason).to_str().unwrap_or("unknown") }
+    };
+
+    tracer.write_event("fallback", reason_str, &frames);
 }
 
 /// Wrap a closure in a Perfetto duration event with category "invalidation"
@@ -539,6 +597,6 @@ fn capture_ruby_frames() -> Vec<String> {
 
     // Resolve each frame to a human-readable string (top frame first)
     (0..stack_length as usize)
-        .map(|i| resolve_frame_label(frames_buffer[i]))
+        .map(|i| resolve_frame_label(frames_buffer[i], lines_buffer[i]))
         .collect()
 }

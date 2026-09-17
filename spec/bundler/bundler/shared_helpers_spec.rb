@@ -387,7 +387,11 @@ RSpec.describe Bundler::SharedHelpers do
 
       before do
         ENV["RUBYOPT"] = "-r#{install_path}/bundler/setup"
-        allow(File).to receive(:expand_path).and_return("#{install_path}/bundler/setup")
+        # Only fake the resolution of bundler/setup itself. A blanket stub
+        # breaks unrelated RubyGems path lookups triggered lazily inside the
+        # example, see #set_rubyopt.
+        allow(File).to receive(:expand_path).and_call_original
+        allow(File).to receive(:expand_path).with("setup", anything).and_return("#{install_path}/bundler/setup")
         allow(Gem).to  receive(:bin_path).and_return("#{install_path}/bundler/setup")
       end
 
@@ -397,6 +401,35 @@ RSpec.describe Bundler::SharedHelpers do
       end
 
       it_behaves_like "ENV['RUBYOPT'] gets set correctly"
+    end
+
+    context "when bundler install path contains whitespace" do
+      let(:install_path) { "/opt/ruby with space/lib" }
+
+      before do
+        allow(File).to receive(:expand_path).and_call_original
+        allow(File).to receive(:expand_path).with("setup", anything).and_return("#{install_path}/bundler/setup")
+        allow(Gem).to receive(:bin_path).and_return("#{install_path}/bundler/setup")
+      end
+
+      # RUBYOPT is split on whitespace with no quoting mechanism, so an
+      # absolute -r path containing spaces would make every child ruby fail
+      # to boot with "invalid switch in RUBYOPT".
+      it "requires bundler/setup by feature name instead of absolute path" do
+        subject.set_bundle_environment
+        expect(ENV["RUBYOPT"].split(" ")).to start_with("-rbundler/setup")
+      end
+
+      it "does not inject the space-containing path into RUBYOPT" do
+        subject.set_bundle_environment
+        expect(ENV["RUBYOPT"]).not_to include(install_path)
+      end
+
+      it "is idempotent" do
+        subject.set_bundle_environment
+        subject.set_bundle_environment
+        expect(ENV["RUBYOPT"].split(" ").grep(%r{\A-r.*bundler/setup\z}).length).to eq(1)
+      end
     end
 
     context "ENV['RUBYLIB'] does not exist" do

@@ -922,7 +922,7 @@ Init_ossl_x509cert(void)
      *   root_ca.serial = 1
      *   root_ca.subject = OpenSSL::X509::Name.parse "/DC=org/DC=ruby-lang/CN=Ruby CA"
      *   root_ca.issuer = root_ca.subject # root CA's are "self-signed"
-     *   root_ca.public_key = root_key.public_key
+     *   root_ca.public_key = root_key
      *   root_ca.not_before = Time.now
      *   root_ca.not_after = root_ca.not_before + 2 * 365 * 24 * 60 * 60 # 2 years validity
      *   ef = OpenSSL::X509::ExtensionFactory.new
@@ -943,7 +943,7 @@ Init_ossl_x509cert(void)
      *   cert.serial = 2
      *   cert.subject = OpenSSL::X509::Name.parse "/DC=org/DC=ruby-lang/CN=Ruby certificate"
      *   cert.issuer = root_ca.subject # root CA is the issuer
-     *   cert.public_key = key.public_key
+     *   cert.public_key = key
      *   cert.not_before = Time.now
      *   cert.not_after = cert.not_before + 1 * 365 * 24 * 60 * 60 # 1 years validity
      *   ef = OpenSSL::X509::ExtensionFactory.new

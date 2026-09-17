@@ -265,10 +265,11 @@ class Ractor
 
   #
   # call-seq:
-  #    Ractor.select(*ractors_or_ports) -> [ractor or port, obj]
+  #    Ractor.select(*ractors_or_ports, timeout: nil) -> [ractor or port, obj] or nil
   #
   # Blocks the current Thread until one of the given ports has received a message. Returns an
   # array of two elements where the first element is the Port and the second is the received object.
+  # With +timeout+ (in seconds) it returns +nil+ instead once the timeout passes.
   # This method can also accept Ractor objects themselves, and in that case will wait until one
   # has terminated and return a two-element array where the first element is the ractor and the
   # second is its termination value.
@@ -296,6 +297,9 @@ class Ractor
   #    # r1 done
   #    # r0 done
   #
+  # Closing one of the given ports raises Ractor::ClosedError, whether it was
+  # closed before the call or while it waits.
+  #
   # The following example is almost equivalent to <code>ractors.map(&:value)</code> except the thread
   # is unblocked when any of the ractors has terminated as opposed to waiting for their termination in
   # the array element order.
@@ -307,49 +311,62 @@ class Ractor
   #      values << val
   #    end
   #
-  def self.select(*ports)
+  def self.select(*ports, timeout: nil)
     raise ArgumentError, 'specify at least one Ractor::Port or Ractor' if ports.empty?
 
-    monitors = {} # Ractor::Port => Ractor
-
-    ports = ports.map do |arg|
-      case arg
-      when Ractor
-        port = Ractor::Port.new
-        monitors[port] = arg
-        arg.monitor port
-        port
-      when Ractor::Port
-        arg
-      else
-        raise ArgumentError, "should be Ractor::Port or Ractor"
-      end
-    end
+    monitored = []
+    others = []
+    mp = nil
 
     begin
-      result_port, obj = __builtin_ractor_select_internal(ports)
-
-      if r = monitors[result_port]
-        [r, r.value]
-      else
-        [result_port, obj]
+      ports.each do |arg|
+        case arg
+        when Ractor
+          monitored << arg
+        when Ractor::Port
+          others << arg
+        else
+          raise ArgumentError, "should be Ractor::Port or Ractor"
+        end
       end
+
+      # One port for every watched ractor rather than one each: the exit token
+      # names the ractor, so there is nothing to look the result up in.
+      unless monitored.empty?
+        mp = Ractor::Port.new
+        monitored.each { |r| r.monitor mp }
+      end
+
+      if others.empty?
+        # Nothing but ractors: one port to wait on, so no selector is built.
+        token = mp.receive(timeout: timeout)
+        return nil if token.nil?
+      else
+        result = __builtin_ractor_select_internal(mp ? [mp, *others] : others, timeout)
+        return nil if result.nil?
+
+        port, obj = result
+        return [port, obj] unless port.equal?(mp)
+        token = obj
+      end
+
+      r = token[0]
+      [r, r.value]
     ensure
-      # close all ports for join
-      monitors.each do |port, r|
-        r.unmonitor port
-        port.close
+      if mp
+        monitored.each { |r| r.unmonitor mp }
+        mp.close
       end
     end
   end
 
   #
   # call-seq:
-  #    Ractor.receive -> obj
+  #    Ractor.receive(timeout: nil) -> obj or nil
   #
   # Receives a message from the current ractor's default port.
-  def self.receive
-    Ractor.current.default_port.receive
+  def self.receive(timeout: nil)
+    Ractor.current.default_port.receive(timeout: timeout)
   end
 
   class << self
@@ -357,8 +374,8 @@ class Ractor
   end
 
   # same as Ractor.receive
-  private def receive
-    default_port.receive
+  private def receive(timeout: nil)
+    default_port.receive(timeout: timeout)
   end
   alias recv receive
 
@@ -376,9 +393,9 @@ class Ractor
   def inspect
     loc  = __builtin_cexpr! %q{ RACTOR_PTR(self)->loc }
     name = __builtin_cexpr! %q{ RACTOR_PTR(self)->name }
-    id   = __builtin_cexpr! %q{ UINT2NUM(rb_ractor_id(RACTOR_PTR(self))) }
+    id   = __builtin_cexpr! %q{ ULL2NUM(rb_ractor_id(RACTOR_PTR(self))) }
     status = __builtin_cexpr! %q{
-      rb_str_new2(ractor_status_str(RACTOR_PTR(self)->status_))
+      rb_str_new2(RACTOR_PTR(self)->status_ == ractor_terminated ? "terminated" : "running")
     }
     "#<Ractor:##{id}#{name ? ' '+name : ''}#{loc ? " " + loc : ''} #{status}>"
   end
@@ -537,9 +554,9 @@ class Ractor
   # internal method
   def self._require feature # :nodoc:
     if main?
-      super feature
+      require(feature)
     else
-      Primitive.ractor_require feature
+      Primitive.ractor_require(feature)
     end
   end
 
@@ -548,17 +565,22 @@ class Ractor
 
     # internal method that is called when the first "Ractor.new" is called
     def _activated # :nodoc:
-      Kernel.prepend Module.new{|m|
-        m.set_temporary_name '<RactorRequire>'
-
-        def require feature # :nodoc: -- otherwise RDoc outputs it as a class method
+      return if defined?(@__ractor_require_alias_activated)
+      # Put this in Object so that it comes before Rubygems require (which
+      # may have code that is not ractor-safe). Gems that hijack require
+      # should define their require in the Kernel module.
+      Object.module_eval do
+        alias_method :__ractor_original_require, :require
+        def require(feature) # :nodoc:
           if Ractor.main?
             super
           else
-            Ractor._require feature
+            Ractor._require(feature)
           end
         end
-      }
+        private :require
+      end
+      @__ractor_require_alias_activated = true
     end
   end
 
@@ -592,7 +614,7 @@ class Ractor
     port = Port.new
 
     self.monitor port
-    if port.receive == :aborted
+    if port.receive[1] == :aborted
       __builtin_ractor_value
     end
 
@@ -607,10 +629,12 @@ class Ractor
   #
   # Waits for +ractor+ to complete and returns its value or raises the exception
   # which terminated the Ractor. The termination value will be moved to the calling
-  # Ractor. Therefore, at most 1 Ractor can receive another ractor's termination value.
+  # Ractor. Therefore, at most 1 Ractor can receive another ractor's termination
+  # value, and it can be received only once.
   #
   #   r = Ractor.new{ [1, 2] }
   #   r.value #=> [1, 2] (unshareable object)
+  #   r.value #=> Ractor::Error
   #
   #   Ractor.new(r){|r| r.value} #=> Ractor::Error
   #
@@ -623,23 +647,28 @@ class Ractor
   # call-seq:
   #    ractor.monitor(port) -> true or false
   #
-  # Registers the port as a monitoring port for this ractor. When the ractor terminates,
-  # the port receives a Symbol object.
+  # Registers the port as a monitoring port for this ractor. When the ractor
+  # terminates, the port receives an Array naming the ractor and what happened to
+  # it, so that several ractors can report to one port.
   #
-  # * +:exited+ is sent if the ractor terminates without an unhandled exception.
-  # * +:aborted+ is sent if the ractor terminates by an unhandled exception.
+  # * <tt>[ractor, :exited]</tt> if the ractor terminated without an unhandled
+  #   exception.
+  # * <tt>[ractor, :aborted]</tt> if it terminated by one.
+  #
+  # The Array is built for the receiving ractor, so watching many ractors does not
+  # leave shareable objects behind.
   #
   # Returns +true+ if the monitor was registered (the ractor is still running).
   # Returns +false+ if the ractor had already terminated; in that case the
-  # termination message (+:exited+ or +:aborted+) is sent to the port immediately.
+  # termination message is sent to the port immediately.
   #
   #     r = Ractor.new{ some_task() }
   #     r.monitor(port = Ractor::Port.new)
-  #     port.receive #=> :exited and r is terminated
+  #     port.receive #=> [r, :exited]
   #
   #     r = Ractor.new{ raise "foo" }
   #     r.monitor(port = Ractor::Port.new)
-  #     port.receive #=> :aborted and r is terminated by the RuntimeError "foo"
+  #     port.receive #=> [r, :aborted]
   #
   def monitor port
     __builtin_ractor_monitor(port)
@@ -700,7 +729,7 @@ class Ractor
   class Port
     #
     # call-seq:
-    #    port.receive -> msg
+    #    port.receive(timeout: nil) -> msg or nil
     #
     # Receives a message from the port (which was sent there by Port#send). Only the ractor
     # that created the port can receive messages this way.
@@ -741,16 +770,33 @@ class Ractor
     #     Still received only one
     #     Received: message2
     #
+    # With +timeout+ (in seconds) the method gives up waiting and returns +nil+
+    # once it passes. A message that arrives just as the timeout expires is still
+    # returned; the timeout bounds the wait, it does not cut delivery off.
+    #
+    #     port = Ractor::Port.new
+    #     port.receive(timeout: 0.1) #=> nil
+    #     port.receive(timeout: 0)   #=> nil
+    #
+    # A +timeout+ of 0 never blocks and reads no clock: it takes a message if one
+    # is already there and returns +nil+ otherwise.
+    #
     # If the port is closed and there are no more messages in the message queue,
-    # the method raises Ractor::ClosedError.
+    # the method raises Ractor::ClosedError. Closing a port while this method
+    # waits on it ends the wait the same way; messages queued before the close
+    # are received first.
     #
     #     port = Ractor::Port.new
     #     port.close
     #     port.receive #=> raise Ractor::ClosedError
     #
-    def receive
+    #     port = Ractor::Port.new
+    #     Thread.new { sleep 0.1; port.close }
+    #     port.receive #=> raise Ractor::ClosedError, after 0.1 seconds
+    #
+    def receive(timeout: nil)
       __builtin_cexpr! %q{
-        ractor_port_receive(ec, self)
+        ractor_port_receive(ec, self, timeout)
       }
     end
 
@@ -806,6 +852,11 @@ class Ractor
     # Closes the port. Sending to a closed port is prohibited.
     # Receiving is also prohibited if there are no messages in its message queue.
     #
+    # Messages already in the queue are kept: a receiver takes them before the
+    # port reports itself closed. A Ractor::Port#receive waiting on the port when
+    # it closes stops there and raises Ractor::ClosedError, rather than waiting
+    # for a message that can no longer arrive.
+    #
     # Only the Ractor which created the port is allowed to close it.
     #
     #     port = Ractor::Port.new
@@ -825,7 +876,6 @@ class Ractor
     #
     # Returns whether or not the port is closed.
     def closed?
-      Primitive.attr! :leaf
       __builtin_cexpr! %q{
         ractor_port_closed_p(ec, self);
       }
@@ -836,7 +886,7 @@ class Ractor
     #    port.inspect -> string
     def inspect
       "#<Ractor::Port to:\##{
-        __builtin_cexpr! "SIZET2NUM(rb_ractor_id((RACTOR_PORT_PTR(self)->r)))"
+        __builtin_cexpr! "ULL2NUM(rb_ractor_id(ractor_port_ptr_check(self)->r))"
       } id:#{
         __builtin_cexpr! "SIZET2NUM(ractor_port_id(RACTOR_PORT_PTR(self)))"
       }>"

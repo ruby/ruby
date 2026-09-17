@@ -179,15 +179,24 @@ rb_ast_parse_array(VALUE array, VALUE keep_script_lines, VALUE error_tolerant, V
 
 static VALUE node_children(VALUE, const NODE*);
 
-static VALUE
-node_find(VALUE self, const int node_id)
+struct node_find_result {
+    VALUE node;
+    VALUE parent;
+};
+
+static bool
+node_find_with_parent(VALUE self, VALUE parent, const int node_id, struct node_find_result *result)
 {
     VALUE ary;
     long i;
     struct ASTNodeData *data;
     TypedData_Get_Struct(self, struct ASTNodeData, &rb_node_type, data);
 
-    if (nd_node_id(data->node) == node_id) return self;
+    if (nd_node_id(data->node) == node_id) {
+        result->node = self;
+        result->parent = parent;
+        return true;
+    }
 
     ary = node_children(data->ast_value, data->node);
 
@@ -195,15 +204,96 @@ node_find(VALUE self, const int node_id)
         VALUE child = RARRAY_AREF(ary, i);
 
         if (CLASS_OF(child) == rb_cNode) {
-            VALUE result = node_find(child, node_id);
-            if (RTEST(result)) return result;
+            if (node_find_with_parent(child, self, node_id, result)) return true;
         }
     }
 
-    return Qnil;
+    return false;
+}
+
+static VALUE
+node_find(VALUE self, const int node_id)
+{
+    struct node_find_result result = { Qnil, Qnil };
+    node_find_with_parent(self, Qnil, node_id, &result);
+    return result.node;
+}
+
+bool
+rb_ast_node_source_location(VALUE source, VALUE path, int first_lineno,
+                            int node_id, bool block_iseq, int iseq_node_id,
+                            rb_code_location_t *location)
+{
+    StringValue(source);
+    VALUE vparser = setup_vparser(Qfalse, Qfalse, Qfalse);
+    VALUE ast_value = rb_parser_compile_string_path(vparser, path, source, first_lineno);
+    VALUE ast = ast_parse_done(ast_value);
+
+    struct node_find_result result = { Qnil, Qnil };
+    if (!node_find_with_parent(ast, Qnil, node_id, &result)) return false;
+
+    struct ASTNodeData *data;
+    TypedData_Get_Struct(result.node, struct ASTNodeData, &rb_node_type, data);
+    const NODE *node = data->node;
+
+    if (!NIL_P(result.parent)) {
+        struct ASTNodeData *parent_data;
+        TypedData_Get_Struct(result.parent, struct ASTNodeData, &rb_node_type, parent_data);
+        const NODE *parent = parent_data->node;
+
+        /* Prism's call node includes its literal block. */
+        if (nd_type(parent) == NODE_ITER && RNODE_ITER(parent)->nd_iter == node) {
+            node = parent;
+        }
+    }
+
+    /* Prism's block node excludes the call that produced the block. */
+    if (block_iseq && node_id == iseq_node_id && nd_type(node) == NODE_ITER) {
+        const NODE *scope = RNODE_ITER(node)->nd_body;
+        if (scope && nd_type(scope) == NODE_SCOPE) {
+            node = scope;
+        }
+    }
+
+    *location = *nd_code_loc(node);
+    return true;
+}
+
+static VALUE
+ast_node_find(rb_execution_context_t *ec, VALUE self, VALUE root, VALUE node_id)
+{
+    return node_find(root, NUM2INT(node_id));
+}
+
+static VALUE
+ast_node_source_hash(rb_execution_context_t *ec, VALUE self, VALUE node)
+{
+    struct ASTNodeData *data;
+    TypedData_Get_Struct(node, struct ASTNodeData, &rb_node_type, data);
+
+    rb_ast_t *ast = rb_ruby_ast_data_get(data->ast_value);
+    if (!ast->body.has_source_hash) return Qnil;
+    return ULL2NUM(ast->body.source_hash);
 }
 
 extern VALUE rb_e_script;
+
+static VALUE
+iseq_compiled_by_prism_p(rb_execution_context_t *ec, VALUE self)
+{
+    return RBOOL(ISEQ_BODY(rb_iseqw_to_iseq(self))->prism);
+}
+
+static VALUE
+source_hash_of(rb_execution_context_t *ec, VALUE self, VALUE str)
+{
+    StringValue(str);
+
+    rb_source_hash_state_t state;
+    rb_source_hash_init(&state);
+    rb_source_hash_update(&state, (const uint8_t *)RSTRING_PTR(str), (size_t)RSTRING_LEN(str));
+    return ULL2NUM(rb_source_hash_finalize(&state));
+}
 
 static VALUE
 node_id_for_backtrace_location(rb_execution_context_t *ec, VALUE module, VALUE location)
@@ -220,6 +310,18 @@ node_id_for_backtrace_location(rb_execution_context_t *ec, VALUE module, VALUE l
     }
 
     return INT2NUM(node_id);
+}
+
+static VALUE
+iseq_of_backtrace_location(rb_execution_context_t *ec, VALUE module, VALUE location)
+{
+    if (!rb_frame_info_p(location)) {
+        rb_raise(rb_eTypeError, "Thread::Backtrace::Location object expected");
+    }
+
+    const rb_iseq_t *iseq = rb_get_iseq_from_frame_info(location);
+    if (!iseq) return Qnil;
+    return rb_iseqw_new(iseq);
 }
 
 static VALUE
@@ -257,7 +359,7 @@ ast_s_of(rb_execution_context_t *ec, VALUE module, VALUE body, VALUE keep_script
         rb_raise(rb_eRuntimeError, "cannot get AST for ISEQ compiled by prism");
     }
 
-    lines = ISEQ_BODY(iseq)->variable.script_lines;
+    lines = ISEQ_SCRIPT_LINES(iseq);
 
     VALUE path = rb_iseq_path(iseq);
     int e_option = RSTRING_LEN(path) == 2 && memcmp(RSTRING_PTR(path), "-e", 2) == 0;

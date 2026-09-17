@@ -318,6 +318,8 @@ RSpec.describe Bundler::Plugin do
     end
 
     it "executes the hook" do
+      skip "Ruby::Box ignores $stdout reassignment (https://bugs.ruby-lang.org/issues/21867)" if defined?(Ruby::Box) && Ruby::Box.enabled?
+
       expect do
         Plugin.hook(Bundler::Plugin::Events::EVENT1)
       end.to output("hook for event 1\n").to_stdout
@@ -331,6 +333,8 @@ RSpec.describe Bundler::Plugin do
       RUBY
 
       it "evals plugins.rb once" do
+        skip "Ruby::Box ignores $stdout reassignment (https://bugs.ruby-lang.org/issues/21867)" if defined?(Ruby::Box) && Ruby::Box.enabled?
+
         expect do
           Plugin.hook(Bundler::Plugin::Events::EVENT1)
           Plugin.hook(Bundler::Plugin::Events::EVENT2)
@@ -344,6 +348,8 @@ RSpec.describe Bundler::Plugin do
       RUBY
 
       it "is passed to the hook" do
+        skip "Ruby::Box ignores $stdout reassignment (https://bugs.ruby-lang.org/issues/21867)" if defined?(Ruby::Box) && Ruby::Box.enabled?
+
         expect do
           Plugin.hook(Bundler::Plugin::Events::EVENT1) { puts "win" }
         end.to output("win\n").to_stdout

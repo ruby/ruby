@@ -93,4 +93,8 @@ describe :array_pack_unicode, shared: true do
       [[0x10FFFF].pack("U"), Encoding::UTF_8]
     ].should be_computed_by(:encoding)
   end
+
+  it "raises a TypeError when passed nil" do
+    -> { [nil].pack("U") }.should.raise(TypeError)
+  end
 end

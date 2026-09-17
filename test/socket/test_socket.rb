@@ -127,7 +127,7 @@ class TestSocket < Test::Unit::TestCase
     rescue NotImplementedError
       return
     end
-    assert_includes list.map(&:ip_address), Addrinfo.tcp("localhost", 0).ip_address
+    assert_include list.map(&:ip_address), Addrinfo.tcp("localhost", 0).ip_address
   end
 
   def test_tcp
@@ -574,7 +574,7 @@ class TestSocket < Test::Unit::TestCase
   ensure
     serv_thread.value.close
     server.close
-  end unless RUBY_PLATFORM.include?("freebsd")
+  end
 
   def test_connect_timeout
     host = "127.0.0.1"
@@ -602,6 +602,16 @@ class TestSocket < Test::Unit::TestCase
     server.close
     accepted.close if accepted
     sock.close if sock && ! sock.closed?
+  end
+
+  def test_connect_timeout_connection_refused
+    server = TCPServer.new("127.0.0.1", 0)
+    port = server.addr[1]
+    server.close
+
+    assert_raise(Errno::ECONNREFUSED) do
+      Socket.tcp("127.0.0.1", port, connect_timeout: 5)
+    end
   end
 
   def test_getifaddrs
@@ -1019,8 +1029,7 @@ class TestSocket < Test::Unit::TestCase
 
     server.close
 
-    # SystemCallError is a workaround for Windows environment
-    assert_raise(Errno::ECONNREFUSED, SystemCallError) do
+    assert_raise(Errno::ECONNREFUSED) do
       Socket.tcp("localhost", port)
     end
     RUBY

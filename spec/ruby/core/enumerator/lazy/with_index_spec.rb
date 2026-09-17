@@ -4,6 +4,29 @@ require_relative '../../../spec_helper'
 require_relative 'fixtures/classes'
 
 describe "Enumerator::Lazy#with_index" do
+  describe "value packing of source yields" do
+    it "pairs a packed Array with the index for a multi-argument source yield" do
+      e = Enumerator.new { |y| y.yield 1, 2 }
+      args = nil
+      e.lazy.with_index.each { |*a| args = a }
+      args.should == [[[1, 2], 0]]
+    end
+
+    it "pairs nil with the index for a zero-argument source yield" do
+      e = Enumerator.new { |y| y.yield }
+      args = nil
+      e.lazy.with_index.each { |*a| args = a }
+      args.should == [[nil, 0]]
+    end
+
+    it "calls the block with the packed value and the index" do
+      e = Enumerator.new { |y| y.yield 1, 2 }
+      seen = []
+      e.lazy.with_index { |v, i| seen << [v, i] }.force
+      seen.should == [[[1, 2], 0]]
+    end
+  end
+
   it "enumerates with an index" do
     (0..Float::INFINITY).lazy.with_index.map { |i, idx| [i, idx] }.first(3).should == [[0, 0], [1, 1], [2, 2]]
   end

@@ -15,7 +15,7 @@ class Gem::Resolver::IndexSpecification < Gem::Resolver::Specification
   # The +name+, +version+ and +platform+ are the name, version and platform of
   # the gem.
 
-  def initialize(set, name, version, source, platform)
+  def initialize(set, name, version, source, platform, content_address: nil)
     super()
 
     @set = set
@@ -24,6 +24,7 @@ class Gem::Resolver::IndexSpecification < Gem::Resolver::Specification
     @source = source
     @platform = Gem::Platform.new(platform.to_s)
     @original_platform = platform.to_s
+    @content_address = content_address
 
     @spec = nil
   end
@@ -60,11 +61,12 @@ class Gem::Resolver::IndexSpecification < Gem::Resolver::Specification
     self.class === other &&
       @name == other.name &&
       @version == other.version &&
-      @platform == other.platform
+      @platform == other.platform &&
+      @content_address == other.content_address
   end
 
   def hash
-    @name.hash ^ @version.hash ^ @platform.hash
+    [@name, @version, @platform, @content_address].hash
   end
 
   def inspect # :nodoc:
@@ -93,7 +95,7 @@ class Gem::Resolver::IndexSpecification < Gem::Resolver::Specification
   def spec # :nodoc:
     @spec ||=
       begin
-        tuple = Gem::NameTuple.new @name, @version, @original_platform
+        tuple = Gem::NameTuple.new @name, @version, @original_platform, content_address: @content_address
 
         @source.fetch_spec tuple
       end

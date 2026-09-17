@@ -39,6 +39,43 @@ end
 
 platform_is_not :windows do
   describe "Process.kill" do
+    it "runs a registered signal handler immediately if called with the current process PID on the main Thread" do
+      backtrace = nil
+      old = trap(:SIGTERM) { backtrace = caller(0) }
+      begin
+        Process.kill(:SIGTERM, Process.pid)
+        backtrace.should.is_a?(Array)
+        backtrace[0].should.include?(__FILE__)
+        backtrace.join.should =~ /in ('Process[.#]kill'|`kill')/
+      ensure
+        trap(:SIGTERM, old)
+      end
+    end
+
+    it "runs a registered signal handler later on the main Thread if called with the current process PID on a non-main Thread" do
+      backtrace = nil
+      old = trap(:SIGTERM) {
+        backtrace = caller(0)
+        Thread.current.should == Thread.main
+      }
+      begin
+        # a way to detect it's a backtrace of the main thread
+        caller(0).join.should.include?("<main>")
+
+        Thread.new do
+          caller(0).join.should_not.include?("<main>")
+          Process.kill(:SIGTERM, Process.pid)
+        end.join
+
+        Thread.pass until backtrace
+        backtrace.join.should.include?("<main>") # the signal handler was run on the main thread
+      ensure
+        trap(:SIGTERM, old)
+      end
+    end
+  end
+
+  describe "Process.kill" do
     ProcessSpecs.use_system_ruby(self)
 
     before :each do

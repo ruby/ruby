@@ -56,6 +56,7 @@ RSpec.describe "LazySpecification override propagation" do
     src.define_singleton_method(:runtime_dependencies) { [] }
     src.define_singleton_method(:required_ruby_version) { Gem::Requirement.default }
     src.define_singleton_method(:required_rubygems_version) { Gem::Requirement.default }
+    src.define_singleton_method(:content_address) { nil }
     src.define_singleton_method(:respond_to?) {|*| raise "from_spec must not call respond_to?" }
     expect { Bundler::LazySpecification.from_spec(src) }.not_to raise_error
   end

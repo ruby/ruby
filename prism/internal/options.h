@@ -106,6 +106,18 @@ struct pm_options_t {
     int8_t frozen_string_literal;
 
     /*
+     * Whether or not the parser should raise an error when it encounters an
+     * error. By default this is off, but can be turned on in the case that you
+     * want nicely formatted syntax errors. The values that this can be set to
+     * are:
+     *  - 0 - do not raise an error, just return the errors in the result
+     *  - PM_ERRORS_FORMAT_PLAIN - raise a plain error with no formatting
+     *  - PM_ERRORS_FORMAT_STYLE - raise an error with bold formatting
+     *  - PM_ERRORS_FORMAT_COLOR - raise an error with color formatting
+     */
+    uint8_t raise_error;
+
+    /*
      * Whether or not the encoding magic comments should be respected. This is a
      * niche use-case where you want to parse a file with a specific encoding
      * but ignore any encoding magic comments at the top of the file.

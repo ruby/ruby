@@ -1,11 +1,6 @@
 # frozen_string_literal: true
 require 'test/unit'
 
-if RUBY_PLATFORM =~ /s390x/
-  warn "Currently, it is known that the compaction does not work well on s390x; contribution is welcome https://github.com/ruby/ruby/pull/5077"
-  return
-end
-
 class TestGCCompact < Test::Unit::TestCase
   module CompactionSupportInspector
     def supports_compact?
@@ -503,6 +498,21 @@ class TestGCCompact < Test::Unit::TestCase
 
       GC.verify_compaction_references(expand_heap: true, toward: :empty)
       assert :ok
+    RUBY
+  end
+
+  # Regression test for [Bug #22237]
+  def test_str_and_ary_ptr_references_dont_go_stale_after_compaction
+    assert_separately([], <<~'RUBY')
+      input = "aaa"
+      iterations = 20_000
+      GC.auto_compact = true
+      Object.new # increases chance of memory corruption or segfault
+
+      iterations.times do |i|
+        s = input.tr("\u0080", "\u20AC").dup
+        assert_equal input, s
+      end
     RUBY
   end
 end

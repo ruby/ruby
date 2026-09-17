@@ -40,10 +40,10 @@ update process below under [CONSERVATIVE UPDATING][].
 
 * `--cooldown=<number>`:
   Only consider gem versions published at least <number> days ago when
-  resolving. Pass `0` to disable cooldown for this run, overriding any
-  per-source or global configuration. See `cooldown` in bundle-config(1)
-  for details on the precedence between the CLI flag, Bundler config,
-  and Gemfile per-source settings.
+  resolving. Pass `0` to disable cooldown for this run, overriding every
+  other cooldown setting, RubyGems' own included. See `cooldown` in
+  bundle-config(1) for details on the precedence between the CLI flag,
+  Bundler config, Gemfile per-source settings, and the gemrc file.
 
 * `--force`, `--redownload`:
   Force reinstalling every gem, even if already installed.

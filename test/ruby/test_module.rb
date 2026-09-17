@@ -221,6 +221,83 @@ class TestModule < Test::Unit::TestCase
     assert_equal([String, Comparable, Object, Kernel, BasicObject], String.ancestors - mixins)
   end
 
+  def test_descendants
+    a = Module.new
+    b = Module.new { include a }
+    c = Class.new { include b }
+    d = Class.new(c)
+
+    order = [a, b, c, d]
+    assert_equal([b, c, d], a.descendants.sort_by {|m| order.index(m)})
+    assert_equal([c, d], b.descendants.sort_by {|m| order.index(m)})
+    assert_equal([d], c.descendants)
+    assert_equal([], d.descendants)
+
+    # prepend
+    pre = Module.new
+    e = Class.new { prepend pre }
+    assert_include(pre.descendants, e)
+
+    # diamond inclusion does not produce duplicates
+    f = Class.new { include a; include b }
+    descendants = a.descendants
+    assert_equal(descendants.uniq, descendants)
+    assert_include(descendants, f)
+
+    # include into a module propagates to existing includers
+    g = Module.new
+    h = Module.new
+    i = Class.new { include h }
+    h.include(g)
+    assert_include(g.descendants, h)
+    assert_include(g.descendants, i)
+
+    # singleton classes are excluded, even via Object#extend
+    obj = Object.new
+    obj.extend(a)
+    assert_not_include(a.descendants, obj.singleton_class)
+
+    # duality with Module#ancestors, except that the receiver is excluded
+    all = [a, b, c, d, pre, e, f, g, h, i]
+    all.each do |x|
+      dx = x.descendants
+      assert_not_include(dx, x)
+      all.each do |y|
+        next if x == y
+        assert_equal(y.ancestors.include?(x), dx.include?(y),
+                     "#{x.inspect} vs #{y.inspect}")
+      end
+    end
+  end
+
+  def test_descendants_gc
+    a = Module.new
+    Class.new { include a }
+    Module.new { include a }
+    GC.start
+    descendants = a.descendants
+    assert_not_include(descendants, a)
+    # the anonymous descendants above may or may not have been collected
+    # already; what must hold is that no dead object is returned
+    descendants.each {|m| assert_kind_of(Module, m)}
+  end
+
+  def test_descendants_refinement
+    assert_separately([], <<-"end;")
+      class Target; def t; end; end
+      module M; end
+      refinement = nil
+      Module.new do
+        refinement = refine(Target) do
+          def t2; end
+        end
+      end
+      assert_equal([], Target.descendants)
+      assert_not_include(M.descendants, Target)
+      assert_not_include(Target.descendants, refinement)
+    end;
+  end
+
   CLASS_EVAL = 2
   @@class_eval = 'b'
 

@@ -17,6 +17,15 @@ test_confstr(EtcSingletonTest)
 # NameError: uninitialized constant Etc::SC_ARG_MAX
 test_sysconf(EtcSingletonTest)
 
+# NameError: uninitialized constant Etc::Group
+test_each(EtcGroupSingletonTest)
+
+# NameError: uninitialized constant Etc::PC_PIPE_BUF
+test_pathconf(IOInstanceTest)
+
+# `Etc::Passwd.each` returns the class itself instead of an Enumerator because getpwent() is unavailable
+test_each(EtcPasswdSingletonTest)
+
 # Errno::EACCES: Permission denied @ apply2files - C:/a/_temp/d20250813-10156-udw6rx/chmod
 test_chmod(FileInstanceTest)
 test_chmod(FileInstanceTest)
@@ -70,9 +79,6 @@ test_parse_config(OpenSSLConfigSingletonTest)
 test_each(OpenSSLConfigTest)
 test_lookup_and_set(OpenSSLConfigTest)
 test_sections(OpenSSLConfigTest)
-
-# OpenSSL::SSL::SSLError: SSL_connect returned=1 errno=0 peeraddr=185.199.108.153:443 state=error: certificate verify failed (unable to get local issuer certificate)
-test_URI_open(OpenURISingletonTest)
 
 # ArgumentError: both textmode and binmode specified
 test_binwrite(PathnameInstanceTest)

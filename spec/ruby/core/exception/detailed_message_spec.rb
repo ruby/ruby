@@ -44,6 +44,11 @@ describe "Exception#detailed_message" do
     StandardError.new("").detailed_message(highlight: true).should == "\e[1;4mStandardError\e[m"
   end
 
+  it "raises an ArgumentError if exception: is not true or false" do
+    -> { StandardError.new("").detailed_message(highlight: 0) }.should.raise ArgumentError, /expected true or false/
+    -> { StandardError.new("").detailed_message(highlight: 'false') }.should.raise ArgumentError, /expected true or false/
+  end
+
   it "allows and ignores other keyword arguments" do
     RuntimeError.new("new error").detailed_message(foo: true).should == "new error (RuntimeError)"
   end

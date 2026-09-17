@@ -77,6 +77,19 @@ describe "Module#alias_method" do
     @class.make_alias "cinq", name
   end
 
+  it "raises an EncodingError for a String name containing invalid bytes" do
+    invalid_utf8 = (+"\xFF").force_encoding(Encoding::UTF_8)
+    -> {
+      @class.make_alias invalid_utf8, :public_one
+    }.should.raise(EncodingError, 'invalid symbol in encoding UTF-8 :"\xFF"')
+
+    name = Object.new
+    name.define_singleton_method(:to_str) { invalid_utf8 }
+    -> {
+      @class.make_alias name, :public_one
+    }.should.raise(EncodingError, 'invalid symbol in encoding UTF-8 :"\xFF"')
+  end
+
   it "raises a TypeError when the given name can't be converted using to_str" do
     -> { @class.make_alias mock('x'), :public_one }.should.raise(TypeError)
   end

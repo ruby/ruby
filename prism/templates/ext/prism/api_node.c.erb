@@ -34,8 +34,8 @@ pm_token_new(const pm_parser_t *parser, const pm_token_t *token, rb_encoding *en
     VALUE slice = rb_enc_str_new((const char *) token->start, token->end - token->start, encoding);
     if (freeze) rb_obj_freeze(slice);
 
-    VALUE argv[] = { source, ID2SYM(type), slice, location };
-    VALUE value = rb_class_new_instance(4, argv, rb_cPrismToken);
+    VALUE argv[] = { source, ID2SYM(type), slice, location, INT2FIX(pm_parser_lex_state(parser)) };
+    VALUE value = rb_class_new_instance(5, argv, rb_cPrismToken);
     if (freeze) rb_obj_freeze(value);
 
     return value;

@@ -45,40 +45,41 @@ mod bits {
   pub const HeapBasicObject: u64 = BasicObject & !Immediate;
   pub const HeapFloat: u64 = 1u64 << 28;
   pub const HeapObject: u64 = Object & !Immediate;
+  pub const IMemo: u64 = 1u64 << 29;
   pub const Immediate: u64 = FalseClass | Fixnum | Flonum | NilClass | StaticSymbol | TrueClass | Undef;
   pub const Integer: u64 = Bignum | Fixnum;
   pub const Module: u64 = Class | ModuleExact | ModuleSubclass;
-  pub const ModuleExact: u64 = 1u64 << 29;
-  pub const ModuleSubclass: u64 = 1u64 << 30;
-  pub const NilClass: u64 = 1u64 << 31;
+  pub const ModuleExact: u64 = 1u64 << 30;
+  pub const ModuleSubclass: u64 = 1u64 << 31;
+  pub const NilClass: u64 = 1u64 << 32;
   pub const NotNil: u64 = BasicObject & !NilClass;
   pub const NotString: u64 = BasicObject & !String;
   pub const Numeric: u64 = Float | Integer | NumericExact | NumericSubclass;
-  pub const NumericExact: u64 = 1u64 << 32;
-  pub const NumericSubclass: u64 = 1u64 << 33;
+  pub const NumericExact: u64 = 1u64 << 33;
+  pub const NumericSubclass: u64 = 1u64 << 34;
   pub const Object: u64 = Array | FalseClass | Hash | Module | NilClass | Numeric | ObjectExact | ObjectSubclass | Range | Regexp | Set | String | Symbol | TrueClass;
-  pub const ObjectExact: u64 = 1u64 << 34;
-  pub const ObjectSubclass: u64 = 1u64 << 35;
+  pub const ObjectExact: u64 = 1u64 << 35;
+  pub const ObjectSubclass: u64 = 1u64 << 36;
   pub const Range: u64 = RangeExact | RangeSubclass;
-  pub const RangeExact: u64 = 1u64 << 36;
-  pub const RangeSubclass: u64 = 1u64 << 37;
+  pub const RangeExact: u64 = 1u64 << 37;
+  pub const RangeSubclass: u64 = 1u64 << 38;
   pub const Regexp: u64 = RegexpExact | RegexpSubclass;
-  pub const RegexpExact: u64 = 1u64 << 38;
-  pub const RegexpSubclass: u64 = 1u64 << 39;
-  pub const RubyValue: u64 = BasicObject | CallableMethodEntry | Undef;
+  pub const RegexpExact: u64 = 1u64 << 39;
+  pub const RegexpSubclass: u64 = 1u64 << 40;
+  pub const RubyValue: u64 = BasicObject | CallableMethodEntry | IMemo | Undef;
   pub const Set: u64 = SetExact | SetSubclass;
-  pub const SetExact: u64 = 1u64 << 40;
-  pub const SetSubclass: u64 = 1u64 << 41;
-  pub const StaticSymbol: u64 = 1u64 << 42;
+  pub const SetExact: u64 = 1u64 << 41;
+  pub const SetSubclass: u64 = 1u64 << 42;
+  pub const StaticSymbol: u64 = 1u64 << 43;
   pub const String: u64 = StringExact | StringSubclass;
-  pub const StringExact: u64 = 1u64 << 43;
-  pub const StringSubclass: u64 = 1u64 << 44;
+  pub const StringExact: u64 = 1u64 << 44;
+  pub const StringSubclass: u64 = 1u64 << 45;
   pub const Subclass: u64 = ArraySubclass | BasicObjectSubclass | ClassSubclass | HashSubclass | ModuleSubclass | NumericSubclass | ObjectSubclass | RangeSubclass | RegexpSubclass | SetSubclass | StringSubclass;
   pub const Symbol: u64 = DynamicSymbol | StaticSymbol;
-  pub const TrueClass: u64 = 1u64 << 45;
+  pub const TrueClass: u64 = 1u64 << 46;
   pub const Truthy: u64 = BasicObject & !Falsy;
-  pub const Undef: u64 = 1u64 << 46;
-  pub const AllBitPatterns: [(&str, u64); 78] = [
+  pub const Undef: u64 = 1u64 << 47;
+  pub const AllBitPatterns: [(&str, u64); 79] = [
     ("Any", Any),
     ("RubyValue", RubyValue),
     ("Immediate", Immediate),
@@ -118,6 +119,7 @@ mod bits {
     ("Module", Module),
     ("ModuleSubclass", ModuleSubclass),
     ("ModuleExact", ModuleExact),
+    ("IMemo", IMemo),
     ("Float", Float),
     ("HeapFloat", HeapFloat),
     ("Hash", Hash),
@@ -158,7 +160,7 @@ mod bits {
     ("ArrayExact", ArrayExact),
     ("Empty", Empty),
   ];
-  pub const NumTypeBits: u64 = 47;
+  pub const NumTypeBits: u64 = 48;
 }
 pub mod types {
   use super::*;
@@ -207,6 +209,7 @@ pub mod types {
   pub const HeapBasicObject: Type = Type::from_bits(bits::HeapBasicObject);
   pub const HeapFloat: Type = Type::from_bits(bits::HeapFloat);
   pub const HeapObject: Type = Type::from_bits(bits::HeapObject);
+  pub const IMemo: Type = Type::from_bits(bits::IMemo);
   pub const Immediate: Type = Type::from_bits(bits::Immediate);
   pub const Integer: Type = Type::from_bits(bits::Integer);
   pub const Module: Type = Type::from_bits(bits::Module);

@@ -10,6 +10,9 @@
  */
 #include "internal/struct.h"    /* for RSTRUCT */
 
+#define RANGE_FL_INIT FL_USER18
+#define RANGE_FL_EXCL FL_USER19
+
 /* range.c */
 static inline VALUE RANGE_BEG(VALUE r);
 static inline VALUE RANGE_END(VALUE r);
@@ -30,7 +33,10 @@ RANGE_END(VALUE r)
 static inline VALUE
 RANGE_EXCL(VALUE r)
 {
-    return RSTRUCT_GET_RAW(r, 2);
+    if (FL_TEST_RAW(r, RANGE_FL_INIT)) {
+        return RBOOL(FL_TEST_RAW(r, RANGE_FL_EXCL));
+    }
+    return Qnil;
 }
 
 VALUE

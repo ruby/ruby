@@ -428,6 +428,12 @@ module Spec
       end
     end
 
+    # Windows has no `getconf`, and its current PATH holds the directories the
+    # Ruby under test finds its DLLs in, so keep it as is there.
+    def default_system_path
+      Gem.win_platform? ? ENV["PATH"] : `getconf PATH`.strip
+    end
+
     def with_path_as(path)
       without_env_side_effects do
         ENV["PATH"] = path.to_s

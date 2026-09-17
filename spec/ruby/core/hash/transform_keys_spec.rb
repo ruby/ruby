@@ -55,6 +55,10 @@ describe "Hash#transform_keys" do
     @hash.transform_keys({ a: :A }, &:to_s).should == { A: 1, 'b' => 2, 'c' => 3 }
   end
 
+  it "raises TypeError when the given mapping is nil" do
+    -> { @hash.transform_keys(nil) }.should.raise(TypeError)
+  end
+
   it "does not retain the default value" do
     h = Hash.new(1)
     h.transform_keys(&:succ).default.should == nil
@@ -121,6 +125,10 @@ describe "Hash#transform_keys!" do
   it "allows a hash argument" do
     @hash.transform_keys!({ a: :A, b: :B, c: :C, d: :D })
     @hash.should == { A: 1, B: 2, C: 3, D: 4 }
+  end
+
+  it "raises TypeError when the given mapping is nil" do
+    -> { @hash.transform_keys!(nil) }.should.raise(TypeError)
   end
 
   describe "on frozen instance" do

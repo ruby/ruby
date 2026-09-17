@@ -68,6 +68,44 @@ class TestGemCommandsFetchCommand < Gem::TestCase
                        "#{a2.full_name} not fetched")
   end
 
+  def test_execute_content_addressable_compact_index_gem
+    spec_fetcher {}
+    util_set_arch "x86_64-linux"
+
+    spec, _gem_path, content_address = util_setup_content_addressable_compact_index_gem(
+      "ca_fetch",
+      "1.0.0",
+      platform: "x86_64-linux"
+    )
+
+    @cmd.options[:args] = %w[ca_fetch]
+
+    execute_with_exit_code
+
+    assert_path_exist File.join(@tempdir, "ca_fetch-1.0.0-#{content_address}.gem")
+    assert_path_not_exist File.join(@tempdir, "ca_fetch-1.0.0-x86_64-linux.gem")
+    assert_equal "ca_fetch-1.0.0-#{content_address}", spec.full_name
+  end
+
+  def test_execute_platform_compact_index_gem
+    spec_fetcher {}
+    util_set_arch "x86_64-linux"
+
+    spec, gem_path = util_gem "platform_fetch", "1.0.0" do |s|
+      s.platform = "x86_64-linux"
+    end
+    util_setup_compact_index spec
+    write_marshalled_gemspecs spec
+    add_to_fetcher spec, gem_path
+    Gem::SpecFetcher.fetcher = nil
+
+    @cmd.options[:args] = %w[platform_fetch]
+
+    execute_with_exit_code
+
+    assert_path_exist File.join(@tempdir, "platform_fetch-1.0.0-x86_64-linux.gem")
+  end
+
   def test_execute_platform
     a2_spec, a2 = util_gem("a", "2")
 

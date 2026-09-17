@@ -124,6 +124,12 @@ describe "Kernel#Integer" do
     -> { Integer(infinity_value) }.should.raise(FloatDomainError)
   end
 
+  it "raises an ArgumentError if exception: is not true or false" do
+    -> { Integer(1, exception: 0) }.should.raise ArgumentError, /expected true or false/
+    -> { Integer(1, exception: nil) }.should.raise ArgumentError, /expected true or false/
+    -> { Integer(1, exception: 'false') }.should.raise ArgumentError, /expected true or false/
+  end
+
   describe "when passed exception: false" do
     describe "and to_i returns a value that is not an Integer" do
       it "swallows an error" do

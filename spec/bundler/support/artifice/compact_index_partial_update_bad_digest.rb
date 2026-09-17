@@ -21,7 +21,7 @@ class CompactIndexPartialUpdateBadDigest < CompactIndexAPI
     partial_update_bad_digest do
       file = tmp("versions.list")
       FileUtils.rm_f(file)
-      file = CompactIndex::VersionsFile.new(file.to_s)
+      file = VendoredCompactIndex::VersionsFile.new(file.to_s)
       file.create(gems)
       file.contents([], calculate_info_checksums: true)
     end
@@ -30,7 +30,7 @@ class CompactIndexPartialUpdateBadDigest < CompactIndexAPI
   get "/info/:name" do
     partial_update_bad_digest do
       gem = gems.find {|g| g.name == params[:name] }
-      CompactIndex.info(gem ? gem.versions : [])
+      VendoredCompactIndex.info(gem ? gem.versions : [])
     end
   end
 end

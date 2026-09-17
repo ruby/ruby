@@ -28,6 +28,34 @@ RSpec.describe "bundle install" do
       expect(the_bundle).to include_gems "myrack 1.0.0"
     end
 
+    it "reinstalls from the cache without going back to the remote" do
+      bundle :install
+      bundle :install, flag => true
+
+      expect(out).not_to include "Fetching gem metadata"
+      expect(the_bundle).to include_gems "myrack 1.0.0"
+    end
+
+    it "reinstalls from the cache when the lockfile carries other platforms" do
+      bundle :install
+      bundle "lock --add-platform x86_64-linux"
+      bundle :install, flag => true
+
+      expect(out).not_to include "Fetching gem metadata"
+      expect(the_bundle).to include_gems "myrack 1.0.0"
+    end
+
+    it "downloads the gem again when the cache no longer holds it" do
+      bundle :install
+      FileUtils.rm_rf(default_bundle_path("cache"))
+
+      bundle :install, flag => true
+
+      expect(out).to include "Fetching myrack 1.0.0"
+      expect(default_bundle_path("cache/myrack-1.0.0.gem")).to exist
+      expect(the_bundle).to include_gems "myrack 1.0.0"
+    end
+
     context "with a git gem" do
       let!(:ref) { build_git("foo", "1.0").ref_for("HEAD", 11) }
 

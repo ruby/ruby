@@ -5,7 +5,7 @@ require_relative "display_code_with_line_numbers"
 
 module SyntaxSuggest
   # Used for formatting invalid blocks
-  class DisplayInvalidBlocks
+  class DisplayInvalidBlocks # :nodoc:
     attr_reader :filename
 
     def initialize(code_lines:, blocks:, io: $stderr, filename: nil, terminal: DEFAULT_VALUE)
@@ -65,19 +65,6 @@ module SyntaxSuggest
 
       # Output code
       @io.puts(document)
-    end
-
-    private def code_with_context
-      lines = CaptureCodeContext.new(
-        blocks: @blocks,
-        code_lines: @code_lines
-      ).call
-
-      DisplayCodeWithLineNumbers.new(
-        lines: lines,
-        terminal: @terminal,
-        highlight_lines: @invalid_lines
-      ).call
     end
   end
 end

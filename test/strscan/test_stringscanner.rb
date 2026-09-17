@@ -231,6 +231,14 @@ module StringScannerTests
     assert_equal(8, scanner.charpos)
   end
 
+  def test_charpos_when_shrunk
+    s = "\u{e9}" * 64
+    sc = StringScanner.new(s)
+    sc.scan(/(?:\u{e9})+/)
+    s.replace("z")
+    assert_equal(s.length, sc.charpos)
+  end
+
   def test_concat
     s = create_string_scanner('a'.dup)
     s.scan(/a/)
@@ -578,6 +586,29 @@ module StringScannerTests
     assert_integer_at(s, 0, 0) # 0xaf
   end
 
+  def test_integer_at_empty
+    s = create_string_scanner("")
+    assert_equal("", s.scan(/()/))
+    assert_nil(s.integer_at(0))
+    assert_nil(s.integer_at(1))
+  end
+
+  def test_integer_at_shrunk
+    s = create_string_scanner(+"before 29 after")
+    s.skip_until(" ")
+    assert_equal("29", s.scan(/\d+/))
+    s.string.replace("before ")
+    assert_nil(s.integer_at(0))
+  end
+
+  def test_integer_at_shrunk_partial
+    s = create_string_scanner(+"before 29 after")
+    s.skip_until(" ")
+    assert_equal("29", s.scan(/\d+/))
+    s.string.replace("before 2")
+    assert_integer_at(s, 2)
+  end
+
   def test_pre_match
     s = create_string_scanner('a b c d e')
     s.scan(/\w/)
@@ -704,6 +735,27 @@ module StringScannerTests
     s.scan(/test/)
     assert_equal(4, s.matched_size)
     s.terminate
+    assert_nil(s.matched_size)
+  end
+
+  def test_matched_size_when_shrunk
+    # matched_size must agree with matched, which extract_range clamps to the
+    # current length of the stored string.
+    s = create_string_scanner(+"before 29 after")
+    s.skip_until(" ")
+    assert_equal("29", s.scan(/\d+/))
+    assert_equal(2, s.matched_size)
+
+    s.string.replace("before 2")
+    assert_equal("2", s.matched)
+    assert_equal(1, s.matched_size)
+
+    s.string.replace("before ")
+    assert_equal("", s.matched)
+    assert_equal(0, s.matched_size)
+
+    s.string.replace("before")
+    assert_nil(s.matched)
     assert_nil(s.matched_size)
   end
 

@@ -61,7 +61,7 @@ class TestZJITCLI < Test::Unit::TestCase
     # With --zjit-stats, stats should be printed to stderr
     out, err, status = eval_with_jit(script, stats: true)
     assert_success(out, err, status)
-    assert_includes(err, stats_header)
+    assert_include(err, stats_header)
     assert_equal("true\n", out)
 
     # With --zjit-stats-quiet, stats should NOT be printed but still enabled
@@ -82,12 +82,30 @@ class TestZJITCLI < Test::Unit::TestCase
       assert_equal("true\n", out)
       assert_equal stats_header, File.open(stats_file) {|f| f.gets(chomp: true)}, "should be overwritten"
     }
+
+    # With --zjit-stats=<path> ending in .json, stats should be dumped as JSON
+    Tempfile.create(["zjit-stats-", ".json"]) {|tmp|
+      stats_file = tmp.path
+      tmp.puts("Lorem ipsum dolor sit amet, consectetur adipiscing elit, ...")
+      tmp.close
+
+      out, err, status = eval_with_jit(script, stats: stats_file)
+      assert_success(out, err, status)
+      refute_includes(err, stats_header)
+      assert_equal("true\n", out)
+
+      require "json"
+      json = JSON.parse(File.read(stats_file))
+      assert_kind_of Hash, json, "should be JSON"
+      assert json.key?("compiled_iseq_count"), "should contain stats keys"
+      refute_includes File.read(stats_file), stats_header, "should not contain the text stats header"
+    }
   end
 
   def test_enable_through_env
     child_env = {'RUBY_YJIT_ENABLE' => nil, 'RUBY_ZJIT_ENABLE' => '1'}
     assert_in_out_err([child_env, '-v'], '') do |stdout, stderr|
-      assert_includes(stdout.first, '+ZJIT')
+      assert_include(stdout.first, '+ZJIT')
       assert_equal([], stderr)
     end
   end
@@ -104,7 +122,7 @@ class TestZJITCLI < Test::Unit::TestCase
 
       assert_predicate RubyVM::ZJIT, :enabled?
       refute_predicate RubyVM::ZJIT, :stats_enabled?
-      assert_includes RUBY_DESCRIPTION, "+ZJIT"
+      assert_include RUBY_DESCRIPTION, "+ZJIT"
     RUBY
   end
 
@@ -116,7 +134,7 @@ class TestZJITCLI < Test::Unit::TestCase
       RubyVM::ZJIT.enable
 
       assert_predicate RubyVM::ZJIT, :enabled?
-      assert_includes RUBY_DESCRIPTION, "+ZJIT"
+      assert_include RUBY_DESCRIPTION, "+ZJIT"
     RUBY
   end
 

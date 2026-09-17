@@ -1,3 +1,7 @@
+# Skip reloading when an identical copy (e.g. the one shipped inside the Bundler
+# gem) was already required from a different path, to avoid redefinition warnings.
+return if defined?(Gem::PubGrub::VERSION)
+
 require_relative "pub_grub/package"
 require_relative "pub_grub/static_package_source"
 require_relative "pub_grub/term"

@@ -131,6 +131,8 @@
 #define ATTRIBUTE_UNUSED
 #endif
 
+#define MAX_ENTRIES_START ((unsigned int)-1)
+
 /* The type of hashes.  */
 typedef st_index_t st_hash_t;
 
@@ -593,6 +595,13 @@ st_init_existing_table_with_size(st_table *tab, const struct st_hash_type *type,
     tab->entry_power = n;
     tab->bin_power = features[n].bin_power;
     tab->size_ind = features[n].size_ind;
+
+    /* The table may be embedded in an object the GC can already reach (T_HASH,
+       imemo_cdhash), in which case the allocation below can mark it. Empty it
+       first, marking walks entries[entries_start..entries_bound). */
+    tab->entries = NULL;
+    tab->num_entries = 0;
+    tab->entries_start = tab->entries_bound = 0;
 
     size_t memsize = get_allocated_entries(tab) * sizeof(st_table_entry);
     if (tab->entry_power > MAX_POWER2_FOR_TABLES_WITHOUT_BINS) {
@@ -1187,12 +1196,13 @@ st_get_key(st_table *tab, st_data_t key, st_data_t *result)
 
 /* Check the table and rebuild it if it is necessary.  */
 static inline void
-rebuild_table_if_necessary (st_table *tab)
+rebuild_table_if_necessary(st_table *tab)
 {
     st_index_t bound = tab->entries_bound;
 
-    if (bound == get_allocated_entries(tab))
+    if (bound == get_allocated_entries(tab) || tab->entries_start == MAX_ENTRIES_START) {
         rebuild_table(tab);
+    }
 }
 
 /* Insert (KEY, VALUE) into table TAB and return zero.  If there is
@@ -1241,6 +1251,21 @@ st_insert(st_table *tab, st_data_t key, st_data_t value)
     tab->entries[bin].record = value;
     return 1;
 }
+
+#ifdef RUBY
+/* Insert (KEY, VALUE) into table TAB like st_insert(), but return -1
+   without any change when st_insert() would rebuild the table.  The
+   insertion is guaranteed to be allocation (and GC) free when it is done. */
+int
+st_insert_no_rebuild(st_table *tab, st_data_t key, st_data_t value)
+{
+    if (tab->entries_bound == get_allocated_entries(tab)) {
+        /* st_insert() will rebuild the table */
+        return -1;
+    }
+    return st_insert(tab, key, value);
+}
+#endif
 
 /* Insert (KEY, VALUE, HASH) into table TAB.  The table should not have
    entry with KEY before the insertion.  */
@@ -1301,7 +1326,7 @@ st_insert2(st_table *tab, st_data_t key, st_data_t value,
 
     hash_value = do_hash(key, tab);
  retry:
-    rebuild_table_if_necessary (tab);
+    rebuild_table_if_necessary(tab);
     if (!st_has_bins(tab)) {
         bin = find_entry(tab, hash_value, key);
         if (EXPECT(bin == REBUILT_TABLE_ENTRY_IND, 0))
@@ -1334,9 +1359,8 @@ st_insert2(st_table *tab, st_data_t key, st_data_t value,
     return 1;
 }
 
-/* Create a copy of old_tab into new_tab. */
-st_table *
-st_replace(st_table *new_tab, st_table *old_tab)
+static st_table *
+st_replace_no_check(st_table *new_tab, st_table *old_tab)
 {
     *new_tab = *old_tab;
     size_t memsize = get_allocated_entries(old_tab) * sizeof(st_table_entry);
@@ -1352,6 +1376,15 @@ st_replace(st_table *new_tab, st_table *old_tab)
     return new_tab;
 }
 
+
+/* Create a copy of old_tab into new_tab. */
+st_table *
+st_replace(st_table *new_tab, st_table *old_tab)
+{
+    RUBY_ASSERT(new_tab->entries == NULL);
+    return st_replace_no_check(new_tab, old_tab);
+}
+
 /* Create and return a copy of table OLD_TAB.  */
 st_table *
 st_copy(st_table *old_tab)
@@ -1364,7 +1397,7 @@ st_copy(st_table *old_tab)
         return NULL;
 #endif
 
-    if (st_replace(new_tab, old_tab) == NULL) {
+    if (st_replace_no_check(new_tab, old_tab) == NULL) {
         st_free_table(new_tab);
         return NULL;
     }
@@ -1384,7 +1417,7 @@ update_range_for_deleted(st_table *tab, st_index_t n)
         st_index_t bound = tab->entries_bound;
         st_table_entry *entries = tab->entries;
         while (start < bound && DELETED_ENTRY_P(&entries[start])) start++;
-        tab->entries_start = start;
+        tab->entries_start = start > MAX_ENTRIES_START ? MAX_ENTRIES_START : (unsigned int)start;
     }
 }
 
@@ -1692,6 +1725,57 @@ st_general_foreach(st_table *tab, st_foreach_check_callback_func *func, st_updat
     }
     return 0;
 }
+
+#ifdef INTERNAL_ST_H
+int
+st_foreach_with_hash(st_table *tab, st_foreach_with_hash_callback_func *func, st_data_t arg)
+{
+    st_table_entry *entries, *curr_entry_ptr;
+    enum st_retval retval;
+    st_index_t i, rebuilds_num;
+    st_hash_t hash;
+    st_data_t key;
+    int packed_p = !st_has_bins(tab);
+
+    entries = tab->entries;
+    /* The bound can change inside the loop even without rebuilding
+       the table, e.g. by an entry insertion.  */
+    for (i = tab->entries_start; i < tab->entries_bound; i++) {
+        curr_entry_ptr = &entries[i];
+        if (EXPECT(DELETED_ENTRY_P(curr_entry_ptr), 0))
+            continue;
+        key = curr_entry_ptr->key;
+        rebuilds_num = tab->rebuilds_num;
+        hash = curr_entry_ptr->hash;
+        retval = (*func)(key, curr_entry_ptr->record, hash, arg);
+
+        if (rebuilds_num != tab->rebuilds_num) {
+        retry:
+            entries = tab->entries;
+            packed_p = !st_has_bins(tab);
+            if (packed_p) {
+                i = find_entry(tab, hash, key);
+                if (EXPECT(i == REBUILT_TABLE_ENTRY_IND, 0))
+                    goto retry;
+            }
+            else {
+                i = find_table_entry_ind(tab, hash, key);
+                if (EXPECT(i == REBUILT_TABLE_ENTRY_IND, 0))
+                    goto retry;
+                i -= ENTRY_BASE;
+            }
+            curr_entry_ptr = &entries[i];
+        }
+        switch (retval) {
+          case ST_STOP:
+            return 0;
+          default:
+            break;
+        }
+    }
+    return 0;
+}
+#endif
 
 int
 st_foreach_with_replace(st_table *tab, st_foreach_check_callback_func *func, st_update_callback_func *replace, st_data_t arg)
@@ -2989,12 +3073,13 @@ set_table_lookup(set_table *tab, st_data_t key)
 
 /* Check the table and rebuild it if it is necessary.  */
 static inline void
-set_rebuild_table_if_necessary (set_table *tab)
+set_rebuild_table_if_necessary(set_table *tab)
 {
     st_index_t bound = tab->entries_bound;
 
-    if (bound == set_get_allocated_entries(tab))
+    if (bound == set_get_allocated_entries(tab) || tab->entries_start == MAX_ENTRIES_START) {
         set_rebuild_table(tab);
+    }
 }
 
 /* Insert KEY into table TAB and return zero.  If there is
@@ -3079,7 +3164,7 @@ set_update_range_for_deleted(set_table *tab, st_index_t n)
         st_index_t bound = tab->entries_bound;
         set_table_entry *entries = tab->entries;
         while (start < bound && DELETED_ENTRY_P(&entries[start])) start++;
-        tab->entries_start = start;
+        tab->entries_start = start > MAX_ENTRIES_START ? MAX_ENTRIES_START : (unsigned int)start;
     }
 }
 

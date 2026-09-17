@@ -20,10 +20,6 @@ module Bundler
         state == :installed
       end
 
-      def enqueued?
-        state == :enqueued
-      end
-
       def enqueue_with_priority?
         state == :installable && spec.extensions.any?
       end
@@ -100,7 +96,8 @@ module Bundler
       handle_error if failed_specs.any?
       @specs
     ensure
-      worker_pool&.stop
+      @worker_pool&.stop
+      @download_worker_pool&.stop
     end
 
     private
@@ -170,17 +167,18 @@ module Bundler
       end
     end
 
+    def download_worker_pool
+      @download_worker_pool ||= Bundler::Worker.new(@size, "Gem Downloader",
+        ->(spec_install, worker_num) { do_download(spec_install, worker_num) }, response_queue: response_queue)
+    end
+
     def worker_pool
-      @worker_pool ||= Bundler::Worker.new @size, "Parallel Installer", lambda {|spec_install, worker_num|
-        case spec_install.state
-        when :enqueued
-          do_download(spec_install, worker_num)
-        when :installable
-          do_install(spec_install, worker_num)
-        else
-          spec_install
-        end
-      }
+      @worker_pool ||= Bundler::Worker.new(@size, "Parallel Installer",
+        ->(spec_install, worker_num) { do_install(spec_install, worker_num) }, response_queue: response_queue)
+    end
+
+    def response_queue
+      @response_queue ||= Thread::Queue.new
     end
 
     def do_download(spec_install, worker_num)
@@ -218,24 +216,24 @@ module Bundler
       spec_install
     end
 
-    # Dequeue a spec and save its post-install message and then enqueue the
-    # remaining specs.
-    # Some specs might've had to wait til this spec was installed to be
-    # processed so the call to `enqueue_specs` is important after every
-    # dequeue.
+    # Process one completed download or installation. Downloads can finish
+    # before their dependencies are installed, so check all downloaded specs
+    # after each completion and enqueue any that are now installable.
     def process_specs(installed_specs)
       spec = worker_pool.deq
 
       if spec.installed?
         installed_specs[spec.name] = true
-        return
       elsif spec.failed?
         return
-      elsif spec.ready_to_install?(installed_specs)
-        spec.state = :installable
       end
 
-      worker_pool.enq(spec, priority: spec.enqueue_with_priority?)
+      @specs.each do |candidate|
+        next unless candidate.ready_to_install?(installed_specs)
+
+        candidate.state = :installable
+        worker_pool.enq(candidate, priority: candidate.enqueue_with_priority?)
+      end
     end
 
     def finished_installing?
@@ -255,7 +253,15 @@ module Bundler
 
     def require_tree_for_spec(spec)
       tree = @spec_set.what_required(spec)
-      t = String.new("In #{File.basename(SharedHelpers.default_gemfile)}:\n")
+      gemfile_name = begin
+        File.basename(SharedHelpers.default_gemfile)
+      rescue GemfileNotFound
+        # This runs while reporting an install error. When no Gemfile can be
+        # located (e.g. Bundler used as a library), raising here would mask
+        # the original error, so fall back to a generic header instead.
+        "Gemfile"
+      end
+      t = String.new("In #{gemfile_name}:\n")
       tree.each_with_index do |s, depth|
         t << "  " * depth.succ << s.name
         unless tree.last == s
@@ -266,11 +272,8 @@ module Bundler
       t
     end
 
-    # Keys in the remains hash represent uninstalled gems specs.
-    # We enqueue all gem specs that do not have any dependencies.
-    # Later we call this lambda again to install specs that depended on
-    # previously installed specifications. We continue until all specs
-    # are installed.
+    # Queue every missing spec for download. `process_specs` schedules each
+    # downloaded spec for installation once its dependencies are installed.
     def enqueue_specs(installed_specs)
       @specs.each do |spec|
         if spec.installed?
@@ -279,7 +282,7 @@ module Bundler
         end
 
         spec.state = :enqueued
-        worker_pool.enq spec
+        download_worker_pool.enq spec
       end
     end
   end

@@ -73,20 +73,26 @@ describe "String#count" do
     "abcde".count("^ac-e").should == 1
   end
 
-  it "raises if the given sequences are invalid" do
+  it "raises an ArgumentError when the sequence is invalid" do
     s = "hel-[()]-lo012^"
 
     -> { s.count("h-e") }.should.raise(ArgumentError)
     -> { s.count("^h-e") }.should.raise(ArgumentError)
   end
 
-  it 'returns the number of occurrences of a multi-byte character' do
+  it "counts multibyte characters" do
     str = "\u{2605}"
     str.count(str).should == 1
     "asd#{str}zzz#{str}ggg".count(str).should == 2
   end
 
-  it "calls #to_str to convert each set arg to a String" do
+  it "respects backslash for escaping" do
+    "a-b".count("a\\-b").should == 3
+    "^".count("\\^").should == 1
+    "\\".count("\\\\").should == 1
+  end
+
+  it "tries to convert each argument to a string using to_str" do
     other_string = mock('lo')
     other_string.should_receive(:to_str).and_return("lo")
 
@@ -97,9 +103,14 @@ describe "String#count" do
     s.count(other_string, other_string2).should == s.count("o")
   end
 
-  it "raises a TypeError when a set arg can't be converted to a string" do
+  it "raises a TypeError when an argument can't be converted to a string" do
     -> { "hello world".count(100)       }.should.raise(TypeError)
     -> { "hello world".count([])        }.should.raise(TypeError)
     -> { "hello world".count(mock('x')) }.should.raise(TypeError)
+  end
+
+  it "raises an Encoding::CompatibilityError when the encodings are incompatible" do
+    -> { "hello".count("e".encode("UTF-16LE")) }.should.raise(Encoding::CompatibilityError)
+    -> { "hello".encode("UTF-16LE").count("e") }.should.raise(Encoding::CompatibilityError)
   end
 end

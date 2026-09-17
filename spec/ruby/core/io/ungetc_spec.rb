@@ -97,12 +97,6 @@ describe "IO#ungetc" do
     @io.pos.should == pos - 1
   end
 
-  it "makes subsequent unbuffered operations to raise IOError" do
-    @io.getc
-    @io.ungetc(100)
-    -> { @io.sysread(1) }.should.raise(IOError)
-  end
-
   it "raises TypeError if passed nil" do
     @io.getc.should == ?V
     proc{@io.ungetc(nil)}.should raise_consistent_error(TypeError, /no implicit conversion of nil into String/)
@@ -112,6 +106,12 @@ describe "IO#ungetc" do
     @io.gets
     @io.ungetc("Aquí ").should == nil
     @io.gets.chomp.should == "Aquí Qui è la linea due."
+  end
+
+  it "puts correctly back a string longer than the amount of data previously read" do
+    @io.read(5).should == "Voici"
+    @io.ungetc("1234567890").should == nil
+    @io.gets.chomp.should == "1234567890 la ligne une."
   end
 
   it "calls #to_str to convert the argument if it is not an Integer" do

@@ -197,6 +197,18 @@ describe "C-API Util function" do
       h.should == {:a => 7, :c => 12}
     end
 
+    it "raises an error if given hash is nil and required arguments are specified" do
+      h = nil
+      -> { @o.rb_get_kwargs(h, [:a], 1, 0) }.should.raise(ArgumentError, "missing keyword: :a")
+      h.should == nil
+    end
+
+    it "raises an error if given hash is nil and multiple required arguments are specified" do
+      h = nil
+      -> { @o.rb_get_kwargs(h, [:a, :b], 2, 0) }.should.raise(ArgumentError, "missing keywords: :a, :b")
+      h.should == nil
+    end
+
     it "does not raise an error for an optional argument not in the hash" do
       h = { :a => 7, :b => 5 }
       @o.rb_get_kwargs(h, [:b, :a, :c], 2, 1).should == [5, 7]

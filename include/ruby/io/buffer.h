@@ -21,13 +21,17 @@ RBIMPL_SYMBOL_EXPORT_BEGIN()
 // WARNING: This entire interface is experimental and may change in the future!
 #define RB_IO_BUFFER_EXPERIMENTAL 1
 
-#define RUBY_IO_BUFFER_VERSION 2
+// Version 3: IO operations use single-transfer `(offset, length)` semantics.
+#define RUBY_IO_BUFFER_VERSION 3
 
 // The `IO::Buffer` class.
 RUBY_EXTERN VALUE rb_cIOBuffer;
 
 // The operating system page size.
 RUBY_EXTERN size_t RUBY_IO_BUFFER_PAGE_SIZE;
+
+// The alignment required for file mapping offsets.
+RUBY_EXTERN size_t RUBY_IO_BUFFER_MAP_ALIGNMENT;
 
 // The default buffer size, usually a (small) multiple of the page size.
 // Can be overridden by the RUBY_IO_BUFFER_DEFAULT_SIZE environment variable.
@@ -47,11 +51,6 @@ enum rb_io_buffer_flags {
 
     // A mapped buffer that is also shared.
     RB_IO_BUFFER_SHARED = 8,
-
-    // The buffer is locked and cannot be resized.
-    // More specifically, it means we can't change the base address or size.
-    // A buffer is typically locked before a system call that uses the data.
-    RB_IO_BUFFER_LOCKED = 32,
 
     // The buffer mapping is private and will not impact other processes or the underlying file.
     RB_IO_BUFFER_PRIVATE = 64,
@@ -79,31 +78,54 @@ enum rb_io_buffer_endian {
 };
 
 VALUE rb_io_buffer_new(void *base, size_t size, enum rb_io_buffer_flags flags);
+// Create a buffer with an initial lock count of one. This is typically used
+// for temporary wrappers around borrowed memory and paired with
+// rb_io_buffer_free_locked.
+VALUE rb_io_buffer_new_locked(void *base, size_t size, enum rb_io_buffer_flags flags);
 VALUE rb_io_buffer_map(VALUE io, size_t size, rb_off_t offset, enum rb_io_buffer_flags flags);
 
+// Acquire and release a reference-counted lock on the backing allocation.
+// Every successful lock call must be paired with exactly one unlock call.
 VALUE rb_io_buffer_lock(VALUE self);
 VALUE rb_io_buffer_unlock(VALUE self);
 int rb_io_buffer_try_unlock(VALUE self);
 
 VALUE rb_io_buffer_free(VALUE self);
+// Release the buffer's only lock and immediately invalidate it. This is for
+// temporary wrappers around borrowed memory. Calls rb_bug if the lock count is
+// not exactly one.
 VALUE rb_io_buffer_free_locked(VALUE self);
 
-// Access the internal buffer and flags. Validates the pointers.
-// The points may not remain valid if the source buffer is manipulated.
+// Access the internal buffer and flags. Validates the pointers. If the returned
+// base is NULL, the returned size is always zero.
+// The pointers may not remain valid if the source buffer is manipulated.
 // Consider using rb_io_buffer_lock if needed.
 enum rb_io_buffer_flags rb_io_buffer_get_bytes(VALUE self, void **base, size_t *size);
 void rb_io_buffer_get_bytes_for_reading(VALUE self, const void **base, size_t *size);
 void rb_io_buffer_get_bytes_for_writing(VALUE self, void **base, size_t *size);
 
+// Lock the backing allocation, invoke the callback with its readable bytes,
+// and automatically unlock it when the callback returns or raises. The bytes
+// are only valid for the duration of the callback. This protects the lifetime
+// of the allocation; it does not provide synchronization for its contents.
+VALUE rb_io_buffer_locked_for_reading(VALUE self, VALUE (*callback)(const void *base, size_t size, VALUE argument), VALUE argument);
+
+// Lock the backing allocation, invoke the callback with its writable bytes,
+// and automatically unlock it when the callback returns or raises. The bytes
+// are only valid for the duration of the callback. This protects the lifetime
+// of the allocation; it does not provide synchronization for its contents.
+VALUE rb_io_buffer_locked_for_writing(VALUE self, VALUE (*callback)(void *base, size_t size, VALUE argument), VALUE argument);
+
 VALUE rb_io_buffer_transfer(VALUE self);
 void rb_io_buffer_resize(VALUE self, size_t size);
 void rb_io_buffer_clear(VALUE self, uint8_t value, size_t offset, size_t length);
 
-// The length is the minimum required length.
-VALUE rb_io_buffer_read(VALUE self, VALUE io, size_t length, size_t offset);
-VALUE rb_io_buffer_pread(VALUE self, VALUE io, rb_off_t from, size_t length, size_t offset);
-VALUE rb_io_buffer_write(VALUE self, VALUE io, size_t length, size_t offset);
-VALUE rb_io_buffer_pwrite(VALUE self, VALUE io, rb_off_t from, size_t length, size_t offset);
+// The length is the maximum transfer length. Each function performs one
+// logical IO operation and may return a short result.
+VALUE rb_io_buffer_read(VALUE self, VALUE io, size_t offset, size_t length);
+VALUE rb_io_buffer_pread(VALUE self, VALUE io, rb_off_t from, size_t offset, size_t length);
+VALUE rb_io_buffer_write(VALUE self, VALUE io, size_t offset, size_t length);
+VALUE rb_io_buffer_pwrite(VALUE self, VALUE io, rb_off_t from, size_t offset, size_t length);
 
 RBIMPL_SYMBOL_EXPORT_END()
 

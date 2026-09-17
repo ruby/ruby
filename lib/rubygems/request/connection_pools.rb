@@ -50,6 +50,9 @@ class Gem::Request::ConnectionPools # :nodoc:
   end
 
   def no_proxy?(host, env_no_proxy)
+    # A lone "*" entry bypasses the proxy for every host
+    return true if env_no_proxy.include?("*")
+
     host = host.downcase
 
     env_no_proxy.any? do |pattern|

@@ -8,12 +8,9 @@
 
 ************************************************/
 
-#include "internal/gc.h"
+#include "internal/coverage.h"
 #include "internal/hash.h"
-#include "internal/thread.h"
-#include "internal/sanitizers.h"
 #include "ruby.h"
-#include "vm_core.h"
 
 static enum {
     IDLE,
@@ -21,7 +18,27 @@ static enum {
     RUNNING
 } current_state = IDLE;
 static int current_mode;
-static VALUE me2counter = Qnil;
+static VALUE cme2counter = Qnil;
+static VALUE me_set = Qnil;
+
+/*
+ * Method coverage result template:
+ *   method_tmpl_by_path: { path => { key => me or [me, ...] } }
+ * Each peek dups the per-path template and replaces the values with the
+ * call counts.  me_set and cme2counter are append-only and iterate in
+ * insertion order, so only the entries after the ones already seen are added.
+ */
+static VALUE method_tmpl_by_path = Qnil;
+static long method_tmpl_n_me_set = 0;
+static long method_tmpl_n_cme2counter = 0;
+
+static void
+method_template_reset(void)
+{
+    method_tmpl_by_path = Qnil;
+    method_tmpl_n_me_set = 0;
+    method_tmpl_n_cme2counter = 0;
+}
 
 /*
  *  call-seq: Coverage.supported?(mode) -> true or false
@@ -41,13 +58,13 @@ rb_coverage_supported(VALUE self, VALUE _mode)
 {
     ID mode = RB_SYM2ID(_mode);
 
-    return RBOOL(
+    return (
         mode == rb_intern("lines") ||
         mode == rb_intern("oneshot_lines") ||
         mode == rb_intern("branches") ||
         mode == rb_intern("methods") ||
         mode == rb_intern("eval")
-    );
+    ) ? Qtrue : Qfalse;
 }
 
 /*
@@ -115,11 +132,14 @@ rb_coverage_setup(int argc, VALUE *argv, VALUE klass)
     }
 
     if (mode & COVERAGE_TARGET_METHODS) {
-        me2counter = rb_ident_hash_new();
+        cme2counter = rb_ident_hash_new();
+        me_set = rb_ident_hash_new();
     }
     else {
-        me2counter = Qnil;
+        cme2counter = Qnil;
+        me_set = Qnil;
     }
+    method_template_reset();
 
     coverages = rb_get_coverages();
     if (!RTEST(coverages)) {
@@ -127,7 +147,7 @@ rb_coverage_setup(int argc, VALUE *argv, VALUE klass)
         rb_obj_hide(coverages);
         current_mode = mode;
         if (mode == 0) mode = COVERAGE_TARGET_LINES;
-        rb_set_coverages(coverages, mode, me2counter);
+        rb_set_coverages(coverages, mode, cme2counter, me_set);
         current_state = SUSPENDED;
     }
     else if (current_mode != mode) {
@@ -186,11 +206,16 @@ struct branch_coverage_result_builder
     int id;
     VALUE result;
     VALUE children;
-    VALUE counters;
 };
 
+/*
+ * Branch coverage result template, cached in branches[2]:
+ *   { base_key => { target_key => counter_index } }
+ * Each peek dups it and replaces the indexes with the counters, which avoids
+ * hashing the array keys again and again.
+ */
 static int
-branch_coverage_ii(VALUE _key, VALUE branch, VALUE v)
+branch_template_ii(VALUE _key, VALUE branch, VALUE v)
 {
     struct branch_coverage_result_builder *b = (struct branch_coverage_result_builder *) v;
 
@@ -199,14 +224,16 @@ branch_coverage_ii(VALUE _key, VALUE branch, VALUE v)
     VALUE target_first_column = RARRAY_AREF(branch, 2);
     VALUE target_last_lineno = RARRAY_AREF(branch, 3);
     VALUE target_last_column = RARRAY_AREF(branch, 4);
-    long counter_idx = FIX2LONG(RARRAY_AREF(branch, 5));
-    rb_hash_aset(b->children, rb_ary_new_from_args(6, target_label, LONG2FIX(b->id++), target_first_lineno, target_first_column, target_last_lineno, target_last_column), RARRAY_AREF(b->counters, counter_idx));
+    VALUE counter_idx = RARRAY_AREF(branch, 5);
+    VALUE key = rb_ary_new_from_args(6, target_label, LONG2FIX(b->id++), target_first_lineno, target_first_column, target_last_lineno, target_last_column);
+    rb_ary_freeze(key);
+    rb_hash_aset(b->children, key, counter_idx);
 
     return ST_CONTINUE;
 }
 
 static int
-branch_coverage_i(VALUE _key, VALUE branch_base, VALUE v)
+branch_template_i(VALUE _key, VALUE branch_base, VALUE v)
 {
     struct branch_coverage_result_builder *b = (struct branch_coverage_result_builder *) v;
 
@@ -217,92 +244,211 @@ branch_coverage_i(VALUE _key, VALUE branch_base, VALUE v)
     VALUE base_last_column = RARRAY_AREF(branch_base, 4);
     VALUE branches = RARRAY_AREF(branch_base, 5);
     VALUE children = rb_hash_new();
-    rb_hash_aset(b->result, rb_ary_new_from_args(6, base_type, LONG2FIX(b->id++), base_first_lineno, base_first_column, base_last_lineno, base_last_column), children);
+    VALUE key = rb_ary_new_from_args(6, base_type, LONG2FIX(b->id++), base_first_lineno, base_first_column, base_last_lineno, base_last_column);
+    rb_ary_freeze(key);
+    rb_hash_aset(b->result, key, children);
     b->children = children;
-    rb_hash_foreach(branches, branch_coverage_ii, v);
+    rb_hash_foreach(branches, branch_template_ii, v);
 
+    return ST_CONTINUE;
+}
+
+/* returns [template, nbases, ntargets] */
+static VALUE
+branch_template(VALUE branches)
+{
+    VALUE structure = RARRAY_AREF(branches, 0);
+    VALUE counters = RARRAY_AREF(branches, 1);
+    long nbases = RHASH_SIZE(structure);
+    long ntargets = RARRAY_LEN(counters);
+    VALUE cache = RARRAY_LEN(branches) > 2 ? RARRAY_AREF(branches, 2) : Qnil;
+
+    if (!NIL_P(cache) &&
+        FIX2LONG(RARRAY_AREF(cache, 1)) == nbases &&
+        FIX2LONG(RARRAY_AREF(cache, 2)) == ntargets) {
+        return RARRAY_AREF(cache, 0);
+    }
+    else {
+        struct branch_coverage_result_builder b;
+        b.id = 0;
+        b.result = rb_hash_new();
+        rb_hash_foreach(structure, branch_template_i, (VALUE)&b);
+        cache = rb_ary_hidden_new(3);
+        rb_ary_push(cache, b.result);
+        rb_ary_push(cache, LONG2FIX(nbases));
+        rb_ary_push(cache, LONG2FIX(ntargets));
+        rb_ary_store(branches, 2, cache);
+        return b.result;
+    }
+}
+
+static int
+branch_fill_check(st_data_t key, st_data_t value, st_data_t argp, int error)
+{
+    return ST_REPLACE;
+}
+
+/* children: {target_key => counter_index} -> {target_key => counter} */
+static int
+branch_fill_counter(st_data_t *key, st_data_t *value, st_data_t argp, int existing)
+{
+    VALUE counters = (VALUE)argp;
+    *value = (st_data_t)RARRAY_AREF(counters, FIX2LONG((VALUE)*value));
+    return ST_CONTINUE;
+}
+
+struct branch_fill_arg
+{
+    VALUE result;
+    VALUE counters;
+};
+
+/* result: {base_key => children_template} -> {base_key => filled copy of children} */
+static int
+branch_fill_children(st_data_t *key, st_data_t *value, st_data_t argp, int existing)
+{
+    struct branch_fill_arg *a = (struct branch_fill_arg *)argp;
+    VALUE children = rb_hash_dup((VALUE)*value);
+    rb_hash_stlike_foreach_with_replace(children, branch_fill_check, branch_fill_counter, (st_data_t)a->counters);
+    RB_OBJ_WRITE(a->result, value, children);
     return ST_CONTINUE;
 }
 
 static VALUE
 branch_coverage(VALUE branches)
 {
-    VALUE structure = RARRAY_AREF(branches, 0);
+    struct branch_fill_arg a;
+    VALUE template = branch_template(branches);
+    a.counters = RARRAY_AREF(branches, 1);
+    a.result = rb_hash_dup(template);
+    rb_hash_stlike_foreach_with_replace(a.result, branch_fill_check, branch_fill_children, (st_data_t)&a);
+    return a.result;
+}
 
-    struct branch_coverage_result_builder b;
-    b.id = 0;
-    b.result = rb_hash_new();
-    b.counters = RARRAY_AREF(branches, 1);
+struct method_template_add_arg {
+    long skip;
+    long i;
+    int check_me_set;   /* skip the entries in me_set (they are already added) */
+};
 
-    rb_hash_foreach(structure, branch_coverage_i, (VALUE)&b);
+static void
+method_template_add(VALUE me)
+{
+    struct rb_coverage_method_data d;
+    VALUE tmpl, key, mes;
 
-    return b.result;
+    if (!rb_coverage_method_data_of(me, Qnil, &d)) return;
+
+    tmpl = rb_hash_lookup(method_tmpl_by_path, d.path);
+    if (NIL_P(tmpl)) {
+        tmpl = rb_hash_new();
+        rb_hash_aset(method_tmpl_by_path, d.path, tmpl);
+    }
+    key = rb_ary_new_from_args(6, d.owner, d.method_id,
+                               d.first_lineno, d.first_column,
+                               d.last_lineno, d.last_column);
+    rb_ary_freeze(key);
+    mes = rb_hash_lookup(tmpl, key);
+    if (NIL_P(mes)) {
+        rb_hash_aset(tmpl, key, me);
+    }
+    else if (RB_TYPE_P(mes, T_ARRAY)) {
+        rb_ary_push(mes, me);
+    }
+    else {
+        VALUE ary = rb_ary_hidden_new(2);
+        rb_ary_push(ary, mes);
+        rb_ary_push(ary, me);
+        rb_hash_aset(tmpl, key, ary);
+    }
 }
 
 static int
-method_coverage_i(void *vstart, void *vend, size_t stride, void *data)
+method_template_add_i(VALUE me, VALUE value, VALUE data)
 {
-    /*
-     * ObjectSpace.each_object(Module){|mod|
-     *   mod.instance_methods.each{|mid|
-     *     m = mod.instance_method(mid)
-     *     if loc = m.source_location
-     *       p [m.name, loc, $g_method_cov_counts[m]]
-     *     end
-     *   }
-     * }
-     */
-    VALUE ncoverages = *(VALUE*)data, v;
+    struct method_template_add_arg *arg = (struct method_template_add_arg *)data;
+    if (arg->i++ >= arg->skip) {
+        if (arg->check_me_set && RTEST(rb_hash_lookup2(me_set, me, Qfalse))) return ST_CONTINUE;
+        method_template_add(me);
+    }
+    return ST_CONTINUE;
+}
 
-    for (v = (VALUE)vstart; v != (VALUE)vend; v += stride) {
-        void *poisoned = rb_asan_poisoned_object_p(v);
-        rb_asan_unpoison_object(v, false);
+static void
+method_template_update(void)
+{
+    struct method_template_add_arg arg;
 
-        if (RB_TYPE_P(v, T_IMEMO) && imemo_type(v) == imemo_ment) {
-            const rb_method_entry_t *me = (rb_method_entry_t *) v;
-            VALUE path, first_lineno, first_column, last_lineno, last_column;
-            VALUE data[5], ncoverage, methods;
-            VALUE methods_id = ID2SYM(rb_intern("methods"));
-            VALUE klass;
-            const rb_method_entry_t *me2 = rb_resolve_me_location(me, data);
-            if (me != me2) continue;
-            klass = me->owner;
-            if (RB_TYPE_P(klass, T_ICLASS)) {
-                rb_bug("T_ICLASS");
-            }
-            path = data[0];
-            first_lineno = data[1];
-            first_column = data[2];
-            last_lineno = data[3];
-            last_column = data[4];
-            if (FIX2LONG(first_lineno) <= 0) continue;
-            ncoverage = rb_hash_aref(ncoverages, path);
-            if (NIL_P(ncoverage)) continue;
-            methods = rb_hash_aref(ncoverage, methods_id);
+    if (NIL_P(method_tmpl_by_path)) {
+        method_tmpl_by_path = rb_hash_new();
+        method_tmpl_n_me_set = 0;
+        method_tmpl_n_cme2counter = 0;
+    }
+    if (RTEST(me_set) && RHASH_SIZE(me_set) > (size_t)method_tmpl_n_me_set) {
+        arg.skip = method_tmpl_n_me_set;
+        arg.i = 0;
+        arg.check_me_set = 0;
+        rb_hash_foreach(me_set, method_template_add_i, (VALUE)&arg);
+        method_tmpl_n_me_set = arg.i;
+    }
+    if (RTEST(cme2counter) && RHASH_SIZE(cme2counter) > (size_t)method_tmpl_n_cme2counter) {
+        arg.skip = method_tmpl_n_cme2counter;
+        arg.i = 0;
+        arg.check_me_set = RTEST(me_set);
+        rb_hash_foreach(cme2counter, method_template_add_i, (VALUE)&arg);
+        method_tmpl_n_cme2counter = arg.i;
+    }
+}
 
-            {
-                VALUE method_id = ID2SYM(me->def->original_id);
-                VALUE rcount = rb_hash_aref(me2counter, (VALUE) me);
-                VALUE key = rb_ary_new_from_args(6, klass, method_id, first_lineno, first_column, last_lineno, last_column);
-                VALUE rcount2 = rb_hash_aref(methods, key);
+static int
+method_fill_check(st_data_t key, st_data_t value, st_data_t argp, int error)
+{
+    return ST_REPLACE;
+}
 
-                if (NIL_P(rcount)) rcount = LONG2FIX(0);
-                if (NIL_P(rcount2)) rcount2 = LONG2FIX(0);
-                if (!POSFIXABLE(FIX2LONG(rcount) + FIX2LONG(rcount2))) {
-                    rcount = LONG2FIX(FIXNUM_MAX);
-                }
-                else {
-                    rcount = LONG2FIX(FIX2LONG(rcount) + FIX2LONG(rcount2));
-                }
-                rb_hash_aset(methods, key, rcount);
-            }
-        }
+static long
+method_call_count(VALUE me)
+{
+    VALUE c = rb_hash_lookup2(cme2counter, me, Qnil);
+    return FIXNUM_P(c) ? FIX2LONG(c) : 0;
+}
 
-        if (poisoned) {
-            rb_asan_poison_object(v);
+/* methods: {key => me or [me, ...]} -> {key => count}, where count is the
+ * sum of the call counts of all the method entries sharing the key
+ * (methods redefined at the same location) */
+static int
+method_fill_count(st_data_t *key, st_data_t *value, st_data_t argp, int existing)
+{
+    VALUE mes = (VALUE)*value;
+    long count;
+    if (RB_TYPE_P(mes, T_ARRAY)) {
+        long i;
+        count = 0;
+        for (i = 0; i < RARRAY_LEN(mes); i++) {
+            count += method_call_count(RARRAY_AREF(mes, i));
+            if (!POSFIXABLE(count)) count = FIXNUM_MAX;
         }
     }
-    return 0;
+    else {
+        count = method_call_count(mes);
+    }
+    *value = (st_data_t)LONG2FIX(count);
+    return ST_CONTINUE;
+}
+
+static VALUE
+method_coverage(VALUE path)
+{
+    VALUE tmpl = rb_hash_lookup(method_tmpl_by_path, path);
+    VALUE methods;
+    if (NIL_P(tmpl)) {
+        methods = rb_hash_new();
+    }
+    else {
+        methods = rb_hash_dup(tmpl);
+        rb_hash_stlike_foreach_with_replace(methods, method_fill_check, method_fill_count, 0);
+    }
+    return methods;
 }
 
 static int
@@ -334,7 +480,7 @@ coverage_peek_result_i(st_data_t key, st_data_t val, st_data_t h)
         }
 
         if (current_mode & COVERAGE_TARGET_METHODS) {
-            rb_hash_aset(h, ID2SYM(rb_intern("methods")), rb_hash_new());
+            rb_hash_aset(h, ID2SYM(rb_intern("methods")), method_coverage(path));
         }
 
         coverage = h;
@@ -365,11 +511,10 @@ rb_coverage_peek_result(VALUE klass)
         rb_raise(rb_eRuntimeError, "coverage measurement is not enabled");
     }
 
-    rb_hash_foreach(coverages, coverage_peek_result_i, ncoverages);
-
     if (current_mode & COVERAGE_TARGET_METHODS) {
-        rb_objspace_each_objects(method_coverage_i, &ncoverages);
+        method_template_update();
     }
+    rb_hash_foreach(coverages, coverage_peek_result_i, ncoverages);
 
     rb_hash_freeze(ncoverages);
     return ncoverages;
@@ -377,9 +522,9 @@ rb_coverage_peek_result(VALUE klass)
 
 
 static int
-clear_me2counter_i(VALUE key, VALUE value, VALUE unused)
+clear_cme2counter_i(VALUE key, VALUE value, VALUE unused)
 {
-    rb_hash_aset(me2counter, key, INT2FIX(0));
+    rb_hash_aset(cme2counter, key, INT2FIX(0));
     return ST_CONTINUE;
 }
 
@@ -435,14 +580,18 @@ rb_coverage_result(int argc, VALUE *argv, VALUE klass)
     }
     if (clear) {
         rb_clear_coverages();
-        if (!NIL_P(me2counter)) rb_hash_foreach(me2counter, clear_me2counter_i, Qnil);
+        /* Reset call counts, but keep me_set: the set of defined methods
+         * persists across clear so that uncalled methods keep showing up. */
+        if (!NIL_P(cme2counter)) rb_hash_foreach(cme2counter, clear_cme2counter_i, Qnil);
     }
     if (stop) {
         if (current_state == RUNNING) {
             rb_coverage_suspend(klass);
         }
         rb_reset_coverages();
-        me2counter = Qnil;
+        cme2counter = Qnil;
+        me_set = Qnil;
+        method_template_reset();
         current_state = IDLE;
     }
     return ncoverages;
@@ -706,5 +855,7 @@ Init_coverage(void)
     rb_define_module_function(rb_mCoverage, "peek_result", rb_coverage_peek_result, 0);
     rb_define_module_function(rb_mCoverage, "state", rb_coverage_state, 0);
     rb_define_module_function(rb_mCoverage, "running?", rb_coverage_running, 0);
-    rb_global_variable(&me2counter);
+    rb_global_variable(&cme2counter);
+    rb_global_variable(&me_set);
+    rb_global_variable(&method_tmpl_by_path);
 }

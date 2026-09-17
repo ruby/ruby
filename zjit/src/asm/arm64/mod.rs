@@ -886,12 +886,15 @@ pub fn stlxr(cb: &mut CodeBlock, rs: A64Opnd, rt: A64Opnd, rn: A64Opnd) {
 }
 
 /// STP (signed offset) - store a pair of registers to memory
+///
+/// Unlike LDP, STP with the same source register twice is well-defined
+/// (e.g. `stp xzr, xzr` is a common way to zero 16 bytes), so the pair is
+/// not asserted to be distinct.
 pub fn stp(cb: &mut CodeBlock, rt1: A64Opnd, rt2: A64Opnd, rn: A64Opnd) {
     let bytes: [u8; 4] = match (rt1, rt2, rn) {
         (A64Opnd::Reg(rt1), A64Opnd::Reg(rt2), A64Opnd::Mem(rn)) => {
             assert!(rt1.num_bits == rt2.num_bits, "Expected source registers to be the same size");
             assert!(imm_fits_bits(rn.disp.into(), 10), "The displacement must be 10 bits or less.");
-            assert_ne!(rt1.reg_no, rt2.reg_no, "Behavior is unpredictable with pairs of the same register");
 
             RegisterPair::stp(rt1.reg_no, rt2.reg_no, rn.base_reg_no, rn.disp as i16, rt1.num_bits).into()
         },
@@ -902,12 +905,15 @@ pub fn stp(cb: &mut CodeBlock, rt1: A64Opnd, rt2: A64Opnd, rn: A64Opnd) {
 }
 
 /// STP (pre-index) - store a pair of registers to memory, update the base pointer before loading it
+///
+/// Unlike LDP, STP with the same source register twice is well-defined; see [stp].
 pub fn stp_pre(cb: &mut CodeBlock, rt1: A64Opnd, rt2: A64Opnd, rn: A64Opnd) {
     let bytes: [u8; 4] = match (rt1, rt2, rn) {
         (A64Opnd::Reg(rt1), A64Opnd::Reg(rt2), A64Opnd::Mem(rn)) => {
             assert!(rt1.num_bits == rt2.num_bits, "Expected source registers to be the same size");
             assert!(imm_fits_bits(rn.disp.into(), 10), "The displacement must be 10 bits or less.");
-            assert_ne!(rt1.reg_no, rt2.reg_no, "Behavior is unpredictable with pairs of the same register");
+            assert!( !(rn.base_reg_no != 31 && (rn.base_reg_no == rt1.reg_no || rn.base_reg_no == rt2.reg_no)),
+                "Behavior is unpredictable when storing and writing back to the same register ({})", rn.base_reg_no);
 
             RegisterPair::stp_pre(rt1.reg_no, rt2.reg_no, rn.base_reg_no, rn.disp as i16, rt1.num_bits).into()
         },
@@ -918,12 +924,15 @@ pub fn stp_pre(cb: &mut CodeBlock, rt1: A64Opnd, rt2: A64Opnd, rn: A64Opnd) {
 }
 
 /// STP (post-index) - store a pair of registers to memory, update the base pointer after loading it
+///
+/// Unlike LDP, STP with the same source register twice is well-defined; see [stp].
 pub fn stp_post(cb: &mut CodeBlock, rt1: A64Opnd, rt2: A64Opnd, rn: A64Opnd) {
     let bytes: [u8; 4] = match (rt1, rt2, rn) {
         (A64Opnd::Reg(rt1), A64Opnd::Reg(rt2), A64Opnd::Mem(rn)) => {
             assert!(rt1.num_bits == rt2.num_bits, "Expected source registers to be the same size");
             assert!(imm_fits_bits(rn.disp.into(), 10), "The displacement must be 10 bits or less.");
-            assert_ne!(rt1.reg_no, rt2.reg_no, "Behavior is unpredictable with pairs of the same register");
+            assert!( !(rn.base_reg_no != 31 && (rn.base_reg_no == rt1.reg_no || rn.base_reg_no == rt2.reg_no)),
+                "Behavior is unpredictable when storing and writing back to the same register ({})", rn.base_reg_no);
 
             RegisterPair::stp_post(rt1.reg_no, rt2.reg_no, rn.base_reg_no, rn.disp as i16, rt1.num_bits).into()
         },
@@ -1820,6 +1829,26 @@ mod tests {
         let cb = compile(|cb| stp_post(cb, X10, X11, A64Opnd::new_mem(64, X12, 208)));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: stp x10, x11, [x12], #0xd0");
         assert_snapshot!(cb.hexdump(), @"8a2d8da8");
+    }
+
+    #[test]
+    fn test_stp_pre_same_reg() {
+        // Unlike LDP, storing the same register twice is well-defined.
+        let cb = compile(|cb| stp_pre(cb, X31, X31, A64Opnd::new_mem(64, X31, -16)));
+        assert_disasm_snapshot!(cb.disasm(), @"  0x0: stp xzr, xzr, [sp, #-0x10]!");
+        assert_snapshot!(cb.hexdump(), @"ff7fbfa9");
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_stp_pre_write_back_to_source() {
+        compile(|cb| stp_pre(cb, X0, X0, A64Opnd::new_mem(64, X0, -16)));
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_stp_post_write_back_to_source() {
+        compile(|cb| stp_post(cb, X0, X0, A64Opnd::new_mem(64, X0, -16)));
     }
 
     #[test]

@@ -15,6 +15,11 @@ describe "Regexps with modifiers" do
     /\d +/x.match("abc123").to_a.should == ["123"] # Quantifiers can be separated from the expression they apply to
   end
 
+  it "ends a comment in extended syntax at a newline, even when the newline is preceded by a backslash" do
+    Regexp.new("(a) # comment \\\n(b)", Regexp::EXTENDED).match("ab").to_a.should == ["ab", "a", "b"]
+    Regexp.new("(x # comment \\\n)", Regexp::EXTENDED).match("x").to_a.should == ["x", "x"]
+  end
+
   it "supports /o (once)" do
     2.times do |i|
       /#{i}/o.should == /0/

@@ -9,7 +9,7 @@
 require "rbconfig"
 
 module Gem
-  VERSION = "4.1.0.dev"
+  VERSION = "4.1.0.beta1"
 end
 
 require_relative "rubygems/defaults"
@@ -979,6 +979,13 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   end
 
   ##
+  # The ABI scope for the currently running Ruby.
+
+  def self.ruby_abi
+    ruby_version.segments.first(2).join(".")
+  end
+
+  ##
   # A Gem::Version for the currently running RubyGems
 
   def self.rubygems_version
@@ -1136,11 +1143,22 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   end
 
   ##
-  # Find rubygems plugin files in the standard location and load them
+  # Find rubygems plugin files in the standard location and load them.
+  # At most one stub is loaded per gem: a stub in the running Ruby's ABI
+  # directory wins over a root stub of the same name, since it was
+  # installed specifically for this Ruby.
 
   def self.load_plugins
     Gem.path.each do |gem_path|
-      load_plugin_files Gem::Util.glob_files_in_dir("*#{Gem.plugin_suffix_pattern}", plugindir(gem_path))
+      abi_plugin_dir = File.join(plugindir(gem_path), ruby_abi)
+      abi_plugins = Gem::Util.glob_files_in_dir("*#{Gem.plugin_suffix_pattern}", abi_plugin_dir)
+      abi_plugin_names = abi_plugins.map {|plugin| File.basename(plugin) }
+
+      root_plugins = Gem::Util.glob_files_in_dir("*#{Gem.plugin_suffix_pattern}", plugindir(gem_path))
+      root_plugins.reject! {|plugin| abi_plugin_names.include?(File.basename(plugin)) }
+
+      load_plugin_files root_plugins
+      load_plugin_files abi_plugins
     end
   end
 
@@ -1411,6 +1429,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   MARSHAL_SPEC_DIR = "quick/Marshal.#{Gem.marshal_version}/".freeze
 
   autoload :ConfigFile,         File.expand_path("rubygems/config_file", __dir__)
+  autoload :ContentAddress,     File.expand_path("rubygems/content_address", __dir__)
   autoload :CIDetector,         File.expand_path("rubygems/ci_detector", __dir__)
   autoload :Dependency,         File.expand_path("rubygems/dependency", __dir__)
   autoload :DependencyList,     File.expand_path("rubygems/dependency_list", __dir__)
@@ -1471,4 +1490,9 @@ else
 end
 eval File.read(path), nil, file
 
+# bundler/setup has to run before error_highlight, did_you_mean and
+# syntax_suggest are loaded, so that the Gemfile controls their versions
+# ([Bug #19089]). Ruby 4.1 autoloads them ([Feature #21951]) and deletes this
+# variable while loading RubyGems, so this can go once 4.1 is the oldest
+# supported version.
 require ENV["BUNDLER_SETUP"] if ENV["BUNDLER_SETUP"] && !defined?(Bundler)

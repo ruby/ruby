@@ -141,20 +141,20 @@ PREFIXED_SYMBOL(coroutine_transfer):
 #    define PAC_FLAG 0
 #  endif
 
-  # The note section format is described by Note Section in Chapter 5
-  # of "System V Application Binary Interface, Edition 4.1".
-  .pushsection .note.gnu.property, "a"
-  .p2align 3
-  .long 0x4        /* Name size ("GNU\0") */
-  .long 0x10       /* Descriptor size */
-  .long 0x5        /* Type: NT_GNU_PROPERTY_TYPE_0 */
-  .asciz "GNU"     /* Name */
-  # Begin descriptor
-  .long 0xc0000000 /* Property type: GNU_PROPERTY_AARCH64_FEATURE_1_AND */
-  .long 0x4        /* Property size */
-  .long (BTI_FLAG|PAC_FLAG)
-  .long 0x0        /* 8-byte alignment padding */
-  # End descriptor
-  .popsection
+	# The note section format is described by Note Section in Chapter 5
+	# of "System V Application Binary Interface, Edition 4.1".
+	.pushsection .note.gnu.property, "a"
+	.p2align 3
+	.long 0x4        /* Name size ("GNU\0") */
+	.long 0x10       /* Descriptor size */
+	.long 0x5        /* Type: NT_GNU_PROPERTY_TYPE_0 */
+	.asciz "GNU"     /* Name */
+	# Begin descriptor
+	.long 0xc0000000 /* Property type: GNU_PROPERTY_AARCH64_FEATURE_1_AND */
+	.long 0x4        /* Property size */
+	.long (BTI_FLAG|PAC_FLAG)
+	.long 0x0        /* 8-byte alignment padding */
+	# End descriptor
+	.popsection
 #endif
 #endif

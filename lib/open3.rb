@@ -520,13 +520,6 @@ module Open3
     opts[[:out, :err]] = out_w
 
     popen_run(cmd, opts, [in_r, out_w], [in_w, out_r], &block)
-  ensure
-    if block
-      in_r.close
-      in_w.close
-      out_r.close
-      out_w.close
-    end
   end
   module_function :popen2e
 
@@ -534,16 +527,23 @@ module Open3
     pid = spawn(*cmd, opts)
     wait_thr = Process.detach(pid)
     child_io.each(&:close)
+    child_io = nil
     result = [*parent_io, wait_thr]
     if defined? yield
-      begin
-        return yield(*result)
-      ensure
+      yield(*result)
+    else
+      result
+    end
+  ensure
+    if result
+      if defined? yield
         parent_io.each(&:close)
         wait_thr.join
       end
+    else
+      child_io&.each(&:close)
+      parent_io.each(&:close)
     end
-    result
   end
   module_function :popen_run
   class << self
@@ -1354,7 +1354,7 @@ module Open3
     opts_base.delete :out
 
     wait_thrs = []
-    r = nil
+    r = r2 = w2 = nil
     cmds.each_with_index {|cmd, i|
       cmd_opts = opts_base.dup
       if String === cmd
@@ -1387,17 +1387,25 @@ module Open3
       w2&.close
       r = r2
     }
-    result = parent_io + [wait_thrs]
     child_io.each(&:close)
+    child_io = nil
+    result = parent_io + [wait_thrs]
     if defined? yield
-      begin
-        return yield(*result)
-      ensure
+      yield(*result)
+    else
+      result
+    end
+  ensure
+    if result
+      if defined? yield
         parent_io.each(&:close)
         wait_thrs.each(&:join)
       end
+    else
+      [r, r2, w2, *child_io, *parent_io].each do |io|
+        io&.close
+      end
     end
-    result
   end
   module_function :pipeline_run
   class << self

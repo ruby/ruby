@@ -21,17 +21,17 @@ class OpenSSL::TestNSSPI < OpenSSL::TestCase
     key2 = Fixtures.pkey("rsa-2")
     spki = OpenSSL::Netscape::SPKI.new
     spki.challenge = "RandomString"
-    spki.public_key = key1.public_key
+    spki.public_key = key1
     spki.sign(key1, OpenSSL::Digest.new('SHA256'))
-    assert(spki.verify(spki.public_key))
-    assert(spki.verify(key1.public_key))
-    assert(!spki.verify(key2.public_key))
+    assert_true(spki.verify(spki.public_key))
+    assert_true(spki.verify(OpenSSL::PKey.read(key1.public_to_der)))
+    assert_false(spki.verify(OpenSSL::PKey.read(key2.public_to_der)))
 
     der = spki.to_der
     spki = OpenSSL::Netscape::SPKI.new(der)
     assert_equal("RandomString", spki.challenge)
-    assert_equal(key1.public_key.to_der, spki.public_key.to_der)
-    assert(spki.verify(spki.public_key))
+    assert_equal(key1.public_to_der, spki.public_key.public_to_der)
+    assert_true(spki.verify(spki.public_key))
     assert_not_nil(spki.to_text)
   end
 

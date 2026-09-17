@@ -43,30 +43,27 @@ require_relative "support/shards"
 begin
   raise LoadError if File.exist?(File.expand_path("../../lib/bundler/bundler.gemspec", __dir__))
 
-  gem "simplecov_json_formatter"
   require "simplecov"
 
   SimpleCov.start do
     command_name "bundler:#{Process.pid}"
-    root File.expand_path("../bundler", __dir__)
+    root File.expand_path("..", __dir__)
     coverage_dir File.expand_path("../coverage", __dir__)
 
-    add_filter "/spec/"
-    add_filter "/test/"
-    add_filter "/lib/rubygems/"
-    add_filter "/lib/bundler/vendor/"
-    add_filter "/tool/"
-    add_filter "/tmp/"
-    add_filter ".gemspec"
+    skip "/spec/"
+    skip "/test/"
+    skip "/lib/rubygems/"
+    skip "/lib/bundler/vendor/"
+    skip "/tool/"
+    skip "/tmp/"
+    skip ".gemspec"
   end
 
   SimpleCov.print_error_status = false
-  SimpleCov.at_exit do
-    $stdout = File.open(File::NULL, "w")
-    SimpleCov.result.format!
-  ensure
-    $stdout = STDOUT
-  end
+
+  # Only merge this process result into the resultset. Parallel workers share a
+  # coverage directory, so the report is formatted once by `rake coverage:report`.
+  SimpleCov.at_exit { SimpleCov.result }
 rescue LoadError
   # SimpleCov is not installed
 end
@@ -138,6 +135,11 @@ RSpec.configure do |config|
     ENV["XDG_CONFIG_HOME"] = nil
     ENV["XDG_CACHE_HOME"] = nil
     ENV["GEMRC"] = nil
+    # Left set, these point the suite at the real OS credential store, where
+    # specs that configure a host credential would write into the developer's
+    # own keychain.
+    ENV["BUNDLE_CREDENTIAL_STORE"] = nil
+    ENV["RUBYGEMS_CREDENTIAL_STORE"] = nil
 
     # Prevent tests from modifying the user's global git config.
     # GIT_CONFIG_GLOBAL and GIT_CONFIG_NOSYSTEM are available since Git 2.32.
@@ -146,6 +148,14 @@ RSpec.configure do |config|
       ENV["GIT_CONFIG_GLOBAL"] = File.join(ENV["HOME"], ".gitconfig")
       ENV["GIT_CONFIG_NOSYSTEM"] = "1"
     end
+
+    # Prevent git commands spawned by specs (directly or through Bundler)
+    # from discovering the rubygems checkout itself when run in a directory
+    # that is not a fixture repository, e.g. a fixture whose .git has been
+    # deleted by a concurrent cleanup. Without this, repository discovery
+    # walks up into the checkout and a stray `git config` writes the fixture
+    # identity to the checkout's own (possibly worktree-shared) .git/config.
+    ENV["GIT_CEILING_DIRECTORIES"] = [Spec::Path.tmp_root.to_s, Spec::Path.source_root.to_s].uniq.join(File::PATH_SEPARATOR)
 
     # Disable git background maintenance. Since Git 2.46, commands like
     # `git commit` spawn a detached `git maintenance run --auto` process,

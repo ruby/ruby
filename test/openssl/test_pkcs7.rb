@@ -238,8 +238,6 @@ IQCJVpo1FTLZOHSc9UpjS+VKR4cg50Iz0HiPyo6hwjCrwA==
     assert_equal(@ee2_cert.serial, recip[1].serial)
     assert_equal(data, p7.decrypt(@ee2_key, @ee2_cert))
 
-    assert_equal(data, p7.decrypt(@ee1_key))
-
     assert_raise(OpenSSL::PKCS7::PKCS7Error) {
       p7.decrypt(@ca_key, @ca_cert)
     }
@@ -248,6 +246,16 @@ IQCJVpo1FTLZOHSc9UpjS+VKR4cg50Iz0HiPyo6hwjCrwA==
     assert_raise_with_message(ArgumentError, /RC2-40-CBC/) {
       OpenSSL::PKCS7.encrypt(certs, data)
     }
+  end
+
+  def test_enveloped_decrypt_key_only
+    omit_on_fips # PKCS #1 v1.5 padding
+
+    data = "aaaaa\nbbbbb\nccccc\n"
+    cipher = "AES-128-CBC"
+
+    p7 = OpenSSL::PKCS7.encrypt([@ee1_cert], data, cipher, OpenSSL::PKCS7::BINARY)
+    assert_equal(data, p7.decrypt(@ee1_key))
   end
 
   def test_enveloped_add_recipient

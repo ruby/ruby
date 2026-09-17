@@ -212,7 +212,7 @@ Note: We're only listing outstanding class updates.
       it returns when a Ractor terminates.
 
     * `Ractor#default_port` was added. Each `Ractor` has a default port,
-      which is used by `Ractor.send`, `Ractor.receive`.
+      which is used by `Ractor#send`, `Ractor.receive`.
 
     * `Ractor#close_incoming` and `Ractor#close_outgoing` were removed.
 

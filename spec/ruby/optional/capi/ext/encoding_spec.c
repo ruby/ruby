@@ -101,6 +101,10 @@ static VALUE encoding_spec_rb_enc_copy(VALUE self, VALUE dest, VALUE src) {
   return dest;
 }
 
+static VALUE encoding_spec_rb_enc_dummy_p(VALUE self, VALUE encoding) {
+  return rb_enc_dummy_p(rb_to_encoding(encoding)) ? Qtrue : Qfalse;
+}
+
 static VALUE encoding_spec_rb_enc_find(VALUE self, VALUE name) {
   return rb_str_new2(rb_enc_find(RSTRING_PTR(name))->name);
 }
@@ -362,6 +366,7 @@ void Init_encoding_spec(void) {
   rb_define_method(cls, "rb_enc_copy", encoding_spec_rb_enc_copy, 2);
   rb_define_method(cls, "rb_enc_codelen", encoding_spec_rb_enc_codelen, 2);
   rb_define_method(cls, "rb_enc_strlen", encoding_spec_rb_enc_strlen, 3);
+  rb_define_method(cls, "rb_enc_dummy_p", encoding_spec_rb_enc_dummy_p, 1);
   rb_define_method(cls, "rb_enc_find", encoding_spec_rb_enc_find, 1);
   rb_define_method(cls, "rb_enc_find_index", encoding_spec_rb_enc_find_index, 1);
   rb_define_method(cls, "rb_enc_isalnum", encoding_spec_rb_enc_isalnum, 2);

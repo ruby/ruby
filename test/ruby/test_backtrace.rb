@@ -2,6 +2,39 @@
 require 'test/unit'
 require 'tempfile'
 
+module Bug22197
+  class Parent
+    def original
+      caller_locations(0, 1).first
+    end
+  end
+
+  class Child < Parent
+    alias_method :aliased, :original
+  end
+
+  module Original
+    def original
+      caller_locations(0, 1).first
+    end
+  end
+
+  class A
+    define_method(:a, Original.instance_method(:original))
+  end
+
+  class WithClassMethod
+    def self.cm
+      caller_locations(0, 1).first
+    end
+  end
+
+  class SingletonTarget; end
+  class << SingletonTarget
+    define_method(:on_singleton, Original.instance_method(:original))
+  end
+end
+
 class TestBacktrace < Test::Unit::TestCase
   def test_exception
     bt = Fiber.new{
@@ -215,6 +248,38 @@ class TestBacktrace < Test::Unit::TestCase
     [1].group_by do
       assert_equal 'label_caller', label_caller
     end
+  end
+
+  def test_original_definition_module # [Bug #22197]
+    # An alias in a subclass reports the module where the body was defined,
+    # not the subclass where the alias was installed.
+    loc = Bug22197::Child.new.aliased
+    assert_equal 'Bug22197::Parent#original', loc.label
+    assert_match(/:in 'Bug22197::Parent#original'\z/, loc.to_s)
+
+    # define_method(UnboundMethod) reports the source module, not the target class.
+    loc = Bug22197::A.new.a
+    assert_equal 'Bug22197::Original#original', loc.label
+    assert_match(/:in 'Bug22197::Original#original'\z/, loc.to_s)
+
+    # ... including when installed on a singleton class, where the target owner
+    # would otherwise render as a phantom "SingletonTarget.original".
+    loc = Bug22197::SingletonTarget.on_singleton
+    assert_equal 'Bug22197::Original#original', loc.label
+    assert_match(/:in 'Bug22197::Original#original'\z/, loc.to_s)
+
+    # Regression guard: a plain class method keeps its own "Class.method" label
+    # rather than borrowing the lexical nesting from the iseq cref.
+    loc = Bug22197::WithClassMethod.cm
+    assert_equal 'Bug22197::WithClassMethod.cm', loc.label
+    assert_match(/:in 'Bug22197::WithClassMethod.cm'\z/, loc.to_s)
+
+    # Regression guard: a plain singleton method keeps its bare label.
+    obj = Object.new
+    def obj.singleton_m
+      caller_locations(0, 1).first
+    end
+    assert_equal 'singleton_m', obj.singleton_m.label
   end
 
   def test_caller_limit_cfunc_iseq_no_pc

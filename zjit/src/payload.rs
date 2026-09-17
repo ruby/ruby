@@ -3,7 +3,6 @@ use std::ptr::NonNull;
 use crate::codegen::IseqCallRef;
 use crate::stats::CompileError;
 use crate::{cruby::*, profile::IseqProfile, virtualmem::CodePtr};
-use crate::options::get_option;
 
 pub use crate::jit_frame::JITFrame;
 
@@ -35,14 +34,6 @@ impl IseqPayload {
             was_invalidated_for_singleton_class_creation: false,
             self_is_heap_object: false,
         }
-    }
-
-    /// Profile counts are used for compilation policy.
-    /// When we deoptimize a method that can be recompiled, we need to update the count to collect more profiles.
-    /// Otherwise, we will generate the same code that was just deoptimized.
-    pub fn reset_profiles_remaining(&mut self, insn_idx: YarvInsnIdx) {
-        let num_profiles = get_option!(num_profiles);
-        self.profile.entry_mut(insn_idx).set_profiles_remaining(num_profiles);
     }
 }
 
@@ -110,7 +101,7 @@ pub fn get_or_create_iseq_payload_ptr(iseq: IseqPtr) -> *mut IseqPayload {
     type VoidPtr = *mut c_void;
 
     unsafe {
-        let payload = rb_iseq_get_zjit_payload(iseq);
+        let payload = rb_iseq_get_jit_payload(iseq);
         if payload.is_null() {
             // Allocate a new payload with Box and transfer ownership to the GC.
             // We drop the payload with Box::from_raw when the GC frees the ISEQ and calls us.
@@ -118,7 +109,7 @@ pub fn get_or_create_iseq_payload_ptr(iseq: IseqPtr) -> *mut IseqPayload {
             // We allocate in those cases anyways.
             let new_payload = IseqPayload::new();
             let new_payload = Box::into_raw(Box::new(new_payload));
-            rb_iseq_set_zjit_payload(iseq, new_payload as VoidPtr);
+            rb_iseq_set_jit_payload(iseq, new_payload as VoidPtr);
 
             new_payload
         } else {

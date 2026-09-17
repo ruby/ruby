@@ -67,4 +67,18 @@ describe "Dir.entries" do
   it "raises a SystemCallError if called with a nonexistent directory" do
     -> { Dir.entries DirSpecs.nonexistent }.should.raise(SystemCallError)
   end
+
+  platform_is :darwin do
+    it "accepts a path in a non-UTF-8, ASCII-compatible encoding containing non-ASCII characters" do
+      dir = tmp("dir_entries_\u{3042}")
+      non_utf8_dir = dir.encode(Encoding::Windows_31J)
+
+      begin
+        mkdir_p(dir)
+        Dir.entries(non_utf8_dir).should.include?(".".encode(Encoding::Windows_31J))
+      ensure
+        rm_r dir
+      end
+    end
+  end
 end

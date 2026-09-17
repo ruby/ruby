@@ -7,9 +7,6 @@ require_relative "../command"
 # RubyGems checkout or tarball.
 
 class Gem::Commands::SetupCommand < Gem::Command
-  HISTORY_HEADER = %r{^##\s*[\d.a-zA-Z]+\s*/\s*\d{4}-\d{2}-\d{2}\s*$}
-  VERSION_MATCHER = %r{^##\s*([\d.a-zA-Z]+)\s*/\s*\d{4}-\d{2}-\d{2}\s*$}
-
   ENV_PATHS = %w[/usr/bin/env /bin/env].freeze
 
   def initialize
@@ -23,7 +20,7 @@ class Gem::Commands::SetupCommand < Gem::Command
 
     add_option "--previous-version=VERSION",
                "Previous version of RubyGems",
-               "Used for changelog processing" do |version, options|
+               "Used for the release notes link" do |version, options|
       options[:previous_version] = version
     end
 
@@ -183,12 +180,6 @@ By default, this RubyGems will install gem as:
       say
     end
 
-    if options[:previous_version].empty?
-      options[:previous_version] = Gem::VERSION.sub(/[0-9]+$/, "0")
-    end
-
-    options[:previous_version] = Gem::Version.new(options[:previous_version])
-
     show_release_notes
 
     say
@@ -318,7 +309,7 @@ By default, this RubyGems will install gem as:
        (!File.exist?(rubygems_doc_dir) ||
         File.writable?(rubygems_doc_dir))
       say "Removing old RubyGems RDoc and ri" if @verbose
-      Dir[File.join(Gem.dir, "doc", "rubygems-[0-9]*")].each do |dir|
+      Gem::Util.glob_files_in_dir("rubygems-[0-9]*", gem_doc_dir).each do |dir|
         rm_rf dir
       end
 
@@ -355,15 +346,29 @@ By default, this RubyGems will install gem as:
       loaded_from = current_default_spec.loaded_from
       File.delete(loaded_from)
 
-      # Remove previous default gem executables if they were not shadowed by a regular gem
-      FileUtils.rm_rf current_default_spec.full_gem_path if all_specs_current_version.size == 1
+      previous_specs_dir = File.dirname(loaded_from)
 
-      File.dirname(loaded_from)
+      # Remove previous default gem executables if they were not shadowed by a
+      # regular gem. They live under the same root as the previous default
+      # gemspec, which is not necessarily default_dir.
+      if all_specs_current_version.size == 1
+        previous_root = File.dirname(File.dirname(previous_specs_dir))
+        FileUtils.rm_rf File.join(previous_root, "gems", current_default_spec.full_name)
+      end
+
+      previous_specs_dir
     else
       target_specs_dir = File.join(default_dir, "specifications", "default")
       mkdir_p target_specs_dir, mode: 0o755
       target_specs_dir
     end
+
+    # Root directory that specs_dir belongs to. It may differ from default_dir
+    # when Gem.default_specifications_dir is customized to live under a
+    # different root, like Homebrew does. Executables must be extracted under
+    # the same root as the default gemspec, since that's where activation of
+    # the default gem will look for them.
+    bundler_install_dir = File.dirname(File.dirname(specs_dir))
 
     new_bundler_spec = Gem::Specification.load("bundler.gemspec")
     full_name = new_bundler_spec.full_name
@@ -372,19 +377,20 @@ By default, this RubyGems will install gem as:
     default_spec_path = File.join(specs_dir, gemspec_path)
     Gem.write_binary(default_spec_path, new_bundler_spec.to_ruby)
 
-    bundler_spec = Gem::Specification.load(default_spec_path)
-
     # Remove gemspec that was same version of vendored bundler.
     normal_gemspec = File.join(default_dir, "specifications", gemspec_path)
     if File.file? normal_gemspec
       File.delete normal_gemspec
     end
 
-    # Remove gem files that were same version of vendored bundler.
-    if File.directory? bundler_spec.gems_dir
-      Dir.entries(bundler_spec.gems_dir).
-        select {|default_gem| File.basename(default_gem) == full_name }.
-        each {|default_gem| rm_r File.join(bundler_spec.gems_dir, default_gem) }
+    # Remove gem files that were same version of vendored bundler. A regular
+    # gem lives under default_dir, which is not necessarily the same root as
+    # the default gemspec.
+    normal_gems_dir = File.join(default_dir, "gems")
+    if File.directory? normal_gems_dir
+      Dir.entries(normal_gems_dir).
+        select {|normal_gem| File.basename(normal_gem) == full_name }.
+        each {|normal_gem| rm_r File.join(normal_gems_dir, normal_gem) }
     end
 
     require_relative "../installer"
@@ -397,14 +403,14 @@ By default, this RubyGems will install gem as:
         format_executable: options[:format_executable],
         force: options[:force],
         bin_dir: bin_dir,
-        install_dir: default_dir,
+        install_dir: bundler_install_dir,
         wrappers: true
       )
-      # We need to install only executable and default spec files.
-      # lib/bundler.rb and lib/bundler/* are available under the site_ruby directory.
+      # We only need to install the executables here. The default spec was
+      # already written above, and lib/bundler.rb and lib/bundler/* are
+      # available under the site_ruby directory.
       installer.extract_bin
       installer.generate_bin
-      installer.write_default_spec
     ensure
       FileUtils.rm_f built_gem
     end
@@ -534,34 +540,16 @@ abort "#{deprecation_message}"
   end
 
   def show_release_notes
-    release_notes = File.join Dir.pwd, "CHANGELOG.md"
+    ref = Gem::VERSION.include?(".dev") ? "master" : "v#{Gem::VERSION}"
+    link = "https://github.com/ruby/rubygems/blob/#{ref}/CHANGELOG.md"
 
-    release_notes =
-      if File.exist? release_notes
-        history = File.read release_notes
-
-        history.force_encoding Encoding::UTF_8
-
-        text = history.split(HISTORY_HEADER)
-        text.shift # correct an off-by-one generated by split
-        version_lines = history.scan(HISTORY_HEADER)
-        versions = history.scan(VERSION_MATCHER).flatten.map do |x|
-          Gem::Version.new(x)
-        end
-
-        history_string = ""
-
-        until versions.length == 0 ||
-              versions.shift <= options[:previous_version] do
-          history_string += version_lines.shift + text.shift
-        end
-
-        history_string
-      else
-        "Oh-no! Unable to find release notes!"
-      end
-
-    say release_notes
+    previous = options[:previous_version].to_s.strip
+    if previous.empty? || !Gem::Version.correct?(previous) ||
+       Gem::Version.new(previous) >= Gem::Version.new(Gem::VERSION)
+      say "See #{link} for the changes."
+    else
+      say "See #{link} for the changes since #{previous}."
+    end
   end
 
   def uninstall_old_gemcutter

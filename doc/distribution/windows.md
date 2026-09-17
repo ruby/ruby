@@ -297,7 +297,7 @@ to their base names.
 
 Although no icons are distributed with the ruby source, you can use
 anything you like. You will be able to find many images by search engines.
-For example, followings are made from [Ruby logo kit]:
+For example, the following are made from [Ruby logo kit]:
 
 * Small [favicon] in the official site
 

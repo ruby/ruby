@@ -203,6 +203,58 @@ class TestBox < Test::Unit::TestCase
     assert_raise(NameError) { BOX_B }
   end
 
+  def test_autoload_dispatches_prepended_require
+    # Autoload must go through the `Kernel#require` decorations (Zeitwerk, RubyGems, etc.)
+    # of the box that registered the autoload, not `Ruby::Box#require` directly.
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      FEATURE = "/nonexistent/virtual_feature"
+      module Decor
+        def require(path)
+          if path == FEATURE
+            Object.const_set(:AutoloadedFromDecorator, Module.new)
+            return true
+          end
+          super
+        end
+      end
+      Kernel.prepend(Decor)
+      Object.autoload(:AutoloadedFromDecorator, FEATURE)
+      assert_kind_of Module, AutoloadedFromDecorator
+    end;
+  end
+
+  def test_autoload_dispatches_prepended_require_of_the_registered_box
+    # Even when the autoload is triggered from outside, it must be dispatched to the
+    # (decorated) `Kernel#require` of the box that registered the autoload.
+    # --enable=gems because Kernel.prepend in a box without RubyGems has a separate
+    # ancestry ordering problem, and assert_separately runs with --disable=gems.
+    assert_in_out_err([ENV_ENABLE_BOX, "--enable=gems"], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
+      begin;
+        box = Ruby::Box.new
+        box.eval(<<~RUBY)
+          FEATURE = "/nonexistent/box_virtual_feature"
+          module BoxDecor
+            def require(path)
+              if path == FEATURE
+                Holder.const_set(:Virtual, "decorated in \#{Ruby::Box.current.inspect}")
+                return true
+              end
+              super
+            end
+          end
+          Kernel.prepend(BoxDecor)
+          module Holder
+            autoload :Virtual, FEATURE
+          end
+        RUBY
+        puts box::Holder::Virtual
+      end;
+      assert_equal 1, output.size
+      assert_match(/\Adecorated in #<Ruby::Box:\d+,user/, output.first)
+    end
+  end
+
   def test_continuous_top_level_method_in_a_box
     setup_box
 
@@ -352,6 +404,83 @@ class TestBox < Test::Unit::TestCase
 
     assert_equal "foo 1", @box::OpenClassWithInclude.refer_foo
   end
+
+  def test_descendants_follow_ancestors_of_the_current_box
+    setup_box
+
+    @box.require_relative('box/descendants')
+
+    assert_include @box::Descendants.ext_descendants, String
+    assert_include @box::Descendants.string_descendants, @box::BoxedString
+
+    # a builtin class has its own classext per box, so the include is invisible here
+    assert_not_include String.ancestors, @box::DescendantsExt
+    assert_not_include @box::DescendantsExt.descendants, String
+
+    # a class defined outside the box shares its classext, so the include is visible here
+    assert_include TestBoxDescendantsMain.ancestors, @box::DescendantsExt
+    assert_include @box::DescendantsExt.descendants, TestBoxDescendantsMain
+
+    assert_include @box::BoxedString.ancestors, String
+    assert_include String.descendants, @box::BoxedString
+  end
+
+  def test_prepend_to_builtin_module_in_box
+    # Use --disable-gems to keep Kernel untouched in the new box, so that
+    # the prepend below is the first copy-on-write of Kernel's classext
+    assert_separately([ENV_ENABLE_BOX, '--disable-gems'], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      box = Ruby::Box.new
+      box.eval('module BoxDecor; def itself; :decorated; end; end; Kernel.prepend(BoxDecor)')
+      ancestors = box.eval('Object.ancestors')
+      assert_operator ancestors.index(box::BoxDecor), :<, ancestors.index(Kernel)
+      assert_equal :decorated, box.eval('Object.new.itself')
+      assert_not_include Object.ancestors, box::BoxDecor
+      assert_equal 42, 42.itself
+    end;
+  end
+
+  def test_marshal_round_trip_in_main_box
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      class BoxMarshalFoo
+        attr_reader :value
+        def initialize(value)
+          @value = value
+        end
+      end
+      obj = Marshal.load(Marshal.dump(BoxMarshalFoo.new(42))) # [Bug #22090]
+      assert_instance_of BoxMarshalFoo, obj
+      assert_equal 42, obj.value
+      assert_instance_of BoxMarshalFoo, Marshal.load(Marshal.dump(BoxMarshalFoo.new(1)), freeze: true)
+    end;
+  end
+
+  def test_marshal_resolves_classes_in_the_caller_user_box
+    setup_box
+
+    obj = @box.eval("class BoxMarshalBar; end; Marshal.load(Marshal.dump(BoxMarshalBar.new))")
+    assert_equal "BoxMarshalBar", obj.class.name
+
+    # a class defined only in the box is invisible from the main box
+    dump = @box.eval("Marshal.dump(BoxMarshalBar.new)")
+    assert_raise_with_message(ArgumentError, /undefined class\/module BoxMarshalBar/) do
+      Marshal.load(dump)
+    end
+  end
+
+  def test_marshal_skips_root_box_frames_in_the_caller_stack
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      class BoxMarshalBaz; end
+      # the proc runs in the root box, where BoxMarshalBaz is invisible
+      loader = Ruby::Box.root.eval("->(dump) { Marshal.load(dump) }")
+      assert_instance_of BoxMarshalBaz, loader.call(Marshal.dump(BoxMarshalBaz.new))
+    end;
+  end
+end
+
+class TestBoxDescendantsMain
 end
 
 module ProcLookupTestA
@@ -443,7 +572,9 @@ class TestBox < Test::Unit::TestCase
   def test_add_constants_in_box
     setup_box
 
-    @box.require('envutil')
+    # A new box copies the master box's $LOAD_PATH, so the tool/lib entry that
+    # tool/test/init.rb adds to the main box at boot is not visible here.
+    @box.require(File.expand_path("../../tool/lib/envutil", __dir__))
 
     String.const_set(:STR_CONST0, 999)
     assert_equal 999, String::STR_CONST0
@@ -519,6 +650,8 @@ class TestBox < Test::Unit::TestCase
     assert_raise(NameError) { String::STR_CONST2 }
     assert_raise(NameError) { String::STR_CONST3 }
     assert_raise(NameError) { Integer::INT_CONST1 }
+  ensure
+    String.__send__(:remove_const, :STR_CONST0) if String.const_defined?(:STR_CONST0, false)
   end
 
   def test_global_variables
@@ -544,7 +677,7 @@ class TestBox < Test::Unit::TestCase
     assert_equal nil, $,
 
     # used only in box
-    assert_not_include? global_variables, :$used_only_in_box
+    assert_not_include global_variables, :$used_only_in_box
     @box::UniqueGvar.write(123)
     assert_equal 123, @box::UniqueGvar.read
     assert_nil $used_only_in_box
@@ -794,14 +927,14 @@ class TestBox < Test::Unit::TestCase
     setup_box
 
     # Define a class in the box via eval
-    @box.eval("class TestClass; def hello; 'from box'; end; end")
+    @box.eval("class BoxEvalTestClass; def hello; 'from box'; end; end")
 
     # Class should be accessible in the box
-    instance = @box::TestClass.new
+    instance = @box::BoxEvalTestClass.new
     assert_equal "from box", instance.hello
 
     # Class should not be visible in main box
-    assert_raise(NameError) { TestClass }
+    assert_raise(NameError) { BoxEvalTestClass }
   end
 
   def test_eval_isolation
@@ -852,7 +985,7 @@ class TestBox < Test::Unit::TestCase
   # Tests which run always (w/o RUBY_BOX=1 globally)
 
   def test_prelude_gems_and_loaded_features
-    assert_in_out_err([ENV_ENABLE_BOX, "--enable=gems"], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
+    assert_in_out_err([ENV_ENABLE_BOX, "--enable=gems", "-W:experimental"], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
       begin;
         puts ["before:", $LOADED_FEATURES.select{ it.end_with?("/bundled_gems.rb") }&.first].join
         puts ["before:", $LOADED_FEATURES.select{ it.end_with?("/error_highlight.rb") }&.first].join
@@ -868,15 +1001,15 @@ class TestBox < Test::Unit::TestCase
       assert_match EXPERIMENTAL_WARNING_LINE_PATTERNS[0], error[0]
       assert_match EXPERIMENTAL_WARNING_LINE_PATTERNS[1], error[1]
 
-      assert_includes output.grep(/^before:/).join("\n"), '/bundled_gems.rb'
-      assert_includes output.grep(/^before:/).join("\n"), '/error_highlight.rb'
-      assert_includes output.grep(/^after:/).join("\n"), '/bundled_gems.rb'
-      assert_includes output.grep(/^after:/).join("\n"), '/error_highlight.rb'
+      assert_include output.grep(/^before:/).join("\n"), '/bundled_gems.rb'
+      refute_includes output.grep(/^before:/).join("\n"), '/error_highlight.rb'
+      assert_include output.grep(/^after:/).join("\n"), '/bundled_gems.rb'
+      assert_include output.grep(/^after:/).join("\n"), '/error_highlight.rb'
     end
   end
 
   def test_prelude_gems_and_loaded_features_with_disable_gems
-    assert_in_out_err([ENV_ENABLE_BOX, "--disable=gems"], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
+    assert_in_out_err([ENV_ENABLE_BOX, "--disable=gems", "-W:experimental"], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
       begin;
         puts ["before:", $LOADED_FEATURES.select{ it.end_with?("/bundled_gems.rb") }&.first].join
         puts ["before:", $LOADED_FEATURES.select{ it.end_with?("/error_highlight.rb") }&.first].join
@@ -894,7 +1027,7 @@ class TestBox < Test::Unit::TestCase
       refute_includes output.grep(/^before:/).join("\n"), '/bundled_gems.rb'
       refute_includes output.grep(/^before:/).join("\n"), '/error_highlight.rb'
       refute_includes output.grep(/^after:/).join("\n"), '/bundled_gems.rb'
-      assert_includes output.grep(/^after:/).join("\n"), '/error_highlight.rb'
+      assert_include output.grep(/^after:/).join("\n"), '/error_highlight.rb'
     end
   end
 
@@ -935,6 +1068,49 @@ class TestBox < Test::Unit::TestCase
       assert_not_equal result[:main], result[:root]
       assert_not_equal result[:box], result[:root]
       assert_not_equal result[:main], result[:box]
+    end
+  end
+
+  def test_bundler_setup_not_loaded_while_decorator_gems_are_autoloaded
+    with_bundler_setup_log do |env|
+      # assert_separately w/ ENV_ENABLE_BOX and --enable=gems causes timeouts on CI @ Windows
+      assert_in_out_err([env, "--enable=gems"], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
+        begin;
+          Ruby::Box.new
+          autoloaded = %i[ErrorHighlight DidYouMean SyntaxSuggest].any? {|c| Object.autoload?(c) }
+          loaded = File.readlines(ENV["BUNDLER_SETUP_LOG"], chomp: true)
+          puts loaded == (autoloaded ? [] : ["true"]) ? "ok" : "loaded in #{loaded.inspect}"
+        end;
+        assert_equal ["ok"], output
+      end
+    end
+  end
+
+  def test_bundler_setup_loaded_only_in_main_box
+    with_bundler_setup_log do |env|
+      opts = [env, "--enable=gems", "--disable=error_highlight", "--disable=did_you_mean", "--disable=syntax_suggest"]
+      assert_in_out_err(opts, "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
+        begin;
+          Ruby::Box.new
+          puts File.readlines(ENV["BUNDLER_SETUP_LOG"], chomp: true)
+        end;
+        assert_equal ["true"], output
+      end
+    end
+  end
+
+  # Runs a BUNDLER_SETUP script that records the box it was loaded in, after
+  # touching RubyGems through TOPLEVEL_BINDING as Bundler does for gemspecs.
+  def with_bundler_setup_log
+    Tempfile.create(["bundler_setup", ".rb"]) do |setup|
+      Tempfile.create(["bundler_setup_log", ".txt"]) do |log|
+        setup.puts 'eval("Gem::Specification", TOPLEVEL_BINDING.dup)'
+        setup.puts 'File.write(ENV["BUNDLER_SETUP_LOG"], "#{Ruby::Box.current.main?}\n", mode: "a")'
+        setup.close
+        log.close
+
+        yield ENV_ENABLE_BOX.merge("BUNDLER_SETUP" => setup.path, "BUNDLER_SETUP_LOG" => log.path)
+      end
     end
   end
 
@@ -1062,6 +1238,79 @@ class TestBox < Test::Unit::TestCase
     end;
   end
 
+  def test_symbol_to_proc_with_escaped_binding
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      # Regression test for [BUG] Local ep without cme/box, flags: 66660087.
+      # binding() may escape TOP env and propagate LOCAL to IFUNC frames.
+      assert_nothing_raised do
+        using Module.new {
+          refine ::Binding do
+            def eval_methods
+              ::Kernel.instance_method(:methods).bind_call(receiver)
+            end
+          end
+        }
+
+        result = binding.eval_methods.map(&:to_s)
+        assert_kind_of Array, result
+        assert result.all? { |x| x.is_a?(String) }
+      end
+    end;
+  end
+
+  def test_method_to_proc_called_from_ruby_frame
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      # Regression test for [BUG] Local ep without cme/box, flags: 77770021.
+      # An ifunc proc invoked directly from a Ruby frame (e.g. Proc#call)
+      # has no enclosing CFUNC frame, so the caller Ruby frame determines
+      # the box.
+      assert_nothing_raised do
+        method(:require).to_proc.call("English")
+      end
+      assert_equal 1, $LOADED_FEATURES.grep(/English/).size
+    end;
+  end
+
+  def test_symbol_to_proc_uses_current_box
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      box = Ruby::Box.new
+
+      normal, via_sym_proc = box.eval(<<~'RUBY')
+        class Array
+          def box_only_method
+            :ok
+          end
+        end
+
+        normal = [[1]].flat_map { |ary| ary.box_only_method }
+        via_sym_proc = [[1]].flat_map(&:box_only_method)
+        [normal, via_sym_proc]
+      RUBY
+
+      assert_equal [:ok], normal
+      assert_equal [:ok], via_sym_proc
+
+      assert_raise(NoMethodError) { [1].box_only_method }
+    end;
+  end
+
+  def test_symbol_to_proc_uses_main_box
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      class Array
+        def main_box_only_method
+          :ok
+        end
+      end
+
+      assert_equal [:ok], [[1]].flat_map { |ary| ary.main_box_only_method }
+      assert_equal [:ok], [[1]].flat_map(&:main_box_only_method)
+    end;
+  end
+
   def test_very_basic_method_calls_and_constants
     assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
     begin;
@@ -1096,8 +1345,7 @@ class TestBox < Test::Unit::TestCase
   end
 
   def test_loading_extension_libs_in_main_box_2
-    pend if /mswin|mingw/ =~ RUBY_PLATFORM # timeout on windows environments
-    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true, timeout: 60)
     begin;
       require "zlib"
       require "open3"
@@ -1144,6 +1392,40 @@ class TestBox < Test::Unit::TestCase
       end;
       assert_empty(Dir.children(tmpdir))
     end
+  end
+
+  def test_loading_extension_from_deep_path_in_user_box
+    require 'date'
+    dlext = RbConfig::CONFIG['DLEXT']
+    src = $LOADED_FEATURES.find {|f| f.end_with?("date_core.#{dlext}")}
+    omit "date_core.#{dlext} is not loaded dynamically" unless src && File.exist?(src)
+
+    require 'tmpdir'
+    require 'fileutils'
+    Dir.mktmpdir do |tmpdir|
+      # deep enough that this path flattened into a single file name exceeds NAME_MAX
+      deep = File.join(tmpdir, "d" * 90, "e" * 90, "f" * 90)
+      FileUtils.mkdir_p(deep)
+      FileUtils.cp(src, deep)
+      env = ENV_ENABLE_BOX.merge({'BOX_TEST_EXT_FEATURE'=>File.join(deep, "date_core")})
+      assert_ruby_status([env], "#{<<~"begin;"}\n#{<<~'end;'}")
+      begin;
+        require ENV['BOX_TEST_EXT_FEATURE'] or raise "already loaded"
+        raise "Date is not defined" unless defined?(Date)
+      end;
+    end
+  end
+
+  def test_extension_loading_survives_fork_in_user_box
+    omit "fork is not supported" unless Process.respond_to?(:fork)
+
+    assert_ruby_status([ENV_ENABLE_BOX], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      Ruby::Box.new.require "digest/md5"
+      pid = fork {Ruby::Box.new.require "digest/sha2"}
+      raise "extension loading failed in the child" unless Process.wait2(pid)[1].success?
+      Ruby::Box.new.require "digest/sha2"
+    end;
   end
 
   def test_root_box_iclasses_should_be_boxable
@@ -1213,6 +1495,19 @@ class TestBox < Test::Unit::TestCase
       RUBY
 
       Module.new.include?(Module.new)
+    end;
+  end
+
+  def test_method_call_in_isolated_proc_from_class_frame
+    # A TOP/CLASS local env stores its box in the SPECVAL slot (VM_ENV_BOX);
+    # Ractor.make_shareable's env copy must preserve it, or any method call
+    # inside the isolated proc dereferences a NULL box and crashes the VM.
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      module BoxIsolatedProcTest
+        PROC = Ractor.make_shareable(->(x){ x.to_s })
+      end
+      assert_equal "42", BoxIsolatedProcTest::PROC.call(42)
     end;
   end
 end

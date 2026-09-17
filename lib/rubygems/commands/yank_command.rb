@@ -25,7 +25,7 @@ data you will need to change them immediately and yank your gem.
   end
 
   def usage # :nodoc:
-    "#{program_name} -v VERSION [-p PLATFORM] [--key KEY_NAME] [--host HOST] GEM"
+    "#{program_name} -v VERSION [-p PLATFORM] [--ruby-abi RUBY_ABI] [--key KEY_NAME] [--host HOST] GEM"
   end
 
   def initialize
@@ -33,6 +33,7 @@ data you will need to change them immediately and yank your gem.
 
     add_version_option("remove")
     add_platform_option("remove")
+    add_ruby_abi_option("remove")
     add_otp_option
 
     add_option("--host HOST",
@@ -50,20 +51,21 @@ data you will need to change them immediately and yank your gem.
 
     sign_in @host, scope: get_yank_scope
 
-    version   = get_version_from_requirements(options[:version])
-    platform  = get_platform_from_requirements(options)
+    version  = get_version_from_requirements(options[:version])
+    platform = get_platform_from_requirements(options)
+    ruby_abi = options[:ruby_abi]
 
     if version
-      yank_gem(version, platform)
+      yank_gem(version, platform, ruby_abi)
     else
       say "A version argument is required: #{usage}"
       terminate_interaction
     end
   end
 
-  def yank_gem(version, platform)
+  def yank_gem(version, platform, ruby_abi)
     say "Yanking gem from #{host}..."
-    args = [:delete, version, platform, "api/v1/gems/yank"]
+    args = [:delete, version, platform, ruby_abi, "api/v1/gems/yank"]
     response = yank_api_request(*args)
 
     say response.body
@@ -71,7 +73,7 @@ data you will need to change them immediately and yank your gem.
 
   private
 
-  def yank_api_request(method, version, platform, api)
+  def yank_api_request(method, version, platform, ruby_abi, api)
     name = get_one_gem_name
     response = rubygems_api_request(method, api, host, scope: get_yank_scope) do |request|
       request.add_field("Authorization", api_key)
@@ -81,6 +83,7 @@ data you will need to change them immediately and yank your gem.
         "version" => version,
       }
       data["platform"] = platform if platform
+      data["ruby_abi"] = ruby_abi if ruby_abi
 
       request.set_form_data data
     end

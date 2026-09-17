@@ -12,6 +12,7 @@
 #include "ruby/intern.h"        /* for rb_blocking_function_t */
 #include "ccan/list/list.h"     /* for list in rb_io_close_wait_list */
 
+struct rb_execution_context_struct; /* in vm_core.h */
 struct rb_thread_struct;        /* in vm_core.h */
 struct rb_io;
 
@@ -22,15 +23,6 @@ struct rb_io;
         SET_MACHINE_STACK_END(&(th)->ec->machine.stack_end);	\
     } while (0)
 
-/* thread.c */
-#define COVERAGE_INDEX_LINES    0
-#define COVERAGE_INDEX_BRANCHES 1
-#define COVERAGE_TARGET_LINES    1
-#define COVERAGE_TARGET_BRANCHES 2
-#define COVERAGE_TARGET_METHODS  4
-#define COVERAGE_TARGET_ONESHOT_LINES 8
-#define COVERAGE_TARGET_EVAL 16
-
 #define RUBY_FATAL_THREAD_KILLED INT2FIX(0)
 #define RUBY_FATAL_THREAD_TERMINATED INT2FIX(1)
 #define RUBY_FATAL_FIBER_KILLED RB_INT2FIX(2)
@@ -38,9 +30,6 @@ struct rb_io;
 VALUE rb_obj_is_mutex(VALUE obj);
 VALUE rb_suppress_tracing(VALUE (*func)(VALUE), VALUE arg);
 void rb_thread_execute_interrupts(VALUE th);
-VALUE rb_get_coverages(void);
-int rb_get_coverage_mode(void);
-VALUE rb_default_coverage(int);
 VALUE rb_thread_shield_new(void);
 bool rb_thread_shield_owned(VALUE self);
 VALUE rb_thread_shield_wait(VALUE self);
@@ -65,6 +54,9 @@ void rb_thread_io_close_wait(struct rb_io *);
 void rb_ec_check_ints(struct rb_execution_context_struct *ec);
 
 void rb_thread_free_native_thread(void *th_ptr);
+
+bool rb_thread_event_hooks_registered_p(void); /* thread_pthread.c */
+void rb_thread_free_body(void *th);            /* vm.c */
 
 RUBY_SYMBOL_EXPORT_BEGIN
 
@@ -108,5 +100,9 @@ void rb_ractor_interrupt_exec(struct rb_ractor_struct *target_r,
                               rb_interrupt_exec_func_t *func, void *data, enum rb_interrupt_exec_flag flags);
 
 void rb_threadptr_interrupt_exec_task_mark(struct rb_thread_struct *th);
+
+/* Mark the roots of the heap objects a thread owns, excluding ec and fiber.  Used by
+ * thread_mark and by the Ractor's local-root marking (rb_ractor_mark_local_roots). */
+void rb_thread_mark_owned_roots(struct rb_thread_struct *th);
 
 #endif /* INTERNAL_THREAD_H */

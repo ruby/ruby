@@ -298,8 +298,7 @@ impl Assembler {
                     };
                     asm.push_insn(insn);
                 },
-                Insn::CCall { data } => {
-                    assert!(data.opnds.len() <= C_ARG_OPNDS.len());
+                Insn::CCall { .. } => {
                     // CCall argument setup is handled by handle_caller_saved_regs.
                     asm.push_insn(insn);
                 },
@@ -384,6 +383,20 @@ impl Assembler {
                     })
                 }
                 _ => opnd,
+            }
+        }
+
+        /// Lower a CPushPair operand into something push can encode: a register,
+        /// a register-based memory operand, or a zero immediate. Anything else
+        /// is loaded into scratch_opnd.
+        fn split_push_operand(asm: &mut Assembler, opnd: Opnd, scratch_opnd: Opnd) -> Opnd {
+            match opnd {
+                Opnd::Reg(_) | Opnd::UImm(0) | Opnd::Imm(0) => opnd,
+                Opnd::Mem(_) => split_stack_membase(asm, opnd, scratch_opnd),
+                _ => {
+                    asm.load_into(scratch_opnd, opnd);
+                    scratch_opnd
+                }
             }
         }
 
@@ -658,6 +671,13 @@ impl Assembler {
                     };
                     asm.store(dest, src);
                 }
+                Insn::CPushPair(opnd0, opnd1) => {
+                    if let Some(opnd0) = opnd0 {
+                        *opnd0 = split_push_operand(asm, *opnd0, SCRATCH0_OPND);
+                    }
+                    *opnd1 = split_push_operand(asm, *opnd1, SCRATCH1_OPND);
+                    asm.push_insn(insn);
+                }
                 &mut Insn::PatchPoint(ref data) => {
                     split_patch_point(asm, &data.target, data.invariant, data.version);
                 }
@@ -742,6 +762,16 @@ impl Assembler {
             // The pointer immediate is encoded as the last part of the mov written out
             let ptr_offset = cb.get_write_ptr().sub_bytes(SIZEOF_VALUE);
             gc_offsets.push(ptr_offset);
+        }
+
+        /// Fill nops until a jump written at `last_patch_pos` can no longer reach
+        /// past the current write position.
+        fn emit_pad_after_patch_point(cb: &mut CodeBlock, last_patch_pos: Option<usize>) {
+            let Some(last_patch_pos) = last_patch_pos else { return };
+            let code_size = cb.get_write_pos().saturating_sub(last_patch_pos);
+            if code_size < cb.jmp_ptr_bytes() {
+                nop(cb, (cb.jmp_ptr_bytes() - code_size) as u32);
+            }
         }
 
         // List of GC offsets
@@ -905,7 +935,12 @@ impl Assembler {
                     push(cb, opnd.into());
                 },
                 Insn::CPushPair(opnd0, opnd1) => {
-                    push(cb, opnd0.into());
+                    match opnd0 {
+                        Some(opnd0) => push(cb, opnd0.into()),
+                        // With no first operand, push 0 to keep the pair-sized
+                        // area, consistent with survivor padding.
+                        None => push(cb, uimm_opnd(0)),
+                    }
                     push(cb, opnd1.into());
                 },
                 Insn::CPop { out } => {
@@ -1059,16 +1094,17 @@ impl Assembler {
 
                 Insn::Joz(..) | Insn::Jonz(..) => unreachable!("Joz/Jonz should be unused for now"),
 
-                Insn::PatchPoint(..) => unreachable!("PatchPoint should have been lowered to PadPatchPoint in x86_scratch_split"),
-                Insn::PadPatchPoint => {
-                    // If patch points are too close to each other or the end of the block, fill nop instructions
-                    if let Some(last_patch_pos) = last_patch_pos {
-                        let code_size = cb.get_write_pos().saturating_sub(last_patch_pos);
-                        if code_size < cb.jmp_ptr_bytes() {
-                            nop(cb, (cb.jmp_ptr_bytes() - code_size) as u32);
-                        }
-                    }
+                Insn::PatchPoint(..) => unreachable!("PatchPoint should have been lowered to PatchPointPad in x86_scratch_split"),
+                Insn::PatchPointPad => {
+                    emit_pad_after_patch_point(cb, last_patch_pos);
+                    // This position is itself where a jump gets written on invalidation, so it
+                    // becomes what following code has to keep its distance from.
                     last_patch_pos = Some(cb.get_write_pos());
+                },
+                Insn::BoundaryPad => {
+                    // A boundary is never patched, so it doesn't become a position to keep away
+                    // from. The last patch point stays that, and the pad just gave it its room.
+                    emit_pad_after_patch_point(cb, last_patch_pos);
                 },
 
                 // Atomically increment a counter at a given memory location
@@ -1132,6 +1168,7 @@ impl Assembler {
     pub fn compile_with_regs(self, cb: &mut CodeBlock, regs: Vec<Reg>) -> Result<(CodePtr, Vec<CodePtr>), CompileError> {
         // The backend is allowed to use scratch registers only if it has not accepted them so far.
         let use_scratch_regs = !self.accept_scratch_reg;
+        let mut regs = RegPool::new(regs);
         asm_dump!(self, init);
 
         let mut asm = trace_compile_phase("split", || self.x86_split());
@@ -1142,7 +1179,7 @@ impl Assembler {
             trace_compile_phase("number_instructions", || asm.number_instructions(0));
 
             let live_in = trace_compile_phase("analyze_liveness", || asm.analyze_liveness());
-            let intervals = trace_compile_phase("build_intervals", || asm.build_intervals(live_in));
+            let mut intervals = trace_compile_phase("build_intervals", || asm.build_intervals(live_in));
 
             // Dump live intervals if requested
             if let Some(crate::options::Options { dump_lir: Some(dump_lirs), .. }) = unsafe { crate::options::OPTIONS.as_ref() } {
@@ -1151,11 +1188,11 @@ impl Assembler {
                 }
             }
 
-            let preferred_registers = trace_compile_phase("preferred_registers", || asm.preferred_register_assignments(&intervals));
-            let (assignments, num_stack_slots) = trace_compile_phase("linear_scan", || asm.linear_scan(intervals.clone(), regs.len(), &preferred_registers));
+            trace_compile_phase("preferred_registers", || asm.preferred_register_assignments(&mut intervals, &mut regs));
+            let num_stack_slots = trace_compile_phase("linear_scan", || asm.linear_scan(&intervals, &regs));
 
             asm.stack_state.num_spill_slots = num_stack_slots;
-            asm.stack_state.num_side_exit_stack_map_slots = asm.side_exit_stack_map_slots(&assignments);
+            asm.stack_state.num_side_exit_stack_map_slots = asm.side_exit_stack_map_slots(&intervals);
             let stack_slot_count = asm.stack_state.stack_slot_count();
             if stack_slot_count > Self::MAX_FRAME_STACK_SLOTS {
                 return Err(CompileError::NativeStackTooLarge);
@@ -1167,15 +1204,13 @@ impl Assembler {
                     println!("LIR live_intervals:\n{}", crate::backend::lir::debug_intervals(&asm, &intervals));
 
                     println!("VReg assignments:");
-                    for (i, alloc) in assignments.iter().enumerate() {
-                        if let Some(alloc) = alloc {
-                            let range = &intervals[i].range;
+                    for (i, interval) in intervals.iter().enumerate() {
+                        if let Some(alloc) = interval.assigned.get() {
                             let alloc_str = match alloc {
-                                Allocation::Reg(n) => format!("{}", regs[*n]),
-                                Allocation::Fixed(reg) => format!("{}", reg),
+                                Allocation::Reg(n) => format!("{}", regs.reg_at(n)),
                                 Allocation::Stack(n) => format!("Stack[{}]", n),
                             };
-                            println!("  v{} => {} (range: {:?}..{:?})", i, alloc_str, range.start, range.end);
+                            println!("  v{} => {} (ranges: {})", i, alloc_str, interval.ranges_string());
                         }
                     }
                 }
@@ -1194,8 +1229,8 @@ impl Assembler {
             });
 
             trace_compile_phase("resolve_ssa", || {
-                asm.handle_caller_saved_regs(&intervals, &assignments, &C_ARG_REGREGS);
-                asm.resolve_ssa(&intervals, &assignments);
+                asm.handle_caller_saved_regs(&intervals, &regs, &C_ARG_REGREGS);
+                asm.resolve_ssa(&intervals, &regs);
             });
 
             Ok(())
@@ -1375,6 +1410,56 @@ mod tests {
         {
             assert!(lines.iter().any(|line| line.starts_with("movabs ")), "{kind:?} {case}: expected movabs materialization for 64-bit immediate, got {lines:?}");
         }
+    }
+
+    #[test]
+    fn test_fallthrough_to_a_patchpoint() {
+        // At one point, this generated unnecessary nop padding
+        use crate::cruby::test_utils::{compile_to_iseq, with_rubyvm};
+        use crate::hir::Invariant;
+        use crate::payload::IseqVersion;
+
+        let version = IseqVersion::new(compile_to_iseq("nil"));
+
+        // The PosMarker that split_patch_point() installs registers the patch point
+        // with ZJITState's invariant table while emitting, so the VM has to be booted.
+        let cb = with_rubyvm(|| {
+            crate::options::rb_zjit_prepare_options(); // Allow `get_option!` in Assembler
+            let mut asm = Assembler::new();
+            let mut cb = CodeBlock::new_dummy();
+
+            let bb0 = asm.new_block(crate::hir::BlockId(0), true, 0);
+            let bb1 = asm.new_block(crate::hir::BlockId(1), false, 1);
+
+            // The patch point's target only has to resolve to some address for the
+            // PosMarker that records it, so bb0 stands in for the side exit code.
+            let side_exit = asm.new_label("side_exit");
+
+            // bb0 falls through to bb1
+            asm.set_current_block(bb0);
+            let label_bb0 = asm.new_label("bb0");
+            asm.write_label(label_bb0);
+            asm.write_label(side_exit.clone());
+            asm.mov(C_ARG_OPNDS[0], Opnd::UImm(1));
+            asm.push_insn(Insn::Jmp(Target::Block(Box::new(BranchEdge { target: bb1, args: vec![] }))));
+
+            asm.set_current_block(bb1);
+            let label_bb1 = asm.new_label("bb1");
+            asm.write_label(label_bb1);
+            asm.patch_point(side_exit.clone(), Invariant::SingleRactorMode, version);
+            asm.cret(C_ARG_OPNDS[0]);
+
+            asm.compile_with_num_regs(&mut cb, 0);
+            cb
+        });
+
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: mov edi, 1
+        0x5: mov rax, rdi
+        0x8: ret
+        0x9: nop
+        ");
+        assert_snapshot!(cb.hexdump(), @"bf010000004889f8c390");
     }
 
     #[test]
@@ -1998,6 +2083,105 @@ mod tests {
         0x3d: add rdi, r8
         ");
         assert_snapshot!(cb.hexdump(), @"bf01000000be02000000ba03000000b90400000041b8050000005756525141506a00b800000000ffd041584158595a5e5f4801f74889d74801cf4889d74c01c7");
+    }
+
+    #[test]
+    fn test_ccall_stack_args() {
+        let (mut asm, mut cb) = setup_asm();
+
+        // 7 arguments: 6 in registers, 1 on the stack. The outgoing-argument
+        // area is padded to 16 bytes to keep the SP aligned at the call.
+        let args: Vec<Opnd> = (1..=7).map(|i| asm.load(Opnd::UImm(i))).collect();
+        asm.ccall(0 as _, args);
+
+        asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
+
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: mov edi, 1
+        0x5: mov esi, 2
+        0xa: mov edx, 3
+        0xf: mov ecx, 4
+        0x14: mov r8d, 5
+        0x1a: mov r9d, 6
+        0x20: mov eax, 7
+        0x25: push 0
+        0x27: push rax
+        0x28: mov eax, 0
+        0x2d: call rax
+        0x2f: add rsp, 0x10
+        ");
+        assert_snapshot!(cb.hexdump(), @"bf01000000be02000000ba03000000b90400000041b80500000041b906000000b8070000006a0050b800000000ffd04883c410");
+    }
+
+    #[test]
+    fn test_ccall_stack_args_spilled_source() {
+        let (mut asm, mut cb) = setup_asm();
+
+        // 8 arguments with more live values than allocatable registers, so a
+        // stack argument's source is itself a frame-based spill slot.
+        let args: Vec<Opnd> = (1..=8).map(|i| asm.load(Opnd::UImm(i))).collect();
+        asm.ccall(0 as _, args);
+
+        asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
+
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: mov edi, 1
+        0x5: mov esi, 2
+        0xa: mov edx, 3
+        0xf: mov ecx, 4
+        0x14: mov r8d, 5
+        0x1a: mov r9d, 6
+        0x20: mov eax, 7
+        0x25: mov r11d, 8
+        0x2b: mov qword ptr [rbp - 8], r11
+        0x2f: push qword ptr [rbp - 8]
+        0x32: push rax
+        0x33: mov eax, 0
+        0x38: call rax
+        0x3a: add rsp, 0x10
+        ");
+        assert_snapshot!(cb.hexdump(), @"bf01000000be02000000ba03000000b90400000041b80500000041b906000000b80700000041bb080000004c895df8ff75f850b800000000ffd04883c410");
+    }
+
+    #[test]
+    fn test_ccall_stack_args_with_survivor() {
+        let (mut asm, mut cb) = setup_asm();
+
+        // 8 arguments (2 stack slots) with a value that survives the call.
+        // The survivor's push/pop must bracket the outgoing-argument area's
+        // sub/add: the bug that got GH-15312 reverted was stack-argument
+        // stores overlapping the survivor slots, so the pops restored the
+        // arguments instead of the saved registers.
+        let surv = asm.load(Opnd::UImm(0x42));
+        let a0 = asm.load(Opnd::UImm(1));
+        let a1 = asm.load(Opnd::UImm(2));
+        asm.ccall(0 as _, vec![a0, a1, a0, a1, a0, a1, a0, a1]);
+        _ = asm.add(surv, Opnd::UImm(1));
+
+        asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
+
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: mov edi, 0x42
+        0x5: mov esi, 1
+        0xa: mov edx, 2
+        0xf: push rdi
+        0x10: push 0
+        0x12: push rdx
+        0x13: push rsi
+        0x14: mov r9, rdx
+        0x17: mov rdx, rsi
+        0x1a: mov rsi, r9
+        0x1d: mov r8, rdx
+        0x20: mov rcx, r9
+        0x23: mov rdi, rdx
+        0x26: mov eax, 0
+        0x2b: call rax
+        0x2d: add rsp, 0x10
+        0x31: pop rdi
+        0x32: pop rdi
+        0x33: add rdi, 1
+        ");
+        assert_snapshot!(cb.hexdump(), @"bf42000000be01000000ba02000000576a0052564989d14889f24c89ce4989d04c89c94889d7b800000000ffd04883c4105f5f4883c701");
     }
 
     #[test]

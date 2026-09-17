@@ -1524,6 +1524,8 @@ if defined? Zlib
     end
 
     def test_gzip
+      assert_raise(Zlib::StreamError) { Zlib.gzip("foo", level: 100) }
+
       actual = Zlib.gzip("foo".freeze)
       actual[4, 4] = "\x00\x00\x00\x00" # replace mtime
       actual[9] = "\xff" # replace OS

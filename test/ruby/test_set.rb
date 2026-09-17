@@ -958,7 +958,7 @@ class TC_Set < Test::Unit::TestCase
     set = set.dup
 
     10_000.times do |i|
-      assert_includes set, i
+      assert_include set, i
     end
   end
 

@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative 'test_helper'
 
 class JSONResumageParserTest < Test::Unit::TestCase
@@ -189,6 +190,27 @@ class JSONResumageParserTest < Test::Unit::TestCase
         value = parser.value if parser.parse
       end
       assert_equal expected, value, doc.inspect
+    end
+  end
+
+  def test_integer_boundaries_split_across_feeds
+    [
+      '9999999999999999999',   # widest 19 digits
+      '-9223372036854775808',  # INT64_MIN
+      '18446744073709551615',  # UINT64_MAX exactly
+      '18446744073709551616',  # 2**64, wraps the accumulator to 0
+      '99999999999999999999',  # widest 20 digits
+      '-18446744073709551616',
+      '100000000000000000000', # 21 digits
+    ].each do |literal|
+      doc = "#{literal} "
+      parser = new_parser
+      value = nil
+      doc.each_char do |char|
+        parser << char
+        value = parser.value if parser.parse
+      end
+      assert_equal Integer(literal, 10), value, doc.inspect
     end
   end
 

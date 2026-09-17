@@ -28,6 +28,7 @@
 #include "internal/encoding.h"
 #include "internal/error.h"
 #include "internal/hash.h"
+#include "internal/marshal.h"
 #include "internal/numeric.h"
 #include "internal/object.h"
 #include "internal/re.h"
@@ -153,6 +154,21 @@ rb_marshal_define_compat(VALUE newclass, VALUE oldclass, VALUE (*dumper)(VALUE),
     st_insert(compat_allocator_table(), (st_data_t)allocator, (st_data_t)compat);
     RB_OBJ_WRITTEN(compat_allocator_tbl_wrapper, Qundef, newclass);
     RB_OBJ_WRITTEN(compat_allocator_tbl_wrapper, Qundef, oldclass);
+}
+
+/* The rb_marshal_define_compat entry for an instance of klass, if any, so the Ractor
+ * courier can dump and load it the way Marshal does. */
+bool
+rb_marshal_compat_lookup(VALUE klass, VALUE (**dumper)(VALUE), VALUE (**loader)(VALUE, VALUE))
+{
+    st_data_t data;
+    rb_alloc_func_t allocator = RCLASS_SINGLETON_P(klass) ? 0 : rb_get_alloc_func(klass);
+    if (!allocator || !st_lookup(compat_allocator_tbl, (st_data_t)allocator, &data)) return false;
+    marshal_compat_t *compat = (marshal_compat_t *)data;
+    if (!compat->dumper || !compat->loader) return false;
+    if (dumper) *dumper = compat->dumper;
+    if (loader) *loader = compat->loader;
+    return true;
 }
 
 struct dump_arg {
@@ -1275,7 +1291,7 @@ mark_load_arg(void *ptr)
         return;
     rb_mark_tbl(p->symbols);
     rb_mark_tbl(p->data);
-    rb_mark_tbl(p->partial_objects);
+    if (p->partial_objects) rb_mark_tbl(p->partial_objects);
     rb_mark_hash(p->compat_tbl);
 }
 
@@ -1487,6 +1503,10 @@ r_bytes1_buffered(long len, struct load_arg *arg)
 
         if (tmp_len > need_len) {
             buflen = tmp_len - need_len;
+            if (UNLIKELY(buflen > arg->bufsize)) {
+                arg->buf = ruby_sized_realloc_n(arg->buf, buflen, 1, arg->bufsize);
+                arg->bufsize = buflen;
+            }
             memcpy(arg->buf, RSTRING_PTR(tmp)+need_len, buflen);
             arg->buflen = buflen;
         }
@@ -1654,7 +1674,9 @@ r_entry0(VALUE v, st_index_t num, struct load_arg *arg)
         st_lookup(arg->compat_tbl, v, &real_obj);
     }
     st_insert(arg->data, num, real_obj);
-    st_insert(arg->partial_objects, (st_data_t)real_obj, Qtrue);
+    if (arg->partial_objects) {
+        st_insert(arg->partial_objects, (st_data_t)real_obj, Qtrue);
+    }
     return v;
 }
 
@@ -1689,9 +1711,11 @@ r_leave(VALUE v, struct load_arg *arg, bool partial)
 {
     v = r_fixup_compat(v, arg);
     if (!partial) {
-        st_data_t data;
-        st_data_t key = (st_data_t)v;
-        st_delete(arg->partial_objects, &key, &data);
+        if (arg->partial_objects) {
+            st_data_t data;
+            st_data_t key = (st_data_t)v;
+            st_delete(arg->partial_objects, &key, &data);
+        }
         if (arg->freeze) {
             if (RB_TYPE_P(v, T_MODULE) || RB_TYPE_P(v, T_CLASS)) {
                 // noop
@@ -1874,7 +1898,7 @@ r_object0(struct load_arg *arg, bool partial, int *ivp, VALUE extmod)
 static VALUE
 r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE klass, VALUE extmod, int type)
 {
-    VALUE (*hash_new_with_size)(st_index_t) = rb_hash_new_with_size;
+    VALUE (*hash_new_capa)(long) = rb_hash_new_capa;
     VALUE v = Qnil;
     long id;
     st_data_t link;
@@ -1886,7 +1910,8 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE klass, VALUE ex
             rb_raise(rb_eArgError, "dump format error (unlinked)");
         }
         v = (VALUE)link;
-        if (!st_lookup(arg->partial_objects, (st_data_t)v, &link)) {
+        if (arg->partial_objects &&
+            !st_lookup(arg->partial_objects, (st_data_t)v, &link)) {
             if (arg->freeze && RB_TYPE_P(v, T_STRING)) {
                 v = rb_str_to_interned_str(v);
             }
@@ -1950,7 +1975,7 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE klass, VALUE ex
             if ((c == rb_cHash) &&
                 /* Hack for compare_by_identity */
                 (type == TYPE_HASH || type == TYPE_HASH_DEF)) {
-                hash_new_with_size = rb_ident_hash_new_with_size;
+                hash_new_capa = rb_ident_hash_new_capa;
                 goto type_hash;
             }
             v = r_object_for(arg, partial, 0, c, extmod, type);
@@ -1961,6 +1986,11 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE klass, VALUE ex
                 VALUE tmp = rb_obj_alloc(c);
 
                 if (TYPE(v) != TYPE(tmp)) goto format_error;
+            }
+            if (RB_TYPE_P(v, T_STRUCT) &&
+                RSTRUCT_LEN_RAW(v) != RARRAY_LEN(rb_struct_s_members(c))) {
+                rb_raise(rb_eTypeError, "struct %"PRIsVALUE" not compatible (struct size differs)",
+                         rb_class_name(c));
             }
             RBASIC_SET_CLASS(v, c);
         }
@@ -2126,7 +2156,7 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE klass, VALUE ex
         {
             long len = r_keep_readable(arg, r_long(arg), 2);
 
-            v = hash_new_with_size(len);
+            v = hash_new_capa(len);
             v = r_entry(v, arg);
             arg->readable += (len - 1) * 2;
             while (len--) {
@@ -2378,8 +2408,10 @@ clear_load_arg(struct load_arg *arg)
     arg->symbols = 0;
     st_free_table(arg->data);
     arg->data = 0;
-    st_free_table(arg->partial_objects);
-    arg->partial_objects = 0;
+    if (arg->partial_objects) {
+        st_free_table(arg->partial_objects);
+        arg->partial_objects = 0;
+    }
     if (arg->compat_tbl) {
         st_free_table(arg->compat_tbl);
         arg->compat_tbl = 0;
@@ -2409,7 +2441,7 @@ rb_marshal_load_with_proc(VALUE port, VALUE proc, bool freeze)
     arg->offset = 0;
     arg->symbols = st_init_numtable();
     arg->data    = rb_init_identtable();
-    arg->partial_objects = rb_init_identtable();
+    arg->partial_objects = (RTEST(proc) || freeze) ? rb_init_identtable() : NULL;
     arg->compat_tbl = 0;
     arg->proc = 0;
     arg->readable = 0;

@@ -13,6 +13,27 @@ class TestObjSpaceRactor < Test::Unit::TestCase
     RUBY
   end
 
+  # dump_all / memsize_of_all cover every Ractor's objspace, including other Ractors'
+  # unshareable objects
+  def test_dump_all_covers_all_ractors
+    assert_ractor(<<~'RUBY', require: 'objspace')
+      ready = Ractor::Port.new
+      ch = Ractor.new(ready) do |port|
+        marker = +"DUMP_ALL_MARKER_FOREIGN"
+        port << :built
+        Ractor.receive
+        marker.size
+      end
+      ready.receive
+
+      dump = ObjectSpace.dump_all(output: :string)
+      assert_include dump, "DUMP_ALL_MARKER_FOREIGN"
+
+      ch.send(:go)
+      ch.value
+    RUBY
+  end
+
   def test_undefine_finalizer
     assert_ractor(<<~'RUBY', timeout: 20, require: 'objspace', signal: :SEGV)
       def fin
@@ -50,6 +71,29 @@ class TestObjSpaceRactor < Test::Unit::TestCase
       end
 
       ractors.each(&:join)
+    RUBY
+  end
+
+  # A joined-but-not-valued Ractor keeps its objspace as a zombie.
+  # ObjectSpace.dump_all should still walk it for shareables.
+  def test_dump_all_includes_zombie_objspace
+    assert_ractor(<<~'RUBY', require: ['objspace', 'json'])
+      port = Ractor::Port.new
+      ch = Ractor.new(port) do |port|
+        port << Object.new.freeze
+        Ractor.receive
+      end
+      obj = port.receive
+      ch.send(:go)
+      ch.join
+      loop until ch.inspect =~ /terminated/ # unfortunate
+
+      needle = JSON.parse(ObjectSpace.dump(obj))["address"] # relies on non-moving collector
+      found = ObjectSpace.dump_all(output: :string).each_line.any? do |line|
+        json = JSON.parse(line) rescue nil
+        json && json["address"] == needle
+      end
+      assert found, "zombie objspace object missing from dump_all"
     RUBY
   end
 

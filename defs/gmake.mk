@@ -198,6 +198,9 @@ $(SCRIPTBINDIR)%$(EXEEXT): bin/% $(STUBPROGRAM) \
 $(SCRIPTBINDIR):
 	$(Q) mkdir $@
 
+encdb.h: $(wildcard $(srcdir)/enc/*.[ch])
+transdb.h: $(wildcard $(srcdir)/enc/trans/*.trans)
+
 .PHONY: commit
 COMMIT_PREPARE := $(subst :,\:,$(filter-out commit do-commit,$(MAKECMDGOALS))) up
 
@@ -436,15 +439,15 @@ endif
 
 ifeq ($(HAVE_GIT),yes)
 REVISION_LATEST := $(shell $(GIT_IN_SRC) rev-parse HEAD 2>/dev/null)
-else
-REVISION_LATEST := update
-endif
+ifneq ($(REVISION_LATEST),)
 REVISION_IN_HEADER := $(shell sed '/^\#define RUBY_FULL_REVISION "\(.*\)"/!d;s//\1/;q' $(wildcard $(srcdir)/revision.h revision.h) /dev/null 2>/dev/null)
 ifeq ($(REVISION_IN_HEADER),)
 REVISION_IN_HEADER := none
 endif
 ifneq ($(REVISION_IN_HEADER),$(REVISION_LATEST))
 $(REVISION_H): PHONY
+endif
+endif
 endif
 
 include $(top_srcdir)/yjit/yjit.mk
@@ -501,20 +504,13 @@ update-deps:
 	$(eval deps_dir := $(shell mktemp -d)/$(update_deps))
 	$(eval GIT_DIR := $(shell $(GIT_IN_SRC) rev-parse --absolute-git-dir))
 	$(GIT) --git-dir=$(GIT_DIR) worktree add $(deps_dir)
-	cp $(tooldir)/config.guess $(tooldir)/config.sub $(deps_dir)/tool
-	[ -f config.status ] && cp config.status $(deps_dir)
-	cd $(deps_dir) && autoconf && \
-	exec ./configure -q -C --enable-load-relative --disable-install-doc --disable-rubygems 'optflags=-O0' 'debugflags=-save-temps=obj -g'
-	$(RUNRUBY) -C $(deps_dir) tool/update-deps --fix
+	$(BASERUBY) -C $(deps_dir) tool/mkdepend.rb --scope=all --sources --inplace
 	$(GIT) -C $(deps_dir) diff --no-ext-diff --ignore-submodules --exit-code || \
 	    $(GIT) -C $(deps_dir) commit --all --message='Update dependencies'
 	$(GIT) --git-dir=$(GIT_DIR) worktree remove $(deps_dir)
 	$(RMDIR) $(dir $(deps_dir))
 	$(GIT) --git-dir=$(GIT_DIR) merge --no-edit --ff-only $(update_deps)
 	$(GIT) --git-dir=$(GIT_DIR) branch --delete $(update_deps)
-
-fix-depends check-depends: all hello
-	$(BASERUBY) -C $(srcdir) tool/update-deps $(if $(filter fix-%,$@),--fix)
 
 # order-only-prerequisites doesn't work for $(RUBYSPEC_CAPIEXT)
 # because the same named directory exists in the source tree.

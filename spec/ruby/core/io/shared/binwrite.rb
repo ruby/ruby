@@ -88,4 +88,20 @@ describe :io_binwrite, shared: true do
     IO.send(@method, @filename, "hello, world!", **{})
     File.read(@filename).should == "hello, world!"
   end
+
+  platform_is :darwin do
+    it "writes to a file when given a path in a non-UTF-8, ASCII-compatible encoding containing non-ASCII characters" do
+      utf8_path = tmp("io_binwrite_utf8_path_\u{3042}.txt")
+      # Can fail with UndefinedConversionError if tmp path has non-Shift_JIS chars (e.g. Emojis, Hangul, Cyrillic, accented letters)
+      non_utf8_path = utf8_path.encode(Encoding::Windows_31J)
+
+      begin
+        IO.send(@method, non_utf8_path, "ok").should == 2
+        File.read(utf8_path).should == "ok"
+      ensure
+        rm_r utf8_path
+        rm_r non_utf8_path
+      end
+    end
+  end
 end

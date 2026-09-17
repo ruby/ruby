@@ -222,7 +222,7 @@ define_ruby_description(const char *const jit_opt)
         // Assume the active GC name can not be longer than 20 chars
         // so that we don't have to use strlen and remove the static
         // qualifier from desc.
-        + RB_GC_MAX_NAME_LEN + 3
+        + RB_GC_MAX_NAME_LEN + 2
 #endif
 
     ];

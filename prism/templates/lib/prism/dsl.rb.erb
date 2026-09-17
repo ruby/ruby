@@ -59,14 +59,14 @@ module Prism
     extend self
 
     # Create a new Source object.
-    #--
+    #
     #: (String string) -> Source
     def source(string)
       Source.for(string, 1, build_offsets(string))
     end
 
     # Create a new Location object.
-    #--
+    #
     #: (?source: Source, ?start_offset: Integer, ?length: Integer) -> Location
     def location(source: default_source, start_offset: 0, length: 0)
       Location.new(source, start_offset, length)
@@ -82,7 +82,7 @@ module Prism
     -%>
 
     # Create a new <%= node.name %> node.
-    #--
+    #
     #: (<%= params.map { |(name, type)| "?#{name}: #{type}" }.join(", ") %>) -> <%= node.name %>
     def <%= node.human %>(<%= ["source: default_source", "node_id: 0", "location: default_location", "flags: 0", *node.fields.map { |field|
       case field
@@ -117,7 +117,7 @@ module Prism
     <%- flags.each do |flag| -%>
 
     # Retrieve the value of one of the <%= flag.name %> flags.
-    #--
+    #
     #: (Symbol name) -> Integer
     def <%= flag.human.chomp("s") %>(name)
       case name
@@ -133,7 +133,7 @@ module Prism
 
     # The default source object that gets attached to nodes and locations if no
     # source is specified.
-    #--
+    #
     #: () -> Source
     def default_source
       Source.for("", 1, [0])
@@ -141,7 +141,7 @@ module Prism
 
     # The default location object that gets attached to nodes if no location is
     # specified, which uses the given source.
-    #--
+    #
     #: () -> Location
     def default_location
       Location.new(default_source, 0, 0)
@@ -149,7 +149,7 @@ module Prism
 
     # The default node that gets attached to nodes if no node is specified for a
     # required node field.
-    #--
+    #
     #: (Source source, Location location) -> node
     def default_node(source, location)
       ErrorRecoveryNode.new(source, -1, location, 0, nil)
@@ -158,7 +158,7 @@ module Prism
     private
 
     # Build the newline byte offset array for the given source string.
-    #--
+    #
     #: (String source) -> Array[Integer]
     def build_offsets(source)
       offsets = [0]

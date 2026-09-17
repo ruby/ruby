@@ -1,15 +1,77 @@
 # frozen_string_literal: true
 #
-# A \Pathname object contains a string directory path or filepath;
-# it does not represent a corresponding actual file or directory
-# -- which in fact may or may not exist.
+# A \Pathname object stores a string:
+#
+#   pn = Pathname('README.md') # => #<Pathname:README.md>
+#   pn.to_s                    # => "README.md"
+#
+# The string is usually an actual or potential path to an entry in the filesystem:
+#
+#   Pathname('lib')            # =>  #<Pathname:lib>        # Relative path.
+#   Pathname('/usr/lib')       # => #<Pathname:/usr/lib>    # Absolute path.
+#   Pathname('nosuch/foo')     # => #<Pathname:nosuch/foo>  # Need not exist.
+#   Pathname('!@#$%^&*()')     # => #<Pathname:!@#$%^&*()>  # Need not be a valid path.
+#
+# Through its many instance methods, the pathname object
+# provides a consistent and convenient interface
+# to numerous methods in other classes and modules:
+#
+# - Wraps almost all methods in class File and module FileTest.
+# - Wraps some methods in class Dir and module FileUtils.
+#
+# Advantages of using a pathname instead of these others:
+#
+# - You don't have to know which class or module has which methods.
+# - You don't have to keep typing the class name and path variable.
+#
+# Without pathnames:
+#
+#   filepath = 'README.md'
+#   File.exist?(filepath)    # => true
+#   File.file?(filepath)     # => true
+#   File.writable?(filepath) # => true
+#   dirpath = 'tempdir'
+#   Dir.mkdir(dirpath)
+#   Dir.rmdir(dirpath)
+#
+# With pathnames:
+#
+#   pn = Pathname('README.md')
+#   pn.exist?    # => true
+#   pn.file?     # => true
+#   pn.writable? # => true
+#   pn = Pathname('tempdir')
+#   pn.mkdir
+#   pn.rmdir
+#
+# In addition to its wrapper methods,
+# \Pathname has certain "core" methods that are not simple wrappers:
+#
+# - #absolute?
+# - #children
+# - #cleanpath
+# - #each_child
+# - #each_filename
+# - #join
+# - #mountpoint?
+# - #parent
+# - #relative?
+# - #relative_path_from
+# - #root?
+# - +
+#
+# Of particular interest may be #cleanpath, which reduces a "noisy" path
+# to a simpler form.
+#
+# Some pathname methods return pathnames, which may be chained:
+#
+#   Pathname("/usr")
+#     .join("local")
+#     .join("bin")
+#     .exist?
+#   # => true
 #
 # A \Pathname object is immutable (except for method #freeze).
-#
-# A pathname may be relative or absolute:
-#
-#   Pathname.new('lib')            # => #<Pathname:lib>
-#   Pathname.new('/usr/local/bin') # => #<Pathname:/usr/local/bin>
 #
 # == About the Examples
 #
@@ -17,202 +79,282 @@
 #
 #  :include: doc/examples/files.rdoc
 #
-# == Convenience Methods
+# == What's Here
 #
-# The class provides *all* functionality from class File and module FileTest,
-# along with some functionality from class Dir and module FileUtils.
+# First, what's elsewhere. Class \Pathname:
 #
-# Here's an example string path and corresponding \Pathname object:
+# - Inherits from {class Object}[rdoc-ref:Object@Whats+Here].
 #
-#   path = 'lib/fileutils.rb'
-#   pn = Pathname.new(path) # => #<Pathname:lib/fileutils.rb>
+# Here, class \Pathname provides methods that are useful for:
 #
-# Each of these method pairs (\Pathname vs. \File) gives exactly the same result:
+# - {Creating a \Pathname object}[rdoc-ref:Pathname@Creating].
+# - {Querying}[rdoc-ref:Pathname@Querying].
+# - {Comparing}[rdoc-ref:Pathname@Comparing].
+# - {Analyzing}[rdoc-ref:Pathname@Analyzing].
+# - {Converting}[rdoc-ref:Pathname@Converting].
+# - {Ownership and Permissions}[rdoc-ref:Pathname@Ownership+and+Permissions].
+# - {Reading and Writing}[rdoc-ref:Pathname@Reading+and+Writing].
+# - {Times}[rdoc-ref:Pathname@Times].
+# - {Iterating}[rdoc-ref:Pathname@Iterating].
+# - {Other}[rdoc-ref:Pathname@Other].
 #
-#   pn.size               # => 83777
-#   File.size(path)       # => 83777
+# === Creating
 #
-#   pn.directory?         # => false
-#   File.directory?(path) # => false
+# - ::getwd (aliased as ::pwd):
+#   Returns a new \Pathname object containing the path to the current working directory.
+# - ::mktmpdir:
+#   Creates a \Pathname object containing the path to a new temporary directory;
+#   returns it or passes it to the block.
+# - ::new:
+#   Returns a new \Pathname object based on the given path.
 #
-#   pn.read.size          # => 81074
-#   File.read(path).size# # => 81074
+# === Querying
 #
-# Each of these method pairs gives similar results,
-# but each \Pathname method returns a more versatile \Pathname object,
-# instead of a string:
+# - ::glob:
+#   Selects filesystem entries; creates a pathname for each;
+#   returns them or passes them to the block.
+# - #absolute?:
+#   Returns whether +self+ contains an absolute path.
+# - #blockdev?:
+#   Returns whether the entry at the path in +self+ is a block device.
+#   (i.e., a direct-access device).
+# - #chardev?:
+#   Returns whether entry at the path in +self+ is a character device.
+#   (i.e., a sequential-access device).
+# - #directory?:
+#   Returns whether the entry at the path in +self+ is a directory.
+# - #empty?:
+#   Returns whether the entry at the path in +self+ exists and is empty.
+# - #entries:
+#   Returns an array of pathnames, one for each entry in the directory at the path in +self+.
+# - #executable?:
+#   Returns whether the entry at the path in +self+ is executable.
+# - #executable_real?:
+#   Returns whether the entry at the path in +self+ is executable by the real user
+#   and group id of the current process.
+# - #exist?:
+#   Returns whether the entry at the path in +self+ exists.
+# - #extname:
+#   Returns the filename extension of +self+.
+# - #file?:
+#   Returns whether the entry at the path in +self+ exists and is a regular file.
+# - #find:
+#   Performs a depth-first traversal of the path in +self+;
+#   calls the block with each found path.
+# - #fnmatch:
+#   Returns whether the given pattern matches against the path in +self+.
+# - #fnmatch?:
+#   Same as #fnmatch.
+# - #ftype:
+#   Returns the string type of the entry at the path in +self+.
+# - #glob:
+#   Finds entries and returns or yields pathnames.
+# - #grpowned?:
+#   Returns whether the entry for the path in +self+ exists,
+#   and the effective group id of the calling process is the owner of the entry.
+# - #lstat:
+#   Returns a File::Stat entry for the path in +self+,
+#   but does not follow symbolic links,
+#   and therefore returns the stat object for the entry at the path in +self+.
+# - #mountpoint?:
+#   Returns whether the entry at the path in +self+ is a mountpoint.
+# - #owned?:
+#   Returns whether the entry at the path in +self+ exists
+#   and is owned by the user of the current process.
+# - #parent:
+#   Returns a new pathname containing the path to the parent directory
+#   of the entry in +self+.
+# - #pipe?:
+#   Returns whether the entry at the path in +self+ is a pipe.
+# - #readable?:
+#   Returns whether the entry at the path in +self+ is readable
+#   by the owner and group of the current process.
+# - #readable_real?:
+#   Like readable?, but checks against the real user and group ids
+#   instead of the effective ids.
+# - #relative?:
+#   Returns whether +self+ contains a relative path.
+# - #root?:
+#   Returns whether the entry at the path in +self+ is a root directory.
+# - #setgid?:
+#   Returns whether the setgid bit is set in the permissions
+#   for the entry at the path in +self+.
+# - #setuid?:
+#   Returns whether the setuid bit is set in the permissions
+#   for the entry at the path in +self+.
+# - #size:
+#   Returns the size of the entry at the path in +self+.
+# - #size?:
+#   Returns the size of the entry at the path in +self+
+#   if the entry exists and has non-zero size; +nil+ otherwise.
+# - #socket?:
+#   Returns whether the entry at the path in +self+ is a socket.
+# - #split:
+#   Returns a 2-element array containing the #dirname and #basename of the path in +self+.
+# - #stat:
+#   Returns a File::Stat object for the entry at the path in +self+.
+# - #sticky?:
+#   Returns whether the sticky bit is set for the entry at the path in +self+.
+# - #symlink?:
+#   Returns whether the entry at the path in +self+ is a symbolic link.
+# - #world_readable?:
+#   If the entry at the path in +self+ is readable by others,
+#   returns the integer permissions for the entry.
+# - #world_writable?:
+#   If the entry at the path in +self+ is writable by others,
+#   returns the integer permissions for the entry.
+# - #writable?:
+#   Returns whether the file entry at the path in +self+ is writable
+#   by the effective user and group id of this process.
+# - #writable_real?:
+#   Like #writable?,
+#   but checks against the real user and group ids instead of the effective ids.
+# - #zero?:
+#   Returns whether the entry at the path in +self+ exists and has size zero.
 #
-#   pn.dirname          # => #<Pathname:lib>
-#   File.dirname(path)  # => "lib"
+# === Comparing
 #
-#   pn.basename         # => #<Pathname:fileutils.rb>
-#   File.basename(path) # => "fileutils.rb"
+# - #<=>:
+#   Compares the contents of +self+ and the given object as strings.
+# - #== (aliased as #=== and #eql?):
+#   Returns whether the paths in +self+ and the given object are equal.
 #
-#   pn.split            # => [#<Pathname:lib>, #<Pathname:fileutils.rb>]
-#   File.split(path)    # => ["lib", "fileutils.rb"]
+# === Analyzing
 #
-# Each of these methods takes a block:
+# - #ascend:
+#   Yields +self+ to the block, then yields a new pathname for each successive dirname
+#   in the path in +self+.
+# - #basename:
+#   Returns all or part of the last component of the path in +self+.
+# - #children:
+#   Returns an array of pathnames,
+#   each containing the path to a child of the entry at the path in +self+.
+# - #descend:
+#   Yields to the block a new pathname for each successive dirname in the path in +self+.
+# - #dirname:
+#   Returns all but the last component of the path in +self+.
+# - #each_filename:
+#   Calls the block with each component of the path in +self+.
 #
-#   pn.open do |file|
-#     p file
-#   end
-#   File.open(path) do |file|
-#     p file
-#   end
+# === Converting
 #
-# The outputs for each:
+# - #+ (aliased as #/):
+#   Returns a new \Pathname object based on the content of +self+ and the given object.
+# - #cleanpath:
+#   Returns a new pathname,
+#   “cleaned” of unnecessary separators, single-dot entries, and double-dot entries.
+# - #expand_path:
+#   Returns a new pathname containing the absolute path for +self+.
+# - #join:
+#   Joins the string-converted given objects to the string path in +self+;
+#   returns the joined string as a pathname.
+# - #readlink:
+#   Returns a new pathname containing the path to the entry referenced by +self+.
+# - #realdirpath:
+#   Returns a new pathname containing the real (absolute) path
+#   of the directory entry at the path in +self+.
+# - #realpath:
+#   Returns a new pathname containing the real (absolute) path
+#   of the file entry at the path in +self+.
+# - #relative_path_from:
+#   Returns a new pathname containing the relative path from the given directory path
+#   to the path in +self+.
+# - #sub:
+#   Returns a new pathname whose path is the path in +self+, after specified substitutions.
+# - #sub_ext:
+#   Returns a new pathname whose path is the path in +self+, after specified changes.
+# - #to_s (aliased as #to_path):
+#   Returns a copy of the path in +self+.
 #
-#   #<File:lib/fileutils.rb (closed)>
-#   #<File:lib/fileutils.rb (closed)>
+# === Ownership and Permissions
 #
-# Each of these methods takes a block:
+# - #chmod:
+#   Changes the mode (i.e., permissions) of the entry at the path in +self+.
+# - #chown:
+#   Changes the owner and group of an entry (directory or file).
+# - #lchmod:
+#   Like #chmod, but does not follow symbolic links,
+#   and therefore changes the mode of the entry at the path in +self+.
+# - #lchown:
+#   Like #chown, but does not follow symbolic links,
+#   and therefore changes the ownership of the entry at the path in +self+.
 #
-#   pn.each_line do |line|
-#     p line
-#     break
-#   end
-#   File.foreach(path) do |line|
-#     p line
-#     break
-#   end
+# === Reading and Writing
 #
-# The outputs for each:
+# - #binread:
+#   Behaves like #read, except that the file is opened in binary mode
+#   with ASCII-8BIT encoding.
+# - #binwrite:
+#   Behaves like #write, except that the file is opened in binary mode
+#   with ASCII-8BIT encoding.
+# - #make_link:
+#   Creates a new entry at the path in +self+ for the existing entry at path
+#   using a hard link.
+# - #make_symlink:
+#   Creates a symbolic link at the path in +self+ to the entry at path.
+# - #mkdir:
+#   Creates a directory entry at the path in +self+.
+# - #mkpath:
+#   Creates a directory entry at the path in +self+;
+#   creates intermediate directories as needed.
+# - #open:
+#   Opens the file at the entry in +self+ for reading or writing.
+# - #opendir:
+#   Creates and opens a Dir object for the directory at the path in +self+;
+#   either returns the Dir object or calls the block with it.
+# - #read:
+#   Reads and returns some or all of the content of the file entry at the path in +self+.
+# - #readlines:
+#   Returns an array of all lines read from file entry at the path in +self+.
+# - #rename:
+#   Renames the entry at the path in +self+.
+# - #rmdir:
+#   Deletes the directory entry at the path in +self+.
+# - #rmtree:
+#   Deletes the entire filetree at the path in +self+.
+# - #sysopen:
+#   Opens the file at the path in +self+; returns the integer file descriptor.
+# - #truncate:
+#   Adjusts the size of file at the path in +self+ to the given size.
+# - #unlink (aliased as #delete):
+#   Removes the entry at the path in +self+.
+# - #write:
+#   Opens the file at the entry at the path in +self+,
+#   writes given data to it, and closes the file.
 #
-#   "# frozen_string_literal: true\n"
-#   "# frozen_string_literal: true\n"
+# === Times
 #
-# == More Methods
+# - #atime:
+#   Returns the access time of the entry at the path in +self+.
+# - #birthtime:
+#   Returns the birth time of the entry at the path in +self+.
+# - #ctime:
+#   On Windows, returns the birthtime.
+#   On other systems, returns a new Time object containing the time
+#   of the most recent metadata change to the entry at the path in +self+.
+# - #lutime:
+#   Like Pathname#utime, but does not follow symbolic links,
+#   and therefore changes the times of the entry at the path in +self+.
+# - #mtime:
+#   Returns a Time object containing the time of the most recent modification
+#   to the entry at the path in +self+.
+# - #utime:
+#   For the entry at the path in +self+,
+#   updates its access time and its modification time to the given times.
 #
-# Here is a sampling of other available methods:
+# === Iterating
 #
-#   p1 = Pathname.new('/usr/lib')  # => #<Pathname:/usr/lib>
-#   p1.absolute?                   # => true
-#   p2 = p1 + 'ruby/4.0'           # => #<Pathname:/usr/lib/ruby/4.0>
-#   p3 = p1.parent                 # => #<Pathname:/usr>
-#   p4 = p2.relative_path_from(p3) # => #<Pathname:lib/ruby/4.0>
-#   p4.absolute?                   # => false
-#   p5 = Pathname.new('.')         # => #<Pathname:.>
-#   p6 = p5 + 'usr/../var'         # => #<Pathname:usr/../var>
-#   p6.cleanpath                   # => #<Pathname:var>
-#   p6.realpath                    # => #<Pathname:/var>
-#   p6.children.take(2)
-#   # => [#<Pathname:usr/../var/local>, #<Pathname:usr/../var/spool>]
+# - #each_child:
+#   Calls the block with a new pathname for each child of the entry at the path in +self+.
+# - #each_entry:
+#   Calls the block with a new pathname for each entry in the entry at the path in +self+.
+# - #each_line:
+#   Calls the block with each line from the file at the path in +self+.
 #
-# == Breakdown of functionality
+# === Other
 #
-# === Core methods
-#
-# These methods are effectively manipulating a String, because that's
-# all a path is.  None of these access the file system except for
-# #mountpoint?, #children, #each_child, #realdirpath and #realpath.
-#
-# - +
-# - #join
-# - #parent
-# - #root?
-# - #absolute?
-# - #relative?
-# - #relative_path_from
-# - #each_filename
-# - #cleanpath
-# - #realpath
-# - #realdirpath
-# - #children
-# - #each_child
-# - #mountpoint?
-#
-# === File status predicate methods
-#
-# These methods are a facade for FileTest:
-# - #blockdev?
-# - #chardev?
-# - #directory?
-# - #executable?
-# - #executable_real?
-# - #exist?
-# - #file?
-# - #grpowned?
-# - #owned?
-# - #pipe?
-# - #readable?
-# - #world_readable?
-# - #readable_real?
-# - #setgid?
-# - #setuid?
-# - #size
-# - #size?
-# - #socket?
-# - #sticky?
-# - #symlink?
-# - #writable?
-# - #world_writable?
-# - #writable_real?
-# - #zero?
-#
-# === File property and manipulation methods
-#
-# These methods are a facade for File:
-# - #each_line(*args, &block)
-# - #read(*args)
-# - #binread(*args)
-# - #readlines(*args)
-# - #sysopen(*args)
-# - #write(*args)
-# - #binwrite(*args)
-# - #atime
-# - #birthtime
-# - #ctime
-# - #mtime
-# - #chmod(mode)
-# - #lchmod(mode)
-# - #chown(owner, group)
-# - #lchown(owner, group)
-# - #fnmatch(pattern, *args)
-# - #fnmatch?(pattern, *args)
-# - #ftype
-# - #make_link(old)
-# - #open(*args, &block)
-# - #readlink
-# - #rename(to)
-# - #stat
-# - #lstat
-# - #make_symlink(old)
-# - #truncate(length)
-# - #utime(atime, mtime)
-# - #lutime(atime, mtime)
-# - #basename(*args)
-# - #dirname
-# - #extname
-# - #expand_path(*args)
-# - #split
-#
-# === Directory methods
-#
-# These methods are a facade for Dir:
-# - Pathname.glob(*args)
-# - Pathname.getwd / Pathname.pwd
-# - #rmdir
-# - #entries
-# - #each_entry(&block)
-# - #mkdir(*args)
-# - #opendir(*args)
-#
-# === Utilities
-#
-# These methods are a mixture of Find, FileUtils, and others:
-# - #find(&block)
-# - #mkpath
-# - #rmtree
-# - #unlink / #delete
-#
-#
-# == Method documentation
-#
-# As the above section shows, most of the methods in Pathname are facades.  The
-# documentation for these methods generally just says, for instance, "See
-# FileTest.writable?", as you should be familiar with the original method
-# anyway, and its documentation (e.g. through +ri+) will contain more
-# information.  In some cases, a brief description will follow.
+# - #freeze:
+#   Freezes +self+, preventing further modifications.
 #
 class Pathname
 
@@ -572,7 +714,7 @@ class Pathname
   # call-seq:
   #   mountpoint? -> true or false
   #
-  # Returns whether the path in `self` points to a mountpoint:
+  # Returns whether entry at the path in `self` is a mountpoint:
   #
   # ```ruby
   # Pathname('/').mountpoint?      # => true
@@ -813,16 +955,25 @@ class Pathname
   end
   private :plus
 
-  # call-seq:
-  #   join(*objects) -> new_pathname
+  # :markup: markdown
   #
-  # Joins the string-converted given +objects+ to the string path in +self+;
+  # call-seq:
+  #   join(*components) -> self or new_pathname
+  #
+  # With no arguments, returns `self`.
+  #
+  # With arguments, joins the given `components` to the string path in `self`
+  # with character `'/'`;
   # returns a new pathname containing the joined string:
   #
-  #   Pathname('foo').join                  # => #<Pathname:foo>
-  #   Pathname('foo').join('bar')           # => #<Pathname:foo/bar>
-  #   Pathname('foo').join('bar', 'baz')    # => #<Pathname:foo/bar/baz>
-  #   Pathname('foo').join(Pathname('bar')) # => #<Pathname:foo/bar>
+  # ```ruby
+  # pn = Pathname('foo')                      # => #<Pathname:foo>
+  # # String arguments.
+  # pn.join('bar')                            # => #<Pathname:foo/bar>
+  # pn.join(*%w[bar baz bat])                 # => #<Pathname:foo/bar/baz/bat>
+  # # Pathname arguments.
+  # pn.join(Pathname('bar'), Pathname('baz')) # => #<Pathname:foo/bar/baz>
+  # ```
   #
   def join(*args)
     return self if args.empty?
@@ -1215,35 +1366,36 @@ class Pathname    # * File *
   # :markup: markdown
   #
   # call-seq:
-  #   atime -> new_time
+  #   atime -> time
   #
-  # Returns a Time object containing the access time
+  # Returns a new Time object containing the access time
   # of the entry represented by `self`, as reported by the filesystem;
-  # see {File System Access Time}[rdoc-ref:file/timestamps.md@Access+Time]:
+  # see {File System Access Time}[rdoc-ref:file/timestamps.md@Access+Time].
+  #
+  # For a file, the access time is established when the file is created,
+  # and may be updated with the file content is read:
   #
   # ```ruby
-  # # Pathname for a (non-existent) directory.
-  # dir_pn = Pathname('doc/foo')   # => #<Pathname:doc/foo>
-  # # Create directory; establishes atime for directory.
-  # dir_pn.mkdir
-  # dir_pn.atime                   # => 2026-06-17 10:10:20.801115774 -0500
-  # # Pathname for a (non-existent) file in the directory.
-  # file_pn = dir_pn.join('t.tmp') # => #<Pathname:doc/foo/t.tmp>
-  # # Create file; establishes atime for file, updates atime for directory.
-  # file_pn.write('foo')
-  # file_pn.atime                  # => 2026-06-17 10:11:40.987171568 -0500
-  # dir_pn.atime                   # => 2026-06-17 10:11:40.96617277 -0500
-  # # Write file; updates atime for file,but not directory.
-  # file_pn.write('bar')
-  # file_pn.atime                  # => 2026-06-17 10:13:22.062904563 -0500
-  # dir_pn.atime                   # => 2026-06-17 10:11:40.96617277 -0500
-  # # Read file; may update atime for file, but not directory.
-  # file_pn.read
-  # file_pn.atime                  # => 2026-06-17 10:13:22.062904563 -0500
-  # dir_pn.atime                   # => 2026-06-17 10:11:40.96617277 -0500
-  # # Clean up.
-  # file_pn.delete
-  # dir_pn.rmdir
+  # filepath = 't.tmp'
+  # pn = Pathname(filepath)
+  # pn.exist? # => false
+  # pn.write('foo')
+  # pn.atime # => 2026-08-15 14:30:28.624455747 -0500
+  # pn.delete
+  # ```
+  #
+  # For a directory, the access time is established when the directory is created,
+  # and may be updated when its entries are read:
+  #
+  # ```ruby
+  # dirpath = 'foo'
+  # pn = Pathname(dirpath)
+  # pn.exist?          # => false
+  # FileUtils.cp_r('doc', 'foo')
+  # pn.atime           # => 2026-08-15 14:36:20.139756073 -0500
+  # pn.entries.take(3) # => [#<Pathname:syntax>, #<Pathname:contributing>, #<Pathname:strscan>]
+  # pn.atime           # => 2026-08-15 14:36:32.262779081 -0500
+  # pn.rmtree          # Clean up.
   # ```
   #
   def atime() File.atime(@path) end
@@ -1360,31 +1512,28 @@ class Pathname    # * File *
   # call-seq:
   #   chmod(mode) -> 1
   #
-  # Changes the mode (i.e., permissions) of the entry represented by `self`;
-  # see {File Permissions}[rdoc-ref:File@File+Permissions]:
+  #  Changes the mode of the entry at the path in `self`;  returns `1`.
+  #  See {Filesystem Modes}[rdoc-ref:file/filesystem_modes.md]
+  #  and especially {Setting a Mode}[rdoc-ref:file/filesystem_modes.md@Setting+a+Mode].
+  #
+  #  These examples use
+  #  a {helper method}[rdoc-ref:file/filesystem_modes.md@Helper+Method], `mode`,
+  #  that displays a mode both in octal digits and in characters:
   #
   # ```ruby
-  # # Pathname for a (non-existent) directory.
-  # dir_pn = Pathname('doc/foo') # => #<Pathname:doc/foo>
-  # # Create the directory and fetch its mode.
-  # dir_pn.mkdir
-  # dir_pn.stat.mode.to_s(8) # => "40775"
-  # # Change the directory mode and fetch the new mode.
-  # dir_pn.chmod(0777)
-  # dir_pn.stat.mode.to_s(8) # => "40777"
-  #
-  # # Pathname for a (non-existent) file in the directory.
-  # file_pn = dir_pn.join('t.tmp') # => #<Pathname:doc/foo/t.tmp>
-  # # Create the file and fetch its mode.
-  # file_pn.write('foo')
-  # file_pn.stat.mode.to_s(8) # => "100664"
-  # # Change the file mode and fetch its new mode.
-  # file_pn.chmod(0777)
-  # file_pn.stat.mode.to_s(8) # => "100777"
-  #
-  # # Clean up.
-  # file_pn.delete
-  # dir_pn.rmdir
+  # dirpath = 'doc/foo'
+  # dir_pn = Pathname(dirpath)
+  # dir_pn.mkdir         # Create directory.
+  # mode(dirpath)        # => "040775 drwxrwxr-x"
+  # filepath = File.join(dirpath, 't.tmp')
+  # file_pn = Pathname(filepath)
+  # file_pn.write('bar') # Create file.
+  # mode(filepath)       # => "100664 -rw-rw-r--"
+  # file_pn.chmod(0755)  # Change file mode.
+  # mode(filepath)       # => "100755 -rwxr-xr-x"
+  # dir_pn.chmod(0644)   # Change directory mode.
+  # mode(dirpath)        # => "040644 drw-r--r--"
+  # dir_pn.rmtree        # Clean up.
   # ```
   #
   def chmod(mode) File.chmod(mode, @path) end
@@ -1392,25 +1541,27 @@ class Pathname    # * File *
   #  :markup: markdown
   #
   #  call-seq:
-  #    Pathname.lchmod(mode) -> 1
+  #    lchmod(mode) -> 1
   #
-  #  Not supported on some platforms (raises Errno:: ENOTSUP).
+  #  Not supported on Linux or Windows (raises NotImplementedError).
   #
-  #  When supported: like Pathname::chmod, but does not follow symbolic links,
+  #  When supported: like Pathname#chmod,
+  #  but does not follow [symbolic links](rdoc-ref:file/symbolic_links.md),
   #  and therefore changes the mode of the entry specified by `self`:
   #
   #  ```ruby
-  #  File.write('t.tmp', '')
+  #  file = Pathname('t.tmp')
+  #  file.write('')
   #  File.symlink('t.tmp', 'link')
-  #  File.stat('t.tmp').mode.to_s(8) # => "100664"
-  #  File.stat('link').mode.to_s(8)  # => "100664"
-  #  Pathname('link').lchmod(0777)
-  #  File.stat('t.tmp').mode.to_s(8) # => "100664"
-  #  File.stat('link').mode.to_s(8)  # => "100777"
-  #  File.delete('t.tmp')
-  #  File.delete('link')
-  #  ```
-  #
+  #  symlink = Pathname('link')
+  #  file.lstat.mode.to_s(8) # => "100644"
+  #  symlink.lstat.mode.to_s(8) # => "120755"
+  #  symlink.lchmod(0777)
+  #  file.lstat.mode.to_s(8) # => "100644"
+  #  symlink.lstat.mode.to_s(8) # => "120777"
+  #  file.delete
+  #  symlink.delete
+  #  ````
   def lchmod(mode) File.lchmod(mode, @path) end
 
   # :markup: markdown
@@ -1475,7 +1626,8 @@ class Pathname    # * File *
   #
   #  Calling process must have superuser privileges.
   #
-  #  When supported: like Pathname#chown, but does not follow symbolic links,
+  #  When supported: like Pathname#chown,
+  #  but does not follow [symbolic links](rdoc-ref:file/symbolic_links.md),
   #  and therefore changes the ownership of the entry at the path in `self`:
   #
   # ```ruby
@@ -1514,20 +1666,35 @@ class Pathname    # * File *
   # :markup: markdown
   #
   # call-seq:
-  #   File.fnmatch(pattern, flags = 0) -> true or false
+  #   fnmatch(pattern, flags = 0) -> true or false
   #
   # Returns whether string `pattern` matches against the string path in `self`,
   # under the control of the given `flags`;
   # see [Filename Matching](rdoc-ref:file/filename_matching.md).
   def fnmatch(pattern, ...) File.fnmatch(pattern, @path, ...) end
 
-  # See <tt>File.fnmatch?</tt> (same as #fnmatch).
+  # :markup: markdown
+  #
+  # call-seq:
+  #   fnmatch?(pattern, flags = 0) -> true or false
+  #
+  # Same as #fnmatch.
   def fnmatch?(pattern, ...) File.fnmatch?(pattern, @path, ...) end
 
   #  call-seq:
-  #    pathname.ftype -> string
+  #    ftype -> string
   #
-  #  Returns the string type of the object at the path in +self+:
+  #  Returns the string type of the object at the path in <tt>self</tt>, one of:
+  #
+  #  - <tt>'file'</tt>.
+  #  - <tt>'directory'</tt>.
+  #  - <tt>'characterSpecial'</tt>.
+  #  - <tt>'blockSpecial'</tt>.
+  #  - <tt>'fifo'</tt>.
+  #  - <tt>'link'</tt>.
+  #  - <tt>'socket'</tt>.
+  #
+  #  Examples:
   #
   #    Pathname('README.md').ftype   # => "file"
   #    Pathname('lib').ftype         # => "directory"
@@ -1571,7 +1738,30 @@ class Pathname    # * File *
   # Raises an exception if the entry at the path in `self` exists.
   def make_link(old) File.link(old, @path) end
 
-  # See <tt>File.open</tt>.  Opens the file for reading or writing.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   open(mode = 'r', permissions = 0666, **options) {|file| ... } -> object
+  #   open(mode = 'r', permissions = 0666, **options) -> file
+  #
+  # Creates a File object for the entry at the path in `self` and opens the file;
+  # see File.new for details.
+  #
+  # With a block given, calls the block with the file;
+  # closes the file on block exit:
+  #
+  # ```ruby
+  # Pathname('README.md').open {|file| file.size } # => 3469
+  # ```
+  #
+  # With no block given, returns the file:
+  #
+  # ```ruby
+  # file = Pathname('README.md').open # => #<File:README.md>
+  # file.size                         # => 3469
+  # file.close
+  # ```
+  #
   def open(...) # :yield: file
     File.open(@path, ...)
   end
@@ -1581,35 +1771,45 @@ class Pathname    # * File *
   # call-seq:
   #   readlink -> new_pathname
   #
-  # Returns a new pathname containing the string path to the entry referenced by `self`:
+  # Returns a new pathname containing the path stored
+  # in the [symbolic link](rdoc-ref:file/symbolic_links.md) entry
+  # at the path stored in `self`:
   #
   # ```ruby
-  # # Create Pathnames.
-  # file_pn = Pathname('doc/extension.rdoc') # => #<Pathname:doc/extension.rdoc>
-  # target_pn = Pathname('..').join(file_pn) # => #<Pathname:../doc/extension.rdoc>
-  # link_pn = Pathname('lib/u.tmp')          # => #<Pathname:lib/u.tmp>
-  # link_pn.make_symlink(target_pn)
-  # link_pn.readlink                         # => #<Pathname:../doc/extension.rdoc>
-  # link_pn.delete
+  # file_pn = Pathname('README.md')
+  # link_pn = Pathname('foo')
+  # link_pn.make_symlink(file_pn)
+  # link_pn.readlink # => #<Pathname:README.md>
+  # link_pn.unlink   # Clean up.
   # ```
   #
+  # Raises Errno::EINVAL if the path in `self` is not the path to a symbolic link.
   def readlink() self.class.new(File.readlink(@path)) end
 
   # :markup: markdown
   #
   # call-seq:
-  #   rename(new_name)
+  #   rename(new_path) -> 0
   #
-  # Renames the entry at the path in `self` to the entry given in `new_name`,
-  # which may be either a path or another pathname:
+  # Moves the entry at the path in `self` to the given `new_path`,
+  # which may be either a path or another pathname.
+  #
+  # Does not follow [symbolic links](rdoc-ref:file/symbolic_links.md);
+  # if the entry is a symlink, the link itself is renamed.
+  #
+  # The examples below use two temporary directories:
   #
   # ```ruby
-  # # Create source and destination pathnames and directories.
-  # pn_srcdir = Pathname('/tmp/src')     # => #<Pathname:/tmp/src>
+  # pn_srcdir = Pathname('/tmp/src/')  # => #<Pathname:/tmp/src/>
+  # pn_dstdir = Pathname('/tmp/dst/')  # => #<Pathname:/tmp/dst/>
   # pn_srcdir.mkdir
-  # pn_dstdir = Pathname('/tmp/dst')     # => #<Pathname:/tmp/dst>
   # pn_dstdir.mkdir
-  # # Create source file pathname and file.
+  # ```
+  #
+  # The entry to be renamed may be a file:
+  #
+  # ```ruby
+  # # Create source pathname and file.
   # pn_srcfile = pn_srcdir.join('t.tmp') # => #<Pathname:/tmp/src/t.tmp>
   # pn_srcfile.write('foo')
   # # Create destination file pathname.
@@ -1618,22 +1818,44 @@ class Pathname    # * File *
   # pn_srcfile.rename(pn_dstfile)
   # pn_srcfile.exist?                    # => false
   # pn_dstfile.exist?                    # => true
+  # pn_srcfile                           # => #<Pathname:/tmp/src/t.tmp> # Not changed.
+  # pn_dstfile.delete                    # Clean up.
   # ```
   #
-  # Works for directories, too:
+  # The entry to be renames may be a symbolic link:
   #
   # ```ruby
-  # pn_dstdir.rename('/tmp/foo')
-  # pn_dstdir.exist?            # => false
-  # Pathname('/tmp/foo').exist? # => true
+  # # Create source pathname and file.
+  # pn_srcfile = pn_srcdir.join('t.tmp') # => #<Pathname:/tmp/src/t.tmp>
+  # pn_srcfile.write('foo')
+  # # Create link pathname and link.
+  # pn_lnkfile = pn_dstdir.join('u.tmp') pn_lnkfile = pn_dstdir.join('u.tmp')
+  # pn_lnkfile.make_symlink(pn_srcfile)
+  # pn_lnkfile.readlink                  # => #<Pathname:/tmp/src/t.tmp>
+  # pn_renamed = Pathname('lib/v.tmp')   # => #<Pathname:lib/v.tmp>
+  # pn_lnkfile.rename(pn_renamed)        # Symlink not followed.
+  # pn_renamed.symlink?                  # => true
+  # pn_renamed.readlink                  # => #<Pathname:/tmp/src/t.tmp>
+  # pn_lnkfile                           # => #<Pathname:/tmp/dst/u.tmp>  # Not changed.
+  # # Clean up.
+  # pn_renamed.delete
+  # pn_srcfile.delete
   # ```
   #
-  # Clean up.
+  # The entry to be renamed may be a directory:
   #
   # ```ruby
-  # pn_srcdir.rmtree
-  # Pathname('/tmp/foo').rmtree
+  # pn_renamed = Pathname('/tmp/foo') # => #<Pathname:/tmp/foo>
+  # pn_dstdir.rename(pn_renamed)
   # ```
+  #
+  # Clean up:
+  #
+  # ```ruby
+  # pn_renamed.rmtree                 # => #<Pathname:/tmp/foo>
+  # pn_srcdir.rmtree                  # => #<Pathname:/tmp/src/>
+  # ```
+  #
   #
   # Raises SystemCallError if the entry cannot be renamed.
   def rename(to) File.rename(@path, to) end
@@ -1641,15 +1863,24 @@ class Pathname    # * File *
   # :markup: markdown
   #
   # call-seq:
-  #   stat -> File::Stat
+  #   stat -> stat
   #
-  # Returns a File::Stat object for the entry at the path in `self`:
+  # Returns a new File::Stat object for the entry at the path in `self`.
+  # Follows [symbolic links](file/symbolic_links.md);
+  # therefore if the entry is a symbolic link,
+  # the returned object contains information for the target entry, not the symbolic link:
   #
   # ```ruby
-  # Pathname('README.md').stat.inspect
-  # => "#<File::Stat dev=0x10302, ino=22941341, mode=0100664, nlink=1, uid=1000, gid=1000, rdev=0x0, size=3469, blksize=4096, blocks=8, atime=2026-07-10 15:24:17.476506084 -0500, mtime=2026-07-07 10:23:27.320088262 -0500, ctime=2026-07-07 10:23:27.320088262 -0500>"
-  # Pathname('doc').stat.inspect
-  # => "#<File::Stat dev=0x10302, ino=22941930, mode=040775, nlink=22, uid=1000, gid=1000, rdev=0x0, size=4096, blksize=4096, blocks=8, atime=2026-07-11 10:05:20.480330738 -0500, mtime=2026-07-11 10:05:06.34333645 -0500, ctime=2026-07-11 10:05:06.34333645 -0500>"
+  # file_pn = Pathname('README.md')
+  # link_pn = Pathname('foo')
+  # link_pn.make_symlink(file_pn)
+  # # Method stat follows the symlink, so the birthtimes are the same.
+  # file_pn.stat.birthtime  # => 2026-09-07 13:36:38.939798737 -0500
+  # link_pn.stat.birthtime  # => 2026-09-07 13:36:38.939798737 -0500
+  # # Method lstat does not follow the symlink, so the birthtimes are different.
+  # file_pn.lstat.birthtime # => 2026-09-07 13:36:38.939798737 -0500
+  # link_pn.lstat.birthtime # => 2026-09-08 10:53:41.027337999 -0500
+  # link_pn.unlink          # Clean up.
   # ```
   #
   def stat() File.stat(@path) end
@@ -1658,25 +1889,24 @@ class Pathname    # * File *
   #  :markup: markdown
   #
   #  call-seq:
-  #    lstat -> new_stat
+  #    lstat -> stat
   #
-  #  Returns a File::Stat object for the path in `self`;
-  #  does not follow symbolic links,
-  #  and therefore returns the stat object for that path,
+  #  Returns a File::Stat object for the entry at the path in `self`.
+  #  Does not follow [symbolic links](file/symbolic_links.md);
+  #  therefore the returned object contains information for that entry,
   #  regardless of whether it is a symbolic link:
   #
   #  ```ruby
-  #  File.write('t.tmp', '')
-  #  sleep(1)
-  #  File.symlink('t.tmp', 'link')
-  #  pn = Pathname('link')
-  #  # => #<Pathname:link>
-  #  # Method stat: follows link to 't.tmp'.
-  #  pn.stat.ctime  # => 2026-06-13 15:02:46.562620885 -0500
-  #  # Method lstat; does not follow link.
-  #  pn.lstat.ctime # => 2026-06-13 15:02:47.563619647 -0500
-  #  File.delete('t.tmp')
-  #  File.delete('link')
+  #  file_pn = Pathname('README.md')
+  #  link_pn = Pathname('foo')
+  #  link_pn.make_symlink(file_pn)
+  #  # Method stat follows the symlink, so the birthtimes are the same.
+  #  file_pn.stat.birthtime  # => 2026-09-07 13:36:38.939798737 -0500
+  #  link_pn.stat.birthtime  # => 2026-09-07 13:36:38.939798737 -0500
+  #  # Method lstat does not follow the symlink, so the birthtimes are different.
+  #  file_pn.lstat.birthtime # => 2026-09-07 13:36:38.939798737 -0500
+  #  link_pn.lstat.birthtime # => 2026-09-08 10:53:41.027337999 -0500
+  #  link_pn.unlink          # Clean up.
   #  ```
   #
   def lstat() File.lstat(@path) end
@@ -1684,9 +1914,10 @@ class Pathname    # * File *
   # :markup: markdown
   #
   # call-seq:
-  #   make_symlink(path) -> 0
+  #   make_symlink(target_path) -> 0
   #
-  # Creates a symbolic link at the path in `self` to the entry at `path`:
+  # Creates a [symbolic link](rdoc-ref:file/symbolic_links.md)
+  # at the path in `self` to the entry at `target_path`:
   #
   # ```ruby
   # # Create Pathnames.
@@ -1698,6 +1929,9 @@ class Pathname    # * File *
   # file_pn.read == link_pn.read             # => true
   # link_pn.delete                           # Clean up.
   # ```
+  #
+  # If the entry at `target_path` is itself a symlink, that link is _not_ followed;
+  # thus the created symlink always points to `target_path`.
   #
   # See also: #read, #readlink, #symlink?.
   def make_symlink(old) File.symlink(old, @path) end
@@ -1776,7 +2010,8 @@ class Pathname    # * File *
   # call-seq:
   #   lutime(atime, mtime) -> 1
   #
-  # Like Pathname#utime, but does not follow symbolic links,
+  # Like Pathname#utime,
+  # but does not follow [symbolic links](rdoc-ref:file/symbolic_links.md),
   # and therefore changes the times of the entry in `self`,
   # regardless of whether it is a symbolic link:
   #
@@ -1859,7 +2094,23 @@ class Pathname    # * File *
   #
   def basename(...) self.class.new(File.basename(@path, ...)) end
 
-  # See <tt>File.dirname</tt>.  Returns all but the last component of the path.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   dirname -> new_pathname
+  #
+  # Returns a new pathname whose path is all but the last component of the path in `self`:
+  #
+  # ```ruby
+  # Pathname('/usr/lib/linux').basename # => #<Pathname:linux>
+  # Pathname('/usr').basename           # => #<Pathname:usr>
+  # Pathname('/').basename              # => #<Pathname:/>
+  # Pathname('lib/').basename           # => #<Pathname:lib>
+  # Pathname('nosuch').basename         # => #<Pathname:nosuch>
+  # ```
+  #
+  # Components are delimited by File::SEPARATOR and, if non-+nil+, File::ALT_SEPARATOR.
+
   def dirname() self.class.new(File.dirname(@path)) end
 
   # :markup: markdown
@@ -2035,7 +2286,7 @@ class Pathname    # * FileTest *
   # Pathname($stdin).blockdev?         # => false
   # ```
   #
-  # The returned value is OS-dependent; on Windows, almost always `false`.
+  # The returned value is filesystem-dependent; on Windows, always `false`.
   def blockdev?() FileTest.blockdev?(@path) end
 
   # :markup: markdown
@@ -2055,7 +2306,7 @@ class Pathname    # * FileTest *
   # Pathname('nosuch').chardev?       # => false
   # ```
   #
-  # The returned value is OS-dependent; on Windows, almost always `false`.
+  # The returned value is filesystem-dependent; on Windows, always `false`.
   def chardev?() FileTest.chardev?(@path) end
 
   # :markup: markdown
@@ -2096,12 +2347,33 @@ class Pathname    # * FileTest *
   # call-seq:
   #   executable? -> true or false
   #
-  # Returns whether the entry represented by `self` is executable;
-  # calls FileTest.executable? with argument `self.to_s`:
+  # Returns whether the entry represented by `self` exists and is executable.
+  #
+  # On Windows, the entry is executable if its path has file extension
+  # `.bat`, `.cmd`, `.com`, or `.exe`:
   #
   # ```ruby
-  # Pathname('bin/gem').executable?   # => true
-  # Pathname('README.md').executable? # => false
+  # Pathname('bin/gem').executable? # => true
+  # mode('bin/gem') # => "100775 -rwxrwxr-x"
+  # Pathname('.').executable? # => true
+  # mode('.') # => "040775 drwxrwxr-x"
+  # Pathname('nosuch').executable? # => false
+  # ```
+  #
+  # On other systems, the entry is executable if it has the execute/search
+  # permission for the effective user and group id of the current process;
+  # see {Permissions}[rdoc-ref:file/filesystem_modes.md@Permissions].
+  #
+  # These examples use
+  # a {helper method}[rdoc-ref:file/filesystem_modes.md@Helper+Method], `mode`,
+  # that displays a mode both in octal digits and in characters:
+  #
+  # ```ruby
+  # Pathname('bin/gem').executable? # => true
+  # mode('bin/gem')                 # => "100775 -rwxrwxr-x"
+  # Pathname('.').executable?       # => true
+  # mode('.')                       # => "040775 drwxrwxr-x"
+  # Pathname('nosuch').executable?  # => false
   # ```
   #
   def executable?() FileTest.executable?(@path) end
@@ -2166,11 +2438,40 @@ class Pathname    # * FileTest *
   # Pathname('lib').directory?       # => true
   # Pathname('README.md').directory? # => false
   # Pathname('nosuch').directory?    # => false
+  # Pathname($stdin).directory?      # => false
+  # ```
+  #
+  # Follows symbolic links:
+  #
+  # ```ruby
+  # target_pn = Pathname('doc')
+  # link_pn = Pathname('link')
+  # link_pn.make_symlink(target_pn)
+  # link_pn.directory?               # => true
+  # link_pn.delete
+  # target_pn = Pathname('README.md')
+  # link_pn = Pathname('link')
+  # link_pn.make_symlink(target_pn)
+  # link_pn.directory?               # => false
+  # link_pn.delete
   # ```
   #
   def directory?() FileTest.directory?(@path) end
 
-  # See <tt>FileTest.file?</tt>.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   file? -> true or false
+  #
+  # Returns whether the entry at the path in `self` exists and is a regular file;
+  # see #ftype:
+  #
+  # ```ruby
+  # Pathname('README.md').file? # => true
+  # Pathname('lib/').file?      # => false
+  # Pathname('nosuch').file?    # => false
+  # ```
+  #
   def file?() FileTest.file?(@path) end
 
   # :markup: markdown
@@ -2178,7 +2479,7 @@ class Pathname    # * FileTest *
   # call-seq:
   #   pipe? -> true or false
   #
-  # Returns whether the path in +self+ points to a pipe:
+  # Returns whether entry at the path in `self` is a pipe:
   #
   # ```ruby
   # path = '/tmp/foo'
@@ -2196,7 +2497,7 @@ class Pathname    # * FileTest *
   # call-seq:
   #   socket? -> true or false
   #
-  # Returns whether the path in `self` points to a socket entry:
+  # Returns whether entry at the path in `self` is a socket:
   #
   # ```ruby
   # require 'socket'
@@ -2241,8 +2542,8 @@ class Pathname    # * FileTest *
   # call-seq:
   #   readable? -> true or false
   #
-  # Returns whether the path in `self` points to an entry
-  # that is readable by the owner and group of the current process:
+  # Returns whether the entry at the path in `self`
+  # is readable by the owner and group of the current process:
   #
   # ```ruby
   # pn = Pathname('/tmp/secret.txt')
@@ -2283,7 +2584,6 @@ class Pathname    # * FileTest *
   # :markup: markdown
   #
   # call-seq:
-  #
   #   readable_real? -> true or false
   #
   # Like #readable?, but checks against the real user and group ids
@@ -2409,23 +2709,38 @@ class Pathname    # * FileTest *
   # call-seq:
   #   symlink? -> true or false
   #
-  # Returns whether the entry at the path in `self` is a symbolic link:
+  # Returns whether the entry at the path in `self`
+  # is a [symbolic link](rdoc-ref:file/symbolic_links.md):
   #
   # ```ruby
-  # # Create Pathnames.
-  # file_pn = Pathname('doc/extension.rdoc') # => #<Pathname:doc/extension.rdoc>
-  # target_pn = Pathname('..').join(file_pn) # => #<Pathname:../doc/extension.rdoc>
-  # link_pn = Pathname('lib/u.tmp')          # => #<Pathname:lib/u.tmp>
-  # link_pn.symlink?                         # => false
-  # # Create link.
-  # link_pn.make_symlink(target_pn)
-  # link_pn.symlink?                         # => true
-  # link_pn.delete                           # Clean up.
+  # file_pn = Pathname('README.md')
+  # link_pn = Pathname('foo')
+  # link_pn.make_symlink(file_pn)
+  # file_pn.symlink? # => false
+  # link_pn.symlink? # => true
+  # link_pn.unlink   # Clean up.
   # ```
   #
   def symlink?() FileTest.symlink?(@path) end
 
-  # See <tt>FileTest.writable?</tt>.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   writable? => true or false
+  #
+  # Returns whether entry at the path in `self`
+  # is writable by the owner and group of the current process:
+  #
+  # ```ruby
+  # pn = Pathname('/tmp/secret.txt')
+  # pn.write('foo')
+  # pn.writable?                 # => true
+  # pn.chmod(0o000)
+  # pn.writable?                 # => false
+  # pn.delete
+  # Pathname('nosuch').writable? # => false
+  # ```
+  #
   def writable?() FileTest.writable?(@path) end
 
   # :markup: markdown
@@ -2452,10 +2767,40 @@ class Pathname    # * FileTest *
   #
   def world_writable?() File.world_writable?(@path) end
 
-  # See <tt>FileTest.writable_real?</tt>.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   writable_real? -> true or false
+  #
+  # Like #writable?, but checks against the real user and group ids
+  # instead of the effective ids.
   def writable_real?() FileTest.writable_real?(@path) end
 
-  # See <tt>FileTest.zero?</tt>.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   zero? -> true or false
+  #
+  # Returns whether the entry represented by `self` exists and has size zero:
+  #
+  # ```
+  # dir_pn = Pathname('example_dir')
+  # dir_pn.zero?  # => false  # Dir does not exist.
+  # dir_pn.mkdir
+  # dir_pn.zero?  # => false  # Directory never has size zero.
+  # dir_pn.empty? # => true   # But this one is empty.
+  #
+  # file_pn = Pathname('example_dir/example.txt')
+  # file_pn.zero? # => false  # File does not exist.
+  # file_pn.write('')
+  # file_pn.zero? # => true
+  # file_pn.write('foo')
+  # file_pn.zero? # => false
+  #
+  # file_pn.delete
+  # dir_pn.delete
+  # ```
+  #
   def zero?() FileTest.zero?(@path) end
 end
 
@@ -2473,7 +2818,7 @@ class Pathname
   # each based on a selected filesystem entry.
   #
   # With a block given, calls the block with pathnames,
-  # each based on a selected filesytem entry.
+  # each based on a selected filesystem entry.
   #
   def Pathname.glob(*args, **kwargs) # :yield: pathname
     if block_given?
@@ -2583,7 +2928,7 @@ class Pathname
   # call-seq:
   #   rmdir -> 0
   #
-  # Deletes the directory at the path in +self+; returns `0`:
+  # Deletes the directory at the path in `self`; returns `0`:
   #
   # ```ruby
   # pn = Pathname('doc/foo')
@@ -2591,8 +2936,8 @@ class Pathname
   # pn.rmdir
   # ```
   #
-  # Raises an exception if the directory is not empty,
-  # or if the path does not point to a directory.
+  # Raises an exception if the entry at the path in `self` is not a directory,
+  # or if the directory is not empty.
   #
   # Use method #rmtree to delete the entire filetree at the path.
   def rmdir() Dir.rmdir(@path) end
@@ -2636,11 +2981,18 @@ class Pathname    # * mixed *
   #   unlink -> 0 or 1
   #
   # Removes the entry represented by `self`;
-  # returns `0` if a directory, `1` if a file:
+  # returns `0` if a directory, `1` otherwise.
+  #
+  # Does not follow [symbolic links](rdoc-ref:file/symbolic_links.md);
+  # if the entry is a symlink, the link itself is removed.
   #
   # ```ruby
   # Pathname(Pathname.mktmpdir).unlink # => 0
   # Pathname(Tempfile.create).unlink   # => 1
+  # pn_target = Pathname('README.md')  # => #<Pathname:README.md>
+  # pn_link = Pathname('foo')          # => #<Pathname:foo>
+  # pn_link.make_symlink(pn_target)
+  # pn_link.delete
   # ```
   #
   def unlink()

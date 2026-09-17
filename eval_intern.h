@@ -106,11 +106,14 @@ extern int select_large_fdset(int, fd_set *, fd_set *, fd_set *, struct timeval 
   EC_SAVE_TAG_CFP(_tag, _ec); \
   rb_vm_tag_jmpbuf_init(&_tag.buf); \
 
-// Remember the CFP as of EC_PUSH_TAG so that ZJIT can materialize frames
-// only up to longjmp's target CFP. When a C method does longjmp inside it,
-// the target CFP may not be equal to the VM_FRAME_FLAG_FINISH frame.
+// Remember the CFP and whether it was already running in ZJIT as of
+// EC_PUSH_TAG. When a C method does longjmp inside it, the target CFP may not
+// be equal to the VM_FRAME_FLAG_FINISH frame. If its ZJIT frame predates this
+// tag, its native stack survives the jump and should not be materialized.
 #if USE_ZJIT
-# define EC_SAVE_TAG_CFP(_tag, _ec) _tag.cfp = _ec->cfp
+# define EC_SAVE_TAG_CFP(_tag, _ec) \
+    _tag.cfp = _ec->cfp; \
+    _tag.zjit_frame_active = CFP_ZJIT_FRAME_P(_ec->cfp)
 #else
 # define EC_SAVE_TAG_CFP(_tag, _ec)
 #endif
@@ -166,7 +169,7 @@ rb_ec_tag_jump(const rb_execution_context_t *ec, enum ruby_tag_type st)
 {
     RUBY_ASSERT(st > TAG_NONE && st <= TAG_FATAL, ": Invalid tag jump: %d", (int)st);
 #if USE_ZJIT
-    rb_zjit_materialize_frames(ec, ec->cfp);
+    rb_zjit_materialize_frames_for_longjmp(ec, ec->cfp);
 #endif
     ec->tag->state = st;
     ruby_longjmp(RB_VM_TAG_JMPBUF_GET(ec->tag->buf), 1);

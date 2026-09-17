@@ -7,6 +7,7 @@ use mmtk::util::ObjectReference;
 use mmtk::vm::ObjectTracerContext;
 
 use crate::abi::GCThreadTLS;
+use crate::binding::object_survives_current_gc;
 use crate::upcalls;
 use crate::Ruby;
 
@@ -118,7 +119,7 @@ impl WeakProcessor {
 
         worker.add_work(WorkBucketStage::VMRefClosure, ProcessWeakReferences);
 
-        worker.add_work(WorkBucketStage::Prepare, UpdateFinalizerObjIdTables);
+        worker.add_work(WorkBucketStage::Prepare, UpdateFinalizerTable);
 
         let global_tables_count = (crate::upcalls().global_tables_count)();
         let work_packets = (0..global_tables_count)
@@ -137,7 +138,7 @@ fn process_obj_free_candidates(obj_free_candidates: &mut Vec<ObjectReference>) {
     let mut new_candidates = Vec::new();
 
     for object in obj_free_candidates.iter().copied() {
-        if object.is_reachable() {
+        if object_survives_current_gc(object) {
             // Forward and add back to the candidate list.
             let new_object = object.forward();
             trace!("Forwarding obj_free candidate: {object} -> {new_object}");
@@ -223,7 +224,7 @@ impl ProcessWeakReferences {
                 *object_ptr = object;
             }
 
-            if object.is_reachable() {
+            if object_survives_current_gc(object) {
                 (upcalls().handle_weak_references)(object, moving_gc);
 
                 true
@@ -260,13 +261,13 @@ trait GlobalTableProcessingWork {
     }
 }
 
-struct UpdateFinalizerObjIdTables;
-impl GlobalTableProcessingWork for UpdateFinalizerObjIdTables {
+struct UpdateFinalizerTable;
+impl GlobalTableProcessingWork for UpdateFinalizerTable {
     fn process_table(&mut self) {
         (crate::upcalls().update_finalizer_table)();
     }
 }
-impl GCWork<Ruby> for UpdateFinalizerObjIdTables {
+impl GCWork<Ruby> for UpdateFinalizerTable {
     fn do_work(&mut self, worker: &mut GCWorker<Ruby>, mmtk: &'static mmtk::MMTK<Ruby>) {
         GlobalTableProcessingWork::do_work(self, worker, mmtk);
     }
@@ -302,7 +303,7 @@ impl GCWork<Ruby> for UpdateWbUnprotectedObjectsList {
         debug!("Updating {} WB-unprotected objects", old_objects.len());
 
         for object in old_objects {
-            if object.is_reachable() {
+            if object_survives_current_gc(object) {
                 // Forward and add back to the candidate list.
                 let new_object = object.forward();
                 trace!("Forwarding WB-unprotected object: {object} -> {new_object}");

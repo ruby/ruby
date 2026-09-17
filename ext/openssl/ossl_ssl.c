@@ -579,12 +579,21 @@ ssl_npn_select_cb_common(SSL *ssl, VALUE cb, const unsigned char **out,
     return SSL_TLSEXT_ERR_OK;
 }
 
+static VALUE
+ossl_sslctx_obj_from_ssl(const SSL *ssl)
+{
+    SSL_CTX *ctx = SSL_get_SSL_CTX(ssl);
+
+    return (VALUE)SSL_CTX_get_ex_data(ctx, ossl_sslctx_ex_ptr_idx);
+}
+
 #ifdef OSSL_USE_NEXTPROTONEG
 static int
 ssl_npn_advertise_cb(SSL *ssl, const unsigned char **out, unsigned int *outlen,
                      void *arg)
 {
-    VALUE protocols = rb_attr_get((VALUE)arg, id_npn_protocols_encoded);
+    VALUE protocols = rb_attr_get(ossl_sslctx_obj_from_ssl(ssl),
+                                  id_npn_protocols_encoded);
 
     *out = (const unsigned char *) RSTRING_PTR(protocols);
     *outlen = RSTRING_LENINT(protocols);
@@ -598,7 +607,7 @@ ssl_npn_select_cb(SSL *ssl, unsigned char **out, unsigned char *outlen,
 {
     VALUE sslctx_obj, cb;
 
-    sslctx_obj = (VALUE) arg;
+    sslctx_obj = ossl_sslctx_obj_from_ssl(ssl);
     cb = rb_attr_get(sslctx_obj, id_i_npn_select_cb);
 
     return ssl_npn_select_cb_common(ssl, cb, (const unsigned char **)out,
@@ -612,7 +621,7 @@ ssl_alpn_select_cb(SSL *ssl, const unsigned char **out, unsigned char *outlen,
 {
     VALUE sslctx_obj, cb;
 
-    sslctx_obj = (VALUE) arg;
+    sslctx_obj = ossl_sslctx_obj_from_ssl(ssl);
     cb = rb_attr_get(sslctx_obj, id_i_alpn_select_cb);
 
     return ssl_npn_select_cb_common(ssl, cb, out, outlen, in, inlen);
@@ -807,11 +816,11 @@ ossl_sslctx_setup(VALUE self)
     if (!NIL_P(val)) {
         VALUE encoded = ssl_encode_npn_protocols(val);
         rb_ivar_set(self, id_npn_protocols_encoded, encoded);
-        SSL_CTX_set_next_protos_advertised_cb(ctx, ssl_npn_advertise_cb, (void *)self);
+        SSL_CTX_set_next_protos_advertised_cb(ctx, ssl_npn_advertise_cb, NULL);
         OSSL_Debug("SSL NPN advertise callback added");
     }
     if (RTEST(rb_attr_get(self, id_i_npn_select_cb))) {
-        SSL_CTX_set_next_proto_select_cb(ctx, ssl_npn_select_cb, (void *) self);
+        SSL_CTX_set_next_proto_select_cb(ctx, ssl_npn_select_cb, NULL);
         OSSL_Debug("SSL NPN select callback added");
     }
 #endif
@@ -827,7 +836,7 @@ ossl_sslctx_setup(VALUE self)
         OSSL_Debug("SSL ALPN values added");
     }
     if (RTEST(rb_attr_get(self, id_i_alpn_select_cb))) {
-        SSL_CTX_set_alpn_select_cb(ctx, ssl_alpn_select_cb, (void *) self);
+        SSL_CTX_set_alpn_select_cb(ctx, ssl_alpn_select_cb, NULL);
         OSSL_Debug("SSL ALPN select callback added");
     }
 
@@ -910,11 +919,16 @@ parse_proto_version(VALUE str)
  * call-seq:
  *    ctx.min_version = OpenSSL::SSL::TLS1_2_VERSION
  *    ctx.min_version = :TLS1_2
+ *    ctx.min_version = 0
  *    ctx.min_version = nil
  *
- * Sets the lower bound on the supported SSL/TLS protocol version. The
+ * Sets the lower bound of the supported SSL/TLS protocol version range. The
  * version may be specified by an integer constant named
- * OpenSSL::SSL::*_VERSION, a Symbol, or +nil+ which means "any version".
+ * OpenSSL::SSL::*_VERSION or a Symbol. A value of +0+ or +nil+ leaves the
+ * lower bound unspecified.
+ *
+ * See also #security_level=, which may further restrict the available protocol
+ * versions.
  *
  * === Example
  *   ctx = OpenSSL::SSL::SSLContext.new
@@ -943,9 +957,10 @@ ossl_sslctx_set_min_version(VALUE self, VALUE v)
  * call-seq:
  *    ctx.max_version = OpenSSL::SSL::TLS1_2_VERSION
  *    ctx.max_version = :TLS1_2
+ *    ctx.max_version = 0
  *    ctx.max_version = nil
  *
- * Sets the upper bound of the supported SSL/TLS protocol version. See
+ * Sets the upper bound of the supported SSL/TLS protocol version range. See
  * #min_version= for the possible values.
  */
 static VALUE

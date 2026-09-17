@@ -28,7 +28,9 @@ describe "IO#sysseek" do
 
   it "raises an error when called after buffered reads" do
     @io.readline
-    -> { @io.sysseek(-5, IO::SEEK_CUR) }.should.raise(IOError)
+    -> do
+      @io.sysseek(-5, IO::SEEK_CUR)
+    end.should.raise(IOError, "sysseek for buffered IO")
   end
 
   it "seeks normally even when called immediately after a buffered IO#read" do

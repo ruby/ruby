@@ -44,11 +44,12 @@ jobs:
       OS_VER: windows-${{ matrix.os }}
       VCPKG_DEFAULT_TRIPLET: x64-windows
       FEED_URL: https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json
+      NoDefaultCurrentDirectoryInExePath: 1
     steps:
       - run: md build
         working-directory:
 
-      - uses: ruby/setup-ruby@8e41b362d2589a22a44c1cfa214b3c83052c195b # v1.318.0
+      - uses: ruby/setup-ruby@bec3f19a76460dbe12f60def7d1a77585f07516c # v1.322.0
         with:
           ruby-version: '3.2'
           bundler: none
@@ -90,14 +91,18 @@ jobs:
           "VCPKG_BINARY_SOURCES=clear;nuget,$Env:FEED_URL,$Env:FEED_MODE" >> $Env:GITHUB_ENV
 
       - name: Install libraries with vcpkg
+        # The registry pinned by `builtin-baseline` can need a newer tool
+        # than the vcpkg.exe shipped in the runner image, so re-bootstrap
+        # it to the version the pulled registry asks for.
         run: |
           git -C "%VCPKG_INSTALLATION_ROOT%" pull --quiet
+          call "%VCPKG_INSTALLATION_ROOT%\bootstrap-vcpkg.bat"
           vcpkg install
         working-directory: ${{ inputs.archname }}
 
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          path: snapshot-*/.downloaded-cache
+          path: ${{ inputs.archname }}/.downloaded-cache
           key: downloaded-cache
 
       - name: setup env
@@ -150,7 +155,7 @@ jobs:
         timeout-minutes: 70
         continue-on-error: ${{ matrix.continue-on-error || false }}
 
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           sparse-checkout: .github/actions/slack
           sparse-checkout-cone-mode: false

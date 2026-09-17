@@ -9,7 +9,7 @@ use crate::options::OPTIONS;
 #[path = "../../jit/src/lib.rs"]
 mod jit;
 
-use crate::{cruby::*, hir::ParseError, options::get_option, state::{zjit_enabled_p, ZJITState}};
+use crate::{cast::IntoUsize as _, cruby::*, hir::ParseError, options::get_option, state::{zjit_enabled_p, ZJITState}};
 
 macro_rules! make_counters {
     (
@@ -156,6 +156,7 @@ make_counters! {
     default {
         compiled_iseq_count,
         failed_iseq_count,
+        jit_frame_heap_bytes,
         skipped_native_stack_full,
 
         compile_time_ns,
@@ -164,19 +165,21 @@ make_counters! {
         invalidation_time_ns,
 
         compiled_side_exit_count,
-        side_exit_size,
+        side_exit_size_bytes,
         compile_side_exit_time_ns,
 
         compile_hir_time_ns,
         compile_hir_build_time_ns,
         compile_hir_strength_reduce_time_ns,
         compile_hir_inline_methods_time_ns,
+        compile_hir_remove_trivial_block_params_time_ns,
         compile_hir_optimize_load_store_time_ns,
         compile_hir_canonicalize_time_ns,
         compile_hir_fold_constants_time_ns,
         compile_hir_clean_cfg_time_ns,
         compile_hir_remove_redundant_patch_points_time_ns,
         compile_hir_remove_duplicate_check_interrupts_time_ns,
+        compile_hir_eliminate_empty_inline_frames_time_ns,
         compile_hir_eliminate_dead_code_time_ns,
         compile_lir_time_ns,
     }
@@ -185,6 +188,7 @@ make_counters! {
     exit {
         // exit_: Side exits reasons
         exit_compile_error,
+        exit_exception_handler,
         exit_unhandled_newarray_send_min,
         exit_unhandled_newarray_send_hash,
         exit_unhandled_newarray_send_pack,
@@ -220,6 +224,7 @@ make_counters! {
         exit_patchpoint_method_redefined,
         exit_patchpoint_stable_constant_names,
         exit_patchpoint_no_tracepoint,
+        exit_patchpoint_no_newobj_hook,
         exit_patchpoint_no_ep_escape,
         exit_patchpoint_single_ractor_mode,
         exit_patchpoint_no_singleton_class,
@@ -236,16 +241,18 @@ make_counters! {
         exit_invoke_block_iseq_changed,
         exit_block_param_wb_required,
         exit_too_many_keyword_parameters,
-        exit_too_many_args_for_lir,
         exit_no_profile_send,
         exit_no_profile_getivar,
         exit_no_profile_setivar,
         exit_splatkw_not_nil_or_hash,
         exit_splatkw_polymorphic,
         exit_splatkw_not_profiled,
+        exit_caller_splat_length_mismatch,
+        exit_caller_splat_ruby2_keywords,
         exit_directive_induced,
         exit_send_while_tracing,
         exit_invokeblock_not_ifunc,
+        exit_once_not_done,
     }
 
     // Send fallback counters that are summed as dynamic_send_count
@@ -253,7 +260,7 @@ make_counters! {
         // send_fallback_: Fallback reasons for send-ish instructions
         send_fallback_send_cfunc_not_variadic,
         send_fallback_send_not_optimized_method_type_optimized,
-        send_fallback_too_many_args_for_lir,
+        send_fallback_operand_too_large,
         send_fallback_send_bop_redefined,
         send_fallback_send_operands_not_fixnum,
         send_fallback_send_polymorphic_fallback,
@@ -267,7 +274,6 @@ make_counters! {
         send_fallback_send_not_optimized_method_type,
         send_fallback_send_not_optimized_need_permission,
         send_fallback_send_block_arg_not_nil,
-        send_fallback_ccall_with_frame_too_many_args,
         send_fallback_argc_param_mismatch,
         // The call has at least one feature on the caller or callee side
         // that the optimizer does not support.
@@ -288,9 +294,9 @@ make_counters! {
         send_fallback_super_not_optimized_method_type,
         send_fallback_super_polymorphic,
         send_fallback_super_target_not_found,
-        send_fallback_super_target_complex_args_pass,
         send_fallback_cannot_send_direct,
         send_fallback_invokeblock_not_specialized,
+        send_fallback_invokeblock_polymorphic_miss,
         send_fallback_sendforward_not_specialized,
         send_fallback_invokesuperforward_not_specialized,
         send_fallback_single_ractor_mode_required,
@@ -334,6 +340,7 @@ make_counters! {
         getivar_fallback_not_t_object,
         getivar_fallback_complex,
         getivar_fallback_no_side_exits,
+        getivar_fallback_multi_ractor,
     }
 
     // Ivar fallback counters that are summed as dynamic_definedivar_count
@@ -349,7 +356,6 @@ make_counters! {
     compile_error_iseq_version_limit_reached,
     compile_error_iseq_stack_too_large,
     compile_error_native_stack_too_large,
-    compile_error_exception_handler,
     compile_error_out_of_memory,
     compile_error_label_linking_failure,
     compile_error_jit_to_jit_optional,
@@ -367,11 +373,9 @@ make_counters! {
     compile_error_validation_duplicate_instruction,
     compile_error_validation_type_check_failure,
     compile_error_validation_misc_validation_error,
+    compile_error_validation_cfg_not_reducible,
 
     // unhandled_hir_insn_: Unhandled HIR instructions
-    unhandled_hir_insn_array_max,
-    unhandled_hir_insn_fixnum_div,
-    unhandled_hir_insn_throw,
     unhandled_hir_insn_invokebuiltin,
     unhandled_hir_insn_unknown,
 
@@ -436,6 +440,22 @@ make_counters! {
     // Unsupported argument conversions
     complex_arg_pass_keyword_to_positional_hash,
 
+    // Caller splat length profile shapes
+    caller_splat_profile_no_profiles,
+    caller_splat_profile_monomorphic,
+    caller_splat_profile_polymorphic,
+    caller_splat_profile_skewed_polymorphic,
+    caller_splat_profile_megamorphic,
+    caller_splat_profile_skewed_megamorphic,
+
+    // Caller splat specialization
+    caller_splat_optimized,
+
+    // Contexts in which SendDirect argument planning failed. These are kept
+    // outside dynamic_send because the detailed fallback reason is also counted.
+    send_direct_fallback_context_send,
+    send_direct_fallback_context_super,
+
     // Writes to the VM frame
     vm_write_jit_frame_count,
     vm_write_sp_count,
@@ -444,6 +464,9 @@ make_counters! {
     vm_write_to_parent_iseq_local_count,
     // TODO(max): Implement
     // vm_reify_stack_count,
+
+    // The number of throw instructions executed in JIT code
+    throw_count,
 
     // The number of times we ran a dynamic check
     guard_type_count,
@@ -464,6 +487,7 @@ make_counters! {
     // be incremented only once, rather than once per SendDirect, if the caller
     // already exceeds the budget before scanning for its SendDirects.
     inline_method_count,
+    empty_inline_frame_count,
     inline_reject_too_large,
     inline_reject_complex_params,
     inline_reject_ep_escapes,
@@ -480,6 +504,8 @@ make_counters! {
     getblockparamproxy_handler_polymorphic,
     getblockparamproxy_handler_megamorphic,
     getblockparamproxy_handler_no_profiles,
+
+    total_native_stack_bytes,
 }
 
 /// Increase a counter by a specified amount
@@ -512,9 +538,9 @@ pub fn exit_counter_ptr_for_opcode(opcode: u32) -> *mut u64 {
 }
 
 /// Return a raw pointer to the fallback counter for a given YARV opcode
-pub fn send_fallback_counter_ptr_for_opcode(opcode: u32) -> *mut u64 {
+pub fn send_fallback_counter_ptr_for_opcode(opcode: VmInsnType) -> *mut u64 {
     let fallback_counters = ZJITState::get_send_fallback_counters();
-    unsafe { fallback_counters.get_unchecked_mut(opcode as usize) }
+    unsafe { fallback_counters.get_unchecked_mut(opcode.to_usize()) }
 }
 
 /// Reason why ZJIT failed to produce any JIT code
@@ -523,7 +549,6 @@ pub enum CompileError {
     IseqVersionLimitReached,
     IseqStackTooLarge,
     NativeStackTooLarge,
-    ExceptionHandler,
     OutOfMemory,
     ParseError(ParseError),
     /// When a ZJIT function is too large, the branches may have
@@ -542,7 +567,6 @@ pub fn exit_counter_for_compile_error(compile_error: &CompileError) -> Counter {
         IseqVersionLimitReached => compile_error_iseq_version_limit_reached,
         IseqStackTooLarge       => compile_error_iseq_stack_too_large,
         NativeStackTooLarge     => compile_error_native_stack_too_large,
-        ExceptionHandler        => compile_error_exception_handler,
         OutOfMemory             => compile_error_out_of_memory,
         LabelLinkingFailure     => compile_error_label_linking_failure,
         ParseError(parse_error) => match parse_error {
@@ -558,6 +582,7 @@ pub fn exit_counter_for_compile_error(compile_error: &CompileError) -> Counter {
                 OperandNotDefined(_, _, _)    => compile_error_validation_operand_not_defined,
                 DuplicateInstruction(_, _)    => compile_error_validation_duplicate_instruction,
                 MismatchedOperandType(..)     => compile_error_validation_type_check_failure,
+                IrreducibleLoopEdge(..)       => compile_error_validation_cfg_not_reducible,
                 MiscValidationError(..)       => compile_error_validation_misc_validation_error,
             },
         }
@@ -568,9 +593,6 @@ pub fn exit_counter_for_unhandled_hir_insn(insn: &crate::hir::Insn) -> Counter {
     use crate::hir::Insn::*;
     use crate::stats::Counter::*;
     match insn {
-        ArrayMax { .. }      => unhandled_hir_insn_array_max,
-        FixnumDiv { .. }     => unhandled_hir_insn_fixnum_div,
-        Throw { .. }         => unhandled_hir_insn_throw,
         InvokeBuiltin { .. } => unhandled_hir_insn_invokebuiltin,
         _                    => unhandled_hir_insn_unknown,
     }
@@ -627,10 +649,11 @@ pub fn side_exit_counter(reason: crate::hir::SideExitReason) -> Counter {
         InvokeBlockIseqChanged        => exit_invoke_block_iseq_changed,
         BlockParamWbRequired          => exit_block_param_wb_required,
         TooManyKeywordParameters      => exit_too_many_keyword_parameters,
-        TooManyArgsForLir             => exit_too_many_args_for_lir,
         SplatKwNotNilOrHash           => exit_splatkw_not_nil_or_hash,
         SplatKwPolymorphic            => exit_splatkw_polymorphic,
         SplatKwNotProfiled            => exit_splatkw_not_profiled,
+        CallerSplatLengthMismatch     => exit_caller_splat_length_mismatch,
+        CallerSplatRuby2Keywords      => exit_caller_splat_ruby2_keywords,
         DirectiveInduced              => exit_directive_induced,
         PatchPoint(Invariant::BOPRedefined { .. })
                                       => exit_patchpoint_bop_redefined,
@@ -640,6 +663,8 @@ pub fn side_exit_counter(reason: crate::hir::SideExitReason) -> Counter {
                                       => exit_patchpoint_stable_constant_names,
         PatchPoint(Invariant::NoTracePoint)
                                       => exit_patchpoint_no_tracepoint,
+        PatchPoint(Invariant::NoNewObjHook)
+                                      => exit_patchpoint_no_newobj_hook,
         PatchPoint(Invariant::NoEPEscape(_))
                                       => exit_patchpoint_no_ep_escape,
         PatchPoint(Invariant::SingleRactorMode)
@@ -653,6 +678,7 @@ pub fn side_exit_counter(reason: crate::hir::SideExitReason) -> Counter {
         NoProfileGetIvar              => exit_no_profile_getivar,
         NoProfileSetIvar              => exit_no_profile_setivar,
         InvokeBlockNotIfunc           => exit_invokeblock_not_ifunc,
+        OnceNotDone                   => exit_once_not_done,
     }
 }
 
@@ -668,7 +694,7 @@ pub fn send_fallback_counter(reason: crate::hir::SendFallbackReason) -> Counter 
         SendCfuncNotVariadic                      => send_fallback_send_cfunc_not_variadic,
         SendNotOptimizedMethodTypeOptimized(_)
                                                   => send_fallback_send_not_optimized_method_type_optimized,
-        TooManyArgsForLir                         => send_fallback_too_many_args_for_lir,
+        OperandTooLarge                           => send_fallback_operand_too_large,
         SendBopRedefined                          => send_fallback_send_bop_redefined,
         SendOperandsNotFixnum                     => send_fallback_send_operands_not_fixnum,
         SendPolymorphicFallback                   => send_fallback_send_polymorphic_fallback,
@@ -689,7 +715,6 @@ pub fn send_fallback_counter(reason: crate::hir::SendFallbackReason) -> Counter 
         SendNotOptimizedMethodType(_)             => send_fallback_send_not_optimized_method_type,
         SendNotOptimizedNeedPermission            => send_fallback_send_not_optimized_need_permission,
         SendBlockArgNotNil                        => send_fallback_send_block_arg_not_nil,
-        CCallWithFrameTooManyArgs                 => send_fallback_ccall_with_frame_too_many_args,
         ObjToStringNotString                      => send_fallback_obj_to_string_not_string,
         SuperCallWithBlock                        => send_fallback_super_call_with_block,
         SuperFromBlock                            => send_fallback_super_from_block,
@@ -699,8 +724,8 @@ pub fn send_fallback_counter(reason: crate::hir::SendFallbackReason) -> Counter 
         SuperNotOptimizedMethodType(_)            => send_fallback_super_not_optimized_method_type,
         SuperPolymorphic                          => send_fallback_super_polymorphic,
         SuperTargetNotFound                       => send_fallback_super_target_not_found,
-        SuperTargetComplexArgsPass                => send_fallback_super_target_complex_args_pass,
         InvokeBlockNotSpecialized                 => send_fallback_invokeblock_not_specialized,
+        InvokeBlockPolymorphicMiss                => send_fallback_invokeblock_polymorphic_miss,
         SendForwardNotSpecialized                 => send_fallback_sendforward_not_specialized,
         InvokeSuperForwardNotSpecialized          => send_fallback_invokesuperforward_not_specialized,
         SingleRactorModeRequired                  => send_fallback_single_ractor_mode_required,
@@ -840,10 +865,12 @@ pub extern "C" fn rb_zjit_stats(_ec: EcPtr, _self: VALUE, target_key: VALUE) -> 
     }
 
     // Memory usage stats
+    let jit_frame_region_bytes = ZJITState::get_jit_frame_allocator().map_or(0, |allocator| allocator.mapped_bytes());
     let code_region_bytes = ZJITState::get_code_block().mapped_region_size();
+    set_stat_usize!(hash, "jit_frame_region_bytes", jit_frame_region_bytes);
     set_stat_usize!(hash, "code_region_bytes", code_region_bytes);
     set_stat_usize!(hash, "zjit_alloc_bytes", zjit_alloc_bytes());
-    set_stat_usize!(hash, "total_mem_bytes", code_region_bytes + zjit_alloc_bytes());
+    set_stat_usize!(hash, "total_mem_bytes", code_region_bytes + jit_frame_region_bytes + zjit_alloc_bytes());
 
     // End of default stats. Every counter beyond this is provided only for --zjit-stats.
     if !get_option!(stats) {

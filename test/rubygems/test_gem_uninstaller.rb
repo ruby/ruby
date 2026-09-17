@@ -326,6 +326,34 @@ class TestGemUninstaller < Gem::InstallerTestCase
     assert_same uninstaller, @post_uninstall_hook_arg
   end
 
+  def test_uninstall_content_addressed_gem_removes_abi_scoped_gemspec
+    _, a_gem = util_gem("ca_gone", 2) do |spec|
+      spec.required_ruby_version = "~> #{Gem.ruby_abi}.0"
+      spec.platform = Gem::Platform.local.to_s
+    end
+
+    digest = Digest::SHA256.file(a_gem).hexdigest
+    address = digest[0, 8]
+    filename = File.join(File.dirname(a_gem), "ca_gone-2-#{address}.gem")
+    FileUtils.cp a_gem, filename
+
+    Gem::Installer.at(filename, force: true).install
+    Gem::Specification.reset
+
+    gemspec = File.join(@gemhome, "specifications", Gem.ruby_abi, "ca_gone-2-#{address}.gemspec")
+    gem_dir = File.join(@gemhome, "gems", "ca_gone-2-#{address}")
+    cache_file = File.join(@gemhome, "cache", "ca_gone-2-#{address}.gem")
+    assert_path_exist gemspec
+    assert_path_exist gem_dir
+    assert_path_exist cache_file
+
+    Gem::Uninstaller.new("ca_gone", executables: true, force: true).uninstall
+
+    assert_path_not_exist gemspec
+    assert_path_not_exist gem_dir
+    assert_path_not_exist cache_file
+  end
+
   def test_uninstall_default_gem
     spec = new_default_spec "default", "2"
 
@@ -391,6 +419,39 @@ create_makefile '#{@spec.name}'
     assert_path_not_exist @spec.extension_dir
   end
 
+  def test_uninstall_removes_build_info_logs
+    @spec.extensions << "extconf.rb"
+    write_file File.join(@tempdir, "extconf.rb") do |io|
+      io.write <<-RUBY
+require 'mkmf'
+create_makefile '#{@spec.name}'
+      RUBY
+    end
+
+    @spec.files += %w[extconf.rb]
+
+    use_ui @ui do
+      path = Gem::Package.build @spec
+
+      installer = Gem::Installer.at path, force: true
+      installer.install
+    end
+
+    # Build logs left behind in build_info by a previous failed build.
+    FileUtils.mkdir_p @spec.build_info_dir
+    mkmf_log = File.join @spec.build_info_dir, "#{@spec.full_name}.mkmf.log"
+    gem_make_out = File.join @spec.build_info_dir, "#{@spec.full_name}.gem_make.out"
+    FileUtils.touch mkmf_log
+    FileUtils.touch gem_make_out
+
+    uninstaller = Gem::Uninstaller.new @spec.name, executables: true
+    uninstaller.uninstall
+
+    assert_path_not_exist @spec.extension_dir
+    assert_path_not_exist mkmf_log
+    assert_path_not_exist gem_make_out
+  end
+
   def test_uninstall_nonexistent
     uninstaller = Gem::Uninstaller.new "bogus", executables: true
 
@@ -449,6 +510,24 @@ create_makefile '#{@spec.name}'
 
     assert_same uninstaller, @pre_uninstall_hook_arg
     assert_same uninstaller, @post_uninstall_hook_arg
+  end
+
+  def test_uninstall_user_install_with_missing_gem_home
+    FileUtils.rm_rf Gem.dir
+
+    Gem::Specification.dirs = [Gem.user_dir]
+
+    uninstaller = Gem::Uninstaller.new(@user_spec.name,
+                                       executables: true,
+                                       user_install: true)
+
+    gem_dir = @user_spec.gem_dir
+
+    assert_path_exist gem_dir
+
+    uninstaller.uninstall
+
+    assert_path_not_exist gem_dir
   end
 
   def test_uninstall_user_install_with_symlinked_home

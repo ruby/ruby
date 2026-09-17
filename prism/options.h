@@ -250,6 +250,22 @@ PRISM_EXPORTED_FUNCTION bool pm_options_freeze(const pm_options_t *options) PRIS
 PRISM_EXPORTED_FUNCTION void pm_options_freeze_set(pm_options_t *options, bool freeze) PRISM_NONNULL(1);
 
 /**
+ * Get the raise_error option on the given options struct.
+ *
+ * @param options The options struct to get the raise_error value from.
+ * @returns The raise_error value.
+ */
+PRISM_EXPORTED_FUNCTION uint8_t pm_options_raise_error(const pm_options_t *options) PRISM_NONNULL(1);
+
+/**
+ * Set the raise_error option on the given options struct.
+ *
+ * @param options The options struct to set the raise_error value on.
+ * @param raise_error The raise_error value to set.
+ */
+PRISM_EXPORTED_FUNCTION void pm_options_raise_error_set(pm_options_t *options, uint8_t raise_error) PRISM_NONNULL(1);
+
+/**
  * Allocate and zero out the scopes array on the given options struct.
  *
  * @param options The options struct to initialize the scopes array on.

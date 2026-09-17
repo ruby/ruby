@@ -266,6 +266,47 @@ RSpec.describe "bundle cache" do
       expect(cached_gem("activesupport-2.3.2")).not_to exist
     end
 
+    it "keeps outdated .gems when keep_outdated_cache is set" do
+      setup_main_repo
+      bundle_config "keep_outdated_cache true"
+
+      install_gemfile <<-G
+        source "https://gem.repo2"
+        gem "myrack"
+      G
+      expect(cached_gem("myrack-1.0.0")).to exist
+      expect(cached_gem("actionpack-2.3.2")).to exist
+      expect(cached_gem("activesupport-2.3.2")).to exist
+    end
+
+    it "keeps outdated .gems when only the deprecated no_prune is set" do
+      setup_main_repo
+      bundle_config "no_prune true"
+
+      install_gemfile <<-G
+        source "https://gem.repo2"
+        gem "myrack"
+      G
+      expect(cached_gem("myrack-1.0.0")).to exist
+      expect(cached_gem("actionpack-2.3.2")).to exist
+      expect(cached_gem("activesupport-2.3.2")).to exist
+      expect(deprecations.count {|d| d.include?("no_prune") }).to eq 1
+    end
+
+    it "lets keep_outdated_cache win over the deprecated no_prune" do
+      setup_main_repo
+      bundle_config "no_prune true"
+      bundle_config "keep_outdated_cache false"
+
+      install_gemfile <<-G
+        source "https://gem.repo2"
+        gem "myrack"
+      G
+      expect(cached_gem("actionpack-2.3.2")).not_to exist
+      expect(cached_gem("activesupport-2.3.2")).not_to exist
+      expect(err).not_to include("no_prune")
+    end
+
     it "removes .gems when gem changes to git source" do
       setup_main_repo
       build_git "myrack"

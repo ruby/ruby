@@ -9,8 +9,10 @@
 #include "internal/bits.h"
 #include "internal/error.h"
 #include "internal/hash.h"
+#include "internal/object.h"
 #include "internal/proc.h"
 #include "internal/sanitizers.h"
+#include "internal/set.h"
 #include "internal/set_table.h"
 #include "internal/symbol.h"
 #include "internal/variable.h"
@@ -394,17 +396,22 @@ set_insert_wb(VALUE set, VALUE key)
 }
 
 static VALUE
-set_alloc_with_size(VALUE klass, st_index_t size)
+set_alloc_with_size_and_type(VALUE klass, st_index_t size, const struct st_hash_type *type)
 {
     VALUE set;
     struct set_object *sobj;
 
     set = TypedData_Make_Struct(klass, struct set_object, &set_data_type, sobj);
-    set_init_table_with_size(&sobj->table, &objhash, size);
+    set_init_table_with_size(&sobj->table, type, size);
 
     return set;
 }
 
+static VALUE
+set_alloc_with_size(VALUE klass, st_index_t size)
+{
+    return set_alloc_with_size_and_type(klass, size, &objhash);
+}
 
 static VALUE
 set_s_alloc(VALUE klass)
@@ -1471,6 +1478,7 @@ set_i_xor(VALUE set, VALUE other)
         set_merge_enum_into(tmp, other);
         set_iter(tmp, set_xor_i, (st_data_t)new_set);
     }
+    set_compact_after_delete(set);
 
     return new_set;
 }
@@ -1522,6 +1530,7 @@ set_remove_enum_from(VALUE set, VALUE arg)
     else {
         rb_block_call(arg, enum_method_id(arg), 0, 0, set_remove_block, (VALUE)set);
     }
+    set_compact_after_delete(set);
 }
 
 /*
@@ -1666,6 +1675,7 @@ set_i_keep_if(VALUE set)
     rb_check_frozen(set);
 
     set_iter(set, set_keep_if_i, (st_data_t)RSET_TABLE(set));
+    set_compact_after_delete(set);
 
     return set;
 }
@@ -1695,6 +1705,7 @@ set_i_select(VALUE set)
     set_table *table = RSET_TABLE(set);
     size_t n = set_table_size(table);
     set_iter(set, set_keep_if_i, (st_data_t)table);
+    set_compact_after_delete(set);
 
     return (n == set_table_size(table)) ? Qnil : set;
 }
@@ -1730,6 +1741,7 @@ set_i_replace(VALUE set, VALUE other)
         set_table_clear(RSET_TABLE(set));
         set_merge_enum_into(set, other);
     }
+    set_compact_after_delete(set);
 
     return set;
 }
@@ -2209,13 +2221,13 @@ set_to_hash_i(st_data_t key, st_data_t arg)
 static VALUE
 set_i_to_h(VALUE set)
 {
-    st_index_t size = RSET_SIZE(set);
+    long size = RSET_SIZE(set);
     VALUE hash;
     if (RSET_COMPARE_BY_IDENTITY(set)) {
-        hash = rb_ident_hash_new_with_size(size);
+        hash = rb_ident_hash_new_capa(size);
     }
     else {
-        hash = rb_hash_new_with_size(size);
+        hash = rb_hash_new_capa(size);
     }
     rb_hash_set_default(hash, Qfalse);
 
@@ -2228,7 +2240,7 @@ set_i_to_h(VALUE set)
 static VALUE
 compat_dumper(VALUE set)
 {
-    VALUE dumper = rb_class_new_instance(0, 0, rb_cObject);
+    VALUE dumper = rb_class_allocate_instance_capa(rb_cObject, 1);
     rb_ivar_set(dumper, id_i_hash, set_i_to_h(set));
     return dumper;
 }
@@ -2256,6 +2268,36 @@ static VALUE
 compat_loader(VALUE self, VALUE a)
 {
     return set_i_from_hash(self, rb_ivar_get(a, id_i_hash));
+}
+
+/* Internal C-API functions */
+
+VALUE
+rb_ident_set_new(void)
+{
+    return set_alloc_with_size_and_type(rb_cSet, 0, &identhash);
+}
+
+bool
+rb_set_add_no_check(VALUE set, VALUE element)
+{
+    if (set_insert(RSET_TABLE(set), (st_data_t)element) == 0) {
+        RB_OBJ_WRITTEN(set, Qundef, element);
+        return true;
+    }
+    return false;
+}
+
+bool
+rb_set_delete_no_check(VALUE set, VALUE element)
+{
+    return set_table_delete(RSET_TABLE(set), (st_data_t *)&element) != 0;
+}
+
+VALUE
+rb_set_to_a(VALUE set)
+{
+    return set_i_to_a(set);
 }
 
 /* C-API functions */
@@ -2383,7 +2425,6 @@ rb_set_size(VALUE set)
  * - {Assigning}[rdoc-ref:Set@Methods+for+Assigning]
  * - {Deleting}[rdoc-ref:Set@Methods+for+Deleting]
  * - {Converting}[rdoc-ref:Set@Methods+for+Converting]
- * - {Iterating}[rdoc-ref:Set@Methods+for+Iterating]
  * - {And more....}[rdoc-ref:Set@Other+Methods]
  *
  * === Methods for Creating a \Set

@@ -1023,7 +1023,11 @@ describe :kernel_sprintf, shared: true do
 
       it "respects Hash#default when there is no set key" do
         @method.call("%{foo}", Hash.new(123)).should == "123"
-        @method.call("%{foo}", Hash.new { 123 }).should == "123"
+        hash_default_proc = Hash.new do |*args|
+          args.should == [hash_default_proc, :foo]
+          123
+        end
+        @method.call("%{foo}", hash_default_proc).should == "123"
       end
 
       it "raises KeyError when Hash#default returns nil" do

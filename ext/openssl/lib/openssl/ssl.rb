@@ -475,9 +475,19 @@ module OpenSSL
 
     ##
     # SSLServer represents a TCP/IP server socket with Secure Sockets Layer.
+    #
+    # *Deprecated.* Use TCPServer or Socket to accept a TCP connection, and
+    # then wrap it with OpenSSL::SSL::SSLSocket.
+    # See also OpenSSL::SSL::SSLSocket#accept.
     class SSLServer
       include SocketForwarder
-      # When true then #accept works exactly the same as TCPServer#accept
+
+      # When set to +true+, #accept will immediately perform the SSL/TLS
+      # handshake after accepting a TCP connection. Defaults to +true+.
+      #
+      # *NOTE*: #accept performs the SSL/TLS handshake synchronously. A slow
+      # client can therefore prevent the server from accepting new connections
+      # indefinitely. For this reason, SSLServer is deprecated.
       attr_accessor :start_immediately
 
       # Creates a new instance of SSLServer.
@@ -511,6 +521,8 @@ module OpenSSL
       end
 
       # Works similar to TCPServer#accept.
+      #
+      # *NOTE*: SSLServer is deprecated. See #start_immediately for details.
       def accept
         # Socket#accept returns [socket, addrinfo].
         # TCPServer#accept returns a socket.

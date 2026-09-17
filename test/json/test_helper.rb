@@ -22,11 +22,19 @@ if ENV["JSON_COVERAGE"]
 
     add_filter 'lib/json/truffle_ruby' unless RUBY_ENGINE == 'truffleruby'
     add_filter 'test/'
+
+    coverage_dir '.coverage'
   end
 end
 
 require 'json'
 require 'test/unit'
+require 'stringio'
+require 'tempfile'
+begin
+  require 'bigdecimal'
+rescue LoadError
+end
 
 if ENV["JSON_COMPACT"]
   if GC.respond_to?(:verify_compaction_references)

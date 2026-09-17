@@ -82,6 +82,23 @@ class TestGemCompactIndexClientCacheFile < Gem::TestCase
     assert_equal "abcdef", @path.read
   end
 
+  def test_append_writes_in_binary_mode
+    @path.binwrite "created_at: 2026-06-10\n---\n"
+
+    appended = nil
+    CacheFile.copy(@path) do |file|
+      file.digests = sha256("created_at: 2026-06-10\n---\nrake 13.0.0\n")
+      appended = file.append("rake 13.0.0\n")
+    end
+
+    assert appended
+    # On Windows a text-mode append rewrites the appended LF as CRLF while the
+    # digest is computed over the pre-write bytes, so verify passes but the file
+    # on disk is corrupted. Read raw bytes to catch any stray carriage return.
+    refute_includes @path.binread, "\r"
+    assert_equal "created_at: 2026-06-10\n---\nrake 13.0.0\n", @path.binread
+  end
+
   def test_append_with_mismatched_digests_keeps_original
     @path.binwrite "abc"
 
@@ -120,6 +137,17 @@ class TestGemCompactIndexClientCacheFile < Gem::TestCase
     assert_raise CacheFile::ClosedError do
       file.commit
     end
+  end
+
+  def test_write_with_permissive_umask_uses_default_mode
+    original_umask = File.umask(0o000)
+
+    CacheFile.write(@path, "data")
+
+    assert_equal "data", @path.read
+    assert_equal 0, @path.stat.mode & 0o022, "expected a fresh cache file to not be world-writable under a permissive umask"
+  ensure
+    File.umask(original_umask)
   end
 
   def test_write_preserves_permissions

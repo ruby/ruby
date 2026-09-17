@@ -6,7 +6,7 @@ class CompactIndexPrecompiledBefore < CompactIndexAPI
   get "/info/:name" do
     etag_response do
       gem = gems.find {|g| g.name == params[:name] }
-      move_ruby_variant_to_the_end(CompactIndex.info(gem ? gem.versions : []))
+      move_ruby_variant_to_the_end(VendoredCompactIndex.info(gem ? gem.versions : []))
     end
   end
 

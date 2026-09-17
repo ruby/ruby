@@ -180,12 +180,6 @@ describe "File.basename" do
     File.basename('/path/Офис.m4a').should == "Офис.m4a"
   end
 
-  it "returns the basename with the same encoding as the original" do
-    basename = File.basename('C:/Users/Scuby Pagrubý'.encode(Encoding::Windows_1250))
-    basename.should == 'Scuby Pagrubý'.encode(Encoding::Windows_1250)
-    basename.encoding.should == Encoding::Windows_1250
-  end
-
   it "returns a new unfrozen String" do
     exts = [nil, '.rb', '.*', '.txt']
     ['foo.rb','//', '/test/', 'test'].each do |example|
@@ -202,4 +196,10 @@ describe "File.basename" do
     end
   end
 
+  it "preserves the encoding of the path" do
+    path = "foo.bar".encode(Encoding::EUC_JP)
+    File.basename(path).encoding.should == Encoding::EUC_JP
+    File.basename(path, ".bar").encoding.should == Encoding::EUC_JP
+    File.basename(path, ".bar".encode(Encoding::EUC_JP)).encoding.should == Encoding::EUC_JP
+  end
 end

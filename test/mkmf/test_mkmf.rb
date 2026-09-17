@@ -11,3 +11,17 @@ class TestMkmfGlobal < Test::Unit::TestCase
     end
   end
 end
+
+class TestMkmfLinkConfig < Test::Unit::TestCase
+  def test_use_configured_libruby_for_bundled_extensions
+    librubyarg = RbConfig::CONFIG["LIBRUBYARG"]
+
+    RbConfig::CONFIG["LIBRUBYARG"] = "-lruby"
+    assert_include(Shellwords.shellsplit(link_command("")), "-lruby")
+
+    RbConfig::CONFIG["LIBRUBYARG"] = "-lruby-static"
+    assert_include(Shellwords.shellsplit(link_command("")), "-lruby-static")
+  ensure
+    RbConfig::CONFIG["LIBRUBYARG"] = librubyarg
+  end
+end

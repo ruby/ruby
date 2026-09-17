@@ -12,19 +12,6 @@ if Gem.java_platform?
 end
 
 class TestGemCommandsCertCommand < Gem::TestCase
-  ALTERNATE_CERT = load_cert "alternate"
-  EXPIRED_PUBLIC_CERT = load_cert "expired"
-
-  ALTERNATE_KEY_FILE  = key_path "alternate"
-  PRIVATE_KEY_FILE    = key_path "private"
-  PRIVATE_EC_KEY_FILE = key_path "private_ec"
-  PUBLIC_KEY_FILE     = key_path "public"
-
-  ALTERNATE_CERT_FILE      = cert_path "alternate"
-  CHILD_CERT_FILE          = cert_path "child"
-  PUBLIC_CERT_FILE         = cert_path "public"
-  EXPIRED_PUBLIC_CERT_FILE = cert_path "expired"
-
   def setup
     super
 
@@ -84,8 +71,6 @@ class TestGemCommandsCertCommand < Gem::TestCase
   end
 
   def test_execute_add_twice
-    self.class.cert_path "alternate"
-
     @cmd.handle_options %W[
       --add #{PUBLIC_CERT_FILE}
       --add #{ALTERNATE_CERT_FILE}
@@ -170,6 +155,67 @@ Added '/CN=alternate/DC=example'
     assert_path_exist cert_path
     cert = OpenSSL::X509::Certificate.new(File.read(cert_path))
     assert cert.public_key.is_a? OpenSSL::PKey::EC
+  end
+
+  def test_execute_build_key_algorithm_ml_dsa_65_key
+    omit_unless_support_ml_dsa_cert
+
+    passphrase = "Foo bar"
+
+    @cmd.handle_options %W[--build nobody@example.com --key-algorithm ml-dsa-65]
+
+    @build_ui = Gem::MockGemUi.new "#{passphrase}\n#{passphrase}"
+
+    use_ui @build_ui do
+      @cmd.execute
+    end
+
+    output = @build_ui.output.squeeze("\n").split "\n"
+
+    assert_equal "Passphrase for your Private Key:  ",
+                 output.shift
+    assert_equal "Please repeat the passphrase for your Private Key:  ",
+                 output.shift
+    assert_equal "Certificate: #{File.join @tempdir, "gem-public_cert.pem"}",
+                 output.shift
+    assert_equal "Private Key: #{File.join @tempdir, "gem-private_key.pem"}",
+                 output.shift
+
+    assert_equal "Don't forget to move the key file to somewhere private!",
+                 output.shift
+
+    assert_empty output
+    assert_empty @build_ui.error
+
+    assert_path_exist File.join(@tempdir, "gem-private_key.pem")
+
+    cert_path = File.join(@tempdir, "gem-public_cert.pem")
+    assert_path_exist cert_path
+    cert = OpenSSL::X509::Certificate.new(File.read(cert_path))
+    assert cert.public_key.is_a? OpenSSL::PKey::PKey
+    assert_equal "ML-DSA-65",
+                 Gem::PQCUtilities.key_algorithm_name(cert.public_key)
+  end
+
+  def test_execute_build_key_algorithm_ml_dsa_65_key_without_ml_dsa_support
+    omit_if_support_ml_dsa_key
+
+    passphrase = "Foo bar"
+
+    @cmd.handle_options %W[--build nobody@example.com --key-algorithm ml-dsa-65]
+
+    @build_ui = Gem::MockGemUi.new "#{passphrase}\n#{passphrase}"
+
+    use_ui @build_ui do
+      e = assert_raise Gem::Security::Exception do
+        @cmd.execute
+      end
+
+      assert_match(
+        /^ML-DSA-65 key generation failed: ML-DSA-65 requires OpenSSL >= 3\.5/,
+        e.message
+      )
+    end
   end
 
   def test_execute_build_bad_email_address
@@ -289,7 +335,7 @@ Added '/CN=alternate/DC=example'
   def test_execute_build_encrypted_key
     @cmd.handle_options %W[
       --build nobody@example.com
-      --private-key #{ENCRYPTED_PRIVATE_KEY_PATH}
+      --private-key #{ENCRYPTED_PRIVATE_KEY_FILE}
     ]
 
     use_ui @ui do
@@ -310,7 +356,7 @@ Added '/CN=alternate/DC=example'
   def test_execute_build_ec_key
     @cmd.handle_options %W[
       --build nobody@example.com
-      --private-key #{PRIVATE_EC_KEY_FILE}
+      --private-key #{EC_PRIVATE_KEY_FILE}
     ]
 
     use_ui @ui do
@@ -329,6 +375,68 @@ Added '/CN=alternate/DC=example'
     assert_path_not_exist File.join(@tempdir, "gem-private_key.pem")
   end
 
+  def test_execute_build_bad_key
+    @cmd.handle_options %W[
+      --build nobody@example.com
+      --private-key #{PUBLIC_KEY_FILE}
+    ]
+
+    e = assert_raise Gem::Security::Exception do
+      use_ui @ui do
+        @cmd.execute
+      end
+    end
+
+    assert_equal "incorrect signing key for signing", e.message
+  end
+
+  def test_execute_build_ml_dsa_65_key
+    omit_unless_support_ml_dsa_cert
+
+    @cmd.handle_options %W[
+      --build nobody@example.com
+      --private-key #{ML_DSA_65_PRIVATE_KEY_FILE}
+    ]
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    output = @ui.output.split "\n"
+
+    assert_equal "Certificate: #{File.join @tempdir, "gem-public_cert.pem"}",
+                 output.shift
+
+    assert_empty output
+    assert_empty @ui.error
+
+    assert_path_exist File.join(@tempdir, "gem-public_cert.pem")
+    assert_path_not_exist File.join(@tempdir, "gem-private_key.pem")
+  end
+
+  def test_execute_build_encrypted_ml_dsa_65_key
+    omit_unless_support_ml_dsa_cert
+
+    @cmd.handle_options %W[
+      --build nobody@example.com
+      --private-key #{ML_DSA_65_ENCRYPTED_PRIVATE_KEY_FILE}
+    ]
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    output = @ui.output.split "\n"
+
+    assert_equal "Certificate: #{File.join @tempdir, "gem-public_cert.pem"}",
+                 output.shift
+
+    assert_empty output
+    assert_empty @ui.error
+
+    assert_path_exist File.join(@tempdir, "gem-public_cert.pem")
+  end
+
   def test_execute_certificate
     use_ui @ui do
       @cmd.handle_options %W[--certificate #{PUBLIC_CERT_FILE}]
@@ -338,6 +446,19 @@ Added '/CN=alternate/DC=example'
     assert_equal "", @ui.error
 
     assert_equal PUBLIC_CERT.to_pem, @cmd.options[:issuer_cert].to_pem
+  end
+
+  def test_execute_certificate_ml_dsa_65
+    omit_unless_support_ml_dsa_key
+
+    use_ui @ui do
+      @cmd.handle_options %W[--certificate #{ML_DSA_65_PUBLIC_CERT_FILE}]
+    end
+
+    assert_equal "", @ui.output
+    assert_equal "", @ui.error
+
+    assert_equal ML_DSA_65_PUBLIC_CERT.to_pem, @cmd.options[:issuer_cert].to_pem
   end
 
   def test_execute_list
@@ -377,18 +498,59 @@ Added '/CN=alternate/DC=example'
     assert_equal "", @ui.output
     assert_equal "", @ui.error
 
-    assert_equal PRIVATE_KEY.to_pem, @cmd.options[:key].to_pem
+    assert_equal PRIVATE_KEY.private_to_pem, @cmd.options[:key].private_to_pem
   end
 
   def test_execute_encrypted_private_key
     use_ui @ui do
-      @cmd.send :handle_options, %W[--private-key #{ENCRYPTED_PRIVATE_KEY_PATH}]
+      @cmd.send :handle_options, %W[--private-key #{ENCRYPTED_PRIVATE_KEY_FILE}]
     end
 
     assert_equal "", @ui.output
     assert_equal "", @ui.error
 
-    assert_equal ENCRYPTED_PRIVATE_KEY.to_pem, @cmd.options[:key].to_pem
+    assert_equal ENCRYPTED_PRIVATE_KEY.private_to_pem, @cmd.options[:key].private_to_pem
+  end
+
+  def test_execute_private_ml_dsa_65_key
+    omit_unless_support_ml_dsa_key
+
+    use_ui @ui do
+      @cmd.send :handle_options, %W[--private-key #{ML_DSA_65_PRIVATE_KEY_FILE}]
+    end
+
+    assert_equal "", @ui.output
+    assert_equal "", @ui.error
+
+    assert_equal ML_DSA_65_PRIVATE_KEY.private_to_pem,
+                 @cmd.options[:key].private_to_pem
+  end
+
+  def test_execute_private_ml_dsa_65_key_without_ml_dsa_support
+    omit_if_support_ml_dsa_key
+
+    use_ui @ui do
+      e = assert_raise Gem::OptionParser::InvalidArgument do
+        @cmd.send :handle_options, %W[--private-key #{ML_DSA_65_PRIVATE_KEY_FILE}]
+      end
+
+      assert_match(/invalid .+ key/, e.message)
+    end
+  end
+
+  def test_execute_encrypted_private_ml_dsa_65_key
+    omit_unless_support_ml_dsa_key
+
+    use_ui @ui do
+      @cmd.send :handle_options,
+                %W[--private-key #{ML_DSA_65_ENCRYPTED_PRIVATE_KEY_FILE}]
+    end
+
+    assert_equal "", @ui.output
+    assert_equal "", @ui.error
+
+    assert_equal ML_DSA_65_ENCRYPTED_PRIVATE_KEY.private_to_pem,
+                 @cmd.options[:key].private_to_pem
   end
 
   def test_execute_remove
@@ -468,7 +630,7 @@ Removed '/CN=alternate/DC=example'
 
   def test_execute_sign
     path = File.join @tempdir, "cert.pem"
-    Gem::Security.write ALTERNATE_CERT, path, 0o600
+    Gem::Security.write_certificate ALTERNATE_CERT, path, 0o600
 
     assert_equal "/CN=alternate/DC=example", ALTERNATE_CERT.issuer.to_s
 
@@ -497,12 +659,12 @@ Removed '/CN=alternate/DC=example'
 
   def test_execute_sign_encrypted_key
     path = File.join @tempdir, "cert.pem"
-    Gem::Security.write ALTERNATE_CERT, path, 0o600
+    Gem::Security.write_certificate ALTERNATE_CERT, path, 0o600
 
     assert_equal "/CN=alternate/DC=example", ALTERNATE_CERT.issuer.to_s
 
     @cmd.handle_options %W[
-      --private-key #{ENCRYPTED_PRIVATE_KEY_PATH}
+      --private-key #{ENCRYPTED_PRIVATE_KEY_FILE}
       --certificate #{PUBLIC_CERT_FILE}
 
       --sign #{path}
@@ -528,13 +690,13 @@ Removed '/CN=alternate/DC=example'
     FileUtils.mkdir_p File.join Gem.user_home, ".gem"
 
     private_key_path = File.join Gem.user_home, ".gem", "gem-private_key.pem"
-    Gem::Security.write PRIVATE_KEY, private_key_path
+    Gem::Security.write_private_key PRIVATE_KEY, private_key_path
 
     public_cert_path = File.join Gem.user_home, ".gem", "gem-public_cert.pem"
-    Gem::Security.write PUBLIC_CERT, public_cert_path
+    Gem::Security.write_certificate PUBLIC_CERT, public_cert_path
 
     path = File.join @tempdir, "cert.pem"
-    Gem::Security.write ALTERNATE_CERT, path, 0o600
+    Gem::Security.write_certificate ALTERNATE_CERT, path, 0o600
 
     assert_equal "/CN=alternate/DC=example", ALTERNATE_CERT.issuer.to_s
 
@@ -560,13 +722,13 @@ Removed '/CN=alternate/DC=example'
     FileUtils.mkdir_p File.join(Gem.user_home, ".gem")
 
     private_key_path = File.join Gem.user_home, ".gem", "gem-private_key.pem"
-    Gem::Security.write ENCRYPTED_PRIVATE_KEY, private_key_path, 0o600, PRIVATE_KEY_PASSPHRASE
+    Gem::Security.write_private_key ENCRYPTED_PRIVATE_KEY, private_key_path, 0o600, PRIVATE_KEY_PASSPHRASE
 
     public_cert_path = File.join Gem.user_home, ".gem", "gem-public_cert.pem"
-    Gem::Security.write PUBLIC_CERT, public_cert_path
+    Gem::Security.write_certificate PUBLIC_CERT, public_cert_path
 
     path = File.join @tempdir, "cert.pem"
-    Gem::Security.write ALTERNATE_CERT, path, 0o600
+    Gem::Security.write_certificate ALTERNATE_CERT, path, 0o600
 
     assert_equal "/CN=alternate/DC=example", ALTERNATE_CERT.issuer.to_s
 
@@ -592,10 +754,10 @@ Removed '/CN=alternate/DC=example'
     FileUtils.mkdir_p File.join Gem.user_home, ".gem"
 
     private_key_path = File.join Gem.user_home, ".gem", "gem-private_key.pem"
-    Gem::Security.write PRIVATE_KEY, private_key_path
+    Gem::Security.write_private_key PRIVATE_KEY, private_key_path
 
     path = File.join @tempdir, "cert.pem"
-    Gem::Security.write ALTERNATE_CERT, path, 0o600
+    Gem::Security.write_certificate ALTERNATE_CERT, path, 0o600
 
     assert_equal "/CN=alternate/DC=example", ALTERNATE_CERT.issuer.to_s
 
@@ -620,10 +782,10 @@ ERROR:  --certificate not specified and ~/.gem/gem-public_cert.pem does not exis
     FileUtils.mkdir_p File.join Gem.user_home, ".gem"
 
     public_cert_path = File.join Gem.user_home, ".gem", "gem-public_cert.pem"
-    Gem::Security.write PUBLIC_CERT, public_cert_path
+    Gem::Security.write_certificate PUBLIC_CERT, public_cert_path
 
     path = File.join @tempdir, "cert.pem"
-    Gem::Security.write ALTERNATE_CERT, path, 0o600
+    Gem::Security.write_certificate ALTERNATE_CERT, path, 0o600
 
     assert_equal "/CN=alternate/DC=example", ALTERNATE_CERT.issuer.to_s
 
@@ -644,17 +806,37 @@ ERROR:  --private-key not specified and ~/.gem/gem-private_key.pem does not exis
     assert_equal expected, @ui.error
   end
 
+  def test_execute_sign_bad_key
+    path = File.join @tempdir, "cert.pem"
+    Gem::Security.write_certificate ALTERNATE_CERT, path, 0o600
+
+    @cmd.handle_options %W[
+      --private-key #{PUBLIC_KEY_FILE}
+      --certificate #{PUBLIC_CERT_FILE}
+
+      --sign #{path}
+    ]
+
+    e = assert_raise Gem::Security::Exception do
+      use_ui @ui do
+        @cmd.execute
+      end
+    end
+
+    assert_equal "incorrect signing key for signing", e.message
+  end
+
   def test_execute_re_sign
     gem_path = File.join Gem.user_home, ".gem"
     Dir.mkdir gem_path
 
     path = File.join @tempdir, "cert.pem"
-    Gem::Security.write EXPIRED_PUBLIC_CERT, path, 0o600
+    Gem::Security.write_certificate EXPIRED_CERT, path, 0o600
 
-    assert_equal "/CN=nobody/DC=example", EXPIRED_PUBLIC_CERT.issuer.to_s
+    assert_equal "/CN=nobody/DC=example", EXPIRED_CERT.issuer.to_s
 
-    tmp_expired_cert_file = File.join(@tempdir, File.basename(EXPIRED_PUBLIC_CERT_FILE))
-    File.write(tmp_expired_cert_file, File.read(EXPIRED_PUBLIC_CERT_FILE))
+    tmp_expired_cert_file = File.join(@tempdir, File.basename(EXPIRED_CERT_FILE))
+    File.write(tmp_expired_cert_file, File.read(EXPIRED_CERT_FILE))
 
     @cmd.handle_options %W[
       --private-key #{PRIVATE_KEY_FILE}
@@ -681,12 +863,12 @@ ERROR:  --private-key not specified and ~/.gem/gem-private_key.pem does not exis
     Dir.mkdir gem_path
 
     path = File.join @tempdir, "cert.pem"
-    Gem::Security.write EXPIRED_PUBLIC_CERT, path, 0o600
+    Gem::Security.write_certificate EXPIRED_CERT, path, 0o600
 
-    assert_equal "/CN=nobody/DC=example", EXPIRED_PUBLIC_CERT.issuer.to_s
+    assert_equal "/CN=nobody/DC=example", EXPIRED_CERT.issuer.to_s
 
-    tmp_expired_cert_file = File.join(@tempdir, File.basename(EXPIRED_PUBLIC_CERT_FILE))
-    File.write(tmp_expired_cert_file, File.read(EXPIRED_PUBLIC_CERT_FILE))
+    tmp_expired_cert_file = File.join(@tempdir, File.basename(EXPIRED_CERT_FILE))
+    File.write(tmp_expired_cert_file, File.read(EXPIRED_CERT_FILE))
 
     @cmd.handle_options %W[
       --private-key #{PRIVATE_KEY_FILE}
@@ -791,15 +973,9 @@ ERROR:  --private-key not specified and ~/.gem/gem-private_key.pem does not exis
       @cmd.handle_options %W[--private-key #{bad}]
     end
 
-    assert_equal "invalid argument: --private-key #{bad}: invalid RSA, DSA, or EC key",
-                 e.message
-
-    e = assert_raise Gem::OptionParser::InvalidArgument do
-      @cmd.handle_options %W[--private-key #{PUBLIC_KEY_FILE}]
-    end
-
-    assert_equal "invalid argument: " \
-                 "--private-key #{PUBLIC_KEY_FILE}: private key not found",
+    assert_equal "invalid argument: "\
+                 "--private-key #{bad}: "\
+                 "invalid RSA, DSA, EC, ML-DSA-44, ML-DSA-65, or ML-DSA-87 key",
                  e.message
   end
 
@@ -815,7 +991,7 @@ ERROR:  --private-key not specified and ~/.gem/gem-private_key.pem does not exis
       --sign #{CHILD_CERT_FILE}
     ]
 
-    assert_equal PRIVATE_KEY.to_pem, @cmd.options[:key].to_pem
+    assert_equal PRIVATE_KEY.private_to_pem, @cmd.options[:key].private_to_pem
     assert_equal PUBLIC_CERT.to_pem, @cmd.options[:issuer_cert].to_pem
 
     assert_equal [ALTERNATE_CERT_FILE, CHILD_CERT_FILE], @cmd.options[:sign]
@@ -824,7 +1000,7 @@ ERROR:  --private-key not specified and ~/.gem/gem-private_key.pem does not exis
   def test_handle_options_sign_encrypted_key
     @cmd.handle_options %W[
       --private-key #{ALTERNATE_KEY_FILE}
-      --private-key #{ENCRYPTED_PRIVATE_KEY_PATH}
+      --private-key #{ENCRYPTED_PRIVATE_KEY_FILE}
 
       --certificate #{ALTERNATE_CERT_FILE}
       --certificate #{PUBLIC_CERT_FILE}
@@ -833,7 +1009,7 @@ ERROR:  --private-key not specified and ~/.gem/gem-private_key.pem does not exis
       --sign #{CHILD_CERT_FILE}
     ]
 
-    assert_equal ENCRYPTED_PRIVATE_KEY.to_pem, @cmd.options[:key].to_pem
+    assert_equal ENCRYPTED_PRIVATE_KEY.private_to_pem, @cmd.options[:key].private_to_pem
     assert_equal PUBLIC_CERT.to_pem, @cmd.options[:issuer_cert].to_pem
 
     assert_equal [ALTERNATE_CERT_FILE, CHILD_CERT_FILE], @cmd.options[:sign]

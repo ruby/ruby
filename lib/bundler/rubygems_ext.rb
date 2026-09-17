@@ -13,7 +13,53 @@ require "rubygems" unless defined?(Gem)
 # `Gem::Source` from the redefined `Gem::Specification#source`.
 require "rubygems/source"
 
+# Can be removed once RubyGems 4.0.0 support is dropped
+unless Gem::BasicSpecification.method_defined?(:content_address)
+  Gem::BasicSpecification.attr_accessor :content_address
+end
+
+# Can be removed once RubyGems 4.0.0 support is dropped
+unless Gem::NameTuple.method_defined?(:content_address)
+  Gem::NameTuple.attr_reader :content_address
+end
+
 module Gem
+  # Can be removed once RubyGems 4.0.0 support is dropped
+  unless defined?(Gem::ContentAddress)
+    module ContentAddress
+      def self.match?(token)
+        false
+      end
+
+      def self.eligible?(spec, validate_ruby_abi: true)
+        false
+      end
+
+      def self.content_addressed?(spec, validate_ruby_abi: true)
+        false
+      end
+
+      def self.content_addressed_row?(suffix, platform, required_ruby_version = nil, validate_ruby_abi: true)
+        false
+      end
+    end
+  end
+
+  # Can be removed once RubyGems 4.0.0 support is dropped
+  class SpecificationRecord
+    unless respond_to?(:specification_dir_for)
+      def self.specification_dir_for(spec, base_dir)
+        File.join(base_dir, "specifications")
+      end
+    end
+
+    unless respond_to?(:dirs_from)
+      def self.dirs_from(paths)
+        paths.map {|path| File.join(path, "specifications") }
+      end
+    end
+  end
+
   # Can be removed once RubyGems 3.5.11 support is dropped
   unless Gem.respond_to?(:freebsd_platform?)
     def self.freebsd_platform?
@@ -235,6 +281,20 @@ module Gem
       end
     end
 
+    alias_method :rg_build_info_dir, :build_info_dir
+    def build_info_dir
+      # A git checkout's build logs belong with that checkout's extension build.
+      # base_dir points at the directory holding every checkout, so logs keyed by
+      # full_name would collide between revisions of the same gem and would sit
+      # outside anything `bundle clean` prunes. extension_dir is unique per
+      # revision and goes away with the checkout.
+      if source.respond_to?(:extension_dir_name)
+        extension_dir
+      else
+        rg_build_info_dir
+      end
+    end
+
     # Can be removed once RubyGems 3.5.21 support is dropped
     remove_method :gem_dir if method_defined?(:gem_dir, false)
 
@@ -417,12 +477,22 @@ module Gem
     unless Gem::NameTuple.new("a", Gem::Version.new("1"), Gem::Platform.new("x86_64-linux")).platform.is_a?(String)
       alias_method :initialize_with_platform, :initialize
 
-      def initialize(name, version, platform = Gem::Platform::RUBY)
+      def initialize(name, version, platform = Gem::Platform::RUBY, content_address = nil)
+        @content_address = content_address
         if Gem::Platform === platform
           initialize_with_platform(name, version, platform.to_s)
         else
           initialize_with_platform(name, version, platform)
         end
+      end
+    end
+
+    unless instance_method(:initialize).parameters.any? {|kind, name| kind == :key && name == :content_address }
+      alias_method :initialize_without_content_address, :initialize
+
+      def initialize(name, version, platform = Gem::Platform::RUBY, content_address: nil)
+        initialize_without_content_address(name, version, platform)
+        @content_address = content_address
       end
     end
 

@@ -224,6 +224,8 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([[], {}], skws(*nil, **nil))
 
     assert_equal({}, {**nil})
+    assert_equal({}, {**nil, **nil})
+    assert_equal({}, {**nil, **nil, **nil})
     assert_equal({a: 1}, {a: 1, **nil})
     assert_equal({a: 1}, {**nil, a: 1})
   end
@@ -497,6 +499,7 @@ class TestKeywordArguments < Test::Unit::TestCase
     def self.yo(*a, **kw) = kw
     assert_equal_not_same kw, yo(**kw)
     assert_equal_not_same kw, yo(**kw, **kw)
+    assert_equal_not_same kw, yo(**kw, **kw, **kw, **kw)
 
     singleton_class.send(:remove_method, :yo)
     def self.yo(opts) = opts
@@ -4187,7 +4190,7 @@ class TestKeywordArguments < Test::Unit::TestCase
       end
     end
 
-    assert_raise_with_message(TypeError, /expected Hash/, bug13015) do
+    assert_raise_with_message(TypeError, /no implicit conversion of Array into Hash/, bug13015) do
       klass.new(d: 4)
     end
   end

@@ -111,10 +111,10 @@ class Gem::PackageTask < Rake::PackageTask
     file gem_path => [package_dir, gem_dir] + @gem_spec.files do
       chdir(gem_dir) do
         when_writing "Creating #{gem_spec.file_name}" do
-          Gem::Package.build gem_spec
+          built_gem_file = Gem::Package.build gem_spec
 
           verbose trace do
-            mv gem_file, ".."
+            mv built_gem_file, ".."
           end
         end
       end

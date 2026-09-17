@@ -38,14 +38,26 @@ describe "Kernel#raise with previously rescued exception" do
     ScratchPad.recorded.should == nil
   end
 
+  new_raisers = [
+    -> { raise "Error" },
+    -> { raise RuntimeError, "Error" },
+    -> { raise RuntimeError, "Error", [] }
+  ]
+
+  re_raisers_with_cause = [
+    -> e1, e2 {raise e1, cause: e2},
+    -> e1, e2 {raise e1, "New message", cause: e2},
+    -> e1, e2 {raise e1, "New message", [], cause: e2}
+  ]
+
   it "re-raises a previously rescued exception without overwriting the cause" do
-    begin
+    check = -> second_raiser do
       begin
         begin
           begin
             raise "Error 1"
           rescue => e1
-            raise "Error 2"
+            second_raiser.call
           end
         rescue => e2
           raise "Error 3"
@@ -57,56 +69,61 @@ describe "Kernel#raise with previously rescued exception" do
     rescue => e
       e.cause.should == e1
     end
+
+    new_raisers.each(&check)
   end
 
   it "re-raises a previously rescued exception with overwriting the cause when it's explicitly specified with :cause option" do
-    e4 = RuntimeError.new("Error 4")
-
-    begin
+    check = -> ((raiser, re_raiser_with_cause)) do # rubocop:disable Style/StabbyLambdaParentheses
+      e4 = RuntimeError.new("Error 4")
       begin
         begin
           begin
             raise "Error 1"
           rescue => e1
-            raise "Error 2"
+            raiser.call
           end
         rescue => e2
           raise "Error 3"
         end
       rescue
         e2.cause.should == e1
-        raise e2, cause: e4
+        re_raiser_with_cause.call(e2, e4)
       end
     rescue => e
       e.cause.should == e4
     end
+
+    new_raisers.product(re_raisers_with_cause).each(&check)
   end
 
-  it "re-raises a previously rescued exception without overwriting the cause when it's explicitly specified with :cause option and has nil value" do
-    begin
+  it "re-raises a previously rescued exception without overwriting the cause when it's explicitly specified with a :cause option that has nil value" do
+    check = -> ((raiser, re_raiser_with_cause)) do # rubocop:disable Style/StabbyLambdaParentheses
       begin
         begin
           begin
             raise "Error 1"
           rescue => e1
-            raise "Error 2"
+            raiser.call
           end
         rescue => e2
           raise "Error 3"
         end
       rescue
         e2.cause.should == e1
-        raise e2, cause: nil
+        re_raiser_with_cause.call(e2, nil)
       end
     rescue => e
       e.cause.should == e1
     end
+
+    new_raisers.product(re_raisers_with_cause).each(&check)
   end
 
   it "re-raises a previously rescued exception without setting a cause implicitly" do
-    begin
+    check = -> raiser do
       begin
-        raise "Error 1"
+        raiser.call
       rescue => e1
         raise
       end
@@ -114,12 +131,14 @@ describe "Kernel#raise with previously rescued exception" do
       e.should == e1
       e.cause.should == nil
     end
+
+    new_raisers.each(&check)
   end
 
   it "re-raises a previously rescued exception that has a cause without setting a cause implicitly" do
-    begin
+    check = -> raiser do
       begin
-        raise "Error 1"
+        raiser.call
       rescue => e1
         begin
           raise "Error 2"
@@ -131,12 +150,14 @@ describe "Kernel#raise with previously rescued exception" do
       e.should == e2
       e.cause.should == e1
     end
+
+    new_raisers.each(&check)
   end
 
-  it "re-raises a previously rescued exception that doesn't have a cause and isn't a cause of any other exception with setting a cause implicitly" do
-    begin
+  it "raises a new exception with two outer rescues while setting the cause implicitly to the innermost rescued exception" do
+    check = -> raiser do
       begin
-        raise "Error 1"
+        raiser.call
       rescue => e1
         begin
           raise "Error 2"
@@ -148,12 +169,14 @@ describe "Kernel#raise with previously rescued exception" do
       e.message.should == "Error 3"
       e.cause.should == e2
     end
+
+    new_raisers.each(&check)
   end
 
   it "re-raises a previously rescued exception that doesn't have a cause and is a cause of other exception without setting a cause implicitly" do
-    begin
+    check = -> raiser do
       begin
-        raise "Error 1"
+        raiser.call
       rescue => e1
         begin
           raise "Error 2"
@@ -167,12 +190,14 @@ describe "Kernel#raise with previously rescued exception" do
       e.should == e1
       e.cause.should == nil
     end
+
+    new_raisers.each(&check)
   end
 
   it "re-raises a previously rescued exception that doesn't have a cause and is a cause of other exception (that wasn't raised explicitly) without setting a cause implicitly" do
-    begin
+    check = -> raiser do
       begin
-        raise "Error 1"
+        raiser.call
       rescue => e1
         begin
           foo # raises NameError
@@ -186,12 +211,14 @@ describe "Kernel#raise with previously rescued exception" do
       e.should == e1
       e.cause.should == nil
     end
+
+    new_raisers.each(&check)
   end
 
   it "re-raises a previously rescued exception that has a cause but isn't a cause of any other exception without setting a cause implicitly" do
-    begin
+    check = -> raiser do
       begin
-        raise "Error 1"
+        raiser.call
       rescue => e1
         begin
           raise "Error 2"
@@ -209,6 +236,8 @@ describe "Kernel#raise with previously rescued exception" do
       e.should == e2
       e.cause.should == e1
     end
+
+    new_raisers.each(&check)
   end
 end
 

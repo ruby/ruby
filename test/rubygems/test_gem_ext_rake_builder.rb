@@ -101,6 +101,24 @@ class TestGemExtRakeBuilder < Gem::TestCase
     end
   end
 
+  # When the running Ruby lives under a path containing whitespace, Gem.ruby
+  # returns a quoted string. That quoting must not leak into the argv passed to
+  # the non-shell spawn that runs mkrf_conf.rb, or the interpreter can't be found.
+  def test_class_build_mkrf_conf_unquotes_ruby
+    commands = []
+
+    Gem.stub(:ruby, '"/path with space/bin/ruby"') do
+      Gem::Ext::RakeBuilder.stub(:run, ->(command, *) { commands << command }) do
+        Gem::Ext::RakeBuilder.build "mkrf_conf.rb", @dest_path, [], [], nil, @ext
+      end
+    end
+
+    mkrf_command = commands.find {|command| command.include?("mkrf_conf.rb") }
+    refute_nil mkrf_command, "mkrf_conf.rb should have been spawned"
+    assert_equal "/path with space/bin/ruby", mkrf_command.first
+    refute_includes mkrf_command.first, '"'
+  end
+
   def create_temp_mkrf_file(rakefile_content)
     File.open File.join(@ext, "mkrf_conf.rb"), "w" do |mkrf_conf|
       mkrf_conf.puts <<-EO_MKRF

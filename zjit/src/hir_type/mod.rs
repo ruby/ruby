@@ -259,6 +259,9 @@ impl Type {
         Type::new(bits::Fixnum, Specialization::Object(VALUE::fixnum_from_usize(val as usize)))
     }
 
+    /// Find the type bits corresponding to exactly the given Ruby class. If we already have
+    /// pre-defined bit patterns for it (say, `NilClass` or `String`), then return those bits
+    /// (`NilClass`, `StringExact`). Otherwise return None.
     fn bits_from_exact_class(class: VALUE) -> Option<u64> {
         types::ExactBitsAndClass
             .iter()
@@ -266,6 +269,19 @@ impl Type {
             .map(|&(bits, _)| bits)
     }
 
+    /// Find the type bits corresponding to the given Ruby class and all of its subclasses. If we
+    /// already have pre-defined bit patterns for it (say, `Array` or `Hash`), then return those
+    /// bits (`Array`, `Hash`). Otherwise return None.
+    fn bits_from_inexact_class(class: VALUE) -> Option<u64> {
+        types::InexactBitsAndClass
+            .iter()
+            .find(|&&(_, class_object)| unsafe { *class_object } == class)
+            .map(|&(bits, _)| bits)
+    }
+
+    /// Find the type bits corresponding to the given Ruby class's subclasses, excluding the class
+    /// itself. If we already have pre-defined bit patterns for it (say, `Array` or `Hash`), then
+    /// return those bits (`ArraySubclass`, `HashSubclass`). Otherwise return None.
     fn bits_from_subclass(class: VALUE) -> Option<u64> {
         types::SubclassBitsAndClass
             .iter()
@@ -352,6 +368,11 @@ impl Type {
         else { Self::from_class(val.class()).intersection(types::HeapBasicObject) }
     }
 
+    /// Try to represent the class using only bits, falling back to the nearest builtin subclass
+    /// and a TypeExact specialization.
+    ///
+    /// Useful for getting specific type information: if we know that we're allocating from a
+    /// specific class, we know the results will be exactly that class and not a subclass.
     pub fn from_class(class: VALUE) -> Type {
         if let Some(bits) = Self::bits_from_exact_class(class) {
             return Type::from_bits(bits);
@@ -363,12 +384,20 @@ impl Type {
                      get_class_name(class))
     }
 
+    /// Try to represent the class or its subclasses using only bits, falling back to the nearest
+    /// builtin subclass and a Type specialization.
+    ///
+    /// Useful for querying subclassing. For example, if we want to query if some `t: Type` is a
+    /// subclass of `class`, we can use `t.is_subtype(Type::from_class_inexact(class))`.
     pub fn from_class_inexact(class: VALUE) -> Type {
-        let bits = types::InexactBitsAndClass
-            .iter()
-            .find(|&(_, class_object)| class.is_subclass_of(unsafe { **class_object }) == ClassRelationship::Subclass)
-            .unwrap_or_else(|| panic!("Class {} is not a subclass of BasicObject! Don't know what to do.", get_class_name(class))).0;
-        Type::new(bits, Specialization::Type(class))
+        if let Some(bits) = Self::bits_from_inexact_class(class) {
+            return Type::from_bits(bits);
+        }
+        if let Some(bits) = Self::bits_from_subclass(class) {
+            return Type::new(bits, Specialization::Type(class));
+        }
+        unreachable!("Class {} is not a subclass of BasicObject! Don't know what to do.",
+                     get_class_name(class))
     }
 
     /// Private. Only for creating type globals.
@@ -436,6 +465,13 @@ impl Type {
 
     /// Return the object specialization, if any.
     pub fn ruby_object(&self) -> Option<VALUE> {
+        // We ask not for the type, but for a specific value associated with this Type. If the Type
+        // is Empty, it will be a subtype of every other Type, but it will never have any value.
+        // Therefore, special-case Empty.
+        if self.is_subtype(types::Empty) { return None; }
+        if self.is_subtype(types::NilClass) { return Some(Qnil); }
+        if self.is_subtype(types::TrueClass) { return Some(Qtrue); }
+        if self.is_subtype(types::FalseClass) { return Some(Qfalse); }
         match self.spec() {
             Specialization::Object(val) => Some(val),
             _ => None,
@@ -595,6 +631,10 @@ impl Type {
         if let Some(val) = self.exact_ruby_class() {
             return Some(val);
         }
+        // As in `ruby_object`, we ask not for the type but for a property of the values it
+        // describes. Empty is a subtype of every Type, so the scan below would report the first
+        // entry's class, but Empty describes no value and therefore no run-time class.
+        if self.is_subtype(types::Empty) { return None; }
         types::ExactBitsAndClass
             .iter()
             .find(|&(bits, _)| self.is_subtype(Type::from_bits(*bits)))
@@ -843,13 +883,25 @@ mod tests {
     }
 
     #[test]
-    fn singletons_do_not_have_ruby_object() {
-        assert_eq!(Type::from_value(Qnil).ruby_object(), None);
-        assert_eq!(types::NilClass.ruby_object(), None);
-        assert_eq!(Type::from_value(Qtrue).ruby_object(), None);
-        assert_eq!(types::TrueClass.ruby_object(), None);
-        assert_eq!(Type::from_value(Qfalse).ruby_object(), None);
-        assert_eq!(types::FalseClass.ruby_object(), None);
+    fn singletons_have_ruby_object() {
+        assert_eq!(Type::from_value(Qnil).ruby_object(), Some(Qnil));
+        assert_eq!(types::NilClass.ruby_object(), Some(Qnil));
+        assert_eq!(Type::from_value(Qtrue).ruby_object(), Some(Qtrue));
+        assert_eq!(types::TrueClass.ruby_object(), Some(Qtrue));
+        assert_eq!(Type::from_value(Qfalse).ruby_object(), Some(Qfalse));
+        assert_eq!(types::FalseClass.ruby_object(), Some(Qfalse));
+    }
+
+    #[test]
+    fn empty_has_no_ruby_object() {
+        // Empty is a subtype of every type, but has no value.
+        assert_eq!(types::Empty.ruby_object(), None);
+        assert_eq!(types::Empty.fixnum_value(), None);
+        assert_eq!(types::Empty.runtime_exact_ruby_class(), None);
+        assert_eq!(types::Empty.cint64_value(), None);
+        assert_eq!(types::Empty.exact_ruby_class(), None);
+        assert_eq!(types::Empty.inexact_ruby_class(), None);
+        assert_eq!(types::Empty.builtin_type_equivalent(), None);
     }
 
     #[test]
@@ -891,6 +943,32 @@ mod tests {
             assert_bit_equal(Type::from_class(unsafe { rb_cFalseClass }), types::FalseClass);
             let c_class = define_class("C", unsafe { rb_cObject });
             assert_bit_equal(Type::from_class(c_class), Type::new(bits::ObjectSubclass, Specialization::TypeExact(c_class)));
+        });
+    }
+
+    #[test]
+    fn from_class_inexact() {
+        crate::cruby::with_rubyvm(|| {
+            assert_bit_equal(Type::from_class_inexact(unsafe { rb_cArray }), types::Array);
+            assert_bit_equal(Type::from_class_inexact(unsafe { rb_cNilClass }), types::NilClass);
+            assert_bit_equal(Type::from_class_inexact(unsafe { rb_cString }), types::String);
+            let c_class = define_class("C", unsafe { rb_cObject });
+            assert_bit_equal(Type::from_class_inexact(c_class),
+                             Type::new(bits::ObjectSubclass, Specialization::Type(c_class)));
+        });
+    }
+
+    #[test]
+    fn intersection_of_builtin_and_user_class_inexact_is_empty() {
+        crate::cruby::with_rubyvm(|| {
+            let c_class = define_class("C", unsafe { rb_cObject });
+            let c_inexact = Type::from_class_inexact(c_class);
+            // A Fixnum can never be an instance of C or any subclass of C; the
+            // bits are disjoint, so no specialization comparison is needed.
+            assert_bit_equal(Type::fixnum(123).intersection(c_inexact), types::Empty);
+            assert_bit_equal(c_inexact.intersection(Type::fixnum(123)), types::Empty);
+            assert_bit_equal(types::Fixnum.intersection(c_inexact), types::Empty);
+            assert_bit_equal(c_inexact.intersection(types::Fixnum), types::Empty);
         });
     }
 

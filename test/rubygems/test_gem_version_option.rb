@@ -24,6 +24,26 @@ class TestGemVersionOption < Gem::TestCase
     assert @cmd.handles?(%w[--version >1])
   end
 
+  def test_add_ruby_abi_option
+    @cmd.add_ruby_abi_option
+
+    @cmd.handle_options %w[--ruby-abi 3.4]
+
+    assert_equal "3.4", @cmd.options[:ruby_abi]
+  end
+
+  def test_ruby_abi_option_rejects_invalid_format
+    @cmd.add_ruby_abi_option
+
+    ["3", "3.4.1", "abc", "3.x"].each do |invalid|
+      error = assert_raise Gem::OptionParser::InvalidArgument do
+        @cmd.handle_options ["--ruby-abi", invalid]
+      end
+
+      assert_match(/Ruby ABI must be in X.Y format/, error.message)
+    end
+  end
+
   def test_enables_prerelease
     @cmd.add_version_option
 

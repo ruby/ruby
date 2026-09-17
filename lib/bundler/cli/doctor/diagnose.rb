@@ -53,7 +53,7 @@ module Bundler
     end
 
     def bundles_for_gem(spec)
-      Dir.glob("#{spec.full_gem_path}/**/*.bundle")
+      SharedHelpers.glob_files_in_dir("**/*.bundle", spec.full_gem_path)
     end
 
     def lookup_with_fiddle(path)

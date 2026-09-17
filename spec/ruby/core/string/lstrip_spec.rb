@@ -25,6 +25,74 @@ describe "String#lstrip" do
     "\x00hello".lstrip.should == "hello"
     "\000 \000hello\000 \000".lstrip.should == "hello\000 \000"
   end
+
+  ruby_version_is "4.0" do
+    context "when given character selectors arguments" do
+      it "removes leading characters in the intersection of sets removed" do
+        "  hello  ".lstrip(" ").should == "hello  "
+        "llo".lstrip("lo", "l").should == "o"
+        "hello".lstrip("ho", "h").should == "ello"
+        "hell yeah".lstrip("").should == "hell yeah"
+      end
+
+      it "negates sets starting with ^" do
+        "ello".lstrip("aeiou", "^e").should == "ello"
+        "hello".lstrip("^o").should == "o"
+      end
+
+      it "removes leading characters in a sequence" do
+        "hello".lstrip("e-h").should == "llo"
+        "hel-lo".lstrip("h-").should == "el-lo"
+        "abcdefgh".lstrip("a-ce-fh").should == "defgh"
+        "abcde".lstrip("ac-e").should == "bcde"
+      end
+
+      it "removes leading multibyte characters" do
+        "四月".lstrip("四").should == "月"
+        "哥哥我倒".lstrip("哥").should == "我倒"
+      end
+
+      it "respects backslash for escaping" do
+        "a-b".lstrip("a\\-b").should == ""
+        "^".lstrip("\\^").should == ""
+        "\\".lstrip("\\\\").should == ""
+      end
+
+      it "raises an ArgumentError when the sequence is invalid" do
+        -> { "hello".lstrip("h-e") }.should.raise(ArgumentError)
+        -> { "hello".lstrip("^h-e") }.should.raise(ArgumentError)
+      end
+
+      it "tries to convert each argument to a string using to_str" do
+        other_string = mock('h')
+        other_string.should_receive(:to_str).and_return("h")
+
+        other_string2 = mock('he')
+        other_string2.should_receive(:to_str).and_return("he")
+
+        "hello world".lstrip(other_string, other_string2).should == "ello world"
+      end
+
+      it "raises a TypeError when an argument can't be converted to a string" do
+        -> { "hello world".lstrip(100)       }.should.raise(TypeError)
+        -> { "hello world".lstrip([])        }.should.raise(TypeError)
+        -> { "hello world".lstrip(mock('x')) }.should.raise(TypeError)
+      end
+
+      it "returns String instances when called on a subclass" do
+        StringSpecs::MyString.new("oh no!!!").lstrip("o").should.instance_of?(String)
+      end
+
+      it "returns a String in the same encoding as self" do
+        "hello".encode("US-ASCII").lstrip("h").encoding.should == Encoding::US_ASCII
+      end
+
+      it "raises an Encoding::CompatibilityError when the encodings are incompatible" do
+        -> { "hello".lstrip("e".encode("UTF-16LE")) }.should.raise(Encoding::CompatibilityError)
+        -> { "hello".encode("UTF-16LE").lstrip("e") }.should.raise(Encoding::CompatibilityError)
+      end
+    end
+  end
 end
 
 describe "String#lstrip!" do

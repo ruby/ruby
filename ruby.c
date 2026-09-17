@@ -44,7 +44,7 @@
 #include "eval_intern.h"
 #include "internal.h"
 #include "internal/cmdlineopt.h"
-#include "internal/cont.h"
+#include "internal/coverage.h"
 #include "internal/error.h"
 #include "internal/file.h"
 #include "internal/inits.h"
@@ -56,6 +56,7 @@
 #include "internal/thread.h"
 #include "internal/ruby_parser.h"
 #include "internal/variable.h"
+#include "prism_compile.h"
 #include "ruby/encoding.h"
 #include "ruby/thread.h"
 #include "ruby/util.h"
@@ -523,7 +524,7 @@ expand_include_path(VALUE path)
     return rb_file_expand_path(path, Qnil);
 }
 
-void
+static void
 ruby_incpush_expand(const char *path)
 {
     ruby_push_include(path, expand_include_path);
@@ -897,7 +898,6 @@ moreswitches(const char *s, ruby_cmdline_options_t *opt, int envopt)
     char **argv, *p;
     const char *ap = 0;
     VALUE argstr, argary;
-    void *ptr;
 
     VALUE src_enc_name = opt->src.enc.name;
     VALUE ext_enc_name = opt->ext.enc.name;
@@ -934,7 +934,7 @@ moreswitches(const char *s, ruby_cmdline_options_t *opt, int envopt)
     rb_str_cat(argary, (char *)&ap, sizeof(ap));
 
     VALUE ptr_obj;
-    argv = ptr = RB_ALLOCV_N(char *, ptr_obj, argc);
+    argv = RB_ALLOCV_N(char *, ptr_obj, argc);
     MEMMOVE(argv, RSTRING_PTR(argary), char *, argc);
 
     while ((i = proc_options(argc, argv, opt, envopt)) > 1 && envopt && (argc -= i) > 0) {

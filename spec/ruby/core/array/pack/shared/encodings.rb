@@ -13,4 +13,8 @@ describe :array_pack_hex, shared: true do
     obj.should_receive(:to_str).and_return(1)
     -> { [obj].pack(pack_format) }.should.raise(TypeError)
   end
+
+  it "accepts nil" do
+    [nil].pack(pack_format).should == "\x00"
+  end
 end

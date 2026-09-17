@@ -460,8 +460,10 @@ impl fmt::Debug for RegMapping {
     }
 }
 
-/// Maximum value of the chain depth (should fit in 5 bits)
-const CHAIN_DEPTH_MAX: u8 = 0b11111; // 31
+/// Maximum value of the chain depth (should fit in 9 bits)
+const CHAIN_DEPTH_MAX: u16 = 256;
+const DEFERRED_FLAG: u8 = 1 << 0;
+const RETURN_LANDING_FLAG: u8 = 1 << 1;
 
 /// Code generation context
 /// Contains information we can use to specialize/optimize code
@@ -478,14 +480,11 @@ pub struct Context {
     reg_mapping: RegMapping,
 
     // Depth of this block in the sidechain (eg: inline-cache chain)
-    // 6 bits, max 63
-    chain_depth: u8,
+    // 9 bits, max 256
+    chain_depth: u16,
 
-    // Whether this code is the target of a JIT-to-JIT Ruby return ([Self::is_return_landing])
-    is_return_landing: bool,
-
-    // Whether the compilation of this code has been deferred ([Self::is_deferred])
-    is_deferred: bool,
+    // Return-landing and deferred flags
+    flags: u8,
 
     // Type we track for self
     self_type: Type,
@@ -580,9 +579,9 @@ impl BitVector {
         self.push_uint(val as u64, 8);
     }
 
-    fn push_u5(&mut self, val: u8) {
-        assert!(val <= 0b11111);
-        self.push_uint(val as u64, 5);
+    fn push_u9(&mut self, val: u16) {
+        assert!(val <= 0b1_1111_1111);
+        self.push_uint(val as u64, 9);
     }
 
     fn push_u4(&mut self, val: u8) {
@@ -654,8 +653,8 @@ impl BitVector {
         self.read_uint(bit_idx, 8) as u8
     }
 
-    fn read_u5(&self, bit_idx: &mut usize) -> u8 {
-        self.read_uint(bit_idx, 5) as u8
+    fn read_u9(&self, bit_idx: &mut usize) -> u16 {
+        self.read_uint(bit_idx, 9) as u16
     }
 
     fn read_u4(&self, bit_idx: &mut usize) -> u8 {
@@ -1053,17 +1052,17 @@ impl Context {
             }
         }
 
-        bits.push_bool(self.is_deferred);
-        bits.push_bool(self.is_return_landing);
+        bits.push_bool(self.is_deferred());
+        bits.push_bool(self.is_return_landing());
 
         // The chain depth is most often 0 or 1
         if self.chain_depth < 2 {
             bits.push_u1(0);
-            bits.push_u1(self.chain_depth);
+            bits.push_u1(self.chain_depth.try_into().unwrap());
 
         } else {
             bits.push_u1(1);
-            bits.push_u5(self.chain_depth);
+            bits.push_u9(self.chain_depth);
         }
 
         // Encode the self type if known
@@ -1154,13 +1153,17 @@ impl Context {
             }
         }
 
-        ctx.is_deferred = bits.read_bool(&mut idx);
-        ctx.is_return_landing = bits.read_bool(&mut idx);
+        if bits.read_bool(&mut idx) {
+            ctx.flags |= DEFERRED_FLAG;
+        }
+        if bits.read_bool(&mut idx) {
+            ctx.flags |= RETURN_LANDING_FLAG;
+        }
 
         if bits.read_u1(&mut idx) == 0 {
-            ctx.chain_depth = bits.read_u1(&mut idx)
+            ctx.chain_depth = bits.read_u1(&mut idx).into()
         } else {
-            ctx.chain_depth = bits.read_u5(&mut idx)
+            ctx.chain_depth = bits.read_u9(&mut idx);
         }
 
         loop {
@@ -1803,7 +1806,7 @@ impl IseqPayload {
 /// Get the payload for an iseq. For safety it's up to the caller to ensure the returned `&mut`
 /// upholds aliasing rules and that the argument is a valid iseq.
 pub fn get_iseq_payload(iseq: IseqPtr) -> Option<&'static mut IseqPayload> {
-    let payload = unsafe { rb_iseq_get_yjit_payload(iseq) };
+    let payload = unsafe { rb_iseq_get_jit_payload(iseq) };
     let payload: *mut IseqPayload = payload.cast();
     unsafe { payload.as_mut() }
 }
@@ -1813,7 +1816,7 @@ pub fn get_or_create_iseq_payload(iseq: IseqPtr) -> &'static mut IseqPayload {
     type VoidPtr = *mut c_void;
 
     let payload_non_null = unsafe {
-        let payload = rb_iseq_get_yjit_payload(iseq);
+        let payload = rb_iseq_get_jit_payload(iseq);
         if payload.is_null() {
             // Increment the compiled iseq count
             incr_counter!(compiled_iseq_count);
@@ -1824,7 +1827,7 @@ pub fn get_or_create_iseq_payload(iseq: IseqPtr) -> &'static mut IseqPayload {
             // We allocate in those cases anyways.
             let new_payload = IseqPayload::default();
             let new_payload = Box::into_raw(Box::new(new_payload));
-            rb_iseq_set_yjit_payload(iseq, new_payload as VoidPtr);
+            rb_iseq_set_jit_payload(iseq, new_payload as VoidPtr);
 
             new_payload
         } else {
@@ -1901,7 +1904,7 @@ pub extern "C" fn rb_yjit_iseq_free(iseq: IseqPtr) {
     iseq_free_invariants(iseq);
 
     let payload = {
-        let payload = unsafe { rb_iseq_get_yjit_payload(iseq) };
+        let payload = unsafe { rb_iseq_get_jit_payload(iseq) };
         if payload.is_null() {
             // Nothing to free.
             return;
@@ -2029,7 +2032,7 @@ pub extern "C" fn rb_yjit_iseq_mark(payload: *mut c_void) {
 /// This is a mirror of [rb_yjit_iseq_mark].
 #[no_mangle]
 pub extern "C" fn rb_yjit_iseq_update_references(iseq: IseqPtr) {
-    let payload = unsafe { rb_iseq_get_yjit_payload(iseq) };
+    let payload = unsafe { rb_iseq_get_jit_payload(iseq) };
     let payload = if payload.is_null() {
         // Nothing to update.
         return;
@@ -2577,13 +2580,13 @@ impl Context {
         self.reg_mapping = reg_mapping;
     }
 
-    pub fn get_chain_depth(&self) -> u8 {
+    pub fn get_chain_depth(&self) -> u16 {
         self.chain_depth
     }
 
     pub fn reset_chain_depth_and_defer(&mut self) {
         self.chain_depth = 0;
-        self.is_deferred = false;
+        self.flags &= !DEFERRED_FLAG;
     }
 
     pub fn increment_chain_depth(&mut self) {
@@ -2594,23 +2597,23 @@ impl Context {
     }
 
     pub fn set_as_return_landing(&mut self) {
-        self.is_return_landing = true;
+        self.flags |= RETURN_LANDING_FLAG;
     }
 
     pub fn clear_return_landing(&mut self) {
-        self.is_return_landing = false;
+        self.flags &= !RETURN_LANDING_FLAG;
     }
 
     pub fn is_return_landing(&self) -> bool {
-        self.is_return_landing
+        self.flags & RETURN_LANDING_FLAG != 0
     }
 
     pub fn mark_as_deferred(&mut self) {
-        self.is_deferred = true;
+        self.flags |= DEFERRED_FLAG;
     }
 
     pub fn is_deferred(&self) -> bool {
-        self.is_deferred
+        self.flags & DEFERRED_FLAG != 0
     }
 
     /// Get an operand for the adjusted stack pointer address
@@ -4373,6 +4376,7 @@ mod tests {
         // Check that we can store types in 4 bits,
         // and all local types in 32 bits
         assert_eq!(mem::size_of::<Type>(), 1);
+        assert_eq!(mem::size_of::<Context>(), 56);
         assert!(Type::BlockParamProxy as usize <= 0b1111);
         assert!(MAX_CTX_LOCALS * 4 <= 32);
     }

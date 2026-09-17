@@ -26,7 +26,7 @@ module Bundler
     private
 
     def spec_for_gem(name)
-      Bundler::CLI::Common.select_spec(name, :regex_match)
+      Bundler::CLI::Common.select_spec_with_match_type(name, options)
     end
 
     def print_gem_version(spec)

@@ -100,10 +100,53 @@ class TestGemCompactIndexClientParser < Gem::TestCase
     assert parser.available?
   end
 
+  def test_available_without_header
+    parser = Gem::CompactIndexClient::Parser.new(FakeIndex.new(versions: "a 1.0.0 aaa111\n"))
+
+    assert parser.available?
+  end
+
   def test_available_with_no_data
     parser = Gem::CompactIndexClient::Parser.new(FakeIndex.new)
 
     refute parser.available?
+  end
+
+  def test_available_with_empty_versions
+    parser = Gem::CompactIndexClient::Parser.new(FakeIndex.new(versions: ""))
+
+    refute parser.available?
+  end
+
+  def test_available_with_header_only
+    parser = Gem::CompactIndexClient::Parser.new(FakeIndex.new(versions: "---\n"))
+
+    refute parser.available?
+  end
+
+  def test_available_with_header_data_only
+    parser = Gem::CompactIndexClient::Parser.new(FakeIndex.new(versions: "created_at: 2026-06-10T00:00:00Z\n---\n"))
+
+    refute parser.available?
+  end
+
+  def test_info_uses_checksum_from_yanked_line
+    index = FakeIndex.new(versions: "---\nc 3.0.0,3.0.3 ccc333\nc -3.0.3 ccc333yanked\n",
+                          info: { "c" => "---\n3.0.0 |checksum:abc\n" })
+    parser = Gem::CompactIndexClient::Parser.new(index)
+
+    parser.info("c")
+
+    assert_equal({ "c" => "ccc333yanked" }, index.info_requests)
+  end
+
+  def test_versions_line_without_checksum
+    index = FakeIndex.new(versions: "---\na 1.0.0 aaa111\nb 2.0.0\n",
+                          info: { "a" => "---\n1.0.0 |checksum:abc\n" })
+    parser = Gem::CompactIndexClient::Parser.new(index)
+
+    assert_equal [["b", "2.0.0"]], parser.versions["b"]
+    assert_equal 1, parser.info("a").size
   end
 
   def test_skips_blank_lines_in_versions_index

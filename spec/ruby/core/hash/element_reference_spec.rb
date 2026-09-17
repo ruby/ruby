@@ -84,11 +84,11 @@ describe "Hash#[]" do
   it "does not compare keys with different #hash values via #eql?" do
     x = mock('x')
     x.should_not_receive(:eql?)
-    x.stub!(:hash).and_return(0)
+    x.stub!(:hash).and_return(7)
 
     y = mock('y')
     y.should_not_receive(:eql?)
-    y.stub!(:hash).and_return(1)
+    y.stub!(:hash).and_return(8)
 
     { y => 1 }[x].should == nil
   end

@@ -93,6 +93,11 @@ describe :io_internal_encoding, shared: true do
       @io = new_io @name, "#{@object}:binary"
       @io.internal_encoding.should == nil
     end
+
+    it "returns nil when the external encoding is BINARY and internal encoding is set" do
+      @io = new_io @name, "#{@object}:binary:ibm437"
+      @io.internal_encoding.should == nil
+    end
   end
 end
 

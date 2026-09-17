@@ -651,6 +651,7 @@ zstream_init(struct zstream *z, const struct zstream_funcs *func)
     z->stream.avail_in = 0;
     z->stream.next_out = Z_NULL;
     z->stream.avail_out = 0;
+    z->stream.state = Z_NULL;
     z->func = func;
 }
 

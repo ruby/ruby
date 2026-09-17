@@ -2725,9 +2725,9 @@ fn gen_newhash(
     jit_prepare_call_with_gc(jit, asm);
 
     if num != 0 {
-        // val = rb_hash_new_with_size(num / 2);
+        // val = rb_hash_new_capa(num / 2);
         let new_hash = asm.ccall(
-            rb_hash_new_with_size as *const u8,
+            rb_hash_new_capa as *const u8,
             vec![Opnd::UImm(num / 2)]
         );
 
@@ -2875,7 +2875,7 @@ fn jit_chain_guard(
     jcc: JCCKinds,
     jit: &mut JITState,
     asm: &mut Assembler,
-    depth_limit: u8,
+    depth_limit: u16,
     counter: Counter,
 ) {
     let target0_gen_fn = match jcc {
@@ -2902,22 +2902,22 @@ fn jit_chain_guard(
 }
 
 // up to 8 different shapes for each
-pub const GET_IVAR_MAX_DEPTH: u8 = 8;
+pub const GET_IVAR_MAX_DEPTH: u16 = 8;
 
 // up to 8 different shapes for each
-pub const SET_IVAR_MAX_DEPTH: u8 = 8;
+pub const SET_IVAR_MAX_DEPTH: u16 = 8;
 
 // hashes and arrays
-pub const OPT_AREF_MAX_CHAIN_DEPTH: u8 = 2;
+pub const OPT_AREF_MAX_CHAIN_DEPTH: u16 = 2;
 
 // expandarray
-pub const EXPANDARRAY_MAX_CHAIN_DEPTH: u8 = 4;
+pub const EXPANDARRAY_MAX_CHAIN_DEPTH: u16 = 4;
 
 // up to 5 different methods for send
-pub const SEND_MAX_DEPTH: u8 = 5;
+pub const SEND_MAX_DEPTH: u16 = 5;
 
-// up to 20 different offsets for case-when
-pub const CASE_WHEN_MAX_DEPTH: u8 = 20;
+// Specialize every value of a byte-sized case expression
+pub const CASE_WHEN_MAX_DEPTH: u16 = 256;
 
 pub const MAX_SPLAT_LENGTH: i32 = 127;
 
@@ -2928,7 +2928,7 @@ pub const MAX_SPLAT_LENGTH: i32 = 127;
 fn gen_get_ivar(
     jit: &mut JITState,
     asm: &mut Assembler,
-    max_chain_depth: u8,
+    max_chain_depth: u16,
     comptime_receiver: VALUE,
     ivar_name: ID,
     recv: Opnd,
@@ -3224,7 +3224,7 @@ fn gen_set_ivar(
 
     // The current shape doesn't contain this iv, we need to transition to another shape.
     let mut new_shape_complex = false;
-    if !shape_complex && receiver_t_object && ivar_index.is_none() {
+    let new_shape = if !shape_complex && receiver_t_object && ivar_index.is_none() {
         let current_shape_id = comptime_receiver.shape_id_of();
         // We don't need to check about imemo_fields here because we're definitely looking at a T_OBJECT.
         let klass = unsafe { rb_obj_class(comptime_receiver) };
@@ -3234,24 +3234,21 @@ fn gen_set_ivar(
         // it may be de-optimized into OBJ_COMPLEX_SHAPE (hash-table).
         new_shape_complex = unsafe { rb_jit_shape_complex_p(next_shape_id) };
         if new_shape_complex {
-            Some((next_shape_id, None, 0_usize))
+            None
         } else {
             let current_capacity = unsafe { rb_yjit_shape_capacity(current_shape_id) };
             let next_capacity = unsafe { rb_yjit_shape_capacity(next_shape_id) };
 
-            // If the new shape has a different capacity, or is COMPLEX, we'll have to
-            // reallocate it.
-            let needs_extension = next_capacity != current_capacity;
-
-            // We can write to the object, but we need to transition the shape
-            let ivar_index = unsafe { rb_yjit_shape_index(next_shape_id) } as usize;
-
-            let needs_extension = if needs_extension {
-                Some((current_capacity, next_capacity))
-            } else {
+            // The transition can be inlined only when the receiver is embedded and the new
+            // shape fits its current capacity; reallocation is delegated to the C function.
+            // That is not supposed to happen after warmup given `max_iv_count` is recorded
+            // on classes, so future objects should be allocated large enough.
+            if next_capacity != current_capacity || !comptime_receiver.embedded_p() {
                 None
-            };
-            Some((next_shape_id, needs_extension, ivar_index))
+            } else {
+                let ivar_index = unsafe { rb_yjit_shape_index(next_shape_id) } as usize;
+                Some((next_shape_id, ivar_index))
+            }
         }
     } else {
         None
@@ -3259,7 +3256,7 @@ fn gen_set_ivar(
 
     // If the receiver isn't a T_OBJECT, then just write out the IV write as a function call.
     // too-complex shapes can't use index access, so we use rb_ivar_get for them too.
-    if !receiver_t_object || shape_complex || new_shape_complex || megamorphic || ivar_index.is_none() {
+    if !receiver_t_object || shape_complex || new_shape_complex || megamorphic || (ivar_index.is_none() && new_shape.is_none()) {
         // The function could raise FrozenError.
         // Note that this modifies REG_SP, which is why we do it first
         jit_prepare_non_leaf_call(jit, asm);
@@ -3318,12 +3315,21 @@ fn gen_set_ivar(
 
         let write_val;
 
-        match ivar_index {
-            None => {
-                panic!("ivar_index None should have been delegated to rb_vm_set_ivar_id")
+        match (ivar_index, new_shape) {
+            // If we don't have an instance variable index, then we need to
+            // transition out of the current shape, which was pinned by the
+            // shape guard above.
+            (None, Some((next_shape_id, ivar_index))) => {
+                asm_comment!(asm, "write shape");
+                // `next_shape_id` was transitioned from the guarded shape id, so it carries
+                // the layout and capacity bits that RBASIC_SET_SHAPE_ID() would preserve.
+                asm.store(shape_opnd, next_shape_id.into());
+
+                write_val = asm.stack_opnd(0);
+                gen_write_iv(asm, comptime_receiver, recv, ivar_index, write_val, false, stack_type.is_imm());
             },
 
-            Some(ivar_index) => {
+            (Some(ivar_index), _) => {
                 // If the iv index already exists, then we don't need to
                 // transition to a new shape.  The reason is because we find
                 // the iv index by searching up the shape tree.  If we've
@@ -3332,6 +3338,9 @@ fn gen_set_ivar(
                 write_val = asm.stack_opnd(0);
                 gen_write_iv(asm, comptime_receiver, recv, ivar_index, write_val, false, stack_type.is_imm());
             },
+
+            // The condition above delegates this case to the C fallback.
+            (None, None) => unreachable!("ivar_index and new_shape cannot both be None here"),
         }
     }
     let write_val = asm.stack_pop(1); // Keep write_val on stack during ccall for GC
@@ -4973,7 +4982,7 @@ fn jit_guard_known_klass(
     obj_opnd: Opnd,
     insn_opnd: YARVOpnd,
     sample_instance: VALUE,
-    max_chain_depth: u8,
+    max_chain_depth: u16,
     counter: Counter,
 ) {
     let known_klass = sample_instance.class_of();
@@ -6350,7 +6359,7 @@ fn jit_rb_str_concat(
     let recv = asm.stack_pop(1);
 
     // Test if string encodings differ. If different, use rb_str_append. If the same,
-    // use rb_yjit_str_simple_append, which calls rb_str_cat.
+    // use rb_jit_str_simple_append, which calls rb_str_cat.
     asm_comment!(asm, "<< on strings");
 
     // Take receiver's object flags XOR arg's flags. If any
@@ -6368,7 +6377,7 @@ fn jit_rb_str_concat(
     asm.jnz(enc_mismatch);
 
     // If encodings match, call the simple append function and jump to return
-    let ret_opnd = asm.ccall(rb_yjit_str_simple_append as *const u8, vec![recv, concat_arg]);
+    let ret_opnd = asm.ccall(rb_jit_str_simple_append as *const u8, vec![recv, concat_arg]);
     let ret_label = asm.new_label("func_return");
     let stack_ret = asm.stack_push(Type::TString);
     asm.mov(stack_ret, ret_opnd);
@@ -6761,7 +6770,7 @@ fn c_method_tracing_currently_enabled(jit: &JITState) -> bool {
 unsafe extern "C" fn build_kwhash(ci: *const rb_callinfo, sp: *const VALUE) -> VALUE {
     let kw_arg = vm_ci_kwarg(ci);
     let kw_len: usize = get_cikw_keyword_len(kw_arg).try_into().unwrap();
-    let hash = rb_hash_new_with_size(kw_len as u64);
+    let hash = rb_hash_new_capa(kw_len as i64);
 
     for kwarg_idx in 0..kw_len {
         let key = get_cikw_keywords_idx(kw_arg, kwarg_idx.try_into().unwrap());
@@ -7022,7 +7031,7 @@ fn gen_send_cfunc(
     if variable_splat {
         let splat_array_idx = i32::from(kw_splat) + i32::from(block_arg);
         let comptime_splat_array = jit.peek_at_stack(&asm.ctx, splat_array_idx as isize);
-        if unsafe { rb_yjit_ruby2_keywords_splat_p(comptime_splat_array) } != 0 {
+        if unsafe { rb_jit_ruby2_keywords_splat_p(comptime_splat_array) } != 0 {
             gen_counter_incr(jit, asm, Counter::send_cfunc_splat_varg_ruby2_keywords);
             return None;
         }
@@ -7441,9 +7450,9 @@ fn gen_send_bmethod(
     let procv = unsafe { rb_get_def_bmethod_proc((*cme).def) };
 
     let proc = unsafe { rb_jit_get_proc_ptr(procv) };
-    let proc_block = unsafe { &(*proc).block };
+    let proc_block = unsafe { (*proc).block.as_ref() };
 
-    if proc_block.type_ != block_type_iseq {
+    if proc_block.type_() != block_type_iseq {
         return None;
     }
 
@@ -7923,7 +7932,7 @@ fn gen_send_iseq(
         // All splats need to guard for ruby2_keywords hash. Check with a function call when
         // splatting into a rest param since the index for the last item in the array is dynamic.
         asm_comment!(asm, "guard no ruby2_keywords hash in splat");
-        let bad_splat = asm.ccall(rb_yjit_ruby2_keywords_splat_p as _, vec![asm.stack_opnd(splat_pos)]);
+        let bad_splat = asm.ccall(rb_jit_ruby2_keywords_splat_p as _, vec![asm.stack_opnd(splat_pos)]);
         asm.cmp(bad_splat, 0.into());
         asm.jnz(Target::side_exit(Counter::guard_send_splatarray_last_ruby2_keywords));
     }
@@ -8290,17 +8299,14 @@ fn gen_send_iseq(
         callee_ctx.set_inline_block(iseq);
     }
 
-    // Set the argument types in the callee's context
-    for arg_idx in 0..argc {
-        let stack_offs: u8 = (argc - arg_idx - 1).try_into().unwrap();
-        let arg_type = asm.ctx.get_opnd_type(StackOpnd(stack_offs));
-        callee_ctx.set_local_type(arg_idx.try_into().unwrap(), arg_type);
-    }
-
-    // If we're in a forwarding callee, there will be one unknown type
-    // written in to the local table (the caller's CI object)
-    if forwarding {
-        callee_ctx.set_local_type(0, Type::Unknown)
+    // Forwarding callees store a callinfo object rather than arguments in
+    // their local table, so their argument types do not map to local types.
+    if !forwarding {
+        for arg_idx in 0..argc {
+            let stack_offs: u8 = (argc - arg_idx - 1).try_into().unwrap();
+            let arg_type = asm.ctx.get_opnd_type(StackOpnd(stack_offs));
+            callee_ctx.set_local_type(arg_idx.try_into().unwrap(), arg_type);
+        }
     }
 
     // Set the receiver type in the callee's context
@@ -8582,7 +8588,7 @@ fn gen_iseq_kw_call(
 
                 // Use the total number of supplied keywords as a size upper bound
                 let keyword_len = unsafe { (*keywords).keyword_len } as usize;
-                let hash = unsafe { rb_hash_new_with_size(keyword_len as u64) };
+                let hash = unsafe { rb_hash_new_capa(keyword_len as i64) };
 
                 // Put pairs into the kwrest hash as the mask describes
                 for kwarg_idx in 0..keyword_len {
@@ -9043,6 +9049,16 @@ fn gen_struct_aset(
     assert!(unsafe { RB_TYPE_P(comptime_recv, RUBY_T_STRUCT) });
     assert!((off as i64) < unsafe { RSTRUCT_LEN(comptime_recv) });
 
+    // We are going to use an encoding that takes a 4-byte immediate which
+    // limits the offset to INT32_MAX (mirrors struct aref).
+    {
+        let native_off = (off as i64) * (SIZEOF_VALUE as i64);
+        if native_off > (i32::MAX as i64) {
+            gen_counter_incr(jit, asm, Counter::send_struct_aset_offset_too_large);
+            return None;
+        }
+    }
+
     // Even if the comptime recv was not frozen, future recv may be. So we need to emit a guard
     // that the recv is not frozen.
     // We know all structs are heap objects, so we can check the flag directly.
@@ -9054,15 +9070,49 @@ fn gen_struct_aset(
 
     // Not frozen, so we can proceed.
 
+    // All structs from the same Struct class and shape_id have the same length, so
+    // embedded-ness is fixed per class.
+    let embedded = unsafe { FL_TEST_RAW(comptime_recv, VALUE(RSTRUCT_EMBED_LEN_MASK)) };
+
+    // Whether the written value is a known immediate, so we can skip the write barrier.
+    let val_is_imm = asm.ctx.get_opnd_type(StackOpnd(0)).is_imm();
+
     asm_comment!(asm, "struct aset");
 
-    let val = asm.stack_pop(1);
-    let recv = asm.stack_pop(1);
+    // Keep the value on the VM stack across the (possible) write barrier ccall so the GC
+    // can see it.
+    let val = asm.stack_opnd(0);
 
-    let val = asm.ccall(RSTRUCT_SET as *const u8, vec![recv, (off as i64).into(), val]);
+    let slot = if embedded != VALUE(0) {
+        Opnd::mem(64, recv, RUBY_OFFSET_RSTRUCT_AS_ARY + (SIZEOF_VALUE_I32 * off))
+    } else {
+        let rstruct_ptr = asm.load(Opnd::mem(64, recv, RUBY_OFFSET_RSTRUCT_AS_HEAP_PTR));
+        Opnd::mem(64, rstruct_ptr, SIZEOF_VALUE_I32 * off)
+    };
+    asm.mov(slot, val);
 
+    // Conditional write barrier: skipped entirely when the value is a known immediate,
+    // otherwise skipped at runtime for immediate/nil/false.
+    if !val_is_imm {
+        asm.spill_regs(); // unconditional for RegMappings consistency across the ccall
+        let skip_wb = asm.new_label("skip_wb");
+        asm.test(val, (RUBY_IMMEDIATE_MASK as u64).into());
+        asm.jnz(skip_wb);
+        asm.cmp(val, Qnil.into());
+        asm.jbe(skip_wb);
+
+        asm_comment!(asm, "write barrier");
+        asm.ccall(rb_gc_writebarrier as *const u8, vec![recv, val]);
+
+        asm.write_label(skip_wb);
+    }
+
+    let write_val = asm.stack_pop(1); // pop the value (kept on stack for GC until now)
+    asm.stack_pop(1); // pop the receiver
+
+    // Struct member assignment returns the assigned value.
     let ret = asm.stack_push(Type::Unknown);
-    asm.mov(ret, val);
+    asm.mov(ret, write_val);
 
     jump_to_next_insn(jit, asm)
 }
@@ -10248,8 +10298,8 @@ fn gen_intern(
     jit: &mut JITState,
     asm: &mut Assembler,
 ) -> Option<CodegenStatus> {
-    // Save the PC and SP because we might allocate
-    jit_prepare_call_with_gc(jit, asm);
+    // rb_str_intern can allocate and raise EncodingError.
+    jit_prepare_non_leaf_call(jit, asm);
 
     let str = asm.stack_opnd(0);
     let sym = asm.ccall(rb_str_intern as *const u8, vec![str]);
@@ -10475,7 +10525,7 @@ fn gen_opt_getconstant_path(
     }
 
     let cref_sensitive = !unsafe { (*ice).ic_cref }.is_null();
-    let is_shareable = unsafe { rb_yjit_constcache_shareable(ice) };
+    let is_shareable = unsafe { rb_jit_constcache_shareable(ice) };
     let needs_checks = cref_sensitive || (!is_shareable && !assume_single_ractor_mode(jit, asm));
 
     if needs_checks {

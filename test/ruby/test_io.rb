@@ -363,6 +363,139 @@ class TestIO < Test::Unit::TestCase
     }
   end
 
+  def test_ungetc_with_seek_textmode
+    bug22239 = '[Bug #22239]'
+    make_tempfile {|t|
+      open(t.path, "rt") {|f|
+        f.ungetc('a')
+        f.seek(2, :SET)
+        assert_equal('o', f.getc, bug22239)
+      }
+
+      open(t.path, "rt") {|f|
+        f.getc
+        f.ungetc('a')
+        f.seek(2, :SET)
+        assert_equal('o', f.getc, bug22239)
+      }
+    }
+  end
+
+  def test_ungetc_with_pos_textmode
+    bug22239 = '[Bug #22239]'
+    make_tempfile {|t|
+      open(t.path, "rt") {|f|
+        f.ungetc('a')
+        f.pos = 2
+        assert_equal('o', f.getc, bug22239)
+      }
+
+      open(t.path, "rt") {|f|
+        f.getc
+        f.ungetc('a')
+        f.pos = 2
+        assert_equal('o', f.getc, bug22239)
+      }
+    }
+  end
+
+  def test_eof_after_seek_with_pending_char
+    bug22239 = '[Bug #22239]'
+    make_tempfile {|t|
+      open(t.path, "rt") {|f|
+        f.getc
+        f.ungetc('a')
+        f.seek(0, IO::SEEK_END)
+        assert_predicate(f, :eof?, bug22239)
+        assert_nil(f.getc, bug22239)
+      }
+    }
+  end
+
+  def test_sysseek_after_rewind_with_pending_char
+    bug22239 = '[Bug #22239]'
+    make_tempfile {|t|
+      open(t.path, "rt") {|f|
+        f.getc
+        f.ungetc('a')
+        f.rewind
+        assert_nothing_raised(IOError, bug22239) {f.sysseek(0)}
+      }
+    }
+  end
+
+  def test_getbyte_after_rewind_with_pending_char
+    bug22239 = '[Bug #22239]'
+    make_tempfile {|t|
+      open(t.path, "rt") {|f|
+        f.getc
+        f.ungetc('a')
+        f.rewind
+        assert_nothing_raised(IOError, bug22239) {f.getbyte}
+      }
+    }
+  end
+
+  def test_getbyte_after_seek_with_pending_char
+    bug22239 = '[Bug #22239]'
+    make_tempfile {|t|
+      open(t.path, "rt") {|f|
+        f.getc
+        f.ungetc('a')
+        f.seek(0, :SET)
+        assert_nothing_raised(IOError, bug22239) {f.getbyte}
+      }
+    }
+  end
+
+  def test_getbyte_after_pos_with_pending_char
+    bug22239 = '[Bug #22239]'
+    make_tempfile {|t|
+      open(t.path, "rt") {|f|
+        f.getc
+        f.ungetc('a')
+        f.pos = 0
+        assert_nothing_raised(IOError, bug22239) {f.getbyte}
+      }
+    }
+  end
+
+  def test_getbyte_after_flush_with_pending_char
+    bug22239 = '[Bug #22239]'
+    make_tempfile {|t|
+      open(t.path, "rt") {|f|
+        f.getc
+        f.ungetc('a')
+        f.flush
+        assert_nothing_raised(IOError, bug22239) {f.getbyte}
+      }
+    }
+  end
+
+  def test_getbyte_after_binmode_with_pending_char
+    bug22239 = '[Bug #22239]'
+    make_tempfile {|t|
+      open(t.path, "rt") {|f|
+        f.getc
+        f.ungetc('a')
+        f.binmode
+        assert_nothing_raised(IOError, bug22239) {f.getbyte}
+      }
+    }
+  end
+
+  def test_getbyte_after_tell_with_pending_char
+    bug22239 = '[Bug #22239]'
+    make_tempfile {|t|
+      open(t.path, "rt") {|f|
+        f.getc
+        f.ungetc('a')
+        f.tell
+        assert_nothing_raised(IOError, bug22239) {f.getbyte}
+      }
+    }
+  end
+
   def test_ungetbyte
     make_tempfile {|t|
       t.open
@@ -943,10 +1076,6 @@ class TestIO < Test::Unit::TestCase
   end if defined? UNIXSocket
 
   def test_copy_stream_socket4
-    if RUBY_PLATFORM =~ /mingw|mswin/
-      omit "pread(2) is not implemented."
-    end
-
     with_bigsrc {|bigsrc, bigcontent|
       File.open(bigsrc) {|f|
         assert_equal(0, f.pos)
@@ -966,10 +1095,6 @@ class TestIO < Test::Unit::TestCase
   end
 
   def test_copy_stream_socket5
-    if RUBY_PLATFORM =~ /mingw|mswin/
-      omit "pread(2) is not implemented."
-    end
-
     with_bigsrc {|bigsrc, bigcontent|
       File.open(bigsrc) {|f|
         assert_equal(bigcontent[0,100], f.read(100))
@@ -990,10 +1115,6 @@ class TestIO < Test::Unit::TestCase
   end
 
   def test_copy_stream_socket6
-    if RUBY_PLATFORM =~ /mingw|mswin/
-      omit "pread(2) is not implemented."
-    end
-
     mkcdtmpdir {
       megacontent = "abc" * 1234567
       File.open("megasrc", "w") {|f| f << megacontent }
@@ -1017,9 +1138,7 @@ class TestIO < Test::Unit::TestCase
   end
 
   def test_copy_stream_socket7
-    if RUBY_PLATFORM =~ /mingw|mswin/
-      omit "pread(2) is not implemented."
-    end
+    omit "fork is not supported" unless Process.respond_to?(:fork)
 
     GC.start
     mkcdtmpdir {
@@ -2737,6 +2856,93 @@ class TestIO < Test::Unit::TestCase
     f1.close
   end
 
+  def test_reopen_with_pending_char
+    bug22239 = '[Bug #22239]'
+    make_tempfile {|t|
+      open(__FILE__, "rt") {|f|
+        f.ungetc(f.getc)
+        f.reopen(t.path, "rt")
+        assert_equal("foo\n", f.gets, bug22239)
+      }
+
+      open(__FILE__, "rt") {|f|
+        f.ungetc('a')
+        f.reopen(t.path, "rt")
+        assert_equal("foo\n", f.gets, bug22239)
+      }
+
+      open(__FILE__, "rt") {|f|
+        f.ungetc(f.getc)
+        f.reopen(t.path, "rt")
+        assert_nothing_raised(IOError, bug22239) {f.getbyte}
+      }
+    }
+  end
+
+  def test_reopen_io_with_pending_byte
+    bug22239 = '[Bug #22239]'
+    mkcdtmpdir {
+      File.binwrite("src", "0123456789")
+
+      ["rb", "r+b"].each {|mode|
+        open("src", mode) {|f|
+          f.getbyte
+          IO.pipe {|r, w|
+            w.binmode
+            w.write("ABC")
+            w.close
+            f.reopen(r)
+            assert_equal("ABC", f.read, "reopen a #{mode} IO #{bug22239}")
+          }
+        }
+      }
+    }
+  end
+
+  def test_reopen_io_with_pending_char
+    bug22239 = '[Bug #22239]'
+    make_tempfile {|t|
+      open(__FILE__, "rt") {|f|
+        f.ungetc(f.getc)
+        open(t.path, "rt") {|f2| f.reopen(f2)}
+        assert_equal("foo\n", f.gets, bug22239)
+      }
+
+      open(__FILE__, "rt") {|f|
+        f.ungetc('a')
+        open(t.path, "rt") {|f2| f.reopen(f2)}
+        assert_equal("foo\n", f.gets, bug22239)
+      }
+
+      open(__FILE__, "rt") {|f|
+        f.ungetc(f.getc)
+        open(t.path, "rt") {|f2| f.reopen(f2)}
+        assert_nothing_raised(IOError, bug22239) {f.getbyte}
+      }
+    }
+  end
+
+  def test_reopen_io_with_pending_byte_then_write
+    bug22239 = '[Bug #22239]'
+    mkcdtmpdir {
+      File.binwrite("src", "abc")
+
+      ["rb", "r+b"].each_with_index {|mode, i|
+        dst = "dst#{i}"
+        open("src", mode) {|f|
+          f.getbyte
+          open(dst, "wb") {|f2|
+            f2.write("XXXXXXXX")
+            f.reopen(f2)
+            f.write("Y")
+            f.flush
+          }
+        }
+        assert_equal("XXXXXXXXY", File.binread(dst), "reopen a #{mode} IO #{bug22239}")
+      }
+    }
+  end
+
   def make_tempfile_for_encoding
     t = make_tempfile
     open(t.path, "rb+:utf-8") {|f| f.puts "\u7d05\u7389bar\n"}
@@ -3386,8 +3592,6 @@ __END__
   end
 
   def test_cross_thread_close_stdio
-    omit "[Bug #18613]" if /freebsd/ =~ RUBY_PLATFORM
-
     assert_separately([], <<-'end;')
       IO.pipe do |r,w|
         $stdin.reopen(r)
@@ -4082,8 +4286,6 @@ __END__
   end
 
   def test_race_closed_stream
-    omit "[Bug #18613]" if /freebsd/ =~ RUBY_PLATFORM
-
     assert_separately([], "#{<<-"begin;"}\n#{<<-"end;"}")
     begin;
       bug13158 = '[ruby-core:79262] [Bug #13158]'
@@ -4178,8 +4380,6 @@ __END__
     end
 
     def test_closed_stream_in_rescue
-      omit "[Bug #18613]" if /freebsd/ =~ RUBY_PLATFORM
-
       assert_separately([], "#{<<-"begin;"}\n#{<<~"end;"}")
       begin;
       10.times do

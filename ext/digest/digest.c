@@ -13,6 +13,7 @@
 
 ************************************************/
 
+#define RB_DIGEST_WRAP_METADATA_LINKAGE RUBY_FUNC_EXPORTED
 #include "digest.h"
 
 static VALUE rb_mDigest;
@@ -543,7 +544,7 @@ static const rb_data_type_t metadata_type = {
     {0},
 };
 
-RUBY_FUNC_EXPORTED VALUE
+RB_DIGEST_WRAP_METADATA_LINKAGE VALUE
 rb_digest_wrap_metadata(const rb_digest_metadata_t *meta)
 {
     return rb_obj_freeze(TypedData_Wrap_Struct(0, &metadata_type, (void *)meta));

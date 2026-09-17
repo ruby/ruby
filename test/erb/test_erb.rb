@@ -43,34 +43,6 @@ class TestERB < Test::Unit::TestCase
     assert_match(/\Atest filename:201\b/, e.backtrace[0])
   end
 
-  def test_html_escape
-    assert_equal(" !&quot;\#$%&amp;&#39;()*+,-./0123456789:;&lt;=&gt;?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~",
-                 ERB::Util.html_escape(" !\"\#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"))
-
-    assert_equal("", ERB::Util.html_escape(""))
-    assert_equal("abc", ERB::Util.html_escape("abc"))
-    assert_equal("&lt;&lt;", ERB::Util.html_escape("<\<"))
-    assert_equal("&#39;&amp;&quot;&gt;&lt;", ERB::Util.html_escape("'&\"><"))
-
-    assert_equal("", ERB::Util.html_escape(nil))
-    assert_equal("123", ERB::Util.html_escape(123))
-
-    assert_equal(65536+5, ERB::Util.html_escape("x"*65536 + "&").size)
-    assert_equal(65536+5, ERB::Util.html_escape("&" + "x"*65536).size)
-  end
-
-  def test_html_escape_to_s
-    object = Object.new
-    def object.to_s
-      "object"
-    end
-    assert_equal("object", ERB::Util.html_escape(object))
-  end
-
-  def test_html_escape_extension
-    assert_nil(ERB::Util.method(:html_escape).source_location)
-  end if RUBY_ENGINE == 'ruby'
-
   def test_concurrent_default_binding
     # This test randomly fails with JRuby -- NameError: undefined local variable or method `template2'
     pend if RUBY_ENGINE == 'jruby'
@@ -85,8 +57,22 @@ class TestERB < Test::Unit::TestCase
 end
 
 class TestERBCore < Test::Unit::TestCase
+  class AlwaysEqual
+    def equal?(_other)
+      true
+    end
+  end
+
   def setup
     @erb = ERB
+  end
+
+  def marshal_loaded_erb(init, src: "")
+    erb = ERB.allocate
+    erb.instance_variable_set(:@src, src)
+    erb.instance_variable_set(:@lineno, 1)
+    erb.instance_variable_set(:@_init, init)
+    Marshal.load(Marshal.dump(erb))
   end
 
   def test_version
@@ -664,12 +650,22 @@ EOS
     assert_raise(ArgumentError) {erb.result}
   end
 
+  def test_prohibited_marshal_load_result_with_overridden_equal
+    erb = marshal_loaded_erb(AlwaysEqual.new, src: "raise 'unreachable'")
+    assert_raise(ArgumentError) {erb.result}
+  end
+
   def test_prohibited_marshal_load_def_method
     erb = ERB.allocate
     erb.instance_variable_set(:@src, "")
     erb.instance_variable_set(:@lineno, 1)
     erb.instance_variable_set(:@_init, true)
     erb = Marshal.load(Marshal.dump(erb))
+    assert_raise(ArgumentError) {erb.def_method(Class.new, 'render')}
+  end
+
+  def test_prohibited_marshal_load_def_method_with_overridden_equal
+    erb = marshal_loaded_erb(AlwaysEqual.new)
     assert_raise(ArgumentError) {erb.def_method(Class.new, 'render')}
   end
 
@@ -714,5 +710,36 @@ class TestERBCoreWOStrScan < TestERBCore
 
   def teardown
     ERB::Compiler::Scanner.instance_variable_set('@scanner_map', @save_map)
+  end
+end
+
+class TestERBRactor < Test::Unit::TestCase
+  def test_compile_and_result_in_ractor
+    assert_ractor(<<~RUBY, require: 'erb')
+      r = Ractor.new do
+        ERB.new("Hello, <%= 'world' %>!").result(binding)
+      end
+      assert_equal("Hello, world!", r.value)
+    RUBY
+  end
+
+  def test_trim_mode_in_ractor
+    assert_ractor(<<~RUBY, require: 'erb')
+      src = "<% [1, 2].each do |i| %>\\n<%= i %>\\n<% end %>\\n"
+      r = Ractor.new(src) { |s| ERB.new(s, trim_mode: '-').result(binding) }
+      assert_equal("\\n1\\n\\n2\\n\\n", r.value)
+
+      r = Ractor.new(src) { |s| ERB.new(s, trim_mode: '<>').result(binding) }
+      assert_equal("12", r.value)
+    RUBY
+  end
+
+  def test_frozen_erb_instance_reused_across_ractors
+    assert_ractor(<<~RUBY, require: 'erb')
+      erb = ERB.new("<%= 1 + 1 %>")
+      erb.freeze
+      rs = 2.times.map { Ractor.new(erb) { |e| e.result(binding) } }
+      assert_equal(["2", "2"], rs.map(&:value))
+    RUBY
   end
 end

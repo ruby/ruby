@@ -1,0 +1,7 @@
+Replaces each byte in +self+ with its bitwise complement; returns +self+:
+
+  s = "\x00\xAA"
+  s.bitwise_not! # => "\xFF\x55"
+  s              # => "\xFF\x55"
+
+The encoding of +self+ is not changed.

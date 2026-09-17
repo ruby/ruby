@@ -49,6 +49,12 @@ describe "Enumerator::Lazy#take" do
       @eventsmixed.take(0).force
       ScratchPad.recorded.should == []
     end
+
+    it "return same value when called twice" do
+      lazy = [0, 1].lazy.take(1)
+      lazy.force.should == [0]
+      lazy.force.should == [0]
+    end
   end
 
   describe "on a nested Lazy" do

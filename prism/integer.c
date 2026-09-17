@@ -503,7 +503,7 @@ pm_integer_parse(pm_integer_t *integer, pm_integer_base_t base, const uint8_t *s
     uint32_t multiplier = 10;
     switch (base) {
         case PM_INTEGER_BASE_DEFAULT:
-            while (*start == '0') start++; // 01 -> 1
+            while (start < end && *start == '0') start++; // 01 -> 1
             break;
         case PM_INTEGER_BASE_BINARY:
             start += 2; // 0b

@@ -4,6 +4,11 @@ require "rubygems"
 require_relative "helper"
 require "rubygems/rdoc"
 
+# RDoc resolves its own dependencies lazily, on require. Load them here, while
+# the real gem paths are still in effect, because Gem::TestCase#setup points
+# GEM_HOME at an empty temporary directory where they cannot be found.
+Gem::RDoc.load_rdoc if defined?(Gem::RDoc)
+
 class TestGemRDoc < Gem::TestCase
   def setup
     super

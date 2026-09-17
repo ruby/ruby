@@ -234,6 +234,12 @@ describe "Kernel#Rational" do
   it "freezes its result" do
     Rational(1).frozen?.should == true
   end
+
+  it "raises an ArgumentError if exception: is not true or false" do
+    -> { Rational(1, exception: 0) }.should.raise ArgumentError, /expected true or false/
+    -> { Rational(1, exception: nil) }.should.raise ArgumentError, /expected true or false/
+    -> { Rational(1, exception: 'false') }.should.raise ArgumentError, /expected true or false/
+  end
 end
 
 describe "Kernel.Rational" do

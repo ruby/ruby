@@ -12,6 +12,7 @@ TZ =				# skip timezone tests
 PWD = $(MAKEDIR)
 empty =
 tooldir = $(srcdir)/tool
+nmake = yes
 
 PROMPT = +$$S
 
@@ -42,6 +43,12 @@ BASERUBY = $(tooldir:/=\)\missing-baseruby.bat
 HAVE_BASERUBY = no
 !else
 HAVE_BASERUBY = yes
+!endif
+
+!if "$(HAVE_BASERUBY)" == "yes"
+DEPENDENCIES_DIR = .deps
+!else
+DEPENDENCIES_DIR = $(srcdir)
 !endif
 
 !ifndef REVISION_FORCE
@@ -322,7 +329,7 @@ LIBS = $(LIBS) imagehlp.lib shlwapi.lib bcrypt.lib $(EXTLIBS)
 MISSING = crypt.obj ffs.obj langinfo.obj lgamma_r.obj strlcat.obj strlcpy.obj win32/win32.obj win32/file.obj setproctitle.obj
 MISSING = $(MISSING) explicit_bzero.obj memrchr.obj
 !endif
-DLNOBJ = dln.obj
+DLNOBJS = dln.obj
 
 !if "$(ARCH)" == "x64"
 COROUTINE_OBJ = coroutine/win64/Context.obj
@@ -337,6 +344,8 @@ COROUTINE_SRC = $(COROUTINE_OBJ:.obj=.asm)
 !error copy coroutine has been replaced with pthread implementation at 42130a64f02294dc8025af3a51bda518c67ab33d
 !endif
 COROUTINE_H = $(COROUTINE_OBJ:.obj=.h)
+COROUTINE_TEST_LINK = $(CC) $(COROUTINE_TEST_OBJS) $(COROUTINE_OBJ) $(MAINLIBS) $(OUTFLAG)$(COROUTINE_TEST) -link $(LDFLAGS) $(XLDFLAGS)
+COROUTINE_TEST_RUN = .\$(COROUTINE_TEST)
 
 ARFLAGS = -machine:$(MACHINE) -out:
 LD = $(CC)
@@ -469,13 +478,15 @@ COMMON_HEADERS = winsock2.h ws2tcpip.h windows.h
 
 !if "$(EXTSTATIC)" == "static"
 ENCOBJS = enc/encinit.$(OBJEXT) enc/libenc.lib enc/libtrans.lib
-EXTOBJS = ext/extinit.$(OBJEXT)
 ! if !defined(ENCSTATIC)
 ENCSTATIC = static
 ! endif
 !else
 ENCOBJS = dmyenc.$(OBJEXT)
+!endif
 EXTOBJS = dmyext.$(OBJEXT)
+!if "$(EXTSTATIC)" != ""
+PROGRAM_EXTS = exts
 !endif
 
 ext_hdrdir = $(EXTOUT)/include
@@ -561,6 +572,12 @@ ABI_VERSION_HDR = $(hdrdir)/ruby/internal/abi.h
 
 !if defined(DUMP_AST)
 DUMP_AST_TARGET = $(empty)
+!else if defined(RUBY_DUMP_AST)
+DUMP_AST = $(RUBY_DUMP_AST)
+DUMP_AST_TARGET = $(empty)
+!else if "$(CROSS_COMPILING)" == "yes"
+DUMP_AST = ruby-dump_ast$(BUILD_EXEEXT)
+DUMP_AST_TARGET = $(DUMP_AST)
 !else
 DUMP_AST = dump_ast$(BUILD_EXEEXT)
 DUMP_AST_TARGET = $(DUMP_AST)
@@ -644,6 +661,10 @@ CONFIG_H = ./.config.h.time
 config: config.status
 
 config.status: $(CONFIG_H)
+
+# {$(VPATH)}config.h prerequisites in common.mk resolve to this bare
+# name until $(RUBY_CONFIG_H) is generated.
+config.h: $(CONFIG_H)
 
 BANG = !
 
@@ -940,6 +961,7 @@ s,@SHELL@,$$(COMSPEC),;t t
 s,@BUILD_FILE_SEPARATOR@,\,;t t
 s,@PATH_SEPARATOR@,;,;t t
 s,@CFLAGS@,$(CFLAGS),;t t
+s,@warnflags@,$(WARNFLAGS),;t t
 s,@WERRORFLAG@,$(WERRORFLAG),;t t
 s,@DEFS@,$(DEFS),;t t
 s,@CPPFLAGS@,$(CPPFLAGS),;t t
@@ -1110,9 +1132,9 @@ s,@ruby_pc@,$(ruby_pc),;t t
 s,@PKG_CONFIG@,$(PKG_CONFIG),;t t
 <<KEEP
 
-!if "$(HAVE_BASERUBY)" != "yes" || "$(CROSS_COMPILING)" == "yes"
+# BOOTSTRAPRUBY is $(MINIRUBY) here even with BASERUBY, so rbconfig.rb
+# generation always needs $(PREP).
 $(RBCONFIG): $(PREP)
-!endif
 
 miniruby: miniruby$(EXEEXT)
 
@@ -1122,7 +1144,7 @@ miniruby$(EXEEXT):
 		$(Q) $(PURIFY) $(CC) $(MAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(LIBS) \
 			$(OUTFLAG)$@ -link $(LDFLAGS) $(XLDFLAGS)
 		@$(RM) miniruby.lib miniruby.exp
-		$(Q) miniruby.exe -v
+		$(Q) .\miniruby.exe -v
 		$(Q) $(LDSHARED_1)
 		$(Q) $(LDSHARED_2)
 
@@ -1131,9 +1153,14 @@ miniruby.rc:
 
 !if "$(PROGRAM)" != ""
 $(PROGRAM):	$(MAINOBJ) $(LIBRUBY_SO) $(RUBY_INSTALL_NAME).res
+! if "$(PROGRAM_EXTS)" == ""
 		$(ECHO) linking $(@:\=/)
 		$(Q) $(PURIFY) $(CC) $(MAINOBJ) $(EXTOBJS) $(RUBY_INSTALL_NAME).res \
 			$(OUTFLAG)$@ $(LIBRUBYARG) -link $(LDFLAGS) $(XLDFLAGS)
+! else
+# without a command nmake would infer $(PROGRAM) from ruby.c
+		@$(NULLCMD)
+! endif
 !endif
 
 !if "$(WPROGRAM)" != ""
@@ -1176,10 +1203,10 @@ $(LIBRUBY_SO):	$(LIBRUBY_A) $(DLDOBJS) $(RUBYDEF) $(RUBY_SO_NAME).res
 			$(LIBRUBY_DLDFLAGS)
 		@$(RM) dummy.lib dummy.exp
 
-$(RUBYDEF):	$(LIBRUBY_A) $(RBCONFIG)
+$(RUBYDEF):	$(LIBRUBY_A) $(DLDOBJS) $(RBCONFIG)
 		$(ECHO) generating $(@:\=/)
 		$(Q) $(BOOTSTRAPRUBY_COMMAND) $(srcdir)/win32/mkexports.rb \
-		  -output=$@ -arch=$(ARCH) $(LIBRUBY_A)
+		  -output=$@ -arch=$(ARCH) $(LIBRUBY_A) -- $(DLDOBJS)
 
 {$(win_srcdir)}.def.lib:
 		$(Q) $(AR) $(ARFLAGS)$@ -def:$<

@@ -29,6 +29,14 @@ describe "IO.popen" do
     @io.read.should == "foo\n"
   end
 
+  platform_is_not :windows do
+    it "redirects the child's STDIN from the parent's STDOUT" do
+      skip "requires STDOUT to be a terminal device" unless STDOUT.tty?
+
+      IO.popen([*ruby_exe, "-e", "print STDIN.tty?", in: STDOUT], &:read).should == "true"
+    end
+  end
+
   it "raises IOError when writing a read-only pipe" do
     @io = IO.popen('echo foo', "r")
     -> { @io.write('bar') }.should.raise(IOError)
@@ -281,6 +289,25 @@ describe "IO.popen" do
                err: [:child, :out], internal_encoding: Encoding::EUC_JP) do |io|
         io.read.should == "bar\n"
         io.internal_encoding.should == Encoding::EUC_JP
+      end
+    end
+  end
+
+  describe "options validation" do
+    it "raises an ArgumentError if :unsetenv_others option is not a boolean or nil" do
+      -> { IO.popen(["true", unsetenv_others: 1]) }.should.raise(ArgumentError, /expected true or false/)
+      -> { IO.popen(["true", unsetenv_others: "true"]) }.should.raise(ArgumentError, /expected true or false/)
+    end
+
+    it "raises an ArgumentError if :close_others option is not a boolean or nil" do
+      -> { IO.popen(["true", close_others: 1]) }.should.raise(ArgumentError, /expected true or false/)
+      -> { IO.popen(["true", close_others: "true"]) }.should.raise(ArgumentError, /expected true or false/)
+    end
+
+    platform_is :windows do
+      it "raises an ArgumentError if :new_pgroup option is not a boolean or nil" do
+        -> { IO.popen(["true", new_pgroup: 1]) }.should.raise(ArgumentError, /expected true or false/)
+        -> { IO.popen(["true", new_pgroup: "true"]) }.should.raise(ArgumentError, /expected true or false/)
       end
     end
   end

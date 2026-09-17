@@ -61,4 +61,19 @@ describe "Dir.delete" do
       end
     end
   end
+
+  platform_is :darwin do
+    it "accepts a path in a non-UTF-8, ASCII-compatible encoding containing non-ASCII characters" do
+      dir = tmp("dir_delete_\u{3042}")
+      non_utf8_dir = dir.encode(Encoding::Windows_31J)
+
+      begin
+        mkdir_p(dir)
+        Dir.delete(non_utf8_dir).should == 0
+        File.directory?(dir).should == false
+      ensure
+        rm_r dir
+      end
+    end
+  end
 end

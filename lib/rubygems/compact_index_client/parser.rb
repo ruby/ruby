@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "../resolver/api_set/gem_parser"
+require "rubygems/resolver/api_set/gem_parser"
 
 class Gem::CompactIndexClient
   class Parser

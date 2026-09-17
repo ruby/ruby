@@ -22,6 +22,12 @@ describe "IO#read_nonblock" do
     }
   end
 
+  it "raises an ArgumentError if exception: is not true or false" do
+    -> { @read.read_nonblock(5, exception: 0) }.should.raise ArgumentError, /expected true or false/
+    -> { @read.read_nonblock(5, exception: nil) }.should.raise ArgumentError, /expected true or false/
+    -> { @read.read_nonblock(5, exception: 'false') }.should.raise ArgumentError, /expected true or false/
+  end
+
   context "when exception option is set to false" do
     context "when there is no data" do
       it "returns :wait_readable" do
@@ -66,16 +72,6 @@ describe "IO#read_nonblock" do
     @read.read_nonblock(3).should == "bar"
   end
 
-  it "raises an exception after ungetc with data in the buffer and character conversion enabled" do
-    @write.write("foobar")
-    @read.set_encoding(
-      'utf-8', universal_newline: true
-    )
-    c = @read.getc
-    @read.ungetc(c)
-    -> { @read.read_nonblock(3).should == "foo" }.should.raise(IOError)
-  end
-
   it "returns less data if that is all that is available" do
     @write << "hello"
     @read.read_nonblock(10).should == "hello"
@@ -117,7 +113,7 @@ describe "IO#read_nonblock" do
     buffer.should == "hello world"
   end
 
-  it "discards the existing buffer content upon error" do
+  it "discards the existing buffer content upon EOFError" do
     buffer = +"existing content"
     @write.close
     -> { @read.read_nonblock(1, buffer) }.should.raise(EOFError)
@@ -137,6 +133,14 @@ describe "IO#read_nonblock" do
     -> { @read.read_nonblock(5) }.should.raise(EOFError)
   end
 
+  ruby_bug "#18421", ""..."3.0.4" do
+    it "clears and returns the given buffer if the length argument is 0" do
+      buffer = String.new("existing content")
+      @read.read_nonblock(0, buffer).should == buffer
+      buffer.should == ""
+    end
+  end
+
   it "preserves the encoding of the given buffer" do
     buffer = ''.encode(Encoding::ISO_8859_1)
     @write.write("abc")
@@ -144,5 +148,11 @@ describe "IO#read_nonblock" do
     @read.read_nonblock(10, buffer)
 
     buffer.encoding.should == Encoding::ISO_8859_1
+  end
+
+  it "does not modify the buffer if a read error (other than EOF) occurs" do
+    buffer = +"existing content"
+    -> { IOSpecs.closed_io.read_nonblock(1, buffer) }.should.raise(IOError)
+    buffer.should == "existing content"
   end
 end

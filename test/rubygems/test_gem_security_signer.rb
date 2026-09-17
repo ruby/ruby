@@ -7,14 +7,6 @@ unless Gem::HAVE_OPENSSL
 end
 
 class TestGemSecuritySigner < Gem::TestCase
-  ALTERNATE_KEY  = load_key "alternate"
-  CHILD_KEY      = load_key "child"
-  GRANDCHILD_KEY = load_key "grandchild"
-
-  CHILD_CERT      = load_cert "child"
-  GRANDCHILD_CERT = load_cert "grandchild"
-  EXPIRED_CERT    = load_cert "expired"
-
   def setup
     super
 
@@ -58,31 +50,67 @@ class TestGemSecuritySigner < Gem::TestCase
     FileUtils.mkdir_p File.join(Gem.user_home, ".gem")
 
     private_key_path = File.join Gem.user_home, ".gem", "gem-private_key.pem"
-    Gem::Security.write PRIVATE_KEY, private_key_path
+    Gem::Security.write_private_key PRIVATE_KEY, private_key_path
 
     public_cert_path = File.join Gem.user_home, ".gem", "gem-public_cert.pem"
-    Gem::Security.write PUBLIC_CERT, public_cert_path
+    Gem::Security.write_certificate PUBLIC_CERT, public_cert_path
 
     signer = Gem::Security::Signer.new nil, nil
 
-    assert_equal PRIVATE_KEY.to_pem, signer.key.to_pem
+    assert_equal PRIVATE_KEY.private_to_pem, signer.key.private_to_pem
     assert_equal [PUBLIC_CERT.to_pem], signer.cert_chain.map(&:to_pem)
   end
 
   def test_initialize_key_path
-    key_file = PRIVATE_KEY_PATH
+    key_file = PRIVATE_KEY_FILE
 
     signer = Gem::Security::Signer.new key_file, nil
 
     assert_equal PRIVATE_KEY.to_s, signer.key.to_s
   end
 
+  def test_initialize_key_path_ml_dsa_65
+    omit_unless_support_ml_dsa_key
+
+    key_file = ML_DSA_65_PRIVATE_KEY_FILE
+
+    signer = Gem::Security::Signer.new key_file, nil
+
+    assert_equal ML_DSA_65_PRIVATE_KEY.private_to_pem, signer.key.private_to_pem
+  end
+
+  def test_initialize_key_path_ml_dsa_65_without_ml_dsa_support
+    omit_if_support_ml_dsa_key
+
+    key_file = ML_DSA_65_PRIVATE_KEY_FILE
+
+    e = assert_raise Gem::Security::Exception do
+      Gem::Security::Signer.new key_file, nil
+    end
+
+    assert_match(
+      /^private key could not be loaded: .+ ML-DSA requires OpenSSL >= 3\.5/,
+      e.message
+    )
+  end
+
   def test_initialize_encrypted_key_path
-    key_file = ENCRYPTED_PRIVATE_KEY_PATH
+    key_file = ENCRYPTED_PRIVATE_KEY_FILE
 
     signer = Gem::Security::Signer.new key_file, nil, PRIVATE_KEY_PASSPHRASE
 
     assert_equal ENCRYPTED_PRIVATE_KEY.to_s, signer.key.to_s
+  end
+
+  def test_initialize_encrypted_key_path_ml_dsa_65
+    omit_unless_support_ml_dsa_key
+
+    key_file = ML_DSA_65_ENCRYPTED_PRIVATE_KEY_FILE
+
+    signer = Gem::Security::Signer.new key_file, nil, PRIVATE_KEY_PASSPHRASE
+
+    assert_equal ML_DSA_65_ENCRYPTED_PRIVATE_KEY.private_to_pem,
+                 signer.key.private_to_pem
   end
 
   def test_extract_name
@@ -120,16 +148,18 @@ class TestGemSecuritySigner < Gem::TestCase
 
     signature = signer.sign "hello"
 
-    expected = <<-EXPECTED
-FmrCYxEXW3dgYYNMxPdS16VrdXT+d5nyXTVlRm64ZHSgMxMAaPtQJsVYv73m
-DWHTzNnLhhINSpgBMLh5a4atM52yxVdkPUTgqIH+LeIPBXn8xaP5JLmfDcmI
-tBpc/9DhS3v9iKCX40igAArFu7Gg3swbgQ61SP+U22LvG5nDQZQz3sudtsw3
-qKPykFVaYjrRwzvBdSdJ1PwlAsanSwcwS/GKPtmE/ykZ6X5XOx7wvCDL/zGy
-B8khkB8hDKC6moCzebmUxCBmTmXD0Wjzon+bf4MOriVE3a0ySGRvpr1mKR2+
-9EaVo7pDJLEM487+xg1CAZHRhwshd6II00XEzG/jBQ==
-    EXPECTED
+    digest = OpenSSL::Digest.new(Gem::Security::DIGEST_NAME)
+    assert PRIVATE_KEY.verify(digest, signature, "hello")
+  end
 
-    assert_equal expected, [signature].pack("m")
+  def test_sign_ml_dsa_65
+    omit_unless_support_ml_dsa_key
+
+    signer = Gem::Security::Signer.new ML_DSA_65_PRIVATE_KEY, [ML_DSA_65_PUBLIC_CERT]
+
+    signature = signer.sign "hello"
+
+    assert ML_DSA_65_PRIVATE_KEY.verify(nil, signature, "hello")
   end
 
   def test_sign_expired
@@ -147,10 +177,10 @@ B8khkB8hDKC6moCzebmUxCBmTmXD0Wjzon+bf4MOriVE3a0ySGRvpr1mKR2+
     FileUtils.mkdir_p File.join(Gem.user_home, ".gem"), mode: 0o700
 
     private_key_path = File.join(Gem.user_home, ".gem", "gem-private_key.pem")
-    Gem::Security.write PRIVATE_KEY, private_key_path
+    Gem::Security.write_private_key PRIVATE_KEY, private_key_path
 
     cert_path = File.join Gem.user_home, ".gem", "gem-public_cert.pem"
-    Gem::Security.write EXPIRED_CERT, cert_path
+    Gem::Security.write_certificate EXPIRED_CERT, cert_path
 
     signer = Gem::Security::Signer.new PRIVATE_KEY, [EXPIRED_CERT]
 
@@ -177,13 +207,13 @@ B8khkB8hDKC6moCzebmUxCBmTmXD0Wjzon+bf4MOriVE3a0ySGRvpr1mKR2+
     expired_path =
       File.join Gem.user_home, "gem-public_cert.pem.expired.#{expiry}"
 
-    Gem::Security.write EXPIRED_CERT, expired_path
+    Gem::Security.write_certificate EXPIRED_CERT, expired_path
 
     private_key_path = File.join(Gem.user_home, "gem-private_key.pem")
-    Gem::Security.write PRIVATE_KEY, private_key_path
+    Gem::Security.write_private_key PRIVATE_KEY, private_key_path
 
     cert_path = File.join Gem.user_home, "gem-public_cert.pem"
-    Gem::Security.write EXPIRED_CERT, cert_path
+    Gem::Security.write_certificate EXPIRED_CERT, cert_path
 
     signer = Gem::Security::Signer.new PRIVATE_KEY, [EXPIRED_CERT]
 

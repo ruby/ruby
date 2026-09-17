@@ -34,6 +34,11 @@ static VALUE module_specs_const_set(VALUE self, VALUE klass, VALUE name, VALUE v
   return Qnil;
 }
 
+static VALUE module_specs_rb_deprecate_constant(VALUE self, VALUE cls, VALUE str_name) {
+  rb_deprecate_constant(cls, RSTRING_PTR(str_name));
+  return Qnil;
+}
+
 static VALUE module_specs_rb_define_alias(VALUE self, VALUE obj,
   VALUE new_name, VALUE old_name) {
 
@@ -143,6 +148,8 @@ void Init_module_spec(void) {
   rb_define_method(cls, "rb_const_get_at", module_specs_const_get_at, 2);
   rb_define_method(cls, "rb_const_get_from", module_specs_const_get_from, 2);
   rb_define_method(cls, "rb_const_set", module_specs_const_set, 3);
+  rb_define_method(cls, "rb_deprecate_constant", module_specs_rb_deprecate_constant, 2);
+
   rb_define_method(cls, "rb_define_alias", module_specs_rb_define_alias, 3);
   rb_define_method(cls, "rb_alias", module_specs_rb_alias, 3);
   rb_define_method(cls, "rb_define_module", module_specs_rb_define_module, 1);

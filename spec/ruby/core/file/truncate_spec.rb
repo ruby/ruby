@@ -82,6 +82,22 @@ describe "File.truncate" do
   it "accepts an object that has a #to_path method" do
     File.truncate(mock_to_path(@name), 0).should == 0
   end
+
+  platform_is :darwin do
+    it "accepts a path in a non-UTF-8, ASCII-compatible encoding containing non-ASCII characters" do
+      utf8_path = tmp("file_truncate_utf8_path_\u{3042}.txt")
+      # Can fail with UndefinedConversionError if tmp path has non-Shift_JIS chars (e.g. Emojis, Hangul, Cyrillic, accented letters)
+      non_utf8_path = utf8_path.encode(Encoding::Windows_31J)
+
+      begin
+        touch(utf8_path)
+        File.truncate(non_utf8_path, 0).should == 0
+      ensure
+        rm_r utf8_path
+        rm_r non_utf8_path
+      end
+    end
+  end
 end
 
 

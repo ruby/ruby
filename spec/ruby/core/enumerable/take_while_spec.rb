@@ -1,8 +1,16 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 require_relative 'shared/enumerable_enumeratorized'
+require_relative 'shared/value_packing'
 
 describe "Enumerable#take_while" do
+  describe "value packing of source yields" do
+    before :each do
+      @take = -> e { e.take_while { true } }
+    end
+    it_behaves_like :enumerable_value_packing, nil
+  end
+
   before :each do
     @enum = EnumerableSpecs::Numerous.new(3, 2, 1, :go)
   end

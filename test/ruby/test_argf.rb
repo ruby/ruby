@@ -383,7 +383,7 @@ class TestArgf < Test::Unit::TestCase
   end
 
   def test_inplace_bug_17117
-    assert_in_out_err(["-", @t1.path], "#{<<~"{#"}#{<<~'};'}")
+    assert_in_out_err(["-", @t1.path], "#{<<~"{#"}#{<<~'};'}", timeout: 60)
     {#
       #!/usr/bin/ruby -pi.bak
       BEGIN {
@@ -1131,7 +1131,9 @@ class TestArgf < Test::Unit::TestCase
   def test_puts
     t = make_tempfile("argf-#{__method__}", 'bar')
     err = "#{@tmpdir}/errout"
-    ruby('-pi-', '-W2', '-e', "print ARGF.puts('foo')", t.path, {err: err}) do |f|
+    # -W:no-experimental because -W2 turns the category back on, and Ruby::Box
+    # warns at startup when it is enabled.
+    ruby('-pi-', '-W2', '-W:no-experimental', '-e', "print ARGF.puts('foo')", t.path, {err: err}) do |f|
     end
     assert_equal("foo\nbar\n", File.read(t.path))
     assert_empty File.read(err)

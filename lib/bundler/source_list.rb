@@ -50,7 +50,13 @@ module Bundler
 
     def add_rubygems_source(options = {})
       new_source = Source::Rubygems.new(options)
-      return @global_rubygems_source if @global_rubygems_source == new_source
+      if @global_rubygems_source == new_source
+        warn_on_cooldown_conflict(new_source, @global_rubygems_source)
+        return @global_rubygems_source
+      end
+
+      existing_source = @rubygems_sources.find {|s| s == new_source }
+      warn_on_cooldown_conflict(new_source, existing_source) if existing_source
 
       add_source_to_list new_source, @rubygems_sources
     end
@@ -60,6 +66,13 @@ module Bundler
     end
 
     def add_global_rubygems_remote(uri, cooldown: nil)
+      unless cooldown.nil?
+        new_source = source_class.new("remotes" => uri, "cooldown" => cooldown)
+        [global_rubygems_source, *@rubygems_sources].find do |existing_source|
+          warn_on_cooldown_conflict(new_source, existing_source)
+        end
+      end
+
       global_rubygems_source.add_remote(uri, cooldown: cooldown)
       global_rubygems_source
     end
@@ -219,6 +232,22 @@ module Bundler
       when Source::Rubygems     then rubygems_sources
       when Plugin::API::Source  then plugin_sources
       else raise ArgumentError, "Invalid source: #{source.inspect}"
+      end
+    end
+
+    def warn_on_cooldown_conflict(new_source, existing_source)
+      new_source.remote_cooldowns.any? do |uri, cooldown|
+        next false unless existing_source.remotes.include?(uri)
+
+        existing_cooldown = existing_source.cooldown_for(uri)
+        next false if existing_cooldown == cooldown
+
+        previous = existing_cooldown ? "`cooldown: #{existing_cooldown}`" : "no cooldown"
+        Bundler.ui.warn "The source #{uri} is declared more than once with different cooldown " \
+          "values (`cooldown: #{cooldown}` here, #{previous} previously). All declarations of " \
+          "the same source URL share a single cooldown, so only one of these values will apply " \
+          "to all gems from this source."
+        true
       end
     end
 

@@ -31,6 +31,19 @@ STRINGIO_VERSION = "3.2.1.dev";
 # define RB_INTEGER_TYPE_P(c) (FIXNUM_P(c) || RB_TYPE_P(c, T_BIGNUM))
 #endif
 
+/* strio_free may run on any thread, so the refcount shared by #initialize_copy must be atomic */
+#ifdef RUBY_TYPED_THREAD_SAFE_FREE
+# include "ruby/atomic.h"
+typedef rb_atomic_t strio_refcnt_t;
+# define STRIO_REFCNT_INC(ptr) RUBY_ATOMIC_INC((ptr)->count)
+# define STRIO_REFCNT_DEC(ptr) (RUBY_ATOMIC_FETCH_SUB((ptr)->count, 1) == 1)
+#else
+# define RUBY_TYPED_THREAD_SAFE_FREE RUBY_TYPED_FREE_IMMEDIATELY
+typedef int strio_refcnt_t;
+# define STRIO_REFCNT_INC(ptr) ((void)++(ptr)->count)
+# define STRIO_REFCNT_DEC(ptr) (--(ptr)->count <= 0)
+#endif
+
 #ifndef RB_PASS_CALLED_KEYWORDS
 # define rb_funcallv_kw(recv, mid, arg, argv, kw_splat) rb_funcallv(recv, mid, arg, argv)
 # define rb_class_new_instance_kw(argc, argv, klass, kw_splat) rb_class_new_instance(argc, argv, klass)
@@ -63,7 +76,7 @@ struct StringIO {
     long pos;
     long lineno;
     rb_io_mode_t flags;
-    int count;
+    strio_refcnt_t count;
 };
 
 static struct StringIO *get_strio_for_read(VALUE self);
@@ -105,8 +118,8 @@ static void
 strio_free(void *p)
 {
     struct StringIO *ptr = p;
-    if (--ptr->count <= 0) {
-	xfree(ptr);
+    if (STRIO_REFCNT_DEC(ptr)) {
+        xfree(ptr);
     }
 }
 
@@ -115,10 +128,6 @@ strio_memsize(const void *p)
 {
     return sizeof(struct StringIO);
 }
-
-#ifndef RUBY_TYPED_THREAD_SAFE_FREE
-#define RUBY_TYPED_THREAD_SAFE_FREE RUBY_TYPED_FREE_IMMEDIATELY
-#endif
 
 static const rb_data_type_t strio_data_type = {
     "strio",
@@ -778,7 +787,7 @@ strio_copy(VALUE copy, VALUE orig)
     RB_OBJ_WRITTEN(copy, old_string, ptr->string);
     RB_FL_UNSET_RAW(copy, STRIO_READWRITE);
     RB_FL_SET_RAW(copy, RB_FL_TEST_RAW(orig, STRIO_READWRITE));
-    ++ptr->count;
+    STRIO_REFCNT_INC(ptr);
     return copy;
 }
 

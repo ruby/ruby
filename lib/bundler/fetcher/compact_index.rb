@@ -2,6 +2,15 @@
 
 require_relative "base"
 require_relative "../worker"
+require "rubygems/compact_index_client"
+
+# Route the client's filesystem access through Bundler's helper so
+# permission problems raise friendly Bundler errors. The respond_to?
+# check covers a host RubyGems that already loaded its own copy of the
+# client from before the hook existed.
+if Gem::CompactIndexClient.respond_to?(:filesystem_access=)
+  Gem::CompactIndexClient.filesystem_access = Bundler::SharedHelpers.method(:filesystem_access)
+end
 
 module Bundler
   class Fetcher
@@ -11,12 +20,12 @@ module Bundler
         undef_method(method_name)
         define_method(method_name) do |*args, &blk|
           method.bind_call(self, *args, &blk)
-        rescue NetworkDownError, CompactIndexClient::Updater::MismatchedChecksumError => e
+        rescue NetworkDownError, Gem::CompactIndexClient::Updater::MismatchedChecksumError => e
           raise HTTPError, e.message
         rescue AuthenticationRequiredError, BadAuthenticationError
           # Fail since we got a 401 from the server.
           raise
-        rescue HTTPError => e
+        rescue HTTPError, Gem::CompactIndexClient::Error => e
           Bundler.ui.trace(e)
           nil
         end
@@ -35,7 +44,7 @@ module Bundler
         until remaining_gems.empty?
           log_specs { "Looking up gems #{remaining_gems.inspect}" }
           deps = fetch_gem_infos(remaining_gems).flatten(1)
-          next_gems = deps.flat_map {|d| d[CompactIndexClient::INFO_DEPS].flat_map(&:first) }.uniq
+          next_gems = deps.flat_map {|d| d[Gem::CompactIndexClient::INFO_DEPS].flat_map(&:first) }.uniq
           deps.each {|dep| gem_info << dep }
           complete_gems.concat(deps.map(&:first)).uniq!
           remaining_gems = next_gems - complete_gems
@@ -53,7 +62,7 @@ module Bundler
         end
         # Read info file checksums out of /versions, so we can know if gems are up to date
         compact_index_client.available?
-      rescue CompactIndexClient::Updater::MismatchedChecksumError => e
+      rescue Gem::CompactIndexClient::Updater::MismatchedChecksumError => e
         Bundler.ui.debug(e.message)
         nil
       end
@@ -75,7 +84,7 @@ module Bundler
       def compact_index_client
         @compact_index_client ||=
           SharedHelpers.filesystem_access(cache_path) do
-            CompactIndexClient.new(cache_path, client_fetcher)
+            Gem::CompactIndexClient.new(cache_path, client_fetcher)
           end
       end
 

@@ -232,6 +232,21 @@ module Bundler
       destination
     end
 
+    # Globs for entries matching +glob+ inside of +base_path+, returning
+    # absolute paths. Glob metacharacters in +base_path+ are not treated as
+    # part of the pattern, and matched entries are joined literally, so an
+    # entry starting with `~` is not expanded into the home directory.
+    #
+    # Bundler runs against whatever RubyGems the host provides, so this cannot
+    # delegate to Gem::Util.glob_files_in_dir, which only gained the literal
+    # join in RubyGems 4.1.
+    def glob_files_in_dir(glob, base_path)
+      expanded_path = nil
+      Dir.glob(glob, base: base_path).map! do |f|
+        File.join(expanded_path ||= File.expand_path(base_path), f)
+      end
+    end
+
     private
 
     def validate_bundle_path
@@ -347,7 +362,12 @@ module Bundler
 
     def set_rubyopt
       rubyopt = [ENV["RUBYOPT"]].compact
-      setup_require = "-r#{File.expand_path("setup", __dir__)}"
+      setup_path = File.expand_path("setup", __dir__)
+      # RUBYOPT is split on whitespace with no quoting mechanism, so an
+      # absolute path containing spaces would be torn apart. Fall back to
+      # requiring by feature name; set_rubylib puts our lib directory first
+      # on the child's load path.
+      setup_require = /\s/.match?(setup_path) ? "-rbundler/setup" : "-r#{setup_path}"
       return if !rubyopt.empty? && rubyopt.first.include?(setup_require)
       rubyopt.unshift setup_require
       Bundler::SharedHelpers.set_env "RUBYOPT", rubyopt.join(" ")

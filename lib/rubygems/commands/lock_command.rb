@@ -100,8 +100,8 @@ lock it down to the exact version.
   end
 
   def spec_path(gem_full_name)
-    gemspecs = Gem.path.map do |path|
-      File.join path, "specifications", "#{gem_full_name}.gemspec"
+    gemspecs = Gem::SpecificationRecord.dirs_from(Gem.path).map do |spec_dir|
+      File.join spec_dir, "#{gem_full_name}.gemspec"
     end
 
     gemspecs.find {|path| File.exist? path }

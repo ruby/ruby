@@ -327,6 +327,13 @@ Collect stats without printing (access via `RubyVM::ZJIT.stats` in Ruby):
 ./miniruby --zjit-stats=quiet script.rb
 ```
 
+Dump stats to a file. Name the file with a `.json` extension to write the
+stats as pretty-printed JSON instead of the human-readable text format:
+
+```bash
+ruby --zjit-stats=stats.json script.rb
+```
+
 ### Accessing Stats in Ruby
 
 ```ruby
@@ -419,6 +426,15 @@ Note that this disables profiling. To inject interpreter profiles into ZJIT, con
 ```bash
 ./miniruby --zjit --zjit-dump-hir -e "30.times { 1 + 1 }"
 ```
+
+To write the dump to a file instead of stdout, pass an existing directory as the option value. Any value other than `all` or `debug` is treated as a directory name, and it composes with those format variants:
+
+```bash
+./miniruby --zjit --zjit-dump-hir=/tmp --zjit-call-threshold=1 -e "1 + 1"
+./miniruby --zjit --zjit-dump-hir=all --zjit-dump-hir=/tmp --zjit-call-threshold=1 -e "1 + 1"
+```
+
+The file `/tmp/hir-$PID` is truncated at startup and appended to as each method compiles.
 
 ### Viewing HIR in Iongraph
 

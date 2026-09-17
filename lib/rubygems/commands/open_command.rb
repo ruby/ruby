@@ -70,7 +70,18 @@ class Gem::Commands::OpenCommand < Gem::Command
   end
 
   def open_editor(path)
-    system(*@editor.split(/\s+/) + [path], { chdir: path })
+    system(*editor_command(@editor), path, { chdir: path })
+  end
+
+  def editor_command(editor) # :nodoc:
+    # On Windows an editor is often configured with a full path such as
+    # C:\Program Files\Microsoft VS Code\Code.exe, which shell splitting
+    # would corrupt. Take a value that names an existing file as a
+    # single word.
+    return [editor] if Gem.win_platform? && File.file?(editor)
+
+    require "shellwords"
+    Shellwords.split(editor)
   end
 
   def spec_for(name)

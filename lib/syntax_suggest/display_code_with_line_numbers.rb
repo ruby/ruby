@@ -18,7 +18,7 @@ module SyntaxSuggest
   #     > 4    end
   #       5  end
   #       6
-  class DisplayCodeWithLineNumbers
+  class DisplayCodeWithLineNumbers # :nodoc:
     TERMINAL_HIGHLIGHT = "\e[1;3m" # Bold, italics
     TERMINAL_END = "\e[0m"
 

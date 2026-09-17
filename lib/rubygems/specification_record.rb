@@ -2,10 +2,48 @@
 
 module Gem
   class SpecificationRecord
+    ##
+    # Specification directories for each path: the flat +specifications+
+    # dir and the ABI-scoped +specifications/<ruby_abi>+ subdir.
+
     def self.dirs_from(paths)
-      paths.map do |path|
-        File.join(path, "specifications")
+      paths.flat_map do |path|
+        specifications = File.join(path, "specifications")
+
+        [specifications, File.join(specifications, Gem.ruby_abi)]
       end
+    end
+
+    ##
+    # Whether +dir+ is an ABI-scoped spec dir
+    # (<tt>.../specifications/<ruby_abi></tt>). Requires the parent to be
+    # named +specifications+ to avoid false positives.
+    def self.abi_scoped_spec_dir?(dir)
+      Gem::ContentAddress.valid_ruby_abi?(File.basename(dir)) &&
+        File.basename(File.dirname(dir)) == "specifications"
+    end
+
+    ##
+    # The spec dir for +spec+ under +base_dir+: the ABI-scoped subdir for
+    # content-addressed specs, the flat +specifications+ dir otherwise.
+    def self.specification_dir_for(spec, base_dir)
+      dir = File.join(base_dir, "specifications")
+      dir = File.join(dir, spec.ruby_abi) if Gem::ContentAddress.content_addressed?(spec)
+      dir
+    end
+
+    ##
+    # Ensure ABI-scoped subdirectories are present in +dirs+.  No-op when
+    # +dirs+ already includes them (e.g. MRI); expands flat-only +dirs+
+
+    def self.dirs_with_abi(dirs)
+      dirs.flat_map do |dir|
+        if File.basename(dir) == "specifications"
+          [dir, File.join(dir, Gem.ruby_abi)]
+        else
+          dir
+        end
+      end.uniq
     end
 
     def self.from_path(path)
@@ -217,6 +255,7 @@ module Gem
     def map_stubs(pattern)
       @dirs.flat_map do |dir|
         base_dir = File.dirname dir
+        base_dir = File.dirname base_dir if self.class.abi_scoped_spec_dir?(dir)
         gems_dir = File.join base_dir, "gems"
         Gem::Specification.gemspec_stubs_in(dir, pattern) {|path| yield path, base_dir, gems_dir }
       end

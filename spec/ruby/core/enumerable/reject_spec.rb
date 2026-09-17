@@ -1,8 +1,16 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
 require_relative 'shared/enumerable_enumeratorized'
+require_relative 'shared/value_packing'
 
 describe "Enumerable#reject" do
+  describe "value packing of source yields" do
+    before :each do
+      @take = -> e { e.reject { false } }
+    end
+    it_behaves_like :enumerable_value_packing, nil
+  end
+
   it "returns an array of the elements for which block is false" do
     EnumerableSpecs::Numerous.new.reject { |i| i > 3 }.should == [2, 3, 1]
     entries = (1..10).to_a

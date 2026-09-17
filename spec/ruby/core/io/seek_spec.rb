@@ -77,6 +77,26 @@ describe "IO#seek" do
     value[-1].should == @io.read[0]
   end
 
+  ruby_bug "#20919", "" ... "3.4" do
+    it "clears the character buffer" do
+      @io.ungetc("a")
+      @io.seek(1, IO::SEEK_SET)
+      @io.getc.should == "o"
+
+      @io.set_encoding(Encoding::UTF_8, Encoding::UTF_16LE)
+      @io.ungetc("a".encode(Encoding::UTF_16LE))
+      @io.seek(1, IO::SEEK_SET)
+      @io.getc.should == "o".encode(Encoding::UTF_16LE)
+    end
+
+    it "clears the character buffer even when ungotten characters exceed consumed characters" do
+      @io.getc.should == "V"
+      @io.ungetc("123456")
+      @io.seek(1, IO::SEEK_SET)
+      @io.getc.should == "o"
+    end
+  end
+
   platform_is :darwin do
     it "supports seek offsets greater than 2^32" do
       begin

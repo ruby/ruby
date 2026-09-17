@@ -739,8 +739,9 @@ static struct {
 } w32_tz;
 
 static char *
-get_tzname(int dst)
+get_tzname(int dst, rb_encoding **enc)
 {
+    *enc = NULL;
     if (w32_tz.use_tzkey) {
         if (w32_tz.name[0]) {
             return w32_tz.name;
@@ -765,6 +766,11 @@ get_tzname(int dst)
             }
         }
     }
+    /* CRT timezone names are encoded in the active code page, which
+     * may differ from the locale (console) code page */
+    char cp[(sizeof(UINT) * 8 / 3) + 4];
+    snprintf(cp, sizeof(cp), "CP%u", GetACP());
+    *enc = rb_enc_find(cp);
     return _tzname[_daylight && dst];
 }
 #endif
@@ -1002,7 +1008,7 @@ timegmw_noleapsecond(struct vtm *vtm)
 }
 
 static VALUE
-zone_str(const char *zone)
+zone_str_enc(const char *zone, rb_encoding *enc)
 {
     const char *p;
     int ascii_only = 1;
@@ -1023,6 +1029,9 @@ zone_str(const char *zone)
     if (ascii_only) {
         return rb_enc_interned_str(zone, len, rb_usascii_encoding());
     }
+    else if (enc) {
+        return rb_enc_interned_str(zone, len, enc);
+    }
     else {
 #ifdef _WIN32
         VALUE str = rb_utf8_str_new(zone, len);
@@ -1034,6 +1043,8 @@ zone_str(const char *zone)
 #endif
     }
 }
+
+#define zone_str(zone) zone_str_enc(zone, NULL)
 
 static void
 gmtimew_noleapsecond(wideval_t timew, struct vtm *vtm)
@@ -1730,7 +1741,9 @@ localtime_with_gmtoff_zone(const time_t *t, struct tm *result, long *gmtoff, VAL
 #if defined(HAVE_TM_ZONE)
             *zone = zone_str(tm.tm_zone);
 #elif defined(_WIN32)
-            *zone = zone_str(get_tzname(tm.tm_isdst));
+            rb_encoding *enc;
+            const char *name = get_tzname(tm.tm_isdst, &enc);
+            *zone = zone_str_enc(name, enc);
 #elif defined(HAVE_TZNAME) && defined(HAVE_DAYLIGHT)
             /* this needs tzset or localtime, instead of localtime_r */
             *zone = zone_str(tzname[daylight && tm.tm_isdst]);
@@ -2233,6 +2246,10 @@ invalid_utc_offset(VALUE zone)
 static VALUE
 utc_offset_arg(VALUE arg)
 {
+    if (RB_INTEGER_TYPE_P(arg)) {
+        return arg;
+    }
+
     VALUE tmp;
     if (!NIL_P(tmp = rb_check_string_type(arg))) {
         int n = 0;
@@ -4140,7 +4157,7 @@ static VALUE
 time_zonelocal(VALUE time, VALUE off)
 {
     VALUE zone = off;
-    if (zone_localtime(zone, time)) return time;
+    if (maybe_tzobj_p(zone) && zone_localtime(zone, time)) return time;
 
     if (NIL_P(off = utc_offset_arg(off))) {
         off = zone;
@@ -4159,20 +4176,19 @@ time_zonelocal(VALUE time, VALUE off)
 
 /*
  *  call-seq:
- *    localtime -> self or new_time
- *    localtime(zone) -> new_time
+ *    localtime -> self
+ *    localtime(zone) -> self
  *
  *  With no argument given:
  *
- *  - Returns +self+ if +self+ is a local time.
- *  - Otherwise returns a new +Time+ in the user's local timezone:
+ *  - Returns +self+ if +self+ is already a local time.
+ *  - Otherwise returns +self+, converted to the user's local timezone:
  *
  *      t = Time.utc(2000, 1, 1, 20, 15, 1) # => 2000-01-01 20:15:01 UTC
  *      t.localtime                         # => 2000-01-01 14:15:01 -0600
  *
  *  With argument +zone+ given,
- *  returns the new +Time+ object created by converting
- *  +self+ to the given time zone:
+ *  returns +self+, converted to the given time zone:
  *
  *    t = Time.utc(2000, 1, 1, 20, 15, 1) # => 2000-01-01 20:15:01 UTC
  *    t.localtime("-09:00")               # => 2000-01-01 11:15:01 -0900
@@ -5188,7 +5204,7 @@ time_deconstruct_keys(VALUE time, VALUE keys)
     MAKE_TM_ENSURE(time, tobj, tobj->vtm.yday != 0);
 
     if (NIL_P(keys)) {
-        h = rb_hash_new_with_size(11);
+        h = rb_hash_new_capa(11);
 
         rb_hash_aset(h, sym_year, tobj->vtm.year);
         rb_hash_aset(h, sym_month, INT2FIX(tobj->vtm.mon));
@@ -5212,7 +5228,7 @@ time_deconstruct_keys(VALUE time, VALUE keys)
 
     }
 
-    h = rb_hash_new_with_size(RARRAY_LEN(keys));
+    h = rb_hash_new_capa(RARRAY_LEN(keys));
 
     for (i=0; i<RARRAY_LEN(keys); i++) {
         VALUE key = RARRAY_AREF(keys, i);

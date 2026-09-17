@@ -111,7 +111,7 @@ module Bundler
 
     def spec_cache_dirs
       @spec_cache_dirs ||= begin
-        dirs = gem_path.map {|dir| File.join(dir, "specifications") }
+        dirs = gem_path.flat_map {|dir| Gem::SpecificationRecord.dirs_from([dir]) }
         dirs << Gem.spec_cache_dir
         dirs.uniq.select {|dir| File.directory? dir }
       end
@@ -144,7 +144,12 @@ module Bundler
 
     def spec_from_gem(path)
       require "rubygems/package"
-      Gem::Package.new(path).spec
+      package = Gem::Package.new(path)
+      spec = package.spec
+      if package.respond_to?(:content_address)
+        spec.content_address = package.content_address
+      end
+      spec
     end
 
     def build_gem(gem_dir, spec)

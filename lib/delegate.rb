@@ -252,6 +252,8 @@ end
 # and even to change the object being delegated to at a later time with
 # #__setobj__.
 #
+#   require 'date'
+#
 #   class User
 #     def born_on
 #       Date.new(1989, 9, 10)

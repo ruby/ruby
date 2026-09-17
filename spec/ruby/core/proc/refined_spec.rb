@@ -47,6 +47,21 @@ ruby_version_is "4.1" do
       pr.should_not.lambda?
     end
 
+    it "preserves the class of a Proc subclass instance" do
+      subclass = Class.new(Proc)
+      refined = subclass.new { |s| s.shout }.refined(ProcRefinedSpecs::StringShout)
+      refined.should.instance_of?(subclass)
+      refined.call("hi").should == "HI!"
+    end
+
+    it "does not copy singleton methods of the receiver" do
+      pr = -> s { s.shout }
+      def pr.tag; :orig; end
+      refined = pr.refined(ProcRefinedSpecs::StringShout)
+      refined.should_not.respond_to?(:tag)
+      refined.call("hi").should == "HI!"
+    end
+
     it "keeps the refinements active in blocks nested inside the body" do
       pr = -> a { a.map { |s| s.shout } }
       pr.refined(ProcRefinedSpecs::StringShout).call(%w[a b]).should == ["A!", "B!"]
@@ -63,6 +78,48 @@ ruby_version_is "4.1" do
       pr.refined(ProcRefinedSpecs::StringShout).call.should == "HI!"
     end
 
+    it "keeps the refinements active in instance methods defined inside the body" do
+      pr = -> {
+        Class.new {
+          def shout_hi
+            "hi".shout
+          end
+        }.new.shout_hi
+      }
+      pr.refined(ProcRefinedSpecs::StringShout).call.should == "HI!"
+    end
+
+    it "keeps the refinements active in a class body opened with the class keyword inside the body" do
+      pr = -> {
+        class ProcRefinedSpecs::ClassBody
+          def shout_hi
+            "hi".shout
+          end
+        end
+        ProcRefinedSpecs::ClassBody.new.shout_hi
+      }
+      pr.refined(ProcRefinedSpecs::StringShout).call.should == "HI!"
+    ensure
+      ProcRefinedSpecs.send(:remove_const, :ClassBody) if ProcRefinedSpecs.const_defined?(:ClassBody)
+    end
+
+    it "applies the refinements to Symbol#to_proc blocks created inside the body" do
+      pr = -> a { a.map(&:shout) }
+      pr.refined(ProcRefinedSpecs::StringShout).call(%w[a b]).should == ["A!", "B!"]
+      -> { pr.call(%w[a b]) }.should.raise(NoMethodError)
+    end
+
+    it "applies the refinements to operators and element access" do
+      file = fixture(__FILE__, "refined_basic_operations.rb")
+      ruby_exe(file).should == <<~EXPECTED
+      plus(1,2)
+      lt
+      at0
+      aref(x)
+      3
+      EXPECTED
+    end
+
     it "keeps the refinements active when called via instance_eval, instance_exec and class_eval" do
       pr = proc { "hi".shout }
       refined = pr.refined(ProcRefinedSpecs::StringShout)
@@ -71,8 +128,10 @@ ruby_version_is "4.1" do
       Class.new.class_eval(&refined).should == "HI!"
     end
 
-    it "raises ArgumentError when called with no modules" do
-      -> { -> {}.refined }.should.raise(ArgumentError)
+    it "returns the receiver when called with no modules" do
+      original = -> {}
+      refined = original.refined
+      refined.should.equal?(original)
     end
 
     it "raises TypeError when called with a non-Module argument" do
@@ -86,17 +145,49 @@ ruby_version_is "4.1" do
       -> { method_proc.refined(ProcRefinedSpecs::StringShout) }.should.raise(ArgumentError)
     end
 
-    it "raises ArgumentError for a Proc that already has refinements applied" do
-      refined = -> s { s.shout }.refined(ProcRefinedSpecs::StringShout)
-      -> { refined.refined(ProcRefinedSpecs::StringQuiet) }.should.raise(ArgumentError)
+    it "activates the refinements of all the given modules when chained" do
+      pr = -> s { [s.shout, s.quiet] }
+      refined = pr.refined(ProcRefinedSpecs::StringShout).refined(ProcRefinedSpecs::StringQuiet)
+      refined.call("Hi").should == ["hi", "..."]
+    end
+
+    it "gives precedence to the module applied last when chained" do
+      pr = -> s { s.shout }
+      pr.refined(ProcRefinedSpecs::StringShout).refined(ProcRefinedSpecs::StringQuiet).call("Hi").should == "hi"
+      pr.refined(ProcRefinedSpecs::StringQuiet).refined(ProcRefinedSpecs::StringShout).call("Hi").should == "HI!"
     end
 
     it "keeps the refinements on dup and clone" do
       refined = -> s { s.shout }.refined(ProcRefinedSpecs::StringShout)
       refined.dup.call("hi").should == "HI!"
       refined.clone.call("hi").should == "HI!"
-      -> { refined.dup.refined(ProcRefinedSpecs::StringQuiet) }.should.raise(ArgumentError)
-      -> { refined.clone.refined(ProcRefinedSpecs::StringQuiet) }.should.raise(ArgumentError)
+    end
+
+    it "returns a Proc that is not equal to the receiver" do
+      pr = -> s { s.shout }
+      refined = pr.refined(ProcRefinedSpecs::StringShout)
+      refined.should_not == pr
+      refined.should_not.eql?(pr)
+      refined.call("hi")
+      refined.should_not == pr
+    end
+
+    it "returns Procs that are not equal for different modules" do
+      pr = -> s { s.shout }
+      r1 = pr.refined(ProcRefinedSpecs::StringShout)
+      r2 = pr.refined(ProcRefinedSpecs::StringQuiet)
+      r1.should_not == r2
+    end
+
+    it "keeps its hash and equality when first called, so it stays usable as a Hash key" do
+      pr = -> s { s.shout }
+      refined = pr.refined(ProcRefinedSpecs::StringShout)
+      h = { pr => :source, refined => :refined }
+      h.size.should == 2
+      hash_before = refined.hash
+      refined.call("hi")
+      refined.hash.should == hash_before
+      h[refined].should == :refined
     end
 
     it "raises ArgumentError when the result is passed to define_method" do
@@ -110,6 +201,14 @@ ruby_version_is "4.1" do
       pr = proc { using mod }
       refined = pr.refined(ProcRefinedSpecs::StringShout)
       -> { Module.new.module_eval(&refined) }.should.raise(RuntimeError)
+    end
+
+    it "allows calling refine inside the body" do
+      pr = -> s {
+        Module.new { refine(String) { def whisper; downcase; end } }
+        s.shout
+      }
+      pr.refined(ProcRefinedSpecs::StringShout).call("hi").should == "HI!"
     end
   end
 end

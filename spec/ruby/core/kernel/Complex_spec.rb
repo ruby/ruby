@@ -274,6 +274,12 @@ describe "Kernel#Complex" do
   it "freezes its result" do
     Complex(1).frozen?.should == true
   end
+
+  it "raises an ArgumentError if exception: is not true or false" do
+    -> { Complex(1, exception: 0) }.should.raise ArgumentError, /expected true or false/
+    -> { Complex(1, exception: nil) }.should.raise ArgumentError, /expected true or false/
+    -> { Complex(1, exception: 'false') }.should.raise ArgumentError, /expected true or false/
+  end
 end
 
 describe "Kernel.Complex" do

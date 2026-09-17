@@ -22,6 +22,13 @@ class TestGemCommandsSigninCommand < Gem::TestCase
     super
   end
 
+  def test_sign_in_calls_api_key_without_arguments
+    # Command plugins include Gem::GemcutterUtilities and override #api_key
+    # with no parameters, so sign_in has to keep calling it that way.
+    assert_equal 0, Gem::GemcutterUtilities.instance_method(:api_key).arity
+    assert_empty Gem::GemcutterUtilities.instance_method(:api_key).parameters
+  end
+
   def test_execute_when_not_already_signed_in
     sign_in_ui = util_capture { @cmd.execute }
     assert_match(/Signed in./, sign_in_ui.output)

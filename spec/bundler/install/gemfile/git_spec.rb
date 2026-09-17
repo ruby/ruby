@@ -31,6 +31,17 @@ RSpec.describe "bundle install with git sources" do
       expect(out).to eq("WIN")
     end
 
+    it "installs and updates gems when git only accepts explicit bare repositories" do
+      git "config --global safe.bareRepository explicit"
+
+      install_base_gemfile
+      expect(the_bundle).to include_gems("foo 1.0")
+
+      update_git "foo", "1.1", path: lib_path("foo-1.0")
+      bundle "update foo"
+      expect(the_bundle).to include_gems("foo 1.1")
+    end
+
     it "points the installed copy's origin at the real remote, not the local cache" do
       install_base_gemfile
 
@@ -113,6 +124,29 @@ RSpec.describe "bundle install with git sources" do
 
       sha = git.ref_for("main", 11)
       spec_file = default_bundle_path("bundler/gems/foo-1.0-#{sha}/foo.gemspec")
+      expect(spec_file).to exist
+      # Serialize with the RubyGems that wrote the file, since `#to_ruby`
+      # output differs across RubyGems versions
+      ruby "print Gem::Specification.load(#{spec_file.to_s.dump}).to_ruby"
+      ruby_code = out
+      file_code = File.read(spec_file)
+      expect(file_code.strip).to eq(ruby_code)
+    end
+
+    it "caches the evaluated gemspec when the bundle path contains glob metacharacters" do
+      bundle_config "path vendor/dir[1]"
+      install_base_gemfile
+      git = update_git "foo" do |s|
+        s.executables = ["foobar"] # we added this the first time, so keep it now
+        s.files = ["bin/foobar"] # updating git nukes the files list
+        foospec = s.to_ruby.gsub(/s\.files.*/, 's.files = `git ls-files -z`.split("\x0")')
+        s.write "foo.gemspec", foospec
+      end
+
+      bundle "update foo"
+
+      sha = git.ref_for("main", 11)
+      spec_file = scoped_gem_path(bundled_app("vendor/dir[1]")).join("bundler/gems/foo-1.0-#{sha}/foo.gemspec")
       expect(spec_file).to exist
       # Serialize with the RubyGems that wrote the file, since `#to_ruby`
       # output differs across RubyGems versions
@@ -511,6 +545,35 @@ RSpec.describe "bundle install with git sources" do
 
         expect(the_bundle).to include_gems("foo 1.0")
       end
+    end
+  end
+
+  describe "a git gem whose extension fails to build" do
+    # Where a build log goes is decided by the RubyGems running the install, and
+    # older ones write a bare gem_make.out into the extension directory.
+    it "keeps the build log with that checkout instead of the shared repository", rubygems: ">= 4.1.0.dev" do
+      build_git "foo", "1.0" do |s|
+        s.add_c_extension
+        # Overwrite the source add_c_extension wrote, before the checkout is
+        # committed, so that building it fails.
+        s.write "ext/foo.c", "#error forced build failure for test\n"
+      end
+
+      install_gemfile <<~G, raise_on_error: false
+        source "https://gem.repo1"
+        gem "foo", :git => "#{lib_path("foo-1.0")}"
+      G
+
+      # The log lands in the checkout's own extension directory, which is unique
+      # per revision and which `bundle clean` prunes along with the checkout.
+      logs = Dir.glob("#{Gem.dir}/bundler/gems/extensions/*/*/*/*.gem_make.out")
+
+      expect(logs.size).to eq(1)
+      expect(File.basename(File.dirname(logs.first))).to start_with("foo-1.0-")
+      expect(File.read(logs.first)).to include("forced build failure for test")
+
+      # Nothing is left directly under bundler/gems, which holds checkouts.
+      expect(Pathname.new("#{Gem.dir}/bundler/gems/build_info")).not_to exist
     end
   end
 end

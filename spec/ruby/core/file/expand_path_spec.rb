@@ -134,7 +134,7 @@ describe "File.expand_path" do
     end
   end
 
-  it "returns a String in the same encoding as the argument" do
+  it "preserves the encoding of the path" do
     Encoding.default_external = Encoding::SHIFT_JIS
 
     path = "./a".dup.force_encoding Encoding::CP1251

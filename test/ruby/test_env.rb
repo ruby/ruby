@@ -195,6 +195,39 @@ class TestEnv < Test::Unit::TestCase
     a.each {|k| assert_kind_of(String, k) }
   end
 
+  def test_keys_encoding
+    bug20958 = '[ruby-core:120277] [Bug #20958]'
+    omit "locale encoding is not UTF-8" unless ENCODING == Encoding::UTF_8
+    orig = ENV.to_hash
+    ENV.clear
+    key = "TEST20958\u{30c6 30b9 30c8}"
+    begin
+      ENV[key] = "x"
+    rescue
+      omit "platform does not support UTF-8 environment variables."
+    end
+    EnvUtil.with_default_internal(nil) do
+      assert_equal(ENCODING, ENV.keys.last.encoding, bug20958)
+      assert_equal(key.encode(ENCODING), ENV.keys.last, bug20958)
+    end
+
+    ENV.update(orig) #required to restore ENV[RbConfig::CONFIG['LIBPATHENV']]
+    env = {key => "x"}
+    # invoke_ruby forces the C locale, restore the locale of this process,
+    # which is known to be UTF-8 here.
+    EnvUtil::LANG_ENVS.each {|e| env[e] = ENV[e]}
+    load_path = $LOAD_PATH.map {|v| "-I#{v}" }
+    internal_enc = "Windows-31J"
+    params = [env, *load_path, "-Eutf-8:#{internal_enc}"]
+    assert_separately(params, <<-"EOS")
+      ENV.keep_if {|k,| k.start_with?("TEST20958") }
+      key = ENV.keys.last
+      assert_equal("#{internal_enc}", key.encoding.to_s, "#{bug20958}")
+      assert_equal("#{key.encode(Encoding.find(internal_enc)).bytes}",
+                   key.bytes.to_s, "#{bug20958}")
+    EOS
+  end
+
   def test_each_key
     ENV.each_key {|k| assert_kind_of(String, k) }
   end
@@ -1441,25 +1474,13 @@ class TestEnv < Test::Unit::TestCase
     end;
   end
 
-  def test_ivar_in_env_should_not_be_access_from_non_main_ractors
+  def test_ivar_in_env_is_not_allowed
+    # ENV is shareable but can never be frozen, so it may not carry instance
+    # variables at all: they would be unshareable values reachable from any ractor.
     assert_ractor <<~RUBY
-    ENV.instance_eval{ @a = "hello" }
-    assert_equal "hello", ENV.instance_variable_get(:@a)
-
-    r_get =  Ractor.new do
-      ENV.instance_variable_get(:@a)
-    rescue Ractor::IsolationError => e
-      e
-    end
-    assert_equal Ractor::IsolationError, r_get.value.class
-
-    r_get =  Ractor.new do
-      ENV.instance_eval{ @a }
-    rescue Ractor::IsolationError => e
-      e
-    end
-
-    assert_equal Ractor::IsolationError, r_get.value.class
+    assert_raise(Ractor::IsolationError) { ENV.instance_eval{ @a = "hello" } }
+    assert_nil ENV.instance_variable_get(:@a)
+    assert_equal [], ENV.instance_variables
 
     r_set = Ractor.new do
       ENV.instance_eval{ @b = "hello" }
@@ -1468,6 +1489,13 @@ class TestEnv < Test::Unit::TestCase
     end
 
     assert_equal Ractor::IsolationError, r_set.value.class
+
+    # Reads are allowed: since writes are forbidden, there is nothing
+    # unshareable to read.
+    r_get = Ractor.new do
+      ENV.instance_variable_get(:@a)
+    end
+    assert_nil r_get.value
     RUBY
   end
 

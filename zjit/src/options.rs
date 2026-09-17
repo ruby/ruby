@@ -25,7 +25,7 @@ pub type NumProfiles = u16;
 /// Default --zjit-call-threshold. This should be large enough to avoid compiling
 /// warmup code, but small enough to perform well on micro-benchmarks.
 pub const DEFAULT_CALL_THRESHOLD: CallThreshold = 30;
-pub type CallThreshold = u64;
+pub type CallThreshold = u32;
 
 /// Default --zjit-inline-threshold
 /// TODO (nirvdrum 2026-06-25): 30 has proven to work well with ruby-bench, but we should finely
@@ -105,6 +105,9 @@ pub struct Options {
     /// Dump High-level IR after optimization, right before codegen.
     pub dump_hir_opt: Option<DumpHIR>,
 
+    /// Dump High-level IR to the given file instead of stdout
+    pub dump_hir_file: Option<std::path::PathBuf>,
+
     /// Dump High-level IR to the given file in Graphviz format after optimization
     pub dump_hir_graphviz: Option<std::path::PathBuf>,
 
@@ -122,6 +125,12 @@ pub struct Options {
 
     /// Frequency of tracing side exits.
     pub trace_side_exits_sample_interval: usize,
+
+    /// Trace and write fallback source maps to /tmp for stackprof.
+    pub trace_fallbacks: bool,
+
+    /// Frequency of tracing fallbacks.
+    pub trace_fallbacks_sample_interval: usize,
 
     /// Trace compilation phases as Perfetto duration events.
     pub trace_compiles: bool,
@@ -197,12 +206,15 @@ impl Default for Options {
             disable_hir_opt: false,
             dump_hir_init: None,
             dump_hir_opt: None,
+            dump_hir_file: None,
             dump_hir_graphviz: None,
             dump_hir_iongraph: false,
             dump_lir: None,
             dump_disasm: None,
             trace_side_exits: None,
             trace_side_exits_sample_interval: 0,
+            trace_fallbacks: false,
+            trace_fallbacks_sample_interval: 0,
             trace_compiles: false,
             trace_invalidation: false,
             perf: None,
@@ -230,7 +242,7 @@ pub const ZJIT_OPTIONS: &[(&str, &str)] = &[
     ("--zjit-stats-quiet",
                      "Collect ZJIT stats and suppress output."),
     ("--zjit-stats[=file]",
-                     "Collect ZJIT stats (=file to write to a file)."),
+                     "Collect ZJIT stats (=file to write; .json for JSON)."),
     ("--zjit-disable",
                      "Disable ZJIT for lazily enabling it with RubyVM::ZJIT.enable."),
     ("--zjit-perf[=iseq|hir]",
@@ -503,6 +515,17 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
             options.trace_side_exits_sample_interval = sample_interval.parse::<usize>().ok()?;
         }
 
+        ("trace-fallbacks", "") => {
+            options.trace_fallbacks = true;
+        }
+
+        ("trace-fallbacks-sample-rate", sample_interval) => {
+            // If not already set, then set it.
+            options.trace_fallbacks = true;
+            // `sample_interval ` must provide a string that can be validly parsed to a `usize`.
+            options.trace_fallbacks_sample_interval = sample_interval.parse::<usize>().ok()?;
+        }
+
         ("trace-compiles", "") => options.trace_compiles = true,
 
         ("trace-invalidation", "") => options.trace_invalidation = true,
@@ -517,6 +540,27 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
         ("dump-hir" | "dump-hir-opt", "") => options.dump_hir_opt = Some(DumpHIR::WithoutSnapshot),
         ("dump-hir" | "dump-hir-opt", "all") => options.dump_hir_opt = Some(DumpHIR::All),
         ("dump-hir" | "dump-hir-opt", "debug") => options.dump_hir_opt = Some(DumpHIR::Debug),
+        // Any other value is a directory to dump HIR to instead of stdout. It composes with the
+        // format variants, e.g. `--zjit-dump-hir=all --zjit-dump-hir=/tmp/` dumps to /tmp/hir-PID.
+        ("dump-hir" | "dump-hir-opt", _) => {
+            let directory = std::fs::canonicalize(&opt_val)
+                .map_err(|e| eprintln!("Failed to canonicalize path '{opt_val}': {e}")).ok()?;
+            if !directory.is_dir() {
+                eprintln!("Path '{opt_val}' is not a directory");
+                return None;
+            }
+            let file_name = directory.join(format!("hir-{}", std::process::id()));
+            // Truncate the file if it exists
+            std::fs::OpenOptions::new()
+                .create(true)
+                .write(true)
+                .truncate(true)
+                .open(&file_name)
+                .map_err(|e| eprintln!("Failed to open file '{}': {e}", file_name.display()))
+                .ok();
+            options.dump_hir_file = Some(file_name);
+            options.dump_hir_opt.get_or_insert(DumpHIR::WithoutSnapshot);
+        }
 
         ("dump-hir-init", "") => options.dump_hir_init = Some(DumpHIR::WithoutSnapshot),
         ("dump-hir-init", "all") => options.dump_hir_init = Some(DumpHIR::All),
@@ -647,6 +691,13 @@ pub fn set_inline_threshold(inline_threshold: InlineThreshold) {
     unsafe { OPTIONS.as_mut().unwrap().inline_threshold = inline_threshold; }
 }
 
+/// Set --zjit-mem-size for testing. It's used to force OOM in tests.
+#[cfg(test)]
+pub fn set_mem_bytes(mem_bytes: usize) {
+    rb_zjit_prepare_options();
+    unsafe { OPTIONS.as_mut().unwrap().mem_bytes = mem_bytes; }
+}
+
 /// Enable --zjit-stats for testing
 #[cfg(test)]
 pub fn enable_zjit_stats() {
@@ -725,6 +776,46 @@ pub extern "C" fn rb_zjit_get_stats_file_path_p(_ec: EcPtr, _self: VALUE) -> VAL
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn parse_dump_hir_path() {
+        unsafe { OPTIONS = Some(Options::default()); }
+
+        let path = std::path::PathBuf::from("/tmp");
+        let option = CString::new(format!("dump-hir={}", path.display())).unwrap();
+
+        assert!(parse_option(option.as_ptr()).is_some());
+
+        let options = unsafe { OPTIONS.as_ref() }.unwrap();
+        // parse_option canonicalizes the path, so canonicalize the expectation too
+        let expected = std::fs::canonicalize(&path).unwrap().join(format!("hir-{}", std::process::id()));
+        assert_eq!(options.dump_hir_file, Some(expected.clone()));
+        assert!(matches!(options.dump_hir_opt, Some(DumpHIR::WithoutSnapshot)));
+        assert!(expected.exists());
+
+        let _ = std::fs::remove_file(expected);
+    }
+
+    #[test]
+    fn parse_dump_hir_path_keeps_format() {
+        unsafe { OPTIONS = Some(Options::default()); }
+
+        let path = std::path::PathBuf::from(".");
+        let all = CString::new("dump-hir=all").unwrap();
+        let file = CString::new(format!("dump-hir={}", path.display())).unwrap();
+
+        assert!(parse_option(all.as_ptr()).is_some());
+        assert!(parse_option(file.as_ptr()).is_some());
+
+        let options = unsafe { OPTIONS.as_ref() }.unwrap();
+        // parse_option canonicalizes the path, so canonicalize the expectation too
+        let expected = std::fs::canonicalize(&path).unwrap().join(format!("hir-{}", std::process::id()));
+        assert_eq!(options.dump_hir_file, Some(expected.clone()));
+        assert!(matches!(options.dump_hir_opt, Some(DumpHIR::All)));
+        assert!(expected.exists());
+
+        let _ = std::fs::remove_file(expected);
+    }
 
     #[test]
     fn parse_dump_disasm_path() {

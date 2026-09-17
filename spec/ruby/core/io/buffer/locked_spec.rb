@@ -26,30 +26,98 @@ describe "IO::Buffer#locked" do
     end
   end
 
-  it "disallows reentrant locking, raising IO::Buffer::LockedError" do
-    @buffer = IO::Buffer.new(4)
-    @buffer.locked do
-      -> { @buffer.locked {} }.should.raise(IO::Buffer::LockedError, "Buffer already locked!")
+  ruby_version_is ""..."4.1" do
+    it "disallows reentrant locking, raising IO::Buffer::LockedError" do
+      @buffer = IO::Buffer.new(4)
+      @buffer.locked do
+        -> { @buffer.locked {} }.should.raise(IO::Buffer::LockedError, "Buffer already locked!")
+      end
+    end
+
+    it "does not propagate to buffer's slices" do
+      @buffer = IO::Buffer.new(4)
+      slice = @buffer.slice(0, 2)
+      @buffer.locked do
+        @buffer.locked?.should == true
+        slice.locked?.should == false
+        slice.locked { slice.locked?.should == true }
+      end
+    end
+
+    it "does not propagate backwards from buffer's slices" do
+      @buffer = IO::Buffer.new(4)
+      slice = @buffer.slice(0, 2)
+      slice.locked do
+        slice.locked?.should == true
+        @buffer.locked?.should == false
+        @buffer.locked { @buffer.locked?.should == true }
+      end
     end
   end
 
-  it "does not propagate to buffer's slices" do
-    @buffer = IO::Buffer.new(4)
-    slice = @buffer.slice(0, 2)
-    @buffer.locked do
-      @buffer.locked?.should == true
-      slice.locked?.should == false
-      slice.locked { slice.locked?.should == true }
-    end
-  end
-
-  it "does not propagate backwards from buffer's slices" do
-    @buffer = IO::Buffer.new(4)
-    slice = @buffer.slice(0, 2)
-    slice.locked do
-      slice.locked?.should == true
+  ruby_version_is "4.1" do
+    it "allows nested locking" do
+      @buffer = IO::Buffer.new(4)
+      @buffer.locked do
+        @buffer.locked do
+          @buffer.locked?.should == true
+        end
+        @buffer.locked?.should == true
+      end
       @buffer.locked?.should == false
-      @buffer.locked { @buffer.locked?.should == true }
+    end
+
+    it "propagates to buffer's slices" do
+      @buffer = IO::Buffer.new(4)
+      slice = @buffer.slice(0, 2)
+      @buffer.locked do
+        @buffer.locked?.should == true
+        slice.locked?.should == true
+        slice.locked do
+          slice.locked?.should == true
+        end
+        @buffer.locked?.should == true
+      end
+    end
+
+    it "propagates backwards from buffer's slices" do
+      @buffer = IO::Buffer.new(4)
+      slice = @buffer.slice(0, 2)
+      slice.locked do
+        slice.locked?.should == true
+        @buffer.locked?.should == true
+        @buffer.locked do
+          @buffer.locked?.should == true
+        end
+        slice.locked?.should == true
+      end
+    end
+
+    it "shares locks with string-backed slices" do
+      @buffer = IO::Buffer.for("test")
+      slice = @buffer.slice(0, 2)
+
+      slice.locked do
+        @buffer.locked?.should == true
+        -> { @buffer.free }.should.raise(IO::Buffer::LockedError)
+      end
+    end
+
+    it "validates a slice before locking its source" do
+      @buffer = IO::Buffer.new(4)
+      slice = @buffer.slice
+      @buffer.free
+
+      yielded = false
+
+      -> {
+        slice.locked do
+          yielded = true
+        end
+      }.should.raise(IO::Buffer::InvalidatedError)
+
+      yielded.should == false
+      slice.locked?.should == false
     end
   end
 end

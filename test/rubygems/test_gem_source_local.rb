@@ -25,6 +25,19 @@ class TestGemSourceLocal < Gem::TestCase
                  @sl.load_specs(:released).sort
   end
 
+  def test_load_specs_ignores_content_address_mismatch
+    _spec, ca_gem = util_gem("ca", "1.0.0", ruby_abi: "3.4") do |spec|
+      spec.required_ruby_version = "~> 3.4.0"
+      spec.platform = Gem::Platform.local
+    end
+    address = Gem::Package.new(ca_gem).content_address
+    mismatched_address = address.start_with?("0") ? "1#{address[1..]}" : "0#{address[1..]}"
+    FileUtils.mv ca_gem, File.join(@tempdir, "ca-1.0.0-#{mismatched_address}.gem")
+
+    assert_equal [@a.name_tuple, @b.name_tuple].sort,
+                 @sl.load_specs(:released).sort
+  end
+
   def test_load_specs_prerelease
     assert_equal [@ap.name_tuple], @sl.load_specs(:prerelease)
   end

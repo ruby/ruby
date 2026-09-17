@@ -20,6 +20,7 @@
 #include "internal/proc.h"
 #include "internal/rational.h"
 #include "internal/re.h"
+#include "internal/set.h"
 #include "ruby/util.h"
 #include "ruby_assert.h"
 #include "symbol.h"
@@ -4870,18 +4871,26 @@ enum_sum(int argc, VALUE* argv, VALUE obj)
 }
 
 static VALUE
-uniq_func(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
+uniq_func(RB_BLOCK_CALL_FUNC_ARGLIST(i, set))
 {
     ENUM_WANT_SVALUE();
-    rb_hash_add_new_element(hash, i, i);
+    rb_set_add_no_check(set, i);
     return Qnil;
 }
 
+struct uniq_iter_memo {
+    VALUE set;
+    VALUE ary;
+};
+
 static VALUE
-uniq_iter(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
+uniq_iter(RB_BLOCK_CALL_FUNC_ARGLIST(i, memo_))
 {
+    struct uniq_iter_memo *memo = (struct uniq_iter_memo *)memo_;
     ENUM_WANT_SVALUE();
-    rb_hash_add_new_element(hash, rb_yield_values2(argc, argv), i);
+    if (rb_set_add_no_check(memo->set, rb_yield_values2(argc, argv))) {
+        rb_ary_push(memo->ary, i);
+    }
     return Qnil;
 }
 
@@ -4909,15 +4918,18 @@ uniq_iter(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
 static VALUE
 enum_uniq(VALUE obj)
 {
-    VALUE hash, ret;
-    rb_block_call_func *const func =
-        rb_block_given_p() ? uniq_iter : uniq_func;
-
-    hash = rb_obj_hide(rb_hash_new());
-    rb_block_call(obj, id_each, 0, 0, func, hash);
-    ret = rb_hash_values(hash);
-    rb_hash_clear(hash);
-    return ret;
+    if (rb_block_given_p()) {
+        struct uniq_iter_memo memo;
+        memo.set = rb_obj_hide(rb_set_new());
+        memo.ary = rb_ary_new();
+        rb_block_call(obj, id_each, 0, 0, uniq_iter, (VALUE)&memo);
+        return memo.ary;
+    }
+    else {
+        VALUE set = rb_obj_hide(rb_set_new());
+        rb_block_call(obj, id_each, 0, 0, uniq_func, set);
+        return rb_set_to_a(set);
+    }
 }
 
 static VALUE

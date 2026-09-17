@@ -400,6 +400,21 @@ RBIMPL_ATTR_NONNULL(())
  */
 VALUE rb_extract_keywords(VALUE *orighash);
 
+/**
+ *  Load an iseq object from binary format String object
+ *  created by RubyVM::InstructionSequence.to_binary.
+ *
+ * @warning     This loader does not have a verifier, so that loading broken/modified
+ *              binary causes critical problem.
+ * @warning     You should not load binary data provided by others.
+ *              You should only use binary data translated by yourself.
+ * @param[in]  ptr             A memory region of `len` bytes length.
+ * @param[in]  len             Length  of `ptr`,  in bytes,  not including  the
+ *                             optional terminating NUL character.
+ * @return     An  instance   of  RubyVM::InstructionSequence.
+ */
+VALUE rb_iseq_load_from_binary(const char *ptr, size_t len);
+
 RBIMPL_SYMBOL_EXPORT_END()
 
 #endif /* RBIMPL_EVAL_H */

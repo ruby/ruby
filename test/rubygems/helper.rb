@@ -5,7 +5,6 @@ require "rubygems"
 begin
   raise LoadError if ENV["GEM_COMMAND"]
 
-  gem "simplecov_json_formatter"
   require "simplecov"
 
   unless ENV["SIMPLECOV_SUBPROCESS"]
@@ -14,12 +13,14 @@ begin
       root File.expand_path("../..", __dir__)
       coverage_dir File.expand_path("../../coverage", __dir__)
 
-      add_filter "/test/"
-      add_filter "/bundler/"
-      add_filter "/tool/"
-      add_filter "/lib/rubygems/vendor/"
-      add_filter ".gemspec"
+      skip "/test/"
+      skip "/bundler/"
+      skip "/tool/"
+      skip "/lib/rubygems/vendor/"
+      skip ".gemspec"
     end
+
+    SimpleCov.print_error_status = false
 
     # Prevent SimpleCov from running in subprocesses spawned by assert_separately
     ENV["SIMPLECOV_SUBPROCESS"] = "1"
@@ -46,6 +47,9 @@ require "tmpdir"
 require "rubygems/vendor/uri/lib/uri"
 require "zlib"
 require_relative "mock_gem_ui"
+require_relative "pem_utilities"
+require_relative "fake_credential_backend"
+require_relative "pqc_utilities"
 
 # JRuby on Windows raises TypeError inside File.symlink (the wincode helper
 # trips on a nil path), so any test that exercises Gem::Installer's symlink
@@ -373,19 +377,36 @@ class Gem::TestCase < Test::Unit::TestCase
 
     @tempdir = Dir.mktmpdir("test_rubygems_", @tmp)
 
+    # @tmp lives inside the checkout by default, so stop git repository
+    # discovery from walking up into the checkout itself. Otherwise a git
+    # command run in a non-repository directory under @tempdir could mutate
+    # the checkout's own (possibly worktree-shared) .git/config.
+    ENV["GIT_CEILING_DIRECTORIES"] = File.realpath(top_srcdir)
+
     ENV["GEM_VENDOR"] = nil
     ENV["GEMRC"] = nil
+    # Left set, this points the suite at the real OS credential store, where
+    # tests that clear an API key would delete the developer's own.
+    ENV["RUBYGEMS_CREDENTIAL_STORE"] = nil
     ENV["XDG_CACHE_HOME"] = nil
     ENV["XDG_CONFIG_HOME"] = nil
     ENV["XDG_DATA_HOME"] = nil
     ENV["XDG_STATE_HOME"] = nil
     ENV["MAKEFLAGS"] = nil
     ENV["SOURCE_DATE_EPOCH"] = nil
+    ENV["GITHUB_ACTIONS"] = nil
     ENV["BUNDLER_VERSION"] = nil
     ENV["BUNDLE_CONFIG"] = nil
     ENV["BUNDLE_USER_CONFIG"] = nil
     ENV["BUNDLE_USER_HOME"] = nil
+    # Cooldown resolution reads Bundler's settings, so a developer running the
+    # suite with one configured would otherwise see it applied to the fixtures.
+    ENV["BUNDLE_COOLDOWN"] = nil
     ENV["RUBYGEMS_PREVENT_UPDATE_SUGGESTION"] = "true"
+
+    # Child ruby processes inherit RUBY_BOX and print an experimental
+    # warning on startup, breaking assertions on subprocess stderr.
+    ENV["RUBYOPT"] = [ENV["RUBYOPT"], "-W:no-experimental"].compact.join(" ") if ruby_box_enabled?
 
     @current_dir = Dir.pwd
     @fetcher     = nil
@@ -536,6 +557,11 @@ class Gem::TestCase < Test::Unit::TestCase
       Gem::RemoteFetcher.fetcher = nil
     end
 
+    if defined? Gem::Cooldown
+      Gem::Cooldown.reset_warned_missing_created_at
+      Gem::Cooldown.reset_warned_invalid_days
+    end
+
     Dir.chdir @current_dir
 
     ENV.replace(@orig_env)
@@ -580,6 +606,19 @@ class Gem::TestCase < Test::Unit::TestCase
 
   def credential_teardown
     FileUtils.rm_rf @temp_cred
+  end
+
+  ##
+  # Runs the block with Gem::CredentialStore.instance backed by an
+  # in-memory Gem::FakeCredentialBackend, so credential_store-enabled code paths
+  # can be exercised without touching a real OS credential store.
+
+  def with_fake_credential_store
+    require "rubygems/credential_store"
+    Gem::CredentialStore.instance = Gem::CredentialStore.new(backend: Gem::FakeCredentialBackend.new)
+    yield Gem::CredentialStore.instance
+  ensure
+    Gem::CredentialStore.reset!
   end
 
   def common_installer_setup
@@ -661,9 +700,9 @@ class Gem::TestCase < Test::Unit::TestCase
 
     Dir.chdir directory do
       unless File.exist? ".git"
-        system @git, "init", "--quiet"
-        system @git, "config", "user.name",  "RubyGems Tests"
-        system @git, "config", "user.email", "rubygems@example"
+        system @git, "init", "--quiet", exception: true
+        system @git, "config", "user.name",  "RubyGems Tests", exception: true
+        system @git, "config", "user.email", "rubygems@example", exception: true
       end
 
       system @git, "add", gemspec
@@ -840,7 +879,7 @@ class Gem::TestCase < Test::Unit::TestCase
   # Builds a gem from +spec+ and places it in <tt>File.join @gemhome,
   # 'cache'</tt>.  Automatically creates files based on +spec.files+
 
-  def util_build_gem(spec)
+  def util_build_gem(spec, ruby_abi: nil)
     dir = spec.gem_dir
     FileUtils.mkdir_p dir
 
@@ -854,12 +893,14 @@ class Gem::TestCase < Test::Unit::TestCase
         end
       end
 
+      built_gem_name = nil
       use_ui Gem::MockGemUi.new do
-        Gem::Package.build spec
+        built_gem_name = Gem::Package.build spec, false, false, nil, ruby_abi
       end
 
-      cache = spec.cache_file
+      cache = File.join File.dirname(spec.cache_file), File.basename(built_gem_name)
       FileUtils.mv File.basename(cache), cache
+      cache
     end
   end
 
@@ -976,12 +1017,31 @@ class Gem::TestCase < Test::Unit::TestCase
   end
 
   ##
-  # Creates a gem with +name+, +version+ and +deps+.  The specification will
-  # be yielded before gem creation for customization.  The gem will be placed
-  # in <tt>File.join @tempdir, 'gems'</tt>.  The specification and .gem file
-  # location are returned.
+  # Creates a content-addressable spec for compact index testing. Requires
+  # either +ruby_abi+ (sets +required_ruby_version+ to "~> X.Y.0") or an
+  # explicit +required_ruby_version+. No gem file is built.
 
-  def util_gem(name, version, deps = nil, &block)
+  def util_ca_spec(name, version, content_address, ruby_abi: nil, platform: "x86_64-linux", required_ruby_version: nil, &block)
+    unless ruby_abi || required_ruby_version
+      raise ArgumentError, "util_ca_spec requires either ruby_abi or required_ruby_version"
+    end
+
+    util_spec(name, version) do |s|
+      s.platform = Gem::Platform.new(platform)
+      s.content_address = content_address
+      s.required_ruby_version = required_ruby_version || "~> #{ruby_abi}.0"
+      yield(s) if block
+    end
+  end
+
+  ##
+  # Creates a gem with +name+, +version+ and +deps+.  The specification will
+  # be yielded before gem creation for customization.  When +ruby_abi+ is set,
+  # the gem is built using a content-addressable file name for that Ruby ABI.
+  # The gem will be placed in <tt>File.join @tempdir, 'gems'</tt>.  The
+  # specification and .gem file location are returned.
+
+  def util_gem(name, version, deps = nil, ruby_abi: nil, &block)
     if deps
       block = proc do |s|
         deps.keys.each do |n|
@@ -992,16 +1052,41 @@ class Gem::TestCase < Test::Unit::TestCase
 
     spec = quick_gem(name, version, &block)
 
-    util_build_gem spec
+    built_gem_path = util_build_gem spec, ruby_abi: ruby_abi
 
-    cache_file = File.join @tempdir, "gems", "#{spec.original_name}.gem"
+    cache_file = File.join @tempdir, "gems", File.basename(built_gem_path)
     FileUtils.mkdir_p File.dirname cache_file
-    FileUtils.mv spec.cache_file, cache_file
+    FileUtils.mv built_gem_path, cache_file
     FileUtils.rm spec.spec_file
 
     spec.loaded_from = nil
 
     [spec, cache_file]
+  end
+
+  ##
+  # Builds a platform gem and serves it through compact index as a
+  # content-addressable gem. Returns the specification, gem path, and content
+  # address.
+
+  def util_setup_content_addressable_compact_index_gem(name, version, platform: "x86_64-linux", required_ruby_version: "~> #{Gem.ruby_abi}.0", &block)
+    spec, gem_path = util_gem(name, version) do |s|
+      s.platform = platform
+      s.required_ruby_version = required_ruby_version
+      yield(s) if block
+    end
+
+    content_address = Digest::SHA256.file(gem_path).hexdigest[0, 8]
+    ca_gem_path = File.join(File.dirname(gem_path), "#{spec.name}-#{spec.version}-#{content_address}.gem")
+    FileUtils.cp gem_path, ca_gem_path
+    spec.content_address = content_address
+
+    util_setup_compact_index spec
+    @fetcher.data["#{@gem_repo}quick/Marshal.#{Gem.marshal_version}/#{spec.full_name}.gemspec.rz"] = util_zip(Marshal.dump(spec))
+    add_to_fetcher spec, ca_gem_path
+    Gem::SpecFetcher.fetcher = nil
+
+    [spec, ca_gem_path, content_address]
   end
 
   ##
@@ -1193,7 +1278,7 @@ Also, a list:
         info_body << util_compact_index_info_line(spec, created_at[spec.original_name]) << "\n"
       end
 
-      versions_list = by_name[name].map {|spec| spec.original_name.delete_prefix("#{spec.name}-") }.join(",")
+      versions_list = by_name[name].map {|spec| spec.content_address ? "#{spec.version}-#{spec.content_address}" : spec.original_name.delete_prefix("#{spec.name}-") }.join(",")
       versions_body << "#{name} #{versions_list} #{Digest::MD5.hexdigest(info_body)}\n"
       names_body << "#{name}\n"
 
@@ -1215,7 +1300,11 @@ Also, a list:
   # A compact index info file line for +spec+, including v2 metadata.
 
   def util_compact_index_info_line(spec, created_at = nil)
-    version = spec.original_name.delete_prefix("#{spec.name}-")
+    version = if spec.content_address
+      "#{spec.version}-#{spec.content_address}"
+    else
+      spec.original_name.delete_prefix("#{spec.name}-")
+    end
 
     dependencies = spec.runtime_dependencies.map do |dependency|
       "#{dependency.name}:#{util_compact_index_requirement(dependency.requirement)}"
@@ -1227,6 +1316,9 @@ Also, a list:
     end
     unless spec.required_rubygems_version.nil? || spec.required_rubygems_version.none?
       metadata << ",rubygems:#{util_compact_index_requirement(spec.required_rubygems_version)}"
+    end
+    if spec.content_address
+      metadata << ",platform:#{spec.platform}"
     end
     metadata << ",created_at:#{created_at}" if created_at
 
@@ -1253,7 +1345,11 @@ Also, a list:
     v = Gem.marshal_version
 
     all_specs.each do |spec|
-      path = "#{@gem_repo}quick/Marshal.#{v}/#{spec.original_name}.gemspec.rz"
+      # For content-addressed specs the gemspec is fetched by its
+      # content-addressed name, not its platform-suffixed name
+      name_tuple = Gem::NameTuple.new(spec.name, spec.version, spec.original_platform,
+                                      content_address: spec.content_address)
+      path = "#{@gem_repo}quick/Marshal.#{v}/#{name_tuple.spec_name}.rz"
       data = Marshal.dump spec
       data_deflate = Zlib::Deflate.deflate data
       @fetcher.data[path] = data_deflate
@@ -1287,6 +1383,15 @@ Also, a list:
     Object.const_set :RUBY_DESCRIPTION,    description
     Object.const_set :RUBY_ENGINE,         engine
     Object.const_set :RUBY_ENGINE_VERSION, engine_version
+  end
+
+  ##
+  # Pins the running Ruby to the first release of +ruby_abi+, so that the
+  # "~> X.Y.0" requirement a content addressed gem pins its ABI with is
+  # satisfied on a prerelease Ruby too. Pair with util_restore_RUBY_VERSION.
+
+  def util_pin_ruby_to_abi(ruby_abi)
+    util_set_RUBY_VERSION "#{ruby_abi}.0", 0, RUBY_REVISION, "ruby #{ruby_abi}.0"
   end
 
   def util_restore_RUBY_VERSION
@@ -1337,6 +1442,23 @@ Also, a list:
 
   def ruby_repo?
     !ENV["GEM_COMMAND"].nil?
+  end
+
+  ##
+  # Is this test running under Ruby::Box (RUBY_BOX=1)?
+
+  def ruby_box_enabled?
+    defined?(Ruby::Box) && Ruby::Box.enabled?
+  end
+
+  ##
+  # Ruby::Box gives each box detached copies of the stdio globals, so
+  # reassigning $stdout/$stderr cannot capture output written by Kernel#warn,
+  # Kernel#puts or subprocesses. Pends until the ruby-core fix for
+  # https://bugs.ruby-lang.org/issues/21867 lands.
+
+  def pend_for_ruby_box_stdio_capture
+    pend "Ruby::Box breaks $stdout/$stderr capture (https://bugs.ruby-lang.org/issues/21867)" if ruby_box_enabled?
   end
 
   ##
@@ -1652,75 +1774,34 @@ Also, a list:
     end
   end
 
-  ##
-  # Loads certificate named +cert_name+ from <tt>test/rubygems/</tt>.
+  include Gem::PEMUtilities
 
-  def self.load_cert(cert_name)
-    cert_file = cert_path cert_name
+  include Gem::PQCUtilities
 
-    cert = File.read cert_file
-
-    OpenSSL::X509::Certificate.new cert
-  end
-
-  ##
-  # Returns the path to the certificate named +cert_name+ from
-  # <tt>test/rubygems/</tt>.
-
-  def self.cert_path(cert_name)
-    if begin
-         Time.at(2**32)
-       rescue StandardError
-         32
-       end == 32
-      cert_file = "#{__dir__}/#{cert_name}_cert_32.pem"
-
-      return cert_file if File.exist? cert_file
+  def omit_unless_support_pqc
+    without_pqc_support do |message|
+      omit message
     end
-
-    "#{__dir__}/#{cert_name}_cert.pem"
   end
 
-  ##
-  # Loads a private key named +key_name+ with +passphrase+ in <tt>test/rubygems/</tt>
-
-  def self.load_key(key_name, passphrase = nil)
-    key_file = key_path key_name
-
-    key = File.read key_file
-
-    OpenSSL::PKey.read key, passphrase
+  def omit_unless_support_ml_dsa_key
+    omit "OpenSSL does not support ML-DSA" unless
+      Gem::PQCUtilities.support_ml_dsa_key?
   end
 
-  ##
-  # Returns the path to the key named +key_name+ from <tt>test/rubygems</tt>
-
-  def self.key_path(key_name)
-    "#{__dir__}/#{key_name}_key.pem"
+  def omit_unless_support_ml_dsa_cert
+    omit "Ruby OpenSSL cannot sign a certificate with an ML-DSA key" unless
+      Gem::PQCUtilities.support_ml_dsa_cert?
   end
 
-  # :stopdoc:
-  # only available in RubyGems tests
+  def omit_if_support_ml_dsa_cert
+    omit "Ruby OpenSSL can sign a certificate with an ML-DSA key" if
+      Gem::PQCUtilities.support_ml_dsa_cert?
+  end
 
-  PRIVATE_KEY_PASSPHRASE = "Foo bar"
-
-  begin
-    PRIVATE_KEY                 = load_key "private"
-    PRIVATE_KEY_PATH            = key_path "private"
-
-    # ENCRYPTED_PRIVATE_KEY is PRIVATE_KEY encrypted with PRIVATE_KEY_PASSPHRASE
-    ENCRYPTED_PRIVATE_KEY       = load_key "encrypted_private", PRIVATE_KEY_PASSPHRASE
-    ENCRYPTED_PRIVATE_KEY_PATH  = key_path "encrypted_private"
-
-    PUBLIC_KEY                  = PRIVATE_KEY.public_key
-
-    PUBLIC_CERT                 = load_cert "public"
-    PUBLIC_CERT_PATH            = cert_path "public"
-  rescue Errno::ENOENT
-    PRIVATE_KEY = nil
-    PUBLIC_KEY  = nil
-    PUBLIC_CERT = nil
-  end if Gem::HAVE_OPENSSL
+  def omit_if_support_ml_dsa_key
+    omit "OpenSSL supports ML-DSA" if Gem::PQCUtilities.support_ml_dsa_key?
+  end
 end
 
 # https://github.com/seattlerb/minitest/blob/13c48a03d84a2a87855a4de0c959f96800100357/lib/minitest/mock.rb#L192

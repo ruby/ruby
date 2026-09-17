@@ -17,6 +17,12 @@ describe "Set#divide" do
     ret.should.is_a?(Enumerator)
     ret.each(&:even?).should == Set[Set[1, 3], Set[2, 4]]
   end
+
+  it "does not retain compare_by_identity flag" do
+    set = Set["one", "two"].compare_by_identity
+    res = set.divide { |x| x.length }
+    res.each { |s| s.compare_by_identity?.should == false }
+  end
 end
 
 describe "Set#divide when passed a block with an arity of 2" do

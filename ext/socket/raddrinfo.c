@@ -9,6 +9,7 @@
 ************************************************/
 
 #include "rubysocket.h"
+#include <signal.h>
 
 // GETADDRINFO_IMPL == 0 : call getaddrinfo/getnameinfo directly
 // GETADDRINFO_IMPL == 1 : call getaddrinfo/getnameinfo without gvl (but uncancellable)

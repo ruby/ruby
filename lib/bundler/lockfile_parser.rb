@@ -41,6 +41,7 @@ module Bundler
     BUNDLED      = "BUNDLED WITH"
     DEPENDENCIES = "DEPENDENCIES"
     CHECKSUMS    = "CHECKSUMS"
+    CONTENT_ADDRESSES = "CONTENT ADDRESSES"
     PLATFORMS    = "PLATFORMS"
     RUBY         = "RUBY VERSION"
     GIT          = "GIT"
@@ -57,6 +58,7 @@ module Bundler
       Gem::Version.create("1.12") => [RUBY].freeze,
       Gem::Version.create("1.13") => [PLUGIN].freeze,
       Gem::Version.create("2.5.0") => [CHECKSUMS].freeze,
+      Gem::Version.create("4.1.0") => [CONTENT_ADDRESSES].freeze,
     }.freeze
 
     KNOWN_SECTIONS = SECTIONS_BY_VERSION_INTRODUCED.values.flatten!.freeze
@@ -140,6 +142,8 @@ module Bundler
           # for all gemfiles that don't already explicitly include the feature.
           @checksums = true
           @parse_method = :parse_checksum
+        elsif line == CONTENT_ADDRESSES
+          @parse_method = :parse_content_address
         elsif line == PLATFORMS
           @parse_method = :parse_platform
         elsif line == RUBY
@@ -227,6 +231,16 @@ module Bundler
       $                                                  # Line end
     /xo
 
+    NAME_VERSION_CONTENT_ADDRESS = /
+      ^#{space}{2}(?!#{space})                           # Exactly 2 spaces at the start of the line
+      (.*?)                                              # Name
+      #{space}\(([^-]*)                                  # Space, followed by version
+      -(.*)\)                                            # Platform, always present for content-addressable gems
+      #{space}([0-9a-f]{8,64})                           # Content address
+      (?:#{space}([^ ]+))?                               # Optional checksums
+      $                                                  # Line end
+    /xo
+
     def parse_dependency(line)
       return unless line =~ NAME_VERSION
       spaces = $1
@@ -268,7 +282,8 @@ module Bundler
 
       version = Gem::Version.new(version)
       platform = platform ? Gem::Platform.new(platform) : Gem::Platform::RUBY
-      full_name = Gem::NameTuple.new(name, version, platform).full_name
+      name_tuple = Gem::NameTuple.new(name, version, platform)
+      full_name = name_tuple.full_name
       spec = @specs[full_name]
 
       if name == "bundler"
@@ -280,10 +295,33 @@ module Bundler
         checksums.split(",") do |lock_checksum|
           column = line.index(lock_checksum) + 1
           checksum = Checksum.from_lock(lock_checksum, "#{@lockfile_path}:#{@pos.line}:#{column}")
-          spec.source.checksum_store.register(spec, checksum)
+          spec.source.checksum_store.register(name_tuple, checksum)
         end
       else
-        spec.source.checksum_store.register(spec, nil)
+        spec.source.checksum_store.register(name_tuple, nil)
+      end
+    end
+
+    def parse_content_address(line)
+      return unless line =~ NAME_VERSION_CONTENT_ADDRESS
+
+      name = -$1
+      version = Gem::Version.new($2)
+      platform = Gem::Platform.new($3)
+      content_address = $4
+      checksums = $5
+
+      spec = @specs[Gem::NameTuple.new(name, version, platform).full_name]
+      return unless spec
+
+      spec.content_address = content_address
+
+      return unless checksums
+
+      checksums.split(",") do |lock_checksum|
+        column = line.index(lock_checksum) + 1
+        checksum = Checksum.from_lock(lock_checksum, "#{@lockfile_path}:#{@pos.line}:#{column}")
+        spec.source.checksum_store.register(spec, checksum)
       end
     end
 

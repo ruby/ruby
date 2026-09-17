@@ -68,6 +68,30 @@ module ThreadBacktraceLocationSpecs
   def original_method = LABEL.call
   alias_method :aliased_method, :original_method
 
+  # [Bug #22197]: an alias in a subclass, and define_method with an UnboundMethod
+  # from another module, should report the module where the body was originally
+  # defined -- not the subclass/class where the copy was installed.
+  class AliasParent
+    def alias_original = LABEL.call
+  end
+  class AliasChild < AliasParent
+    alias_method :alias_in_subclass, :alias_original
+  end
+
+  module DefineMethodSource
+    def define_method_original = LABEL.call
+  end
+  class DefineMethodTarget
+    define_method(:defined_from_other_module, DefineMethodSource.instance_method(:define_method_original))
+  end
+  class DefineMethodSingletonTarget; end
+  class << DefineMethodSingletonTarget
+    define_method(:defined_on_singleton, DefineMethodSource.instance_method(:define_method_original))
+  end
+  class DefineMethodSameNameTarget
+    define_method(:define_method_original, DefineMethodSource.instance_method(:define_method_original))
+  end
+
   module M
     class C
       def regular_instance_method = LABEL.call

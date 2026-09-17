@@ -469,11 +469,11 @@ math_exp(VALUE unused_obj, VALUE x)
  *
  *  Examples:
  *
- *    expm1(-INFINITY) # => 0.0
+ *    expm1(-INFINITY) # => -1.0
  *    expm1(-1.0)      # => -0.6321205588285577 # 1.0/E - 1
  *    expm1(0.0)       # => 0.0
  *    expm1(0.5)       # => 0.6487212707001282  # sqrt(E) - 1
- *    expm1(1.0)       # => 1.718281828459045   # E - 1
+ *    expm1(1.0)       # => 1.7182818284590453  # E - 1
  *    expm1(2.0)       # => 6.38905609893065    # E**2 - 1
  *    expm1(INFINITY)  # => Infinity
  *

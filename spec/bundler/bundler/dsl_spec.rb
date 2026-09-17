@@ -370,6 +370,7 @@ RSpec.describe Bundler::Dsl do
   describe "#source with cooldown" do
     before do
       allow(@rubygems).to receive(:add_remote)
+      allow(@rubygems).to receive(:remote_cooldowns).and_return({})
     end
 
     it "accepts a non-negative integer" do

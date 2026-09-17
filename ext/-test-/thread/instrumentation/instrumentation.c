@@ -1,6 +1,7 @@
 #include "ruby/ruby.h"
 #include "ruby/atomic.h"
 #include "ruby/thread.h"
+#include "internal/gc.h"
 
 #ifndef RB_THREAD_LOCAL_SPECIFIER
 #  define RB_THREAD_LOCAL_SPECIFIER
@@ -19,9 +20,11 @@ static rb_atomic_t timeline_cursor;
 
 static void
 event_timeline_gc_mark(void *ptr) {
+    /* Hook sees every Ractor's threads; validate membership before marking. */
+    rb_atomic_t n = RUBY_ATOMIC_LOAD(timeline_cursor);
     rb_atomic_t cursor;
-    for (cursor = 0; cursor < timeline_cursor; cursor++) {
-        rb_gc_mark(event_timeline[cursor].thread);
+    for (cursor = 0; cursor < n; cursor++) {
+        rb_gc_mark_maybe(event_timeline[cursor].thread);
     }
 }
 
@@ -42,14 +45,12 @@ reset_timeline(void)
 static rb_event_flag_t
 find_last_event(VALUE thread)
 {
-    rb_atomic_t cursor = timeline_cursor;
-    if (cursor) {
-        do {
-            if (event_timeline[cursor].thread == thread){
-                return event_timeline[cursor].event;
-            }
-            cursor--;
-        } while (cursor > 0);
+    rb_atomic_t cursor = RUBY_ATOMIC_LOAD(timeline_cursor);
+    while (cursor > 0) {
+        cursor--;
+        if (event_timeline[cursor].thread == thread) {
+            return event_timeline[cursor].event;
+        }
     }
     return 0;
 }
@@ -166,6 +167,7 @@ event_symbol(rb_event_flag_t event)
     }
 }
 
+// NOTE: only safe when there's a single active Ractor
 static VALUE
 thread_unregister_callback(VALUE thread)
 {
@@ -174,11 +176,15 @@ thread_unregister_callback(VALUE thread)
         single_hook = NULL;
     }
 
-    VALUE events = rb_ary_new_capa(timeline_cursor);
+    rb_atomic_t n = RUBY_ATOMIC_LOAD(timeline_cursor);
+    VALUE events = rb_ary_new_capa(n);
     rb_atomic_t cursor;
-    for (cursor = 0; cursor < timeline_cursor; cursor++) {
+    for (cursor = 0; cursor < n; cursor++) {
+        VALUE th = event_timeline[cursor].thread;
+        /* Skip foreign-objspace threads: pushing them into this Array would violate containment. */
+        if (rb_objspace_foreign_object_p(th)) continue;
         VALUE pair = rb_ary_new_capa(2);
-        rb_ary_push(pair, event_timeline[cursor].thread);
+        rb_ary_push(pair, th);
         rb_ary_push(pair, event_symbol(event_timeline[cursor].event));
         rb_ary_push(events, pair);
     }

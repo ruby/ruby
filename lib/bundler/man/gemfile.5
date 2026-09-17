@@ -107,6 +107,8 @@ gem "nokogiri", ">= 1\.4\.2"
 gem "RedCloth", ">= 4\.1\.0", "< 4\.2\.0"
 .fi
 .IP "" 0
+.P
+Most version specifiers, like \fB>= 1\.0\fR, are self\-explanatory\. The pessimistic specifier \fB~>\fR constrains both a lower and an upper bound: \fB~> 2\.0\.3\fR is identical to \fB>= 2\.0\.3\fR and \fB< 2\.1\fR, and \fB~> 2\.1\fR is identical to \fB>= 2\.1\fR and \fB< 3\.0\fR\. A pessimistic specifier with a prerelease component, like \fB~> 2\.2\.beta\fR, will match prerelease versions like \fB2\.2\.beta\.12\fR\. \fB~> 0\fR is identical to \fB>= 0\.0\fR and \fB< 1\.0\fR\.
 .SS "REQUIRE AS"
 Each \fIgem\fR \fBMAY\fR specify files that should be used when autorequiring via \fBBundler\.require\fR\. You may pass an array with multiple files or \fBtrue\fR if the file you want \fBrequired\fR has the same name as \fIgem\fR or \fBfalse\fR to prevent any file from being autorequired\.
 .IP "" 4
@@ -164,7 +166,7 @@ bundle config set \-\-local without development test
 .P
 Also, calling \fBBundler\.setup\fR with no parameters, or calling \fBrequire "bundler/setup"\fR will setup all groups except for the ones you excluded via \fB\-\-without\fR (since they are not available)\.
 .P
-Note that on \fBbundle install\fR, bundler downloads and evaluates all gems, in order to create a single canonical list of all of the required gems and their dependencies\. This means that you cannot list different versions of the same gems in different groups\. For more details, see Understanding Bundler \fIhttps://bundler\.io/rationale\.html\fR\.
+Note that on \fBbundle install\fR, bundler downloads and evaluates all gems, in order to create a single canonical list of all of the required gems and their dependencies\. This means that you cannot list different versions of the same gems in different groups\. For more details, see Dependency management \fIhttps://guides\.rubygems\.org/dependency_management/\fR\.
 .SS "PLATFORMS"
 If a gem should only be used in a particular platform or set of platforms, you can specify them\. Platforms are essentially identical to groups, except that you do not need to use the \fB\-\-without\fR install\-time flag to exclude groups of gems for other platforms\.
 .P
@@ -390,7 +392,7 @@ gem "rails", git: "https://rails@bitbucket\.org/rails/rails\.git"
 .P
 Since the \fBbitbucket\fR method is a specialization of \fBgit_source\fR, it accepts a \fB:branch\fR named argument\.
 .SS "PATH"
-You can specify that a gem is located in a particular location on the file system\. Relative paths are resolved relative to the directory containing the \fBGemfile\fR\.
+You can specify that a gem is located in a particular location on the file system\. Relative paths are resolved relative to the directory containing the \fBGemfile\fR\. The path must point to a directory containing the gem's unpacked source code, not to a packaged \fB\.gem\fR file\.
 .P
 Similar to the semantics of the \fB:git\fR option, the \fB:path\fR option requires that the directory in question either contains a \fB\.gemspec\fR for the gem, or that you specify an explicit version that bundler should use\.
 .P
@@ -460,6 +462,15 @@ The \fBgemspec\fR method adds any runtime dependencies as gem requirements in th
 The \fBgemspec\fR method supports optional \fB:path\fR, \fB:glob\fR, \fB:name\fR, and \fB:development_group\fR options, which control where bundler looks for the \fB\.gemspec\fR, the glob it uses to look for the gemspec (defaults to: \fB{,*,*/*}\.gemspec\fR), what named \fB\.gemspec\fR it uses (if more than one is present), and which group development dependencies are included in\.
 .P
 When a \fBgemspec\fR dependency encounters version conflicts during resolution, the local version under development will always be selected \-\- even if there are remote versions that better match other requirements for the \fBgemspec\fR gem\.
+.SH "EVAL_GEMFILE"
+A Gemfile \fBMAY\fR be split across multiple files\. The \fBeval_gemfile\fR method reads the contents of another file as if they appeared in the current Gemfile\. A relative path is resolved against the directory of the file containing the call\.
+.IP "" 4
+.nf
+eval_gemfile "another\.gemfile"
+.fi
+.IP "" 0
+.P
+This can be useful to run tests against multiple combinations of dependencies, or to load per\-developer gems from an untracked gemfile\.
 .SH "OVERRIDE"
 The \fBoverride\fR directive rewrites a constraint on another gem before resolution runs\. It targets the common case where an upstream gem's published metadata is too narrow on the current project's machine \-\- a stale upper bound, an unwanted floor, or a transitive pin that has to be lifted\.
 .IP "" 4

@@ -2,8 +2,16 @@
 
 require_relative '../../../spec_helper'
 require_relative 'fixtures/classes'
+require_relative '../../enumerable/shared/value_packing'
 
 describe "Enumerator::Lazy#drop" do
+  describe "value packing of source yields (matches Enumerable#drop)" do
+    before :each do
+      @take = -> e { e.lazy.drop(0) }
+    end
+    it_behaves_like :enumerable_value_packing, nil
+  end
+
   before :each do
     @yieldsmixed = EnumeratorLazySpecs::YieldsMixed.new.to_enum.lazy
     @eventsmixed = EnumeratorLazySpecs::EventsMixed.new.to_enum.lazy
@@ -31,6 +39,14 @@ describe "Enumerator::Lazy#drop" do
 
       @eventsmixed.drop(0).first(1)
       ScratchPad.recorded.should == [:before_yield]
+    end
+  end
+
+  describe "when the returned lazy enumerator is evaluated by .force" do
+    it "return same value when called twice" do
+      lazy = [0, 1].lazy.drop(1)
+      lazy.force.should == [1]
+      lazy.force.should == [1]
     end
   end
 

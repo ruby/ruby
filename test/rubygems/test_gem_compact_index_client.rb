@@ -43,6 +43,15 @@ class TestGemCompactIndexClient < Gem::TestCase
     @client = Gem::CompactIndexClient.new(File.join(@tempdir, "compact_index"), @fetcher)
   end
 
+  def test_info_platform_is_a_deprecated_alias_of_info_suffix
+    deprecated = Warning[:deprecated]
+    Warning[:deprecated] = false
+
+    assert_equal Gem::CompactIndexClient::INFO_SUFFIX, Gem::CompactIndexClient::INFO_PLATFORM
+  ensure
+    Warning[:deprecated] = deprecated
+  end
+
   def test_names
     assert_equal %w[a b], @client.names
   end
@@ -60,7 +69,7 @@ class TestGemCompactIndexClient < Gem::TestCase
     assert_equal 2, info.size
     assert_equal "a", info.last[Gem::CompactIndexClient::INFO_NAME]
     assert_equal "1.1.0", info.last[Gem::CompactIndexClient::INFO_VERSION]
-    assert_nil info.last[Gem::CompactIndexClient::INFO_PLATFORM]
+    assert_nil info.last[Gem::CompactIndexClient::INFO_SUFFIX]
     assert_includes info.last[Gem::CompactIndexClient::INFO_REQS], ["created_at", ["2026-06-05T10:30:45Z"]]
   end
 
@@ -69,7 +78,7 @@ class TestGemCompactIndexClient < Gem::TestCase
 
     assert_equal 2, dependencies.size
     assert_equal "b", dependencies.last.first[Gem::CompactIndexClient::INFO_NAME]
-    assert_equal "java", dependencies.last.first[Gem::CompactIndexClient::INFO_PLATFORM]
+    assert_equal "java", dependencies.last.first[Gem::CompactIndexClient::INFO_SUFFIX]
   end
 
   def test_latest_version
@@ -107,6 +116,23 @@ class TestGemCompactIndexClient < Gem::TestCase
     @client.versions
 
     assert_equal %w[versions versions], @fetcher.requests
+  end
+
+  def test_filesystem_access_hook_wraps_reads_and_writes
+    accesses = []
+    Gem::CompactIndexClient.filesystem_access = lambda do |path, action, &block|
+      accesses << [path.basename.to_s, action]
+      block.call(path)
+    end
+
+    client = Gem::CompactIndexClient.new(File.join(@tempdir, "hooked_index"), @fetcher)
+    client.versions
+
+    assert_includes accesses, ["info", :write]
+    assert_includes accesses, ["versions", :write]
+    assert_includes accesses, ["versions", :read]
+  ensure
+    Gem::CompactIndexClient.filesystem_access = nil
   end
 
   def test_info_uses_local_cache_when_checksum_matches

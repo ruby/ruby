@@ -29,6 +29,9 @@ int Init_enc_set_filesystem_encoding(void);
 /* newline.c */
 void Init_newline(void);
 
+/* shape.c */
+void Init_default_shapes(void);
+
 /* vm.c */
 void Init_BareVM(void);
 void Init_vm_objects(void);

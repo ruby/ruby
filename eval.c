@@ -20,7 +20,7 @@
 #include "eval_intern.h"
 #include "internal.h"
 #include "internal/class.h"
-#include "internal/cont.h"
+#include "internal/jit.h"
 #include "internal/error.h"
 #include "internal/eval.h"
 #include "internal/gc.h"
@@ -30,6 +30,7 @@
 #include "internal/object.h"
 #include "internal/thread.h"
 #include "internal/variable.h"
+#include "internal/vm.h"
 #include "ruby/fiber/scheduler.h"
 #include "iseq.h"
 #include "probes.h"
@@ -77,7 +78,11 @@ ruby_setup(void)
 #if defined(__linux__) && defined(PR_SET_THP_DISABLE)
     prctl(PR_SET_THP_DISABLE, 1, 0, 0, 0);
 #endif
+#if defined(_WIN32)
+    rb_w32_init_long_paths();
+#endif
     Init_BareVM();
+    Init_default_shapes();
     rb_vm_encoded_insn_data_table_init();
     Init_enable_box();
     Init_vm_objects();
@@ -452,6 +457,7 @@ rb_class_modify_check(VALUE klass)
         }
         rb_error_frozen_object(klass);
     }
+    rb_class_owner_check(klass);
 }
 
 NORETURN(static void rb_longjmp(rb_execution_context_t *, enum ruby_tag_type, volatile VALUE, VALUE));
@@ -1067,12 +1073,14 @@ rb_rescue2(VALUE (* b_proc) (VALUE), VALUE data1,
 
 VALUE
 rb_vrescue2(VALUE (* b_proc) (VALUE), VALUE data1,
-            VALUE (* r_proc) (VALUE, VALUE), VALUE data2,
+            VALUE (* r_proc_arg) (VALUE, VALUE), VALUE data2_arg,
             va_list args)
 {
     enum ruby_tag_type state;
     rb_execution_context_t * volatile ec = GET_EC();
     rb_control_frame_t *volatile cfp = ec->cfp;
+    VALUE (* volatile r_proc)(VALUE, VALUE) = r_proc_arg;
+    volatile VALUE data2 = data2_arg;
     volatile VALUE result = Qfalse;
     volatile VALUE e_info = ec->errinfo;
 
@@ -1134,12 +1142,13 @@ rb_rescue(VALUE (* b_proc)(VALUE), VALUE data1,
 }
 
 VALUE
-rb_protect(VALUE (* proc) (VALUE), VALUE data, int *pstate)
+rb_protect(VALUE (* proc) (VALUE), VALUE data, int *pstate_arg)
 {
     volatile VALUE result = Qnil;
     volatile enum ruby_tag_type state;
     rb_execution_context_t * volatile ec = GET_EC();
     rb_control_frame_t *volatile cfp = ec->cfp;
+    int * volatile pstate = pstate_arg;
 
     EC_PUSH_TAG(ec);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
@@ -1155,9 +1164,12 @@ rb_protect(VALUE (* proc) (VALUE), VALUE data, int *pstate)
 }
 
 VALUE
-rb_ec_ensure(rb_execution_context_t *ec, VALUE (*b_proc)(VALUE), VALUE data1, VALUE (*e_proc)(VALUE), VALUE data2)
+rb_ec_ensure(rb_execution_context_t *ec_arg, VALUE (*b_proc)(VALUE), VALUE data1, VALUE (*e_proc_arg)(VALUE), VALUE data2_arg)
 {
     enum ruby_tag_type state;
+    rb_execution_context_t * volatile ec = ec_arg;
+    VALUE (* volatile e_proc)(VALUE) = e_proc_arg;
+    volatile VALUE data2 = data2_arg;
     volatile VALUE result = Qnil;
     VALUE errinfo;
     EC_PUSH_TAG(ec);
@@ -1319,8 +1331,8 @@ rb_mod_include(int argc, VALUE *argv, VALUE module)
         }
     }
     while (argc--) {
-        rb_funcall(argv[argc], id_append_features, 1, module);
-        rb_funcall(argv[argc], id_included, 1, module);
+        rb_funcallv_uncached(argv[argc], id_append_features, 1, &module);
+        rb_funcallv_uncached(argv[argc], id_included, 1, &module);
     }
     return module;
 }
@@ -1376,8 +1388,8 @@ rb_mod_prepend(int argc, VALUE *argv, VALUE module)
         }
     }
     while (argc--) {
-        rb_funcall(argv[argc], id_prepend_features, 1, module);
-        rb_funcall(argv[argc], id_prepended, 1, module);
+        rb_funcallv_uncached(argv[argc], id_prepend_features, 1, &module);
+        rb_funcallv_uncached(argv[argc], id_prepended, 1, &module);
     }
     return module;
 }
@@ -1625,6 +1637,11 @@ rb_mod_refine(VALUE module, VALUE klass)
     }
 
     ensure_class_or_module(klass);
+
+    // refine installs refined method entries into the target's method table, and
+    // rb_refinement_setup writes the refinement tables into the receiver
+    rb_class_owner_check(module);
+    rb_class_owner_check(klass);
 
     rb_refinement_setup(&data, module, klass);
 
@@ -1972,8 +1989,8 @@ rb_obj_extend(int argc, VALUE *argv, VALUE obj)
         }
     }
     while (argc--) {
-        rb_funcall(argv[argc], id_extend_object, 1, obj);
-        rb_funcall(argv[argc], id_extended, 1, obj);
+        rb_funcallv_uncached(argv[argc], id_extend_object, 1, &obj);
+        rb_funcallv_uncached(argv[argc], id_extended, 1, &obj);
     }
     return obj;
 }

@@ -100,6 +100,7 @@ fn profile_insn_sample(
             let argc = num_arguments_on_stack(cd);
             // Profile all the arguments and self (+1).
             profile_operands(profiler, profile, argc + 1);
+            profile_splat_length(profiler, profile, unsafe { (*cd).ci });
         }
         YARVINSN_splatkw => profile_operands(profiler, profile, 2),
         _ => return false,
@@ -122,36 +123,15 @@ fn profile_insn(bare_opcode: ruby_vminsn_type, ec: EcPtr) {
     }
 }
 
-/// Profile the instruction at the current CFP for a recompile side exit.
-pub fn profile_recompile_insn(ec: EcPtr) -> bool {
-    let profiler = &mut Profiler::new(ec);
-    let pc = unsafe { get_cfp_pc(profiler.cfp) };
-    let bare_opcode = unsafe {
-        rb_zjit_insn_to_bare_insn(rb_iseq_opcode_at_pc(profiler.iseq, pc))
-    } as ruby_vminsn_type;
-    let profile = &mut get_or_create_iseq_payload(profiler.iseq).profile;
-
-    let is_send = matches!(bare_opcode, YARVINSN_send | YARVINSN_opt_send_without_block);
-    // For now, send recompile exits only fill in missing profiles. Once the send site
-    // has finished profiling, don't recompile it on later exits.
-    if is_send && profile.done_profiling_at(profiler.insn_idx) {
-        return false;
+/// Reset existing profile counters and install profiling instructions throughout an ISEQ.
+/// Newly reached instructions initialize their counters from the same option.
+pub(crate) fn reset_profiles_remaining(iseq: IseqPtr) {
+    let profile = &mut get_or_create_iseq_payload(iseq).profile;
+    let num_profiles = get_option!(num_profiles);
+    for entry in &mut profile.entries {
+        entry.profiles_remaining = num_profiles;
     }
-    // For now, non-send recompile exits reset the profiling counter before requesting recompilation
-    // so that we can collect enough samples.
-    if !is_send && profile.done_profiling_at(profiler.insn_idx) {
-        profile.entry_mut(profiler.insn_idx)
-            .set_profiles_remaining(get_option!(num_profiles));
-    }
-
-    // If this opcode can't be sampled here, this exit has no profile data to collect.
-    if !profile_insn_sample(bare_opcode, profiler, profile) {
-        return false;
-    }
-
-    let entry = profile.entry_mut(profiler.insn_idx);
-    entry.profiles_remaining = entry.profiles_remaining.saturating_sub(1);
-    entry.profiles_remaining == 0
+    unsafe { rb_zjit_profile_enable(iseq) };
 }
 
 /// Return the argc as stated in the calldata plus:
@@ -163,11 +143,19 @@ pub fn num_arguments_on_stack(cd: *const rb_call_data) -> usize {
     (unsafe { vm_ci_argc(ci) }) as usize + has_blockarg as usize
 }
 
-const DISTRIBUTION_SIZE: usize = 4;
+pub const DISTRIBUTION_SIZE: usize = 8;
 
 pub type TypeDistribution = Distribution<ProfiledType, DISTRIBUTION_SIZE>;
 
 pub type TypeDistributionSummary = DistributionSummary<ProfiledType, DISTRIBUTION_SIZE>;
+
+pub type SplatLength = u32;
+
+/// `None` records an unknown length so this distribution covers the same
+/// executions as the operand type profile.
+pub type SplatLengthDistribution = Distribution<Option<SplatLength>, DISTRIBUTION_SIZE>;
+
+pub type SplatLengthDistributionSummary = DistributionSummary<Option<SplatLength>, DISTRIBUTION_SIZE>;
 
 /// Profile the Type of top-`n` stack operands
 fn profile_operands(profiler: &mut Profiler, profile: &mut IseqProfile, n: usize) {
@@ -184,6 +172,30 @@ fn profile_operands(profiler: &mut Profiler, profile: &mut IseqProfile, n: usize
         VALUE::from(profiler.iseq).write_barrier(ty.class());
         profile_type.observe(ty);
     }
+}
+
+fn profile_splat_length(profiler: &mut Profiler, profile: &mut IseqProfile, ci: *const rb_callinfo) {
+    let flags = unsafe { rb_vm_ci_flag(ci) };
+    // Only call sites with VM_CALL_ARGS_SPLAT have a splat array on the stack.
+    if flags & VM_CALL_ARGS_SPLAT == 0 {
+        return;
+    }
+
+    let kwarg = unsafe { rb_vm_ci_kwarg(ci) };
+    let caller_kw_count = if kwarg.is_null() { 0 } else { (unsafe { get_cikw_keyword_len(kwarg) }) as usize };
+    // Starting at the top of the stack, skip the block argument, keyword-splat
+    // hash, and explicit keyword values to reach the splat array.
+    let splat_pos = usize::from(flags & VM_CALL_ARGS_BLOCKARG != 0)
+        + usize::from(flags & VM_CALL_KW_SPLAT != 0)
+        + caller_kw_count;
+    let splat_array = profiler.peek_at_stack(splat_pos as isize);
+    let length = if unsafe { RB_TYPE_P(splat_array, RUBY_T_ARRAY) } {
+        SplatLength::try_from(unsafe { rb_jit_array_len(splat_array) }).ok()
+    } else {
+        None
+    };
+    profile.splat_lengths.entry(profiler.insn_idx)
+        .or_insert_with(SplatLengthDistribution::new).observe(length);
 }
 
 fn profile_self(profiler: &mut Profiler, profile: &mut IseqProfile) {
@@ -240,6 +252,7 @@ fn profile_invokesuper(profiler: &mut Profiler, profile: &mut IseqProfile) {
 
     // Profile all the arguments and self (+1).
     profile_operands(profiler, profile, (argc + 1) as usize);
+    profile_splat_length(profiler, profile, unsafe { (*cd).ci });
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -301,38 +314,16 @@ impl ProfiledType {
 
     /// Profile the class and shape of the given object
     fn new(obj: VALUE) -> Self {
-        if obj == Qfalse {
-            return Self { class: unsafe { rb_cFalseClass },
-                          shape: INVALID_SHAPE_ID,
-                          flags: Flags::immediate() };
-        }
-        if obj == Qtrue {
-            return Self { class: unsafe { rb_cTrueClass },
-                          shape: INVALID_SHAPE_ID,
-                          flags: Flags::immediate() };
-        }
-        if obj == Qnil {
-            return Self { class: unsafe { rb_cNilClass },
-                          shape: INVALID_SHAPE_ID,
-                          flags: Flags::immediate() };
-        }
-        if obj.fixnum_p() {
-            return Self { class: unsafe { rb_cInteger },
-                          shape: INVALID_SHAPE_ID,
-                          flags: Flags::immediate() };
-        }
-        if obj.flonum_p() {
-            return Self { class: unsafe { rb_cFloat },
-                          shape: INVALID_SHAPE_ID,
-                          flags: Flags::immediate() };
-        }
-        if obj.static_sym_p() {
-            return Self { class: unsafe { rb_cSymbol },
+        // Qundef must never escape the VM internals; rb_class_of(Qundef) is undefined
+        debug_assert_ne!(obj, Qundef, "should not profile Qundef");
+        if obj.special_const_p() {
+            return Self { class: obj.class_of(),
                           shape: INVALID_SHAPE_ID,
                           flags: Flags::immediate() };
         }
         let mut flags = Flags::none();
-        if obj.shape_id_of().layout() == ShapeLayout::RObject {
+        let shape = obj.shape_id_of();
+        if shape.layout() == ShapeLayout::RObject {
             flags.0 |= Flags::IS_EMBEDDED;
         }
         if obj.struct_embedded_p() {
@@ -341,7 +332,7 @@ impl ProfiledType {
         if unsafe { RB_TYPE_P(obj, RUBY_T_OBJECT) } {
             flags.0 |= Flags::IS_T_OBJECT;
         }
-        Self { class: obj.class_of(), shape: obj.shape_id_of(), flags }
+        Self { class: obj.class_of(), shape, flags }
     }
 
     pub fn empty() -> Self {
@@ -417,12 +408,6 @@ pub struct ProfileEntry {
     profiles_remaining: NumProfiles,
 }
 
-impl ProfileEntry {
-    pub fn set_profiles_remaining(&mut self, num_profiles: NumProfiles) {
-        self.profiles_remaining = num_profiles;
-    }
-}
-
 #[derive(Debug)]
 pub struct IseqProfile {
     /// Sparse storage of per-instruction profile data, sorted by instruction index.
@@ -430,7 +415,10 @@ pub struct IseqProfile {
     entries: Vec<ProfileEntry>,
 
     /// Method entries for `super` calls (stored as VALUE to be GC-safe)
-    super_cme: HashMap<YarvInsnIdx, TypeDistribution>
+    super_cme: HashMap<YarvInsnIdx, TypeDistribution>,
+
+    /// Observed lengths of caller splat arrays for call instructions.
+    splat_lengths: HashMap<YarvInsnIdx, SplatLengthDistribution>,
 }
 
 impl IseqProfile {
@@ -438,6 +426,7 @@ impl IseqProfile {
         Self {
             entries: Vec::new(),
             super_cme: HashMap::new(),
+            splat_lengths: HashMap::new(),
         }
     }
 
@@ -464,14 +453,14 @@ impl IseqProfile {
             .ok().map(|i| &self.entries[i])
     }
 
-    /// Check if enough profiles have been gathered for this instruction.
-    pub fn done_profiling_at(&self, insn_idx: YarvInsnIdx) -> bool {
-        self.entry(insn_idx).map_or(false, |e| e.profiles_remaining == 0)
-    }
-
     /// Get profiled operand types for a given instruction index
     pub fn get_operand_types(&self, insn_idx: YarvInsnIdx) -> Option<&[TypeDistribution]> {
         self.entry(insn_idx).map(|e| e.opnd_types.as_slice()).filter(|s| !s.is_empty())
+    }
+
+    pub fn get_splat_length_summary(&self, insn_idx: YarvInsnIdx) -> Option<SplatLengthDistributionSummary> {
+        self.splat_lengths.get(&insn_idx)
+            .map(SplatLengthDistributionSummary::new)
     }
 
     pub fn get_super_method_entry(&self, insn_idx: YarvInsnIdx) -> Option<*const rb_callable_method_entry_t> {

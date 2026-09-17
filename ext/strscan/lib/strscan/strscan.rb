@@ -3,7 +3,8 @@
 class StringScanner
   unless method_defined?(:integer_at) # For JRuby
     def integer_at(specifier, *to_i_args)
-      self[specifier]&.to_i(*to_i_args)
+      value = self[specifier]
+      value.to_i(*to_i_args) unless value.nil? || value.empty?
     end
   end
 

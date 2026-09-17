@@ -91,4 +91,10 @@ describe "File.absolute_path" do
   it "calls #to_path on its argument" do
     File.absolute_path(mock_to_path(@abs)).should == @abs
   end
+
+  it "preserves the encoding of the path" do
+    path = "foo/bar".encode(Encoding::EUC_JP)
+    File.absolute_path(path).encoding.should == Encoding::EUC_JP
+    File.absolute_path(path, "dir".encode(Encoding::EUC_JP)).encoding.should == Encoding::EUC_JP
+  end
 end

@@ -1,4 +1,4 @@
-require_relative '../../proc/fixtures/source_range_helpers'
+require_relative '../../../fixtures/source_range_helpers'
 
 describe :method_source_range, shared: true do
   it "sets absolute_path to the real path of the source file" do
@@ -129,5 +129,10 @@ describe :method_source_range, shared: true do
     range = method.source_range
 
     range.start_line.should == 100
+  end
+
+  it "returns nil if the method is not defined in Ruby" do
+    method = @object.call(42.method(:__id__))
+    method.source_range.should == nil
   end
 end

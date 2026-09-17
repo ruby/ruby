@@ -326,29 +326,36 @@ class Gem::Specification < Gem::BasicSpecification
   ##
   # The license for this gem.
   #
-  # The license must be no more than 64 characters.
-  #
-  # This should just be the name of your license. The full text of the license
-  # should be inside of the gem (at the top level) when you build it.
-  #
-  # The simplest way is to specify the standard SPDX ID
-  # https://spdx.org/licenses/ for the license.
+  # The license must be no more than 64 characters, and should be a single
+  # SPDX license identifier from https://spdx.org/licenses/.
   # Ideally, you should pick one that is OSI (Open Source Initiative)
   # https://opensource.org/licenses/ approved.
   #
   # The most commonly used OSI-approved licenses are MIT and Apache-2.0.
   # GitHub also provides a license picker at https://choosealicense.com/.
   #
-  # You can also use a custom license file along with your gemspec and specify
-  # a LicenseRef-<idstring>, where idstring is the name of the file containing
+  # The full text of the license should be inside of the gem (at the top
+  # level) when you build it.
+  #
+  # RubyGems validates the license against the SPDX license list when you
+  # run <tt>gem build</tt> and warns about unknown or deprecated identifiers.
+  # An identifier may carry a trailing <tt>+</tt> (this version or any later
+  # version) and a license exception joined with WITH, for example
+  # <tt>Apache-2.0 WITH LLVM-exception</tt>.
+  #
+  # Compound SPDX license expressions such as <tt>MIT OR Apache-2.0</tt> are
+  # not currently supported. RubyGems treats the whole string as a single
+  # identifier and warns that it is invalid. For a gem available under more
+  # than one license, set each license as a separate entry with #licenses=.
+  #
+  # For a license that has no SPDX identifier, use Nonstandard, or
+  # LicenseRef-<idstring> where idstring is the name of the file containing
   # the license text.
   #
   # You should specify a license for your gem so that people know how they are
   # permitted to use it and any restrictions you're placing on it.  Not
   # specifying a license means all rights are reserved; others have no right
   # to use the code for any purpose.
-  #
-  # You can set multiple licenses with #licenses=
   #
   # Usage:
   #   spec.license = 'MIT'
@@ -360,15 +367,20 @@ class Gem::Specification < Gem::BasicSpecification
   ##
   # The license(s) for the library.
   #
-  # Each license must be a short name, no more than 64 characters.
+  # Each entry must be a single SPDX license identifier, no more than 64
+  # characters. Entries are validated independently, so a compound expression
+  # such as <tt>MIT OR Apache-2.0</tt> is not valid as an entry. Listing the
+  # identifiers as separate array elements is currently the only way RubyGems
+  # supports declaring a dual- or multi-licensed gem.
   #
-  # This should just be the name of your license. The full
-  # text of the license should be inside of the gem when you build it.
+  # Note that the array itself does not state how the licenses combine.
+  # Include the full text of each license in the gem and describe the exact
+  # terms there.
   #
   # See #license= for more discussion
   #
   # Usage:
-  #   spec.licenses = ['MIT', 'GPL-2.0']
+  #   spec.licenses = ['MIT', 'GPL-2.0-only']
 
   def licenses=(licenses)
     @licenses = Array licenses
@@ -406,6 +418,13 @@ class Gem::Specification < Gem::BasicSpecification
   #   %r{\Ahttps?:\/\/([^\s:@]+:[^\s:@]*@)?[A-Za-z\d\-]+(\.[A-Za-z\d\-]+)+\.?(:\d{1,5})?([\/?]\S*)?\z}
 
   attr_accessor :metadata
+
+  ##
+  # The content address of this gem, a SHA-256 prefix of the gem file
+  # contents used in place of the platform in file and install names
+  # (e.g. "example-1.0-78be552b"), or +nil+ for non-content-addressable gems.
+
+  attr_accessor :content_address
 
   ######################################################################
   # :section: Optional gemspec attributes
@@ -554,6 +573,15 @@ class Gem::Specification < Gem::BasicSpecification
     end
 
     add_dependency_with_type(gem, :runtime, requirements)
+  end
+
+  ##
+  # Ruby ABI of the gem derived from required_ruby_version
+  # Only supports required_ruby_version in "~> X.Y.0" format (single pessimistic requirement with 3 segments)
+  # Returns nil if the required_ruby_version does not specify a single Ruby ABI
+
+  def ruby_abi
+    Gem::ContentAddress.ruby_abi_for(required_ruby_version)
   end
 
   ##
@@ -1227,6 +1255,8 @@ class Gem::Specification < Gem::BasicSpecification
       end
 
       unresolved_deps.clear
+      # find_all_by_name above memoized the record, which would outlive dirs= and ignore its new dirs
+      @specification_record = nil
     end
     Gem.post_reset_hooks.each(&:call)
   end
@@ -1235,7 +1265,9 @@ class Gem::Specification < Gem::BasicSpecification
   # Keeps track of all currently known specifications
 
   def self.specification_record
-    @specification_record ||= Gem::SpecificationRecord.new(dirs)
+    @specification_record ||= Gem::SpecificationRecord.new(
+      Gem::SpecificationRecord.dirs_with_abi(dirs)
+    )
   end
 
   # DOC: This method needs documented or nodoc'd
@@ -1342,7 +1374,8 @@ class Gem::Specification < Gem::BasicSpecification
     self.class === other &&
       name == other.name &&
       version == other.version &&
-      platform == other.platform
+      platform == other.platform &&
+      content_address == other.content_address
   end
 
   ##
@@ -1913,7 +1946,7 @@ class Gem::Specification < Gem::BasicSpecification
   # :startdoc:
 
   def hash # :nodoc:
-    name.hash ^ version.hash
+    [name, version, platform, content_address].hash
   end
 
   def init_with(coder) # :nodoc:
@@ -1949,6 +1982,7 @@ class Gem::Specification < Gem::BasicSpecification
     @loaded_from = nil
     @original_platform = nil
     @installed_by_version = nil
+    @content_address = nil
 
     set_nil_attributes_to_nil
     set_not_nil_attributes_to_default_values
@@ -1996,12 +2030,18 @@ class Gem::Specification < Gem::BasicSpecification
 
   def base_dir
     return Gem.dir unless loaded_from
-    @base_dir ||= if default_gem?
+    @base_dir ||= if default_gem? || loaded_from_abi_scoped_spec_dir?
       File.dirname File.dirname File.dirname loaded_from
     else
       File.dirname File.dirname loaded_from
     end
   end
+
+  def loaded_from_abi_scoped_spec_dir?
+    !loaded_from.nil? &&
+      Gem::SpecificationRecord.abi_scoped_spec_dir?(File.dirname(loaded_from))
+  end
+  private :loaded_from_abi_scoped_spec_dir?
 
   def inspect # :nodoc:
     if $DEBUG
@@ -2102,7 +2142,7 @@ class Gem::Specification < Gem::BasicSpecification
   # Return a NameTuple that represents this Specification
 
   def name_tuple
-    Gem::NameTuple.new name, version, original_platform
+    Gem::NameTuple.new name, version, original_platform, content_address: content_address
   end
 
   ##
@@ -2269,7 +2309,8 @@ class Gem::Specification < Gem::BasicSpecification
   # True if this gem has the same attributes as +other+.
 
   def same_attributes?(spec)
-    @@attributes.all? {|name, _default| send(name) == spec.send(name) }
+    @@attributes.all? {|name, _default| send(name) == spec.send(name) } &&
+      content_address == spec.content_address
   end
 
   private :same_attributes?
@@ -2297,11 +2338,14 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   ##
-  # Returns the full path to the directory containing this spec's
-  # gemspec file. eg: /usr/local/lib/ruby/gems/1.8/specifications
-
+  # Full path to the directory containing this spec's gemspec file.
+  # ABI-scoped for content-addressed specs.
   def spec_dir
-    @spec_dir ||= File.join base_dir, "specifications"
+    @spec_dir ||= if loaded_from && Gem::ContentAddress.content_addressed?(self)
+      File.dirname loaded_from
+    else
+      Gem::SpecificationRecord.specification_dir_for(self, base_dir)
+    end
   end
 
   ##
@@ -2368,11 +2412,14 @@ class Gem::Specification < Gem::BasicSpecification
   # still have their default values are omitted.
 
   def to_ruby
+    content_addressed = Gem::ContentAddress.content_addressed?(self)
+    gem_suffix = content_addressed ? content_address : platform
     result = []
     result << "# -*- encoding: utf-8 -*-"
-    result << "#{Gem::StubSpecification::PREFIX}#{name} #{version} #{platform} #{raw_require_paths.join("\0")}"
+    result << "#{Gem::StubSpecification::PREFIX}#{name} #{version} #{gem_suffix} #{raw_require_paths.join("\0")}"
     result << "#{Gem::StubSpecification::PREFIX}#{extensions.join "\0"}" unless
       extensions.empty?
+    result << "#{Gem::StubSpecification::TARGET_PREFIX}platform=#{platform}" if content_addressed
     result << nil
     result << "Gem::Specification.new do |s|"
 
@@ -2381,6 +2428,7 @@ class Gem::Specification < Gem::BasicSpecification
     unless platform.nil? || platform == Gem::Platform::RUBY
       result << "  s.platform = #{ruby_code original_platform}"
     end
+    result << "  s.content_address = #{ruby_code content_address} if s.respond_to? :content_address=" if content_addressed
     result << ""
     result << "  s.required_rubygems_version = #{ruby_code required_rubygems_version} if s.respond_to? :required_rubygems_version="
 

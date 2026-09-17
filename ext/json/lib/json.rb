@@ -44,13 +44,13 @@ require 'json/common'
 #
 # You can parse a \String containing \JSON data using
 # either of two methods:
-# - <tt>JSON.parse(source, opts)</tt>
-# - <tt>JSON.parse!(source, opts)</tt>
+# - <tt>JSON.parse(source, **opts)</tt>
+# - <tt>JSON.parse!(source, **opts)</tt>
 #
 # where
 # - +source+ is a Ruby object.
-# - +opts+ is a \Hash object containing options
-#   that control both input allowed and output formatting.
+# - +opts+ are keyword arguments that control both input
+#   allowed and output formatting.
 #
 # The difference between the two methods
 # is that JSON.parse! omits some checks
@@ -102,7 +102,7 @@ require 'json/common'
 #   ruby # => 1.0
 #   ruby.class # => Float
 #   ruby = JSON.parse('2.0e2')
-#   ruby # => 200
+#   ruby # => 200.0
 #   ruby.class # => Float
 # Boolean:
 #   ruby = JSON.parse('true')
@@ -121,36 +121,32 @@ require 'json/common'
 # ====== Input Options
 #
 # Option +max_nesting+ (\Integer) specifies the maximum nesting depth allowed;
-# defaults to +100+; specify +false+ to disable depth checking.
+# defaults to +100+;
+# You can set it to +false+ to disable depth checking entirely, but that is dangerous
+# when parsing untrusted input.
 #
-# With the default, +false+:
+# With the default, +100+:
 #   source = '[0, [1, [2, [3]]]]'
 #   ruby = JSON.parse(source)
 #   ruby # => [0, [1, [2, [3]]]]
 # Too deep:
 #   # Raises JSON::NestingError (nesting of 2 is too deep):
-#   JSON.parse(source, {max_nesting: 1})
+#   JSON.parse(source, max_nesting: 1)
 # Bad value:
-#   # Raises TypeError (wrong argument type Symbol (expected Fixnum)):
-#   JSON.parse(source, {max_nesting: :foo})
+#   # Raises TypeError (no implicit conversion of Symbol into Integer):
+#   JSON.parse(source, max_nesting: :foo)
 #
 # ---
 #
 # Option +allow_duplicate_key+ specifies whether duplicate keys in objects
 # should be ignored or cause an error to be raised:
 #
-# When not specified:
-#   # The last value is used and a deprecation warning emitted.
-#   JSON.parse('{"a": 1, "a":2}') => {"a" => 2}
-#   # warning: detected duplicate keys in JSON object.
-#   # This will raise an error in json 3.0 unless enabled via `allow_duplicate_key: true`
+# When set to +false+, the default:
+#   JSON.parse('{"a": 1, "a": 2}') # duplicate key "a" at line 1 column 1 (JSON::ParserError)
 #
 # When set to +true+:
 #   # The last value is used.
-#   JSON.parse('{"a": 1, "a":2}') => {"a" => 2}
-#
-# When set to +false+, the future default:
-#   JSON.parse('{"a": 1, "a":2}') => duplicate key at line 1 column 1 (JSON::ParserError)
+#   JSON.parse('{"a": 1, "a": 2}', allow_duplicate_key: true) # => {"a" => 2}
 #
 # ---
 #
@@ -159,15 +155,15 @@ require 'json/common'
 # defaults to +false+.
 #
 # With the default, +false+:
-#   # Raises JSON::ParserError (225: unexpected token at '[NaN]'):
+#   # Raises JSON::ParserError (unexpected token 'NaN]' at line 1 column 2):
 #   JSON.parse('[NaN]')
-#   # Raises JSON::ParserError (232: unexpected token at '[Infinity]'):
+#   # Raises JSON::ParserError (unexpected token 'Infinity]' at line 1 column 2):
 #   JSON.parse('[Infinity]')
-#   # Raises JSON::ParserError (248: unexpected token at '[-Infinity]'):
+#   # Raises JSON::ParserError (invalid number: '-Infinity]' at line 1 column 2):
 #   JSON.parse('[-Infinity]')
 # Allow:
 #   source = '[NaN, Infinity, -Infinity]'
-#   ruby = JSON.parse(source, {allow_nan: true})
+#   ruby = JSON.parse(source, allow_nan: true)
 #   ruby # => [NaN, Infinity, -Infinity]
 #
 # ---
@@ -188,13 +184,11 @@ require 'json/common'
 # JavaScript style comments (either <tt>// comment</tt> or <tt>/* comment */</tt>);
 # defaults to +false+.
 #
-# When not specified, a deprecation warning is emitted if a comment is encountered.
+# When set to +false+, the default:
+#   JSON.parse('/* comment */ {"a": 1, "a": 2}') # unexpected token '/*' at line 1 column 1 (JSON::ParserError)
 #
 # When set to +true+, comments are ignored:
-#   JSON.parse('/* comment */ {"a": 1, "a":2}') # => {"a" => 2}
-#
-# When set to +false+, the future default:
-#   JSON.parse('/* comment */ {"a": 1, "a":2}') # unexpected character: '/' at line 1 column 1 (JSON::ParserError)
+#   JSON.parse('/* comment */ {"a": 1} // more comment', allow_comments: true) # => {"a" => 1}
 #
 # ---
 #
@@ -203,7 +197,7 @@ require 'json/common'
 # defaults to +false+.
 #
 # With the default, +false+:
-#   JSON.parse(%{"Hello\nWorld"}) # invalid ASCII control character in string (JSON::ParserError)
+#   JSON.parse(%{"Hello\nWorld"}) # invalid ASCII control character in string: \nWorld" at line 2 column 0 (JSON::ParserError)
 #
 # When enabled:
 #   JSON.parse(%{"Hello\nWorld"}, allow_control_characters: true) # => "Hello\nWorld"
@@ -215,7 +209,7 @@ require 'json/common'
 # defaults to +false+.
 #
 # With the default, +false+:
-#   JSON.parse('"Hell\o"') # invalid escape character in string (JSON::ParserError)
+#   JSON.parse('"Hell\o"') # invalid escape character in string: '\o"' at line 1 column 6 (JSON::ParserError)
 #
 # When enabled:
 #   JSON.parse('"Hell\o"', allow_invalid_escape: true) # => "Hello"
@@ -234,8 +228,8 @@ require 'json/common'
 #   ruby = JSON.parse(source)
 #   ruby # => {"a"=>"foo", "b"=>1.0, "c"=>true, "d"=>false, "e"=>nil}
 # Use Symbols:
-#   ruby = JSON.parse(source, {symbolize_names: true})
-#   ruby # => {:a=>"foo", :b=>1.0, :c=>true, :d=>false, :e=>nil}
+#   ruby = JSON.parse(source, symbolize_names: true)
+#   ruby # => {a: "foo", b: 1.0, c: true, d: false, e: nil}
 #
 # ---
 #
@@ -248,7 +242,7 @@ require 'json/common'
 #   ruby = JSON.parse(source)
 #   ruby.class # => Hash
 # Use class \OpenStruct:
-#   ruby = JSON.parse(source, {object_class: OpenStruct})
+#   ruby = JSON.parse(source, object_class: OpenStruct)
 #   ruby # => #<OpenStruct a="foo", b=1.0, c=true, d=false, e=nil>
 #
 # ---
@@ -262,13 +256,8 @@ require 'json/common'
 #   ruby = JSON.parse(source)
 #   ruby.class # => Array
 # Use class \Set:
-#   ruby = JSON.parse(source, {array_class: Set})
-#   ruby # => #<Set: {"foo", 1.0, true, false, nil}>
-#
-# ---
-#
-# Option +create_additions+ (boolean) specifies whether to use \JSON additions in parsing.
-# See {\JSON Additions}[#module-JSON-label-JSON+Additions].
+#   ruby = JSON.parse(source, array_class: Set)
+#   ruby # => Set["foo", 1.0, true, false, nil]
 #
 # === Generating \JSON
 #
@@ -330,22 +319,22 @@ require 'json/common'
 # a \String containing a \JSON string representation of the source:
 #   JSON.generate(:foo) # => '"foo"'
 #   JSON.generate(Complex(0, 0)) # => '"0+0i"'
-#   JSON.generate(Dir.new('.')) # => '"#<Dir>"'
+#   JSON.generate(Dir.new('.')) # => '"#<Dir:0x...>"'
 #
 # ==== Generating Options
 #
 # ====== Input Options
 #
 # Option +allow_nan+ (boolean) specifies whether
-# +NaN+, +Infinity+, and <tt>-Infinity</tt> may be generated;
+# +NaN+, +Infinity+, and +-Infinity+ may be generated;
 # defaults to +false+.
 #
 # With the default, +false+:
-#   # Raises JSON::GeneratorError (920: NaN not allowed in JSON):
+#   # Raises JSON::GeneratorError (NaN not allowed in JSON):
 #   JSON.generate(JSON::NaN)
-#   # Raises JSON::GeneratorError (917: Infinity not allowed in JSON):
+#   # Raises JSON::GeneratorError (Infinity not allowed in JSON):
 #   JSON.generate(JSON::Infinity)
-#   # Raises JSON::GeneratorError (917: -Infinity not allowed in JSON):
+#   # Raises JSON::GeneratorError (-Infinity not allowed in JSON):
 #   JSON.generate(JSON::MinusInfinity)
 #
 # Allow:
@@ -356,20 +345,15 @@ require 'json/common'
 #
 # Option +allow_duplicate_key+ (boolean) specifies whether
 # hashes with duplicate keys should be allowed or produce an error.
-# defaults to emit a deprecation warning.
+# Defaults to +false+, which raises an error.
 #
-# With the default, (not set):
-#   Warning[:deprecated] = true
-#   JSON.generate({ foo: 1, "foo" => 2 })
-#   # warning: detected duplicate key "foo" in {foo: 1, "foo" => 2}.
-#   # This will raise an error in json 3.0 unless enabled via `allow_duplicate_key: true`
-#   # => '{"foo":1,"foo":2}'
-#
-# With <tt>false</tt>
-#   JSON.generate({ foo: 1, "foo" => 2 }, allow_duplicate_key: false)
+# With the default, +false+:
+#   JSON.generate({foo: 1, "foo" => 2})
 #   # detected duplicate key "foo" in {foo: 1, "foo" => 2} (JSON::GeneratorError)
 #
-# In version 3.0, <tt>false</tt> will become the default.
+# With +true+:
+#   JSON.generate({foo: 1, "foo" => 2}, allow_duplicate_key: true)
+#   # => '{"foo":1,"foo":2}'
 #
 # ---
 #
@@ -381,8 +365,18 @@ require 'json/common'
 #   JSON.generate(obj) # => '[[[[[[0]]]]]]'
 #
 # Too deep:
-#   # Raises JSON::NestingError (nesting of 2 is too deep):
+#   # Raises JSON::NestingError (nesting of 2 is too deep. Did you try to serialize objects with circular references?):
 #   JSON.generate(obj, max_nesting: 2)
+#
+# With +false+:
+#   obj = []
+#   obj[0] = obj
+#   # Raises SystemStackError (stack level too deep):
+#   JSON.generate(obj, max_nesting: false)
+#
+# Setting +max_nesting+ to +false+ or a very large number can lead to a stack overflow
+# which may leave the process in an unrecoverable state.
+# It is highly discouraged.
 #
 # ====== Escaping Options
 #
@@ -416,7 +410,7 @@ require 'json/common'
 #   inserted before the colon in each \JSON object's pair;
 #   defaults to the empty \String, <tt>''</tt>.
 # - Option +sort_keys+ (boolean or \Proc) controls whether and how the keys of a
-#   hash are sorted when generating the output; defaults to <tt>false</tt>.
+#   hash are sorted when generating the output; defaults to +false+.
 #   When +true+, keys are sorted lexicographically. When a \Proc, it receives
 #   the entire \Hash and must return a \Hash with its pairs in the desired
 #   order, allowing for arbitrary sort orders.
@@ -445,247 +439,12 @@ require 'json/common'
 #     "foo" : [
 #       "bar",
 #       "baz"
-#   ],
+#     ],
 #     "bat" : {
 #       "bam" : 0,
 #       "bad" : 1
 #     }
 #   }
-#
-# == \JSON Additions
-#
-# Note that JSON Additions must only be used with trusted data, and is
-# deprecated.
-#
-# When you "round trip" a non-\String object from Ruby to \JSON and back,
-# you have a new \String, instead of the object you began with:
-#   ruby0 = Range.new(0, 2)
-#   json = JSON.generate(ruby0)
-#   json # => '0..2"'
-#   ruby1 = JSON.parse(json)
-#   ruby1 # => '0..2'
-#   ruby1.class # => String
-#
-# You can use \JSON _additions_ to preserve the original object.
-# The addition is an extension of a ruby class, so that:
-# - \JSON.generate stores more information in the \JSON string.
-# - \JSON.parse, called with option +create_additions+,
-#   uses that information to create a proper Ruby object.
-#
-# This example shows a \Range being generated into \JSON
-# and parsed back into Ruby, both without and with
-# the addition for \Range:
-#   ruby = Range.new(0, 2)
-#   # This passage does not use the addition for Range.
-#   json0 = JSON.generate(ruby)
-#   ruby0 = JSON.parse(json0)
-#   # This passage uses the addition for Range.
-#   require 'json/add/range'
-#   json1 = JSON.generate(ruby)
-#   ruby1 = JSON.parse(json1, create_additions: true)
-#   # Make a nice display.
-#   display = <<~EOT
-#     Generated JSON:
-#       Without addition:  #{json0} (#{json0.class})
-#       With addition:     #{json1} (#{json1.class})
-#     Parsed JSON:
-#       Without addition:  #{ruby0.inspect} (#{ruby0.class})
-#       With addition:     #{ruby1.inspect} (#{ruby1.class})
-#   EOT
-#   puts display
-#
-# This output shows the different results:
-#   Generated JSON:
-#     Without addition:  "0..2" (String)
-#     With addition:     {"json_class":"Range","a":[0,2,false]} (String)
-#   Parsed JSON:
-#     Without addition:  "0..2" (String)
-#     With addition:     0..2 (Range)
-#
-# The \JSON module includes additions for certain classes.
-# You can also craft custom additions.
-# See {Custom \JSON Additions}[#module-JSON-label-Custom+JSON+Additions].
-#
-# === Built-in Additions
-#
-# The \JSON module includes additions for certain classes.
-# To use an addition, +require+ its source:
-# - BigDecimal: <tt>require 'json/add/bigdecimal'</tt>
-# - Complex: <tt>require 'json/add/complex'</tt>
-# - Date: <tt>require 'json/add/date'</tt>
-# - DateTime: <tt>require 'json/add/date_time'</tt>
-# - Exception: <tt>require 'json/add/exception'</tt>
-# - OpenStruct: <tt>require 'json/add/ostruct'</tt>
-# - Range: <tt>require 'json/add/range'</tt>
-# - Rational: <tt>require 'json/add/rational'</tt>
-# - Regexp: <tt>require 'json/add/regexp'</tt>
-# - Set: <tt>require 'json/add/set'</tt>
-# - Struct: <tt>require 'json/add/struct'</tt>
-# - Symbol: <tt>require 'json/add/symbol'</tt>
-# - Time: <tt>require 'json/add/time'</tt>
-#
-# To reduce punctuation clutter, the examples below
-# show the generated \JSON via +puts+, rather than the usual +inspect+,
-#
-# \BigDecimal:
-#   require 'json/add/bigdecimal'
-#   ruby0 = BigDecimal(0) # 0.0
-#   json = JSON.generate(ruby0) # {"json_class":"BigDecimal","b":"27:0.0"}
-#   ruby1 = JSON.parse(json, create_additions: true) # 0.0
-#   ruby1.class # => BigDecimal
-#
-# \Complex:
-#   require 'json/add/complex'
-#   ruby0 = Complex(1+0i) # 1+0i
-#   json = JSON.generate(ruby0) # {"json_class":"Complex","r":1,"i":0}
-#   ruby1 = JSON.parse(json, create_additions: true) # 1+0i
-#   ruby1.class # Complex
-#
-# \Date:
-#   require 'json/add/date'
-#   ruby0 = Date.today # 2020-05-02
-#   json = JSON.generate(ruby0) # {"json_class":"Date","y":2020,"m":5,"d":2,"sg":2299161.0}
-#   ruby1 = JSON.parse(json, create_additions: true) # 2020-05-02
-#   ruby1.class # Date
-#
-# \DateTime:
-#   require 'json/add/date_time'
-#   ruby0 = DateTime.now # 2020-05-02T10:38:13-05:00
-#   json = JSON.generate(ruby0) # {"json_class":"DateTime","y":2020,"m":5,"d":2,"H":10,"M":38,"S":13,"of":"-5/24","sg":2299161.0}
-#   ruby1 = JSON.parse(json, create_additions: true) # 2020-05-02T10:38:13-05:00
-#   ruby1.class # DateTime
-#
-# \Exception (and its subclasses including \RuntimeError):
-#   require 'json/add/exception'
-#   ruby0 = Exception.new('A message') # A message
-#   json = JSON.generate(ruby0) # {"json_class":"Exception","m":"A message","b":null}
-#   ruby1 = JSON.parse(json, create_additions: true) # A message
-#   ruby1.class # Exception
-#   ruby0 = RuntimeError.new('Another message') # Another message
-#   json = JSON.generate(ruby0) # {"json_class":"RuntimeError","m":"Another message","b":null}
-#   ruby1 = JSON.parse(json, create_additions: true) # Another message
-#   ruby1.class # RuntimeError
-#
-# \OpenStruct:
-#   require 'json/add/ostruct'
-#   ruby0 = OpenStruct.new(name: 'Matz', language: 'Ruby') # #<OpenStruct name="Matz", language="Ruby">
-#   json = JSON.generate(ruby0) # {"json_class":"OpenStruct","t":{"name":"Matz","language":"Ruby"}}
-#   ruby1 = JSON.parse(json, create_additions: true) # #<OpenStruct name="Matz", language="Ruby">
-#   ruby1.class # OpenStruct
-#
-# \Range:
-#   require 'json/add/range'
-#   ruby0 = Range.new(0, 2) # 0..2
-#   json = JSON.generate(ruby0) # {"json_class":"Range","a":[0,2,false]}
-#   ruby1 = JSON.parse(json, create_additions: true) # 0..2
-#   ruby1.class # Range
-#
-# \Rational:
-#   require 'json/add/rational'
-#   ruby0 = Rational(1, 3) # 1/3
-#   json = JSON.generate(ruby0) # {"json_class":"Rational","n":1,"d":3}
-#   ruby1 = JSON.parse(json, create_additions: true) # 1/3
-#   ruby1.class # Rational
-#
-# \Regexp:
-#   require 'json/add/regexp'
-#   ruby0 = Regexp.new('foo') # (?-mix:foo)
-#   json = JSON.generate(ruby0) # {"json_class":"Regexp","o":0,"s":"foo"}
-#   ruby1 = JSON.parse(json, create_additions: true) # (?-mix:foo)
-#   ruby1.class # Regexp
-#
-# \Set:
-#   require 'json/add/set'
-#   ruby0 = Set.new([0, 1, 2]) # #<Set: {0, 1, 2}>
-#   json = JSON.generate(ruby0) # {"json_class":"Set","a":[0,1,2]}
-#   ruby1 = JSON.parse(json, create_additions: true) # #<Set: {0, 1, 2}>
-#   ruby1.class # Set
-#
-# \Struct:
-#   require 'json/add/struct'
-#   Customer = Struct.new(:name, :address) # Customer
-#   ruby0 = Customer.new("Dave", "123 Main") # #<struct Customer name="Dave", address="123 Main">
-#   json = JSON.generate(ruby0) # {"json_class":"Customer","v":["Dave","123 Main"]}
-#   ruby1 = JSON.parse(json, create_additions: true) # #<struct Customer name="Dave", address="123 Main">
-#   ruby1.class # Customer
-#
-# \Symbol:
-#   require 'json/add/symbol'
-#   ruby0 = :foo # foo
-#   json = JSON.generate(ruby0) # {"json_class":"Symbol","s":"foo"}
-#   ruby1 = JSON.parse(json, create_additions: true) # foo
-#   ruby1.class # Symbol
-#
-# \Time:
-#   require 'json/add/time'
-#   ruby0 = Time.now # 2020-05-02 11:28:26 -0500
-#   json = JSON.generate(ruby0) # {"json_class":"Time","s":1588436906,"n":840560000}
-#   ruby1 = JSON.parse(json, create_additions: true) # 2020-05-02 11:28:26 -0500
-#   ruby1.class # Time
-#
-#
-# === Custom \JSON Additions
-#
-# In addition to the \JSON additions provided,
-# you can craft \JSON additions of your own,
-# either for Ruby built-in classes or for user-defined classes.
-#
-# Here's a user-defined class +Foo+:
-#   class Foo
-#     attr_accessor :bar, :baz
-#     def initialize(bar, baz)
-#       self.bar = bar
-#       self.baz = baz
-#     end
-#   end
-#
-# Here's the \JSON addition for it:
-#   # Extend class Foo with JSON addition.
-#   class Foo
-#     # Serialize Foo object with its class name and arguments
-#     def to_json(*args)
-#       {
-#         JSON.create_id  => self.class.name,
-#         'a'             => [ bar, baz ]
-#       }.to_json(*args)
-#     end
-#     # Deserialize JSON string by constructing new Foo object with arguments.
-#     def self.json_create(object)
-#       new(*object['a'])
-#     end
-#   end
-#
-# Demonstration:
-#   require 'json'
-#   # This Foo object has no custom addition.
-#   foo0 = Foo.new(0, 1)
-#   json0 = JSON.generate(foo0)
-#   obj0 = JSON.parse(json0)
-#   # Lood the custom addition.
-#   require_relative 'foo_addition'
-#   # This foo has the custom addition.
-#   foo1 = Foo.new(0, 1)
-#   json1 = JSON.generate(foo1)
-#   obj1 = JSON.parse(json1, create_additions: true)
-#   #   Make a nice display.
-#   display = <<~EOT
-#     Generated JSON:
-#       Without custom addition:  #{json0} (#{json0.class})
-#       With custom addition:     #{json1} (#{json1.class})
-#     Parsed JSON:
-#       Without custom addition:  #{obj0.inspect} (#{obj0.class})
-#       With custom addition:     #{obj1.inspect} (#{obj1.class})
-#   EOT
-#   puts display
-#
-# Output:
-#
-#   Generated JSON:
-#     Without custom addition:  "#<Foo:0x0000000006534e80>" (String)
-#     With custom addition:     {"json_class":"Foo","a":[0,1]} (String)
-#   Parsed JSON:
-#     Without custom addition:  "#<Foo:0x0000000006534e80>" (String)
-#     With custom addition:     #<Foo:0x0000000006473bb8 @bar=0, @baz=1> (Foo)
 #
 module JSON
   require 'json/version'

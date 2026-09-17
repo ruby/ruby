@@ -41,7 +41,6 @@ static const int ABBREVIATED_MONTH_NAME_LENGTH = 3;
 
 #define f_match(r,s) rb_funcall(r, rb_intern("match"), 1, s)
 #define f_aref(o,i) rb_funcall(o, rb_intern("[]"), 1, i)
-#define f_end(o,i) rb_funcall(o, rb_intern("end"), 1, i)
 
 #define issign(c) ((c) == '-' || (c) == '+')
 
@@ -144,7 +143,7 @@ valid_range_p(VALUE v, int a, int b)
 do { \
     size_t l; \
     l = date__strptime_internal(&str[si], slen - si, \
-				fmt, sizeof fmt - 1, hash); \
+				fmt, sizeof fmt - 1, hash, enc); \
     if (fail_p()) \
 	return 0; \
     si += l; \
@@ -160,7 +159,8 @@ head_match_p(size_t len, const char *name, const char *str, size_t slen, size_t 
 
 static size_t
 date__strptime_internal(const char *str, size_t slen,
-			const char *fmt, size_t flen, VALUE hash)
+			const char *fmt, size_t flen,
+			VALUE hash, rb_encoding *enc)
 {
     size_t si, fi;
     int c;
@@ -597,15 +597,14 @@ date__strptime_internal(const char *str, size_t slen,
 
 		    b = rb_backref_get();
 		    rb_match_busy(b);
-		    m = f_match(pat, rb_usascii_str_new(&str[si], slen - si));
+		    m = f_match(pat, rb_enc_str_new(&str[si], slen - si, enc));
 
 		    if (!NIL_P(m)) {
-			VALUE s, l, o;
+			VALUE s, o;
 
 			s = rb_reg_nth_match(1, m);
-			l = f_end(m, INT2FIX(0));
 			o = date_zone_to_diff(s);
-			si += NUM2LONG(l);
+			si += RSTRING_LEN(s);
 			set_hash("zone", s);
 			set_hash("offset", o);
 			rb_backref_set(b);
@@ -654,12 +653,13 @@ date__strptime_internal(const char *str, size_t slen,
 
 VALUE
 date__strptime(const char *str, size_t slen,
-	       const char *fmt, size_t flen, VALUE hash)
+	       const char *fmt, size_t flen,
+	       VALUE hash, rb_encoding *enc)
 {
     size_t si;
     VALUE cent, merid;
 
-    si = date__strptime_internal(str, slen, fmt, flen, hash);
+    si = date__strptime_internal(str, slen, fmt, flen, hash, enc);
 
     if (fail_p())
 	return Qnil;
@@ -667,7 +667,7 @@ date__strptime(const char *str, size_t slen,
     if (slen > si) {
 	VALUE s;
 
-	s = rb_usascii_str_new(&str[si], slen - si);
+	s = rb_enc_str_new(&str[si], slen - si, enc);
 	set_hash("leftover", s);
     }
 

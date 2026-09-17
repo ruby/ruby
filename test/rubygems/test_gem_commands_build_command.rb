@@ -5,12 +5,6 @@ require "rubygems/commands/build_command"
 require "rubygems/package"
 
 class TestGemCommandsBuildCommand < Gem::TestCase
-  CERT_FILE = cert_path "public3072"
-  SIGNING_KEY = key_path "private3072"
-
-  EXPIRED_CERT_FILE = cert_path "expired"
-  PRIVATE_KEY_FILE  = key_path "private"
-
   def setup
     super
 
@@ -34,13 +28,50 @@ class TestGemCommandsBuildCommand < Gem::TestCase
     @cmd = Gem::Commands::BuildCommand.new
   end
 
-  def test_handle_options
+  def test_handle_options_force_strict_platform
     @cmd.handle_options %w[--force --strict]
 
     assert @cmd.options[:force]
     assert @cmd.options[:strict]
     assert @cmd.handles?(%W[--platform #{Gem::Platform.local}])
     assert_includes Gem.platforms, Gem::Platform.local
+  end
+
+  def test_options_ruby_abi
+    gem = util_spec "platformed_gem" do |s|
+      s.license = "AGPL-3.0-only"
+      s.files = ["README.md"]
+      s.platform = "arm64-darwin"
+      s.required_ruby_version = "~> 3.4.0"
+    end
+
+    gemspec_file = File.join(@tempdir, gem.spec_name)
+
+    File.open gemspec_file, "w" do |gs|
+      gs.write gem.to_ruby
+    end
+
+    @cmd.handle_options [gemspec_file, "--ruby-abi", "3.4"]
+    assert_equal "3.4", @cmd.options[:ruby_abi]
+
+    use_ui @ui do
+      Dir.chdir @tempdir do
+        @cmd.execute
+      end
+    end
+
+    files = Dir[File.join(@tempdir, "platformed_gem-2-*.gem")]
+    assert_equal 1, files.size
+    assert_match(/\Aplatformed_gem-2-[0-9a-f]{8}\.gem\z/, File.basename(files.first))
+
+    output = @ui.output.split "\n"
+    assert_equal "  Successfully built RubyGem", output.shift
+    assert_equal "  Name: platformed_gem", output.shift
+    assert_equal "  Version: 2", output.shift
+    assert_match(/\A  File: platformed_gem-2-[0-9a-f]{8}\.gem\z/, output.shift)
+    assert_equal "  Platform: arm64-darwin", output.shift
+    assert_equal "  Ruby ABI: 3.4", output.shift
+    assert_equal [], output
   end
 
   def test_options_filename
@@ -76,6 +107,7 @@ class TestGemCommandsBuildCommand < Gem::TestCase
     refute @cmd.options[:force]
     refute @cmd.options[:strict]
     assert_nil @cmd.options[:output]
+    assert_nil @cmd.options[:ruby_abi]
   end
 
   def test_execute
@@ -88,6 +120,156 @@ class TestGemCommandsBuildCommand < Gem::TestCase
     @cmd.options[:args] = [gemspec_file]
 
     util_test_build_gem @gem
+  end
+
+  def test_ruby_abi_rejects_ruby_platform
+    gem = util_spec "some_gem" do |s|
+      s.license = "AGPL-3.0-only"
+      s.files = ["README.md"]
+    end
+
+    gemspec_file = File.join(@tempdir, gem.spec_name)
+    File.open gemspec_file, "w" do |gs|
+      gs.write gem.to_ruby
+    end
+
+    @cmd.handle_options [gemspec_file, "--ruby-abi", "3.4"]
+    error = assert_raise(ArgumentError) do
+      use_ui @ui do
+        Dir.chdir @tempdir do
+          @cmd.execute
+        end
+      end
+    end
+    assert_match(/no platform or a Ruby platform has been set/, error.message)
+  end
+
+  def test_ruby_abi_rejects_mismatched_required_ruby_version
+    gem = util_spec "platformed_gem" do |s|
+      s.license = "AGPL-3.0-only"
+      s.files = ["README.md"]
+      s.platform = "arm64-darwin"
+      s.required_ruby_version = "~> 3.3.0"
+    end
+
+    gemspec_file = File.join(@tempdir, gem.spec_name)
+    File.open gemspec_file, "w" do |gs|
+      gs.write gem.to_ruby
+    end
+
+    @cmd.handle_options [gemspec_file, "--ruby-abi", "3.4"]
+    error = assert_raise(ArgumentError) do
+      use_ui @ui do
+        Dir.chdir @tempdir do
+          @cmd.execute
+        end
+      end
+    end
+    assert_match(/Cannot build gem for Ruby ABI 3\.4 because required_ruby_version/, error.message)
+  end
+
+  def test_ruby_abi_rejects_conflicting_required_rubygems_version
+    gem = util_spec "platformed_gem" do |s|
+      s.license = "AGPL-3.0-only"
+      s.files = ["README.md"]
+      s.platform = "arm64-darwin"
+      s.required_ruby_version = "~> 3.4.0"
+      s.required_rubygems_version = "< 4.0"
+    end
+
+    gemspec_file = File.join(@tempdir, gem.spec_name)
+    File.open gemspec_file, "w" do |gs|
+      gs.write gem.to_ruby
+    end
+
+    @cmd.handle_options [gemspec_file, "--ruby-abi", "3.4"]
+    error = assert_raise(ArgumentError) do
+      use_ui @ui do
+        Dir.chdir @tempdir do
+          @cmd.execute
+        end
+      end
+    end
+    assert_match(/Cannot build gem for Ruby ABI 3\.4 because required_rubygems_version/, error.message)
+  end
+
+  def test_ruby_abi_defaults_required_ruby_version_when_unset
+    gem = util_spec "platformed_gem" do |s|
+      s.license = "AGPL-3.0-only"
+      s.files = ["README.md"]
+      s.platform = "arm64-darwin"
+    end
+
+    gemspec_file = File.join(@tempdir, gem.spec_name)
+    File.open gemspec_file, "w" do |gs|
+      gs.write gem.to_ruby
+    end
+
+    @cmd.handle_options [gemspec_file, "--ruby-abi", "3.4"]
+    use_ui @ui do
+      Dir.chdir @tempdir do
+        @cmd.execute
+      end
+    end
+
+    files = Dir[File.join(@tempdir, "platformed_gem-2-*.gem")]
+    assert_equal 1, files.size
+    spec = Gem::Package.new(files.first).spec
+    assert_equal Gem::Requirement.new("~> 3.4.0"), spec.required_ruby_version
+  end
+
+  def test_ruby_abi_produces_deterministic_content_address
+    gemspec = lambda do
+      gem = util_spec "platformed_gem" do |s|
+        s.license = "AGPL-3.0-only"
+        s.files = ["README.md"]
+        s.platform = "arm64-darwin"
+        s.required_ruby_version = "~> 3.4.0"
+      end
+
+      gemspec_file = File.join(@tempdir, gem.spec_name)
+      File.open gemspec_file, "w" do |gs|
+        gs.write gem.to_ruby
+      end
+
+      @cmd.handle_options [gemspec_file, "--ruby-abi", "3.4"]
+      use_ui @ui do
+        Dir.chdir @tempdir do
+          @cmd.execute
+        end
+      end
+
+      Dir[File.join(@tempdir, "platformed_gem-2-*.gem")].first
+    end
+
+    first_build = gemspec.call
+    second_build = gemspec.call
+
+    assert_equal File.basename(first_build), File.basename(second_build)
+  end
+
+  def test_ruby_abi_with_output_raises
+    gem = util_spec "platformed_gem" do |s|
+      s.license = "AGPL-3.0-only"
+      s.files = ["README.md"]
+      s.platform = "arm64-darwin"
+      s.required_ruby_version = "~> 3.4.0"
+    end
+
+    gemspec_file = File.join(@tempdir, gem.spec_name)
+    File.open gemspec_file, "w" do |gs|
+      gs.write gem.to_ruby
+    end
+
+    @cmd.handle_options [gemspec_file, "--ruby-abi", "3.4", "--output", "test.gem"]
+    error = assert_raise(ArgumentError) do
+      use_ui @ui do
+        Dir.chdir @tempdir do
+          @cmd.execute
+        end
+      end
+    end
+    assert_match(/Cannot specify both a Ruby ABI and an output file name/, error.message)
   end
 
   def test_execute_platform
@@ -108,6 +290,28 @@ class TestGemCommandsBuildCommand < Gem::TestCase
       Gem.platforms.replace(platforms)
     end
     assert_match spec.platform, "java"
+  end
+
+  def test_execute_platform_option_local
+    local = Gem::Platform.local.to_s
+
+    util_test_build_gem_with_platform_option local, suffix: local
+  end
+
+  def test_execute_platform_option_non_local
+    util_test_build_gem_with_platform_option "java", suffix: "java"
+  end
+
+  def test_execute_platform_option_local_with_gemspec_platform
+    @gem.platform = "arm64-darwin"
+
+    util_test_build_gem_with_platform_option Gem::Platform.local.to_s, suffix: "arm64-darwin"
+  end
+
+  def test_execute_platform_option_non_local_with_gemspec_platform
+    @gem.platform = "arm64-darwin"
+
+    util_test_build_gem_with_platform_option "java", suffix: "arm64-darwin"
   end
 
   def test_execute_bad_name
@@ -201,6 +405,7 @@ class TestGemCommandsBuildCommand < Gem::TestCase
   end
 
   def test_execute_bad_spec
+    pend_for_ruby_box_stdio_capture
     @gem.date = "2010-11-08"
 
     gemspec_file = File.join(@tempdir, @gem.spec_name)
@@ -570,6 +775,23 @@ class TestGemCommandsBuildCommand < Gem::TestCase
     spec
   end
 
+  def util_test_build_gem_with_platform_option(platform, suffix:)
+    gemspec_file = File.join(@tempdir, @gem.spec_name)
+
+    File.open gemspec_file, "w" do |gs|
+      gs.write @gem.to_ruby
+    end
+
+    platforms = Gem.platforms.dup
+    begin
+      @cmd.handle_options [gemspec_file, "--platform", platform]
+
+      util_test_build_gem @gem, suffix: suffix
+    ensure
+      Gem.platforms = platforms
+    end
+  end
+
   def test_execute_force
     gemspec_file = File.join(@tempdir, @gem.spec_name)
 
@@ -591,8 +813,8 @@ class TestGemCommandsBuildCommand < Gem::TestCase
     trust_dir = Gem::Security.trust_dir
 
     spec = util_spec "some_gem" do |s|
-      s.signing_key = SIGNING_KEY
-      s.cert_chain = [CERT_FILE]
+      s.signing_key = RSA3072_PRIVATE_KEY_FILE
+      s.cert_chain = [RSA3072_PUBLIC_CERT_FILE]
     end
 
     gemspec_file = File.join(@tempdir, spec.spec_name)
@@ -605,11 +827,76 @@ class TestGemCommandsBuildCommand < Gem::TestCase
 
     util_test_build_gem spec
 
-    trust_dir.trust_cert OpenSSL::X509::Certificate.new(File.read(CERT_FILE))
+    trust_dir.trust_cert RSA3072_PUBLIC_CERT
 
     gem = Gem::Package.new(File.join(@tempdir, spec.file_name),
                            Gem::Security::HighSecurity)
     assert gem.verify
+  end
+
+  def test_build_signed_gem_ml_dsa_65
+    pend "openssl is missing" unless Gem::HAVE_OPENSSL && !Gem.java_platform?
+
+    omit_unless_support_ml_dsa_key
+
+    trust_dir = Gem::Security.trust_dir
+
+    spec = util_spec "some_gem" do |s|
+      s.signing_key = ML_DSA_65_PRIVATE_KEY_FILE
+      s.cert_chain = [ML_DSA_65_PUBLIC_CERT_FILE]
+    end
+
+    gemspec_file = File.join(@tempdir, spec.spec_name)
+
+    File.open gemspec_file, "w" do |gs|
+      gs.write spec.to_ruby
+    end
+
+    @cmd.options[:args] = [gemspec_file]
+
+    util_test_build_gem spec
+
+    trust_dir.trust_cert(
+      OpenSSL::X509::Certificate.new(
+        File.read(ML_DSA_65_PUBLIC_CERT_FILE)
+      )
+    )
+
+    gem = Gem::Package.new(File.join(@tempdir, spec.file_name),
+                           Gem::Security::HighSecurity)
+    assert gem.verify
+  end
+
+  def test_build_signed_gem_ml_dsa_65_without_ml_dsa_support
+    pend "openssl is missing" unless Gem::HAVE_OPENSSL
+
+    omit_if_support_ml_dsa_key
+
+    spec = util_spec "some_gem" do |s|
+      s.signing_key = ML_DSA_65_PRIVATE_KEY_FILE
+      s.cert_chain = [ML_DSA_65_PUBLIC_CERT_FILE]
+    end
+
+    gemspec_file = File.join(@tempdir, spec.spec_name)
+
+    File.open gemspec_file, "w" do |gs|
+      gs.write spec.to_ruby
+    end
+
+    @cmd.options[:args] = [gemspec_file]
+
+    use_ui @ui do
+      Dir.chdir @tempdir do
+        e = assert_raise Gem::Security::Exception do
+          @cmd.execute
+        end
+
+        assert_match(
+          /^private key could not be loaded: .+ ML-DSA requires OpenSSL >= 3\.5/,
+          e.message
+        )
+      end
+    end
   end
 
   def test_build_signed_gem_with_cert_expiration_length_days

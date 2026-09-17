@@ -378,7 +378,7 @@ class IPAddr
     when Socket::AF_INET6
       @addr & 0xffff_0000_0000_0000_0000_0000_0000_0000 == 0xff02_0000_0000_0000_0000_0000_0000_0000 || # ff02::/16
         (@addr >> 32 == 0xffff && (
-          @addr & 0xffff0000 == 0xe0000000 # ::ffff:224.0.0.0/24
+          @addr & 0xffffff00 == 0xe0000000 # ::ffff:224.0.0.0/24
         ))
     else
       raise AddressFamilyError, "unsupported address family"

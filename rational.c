@@ -33,6 +33,7 @@
 #include "internal/object.h"
 #include "internal/rational.h"
 #include "ruby_assert.h"
+#include "vm_core.h"            /* for GET_EC() */
 
 #if USE_GMP
 RBIMPL_WARNING_PUSH()

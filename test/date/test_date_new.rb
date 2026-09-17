@@ -192,6 +192,27 @@ class TestDateNew < Test::Unit::TestCase
     end
   end
 
+  def test_civil__offset
+    d = DateTime.civil(2001,2,3, 0,0,0, Rational(1, 1))
+    assert_equal(1.to_r, d.offset)
+    d = DateTime.civil(2001,2,3, 0,0,0, Rational(-1, 1))
+    assert_equal(-1.to_r, d.offset)
+
+    # An out-of-range offset is ignored, as it is for the equivalent Integer.
+    assert_warning(/invalid offset/) do
+      d = DateTime.civil(2001,2,3, 0,0,0, 2)
+    end
+    assert_equal(0, d.offset)
+    assert_warning(/invalid offset/) do
+      d = DateTime.civil(2001,2,3, 0,0,0, Rational(2, 1))
+    end
+    assert_equal(0, d.offset)
+    assert_warning(/invalid offset/) do
+      d = DateTime.civil(2001,2,3, 0,0,0, Rational(49710, 1))
+    end
+    assert_equal(0, d.offset)
+  end
+
   def test_civil__reform
     d = Date.jd(Date::ENGLAND, Date::ENGLAND)
     dt = DateTime.jd(Date::ENGLAND, 0,0,0,0, Date::ENGLAND)
@@ -254,6 +275,11 @@ class TestDateNew < Test::Unit::TestCase
     assert_raise(Date::Error) do
       DateTime.commercial(1997,52,1, 23,59,60, 0)
     end
+  end
+
+  def test_commercial_p
+    assert_equal(false, Date.valid_commercial?(2024, -53, 1))
+    assert_equal(false, Date.valid_commercial?(2024, -1227133565, 1))
   end
 
   def test_weeknum

@@ -245,7 +245,9 @@ pm_constant_pool_find(const pm_constant_pool_t *pool, const uint8_t *start, size
     pm_constant_pool_bucket_t *bucket;
 
     while (bucket = &pool->buckets[index], bucket->id != PM_CONSTANT_ID_UNSET) {
-        if ((bucket->length == length) && memcmp(bucket->start, start, length) == 0) {
+        // Compare the stored hash before touching the contents so that probe
+        // collisions are rejected without a memcmp call.
+        if ((bucket->hash == hash) && (bucket->length == length) && memcmp(bucket->start, start, length) == 0) {
             return bucket->id;
         }
 
@@ -274,8 +276,9 @@ pm_constant_pool_insert(pm_arena_t *arena, pm_constant_pool_t *pool, const uint8
     while (bucket = &pool->buckets[index], bucket->id != PM_CONSTANT_ID_UNSET) {
         // If there is a collision, then we need to check if the content is the
         // same as the content we are trying to insert. If it is, then we can
-        // return the id of the existing constant.
-        if ((bucket->length == length) && memcmp(bucket->start, start, length) == 0) {
+        // return the id of the existing constant. Compare the stored hash
+        // first so that probe collisions are rejected without a memcmp call.
+        if ((bucket->hash == hash) && (bucket->length == length) && memcmp(bucket->start, start, length) == 0) {
             // Since we have found a match, we need to check if this is
             // attempting to insert a shared or an owned constant. We want to
             // prefer shared constants since they don't require allocations.

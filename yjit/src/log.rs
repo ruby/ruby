@@ -46,7 +46,7 @@ impl Log {
         }
     }
 
-    pub fn add_block_with_chain_depth(block_id: BlockId, chain_depth: u8) {
+    pub fn add_block_with_chain_depth(block_id: BlockId, chain_depth: u16) {
         if !Self::has_instance() {
             return;
         }

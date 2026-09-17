@@ -4,6 +4,17 @@ require 'test/unit'
 if defined?(OpenSSL)
 
 module OpenSSL::TestEOF
+  def open_file(content)
+    ssl_pair { |s1, s2|
+      begin
+        th = Thread.new { s2 << content; s2.close }
+        yield s1
+      ensure
+        th&.join
+      end
+    }
+  end
+
   def test_getbyte_eof
     open_file("") {|f| assert_nil f.getbyte }
   end

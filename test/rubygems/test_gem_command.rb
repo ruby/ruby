@@ -2,6 +2,7 @@
 
 require_relative "helper"
 require "rubygems/command"
+require "open3"
 
 class Gem::Command
   public :parser
@@ -398,5 +399,20 @@ ERROR:  Possible alternatives: non_existent_with_hint
     EXPECTED
 
     assert_equal expected, @ui.error
+  end
+
+  def test_gem_cli_runs_under_ruby_box
+    omit "Ruby::Box is not available" unless defined?(Ruby::Box)
+    # Ruby 4.0 resolves Gem::NameTuple from the root box and fails autoload
+    omit "Ruby::Box is too unstable before 4.1" if Gem.ruby_version < Gem::Version.new("4.1.0.a")
+
+    boxed, warning, = Open3.capture3({ "RUBY_BOX" => "1" }, Gem.ruby, "-e", "print !Ruby::Box.current.nil?")
+    assert_equal "true", boxed, "RUBY_BOX=1 no longer boxes the subprocess: #{warning}"
+
+    env = { "RUBY_BOX" => "1", "GEM_HOME" => Gem.paths.home }
+    run_gem = 'require "rubygems/gem_runner"; Gem::GemRunner.new.run(["list", "--local"])'
+    output = IO.popen(env, [*ruby_with_rubygems_in_load_path, "-e", run_gem], err: [:child, :out], &:read)
+
+    assert Process.last_status.success?, output
   end
 end

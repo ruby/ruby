@@ -53,6 +53,10 @@ pm_token_str(pm_token_type_t token_type) {
             return "'!~'";
         case PM_TOKEN_BRACE_LEFT:
             return "'{'";
+        case PM_TOKEN_BRACE_LEFT_ARGUMENT:
+            return "'{'";
+        case PM_TOKEN_BRACE_LEFT_HASH:
+            return "'{'";
         case PM_TOKEN_BRACE_RIGHT:
             return "'}'";
         case PM_TOKEN_BRACKET_LEFT:
@@ -271,9 +275,13 @@ pm_token_str(pm_token_type_t token_type) {
             return "'->'";
         case PM_TOKEN_NEWLINE:
             return "newline";
+        case PM_TOKEN_NEWLINE_TERMINATOR:
+            return "newline";
         case PM_TOKEN_NUMBERED_REFERENCE:
             return "numbered reference";
         case PM_TOKEN_PARENTHESIS_LEFT:
+            return "'('";
+        case PM_TOKEN_PARENTHESIS_LEFT_GROUPING:
             return "'('";
         case PM_TOKEN_PARENTHESIS_LEFT_PARENTHESES:
             return "'('";
@@ -355,6 +363,8 @@ pm_token_str(pm_token_type_t token_type) {
             return "**";
         case PM_TOKEN_WORDS_SEP:
             return "string separator";
+        case PM_TOKEN_XSTRING_BEGIN:
+            return "backtick string literal";
         case PM_TOKEN___END__:
             return "'__END__'";
         case PM_TOKEN_MAXIMUM:

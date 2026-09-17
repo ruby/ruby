@@ -14,16 +14,15 @@ class OpenSSL::TestPKeyDSA < OpenSSL::PKeyTestCase
     assert_equal true, key.private?
     key2 = OpenSSL::PKey::DSA.new(key.to_der)
     assert_equal true, key2.private?
-    key3 = key.public_key
+    key3 = OpenSSL::PKey::DSA.new(key.public_to_der)
     assert_equal false, key3.private?
-    key4 = OpenSSL::PKey::DSA.new(key3.to_der)
-    assert_equal false, key4.private?
   end
 
   def test_new
-    key = OpenSSL::PKey::DSA.new(2048)
-    pem  = key.public_key.to_pem
-    OpenSSL::PKey::DSA.new pem
+    key = OpenSSL::PKey::DSA.new(1024)
+    assert_predicate(key, :private?)
+    assert_equal(1024, key.p.num_bits)
+    assert_equal(160, key.q.num_bits)
   end
 
   def test_new_break
@@ -231,6 +230,19 @@ fWLOqqkzFeRrYMDzUpl36XktY6Yq8EJYlW9pCMmBVNy/dQ==
     assert_equal(key.pub_key, pubkey.params["pub_key"])
     assert_nil(pubkey.priv_key)
     assert_nil(pubkey.params["priv_key"])
+  end
+
+  def test_public_key
+    key = Fixtures.pkey("dsa2048")
+    pub = key.public_key
+    assert_not_predicate(pub, :private?)
+    assert_predicate(pub, :public?)
+    assert_equal(key.p, pub.p)
+    assert_equal(key.q, pub.q)
+    assert_equal(key.g, pub.g)
+    assert_equal(key.pub_key, pub.pub_key)
+    assert_nil(pub.priv_key)
+    assert_equal(key.public_to_der, pub.to_der)
   end
 
   def test_dup

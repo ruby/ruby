@@ -814,7 +814,7 @@ class TestRubyOptions < Test::Unit::TestCase
         (?:
         --\sRuby\slevel\sbacktrace\sinformation\s----------------------------------------\n
         (?:-e:1:in\s\'(?:block\sin\s)?<main>\'\n)*
-        -e:1:in\s\'kill\'\n
+        -e:1:in\s\'segv\'\n
         \n
         )?
       )x,
@@ -838,15 +838,24 @@ class TestRubyOptions < Test::Unit::TestCase
       )x,
     ]
 
-    KILL_SELF = "Process.kill :SEGV, $$"
+    # Crash the current thread with a thread-directed raise(SIGSEGV) so the
+    # signal is delivered synchronously on the calling thread. Requires
+    # -test-/fatal to be loaded.
+    KILL_SELF = "Bug.segv"
   end
 
-  def assert_segv(args, message=nil, list: SEGVTest::ExpectedStderrList, **opt, &block)
+  # Turning the C level backtrace into file:line pairs walks the whole of the
+  # binary's debug info, and that is nearly all of what a crash costs: 0.8s of
+  # CPU with the dSYM in place against 0.01s without it, on an idle arm64 macOS
+  # host.  The default subprocess budget of 10 seconds is meant for a child
+  # that does none of that work.
+  def assert_segv(args, message=nil, list: SEGVTest::ExpectedStderrList, timeout: 60, **opt, &block)
     # We want YJIT to be enabled in the subprocess if it's enabled for us
     # so that the Ruby description matches.
     env = Hash === args.first ? args.shift : {}
     args.unshift("--yjit") if JITSupport.yjit_enabled?
     args.unshift("--zjit") if JITSupport.zjit_enabled?
+    args.unshift("-r-test-/fatal")
     env.update({'RUBY_ON_BUG' => nil})
     env['RUBY_CRASH_REPORT'] ||= nil # default to not passing down parent setting
     # ASAN registers a segv handler which prints out "AddressSanitizer: DEADLYSIGNAL" when
@@ -862,7 +871,7 @@ class TestRubyOptions < Test::Unit::TestCase
     end
 
     assert_in_out_err(args, test_stdin, *tests, encoding: "ASCII-8BIT",
-                      **SEGVTest::ExecOptions, **opt, &block)
+                      timeout: timeout, **SEGVTest::ExecOptions, **opt, &block)
   end
 
   def test_segv_test
@@ -962,6 +971,35 @@ class TestRubyOptions < Test::Unit::TestCase
         end
       end
     end
+  end
+
+  # The sender pid is only reported for a signal another process sent us.
+  def abrt_crash_report(code)
+    Dir.mktmpdir("ruby_crash_report") do |dir|
+      IO.popen([{"RUBY_CRASH_REPORT" => "abrt.log", "RUBY_ON_BUG" => nil},
+                EnvUtil.rubybin, "--disable-gems", "-e", "STDOUT.sync = true; puts; #{code}"],
+               chdir: dir, err: File::NULL, rlimit_core: 0) do |child|
+        child.gets
+        yield child if block_given?
+      end
+      break File.read(File.join(dir, "abrt.log"))
+    end
+  end
+
+  def test_crash_report_sender_pid
+    omit "needs siginfo" unless (macos? || linux?)
+
+    report = abrt_crash_report("sleep") {|child| Process.kill(:ABRT, child.pid)}
+    assert_include(report, "[BUG] Aborted")
+    assert_include(report, "(sent by pid #{Process.pid})")
+  end
+
+  def test_crash_report_no_sender_pid_when_self_inflicted
+    omit "needs siginfo" unless (macos? || linux?)
+
+    report = abrt_crash_report("Process.kill(:ABRT, $$)")
+    assert_include(report, "[BUG] Aborted")
+    assert_not_include(report, "sent by pid")
   end
 
   def test_DATA

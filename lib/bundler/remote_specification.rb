@@ -10,11 +10,11 @@ module Bundler
     include MatchPlatform
     include Comparable
 
-    attr_reader :name, :version, :platform
+    attr_reader :name, :version, :platform, :content_address
     attr_writer :dependencies
     attr_accessor :source, :remote, :locked_platform, :created_at
 
-    def initialize(name, version, platform, spec_fetcher)
+    def initialize(name, version, platform, spec_fetcher, content_address: nil)
       @name         = name
       @version      = Gem::Version.create version
       @original_platform = platform || Gem::Platform::RUBY
@@ -22,6 +22,7 @@ module Bundler
       @spec_fetcher = spec_fetcher
       @dependencies = nil
       @locked_platform = nil
+      @content_address = content_address
     end
 
     def insecurely_materialized?
@@ -35,7 +36,9 @@ module Bundler
     end
 
     def full_name
-      @full_name ||= if @platform == Gem::Platform::RUBY
+      @full_name ||= if Gem::ContentAddress.content_addressed?(self, validate_ruby_abi: false)
+        "#{@name}-#{@version}-#{@content_address}"
+      elsif @platform == Gem::Platform::RUBY
         "#{@name}-#{@version}"
       else
         "#{@name}-#{@version}-#{@platform}"

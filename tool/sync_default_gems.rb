@@ -6,6 +6,7 @@ require 'fileutils'
 require "rbconfig"
 require "find"
 require "tempfile"
+require_relative "../lib/mkmf/depend"
 
 module SyncDefaultGems
   include FileUtils
@@ -21,6 +22,7 @@ module SyncDefaultGems
   # exclude: [ "fnmatch_pattern_after_mapping", ... ]
   Repository = Data.define(:upstream, :branch, :mappings, :exclude) do
     def excluded?(newpath)
+      return true if newpath.end_with?(*%w".a .bundle .dll .dylib .so .o .obj")
       p = newpath
       until p == "."
         return true if exclude.any? {|pat| File.fnmatch?(pat, p, File::FNM_PATHNAME|File::FNM_EXTGLOB)}
@@ -45,7 +47,6 @@ module SyncDefaultGems
 
   def repo((upstream, branch), mappings, exclude: [])
     branch ||= CLASSICAL_DEFAULT_BRANCH
-    exclude += ["ext/**/depend"]
     Repository.new(upstream:, branch:, mappings:, exclude:)
   end
 
@@ -78,6 +79,8 @@ module SyncDefaultGems
       ["regsyntax.c", "regsyntax.c"],
       ["onigmo.h", "include/ruby/onigmo.h"],
       ["enc", "enc"],
+    ], exclude: [
+      "encoding.c",
     ]),
     "io-console": repo("ruby/io-console", [
       ["ext/io/console", "ext/io/console"],
@@ -114,8 +117,6 @@ module SyncDefaultGems
       ["lib", "ext/date/lib"],
       ["test/date", "test/date"],
       ["date.gemspec", "ext/date/date.gemspec"],
-    ], exclude: [
-      "ext/date/lib/date_core.bundle",
     ]),
     delegate: lib("ruby/delegate"),
     did_you_mean: repo("ruby/did_you_mean", [
@@ -175,9 +176,12 @@ module SyncDefaultGems
       "ext/json/lib/json/truffle_ruby",
       "test/json/lib",
       "ext/json/extconf.rb",
+      "ext/json/depend",
     ]),
     mmtk: repo(["ruby/mmtk", "main"], [
       ["gc/mmtk", "gc/mmtk"],
+      ["test/.excludes-mmtk", "test/.excludes-mmtk"],
+      ["test/mmtk", "test/mmtk"],
     ]),
     open3: lib("ruby/open3", gemspec_in_subdir: true).tap {
       it.exclude << "lib/open3/jruby_windows.rb"
@@ -191,7 +195,6 @@ module SyncDefaultGems
       ["History.md", "ext/openssl/History.md"],
     ], exclude: [
       "test/openssl/envutil.rb",
-      "ext/openssl/depend",
     ]),
     optparse: lib("ruby/optparse", gemspec_in_subdir: true).tap {
       it.mappings << ["doc/optparse", "doc/optparse"]
@@ -225,7 +228,6 @@ module SyncDefaultGems
       "ext/psych/lib/org",
       "ext/psych/lib/psych.jar",
       "ext/psych/lib/psych_jars.rb",
-      "ext/psych/lib/psych.{bundle,so}",
       "ext/psych/lib/2.*",
       "ext/psych/yaml/LICENSE",
       "ext/psych/.gitignore",
@@ -302,6 +304,18 @@ module SyncDefaultGems
       ["ext/zlib", "ext/zlib"],
       ["test/zlib", "test/zlib"],
       ["zlib.gemspec", "ext/zlib/zlib.gemspec"],
+    ]),
+    # Most files under tool/lib and tool/test belong to ruby/ruby, so map
+    # each upstream file rather than the directories.
+    "test-unit-ruby-core":repo("ruby/test-unit-ruby-core", [
+      ["lib/core_assertions.rb", "tool/lib/core_assertions.rb"],
+      ["lib/envutil.rb", "tool/lib/envutil.rb"],
+      ["lib/find_executable.rb", "tool/lib/find_executable.rb"],
+      ["lib/memory_status.rb", "tool/lib/memory_status.rb"],
+      ["test/test_core_assertions.rb", "tool/test/test_core_assertions.rb"],
+      ["test/test_envutil.rb", "tool/test/test_envutil.rb"],
+      ["test/test_find_executable.rb", "tool/test/test_find_executable.rb"],
+      ["test/test_memory_status.rb", "tool/test/test_memory_status.rb"],
     ]),
   }.transform_keys(&:to_s)
 
@@ -389,6 +403,23 @@ module SyncDefaultGems
     end
   end
 
+  def minimize_dependencies(gem)
+    files = REPOSITORIES[gem].mappings.flat_map do |_src, dst|
+      if File.file?(dst)
+        File.basename(dst) == "depend" ? [dst] : []
+      elsif File.directory?(dst)
+        Dir.glob("#{dst}/**/depend")
+      else
+        []
+      end
+    end.uniq
+    return if files.empty?
+
+    MakeMakefile::Depend.new(root: Dir.pwd).run(
+      files, mode: :inplace, sources: true,
+    )
+  end
+
   # We usually don't use this. Please consider using #sync_default_gems_with_commits instead.
   def sync_default_gems(gem)
     config = REPOSITORIES[gem]
@@ -432,6 +463,7 @@ module SyncDefaultGems
     if gem == "rubygems"
       rubygems_do_fixup
     end
+    minimize_dependencies(gem)
 
     check_prerelease_version(gem)
 
@@ -441,7 +473,7 @@ module SyncDefaultGems
   end
 
   def check_prerelease_version(gem)
-    return if ["rubygems", "mmtk", "Onigmo"].include?(gem)
+    return if ["rubygems", "mmtk", "Onigmo", "test-unit-ruby-core"].include?(gem)
 
     require "net/https"
     require "json"
@@ -461,7 +493,41 @@ module SyncDefaultGems
       "lib/#{gem.split("-").join("/")}/#{gem}.gemspec",
     ].find{|gemspec| File.exist?(gemspec)}
     spec = Gem::Specification.load(gemspec)
-    puts "#{gem}-#{spec.version} is not latest version of rubygems.org" if spec.version.to_s != latest_version
+    version = spec.version
+    return if version.to_s == latest_version
+
+    if !version.prerelease? and Gem::Version.correct?(latest_version) and
+       version > Gem::Version.new(latest_version) and
+       prerelease = mark_as_prerelease(gem, version)
+      puts "#{gem}-#{version} is not released yet, marked as #{prerelease}"
+    else
+      puts "#{gem}-#{version} is not latest version of rubygems.org"
+    end
+  end
+
+  # Upstream bumps the version just after a release, so the synced tree holds a
+  # version nobody can install yet, and `bundle install` against it would lock
+  # to that version.  Turn it into a prerelease instead.
+  def mark_as_prerelease(gem, version)
+    literal = %["#{version}"]
+    files = REPOSITORIES[gem].mappings.flat_map do |_src, dst|
+      File.directory?(dst) ? Dir.glob("#{dst}/**/*.{c,rb,gemspec}") : [dst]
+    end
+    found = files.uniq.filter_map do |file|
+      next unless File.file?(file)
+      source = File.binread(file)
+      definition = source.lines.find {|line| line.include?(literal) and line.include?("VERSION")}
+      [file, source, definition] if definition
+    end
+    unless found.size == 1
+      puts "Cannot tell where #{gem}-#{version} is defined"
+      return nil
+    end
+
+    file, source, definition = found[0]
+    prerelease = "#{version}.dev"
+    File.binwrite(file, source.sub(definition) {definition.sub(literal) {%["#{prerelease}"]}})
+    prerelease
   end
 
   def message_filter(repo, sha, log, context: nil)
@@ -647,6 +713,7 @@ module SyncDefaultGems
       if gem == "rubygems"
         rubygems_do_fixup
       end
+      minimize_dependencies(gem)
       replace_rdoc_ref_all_full
     end
 
@@ -817,12 +884,6 @@ module SyncDefaultGems
         `git remote add ruby-core git@github.com:ruby/ruby.git`
       end
       `git fetch ruby-core master --no-tags`
-      unless `git branch`.match(/ruby\-core/)
-        `git checkout ruby-core/master`
-        `git branch ruby-core`
-      end
-      `git checkout ruby-core`
-      `git rebase ruby-core/master`
       `git fetch origin --tags`
 
       if release

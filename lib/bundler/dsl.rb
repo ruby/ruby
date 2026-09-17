@@ -69,7 +69,7 @@ module Bundler
       development_group = opts[:development_group] || :development
       expanded_path     = gemfile_root.join(path)
 
-      gemspecs = Gem::Util.glob_files_in_dir("{,*}.gemspec", expanded_path).filter_map {|g| Bundler.load_gemspec(g) }
+      gemspecs = SharedHelpers.glob_files_in_dir("{,*}.gemspec", expanded_path).filter_map {|g| Bundler.load_gemspec(g) }
       gemspecs.reject! {|s| s.name != name } if name
       specs_by_name_and_version = gemspecs.group_by {|s| [s.name, s.version] }
 
@@ -331,13 +331,10 @@ module Bundler
 
           gemspec_dep = [dep, current].find(&:gemspec_dev_dep?)
           if gemspec_dep
-            require_relative "vendor/pub_grub/lib/pub_grub/version_range"
-            require_relative "vendor/pub_grub/lib/pub_grub/version_constraint"
-            require_relative "vendor/pub_grub/lib/pub_grub/version_union"
-            require_relative "vendor/pub_grub/lib/pub_grub/rubygems"
+            require_relative "vendored_pub_grub"
 
-            current_gemspec_range = PubGrub::RubyGems.requirement_to_range(current.requirement)
-            next_gemspec_range = PubGrub::RubyGems.requirement_to_range(dep.requirement)
+            current_gemspec_range = Gem::PubGrub::RubyGems.requirement_to_range(current.requirement)
+            next_gemspec_range = Gem::PubGrub::RubyGems.requirement_to_range(dep.requirement)
 
             if current_gemspec_range.intersects?(next_gemspec_range)
               dep = Dependency.new(name, current.requirement.as_list + dep.requirement.as_list, options)

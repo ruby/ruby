@@ -1,7 +1,15 @@
 # frozen_string_literal: true
 
 require "zlib"
-require_relative "../vendored_net_http"
+
+# On RubyGems versions too old to vendor Gem::Net (when this file is loaded
+# from the copy shipped inside the Bundler gem), Bundler's own
+# vendored_net_http shim has already defined it before this file is loaded.
+begin
+  require "rubygems/vendored_net_http" unless defined?(Gem::Net::HTTP)
+rescue LoadError
+  require "net/http"
+end
 
 class Gem::CompactIndexClient
   # Updates the cached files on disk, keeping them in sync with the server

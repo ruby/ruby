@@ -722,7 +722,9 @@ class TestTime < Test::Unit::TestCase
     assert_predicate(zone, :valid_encoding?)
     if zone.ascii_only?
       assert_equal(Encoding::US_ASCII, zone.encoding)
-    else
+    elsif !/mswin|mingw/.match?(RUBY_PLATFORM)
+      # Windows takes the name from the CRT, which encodes it in the
+      # active code page rather than the locale one. [Bug #19383]
       enc = Encoding.default_internal || Encoding.find('locale')
       assert_equal(enc, zone.encoding)
     end
