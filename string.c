@@ -9662,6 +9662,7 @@ tr_trans_pairs_search_sse2(struct tr_trans_pairs_search *search)
                 const __m128i bytes = _mm_loadu_si128((__m128i const *)search->s);
 
                 __m128i matches[TR_TRANS_PAIRS_SIMD_MAX_NEEDLES];
+                matches[0] = _mm_setzero_si128();
                 for (i = 0; i < search->needles_count; i++) {
                     matches[i] = _mm_cmpeq_epi8(bytes, masks[i]);
                 }
