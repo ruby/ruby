@@ -494,7 +494,7 @@ rb_RB_TYPE_P(VALUE obj, enum ruby_value_type t)
     return RB_TYPE_P(obj, t);
 }
 
-long
+rb_len_t
 rb_RSTRUCT_LEN(VALUE st)
 {
     return RSTRUCT_LEN(st);
@@ -548,12 +548,12 @@ rb_assert_cme_handle(VALUE handle)
 
 // YJIT and ZJIT need this function to never allocate and never raise
 VALUE
-rb_yarv_ary_entry_internal(VALUE ary, long offset)
+rb_yarv_ary_entry_internal(VALUE ary, rb_len_t offset)
 {
     return rb_ary_entry_internal(ary, offset);
 }
 
-long
+rb_len_t
 rb_jit_array_len(VALUE a)
 {
     return rb_array_len(a);
@@ -565,7 +565,7 @@ size_t
 rb_jit_ruby2_keywords_splat_p(VALUE obj)
 {
     if (!RB_TYPE_P(obj, T_ARRAY)) return 0;
-    long len = RARRAY_LEN(obj);
+    rb_len_t len = RARRAY_LEN(obj);
     if (len == 0) return 0;
     VALUE last = RARRAY_AREF(obj, len - 1);
     if (!RB_TYPE_P(last, T_HASH)) return 0;
