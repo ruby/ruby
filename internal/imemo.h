@@ -118,7 +118,7 @@ struct MEMO {
     const VALUE v1;
     const VALUE v2;
     union {
-        long cnt;
+        rb_long_t cnt;
         long state;
         const VALUE value;
     } u3;
@@ -143,7 +143,7 @@ struct MEMO {
 typedef struct rb_imemo_tmpbuf_struct rb_imemo_tmpbuf_t;
 #endif
 VALUE rb_imemo_new(enum imemo_type type, VALUE v0, size_t size, bool is_shareable);
-struct MEMO *rb_imemo_memo_new(VALUE a, VALUE b, long c);
+struct MEMO *rb_imemo_memo_new(VALUE a, VALUE b, rb_long_t c);
 struct MEMO *rb_imemo_memo_new_value(VALUE a, VALUE b, VALUE c);
 struct vm_ifunc *rb_vm_ifunc_new(rb_block_call_func_t func, const void *data, int min_argc, int max_argc);
 static inline enum imemo_type imemo_type(VALUE imemo);
