@@ -726,7 +726,7 @@ random_seed(VALUE _)
 static VALUE
 random_raw_seed(VALUE self, VALUE size)
 {
-    long n = NUM2ULONG(size);
+    rb_long_t n = NUM2LONGT(size);
     VALUE buf = rb_str_new(0, n);
     if (n == 0) return buf;
     if (fill_random_bytes(RSTRING_PTR(buf), n, TRUE))
@@ -1036,17 +1036,17 @@ rb_genrand_ulong_limited(unsigned long limit)
 }
 
 static VALUE
-obj_random_bytes(VALUE obj, void *p, long n)
+obj_random_bytes(VALUE obj, void *p, rb_long_t n)
 {
-    VALUE len = LONG2NUM(n);
+    VALUE len = LONGT2NUM(n);
     VALUE v = rb_funcallv_public(obj, id_bytes, 1, &len);
-    long l;
+    rb_long_t l;
     Check_Type(v, T_STRING);
     l = RSTRING_LEN(v);
     if (l < n)
-        rb_raise(rb_eRangeError, "random data too short %ld", l);
+        rb_raise(rb_eRangeError, "random data too short %"PRIdLONGT, l);
     else if (l > n)
-        rb_raise(rb_eRangeError, "random data too long %ld", l);
+        rb_raise(rb_eRangeError, "random data too long %"PRIdLONGT, l);
     if (p) memcpy(p, RSTRING_PTR(v), n);
     return v;
 }
@@ -1211,7 +1211,7 @@ random_ulong_limited_big(VALUE obj, const rb_random_interface_t *rng, rb_random_
 }
 
 static VALUE
-rand_bytes(const rb_random_interface_t *rng, rb_random_t *rnd, long n)
+rand_bytes(const rb_random_interface_t *rng, rb_random_t *rnd, rb_long_t n)
 {
     VALUE bytes;
     char *ptr;
@@ -1235,7 +1235,7 @@ random_bytes(VALUE obj, VALUE len)
 {
     const rb_random_interface_t *rng = NULL;
     rb_random_t *rnd = try_get_rnd(obj, &rng);
-    return rand_bytes(rng, rnd, NUM2LONG(rb_to_int(len)));
+    return rand_bytes(rng, rnd, NUM2LONGT(rb_to_int(len)));
 }
 
 void
@@ -1282,7 +1282,7 @@ static VALUE
 random_s_bytes(VALUE obj, VALUE len)
 {
     rb_random_t *rnd = default_rand_start();
-    return rand_bytes(&random_mt_if, rnd, NUM2LONG(rb_to_int(len)));
+    return rand_bytes(&random_mt_if, rnd, NUM2LONGT(rb_to_int(len)));
 }
 
 /*
