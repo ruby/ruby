@@ -6363,20 +6363,6 @@ impl Function {
     /// This produces a minimal SSA representation amenable to further optimizations.
     /// The implementation is inspired from algorithm 2 in <https://c9x.me/compile/bib/braun13cc.pdf>.
     fn remove_trivial_block_params(&mut self) {
-
-        #[derive(Copy, Clone)]
-        enum Edge {
-            True,
-            False,
-            Unconditional
-        }
-
-        #[derive(Copy, Clone)]
-        struct EdgeKey {
-            block_id: BlockId,
-            edge: Edge
-        }
-
         // Each block param is lifted to an abstract domain of ParamValues.
         // The lattice is simple. None is Bottom, Multiple is Top, and One is between both.
         // During analysis, all block params start with None.
@@ -6451,20 +6437,11 @@ impl Function {
             rpo_order[block_id] = idx;
         }
 
-
         // Populate each block with a vec of instructions that call the block
-        let mut predecessors: Vec<Vec<EdgeKey>> = vec![vec![]; self.num_blocks()];
+        let mut predecessors: Vec<Vec<BlockId>> = vec![vec![]; self.num_blocks()];
         for block_id in rpo.iter().cloned() {
-            let insn_id = self.blocks[block_id].insns().last().unwrap();
-            match self.resolve(*insn_id).insn(self) {
-                    Insn::CondBranch { if_true, if_false, .. } => {
-                        predecessors[if_true.target].push(EdgeKey { block_id, edge: Edge::True });
-                        predecessors[if_false.target].push(EdgeKey { block_id, edge: Edge::False });
-                    }
-                    Insn::Jump(edge) => {
-                        predecessors[edge.target].push(EdgeKey { block_id, edge: Edge::Unconditional });
-                    }
-                    _ => ()
+            for edge in outgoing_edges(self, block_id) {
+                predecessors[edge.target].push(block_id);
             }
         }
 
@@ -6477,22 +6454,18 @@ impl Function {
             for target in rpo.iter().copied() {
                 let mut abstract_domain = vec![AbstractValue::None; self.blocks[target].params.len()];
 
-                for pred in &predecessors[target] {
-                    // Collect the params for abstract interpretation. The params are args of the BranchEdges extracted from block terminators.
-                    let insn_idx = self.blocks[pred.block_id].insns.len() - 1;
-                    let insn = self.resolve(self.blocks[pred.block_id].insns[insn_idx]).insn(self);
-                    let params = match (insn, pred.edge) {
-                        (Insn::Jump(edge), Edge::Unconditional) => &edge.args,
-                        (Insn::CondBranch { if_true, .. }, Edge::True) => &if_true.args,
-                        (Insn::CondBranch { if_false, .. }, Edge::False) => &if_false.args,
-                        (_, _) => unreachable!("Predecessors should only be Jump or CondBranch with a corresponding EdgeKey bool.")
-                    };
-
-                    // Perform abstract interpretation to determine trivial params
-                    for i in 0..params.len() {
-                        let param = self.find_id(params[i]);
-                        let self_loop_param = self.find_id(self.blocks[target].params[i]);
-                        abstract_domain[i].update(param, self_loop_param);
+                for &block_id in &predecessors[target] {
+                    // In almost all cases, there is only one edge that returns from this filter. However, there's one thorny edge case.
+                    // Technically, a CondBranch could pass two sets of different parameters to the same target. Both of these are predecessors and both must be checked.
+                    for edge in outgoing_edges(self, block_id).filter(|edge| edge.target == target) {
+                        // Collect the params for abstract interpretation. The params are args of the BranchEdges extracted from block terminators.
+                        let predecessor_params = &edge.args;
+                        // Perform abstract interpretation to determine trivial params
+                        for i in 0..predecessor_params.len() {
+                            let param = self.find_id(predecessor_params[i]);
+                            let self_loop_param = self.find_id(self.blocks[target].params[i]);
+                            abstract_domain[i].update(param, self_loop_param);
+                        }
                     }
                 }
 
@@ -6519,15 +6492,12 @@ impl Function {
                 }
 
                 // Remove trivial params from the incoming edges
-                for pred in &predecessors[target] {
-                    let insn_idx = self.blocks[pred.block_id].insns.len() - 1;
-                    let insn = self.resolve(self.blocks[pred.block_id].insns[insn_idx]).insn_mut(self);
-                    match (insn, pred.edge) {
-                        (Insn::Jump(edge), Edge::Unconditional) => prune_vec_by_indices(&mut edge.args, &trivial_indices),
-                        (Insn::CondBranch { if_true, .. }, Edge::True) => prune_vec_by_indices(&mut if_true.args, &trivial_indices),
-                        (Insn::CondBranch { if_false, .. }, Edge::False) => prune_vec_by_indices(&mut if_false.args, &trivial_indices),
-                        (_, _) => unreachable!("Predecessors should only be Jump or CondBranch with a corresponding EdgeKey bool.")
-                    };
+                for &block_id in &predecessors[target] {
+                    for edge in outgoing_edges_mut(self, block_id) {
+                        if edge.target == target {
+                            prune_vec_by_indices(&mut edge.args, &trivial_indices);
+                        }
+                    }
                 }
 
                 // Remove trivial params from the block definition
