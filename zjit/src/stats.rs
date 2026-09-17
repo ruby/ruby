@@ -795,33 +795,32 @@ pub extern "C" fn rb_zjit_reset_stats_bang(_ec: EcPtr, _self: VALUE) -> VALUE {
         return Qnil;
     }
 
-    let counters = ZJITState::get_counters();
-    let exit_counters = ZJITState::get_exit_counters();
+    with_vm_lock(src_loc!(), || {
+        // Reset all counters to zero
+        *ZJITState::get_counters() = Counters::default();
 
-    // Reset all counters to zero
-    *counters = Counters::default();
+        // Reset exit counters for YARV instructions
+        ZJITState::get_exit_counters().as_mut_slice().fill(0);
 
-    // Reset exit counters for YARV instructions
-    exit_counters.as_mut_slice().fill(0);
+        // Reset send fallback counters
+        ZJITState::get_send_fallback_counters().as_mut_slice().fill(0);
 
-    // Reset send fallback counters
-    ZJITState::get_send_fallback_counters().as_mut_slice().fill(0);
+        // Reset not-inlined counters
+        ZJITState::get_not_inlined_cfunc_counter_pointers().iter_mut()
+            .for_each(|b| { **(b.1) = 0; });
 
-    // Reset not-inlined counters
-    ZJITState::get_not_inlined_cfunc_counter_pointers().iter_mut()
-        .for_each(|b| { **(b.1) = 0; });
+        // Reset not-annotated counters
+        ZJITState::get_not_annotated_cfunc_counter_pointers().iter_mut()
+            .for_each(|b| { **(b.1) = 0; });
 
-    // Reset not-annotated counters
-    ZJITState::get_not_annotated_cfunc_counter_pointers().iter_mut()
-        .for_each(|b| { **(b.1) = 0; });
+        // Reset ccall counters
+        ZJITState::get_ccall_counter_pointers().iter_mut()
+            .for_each(|b| { **(b.1) = 0; });
 
-    // Reset ccall counters
-    ZJITState::get_ccall_counter_pointers().iter_mut()
-        .for_each(|b| { **(b.1) = 0; });
-
-    // Reset iseq call counters
-    ZJITState::get_iseq_calls_count_pointers().iter_mut()
-        .for_each(|b| { **(b.1) = 0; });
+        // Reset iseq call counters
+        ZJITState::get_iseq_calls_count_pointers().iter_mut()
+            .for_each(|b| { **(b.1) = 0; });
+    });
 
     Qnil
 }
