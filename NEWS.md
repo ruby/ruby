@@ -214,7 +214,7 @@ They are still available on rubygems.org and can be installed with
   * 1.7.0 to [v1.8.0][prism-v1.8.0], [v1.8.1][prism-v1.8.1], [v1.9.0][prism-v1.9.0]
 * psych 5.5.0
   * 5.3.1 to [v5.4.0][psych-v5.4.0], [v5.5.0][psych-v5.5.0]
-* resolv 0.7.2
+* resolv 0.8.0
   * 0.7.0 to [v0.7.1][resolv-v0.7.1], [v0.7.2][resolv-v0.7.2]
 * stringio 3.2.1.dev
 * strscan 3.1.9.dev
