@@ -308,7 +308,7 @@ rb_str_encode_ospath(VALUE path)
 
 # ifdef HAVE_WORKING_FORK
 static CFMutableStringRef
-mutable_CFString_new(CFStringRef *s, const char *ptr, long len)
+mutable_CFString_new(CFStringRef *s, const char *ptr, rb_long_t len)
 {
     const CFAllocatorRef alloc = kCFAllocatorDefault;
     *s = CFStringCreateWithBytesNoCopy(alloc, (const UInt8 *)ptr, len,
@@ -344,7 +344,7 @@ rb_CFString_class_initialize_before_fork(void)
 
     /* Enough small but non-empty ASCII string to fit in NSTaggedPointerString. */
     const char small_str[] = "/";
-    long len = sizeof(small_str) - 1;
+    rb_long_t len = sizeof(small_str) - 1;
     CFStringRef s;
     /*
      * Touch `CFStringCreateWithBytesNoCopy` *twice* because the implementation
@@ -360,13 +360,13 @@ rb_CFString_class_initialize_before_fork(void)
 # endif /* HAVE_WORKING_FORK */
 
 static VALUE
-rb_str_append_normalized_ospath(VALUE str, const char *ptr, long len)
+rb_str_append_normalized_ospath(VALUE str, const char *ptr, rb_long_t len)
 {
     CFIndex buflen = 0;
     CFRange all;
     CFStringRef s;
     CFMutableStringRef m = mutable_CFString_new(&s, ptr, len);
-    long oldlen = RSTRING_LEN(str);
+    rb_long_t oldlen = RSTRING_LEN(str);
 
     CFStringNormalize(m, kCFStringNormalizationFormC);
     all = CFRangeMake(0, CFStringGetLength(m));
@@ -380,7 +380,7 @@ rb_str_append_normalized_ospath(VALUE str, const char *ptr, long len)
 }
 
 VALUE
-rb_str_normalize_ospath(const char *ptr, long len)
+rb_str_normalize_ospath(const char *ptr, rb_long_t len)
 {
     const char *p = ptr;
     const char *e = ptr + len;
@@ -504,7 +504,7 @@ apply2files(int (*func)(const char *, void *), int argc, VALUE *argv, void *arg)
 {
     VALUE v;
     const size_t size = sizeof(struct apply_filename);
-    const long len = (long)(offsetof(struct apply_arg, fn) + (size * argc));
+    const rb_long_t len = (rb_long_t)(offsetof(struct apply_arg, fn) + (size * argc));
     struct apply_arg *aa = ALLOCV(v, len);
 
     aa->errnum = 0;
@@ -4610,7 +4610,7 @@ ntfs_tail(const char *path, const char *end, bool mb_enc, rb_encoding *enc)
 } while (0)
 
 #define WITH_ROOTDIFF(stmt) do { \
-    long rootdiff = root - buf; \
+    rb_long_t rootdiff = root - buf; \
     stmt; \
     root = buf + rootdiff; \
 } while (0)
@@ -4619,7 +4619,7 @@ static VALUE
 copy_home_path(VALUE result, const char *dir)
 {
     char *buf;
-    long dirlen;
+    rb_long_t dirlen;
     int encidx;
 
     dirlen = strlen(dir);
@@ -4727,7 +4727,7 @@ rb_default_home_dir(VALUE result)
 }
 
 static VALUE
-ospath_new(const char *ptr, long len, rb_encoding *fsenc)
+ospath_new(const char *ptr, rb_long_t len, rb_encoding *fsenc)
 {
 #if NORMALIZE_UTF8PATH
     VALUE path = rb_str_normalize_ospath(ptr, len);
@@ -4792,7 +4792,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
     if (s < fend && s[0] == '~' && abs_mode == 0) {      /* execute only if NOT absolute_path() */
         BUFINIT(result, buf, p, pend); // TOOD: right size the buffer
 
-        long userlen = 0;
+        rb_long_t userlen = 0;
         if (s + 1 == fend || isdirsep(s[1])) {
             buf = 0;
             b = 0;
@@ -5025,7 +5025,7 @@ str_shrink(VALUE str)
      (void)(NIL_P(dname) ? (dname) : ((dname) = rb_get_path(dname))))
 
 static VALUE
-file_expand_path_1(VALUE fname, long extra_capa)
+file_expand_path_1(VALUE fname, rb_long_t extra_capa)
 {
     VALUE buffer = rb_usascii_str_new(0, RSTRING_LEN(fname) + extra_capa);
     return rb_file_expand_path_internal(fname, Qnil, 0, 0, buffer);
@@ -5193,7 +5193,7 @@ enum rb_realpath_mode {
 };
 
 static int
-realpath_rec(long *prefixlenp, VALUE *resolvedp, const char *unresolved, VALUE fallback,
+realpath_rec(rb_long_t *prefixlenp, VALUE *resolvedp, const char *unresolved, VALUE fallback,
              VALUE loopcheck, enum rb_realpath_mode mode, int last)
 {
     const char *pend = unresolved + strlen(unresolved);
@@ -5203,7 +5203,7 @@ realpath_rec(long *prefixlenp, VALUE *resolvedp, const char *unresolved, VALUE f
     while (unresolved < pend) {
         const char *testname = unresolved;
         const char *unresolved_firstsep = rb_enc_path_next(unresolved, pend, enc);
-        long testnamelen = unresolved_firstsep - unresolved;
+        rb_long_t testnamelen = unresolved_firstsep - unresolved;
         const char *unresolved_nextname = unresolved_firstsep;
         while (unresolved_nextname < pend && isdirsep(*unresolved_nextname))
             unresolved_nextname++;
@@ -5216,7 +5216,7 @@ realpath_rec(long *prefixlenp, VALUE *resolvedp, const char *unresolved, VALUE f
                 const char *resolved_str = RSTRING_PTR(*resolvedp);
                 const char *resolved_names = resolved_str + *prefixlenp;
                 const char *lastsep = strrdirsep(resolved_names, resolved_str + RSTRING_LEN(*resolvedp), mb_enc, enc);
-                long len = lastsep ? lastsep - resolved_names : 0;
+                rb_long_t len = lastsep ? lastsep - resolved_names : 0;
                 rb_str_resize(*resolvedp, *prefixlenp + len);
             }
         }
@@ -5274,7 +5274,7 @@ realpath_rec(long *prefixlenp, VALUE *resolvedp, const char *unresolved, VALUE f
                     VALUE link;
                     VALUE link_orig = Qnil;
                     const char *link_prefix, *link_names;
-                    long link_prefixlen;
+                    rb_long_t link_prefixlen;
                     rb_hash_aset(loopcheck, testpath, ID2SYM(resolving));
                     link = rb_readlink(testpath, enc);
                     link_prefix = RSTRING_PTR(link);
@@ -5311,7 +5311,7 @@ realpath_rec(long *prefixlenp, VALUE *resolvedp, const char *unresolved, VALUE f
 static VALUE
 rb_check_realpath_emulate(VALUE basedir, VALUE path, rb_encoding *origenc, enum rb_realpath_mode mode)
 {
-    long prefixlen;
+    rb_long_t prefixlen;
     VALUE resolved;
     VALUE unresolved_path;
     VALUE loopcheck;
@@ -5320,7 +5320,7 @@ rb_check_realpath_emulate(VALUE basedir, VALUE path, rb_encoding *origenc, enum 
     rb_encoding *enc;
     char *path_names = NULL, *basedir_names = NULL, *curdir_names = NULL;
     char *ptr, *prefixptr = NULL, *pend;
-    long len;
+    rb_long_t len;
 
     unresolved_path = rb_str_dup_frozen(path);
 
@@ -5402,7 +5402,7 @@ rb_check_realpath_emulate(VALUE basedir, VALUE path, rb_encoding *origenc, enum 
     return resolved;
 }
 
-static VALUE rb_file_join(long argc, VALUE *args);
+static VALUE rb_file_join(rb_long_t argc, VALUE *args);
 
 #ifndef HAVE_REALPATH
 static VALUE
@@ -5575,7 +5575,7 @@ rb_file_s_realdirpath(int argc, VALUE *argv, VALUE klass)
 }
 
 static size_t
-rmext(const char *p, long l0, long l1, const char *e, long l2, rb_encoding *enc)
+rmext(const char *p, rb_long_t l0, rb_long_t l1, const char *e, rb_long_t l2, rb_encoding *enc)
 {
     int len1, len2;
     unsigned int c;
@@ -5614,9 +5614,9 @@ static inline const char *
 enc_find_basename(const char *name, rb_long_t *baselen, rb_long_t *alllen, bool mb_enc, rb_encoding *enc)
 {
     const char *p, *q, *e, *end;
-    long f = 0, n = -1;
+    rb_long_t f = 0, n = -1;
 
-    long len = (alllen ? (size_t)*alllen : strlen(name));
+    rb_long_t len = (alllen ? (size_t)*alllen : strlen(name));
 
     if (len <= 0) {
         return name;
@@ -5871,7 +5871,7 @@ rb_file_dirname_n(VALUE fname, int n)
 static inline const char *
 enc_find_extname(const char *name, rb_long_t *len, bool mb_enc, rb_encoding *enc)
 {
-    const char *p, *e, *end = name + (len ? *len : (long)strlen(name));
+    const char *p, *e, *end = name + (len ? *len : (rb_long_t)strlen(name));
 
     p = strrdirsep(name, end, mb_enc, enc);	/* get the last path component */
     if (!p)
@@ -6059,7 +6059,7 @@ file_inspect_join(VALUE ary, VALUE arg, int recur)
 static VALUE
 rb_file_join_ary(VALUE ary)
 {
-    long len, i;
+    rb_long_t len, i;
     VALUE result, tmp;
     const char *name, *tail;
     int checked = TRUE;
@@ -6123,11 +6123,11 @@ rb_file_join_ary(VALUE ary)
 }
 
 static inline VALUE
-rb_file_join_fastpath(long argc, VALUE *args)
+rb_file_join_fastpath(rb_long_t argc, VALUE *args)
 {
-    long size = argc;
+    rb_long_t size = argc;
 
-    long i;
+    rb_long_t i;
     for (i = 0; i < argc; i++) {
         VALUE tmp = args[i];
         if (RB_LIKELY(RB_TYPE_P(tmp, T_STRING) && rb_str_enc_fastpath(tmp))) {
@@ -6147,15 +6147,15 @@ rb_file_join_fastpath(long argc, VALUE *args)
     const char *name = RSTRING_PTR(result);
     for (i = 1; i < argc; i++) {
         VALUE tmp = args[i];
-        long len = RSTRING_LEN(result);
+        rb_long_t len = RSTRING_LEN(result);
 
         const char *tmp_s;
-        long tmp_len;
+        rb_long_t tmp_len;
         RSTRING_GETMEM(tmp, tmp_s, tmp_len);
 
         if (tmp_len > 0 && isdirsep(tmp_s[0])) {
             // right side has a leading separator, remove left side separators.
-            long chomp = len;
+            rb_long_t chomp = len;
             while (chomp > 0 && isdirsep(name[chomp - 1])) {
                 --chomp;
             }
@@ -6180,7 +6180,7 @@ rb_file_join_fastpath(long argc, VALUE *args)
 }
 
 static inline VALUE
-rb_file_join(long argc, VALUE *args)
+rb_file_join(rb_long_t argc, VALUE *args)
 {
     if (RB_UNLIKELY(argc == 0)) {
         return rb_str_new(0, 0);
@@ -7709,7 +7709,7 @@ static bool
 fname_need_expansion_p(VALUE fname)
 {
     const char *s = RSTRING_PTR(fname);
-    const long len = RSTRING_LEN(fname);
+    const rb_long_t len = RSTRING_LEN(fname);
     const char *send = s + len;
 
     if (nav_component_p(s, send)) {
@@ -7733,7 +7733,7 @@ fname_need_expansion_p(VALUE fname)
 static bool
 expand_feature(VALUE fname, VALUE dname, VALUE buffer, bool need_expansion)
 {
-    long dname_len = RSTRING_LEN(dname);
+    rb_long_t dname_len = RSTRING_LEN(dname);
     const char *dname_ptr = RSTRING_PTR(dname);
 
     RUBY_ASSERT(dname_len > 0);
@@ -7757,7 +7757,7 @@ rb_find_file_ext(VALUE *filep, const char *const *ext)
 {
     const char *f = StringValueCStr(*filep);
     VALUE fname = *filep;
-    long i, j, fnlen;
+    rb_long_t i, j, fnlen;
     int expanded = 0;
 
     if (!ext[0]) return 0;
@@ -7783,7 +7783,7 @@ rb_find_file_ext(VALUE *filep, const char *const *ext)
         return 0;
     }
 
-    long expanded_load_path_maxlen;
+    rb_long_t expanded_load_path_maxlen;
     VALUE load_path = rb_get_expanded_load_path(&expanded_load_path_maxlen);
     if (!load_path) return 0;
 
@@ -7834,14 +7834,14 @@ rb_find_file(VALUE path)
         return path;
     }
 
-    long expanded_load_path_maxlen;
+    rb_long_t expanded_load_path_maxlen;
     VALUE load_path = rb_get_expanded_load_path(&expanded_load_path_maxlen);
 
     if (load_path) {
         bool need_expansion = fname_need_expansion_p(path);
         VALUE tmp = rb_str_tmp_new(expanded_load_path_maxlen + RSTRING_LEN(path) + 2);
         rb_enc_associate_index(tmp, rb_usascii_encindex());
-        for (long i = 0; i < RARRAY_LEN(load_path); i++) {
+        for (rb_long_t i = 0; i < RARRAY_LEN(load_path); i++) {
             VALUE dname = rb_get_path(RARRAY_AREF(load_path, i));
             if (!RSTRING_LEN(dname)) continue;
             expand_feature(path, dname, tmp, need_expansion);
