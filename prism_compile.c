@@ -9762,12 +9762,25 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         const pm_keyword_hash_node_t *cast = (const pm_keyword_hash_node_t *) node;
         const pm_node_list_t *elements = &cast->elements;
 
-        const pm_node_t *element;
-        PM_NODE_LIST_FOREACH(elements, index, element) {
-            PM_COMPILE(element);
+        bool has_splat = false;
+        for (size_t index = 0; index < elements->size; index++) {
+            if (PM_NODE_TYPE_P(elements->nodes[index], PM_ASSOC_SPLAT_NODE)) {
+                has_splat = true;
+                break;
+            }
         }
 
-        if (!popped) PUSH_INSN1(ret, location, newhash, INT2FIX(elements->size * 2));
+        if (has_splat) {
+            pm_compile_hash_elements(iseq, node, elements, 0, Qundef, false, ret, scope_node);
+        }
+        else {
+            const pm_node_t *element;
+            PM_NODE_LIST_FOREACH(elements, index, element) {
+                PM_COMPILE(element);
+            }
+
+            if (!popped) PUSH_INSN1(ret, location, newhash, INT2FIX(elements->size * 2));
+        }
         return;
       }
       case PM_LAMBDA_NODE: {
