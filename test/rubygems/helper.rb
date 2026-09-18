@@ -1452,16 +1452,6 @@ Also, a list:
   end
 
   ##
-  # Ruby::Box gives each box detached copies of the stdio globals, so
-  # reassigning $stdout/$stderr cannot capture output written by Kernel#warn,
-  # Kernel#puts or subprocesses. Pends until the ruby-core fix for
-  # https://bugs.ruby-lang.org/issues/21867 lands.
-
-  def pend_for_ruby_box_stdio_capture
-    pend "Ruby::Box breaks $stdout/$stderr capture (https://bugs.ruby-lang.org/issues/21867)" if ruby_box_enabled?
-  end
-
-  ##
   # Returns the make command for the current platform. For versions of Ruby
   # built on MS Windows with VC++ or Borland it will return 'nmake'. On all
   # other platforms, including Cygwin, it will return 'make'.

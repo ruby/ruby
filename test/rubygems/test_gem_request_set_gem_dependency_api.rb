@@ -78,7 +78,6 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
   end
 
   def test_gem_duplicate
-    pend_for_ruby_box_stdio_capture
     @gda.gem "a"
 
     _, err = capture_output do
@@ -129,7 +128,6 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
   end
 
   def test_gem_git_branch
-    pend_for_ruby_box_stdio_capture
     _, err = capture_output do
       @gda.gem "a", git: "git/a", branch: "other", tag: "v1"
     end
@@ -151,7 +149,6 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
   end
 
   def test_gem_git_ref
-    pend_for_ruby_box_stdio_capture
     _, err = capture_output do
       @gda.gem "a", git: "git/a", ref: "abcd123", branch: "other"
     end

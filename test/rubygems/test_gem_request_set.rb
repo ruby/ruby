@@ -71,7 +71,6 @@ class TestGemRequestSet < Gem::TestCase
   end
 
   def test_install_from_gemdeps_explain
-    pend_for_ruby_box_stdio_capture
     spec_fetcher do |fetcher|
       fetcher.gem "a", 2
     end
@@ -95,7 +94,6 @@ Gems to install:
   end
 
   def test_install_from_gemdeps_explain_verbose
-    pend_for_ruby_box_stdio_capture
     spec_fetcher do |fetcher|
       fetcher.gem "a", 2
     end
