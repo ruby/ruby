@@ -6,7 +6,7 @@ use crate::backend::lir::Assembler;
 use crate::codegen::max_iseq_versions;
 use crate::cruby::*;
 use crate::hir::{Insn, iseq_to_hir};
-use crate::options::{CallThreshold, get_option, rb_zjit_prepare_options, set_call_threshold, set_inline_threshold, set_max_versions, set_mem_bytes};
+use crate::options::{CallThreshold, get_option, rb_zjit_prepare_options, set_call_threshold, set_inline_threshold, set_max_versions, set_mem_bytes, set_num_exits_until_invalidate};
 use crate::payload::IseqVersion;
 use crate::hir::tests::hir_build_tests::assert_contains_opcode;
 use crate::payload::*;
@@ -197,6 +197,7 @@ fn test_putobject() {
 #[test]
 fn test_recompile_exit_invalidates_on_first_exit() {
     set_call_threshold(2);
+    set_num_exits_until_invalidate(1);
     eval("
         def recompile_on_first_exit(a, b) = a + b
         recompile_on_first_exit(1, 2)
@@ -208,9 +209,39 @@ fn test_recompile_exit_invalidates_on_first_exit() {
     assert_eq!(1, payload.versions.len());
     assert!(!unsafe { payload.versions.last().unwrap().as_ref() }.is_invalidated());
 
-    // The first recompile exit invalidates the version right away, so subsequent
-    // calls re-profile every instruction in the interpreter before recompiling.
+    // With --zjit-num-exits-until-invalidate=1, the first recompile exit invalidates the version right
+    // away, so subsequent calls re-profile every instruction in the interpreter before recompiling.
     eval("recompile_on_first_exit(1.5, 2.5)");
+    let payload = get_or_create_iseq_payload(iseq);
+    assert_eq!(1, payload.versions.len());
+    assert!(unsafe { payload.versions.last().unwrap().as_ref() }.is_invalidated());
+}
+
+#[test]
+fn test_recompile_exit_waits_for_exit_budget() {
+    set_call_threshold(2);
+    set_num_exits_until_invalidate(3);
+    eval("
+        def recompile_exit_budget(a, b) = a + b
+        recompile_exit_budget(1, 2)
+        recompile_exit_budget(1, 2)
+    ");
+
+    let iseq = get_method_iseq("self", "recompile_exit_budget");
+    let payload = get_or_create_iseq_payload(iseq);
+    assert_eq!(1, payload.versions.len());
+    assert!(!unsafe { payload.versions.last().unwrap().as_ref() }.is_invalidated());
+
+    // The first two recompile exits only decrement the budget. The compiled version keeps running.
+    for _ in 0..2 {
+        eval("recompile_exit_budget(1.5, 2.5)");
+        let payload = get_or_create_iseq_payload(iseq);
+        assert_eq!(1, payload.versions.len());
+        assert!(!unsafe { payload.versions.last().unwrap().as_ref() }.is_invalidated());
+    }
+
+    // The third recompile exit exhausts the budget and invalidates the version.
+    eval("recompile_exit_budget(1.5, 2.5)");
     let payload = get_or_create_iseq_payload(iseq);
     assert_eq!(1, payload.versions.len());
     assert!(unsafe { payload.versions.last().unwrap().as_ref() }.is_invalidated());
@@ -220,6 +251,7 @@ fn test_recompile_exit_invalidates_on_first_exit() {
 fn test_function_stub_reprofiles_after_invalidation() {
     rb_zjit_prepare_options();
     set_inline_threshold(0);
+    set_num_exits_until_invalidate(1);
     let num_profiles = get_option!(num_profiles);
     let call_threshold = CallThreshold::from(num_profiles) + 2;
     set_call_threshold(call_threshold);

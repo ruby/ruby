@@ -364,6 +364,8 @@ fn gen_iseq(cb: &mut CodeBlock, iseq: IseqPtr, function: Option<&Function>) -> R
         Ok(code_ptrs) => {
             unsafe { version.as_mut() }.status = IseqStatus::Compiled(code_ptrs.clone());
             incr_counter!(compiled_iseq_count);
+            // Give the new version a fresh budget of recompile exits. See exit_recompile().
+            payload.num_exits_until_invalidate = get_option!(num_exits_until_invalidate);
         }
         Err(err) => {
             unsafe { version.as_mut() }.status = IseqStatus::CantCompile(err.clone());
@@ -3765,11 +3767,9 @@ c_callable! {
     /// the outer ISEQ's version holds the failing guard and must be invalidated to
     /// force a recompile. For non-inlined code, it is the same as the frame ISEQ.
     ///
-    /// The first exit invalidates the version right away. Invalidation resets the
-    /// ISEQ's call counter and re-stubs incoming JIT-to-JIT calls, so every entry
-    /// runs the profiling window in the interpreter before the next compile.
-    ///
-    /// TODO: Allow waiting for a configured number of exits before invalidating the ISEQ.
+    /// The version gets invalidated after `--zjit-num-exits-until-invalidate` recompile exits.
+    /// Invalidation resets the ISEQ's call counter and re-stubs incoming JIT-to-JIT calls,
+    /// so every entry runs the profiling window in the interpreter before the next compile.
     pub(crate) fn exit_recompile(compiled_iseq_raw: VALUE) {
         // Fast check before taking the VM lock: skip if the compiled unit is already
         // invalidated or at the version limit. This avoids expensive lock acquisition
@@ -3782,6 +3782,12 @@ c_callable! {
                 .map_or(false, |v| unsafe { v.as_ref() }.is_invalidated())
                 || payload.versions.len() >= max_iseq_versions();
             if already_done {
+                return;
+            }
+
+            // Wait for the configured number of recompile exits before invalidation.
+            payload.num_exits_until_invalidate = payload.num_exits_until_invalidate.saturating_sub(1);
+            if payload.num_exits_until_invalidate > 0 {
                 return;
             }
         }
