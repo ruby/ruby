@@ -62,30 +62,67 @@ platform_is_not :mingw do
       ScratchPad.recorded.should.include?(:outer_ensure_clause)
     end
 
-    it "does not set $!" do
-      thread = ThreadSpecs.dying_thread_ensures(:kill) { ScratchPad.record $! }
-      thread.join
-      ScratchPad.recorded.should == nil
-    end
+    ruby_version_is ""..."4.1" do
+      it "does not set $!" do
+        thread = ThreadSpecs.dying_thread_ensures(:kill) { ScratchPad.record $! }
+        thread.join
+        ScratchPad.recorded.should == nil
+      end
 
-    it "does not reset $!" do
-      ScratchPad.record []
+      it "does not reset $!" do
+        ScratchPad.record []
 
-      exc = RuntimeError.new("foo")
-      thread = Thread.new do
-        begin
-          raise exc
-        ensure
-          ScratchPad << $!
+        exc = RuntimeError.new("foo")
+        thread = Thread.new do
           begin
-            Thread.current.kill
+            raise exc
           ensure
             ScratchPad << $!
+            begin
+              Thread.current.kill
+            ensure
+              ScratchPad << $!
+            end
           end
         end
+        thread.join
+        ScratchPad.recorded.should == [exc, exc]
       end
-      thread.join
-      ScratchPad.recorded.should == [exc, exc]
+    end
+
+    ruby_version_is "4.1" do
+      it "sets $! to a fatal exception" do
+        thread = ThreadSpecs.dying_thread_ensures(:kill) { ScratchPad.record $! }
+        thread.join
+
+        ScratchPad.recorded.should.is_a?(Exception)
+        ScratchPad.recorded.class.name.should == "fatal"
+        ScratchPad.recorded.message.should == "thread killed"
+      end
+
+      it "replaces $! with a fatal exception" do
+        ScratchPad.record []
+
+        exc = RuntimeError.new("foo")
+        thread = Thread.new do
+          begin
+            raise exc
+          ensure
+            ScratchPad << $!
+            begin
+              Thread.current.kill
+            ensure
+              ScratchPad << $!
+            end
+          end
+        end
+        thread.join
+
+        ScratchPad.recorded[0].should.equal?(exc)
+        ScratchPad.recorded[1].should.is_a?(Exception)
+        ScratchPad.recorded[1].class.name.should == "fatal"
+        ScratchPad.recorded[1].message.should == "thread killed"
+      end
     end
 
     it "cannot be rescued" do
