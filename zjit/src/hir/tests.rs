@@ -307,6 +307,50 @@ mod snapshot_tests {
           Return v59
         ");
     }
+
+    #[test]
+    fn locals_in_memory_are_marked_in_snapshot() {
+        eval("
+          def test
+            a = 1
+            self.then { a = :a }
+          end
+          test
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb0():
+          Entries bb1, bb2
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:NilClass = Const Value(nil)
+          Jump bb3(v1, v2)
+        bb2():
+          EntryPoint JIT(0)
+          v5:BasicObject = LoadArg :self@0
+          v6:NilClass = Const Value(nil)
+          Jump bb3(v5, v6)
+        bb3(v8:BasicObject, v9:NilClass):
+          v10:Any = Snapshot FrameState { pc: 0x1000, stack: [], locals: [a=v9] }
+          v11:Any = Snapshot FrameState { pc: 0x1008, stack: [], locals: [a=v9] }
+          PatchPoint NoTracePoint
+          v13:Fixnum[1] = Const Value(1)
+          v14:Any = Snapshot FrameState { pc: 0x1010, stack: [v13], locals: [a=v9] }
+          v15:Any = Snapshot FrameState { pc: 0x1018, stack: [], locals: [a=v13] }
+          PatchPoint NoTracePoint
+          v17:Any = Snapshot FrameState { pc: 0x1020, stack: [v8], locals: [a:=v13] }
+          v18:BasicObject = Send v8, 0x1028, :then # SendFallbackReason: Uncategorized(send)
+          v19:Any = Snapshot FrameState { pc: 0x1048, stack: [v18], locals: [] }
+          PatchPoint NoEPEscape(test)
+          v21:CPtr = LoadSP
+          v22:BasicObject = LoadField v21, :a@0x1050
+          v23:Any = Snapshot FrameState { pc: 0x1048, stack: [v18], locals: [a=v22] }
+          PatchPoint NoTracePoint
+          CheckInterrupts
+          Return v18
+        ");
+    }
 }
 
 #[cfg(test)]
