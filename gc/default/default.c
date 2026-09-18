@@ -5202,16 +5202,6 @@ gc_sweep_page(rb_objspace_t *objspace, rb_heap_t *heap, struct gc_sweep_context 
         }
     }
 
-    /* main's local GC is lock-free, but freeing a dead object can mutate VM-global state
-     * that other Ractors rewrite under the VM lock: weak tables (rb_gc_obj_free_vm_weak_
-     * references: ci_table, fstring, symbol, cme). (JIT iseq frees are not reached here:
-     * iseqs are born shareable and a local GC never frees shareable objects.) Wrap the
-     * page's free loop in a no-barrier VM lock (FIXME). */
-    const bool sweep_needs_vm_lock =
-        objspace == global_objspace->main_objspace && rb_gc_multi_ractor_p() && !objspace->flags.during_global_gc;
-    unsigned int sweep_lock_lev = 0;
-    if (sweep_needs_vm_lock) sweep_lock_lev = RB_GC_VM_LOCK_NO_BARRIER();
-
     for (int i = 0; i < bitmap_plane_count; i++) {
         bitset = ~bits[i];
         if (bitset) {
@@ -5219,8 +5209,6 @@ gc_sweep_page(rb_objspace_t *objspace, rb_heap_t *heap, struct gc_sweep_context 
         }
         p += BITS_BITLENGTH * slot_size;
     }
-
-    if (sweep_needs_vm_lock) RB_GC_VM_UNLOCK_NO_BARRIER(sweep_lock_lev);
 
     /* Bulk-clear the freed slots' shareable and shref bits before the freelist is
      * published, so a reused slot is clean.  Freed slots are exactly the unmarked ones,
