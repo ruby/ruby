@@ -4242,17 +4242,32 @@ gc_finalize_deferred_register(rb_objspace_t *objspace)
 
 static int pop_mark_stack(mark_stack_t *stack, VALUE *data);
 
+/* Throw away an unfinished incremental mark and leave the objspace in gc_mode_none.  The
+ * mark bits the partial mark set stay behind, so the caller must clear them before the
+ * heap is collected again. */
+static void
+gc_abort_incremental_marking(rb_objspace_t *objspace)
+{
+    GC_ASSERT(is_incremental_marking(objspace));
+
+    VALUE obj;
+    while (pop_mark_stack(&objspace->mark_stack, &obj));
+
+    /* gc_grey records the weak references it greys for gc_marks_finish to resolve; this
+     * cycle never reaches it, and the entries would outlive their objects. */
+    rb_darray_clear(objspace->weak_references);
+
+    objspace->flags.during_incremental_marking = FALSE;
+    gc_mode_set(objspace, gc_mode_none);
+}
+
 static void
 gc_abort(void *objspace_ptr)
 {
     rb_objspace_t *objspace = objspace_ptr;
 
     if (is_incremental_marking(objspace)) {
-        /* Remove all objects from the mark stack. */
-        VALUE obj;
-        while (pop_mark_stack(&objspace->mark_stack, &obj));
-
-        objspace->flags.during_incremental_marking = FALSE;
+        gc_abort_incremental_marking(objspace);
     }
 
     if (is_lazy_sweeping(objspace)) {
@@ -9523,9 +9538,14 @@ gc_start_global(rb_objspace_t *driver, unsigned int reason, bool compact, bool a
      * thread runs every objspace's phases. */
     for (size_t i = 0; i < global_objspace->global_gc.n_objspaces; i++) {
         rb_objspace_t *objspace = global_objspace->global_gc.objspaces[i];
-        /* No objspace can be mid-incremental-mark here: that only runs single-objspace
-         * and vm_insert_ractor0 settles it on the transition.  Clearing flags in step 5
-         * under a live gray stack would break the owner's GC state machine. */
+        /* The barrier can stop a Ractor between the steps of its own incremental mark, and
+         * nothing else finishes another objspace's mark.  Drop the partial mark rather
+         * than clear its flags in step 5 under a live gray stack: the owner would resume
+         * with a mark stack into a heap this GC has since re-marked and swept.  Nothing is
+         * lost, the unified mark below redoes the work. */
+        if (is_incremental_marking(objspace)) {
+            gc_abort_incremental_marking(objspace);
+        }
         GC_ASSERT(!is_incremental_marking(objspace));
         GC_ASSERT(is_mark_stack_empty(&objspace->mark_stack));
         rb_gc_initialize_vm_context(&objspace->vm_context);
@@ -9796,8 +9816,7 @@ objspace_absorb(rb_objspace_t *dst, rb_objspace_t *src)
 
     /* Settle dst first: adding pages under a walking lazy-sweep cursor, or into a
      * half-marked incremental heap, would sweep the merged pages with src's stale mark
-     * bits and free live objects.  (Normally settled already: vm_insert_ractor0's settle
-     * means no objspace is incremental while a zombie waits to be absorbed.) */
+     * bits and free live objects. */
     gc_rest(dst);
 
     /* Settle src: no lazy sweep and no in-progress allocation page. */
