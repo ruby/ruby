@@ -8828,7 +8828,7 @@ gc_start_body(rb_objspace_t *objspace, unsigned int reason, bool allow_global)
 
     if (objspace->flags.immediate_sweep) reason |= GPR_FLAG_IMMEDIATE_SWEEP;
 
-    /* Enter after during_compacting is decided: gc_local_gc_holds_vm_lock reads it. */
+    /* Enter after during_compacting is decided */
     unsigned int lock_lev;
     gc_enter(objspace, gc_enter_event_start, &lock_lev);
 
@@ -9070,31 +9070,16 @@ gc_clock_end(struct timespec *ts)
     return 0;
 }
 
-/* Whether a non-global local GC holds the no-barrier VM lock for its whole run.  Main's
- * ordinary local GC is lock-free; only compaction holds it (see the comment in the
- * function body). */
 static inline bool
-gc_local_gc_holds_vm_lock(const rb_objspace_t *objspace)
+gc_local_gc_holds_vm_lock(void)
 {
-    /* Main's local GC is lock-free at the gc_enter level.  The VM-global roots and JIT
-     * root marks that need the VM lock take a bounded no-barrier window in rb_gc_mark_roots.
-     * (JIT iseq payload marks and frees are not reached during a local GC: iseqs are born
-     * shareable and a local GC never traverses or frees them.)  Compaction takes its
-     * barrier lock separately (gc_enter handles it before this function runs). */
-    return objspace == global_objspace->main_objspace &&
-           objspace->flags.during_compacting;
+    return rb_gc_single_objspace_p();
 }
 
 static inline bool
 gc_enter(rb_objspace_t *objspace, enum gc_enter_event event, unsigned int *lock_lev)
 {
-    /* A local GC runs on its owner thread and takes neither the VM lock nor a barrier:
-     * containment makes the heap single-writer (only a stop-the-world global GC writes pages
-     * across objspaces).
-     *
-     * Main's local GC walks VM-global roots (rb_vm_mark) and JIT root marks that change under
-     * the VM lock but takes the lock in rb_gc_mark_roots rather than holding it for the full GC.
-     *
+     /*
      * NOTE: The GC must never take the barrier VM lock from inside itself: the waiter could
      * join a pending barrier mid-collection and expose its half-collected heap to the global
      * GC. A no-barrier lock is safe. Other shared structures the GC paths touch use their own
@@ -9152,7 +9137,7 @@ gc_enter(rb_objspace_t *objspace, enum gc_enter_event event, unsigned int *lock_
             rb_gc_vm_barrier();
             objspace->flags.gc_lock_barrier = TRUE;
         }
-        else if (gc_local_gc_holds_vm_lock(objspace)) {
+        else if (gc_local_gc_holds_vm_lock()) {
             *lock_lev = RB_GC_VM_LOCK_NO_BARRIER();
         }
         break;
