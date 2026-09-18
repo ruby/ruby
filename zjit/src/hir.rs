@@ -6646,7 +6646,18 @@ impl Function {
 
 
     fn optimize_load_store(&mut self) {
-        for block in self.reverse_post_order() {
+        // TODO: Maybe we could have another patch as Kokubun recommended to retain information needed across global optimizations?
+        // the back edge optimization seems common, as does the traversal techniques and it would be nice to have a simple API
+        // Also the abstract interpretations are common too
+        let rpo = self.reverse_post_order();
+        let mut changed = true;
+        // TODO: Add comments and consolidate back edge checks among various different passes
+        let mut rpo_order = vec![usize::MAX; self.blocks.len()];
+        for (idx, &block_id) in rpo.iter().enumerate() {
+            rpo_order[block_id] = idx;
+        }
+        let mut has_back_edge = true;
+        for block in rpo {
             let mut compile_time_heap: HashMap<(InsnId, i32), InsnId>  = HashMap::new();
             let old_insns = std::mem::take(&mut self.blocks[block].insns);
             let mut new_insns = Vec::with_capacity(old_insns.len());
