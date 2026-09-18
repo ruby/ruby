@@ -503,7 +503,6 @@ cloexec_pipe(int descriptors[2], int flags, bool force_cloexec)
     rb_maygvl_fd_fix_cloexec(descriptors[0]);
     rb_maygvl_fd_fix_cloexec(descriptors[1]);
 
-#ifndef _WIN32
     rb_fd_set_nonblock(descriptors[0]);
     rb_fd_set_nonblock(descriptors[1]);
 #endif
