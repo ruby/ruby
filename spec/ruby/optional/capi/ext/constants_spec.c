@@ -48,6 +48,9 @@ defconstfunc(rb_cTime)
 defconstfunc(rb_cThread)
 defconstfunc(rb_cTrueClass)
 defconstfunc(rb_cUnboundMethod)
+#ifdef RUBY_VERSION_IS_4_1
+defconstfunc(rb_eAbstractMethodError)
+#endif
 defconstfunc(rb_eArgError)
 defconstfunc(rb_eEncodingError)
 defconstfunc(rb_eEncCompatError)
@@ -128,6 +131,9 @@ void Init_constants_spec(void) {
   rb_define_method(cls, "rb_cThread", constants_spec_rb_cThread, 0);
   rb_define_method(cls, "rb_cTrueClass", constants_spec_rb_cTrueClass, 0);
   rb_define_method(cls, "rb_cUnboundMethod", constants_spec_rb_cUnboundMethod, 0);
+#ifdef RUBY_VERSION_IS_4_1
+  rb_define_method(cls, "rb_eAbstractMethodError", constants_spec_rb_eAbstractMethodError, 0);
+#endif
   rb_define_method(cls, "rb_eArgError", constants_spec_rb_eArgError, 0);
   rb_define_method(cls, "rb_eEncodingError", constants_spec_rb_eEncodingError, 0);
   rb_define_method(cls, "rb_eEncCompatError", constants_spec_rb_eEncCompatError, 0);
