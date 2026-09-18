@@ -6102,6 +6102,16 @@ rb_io_close_write(VALUE io)
 #ifndef SHUT_WR
 # define SHUT_WR 1
 #endif
+        /* Flush any buffered data before shutting down the write side.
+         * Otherwise the buffered bytes are silently dropped here, and a
+         * subsequent #close would try to flush them into the now
+         * shutdown(SHUT_WR) socket and fail with EPIPE. This matches the
+         * behaviour of the non-socket path below, which flushes via
+         * rb_io_close(). */
+        if (fptr->mode & FMODE_WRITABLE) {
+            if (io_fflush(fptr) < 0)
+                rb_sys_fail_on_write(fptr);
+        }
         if (shutdown(fptr->fd, SHUT_WR) < 0)
             rb_sys_fail_path(fptr->pathv);
         fptr->mode &= ~FMODE_WRITABLE;
