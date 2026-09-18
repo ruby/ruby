@@ -14,7 +14,7 @@ module Gem
     def self.open(file_name)
       # Vendored, because activating the securerandom default gem here pins it for
       # the rest of the process and conflicts with gems that need a newer one.
-      require_relative "../vendored_securerandom" unless defined?(Gem::SecureRandom)
+      require_relative "../vendored_securerandom"
 
       old_stat = begin
                    File.stat(file_name)
