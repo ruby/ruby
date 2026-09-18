@@ -995,6 +995,15 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_raise(IO::Buffer::InvalidatedError) do
       slice.get_string(0, 8, encoding)
     end
+
+    # [Bug #22336]
+    encoding = Struct.new(:buffer) do
+      def to_str
+        buffer.resize(64 * 1024 * 1024)
+        "UTF-8"
+      end
+    end.new(IO::Buffer.new(2_000_000))
+    assert_equal 1_000_000, encoding.buffer.get_string(0, 1_000_000, encoding).length
   end
 
   def test_zero_length_get_string
