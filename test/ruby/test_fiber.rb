@@ -191,8 +191,10 @@ class TestFiber < Test::Unit::TestCase
       ary << f1.transfer(:baz)
       :ng
     }
-    assert_equal(:ok, f1.transfer)
-    assert_equal([:baz], ary)
+    # When f1 terminates it returns to the fiber that transferred into it (f2),
+    # which then resumes and terminates, returning to the root fiber. [Bug #20081]
+    assert_equal(:ng, f1.transfer)
+    assert_equal([:baz, :ok], ary)
   end
 
   def test_terminate_transferred_fiber
@@ -219,7 +221,58 @@ class TestFiber < Test::Unit::TestCase
     r1.resume
     log << :root_terminate
 
-    assert_equal [:fa2_terminate, :fa1_terminate, :r1_terminate, :root_terminate], log
+    assert_equal [:fa2_terminate, :fa1_terminate, :fb1_terminate, :r1_terminate, :root_terminate], log
+  end
+
+  def test_terminate_unwinds_to_most_recent_transferring_fiber
+    # A transferred fiber that terminates returns to the fiber that most recently
+    # transferred into it, unwinding the transfer chain instead of jumping back
+    # to the root fiber. [Bug #20081]
+    log = []
+    a = b = nil
+
+    a = Fiber.new{
+      log << :a1
+      b.transfer
+      log << :a2 # b transferred back into a
+    }
+    b = Fiber.new{
+      log << :b1
+      a.transfer
+      log << :b2 # a terminated and returned control to b
+    }
+
+    a.transfer # a.prev = root
+    log << :root
+
+    assert_equal [:a1, :b1, :a2, :b2, :root], log
+  end
+
+  def test_yield_returns_to_resumer_across_transfer
+    # Fiber.yield must return to the resumer even when the resumed fiber
+    # transfers away and is transferred back before yielding: an intervening
+    # transfer must not clobber the resume back-pointer. [Bug #20081]
+    log = []
+    a = b = nil
+
+    a = Fiber.new{
+      log << :a_start
+      b.transfer
+      log << :a_resumed
+      Fiber.yield # must return to the resumer (root), not b
+      log << :a_after_yield
+    }
+    b = Fiber.new{
+      log << :b_start
+      a.transfer
+      log << :b_never
+    }
+
+    a.resume
+    log << :back_in_root
+    a.resume
+
+    assert_equal [:a_start, :b_start, :a_resumed, :back_in_root, :a_after_yield], log
   end
 
   def test_tls
