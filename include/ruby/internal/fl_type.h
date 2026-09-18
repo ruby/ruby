@@ -355,6 +355,8 @@ ruby_fl_type {
 #undef RBIMPL_HAVE_ENUM_ATTRIBUTE
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
+
+RBIMPL_ATTR_DEPRECATED_EXT(("only for internal use"))
 /**
  * This is an  implementation detail of #RB_OBJ_FREEZE().  People  don't use it
  * directly.
@@ -363,6 +365,7 @@ RBIMPL_SYMBOL_EXPORT_BEGIN()
  * @post        `klass` gets frozen.
  */
 void rb_freeze_singleton_class(VALUE klass);
+
 RBIMPL_SYMBOL_EXPORT_END()
 
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()

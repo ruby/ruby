@@ -23,6 +23,7 @@
 #include "internal.h"
 #include "internal/box.h"
 #include "internal/class.h"
+#include "internal/error.h"
 #include "internal/eval.h"
 #include "internal/gc.h"
 #include "internal/hash.h"
@@ -3000,6 +3001,9 @@ singleton_class_of(VALUE obj, bool ensure_eigenclass)
     return klass;
 }
 
+#if RUBY_VERSION_SINCE(4, 2)
+RBIMPL_TODO("make rb_freeze_singleton_class internal; remove from fl_type.h")
+#endif
 void
 rb_freeze_singleton_class(VALUE attached_object)
 {
