@@ -173,7 +173,7 @@ def parse_args(argv = ARGV)
   end
 end
 
-Compressors = {".gz"=>"gzip", ".bz2"=>"bzip2"}
+Compressors = {".gz"=>%w"gzip -n", ".bz2"=>%w"bzip2"}
 def Compressors.for(type)
   ext = File.extname(type)
   if compress = fetch(ext, nil)
