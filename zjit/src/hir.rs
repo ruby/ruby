@@ -6447,10 +6447,7 @@ impl Function {
         for (idx, &block_id) in rpo.iter().enumerate() {
             rpo_order[block_id] = idx;
         }
-        let has_back_edge = rpo.iter()
-            .any(|&block| outgoing_edges(self, block)
-                .any(|edge| rpo_order[edge.target] <= rpo_order[block]));
-
+        let mut has_back_edge = false;
 
         // Populate each block with a vec of instructions that call said block
         let mut predecessors: Vec<Vec<BlockId>> = vec![vec![]; self.num_blocks()];
@@ -6474,6 +6471,7 @@ impl Function {
                     // In almost all cases, there is only one edge that returns from this filter. However, there's one thorny edge case.
                     // Technically, a CondBranch could pass two sets of different parameters to the same target. Both of these are predecessors and both must be checked.
                     for edge in outgoing_edges(self, block_id).filter(|edge| edge.target == target) {
+                        has_back_edge |= rpo_order[edge.target] <= rpo_order[rpo_order[block_id]];
                         // Collect the params for abstract interpretation. The params are args of the BranchEdges extracted from block terminators.
                         let predecessor_params = &edge.args;
                         // Perform abstract interpretation to determine trivial params
