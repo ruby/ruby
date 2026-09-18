@@ -719,6 +719,10 @@ class Gem::Installer
       raise Gem::InstallError, "#{spec} has an invalid name"
     end
 
+    unless /\A#{Gem::Version::VERSION_PATTERN}\z/.match?(spec.version.to_s)
+      raise Gem::InstallError, "#{spec} has an invalid version"
+    end
+
     if spec.raw_require_paths.any? {|path| path =~ /\R/ }
       raise Gem::InstallError, "#{spec} has an invalid require_paths"
     end

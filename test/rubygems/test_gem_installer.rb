@@ -2368,6 +2368,46 @@ class TestGemInstaller < Gem::InstallerTestCase
     refute defined?(::Object::FROM_EVAL)
   end
 
+  # Psych restores a version from gem metadata through
+  # Gem::Version#yaml_initialize, which skips the checks in #initialize.
+  def test_pre_install_checks_malicious_version_before_eval
+    spec = util_spec "malicious", "1"
+    def spec.validate(*args); end
+    version = Gem::Version.allocate
+    version.yaml_initialize nil, "version" => "1\n::Object.const_set(:FROM_EVAL, true)#"
+    spec.version = version
+
+    installer = Gem::Installer.for_spec spec
+    installer.gem_home = @gemhome
+
+    use_ui @ui do
+      e = assert_raise Gem::InstallError do
+        installer.pre_install_checks
+      end
+      assert_equal "#<Gem::Specification name=malicious version=1\n::Object.const_set(:FROM_EVAL, true)#> has an invalid version", e.message
+    end
+    refute defined?(::Object::FROM_EVAL)
+  end
+
+  def test_pre_install_checks_accepts_real_versions
+    %w[1 1.0.0 1.0.0.a 1.0.0-rc.1 0.1.0.pre.20260918].each do |version|
+      spec = util_spec "a", version
+
+      util_build_gem spec
+
+      installer = Gem::Installer.at spec.cache_file,
+                                    install_dir: @gemhome,
+                                    user_install: false,
+                                    force: true
+
+      use_ui @ui do
+        assert_equal spec, installer.install, version
+      end
+
+      assert_path_exist File.join(@gemhome, "gems", spec.full_name), version
+    end
+  end
+
   def test_pre_install_checks_malicious_require_paths_before_eval
     spec = util_spec "malicious", "1"
     def spec.full_name # so the spec is buildable
