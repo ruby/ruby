@@ -4211,7 +4211,11 @@ rb_gc_vm_refresh_zombie_pages(void)
 void
 rb_gc_rest(void)
 {
-    rb_gc_impl_gc_rest(rb_gc_get_objspace());
+    // Lock to keep assertions happy. This runs right after single-ractor mode is
+    // cancelled, but we can still free shareables like fstrings because ractor.cnt is 1.
+    RB_VM_LOCKING() {
+        rb_gc_impl_gc_rest(rb_gc_get_objspace());
+    }
 }
 
 /* True while a zombie is being absorbed.  The zombie's count is decremented before the
