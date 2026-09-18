@@ -106,7 +106,11 @@ fn parse_float_env_var(key: &str, default: f64, min: f64, max: f64) -> f64 {
     .unwrap_or(default)
 }
 
-fn mmtk_builder_default_parse_heap_mode(heap_min: usize, heap_max: usize) -> GCTriggerSelector {
+fn mmtk_builder_default_parse_heap_mode(
+    heap_min: usize,
+    heap_max: usize,
+    plan: PlanSelector,
+) -> GCTriggerSelector {
     let make_fixed = || GCTriggerSelector::FixedHeapSize(heap_max);
     let make_dynamic = || GCTriggerSelector::DynamicHeapSize(heap_min, heap_max);
 
@@ -114,6 +118,13 @@ fn mmtk_builder_default_parse_heap_mode(heap_min: usize, heap_max: usize) -> GCT
         "fixed" => Some(make_fixed()),
         "dynamic" => Some(make_dynamic()),
         "ruby" => {
+            if plan == PlanSelector::NoGC {
+                eprintln!(
+                    "[WARN] Cannot use ruby heap mode with NoGC. Using fixed heap mode instead."
+                );
+                return Some(make_fixed());
+            }
+
             let min_ratio = parse_float_env_var("RUBY_GC_HEAP_FREE_SLOTS_MIN_RATIO", 0.2, 0.0, 1.0);
             let goal_ratio =
                 parse_float_env_var("RUBY_GC_HEAP_FREE_SLOTS_GOAL_RATIO", 0.4, min_ratio, 1.0);
@@ -133,6 +144,13 @@ fn mmtk_builder_default_parse_heap_mode(heap_min: usize, heap_max: usize) -> GCT
             Some(GCTriggerSelector::Delegated)
         }
         "cpu" => {
+            if plan == PlanSelector::NoGC {
+                eprintln!(
+                    "[WARN] Cannot use cpu heap mode with NoGC. Using fixed heap mode instead."
+                );
+                return Some(make_fixed());
+            }
+
             // CPU-overhead-driven heap sizing based on Tavakolisomeh et al.,
             // "Heap Size Adjustment with CPU Control", MPLR '23.
             //
@@ -206,12 +224,16 @@ pub extern "C" fn mmtk_builder_default() -> *mut MMTKBuilder {
         std::process::exit(1);
     }
 
+    let plan = mmtk_builder_default_parse_plan();
+
+    builder.options.plan.set(plan);
+
     builder
         .options
         .gc_trigger
-        .set(mmtk_builder_default_parse_heap_mode(heap_min, heap_max));
-
-    builder.options.plan.set(mmtk_builder_default_parse_plan());
+        .set(mmtk_builder_default_parse_heap_mode(
+            heap_min, heap_max, plan,
+        ));
 
     Box::into_raw(Box::new(builder))
 }
