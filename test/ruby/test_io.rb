@@ -1585,6 +1585,21 @@ class TestIO < Test::Unit::TestCase
     end
   end
 
+  def test_write_with_many_arguments_is_flushed_when_sync
+    # Under sync mode, write(*args) must be observably atomic: all data must
+    # reach the peer immediately, not be left buffered until close. This
+    # covers argument counts above IOV_MAX, where the internal writev path
+    # previously coalesced into the buffer without flushing.
+    [10, 1023, 1024, 2000].each do |n|
+      IO.pipe do |r, w|
+        assert_predicate(w, :sync)
+        w.write(*(["a"] * n))
+        assert_equal("a" * n, r.read_nonblock(n),
+                     "sync write with #{n} arguments was not flushed")
+      end
+    end
+  end
+
   def test_write_with_multiple_nonstring_arguments
     assert_in_out_err([], "STDOUT.write(:foo, :bar)", ["foobar"])
   end
