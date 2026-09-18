@@ -3133,6 +3133,25 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
     end
   end
 
+  def test_validate_extension_without_builder
+    util_setup_validate
+
+    Dir.chdir @tempdir do
+      @a1.extensions = ["build.sh"]
+      File.write File.join(@tempdir, "build.sh"), ""
+      gem_make_out = File.join @a1.build_info_dir, "#{@a1.full_name}.gem_make.out"
+
+      e = assert_raise Gem::Ext::BuildError do
+        use_ui @ui do
+          @a1.validate
+        end
+      end
+
+      assert_equal "No builder for extension 'build.sh'", e.message
+      assert_path_not_exist gem_make_out
+    end
+  end
+
   def test_validate_extension_require_relative_warning
     util_setup_validate
 
