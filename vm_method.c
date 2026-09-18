@@ -2960,9 +2960,9 @@ rb_alias(VALUE klass, ID alias_name, ID original_name)
              UNDEFINED_METHOD_ENTRY_P(orig_me))) {
             rb_print_undef(target_klass, original_name, METHOD_VISI_UNDEF);
         }
-        rb_warn_deprecated_to_remove_at(4.3,
-                                        "the fallback to Object for alias of '%"PRIsVALUE"' in module '%"PRIsVALUE"'",
-                                        NULL, QUOTE_ID(original_name), rb_class_path(target_klass));
+        rb_warn_scheduled_deprecation(4.2, 4.3,
+                                      "the fallback to Object for alias of '%"PRIsVALUE"' in module '%"PRIsVALUE"'",
+                                      NULL, QUOTE_ID(original_name), rb_class_path(target_klass));
     }
 
     switch (orig_me->def->type) {
@@ -2995,7 +2995,7 @@ rb_alias(VALUE klass, ID alias_name, ID original_name)
         }
 
         if (in_prepended_module) {
-            rb_warn_deprecated_to_remove_at(4.3,
+            rb_warn_scheduled_deprecation(4.2, 4.3,
                 "aliasing %"PRIsVALUE"#%"PRIsVALUE" defined in a prepended module %"PRIsVALUE,
                 NULL,
                 rb_class_path(target_klass), QUOTE_ID(original_name),
