@@ -281,7 +281,7 @@ RBIMPL_ATTR_PURE()
  */
 VALUE rb_class_real(VALUE klass);
 
-RBIMPL_ATTR_PURE()
+RBIMPL_ATTR_NOALIAS()
 /**
  * Determines if the given two modules are relatives.
  *
@@ -294,7 +294,7 @@ RBIMPL_ATTR_PURE()
  */
 VALUE rb_class_inherited_p(VALUE scion, VALUE ascendant);
 
-RBIMPL_ATTR_PURE()
+RBIMPL_ATTR_NOALIAS()
 /**
  * Queries the parent of the given class.
  *
