@@ -2268,6 +2268,16 @@ CODE
     assert_raise(ArgumentError) { a.slice! }
   end
 
+  def test_slice_bang_string_modified
+    obj = Object.new
+    s = S("x" + "l" * 3999)
+    obj.define_singleton_method(:to_int) do
+      s.clear
+      0
+    end
+    assert_nil(s.slice!(/l+$/, obj))
+  end
+
   def test_split
     fs, $; = $;, nil
     assert_equal([S("a"), S("b"), S("c")], S(" a   b\t c ").split)
