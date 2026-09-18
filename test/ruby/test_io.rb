@@ -3341,6 +3341,44 @@ __END__
     end.each {|th| th.join}
   end
 
+  def test_writable_predicate
+    IO.pipe do |r, w|
+      assert_predicate(w, :writable?)
+      refute_predicate(r, :writable?)
+    end
+  end
+
+  def test_writable_false_abandons_write_buffer_on_close
+    IO.pipe do |r, w|
+      w.sync = false
+      w.write("buffered")
+
+      # Marking the stream as not writable must discard the buffered
+      # output instead of flushing (replaying) it on close.
+      w.writable = false
+      refute_predicate(w, :writable?)
+      assert_nothing_raised { w.close }
+
+      assert_equal("", r.read)
+    end
+  end
+
+  def test_writable_false_raises_on_write
+    IO.pipe do |r, w|
+      w.writable = false
+      assert_raise(IOError) { w.write("x") }
+    end
+  end
+
+  def test_writable_true_still_flushes_on_close
+    IO.pipe do |r, w|
+      w.sync = false
+      w.write("data")
+      w.close
+      assert_equal("data", r.read)
+    end
+  end
+
   def test_flush_in_finalizer1
     bug3910 = '[ruby-dev:42341]'
     tmp = Tempfile.open("bug3910") {|t|

@@ -61,6 +61,15 @@ Note: We're only listing outstanding class updates.
       binary representation of a non-negative integer (its population count).
       [[Feature #20163]]
 
+* IO
+
+    * `IO#writable?` and `IO#writable=` are added. Setting `writable = false`
+      marks the write side of a stream as unusable: any buffered output is
+      abandoned rather than flushed on `#close`, and subsequent writes raise
+      `IOError`. This is intended for recovering from an interrupted write
+      where the amount of data actually written is indeterminate and
+      replaying the buffer could duplicate or corrupt data.
+
 * IO::Buffer
 
     * `read`, `write`, `pread`, and `pwrite` now perform one IO operation using

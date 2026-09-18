@@ -2827,6 +2827,70 @@ rb_io_sync(VALUE io)
     return RBOOL(fptr->mode & FMODE_SYNC);
 }
 
+/*
+ *  call-seq:
+ *    writable? -> true or false
+ *
+ *  Returns whether the stream is currently open for writing.
+ *
+ *  This can become +false+ either because the stream was not opened for
+ *  writing, or because writing was explicitly disabled via IO#writable=.
+ *
+ */
+
+static VALUE
+rb_io_writable_p(VALUE io)
+{
+    rb_io_t *fptr;
+
+    io = GetWriteIO(io);
+    GetOpenFile(io, fptr);
+    return RBOOL(fptr->mode & FMODE_WRITABLE);
+}
+
+/*
+ *  call-seq:
+ *    writable = bool -> bool
+ *
+ *  Enables or disables writing on the stream.
+ *
+ *  Setting this to +false+ marks the write side of the stream as unusable:
+ *  any buffered output is abandoned (it will *not* be flushed on #close),
+ *  and subsequent writes raise IOError.
+ *
+ *  This is intended for the case where an output operation was interrupted
+ *  and the amount of data actually written is indeterminate (for example a
+ *  buffered write cancelled by a fiber scheduler). In that situation the
+ *  stream position can no longer be trusted, so replaying the buffer on
+ *  #close would risk duplicating or corrupting data. Marking the stream as
+ *  not writable lets it be closed cleanly without retransmitting.
+ *
+ *    begin
+ *      io.flush
+ *    rescue Interrupt
+ *      io.writable = false # abandon the buffer; do not replay on close
+ *      io.close
+ *      raise
+ *    end
+ *
+ */
+
+static VALUE
+rb_io_set_writable(VALUE io, VALUE writable)
+{
+    rb_io_t *fptr;
+
+    io = GetWriteIO(io);
+    GetOpenFile(io, fptr);
+    if (RTEST(writable)) {
+        fptr->mode |= FMODE_WRITABLE;
+    }
+    else {
+        fptr->mode &= ~FMODE_WRITABLE;
+    }
+    return writable;
+}
+
 #ifdef HAVE_FSYNC
 
 /*
@@ -5631,7 +5695,11 @@ fptr_finalize_flush(rb_io_t *fptr, int noraise, int keepgvl)
             error = finish_writeconv(fptr, noraise);
         }
     }
-    if (fptr->wbuf.len) {
+    /* Only flush the write buffer if the IO is still writable. If the write
+     * side has been abandoned (e.g. via IO#writable = false after an
+     * interrupted write left the buffer in an indeterminate state), the
+     * buffered bytes must be discarded rather than replayed on close. */
+    if (fptr->wbuf.len && (fptr->mode & FMODE_WRITABLE)) {
         if (noraise) {
             io_flush_buffer_sync(fptr);
         }
@@ -15887,6 +15955,8 @@ Init_IO(void)
 
     rb_define_method(rb_cIO, "fsync", rb_io_fsync, 0);
     rb_define_method(rb_cIO, "fdatasync", rb_io_fdatasync, 0);
+    rb_define_method(rb_cIO, "writable?", rb_io_writable_p, 0);
+    rb_define_method(rb_cIO, "writable=", rb_io_set_writable, 1);
     rb_define_method(rb_cIO, "sync", rb_io_sync, 0);
     rb_define_method(rb_cIO, "sync=", rb_io_set_sync, 1);
 
