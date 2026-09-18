@@ -9794,7 +9794,7 @@ mod hir_opt_tests {
           v60:TrueClass = Const Value(true)
           Jump bb7(v60)
         bb11():
-          v48:BasicObject = Send v31, :! # SendFallbackReason: Send: polymorphic call site
+          v48:BasicObject = Send v31, :! # SendFallbackReason: Send: polymorphic fallback
           Jump bb7(v48)
         bb7(v35:BasicObject):
           CheckInterrupts
@@ -10580,7 +10580,7 @@ mod hir_opt_tests {
           SetIvar v24, :@foo, v17
           Jump bb4(v17)
         bb6():
-          v27:BasicObject = Send v10, :foo=, v17 # SendFallbackReason: Send: polymorphic call site
+          v27:BasicObject = Send v10, :foo=, v17 # SendFallbackReason: Send: polymorphic fallback
           Jump bb4(v27)
         bb4(v20:BasicObject):
           CheckInterrupts
@@ -11247,7 +11247,7 @@ mod hir_opt_tests {
           v31:BasicObject = GetIvar v19, :@foo
           Jump bb4(v31)
         bb6():
-          v22:BasicObject = Send v10, :foo # SendFallbackReason: Send: polymorphic call site
+          v22:BasicObject = Send v10, :foo # SendFallbackReason: Send: polymorphic fallback
           Jump bb4(v22)
         bb4(v15:BasicObject):
           CheckInterrupts
@@ -15268,7 +15268,7 @@ mod hir_opt_tests {
           PopInlineFrame
           Jump bb4(v60)
         bb8():
-          v34:BasicObject = Send v12, :target, v19 # SendFallbackReason: Send: polymorphic call site
+          v34:BasicObject = Send v12, :target, v19 # SendFallbackReason: Send: polymorphic fallback
           Jump bb4(v34)
         bb4(v21:BasicObject):
           CheckInterrupts
@@ -16953,7 +16953,7 @@ mod hir_opt_tests {
           v46:TrueClass = Const Value(true)
           Jump bb4(v46)
         bb8():
-          v31:BasicObject = Send v10, :is_a?, v16 # SendFallbackReason: Send: polymorphic call site
+          v31:BasicObject = Send v10, :is_a?, v16 # SendFallbackReason: Send: polymorphic fallback
           Jump bb4(v31)
         bb4(v18:BasicObject):
           CheckInterrupts
@@ -19281,7 +19281,7 @@ mod hir_opt_tests {
           v45:Fixnum[4] = Const Value(4)
           Jump bb4(v45)
         bb8():
-          v28:BasicObject = Send v10, :foo # SendFallbackReason: Send: polymorphic call site
+          v28:BasicObject = Send v10, :foo # SendFallbackReason: Send: polymorphic fallback
           Jump bb4(v28)
         bb4(v15:BasicObject):
           v31:Fixnum[2] = Const Value(2)
@@ -19334,7 +19334,7 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(Integer@0x1040, itself@0x1010, cme:0x1018)
           Jump bb4(v25)
         bb8():
-          v28:BasicObject = Send v10, :itself # SendFallbackReason: Send: polymorphic call site
+          v28:BasicObject = Send v10, :itself # SendFallbackReason: Send: polymorphic fallback
           Jump bb4(v28)
         bb4(v15:BasicObject):
           CheckInterrupts
@@ -19440,7 +19440,7 @@ mod hir_opt_tests {
           v54:BasicObject = HashAref v30, v13
           Jump bb4(v54)
         bb8():
-          v33:BasicObject = Send v12, :[], v13 # SendFallbackReason: Send: polymorphic call site
+          v33:BasicObject = Send v12, :[], v13 # SendFallbackReason: Send: polymorphic fallback
           Jump bb4(v33)
         bb4(v20:BasicObject):
           CheckInterrupts
@@ -19496,7 +19496,7 @@ mod hir_opt_tests {
           v40:StringExact = CCallVariadic v25, :Integer#to_s@0x1040
           Jump bb4(v40)
         bb8():
-          v28:BasicObject = Send v10, :to_s # SendFallbackReason: Send: polymorphic call site
+          v28:BasicObject = Send v10, :to_s # SendFallbackReason: Send: polymorphic fallback
           Jump bb4(v28)
         bb4(v15:BasicObject):
           CheckInterrupts
@@ -19549,7 +19549,7 @@ mod hir_opt_tests {
           v40:BasicObject = CCallWithFrame v25, :Float#to_s@0x1040
           Jump bb4(v40)
         bb8():
-          v28:BasicObject = Send v10, :to_s # SendFallbackReason: Send: polymorphic call site
+          v28:BasicObject = Send v10, :to_s # SendFallbackReason: Send: polymorphic fallback
           Jump bb4(v28)
         bb4(v15:BasicObject):
           CheckInterrupts
@@ -19602,7 +19602,7 @@ mod hir_opt_tests {
           v38:StringExact = InvokeBuiltin leaf <inline_expr>, v25
           Jump bb4(v38)
         bb8():
-          v28:BasicObject = Send v10, :to_s # SendFallbackReason: Send: polymorphic call site
+          v28:BasicObject = Send v10, :to_s # SendFallbackReason: Send: polymorphic fallback
           Jump bb4(v28)
         bb4(v15:BasicObject):
           CheckInterrupts
@@ -19651,7 +19651,7 @@ mod hir_opt_tests {
           v31:Fixnum[3] = Const Value(3)
           Jump bb4(v31)
         bb6():
-          v22:BasicObject = Send v10, :foo # SendFallbackReason: Send: polymorphic call site
+          v22:BasicObject = Send v10, :foo # SendFallbackReason: Send: polymorphic fallback
           Jump bb4(v22)
         bb4(v15:BasicObject):
           CheckInterrupts
@@ -21177,7 +21177,7 @@ mod hir_opt_tests {
           v46:Float = FloatMul v30, v45
           Jump bb4(v46)
         bb8():
-          v33:BasicObject = Send v12, :*, v13 # SendFallbackReason: Send: polymorphic call site
+          v33:BasicObject = Send v12, :*, v13 # SendFallbackReason: Send: polymorphic fallback
           Jump bb4(v33)
         bb4(v20:BasicObject):
           CheckInterrupts
@@ -23326,6 +23326,164 @@ mod hir_opt_tests {
           v40:TrueClass = GuardType v14, TrueClass recompile
           CheckInterrupts
           Return v37
+        ");
+    }
+
+    #[test]
+    fn test_specialize_polymorphic_send_with_block() {
+        set_call_threshold(4);
+        eval(r#"
+            class A
+              def foo = yield
+            end
+            class B < A; end
+            class C < A; end
+            def test(obj)
+              obj.foo { }
+            end
+            test(A.new)
+            test(B.new)
+            test(C.new)
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:8:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :obj@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :obj@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v16:CBool = HasType v10, ObjectSubclass[class_exact:C]
+          CondBranch v16, bb5(), bb6()
+        bb5():
+          v19:ObjectSubclass[class_exact:C] = RefineType v10, ObjectSubclass[class_exact:C]
+          PatchPoint NoSingletonClass(C@0x1008)
+          PatchPoint MethodRedefined(C@0x1008, foo@0x1010, cme:0x1018)
+          PushInlineFrame :foo, v19 (0x1040), num_args=0
+          v57:CPtr = GetEP 0
+          v58:CInt64 = LoadField v57, :VM_ENV_DATA_INDEX_SPECVAL@0x1060
+          v59:CInt64[-4] = Const CInt64(-4)
+          v60:CInt64 = IntAnd v58, v59
+          v61:BasicObject = InvokeBlockIseqDirect (0x1068), v60
+          CheckInterrupts
+          PopInlineFrame
+          Jump bb4(v61)
+        bb6():
+          v22:CBool = HasType v10, ObjectSubclass[class_exact:A]
+          CondBranch v22, bb7(), bb8()
+        bb7():
+          v25:ObjectSubclass[class_exact:A] = RefineType v10, ObjectSubclass[class_exact:A]
+          PatchPoint NoSingletonClass(A@0x1088)
+          PatchPoint MethodRedefined(A@0x1088, foo@0x1010, cme:0x1018)
+          PushInlineFrame :foo, v25 (0x1040), num_args=0
+          v75:CPtr = GetEP 0
+          v76:CInt64 = LoadField v75, :VM_ENV_DATA_INDEX_SPECVAL@0x1060
+          v77:CInt64[-4] = Const CInt64(-4)
+          v78:CInt64 = IntAnd v76, v77
+          v79:BasicObject = InvokeBlockIseqDirect (0x1068), v78
+          CheckInterrupts
+          PopInlineFrame
+          Jump bb4(v79)
+        bb8():
+          v28:CBool = HasType v10, ObjectSubclass[class_exact:B]
+          CondBranch v28, bb9(), bb10()
+        bb9():
+          v31:ObjectSubclass[class_exact:B] = RefineType v10, ObjectSubclass[class_exact:B]
+          PatchPoint NoSingletonClass(B@0x1090)
+          PatchPoint MethodRedefined(B@0x1090, foo@0x1010, cme:0x1018)
+          PushInlineFrame :foo, v31 (0x1040), num_args=0
+          v93:CPtr = GetEP 0
+          v94:CInt64 = LoadField v93, :VM_ENV_DATA_INDEX_SPECVAL@0x1060
+          v95:CInt64[-4] = Const CInt64(-4)
+          v96:CInt64 = IntAnd v94, v95
+          v97:BasicObject = InvokeBlockIseqDirect (0x1068), v96
+          CheckInterrupts
+          PopInlineFrame
+          Jump bb4(v97)
+        bb10():
+          v34:BasicObject = Send v10, 0x1068, :foo # SendFallbackReason: Send: polymorphic fallback
+          Jump bb4(v34)
+        bb4(v15:BasicObject):
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v15
+        ");
+    }
+
+    #[test]
+    fn test_specialize_polymorphic_nil_block() {
+        set_call_threshold(3);
+        eval(r#"
+            class A
+              def foo(&blk) = 42
+            end
+            class B
+              def foo(&blk) = 43
+            end
+            def test(obj, &blk)
+              obj.foo(&blk)
+            end
+
+            test(A.new); test(B.new)
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:9:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :obj@0x1000
+          v4:BasicObject = LoadField v2, :blk@0x1001
+          Jump bb3(v1, v3, v4)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :obj@1
+          v9:BasicObject = LoadArg :blk@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          v20:CPtr = GetEP 0
+          v21:CUInt64 = LoadField v20, :VM_ENV_DATA_INDEX_FLAGS@0x1002
+          v22:CBool = IsBlockParamModified v21
+          CondBranch v22, bb4(), bb5()
+        bb4():
+          v24:BasicObject = LoadField v20, :blk@0x1003
+          Jump bb6(v24, v24)
+        bb5():
+          v26:CInt64 = LoadField v20, :VM_ENV_DATA_INDEX_SPECVAL@0x1004
+          v27:CInt64[0] = GuardBitEquals v26, CInt64(0) recompile
+          v28:NilClass = Const Value(nil)
+          Jump bb6(v28, v13)
+        bb6(v18:BasicObject, v19:BasicObject):
+          v32:CBool = HasType v12, ObjectSubclass[class_exact:B]
+          CondBranch v32, bb8(), bb9()
+        bb8():
+          v51:NilClass = GuardBitEquals v18, Value(nil) recompile
+          PatchPoint NoSingletonClass(B@0x1008)
+          PatchPoint MethodRedefined(B@0x1008, foo@0x1010, cme:0x1018)
+          v55:Fixnum[43] = Const Value(43)
+          Jump bb7(v55)
+        bb9():
+          v38:CBool = HasType v12, ObjectSubclass[class_exact:A]
+          CondBranch v38, bb10(), bb11()
+        bb10():
+          v56:NilClass = GuardBitEquals v18, Value(nil) recompile
+          PatchPoint NoSingletonClass(A@0x1040)
+          PatchPoint MethodRedefined(A@0x1040, foo@0x1010, cme:0x1048)
+          v60:Fixnum[42] = Const Value(42)
+          Jump bb7(v60)
+        bb11():
+          v44:BasicObject = Send v12, &block, :foo, v18 # SendFallbackReason: Send: polymorphic fallback
+          Jump bb7(v44)
+        bb7(v31:BasicObject):
+          CheckInterrupts
+          Return v31
         ");
     }
 }
