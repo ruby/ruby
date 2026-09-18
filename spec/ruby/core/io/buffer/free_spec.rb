@@ -127,8 +127,16 @@ describe "IO::Buffer#free" do
       slice = buffer.slice(0, 2)
 
       buffer.free
-      slice.null?.should == false
       slice.valid?.should == false
+
+      ruby_version_is ""..."4.1" do
+        slice.null?.should == false
+      end
+
+      ruby_version_is "4.1" do
+        # Offset-based slices resolve their base from the freed source.
+        slice.null?.should == true
+      end
     end
   end
 end
