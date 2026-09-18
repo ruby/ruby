@@ -2235,6 +2235,14 @@ io_binwritev(struct iovec *iov, int iovcnt, rb_io_t *fptr)
 
             fptr->wbuf.len += total;
 
+            /* io_binwritev is only reached in sync/TTY mode (it is called only
+             * from io_fwritev, which io_writev uses only when FMODE_SYNC or
+             * FMODE_TTY is set), so the coalesced data must be flushed
+             * immediately rather than left in the buffer until the next flush
+             * or close. Otherwise a multi-argument write with many arguments
+             * would not be observably atomic under sync. */
+            if (io_fflush(fptr) < 0) return -1;
+
             return total;
         }
         else {
