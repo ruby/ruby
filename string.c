@@ -9598,7 +9598,7 @@ struct tr_trans_pairs_search {
 
 #ifdef HAVE_SIMD
     unsigned char needles[TR_TRANS_PAIRS_SIMD_MAX_NEEDLES];
-    int needles_count;
+    unsigned int needles_count;
 #ifdef HAVE_SIMD_NEON
     uint64_t matches_bitmap;
 #endif
@@ -9643,9 +9643,8 @@ tr_trans_pairs_next_match_sse2(struct tr_trans_pairs_search *search)
 static inline VALUE
 tr_trans_pairs_search_sse2(struct tr_trans_pairs_search *search)
 {
-    const int needles_count = search->needles_count;
+    const unsigned int needles_count = search->needles_count;
     if (needles_count) {
-        RBIMPL_ASSERT_OR_ASSUME(needles_count > 0);
         RBIMPL_ASSERT_OR_ASSUME(needles_count <= TR_TRANS_PAIRS_SIMD_MAX_NEEDLES);
 
         if (search->matches_bitmap) {
@@ -9653,7 +9652,7 @@ tr_trans_pairs_search_sse2(struct tr_trans_pairs_search *search)
         }
 
         if ((size_t)(search->send - search->s) >= sizeof(__m128i)) {
-            int i;
+            unsigned int i;
             __m128i masks[TR_TRANS_PAIRS_SIMD_MAX_NEEDLES];
             for (i = 0; i < needles_count; i++) {
                 masks[i] = _mm_set1_epi8(search->needles[i]);
@@ -9706,9 +9705,8 @@ tr_trans_pairs_next_match_neon(struct tr_trans_pairs_search *search)
 static inline VALUE
 tr_trans_pairs_search_neon(struct tr_trans_pairs_search *search)
 {
-    const int needles_count = search->needles_count;
+    const unsigned int needles_count = search->needles_count;
     if (needles_count) {
-        RBIMPL_ASSERT_OR_ASSUME(needles_count > 0);
         RBIMPL_ASSERT_OR_ASSUME(needles_count <= TR_TRANS_PAIRS_SIMD_MAX_NEEDLES);
 
         if (search->matches_bitmap) {
@@ -9716,7 +9714,7 @@ tr_trans_pairs_search_neon(struct tr_trans_pairs_search *search)
         }
 
         if ((size_t)(search->send - search->s) >= sizeof(uint8x16_t)) {
-            int i;
+            unsigned int i;
             uint8x16_t masks[TR_TRANS_PAIRS_SIMD_MAX_NEEDLES];
             for (i = 0; i < needles_count; i++) {
                 masks[i] = vdupq_n_u8(search->needles[i]);
