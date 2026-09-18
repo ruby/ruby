@@ -838,7 +838,7 @@ rb_backtrace_p(VALUE obj)
 }
 
 static VALUE
-backtrace_alloc_capa(long num_frames, rb_backtrace_t **backtrace)
+backtrace_alloc_capa(rb_long_t num_frames, rb_backtrace_t **backtrace)
 {
     size_t memsize = offsetof(rb_backtrace_t, backtrace) + num_frames * sizeof(rb_backtrace_location_t);
     VALUE btobj = rb_data_typed_object_zalloc(rb_cBacktrace, memsize, &backtrace_data_type);
@@ -960,7 +960,7 @@ bt_yield_loc(rb_backtrace_location_t *loc, long num_frames, VALUE btobj)
 }
 
 static VALUE
-rb_ec_partial_backtrace_object(const rb_execution_context_t *ec, long start_frame, long num_frames, int* start_too_large, bool skip_internal, bool do_yield)
+rb_ec_partial_backtrace_object(const rb_execution_context_t *ec, rb_long_t start_frame, rb_long_t num_frames, int* start_too_large, bool skip_internal, bool do_yield)
 {
     const rb_control_frame_t *cfp = ec->cfp;
     const rb_control_frame_t *end_cfp = RUBY_VM_END_CONTROL_FRAME(ec);
@@ -1182,10 +1182,10 @@ rb_location_ary_to_backtrace(VALUE ary)
     }
 
     rb_backtrace_t *new_backtrace;
-    long num_frames = RARRAY_LEN(ary);
+    rb_long_t num_frames = RARRAY_LEN(ary);
     VALUE btobj = backtrace_alloc_capa(num_frames, &new_backtrace);
 
-    for (long index = 0; index < RARRAY_LEN(ary); index++) {
+    for (rb_long_t index = 0; index < RARRAY_LEN(ary); index++) {
         VALUE locobj = RARRAY_AREF(ary, index);
 
         if (!rb_frame_info_p(locobj)) {
@@ -1556,11 +1556,11 @@ rb_make_backtrace(void)
     return rb_ec_backtrace_str_ary(GET_EC(), RUBY_BACKTRACE_START, RUBY_ALL_BACKTRACE_LINES);
 }
 
-static long
-ec_backtrace_range(const rb_execution_context_t *ec, int argc, const VALUE *argv, int lev_default, int lev_plus, long *len_ptr)
+static rb_long_t
+ec_backtrace_range(const rb_execution_context_t *ec, int argc, const VALUE *argv, int lev_default, int lev_plus, rb_long_t *len_ptr)
 {
     VALUE level, vn, opts;
-    long lev, n;
+    rb_long_t lev, n;
 
     rb_scan_args(argc, argv, "02:", &level, &vn, &opts);
 
@@ -1576,12 +1576,12 @@ ec_backtrace_range(const rb_execution_context_t *ec, int argc, const VALUE *argv
         break;
       case 1:
         {
-            long beg, len, bt_size = backtrace_size(ec);
+            rb_long_t beg, len, bt_size = backtrace_size(ec);
             switch (rb_range_beg_len(level, &beg, &len, bt_size - lev_plus, 0)) {
               case Qfalse:
-                lev = NUM2LONG(level);
+                lev = NUM2LONGT(level);
                 if (lev < 0) {
-                    rb_raise(rb_eArgError, "negative level (%ld)", lev);
+                    rb_raise(rb_eArgError, "negative level (%"PRIdLONGT")", lev);
                 }
                 lev += lev_plus;
                 n = RUBY_ALL_BACKTRACE_LINES;
@@ -1596,13 +1596,13 @@ ec_backtrace_range(const rb_execution_context_t *ec, int argc, const VALUE *argv
             break;
         }
       case 2:
-        lev = NUM2LONG(level);
-        n = NUM2LONG(vn);
+        lev = NUM2LONGT(level);
+        n = NUM2LONGT(vn);
         if (lev < 0) {
-            rb_raise(rb_eArgError, "negative level (%ld)", lev);
+            rb_raise(rb_eArgError, "negative level (%"PRIdLONGT")", lev);
         }
         if (n < 0) {
-            rb_raise(rb_eArgError, "negative size (%ld)", n);
+            rb_raise(rb_eArgError, "negative size (%"PRIdLONGT")", n);
         }
         lev += lev_plus;
         break;
@@ -1618,7 +1618,7 @@ ec_backtrace_range(const rb_execution_context_t *ec, int argc, const VALUE *argv
 static VALUE
 ec_backtrace_to_ary(const rb_execution_context_t *ec, int argc, const VALUE *argv, int lev_default, int lev_plus, int to_str)
 {
-    long lev, n;
+    rb_long_t lev, n;
     VALUE btval, r;
     int too_large;
 
@@ -1763,7 +1763,7 @@ static VALUE
 each_caller_location(int argc, VALUE *argv, VALUE _)
 {
     rb_execution_context_t *ec = GET_EC();
-    long n, lev = ec_backtrace_range(ec, argc, argv, 1, 1, &n);
+    rb_long_t n, lev = ec_backtrace_range(ec, argc, argv, 1, 1, &n);
     if (lev >= 0 && n != 0) {
         rb_ec_partial_backtrace_object(ec, lev, n, NULL, FALSE, TRUE);
     }
@@ -2048,7 +2048,7 @@ rb_debug_inspector_open(rb_debug_inspector_func_t func, void *data)
 }
 
 static VALUE
-frame_get(const rb_debug_inspector_t *dc, long index)
+frame_get(const rb_debug_inspector_t *dc, rb_long_t index)
 {
     if (index < 0 || index >= RARRAY_LEN(dc->contexts)) {
         rb_raise(rb_eArgError, "no such frame");
@@ -2057,28 +2057,28 @@ frame_get(const rb_debug_inspector_t *dc, long index)
 }
 
 VALUE
-rb_debug_inspector_frame_self_get(const rb_debug_inspector_t *dc, long index)
+rb_debug_inspector_frame_self_get(const rb_debug_inspector_t *dc, rb_long_t index)
 {
     VALUE frame = frame_get(dc, index);
     return rb_ary_entry(frame, CALLER_BINDING_SELF);
 }
 
 VALUE
-rb_debug_inspector_frame_class_get(const rb_debug_inspector_t *dc, long index)
+rb_debug_inspector_frame_class_get(const rb_debug_inspector_t *dc, rb_long_t index)
 {
     VALUE frame = frame_get(dc, index);
     return rb_ary_entry(frame, CALLER_BINDING_CLASS);
 }
 
 VALUE
-rb_debug_inspector_frame_binding_get(const rb_debug_inspector_t *dc, long index)
+rb_debug_inspector_frame_binding_get(const rb_debug_inspector_t *dc, rb_long_t index)
 {
     VALUE frame = frame_get(dc, index);
     return rb_ary_entry(frame, CALLER_BINDING_BINDING);
 }
 
 VALUE
-rb_debug_inspector_frame_iseq_get(const rb_debug_inspector_t *dc, long index)
+rb_debug_inspector_frame_iseq_get(const rb_debug_inspector_t *dc, rb_long_t index)
 {
     VALUE frame = frame_get(dc, index);
     VALUE iseq = rb_ary_entry(frame, CALLER_BINDING_ISEQ);
@@ -2087,7 +2087,7 @@ rb_debug_inspector_frame_iseq_get(const rb_debug_inspector_t *dc, long index)
 }
 
 VALUE
-rb_debug_inspector_frame_depth(const rb_debug_inspector_t *dc, long index)
+rb_debug_inspector_frame_depth(const rb_debug_inspector_t *dc, rb_long_t index)
 {
     VALUE frame = frame_get(dc, index);
     return rb_ary_entry(frame, CALLER_BINDING_DEPTH);
@@ -2397,9 +2397,9 @@ rb_profile_frame_full_label(VALUE frame)
         return label;
     }
     else {
-        long label_length = RSTRING_LEN(label);
-        long base_label_length = RSTRING_LEN(base_label);
-        int prefix_len = rb_long2int(label_length - base_label_length);
+        rb_long_t label_length = RSTRING_LEN(label);
+        rb_long_t base_label_length = RSTRING_LEN(base_label);
+        int prefix_len = rb_longt2int(label_length - base_label_length);
 
         return rb_sprintf("%.*s%"PRIsVALUE, prefix_len, RSTRING_PTR(label), qualified_method_name);
     }

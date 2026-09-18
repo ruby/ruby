@@ -7,6 +7,11 @@
 #include <ruby.h>
 #include <ruby/version.h>
 
+/* Before rb_long_t, lengths and indices were `long` */
+#ifndef RB_LONGT2NUM
+typedef long rb_long_t;
+#endif
+
 /* copied from ext/-test-/cxxanyargs/cxxanyargs.cpp */
 #if 0 /* Ignore deprecation warnings */
 

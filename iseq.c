@@ -2883,7 +2883,7 @@ rb_iseq_disasm_insn(VALUE ret, const VALUE *code, size_t pos,
         unsigned int line_no = rb_iseq_line_no(iseq, pos);
         unsigned int prev = pos == 0 ? 0 : rb_iseq_line_no(iseq, pos - 1);
         if (line_no && line_no != prev) {
-            long slen = RSTRING_LEN(str);
+            rb_long_t slen = RSTRING_LEN(str);
             slen = (slen > 70) ? 0 : (70 - slen);
             str = rb_str_catf(str, "%*s(%4d)", (int)slen, "", line_no);
         }
@@ -2975,13 +2975,13 @@ rb_iseq_disasm_recursive(const rb_iseq_t *iseq, VALUE indent)
     VALUE child = rb_ary_hidden_new(3);
     unsigned int size;
     unsigned int i;
-    long l;
+    rb_long_t l;
     size_t n;
     enum {header_minlen = 72};
     st_table *done_iseq = 0;
     VALUE done_iseq_wrapper = Qnil;
     const char *indent_str;
-    long indent_len;
+    rb_long_t indent_len;
 
     size = body->iseq_size;
 
@@ -3062,7 +3062,7 @@ rb_iseq_disasm_recursive(const rb_iseq_t *iseq, VALUE indent)
 
         for (i = body->local_table_size; i > 0;) {
             int li = body->local_table_size - --i - 1;
-            long width;
+            rb_long_t width;
             VALUE name = local_var_name(iseq, 0, i);
             char argi[0x100];
             char opti[0x100];
@@ -3505,7 +3505,7 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
 {
     VALUE iseq_value = (VALUE)iseq;
     unsigned int i;
-    long l;
+    rb_long_t l;
     const struct rb_iseq_constant_body *const iseq_body = ISEQ_BODY(iseq);
     const struct iseq_insn_info_entry *prev_insn_info;
     unsigned int pos;

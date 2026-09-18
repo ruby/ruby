@@ -1700,10 +1700,10 @@ obj_traverse_i(VALUE obj, struct obj_traverse_data *data)
 
       case T_STRUCT:
         {
-            long len = RSTRUCT_LEN_RAW(obj);
+            rb_long_t len = RSTRUCT_LEN_RAW(obj);
             const VALUE *ptr = RSTRUCT_CONST_PTR(obj);
 
-            for (long i=0; i<len; i++) {
+            for (rb_long_t i=0; i<len; i++) {
                 if (obj_traverse_i(ptr[i], data)) return 1;
             }
         }
@@ -2286,10 +2286,10 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
 
       case T_STRUCT:
         {
-            long len = RSTRUCT_LEN_RAW(obj);
+            rb_long_t len = RSTRUCT_LEN_RAW(obj);
             const VALUE *ptr = RSTRUCT_CONST_PTR(obj);
 
-            for (long i=0; i<len; i++) {
+            for (rb_long_t i=0; i<len; i++) {
                 CHECK_AND_REPLACE(obj, ptr[i]);
             }
         }
@@ -2423,13 +2423,13 @@ struct courier_node {
     uint32_t *iv_vals;   /* owned by the courier; node ids */
     union {
         VALUE ref;
-        struct { char *ptr; long len, capa; int encidx; VALUE klass; } str;  /* the courier owns ptr */
-        struct { long len; uint32_t *elems; VALUE klass; } ary;              /* the courier owns elems */
+        struct { char *ptr; rb_long_t len, capa; int encidx; VALUE klass; } str;  /* the courier owns ptr */
+        struct { rb_long_t len; uint32_t *elems; VALUE klass; } ary;              /* the courier owns elems */
         struct { long size; uint32_t *kv; uint32_t ifnone_id; bool compare_by_id; bool proc_default; VALUE klass; } hash; /* owns kv (2*size) */
         struct { VALUE klass; } obj;
-        struct { long len; uint32_t *elems; VALUE klass; } strct; /* owns elems */
+        struct { rb_long_t len; uint32_t *elems; VALUE klass; } strct; /* owns elems */
         struct { uint32_t regexp_id, str_id; int num_regs; void *regs; VALUE klass; } match; /* owns regs */
-        struct { void *blob; int size; } bt;                                 /* the courier owns blob */
+        struct { void *blob; int size; } bt;                                      /* the courier owns blob */
         struct { VALUE src; int options; VALUE klass; } re;    /* src is an fstring: shareable */
         struct { VALUE klass; uint32_t payload_id; enum courier_hook hook; } hooked;
         struct {
@@ -2784,13 +2784,13 @@ courier_capture(struct courier_build *b, VALUE obj)
          * Safe even when frozen: it changes ownership, not content.  Afterwards a string
          * is embedded, owns a private heap buffer, or is a shared ROOT (a no-op). */
         if (!b->copy) rb_str_make_independent(obj);
-        long len = RSTRING_LEN(obj);
+        rb_long_t len = RSTRING_LEN(obj);
         int encidx = ENCODING_GET(obj);
         /* The receiver adopts this buffer as a String body, which is freed by size:
          * capa has to describe the allocation exactly (capa + terminator bytes). */
         const int termlen = rb_enc_mbminlen(rb_enc_from_index(encidx));
         char *ptr;
-        long capa;
+        rb_long_t capa;
         if (!b->copy && !STR_EMBED_P(obj) && rb_str_reembeddable_p(obj)) {
             /* Owns a private heap buffer: carry the pointer over (zero-copy) and leave
              * the source as a shell that does not free it. */
@@ -2816,9 +2816,9 @@ courier_capture(struct courier_build *b, VALUE obj)
       }
 
       case T_ARRAY: {
-        long len = RARRAY_LEN(obj);
+        rb_long_t len = RARRAY_LEN(obj);
         uint32_t *elems = len ? ALLOC_N(uint32_t, len) : NULL;
-        for (long i = 0; i < len; i++) {
+        for (rb_long_t i = 0; i < len; i++) {
             elems[i] = courier_capture(b, RARRAY_AREF(obj, i));
         }
         b->c->nodes[id].kind = COURIER_KIND_ARRAY;
@@ -2836,6 +2836,7 @@ courier_capture(struct courier_build *b, VALUE obj)
 
       case T_HASH: {
         uint32_t ifnone_id = courier_capture(b, RHASH_IFNONE(obj));
+        /* An entry count, not a String or Array length, so u.hash.size stays long */
         long size = RHASH_SIZE(obj);
         uint32_t *kv = size ? ALLOC_N(uint32_t, size * 2) : NULL;
         struct courier_hash_ctx hc = { b, kv, 0 };
@@ -2858,9 +2859,9 @@ courier_capture(struct courier_build *b, VALUE obj)
         break;
 
       case T_STRUCT: {
-        long len = RSTRUCT_LEN(obj);
+        rb_long_t len = RSTRUCT_LEN(obj);
         uint32_t *elems = len ? ALLOC_N(uint32_t, len) : NULL;
-        for (long i = 0; i < len; i++) {
+        for (rb_long_t i = 0; i < len; i++) {
             elems[i] = courier_capture(b, RSTRUCT_GET(obj, (int)i));
         }
         b->c->nodes[id].kind = COURIER_KIND_STRUCT;
@@ -3026,7 +3027,7 @@ move_preflight(VALUE obj, struct move_preflight_ctx *ctx)
         break;
       }
       case T_ARRAY:
-        for (long i = 0; i < RARRAY_LEN(obj); i++) {
+        for (rb_long_t i = 0; i < RARRAY_LEN(obj); i++) {
             move_preflight(RARRAY_AREF(obj, i), ctx);
         }
         break;
@@ -3035,7 +3036,7 @@ move_preflight(VALUE obj, struct move_preflight_ctx *ctx)
         move_preflight(RHASH_IFNONE(obj), ctx);
         break;
       case T_STRUCT:
-        for (long i = 0; i < RSTRUCT_LEN(obj); i++) {
+        for (rb_long_t i = 0; i < RSTRUCT_LEN(obj); i++) {
             move_preflight(RSTRUCT_GET(obj, (int)i), ctx);
         }
         break;
@@ -3135,7 +3136,7 @@ copy_courier_supported_p(VALUE obj, struct copy_support_ctx *ctx)
         if (!rb_backtrace_p(obj) && courier_hook_of(obj) == COURIER_HOOK_NONE) return false;
         break;
       case T_ARRAY:
-        for (long i = 0; i < RARRAY_LEN(obj); i++) {
+        for (rb_long_t i = 0; i < RARRAY_LEN(obj); i++) {
             if (!copy_courier_supported_p(RARRAY_AREF(obj, i), ctx)) return false;
         }
         break;
@@ -3145,7 +3146,7 @@ copy_courier_supported_p(VALUE obj, struct copy_support_ctx *ctx)
         if (!copy_courier_supported_p(RHASH_IFNONE(obj), ctx)) return false;
         break;
       case T_STRUCT:
-        for (long i = 0; i < RSTRUCT_LEN(obj); i++) {
+        for (rb_long_t i = 0; i < RSTRUCT_LEN(obj); i++) {
             if (!copy_courier_supported_p(RSTRUCT_GET(obj, (int)i), ctx)) return false;
         }
         break;
@@ -3352,10 +3353,10 @@ rb_ractor_courier_materialize(struct rb_ractor_courier *c)
           case COURIER_KIND_ARRAY: {
             /* The length is known, so set it once and write the slots, rather than
              * pushing each element through the capacity check. */
-            const long len = n->u.ary.len;
+            const rb_long_t len = n->u.ary.len;
             if (len > 0) {
                 rb_ary_resize(shell, len);
-                for (long j = 0; j < len; j++) {
+                for (rb_long_t j = 0; j < len; j++) {
                     RARRAY_ASET(shell, j, courier_child(c, shells, n->u.ary.elems[j]));
                 }
             }
@@ -3411,7 +3412,7 @@ rb_ractor_courier_materialize(struct rb_ractor_courier *c)
             break;
           }
           case COURIER_KIND_STRUCT:
-            for (long j = 0; j < n->u.strct.len; j++) {
+            for (rb_long_t j = 0; j < n->u.strct.len; j++) {
                 RSTRUCT_SET(shell, (int)j, courier_child(c, shells, n->u.strct.elems[j]));
             }
             break;

@@ -25,7 +25,7 @@
 #include "ruby/internal/dllexport.h"
 #include "ruby/internal/value.h"
 #include "ruby/internal/value_type.h"
-#include "ruby/internal/arithmetic/long.h"
+#include "ruby/internal/arithmetic/long_t.h"
 #include "ruby/internal/arithmetic/int.h"
 #if !defined RUBY_EXPORT && !defined RUBY_NO_OLD_COMPATIBILITY
 # include "ruby/backward.h"
@@ -78,12 +78,12 @@ RBIMPL_SYMBOL_EXPORT_END()
 
 RBIMPL_ATTR_ARTIFICIAL()
 /** @copydoc rb_struct_size()  */
-static inline long
+static inline rb_long_t
 RSTRUCT_LEN(VALUE st)
 {
     RBIMPL_ASSERT_TYPE(st, RUBY_T_STRUCT);
 
-    return RB_NUM2LONG(rb_struct_size(st));
+    return RB_NUM2LONGT(rb_struct_size(st));
 }
 
 RBIMPL_ATTR_ARTIFICIAL()

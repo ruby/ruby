@@ -3700,7 +3700,7 @@ static double
 rb_str_to_dbl_raise(VALUE str, int badcheck, int raise, int *error)
 {
     char *s;
-    long len;
+    rb_long_t len;
     double ret;
     VALUE v = 0;
 

@@ -1235,7 +1235,7 @@ typedef struct rb_parser_config_struct {
     VALUE (*attr_get)(VALUE obj, ID id);
 
     /* Array */
-    VALUE (*ary_new_from_args)(long n, ...);
+    VALUE (*ary_new_from_args)(rb_long_t n, ...);
     VALUE (*ary_unshift)(VALUE ary, VALUE item);
 
     /* Symbol */
@@ -1246,11 +1246,11 @@ typedef struct rb_parser_config_struct {
     int (*id_type)(ID id);
     ID (*id_attrset)(ID);
     ID (*intern)(const char *name);
-    ID (*intern2)(const char *name, long len);
-    ID (*intern3)(const char *name, long len, rb_encoding *enc);
+    ID (*intern2)(const char *name, rb_long_t len);
+    ID (*intern3)(const char *name, rb_long_t len, rb_encoding *enc);
     ID (*intern_str)(VALUE str);
     int (*is_notop_id)(ID);
-    int (*enc_symname_type)(const char *name, long len, rb_encoding *enc, unsigned int allowed_attrset);
+    int (*enc_symname_type)(const char *name, rb_long_t len, rb_encoding *enc, unsigned int allowed_attrset);
     const char *(*id2name)(ID id);
     VALUE (*id2str)(ID id);
     VALUE (*id2sym)(ID x);
@@ -1259,17 +1259,17 @@ typedef struct rb_parser_config_struct {
     RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 2, 3)
     VALUE (*str_catf)(VALUE str, const char *format, ...);
     VALUE (*str_cat_cstr)(VALUE str, const char *ptr);
-    VALUE (*str_resize)(VALUE str, long len);
-    VALUE (*str_new)(const char *ptr, long len);
+    VALUE (*str_resize)(VALUE str, rb_long_t len);
+    VALUE (*str_new)(const char *ptr, rb_long_t len);
     VALUE (*str_new_cstr)(const char *ptr);
     VALUE (*str_to_interned_str)(VALUE);
-    VALUE (*enc_str_new)(const char *ptr, long len, rb_encoding *enc);
+    VALUE (*enc_str_new)(const char *ptr, rb_long_t len, rb_encoding *enc);
     RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 2, 0)
     VALUE (*str_vcatf)(VALUE str, const char *fmt, va_list ap);
     RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 1, 2)
     VALUE (*rb_sprintf)(const char *format, ...);
     char *(*rstring_ptr)(VALUE str);
-    long (*rstring_len)(VALUE str);
+    rb_long_t (*rstring_len)(VALUE str);
 
     /* Numeric */
     VALUE (*int2num)(int v);
@@ -1333,7 +1333,7 @@ typedef struct rb_parser_config_struct {
     /* Re */
     VALUE (*reg_compile)(VALUE str, int options, const char *sourcefile, int sourceline);
     VALUE (*reg_check_preprocess)(VALUE str);
-    int (*memcicmp)(const void *x, const void *y, long len);
+    int (*memcicmp)(const void *x, const void *y, rb_long_t len);
 
     /* Error */
     void (*compile_warn)(const char *file, int line, const char *fmt, ...) RUBYPARSER_ATTRIBUTE_FORMAT(3, 4);
@@ -1364,7 +1364,7 @@ typedef struct rb_parser_config_struct {
     int enc_coderange_7bit;
     int enc_coderange_unknown;
     VALUE (*static_id2sym)(ID id);
-    long (*str_coderange_scan_restartable)(const char *s, const char *e, rb_encoding *enc, int *cr);
+    rb_long_t (*str_coderange_scan_restartable)(const char *s, const char *e, rb_encoding *enc, int *cr);
 
     /* Source hash */
     void (*source_hash_init)(rb_source_hash_state_t *state);

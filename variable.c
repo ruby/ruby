@@ -247,7 +247,7 @@ set_sub_temporary_name_foreach(VALUE mod, struct sub_temporary_name_args *args, 
         rb_id_table_foreach(tbl, set_sub_temporary_name_i, args);
     }
     else {
-        long names_len = RARRAY_LEN(args->names); // paranoiac check?
+        rb_long_t names_len = RARRAY_LEN(args->names); // paranoiac check?
         rb_ary_push(args->names, name);
         rb_id_table_foreach(tbl, set_sub_temporary_name_i, args);
         rb_ary_set_len(args->names, names_len);

@@ -187,7 +187,7 @@ CONSTFUNC(st_index_t rb_st_hash_end(st_index_t h));
 CONSTFUNC(st_index_t rb_st_hash_start(st_index_t h));
 #define st_hash_start(h) ((st_index_t)(h))
 
-void rb_hash_bulk_insert_into_st_table(long, const VALUE *, VALUE);
+void rb_hash_bulk_insert_into_st_table(rb_long_t, const VALUE *, VALUE);
 
 RUBY_SYMBOL_EXPORT_END
 

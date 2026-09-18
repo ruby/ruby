@@ -134,7 +134,7 @@ class Array
       if unspecified
         Primitive.cexpr! %q{ ary_first(self) }
       else
-        Primitive.cexpr! %q{  ary_take_first_or_last_n(self, NUM2LONG(n), ARY_TAKE_FIRST) }
+        Primitive.cexpr! %q{  ary_take_first_or_last_n(self, NUM2LONGT(n), ARY_TAKE_FIRST) }
       end
     end
   end
@@ -171,7 +171,7 @@ class Array
       if unspecified
         Primitive.cexpr! %q{ ary_last(self) }
       else
-        Primitive.cexpr! %q{ ary_take_first_or_last_n(self, NUM2LONG(n), ARY_TAKE_LAST) }
+        Primitive.cexpr! %q{ ary_take_first_or_last_n(self, NUM2LONGT(n), ARY_TAKE_LAST) }
       end
     end
   end

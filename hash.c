@@ -1620,7 +1620,7 @@ hash_new_capa(VALUE klass, size_t capa)
 }
 
 VALUE
-rb_hash_new_capa(long capa)
+rb_hash_new_capa(rb_long_t capa)
 {
     if (capa < 0) {
         rb_raise(rb_eArgError, "negative hash size (or size too big)");
@@ -1943,9 +1943,9 @@ rb_hash_init(rb_execution_context_t *ec, VALUE hash, VALUE capa_value, VALUE ifn
     rb_hash_modify(hash);
 
     if (capa_value != INT2FIX(0)) {
-        long capa = NUM2LONG(capa_value);
+        rb_long_t capa = NUM2LONGT(capa_value);
         if (capa > 0 && RHASH_AR_TABLE_P(hash) && RHASH_SIZE(hash) == 0 &&
-            (unsigned long)capa > RHASH_AR_TABLE_MAX_BOUND(hash)) {
+            (rb_ulong_t)capa > RHASH_AR_TABLE_MAX_BOUND(hash)) {
             hash_st_table_init(hash, capa);
         }
     }
@@ -2039,14 +2039,14 @@ rb_hash_s_create(int argc, VALUE *argv, VALUE klass)
             }
 
             hash = 0;
-            long i;
+            rb_long_t i;
             for (i = 0; i < RARRAY_LEN(tmp); ++i) {
                 VALUE e = RARRAY_AREF(tmp, i);
                 VALUE v = rb_check_array_type(e);
                 VALUE key, val = Qnil;
 
                 if (NIL_P(v)) {
-                    rb_raise(rb_eArgError, "wrong element type %s at %ld (expected array)",
+                    rb_raise(rb_eArgError, "wrong element type %s at %"PRIdLONGT" (expected array)",
                              rb_builtin_class_name(e), i);
                 }
 
@@ -2063,7 +2063,7 @@ rb_hash_s_create(int argc, VALUE *argv, VALUE klass)
 
                 switch (RARRAY_LEN(v)) {
                   default:
-                    rb_raise(rb_eArgError, "invalid number of elements (%ld for 1..2)",
+                    rb_raise(rb_eArgError, "invalid number of elements (%"PRIdLONGT" for 1..2)",
                              RARRAY_LEN(v));
                   case 2:
                     val = RARRAY_AREF(v, 1);
@@ -3661,7 +3661,7 @@ rb_hash_transform_keys_bang(int argc, VALUE *argv, VALUE hash)
     }
     rb_hash_modify_check(hash);
     if (!RHASH_TABLE_EMPTY_P(hash)) {
-        long i;
+        rb_long_t i;
         VALUE new_keys = hash_hidden_new(RHASH_SIZE(hash));
         VALUE pairs = rb_ary_hidden_new(RHASH_SIZE(hash) * 2);
         rb_hash_foreach(hash, flatten_i, pairs);
@@ -3826,7 +3826,7 @@ rb_hash_to_a(VALUE hash)
 static bool
 symbol_key_needs_quote(VALUE str)
 {
-    long len = RSTRING_LEN(str);
+    rb_long_t len = RSTRING_LEN(str);
     if (len == 0 || !rb_str_symname_p(str)) return true;
     const char *s = RSTRING_PTR(str);
     char first = s[0];
@@ -3946,7 +3946,7 @@ rb_hash_set_pair(VALUE hash, VALUE arg)
                  rb_builtin_class_name(arg));
     }
     if (RARRAY_LEN(pair) != 2) {
-        rb_raise(rb_eArgError, "element has wrong array length (expected 2, was %ld)",
+        rb_raise(rb_eArgError, "element has wrong array length (expected 2, was %"PRIdLONGT")",
                  RARRAY_LEN(pair));
     }
     rb_hash_aset(hash, RARRAY_AREF(pair, 0), RARRAY_AREF(pair, 1));
@@ -5012,7 +5012,7 @@ rb_ident_hash_new(void)
 }
 
 VALUE
-rb_ident_hash_new_capa(long size)
+rb_ident_hash_new_capa(rb_long_t size)
 {
     VALUE hash = rb_hash_new_capa(0);
     FL_SET_RAW(hash, RHASH_COMPARE_BY_IDENTITY);
@@ -5371,9 +5371,9 @@ key_stringify(VALUE hash, VALUE key)
 }
 
 static void
-ar_bulk_insert(VALUE hash, long argc, const VALUE *argv)
+ar_bulk_insert(VALUE hash, rb_long_t argc, const VALUE *argv)
 {
-    long i;
+    rb_long_t i;
     for (i = 0; i < argc; ) {
         st_data_t k = key_stringify(hash, argv[i++]);
         st_data_t v = argv[i++];
@@ -5384,7 +5384,7 @@ ar_bulk_insert(VALUE hash, long argc, const VALUE *argv)
 }
 
 void
-rb_hash_bulk_insert(long argc, const VALUE *argv, VALUE hash)
+rb_hash_bulk_insert(rb_long_t argc, const VALUE *argv, VALUE hash)
 {
     HASH_ASSERT(argc % 2 == 0);
     if (argc > 0) {
@@ -6096,7 +6096,7 @@ static VALUE
 env_each_key(VALUE ehash)
 {
     VALUE keys;
-    long i;
+    rb_long_t i;
 
     RETURN_SIZED_ENUMERATOR(ehash, 0, 0, rb_env_size);
     keys = env_keys(FALSE);
@@ -6167,7 +6167,7 @@ static VALUE
 env_each_value(VALUE ehash)
 {
     VALUE values;
-    long i;
+    rb_long_t i;
 
     RETURN_SIZED_ENUMERATOR(ehash, 0, 0, rb_env_size);
     values = env_values();
@@ -6198,7 +6198,7 @@ env_each_value(VALUE ehash)
 static VALUE
 env_each_pair(VALUE ehash)
 {
-    long i;
+    rb_long_t i;
 
     RETURN_SIZED_ENUMERATOR(ehash, 0, 0, rb_env_size);
 
@@ -6259,7 +6259,7 @@ static VALUE
 env_reject_bang(VALUE ehash)
 {
     VALUE keys;
-    long i;
+    rb_long_t i;
     int del = 0;
 
     RETURN_SIZED_ENUMERATOR(ehash, 0, 0, rb_env_size);
@@ -6352,7 +6352,7 @@ env_select(VALUE ehash)
 {
     VALUE result;
     VALUE keys;
-    long i;
+    rb_long_t i;
 
     RETURN_SIZED_ENUMERATOR(ehash, 0, 0, rb_env_size);
     result = rb_hash_new();
@@ -6398,7 +6398,7 @@ static VALUE
 env_select_bang(VALUE ehash)
 {
     VALUE keys;
-    long i;
+    rb_long_t i;
     int del = 0;
 
     RETURN_SIZED_ENUMERATOR(ehash, 0, 0, rb_env_size);
@@ -6474,7 +6474,7 @@ VALUE
 rb_env_clear(void)
 {
     VALUE keys;
-    long i;
+    rb_long_t i;
 
     keys = env_keys(TRUE);
     for (i=0; i<RARRAY_LEN(keys); i++) {
@@ -7057,13 +7057,13 @@ env_invert(VALUE _)
 static void
 keylist_delete(VALUE keys, VALUE key)
 {
-    long keylen, elen;
+    rb_long_t keylen, elen;
     const char *keyptr, *eptr;
     RSTRING_GETMEM(key, keyptr, keylen);
     /* Don't stop at first key, as it is possible to have
        multiple environment values with the same key.
     */
-    for (long i=0; i<RARRAY_LEN(keys); i++) {
+    for (rb_long_t i=0; i<RARRAY_LEN(keys); i++) {
         VALUE e = RARRAY_AREF(keys, i);
         RSTRING_GETMEM(e, eptr, elen);
         if (elen != keylen) continue;
@@ -7105,7 +7105,7 @@ static VALUE
 env_replace(VALUE env, VALUE hash)
 {
     VALUE keys;
-    long i;
+    rb_long_t i;
 
     keys = env_keys(TRUE);
     if (env == hash) return env;

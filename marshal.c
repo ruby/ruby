@@ -284,13 +284,13 @@ class2path(VALUE klass)
     return path;
 }
 
-int ruby_marshal_write_long(long x, char *buf);
-static void w_long(long, struct dump_arg*);
+int ruby_marshal_write_long(rb_long_t x, char *buf);
+static void w_long(rb_long_t, struct dump_arg*);
 static int w_encoding(VALUE encname, struct dump_call_arg *arg);
 static VALUE encoding_name(VALUE obj, struct dump_arg *arg);
 
 static void
-w_nbyte(const char *s, long n, struct dump_arg *arg)
+w_nbyte(const char *s, rb_long_t n, struct dump_arg *arg)
 {
     VALUE buf = arg->str;
     rb_str_buf_cat(buf, s, n);
@@ -307,7 +307,7 @@ w_byte(char c, struct dump_arg *arg)
 }
 
 static void
-w_bytes(const char *s, long n, struct dump_arg *arg)
+w_bytes(const char *s, rb_long_t n, struct dump_arg *arg)
 {
     w_long(n, arg);
     w_nbyte(s, n, arg);
@@ -323,9 +323,9 @@ w_short(int x, struct dump_arg *arg)
 }
 
 static void
-w_long(long x, struct dump_arg *arg)
+w_long(rb_long_t x, struct dump_arg *arg)
 {
-    char buf[sizeof(long)+1];
+    char buf[sizeof(rb_long_t)+1];
     int i = ruby_marshal_write_long(x, buf);
     if (i < 0) {
         rb_raise(rb_eTypeError, "long too big to dump");
@@ -334,7 +334,7 @@ w_long(long x, struct dump_arg *arg)
 }
 
 int
-ruby_marshal_write_long(long x, char *buf)
+ruby_marshal_write_long(rb_long_t x, char *buf)
 {
     int i;
 
@@ -386,7 +386,7 @@ ruby_marshal_write_long(long x, char *buf)
 #endif
 
 static double
-load_mantissa(double d, const char *buf, long len)
+load_mantissa(double d, const char *buf, rb_long_t len)
 {
     if (!len) return d;
     if (--len > 0 && !*buf++) {	/* binary mantissa mark */
@@ -1047,7 +1047,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
             w_uclass(obj, rb_cArray, arg);
             w_byte(TYPE_ARRAY, arg);
             {
-                long i, len = RARRAY_LEN(obj);
+                rb_long_t i, len = RARRAY_LEN(obj);
 
                 w_long(len, arg);
                 for (i=0; i<RARRAY_LEN(obj); i++) {
@@ -1084,9 +1084,9 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
           case T_STRUCT:
             w_class(TYPE_STRUCT, obj, arg, TRUE);
             {
-                long len = RSTRUCT_LEN_RAW(obj);
+                rb_long_t len = RSTRUCT_LEN_RAW(obj);
                 VALUE mem;
-                long i;
+                rb_long_t i;
 
                 w_long(len, arg);
                 mem = rb_struct_members(obj);
@@ -1257,10 +1257,10 @@ rb_marshal_dump_limited(VALUE obj, VALUE port, int limit)
 struct load_arg {
     VALUE src;
     char *buf;
-    long bufsize;
-    long buflen;
-    long readable;
-    long offset;
+    rb_long_t bufsize;
+    rb_long_t buflen;
+    rb_long_t readable;
+    rb_long_t offset;
     st_table *symbols;
     st_table *data;
     st_table *partial_objects;
@@ -1343,9 +1343,9 @@ static unsigned char
 r_byte1_buffered(struct load_arg *arg)
 {
     if (arg->buflen == 0) {
-        long readable = arg->readable < arg->bufsize ? arg->readable : arg->bufsize;
-        long read_len;
-        VALUE str, n = LONG2NUM(readable);
+        rb_long_t readable = arg->readable < arg->bufsize ? arg->readable : arg->bufsize;
+        rb_long_t read_len;
+        VALUE str, n = LONGT2NUM(readable);
 
         str = load_funcall(arg, arg->src, s_read, 1, &n);
         if (NIL_P(str)) too_short();
@@ -1434,7 +1434,7 @@ r_long(struct load_arg *arg)
 }
 
 long
-ruby_marshal_read_long(const char **buf, long len)
+ruby_marshal_read_long(const char **buf, rb_long_t len)
 {
     long x;
     struct RString src = {RBASIC_INIT};
@@ -1452,7 +1452,7 @@ r_keep_readable(struct load_arg *arg, long len, size_t size)
     if (UNLIKELY(len < 0)) {
         rb_raise(rb_eArgError, "negative length");
     }
-    if (UNLIKELY((unsigned long)len > SIZE_MAX / size || arg->readable >= LONG_MAX - len)) {
+    if (UNLIKELY((unsigned long)len > SIZE_MAX / size || arg->readable >= RB_LONGT_MAX - len)) {
         rb_raise(rb_eArgError, "marshaled data too big");
     }
     return len;
@@ -1482,14 +1482,14 @@ r_bytes1_buffered(long len, struct load_arg *arg)
         arg->buflen -= len;
     }
     else {
-        long buflen = arg->buflen;
-        long readable = arg->readable + 1;
-        long tmp_len, read_len, need_len = len - buflen;
+        rb_long_t buflen = arg->buflen;
+        rb_long_t readable = arg->readable + 1;
+        rb_long_t tmp_len, read_len, need_len = len - buflen;
         VALUE tmp, n;
 
         readable = readable < arg->bufsize ? readable : arg->bufsize;
         read_len = need_len > readable ? need_len : readable;
-        n = LONG2NUM(read_len);
+        n = LONGT2NUM(read_len);
         tmp = load_funcall(arg, arg->src, s_read, 1, &n);
         if (NIL_P(tmp)) too_short();
         StringValue(tmp);
@@ -1548,7 +1548,7 @@ r_bytes0(long len, struct load_arg *arg)
 }
 
 static inline int
-name_equal(const char *name, size_t nlen, const char *p, long l)
+name_equal(const char *name, size_t nlen, const char *p, rb_long_t l)
 {
     if ((size_t)l != nlen || *p != *name) return 0;
     return nlen == 1 || memcmp(p+1, name+1, nlen-1) == 0;
@@ -1559,7 +1559,7 @@ sym2encidx(VALUE sym, VALUE val)
 {
     RBIMPL_ATTR_NONSTRING() static const char name_encoding[8] = "encoding";
     const char *p;
-    long l;
+    rb_long_t l;
     if (rb_enc_get_index(sym) != ENCINDEX_US_ASCII) return -1;
     RSTRING_GETMEM(sym, p, l);
     if (l <= 0) return -1;
@@ -1579,7 +1579,7 @@ static int
 symname_equal(VALUE sym, const char *name, size_t nlen)
 {
     const char *p;
-    long l;
+    rb_long_t l;
     if (rb_enc_get_index(sym) != ENCINDEX_US_ASCII) return 0;
     RSTRING_GETMEM(sym, p, l);
     return name_equal(name, nlen, p, l);
@@ -1873,7 +1873,7 @@ obj_alloc_by_path(VALUE path, struct load_arg *arg)
 static VALUE
 append_extmod(VALUE obj, VALUE extmod)
 {
-    long i = RARRAY_LEN(extmod);
+    rb_long_t i = RARRAY_LEN(extmod);
     while (i > 0) {
         VALUE m = RARRAY_AREF(extmod, --i);
         rb_extend_object(obj, m);
@@ -1898,7 +1898,7 @@ r_object0(struct load_arg *arg, bool partial, int *ivp, VALUE extmod)
 static VALUE
 r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE klass, VALUE extmod, int type)
 {
-    VALUE (*hash_new_capa)(long) = rb_hash_new_capa;
+    VALUE (*hash_new_capa)(rb_long_t) = rb_hash_new_capa;
     VALUE v = Qnil;
     long id;
     st_data_t link;
@@ -2106,7 +2106,7 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE klass, VALUE ex
             if (!has_encoding) {
                 /* 1.8 compatibility; remove escapes undefined in 1.8 */
                 char *ptr = RSTRING_PTR(str), *dst = ptr, *src = ptr;
-                long len = RSTRING_LEN(str);
+                rb_long_t len = RSTRING_LEN(str);
                 long bs = 0;
                 for (; len-- > 0; *dst++ = *src++) {
                     switch (*src) {

@@ -1005,7 +1005,7 @@ static rb_encoding *io_input_encoding(rb_io_t *fptr);
 static void
 io_ungetbyte(VALUE str, rb_io_t *fptr)
 {
-    long len = RSTRING_LEN(str);
+    rb_long_t len = RSTRING_LEN(str);
 
     if (fptr->rbuf.ptr == NULL) {
         const int min_capa = IO_RBUF_CAPA_FOR(fptr);
@@ -1462,7 +1462,7 @@ static VALUE
 io_flush_buffer_sync(void *arg)
 {
     rb_io_t *fptr = arg;
-    long l = fptr->wbuf.len;
+    rb_long_t l = fptr->wbuf.len;
     ssize_t r = write(fptr->fd, fptr->wbuf.ptr+fptr->wbuf.off, (size_t)l);
 
     if (fptr->wbuf.len <= r) {
@@ -1829,7 +1829,7 @@ make_writeconv(rb_io_t *fptr)
 struct binwrite_arg {
     rb_io_t *fptr;
     const char *ptr;
-    long length;
+    rb_long_t length;
 };
 
 struct write_arg {
@@ -1840,7 +1840,7 @@ struct write_arg {
 
 #ifdef HAVE_WRITEV
 static ssize_t
-io_binwrite_string_internal(rb_io_t *fptr, const char *ptr, long length)
+io_binwrite_string_internal(rb_io_t *fptr, const char *ptr, rb_long_t length)
 {
     if (fptr->wbuf.len) {
         struct iovec iov[2];
@@ -1877,9 +1877,9 @@ io_binwrite_string_internal(rb_io_t *fptr, const char *ptr, long length)
 }
 #else
 static ssize_t
-io_binwrite_string_internal(rb_io_t *fptr, const char *ptr, long length)
+io_binwrite_string_internal(rb_io_t *fptr, const char *ptr, rb_long_t length)
 {
-    long remaining = length;
+    rb_long_t remaining = length;
 
     if (fptr->wbuf.len) {
         if (fptr->wbuf.len+length <= fptr->wbuf.capa) {
@@ -1962,7 +1962,7 @@ io_allocate_write_buffer(rb_io_t *fptr, int sync)
 }
 
 static inline int
-io_binwrite_requires_flush_write(rb_io_t *fptr, long len, int nosync)
+io_binwrite_requires_flush_write(rb_io_t *fptr, rb_long_t len, int nosync)
 {
     // If the requested operation was synchronous and the output mode is synchronous or a TTY:
     if (!nosync && (fptr->mode & (FMODE_SYNC|FMODE_TTY)))
@@ -1976,8 +1976,8 @@ io_binwrite_requires_flush_write(rb_io_t *fptr, long len, int nosync)
     return 0;
 }
 
-static long
-io_binwrite(const char *ptr, long len, rb_io_t *fptr, int nosync)
+static rb_long_t
+io_binwrite(const char *ptr, rb_long_t len, rb_io_t *fptr, int nosync)
 {
     if (len <= 0) return len;
 
@@ -2078,12 +2078,12 @@ do_writeconv(VALUE str, rb_io_t *fptr, int *converted)
     return str;
 }
 
-static long
+static rb_long_t
 io_fwrite(VALUE str, rb_io_t *fptr, int nosync)
 {
     int converted = 0;
     VALUE tmp;
-    long n, len;
+    rb_long_t n, len;
     const char *ptr;
 
 #ifdef _WIN32
@@ -2112,14 +2112,14 @@ rb_io_bufwrite(VALUE io, const void *buf, size_t size)
 
     GetOpenFile(io, fptr);
     rb_io_check_writable(fptr);
-    return (ssize_t)io_binwrite(buf, (long)size, fptr, 0);
+    return (ssize_t)io_binwrite(buf, (rb_long_t)size, fptr, 0);
 }
 
 static VALUE
 io_write(VALUE io, VALUE str, int nosync)
 {
     rb_io_t *fptr;
-    long n;
+    rb_long_t n;
     VALUE tmp;
 
     io = GetWriteIO(io);
@@ -2140,7 +2140,7 @@ io_write(VALUE io, VALUE str, int nosync)
     n = io_fwrite(str, fptr, nosync);
     if (n < 0L) rb_sys_fail_on_write(fptr);
 
-    return LONG2FIX(n);
+    return LONGT2NUM(n);
 }
 
 #ifdef HAVE_WRITEV
@@ -2164,7 +2164,7 @@ io_binwritev_internal(VALUE arg)
     int iovcnt = p->iovcnt;
 
     while (remaining) {
-        long result = rb_writev_internal(fptr, iov, iovcnt);
+        rb_long_t result = rb_writev_internal(fptr, iov, iovcnt);
 
         if (result >= 0) {
             offset += result;
@@ -2210,7 +2210,7 @@ io_binwritev_internal(VALUE arg)
     return offset;
 }
 
-static long
+static rb_long_t
 io_binwritev(struct iovec *iov, int iovcnt, rb_io_t *fptr)
 {
     // Don't write anything if current thread has a pending interrupt:
@@ -2274,11 +2274,11 @@ io_binwritev(struct iovec *iov, int iovcnt, rb_io_t *fptr)
     }
 }
 
-static long
+static rb_long_t
 io_fwritev(int argc, const VALUE *argv, rb_io_t *fptr)
 {
     int i, converted, iovcnt = argc + 1;
-    long n;
+    rb_long_t n;
     VALUE v1, v2, str, tmp, *tmp_array;
     struct iovec *iov;
 
@@ -2328,7 +2328,7 @@ static VALUE
 io_writev(int argc, const VALUE *argv, VALUE io)
 {
     rb_io_t *fptr;
-    long n;
+    rb_long_t n;
     VALUE tmp, total = INT2FIX(0);
     int i, cnt = 1;
 
@@ -2361,7 +2361,7 @@ io_writev(int argc, const VALUE *argv, VALUE io)
         if (n < 0L)
             rb_sys_fail_on_write(fptr);
 
-        total = rb_fix_plus(LONG2FIX(n), total);
+        total = rb_int_plus(LONGT2NUM(n), total);
     }
 
     return total;
@@ -3134,8 +3134,8 @@ rb_io_to_io(VALUE io)
 }
 
 /* reading functions */
-static long
-read_buffered_data(char *ptr, long len, rb_io_t *fptr)
+static rb_long_t
+read_buffered_data(char *ptr, rb_long_t len, rb_io_t *fptr)
 {
     int n;
 
@@ -3148,12 +3148,12 @@ read_buffered_data(char *ptr, long len, rb_io_t *fptr)
     return n;
 }
 
-static long
-io_bufread(char *ptr, long len, rb_io_t *fptr)
+static rb_long_t
+io_bufread(char *ptr, rb_long_t len, rb_io_t *fptr)
 {
-    long offset = 0;
-    long n = len;
-    long c;
+    rb_long_t offset = 0;
+    rb_long_t n = len;
+    rb_long_t c;
 
     if (READ_DATA_PENDING(fptr) == 0) {
         while (n > 0) {
@@ -3186,11 +3186,11 @@ io_bufread(char *ptr, long len, rb_io_t *fptr)
     return len - n;
 }
 
-static int io_setstrbuf(VALUE *str, long len);
+static int io_setstrbuf(VALUE *str, rb_long_t len);
 
 struct bufread_arg {
     char *str_ptr;
-    long len;
+    rb_long_t len;
     rb_io_t *fptr;
 };
 
@@ -3202,10 +3202,10 @@ bufread_call(VALUE arg)
     return Qundef;
 }
 
-static long
-io_fread(VALUE str, long offset, long size, rb_io_t *fptr)
+static rb_long_t
+io_fread(VALUE str, rb_long_t offset, rb_long_t size, rb_io_t *fptr)
 {
-    long len;
+    rb_long_t len;
     struct bufread_arg arg;
 
     io_setstrbuf(&str, offset + size);
@@ -3218,7 +3218,7 @@ io_fread(VALUE str, long offset, long size, rb_io_t *fptr)
     return len;
 }
 
-static long
+static rb_long_t
 remain_size(rb_io_t *fptr)
 {
     struct stat st;
@@ -3236,7 +3236,7 @@ remain_size(rb_io_t *fptr)
         pos = lseek(fptr->fd, 0, SEEK_CUR);
         if (st.st_size >= pos && pos >= 0) {
             siz += st.st_size - pos;
-            if (siz > LONG_MAX) {
+            if (siz > RB_LONGT_MAX) {
                 rb_raise(rb_eIOError, "file too big for single read");
             }
         }
@@ -3244,7 +3244,7 @@ remain_size(rb_io_t *fptr)
     else {
         siz += BUFSIZ;
     }
-    return (long)siz;
+    return (rb_long_t)siz;
 }
 
 static VALUE
@@ -3394,7 +3394,7 @@ io_shift_cbuf(rb_io_t *fptr, int len, VALUE *strp)
 }
 
 static int
-io_setstrbuf(VALUE *str, long len)
+io_setstrbuf(VALUE *str, rb_long_t len)
 {
     if (NIL_P(*str)) {
         *str = rb_str_new(0, len);
@@ -3404,7 +3404,7 @@ io_setstrbuf(VALUE *str, long len)
         VALUE s = StringValue(*str);
         rb_str_modify(s);
 
-        long clen = RSTRING_LEN(s);
+        rb_long_t clen = RSTRING_LEN(s);
         if (clen >= len) {
             return FALSE;
         }
@@ -3418,7 +3418,7 @@ io_setstrbuf(VALUE *str, long len)
 
 #define MAX_REALLOC_GAP 4096
 static void
-io_shrink_read_string(VALUE str, long n)
+io_shrink_read_string(VALUE str, rb_long_t n)
 {
     if (rb_str_capacity(str) - n > MAX_REALLOC_GAP) {
         rb_str_resize(str, n);
@@ -3426,7 +3426,7 @@ io_shrink_read_string(VALUE str, long n)
 }
 
 static void
-io_set_read_length(VALUE str, long n, int shrinkable)
+io_set_read_length(VALUE str, rb_long_t n, int shrinkable)
 {
     if (RSTRING_LEN(str) != n) {
         rb_str_modify(str);
@@ -3436,11 +3436,11 @@ io_set_read_length(VALUE str, long n, int shrinkable)
 }
 
 static VALUE
-read_all(rb_io_t *fptr, long siz, VALUE str)
+read_all(rb_io_t *fptr, rb_long_t siz, VALUE str)
 {
-    long bytes;
-    long n;
-    long pos;
+    rb_long_t bytes;
+    rb_long_t n;
+    rb_long_t pos;
     rb_encoding *enc;
     int cr;
     int shrinkable;
@@ -3540,7 +3540,7 @@ io_read_memory_call(VALUE arg)
         VALUE result = rb_fiber_scheduler_io_read_memory(scheduler, iis->fptr->self, iis->buf, iis->capa);
 
         if (!UNDEF_P(result)) {
-            // This is actually returned as a pseudo-VALUE and later cast to a long:
+            // This is actually returned as a pseudo-VALUE and later cast to a rb_long_t:
             return (VALUE)rb_fiber_scheduler_io_result_apply(result);
         }
     }
@@ -3553,10 +3553,10 @@ io_read_memory_call(VALUE arg)
     }
 }
 
-static long
+static rb_long_t
 io_read_memory_locktmp(VALUE str, struct io_internal_read_struct *iis)
 {
-    return (long)rb_str_locktmp_ensure(str, io_read_memory_call, (VALUE)iis);
+    return (rb_long_t)rb_str_locktmp_ensure(str, io_read_memory_call, (VALUE)iis);
 }
 
 #define no_exception_p(opts) !rb_opts_exception_p((opts), TRUE)
@@ -3566,14 +3566,14 @@ io_getpartial(int argc, VALUE *argv, VALUE io, int no_exception, int nonblock)
 {
     rb_io_t *fptr;
     VALUE length, str;
-    long n, len;
+    rb_long_t n, len;
     struct io_internal_read_struct iis;
     int shrinkable;
 
     rb_scan_args(argc, argv, "11", &length, &str);
 
-    if ((len = NUM2LONG(length)) < 0) {
-        rb_raise(rb_eArgError, "negative length %ld given", len);
+    if ((len = NUM2LONGT(length)) < 0) {
+        rb_raise(rb_eArgError, "negative length %"PRIdLONGT" given", len);
     }
 
     shrinkable = io_setstrbuf(&str, len);
@@ -3742,12 +3742,12 @@ static VALUE
 io_read_nonblock(rb_execution_context_t *ec, VALUE io, VALUE length, VALUE str, VALUE ex)
 {
     rb_io_t *fptr;
-    long n, len;
+    rb_long_t n, len;
     struct io_internal_read_struct iis;
     int shrinkable;
 
-    if ((len = NUM2LONG(length)) < 0) {
-        rb_raise(rb_eArgError, "negative length %ld given", len);
+    if ((len = NUM2LONGT(length)) < 0) {
+        rb_raise(rb_eArgError, "negative length %"PRIdLONGT" given", len);
     }
 
     shrinkable = io_setstrbuf(&str, len);
@@ -3797,7 +3797,7 @@ static VALUE
 io_write_nonblock(rb_execution_context_t *ec, VALUE io, VALUE str, VALUE ex)
 {
     rb_io_t *fptr;
-    long n;
+    rb_long_t n;
 
     if (!RB_TYPE_P(str, T_STRING))
         str = rb_obj_as_string(str);
@@ -3827,7 +3827,7 @@ io_write_nonblock(rb_execution_context_t *ec, VALUE io, VALUE str, VALUE ex)
         rb_syserr_fail_path(e, fptr->pathv);
     }
 
-    return LONG2FIX(n);
+    return LONGT2NUM(n);
 }
 
 /*
@@ -3905,7 +3905,7 @@ static VALUE
 io_read(int argc, VALUE *argv, VALUE io)
 {
     rb_io_t *fptr;
-    long n, len;
+    rb_long_t n, len;
     VALUE length, str;
     int shrinkable;
 #if RUBY_CRLF_ENVIRONMENT
@@ -3919,9 +3919,9 @@ io_read(int argc, VALUE *argv, VALUE io)
         rb_io_check_char_readable(fptr);
         return read_all(fptr, remain_size(fptr), str);
     }
-    len = NUM2LONG(length);
+    len = NUM2LONGT(length);
     if (len < 0) {
-        rb_raise(rb_eArgError, "negative length %ld given", len);
+        rb_raise(rb_eArgError, "negative length %"PRIdLONGT" given", len);
     }
 
     shrinkable = io_setstrbuf(&str,len);
@@ -3950,7 +3950,7 @@ io_read(int argc, VALUE *argv, VALUE io)
 }
 
 static void
-rscheck(const char *rsptr, long rslen, VALUE rs)
+rscheck(const char *rsptr, rb_long_t rslen, VALUE rs)
 {
     if (!rs) return;
     if (RSTRING_PTR(rs) != rsptr && RSTRING_LEN(rs) != rslen)
@@ -3958,7 +3958,7 @@ rscheck(const char *rsptr, long rslen, VALUE rs)
 }
 
 static const char *
-search_delim(const char *p, long len, int delim, rb_encoding *enc)
+search_delim(const char *p, rb_long_t len, int delim, rb_encoding *enc)
 {
     if (rb_enc_mbminlen(enc) == 1) {
         p = memchr(p, delim, len);
@@ -3983,10 +3983,10 @@ search_delim(const char *p, long len, int delim, rb_encoding *enc)
 }
 
 static int
-appendline(rb_io_t *fptr, int delim, VALUE *strp, long *lp, rb_encoding *enc)
+appendline(rb_io_t *fptr, int delim, VALUE *strp, rb_long_t *lp, rb_encoding *enc)
 {
     VALUE str = *strp;
-    long limit = *lp;
+    rb_long_t limit = *lp;
 
     if (NEED_READCONV(fptr)) {
         SET_BINARY_MODE(fptr);
@@ -4033,11 +4033,11 @@ appendline(rb_io_t *fptr, int delim, VALUE *strp, long *lp, rb_encoding *enc)
 
     NEED_NEWLINE_DECORATOR_ON_READ_CHECK(fptr);
     do {
-        long pending = READ_DATA_PENDING_COUNT(fptr);
+        rb_long_t pending = READ_DATA_PENDING_COUNT(fptr);
         if (pending > 0) {
             const char *p = READ_DATA_PENDING_PTR(fptr);
             const char *e;
-            long last;
+            rb_long_t last;
 
             if (limit > 0 && pending > limit) pending = limit;
             e = search_delim(p, pending, delim, enc);
@@ -4118,7 +4118,7 @@ rb_io_getline_fast(rb_io_t *fptr, rb_encoding *enc, int chomp)
 {
     VALUE str = Qnil;
     int len = 0;
-    long pos = 0;
+    rb_long_t pos = 0;
     int cr = 0;
 
     do {
@@ -4172,7 +4172,7 @@ rb_io_getline_fast(rb_io_t *fptr, rb_encoding *enc, int chomp)
 struct getline_arg {
     VALUE io;
     VALUE rs;
-    long limit;
+    rb_long_t limit;
     unsigned int chomp: 1;
 };
 
@@ -4213,11 +4213,11 @@ extract_getline_args(int argc, VALUE *argv, struct getline_arg *args)
             StringValue(rs);
     }
     args->rs = rs;
-    args->limit = NIL_P(lim) ? -1L : NUM2LONG(lim);
+    args->limit = NIL_P(lim) ? -1L : NUM2LONGT(lim);
 }
 
 static void
-check_getline_args(VALUE *rsp, long *limit, VALUE io)
+check_getline_args(VALUE *rsp, rb_long_t *limit, VALUE io)
 {
     rb_io_t *fptr;
     VALUE rs = *rsp;
@@ -4256,7 +4256,7 @@ prepare_getline_args(int argc, VALUE *argv, struct getline_arg *args, VALUE io)
 }
 
 static VALUE
-rb_io_getline_0(VALUE rs, long limit, int chomp, rb_io_t *fptr)
+rb_io_getline_0(VALUE rs, rb_long_t limit, int chomp, rb_io_t *fptr)
 {
     VALUE str = Qnil;
     int nolimit = 0;
@@ -4278,7 +4278,7 @@ rb_io_getline_0(VALUE rs, long limit, int chomp, rb_io_t *fptr)
     else {
         int c, newline = -1;
         const char *rsptr = 0;
-        long rslen = 0;
+        rb_long_t rslen = 0;
         int rspara = 0;
         int extra_limit = 16;
         int chomp_cr = chomp;
@@ -4370,7 +4370,7 @@ rb_io_getline_0(VALUE rs, long limit, int chomp, rb_io_t *fptr)
 }
 
 static VALUE
-rb_io_getline_1(VALUE rs, long limit, int chomp, VALUE io)
+rb_io_getline_1(VALUE rs, rb_long_t limit, int chomp, VALUE io)
 {
     rb_io_t *fptr;
     int old_lineno, new_lineno;
@@ -4408,7 +4408,7 @@ rb_io_gets(VALUE io)
 }
 
 VALUE
-rb_io_gets_limit_internal(VALUE io, long limit)
+rb_io_gets_limit_internal(VALUE io, rb_long_t limit)
 {
     rb_io_t *fptr;
     GetOpenFile(io, fptr);
@@ -4547,7 +4547,7 @@ rb_io_set_lineno(VALUE io, VALUE lineno)
 static VALUE
 io_readline(rb_execution_context_t *ec, VALUE io, VALUE sep, VALUE lim, VALUE chomp)
 {
-    long limit = -1;
+    rb_long_t limit = -1;
     if (NIL_P(lim)) {
         VALUE tmp = Qnil;
         // If sep is specified, but it's not a string and not nil, then assume
@@ -4557,7 +4557,7 @@ io_readline(rb_execution_context_t *ec, VALUE io, VALUE sep, VALUE lim, VALUE ch
             // for the separator, we assume it's the limit and set the
             // separator to default: rb_rs.
             lim = sep;
-            limit = NUM2LONG(lim);
+            limit = NUM2LONGT(lim);
             sep = rb_rs;
         }
         else {
@@ -4566,7 +4566,7 @@ io_readline(rb_execution_context_t *ec, VALUE io, VALUE sep, VALUE lim, VALUE ch
     }
     else {
         if (!NIL_P(sep)) StringValue(sep);
-        limit = NUM2LONG(lim);
+        limit = NUM2LONGT(lim);
     }
 
     check_getline_args(&sep, &limit, io);
@@ -5341,7 +5341,7 @@ VALUE
 rb_io_ungetc(VALUE io, VALUE c)
 {
     rb_io_t *fptr;
-    long len;
+    rb_long_t len;
 
     GetOpenFile(io, fptr);
     rb_io_check_char_readable(fptr);
@@ -5523,7 +5523,7 @@ finish_writeconv(rb_io_t *fptr, int noalloc)
             res = rb_econv_convert(fptr->writeconv, NULL, NULL, &dp, de, 0);
             while (dp-ds) {
                 size_t remaining = dp-ds;
-                long result = rb_io_write_memory(fptr, ds, remaining);
+                rb_long_t result = rb_io_write_memory(fptr, ds, remaining);
 
                 if (result > 0) {
                     ds += result;
@@ -6209,7 +6209,7 @@ rb_io_syswrite(VALUE io, VALUE str)
 {
     VALUE tmp;
     rb_io_t *fptr;
-    long n, len;
+    rb_long_t n, len;
     const char *ptr;
 
     if (!RB_TYPE_P(str, T_STRING))
@@ -6229,7 +6229,7 @@ rb_io_syswrite(VALUE io, VALUE str)
     if (n < 0) rb_sys_fail_path(fptr->pathv);
     rb_str_tmp_frozen_release(str, tmp);
 
-    return LONG2FIX(n);
+    return LONGT2NUM(n);
 }
 
 /*
@@ -6248,12 +6248,12 @@ rb_io_sysread(int argc, VALUE *argv, VALUE io)
 {
     VALUE len, str;
     rb_io_t *fptr;
-    long n, ilen;
+    rb_long_t n, ilen;
     struct io_internal_read_struct iis;
     int shrinkable;
 
     rb_scan_args(argc, argv, "11", &len, &str);
-    ilen = NUM2LONG(len);
+    ilen = NUM2LONGT(len);
 
     shrinkable = io_setstrbuf(&str, ilen);
     if (ilen == 0) return str;
@@ -6364,7 +6364,7 @@ rb_io_pread(int argc, VALUE *argv, VALUE io)
     arg.count = NUM2SIZET(len);
     arg.offset = NUM2OFFT(offset);
 
-    shrinkable = io_setstrbuf(&str, (long)arg.count);
+    shrinkable = io_setstrbuf(&str, (rb_long_t)arg.count);
     if (arg.count == 0) return str;
     arg.buf = RSTRING_PTR(str);
 
@@ -6597,7 +6597,7 @@ enum {bom_prefix_len = (int)sizeof(bom_prefix) - 1};
 enum {utf_prefix_len = (int)sizeof(utf_prefix) - 1};
 
 static int
-io_encname_bom_p(const char *name, long len)
+io_encname_bom_p(const char *name, rb_long_t len)
 {
     return len > bom_prefix_len && STRNCASECMP(name, bom_prefix, bom_prefix_len) == 0;
 }
@@ -6642,7 +6642,7 @@ rb_io_modestr_fmode(const char *modestr)
             goto error;
           case ':':
             p = strchr(m, ':');
-            if (io_encname_bom_p(m, p ? (long)(p - m) : (long)strlen(m)))
+            if (io_encname_bom_p(m, p ? (rb_long_t)(p - m) : (rb_long_t)strlen(m)))
                 fmode |= FMODE_SETENC_BY_BOM;
             goto finished;
         }
@@ -6825,12 +6825,12 @@ parse_mode_enc(const char *estr, rb_encoding *estr_enc,
     int idx, idx2;
     enum rb_io_mode fmode = fmode_p ? *fmode_p : 0;
     rb_encoding *ext_enc, *int_enc;
-    long len;
+    rb_long_t len;
 
     /* parse estr as "enc" or "enc2:enc" or "enc:-" */
 
     p = strrchr(estr, ':');
-    len = p ? (p++ - estr) : (long)strlen(estr);
+    len = p ? (p++ - estr) : (rb_long_t)strlen(estr);
     if ((fmode & FMODE_SETENC_BY_BOM) || io_encname_bom_p(estr, len)) {
         estr += bom_prefix_len;
         len -= bom_prefix_len;
@@ -8145,7 +8145,7 @@ rb_io_popen(VALUE pname, VALUE pmode, VALUE env, VALUE opt)
 
     tmp = rb_check_array_type(pname);
     if (!NIL_P(tmp)) {
-        long len = RARRAY_LEN(tmp);
+        rb_long_t len = RARRAY_LEN(tmp);
 #if SIZEOF_LONG > SIZEOF_INT
         if (len > INT_MAX) {
             rb_raise(rb_eArgError, "too many arguments");
@@ -8997,7 +8997,7 @@ rb_f_putc(VALUE recv, VALUE ch)
 int
 rb_str_end_with_asciichar(VALUE str, int c)
 {
-    long len = RSTRING_LEN(str);
+    rb_long_t len = RSTRING_LEN(str);
     const char *ptr = RSTRING_PTR(str);
     rb_encoding *enc = rb_enc_from_index(ENCODING_GET(str));
     int n;
@@ -9013,7 +9013,7 @@ static VALUE
 io_puts_ary(VALUE ary, VALUE out, int recur)
 {
     VALUE tmp;
-    long i;
+    rb_long_t i;
 
     if (recur) {
         tmp = rb_str_new2("[...]");
@@ -9254,7 +9254,7 @@ rb_stderr_to_original_p(VALUE err)
 }
 
 void
-rb_write_error2(const char *mesg, long len)
+rb_write_error2(const char *mesg, rb_long_t len)
 {
     VALUE out = rb_ractor_stderr();
     if (rb_stderr_to_original_p(out)) {
@@ -10785,7 +10785,7 @@ select_internal(VALUE read, VALUE write, VALUE except, struct timeval *tp, rb_fd
     VALUE res, list;
     rb_fdset_t *rp, *wp, *ep;
     rb_io_t *fptr;
-    long i;
+    rb_long_t i;
     int max = 0, n;
     int pending = 0;
     struct timeval timerec;
@@ -11531,18 +11531,19 @@ setup_narg(ioctl_req_t cmd, VALUE *argp, long (*narg_len)(ioctl_req_t))
         }
         else {
             char *ptr;
-            long len, slen;
+            long req_len;
+            rb_long_t slen;
 
             *argp = arg = tmp;
-            len = narg_len(cmd);
+            req_len = narg_len(cmd);
             rb_str_modify(arg);
 
             slen = RSTRING_LEN(arg);
             /* expand for data + sentinel. */
-            if (slen < len+1) {
-                rb_str_resize(arg, len+1);
-                MEMZERO(RSTRING_PTR(arg)+slen, char, len-slen);
-                slen = len+1;
+            if (slen < req_len+1) {
+                rb_str_resize(arg, req_len+1);
+                MEMZERO(RSTRING_PTR(arg)+slen, char, req_len-slen);
+                slen = req_len+1;
             }
             /* a little sanity check here */
             ptr = RSTRING_PTR(arg);
@@ -11560,7 +11561,7 @@ finish_narg(int retval, VALUE arg, const rb_io_t *fptr)
     if (retval < 0) rb_sys_fail_path(fptr->pathv);
     if (RB_TYPE_P(arg, T_STRING)) {
         char *ptr;
-        long slen;
+        rb_long_t slen;
         RSTRING_GETMEM(arg, ptr, slen);
         if (ptr[slen-1] != NARG_SENTINEL)
             rb_raise(rb_eArgError, "return value overflowed string");
@@ -12397,12 +12398,12 @@ static VALUE
 rb_io_s_read(int argc, VALUE *argv, VALUE io)
 {
     VALUE opt, offset;
-    long off;
+    rb_long_t off;
     struct foreach_arg arg;
 
     argc = rb_scan_args(argc, argv, "13:", NULL, NULL, &offset, NULL, &opt);
-    if (!NIL_P(offset) && (off = NUM2LONG(offset)) < 0) {
-        rb_raise(rb_eArgError, "negative offset %ld given", off);
+    if (!NIL_P(offset) && (off = NUM2LONGT(offset)) < 0) {
+        rb_raise(rb_eArgError, "negative offset %"PRIdLONGT" given", off);
     }
     open_key_args(io, argc, argv, opt, &arg);
     if (NIL_P(arg.io)) return Qnil;
@@ -13301,8 +13302,8 @@ copy_stream_fallback_body(VALUE arg)
     }
 
     while (1) {
-        long numwrote;
-        long l;
+        rb_long_t numwrote;
+        rb_long_t l;
         rb_str_make_independent(buf);
         if (stp->copy_length < (rb_off_t)0) {
             l = buflen;
@@ -13312,7 +13313,7 @@ copy_stream_fallback_body(VALUE arg)
                 rb_str_resize(buf, 0);
                 break;
             }
-            l = buflen < rest ? buflen : (long)rest;
+            l = buflen < rest ? buflen : (rb_long_t)rest;
         }
         if (!stp->src_fptr) {
             VALUE rc = rb_funcall(stp->src, read_method, 2, INT2FIX(l), buf);
@@ -13333,7 +13334,7 @@ copy_stream_fallback_body(VALUE arg)
                 off += ss;
         }
         n = rb_io_write(stp->dst, buf);
-        numwrote = NUM2LONG(n);
+        numwrote = NUM2LONGT(n);
         stp->total += numwrote;
         rest -= numwrote;
         if (read_method == id_read && RSTRING_LEN(buf) == 0) {
@@ -14026,11 +14027,11 @@ static VALUE
 argf_read(int argc, VALUE *argv, VALUE argf)
 {
     VALUE tmp, str, length;
-    long len = 0;
+    rb_long_t len = 0;
 
     rb_scan_args(argc, argv, "02", &length, &str);
     if (!NIL_P(length)) {
-        len = NUM2LONG(argv[0]);
+        len = NUM2LONGT(argv[0]);
     }
     if (!NIL_P(str)) {
         StringValue(str);
@@ -14058,9 +14059,9 @@ argf_read(int argc, VALUE *argv, VALUE argf)
         }
     }
     else if (argc >= 1) {
-        long slen = RSTRING_LEN(str);
+        rb_long_t slen = RSTRING_LEN(str);
         if (slen < len) {
-            argv[0] = LONG2NUM(len - slen);
+            argv[0] = LONGT2NUM(len - slen);
             goto retry;
         }
     }

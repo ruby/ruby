@@ -504,7 +504,7 @@ void rb_write_error(const char *str);
  * @param[in]  len  Length of `str`, in bytes.
  * @post       `str` is written to somewhere.
  */
-void rb_write_error2(const char *str, long len);
+void rb_write_error2(const char *str, rb_long_t len);
 
 /**
  * Closes everything.  In case of  POSIX environments, a child process inherits
