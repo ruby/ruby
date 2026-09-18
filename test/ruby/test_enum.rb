@@ -665,6 +665,34 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal([13, 14], [20, 32, 32, 21, 30, 25, 29, 13, 14].min_by(2) {|x| x})
   end
 
+  # min/max with an argument sort the collected candidates, at sizes straddling
+  # the insertion-sort threshold and both pivot-selection widenings.
+  def test_nmin_shapes
+    [1, 2, 17, 60, 200, 1000].each do |n|
+      a = (1..n).to_a.shuffle(random: Random.new(n))
+      [1, 2, n / 2 + 1, n].uniq.each do |k|
+        assert_equal(a.sort.first(k), a.min(k), "n=#{n} k=#{k}")
+        assert_equal(a.sort.reverse.first(k), a.max(k), "n=#{n} k=#{k}")
+        assert_equal(a.sort.reverse.first(k), a.min_by(k) {|x| -x }, "n=#{n} k=#{k}")
+        assert_equal(a.sort.first(k), a.max_by(k) {|x| -x }, "n=#{n} k=#{k}")
+        assert_equal(a.sort.reverse.first(k), a.min(k) {|x, y| y <=> x }, "n=#{n} k=#{k}")
+      end
+    end
+  end
+
+  # A block may return anything, so the comparison need not be an ordering.
+  # This must terminate without reading outside the buffer.
+  def test_nmin_with_inconsistent_block
+    [17, 200, 1000].each do |n|
+      a = (1..n).to_a
+      assert_equal(n / 2, a.min(n / 2) { -1 }.size, "n=#{n}")
+      assert_equal(n / 2, a.max(n / 2) { 1 }.size, "n=#{n}")
+      assert_equal(n / 2, a.min(n / 2) { 0 }.size, "n=#{n}")
+      r = Random.new(n)
+      assert_equal(n / 2, a.min(n / 2) { r.rand(-1..1) }.size, "n=#{n} random")
+    end
+  end
+
   def test_max_by
     assert_equal(1, @obj.max_by {|x| -x })
     cond = ->(x, i) { -x }
