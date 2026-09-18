@@ -88,7 +88,6 @@
 #define FL_USER19       RBIMPL_CAST((VALUE)(unsigned int)RUBY_FL_USER19) /**< @old{RUBY_FL_USER19} */
 
 #define ELTS_SHARED          RUBY_ELTS_SHARED     /**< @old{RUBY_ELTS_SHARED} */
-#define RB_OBJ_FREEZE        rb_obj_freeze_inline /**< @alias{rb_obj_freeze_inline} */
 
 /** @cond INTERNAL_MACRO */
 #define RUBY_ELTS_SHARED     RUBY_ELTS_SHARED
@@ -105,6 +104,7 @@
 #define RB_FL_TEST_RAW       RB_FL_TEST_RAW
 #define RB_FL_UNSET          RB_FL_UNSET
 #define RB_FL_UNSET_RAW      RB_FL_UNSET_RAW
+#define RB_OBJ_FREEZE        RB_OBJ_FREEZE
 #define RB_OBJ_FREEZE_RAW    RB_OBJ_FREEZE_RAW
 #define RB_OBJ_FROZEN        RB_OBJ_FROZEN
 #define RB_OBJ_FROZEN_RAW    RB_OBJ_FROZEN_RAW
@@ -744,6 +744,18 @@ static inline void
 RB_OBJ_FREEZE_RAW(VALUE obj)
 {
     rb_obj_freeze_inline(obj);
+}
+
+RBIMPL_ATTR_ARTIFICIAL()
+/**
+ * Freeze the given object if it is not frozen yet.
+ *
+ * @param[out]  obj  Object in question.
+ */
+static inline void
+RB_OBJ_FREEZE(VALUE obj)
+{
+    if (!RB_OBJ_FROZEN(obj)) RB_OBJ_FREEZE_RAW(obj);
 }
 
 #endif /* RBIMPL_FL_TYPE_H */

@@ -1371,7 +1371,7 @@ VALUE
 rb_obj_freeze(VALUE obj)
 {
     if (!OBJ_FROZEN(obj)) {
-        OBJ_FREEZE(obj);
+        OBJ_FREEZE_RAW(obj);
         if (SPECIAL_CONST_P(obj)) {
             rb_bug("special consts should be frozen.");
         }
