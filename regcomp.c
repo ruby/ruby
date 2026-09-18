@@ -3664,7 +3664,11 @@ expand_case_fold_string(Node* node, regex_t* reg, int state)
       }
 
       r = onig_node_str_cat(snode, p, p + len);
-      if (r != 0) goto err;
+      if (r != 0) {
+        if (IS_NULL(root))
+          onig_node_free(snode);
+        goto err;
+      }
     }
     else {
       alt_num *= (n + 1);
