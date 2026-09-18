@@ -788,7 +788,7 @@ module Bundler
         break if incomplete_specs.empty?
 
         Bundler.ui.debug("The lockfile does not have all gems needed for the current platform (#{Bundler.local_platform}) though, " \
-                         "Bundler will still re-resolve dependencies. The following locked gems have no variant for it: " \
+                         "Bundler will still re-resolve dependencies. The following locked gems could not be materialized for it: " \
                          "#{incomplete_specs.map(&:full_name).join(", ")}")
         sources.remote!
         reresolve_without(incomplete_specs)
