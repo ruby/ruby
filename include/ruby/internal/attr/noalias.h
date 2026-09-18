@@ -54,7 +54,7 @@
 # /*
 #  * `::llvm::Attribute::ArgMemOnly`  was buggy  before.  Maybe  because nobody
 #  * actually seriously used it.  It seems they somehow mitigated the situation
-#  * in  LLVM  12.  Still  not  found  the  exact  changeset which  fiexed  the
+#  * in  LLVM  12.   Still  not  found the  exact  changeset  which  fixed  the
 #  * attribute, though.
 #  *
 #  * :FIXME: others (armclang, xlclang, ...) can also be affected?
