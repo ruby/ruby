@@ -53,7 +53,7 @@ pub extern "C" fn rb_zjit_iseq_free(iseq: IseqPtr) {
 
     // TODO(Shopify/ruby#682): Free `IseqPayload`
     let payload = get_or_create_iseq_payload(iseq);
-    for version in payload.versions.iter_mut() {
+    for mut version in payload.all_versions() {
         unsafe { version.as_mut() }.iseq = null();
     }
 
@@ -107,7 +107,7 @@ fn iseq_mark(payload: &IseqPayload) {
 
     // Mark objects baked in JIT code
     let cb = ZJITState::get_code_block();
-    for version in payload.versions.iter() {
+    for version in payload.all_versions() {
         for &offset in unsafe { version.as_ref() }.gc_offsets.iter() {
             let value_ptr: *const u8 = offset.raw_ptr(cb);
             // Creating an unaligned pointer is well defined unlike in C.
@@ -131,7 +131,7 @@ fn iseq_update_references(payload: &mut IseqPayload) {
         }
     });
 
-    for &version in payload.versions.iter() {
+    for version in payload.all_versions() {
         iseq_version_update_references(version);
     }
 }

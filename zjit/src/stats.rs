@@ -354,6 +354,7 @@ make_counters! {
 
     // compile_error_: Compile error reasons
     compile_error_iseq_version_limit_reached,
+    compile_error_exception_entry_with_escaped_environment,
     compile_error_iseq_stack_too_large,
     compile_error_native_stack_too_large,
     compile_error_out_of_memory,
@@ -547,6 +548,7 @@ pub fn send_fallback_counter_ptr_for_opcode(opcode: VmInsnType) -> *mut u64 {
 #[derive(Clone, Debug, PartialEq)]
 pub enum CompileError {
     IseqVersionLimitReached,
+    ExceptionEntryWithEscapedEnvironment,
     IseqStackTooLarge,
     NativeStackTooLarge,
     OutOfMemory,
@@ -565,6 +567,7 @@ pub fn exit_counter_for_compile_error(compile_error: &CompileError) -> Counter {
     use crate::stats::Counter::*;
     match compile_error {
         IseqVersionLimitReached => compile_error_iseq_version_limit_reached,
+        ExceptionEntryWithEscapedEnvironment => compile_error_exception_entry_with_escaped_environment,
         IseqStackTooLarge       => compile_error_iseq_stack_too_large,
         NativeStackTooLarge     => compile_error_native_stack_too_large,
         OutOfMemory             => compile_error_out_of_memory,

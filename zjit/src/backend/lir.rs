@@ -628,16 +628,16 @@ pub struct SideExit {
     /// side exit. The current frame's stack and locals are still handled by
     /// `stack` and `locals` above.
     pub stack_map: Option<StackMap>,
-    /// If set, the side exit will invalidate the compiled ISEQ for recompilation.
+    /// If set, the side exit will invalidate the compiled version for recompilation.
     pub recompile: Option<SideExitRecompile>,
 }
 
 /// Metadata for the recompile callback on side exit.
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct SideExitRecompile {
-    /// The compiled unit whose version must be invalidated to force a recompile. For inlined
-    /// methods, this will be the outer function it was inlined into.
-    pub compiled_iseq: Opnd,
+    /// The compiled version that must be invalidated. For inlined methods, this
+    /// version belongs to the outer function.
+    pub compiled_version: Opnd,
 }
 
 /// Payload of `Target::SideExit`, boxed to keep `Target` (and every `Insn`
@@ -3125,7 +3125,7 @@ impl Assembler
             if let Some(recompile) = &exit.recompile {
                 use crate::codegen::exit_recompile;
                 asm_comment!(asm, "invalidate for recompilation");
-                asm_ccall!(asm, exit_recompile, recompile.compiled_iseq);
+                asm_ccall!(asm, exit_recompile, recompile.compiled_version);
             }
         }
 
