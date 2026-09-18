@@ -835,6 +835,17 @@ class TestFileExhaustive < Test::Unit::TestCase
     end
   end
 
+  def test_realpath_drive_relative_path
+    bug14640 = '[Bug #14640]'
+    drive = @dir[/\A[a-z]:/i]
+    omit "#{@dir} is not on a drive letter" unless drive
+    File.write(File.join(@dir, "t"), "")
+    Dir.chdir(@dir) do
+      assert_equal(File.realpath("t"), File.realpath("#{drive}t"), bug14640)
+    end
+    assert_equal(File.realpath("t", @dir), File.realpath("#{drive}t", @dir), bug14640)
+  end if DRIVE
+
   def test_unlink
     assert_equal(1, File.unlink(regular_file))
     make_file("foo", regular_file)
