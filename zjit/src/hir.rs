@@ -6359,7 +6359,7 @@ impl Function {
 
     /// ZJIT uses block parameters in HIR SSA representation.
     /// Sometimes, we can prove that a block param is only called with a single value.
-    /// This pass identifies such trivial block params and replaces them with the concretized value.
+    /// This pass identifies such trivial block params and replaces them with constants.
     /// This produces a minimal SSA representation amenable to further optimizations.
     /// The implementation is inspired from algorithm 2 in <https://c9x.me/compile/bib/braun13cc.pdf>.
     fn remove_trivial_block_params(&mut self) {
@@ -6371,7 +6371,7 @@ impl Function {
         // 3. Replace each trivial param in the following places.
         //    - at the block definition (remove this param)
         //    - for each predecessor edge of the block (remove this param)
-        //    - at each use of the param (replace this param with the concretized value)
+        //    - at each use of the param (replace this param with the actual constants)
 
         // Each block param is lifted to an abstract domain of ParamValues.
         // The lattice is simple. None is Bottom, Multiple is Top, and One is between both.
@@ -6485,7 +6485,7 @@ impl Function {
                     }
                 }
 
-                // Remove trivial params and replace uses with concretized values.
+                // Remove trivial params and replace uses with the actual constants.
                 let mut trivial_indices: Vec<usize> = Vec::with_capacity(abstract_domain.len());
                 for (index, value) in abstract_domain.into_iter().enumerate() {
                     let old_insn_id = self.blocks[target].params[index];
@@ -6517,7 +6517,7 @@ impl Function {
                 prune_vec_by_indices(&mut self.blocks[target].params, &trivial_indices);
             }
 
-            // End the analysis if there are no changes the CFG has no back edges.
+            // End analysis when there are no changes or the CFG has no back edges.
             if !(changed && has_back_edge) {
                 break;
             }
