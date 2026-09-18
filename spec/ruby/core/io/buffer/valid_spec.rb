@@ -41,8 +41,9 @@ describe "IO::Buffer#valid?" do
     end
   end
 
-  # "A buffer becomes invalid if it is a slice of another buffer (or string)
-  # which has been freed or re-allocated at a different address."
+  # A slice tracks a logical [offset, length) range of its source. It becomes
+  # invalid only if the source is freed, or resized so that the slice's range
+  # no longer fits; it survives a resize that merely relocates the source.
   context "with a slice" do
     it "is true for a slice of a live buffer" do
       @buffer = IO::Buffer.new(4)
@@ -59,19 +60,34 @@ describe "IO::Buffer#valid?" do
         slice.get_string.should == ""
       end
 
-      it "tracks whether its empty range exists in the source" do
+      it "survives a resize that relocates the source" do
         @buffer = IO::Buffer.new(0)
         slice = @buffer.slice(0, 0)
 
         slice.valid?.should == true
 
+        # Growing the source may relocate its allocation, but the slice's
+        # [0, 0) range still exists within it, so the slice stays valid:
         @buffer.resize(1)
-        slice.valid?.should == false
-        -> { slice.get_string }.should.raise(IO::Buffer::InvalidatedError)
+        slice.valid?.should == true
+        slice.get_string.should == ""
 
         @buffer.resize(0)
         slice.valid?.should == true
         slice.get_string.should == ""
+      end
+
+      it "keeps referring to the same range after the source is relocated" do
+        @buffer = IO::Buffer.new(8)
+        @buffer.set_string("ABCDEFGH")
+        slice = @buffer.slice(2, 4)
+        slice.get_string.should == "CDEF"
+
+        # A large grow is likely to relocate the source allocation; the slice
+        # continues to refer to bytes [2, 6) of the (preserved) contents:
+        @buffer.resize(1 << 20)
+        slice.valid?.should == true
+        slice.get_string.should == "CDEF"
       end
 
       it "is false when its empty range no longer belongs to the source" do
@@ -112,8 +128,15 @@ describe "IO::Buffer#valid?" do
       @buffer.free
 
       slice.valid?.should == false
-      slice.null?.should == false
       slice.empty?.should == false
+
+      ruby_version_is ""..."4.1" do
+        slice.null?.should == false
+      end
+
+      ruby_version_is "4.1" do
+        slice.null?.should == true
+      end
     end
 
     it "can be true for a non-null empty slice" do

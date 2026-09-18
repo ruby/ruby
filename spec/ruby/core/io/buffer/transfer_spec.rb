@@ -121,8 +121,17 @@ describe "IO::Buffer#transfer" do
       slice = buffer.slice(0, 2)
       @buffer = buffer.transfer
 
-      slice.null?.should == false
       slice.valid?.should == false
+
+      ruby_version_is ""..."4.1" do
+        slice.null?.should == false
+      end
+
+      ruby_version_is "4.1" do
+        # Offset-based slices resolve their base from the now-nullified source.
+        slice.null?.should == true
+      end
+
       -> { slice.get_string }.should.raise(IO::Buffer::InvalidatedError, "Buffer has been invalidated!")
     end
   end
