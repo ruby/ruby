@@ -601,9 +601,34 @@ class TestIOBuffer < Test::Unit::TestCase
     slice = inner.slice(0, 8)
     inner.free
 
-    assert_raise(IO::Buffer::InvalidatedError) do
+    assert_raise(ArgumentError) do
       slice.resize(16)
     end
+
+    slice.resize(0)
+    assert_predicate slice, :valid?
+    assert_predicate slice, :null?
+    assert_predicate slice, :empty?
+    slice.free
+  end
+
+  def test_resize_invalidated_slice_beyond_null_source
+    inner = IO::Buffer.new(IO::Buffer::PAGE_SIZE)
+    slice = inner.slice(2, 8)
+    inner.free
+
+    assert_raise(IO::Buffer::InvalidatedError) do
+      slice.resize(0)
+    end
+    refute_predicate slice, :valid?
+
+    inner.resize(IO::Buffer::PAGE_SIZE)
+    inner.set_string("abcdefghij")
+    assert_predicate slice, :valid?
+    assert_equal "cdefghij", slice.get_string
+  ensure
+    inner&.free unless inner&.null?
+    slice&.free unless slice&.null?
   end
 
   def test_resize_after_free
@@ -748,6 +773,63 @@ class TestIOBuffer < Test::Unit::TestCase
       slice.set_string("Adios", 0, 5)
     end
     assert_equal "Hello World", hello
+  end
+
+  def test_slice_readonly_permission_follows_source_replacement
+    buffer = IO::Buffer.new(8)
+    slice = buffer.slice(2, 4)
+
+    buffer.free
+    buffer.send(:initialize, 8, IO::Buffer::INTERNAL | IO::Buffer::READONLY)
+
+    assert_predicate slice, :valid?
+    assert_predicate slice, :readonly?
+    assert_equal IO::Buffer::READONLY, Bug::IOBuffer.get_bytes_flags(slice) & IO::Buffer::READONLY
+    assert_raise(IO::Buffer::AccessError) {slice.set_string("test")}
+
+    buffer.free
+    buffer.resize(8)
+
+    assert_predicate slice, :valid?
+    refute_predicate slice, :readonly?
+    assert_equal 0, Bug::IOBuffer.get_bytes_flags(slice) & IO::Buffer::READONLY
+    slice.set_string("test")
+    assert_equal "\0\0test\0\0", buffer.get_string
+  ensure
+    buffer&.free unless buffer&.null?
+  end
+
+  def test_slice_of_frozen_source_is_readonly
+    buffer = IO::Buffer.new(8)
+    slice = buffer.slice(2, 4)
+    buffer.freeze
+
+    assert_predicate slice, :readonly?
+    assert_equal IO::Buffer::READONLY, Bug::IOBuffer.get_bytes_flags(slice) & IO::Buffer::READONLY
+    assert_raise(IO::Buffer::AccessError) {slice.set_string("test")}
+  end
+
+  def test_slice_tracks_same_range_after_source_reallocation
+    buffer = IO::Buffer.new(8)
+    blocker = IO::Buffer.new(8)
+    buffer.set_string("ABCDEFGH")
+    slice = buffer.slice(2, 4)
+
+    original_address = Bug::IOBuffer.get_bytes_address(buffer)
+    buffer.resize(1 << 20)
+    relocated_address = Bug::IOBuffer.get_bytes_address(buffer)
+    omit "resize did not relocate the allocation" if relocated_address == original_address
+
+    assert_predicate slice, :valid?
+    assert_equal "CDEF", slice.get_string
+    slice.set_string("test")
+    assert_equal "ABtestGH", buffer.get_string(0, 8)
+    assert_true MemoryViewTestUtils.set_data(slice, 1, "?".ord)
+    assert_equal "ABt?stGH", buffer.get_string(0, 8)
+  ensure
+    blocker&.free
+    slice&.free unless slice&.null?
+    buffer&.free unless buffer&.null?
   end
 
   def test_string_backed_slice_is_invalidated_when_root_is_freed
