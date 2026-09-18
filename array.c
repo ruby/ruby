@@ -1178,6 +1178,7 @@ rb_ary_initialize(int argc, VALUE *argv, VALUE ary)
     }
     /* recheck after argument conversion */
     rb_ary_modify(ary);
+    ARY_SET_LEN(ary, 0);
     ary_resize_capa(ary, len);
     if (rb_block_given_p()) {
         long i;
