@@ -3356,6 +3356,40 @@ __END__
     end.each {|th| th.join}
   end
 
+  def test_close_discards_write_buffer_in_sync_mode
+    IO.pipe do |r, w|
+      w.sync = false
+      w.write("buffered")
+
+      # Enabling sync marks the write buffer as non-authoritative, so close
+      # must abandon the pending bytes rather than replaying them.
+      w.sync = true
+      assert_nothing_raised { w.close }
+
+      assert_equal("", r.read)
+    end
+  end
+
+  def test_close_flushes_write_buffer_when_not_sync
+    IO.pipe do |r, w|
+      w.sync = false
+      w.write("data")
+      w.close
+      assert_equal("data", r.read)
+    end
+  end
+
+  def test_sync_write_is_not_lost_on_close
+    IO.pipe do |r, w|
+      w.sync = true
+      payload = "x" * 200_000
+      reader = Thread.new { r.read }
+      w.write(payload)
+      w.close
+      assert_equal(payload, reader.value)
+    end
+  end
+
   def test_flush_in_finalizer1
     bug3910 = '[ruby-dev:42341]'
     tmp = Tempfile.open("bug3910") {|t|

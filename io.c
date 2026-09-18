@@ -5639,7 +5639,15 @@ fptr_finalize_flush(rb_io_t *fptr, int noraise, int keepgvl)
             error = finish_writeconv(fptr, noraise);
         }
     }
-    if (fptr->wbuf.len) {
+    /* Do not flush the write buffer on close when the stream is in sync
+     * mode. In sync mode Ruby's write buffer is not authoritative (writes go
+     * straight to the OS), so any bytes left in the buffer are the result of
+     * writes made while sync was disabled. Setting sync = true is therefore a
+     * way to abandon that pending output rather than replaying it on close,
+     * which matters after an interrupted write where the amount actually
+     * written is indeterminate. Call flush before enabling sync if the
+     * buffered data should still be sent. */
+    if (fptr->wbuf.len && !(fptr->mode & FMODE_SYNC)) {
         if (noraise) {
             io_flush_buffer_sync(fptr);
         }
