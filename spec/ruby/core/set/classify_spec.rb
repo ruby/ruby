@@ -24,9 +24,19 @@ describe "Set#classify" do
     classified.should == { 3 => Set["one", "two"], 4 => Set["four"], 5 => Set["three"] }
   end
 
-  it "does not retain compare_by_identity flag" do
-    set = Set["one", "two"].compare_by_identity
-    classified = set.classify { |x| x.length }
-    classified.values.each { |s| s.compare_by_identity?.should == false }
+  ruby_version_is "4.1" do
+    it "retains compare_by_identity flag" do
+      set = Set["one", "two"].compare_by_identity
+      classified = set.classify { |x| x.length }
+      classified.values.each { |s| s.compare_by_identity?.should == true }
+    end
+  end
+
+  ruby_version_is ""..."4.0" do
+    it "does not retain compare_by_identity flag" do
+      set = Set["one", "two"].compare_by_identity
+      classified = set.classify { |x| x.length }
+      classified.values.each { |s| s.compare_by_identity?.should == false }
+    end
   end
 end
