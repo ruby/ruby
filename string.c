@@ -6133,6 +6133,9 @@ rb_str_slice_bang(int argc, VALUE *argv, VALUE str)
         else if (nth >= num_regs) return Qnil;
         beg = RMATCH_BEG(match, nth);
         len = RMATCH_END(match, nth) - beg;
+        /* Converting the backref may have modified the string. */
+        if (beg > RSTRING_LEN(str)) return Qnil;
+        if (len > RSTRING_LEN(str) - beg) len = RSTRING_LEN(str) - beg;
         goto subseq;
     }
     else if (argc == 2) {
