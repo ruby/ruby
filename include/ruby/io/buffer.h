@@ -96,8 +96,14 @@ VALUE rb_io_buffer_free(VALUE self);
 // not exactly one.
 VALUE rb_io_buffer_free_locked(VALUE self);
 
-// Access the internal buffer and flags. Validates the pointers. If the returned
-// base is NULL, the returned size is always zero.
+// Returns non-zero if the buffer's own flags or its source's current permissions
+// prohibit writing, otherwise zero. This checks effective read-only access without
+// invoking Ruby methods; it does not validate the range or lock the allocation.
+int rb_io_buffer_readonly_p(VALUE self);
+
+// Access the buffer and flags. Validates the pointers. READONLY reflects both
+// the view's own restriction and its source's current permissions. If the
+// returned base is NULL, the returned size is always zero.
 // The pointers may not remain valid if the source buffer is manipulated.
 // Consider using rb_io_buffer_lock if needed.
 enum rb_io_buffer_flags rb_io_buffer_get_bytes(VALUE self, void **base, size_t *size);
@@ -117,7 +123,20 @@ VALUE rb_io_buffer_locked_for_reading(VALUE self, VALUE (*callback)(const void *
 VALUE rb_io_buffer_locked_for_writing(VALUE self, VALUE (*callback)(void *base, size_t size, VALUE argument), VALUE argument);
 
 VALUE rb_io_buffer_transfer(VALUE self);
+
+// Resize an allocation, or an IO::Buffer-backed slice's view within its root's
+// bounds. Locked allocations cannot be resized, but their slices can be.
+// String-backed buffers cannot be resized directly; create a slice instead.
 void rb_io_buffer_resize(VALUE self, size_t size);
+
+// Consume bytes from the front of a non-owning view without moving the backing
+// storage. Advances its start and reduces its size by amount. Raises on owning
+// buffers, invalid views, or amounts exceeding the current size. Read-only and
+// locked views may advance; their source and allocation lock count are unchanged.
+// Any previously acquired pointer/length still describes the original range;
+// keep the allocation locked until all native users of that range have finished.
+void rb_io_buffer_advance(VALUE self, size_t amount);
+
 void rb_io_buffer_clear(VALUE self, uint8_t value, size_t offset, size_t length);
 
 // The length is the maximum transfer length. Each function performs one

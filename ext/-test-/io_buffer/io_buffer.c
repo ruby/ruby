@@ -205,6 +205,57 @@ io_buffer_free_locked(VALUE self, VALUE buffer)
     return rb_io_buffer_free_locked(buffer);
 }
 
+static VALUE
+io_buffer_readonly(VALUE self, VALUE buffer)
+{
+    return rb_io_buffer_readonly_p(buffer) ? Qtrue : Qfalse;
+}
+
+static VALUE
+io_buffer_get_bytes_flags(VALUE self, VALUE buffer)
+{
+    void *base;
+    size_t size;
+    return UINT2NUM(rb_io_buffer_get_bytes(buffer, &base, &size));
+}
+
+static VALUE
+io_buffer_with_borrowed_buffer(VALUE self)
+{
+    static const char data[] = "abcdef";
+    VALUE buffer = rb_io_buffer_new_locked((void *)data, sizeof(data) - 1, RB_IO_BUFFER_READONLY);
+
+    return rb_ensure(rb_yield, buffer, rb_io_buffer_free_locked, buffer);
+}
+
+static VALUE
+io_buffer_locked_advance_callback(const void *base, size_t size, VALUE buffer)
+{
+    rb_io_buffer_advance(buffer, size / 2);
+    // Advancing the view must not invalidate the original pointer and length
+    // held by an in-flight native operation.
+    return rb_str_new(base, size);
+}
+
+static VALUE
+io_buffer_locked_advance(VALUE self, VALUE buffer)
+{
+    return rb_io_buffer_locked_for_reading(buffer, io_buffer_locked_advance_callback, buffer);
+}
+
+static VALUE
+io_buffer_locked_advance_raise_callback(const void *base, size_t size, VALUE buffer)
+{
+    rb_io_buffer_advance(buffer, size / 2);
+    rb_raise(rb_eRuntimeError, "interrupted");
+}
+
+static VALUE
+io_buffer_locked_advance_raise(VALUE self, VALUE buffer)
+{
+    return rb_io_buffer_locked_for_reading(buffer, io_buffer_locked_advance_raise_callback, buffer);
+}
+
 void
 Init_io_buffer(void)
 {
@@ -229,4 +280,9 @@ Init_io_buffer(void)
     rb_define_singleton_method(mIOBuffer, "unlock", io_buffer_unlock, 1);
     rb_define_singleton_method(mIOBuffer, "new_locked", io_buffer_new_locked, 1);
     rb_define_singleton_method(mIOBuffer, "free_locked", io_buffer_free_locked, 1);
+    rb_define_singleton_method(mIOBuffer, "readonly?", io_buffer_readonly, 1);
+    rb_define_singleton_method(mIOBuffer, "get_bytes_flags", io_buffer_get_bytes_flags, 1);
+    rb_define_singleton_method(mIOBuffer, "with_borrowed_buffer", io_buffer_with_borrowed_buffer, 0);
+    rb_define_singleton_method(mIOBuffer, "locked_advance", io_buffer_locked_advance, 1);
+    rb_define_singleton_method(mIOBuffer, "locked_advance_raise", io_buffer_locked_advance_raise, 1);
 }
