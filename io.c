@@ -8266,17 +8266,25 @@ rb_open_file(VALUE io, VALUE fname, VALUE vmode, VALUE vperm, VALUE opt)
 /*
  *  Document-method: File::open
  *
+ *  :markup: markdown
+ *
  *  call-seq:
- *    File.open(path, mode = 'r', perm = 0666, **opts) -> file
- *    File.open(path, mode = 'r', perm = 0666, **opts) {|f| ... } -> object
+ *    File.open(path, mode = 'r', permissions = 0666, **options) -> file
+ *    File.open(path, mode = 'r', permissions = 0666, **options) {|file| ... } -> object
  *
- *  Creates a new File object, via File.new with the given arguments.
+ *  Creates a new \File object via File.new with the given arguments.
  *
- *  With no block given, returns the File object.
+ *  With no block given, returns the \File object.
  *
- *  With a block given, calls the block with the File object
- *  and returns the block's value.
+ *  With a block given, calls the block with the \File object,
+ *  closes the \File object, and returns the block's value.
  *
+ *  ```ruby
+ *  File.open('doc/maintainers.md') {|file| file.size } # => 14900
+ *  ```
+ *
+ *  Note that the \File object is automatically closed
+ *  even if the block raises an exception.
  */
 
 /*
