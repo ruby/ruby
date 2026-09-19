@@ -872,8 +872,6 @@ get_string_value(const NODE *node)
     switch (nd_type(node)) {
       case NODE_STR:
         return RB_OBJ_SET_SHAREABLE(rb_node_str_string_val(node));
-      case NODE_FILE:
-        return RB_OBJ_SET_SHAREABLE(rb_node_file_path_val(node));
       default:
         rb_bug("unexpected node: %s", ruby_node_name(nd_type(node)));
     }
@@ -5259,7 +5257,6 @@ static_literal_node_p(const NODE *node, const rb_iseq_t *iseq, bool hash_key)
       case NODE_FALSE:
         return TRUE;
       case NODE_STR:
-      case NODE_FILE:
         return hash_key || frozen_string_literal_p(iseq);
       default:
         return FALSE;
@@ -5300,7 +5297,6 @@ static_literal_value(const NODE *node, rb_iseq_t *iseq)
         return rb_node_line_lineno_val(node);
       case NODE_ENCODING:
         return rb_node_encoding_val(node);
-      case NODE_FILE:
       case NODE_STR:
         if (ISEQ_COMPILE_DATA(iseq)->option->debug_frozen_string_literal || RTEST(ruby_debug)) {
             VALUE lit = get_string_value(node);
@@ -5683,8 +5679,6 @@ rb_node_case_when_optimizable_literal(const NODE *const node)
         return rb_node_line_lineno_val(node);
       case NODE_STR:
         return rb_node_str_string_val(node);
-      case NODE_FILE:
-        return rb_node_file_path_val(node);
     }
     return Qundef;
 }
@@ -5704,7 +5698,7 @@ when_vals(rb_iseq_t *iseq, LINK_ANCHOR *const cond_seq, const NODE *vals,
             cdhash_aset_if_missing(literals, lit, (VALUE)(l1));
         }
 
-        if (nd_type_p(val, NODE_STR) || nd_type_p(val, NODE_FILE)) {
+        if (nd_type_p(val, NODE_STR)) {
             debugp_param("nd_lit", get_string_value(val));
             lit = get_string_value(val);
             ADD_INSN1(cond_seq, val, putobject, lit);
@@ -10819,16 +10813,6 @@ compile_shareable_literal_constant(rb_iseq_t *iseq, LINK_ANCHOR *ret, enum rb_pa
         return COMPILE_OK;
       }
 
-      case NODE_FILE:{
-        VALUE lit = rb_node_file_path_val(node);
-        ADD_INSN1(ret, node, putobject, lit);
-        RB_OBJ_WRITTEN(iseq, Qundef, lit);
-        *value_p = lit;
-        *shareable_literal_p = 1;
-
-        return COMPILE_OK;
-      }
-
       case NODE_ZLIST:{
         VALUE lit = rb_ary_new();
         OBJ_FREEZE(lit);
@@ -11421,7 +11405,15 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         }
         break;
       }
-      case NODE_FILE:
+      case NODE_FILE:{
+        if (!popped) {
+            const rb_compile_option_t *option = ISEQ_COMPILE_DATA(iseq)->option;
+            ADD_INSN1(ret, node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+            ADD_INSN1(ret, node, putobject, INT2FIX(option->frozen_string_literal));
+            ADD_SEND(ret, node, id_core_iseq_path, INT2FIX(1));
+        }
+        break;
+      }
       case NODE_STR:{
         debugp_param("nd_lit", get_string_value(node));
         if (!popped) {
