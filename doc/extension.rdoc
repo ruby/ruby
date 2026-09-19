@@ -1092,6 +1092,19 @@ or the objects themselves by
 
   void rb_gc_register_mark_object(VALUE object)
 
+Registration is scoped to the calling Ractor. Any Ractor may register an
+address. The stored value must be a special constant, a shareable object,
+or an unshareable object owned by the registering Ractor. If the address
+holds another Ractor's unshareable object, the owning Ractor's GC cannot
+see the registration and can free the stored object while the registered
+address still refers to it. This can cause a use-after-free if the
+registering Ractor attempts to use the Object stored.
+
+If the address has process lifetime (a +static VALUE+), either register it
+from the main Ractor or keep the stored values shareable.
+
+When a Ractor is joined, its registrations move to the joining Ractor.
+
 === Prepare extconf.rb
 
 If the file named extconf.rb exists, it will be executed to generate
@@ -1552,6 +1565,10 @@ golf_prelude.rb         :: goruby specific libraries.
 <tt>void rb_global_variable(VALUE *var)</tt> ::
 
   Tells GC to protect C global variable, which holds Ruby value to be marked.
+  The registration belongs to the calling Ractor: the stored value must be
+  a special constant, a shareable object, or an unshareable object owned by
+  the registering Ractor, or the owning Ractor's GC can free the object
+  while the variable still refers to it (use-after-free).
 
 <tt>void rb_gc_register_mark_object(VALUE object)</tt> ::
 
