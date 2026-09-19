@@ -18227,8 +18227,6 @@ parse_case(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
                      * frozen because when clause strings are frozen. */
                     if (PM_NODE_TYPE_P(condition, PM_STRING_NODE)) {
                         pm_node_flag_set(condition, PM_STRING_FLAGS_FROZEN | PM_NODE_FLAG_STATIC_LITERAL);
-                    } else if (PM_NODE_TYPE_P(condition, PM_SOURCE_FILE_NODE)) {
-                        pm_node_flag_set(condition, PM_NODE_FLAG_STATIC_LITERAL);
                     }
 
                     pm_when_clause_static_literals_add(parser, &literals, condition);
