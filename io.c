@@ -9753,19 +9753,15 @@ rb_io_set_encoding_by_bom(VALUE io)
  *  Creates and returns a new open \File object for that file;
  *  the opened file is in non-synchronous mode.
  *
- *  Argument `path` must the string path to an existing filesystem entry
- *  or a Pathname object containing such a path:
+ *  Argument `path` must the string path to an existing filesystem entry:
  *
  *  ```ruby
  *  file = File.new('doc/maintainers.md') # => #<File:doc/maintainers.md>
  *  file.sync                             # => false
  *  file.close                            # Clean up.
- *  tty = File.new('/dev/tty', 'w')       # => #<File:/dev/tty>
+ *  tty = File.new('/dev/tty')            # => #<File:/dev/tty>
  *  tty.sync                              # => false
  *  tty.close                             # Clean up.
- *  pn = Pathname.new(path)               # => #<Pathname:t.tmp>
- *  file = File.new(pn)                   # => #<File:t.tmp>
- *  file.close                            # Clean up.
  *  ```
  *
  *  Note that the caller is responsible for closing the file;
