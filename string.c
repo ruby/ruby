@@ -10944,6 +10944,7 @@ rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, VALUE ary)
         line = rb_str_subseq(str, subptr - ptr, subend - subptr);
         if (ENUM_ELEM(ary, line)) {
             str_mod_check(str, ptr, len);
+            str_mod_check(rs, rsptr, rslen);
         }
         subptr = hit;
     }
