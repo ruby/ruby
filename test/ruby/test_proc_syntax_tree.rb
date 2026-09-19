@@ -6,6 +6,10 @@ class TestProcSyntaxTree < Test::Unit::TestCase
   PRISM = RubyVM::InstructionSequence.compile("").to_a[4][:parser] == :prism
 
   def with_loaded_file(source)
+    # Ruby::Box initializes a statically linked extension in the box that
+    # requires it first, so the prism that syntax_tree needs can belong to
+    # another box by the time this runs.
+    pend "prism is not loadable in every box" if defined?(Ruby::Box) && Ruby::Box.enabled?
     Dir.mktmpdir do |dir|
       path = File.join(dir, "target.rb")
       File.write(path, source)
