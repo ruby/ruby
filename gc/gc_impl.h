@@ -63,7 +63,7 @@ GC_IMPL_FN void rb_gc_impl_shutdown_free_objects(void *objspace_ptr);
 GC_IMPL_FN void rb_gc_impl_objspace_free(void *objspace_ptr);
 GC_IMPL_FN void rb_gc_impl_ractor_cache_free(void *objspace_ptr, void *cache);
 // GC
-GC_IMPL_FN void rb_gc_impl_start(void *objspace_ptr, bool full_mark, bool immediate_mark, bool immediate_sweep, bool compact);
+GC_IMPL_FN void rb_gc_impl_start(void *objspace_ptr, bool full_mark, bool immediate_mark, bool immediate_sweep, bool compact, bool global);
 GC_IMPL_FN bool rb_gc_impl_during_gc_p(void *objspace_ptr);
 GC_IMPL_FN void rb_gc_impl_prepare_heap(void *objspace_ptr);
 GC_IMPL_FN void rb_gc_impl_gc_enable(void *objspace_ptr);

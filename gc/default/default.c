@@ -411,6 +411,8 @@ typedef enum {
     GPR_FLAG_IMMEDIATE_MARK    = 0x8000,
     GPR_FLAG_FULL_MARK        = 0x10000,
     GPR_FLAG_COMPACT          = 0x20000,
+    /* The collection is a global GC: every objspace, stop-the-world (gc_start_global). */
+    GPR_FLAG_GLOBAL           = 0x40000,
 
     GPR_DEFAULT_REASON =
         (GPR_FLAG_FULL_MARK | GPR_FLAG_IMMEDIATE_MARK |
@@ -859,6 +861,7 @@ typedef struct rb_global_objspace {
         bool compacting;
         struct rb_objspace **objspaces;
         size_t n_objspaces, objspaces_capa;
+        size_t count;
     } global_gc;
 
     /* Index of every objspace's heap pages, ordered by body address.  Writers (page
@@ -1552,7 +1555,6 @@ static void init_mark_stack(mark_stack_t *stack);
 static int garbage_collect(rb_objspace_t *, unsigned int reason);
 
 static int  gc_start(rb_objspace_t *objspace, unsigned int reason);
-static int  gc_start_body(rb_objspace_t *objspace, unsigned int reason, bool allow_global);
 static void gc_rest(rb_objspace_t *objspace);
 
 /* GC cycle events (ENTER, EXIT, START, END_MARK, END_SWEEP) fire only if the objspace's
@@ -8546,15 +8548,13 @@ rb_gc_impl_objspace_retire_gc(void *objspace_ptr)
     objspace->flags.during_postmortem = 1;
 
     gc_rest(objspace);
-    gc_start_body(objspace, GPR_FLAG_FULL_MARK | GPR_FLAG_IMMEDIATE_MARK | GPR_FLAG_IMMEDIATE_SWEEP,
-                  false);
+    gc_start(objspace, GPR_FLAG_FULL_MARK | GPR_FLAG_IMMEDIATE_MARK | GPR_FLAG_IMMEDIATE_SWEEP);
 
     /* The sweep above turned this heap's dead IO and the like into deferred zombies
      * (the per-Ractor stdio holds a page per Ractor otherwise); finalize the C-only
      * ones here and re-sweep the nearly-empty heap so their pages detach as empty. */
     if (finalize_deferred_dfree_only(objspace)) {
-        gc_start_body(objspace, GPR_FLAG_FULL_MARK | GPR_FLAG_IMMEDIATE_MARK | GPR_FLAG_IMMEDIATE_SWEEP,
-                      false);
+        gc_start(objspace, GPR_FLAG_FULL_MARK | GPR_FLAG_IMMEDIATE_MARK | GPR_FLAG_IMMEDIATE_SWEEP);
     }
 
     heap_pages_freeable_pages = objspace->empty_pages_count;
@@ -8696,6 +8696,8 @@ static bool
 gc_need_global_p(rb_objspace_t *objspace)
 {
     if (rb_gc_single_objspace_p()) return false;
+    /* A Ractor's death must not stop the world, so the retire GC stays local. */
+    if (objspace->flags.during_postmortem) return false;
     if (objspace->shareable_objects > objspace->shareable_objects_limit) return true;
     /* A zombie's garbage only a global cycle reclaims, but what survived the last one
      * is live data, so retrigger only once TRIGGER more pages accumulate on top of it.
@@ -8729,18 +8731,17 @@ garbage_collect(rb_objspace_t *objspace, unsigned int reason)
 }
 
 static int
-gc_start_body(rb_objspace_t *objspace, unsigned int reason, bool allow_global)
+gc_start(rb_objspace_t *objspace, unsigned int reason)
 {
     unsigned int do_full_mark = !!(reason & GPR_FLAG_FULL_MARK);
 
     if (!rb_darray_size(objspace->heap_pages.sorted)) return TRUE; /* heap is not ready */
     if (!(reason & GPR_FLAG_METHOD) && !ready_to_gc(objspace)) return TRUE; /* GC is not allowed */
 
-    /* Every local GC entry asks whether a global cycle is needed instead, including the
-     * allocation slow path, or an allocation-driven workload slips past every threshold
-     * (only a global cycle reclaims dead shareable objects and zombie pages).  The
-     * exception is the retire GC, which never promotes: a Ractor's death must not STW. */
-    if (allow_global && gc_need_global_p(objspace)) {
+    // NOTE: When calling `GC.start` explicitly with the `global: true` option set, it goes through
+    // a different code path so never gets here.
+    if (!(reason & GPR_FLAG_METHOD) && gc_need_global_p(objspace)) {
+        // NOTE: With auto-compact on, compaction still doesn't run during global GC
         if (gc_start_global(objspace, reason, false, true)) {
             return TRUE;
         }
@@ -8871,12 +8872,6 @@ gc_start_body(rb_objspace_t *objspace, unsigned int reason, bool allow_global)
     gc_verify_internal_consistency(objspace);
 #endif
     return TRUE;
-}
-
-static int
-gc_start(rb_objspace_t *objspace, unsigned int reason)
-{
-    return gc_start_body(objspace, reason, true);
 }
 
 static void
@@ -9478,6 +9473,8 @@ gc_start_global(rb_objspace_t *driver, unsigned int reason, bool compact, bool a
         return false;
     }
 
+    reason |= GPR_FLAG_GLOBAL;
+
     /* A global GC is a collection of the driver's objspace too, and its profile.count
      * below says so, so report it like a local one.  The driver is the objspace whose
      * count moves, which is the one a hook reading GC.stat would compare against.  For
@@ -9546,6 +9543,7 @@ gc_start_global(rb_objspace_t *driver, unsigned int reason, bool compact, bool a
         }
     }
     driver->profile.major_gc_count++;
+    global_objspace->global_gc.count++;
 
     /* Enable compaction in every objspace before the mark: the unified conservative root
      * scan then pins machine-stack referents (gc_pin only pins while during_compacting)
@@ -10009,7 +10007,7 @@ rb_gc_impl_objspace_absorb(void *dst_ptr, void *src_ptr)
 }
 
 void
-rb_gc_impl_start(void *objspace_ptr, bool full_mark, bool immediate_mark, bool immediate_sweep, bool compact)
+rb_gc_impl_start(void *objspace_ptr, bool full_mark, bool immediate_mark, bool immediate_sweep, bool compact, bool global)
 {
     rb_objspace_t *objspace = objspace_ptr;
     unsigned int reason = (GPR_FLAG_FULL_MARK |
@@ -10036,11 +10034,9 @@ rb_gc_impl_start(void *objspace_ptr, bool full_mark, bool immediate_mark, bool i
         if (!immediate_sweep) reason &= ~GPR_FLAG_IMMEDIATE_SWEEP;
     }
 
-    /* An explicit full GC.start with multiple objspaces runs a global GC, the only
-     * collector that reclaims shareable and cross-objspace garbage.  It stops the world,
-     * so auto_compact is honoured here too (mirroring full mark x autocompact locally). */
-    if (!rb_gc_single_objspace_p() && (reason & GPR_FLAG_FULL_MARK)) {
-        gc_start_global(objspace, reason, compact || ruby_enable_autocompact, false);
+    if (global && !rb_gc_single_objspace_p()) {
+        reason |= GPR_FLAG_FULL_MARK | GPR_FLAG_IMMEDIATE_MARK | GPR_FLAG_IMMEDIATE_SWEEP;
+        gc_start_global(objspace, reason, compact, false);
     }
     else {
         garbage_collect(objspace, reason);
@@ -10065,7 +10061,7 @@ rb_gc_impl_prepare_heap(void *objspace_ptr)
     double orig_max_free_slots = gc_params.heap_free_slots_max_ratio;
     /* Ensure that all empty pages are moved onto empty_pages. */
     gc_params.heap_free_slots_max_ratio = 0.0;
-    rb_gc_impl_start(objspace, true, true, true, true);
+    rb_gc_impl_start(objspace, true, true, true, true, true);
     gc_params.heap_free_slots_max_ratio = orig_max_free_slots;
 
     objspace->heap_pages.allocatable_bytes = 0;
@@ -10724,6 +10720,7 @@ enum gc_stat_sym {
     gc_stat_sym_malloc_increase_bytes_limit,
     gc_stat_sym_minor_gc_count,
     gc_stat_sym_major_gc_count,
+    gc_stat_sym_global_gc_count,
     gc_stat_sym_compact_count,
     gc_stat_sym_read_barrier_faults,
     gc_stat_sym_total_moved_objects,
@@ -10779,6 +10776,7 @@ setup_gc_stat_symbols(void)
     S(malloc_increase_bytes_limit);
     S(minor_gc_count);
     S(major_gc_count);
+    S(global_gc_count);
     S(compact_count);
     S(read_barrier_faults);
     S(total_moved_objects);
@@ -10865,6 +10863,7 @@ rb_gc_impl_stat(void *objspace_ptr, VALUE hash_or_sym)
     SET(malloc_increase_bytes_limit, malloc_limit);
     SET(minor_gc_count, objspace->profile.minor_gc_count);
     SET(major_gc_count, objspace->profile.major_gc_count);
+    SET(global_gc_count, global_objspace->global_gc.count);
     SET(compact_count, objspace->profile.compact_count);
     SET(read_barrier_faults, objspace->profile.read_barrier_faults);
     SET(total_moved_objects, objspace->rcompactor.total_moved);
@@ -12727,7 +12726,7 @@ gc_compact(VALUE self)
     gc_config_full_mark_set(TRUE);
 
     /* Run GC with compaction enabled */
-    rb_gc_impl_start(rb_gc_get_objspace(), true, true, true, true);
+    rb_gc_impl_start(rb_gc_get_objspace(), true, true, true, true, true);
     gc_config_full_mark_set(full_marking_p);
 
     return gc_compact_stats(self);
@@ -12804,12 +12803,12 @@ gc_verify_compaction_references(int argc, VALUE* argv, VALUE self)
      * moved-reference walk) is built for a single objspace, so with several demote it
      * to a plain full GC.  Plain GC.compact does compact them via the global GC. */
     if (!rb_gc_single_objspace_p()) {
-        rb_gc_impl_start(objspace, true, true, true, false);
+        rb_gc_impl_start(objspace, true, true, true, false, true);
         return gc_compact_stats(self);
     }
 
     /* Clear the heap. */
-    rb_gc_impl_start(objspace, true, true, true, false);
+    rb_gc_impl_start(objspace, true, true, true, false, true);
 
     unsigned int lev = RB_GC_VM_LOCK();
     {
@@ -12869,7 +12868,7 @@ gc_verify_compaction_references(int argc, VALUE* argv, VALUE self)
     }
     RB_GC_VM_UNLOCK(lev);
 
-    rb_gc_impl_start(rb_gc_get_objspace(), true, true, true, true);
+    rb_gc_impl_start(rb_gc_get_objspace(), true, true, true, true, true);
 
     rb_objspace_reachable_objects_from_root(root_obj_check_moved_i, objspace);
     objspace_each_objects(objspace, heap_check_moved_i, objspace, TRUE);
