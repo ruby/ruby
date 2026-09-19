@@ -1729,7 +1729,7 @@ class TestRefinement < Test::Unit::TestCase
         prepend M
         def m
           raise 'defined?(super) true, should be false' if defined?(super)
-          :C
+          [:C]
         end
       end
 
@@ -1767,6 +1767,11 @@ class TestRefinement < Test::Unit::TestCase
         m = super_method.(m)
         assert_equal(C, m.owner)
         assert_nil(m.super_method)
+      end
+
+      while meth = meth.super_method
+        expected.shift
+        assert_equal(expected, meth.call)
       end
     end;
   end

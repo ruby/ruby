@@ -4393,12 +4393,15 @@ method_super_method(VALUE method)
             if (NIL_P(refs)) continue;
             VALUE r = rb_hash_lookup(refs, cme->owner);
             if (NIL_P(r)) continue;
+            if (RB_TYPE_P(cme->owner, T_MODULE)) {
+                r = rb_vm_module_refinement_iclass(r, cme->defined_class);
+            }
             const rb_callable_method_entry_t *ref_cme = rb_callable_method_entry(r, mid);
             if (!ref_cme) break;
             if (ref_cme->def->type == VM_METHOD_TYPE_REFINED) continue;
             if (skip_def && rb_method_definition_eq(ref_cme->def, skip_def)) continue;
             me = (rb_method_entry_t *)ref_cme;
-            iclass = cme->defined_class;
+            iclass = ref_cme->defined_class;
             break;
         }
         if (me) break;
