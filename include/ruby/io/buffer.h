@@ -96,8 +96,14 @@ VALUE rb_io_buffer_free(VALUE self);
 // not exactly one.
 VALUE rb_io_buffer_free_locked(VALUE self);
 
-// Access the internal buffer and flags. Validates the pointers. If the returned
-// base is NULL, the returned size is always zero.
+// Returns non-zero if the buffer's own flags or its source's current permissions
+// prohibit writing, otherwise zero. This checks effective read-only access without
+// invoking Ruby methods; it does not validate the range or lock the allocation.
+int rb_io_buffer_readonly_p(VALUE self);
+
+// Access the buffer and flags. Validates the pointers. READONLY reflects both
+// the view's own restriction and its source's current permissions. If the
+// returned base is NULL, the returned size is always zero.
 // The pointers may not remain valid if the source buffer is manipulated.
 // Consider using rb_io_buffer_lock if needed.
 enum rb_io_buffer_flags rb_io_buffer_get_bytes(VALUE self, void **base, size_t *size);
