@@ -32,7 +32,7 @@ describe "UNIXSocket#recvfrom" do
       end
     end
 
-    guard -> { platform_is :windows and ruby_bug "#21702", ""..."4.2" } do
+    guard -> { platform_is :windows and ruby_bug "#21702", ""..."4.1" } do
       it "returns an array containing basic information on the client as second element" do
         @client.send("foobar", 0)
         sock = @server.accept
@@ -54,13 +54,13 @@ describe "UNIXSocket#recvfrom" do
       end
     end
 
-    guard -> { platform_is :windows and ruby_bug "#21702", ""..."4.2" } do
-      it "returns an array containing server's address as second element" do
+    guard -> { platform_is :windows and ruby_bug "#21702", ""..."4.1" } do
+      it "returns an array containing basic information on the server as second element" do
         @client.send("", 0)
         sock = @server.accept
         sock.send("barfoo", 0)
-        # This may not be correct, depends on what underlying recvfrom actually returns.
-        @client.recvfrom(6).last.should == ["AF_UNIX", @server.local_address.unix_path]
+        # winsock does not return the source address for connection-oriented sockets
+        @client.recvfrom(6).last.should == ["AF_UNIX", ""]
         sock.close
       end
     end
@@ -131,7 +131,7 @@ describe 'UNIXSocket#recvfrom' do
       end
     end
 
-    guard -> { platform_is :windows and ruby_bug "#21702", ""..."4.2" } do
+    guard -> { platform_is :windows and ruby_bug "#21702", ""..."4.1" } do
       it 'returns an Array containing the data and address information' do
         @server.recvfrom(5).should == ['hello', ['AF_UNIX', '']]
       end
