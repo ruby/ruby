@@ -63,6 +63,7 @@ void rb_lastline_set_up(VALUE val, unsigned int up);
 
 /* vm_eval.c */
 VALUE rb_current_realfilepath(void);
+VALUE rb_current_filepath(void);
 VALUE rb_check_block_call(VALUE, ID, int, const VALUE *, rb_block_call_func_t, VALUE);
 typedef void rb_check_funcall_hook(int, VALUE, ID, int, const VALUE *, VALUE);
 VALUE rb_check_funcall_with_hook_kw(VALUE recv, ID mid, int argc, const VALUE *argv,
