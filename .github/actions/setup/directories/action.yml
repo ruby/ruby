@@ -170,7 +170,6 @@ runs:
       run: |
         ruby tool/missing-baseruby.bat --verbose
         bash tool/gen-sources.bash up
-        echo RUBY_DUMP_AST=true >> "$GITHUB_ENV"
 
     - if: steps.which.outputs.sudo
       shell: bash
