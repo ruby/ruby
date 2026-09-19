@@ -1147,6 +1147,41 @@ class TestRefinement < Test::Unit::TestCase
     end;
   end
 
+  def test_send_and_sym_proc_to_super_in_refined_module_method
+    assert_separately([], <<-"end;")
+      module M
+        def m
+          raise 'defined?(super) false, should be true' unless defined?(super)
+          [:M, *super]
+        end
+      end
+
+      module R
+        refine M do
+          def m
+            raise 'defined?(super) false, should be true' unless defined?(super)
+            [:R, *super]
+          end
+        end
+      end
+      using R
+
+      class C
+        def m
+          raise 'defined?(super) true, should be false' if defined?(super)
+          :C
+        end
+      end
+
+      class SC < C
+        include M
+      end
+
+      assert_equal([:R, :M, :C], SC.new.send(:m))
+      assert_equal([[:R, :M, :C]], [SC.new].map(&:m))
+    end;
+  end
+
   def test_super_in_redefined_refined_module_method
     assert_separately([], <<-"end;")
       module M
