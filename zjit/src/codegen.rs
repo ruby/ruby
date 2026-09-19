@@ -493,6 +493,7 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
                 let insn = function.find(insn_id);
                 let symbol_range = perf::hir_symbol_range_start(&mut asm, &insn);
 
+                asm_comment!(asm, "Insn: {insn_id} {insn}");
                 let result = match &insn {
                     Insn::CondBranch { val, if_true, if_false } => {
                         let val_opnd = jit.get_opnd(*val);
