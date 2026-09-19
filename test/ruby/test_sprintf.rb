@@ -346,8 +346,8 @@ class TestSprintf < Test::Unit::TestCase
 
   def test_float_prec
     assert_equal("5.00", sprintf("%.2f",5.005))
-    assert_equal("5.02", sprintf("%.2f",5.015))
-    assert_equal("5.02", sprintf("%.2f",5.025))
+    assert_equal("5.01", sprintf("%.2f",5.015)) # 5.015 = 0x40140F5C28F5C28F in IEEE754; closer to 5.01 than 5.02
+    assert_equal("5.03", sprintf("%.2f",5.025)) # 5.025 = 0x401419999999999A in IEEE754; closer to 5.03 than 5.02
     assert_equal("5.04", sprintf("%.2f",5.035))
     bug12889 = '[ruby-core:77864] [Bug #12889]'
     assert_equal("1234567892", sprintf("%.0f", 1234567891.99999))
