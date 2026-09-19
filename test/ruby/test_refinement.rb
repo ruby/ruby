@@ -1090,7 +1090,10 @@ class TestRefinement < Test::Unit::TestCase
 
       super_method = ->(m) do
         sm = m.super_method
-        assert_equal(m.unbind.super_method, sm.unbind) if m.is_a?(Method)
+        if m.is_a?(Method)
+          assert_equal(m.unbind.super_method, sm.unbind)
+          assert(expected.end_with?(m.call))
+        end
         sm
       end
       [meth, umeth].each do |m|
@@ -1145,7 +1148,11 @@ class TestRefinement < Test::Unit::TestCase
 
       super_method = ->(m) do
         sm = m.super_method
-        assert_equal(m.unbind.super_method, sm.unbind) if m.is_a?(Method)
+        if m.is_a?(Method)
+          assert_equal(m.unbind.super_method, sm.unbind)
+          v = m.call
+          assert_equal(expected[-v.size...], Array(v))
+        end
         sm
       end
       [meth, umeth].each do |m|
@@ -1246,7 +1253,11 @@ class TestRefinement < Test::Unit::TestCase
 
       super_method = ->(m) do
         sm = m.super_method
-        assert_equal(m.unbind.super_method, sm.unbind) if m.is_a?(Method)
+        if m.is_a?(Method)
+          assert_equal(m.unbind.super_method, sm.unbind)
+          v = m.call
+          assert_equal(expected[-v.size...], Array(v))
+        end
         sm
       end
       [meth, umeth].each do |m|
@@ -1303,7 +1314,11 @@ class TestRefinement < Test::Unit::TestCase
 
       super_method = ->(m) do
         sm = m.super_method
-        assert_equal(m.unbind.super_method, sm.unbind) if m.is_a?(Method)
+        if m.is_a?(Method)
+          assert_equal(m.unbind.super_method, sm.unbind)
+          v = m.call
+          assert_equal(expected[-v.size...], Array(v))
+        end
         sm
       end
       [meth, umeth].each do |m|
@@ -1473,7 +1488,11 @@ class TestRefinement < Test::Unit::TestCase
 
       super_method = ->(m) do
         sm = m.super_method
-        assert_equal(m.unbind.super_method, sm.unbind) if m.is_a?(Method)
+        if m.is_a?(Method)
+          assert_equal(m.unbind.super_method, sm.unbind)
+          v = m.call
+          assert_equal(expected[-v.size...], Array(v))
+        end
         sm
       end
       [SC.new.method(:m), SC.instance_method(:m)].each do |m|
@@ -1576,7 +1595,11 @@ class TestRefinement < Test::Unit::TestCase
 
       super_method = ->(m) do
         sm = m.super_method
-        assert_equal(m.unbind.super_method, sm.unbind) if m.is_a?(Method)
+        if m.is_a?(Method)
+          assert_equal(m.unbind.super_method, sm.unbind)
+          v = m.call
+          assert_equal(expected[-v.size...], Array(v))
+        end
         sm
       end
       [meth, umeth].each do |m|
@@ -1690,7 +1713,11 @@ class TestRefinement < Test::Unit::TestCase
 
       super_method = ->(m) do
         sm = m.super_method
-        assert_equal(m.unbind.super_method, sm.unbind) if m.is_a?(Method)
+        if m.is_a?(Method)
+          assert_equal(m.unbind.super_method, sm.unbind)
+          v = m.call
+          assert_equal(expected[-v.size...], Array(v))
+        end
         sm
       end
       [meth, umeth].each do |m|
@@ -1751,7 +1778,11 @@ class TestRefinement < Test::Unit::TestCase
 
       super_method = ->(m) do
         sm = m.super_method
-        assert_equal(m.unbind.super_method, sm.unbind) if m.is_a?(Method)
+        if m.is_a?(Method)
+          assert_equal(m.unbind.super_method, sm.unbind)
+          v = m.call
+          assert_equal(expected[-v.size...], Array(v))
+        end
         sm
       end
       [meth, umeth].each do |m|
@@ -1837,7 +1868,11 @@ class TestRefinement < Test::Unit::TestCase
 
       super_method = ->(m) do
         sm = m.super_method
-        assert_equal(m.unbind.super_method, sm.unbind) if m.is_a?(Method)
+        if m.is_a?(Method)
+          assert_equal(m.unbind.super_method, sm.unbind)
+          v = m.call
+          assert_equal(expected[-v.size...], Array(v))
+        end
         sm
       end
       [meth, umeth].each do |m|
@@ -1909,7 +1944,11 @@ class TestRefinement < Test::Unit::TestCase
 
       super_method = ->(m) do
         sm = m.super_method
-        assert_equal(m.unbind.super_method, sm.unbind) if m.is_a?(Method)
+        if m.is_a?(Method)
+          assert_equal(m.unbind.super_method, sm.unbind)
+          v = m.call
+          assert_equal(expected[-v.size...], Array(v))
+        end
         sm
       end
       [meth, umeth].each do |m|
@@ -1996,7 +2035,11 @@ class TestRefinement < Test::Unit::TestCase
 
       super_method = ->(m) do
         sm = m.super_method
-        assert_equal(m.unbind.super_method, sm.unbind) if m.is_a?(Method)
+        if m.is_a?(Method)
+          assert_equal(m.unbind.super_method, sm.unbind)
+          v = m.call
+          assert_equal(expected[-v.size...], Array(v))
+        end
         sm
       end
       [meth, umeth].each do |m|
@@ -2069,7 +2112,11 @@ class TestRefinement < Test::Unit::TestCase
 
       super_method = ->(m) do
         sm = m.super_method
-        assert_equal(m.unbind.super_method, sm.unbind) if m.is_a?(Method)
+        if m.is_a?(Method)
+          assert_equal(m.unbind.super_method, sm.unbind)
+          v = m.call
+          assert_equal(expected[-v.size...], Array(v))
+        end
         sm
       end
       [meth, umeth].each do |m|
@@ -2198,7 +2245,11 @@ class TestRefinement < Test::Unit::TestCase
 
       super_method = ->(m) do
         sm = m.super_method
-        assert_equal(m.unbind.super_method, sm.unbind) if m.is_a?(Method)
+        if m.is_a?(Method)
+          assert_equal(m.unbind.super_method, sm.unbind)
+          v = m.call
+          assert_equal(expected[-v.size...], Array(v))
+        end
         sm
       end
       [meth, umeth].each do |m|
