@@ -844,7 +844,7 @@ node_children(VALUE ast_value, const NODE *node)
       case NODE_LINE:
         return rb_ary_new_from_args(1, rb_node_line_lineno_val(node));
       case NODE_FILE:
-        return rb_ary_new_from_args(1, rb_node_file_path_val(node));
+        return rb_ary_new_from_node_args(ast_value, 0);
       case NODE_ENCODING:
         return rb_ary_new_from_args(1, rb_node_encoding_val(node));
       case NODE_ERROR:

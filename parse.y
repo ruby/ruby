@@ -14703,7 +14703,6 @@ nd_type_st_key_enable_p(NODE *node)
       case NODE_SYM:
       case NODE_REGX:
       case NODE_LINE:
-      case NODE_FILE:
       case NODE_ENCODING:
         return true;
       default:
@@ -14733,8 +14732,6 @@ nd_value(struct parser_params *p, NODE *node)
         return rb_node_line_lineno_val(node);
       case NODE_ENCODING:
         return rb_node_encoding_val(node);
-      case NODE_FILE:
-        return rb_node_file_path_val(node);
       default:
         rb_bug("unexpected node: %s", ruby_node_name(nd_type(node)));
         UNREACHABLE_RETURN(0);
