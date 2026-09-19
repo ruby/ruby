@@ -1206,6 +1206,84 @@ class TestRefinement < Test::Unit::TestCase
     end;
   end
 
+  def test_super_in_refined_module_method_uses_correct_iclass
+    assert_separately([], <<-"end;")
+      module M
+        def m
+          raise 'defined?(super) false, should be true' unless defined?(super)
+          [:M, *super]
+        end
+      end
+
+      class C
+        prepend M
+        def m
+          raise 'defined?(super) true, should be false' if defined?(super)
+          :C
+        end
+      end
+
+      module R1
+        refine M do
+          def m
+            raise 'defined?(super) false, should be true' unless defined?(super)
+            [:R1, *super]
+          end
+        end
+      end
+
+      module R2
+        refine M do
+          def m
+            raise 'defined?(super) false, should be true' unless defined?(super)
+            [:R2, *super]
+          end
+        end
+      end
+
+      module UR1R2
+        using R1
+        using R2
+        def self.run = C.new.m
+        def self.m = C.new.method(:m)
+        def self.um = C.instance_method(:m)
+      end
+
+      module UR2
+        using R2
+        def self.run = C.new.m
+        def self.m = C.new.method(:m)
+        def self.um = C.instance_method(:m)
+      end
+
+      assert_equal([:R2, :R1, :M, :C], UR1R2.run)
+      assert_equal([:R2, :M, :C], UR2.run)
+
+      super_method = ->(m) do
+        sm = m.super_method
+        assert_equal(m.unbind.super_method, sm.unbind) if m.is_a?(Method)
+        sm
+      end
+      [UR1R2.m, UR1R2.um].each do |m|
+        assert_equal(M, m.owner.target)
+        m = super_method.(m)
+        assert_equal(M, m.owner.target)
+        m = super_method.(m)
+        assert_equal(M, m.owner)
+        m = super_method.(m)
+        assert_equal(C, m.owner)
+        assert_nil(m.super_method)
+      end
+      [UR2.m, UR2.um].each do |m|
+        assert_equal(M, m.owner.target)
+        m = super_method.(m)
+        assert_equal(M, m.owner)
+        m = super_method.(m)
+        assert_equal(C, m.owner)
+        assert_nil(m.super_method)
+      end
+    end;
+  end
 
   def test_super_in_refined_prepended_module_method_called_by_other_method_same_object
     assert_separately([], <<-"end;")

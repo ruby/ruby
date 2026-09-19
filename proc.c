@@ -2508,6 +2508,21 @@ refinement_module_p(VALUE mod)
     return RB_TYPE_P(mod, T_MODULE) && FL_TEST_RAW(mod, RMODULE_IS_REFINEMENT);
 }
 
+VALUE rb_vm_module_refinement_iclass(VALUE refinement_iclass, VALUE defined_class);
+
+static VALUE
+find_refined_target_ancestor(VALUE start, VALUE refined_target)
+{
+    VALUE klass;
+    for (klass = start; klass; klass = RCLASS_SUPER(klass)) {
+        VALUE mod = RB_TYPE_P(klass, T_ICLASS) ? RBASIC(klass)->klass : klass;
+        if (mod == refined_target) {
+            return klass;
+        }
+    }
+    return 0;
+}
+
 static VALUE
 mnew_internal(const rb_method_entry_t *me, VALUE klass, VALUE iclass,
               VALUE obj, ID id, VALUE mclass, int scope, int error)
@@ -2570,11 +2585,19 @@ mnew_from_me(const rb_method_entry_t *me, VALUE klass, VALUE iclass,
              VALUE obj, ID id, VALUE mclass, int scope)
 {
     if (me && refinement_module_p(me->owner)) {
-        /* Use klass instead of iclass for refinement methods, so that if the
-         * super method is a module method, it can find the correct superclass
-         * to continue the lookup. */
-        iclass = klass;
+        VALUE refined_ancestor, refined_target;
+
+        if (RICLASS_FOR_REFINEMENT_P(iclass) &&
+                (refined_target = rb_refinement_module_get_refined_class(me->owner)) &&
+                RB_TYPE_P(refined_target, T_MODULE) &&
+                (refined_ancestor = find_refined_target_ancestor(klass, refined_target))) {
+            iclass = rb_vm_module_refinement_iclass(iclass, refined_ancestor);
+        }
+        else {
+            iclass = klass;
+        }
     }
+
     return mnew_internal(me, klass, iclass, obj, id, mclass, scope, TRUE);
 }
 
@@ -4307,18 +4330,14 @@ method_super_method(VALUE method)
         mid = data->me->def->body.alias.original_me->def->original_id;
     }
     else if (is_refinement_method) {
-        VALUE refined_target = rb_refinement_module_get_refined_class(data->me->owner);
-        super_class = 0;
-        VALUE klass;
-        for (klass = iclass; klass; klass = RCLASS_SUPER(klass)) {
-            VALUE mod = RB_TYPE_P(klass, T_ICLASS) ? RBASIC(klass)->klass : klass;
-            if (mod == refined_target) {
-                super_class = klass;
-                break;
-            }
+        if (RICLASS_FOR_REFINEMENT_P(iclass)) {
+            super_class = RCLASS_SUPER(iclass);
         }
-        if (!super_class) {
-            super_class = RCLASS_SUPER(data->me->owner);
+        else {
+            super_class = find_refined_target_ancestor(iclass, rb_refinement_module_get_refined_class(data->me->owner));
+            if (!super_class) {
+                super_class = RCLASS_SUPER(data->me->owner);
+            }
         }
         mid = data->me->def->original_id;
     }
