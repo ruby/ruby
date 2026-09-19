@@ -168,6 +168,8 @@ There are some exceptional classes/modules that are enabled in default, but aren
 
 Those classes/modules (part of default gems) are loaded in each boxes independently. If a user box's code calls RubyGems, it calls the RubyGems inside the box itself, instead of the root box's one.
 
+Those classes/modules can be disabled per box by `Ruby::Box.new(disable_gems: true)`, which skips loading RubyGems and the prelude gems in the created box only, like the `--disable-gems` command line option does for the main box.
+
 ### Builtin classes referred via box objects
 
 Builtin classes in a box `box` can be referred from other boxes. For example, `box::String` is a valid reference, and `String` and `box::String` are identical (`String == box::String`, `String.object_id == box::String.object_id`).

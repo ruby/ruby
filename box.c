@@ -392,18 +392,30 @@ rb_get_box_object(rb_box_t *box)
 
 /*
  *  call-seq:
- *    Ruby::Box.new -> new_box
+ *    Ruby::Box.new(disable_gems: false) -> new_box
  *
  *  Returns a new Ruby::Box object.
+ *
+ *  If +disable_gems+ is +true+, RubyGems and the other gems loaded by
+ *  the prelude (ErrorHighlight, DidYouMean, SyntaxSuggest) are not loaded
+ *  in the new box, like the +--disable-gems+ command line option does for
+ *  the main box.
  */
 static VALUE
-box_initialize(VALUE box_value)
+box_initialize(int argc, VALUE *argv, VALUE box_value)
 {
     rb_box_t *box;
     rb_classext_t *object_classext;
-    VALUE entry;
-    ID id_box_entry;
+    VALUE entry, opts, disable_gems = Qfalse;
+    ID id_box_entry, id_disable_gems;
     CONST_ID(id_box_entry, "__box_entry__");
+    CONST_ID(id_disable_gems, "disable_gems");
+
+    rb_scan_args(argc, argv, "0:", &opts);
+    if (!NIL_P(opts)) {
+        rb_get_kwargs(opts, &id_disable_gems, 0, 1, &disable_gems);
+        if (UNDEF_P(disable_gems)) disable_gems = Qfalse;
+    }
 
     if (!rb_box_available()) {
         rb_raise(rb_eRuntimeError, "Ruby Box is disabled. Set RUBY_BOX=1 environment variable to use Ruby::Box.");
@@ -429,7 +441,7 @@ box_initialize(VALUE box_value)
     rb_ivar_set(box_value, id_box_entry, entry);
 
     if (ruby_box_init_done) {
-        if (box_gem_flags->gem) {
+        if (box_gem_flags->gem && !RTEST(disable_gems)) {
             rb_vm_call_cfunc_in_box(Qnil, rb_define_gem_modules, (VALUE)box_gem_flags, Qnil,
                                     rb_str_new_cstr("before_prelude.user.dummy"), (const rb_box_t *)box);
             rb_load_gem_prelude((VALUE)box);
@@ -1298,7 +1310,7 @@ Init_Box(void)
     VALUE mRuby = rb_define_module("Ruby");
 
     rb_cBox = rb_define_class_under(mRuby, "Box", rb_cModule);
-    rb_define_method(rb_cBox, "initialize", box_initialize, 0);
+    rb_define_method(rb_cBox, "initialize", box_initialize, -1);
 
     /* :nodoc: */
     rb_cBoxEntry = rb_define_class_under(rb_cBox, "Entry", rb_cObject);
