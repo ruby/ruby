@@ -117,7 +117,20 @@ VALUE rb_io_buffer_locked_for_reading(VALUE self, VALUE (*callback)(const void *
 VALUE rb_io_buffer_locked_for_writing(VALUE self, VALUE (*callback)(void *base, size_t size, VALUE argument), VALUE argument);
 
 VALUE rb_io_buffer_transfer(VALUE self);
+
+// Resize an allocation, or an IO::Buffer-backed slice's view within its root's
+// bounds. Locked allocations cannot be resized, but their slices can be.
+// String-backed buffers cannot be resized directly; create a slice instead.
 void rb_io_buffer_resize(VALUE self, size_t size);
+
+// Consume bytes from the front of a non-owning view without moving the backing
+// storage. Advances its start and reduces its size by amount. Raises on owning
+// buffers, invalid views, or amounts exceeding the current size. Read-only and
+// locked views may advance; their source and allocation lock count are unchanged.
+// Any previously acquired pointer/length still describes the original range;
+// keep the allocation locked until all native users of that range have finished.
+void rb_io_buffer_advance(VALUE self, size_t amount);
+
 void rb_io_buffer_clear(VALUE self, uint8_t value, size_t offset, size_t length);
 
 // The length is the maximum transfer length. Each function performs one

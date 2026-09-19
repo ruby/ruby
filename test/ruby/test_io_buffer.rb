@@ -716,6 +716,145 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_equal("Hello World", buffer.get_string(8, 11))
   end
 
+  def test_slice_resolves_reallocated_root
+    [IO::Buffer::INTERNAL, IO::Buffer::MAPPED].each do |flags|
+      buffer = IO::Buffer.new(8, flags)
+      previous = nil
+      begin
+        buffer.set_string("ABCDEFGH")
+        parent = buffer.slice(1, 6)
+        slice = parent.slice(1, 4)
+        previous = buffer.transfer
+        refute_predicate slice, :valid?
+
+        # Retaining the previous allocation forces a different address when
+        # the root gets new storage, independently of allocator behavior.
+        buffer.resize(8)
+        buffer.set_string("abcdefgh")
+        assert_predicate slice, :valid?
+        assert_equal "cdef", slice.get_string
+        slice.set_string("wxyz")
+        assert_equal "abwxyzgh", buffer.get_string
+        assert_equal "bwxyzg", parent.get_string
+        assert_equal "ABCDEFGH", previous.get_string
+
+        slice.locked do
+          assert_predicate buffer, :locked?
+          assert_raise(IO::Buffer::LockedError) {buffer.resize(16)}
+          assert_raise(IO::Buffer::LockedError) {buffer.free}
+        end
+        refute_predicate buffer, :locked?
+      ensure
+        previous&.free
+        buffer.free
+      end
+    end
+  end
+
+  def test_slice_survives_mapped_resize
+    buffer = IO::Buffer.new(IO::Buffer::PAGE_SIZE, IO::Buffer::MAPPED)
+    begin
+      buffer.set_string("ABCDEFGH")
+      slice = buffer.slice(2, 4)
+      buffer.resize(IO::Buffer::PAGE_SIZE * 2)
+      assert_predicate slice, :valid?
+      assert_equal "CDEF", slice.get_string
+      slice.set_string("wxyz")
+      assert_equal "ABwxyzGH", buffer.get_string(0, 8)
+    ensure
+      buffer.free
+    end
+  end
+
+  def test_advance_borrowed_buffer
+    borrowed = nil
+    Bug::IOBuffer.with_borrowed_buffer do |buffer|
+      borrowed = buffer
+      assert_predicate buffer, :readonly?
+      assert_predicate buffer, :locked?
+      refute_predicate buffer, :internal?
+      refute_predicate buffer, :mapped?
+      refute_predicate buffer, :external?
+
+      assert_same buffer, buffer.advance(2)
+      assert_equal "cdef", buffer.get_string
+      assert_equal 4, buffer.size
+      assert_predicate buffer, :locked?
+      assert_raise(ArgumentError) {buffer.advance(5)}
+      assert_equal "cdef", buffer.get_string
+
+      buffer.advance(4)
+      assert_predicate buffer, :empty?
+      assert_predicate buffer, :valid?
+      refute_predicate buffer, :null?
+      assert_equal "", buffer.get_string
+      assert_same buffer, buffer.advance(0)
+    end
+    assert_predicate borrowed, :null?
+    refute_predicate borrowed, :locked?
+  end
+
+  def test_advance_borrowed_buffer_from_c
+    borrowed = nil
+    Bug::IOBuffer.with_borrowed_buffer do |buffer|
+      borrowed = buffer
+      assert_equal "abcdef", Bug::IOBuffer.locked_advance(buffer)
+      assert_equal "def", buffer.get_string
+      assert_predicate buffer, :locked?
+      assert_predicate buffer, :readonly?
+    end
+    assert_predicate borrowed, :null?
+    refute_predicate borrowed, :locked?
+  end
+
+  def test_advance_slice_from_c_preserves_root_and_locks
+    buffer = IO::Buffer.new(8)
+    begin
+      buffer.set_string("abcdefgh")
+      slice = buffer.slice(1, 6)
+      slice.locked do
+        assert_equal "bcdefg", Bug::IOBuffer.locked_advance(slice)
+        assert_equal "efg", slice.get_string
+        assert_predicate slice, :locked?
+        assert_predicate buffer, :locked?
+        assert_equal "abcdefgh", buffer.get_string
+      end
+      refute_predicate buffer, :locked?
+    ensure
+      buffer.free
+    end
+  end
+
+  def test_advance_progress_survives_unwind
+    buffer = IO::Buffer.new(6)
+    begin
+      buffer.set_string("abcdef")
+      slice = buffer.slice
+      assert_raise(RuntimeError) {Bug::IOBuffer.locked_advance_raise(slice)}
+      assert_equal "def", slice.get_string
+      assert_equal "abcdef", buffer.get_string
+      refute_predicate slice, :locked?
+      refute_predicate buffer, :locked?
+    ensure
+      buffer.free
+    end
+  end
+
+  def test_advance_owning_buffer_from_c_raises_and_unlocks
+    [IO::Buffer::INTERNAL, IO::Buffer::MAPPED].each do |flags|
+      buffer = IO::Buffer.new(8, flags)
+      begin
+        buffer.set_string("abcdefgh")
+        assert_raise(IO::Buffer::AccessError) {Bug::IOBuffer.locked_advance(buffer)}
+        assert_equal "abcdefgh", buffer.get_string
+        assert_equal 8, buffer.size
+        refute_predicate buffer, :locked?
+      ensure
+        buffer.free
+      end
+    end
+  end
+
   def test_slice_arguments
     buffer = IO::Buffer.for("Hello World")
 
@@ -2068,6 +2207,43 @@ class TestIOBuffer < Test::Unit::TestCase
         assert_predicate buffer, :locked?
       end
       refute_predicate buffer, :locked?
+    end
+  end
+
+  def test_memory_view_slice_at_offset_zero
+    buffer = IO::Buffer.new(4)
+    previous = nil
+    begin
+      buffer.set_string("ABCD")
+      slice = buffer.slice(0, 4)
+      assert_equal "ABCD", MemoryViewTestUtils.get_data(slice, 0...4)
+
+      previous = buffer.transfer
+      buffer.resize(4)
+      buffer.set_string("abcd")
+      assert_equal "abcd", MemoryViewTestUtils.get_data(slice, 0...4)
+      assert_true MemoryViewTestUtils.set_data(slice, 1, "Z".ord)
+      assert_equal "aZcd", buffer.get_string
+      assert_equal "ABCD", previous.get_string
+
+      MemoryViewTestUtils.get(slice, MemoryViewTestUtils::SIMPLE) do
+        assert_predicate buffer, :locked?
+        assert_raise(IO::Buffer::LockedError) {buffer.resize(8)}
+        assert_raise(IO::Buffer::LockedError) {buffer.free}
+      end
+      refute_predicate buffer, :locked?
+    ensure
+      previous&.free
+      buffer.free
+    end
+
+    IO::Buffer.for("abcd".freeze) do |root|
+      slice = root.slice(0, 4)
+      assert_equal "abcd", MemoryViewTestUtils.get_data(slice, 0...4)
+      MemoryViewTestUtils.get(slice, MemoryViewTestUtils::SIMPLE) do
+        assert_predicate root, :locked?
+      end
+      refute_predicate root, :locked?
     end
   end
 
