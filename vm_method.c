@@ -2256,6 +2256,9 @@ resolve_refined_method(VALUE refinements, const rb_method_entry_t *me, VALUE *de
 
         refinement = find_refinement(refinements, me->owner);
         if (!NIL_P(refinement)) {
+            if (RB_TYPE_P(me->owner, T_MODULE) && defined_class_ptr && RB_TYPE_P(*defined_class_ptr, T_ICLASS)) {
+                refinement = module_refinement_iclass(refinement, *defined_class_ptr);
+            }
             tmp_me = search_method_protect(refinement, me->called_id, defined_class_ptr);
 
             if (tmp_me && tmp_me->def->type != VM_METHOD_TYPE_REFINED) {

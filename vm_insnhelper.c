@@ -4601,7 +4601,7 @@ current_method_entry(const rb_execution_context_t *ec, rb_control_frame_t *cfp)
 {
     rb_control_frame_t *top_cfp = cfp;
 
-    if (CFP_ISEQ(cfp) && ISEQ_BODY(CFP_ISEQ(cfp))->type == ISEQ_TYPE_BLOCK) {
+    if (CFP_ISEQ(cfp) && !VM_FRAME_BMETHOD_P(cfp) && ISEQ_BODY(CFP_ISEQ(cfp))->type == ISEQ_TYPE_BLOCK) {
         const rb_iseq_t *local_iseq = ISEQ_BODY(CFP_ISEQ(cfp))->local_iseq;
 
         do {
@@ -4610,7 +4610,7 @@ current_method_entry(const rb_execution_context_t *ec, rb_control_frame_t *cfp)
                 /* TODO: orphan block */
                 return top_cfp;
             }
-        } while (CFP_ISEQ(cfp) != local_iseq);
+        } while (CFP_ISEQ(cfp) != local_iseq && !VM_FRAME_BMETHOD_P(cfp));
     }
     return cfp;
 }
@@ -4638,6 +4638,54 @@ refined_method_callable_without_refinement(const rb_callable_method_entry_t *me)
     return cme;
 }
 
+// Construct correct super chain for module refinements.
+// Each class including/prepending a module has a hash mapping refinement
+// modules to refinement module iclasses with the correct super. Like
+// singleton classes, these are lazily initialized (both the hash and
+// the refinement module iclasses).
+static VALUE
+module_refinement_iclass(VALUE refinement_iclass, VALUE defined_class)
+{
+    VALUE module_ref_iclass = Qnil;
+
+    RB_VM_LOCKING() {
+        VALUE cache = RCLASS_MODULE_REFINEMENT_ICLASSES(defined_class);
+
+        if (LIKELY(cache)) {
+            module_ref_iclass = rb_hash_lookup(cache, refinement_iclass);
+        }
+        else {
+            cache = rb_obj_hide(rb_ident_hash_new());
+            RCLASS_SET_MODULE_REFINEMENT_ICLASSES(defined_class, cache);
+        }
+
+        if (NIL_P(module_ref_iclass)) {
+            VALUE super;
+            VALUE refinement_iclass_super = RCLASS_SUPER(refinement_iclass);
+
+            if (RICLASS_FOR_REFINEMENT_P(refinement_iclass_super)) {
+                super = module_refinement_iclass(refinement_iclass_super, defined_class);
+            }
+            else {
+                super = defined_class;
+            }
+
+            module_ref_iclass = rb_include_class_new(RBASIC(refinement_iclass)->klass, super);
+            RCLASS_SET_REFINED_CLASS(module_ref_iclass, RCLASS_REFINED_CLASS(refinement_iclass));
+            rb_class_subclass_add(RCLASS_REFINED_CLASS(refinement_iclass), module_ref_iclass);
+            rb_hash_aset(cache, refinement_iclass, module_ref_iclass);
+        }
+    }
+
+    return module_ref_iclass;
+}
+
+VALUE
+rb_vm_module_refinement_iclass(VALUE refinement_iclass, VALUE defined_class)
+{
+    return module_refinement_iclass(refinement_iclass, defined_class);
+}
+
 static const rb_callable_method_entry_t *
 search_refined_method(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling)
 {
@@ -4647,8 +4695,12 @@ search_refined_method(rb_execution_context_t *ec, rb_control_frame_t *cfp, struc
     const rb_callable_method_entry_t *cme = vm_cc_cme(cc);
 
     for (; cref; cref = CREF_NEXT(cref)) {
-        const VALUE refinement = find_refinement(CREF_REFINEMENTS(cref), vm_cc_cme(cc)->owner);
+        VALUE refinement = find_refinement(CREF_REFINEMENTS(cref), vm_cc_cme(cc)->owner);
         if (NIL_P(refinement)) continue;
+
+        if (RB_TYPE_P(vm_cc_cme(cc)->owner, T_MODULE)) {
+            refinement = module_refinement_iclass(refinement, vm_cc_cme(cc)->defined_class);
+        }
 
         const rb_callable_method_entry_t *const ref_me =
             rb_callable_method_entry(refinement, mid);
@@ -5096,6 +5148,14 @@ static inline VALUE
 vm_search_normal_superclass(VALUE klass)
 {
     if (RICLASS_FOR_REFINEMENT_P(klass)) {
+        if (RB_TYPE_P(RCLASS_REFINED_CLASS(klass), T_MODULE)) {
+            do {
+                klass = RCLASS_SUPER(klass);
+            } while (RICLASS_FOR_REFINEMENT_P(klass));
+
+            return klass;
+        }
+
         klass = RBASIC(klass)->klass;
     }
     klass = RCLASS_ORIGIN(klass);
@@ -5173,13 +5233,6 @@ vm_search_super_method(const rb_control_frame_t *reg_cfp, struct rb_call_data *c
         /* bound instance method of module */
         cc = vm_cc_new(Qundef, NULL, vm_call_method_missing, cc_type_super);
         RB_OBJ_WRITE(iseq, &cd->cc, cc);
-    }
-    else if (klass == rb_cBasicObject &&
-             RB_TYPE_P(me->defined_class, T_ICLASS) &&
-             RCLASS_INCLUDER(me->defined_class) == 0) {
-        rb_raise(rb_eNoMethodError,
-                 "super in a method in a module that has been refined and that is called via super"
-                 " from a refinement method is not supported.");
     }
     else {
         cc = vm_search_method_fastpath(reg_cfp, cd, klass);

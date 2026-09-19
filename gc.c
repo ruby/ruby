@@ -3490,6 +3490,9 @@ gc_mark_classext_iclass(rb_classext_t *ext, bool prime, VALUE box_value, void *a
     if (RCLASSEXT_INCLUDER(ext)) {
         gc_mark_internal(RCLASSEXT_INCLUDER(ext));
     }
+    if (RCLASSEXT_MODULE_REFINEMENT_ICLASSES(ext)) {
+        gc_mark_internal(RCLASSEXT_MODULE_REFINEMENT_ICLASSES(ext));
+    }
     mark_m_tbl(objspace, RCLASSEXT_CALLABLE_M_TBL(ext));
     gc_mark_internal(RCLASSEXT_CC_TBL(ext));
     if (RCLASSEXT_SUBCLASSES(ext)) {
