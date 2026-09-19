@@ -4242,17 +4242,32 @@ gc_finalize_deferred_register(rb_objspace_t *objspace)
 
 static int pop_mark_stack(mark_stack_t *stack, VALUE *data);
 
+/* Throw away an unfinished incremental mark and leave the objspace in gc_mode_none.  The
+ * mark bits the partial mark set stay behind, so the caller must clear them before the
+ * heap is collected again. */
+static void
+gc_abort_incremental_marking(rb_objspace_t *objspace)
+{
+    GC_ASSERT(is_incremental_marking(objspace));
+
+    VALUE obj;
+    while (pop_mark_stack(&objspace->mark_stack, &obj));
+
+    /* gc_grey records the weak references it greys for gc_marks_finish to resolve; this
+     * cycle never reaches it, and the entries would outlive their objects. */
+    rb_darray_clear(objspace->weak_references);
+
+    objspace->flags.during_incremental_marking = FALSE;
+    gc_mode_set(objspace, gc_mode_none);
+}
+
 static void
 gc_abort(void *objspace_ptr)
 {
     rb_objspace_t *objspace = objspace_ptr;
 
     if (is_incremental_marking(objspace)) {
-        /* Remove all objects from the mark stack. */
-        VALUE obj;
-        while (pop_mark_stack(&objspace->mark_stack, &obj));
-
-        objspace->flags.during_incremental_marking = FALSE;
+        gc_abort_incremental_marking(objspace);
     }
 
     if (is_lazy_sweeping(objspace)) {
@@ -8215,6 +8230,7 @@ gc_bitmaps_clear(rb_objspace_t *objspace, rb_heap_t *heap, bool clear_shref)
 
 NOINLINE(static void gc_writebarrier_generational(VALUE a, VALUE b, rb_objspace_t *objspace));
 
+/* Precondition: `a` and `b` live in `objspace`. */
 static void
 gc_writebarrier_generational(VALUE a, VALUE b, rb_objspace_t *objspace)
 {
@@ -8303,12 +8319,11 @@ rb_gc_impl_writebarrier(void *objspace_ptr, VALUE a, VALUE b)
         }
     }
 
-  retry:
     if (!is_incremental_marking(objspace)) {
-        /* The generational barrier covers old->young edges within one objspace only; a
-         * foreign a or b has age bits another objspace mutates, unsafe to read, so check
-         * locality first when multi-Ractor (a foreign a is shareable and the shref above
-         * already keeps b alive).  With a single Ractor nothing is foreign. */
+        /* The generational barrier covers old->young edges within one objspace only.
+         * NOTE: we shouldn't even check the age of `a` or `b` if they are in another objspace,
+         * so check it after the first test.
+         **/
         if ((rb_gc_multi_ractor_p() &&
                 (GET_HEAP_OBJSPACE(a) != objspace || GET_HEAP_OBJSPACE(b) != objspace)) ||
                 !RVALUE_OLD_P(objspace, a) || RVALUE_OLD_P(objspace, b)) {
@@ -8317,19 +8332,16 @@ rb_gc_impl_writebarrier(void *objspace_ptr, VALUE a, VALUE b)
         else {
             gc_writebarrier_generational(a, b, objspace);
         }
-    }
-    else {
-        /* Slow path, no lock: incremental marking only runs while the process has a single
-         * objspace, so the owning Ractor's GVL already serializes this barrier against its
-         * own GC. */
-        if (is_incremental_marking(objspace)) {
-            gc_writebarrier_incremental(a, b, objspace);
+    } else {
+        // Shareable objects from different object spaces are kept alive by shareable bits
+        if (rb_gc_multi_ractor_p() &&
+                (GET_HEAP_OBJSPACE(a) != objspace || GET_HEAP_OBJSPACE(b) != objspace)) {
+            // do nothing
         }
         else {
-            goto retry;
+            gc_writebarrier_incremental(a, b, objspace);
         }
     }
-    return;
 }
 
 void
@@ -8414,18 +8426,18 @@ rb_gc_impl_writebarrier_remember(void *objspace_ptr, VALUE obj)
 {
     rb_objspace_t *objspace = objspace_ptr;
 
-    gc_report(1, objspace, "rb_gc_writebarrier_remember: %s\n", rb_obj_info(obj));
-
-    /* No lock, for the same reason as rb_gc_impl_writebarrier: remembering is an atomic
-     * bitmap set, and the incremental branch only runs with a single objspace, where the
-     * Ractor's GVL serializes it against its own GC. */
-    if (is_incremental_marking(objspace)) {
-        if (RVALUE_BLACK_P(objspace, obj)) {
-            gc_grey(objspace, obj);
+    // Shareable objects from other object spaces don't need to be put on the remembered set
+    // and are only collected during global GC, so not while incremental marking.
+    if (RB_LIKELY(!rb_gc_multi_ractor_p() || GET_HEAP_OBJSPACE(obj) == objspace)) {
+        gc_report(1, objspace, "rb_gc_writebarrier_remember: %s\n", rb_obj_info(obj));
+        if (is_incremental_marking(objspace)) {
+            if (RVALUE_BLACK_P(objspace, obj)) {
+                gc_grey(objspace, obj);
+            }
         }
-    }
-    else if (RVALUE_OLD_P(objspace, obj)) {
-        rgengc_remember(objspace, obj);
+        else if (RVALUE_OLD_P(objspace, obj)) {
+            rgengc_remember(objspace, obj);
+        }
     }
 }
 
@@ -8783,11 +8795,7 @@ gc_start_body(rb_objspace_t *objspace, unsigned int reason, bool allow_global)
 
     if (objspace->flags.dont_incremental ||
             reason & GPR_FLAG_IMMEDIATE_MARK ||
-            ruby_gc_stressful ||
-            /* No incremental marking while multiple objspaces exist: between steps another
-             * Ractor can create and share objects behind this objspace's already-scanned
-             * roots. */
-            !rb_gc_single_objspace_p()) {
+            ruby_gc_stressful) {
         objspace->flags.during_incremental_marking = FALSE;
     }
     else {
@@ -9515,9 +9523,14 @@ gc_start_global(rb_objspace_t *driver, unsigned int reason, bool compact, bool a
      * thread runs every objspace's phases. */
     for (size_t i = 0; i < global_objspace->global_gc.n_objspaces; i++) {
         rb_objspace_t *objspace = global_objspace->global_gc.objspaces[i];
-        /* No objspace can be mid-incremental-mark here: that only runs single-objspace
-         * and vm_insert_ractor0 settles it on the transition.  Clearing flags in step 5
-         * under a live gray stack would break the owner's GC state machine. */
+        /* The barrier can stop a Ractor between the steps of its own incremental mark, and
+         * nothing else finishes another objspace's mark.  Drop the partial mark rather
+         * than clear its flags in step 5 under a live gray stack: the owner would resume
+         * with a mark stack into a heap this GC has since re-marked and swept.  Nothing is
+         * lost, the unified mark below redoes the work. */
+        if (is_incremental_marking(objspace)) {
+            gc_abort_incremental_marking(objspace);
+        }
         GC_ASSERT(!is_incremental_marking(objspace));
         GC_ASSERT(is_mark_stack_empty(&objspace->mark_stack));
         rb_gc_initialize_vm_context(&objspace->vm_context);
@@ -9788,8 +9801,7 @@ objspace_absorb(rb_objspace_t *dst, rb_objspace_t *src)
 
     /* Settle dst first: adding pages under a walking lazy-sweep cursor, or into a
      * half-marked incremental heap, would sweep the merged pages with src's stale mark
-     * bits and free live objects.  (Normally settled already: vm_insert_ractor0's settle
-     * means no objspace is incremental while a zombie waits to be absorbed.) */
+     * bits and free live objects. */
     gc_rest(dst);
 
     /* Settle src: no lazy sweep and no in-progress allocation page. */

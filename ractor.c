@@ -548,9 +548,9 @@ vm_insert_ractor0(rb_vm_t *vm, rb_ractor_t *r, bool single_ractor_mode)
     RUBY_DEBUG_LOG("r:%"PRI_SERIALT_PREFIX"u ractor.cnt:%u++", r->pub.id, vm->ractor.cnt);
     VM_ASSERT(single_ractor_mode || RB_VM_LOCKED_P());
 
-    /* Incremental marking only runs in a single-objspace world, and nothing later can
-     * finish another objspace's partial mark, so end any cycle in progress before a
-     * second Ractor becomes visible. */
+    /* End main's cycle before a second Ractor becomes visible: the collection was
+     * planned for a single-objspace world (a local GC is a whole-world GC there and may
+     * free shareable objects), so it must not straddle the transition. */
     if (vm->ractor.cnt == 1) {
         rb_gc_rest();
     }
