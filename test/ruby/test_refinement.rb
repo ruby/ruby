@@ -1147,6 +1147,57 @@ class TestRefinement < Test::Unit::TestCase
     end;
   end
 
+  def test_super_in_redefined_refined_module_method
+    assert_separately([], <<-"end;")
+      module M
+        def m
+          raise 'defined?(super) true, should be false' if defined?(super)
+          :M
+        end
+      end
+
+      class C
+        include M
+      end
+
+      module R
+        refine M do
+          def m
+            raise 'defined?(super) false, should be true' unless defined?(super)
+            [:R1, *super]
+          end
+        end
+      end
+      using R
+
+      assert_equal([:R1, :M], C.new.m)
+
+      module R
+        refine M do
+          alias m m
+          def m
+            raise 'defined?(super) false, should be true' unless defined?(super)
+            [:R2, *super]
+          end
+        end
+      end
+
+      assert_equal([:R2, :M], C.new.m)
+
+      super_method = ->(m) do
+        sm = m.super_method
+        assert_equal(m.unbind.super_method, sm.unbind) if m.is_a?(Method)
+        sm
+      end
+      [C.new.method(:m), C.instance_method(:m)].each do |m|
+        assert_equal(M, m.owner.target)
+        m = super_method.(m)
+        assert_equal(M, m.owner)
+        assert_nil(m.super_method)
+      end
+    end;
+  end
+
   def test_super_in_refined_prepended_module_method_in_thread
     assert_separately([], <<-"end;", timeout: 1)
       module M

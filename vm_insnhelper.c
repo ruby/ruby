@@ -4667,6 +4667,7 @@ module_refinement_iclass(VALUE refinement_iclass, VALUE defined_class)
 
     VALUE module_ref_iclass = rb_include_class_new(RBASIC(refinement_iclass)->klass, super);
     RCLASS_SET_REFINED_CLASS(module_ref_iclass, RCLASS_REFINED_CLASS(refinement_iclass));
+    rb_class_subclass_add(RCLASS_REFINED_CLASS(refinement_iclass), module_ref_iclass);
     rb_hash_aset(cache, refinement_iclass, module_ref_iclass);
 
     return module_ref_iclass;
