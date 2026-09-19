@@ -1,16 +1,35 @@
 files:
+  # JIT sources (Rust + C + Ruby)
+  'jit/**': [team:jit]
+  # All of {y,z}jit/ except the generated cruby_bindings.inc.rs files.
   'yjit*': [team:jit]
   'yjit/**/*': [team:jit]
   'yjit/src/cruby_bindings.inc.rs': []
-  'bootstraptest/test_yjit*': [team:jit]
-  'test/ruby/test_yjit*': [team:jit]
   'zjit*': [team:jit]
   'zjit/**/*': [team:jit]
   'zjit/src/cruby_bindings.inc.rs': []
-  'test/ruby/test_zjit*': [team:jit]
+  'jit.c': [team:jit]
+  'jit_hook.rb': [team:jit]
+  'jit_undef.rb': [team:jit]
+
+  # Build + GC fast paths
   'defs/jit.mk': [team:jit]
-  'tool/zjit_bisect.rb': [team:jit]
+  'gc/**/zjit_fastpath.h': [team:jit]
+
+  # Docs
   'doc/jit/*': [team:jit]
+
+  # Specs + tests
+  'spec/zjit.mspec': [team:jit]
+  'test/.excludes-zjit/**': [team:jit]
+  'test/lib/jit_support.rb': [team:jit]
+  'test/ruby/test_*jit*': [team:jit]
+  'bootstraptest/test_*jit*.rb': [team:jit]
+
+  # Tooling
+  'tool/zjit_*': [team:jit]
+  'tool/ruby_vm/**/*zjit*': [team:jit]
+
   # Skip files updated by dependabot. It's noisy in notifications, and they're auto-merged anyway.
   'yjit/Cargo.lock': []
   'zjit/Cargo.lock': []
