@@ -92,7 +92,14 @@ jobs:
           runuser -u ruby -- ./miniruby -e '
             line = File.foreach("/proc/self/status").find { |entry| entry.start_with?("x86_Thread_features:") }
             features = line&.split(":", 2)&.last&.split || []
-            abort "SHSTK is not active (x86_Thread_features: #{features.join(" ")})" unless features.include?("shstk")
+            unless features.include?("shstk")
+              warn "::notice::SHSTK is not active (x86_Thread_features: #{features.join(" ")})"
+              cpuinfo = File.read("/proc/cpuinfo")
+              model = cpuinfo[/^model name.*/]
+              flags = cpuinfo[/^flags.*/]
+              puts model, flags, ENV["GLIBC_TUNABLES"]
+              exit !/\buser_shstk\b/.match?(flags)
+            end
           '
 
       - name: make check
