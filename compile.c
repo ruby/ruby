@@ -3243,15 +3243,48 @@ find_destination(INSN *i)
 }
 
 static int
+unreachable_unref_count(const struct iseq_compile_data *data, const LABEL *lab)
+{
+    unsigned int no = (unsigned int)lab->label_no;
+    return data->unreachable_unref_stamps[no] == data->unreachable_unref_gen ?
+        data->unreachable_unref_counts[no] : 0;
+}
+
+static void
+unreachable_unref_increment(struct iseq_compile_data *data, const LABEL *lab)
+{
+    unsigned int no = (unsigned int)lab->label_no;
+    if (data->unreachable_unref_stamps[no] != data->unreachable_unref_gen) {
+        data->unreachable_unref_stamps[no] = data->unreachable_unref_gen;
+        data->unreachable_unref_counts[no] = 0;
+    }
+    data->unreachable_unref_counts[no]++;
+}
+
+static int
 remove_unreachable_chunk(rb_iseq_t *iseq, LINK_ELEMENT *i)
 {
     LINK_ELEMENT *first = i, *end, *scan, *pending_end = 0;
     LABEL *pending = 0;
-    int *unref_counts = 0, nlabels = ISEQ_COMPILE_DATA(iseq)->label_no;
+    struct iseq_compile_data *data = ISEQ_COMPILE_DATA(iseq);
+    unsigned int nlabels = (unsigned int)data->label_no;
 
     if (!i) return 0;
-    unref_counts = ALLOCA_N(int, nlabels);
-    MEMZERO(unref_counts, int, nlabels);
+    if (data->unreachable_unref_capacity < nlabels) {
+        unsigned int capacity = data->unreachable_unref_capacity ? data->unreachable_unref_capacity : 16;
+        while (capacity < nlabels) capacity *= 2;
+        /* The abandoned arrays stay in the compile arena until the compile
+         * ends; doubling bounds their total at twice the final capacity. */
+        data->unreachable_unref_counts = compile_data_alloc2_type(iseq, int, capacity);
+        data->unreachable_unref_stamps = compile_data_calloc2_type(iseq, unsigned int, capacity);
+        data->unreachable_unref_capacity = capacity;
+        data->unreachable_unref_gen = 0;
+    }
+    if (++data->unreachable_unref_gen == 0) {
+        /* The stamp wrapped around, so every stale stamp became ambiguous. */
+        MEMZERO(data->unreachable_unref_stamps, unsigned int, data->unreachable_unref_capacity);
+        data->unreachable_unref_gen = 1;
+    }
 
     end = i;
     scan = i;
@@ -3264,8 +3297,8 @@ remove_unreachable_chunk(rb_iseq_t *iseq, LINK_ELEMENT *i)
                 break;
             }
             else if ((lab = find_destination((INSN *)scan)) != 0) {
-                unref_counts[lab->label_no]++;
-                if (lab == pending && lab->refcnt <= unref_counts[lab->label_no]) {
+                unreachable_unref_increment(data, lab);
+                if (lab == pending && lab->refcnt <= unreachable_unref_count(data, lab)) {
                     pending = 0;
                 }
             }
@@ -3276,7 +3309,7 @@ remove_unreachable_chunk(rb_iseq_t *iseq, LINK_ELEMENT *i)
                 if (pending) break;
                 return 0;
             }
-            if (lab->refcnt > unref_counts[lab->label_no]) {
+            if (lab->refcnt > unreachable_unref_count(data, lab)) {
                 if (pending) break;
                 pending = lab;
                 pending_end = (scan == first) ? 0 : end;
