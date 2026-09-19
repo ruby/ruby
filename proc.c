@@ -2509,18 +2509,33 @@ refinement_module_p(VALUE mod)
 }
 
 VALUE rb_vm_module_refinement_iclass(VALUE refinement_iclass, VALUE defined_class);
+VALUE rb_vm_refinement_iclass_for_cme(VALUE refinement, const rb_callable_method_entry_t *cme);
 
 static VALUE
 find_refined_target_ancestor(VALUE start, VALUE refined_target)
 {
     VALUE klass;
     for (klass = start; klass; klass = RCLASS_SUPER(klass)) {
-        VALUE mod = RB_TYPE_P(klass, T_ICLASS) ? RBASIC(klass)->klass : klass;
-        if (mod == refined_target) {
+        if (RB_TYPE_P(klass, T_ICLASS) && RBASIC(klass)->klass == refined_target) {
             return klass;
         }
     }
     return 0;
+}
+
+static VALUE
+find_refinement_iclass(VALUE owner, VALUE klass, VALUE iclass)
+{
+    VALUE refined_target = rb_refinement_module_get_refined_class(owner);
+
+    if (RB_TYPE_P(refined_target, T_MODULE)) {
+        VALUE refined_ancestor = find_refined_target_ancestor(klass, refined_target);
+        if (refined_ancestor) {
+            iclass = rb_vm_module_refinement_iclass(iclass, refined_ancestor);
+        }
+    }
+
+    return iclass;
 }
 
 static VALUE
@@ -2585,13 +2600,8 @@ mnew_from_me(const rb_method_entry_t *me, VALUE klass, VALUE iclass,
              VALUE obj, ID id, VALUE mclass, int scope)
 {
     if (me && refinement_module_p(me->owner)) {
-        VALUE refined_ancestor, refined_target;
-
-        if (RICLASS_FOR_REFINEMENT_P(iclass) &&
-                (refined_target = rb_refinement_module_get_refined_class(me->owner)) &&
-                RB_TYPE_P(refined_target, T_MODULE) &&
-                (refined_ancestor = find_refined_target_ancestor(klass, refined_target))) {
-            iclass = rb_vm_module_refinement_iclass(iclass, refined_ancestor);
+        if (RICLASS_FOR_REFINEMENT_P(iclass)) {
+            iclass = find_refinement_iclass(me->owner, klass, iclass);
         }
         else {
             iclass = klass;
@@ -3509,13 +3519,19 @@ convert_umethod_to_method_components(const struct METHOD *data, VALUE recv, VALU
             // because this branch manipulates it in rb_method_entry_complement_defined_class
             me = rb_method_entry_clone(me);
         }
-        VALUE ic = rb_class_search_ancestor(klass, me->owner);
-        if (ic) {
-            klass = ic;
-            iclass = ic;
+        if (refinement_module_p(me->owner) && RICLASS_FOR_REFINEMENT_P(data->iclass)) {
+            iclass = find_refinement_iclass(me->owner, klass, data->iclass);
+            klass = iclass;
         }
         else {
-            klass = rb_include_class_new(methclass, klass);
+            VALUE ic = rb_class_search_ancestor(klass, me->owner);
+            if (ic) {
+                klass = ic;
+                iclass = ic;
+            }
+            else {
+                klass = rb_include_class_new(methclass, klass);
+            }
         }
         me = (const rb_method_entry_t *) rb_method_entry_complement_defined_class(me, me->called_id, klass);
     }
@@ -4396,9 +4412,7 @@ method_super_method(VALUE method)
             if (NIL_P(refs)) continue;
             VALUE r = rb_hash_lookup(refs, cme->owner);
             if (NIL_P(r)) continue;
-            if (RB_TYPE_P(cme->owner, T_MODULE)) {
-                r = rb_vm_module_refinement_iclass(r, cme->defined_class);
-            }
+            r = rb_vm_refinement_iclass_for_cme(r, cme);
             const rb_callable_method_entry_t *ref_cme = rb_callable_method_entry(r, mid);
             if (!ref_cme) break;
             if (ref_cme->def->type == VM_METHOD_TYPE_REFINED) continue;

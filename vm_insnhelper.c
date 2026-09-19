@@ -4686,6 +4686,21 @@ rb_vm_module_refinement_iclass(VALUE refinement_iclass, VALUE defined_class)
     return module_refinement_iclass(refinement_iclass, defined_class);
 }
 
+static VALUE
+refinement_iclass_for_cme(VALUE refinement_iclass, const rb_callable_method_entry_t *cme)
+{
+    if (RB_TYPE_P(cme->owner, T_MODULE) && RB_TYPE_P(cme->defined_class, T_ICLASS)) {
+        refinement_iclass = module_refinement_iclass(refinement_iclass, cme->defined_class);
+    }
+    return refinement_iclass;
+}
+
+VALUE
+rb_vm_refinement_iclass_for_cme(VALUE refinement_iclass, const rb_callable_method_entry_t *cme)
+{
+    return refinement_iclass_for_cme(refinement_iclass, cme);
+}
+
 static const rb_callable_method_entry_t *
 search_refined_method(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling)
 {
@@ -4698,9 +4713,7 @@ search_refined_method(rb_execution_context_t *ec, rb_control_frame_t *cfp, struc
         VALUE refinement = find_refinement(CREF_REFINEMENTS(cref), vm_cc_cme(cc)->owner);
         if (NIL_P(refinement)) continue;
 
-        if (RB_TYPE_P(vm_cc_cme(cc)->owner, T_MODULE)) {
-            refinement = module_refinement_iclass(refinement, vm_cc_cme(cc)->defined_class);
-        }
+        refinement = refinement_iclass_for_cme(refinement, vm_cc_cme(cc));
 
         const rb_callable_method_entry_t *const ref_me =
             rb_callable_method_entry(refinement, mid);

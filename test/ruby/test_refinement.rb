@@ -1035,6 +1035,22 @@ class TestRefinement < Test::Unit::TestCase
     RUBY
   end
 
+  def test_refined_module_instance_method
+    assert_separately([], <<-"end;")
+      module M
+        def m = [:M]
+      end
+      module R
+        refine M do
+          def m = [:R, *super]
+        end
+      end
+      using R
+      m = M.instance_method(:m)
+      assert_equal([:R, :M], m.bind_call(Object.new))
+    end;
+  end
+
   def test_super_in_refined_module_method
     assert_separately([], <<-"end;")
       class BasicObject
