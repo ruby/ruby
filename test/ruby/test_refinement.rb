@@ -1300,6 +1300,13 @@ class TestRefinement < Test::Unit::TestCase
         def self.um = C.instance_method(:m)
       end
 
+      module UR1
+        using R1
+        def self.run = C.new.m
+        def self.m = C.new.method(:m)
+        def self.um = C.instance_method(:m)
+      end
+
       module UR2
         using R2
         def self.run = C.new.m
@@ -1307,7 +1314,8 @@ class TestRefinement < Test::Unit::TestCase
         def self.um = C.instance_method(:m)
       end
 
-      assert_equal([:R2, :R1, :M, :C], UR1R2.run)
+      assert_equal([:R2, :M, :C], UR1R2.run)
+      assert_equal([:R1, :M, :C], UR1.run)
       assert_equal([:R2, :M, :C], UR2.run)
 
       super_method = ->(m) do
@@ -1318,6 +1326,14 @@ class TestRefinement < Test::Unit::TestCase
       [UR1R2.m, UR1R2.um].each do |m|
         assert_equal(M, m.owner.target)
         m = super_method.(m)
+        assert_equal(M, m.owner.target)
+        m = super_method.(m)
+        assert_equal(M, m.owner)
+        m = super_method.(m)
+        assert_equal(C, m.owner)
+        assert_nil(m.super_method)
+      end
+      [UR1.m, UR1.um].each do |m|
         assert_equal(M, m.owner.target)
         m = super_method.(m)
         assert_equal(M, m.owner)

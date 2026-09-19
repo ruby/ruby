@@ -5141,10 +5141,15 @@ static inline VALUE
 vm_search_normal_superclass(VALUE klass)
 {
     if (RICLASS_FOR_REFINEMENT_P(klass)) {
-        VALUE refinement_module = RBASIC(klass)->klass;
-        if (!RB_TYPE_P(rb_refinement_module_get_refined_class(refinement_module), T_MODULE)) {
-            klass = refinement_module;
+        if (RB_TYPE_P(RCLASS_REFINED_CLASS(klass), T_MODULE)) {
+            do {
+                klass = RCLASS_SUPER(klass);
+            } while (RICLASS_FOR_REFINEMENT_P(klass));
+
+            return klass;
         }
+
+        klass = RBASIC(klass)->klass;
     }
     klass = RCLASS_ORIGIN(klass);
     return RCLASS_SUPER(klass);
