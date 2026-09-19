@@ -9744,43 +9744,57 @@ rb_io_set_encoding_by_bom(VALUE io)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *    File.new(path, mode = 'r', perm = 0666, **opts) -> file
+ *    File.new(path, mode = 'r', permissions = 0666, **options) -> file
  *
- *  Opens the file at the given +path+ according to the given +mode+;
- *  creates and returns a new File object for that file.
+ *  Opens the file as specified by the given arguments.
+ *  Creates and returns a new open \File object for that file;
+ *  the opened file is in non-synchronous mode.
  *
- *  The new File object is buffered mode (or non-sync mode), unless
- *  +filename+ is a tty.
- *  See IO#flush, IO#fsync, IO#fdatasync, and IO#sync=.
+ *  Argument `path` must the string path to an existing filesystem entry
+ *  or a Pathname object containing such a path:
  *
- *  Argument +path+ must be a valid file path:
+ *  ```ruby
+ *  file = File.new('doc/maintainers.md') # => #<File:doc/maintainers.md>
+ *  file.sync                             # => false
+ *  file.close                            # Clean up.
+ *  tty = File.new('/dev/tty', 'w')       # => #<File:/dev/tty>
+ *  tty.sync                              # => false
+ *  tty.close                             # Clean up.
+ *  pn = Pathname.new(path)               # => #<Pathname:t.tmp>
+ *  file = File.new(pn)                   # => #<File:t.tmp>
+ *  file.close                            # Clean up.
+ *  ```
  *
- *    f = File.new('/etc/fstab')
- *    f.close
- *    f = File.new('t.txt')
- *    f.close
+ *  Note that the caller is responsible for closing the file;
+ *  see File.open for automatic closing.
  *
- *  Optional argument +mode+ (defaults to 'r') must specify a valid mode;
- *  see {Access Modes}[rdoc-ref:File@Access+Modes]:
+ *  Optional argument `mode` (defaults to `'r'`) must specify a valid mode;
+ *  see [Access Modes](rdoc-ref:File@Access+Modes):
  *
- *    f = File.new('t.tmp', 'w')
- *    f.close
- *    f = File.new('t.tmp', File::RDONLY)
- *    f.close
+ *  ```ruby
+ *  file = File.new('t.tmp', 'w')          # => #<File:t.tmp>
+ *  file.close                             # Clean up.
+ *  file = File.new('t.tmp', File::RDONLY) # => #<File:t.tmp>
+ *  file.close                             # Clean up.
+ *  ```
  *
- *  Optional argument +perm+ (defaults to 0666) must specify valid permissions
- *  see {File Permissions}[rdoc-ref:File@File+Permissions]:
+ *  Optional argument `permissions` (defaults to `0666`) must specify valid permissions;
+ *  see [File Permissions](rdoc-ref:File@File+Permissions):
  *
- *    f = File.new('t.tmp', File::CREAT, 0644)
- *    f.close
- *    f = File.new('t.tmp', File::CREAT, 0444)
- *    f.close
+ *  ```ruby
+ *  file = File.new('t.tmp', 'w', 0644)    # => #<File:t.tmp>
+ *  file.close                             # Clean up.
+ *  file = File.new('t.tmp', 'w', 0444)    # => #<File:t.tmp>
+ *  file.close                             # Clean up.
+ *  ```
  *
- *  Optional keyword arguments +opts+ specify:
+ *  Optional keyword arguments `options` specify:
  *
- *  - {Open Options}[rdoc-ref:IO@Open+Options].
- *  - {Encoding options}[rdoc-ref:encodings.rdoc@Encoding+Options].
+ *  - [Open Options](rdoc-ref:IO@Open+Options).
+ *  - [Encoding options](rdoc-ref:encodings.rdoc@Encoding+Options).
  *
  */
 
