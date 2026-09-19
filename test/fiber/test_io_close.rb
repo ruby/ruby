@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 require 'test/unit'
-require 'io/wait'
 require_relative 'scheduler'
 
 class TestFiberIOClose < Test::Unit::TestCase

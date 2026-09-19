@@ -343,12 +343,6 @@ consensus on ruby-core/ruby-dev.
 * https://github.com/ruby/io-nonblock
 * https://rubygems.org/gems/io-nonblock
 
-#### ext/io/wait
-
-* Nobuyuki Nakada ([nobu])
-* https://github.com/ruby/io-wait
-* https://rubygems.org/gems/io-wait
-
 #### ext/json
 
 * NARUSE, Yui ([nurse])
