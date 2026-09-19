@@ -527,6 +527,18 @@ class TestRubyLiteral < Test::Unit::TestCase
     end
   end
 
+  def test_hash_duplicate_key_warning_across_keyword_splat
+    assert_warning("test:2: warning: key 1 is duplicated and overwritten on line 4\n") do
+      RubyVM::InstructionSequence.compile_parsey(<<~RUBY, "test")
+        {
+          1 => :first,
+          **1,
+          1 => :last,
+        }
+      RUBY
+    end
+  end
+
   def test_hash_frozen_key_id
     key = "a".freeze
     h = {key => 100}
