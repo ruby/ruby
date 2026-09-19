@@ -240,7 +240,7 @@ Note: We're only listing outstanding class updates.
 * Ruby::Box
 
     * A new (experimental) feature to provide separation about definitions.
-      For the detail of "Ruby Box", see [doc/language/box.md](doc/language/box.md).
+      For the detail of "Ruby Box", see [box.md](rdoc-ref:language/box.md).
       [[Feature #21311]] [[Misc #21385]]
 
 * Set
