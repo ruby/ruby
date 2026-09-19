@@ -4331,7 +4331,10 @@ method_super_method(VALUE method)
     }
     else if (is_refinement_method) {
         if (RICLASS_FOR_REFINEMENT_P(iclass)) {
-            super_class = RCLASS_SUPER(iclass);
+            do {
+                super_class = RCLASS_SUPER(iclass);
+                iclass = super_class;
+            } while (RICLASS_FOR_REFINEMENT_P(super_class));
         }
         else {
             super_class = find_refined_target_ancestor(iclass, rb_refinement_module_get_refined_class(data->me->owner));

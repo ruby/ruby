@@ -1407,8 +1407,6 @@ class TestRefinement < Test::Unit::TestCase
       [UR1R2.m, UR1R2.um].each do |m|
         assert_equal(M, m.owner.target)
         m = super_method.(m)
-        assert_equal(M, m.owner.target)
-        m = super_method.(m)
         assert_equal(M, m.owner)
         m = super_method.(m)
         assert_equal(C, m.owner)
