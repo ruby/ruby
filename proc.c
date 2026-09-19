@@ -2599,13 +2599,8 @@ static VALUE
 mnew_from_me(const rb_method_entry_t *me, VALUE klass, VALUE iclass,
              VALUE obj, ID id, VALUE mclass, int scope)
 {
-    if (me && refinement_module_p(me->owner)) {
-        if (RICLASS_FOR_REFINEMENT_P(iclass)) {
-            iclass = find_refinement_iclass(me->owner, klass, iclass);
-        }
-        else {
-            iclass = klass;
-        }
+    if (me && refinement_module_p(me->owner) && !RICLASS_FOR_REFINEMENT_P(iclass)) {
+        iclass = klass;
     }
 
     return mnew_internal(me, klass, iclass, obj, id, mclass, scope, TRUE);
