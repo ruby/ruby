@@ -5,7 +5,7 @@ use crate::invariants::*;
 use crate::options::*;
 use crate::stats::YjitExitLocations;
 use crate::stats::incr_counter;
-use crate::stats::with_compile_time;
+use crate::stats::{with_compile_time,rb_yjit_max_compile_time_ns,rb_yjit_total_compile_time_ns};
 
 use std::os::raw::{c_char, c_int};
 use std::time::Instant;
@@ -201,7 +201,11 @@ pub extern "C" fn rb_yjit_iseq_gen_entry_point(iseq: IseqPtr, ec: EcPtr, jit_exc
 
     // Stop compiling if we ran out of executable memory so that the
     // interpreter stops incrementing ISEQ call counters.
-    unsafe { rb_yjit_compiling_p = !out_of_memory_p(); }
+    unsafe {
+        if out_of_memory_p() || (rb_yjit_max_compile_time_ns > 0 && rb_yjit_max_compile_time_ns <= rb_yjit_total_compile_time_ns) {
+            rb_yjit_compiling_p = false;
+        }
+    }
 
     maybe_code_ptr.unwrap_or(std::ptr::null())
 }
