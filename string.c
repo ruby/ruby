@@ -11734,6 +11734,12 @@ rb_str_lstrip_bang(int argc, VALUE *argv, VALUE str)
         VALUE del = 0, nodel = 0;
 
         tr_setup_table_multi(table, &del, &nodel, str, argc, argv);
+
+        /* the selector conversion may have modified str */
+        str_modify_keep_cr(str);
+        enc = STR_ENC_GET(str);
+        RSTRING_GETMEM(str, start, olen);
+
         loffset = lstrip_offset_table(str, start, start+olen, enc, table, del, nodel);
     }
     else {
@@ -11790,6 +11796,10 @@ rb_str_lstrip(int argc, VALUE *argv, VALUE str)
         VALUE del = 0, nodel = 0;
 
         tr_setup_table_multi(table, &del, &nodel, str, argc, argv);
+
+        /* the selector conversion may have modified str */
+        RSTRING_GETMEM(str, start, len);
+
         loffset = lstrip_offset_table(str, start, start+len, STR_ENC_GET(str), table, del, nodel);
     }
     else {
@@ -11878,6 +11888,12 @@ rb_str_rstrip_bang(int argc, VALUE *argv, VALUE str)
         VALUE del = 0, nodel = 0;
 
         tr_setup_table_multi(table, &del, &nodel, str, argc, argv);
+
+        /* the selector conversion may have modified str */
+        str_modify_keep_cr(str);
+        enc = STR_ENC_GET(str);
+        RSTRING_GETMEM(str, start, olen);
+
         roffset = rstrip_offset_table(str, start, start+olen, enc, table, del, nodel);
     }
     else {
@@ -11934,6 +11950,11 @@ rb_str_rstrip(int argc, VALUE *argv, VALUE str)
         VALUE del = 0, nodel = 0;
 
         tr_setup_table_multi(table, &del, &nodel, str, argc, argv);
+
+        /* the selector conversion may have modified str */
+        enc = STR_ENC_GET(str);
+
+        RSTRING_GETMEM(str, start, olen);
         roffset = rstrip_offset_table(str, start, start+olen, enc, table, del, nodel);
     }
     else {
@@ -11972,6 +11993,12 @@ rb_str_strip_bang(int argc, VALUE *argv, VALUE str)
         VALUE del = 0, nodel = 0;
 
         tr_setup_table_multi(table, &del, &nodel, str, argc, argv);
+
+        /* the selector conversion may have modified str */
+        str_modify_keep_cr(str);
+        enc = STR_ENC_GET(str);
+        RSTRING_GETMEM(str, start, olen);
+
         loffset = lstrip_offset_table(str, start, start+olen, enc, table, del, nodel);
         roffset = rstrip_offset_table(str, start+loffset, start+olen, enc, table, del, nodel);
     }
@@ -12035,6 +12062,11 @@ rb_str_strip(int argc, VALUE *argv, VALUE str)
         VALUE del = 0, nodel = 0;
 
         tr_setup_table_multi(table, &del, &nodel, str, argc, argv);
+
+        /* the selector conversion may have modified str */
+        enc = STR_ENC_GET(str);
+        RSTRING_GETMEM(str, start, olen);
+
         loffset = lstrip_offset_table(str, start, start+olen, enc, table, del, nodel);
         roffset = rstrip_offset_table(str, start+loffset, start+olen, enc, table, del, nodel);
     }

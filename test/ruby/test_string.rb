@@ -2625,6 +2625,23 @@ CODE
     assert_equal(S("abc"), a)
   end
 
+  def test_strip_selector_modifying_receiver
+    [:strip, :strip!, :lstrip, :lstrip!, :rstrip, :rstrip!].each do |m|
+      s = S("-" * 100 + "abc" + "-" * 100)
+      obj = Object.new
+      obj.define_singleton_method(:to_str) do
+        s.clear
+        "-"
+      end
+
+      if m.end_with?("!")
+        assert_nil(s.public_send(m, obj), "String##{m}")
+      else
+        assert_equal("", s.public_send(m, obj), "String##{m}")
+      end
+    end
+  end
+
   def test_sub
     assert_equal(S("h*llo"),    S("hello").sub(/[aeiou]/, S('*')))
     assert_equal(S("h<e>llo"),  S("hello").sub(/([aeiou])/, S('<\1>')))
