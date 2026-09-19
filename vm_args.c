@@ -320,6 +320,37 @@ args_setup_kw_parameters_lookup(const ID key, VALUE *ptr, const VALUE *const pas
     return FALSE;
 }
 
+static inline void
+args_setup_kw_parameters_not_found(const VALUE *default_values, VALUE *locals, int i, int di,
+                                   int *unspecified_bits, VALUE *unspecified_bits_value)
+{
+    if (UNDEF_P(default_values[di])) {
+        locals[i] = Qnil;
+
+        if (LIKELY(i < VM_KW_SPECIFIED_BITS_MAX)) {
+            *unspecified_bits |= 0x01 << di;
+        }
+        else {
+            VALUE bits_value = *unspecified_bits_value;
+            if (NIL_P(bits_value)) {
+                /* fixnum -> hash */
+                int bits = *unspecified_bits;
+                *unspecified_bits_value = bits_value = rb_ident_hash_new();
+
+                for (int j=0; j<VM_KW_SPECIFIED_BITS_MAX; j++) {
+                    if (bits & (0x01 << j)) {
+                        rb_hash_aset(bits_value, INT2FIX(j), Qtrue);
+                    }
+                }
+            }
+            rb_hash_aset(bits_value, INT2FIX(di), Qtrue);
+        }
+    }
+    else {
+        locals[i] = default_values[di];
+    }
+}
+
 static void
 args_setup_kw_parameters(rb_execution_context_t *const ec, const rb_iseq_t *const iseq, const rb_callable_method_entry_t *cme,
                          VALUE *const passed_values, const int passed_keyword_len, const VALUE *const passed_keywords,
@@ -352,30 +383,8 @@ args_setup_kw_parameters(rb_execution_context_t *const ec, const rb_iseq_t *cons
             found++;
         }
         else {
-            if (UNDEF_P(default_values[di])) {
-                locals[i] = Qnil;
-
-                if (LIKELY(i < VM_KW_SPECIFIED_BITS_MAX)) {
-                    unspecified_bits |= 0x01 << di;
-                }
-                else {
-                    if (NIL_P(unspecified_bits_value)) {
-                        /* fixnum -> hash */
-                        int j;
-                        unspecified_bits_value = rb_hash_new();
-
-                        for (j=0; j<VM_KW_SPECIFIED_BITS_MAX; j++) {
-                            if (unspecified_bits & (0x01 << j)) {
-                                rb_hash_aset(unspecified_bits_value, INT2FIX(j), Qtrue);
-                            }
-                        }
-                    }
-                    rb_hash_aset(unspecified_bits_value, INT2FIX(di), Qtrue);
-                }
-            }
-            else {
-                locals[i] = default_values[di];
-            }
+            args_setup_kw_parameters_not_found(default_values, locals, i, di,
+                                               &unspecified_bits, &unspecified_bits_value);
         }
     }
 
@@ -447,30 +456,8 @@ args_setup_kw_parameters_from_kwsplat(rb_execution_context_t *const ec, const rb
             locals[i] = value;
         }
         else {
-            if (UNDEF_P(default_values[di])) {
-                locals[i] = Qnil;
-
-                if (LIKELY(i < VM_KW_SPECIFIED_BITS_MAX)) {
-                    unspecified_bits |= 0x01 << di;
-                }
-                else {
-                    if (NIL_P(unspecified_bits_value)) {
-                        /* fixnum -> hash */
-                        int j;
-                        unspecified_bits_value = rb_hash_new();
-
-                        for (j=0; j<VM_KW_SPECIFIED_BITS_MAX; j++) {
-                            if (unspecified_bits & (0x01 << j)) {
-                                rb_hash_aset(unspecified_bits_value, INT2FIX(j), Qtrue);
-                            }
-                        }
-                    }
-                    rb_hash_aset(unspecified_bits_value, INT2FIX(di), Qtrue);
-                }
-            }
-            else {
-                locals[i] = default_values[di];
-            }
+            args_setup_kw_parameters_not_found(default_values, locals, i, di,
+                                               &unspecified_bits, &unspecified_bits_value);
         }
     }
 
