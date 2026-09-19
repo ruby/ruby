@@ -711,7 +711,7 @@ num_members(VALUE klass)
     VALUE members;
     members = struct_ivar_get(klass, id_members);
     if (!RB_TYPE_P(members, T_ARRAY)) {
-        rb_raise(rb_eTypeError, "broken members");
+        rb_bug("broken members"); /* should never happen */
     }
     return RARRAY_LEN(members);
 }
