@@ -4646,29 +4646,36 @@ refined_method_callable_without_refinement(const rb_callable_method_entry_t *me)
 static VALUE
 module_refinement_iclass(VALUE refinement_iclass, VALUE defined_class)
 {
-    VALUE cache = RCLASS_MODULE_REFINEMENT_ICLASSES(defined_class);
-    if (LIKELY(cache)) {
-        VALUE cached = rb_hash_lookup(cache, refinement_iclass);
-        if (!NIL_P(cached)) return cached;
-    }
-    else {
-        cache = rb_obj_hide(rb_ident_hash_new());
-        RCLASS_SET_MODULE_REFINEMENT_ICLASSES(defined_class, cache);
-    }
+    VALUE module_ref_iclass = Qnil;
 
-    VALUE super;
-    VALUE refinement_iclass_super = RCLASS_SUPER(refinement_iclass);
-    if (RICLASS_FOR_REFINEMENT_P(refinement_iclass_super)) {
-        super = module_refinement_iclass(refinement_iclass_super, defined_class);
-    }
-    else {
-        super = defined_class;
-    }
+    RB_VM_LOCKING() {
+        VALUE cache = RCLASS_MODULE_REFINEMENT_ICLASSES(defined_class);
 
-    VALUE module_ref_iclass = rb_include_class_new(RBASIC(refinement_iclass)->klass, super);
-    RCLASS_SET_REFINED_CLASS(module_ref_iclass, RCLASS_REFINED_CLASS(refinement_iclass));
-    rb_class_subclass_add(RCLASS_REFINED_CLASS(refinement_iclass), module_ref_iclass);
-    rb_hash_aset(cache, refinement_iclass, module_ref_iclass);
+        if (LIKELY(cache)) {
+            module_ref_iclass = rb_hash_lookup(cache, refinement_iclass);
+        }
+        else {
+            cache = rb_obj_hide(rb_ident_hash_new());
+            RCLASS_SET_MODULE_REFINEMENT_ICLASSES(defined_class, cache);
+        }
+
+        if (NIL_P(module_ref_iclass)) {
+            VALUE super;
+            VALUE refinement_iclass_super = RCLASS_SUPER(refinement_iclass);
+
+            if (RICLASS_FOR_REFINEMENT_P(refinement_iclass_super)) {
+                super = module_refinement_iclass(refinement_iclass_super, defined_class);
+            }
+            else {
+                super = defined_class;
+            }
+
+            module_ref_iclass = rb_include_class_new(RBASIC(refinement_iclass)->klass, super);
+            RCLASS_SET_REFINED_CLASS(module_ref_iclass, RCLASS_REFINED_CLASS(refinement_iclass));
+            rb_class_subclass_add(RCLASS_REFINED_CLASS(refinement_iclass), module_ref_iclass);
+            rb_hash_aset(cache, refinement_iclass, module_ref_iclass);
+        }
+    }
 
     return module_ref_iclass;
 }
