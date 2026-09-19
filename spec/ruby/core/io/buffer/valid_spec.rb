@@ -41,9 +41,6 @@ describe "IO::Buffer#valid?" do
     end
   end
 
-  # A slice tracks a logical [offset, length) range of its source. It becomes
-  # invalid only if the source is freed, or resized so that the slice's range
-  # no longer fits; it survives a resize that merely relocates the source.
   context "with a slice" do
     it "is true for a slice of a live buffer" do
       @buffer = IO::Buffer.new(4)
@@ -60,14 +57,12 @@ describe "IO::Buffer#valid?" do
         slice.get_string.should == ""
       end
 
-      it "survives a resize that relocates the source" do
+      it "keeps an empty range valid as the source grows and shrinks" do
         @buffer = IO::Buffer.new(0)
         slice = @buffer.slice(0, 0)
 
         slice.valid?.should == true
 
-        # Growing the source may relocate its allocation, but the slice's
-        # [0, 0) range still exists within it, so the slice stays valid:
         @buffer.resize(1)
         slice.valid?.should == true
         slice.get_string.should == ""
@@ -77,17 +72,90 @@ describe "IO::Buffer#valid?" do
         slice.get_string.should == ""
       end
 
-      it "keeps referring to the same range after the source is relocated" do
+      it "preserves a nested slice's range when the root grows" do
         @buffer = IO::Buffer.new(8)
         @buffer.set_string("ABCDEFGH")
-        slice = @buffer.slice(2, 4)
-        slice.get_string.should == "CDEF"
+        parent = @buffer.slice(1, 6)
+        slice = parent.slice(1, 4)
 
-        # A large grow is likely to relocate the source allocation; the slice
-        # continues to refer to bytes [2, 6) of the (preserved) contents:
         @buffer.resize(1 << 20)
         slice.valid?.should == true
         slice.get_string.should == "CDEF"
+        slice.set_string("wxyz")
+        @buffer.get_string(0, 8).should == "ABwxyzGH"
+        parent.get_string.should == "BwxyzG"
+      end
+
+      it "becomes valid again at its original offset when a shrunk root regrows" do
+        @buffer = IO::Buffer.new(8)
+        slice = @buffer.slice(2, 4)
+
+        @buffer.resize(5)
+        slice.valid?.should == false
+        slice.null?.should == true
+        slice.size.should == 4
+        -> { slice.get_string }.should.raise(IO::Buffer::InvalidatedError)
+        -> { slice.set_string("xxxx") }.should.raise(IO::Buffer::InvalidatedError)
+
+        @buffer.resize(8)
+        @buffer.set_string("abcdefgh")
+        slice.valid?.should == true
+        slice.null?.should == false
+        slice.get_string.should == "cdef"
+      end
+
+      it "refers to current contents when a freed root is allocated again" do
+        @buffer = IO::Buffer.new(8)
+        @buffer.set_string("ABCDEFGH")
+        slice = @buffer.slice(2, 4)
+
+        @buffer.free
+        slice.valid?.should == false
+        @buffer.resize(8)
+        @buffer.set_string("abcdefgh")
+
+        slice.valid?.should == true
+        slice.get_string.should == "cdef"
+        slice.set_string("wxyz")
+        @buffer.get_string.should == "abwxyzgh"
+      end
+
+      it "resolves a new root allocation rather than the transferred allocation" do
+        @buffer = IO::Buffer.new(8)
+        @buffer.set_string("ABCDEFGH")
+        slice = @buffer.slice(2, 4)
+        previous = @buffer.transfer
+
+        begin
+          slice.valid?.should == false
+          # Keep the old allocation alive so the new allocation cannot reuse
+          # its address. The slice must resolve through the original root.
+          @buffer.resize(8)
+          @buffer.set_string("abcdefgh")
+
+          slice.valid?.should == true
+          slice.get_string.should == "cdef"
+          slice.set_string("wxyz")
+          @buffer.get_string.should == "abwxyzgh"
+          previous.get_string.should == "ABCDEFGH"
+        ensure
+          previous.free
+        end
+      end
+
+      it "keeps an empty range at offset zero valid after the root is freed" do
+        @buffer = IO::Buffer.new(8)
+        slice = @buffer.slice(0, 0)
+
+        @buffer.free
+        slice.valid?.should == true
+        slice.null?.should == true
+        slice.get_string.should == ""
+
+        @buffer.resize(8)
+        slice.valid?.should == true
+        slice.null?.should == false
+        slice.get_string.should == ""
       end
 
       it "is false when its empty range no longer belongs to the source" do
@@ -96,6 +164,11 @@ describe "IO::Buffer#valid?" do
 
         @buffer.resize(0)
         slice.valid?.should == false
+
+        @buffer.resize(1)
+        slice.valid?.should == true
+        slice.empty?.should == true
+        slice.get_string.should == ""
       end
     end
 
