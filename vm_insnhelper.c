@@ -26,6 +26,7 @@
 #include "internal/proc.h"
 #include "internal/random.h"
 #include "internal/variable.h"
+#include "internal/set.h"
 #include "internal/set_table.h"
 #include "internal/struct.h"
 #include "ruby/thread.h"
@@ -5953,8 +5954,8 @@ vm_check_keyword(lindex_t bits, lindex_t idx, const VALUE *ep)
             return Qfalse;
     }
     else {
-        VM_ASSERT(RB_TYPE_P(kw_bits, T_HASH));
-        if (rb_hash_has_key(kw_bits, INT2FIX(idx))) return Qfalse;
+        VM_ASSERT(rb_set_p(kw_bits), "%s", rb_obj_info(kw_bits));
+        if (rb_set_lookup(kw_bits, INT2FIX(idx))) return Qfalse;
     }
     return Qtrue;
 }
