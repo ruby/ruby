@@ -20,6 +20,8 @@ void ruby_register_rollback_func_for_ensure(VALUE (*ensure_func)(VALUE), VALUE (
 
 /* vm.c */
 void rb_free_shared_fiber_pool(void);
+/* thread.c */
+void rb_fiber_pool_lock_atfork(void);
 
 // Copy locals from the current execution to the specified fiber.
 VALUE rb_fiber_inherit_storage(struct rb_execution_context_struct *ec, struct rb_fiber_struct *fiber);
