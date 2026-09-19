@@ -217,6 +217,36 @@ class TestPatternMatching < Test::Unit::TestCase
       end
     }, [], /alternative pattern/,
     success: false)
+
+    assert_in_out_err(['-c'], %q{
+      case 0
+      in { a: 1, **rest } | 1
+      end
+    }, [], /alternative pattern/,
+    success: false)
+
+    assert_in_out_err(['-c'], %q{
+      case 0
+      in 1 | { a: 1, **rest }
+      end
+    }, [], /alternative pattern/,
+    success: false)
+
+    # `**nil` binds nothing
+    assert_valid_syntax(%{
+      case 0
+      in { a: 1, **nil } | 1
+        true
+      end
+    })
+
+    # a `**rest` binding must not leak into an unrelated sibling alternation
+    assert_valid_syntax(%{
+      case 0
+      in [ { **rest }, 1 | 2 ]
+        true
+      end
+    })
   end
 
   def test_alternative_pattern_nested
@@ -296,6 +326,18 @@ class TestPatternMatching < Test::Unit::TestCase
     assert_syntax_error(%q{
       case 0
       in a, {"a":}
+      end
+    }, /duplicated variable name/)
+
+    assert_syntax_error(%q{
+      case 0
+      in {a: x, **x}
+      end
+    }, /duplicated variable name/)
+
+    assert_syntax_error(%q{
+      case 0
+      in {a:, **a}
       end
     }, /duplicated variable name/)
 
