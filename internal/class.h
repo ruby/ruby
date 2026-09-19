@@ -291,7 +291,7 @@ RCLASS_SET_CLASSEXT_TBL(VALUE klass, st_table *tbl)
 }
 
 /* class.c */
-rb_classext_t * rb_class_duplicate_classext(rb_classext_t *orig, VALUE obj, const rb_box_t *box);
+rb_classext_t * rb_class_duplicate_classext(rb_classext_t *orig, VALUE obj, const rb_box_t *box, int *first_set);
 void rb_class_ensure_writable(VALUE obj);
 
 void rb_class_set_box_classext(VALUE obj, const rb_box_t *box, rb_classext_t *ext);
@@ -413,8 +413,7 @@ RCLASS_EXT_WRITABLE_LOOKUP(VALUE obj, const rb_box_t *box)
         // re-check the classext is not created to avoid the multi-thread race
         ext = RCLASS_EXT_TABLE_LOOKUP_INTERNAL(obj, box);
         if (!ext) {
-            ext = rb_class_duplicate_classext(RCLASS_EXT_PRIME(obj), obj, box);
-            first_set = RCLASS_SET_BOX_CLASSEXT(obj, box, ext);
+            ext = rb_class_duplicate_classext(RCLASS_EXT_PRIME(obj), obj, box, &first_set);
             if (first_set) {
                 // TODO: are there any case that a class/module become non-writable after its birthtime?
                 RCLASS_SET_PRIME_CLASSEXT_WRITABLE(obj, false);
