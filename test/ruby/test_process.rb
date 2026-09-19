@@ -1150,6 +1150,76 @@ class TestProcess < Test::Unit::TestCase
     assert_raise(Errno::ENOENT) { IO.popen([str, str]) }
   end
 
+  PAYLOADS = [
+    'a&echo.>INJECTED',       # command separator
+    'a|echo.>INJECTED',       # pipe
+    'a>INJECTED',             # redirection
+    'a&(echo.>INJECTED)',     # grouping
+    'a"&echo.>INJECTED',      # double-quote break-out
+    'a^&echo.>INJECTED',      # caret escape
+  ]
+
+  # An argument passed via the array form must reach a batch file as a plain
+  # argument, not be re-interpreted as cmd.exe syntax.
+  def test_spawn_bat_argument_quoting
+    omit "Windows only" unless windows?
+    with_tmpchdir do
+      bat = File.expand_path("harmless.bat")
+      # %1 keeps the quotes the caller added.  A batch that strips them with
+      # %~1 and reuses the result in command position re-exposes the
+      # metacharacter, which no runtime can prevent.
+      File.binwrite(bat, "@echo off\r\necho [%1]\r\n")
+      PAYLOADS.each do |payload|
+        File.delete("INJECTED") if File.exist?("INJECTED")
+        system(bat, payload, out: "out", err: File::NULL)
+        assert_not_operator(File, :exist?, "INJECTED",
+                            "#{payload.inspect} was re-interpreted by cmd.exe")
+      end
+
+      # An argument that needs no quoting still reaches %1 unquoted.
+      system(bat, "plain", out: "out", err: File::NULL)
+      assert_equal("[plain]", File.binread("out").chomp)
+    end
+  end
+
+  # The same protection applies to a cmd.exe internal command, which is run as
+  # `cmd.exe /c`.  There the argument must survive without being quoted, since
+  # quoting would change what the command itself receives.
+  def test_spawn_internal_command_argument_quoting
+    omit "Windows only" unless windows?
+    with_tmpchdir do
+      PAYLOADS.each do |payload|
+        File.delete("INJECTED") if File.exist?("INJECTED")
+        system("echo", payload, out: "out", err: File::NULL)
+        assert_not_operator(File, :exist?, "INJECTED",
+                            "#{payload.inspect} was re-interpreted by cmd.exe")
+      end
+
+      system("echo", "plain", out: "out", err: File::NULL)
+      assert_equal("plain", File.binread("out").chomp,
+                   "an argument that needs no quoting must not gain quotes")
+    end
+  end
+
+  # A command name that merely starts with an internal command must not be
+  # taken for that command.  [Bug #22199] adjacent: internal_match compares the
+  # terminator so "setlocal&..." no longer matches "setlocal".
+  def test_spawn_internal_command_name_is_not_a_prefix_match
+    omit "Windows only" unless windows?
+    with_tmpchdir do
+      %w[setlocal endlocal truename].each do |builtin|
+        File.delete("INJECTED") if File.exist?("INJECTED")
+        begin
+          system("#{builtin}>INJECTED", "x", out: File::NULL, err: File::NULL)
+        rescue SystemCallError
+          # not found is the expected outcome
+        end
+        assert_not_operator(File, :exist?, "INJECTED",
+                            "#{builtin}>INJECTED ran as the #{builtin} builtin")
+      end
+    end
+  end
+
   def test_exec_noshell
     with_tmpchdir {|d|
       File.write("s", <<-"End")
