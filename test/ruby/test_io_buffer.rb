@@ -889,6 +889,125 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_equal "Hello World", hello
   end
 
+  def test_revived_slice_respects_readonly_root
+    buffer = IO::Buffer.new(8)
+    buffer.set_string("abcdefgh")
+    parent = buffer.slice(1, 6)
+    slice = parent.slice(1, 4)
+    previous = buffer.transfer
+    copy_source = IO::Buffer.for("TEST")
+
+    # Keep the original allocation alive, then give the same root new,
+    # read-only storage. The slice's original flags allowed writing.
+    buffer.send(:initialize, 8, IO::Buffer::INTERNAL | IO::Buffer::READONLY)
+    [parent, slice].each do |view|
+      assert_predicate view, :valid?
+      assert_predicate view, :readonly?
+      assert_equal true, Bug::IOBuffer.readonly?(view)
+      assert_equal IO::Buffer::READONLY, Bug::IOBuffer.get_bytes_flags(view) & IO::Buffer::READONLY
+      assert_include view.to_s, "READONLY"
+      assert_equal "\0" * view.size, view.get_string
+
+      assert_raise(IO::Buffer::AccessError) {view.set_string("TEST")}
+      assert_raise(IO::Buffer::AccessError) {view.set_value(:U8, 0, 42)}
+      assert_raise(IO::Buffer::AccessError) {view.copy(copy_source)}
+      assert_raise(IO::Buffer::AccessError) {view.clear(42)}
+      assert_raise(IO::Buffer::AccessError) {Bug::IOBuffer.locked_for_writing(view)}
+      assert_raise(ArgumentError) {Bug::IOBuffer.for_writing_set_string(view, "TEST")}
+      assert_nil MemoryViewTestUtils.set_data(view, 0, 42)
+      refute_predicate buffer, :locked?
+    end
+
+    assert_equal "\0" * 8, buffer.get_string
+    assert_equal "abcdefgh", previous.get_string
+
+    slice.locked do
+      assert_same slice, slice.advance(1)
+      assert_equal 3, slice.size
+      assert_same slice, slice.resize(4)
+      assert_equal "\0" * 4, slice.get_string
+      assert_predicate slice, :readonly?
+      assert_predicate buffer, :locked?
+    end
+    refute_predicate buffer, :locked?
+  ensure
+    copy_source&.free
+    previous&.free
+    buffer&.free
+  end
+
+  def test_slice_permissions_after_root_becomes_writable_again
+    buffer = IO::Buffer.new(8)
+    original = buffer.slice(2, 4)
+    buffer.free
+    buffer.send(:initialize, 8, IO::Buffer::INTERNAL | IO::Buffer::READONLY)
+    assert_predicate original, :readonly?
+
+    # Neither the original nor a newly created child copies root permissions.
+    child = original.slice(1, 2)
+    assert_predicate child, :readonly?
+    assert_equal true, Bug::IOBuffer.readonly?(child)
+    buffer.free
+    buffer.resize(8)
+    buffer.set_string("abcdefgh")
+
+    refute_predicate original, :readonly?
+    assert_equal false, Bug::IOBuffer.readonly?(original)
+    assert_equal 0, Bug::IOBuffer.get_bytes_flags(original) & IO::Buffer::READONLY
+    original.set_string("WXYZ")
+    assert_equal "abWXYZgh", buffer.get_string
+
+    refute_predicate child, :readonly?
+    assert_equal false, Bug::IOBuffer.readonly?(child)
+    assert_equal 0, Bug::IOBuffer.get_bytes_flags(child) & IO::Buffer::READONLY
+    assert_equal "XY", child.get_string
+    child.set_string("!!")
+    assert_equal "abW!!Zgh", buffer.get_string
+    assert_true MemoryViewTestUtils.set_data(child, 0, "?".ord)
+    assert_equal "abW?!Zgh", buffer.get_string
+  ensure
+    buffer&.free
+  end
+
+  def test_c_readonly_predicate_does_not_invoke_ruby_methods
+    buffer = IO::Buffer.new(8)
+    slice = buffer.slice(2, 4)
+    buffer.define_singleton_method(:readonly?) {raise "Ruby method must not be called"}
+
+    assert_equal false, Bug::IOBuffer.readonly?(buffer)
+    refute_predicate slice, :readonly?
+    assert_equal false, Bug::IOBuffer.readonly?(slice)
+
+    buffer.free
+    buffer.send(:initialize, 8, IO::Buffer::INTERNAL | IO::Buffer::READONLY)
+    assert_equal true, Bug::IOBuffer.readonly?(buffer)
+    assert_predicate slice, :readonly?
+    assert_equal true, Bug::IOBuffer.readonly?(slice)
+  ensure
+    buffer&.free
+  end
+
+  def test_c_readonly_predicate_type_check
+    assert_raise(TypeError) {Bug::IOBuffer.readonly?("not a buffer")}
+  end
+
+  def test_slice_of_frozen_root_reports_effective_permissions
+    buffer = IO::Buffer.new(8)
+    buffer.set_string("abcdefgh")
+    slice = buffer.slice(2, 4)
+    buffer.freeze
+
+    assert_predicate slice, :readonly?
+    assert_equal true, Bug::IOBuffer.readonly?(slice)
+    assert_equal IO::Buffer::READONLY, Bug::IOBuffer.get_bytes_flags(slice) & IO::Buffer::READONLY
+    assert_raise(IO::Buffer::AccessError) {slice.set_string("TEST")}
+    assert_nil MemoryViewTestUtils.set_data(slice, 0, 42)
+    assert_equal "abcdefgh", buffer.get_string
+    slice.advance(1)
+    slice.resize(4)
+    assert_equal "defg", slice.get_string
+  end
+
   def test_string_backed_slice_is_invalidated_when_root_is_freed
     buffer = IO::Buffer.for("Hello World")
     slice = buffer.slice(0, 5)

@@ -1173,7 +1173,9 @@ rb_io_buffer_get_bytes(VALUE self, void **base, size_t *size)
     struct rb_io_buffer *buffer = get_io_buffer(self);
 
     if (io_buffer_try_get_bytes(buffer, base, size)) {
-        return buffer->flags;
+        enum rb_io_buffer_flags flags = buffer->flags;
+        if (io_buffer_readonly_p(buffer)) flags |= RB_IO_BUFFER_READONLY;
+        return flags;
     }
 
     return 0;
@@ -1182,8 +1184,7 @@ rb_io_buffer_get_bytes(VALUE self, void **base, size_t *size)
 static inline void
 io_buffer_get_bytes_for_writing(const struct rb_io_buffer *buffer, void **base, size_t *size)
 {
-    if (buffer->flags & RB_IO_BUFFER_READONLY ||
-        (!NIL_P(buffer->source) && OBJ_FROZEN(buffer->source))) {
+    if (io_buffer_readonly_p(buffer)) {
         rb_raise(rb_eIOBufferAccessError, "Buffer is not writable!");
     }
 
@@ -1299,7 +1300,7 @@ rb_io_buffer_to_s(VALUE self)
         rb_str_cat2(result, " PRIVATE");
     }
 
-    if (buffer->flags & RB_IO_BUFFER_READONLY) {
+    if (io_buffer_readonly_p(buffer)) {
         rb_str_cat2(result, " READONLY");
     }
 
@@ -1653,10 +1654,33 @@ rb_io_buffer_private_p(VALUE self)
     return RBOOL(buffer->flags & RB_IO_BUFFER_PRIVATE);
 }
 
+// A view can restrict access but cannot grant write access to a read-only
+// source. Check the source's current permissions as well as the view's own
+// flags, since the source can be reallocated while the view remains alive.
 static int
 io_buffer_readonly_p(const struct rb_io_buffer *buffer)
 {
-    return buffer->flags & RB_IO_BUFFER_READONLY;
+    if (buffer->flags & RB_IO_BUFFER_READONLY)
+        return 1;
+
+    VALUE source = buffer->source;
+    if (NIL_P(source))
+        return 0;
+
+    if (OBJ_FROZEN(source))
+        return 1;
+
+    if (RB_TYPE_P(source, T_STRING))
+        return 0;
+
+    return rb_io_buffer_readonly_p(source);
+}
+
+int
+rb_io_buffer_readonly_p(VALUE self)
+{
+    const struct rb_io_buffer *buffer = get_io_buffer(self);
+    return io_buffer_readonly_p(buffer);
 }
 
 /*
@@ -1667,13 +1691,19 @@ io_buffer_readonly_p(const struct rb_io_buffer *buffer)
  *
  *  A buffer created by IO::Buffer.for without a block is read-only, as is one
  *  backed by a frozen string or a read-only file.
+ *
+ *  A slice derives read-only access from its retained source rather than
+ *  copying the source's flag. If the source is reallocated, revived slices
+ *  follow its current permissions in either direction. A buffer's own
+ *  READONLY flag, if set, is always restrictive regardless of its source.
+ *  These restrictions concern the bytes, not view-only operations such as
+ *  #advance or resizing a slice. A frozen source also prevents writes through
+ *  views backed by it.
  */
 static VALUE
-rb_io_buffer_readonly_p(VALUE self)
+io_buffer_readonly(VALUE self)
 {
-    struct rb_io_buffer *buffer = get_io_buffer(self);
-
-    return RBOOL(io_buffer_readonly_p(buffer));
+    return RBOOL(rb_io_buffer_readonly_p(self));
 }
 
 static void
@@ -2000,7 +2030,7 @@ rb_io_buffer_slice(struct rb_io_buffer *buffer, VALUE self, size_t offset, size_
     VALUE instance = rb_io_buffer_type_allocate(rb_class_of(self));
     struct rb_io_buffer *slice = get_io_buffer(instance);
 
-    slice->flags |= (buffer->flags & RB_IO_BUFFER_READONLY);
+    // Permissions are derived from the retained source, not copied.
     slice->size = length;
 
     // Flatten nested slices: retain the root and combine the offsets.
@@ -4650,7 +4680,7 @@ Init_IO_Buffer(void)
     rb_define_method(rb_cIOBuffer, "shared?", rb_io_buffer_shared_p, 0);
     rb_define_method(rb_cIOBuffer, "locked?", rb_io_buffer_locked_p, 0);
     rb_define_method(rb_cIOBuffer, "private?", rb_io_buffer_private_p, 0);
-    rb_define_method(rb_cIOBuffer, "readonly?", rb_io_buffer_readonly_p, 0);
+    rb_define_method(rb_cIOBuffer, "readonly?", io_buffer_readonly, 0);
 
     // Locking to prevent changes while using pointer:
     // rb_define_method(rb_cIOBuffer, "lock", rb_io_buffer_lock, 0);
