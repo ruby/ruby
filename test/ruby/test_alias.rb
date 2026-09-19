@@ -208,9 +208,10 @@ class TestAlias < Test::Unit::TestCase
     begin;
       bug = ARGV[0]
 
-      Warning[:deprecated] = false # the Object fallback warns since [Bug #22276]
-      m = Module.new do
-        alias orig_to_s to_s
+      m = EnvUtil.suppress_warning do
+        Module.new do
+          alias orig_to_s to_s
+        end
       end
 
       o = Object.new.extend(m)
