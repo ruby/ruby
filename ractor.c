@@ -4227,4 +4227,16 @@ rb_ractor_autoload_load(VALUE module, ID name)
     }
 }
 
+VALUE
+rb_builtin_shareable_proc(rb_execution_context_t *ec, VALUE self, VALUE arg_self)
+{
+    return ractor_shareable_proc(ec, arg_self, false);
+}
+
+VALUE
+rb_builtin_shareable_lambda(rb_execution_context_t *ec, VALUE self, VALUE arg_self)
+{
+    return ractor_shareable_proc(ec, arg_self, true);
+}
+
 #include "ractor.rbinc"
