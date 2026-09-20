@@ -357,6 +357,17 @@ CPPFLAGS = $(DEFS) $(ARCHDEFS) $(CPPFLAGS)
 CPPFLAGS = -DDISABLE_RUBYGEMS $(CPPFLAGS)
 !endif
 
+# https://learn.microsoft.com/en-us/cpp/build/reference/zc-preprocessor?view=msvc-170
+!if $(MSC_VER) >= 1925
+# maybe >= 1926?
+# https://devblogs.microsoft.com/cppblog/announcing-full-support-for-a-c-c-conformant-preprocessor-in-msvc/
+CPPFLAGS = -Zc:preprocessor $(CPPFLAGS)
+!elseif $(MSC_VER) >= 1915
+CPPFLAGS = -experimental:preprocessor $(CPPFLAGS)
+!else
+! error C99 conformant preprocessor is required
+!endif
+
 POSTLINK =
 DLDFLAGS = $(LDFLAGS) -dll
 MAINLIBS = $(LIBS)
@@ -1323,10 +1334,10 @@ modular-gc-precheck:
 
 {$(srcdir)/coroutine/win32}.asm{coroutine/win32}.obj:
 	$(ECHO) assembling $(<:\=/)
-	$(Q) $(AS) $(ASFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(<:\=/)
+	$(Q) $(AS) $(ASFLAGS) $(COUTFLAG)$@ -c $(<:\=/)
 {$(srcdir)/coroutine/win64}.asm{coroutine/win64}.obj:
 	$(ECHO) assembling $(<:\=/)
-	$(Q) $(AS) $(ASFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(<:\=/)
+	$(Q) $(AS) $(ASFLAGS) $(COUTFLAG)$@ -c $(<:\=/)
 {$(srcdir)/coroutine/arm64}.asm{coroutine/arm64}.obj:
 	$(ECHO) assembling $(<:\=/)
 	$(Q) $(AS) $(ASFLAGS) -o $@ $(<:\=/)
