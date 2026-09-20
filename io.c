@@ -8277,7 +8277,7 @@ rb_open_file(VALUE io, VALUE fname, VALUE vmode, VALUE vperm, VALUE opt)
  *  With no block given, returns the \File object.
  *
  *  With a block given, calls the block with the \File object,
- *  closes the \File object, and returns the block's value.
+ *  closes the \File object, and returns the block's value:
  *
  *  ```ruby
  *  File.open('doc/maintainers.md') {|file| file.size } # => 14900
@@ -8290,17 +8290,23 @@ rb_open_file(VALUE io, VALUE fname, VALUE vmode, VALUE vperm, VALUE opt)
 /*
  *  Document-method: IO::open
  *
- *  call-seq:
- *    IO.open(fd, mode = 'r', **opts)             -> io
- *    IO.open(fd, mode = 'r', **opts) {|io| ... } -> object
+ *  :markup: markdown
  *
- *  Creates a new \IO object, via IO.new with the given arguments.
+ *  call-seq:
+ *    IO.open(fd, mode = 'r', **options) -> io
+ *    IO.open(fd, mode = 'r', **options) {|io| ... } -> object
+ *
+ *  Creates a new IO object via IO.new with the given arguments.
  *
  *  With no block given, returns the \IO object.
  *
- *  With a block given, calls the block with the \IO object
- *  and returns the block's value.
+ *  With a block given, calls the block with the \IO object,
+ *  closes the \IO object, and returns the block’s value:
  *
+ *  ```ruby
+ *  fd = File.sysopen('doc/maintainers.md') # => 6
+ *  IO.open(fd) {|io| io.read.size }        # => 14897
+ *  ```
  */
 
 static VALUE
