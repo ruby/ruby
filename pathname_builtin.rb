@@ -2543,7 +2543,8 @@ class Pathname    # * FileTest *
   #   readable? -> true or false
   #
   # Returns whether the entry at the path in `self`
-  # is readable by the owner and group of the current process:
+  # exists and is readable by the owner and group of the current process;
+  # see [Permissions](rdoc-ref:file/filesystem_modes.md@Permissions):
   #
   # ```ruby
   # pn = Pathname('/tmp/secret.txt')
