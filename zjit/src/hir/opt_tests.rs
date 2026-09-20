@@ -4162,17 +4162,15 @@ mod hir_opt_tests {
           v8:BasicObject = LoadArg :x@1
           Jump bb3(v7, v8)
         bb3(v11:BasicObject, v12:BasicObject):
-          v36:NilClass = Const Value(nil)
+          v34:NilClass = Const Value(nil)
           v17:ArrayExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           v18:ArrayExact = ArrayDup v17
           PatchPoint NoSingletonClass(Array@0x1010)
           PatchPoint MethodRedefined(Array@0x1010, first@0x1018, cme:0x1020)
-          v32:CInt64 = ArrayLength v18
-          v33:CInt64[0] = Const CInt64(0)
-          v34:CInt64[0] = GuardLess v33, v32
-          v35:BasicObject = ArrayAref v18, v34
+          v32:CInt64[0] = Const CInt64(0)
+          v33:BasicObject = ArrayAref v18, v32
           CheckInterrupts
-          Return v35
+          Return v33
         ");
     }
 
@@ -13618,12 +13616,10 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(Array@0x1008)
           PatchPoint MethodRedefined(Array@0x1008, first@0x1010, cme:0x1018)
           v23:ArrayExact = GuardType v10, ArrayExact recompile
-          v25:CInt64 = ArrayLength v23
-          v26:CInt64[0] = Const CInt64(0)
-          v27:CInt64[0] = GuardLess v26, v25
-          v28:BasicObject = ArrayAref v23, v27
+          v25:CInt64[0] = Const CInt64(0)
+          v26:BasicObject = ArrayAref v23, v25
           CheckInterrupts
-          Return v28
+          Return v26
         ");
     }
 

@@ -1110,16 +1110,11 @@ fn inline_ary_at_end(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::I
 }
 
 /// Inline `ary_first(ec, self)` from Array#first with no arguments.
-/// Guards that the array is non-empty and loads the element at index 0;
-/// side-exits on empty arrays and lets the interpreter return nil.
-fn inline_ary_first(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
-    use crate::hir::SideExitReason;
+fn inline_ary_first(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
     let &[recv] = args else { return None; };
     let recv = fun.push_insn(block, hir::Insn::RefineType { val: recv, new_type: types::Array });
-    let length = fun.push_insn(block, hir::Insn::ArrayLength { array: recv });
     let zero = fun.push_insn(block, hir::Insn::Const { val: hir::Const::CInt64(0) });
-    let index = fun.push_insn(block, hir::Insn::GuardLess { left: zero, right: length, reason: Box::new(SideExitReason::GuardLess), state });
-    let result = fun.push_insn(block, hir::Insn::ArrayAref { array: recv, index });
+    let result = fun.push_insn(block, hir::Insn::ArrayAref { array: recv, index: zero});
     Some(result)
 }
 
