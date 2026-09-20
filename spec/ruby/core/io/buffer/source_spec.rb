@@ -122,6 +122,32 @@ ruby_version_is "4.1" do
       @buffer.source.should.equal?(string)
       @buffer.free
       string.should == "test"
+    it "clears a Buffer's source when freed, without detaching its slices" do
+      buffer = IO::Buffer.for("abcdefgh")
+      slice = buffer.slice
+      buffer.free
+      buffer.source.should == nil
+      slice.source.should.equal?(buffer)
+      slice.should_not.valid?
+    end
+
+    it "moves a Buffer's source reference when its storage is transferred" do
+      buffer = IO::Buffer.for("abcdefgh")
+      source = buffer.source
+      transferred = nil
+      begin
+        transferred = buffer.transfer
+        buffer.source.should == nil
+        transferred.source.should.equal?(source)
+      ensure
+        transferred&.free
+        buffer.free
+      end
+    end
+
+    it "does not expose a source setter" do
+      buffer = IO::Buffer.new(0)
+      buffer.respond_to?(:source=).should == false
     end
   end
 end
