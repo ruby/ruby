@@ -4593,7 +4593,7 @@ rb_ary_zip(int argc, VALUE *argv, VALUE ary)
     else {
         result = rb_ary_new_capa(len);
 
-        for (i=0; i<len; i++) {
+        for (i=0; i<RARRAY_LEN(ary); i++) {
             VALUE tmp = rb_ary_new_capa(argc+1);
 
             rb_ary_push(tmp, RARRAY_AREF(ary, i));
