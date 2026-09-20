@@ -9757,10 +9757,8 @@ rb_io_set_encoding_by_bom(VALUE io)
  *
  *  ```ruby
  *  file = File.new('doc/maintainers.md') # => #<File:doc/maintainers.md>
- *  file.sync                             # => false
  *  file.close                            # Clean up.
  *  tty = File.new('/dev/tty')            # => #<File:/dev/tty>
- *  tty.sync                              # => false
  *  tty.close                             # Clean up.
  *  ```
  *
