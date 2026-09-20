@@ -8296,7 +8296,7 @@ rb_open_file(VALUE io, VALUE fname, VALUE vmode, VALUE vperm, VALUE opt)
  *    IO.open(fd, mode = 'r', **options) -> io
  *    IO.open(fd, mode = 'r', **options) {|io| ... } -> object
  *
- *  Creates a new IO object via IO.new with the given arguments.
+ *  Creates a new \IO object via IO.new with the given arguments.
  *
  *  With no block given, returns the \IO object.
  *
