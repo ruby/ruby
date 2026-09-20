@@ -2527,11 +2527,11 @@ class Pathname    # * FileTest *
   # pn = Pathname('doc/t.tmp')
   # pn.write('foo')
   # pn.owned?               # => true
-  # pn.delete
+  # pn.delete               # Clean up.
   # pn = Pathname('doc/tmp')
   # pn.mkdir
   # pn.owned?               # => true
-  # pn.rmdir
+  # pn.rmdir                # Clean up.
   # Pathname('/etc').owned? # => false
   # ```
   #

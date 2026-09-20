@@ -2381,14 +2381,27 @@ rb_file_size_p(VALUE obj, VALUE fname)
 }
 
 /*
+ * :markup: markdown
+ *
  * call-seq:
- *    File.owned?(file_name)   -> true or false
+ *   File.owned?(object) -> true or false
  *
- * Returns <code>true</code> if the named file exists and the
- * effective user id of the calling process is the owner of
- * the file.
+ * Returns whether the given `object` represents a filesystem entry or IO object
+ * that exists and is owned by the user of the current process:
  *
- * _file_name_ can be an IO object.
+ * ```ruby
+ * filepath = 'doc/t.tmp'
+ * File.write(filepath, 'foo')
+ * File.owned?(filepath) # => true
+ * File.delete(filepath) # Clean up.
+ * dirpath = 'doc/tmp'
+ * Dir.mkdir(dirpath)
+ * File.owned?(dirpath)  # => true
+ * Dir.rmdir(dirpath)    # Clean up.
+ * File.owned?($stdin)   # => true
+ * File.owned?('/etc')   # => false
+ * ```
+ *
  */
 
 static VALUE
@@ -6930,14 +6943,31 @@ rb_stat_c(VALUE obj)
 }
 
 /*
+ * :markup: markdown
+ *
  *  call-seq:
- *     stat.owned?    -> true or false
+ *    owned? -> true or false
  *
- *  Returns <code>true</code> if the effective user id of the process is
- *  the same as the owner of <i>stat</i>.
+ * Returns whether `self` represents a filesystem entry that,
+ * at the time `self` was created,
+ * existed and was owned by the user of the current process;
+ * see [Snapshot](rdoc-ref:File::Stat@Snapshot):
  *
- *     File.stat("testfile").owned?      #=> true
- *     File.stat("/etc/passwd").owned?   #=> false
+ * ```ruby
+ * filepath = 'doc/t.tmp'
+ * File.write(filepath, 'foo')
+ * filestat = File.stat(filepath)
+ * filestat.owned?          # => true
+ * File.delete(filepath)
+ * filestat.owned?          # => true  # Snapshot unchanged.
+ * dirpath = 'doc/tmp'
+ * Dir.mkdir(dirpath)
+ * dirstat = File.stat(dirpath)
+ * dirstat.owned?           # => true
+ * Dir.rmdir(dirpath)
+ * dirstat.owned?           # => true  # Snapshot unchanged.
+ * File.stat('/etc').owned? # => false
+ * ```
  *
  */
 
