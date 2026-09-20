@@ -1866,14 +1866,22 @@ rb_file_directory_p(VALUE obj, VALUE fname)
 }
 
 /*
+ * :markup: markdown
+ *
  * call-seq:
- *   File.pipe?(filepath) -> true or false
+ *   File.pipe?(path) -> true or false
  *
- * Returns +true+ if +filepath+ points to a pipe, +false+ otherwise:
+ * Returns whether the entry at the given `path` is a pipe:
  *
- *   File.mkfifo('tmp/fifo')
- *   File.pipe?('tmp/fifo') # => true
- *   File.pipe?('t.txt')    # => false
+ * ```ruby
+ * File.pipe?('doc/syntax/')        # => false  # Directory.
+ * File.pipe?('doc/maintainers.md') # => false  # Regular file.
+ * File.pipe?('nosuch')             # => false  # Non-existent.
+ * path = '/tmp/foo'
+ * File.mkfifo(path)
+ * File.pipe?(path)                 # => true
+ * File.delete(path)                # Clean up.
+ * ```
  *
  */
 
@@ -6830,11 +6838,22 @@ rb_stat_d(VALUE obj)
 }
 
 /*
- *  call-seq:
- *     stat.pipe?    -> true or false
+ * :markup: markdown
  *
- *  Returns <code>true</code> if the operating system supports pipes and
- *  <i>stat</i> is a pipe; <code>false</code> otherwise.
+ *  call-seq:
+ *    stat.pipe? -> true or false
+ *
+ * Returns whether the entry at the path in `self` is a pipe:
+ *
+ * ```ruby
+ * File.stat('doc/syntax/').pipe?        # => false  # Directory .
+ * File.stat('doc/maintainers.md').pipe? # => false  # Regular file.
+ * path = '/tmp/foo'
+ * File.mkfifo(path)
+ * File.stat(path).pipe?                 # => true
+ * File.delete(path)                     # Clean up.
+ * ```
+ *
  */
 
 static VALUE
