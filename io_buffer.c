@@ -2575,10 +2575,6 @@ io_buffer_get_string(int argc, VALUE *argv, VALUE self)
     size_t offset, length;
     struct rb_io_buffer *buffer = io_buffer_extract_offset_length(self, argc, argv, &offset, &length);
 
-    const void *base;
-    size_t size;
-    io_buffer_get_bytes_for_reading(buffer, &base, &size);
-
     rb_encoding *encoding;
     if (argc >= 3) {
         encoding = rb_find_encoding(argv[2]);
@@ -2586,6 +2582,10 @@ io_buffer_get_string(int argc, VALUE *argv, VALUE self)
     else {
         encoding = rb_ascii8bit_encoding();
     }
+
+    const void *base;
+    size_t size;
+    io_buffer_get_bytes_for_reading(buffer, &base, &size);
 
     io_buffer_validate_range(buffer, offset, length);
 

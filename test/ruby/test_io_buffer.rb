@@ -314,6 +314,15 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_raise_with_message(ArgumentError, /Offset can't be negative/) do
       buffer.get_string(-1)
     end
+
+    # [Bug #22336]
+    encoding = Struct.new(:buffer) do
+      def to_str
+        buffer.resize(64 * 1024 * 1024)
+        "UTF-8"
+      end
+    end.new(IO::Buffer.new(2_000_000))
+    assert_equal 1_000_000, encoding.buffer.get_string(0, 1_000_000, encoding).length
   end
 
   def test_zero_length_get_string
