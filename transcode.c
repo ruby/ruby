@@ -1037,6 +1037,8 @@ rb_econv_open0(const char *sname, const char *dname, int ecflags)
             xfree(entries);
             return NULL;
         }
+        sname = entries[0]->sname;
+        dname = entries[num_trans-1]->dname;
     }
 
     ec = rb_econv_open_by_transcoder_entries(num_trans, entries);
