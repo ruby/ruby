@@ -2479,14 +2479,14 @@ class Pathname    # * FileTest *
   # call-seq:
   #   pipe? -> true or false
   #
-  # Returns whether entry at the path in `self` is a pipe:
+  # Returns whether the entry at the path in `self` is a pipe:
   #
   # ```ruby
+  # Pathname('.').pipe? # => false
   # path = '/tmp/foo'
   # File.mkfifo(path)
   # pn = Pathname(path) # => #<Pathname:/tmp/foo>
   # pn.pipe?            # => true
-  # Pathname('.').pipe? # => false
   # pn.delete           # Clean up.
   # ```
   #
