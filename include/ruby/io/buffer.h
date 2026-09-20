@@ -124,8 +124,8 @@ VALUE rb_io_buffer_locked_for_writing(VALUE self, VALUE (*callback)(void *base, 
 
 VALUE rb_io_buffer_transfer(VALUE self);
 
-// Resize an allocation, or an IO::Buffer-backed slice's view within its root's
-// bounds. Locked allocations cannot be resized, but their slices can be.
+// Resize an allocation, or an IO::Buffer-backed slice's view within its direct
+// source's bounds. Locked allocations cannot be resized, but their slices can be.
 // String-backed buffers cannot be resized directly; create a slice instead.
 void rb_io_buffer_resize(VALUE self, size_t size);
 

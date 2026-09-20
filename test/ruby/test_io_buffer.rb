@@ -538,6 +538,59 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_predicate slice, :valid?
   end
 
+  def test_resize_empty_slice_of_null_source
+    buffer = IO::Buffer.new(0)
+    slice = buffer.slice(0, 0)
+
+    slice.locked do
+      assert_same slice, slice.resize(0)
+      assert_predicate slice, :valid?
+      assert_predicate slice, :null?
+      assert_predicate slice, :empty?
+      assert_predicate buffer, :locked?
+      assert_equal "", slice.get_string
+      assert_raise(ArgumentError) {slice.resize(1)}
+      assert_equal 0, slice.size
+      assert_raise(IO::Buffer::LockedError) {buffer.resize(1)}
+    end
+    refute_predicate buffer, :locked?
+    assert_predicate buffer, :null?
+  ensure
+    buffer&.free
+  end
+
+  def test_resize_slice_after_source_is_freed
+    buffer = IO::Buffer.new(8)
+    slice = buffer.slice(0, 4)
+    buffer.free
+
+    refute_predicate slice, :valid?
+    assert_same slice, slice.resize(0)
+    assert_predicate slice, :valid?
+    assert_predicate slice, :null?
+    assert_predicate slice, :empty?
+    assert_equal "", slice.get_string
+    assert_predicate buffer, :null?
+  ensure
+    buffer&.free
+  end
+
+  def test_resize_slice_with_offset_beyond_null_source
+    buffer = IO::Buffer.new(8)
+    slice = buffer.slice(2, 4)
+    buffer.free
+
+    assert_raise(IO::Buffer::InvalidatedError) {slice.resize(0)}
+    assert_equal 4, slice.size
+    refute_predicate slice, :valid?
+
+    buffer.resize(8)
+    buffer.set_string("abcdefgh")
+    assert_equal "cdef", slice.get_string
+  ensure
+    buffer&.free
+  end
+
   def test_resize_slice_changes_view
     buffer = IO::Buffer.for("abcdef").dup
     slice = buffer.slice(2, 2)
@@ -579,13 +632,20 @@ class TestIOBuffer < Test::Unit::TestCase
     end
   end
 
-  def test_resize_nested_slice_uses_root_bounds
+  def test_resize_nested_slice_uses_parent_bounds
     buffer = IO::Buffer.for("abcdef").dup
     parent = buffer.slice(1, 2)
     slice = parent.slice(1, 1)
 
+    assert_same parent, slice.source
+    assert_raise(ArgumentError) {slice.resize(4)}
+    assert_equal "c", slice.get_string
+
+    parent.resize(5)
     slice.resize(4)
     assert_equal "cdef", slice.get_string
+  ensure
+    buffer&.free
   end
 
   def test_resize_zero_external
@@ -596,14 +656,16 @@ class TestIOBuffer < Test::Unit::TestCase
     end
   end
 
-  def test_resize_invalidated_slice
+  def test_resize_slice_beyond_freed_source
     inner = IO::Buffer.new(IO::Buffer::PAGE_SIZE)
     slice = inner.slice(0, 8)
     inner.free
 
-    assert_raise(IO::Buffer::InvalidatedError) do
+    assert_raise(ArgumentError) do
       slice.resize(16)
     end
+    assert_equal 8, slice.size
+    refute_predicate slice, :valid?
   end
 
   def test_resize_after_free
@@ -775,6 +837,7 @@ class TestIOBuffer < Test::Unit::TestCase
       refute_predicate buffer, :internal?
       refute_predicate buffer, :mapped?
       refute_predicate buffer, :external?
+      assert_nil buffer.source
 
       assert_same buffer, buffer.advance(2)
       assert_equal "cdef", buffer.get_string
@@ -853,6 +916,102 @@ class TestIOBuffer < Test::Unit::TestCase
         buffer.free
       end
     end
+  end
+
+  def test_nested_slice_follows_parent_view
+    buffer = IO::Buffer.new(8)
+    buffer.set_string("abcdefgh")
+    parent = buffer.slice(1, 6)
+    child = parent.slice(1, 2)
+    assert_same buffer, parent.source
+    assert_same parent, child.source
+    assert_equal "cd", child.get_string
+
+    parent.advance(1)
+    assert_equal "de", child.get_string
+    child.set_string("XY")
+    assert_equal "abcXYfgh", buffer.get_string
+
+    parent.resize(2)
+    refute_predicate child, :valid?
+    assert_raise(IO::Buffer::InvalidatedError) {child.get_string}
+    parent.resize(3)
+    assert_predicate child, :valid?
+    assert_equal "XY", child.get_string
+
+    parent.free
+    refute_predicate child, :valid?
+    assert_same parent, child.source
+    assert_predicate buffer, :valid?
+    parent.resize(4)
+    parent.set_string("1234")
+    assert_equal "23", child.get_string
+    assert_equal "abcXYfgh", buffer.get_string
+  ensure
+    parent&.free
+    buffer&.free
+  end
+
+  def test_nested_slice_requires_valid_parent
+    buffer = IO::Buffer.new(8)
+    parent = buffer.slice(2, 6)
+    child = parent.slice(0, 1)
+    buffer.resize(4)
+    # The child's final range would fit the allocation, but its parent does not.
+    refute_predicate parent, :valid?
+    refute_predicate child, :valid?
+    assert_raise(IO::Buffer::InvalidatedError) {child.resize(0)}
+    parent.resize(2)
+    assert_predicate child, :valid?
+  ensure
+    buffer&.free
+  end
+
+  def test_deep_slice_chain_shares_allocation_lock
+    buffer = IO::Buffer.new(4)
+    buffer.set_string("test")
+    child = buffer
+    2048.times {child = child.slice}
+    GC.start
+    assert_equal "test", child.get_string
+    refute_predicate child, :readonly?
+    assert_equal false, Bug::IOBuffer.readonly?(child)
+    assert_equal 0, Bug::IOBuffer.get_bytes_flags(child) & IO::Buffer::READONLY
+
+    MemoryViewTestUtils.get(child, MemoryViewTestUtils::SIMPLE) do
+      assert_predicate buffer, :locked?
+      assert_predicate child.source, :locked?
+      assert_raise(IO::Buffer::LockedError) {buffer.resize(8)}
+      assert_raise(IO::Buffer::LockedError) {buffer.free}
+      assert_raise(IO::Buffer::LockedError) {child.source.free}
+      assert_raise(IO::Buffer::LockedError) {child.source.transfer}
+      child.advance(1)
+      assert_equal "est", child.get_string
+    end
+    refute_predicate buffer, :locked?
+    refute_predicate child.source, :locked?
+    buffer.free
+    refute_predicate child, :valid?
+  ensure
+    buffer&.free
+  end
+
+  def test_nested_slice_respects_frozen_parent
+    buffer = IO::Buffer.new(8)
+    buffer.set_string("abcdefgh")
+    parent = buffer.slice(1, 6)
+    child = parent.slice(1, 2)
+    parent.freeze
+
+    refute_predicate buffer, :readonly?
+    assert_predicate child, :readonly?
+    assert_equal true, Bug::IOBuffer.readonly?(child)
+    assert_raise(IO::Buffer::AccessError) {child.set_string("XX")}
+    assert_nil MemoryViewTestUtils.set_data(child, 0, 42)
+    child.advance(1)
+    assert_equal "d", child.get_string
+  ensure
+    buffer&.free
   end
 
   def test_slice_arguments

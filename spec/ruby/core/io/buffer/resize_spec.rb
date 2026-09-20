@@ -190,6 +190,53 @@ describe "IO::Buffer#resize" do
         slice.get_string.should == "cdef"
       end
 
+      it "allows an empty slice of a null source to resize to zero while locked" do
+        @buffer = IO::Buffer.new(0)
+        slice = @buffer.slice(0, 0)
+
+        slice.locked do
+          slice.resize(0).should.equal?(slice)
+          slice.should.valid?
+          slice.should.null?
+          slice.should.empty?
+          slice.get_string.should == ""
+          @buffer.should.locked?
+          -> { slice.resize(1) }.should.raise(ArgumentError)
+          slice.size.should == 0
+        end
+        @buffer.should_not.locked?
+        @buffer.should.null?
+      end
+
+      it "restores validity by resizing an offset-zero slice to zero after its root is freed" do
+        @buffer = IO::Buffer.new(8)
+        slice = @buffer.slice(0, 4)
+        @buffer.free
+
+        slice.should_not.valid?
+        -> { slice.resize(1) }.should.raise(ArgumentError)
+        slice.size.should == 4
+        slice.resize(0).should.equal?(slice)
+        slice.should.valid?
+        slice.should.null?
+        slice.get_string.should == ""
+        @buffer.should.null?
+      end
+
+      it "rejects resizing a slice whose offset is beyond a null source" do
+        @buffer = IO::Buffer.new(8)
+        slice = @buffer.slice(2, 4)
+        @buffer.free
+
+        -> { slice.resize(0) }.should.raise(IO::Buffer::InvalidatedError)
+        slice.size.should == 4
+        slice.should_not.valid?
+
+        @buffer.resize(8)
+        @buffer.set_string("abcdefgh")
+        slice.get_string.should == "cdef"
+      end
+
       it "raises ArgumentError when the resized view exceeds the source" do
         @buffer = IO::Buffer.for("abcdef").dup
         slice = @buffer.slice(2, 2)
@@ -221,11 +268,16 @@ describe "IO::Buffer#resize" do
         slice.get_string.should == "cdef"
       end
 
-      it "uses the retained root buffer as the boundary for nested slices" do
+      it "uses the immediate parent's view as the boundary for nested slices" do
         @buffer = IO::Buffer.for("abcdef").dup
         parent = @buffer.slice(1, 2)
         slice = parent.slice(1, 1)
 
+        slice.source.should.equal?(parent)
+        -> { slice.resize(4) }.should.raise(ArgumentError)
+        slice.get_string.should == "c"
+
+        parent.resize(5)
         slice.resize(4)
         slice.get_string.should == "cdef"
       end

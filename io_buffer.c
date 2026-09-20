@@ -384,14 +384,13 @@ io_buffer_slice_offset(const struct rb_io_buffer *buffer)
     return (uintptr_t)buffer->base;
 }
 
-// Return the buffer which owns the lock count. A slice backed by another
-// buffer shares that source buffer's lock count. Other external sources, such
-// as strings, manage their own lifetime and do not share buffer lock state.
+// Follow the source chain to the buffer which owns the allocation lock count.
+// String-backed buffers manage their own lock count and pin their String source.
 static struct rb_io_buffer *
 io_buffer_lock_owner(struct rb_io_buffer *buffer)
 {
-    if (io_buffer_slice_p(buffer)) {
-        return get_io_buffer(buffer->source);
+    while (io_buffer_slice_p(buffer)) {
+        buffer = get_io_buffer(buffer->source);
     }
 
     return buffer;
@@ -786,8 +785,9 @@ rb_io_buffer_type_for(VALUE klass, VALUE string)
         return rb_ensure(io_buffer_for_yield_instance, (VALUE)&arguments, io_buffer_for_yield_instance_ensure, (VALUE)&arguments);
     }
     else {
-        // This internally returns the source string if it's already frozen.
-        string = rb_str_tmp_frozen_acquire(string);
+        // The backing String is exposed by #source, so it must be a normal
+        // Ruby object rather than a hidden temporary frozen String.
+        string = rb_str_new_frozen(string);
         return io_buffer_for_make_instance(klass, string, RB_IO_BUFFER_READONLY);
     }
 }
@@ -1119,39 +1119,43 @@ rb_io_buffer_initialize(int argc, VALUE *argv, VALUE self)
 static int
 io_buffer_try_get_bytes(const struct rb_io_buffer *buffer, void **base, size_t *size)
 {
-    if (buffer->source == Qnil) {
-        *base = buffer->base;
-        *size = buffer->size;
-        return 1;
-    }
+    size_t length = buffer->size;
+    size_t offset = 0;
+    void *source_base;
 
-    // Source-backed buffer: `base` is an offset into the source.
-    void *source_base = NULL;
-    size_t source_size = 0;
+    // Validate each complete parent view, not just the child's final range.
+    // Iteration avoids growing the C stack for deeply nested slices.
+    while (buffer->source != Qnil) {
+        const struct rb_io_buffer *source_buffer = NULL;
+        size_t source_size;
 
-    if (io_buffer_slice_p(buffer)) {
-        // Slice of another IO::Buffer: resolve the (root) source recursively.
-        if (!io_buffer_try_get_bytes(get_io_buffer(buffer->source), &source_base, &source_size)) {
+        if (io_buffer_slice_p(buffer)) {
+            source_buffer = get_io_buffer(buffer->source);
+            source_size = source_buffer->size;
+        }
+        else {
+            RSTRING_GETMEM(buffer->source, source_base, source_size);
+        }
+
+        size_t relative_offset = io_buffer_slice_offset(buffer);
+        if (relative_offset > source_size || buffer->size > source_size - relative_offset) {
             *base = NULL;
             *size = 0;
             return 0;
         }
-    }
-    else {
-        // String-backed buffer: the (pinned) String content is the source.
-        RSTRING_GETMEM(buffer->source, source_base, source_size);
+
+        // Previous bounds checks ensure offset <= buffer->size, so adding
+        // relative_offset cannot overflow or exceed source_size.
+        offset += relative_offset;
+        if (!source_buffer) goto resolved;
+        buffer = source_buffer;
     }
 
-    size_t offset = io_buffer_slice_offset(buffer);
-    if (offset <= source_size && buffer->size <= source_size - offset) {
-        *base = source_base ? (char *)source_base + offset : NULL;
-        *size = buffer->size;
-        return 1;
-    }
-
-    *base = NULL;
-    *size = 0;
-    return 0;
+    source_base = buffer->base;
+resolved:
+    *base = source_base ? (char *)source_base + offset : NULL;
+    *size = length;
+    return 1;
 }
 
 static int
@@ -1441,15 +1445,15 @@ rb_io_buffer_size(VALUE self)
  *  A buffer which is not a slice is always valid, including a null buffer.
  *  Only slices can become invalid.
  *
- *  A slice is valid when its offset and length fit within its root source's
- *  current size. Relocating the source's storage does not invalidate a slice.
- *  Freeing, transferring, or shrinking the source can make the range invalid.
- *  If the same source buffer later grows or allocates storage covering that
- *  range, the slice becomes valid again and refers to the current contents at
- *  its original offset, not to the previous allocation's contents.
+ *  A slice is valid when its source is valid and its offset and length fit
+ *  within that source's current view. Every parent in a slice chain must be
+ *  valid. Relocating the backing allocation alone does not invalidate slices.
+ *  Advancing, freeing, transferring, or shrinking a source can make a child
+ *  invalid. If the source later becomes valid and covers the child's range,
+ *  the child becomes valid again at its original source-relative offset.
  *
- *  An empty slice at offset zero remains valid even when its source has no
- *  storage. #valid?, #null? and #empty? describe distinct properties: an empty
+ *  An empty slice at offset zero remains valid when its source is valid but
+ *  has no storage. #valid?, #null? and #empty? describe distinct properties: an empty
  *  slice can be valid and null, while an invalid slice can have non-zero size.
  */
 static VALUE
@@ -1660,20 +1664,22 @@ rb_io_buffer_private_p(VALUE self)
 static int
 io_buffer_readonly_p(const struct rb_io_buffer *buffer)
 {
-    if (buffer->flags & RB_IO_BUFFER_READONLY)
-        return 1;
+    for (;;) {
+        if (buffer->flags & RB_IO_BUFFER_READONLY)
+            return 1;
 
-    VALUE source = buffer->source;
-    if (NIL_P(source))
-        return 0;
+        VALUE source = buffer->source;
+        if (NIL_P(source))
+            return 0;
 
-    if (OBJ_FROZEN(source))
-        return 1;
+        if (OBJ_FROZEN(source))
+            return 1;
 
-    if (RB_TYPE_P(source, T_STRING))
-        return 0;
+        if (RB_TYPE_P(source, T_STRING))
+            return 0;
 
-    return rb_io_buffer_readonly_p(source);
+        buffer = get_io_buffer(source);
+    }
 }
 
 int
@@ -2033,17 +2039,38 @@ rb_io_buffer_slice(struct rb_io_buffer *buffer, VALUE self, size_t offset, size_
     // Permissions are derived from the retained source, not copied.
     slice->size = length;
 
-    // Flatten nested slices: retain the root and combine the offsets.
-    if (io_buffer_slice_p(buffer)) {
-        slice->base = (void *)(uintptr_t)(io_buffer_slice_offset(buffer) + offset);
-        RB_OBJ_WRITE(instance, &slice->source, buffer->source);
-    }
-    else {
-        slice->base = (void *)(uintptr_t)offset;
-        RB_OBJ_WRITE(instance, &slice->source, self);
-    }
+    slice->base = (void *)(uintptr_t)offset;
+    RB_OBJ_WRITE(instance, &slice->source, self);
 
     return instance;
+}
+
+/*
+ *  call-seq: source -> io_buffer, string, or nil
+ *
+ *  Returns the object backing this view, or +nil+ for a source-less buffer.
+ *  A slice's source is the buffer on which #slice was called, including when
+ *  that buffer is itself a slice. The source is retained while the view lives.
+ *
+ *    root = IO::Buffer.new(8)
+ *    parent = root.slice(1, 6)
+ *    child = parent.slice(1, 2)
+ *    child.source.equal?(parent) # => true
+ *    parent.source.equal?(root)  # => true
+ *    root.source                 # => nil
+ *
+ *  For a String-backed buffer the source is its backing String. Without a
+ *  block, IO::Buffer.for may use a frozen internal copy rather than the
+ *  original String. A source-less buffer may own or borrow its memory;
+ *  a +nil+ source does not imply allocation ownership.
+ *
+ *  An invalid slice still retains and returns its source. Calling #free or
+ *  #transfer on the receiver clears its source. There is no source setter.
+ */
+static VALUE
+io_buffer_source(VALUE self)
+{
+    return get_io_buffer(self)->source;
 }
 
 /*
@@ -2052,15 +2079,15 @@ rb_io_buffer_slice(struct rb_io_buffer *buffer, VALUE self, size_t offset, size_
  *  Produce another IO::Buffer which is a slice (or view into) the current one
  *  starting at +offset+ bytes and going for +length+ bytes.
  *
- *  Slicing does not copy memory. The slice retains its root buffer and tracks
- *  a logical offset and length within it, even if resizing moves the root's
- *  storage. A nested slice also refers directly to that root.
+ *  Slicing does not copy memory. The slice retains +self+ as its #source and
+ *  tracks a logical offset and length within that source's current view.
+ *  Nested slices retain their immediate parent rather than being flattened.
  *
- *  Validity is determined by whether the slice's range fits within the root's
- *  current size. A slice can become invalid after the root is freed,
- *  transferred, or shrunk, and valid again when that same root is resized or
- *  reallocated to cover the range. It then refers to the root's current bytes
- *  at the original offset. See #valid? for empty-range behavior.
+ *  Advancing the parent moves the child's origin. Resizing or freeing the
+ *  parent can invalidate the child even if the underlying allocation still
+ *  exists. The child becomes valid again when its source is valid and its
+ *  range fits within that source. Moving the underlying allocation alone
+ *  does not invalidate a slice. See #valid? for empty-range behavior.
  *
  *  If the offset is not given, it will be zero. If the offset is negative, it
  *  will raise an ArgumentError.
@@ -2202,7 +2229,7 @@ io_buffer_resize_slice(struct rb_io_buffer *slice, size_t size)
     void *source_base = NULL;
     size_t source_size = 0;
 
-    if (!io_buffer_try_get_bytes(source, &source_base, &source_size) || source_base == NULL) {
+    if (!io_buffer_try_get_bytes(source, &source_base, &source_size)) {
         rb_raise(rb_eIOBufferInvalidatedError, "Buffer is invalid!");
     }
 
@@ -2375,8 +2402,10 @@ rb_io_buffer_advance(VALUE self, size_t amount)
  *  the view subsequently advances. Coordinate access to a shared view.
  *
  *  Advancing by the entire size leaves an empty view at its previous end.
- *  An IO::Buffer-backed slice can subsequently be resized within its root's
- *  bounds; resizing does not move its start back.
+ *  An IO::Buffer-backed slice can subsequently be resized within its direct
+ *  source's bounds; resizing does not move its start back. Existing child
+ *  slices follow the advanced view and can become invalid if they no longer
+ *  fit within it.
  *
  *  Raises IO::Buffer::AccessError if the buffer owns its allocation. Create a
  *  slice first to consume a view of an owning buffer.
@@ -4688,6 +4717,7 @@ Init_IO_Buffer(void)
     rb_define_method(rb_cIOBuffer, "locked", rb_io_buffer_locked, 0);
 
     // Manipulation:
+    rb_define_method(rb_cIOBuffer, "source", io_buffer_source, 0);
     rb_define_method(rb_cIOBuffer, "slice", io_buffer_slice, -1);
     rb_define_method(rb_cIOBuffer, "<=>", rb_io_buffer_compare, 1);
     rb_define_method(rb_cIOBuffer, "resize", io_buffer_resize, 1);
