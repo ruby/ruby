@@ -2133,6 +2133,29 @@ io_buffer_slice_initialize(int argc, VALUE *argv, VALUE self)
     return self;
 }
 
+/*
+ *  call-seq:
+ *    dup -> slice
+ *    clone -> slice
+ *
+ *  Copies the view, retaining the same source, offset, and size without
+ *  copying the underlying bytes. Advancing or resizing the copy does not
+ *  change the original view; writes through either view affect shared storage.
+ *
+ *    buffer = IO::Buffer.new(6)
+ *    buffer.set_string("abcdef")
+ *    slice = buffer.slice(1, 3)
+ *    copy = slice.dup
+ *    copy.source.equal?(slice.source) # => true
+ *    copy.advance(1)
+ *    copy.get_string                 # => "cd"
+ *    slice.get_string                # => "bcd"
+ *    copy.set_string("XY")
+ *    buffer.get_string               # => "abXYef"
+ *
+ *  This differs from IO::Buffer#dup, which copies the bytes into independent
+ *  storage. The usual Object#dup and Object#clone frozen-state rules apply.
+ */
 static VALUE
 io_buffer_slice_initialize_copy(VALUE self, VALUE other)
 {
@@ -4738,6 +4761,43 @@ Init_IO_Buffer(void)
     rb_cIOBuffer = rb_define_class_under(rb_cIO, "Buffer", rb_cIOBufferView);
     rb_const_set(rb_cIOBuffer, rb_intern("View"), rb_cIOBufferView);
     rb_funcall(rb_cIOBuffer, rb_intern("private_constant"), 1, ID2SYM(rb_intern("View")));
+    /*
+     * Document-class: IO::Buffer::Slice
+     *
+     * A zero-copy, parent-relative view of an IO::Buffer or another Slice.
+     * Create a view with IO::Buffer#slice or IO::Buffer::Slice.new:
+     *
+     *   buffer = IO::Buffer.new(6)
+     *   buffer.set_string("abcdef")
+     *   parent = buffer.slice(1, 4)
+     *   child = parent.slice(1, 2)
+     *   child.source.equal?(parent) # => true
+     *   child.get_string            # => "cd"
+     *   parent.advance(1)
+     *   child.get_string            # => "de"
+     *
+     * A slice retains its immediate source and follows that source's current
+     * view. Its range is valid only while every parent is valid and the range
+     * fits within its source. Moving the backing allocation does not itself
+     * invalidate a slice. Shrinking a parent can invalidate descendants;
+     * growing it again can restore their validity.
+     *
+     * Slice shares Buffer's byte-access interface but does not manage storage.
+     * Resizing a slice only changes its extent within its parent's bounds, and
+     * advancing it consumes bytes from the front of its view. Neither operation
+     * allocates or releases storage. Slice has no +free+ or +transfer+ method,
+     * nor Buffer's storage-specific predicates such as +mapped?+ or +internal?+.
+     *
+     * Writes modify the source's bytes and respect its current permissions.
+     * Locking a slice protects the backing allocation; +locked?+ reports that
+     * shared lock state. Locked or read-only views may still be resized or
+     * advanced, but frozen views cannot change their range. Locking does not
+     * serialize access to bytes or view metadata.
+     *
+     * Duplicating or cloning a Slice copies its view rather than its bytes.
+     * A Slice is not an instance of IO::Buffer; both provide the shared
+     * byte-access interface through a private implementation superclass.
+     */
     rb_cIOBufferSlice = rb_define_class_under(rb_cIOBuffer, "Slice", rb_cIOBufferView);
     rb_define_alloc_func(rb_cIOBufferSlice, io_buffer_slice_allocate);
     rb_define_method(rb_cIOBufferSlice, "initialize", io_buffer_slice_initialize, -1);
