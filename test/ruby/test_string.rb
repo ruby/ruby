@@ -3013,6 +3013,18 @@ CODE
     assert_equal(expected, actual)
   end
 
+  def test_tr_hash_modify
+    replacements = {}
+    obj = Object.new
+    obj.define_singleton_method(:to_str) do
+      replacements.clear
+      "a"
+    end
+    replacements[obj] = "x"
+    ("b".."z").each { |c| replacements[c] = (c.ord + 1).chr }
+    assert_equal(S("xb"), S("ab").tr(replacements))
+  end
+
   def test_tr!
     a = S("hello")
     b = a.dup

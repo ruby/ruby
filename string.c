@@ -9794,6 +9794,11 @@ tr_trans_pairs(VALUE str, VALUE pairs_val)
     rb_hash_foreach(pairs_val, tr_trans_pairs_coerce_i, (VALUE)&coerce_args);
     rb_encoding *e1 = coerce_args.enc;
 
+    /* Keys could be deleted from pairs_val during rb_hash_foreach when coercing
+     * the keys/values, so we need to update pairs_count to the number of pairs we
+     * were actually able to extract from pairs_val. */
+    pairs_count = coerce_args.index;
+
     VALUE hash = 0;
 
     const unsigned char *sstart = (unsigned char *)RSTRING_PTR(str);
