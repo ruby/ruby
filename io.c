@@ -3055,16 +3055,27 @@ rb_io_pid(VALUE io)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
  *    path -> string or nil
  *
- *  Returns the path associated with the IO, or +nil+ if there is no path
- *  associated with the IO. It is not guaranteed that the path exists on
- *  the filesystem.
+ *  Returns the string path associated with `self`,
+ *  or `nil` if there is no associated path:
  *
- *    $stdin.path # => "<STDIN>"
+ *  ```ruby
+ *  fd = File.new('doc/maintainers.md').fileno # => 7
+ *  io = IO.new(fd)                            # => #<IO:fd 7>
+ *  io.path                                    # => nil
+
+ *  fd = $stdin.fileno # => 0
+ *  io = IO.new(fd)    # => #<IO:fd 0>
+ *  io.path            # => nil
+ *  ```
  *
- *    File.open("testfile") {|f| f.path} # => "testfile"
+ *  No method in the Ruby core calls method IO.path.
+ *  \Class File is the only Ruby core class that is a subclass of \IO;
+ *  it overrides method IO.path with its own method File.path.
  */
 
 VALUE
