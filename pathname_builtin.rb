@@ -1776,11 +1776,11 @@ class Pathname    # * File *
   # at the path stored in `self`:
   #
   # ```ruby
-  # file_pn = Pathname('README.md')
-  # link_pn = Pathname('foo')
+  # file_pn = Pathname('doc/maintainers.md')
+  # link_pn = Pathname('/tmp/link')
   # link_pn.make_symlink(file_pn)
-  # link_pn.readlink # => #<Pathname:README.md>
-  # link_pn.unlink   # Clean up.
+  # link_pn.readlink # => #<Pathname:doc/maintainers.md>
+  # link_pn.delete   # Clean up.
   # ```
   #
   # Raises Errno::EINVAL if the path in `self` is not the path to a symbolic link.

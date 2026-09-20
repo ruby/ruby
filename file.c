@@ -3851,11 +3851,11 @@ rb_file_s_symlink(VALUE klass, VALUE from, VALUE to)
  *  by the [symbolic link](rdoc-ref:file/symbolic_links.md) at `link_path`:
  *
  *  ```ruby
- *  filepath = 'README.md'
- *  linkpath = 'foo'
+ *  filepath = 'doc/maintainers.md'
+ *  linkpath = '/tmp/link'
  *  File.symlink(filepath, linkpath)
- *  File.readlink(linkpath) # => "README.md"
- *  File.unlink(linkpath)   # Clean up.
+ *  File.readlink(linkpath) # => "doc/maintainers.md"
+ *  File.delete(linkpath)   # Clean up.
  *  ```
  *
  *  Raises Errno::EINVAL if the entry referenced by `link_path`
