@@ -62,26 +62,23 @@ ruby_version_is "4.1" do
       end
     end
 
-    it "clears the receiver's source when freed" do
-      buffer = IO::Buffer.new(8)
-      begin
-        slice = buffer.slice
-        slice.free
-        slice.source.should == nil
-        buffer.size.should == 8
-      ensure
-        buffer.free
-      end
+    it "clears a Buffer's source when freed, without detaching its slices" do
+      buffer = IO::Buffer.for("abcdefgh")
+      slice = buffer.slice
+      buffer.free
+      buffer.source.should == nil
+      slice.source.should.equal?(buffer)
+      slice.should_not.valid?
     end
 
-    it "moves the source reference to the transferred view" do
-      buffer = IO::Buffer.new(8)
+    it "moves a Buffer's source reference when its storage is transferred" do
+      buffer = IO::Buffer.for("abcdefgh")
+      source = buffer.source
       transferred = nil
       begin
-        slice = buffer.slice
-        transferred = slice.transfer
-        slice.source.should == nil
-        transferred.source.should.equal?(buffer)
+        transferred = buffer.transfer
+        buffer.source.should == nil
+        transferred.source.should.equal?(source)
       ensure
         transferred&.free
         buffer.free

@@ -24,6 +24,8 @@
 #include "internal/io_buffer.h"
 
 VALUE rb_cIOBuffer;
+VALUE rb_cIOBufferSlice;
+static VALUE rb_cIOBufferView;
 VALUE rb_eIOBufferLockedError;
 VALUE rb_eIOBufferAllocationError;
 VALUE rb_eIOBufferAccessError;
@@ -53,10 +55,13 @@ enum {
     RB_IO_BUFFER_ALLOCATION_FLAGS = RB_IO_BUFFER_INTERNAL | RB_IO_BUFFER_MAPPED,
     RB_IO_BUFFER_MAPPING_FLAGS = RB_IO_BUFFER_SHARED | RB_IO_BUFFER_PRIVATE,
 
+    // Private representation tag, never accepted or returned as a public flag.
+    IO_BUFFER_SLICE = 1 << 9,
+
     RB_IO_BUFFER_DEBUG = 0,
 };
 
-struct rb_io_buffer {
+struct rb_io_buffer_view {
     // Without a source (source == Qnil), this is an absolute pointer to owned
     // or borrowed memory. Allocation ownership is determined by the flags,
     // not by the presence of a source (see io_buffer_owning_p).
@@ -69,15 +74,35 @@ struct rb_io_buffer {
     size_t size;
 
     enum rb_io_buffer_flags flags;
-    // Locking and unlocking are performed with the GVL held.
-    size_t lock_count;
-
-#if defined(_WIN32)
-    HANDLE mapping;
-#endif
-
     VALUE source;
 };
+
+struct rb_io_buffer {
+    struct rb_io_buffer_view view;
+    // Only Buffer objects carry allocation-lifetime state, even for borrowed
+    // storage. Slice objects contain only the common view header above.
+    size_t lock_count;
+#ifdef _WIN32
+    HANDLE mapping;
+#endif
+};
+
+static bool
+io_buffer_slice_p(const struct rb_io_buffer_view *buffer)
+{
+    return (buffer->flags & IO_BUFFER_SLICE) != 0;
+}
+
+// Checked downcast of this view; unlike io_buffer_lock_owner, it does not
+// traverse sources. Only Buffer objects contain the storage-management tail.
+static struct rb_io_buffer *
+io_buffer_from_view(struct rb_io_buffer_view *view)
+{
+    if (io_buffer_slice_p(view)) {
+        rb_raise(rb_eIOBufferAccessError, "Slice does not manage an allocation!");
+    }
+    return (struct rb_io_buffer *)view;
+}
 
 static inline void *
 io_buffer_map_memory(size_t size, int flags)
@@ -110,7 +135,7 @@ io_buffer_map_memory(size_t size, int flags)
 }
 
 static void
-io_buffer_map_file(struct rb_io_buffer *buffer, int descriptor, size_t size, rb_off_t offset, enum rb_io_buffer_flags flags)
+io_buffer_map_file(struct rb_io_buffer_view *buffer, int descriptor, size_t size, rb_off_t offset, enum rb_io_buffer_flags flags)
 {
 #if defined(_WIN32)
     HANDLE file = (HANDLE)_get_osfhandle(descriptor);
@@ -148,7 +173,7 @@ io_buffer_map_file(struct rb_io_buffer *buffer, int descriptor, size_t size, rb_
         rb_sys_fail("io_buffer_map_file:MapViewOfFile");
     }
 
-    buffer->mapping = mapping;
+    io_buffer_from_view(buffer)->mapping = mapping;
 #else
     int protect = PROT_READ, access = 0;
 
@@ -201,21 +226,23 @@ io_buffer_experimental(void)
 }
 
 static void
-io_buffer_zero(struct rb_io_buffer *buffer)
+io_buffer_zero(struct rb_io_buffer_view *buffer)
 {
+    struct rb_io_buffer *allocation = io_buffer_from_view(buffer);
     buffer->base = NULL;
     buffer->size = 0;
     buffer->flags = 0;
-    buffer->lock_count = 0;
-#if defined(_WIN32)
-    buffer->mapping = NULL;
-#endif
     buffer->source = Qnil;
+    allocation->lock_count = 0;
+#if defined(_WIN32)
+    allocation->mapping = NULL;
+#endif
 }
 
 static void
-io_buffer_initialize(VALUE self, struct rb_io_buffer *buffer, void *base, size_t size, enum rb_io_buffer_flags flags, VALUE source)
+io_buffer_initialize(VALUE self, struct rb_io_buffer_view *buffer, void *base, size_t size, enum rb_io_buffer_flags flags, VALUE source)
 {
+    struct rb_io_buffer *allocation = io_buffer_from_view(buffer);
     if (source != Qnil) {
         // `base` is an offset into borrowed storage; do not allocate.
     }
@@ -242,18 +269,20 @@ io_buffer_initialize(VALUE self, struct rb_io_buffer *buffer, void *base, size_t
 
     buffer->base = base;
     buffer->size = size;
-    buffer->flags = flags;
-    buffer->lock_count = 0;
+    // Public flags cannot change the payload's representation.
+    buffer->flags = flags & ~IO_BUFFER_SLICE;
+    allocation->lock_count = 0;
     RB_OBJ_WRITE(self, &buffer->source, source);
 
 #if defined(_WIN32)
-    buffer->mapping = NULL;
+    allocation->mapping = NULL;
 #endif
 }
 
 static void
-io_buffer_release(struct rb_io_buffer *buffer)
+io_buffer_release(struct rb_io_buffer_view *buffer)
 {
+    RUBY_ASSERT(!io_buffer_slice_p(buffer));
     if (buffer->base) {
         if (buffer->flags & RB_IO_BUFFER_INTERNAL) {
             free(buffer->base);
@@ -280,12 +309,13 @@ io_buffer_release(struct rb_io_buffer *buffer)
     }
 
 #if defined(_WIN32)
-    if (buffer->mapping) {
-        if (RB_IO_BUFFER_DEBUG) fprintf(stderr, "io_buffer_release:CloseHandle -> %p\n", buffer->mapping);
-        if (!CloseHandle(buffer->mapping)) {
+    struct rb_io_buffer *allocation = io_buffer_from_view(buffer);
+    if (allocation->mapping) {
+        if (RB_IO_BUFFER_DEBUG) fprintf(stderr, "io_buffer_release:CloseHandle -> %p\n", allocation->mapping);
+        if (!CloseHandle(allocation->mapping)) {
             fprintf(stderr, "io_buffer_release:GetLastError -> %lu\n", GetLastError());
         }
-        buffer->mapping = NULL;
+        allocation->mapping = NULL;
     }
 #endif
 
@@ -295,7 +325,7 @@ io_buffer_release(struct rb_io_buffer *buffer)
 static void
 rb_io_buffer_type_mark(void *_buffer)
 {
-    struct rb_io_buffer *buffer = _buffer;
+    struct rb_io_buffer_view *buffer = _buffer;
     if (buffer->source != Qnil) {
         if (RB_TYPE_P(buffer->source, T_STRING)) {
             // Pin embedded String storage: a resolved pointer may be in use
@@ -310,7 +340,7 @@ rb_io_buffer_type_mark(void *_buffer)
 static void
 rb_io_buffer_type_compact(void *_buffer)
 {
-    struct rb_io_buffer *buffer = _buffer;
+    struct rb_io_buffer_view *buffer = _buffer;
     if (buffer->source != Qnil) {
         if (RB_TYPE_P(buffer->source, T_STRING)) {
             // String storage is pinned by rb_io_buffer_type_mark.
@@ -323,18 +353,18 @@ rb_io_buffer_type_compact(void *_buffer)
 static void
 rb_io_buffer_type_free(void *_buffer)
 {
-    struct rb_io_buffer *buffer = _buffer;
+    struct rb_io_buffer_view *buffer = _buffer;
 
-    io_buffer_release(buffer);
+    if (!io_buffer_slice_p(buffer)) io_buffer_release(buffer);
 }
 
 static size_t
 rb_io_buffer_type_size(const void *_buffer)
 {
-    const struct rb_io_buffer *buffer = _buffer;
-    size_t total = sizeof(struct rb_io_buffer);
+    const struct rb_io_buffer_view *buffer = _buffer;
+    size_t total = io_buffer_slice_p(buffer) ? sizeof(struct rb_io_buffer_view) : sizeof(struct rb_io_buffer);
 
-    if (buffer->flags) {
+    if (buffer->flags & RB_IO_BUFFER_ALLOCATION_FLAGS) {
         total += buffer->size;
     }
 
@@ -353,33 +383,42 @@ static const rb_data_type_t rb_io_buffer_type = {
     .flags = RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE,
 };
 
+int
+rb_io_buffer_p(VALUE self)
+{
+    return rb_typeddata_is_kind_of(self, &rb_io_buffer_type);
+}
+
+// Shared byte-access interface: accepts Buffer and Slice.
+static struct rb_io_buffer_view *
+get_io_buffer_view(VALUE self)
+{
+    struct rb_io_buffer_view *view;
+    TypedData_Get_Struct(self, struct rb_io_buffer_view, &rb_io_buffer_type, view);
+    return view;
+}
+
+// Allocation-management interface: requires Buffer.
 static struct rb_io_buffer *
 get_io_buffer(VALUE self)
 {
-    struct rb_io_buffer *buffer;
-    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
-    return buffer;
+    return io_buffer_from_view(get_io_buffer_view(self));
 }
 
 // Whether this buffer owns an allocation and is responsible for releasing it.
 // Slices, String-backed buffers, and raw borrowed-memory wrappers do not own
 // their memory. A source-less buffer is not necessarily an owning buffer.
 static inline bool
-io_buffer_owning_p(const struct rb_io_buffer *buffer)
+io_buffer_owning_p(const struct rb_io_buffer_view *buffer)
 {
     return (buffer->flags & RB_IO_BUFFER_ALLOCATION_FLAGS) != 0;
 }
 
-static bool
-io_buffer_slice_p(const struct rb_io_buffer *buffer)
-{
-    return rb_typeddata_is_kind_of(buffer->source, &rb_io_buffer_type);
-}
 
 // For any source-backed buffer (String or IO::Buffer), `base` stores a byte
 // offset into the source rather than an absolute pointer.
 static inline size_t
-io_buffer_slice_offset(const struct rb_io_buffer *buffer)
+io_buffer_slice_offset(const struct rb_io_buffer_view *buffer)
 {
     return (uintptr_t)buffer->base;
 }
@@ -387,18 +426,20 @@ io_buffer_slice_offset(const struct rb_io_buffer *buffer)
 // Follow the source chain to the buffer which owns the allocation lock count.
 // String-backed buffers manage their own lock count and pin their String source.
 static struct rb_io_buffer *
-io_buffer_lock_owner(struct rb_io_buffer *buffer)
+io_buffer_lock_owner(struct rb_io_buffer_view *buffer)
 {
     while (io_buffer_slice_p(buffer)) {
-        buffer = get_io_buffer(buffer->source);
+        if (NIL_P(buffer->source)) rb_raise(rb_eIOBufferInvalidatedError, "Uninitialized slice!");
+        buffer = get_io_buffer_view(buffer->source);
     }
 
-    return buffer;
+    return io_buffer_from_view(buffer);
 }
 
 static bool
-io_buffer_locked(struct rb_io_buffer *buffer)
+io_buffer_locked(struct rb_io_buffer_view *buffer)
 {
+    if (io_buffer_slice_p(buffer) && NIL_P(buffer->source)) return false;
     return io_buffer_lock_owner(buffer)->lock_count > 0;
 }
 
@@ -496,7 +537,7 @@ io_buffer_extract_width(VALUE argument, size_t minimum)
 // must be less than the size of the buffer otherwise the length will be
 // invalid; in that case, an ArgumentError exception will be raised.
 static inline size_t
-io_buffer_default_length(const struct rb_io_buffer *buffer, size_t offset)
+io_buffer_default_length(const struct rb_io_buffer_view *buffer, size_t offset)
 {
     if (offset > buffer->size) {
         rb_raise(rb_eArgError, "The given offset is bigger than the buffer size!");
@@ -510,10 +551,10 @@ io_buffer_default_length(const struct rb_io_buffer *buffer, size_t offset)
 // The offset and length are optional, but if they are provided, they must be
 // positive integers. If the offset is not provided, it defaults to zero. If
 // the length is not provided, it defaults to the buffer size minus the offset.
-static inline struct rb_io_buffer *
+static inline struct rb_io_buffer_view *
 io_buffer_extract_offset_length(VALUE self, int argc, VALUE argv[], size_t *offset, size_t *length)
 {
-    struct rb_io_buffer *buffer = get_io_buffer(self);
+    struct rb_io_buffer_view *buffer = get_io_buffer_view(self);
 
     if (argc >= 1 && !NIL_P(argv[0])) {
         *offset = io_buffer_extract_offset(argv[0]);
@@ -540,8 +581,18 @@ rb_io_buffer_type_allocate(VALUE self)
     struct rb_io_buffer *buffer = NULL;
     VALUE instance = TypedData_Make_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
 
-    io_buffer_zero(buffer);
+    io_buffer_zero(&buffer->view);
 
+    return instance;
+}
+
+static VALUE
+io_buffer_slice_allocate(VALUE klass)
+{
+    struct rb_io_buffer_view *buffer;
+    VALUE instance = TypedData_Make_Struct(klass, struct rb_io_buffer_view, &rb_io_buffer_type, buffer);
+    buffer->flags = IO_BUFFER_SLICE;
+    buffer->source = Qnil;
     return instance;
 }
 
@@ -549,7 +600,7 @@ static VALUE io_buffer_for_make_instance(VALUE klass, VALUE string, enum rb_io_b
 {
     VALUE instance = rb_io_buffer_type_allocate(klass);
 
-    struct rb_io_buffer *buffer = get_io_buffer(instance);
+    struct rb_io_buffer_view *buffer = get_io_buffer_view(instance);
 
     flags |= RB_IO_BUFFER_EXTERNAL;
 
@@ -675,7 +726,7 @@ io_buffer_for_callback_ensure(VALUE _arguments)
 VALUE
 rb_io_buffer_for_reading(VALUE string_or_buffer, VALUE (*callback)(VALUE, VALUE), VALUE argument)
 {
-    if (rb_obj_is_kind_of(string_or_buffer, rb_cIOBuffer)) {
+    if (rb_io_buffer_p(string_or_buffer)) {
         return io_buffer_for_locked_callback(string_or_buffer, callback, argument);
     }
     else if (RB_TYPE_P(string_or_buffer, T_STRING)) {
@@ -699,13 +750,13 @@ rb_io_buffer_for_reading(VALUE string_or_buffer, VALUE (*callback)(VALUE, VALUE)
 }
 
 /* Forward declaration: io_buffer_readonly_p is defined later in this file. */
-static int io_buffer_readonly_p(const struct rb_io_buffer *buffer);
+static int io_buffer_readonly_p(const struct rb_io_buffer_view *buffer);
 
 VALUE
 rb_io_buffer_for_writing(VALUE string_or_buffer, VALUE (*callback)(VALUE, VALUE), VALUE argument)
 {
-    if (rb_obj_is_kind_of(string_or_buffer, rb_cIOBuffer)) {
-        struct rb_io_buffer *buffer = get_io_buffer(string_or_buffer);
+    if (rb_io_buffer_p(string_or_buffer)) {
+        struct rb_io_buffer_view *buffer = get_io_buffer_view(string_or_buffer);
         if (io_buffer_readonly_p(buffer)) {
             rb_raise(rb_eArgError, "buffer is read-only");
         }
@@ -826,7 +877,7 @@ rb_io_buffer_new(void *base, size_t size, enum rb_io_buffer_flags flags)
 {
     VALUE instance = rb_io_buffer_type_allocate(rb_cIOBuffer);
 
-    struct rb_io_buffer *buffer = get_io_buffer(instance);
+    struct rb_io_buffer_view *buffer = get_io_buffer_view(instance);
 
     io_buffer_initialize(instance, buffer, base, size, flags, Qnil);
 
@@ -861,7 +912,7 @@ rb_io_buffer_map(VALUE io, size_t size, rb_off_t offset, enum rb_io_buffer_flags
 
     VALUE instance = rb_io_buffer_type_allocate(rb_cIOBuffer);
 
-    struct rb_io_buffer *buffer = get_io_buffer(instance);
+    struct rb_io_buffer_view *buffer = get_io_buffer_view(instance);
 
     int descriptor = rb_io_descriptor(io);
 
@@ -1084,9 +1135,8 @@ io_buffer_flags_for_new(enum rb_io_buffer_flags flags, size_t size)
 VALUE
 rb_io_buffer_initialize(int argc, VALUE *argv, VALUE self)
 {
+    rb_check_frozen(self);
     rb_check_arity(argc, 0, 2);
-
-    struct rb_io_buffer *buffer = get_io_buffer(self);
 
     size_t size;
     if (argc > 0) {
@@ -1102,13 +1152,17 @@ rb_io_buffer_initialize(int argc, VALUE *argv, VALUE self)
     }
     flags = io_buffer_flags_for_new(flags, size);
 
+    struct rb_io_buffer_view *buffer = get_io_buffer_view(self);
+    struct rb_io_buffer *allocation = io_buffer_from_view(buffer);
+    if (allocation->lock_count) rb_raise(rb_eIOBufferLockedError, "Cannot initialize locked buffer!");
+    io_buffer_release(buffer);
     io_buffer_initialize(self, buffer, NULL, size, flags, Qnil);
 
     return self;
 }
 
 // Resolve `source_base + buffer->base`, with a source base of zero for
-// source-less buffers (see struct rb_io_buffer). Source-backed ranges are
+// source-less buffers (see struct rb_io_buffer_view). Source-backed ranges are
 // checked against the source's current size, so they survive relocation and
 // can become valid again after the source regrows.
 // Returns non-zero if valid, setting `*base`/`*size` (NULL/0 when invalid).
@@ -1117,7 +1171,7 @@ rb_io_buffer_initialize(int argc, VALUE *argv, VALUE self)
 // Valid empty ranges may resolve to NULL. Keep the storage locked while using
 // a resolved pointer across calls that can release the GVL or invoke Ruby.
 static int
-io_buffer_try_get_bytes(const struct rb_io_buffer *buffer, void **base, size_t *size)
+io_buffer_try_get_bytes(const struct rb_io_buffer_view *buffer, void **base, size_t *size)
 {
     size_t length = buffer->size;
     size_t offset = 0;
@@ -1126,11 +1180,11 @@ io_buffer_try_get_bytes(const struct rb_io_buffer *buffer, void **base, size_t *
     // Validate each complete parent view, not just the child's final range.
     // Iteration avoids growing the C stack for deeply nested slices.
     while (buffer->source != Qnil) {
-        const struct rb_io_buffer *source_buffer = NULL;
+        const struct rb_io_buffer_view *source_buffer = NULL;
         size_t source_size;
 
         if (io_buffer_slice_p(buffer)) {
-            source_buffer = get_io_buffer(buffer->source);
+            source_buffer = get_io_buffer_view(buffer->source);
             source_size = source_buffer->size;
         }
         else {
@@ -1151,6 +1205,12 @@ io_buffer_try_get_bytes(const struct rb_io_buffer *buffer, void **base, size_t *
         buffer = source_buffer;
     }
 
+    if (io_buffer_slice_p(buffer)) {
+        // Slice.allocate has no source until initialize attaches one.
+        *base = NULL;
+        *size = 0;
+        return 0;
+    }
     source_base = buffer->base;
 resolved:
     *base = source_base ? (char *)source_base + offset : NULL;
@@ -1159,9 +1219,9 @@ resolved:
 }
 
 static int
-io_buffer_validate(const struct rb_io_buffer *buffer)
+io_buffer_validate(const struct rb_io_buffer_view *buffer)
 {
-    if (buffer->source != Qnil) {
+    if (buffer->source != Qnil || io_buffer_slice_p(buffer)) {
         void *base = NULL;
         size_t size = 0;
         return io_buffer_try_get_bytes(buffer, &base, &size);
@@ -1174,10 +1234,10 @@ io_buffer_validate(const struct rb_io_buffer *buffer)
 enum rb_io_buffer_flags
 rb_io_buffer_get_bytes(VALUE self, void **base, size_t *size)
 {
-    struct rb_io_buffer *buffer = get_io_buffer(self);
+    struct rb_io_buffer_view *buffer = get_io_buffer_view(self);
 
     if (io_buffer_try_get_bytes(buffer, base, size)) {
-        enum rb_io_buffer_flags flags = buffer->flags;
+        enum rb_io_buffer_flags flags = buffer->flags & ~IO_BUFFER_SLICE;
         if (io_buffer_readonly_p(buffer)) flags |= RB_IO_BUFFER_READONLY;
         return flags;
     }
@@ -1186,7 +1246,7 @@ rb_io_buffer_get_bytes(VALUE self, void **base, size_t *size)
 }
 
 static inline void
-io_buffer_get_bytes_for_writing(const struct rb_io_buffer *buffer, void **base, size_t *size)
+io_buffer_get_bytes_for_writing(const struct rb_io_buffer_view *buffer, void **base, size_t *size)
 {
     if (io_buffer_readonly_p(buffer)) {
         rb_raise(rb_eIOBufferAccessError, "Buffer is not writable!");
@@ -1198,19 +1258,19 @@ io_buffer_get_bytes_for_writing(const struct rb_io_buffer *buffer, void **base, 
 }
 
 static void
-io_buffer_validate_for_writing(const struct rb_io_buffer *buffer)
+io_buffer_validate_for_writing(const struct rb_io_buffer_view *buffer)
 {
     void *base;
     size_t size;
     io_buffer_get_bytes_for_writing(buffer, &base, &size);
 }
 
-static struct rb_io_buffer *
-get_io_buffer_for_writing(VALUE self)
+static struct rb_io_buffer_view *
+get_io_buffer_view_for_writing(VALUE self)
 {
     rb_check_frozen(self);
 
-    struct rb_io_buffer *buffer = get_io_buffer(self);
+    struct rb_io_buffer_view *buffer = get_io_buffer_view(self);
     io_buffer_validate_for_writing(buffer);
     return buffer;
 }
@@ -1218,13 +1278,13 @@ get_io_buffer_for_writing(VALUE self)
 void
 rb_io_buffer_get_bytes_for_writing(VALUE self, void **base, size_t *size)
 {
-    struct rb_io_buffer *buffer = get_io_buffer(self);
+    struct rb_io_buffer_view *buffer = get_io_buffer_view(self);
 
     io_buffer_get_bytes_for_writing(buffer, base, size);
 }
 
 static void
-io_buffer_get_bytes_for_reading(const struct rb_io_buffer *buffer, const void **base, size_t *size)
+io_buffer_get_bytes_for_reading(const struct rb_io_buffer_view *buffer, const void **base, size_t *size)
 {
     void *resolved_base;
     if (!io_buffer_try_get_bytes(buffer, &resolved_base, size)) {
@@ -1234,7 +1294,7 @@ io_buffer_get_bytes_for_reading(const struct rb_io_buffer *buffer, const void **
 }
 
 static void
-io_buffer_validate_for_reading(const struct rb_io_buffer *buffer)
+io_buffer_validate_for_reading(const struct rb_io_buffer_view *buffer)
 {
     const void *base;
     size_t size;
@@ -1244,7 +1304,7 @@ io_buffer_validate_for_reading(const struct rb_io_buffer *buffer)
 void
 rb_io_buffer_get_bytes_for_reading(VALUE self, const void **base, size_t *size)
 {
-    struct rb_io_buffer *buffer = get_io_buffer(self);
+    struct rb_io_buffer_view *buffer = get_io_buffer_view(self);
 
     io_buffer_get_bytes_for_reading(buffer, base, size);
 }
@@ -1261,7 +1321,7 @@ rb_io_buffer_get_bytes_for_reading(VALUE self, const void **base, size_t *size)
 VALUE
 rb_io_buffer_to_s(VALUE self)
 {
-    struct rb_io_buffer *buffer = get_io_buffer(self);
+    struct rb_io_buffer_view *buffer = get_io_buffer_view(self);
 
     VALUE result = rb_str_new_cstr("#<");
 
@@ -1399,7 +1459,7 @@ io_buffer_hexdump(VALUE string, size_t width, const char *base, size_t length, s
 VALUE
 rb_io_buffer_inspect(VALUE self)
 {
-    struct rb_io_buffer *buffer = get_io_buffer(self);
+    struct rb_io_buffer_view *buffer = get_io_buffer_view(self);
 
     VALUE result = rb_io_buffer_to_s(self);
 
@@ -1434,7 +1494,7 @@ rb_io_buffer_inspect(VALUE self)
 VALUE
 rb_io_buffer_size(VALUE self)
 {
-    struct rb_io_buffer *buffer = get_io_buffer(self);
+    struct rb_io_buffer_view *buffer = get_io_buffer_view(self);
 
     return SIZET2NUM(buffer->size);
 }
@@ -1459,7 +1519,7 @@ rb_io_buffer_size(VALUE self)
 static VALUE
 rb_io_buffer_valid_p(VALUE self)
 {
-    struct rb_io_buffer *buffer = get_io_buffer(self);
+    struct rb_io_buffer_view *buffer = get_io_buffer_view(self);
 
     return RBOOL(io_buffer_validate(buffer));
 }
@@ -1486,7 +1546,7 @@ rb_io_buffer_valid_p(VALUE self)
 static VALUE
 rb_io_buffer_null_p(VALUE self)
 {
-    struct rb_io_buffer *buffer = get_io_buffer(self);
+    struct rb_io_buffer_view *buffer = get_io_buffer_view(self);
 
     void *base = NULL;
     size_t size = 0;
@@ -1507,7 +1567,7 @@ rb_io_buffer_null_p(VALUE self)
 static VALUE
 rb_io_buffer_empty_p(VALUE self)
 {
-    struct rb_io_buffer *buffer = get_io_buffer(self);
+    struct rb_io_buffer_view *buffer = get_io_buffer_view(self);
 
     return RBOOL(buffer->size == 0);
 }
@@ -1526,7 +1586,7 @@ rb_io_buffer_empty_p(VALUE self)
 static VALUE
 rb_io_buffer_external_p(VALUE self)
 {
-    struct rb_io_buffer *buffer = get_io_buffer(self);
+    struct rb_io_buffer_view *buffer = get_io_buffer_view(self);
 
     return RBOOL(buffer->flags & RB_IO_BUFFER_EXTERNAL);
 }
@@ -1550,7 +1610,7 @@ rb_io_buffer_external_p(VALUE self)
 static VALUE
 rb_io_buffer_internal_p(VALUE self)
 {
-    struct rb_io_buffer *buffer = get_io_buffer(self);
+    struct rb_io_buffer_view *buffer = get_io_buffer_view(self);
 
     return RBOOL(buffer->flags & RB_IO_BUFFER_INTERNAL);
 }
@@ -1571,7 +1631,7 @@ rb_io_buffer_internal_p(VALUE self)
 static VALUE
 rb_io_buffer_mapped_p(VALUE self)
 {
-    struct rb_io_buffer *buffer = get_io_buffer(self);
+    struct rb_io_buffer_view *buffer = get_io_buffer_view(self);
 
     return RBOOL(buffer->flags & RB_IO_BUFFER_MAPPED);
 }
@@ -1602,7 +1662,7 @@ rb_io_buffer_mapped_p(VALUE self)
 static VALUE
 rb_io_buffer_shared_p(VALUE self)
 {
-    struct rb_io_buffer *buffer = get_io_buffer(self);
+    struct rb_io_buffer_view *buffer = get_io_buffer_view(self);
 
     return RBOOL(buffer->flags & RB_IO_BUFFER_SHARED);
 }
@@ -1623,7 +1683,7 @@ rb_io_buffer_shared_p(VALUE self)
 static VALUE
 rb_io_buffer_locked_p(VALUE self)
 {
-    struct rb_io_buffer *buffer = get_io_buffer(self);
+    struct rb_io_buffer_view *buffer = get_io_buffer_view(self);
 
     return RBOOL(io_buffer_locked(buffer));
 }
@@ -1653,7 +1713,7 @@ rb_io_buffer_locked_p(VALUE self)
 static VALUE
 rb_io_buffer_private_p(VALUE self)
 {
-    struct rb_io_buffer *buffer = get_io_buffer(self);
+    struct rb_io_buffer_view *buffer = get_io_buffer_view(self);
 
     return RBOOL(buffer->flags & RB_IO_BUFFER_PRIVATE);
 }
@@ -1662,7 +1722,7 @@ rb_io_buffer_private_p(VALUE self)
 // source. Check the source's current permissions as well as the view's own
 // flags, since the source can be reallocated while the view remains alive.
 static int
-io_buffer_readonly_p(const struct rb_io_buffer *buffer)
+io_buffer_readonly_p(const struct rb_io_buffer_view *buffer)
 {
     for (;;) {
         if (buffer->flags & RB_IO_BUFFER_READONLY)
@@ -1678,14 +1738,14 @@ io_buffer_readonly_p(const struct rb_io_buffer *buffer)
         if (RB_TYPE_P(source, T_STRING))
             return 0;
 
-        buffer = get_io_buffer(source);
+        buffer = get_io_buffer_view(source);
     }
 }
 
 int
 rb_io_buffer_readonly_p(VALUE self)
 {
-    const struct rb_io_buffer *buffer = get_io_buffer(self);
+    const struct rb_io_buffer_view *buffer = get_io_buffer_view(self);
     return io_buffer_readonly_p(buffer);
 }
 
@@ -1713,7 +1773,7 @@ io_buffer_readonly(VALUE self)
 }
 
 static void
-io_buffer_lock(struct rb_io_buffer *buffer)
+io_buffer_lock(struct rb_io_buffer_view *buffer)
 {
     struct rb_io_buffer *owner = io_buffer_lock_owner(buffer);
 
@@ -1727,7 +1787,7 @@ io_buffer_lock(struct rb_io_buffer *buffer)
 VALUE
 rb_io_buffer_lock(VALUE self)
 {
-    struct rb_io_buffer *buffer = get_io_buffer(self);
+    struct rb_io_buffer_view *buffer = get_io_buffer_view(self);
 
     io_buffer_lock(buffer);
 
@@ -1735,7 +1795,7 @@ rb_io_buffer_lock(VALUE self)
 }
 
 static void
-io_buffer_unlock(struct rb_io_buffer *buffer)
+io_buffer_unlock(struct rb_io_buffer_view *buffer)
 {
     struct rb_io_buffer *owner = io_buffer_lock_owner(buffer);
 
@@ -1749,7 +1809,7 @@ io_buffer_unlock(struct rb_io_buffer *buffer)
 VALUE
 rb_io_buffer_unlock(VALUE self)
 {
-    struct rb_io_buffer *buffer = get_io_buffer(self);
+    struct rb_io_buffer_view *buffer = get_io_buffer_view(self);
 
     io_buffer_unlock(buffer);
 
@@ -1759,7 +1819,7 @@ rb_io_buffer_unlock(VALUE self)
 int
 rb_io_buffer_try_unlock(VALUE self)
 {
-    struct rb_io_buffer *buffer = get_io_buffer(self);
+    struct rb_io_buffer_view *buffer = get_io_buffer_view(self);
     struct rb_io_buffer *owner = io_buffer_lock_owner(buffer);
 
     if (owner->lock_count > 0) {
@@ -1774,7 +1834,7 @@ rb_io_buffer_try_unlock(VALUE self)
 static VALUE
 rb_io_buffer_locked_ensure(VALUE self)
 {
-    struct rb_io_buffer *buffer = get_io_buffer(self);
+    struct rb_io_buffer_view *buffer = get_io_buffer_view(self);
 
     io_buffer_unlock(buffer);
 
@@ -1877,7 +1937,7 @@ rb_io_buffer_locked_for_writing(VALUE self, VALUE (*callback)(void *base, size_t
 VALUE
 rb_io_buffer_locked(VALUE self)
 {
-    struct rb_io_buffer *buffer = get_io_buffer(self);
+    struct rb_io_buffer_view *buffer = get_io_buffer_view(self);
 
     // Only yield the block for a currently valid view. In particular, an
     // invalid slice should not lock its source.
@@ -1893,11 +1953,11 @@ rb_io_buffer_free(VALUE self)
 {
     struct rb_io_buffer *buffer = get_io_buffer(self);
 
-    if (io_buffer_locked(buffer)) {
+    if (buffer->lock_count) {
         rb_raise(rb_eIOBufferLockedError, "Buffer is locked!");
     }
 
-    io_buffer_release(buffer);
+    io_buffer_release(&buffer->view);
 
     return self;
 }
@@ -1915,7 +1975,9 @@ rb_io_buffer_free(VALUE self)
  *  Zero-length operations remain valid, while operations requiring bytes fail
  *  normal bounds checking.
  *
- *  You can resize the buffer to allocate new storage.
+ *  Repeated calls on an unlocked, unfrozen Buffer are harmless and return
+ *  +self+. You can resize the buffer to allocate new storage. This method is
+ *  not available on Slice, which never manages storage.
  *
  *    buffer = IO::Buffer.for('test')
  *    buffer.free
@@ -1946,17 +2008,16 @@ io_buffer_free(VALUE self)
 VALUE rb_io_buffer_free_locked(VALUE self)
 {
     struct rb_io_buffer *buffer = get_io_buffer(self);
-    struct rb_io_buffer *owner = io_buffer_lock_owner(buffer);
 
     // This function is used to invalidate temporary wrappers around borrowed
     // memory. If another lock remains, the owner cannot safely end the
     // lifetime of that memory while another operation still retains it.
-    if (owner->lock_count != 1) {
-        rb_bug("rb_io_buffer_free_locked: expected lock count 1, got %" PRIuSIZE, owner->lock_count);
+    if (buffer->lock_count != 1) {
+        rb_bug("rb_io_buffer_free_locked: expected lock count 1, got %" PRIuSIZE, buffer->lock_count);
     }
 
-    io_buffer_unlock(buffer);
-    io_buffer_release(buffer);
+    io_buffer_unlock(&buffer->view);
+    io_buffer_release(&buffer->view);
 
     return self;
 }
@@ -1971,7 +2032,7 @@ size_sum_is_bigger_than(size_t a, size_t b, size_t x)
 // Validate that access to the buffer is within bounds, assuming you want to
 // access length bytes from the specified offset.
 static inline void
-io_buffer_validate_range(const struct rb_io_buffer *buffer, size_t offset, size_t length)
+io_buffer_validate_range(const struct rb_io_buffer_view *buffer, size_t offset, size_t length)
 {
     io_buffer_validate_for_reading(buffer);
 
@@ -2005,7 +2066,7 @@ rb_io_buffer_hexdump(int argc, VALUE *argv, VALUE self)
     rb_check_arity(argc, 0, 3);
 
     size_t offset, length;
-    struct rb_io_buffer *buffer = io_buffer_extract_offset_length(self, argc, argv, &offset, &length);
+    struct rb_io_buffer_view *buffer = io_buffer_extract_offset_length(self, argc, argv, &offset, &length);
 
     size_t width = RB_IO_BUFFER_HEXDUMP_DEFAULT_WIDTH;
     if (argc >= 3) {
@@ -2029,12 +2090,12 @@ rb_io_buffer_hexdump(int argc, VALUE *argv, VALUE self)
 }
 
 static VALUE
-rb_io_buffer_slice(struct rb_io_buffer *buffer, VALUE self, size_t offset, size_t length)
+rb_io_buffer_slice(struct rb_io_buffer_view *buffer, VALUE self, size_t offset, size_t length)
 {
     io_buffer_validate_range(buffer, offset, length);
 
-    VALUE instance = rb_io_buffer_type_allocate(rb_class_of(self));
-    struct rb_io_buffer *slice = get_io_buffer(instance);
+    VALUE instance = io_buffer_slice_allocate(rb_cIOBufferSlice);
+    struct rb_io_buffer_view *slice = get_io_buffer_view(instance);
 
     // Permissions are derived from the retained source, not copied.
     slice->size = length;
@@ -2043,6 +2104,50 @@ rb_io_buffer_slice(struct rb_io_buffer *buffer, VALUE self, size_t offset, size_
     RB_OBJ_WRITE(instance, &slice->source, self);
 
     return instance;
+}
+
+/*
+ *  call-seq: IO::Buffer::Slice.new(source, [offset, [length]]) -> slice
+ *
+ *  Creates a parent-relative view of a Buffer or another Slice. The source is
+ *  retained, not copied. Resizing or advancing this view never allocates storage.
+ */
+static VALUE
+io_buffer_slice_initialize(int argc, VALUE *argv, VALUE self)
+{
+    rb_check_frozen(self);
+    rb_check_arity(argc, 1, 3);
+    struct rb_io_buffer_view *slice = get_io_buffer_view(self);
+    if (!NIL_P(slice->source)) rb_raise(rb_eRuntimeError, "Slice is already initialized!");
+
+    VALUE source = argv[0];
+    size_t offset, length;
+    struct rb_io_buffer_view *parent = io_buffer_extract_offset_length(source, argc-1, argv+1, &offset, &length);
+    io_buffer_validate_range(parent, offset, length);
+
+    slice = get_io_buffer_view(self);
+    if (!NIL_P(slice->source)) rb_raise(rb_eRuntimeError, "Slice is already initialized!");
+    slice->base = (void *)(uintptr_t)offset;
+    slice->size = length;
+    RB_OBJ_WRITE(self, &slice->source, source);
+    return self;
+}
+
+static VALUE
+io_buffer_slice_initialize_copy(VALUE self, VALUE other)
+{
+    if (self == other) return self;
+    rb_check_frozen(self);
+    struct rb_io_buffer_view *slice = get_io_buffer_view(self);
+    const struct rb_io_buffer_view *original = get_io_buffer_view(other);
+    if (!io_buffer_slice_p(original)) rb_raise(rb_eTypeError, "Expected IO::Buffer::Slice!");
+    if (!NIL_P(slice->source)) rb_raise(rb_eRuntimeError, "Slice is already initialized!");
+
+    slice->base = original->base;
+    slice->size = original->size;
+    slice->flags = original->flags;
+    RB_OBJ_WRITE(self, &slice->source, original->source);
+    return self;
 }
 
 /*
@@ -2064,13 +2169,14 @@ rb_io_buffer_slice(struct rb_io_buffer *buffer, VALUE self, size_t offset, size_
  *  original String. A source-less buffer may own or borrow its memory;
  *  a +nil+ source does not imply allocation ownership.
  *
- *  An invalid slice still retains and returns its source. Calling #free or
- *  #transfer on the receiver clears its source. There is no source setter.
+ *  An invalid slice still retains and returns its source. Buffer#free or
+ *  Buffer#transfer clears that Buffer's source; Slice has neither operation.
+ *  There is no source setter.
  */
 static VALUE
 io_buffer_source(VALUE self)
 {
-    return get_io_buffer(self)->source;
+    return get_io_buffer_view(self)->source;
 }
 
 /*
@@ -2136,7 +2242,7 @@ io_buffer_slice(int argc, VALUE *argv, VALUE self)
     rb_check_arity(argc, 0, 2);
 
     size_t offset, length;
-    struct rb_io_buffer *buffer = io_buffer_extract_offset_length(self, argc, argv, &offset, &length);
+    struct rb_io_buffer_view *buffer = io_buffer_extract_offset_length(self, argc, argv, &offset, &length);
 
     return rb_io_buffer_slice(buffer, self, offset, length);
 }
@@ -2146,16 +2252,15 @@ rb_io_buffer_transfer(VALUE self)
 {
     struct rb_io_buffer *buffer = get_io_buffer(self);
 
-    if (io_buffer_locked(buffer)) {
+    if (buffer->lock_count) {
         rb_raise(rb_eIOBufferLockedError, "Cannot transfer ownership of locked buffer!");
     }
 
     VALUE instance = rb_io_buffer_type_allocate(rb_class_of(self));
-    struct rb_io_buffer *transferred;
-    TypedData_Get_Struct(instance, struct rb_io_buffer, &rb_io_buffer_type, transferred);
+    struct rb_io_buffer *transferred = get_io_buffer(instance);
 
     *transferred = *buffer;
-    io_buffer_zero(buffer);
+    io_buffer_zero(&buffer->view);
 
     return instance;
 }
@@ -2194,7 +2299,7 @@ io_buffer_transfer(VALUE self)
 }
 
 static void
-io_buffer_resize_clear(struct rb_io_buffer *buffer, void* base, size_t size)
+io_buffer_resize_clear(struct rb_io_buffer_view *buffer, void* base, size_t size)
 {
     if (size > buffer->size) {
         memset((unsigned char*)base+buffer->size, 0, size - buffer->size);
@@ -2202,29 +2307,30 @@ io_buffer_resize_clear(struct rb_io_buffer *buffer, void* base, size_t size)
 }
 
 static void
-io_buffer_resize_copy(VALUE self, struct rb_io_buffer *buffer, size_t size)
+io_buffer_resize_copy(VALUE self, struct rb_io_buffer_view *buffer, size_t size)
 {
     // Slow path:
-    struct rb_io_buffer resized;
+    struct rb_io_buffer resized = {0};
     enum rb_io_buffer_flags flags = io_flags_for_size(size) | (buffer->flags & RB_IO_BUFFER_READONLY);
-    io_buffer_initialize(self, &resized, NULL, size, flags, Qnil);
+    io_buffer_initialize(self, &resized.view, NULL, size, flags, Qnil);
 
     if (buffer->base) {
         size_t preserve = buffer->size;
         if (preserve > size) preserve = size;
-        memcpy(resized.base, buffer->base, preserve);
+        memcpy(resized.view.base, buffer->base, preserve);
 
-        io_buffer_resize_clear(buffer, resized.base, size);
+        io_buffer_resize_clear(buffer, resized.view.base, size);
     }
 
     io_buffer_release(buffer);
-    *buffer = resized;
+    *io_buffer_from_view(buffer) = resized;
 }
 
 static void
-io_buffer_resize_slice(struct rb_io_buffer *slice, size_t size)
+io_buffer_resize_slice(struct rb_io_buffer_view *slice, size_t size)
 {
-    struct rb_io_buffer *source = get_io_buffer(slice->source);
+    if (NIL_P(slice->source)) rb_raise(rb_eIOBufferInvalidatedError, "Uninitialized slice!");
+    struct rb_io_buffer_view *source = get_io_buffer_view(slice->source);
 
     void *source_base = NULL;
     size_t source_size = 0;
@@ -2251,7 +2357,7 @@ io_buffer_resize_slice(struct rb_io_buffer *slice, size_t size)
 void
 rb_io_buffer_resize(VALUE self, size_t size)
 {
-    struct rb_io_buffer *buffer = get_io_buffer(self);
+    struct rb_io_buffer_view *buffer = get_io_buffer_view(self);
 
     if (io_buffer_slice_p(buffer)) {
         // Resizing a slice only changes the view, not the locked allocation.
@@ -2357,7 +2463,7 @@ io_buffer_resize(VALUE self, VALUE size)
 void
 rb_io_buffer_advance(VALUE self, size_t amount)
 {
-    struct rb_io_buffer *buffer = get_io_buffer(self);
+    struct rb_io_buffer_view *buffer = get_io_buffer_view(self);
 
     if (io_buffer_owning_p(buffer)) {
         rb_raise(rb_eIOBufferAccessError, "Cannot advance a buffer that owns its memory!");
@@ -2577,7 +2683,7 @@ io_buffer_read_##name(const void* base, size_t size, size_t *offset) \
 } \
 \
 static void \
-io_buffer_write_##name(struct rb_io_buffer* buffer, size_t *offset, VALUE _value) \
+io_buffer_write_##name(struct rb_io_buffer_view* buffer, size_t *offset, VALUE _value) \
 { \
     void* base; size_t size; \
     IO_BUFFER_VALIDATE_TYPE_FOR_WRITING(buffer, base, size, *offset, type); \
@@ -3008,7 +3114,7 @@ io_buffer_each_byte(int argc, VALUE *argv, VALUE self)
 }
 
 static inline void
-rb_io_buffer_set_value(struct rb_io_buffer *buffer, VALUE buffer_type, size_t *offset, VALUE value)
+rb_io_buffer_set_value(struct rb_io_buffer_view *buffer, VALUE buffer_type, size_t *offset, VALUE value)
 {
     ID type = TYPE_ID(buffer_type);
 #define IO_BUFFER_SET_VALUE(name) if (type == RB_IO_BUFFER_DATA_TYPE_##name) {io_buffer_write_##name(buffer, offset, value); return;}
@@ -3045,7 +3151,7 @@ rb_io_buffer_set_value(struct rb_io_buffer *buffer, VALUE buffer_type, size_t *o
 }
 
 struct io_buffer_set_value_arguments {
-    struct rb_io_buffer *buffer;
+    struct rb_io_buffer_view *buffer;
     size_t offset;
     VALUE type, value;
 };
@@ -3084,7 +3190,7 @@ struct io_buffer_set_value_arguments {
 static VALUE
 io_buffer_set_value(VALUE self, VALUE type, VALUE _offset, VALUE value)
 {
-    struct rb_io_buffer *buffer = get_io_buffer_for_writing(self);
+    struct rb_io_buffer_view *buffer = get_io_buffer_view_for_writing(self);
     size_t offset = io_buffer_extract_offset(_offset);
     rb_io_buffer_set_value(buffer, type, &offset, value);
     return SIZET2NUM(offset);
@@ -3109,7 +3215,7 @@ io_buffer_set_value(VALUE self, VALUE type, VALUE _offset, VALUE value)
 static VALUE
 io_buffer_set_values(VALUE self, VALUE buffer_types, VALUE _offset, VALUE values)
 {
-    struct rb_io_buffer *buffer = get_io_buffer_for_writing(self);
+    struct rb_io_buffer_view *buffer = get_io_buffer_view_for_writing(self);
 
     if (!RB_TYPE_P(buffer_types, T_ARRAY)) {
         rb_raise(rb_eArgError, "Argument buffer_types should be an array!");
@@ -3221,7 +3327,7 @@ io_buffer_extract_copy_arguments(size_t source_size, int argc, VALUE *argv, size
 
 // (offset, length, source_offset) -> length
 static VALUE
-io_buffer_copy_from(struct rb_io_buffer *buffer, const void *source_base, size_t source_size, int argc, VALUE *argv)
+io_buffer_copy_from(struct rb_io_buffer_view *buffer, const void *source_base, size_t source_size, int argc, VALUE *argv)
 {
     size_t offset, length, source_offset;
     io_buffer_extract_copy_arguments(source_size, argc, argv, &offset, &length, &source_offset);
@@ -3285,8 +3391,10 @@ io_buffer_copy_from_readable(const void *base, size_t size, VALUE _arguments)
 static VALUE
 io_buffer_initialize_copy_from(const void *base, size_t size, VALUE self)
 {
-    struct rb_io_buffer *buffer = get_io_buffer(self);
-
+    struct rb_io_buffer_view *buffer = get_io_buffer_view(self);
+    struct rb_io_buffer *allocation = io_buffer_from_view(buffer);
+    if (allocation->lock_count) rb_raise(rb_eIOBufferLockedError, "Cannot initialize locked buffer!");
+    io_buffer_release(buffer);
     io_buffer_initialize(self, buffer, NULL, size, io_flags_for_size(size), Qnil);
 
     struct io_buffer_copy_arguments arguments = {
@@ -3322,6 +3430,8 @@ io_buffer_initialize_copy_from(const void *base, size_t size, VALUE self)
 static VALUE
 rb_io_buffer_initialize_copy(VALUE self, VALUE source)
 {
+    if (self == source) return self;
+    rb_check_frozen(self);
     return rb_io_buffer_locked_for_reading(source, io_buffer_initialize_copy_from, self);
 }
 
@@ -3433,7 +3543,7 @@ io_buffer_get_string(int argc, VALUE *argv, VALUE self)
     rb_check_arity(argc, 0, 3);
 
     size_t offset, length;
-    struct rb_io_buffer *buffer = io_buffer_extract_offset_length(self, argc, argv, &offset, &length);
+    struct rb_io_buffer_view *buffer = io_buffer_extract_offset_length(self, argc, argv, &offset, &length);
 
     rb_encoding *encoding;
     if (argc >= 3) {
@@ -3482,7 +3592,7 @@ io_buffer_set_string(int argc, VALUE *argv, VALUE self)
 {
     rb_check_arity(argc, 1, 4);
 
-    struct rb_io_buffer *buffer = get_io_buffer_for_writing(self);
+    struct rb_io_buffer_view *buffer = get_io_buffer_view_for_writing(self);
 
     VALUE string = rb_str_to_str(argv[0]);
 
@@ -3497,7 +3607,7 @@ io_buffer_set_string(int argc, VALUE *argv, VALUE self)
 void
 rb_io_buffer_clear(VALUE self, uint8_t value, size_t offset, size_t length)
 {
-    struct rb_io_buffer *buffer = get_io_buffer_for_writing(self);
+    struct rb_io_buffer_view *buffer = get_io_buffer_view_for_writing(self);
 
     void *base;
     size_t size;
@@ -3587,7 +3697,7 @@ io_buffer_default_size(size_t page_size)
 
 struct io_buffer_blocking_region_argument {
     struct rb_io *io;
-    struct rb_io_buffer *buffer;
+    struct rb_io_buffer_view *buffer;
     rb_blocking_function_t *function;
     void *data;
 };
@@ -3611,7 +3721,7 @@ io_buffer_blocking_region_ensure(VALUE _argument)
 }
 
 static VALUE
-io_buffer_blocking_region(VALUE io, struct rb_io_buffer *buffer, rb_blocking_function_t *function, void *data)
+io_buffer_blocking_region(VALUE io, struct rb_io_buffer_view *buffer, rb_blocking_function_t *function, void *data)
 {
     struct rb_io *ioptr;
     RB_IO_POINTER(io, ioptr);
@@ -3652,7 +3762,7 @@ io_buffer_read_internal(void *_argument)
 VALUE
 rb_io_buffer_read(VALUE self, VALUE io, size_t offset, size_t length)
 {
-    struct rb_io_buffer *buffer = get_io_buffer_for_writing(self);
+    struct rb_io_buffer_view *buffer = get_io_buffer_view_for_writing(self);
 
     io = rb_io_get_io(io);
 
@@ -3743,7 +3853,7 @@ io_buffer_pread_internal(void *_argument)
 VALUE
 rb_io_buffer_pread(VALUE self, VALUE io, rb_off_t from, size_t offset, size_t length)
 {
-    struct rb_io_buffer *buffer = get_io_buffer_for_writing(self);
+    struct rb_io_buffer_view *buffer = get_io_buffer_view_for_writing(self);
 
     io = rb_io_get_io(io);
 
@@ -3840,7 +3950,7 @@ rb_io_buffer_write(VALUE self, VALUE io, size_t offset, size_t length)
 {
     io = rb_io_get_write_io(rb_io_get_io(io));
 
-    struct rb_io_buffer *buffer = get_io_buffer(self);
+    struct rb_io_buffer_view *buffer = get_io_buffer_view(self);
     io_buffer_validate_range(buffer, offset, length);
 
     if (length == 0) return SIZET2NUM(0);
@@ -3923,7 +4033,7 @@ rb_io_buffer_pwrite(VALUE self, VALUE io, rb_off_t from, size_t offset, size_t l
 {
     io = rb_io_get_write_io(rb_io_get_io(io));
 
-    struct rb_io_buffer *buffer = get_io_buffer(self);
+    struct rb_io_buffer_view *buffer = get_io_buffer_view(self);
     io_buffer_validate_range(buffer, offset, length);
 
     if (length == 0) return SIZET2NUM(0);
@@ -4018,9 +4128,9 @@ memory_and(unsigned char * restrict output, const unsigned char * restrict base,
 static VALUE
 io_buffer_and(VALUE self, VALUE mask)
 {
-    struct rb_io_buffer *buffer = get_io_buffer(self);
+    struct rb_io_buffer_view *buffer = get_io_buffer_view(self);
 
-    struct rb_io_buffer *mask_buffer = get_io_buffer(mask);
+    struct rb_io_buffer_view *mask_buffer = get_io_buffer_view(mask);
 
     const void *base;
     size_t size;
@@ -4033,7 +4143,7 @@ io_buffer_and(VALUE self, VALUE mask)
     io_buffer_check_mask_size(mask_size);
 
     VALUE output = rb_io_buffer_new(NULL, size, io_flags_for_size(size));
-    struct rb_io_buffer *output_buffer = get_io_buffer(output);
+    struct rb_io_buffer_view *output_buffer = get_io_buffer_view(output);
 
     memory_and(output_buffer->base, base, size, mask_base, mask_size);
 
@@ -4063,9 +4173,9 @@ memory_or(unsigned char * restrict output, const unsigned char * restrict base, 
 static VALUE
 io_buffer_or(VALUE self, VALUE mask)
 {
-    struct rb_io_buffer *buffer = get_io_buffer(self);
+    struct rb_io_buffer_view *buffer = get_io_buffer_view(self);
 
-    struct rb_io_buffer *mask_buffer = get_io_buffer(mask);
+    struct rb_io_buffer_view *mask_buffer = get_io_buffer_view(mask);
 
     const void *base;
     size_t size;
@@ -4078,7 +4188,7 @@ io_buffer_or(VALUE self, VALUE mask)
     io_buffer_check_mask_size(mask_size);
 
     VALUE output = rb_io_buffer_new(NULL, size, io_flags_for_size(size));
-    struct rb_io_buffer *output_buffer = get_io_buffer(output);
+    struct rb_io_buffer_view *output_buffer = get_io_buffer_view(output);
 
     memory_or(output_buffer->base, base, size, mask_base, mask_size);
 
@@ -4108,9 +4218,9 @@ memory_xor(unsigned char * restrict output, const unsigned char * restrict base,
 static VALUE
 io_buffer_xor(VALUE self, VALUE mask)
 {
-    struct rb_io_buffer *buffer = get_io_buffer(self);
+    struct rb_io_buffer_view *buffer = get_io_buffer_view(self);
 
-    struct rb_io_buffer *mask_buffer = get_io_buffer(mask);
+    struct rb_io_buffer_view *mask_buffer = get_io_buffer_view(mask);
 
     const void *base;
     size_t size;
@@ -4123,7 +4233,7 @@ io_buffer_xor(VALUE self, VALUE mask)
     io_buffer_check_mask_size(mask_size);
 
     VALUE output = rb_io_buffer_new(NULL, size, io_flags_for_size(size));
-    struct rb_io_buffer *output_buffer = get_io_buffer(output);
+    struct rb_io_buffer_view *output_buffer = get_io_buffer_view(output);
 
     memory_xor(output_buffer->base, base, size, mask_base, mask_size);
 
@@ -4153,14 +4263,14 @@ memory_not(unsigned char * restrict output, const unsigned char * restrict base,
 static VALUE
 io_buffer_not(VALUE self)
 {
-    struct rb_io_buffer *buffer = get_io_buffer(self);
+    struct rb_io_buffer_view *buffer = get_io_buffer_view(self);
 
     const void *base;
     size_t size;
     io_buffer_get_bytes_for_reading(buffer, &base, &size);
 
     VALUE output = rb_io_buffer_new(NULL, size, io_flags_for_size(size));
-    struct rb_io_buffer *output_buffer = get_io_buffer(output);
+    struct rb_io_buffer_view *output_buffer = get_io_buffer_view(output);
 
     memory_not(output_buffer->base, base, size);
 
@@ -4168,7 +4278,7 @@ io_buffer_not(VALUE self)
 }
 
 static inline int
-io_buffer_overlaps(const struct rb_io_buffer *a, const struct rb_io_buffer *b)
+io_buffer_overlaps(const struct rb_io_buffer_view *a, const struct rb_io_buffer_view *b)
 {
     // Resolve the current base pointers (following slice indirection):
     void *a_base = NULL, *b_base = NULL;
@@ -4187,7 +4297,7 @@ io_buffer_overlaps(const struct rb_io_buffer *a, const struct rb_io_buffer *b)
 }
 
 static inline void
-io_buffer_check_overlaps(const struct rb_io_buffer *a, const struct rb_io_buffer *b)
+io_buffer_check_overlaps(const struct rb_io_buffer_view *a, const struct rb_io_buffer_view *b)
 {
     if (io_buffer_overlaps(a, b))
         rb_raise(rb_eIOBufferMaskError, "Mask overlaps source buffer!");
@@ -4221,9 +4331,9 @@ memory_and_inplace(unsigned char * restrict base, size_t size, const unsigned ch
 static VALUE
 io_buffer_and_inplace(VALUE self, VALUE mask)
 {
-    struct rb_io_buffer *buffer = get_io_buffer_for_writing(self);
+    struct rb_io_buffer_view *buffer = get_io_buffer_view_for_writing(self);
 
-    struct rb_io_buffer *mask_buffer = get_io_buffer(mask);
+    struct rb_io_buffer_view *mask_buffer = get_io_buffer_view(mask);
 
     io_buffer_check_mask_size(mask_buffer->size);
     io_buffer_check_overlaps(buffer, mask_buffer);
@@ -4269,9 +4379,9 @@ memory_or_inplace(unsigned char * restrict base, size_t size, const unsigned cha
 static VALUE
 io_buffer_or_inplace(VALUE self, VALUE mask)
 {
-    struct rb_io_buffer *buffer = get_io_buffer_for_writing(self);
+    struct rb_io_buffer_view *buffer = get_io_buffer_view_for_writing(self);
 
-    struct rb_io_buffer *mask_buffer = get_io_buffer(mask);
+    struct rb_io_buffer_view *mask_buffer = get_io_buffer_view(mask);
 
     io_buffer_check_mask_size(mask_buffer->size);
     io_buffer_check_overlaps(buffer, mask_buffer);
@@ -4317,9 +4427,9 @@ memory_xor_inplace(unsigned char * restrict base, size_t size, const unsigned ch
 static VALUE
 io_buffer_xor_inplace(VALUE self, VALUE mask)
 {
-    struct rb_io_buffer *buffer = get_io_buffer_for_writing(self);
+    struct rb_io_buffer_view *buffer = get_io_buffer_view_for_writing(self);
 
-    struct rb_io_buffer *mask_buffer = get_io_buffer(mask);
+    struct rb_io_buffer_view *mask_buffer = get_io_buffer_view(mask);
 
     io_buffer_check_mask_size(mask_buffer->size);
     io_buffer_check_overlaps(buffer, mask_buffer);
@@ -4365,7 +4475,7 @@ memory_not_inplace(unsigned char * restrict base, size_t size)
 static VALUE
 io_buffer_not_inplace(VALUE self)
 {
-    struct rb_io_buffer *buffer = get_io_buffer_for_writing(self);
+    struct rb_io_buffer_view *buffer = get_io_buffer_view_for_writing(self);
 
     void *base;
     size_t size;
@@ -4417,7 +4527,7 @@ io_buffer_bit_count(int argc, VALUE *argv, VALUE self)
     rb_check_arity(argc, 0, 2);
 
     size_t offset, length;
-    struct rb_io_buffer *buffer = io_buffer_extract_offset_length(self, argc, argv, &offset, &length);
+    struct rb_io_buffer_view *buffer = io_buffer_extract_offset_length(self, argc, argv, &offset, &length);
 
     io_buffer_validate_range(buffer, offset, length);
 
@@ -4436,7 +4546,7 @@ io_buffer_bit_count(int argc, VALUE *argv, VALUE self)
 static bool
 io_buffer_memory_view_get(VALUE self, rb_memory_view_t *view, int flags)
 {
-    struct rb_io_buffer *buffer = get_io_buffer(self);
+    struct rb_io_buffer_view *buffer = get_io_buffer_view(self);
 
     void *base = NULL;
     size_t size = 0;
@@ -4499,7 +4609,7 @@ io_buffer_memory_view_release(VALUE self, rb_memory_view_t *view)
 static bool
 io_buffer_memory_view_available_p(VALUE self)
 {
-    struct rb_io_buffer *buffer = get_io_buffer(self);
+    struct rb_io_buffer_view *buffer = get_io_buffer_view(self);
 
     void *base = NULL;
     size_t size = 0;
@@ -4515,7 +4625,18 @@ static const rb_memory_view_entry_t io_buffer_memory_view_entry = {
 /*
  *  Document-class: IO::Buffer
  *
- *  IO::Buffer is a efficient zero-copy buffer for input/output. There are
+ *  IO::Buffer manages backing storage and provides zero-copy byte access.
+ *  IO::Buffer::Slice provides the same byte-access interface as a parent-relative
+ *  view, without allocation-management methods or per-view allocation state.
+ *  The two classes share a private implementation superclass; neither concrete
+ *  class inherits from the other.
+ *
+ *  Buffer#resize may reallocate; Buffer#free and Buffer#transfer manage storage.
+ *  Slice#resize and Slice#advance only change a view, and Slice never acquires
+ *  its own storage. Duplicating a Buffer copies its bytes; duplicating a Slice
+ *  copies its range and source reference without copying bytes.
+ *
+ *  IO::Buffer is an efficient zero-copy buffer for input/output. There are
  *  typical use cases:
  *
  *  * Create an empty buffer with ::new, fill it with buffer using #copy or
@@ -4612,7 +4733,15 @@ static const rb_memory_view_entry_t io_buffer_memory_view_entry = {
 void
 Init_IO_Buffer(void)
 {
-    rb_cIOBuffer = rb_define_class_under(rb_cIO, "Buffer", rb_cObject);
+    rb_cIOBufferView = rb_class_new(rb_cObject);
+    rb_undef_alloc_func(rb_cIOBufferView);
+    rb_cIOBuffer = rb_define_class_under(rb_cIO, "Buffer", rb_cIOBufferView);
+    rb_const_set(rb_cIOBuffer, rb_intern("View"), rb_cIOBufferView);
+    rb_funcall(rb_cIOBuffer, rb_intern("private_constant"), 1, ID2SYM(rb_intern("View")));
+    rb_cIOBufferSlice = rb_define_class_under(rb_cIOBuffer, "Slice", rb_cIOBufferView);
+    rb_define_alloc_func(rb_cIOBufferSlice, io_buffer_slice_allocate);
+    rb_define_method(rb_cIOBufferSlice, "initialize", io_buffer_slice_initialize, -1);
+    rb_define_method(rb_cIOBufferSlice, "initialize_copy", io_buffer_slice_initialize_copy, 1);
 
     /* Raised when an operation would resize or re-allocate a locked buffer. */
     rb_eIOBufferLockedError = rb_define_class_under(rb_cIOBuffer, "LockedError", rb_eRuntimeError);
@@ -4663,11 +4792,11 @@ Init_IO_Buffer(void)
 
     rb_define_method(rb_cIOBuffer, "initialize", rb_io_buffer_initialize, -1);
     rb_define_method(rb_cIOBuffer, "initialize_copy", rb_io_buffer_initialize_copy, 1);
-    rb_define_method(rb_cIOBuffer, "inspect", rb_io_buffer_inspect, 0);
-    rb_define_method(rb_cIOBuffer, "hexdump", rb_io_buffer_hexdump, -1);
-    rb_define_method(rb_cIOBuffer, "to_s", rb_io_buffer_to_s, 0);
-    rb_define_method(rb_cIOBuffer, "size", rb_io_buffer_size, 0);
-    rb_define_method(rb_cIOBuffer, "valid?", rb_io_buffer_valid_p, 0);
+    rb_define_method(rb_cIOBufferView, "inspect", rb_io_buffer_inspect, 0);
+    rb_define_method(rb_cIOBufferView, "hexdump", rb_io_buffer_hexdump, -1);
+    rb_define_method(rb_cIOBufferView, "to_s", rb_io_buffer_to_s, 0);
+    rb_define_method(rb_cIOBufferView, "size", rb_io_buffer_size, 0);
+    rb_define_method(rb_cIOBufferView, "valid?", rb_io_buffer_valid_p, 0);
 
     rb_define_method(rb_cIOBuffer, "transfer", io_buffer_transfer, 0);
 
@@ -4701,31 +4830,32 @@ Init_IO_Buffer(void)
     /* Refers to network byte order, which is the same as big endian. See #get_value for more details. */
     rb_define_const(rb_cIOBuffer, "NETWORK_ENDIAN", RB_INT2NUM(RB_IO_BUFFER_NETWORK_ENDIAN));
 
-    rb_define_method(rb_cIOBuffer, "null?", rb_io_buffer_null_p, 0);
-    rb_define_method(rb_cIOBuffer, "empty?", rb_io_buffer_empty_p, 0);
+    rb_define_method(rb_cIOBufferView, "null?", rb_io_buffer_null_p, 0);
+    rb_define_method(rb_cIOBufferView, "empty?", rb_io_buffer_empty_p, 0);
     rb_define_method(rb_cIOBuffer, "external?", rb_io_buffer_external_p, 0);
     rb_define_method(rb_cIOBuffer, "internal?", rb_io_buffer_internal_p, 0);
     rb_define_method(rb_cIOBuffer, "mapped?", rb_io_buffer_mapped_p, 0);
     rb_define_method(rb_cIOBuffer, "shared?", rb_io_buffer_shared_p, 0);
-    rb_define_method(rb_cIOBuffer, "locked?", rb_io_buffer_locked_p, 0);
+    rb_define_method(rb_cIOBufferView, "locked?", rb_io_buffer_locked_p, 0);
     rb_define_method(rb_cIOBuffer, "private?", rb_io_buffer_private_p, 0);
-    rb_define_method(rb_cIOBuffer, "readonly?", io_buffer_readonly, 0);
+    rb_define_method(rb_cIOBufferView, "readonly?", io_buffer_readonly, 0);
 
     // Locking to prevent changes while using pointer:
     // rb_define_method(rb_cIOBuffer, "lock", rb_io_buffer_lock, 0);
     // rb_define_method(rb_cIOBuffer, "unlock", rb_io_buffer_unlock, 0);
-    rb_define_method(rb_cIOBuffer, "locked", rb_io_buffer_locked, 0);
+    rb_define_method(rb_cIOBufferView, "locked", rb_io_buffer_locked, 0);
 
     // Manipulation:
-    rb_define_method(rb_cIOBuffer, "source", io_buffer_source, 0);
-    rb_define_method(rb_cIOBuffer, "slice", io_buffer_slice, -1);
-    rb_define_method(rb_cIOBuffer, "<=>", rb_io_buffer_compare, 1);
+    rb_define_method(rb_cIOBufferView, "source", io_buffer_source, 0);
+    rb_define_method(rb_cIOBufferView, "slice", io_buffer_slice, -1);
+    rb_define_method(rb_cIOBufferView, "<=>", rb_io_buffer_compare, 1);
     rb_define_method(rb_cIOBuffer, "resize", io_buffer_resize, 1);
-    rb_define_method(rb_cIOBuffer, "advance", io_buffer_advance, 1);
-    rb_define_method(rb_cIOBuffer, "clear", io_buffer_clear, -1);
+    rb_define_method(rb_cIOBufferSlice, "resize", io_buffer_resize, 1);
+    rb_define_method(rb_cIOBufferView, "advance", io_buffer_advance, 1);
+    rb_define_method(rb_cIOBufferView, "clear", io_buffer_clear, -1);
     rb_define_method(rb_cIOBuffer, "free", io_buffer_free, 0);
 
-    rb_include_module(rb_cIOBuffer, rb_mComparable);
+    rb_include_module(rb_cIOBufferView, rb_mComparable);
 
 #define IO_BUFFER_DEFINE_DATA_TYPE(name) RB_IO_BUFFER_DATA_TYPE_##name = rb_intern_const(#name)
     IO_BUFFER_DEFINE_DATA_TYPE(U8);
@@ -4760,38 +4890,38 @@ Init_IO_Buffer(void)
     rb_define_singleton_method(rb_cIOBuffer, "size_of", io_buffer_size_of, 1);
 
     // Data access:
-    rb_define_method(rb_cIOBuffer, "get_value", io_buffer_get_value, 2);
-    rb_define_method(rb_cIOBuffer, "get_values", io_buffer_get_values, 2);
-    rb_define_method(rb_cIOBuffer, "each", io_buffer_each, -1);
-    rb_define_method(rb_cIOBuffer, "values", io_buffer_values, -1);
-    rb_define_method(rb_cIOBuffer, "each_byte", io_buffer_each_byte, -1);
-    rb_define_method(rb_cIOBuffer, "set_value", io_buffer_set_value, 3);
-    rb_define_method(rb_cIOBuffer, "set_values", io_buffer_set_values, 3);
+    rb_define_method(rb_cIOBufferView, "get_value", io_buffer_get_value, 2);
+    rb_define_method(rb_cIOBufferView, "get_values", io_buffer_get_values, 2);
+    rb_define_method(rb_cIOBufferView, "each", io_buffer_each, -1);
+    rb_define_method(rb_cIOBufferView, "values", io_buffer_values, -1);
+    rb_define_method(rb_cIOBufferView, "each_byte", io_buffer_each_byte, -1);
+    rb_define_method(rb_cIOBufferView, "set_value", io_buffer_set_value, 3);
+    rb_define_method(rb_cIOBufferView, "set_values", io_buffer_set_values, 3);
 
-    rb_define_method(rb_cIOBuffer, "copy", io_buffer_copy, -1);
+    rb_define_method(rb_cIOBufferView, "copy", io_buffer_copy, -1);
 
-    rb_define_method(rb_cIOBuffer, "get_string", io_buffer_get_string, -1);
-    rb_define_method(rb_cIOBuffer, "set_string", io_buffer_set_string, -1);
+    rb_define_method(rb_cIOBufferView, "get_string", io_buffer_get_string, -1);
+    rb_define_method(rb_cIOBufferView, "set_string", io_buffer_set_string, -1);
 
     // Binary buffer manipulations:
-    rb_define_method(rb_cIOBuffer, "&", io_buffer_and, 1);
-    rb_define_method(rb_cIOBuffer, "|", io_buffer_or, 1);
-    rb_define_method(rb_cIOBuffer, "^", io_buffer_xor, 1);
-    rb_define_method(rb_cIOBuffer, "~", io_buffer_not, 0);
+    rb_define_method(rb_cIOBufferView, "&", io_buffer_and, 1);
+    rb_define_method(rb_cIOBufferView, "|", io_buffer_or, 1);
+    rb_define_method(rb_cIOBufferView, "^", io_buffer_xor, 1);
+    rb_define_method(rb_cIOBufferView, "~", io_buffer_not, 0);
 
-    rb_define_method(rb_cIOBuffer, "and!", io_buffer_and_inplace, 1);
-    rb_define_method(rb_cIOBuffer, "or!", io_buffer_or_inplace, 1);
-    rb_define_method(rb_cIOBuffer, "xor!", io_buffer_xor_inplace, 1);
-    rb_define_method(rb_cIOBuffer, "not!", io_buffer_not_inplace, 0);
+    rb_define_method(rb_cIOBufferView, "and!", io_buffer_and_inplace, 1);
+    rb_define_method(rb_cIOBufferView, "or!", io_buffer_or_inplace, 1);
+    rb_define_method(rb_cIOBufferView, "xor!", io_buffer_xor_inplace, 1);
+    rb_define_method(rb_cIOBufferView, "not!", io_buffer_not_inplace, 0);
 
-    rb_define_method(rb_cIOBuffer, "bit_count", io_buffer_bit_count, -1);
+    rb_define_method(rb_cIOBufferView, "bit_count", io_buffer_bit_count, -1);
 
     // IO operations:
-    rb_define_method(rb_cIOBuffer, "read", io_buffer_read, -1);
-    rb_define_method(rb_cIOBuffer, "pread", io_buffer_pread, -1);
-    rb_define_method(rb_cIOBuffer, "write", io_buffer_write, -1);
-    rb_define_method(rb_cIOBuffer, "pwrite", io_buffer_pwrite, -1);
+    rb_define_method(rb_cIOBufferView, "read", io_buffer_read, -1);
+    rb_define_method(rb_cIOBufferView, "pread", io_buffer_pread, -1);
+    rb_define_method(rb_cIOBufferView, "write", io_buffer_write, -1);
+    rb_define_method(rb_cIOBufferView, "pwrite", io_buffer_pwrite, -1);
 
     // MemoryView:
-    rb_memory_view_register(rb_cIOBuffer, &io_buffer_memory_view_entry);
+    rb_memory_view_register(rb_cIOBufferView, &io_buffer_memory_view_entry);
 }

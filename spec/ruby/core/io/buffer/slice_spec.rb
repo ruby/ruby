@@ -10,7 +10,6 @@ ruby_version_is "4.1" do
     end
 
     after :each do
-      @parent.free unless @parent.frozen?
       @buffer.free
     end
 
@@ -51,32 +50,20 @@ ruby_version_is "4.1" do
       @child.get_string.should == "cd"
     end
 
-    it "is invalidated when its immediate parent is freed" do
-      @parent.free
-      @buffer.get_string.should == "abcdefgh"
+    it "remains a view of its parent when resized to zero and grown again" do
+      @parent.resize(0)
+      @parent.source.should.equal?(@buffer)
       @child.should_not.valid?
-      @child.source.should.equal?(@parent)
-      -> { @child.get_string }.should.raise(IO::Buffer::InvalidatedError)
-    end
-
-    it "follows the same parent if it acquires new storage after being freed" do
-      @parent.free
       @parent.resize(4)
       @parent.set_string("1234")
       @child.should.valid?
       @child.get_string.should == "23"
-      @buffer.get_string.should == "abcdefgh"
+      @buffer.get_string.should == "a1234fgh"
     end
 
-    it "is invalidated when the parent transfers its view elsewhere" do
-      transferred = @parent.transfer
-      begin
-        transferred.source.should.equal?(@buffer)
-        @child.should_not.valid?
-        @child.source.should.equal?(@parent)
-      ensure
-        transferred.free
-      end
+    it "does not expose allocation-management methods" do
+      @parent.respond_to?(:free).should == false
+      @parent.respond_to?(:transfer).should == false
     end
 
     it "shares the root allocation lock through the parent chain" do
@@ -84,8 +71,8 @@ ruby_version_is "4.1" do
         @parent.should.locked?
         @buffer.should.locked?
         -> { @buffer.resize(16) }.should.raise(IO::Buffer::LockedError)
-        -> { @parent.free }.should.raise(IO::Buffer::LockedError)
-        -> { @parent.transfer }.should.raise(IO::Buffer::LockedError)
+        -> { @buffer.free }.should.raise(IO::Buffer::LockedError)
+        -> { @buffer.transfer }.should.raise(IO::Buffer::LockedError)
 
         @parent.advance(1)
         @child.get_string.should == "de"

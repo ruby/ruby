@@ -24,7 +24,124 @@ class TestIOBuffer < Test::Unit::TestCase
   end
 
   def test_version
-    assert_equal 3, IO::Buffer::VERSION
+    assert_equal 4, IO::Buffer::VERSION
+  end
+
+  def test_buffer_and_slice_share_view_interface
+    buffer = IO::Buffer.new(8)
+    buffer.set_string("abcdefgh")
+    slice = buffer.slice(1, 4)
+    assert_instance_of IO::Buffer::Slice, slice
+    refute_kind_of IO::Buffer, slice
+    assert_same IO::Buffer.superclass, IO::Buffer::Slice.superclass
+    assert_raise(NameError) {IO::Buffer::View}
+    assert_raise(TypeError) {IO::Buffer.superclass.new}
+
+    [:internal?, :external?, :mapped?, :shared?, :private?, :free, :transfer].each do |method|
+      assert_respond_to buffer, method
+      refute_respond_to slice, method
+    end
+    [:locked?, :locked, :valid?, :null?, :empty?, :readonly?, :size, :source].each do |method|
+      assert_respond_to buffer, method
+      assert_respond_to slice, method
+    end
+    assert_equal true, Bug::IOBuffer.buffer?(buffer)
+    assert_equal true, Bug::IOBuffer.buffer?(slice)
+    assert_equal false, Bug::IOBuffer.buffer?("abcd")
+    assert_equal 0, Bug::IOBuffer.get_bytes_flags(slice)
+  ensure
+    buffer&.free
+  end
+
+  def test_slice_dup_and_clone_copy_the_view
+    buffer = IO::Buffer.new(8)
+    buffer.set_string("abcdefgh")
+    slice = buffer.slice(1, 4)
+    duplicate = slice.dup
+    assert_instance_of IO::Buffer::Slice, duplicate
+    assert_same buffer, duplicate.source
+    duplicate.advance(1)
+    assert_equal "cde", duplicate.get_string
+    assert_equal "bcde", slice.get_string
+    duplicate.set_string("XYZ")
+    assert_equal "abXYZfgh", buffer.get_string
+    assert_equal "bXYZ", slice.get_string
+    slice.freeze
+    assert_predicate slice.clone, :frozen?
+    refute_predicate slice.clone(freeze: false), :frozen?
+  ensure
+    buffer&.free
+  end
+
+  def test_slice_c_lifecycle_rejects_allocation_operations
+    buffer = IO::Buffer.new(8)
+    buffer.set_string("abcdefgh")
+    slice = buffer.slice(1, 4)
+    slice.locked do
+      assert_raise(IO::Buffer::AccessError) {Bug::IOBuffer.free(slice)}
+      assert_raise(IO::Buffer::AccessError) {Bug::IOBuffer.transfer(slice)}
+      assert_raise(IO::Buffer::AccessError) {Bug::IOBuffer.free_locked(slice)}
+      assert_predicate buffer, :locked?
+      assert_equal "bcde", slice.get_string
+    end
+    refute_predicate buffer, :locked?
+    assert_same buffer, buffer.free
+    assert_same buffer, buffer.free
+  ensure
+    buffer&.free
+  end
+
+  def test_uninitialized_slice_cannot_allocate_storage
+    slice = IO::Buffer::Slice.allocate
+    assert_nil slice.source
+    refute_predicate slice, :valid?
+    refute_predicate slice, :locked?
+    assert_raise(IO::Buffer::InvalidatedError) {slice.resize(8)}
+    assert_raise(IO::Buffer::InvalidatedError) {slice.locked {flunk}}
+    assert_raise(IO::Buffer::AccessError) {Bug::IOBuffer.free(slice)}
+    buffer = IO::Buffer.new(4)
+    buffer.set_string("test")
+    slice.send(:initialize, buffer, 1, 2)
+    assert_equal "es", slice.get_string
+    slice.locked do
+      assert_raise(RuntimeError) {slice.send(:initialize, buffer, 0, 4)}
+    end
+    assert_equal "es", slice.get_string
+  ensure
+    buffer&.free
+  end
+
+  def test_initialization_respects_allocation_lock
+    buffer = IO::Buffer.new(4)
+    buffer.set_string("test")
+    source = IO::Buffer.new(4)
+    source.set_string("copy")
+    slice = buffer.slice
+    slice.locked do
+      assert_raise(IO::Buffer::LockedError) {buffer.send(:initialize, 8)}
+      assert_raise(IO::Buffer::LockedError) {buffer.send(:initialize_copy, source)}
+      assert_predicate buffer, :locked?
+      assert_equal "test", slice.get_string
+    end
+    assert_same buffer, buffer.send(:initialize_copy, buffer)
+    buffer.send(:initialize, 4)
+    assert_equal "\0" * 4, buffer.get_string
+  ensure
+    source&.free
+    buffer&.free
+  end
+
+  def test_internal_coercion_accepts_slices
+    buffer = IO::Buffer.new(8)
+    buffer.set_string("abcdefgh")
+    slice = buffer.slice(1, 4)
+    assert_equal "bcde", Bug::IOBuffer.for_reading_get_string(slice)
+    assert_equal true, Bug::IOBuffer.for_reading_locked?(slice)
+    Bug::IOBuffer.for_writing_set_string(slice, "TEST")
+    assert_equal "aTESTfgh", buffer.get_string
+    refute_predicate buffer, :locked?
+  ensure
+    buffer&.free
   end
 
   def test_flags
@@ -939,16 +1056,16 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_predicate child, :valid?
     assert_equal "XY", child.get_string
 
-    parent.free
+    parent.resize(0)
     refute_predicate child, :valid?
     assert_same parent, child.source
+    assert_same buffer, parent.source
     assert_predicate buffer, :valid?
     parent.resize(4)
     parent.set_string("1234")
     assert_equal "23", child.get_string
-    assert_equal "abcXYfgh", buffer.get_string
+    assert_equal "ab1234gh", buffer.get_string
   ensure
-    parent&.free
     buffer&.free
   end
 
@@ -983,8 +1100,8 @@ class TestIOBuffer < Test::Unit::TestCase
       assert_predicate child.source, :locked?
       assert_raise(IO::Buffer::LockedError) {buffer.resize(8)}
       assert_raise(IO::Buffer::LockedError) {buffer.free}
-      assert_raise(IO::Buffer::LockedError) {child.source.free}
-      assert_raise(IO::Buffer::LockedError) {child.source.transfer}
+      refute_respond_to child.source, :free
+      refute_respond_to child.source, :transfer
       child.advance(1)
       assert_equal "est", child.get_string
     end
@@ -1176,8 +1293,7 @@ class TestIOBuffer < Test::Unit::TestCase
     refute_predicate slice, :valid?
     assert_raise(IO::Buffer::InvalidatedError) {slice.get_string}
   ensure
-    slice&.free unless slice&.null?
-    buffer&.free unless buffer&.null?
+    buffer&.free
   end
 
   def test_string_backed_slice_escaping_block_is_invalidated
@@ -1190,8 +1306,6 @@ class TestIOBuffer < Test::Unit::TestCase
 
     refute_predicate slice, :valid?
     assert_raise(IO::Buffer::InvalidatedError) {slice.get_string}
-  ensure
-    slice&.free unless slice&.null?
   end
 
   def test_transfer
@@ -1315,7 +1429,7 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_predicate buffer, :null?
   ensure
     Bug::IOBuffer.free_locked(buffer) if buffer&.locked?
-    buffer&.free unless buffer&.null?
+    buffer&.free
   end
 
   def test_slice_and_root_share_lock_count
@@ -1339,8 +1453,7 @@ class TestIOBuffer < Test::Unit::TestCase
     refute_predicate slice, :valid?
   ensure
     Bug::IOBuffer.unlock(buffer) while buffer&.locked?
-    slice&.free unless slice&.null?
-    buffer&.free unless buffer&.null?
+    buffer&.free
   end
 
   def test_invalid_slice_does_not_lock_source
@@ -1360,8 +1473,7 @@ class TestIOBuffer < Test::Unit::TestCase
     refute_predicate buffer, :locked?
     refute_predicate slice, :locked?
   ensure
-    slice&.free unless slice&.null?
-    buffer&.free unless buffer&.null?
+    buffer&.free
   end
 
   def test_string_backed_slice_shares_root_lock
@@ -1373,8 +1485,7 @@ class TestIOBuffer < Test::Unit::TestCase
       assert_raise(IO::Buffer::LockedError) {buffer.free}
     end
   ensure
-    slice&.free unless slice&.null?
-    buffer&.free unless buffer&.null?
+    buffer&.free
   end
 
   def test_get_string
@@ -1574,7 +1685,6 @@ class TestIOBuffer < Test::Unit::TestCase
     refute_predicate buffer, :locked?
     refute_predicate slice, :locked?
   ensure
-    slice&.free
     buffer&.free
   end
 
@@ -1706,7 +1816,7 @@ class TestIOBuffer < Test::Unit::TestCase
     output1&.close
     input2&.close
     output2&.close
-    buffer&.free unless buffer&.null?
+    buffer&.free
   end
 
   def hello_world_tempfile(repeats = 1)
