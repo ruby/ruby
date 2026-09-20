@@ -1497,6 +1497,14 @@ a
         end
         prism_test_return_node(1, foo: 0)
       CODE
+
+      # [Bug #22334]
+      assert_prism_eval(<<-CODE)
+        def self.prism_test_return_node
+          return **{foo: 1}
+        end
+        prism_test_return_node
+      CODE
     end
 
     ############################################################################
