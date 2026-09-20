@@ -1119,19 +1119,10 @@ fn inline_ary_first(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::In
 }
 
 /// Inline `ary_last(ec, self)` from Array#last with no arguments.
-/// Guards that the array is non-empty and loads the element at index length-1;
-/// side-exits on empty arrays and lets the interpreter return nil.
-fn inline_ary_last(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
-    use crate::hir::SideExitReason;
+fn inline_ary_last(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
     let &[recv] = args else { return None; };
     let recv = fun.push_insn(block, hir::Insn::RefineType { val: recv, new_type: types::Array });
-    let length = fun.push_insn(block, hir::Insn::ArrayLength { array: recv });
-    let minus_one = fun.push_insn(block, hir::Insn::Const { val: hir::Const::CInt64(-1) });
-    // AdjustBounds computes length - 1 since the index is negative
-    // TODO: Consider doing something like IntSub instead
-    let index = fun.push_insn(block, hir::Insn::AdjustBounds { index: minus_one, length });
-    let zero = fun.push_insn(block, hir::Insn::Const { val: hir::Const::CInt64(0) });
-    let index = fun.push_insn(block, hir::Insn::GuardGreaterEq { left: index, right: zero, reason: Box::new(SideExitReason::GuardGreaterEq), state });
+    let index = fun.push_insn(block, hir::Insn::Const { val: hir::Const::CInt64(-1) });
     let result = fun.push_insn(block, hir::Insn::ArrayAref { array: recv, index });
     Some(result)
 }

@@ -13646,14 +13646,10 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(Array@0x1008)
           PatchPoint MethodRedefined(Array@0x1008, last@0x1010, cme:0x1018)
           v23:ArrayExact = GuardType v10, ArrayExact recompile
-          v25:CInt64 = ArrayLength v23
-          v26:CInt64[-1] = Const CInt64(-1)
-          v27:CInt64 = AdjustBounds v26, v25
-          v28:CInt64[0] = Const CInt64(0)
-          v29:CInt64 = GuardGreaterEq v27, v28
-          v30:BasicObject = ArrayAref v23, v29
+          v25:CInt64[-1] = Const CInt64(-1)
+          v26:BasicObject = ArrayAref v23, v25
           CheckInterrupts
-          Return v30
+          Return v26
         ");
     }
 
