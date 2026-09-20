@@ -3228,6 +3228,9 @@ method_inspect(VALUE method)
     }
     else {
         mklass = data->klass;
+        if (RB_TYPE_P(mklass, T_ICLASS)) {
+            mklass = RBASIC_CLASS(mklass);
+        }
         if (RCLASS_SINGLETON_P(mklass)) {
             VALUE v = RCLASS_ATTACHED_OBJECT(mklass);
             if (!(RB_TYPE_P(v, T_CLASS) || RB_TYPE_P(v, T_MODULE))) {

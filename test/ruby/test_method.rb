@@ -539,6 +539,12 @@ class TestMethod < Test::Unit::TestCase
     c5.extend(m)
     c6 = Class.new(c5)
     assert_equal("#<Method: #<Class:#{c6.inspect}>(#{m.inspect})#prep(prepend)() #{__FILE__}:#{line_no}>", c6.method(:prep).inspect, bug17428)
+
+    mod = Module.new { def foo; end }; line_no = __LINE__
+    cls = Class.new { include mod }
+    o = cls.new
+    assert_equal("#<Method: #{mod.inspect}#foo() #{__FILE__}:#{line_no}>",
+                 o.method(:foo).unbind.bind(o).inspect, "[ruby-core:126737] [Bug #22321]")
   end
 
   def test_callee_top_level
