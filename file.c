@@ -2082,14 +2082,25 @@ rb_file_exist_p(VALUE obj, VALUE fname)
 }
 
 /*
+ * :markup: markdown
+ *
  * call-seq:
- *    File.readable?(file_name)   -> true or false
+ *   File.readable?(path) -> true or false
  *
- * Returns <code>true</code> if the named file is readable by the effective
- * user and group id of this process. See eaccess(3).
+ * Returns whether the entry at the given `path`
+ * exists and is readable by the owner and group of the current process;
+ * see [Permissions](rdoc-ref:file/filesystem_modes.md@Permissions):
  *
- * Note that some OS-level security features may cause this to return true
- * even though the file is not readable by the effective user/group.
+ * ```ruby
+ * path = '/tmp/secret.txt'
+ * File.write(path, 'foo')
+ * File.readable?(path)     # => true
+ * File.chmod(0o000, path)
+ * File.readable?(path)     # => false
+ * File.delete(path)        # Clean up.
+ * File.readable?('nosuch') # => false
+ * ```
+ *
  */
 
 static VALUE
@@ -6981,13 +6992,23 @@ rb_stat_grpowned(VALUE obj)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     stat.readable?    -> true or false
+ *    readable? -> true or false
  *
- *  Returns <code>true</code> if <i>stat</i> is readable by the
- *  effective user id of this process.
+ *  Returns whether the entry represented by `self`
+ *  exists and is readable by the owner and group of the current process;
+ *  see [Permissions](rdoc-ref:file/filesystem_modes.md@Permissions):
  *
- *     File.stat("testfile").readable?   #=> true
+ *  ```ruby
+ *  path = '/tmp/secret.txt'
+ *  File.write(path, 'foo')
+ *  File.stat(path).readable? # => true
+ *  File.chmod(0o000, path)
+ *  File.stat(path).readable? # => false
+ *  File.delete(path)         # Clean up.
+ *  ```
  *
  */
 
