@@ -247,6 +247,18 @@ class TestPack < Test::Unit::TestCase
     end
   end
 
+  def test_unpack_with_block_modifying_string
+    # [Bug #22315]
+    s = "C" * 4000
+    assert_raise_with_message(RuntimeError, /string modified/) {
+      s.unpack("L*") { s.clear }
+    }
+    s = "ABCD"
+    assert_raise_with_message(RuntimeError, /string modified/) {
+      s.unpack("C*") { s << "E" * 100 }
+    }
+  end
+
   def test_comment
     assert_equal("\0\1", [0,1].pack("  C  #foo \n  C  "))
     assert_equal([0,1], "\0\1".unpack("  C  #foo \n  C  "))
