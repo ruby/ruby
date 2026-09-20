@@ -2118,14 +2118,13 @@ rb_file_readable_p(VALUE obj, VALUE fname)
 }
 
 /*
+ * :markup: markdown
+ *
  * call-seq:
- *    File.readable_real?(file_name)   -> true or false
+ *    File.readable_real?(path) -> true or false
  *
- * Returns <code>true</code> if the named file is readable by the real
- * user and group id of this process. See access(3).
- *
- * Note that some OS-level security features may cause this to return true
- * even though the file is not readable by the real user/group.
+ * Like File.readable?, but checks against the real user and group ids
+ * instead of the effective ids.
  */
 
 static VALUE
@@ -7084,14 +7083,13 @@ rb_stat_r(VALUE obj)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
  *     stat.readable_real?  ->  true or false
  *
- *  Returns <code>true</code> if <i>stat</i> is readable by the real
- *  user id of this process.
- *
- *     File.stat("testfile").readable_real?   #=> true
- *
+ *  Like #readable?, but checks against the real user and group ids
+ *  instead of the effective ids.
  */
 
 static VALUE
