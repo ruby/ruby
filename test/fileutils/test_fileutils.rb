@@ -1899,7 +1899,10 @@ class TestFileUtils < Test::Unit::TestCase
 
   def test_compare_stream
     check_singleton :compare_stream
-    # FIXME
+
+    assert(FileUtils.compare_stream(StringIO.new("contents\n"), StringIO.new("contents\n")))
+    assert_not_equal(true, FileUtils.compare_stream(StringIO.new("contents\n"), StringIO.new("content!\n")))
+    assert_not_equal(true, FileUtils.compare_stream(StringIO.new("contents\n"), StringIO.new("content")))
   end
 
   class Stream
