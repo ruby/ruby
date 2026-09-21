@@ -3064,18 +3064,12 @@ rb_io_pid(VALUE io)
  *  or `nil` if there is no associated path:
  *
  *  ```ruby
- *  fd = File.new('doc/maintainers.md').fileno # => 7
- *  io = IO.new(fd)                            # => #<IO:fd 7>
- *  io.path                                    # => nil
-
- *  fd = $stdin.fileno # => 0
- *  io = IO.new(fd)    # => #<IO:fd 0>
- *  io.path            # => nil
+ *  path = 'doc/maintainers.md'
+ *  fd = File.open(path).fileno # => 6
+ *  IO.new(fd, path: path).path # => "doc/maintainers.md"
+ *  IO.new(fd).path             # => nil
  *  ```
  *
- *  No method in the Ruby core calls method IO.path.
- *  \Class File is the only Ruby core class that is a subclass of \IO;
- *  it overrides method IO.path with its own method File.path.
  */
 
 VALUE
