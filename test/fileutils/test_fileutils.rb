@@ -2059,6 +2059,37 @@ cd -
     check_singleton :touch
   end
 
+  def test_touch_verbose
+    assert_output_lines(["touch file"]) do
+      touch('file', verbose: true, noop: true)
+    end
+    assert_output_lines(["touch -c file"]) do
+      touch('file', verbose: true, noop: true, nocreate: true)
+    end
+    t = Time.new(2026, 5, 4, 3, 2, 1)
+    assert_output_lines(["touch -t 202605040302.01 file"]) do
+      touch('file', verbose: true, noop: true, mtime: t)
+    end
+  end
+
+  def test_touch_create
+    t0 = Time.now - 10          # discrepancies caused by remote file systems?
+    assert_file.not_exist?('file')
+    assert_raise(Errno::ENOENT) {touch('file', nocreate: true)}
+    assert_file.not_exist?('file')
+    touch('file')
+    assert_file.exist?('file')
+    t = File.mtime('file')
+    assert_operator(t, :>=, t0)
+    assert_operator(t, :<=, Time.now + 10)
+  end
+
+  def test_touch_mtime
+    t = Time.new(2026, 5, 4, 3, 2, 1)
+    touch('file', mtime: t)
+    assert_equal(t, File.mtime('file'))
+  end
+
   def test_collect_methods
   end
 
