@@ -7602,7 +7602,6 @@ pm_compile_case_node_dispatch(rb_iseq_t *iseq, VALUE dispatch, const pm_node_t *
       case PM_FALSE_NODE:
       case PM_INTEGER_NODE:
       case PM_NIL_NODE:
-      case PM_SOURCE_FILE_NODE:
       case PM_SOURCE_LINE_NODE:
       case PM_SYMBOL_NODE:
       case PM_TRUE_NODE:
