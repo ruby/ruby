@@ -27,6 +27,7 @@ pub struct RubyHeapTriggerConfig {
 pub struct RubyHeapTrigger {
     /// Target number of heap pages
     target_heap_pages: AtomicUsize,
+    pending_pages: AtomicUsize,
 }
 
 impl GCTriggerPolicy<Ruby> for RubyHeapTrigger {
@@ -40,10 +41,20 @@ impl GCTriggerPolicy<Ruby> for RubyHeapTrigger {
         plan.collection_required(space_full, space)
     }
 
+    fn on_pending_allocation(&self, pages: usize) {
+        self.pending_pages.fetch_add(pages, Ordering::SeqCst);
+    }
+
     fn on_pause_end(&self, mmtk: &'static MMTK<Ruby>) {
-        if let Some(plan) = mmtk.get_plan().generational() {
-            if plan.is_current_gc_nursery() {
-                return;
+        let pending_pages = self.pending_pages.swap(0, Ordering::SeqCst);
+
+        // Nursery GCs don't resize the heap, unless a failed allocation is
+        // waiting on us to make room for it.
+        if pending_pages == 0 {
+            if let Some(plan) = mmtk.get_plan().generational() {
+                if plan.is_current_gc_nursery() {
+                    return;
+                }
             }
         }
 
@@ -53,14 +64,17 @@ impl GCTriggerPolicy<Ruby> for RubyHeapTrigger {
             (used_pages as f64 * (1.0 + Self::get_config().heap_pages_min_ratio)) as usize;
         let target_max =
             (used_pages as f64 * (1.0 + Self::get_config().heap_pages_max_ratio)) as usize;
+        // Grow the heap by the goal ratio over the live size, plus whatever
+        // is needed to fit allocations that failed and triggered this GC.
         let new_target = (((used_pages as f64) * (1.0 + Self::get_config().heap_pages_goal_ratio))
             as usize)
+            .saturating_add(pending_pages)
             .clamp(
                 Self::get_config().min_heap_pages,
                 Self::get_config().max_heap_pages,
             );
 
-        if used_pages < target_min || used_pages > target_max {
+        if pending_pages > 0 || used_pages < target_min || used_pages > target_max {
             self.target_heap_pages.store(new_target, Ordering::Relaxed);
         }
     }
@@ -88,6 +102,7 @@ impl Default for RubyHeapTrigger {
 
         Self {
             target_heap_pages: AtomicUsize::new(min_heap_pages),
+            pending_pages: AtomicUsize::new(0),
         }
     }
 }
@@ -122,6 +137,7 @@ mod tests {
 
         RubyHeapTrigger {
             target_heap_pages: AtomicUsize::new(target_heap_pages),
+            pending_pages: AtomicUsize::new(0),
         }
     }
 
