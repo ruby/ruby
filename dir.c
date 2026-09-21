@@ -831,7 +831,6 @@ dir_fileno(VALUE dir)
  * If `self` was created with a file descriptor, returns `nil`:
  *
  * ```
- * dir.path         # => "../ruby/doc/syntax"
  * dir0 = Dir.new('.')
  * fd = dir0.fileno # => 8
  * dir1 = Dir.for_fd(fd)
