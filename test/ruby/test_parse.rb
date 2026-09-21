@@ -1623,6 +1623,17 @@ x = __ENCODING__
     assert_equal(2, b[1], bug_20341)
   end
 
+  def test_shareable_constant_value_literal_file
+    a, b = eval_separately(<<~'end;')
+      # shareable_constant_value: literal
+      A = __FILE__
+      B = [__FILE__]
+      [A, B]
+    end;
+    assert_ractor_shareable(a)
+    assert_ractor_shareable(b)
+  end
+
   def test_shareable_constant_value_literal_const_refs
     a = eval_separately("#{<<~"begin;"}\n#{<<~'end;'}")
     begin;

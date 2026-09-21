@@ -5840,6 +5840,13 @@ pm_compile_shareable_constant_value(rb_iseq_t *iseq, const pm_node_t *node, cons
 
         return;
       }
+     case PM_SOURCE_FILE_NODE: {
+       // frozen regardless of frozen_string_literal, as when it was a literal
+       PUSH_INSN1(ret, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+       PUSH_INSN1(ret, location, putobject, INT2FIX(ISEQ_FROZEN_STRING_LITERAL_ENABLED));
+       PUSH_SEND(ret, location, id_core_iseq_path, INT2FIX(1));
+       return;
+      }
       default: {
         DECL_ANCHOR(value_seq);
 

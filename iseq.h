@@ -263,8 +263,8 @@ iseq_imemo_alloc(void)
 
 VALUE rb_iseq_ibf_dump(const rb_iseq_t *iseq, VALUE opt);
 void rb_ibf_load_iseq_complete(rb_iseq_t *iseq);
-const rb_iseq_t *rb_iseq_ibf_load(VALUE str);
-const rb_iseq_t *rb_iseq_ibf_load_bytes(const char *cstr, size_t);
+const rb_iseq_t *rb_iseq_ibf_load(VALUE str, VALUE fname, VALUE path);
+const rb_iseq_t *rb_iseq_ibf_load_bytes(const char *cstr, size_t len, VALUE fname, VALUE path);
 VALUE rb_iseq_ibf_load_extra_data(VALUE str);
 const rb_iseq_t *rb_iseq_dup_with_independent_caches(const rb_iseq_t *iseq);
 void rb_iseq_init_trace(rb_iseq_t *iseq);

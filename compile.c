@@ -10800,6 +10800,15 @@ compile_shareable_literal_constant(rb_iseq_t *iseq, LINK_ANCHOR *ret, enum rb_pa
         *shareable_literal_p = 1;
         return COMPILE_OK;
 
+      case NODE_FILE:
+        /* frozen regardless of frozen_string_literal, as when it was a literal */
+        ADD_INSN1(ret, node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+        ADD_INSN1(ret, node, putobject, INT2FIX(ISEQ_FROZEN_STRING_LITERAL_ENABLED));
+        ADD_SEND(ret, node, id_core_iseq_path, INT2FIX(1));
+        *value_p = Qundef;
+        *shareable_literal_p = 1;
+        return COMPILE_OK;
+
       case NODE_DSTR:
         CHECK(COMPILE(ret, "shareable_literal_constant", node));
         if (shareable == rb_parser_shareable_literal) {
@@ -12765,6 +12774,8 @@ struct ibf_load {
     VALUE loader_obj;
     rb_iseq_t *iseq;
     VALUE str;
+    VALUE path_override;
+    VALUE realpath_override;
     struct ibf_load_buffer *current_buffer;
 };
 
@@ -14070,6 +14081,10 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
         else {
             rb_raise(rb_eRuntimeError, "unexpected path object");
         }
+        if (RTEST(load->path_override)) {
+            path = load->path_override;
+            realpath = load->realpath_override;
+        }
         rb_iseq_pathobj_set(iseq, path, realpath);
     }
 
@@ -15216,6 +15231,8 @@ ibf_loader_mark(void *ptr)
 {
     struct ibf_load *load = (struct ibf_load *)ptr;
     rb_gc_mark(load->str);
+    rb_gc_mark(load->path_override);
+    rb_gc_mark(load->realpath_override);
     rb_gc_mark(load->iseq_list);
     rb_gc_mark(load->global_buffer.obj_list);
 }
@@ -15239,14 +15256,24 @@ static const rb_data_type_t ibf_load_type = {
     0, 0, RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_THREAD_SAFE_FREE
 };
 
+static void
+ibf_load_set_path(struct ibf_load *load, VALUE path, VALUE realpath)
+{
+    if (NIL_P(path)) return;
+    if (NIL_P(realpath)) realpath = path;
+    RB_OBJ_WRITE(load->loader_obj, &load->path_override, rb_fstring(path));
+    RB_OBJ_WRITE(load->loader_obj, &load->realpath_override, rb_fstring(realpath));
+}
+
 const rb_iseq_t *
-rb_iseq_ibf_load(VALUE str)
+rb_iseq_ibf_load(VALUE str, VALUE fname, VALUE path)
 {
     struct ibf_load *load;
     rb_iseq_t *iseq;
     VALUE loader_obj = TypedData_Make_Struct(0, struct ibf_load, &ibf_load_type, load);
 
     ibf_load_setup(load, loader_obj, str);
+    ibf_load_set_path(load, fname, path);
     iseq = ibf_load_iseq(load, 0);
 
     RB_GC_GUARD(loader_obj);
@@ -15254,13 +15281,14 @@ rb_iseq_ibf_load(VALUE str)
 }
 
 const rb_iseq_t *
-rb_iseq_ibf_load_bytes(const char *bytes, size_t size)
+rb_iseq_ibf_load_bytes(const char *bytes, size_t size, VALUE fname, VALUE path)
 {
     struct ibf_load *load;
     rb_iseq_t *iseq;
     VALUE loader_obj = TypedData_Make_Struct(0, struct ibf_load, &ibf_load_type, load);
 
     ibf_load_setup_bytes(load, loader_obj, bytes, size);
+    ibf_load_set_path(load, fname, path);
     iseq = ibf_load_iseq(load, 0);
 
     RB_GC_GUARD(loader_obj);

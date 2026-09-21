@@ -7,14 +7,14 @@ eval_string(VALUE self, VALUE str)
 }
 
 static VALUE
-iseq_load_from_binary(VALUE self, VALUE str)
+iseq_load_from_binary(VALUE self, VALUE str, VALUE fname, VALUE path)
 {
-    return rb_iseq_load_from_binary(RSTRING_PTR(str), RSTRING_LEN(str));
+    return rb_iseq_load_from_binary(RSTRING_PTR(str), RSTRING_LEN(str), fname, path);
 }
 
 void
 Init_eval(void)
 {
     rb_define_global_function("rb_eval_string", eval_string, 1);
-    rb_define_global_function("rb_iseq_load_from_binary", iseq_load_from_binary, 1);
+    rb_define_global_function("rb_iseq_load_from_binary", iseq_load_from_binary, 3);
 }
