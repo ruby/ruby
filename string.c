@@ -12724,10 +12724,11 @@ rb_str_partition(VALUE str, VALUE sep)
 static VALUE
 rb_str_rpartition(VALUE str, VALUE sep)
 {
-    long pos = RSTRING_LEN(str);
+    long pos;
 
     sep = get_pat_quoted(sep, 0);
     if (RB_TYPE_P(sep, T_REGEXP)) {
+        pos = RSTRING_LEN(str);
         if (rb_reg_search(sep, str, pos, 1) < 0) {
             goto failed;
         }
@@ -12737,7 +12738,8 @@ rb_str_rpartition(VALUE str, VALUE sep)
         sep = rb_str_subseq(str, pos, RMATCH_END(match, 0) - pos);
     }
     else {
-        pos = rb_str_sublen(str, pos);
+        /* str may have been modified by #to_str above */
+        pos = rb_str_sublen(str, RSTRING_LEN(str));
         pos = rb_str_rindex(str, sep, pos);
         if (pos < 0) {
             goto failed;
