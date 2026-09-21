@@ -2151,6 +2151,10 @@ cd -
   end
 
   def test_collect_methods
+    assert_include(FileUtils.collect_method(:preserve), 'cp')
+    assert_include(FileUtils.collect_method(:preserve), 'install')
+    assert_include(FileUtils.collect_method(:secure), 'mv')
+    assert_not_include(FileUtils.collect_method(:secure), 'cp')
   end
 
   def test_commands
