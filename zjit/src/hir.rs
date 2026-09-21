@@ -6668,7 +6668,6 @@ impl Function {
             rpo_order[block_id] = idx;
         }
         // TODO: Add back edge check as we iterate in the pass. Figure out if we should use cfi or not
-        // TODO: Create compile time heaps for each block
 
         // Each block contains a cache of tracked load and store instructions.
         // The cache is filled with load and store instructions when scanning a block.
@@ -6684,8 +6683,9 @@ impl Function {
         // We often want to construct analysis information the first time and use it without modification for each subsequent loop. But having two loops containing all the logic is really gross.
 
         loop {
-            // TODO: Add fixpoint loop
             for &block_id in rpo {
+                // TODO: Make sure our "changed" analysis makes sense. It seems we don't actually need to worry about this when a block prunes away unnecessary instructions,
+                // but rather when our cache at the end of the block is different than when we started
                 changed = false;
                 // TODO: Prefill cache with information from predecessor blocks
                 //
