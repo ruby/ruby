@@ -15229,7 +15229,7 @@ static const rb_data_type_t ibf_load_type = {
 };
 
 const rb_iseq_t *
-rb_iseq_ibf_load(VALUE str)
+rb_iseq_ibf_load(VALUE str, VALUE fname, VALUE path)
 {
     struct ibf_load *load;
     rb_iseq_t *iseq;
@@ -15237,13 +15237,14 @@ rb_iseq_ibf_load(VALUE str)
 
     ibf_load_setup(load, loader_obj, str);
     iseq = ibf_load_iseq(load, 0);
+    rb_iseq_pathobj_update(iseq, fname, path);
 
     RB_GC_GUARD(loader_obj);
     return iseq;
 }
 
 const rb_iseq_t *
-rb_iseq_ibf_load_bytes(const char *bytes, size_t size)
+rb_iseq_ibf_load_bytes(const char *bytes, size_t size, VALUE fname, VALUE path)
 {
     struct ibf_load *load;
     rb_iseq_t *iseq;
@@ -15251,6 +15252,7 @@ rb_iseq_ibf_load_bytes(const char *bytes, size_t size)
 
     ibf_load_setup_bytes(load, loader_obj, bytes, size);
     iseq = ibf_load_iseq(load, 0);
+    rb_iseq_pathobj_update(iseq, fname, path);
 
     RB_GC_GUARD(loader_obj);
     return iseq;

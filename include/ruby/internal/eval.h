@@ -404,6 +404,8 @@ VALUE rb_extract_keywords(VALUE *orighash);
  *  Load an iseq object from binary format String object
  *  created by RubyVM::InstructionSequence.to_binary.
  *
+ *  Provides the same functionality than RubyVM::InstructionSequence.from_binary
+ *
  * @warning     This loader does not have a verifier, so that loading broken/modified
  *              binary causes critical problem.
  * @warning     You should not load binary data provided by others.
@@ -411,9 +413,13 @@ VALUE rb_extract_keywords(VALUE *orighash);
  * @param[in]  ptr             A memory region of `len` bytes length.
  * @param[in]  len             Length  of `ptr`,  in bytes,  not including  the
  *                             optional terminating NUL character.
+ * @param[in]  fname           The file path to use for +__FILE__+.
+ *                             Keeps the value set during compilation if given +nil+.
+ * @param[in]  path            The real path to use for +require_relative+.
+ *                             Keeps the value set during compilation if given +nil+.
  * @return     An  instance   of  RubyVM::InstructionSequence.
  */
-VALUE rb_iseq_load_from_binary(const char *ptr, size_t len);
+VALUE rb_iseq_load_from_binary(const char *ptr, size_t len, VALUE fname, VALUE path);
 
 RBIMPL_SYMBOL_EXPORT_END()
 

@@ -2057,6 +2057,7 @@ RUBY_SYMBOL_EXPORT_END
 
 VALUE rb_iseq_pathobj_new(VALUE path, VALUE realpath);
 void rb_iseq_pathobj_set(const rb_iseq_t *iseq, VALUE path, VALUE realpath);
+void rb_iseq_pathobj_update(const rb_iseq_t *iseq, VALUE path, VALUE realpath);
 
 int rb_ec_frame_method_id_and_class(const rb_execution_context_t *ec, ID *idp, ID *called_idp, VALUE *klassp);
 void rb_ec_setup_exception(const rb_execution_context_t *ec, VALUE mesg, VALUE cause);

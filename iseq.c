@@ -689,6 +689,14 @@ rb_iseq_pathobj_set(const rb_iseq_t *iseq, VALUE path, VALUE realpath)
                  rb_iseq_pathobj_new(path, realpath));
 }
 
+void
+rb_iseq_pathobj_update(const rb_iseq_t *iseq, VALUE path, VALUE realpath)
+{
+    if (NIL_P(path)) return;
+    if (NIL_P(realpath)) realpath = path;
+    rb_iseq_pathobj_set(iseq, path, realpath);
+}
+
 // Make a dummy iseq for a dummy frame that exposes a path for profilers to inspect
 rb_iseq_t *
 rb_iseq_alloc_with_dummy_path(VALUE fname)
@@ -4453,10 +4461,18 @@ iseqw_to_binary(int argc, VALUE *argv, VALUE self)
 
 /*
  *  call-seq:
- *     RubyVM::InstructionSequence.load_from_binary(binary) -> iseq
+ *     RubyVM::InstructionSequence.load_from_binary(binary[, file[, path]]) -> iseq
  *
  *  Load an iseq object from binary format String object
  *  created by RubyVM::InstructionSequence.to_binary.
+ *
+ *  Optionally takes +file+ and +path+ which describe the file path and
+ *  real path of the original Ruby code being loaded.
+ *
+ *  +file+ is used for +__FILE__+ and exception backtrace. +path+ is used for
+ *  +require_relative+ base. It is recommended these should be the same full
+ *  path. If not provided it defaults to the values provided or inferred during
+ *  compilation.
  *
  *  This loader does not have a verifier, so that loading broken/modified
  *  binary causes critical problem.
@@ -4465,15 +4481,28 @@ iseqw_to_binary(int argc, VALUE *argv, VALUE self)
  *  You should only use binary data translated by yourself.
  */
 static VALUE
-iseqw_s_load_from_binary(VALUE self, VALUE str)
+iseqw_s_load_from_binary(int argc, VALUE* argv, VALUE self)
 {
-    return iseqw_new(rb_iseq_ibf_load(str));
+    rb_check_arity(argc, 1, 3);
+    VALUE str = argv[0], fname = Qnil, path = Qnil;
+    Check_Type(str, T_STRING);
+
+    if (argc >= 2) {
+        fname = argv[1];
+        Check_Type(fname, T_STRING);
+
+        if (argc >= 3) {
+            path = argv[2];
+            Check_Type(path, T_STRING);
+        }
+    }
+    return iseqw_new(rb_iseq_ibf_load(str, fname, path));
 }
 
 VALUE
-rb_iseq_load_from_binary(const char *ptr, size_t len)
+rb_iseq_load_from_binary(const char *ptr, size_t len, VALUE fname, VALUE path)
 {
-    return iseqw_new(rb_iseq_ibf_load_bytes(ptr, len));
+    return iseqw_new(rb_iseq_ibf_load_bytes(ptr, len, fname, path));
 }
 
 /*
@@ -4698,7 +4727,7 @@ Init_ISeq(void)
     rb_define_method(rb_cISeq, "eval", iseqw_eval, 0);
 
     rb_define_method(rb_cISeq, "to_binary", iseqw_to_binary, -1);
-    rb_define_singleton_method(rb_cISeq, "load_from_binary", iseqw_s_load_from_binary, 1);
+    rb_define_singleton_method(rb_cISeq, "load_from_binary", iseqw_s_load_from_binary, -1);
     rb_define_singleton_method(rb_cISeq, "load_from_binary_extra_data", iseqw_s_load_from_binary_extra_data, 1);
 
     /* location APIs */
