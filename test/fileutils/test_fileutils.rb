@@ -795,7 +795,7 @@ class TestFileUtils < Test::Unit::TestCase
   def test_rm_r_no_permissions
     check_singleton :rm_rf
 
-    return if /mswin|mingw/ =~ RUBY_PLATFORM || root_in_posix?
+    return if root_in_posix?
 
     mkdir 'tmpdatadir'
     touch 'tmpdatadir/tmpdata'
