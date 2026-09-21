@@ -2165,6 +2165,10 @@ cd -
   end
 
   def test_have_option?
+    assert(FileUtils.have_option?(:mv, :force))
+    assert(FileUtils.have_option?('mv', :secure))
+    assert_not_equal(true, FileUtils.have_option?(:mv, :preserve))
+    assert_raise(ArgumentError) {FileUtils.have_option?(:missing, :noop)}
   end
 
   def test_options
