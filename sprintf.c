@@ -98,15 +98,26 @@ sign_bits(int base, const char *p)
     blen += (l);\
 } while (0)
 
+static void
+format_args_check(VALUE ary, int argc, const VALUE *argv)
+{
+    if (!RTEST(ary)) return;
+    if (RARRAY_LEN(ary) != argc || RARRAY_CONST_PTR(ary) != argv) {
+        rb_raise(rb_eRuntimeError, "array modified during formatting");
+    }
+}
+
 #define GETARG() (!UNDEF_P(nextvalue) ? nextvalue : \
                   GETNEXTARG())
 
 #define GETNEXTARG() ( \
     check_next_arg(posarg, nextarg), \
+    (RTEST(ary) ? (format_args_check(ary, argc0, argv0), 0) : 0), \
     (posarg = nextarg++, GETNTHARG(posarg)))
 
 #define GETPOSARG(n) ( \
     check_pos_arg(posarg, (n)), \
+    (RTEST(ary) ? (format_args_check(ary, argc0, argv0), 0) : 0), \
     (posarg = -1, GETNTHARG(n)))
 
 #define GETNTHARG(nth) \
@@ -212,7 +223,7 @@ rb_f_sprintf(int argc, const VALUE *argv)
 }
 
 VALUE
-rb_str_format(int argc, const VALUE *argv, VALUE fmt)
+rb_str_format_ary(int argc, const VALUE *argv, VALUE fmt, VALUE ary)
 {
     enum {default_float_precision = 6};
     rb_encoding *enc;
@@ -256,6 +267,10 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
                                ENC_CODERANGE_BROKEN : (coderange = cr))); \
         } \
     } while (0)
+
+    const int argc0 = argc;
+    const VALUE *argv0 = argv;
+
     ++argc;
     --argv;
     StringValue(fmt);
@@ -937,6 +952,7 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
     rb_str_tmp_frozen_release(orig, fmt);
     /* XXX - We cannot validate the number of arguments if (digit)$ style used.
      */
+    format_args_check(ary, argc0, argv0);
     if (posarg >= 0 && nextarg < argc && !(argc == 2 && RB_TYPE_P(argv[1], T_HASH))) {
         const char *mesg = "too many arguments for format string";
         if (RTEST(ruby_debug)) rb_raise(rb_eArgError, "%s", mesg);
@@ -945,6 +961,12 @@ rb_str_format(int argc, const VALUE *argv, VALUE fmt)
     rb_str_resize(result, blen);
 
     return result;
+}
+
+VALUE
+rb_str_format(int argc, const VALUE *argv, VALUE fmt)
+{
+    return rb_str_format_ary(argc, argv, fmt, Qfalse);
 }
 
 static char *

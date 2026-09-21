@@ -288,6 +288,20 @@ class TestSprintf < Test::Unit::TestCase
     end
   end
 
+  def test_modify_argument_array
+    count = 1_000
+    obj = Object.new
+    ary = [obj, *Array.new(count - 1) { "x" }]
+    obj.define_singleton_method(:to_s) do
+      ary.replace([])
+      "X"
+    end
+    str = "%s" * count
+    assert_raise_with_message(RuntimeError, /array modified during formatting/) do
+      str % ary
+    end
+  end
+
   def test_float
     assert_equal("36893488147419111424",
                  sprintf("%20.0f", 36893488147419107329.0))
