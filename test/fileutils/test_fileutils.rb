@@ -1021,6 +1021,13 @@ class TestFileUtils < Test::Unit::TestCase
     assert_equal '../.dotfiles/zsh', File.readlink(dest)
 
     lnfname = File.join(dest, 'zsh')
+
+    if /mingw|mswin/ =~ RUBY_PLATFORM
+      unless /<SYMLINKD>/ =~ IO.popen({"DIRCMD"=>nil}, "dir zsh", chdir: File.dirname(dest), &:read)
+        omit "[Bug #22338]"
+      end
+    end
+
     assert_output_lines(["ln -s ../../.dotfiles/zsh #{lnfname}"]) {
       ln_s src, dest, relative: true, verbose: true, noop: true
     }
