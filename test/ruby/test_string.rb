@@ -3425,6 +3425,17 @@ CODE
     assert_equal(["", "", s], s.rpartition(sep))
   end
 
+  def test_rpartition_string_modified
+    str = S("héllo" * 1000)
+    replacement = S("hé")
+    obj = Object.new
+    obj.define_singleton_method(:to_str) do
+      str.replace(replacement)
+      "-"
+    end
+    assert_equal([S(""), S(""), replacement], str.rpartition(obj))
+  end
+
   def test_rs
     return unless @cls == String
 
