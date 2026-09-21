@@ -116,19 +116,20 @@ module OpenSSL::Buffering
         buf.clear
         return buf
       else
-        return ""
+        return String.new
       end
     end
     until @eof
       break if size && size <= @rbuffer.size
       fill_rbuff
     end
-    ret = consume_rbuff(size) || ""
-    if buf
-      buf.replace(ret)
-      ret = buf
+    if ret = consume_rbuff(size)
+      buf ? buf.replace(ret) : ret
+    else
+      buf.clear if buf
+      return nil if size
+      buf || String.new
     end
-    (size && ret.empty?) ? nil : ret
   end
 
   ##
@@ -143,7 +144,7 @@ module OpenSSL::Buffering
         buf.clear
         return buf
       else
-        return ""
+        return String.new
       end
     end
     if @rbuffer.empty?
@@ -197,7 +198,7 @@ module OpenSSL::Buffering
         buf.clear
         return buf
       else
-        return ""
+        return String.new
       end
     end
     if @rbuffer.empty?
