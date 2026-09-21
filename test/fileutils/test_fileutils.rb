@@ -309,6 +309,15 @@ class TestFileUtils < Test::Unit::TestCase
     TARGETS.each do |fname|
       assert cmp(fname, fname), 'not same?'
     end
+
+    File.write('tmp/same', "contents\n")
+    File.write('tmp/copy', "contents\n")
+    File.write('tmp/different', "content!\n")
+    File.write('tmp/shorter', "content")
+    assert(cmp('tmp/same', 'tmp/copy'))
+    assert_equal(false, cmp('tmp/same', 'tmp/different'))
+    assert_equal(false, cmp('tmp/same', 'tmp/shorter'))
+
     assert_raise(ArgumentError) {
       cmp TARGETS[0], TARGETS[0], :undefinedoption => true
     }
@@ -1885,7 +1894,7 @@ class TestFileUtils < Test::Unit::TestCase
 
   def test_compare_file
     check_singleton :compare_file
-    # FIXME
+    assert_equal(FileUtils.method(:cmp), FileUtils.method(:compare_file))
   end
 
   def test_compare_stream
@@ -1973,6 +1982,7 @@ cd -
 
   def test_identical?
     check_singleton :identical?
+    assert_equal(FileUtils.method(:cmp), FileUtils.method(:identical?))
   end
 
   def test_link
