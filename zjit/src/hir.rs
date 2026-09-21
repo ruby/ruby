@@ -6649,84 +6649,167 @@ impl Function {
         // TODO: Maybe we could have another patch as Kokubun recommended to retain information needed across global optimizations?
         // the back edge optimization seems common, as does the traversal techniques and it would be nice to have a simple API
         // Also the abstract interpretations are common too
-        let rpo = self.reverse_post_order();
+
+        use std::collections::hash_map::Entry;
+
+        #[derive(Hash, PartialEq, Eq, Clone, Copy)]
+        struct Key {
+            id: InsnId,
+            offset: i32,
+        }
+
+
+        let cfi = ControlFlowInfo::new(self);
+        let rpo = &cfi.reverse_post_order;
         let mut changed = true;
         // TODO: Add comments and consolidate back edge checks among various different passes
         let mut rpo_order = vec![usize::MAX; self.blocks.len()];
         for (idx, &block_id) in rpo.iter().enumerate() {
             rpo_order[block_id] = idx;
         }
+        // TODO: Add back edge check as we iterate in the pass. Figure out if we should use cfi or not
+        // TODO: Create compile time heaps for each block
+
+        // Each block contains a cache of tracked load and store instructions.
+        // The cache is filled with load and store instructions when scanning a block.
+        // The cache is invalidated from effectful instructions that could modify instructions saved in the cache.
+        // The cache is pruned when loads and stores can alias between objects.
+        let mut cache: Vec<HashMap<Key, InsnId>> = vec![HashMap::new(); cfi.num_blocks];
+
+        // Invalidations mark each block with a bool that is true any time our alias analysis changes anything or an effectul instruction occurs.
+        let mut invalidates: Vec<bool> = vec![false; cfi.num_blocks];
         let mut has_back_edge = true;
-        for block in rpo {
-            let mut compile_time_heap: HashMap<(InsnId, i32), InsnId>  = HashMap::new();
-            let old_insns = std::mem::take(&mut self.blocks[block].insns);
-            let mut new_insns = Vec::with_capacity(old_insns.len());
-            for insn_id in old_insns {
-                let replacement_insn: InsnId = match self.resolve(insn_id).insn(self) {
-                    &Insn::StoreField { recv, offset, val, .. } => {
-                        let key = (self.chase_insn(recv), offset);
-                        let heap_entry = compile_time_heap.get(&key).copied();
-                        // TODO(Jacob): Switch from actual to partial equality
-                        if Some(val) == heap_entry {
-                            // If the value is already stored, short circuit and don't add an instruction to the block
-                            continue
+
+        // IDEA: It would be really cool to have a macro that took a loop body with custom code that only gets executed on the first pass
+        // We often want to construct analysis information the first time and use it without modification for each subsequent loop. But having two loops containing all the logic is really gross.
+
+        loop {
+            // TODO: Add fixpoint loop
+            for &block_id in rpo {
+                changed = false;
+                // TODO: Prefill cache with information from predecessor blocks
+                //
+                // TODO: Add backedge check throughout during the pass
+
+                // TODO: Figure out how we will handle immediate dominators. These will include information that is valid from the dominators to the current block unless an invalidation occurred
+                // We somehow need to mark blocks by whether or not predecessor information gets invalidated?
+
+                // TODO: When analyzing the block, reset the current cache to use the set of all predecessors
+                let mut block_cache: HashMap<Key, InsnId>  = HashMap::new();
+                // Populate the block cache with information from predecessors
+                // If all predecessors contain the same entry and the value aligns, add it to the map
+                // TODO: Do a clean up pass to remove all the alias information
+                // TODO: Compute the dominance path given block invalidations
+                // This will give us a subset of the dominators. All such blocks that dominate and do not invalidate also can populate the cache
+                // TODO: Figure out if we are missing some "middle" section between
+                // 1. dominators that don't invalidate
+                // 2. information from predecessors.
+                // There's an inductive argument that needs to be checked. Can we consider *only* immediate predecessors and ensure this provides all prior predecessor information?
+                // I think that, starting from RPO and using fixpoints, the answer is yes. But at the same time, it seems like this should have accounted for the dominator case?
+                // Too much thinking for now, will need to try again later tonight or tomorrow.
+                match cfi.predecessors(block_id) {
+                    [] => {},
+                    [head] => {
+                        // TODO: Figure out how to fix this with Kevin's idiomatic thing
+                        block_cache = cache[head.0 as usize].clone();
+                    }
+                    [head, tail @ ..] => {
+                        // TODO: Figure out how to fix this with Kevin's idiomatic thing
+                        block_cache = cache[head.0 as usize].clone();
+                        for pred in tail {
+                            block_cache.retain(|key, value| cache[pred.0 as usize].get(key) == Some(value));
                         }
-                        // TODO(Jacob): Add TBAA to avoid removing so many entries
-                        compile_time_heap.retain(|(_, off), _| *off != offset);
-                        compile_time_heap.insert(key, val);
-                        insn_id
-                    },
-                    &Insn::LoadField { recv, offset, return_type, .. } => {
-                        let key = (self.chase_insn(recv), offset);
-                        match compile_time_heap.entry(key) {
-                            std::collections::hash_map::Entry::Occupied(entry) => {
-                                let cached_insn = *entry.get();
+                    }
+                }
+                let old_insns = std::mem::take(&mut self.blocks[block_id].insns);
+                let mut new_insns = Vec::with_capacity(old_insns.len());
+                for insn_id in old_insns {
+                    let replacement_insn: InsnId = match self.resolve(insn_id).insn(self) {
+                        &Insn::StoreField { recv, offset, val, .. } => {
+                            let key = Key { id: self.chase_insn(recv), offset };
+                            let heap_entry = block_cache.get(&key).copied();
+                            // TODO(Jacob): Switch from actual to partial equality
+                            if Some(val) == heap_entry {
+                                // If the value is already stored, short circuit and don't add an instruction to the block
+                                changed = true;
+                                continue
+                            }
+                            // TODO(Jacob): Add TBAA to avoid removing so many entries
+                            block_cache.retain(|key, _| {
+                                let not_equal = key.offset != offset;
+                                if not_equal {
+                                    invalidates[block_id.0 as usize] |= true;
+                                }
+                                not_equal
+                            });
+                            block_cache.insert(key, val);
+                            insn_id
+                        },
+                        &Insn::LoadField { recv, offset, return_type, .. } => {
+                            let key = Key { id: self.chase_insn(recv), offset };
+                            match block_cache.entry(key) {
+                                Entry::Occupied(entry) => {
+                                    let cached_insn = *entry.get();
 
-                                // TODO (nirvdrum 2026-06-04): Remove the return type guard and supporting code when the type checker becomes more accurate.
-                                // If there's an an embedded<=>heap shape storage transition, it's possible for this `LoadField` to have a different return
-                                // type than the cached entry (`CPtr` vs `BasicObject`). While the loaded value would be the same in either case, the
-                                // difference in associated type causes type checking to fail. Consequently, we conservatively retain the duplicate `LoadField`.
-                                // The `optimize_load_store_does_not_alias_loads_with_incompatible_return_types` test checks the problematic case.
-                                let can_forward_cached_insn = match self.resolve(cached_insn).insn(self) {
-                                    Insn::LoadField { return_type : cached_return_type,.. } => cached_return_type.is_subtype(return_type),
-                                    _ => true
-                                };
+                                    // TODO (nirvdrum 2026-06-04): Remove the return type guard and supporting code when the type checker becomes more accurate.
+                                    // If there's an an embedded<=>heap shape storage transition, it's possible for this `LoadField` to have a different return
+                                    // type than the cached entry (`CPtr` vs `BasicObject`). While the loaded value would be the same in either case, the
+                                    // difference in associated type causes type checking to fail. Consequently, we conservatively retain the duplicate `LoadField`.
+                                    // The `optimize_load_store_does_not_alias_loads_with_incompatible_return_types` test checks the problematic case.
+                                    let can_forward_cached_insn = match self.resolve(cached_insn).insn(self) {
+                                        Insn::LoadField { return_type : cached_return_type,.. } => cached_return_type.is_subtype(return_type),
+                                        _ => true
+                                    };
 
-                                if can_forward_cached_insn {
-                                    // If the value is stored already, we should short circuit.
-                                    // However, we need to replace insn_id with its representative in the SSA union.
-                                    self.make_equal_to(insn_id, cached_insn);
-                                    continue
+                                    if can_forward_cached_insn {
+                                        // If the value is stored already, we should short circuit.
+                                        // However, we need to replace insn_id with its representative in the SSA union.
+                                        self.make_equal_to(insn_id, cached_insn);
+                                        changed = true;
+                                        continue
+                                    }
+                                }
+                                Entry::Vacant(_) => {
+                                    // If the value has not been accessed, cache a copy to optimize future loads or stores.
+                                    block_cache.insert(key, insn_id);
                                 }
                             }
-                            std::collections::hash_map::Entry::Vacant(_) => {
-                                // If the value has not been accessed, cache a copy to optimize future loads or stores.
-                                compile_time_heap.insert(key, insn_id);
+                            insn_id
+                        }
+                        &Insn::WriteBarrier { .. } => {
+                            // Currently, WriteBarrier write effects are Allocator and Memory when we'd really like them to be flags.
+                            // We don't use LoadField for mark bits so we can ignore them for now.
+                            // But flags does not exist in our effects abstract heap modeling and we don't want to add special casing to effects.
+                            // This special casing in this pass here should be removed once we refine our effects system to provide greater granularity for WriteBarrier.
+                            // TODO: use TBAA
+                            let offset = RUBY_OFFSET_RBASIC_FLAGS;
+                            block_cache.retain(|key, _| {
+                                let not_equal = key.offset != offset;
+                                if not_equal {
+                                    invalidates[block_id.0 as usize] |= true;
+                                }
+                                not_equal
+                            });
+                            insn_id
+                        },
+                        insn => {
+                            // If an instruction affects memory and we haven't modeled it, the compile_time_heap is invalidated
+                            if insn.effects_of().includes(Effect::write(abstract_heaps::Memory)) {
+                                invalidates[block_id.0 as usize] |= true;
+                                block_cache.clear();
                             }
+                            insn_id
                         }
-                        insn_id
-                    }
-                    &Insn::WriteBarrier { .. } => {
-                        // Currently, WriteBarrier write effects are Allocator and Memory when we'd really like them to be flags.
-                        // We don't use LoadField for mark bits so we can ignore them for now.
-                        // But flags does not exist in our effects abstract heap modeling and we don't want to add special casing to effects.
-                        // This special casing in this pass here should be removed once we refine our effects system to provide greater granularity for WriteBarrier.
-                        // TODO: use TBAA
-                        let offset = RUBY_OFFSET_RBASIC_FLAGS;
-                        compile_time_heap.retain(|(_, off), _| *off != offset);
-                        insn_id
-                    },
-                    insn => {
-                        // If an instruction affects memory and we haven't modeled it, the compile_time_heap is invalidated
-                        if insn.effects_of().includes(Effect::write(abstract_heaps::Memory)) {
-                            compile_time_heap.clear();
-                        }
-                        insn_id
-                    }
-                };
-                new_insns.push(replacement_insn);
+                    };
+                    new_insns.push(replacement_insn);
+                }
+                self.blocks[block_id].insns = new_insns;
+                cache[block_id] = block_cache.clone();
             }
-            self.blocks[block].insns = new_insns;
+
+            if !(changed && has_back_edge) {
+                break;
+            }
         }
     }
 
