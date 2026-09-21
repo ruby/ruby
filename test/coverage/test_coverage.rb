@@ -256,7 +256,7 @@ class TestCoverage < Test::Unit::TestCase
     end;
   end
 
-def test_branch_coverage_for_eval_repeated
+  def test_branch_coverage_for_eval_repeated
     assert_in_out_err(["-W0", *ARGV], <<-"end;", ["2", "2", "[[0, 1], [0, 2]]"], [])
       Coverage.start(eval: true, branches: true)
 
