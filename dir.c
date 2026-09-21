@@ -817,7 +817,7 @@ dir_fileno(VALUE dir)
  * ```ruby
  * dirpath = 'doc/tmp'
  * Dir.mkdir(dirpath)
- * Dir.new(dirpath)
+ * dir = Dir.new(dirpath)
  * dir.path # => "../ruby/doc/syntax"
  * ```
  *
