@@ -3524,6 +3524,16 @@ CODE
     assert !1000.times.any? {s.byteindex("", 100_000_000)}
   end
 
+  def test_byteindex_modify_source
+    s = S("héllo" * 1000)
+    obj = Object.new
+    obj.define_singleton_method(:to_int) do
+      s.replace("é" * 50)
+      4500
+    end
+    assert_nil(s.byteindex("l", obj))
+  end
+
   def test_byterindex
     assert_byterindex(3, S("hello"), ?l)
     assert_byterindex(6, S("ell, hello"), S("ell"))
@@ -3576,6 +3586,16 @@ CODE
     assert_byterindex(nil, S("こんにち"), S("こんにちは"))
     assert_byterindex(nil, S("こ"), S("こんにちは"))
     assert_byterindex(nil, S(""), S("こんにちは"))
+  end
+
+  def test_byterindex_modify_source
+    s = S("héllo" * 1000)
+    obj = Object.new
+    obj.define_singleton_method(:to_int) do
+      s.replace("é" * 50)
+      4500
+    end
+    assert_nil(s.byterindex("l", obj))
   end
 
   def test_bytesplice

@@ -4555,8 +4555,8 @@ rb_str_byteindex_m(int argc, VALUE *argv, VALUE str)
     long pos;
 
     if (rb_scan_args(argc, argv, "11", &sub, &initpos) == 2) {
-        long slen = RSTRING_LEN(str);
         pos = NUM2LONG(initpos);
+        long slen = RSTRING_LEN(str);
         if (pos < 0 ? (pos += slen) < 0 : pos > slen) {
             if (RB_TYPE_P(sub, T_REGEXP)) {
                 rb_backref_set(Qnil);
@@ -4866,10 +4866,11 @@ rb_str_byterindex_m(int argc, VALUE *argv, VALUE str)
 {
     VALUE sub;
     VALUE initpos;
-    long pos, len = RSTRING_LEN(str);
+    long pos;
 
     if (rb_scan_args(argc, argv, "11", &sub, &initpos) == 2) {
         pos = NUM2LONG(initpos);
+        long len = RSTRING_LEN(str);
         if (pos < 0 && (pos += len) < 0) {
             if (RB_TYPE_P(sub, T_REGEXP)) {
                 rb_backref_set(Qnil);
@@ -4879,7 +4880,7 @@ rb_str_byterindex_m(int argc, VALUE *argv, VALUE str)
         if (pos > len) pos = len;
     }
     else {
-        pos = len;
+        pos = RSTRING_LEN(str);
     }
 
     str_ensure_byte_pos(str, pos);
