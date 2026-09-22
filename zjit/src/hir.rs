@@ -9764,21 +9764,36 @@ fn add_iseq_to_hir(
                     queue.push_back((state.clone(), target, target_idx, local_inval));
                     break;  // Don't enqueue the next block as a successor
                 }
-                YARVINSN_getlocal_WC_0 => {
+                opcode @ (YARVINSN_getlocal | YARVINSN_getlocal_WC_0 | YARVINSN_getlocal_WC_1) => {
                     let ep_offset = get_arg(pc, 0).as_u32();
-                    if !local_inval {
+                    let level = match opcode {
+                        YARVINSN_getlocal => get_arg(pc, 1).as_u32(),
+                        YARVINSN_getlocal_WC_0 => 0,
+                        YARVINSN_getlocal_WC_1 => 1,
+                        _ => unreachable!()
+                    };
+
+                    if level != 0 {
+                        // Load local from EP; no change to FrameState as it describes level 0.
+                        let ep = fun.get_ep(block, level);
+                        let val = fun.get_local_from_ep(block, iseq, ep, ep_offset, level, types::BasicObject);
+                        state.stack_push(val);
+                    } else if !local_inval {
+                        assert!(level == 0); // from place in decision tree
                         // The FrameState is the source of truth for locals until invalidated.
                         // In case of JIT-to-JIT send locals might never end up in EP memory.
                         let val = state.getlocal(ep_offset);
                         state.stack_push(val);
                     } else if ep_escaped {
+                        assert!(level == 0); // from place in decision tree
                         // Read the local using EP
                         let ep = fun.get_ep(block, 0);
                         let val = fun.get_local_from_ep(block, iseq, ep, ep_offset, 0, types::BasicObject);
                         state.setlocal(ep_offset, val); // remember the result to spill on side-exits
                         state.stack_push(val);
                     } else {
-                        assert!(local_inval); // if check above
+                        assert!(local_inval); // from place in decision tree
+                        assert!(level == 0);  // from place in decision tree
                         // There has been some non-leaf call since JIT entry or the last patch point,
                         // so add a patch point to make sure locals have not been escaped.
                         let exit_id = fun.push_insn(block, Insn::Snapshot { state: Box::new(exit_state.without_locals()) }); // skip spilling locals
@@ -9790,51 +9805,37 @@ fn add_iseq_to_hir(
                         state.stack_push(val);
                     }
                 }
-                YARVINSN_setlocal_WC_0 => {
+                opcode @ (YARVINSN_setlocal | YARVINSN_setlocal_WC_0 | YARVINSN_setlocal_WC_1) => {
                     let ep_offset = get_arg(pc, 0).as_u32();
+                    let level = match opcode {
+                        YARVINSN_setlocal => get_arg(pc, 1).as_u32(),
+                        YARVINSN_setlocal_WC_0 => 0,
+                        YARVINSN_setlocal_WC_1 => 1,
+                        _ => unreachable!(),
+                    };
                     let val = state.stack_pop()?;
-                    if ep_escaped {
+
+                    if level != 0 {
+                        fun.push_insn(block, Insn::SetLocal { val, ep_offset, level, state: exit_id });
+                    } else if ep_escaped {
+                        assert!(level == 0); // from place in decision tree
                         // Write the local using EP
                         fun.push_insn(block, Insn::SetLocal { val, ep_offset, level: 0, state: exit_id });
-                    } else if local_inval {
+                        state.setlocal(ep_offset, val);
+                    } else if !local_inval {
+                        assert!(level == 0);  // from place in decision tree
+                        assert!(!ep_escaped); // from place in decision tree
+                        state.setlocal(ep_offset, val);
+                    } else {
+                        assert!(local_inval); // from place in decision tree
+                        assert!(level == 0);  // from place in decision tree
                         // If there has been any non-leaf call since JIT entry or the last patch point,
                         // add a patch point to make sure locals have not been escaped.
                         let exit_id = fun.push_insn(block, Insn::Snapshot { state: Box::new(exit_state.without_locals()) }); // skip spilling locals
                         fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoEPEscape(iseq), state: exit_id });
                         local_inval = false;
+                        state.setlocal(ep_offset, val);
                     }
-                    // Write the local into FrameState
-                    state.setlocal(ep_offset, val);
-                }
-                YARVINSN_getlocal_WC_1 => {
-                    let ep_offset = get_arg(pc, 0).as_u32();
-                    let ep = fun.get_ep(block, 1);
-                    state.stack_push(fun.get_local_from_ep(block, iseq, ep, ep_offset, 1, types::BasicObject));
-                }
-                YARVINSN_setlocal_WC_1 => {
-                    let ep_offset = get_arg(pc, 0).as_u32();
-                    fun.push_insn(block, Insn::SetLocal { val: state.stack_pop()?, ep_offset, level: 1, state: exit_id });
-                }
-                YARVINSN_getlocal => {
-                    let ep_offset = get_arg(pc, 0).as_u32();
-                    let level = get_arg(pc, 1).as_u32();
-                    if level == 0 && !local_inval {
-                        // Same optimization as getlocal_WC_0: use FrameState
-                        let val = state.getlocal(ep_offset);
-                        state.stack_push(val);
-                    } else {
-                        let ep = fun.get_ep(block, level);
-                        let val = fun.get_local_from_ep(block, iseq, ep, ep_offset, level, types::BasicObject);
-                        if level == 0 {
-                            state.setlocal(ep_offset, val);
-                        }
-                        state.stack_push(val);
-                    }
-                }
-                YARVINSN_setlocal => {
-                    let ep_offset = get_arg(pc, 0).as_u32();
-                    let level = get_arg(pc, 1).as_u32();
-                    fun.push_insn(block, Insn::SetLocal { val: state.stack_pop()?, ep_offset, level, state: exit_id });
                 }
                 YARVINSN_setblockparam => {
                     let ep_offset = get_arg(pc, 0).as_u32();
