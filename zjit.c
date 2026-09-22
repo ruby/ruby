@@ -345,6 +345,14 @@ rb_zjit_class_initialized_p(VALUE klass)
     return RCLASS_INITIALIZED_P(klass);
 }
 
+// Whether the class's superclasses array has been built. rb_class_superclass
+// raises TypeError when it is NULL (an uninitialized class, e.g. Class.allocate).
+bool
+rb_zjit_class_superclasses_p(VALUE klass)
+{
+    return RCLASS_SUPERCLASSES(klass) != NULL;
+}
+
 rb_alloc_func_t rb_zjit_class_get_alloc_func(VALUE klass);
 
 VALUE rb_class_allocate_instance(VALUE klass);

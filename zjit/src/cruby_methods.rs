@@ -922,14 +922,19 @@ fn inline_class_allocate(fun: &mut hir::Function, block: hir::BlockId, recv: hir
 }
 
 fn inline_class_superclass(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
-    let &[] = args else { return None; };
+    // Class#superclass takes no arguments; calls with the wrong argc bail out with
+    // ArgcParamMismatch before inlining is attempted.
+    debug_assert!(args.is_empty(), "Class#superclass takes no arguments");
     // A class's superclass cannot change after the class is created (prepending a module only
     // inserts ICLASSes, which superclass skips), so fold the lookup when the receiver is a
     // compile-time constant.
     let recv_class = fun.type_of(recv).ruby_object()?;
     if !unsafe { RB_TYPE_P(recv_class, RUBY_T_CLASS) } { return None; }
-    // rb_class_superclass raises TypeError on an uninitialized class (Class.allocate); don't fold.
-    if recv_class != unsafe { rb_cBasicObject } && unsafe { rb_class_get_superclass(recv_class) } == VALUE(0) {
+    // rb_class_superclass raises TypeError on an uninitialized class (Class.allocate); don't
+    // fold. Mirror its exact raise condition, superclasses == NULL. Checking RCLASS_SUPER
+    // instead would be wrong: Class.allocate.include(M) sets RCLASS_SUPER to an ICLASS while
+    // leaving the superclasses array unbuilt.
+    if recv_class != unsafe { rb_cBasicObject } && !unsafe { rb_zjit_class_superclasses_p(recv_class) } {
         return None;
     }
     let superclass = unsafe { rb_class_superclass(recv_class) };
