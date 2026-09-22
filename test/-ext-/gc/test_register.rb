@@ -145,6 +145,83 @@ class Test_GCRegisterAddress < Test::Unit::TestCase
     RUBY
   end
 
+  def test_verify_internal_consistency_fails_on_foreign_unshareable_store
+    omit "needs GC.verify_internal_consistency with the registered-address check" unless
+      GC.respond_to?(:verify_internal_consistency) && Bug::GC.registered_address_check_enabled?
+    assert_in_out_err([], <<~RUBY, [], /registered address .* changed since registration to an unshareable object owned by another Ractor/, success: false)
+      require '-test-/gc/register'
+      Bug::GC.register_static(0)
+      port = Ractor::Port.new
+      Ractor.new(port) do |port|
+        child_string = "foreign".dup
+        Bug::GC.assign_static(child_string)
+        port.send(:stored)
+        Ractor.receive
+        child_string
+      end
+      port.receive
+      GC.verify_internal_consistency
+    RUBY
+  end
+
+  def test_verify_internal_consistency_ignores_registration_time_value
+    omit "needs the registered-address check" unless Bug::GC.registered_address_check_enabled?
+    assert_separately([], <<~RUBY)
+      Warning[:experimental] = false
+      require '-test-/gc/register'
+
+      port = Ractor::Port.new
+      r = Ractor.new(port) do |port|
+        child_string = "registered in child".dup
+        Bug::GC.assign_static(child_string)
+        port.send(:stored)
+        Ractor.receive
+        child_string
+      end
+      port.receive
+
+      # The slot already holds the child's string at registration time, so the
+      # registration-time snapshot matches and the verifier must not fail.
+      Bug::GC.register_current_static
+      GC.verify_internal_consistency
+      Bug::GC.unregister_static
+
+      r.send(:done)
+      r.value
+    RUBY
+  end
+
+  def test_verify_internal_consistency_ignores_cross_ractor_duplicate_registration
+    omit "needs the registered-address check" unless Bug::GC.registered_address_check_enabled?
+    assert_separately([], <<~RUBY)
+      Warning[:experimental] = false
+      require '-test-/gc/register'
+
+      Bug::GC.register_static(0)
+
+      port = Ractor::Port.new
+      r = Ractor.new(port) do |port|
+        child_string = "registered in child".dup
+        Bug::GC.register_static(child_string)
+        port.send(:stored)
+        Ractor.receive
+        Bug::GC.unregister_static
+        port.send(:unregistered)
+        child_string
+      end
+      port.receive
+
+      # Main's entry is stale (initial value 0, current value owned by the child),
+      # but the child registrant owns the value, so the verifier must not fail.
+      GC.verify_internal_consistency
+
+      r.send(:done)
+      port.receive
+      Bug::GC.unregister_static
+      r.value
+    RUBY
+  end
+
   def test_verify_internal_consistency_with_many_registered_addresses_and_gc_stress
     omit "needs GC.verify_internal_consistency" unless GC.respond_to?(:verify_internal_consistency)
     assert_separately([], <<~RUBY)

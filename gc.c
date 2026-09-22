@@ -4011,6 +4011,56 @@ rb_gc_registered_addrs_unenroll_without_gc(rb_vm_t *vm, rb_ractor_t *r)
     r->registered_addrs_listed = false;
 }
 
+void
+rb_gc_each_registered_addr(rb_gc_registered_addr_cb func, void *data)
+{
+#if !RB_GC_REGISTERED_ADDR_CHECK
+    /* Production entries carry no provenance, so the verifier has nothing to check. */
+    (void)func;
+    (void)data;
+    return;
+#else
+    rb_vm_t *vm = GET_VM();
+    for (size_t i = 0; i < vm->gc.registered_addrs.registry_cnt; i++) {
+        rb_ractor_t *r = vm->gc.registered_addrs.registry[i];
+        for (size_t j = 0; j < r->registered_addrs_cnt; j++) {
+            struct rb_ractor_registered_addr *entry = &r->registered_addrs[j];
+            func(entry->addr, entry->initial_value, (void *)r->objspace, data);
+        }
+    }
+#endif
+}
+
+/* True if the same address is registered by a Ractor whose objspace is the given one;
+ * that registrant's local GC can root the value, so the verifier accepts it.  Called
+ * from the consistency verifier with the world stopped, so no lock is taken here. */
+bool
+rb_gc_registered_addr_owned_by_registrant_p(VALUE *addr, void *objspace)
+{
+    rb_vm_t *vm = GET_VM();
+    for (size_t i = 0; i < vm->gc.registered_addrs.registry_cnt; i++) {
+        rb_ractor_t *r = vm->gc.registered_addrs.registry[i];
+        if ((void *)r->objspace != objspace) continue;
+        for (size_t j = 0; j < r->registered_addrs_cnt; j++) {
+            if (r->registered_addrs[j].addr == addr) return true;
+        }
+    }
+    return false;
+}
+
+/* True while the objspace is a zombie pending merge.  Registration ownership moves to
+ * the inheritor before the zombie merge completes, so a value still owned by a zombie
+ * is a safe transient for the verifier. */
+bool
+rb_gc_vm_zombie_objspace_p(void *objspace)
+{
+    rb_vm_t *vm = GET_VM();
+    for (size_t i = 0; i < vm->gc.zombie_objspaces_count; i++) {
+        if (vm->gc.zombie_objspaces[i].objspace == objspace) return true;
+    }
+    return false;
+}
+
 static bool
 gc_registered_addrs_remove(rb_ractor_t *r, VALUE *addr)
 {
@@ -4042,6 +4092,9 @@ rb_gc_register_address(VALUE *addr)
     }
     struct rb_ractor_registered_addr *entry = &owner->registered_addrs[owner->registered_addrs_cnt];
     entry->addr = addr;
+#if RB_GC_REGISTERED_ADDR_CHECK
+    entry->initial_value = *addr;
+#endif
     owner->registered_addrs_cnt++;
     rb_gc_registered_addrs_enroll_without_gc(vm, owner);
     rb_native_mutex_unlock(&vm->gc.registered_addrs.lock);
