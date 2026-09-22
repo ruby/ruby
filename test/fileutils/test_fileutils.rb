@@ -1240,7 +1240,7 @@ class TestFileUtils < Test::Unit::TestCase
     )
     my_rm_rf 'tmpdir'
     dirs.each do |d|
-      mkdir_p d
+      assert_equal([d], mkdir_p(d))
       assert_directory d
       assert_file_not_exist "#{d}/a"
       assert_file_not_exist "#{d}/b"
@@ -2012,10 +2012,12 @@ cd -
 
   def test_makedirs
     check_singleton :makedirs
+    assert_equal(FileUtils.method(:mkdir_p), FileUtils.method(:makedirs))
   end
 
   def test_mkpath
     check_singleton :mkpath
+    assert_equal(FileUtils.method(:mkdir_p), FileUtils.method(:mkpath))
   end
 
   def test_move
