@@ -83,12 +83,6 @@ class TestClass < Test::Unit::TestCase
     assert_nil(Class.new <=> 1)
   end
 
-  def test_class_initialize
-    assert_raise(TypeError) do
-      Class.new.instance_eval { initialize }
-    end
-  end
-
   def test_instantiate_singleton_class
     c = class << Object.new; self; end
     assert_raise(TypeError) { c.new }

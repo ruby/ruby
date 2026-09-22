@@ -42,6 +42,9 @@ test_TOPDIR(RbConfigSingletonTest) `TOPDIR` is `nil` during CI while RBS type is
 # Failing because ObjectSpace.count_nodes has been removed
 test_count_nodes(ObjectSpaceTest)
 
+# Class.allocate and Class#initialize have been removed
+test_initialize(ClassInstanceTest)
+
 ## Unknown failures
 
 # NoMethodError: undefined method 'inspect' for an instance of RBS::UnitTest::Convertibles::ToInt
