@@ -935,12 +935,32 @@ rb_stat_rdev_minor(VALUE self)
 }
 
 /*
+ * :markup: markdown
+ *
  *  call-seq:
- *     stat.size    -> integer
+ *    size -> integer
  *
- *  Returns the size of <i>stat</i> in bytes.
+ *  Returns the size of `self` in bytes:
  *
- *     File.stat("testfile").size   #=> 66
+ *  ```ruby
+ *  File.stat('doc/maintainers.md').size # => 14900  # Regular file.
+ *  File.stat('doc/syntax/').size        # => 4096   # Directory.
+ *  # When the file size changes.
+ *  path = '/tmp/t.tmp'
+ *  file = File.new(path, 'w+')
+ *  file.write('foo')
+ *  stat = File.stat(path) # Take snapshot.
+ *  stat.size              # => 3
+ *  file.write('bar')      # Change file size.
+ *  file.size              # => 6
+ *  stat.size              # => 3  # Snapshot unchanged.
+ *  stat = File.stat(path) # Fresh snapshot.
+ *  stat.size              # => 6  # Shapshot different.
+ *  # Clean up.
+ *  file.close
+ *  File.delete(path)
+ *  ```
+ *
  */
 
 static VALUE
@@ -2556,12 +2576,20 @@ rb_file_identical_p(VALUE obj, VALUE fname1, VALUE fname2)
 }
 
 /*
+ * :markup: markdown
+ *
  * call-seq:
- *    File.size(file_name)   -> integer
+ *   File.size(object) -> integer
  *
- * Returns the size of <code>file_name</code>.
+ * Returns the size in bytes of the given `object`,
+ * which may be a path or an IO object:
  *
- * _file_name_ can be an IO object.
+ * ```ruby
+ * File.size('doc/maintainers.md') # => 14900  # Regular file.
+ * File.size('doc/syntax/')        # => 4096   # Directory.
+ * File.size($stdin)               # => 0      # IO object.
+ * ```
+ *
  */
 
 static VALUE
@@ -3009,12 +3037,17 @@ rb_file_size(VALUE file)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     file.size    -> integer
+ *    size -> integer
  *
- *  Returns the size of <i>file</i> in bytes.
+ *  Returns the size of `self` in bytes:
  *
- *     File.new("testfile").size   #=> 66
+ *  ```ruby
+ *  File.new('doc/maintainers.md').size # => 14900  # Regular file.
+ *  File.new('doc/syntax/').size        # => 4096   # Directory.
+ *  ```
  *
  */
 
