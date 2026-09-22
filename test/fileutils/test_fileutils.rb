@@ -690,6 +690,11 @@ class TestFileUtils < Test::Unit::TestCase
   def test_rm_f
     check_singleton :rm_f
 
+    File.write('tmp/file', "contents\n")
+    assert_equal(['tmp/file'], FileUtils.rm_f('tmp/file'))
+    assert_file_not_exist('tmp/file')
+    assert_equal(['tmp/missing'], FileUtils.rm_f('tmp/missing'))
+
     TARGETS.each do |fname|
       cp fname, 'tmp/rmsrc'
       rm_f 'tmp/rmsrc'
@@ -2095,6 +2100,7 @@ cd -
 
   def test_safe_unlink
     check_singleton :safe_unlink
+    assert_equal(FileUtils.method(:rm_f), FileUtils.method(:safe_unlink))
   end
 
   def test_symlink
