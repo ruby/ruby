@@ -6006,30 +6006,21 @@ rb_file_s_extname(VALUE klass, VALUE fname)
 }
 
 /*
+ * :markup: markdown
+ *
  * call-seq:
- *     File.path(path)  ->  string
+ *   File.path(path) -> string
  *
- * Returns the string representation of the path
+ * Returns a string representation of the given `path`:
  *
- *     File.path(File::NULL)           #=> "/dev/null"
- *     File.path(Pathname.new("/tmp")) #=> "/tmp"
+ * ```ruby
+ * File.path(File::NULL) # => "/dev/null"
+ * File.path('/tmp')     # => "/tmp"
+ * File.path('../ruby')  # => "../ruby"
+ * File.path($stdin)     # => "<STDIN>"
+ * File.path('nosuch')   # => "nosuch"
+ * ```
  *
- * If +path+ is not a String:
- *
- * 1. If it has the +to_path+ method, that method will be called to
- *    coerce to a String.
- *
- * 2. Otherwise, or if the coerced result is not a String too, the
- *    standard coercion using +to_str+ method will take place on that
- *    object. (See also String.try_convert)
- *
- * The coerced string must satisfy the following conditions:
- *
- * 1. It must be in an ASCII-compatible encoding; otherwise, an
- *    Encoding::CompatibilityError is raised.
- *
- * 2. It must not contain the NUL character (<tt>\0</tt>); otherwise,
- *    an ArgumentError is raised.
  */
 
 static VALUE

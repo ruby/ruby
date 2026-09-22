@@ -807,13 +807,35 @@ dir_fileno(VALUE dir)
 #endif
 
 /*
+ * :markup: markdown
+ *
  * call-seq:
  *   path -> string or nil
  *
- * Returns the +dirpath+ string that was used to create +self+
- * (or +nil+ if created by method Dir.for_fd):
+ * If `self` was created with a string path, returns that path:
  *
- *   Dir.new('example').path # => "example"
+ * ```ruby
+ * dirpath = 'doc/tmp'
+ * Dir.mkdir(dirpath)
+ * dir = Dir.new(dirpath)
+ * dir.path # => "../ruby/doc/syntax"
+ * ```
+ *
+ * The path remains even when the directory is removed:
+ *
+ * ```ruby
+ * Dir.rmdir(dirpath)
+ * dir.path # => "../ruby/doc/syntax"
+ * ```
+ *
+ * If `self` was created with a file descriptor, returns `nil`:
+ *
+ * ```
+ * dir0 = Dir.new('.')
+ * fd = dir0.fileno # => 8
+ * dir1 = Dir.for_fd(fd)
+ * dir1.path        # => nil
+ * ```
  *
  */
 static VALUE
