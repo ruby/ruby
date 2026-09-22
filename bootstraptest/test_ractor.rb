@@ -907,6 +907,72 @@ assert_equal "can not set instance variables of classes/modules created by anoth
   end
 RUBY
 
+# a non-main Ractor can read, set, and remove ivars of classes/modules it created
+assert_equal 'ok', <<~'RUBY', frozen_string_literal: false
+  Ractor.new do
+    [Class.new, Module.new].each do |mod|
+      mod.instance_variable_set(:@iv, 'str')
+      raise unless mod.instance_variable_get(:@iv) == 'str'
+      raise unless mod.remove_instance_variable(:@iv) == 'str'
+    end
+    :ok
+  end.value
+RUBY
+
+# even main cannot modify another Ractor's module; reporting its name must not call to_s
+assert_equal 'true', <<~'RUBY', frozen_string_literal: false
+  port = Ractor::Port.new
+  r = Ractor.new(port) do |port|
+    mod = Module.new
+    mod.set_temporary_name('worker_module')
+    mod.instance_variable_set(:@iv, 'str')
+    def mod.to_s = raise('to_s must not be called')
+    port << mod
+    Ractor.receive
+  end
+  mod = port.receive
+
+  begin
+    messages = [[:instance_variable_set, :@iv, 'other'], [:remove_instance_variable, :@iv]].map do |args|
+      begin
+        mod.public_send(*args)
+      rescue Ractor::IsolationError => e
+        e.message
+      end
+    end
+    messages == ["can not set instance variables of classes/modules created by another Ractor (@iv from worker_module)"] * 2
+  ensure
+    r << nil
+    r.join
+  end
+RUBY
+
+# normal and JIT-compiled ivar reads report the same names without calling to_s
+assert_equal 'true', <<~'RUBY', frozen_string_literal: false
+  class C
+    @iv = 'str'
+    def self.read = @iv
+    def self.to_s = raise('to_s must not be called')
+  end
+
+  Ractor.new do
+    messages = []
+    begin
+      C.instance_variable_get(:@iv)
+    rescue Ractor::IsolationError => e
+      messages << e.message
+    end
+    40.times do
+      begin
+        C.read
+      rescue Ractor::IsolationError => e
+        messages << e.message
+      end
+    end
+    messages == ["can not get unshareable values from instance variables of classes/modules created by another Ractor (@iv from C)"] * 41
+  end.value
+RUBY
+
 # setting an ivar on a shareable but unfrozen object is not allowed, by instance_variable_set
 assert_equal "can't modify instance variables of a shareable Ractor", %q{
   shared = Ractor.new{}
