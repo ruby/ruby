@@ -3242,48 +3242,42 @@ find_destination(INSN *i)
     return 0;
 }
 
+struct unreachable_unref {
+    const unsigned int capacity;
+    unsigned int gen;
+    int *counts;
+    unsigned int *stamps;
+};
+
 static int
-unreachable_unref_count(const struct iseq_compile_data *data, const LABEL *lab)
+unreachable_unref_count(const struct unreachable_unref *unref, const LABEL *lab)
 {
     unsigned int no = (unsigned int)lab->label_no;
-    return data->unreachable_unref_stamps[no] == data->unreachable_unref_gen ?
-        data->unreachable_unref_counts[no] : 0;
+    return unref->stamps[no] == unref->gen ? unref->counts[no] : 0;
 }
 
 static void
-unreachable_unref_increment(struct iseq_compile_data *data, const LABEL *lab)
+unreachable_unref_increment(const struct unreachable_unref *unref, const LABEL *lab)
 {
     unsigned int no = (unsigned int)lab->label_no;
-    if (data->unreachable_unref_stamps[no] != data->unreachable_unref_gen) {
-        data->unreachable_unref_stamps[no] = data->unreachable_unref_gen;
-        data->unreachable_unref_counts[no] = 0;
+    if (unref->stamps[no] != unref->gen) {
+        unref->stamps[no] = unref->gen;
+        unref->counts[no] = 0;
     }
-    data->unreachable_unref_counts[no]++;
+    unref->counts[no]++;
 }
 
 static int
-remove_unreachable_chunk(rb_iseq_t *iseq, LINK_ELEMENT *i)
+remove_unreachable_chunk(rb_iseq_t *iseq, struct unreachable_unref *unref, LINK_ELEMENT *i)
 {
     LINK_ELEMENT *first = i, *end, *scan, *pending_end = 0;
     LABEL *pending = 0;
-    struct iseq_compile_data *data = ISEQ_COMPILE_DATA(iseq);
-    unsigned int nlabels = (unsigned int)data->label_no;
 
     if (!i) return 0;
-    if (data->unreachable_unref_capacity < nlabels) {
-        unsigned int capacity = data->unreachable_unref_capacity ? data->unreachable_unref_capacity : 16;
-        while (capacity < nlabels) capacity *= 2;
-        /* The abandoned arrays stay in the compile arena until the compile
-         * ends; doubling bounds their total at twice the final capacity. */
-        data->unreachable_unref_counts = compile_data_alloc2_type(iseq, int, capacity);
-        data->unreachable_unref_stamps = compile_data_calloc2_type(iseq, unsigned int, capacity);
-        data->unreachable_unref_capacity = capacity;
-        data->unreachable_unref_gen = 0;
-    }
-    if (++data->unreachable_unref_gen == 0) {
+    if (++unref->gen == 0) {
         /* The stamp wrapped around, so every stale stamp became ambiguous. */
-        MEMZERO(data->unreachable_unref_stamps, unsigned int, data->unreachable_unref_capacity);
-        data->unreachable_unref_gen = 1;
+        MEMZERO(unref->stamps, unsigned int, unref->capacity);
+        unref->gen = 1;
     }
 
     end = i;
@@ -3297,8 +3291,8 @@ remove_unreachable_chunk(rb_iseq_t *iseq, LINK_ELEMENT *i)
                 break;
             }
             else if ((lab = find_destination((INSN *)scan)) != 0) {
-                unreachable_unref_increment(data, lab);
-                if (lab == pending && lab->refcnt <= unreachable_unref_count(data, lab)) {
+                unreachable_unref_increment(unref, lab);
+                if (lab == pending && lab->refcnt <= unreachable_unref_count(unref, lab)) {
                     pending = 0;
                 }
             }
@@ -3309,7 +3303,7 @@ remove_unreachable_chunk(rb_iseq_t *iseq, LINK_ELEMENT *i)
                 if (pending) break;
                 return 0;
             }
-            if (lab->refcnt > unreachable_unref_count(data, lab)) {
+            if (lab->refcnt > unreachable_unref_count(unref, lab)) {
                 if (pending) break;
                 pending = lab;
                 pending_end = (scan == first) ? 0 : end;
@@ -3526,7 +3520,7 @@ iseq_reg_compile(rb_iseq_t *iseq, VALUE str, int options, const char *sourcefile
 }
 
 static int
-iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcallopt)
+iseq_peephole_optimize(rb_iseq_t *iseq, struct unreachable_unref *unref, LINK_ELEMENT *list, const int do_tailcallopt)
 {
     INSN *const iobj = (INSN *)list;
 
@@ -3564,7 +3558,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
              *      LABEL2 directly
              */
             if (replace_destination(iobj, diobj)) {
-                remove_unreachable_chunk(iseq, iobj->link.next);
+                remove_unreachable_chunk(iseq, unref, iobj->link.next);
                 goto again;
             }
         }
@@ -3637,7 +3631,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
                 ELEM_REPLACE(&piobj->link, &popiobj->link);
             }
         }
-        if (remove_unreachable_chunk(iseq, iobj->link.next)) {
+        if (remove_unreachable_chunk(iseq, unref, iobj->link.next)) {
             goto again;
         }
     }
@@ -3673,7 +3667,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
     }
 
     if (IS_INSN_ID(iobj, leave)) {
-        remove_unreachable_chunk(iseq, iobj->link.next);
+        remove_unreachable_chunk(iseq, unref, iobj->link.next);
     }
 
     /*
@@ -4130,7 +4124,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
                 }
                 label->refcnt++;
                 ELEM_INSERT_NEXT(next, &label->link);
-                CHECK(iseq_peephole_optimize(iseq, get_next_insn(jump), do_tailcallopt));
+                CHECK(iseq_peephole_optimize(iseq, unref, get_next_insn(jump), do_tailcallopt));
             }
             else {
                 ELEM_REMOVE(next);
@@ -4620,6 +4614,18 @@ iseq_optimize(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
     int do_block_optimization = 0;
     LABEL * block_loop_label = NULL;
 
+    int nlabels = ISEQ_COMPILE_DATA(iseq)->label_no;
+    int unref_counts[nlabels];
+    unsigned int unref_stamps[nlabels];
+    struct unreachable_unref unreachable_unref = {
+        .capacity = nlabels,
+        .gen = 0,
+        .counts = unref_counts,
+        .stamps = unref_stamps,
+    };
+    MEMZERO(unref_counts, int, nlabels);
+    MEMZERO(unref_stamps, unsigned int, nlabels);
+
     // If we're optimizing a block
     if (ISEQ_BODY(iseq)->type == ISEQ_TYPE_BLOCK) {
         do_block_optimization = 1;
@@ -4635,7 +4641,7 @@ iseq_optimize(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
     while (list) {
         if (IS_INSN(list)) {
             if (do_peepholeopt) {
-                iseq_peephole_optimize(iseq, list, tailcallopt);
+                iseq_peephole_optimize(iseq, &unreachable_unref, list, tailcallopt);
             }
             if (do_si) {
                 iseq_specialized_instruction(iseq, (INSN *)list);

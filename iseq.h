@@ -211,15 +211,6 @@ struct iseq_compile_data {
     int loopval_popped;	/* used by NODE_BREAK */
     int last_line;
     int label_no;
-    /* Scratch table for remove_unreachable_chunk, reused across calls: an
-     * entry is meaningful only while its stamp equals unreachable_unref_gen,
-     * so a call invalidates the whole table by bumping the generation instead
-     * of zeroing label_no counters, which made compilation quadratic in the
-     * size of a method. */
-    int *unreachable_unref_counts;
-    unsigned int *unreachable_unref_stamps;
-    unsigned int unreachable_unref_capacity;
-    unsigned int unreachable_unref_gen;
     int node_level;
     int isolated_depth;
     unsigned int ci_index;
