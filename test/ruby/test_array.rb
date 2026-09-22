@@ -2600,6 +2600,17 @@ class TestArray < Test::Unit::TestCase
     assert_equal(b, @cls[0, 1, 2, 3, 4][1, 4].permutation.to_a, bug3708)
   end
 
+  def test_permutation_array_modified
+    ary = @cls[*(1..1000)]
+    cls = @cls
+    obj = Object.new
+    obj.define_singleton_method(:to_int) do
+      ary.replace(cls[1, 2])
+      2
+    end
+    assert_equal(@cls[[1, 2], [2, 1]], ary.permutation(obj).to_a)
+  end
+
   def test_permutation_stack_error
     bug9932 = '[ruby-core:63103] [Bug #9932]'
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}", timeout: 30)

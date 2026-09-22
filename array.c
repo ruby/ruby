@@ -7106,13 +7106,17 @@ rb_ary_permutation_size(VALUE ary, VALUE args, VALUE eobj)
 static VALUE
 rb_ary_permutation(int argc, VALUE *argv, VALUE ary)
 {
-    long r, n, i;
+    long r, i;
 
-    n = RARRAY_LEN(ary);                  /* Array length */
     RETURN_SIZED_ENUMERATOR(ary, argc, argv, rb_ary_permutation_size);   /* Return enumerator if no block */
-    r = n;
-    if (rb_check_arity(argc, 0, 1) && !NIL_P(argv[0]))
+    if (rb_check_arity(argc, 0, 1) && !NIL_P(argv[0])) {
         r = NUM2LONG(argv[0]);            /* Permutation size from argument */
+    }
+    else {
+        r = RARRAY_LEN(ary);
+    }
+
+    long n = RARRAY_LEN(ary);
 
     if (r < 0 || n < r) {
         /* no permutations: yield nothing */
