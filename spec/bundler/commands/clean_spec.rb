@@ -413,6 +413,7 @@ RSpec.describe "bundle clean" do
   end
 
   it "does not remove gemspecs for content-addressed gems in the bundle", :compact_index, rubygems: ">= 4.1.0.a" do
+    skip "Gem::ContentAddress not available" if ruby_core?
     skip "A prerelease Ruby does not satisfy the ~> X.Y.0 ABI pin of content-addressed gems" if Gem.ruby_version.prerelease?
 
     simulate_platform "x86_64-linux" do
