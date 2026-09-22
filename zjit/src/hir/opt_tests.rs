@@ -13595,10 +13595,12 @@ mod hir_opt_tests {
 
     #[test]
     fn test_optimize_array_first() {
-        eval("
+        let result = eval("
             def test(arr) = arr.first
             test([1])
+            test([1])
         ");
+        assert_eq!(VALUE::fixnum_from_usize(1), result);
         assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
@@ -13624,11 +13626,23 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_optimize_array_last() {
-        eval("
-            def test(arr) = arr.last
-            test([1])
+    fn test_optimize_array_first_empty_array() {
+        let result = eval("
+            def test(arr) = arr.first
+            test([])
+            test([])
         ");
+        assert_eq!(Qnil, result);
+    }
+
+    #[test]
+    fn test_optimize_array_last() {
+        let result = eval("
+            def test(arr) = arr.last
+            test([1, 2, 3])
+            test([1, 2, 3])
+        ");
+        assert_eq!(VALUE::fixnum_from_usize(4), result);
         assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
@@ -13651,6 +13665,16 @@ mod hir_opt_tests {
           CheckInterrupts
           Return v26
         ");
+    }
+
+    #[test]
+    fn test_optimize_array_last_empty_array() {
+        let result = eval("
+            def test(arr) = arr.last
+            test([])
+            test([])
+        ");
+        assert_eq!(Qnil, result);
     }
 
     #[test]
