@@ -345,12 +345,13 @@ rb_zjit_class_initialized_p(VALUE klass)
     return RCLASS_INITIALIZED_P(klass);
 }
 
-// Whether the class's superclasses array has been built. rb_class_superclass
-// raises TypeError when it is NULL (an uninitialized class, e.g. Class.allocate).
+// Whether rb_class_superclass can be called on the class without raising: it raises
+// TypeError when the superclasses array is unbuilt (an uninitialized class, e.g.
+// Class.allocate), except for BasicObject, which it special-cases to return nil.
 bool
-rb_zjit_class_superclasses_p(VALUE klass)
+rb_zjit_can_load_superclass_p(VALUE klass)
 {
-    return RCLASS_SUPERCLASSES(klass) != NULL;
+    return klass == rb_cBasicObject || RCLASS_SUPERCLASSES(klass) != NULL;
 }
 
 rb_alloc_func_t rb_zjit_class_get_alloc_func(VALUE klass);
