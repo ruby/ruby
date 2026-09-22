@@ -2033,6 +2033,12 @@ cd -
   def test_rm_rf
     check_singleton :rm_rf
 
+    FileUtils.mkdir_p('tmp/tree/child')
+    File.write('tmp/tree/child/file', "contents\n")
+    assert_equal(['tmp/tree'], FileUtils.rm_rf('tmp/tree'))
+    assert_file_not_exist('tmp/tree')
+    assert_equal(['tmp/missing'], FileUtils.rm_rf('tmp/missing'))
+
     return if /mswin|mingw/ =~ RUBY_PLATFORM
 
     mkdir 'tmpdatadir'
@@ -2084,6 +2090,7 @@ cd -
 
   def test_rmtree
     check_singleton :rmtree
+    assert_equal(FileUtils.method(:rm_rf), FileUtils.method(:rmtree))
   end
 
   def test_safe_unlink
