@@ -1102,6 +1102,8 @@ dir_each_entry(VALUE dir, VALUE (*each)(VALUE, VALUE, struct dir_entry_args *), 
             .dp = dp,
         };
         (*each)(arg, path, &each_args);
+        /* the block may have closed dir */
+        if (!dirp->dir) dir_closed();
     }
     return dir;
 }
