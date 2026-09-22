@@ -2077,6 +2077,17 @@ rb_file_chardev_p(VALUE obj, VALUE fname)
  *   file = File.new(filepath)
  *   File.exist?(file)        # => true
  *   file.close               # Clean up.
+ *   File.unlink(filepath)    # Clean up.
+ *
+ * Follows symbolic links:
+ *
+ *   # Symbolic links.
+ *   File.symlink('README.md', 'README.link')
+ *   File.symlink('nosuch', 'BROKEN.link')
+ *   File.exist?('README.link')  # => true
+ *   File.exist?('BROKEN.link')  # => false
+ *   File.unlink('README.link')  # Clean up.
+ *   File.unlink('BROKEN.link')  # Clean up.
  *
  */
 
