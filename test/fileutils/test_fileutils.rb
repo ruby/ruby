@@ -1946,30 +1946,44 @@ class TestFileUtils < Test::Unit::TestCase
 
   def test_cd
     check_singleton :cd
+
+    original = FileUtils.pwd
+    FileUtils.cd('tmp')
+    assert_equal(File.join(original, 'tmp'), FileUtils.pwd)
+  ensure
+    FileUtils.cd(original) if original
   end
 
   def test_cd_result
     assert_equal 42, cd('.') { 42 }
+
+    original = FileUtils.pwd
+    assert_equal('tmp', FileUtils.cd('tmp') {|dir|
+      assert_equal(File.join(original, 'tmp'), Dir.pwd)
+      dir
+    })
+    assert_equal(original, FileUtils.pwd)
   end
 
   def test_chdir
     check_singleton :chdir
+    assert_equal(FileUtils.method(:cd), FileUtils.method(:chdir))
   end
 
-  def test_chdir_verbose
+  def test_cd_verbose
     assert_output_lines(["cd .", "cd -"], FileUtils) do
-      FileUtils.chdir('.', verbose: true){}
+      FileUtils.cd('.', verbose: true){}
     end
   end
 
-  def test_chdir_verbose_frozen
+  def test_cd_verbose_frozen
     o = Object.new
     o.extend(FileUtils)
-    o.singleton_class.send(:public, :chdir)
+    o.singleton_class.send(:public, :cd)
     o.freeze
     orig_stdout = $stdout
     $stdout = StringIO.new
-    o.chdir('.', verbose: true){}
+    o.cd('.', verbose: true){}
     $stdout.rewind
     assert_equal(<<-END, $stdout.read)
 cd .
