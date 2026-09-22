@@ -1066,10 +1066,10 @@ class TestFileUtils < Test::Unit::TestCase
 
   def test_ln_s_broken_symlink
     assert_nothing_raised {
-      ln_s 'symlink', 'tmp/symlink'
+      ln_s 'missing', 'tmp/symlink'
     }
     assert_symlink 'tmp/symlink'
-    assert_equal 'symlink', File.readlink('tmp/symlink')
+    assert_equal 'missing', File.readlink('tmp/symlink')
     assert_file.not_exist?('tmp/symlink')
   end if have_symlink? and !no_broken_symlink?
 
