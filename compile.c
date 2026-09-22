@@ -4615,16 +4615,15 @@ iseq_optimize(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
     LABEL * block_loop_label = NULL;
 
     int nlabels = ISEQ_COMPILE_DATA(iseq)->label_no;
-    int unref_counts[nlabels];
-    unsigned int unref_stamps[nlabels];
+    VALUE unref_counts_buf = 0, unref_stamps_buf = 0;
     struct unreachable_unref unreachable_unref = {
         .capacity = nlabels,
         .gen = 0,
-        .counts = unref_counts,
-        .stamps = unref_stamps,
+        .counts = ALLOCV_N(int, unref_counts_buf, nlabels),
+        .stamps = ALLOCV_N(unsigned int, unref_stamps_buf, nlabels),
     };
-    MEMZERO(unref_counts, int, nlabels);
-    MEMZERO(unref_stamps, unsigned int, nlabels);
+    MEMZERO(unreachable_unref.counts, int, nlabels);
+    MEMZERO(unreachable_unref.stamps, unsigned int, nlabels);
 
     // If we're optimizing a block
     if (ISEQ_BODY(iseq)->type == ISEQ_TYPE_BLOCK) {
@@ -4711,6 +4710,9 @@ iseq_optimize(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
             ELEM_REMOVE(le);
         }
     }
+
+    ALLOCV_END(unref_counts_buf);
+    ALLOCV_END(unref_stamps_buf);
     return COMPILE_OK;
 }
 
