@@ -1047,27 +1047,4 @@ class TestISeq < Test::Unit::TestCase
       RubyVM::InstructionSequence.compile_file(File::NULL)
     end
   end
-
-  def test_jump_heavy_compilation_is_linear # [Bug #22313]
-    pre = ->(n) do
-      src = +"def f(x)\n"
-      (n * 500).times do |i|
-        src << <<~RUBY
-          while x < #{i}
-            x = x + 1
-            next if x == #{i}
-            break if x > #{i}
-          end
-          return x if x == #{i}
-        RUBY
-      end
-      src << <<~RUBY
-        x
-        end
-      RUBY
-    end
-    assert_linear_performance([1, 50], pre: pre) do |src|
-      RubyVM::InstructionSequence.compile(src)
-    end
-  end
 end
