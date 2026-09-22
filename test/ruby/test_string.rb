@@ -2787,6 +2787,17 @@ CODE
     assert_equal([S("abcdb"), S("c"), S("e")], S("abcdbce").rpartition(/b\Kc/))
   end
 
+  def test_rpartition_string_modified
+    str = S("héllo" * 1000)
+    replacement = S("hé")
+    obj = Object.new
+    obj.define_singleton_method(:to_str) do
+      str.replace(replacement)
+      "-"
+    end
+    assert_equal([S(""), S(""), replacement], str.rpartition(obj))
+  end
+
   def test_fs_setter
     return unless @cls == String
 
