@@ -1295,6 +1295,15 @@ class TestEnumerable < Test::Unit::TestCase
                  olympics.uniq{|k,v| v})
     assert_equal([1, 2, 3, 4, 5, 10], (1..100).uniq{|x| (x**2) % 10 }.first(6))
     assert_equal([1, [1, 2]], Foo.new.to_enum.uniq)
+
+    b = Struct.new(:block) do
+      def each(&blk)
+        self.block = blk
+        nil
+      end
+    end.new
+    b.uniq {|x| x}
+    assert_nil(b.block.call(:foo))
   end
 
   def test_compact
