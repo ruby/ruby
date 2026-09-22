@@ -75,6 +75,10 @@ enum ractor_status {
     ractor_terminated,
 };
 
+struct rb_ractor_registered_addr {
+    VALUE *addr;
+};
+
 struct rb_ractor_struct {
     struct rb_ractor_pub pub;
     struct rb_ractor_sync sync;
@@ -84,6 +88,10 @@ struct rb_ractor_struct {
      * them to the survivor.  Raw malloc, so a merge during sweep cannot re-enter GC. */
     VALUE *registered_marks;
     size_t registered_marks_cnt, registered_marks_capa;
+
+    struct rb_ractor_registered_addr *registered_addrs;
+    size_t registered_addrs_cnt, registered_addrs_capa;
+    bool registered_addrs_listed;
 
     /* traversal-API mark redirect (NULL outside a traversal).  Per Ractor so a
      * concurrent traversal on another Ractor is never observed.  A modular GC's
@@ -170,6 +178,8 @@ void rb_ractor_reap_dead_ports(rb_ractor_t *r);
  * is absorbed).  An absorb can run during a GC sweep, so the implementation uses raw
  * realloc (ractor.c). */
 void rb_ractor_absorb_registered_marks(rb_ractor_t *dst, rb_ractor_t *src);
+
+void rb_ractor_absorb_registered_addrs_without_gc(rb_ractor_t *dst, rb_ractor_t *src);
 
 enum ractor_wakeup_status {
     wakeup_none,
