@@ -301,6 +301,21 @@ class TestFileExhaustive < Test::Unit::TestCase
     end
   end if NTFS
 
+  def test_stat_symlink_loop
+    return unless symlinkfile
+    path = make_tmp_filename("symlink_loop")
+    File.symlink(File.basename(path), path)
+    assert_predicate(File.lstat(path), :symlink?)
+    assert_raise(Errno::ELOOP) { File.stat(path) }
+  end
+
+  def test_exist_p_symlink_loop
+    return unless symlinkfile
+    path = make_tmp_filename("symlink_loop")
+    File.symlink(File.basename(path), path)
+    assert_file.not_exist?(path)
+  end
+
   def test_lstat
     return unless symlinkfile
     assert_equal(false, File.stat(symlinkfile).symlink?)
