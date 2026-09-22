@@ -1002,9 +1002,24 @@ class TestFileUtils < Test::Unit::TestCase
   def test_ln_s
     check_singleton :ln_s
 
-    ln_s TARGETS, 'tmp'
-    each_srcdest do |fname, lnfname|
+    TARGETS.each do |fname|
+      fname = "../#{fname}"
+      lnfname = 'tmp/lnsdest'
+      assert_equal(0, ln_s(fname, lnfname))
+      assert_file.symlink?(lnfname)
       assert_equal fname, File.readlink(lnfname)
+      assert_file.exist?(lnfname)
+    ensure
+      rm_f lnfname
+    end
+  end if have_symlink?
+
+  def test_ln_s_multiple
+    ln_s TARGETS.map {|fname| "../#{fname}" }, 'tmp'
+    each_srcdest do |fname, lnfname|
+      assert_file.symlink?(lnfname)
+      assert_equal "../#{fname}", File.readlink(lnfname)
+      assert_file.exist?(lnfname)
     ensure
       rm_f lnfname
     end
@@ -1014,17 +1029,7 @@ class TestFileUtils < Test::Unit::TestCase
       ln_s TARGETS, lnfname
     }
     assert_file.not_exist?(lnfname)
-
-    TARGETS.each do |fname|
-      fname = "../#{fname}"
-      lnfname = 'tmp/lnsdest'
-      ln_s fname, lnfname
-      assert_file.symlink?(lnfname)
-      assert_equal fname, File.readlink(lnfname)
-    ensure
-      rm_f lnfname
-    end
-  end if have_symlink? and !no_broken_symlink?
+  end if have_symlink?
 
   def test_ln_s_relative_to_symlinked_directory
     mkdir_p 'tmp/symlink_dir/.dotfiles/zsh'
@@ -1064,6 +1069,8 @@ class TestFileUtils < Test::Unit::TestCase
       ln_s 'symlink', 'tmp/symlink'
     }
     assert_symlink 'tmp/symlink'
+    assert_equal 'symlink', File.readlink('tmp/symlink')
+    assert_file.not_exist?('tmp/symlink')
   end if have_symlink? and !no_broken_symlink?
 
   def test_ln_s_pathname
@@ -2105,6 +2112,7 @@ cd -
 
   def test_symlink
     check_singleton :symlink
+    assert_equal(FileUtils.method(:ln_s), FileUtils.method(:symlink))
   end
 
   def test_touch
