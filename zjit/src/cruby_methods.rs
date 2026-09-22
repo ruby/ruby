@@ -930,13 +930,9 @@ fn inline_class_superclass(fun: &mut hir::Function, block: hir::BlockId, recv: h
     // compile-time constant.
     let recv_class = fun.type_of(recv).ruby_object()?;
     if !unsafe { RB_TYPE_P(recv_class, RUBY_T_CLASS) } { return None; }
-    // rb_class_superclass raises TypeError on an uninitialized class (Class.allocate); don't
-    // fold. The helper mirrors its exact raise condition, superclasses == NULL. Checking
-    // RCLASS_SUPER instead would be wrong: Class.allocate.include(M) sets RCLASS_SUPER to an
-    // ICLASS while leaving the superclasses array unbuilt.
-    if !unsafe { rb_zjit_can_load_superclass_p(recv_class) } {
-        return None;
-    }
+    // rb_class_superclass raises TypeError on an uninitialized class (e.g. from Class.allocate);
+    // don't fold.
+    if !unsafe { rb_zjit_can_load_superclass_p(recv_class) } { return None; }
     let superclass = unsafe { rb_class_superclass(recv_class) };
     Some(fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(superclass) }))
 }
