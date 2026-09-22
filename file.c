@@ -2455,12 +2455,28 @@ check3rdbyte(VALUE fname, int mode)
 #endif
 
 /*
+ * :markup: markdown
+ *
  * call-seq:
- *   File.setuid?(file_name)   ->  true or false
+ *   File.setuid?(object) -> true or false
  *
- * Returns <code>true</code> if the named file has the setuid bit set.
+ * Returns whether the setuid bit is set
+ * in the [special bits](rdoc-ref:file/filesystem_modes.md@Special+Bits)
+ * for the given `object`, which may be a path or an IO object:
  *
- * _file_name_ can be an IO object.
+ * ```ruby
+ * path = '/tmp/t.tmp'
+ * File.write(path, 'foo')
+ * mode = File.stat(path).mode.to_s(8) # => "100664"
+ * File.setuid?(path)                  # => false
+ * File.chmod(0o4644, path)            # Set the bit.
+ * mode = File.stat(path).mode.to_s(8) # => "104644"
+ * File.setuid?(path)                  # => true
+ * File.delete(path)                   # Clean up.
+ * File.setuid?($stdin)                # => false
+ * ```
+ *
+ * On Windows, the bit is never set; the method always returns `false`.
  */
 
 static VALUE
@@ -7313,14 +7329,31 @@ rb_stat_s(VALUE obj)
 }
 
 /*
+ * :markup: markdown
+ *
  *  call-seq:
- *     stat.setuid?    -> true or false
+ *    setuid? -> true or false
  *
- *  Returns <code>true</code> if <i>stat</i> has the set-user-id
- *  permission bit set, <code>false</code> if it doesn't or if the
- *  operating system doesn't support this feature.
+ *  Returns whether the setuid bit is set
+ *  in the [special bits](rdoc-ref:file/filesystem_modes.md@Special+Bits)
+ *  for the entry represented in `self`:
  *
- *     File.stat("/bin/su").setuid?   #=> true
+ *  ```ruby
+ *  path = '/tmp/t.tmp'
+ *  File.write(path, 'foo')
+ *  stat = File.stat(path)   # Take snapshot; bit not set.
+ *  stat.setuid?             # => false
+ *  stat.mode.to_s(8)        # => "100664"
+ *  File.chmod(0o4644, path) # Set the bit; snapshot not updated.
+ *  stat.setuid?             # => false
+ *  stat.mode.to_s(8)        # => "100664"
+ *  stat = File.stat(path)   # Fresh snapshot.
+ *  stat.setuid?             # => true
+ *  stat.mode.to_s(8)        # => "104644"
+ *  File.delete(path)        # Clean up.
+ *  ```
+ *
+ *  On Windows, the bit is never set; the method always returns `false`.
  */
 
 static VALUE

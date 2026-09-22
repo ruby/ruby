@@ -2595,17 +2595,16 @@ class Pathname    # * FileTest *
   # call-seq:
   #   setuid? -> true or false
   #
-  # Returns whether the [setuid bit](https://en.wikipedia.org/wiki/Setuid) is set
-  # in the permissions for the entry at the path in `self`:
+  # Returns whether the setuid bit is set
+  # in the [special bits](rdoc-ref:file/filesystem_modes.md@Special+Bits)
+  # for the entry at the path in `self`:
   #
   # ```ruby
-  # # Create a file and get its permissions and setuid? setting.
   # pn = Pathname('doc/t.tmp')
   # pn.write('foo')
   # mode = pn.stat.mode.to_s(8) # => "100664"
   # pn.setuid?                  # => false
-  # # Set the bit.
-  # pn.chmod(0o4644)
+  # pn.chmod(0o4644)            # Set the bit.
   # mode = pn.stat.mode.to_s(8) # => "104644"
   # pn.setuid?                  # => true
   # pn.delete                   # Clean up.
