@@ -18565,9 +18565,8 @@ mod hir_opt_tests {
         bb3(v9:BasicObject, v10:BasicObject):
           PatchPoint MethodRedefined(Symbol@0x1008, dup@0x1010, cme:0x1018)
           v23:DynamicSymbol = GuardType v10, DynamicSymbol recompile
-          v24:BasicObject = CCallWithFrame v23, :Kernel#dup@0x1040
           CheckInterrupts
-          Return v24
+          Return v23
         ");
     }
 

@@ -1086,7 +1086,26 @@ fn inline_kernel_respond_to_p(
 
 fn inline_kernel_dup(fun: &mut hir::Function, _block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
     let &[] = args else { return None; };
-    if fun.is_a(recv, types::Immediate) {
+    // rb_obj_dup skips the call for "special objects". We don't check for
+    // bignum/float/rational/complex here because Numeric#dup defines its own no-op `dup` method.
+    //
+    //   static inline int
+    //   special_object_p(VALUE obj)
+    //   {
+    //       if (SPECIAL_CONST_P(obj)) return TRUE;
+    //       switch (BUILTIN_TYPE(obj)) {
+    //         case T_BIGNUM:
+    //         case T_FLOAT:
+    //         case T_SYMBOL:
+    //         case T_RATIONAL:
+    //         case T_COMPLEX:
+    //           /* not a comprehensive list */
+    //           return TRUE;
+    //         default:
+    //           return FALSE;
+    //       }
+    //   }
+    if fun.is_a(recv, types::Immediate.union(types::DynamicSymbol)) {
         return Some(recv);
     }
     None
