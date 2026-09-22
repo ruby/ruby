@@ -245,6 +245,7 @@ pub fn init() -> Annotations {
     annotate!(rb_cNilClass, "nil?", inline_nilclass_nil_p);
     annotate!(rb_mKernel, "nil?", inline_kernel_nil_p);
     annotate!(rb_mKernel, "respond_to?", inline_kernel_respond_to_p);
+    annotate!(rb_mKernel, "dup", inline_kernel_dup);
     annotate!(rb_cBasicObject, "==", inline_basic_object_eq, types::BoolExact, no_gc, leaf, elidable);
     annotate!(rb_cBasicObject, "!", inline_basic_object_not, types::BoolExact, no_gc, leaf, elidable);
     annotate!(rb_cBasicObject, "!=", inline_basic_object_neq, types::BoolExact);
@@ -1081,6 +1082,33 @@ fn inline_kernel_respond_to_p(
         }, state
     });
     Some(fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(result) }))
+}
+
+fn inline_kernel_dup(fun: &mut hir::Function, _block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[] = args else { return None; };
+    // rb_obj_dup skips the call for "special objects". We don't check for
+    // bignum/float/rational/complex here because Numeric#dup defines its own no-op `dup` method.
+    //
+    //   static inline int
+    //   special_object_p(VALUE obj)
+    //   {
+    //       if (SPECIAL_CONST_P(obj)) return TRUE;
+    //       switch (BUILTIN_TYPE(obj)) {
+    //         case T_BIGNUM:
+    //         case T_FLOAT:
+    //         case T_SYMBOL:
+    //         case T_RATIONAL:
+    //         case T_COMPLEX:
+    //           /* not a comprehensive list */
+    //           return TRUE;
+    //         default:
+    //           return FALSE;
+    //       }
+    //   }
+    if fun.is_a(recv, types::Immediate.union(types::DynamicSymbol)) {
+        return Some(recv);
+    }
+    None
 }
 
 fn inline_kernel_class(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
