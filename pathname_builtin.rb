@@ -1776,11 +1776,11 @@ class Pathname    # * File *
   # at the path stored in `self`:
   #
   # ```ruby
-  # file_pn = Pathname('README.md')
-  # link_pn = Pathname('foo')
+  # file_pn = Pathname('doc/maintainers.md')
+  # link_pn = Pathname('/tmp/link')
   # link_pn.make_symlink(file_pn)
-  # link_pn.readlink # => #<Pathname:README.md>
-  # link_pn.unlink   # Clean up.
+  # link_pn.readlink # => #<Pathname:doc/maintainers.md>
+  # link_pn.delete   # Clean up.
   # ```
   #
   # Raises Errno::EINVAL if the path in `self` is not the path to a symbolic link.
@@ -2479,14 +2479,14 @@ class Pathname    # * FileTest *
   # call-seq:
   #   pipe? -> true or false
   #
-  # Returns whether entry at the path in `self` is a pipe:
+  # Returns whether the entry at the path in `self` is a pipe:
   #
   # ```ruby
+  # Pathname('.').pipe? # => false
   # path = '/tmp/foo'
   # File.mkfifo(path)
   # pn = Pathname(path) # => #<Pathname:/tmp/foo>
   # pn.pipe?            # => true
-  # Pathname('.').pipe? # => false
   # pn.delete           # Clean up.
   # ```
   #
@@ -2527,11 +2527,11 @@ class Pathname    # * FileTest *
   # pn = Pathname('doc/t.tmp')
   # pn.write('foo')
   # pn.owned?               # => true
-  # pn.delete
+  # pn.delete               # Clean up.
   # pn = Pathname('doc/tmp')
   # pn.mkdir
   # pn.owned?               # => true
-  # pn.rmdir
+  # pn.rmdir                # Clean up.
   # Pathname('/etc').owned? # => false
   # ```
   #
@@ -2543,7 +2543,8 @@ class Pathname    # * FileTest *
   #   readable? -> true or false
   #
   # Returns whether the entry at the path in `self`
-  # is readable by the owner and group of the current process:
+  # exists and is readable by the owner and group of the current process;
+  # see [Permissions](rdoc-ref:file/filesystem_modes.md@Permissions):
   #
   # ```ruby
   # pn = Pathname('/tmp/secret.txt')

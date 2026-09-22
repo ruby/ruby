@@ -83,7 +83,7 @@ static const rb_data_type_t ossl_sslctx_type = {
         .dfree = ossl_sslctx_free,
         .dcompact = ossl_sslctx_compact,
     },
-    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
+    .flags = RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED,
 };
 
 static VALUE
@@ -1632,7 +1632,7 @@ const rb_data_type_t ossl_ssl_type = {
         .dfree = ossl_ssl_free,
         .dcompact = ossl_ssl_compact,
     },
-    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
+    .flags = RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED,
 };
 
 static VALUE

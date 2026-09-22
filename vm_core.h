@@ -1722,11 +1722,16 @@ VM_ENV_BOX_UNCHECKED(const VALUE *ep)
 #if VM_CHECK_MODE > 0
 int rb_vm_ep_in_heap_p(const VALUE *ep);
 #endif
+static inline rb_execution_context_t * rb_current_execution_context(bool expect_ec);
 
 static inline int
 VM_ENV_ESCAPED_P(const VALUE *ep)
 {
-    VM_ASSERT(rb_vm_ep_in_heap_p(ep) == !!VM_ENV_FLAGS(ep, VM_ENV_FLAG_ESCAPED));
+#if VM_CHECK_MODE > 0
+    if (rb_current_execution_context(false)) {
+        VM_ASSERT(rb_vm_ep_in_heap_p(ep) == !!VM_ENV_FLAGS(ep, VM_ENV_FLAG_ESCAPED));
+    }
+#endif
     return VM_ENV_FLAGS(ep, VM_ENV_FLAG_ESCAPED) ? 1 : 0;
 }
 

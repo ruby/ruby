@@ -130,7 +130,7 @@ static const rb_data_type_t ossl_x509store_type = {
         .dfree = ossl_x509store_free,
         .dcompact = ossl_x509store_compact,
     },
-    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
+    .flags = RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED,
 };
 
 /*
@@ -597,7 +597,7 @@ static const rb_data_type_t ossl_x509stctx_type = {
         .dfree = ossl_x509stctx_free,
         .dcompact = ossl_x509stctx_compact,
     },
-    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
+    .flags = RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED,
 };
 
 static VALUE

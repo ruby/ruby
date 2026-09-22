@@ -2279,6 +2279,7 @@ unsafe extern "C" {
     pub fn rb_obj_frozen_p(obj: VALUE) -> VALUE;
     pub fn rb_class_real(klass: VALUE) -> VALUE;
     pub fn rb_class_inherited_p(scion: VALUE, ascendant: VALUE) -> VALUE;
+    pub fn rb_class_superclass(klass: VALUE) -> VALUE;
     pub fn rb_backref_get() -> VALUE;
     pub fn rb_range_new(beg: VALUE, end: VALUE, excl: ::std::os::raw::c_int) -> VALUE;
     pub fn rb_reg_nth_match(n: ::std::os::raw::c_int, md: VALUE) -> VALUE;
@@ -2482,6 +2483,7 @@ unsafe extern "C" {
         recv: VALUE,
     ) -> *const rb_callable_method_entry_struct;
     pub fn rb_zjit_class_initialized_p(klass: VALUE) -> bool;
+    pub fn rb_zjit_can_load_superclass_p(klass: VALUE) -> bool;
     pub fn rb_zjit_class_get_alloc_func(klass: VALUE) -> rb_alloc_func_t;
     pub fn rb_zjit_class_has_default_allocator(klass: VALUE) -> bool;
     pub fn rb_vm_get_untagged_block_handler(reg_cfp: *mut rb_control_frame_t) -> VALUE;
