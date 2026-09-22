@@ -245,11 +245,13 @@ pub fn init() -> Annotations {
     annotate!(rb_cNilClass, "nil?", inline_nilclass_nil_p);
     annotate!(rb_mKernel, "nil?", inline_kernel_nil_p);
     annotate!(rb_mKernel, "respond_to?", inline_kernel_respond_to_p);
+    annotate!(rb_mKernel, "dup", inline_kernel_dup);
     annotate!(rb_cBasicObject, "==", inline_basic_object_eq, types::BoolExact, no_gc, leaf, elidable);
     annotate!(rb_cBasicObject, "!", inline_basic_object_not, types::BoolExact, no_gc, leaf, elidable);
     annotate!(rb_cBasicObject, "!=", inline_basic_object_neq, types::BoolExact);
     annotate!(rb_cBasicObject, "initialize", inline_basic_object_initialize);
     annotate!(rb_cClass, "allocate", inline_class_allocate);
+    annotate!(rb_cClass, "superclass", inline_class_superclass, types::Class.union(types::NilClass));
     annotate!(rb_cInteger, "succ", inline_integer_succ);
     annotate!(rb_cInteger, "^", inline_integer_xor);
     annotate!(rb_cInteger, "==", inline_integer_eq);
@@ -920,6 +922,22 @@ fn inline_class_allocate(fun: &mut hir::Function, block: hir::BlockId, recv: hir
     fun.try_inline_object_alloc(block, recv, state)
 }
 
+fn inline_class_superclass(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
+    // Class#superclass takes no arguments; calls with the wrong argc bail out with
+    // ArgcParamMismatch before inlining is attempted.
+    debug_assert!(args.is_empty(), "Class#superclass takes no arguments");
+    // A class's superclass cannot change after the class is created (prepending a module only
+    // inserts ICLASSes, which superclass skips), so fold the lookup when the receiver is a
+    // compile-time constant.
+    let recv_class = fun.type_of(recv).ruby_object()?;
+    if !unsafe { RB_TYPE_P(recv_class, RUBY_T_CLASS) } { return None; }
+    // rb_class_superclass raises TypeError on an uninitialized class (e.g. from Class.allocate);
+    // don't fold.
+    if !unsafe { rb_zjit_can_load_superclass_p(recv_class) } { return None; }
+    let superclass = unsafe { rb_class_superclass(recv_class) };
+    Some(fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(superclass) }))
+}
+
 fn inline_basic_object_initialize(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
     if !args.is_empty() { return None; }
     let result = fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(Qnil) });
@@ -1064,6 +1082,33 @@ fn inline_kernel_respond_to_p(
         }, state
     });
     Some(fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(result) }))
+}
+
+fn inline_kernel_dup(fun: &mut hir::Function, _block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[] = args else { return None; };
+    // rb_obj_dup skips the call for "special objects". We don't check for
+    // bignum/float/rational/complex here because Numeric#dup defines its own no-op `dup` method.
+    //
+    //   static inline int
+    //   special_object_p(VALUE obj)
+    //   {
+    //       if (SPECIAL_CONST_P(obj)) return TRUE;
+    //       switch (BUILTIN_TYPE(obj)) {
+    //         case T_BIGNUM:
+    //         case T_FLOAT:
+    //         case T_SYMBOL:
+    //         case T_RATIONAL:
+    //         case T_COMPLEX:
+    //           /* not a comprehensive list */
+    //           return TRUE;
+    //         default:
+    //           return FALSE;
+    //       }
+    //   }
+    if fun.is_a(recv, types::Immediate.union(types::DynamicSymbol)) {
+        return Some(recv);
+    }
+    None
 }
 
 fn inline_kernel_class(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {

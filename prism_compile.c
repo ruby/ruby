@@ -920,10 +920,6 @@ pm_static_literal_value(rb_iseq_t *iseq, const pm_node_t *node, pm_scope_node_t 
       }
       case PM_SOURCE_ENCODING_NODE:
         return rb_enc_from_encoding(scope_node->encoding);
-      case PM_SOURCE_FILE_NODE: {
-        const pm_source_file_node_t *cast = (const pm_source_file_node_t *) node;
-        return pm_source_file_value(cast, scope_node);
-      }
       case PM_SOURCE_LINE_NODE:
         return INT2FIX(pm_node_line_number_cached(node, scope_node));
       case PM_STRING_NODE: {
@@ -7602,7 +7598,6 @@ pm_compile_case_node_dispatch(rb_iseq_t *iseq, VALUE dispatch, const pm_node_t *
       case PM_FALSE_NODE:
       case PM_INTEGER_NODE:
       case PM_NIL_NODE:
-      case PM_SOURCE_FILE_NODE:
       case PM_SOURCE_LINE_NODE:
       case PM_SYMBOL_NODE:
       case PM_TRUE_NODE:

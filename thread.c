@@ -5342,6 +5342,7 @@ rb_thread_atfork_internal(rb_thread_t *th, void (*atfork)(rb_thread_t *, const r
     rb_gc_zombie_objspaces_atfork();
     rb_gc_atfork_global_locks();
     rb_generic_fields_lock_atfork();
+    rb_fiber_pool_lock_atfork();
     ccan_list_head_init(&th->interrupt_exec_tasks);
 
     vm->fork_gen++;

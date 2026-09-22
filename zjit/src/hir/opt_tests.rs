@@ -18146,6 +18146,570 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_fold_class_superclass() {
+        eval(r#"
+            class A; end
+            class B < A; end
+            def test = B.superclass
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:4:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint StableConstantNames(0x1000, B)
+          v11:ClassSubclass[B@0x1008] = Const Value(VALUE(0x1008))
+          PatchPoint MethodRedefined(Class@0x1010, superclass@0x1018, cme:0x1020)
+          v22:ClassSubclass[A@0x1048] = Const Value(VALUE(0x1048))
+          CheckInterrupts
+          Return v22
+        ");
+    }
+
+    #[test]
+    fn test_fold_basic_object_superclass() {
+        eval(r#"
+            def test = BasicObject.superclass
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint StableConstantNames(0x1000, BasicObject)
+          v11:ClassSubclass[BasicObject@0x1008] = Const Value(VALUE(0x1008))
+          PatchPoint MethodRedefined(Class@0x1010, superclass@0x1018, cme:0x1020)
+          v22:NilClass = Const Value(nil)
+          CheckInterrupts
+          Return v22
+        ");
+    }
+
+    #[test]
+    fn test_fold_class_superclass_skips_prepended_module() {
+        eval(r#"
+            class A; end
+            module M; end
+            class B < A
+              prepend M
+            end
+            def test = B.superclass
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:7:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint StableConstantNames(0x1000, B)
+          v11:ClassSubclass[B@0x1008] = Const Value(VALUE(0x1008))
+          PatchPoint MethodRedefined(Class@0x1010, superclass@0x1018, cme:0x1020)
+          v22:ClassSubclass[A@0x1048] = Const Value(VALUE(0x1048))
+          CheckInterrupts
+          Return v22
+        ");
+    }
+
+    #[test]
+    fn test_fold_singleton_class_superclass() {
+        eval(r#"
+            class C; end
+            C1 = C.new.singleton_class.singleton_class
+            def test = C1.superclass
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:4:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint StableConstantNames(0x1000, C1)
+          v11:ClassSubclass[Class@0x1008] = Const Value(VALUE(0x1008))
+          PatchPoint MethodRedefined(Class@0x1010, superclass@0x1018, cme:0x1020)
+          v22:ClassSubclass[Class@0x1048] = Const Value(VALUE(0x1048))
+          CheckInterrupts
+          Return v22
+        ");
+    }
+
+    #[test]
+    fn test_dont_fold_uninitialized_class_superclass() {
+        eval(r#"
+            C = Class.allocate
+            def test = C.superclass
+            begin; test; rescue TypeError; end
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint StableConstantNames(0x1000, C)
+          v11:ClassExact[C@0x1008] = Const Value(VALUE(0x1008))
+          PatchPoint NoSingletonClass(Class@0x1010)
+          PatchPoint MethodRedefined(Class@0x1010, superclass@0x1018, cme:0x1020)
+          v23:NilClass|Class = CCallWithFrame v11, :Class#superclass@0x1048
+          CheckInterrupts
+          Return v23
+        ");
+    }
+
+    #[test]
+    fn test_dont_fold_uninitialized_class_with_included_module_superclass() {
+        // include sets RCLASS_SUPER to the module's ICLASS but leaves the superclasses array
+        // unbuilt, so Class#superclass still raises TypeError; make sure we don't fold.
+        // Call test before the include: interpreted Class#superclass has a (bogus) assertion
+        // that RCLASS_SUPER is unset whenever the superclasses array is, which aborts dev
+        // builds after the include. Compilation happens at hir_string time, after it.
+        eval(r#"
+            module M; end
+            C = Class.allocate
+            def test = C.superclass
+            begin; test; rescue TypeError; end
+            C.include M
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:4:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint StableConstantNames(0x1000, C)
+          v11:ClassExact[C@0x1008] = Const Value(VALUE(0x1008))
+          PatchPoint NoSingletonClass(Class@0x1010)
+          PatchPoint MethodRedefined(Class@0x1010, superclass@0x1018, cme:0x1020)
+          v23:NilClass|Class = CCallWithFrame v11, :Class#superclass@0x1048
+          CheckInterrupts
+          Return v23
+        ");
+    }
+
+    #[test]
+    fn test_dont_fold_unknown_receiver_superclass() {
+        eval(r#"
+            def test(c) = c.superclass
+            test(String)
+            test(String)
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :c@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :c@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint MethodRedefined(Class@0x1008, superclass@0x1010, cme:0x1018)
+          v23:ClassSubclass[class_exact*:Class@VALUE(0x1008)] = GuardType v10, ClassSubclass[class_exact*:Class@VALUE(0x1008)] recompile
+          v24:NilClass|Class = CCallWithFrame v23, :Class#superclass@0x1040
+          CheckInterrupts
+          Return v24
+        ");
+    }
+
+    #[test]
+    fn test_fold_profiled_receiver_class_superclass() {
+        eval(r#"
+            def test(o) = o.class.superclass
+            test("abc")
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint NoSingletonClass(String@0x1008)
+          PatchPoint MethodRedefined(String@0x1008, class@0x1010, cme:0x1018)
+          v25:StringExact = GuardType v10, StringExact recompile
+          v26:ClassSubclass[String@0x1008] = Const Value(VALUE(0x1008))
+          PatchPoint MethodRedefined(Class@0x1040, superclass@0x1048, cme:0x1050)
+          v30:ClassSubclass[Object@0x1078] = Const Value(VALUE(0x1078))
+          CheckInterrupts
+          Return v30
+        ");
+    }
+
+    #[test]
+    fn test_elide_kernel_dup_fixnum() {
+        eval(r#"
+            def test(o) = o.dup
+            test(3)
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1008, dup@0x1010, cme:0x1018)
+          v22:Fixnum = GuardType v10, Fixnum recompile
+          CheckInterrupts
+          Return v22
+        ");
+    }
+
+    #[test]
+    fn test_elide_kernel_dup_bignum() {
+        eval(r#"
+            def test(o) = o.dup
+            test(300000000000000000000000000000000000000000000000000000000000000)
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1008, dup@0x1010, cme:0x1018)
+          v22:Bignum = GuardType v10, Bignum recompile
+          CheckInterrupts
+          Return v22
+        ");
+    }
+
+    #[test]
+    fn test_elide_kernel_dup_nil() {
+        eval(r#"
+            def test(o) = o.dup
+            test(nil)
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint MethodRedefined(NilClass@0x1008, dup@0x1010, cme:0x1018)
+          v23:NilClass = GuardType v10, NilClass recompile
+          CheckInterrupts
+          Return v23
+        ");
+    }
+
+    #[test]
+    fn test_elide_kernel_dup_true() {
+        eval(r#"
+            def test(o) = o.dup
+            test(true)
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint MethodRedefined(TrueClass@0x1008, dup@0x1010, cme:0x1018)
+          v23:TrueClass = GuardType v10, TrueClass recompile
+          CheckInterrupts
+          Return v23
+        ");
+    }
+
+    #[test]
+    fn test_elide_kernel_dup_false() {
+        eval(r#"
+            def test(o) = o.dup
+            test(false)
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint MethodRedefined(FalseClass@0x1008, dup@0x1010, cme:0x1018)
+          v23:FalseClass = GuardType v10, FalseClass recompile
+          CheckInterrupts
+          Return v23
+        ");
+    }
+
+    #[test]
+    fn test_elide_kernel_dup_static_symbol() {
+        eval(r#"
+            def test(o) = o.dup
+            test(:foo)
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint MethodRedefined(Symbol@0x1008, dup@0x1010, cme:0x1018)
+          v23:StaticSymbol = GuardType v10, StaticSymbol recompile
+          CheckInterrupts
+          Return v23
+        ");
+    }
+
+    #[test]
+    fn test_elide_kernel_dup_dynamic_symbol() {
+        eval(r#"
+            def test(o) = o.dup
+            test(:"v#{1 + 1}")
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint MethodRedefined(Symbol@0x1008, dup@0x1010, cme:0x1018)
+          v23:DynamicSymbol = GuardType v10, DynamicSymbol recompile
+          CheckInterrupts
+          Return v23
+        ");
+    }
+
+    #[test]
+    fn test_elide_kernel_dup_static_flonum() {
+        eval(r#"
+            def test(o) = o.dup
+            test(0.0)
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint MethodRedefined(Float@0x1008, dup@0x1010, cme:0x1018)
+          v22:Flonum = GuardType v10, Flonum recompile
+          CheckInterrupts
+          Return v22
+        ");
+    }
+
+    #[test]
+    fn test_elide_kernel_dup_bigfloat() {
+        eval(r#"
+            def test(o) = o.dup
+            test(3000000000000000000000000000000000000000000000000000000000000000000000000000000000000.0)
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint MethodRedefined(Float@0x1008, dup@0x1010, cme:0x1018)
+          v22:HeapFloat = GuardType v10, HeapFloat recompile
+          CheckInterrupts
+          Return v22
+        ");
+    }
+
+    #[test]
+    fn test_elide_kernel_dup_rational() {
+        eval(r#"
+            def test(o) = o.dup
+            test(1.to_r)
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint NoSingletonClass(Rational@0x1008)
+          PatchPoint MethodRedefined(Rational@0x1008, dup@0x1010, cme:0x1018)
+          v23:NumericSubclass[class_exact:Rational] = GuardType v10, NumericSubclass[class_exact:Rational] recompile
+          CheckInterrupts
+          Return v23
+        ");
+    }
+
+    #[test]
+    fn test_elide_kernel_dup_complex() {
+        eval(r#"
+            def test(o) = o.dup
+            test(Complex.rect(3, 4))
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint NoSingletonClass(Complex@0x1008)
+          PatchPoint MethodRedefined(Complex@0x1008, dup@0x1010, cme:0x1018)
+          v23:NumericSubclass[class_exact:Complex] = GuardType v10, NumericSubclass[class_exact:Complex] recompile
+          CheckInterrupts
+          Return v23
+        ");
+    }
+
+    #[test]
+    fn test_no_elide_kernel_dup_heap_object() {
+        eval(r#"
+            def test(o) = o.dup
+            test(Object.new)
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint NoSingletonClass(Object@0x1008)
+          PatchPoint MethodRedefined(Object@0x1008, dup@0x1010, cme:0x1018)
+          v24:ObjectExact = GuardType v10, ObjectExact recompile
+          v25:BasicObject = CCallWithFrame v24, :Kernel#dup@0x1040
+          CheckInterrupts
+          Return v25
+        ");
+    }
+
+    #[test]
     fn test_print_nil_module_name() {
         eval(r#"
             X = [Module.new].freeze

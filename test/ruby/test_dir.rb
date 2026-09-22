@@ -237,6 +237,17 @@ class TestDir < Test::Unit::TestCase
     assert_raise(IOError) { d.read }
   end
 
+  def test_each_with_close
+    d = Dir.open(@root)
+    assert_raise(IOError) { d.each { d.close } }
+
+    d = Dir.open(@root)
+    assert_raise(IOError) { d.each_child { d.close } }
+
+    d = Dir.open(@root)
+    assert_raise(IOError) { d.scan { |*| d.close } }
+  end
+
   def test_glob
     assert_equal((%w(.) + ("a".."z").to_a).map{|f| File.join(@root, f) },
                  Dir.glob(File.join(@root, "*"), File::FNM_DOTMATCH))

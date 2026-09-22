@@ -3055,16 +3055,21 @@ rb_io_pid(VALUE io)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
  *    path -> string or nil
  *
- *  Returns the path associated with the IO, or +nil+ if there is no path
- *  associated with the IO. It is not guaranteed that the path exists on
- *  the filesystem.
+ *  Returns the string path associated with `self`,
+ *  or `nil` if there is no associated path:
  *
- *    $stdin.path # => "<STDIN>"
+ *  ```ruby
+ *  path = 'doc/maintainers.md'
+ *  fd = File.open(path).fileno # => 6
+ *  IO.new(fd, path: path).path # => "doc/maintainers.md"
+ *  IO.new(fd).path             # => nil
+ *  ```
  *
- *    File.open("testfile") {|f| f.path} # => "testfile"
  */
 
 VALUE

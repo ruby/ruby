@@ -22,6 +22,9 @@
 #else
 #define RUBY_TYPED_FROZEN_SHAREABLE 0
 #endif
+#if !defined(RUBY_TYPED_THREAD_SAFE_FREE)
+#define RUBY_TYPED_THREAD_SAFE_FREE RUBY_TYPED_FREE_IMMEDIATELY
+#endif
 
 #include <openssl/opensslv.h>
 
