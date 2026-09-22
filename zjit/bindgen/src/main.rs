@@ -404,8 +404,6 @@ fn main() {
         .allowlist_function("rb_insn_name")
         .allowlist_function("rb_insn_len")
         .allowlist_function("rb_yarv_class_of")
-        .allowlist_function("rb_zjit_class_initialized_p")
-        .allowlist_function("rb_zjit_can_load_superclass_p")
         .allowlist_function("rb_zjit_class_has_default_allocator")
         .allowlist_function("rb_zjit_class_get_alloc_func")
         .allowlist_function("rb_get_ec_cfp")

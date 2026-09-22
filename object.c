@@ -2216,9 +2216,7 @@ rb_class_s_new(int argc, VALUE *argv, VALUE self)
     else {
         super = argv[0];
         rb_check_inheritable(super);
-        if (!RCLASS_INITIALIZED_P(super)) {
-            rb_raise(rb_eTypeError, "can't inherit uninitialized class");
-        }
+        RUBY_ASSERT(RCLASS_INITIALIZED_P(super));
     }
     klass = rb_class_s_alloc(self);
     rb_class_set_super(klass, super);
@@ -2294,9 +2292,7 @@ class_get_alloc_func(VALUE klass)
 {
     rb_alloc_func_t allocator;
 
-    if (!RCLASS_INITIALIZED_P(klass)) {
-        rb_raise(rb_eTypeError, "can't instantiate uninitialized class");
-    }
+    RUBY_ASSERT(RCLASS_INITIALIZED_P(klass));
     if (RCLASS_SINGLETON_P(klass)) {
         rb_raise(rb_eTypeError, "can't create instance of singleton class");
     }
@@ -2413,10 +2409,7 @@ rb_class_superclass(VALUE klass)
 
     if (klass == rb_cBasicObject) return Qnil;
 
-    if (!superclasses) {
-        RUBY_ASSERT(!RCLASS_SUPER(klass));
-        rb_raise(rb_eTypeError, "uninitialized class");
-    }
+    RUBY_ASSERT(superclasses);
 
     if (!superclasses_depth) {
         return Qnil;
