@@ -3651,6 +3651,29 @@ fn test_opt_eq_string_distinct_objects() {
 }
 
 #[test]
+fn test_opt_eq_string_symbol_arg_after_inlining() {
+    eval(r#"
+        # frozen_string_literal: true
+        class Foo
+          def self.bar(l, r) = l == r
+        end
+        def test(flag)
+          foo = Foo
+          if flag
+            foo.bar("a", "b")
+          else
+            foo.bar("a", :sym)
+          end
+        end
+    "#);
+    assert_snapshot!(inspect(r#"
+        test(true) # profile opt_eq in bar
+        test(true) # compile test, inlining bar with a Symbol argument on the untaken branch
+        [test(true), test(false)]
+    "#), @"[false, false]");
+}
+
+#[test]
 fn test_opt_eqq_string_same_operand() {
     assert_snapshot!(inspect(r#"
         def test(s) = s === s
