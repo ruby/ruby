@@ -664,6 +664,25 @@ ruby_nativethread_signal(int signum, sighandler_t handler)
 #endif
 #endif
 
+static sighandler_t
+ruby_signal_handler(int sig)
+{
+#ifdef POSIX_SIGNAL
+    struct sigaction action;
+    (void)VALGRIND_MAKE_MEM_DEFINED(&action, sizeof(action));
+    if (sigaction(sig, NULL, &action) < 0) return SIG_ERR;
+    if (action.sa_flags & SA_SIGINFO)
+        return (sighandler_t)action.sa_sigaction;
+    return action.sa_handler;
+#elif defined SIG_GET
+    // https://learn.microsoft.com/en-us/cpp/c-runtime-library/signal-action-constants
+    // SIG_GET returns the current handler without changing it.
+    return signal(sig, SIG_GET);
+#else
+    rb_notimplement();
+#endif
+}
+
 #if !defined(POSIX_SIGNAL) && !defined(SIG_GET)
 static rb_nativethread_lock_t sig_check_lock;
 #endif
@@ -673,14 +692,10 @@ signal_ignored(int sig)
 {
     sighandler_t func;
 #ifdef POSIX_SIGNAL
-    struct sigaction old;
-    (void)VALGRIND_MAKE_MEM_DEFINED(&old, sizeof(old));
-    if (sigaction(sig, NULL, &old) < 0) return FALSE;
-    func = old.sa_handler;
+    func = ruby_signal_handler(sig);
+    if (func == SIG_ERR) return FALSE;
 #elif defined SIG_GET
-    // https://learn.microsoft.com/en-us/cpp/c-runtime-library/signal-action-constants
-    // SIG_GET: Returns the current value of the signal.
-    func = signal(sig, SIG_GET);
+    func = ruby_signal_handler(sig);
 #else
     sighandler_t old;
     rb_native_mutex_lock(&sig_check_lock);
@@ -1377,6 +1392,9 @@ reserved_signal_p(int signo)
  * The returned object is represented the same way as the previous handler
  * returned by Signal.trap.
  *
+ * Raises NotImplementedError if the platform cannot query a native signal
+ * handler without changing it.
+ *
  *     Signal.trap("HUP", "IGNORE")
  *     Signal["HUP"] # => "IGNORE"
  */
@@ -1399,9 +1417,8 @@ sig_aref(VALUE recv, VALUE signo)
         return trap_handler_command(command, SIG_ERR);
     }
 
-    func = ruby_signal(sig, SIG_DFL);
+    func = ruby_signal_handler(sig);
     if (func == SIG_ERR) rb_sys_fail_str(rb_signo2signm(sig));
-    if (ruby_signal(sig, func) == SIG_ERR) rb_sys_fail_str(rb_signo2signm(sig));
 
     return trap_handler_command(command, func);
 }

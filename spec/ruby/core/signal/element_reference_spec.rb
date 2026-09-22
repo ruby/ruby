@@ -59,6 +59,11 @@ ruby_version_is "4.1" do
       Signal[@signal].should == "SYSTEM_DEFAULT"
     end
 
+    it "returns EXIT for handlers that terminate the process" do
+      Signal.trap(@signal, :EXIT)
+      Signal[@signal].should == "EXIT"
+    end
+
     it "returns the current EXIT handler" do
       handler = -> {}
       saved_trap = Signal.trap(:EXIT, handler)
