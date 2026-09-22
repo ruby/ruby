@@ -888,6 +888,25 @@ assert_equal "can not get unshareable values from instance variables of classes/
   end
 RUBY
 
+# setting an ivar of a class/module from a non-owner Ractor reports the ivar and class
+assert_equal "can not set instance variables of classes/modules created by another Ractor (@iv from C)", <<~'RUBY', frozen_string_literal: false
+  class C
+    @iv = 'str'
+  end
+
+  r = Ractor.new do
+    class C
+      @iv = 'other'
+    end
+  end
+
+  begin
+    r.value
+  rescue Ractor::RemoteError => e
+    e.cause.message
+  end
+RUBY
+
 # setting an ivar on a shareable but unfrozen object is not allowed, by instance_variable_set
 assert_equal "can't modify instance variables of a shareable Ractor", %q{
   shared = Ractor.new{}
