@@ -1,6 +1,7 @@
 #ifndef RUBY_RACTOR_CORE_H
 #define RUBY_RACTOR_CORE_H
 #include "internal/gc.h"
+#include "internal/sanitizers.h"
 #include "ruby/ruby.h"
 #include "ruby/ractor.h"
 #include "vm_core.h"
@@ -10,6 +11,17 @@
 
 #ifndef RACTOR_CHECK_MODE
 #define RACTOR_CHECK_MODE (VM_CHECK_MODE || RUBY_DEBUG) && (SIZEOF_UINT64_T == SIZEOF_VALUE)
+#endif
+
+/* Record the registration-time VALUE in each rb_gc_register_address entry so the
+ * verifier can distinguish a transitioned cross-Ractor store from conservative
+ * garbage.  Debug and ASAN builds only; production keeps one-word entries. */
+#ifndef RB_GC_REGISTERED_ADDR_CHECK
+# if RUBY_DEBUG || defined(RUBY_ASAN_ENABLED)
+#  define RB_GC_REGISTERED_ADDR_CHECK 1
+# else
+#  define RB_GC_REGISTERED_ADDR_CHECK 0
+# endif
 #endif
 
 // experimental flag because it is not sure it is the common pattern
@@ -77,6 +89,10 @@ enum ractor_status {
 
 struct rb_ractor_registered_addr {
     VALUE *addr;
+#if RB_GC_REGISTERED_ADDR_CHECK
+    /* A raw provenance snapshot for verification only. Never mark or dereference it. */
+    VALUE initial_value;
+#endif
 };
 
 struct rb_ractor_struct {
