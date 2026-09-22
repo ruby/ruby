@@ -115,20 +115,6 @@ module Gem::ContentAddress
   end
 
   ##
-  # Whether +spec+'s required_ruby_version permits building for +ruby_abi+:
-  # an unset or default requirement can still be pinned to the ABI, and
-  # anything else must already pin exactly that ABI. Used at build time,
-  # before the requirement is injected, where eligible? would be
-  # premature.
-
-  def self.ruby_abi_compatible?(spec, ruby_abi)
-    required_ruby_version = spec.required_ruby_version
-    return true if required_ruby_version.nil? || required_ruby_version.none?
-
-    ruby_abi_for(required_ruby_version) == ruby_abi
-  end
-
-  ##
   # Generates the content address for +bytes+: the first +length+
   # characters of the hexadecimal SHA256 digest of the contents.
 

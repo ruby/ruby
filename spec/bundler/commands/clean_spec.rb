@@ -416,6 +416,7 @@ RSpec.describe "bundle clean" do
     skip "A prerelease Ruby does not satisfy the ~> X.Y.0 ABI pin of content-addressed gems" if Gem.ruby_version.prerelease?
 
     simulate_platform "x86_64-linux" do
+      current_abi = "#{Gem.ruby_version.segments[0]}.#{Gem.ruby_version.segments[1]}"
       build_repo2 do
         build_gem "mygem", "1.0" do |s|
           s.platform = Gem::Platform.new("x86_64-linux")
@@ -423,9 +424,9 @@ RSpec.describe "bundle clean" do
         end
       end
 
-      build_gem "mygem", "1.0", ruby_abi: Gem.ruby_abi, path: gem_repo2("gems") do |s|
+      build_gem "mygem", "1.0", content_addressable: true, path: gem_repo2("gems") do |s|
         s.platform = Gem::Platform.new("x86_64-linux")
-        s.required_ruby_version = "~> #{Gem.ruby_abi}.0"
+        s.required_ruby_version = "~> #{current_abi}.0"
         s.write "lib/mygem.rb", "MYGEM = '1.0 content_addressed'"
       end
 

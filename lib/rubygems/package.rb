@@ -149,18 +149,20 @@ class Gem::Package
   MINIMUM_RUBYGEMS_VERSION = ">= 4.1.0.a"
 
   ##
-  # Builds the gem described by +spec+ and returns the built file name;
-  # passing +ruby_abi+ ("X.Y") builds a content-addressable gem named by the
-  # SHA-256 of its contents, updates +spec.required_ruby_version+ to
-  # "~> X.Y.0", and constrains +spec.required_rubygems_version+ to at least
-  # MINIMUM_RUBYGEMS_VERSION (incompatible with
-  # +file_name+).
+  # Builds the gem described by +spec+ and returns the built file name.
+  #
+  # When +content_addressable+ is true, builds a gem named by the SHA-256
+  # digest of its contents. The spec must declare a non-Ruby platform and a
+  # +required_ruby_version+ identifying a single Ruby ABI. Its
+  # +required_rubygems_version+ is constrained to at least
+  # MINIMUM_RUBYGEMS_VERSION. Content-addressable builds are incompatible
+  # with +file_name+.
 
-  def self.build(spec, skip_validation = false, strict_validation = false, file_name = nil, ruby_abi = nil)
-    if ruby_abi && file_name
-      raise ArgumentError, "Cannot specify both a Ruby ABI and an output file name because content addressable gems must use the generated file name."
+  def self.build(spec, skip_validation = false, strict_validation = false, file_name = nil, content_addressable: false)
+    if content_addressable && file_name
+      raise ArgumentError, "Cannot specify an output file name for a content-addressable gem as these gems must use the generated file name."
     end
-    if ruby_abi
+    if content_addressable
       require "digest"
       require "stringio"
 
@@ -169,9 +171,8 @@ class Gem::Package
 
       package = new io
       package.spec = spec.dup
-      gem_file = package.build_content_addressable_file ruby_abi, skip_validation, strict_validation
+      gem_file = package.build_content_addressable_file skip_validation, strict_validation
 
-      spec.required_ruby_version = package.spec.required_ruby_version
       spec.required_rubygems_version = package.spec.required_rubygems_version
     else
       gem_file = file_name || spec.file_name
@@ -391,20 +392,18 @@ EOM
   end
 
   ##
-  # Builds this package scoped to +ruby_abi+ ("X.Y"), then writes it to a
-  # content-addressable file name derived from the SHA-256 digest of the gem
-  # contents, e.g. "example-1.0-01234567.gem". Returns the file name of the
-  # written gem.
+  # Builds this package and writes it to a content-addressable file name
+  # derived from the SHA-256 digest of the gem contents, for example
+  # "example-1.0-01234567.gem". Returns the written file name.
   #
-  # The spec is validated for an ABI-scoped build and its
-  # +required_ruby_version+ and +required_rubygems_version+ are constrained
-  # before building, so every gem this method produces is eligible for
-  # content addressing.
+  # The spec is validated for content addressing. Its
+  # +required_ruby_version+ determines the Ruby ABI, while its
+  # +required_rubygems_version+ is constrained before building.
 
-  def build_content_addressable_file(ruby_abi, skip_validation = false, strict_validation = false)
-    validate_ruby_abi ruby_abi
+  def build_content_addressable_file(skip_validation = false, strict_validation = false)
+    validate_content_addressable_spec
+    ruby_abi = Gem::ContentAddress.ruby_abi_for(@spec.required_ruby_version)
     @spec.required_rubygems_version = normalized_required_rubygems_version(ruby_abi)
-    @spec.required_ruby_version = Gem::ContentAddress.ruby_abi_requirement(ruby_abi)
 
     build skip_validation, strict_validation
 
@@ -821,19 +820,20 @@ EOM
   end
 
   ##
-  # Validates that the spec can be built as a content-addressable gem scoped
-  # to +ruby_abi+ ("X.Y"): the ABI must be well-formed, the spec must declare
-  # a non-Ruby platform, and any existing +required_ruby_version+ must match
-  # the ABI.
+  # Validates that the spec can be built as a content-addressable gem: it
+  # must declare a non-Ruby platform and its +required_ruby_version+ must
+  # identify a single Ruby ABI.
 
-  def validate_ruby_abi(ruby_abi)
-    if !Gem::ContentAddress.valid_ruby_abi?(ruby_abi)
-      raise ArgumentError, "Ruby ABI must be in X.Y format"
-    elsif !Gem::ContentAddress.platform_eligible?(@spec.platform)
-      raise ArgumentError, "Cannot build a gem scoped to a single Ruby ABI as no platform or a Ruby platform has been set"
-    elsif !Gem::ContentAddress.ruby_abi_compatible?(@spec, ruby_abi)
-      raise ArgumentError, "Cannot build gem for Ruby ABI #{ruby_abi} because required_ruby_version is set to #{@spec.required_ruby_version}. Please set required_ruby_version to \"~> #{ruby_abi}.0\"."
+  def validate_content_addressable_spec
+    return if Gem::ContentAddress.eligible?(@spec)
+
+    unless Gem::ContentAddress.platform_eligible?(@spec.platform)
+      raise ArgumentError, "Cannot build a content-addressable gem as no platform or a Ruby platform has been set"
     end
+
+    raise ArgumentError,
+      "Cannot build a content-addressable gem because required_ruby_version is set to #{@spec.required_ruby_version}. " \
+      "Please set required_ruby_version to \"~> X.Y.0\" so that it identifies a single Ruby ABI."
   end
 
   ##

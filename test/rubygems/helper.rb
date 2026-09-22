@@ -894,8 +894,13 @@ class Gem::TestCase < Test::Unit::TestCase
       end
 
       built_gem_name = nil
+      content_addressable = false
+      if ruby_abi
+        spec.required_ruby_version = Gem::ContentAddress.ruby_abi_requirement(ruby_abi)
+        content_addressable = true
+      end
       use_ui Gem::MockGemUi.new do
-        built_gem_name = Gem::Package.build spec, false, false, nil, ruby_abi
+        built_gem_name = Gem::Package.build spec, content_addressable: content_addressable
       end
 
       cache = File.join File.dirname(spec.cache_file), File.basename(built_gem_name)
