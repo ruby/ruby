@@ -2183,7 +2183,7 @@ rb_file_world_readable_p(VALUE obj, VALUE fname)
  *    File.writable?(file_name)   -> true or false
  *
  * Returns +true+ if the named file is writable by the effective user and
- * group id of this process. See eaccess(3).
+ * group id of this process. See <code>eaccess(3)</code>.
  *
  * Note that some OS-level security features may cause this to return true
  * even though the file is not writable by the effective user/group.
@@ -2200,7 +2200,7 @@ rb_file_writable_p(VALUE obj, VALUE fname)
  *    File.writable_real?(file_name)   -> true or false
  *
  * Returns +true+ if the named file is writable by the real user and group id
- * of this process. See access(3).
+ * of this process. See <code>access(3)</code>.
  *
  * Note that some OS-level security features may cause this to return true
  * even though the file is not writable by the real user/group.
@@ -2287,7 +2287,7 @@ rb_file_executable_p(VALUE obj, VALUE fname)
  *    File.executable_real?(file_name)   -> true or false
  *
  * Returns +true+ if the named file is executable by the real user and group
- * id of this process. See access(3).
+ * id of this process. See <code>access(3)</code>.
  *
  * Windows does not support execute permissions separately from read
  * permissions. On Windows, a file is only considered executable if it ends in
