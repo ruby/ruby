@@ -877,6 +877,17 @@ EOT
          proc {|r| assert_equal("\xa4\xa2\xa4\xa4\xa4\xa6\n".force_encoding("euc-jp"), r.gets(9)) })
   end
 
+  def test_gets_rs_char_boundary
+    str = "\xa2\xa4\xa4\xa2\xa4\xa4\xa4\xa6\xa4\xa8\xa4\xaa".force_encoding("euc-jp")
+    rs = "\xa4\xa4".force_encoding("euc-jp")
+    pipe("euc-jp",
+         proc {|w| w << str; w.close },
+         proc {|r| assert_equal("\xa2\xa4\xa4\xa2\xa4\xa4".force_encoding("euc-jp"), r.gets(rs)) })
+    pipe("euc-jp",
+         proc {|w| w << str; w.close },
+         proc {|r| assert_equal("\xa2\xa4\xa4\xa2".force_encoding("euc-jp"), r.gets(rs, 3)) })
+  end
+
   def test_gets_invalid
     before = "\u{3042}\u{3044}"
     invalid = "\x80".force_encoding("utf-8")
