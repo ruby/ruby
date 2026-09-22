@@ -1232,11 +1232,9 @@ pub(crate) mod hir_build_tests {
           v9:NilClass = Const Value(nil)
           Jump bb3(v7, v8, v9)
         bb3(v11:BasicObject, v12:BasicObject, v13:NilClass):
-          SetLocal :x, l0, EP@3, v12
-          v21:Fixnum[2] = Const Value(2)
-          SetLocal :x, l0, EP@3, v21
+          v20:Fixnum[2] = Const Value(2)
           CheckInterrupts
-          Return v13
+          Return v20
         ");
     }
 
