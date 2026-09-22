@@ -937,6 +937,8 @@ class TestFileUtils < Test::Unit::TestCase
     TARGETS.each do |fname|
       ln fname, 'tmp/lndest'
       assert_same_file fname, 'tmp/lndest'
+      assert_same_entry fname, 'tmp/lndest'
+      assert_file.identical?(fname, 'tmp/lndest')
       File.unlink 'tmp/lndest'
     end
 
@@ -2005,6 +2007,7 @@ cd -
 
   def test_link
     check_singleton :link
+    assert_equal(FileUtils.method(:ln), FileUtils.method(:link))
   end
 
   def test_makedirs
