@@ -309,6 +309,15 @@ class TestFileUtils < Test::Unit::TestCase
     TARGETS.each do |fname|
       assert cmp(fname, fname), 'not same?'
     end
+
+    File.write('tmp/same', "contents\n")
+    File.write('tmp/copy', "contents\n")
+    File.write('tmp/different', "content!\n")
+    File.write('tmp/shorter', "content")
+    assert(cmp('tmp/same', 'tmp/copy'))
+    assert_equal(false, cmp('tmp/same', 'tmp/different'))
+    assert_equal(false, cmp('tmp/same', 'tmp/shorter'))
+
     assert_raise(ArgumentError) {
       cmp TARGETS[0], TARGETS[0], :undefinedoption => true
     }
@@ -582,6 +591,11 @@ class TestFileUtils < Test::Unit::TestCase
   def test_mv
     check_singleton :mv
 
+    File.write('tmp/source', "contents\n")
+    assert_equal(0, FileUtils.mv('tmp/source', 'tmp/destination'))
+    assert_file_not_exist('tmp/source')
+    assert_equal("contents\n", File.read('tmp/destination'))
+
     mkdir 'tmp/dest'
     TARGETS.each do |fname|
       cp fname, 'tmp/mvsrc'
@@ -675,6 +689,11 @@ class TestFileUtils < Test::Unit::TestCase
 
   def test_rm_f
     check_singleton :rm_f
+
+    File.write('tmp/file', "contents\n")
+    assert_equal(['tmp/file'], FileUtils.rm_f('tmp/file'))
+    assert_file_not_exist('tmp/file')
+    assert_equal(['tmp/missing'], FileUtils.rm_f('tmp/missing'))
 
     TARGETS.each do |fname|
       cp fname, 'tmp/rmsrc'
@@ -928,6 +947,8 @@ class TestFileUtils < Test::Unit::TestCase
     TARGETS.each do |fname|
       ln fname, 'tmp/lndest'
       assert_same_file fname, 'tmp/lndest'
+      assert_same_entry fname, 'tmp/lndest'
+      assert_file.identical?(fname, 'tmp/lndest')
       File.unlink 'tmp/lndest'
     end
 
@@ -981,9 +1002,24 @@ class TestFileUtils < Test::Unit::TestCase
   def test_ln_s
     check_singleton :ln_s
 
-    ln_s TARGETS, 'tmp'
-    each_srcdest do |fname, lnfname|
+    TARGETS.each do |fname|
+      fname = "../#{fname}"
+      lnfname = 'tmp/lnsdest'
+      assert_equal(0, ln_s(fname, lnfname))
+      assert_file.symlink?(lnfname)
       assert_equal fname, File.readlink(lnfname)
+      assert_file.exist?(lnfname)
+    ensure
+      rm_f lnfname
+    end
+  end if have_symlink?
+
+  def test_ln_s_multiple
+    ln_s TARGETS.map {|fname| "../#{fname}" }, 'tmp'
+    each_srcdest do |fname, lnfname|
+      assert_file.symlink?(lnfname)
+      assert_equal "../#{fname}", File.readlink(lnfname)
+      assert_file.exist?(lnfname)
     ensure
       rm_f lnfname
     end
@@ -993,17 +1029,7 @@ class TestFileUtils < Test::Unit::TestCase
       ln_s TARGETS, lnfname
     }
     assert_file.not_exist?(lnfname)
-
-    TARGETS.each do |fname|
-      fname = "../#{fname}"
-      lnfname = 'tmp/lnsdest'
-      ln_s fname, lnfname
-      assert_file.symlink?(lnfname)
-      assert_equal fname, File.readlink(lnfname)
-    ensure
-      rm_f lnfname
-    end
-  end if have_symlink? and !no_broken_symlink?
+  end if have_symlink?
 
   def test_ln_s_relative_to_symlinked_directory
     mkdir_p 'tmp/symlink_dir/.dotfiles/zsh'
@@ -1040,9 +1066,11 @@ class TestFileUtils < Test::Unit::TestCase
 
   def test_ln_s_broken_symlink
     assert_nothing_raised {
-      ln_s 'symlink', 'tmp/symlink'
+      ln_s 'missing', 'tmp/symlink'
     }
     assert_symlink 'tmp/symlink'
+    assert_equal 'missing', File.readlink('tmp/symlink')
+    assert_file.not_exist?('tmp/symlink')
   end if have_symlink? and !no_broken_symlink?
 
   def test_ln_s_pathname
@@ -1229,7 +1257,7 @@ class TestFileUtils < Test::Unit::TestCase
     )
     my_rm_rf 'tmpdir'
     dirs.each do |d|
-      mkdir_p d
+      assert_equal([d], mkdir_p(d))
       assert_directory d
       assert_file_not_exist "#{d}/a"
       assert_file_not_exist "#{d}/b"
@@ -1885,12 +1913,15 @@ class TestFileUtils < Test::Unit::TestCase
 
   def test_compare_file
     check_singleton :compare_file
-    # FIXME
+    assert_equal(FileUtils.method(:cmp), FileUtils.method(:compare_file))
   end
 
   def test_compare_stream
     check_singleton :compare_stream
-    # FIXME
+
+    assert(FileUtils.compare_stream(StringIO.new("contents\n"), StringIO.new("contents\n")))
+    assert_not_equal(true, FileUtils.compare_stream(StringIO.new("contents\n"), StringIO.new("content!\n")))
+    assert_not_equal(true, FileUtils.compare_stream(StringIO.new("contents\n"), StringIO.new("content")))
   end
 
   class Stream
@@ -1934,30 +1965,44 @@ class TestFileUtils < Test::Unit::TestCase
 
   def test_cd
     check_singleton :cd
+
+    original = FileUtils.pwd
+    FileUtils.cd('tmp')
+    assert_equal(File.join(original, 'tmp'), FileUtils.pwd)
+  ensure
+    FileUtils.cd(original) if original
   end
 
   def test_cd_result
     assert_equal 42, cd('.') { 42 }
+
+    original = FileUtils.pwd
+    assert_equal('tmp', FileUtils.cd('tmp') {|dir|
+      assert_equal(File.join(original, 'tmp'), Dir.pwd)
+      dir
+    })
+    assert_equal(original, FileUtils.pwd)
   end
 
   def test_chdir
     check_singleton :chdir
+    assert_equal(FileUtils.method(:cd), FileUtils.method(:chdir))
   end
 
-  def test_chdir_verbose
+  def test_cd_verbose
     assert_output_lines(["cd .", "cd -"], FileUtils) do
-      FileUtils.chdir('.', verbose: true){}
+      FileUtils.cd('.', verbose: true){}
     end
   end
 
-  def test_chdir_verbose_frozen
+  def test_cd_verbose_frozen
     o = Object.new
     o.extend(FileUtils)
-    o.singleton_class.send(:public, :chdir)
+    o.singleton_class.send(:public, :cd)
     o.freeze
     orig_stdout = $stdout
     $stdout = StringIO.new
-    o.chdir('.', verbose: true){}
+    o.cd('.', verbose: true){}
     $stdout.rewind
     assert_equal(<<-END, $stdout.read)
 cd .
@@ -1969,30 +2014,42 @@ cd -
 
   def test_getwd
     check_singleton :getwd
+    assert_equal(FileUtils.method(:pwd), FileUtils.method(:getwd))
   end
 
   def test_identical?
     check_singleton :identical?
+    assert_equal(FileUtils.method(:cmp), FileUtils.method(:identical?))
   end
 
   def test_link
     check_singleton :link
+    assert_equal(FileUtils.method(:ln), FileUtils.method(:link))
   end
 
   def test_makedirs
     check_singleton :makedirs
+    assert_equal(FileUtils.method(:mkdir_p), FileUtils.method(:makedirs))
   end
 
   def test_mkpath
     check_singleton :mkpath
+    assert_equal(FileUtils.method(:mkdir_p), FileUtils.method(:mkpath))
   end
 
   def test_move
     check_singleton :move
+    assert_equal(FileUtils.method(:mv), FileUtils.method(:move))
   end
 
   def test_rm_rf
     check_singleton :rm_rf
+
+    FileUtils.mkdir_p('tmp/tree/child')
+    File.write('tmp/tree/child/file', "contents\n")
+    assert_equal(['tmp/tree'], FileUtils.rm_rf('tmp/tree'))
+    assert_file_not_exist('tmp/tree')
+    assert_equal(['tmp/missing'], FileUtils.rm_rf('tmp/missing'))
 
     return if /mswin|mingw/ =~ RUBY_PLATFORM
 
@@ -2045,14 +2102,17 @@ cd -
 
   def test_rmtree
     check_singleton :rmtree
+    assert_equal(FileUtils.method(:rm_rf), FileUtils.method(:rmtree))
   end
 
   def test_safe_unlink
     check_singleton :safe_unlink
+    assert_equal(FileUtils.method(:rm_f), FileUtils.method(:safe_unlink))
   end
 
   def test_symlink
     check_singleton :symlink
+    assert_equal(FileUtils.method(:ln_s), FileUtils.method(:symlink))
   end
 
   def test_touch
@@ -2091,18 +2151,36 @@ cd -
   end
 
   def test_collect_methods
+    assert_include(FileUtils.collect_method(:preserve), 'cp')
+    assert_include(FileUtils.collect_method(:preserve), 'install')
+    assert_include(FileUtils.collect_method(:secure), 'mv')
+    assert_not_include(FileUtils.collect_method(:secure), 'cp')
   end
 
   def test_commands
+    commands = FileUtils.commands
+    assert_include(commands, 'mv')
+    assert_include(commands, 'chdir')
+    assert_equal(commands.uniq, commands)
   end
 
   def test_have_option?
+    assert(FileUtils.have_option?(:mv, :force))
+    assert(FileUtils.have_option?('mv', :secure))
+    assert_not_equal(true, FileUtils.have_option?(:mv, :preserve))
+    assert_raise(ArgumentError) {FileUtils.have_option?(:missing, :noop)}
   end
 
   def test_options
+    options = FileUtils.options
+    assert_include(options, 'force')
+    assert_include(options, 'verbose')
+    assert_equal(options.uniq, options)
   end
 
   def test_options_of
+    assert_equal(%w[force noop verbose secure], FileUtils.options_of(:mv))
+    assert_equal(%w[force noop verbose secure], FileUtils.options_of('mv'))
   end
 
 end
