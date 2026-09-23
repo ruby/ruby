@@ -3694,6 +3694,18 @@ retry:;
             PUSH_INSN1(ret, *node_location, putobject, Qfalse);
             return pm_compile_builtin_mandatory_only_method(iseq, scope_node, call_node, node_location);
         }
+        else if (strcmp("local_self!", builtin_func) == 0) {
+            // Push the local named "self" (e.g. the `self:` keyword parameter
+            // of Ractor.shareable_proc) onto the stack.
+            pm_constant_id_t self_id = pm_parser_constant_find(scope_node->parser, (const uint8_t *) "self", 4);
+            if (self_id == 0) {
+                COMPILE_ERROR(iseq, node_location->line, "local_self! called but 'self' not found in local table");
+                return COMPILE_NG;
+            }
+            pm_local_index_t self_index = pm_lookup_local_index(iseq, scope_node, self_id, /*start_depth=*/0);
+            PUSH_GETLOCAL(ret, *node_location, self_index.index, self_index.level);
+            return COMPILE_OK;
+        }
         else if (1) {
             rb_bug("can't find builtin function:%s", builtin_func);
         }
