@@ -2230,16 +2230,14 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             },
             Insn::SendDirect(insn) => {
                 let SendDirectData { recv, cme, iseq, args, block, jit_entry_idx, .. } = &**insn;
-                let method_name = unsafe { (**cme).called_id };
-                match block {
-                    Some(BlockHandler::BlockArgProc(proc_id)) =>
-                        write!(f, "SendDirect {recv}, &{proc_id}, :{method_name} ({:?})", self.ptr_map.map_ptr(*iseq))?,
-                    Some(BlockHandler::BlockIseq(blockiseq)) =>
-                        write!(f, "SendDirect {recv}, {:p}, :{method_name} ({:?})", self.ptr_map.map_ptr(*blockiseq), self.ptr_map.map_ptr(*iseq))?,
+                let block = match block {
+                    Some(BlockHandler::BlockArgProc(proc_id)) => format!("&{proc_id}"),
+                    Some(BlockHandler::BlockIseq(blockiseq)) => format!("{:p}", self.ptr_map.map_ptr(*blockiseq)),
                     Some(BlockHandler::BlockArg) => unreachable!("BlockArg in SendDirect"),
-                    None =>
-                        write!(f, "SendDirect {recv}, {:p}, :{method_name} ({:?})", ptr::null::<u8>(), self.ptr_map.map_ptr(*iseq))?,
-                }
+                    None => format!("{:p}", ptr::null::<u8>()),
+                };
+                let method_name = unsafe { (**cme).called_id };
+                write!(f, "SendDirect {recv}, {block}, :{method_name} ({:?})", self.ptr_map.map_ptr(*iseq))?;
                 if *jit_entry_idx != 0 {
                     write!(f, ", jit_entry_idx={jit_entry_idx}")?;
                 }
