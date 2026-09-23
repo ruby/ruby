@@ -1539,24 +1539,24 @@ rb_stat(VALUE file, struct stat *st)
  *  :markup: markdown
  *
  *  call-seq:
- *    File.stat(path) -> file_stat
+ *    File.stat(path) -> stat
  *
  *  Returns a new File::Stat object for the entry at `path`.
- *  Follows [symbolic links](file/symbolic_links.md);
+ *  Unlike File.lstat, _does follow_ [symbolic links](file/symbolic_links.md);
  *  therefore if the entry is a symbolic link,
  *  the returned object contains information for the target entry, not the symbolic link:
  *
  *  ```ruby
- *  filepath = 'README.md'
- *  linkpath = 'foo'
+ *  filepath = '/etc/passwd'
+ *  linkpath = '/tmp/foo'
  *  File.symlink(filepath, linkpath)
  *  # Method File.stat follows the symlink, so the birthtimes are the same.
- *  File.stat(filepath).birthtime  # => 2026-09-01 09:09:28.378987388 -0500
- *  File.stat(linkpath).birthtime  # => 2026-09-01 09:09:28.378987388 -0500
+ *  File.stat(filepath).birthtime  # => 2025-06-10 11:10:47.358999941 -0500
+ *  File.stat(linkpath).birthtime  # => 2025-06-10 11:10:47.358999941 -0500
  *  # Method File.lstat does not follow the symlink, so the birthtimes are different.
- *  File.lstat(filepath).birthtime # => 2026-09-01 09:09:28.378987388 -0500
- *  File.lstat(linkpath).birthtime # => 2026-09-04 10:29:45.884317953 -0500
- *  File.unlink(linkpath)          # Clean up.
+ *  File.lstat(filepath).birthtime # => 2025-06-10 11:10:47.358999941 -0500
+ *  File.lstat(linkpath).birthtime # => 2026-09-23 14:01:18.248754979 -0500
+ *  File.delete(linkpath)          # Clean up.
  *  ```
  *
  */
@@ -1575,17 +1575,30 @@ rb_file_s_stat(VALUE klass, VALUE fname)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     ios.stat    -> stat
+ *    stat -> stat
  *
- *  Returns status information for <em>ios</em> as an object of type
- *  File::Stat.
+ *  Returns a new File::Stat object for `self`.
+ *  Unlike File#lstat, _does follow_ symbolic links;
+ *  therefore if `self` is a symbolic link,
+ *  the returned object contains information for the target entry, not `self`:
  *
- *     f = File.new("testfile")
- *     s = f.stat
- *     "%o" % s.mode   #=> "100644"
- *     s.blksize       #=> 4096
- *     s.atime         #=> Wed Apr 09 08:53:54 CDT 2003
+ *  ```ruby
+ *  file_path = '/etc/passwd'
+ *  link_path = '/tmp/foo'
+ *  File.symlink(file_path, link_path)
+ *  file = File.new(file_path) # => #<File:/etc/passwd>
+ *  link = File.new(link_path) # => #<File:/tmp/foo>
+ *  # Method stat does follow the symlink, so the birthtimes are the same.
+ *  file.stat.birthtime        # => 2025-06-10 11:10:47.358999941 -0500
+ *  link.stat.birthtime        # => 2025-06-10 11:10:47.358999941 -0500
+ *  # Method lstat does not follow the symlink, so the birthtimes are different.
+ *  file.lstat.birthtime       # => 2025-06-10 11:10:47.358999941 -0500
+ *  link.lstat.birthtime       # => 2026-09-23 16:35:59.321566598 -0500
+ *  File.delete(link_path)     # Clean up.
+ *  ```
  *
  */
 
@@ -1626,24 +1639,24 @@ lstat_without_gvl(const char *path, struct stat *st)
  *  :markup: markdown
  *
  *  call-seq:
- *    File.lstat(path) -> file_stat
+ *    File.lstat(path) -> stat
  *
  *  Returns a new File::Stat object for the entry at `path`.
- *  Does not follow [symbolic links](file/symbolic_links.md);
+ *  Unline File.stat, _does not follow_ [symbolic links](file/symbolic_links.md);
  *  therefore the returned object contains information for the entry at `path`,
  *  regardless of whether is a symbolic link:
  *
  *  ```ruby
- *  filepath = 'README.md'
- *  linkpath = 'foo'
+ *  filepath = '/etc/passwd'
+ *  linkpath = '/tmp/foo'
  *  File.symlink(filepath, linkpath)
- *  # Method File.stat follows the symlink, so the birthtimes are the same.
- *  File.stat(filepath).birthtime  # => 2026-09-01 09:09:28.378987388 -0500
- *  File.stat(linkpath).birthtime  # => 2026-09-01 09:09:28.378987388 -0500
  *  # Method File.lstat does not follow the symlink, so the birthtimes are different.
- *  File.lstat(filepath).birthtime # => 2026-09-01 09:09:28.378987388 -0500
- *  File.lstat(linkpath).birthtime # => 2026-09-04 10:29:45.884317953 -0500
- *  File.unlink(linkpath)          # Clean up.
+ *  File.lstat(filepath).birthtime # => 2025-06-10 11:10:47.358999941 -0500
+ *  File.lstat(linkpath).birthtime # => 2026-09-23 14:01:18.248754979 -0500
+ *  # Method File.stat follows the symlink, so the birthtimes are the same.
+ *  File.stat(filepath).birthtime  # => 2025-06-10 11:10:47.358999941 -0500
+ *  File.stat(linkpath).birthtime  # => 2025-06-10 11:10:47.358999941 -0500
+ *  File.delete(linkpath)          # Clean up.
  *  ```
  *
  */
@@ -1666,16 +1679,30 @@ rb_file_s_lstat(VALUE klass, VALUE fname)
 }
 
 /*
+ *  :markup: markdown
+
  *  call-seq:
  *    lstat -> stat
  *
- *  Like File#stat, but does not follow the last symbolic link;
- *  instead, returns a File::Stat object for the link itself:
+ *  Returns a new File::Stat object for `self`.
+ *  Unlike File#stat, _does not follow_ symbolic links;
+ *  therefore if `self` is a symbolic link,
+ *  the returned object contains information for `self`, not the target entry:
  *
- *    File.symlink('t.txt', 'symlink')
- *    f = File.new('symlink')
- *    f.stat.size  # => 47
- *    f.lstat.size # => 11
+ *  ```ruby
+ *  file_path = '/etc/passwd'
+ *  link_path = '/tmp/foo'
+ *  File.symlink(file_path, link_path)
+ *  file = File.new(file_path) # => #<File:/etc/passwd>
+ *  link = File.new(link_path) # => #<File:/tmp/foo>
+ *  # Method lstat does not follow the symlink, so the birthtimes are different.
+ *  file.lstat.birthtime       # => 2025-06-10 11:10:47.358999941 -0500
+ *  link.lstat.birthtime       # => 2026-09-23 16:35:59.321566598 -0500
+ *  # Method stat does follow the symlink, so the birthtimes are the same.
+ *  file.stat.birthtime        # => 2025-06-10 11:10:47.358999941 -0500
+ *  link.stat.birthtime        # => 2025-06-10 11:10:47.358999941 -0500
+ *  File.delete(link_path)     # Clean up.
+ *  ```
  *
  */
 

@@ -1866,21 +1866,21 @@ class Pathname    # * File *
   #   stat -> stat
   #
   # Returns a new File::Stat object for the entry at the path in `self`.
-  # Follows [symbolic links](file/symbolic_links.md);
+  # Unlike Pathname#lstat, _does follow_ [symbolic links](file/symbolic_links.md);
   # therefore if the entry is a symbolic link,
   # the returned object contains information for the target entry, not the symbolic link:
   #
   # ```ruby
-  # file_pn = Pathname('README.md')
-  # link_pn = Pathname('foo')
+  # file_pn = Pathname('/etc/passwd')
+  # link_pn = Pathname('/tmp/foo')
   # link_pn.make_symlink(file_pn)
   # # Method stat follows the symlink, so the birthtimes are the same.
-  # file_pn.stat.birthtime  # => 2026-09-07 13:36:38.939798737 -0500
-  # link_pn.stat.birthtime  # => 2026-09-07 13:36:38.939798737 -0500
+  # file_pn.stat.birthtime  # => 2025-06-10 11:10:47.358999941 -0500
+  # link_pn.stat.birthtime  # => 2025-06-10 11:10:47.358999941 -0500
   # # Method lstat does not follow the symlink, so the birthtimes are different.
-  # file_pn.lstat.birthtime # => 2026-09-07 13:36:38.939798737 -0500
-  # link_pn.lstat.birthtime # => 2026-09-08 10:53:41.027337999 -0500
-  # link_pn.unlink          # Clean up.
+  # file_pn.lstat.birthtime # => 2025-06-10 11:10:47.358999941 -0500
+  # link_pn.lstat.birthtime # => 2026-09-23 14:12:00.978946471 -0500
+  # link_pn.delete          # Clean up.
   # ```
   #
   def stat() File.stat(@path) end
@@ -1891,22 +1891,22 @@ class Pathname    # * File *
   #  call-seq:
   #    lstat -> stat
   #
-  #  Returns a File::Stat object for the entry at the path in `self`.
-  #  Does not follow [symbolic links](file/symbolic_links.md);
+  #  Returns a new File::Stat object for the entry at the path in `self`.
+  #  Unlike Pathname#stat, _does not follow_ [symbolic links](file/symbolic_links.md);
   #  therefore the returned object contains information for that entry,
   #  regardless of whether it is a symbolic link:
   #
   #  ```ruby
-  #  file_pn = Pathname('README.md')
-  #  link_pn = Pathname('foo')
+  #  file_pn = Pathname('/etc/passwd')
+  #  link_pn = Pathname('/tmp/foo')
   #  link_pn.make_symlink(file_pn)
-  #  # Method stat follows the symlink, so the birthtimes are the same.
-  #  file_pn.stat.birthtime  # => 2026-09-07 13:36:38.939798737 -0500
-  #  link_pn.stat.birthtime  # => 2026-09-07 13:36:38.939798737 -0500
   #  # Method lstat does not follow the symlink, so the birthtimes are different.
-  #  file_pn.lstat.birthtime # => 2026-09-07 13:36:38.939798737 -0500
-  #  link_pn.lstat.birthtime # => 2026-09-08 10:53:41.027337999 -0500
-  #  link_pn.unlink          # Clean up.
+  #  file_pn.lstat.birthtime # => 2025-06-10 11:10:47.358999941 -0500
+  #  link_pn.lstat.birthtime # => 2026-09-23 14:12:00.978946471 -0500
+  #  # Method stat follows the symlink, so the birthtimes are the same.
+  #  file_pn.stat.birthtime  # => 2025-06-10 11:10:47.358999941 -0500
+  #  link_pn.stat.birthtime  # => 2025-06-10 11:10:47.358999941 -0500
+  #  link_pn.delete          # Clean up.
   #  ```
   #
   def lstat() File.lstat(@path) end
