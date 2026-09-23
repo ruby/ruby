@@ -778,7 +778,6 @@ pub enum ReceiverTypeResolution {
 pub enum SendFallbackReason {
     SendCfuncNotVariadic,
     SendNotOptimizedMethodTypeOptimized(OptimizedMethodType),
-    SendBopRedefined,
     SendOperandsNotFixnum,
     SendPolymorphicFallback,
     SendDirectKeywordMismatch,
@@ -851,7 +850,6 @@ impl Display for SendFallbackReason {
             SendCfuncNotVariadic => write!(f, "Send: C function is not variadic"),
             SendNotOptimizedMethodTypeOptimized(opt_type) => write!(f, "Send: unsupported optimized method type {:?}", opt_type),
             SendNotOptimizedNeedPermission => write!(f, "Send: method private or protected and no FCALL"),
-            SendBopRedefined => write!(f, "Send: basic operation was redefined"),
             SendOperandsNotFixnum => write!(f, "Send: operands are not fixnums"),
             SendPolymorphicFallback => write!(f, "Send: polymorphic fallback"),
             SendDirectKeywordMismatch => write!(f, "SendDirect: keyword mismatch"),
@@ -4574,24 +4572,6 @@ impl Function {
         self.count(block, counter);
     }
 
-    fn rewrite_if_frozen(&mut self, block: BlockId, orig_insn_id: InsnId, self_val: InsnId, klass: u32, bop: u32, state: InsnId) {
-        if !unsafe { rb_BASIC_OP_UNREDEFINED_P(bop, klass) } {
-            // If the basic operation is already redefined, we cannot optimize it.
-            self.set_dynamic_send_reason(orig_insn_id, SendBopRedefined);
-            self.push_insn_id(block, orig_insn_id);
-            return;
-        }
-        let self_type = self.type_of(self_val);
-        if let Some(obj) = self_type.ruby_object() {
-            if obj.is_frozen() {
-                self.push_insn(block, Insn::PatchPoint { invariant: Invariant::BOPRedefined { klass, bop }, state });
-                self.make_equal_to(orig_insn_id, self_val);
-                return;
-            }
-        }
-        self.push_insn_id(block, orig_insn_id);
-    }
-
     pub fn try_inline_object_alloc(&mut self, block: BlockId, recv: InsnId, state: InsnId) -> Option<InsnId> {
         let recv_type = self.type_of(recv);
         if recv_type.is_subtype(types::Class) {
@@ -4605,26 +4585,6 @@ impl Function {
             }
         }
         None
-    }
-
-    fn try_rewrite_freeze(&mut self, block: BlockId, orig_insn_id: InsnId, self_val: InsnId, state: InsnId) {
-        if self.is_a(self_val, types::StringExact) {
-            self.rewrite_if_frozen(block, orig_insn_id, self_val, STRING_REDEFINED_OP_FLAG, BOP_FREEZE, state);
-        } else if self.is_a(self_val, types::ArrayExact) {
-            self.rewrite_if_frozen(block, orig_insn_id, self_val, ARRAY_REDEFINED_OP_FLAG, BOP_FREEZE, state);
-        } else if self.is_a(self_val, types::HashExact) {
-            self.rewrite_if_frozen(block, orig_insn_id, self_val, HASH_REDEFINED_OP_FLAG, BOP_FREEZE, state);
-        } else {
-            self.push_insn_id(block, orig_insn_id);
-        }
-    }
-
-    fn try_rewrite_uminus(&mut self, block: BlockId, orig_insn_id: InsnId, self_val: InsnId, state: InsnId) {
-        if self.is_a(self_val, types::StringExact) {
-            self.rewrite_if_frozen(block, orig_insn_id, self_val, STRING_REDEFINED_OP_FLAG, BOP_UMINUS, state);
-        } else {
-            self.push_insn_id(block, orig_insn_id);
-        }
     }
 
     pub fn load_rbasic_flags(&mut self, block: BlockId, recv: InsnId) -> InsnId {
@@ -4779,10 +4739,6 @@ impl Function {
             for insn_id in old_insns {
                 let resolved = self.resolve(insn_id);
                 match resolved.insn(self) {
-                    &Insn::Send { recv, block: None, ref args, state, cd, .. } if ruby_call_method_id(cd) == ID!(freeze) && args.is_empty() =>
-                        self.try_rewrite_freeze(block, insn_id, recv, state),
-                    &Insn::Send { recv, block: None, ref args, state, cd, .. } if ruby_call_method_id(cd) == ID!(minusat) && args.is_empty() =>
-                        self.try_rewrite_uminus(block, insn_id, recv, state),
                     &Insn::Send { mut recv, cd, state, block: send_block, caller_splat_length, .. } => {
                         let mut has_block = send_block.is_some();
                         let (klass, profiled_type) = match self.resolve_receiver_type(recv, self.type_of(recv), state) {
