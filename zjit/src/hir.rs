@@ -10875,13 +10875,9 @@ fn add_iseq_to_hir(
                     let val = state.stack_pop()?;
                     let array = fun.push_insn(block, Insn::GuardType { val, guard_type: types::ArrayExact, state: exit_id, recompile: None });
                     let length = fun.push_insn(block, Insn::ArrayLength { array });
-                    let expected = fun.push_insn(block, Insn::Const { val: Const::CInt64(num as i64) });
-                    fun.push_insn(block, Insn::GuardGreaterEq { left: length, right: expected, reason: Box::new(SideExitReason::ExpandArray), state: exit_id });
                     for i in (0..num).rev() {
-                        // We do not emit a length guard here because in-bounds is already
-                        // ensured by the expandarray length check above.
                         let index = fun.push_insn(block, Insn::Const { val: Const::CInt64(i.try_into().unwrap()) });
-                        let element = fun.push_insn(block, Insn::ArrayAref { array, index });
+                        let element = fun.push_insn(block, Insn::ArrayArefChecked { array, index, length });
                         state.stack_push(element);
                     }
                 }

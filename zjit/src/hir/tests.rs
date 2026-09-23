@@ -6221,12 +6221,10 @@ pub(crate) mod hir_build_tests {
         bb3(v13:BasicObject, v14:BasicObject, v15:NilClass, v16:NilClass):
           v22:ArrayExact = GuardType v14, ArrayExact
           v23:CInt64 = ArrayLength v22
-          v24:CInt64[2] = Const CInt64(2)
-          v25:CInt64 = GuardGreaterEq v23, v24
-          v26:CInt64[1] = Const CInt64(1)
-          v27:BasicObject = ArrayAref v22, v26
-          v28:CInt64[0] = Const CInt64(0)
-          v29:BasicObject = ArrayAref v22, v28
+          v24:CInt64[1] = Const CInt64(1)
+          v25:BasicObject = ArrayArefChecked v22, v24, v23
+          v26:CInt64[0] = Const CInt64(0)
+          v27:BasicObject = ArrayArefChecked v22, v26, v23
           PatchPoint NoEPEscape(test)
           CheckInterrupts
           Return v14
