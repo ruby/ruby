@@ -1367,7 +1367,7 @@ pub enum Insn {
 /// `$visit_one` macro for a single InsnId field and `$visit_many` macro for a
 /// slice/Vec of InsnIds. Used by both `for_each_operand` and `for_each_operand_mut`.
 macro_rules! for_each_operand_impl {
-    ($self:expr, $visit_one:ident, $visit_many:ident, $visit_opt_block:ident) => {
+    ($self:expr, $visit_one:ident, $visit_many:ident $(, $mut:tt)?) => {
         match $self {
             Insn::Comment { .. }
             | Insn::Const { .. }
@@ -1615,7 +1615,9 @@ macro_rules! for_each_operand_impl {
             Insn::SendDirect(insn) => {
                 $visit_one!(insn.recv);
                 $visit_many!(insn.args);
-                $visit_opt_block!(insn.block);
+                if let Some(BlockHandler::BlockArgProc(id)) = &$($mut)? insn.block {
+                    $visit_one!(*id);
+                }
                 $visit_one!(insn.state);
             }
             Insn::CCallWithFrame(insn) => {
@@ -1747,30 +1749,21 @@ impl Insn {
     pub fn for_each_operand(&self, mut f: impl FnMut(InsnId)) {
         macro_rules! visit_one { ($p:expr) => { f($p) }; }
         macro_rules! visit_many { ($s:expr) => { for id in ($s).iter() { f(*id) } }; }
-        macro_rules! visit_opt_block { ($block:expr) => {
-            if let Some(BlockHandler::BlockArgProc(id)) = $block { f(id) }
-        }; }
-        for_each_operand_impl!(self, visit_one, visit_many, visit_opt_block);
+        for_each_operand_impl!(self, visit_one, visit_many);
     }
 
     /// Call `f` on a mutable reference to each operand (InsnId) of this instruction.
     pub fn for_each_operand_mut(&mut self, mut f: impl FnMut(&mut InsnId)) {
         macro_rules! visit_one { ($p:expr) => { f(&mut $p) }; }
         macro_rules! visit_many { ($s:expr) => { for id in ($s).iter_mut() { f(id) } }; }
-        macro_rules! visit_opt_block { ($block:expr) => {
-            if let Some(BlockHandler::BlockArgProc(id)) = &mut $block { f(id) }
-        }; }
-        for_each_operand_impl!(self, visit_one, visit_many, visit_opt_block);
+        for_each_operand_impl!(self, visit_one, visit_many, mut);
     }
 
     /// Call `f` on each operand, short-circuiting on the first error.
     pub fn try_for_each_operand<E>(&self, mut f: impl FnMut(InsnId) -> Result<(), E>) -> Result<(), E> {
         macro_rules! visit_one { ($p:expr) => { f($p)? }; }
         macro_rules! visit_many { ($s:expr) => { for id in ($s).iter() { f(*id)? } }; }
-        macro_rules! visit_opt_block { ($block:expr) => {
-            if let Some(BlockHandler::BlockArgProc(id)) = $block { f(id)?; }
-        }; }
-        for_each_operand_impl!(self, visit_one, visit_many, visit_opt_block);
+        for_each_operand_impl!(self, visit_one, visit_many);
         Ok(())
     }
 
