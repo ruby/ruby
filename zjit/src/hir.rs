@@ -1718,10 +1718,14 @@ macro_rules! for_each_operand_impl {
 }
 
 macro_rules! edges_of {
-    ($insn:expr) => {
+    ($insn:expr, $unbox:ident) => {
         match $insn {
             Insn::Jump(edge) => [Some(edge), None],
             Insn::CondBranch { if_true, if_false, .. } => [Some(if_true), Some(if_false)],
+            Insn::CondBranchHasType(data) => {
+                let CondBranchHasTypeData { if_true, if_false, .. } = data.$unbox();
+                [Some(if_true), Some(if_false)]
+            }
             _ => [None, None],
         }.into_iter().flatten()
     };
@@ -2025,11 +2029,11 @@ impl Insn {
     }
 
     fn outgoing_edges(&self) -> impl Iterator<Item = &BranchEdge> {
-        edges_of!(self)
+        edges_of!(self, as_ref)
     }
 
     fn outgoing_edges_mut(&mut self) -> impl Iterator<Item = &mut BranchEdge> + '_ {
-        edges_of!(self)
+        edges_of!(self, as_mut)
     }
 }
 
