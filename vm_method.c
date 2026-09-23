@@ -3466,9 +3466,7 @@ top_ruby2_keywords(int argc, VALUE *argv, VALUE module)
  *  be called with the module as a receiver, and also become available
  *  as instance methods to classes that mix in the module. Module
  *  functions are copies of the original, and so may be changed
- *  independently. The instance-method versions are made private. If
- *  used with no arguments, subsequently defined methods become module
- *  functions.
+ *  independently. The instance-method versions are made private.
  *  String arguments are converted to symbols.
  *  If a single argument is passed, it is returned.
  *  If no argument is passed, nil is returned.
@@ -3496,6 +3494,18 @@ top_ruby2_keywords(int argc, VALUE *argv, VALUE module)
  *     end
  *     Mod.one     #=> "This is one"
  *     c.call_one  #=> "This is the new one"
+ *
+ *  If used with no arguments, subsequently defined methods become module
+ *  functions:
+ *
+ *     module Mod
+ *       module_function
+ *
+ *       def two
+ *         "This is two"
+ *       end
+ *     end
+ *     Mod.two  #=> "This is two"
  */
 
 static VALUE
