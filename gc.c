@@ -666,7 +666,7 @@ typedef struct gc_function_map {
     void (*objspace_free)(void *objspace_ptr);
     void (*ractor_cache_free)(void *objspace_ptr, void *cache);
     // GC
-    void (*start)(void *objspace_ptr, bool full_mark, bool immediate_mark, bool immediate_sweep, bool compact);
+    void (*start)(void *objspace_ptr, bool full_mark, bool immediate_mark, bool immediate_sweep, bool compact, bool global);
     bool (*during_gc_p)(void *objspace_ptr);
     void (*prepare_heap)(void *objspace_ptr);
     void (*gc_enable)(void *objspace_ptr);
@@ -3955,9 +3955,9 @@ rb_global_variable(VALUE *var)
 }
 
 static VALUE
-gc_start_internal(rb_execution_context_t *ec, VALUE self, VALUE full_mark, VALUE immediate_mark, VALUE immediate_sweep, VALUE compact)
+gc_start_internal(rb_execution_context_t *ec, VALUE self, VALUE full_mark, VALUE immediate_mark, VALUE immediate_sweep, VALUE compact, VALUE global)
 {
-    rb_gc_impl_start(rb_gc_get_objspace(), RTEST(full_mark), RTEST(immediate_mark), RTEST(immediate_sweep), RTEST(compact));
+    rb_gc_impl_start(rb_gc_get_objspace(), RTEST(full_mark), RTEST(immediate_mark), RTEST(immediate_sweep), RTEST(compact), RTEST(global));
 
     return Qnil;
 }
@@ -4038,9 +4038,9 @@ rb_objspace_each_objects(int (*callback)(void *, void *, size_t, void *), void *
     }
 }
 
-/* Enumerate every objspace: live Ractors' plus uninherited zombies.  Callers hold the
- * VM lock (reading another objspace also needs the barrier).  Missing even one leaves
- * stale mark bits behind for the global GC. */
+/* Enumerate live, creating, and zombie objspaces under the VM lifetime lock.
+ * Reading foreign mutable collector state also needs the barrier; independently
+ * synchronized publications may be read under their own locks without a barrier. */
 void
 rb_gc_vm_each_objspace(void (*func)(void *objspace, void *data), void *data)
 {
@@ -5229,7 +5229,7 @@ rb_gc(void)
 {
     unless_objspace(objspace) { return; }
 
-    rb_gc_impl_start(objspace, true, true, true, false);
+    rb_gc_impl_start(objspace, true, true, true, false, true);
 }
 
 int
@@ -5269,7 +5269,7 @@ rb_gc_latest_gc_info(VALUE key)
 }
 
 static VALUE
-gc_stat(rb_execution_context_t *ec, VALUE self, VALUE arg) // arg is (nil || hash || symbol)
+gc_stat(rb_execution_context_t *ec, VALUE self, VALUE arg, VALUE global_scope)
 {
     if (NIL_P(arg)) {
         arg = rb_hash_new();
@@ -5278,7 +5278,7 @@ gc_stat(rb_execution_context_t *ec, VALUE self, VALUE arg) // arg is (nil || has
         rb_raise(rb_eTypeError, "non-hash or symbol given");
     }
 
-    VALUE ret = rb_gc_impl_stat(rb_gc_get_objspace(), arg);
+    VALUE ret = rb_gc_impl_stat(RTEST(global_scope) ? NULL : rb_gc_get_objspace(), arg);
 
     if (ret == Qundef) {
         GC_ASSERT(SYMBOL_P(arg));
