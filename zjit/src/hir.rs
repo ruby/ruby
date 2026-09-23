@@ -8021,7 +8021,7 @@ impl Function {
             }
             // Instructions with String operands
             Insn::StringCopy { val, .. } => self.assert_subtype(insn_id, val, types::StringExact),
-            Insn::StringIntern { val, .. } => self.assert_subtype(insn_id, val, types::StringExact),
+            Insn::StringIntern { val, .. } => self.assert_subtype(insn_id, val, types::String),
             Insn::StringAppend { recv, other, recv_flags, other_flags, .. } => {
                 self.assert_subtype(insn_id, recv, types::StringExact)?;
                 self.assert_subtype(insn_id, other, types::String)?;

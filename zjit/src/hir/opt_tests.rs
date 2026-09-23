@@ -12841,6 +12841,94 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_inline_string_to_sym() {
+        eval(r#"
+            def test(str) = str.to_sym
+            test("warmup")
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :str@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :str@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint NoSingletonClass(String@0x1008)
+          PatchPoint MethodRedefined(String@0x1008, to_sym@0x1010, cme:0x1018)
+          v24:StringExact = GuardType v10, StringExact recompile
+          v25:Symbol = StringIntern v24
+          CheckInterrupts
+          Return v25
+        ");
+    }
+
+    #[test]
+    fn test_inline_string_subclass_to_sym() {
+        eval(r#"
+            class MyString < String; end
+            def test(str) = str.to_sym
+            test(MyString.new("warmup"))
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :str@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :str@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint NoSingletonClass(MyString@0x1008)
+          PatchPoint MethodRedefined(MyString@0x1008, to_sym@0x1010, cme:0x1018)
+          v24:StringSubclass[class_exact:MyString] = GuardType v10, StringSubclass[class_exact:MyString] recompile
+          v25:Symbol = StringIntern v24
+          CheckInterrupts
+          Return v25
+        ");
+    }
+
+    #[test]
+    fn test_inline_string_intern() {
+        eval(r#"
+            def test(str) = str.intern
+            test("warmup")
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :str@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :str@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint NoSingletonClass(String@0x1008)
+          PatchPoint MethodRedefined(String@0x1008, intern@0x1010, cme:0x1018)
+          v24:StringExact = GuardType v10, StringExact recompile
+          v25:Symbol = StringIntern v24
+          CheckInterrupts
+          Return v25
+        ");
+    }
+
+    #[test]
     fn test_fixnum_to_s_returns_string() {
         eval(r#"
             def test(x) = x.to_s
