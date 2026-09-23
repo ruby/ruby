@@ -61,7 +61,7 @@ pub extern "C" fn rb_zjit_iseq_free(iseq: IseqPtr) {
 
     // Take ownership of the payload and unset it from the ISEQ.
     let payload = unsafe { Box::from_raw(payload_ptr) };
-    unsafe { rb_iseq_set_jit_payload(iseq, std::ptr::null_mut()) };
+    unsafe { rb_iseq_clear_jit_payload(iseq) };
 
     // Clear IseqVersion references. Patch points may hold raw pointers to them, so
     // they have to outlive the ISEQ. They're dropped when the assumption is broken.
