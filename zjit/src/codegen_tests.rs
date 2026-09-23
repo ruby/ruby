@@ -6,7 +6,7 @@ use crate::backend::lir::Assembler;
 use crate::codegen::max_iseq_versions;
 use crate::cruby::*;
 use crate::hir::{Insn, iseq_to_hir};
-use crate::options::{CallThreshold, get_option, rb_zjit_prepare_options, set_call_threshold, set_inline_threshold, set_max_versions, set_mem_bytes, set_num_exits_until_invalidate};
+use crate::options::{CallThreshold, disable_hir_opt, get_option, rb_zjit_prepare_options, set_call_threshold, set_inline_threshold, set_max_versions, set_mem_bytes, set_num_exits_until_invalidate};
 use crate::payload::IseqVersion;
 use crate::hir::tests::hir_build_tests::assert_contains_opcode;
 use crate::payload::*;
@@ -1702,6 +1702,45 @@ fn test_setlocal_on_eval_with_spill() {
         eval('a = 1; itself', @b)
         eval('a', @b)
     "), @"1");
+}
+
+#[test]
+fn test_eval_local_write_survives_send_without_hir_opt() {
+    // https://github.com/Shopify/ruby/issues/970, reduced from ruby-spec.
+    // `eval` writes `n` into this frame's memory behind the JIT's back. Without HIR
+    // optimizations `ofor.nil?` stays a fallback Send, which used to spill every local
+    // before the call, writing the JIT's stale `n = 0` over the 2 from `eval`.
+    set_call_threshold(1);
+    disable_hir_opt();
+    eval(r#"
+        def test
+          ofor = nil
+          n = 0
+          eval("n = 2")
+          raise unless ofor.nil? # commenting out this line dodges the bug
+          raise "n=#{n} and !=2" unless n == 2
+        end
+        test
+    "#);
+    assert_snapshot!(assert_compiles_allowing_exits("test"), @"nil");
+}
+
+#[test]
+fn test_eval_local_write_survives_side_exit() {
+    // Like test_eval_local_write_survives_send_without_hir_opt(), but through a side exit
+    // instead of a send: the exit used to write the JIT's stale `n = 0` over the 2 from `eval`.
+    set_call_threshold(2);
+    eval(r#"
+        def test
+          n = 0
+          eval("n = 2")
+          ::RubyVM::ZJIT.induce_side_exit!
+          n
+        end
+        test
+        test
+    "#);
+    assert_snapshot!(assert_compiles_allowing_exits("test"), @"2");
 }
 
 #[test]
