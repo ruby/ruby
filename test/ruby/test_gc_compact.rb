@@ -105,6 +105,48 @@ class TestGCCompact < Test::Unit::TestCase
     end
   end
 
+  def test_global_compaction_cpu_intervals_do_not_overlap
+    omit 'default GC only' unless GC.config[:implementation] == 'default'
+    omit 'stress' if GC.stress
+    omit 'thread CPU clock unavailable' unless Process.const_defined?(:CLOCK_THREAD_CPUTIME_ID)
+    begin
+      Process.clock_gettime(Process::CLOCK_THREAD_CPUTIME_ID, :nanosecond)
+      Process.clock_getres(Process::CLOCK_THREAD_CPUTIME_ID, :nanosecond)
+    rescue SystemCallError, ArgumentError, NotImplementedError
+      omit 'thread CPU clock unavailable'
+    end
+
+    assert_separately([{'RUBY_MN_THREADS' => '0'}], __FILE__, __LINE__, <<~'RUBY', timeout: 60)
+      Warning[:experimental] = false
+      GC.disable
+      GC.measure_total_time = true
+      ready = Ractor::Port.new
+      worker = Ractor.new(ready) do |reply|
+        GC.disable
+        GC.measure_total_time = true
+        _objects = Array.new(100_000) { Object.new }
+        before = GC.total_time
+        reply << :ready
+        Ractor.receive
+        GC.total_time - before
+      end
+      ready.receive
+
+      clock = Process::CLOCK_THREAD_CPUTIME_ID
+      cpu_before = Process.clock_gettime(clock, :nanosecond)
+      gc_before = GC.total_time
+      5.times { GC.compact }
+      gc_ns = GC.total_time - gc_before
+      cpu_ns = Process.clock_gettime(clock, :nanosecond) - cpu_before
+
+      worker.send(:finish)
+      gc_ns += worker.value
+      allowance_ns = [1_000_000, 64 * Process.clock_getres(clock, :nanosecond)].max
+      assert_operator gc_ns, :>, 0
+      assert_operator gc_ns, :<=, cpu_ns + allowance_ns
+    RUBY
+  end
+
   def test_gc_compact_stats
     list = []
 
