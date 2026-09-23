@@ -1748,6 +1748,7 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
 #define FORWARDING_BLOCK_STR "&"
 #define FORWARDING_ALL_CHR '.'
 #define FORWARDING_ALL_STR "."
+#define FORWARDING_PLACEHOLDER_STR ""
 
     for (int scopes_index = 0; scopes_index < scopes_count; scopes_index++) {
         VALUE iseq_value = (VALUE)iseq;
@@ -1770,6 +1771,7 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
                 // Explicitly skip numbered parameters. These should not be sent
                 // into the eval.
                 if (length == 2 && name[0] == '_' && name[1] >= '1' && name[1] <= '9') {
+                    pm_string_constant_init(scope_local, FORWARDING_PLACEHOLDER_STR, 0);
                     continue;
                 }
 
@@ -1778,6 +1780,7 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
                 // not be added to the constant pool as it would not be able to
                 // be referenced anyway.
                 if (rb_enc_str_coderange_scan(name_obj, encoding) == ENC_CODERANGE_BROKEN) {
+                    pm_string_constant_init(scope_local, FORWARDING_PLACEHOLDER_STR, 0);
                     continue;
                 }
 
@@ -1899,6 +1902,7 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
 #undef FORWARDING_BLOCK_STR
 #undef FORWARDING_ALL_CHR
 #undef FORWARDING_ALL_STR
+#undef FORWARDING_PLACEHOLDER_STR
 
     int error_state;
     iseq = pm_iseq_new_eval(&result.node, name, fname, Qnil, line, parent, isolated_depth, &error_state);
