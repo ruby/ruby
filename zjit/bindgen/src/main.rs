@@ -474,6 +474,7 @@ fn main() {
         .allowlist_function("rb_RCLASS_ORIGIN")
         .allowlist_function("rb_method_basic_definition_p")
         .allowlist_function("rb_obj_class")
+        .allowlist_function("rb_obj_is_proc")
         .allowlist_function("rb_vm_base_ptr")
         .allowlist_function("rb_ec_stack_check")
         .allowlist_function("rb_vm_top_self")

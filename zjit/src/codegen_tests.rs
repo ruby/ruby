@@ -6610,6 +6610,33 @@ fn test_profile_frames_during_direct_jit_to_jit_entry() {
 }
 
 #[test]
+fn test_profiled_proc_block_handler_does_not_retain_proc() {
+    // Profile more than one call so that the profile can hold several Procs
+    rb_zjit_prepare_options();
+    let num_profiles = get_option!(num_profiles);
+    set_call_threshold(CallThreshold::from(num_profiles) + 2);
+
+    assert_snapshot!(inspect("
+        def profiled_proc_take = yield
+        def profiled_proc_forward(&blk) = profiled_proc_take(&blk)
+
+        PROFILED_PROC_OBJECTS = ObjectSpace::WeakMap.new
+        def profiled_proc_make(i)
+          obj = Object.new
+          PROFILED_PROC_OBJECTS[i] = obj
+          pr = proc { obj }
+          profiled_proc_forward(&pr)
+          nil
+        end
+
+        100.times { |i| profiled_proc_make(i) }
+        4.times { GC.start(full_mark: true, immediate_sweep: true) }
+        # Allow one object kept alive by conservative stack scanning
+        PROFILED_PROC_OBJECTS.keys.size <= 1
+    "), @"true");
+}
+
+#[test]
 fn test_profile_under_nested_jit_call() {
     assert_snapshot!(inspect("
         def profile
