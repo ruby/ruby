@@ -1,15 +1,15 @@
 use std::ptr::copy_nonoverlapping;
 
+use crate::Ruby;
 use crate::abi;
-use crate::abi::RubyObjectAccess;
 use crate::abi::MIN_OBJ_ALIGN;
 use crate::abi::OBJREF_OFFSET;
-use crate::Ruby;
+use crate::abi::RubyObjectAccess;
+use mmtk::util::Address;
+use mmtk::util::ObjectReference;
 use mmtk::util::constants::BITS_IN_BYTE;
 use mmtk::util::copy::CopySemantics;
 use mmtk::util::copy::GCWorkerCopyContext;
-use mmtk::util::Address;
-use mmtk::util::ObjectReference;
 use mmtk::vm::*;
 
 pub struct VMObjectModel {}

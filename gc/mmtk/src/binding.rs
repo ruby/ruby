@@ -3,15 +3,15 @@ use std::ffi::CString;
 use std::sync::Mutex;
 use std::thread::JoinHandle;
 
+use mmtk::MMTK;
 use mmtk::util::ObjectReference;
 use mmtk::vm::ObjectModel;
-use mmtk::MMTK;
 
+use crate::Ruby;
 use crate::abi;
 use crate::abi::RubyBindingOptions;
 use crate::pinning_registry::PinningRegistry;
 use crate::weak_proc::WeakProcessor;
-use crate::Ruby;
 
 pub struct RubyBindingFast {
     pub suffix_size: usize,
@@ -113,7 +113,7 @@ pub(crate) fn object_survives_current_gc(object: ObjectReference) -> bool {
 
     let is_nursery_gc = plan
         .generational()
-        .is_some_and(|gen| gen.is_current_gc_nursery());
+        .is_some_and(|gen_plan| gen_plan.is_current_gc_nursery());
 
     if !is_nursery_gc {
         return object.is_reachable();
