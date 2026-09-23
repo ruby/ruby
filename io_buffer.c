@@ -3060,7 +3060,15 @@ io_buffer_copy_from(struct rb_io_buffer *buffer, const void *source_base, size_t
     size_t size;
     io_buffer_get_bytes_for_writing(buffer, &base, &size);
 
+    if (length >= IO_BUFFER_BLOCKING_SIZE) {
+        io_buffer_lock(buffer);
+    }
+
     io_buffer_memmove(base, size, offset, source_base, source_offset, source_size, length);
+
+    if (length >= IO_BUFFER_BLOCKING_SIZE) {
+        io_buffer_unlock(buffer);
+    }
 
     return SIZET2NUM(length);
 }

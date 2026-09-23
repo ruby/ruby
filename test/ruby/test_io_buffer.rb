@@ -1626,6 +1626,36 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_predicate buf, :empty?
   end
 
+  def test_set_string_resize_race
+    assert_normal_exit("#{<<-"begin;"}\n#{<<-'end;'}")
+    begin;
+      buf = IO::Buffer.new(64 * 1024 * 1024)
+      src = "x" * (64 * 1024 * 1024)
+
+      stop = false
+      writer = Thread.new do
+        until stop
+          begin
+            buf.set_string(src)
+          rescue ArgumentError
+          end
+        end
+      end
+
+      resizer = Thread.new do
+        until stop
+          buf.resize(8)
+          buf.resize(64 * 1024 * 1024)
+        end
+      end
+
+      sleep 0.5
+      stop = true
+      writer.join
+      resizer.join
+    end;
+  end
+
   # https://bugs.ruby-lang.org/issues/21210
   def test_bug_21210
     omit "compaction is not supported on this platform" unless GC.respond_to?(:compact)
