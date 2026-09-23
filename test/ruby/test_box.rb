@@ -1168,6 +1168,58 @@ class TestBox < Test::Unit::TestCase
     end
   end
 
+  def test_box_disable_gems
+    # assert_separately w/ ENV_ENABLE_BOX and --enable=gems causes timeouts on CI @ Windows
+    opts = [ENV_ENABLE_BOX, "--enable=gems", "--enable=error_highlight"]
+    assert_in_out_err(opts, "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
+      begin;
+        enabled = Ruby::Box.new
+        disabled = Ruby::Box.new(disable_gems: true)
+        puts enabled.eval("defined?(Gem::VERSION)").inspect
+        puts enabled.eval("Object.autoload?(:ErrorHighlight)").inspect
+        puts disabled.eval("defined?(Gem)").inspect
+        puts disabled.eval("Object.autoload?(:ErrorHighlight)").inspect
+        # A box without RubyGems can still require library files under $LOAD_PATH
+        puts disabled.eval("require 'tempfile'; Tempfile.instance_of?(Class)").inspect
+      end;
+      assert_equal ['"constant"', '"error_highlight"', "nil", "nil", "true"], output
+    end
+  end
+
+  def test_box_disable_gems_false_loads_gems
+    # assert_separately w/ ENV_ENABLE_BOX and --enable=gems causes timeouts on CI @ Windows
+    assert_in_out_err([ENV_ENABLE_BOX, "--enable=gems"], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
+      begin;
+        puts Ruby::Box.new(disable_gems: false).eval("defined?(Gem::VERSION)").inspect
+        begin
+          Ruby::Box.new(disable_gem: true)
+        rescue ArgumentError => e
+          puts e.message
+        end
+      end;
+      assert_equal ['"constant"', "unknown keyword: :disable_gem"], output
+    end
+  end
+
+  def test_box_disable_gems_under_disabled_gems_process
+    # --disable=gems disables gems for the whole process, so no box loads them,
+    # and disable_gems: false doesn't bring them back.
+    # assert_separately w/ ENV_ENABLE_BOX and gems causes timeouts on CI @ Windows
+    assert_in_out_err([ENV_ENABLE_BOX, "--disable=gems"], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
+      begin;
+        puts defined?(Gem).inspect
+        puts Ruby::Box.new(disable_gems: false).eval("defined?(Gem)").inspect
+        puts Ruby::Box.new(disable_gems: false).eval("Object.autoload?(:ErrorHighlight)").inspect
+        puts Ruby::Box.new(disable_gems: true).eval("defined?(Gem)").inspect
+        puts Ruby::Box.new(disable_gems: true).eval("Object.autoload?(:ErrorHighlight)").inspect
+        # Boxes still work without RubyGems in both cases
+        puts Ruby::Box.new(disable_gems: false).eval("require 'tempfile'; Tempfile.instance_of?(Class)").inspect
+        puts Ruby::Box.new(disable_gems: true).eval("require 'tempfile'; Tempfile.instance_of?(Class)").inspect
+      end;
+      assert_equal ["nil", "nil", "nil", "nil", "nil", "true", "true"], output
+    end
+  end
+
   def test_bundler_setup_not_loaded_while_decorator_gems_are_autoloaded
     with_bundler_setup_log do |env|
       # assert_separately w/ ENV_ENABLE_BOX and --enable=gems causes timeouts on CI @ Windows
