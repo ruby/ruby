@@ -335,15 +335,15 @@ args_setup_kw_parameters_not_found(const VALUE *default_values, VALUE *locals, i
             if (NIL_P(bits_value)) {
                 /* fixnum -> hash */
                 int bits = *unspecified_bits;
-                *unspecified_bits_value = bits_value = rb_ident_hash_new();
+                *unspecified_bits_value = bits_value = rb_ident_set_new();
 
                 for (int j=0; j<VM_KW_SPECIFIED_BITS_MAX; j++) {
                     if (bits & (0x01 << j)) {
-                        rb_hash_aset(bits_value, INT2FIX(j), Qtrue);
+                        rb_set_add_no_check(bits_value, INT2FIX(j));
                     }
                 }
             }
-            rb_hash_aset(bits_value, INT2FIX(di), Qtrue);
+            rb_set_add_no_check(bits_value, INT2FIX(di));
         }
     }
     else {

@@ -3724,6 +3724,29 @@ fn test_opt_eq_string_distinct_objects() {
 }
 
 #[test]
+fn test_opt_eq_string_symbol_arg_after_inlining() {
+    eval(r#"
+        # frozen_string_literal: true
+        class Foo
+          def self.bar(l, r) = l == r
+        end
+        def test(flag)
+          foo = Foo
+          if flag
+            foo.bar("a", "b")
+          else
+            foo.bar("a", :sym)
+          end
+        end
+    "#);
+    assert_snapshot!(inspect(r#"
+        test(true) # profile opt_eq in bar
+        test(true) # compile test, inlining bar with a Symbol argument on the untaken branch
+        [test(true), test(false)]
+    "#), @"[false, false]");
+}
+
+#[test]
 fn test_opt_eqq_string_same_operand() {
     assert_snapshot!(inspect(r#"
         def test(s) = s === s
@@ -4639,6 +4662,26 @@ fn test_string_append_encoding_mismatch() {
         test(s, "é")
         [s, s.encoding.name, s.valid_encoding?]
     "#), @r#"["éé", "UTF-8", true]"#);
+}
+
+#[test]
+fn test_string_append_encoding_mutation_between_appends() {
+    eval(r#"
+        def test(string, first, second)
+          string << first
+          string << second
+        end
+    "#);
+    assert_contains_opcode("test", YARVINSN_opt_ltlt);
+    assert_snapshot!(assert_compiles(r#"
+        string = String.new(encoding: Encoding::BINARY)
+        begin
+          test(string, "é", "\xFF".b)
+          :no_error
+        rescue Encoding::CompatibilityError
+          [string.bytes, string.encoding.name, string.valid_encoding?]
+        end
+    "#), @"[[195, 169], \"UTF-8\", true]");
 }
 
 #[test]

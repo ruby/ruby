@@ -1,12 +1,12 @@
 use std::collections::VecDeque;
 use std::marker::PhantomData;
 
+use crate::Ruby;
 use crate::mmtk;
 use crate::upcalls;
-use crate::Ruby;
+use mmtk::Mutator;
 use mmtk::util::opaque_pointer::*;
 use mmtk::vm::ActivePlan;
-use mmtk::Mutator;
 
 pub struct VMActivePlan {}
 
