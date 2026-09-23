@@ -6725,6 +6725,56 @@ fn test_profile_frames_during_direct_jit_to_jit_entry() {
     });
 }
 
+// Same as test_profile_frames_during_direct_jit_to_jit_entry, but for a direct `yield` to an ISEQ block.
+#[cfg(all(
+    any(target_os = "linux", target_os = "macos"),
+    any(target_arch = "x86_64", target_arch = "aarch64"),
+))]
+#[test]
+fn test_profile_frames_during_direct_block_entry() {
+    with_inlining_threshold(0, || {
+        eval(r#"
+            def profiled_yield_each(n)
+              i = 0
+              while i < n
+                yield i
+                i += 1
+              end
+            end
+
+            def profiled_yield_shallow(n)
+              sum = 0
+              profiled_yield_each(n) { |x| sum += x }
+              sum
+            end
+
+            # Same VM frame depth as profiled_yield_shallow, on a deeper native stack
+            def profiled_yield_deep(n)
+              [n].each { |m| return __send__(:profiled_yield_shallow, m) }
+            end
+
+            def profiled_yield_loop(n)
+              i = 0
+              sum = 0
+              while i < n
+                sum += profiled_yield_deep(1)
+                sum += profiled_yield_shallow(2)
+                i += 1
+              end
+              sum
+            end
+
+            profiled_yield_loop(3)
+            profiled_yield_loop(3)
+            profiled_yield_loop(3)
+        "#);
+
+        let profiler = signal_profiler::Profiler::start(10);
+        assert_snapshot!(assert_compiles("profiled_yield_loop(1_000_000)"), @"1000000");
+        assert!(profiler.samples() > 0, "rb_profile_frames was not called from SIGPROF handler");
+    });
+}
+
 #[test]
 fn test_profile_under_nested_jit_call() {
     assert_snapshot!(inspect("

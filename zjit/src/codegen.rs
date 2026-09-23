@@ -2107,8 +2107,7 @@ fn gen_invoke_block_iseq_direct(
 
     asm_comment!(asm, "switch to new CFP");
     let new_cfp = asm.sub(CFP, RUBY_SIZEOF_CONTROL_FRAME.into());
-    asm.mov(CFP, new_cfp);
-    asm.store(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), CFP);
+    asm.mov(CFP, new_cfp); // will be published at `ec->cfp` after callee's entrypoint
 
     // JIT-to-JIT convention: self as c_args[0], then positional args. The block is
     // gated to simple + lead-only + exact arity, so there are no optionals/kw/block.
