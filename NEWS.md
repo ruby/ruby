@@ -62,6 +62,11 @@ Note: We're only listing outstanding class updates.
     * The `fiber_interrupt` hook is now required. Schedulers which do not
       implement it can no longer be installed with `Fiber.set_scheduler`.
 
+* GC
+
+    * Global compaction no longer counts overlapping CPU intervals in scalar GC
+      timing statistics. Profiler wall-time intervals are unchanged.
+
 * Hash
 
     * `Hash.ruby2_keywords_hash?` and `Hash.ruby2_keywords_hash` are

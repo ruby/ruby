@@ -9275,6 +9275,22 @@ gc_marking_exit(rb_objspace_t *objspace)
 }
 
 static void
+gc_sweeping_cpu_enter(rb_objspace_t *objspace)
+{
+    if (MEASURE_GC) {
+        gc_clock_start(&objspace->profile.sweeping_start_time);
+    }
+}
+
+static void
+gc_sweeping_cpu_exit(rb_objspace_t *objspace)
+{
+    if (MEASURE_GC) {
+        objspace->profile.sweeping_time_ns += gc_clock_end(&objspace->profile.sweeping_start_time);
+    }
+}
+
+static void
 gc_sweeping_enter(rb_objspace_t *objspace)
 {
     GC_ASSERT(during_gc != 0);
@@ -9284,9 +9300,7 @@ gc_sweeping_enter(rb_objspace_t *objspace)
         objspace->profile.gc_sweep_excluded_wall_time = 0;
     }
 
-    if (MEASURE_GC) {
-        gc_clock_start(&objspace->profile.sweeping_start_time);
-    }
+    gc_sweeping_cpu_enter(objspace);
 
     rb_gc_initialize_vm_context(&objspace->vm_context);
 }
@@ -9296,9 +9310,7 @@ gc_sweeping_exit(rb_objspace_t *objspace)
 {
     GC_ASSERT(during_gc != 0);
 
-    if (MEASURE_GC) {
-        objspace->profile.sweeping_time_ns += gc_clock_end(&objspace->profile.sweeping_start_time);
-    }
+    gc_sweeping_cpu_exit(objspace);
 
     if (gc_prof_enabled(objspace)) {
         rb_hrtime_t sweep_wall_time = elapsed_hrtime_from(objspace->profile.gc_sweep_phase_wall_start_time);
@@ -9662,33 +9674,41 @@ gc_start_global(rb_objspace_t *driver, unsigned int reason, bool compact, bool a
             if (os == driver && driver_prof) {
                 driver_compact_wall_time = rb_hrtime_add(driver_compact_wall_time, elapsed_hrtime_from(t0));
             }
+            gc_sweeping_cpu_exit(os);
         }
 
         /* pass 2 (update): all forwarding now exists, so update every objspace's
          * references (cross-objspace ones resolve too); gc_compact_finish also unprotects
          * pages and clears during_compacting.  The move-or-mark decision reads
          * rb_gc_get_objspace()'s during_reference_updating: set it on every objspace. */
+        gc_sweeping_cpu_enter(driver);
         for (size_t i = 0; i < global_objspace->global_gc.n_objspaces; i++) {
             global_objspace->global_gc.objspaces[i]->flags.during_reference_updating = TRUE;
         }
         rb_gc_before_updating_jit_code();
+        gc_sweeping_cpu_exit(driver);
         for (size_t i = 0; i < global_objspace->global_gc.n_objspaces; i++) {
             rb_objspace_t *os = global_objspace->global_gc.objspaces[i];
+            gc_sweeping_cpu_enter(os);
             rb_hrtime_t t0 = (os == driver && driver_prof) ? rb_hrtime_now() : 0;
             gc_compact_finish(os);
             if (os == driver && driver_prof) {
                 driver_compact_wall_time = rb_hrtime_add(driver_compact_wall_time, elapsed_hrtime_from(t0));
             }
+            gc_sweeping_cpu_exit(os);
         }
         /* The VM-global / weak-table side of the reference update runs once (each objspace's
          * heap side already ran in gc_compact_finish above). */
         {
+            gc_sweeping_cpu_enter(driver);
             rb_hrtime_t t0 = driver_prof ? rb_hrtime_now() : 0;
             gc_update_references_global(driver);
             if (driver_prof) {
                 driver_compact_wall_time = rb_hrtime_add(driver_compact_wall_time, elapsed_hrtime_from(t0));
             }
+            gc_sweeping_cpu_exit(driver);
         }
+        gc_sweeping_cpu_enter(driver);
         rb_gc_after_updating_jit_code();
         for (size_t i = 0; i < global_objspace->global_gc.n_objspaces; i++) {
             global_objspace->global_gc.objspaces[i]->flags.during_reference_updating = FALSE;
@@ -9696,6 +9716,7 @@ gc_start_global(rb_objspace_t *driver, unsigned int reason, bool compact, bool a
         }
         global_objspace->global_gc.compacting = false;
         uninstall_handlers();
+        gc_sweeping_cpu_exit(driver);
 
         /* Record the driver's compaction time and exclude it from the driver's sweep phase.
          * gc_sweeping_exit(driver) in pass 3 subtracts gc_sweep_excluded_wall_time from the
@@ -9714,6 +9735,7 @@ gc_start_global(rb_objspace_t *driver, unsigned int reason, bool compact, bool a
          * T_MOVED as usual. */
         for (size_t i = 0; i < global_objspace->global_gc.n_objspaces; i++) {
             rb_objspace_t *os = global_objspace->global_gc.objspaces[i];
+            gc_sweeping_cpu_enter(os);
             gc_sweep_rest(os);
             gc_sweeping_exit(os);
         }
