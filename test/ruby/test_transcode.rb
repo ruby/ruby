@@ -2228,6 +2228,18 @@ class TestTranscode < Test::Unit::TestCase
     assert_equal("U+3042", "\u{3042}".encode("US-ASCII", fallback: fallback))
   end
 
+  def test_fallback_modify_source_string
+    # [Bug #22330]
+    s = "\u3042" * 1000
+    assert_raise_with_message(RuntimeError, /string modified/) do
+      s.encode("US-ASCII",
+        fallback: proc {|x|
+          s.clear
+          "?"
+        })
+    end
+  end
+
   def test_fallback_method
     def (fallback = "U+%.4X").escape(x)
       self % x.unpack("U")

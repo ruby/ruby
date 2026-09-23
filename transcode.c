@@ -2325,6 +2325,20 @@ aref_fallback(VALUE fallback, VALUE c)
     return rb_funcallv_public(fallback, idAREF, 1, &c);
 }
 
+struct transcode_loop_fallback_args {
+    VALUE (*fallback_func)(VALUE, VALUE);
+    VALUE fallback;
+    VALUE rep;
+};
+
+static VALUE
+transcode_loop_fallback_try(VALUE a)
+{
+    struct transcode_loop_fallback_args *args = (struct transcode_loop_fallback_args *)a;
+
+    return args->fallback_func(args->fallback, args->rep);
+}
+
 static void
 transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
                const unsigned char *in_stop, unsigned char *out_stop,
@@ -2333,7 +2347,8 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
                const char *src_encoding,
                const char *dst_encoding,
                int ecflags,
-               VALUE ecopts)
+               VALUE ecopts,
+               VALUE source)
 {
     rb_econv_t *ec;
     rb_transcoding *last_tc;
@@ -2343,6 +2358,8 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
     VALUE exc;
     VALUE fallback = Qnil;
     VALUE (*fallback_func)(VALUE, VALUE) = 0;
+    const unsigned char *source_start = *in_pos;
+    long source_len = in_stop - *in_pos;
 
     ec = rb_econv_open_opts(src_encoding, dst_encoding, ecflags, ecopts);
     if (!ec)
@@ -2374,7 +2391,30 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
                 (const char *)ec->last_error.error_bytes_start,
                 ec->last_error.error_bytes_len,
                 rb_enc_find(ec->last_error.source_encoding));
-        rep = (*fallback_func)(fallback, rep);
+
+
+        struct transcode_loop_fallback_args args = {
+            .fallback_func = fallback_func,
+            .fallback = fallback,
+            .rep = rep,
+        };
+
+        int state;
+        rep = rb_protect(transcode_loop_fallback_try, (VALUE)&args, &state);
+        if (state) {
+            rb_econv_close(ec);
+            rb_jump_tag(state);
+        }
+
+        /* Ruby code run during the conversion (e.g. the fallback) may have
+         * modified the source string, invalidating the pointers into its
+         * buffer. */
+        if ((const unsigned char *)RSTRING_PTR(source) != source_start ||
+                RSTRING_LEN(source) != source_len) {
+            rb_econv_close(ec);
+            rb_raise(rb_eRuntimeError, "string modified");
+        }
+
         if (!UNDEF_P(rep) && !NIL_P(rep)) {
             StringValue(rep);
             ret = rb_econv_insert_output(ec, (const unsigned char *)RSTRING_PTR(rep),
@@ -2412,7 +2452,8 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
                const char *src_encoding,
                const char *dst_encoding,
                int ecflags,
-               VALUE ecopts)
+               VALUE ecopts,
+               VALUE source)
 {
     rb_econv_t *ec;
     rb_transcoding *last_tc;
@@ -2813,7 +2854,7 @@ str_transcode0(int argc, VALUE *argv, VALUE *self, int ecflags, VALUE ecopts)
     dest = rb_str_tmp_new(blen);
     bp = (unsigned char *)RSTRING_PTR(dest);
 
-    transcode_loop(&fromp, &bp, (sp+slen), (bp+blen), dest, str_transcoding_resize, sname, dname, ecflags, ecopts);
+    transcode_loop(&fromp, &bp, (sp+slen), (bp+blen), dest, str_transcoding_resize, sname, dname, ecflags, ecopts, str);
     if (fromp != sp+slen) {
         rb_raise(rb_eArgError, "not fully converted, %"PRIdPTRDIFF" bytes left", sp+slen-fromp);
     }
