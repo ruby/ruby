@@ -362,7 +362,7 @@ args_setup_kw_parameters(rb_execution_context_t *const ec, const rb_iseq_t *cons
                     if (NIL_P(unspecified_bits_value)) {
                         /* fixnum -> hash */
                         int j;
-                        unspecified_bits_value = rb_hash_new();
+                        unspecified_bits_value = rb_ident_hash_new();
 
                         for (j=0; j<KW_SPECIFIED_BITS_MAX; j++) {
                             if (unspecified_bits & (0x01 << j)) {
@@ -457,7 +457,7 @@ args_setup_kw_parameters_from_kwsplat(rb_execution_context_t *const ec, const rb
                     if (NIL_P(unspecified_bits_value)) {
                         /* fixnum -> hash */
                         int j;
-                        unspecified_bits_value = rb_hash_new();
+                        unspecified_bits_value = rb_ident_hash_new();
 
                         for (j=0; j<KW_SPECIFIED_BITS_MAX; j++) {
                             if (unspecified_bits & (0x01 << j)) {
