@@ -47,16 +47,19 @@ ruby_version_is "4.1" do
     it "returns IGNORE for ignored signals" do
       Signal.trap(@signal, :IGNORE)
       Signal[@signal].should == "IGNORE"
+      Signal.trap(@signal, @proc).should == "IGNORE"
     end
 
     it "returns DEFAULT for Ruby default handlers" do
       Signal.trap(@signal, :DEFAULT)
       Signal[@signal].should == "DEFAULT"
+      Signal.trap(@signal, @proc).should == "DEFAULT"
     end
 
     it "returns SYSTEM_DEFAULT for system default handlers" do
       Signal.trap(@signal, :SYSTEM_DEFAULT)
       Signal[@signal].should == "SYSTEM_DEFAULT"
+      Signal.trap(@signal, @proc).should == "SYSTEM_DEFAULT"
     end
 
     it "returns EXIT for handlers that terminate the process" do

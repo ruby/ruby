@@ -664,45 +664,47 @@ ruby_nativethread_signal(int signum, sighandler_t handler)
 #endif
 #endif
 
+#if !defined(HAVE_SIGACTION) && !defined(SIG_GET)
+static rb_nativethread_lock_t sig_check_lock;
+#endif
+
 static sighandler_t
 ruby_signal_handler(int sig)
 {
-#ifdef POSIX_SIGNAL
+#ifdef HAVE_SIGACTION
     struct sigaction action;
     (void)VALGRIND_MAKE_MEM_DEFINED(&action, sizeof(action));
     if (sigaction(sig, NULL, &action) < 0) return SIG_ERR;
+#ifdef SA_SIGINFO
     if (action.sa_flags & SA_SIGINFO)
         return (sighandler_t)action.sa_sigaction;
+#endif
     return action.sa_handler;
 #elif defined SIG_GET
     // https://learn.microsoft.com/en-us/cpp/c-runtime-library/signal-action-constants
     // SIG_GET returns the current handler without changing it.
     return signal(sig, SIG_GET);
 #else
-    rb_notimplement();
+    sighandler_t handler;
+    int saved_errno;
+
+    rb_native_mutex_lock(&sig_check_lock);
+    handler = signal(sig, SIG_DFL);
+    if (handler != SIG_ERR && signal(sig, handler) == SIG_ERR) handler = SIG_ERR;
+    saved_errno = errno;
+    rb_native_mutex_unlock(&sig_check_lock);
+    errno = saved_errno;
+
+    return handler;
 #endif
 }
-
-#if !defined(POSIX_SIGNAL) && !defined(SIG_GET)
-static rb_nativethread_lock_t sig_check_lock;
-#endif
 
 static int
 signal_ignored(int sig)
 {
-    sighandler_t func;
-#ifdef POSIX_SIGNAL
-    func = ruby_signal_handler(sig);
+    sighandler_t func = ruby_signal_handler(sig);
+#ifdef HAVE_SIGACTION
     if (func == SIG_ERR) return FALSE;
-#elif defined SIG_GET
-    func = ruby_signal_handler(sig);
-#else
-    sighandler_t old;
-    rb_native_mutex_lock(&sig_check_lock);
-    old = signal(sig, SIG_DFL);
-    signal(sig, old);
-    rb_native_mutex_unlock(&sig_check_lock);
-    func = old;
 #endif
     if (func == SIG_IGN) return 1;
     return func == sighandler ? 0 : -1;
@@ -1383,7 +1385,7 @@ reserved_signal_p(int signo)
  * call-seq:
  *   Signal[signal] -> obj
  *
- * Returns the current handler for the given signal without changing it.
+ * Returns the current handler for the given signal.
  *
  * Argument +signal+ is a signal name (a string or symbol such
  * as +SIGALRM+ or +SIGUSR1+) or an integer signal number. When +signal+
@@ -1392,8 +1394,11 @@ reserved_signal_p(int signo)
  * The returned object is represented the same way as the previous handler
  * returned by Signal.trap.
  *
- * Raises NotImplementedError if the platform cannot query a native signal
- * handler without changing it.
+ * On platforms that support querying native signal handlers, signal handling
+ * is unchanged. Otherwise, the native handler is temporarily set to the
+ * system default and then restored. On such platforms, signals may be handled
+ * differently or lost during inspection, and concurrent native handler changes
+ * may be overwritten.
  *
  *     Signal.trap("HUP", "IGNORE")
  *     Signal["HUP"] # => "IGNORE"
@@ -1611,7 +1616,7 @@ Init_signal(void)
     rb_define_method(rb_eSignal, "signo", esignal_signo, 0);
     rb_alias(rb_eSignal, rb_intern_const("signm"), rb_intern_const("message"));
     rb_define_method(rb_eInterrupt, "initialize", interrupt_init, -1);
-#if !defined(POSIX_SIGNAL) && !defined(SIG_GET)
+#if !defined(HAVE_SIGACTION) && !defined(SIG_GET)
     rb_native_mutex_initialize(&sig_check_lock);
 #endif
 
@@ -1674,7 +1679,7 @@ Init_signal(void)
 void
 rb_signal_atfork(void)
 {
-#if defined(HAVE_WORKING_FORK) && !defined(POSIX_SIGNAL) && !defined(SIG_GET)
+#if defined(HAVE_WORKING_FORK) && !defined(HAVE_SIGACTION) && !defined(SIG_GET)
     rb_native_mutex_initialize(&sig_check_lock);
 #endif
 }
