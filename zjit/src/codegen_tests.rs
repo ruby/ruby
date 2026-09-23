@@ -370,6 +370,51 @@ fn test_string_intern() {
 }
 
 #[test]
+fn test_string_to_sym_invalid_encoding_unused() {
+    eval(r#"
+        def test(str)
+          str.to_sym
+          :converted
+        end
+    "#);
+    assert_snapshot!(assert_compiles(r#"
+        test("warmup")
+        test("warmup")
+        begin
+          test("\xFF".force_encoding(Encoding::UTF_8))
+        rescue EncodingError
+          :encoding_error
+        end
+    "#), @":encoding_error");
+}
+
+#[test]
+fn test_string_subclass_to_sym() {
+    assert_snapshot!(assert_compiles(r#"
+        class MyString < String; end
+        def test(str) = str.to_sym
+        value = MyString.new("key")
+        test(value)
+        test(value)
+        [test(value), test(MyString.new("other"))]
+    "#), @"[:key, :other]");
+}
+
+#[test]
+fn test_string_subclass_to_sym_redefined() {
+    assert_snapshot!(assert_compiles_allowing_exits(r#"
+        class MyString < String; end
+        def test(str) = str.to_sym
+        value = MyString.new("key")
+        test(value)
+        test(value)
+        original = test(value)
+        MyString.class_eval { def to_sym = :overridden }
+        [original, test(value)]
+    "#), @"[:key, :overridden]");
+}
+
+#[test]
 fn test_duphash() {
     eval("
         def test

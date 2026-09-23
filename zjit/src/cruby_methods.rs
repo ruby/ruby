@@ -277,6 +277,7 @@ pub fn init() -> Annotations {
     annotate!(rb_cFloat, "to_i", inline_float_to_i);
     annotate!(rb_cFloat, "to_int", inline_float_to_i);
     annotate!(rb_cString, "to_s", inline_string_to_s, types::StringExact);
+    annotate!(rb_cString, "to_sym", inline_string_to_sym, types::Symbol);
     annotate!(rb_cFloat, "nan?", types::BoolExact, no_gc, leaf, elidable);
     annotate!(rb_cFloat, "finite?", types::BoolExact, no_gc, leaf, elidable);
     annotate!(rb_cFloat, "infinite?", types::Fixnum.union(types::NilClass), no_gc, leaf, elidable);
@@ -320,6 +321,15 @@ fn inline_string_to_s(fun: &mut hir::Function, block: hir::BlockId, recv: hir::I
     if args.is_empty() && fun.likely_a(recv, types::StringExact, state) {
         let recv = fun.coerce_to(block, recv, types::StringExact, state);
         return Some(recv);
+    }
+    None
+}
+
+fn inline_string_to_sym(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    debug_assert!(args.is_empty());
+    if fun.likely_a(recv, types::String, state) {
+        let recv = fun.coerce_to(block, recv, types::String, state);
+        return Some(fun.push_insn(block, hir::Insn::StringIntern { val: recv, state }));
     }
     None
 }
