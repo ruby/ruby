@@ -818,6 +818,9 @@ pub enum Insn {
     // C function return
     CRet(Opnd),
 
+    /// Conditionally select if above or equal (unsigned)
+    CSelAE { truthy: Opnd, falsy: Opnd, out: Opnd },
+
     /// Conditionally select if equal
     CSelE { truthy: Opnd, falsy: Opnd, out: Opnd },
 
@@ -1071,6 +1074,7 @@ macro_rules! for_each_operand_impl {
             Insn::And { left: opnd0, right: opnd1, .. } |
             Insn::CPopPairInto(opnd0, opnd1) |
             Insn::Cmp { left: opnd0, right: opnd1 } |
+            Insn::CSelAE { truthy: opnd0, falsy: opnd1, .. } |
             Insn::CSelE { truthy: opnd0, falsy: opnd1, .. } |
             Insn::CSelG { truthy: opnd0, falsy: opnd1, .. } |
             Insn::CSelGE { truthy: opnd0, falsy: opnd1, .. } |
@@ -1199,6 +1203,7 @@ impl Insn {
             Insn::CPushPair(_, _) => "CPushPair",
             Insn::CCall { .. } => "CCall",
             Insn::CRet(_) => "CRet",
+            Insn::CSelAE { .. } => "CSelAE",
             Insn::CSelE { .. } => "CSelE",
             Insn::CSelG { .. } => "CSelG",
             Insn::CSelGE { .. } => "CSelGE",
@@ -1256,6 +1261,7 @@ impl Insn {
             Insn::Add { out, .. } |
             Insn::And { out, .. } |
             Insn::CPop { out, .. } |
+            Insn::CSelAE { out, .. } |
             Insn::CSelE { out, .. } |
             Insn::CSelG { out, .. } |
             Insn::CSelGE { out, .. } |
@@ -1288,6 +1294,7 @@ impl Insn {
             Insn::Add { out, .. } |
             Insn::And { out, .. } |
             Insn::CPop { out, .. } |
+            Insn::CSelAE { out, .. } |
             Insn::CSelE { out, .. } |
             Insn::CSelG { out, .. } |
             Insn::CSelGE { out, .. } |
@@ -4041,6 +4048,13 @@ impl Assembler {
 
     pub fn cret(&mut self, opnd: Opnd) {
         self.push_insn(Insn::CRet(opnd));
+    }
+
+    #[must_use]
+    pub fn csel_ae(&mut self, truthy: Opnd, falsy: Opnd) -> Opnd {
+        let out = self.new_vreg(Opnd::match_num_bits(&[truthy, falsy]));
+        self.push_insn(Insn::CSelAE { truthy, falsy, out });
+        out
     }
 
     #[must_use]
