@@ -4013,6 +4013,8 @@ impl Function {
         }
     }
 
+    /// Extract the original value out of guards and RefineType instructions. Because it drops
+    /// the most recent type information, this should be used only for checking pointer eqality.
     fn chase_insn(&self, insn: InsnId) -> InsnId {
         let id = self.union_find.borrow().find_const(insn);
         match self.insns[id] {
@@ -6849,11 +6851,9 @@ impl Function {
                         }
                     }
                     &Insn::StringEqual { left, right } => {
-                        let left = self.chase_insn(left);
-                        let right = self.chase_insn(right);
                         // If both operands resolve to the same SSA value,
                         // String#== is guaranteed to be true.
-                        if left == right {
+                        if self.chase_insn(left) == self.chase_insn(right) {
                             self.new_insn(Insn::Const { val: Const::Value(Qtrue) })
                         } else {
                             let left_type = self.type_of(left);
@@ -6862,7 +6862,7 @@ impl Function {
                                 (Some(left_obj), Some(right_obj))
                                     if left_obj.is_frozen() && right_obj.is_frozen() =>
                                 {
-                                    // For known frozen objects, evaluate String#== at compile time.
+                                    // For known frozen Strings, evaluate String#== at compile time.
                                     let val = unsafe { rb_yarv_str_eql_internal(left_obj, right_obj) };
                                     self.new_insn(Insn::Const { val: Const::Value(val) })
                                 }
