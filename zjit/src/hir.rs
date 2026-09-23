@@ -5837,9 +5837,9 @@ impl Function {
                 };
                 let SendDirectData { recv, cme, iseq, kw_bits, jit_entry_idx, block: call_block, state, .. } = **data;
                 let args_len = data.args.len();
-                // Inlining a callee that receives a &proc block handler is not
-                // supported yet: the inlined body would need the proc as its
-                // frame's specval for yield/block_given?.
+                // TODO: Inline callees that receive a &proc block handler. The inlined body
+                // only knows a static blockiseq for yield/defined?(yield); it would need to
+                // be taught to dispatch to the runtime Proc instead.
                 if matches!(call_block, Some(BlockHandler::BlockArgProc(_))) {
                     search_start = send_pos + 1;
                     continue;
