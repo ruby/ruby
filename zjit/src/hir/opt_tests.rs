@@ -8675,6 +8675,7 @@ mod hir_opt_tests {
     fn test_no_elide_freeze_with_unfrozen_hash() {
         eval("
             def test = {}.dup.freeze
+            test
         ");
         assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
@@ -8690,8 +8691,8 @@ mod hir_opt_tests {
           v10:HashExact = NewHash
           PatchPoint NoSingletonClass(Hash@0x1000)
           PatchPoint MethodRedefined(Hash@0x1000, dup@0x1008, cme:0x1010)
-          v23:BasicObject = CCallWithFrame v10, :Kernel#dup@0x1038
-          v14:BasicObject = Send v23, :freeze # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v24:BasicObject = CCallWithFrame v10, :Kernel#dup@0x1038
+          v14:BasicObject = Send v24, :freeze # SendFallbackReason: Uncategorized(opt_send_without_block)
           CheckInterrupts
           Return v14
         ");
@@ -8771,6 +8772,7 @@ mod hir_opt_tests {
     fn test_no_elide_freeze_with_unfrozen_ary() {
         eval("
             def test = [].dup.freeze
+            test
         ");
         assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
@@ -8786,8 +8788,8 @@ mod hir_opt_tests {
           v10:ArrayExact = NewArray
           PatchPoint NoSingletonClass(Array@0x1000)
           PatchPoint MethodRedefined(Array@0x1000, dup@0x1008, cme:0x1010)
-          v23:BasicObject = CCallWithFrame v10, :Kernel#dup@0x1038
-          v14:BasicObject = Send v23, :freeze # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v24:BasicObject = CCallWithFrame v10, :Kernel#dup@0x1038
+          v14:BasicObject = Send v24, :freeze # SendFallbackReason: Uncategorized(opt_send_without_block)
           CheckInterrupts
           Return v14
         ");
@@ -8867,6 +8869,7 @@ mod hir_opt_tests {
     fn test_no_elide_freeze_with_unfrozen_str() {
         eval("
             def test = ''.dup.freeze
+            test
         ");
         assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
@@ -8883,8 +8886,8 @@ mod hir_opt_tests {
           v11:StringExact = StringCopy v10
           PatchPoint NoSingletonClass(String@0x1008)
           PatchPoint MethodRedefined(String@0x1008, dup@0x1010, cme:0x1018)
-          v24:BasicObject = CCallWithFrame v11, :String#dup@0x1040
-          v15:BasicObject = Send v24, :freeze # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v25:BasicObject = CCallWithFrame v11, :String#dup@0x1040
+          v15:BasicObject = Send v25, :freeze # SendFallbackReason: Uncategorized(opt_send_without_block)
           CheckInterrupts
           Return v15
         ");
@@ -8966,6 +8969,7 @@ mod hir_opt_tests {
     fn test_no_elide_uminus_with_unfrozen_str() {
         eval("
             def test = -''.dup
+            test
         ");
         assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
@@ -8982,8 +8986,144 @@ mod hir_opt_tests {
           v11:StringExact = StringCopy v10
           PatchPoint NoSingletonClass(String@0x1008)
           PatchPoint MethodRedefined(String@0x1008, dup@0x1010, cme:0x1018)
-          v24:BasicObject = CCallWithFrame v11, :String#dup@0x1040
-          v15:BasicObject = Send v24, :-@ # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v25:BasicObject = CCallWithFrame v11, :String#dup@0x1040
+          v15:BasicObject = Send v25, :-@ # SendFallbackReason: Uncategorized(opt_send_without_block)
+          CheckInterrupts
+          Return v15
+        ");
+    }
+
+    #[test]
+    fn test_integer_uminus() {
+        eval("
+            def test(n) = -n
+            test(1)
+            test(2)
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :n@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :n@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:BasicObject = Send v10, :-@ # SendFallbackReason: Uncategorized(opt_send_without_block)
+          CheckInterrupts
+          Return v15
+        ");
+    }
+
+    #[test]
+    fn test_user_defined_uminus() {
+        eval("
+            class C
+              def -@ = 5
+            end
+            def test(o) = -o
+            test(C.new)
+            test(C.new)
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:5:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:BasicObject = Send v10, :-@ # SendFallbackReason: Uncategorized(opt_send_without_block)
+          CheckInterrupts
+          Return v15
+        ");
+    }
+
+    #[test]
+    fn test_elide_uminus_with_fstring_constant() {
+        eval("
+            S = -'abc'.dup
+            def test = -S
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint StableConstantNames(0x1000, S)
+          v11:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          PatchPoint BOPRedefined(STRING_REDEFINED_OP_FLAG, BOP_UMINUS)
+          CheckInterrupts
+          Return v11
+        ");
+    }
+
+    #[test]
+    fn test_no_elide_uminus_with_frozen_non_fstring() {
+        eval("
+            S = 'abc'.dup.freeze
+            def test = -S
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint StableConstantNames(0x1000, S)
+          v11:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          PatchPoint BOPRedefined(STRING_REDEFINED_OP_FLAG, BOP_UMINUS)
+          CheckInterrupts
+          Return v11
+        ");
+    }
+
+    #[test]
+    fn test_optimize_freeze_on_object() {
+        eval("
+            class C; end
+            def test(o) = o.freeze
+            test(C.new)
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:BasicObject = Send v10, :freeze # SendFallbackReason: Uncategorized(opt_send_without_block)
           CheckInterrupts
           Return v15
         ");
