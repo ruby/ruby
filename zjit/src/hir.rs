@@ -897,6 +897,10 @@ pub enum BlockHandler {
     BlockIseq(IseqPtr),
     /// Block arg passed via &proc (e.g. `foo(&block)`)
     BlockArg,
+    /// Block arg proven to be a Proc by a guard. The InsnId refers to the
+    /// guarded Proc value, which becomes the callee frame's block handler
+    /// (a Proc VALUE is itself a valid block handler).
+    BlockArgProc(InsnId),
 }
 
 /// Identifier used by LoadField/StoreField/LoadArg for HIR dumps. Variants
@@ -1364,7 +1368,7 @@ pub enum Insn {
 /// `$visit_one` macro for a single InsnId field and `$visit_many` macro for a
 /// slice/Vec of InsnIds. Used by both `for_each_operand` and `for_each_operand_mut`.
 macro_rules! for_each_operand_impl {
-    ($self:expr, $visit_one:ident, $visit_many:ident) => {
+    ($self:expr, $visit_one:ident, $visit_many:ident $(, $mut:tt)?) => {
         match $self {
             Insn::Comment { .. }
             | Insn::Const { .. }
@@ -1618,6 +1622,9 @@ macro_rules! for_each_operand_impl {
             Insn::SendDirect(insn) => {
                 $visit_one!(insn.recv);
                 $visit_many!(insn.args);
+                if let Some(BlockHandler::BlockArgProc(id)) = &$($mut)? insn.block {
+                    $visit_one!(*id);
+                }
                 $visit_one!(insn.state);
             }
             Insn::CCallWithFrame(insn) => {
@@ -1756,7 +1763,7 @@ impl Insn {
     pub fn for_each_operand_mut(&mut self, mut f: impl FnMut(&mut InsnId)) {
         macro_rules! visit_one { ($p:expr) => { f(&mut $p) }; }
         macro_rules! visit_many { ($s:expr) => { for id in ($s).iter_mut() { f(id) } }; }
-        for_each_operand_impl!(self, visit_one, visit_many);
+        for_each_operand_impl!(self, visit_one, visit_many, mut);
     }
 
     /// Call `f` on each operand, short-circuiting on the first error.
@@ -2230,10 +2237,14 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             },
             Insn::SendDirect(insn) => {
                 let SendDirectData { recv, cme, iseq, args, block, jit_entry_idx, .. } = &**insn;
-                let blockiseq = block.map(|bh| match bh { BlockHandler::BlockIseq(iseq) => iseq, BlockHandler::BlockArg => unreachable!() });
-                let blockiseq_ptr = blockiseq.map_or(ptr::null(), |iseq| self.ptr_map.map_ptr(iseq));
+                let block = match block {
+                    Some(BlockHandler::BlockArgProc(proc_id)) => format!("&{proc_id}"),
+                    Some(BlockHandler::BlockIseq(blockiseq)) => format!("{:p}", self.ptr_map.map_ptr(*blockiseq)),
+                    Some(BlockHandler::BlockArg) => unreachable!("BlockArg in SendDirect"),
+                    None => format!("{:p}", ptr::null::<u8>()),
+                };
                 let method_name = unsafe { (**cme).called_id };
-                write!(f, "SendDirect {recv}, {blockiseq_ptr:p}, :{method_name} ({:?})", self.ptr_map.map_ptr(*iseq))?;
+                write!(f, "SendDirect {recv}, {block}, :{method_name} ({:?})", self.ptr_map.map_ptr(*iseq))?;
                 if *jit_entry_idx != 0 {
                     write!(f, ", jit_entry_idx={jit_entry_idx}")?;
                 }
@@ -2258,6 +2269,8 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                         write!(f, "Send {recv}, {:p}, :{}", self.ptr_map.map_ptr(blockiseq), ruby_call_method_name(*cd))?,
                     Some(BlockHandler::BlockArg) =>
                         write!(f, "Send {recv}, &block, :{}", ruby_call_method_name(*cd))?,
+                    Some(BlockHandler::BlockArgProc(_)) =>
+                        unreachable!("BlockArgProc only appears in SendDirect"),
                     None =>
                         write!(f, "Send {recv}, :{}", ruby_call_method_name(*cd))?,
                 }
@@ -2404,6 +2417,8 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                         write!(f, ", block={:p}", self.ptr_map.map_ptr(*blockiseq))?,
                     Some(BlockHandler::BlockArg) =>
                         write!(f, ", block=&block")?,
+                    Some(BlockHandler::BlockArgProc(_)) =>
+                        unreachable!("BlockArgProc only appears in SendDirect"),
                     None => {}
                 }
                 Ok(())
@@ -4838,25 +4853,35 @@ impl Function {
                             def_type = unsafe { get_cme_def_type(cme) };
                         }
 
-                        // Check if we can optimize `foo(&block)` where block is nil to a send without block.
+                        // Check if we can optimize `foo(&block)` to a direct send: either `block` is
+                        // nil (strip it and send without a block) or `block` is monomorphically an
+                        // exact-class Proc (pass it through as the callee frame's specval).
                         // `state` keeps referring to the pre-send frame state (block arg still on the
                         // stack). Any guard that side-exits before the call re-executes the `send` in
                         // the interpreter, so it must reconstruct the stack with the block arg present.
                         // Only the direct-send frame setup uses `send_frame_state`, which has the nil
-                        // block arg stripped from the stack.
+                        // or Proc block arg stripped from the stack.
                         let mut send_block = send_block;
                         let mut send_frame_state = state;
                         let mut args = match resolved.insn(self) {
                             Insn::Send { args, .. } => args.to_vec(),
                             _ => panic!("Expected Send instruction"),
                         };
-                        let mut stripped_nil_block = false;
+                        let mut stripped_block_arg = false;
                         if send_block == Some(BlockHandler::BlockArg) && def_type == VM_METHOD_TYPE_ISEQ {
+                            // Reject complex argument passing before emitting any block-arg guard;
+                            // a guard in front of a send that stays dynamic gates nothing.
+                            if unspecializable_call_type(flags & !VM_CALL_ARGS_BLOCKARG) {
+                                self.count_complex_call_features(block, flags, state);
+                                self.set_dynamic_send_reason(insn_id, ComplexArgPass);
+                                self.push_insn_id(block, insn_id); continue;
+                            }
                             // The block arg is the last element in args
                             if let Some(&block_arg) = args.last() {
+                                let original_argc = args.len();
                                 let statically_nil = self.is_a(block_arg, types::NilClass);
-                                let profiled_nil = self.profiled_type_of_at(block_arg, state)
-                                    .map_or(false, |pt| pt.is_nil());
+                                let block_arg_profiled_type = self.profiled_type_of_at(block_arg, state);
+                                let profiled_nil = block_arg_profiled_type.map_or(false, |pt| pt.is_nil());
                                 if statically_nil || profiled_nil {
                                     if !statically_nil {
                                         // Guard needed when relying on profiled type. Uses the original
@@ -4880,13 +4905,26 @@ impl Function {
                                     args = args[..args.len() - 1].to_vec();
                                     send_block = None;
                                     has_block = false;
-                                    stripped_nil_block = true;
+                                    stripped_block_arg = true;
                                     // Frame state for the direct send only: the block arg is removed
                                     // from the stack so the callee frame is laid out correctly.
-                                    let new_state = self.frame_state(state).with_replaced_args(&args, args.len() + 1);
+                                    let new_state = self.frame_state(state).with_replaced_args(&args, original_argc);
+                                    send_frame_state = self.push_insn(block, Insn::Snapshot { state: Box::new(new_state) });
+                                } else if block_arg_profiled_type.is_some_and(|pt| pt.is_proc()) {
+                                    // Guard the Proc and pass it through as the callee frame's
+                                    // specval.
+                                    let guarded = self.guard_type_recompile(
+                                        block, block_arg,
+                                        Type::from_profiled_type(block_arg_profiled_type.unwrap()),
+                                        state, Recompile,
+                                    );
+                                    _ = args.pop();
+                                    send_block = Some(BlockHandler::BlockArgProc(guarded));
+                                    stripped_block_arg = true;
+                                    let new_state = self.frame_state(state).with_replaced_args(&args, original_argc);
                                     send_frame_state = self.push_insn(block, Insn::Snapshot { state: Box::new(new_state) });
                                 } else {
-                                    // Can't prove block arg is nil
+                                    // Can't prove block arg is nil or a Proc
                                     self.set_dynamic_send_reason(insn_id, SendBlockArgNotNil);
                                     self.push_insn_id(block, insn_id); continue;
                                 }
@@ -4895,8 +4933,8 @@ impl Function {
 
                         // If the call site info indicates that the `Function` has overly complex arguments, then do not optimize into a `SendDirect`.
                         // Optimized methods(`VM_METHOD_TYPE_OPTIMIZED`) and C methods handle their own argument constraints (e.g., kw_splat for Proc call).
-                        // Mask out ARGS_BLOCKARG only if we've already handled the nil block arg case above.
-                        let mut flags_for_check = if stripped_nil_block { flags & !VM_CALL_ARGS_BLOCKARG } else { flags };
+                        // Mask out ARGS_BLOCKARG only if we've already handled the nil/Proc block arg case above.
+                        let mut flags_for_check = if stripped_block_arg { flags & !VM_CALL_ARGS_BLOCKARG } else { flags };
                         if def_type == VM_METHOD_TYPE_ISEQ {
                             // Caller splat specialization currently only supports ISEQ callees, so
                             // skip the generic splat rejection here and validate its profile below.
@@ -5170,6 +5208,7 @@ impl Function {
 
                                 let blockiseq = match send_block {
                                     Some(BlockHandler::BlockArg) => unreachable!("unsupported &block should have been filtered out"),
+                                    Some(BlockHandler::BlockArgProc(_)) => unreachable!("BlockArgProc is only built for ISEQ callees"),
                                     Some(BlockHandler::BlockIseq(blockiseq)) => Some(blockiseq),
                                     None => None,
                                 };
@@ -5807,14 +5846,20 @@ impl Function {
                 };
                 let SendDirectData { recv, cme, iseq, kw_bits, jit_entry_idx, block: call_block, state, .. } = **data;
                 let args_len = data.args.len();
-                // SendDirect invariant: block is either None or BlockIseq.
-                // BlockArg is rejected upstream during type specialization.
+                // TODO: Inline callees that receive a &proc block handler. The inlined body
+                // only knows a static blockiseq for yield/defined?(yield); it would need to
+                // be taught to dispatch to the runtime Proc instead.
+                if matches!(call_block, Some(BlockHandler::BlockArgProc(_))) {
+                    search_start = send_pos + 1;
+                    continue;
+                }
                 // TODO(max): If we accept BlockArg here, we need to change the folding of Defined
                 // in HIR construction for the defined opcode to check the send flags of the method
                 // being inlined, too.
                 let blockiseq: Option<IseqPtr> = call_block.map(|bh| match bh {
                     BlockHandler::BlockIseq(bi) => bi,
                     BlockHandler::BlockArg => unreachable!("BlockArg in SendDirect"),
+                    BlockHandler::BlockArgProc(_) => unreachable!("skipped above"),
                 });
 
                 // Apply the cheap optimization heuristics (size, budget, denylist)
