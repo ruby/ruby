@@ -5876,8 +5876,12 @@ winnt_stat(const WCHAR *path, struct stati128 *st, BOOL lstat)
         }
     }
     else {
-        if ((open_error == ERROR_FILE_NOT_FOUND) || (open_error == ERROR_INVALID_NAME)
-            || (open_error == ERROR_PATH_NOT_FOUND || (open_error == ERROR_BAD_NETPATH))) {
+        switch (open_error) {
+          case ERROR_FILE_NOT_FOUND:
+          case ERROR_INVALID_NAME:
+          case ERROR_PATH_NOT_FOUND:
+          case ERROR_BAD_NETPATH:
+          case ERROR_CANT_RESOLVE_FILENAME:
             errno = map_errno(open_error);
             return -1;
         }
