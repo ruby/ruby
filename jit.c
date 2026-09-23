@@ -648,6 +648,14 @@ rb_iseq_set_jit_payload(const rb_iseq_t *iseq, void *payload)
 }
 
 void
+rb_iseq_clear_jit_payload(const rb_iseq_t *iseq)
+{
+    RUBY_ASSERT_ALWAYS(IMEMO_TYPE_P(iseq, imemo_iseq));
+    RUBY_ASSERT_ALWAYS(ISEQ_BODY(iseq));
+    ISEQ_BODY(iseq)->jit_payload = NULL;
+}
+
+void
 rb_iseq_reset_jit_func(const rb_iseq_t *iseq)
 {
     RUBY_ASSERT_ALWAYS(IMEMO_TYPE_P(iseq, imemo_iseq));
