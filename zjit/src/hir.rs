@@ -6664,7 +6664,6 @@ impl Function {
         for (idx, &block_id) in rpo.iter().enumerate() {
             rpo_order[block_id] = idx;
         }
-        // TODO: Add back edge check as we iterate in the pass. Figure out if we should use cfi or not
 
         // Each block contains a cache of tracked load and store instructions.
         // The cache is filled with load and store instructions when scanning a block.
@@ -6672,8 +6671,6 @@ impl Function {
         // The cache is pruned when loads and stores can alias between objects.
         let mut cache: Vec<HashMap<Key, InsnId>> = vec![HashMap::new(); cfi.num_blocks];
 
-        // Invalidations mark each block with a bool that is true any time our alias analysis changes anything or an effectul instruction occurs.
-        let mut invalidates: Vec<bool> = vec![false; cfi.num_blocks];
         let mut has_back_edge = false;
 
         // IDEA: It would be really cool to have a macro that took a loop body with custom code that only gets executed on the first pass
@@ -6681,26 +6678,10 @@ impl Function {
 
         loop {
             for (rpo_index, &block_id) in rpo.iter().enumerate() {
-                // TODO: Prefill cache with information from predecessor blocks
-                //
-                // TODO: Add backedge check throughout during the pass
-
-                // TODO: Figure out how we will handle immediate dominators. These will include information that is valid from the dominators to the current block unless an invalidation occurred
-                // We somehow need to mark blocks by whether or not predecessor information gets invalidated?
-
-                // TODO: When analyzing the block, reset the current cache to use the set of all predecessors
                 let mut block_cache: HashMap<Key, InsnId>  = HashMap::new();
                 // Populate the block cache with information from predecessors
                 // If all predecessors contain the same entry and the value aligns, add it to the map
                 // TODO: Do a clean up pass to remove all the alias information
-                // TODO: Compute the dominance path given block invalidations
-                // This will give us a subset of the dominators. All such blocks that dominate and do not invalidate also can populate the cache
-                // TODO: Figure out if we are missing some "middle" section between
-                // 1. dominators that don't invalidate
-                // 2. information from predecessors.
-                // There's an inductive argument that needs to be checked. Can we consider *only* immediate predecessors and ensure this provides all prior predecessor information?
-                // I think that, starting from RPO and using fixpoints, the answer is yes. But at the same time, it seems like this should have accounted for the dominator case?
-                // Too much thinking for now, will need to try again later tonight or tomorrow.
                 match cfi.predecessors(block_id) {
                     [] => {},
                     [head] => {
@@ -6728,13 +6709,7 @@ impl Function {
                                 continue
                             }
                             // TODO(Jacob): Add TBAA to avoid removing so many entries
-                            block_cache.retain(|key, _| {
-                                let not_equal = key.offset != offset;
-                                if not_equal {
-                                    invalidates[block_id.0 as usize] |= true;
-                                }
-                                not_equal
-                            });
+                            block_cache.retain(|key, _| key.offset != offset);
                             block_cache.insert(key, val);
                             insn_id
                         },
@@ -6775,13 +6750,7 @@ impl Function {
                             // This special casing in this pass here should be removed once we refine our effects system to provide greater granularity for WriteBarrier.
                             // TODO: use TBAA
                             let offset = RUBY_OFFSET_RBASIC_FLAGS;
-                            block_cache.retain(|key, _| {
-                                let not_equal = key.offset != offset;
-                                if not_equal {
-                                    invalidates[block_id.0 as usize] |= true;
-                                }
-                                not_equal
-                            });
+                            block_cache.retain(|key, _| key.offset != offset);
                             insn_id
                         },
                         insn @ &Insn::Jump(_) | insn @ &Insn::CondBranch { .. } => {
@@ -6795,9 +6764,17 @@ impl Function {
                             insn_id
                         }
                         insn => {
+                            // Check for back edges
+                            // We can avoid doing this in WriteBarrier, LoadField, and StoreField cases because these instructions do not have outgoing edges.
+                            // The basic block definition requires that outgoing edges come from the terminator of the block.
+                            // This check could be sped up if we only checked the final instruction rather than all non WriteBarrier, LoadField, and StoreField instructions.
+                            for edge in insn.outgoing_edges() {
+                                if rpo_order[edge.target] <= rpo_index {
+                                    has_back_edge |= true;
+                                }
+                            }
                             // If an instruction affects memory and we haven't modeled it, the compile_time_heap is invalidated
                             if insn.effects_of().includes(Effect::write(abstract_heaps::Memory)) {
-                                invalidates[block_id.0 as usize] |= true;
                                 block_cache.clear();
                             }
                             insn_id
