@@ -1717,6 +1717,16 @@ macro_rules! for_each_operand_impl {
     };
 }
 
+macro_rules! edges_of {
+    ($insn:expr) => {
+        match $insn {
+            Insn::Jump(edge) => [Some(edge), None],
+            Insn::CondBranch { if_true, if_false, .. } => [Some(if_true), Some(if_false)],
+            _ => [None, None],
+        }.into_iter().flatten()
+    };
+}
+
 impl Insn {
     /// Not every instruction returns a value. Return true if the instruction does and false otherwise.
     pub fn has_output(&self) -> bool {
@@ -2012,6 +2022,14 @@ impl Insn {
             => false,
             _ => true,
         }
+    }
+
+    fn outgoing_edges(&self) -> impl Iterator<Item = &BranchEdge> {
+        edges_of!(self)
+    }
+
+    fn outgoing_edges_mut(&mut self) -> impl Iterator<Item = &mut BranchEdge> + '_ {
+        edges_of!(self)
     }
 }
 
@@ -2570,6 +2588,10 @@ impl Block {
     /// Return an iterator over insns
     pub fn insns(&self) -> Iter<'_, InsnId> {
         self.insns.iter()
+    }
+
+    pub fn terminator(&self) -> &InsnId {
+        self.insns().last().unwrap()
     }
 }
 
@@ -6516,33 +6538,6 @@ impl Function {
             })
         }
 
-        fn block_terminator(fun: &Function, block_id: BlockId) -> InsnId {
-            *fun.blocks[block_id].insns().last().unwrap()
-        }
-
-        // The extra `&`/`&mut` tokens borrow the boxed CondBranchHasType payload's edges with the
-        // same mutability as the match ergonomics give the other arms' bindings.
-        macro_rules! edges_of {
-            ($insn:expr, $($borrow:tt)+) => {
-                match $insn {
-                    Insn::Jump(edge) => [Some(edge), None],
-                    Insn::CondBranch { if_true, if_false, .. } => [Some(if_true), Some(if_false)],
-                    Insn::CondBranchHasType(insn) => [Some($($borrow)+ insn.if_true), Some($($borrow)+ insn.if_false)],
-                    _ => [None, None],
-                }.into_iter().flatten()
-            };
-        }
-
-        fn outgoing_edges(fun: &Function, block_id: BlockId) -> impl Iterator<Item = &BranchEdge> {
-            let insn_id = block_terminator(fun, block_id);
-            edges_of!(&fun.insns[insn_id], &)
-        }
-
-        fn outgoing_edges_mut(fun: &mut Function, block_id: BlockId) -> impl Iterator<Item = &mut BranchEdge> {
-            let insn_id = block_terminator(fun, block_id);
-            edges_of!(&mut fun.insns[insn_id], &mut)
-        }
-
         // Instantiate the domain for abstract interpretation.
         // We store possible param values for each block
         let mut param_values: Vec<Vec<ParamValue>> = self.blocks.iter().map(|block| vec![ParamValue::None; block.params.len()]).collect();
@@ -6552,7 +6547,7 @@ impl Function {
         // Collect blocks that terminate with Jump or CondBranch instructions that pass at least one block param along.
         let blocks_sending_params: Vec<BlockId> = blocks.iter().copied()
             .filter(|&block_id|
-                outgoing_edges(self, block_id).any(|edge| !edge.args.is_empty()))
+                self.resolve(*self.blocks[block_id].terminator()).insn(self).outgoing_edges().any(|edge| !edge.args.is_empty()))
             .collect();
 
         // We only need to update blocks that have params. (Blocks without params cannot be improved)
@@ -6581,17 +6576,18 @@ impl Function {
             }
 
             // Scan through each jump, collecting edges with params to analyze from CondBranch and Jump insns.
-            for block_id in &blocks_sending_params {
+            for &block_id in &blocks_sending_params {
                 // Use the results of abstract interpretation to update the states
                 // Perform abstract interpretation
-                for BranchEdge { target: block_id, args: params } in outgoing_edges(self, *block_id) {
+                let edges = self.resolve(*self.blocks[block_id].terminator()).insn(self).outgoing_edges();
+                for BranchEdge { target: target_block_id, args: params } in edges {
                     for (i, param) in params.iter().enumerate() {
                         let param = self.find_id(*param);
                         // If the param is the same as passed into the block, it is a self loop and provides no new predecessor information.
-                        if param == self.find_id(self.blocks[*block_id].params[i]) {
+                        if param == self.find_id(self.blocks[*target_block_id].params[i]) {
                             continue
                         }
-                        param_values[*block_id][i].update(param);
+                        param_values[*target_block_id][i].update(param);
                     }
                 }
             }
@@ -6634,7 +6630,8 @@ impl Function {
 
                 // Update the terminators (basic blocks can only branch at the terminator. This is where block params are passed)
                 for jump_block_id in &blocks_sending_params {
-                    for edge in outgoing_edges_mut(self, *jump_block_id) {
+                    let edges = self.resolve(*self.blocks[*jump_block_id].terminator()).insn_mut(self).outgoing_edges_mut();
+                    for edge in edges {
                         if edge.target == *block_id {
                             prune_vec_by_indices(&mut edge.args, &trivial_indices);
                         }
@@ -6677,16 +6674,13 @@ impl Function {
 
         // Invalidations mark each block with a bool that is true any time our alias analysis changes anything or an effectul instruction occurs.
         let mut invalidates: Vec<bool> = vec![false; cfi.num_blocks];
-        let mut has_back_edge = true;
+        let mut has_back_edge = false;
 
         // IDEA: It would be really cool to have a macro that took a loop body with custom code that only gets executed on the first pass
         // We often want to construct analysis information the first time and use it without modification for each subsequent loop. But having two loops containing all the logic is really gross.
 
         loop {
-            for &block_id in rpo {
-                // TODO: Make sure our "changed" analysis makes sense. It seems we don't actually need to worry about this when a block prunes away unnecessary instructions,
-                // but rather when our cache at the end of the block is different than when we started
-                changed = false;
+            for (rpo_index, &block_id) in rpo.iter().enumerate() {
                 // TODO: Prefill cache with information from predecessor blocks
                 //
                 // TODO: Add backedge check throughout during the pass
@@ -6731,7 +6725,6 @@ impl Function {
                             // TODO(Jacob): Switch from actual to partial equality
                             if Some(val) == heap_entry {
                                 // If the value is already stored, short circuit and don't add an instruction to the block
-                                changed = true;
                                 continue
                             }
                             // TODO(Jacob): Add TBAA to avoid removing so many entries
@@ -6765,7 +6758,6 @@ impl Function {
                                         // If the value is stored already, we should short circuit.
                                         // However, we need to replace insn_id with its representative in the SSA union.
                                         self.make_equal_to(insn_id, cached_insn);
-                                        changed = true;
                                         continue
                                     }
                                 }
@@ -6792,6 +6784,16 @@ impl Function {
                             });
                             insn_id
                         },
+                        insn @ &Insn::Jump(_) | insn @ &Insn::CondBranch { .. } => {
+                            // Check for back edges
+                            // We know that Jump and CondBranch don't write the Memory effect so we don't need to catch them in the "all other cases besides load, store, and write barrier" case
+                            for edge in insn.outgoing_edges() {
+                                if rpo_order[edge.target] <= rpo_index {
+                                    has_back_edge |= true;
+                                }
+                            }
+                            insn_id
+                        }
                         insn => {
                             // If an instruction affects memory and we haven't modeled it, the compile_time_heap is invalidated
                             if insn.effects_of().includes(Effect::write(abstract_heaps::Memory)) {
@@ -6804,7 +6806,12 @@ impl Function {
                     new_insns.push(replacement_insn);
                 }
                 self.blocks[block_id].insns = new_insns;
-                cache[block_id] = block_cache.clone();
+                if cache[block_id] == block_cache {
+                    changed = false;
+                }
+                else {
+                    cache[block_id] = block_cache.clone();
+                }
             }
 
             if !(changed && has_back_edge) {
