@@ -4054,19 +4054,23 @@ impl Function {
     }
 
     /// Materialize a validated SendDirect call in the selected runtime path.
-    fn emit_send_direct_args(&mut self, block: BlockId, call: SendDirectCall, original_args: &[InsnId], state: InsnId) -> SendDirectArgs {
+    ///
+    /// `send_frame_state` is the frame state the SendDirect uses, which strips a profiled-nil block arg from the stack.
+    /// `exit_state` is the pre-send frame state (block arg still on the stack). Any guard that side-exits before the call
+    /// re-executes the `send` in the interpreter, so it must reconstruct the stack with the block arg present.
+    fn emit_send_direct_args(&mut self, block: BlockId, call: SendDirectCall, original_args: &[InsnId], send_frame_state: InsnId, exit_state: InsnId) -> SendDirectArgs {
         let args: Vec<_> = call
             .args
             .into_iter()
-            .map(|arg| self.emit_send_direct_arg(block, arg, state))
+            .map(|arg| self.emit_send_direct_arg(block, arg, exit_state))
             .collect();
 
         // If args were reordered or synthesized, create a new snapshot with the updated stack.
         let send_state = if args != original_args {
-            let new_state = self.frame_state(state).with_replaced_args(&args, original_args.len());
+            let new_state = self.frame_state(send_frame_state).with_replaced_args(&args, original_args.len());
             self.push_insn(block, Insn::Snapshot { state: Box::new(new_state) })
         } else {
-            state
+            send_frame_state
         };
 
         SendDirectArgs {
@@ -4952,7 +4956,7 @@ impl Function {
                             }
 
                             let SendDirectArgs { state: send_state, args: send_args, kw_bits, jit_entry_idx } =
-                                self.emit_send_direct_args(block, call, &args, send_frame_state);
+                                self.emit_send_direct_args(block, call, &args, send_frame_state, state);
                             let replacement = self.try_inline_send_direct(block, Insn::SendDirect(Box::new(SendDirectData { recv, cd, cme, iseq, args: send_args, kw_bits, jit_entry_idx, state: send_state, block: send_block })));
                             self.make_equal_to(insn_id, replacement);
                         } else if !has_block && def_type == VM_METHOD_TYPE_BMETHOD {
@@ -4993,7 +4997,7 @@ impl Function {
                             }
 
                             let SendDirectArgs { state: send_state, args: send_args, kw_bits, jit_entry_idx } =
-                                self.emit_send_direct_args(block, call, &args, send_frame_state);
+                                self.emit_send_direct_args(block, call, &args, send_frame_state, state);
                             let replacement = self.try_inline_send_direct(block, Insn::SendDirect(Box::new(SendDirectData { recv, cd, cme, iseq, args: send_args, kw_bits, jit_entry_idx, state: send_state, block: None })));
                             self.make_equal_to(insn_id, replacement);
                         } else if !has_block && def_type == VM_METHOD_TYPE_IVAR && args.is_empty() {
@@ -5513,7 +5517,7 @@ impl Function {
                             emit_super_call_guards(self, block, super_cme, current_cme, mid, state, frame_state_iseq);
 
                             let SendDirectArgs { state: send_state, args: send_args, kw_bits, jit_entry_idx } =
-                                self.emit_send_direct_args(block, call, &args, state);
+                                self.emit_send_direct_args(block, call, &args, state, state);
                             // Use SendDirect with the super method's CME and ISEQ.
                             let replacement = self.try_inline_send_direct(block, Insn::SendDirect(Box::new(SendDirectData {
                                 recv,
