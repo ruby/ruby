@@ -5972,14 +5972,22 @@ rb_file_s_path(VALUE klass, VALUE fname)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     File.split(file_name)   -> array
+ *    File.split(string) -> array_of_strings
  *
- *  Splits the given string into a directory and a file component and
- *  returns them in a two-element array. See also File::dirname and
- *  File::basename.
+ *  Returns a 2-element array of strings containing the ::dirname and ::basename
+ *  of the the given `string`:
  *
- *     File.split("/home/gumby/.profile")   #=> ["/home/gumby", ".profile"]
+ *  ```ruby
+ *  File.split('doc/maintainers.md') # => ["doc", "maintainers.md"]
+ *  File.split('doc/')               # => [".", "doc"]
+ *  File.split('README.md')          # => [".", "README.md"]
+ *  File.split('/tmp/nosuch')        # => ["/tmp", "nosuch"]
+ *  File.split('@@##$$/%%^^&&')      # => ["@@#\#$$", "%%^^&&"]
+ *  ```
+ *
  */
 
 static VALUE

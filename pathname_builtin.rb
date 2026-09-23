@@ -2193,15 +2193,17 @@ class Pathname    # * File *
   # :markup: markdown
   #
   # call-seq:
-  #   split -> array
+  #   split -> array_of_pathnames
   #
-  # Returns a 2-element array containing #dirname and #basename:
+  # Returns a 2-element array of pathnames containing the #dirname and #basename
+  # of the path in `self`:
   #
   # ```ruby
-  # Pathname('lib/pathname.rb').split # => [#<Pathname:lib>, #<Pathname:pathname.rb>]
-  # Pathname('README.md').split       # => [#<Pathname:.>, #<Pathname:README.md>]
-  # Pathname('').split                # => [#<Pathname:.>, #<Pathname:>]
-  # Pathname('nosuch/foo/bar').split  # => [#<Pathname:nosuch/foo>, #<Pathname:bar>]
+  # Pathname('doc/maintainers.md').split # => [#<Pathname:doc>, #<Pathname:maintainers.md>]
+  # Pathname('doc/').split               # => [#<Pathname:.>, #<Pathname:doc>]
+  # Pathname('README.md').split          # => [#<Pathname:.>, #<Pathname:README.md>]
+  # Pathname('/tmp/nosuch').split        # => [#<Pathname:/tmp>, #<Pathname:nosuch>]
+  # Pathname('@@##$$/%%^^&&').split      # => [#<Pathname:@@##$$>, #<Pathname:%%^^&&>]
   # ```
   #
   def split()
