@@ -45,6 +45,12 @@ Note: We're only listing outstanding class updates.
       offset to a byte boundary or to the ABI alignment of another
       directive. [[Feature #22185]]
 
+* Dir
+
+    * `Dir.glob` supports `***/` for recursive matching that follows
+      directory symbolic links, stopping at links to ancestor directories.
+      [[Feature #17548]]
+
 * ENV
 
     * `ENV.fetch_values` is added. It returns an array of values for the
@@ -482,6 +488,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #8948]: https://bugs.ruby-lang.org/issues/8948
 [Feature #9779]: https://bugs.ruby-lang.org/issues/9779
 [Feature #15330]: https://bugs.ruby-lang.org/issues/15330
+[Feature #17548]: https://bugs.ruby-lang.org/issues/17548
 [Feature #20163]: https://bugs.ruby-lang.org/issues/20163
 [Feature #21390]: https://bugs.ruby-lang.org/issues/21390
 [Feature #21768]: https://bugs.ruby-lang.org/issues/21768
