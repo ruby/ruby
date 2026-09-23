@@ -4902,7 +4902,7 @@ impl Function {
                                         });
                                     }
                                     // Strip nil block arg and treat as no block
-                                    args.pop();
+                                    args = args[..args.len() - 1].to_vec();
                                     send_block = None;
                                     has_block = false;
                                     stripped_block_arg = true;
@@ -4918,7 +4918,7 @@ impl Function {
                                         Type::from_profiled_type(block_arg_profiled_type.unwrap()),
                                         state, Recompile,
                                     );
-                                    args.pop();
+                                    _ = args.pop();
                                     send_block = Some(BlockHandler::BlockArgProc(guarded));
                                     stripped_block_arg = true;
                                     let new_state = self.frame_state(state).with_replaced_args(&args, original_argc);
