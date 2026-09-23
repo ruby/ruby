@@ -1833,6 +1833,33 @@ class TestArray < Test::Unit::TestCase
     assert_equal([100], a.slice(-1, 1_000_000_000))
   end
 
+  def test_slice_shrinking_array_by_to_int
+    bug22325 = '[Bug #22325]'
+    cls = Class.new(Numeric) do
+      attr_reader :val
+      def initialize(ary, val)
+        @ary = ary
+        @val = val
+      end
+      def <=>(other)
+        val <=> (other.is_a?(self.class) ? other.val : other)
+      end
+      def to_int
+        @ary.clear
+        val
+      end
+      def coerce(other)
+        [other, val]
+      end
+    end
+
+    ary = @cls[*(1..100).to_a]
+    assert_equal([], ary[Range.new(cls.new(ary, 50), cls.new(ary, 60))], bug22325)
+
+    ary.replace((1..100).to_a)
+    assert_equal([], ary[Range.new(cls.new(ary, 50), cls.new(ary, 60)).step(2)], bug22325)
+  end
+
   def test_slice_gc_compact_stress
     EnvUtil.under_gc_compact_stress { assert_equal([1, 2, 3, 4, 5], (0..10).to_a[1, 5]) }
     EnvUtil.under_gc_compact_stress do
@@ -2604,6 +2631,17 @@ class TestArray < Test::Unit::TestCase
 
     bug3708 = '[ruby-dev:42067]'
     assert_equal(b, @cls[0, 1, 2, 3, 4][1, 4].permutation.to_a, bug3708)
+  end
+
+  def test_permutation_array_modified
+    ary = @cls[*(1..1000)]
+    cls = @cls
+    obj = Object.new
+    obj.define_singleton_method(:to_int) do
+      ary.replace(cls[1, 2])
+      2
+    end
+    assert_equal(@cls[[1, 2], [2, 1]], ary.permutation(obj).to_a)
   end
 
   def test_permutation_stack_error

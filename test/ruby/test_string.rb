@@ -3013,6 +3013,18 @@ CODE
     assert_equal(expected, actual)
   end
 
+  def test_tr_hash_modify
+    replacements = {}
+    obj = Object.new
+    obj.define_singleton_method(:to_str) do
+      replacements.clear
+      "a"
+    end
+    replacements[obj] = "x"
+    ("b".."z").each { |c| replacements[c] = (c.ord + 1).chr }
+    assert_equal(S("xb"), S("ab").tr(replacements))
+  end
+
   def test_tr!
     a = S("hello")
     b = a.dup
@@ -3411,6 +3423,17 @@ CODE
     s = S("A").force_encoding(Encoding::UTF_16LE)
     sep = S("A\x00").force_encoding(s.encoding)
     assert_equal(["", "", s], s.rpartition(sep))
+  end
+
+  def test_rpartition_string_modified
+    str = S("héllo" * 1000)
+    replacement = S("hé")
+    obj = Object.new
+    obj.define_singleton_method(:to_str) do
+      str.replace(replacement)
+      "-"
+    end
+    assert_equal([S(""), S(""), replacement], str.rpartition(obj))
   end
 
   def test_rs
@@ -4230,6 +4253,16 @@ CODE
     assert !1000.times.any? {s.byteindex("", 100_000_000)}
   end
 
+  def test_byteindex_modify_source
+    s = S("héllo" * 1000)
+    obj = Object.new
+    obj.define_singleton_method(:to_int) do
+      s.replace("é" * 50)
+      4500
+    end
+    assert_nil(s.byteindex("l", obj))
+  end
+
   def test_byterindex
     assert_byterindex(3, S("hello"), ?l)
     assert_byterindex(6, S("ell, hello"), S("ell"))
@@ -4282,6 +4315,16 @@ CODE
     assert_byterindex(nil, S("こんにち"), S("こんにちは"))
     assert_byterindex(nil, S("こ"), S("こんにちは"))
     assert_byterindex(nil, S(""), S("こんにちは"))
+  end
+
+  def test_byterindex_modify_source
+    s = S("héllo" * 1000)
+    obj = Object.new
+    obj.define_singleton_method(:to_int) do
+      s.replace("é" * 50)
+      4500
+    end
+    assert_nil(s.byterindex("l", obj))
   end
 
   def test_bytesplice

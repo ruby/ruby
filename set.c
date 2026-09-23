@@ -419,6 +419,12 @@ set_s_alloc(VALUE klass)
     return set_alloc_with_size(klass, 0);
 }
 
+bool
+rb_set_p(VALUE obj)
+{
+    return rb_typeddata_is_instance_of(obj, &set_data_type);
+}
+
 /*
  *  call-seq:
  *    Set[*objects] -> new_set

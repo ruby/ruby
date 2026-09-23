@@ -2,7 +2,7 @@
 name = "mmtk_ruby"
 version = "0.1.0"
 authors = []
-edition = "2021"
+edition = "2024"
 
 [lib]
 name = "mmtk_ruby"
