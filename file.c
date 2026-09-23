@@ -2328,7 +2328,7 @@ rb_file_file_p(VALUE obj, VALUE fname)
  *    dir = Dir.mkdir(dirpath)
  *    # The directory size is filesystem-dependent;
  *    # for a directory with no children, may or may not be zero.
- *    File.size?(dirpath)        # => 4096
+ *    File.size(dirpath)         # => 4096
  *    File.empty?(dirpath)       # => false
  *
  * The given +object+ may be the path to a file (possibly non-existent):
@@ -2338,7 +2338,7 @@ rb_file_file_p(VALUE obj, VALUE fname)
  *    File.write(filepath, '')
  *    File.size(filepath)        # => 0
  *    File.empty?(filepath)      # => true   # File exists; size zero.
- *    File.size?(dirpath)        # => 4096
+ *    File.size(dirpath)         # => 4096
  *    File.empty?(dirpath)       # => false
  *    File.write(filepath, 'bar')
  *    File.size(filepath)        # => 3
@@ -2361,13 +2361,32 @@ rb_file_zero_p(VALUE obj, VALUE fname)
 }
 
 /*
+ * :markup: markdown
+ *
  * call-seq:
- *    File.size?(file_name)   -> Integer or nil
+ *   File.size?(object) -> integer or nil
  *
- * Returns +nil+ if +file_name+ doesn't exist or has zero size, the size of the
- * file otherwise.
+ * Returns the size in bytes of the given `object`
+ * if the entry exists and has non-zero size, `nil` otherwise;
+ * the `object` may be a path or an IO object:
  *
- * _file_name_ can be an IO object.
+ * ```ruby
+ * # Regular file.
+ * path = '/tmp/t.tmp'
+ * File.write(path, 'foo')
+ * File.size?(path)   # => 3    # Non-zero size.
+ * File.write(path, '')
+ * File.size?(path)   # => nil  # Zero size.
+ * File.delete(path)            # Clean up.
+ * File.size?(path)   # => nil  # Non-existent.
+ * # Directory.
+ * path = '/tmp/foo/'
+ * Dir.mkdir(path)
+ * File.size?(path)   # => 4096 # Non-zero size.
+ * Dir.rmdir(path)              # Clean up.
+ * File.size?(path)   # => nil  # Non-existent.
+ * ```
+ *
  */
 
 static VALUE
@@ -7292,14 +7311,27 @@ rb_stat_z(VALUE obj)
 }
 
 /*
- *  call-seq:
- *     stat.size?    -> Integer or nil
+ * :markup: markdown
  *
- *  Returns +nil+ if <i>stat</i> is a zero-length file, the size of
- *  the file otherwise.
+ * call-seq:
+ *    size? -> integer or nil
  *
- *     File.stat("testfile").size?   #=> 66
- *     File.stat(File::NULL).size?   #=> nil
+ * Returns the size in bytes of the entry in `self`
+ * if the entry exists and has non-zero size, `nil` otherwise:
+ *
+ * ```ruby
+ * path = '/tmp/t.tmp'
+ * File.write(path, 'foo')
+ * File.size(path)        # => 3
+ * stat = File.stat(path)           # Take snapshot.
+ * stat.size?             # => 3    # Non-zero size.
+ * File.write(path, '')
+ * File.size(path)        # => 0
+ * stat.size?             # => 3    # Snapshot unchanged.
+ * stat = File.stat(path)           # Take new snapshot.
+ * stat.size?             # => nil  # Zero size
+ * File.delete(path)                # Clean up.
+ * ```
  *
  */
 

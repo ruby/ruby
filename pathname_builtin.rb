@@ -2643,15 +2643,11 @@ class Pathname    # * FileTest *
   # call-seq:
   #   size -> integer
   #
-  # Returns the size of the entry at the path in `self`:
+  # Returns the size in bytes of the entry at the path in `self`:
   #
   # ```ruby
-  # Pathname('README.md').size # => 3469
-  # Pathname('doc').size       # => 4096
-  # pn = Pathname('doc/t.tmp')
-  # pn.write('')
-  # pn.size                    # => 0
-  # pd.delete                  # Clean up.
+  # Pathname('doc/maintainers.md').size # => 14900  # Regular file.
+  # Pathname('doc/syntax/').size        # => 4096   # Directory.
   # ```
   #
   # Raises an exception if the entry does not exist.
@@ -2663,22 +2659,24 @@ class Pathname    # * FileTest *
   # call-seq:
   #   size? -> integer or nil
   #
-  # If the file or directory entry at the path in `self` exists,
-  # returns its size if non-zero, or `nil` if zero:
+  # Returns the size in bytes of the entry at the path in `self`
+  # if the entry exists and has non-zero size, `nil` otherwise:
   #
   # ```ruby
-  # pn = Pathname('doc/t.tmp')
+  # # Regular file.
+  # pn = Pathname('/tmp/t.tmp')
   # pn.write('foo')
-  # pn.size? # => 3
+  # pn.size? # => 3     # Non-zero size.
   # pn.write('')
-  # pn.size? # => nil
-  # ```
-  #
-  # Returns `nil` if the entry does not exist:
-  #
-  # ```ruby
-  # pn.delete
-  # pn.size? # => nil
+  # pn.size? # => nil   # Zero size.
+  # pn.delete           # Clean up.
+  # pn.size? # => nil   # Non-existent.
+  # # Directory.
+  # pn = Pathname('/tmp/foo/')
+  # pn.mkdir
+  # pn.size? # => 4096  # Non-zero size.
+  # pn.delete           # Clean up.
+  # pn.size? # => nil   # Non-existent.
   # ```
   #
   def size?() FileTest.size?(@path) end
