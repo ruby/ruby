@@ -135,6 +135,9 @@ struct rb_ractor_struct {
     struct rb_id_table *idkey_local_storage;
     VALUE local_storage_store_lock;
 
+    /* Courier walks borrow this cached empty seen-table. */
+    st_table *courier_scratch;
+
     /* 0 until first use: rb_ractor_stdin and friends build them lazily, with plain
      * stores (rooted via ractor_mark_unshareable_parts; a write barrier on the
      * shareable wrapper would shref-pin them). */

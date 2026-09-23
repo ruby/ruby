@@ -407,6 +407,30 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+  def test_sending_from_dump_hook_during_build
+    # The hook's own send runs while the outer build is still walking.
+    assert_ractor(<<~'RUBY')
+      class SendingTime < Time
+        def _dump(limit)
+          port = Ractor::Port.new
+          port.send([+"inner", { +"k" => [+"v"] }])
+          raise "inner copy" unless port.receive == [+"inner", { +"k" => [+"v"] }]
+          super
+        end
+      end
+      s = +"shared"
+      msg = [s, SendingTime.at(1), s, SendingTime.at(2), [s]]
+      port = Ractor::Port.new
+      3.times do
+        port.send(msg)
+        copy = port.receive
+        assert_equal [1, 2], [copy[1].to_i, copy[3].to_i]
+        assert_same copy[0], copy[2]
+        assert_same copy[0], copy[4][0]
+      end
+    RUBY
+  end
+
   def test_move_nested_hash_during_gc_with_yjit
     assert_ractor(<<~'RUBY', timeout: 20, args: [{ "RUBY_YJIT_ENABLE" => "1" }])
       GC.stress = true
