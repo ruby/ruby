@@ -12,7 +12,7 @@ use std::{
     cell::RefCell, collections::{HashMap, HashSet, VecDeque}, ffi::{c_void, c_uint, c_int, CStr}, fmt::Display, ptr, slice::Iter,
     sync::atomic::Ordering,
 };
-use crate::hir_type::{Type, types};
+use crate::hir_type::{Specialization, Type, types};
 use crate::hir_effect::{Effect, abstract_heaps, effects};
 use crate::bitset::BitSet;
 use crate::profile::{ProfiledType, SplatLength, TypeDistributionSummary};
@@ -6853,15 +6853,33 @@ impl Function {
         //
         // This would require 1) fixpointing, 2) worklist, or 3) (slightly less powerful) calling a
         // function-level infer_types after each pruned branch.
-        for block in self.reverse_post_order() {
+        let rpo = self.reverse_post_order();
+        // Keep track of reachable blocks to avoid folding unreachable blocks, which may have
+        // a load behind a guard that always fails and is unsafe to fold.
+        let mut reachable = BlockSet::with_capacity(self.blocks.len());
+        if let Some(&start) = rpo.first() {
+            reachable.insert(start);
+        }
+        for block in rpo {
+            if !reachable.get(block) {
+                continue;
+            }
             let old_insns = std::mem::take(&mut self.blocks[block].insns);
             let mut new_insns = Vec::with_capacity(old_insns.len());
             for insn_id in old_insns {
                 let replacement_id = match self.resolve(insn_id).insn(self) {
-                    &Insn::GuardType { val, guard_type, .. } if self.is_a(val, guard_type) => {
-                        self.make_equal_to(insn_id, val);
-                        // Don't bother re-inferring the type of val; we already know it.
-                        continue;
+                    &Insn::GuardType { val, guard_type, state, recompile } => {
+                        let val_type = self.type_of(val);
+                        if val_type.is_subtype(guard_type) {
+                            self.make_equal_to(insn_id, val);
+                            // Don't bother re-inferring the type of val; we already know it.
+                            continue;
+                        } else if !val_type.could_be(guard_type) {
+                            // The guard can never pass, so the rest of the block is unreachable.
+                            self.new_insn(Insn::SideExit { state, reason: Box::new(SideExitReason::GuardType(guard_type)), recompile })
+                        } else {
+                            insn_id
+                        }
                     }
                     &Insn::RefineType { val, new_type, .. } if self.is_a(val, new_type) => {
                         self.make_equal_to(insn_id, val);
@@ -6938,13 +6956,36 @@ impl Function {
                             _ => insn_id,
                         }
                     },
-                    &Insn::GuardBitEquals { val, expected, .. } => {
-                        let recv_type = self.type_of(val);
-                        if recv_type.has_value(expected) {
+                    &Insn::GuardBitEquals { val, expected, state, ref reason, recompile } => {
+                        let val_type = self.type_of(val);
+                        if val_type.has_value(expected) {
                             self.make_equal_to(insn_id, val);
                             continue;
+                        } else if !val_type.could_be(Type::from_const(expected)) {
+                            // The guard can never pass, so the rest of the block is unreachable.
+                            self.new_insn(Insn::SideExit { state, reason: reason.clone(), recompile })
                         } else {
                             insn_id
+                        }
+                    }
+                    &Insn::IsBitEqual { left, right } => {
+                        let left_type = self.type_of(left);
+                        let right_type = self.type_of(right);
+                        let result = match (left_type.ruby_object(), right_type.ruby_object()) {
+                            (Some(left_obj), Some(right_obj)) => Some(left_obj == right_obj),
+                            // Two Ruby objects of disjoint types are distinct objects.
+                            _ if left_type.is_subtype(types::RubyValue) && right_type.is_subtype(types::RubyValue)
+                                && !left_type.could_be(right_type) => Some(false),
+                            // C integers of different types, e.g. CInt64 and CUInt64, can still have equal bits.
+                            _ => match (left_type.spec(), right_type.spec()) {
+                                (Specialization::Int(left_int), Specialization::Int(right_int))
+                                    if left_type.unspecialized().bit_equal(right_type.unspecialized()) => Some(left_int == right_int),
+                                _ => None,
+                            }
+                        };
+                        match result {
+                            Some(result) => self.new_insn(Insn::Const { val: Const::CBool(result) }),
+                            None => insn_id,
                         }
                     }
                     &Insn::IsA { val, class } => 'is_a: {
@@ -7209,6 +7250,10 @@ impl Function {
                 }
             }
             self.blocks[block].insns = new_insns;
+            let successors: Vec<BlockId> = self.successors(block).collect();
+            for successor in successors {
+                reachable.insert(successor);
+            }
         }
     }
 
