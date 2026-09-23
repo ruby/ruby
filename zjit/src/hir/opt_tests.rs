@@ -8062,9 +8062,8 @@ mod hir_opt_tests {
           v16:NilClass = Const Value(nil)
           Jump bb4(v16)
         bb6():
-          v18:CShape = LoadField v10, :shape_id@0x1000
           v19:CShape[0x1002] = Const CShape(0x1002)
-          v20:CBool = IsBitEqual v18, v19
+          v20:CBool = IsBitEqual v12, v19
           CondBranch v20, bb7(), bb8()
         bb7():
           v22:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
@@ -8100,7 +8099,7 @@ mod hir_opt_tests {
             obj.test
             TEST = C.instance_method(:test)
         ");
-        assert_snapshot!(hir_string_proc("TEST"), @r"
+        assert_snapshot!(hir_string_proc("TEST"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -8120,9 +8119,8 @@ mod hir_opt_tests {
           v16:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           Jump bb4(v16)
         bb6():
-          v18:CShape = LoadField v10, :shape_id@0x1000
           v19:CShape[0x1010] = Const CShape(0x1010)
-          v20:CBool = IsBitEqual v18, v19
+          v20:CBool = IsBitEqual v12, v19
           CondBranch v20, bb7(), bb8()
         bb7():
           v22:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
@@ -8139,9 +8137,8 @@ mod hir_opt_tests {
           v33:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           Jump bb9(v33)
         bb11():
-          v35:CShape = LoadField v10, :shape_id@0x1000
           v36:CShape[0x1010] = Const CShape(0x1010)
-          v37:CBool = IsBitEqual v35, v36
+          v37:CBool = IsBitEqual v29, v36
           CondBranch v37, bb12(), bb13()
         bb12():
           v39:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
@@ -10867,9 +10864,8 @@ mod hir_opt_tests {
           v16:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           Jump bb4(v16)
         bb6():
-          v18:CShape = LoadField v6, :shape_id@0x1000
           v19:CShape[0x1010] = Const CShape(0x1010)
-          v20:CBool = IsBitEqual v18, v19
+          v20:CBool = IsBitEqual v12, v19
           CondBranch v20, bb7(), bb8()
         bb7():
           v22:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
@@ -23238,8 +23234,7 @@ mod hir_opt_tests {
           CondBranch v57, bb5(v18), bb12()
         bb12():
           PatchPoint NoEPEscape(set_value_loop)
-          v66:CShape = LoadField v18, :shape_id@0x1038
-          v67:CShape[0x103b] = GuardBitEquals v66, CShape(0x103b) recompile
+          v67:CShape[0x103b] = GuardBitEquals v45, CShape(0x103b) recompile
           StoreField v18, :@levar@0x103a, v19
           v70:CShape[0x1039] = Const CShape(0x1039)
           StoreField v18, :shape_id@0x1038, v70
@@ -25659,6 +25654,15 @@ mod hir_opt_tests {
           v258:BoolExact = FixnumEq v256, v257
           Jump bb18(v258)
         bb18(v222:BoolExact):
+          v212:BasicObject = LoadField v85, :@y@0x108c
+          PatchPoint NoEPEscape(==)
+          PatchPoint NoSingletonClass(Point@0x1008)
+          PatchPoint MethodRedefined(Point@0x1008, y@0x1148, cme:0x1150)
+          PatchPoint MethodRedefined(Integer@0x1118, ==@0x1098, cme:0x1120)
+          v259:Fixnum = GuardType v212, Fixnum recompile
+          v261:BoolExact = FixnumEq v259, v49
+          Jump bb18(v261)
+        bb18(v224:BoolExact):
           PopInlineFrame
           CheckInterrupts
           Return v222
