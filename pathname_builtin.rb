@@ -2501,14 +2501,20 @@ class Pathname    # * FileTest *
   #
   # ```ruby
   # require 'socket'
-  # path = 'doc/socket'
-  # server = UNIXServer.new(path) # => #<UNIXServer:doc/socket>
-  # pn = Pathname(path)           # => #<Pathname:doc/socket>
-  # pn.socket?                    # => true
+  # sock_path = '/tmp/socket'
+  # sock_pn = Pathname(sock_path)
+  # sock_pn.exist?  # => false
+  # sock_pn.socket? # => false
+  # server = UNIXServer.new(sock_path)
+  # sock_pn.exist?  # => true
+  # sock_pn.socket? # => true
+  # # Clean up.
   # server.close
-  # pn.unlink
-  # Pathname('README.md').socket? # => false
-  # Pathname('nosuch').socket?    # => false
+  # sock_pn.delete
+  # file_path = '/etc/passwd'
+  # file_pn = Pathname(file_path)
+  # file_pn.file?   # => true
+  # file_pn.socket? # => false
   # ```
   #
   # Returns `false` on Windows.
