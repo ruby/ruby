@@ -14540,9 +14540,54 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(String@0x1008, <<@0x1010, cme:0x1018)
           v29:StringExact = GuardType v12, StringExact recompile
           v30:String = GuardType v13, String
-          v31:StringExact = StringAppend v29, v30
+          v31:CUInt64 = LoadField v29, :RBASIC_FLAGS@0x1040
+          v32:CUInt64 = LoadField v30, :RBASIC_FLAGS@0x1040
+          v33:StringExact = StringAppend v29, v30, recv_flags: v31, other_flags: v32
           CheckInterrupts
           Return v29
+        ");
+    }
+
+    #[test]
+    fn test_optimize_string_append_reuses_flags_load() {
+        eval(r#"
+            def test(s, t)
+              s.ascii_only?
+              s << t
+            end
+            test("iron", "fish")
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :s@0x1000
+          v4:BasicObject = LoadField v2, :t@0x1001
+          Jump bb3(v1, v3, v4)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :s@1
+          v9:BasicObject = LoadArg :t@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint NoSingletonClass(String@0x1008)
+          PatchPoint MethodRedefined(String@0x1008, ascii_only?@0x1010, cme:0x1018)
+          v35:StringExact = GuardType v12, StringExact recompile
+          v36:CUInt64 = LoadField v35, :RBASIC_FLAGS@0x1040
+          v37:CUInt64[3145728] = Const CUInt64(3145728)
+          v38:CInt64 = IntAnd v36, v37
+          v39:CInt64[1048576] = Const CInt64(1048576)
+          v40:CInt64 = GuardGreaterEq v38, v39
+          PatchPoint NoEPEscape(test)
+          PatchPoint MethodRedefined(String@0x1008, <<@0x1041, cme:0x1048)
+          v48:String = GuardType v13, String
+          v50:CUInt64 = LoadField v48, :RBASIC_FLAGS@0x1040
+          v51:StringExact = StringAppend v35, v48, recv_flags: v36, other_flags: v50
+          CheckInterrupts
+          Return v35
         ");
     }
 
@@ -14606,7 +14651,9 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(String@0x1008, <<@0x1010, cme:0x1018)
           v29:StringExact = GuardType v12, StringExact recompile
           v30:String = GuardType v13, String
-          v31:StringExact = StringAppend v29, v30
+          v31:CUInt64 = LoadField v29, :RBASIC_FLAGS@0x1040
+          v32:CUInt64 = LoadField v30, :RBASIC_FLAGS@0x1040
+          v33:StringExact = StringAppend v29, v30, recv_flags: v31, other_flags: v32
           CheckInterrupts
           Return v29
         ");
@@ -17059,8 +17106,8 @@ mod hir_opt_tests {
           v6:BasicObject = LoadArg :self@0
           Jump bb3(v6)
         bb3(v10:BasicObject):
-          v57:NilClass = Const Value(nil)
-          v56:NilClass = Const Value(nil)
+          v59:NilClass = Const Value(nil)
+          v58:NilClass = Const Value(nil)
           v16:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v17:StringExact = StringCopy v16
           v21:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
@@ -17069,13 +17116,15 @@ mod hir_opt_tests {
           v28:StringExact = StringCopy v27
           PatchPoint NoSingletonClass(String@0x1008)
           PatchPoint MethodRedefined(String@0x1008, <<@0x1010, cme:0x1018)
-          v50:StringExact = StringAppend v17, v28
+          v50:CUInt64 = LoadField v17, :RBASIC_FLAGS@0x1040
+          v51:CUInt64 = LoadField v28, :RBASIC_FLAGS@0x1040
+          v52:StringExact = StringAppend v17, v28, recv_flags: v50, other_flags: v51
           PatchPoint NoEPEscape(test)
           PatchPoint NoSingletonClass(String@0x1008)
-          PatchPoint MethodRedefined(String@0x1008, ==@0x1040, cme:0x1048)
-          v55:BoolExact = StringEqual v17, v22
+          PatchPoint MethodRedefined(String@0x1008, ==@0x1041, cme:0x1048)
+          v57:BoolExact = StringEqual v17, v22
           CheckInterrupts
-          Return v55
+          Return v57
         ");
     }
 

@@ -1017,7 +1017,8 @@ pub enum Insn {
     /// Call rb_str_byte_substr with known-Fixnum beg/len
     StringByteslice { string: InsnId, beg: InsnId, len: InsnId, state: InsnId },
     StringSetbyteFixnum { string: InsnId, index: InsnId, value: InsnId },
-    StringAppend { recv: InsnId, other: InsnId, state: InsnId },
+    /// Append `other` to `recv`. HIR loads both flags for load reuse. Codegen XORs the flags.
+    StringAppend { recv: InsnId, other: InsnId, recv_flags: InsnId, other_flags: InsnId, state: InsnId },
     StringAppendCodepoint { recv: InsnId, other: InsnId, state: InsnId },
     StringEqual { left: InsnId, right: InsnId },
 
@@ -1452,8 +1453,14 @@ macro_rules! for_each_operand_impl {
                 $visit_one!(*index);
                 $visit_one!(*value);
             }
-            Insn::StringAppend { recv, other, state }
-            | Insn::StringAppendCodepoint { recv, other, state } => {
+            Insn::StringAppend { recv, other, recv_flags, other_flags, state } => {
+                $visit_one!(*recv);
+                $visit_one!(*other);
+                $visit_one!(*recv_flags);
+                $visit_one!(*other_flags);
+                $visit_one!(*state);
+            }
+            Insn::StringAppendCodepoint { recv, other, state } => {
                 $visit_one!(*recv);
                 $visit_one!(*other);
                 $visit_one!(*state);
@@ -2180,8 +2187,8 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::StringSetbyteFixnum { string, index, value, .. } => {
                 write!(f, "StringSetbyteFixnum {string}, {index}, {value}")
             }
-            Insn::StringAppend { recv, other, .. } => {
-                write!(f, "StringAppend {recv}, {other}")
+            Insn::StringAppend { recv, other, recv_flags, other_flags, .. } => {
+                write!(f, "StringAppend {recv}, {other}, recv_flags: {recv_flags}, other_flags: {other_flags}")
             }
             Insn::StringAppendCodepoint { recv, other, .. } => {
                 write!(f, "StringAppendCodepoint {recv}, {other}")
@@ -8015,9 +8022,11 @@ impl Function {
             // Instructions with String operands
             Insn::StringCopy { val, .. } => self.assert_subtype(insn_id, val, types::StringExact),
             Insn::StringIntern { val, .. } => self.assert_subtype(insn_id, val, types::StringExact),
-            Insn::StringAppend { recv, other, .. } => {
+            Insn::StringAppend { recv, other, recv_flags, other_flags, .. } => {
                 self.assert_subtype(insn_id, recv, types::StringExact)?;
-                self.assert_subtype(insn_id, other, types::String)
+                self.assert_subtype(insn_id, other, types::String)?;
+                self.assert_subtype(insn_id, recv_flags, types::CUInt64)?;
+                self.assert_subtype(insn_id, other_flags, types::CUInt64)
             }
             Insn::StringAppendCodepoint { recv, other, .. } => {
                 self.assert_subtype(insn_id, recv, types::StringExact)?;
