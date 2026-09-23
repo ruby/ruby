@@ -259,6 +259,13 @@ class TestPack < Test::Unit::TestCase
     }
   end
 
+  def test_unpack_with_block_modifying_format
+    fmt = "C" * 1_000_000
+    assert_raise_with_message(RuntimeError, /format string modified/) {
+      ("A" * 4000).unpack(fmt) { fmt.clear }
+    }
+  end
+
   def test_comment
     assert_equal("\0\1", [0,1].pack("  C  #foo \n  C  "))
     assert_equal([0,1], "\0\1".unpack("  C  #foo \n  C  "))
