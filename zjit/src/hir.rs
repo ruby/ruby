@@ -4878,6 +4878,7 @@ impl Function {
                             }
                             // The block arg is the last element in args
                             if let Some(&block_arg) = args.last() {
+                                let original_argc = args.len();
                                 let statically_nil = self.is_a(block_arg, types::NilClass);
                                 let block_arg_profiled_type = self.profiled_type_of_at(block_arg, state);
                                 let profiled_nil = block_arg_profiled_type.map_or(false, |pt| pt.is_nil());
@@ -4901,13 +4902,13 @@ impl Function {
                                         });
                                     }
                                     // Strip nil block arg and treat as no block
-                                    args = args[..args.len() - 1].to_vec();
+                                    args.pop();
                                     send_block = None;
                                     has_block = false;
                                     stripped_block_arg = true;
                                     // Frame state for the direct send only: the block arg is removed
                                     // from the stack so the callee frame is laid out correctly.
-                                    let new_state = self.frame_state(state).with_replaced_args(&args, args.len() + 1);
+                                    let new_state = self.frame_state(state).with_replaced_args(&args, original_argc);
                                     send_frame_state = self.push_insn(block, Insn::Snapshot { state: Box::new(new_state) });
                                 } else if block_arg_profiled_type.is_some_and(|pt| pt.is_proc()) {
                                     // Guard the Proc and pass it through as the callee frame's
@@ -4917,10 +4918,10 @@ impl Function {
                                         Type::from_profiled_type(block_arg_profiled_type.unwrap()),
                                         state, Recompile,
                                     );
-                                    args.truncate(args.len() - 1);
+                                    args.pop();
                                     send_block = Some(BlockHandler::BlockArgProc(guarded));
                                     stripped_block_arg = true;
-                                    let new_state = self.frame_state(state).with_replaced_args(&args, args.len() + 1);
+                                    let new_state = self.frame_state(state).with_replaced_args(&args, original_argc);
                                     send_frame_state = self.push_insn(block, Insn::Snapshot { state: Box::new(new_state) });
                                 } else {
                                     // Can't prove block arg is nil or a Proc
