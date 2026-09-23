@@ -1207,6 +1207,40 @@ pub(crate) mod hir_build_tests {
     }
 
     #[test]
+    fn test_setlocal_getlocal_no_operands_unification() {
+        eval_with_options("
+            def test(a)
+              x = a
+              x = 2
+              x
+            end
+        ", "{ operands_unification: false }");
+        assert_contains_opcodes("test", &[YARVINSN_getlocal, YARVINSN_setlocal]);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          v4:NilClass = Const Value(nil)
+          Jump bb3(v1, v3, v4)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :a@1
+          v9:NilClass = Const Value(nil)
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:NilClass):
+          SetLocal :x, l0, EP@3, v12
+          v21:Fixnum[2] = Const Value(2)
+          SetLocal :x, l0, EP@3, v21
+          CheckInterrupts
+          Return v13
+        ");
+    }
+
+    #[test]
     fn test_nested_setlocal_getlocal() {
         eval("
           l3 = 3
