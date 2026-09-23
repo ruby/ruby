@@ -692,7 +692,14 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
             let SendDirectData { cd, cme, iseq, recv, args, kw_bits, jit_entry_idx, block, state, .. } = &**insn;
             let block = block.map(|bh| match bh {
                 BlockHandler::BlockIseq(blockiseq) => lir::BlockHandler::Iseq(blockiseq),
-                BlockHandler::BlockArgProc(proc_id) => lir::BlockHandler::Proc(opnd!(proc_id)),
+                BlockHandler::BlockArgProc(proc_id) => {
+                    let proc_type = function.type_of(proc_id);
+                    assert!(
+                        proc_type.is_subtype(Type::from_class(unsafe { rb_cProc })),
+                        "BlockArgProc operand must be a Proc, got {proc_type}",
+                    );
+                    lir::BlockHandler::Proc(opnd!(proc_id))
+                }
                 BlockHandler::BlockArg => unreachable!("BlockArg in SendDirect"),
             });
             gen_send_iseq_direct(
