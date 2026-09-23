@@ -2512,12 +2512,28 @@ rb_file_suid_p(VALUE obj, VALUE fname)
 }
 
 /*
+ * :markup: markdown
+ *
  * call-seq:
- *   File.setgid?(file_name)   ->  true or false
+ *   File.setgid?(object) -> true or false
  *
- * Returns +true+ if the named file has the setgid bit set.
+ * Returns whether the setgid bit is set
+ * in the [special bits](rdoc-ref:file/filesystem_modes.md@Special+Bits)
+ * for the given `object`, which may be a path or an IO object:
  *
- * _file_name_ can be an IO object.
+ * ```ruby
+ * path = '/tmp/t.tmp'
+ * File.write(path, 'foo')
+ * mode = File.stat(path).mode.to_s(8) # => "100664"
+ * File.setgid?(path)                  # => false
+ * File.chmod(0o2644, path)            # Set the bit.
+ * mode = File.stat(path).mode.to_s(8) # => "102644"
+ * File.setgid?(path)                  # => true
+ * File.delete(path)                   # Clean up.
+ * File.setgid?($stdin)                # => false
+ * ```
+ *
+ * On Windows, the bit is never set; the method always returns `false`.
  */
 
 static VALUE
@@ -7393,15 +7409,31 @@ rb_stat_suid(VALUE obj)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     stat.setgid?   -> true or false
+ *    setgid? -> true or false
  *
- *  Returns +true+ if <i>stat</i> has the set-group-id permission bit set,
- *  +false+ if it doesn't or if the operating system doesn't support this
- *  feature.
+ *  Returns whether the setgid bit is set
+ *  in the [special bits](rdoc-ref:file/filesystem_modes.md@Special+Bits)
+ *  for the entry represented in `self`:
  *
- *     File.stat("/usr/sbin/lpc").setgid?   #=> true
+ *  ```ruby
+ *  path = '/tmp/t.tmp'
+ *  File.write(path, 'foo')
+ *  stat = File.stat(path)   # Take a snapshot.
+ *  stat.setgid?             # => false
+ *  stat.mode.to_s(8)        # => "100664"
+ *  File.chmod(0o2644, path) # Set the bit; stat snapshot unchanged.
+ *  stat.setgid?             # => false
+ *  stat.mode.to_s(8)        # => "100664"
+ *  stat = File.stat(path)   # Fresh stat; snapshot changed.
+ *  stat.setgid?             # => true
+ *  stat.mode.to_s(8)        # => "102644"
+ *  File.delete(path)        # Clean up.
+ *  ```
  *
+ *  On Windows, the bit is never set; the method always returns `false`.
  */
 
 static VALUE
