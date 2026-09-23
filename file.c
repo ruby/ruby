@@ -2493,12 +2493,29 @@ rb_file_sgid_p(VALUE obj, VALUE fname)
 }
 
 /*
+ * :markup: markdown
+
  * call-seq:
- *   File.sticky?(file_name)   ->  true or false
+ *   File.sticky?(object) -> true or false
  *
- * Returns <code>true</code> if the named file has the sticky bit set.
+ * Returns whether the sticky bit is set
+ * in the [special bits](rdoc-ref:file/filesystem_modes.md@Special+Bits)
+ * for the given `object`, which may be a path or an IO object:
  *
- * _file_name_ can be an IO object.
+ * ```ruby
+ * filepath = '/tmp/t.tmp'
+ * File.write(filepath, 'foo')
+ * mode = File.stat(filepath).mode.to_s(8) # => "100664"
+ * File.sticky?(filepath)                  # => false
+ * File.chmod(01644, filepath)             # Set sticky bit.
+ * mode = File.stat(filepath).mode.to_s(8) # => "101644"
+ * File.sticky?(filepath)                  # => true
+ * File.delete(filepath)                   # Clean up.
+ * File.sticky?($stdin)                    # => false
+ * File.sticky?('nosuch')                  # => false
+ * ```
+ *
+ * Returns `false` on Windows.
  */
 
 static VALUE
@@ -7354,15 +7371,31 @@ rb_stat_sgid(VALUE obj)
 }
 
 /*
+ *  :markup: markdown
+
  *  call-seq:
- *     stat.sticky?    -> true or false
+ *    sticky? -> true or false
  *
- *  Returns <code>true</code> if <i>stat</i> has its sticky bit set,
- *  <code>false</code> if it doesn't or if the operating system doesn't
- *  support this feature.
+ * Returns whether the sticky bit is set
+ * in the [special bits](rdoc-ref:file/filesystem_modes.md@Special+Bits)
+ * for `self`:
  *
- *     File.stat("testfile").sticky?   #=> false
+ * ```ruby
+ * filepath = '/tmp/t.tmp'
+ * File.write(filepath, 'foo')
+ * stat = File.stat(filepath)
+ * stat.sticky?                # => false
+ * stat.mode.to_s(8)           # => "100664"
+ * File.chmod(01644, filepath) # => 1        # Stat unchanged.
+ * stat.sticky?                # => false
+ * stat.mode.to_s(8)           # => "100664"
+ * stat = File.stat(filepath)                # Fresh stat.
+ * stat.sticky?                # => true
+ * stat.mode.to_s(8)           # => "101644"
+ * File.delete(filepath)                     # Clean up.
+ * ```
  *
+ * Returns `false` on Windows.
  */
 
 static VALUE
