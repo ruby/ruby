@@ -1776,11 +1776,11 @@ class Pathname    # * File *
   # at the path stored in `self`:
   #
   # ```ruby
-  # file_pn = Pathname('README.md')
-  # link_pn = Pathname('foo')
+  # file_pn = Pathname('doc/maintainers.md')
+  # link_pn = Pathname('/tmp/link')
   # link_pn.make_symlink(file_pn)
-  # link_pn.readlink # => #<Pathname:README.md>
-  # link_pn.unlink   # Clean up.
+  # link_pn.readlink # => #<Pathname:doc/maintainers.md>
+  # link_pn.delete   # Clean up.
   # ```
   #
   # Raises Errno::EINVAL if the path in `self` is not the path to a symbolic link.
@@ -2479,14 +2479,14 @@ class Pathname    # * FileTest *
   # call-seq:
   #   pipe? -> true or false
   #
-  # Returns whether entry at the path in `self` is a pipe:
+  # Returns whether the entry at the path in `self` is a pipe:
   #
   # ```ruby
+  # Pathname('.').pipe? # => false
   # path = '/tmp/foo'
   # File.mkfifo(path)
   # pn = Pathname(path) # => #<Pathname:/tmp/foo>
   # pn.pipe?            # => true
-  # Pathname('.').pipe? # => false
   # pn.delete           # Clean up.
   # ```
   #
@@ -2527,11 +2527,11 @@ class Pathname    # * FileTest *
   # pn = Pathname('doc/t.tmp')
   # pn.write('foo')
   # pn.owned?               # => true
-  # pn.delete
+  # pn.delete               # Clean up.
   # pn = Pathname('doc/tmp')
   # pn.mkdir
   # pn.owned?               # => true
-  # pn.rmdir
+  # pn.rmdir                # Clean up.
   # Pathname('/etc').owned? # => false
   # ```
   #
@@ -2543,7 +2543,8 @@ class Pathname    # * FileTest *
   #   readable? -> true or false
   #
   # Returns whether the entry at the path in `self`
-  # is readable by the owner and group of the current process:
+  # exists and is readable by the owner and group of the current process;
+  # see [Permissions](rdoc-ref:file/filesystem_modes.md@Permissions):
   #
   # ```ruby
   # pn = Pathname('/tmp/secret.txt')
@@ -2595,17 +2596,16 @@ class Pathname    # * FileTest *
   # call-seq:
   #   setuid? -> true or false
   #
-  # Returns whether the [setuid bit](https://en.wikipedia.org/wiki/Setuid) is set
-  # in the permissions for the entry at the path in `self`:
+  # Returns whether the setuid bit is set
+  # in the [special bits](rdoc-ref:file/filesystem_modes.md@Special+Bits)
+  # for the entry at the path in `self`:
   #
   # ```ruby
-  # # Create a file and get its permissions and setuid? setting.
   # pn = Pathname('doc/t.tmp')
   # pn.write('foo')
   # mode = pn.stat.mode.to_s(8) # => "100664"
   # pn.setuid?                  # => false
-  # # Set the bit.
-  # pn.chmod(0o4644)
+  # pn.chmod(0o4644)            # Set the bit.
   # mode = pn.stat.mode.to_s(8) # => "104644"
   # pn.setuid?                  # => true
   # pn.delete                   # Clean up.
@@ -2619,17 +2619,16 @@ class Pathname    # * FileTest *
   # call-seq:
   #   setgid? -> true or false
   #
-  # Returns whether the [setgid bit](https://en.wikipedia.org/wiki/Setuid) is set
-  # in the permissions for the entry at the path in `self`:
+  # Returns whether the setgid bit is set
+  # in the [special bits](rdoc-ref:file/filesystem_modes.md@Special+Bits)
+  # for the entry at the path in `self`:
   #
   # ```ruby
-  # # Create a file and get its permissions and setgid? setting.
   # pn = Pathname('doc/t.tmp')
   # pn.write('foo')
   # mode = pn.stat.mode.to_s(8) # => "100664"
   # pn.setgid?                  # => false
-  # # Set the bit.
-  # pn.chmod(0o2644)
+  # pn.chmod(0o2644)            # Set the bit.
   # mode = pn.stat.mode.to_s(8) # => "102644"
   # pn.setgid?                  # => true
   # pn.delete                   # Clean up.

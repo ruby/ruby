@@ -897,6 +897,10 @@ pub enum BlockHandler {
     BlockIseq(IseqPtr),
     /// Block arg passed via &proc (e.g. `foo(&block)`)
     BlockArg,
+    /// Block arg proven to be a Proc by a guard. The InsnId refers to the
+    /// guarded Proc value, which becomes the callee frame's block handler
+    /// (a Proc VALUE is itself a valid block handler).
+    BlockArgProc(InsnId),
 }
 
 /// Identifier used by LoadField/StoreField/LoadArg for HIR dumps. Variants
@@ -967,6 +971,15 @@ pub struct SendDirectData {
     pub state: InsnId,
 }
 
+/// Payload of [`Insn::CondBranchHasType`]. Boxed in the enum to keep `Insn` small.
+#[derive(Debug, Clone)]
+pub struct CondBranchHasTypeData {
+    pub val: InsnId,
+    pub expected: Type,
+    pub if_true: BranchEdge,
+    pub if_false: BranchEdge,
+}
+
 /// Payload of [`Insn::CCallVariadic`]. Boxed in the enum to keep `Insn` small.
 #[derive(Debug, Clone)]
 pub struct CCallVariadicData {
@@ -1008,7 +1021,8 @@ pub enum Insn {
     /// Call rb_str_byte_substr with known-Fixnum beg/len
     StringByteslice { string: InsnId, beg: InsnId, len: InsnId, state: InsnId },
     StringSetbyteFixnum { string: InsnId, index: InsnId, value: InsnId },
-    StringAppend { recv: InsnId, other: InsnId, state: InsnId },
+    /// Append `other` to `recv`. HIR loads both flags for load reuse. Codegen XORs the flags.
+    StringAppend { recv: InsnId, other: InsnId, recv_flags: InsnId, other_flags: InsnId, state: InsnId },
     StringAppendCodepoint { recv: InsnId, other: InsnId, state: InsnId },
     StringEqual { left: InsnId, right: InsnId },
 
@@ -1152,6 +1166,10 @@ pub enum Insn {
 
     /// Conditional branch
     CondBranch { val: InsnId, if_true: BranchEdge, if_false: BranchEdge },
+
+    /// Conditional branch on a type test: branch to if_true if val has type expected and to
+    /// if_false otherwise.
+    CondBranchHasType(Box<CondBranchHasTypeData>),
 
     /// Call a C function without pushing a frame
     /// `name` and `owner` are for printing purposes only
@@ -1305,8 +1323,6 @@ pub enum Insn {
     /// Refine the known type information of with additional type information.
     /// Computes the intersection of the existing type and the new type.
     RefineType { val: InsnId, new_type: Type },
-    /// Return CBool[true] if val has type Type and CBool[false] otherwise.
-    HasType { val: InsnId, expected: Type },
 
     /// Side-exit if val doesn't have the expected type.
     GuardType { val: InsnId, guard_type: Type, state: InsnId, recompile: Option<Recompile> },
@@ -1352,7 +1368,7 @@ pub enum Insn {
 /// `$visit_one` macro for a single InsnId field and `$visit_many` macro for a
 /// slice/Vec of InsnIds. Used by both `for_each_operand` and `for_each_operand_mut`.
 macro_rules! for_each_operand_impl {
-    ($self:expr, $visit_one:ident, $visit_many:ident) => {
+    ($self:expr, $visit_one:ident, $visit_many:ident $(, $mut:tt)?) => {
         match $self {
             Insn::Comment { .. }
             | Insn::Const { .. }
@@ -1441,8 +1457,14 @@ macro_rules! for_each_operand_impl {
                 $visit_one!(*index);
                 $visit_one!(*value);
             }
-            Insn::StringAppend { recv, other, state }
-            | Insn::StringAppendCodepoint { recv, other, state } => {
+            Insn::StringAppend { recv, other, recv_flags, other_flags, state } => {
+                $visit_one!(*recv);
+                $visit_one!(*other);
+                $visit_one!(*recv_flags);
+                $visit_one!(*other_flags);
+                $visit_one!(*state);
+            }
+            Insn::StringAppendCodepoint { recv, other, state } => {
                 $visit_one!(*recv);
                 $visit_one!(*other);
                 $visit_one!(*state);
@@ -1456,7 +1478,6 @@ macro_rules! for_each_operand_impl {
                 $visit_one!(*state);
             }
             Insn::RefineType { val, .. }
-            | Insn::HasType { val, .. }
             | Insn::Return { val }
             | Insn::Test { val }
             | Insn::BoxBool { val } => {
@@ -1539,6 +1560,11 @@ macro_rules! for_each_operand_impl {
                 $visit_many!(true_args);
                 $visit_many!(false_args);
             }
+            Insn::CondBranchHasType(insn) => {
+                $visit_one!(insn.val);
+                $visit_many!(insn.if_true.args);
+                $visit_many!(insn.if_false.args);
+            }
             Insn::ArrayDup { val, state }
             | Insn::Throw { val, state, .. }
             | Insn::HashDup { val, state } => {
@@ -1596,6 +1622,9 @@ macro_rules! for_each_operand_impl {
             Insn::SendDirect(insn) => {
                 $visit_one!(insn.recv);
                 $visit_many!(insn.args);
+                if let Some(BlockHandler::BlockArgProc(id)) = &$($mut)? insn.block {
+                    $visit_one!(*id);
+                }
                 $visit_one!(insn.state);
             }
             Insn::CCallWithFrame(insn) => {
@@ -1695,7 +1724,7 @@ impl Insn {
             Insn::Comment { .. }
             | Insn::Jump(_)
             | Insn::Entries { .. }
-            | Insn::CondBranch { .. } | Insn::EntryPoint { .. } | Insn::Return { .. }
+            | Insn::CondBranch { .. } | Insn::CondBranchHasType { .. } | Insn::EntryPoint { .. } | Insn::Return { .. }
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::SetClassVar { .. } | Insn::ArrayExtend { .. }
             | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetGlobal { .. }
             | Insn::SetLocal { .. } | Insn::Throw { .. } | Insn::IncrCounter(_) | Insn::IncrCounterPtr { .. }
@@ -1710,7 +1739,7 @@ impl Insn {
     /// Return true if the instruction ends a basic block and false otherwise.
     pub fn is_terminator(&self) -> bool {
         match self {
-            Insn::Unreachable | Insn::CondBranch { .. } | Insn::Jump(_) | Insn::Entries { .. } | Insn::Return { .. } | Insn::SideExit { .. } | Insn::Throw { .. } => true,
+            Insn::Unreachable | Insn::CondBranch { .. } | Insn::CondBranchHasType { .. } | Insn::Jump(_) | Insn::Entries { .. } | Insn::Return { .. } | Insn::SideExit { .. } | Insn::Throw { .. } => true,
             _ => false,
         }
     }
@@ -1718,7 +1747,7 @@ impl Insn {
     /// Return true if the instruction is a jump (has successor blocks in the CFG).
     pub fn is_jump(&self) -> bool {
         match self {
-            Insn::CondBranch { .. } | Insn::Jump(_) | Insn::Entries { .. } => true,
+            Insn::CondBranch { .. } | Insn::CondBranchHasType { .. } | Insn::Jump(_) | Insn::Entries { .. } => true,
             _ => false,
         }
     }
@@ -1734,7 +1763,7 @@ impl Insn {
     pub fn for_each_operand_mut(&mut self, mut f: impl FnMut(&mut InsnId)) {
         macro_rules! visit_one { ($p:expr) => { f(&mut $p) }; }
         macro_rules! visit_many { ($s:expr) => { for id in ($s).iter_mut() { f(id) } }; }
-        for_each_operand_impl!(self, visit_one, visit_many);
+        for_each_operand_impl!(self, visit_one, visit_many, mut);
     }
 
     /// Call `f` on each operand, short-circuiting on the first error.
@@ -1847,6 +1876,11 @@ impl Insn {
             Insn::Snapshot { .. } => effects::Empty,
             Insn::Jump(_) => effects::Any,
             Insn::CondBranch { .. } => effects::Any,
+            Insn::CondBranchHasType(insn)
+                => Effect::read_write(
+                    if insn.expected.is_subtype(types::Immediate) { abstract_heaps::Empty } else { abstract_heaps::Memory },
+                    abstract_heaps::Control
+                ),
             Insn::CCall { elidable, .. } => {
                 if *elidable {
                     Effect::write(abstract_heaps::Allocator)
@@ -1940,11 +1974,6 @@ impl Insn {
             Insn::InvokeProc { .. } => effects::Any,
             Insn::InvokeBlockIseqDirect { .. } => effects::Any,
             Insn::RefineType { .. } => effects::Empty,
-            Insn::HasType { expected, .. }
-                => Effect::read_write(
-                    if expected.is_subtype(types::Immediate) { abstract_heaps::Empty } else { abstract_heaps::Memory },
-                    abstract_heaps::Empty
-                ),
             Insn::Entries { .. } => effects::Any,
             Insn::BreakPoint | Insn::Unreachable => Effect::read_write(abstract_heaps::Empty, abstract_heaps::Control),
         }
@@ -2165,8 +2194,8 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::StringSetbyteFixnum { string, index, value, .. } => {
                 write!(f, "StringSetbyteFixnum {string}, {index}, {value}")
             }
-            Insn::StringAppend { recv, other, .. } => {
-                write!(f, "StringAppend {recv}, {other}")
+            Insn::StringAppend { recv, other, recv_flags, other_flags, .. } => {
+                write!(f, "StringAppend {recv}, {other}, recv_flags: {recv_flags}, other_flags: {other_flags}")
             }
             Insn::StringAppendCodepoint { recv, other, .. } => {
                 write!(f, "StringAppendCodepoint {recv}, {other}")
@@ -2202,12 +2231,20 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::FixnumAref { recv, index } => write!(f, "FixnumAref {recv}, {index}"),
             Insn::Jump(target) => { write!(f, "Jump {target}") }
             Insn::CondBranch { val, if_true, if_false } => { write!(f, "CondBranch {val}, {if_true}, {if_false}") },
+            Insn::CondBranchHasType(insn) => {
+                let CondBranchHasTypeData { val, expected, if_true, if_false } = &**insn;
+                write!(f, "CondBranchHasType {val}, {}, {if_true}, {if_false}", expected.print(self.ptr_map))
+            },
             Insn::SendDirect(insn) => {
                 let SendDirectData { recv, cme, iseq, args, block, jit_entry_idx, .. } = &**insn;
-                let blockiseq = block.map(|bh| match bh { BlockHandler::BlockIseq(iseq) => iseq, BlockHandler::BlockArg => unreachable!() });
-                let blockiseq_ptr = blockiseq.map_or(ptr::null(), |iseq| self.ptr_map.map_ptr(iseq));
+                let block = match block {
+                    Some(BlockHandler::BlockArgProc(proc_id)) => format!("&{proc_id}"),
+                    Some(BlockHandler::BlockIseq(blockiseq)) => format!("{:p}", self.ptr_map.map_ptr(*blockiseq)),
+                    Some(BlockHandler::BlockArg) => unreachable!("BlockArg in SendDirect"),
+                    None => format!("{:p}", ptr::null::<u8>()),
+                };
                 let method_name = unsafe { (**cme).called_id };
-                write!(f, "SendDirect {recv}, {blockiseq_ptr:p}, :{method_name} ({:?})", self.ptr_map.map_ptr(*iseq))?;
+                write!(f, "SendDirect {recv}, {block}, :{method_name} ({:?})", self.ptr_map.map_ptr(*iseq))?;
                 if *jit_entry_idx != 0 {
                     write!(f, ", jit_entry_idx={jit_entry_idx}")?;
                 }
@@ -2232,6 +2269,8 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                         write!(f, "Send {recv}, {:p}, :{}", self.ptr_map.map_ptr(blockiseq), ruby_call_method_name(*cd))?,
                     Some(BlockHandler::BlockArg) =>
                         write!(f, "Send {recv}, &block, :{}", ruby_call_method_name(*cd))?,
+                    Some(BlockHandler::BlockArgProc(_)) =>
+                        unreachable!("BlockArgProc only appears in SendDirect"),
                     None =>
                         write!(f, "Send {recv}, :{}", ruby_call_method_name(*cd))?,
                 }
@@ -2324,7 +2363,6 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 return Ok(())
             },
             Insn::RefineType { val, new_type, .. } => { write!(f, "RefineType {val}, {}", new_type.print(self.ptr_map)) },
-            Insn::HasType { val, expected, .. } => { write!(f, "HasType {val}, {}", expected.print(self.ptr_map)) },
             Insn::GuardBitEquals { val, expected, recompile, .. } => {
                 write!(f, "GuardBitEquals {val}, {}", expected.print(self.ptr_map))?;
                 if recompile.is_some() {
@@ -2379,6 +2417,8 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                         write!(f, ", block={:p}", self.ptr_map.map_ptr(*blockiseq))?,
                     Some(BlockHandler::BlockArg) =>
                         write!(f, ", block=&block")?,
+                    Some(BlockHandler::BlockArgProc(_)) =>
+                        unreachable!("BlockArgProc only appears in SendDirect"),
                     None => {}
                 }
                 Ok(())
@@ -3428,6 +3468,7 @@ impl Function {
 
         let (first, second, rest): (Option<BlockId>, Option<BlockId>, &[BlockId]) = match terminator {
             Insn::CondBranch { if_true, if_false, .. } => (Some(if_true.target), Some(if_false.target), &[]),
+            Insn::CondBranchHasType(insn) => (Some(insn.if_true.target), Some(insn.if_false.target), &[]),
             Insn::Jump(edge) => (Some(edge.target), None, &[]),
             Insn::Entries { targets } => (None, None, targets.as_slice()),
 
@@ -3641,7 +3682,7 @@ impl Function {
             Insn::LoadArg { val_type, .. } => *val_type,
             Insn::SetGlobal { .. } | Insn::Jump(_) | Insn::Entries { .. } | Insn::EntryPoint { .. }
             | Insn::Comment { .. }
-            | Insn::CondBranch { .. } | Insn::Return { .. } | Insn::Throw { .. }
+            | Insn::CondBranch { .. } | Insn::CondBranchHasType { .. } | Insn::Return { .. } | Insn::Throw { .. }
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::SetClassVar { .. } | Insn::ArrayExtend { .. }
             | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetLocal { .. }
             | Insn::IncrCounter(_) | Insn::IncrCounterPtr { .. }
@@ -3705,9 +3746,6 @@ impl Function {
             Insn::CheckMatch { .. } => types::BasicObject,
             Insn::GuardType { val, guard_type, .. } => self.type_of(*val).intersection(*guard_type),
             Insn::RefineType { val, new_type, .. } => self.type_of(*val).intersection(*new_type),
-            &Insn::HasType { val, expected } if self.is_a(val, expected) => Type::from_cbool(true),
-            &Insn::HasType { val, expected } if !self.type_of(val).could_be(expected) => Type::from_cbool(false),
-            Insn::HasType { .. } => types::CBool,
             Insn::GuardBitEquals { val, expected, .. } => self.type_of(*val).intersection(Type::from_const(*expected)),
             Insn::GuardAnyBitSet { val, .. } => self.type_of(*val),
             Insn::GuardNoBitsSet { val, .. } => self.type_of(*val),
@@ -3920,6 +3958,47 @@ impl Function {
                             }
                             continue;
                         }
+                        Insn::CondBranchHasType(insn) => {
+                            let CondBranchHasTypeData { val, expected, if_true, if_false } = &**insn;
+                            let val_type = self.type_of(*val);
+                            // If we're looking at
+                            //   CondBranchHasType v, T, if_true, if_false
+                            // then we have four cases:
+                            //
+                            // * if v could be a T, then if_true is reachable
+                            //   * if v is a T, then if_false is not reachable
+                            //   * if v is not a T, then we don't know anything about if_false and
+                            //     have to assume it's reachable
+                            // * if v could not be a T, then if_true is not reachable
+                            //   * if v is a T, then v has the Empty type which means neither is reachable
+                            //   * if v is not a T, then it has some other non-Empty type that
+                            //     overlaps with T and therefore if_false is reachable
+                            //
+                            // If you explode this decision tree out, you end up with the collapsed
+                            // tree of two sequential not-mutually-exclusive checks:
+                            //
+                            // * if v could be a T, then if_true is reachable
+                            // * (not else!) if v is not a T, then if_false is reachable
+                            if val_type.could_be(*expected) {
+                                reachable.insert(if_true.target);
+                                let arg_types: Vec<Type> = if_true.args.iter().map(|a| self.type_of(*a)).collect();
+                                for (idx, arg_type) in arg_types.into_iter().enumerate() {
+                                    let param = self.blocks[if_true.target].params[idx];
+                                    changed |= set_type!(param, self.type_of(param).union(arg_type));
+                                }
+                                traversed_back_edge |= rpo_order[if_true.target] <= rpo_index;
+                            }
+                            if !val_type.is_subtype(*expected) {
+                                reachable.insert(if_false.target);
+                                let arg_types: Vec<Type> = if_false.args.iter().map(|a| self.type_of(*a)).collect();
+                                for (idx, arg_type) in arg_types.into_iter().enumerate() {
+                                    let param = self.blocks[if_false.target].params[idx];
+                                    changed |= set_type!(param, self.type_of(param).union(arg_type));
+                                }
+                                traversed_back_edge |= rpo_order[if_false.target] <= rpo_index;
+                            }
+                            continue;
+                        }
                         &Insn::Jump(BranchEdge { target, ref args }) => {
                             reachable.insert(target);
                             let arg_types: Vec<Type> = args.iter().map(|a| self.type_of(*a)).collect();
@@ -3949,6 +4028,8 @@ impl Function {
         }
     }
 
+    /// Extract the original value out of guards and RefineType instructions. Because it drops
+    /// the most recent type information, this should be used only for checking pointer eqality.
     fn chase_insn(&self, insn: InsnId) -> InsnId {
         let id = self.union_find.borrow().find_const(insn);
         match self.insns[id] {
@@ -4772,25 +4853,35 @@ impl Function {
                             def_type = unsafe { get_cme_def_type(cme) };
                         }
 
-                        // Check if we can optimize `foo(&block)` where block is nil to a send without block.
+                        // Check if we can optimize `foo(&block)` to a direct send: either `block` is
+                        // nil (strip it and send without a block) or `block` is monomorphically an
+                        // exact-class Proc (pass it through as the callee frame's specval).
                         // `state` keeps referring to the pre-send frame state (block arg still on the
                         // stack). Any guard that side-exits before the call re-executes the `send` in
                         // the interpreter, so it must reconstruct the stack with the block arg present.
                         // Only the direct-send frame setup uses `send_frame_state`, which has the nil
-                        // block arg stripped from the stack.
+                        // or Proc block arg stripped from the stack.
                         let mut send_block = send_block;
                         let mut send_frame_state = state;
                         let mut args = match resolved.insn(self) {
                             Insn::Send { args, .. } => args.to_vec(),
                             _ => panic!("Expected Send instruction"),
                         };
-                        let mut stripped_nil_block = false;
+                        let mut stripped_block_arg = false;
                         if send_block == Some(BlockHandler::BlockArg) && def_type == VM_METHOD_TYPE_ISEQ {
+                            // Reject complex argument passing before emitting any block-arg guard;
+                            // a guard in front of a send that stays dynamic gates nothing.
+                            if unspecializable_call_type(flags & !VM_CALL_ARGS_BLOCKARG) {
+                                self.count_complex_call_features(block, flags, state);
+                                self.set_dynamic_send_reason(insn_id, ComplexArgPass);
+                                self.push_insn_id(block, insn_id); continue;
+                            }
                             // The block arg is the last element in args
                             if let Some(&block_arg) = args.last() {
+                                let original_argc = args.len();
                                 let statically_nil = self.is_a(block_arg, types::NilClass);
-                                let profiled_nil = self.profiled_type_of_at(block_arg, state)
-                                    .map_or(false, |pt| pt.is_nil());
+                                let block_arg_profiled_type = self.profiled_type_of_at(block_arg, state);
+                                let profiled_nil = block_arg_profiled_type.map_or(false, |pt| pt.is_nil());
                                 if statically_nil || profiled_nil {
                                     if !statically_nil {
                                         // Guard needed when relying on profiled type. Uses the original
@@ -4814,13 +4905,26 @@ impl Function {
                                     args = args[..args.len() - 1].to_vec();
                                     send_block = None;
                                     has_block = false;
-                                    stripped_nil_block = true;
+                                    stripped_block_arg = true;
                                     // Frame state for the direct send only: the block arg is removed
                                     // from the stack so the callee frame is laid out correctly.
-                                    let new_state = self.frame_state(state).with_replaced_args(&args, args.len() + 1);
+                                    let new_state = self.frame_state(state).with_replaced_args(&args, original_argc);
+                                    send_frame_state = self.push_insn(block, Insn::Snapshot { state: Box::new(new_state) });
+                                } else if block_arg_profiled_type.is_some_and(|pt| pt.is_proc()) {
+                                    // Guard the Proc and pass it through as the callee frame's
+                                    // specval.
+                                    let guarded = self.guard_type_recompile(
+                                        block, block_arg,
+                                        Type::from_profiled_type(block_arg_profiled_type.unwrap()),
+                                        state, Recompile,
+                                    );
+                                    _ = args.pop();
+                                    send_block = Some(BlockHandler::BlockArgProc(guarded));
+                                    stripped_block_arg = true;
+                                    let new_state = self.frame_state(state).with_replaced_args(&args, original_argc);
                                     send_frame_state = self.push_insn(block, Insn::Snapshot { state: Box::new(new_state) });
                                 } else {
-                                    // Can't prove block arg is nil
+                                    // Can't prove block arg is nil or a Proc
                                     self.set_dynamic_send_reason(insn_id, SendBlockArgNotNil);
                                     self.push_insn_id(block, insn_id); continue;
                                 }
@@ -4829,8 +4933,8 @@ impl Function {
 
                         // If the call site info indicates that the `Function` has overly complex arguments, then do not optimize into a `SendDirect`.
                         // Optimized methods(`VM_METHOD_TYPE_OPTIMIZED`) and C methods handle their own argument constraints (e.g., kw_splat for Proc call).
-                        // Mask out ARGS_BLOCKARG only if we've already handled the nil block arg case above.
-                        let mut flags_for_check = if stripped_nil_block { flags & !VM_CALL_ARGS_BLOCKARG } else { flags };
+                        // Mask out ARGS_BLOCKARG only if we've already handled the nil/Proc block arg case above.
+                        let mut flags_for_check = if stripped_block_arg { flags & !VM_CALL_ARGS_BLOCKARG } else { flags };
                         if def_type == VM_METHOD_TYPE_ISEQ {
                             // Caller splat specialization currently only supports ISEQ callees, so
                             // skip the generic splat rejection here and validate its profile below.
@@ -5104,6 +5208,7 @@ impl Function {
 
                                 let blockiseq = match send_block {
                                     Some(BlockHandler::BlockArg) => unreachable!("unsupported &block should have been filtered out"),
+                                    Some(BlockHandler::BlockArgProc(_)) => unreachable!("BlockArgProc is only built for ISEQ callees"),
                                     Some(BlockHandler::BlockIseq(blockiseq)) => Some(blockiseq),
                                     None => None,
                                 };
@@ -5741,14 +5846,20 @@ impl Function {
                 };
                 let SendDirectData { recv, cme, iseq, kw_bits, jit_entry_idx, block: call_block, state, .. } = **data;
                 let args_len = data.args.len();
-                // SendDirect invariant: block is either None or BlockIseq.
-                // BlockArg is rejected upstream during type specialization.
+                // TODO: Inline callees that receive a &proc block handler. The inlined body
+                // only knows a static blockiseq for yield/defined?(yield); it would need to
+                // be taught to dispatch to the runtime Proc instead.
+                if matches!(call_block, Some(BlockHandler::BlockArgProc(_))) {
+                    search_start = send_pos + 1;
+                    continue;
+                }
                 // TODO(max): If we accept BlockArg here, we need to change the folding of Defined
                 // in HIR construction for the defined opcode to check the send flags of the method
                 // being inlined, too.
                 let blockiseq: Option<IseqPtr> = call_block.map(|bh| match bh {
                     BlockHandler::BlockIseq(bi) => bi,
                     BlockHandler::BlockArg => unreachable!("BlockArg in SendDirect"),
+                    BlockHandler::BlockArgProc(_) => unreachable!("skipped above"),
                 });
 
                 // Apply the cheap optimization heuristics (size, budget, denylist)
@@ -6392,11 +6503,14 @@ impl Function {
             *fun.blocks[block_id].insns().last().unwrap()
         }
 
+        // The extra `&`/`&mut` tokens borrow the boxed CondBranchHasType payload's edges with the
+        // same mutability as the match ergonomics give the other arms' bindings.
         macro_rules! edges_of {
-            ($insn:expr) => {
+            ($insn:expr, $($borrow:tt)+) => {
                 match $insn {
                     Insn::Jump(edge) => [Some(edge), None],
                     Insn::CondBranch { if_true, if_false, .. } => [Some(if_true), Some(if_false)],
+                    Insn::CondBranchHasType(insn) => [Some($($borrow)+ insn.if_true), Some($($borrow)+ insn.if_false)],
                     _ => [None, None],
                 }.into_iter().flatten()
             };
@@ -6404,12 +6518,12 @@ impl Function {
 
         fn outgoing_edges(fun: &Function, block_id: BlockId) -> impl Iterator<Item = &BranchEdge> {
             let insn_id = block_terminator(fun, block_id);
-            edges_of!(&fun.insns[insn_id])
+            edges_of!(&fun.insns[insn_id], &)
         }
 
         fn outgoing_edges_mut(fun: &mut Function, block_id: BlockId) -> impl Iterator<Item = &mut BranchEdge> {
             let insn_id = block_terminator(fun, block_id);
-            edges_of!(&mut fun.insns[insn_id])
+            edges_of!(&mut fun.insns[insn_id], &mut)
         }
 
         // Instantiate the domain for abstract interpretation.
@@ -6782,11 +6896,9 @@ impl Function {
                         }
                     }
                     &Insn::StringEqual { left, right } => {
-                        let left = self.chase_insn(left);
-                        let right = self.chase_insn(right);
                         // If both operands resolve to the same SSA value,
                         // String#== is guaranteed to be true.
-                        if left == right {
+                        if self.chase_insn(left) == self.chase_insn(right) {
                             self.new_insn(Insn::Const { val: Const::Value(Qtrue) })
                         } else {
                             let left_type = self.type_of(left);
@@ -6795,7 +6907,7 @@ impl Function {
                                 (Some(left_obj), Some(right_obj))
                                     if left_obj.is_frozen() && right_obj.is_frozen() =>
                                 {
-                                    // For known frozen objects, evaluate String#== at compile time.
+                                    // For known frozen Strings, evaluate String#== at compile time.
                                     let val = unsafe { rb_yarv_str_eql_internal(left_obj, right_obj) };
                                     self.new_insn(Insn::Const { val: Const::Value(val) })
                                 }
@@ -7000,6 +7112,16 @@ impl Function {
                     }
                     &Insn::CondBranch { val, ref if_false, .. } if self.is_a(val, Type::from_cbool(false)) => {
                         self.new_insn(Insn::Jump(if_false.clone()))
+                    }
+                    // Match infer_types implementation of CondBranchHasType.
+                    Insn::CondBranchHasType(insn) if self.type_of(insn.val).is_subtype(types::Empty) => {
+                        self.new_insn(Insn::Unreachable)
+                    }
+                    Insn::CondBranchHasType(insn) if self.is_a(insn.val, insn.expected) => {
+                        self.new_insn(Insn::Jump(insn.if_true.clone()))
+                    }
+                    Insn::CondBranchHasType(insn) if !self.type_of(insn.val).could_be(insn.expected) => {
+                        self.new_insn(Insn::Jump(insn.if_false.clone()))
                     }
                     _ => insn_id,
                 };
@@ -7636,6 +7758,10 @@ impl Function {
                         check_edge(block_id, if_true)?;
                         check_edge(block_id, if_false)?;
                     }
+                    Insn::CondBranchHasType(insn) => {
+                        check_edge(block_id, &insn.if_true)?;
+                        check_edge(block_id, &insn.if_false)?;
+                    }
                     _ => {}
                 }
 
@@ -7727,6 +7853,10 @@ impl Function {
                     Insn::CondBranch { if_true, if_false, .. } => {
                         propagate(if_true.target)?;
                         propagate(if_false.target)?;
+                    }
+                    Insn::CondBranchHasType(insn) => {
+                        propagate(insn.if_true.target)?;
+                        propagate(insn.if_false.target)?;
                     }
                     Insn::Entries { targets } => {
                         for &target in targets {
@@ -7936,10 +8066,12 @@ impl Function {
             }
             // Instructions with String operands
             Insn::StringCopy { val, .. } => self.assert_subtype(insn_id, val, types::StringExact),
-            Insn::StringIntern { val, .. } => self.assert_subtype(insn_id, val, types::StringExact),
-            Insn::StringAppend { recv, other, .. } => {
+            Insn::StringIntern { val, .. } => self.assert_subtype(insn_id, val, types::String),
+            Insn::StringAppend { recv, other, recv_flags, other_flags, .. } => {
                 self.assert_subtype(insn_id, recv, types::StringExact)?;
-                self.assert_subtype(insn_id, other, types::String)
+                self.assert_subtype(insn_id, other, types::String)?;
+                self.assert_subtype(insn_id, recv_flags, types::CUInt64)?;
+                self.assert_subtype(insn_id, other_flags, types::CUInt64)
             }
             Insn::StringAppendCodepoint { recv, other, .. } => {
                 self.assert_subtype(insn_id, recv, types::StringExact)?;
@@ -8123,7 +8255,7 @@ impl Function {
                 self.assert_subtype(insn_id, class, types::Class)
             }
             Insn::RefineType { .. } => Ok(()),
-            Insn::HasType { val, .. } => self.assert_subtype(insn_id, val, types::BasicObject),
+            Insn::CondBranchHasType(ref insn) => self.assert_subtype(insn_id, insn.val, types::BasicObject),
             Insn::IsBlockParamModified { flags } => self.assert_subtype(insn_id, flags, types::CUInt64),
             // Frame instructions have no output to validate; their operands
             // are validated by the recv+args group (PushLightweightFrame)
@@ -9561,7 +9693,6 @@ fn add_iseq_to_hir(
                         fun.push_insn(block, Insn::CheckInterrupts { state: exit_id });
                     }
                     let val = state.stack_pop()?;
-                    let test_id = fun.push_insn(block, Insn::HasType { val, expected: types::NilClass });
                     let target_idx = insn_idx_at_offset(insn_idx, offset);
                     let target = insn_idx_to_block[&target_idx];
                     let nil = fun.push_insn(block, Insn::Const { val: Const::Value(Qnil) });
@@ -9570,11 +9701,12 @@ fn add_iseq_to_hir(
 
                     let fall_through = fun.new_block(insn_idx);
 
-                    fun.push_insn(block, Insn::CondBranch {
-                        val: test_id,
+                    fun.push_insn(block, Insn::CondBranchHasType(Box::new(CondBranchHasTypeData {
+                        val,
+                        expected: types::NilClass,
                         if_true: BranchEdge { target, args: iftrue_state.as_args(self_param) },
                         if_false: BranchEdge { target: fall_through, args: vec![] }
-                    });
+                    })));
 
                     block = fall_through;
                     let new_type = types::NotNil;
@@ -9632,21 +9764,36 @@ fn add_iseq_to_hir(
                     queue.push_back((state.clone(), target, target_idx, local_inval));
                     break;  // Don't enqueue the next block as a successor
                 }
-                YARVINSN_getlocal_WC_0 => {
+                opcode @ (YARVINSN_getlocal | YARVINSN_getlocal_WC_0 | YARVINSN_getlocal_WC_1) => {
                     let ep_offset = get_arg(pc, 0).as_u32();
-                    if !local_inval {
+                    let level = match opcode {
+                        YARVINSN_getlocal => get_arg(pc, 1).as_u32(),
+                        YARVINSN_getlocal_WC_0 => 0,
+                        YARVINSN_getlocal_WC_1 => 1,
+                        _ => unreachable!()
+                    };
+
+                    if level != 0 {
+                        // Load local from EP; no change to FrameState as it describes level 0.
+                        let ep = fun.get_ep(block, level);
+                        let val = fun.get_local_from_ep(block, iseq, ep, ep_offset, level, types::BasicObject);
+                        state.stack_push(val);
+                    } else if !local_inval {
+                        assert!(level == 0); // from place in decision tree
                         // The FrameState is the source of truth for locals until invalidated.
                         // In case of JIT-to-JIT send locals might never end up in EP memory.
                         let val = state.getlocal(ep_offset);
                         state.stack_push(val);
                     } else if ep_escaped {
+                        assert!(level == 0); // from place in decision tree
                         // Read the local using EP
                         let ep = fun.get_ep(block, 0);
                         let val = fun.get_local_from_ep(block, iseq, ep, ep_offset, 0, types::BasicObject);
                         state.setlocal(ep_offset, val); // remember the result to spill on side-exits
                         state.stack_push(val);
                     } else {
-                        assert!(local_inval); // if check above
+                        assert!(local_inval); // from place in decision tree
+                        assert!(level == 0);  // from place in decision tree
                         // There has been some non-leaf call since JIT entry or the last patch point,
                         // so add a patch point to make sure locals have not been escaped.
                         let exit_id = fun.push_insn(block, Insn::Snapshot { state: Box::new(exit_state.without_locals()) }); // skip spilling locals
@@ -9658,51 +9805,37 @@ fn add_iseq_to_hir(
                         state.stack_push(val);
                     }
                 }
-                YARVINSN_setlocal_WC_0 => {
+                opcode @ (YARVINSN_setlocal | YARVINSN_setlocal_WC_0 | YARVINSN_setlocal_WC_1) => {
                     let ep_offset = get_arg(pc, 0).as_u32();
+                    let level = match opcode {
+                        YARVINSN_setlocal => get_arg(pc, 1).as_u32(),
+                        YARVINSN_setlocal_WC_0 => 0,
+                        YARVINSN_setlocal_WC_1 => 1,
+                        _ => unreachable!(),
+                    };
                     let val = state.stack_pop()?;
-                    if ep_escaped {
+
+                    if level != 0 {
+                        fun.push_insn(block, Insn::SetLocal { val, ep_offset, level, state: exit_id });
+                    } else if ep_escaped {
+                        assert!(level == 0); // from place in decision tree
                         // Write the local using EP
                         fun.push_insn(block, Insn::SetLocal { val, ep_offset, level: 0, state: exit_id });
-                    } else if local_inval {
+                        state.setlocal(ep_offset, val);
+                    } else if !local_inval {
+                        assert!(level == 0);  // from place in decision tree
+                        assert!(!ep_escaped); // from place in decision tree
+                        state.setlocal(ep_offset, val);
+                    } else {
+                        assert!(local_inval); // from place in decision tree
+                        assert!(level == 0);  // from place in decision tree
                         // If there has been any non-leaf call since JIT entry or the last patch point,
                         // add a patch point to make sure locals have not been escaped.
                         let exit_id = fun.push_insn(block, Insn::Snapshot { state: Box::new(exit_state.without_locals()) }); // skip spilling locals
                         fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoEPEscape(iseq), state: exit_id });
                         local_inval = false;
+                        state.setlocal(ep_offset, val);
                     }
-                    // Write the local into FrameState
-                    state.setlocal(ep_offset, val);
-                }
-                YARVINSN_getlocal_WC_1 => {
-                    let ep_offset = get_arg(pc, 0).as_u32();
-                    let ep = fun.get_ep(block, 1);
-                    state.stack_push(fun.get_local_from_ep(block, iseq, ep, ep_offset, 1, types::BasicObject));
-                }
-                YARVINSN_setlocal_WC_1 => {
-                    let ep_offset = get_arg(pc, 0).as_u32();
-                    fun.push_insn(block, Insn::SetLocal { val: state.stack_pop()?, ep_offset, level: 1, state: exit_id });
-                }
-                YARVINSN_getlocal => {
-                    let ep_offset = get_arg(pc, 0).as_u32();
-                    let level = get_arg(pc, 1).as_u32();
-                    if level == 0 && !local_inval {
-                        // Same optimization as getlocal_WC_0: use FrameState
-                        let val = state.getlocal(ep_offset);
-                        state.stack_push(val);
-                    } else {
-                        let ep = fun.get_ep(block, level);
-                        let val = fun.get_local_from_ep(block, iseq, ep, ep_offset, level, types::BasicObject);
-                        if level == 0 {
-                            state.setlocal(ep_offset, val);
-                        }
-                        state.stack_push(val);
-                    }
-                }
-                YARVINSN_setlocal => {
-                    let ep_offset = get_arg(pc, 0).as_u32();
-                    let level = get_arg(pc, 1).as_u32();
-                    fun.push_insn(block, Insn::SetLocal { val: state.stack_pop()?, ep_offset, level, state: exit_id });
                 }
                 YARVINSN_setblockparam => {
                     let ep_offset = get_arg(pc, 0).as_u32();
@@ -10083,14 +10216,14 @@ fn add_iseq_to_hir(
                                 continue;
                             }
                             seen_types.push(expected);
-                            let has_type = fun.push_insn(block, Insn::HasType { val: recv, expected });
                             let iftrue_block = fun.new_block(insn_idx);
                             let fall_through = fun.new_block(insn_idx);
-                            fun.push_insn(block, Insn::CondBranch {
-                                val: has_type,
+                            fun.push_insn(block, Insn::CondBranchHasType(Box::new(CondBranchHasTypeData {
+                                val: recv,
+                                expected,
                                 if_true: BranchEdge { target: iftrue_block, args: vec![] },
                                 if_false: BranchEdge { target: fall_through, args: vec![] }
-                            });
+                            })));
                             block = fall_through;
                             // Take a fresh Snapshot rather than
                             // reusing exit_id so type specialization resolves the receiver from
@@ -10160,14 +10293,14 @@ fn add_iseq_to_hir(
                                 continue;
                             }
                             seen_types.push(expected);
-                            let has_type = fun.push_insn(block, Insn::HasType { val: recv, expected });
                             let iftrue_block = fun.new_block(insn_idx);
                             let fall_through = fun.new_block(insn_idx);
-                            fun.push_insn(block, Insn::CondBranch {
-                                val: has_type,
+                            fun.push_insn(block, Insn::CondBranchHasType(Box::new(CondBranchHasTypeData {
+                                val: recv,
+                                expected,
                                 if_true: BranchEdge { target: iftrue_block, args: vec![] },
                                 if_false: BranchEdge { target: fall_through, args: vec![] }
-                            });
+                            })));
                             block = fall_through;
                             // Take a fresh Snapshot rather than
                             // reusing exit_id so type specialization resolves the receiver from
@@ -10633,15 +10766,15 @@ fn add_iseq_to_hir(
                             fun.push_insn(block, Insn::Send { recv, cd, block: None, args: vec![], caller_splat_length: None, state: exit_id, reason: ObjToStringNotString })
                         }
                     } else {
-                        let has_type = fun.push_insn(block, Insn::HasType { val: recv, expected: types::String });
                         let iftrue_block = fun.new_block(insn_idx);
                         let iffalse_block = fun.new_block(insn_idx);
                         let join_block = fun.new_block(insn_idx);
-                        fun.push_insn(block, Insn::CondBranch {
-                            val: has_type,
+                        fun.push_insn(block, Insn::CondBranchHasType(Box::new(CondBranchHasTypeData {
+                            val: recv,
+                            expected: types::String,
                             if_true: BranchEdge { target: iftrue_block, args: vec![] },
                             if_false: BranchEdge { target: iffalse_block, args: vec![] }
-                        });
+                        })));
                         // true block
                         let refined = fun.push_insn(iftrue_block, Insn::RefineType { val: recv, new_type: types::String });
                         fun.push_insn(iftrue_block, Insn::Jump(BranchEdge { target: join_block, args: vec![refined] }));
@@ -10660,15 +10793,15 @@ fn add_iseq_to_hir(
                     let val = state.stack_pop()?;
 
                     // Mirror logic of rb_obj_as_string_result() (`anytostring` in insns.def)
-                    let has_type = fun.push_insn(block, Insn::HasType { val: str, expected: types::String });
                     let iftrue_block = fun.new_block(insn_idx);
                     let iffalse_block = fun.new_block(insn_idx);
                     let join_block = fun.new_block(insn_idx);
-                    fun.push_insn(block, Insn::CondBranch {
-                        val: has_type,
+                    fun.push_insn(block, Insn::CondBranchHasType(Box::new(CondBranchHasTypeData {
+                        val: str,
+                        expected: types::String,
                         if_true: BranchEdge { target: iftrue_block, args: vec![] },
                         if_false: BranchEdge { target: iffalse_block, args: vec![] }
-                    });
+                    })));
                     // true block
                     let refined = fun.push_insn(iftrue_block, Insn::RefineType { val: str, new_type: types::String });
                     fun.push_insn(iftrue_block, Insn::Jump(BranchEdge { target: join_block, args: vec![refined] }));
@@ -11509,6 +11642,47 @@ mod validation_tests {
             function.infer_types();
             // Just checking that we don't panic.
             assert!(function.validate_definite_assignment().is_ok());
+        });
+    }
+
+    // A `CondBranchHasType` whose `val` has been refined to a disjoint type is
+    // `Empty` (Bottom): an impossible value, so the branch is dead. `infer_types`
+    // uses `could_be` and so marks neither edge reachable (both params stay
+    // `Empty`), and `fold_constants` folds the branch to `Unreachable` to match.
+    #[test]
+    fn condbranchhastype_bottom_val_folds_to_unreachable() {
+        let mut function = Function::new(std::ptr::null());
+        let entry = function.entry_block;
+        let if_true = function.new_block(0);
+        let if_false = function.new_block(0);
+        let p_true = function.push_insn(if_true, Insn::Param);
+        function.push_insn(if_true, Insn::Return { val: p_true });
+        let p_false = function.push_insn(if_false, Insn::Param);
+        function.push_insn(if_false, Insn::Return { val: p_false });
+        // Refine a nil to Fixnum: NilClass ∩ Fixnum = Empty (Bottom).
+        let nil = function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
+        let bottom = function.push_insn(entry, Insn::RefineType { val: nil, new_type: types::Fixnum });
+        let arg = function.push_insn(entry, Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(3)) });
+        function.push_insn(entry, Insn::CondBranchHasType(Box::new(CondBranchHasTypeData {
+            val: bottom,
+            expected: types::Fixnum,
+            if_true: BranchEdge { target: if_true, args: vec![arg] },
+            if_false: BranchEdge { target: if_false, args: vec![arg] },
+        })));
+        function.seal_entries();
+        crate::cruby::with_rubyvm(|| {
+            function.infer_types();
+            assert!(function.type_of(bottom).bit_equal(types::Empty), "refine to disjoint type should be Bottom");
+            // `could_be`-only means neither edge is reachable, so both params are Empty.
+            assert!(function.type_of(p_true).bit_equal(types::Empty),
+                "if_true param should be Empty, got {}", function.type_of(p_true));
+            assert!(function.type_of(p_false).bit_equal(types::Empty),
+                "if_false param should be Empty, got {}", function.type_of(p_false));
+            // The dead branch folds to Unreachable, agreeing with infer_types.
+            function.fold_constants();
+            let last = *function.blocks[entry].insns.last().unwrap();
+            assert!(matches!(function.find_ref(last), Insn::Unreachable),
+                "expected entry terminator to fold to Unreachable");
         });
     }
 

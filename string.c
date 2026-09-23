@@ -4801,8 +4801,8 @@ rb_str_byteindex_m(int argc, VALUE *argv, VALUE str)
     long pos;
 
     if (rb_scan_args(argc, argv, "11", &sub, &initpos) == 2) {
-        long slen = RSTRING_LEN(str);
         pos = NUM2LONG(initpos);
+        long slen = RSTRING_LEN(str);
         if (pos < 0 ? (pos += slen) < 0 : pos > slen) {
             if (RB_TYPE_P(sub, T_REGEXP)) {
                 rb_backref_set(Qnil);
@@ -5076,10 +5076,11 @@ rb_str_byterindex_m(int argc, VALUE *argv, VALUE str)
 {
     VALUE sub;
     VALUE initpos;
-    long pos, len = RSTRING_LEN(str);
+    long pos;
 
     if (rb_scan_args(argc, argv, "11", &sub, &initpos) == 2) {
         pos = NUM2LONG(initpos);
+        long len = RSTRING_LEN(str);
         if (pos < 0 && (pos += len) < 0) {
             if (RB_TYPE_P(sub, T_REGEXP)) {
                 rb_backref_set(Qnil);
@@ -5089,7 +5090,7 @@ rb_str_byterindex_m(int argc, VALUE *argv, VALUE str)
         if (pos > len) pos = len;
     }
     else {
-        pos = len;
+        pos = RSTRING_LEN(str);
     }
 
     str_ensure_byte_pos(str, pos);
@@ -9794,6 +9795,11 @@ tr_trans_pairs(VALUE str, VALUE pairs_val)
     rb_hash_foreach(pairs_val, tr_trans_pairs_coerce_i, (VALUE)&coerce_args);
     rb_encoding *e1 = coerce_args.enc;
 
+    /* Keys could be deleted from pairs_val during rb_hash_foreach when coercing
+     * the keys/values, so we need to update pairs_count to the number of pairs we
+     * were actually able to extract from pairs_val. */
+    pairs_count = coerce_args.index;
+
     VALUE hash = 0;
 
     const unsigned char *sstart = (unsigned char *)RSTRING_PTR(str);
@@ -12718,10 +12724,11 @@ rb_str_partition(VALUE str, VALUE sep)
 static VALUE
 rb_str_rpartition(VALUE str, VALUE sep)
 {
-    long pos = RSTRING_LEN(str);
+    long pos;
 
     sep = get_pat_quoted(sep, 0);
     if (RB_TYPE_P(sep, T_REGEXP)) {
+        pos = RSTRING_LEN(str);
         if (rb_reg_search(sep, str, pos, 1) < 0) {
             goto failed;
         }
@@ -12731,7 +12738,8 @@ rb_str_rpartition(VALUE str, VALUE sep)
         sep = rb_str_subseq(str, pos, RMATCH_END(match, 0) - pos);
     }
     else {
-        pos = rb_str_sublen(str, pos);
+        /* str may have been modified by #to_str above */
+        pos = rb_str_sublen(str, RSTRING_LEN(str));
         pos = rb_str_rindex(str, sep, pos);
         if (pos < 0) {
             goto failed;

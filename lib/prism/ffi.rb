@@ -54,16 +54,18 @@ module Prism # :nodoc:
     def self.load_exported_functions_from(header, *functions, callbacks)
       File.foreach("#{INCLUDE_DIR}/#{header}") do |line|
         # We only want to attempt to load exported functions.
-        next unless line.start_with?("PRISM_EXPORTED_FUNCTION ")
+        next unless line.include?("PRISM_EXPORTED_FUNCTION ")
 
         # We only want to load the functions that we are interested in.
         next unless functions.any? { |function| line.include?(function) }
 
+        # Strip leading attributes (PRISM_EXPORTED_FUNCTION, PRISM_NODISCARD, etc.)
+        line = line.sub(/\A(PRISM_\w+(?:\([^)]*\))?)+/, "")
         # Strip trailing attributes (PRISM_NODISCARD, PRISM_NONNULL(...), etc.)
         line = line.sub(/\)(\s+PRISM_\w+(?:\([^)]*\))?)+\s*;/, ");")
 
         # Parse the function declaration.
-        unless /^PRISM_EXPORTED_FUNCTION (?<return_type>.+) (?<name>\w+)\((?<arg_types>.+)\);$/ =~ line
+        unless /^(?<return_type>.+) (?<name>\w+)\((?<arg_types>.+)\);$/ =~ line
           raise "Could not parse #{line}"
         end
 

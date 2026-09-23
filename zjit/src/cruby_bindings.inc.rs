@@ -2222,6 +2222,7 @@ unsafe extern "C" {
     pub static mut rb_cModule: VALUE;
     pub static mut rb_cNilClass: VALUE;
     pub static mut rb_cNumeric: VALUE;
+    pub static mut rb_cProc: VALUE;
     pub static mut rb_cRange: VALUE;
     pub static mut rb_cRegexp: VALUE;
     pub static mut rb_cSet: VALUE;
@@ -2279,6 +2280,7 @@ unsafe extern "C" {
     pub fn rb_obj_frozen_p(obj: VALUE) -> VALUE;
     pub fn rb_class_real(klass: VALUE) -> VALUE;
     pub fn rb_class_inherited_p(scion: VALUE, ascendant: VALUE) -> VALUE;
+    pub fn rb_class_superclass(klass: VALUE) -> VALUE;
     pub fn rb_backref_get() -> VALUE;
     pub fn rb_range_new(beg: VALUE, end: VALUE, excl: ::std::os::raw::c_int) -> VALUE;
     pub fn rb_reg_nth_match(n: ::std::os::raw::c_int, md: VALUE) -> VALUE;
@@ -2482,7 +2484,9 @@ unsafe extern "C" {
         recv: VALUE,
     ) -> *const rb_callable_method_entry_struct;
     pub fn rb_zjit_class_initialized_p(klass: VALUE) -> bool;
+    pub fn rb_zjit_can_load_superclass_p(klass: VALUE) -> bool;
     pub fn rb_zjit_class_get_alloc_func(klass: VALUE) -> rb_alloc_func_t;
+    pub fn rb_zjit_class_has_struct_allocator(klass: VALUE) -> bool;
     pub fn rb_zjit_class_has_default_allocator(klass: VALUE) -> bool;
     pub fn rb_vm_get_untagged_block_handler(reg_cfp: *mut rb_control_frame_t) -> VALUE;
     pub fn rb_vm_once_done_value(is: ISE, result: *mut VALUE) -> bool;
@@ -2594,6 +2598,7 @@ unsafe extern "C" {
     );
     pub fn rb_iseq_get_jit_payload(iseq: *const rb_iseq_t) -> *mut ::std::os::raw::c_void;
     pub fn rb_iseq_set_jit_payload(iseq: *const rb_iseq_t, payload: *mut ::std::os::raw::c_void);
+    pub fn rb_iseq_clear_jit_payload(iseq: *const rb_iseq_t);
     pub fn rb_iseq_reset_jit_func(iseq: *const rb_iseq_t);
     pub fn rb_jit_get_page_size() -> u32;
     pub fn rb_jit_reserve_addr_space(mem_size: u32) -> *mut u8;

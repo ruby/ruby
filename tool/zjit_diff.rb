@@ -53,10 +53,11 @@ class ZJITDiff
 
   def run_benchmarks(ruby_bench_path)
     Dir.chdir(ruby_bench_path) do
+      zjit_stats = @options[:zjit_stats] ? ' --zjit-stats' : ''
       @runner.cmd({ 'RUBIES_DIR' => RUBIES_DIR },
                   './run_benchmarks.rb',
                   '--chruby',
-                  "before::#{@before_hash} --zjit-stats;after::#{@after_hash} --zjit-stats",
+                  "before::#{@before_hash}#{zjit_stats};after::#{@after_hash}#{zjit_stats}",
                   '--out-name',
                   DATA_FILENAME,
                   *@options[:bench_args],
@@ -177,7 +178,7 @@ end
 
 DEFAULT_BENCHMARKS = %w[lobsters railsbench].freeze
 
-options = {}
+options = { zjit_stats: true }
 
 subtext = <<~HELP
   Subcommands:
@@ -229,6 +230,10 @@ subcommands = {
     opts.on('--force-rebuild',
             'Force building ruby again instead of using even if existing builds exist in the cache at ~/.diffs') do
       options[:force_rebuild] = true
+    end
+
+    opts.on('--[no-]zjit-stats', 'Pass --zjit-stats to each Ruby command') do |zjit_stats|
+      options[:zjit_stats] = zjit_stats
     end
 
     opts.on('--quiet', 'Silence output of commands except for benchmark result') do

@@ -166,6 +166,18 @@ class TestTime < Test::Unit::TestCase
     }
   end
 
+  def test_new_from_string_modified_by_precision
+    str = "2020-12-25 00:00:00" + "0" * 1_000_000
+    obj = Object.new
+    obj.define_singleton_method(:to_int) do
+      str.clear
+      9
+    end
+    assert_raise_with_message(ArgumentError, /can't parse/) {
+      Time.new(str, precision: obj)
+    }
+  end
+
   def test_time_add()
     assert_equal(Time.utc(2000, 3, 21, 3, 30) + 3 * 3600,
                  Time.utc(2000, 3, 21, 6, 30))

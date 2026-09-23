@@ -36,7 +36,7 @@ static const rb_data_type_t ossl_digest_type = {
     {
         0, ossl_digest_free,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED,
 };
 
 #ifdef OSSL_USE_PROVIDER
@@ -53,7 +53,7 @@ static const rb_data_type_t ossl_evp_md_holder_type = {
     {
         .dfree = ossl_evp_md_free,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED,
 };
 #endif
 

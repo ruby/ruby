@@ -1,16 +1,16 @@
 use std::sync::Mutex;
 
+use mmtk::MMTK;
 use mmtk::memory_manager;
 use mmtk::scheduler::GCWork;
 use mmtk::scheduler::GCWorker;
 use mmtk::scheduler::WorkBucketStage;
 use mmtk::util::ObjectReference;
 use mmtk::util::VMWorkerThread;
-use mmtk::MMTK;
 
+use crate::Ruby;
 use crate::abi::GCThreadTLS;
 use crate::upcalls;
-use crate::Ruby;
 
 pub struct PinningRegistry {
     pinning_objs: Mutex<Vec<ObjectReference>>,

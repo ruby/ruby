@@ -358,8 +358,6 @@ static void iseq_add_setlocal(rb_iseq_t *iseq, LINK_ANCHOR *const seq, const NOD
 #define IS_INSN_ID(iobj, insn) (INSN_OF(iobj) == BIN(insn))
 #define IS_NEXT_INSN_ID(link, insn) \
     ((link)->next && IS_INSN((link)->next) && IS_INSN_ID((link)->next, insn))
-#define IS_NEXT_NEXT_INSN_ID(link, insn) \
-    ((link)->next && IS_NEXT_INSN_ID((link)->next, insn))
 
 static inline bool
 IS_INDEPENDENT_INSN(LINK_ELEMENT *link)
@@ -378,6 +376,10 @@ IS_INDEPENDENT_INSN(LINK_ELEMENT *link)
         type == BIN(duphash) ||
         type == BIN(getinstancevariable) ||
         type == BIN(getlocal) ||
+        type == BIN(getlocal_WC_0) ||
+        type == BIN(getlocal_WC_1) ||
+        type == BIN(putobject_INT2FIX_0_) ||
+        type == BIN(putobject_INT2FIX_1_) ||
         type == BIN(opt_getconstant_path)
     );
 }
@@ -4326,10 +4328,11 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
     *  putnil  / (or any other independent instruction)
     *  putself / (or any other independent instruction)
     */
-    if (IS_NEXT_NEXT_INSN_ID(&iobj->link, swap)) {
-        LINK_ELEMENT *first = &iobj->link;
-        LINK_ELEMENT *second = first->next;
+    if (IS_NEXT_INSN_ID(&iobj->link, swap)) {
+        LINK_ELEMENT *second = &iobj->link;
+        LINK_ELEMENT *first = second->prev;
         LINK_ELEMENT *swap = second->next;
+
         if (IS_INDEPENDENT_INSN(first) && IS_INDEPENDENT_INSN(second)) {
             ELEM_REMOVE(swap);
             ELEM_SWAP(first, second);
@@ -9585,6 +9588,14 @@ compile_builtin_function_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NOD
 
                 ADD_INSN1(ret, line_node, putobject, Qfalse);
                 return compile_builtin_mandatory_only_method(iseq, node, line_node);
+            }
+            else if (strcmp("local_self!", builtin_func) == 0) {
+                // Push the local named "self" (e.g. the `self:` keyword
+                // parameter of Ractor.shareable_proc) onto the stack.
+                ID id_self;
+                CONST_ID(id_self, "self");
+                compile_lvar(iseq, ret, line_node, id_self);
+                return COMPILE_OK;
             }
             else if (1) {
                 rb_bug("can't find builtin function:%s", builtin_func);

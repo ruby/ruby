@@ -370,6 +370,51 @@ fn test_string_intern() {
 }
 
 #[test]
+fn test_string_to_sym_invalid_encoding_unused() {
+    eval(r#"
+        def test(str)
+          str.to_sym
+          :converted
+        end
+    "#);
+    assert_snapshot!(assert_compiles(r#"
+        test("warmup")
+        test("warmup")
+        begin
+          test("\xFF".force_encoding(Encoding::UTF_8))
+        rescue EncodingError
+          :encoding_error
+        end
+    "#), @":encoding_error");
+}
+
+#[test]
+fn test_string_subclass_to_sym() {
+    assert_snapshot!(assert_compiles(r#"
+        class MyString < String; end
+        def test(str) = str.to_sym
+        value = MyString.new("key")
+        test(value)
+        test(value)
+        [test(value), test(MyString.new("other"))]
+    "#), @"[:key, :other]");
+}
+
+#[test]
+fn test_string_subclass_to_sym_redefined() {
+    assert_snapshot!(assert_compiles_allowing_exits(r#"
+        class MyString < String; end
+        def test(str) = str.to_sym
+        value = MyString.new("key")
+        test(value)
+        test(value)
+        original = test(value)
+        MyString.class_eval { def to_sym = :overridden }
+        [original, test(value)]
+    "#), @"[:key, :overridden]");
+}
+
+#[test]
 fn test_duphash() {
     eval("
         def test
@@ -1995,6 +2040,79 @@ fn test_send_nil_block_arg() {
         test
         test
     "), @"false");
+}
+
+#[test]
+fn test_send_proc_block_arg() {
+    assert_snapshot!(inspect("
+        def foo = yield 3
+        def test
+          blk = proc { |x| x * 2 }
+          foo(&blk)
+        end
+        test
+        test
+    "), @"6");
+}
+
+#[test]
+fn test_send_proc_block_arg_side_exit() {
+    assert_snapshot!(inspect("
+        def foo = yield 3
+        def test(blk) = foo(&blk)
+        test(proc { |x| x * 2 })
+        test(proc { |x| x * 2 })
+        [test(proc { |x| x * 2 }), test(:succ)]
+    "), @"[6, 4]");
+}
+
+#[test]
+fn test_send_proc_block_arg_lambda() {
+    assert_snapshot!(inspect("
+        def foo = yield 3
+        def test
+          blk = lambda { |x| x * 2 }
+          foo(&blk)
+        end
+        test
+        test
+    "), @"6");
+}
+
+#[test]
+fn test_send_proc_block_arg_rest_optional_keyword_callee() {
+    // Callee has rest/optional/keyword params (so `prepare_direct_send_args` builds
+    // a `NewArray` for the rest param) and also `yield`s, so it's eligible for the
+    // guarded-Proc block-arg direct-send specialization. The NewArray allocation
+    // happens between the Proc guard and the callee send.
+    assert_snapshot!(inspect("
+        def foo(opt = 10, *rest, kw: 20) = yield(opt + rest.sum + kw)
+        def test
+          blk = proc { |x| x + 1 }
+          foo(1, 2, &blk)
+        end
+        test
+        test
+    "), @"24");
+}
+
+#[test]
+fn test_send_proc_subclass_block_arg_falls_back() {
+    // A Proc subclass instance is not an exact-class Proc, so the block arg's
+    // profiled type should not match `is_proc` (which requires class_exact:Proc),
+    // and the call should fall back to a dynamic send rather than being
+    // (incorrectly) treated as a guardable exact Proc.
+    assert_snapshot!(inspect("
+        class MyProc < Proc; end
+
+        def foo = yield 3
+        def test
+          blk = MyProc.new { |x| x * 2 }
+          foo(&blk)
+        end
+        test
+        test
+    "), @"6");
 }
 
 #[test]
@@ -3651,6 +3769,29 @@ fn test_opt_eq_string_distinct_objects() {
 }
 
 #[test]
+fn test_opt_eq_string_symbol_arg_after_inlining() {
+    eval(r#"
+        # frozen_string_literal: true
+        class Foo
+          def self.bar(l, r) = l == r
+        end
+        def test(flag)
+          foo = Foo
+          if flag
+            foo.bar("a", "b")
+          else
+            foo.bar("a", :sym)
+          end
+        end
+    "#);
+    assert_snapshot!(inspect(r#"
+        test(true) # profile opt_eq in bar
+        test(true) # compile test, inlining bar with a Symbol argument on the untaken branch
+        [test(true), test(false)]
+    "#), @"[false, false]");
+}
+
+#[test]
 fn test_opt_eqq_string_same_operand() {
     assert_snapshot!(inspect(r#"
         def test(s) = s === s
@@ -4566,6 +4707,26 @@ fn test_string_append_encoding_mismatch() {
         test(s, "é")
         [s, s.encoding.name, s.valid_encoding?]
     "#), @r#"["éé", "UTF-8", true]"#);
+}
+
+#[test]
+fn test_string_append_encoding_mutation_between_appends() {
+    eval(r#"
+        def test(string, first, second)
+          string << first
+          string << second
+        end
+    "#);
+    assert_contains_opcode("test", YARVINSN_opt_ltlt);
+    assert_snapshot!(assert_compiles(r#"
+        string = String.new(encoding: Encoding::BINARY)
+        begin
+          test(string, "é", "\xFF".b)
+          :no_error
+        rescue Encoding::CompatibilityError
+          [string.bytes, string.encoding.name, string.valid_encoding?]
+        end
+    "#), @"[[195, 169], \"UTF-8\", true]");
 }
 
 #[test]
@@ -6605,6 +6766,56 @@ fn test_profile_frames_during_direct_jit_to_jit_entry() {
 
         let profiler = signal_profiler::Profiler::start(10);
         assert_snapshot!(assert_compiles("profiled_direct_loop(1_000_000)"), @"1000000");
+        assert!(profiler.samples() > 0, "rb_profile_frames was not called from SIGPROF handler");
+    });
+}
+
+// Same as test_profile_frames_during_direct_jit_to_jit_entry, but for a direct `yield` to an ISEQ block.
+#[cfg(all(
+    any(target_os = "linux", target_os = "macos"),
+    any(target_arch = "x86_64", target_arch = "aarch64"),
+))]
+#[test]
+fn test_profile_frames_during_direct_block_entry() {
+    with_inlining_threshold(0, || {
+        eval(r#"
+            def profiled_yield_each(n)
+              i = 0
+              while i < n
+                yield i
+                i += 1
+              end
+            end
+
+            def profiled_yield_shallow(n)
+              sum = 0
+              profiled_yield_each(n) { |x| sum += x }
+              sum
+            end
+
+            # Same VM frame depth as profiled_yield_shallow, on a deeper native stack
+            def profiled_yield_deep(n)
+              [n].each { |m| return __send__(:profiled_yield_shallow, m) }
+            end
+
+            def profiled_yield_loop(n)
+              i = 0
+              sum = 0
+              while i < n
+                sum += profiled_yield_deep(1)
+                sum += profiled_yield_shallow(2)
+                i += 1
+              end
+              sum
+            end
+
+            profiled_yield_loop(3)
+            profiled_yield_loop(3)
+            profiled_yield_loop(3)
+        "#);
+
+        let profiler = signal_profiler::Profiler::start(10);
+        assert_snapshot!(assert_compiles("profiled_yield_loop(1_000_000)"), @"1000000");
         assert!(profiler.samples() > 0, "rb_profile_frames was not called from SIGPROF handler");
     });
 }
