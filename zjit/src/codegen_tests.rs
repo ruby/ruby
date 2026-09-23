@@ -4916,6 +4916,23 @@ fn test_opt_str_uminus() {
 }
 
 #[test]
+fn test_send_uminus_fstring_identity() {
+    eval("
+        FSTR = -'abc'.dup
+        NON_FSTR = 'xyz'.dup.freeze
+        def test = [(-FSTR).equal?(FSTR), (-NON_FSTR).equal?(NON_FSTR), (-NON_FSTR).equal?(-'xyz')]
+        test
+    ");
+    assert_snapshot!(assert_compiles(r#"
+        result = [test]
+        class String
+          def -@ = 5
+        end
+        result << test
+    "#), @"[[true, false, true], [false, false, true]]");
+}
+
+#[test]
 fn test_opt_str_uminus_rewritten() {
     eval("
         class String

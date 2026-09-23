@@ -277,6 +277,10 @@ pub fn init() -> Annotations {
     annotate!(rb_cFloat, "to_i", inline_float_to_i);
     annotate!(rb_cFloat, "to_int", inline_float_to_i);
     annotate!(rb_cString, "to_s", inline_string_to_s, types::StringExact);
+    annotate!(rb_cString, "freeze", inline_freeze);
+    annotate!(rb_cString, "-@", inline_string_uminus);
+    annotate!(rb_cArray, "freeze", inline_freeze);
+    annotate!(rb_cHash, "freeze", inline_freeze);
     annotate!(rb_cFloat, "nan?", types::BoolExact, no_gc, leaf, elidable);
     annotate!(rb_cFloat, "finite?", types::BoolExact, no_gc, leaf, elidable);
     annotate!(rb_cFloat, "infinite?", types::Fixnum.union(types::NilClass), no_gc, leaf, elidable);
@@ -319,6 +323,37 @@ fn no_inline(_fun: &mut hir::Function, _block: hir::BlockId, _recv: hir::InsnId,
 fn inline_string_to_s(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     if args.is_empty() && fun.likely_a(recv, types::StringExact, state) {
         let recv = fun.coerce_to(block, recv, types::StringExact, state);
+        return Some(recv);
+    }
+    None
+}
+
+/// Inline `String#freeze`, `Array#freeze`, and `Hash#freeze` on an object that is already frozen,
+/// in which case they return the receiver. See `rb_str_freeze` (string.c), `rb_ary_freeze`
+/// (array.c), and `rb_hash_freeze` (hash.c).
+fn inline_freeze(fun: &mut hir::Function, _block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[] = args else { return None; };
+    let obj = fun.type_of(recv).ruby_object()?;
+    if obj.is_frozen() {
+        return Some(recv);
+    }
+    None
+}
+
+/// Inline `String#-@` on a string that is already deduplicated (an fstring).
+///
+/// This mirrors `str_uminus` and `rb_fstring` in string.c. `str_uminus` calls `rb_fstring`, which
+/// returns the receiver right away if it has `RSTRING_FSTR` set. Otherwise, for a bare `String`
+/// (no ivars, class exactly `String`), it looks up or registers the string in the fstring table
+/// and returns the interned copy, which is a different object even when the receiver is already
+/// frozen. So "frozen" is not enough to fold `-str` to `str`; we need `RSTRING_FSTR`.
+///
+/// `rb_fstring` also returns the receiver in some cases that are not handled here, such as a
+/// frozen non-bare embedded string. Those are rare, and fall back to calling the method.
+fn inline_string_uminus(fun: &mut hir::Function, _block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[] = args else { return None; };
+    let obj = fun.type_of(recv).ruby_object()?;
+    if obj.string_p() && obj.builtin_flags() & RSTRING_FSTR as usize != 0 {
         return Some(recv);
     }
     None

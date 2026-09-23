@@ -8666,6 +8666,8 @@ mod hir_opt_tests {
         bb3(v6:BasicObject):
           PatchPoint BOPRedefined(HASH_REDEFINED_OP_FLAG, BOP_FREEZE)
           v11:HashExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          PatchPoint NoSingletonClass(Hash@0x1008)
+          PatchPoint MethodRedefined(Hash@0x1008, freeze@0x1010, cme:0x1018)
           CheckInterrupts
           Return v11
         ");
@@ -8675,6 +8677,7 @@ mod hir_opt_tests {
     fn test_no_elide_freeze_with_unfrozen_hash() {
         eval("
             def test = {}.dup.freeze
+            test
         ");
         assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
@@ -8690,10 +8693,13 @@ mod hir_opt_tests {
           v10:HashExact = NewHash
           PatchPoint NoSingletonClass(Hash@0x1000)
           PatchPoint MethodRedefined(Hash@0x1000, dup@0x1008, cme:0x1010)
-          v23:BasicObject = CCallWithFrame v10, :Kernel#dup@0x1038
-          v14:BasicObject = Send v23, :freeze # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v24:BasicObject = CCallWithFrame v10, :Kernel#dup@0x1038
+          PatchPoint NoSingletonClass(Hash@0x1000)
+          PatchPoint MethodRedefined(Hash@0x1000, freeze@0x1039, cme:0x1040)
+          v28:HashExact = GuardType v24, HashExact recompile
+          v29:BasicObject = CCallWithFrame v28, :Hash#freeze@0x1068
           CheckInterrupts
-          Return v14
+          Return v29
         ");
     }
 
@@ -8762,6 +8768,8 @@ mod hir_opt_tests {
         bb3(v6:BasicObject):
           PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_FREEZE)
           v11:ArrayExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          PatchPoint NoSingletonClass(Array@0x1008)
+          PatchPoint MethodRedefined(Array@0x1008, freeze@0x1010, cme:0x1018)
           CheckInterrupts
           Return v11
         ");
@@ -8771,6 +8779,7 @@ mod hir_opt_tests {
     fn test_no_elide_freeze_with_unfrozen_ary() {
         eval("
             def test = [].dup.freeze
+            test
         ");
         assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
@@ -8786,10 +8795,13 @@ mod hir_opt_tests {
           v10:ArrayExact = NewArray
           PatchPoint NoSingletonClass(Array@0x1000)
           PatchPoint MethodRedefined(Array@0x1000, dup@0x1008, cme:0x1010)
-          v23:BasicObject = CCallWithFrame v10, :Kernel#dup@0x1038
-          v14:BasicObject = Send v23, :freeze # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v24:BasicObject = CCallWithFrame v10, :Kernel#dup@0x1038
+          PatchPoint NoSingletonClass(Array@0x1000)
+          PatchPoint MethodRedefined(Array@0x1000, freeze@0x1039, cme:0x1040)
+          v28:ArrayExact = GuardType v24, ArrayExact recompile
+          v29:BasicObject = CCallWithFrame v28, :Array#freeze@0x1068
           CheckInterrupts
-          Return v14
+          Return v29
         ");
     }
 
@@ -8858,6 +8870,8 @@ mod hir_opt_tests {
         bb3(v6:BasicObject):
           PatchPoint BOPRedefined(STRING_REDEFINED_OP_FLAG, BOP_FREEZE)
           v11:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
+          PatchPoint NoSingletonClass(String@0x1008)
+          PatchPoint MethodRedefined(String@0x1008, freeze@0x1010, cme:0x1018)
           CheckInterrupts
           Return v11
         ");
@@ -8867,6 +8881,7 @@ mod hir_opt_tests {
     fn test_no_elide_freeze_with_unfrozen_str() {
         eval("
             def test = ''.dup.freeze
+            test
         ");
         assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
@@ -8883,10 +8898,13 @@ mod hir_opt_tests {
           v11:StringExact = StringCopy v10
           PatchPoint NoSingletonClass(String@0x1008)
           PatchPoint MethodRedefined(String@0x1008, dup@0x1010, cme:0x1018)
-          v24:BasicObject = CCallWithFrame v11, :String#dup@0x1040
-          v15:BasicObject = Send v24, :freeze # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v25:BasicObject = CCallWithFrame v11, :String#dup@0x1040
+          PatchPoint NoSingletonClass(String@0x1008)
+          PatchPoint MethodRedefined(String@0x1008, freeze@0x1041, cme:0x1048)
+          v29:StringExact = GuardType v25, StringExact recompile
+          v30:BasicObject = CCallWithFrame v29, :String#freeze@0x1070
           CheckInterrupts
-          Return v15
+          Return v30
         ");
     }
 
@@ -8956,7 +8974,8 @@ mod hir_opt_tests {
         bb3(v6:BasicObject):
           PatchPoint BOPRedefined(STRING_REDEFINED_OP_FLAG, BOP_FREEZE)
           v11:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
-          PatchPoint BOPRedefined(STRING_REDEFINED_OP_FLAG, BOP_UMINUS)
+          PatchPoint NoSingletonClass(String@0x1008)
+          PatchPoint MethodRedefined(String@0x1008, -@@0x1010, cme:0x1018)
           CheckInterrupts
           Return v11
         ");
@@ -8966,6 +8985,7 @@ mod hir_opt_tests {
     fn test_no_elide_uminus_with_unfrozen_str() {
         eval("
             def test = -''.dup
+            test
         ");
         assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
@@ -8982,10 +9002,160 @@ mod hir_opt_tests {
           v11:StringExact = StringCopy v10
           PatchPoint NoSingletonClass(String@0x1008)
           PatchPoint MethodRedefined(String@0x1008, dup@0x1010, cme:0x1018)
-          v24:BasicObject = CCallWithFrame v11, :String#dup@0x1040
-          v15:BasicObject = Send v24, :-@ # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v25:BasicObject = CCallWithFrame v11, :String#dup@0x1040
+          PatchPoint NoSingletonClass(String@0x1008)
+          PatchPoint MethodRedefined(String@0x1008, -@@0x1041, cme:0x1048)
+          v29:StringExact = GuardType v25, StringExact recompile
+          v30:BasicObject = CCallWithFrame v29, :String#-@@0x1070
           CheckInterrupts
-          Return v15
+          Return v30
+        ");
+    }
+
+    #[test]
+    fn test_integer_uminus() {
+        eval("
+            def test(n) = -n
+            test(1)
+            test(2)
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :n@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :n@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1008, -@@0x1010, cme:0x1018)
+          v22:Fixnum = GuardType v10, Fixnum recompile
+          v23:BasicObject = InvokeBuiltin leaf <inline_expr>, v22
+          CheckInterrupts
+          Return v23
+        ");
+    }
+
+    #[test]
+    fn test_user_defined_uminus() {
+        eval("
+            class C
+              def -@ = 5
+            end
+            def test(o) = -o
+            test(C.new)
+            test(C.new)
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:5:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint NoSingletonClass(C@0x1008)
+          PatchPoint MethodRedefined(C@0x1008, -@@0x1010, cme:0x1018)
+          v23:ObjectSubclass[class_exact:C] = GuardType v10, ObjectSubclass[class_exact:C] recompile
+          v24:Fixnum[5] = Const Value(5)
+          CheckInterrupts
+          Return v24
+        ");
+    }
+
+    #[test]
+    fn test_elide_uminus_with_fstring_constant() {
+        eval("
+            S = -'abc'.dup
+            def test = -S
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint StableConstantNames(0x1000, S)
+          v11:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          PatchPoint NoSingletonClass(String@0x1010)
+          PatchPoint MethodRedefined(String@0x1010, -@@0x1018, cme:0x1020)
+          CheckInterrupts
+          Return v11
+        ");
+    }
+
+    #[test]
+    fn test_no_elide_uminus_with_frozen_non_fstring() {
+        eval("
+            S = 'abc'.dup.freeze
+            def test = -S
+            test
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint StableConstantNames(0x1000, S)
+          v11:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          PatchPoint NoSingletonClass(String@0x1010)
+          PatchPoint MethodRedefined(String@0x1010, -@@0x1018, cme:0x1020)
+          v23:BasicObject = CCallWithFrame v11, :String#-@@0x1048
+          CheckInterrupts
+          Return v23
+        ");
+    }
+
+    #[test]
+    fn test_optimize_freeze_on_object() {
+        eval("
+            class C; end
+            def test(o) = o.freeze
+            test(C.new)
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint NoSingletonClass(C@0x1008)
+          PatchPoint MethodRedefined(C@0x1008, freeze@0x1010, cme:0x1018)
+          v24:ObjectSubclass[class_exact:C] = GuardType v10, ObjectSubclass[class_exact:C] recompile
+          v25:BasicObject = CCallWithFrame v24, :Kernel#freeze@0x1040
+          CheckInterrupts
+          Return v25
         ");
     }
 
