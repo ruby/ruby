@@ -4641,6 +4641,41 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_yield_proc_subclass_falls_back() {
+        // A Proc subclass instance profiles with a class other than exactly Proc, so
+        // `ProfiledType::is_proc()` is false and the block arg specialization does not
+        // apply; the call stays a dynamic Send instead of being (incorrectly) treated
+        // as a guardable exact Proc.
+        let result = eval("
+            class MyProc < Proc; end
+            def foo = yield(5)
+            def test(blk) = foo(&blk)
+            blk = MyProc.new { |x| x * 10 }
+            test(blk)
+            test(blk)
+        ");
+        assert_eq!(VALUE::fixnum_from_usize(50), result);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:4:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :blk@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :blk@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v16:BasicObject = Send v9, &block, :foo, v10 # SendFallbackReason: Send: block argument is not nil
+          CheckInterrupts
+          Return v16
+        ");
+    }
+
+    #[test]
     fn test_yield_polymorphic_blocks_dispatch_directly() {
         // A yield site shared by multiple call sites (like Integer#times) profiles as
         // polymorphic. Instead of falling back to the generic InvokeBlock, dispatch on

@@ -343,6 +343,12 @@ impl ProfiledType {
     }
 
     /// Whether the profiled class is exactly Proc (subclasses return false).
+    ///
+    /// This is stricter than the interpreter, which accepts anything for which
+    /// `rb_obj_is_proc()` is true. That checks the object's typed data type, not its
+    /// class, so Proc subclasses pass. We use the class as a conservative approximation:
+    /// Proc has no allocator, so an object whose class is exactly Proc always has
+    /// `proc_data_type`. Subclasses fall back to a dynamic send.
     pub fn is_proc(&self) -> bool {
         self.class == unsafe { rb_cProc }
     }
