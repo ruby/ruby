@@ -2992,7 +2992,11 @@ singleton_class_of(VALUE obj, bool ensure_eigenclass)
             RCLASS_ATTACHED_OBJECT(klass) == obj)) {
             klass = rb_make_metaclass(obj, klass);
         }
-        RB_FL_SET_RAW(klass, RB_OBJ_FROZEN_RAW(obj));
+        if (RB_OBJ_FROZEN_RAW(obj)) {
+            // Freeze through rb_obj_freeze_inline so the singleton class also
+            // gets a frozen shape_id, not just the FL_FREEZE flag.
+            rb_obj_freeze_inline(klass);
+        }
         if (ensure_eigenclass && RB_TYPE_P(obj, T_CLASS)) {
             /* ensures an exposed class belongs to its own eigenclass */
             (void)ENSURE_EIGENCLASS(klass);
