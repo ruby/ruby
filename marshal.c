@@ -174,11 +174,12 @@ rb_marshal_compat_lookup(VALUE klass, VALUE (**dumper)(VALUE), VALUE (**loader)(
 
 struct dump_arg {
     VALUE str, dest;
-    st_table *symbols;
+    st_table symbols;
     st_table data;
     st_table userdefs;
     st_table encodings;
     st_table compat_tbl;
+    bool has_symbols;
     bool has_data;
     bool has_userdefs;
     bool has_encodings;
@@ -195,7 +196,7 @@ struct dump_call_arg {
 static VALUE
 check_dump_arg(VALUE ret, struct dump_arg *arg, const char *name)
 {
-    if (!arg->symbols) {
+    if (!arg->has_symbols) {
         rb_raise(rb_eRuntimeError, "Marshal.dump reentered at %s",
                  name);
     }
@@ -226,9 +227,9 @@ static void
 mark_dump_arg(void *ptr)
 {
     struct dump_arg *p = ptr;
-    if (!p->symbols)
+    if (!p->has_symbols)
         return;
-    rb_mark_set(p->symbols);
+    rb_mark_set(&p->symbols);
     if (p->has_data) rb_mark_set(&p->data);
     if (p->has_compat_tbl) rb_mark_hash(&p->compat_tbl);
     if (p->has_userdefs) rb_mark_set(&p->userdefs);
@@ -246,7 +247,7 @@ memsize_dump_arg(const void *ptr)
 {
     const struct dump_arg *p = (struct dump_arg *)ptr;
     size_t memsize = 0;
-    if (p->symbols) memsize += rb_st_memsize(p->symbols);
+    if (p->has_symbols) memsize += rb_st_allocated_memsize(&p->symbols);
     if (p->has_data) memsize += rb_st_allocated_memsize(&p->data);
     if (p->has_compat_tbl) memsize += rb_st_allocated_memsize(&p->compat_tbl);
     if (p->has_userdefs) memsize += rb_st_allocated_memsize(&p->userdefs);
@@ -529,7 +530,7 @@ w_symbol(VALUE sym, struct dump_arg *arg)
     st_data_t num;
     VALUE encname;
 
-    if (st_lookup(arg->symbols, sym, &num)) {
+    if (st_lookup(&arg->symbols, sym, &num)) {
         w_byte(TYPE_SYMLINK, arg);
         w_long((long)num, arg);
     }
@@ -542,7 +543,7 @@ w_symbol(VALUE sym, struct dump_arg *arg)
         encname = w_encivar(sym, arg);
         w_byte(TYPE_SYMBOL, arg);
         w_bytes(RSTRING_PTR(sym), RSTRING_LEN(sym), arg);
-        st_add_direct(arg->symbols, orig_sym, arg->symbols->num_entries);
+        st_add_direct(&arg->symbols, orig_sym, arg->symbols.num_entries);
         w_encname(encname, arg);
     }
 }
@@ -1160,9 +1161,9 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 static void
 clear_dump_arg(struct dump_arg *arg)
 {
-    if (!arg->symbols) return;
-    st_free_table(arg->symbols);
-    arg->symbols = 0;
+    if (!arg->has_symbols) return;
+    st_free_embedded_table(&arg->symbols);
+    arg->has_symbols = false;
     st_free_embedded_table(&arg->data);
     arg->has_data = false;
     arg->num_entries = 0;
@@ -1250,7 +1251,9 @@ rb_marshal_dump_limited(VALUE obj, VALUE port, int limit)
 
     wrapper = TypedData_Make_Struct(0, struct dump_arg, &dump_arg_data, arg);
     arg->dest = 0;
-    arg->symbols = st_init_numtable();
+    st_init_existing_numtable_with_size(&arg->symbols, 0);
+    arg->has_symbols = true;
+
     rb_init_existing_identtable_with_size(&arg->data, 0);
     arg->has_data = true;
     arg->num_entries = 0;
@@ -1287,11 +1290,12 @@ struct load_arg {
     long buflen;
     long readable;
     long offset;
-    st_table *symbols;
+    st_table symbols;
     st_table data;
     st_table *partial_objects;
     VALUE proc;
     st_table compat_tbl;
+    bool has_symbols;
     bool has_data;
     bool has_compat_tbl;
     bool freeze;
@@ -1300,7 +1304,7 @@ struct load_arg {
 static VALUE
 check_load_arg(VALUE ret, struct load_arg *arg, const char *name)
 {
-    if (!arg->symbols) {
+    if (!arg->has_symbols) {
         rb_raise(rb_eRuntimeError, "Marshal.load reentered at %s",
                  name);
     }
@@ -1315,9 +1319,9 @@ static void
 mark_load_arg(void *ptr)
 {
     struct load_arg *p = ptr;
-    if (!p->symbols)
+    if (!p->has_symbols)
         return;
-    rb_mark_tbl(p->symbols);
+    rb_mark_tbl(&p->symbols);
     if (p->has_data) rb_mark_tbl(&p->data);
     if (p->partial_objects) rb_mark_tbl(p->partial_objects);
     if (p->has_compat_tbl) rb_mark_hash(&p->compat_tbl);
@@ -1334,7 +1338,7 @@ memsize_load_arg(const void *ptr)
 {
     const struct load_arg *p = (struct load_arg *)ptr;
     size_t memsize = 0;
-    if (p->symbols) memsize += rb_st_memsize(p->symbols);
+    if (p->has_symbols) memsize += rb_st_allocated_memsize(&p->symbols);
     if (p->has_data) memsize += rb_st_allocated_memsize(&p->data);
     if (p->partial_objects) memsize += rb_st_memsize(p->partial_objects);
     if (p->has_compat_tbl) memsize += rb_st_allocated_memsize(&p->compat_tbl);
@@ -1625,7 +1629,7 @@ r_symlink(struct load_arg *arg)
     st_data_t sym;
     long num = r_long(arg);
 
-    if (!st_lookup(arg->symbols, num, &sym)) {
+    if (!st_lookup(&arg->symbols, num, &sym)) {
         rb_raise(rb_eArgError, "bad symbol");
     }
     return (VALUE)sym;
@@ -1637,10 +1641,10 @@ r_symreal(struct load_arg *arg, int ivar)
     VALUE s = r_bytes(arg);
     VALUE sym;
     int idx = -1;
-    st_index_t n = arg->symbols->num_entries;
+    st_index_t n = arg->symbols.num_entries;
 
     if (rb_enc_str_asciionly_p(s)) rb_enc_associate_index(s, ENCINDEX_US_ASCII);
-    st_insert(arg->symbols, (st_data_t)n, (st_data_t)s);
+    st_insert(&arg->symbols, (st_data_t)n, (st_data_t)s);
     if (ivar) {
         long num = r_long(arg);
         while (num-- > 0) {
@@ -2432,9 +2436,9 @@ clear_load_arg(struct load_arg *arg)
     arg->buflen = 0;
     arg->offset = 0;
     arg->readable = 0;
-    if (!arg->symbols) return;
-    st_free_table(arg->symbols);
-    arg->symbols = 0;
+    if (!arg->has_symbols) return;
+    st_free_embedded_table(&arg->symbols);
+    arg->has_symbols = false;
     st_free_embedded_table(&arg->data);
     arg->has_data = false;
     if (arg->partial_objects) {
@@ -2468,7 +2472,8 @@ rb_marshal_load_with_proc(VALUE port, VALUE proc, bool freeze)
     wrapper = TypedData_Make_Struct(0, struct load_arg, &load_arg_data, arg);
     arg->src = port;
     arg->offset = 0;
-    arg->symbols = st_init_numtable();
+    st_init_existing_numtable_with_size(&arg->symbols, 0);
+    arg->has_symbols = true;
     rb_init_existing_identtable_with_size(&arg->data, 0);
     arg->has_data = true;
     arg->partial_objects = (RTEST(proc) || freeze) ? rb_init_identtable() : NULL;
