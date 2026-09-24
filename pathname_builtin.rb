@@ -1941,23 +1941,18 @@ class Pathname    # * File *
   # call-seq:
   #   truncate(size) -> 0
   #
-  # Adjusts the size of file at the path in `self` to the given `size`;
-  # returns `0`:
+  # Adjusts the size of file at the path in `self` to the given `size`:
   #
   # ```ruby
+  # pn = Pathname('/tmp/t.tmp')
   # pn.write('0123456789')
-  # pn.size # => 10
+  # pn.read   # => "0123456789"
   # pn.truncate(5)
-  # pn.size # => 5
-  # pn.read # => "01234"
-  # ```
-  #
-  # Pads on the right with null characters if necessary:
-  #
-  # ```ruby
+  # pn.read   # => "01234"
   # pn.truncate(10)
-  # pn.size # => 10
-  # pn.read # => "01234\u0000\u0000\u0000\u0000\u0000"
+  # # Pads with null characters if necessary.
+  # pn.read   # => "01234\u0000\u0000\u0000\u0000\u0000"
+  # pn.delete # Clean up.
   # ```
   #
   def truncate(length) File.truncate(@path, length) end

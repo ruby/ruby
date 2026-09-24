@@ -6234,23 +6234,24 @@ nogvl_truncate(void *ptr)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     File.truncate(filepath, size) -> 0
+ *    File.truncate(filepath, size) -> 0
  *
- *  Adjusts the size of file +filepath+ to the given size; returns 0:
+ *  Adjusts the size of file `filepath` to the given `size`:
  *
- *    file = File.new('t.tmp', 'w+')
- *    file.write('0123456789')
- *    file.truncate(5)
- *    file.rewind
- *    file.read # => "01234"
- *
- *  Pads on the right with null characters if necessary:
- *
- *    file.truncate(10)
- *    file.rewind
- *    file.read # => "01234\u0000\u0000\u0000\u0000\u0000"
- *    file.close
+ *  ```ruby
+ *  filepath = '/tmp/t.tmp'
+ *  File.write(filepath, '0123456789')
+ *  File.read(filepath)   # => "0123456789"
+ *  File.truncate(filepath, 5)
+ *  File.read(filepath)   # => "01234"
+ *  # Pads with null characters if necessary.
+ *  File.truncate(filepath, 10)
+ *  File.read(filepath)   # => "01234\u0000\u0000\u0000\u0000\u0000"
+ *  File.delete(filepath) # Clean up.
+ *  ```
  *
  */
 
@@ -6289,17 +6290,33 @@ nogvl_ftruncate(void *ptr)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     file.truncate(integer)    -> 0
+ *    truncate(size) -> 0
  *
- *  Truncates <i>file</i> to at most <i>integer</i> bytes. The file
- *  must be opened for writing. Not available on all platforms.
+ *  Adjusts the size of `self` to the given `size`,
+ *  regardless of the current [position](rdoc-ref:IO@Position);
+ *  does not adjust the position:
  *
- *     f = File.new("out", "w")
- *     f.syswrite("1234567890")   #=> 10
- *     f.truncate(5)              #=> 0
- *     f.close()                  #=> nil
- *     File.size("out")           #=> 5
+ *  ```ruby
+ *  filepath = '/tmp/t.tmp'
+ *  file = File.new(filepath, 'w+')
+ *  file.write('0123456789')
+ *  file.truncate(5)
+ *  file.pos  # => 10
+ *  file.rewind
+ *  file.read # => "01234"
+ *  file.truncate(10)
+ *  file.pos  # => 5
+ *  file.rewind
+ *  # Pads with null characters if necessary.
+ *  file.read # => "01234\u0000\u0000\u0000\u0000\u0000"
+ *  # Clean up.
+ *  file.close
+ *  File.delete(filepath)
+ *  ```
+ *
  */
 
 static VALUE
