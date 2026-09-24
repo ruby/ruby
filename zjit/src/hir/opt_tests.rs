@@ -27,6 +27,32 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_send_direct_rest_array_keeps_stripped_block_arg_in_exit_state() {
+        eval("
+            def rest_callee(*args) = args
+            def test(obj, &block) = rest_callee(obj, &block)
+            test(1)
+            test(1)
+        ");
+        let iseq = crate::cruby::with_rubyvm(|| get_method_iseq("self", "test"));
+        unsafe { crate::cruby::rb_zjit_profile_disable(iseq) };
+        let mut function = iseq_to_hir(iseq).unwrap();
+        function.optimize();
+        function.validate().unwrap();
+
+        let new_array_stack_sizes: Vec<usize> = (0..function.num_insns())
+            .map(InsnId::from)
+            .filter_map(|insn_id| match function.find(insn_id) {
+                Insn::NewArray { state, .. } => Some(function.frame_state(state).stack().len()),
+                _ => None,
+            })
+            .collect();
+        // [self, obj, block]
+        assert!(!new_array_stack_sizes.is_empty(), "{}", hir_string_function(&function));
+        assert!(new_array_stack_sizes.iter().all(|&size| size == 3), "{new_array_stack_sizes:?}");
+    }
+
+    #[test]
     fn test_fold_iftrue_away() {
         eval("
             def test
