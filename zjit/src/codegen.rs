@@ -3167,6 +3167,43 @@ fn gen_guard_type(jit: &mut JITState, asm: &mut Assembler, function: &Function, 
         let masked = asm.and(val, Opnd::UImm(RUBY_FLONUM_MASK as u64));
         asm.cmp(masked, Opnd::UImm(RUBY_FLONUM_FLAG as u64));
         asm.jne(jit, side_exit_with_recompile(jit, function, state, GuardType(guard_type), recompile));
+    } else if guard_type.is_subtype(types::Float) {
+        // Float is split across Flonum and HeapFloat, so check for both. Both are OK.
+        // Flonum: (val & RUBY_FLONUM_MASK) == RUBY_FLONUM_FLAG
+        let masked = asm.and(val, Opnd::UImm(RUBY_FLONUM_MASK as u64));
+        asm.cmp(masked, Opnd::UImm(RUBY_FLONUM_FLAG as u64));
+        let hir_block_id = asm.current_block().hir_block_id;
+        let rpo_idx = asm.current_block().rpo_index;
+        let check_heap_float = asm.new_block(hir_block_id, false, rpo_idx);
+        let result_block = asm.new_block(hir_block_id, false, rpo_idx);
+        asm.jne(jit, Target::Block(Box::new(lir::BranchEdge { target: check_heap_float, args: vec![] })));
+        asm.jmp(Target::Block(Box::new(lir::BranchEdge { target: result_block, args: vec![] })));
+
+        asm.set_current_block(check_heap_float);
+        let label = jit.get_label(asm, check_heap_float, hir_block_id);
+        asm.write_label(label);
+        // HeapFloat: check the builtin type
+        let side_exit = side_exit_with_recompile(jit, function, state, GuardType(guard_type), recompile);
+        if !is_known_heap_basic_object {
+            // Check special constant
+            asm.test(val, Opnd::UImm(RUBY_IMMEDIATE_MASK as u64));
+            asm.jnz(jit, side_exit.clone());
+
+            // Check false
+            asm.cmp(val, Qfalse.into());
+            asm.je(jit, side_exit.clone());
+        }
+        // Mask and check the builtin type
+        let val = asm.load_mem(val);
+        let flags = asm.load(Opnd::mem(VALUE_BITS, val, RUBY_OFFSET_RBASIC_FLAGS));
+        let tag   = asm.and(flags, Opnd::UImm(RUBY_T_MASK as u64));
+        asm.cmp(tag, Opnd::UImm(RUBY_T_FLOAT as u64));
+        asm.jne(jit, side_exit);
+        asm.jmp(Target::Block(Box::new(lir::BranchEdge { target: result_block, args: vec![] })));
+
+        asm.set_current_block(result_block);
+        let label = jit.get_label(asm, result_block, hir_block_id);
+        asm.write_label(label);
     } else if guard_type.is_subtype(types::StaticSymbol) {
         // Static symbols have (val & 0xff) == RUBY_SYMBOL_FLAG
         // Use 8-bit comparison like YJIT does.
