@@ -186,7 +186,7 @@ module Prism # :nodoc:
     # pointer directly; for files it uses a pm_source_t under the hood.
     class PrismSource # :nodoc:
       PLATFORM_EXPECTS_UTF8 =
-        RbConfig::CONFIG["host_os"].match?(/bccwin|cygwin|djgpp|mingw|mswin|wince|darwin/i)
+        RbConfig::CONFIG["host_os"].match?(/cygwin|mingw|mswin|darwin/i)
 
       attr_reader :pointer, :length
 
