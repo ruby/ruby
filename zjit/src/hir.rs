@@ -1888,8 +1888,8 @@ impl Insn {
             Insn::GetBlockParam { .. } => effects::Any,
             Insn::SymToProc { .. } => effects::Any,
             Insn::Snapshot { .. } => effects::Empty,
-            Insn::Jump(_) => effects::Any,
-            Insn::CondBranch { .. } => effects::Any,
+            Insn::Jump(_) => Effect::read_write(abstract_heaps::Empty, abstract_heaps::Control),
+            Insn::CondBranch { .. } => Effect::read_write(abstract_heaps::Empty, abstract_heaps::Control),
             Insn::CondBranchHasType(insn)
                 => Effect::read_write(
                     if insn.expected.is_subtype(types::Immediate) { abstract_heaps::Empty } else { abstract_heaps::Memory },
@@ -6647,10 +6647,7 @@ impl Function {
 
 
     fn optimize_load_store(&mut self) {
-        // TODO: Maybe we could have another patch as Kokubun recommended to retain information needed across global optimizations?
-        // the back edge optimization seems common, as does the traversal techniques and it would be nice to have a simple API
-        // Also the abstract interpretations are common too
-
+        // TODO: Add a test that exercises the alias across blocks construction check
         use std::collections::hash_map::Entry;
 
         #[derive(Hash, PartialEq, Eq, Clone, Copy)]
@@ -6659,11 +6656,10 @@ impl Function {
             offset: i32,
         }
 
-
         let cfi = ControlFlowInfo::new(self);
         let rpo = &cfi.reverse_post_order;
         let mut changed = true;
-        // TODO: Add comments and consolidate back edge checks among various different passes
+        let mut has_back_edge = false;
         let mut rpo_order = vec![usize::MAX; self.blocks.len()];
         for (idx, &block_id) in rpo.iter().enumerate() {
             rpo_order[block_id] = idx;
@@ -6675,17 +6671,11 @@ impl Function {
         // The cache is pruned when loads and stores can alias between objects.
         let mut cache: Vec<HashMap<Key, InsnId>> = vec![HashMap::new(); cfi.num_blocks];
 
-        let mut has_back_edge = false;
-
-        // IDEA: It would be really cool to have a macro that took a loop body with custom code that only gets executed on the first pass
-        // We often want to construct analysis information the first time and use it without modification for each subsequent loop. But having two loops containing all the logic is really gross.
-
         loop {
             for (rpo_index, &block_id) in rpo.iter().enumerate() {
                 let mut block_cache: HashMap<Key, InsnId>  = HashMap::new();
                 // Populate the block cache with information from predecessors
-                // If all predecessors contain the same entry and the value aligns, add it to the map
-                // TODO: Do a clean up pass to remove all the alias information
+                // If all predecessors contain the same entry and value, add it to the map
                 match cfi.predecessors(block_id) {
                     [] => {},
                     [head] => {
@@ -6698,8 +6688,21 @@ impl Function {
                         }
 
                         // If multiple entries contain the same offset, they may alias.
-                        // Unlike the case inside of the pass, we have no "newest". If there are multiple aliases, we must remove all entries at this offset.
-                        // TODO: Implement this
+                        // Unlike the case inside of the pass, we have no newest element. We must remove all entries at this offset.
+                        // let aliases: Vec<Key> = Vec::with_capacity(block_cache.len());
+                        let mut aliases: HashMap<i32, Vec<Key>> = HashMap::new();
+
+                        for (key, _) in block_cache.iter() {
+                            aliases.entry(key.offset).or_default().push(*key);
+                        }
+
+                        for (_, keys) in aliases.iter() {
+                            if keys.len() >= 2 {
+                                for key in keys {
+                                    block_cache.remove(&key);
+                                }
+                            }
+                        }
                     }
                 }
                 let old_insns = std::mem::take(&mut self.blocks[block_id].insns);
@@ -6759,16 +6762,6 @@ impl Function {
                             block_cache.retain(|key, _| key.offset != offset);
                             insn_id
                         },
-                        insn @ &Insn::Jump(_) | insn @ &Insn::CondBranch { .. } => {
-                            // Check for back edges
-                            // We know that Jump and CondBranch don't write the Memory effect so we don't need to catch them in the "all other cases besides load, store, and write barrier" case
-                            for edge in insn.outgoing_edges() {
-                                if rpo_order[edge.target] <= rpo_index {
-                                    has_back_edge |= true;
-                                }
-                            }
-                            insn_id
-                        }
                         insn => {
                             // Check for back edges
                             // We can avoid doing this in WriteBarrier, LoadField, and StoreField cases because these instructions do not have outgoing edges.
