@@ -2741,6 +2741,12 @@ rb_builtin_fixnum_inc(rb_execution_context_t *ec, VALUE self, VALUE num)
     return LONG2FIX(FIX2LONG(num) + 1);
 }
 
+VALUE
+rb_builtin_ary_first(rb_execution_context_t *ec, VALUE self)
+{
+    return ary_first(self);
+}
+
 // Push a value onto an array and return the value.
 static VALUE
 rb_jit_ary_push(rb_execution_context_t *ec, VALUE self, VALUE ary, VALUE val)
