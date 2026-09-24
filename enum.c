@@ -4915,11 +4915,13 @@ enum_uniq(VALUE obj)
         VALUE hash = rb_obj_hide(rb_hash_new());
         rb_block_call(obj, id_each, 0, 0, uniq_iter, hash);
         ret = rb_hash_values(hash);
+        rb_hash_clear(hash);
     }
     else {
         VALUE set = rb_obj_hide(rb_set_new());
         rb_block_call(obj, id_each, 0, 0, uniq_func, set);
         ret = rb_set_to_a(set);
+        rb_set_clear(set);
     }
     return ret;
 }
