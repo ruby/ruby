@@ -1160,7 +1160,7 @@ rb_gvar_defined(ID id)
 
         defined = entry->var->getter != rb_gvar_undef_getter ||
             (gvar_use_box_tbl(box, entry) &&
-             RTEST(rb_hash_has_key(box->gvar_tbl, rb_id2sym(id))));
+             RTEST(rb_hash_has_key(box->gvar_tbl, rb_id2sym(entry->var->id))));
     }
     return RBOOL(defined);
 }

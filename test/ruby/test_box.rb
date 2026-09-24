@@ -728,6 +728,7 @@ class TestBox < Test::Unit::TestCase
       assert_equal [1, 1], [$aliased_original, $aliased_alias]
       $aliased_alias = 2
       assert_equal [2, 2], [$aliased_original, $aliased_alias]
+      assert_equal "global-variable", defined?($aliased_alias)
 
       in_box = Ruby::Box.new.eval(<<~'CODE')
         $aliased_original = 3
