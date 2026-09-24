@@ -59,10 +59,29 @@ class Test_StringCapacity < Test::Unit::TestCase
     assert_equal(s.length, capa(s))
   end
 
+  # Temporarily handing a string's buffer over to a frozen shared root
+  # (rb_str_tmp_frozen_acquire) uses an internal ASCII-8BIT string.  Use
+  # UTF-16LE so that the terminator length of the root differs from the
+  # terminator length of the string to verify that releasing the root restores
+  # the capacity in the string's own encoding.
+  def test_frozen_root_capacity_with_multibyte_terminator
+    s = multibyte_terminator_string
+    capacity = capa(s)
+    assert_operator(capacity, :>=, s.bytesize)
+
+    Bug::String.tmp_frozen_acquire_release(s)
+
+    assert_equal(capacity, capa(s))
+  end
+
   private
 
   def capa(str)
     Bug::String.capacity(str)
+  end
+
+  def multibyte_terminator_string
+    ("\u{30AF}\u{30FC}\u{30DD}\u{30F3}\u{1F381}" * 100).encode("UTF-16LE")
   end
 
   def embed_header_size
