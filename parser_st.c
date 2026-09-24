@@ -84,6 +84,8 @@ nonempty_memcpy(void *dest, const void *src, size_t n)
 #define st_init_existing_strtable_with_size rb_parser_st_init_existing_strtable_with_size
 #undef st_init_existing_numtable_with_size
 #define st_init_existing_numtable_with_size rb_parser_st_init_existing_numtable_with_size
+#undef st_allocated_memsize
+#define st_allocated_memsize rb_parser_st_allocated_memsize
 #undef st_free_embedded_table
 #define st_free_embedded_table rb_parser_st_free_embedded_table
 #undef st_insert

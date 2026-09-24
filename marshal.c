@@ -32,6 +32,7 @@
 #include "internal/numeric.h"
 #include "internal/object.h"
 #include "internal/re.h"
+#include "internal/st.h"
 #include "internal/struct.h"
 #include "internal/symbol.h"
 #include "internal/util.h"
@@ -175,9 +176,10 @@ struct dump_arg {
     VALUE str, dest;
     st_table *symbols;
     st_table *data;
-    st_table *compat_tbl;
     st_table *encodings;
     st_table *userdefs;
+    st_table compat_tbl;
+    bool has_compat_tbl;
     st_index_t num_entries;
 };
 
@@ -225,7 +227,7 @@ mark_dump_arg(void *ptr)
         return;
     rb_mark_set(p->symbols);
     rb_mark_set(p->data);
-    rb_mark_hash(p->compat_tbl);
+    if (p->has_compat_tbl) rb_mark_hash(&p->compat_tbl);
     rb_mark_set(p->userdefs);
     rb_gc_mark(p->str);
 }
@@ -243,7 +245,7 @@ memsize_dump_arg(const void *ptr)
     size_t memsize = 0;
     if (p->symbols) memsize += rb_st_memsize(p->symbols);
     if (p->data) memsize += rb_st_memsize(p->data);
-    if (p->compat_tbl) memsize += rb_st_memsize(p->compat_tbl);
+    if (p->has_compat_tbl) memsize += rb_st_allocated_memsize(&p->compat_tbl);
     if (p->userdefs) memsize += rb_st_memsize(p->userdefs);
     if (p->encodings) memsize += rb_st_memsize(p->encodings);
     return memsize;
@@ -593,8 +595,8 @@ w_class(char type, VALUE obj, struct dump_arg *arg, int check)
     st_data_t real_obj;
     VALUE klass;
 
-    if (arg->compat_tbl &&
-                st_lookup(arg->compat_tbl, (st_data_t)obj, &real_obj)) {
+    if (arg->has_compat_tbl &&
+                st_lookup(&arg->compat_tbl, (st_data_t)obj, &real_obj)) {
         obj = (VALUE)real_obj;
     }
     klass = CLASS_OF(obj);
@@ -968,10 +970,11 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
                 marshal_compat_t *compat = (marshal_compat_t*)compat_data;
                 VALUE real_obj = obj;
                 obj = compat->dumper(real_obj);
-                if (!arg->compat_tbl) {
-                    arg->compat_tbl = rb_init_identtable();
+                if (!arg->has_compat_tbl) {
+                    rb_init_existing_identtable_with_size(&arg->compat_tbl, 1);
+                    arg->has_compat_tbl = true;
                 }
-                st_insert(arg->compat_tbl, (st_data_t)obj, (st_data_t)real_obj);
+                st_insert(&arg->compat_tbl, (st_data_t)obj, (st_data_t)real_obj);
                 if (obj != real_obj && UNDEF_P(ivobj)) hasiv = 0;
             }
         }
@@ -1153,9 +1156,9 @@ clear_dump_arg(struct dump_arg *arg)
     st_free_table(arg->data);
     arg->data = 0;
     arg->num_entries = 0;
-    if (arg->compat_tbl) {
-        st_free_table(arg->compat_tbl);
-        arg->compat_tbl = 0;
+    if (arg->has_compat_tbl) {
+        st_free_embedded_table(&arg->compat_tbl);
+        arg->has_compat_tbl = false;
     }
     if (arg->encodings) {
         st_free_table(arg->encodings);
@@ -1240,7 +1243,6 @@ rb_marshal_dump_limited(VALUE obj, VALUE port, int limit)
     arg->symbols = st_init_numtable();
     arg->data    = rb_init_identtable();
     arg->num_entries = 0;
-    arg->compat_tbl = 0;
     arg->encodings = 0;
     arg->userdefs = 0;
     arg->str = rb_str_buf_new(0);
@@ -1280,7 +1282,8 @@ struct load_arg {
     st_table *data;
     st_table *partial_objects;
     VALUE proc;
-    st_table *compat_tbl;
+    st_table compat_tbl;
+    bool has_compat_tbl;
     bool freeze;
 };
 
@@ -1307,7 +1310,7 @@ mark_load_arg(void *ptr)
     rb_mark_tbl(p->symbols);
     rb_mark_tbl(p->data);
     if (p->partial_objects) rb_mark_tbl(p->partial_objects);
-    rb_mark_hash(p->compat_tbl);
+    if (p->has_compat_tbl) rb_mark_hash(&p->compat_tbl);
 }
 
 static void
@@ -1324,7 +1327,7 @@ memsize_load_arg(const void *ptr)
     if (p->symbols) memsize += rb_st_memsize(p->symbols);
     if (p->data) memsize += rb_st_memsize(p->data);
     if (p->partial_objects) memsize += rb_st_memsize(p->partial_objects);
-    if (p->compat_tbl) memsize += rb_st_memsize(p->compat_tbl);
+    if (p->has_compat_tbl) memsize += rb_st_allocated_memsize(&p->compat_tbl);
     return memsize;
 }
 
@@ -1684,9 +1687,9 @@ static VALUE
 r_entry0(VALUE v, st_index_t num, struct load_arg *arg)
 {
     st_data_t real_obj = (st_data_t)v;
-    if (arg->compat_tbl) {
+    if (arg->has_compat_tbl) {
         /* real_obj is kept if not found */
-        st_lookup(arg->compat_tbl, v, &real_obj);
+        st_lookup(&arg->compat_tbl, v, &real_obj);
     }
     st_insert(arg->data, num, real_obj);
     if (arg->partial_objects) {
@@ -1700,7 +1703,7 @@ r_fixup_compat(VALUE v, struct load_arg *arg)
 {
     st_data_t data;
     st_data_t key = (st_data_t)v;
-    if (arg->compat_tbl && st_delete(arg->compat_tbl, &key, &data)) {
+    if (arg->has_compat_tbl && st_delete(&arg->compat_tbl, &key, &data)) {
         VALUE real_obj = (VALUE)data;
         rb_alloc_func_t allocator = rb_get_alloc_func(CLASS_OF(real_obj));
         if (st_lookup(compat_allocator_tbl, (st_data_t)allocator, &data)) {
@@ -1869,10 +1872,11 @@ obj_alloc_by_klass(VALUE klass, struct load_arg *arg, VALUE *oldclass)
         VALUE obj = rb_obj_alloc(compat->oldclass);
         if (oldclass) *oldclass = compat->oldclass;
 
-        if (!arg->compat_tbl) {
-            arg->compat_tbl = rb_init_identtable();
+        if (!arg->has_compat_tbl) {
+            rb_init_existing_identtable_with_size(&arg->compat_tbl, 1);
+            arg->has_compat_tbl = true;
         }
-        st_insert(arg->compat_tbl, (st_data_t)obj, (st_data_t)real_obj);
+        st_insert(&arg->compat_tbl, (st_data_t)obj, (st_data_t)real_obj);
         return obj;
     }
 
@@ -2427,9 +2431,9 @@ clear_load_arg(struct load_arg *arg)
         st_free_table(arg->partial_objects);
         arg->partial_objects = 0;
     }
-    if (arg->compat_tbl) {
-        st_free_table(arg->compat_tbl);
-        arg->compat_tbl = 0;
+    if (arg->has_compat_tbl) {
+        st_free_embedded_table(&arg->compat_tbl);
+        arg->has_compat_tbl = false;
     }
 }
 
@@ -2457,7 +2461,6 @@ rb_marshal_load_with_proc(VALUE port, VALUE proc, bool freeze)
     arg->symbols = st_init_numtable();
     arg->data    = rb_init_identtable();
     arg->partial_objects = (RTEST(proc) || freeze) ? rb_init_identtable() : NULL;
-    arg->compat_tbl = 0;
     arg->proc = 0;
     arg->readable = 0;
     arg->freeze = freeze;
