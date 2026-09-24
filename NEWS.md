@@ -290,6 +290,20 @@ Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for det
     * Interix (Windows Services for UNIX)
     * SunOS 4 (Solaris, i.e. SunOS 5, is unaffected)
     * BSD/OS (BSDi)
+    * NeXTSTEP, OpenStep and Rhapsody
+
+* Support code for the following platforms has also been removed.  None
+  of them has a platform maintainer.
+
+    * AmigaOS
+    * AtheOS
+    * ESIX
+    * HI-UX/MPP
+    * IRIX
+    * OSF/1 (Tru64 UNIX)
+    * QNX Neutrino
+    * System V Release 4
+    * UX/PDS
 
 * Windows 10 1703 or later no longer needs the `LongPathsEnabled` registry
   value to use paths longer than 260 characters.  This applies to any process
