@@ -1993,14 +1993,26 @@ rb_file_symlink_p(VALUE obj, VALUE fname)
 }
 
 /*
+ * :markup: markdown
+ *
  * call-seq:
- *   File.socket?(filepath)   ->  true or false
+ *   File.socket?(object) -> true or false
  *
- * Returns +true+ if +filepath+ points to a socket, +false+ otherwise:
+ * Returns whether the given `object` represents a socket;
+ * the `object` may be a path or an IO object:
  *
- *   require 'socket'
- *   File.socket?(Socket.new(:INET, :STREAM)) # => true
- *   File.socket?(File.new('t.txt'))          # => false
+ * ```ruby
+ * require 'socket'
+ * sock_path = '/tmp/socket'
+ * server = UNIXServer.new(sock_path)
+ * File.socket?(sock_path) # => true
+ * File.delete(sock_path)  # Clean up.
+ * file_path = '/etc/passwd'
+ * File.file?(file_path)   # => true
+ * File.socket?(file_path) # => false
+ * File.socket?($stdin)    # => false
+ * File.socket?('nosuch')  # => false
+ * ```
  *
  */
 
@@ -6874,13 +6886,25 @@ rb_stat_l(VALUE obj)
 }
 
 /*
+ * :markup: markdown
+ *
  *  call-seq:
- *     stat.socket?    -> true or false
+ *    socket? -> true or false
  *
- *  Returns +true+ if <i>stat</i> is a socket, +false+ if it isn't or if the
- *  operating system doesn't support this feature.
+ *  Returns whether entry in `self` is a socket:
  *
- *     File.stat("testfile").socket?   #=> false
+ *  ```ruby
+ *  sock_path = '/tmp/socket'
+ *  server = UNIXServer.new(sock_path)
+ *  stat = File.stat(sock_path)
+ *  stat.socket?           # => true
+ *  File.delete(sock_path) # Clean up.
+ *  stat.socket?           # => true
+ *  file_path = '/etc/passwd'
+ *  File.exist?(file_path) # => true  # Snapshot not updated.
+ *  stat = File.stat(file_path)
+ *  stat.socket?           # => false
+ *  ```
  *
  */
 
