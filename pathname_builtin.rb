@@ -2719,12 +2719,12 @@ class Pathname    # * FileTest *
   # is a [symbolic link](rdoc-ref:file/symbolic_links.md):
   #
   # ```ruby
-  # file_pn = Pathname('README.md')
-  # link_pn = Pathname('foo')
+  # file_pn = Pathname('/etc/passwd')
+  # link_pn = Pathname('/tmp/foo')
   # link_pn.make_symlink(file_pn)
   # file_pn.symlink? # => false
   # link_pn.symlink? # => true
-  # link_pn.unlink   # Clean up.
+  # link_pn.delete   # Clean up.
   # ```
   #
   def symlink?() FileTest.symlink?(@path) end

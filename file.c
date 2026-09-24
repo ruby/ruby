@@ -1953,12 +1953,13 @@ rb_file_pipe_p(VALUE obj, VALUE fname)
  * is a [symbolic link](rdoc-ref:file/symbolic_links.md):
  *
  * ```ruby
- * filepath = 'README.md'
- * linkpath = 'foo'
+ * filepath = '/etc/passwd'
+ * linkpath = '/tmp/foo'
  * File.symlink(filepath, linkpath)
  * File.symlink?(filepath) # => false
  * File.symlink?(linkpath) # => true
- * File.unlink(linkpath)   # Clean up.
+ * File.symlink?('.')      # => false
+ * File.delete(linkpath)   # Clean up.
  * ```
  *
  */
@@ -6880,17 +6881,23 @@ rb_stat_p(VALUE obj)
  *  call-seq:
  *    symlink? -> true or false
  *
- *  Returns whether the entry in `self`
+ *  Returns whether the entry in `self` (see [Snapshot](rdoc-ref:File::Stat@Snapshot))
  *  is a [symbolic link](rdoc-ref:file/symbolic_links.md):
  *
  *  ```ruby
- *  filepath = 'README.md'
- *  linkpath = 'foo'
+ *  filepath = '/etc/passwd'
+ *  linkpath = '/tmp/foo'
  *  File.symlink(filepath, linkpath)
  *  File.stat(filepath).symlink?  # => false
- *  File.stat(linkpath).symlink?  # => false  # stat followed symlink.
- *  File.lstat(linkpath).symlink? # => true   # lstat did not follow symlink.
- *  File.unlink(linkpath)         # Clean up.
+ *  File.lstat(filepath).symlink? # => false
+ *  stat = File.stat(linkpath)    # Snapshot with stat follows link.
+ *  stat.symlink?                 # => false
+ *  lstat = File.lstat(linkpath)  # Snapshot with lstat does not follow link.
+ *  lstat.symlink?                # => true
+ *  File.delete(linkpath)         # Clean up.
+ *  # Snapshots are unchanged, even when link deleted.
+ *  stat.symlink?                 # => false
+ *  lstat.symlink?                # => true
  *  ```
  *
  */
