@@ -1292,11 +1292,12 @@ struct load_arg {
     long offset;
     st_table symbols;
     st_table data;
-    st_table *partial_objects;
+    st_table partial_objects;
     VALUE proc;
     st_table compat_tbl;
     bool has_symbols;
     bool has_data;
+    bool has_partial_objects;
     bool has_compat_tbl;
     bool freeze;
 };
@@ -1323,7 +1324,7 @@ mark_load_arg(void *ptr)
         return;
     rb_mark_tbl(&p->symbols);
     if (p->has_data) rb_mark_tbl(&p->data);
-    if (p->partial_objects) rb_mark_tbl(p->partial_objects);
+    if (p->has_partial_objects) rb_mark_tbl(&p->partial_objects);
     if (p->has_compat_tbl) rb_mark_hash(&p->compat_tbl);
 }
 
@@ -1340,7 +1341,7 @@ memsize_load_arg(const void *ptr)
     size_t memsize = 0;
     if (p->has_symbols) memsize += rb_st_allocated_memsize(&p->symbols);
     if (p->has_data) memsize += rb_st_allocated_memsize(&p->data);
-    if (p->partial_objects) memsize += rb_st_memsize(p->partial_objects);
+    if (p->has_partial_objects) memsize += rb_st_allocated_memsize(&p->partial_objects);
     if (p->has_compat_tbl) memsize += rb_st_allocated_memsize(&p->compat_tbl);
     return memsize;
 }
@@ -1706,8 +1707,8 @@ r_entry0(VALUE v, st_index_t num, struct load_arg *arg)
         st_lookup(&arg->compat_tbl, v, &real_obj);
     }
     st_insert(&arg->data, num, real_obj);
-    if (arg->partial_objects) {
-        st_insert(arg->partial_objects, (st_data_t)real_obj, Qtrue);
+    if (arg->has_partial_objects) {
+        st_insert(&arg->partial_objects, (st_data_t)real_obj, Qtrue);
     }
     return v;
 }
@@ -1743,10 +1744,10 @@ r_leave(VALUE v, struct load_arg *arg, bool partial)
 {
     v = r_fixup_compat(v, arg);
     if (!partial) {
-        if (arg->partial_objects) {
+        if (arg->has_partial_objects) {
             st_data_t data;
             st_data_t key = (st_data_t)v;
-            st_delete(arg->partial_objects, &key, &data);
+            st_delete(&arg->partial_objects, &key, &data);
         }
         if (arg->freeze) {
             if (RB_TYPE_P(v, T_MODULE) || RB_TYPE_P(v, T_CLASS)) {
@@ -1943,8 +1944,8 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE klass, VALUE ex
             rb_raise(rb_eArgError, "dump format error (unlinked)");
         }
         v = (VALUE)link;
-        if (arg->partial_objects &&
-            !st_lookup(arg->partial_objects, (st_data_t)v, &link)) {
+        if (arg->has_partial_objects &&
+            !st_lookup(&arg->partial_objects, (st_data_t)v, &link)) {
             if (arg->freeze && RB_TYPE_P(v, T_STRING)) {
                 v = rb_str_to_interned_str(v);
             }
@@ -2441,9 +2442,9 @@ clear_load_arg(struct load_arg *arg)
     arg->has_symbols = false;
     st_free_embedded_table(&arg->data);
     arg->has_data = false;
-    if (arg->partial_objects) {
-        st_free_table(arg->partial_objects);
-        arg->partial_objects = 0;
+    if (arg->has_partial_objects) {
+        st_free_embedded_table(&arg->partial_objects);
+        arg->has_partial_objects = false;
     }
     if (arg->has_compat_tbl) {
         st_free_embedded_table(&arg->compat_tbl);
@@ -2476,7 +2477,10 @@ rb_marshal_load_with_proc(VALUE port, VALUE proc, bool freeze)
     arg->has_symbols = true;
     rb_init_existing_identtable_with_size(&arg->data, 0);
     arg->has_data = true;
-    arg->partial_objects = (RTEST(proc) || freeze) ? rb_init_identtable() : NULL;
+    if (RTEST(proc) || freeze) {
+        rb_init_existing_identtable_with_size(&arg->partial_objects, 0);
+        arg->has_partial_objects = true;
+    }
     arg->proc = 0;
     arg->readable = 0;
     arg->freeze = freeze;
