@@ -1106,7 +1106,6 @@ RSpec.describe "bundle gem" do
 
       def setup_rust_env
         skip "rust toolchain of mingw is broken" if RUBY_PLATFORM.match?("mingw")
-        skip "magnus has no release supporting the extended rb_data_type_struct yet (https://github.com/matsadler/magnus/issues/173)" if rb_data_type_struct_extended?
 
         env = {
           "CARGO_HOME" => ENV.fetch("CARGO_HOME", File.join(ENV["HOME"], ".cargo")),
