@@ -56,10 +56,6 @@
 # define USE_SETVBUF
 #endif
 
-#ifdef __QNXNTO__
-#include <unix.h>
-#endif
-
 #include <sys/types.h>
 #if defined(HAVE_SYS_IOCTL_H) && !defined(_WIN32)
 #include <sys/ioctl.h>
@@ -76,7 +72,7 @@
 
 #include <sys/stat.h>
 
-#if defined(HAVE_SYS_PARAM_H) || defined(__HIUX_MPP__)
+#if defined(HAVE_SYS_PARAM_H)
 # include <sys/param.h>
 #endif
 

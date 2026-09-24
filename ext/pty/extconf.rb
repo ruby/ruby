@@ -19,7 +19,6 @@ if /mswin|mingw/ !~ RUBY_PLATFORM
   end
   if openpt or
       (util or have_func("openpty")) or
-      have_func("_getpty") or
       have_func("ioctl")
     have_macro("HAVE_FCHMOD") or have_func("fchmod")
     have_macro("HAVE_FCHOWN") or have_func("fchown")
