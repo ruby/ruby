@@ -47,7 +47,7 @@ assert_equal 'ok', %q{
         Process.wait2(pid2)
       else
         w.close
-        sleep 0.2
+        sleep 0.3
       end
       exit true
     end
