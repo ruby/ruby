@@ -4486,9 +4486,8 @@ fs_enc_check(VALUE path1, VALUE path2)
 
 #if USE_NTFS
 static char *
-ntfs_tail(const char *path, const char *end, rb_encoding *enc)
+ntfs_tail(const char *path, const char *end, bool mb_enc, rb_encoding *enc)
 {
-    bool mb_enc = enc_mbclen_needed(enc);
     while (path < end && *path == '.') path++;
     while (path < end && !isADS(*path)) {
         if (istrailinggarbage(*path)) {
@@ -5597,7 +5596,7 @@ enc_find_basename(const char *name, long *baselen, long *alllen, bool mb_enc, rb
             }
         }
 #if USE_NTFS
-        n = ntfs_tail(p, end, enc) - p;
+        n = ntfs_tail(p, end, mb_enc, enc) - p;
 #else
         n = chompdirsep(p, end, mb_enc, enc) - p;
 #endif
