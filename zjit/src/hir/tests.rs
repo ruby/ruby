@@ -5702,22 +5702,24 @@ pub(crate) mod hir_build_tests {
           v3:BasicObject = LoadField v2, :full_mark@0x1000
           v4:BasicObject = LoadField v2, :immediate_mark@0x1001
           v5:BasicObject = LoadField v2, :immediate_sweep@0x1002
-          v6:BasicObject = LoadField v2, :<empty>@0x1003
-          Jump bb3(v1, v3, v4, v5, v6)
+          v6:BasicObject = LoadField v2, :global@0x1003
+          v7:BasicObject = LoadField v2, :<empty>@0x1004
+          Jump bb3(v1, v3, v4, v5, v6, v7)
         bb2():
           EntryPoint JIT(0)
-          v9:BasicObject = LoadArg :self@0
-          v10:BasicObject = LoadArg :full_mark@1
-          v11:BasicObject = LoadArg :immediate_mark@2
-          v12:BasicObject = LoadArg :immediate_sweep@3
-          v13:CPtr = GetEP 0
-          v14:BasicObject = LoadField v13, :<empty>@0x1004
-          Jump bb3(v9, v10, v11, v12, v14)
-        bb3(v16:BasicObject, v17:BasicObject, v18:BasicObject, v19:BasicObject, v20:BasicObject):
-          v27:FalseClass = Const Value(false)
-          v29:BasicObject = InvokeBuiltin gc_start_internal, v16, v17, v18, v19, v27
+          v10:BasicObject = LoadArg :self@0
+          v11:BasicObject = LoadArg :full_mark@1
+          v12:BasicObject = LoadArg :immediate_mark@2
+          v13:BasicObject = LoadArg :immediate_sweep@3
+          v14:BasicObject = LoadArg :global@4
+          v15:CPtr = GetEP 0
+          v16:BasicObject = LoadField v15, :<empty>@0x1005
+          Jump bb3(v10, v11, v12, v13, v14, v16)
+        bb3(v18:BasicObject, v19:BasicObject, v20:BasicObject, v21:BasicObject, v22:BasicObject, v23:BasicObject):
+          v30:FalseClass = Const Value(false)
+          v33:BasicObject = InvokeBuiltin gc_start_internal, v18, v19, v20, v21, v30, v22
           CheckInterrupts
-          Return v29
+          Return v33
         ");
     }
 
