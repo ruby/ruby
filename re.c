@@ -4895,6 +4895,7 @@ match_setter(VALUE val, ID _x, VALUE *_y)
 {
     if (!NIL_P(val)) {
         Check_Type(val, T_MATCH);
+        rb_match_busy(val);
     }
     rb_backref_set(val);
 }
