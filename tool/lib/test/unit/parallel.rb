@@ -20,6 +20,7 @@ module Test
       end
 
       def _run_suites(suites, type) # :nodoc:
+        GC.start
         suites.map do |suite|
           _run_suite(suite, type)
         end

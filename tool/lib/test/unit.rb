@@ -808,10 +808,10 @@ module Test
         _prepare_run(suites, type)
         @interrupt = nil
         result = []
-        GC.start
         if @options[:parallel]
           _run_parallel suites, type, result
         else
+          GC.start
           suites.each {|suite|
             begin
               result << _run_suite(suite, type)
