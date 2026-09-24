@@ -1916,24 +1916,33 @@ class Pathname    # * File *
   # call-seq:
   #   make_symlink(target_path) -> 0
   #
+  # Not supported on some platforms.
+  #
+  #
   # Creates a [symbolic link](rdoc-ref:file/symbolic_links.md)
   # at the path in `self` to the entry at `target_path`:
   #
   # ```ruby
-  # # Create Pathnames.
-  # file_pn = Pathname('doc/extension.rdoc') # => #<Pathname:doc/extension.rdoc>
-  # target_pn = Pathname('..').join(file_pn) # => #<Pathname:../doc/extension.rdoc>
-  # link_pn = Pathname('lib/u.tmp')          # => #<Pathname:lib/u.tmp>
-  # # Create link and verify.
-  # link_pn.make_symlink(target_pn)
-  # file_pn.read == link_pn.read             # => true
-  # link_pn.delete                           # Clean up.
+  # file_pn = Pathname('/etc/passwd')
+  # link_pn = Pathname('/tmp/foo')
+  # link_pn.make_symlink(file_pn)
+  # link_pn.readlink             # => #<Pathname:/etc/passwd>
+  # file_pn.read == link_pn.read # => true
   # ```
   #
-  # If the entry at `target_path` is itself a symlink, that link is _not_ followed;
-  # thus the created symlink always points to `target_path`.
+  # If the entry at `target_path` is itself a symbolic link,
+  # that link is _not_ followed:
   #
-  # See also: #read, #readlink, #symlink?.
+  # ```ruby
+  # link2_pn = Pathname('/tmp/bar')
+  # link2_pn.make_symlink(link_pn)
+  # link2_pn.readlink             # => #<Pathname:/tmp/foo>
+  # link2_pn.read == file_pn.read # => true
+  # # Clean up.
+  # link_pn.delete
+  # link2_pn.delete
+  # ```
+  #
   def make_symlink(old) File.symlink(old, @path) end
 
   # :markup: markdown
