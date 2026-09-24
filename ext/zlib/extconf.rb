@@ -82,8 +82,6 @@ if have_zlib
   Logging::message 'checking for kind of operating system... '
   os_code = with_config('os-code') ||
     case RUBY_PLATFORM.split('-',2)[1]
-    when 'amigaos' then
-      os_code = 'AMIGA'
     when /mswin|mingw/ then
       # NOTE: cygwin should be regarded as Unix.
       os_code = 'WIN32'
