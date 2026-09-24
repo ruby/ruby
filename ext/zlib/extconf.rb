@@ -114,7 +114,7 @@ if have_zlib
   Logging::message "#{OS_NAMES[os_code]}\n"
   defines << "OS_CODE=#{os_code}"
 
-  $defs.concat(defines.collect{|d|' -D'+d})
+  $defs.concat(defines.collect{|d|'-D'+d})
 
   if zsrc
     $defs << "-DHAVE_CRC32_COMBINE"
