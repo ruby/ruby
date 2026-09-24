@@ -37,7 +37,6 @@ jobs:
             os: macos-26
             configure_args: '--with-jemalloc --with-opt-dir=$(brew --prefix jemalloc)'
           - test_task: test-all
-            test_opts: --repeat-count=2
             os: macos-26
           - test_task: test-bundler-parallel
             os: macos-26
@@ -141,18 +140,11 @@ jobs:
         uses: ./.github/actions/launchable/setup
         with:
           os: ${{ matrix.os }}
-          test-opts: ${{ matrix.test_opts }}
           launchable-token: ${{ secrets.LAUNCHABLE_TOKEN }}
           builddir: build
           srcdir: src
         continue-on-error: true
         timeout-minutes: 3
-
-      - name: Set extra test options
-        run: |
-          echo "TESTS=$TESTS ${{ matrix.test_opts }}" >> $GITHUB_ENV
-          echo "RUBY_TEST_TIMEOUT_SCALE=10" >> $GITHUB_ENV # With --repeat-count=2, flaky test by timeout occurs frequently for some reason
-        if: matrix.test_opts
 
       - name: Set timeout scale
         run: echo "RUBY_TEST_TIMEOUT_SCALE=10" >> $GITHUB_ENV # subprocess assertion timeouts flake on slower/contended macOS runners
