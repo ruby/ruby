@@ -84,7 +84,7 @@ if have_zlib
     case RUBY_PLATFORM.split('-',2)[1]
     when 'amigaos' then
       os_code = 'AMIGA'
-    when /mswin|mingw|bccwin/ then
+    when /mswin|mingw/ then
       # NOTE: cygwin should be regarded as Unix.
       os_code = 'WIN32'
     else
