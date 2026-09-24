@@ -101,11 +101,6 @@
 # endif
 #endif
 
-#if defined(sgi)
-#undef __const
-#define __const
-#endif /* People who don't like const sys_error */
-
 #include <stddef.h>
 
 #ifndef NULL

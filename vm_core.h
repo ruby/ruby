@@ -146,8 +146,6 @@ If `rb_vm_check_ints()` is called between the `RUBY_ASSERT_CRITICAL_SECTION_ENTE
 #elif defined(_SIG_MAXSIG)      /* FreeBSD */
 # undef NSIG
 # define NSIG _SIG_MAXSIG
-#elif defined(_SIGMAX)          /* QNX */
-# define NSIG (_SIGMAX + 1)
 #elif defined(NSIG)             /* 99% of everything else */
 # /* take it */
 #else                           /* Last resort */
