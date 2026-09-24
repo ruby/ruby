@@ -6902,7 +6902,7 @@ impl Function {
                     &Insn::StringEqual { left, right } => {
                         // If both operands resolve to the same SSA value,
                         // String#== is guaranteed to be true.
-                        if self.chase_insn(left) == self.chase_insn(right) {
+                        if left == right {
                             self.new_insn(Insn::Const { val: Const::Value(Qtrue) })
                         } else {
                             let left_type = self.type_of(left);
