@@ -677,6 +677,7 @@ if defined? Zlib
           assert_equal(Zlib::OS_CODE, f.os_code)
         end
       }
+      assert_equal(Zlib::OS_WIN32, Zlib::OS_CODE) if /mswin|mingw/ =~ RUBY_PLATFORM
     end
 
     def test_orig_name
