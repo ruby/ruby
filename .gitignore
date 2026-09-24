@@ -80,7 +80,6 @@ lcov*.info
 /autom4te*.cache
 /automake
 /benchmark/benchmark-driver
-/beos
 /bmlog-*
 /breakpoints.gdb
 /config.cache

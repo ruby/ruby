@@ -8,8 +8,8 @@ require '-test-/file'
 class TestFileExhaustive < Test::Unit::TestCase
   ROOT_REGEXP = %r'\A(?:[a-z]:(?=(/))|//[^/]+/[^/]+)'i
   DRIVE = Dir.pwd[ROOT_REGEXP]
-  POSIX = /cygwin|mswin|bccwin|mingw|emx/ !~ RUBY_PLATFORM
-  NTFS = !(/mingw|mswin|bccwin/ !~ RUBY_PLATFORM)
+  POSIX = /cygwin|mswin|mingw/ !~ RUBY_PLATFORM
+  NTFS = !(/mingw|mswin/ !~ RUBY_PLATFORM)
 
   def assert_incompatible_encoding
     d = "\u{3042}\u{3044}".encode("utf-16le")
@@ -258,7 +258,7 @@ class TestFileExhaustive < Test::Unit::TestCase
       assert_integer_or_nil(fs1.rdev_minor)
       assert_integer(fs1.ino)
       assert_integer(fs1.mode)
-      unless /emx|mswin|mingw/ =~ RUBY_PLATFORM
+      unless /mswin|mingw/ =~ RUBY_PLATFORM
         # on Windows, nlink is always 1. but this behavior will be changed
         # in the future.
         assert_equal(hardlinkfile ? 2 : 1, fs1.nlink)

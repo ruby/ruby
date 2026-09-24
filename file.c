@@ -7849,8 +7849,6 @@ const char ruby_null_device[] =
     "NUL"
 #elif defined AMIGA || defined __amigaos__
     "NIL"
-#elif defined __VMS
-    "NL:"
 #else
     "/dev/null"
 #endif
