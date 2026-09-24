@@ -134,7 +134,7 @@ fn test_and() {
 #[test]
 fn test_call_label() {
     let cb = compile(|cb| {
-        let label_idx = cb.new_label("fn".to_owned());
+        let label_idx = cb.new_label("fn");
         call_label(cb, label_idx);
         cb.link_labels().unwrap();
     });
@@ -253,7 +253,7 @@ fn test_imul_mem_reg() {
 #[test]
 fn test_jge_label() {
     let cb = compile(|cb| {
-        let label_idx = cb.new_label("loop".to_owned());
+        let label_idx = cb.new_label("loop");
         jge_label(cb, label_idx);
         cb.link_labels().unwrap();
     });
@@ -265,14 +265,14 @@ fn test_jge_label() {
 fn test_jmp_label() {
     // Forward jump
     let cb1 = compile(|cb| {
-        let label_idx = cb.new_label("next".to_owned());
+        let label_idx = cb.new_label("next");
         jmp_label(cb, label_idx);
         cb.write_label(label_idx);
         cb.link_labels().unwrap();
     });
     // Backwards jump
     let cb2 = compile(|cb| {
-        let label_idx = cb.new_label("loop".to_owned());
+        let label_idx = cb.new_label("loop");
         cb.write_label(label_idx);
         jmp_label(cb, label_idx);
         cb.link_labels().unwrap();
@@ -299,7 +299,7 @@ fn test_jmp_rm() {
 #[test]
 fn test_jo_label() {
     let cb = compile(|cb| {
-        let label_idx = cb.new_label("loop".to_owned());
+        let label_idx = cb.new_label("loop");
         jo_label(cb, label_idx);
         cb.link_labels().unwrap();
     });
