@@ -1301,6 +1301,10 @@ module Test
       def _run_anything(type)
         @repeat_count = @options[:repeat_count]
         @keep_repeating = @options[:keep_repeating]
+        if @repeat_count and @options[:parallel]
+          warn "--repeat-count is not supported in parallel tests; ignored"
+          @repeat_count = @keep_repeating = nil
+        end
         super
       end
     end
