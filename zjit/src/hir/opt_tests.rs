@@ -14219,9 +14219,11 @@ mod hir_opt_tests {
           v32:StringExact = GuardType v14, StringExact recompile
           v33:Fixnum = GuardType v15, Fixnum
           v34:Fixnum = GuardType v16, Fixnum
-          v35:StringExact|NilClass = StringByteslice v32, v33, v34
+          v35:CInt64 = UnboxFixnum v33
+          v36:CInt64 = UnboxFixnum v34
+          v37:StringExact|NilClass = StringByteslice v32, v35, v36
           CheckInterrupts
-          Return v35
+          Return v37
         ");
     }
 
@@ -14357,13 +14359,48 @@ mod hir_opt_tests {
           v35:StringExact = GuardType v14, StringExact recompile
           v36:Fixnum = GuardType v15, Fixnum
           v37:Fixnum = GuardType v16, Fixnum
-          v38:StringExact|NilClass = StringByteslice v35, v36, v37
+          v38:CInt64 = UnboxFixnum v36
+          v39:CInt64 = UnboxFixnum v37
+          v40:StringExact|NilClass = StringByteslice v35, v38, v39
           PatchPoint NoSingletonClass(String@0x1008)
           PatchPoint MethodRedefined(String@0x1008, length@0x1040, cme:0x1048)
-          v42:StringExact = GuardType v38, StringExact recompile
-          v43:Fixnum = CCall v42, :String#length@0x1070
+          v44:StringExact = GuardType v40, StringExact recompile
+          v45:Fixnum = CCall v44, :String#length@0x1070
           CheckInterrupts
-          Return v43
+          Return v45
+        ");
+    }
+
+    #[test]
+    fn test_optimize_string_byteslice_const_fixnum() {
+        eval(r#"
+            def test(s) = s.byteslice(1, 2)
+            test("foo")
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :s@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :s@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:Fixnum[1] = Const Value(1)
+          v17:Fixnum[2] = Const Value(2)
+          PatchPoint NoSingletonClass(String@0x1008)
+          PatchPoint MethodRedefined(String@0x1008, byteslice@0x1010, cme:0x1018)
+          v28:StringExact = GuardType v10, StringExact recompile
+          v32:CInt64[1] = Const CInt64(1)
+          v33:CInt64[2] = Const CInt64(2)
+          v31:StringExact|NilClass = StringByteslice v28, v32, v33
+          CheckInterrupts
+          Return v31
         ");
     }
 

@@ -1018,7 +1018,7 @@ pub enum Insn {
     StringConcat { strings: Vec<InsnId>, state: InsnId },
     /// Call rb_str_getbyte with known-Fixnum index
     StringGetbyte { string: InsnId, index: InsnId },
-    /// Call rb_str_byte_substr with known-Fixnum beg/len
+    /// Call rb_zjit_str_byte_substr with unboxed beg/len
     StringByteslice { string: InsnId, beg: InsnId, len: InsnId, state: InsnId },
     StringSetbyteFixnum { string: InsnId, index: InsnId, value: InsnId },
     /// Append `other` to `recv`. HIR loads both flags for load reuse. Codegen XORs the flags.
@@ -8246,8 +8246,8 @@ impl Function {
             },
             Insn::StringByteslice { string, beg, len, .. } => {
                 self.assert_subtype(insn_id, string, types::String)?;
-                self.assert_subtype(insn_id, beg, types::Fixnum)?;
-                self.assert_subtype(insn_id, len, types::Fixnum)
+                self.assert_subtype(insn_id, beg, types::CInt64)?;
+                self.assert_subtype(insn_id, len, types::CInt64)
             },
             Insn::StringSetbyteFixnum { string, index, value } => {
                 self.assert_subtype(insn_id, string, types::String)?;

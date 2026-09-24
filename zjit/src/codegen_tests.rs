@@ -5444,6 +5444,24 @@ fn test_string_byteslice_bignum_arg_falls_back() {
 }
 
 #[test]
+fn test_string_byteslice_negative_beg() {
+    assert_snapshot!(assert_compiles(r#"
+        def test(s, beg, len) = s.byteslice(beg, len)
+        test("foo", -2, 1)
+        test("foo", -2, 1)
+    "#), @r#""o""#);
+}
+
+#[test]
+fn test_string_byteslice_fixnum_extremes() {
+    assert_snapshot!(assert_compiles(r#"
+        def test(s, beg, len) = s.byteslice(beg, len)
+        test("hello", 1, 3)
+        [test("hello", 2**62 - 1, 1), test("hello", -(2**62), 1), test("hello", 1, 2**62 - 1), test("hello", 1, -(2**62))]
+    "#), @r#"[nil, nil, "ello", nil]"#);
+}
+
+#[test]
 fn test_new_range_inclusive() {
     assert_snapshot!(inspect("
         def test(a, b) = a..b
