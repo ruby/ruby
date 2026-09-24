@@ -3983,20 +3983,24 @@ rb_file_s_link(VALUE klass, VALUE from, VALUE to)
  *  at `link_path` to the entry at `target_path`:
  *
  *  ```ruby
- *  # Create paths.
- *  file_path = 'doc/extension.rdoc'             # => "doc/extension.rdoc"
- *  target_path = File.join('..', file_path)     # => "../doc/extension.rdoc"
- *  link_path = 'lib/u.tmp'                      # => "lib/u.tmp"
- *  # Create link and verify.
- *  File.symlink(target_path, link_path)
- *  File.read(file_path) == File.read(link_path) # => true
- *  File.delete(link_path)                       # Clean up.
+ *  filepath = '/etc/passwd'                   # Regular file.
+ *  linkpath = '/tmp/foo'
+ *  File.symlink(filepath, linkpath)
+ *  File.readlink(linkpath)                    # => "/etc/passwd"
+ *  File.read(filepath) == File.read(linkpath) # => true
  *  ```
  *
- *  If the entry at `target_path` is itself a symlink, that link is _not_ followed;
- *  thus the created symlink always points to `target_path`.
+ *  If the entry at `target_path` is itself a symbolic link,
+ *  that link is _not_ followed:
  *
- *  See also: ::read, ::readlink, ::symlink?.
+ *  ```ruby
+ *  link2path = '/tmp/bar'
+ *  File.symlink(linkpath, link2path)
+ *  File.readlink(link2path)                    # => "/tmp/foo"
+ *  File.read(filepath) == File.read(link2path) # => true
+ *  File.delete(linkpath, link2path)            # Clean up.
+ *  ```
+ *
  */
 
 static VALUE
