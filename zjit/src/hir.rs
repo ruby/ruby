@@ -6689,15 +6689,17 @@ impl Function {
                 match cfi.predecessors(block_id) {
                     [] => {},
                     [head] => {
-                        // TODO: Figure out how to fix this with Kevin's idiomatic thing
-                        block_cache = cache[head.0 as usize].clone();
+                        block_cache = cache[*head].clone();
                     }
                     [head, tail @ ..] => {
-                        // TODO: Figure out how to fix this with Kevin's idiomatic thing
-                        block_cache = cache[head.0 as usize].clone();
+                        block_cache = cache[*head].clone();
                         for pred in tail {
                             block_cache.retain(|key, value| cache[pred.0 as usize].get(key) == Some(value));
                         }
+
+                        // If multiple entries contain the same offset, they may alias.
+                        // Unlike the case inside of the pass, we have no "newest". If there are multiple aliases, we must remove all entries at this offset.
+                        // TODO: Implement this
                     }
                 }
                 let old_insns = std::mem::take(&mut self.blocks[block_id].insns);
