@@ -43,26 +43,16 @@ class TestFileUnlinkRecursive < Test::Unit::TestCase
     assert_file.not_exist?(path)
   end
 
-  def test_descriptor_exhaustion
+  def test_branching_tree
     path = File.join(@root, 'tree')
-    FileUtils.mkdir_p(path + '/a' * 64)
-    assert_separately([], <<~RUBY)
-      path = #{path.dump}
-      soft, hard = Process.getrlimit(:NOFILE)
-      before = Dir.children('/dev/fd').size
-      begin
-        Process.setrlimit(:NOFILE, [soft, 32].min, hard)
-        3.times do
-          assert_raise(Errno::EMFILE) {File.unlink(path, recursive: true)}
-        end
-      ensure
-        Process.setrlimit(:NOFILE, soft, hard)
-      end
-      assert_equal(before, Dir.children('/dev/fd').size)
-      assert_equal(1, File.unlink(path, recursive: true))
-    RUBY
+    16.times do |i|
+      branch = "#{path}/#{i}/a/b"
+      FileUtils.mkdir_p(branch)
+      File.write("#{branch}/file", 'content')
+    end
+    assert_equal(1, File.unlink(path, recursive: true))
     assert_file.not_exist?(path)
-  end if !windows? && File.directory?('/dev/fd')
+  end
 
   def test_files_and_multiple_paths
     paths = %w[file tree].map {|name| File.join(@root, name)}

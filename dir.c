@@ -39,30 +39,6 @@
 #  define O_CLOEXEC 0
 #endif
 
-#undef HAVE_DIRENT_NAMLEN
-#if defined HAVE_DIRENT_H && !defined _WIN32
-# include <dirent.h>
-# define NAMLEN(dirent) strlen((dirent)->d_name)
-#elif defined HAVE_DIRECT_H && !defined _WIN32
-# include <direct.h>
-# define NAMLEN(dirent) strlen((dirent)->d_name)
-#else
-# define dirent direct
-# define NAMLEN(dirent) (dirent)->d_namlen
-# define HAVE_DIRENT_NAMLEN 1
-# ifdef HAVE_SYS_NDIR_H
-#  include <sys/ndir.h>
-# endif
-# ifdef HAVE_SYS_DIR_H
-#  include <sys/dir.h>
-# endif
-# ifdef HAVE_NDIR_H
-#  include <ndir.h>
-# endif
-# ifdef _WIN32
-#  include "win32/dir.h"
-# endif
-#endif
 
 #ifndef HAVE_STDLIB_H
 char *getenv();
@@ -898,28 +874,6 @@ nogvl_readdir(void *dir)
 # define READDIR_NOGVL(dir, enc) nogvl_readdir((dir))
 #endif
 
-/* safe to use without GVL */
-static int
-to_be_skipped(const struct dirent *dp)
-{
-    const char *name = dp->d_name;
-    if (name[0] != '.') return FALSE;
-#ifdef HAVE_DIRENT_NAMLEN
-    switch (NAMLEN(dp)) {
-      case 2:
-        if (name[1] != '.') return FALSE;
-      case 1:
-        return TRUE;
-      default:
-        break;
-    }
-#else
-    if (!name[1]) return TRUE;
-    if (name[1] != '.') return FALSE;
-    if (!name[2]) return TRUE;
-#endif
-    return FALSE;
-}
 
 /*
  * call-seq:
@@ -4151,7 +4105,7 @@ nogvl_dir_empty_p(void *ptr)
         }
     }
     while ((dp = READDIR_NOGVL(dir, NULL)) != NULL) {
-        if (!to_be_skipped(dp)) {
+        if (!dirent_dot_p(dp)) {
             result = Qfalse;
             break;
         }
