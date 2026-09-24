@@ -1119,12 +1119,6 @@ RSpec.describe "bundle gem" do
         RbConfig::CONFIG.each {|k, v| env["RBCONFIG_#{k}"] = v }
         env
       end
-
-      def rb_data_type_struct_extended?
-        rtypeddata_h = File.join(RbConfig::CONFIG["rubyhdrdir"], "ruby", "internal", "core", "rtypeddata.h")
-
-        File.exist?(rtypeddata_h) && File.read(rtypeddata_h).include?("handle_weak_references")
-      end
     end
 
     context "--ext parameter set with go" do
