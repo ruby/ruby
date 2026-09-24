@@ -1415,8 +1415,8 @@ Also, a list:
   end
 
   ##
-  # Returns whether or not we're on a version of Ruby built with VC++ (or
-  # Borland) versus Cygwin, Mingw, etc.
+  # Returns whether or not we're on a version of Ruby built with VC++ versus
+  # Cygwin, Mingw, etc.
 
   def self.vc_windows?
     RUBY_PLATFORM.match("mswin")
@@ -1453,8 +1453,8 @@ Also, a list:
 
   ##
   # Returns the make command for the current platform. For versions of Ruby
-  # built on MS Windows with VC++ or Borland it will return 'nmake'. On all
-  # other platforms, including Cygwin, it will return 'make'.
+  # built on MS Windows with VC++ it will return 'nmake'. On all other
+  # platforms, including Cygwin, it will return 'make'.
 
   def make_command
     ENV["make"] || ENV["MAKE"] || (vc_windows? ? "nmake" : "make")
