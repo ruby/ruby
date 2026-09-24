@@ -3,7 +3,7 @@ require 'mkmf'
 
 $INCFLAGS << " -I$(topdir) -I$(top_srcdir)"
 
-if /mswin|mingw|bccwin/ !~ RUBY_PLATFORM
+if /mswin|mingw/ !~ RUBY_PLATFORM
   have_header("sys/stropts.h")
   have_func("setresuid")
   have_header("libutil.h")

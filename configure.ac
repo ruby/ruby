@@ -1149,9 +1149,6 @@ AC_SUBST(POSTLINK)
 cleanlibs=
 AC_SUBST(cleanlibs)
 AS_CASE(["$target_os"],
-[nextstep*], [	],
-[openstep*], [	],
-[rhapsody*], [	],
 [darwin*], [
 		ORIG_LIBS="$LIBS"
 		RUBY_PREPEND_OPTION(LIBS, -lobjc)
@@ -3441,7 +3438,7 @@ AS_IF([test x$with_valgrind != xno],
     [darwin*], [
 	SOEXT=dylib
 	DLEXT=bundle],
-    [cygwin*|msys*|mingw*|*djgpp*], [
+    [cygwin*|msys*|mingw*], [
 	LOAD_RELATIVE=1
 	SOEXT=dll
 	DLEXT=so],

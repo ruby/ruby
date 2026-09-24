@@ -20,7 +20,7 @@ class TestProcess < Test::Unit::TestCase
     self.class.windows?
   end
   def self.windows?
-    return /mswin|mingw|bccwin/ =~ RUBY_PLATFORM
+    return /mswin|mingw/ =~ RUBY_PLATFORM
   end
 
   def with_tmpchdir
@@ -1270,7 +1270,7 @@ class TestProcess < Test::Unit::TestCase
     with_tmpchdir {|d|
       File.write("script", <<-'End')
         File.open("result", "w") {|t|
-          if /mswin|bccwin|mingw/ =~ RUBY_PLATFORM
+          if /mswin|mingw/ =~ RUBY_PLATFORM
             t << "hehe ppid=#{Process.ppid}"
           else
             t << "hehe pid=#{$$} ppid=#{Process.ppid}"
