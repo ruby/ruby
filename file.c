@@ -24,8 +24,6 @@
 
 #ifdef __CYGWIN__
 # include <windows.h>
-# include <sys/cygwin.h>
-# include <wchar.h>
 #endif
 
 #ifdef __APPLE__
@@ -4891,11 +4889,6 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
                         }
                         b = ++s;
                     }
-#if USE_NTFS
-                    else {
-                        do ++s; while (s < fend && istrailinggarbage(*s));
-                    }
-#endif /* USE_NTFS */
                     break;
                   case '/':
 #if defined FILE_ALT_SEPARATOR
@@ -4908,19 +4901,6 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
                     break;
                 }
             }
-#if USE_NTFS
-            else {
-                --s;
-              case ' ': {
-                const char *e = s;
-                while (s < fend && istrailinggarbage(*s)) s++;
-                if (s >= fend) {
-                    s = e;
-                    goto endpath;
-                }
-              }
-            }
-#endif /* USE_NTFS */
             break;
           case '/':
 #if defined FILE_ALT_SEPARATOR
@@ -4952,135 +4932,10 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
     }
 
     if (s > b) {
-#if USE_NTFS
-# if USE_NTFS_ADS
-        static const char prime[] = ":$DATA";
-        enum {prime_len = sizeof(prime) -1};
-# endif
-      endpath:
-# if USE_NTFS_ADS
-        if (s > b + prime_len && strncasecmp(s - prime_len, prime, prime_len) == 0) {
-            /* alias of stream */
-            /* get rid of a bug of x64 VC++ */
-            if (isADS(*(s - (prime_len+1)))) {
-                s -= prime_len + 1; /* prime */
-            }
-            else if (memchr(b, ':', s - prime_len - b)) {
-                s -= prime_len;	/* alternative */
-            }
-        }
-# endif /* USE_NTFS_ADS */
-#endif /* USE_NTFS */
         BUFCOPY(b, s-b);
         rb_str_set_len(result, p-buf);
     }
     if (p == skiproot(buf, p + !!*p) - 1) p++;
-
-#if USE_NTFS
-    *p = '\0';
-    if ((s = strrdirsep(b = buf, p, enc)) != 0 && !strpbrk(s, "*?")) {
-        VALUE tmp, v;
-        size_t len;
-        int encidx;
-        WCHAR *wstr;
-        WIN32_FIND_DATAW wfd;
-        HANDLE h;
-#ifdef __CYGWIN__
-#ifdef HAVE_CYGWIN_CONV_PATH
-        char *w32buf = NULL;
-        const int flags = CCP_POSIX_TO_WIN_A | CCP_RELATIVE;
-#else
-        char w32buf[MAXPATHLEN];
-#endif /* HAVE_CYGWIN_CONV_PATH */
-        const char *path;
-        ssize_t bufsize;
-        int lnk_added = 0, is_symlink = 0;
-        struct stat st;
-        p = (char *)s;
-        len = strlen(p);
-        if (lstat_without_gvl(buf, &st) == 0 && S_ISLNK(st.st_mode)) {
-            is_symlink = 1;
-            if (len > 4 && STRCASECMP(p + len - 4, ".lnk") != 0) {
-                lnk_added = 1;
-            }
-        }
-        path = *buf ? buf : "/";
-#ifdef HAVE_CYGWIN_CONV_PATH
-        bufsize = cygwin_conv_path(flags, path, NULL, 0);
-        if (bufsize > 0) {
-            bufsize += len;
-            if (lnk_added) bufsize += 4;
-            w32buf = ALLOCA_N(char, bufsize);
-            if (cygwin_conv_path(flags, path, w32buf, bufsize) == 0) {
-                b = w32buf;
-            }
-        }
-#else /* !HAVE_CYGWIN_CONV_PATH */
-        bufsize = MAXPATHLEN;
-        if (cygwin_conv_to_win32_path(path, w32buf) == 0) {
-            b = w32buf;
-        }
-#endif /* !HAVE_CYGWIN_CONV_PATH */
-        if (is_symlink && b == w32buf) {
-            *p = '\\';
-            strlcat(w32buf, p, bufsize);
-            if (lnk_added) {
-                strlcat(w32buf, ".lnk", bufsize);
-            }
-        }
-        else {
-            lnk_added = 0;
-        }
-        *p = '/';
-#endif /* __CYGWIN__ */
-        rb_str_set_len(result, p - buf + strlen(p));
-        encidx = ENCODING_GET(result);
-        tmp = result;
-        if (encidx != ENCINDEX_UTF_8 && !is_ascii_string(result)) {
-            tmp = rb_str_encode_ospath(result);
-        }
-        len = MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(tmp), -1, NULL, 0);
-        wstr = ALLOCV_N(WCHAR, v, len);
-        MultiByteToWideChar(CP_UTF8, 0, RSTRING_PTR(tmp), -1, wstr, len);
-        if (tmp != result) rb_str_set_len(tmp, 0);
-        h = FindFirstFileW(wstr, &wfd);
-        ALLOCV_END(v);
-        if (h != INVALID_HANDLE_VALUE) {
-            size_t wlen;
-            FindClose(h);
-            len = lstrlenW(wfd.cFileName);
-#ifdef __CYGWIN__
-            if (lnk_added && len > 4 &&
-                wcscasecmp(wfd.cFileName + len - 4, L".lnk") == 0) {
-                wfd.cFileName[len -= 4] = L'\0';
-            }
-#else
-            p = (char *)s;
-#endif
-            ++p;
-            wlen = (int)len;
-            len = WideCharToMultiByte(CP_UTF8, 0, wfd.cFileName, wlen, NULL, 0, NULL, NULL);
-            if (tmp == result) {
-                BUFCHECK(bdiff + len >= buflen);
-                WideCharToMultiByte(CP_UTF8, 0, wfd.cFileName, wlen, p, len + 1, NULL, NULL);
-            }
-            else {
-                rb_str_modify_expand(tmp, len);
-                WideCharToMultiByte(CP_UTF8, 0, wfd.cFileName, wlen, RSTRING_PTR(tmp), len + 1, NULL, NULL);
-                rb_str_cat_conv_enc_opts(result, bdiff, RSTRING_PTR(tmp), len,
-                                         rb_utf8_encoding(), 0, Qnil);
-                BUFINIT(result, buf, p, pend);
-                rb_str_resize(tmp, 0);
-            }
-            p += len;
-        }
-#ifdef __CYGWIN__
-        else {
-            p += strlen(p);
-        }
-#endif
-    }
-#endif /* USE_NTFS */
 
     rb_str_set_len(result, p - buf);
     rb_enc_check(fname, result);
