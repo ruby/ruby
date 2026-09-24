@@ -1042,6 +1042,19 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal("foo", $&)
   end
 
+  def test_match_setter_with_copy
+    [:dup, :clone].each do |copy|
+      [false, true].each do |freeze|
+        m = /a/.match("a").public_send(copy)
+        m.freeze if freeze
+        $~ = m
+        /b/ =~ "b"
+        assert_equal("a", m[0], "#{copy}, freeze: #{freeze}")
+        assert_equal("b", $&)
+      end
+    end
+  end
+
   def test_match_without_regexp
     # create a MatchData for each assertion because the internal state may change
     test = proc {|&blk| "abc".sub("a", ""); blk.call($~) }
