@@ -5341,6 +5341,7 @@ rb_thread_atfork_internal(rb_thread_t *th, void (*atfork)(rb_thread_t *, const r
     rb_generic_fields_lock_atfork();
     rb_fiber_pool_lock_atfork();
     ccan_list_head_init(&th->interrupt_exec_tasks);
+    th->interrupt_exec_tasks_pending = 0;
 
     vm->fork_gen++;
     rb_ractor_sleeper_threads_clear(th->ractor);
@@ -6680,6 +6681,15 @@ rb_threadptr_interrupt_exec_task_mark(rb_thread_t *th)
     }
 }
 
+// Rearm interrupt-exec tasks after switching the thread's execution context.
+void
+rb_threadptr_interrupt_exec_task_rearm(rb_thread_t *th)
+{
+    if (RUBY_ATOMIC_LOAD(th->interrupt_exec_tasks_pending)) {
+        RUBY_VM_SET_TRAP_INTERRUPT(th->ec);
+    }
+}
+
 // native thread safe
 // th should be available
 void
@@ -6696,6 +6706,7 @@ rb_threadptr_interrupt_exec(rb_thread_t *th, rb_interrupt_exec_func_t *func, voi
     rb_native_mutex_lock(&th->interrupt_lock);
     {
         ccan_list_add_tail(&th->interrupt_exec_tasks, &task->node);
+        RUBY_ATOMIC_SET(th->interrupt_exec_tasks_pending, 1);
         threadptr_set_interrupt_locked(th, true);
     }
     rb_native_mutex_unlock(&th->interrupt_lock);
@@ -6710,6 +6721,9 @@ threadptr_interrupt_exec_exec(rb_thread_t *th)
         rb_native_mutex_lock(&th->interrupt_lock);
         {
             task = ccan_list_pop(&th->interrupt_exec_tasks, struct rb_interrupt_exec_task, node);
+            if (ccan_list_empty(&th->interrupt_exec_tasks)) {
+                RUBY_ATOMIC_SET(th->interrupt_exec_tasks_pending, 0);
+            }
         }
         rb_native_mutex_unlock(&th->interrupt_lock);
 
@@ -6740,6 +6754,7 @@ threadptr_interrupt_exec_cleanup(rb_thread_t *th)
         while ((task = ccan_list_pop(&th->interrupt_exec_tasks, struct rb_interrupt_exec_task, node)) != NULL) {
             SIZED_FREE(task);
         }
+        RUBY_ATOMIC_SET(th->interrupt_exec_tasks_pending, 0);
     }
     rb_native_mutex_unlock(&th->interrupt_lock);
 }

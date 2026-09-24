@@ -1062,6 +1062,13 @@ ec_switch(rb_thread_t *th, rb_fiber_t *fiber)
     // ruby_current_execution_context_ptr = th->ec = ec;
 
     /*
+     * Interrupt-exec tasks belong to the thread, but their notification is
+     * stored on the current execution context.  Ensure queued tasks remain
+     * visible after switching Fibers.
+     */
+    rb_threadptr_interrupt_exec_task_rearm(th);
+
+    /*
      * timer-thread may set trap interrupt on previous th->ec at any time;
      * ensure we do not delay (or lose) the trap interrupt handling.
      */

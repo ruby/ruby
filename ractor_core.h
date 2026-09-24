@@ -31,6 +31,7 @@ struct rb_ractor_sync {
 
     // waiting threads for receiving
     struct ccan_list_head waiters;
+    st_data_t next_scheduler_waiter_id;
 
     // ports
     VALUE default_port_value;
@@ -183,6 +184,12 @@ struct ractor_waiter {
     rb_thread_t *th;
     struct ccan_list_node node;
     rb_atomic_t event_serial;
+
+    // Non-zero when a non-blocking Fiber is waiting through its scheduler.
+    // The id, rather than this stack address, is passed between Ractors.
+    st_data_t scheduler_wait_id;
+    VALUE blocker;
+    VALUE fiber;
 
     // absolute deadline for this wait, NULL when there is no timeout
     const rb_hrtime_t *end;
