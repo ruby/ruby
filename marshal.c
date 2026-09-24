@@ -176,10 +176,11 @@ struct dump_arg {
     VALUE str, dest;
     st_table *symbols;
     st_table *data;
-    st_table *encodings;
     st_table *userdefs;
+    st_table encodings;
     st_table compat_tbl;
     bool has_compat_tbl;
+    bool has_encodings;
     st_index_t num_entries;
 };
 
@@ -247,7 +248,7 @@ memsize_dump_arg(const void *ptr)
     if (p->data) memsize += rb_st_memsize(p->data);
     if (p->has_compat_tbl) memsize += rb_st_allocated_memsize(&p->compat_tbl);
     if (p->userdefs) memsize += rb_st_memsize(p->userdefs);
-    if (p->encodings) memsize += rb_st_memsize(p->encodings);
+    if (p->has_encodings) memsize += rb_st_allocated_memsize(&p->encodings);
     return memsize;
 }
 
@@ -702,12 +703,18 @@ encoding_name(VALUE obj, struct dump_arg *arg)
             return Qtrue;
         }
 
-        if (arg->encodings ?
-            !st_lookup(arg->encodings, (st_data_t)rb_enc_name(enc), &name) :
-            (arg->encodings = st_init_strcasetable(), 1)) {
-            name = (st_data_t)rb_str_new_cstr(rb_enc_name(enc));
-            st_insert(arg->encodings, (st_data_t)rb_enc_name(enc), name);
+        if (arg->has_encodings) {
+            if (st_lookup(&arg->encodings, (st_data_t)rb_enc_name(enc), &name)) {
+                return (VALUE)name;
+            }
         }
+        else {
+            st_init_existing_strtable_with_size(&arg->encodings, 1);
+            arg->has_encodings = true;
+        }
+
+        name = (st_data_t)rb_str_new_cstr(rb_enc_name(enc));
+        st_insert(&arg->encodings, (st_data_t)rb_enc_name(enc), name);
         return (VALUE)name;
     }
     else {
@@ -1160,9 +1167,9 @@ clear_dump_arg(struct dump_arg *arg)
         st_free_embedded_table(&arg->compat_tbl);
         arg->has_compat_tbl = false;
     }
-    if (arg->encodings) {
-        st_free_table(arg->encodings);
-        arg->encodings = 0;
+    if (arg->has_encodings) {
+        st_free_embedded_table(&arg->encodings);
+        arg->has_encodings = false;
     }
     if (arg->userdefs) {
         st_free_table(arg->userdefs);
@@ -1243,7 +1250,6 @@ rb_marshal_dump_limited(VALUE obj, VALUE port, int limit)
     arg->symbols = st_init_numtable();
     arg->data    = rb_init_identtable();
     arg->num_entries = 0;
-    arg->encodings = 0;
     arg->userdefs = 0;
     arg->str = rb_str_buf_new(0);
     if (!NIL_P(port)) {
