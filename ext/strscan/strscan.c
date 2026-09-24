@@ -617,6 +617,17 @@ match_target(struct strscanner *p)
     }
 }
 
+static inline bool
+curr_char_head_p(struct strscanner *p)
+{
+    const char *pbeg = S_PBEG(p);
+    const char *curr = CURPTR(p);
+
+    if (curr == pbeg) return true;
+    return rb_enc_left_char_head(pbeg, curr, S_PEND(p),
+                                 rb_enc_get(p->str)) == curr;
+}
+
 static inline void
 set_registers(struct strscanner *p, size_t pos, size_t length)
 {
@@ -750,6 +761,10 @@ strscan_do_scan(VALUE self, VALUE pattern, int succptr, int getstr, int headonly
 
     CLEAR_MATCH_STATUS(p);
     if (S_RESTLEN(p) < 0) {
+        return Qnil;
+    }
+
+    if (!curr_char_head_p(p)) {
         return Qnil;
     }
 
