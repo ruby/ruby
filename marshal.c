@@ -175,10 +175,11 @@ rb_marshal_compat_lookup(VALUE klass, VALUE (**dumper)(VALUE), VALUE (**loader)(
 struct dump_arg {
     VALUE str, dest;
     st_table *symbols;
-    st_table *data;
+    st_table data;
     st_table userdefs;
     st_table encodings;
     st_table compat_tbl;
+    bool has_data;
     bool has_userdefs;
     bool has_encodings;
     bool has_compat_tbl;
@@ -228,7 +229,7 @@ mark_dump_arg(void *ptr)
     if (!p->symbols)
         return;
     rb_mark_set(p->symbols);
-    rb_mark_set(p->data);
+    if (p->has_data) rb_mark_set(&p->data);
     if (p->has_compat_tbl) rb_mark_hash(&p->compat_tbl);
     if (p->has_userdefs) rb_mark_set(&p->userdefs);
     rb_gc_mark(p->str);
@@ -246,7 +247,7 @@ memsize_dump_arg(const void *ptr)
     const struct dump_arg *p = (struct dump_arg *)ptr;
     size_t memsize = 0;
     if (p->symbols) memsize += rb_st_memsize(p->symbols);
-    if (p->data) memsize += rb_st_memsize(p->data);
+    if (p->has_data) memsize += rb_st_allocated_memsize(&p->data);
     if (p->has_compat_tbl) memsize += rb_st_allocated_memsize(&p->compat_tbl);
     if (p->has_userdefs) memsize += rb_st_allocated_memsize(&p->userdefs);
     if (p->has_encodings) memsize += rb_st_allocated_memsize(&p->encodings);
@@ -853,7 +854,7 @@ w_bigfixnum(VALUE obj, struct dump_arg *arg)
 static void
 w_remember(VALUE obj, struct dump_arg *arg)
 {
-    st_add_direct(arg->data, obj, arg->num_entries++);
+    st_add_direct(&arg->data, obj, arg->num_entries++);
 }
 
 static void
@@ -896,7 +897,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
         w_symbol(obj, arg);
     }
     else {
-        if (st_lookup(arg->data, obj, &num)) {
+        if (st_lookup(&arg->data, obj, &num)) {
             w_byte(TYPE_LINK, arg);
             w_long((long)num, arg);
             return;
@@ -1162,8 +1163,8 @@ clear_dump_arg(struct dump_arg *arg)
     if (!arg->symbols) return;
     st_free_table(arg->symbols);
     arg->symbols = 0;
-    st_free_table(arg->data);
-    arg->data = 0;
+    st_free_embedded_table(&arg->data);
+    arg->has_data = false;
     arg->num_entries = 0;
     if (arg->has_compat_tbl) {
         st_free_embedded_table(&arg->compat_tbl);
@@ -1250,7 +1251,8 @@ rb_marshal_dump_limited(VALUE obj, VALUE port, int limit)
     wrapper = TypedData_Make_Struct(0, struct dump_arg, &dump_arg_data, arg);
     arg->dest = 0;
     arg->symbols = st_init_numtable();
-    arg->data    = rb_init_identtable();
+    rb_init_existing_identtable_with_size(&arg->data, 0);
+    arg->has_data = true;
     arg->num_entries = 0;
     arg->str = rb_str_buf_new(0);
     if (!NIL_P(port)) {
@@ -1286,10 +1288,11 @@ struct load_arg {
     long readable;
     long offset;
     st_table *symbols;
-    st_table *data;
+    st_table data;
     st_table *partial_objects;
     VALUE proc;
     st_table compat_tbl;
+    bool has_data;
     bool has_compat_tbl;
     bool freeze;
 };
@@ -1315,7 +1318,7 @@ mark_load_arg(void *ptr)
     if (!p->symbols)
         return;
     rb_mark_tbl(p->symbols);
-    rb_mark_tbl(p->data);
+    if (p->has_data) rb_mark_tbl(&p->data);
     if (p->partial_objects) rb_mark_tbl(p->partial_objects);
     if (p->has_compat_tbl) rb_mark_hash(&p->compat_tbl);
 }
@@ -1332,7 +1335,7 @@ memsize_load_arg(const void *ptr)
     const struct load_arg *p = (struct load_arg *)ptr;
     size_t memsize = 0;
     if (p->symbols) memsize += rb_st_memsize(p->symbols);
-    if (p->data) memsize += rb_st_memsize(p->data);
+    if (p->has_data) memsize += rb_st_allocated_memsize(&p->data);
     if (p->partial_objects) memsize += rb_st_memsize(p->partial_objects);
     if (p->has_compat_tbl) memsize += rb_st_allocated_memsize(&p->compat_tbl);
     return memsize;
@@ -1344,7 +1347,7 @@ static const rb_data_type_t load_arg_data = {
     0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_EMBEDDABLE
 };
 
-#define r_entry(v, arg) r_entry0((v), (arg)->data->num_entries, (arg))
+#define r_entry(v, arg) r_entry0((v), (arg)->data.num_entries, (arg))
 static VALUE r_object(struct load_arg *arg);
 static VALUE r_symbol(struct load_arg *arg);
 
@@ -1358,9 +1361,9 @@ too_short(void)
 static st_index_t
 r_prepare(struct load_arg *arg)
 {
-    st_index_t idx = arg->data->num_entries;
+    st_index_t idx = arg->data.num_entries;
 
-    st_insert(arg->data, (st_data_t)idx, (st_data_t)Qundef);
+    st_insert(&arg->data, (st_data_t)idx, (st_data_t)Qundef);
     return idx;
 }
 
@@ -1698,7 +1701,7 @@ r_entry0(VALUE v, st_index_t num, struct load_arg *arg)
         /* real_obj is kept if not found */
         st_lookup(&arg->compat_tbl, v, &real_obj);
     }
-    st_insert(arg->data, num, real_obj);
+    st_insert(&arg->data, num, real_obj);
     if (arg->partial_objects) {
         st_insert(arg->partial_objects, (st_data_t)real_obj, Qtrue);
     }
@@ -1932,7 +1935,7 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE klass, VALUE ex
     switch (type) {
       case TYPE_LINK:
         id = r_long(arg);
-        if (!st_lookup(arg->data, (st_data_t)id, &link)) {
+        if (!st_lookup(&arg->data, (st_data_t)id, &link)) {
             rb_raise(rb_eArgError, "dump format error (unlinked)");
         }
         v = (VALUE)link;
@@ -2432,8 +2435,8 @@ clear_load_arg(struct load_arg *arg)
     if (!arg->symbols) return;
     st_free_table(arg->symbols);
     arg->symbols = 0;
-    st_free_table(arg->data);
-    arg->data = 0;
+    st_free_embedded_table(&arg->data);
+    arg->has_data = false;
     if (arg->partial_objects) {
         st_free_table(arg->partial_objects);
         arg->partial_objects = 0;
@@ -2466,7 +2469,8 @@ rb_marshal_load_with_proc(VALUE port, VALUE proc, bool freeze)
     arg->src = port;
     arg->offset = 0;
     arg->symbols = st_init_numtable();
-    arg->data    = rb_init_identtable();
+    rb_init_existing_identtable_with_size(&arg->data, 0);
+    arg->has_data = true;
     arg->partial_objects = (RTEST(proc) || freeze) ? rb_init_identtable() : NULL;
     arg->proc = 0;
     arg->readable = 0;
