@@ -143,8 +143,6 @@ class Exports::Mswin < Exports
         yield l.strip, is_data
       end
     end
-    yield "strcasecmp", "msvcrt.stricmp"
-    yield "strncasecmp", "msvcrt.strnicmp"
   end
 
   def each_dllexport(objs)
