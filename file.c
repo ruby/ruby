@@ -4487,6 +4487,9 @@ unlink_tree_free(struct unlink_tree *entry)
 }
 
 #if USE_UNLINKAT_TREE
+/* Retain this many ancestors in addition to the current directory and base. */
+#define UNLINK_TREE_KEEP_PARENTS 8
+
 /* Save names before descending so ancestors need no open directory stream. */
 static int
 unlink_tree_read(struct unlink_tree *entry)
@@ -4516,6 +4519,7 @@ static int
 unlink_tree_parent(struct unlink_tree *entry)
 {
     struct unlink_tree *parent = entry->parent;
+    if (parent->dir) return 0;
     int fd = openat(dirfd(entry->dir), "..",
                     O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC);
     if (fd < 0) return -1;
@@ -4593,9 +4597,13 @@ unlink_tree_enter(int base, const char *name, const struct stat *root,
     entry->dev = after.st_dev;
     entry->ino = after.st_ino;
     entry->parent = *stack;
-    if (*stack) {
-        int ret = closedir((*stack)->dir);
-        (*stack)->dir = NULL;
+    struct unlink_tree *ancestor = entry->parent;
+    for (int i = 0; ancestor && i < UNLINK_TREE_KEEP_PARENTS; i++) {
+        ancestor = ancestor->parent;
+    }
+    if (ancestor && ancestor->dir) {
+        int ret = closedir(ancestor->dir);
+        ancestor->dir = NULL;
         if (ret < 0) {
             e = errno;
             unlink_tree_free(entry);
@@ -4889,10 +4897,11 @@ unlink_recursive_internal(const char *path, void *arg)
  *  Where supported, recursive removal resolves the parent of each given path
  *  once and uses directory descriptors to traverse its contents. A directory
  *  that is moved during traversal may still have its contents removed through
- *  its descriptor. Ancestor descriptors are closed during descent; their
- *  identities and pending entry names are retained in memory. Returning to a
- *  parent verifies its device and inode against the saved identity and raises
- *  RuntimeError if they differ. Descriptor usage does not grow with depth.
+ *  its descriptor. A bounded number of ancestor descriptors are retained;
+ *  older ancestors are closed while their identities and pending entry names
+ *  remain in memory. Reopening a parent verifies its device and inode against
+ *  the saved identity and raises RuntimeError if they differ. Descriptor usage
+ *  is bounded independently of depth.
  *  Concurrent changes can cause an exception after partial removal.
  *  The root directory and paths ending in `.` or `..` are rejected.
  *  On non-Windows platforms, mounted filesystems within a tree are traversed.
