@@ -1874,13 +1874,15 @@ ossl_start_ssl(VALUE self, int (*func)(SSL *), const char *funcname, VALUE opts)
             io_wait_readable(io);
             continue;
           case SSL_ERROR_SYSCALL:
+            if (saved_errno) {
+                ossl_clear_error();
 #ifdef __APPLE__
-            /* See ossl_ssl_write_internal() */
-            if (saved_errno == EPROTOTYPE)
-                continue;
+                /* See ossl_ssl_write_internal() */
+                if (saved_errno == EPROTOTYPE)
+                    continue;
 #endif
-            if (saved_errno)
                 rb_exc_raise(rb_syserr_new(saved_errno, funcname));
+            }
             /* fallthrough */
           default: {
               VALUE error_append = Qnil;
@@ -2078,20 +2080,20 @@ ossl_ssl_read_internal(int argc, VALUE *argv, VALUE self, int nonblock)
             io_wait_readable(io);
             break;
           case SSL_ERROR_SYSCALL:
+            if (saved_errno) {
+                ossl_clear_error();
+                rb_exc_raise(rb_syserr_new(saved_errno, "SSL_read"));
+            }
             if (!ERR_peek_error()) {
-                if (saved_errno)
-                    rb_exc_raise(rb_syserr_new(saved_errno, "SSL_read"));
-                else {
-                    /*
-                     * The underlying BIO returned 0. This is actually a
-                     * protocol error. But unfortunately, not all
-                     * implementations cleanly shutdown the TLS connection
-                     * but just shutdown/close the TCP connection. So report
-                     * EOF for now...
-                     */
-                    if (no_exception_p(opts)) { return Qnil; }
-                    rb_eof_error();
-                }
+                /*
+                 * The underlying BIO returned 0. This is actually a
+                 * protocol error. But unfortunately, not all
+                 * implementations cleanly shutdown the TLS connection
+                 * but just shutdown/close the TCP connection. So report
+                 * EOF for now...
+                 */
+                if (no_exception_p(opts)) { return Qnil; }
+                rb_eof_error();
             }
             /* fall through */
           default:
@@ -2188,18 +2190,20 @@ ossl_ssl_write_internal_safe(VALUE _args)
             io_wait_readable(io);
             continue;
           case SSL_ERROR_SYSCALL:
+            if (saved_errno) {
+                ossl_clear_error();
 #ifdef __APPLE__
-            /*
-             * It appears that send syscall can return EPROTOTYPE if the
-             * socket is being torn down. Retry to get a proper errno to
-             * make the error handling in line with the socket library.
-             * [Bug #14713] https://bugs.ruby-lang.org/issues/14713
-             */
-            if (saved_errno == EPROTOTYPE)
-                continue;
+                /*
+                 * It appears that send syscall can return EPROTOTYPE if the
+                 * socket is being torn down. Retry to get a proper errno to
+                 * make the error handling in line with the socket library.
+                 * [Bug #14713] https://bugs.ruby-lang.org/issues/14713
+                 */
+                if (saved_errno == EPROTOTYPE)
+                    continue;
 #endif
-            if (saved_errno)
                 rb_exc_raise(rb_syserr_new(saved_errno, "SSL_write"));
+            }
             /* fallthrough */
           default:
             ossl_raise(eSSLError, "SSL_write");

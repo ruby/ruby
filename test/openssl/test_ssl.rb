@@ -1255,6 +1255,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
       assert_raise(Errno::ECONNRESET, Errno::EPIPE) {
         ssl.connect
       }
+      assert_empty(OpenSSL.errors)
     ensure
       sock&.close
     end
