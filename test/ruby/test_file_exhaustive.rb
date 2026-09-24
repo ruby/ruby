@@ -834,7 +834,7 @@ class TestFileExhaustive < Test::Unit::TestCase
   if NTFS
     def test_readlink_junction
       base = File.basename(nofile)
-      err = IO.popen(%W"cmd.exe /c mklink /j #{base} .", chdir: @dir, err: %i[child out], &:read)
+      err = IO.popen(%W"mklink /j #{base} .", chdir: @dir, err: %i[child out], &:read)
       omit err unless $?.success?
       assert_equal(@dir, File.readlink(nofile))
     end
