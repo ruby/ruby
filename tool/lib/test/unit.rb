@@ -495,6 +495,7 @@ module Test
         worker.close
         if @jobserver and (token = @job_tokens.slice!(0))
           @jobserver[1] << token
+          @jobserver[1].flush
         end
         @workers.delete(worker)
         @dead_workers << worker
@@ -646,6 +647,13 @@ module Test
         return false
       end
 
+      def _run_anything(type)
+        @job_tokens = String.new(encoding: Encoding::ASCII_8BIT) if @jobserver
+        super
+      ensure
+        flush_job_tokens
+      end
+
       def _run_parallel suites, type, result
         @records = {}
 
@@ -667,7 +675,6 @@ module Test
         @workers      = [] # Array of workers.
         @workers_hash = {} # out-IO => worker
         @ios          = [] # Array of worker IOs
-        @job_tokens   = String.new(encoding: Encoding::ASCII_8BIT) if @jobserver
         begin
           while true
             newjobs = [@tasks.size, @options[:parallel]].min - @workers.size
@@ -719,7 +726,6 @@ module Test
           end
 
           quit_workers
-          flush_job_tokens
 
           unless @interrupt || !@options[:retry] || @need_quit
             parallel = @options[:parallel]

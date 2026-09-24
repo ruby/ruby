@@ -151,11 +151,11 @@ module TestParallel
   end
 
   class TestParallel < Test::Unit::TestCase
-    def spawn_runner(*opt_args, jobs: "t1", env: {})
+    def spawn_runner(*opt_args, jobs: "t1", env: {}, **spawn_options)
       @test_out, o = IO.pipe
       @test_pid = spawn(env, *@__runner_options__[:ruby], TESTS+"/runner.rb",
                         "--ruby", @__runner_options__[:ruby].join(" "),
-                        "-j", jobs, *opt_args, out: o, err: o)
+                        *(jobs ? ["-j", jobs] : []), *opt_args, out: o, err: o, **spawn_options)
       o.close
     end
 
@@ -184,6 +184,26 @@ module TestParallel
       spawn_runner
       buf = ::TestParallel.timeout(TIMEOUT) {@test_out.read}
       assert_match(/^9 tests/,buf)
+    end
+
+    def test_repeat_with_jobserver
+      omit "jobserver requires file descriptor inheritance" if /mswin|mingw/ =~ RUBY_PLATFORM
+      IO.pipe do |r, w|
+        w.write(".")
+        spawn_runner("--repeat-count=3", "--jobs-status", "--tty=no",
+                     "-n", "/nothing|not_fail/", jobs: nil,
+                     env: {"MAKEFLAGS" => "--jobserver-auth=#{r.fileno},#{w.fileno} -j2"},
+                     r.fileno => r, w.fileno => w)
+        buf = ::TestParallel.timeout(TIMEOUT) {@test_out.read}
+        rounds = buf.split(/^Finished\(\d\/3\).*\n/)
+        assert_equal(4, rounds.size, buf)
+        rounds.first(3).each do |round|
+          pids = round.scan(/^\[\s*\d+\/\d+\]\s*(\d+)=/).flatten.uniq
+          assert_equal(2, pids.size, round)
+        end
+        assert_match(/^12 tests,.* 0 failures, 0 errors,/, buf)
+        assert_equal(".", r.read_nonblock(10, exception: false))
+      end
     end
 
     def test_should_retry_failed_on_workers
