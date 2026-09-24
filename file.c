@@ -4309,24 +4309,11 @@ static const char file_alt_separator[] = {FILE_ALT_SEPARATOR, '\0'};
 #  endif
 #endif
 
-#ifndef USE_NTFS_ADS
-# if USE_NTFS
-#   define USE_NTFS_ADS 1
-# else
-#   define USE_NTFS_ADS 0
-# endif
-#endif
-
 #if USE_NTFS
 #define istrailinggarbage(x) ((x) == '.' || (x) == ' ')
+#define isADS(x) ((x) == ':')
 #else
 #define istrailinggarbage(x) 0
-#endif
-
-#if USE_NTFS_ADS
-# define isADS(x) ((x) == ':')
-#else
-# define isADS(x) 0
 #endif
 
 #define enc_mbclen_needed(enc) (!rb_str_encindex_fastpath(rb_enc_to_index(enc)))
