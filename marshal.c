@@ -176,11 +176,12 @@ struct dump_arg {
     VALUE str, dest;
     st_table *symbols;
     st_table *data;
-    st_table *userdefs;
+    st_table userdefs;
     st_table encodings;
     st_table compat_tbl;
-    bool has_compat_tbl;
+    bool has_userdefs;
     bool has_encodings;
+    bool has_compat_tbl;
     st_index_t num_entries;
 };
 
@@ -229,7 +230,7 @@ mark_dump_arg(void *ptr)
     rb_mark_set(p->symbols);
     rb_mark_set(p->data);
     if (p->has_compat_tbl) rb_mark_hash(&p->compat_tbl);
-    rb_mark_set(p->userdefs);
+    if (p->has_userdefs) rb_mark_set(&p->userdefs);
     rb_gc_mark(p->str);
 }
 
@@ -247,7 +248,7 @@ memsize_dump_arg(const void *ptr)
     if (p->symbols) memsize += rb_st_memsize(p->symbols);
     if (p->data) memsize += rb_st_memsize(p->data);
     if (p->has_compat_tbl) memsize += rb_st_allocated_memsize(&p->compat_tbl);
-    if (p->userdefs) memsize += rb_st_memsize(p->userdefs);
+    if (p->has_userdefs) memsize += rb_st_allocated_memsize(&p->userdefs);
     if (p->has_encodings) memsize += rb_st_allocated_memsize(&p->encodings);
     return memsize;
 }
@@ -933,7 +934,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
             st_index_t hasiv2;
             VALUE encname2;
 
-            if (arg->userdefs && st_is_member(arg->userdefs, (st_data_t)obj)) {
+            if (arg->has_userdefs && st_is_member(&arg->userdefs, (st_data_t)obj)) {
                 rb_raise(rb_eRuntimeError, "can't dump recursive object using _dump()");
             }
             v = INT2NUM(limit);
@@ -953,12 +954,13 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
             w_str_bytes(v, arg);
             if (hasiv) {
                 st_data_t userdefs = (st_data_t)obj;
-                if (!arg->userdefs) {
-                    arg->userdefs = rb_init_identtable();
+                if (!arg->has_userdefs) {
+                    rb_init_existing_identtable_with_size(&arg->userdefs, 1);
+                    arg->has_userdefs = true;
                 }
-                st_add_direct(arg->userdefs, userdefs, 0);
+                st_add_direct(&arg->userdefs, userdefs, 0);
                 w_ivar(hasiv, ivobj, encname, &c_arg);
-                st_delete(arg->userdefs, &userdefs, NULL);
+                st_delete(&arg->userdefs, &userdefs, NULL);
             }
             w_remember(obj, arg);
             return;
@@ -1171,9 +1173,9 @@ clear_dump_arg(struct dump_arg *arg)
         st_free_embedded_table(&arg->encodings);
         arg->has_encodings = false;
     }
-    if (arg->userdefs) {
-        st_free_table(arg->userdefs);
-        arg->userdefs = 0;
+    if (arg->has_userdefs) {
+        st_free_embedded_table(&arg->userdefs);
+        arg->has_userdefs = false;
     }
 }
 
@@ -1250,7 +1252,6 @@ rb_marshal_dump_limited(VALUE obj, VALUE port, int limit)
     arg->symbols = st_init_numtable();
     arg->data    = rb_init_identtable();
     arg->num_entries = 0;
-    arg->userdefs = 0;
     arg->str = rb_str_buf_new(0);
     if (!NIL_P(port)) {
         if (!rb_respond_to(port, s_write)) {
