@@ -2686,18 +2686,19 @@ class Pathname    # * FileTest *
   # call-seq:
   #   sticky? -> true or false
   #
-  # Returns whether the [sticky bit](https://en.wikipedia.org/wiki/Sticky_bit) is set
+  # Returns whether the sticky bit is set
+  # in the [special bits](rdoc-ref:file/filesystem_modes.md@Special+Bits)
   # for the entry at the path in `self`:
   #
   # ```ruby
-  # pn = Pathname('t.tmp')
+  # pn = Pathname('/tmp/t.tmp')
   # pn.write('foo')
   # pn.stat.mode.to_s(8) # => "100664"
   # pn.sticky?           # => false
-  # pn.chmod(0o1644)
-  # pn.stat.mode.to_s(8) # => "101644"
+  # pn.chmod(01644)      # Set sticky bit.
+  # pn.stat.mode.to_s(8) #  => "101644"
   # pn.sticky?           # => true
-  # pn.delete
+  # pn.delete # => 1     # Clean up.
   # ```
   #
   # Returns `false` on Windows.
