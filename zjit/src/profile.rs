@@ -160,7 +160,9 @@ pub type SplatLengthDistributionSummary = DistributionSummary<Option<SplatLength
 fn profile_operands(profiler: &mut Profiler, profile: &mut IseqProfile, n: usize) {
     let entry = profile.entry_mut(profiler.insn_idx);
     if entry.opnd_types.is_empty() {
-        entry.opnd_types.resize(n, TypeDistribution::new());
+        // Allocate exactly `n` distributions. A plain `resize` on an empty Vec rounds the capacity
+        // up to 4 elements, which might waste space.
+        entry.opnd_types = vec![TypeDistribution::new(); n];
     }
 
     for (i, profile_type) in entry.opnd_types.iter_mut().enumerate() {
@@ -200,7 +202,7 @@ fn profile_splat_length(profiler: &mut Profiler, profile: &mut IseqProfile, ci: 
 fn profile_self(profiler: &mut Profiler, profile: &mut IseqProfile) {
     let entry = profile.entry_mut(profiler.insn_idx);
     if entry.opnd_types.is_empty() {
-        entry.opnd_types.resize(1, TypeDistribution::new());
+        entry.opnd_types = vec![TypeDistribution::new()];
     }
     let obj = profiler.peek_at_self();
     // TODO(max): Handle GC-hidden classes like Array, Hash, etc and make them look normal or
@@ -213,7 +215,7 @@ fn profile_self(profiler: &mut Profiler, profile: &mut IseqProfile) {
 fn profile_block_handler(profiler: &mut Profiler, profile: &mut IseqProfile) {
     let entry = profile.entry_mut(profiler.insn_idx);
     if entry.opnd_types.is_empty() {
-        entry.opnd_types.resize(1, TypeDistribution::new());
+        entry.opnd_types = vec![TypeDistribution::new()];
     }
     let obj = profiler.peek_at_block_handler();
     let ty = ProfiledType::object(obj);
