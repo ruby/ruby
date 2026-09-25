@@ -264,18 +264,6 @@
 # include <stdio.h>
 #endif
 
-#ifndef PRIdPTR
-# ifdef _WIN64
-#  define PRIdPTR	"I64d"
-#  define PRIuPTR	"I64u"
-#  define PRIxPTR	"I64x"
-# else
-#  define PRIdPTR	"ld"
-#  define PRIuPTR	"lu"
-#  define PRIxPTR	"lx"
-# endif
-#endif
-
 #ifndef PRIdPTRDIFF
 # define PRIdPTRDIFF PRIdPTR
 #endif
