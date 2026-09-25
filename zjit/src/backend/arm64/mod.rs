@@ -513,7 +513,8 @@ impl Assembler {
                 Insn::CSelL { truthy, falsy, .. } |
                 Insn::CSelLE { truthy, falsy, .. } |
                 Insn::CSelG { truthy, falsy, .. } |
-                Insn::CSelGE { truthy, falsy, .. } => {
+                Insn::CSelGE { truthy, falsy, .. } |
+                Insn::CSelAE { truthy, falsy, .. } => {
                     let (opnd0, opnd1) = split_csel_operands(asm, *truthy, *falsy);
                     *truthy = opnd0;
                     *falsy = opnd1;
@@ -757,7 +758,8 @@ impl Assembler {
                 Insn::CSelL  { truthy: left, falsy: right, out } |
                 Insn::CSelLE { truthy: left, falsy: right, out } |
                 Insn::CSelG  { truthy: left, falsy: right, out } |
-                Insn::CSelGE { truthy: left, falsy: right, out } => {
+                Insn::CSelGE { truthy: left, falsy: right, out } |
+                Insn::CSelAE { truthy: left, falsy: right, out } => {
                     *left = split_memory_read(asm, *left, SCRATCH0_OPND);
                     *right = split_memory_read(asm, *right, SCRATCH1_OPND);
                     let mem_out = split_memory_write(out, SCRATCH0_OPND);
@@ -1616,6 +1618,9 @@ impl Assembler {
                 },
                 Insn::CSelGE { truthy, falsy, out } => {
                     csel(cb, out.into(), truthy.into(), falsy.into(), Condition::GE);
+                }
+                Insn::CSelAE { truthy, falsy, out } => {
+                    csel(cb, out.into(), truthy.into(), falsy.into(), Condition::CS);
                 }
             };
 
@@ -2717,6 +2722,45 @@ mod tests {
             0x8: csel x1, x0, x1, lt
         ");
         assert_snapshot!(cb.hexdump(), @"800280d2010080d201b0819a");
+    }
+
+    #[test]
+    fn test_csel_ae() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let out = asm.csel_ae(Qtrue.into(), Qfalse.into());
+        asm.mov(Opnd::Reg(TEMP_REGS[0]), out);
+        asm.compile_with_num_regs(&mut cb, 2);
+
+        assert_disasm_snapshot!(cb.disasm(), @"
+            0x0: mov x0, #0x14
+            0x4: mov x1, #0
+            0x8: csel x1, x0, x1, hs
+        ");
+        assert_snapshot!(cb.hexdump(), @"800280d2010080d20120819a");
+    }
+
+    #[test]
+    fn test_csel_ae_bounds_check() {
+        let (mut asm, mut cb) = setup_asm();
+
+        // Select nil if idx < 0 || idx >= len, else the element
+        let idx = Opnd::Reg(TEMP_REGS[1]);
+        let len = Opnd::mem(64, SP, 16);
+        asm.cmp(idx, len);
+        let out = asm.csel_ae(Qnil.into(), Opnd::mem(64, SP, 0));
+        asm.mov(Opnd::mem(64, SP, 0), out);
+        asm.compile_with_num_regs(&mut cb, 2);
+
+        assert_disasm_snapshot!(cb.disasm(), @"
+            0x0: ldur x0, [x21, #0x10]
+            0x4: cmp x9, x0
+            0x8: mov x0, #4
+            0xc: ldur x1, [x21]
+            0x10: csel x0, x0, x1, hs
+            0x14: stur x0, [x21]
+        ");
+        assert_snapshot!(cb.hexdump(), @"a00241f83f0100eb800080d2a10240f80020819aa00200f8");
     }
 
     #[test]
