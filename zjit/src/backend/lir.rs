@@ -6,15 +6,14 @@ use std::mem::take;
 use std::rc::Rc;
 use crate::bitset::BitSet;
 use crate::perf;
-use crate::cruby::{IseqPtr, RUBY_OFFSET_CFP_ISEQ, RUBY_OFFSET_CFP_JIT_RETURN, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32, VALUE, ZJIT_STACK_MAP_BASE_PTR_INDEX_MASK, ZJIT_STACK_MAP_BASE_PTR_SIZE_SHIFT, ZJIT_STACK_MAP_BASE_PTR_TAG, ZJIT_STACK_MAP_SHIFT, ZJIT_STACK_MAP_SKIP_TAG, ZJIT_STACK_MAP_VREG_TAG, vm_stack_canary, zjit_jit_frame, local_size_and_idx_to_ep_offset};
-use crate::asm::LabelName;
+use crate::cruby::{IseqPtr, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32, VALUE, ZJIT_STACK_MAP_BASE_PTR_INDEX_MASK, ZJIT_STACK_MAP_BASE_PTR_SIZE_SHIFT, ZJIT_STACK_MAP_BASE_PTR_TAG, ZJIT_STACK_MAP_SHIFT, ZJIT_STACK_MAP_SKIP_TAG, ZJIT_STACK_MAP_LOCAL_MOD_TAG, ZJIT_STACK_MAP_PREV_FRAME_TAG, ZJIT_STACK_MAP_VREG_TAG, vm_stack_canary, zjit_jit_frame, local_size_and_idx_to_ep_offset};
 use crate::hir::{Invariant, SideExitReason};
 use crate::hir;
 use crate::options::{TraceExits, get_option};
 use crate::payload::IseqVersionRef;
 use crate::stats::{exit_counter_ptr, exit_counter_ptr_for_opcode, side_exit_counter, CompileError};
 use crate::virtualmem::CodePtr;
-use crate::asm::{CodeBlock, Label};
+use crate::asm::{CodeBlock, Label, LabelName};
 use crate::state::{ZJITState, rb_zjit_record_exit_stack};
 use crate::cast::IntoUsize;
 
@@ -632,9 +631,7 @@ pub struct SideExit {
     pub stack: Vec<Opnd>,
     pub locals: Vec<Opnd>,
     pub iseq: IseqPtr,
-    /// Stack map for older inlined frames that are not written directly by this
-    /// side exit. The current frame's stack and locals are still handled by
-    /// `stack` and `locals` above.
+    /// Stack map for the top-most frame and any inlined frames below.
     pub stack_map: Option<StackMap>,
     /// If set, the side exit will invalidate the compiled ISEQ for recompilation.
     pub recompile: Option<SideExitRecompile>,
@@ -1394,6 +1391,14 @@ impl fmt::Debug for Insn {
         });
         write!(fmt, ")")?;
 
+        // for_each_operand() above yields the stack map's Opnd entries but not its
+        // Skip/LocalModifier/BasePtr structure, which is where write-cursor bugs live.
+        if let Insn::CCall { data } = self {
+            if let Some(StackMap { stack, .. }) = &data.stack_map {
+                write!(fmt, " stack_map={stack:?}")?;
+            }
+        }
+
         // Print text, target, and pos if they are present
         if let Some(text) = self.text() {
             write!(fmt, " {text:?}")?
@@ -1801,6 +1806,15 @@ pub enum StackMapEntry {
     /// at `cfp->jit_return[-slot_index]`, plus `stack_size` VM slots. Emitted as
     /// the first entry by gen_prepare_non_leaf_call(); see zjit.h.
     BasePtr { slot_index: u32, stack_size: u32 },
+    /// This opcode marks the next value operand as one for local variable.
+    /// Some situations such as EP escape are only interested in the values of locals.
+    LocalModifier,
+    /// Boundary between two control frames that one stack map describes, emitted
+    /// by build_stack_map() between an inlined callee and its caller. Moves the
+    /// write cursor past the callee's receiver slot and switches the frame whose
+    /// env decides whether the following [`StackMapEntry::LocalModifier`] entries
+    /// are written. See zjit_write_frame_stack() in vm.c.
+    PrevFrame,
 }
 
 /// The base_ptr payload splits in two above the tag byte, so the slot index has
@@ -2730,6 +2744,12 @@ impl Assembler
                                     debug_assert_eq!(idx, 0, "base_ptr must be the first StackMap entry so later entries decode from it");
                                     StackMapEntry::encode_base_ptr(slot_index, stack_size)
                                 }
+                                StackMapEntry::LocalModifier => {
+                                    VALUE(ZJIT_STACK_MAP_LOCAL_MOD_TAG.to_usize())
+                                }
+                                StackMapEntry::PrevFrame => {
+                                    VALUE(ZJIT_STACK_MAP_PREV_FRAME_TAG.to_usize())
+                                }
                                 StackMapEntry::Opnd(Opnd::VReg { idx: vreg, .. }) => {
                                     let vreg_stack_index = match intervals[vreg].assigned.get().expect("StackMap VReg should have an allocation") {
                                         Allocation::Reg(_) => {
@@ -3069,6 +3089,18 @@ impl Assembler
                         debug_assert!(!VALUE(encoded).special_const_p(), "encoded StackMap skip should not look like an immediate VALUE");
                         VALUE(encoded)
                     }
+                    StackMapEntry::BasePtr { slot_index, stack_size } => {
+                        // NOTE: when side exiting, we're the topmost frame, so while a baseptr code
+                        // wouldn't introduce a correctness issue it is also unnecessary.
+                        debug_assert_eq!(idx, 0, "base_ptr must be the first StackMap entry so later entries decode from it");
+                        StackMapEntry::encode_base_ptr(slot_index, stack_size)
+                    }
+                    StackMapEntry::LocalModifier => {
+                        VALUE(ZJIT_STACK_MAP_LOCAL_MOD_TAG.to_usize())
+                    }
+                    StackMapEntry::PrevFrame => {
+                        VALUE(ZJIT_STACK_MAP_PREV_FRAME_TAG.to_usize())
+                    }
                     StackMapEntry::Opnd(Opnd::Mem(Mem { base: MemBase::Stack { stack_idx, .. }, disp, .. })) => {
                         assert_eq!(disp, 0, "StackMap stack slot should not have a displacement");
                         encode_stack_map_index(asm, stack_idx.to_usize(), *frame_depth)
@@ -3077,7 +3109,7 @@ impl Assembler
                         let StackMapEntry::Opnd(opnd) = *stack_entry else { unreachable!() };
                         capture_stack_map_opnd(asm, opnd, &mut capture_idx, *frame_depth)
                     }
-                    _ => unreachable!("unexpected entry in SideExit StackMap: {stack_entry:?}"),
+                    StackMapEntry::Opnd(_) => unreachable!("unexpected entry in SideExit StackMap: {stack_entry:?}"),
                 };
                 unsafe { (*jit_frame.cast_mut()).stack.as_mut_ptr().add(idx).write(entry); }
             }
@@ -3090,32 +3122,32 @@ impl Assembler
 
         /// Restore VM state (cfp->pc, cfp->sp, stack, locals) for the side exit.
         fn compile_exit_save_state(asm: &mut Assembler, exit: &SideExit) {
-            let SideExit { pc, stack, locals, iseq, stack_map, .. } = exit;
+            let SideExit { pc: _, stack, locals, iseq: _, stack_map, .. } = exit;
 
             // Side exit blocks are not part of the CFG at the moment,
             // so we need to manually ensure that patchpoints get padded
             // so that nobody stomps on us
             asm.boundary_pad();
 
-            asm_comment!(asm, "save cfp->pc");
-            asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC), *pc);
+            // asm_comment!(asm, "save cfp->pc");
+            // asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC), *pc);
 
             asm_comment!(asm, "save cfp->sp");
             asm.lea_into(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP), Opnd::mem(64, SP, stack.len() as i32 * SIZEOF_VALUE_I32));
 
-            asm_comment!(asm, "save cfp->iseq");
-            asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_ISEQ), VALUE::from(*iseq).into());
+            // asm_comment!(asm, "save cfp->iseq");
+            // asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_ISEQ), VALUE::from(*iseq).into());
+            // side: does materialize write ^^?: They do PC & iseq, but not sp
+            // TODO(alan): jit frame has enough info to write sp if we really want
 
-            // cfp->block_code and cfp->jit_return are cleared by the materialize_exit trampoline
-
-            if !stack.is_empty() {
+            if false {
                 asm_comment!(asm, "write stack slots: {}", join_opnds(&stack, ", "));
                 for (idx, &opnd) in stack.iter().enumerate() {
                     asm.store(Opnd::mem(64, SP, idx as i32 * SIZEOF_VALUE_I32), opnd);
                 }
             }
 
-            if !locals.is_empty() {
+            if false {
                 asm_comment!(asm, "write locals: {}", join_opnds(&locals, ", "));
                 for (idx, &opnd) in locals.iter().enumerate() {
                     asm.store(Opnd::mem(64, SP, (-local_size_and_idx_to_ep_offset(locals.len(), idx) - 1) * SIZEOF_VALUE_I32), opnd);
@@ -3152,13 +3184,6 @@ impl Assembler
             // ccall doesn't clobber caller-saved registers
             // holding stack/local operands.
             compile_exit_save_state(asm, exit);
-            if trace_reason.is_some() || exit.recompile.is_some() {
-                // Clear cfp->jit_return to prepare for a C call. Normally, cfp->jit_return
-                // is cleared by the materialize_exit trampoline, but if we're about to
-                // make a C call, we need to clear any stale JITFrame.
-                asm_comment!(asm, "clear cfp->jit_return");
-                asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_JIT_RETURN), 0.into());
-            }
             if let Some(reason) = trace_reason {
                 // Leak a CString with the reason so it's available at runtime
                 let reason_cstr = std::ffi::CString::new(reason.to_string())
@@ -3816,6 +3841,15 @@ impl fmt::Display for Assembler {
                                 sep = ", ";
                                 result
                             })?;
+                        }
+
+                        // The operands above are the stack map's Opnd entries only, not its
+                        // Skip/LocalModifier/BasePtr structure, which is where write-cursor
+                        // bugs live. See zjit_write_frame_stack() for the decoder.
+                        if let Insn::CCall { data } = insn {
+                            if let Some(StackMap { stack, .. }) = &data.stack_map {
+                                write!(f, " stack_map={stack:?}")?;
+                            }
                         }
 
                         write!(f, "\n")?;

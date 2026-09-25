@@ -1990,14 +1990,18 @@ eval_string_with_cref(VALUE self, VALUE src, rb_cref_t *cref, VALUE file, int li
         rb_raise(rb_eRuntimeError, "Can't eval on top of Fiber or Thread");
     }
 
+    // In the interpreter this eval variant runs without causing environment
+    // escape by having an existing environment parent the dynamically created eval evironment.
+    // TODO(alan): explain this better
+    // But, that interferes with ZJIT's being able to assume that non-escaped
+    // environment implies syntatic modification only, so we induce an
+    // environment escape here.
+    if (rb_zjit_enabled_p) vm_make_env_object(ec, cfp);
+
     block.as.captured = *VM_CFP_TO_CAPTURED_BLOCK(cfp);
     block.as.captured.self = self;
     block.as.captured.code.iseq = CFP_ISEQ(cfp);
     block.type = block_type_iseq;
-
-    // EP is not escaped to the heap here, but captured and reused by another frame.
-    // ZJIT's locals are incompatible with it unlike YJIT's, so invalidate the ISEQ for ZJIT.
-    if (rb_zjit_enabled_p) rb_zjit_invalidate_no_ep_escape(CFP_ISEQ(cfp));
 
     iseq = eval_make_iseq(src, file, line, &block);
     if (!iseq) {

@@ -6,7 +6,7 @@ use crate::backend::lir::Assembler;
 use crate::codegen::max_iseq_versions;
 use crate::cruby::*;
 use crate::hir::{Insn, iseq_to_hir};
-use crate::options::{CallThreshold, get_option, rb_zjit_prepare_options, set_call_threshold, set_inline_threshold, set_max_versions, set_mem_bytes, set_num_exits_until_invalidate};
+use crate::options::{CallThreshold, disable_hir_opt, get_option, rb_zjit_prepare_options, set_call_threshold, set_inline_threshold, set_max_versions, set_mem_bytes, set_num_exits_until_invalidate};
 use crate::payload::IseqVersion;
 use crate::hir::tests::hir_build_tests::assert_contains_opcode;
 use crate::payload::*;
@@ -1409,6 +1409,47 @@ fn test_throw_retry_in_rescue() {
 }
 
 #[test]
+fn test_rescue_sees_locals_after_variadic_cfunc_raises() {
+    set_call_threshold(2);
+    // Kernel#raise is a variadic cfunc. With the HIR optimizer on, `keep` never
+    // reaches EP memory on its own -- it is an SSA value in a register and nothing
+    // marks it spilled -- so the rescue handler can only see it if the call site
+    // registered a stack map for rb_zjit_materialize_frames() to walk.
+    eval("
+        def test
+          keep = 42
+          begin
+            raise 'boom'
+          rescue
+            keep
+          end
+        end
+        test
+        test
+    ");
+    assert_snapshot!(assert_compiles_allowing_exits("test"), @"42");
+}
+
+#[test]
+fn test_rescue_sees_locals_after_cfunc_raises() {
+    set_call_threshold(2);
+    // Same as above for the non-variadic path: String#* takes a fixed argc.
+    eval("
+        def test
+          keep = 42
+          begin
+            'a' * -1
+          rescue ArgumentError
+            keep
+          end
+        end
+        test
+        test
+    ");
+    assert_snapshot!(assert_compiles_allowing_exits("test"), @"42");
+}
+
+#[test]
 fn test_throw_next_with_ensure() {
     set_call_threshold(2);
     eval("
@@ -1636,12 +1677,70 @@ fn test_optimized_method_call_proc_call_kwarg() {
 }
 
 #[test]
+fn test_spill_locals_when_send_is_optimized_away() {
+    // The block writes `a`, so the send is followed by a reload of `a` from frame memory, while
+    // `foo` returns a constant, so the send itself is inlined away. The spill that fills the slot
+    // has to outlive the send it was emitted for; `a` used to read back nil.
+    set_call_threshold(2);
+    eval("
+        def foo(&) = 1
+        def test
+          a = 1
+          foo { a = 'the surrounding block is dead code' }
+          a
+        end
+        test
+        test
+    ");
+    assert_snapshot!(assert_compiles("test"), @"1");
+}
+
+#[test]
 fn test_setlocal_on_eval_with_spill() {
     assert_snapshot!(inspect("
         @b = binding
         eval('a = 1; itself', @b)
         eval('a', @b)
     "), @"1");
+}
+
+#[test]
+fn test_eval_local_write_survives_send_without_hir_opt() {
+    // https://github.com/Shopify/ruby/issues/970, reduced from ruby-spec.
+    // `eval` writes `n` into this frame's memory behind the JIT's back. Without HIR
+    // optimizations `ofor.nil?` stays a fallback Send, which used to spill every local
+    // before the call, writing the JIT's stale `n = 0` over the 2 from `eval`.
+    set_call_threshold(1);
+    disable_hir_opt();
+    eval(r#"
+        def test
+          ofor = nil
+          n = 0
+          eval("n = 2")
+          raise unless ofor.nil? # commenting out this line dodges the bug
+          raise "n=#{n} and !=2" unless n == 2
+        end
+        test
+    "#);
+    assert_snapshot!(assert_compiles_allowing_exits("test"), @"nil");
+}
+
+#[test]
+fn test_eval_local_write_survives_side_exit() {
+    // Like test_eval_local_write_survives_send_without_hir_opt(), but through a side exit
+    // instead of a send: the exit used to write the JIT's stale `n = 0` over the 2 from `eval`.
+    set_call_threshold(2);
+    eval(r#"
+        def test
+          n = 0
+          eval("n = 2")
+          ::RubyVM::ZJIT.induce_side_exit!
+          n
+        end
+        test
+        test
+    "#);
+    assert_snapshot!(assert_compiles_allowing_exits("test"), @"2");
 }
 
 #[test]
@@ -8512,6 +8611,72 @@ fn test_inlined_method_with_invokeblock_raise_materializes_stack() {
     });
 }
 
+// One stack map can describe several control frames when methods are inlined,
+// and each frame's own env decides whether its locals still live in VM stack
+// memory. These exercise the StackMapEntry::PrevFrame boundary that carries that
+// switch; see zjit_write_frame_stack() in vm.c.
+//
+// Here the innermost inlined frame escapes its env and then raises, so decoding
+// crosses from an escaped frame into two unescaped ones.
+#[test]
+fn test_stack_map_switches_frames_when_inner_env_escapes() {
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines_allowing_exits("
+            def leaf(escape)
+              if escape
+                proc { }
+                raise 'boom'
+              end
+              1
+            end
+
+            def middle(n)
+              keep = n + 41
+              leaf(n > 0)
+              keep
+            rescue
+              keep
+            end
+
+            def outer(n) = middle(n)
+
+            outer(0)
+            outer(0)
+            [outer(1), outer(0)]
+        "), @"[42, 41]");
+    });
+}
+
+// The escape is one frame up instead, so decoding crosses from an unescaped
+// frame into an escaped one and back out into an unescaped one. env_escaped
+// flips twice inside a single stack map.
+#[test]
+fn test_stack_map_switches_frames_when_env_escape_flips_twice() {
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines_allowing_exits("
+            def leaf(x)
+              raise 'boom' if x > 0
+              x
+            end
+
+            def middle(n)
+              keep = n + 41
+              binding if n > 0
+              leaf(n)
+              keep
+            rescue
+              keep
+            end
+
+            def outer(n) = middle(n)
+
+            outer(0)
+            outer(0)
+            [outer(1), outer(0)]
+        "), @"[42, 41]");
+    });
+}
+
 #[test]
 fn test_inlined_method_with_block_param() {
     with_inlining(|| {
@@ -8801,6 +8966,27 @@ fn test_uncached_getconstant_path() {
 }
 
 #[test]
+fn test_side_exit_materializes_locals_spilled_for_a_builtin_call() {
+    set_call_threshold(1);
+    eval("nil"); // boot the VM before assert_compiles_allowing_exits touches ZJITState
+    // Array#each is a builtin, so its snapshots mark every local as spilled: the
+    // Primitive.* calls read them as C locals. Enabling tracing from inside the
+    // block invalidates the NoTracePoint patch point that shares one of those
+    // snapshots, and that exit has to materialize `i` even though nothing spilled
+    // it -- the builtin around it was inlined into LIR.
+    assert_snapshot!(assert_compiles_allowing_exits(r#"
+        tp = TracePoint.new(:line) { }
+        out = []
+        [1, 2, 3, 4].each do |x|
+          out << x
+          tp.enable if x == 2
+        end
+        tp.disable
+        out
+    "#), @"[1, 2, 3, 4]");
+}
+
+#[test]
 fn test_line_tracepoint_on_c_method() {
     set_call_threshold(1);
     assert_snapshot!(assert_compiles_allowing_exits(r#"
@@ -8991,6 +9177,44 @@ fn test_no_ep_escape_invalidation_at_max_versions() {
     set_max_versions(old_max_versions);
     set_call_threshold(old_call_threshold);
     assert_snapshot!(result, @r#""expected""#);
+}
+
+#[test]
+fn test_concurrent_ep_escape() {
+    // Test to see if concurrent environment escapes
+    // sharing one piece of JIT code produce one consistent result.
+    rb_zjit_prepare_options();
+    set_call_threshold(2);
+    set_inline_threshold(0);
+    let result = inspect(r#"
+        def spill_escaper(gate)
+          a = 1
+          b = 2
+          spill_captor(gate) { }  # empty block, no eager spill
+        end
+
+        # Returning `blk` materializes the Proc, which escapes spill_escaper's EP.
+        def spill_captor(gate, &blk)
+          gate.receive ? blk : nil
+        end
+
+        ready = Ractor::Port.new
+        results = Ractor::Port.new
+        ractors = 4.times.map do
+          Ractor.new(ready, results) do |ready, results|
+            port = Ractor.current.default_port
+            2.times { port << false; spill_escaper(port) }  # compile spill_escaper, no escape
+            ready << :parked                                # parks until the main Ractor releases
+            bnd = spill_escaper(port).binding
+            results << [bnd.local_variable_get(:a), bnd.local_variable_get(:b)]
+          end
+        end
+
+        ractors.size.times { ready.receive }
+        ractors.each { |r| r << true }  # have all ractor do EP escapes
+        ractors.size.times.map { results.receive }.uniq
+    "#);
+    assert_snapshot!(result, @r#"[[1, 2]]"#);
 }
 
 #[test]
