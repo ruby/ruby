@@ -21,16 +21,18 @@ RBIMPL_SYMBOL_EXPORT_BEGIN()
 // WARNING: This entire interface is experimental and may change in the future!
 #define RB_IO_BUFFER_EXPERIMENTAL 1
 
-// Version 4: Buffer and Slice share the view interface; allocation lifecycle
-// operations require Buffer. Version 3 introduced single-transfer IO semantics.
+// Version 4: Buffer is the common view interface for Storage and Slice;
+// allocation lifecycle operations require Storage. Version 3 introduced
+// single-transfer IO semantics.
 #define RUBY_IO_BUFFER_VERSION 4
 
 // The `IO::Buffer` class.
 RUBY_EXTERN VALUE rb_cIOBuffer;
+RUBY_EXTERN VALUE rb_cIOBufferStorage;
 RUBY_EXTERN VALUE rb_cIOBufferSlice;
 
-// Returns non-zero for a native Buffer or Slice representation. C consumers
-// should use this rather than checking Ruby inheritance from IO::Buffer.
+// Returns non-zero for a native Storage or Slice representation. This verifies
+// the native payload, rather than only Ruby inheritance from IO::Buffer.
 int rb_io_buffer_p(VALUE self);
 
 // The operating system page size.
@@ -96,7 +98,7 @@ VALUE rb_io_buffer_lock(VALUE self);
 VALUE rb_io_buffer_unlock(VALUE self);
 int rb_io_buffer_try_unlock(VALUE self);
 
-// Allocation lifecycle operations reject Slice receivers.
+// Allocation lifecycle operations require Storage and reject Slice receivers.
 VALUE rb_io_buffer_free(VALUE self);
 // Release the buffer's only lock and immediately invalidate it. This is for
 // temporary wrappers around borrowed memory. Calls rb_bug if the lock count is

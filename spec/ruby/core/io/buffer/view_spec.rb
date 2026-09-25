@@ -61,7 +61,7 @@ ruby_version_is "4.1" do
     end
   end
 
-  describe "IO::Buffer byte-access protocol" do
+  describe "IO::Buffer::Storage byte-access protocol" do
     it_behaves_like :io_buffer_view_access, :buffer
   end
 
@@ -69,7 +69,7 @@ ruby_version_is "4.1" do
     it_behaves_like :io_buffer_view_access, :slice
   end
 
-  describe "IO::Buffer and IO::Buffer::Slice" do
+  describe "IO::Buffer::Storage and IO::Buffer::Slice" do
     before :each do
       @buffer = IO::Buffer.new(8)
       @buffer.set_string("abcdefgh")
@@ -80,15 +80,18 @@ ruby_version_is "4.1" do
       @buffer.free
     end
 
-    it "are distinct types with a private, non-instantiable common superclass" do
-      @slice.should.is_a?(IO::Buffer::Slice)
-      @slice.is_a?(IO::Buffer).should == false
-      IO::Buffer.superclass.should.equal?(IO::Buffer::Slice.superclass)
-      -> { IO::Buffer::View }.should.raise(NameError)
-      -> { IO::Buffer.superclass.new }.should.raise(TypeError)
+    it "are Buffer subclasses while Buffer.new is a Storage factory" do
+      @buffer.class.should == IO::Buffer::Storage
+      @slice.class.should == IO::Buffer::Slice
+      @buffer.should.is_a?(IO::Buffer)
+      @slice.should.is_a?(IO::Buffer)
+      IO::Buffer::Storage.superclass.should.equal?(IO::Buffer)
+      IO::Buffer::Slice.superclass.should.equal?(IO::Buffer)
+      IO::Buffer.const_defined?(:View, false).should == false
+      -> { IO::Buffer.allocate }.should.raise(TypeError)
     end
 
-    it "exposes allocation predicates and lifecycle methods only on Buffer" do
+    it "exposes allocation predicates and lifecycle methods only on Storage" do
       [:internal?, :external?, :mapped?, :shared?, :private?, :free, :transfer].each do |method|
         @buffer.respond_to?(method).should == true
         @slice.respond_to?(method).should == false
@@ -96,6 +99,14 @@ ruby_version_is "4.1" do
       [:locked?, :locked, :valid?, :null?, :empty?, :readonly?, :size, :source].each do |method|
         @buffer.respond_to?(method).should == true
         @slice.respond_to?(method).should == true
+      end
+    end
+
+    it "does not expose storage factories on Slice" do
+      [:for, :map, :string].each do |method|
+        IO::Buffer.respond_to?(method).should == true
+        IO::Buffer::Storage.respond_to?(method).should == true
+        IO::Buffer::Slice.respond_to?(method).should == false
       end
     end
 
@@ -120,7 +131,7 @@ ruby_version_is "4.1" do
     it "duplicates Buffer storage independently" do
       copy = @buffer.dup
       begin
-        copy.class.should == IO::Buffer
+        copy.class.should == IO::Buffer::Storage
         copy.source.should == nil
         copy.set_string("ABCDEFGH")
         @buffer.get_string.should == "abcdefgh"
@@ -137,7 +148,7 @@ ruby_version_is "4.1" do
       -> { @slice.resize(8) }.should.raise(ArgumentError)
     end
 
-    it "treats free as idempotent on an ordinary Buffer" do
+    it "treats free as idempotent on ordinary Storage" do
       @buffer.free.should.equal?(@buffer)
       @buffer.free.should.equal?(@buffer)
       @buffer.should.null?

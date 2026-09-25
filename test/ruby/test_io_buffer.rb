@@ -31,11 +31,14 @@ class TestIOBuffer < Test::Unit::TestCase
     buffer = IO::Buffer.new(8)
     buffer.set_string("abcdefgh")
     slice = buffer.slice(1, 4)
+    assert_instance_of IO::Buffer::Storage, buffer
     assert_instance_of IO::Buffer::Slice, slice
-    refute_kind_of IO::Buffer, slice
-    assert_same IO::Buffer.superclass, IO::Buffer::Slice.superclass
-    assert_raise(NameError) {IO::Buffer::View}
-    assert_raise(TypeError) {IO::Buffer.superclass.new}
+    assert_kind_of IO::Buffer, buffer
+    assert_kind_of IO::Buffer, slice
+    assert_same IO::Buffer, IO::Buffer::Storage.superclass
+    assert_same IO::Buffer, IO::Buffer::Slice.superclass
+    refute IO::Buffer.const_defined?(:View, false)
+    assert_raise(TypeError) {IO::Buffer.allocate}
 
     [:internal?, :external?, :mapped?, :shared?, :private?, :free, :transfer].each do |method|
       assert_respond_to buffer, method
@@ -51,6 +54,55 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_equal 0, Bug::IOBuffer.get_bytes_flags(slice)
   ensure
     buffer&.free
+  end
+
+  def test_storage_factories_and_subclasses
+    [IO::Buffer, IO::Buffer::Storage].each do |factory|
+      storage = factory.new(8)
+      assert_instance_of IO::Buffer::Storage, storage
+      assert_nil storage.source
+      storage.free
+
+      storage = factory.for("data")
+      assert_instance_of IO::Buffer::Storage, storage
+      assert_equal "data", storage.get_string
+      storage.free
+
+      factory.for(+"data") {|buffer| assert_instance_of IO::Buffer::Storage, buffer}
+      result = factory.string(4) do |buffer|
+        assert_instance_of IO::Buffer::Storage, buffer
+        buffer.set_string("test")
+      end
+      assert_equal "test", result
+
+      File.open(__FILE__) do |file|
+        storage = factory.map(file, nil, 0, IO::Buffer::READONLY)
+        assert_instance_of IO::Buffer::Storage, storage
+        assert_predicate storage, :mapped?
+        storage.free
+      end
+    end
+
+    subclass = Class.new(IO::Buffer::Storage) do
+      attr_reader :tag
+      def initialize(size, tag:)
+        super(size)
+        @tag = tag
+        yield self if block_given?
+      end
+    end
+    storage = subclass.new(4, tag: :test) {|buffer| buffer.set_string("data")}
+    assert_instance_of subclass, storage
+    assert_equal :test, storage.tag
+    assert_equal "data", storage.get_string
+
+    slice_class = Class.new(IO::Buffer::Slice)
+    slice = slice_class.new(storage, 1, 2)
+    assert_instance_of slice_class, slice
+    assert_equal "at", slice.get_string
+    [:for, :map, :string].each {|method| refute_respond_to slice_class, method}
+  ensure
+    storage&.free
   end
 
   def test_slice_dup_and_clone_copy_the_view
@@ -1534,6 +1586,73 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_equal 1_000_000, encoding.buffer.get_string(0, 1_000_000, encoding).length
   end
 
+  def test_get_string_resolves_storage_after_encoding_coercion
+    [false, true].each do |sliced|
+      buffer = IO::Buffer.new(8)
+      previous = nil
+      begin
+        buffer.set_string("original")
+        view = sliced ? buffer.slice(0, 4) : buffer
+        encoding = Object.new
+        encoding.define_singleton_method(:to_str) do
+          # Retain the old allocation so a stale read is observable without
+          # accessing released storage. The new allocation cannot overlap it.
+          previous = buffer.transfer
+          buffer.resize(8)
+          buffer.set_string("replaced")
+          "BINARY"
+        end
+
+        assert_equal "repl", view.get_string(0, 4, encoding)
+        assert_equal "original", previous.get_string
+        assert_equal "replaced", buffer.get_string
+        refute_predicate buffer, :locked?
+      ensure
+        previous&.free
+        buffer.free
+      end
+    end
+  end
+
+  def test_get_string_resolves_parent_after_encoding_coercion
+    buffer = IO::Buffer.new(8)
+    buffer.set_string("abcdefgh")
+    parent = buffer.slice(1, 6)
+    child = parent.slice(1, 2)
+    encoding = Object.new
+    encoding.define_singleton_method(:to_str) do
+      parent.advance(1)
+      "BINARY"
+    end
+
+    assert_equal "de", child.get_string(0, 2, encoding)
+    refute_predicate buffer, :locked?
+  ensure
+    buffer&.free
+  end
+
+  def test_read_rechecks_permissions_after_io_coercion
+    buffer = IO::Buffer.new(8)
+    begin
+      buffer.set_string("original")
+      view = buffer.slice(0, 4)
+      IO.pipe do |reader, writer|
+        writer.write("data")
+        proxy = Object.new
+        proxy.define_singleton_method(:to_io) do
+          view.freeze
+          reader
+        end
+        assert_raise(FrozenError) {view.read(proxy)}
+        assert_equal "original", buffer.get_string
+        assert_equal "data", reader.read(4)
+        refute_predicate buffer, :locked?
+      end
+    ensure
+      buffer.free
+    end
+  end
+
   def test_zero_length_get_string
     buffer = IO::Buffer.new.slice(0, 0)
     assert_equal "", buffer.get_string
@@ -2101,6 +2220,23 @@ class TestIOBuffer < Test::Unit::TestCase
         buffer&.free
       end
     end
+  end
+
+  def test_empty_views_do_not_overlap_nonempty_masks
+    buffer = IO::Buffer.new(8)
+    buffer.set_string("abcdefgh")
+    [:and!, :or!, :xor!].each do |operation|
+      [0, 4, 8].each do |offset|
+        view = buffer.slice(offset, 0)
+        assert_same view, view.public_send(operation, buffer)
+        assert_predicate view, :empty?
+        assert_equal "abcdefgh", buffer.get_string
+      end
+      assert_raise(IO::Buffer::MaskError) {buffer.slice(2, 2).public_send(operation, buffer)}
+      assert_raise(IO::Buffer::MaskError) {buffer.public_send(operation, buffer.slice(0, 0))}
+    end
+  ensure
+    buffer&.free
   end
 
   def test_copy_overlapped_fwd
