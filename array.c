@@ -8403,7 +8403,7 @@ rb_ary_sum(int argc, VALUE *argv, VALUE ary)
   not_exact:
     v = finish_exact_sum(n, r, v, i!=0);
 
-    if (init_is_float ? (--i, e = argv[0], true) : RB_FLOAT_TYPE_P(e)) {
+    if (init_is_float || RB_FLOAT_TYPE_P(e)) {
         /*
          * Kahan-Babuska balancing compensated summation algorithm
          * See https://link.springer.com/article/10.1007/s00607-005-0139-x
