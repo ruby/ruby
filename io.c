@@ -7698,20 +7698,11 @@ pipe_open(VALUE execarg_obj, const char *modestr, enum rb_io_mode fmode,
 #endif
     int e = 0;
 #if defined(HAVE_SPAWNV)
-# if defined(HAVE_SPAWNVE)
-#   define DO_SPAWN(cmd, args, envp) ((args) ? \
-                                      spawnve(P_NOWAIT, (cmd), (args), (envp)) : \
-                                      spawne(P_NOWAIT, (cmd), (envp)))
-# else
-#   define DO_SPAWN(cmd, args, envp) ((args) ? \
-                                      spawnv(P_NOWAIT, (cmd), (args)) : \
-                                      spawn(P_NOWAIT, (cmd)))
-# endif
+# define DO_SPAWN(cmd, args) ((args) ? \
+                              spawnv(P_NOWAIT, (cmd), (args)) : \
+                              spawn(P_NOWAIT, (cmd)))
 # if !defined(HAVE_WORKING_FORK)
     char **args = NULL;
-#   if defined(HAVE_SPAWNVE)
-    char **envp = NULL;
-#   endif
 # endif
 #endif
 #if !defined(HAVE_WORKING_FORK)
@@ -7783,10 +7774,7 @@ pipe_open(VALUE execarg_obj, const char *modestr, enum rb_io_mode fmode,
         pid = rb_fork_async_signal_safe(&status, popen_exec, &arg, arg.eargp->redirect_fds, errmsg, sizeof(errmsg));
 # else
         rb_execarg_run_options(eargp, sargp, NULL, 0);
-#   if defined(HAVE_SPAWNVE)
-        if (eargp->envp_str) envp = (char **)RSTRING_PTR(eargp->envp_str);
-#   endif
-        while ((pid = DO_SPAWN(cmd, args, envp)) < 0) {
+        while ((pid = DO_SPAWN(cmd, args)) < 0) {
             /* exec failed */
             switch (e = errno) {
               case EAGAIN:
