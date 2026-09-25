@@ -289,11 +289,6 @@ rb_str_encode_ospath(VALUE path)
 {
 #if USE_OSPATH
     int encidx = ENCODING_GET(path);
-#if 0 && defined _WIN32
-    if (encidx == ENCINDEX_ASCII_8BIT) {
-        encidx = rb_filesystem_encindex();
-    }
-#endif
     if (encidx != ENCINDEX_ASCII_8BIT && encidx != ENCINDEX_UTF_8) {
         rb_encoding *enc = rb_enc_from_index(encidx);
         rb_encoding *utf8 = rb_utf8_encoding();
