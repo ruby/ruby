@@ -4,11 +4,11 @@
 INSN_ENTRY(<%= insn.name %>)
 {
     START_OF_ORIGINAL_INSN(<%= insn.name %>);
-    rb_zjit_profile_insn(BIN(<%= insn.jump_destination %>), ec);
 % if insn.skip_fast_path?
     ADD_PC(<%= insn.width %>);
     INC_SP(-1);
 % else
+    rb_zjit_profile_insn(BIN(<%= insn.jump_destination %>), ec);
     DISPATCH_ORIGINAL_INSN(<%= insn.jump_destination %>);
 % end
     END_INSN(<%= insn.name %>);
