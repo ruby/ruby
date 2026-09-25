@@ -78,8 +78,6 @@ char *strchr(char*,char);
 
 #define USE_NAME_ON_FS_REAL_BASENAME 1	/* platform dependent APIs to
                                          * get real basenames */
-#define USE_NAME_ON_FS_BY_FNMATCH 2	/* select the matching
-                                         * basename by fnmatch */
 
 #ifdef HAVE_GETATTRLIST
 # define USE_NAME_ON_FS USE_NAME_ON_FS_REAL_BASENAME
@@ -87,8 +85,6 @@ char *strchr(char*,char);
 # define SIZEUP32(type) RUP32(sizeof(type))
 #elif defined _WIN32
 # define USE_NAME_ON_FS USE_NAME_ON_FS_REAL_BASENAME
-#elif defined DOSISH
-# define USE_NAME_ON_FS USE_NAME_ON_FS_BY_FNMATCH
 #else
 # define USE_NAME_ON_FS 0
 #endif
@@ -3032,21 +3028,7 @@ glob_helper(
     if (magical || recursive) {
         rb_dirent_t *dp;
         DIR *dirp;
-# if USE_NAME_ON_FS == USE_NAME_ON_FS_BY_FNMATCH
-        char *plainname = 0;
-# endif
         IF_NORMALIZE_UTF8PATH(int norm_p);
-# if USE_NAME_ON_FS == USE_NAME_ON_FS_BY_FNMATCH
-        if (cur + 1 == end && (*cur)->type <= ALPHA) {
-            plainname = join_path(path, pathlen, dirsep, (*cur)->str, strlen((*cur)->str));
-            if (!plainname) return -1;
-            dirp = do_opendir(fd, basename, plainname, flags, enc, funcs->error, arg, &status);
-            GLOB_FREE(plainname);
-        }
-        else
-# else
-            ;
-# endif
         dirp = do_opendir(fd, baselen, path, flags, enc, funcs->error, arg, &status);
         if (dirp == NULL) {
 # if FNM_SYSCASE || NORMALIZE_UTF8PATH
@@ -3184,12 +3166,6 @@ glob_helper(
                         *new_end++ = p->next;
                     break;
                   case ALPHA:
-# if USE_NAME_ON_FS == USE_NAME_ON_FS_BY_FNMATCH
-                    if (plainname) {
-                        *new_end++ = p->next;
-                        break;
-                    }
-# endif
                   case PLAIN:
                   case MAGICAL:
                     if (dirent_match(p->str, enc, name, dp, flags))
