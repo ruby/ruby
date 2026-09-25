@@ -95,29 +95,16 @@ int flock(int, int);
 /* define system APIs */
 #ifdef _WIN32
 # include "win32/file.h"
-# define STAT(p, s)      rb_w32_ustati128((p), (s))
-# undef lstat
-# define lstat(p, s)     rb_w32_ulstati128((p), (s))
-# undef access
-# define access(p, m)    rb_w32_uaccess((p), (m))
-# undef truncate
-# define truncate(p, n)  rb_w32_utruncate((p), (n))
 # undef chmod
 # define chmod(p, m)     rb_w32_uchmod((p), (m))
 # undef chown
 # define chown(p, o, g)  rb_w32_uchown((p), (o), (g))
 # undef lchown
 # define lchown(p, o, g) rb_w32_ulchown((p), (o), (g))
-# undef utimensat
-# define utimensat(s, p, t, f)   rb_w32_uutimensat((s), (p), (t), (f))
 # undef link
 # define link(f, t)      rb_w32_ulink((f), (t))
-# undef unlink
-# define unlink(p)       rb_w32_uunlink(p)
 # undef readlink
 # define readlink(f, t, l)    rb_w32_ureadlink((f), (t), (l))
-# undef rename
-# define rename(f, t)    rb_w32_urename((f), (t))
 # undef symlink
 # define symlink(s, l)   rb_w32_usymlink((s), (l))
 
@@ -126,9 +113,8 @@ int flock(int, int);
    absolute paths does not work for drive letters. */
 #  undef HAVE_REALPATH
 # endif
-#else
-# define STAT(p, s)      stat((p), (s))
 #endif /* _WIN32 */
+#define STAT(p, s)      stat((p), (s))
 
 #ifdef HAVE_STRUCT_STATX_STX_BTIME
 # define ST_(name) stx_ ## name
