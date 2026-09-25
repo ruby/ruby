@@ -85,10 +85,15 @@ module Bundler
     end
 
     def validate_deps(s)
+      overrides = s.is_a?(LazySpecification) ? Array(s.overrides) : []
+
       s.runtime_dependencies.each do |dep|
         next if dep.name == "bundler"
 
         return :missing unless names.include?(dep.name)
+
+        override = Override.find_for(overrides, dep.name, :version)
+        dep = Gem::Dependency.new(dep.name, override.apply_to(dep.requirement)) if override
         return :invalid if none? {|spec| dep.matches_spec?(spec) }
       end
 

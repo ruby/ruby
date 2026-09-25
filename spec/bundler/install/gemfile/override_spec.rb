@@ -165,6 +165,18 @@ RSpec.describe "override DSL" do
 
       expect(the_bundle).to include_gems "myrack 0.9.1", "myrack_middleware 1.0"
     end
+
+    it "installs a transitive-only override outside the parent's requirement" do
+      install_gemfile <<-G
+        source "https://gem.repo1"
+        override "myrack", version: "= 1.0.0"
+        gem "myrack_middleware"
+      G
+
+      bundle :install, env: { "BUNDLE_FROZEN" => "true" }
+
+      expect(the_bundle).to include_gems "myrack 1.0.0", "myrack_middleware 1.0"
+    end
   end
 
   context "lockfile contents" do
