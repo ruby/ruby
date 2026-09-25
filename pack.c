@@ -371,6 +371,7 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
     while (p < pend) {
         int explicit_endian = 0;
         size_t align = 0;
+        bool star = false;
         if (RSTRING_END(fmt) != pend) {
             rb_raise(rb_eRuntimeError, "format string modified");
         }
@@ -392,6 +393,7 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
         p = pack_modifiers(p, pend, type, &natint, &explicit_endian);
 
         if (*p == '*') {	/* set data length */
+            star = true;
             len = strchr("@Xxu", type) ? 0
                 : strchr("PMm", type) ? 1
                 : RARRAY_LEN(ary) - idx;
@@ -436,7 +438,9 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
                 plen = RSTRING_LEN(from);
             }
 
-            if (p[-1] == '*')
+            /* The conversion of from with #to_str may have modified fmt,
+             * so p may be a dangling pointer; use star instead of p[-1]. */
+            if (star)
                 len = plen;
 
             switch (type) {
@@ -445,7 +449,7 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
               case 'Z':         /* null terminated string  */
                 if (plen >= len) {
                     rb_str_buf_cat(res, ptr, len);
-                    if (p[-1] == '*' && type == 'Z')
+                    if (star && type == 'Z')
                         rb_str_buf_cat(res, "", 1);
                 }
                 else {
