@@ -1580,12 +1580,9 @@ rb_str_tmp_frozen_acquire(VALUE orig)
     return str_new_frozen_buffer(0, orig, FALSE);
 }
 
-VALUE
-rb_str_tmp_frozen_no_embed_acquire(VALUE orig)
+static VALUE
+str_tmp_frozen_no_embed_acquire_body(VALUE orig)
 {
-    if (OBJ_FROZEN_RAW(orig) && !STR_EMBED_P(orig) && !rb_str_reembeddable_p(orig)) return orig;
-    if (STR_SHARED_P(orig) && !STR_EMBED_P(RSTRING(orig)->as.heap.aux.shared)) return rb_str_tmp_frozen_acquire(orig);
-
     VALUE str = str_alloc_heap(0);
     OBJ_FREEZE(str);
     /* Always set the STR_SHARED_ROOT to ensure it does not get re-embedded. */
@@ -1618,6 +1615,32 @@ rb_str_tmp_frozen_no_embed_acquire(VALUE orig)
     RSTRING(str)->as.heap.aux.capa = capa + (TERM_LEN(orig) - TERM_LEN(str));
 
     return str;
+}
+
+static VALUE
+str_tmp_frozen_no_embed_acquire_locked(void *data)
+{
+    VALUE orig = (VALUE)data;
+
+    if (OBJ_FROZEN_RAW(orig) && !STR_EMBED_P(orig) && !rb_str_reembeddable_p(orig)) return orig;
+    if (STR_SHARED_P(orig) && !STR_EMBED_P(RSTRING(orig)->as.heap.aux.shared)) return rb_str_tmp_frozen_acquire(orig);
+
+    return str_tmp_frozen_no_embed_acquire_body(orig);
+}
+
+VALUE
+rb_str_tmp_frozen_no_embed_acquire(VALUE orig)
+{
+    if (OBJ_FROZEN_RAW(orig) && !STR_EMBED_P(orig) && !rb_str_reembeddable_p(orig)) return orig;
+    if (STR_SHARED_P(orig) && !STR_EMBED_P(RSTRING(orig)->as.heap.aux.shared)) return rb_str_tmp_frozen_acquire(orig);
+
+    if (rb_multi_ractor_p() && RB_OBJ_SHAREABLE_P(orig) &&
+            !STR_EMBED_P(orig) && !FL_TEST_RAW(orig, STR_SHARED | STR_SHARED_ROOT | RSTRING_FSTR)) {
+        return rb_vm_lock_with_barrier(str_tmp_frozen_no_embed_acquire_locked, (void *)orig);
+    }
+    else {
+        return str_tmp_frozen_no_embed_acquire_body(orig);
+    }
 }
 
 void
