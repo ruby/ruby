@@ -6239,8 +6239,7 @@ nogvl_truncate(void *ptr)
  *  call-seq:
  *    File.truncate(filepath, size) -> 0
  *
- *  Adjusts the size of file `filepath` to the given `size`;
- *  pads with null characters if necessary.
+ *  Adjusts the size of file `filepath` to the given `size`:
  *
  *  ```ruby
  *  filepath = '/tmp/t.tmp'
@@ -6248,6 +6247,11 @@ nogvl_truncate(void *ptr)
  *  File.read(filepath)   # => "0123456789"
  *  File.truncate(filepath, 5)
  *  File.read(filepath)   # => "01234"
+ *  ```
+ *
+ *  Pads with null characters if necessary:
+ *
+ *  ```ruby
  *  File.truncate(filepath, 10)
  *  File.read(filepath)   # => "01234\u0000\u0000\u0000\u0000\u0000"
  *  File.delete(filepath) # Clean up.
@@ -6297,8 +6301,7 @@ nogvl_ftruncate(void *ptr)
  *
  *  Adjusts the size of `self` to the given `size`,
  *  regardless of the current [position](rdoc-ref:IO@Position);
- *  pads with null characters if necessary.
- *  Does not adjust the position:
+ *  does not adjust the position:
  *
  *  ```ruby
  *  filepath = '/tmp/t.tmp'
@@ -6308,6 +6311,11 @@ nogvl_ftruncate(void *ptr)
  *  file.pos  # => 10
  *  file.rewind
  *  file.read # => "01234"
+ *  ```
+ *
+ *  Pads with null characters if necessary:
+ *
+ *  ```ruby
  *  file.truncate(10)
  *  file.pos  # => 5
  *  file.rewind
