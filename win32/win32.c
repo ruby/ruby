@@ -81,8 +81,7 @@ static char *w32_getenv(const char *name, UINT cp);
 #define DLN_FIND_EXTRA_ARG ,cp
 #define rb_w32_stati128(path, st) w32_stati128(path, st, cp, FALSE)
 #define getenv(name) w32_getenv(name, cp) /* Necessarily For dln.c */
-#undef CharNext
-#define CharNext(p) CharNextExA(cp, (p), 0)
+#define DLN_CHAR_NEXT(p) CharNextExA(cp, (p), 0)
 #define dln_find_exe_r rb_w32_udln_find_exe_r
 #define dln_find_file_r rb_w32_udln_find_file_r
 #include "dln.h"
