@@ -6754,6 +6754,60 @@ pub(crate) mod hir_build_tests {
           Return v10
         ");
     }
+
+    #[test]
+    fn test_opt_case_dispatch() {
+        eval("
+            def test(o)
+              case o
+              when 1 then :one
+              when 2 then :two
+              else :other
+              end
+            end
+        ");
+        assert_contains_opcode("test", YARVINSN_opt_case_dispatch);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v17:Fixnum[1] = Const Value(1)
+          v20:BasicObject = Send v17, :===, v10 # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v22:CBool = Test v20
+          v23:Truthy = RefineType v20, Truthy
+          CondBranch v22, bb4(v9, v10, v10), bb6()
+        bb4(v44:BasicObject, v45:BasicObject, v46:BasicObject):
+          v51:StaticSymbol[:one] = Const Value(VALUE(0x1008))
+          CheckInterrupts
+          Return v51
+        bb6():
+          v25:Falsy = RefineType v20, Falsy
+          v27:Fixnum[2] = Const Value(2)
+          v30:BasicObject = Send v27, :===, v10 # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v32:CBool = Test v30
+          v33:Truthy = RefineType v30, Truthy
+          CondBranch v32, bb5(v9, v10, v10), bb7()
+        bb5(v56:BasicObject, v57:BasicObject, v58:BasicObject):
+          v63:StaticSymbol[:two] = Const Value(VALUE(0x1010))
+          CheckInterrupts
+          Return v63
+        bb7():
+          v35:Falsy = RefineType v30, Falsy
+          v39:StaticSymbol[:other] = Const Value(VALUE(0x1018))
+          CheckInterrupts
+          Return v39
+        ");
+    }
 }
 
  /// Test successor and predecessor set computations.
