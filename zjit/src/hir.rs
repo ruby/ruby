@@ -4160,8 +4160,7 @@ impl Function {
         args
     }
 
-    /// Select caller-splat lengths while translating the Send. Monomorphic lengths
-    /// keep the existing guard path; multiple lengths are dispatched only for ISEQs.
+    /// Select caller-splat lengths for a callsite.
     fn caller_splat_lengths(&self, ci: *const rb_callinfo, recv: InsnId, state: InsnId, profiles: &ProfileOracle) -> Vec<SplatLength> {
         if self.policy.no_side_exits || unsafe { rb_vm_ci_flag(ci) } & VM_CALL_ARGS_SPLAT == 0 {
             return vec![];
