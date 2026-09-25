@@ -48,7 +48,7 @@
 # include <sys/socket.h>
 #endif
 
-#if defined(__BOW__) || defined(__CYGWIN__) || defined(_WIN32)
+#if defined(__CYGWIN__) || defined(_WIN32)
 # define NO_SAFE_RENAME
 #endif
 
