@@ -130,12 +130,6 @@ char *strchr(char*,char);
 #ifdef _WIN32
 # undef chdir
 # define chdir(p) rb_w32_uchdir(p)
-# undef mkdir
-# define mkdir(p, m) rb_w32_umkdir((p), (m))
-# undef rmdir
-# define rmdir(p) rb_w32_urmdir(p)
-# undef opendir
-# define opendir(p) rb_w32_uopendir(p)
 # define ruby_getcwd() rb_w32_ugetcwd(NULL, 0)
 # define IS_WIN32 1
 #else
