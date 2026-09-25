@@ -2306,4 +2306,16 @@ class TestRegexp < Test::Unit::TestCase
       assert_match(/[x#{e_acute_lower}]/i, "CAF#{e_acute_upper}", "should match e acute case insensitive")
     end
   end
+
+  def test_nested_repeat_expansion_overflow
+    assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}", timeout: 30)
+    begin;
+      # A nested repeat whose expanded size overflows int must not be
+      # unrolled: the compiler used to hang or emit wrapped jump offsets.
+      ["(?:.{90000,}){90000}", "(?:.{46341,}){46341}"].each do |src|
+        re = Regexp.new(src)
+        assert_nil(re.match("x" * 10), src)
+      end
+    end;
+  end
 end
