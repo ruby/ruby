@@ -76,12 +76,24 @@ fn yjit_init() {
     // TODO: need to make sure that command-line options have been
     // initialized by CRuby
 
-    // Call YJIT hooks before enabling YJIT to avoid compiling the hooks themselves
+    call_jit_hooks();
+    yjit_init_state();
+}
+
+/// Install the Ruby implementations of builtins registered by `Module#with_jit`.
+/// This runs arbitrary Ruby -- the hooks call `Array#each`, `undef` and `def` -- so
+/// the VM lock must not be held. Call it before enabling YJIT, both so the hooks
+/// themselves are not compiled and so the builtins they replace are in place first.
+fn call_jit_hooks() {
     unsafe {
         let yjit = rb_const_get(rb_cRubyVM, rust_str_to_id("YJIT"));
         rb_funcall(yjit, rust_str_to_id("call_jit_hooks"), 0);
     }
+}
 
+/// Initialize YJIT state and start compiling. Runs no Ruby, so it is safe to hold
+/// the VM lock across it. Call `call_jit_hooks()` first.
+fn yjit_init_state() {
     // Catch panics to avoid UB for unwinding into C frames.
     // See https://doc.rust-lang.org/nomicon/exception-safety.html
     let result = std::panic::catch_unwind(|| {
@@ -101,7 +113,7 @@ fn yjit_init() {
     });
 
     if let Err(_) = result {
-        println!("YJIT: yjit_init() panicked. Aborting.");
+        println!("YJIT: yjit_init_state() panicked. Aborting.");
         std::process::abort();
     }
 
@@ -225,53 +237,55 @@ pub extern "C" fn rb_yjit_code_gc(_ec: EcPtr, _ruby_self: VALUE) -> VALUE {
 /// Enable YJIT compilation, returning true if YJIT was previously disabled
 #[no_mangle]
 pub extern "C" fn rb_yjit_enable(_ec: EcPtr, _ruby_self: VALUE, gen_stats: VALUE, print_stats: VALUE, gen_log: VALUE, print_log: VALUE, mem_size: VALUE, call_threshold: VALUE) -> VALUE {
-    with_vm_lock(src_loc!(), || {
+    if !mem_size.nil_p() {
+        let mem_size_mb = mem_size.as_isize() >> 1;
+        let mem_size_bytes = mem_size_mb * 1024 * 1024;
+        unsafe {
+            OPTIONS.mem_size = mem_size_bytes as usize;
+        }
+    }
 
-        if !mem_size.nil_p() {
-            let mem_size_mb = mem_size.as_isize() >> 1;
-            let mem_size_bytes = mem_size_mb * 1024 * 1024;
-            unsafe {
-                OPTIONS.mem_size = mem_size_bytes as usize;
+    if !call_threshold.nil_p() {
+        let threshold = call_threshold.as_isize() >> 1;
+        unsafe {
+            rb_yjit_call_threshold = threshold as u32;
+        }
+    }
+
+    if gen_stats.test() {
+        unsafe {
+            OPTIONS.gen_stats = gen_stats.test();
+            OPTIONS.print_stats = print_stats.test();
+        }
+    }
+
+    if gen_log.test() {
+        unsafe {
+            if print_log.test() {
+                OPTIONS.log = Some(LogOutput::Stderr);
+            } else {
+                OPTIONS.log = Some(LogOutput::MemoryOnly);
             }
+
+            Log::init();
         }
+    }
 
-        if !call_threshold.nil_p() {
-            let threshold = call_threshold.as_isize() >> 1;
-            unsafe {
-                rb_yjit_call_threshold = threshold as u32;
-            }
-        }
+    // Runs Ruby, so it has to happen before the VM lock is taken below
+    call_jit_hooks();
 
-        // Initialize and enable YJIT
-        if gen_stats.test() {
-            unsafe {
-                OPTIONS.gen_stats = gen_stats.test();
-                OPTIONS.print_stats = print_stats.test();
-            }
-        }
+    // Stop other ractors for the flip of rb_yjit_enabled_p
+    with_vm_lock(src_loc!(), || yjit_init_state());
 
-        if gen_log.test() {
-            unsafe {
-                if print_log.test() {
-                    OPTIONS.log = Some(LogOutput::Stderr);
-                } else {
-                    OPTIONS.log = Some(LogOutput::MemoryOnly);
-                }
+    // Add "+YJIT" to RUBY_DESCRIPTION. rb_define_const() goes through
+    // rb_const_set(), which dispatches Module#const_added, so this stays outside
+    // the VM lock as well.
+    extern "C" {
+        fn ruby_set_yjit_description();
+    }
+    unsafe { ruby_set_yjit_description(); }
 
-                Log::init();
-            }
-        }
-
-        yjit_init();
-
-        // Add "+YJIT" to RUBY_DESCRIPTION
-        extern "C" {
-            fn ruby_set_yjit_description();
-        }
-        unsafe { ruby_set_yjit_description(); }
-
-        Qtrue
-    })
+    Qtrue
 }
 
 /// Simulate a situation where we are out of executable memory

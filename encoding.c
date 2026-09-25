@@ -350,7 +350,9 @@ rb_find_encoding(VALUE enc)
 static int
 enc_table_expand(struct enc_table *enc_table, int newsize)
 {
+    ASSERT_vm_locking();
     if (newsize > ENCODING_LIST_CAPA) {
+        RB_VM_UNLOCK();
         rb_raise(rb_eEncodingError, "too many encoding (> %d)", ENCODING_LIST_CAPA);
     }
     return newsize;
@@ -512,8 +514,9 @@ rb_enc_registered(const char *name)
 void
 rb_encdb_declare(const char *name)
 {
+    int idx;
     GLOBAL_ENC_TABLE_LOCKING(enc_table) {
-        int idx = enc_registered(enc_table, name);
+        idx = enc_registered(enc_table, name);
         if (idx < 0) {
             idx = enc_register(enc_table, name, 0);
         }
@@ -1862,8 +1865,19 @@ set_default_internal(VALUE klass, VALUE encoding)
 }
 
 static void
+define_const_safely(VALUE klass, const char *name, VALUE encoding)
+{
+    ASSERT_vm_locking();
+    RB_VM_UNLOCK();
+    // This calls `const_added` so must not be called with the VM lock
+    rb_define_const(rb_cEncoding, name, encoding);
+    RB_VM_LOCK();
+}
+
+static void
 set_encoding_const(const char *name, rb_encoding *enc)
 {
+    ASSERT_vm_locking();
     VALUE encoding = rb_enc_from_encoding(enc);
     char *s = (char *)name;
     int haslower = 0, hasupper = 0, valid = 0;
@@ -1878,7 +1892,7 @@ set_encoding_const(const char *name, rb_encoding *enc)
     if (!*s) {
         if (s - name > ENCODING_NAMELEN_MAX) return;
         valid = 1;
-        rb_define_const(rb_cEncoding, name, encoding);
+        define_const_safely(rb_cEncoding, name, encoding);
     }
     if (!valid || haslower) {
         size_t len = s - name;
@@ -1900,14 +1914,14 @@ set_encoding_const(const char *name, rb_encoding *enc)
                 if (!ISALNUM(*s)) *s = '_';
             }
             if (hasupper) {
-                rb_define_const(rb_cEncoding, name, encoding);
+                define_const_safely(rb_cEncoding, name, encoding);
             }
         }
         if (haslower) {
             for (s = (char *)name; *s; ++s) {
                 if (ISLOWER(*s)) *s = ONIGENC_ASCII_CODE_TO_UPPER_CASE((int)*s);
             }
-            rb_define_const(rb_cEncoding, name, encoding);
+            define_const_safely(rb_cEncoding, name, encoding);
         }
     }
 }
@@ -2091,7 +2105,9 @@ Init_unicode_version(void)
 void
 Init_encodings(void)
 {
-    rb_enc_init(&global_enc_table);
+    RB_VM_LOCKING() {
+        rb_enc_init(&global_enc_table);
+    }
 }
 
 /* locale insensitive ctype functions */

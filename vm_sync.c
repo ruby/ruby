@@ -26,7 +26,7 @@ vm_lock_assertable_p(void)
 void
 RUBY_ASSERT_vm_locking(void)
 {
-    if (vm_lock_assertable_p() && rb_multi_ractor_p()) {
+    if (vm_lock_assertable_p() && rb_vm_locking_needed_p()) {
         rb_vm_t *vm = GET_VM();
         VM_ASSERT(vm_locked(vm));
     }
@@ -35,7 +35,7 @@ RUBY_ASSERT_vm_locking(void)
 void
 RUBY_ASSERT_vm_locking_with_barrier(void)
 {
-    if (vm_lock_assertable_p() && rb_multi_ractor_p()) {
+    if (vm_lock_assertable_p() && rb_vm_locking_needed_p()) {
         rb_vm_t *vm = GET_VM();
         VM_ASSERT(vm_locked(vm));
 
@@ -49,7 +49,7 @@ RUBY_ASSERT_vm_locking_with_barrier(void)
 void
 RUBY_ASSERT_vm_unlocking(void)
 {
-    if (vm_lock_assertable_p() && rb_multi_ractor_p()) {
+    if (vm_lock_assertable_p() && rb_vm_locking_needed_p()) {
         rb_vm_t *vm = GET_VM();
         VM_ASSERT(!vm_locked(vm));
     }

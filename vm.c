@@ -2452,7 +2452,20 @@ vm_redefinition_check_method_type(const rb_method_entry_t *me)
 }
 
 static void
-rb_vm_check_redefinition_opt_method(const rb_method_entry_t *me, VALUE klass)
+vm_warn_redefinition_opt_method(const rb_method_entry_t *me)
+{
+    rb_category_warn(RB_WARN_CATEGORY_PERFORMANCE,
+                     "Redefining '%s#%s' disables interpreter and JIT optimizations",
+                     rb_class2name(me->owner),
+                     rb_id2name(me->called_id));
+}
+
+/* When perf_warnings is non-NULL the caller holds the VM lock, where neither
+ * warning nor formatting the message is allowed, so the method entry is
+ * appended there for it to warn about after releasing the lock.
+ * See method_entry_warnings_emit(). */
+static void
+rb_vm_check_redefinition_opt_method(const rb_method_entry_t *me, VALUE klass, VALUE *perf_warnings)
 {
     st_data_t bop;
     if (RB_TYPE_P(klass, T_ICLASS) && RICLASS_IS_ORIGIN_P(klass) &&
@@ -2463,12 +2476,15 @@ rb_vm_check_redefinition_opt_method(const rb_method_entry_t *me, VALUE klass)
         if (st_lookup(vm_opt_method_def_table, (st_data_t)me->def, &bop)) {
             int flag = vm_redefinition_check_flag(klass);
             if (flag != 0) {
-                rb_category_warn(
-                    RB_WARN_CATEGORY_PERFORMANCE,
-                    "Redefining '%s#%s' disables interpreter and JIT optimizations",
-                    rb_class2name(me->owner),
-                    rb_id2name(me->called_id)
-                );
+                if (!NIL_P(ruby_verbose) && rb_warning_category_enabled_p(RB_WARN_CATEGORY_PERFORMANCE)) {
+                    if (perf_warnings) {
+                        if (!*perf_warnings) *perf_warnings = rb_ary_hidden_new(1);
+                        rb_ary_push(*perf_warnings, (VALUE)me);
+                    }
+                    else {
+                        vm_warn_redefinition_opt_method(me);
+                    }
+                }
                 rb_yjit_bop_redefined(flag, (enum ruby_basic_operators)bop);
                 rb_zjit_bop_redefined(flag, (enum ruby_basic_operators)bop);
                 ruby_vm_redefined_flag[bop] |= flag;
@@ -2484,7 +2500,7 @@ check_redefined_method(ID mid, VALUE value, void *data)
     const rb_method_entry_t *me = (rb_method_entry_t *)value;
     const rb_method_entry_t *newme = rb_method_entry(klass, mid);
 
-    if (newme != me) rb_vm_check_redefinition_opt_method(me, me->owner);
+    if (newme != me) rb_vm_check_redefinition_opt_method(me, me->owner, NULL);
 
     return ID_TABLE_CONTINUE;
 }

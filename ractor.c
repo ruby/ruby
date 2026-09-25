@@ -604,8 +604,10 @@ vm_insert_ractor(rb_vm_t *vm, rb_ractor_t *r)
         if (vm->ractor.cnt == 0) {
             // main ractor
             vm_insert_ractor0(vm, r, true);
-            ractor_status_set(r, ractor_blocking);
-            ractor_status_set(r, ractor_running);
+            RB_VM_LOCKING() { // for assertions
+                ractor_status_set(r, ractor_blocking);
+                ractor_status_set(r, ractor_running);
+            }
         }
         else {
             cancel_single_ractor_mode();

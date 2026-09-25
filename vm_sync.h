@@ -53,12 +53,25 @@ rb_multi_ractor_p(void)
     }
 }
 
+// The VM lock is a no-op in single ractor mode, where it is not needed for
+// mutual exclusion. Debug builds take it anyway so that the lock bookkeeping
+// and the assertions built on it are exercised outside of multi-ractor runs.
+static inline bool
+rb_vm_locking_needed_p(void)
+{
+#if RUBY_DEBUG
+    return true;
+#else
+    return rb_multi_ractor_p();
+#endif
+}
+
 static inline void
 rb_vm_lock(const char *file, int line)
 {
     RB_DEBUG_COUNTER_INC(vm_sync_lock);
 
-    if (rb_multi_ractor_p()) {
+    if (rb_vm_locking_needed_p()) {
         rb_vm_lock_body(LOCATION_PARAMS);
     }
 }
@@ -66,7 +79,7 @@ rb_vm_lock(const char *file, int line)
 static inline void
 rb_vm_unlock(const char *file, int line)
 {
-    if (rb_multi_ractor_p()) {
+    if (rb_vm_locking_needed_p()) {
         rb_vm_unlock_body(LOCATION_PARAMS);
     }
 }
@@ -76,7 +89,7 @@ rb_vm_lock_enter(unsigned int *lev, const char *file, int line)
 {
     RB_DEBUG_COUNTER_INC(vm_sync_lock_enter);
 
-    if (rb_multi_ractor_p()) {
+    if (rb_vm_locking_needed_p()) {
         rb_vm_lock_enter_body(lev APPEND_LOCATION_PARAMS);
     }
 }
@@ -86,7 +99,7 @@ rb_vm_lock_enter_nb(unsigned int *lev, const char *file, int line)
 {
     RB_DEBUG_COUNTER_INC(vm_sync_lock_enter_nb);
 
-    if (rb_multi_ractor_p()) {
+    if (rb_vm_locking_needed_p()) {
         rb_vm_lock_enter_body_nb(lev APPEND_LOCATION_PARAMS);
     }
 }
@@ -94,7 +107,7 @@ rb_vm_lock_enter_nb(unsigned int *lev, const char *file, int line)
 static inline void
 rb_vm_lock_leave_nb(unsigned int *lev, const char *file, int line)
 {
-    if (rb_multi_ractor_p()) {
+    if (rb_vm_locking_needed_p()) {
         rb_vm_lock_leave_body_nb(lev APPEND_LOCATION_PARAMS);
     }
 }
@@ -102,7 +115,7 @@ rb_vm_lock_leave_nb(unsigned int *lev, const char *file, int line)
 static inline void
 rb_vm_lock_leave(unsigned int *lev, const char *file, int line)
 {
-    if (rb_multi_ractor_p()) {
+    if (rb_vm_locking_needed_p()) {
         rb_vm_lock_leave_body(lev APPEND_LOCATION_PARAMS);
     }
 }
