@@ -16,11 +16,29 @@
 #define APPEND_LOCATION_PARAMS
 #endif
 
+struct rb_ractor_struct;
+
 bool rb_vm_locked_p(void);
 void rb_vm_lock_body(LOCATION_ARGS);
 void rb_vm_unlock_body(LOCATION_ARGS);
 
-struct rb_ractor_struct;
+/* A call deferred out of a VM lock critical section; see rb_vm_call_when_unlocked(). */
+struct rb_deferred_call {
+    void (*func)(VALUE arg0, VALUE arg1);
+    VALUE arg0, arg1;
+};
+
+/* Call func(arg0, arg1) once the outermost VM lock has been released -- or right away,
+ * if the lock is not held.  For work that must not happen inside a critical section:
+ * anything that dispatches a Ruby method, checks interrupts, or can raise.  arg0 and
+ * arg1 are GC roots until the call runs.
+ *
+ * A pending call is dropped if the critical section is left by a non-local exit (see
+ * rb_ec_vm_lock_rec_release): the operation that queued it did not complete, and a
+ * longjmp is not a safe point at which to run Ruby. */
+void rb_vm_call_when_unlocked(void (*func)(VALUE, VALUE), VALUE arg0, VALUE arg1);
+void rb_vm_discard_deferred_calls(struct rb_ractor_struct *cr);
+
 NOINLINE(void rb_vm_lock_enter_body_cr(struct rb_ractor_struct *cr, unsigned int *lev APPEND_LOCATION_ARGS));
 NOINLINE(void rb_vm_lock_enter_body_nb(unsigned int *lev APPEND_LOCATION_ARGS));
 NOINLINE(void rb_vm_lock_enter_body(unsigned int *lev APPEND_LOCATION_ARGS));

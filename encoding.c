@@ -1864,16 +1864,8 @@ set_default_internal(VALUE klass, VALUE encoding)
     return encoding;
 }
 
-static void
-define_const_safely(VALUE klass, const char *name, VALUE encoding)
-{
-    ASSERT_vm_locking();
-    RB_VM_UNLOCK();
-    // This calls `const_added` so must not be called with the VM lock
-    rb_define_const(rb_cEncoding, name, encoding);
-    RB_VM_LOCK();
-}
-
+/* Runs under the VM lock: rb_define_const() dispatches const_added, which
+ * rb_vm_call_when_unlocked() defers to the outermost lock release. */
 static void
 set_encoding_const(const char *name, rb_encoding *enc)
 {
@@ -1892,7 +1884,7 @@ set_encoding_const(const char *name, rb_encoding *enc)
     if (!*s) {
         if (s - name > ENCODING_NAMELEN_MAX) return;
         valid = 1;
-        define_const_safely(rb_cEncoding, name, encoding);
+        rb_define_const(rb_cEncoding, name, encoding);
     }
     if (!valid || haslower) {
         size_t len = s - name;
@@ -1914,14 +1906,14 @@ set_encoding_const(const char *name, rb_encoding *enc)
                 if (!ISALNUM(*s)) *s = '_';
             }
             if (hasupper) {
-                define_const_safely(rb_cEncoding, name, encoding);
+                rb_define_const(rb_cEncoding, name, encoding);
             }
         }
         if (haslower) {
             for (s = (char *)name; *s; ++s) {
                 if (ISLOWER(*s)) *s = ONIGENC_ASCII_CODE_TO_UPPER_CASE((int)*s);
             }
-            define_const_safely(rb_cEncoding, name, encoding);
+            rb_define_const(rb_cEncoding, name, encoding);
         }
     }
 }

@@ -286,6 +286,14 @@ ractor_mark_unshareable_parts(rb_ractor_t *r)
 
     /* Structures the owner mutates while running follow. */
 
+    /* Calls deferred out of a VM lock critical section: the entries still to run are
+     * reachable from nowhere else. */
+    for (size_t i = r->deferred_calls_pos; i < rb_darray_size(r->deferred_calls); i++) {
+        const struct rb_deferred_call *call = rb_darray_ref(r->deferred_calls, i);
+        rb_gc_mark(call->arg0);
+        rb_gc_mark(call->arg1);
+    }
+
     rb_hook_list_mark(&r->pub.hooks);
     if (r->pub.targeted_hooks.num_entries) {
         st_foreach(&r->pub.targeted_hooks, mark_targeted_hook_list, 0);
@@ -432,6 +440,7 @@ ractor_free(void *ptr)
     RUBY_DEBUG_LOG("free r:%"PRI_SERIALT_PREFIX"u", rb_ractor_id(r));
 
     free_targeted_hooks(&r->pub.targeted_hooks);
+    rb_darray_free_without_gc(r->deferred_calls); /* appended with rb_darray_append_without_gc */
     rb_thread_sched_destroy(&r->threads.sched);
     rb_native_mutex_destroy(&r->sync.lock);
     ractor_local_storage_free(r);

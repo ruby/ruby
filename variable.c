@@ -3940,11 +3940,20 @@ set_namespace_path(VALUE named_namespace, VALUE namespace_path)
 }
 
 static void
+const_added_call(VALUE klass, VALUE name)
+{
+    ASSERT_vm_unlocking();
+    rb_funcallv_uncached(klass, idConst_added, 1, &name);
+}
+
+static void
 const_added(VALUE klass, ID const_name)
 {
     if (GET_VM()->running) {
-        VALUE arg = ID2SYM(const_name);
-        rb_funcallv_uncached(klass, idConst_added, 1, &arg);
+        /* Dispatching const_added runs Ruby and checks interrupts, neither of which is
+         * allowed inside a VM lock critical section, so under the lock this runs at the
+         * outermost release instead. */
+        rb_vm_call_when_unlocked(const_added_call, klass, ID2SYM(const_name));
     }
 }
 
