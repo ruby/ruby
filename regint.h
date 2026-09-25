@@ -378,6 +378,11 @@ typedef unsigned int  BitStatusType;
 #define INT_MAX_LIMIT           ((1UL << (SIZEOF_INT * 8 - 1)) - 1)
 #define LONG_MAX_LIMIT           ((1UL << (SIZEOF_LONG * 8 - 1)) - 1)
 
+/* Program offsets are RelAddrType, and the compile_length_*() functions sum
+   into int, so a larger program would wrap both.  The quarter leaves room
+   for the sums the offset arithmetic makes out of those lengths. */
+#define MAX_COMPILED_PROGRAM_SIZE  ((unsigned int )(INT_MAX_LIMIT / 4))
+
 #define DIGITVAL(code)    ((code) - '0')
 #define ODIGITVAL(code)   DIGITVAL(code)
 #define XDIGITVAL(enc,code) \
