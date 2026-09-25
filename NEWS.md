@@ -413,6 +413,11 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
   shareable-object growth, reclaiming dead Ractors' heaps).  Allocation-heavy
   Ractor programs now scale like forked processes.
 
+* `GC.start(global: false)` can be used when multiple Ractors are running to force
+   a Ractor-local GC. By default, `GC.start` runs a global GC (all Ractors) like
+   before. This can also be triggered with `GC.start(global: true)`. The `global`
+   keyword argument has no effect when a single Ractor is running.
+
   Visible behavior changes:
 
   * `Ractor#value` returns the value only once; a second call raises
