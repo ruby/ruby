@@ -54,7 +54,7 @@ $(RUST_LIB): $(srcdir)/ruby.rs target/.rustc-version
 JIT_RLIB = $(TOP_BUILD_DIR)/$(RLIB_DIR)/libjit.rlib
 $(YJIT_RLIB): $(JIT_RLIB)
 $(ZJIT_RLIB): $(JIT_RLIB)
-$(JIT_RLIB): target/.rustc-version
+$(JIT_RLIB): $(top_srcdir)/jit/src/lib.rs target/.rustc-version
 	$(ECHO) 'building $(@F)'
 	$(gnumake_recursive)$(Q) $(RUSTC) --crate-name=jit \
 	    --edition=2024 \
