@@ -2880,6 +2880,7 @@ stack_check(rb_execution_context_t *ec, int water_mark)
     SET_STACK_END;
 
     size_t length = STACK_LENGTH;
+    if (STACK_LEVEL_MAX <= (size_t)water_mark) return TRUE;
     size_t maximum_length = STACK_LEVEL_MAX - water_mark;
 
     return length > maximum_length;
@@ -2888,7 +2889,12 @@ stack_check(rb_execution_context_t *ec, int water_mark)
 #define stack_check(ec, water_mark) FALSE
 #endif
 
-#define STACKFRAME_FOR_CALL_CFUNC 2048
+#ifdef RUBY_ASAN_ENABLED
+/* Unoptimized, instrumented VM frames can exceed the usual 16KB reserve. */
+# define STACKFRAME_FOR_CALL_CFUNC (128 * 1024 / sizeof(VALUE))
+#else
+# define STACKFRAME_FOR_CALL_CFUNC 2048
+#endif
 
 int
 rb_ec_stack_check(rb_execution_context_t *ec)
