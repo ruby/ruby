@@ -951,7 +951,7 @@ io_buffer_map(int argc, VALUE *argv, VALUE klass)
         }
         else if (UNLIKELY((size_t)(file_size - offset) < size)) {
             size_t maximum_offset =
-                (file_size - size) / RUBY_IO_BUFFER_MAP_ALIGNMENT *
+                ((size_t)file_size - size) / RUBY_IO_BUFFER_MAP_ALIGNMENT *
                 RUBY_IO_BUFFER_MAP_ALIGNMENT;
             rb_raise(rb_eArgError,
                      "Offset (%" PRIsVALUE ") can't be larger than "
