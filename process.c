@@ -125,7 +125,7 @@ int initgroups(const char *, rb_gid_t);
 #define open	rb_w32_uopen
 #endif
 
-#if defined(HAVE_TIMES) || defined(_WIN32)
+#if defined(HAVE_TIMES)
 /*********************************************************************
  *
  * Document-class: Process::Tms
@@ -9566,7 +9566,7 @@ InitVM_process(void)
     rb_define_module_function(rb_mProcess, "clock_gettime", rb_clock_gettime, -1);
     rb_define_module_function(rb_mProcess, "clock_getres", rb_clock_getres, -1);
 
-#if defined(HAVE_TIMES) || defined(_WIN32)
+#if defined(HAVE_TIMES)
     rb_cProcessTms = rb_struct_define_under(rb_mProcess, "Tms", "utime", "stime", "cutime", "cstime", NULL);
 #if 0 /* for RDoc */
     /* user time used in this process */

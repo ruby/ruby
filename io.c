@@ -61,10 +61,10 @@
 #endif
 
 #include <sys/types.h>
-#if defined(HAVE_SYS_IOCTL_H) && !defined(_WIN32)
+#ifdef HAVE_SYS_IOCTL_H
 #include <sys/ioctl.h>
 #endif
-#if defined(HAVE_FCNTL_H) || defined(_WIN32)
+#if defined(HAVE_FCNTL_H)
 #include <fcntl.h>
 #elif defined(HAVE_SYS_FCNTL_H)
 #include <sys/fcntl.h>
@@ -7531,7 +7531,6 @@ rb_pipe(int *pipes)
 }
 
 #ifdef _WIN32
-#define HAVE_SPAWNV 1
 #define spawnv(mode, cmd, args) rb_w32_uaspawn((mode), (cmd), (args))
 #define spawn(mode, cmd) rb_w32_uspawn((mode), (cmd), 0)
 #endif
