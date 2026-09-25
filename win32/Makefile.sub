@@ -143,8 +143,8 @@ CAT_DEPEND = type
 
 !if !defined(MSC_VER)
 ! error MSC_VER not defined.  Retry from configure pass.
-!else if $(MSC_VER) < 1900
-! error MSVC $(MSC_VER) is not supported
+!else if $(MSC_VER) < 1915
+! error MSVC $(MSC_VER) is not supported.  1915 (Visual Studio 2017 version 15.8) or later is required for the conforming preprocessor.
 !endif
 !if !defined(MACHINE)
 MACHINE = x86
@@ -362,10 +362,8 @@ CPPFLAGS = -DDISABLE_RUBYGEMS $(CPPFLAGS)
 # maybe >= 1926?
 # https://devblogs.microsoft.com/cppblog/announcing-full-support-for-a-c-c-conformant-preprocessor-in-msvc/
 CPPFLAGS = -Zc:preprocessor $(CPPFLAGS)
-!elseif $(MSC_VER) >= 1915
-CPPFLAGS = -experimental:preprocessor $(CPPFLAGS)
 !else
-! error C99 conformant preprocessor is required
+CPPFLAGS = -experimental:preprocessor $(CPPFLAGS)
 !endif
 
 POSTLINK =
