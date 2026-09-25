@@ -110,6 +110,21 @@ ruby_version_is "4.1" do
       end
     end
 
+    it "preserves the concrete Storage subclass in mapping factories" do
+      subclass = Class.new(IO::Buffer::Storage)
+      File.open(__FILE__) do |file|
+        mapping = subclass.map(file, nil, 0, IO::Buffer::READONLY)
+        begin
+          mapping.class.should == subclass
+          mapping.should.mapped?
+          mapping.should.readonly?
+          mapping.get_string(0, 16).should == File.binread(__FILE__, 16)
+        ensure
+          mapping.free
+        end
+      end
+    end
+
     it "constructs a Slice relative to an explicit parent" do
       child = IO::Buffer::Slice.new(@slice, 1, 2)
       child.source.should.equal?(@slice)

@@ -105,6 +105,31 @@ class TestIOBuffer < Test::Unit::TestCase
     storage&.free
   end
 
+  def test_storage_subclass_factories_preserve_receiver_class
+    subclass = Class.new(IO::Buffer::Storage)
+    storage = subclass.for("data")
+    assert_instance_of subclass, storage
+    assert_equal "data", storage.get_string
+    storage.free
+
+    subclass.for(+"data") {|buffer| assert_instance_of subclass, buffer}
+    result = subclass.string(4) do |buffer|
+      assert_instance_of subclass, buffer
+      buffer.set_string("test")
+    end
+    assert_equal "test", result
+
+    File.open(__FILE__) do |file|
+      storage = subclass.map(file, nil, 0, IO::Buffer::READONLY)
+      assert_instance_of subclass, storage
+      assert_predicate storage, :mapped?
+      assert_predicate storage, :readonly?
+      assert_equal File.binread(__FILE__, 16), storage.get_string(0, 16)
+    end
+  ensure
+    storage&.free
+  end
+
   def test_slice_dup_and_clone_copy_the_view
     buffer = IO::Buffer.new(8)
     buffer.set_string("abcdefgh")
