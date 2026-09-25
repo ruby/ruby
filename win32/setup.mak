@@ -220,11 +220,11 @@ set /a MSC_VER = _MSC_VER
 #elif _MSC_VER >= 1920
 set /a MSC_VER_LOWER = MSC_VER/20*20+0
 set /a MSC_VER_UPPER = MSC_VER/20*20+19
-#elif _MSC_VER >= 1900
+#elif _MSC_VER >= 1915
 set /a MSC_VER_LOWER = MSC_VER/10*10+0
 set /a MSC_VER_UPPER = MSC_VER/10*10+9
 #else
-# error Unsupported VC++ compiler
+# error MSVC 1915 (Visual Studio 2017 version 15.8) or later is required
 #endif
 set MSC_VER
 del %0 & exit
