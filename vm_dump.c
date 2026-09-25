@@ -799,10 +799,12 @@ backtrace(void **trace, int size)
     unw_word_t ip;
     int n = 0;
 
+    if (size <= 0) return 0;
+
     unw_getcontext(&uc);
     unw_init_local(&cursor, &uc);
 #  if defined(__x86_64__)
-    while (unw_step(&cursor) > 0) {
+    while (n < size && unw_step(&cursor) > 0) {
         unw_get_reg(&cursor, UNW_REG_IP, &ip);
         trace[n++] = (void *)ip;
         {
@@ -815,6 +817,7 @@ backtrace(void **trace, int size)
     }
     return n;
 darwin_sigtramp:
+    if (n == size) return n;
     /* darwin's bundled libunwind doesn't support signal trampoline */
     {
         ucontext_t *uctx;
@@ -875,13 +878,14 @@ darwin_sigtramp:
             /* if segv is caused by invalid call or signal received in syscall */
             /* the frame is invalid; skip */
             trace[n++] = (void *)ip;
+            if (n == size) return n;
             ip = *(unw_word_t*)uctx->uc_mcontext->MCTX_SS_REG(rsp);
         }
 
         trace[n++] = (void *)ip;
         unw_set_reg(&cursor, UNW_REG_IP, ip);
     }
-    while (unw_step(&cursor) > 0) {
+    while (n < size && unw_step(&cursor) > 0) {
         unw_get_reg(&cursor, UNW_REG_IP, &ip);
         trace[n++] = (void *)ip;
     }
@@ -892,7 +896,7 @@ darwin_sigtramp:
      * unwind can unwind frames without special code.
      * https://github.com/apple/darwin-libplatform/blob/215b09856ab5765b7462a91be7076183076600df/src/setjmp/generic/sigtramp.c
      */
-    while (unw_step(&cursor) > 0) {
+    while (n < size && unw_step(&cursor) > 0) {
         unw_get_reg(&cursor, UNW_REG_IP, &ip);
 #   if defined(__arm64__)
         // Strip Arm64's pointer authentication.
