@@ -3,7 +3,8 @@
 require 'test/unit'
 require 'resolv'
 
-if defined?(Win32::Resolv)
+# JRuby loads its bundled win32/resolv, which lacks the registry access of the extension.
+if defined?(Win32::Resolv) && Win32::Resolv.respond_to?(:tcpip_params, true)
   class TestWin32Config < Test::Unit::TestCase
     def test_get_item_property_string
       # Test reading a string registry value
