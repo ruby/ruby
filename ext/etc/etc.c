@@ -848,6 +848,9 @@ etc_uname(VALUE obj)
 # ifndef PROCESSOR_ARCHITECTURE_INTEL
 #   define PROCESSOR_ARCHITECTURE_INTEL 0
 # endif
+# ifndef PROCESSOR_ARCHITECTURE_ARM64
+#   define PROCESSOR_ARCHITECTURE_ARM64 12
+# endif
     GetSystemInfo(&s);
     switch (s.wProcessorArchitecture) {
       case PROCESSOR_ARCHITECTURE_AMD64:
@@ -855,6 +858,9 @@ etc_uname(VALUE obj)
 	break;
       case PROCESSOR_ARCHITECTURE_ARM:
 	mach = "ARM";
+	break;
+      case PROCESSOR_ARCHITECTURE_ARM64:
+	mach = "ARM64";
 	break;
       case PROCESSOR_ARCHITECTURE_INTEL:
 	mach = "x86";
