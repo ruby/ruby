@@ -876,7 +876,7 @@ dump_all_locked(void *args_p)
     }
 
     /* dump all objects */
-    rb_objspace_each_objects(heap_i, dc);
+    rb_objspace_each_objects_all(heap_i, dc);
 
     return dump_result(dc);
 }

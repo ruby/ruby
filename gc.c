@@ -3990,11 +3990,17 @@ each_objects_foreign_i(void *objspace, void *arg)
  *
  * If callback() returns non-zero, the iteration will be stopped.
  *
- * This takes the VM barrier for the whole walk, stopping every other
- * Ractor: the set of heap pages must not change under the callback, and a
- * GC is stop-the-world.  Because of that, the callback must not wait on
- * another Ractor (e.g. send/receive) -- they are all suspended and it
- * would deadlock.
+ * This walks the calling Ractor's own objspace, and only that one: with
+ * per-Ractor heaps, another Ractor's objects are reachable only under the VM
+ * barrier, where a callback may not run Ruby.  Use
+ * rb_objspace_each_objects_all() for whole-process coverage with a pure-C
+ * callback.
+ *
+ * No lock is taken, so the callback is free to run Ruby -- extensions do, e.g.
+ * ruby/debug's ObjectSpace.each_iseq yields each iseq from here.
+ * rb_gc_impl_each_objects() settles the lazy sweep and turns off incremental GC
+ * for the duration, so the walk tolerates the callback allocating or triggering
+ * a GC, and it tolerates pages being freed under it.
  *
  * This is a sample callback code to iterate liveness objects:
  *
@@ -4023,16 +4029,29 @@ each_objects_foreign_i(void *objspace, void *arg)
 void
 rb_objspace_each_objects(int (*callback)(void *, void *, size_t, void *), void *data)
 {
+    rb_gc_impl_each_objects(rb_gc_get_objspace(), callback, data);
+}
+
+/* Like rb_objspace_each_objects(), but covering every object in the process: the other
+ * live Ractors' objspaces and the zombie ones too, under the VM lock and barrier.
+ *
+ * That barrier is what makes the walk whole -- the other Ractors are stopped, so their
+ * heap pages cannot change under the callback -- and it is why the callback must be
+ * pure C here: it runs in a critical section, so it must not run Ruby, check interrupts
+ * or raise, and it must not wait on another Ractor (e.g. send/receive), which are all
+ * suspended and would deadlock.
+ *
+ * A foreign objspace's stopped lazy sweep is not settled; the walk skips its dead
+ * objects. */
+void
+rb_objspace_each_objects_all(int (*callback)(void *, void *, size_t, void *), void *data)
+{
     RB_VM_LOCKING() {
         rb_vm_barrier();
 
         void *self = rb_gc_get_objspace();
         rb_gc_impl_each_objects(self, callback, data);
 
-        /* Like upstream, cover every object in the process: walk the other live
-         * Ractors' objspaces too, under the VM lock and barrier, with a pure-C callback.
-         * A foreign objspace's stopped lazy sweep is not settled; the walk skips its
-         * dead objects. Also covers zombie objspaces. */
         struct each_objects_foreign_arg arg = { self, callback, data };
         rb_gc_vm_each_objspace(each_objects_foreign_i, &arg);
     }
