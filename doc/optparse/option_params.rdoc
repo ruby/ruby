@@ -477,9 +477,9 @@ Executions:
           --xxx                        Option with no argument
           --yyy YYY                    Option with required argument
   $ ruby block.rb --xxx
-  ["Handler block for -xxx called with value:", true]
+  ["Handler block for --xxx called with value:", true]
   $ ruby block.rb --yyy FOO
-  ["Handler block for -yyy called with value:", "FOO"]
+  ["Handler block for --yyy called with value:", "FOO"]
 
 ==== Handler Procs
 
@@ -496,9 +496,9 @@ Executions:
           --xxx                        Option with no argument
           --yyy YYY                    Option with required argument
   $ ruby proc.rb --xxx
-  ["Handler proc for -xxx called with value:", true]
+  ["Handler proc for --xxx called with value:", true]
   $ ruby proc.rb --yyy FOO
-  ["Handler proc for -yyy called with value:", "FOO"]
+  ["Handler proc for --yyy called with value:", "FOO"]
 
 ==== Handler Methods
 
@@ -515,6 +515,6 @@ Executions:
           --xxx                        Option with no argument
           --yyy YYY                    Option with required argument
   $ ruby method.rb --xxx
-  ["Handler method for -xxx called with value:", true]
+  ["Handler method for --xxx called with value:", true]
   $ ruby method.rb --yyy FOO
-  ["Handler method for -yyy called with value:", "FOO"]
+  ["Handler method for --yyy called with value:", "FOO"]

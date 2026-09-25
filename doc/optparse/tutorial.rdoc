@@ -99,16 +99,16 @@ The method returns the possibly-reduced +ARGV+ array.
 Executions:
 
   $ ruby basic.rb -x -z
-  ["x", true]
-  ["z", true]
+  ["-x", true]
+  ["-z", true]
   []
   $ ruby basic.rb -z -y -x
-  ["z", true]
-  ["y", true]
-  ["x", true]
+  ["-z", true]
+  ["-y", true]
+  ["-x", true]
   []
   $ ruby basic.rb -x input_file.txt output_file.txt
-  ["x", true]
+  ["-x", true]
   ["input_file.txt", "output_file.txt"]
   $ ruby basic.rb -a
   basic.rb:16:in '<main>': invalid option: -a (OptionParser::InvalidOption)
@@ -157,7 +157,7 @@ Executions:
       -x                               Short name
       -1, -%                           Two short names
   $ ruby short_names.rb -x
-  ["x", true]
+  ["-x", true]
   $ ruby short_names.rb -1
   ["-1 or -%", true]
   $ ruby short_names.rb -%
@@ -166,7 +166,7 @@ Executions:
 Multiple short names can "share" a hyphen:
 
   $ ruby short_names.rb -x1%
-  ["x", true]
+  ["-x", true]
   ["-1 or -%", true]
   ["-1 or -%", true]
 
@@ -188,7 +188,7 @@ Executions:
           --xxx                        Long name
           --y1%, --z2#                 Two long names
   $ ruby long_names.rb --xxx
-  ["-xxx", true]
+  ["--xxx", true]
   $ ruby long_names.rb --y1%
   ["--y1% or --z2#", true]
   $ ruby long_names.rb --z2#
@@ -314,7 +314,7 @@ Executions:
   $ ruby required_argument.rb --help
   Usage: required_argument [options]
       -x, --xxx XXX                    Required argument via short name
-      -y, --y YYY                      Required argument via long name
+      -y, --yyy YYY                    Required argument via long name
   $ ruby required_argument.rb -x AAA
   ["--xxx", "AAA"]
   $ ruby required_argument.rb -y BBB
