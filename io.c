@@ -37,7 +37,7 @@
 #undef free
 #define free(x) xfree(x)
 
-#if defined(DOSISH) || defined(__CYGWIN__)
+#ifdef __CYGWIN__
 #include <io.h>
 #endif
 
