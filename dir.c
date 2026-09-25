@@ -2170,10 +2170,6 @@ has_magic(const char *p, const char *pend, int flags, rb_encoding *enc)
 #ifdef _WIN32
           case '.':
             break;
-
-          case '~':
-            hasalpha = 1;
-            break;
 #endif
           default:
             if (IS_WIN32 || ISALPHA(c)) {
