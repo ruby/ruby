@@ -297,6 +297,9 @@ Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for det
   component is still limited to 255 characters, and a child process still
   starts with the `MAX_PATH` limited current directory. [[Bug #18947]]
 
+* Building Ruby with MSVC now requires Visual Studio 2017 version 15.8
+  (`_MSC_VER` 1915) or later.
+
 ## Compatibility issues
 
 * A class or module can now be modified only by the Ractor which created it,
