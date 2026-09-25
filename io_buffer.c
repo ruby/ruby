@@ -135,8 +135,9 @@ io_buffer_map_memory(size_t size, int flags)
 }
 
 static void
-io_buffer_map_file(struct rb_io_buffer_view *buffer, int descriptor, size_t size, rb_off_t offset, enum rb_io_buffer_flags flags)
+io_buffer_storage_map_file(struct rb_io_buffer_storage *storage, int descriptor, size_t size, rb_off_t offset, enum rb_io_buffer_flags flags)
 {
+    struct rb_io_buffer_view *buffer = &storage->view;
 #if defined(_WIN32)
     HANDLE file = (HANDLE)_get_osfhandle(descriptor);
     if (!file) rb_sys_fail("io_buffer_map_descriptor:_get_osfhandle");
@@ -163,17 +164,17 @@ io_buffer_map_file(struct rb_io_buffer_view *buffer, int descriptor, size_t size
     }
 
     HANDLE mapping = CreateFileMapping(file, NULL, protect, 0, 0, NULL);
-    if (RB_IO_BUFFER_DEBUG) fprintf(stderr, "io_buffer_map_file:CreateFileMapping -> %p\n", mapping);
+    if (RB_IO_BUFFER_DEBUG) fprintf(stderr, "io_buffer_storage_map_file:CreateFileMapping -> %p\n", mapping);
     if (!mapping) rb_sys_fail("io_buffer_map_descriptor:CreateFileMapping");
 
     void *base = MapViewOfFile(mapping, access, (DWORD)(offset >> 32), (DWORD)(offset & 0xFFFFFFFF), size);
 
     if (!base) {
         CloseHandle(mapping);
-        rb_sys_fail("io_buffer_map_file:MapViewOfFile");
+        rb_sys_fail("io_buffer_storage_map_file:MapViewOfFile");
     }
 
-    io_buffer_storage_from_view(buffer)->mapping = mapping;
+    storage->mapping = mapping;
 #else
     int protect = PROT_READ, access = 0;
 
@@ -198,7 +199,7 @@ io_buffer_map_file(struct rb_io_buffer_view *buffer, int descriptor, size_t size
     void *base = mmap(NULL, size, protect, access, descriptor, offset);
 
     if (base == MAP_FAILED) {
-        rb_sys_fail("io_buffer_map_file:mmap");
+        rb_sys_fail("io_buffer_storage_map_file:mmap");
     }
 #endif
 
@@ -226,23 +227,22 @@ io_buffer_experimental(void)
 }
 
 static void
-io_buffer_zero(struct rb_io_buffer_view *buffer)
+io_buffer_storage_zero(struct rb_io_buffer_storage *storage)
 {
-    struct rb_io_buffer_storage *allocation = io_buffer_storage_from_view(buffer);
-    buffer->base = NULL;
-    buffer->size = 0;
-    buffer->flags = 0;
-    buffer->source = Qnil;
-    allocation->lock_count = 0;
+    storage->view.base = NULL;
+    storage->view.size = 0;
+    storage->view.flags = 0;
+    storage->view.source = Qnil;
+    storage->lock_count = 0;
 #if defined(_WIN32)
-    allocation->mapping = NULL;
+    storage->mapping = NULL;
 #endif
 }
 
 static void
-io_buffer_initialize(VALUE self, struct rb_io_buffer_view *buffer, void *base, size_t size, enum rb_io_buffer_flags flags, VALUE source)
+io_buffer_storage_initialize(VALUE self, struct rb_io_buffer_storage *storage, void *base, size_t size, enum rb_io_buffer_flags flags, VALUE source)
 {
-    struct rb_io_buffer_storage *allocation = io_buffer_storage_from_view(buffer);
+    struct rb_io_buffer_view *buffer = &storage->view;
     if (source != Qnil) {
         // `base` is an offset into borrowed storage; do not allocate.
     }
@@ -271,18 +271,18 @@ io_buffer_initialize(VALUE self, struct rb_io_buffer_view *buffer, void *base, s
     buffer->size = size;
     // Public flags cannot change the payload's representation.
     buffer->flags = flags & ~IO_BUFFER_SLICE;
-    allocation->lock_count = 0;
+    storage->lock_count = 0;
     RB_OBJ_WRITE(self, &buffer->source, source);
 
 #if defined(_WIN32)
-    allocation->mapping = NULL;
+    storage->mapping = NULL;
 #endif
 }
 
 static void
-io_buffer_release(struct rb_io_buffer_view *buffer)
+io_buffer_storage_release(struct rb_io_buffer_storage *storage)
 {
-    RUBY_ASSERT(!io_buffer_slice_p(buffer));
+    struct rb_io_buffer_view *buffer = &storage->view;
     if (buffer->base) {
         if (buffer->flags & RB_IO_BUFFER_INTERNAL) {
             free(buffer->base);
@@ -309,17 +309,16 @@ io_buffer_release(struct rb_io_buffer_view *buffer)
     }
 
 #if defined(_WIN32)
-    struct rb_io_buffer_storage *allocation = io_buffer_storage_from_view(buffer);
-    if (allocation->mapping) {
-        if (RB_IO_BUFFER_DEBUG) fprintf(stderr, "io_buffer_release:CloseHandle -> %p\n", allocation->mapping);
-        if (!CloseHandle(allocation->mapping)) {
-            fprintf(stderr, "io_buffer_release:GetLastError -> %lu\n", GetLastError());
+    if (storage->mapping) {
+        if (RB_IO_BUFFER_DEBUG) fprintf(stderr, "io_buffer_storage_release:CloseHandle -> %p\n", storage->mapping);
+        if (!CloseHandle(storage->mapping)) {
+            fprintf(stderr, "io_buffer_storage_release:GetLastError -> %lu\n", GetLastError());
         }
-        allocation->mapping = NULL;
+        storage->mapping = NULL;
     }
 #endif
 
-    io_buffer_zero(buffer);
+    io_buffer_storage_zero(storage);
 }
 
 static void
@@ -355,7 +354,7 @@ rb_io_buffer_type_free(void *_buffer)
 {
     struct rb_io_buffer_view *buffer = _buffer;
 
-    if (!io_buffer_slice_p(buffer)) io_buffer_release(buffer);
+    if (!io_buffer_slice_p(buffer)) io_buffer_storage_release(io_buffer_storage_from_view(buffer));
 }
 
 static size_t
@@ -581,7 +580,7 @@ rb_io_buffer_type_allocate(VALUE self)
     struct rb_io_buffer_storage *buffer = NULL;
     VALUE instance = TypedData_Make_Struct(self, struct rb_io_buffer_storage, &rb_io_buffer_type, buffer);
 
-    io_buffer_zero(&buffer->view);
+    io_buffer_storage_zero(buffer);
 
     return instance;
 }
@@ -623,8 +622,6 @@ static VALUE io_buffer_for_make_instance(VALUE klass, VALUE string, enum rb_io_b
 {
     VALUE instance = rb_io_buffer_type_allocate(klass);
 
-    struct rb_io_buffer_view *buffer = get_io_buffer_view(instance);
-
     flags |= RB_IO_BUFFER_EXTERNAL;
 
     if (RB_OBJ_FROZEN(string))
@@ -634,7 +631,8 @@ static VALUE io_buffer_for_make_instance(VALUE klass, VALUE string, enum rb_io_b
         rb_str_modify(string);
 
     // The whole String, starting at offset zero.
-    io_buffer_initialize(instance, buffer, NULL, RSTRING_LEN(string), flags, string);
+    struct rb_io_buffer_storage *buffer = get_io_buffer_storage(instance);
+    io_buffer_storage_initialize(instance, buffer, NULL, RSTRING_LEN(string), flags, string);
 
     return instance;
 }
@@ -902,9 +900,9 @@ rb_io_buffer_new(void *base, size_t size, enum rb_io_buffer_flags flags)
 {
     VALUE instance = rb_io_buffer_type_allocate(rb_cIOBufferStorage);
 
-    struct rb_io_buffer_view *buffer = get_io_buffer_view(instance);
+    struct rb_io_buffer_storage *buffer = get_io_buffer_storage(instance);
 
-    io_buffer_initialize(instance, buffer, base, size, flags, Qnil);
+    io_buffer_storage_initialize(instance, buffer, base, size, flags, Qnil);
 
     return instance;
 }
@@ -919,8 +917,8 @@ rb_io_buffer_new_locked(void *base, size_t size, enum rb_io_buffer_flags flags)
     return instance;
 }
 
-VALUE
-rb_io_buffer_map(VALUE io, size_t size, rb_off_t offset, enum rb_io_buffer_flags flags)
+static VALUE
+io_buffer_storage_map(VALUE klass, VALUE io, size_t size, rb_off_t offset, enum rb_io_buffer_flags flags)
 {
     if (UNLIKELY(offset < 0)) {
         rb_raise(rb_eArgError,
@@ -935,15 +933,19 @@ rb_io_buffer_map(VALUE io, size_t size, rb_off_t offset, enum rb_io_buffer_flags
                  RUBY_IO_BUFFER_MAP_ALIGNMENT);
     }
 
-    VALUE instance = rb_io_buffer_type_allocate(rb_cIOBufferStorage);
-
-    struct rb_io_buffer_view *buffer = get_io_buffer_view(instance);
-
+    VALUE instance = rb_io_buffer_type_allocate(klass);
     int descriptor = rb_io_descriptor(io);
+    struct rb_io_buffer_storage *storage = get_io_buffer_storage(instance);
 
-    io_buffer_map_file(buffer, descriptor, size, offset, flags);
+    io_buffer_storage_map_file(storage, descriptor, size, offset, flags);
 
     return instance;
+}
+
+VALUE
+rb_io_buffer_map(VALUE io, size_t size, rb_off_t offset, enum rb_io_buffer_flags flags)
+{
+    return io_buffer_storage_map(rb_cIOBufferStorage, io, size, offset, flags);
 }
 
 /*
@@ -1000,7 +1002,7 @@ rb_io_buffer_map(VALUE io, size_t size, rb_off_t offset, enum rb_io_buffer_flags
 static VALUE
 io_buffer_map(int argc, VALUE *argv, VALUE klass)
 {
-    io_buffer_storage_class(klass);
+    klass = io_buffer_storage_class(klass);
     rb_check_arity(argc, 1, 4);
 
     // We might like to handle a string path?
@@ -1074,7 +1076,7 @@ io_buffer_map(int argc, VALUE *argv, VALUE klass)
     }
     flags = io_buffer_flags_for_map(flags);
 
-    return rb_io_buffer_map(io, size, offset, flags);
+    return io_buffer_storage_map(klass, io, size, offset, flags);
 }
 
 // Compute the optimal allocation flags for a buffer of the given size.
@@ -1178,11 +1180,10 @@ rb_io_buffer_initialize(int argc, VALUE *argv, VALUE self)
     }
     flags = io_buffer_flags_for_new(flags, size);
 
-    struct rb_io_buffer_view *buffer = get_io_buffer_view(self);
-    struct rb_io_buffer_storage *allocation = io_buffer_storage_from_view(buffer);
-    if (allocation->lock_count) rb_raise(rb_eIOBufferLockedError, "Cannot initialize locked buffer!");
-    io_buffer_release(buffer);
-    io_buffer_initialize(self, buffer, NULL, size, flags, Qnil);
+    struct rb_io_buffer_storage *buffer = get_io_buffer_storage(self);
+    if (buffer->lock_count) rb_raise(rb_eIOBufferLockedError, "Cannot initialize locked buffer!");
+    io_buffer_storage_release(buffer);
+    io_buffer_storage_initialize(self, buffer, NULL, size, flags, Qnil);
 
     return self;
 }
@@ -1978,7 +1979,7 @@ rb_io_buffer_free(VALUE self)
         rb_raise(rb_eIOBufferLockedError, "Buffer is locked!");
     }
 
-    io_buffer_release(&buffer->view);
+    io_buffer_storage_release(buffer);
 
     return self;
 }
@@ -2038,7 +2039,7 @@ VALUE rb_io_buffer_free_locked(VALUE self)
     }
 
     io_buffer_unlock(&buffer->view);
-    io_buffer_release(&buffer->view);
+    io_buffer_storage_release(buffer);
 
     return self;
 }
@@ -2304,7 +2305,7 @@ rb_io_buffer_transfer(VALUE self)
     struct rb_io_buffer_storage *transferred = get_io_buffer_storage(instance);
 
     *transferred = *buffer;
-    io_buffer_zero(&buffer->view);
+    io_buffer_storage_zero(buffer);
 
     return instance;
 }
@@ -2343,31 +2344,31 @@ io_buffer_transfer(VALUE self)
 }
 
 static void
-io_buffer_resize_clear(struct rb_io_buffer_view *buffer, void* base, size_t size)
+io_buffer_storage_resize_clear(const struct rb_io_buffer_storage *storage, void* base, size_t size)
 {
-    if (size > buffer->size) {
-        memset((unsigned char*)base+buffer->size, 0, size - buffer->size);
+    if (size > storage->view.size) {
+        memset((unsigned char*)base+storage->view.size, 0, size - storage->view.size);
     }
 }
 
 static void
-io_buffer_resize_copy(VALUE self, struct rb_io_buffer_view *buffer, size_t size)
+io_buffer_storage_resize_copy(VALUE self, struct rb_io_buffer_storage *storage, size_t size)
 {
-    // Slow path:
+    // Allocate and copy before releasing the old storage.
     struct rb_io_buffer_storage resized = {0};
-    enum rb_io_buffer_flags flags = io_flags_for_size(size) | (buffer->flags & RB_IO_BUFFER_READONLY);
-    io_buffer_initialize(self, &resized.view, NULL, size, flags, Qnil);
+    enum rb_io_buffer_flags flags = io_flags_for_size(size) | (storage->view.flags & RB_IO_BUFFER_READONLY);
+    io_buffer_storage_initialize(self, &resized, NULL, size, flags, Qnil);
 
-    if (buffer->base) {
-        size_t preserve = buffer->size;
+    if (storage->view.base) {
+        size_t preserve = storage->view.size;
         if (preserve > size) preserve = size;
-        memcpy(resized.view.base, buffer->base, preserve);
+        memcpy(resized.view.base, storage->view.base, preserve);
 
-        io_buffer_resize_clear(buffer, resized.view.base, size);
+        io_buffer_storage_resize_clear(storage, resized.view.base, size);
     }
 
-    io_buffer_release(buffer);
-    *io_buffer_storage_from_view(buffer) = resized;
+    io_buffer_storage_release(storage);
+    *storage = resized;
 }
 
 static void
@@ -2398,20 +2399,13 @@ io_buffer_resize_slice(struct rb_io_buffer_view *slice, size_t size)
     slice->size = size;
 }
 
-void
-rb_io_buffer_resize(VALUE self, size_t size)
+static void
+io_buffer_storage_resize(VALUE self, struct rb_io_buffer_storage *storage, size_t size)
 {
-    struct rb_io_buffer_view *buffer = get_io_buffer_view(self);
-
-    if (io_buffer_slice_p(buffer)) {
-        // Resizing a slice only changes the view, not the locked allocation.
-        io_buffer_resize_slice(buffer, size);
-        return;
-    }
-
+    struct rb_io_buffer_view *buffer = &storage->view;
     io_buffer_validate_for_reading(buffer);
 
-    if (io_buffer_locked(buffer)) {
+    if (storage->lock_count) {
         rb_raise(rb_eIOBufferLockedError, "Cannot resize locked buffer!");
     }
 
@@ -2422,12 +2416,12 @@ rb_io_buffer_resize(VALUE self, size_t size)
     }
 
     if (buffer->base == NULL) {
-        io_buffer_initialize(self, buffer, NULL, size, io_flags_for_size(size), Qnil);
+        io_buffer_storage_initialize(self, storage, NULL, size, io_flags_for_size(size), Qnil);
         return;
     }
 
     if (size == 0) {
-        io_buffer_release(buffer);
+        io_buffer_storage_release(storage);
         return;
     }
 
@@ -2439,7 +2433,7 @@ rb_io_buffer_resize(VALUE self, size_t size)
             rb_sys_fail("rb_io_buffer_resize:mremap");
         }
 
-        io_buffer_resize_clear(buffer, base, size);
+        io_buffer_storage_resize_clear(storage, base, size);
 
         buffer->base = base;
         buffer->size = size;
@@ -2455,7 +2449,7 @@ rb_io_buffer_resize(VALUE self, size_t size)
             rb_sys_fail("rb_io_buffer_resize:realloc");
         }
 
-        io_buffer_resize_clear(buffer, base, size);
+        io_buffer_storage_resize_clear(storage, base, size);
 
         buffer->base = base;
         buffer->size = size;
@@ -2463,7 +2457,19 @@ rb_io_buffer_resize(VALUE self, size_t size)
         return;
     }
 
-    io_buffer_resize_copy(self, buffer, size);
+    io_buffer_storage_resize_copy(self, storage, size);
+}
+
+void
+rb_io_buffer_resize(VALUE self, size_t size)
+{
+    struct rb_io_buffer_view *view = get_io_buffer_view(self);
+    if (io_buffer_slice_p(view)) {
+        io_buffer_resize_slice(view, size);
+    }
+    else {
+        io_buffer_storage_resize(self, io_buffer_storage_from_view(view), size);
+    }
 }
 
 /*
@@ -3435,11 +3441,10 @@ io_buffer_copy_from_readable(const void *base, size_t size, VALUE _arguments)
 static VALUE
 io_buffer_initialize_copy_from(const void *base, size_t size, VALUE self)
 {
-    struct rb_io_buffer_view *buffer = get_io_buffer_view(self);
-    struct rb_io_buffer_storage *allocation = io_buffer_storage_from_view(buffer);
-    if (allocation->lock_count) rb_raise(rb_eIOBufferLockedError, "Cannot initialize locked buffer!");
-    io_buffer_release(buffer);
-    io_buffer_initialize(self, buffer, NULL, size, io_flags_for_size(size), Qnil);
+    struct rb_io_buffer_storage *buffer = get_io_buffer_storage(self);
+    if (buffer->lock_count) rb_raise(rb_eIOBufferLockedError, "Cannot initialize locked buffer!");
+    io_buffer_storage_release(buffer);
+    io_buffer_storage_initialize(self, buffer, NULL, size, io_flags_for_size(size), Qnil);
 
     struct io_buffer_copy_arguments arguments = {
         .destination = self,
