@@ -1119,11 +1119,18 @@ module Bundler
 
         name = override.target
         next if @changed_dependencies.include?(name)
-        next if @originally_locked_specs[name].empty?
-        # version: overrides on direct deps are detected in the per-dep
-        # converge_dependencies loop via apply_override_to + matches_spec?.
-        # Other fields are not visible there, so they always reach here.
-        next if override.field == :version && @dependencies.any? {|d| d.name == name }
+        locked_specs = @originally_locked_specs[name]
+        next if locked_specs.empty?
+
+        if override.field == :version
+          # version: overrides on direct deps are detected in the per-dep
+          # converge_dependencies loop via apply_override_to + matches_spec?.
+          # Other fields are not visible there, so they always reach here.
+          next if @dependencies.any? {|d| d.name == name }
+          # Only a version string constrains on its own. :ignore_upper and nil
+          # loosen requirements the lockfile already satisfies.
+          next if override.apply_to(Gem::Requirement.default).satisfied_by?(locked_specs.first.version)
+        end
 
         @gems_to_unlock << name
         @changed_dependencies << name

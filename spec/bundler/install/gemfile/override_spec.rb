@@ -51,6 +51,29 @@ RSpec.describe "override DSL" do
       expect(the_bundle).to include_gems "myrack 0.9.1"
     end
 
+    it "keeps the locked version of a transitive-only target that still satisfies the override" do
+      build_repo2 do
+        build_gem "child", "1.0"
+        build_gem "parent", "1.0" do |s|
+          s.add_dependency "child", ">= 1.0"
+        end
+      end
+
+      install_gemfile <<-G
+        source "https://gem.repo2"
+        override "child", version: ">= 1.0"
+        gem "parent"
+      G
+
+      update_repo2 do
+        build_gem "child", "1.1"
+      end
+
+      bundle :install
+
+      expect(the_bundle).to include_gems "child 1.0", "parent 1.0"
+    end
+
     it "pins a prerelease version that the Gemfile dependency would otherwise filter out" do
       build_repo2 do
         build_gem "has_prerelease", "1.0"
@@ -127,6 +150,20 @@ RSpec.describe "override DSL" do
       bundle :install
 
       expect(the_bundle).to include_gems "myrack 1.0.0", "myrack_middleware 1.0"
+    end
+  end
+
+  context "in frozen mode" do
+    it "installs a transitive-only override the lockfile already satisfies" do
+      install_gemfile <<-G
+        source "https://gem.repo1"
+        override "myrack", version: "= 0.9.1"
+        gem "myrack_middleware"
+      G
+
+      bundle :install, env: { "BUNDLE_FROZEN" => "true" }
+
+      expect(the_bundle).to include_gems "myrack 0.9.1", "myrack_middleware 1.0"
     end
   end
 
