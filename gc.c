@@ -2880,6 +2880,7 @@ stack_check(rb_execution_context_t *ec, int water_mark)
     SET_STACK_END;
 
     size_t length = STACK_LENGTH;
+    if (STACK_LEVEL_MAX == 0) return FALSE; /* unknown maxsize */
     if (STACK_LEVEL_MAX <= (size_t)water_mark) return TRUE;
     size_t maximum_length = STACK_LEVEL_MAX - water_mark;
 
