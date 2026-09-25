@@ -3,7 +3,7 @@
 require 'test/unit'
 require 'resolv'
 
-if defined?(Win32::Resolve)
+if defined?(Win32::Resolv)
   class TestWin32Config < Test::Unit::TestCase
     def test_get_item_property_string
       # Test reading a string registry value
