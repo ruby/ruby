@@ -1609,6 +1609,11 @@ obj_traverse_reachable_i(VALUE obj, void *ptr)
 }
 
 // Traverse obj's children via its GC mark function. Returns 1 to stop.
+//
+// No VM lock: rb_objspace_reachable_objects_from() needs none, and obj_traverse_i()
+// recurses back into here from the callback, so locking would put a whole subtree --
+// its allocations included -- in one reentrant critical section.  The objects walked
+// here are unshareable, hence local to this Ractor.
 static int
 obj_traverse_reachable(VALUE obj, struct obj_traverse_data *data)
 {
@@ -1616,9 +1621,7 @@ obj_traverse_reachable(VALUE obj, struct obj_traverse_data *data)
         .stop = false,
         .data = data,
     };
-    RB_VM_LOCKING_NO_BARRIER() {
-        rb_objspace_reachable_objects_from(obj, obj_traverse_reachable_i, &d);
-    }
+    rb_objspace_reachable_objects_from(obj, obj_traverse_reachable_i, &d);
     return d.stop;
 }
 
@@ -2137,13 +2140,13 @@ obj_refer_only_shareables_p_i(VALUE obj, void *ptr)
     }
 }
 
+// No VM lock, as in obj_traverse_reachable() above: the traversal needs none, and the
+// callback only reads shareable bits.
 static int
 obj_refer_only_shareables_p(VALUE obj)
 {
     int cnt = 0;
-    RB_VM_LOCKING_NO_BARRIER() {
-        rb_objspace_reachable_objects_from(obj, obj_refer_only_shareables_p_i, &cnt);
-    }
+    rb_objspace_reachable_objects_from(obj, obj_refer_only_shareables_p_i, &cnt);
     return cnt == 0;
 }
 

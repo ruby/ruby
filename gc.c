@@ -5526,24 +5526,28 @@ ruby_gc_set_params(void)
     rb_gc_impl_set_params(rb_gc_get_objspace());
 }
 
+/* No lock: the redirect slot is private to this Ractor and the walk is synchronous, the
+ * same reasoning as rb_gc_verify_shareable().  The slot is only installed across
+ * rb_gc_mark_children(), which allocates nothing and reaches no safepoint -- and
+ * RB_GC_MARK_OR_TRAVERSE() clears it again around each callback, so whatever func()
+ * allocates is marked normally.  (The VM lock this used to take guarded the redirect
+ * back when it lived on the VM; per-Ractor storage replaced that.) */
 void
 rb_objspace_reachable_objects_from(VALUE obj, void (func)(VALUE, void *), void *data)
 {
-    RB_VM_LOCKING() {
-        if (rb_gc_impl_during_gc_p(rb_gc_get_objspace())) rb_bug("rb_objspace_reachable_objects_from() is not supported while during GC");
+    if (rb_gc_impl_during_gc_p(rb_gc_get_objspace())) rb_bug("rb_objspace_reachable_objects_from() is not supported while during GC");
 
-        if (!RB_SPECIAL_CONST_P(obj)) {
-            struct gc_mark_func_data_struct **mfdp = GC_MARK_FUNC_DATA_SLOTP();
-            struct gc_mark_func_data_struct *prev_mfd = *mfdp;
-            struct gc_mark_func_data_struct mfd = {
-                .mark_func = func,
-                .data = data,
-            };
+    if (!RB_SPECIAL_CONST_P(obj)) {
+        struct gc_mark_func_data_struct **mfdp = GC_MARK_FUNC_DATA_SLOTP();
+        struct gc_mark_func_data_struct *prev_mfd = *mfdp;
+        struct gc_mark_func_data_struct mfd = {
+            .mark_func = func,
+            .data = data,
+        };
 
-            *mfdp = &mfd;
-            rb_gc_mark_children(rb_gc_get_objspace(), obj);
-            *mfdp = prev_mfd;
-        }
+        *mfdp = &mfd;
+        rb_gc_mark_children(rb_gc_get_objspace(), obj);
+        *mfdp = prev_mfd;
     }
 }
 
