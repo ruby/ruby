@@ -813,18 +813,7 @@ etc_uname(VALUE obj)
         rb_sys_fail("GetVersionEx");
 
     result = rb_hash_new();
-    switch (v.dwPlatformId) {
-      case VER_PLATFORM_WIN32s:
-	sysname = "Win32s";
-	break;
-      case VER_PLATFORM_WIN32_NT:
-	sysname = "Windows_NT";
-	break;
-      case VER_PLATFORM_WIN32_WINDOWS:
-      default:
-	sysname = "Windows";
-	break;
-    }
+    sysname = "Windows_NT";
     rb_hash_aset(result, SYMBOL_LIT("sysname"), rb_str_new_cstr(sysname));
     release = rb_sprintf("%lu.%lu.%lu", v.dwMajorVersion, v.dwMinorVersion, v.dwBuildNumber);
     rb_hash_aset(result, SYMBOL_LIT("release"), release);
