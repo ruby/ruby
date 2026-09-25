@@ -6647,10 +6647,9 @@ impl Function {
 
 
     fn optimize_load_store(&mut self) {
-        // TODO: Add a test that exercises the alias across blocks construction check
         use std::collections::hash_map::Entry;
 
-        #[derive(Hash, PartialEq, Eq, Clone, Copy)]
+        #[derive(Hash, PartialEq, Eq, Clone, Copy, Debug)]
         struct Key {
             id: InsnId,
             offset: i32,
@@ -6763,16 +6762,6 @@ impl Function {
                             insn_id
                         },
                         insn => {
-                            // Check for back edges
-                            // We can avoid doing this in WriteBarrier, LoadField, and StoreField cases because these instructions do not have outgoing edges.
-                            // The basic block definition requires that outgoing edges come from the terminator of the block.
-                            // This check could be sped up if we only checked the final instruction rather than all non WriteBarrier, LoadField, and StoreField instructions.
-                            for edge in insn.outgoing_edges() {
-                                if rpo_order[edge.target] <= rpo_index {
-                                    has_back_edge |= true;
-                                }
-                            }
-                            // If an instruction affects memory and we haven't modeled it, the compile_time_heap is invalidated
                             if insn.effects_of().includes(Effect::write(abstract_heaps::Memory)) {
                                 block_cache.clear();
                             }
@@ -6781,7 +6770,16 @@ impl Function {
                     };
                     new_insns.push(replacement_insn);
                 }
+
                 self.blocks[block_id].insns = new_insns;
+
+                // Check for back edges
+                for edge in self.resolve(*self.blocks[block_id].terminator()).insn(self).outgoing_edges() {
+                    if rpo_order[edge.target] <= rpo_index {
+                        has_back_edge |= true;
+                    }
+                }
+
                 if cache[block_id] == block_cache {
                     changed = false;
                 }
