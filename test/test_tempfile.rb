@@ -237,9 +237,11 @@ File.open(path, "w").close
 
   def test_finalizer_ignores_eacces_on_unlink
     assert_in_out_err("-r#{LIB_TEMPFILE_RB_PATH}", <<~'RUBY') do |(filename,*), (error,*)|
-      def File.unlink(*)
-        raise Errno::EACCES
-      end
+      File.singleton_class.prepend(Module.new do
+        def unlink(*)
+          raise Errno::EACCES
+        end
+      end)
       file = Tempfile.new("foo")
       puts file.path
     RUBY
