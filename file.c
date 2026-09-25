@@ -1710,7 +1710,7 @@ rb_file_lstat(VALUE obj)
 static int
 rb_group_member(GETGROUPS_T gid)
 {
-#if defined(_WIN32) || !defined(HAVE_GETGROUPS)
+#if !defined(HAVE_GETGROUPS)
     return FALSE;
 #else
     int rv = FALSE;
@@ -1735,7 +1735,7 @@ rb_group_member(GETGROUPS_T gid)
         ALLOCV_END(v);
 
     return rv;
-#endif /* defined(_WIN32) || !defined(HAVE_GETGROUPS) */
+#endif /* !defined(HAVE_GETGROUPS) */
 }
 
 #ifndef S_IXUGO
