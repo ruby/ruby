@@ -146,9 +146,9 @@ Executions:
 
 File +long_simple.rb+ defines two options:
 
-- One with long name <tt>-xxx</tt>.
-- The other with two long names, in effect, aliases,
-  <tt>--y1%</tt> and <tt>--z2#</tt>.
+-   One with long name <tt>--xxx</tt>.
+-   The other with two long names, in effect, aliases,
+    <tt>--y1%</tt> and <tt>--z2#</tt>.
 
   :include: ruby/long_simple.rb
 
