@@ -1602,6 +1602,7 @@ struct obj_traverse_data {
 
     st_table *rec;
     VALUE rec_hash;
+    void *objspace;
 };
 
 
@@ -1635,6 +1636,15 @@ obj_traverse_reachable_i(VALUE obj, void *ptr)
 {
     struct obj_traverse_callback_data *d = (struct obj_traverse_callback_data *)ptr;
 
+    // We need to assume foreign objects are properly shareable. If we check
+    // their shareability, this could result in a crash because the page could
+    // be unmapped. The object could also be freed concurrently.
+    if (!rb_objspace_live_object_p(obj)) {
+        return;
+    }
+    // If the object is "garbage" (unmarked during lazy sweeping), it's okay
+    // to traverse it.
+
     if (obj_traverse_i(obj, d->data)) {
         d->stop = true;
     }
@@ -1648,9 +1658,7 @@ obj_traverse_reachable(VALUE obj, struct obj_traverse_data *data)
         .stop = false,
         .data = data,
     };
-    RB_VM_LOCKING_NO_BARRIER() {
-        rb_objspace_reachable_objects_from(obj, obj_traverse_reachable_i, &d);
-    }
+    rb_objspace_reachable_objects_from_local(obj, obj_traverse_reachable_i, &d);
     return d.stop;
 }
 
@@ -1836,6 +1844,7 @@ rb_obj_traverse(VALUE obj,
         .enter_func = enter_func,
         .leave_func = leave_func,
         .rec = NULL,
+        .objspace = GET_RACTOR()->objspace,
     };
 
     if (obj_traverse_i(obj, &data)) return 1;
@@ -2164,6 +2173,10 @@ obj_refer_only_shareables_p_i(VALUE obj, void *ptr)
 {
     int *pcnt = (int *)ptr;
 
+    if (!rb_objspace_live_object_p(obj)) {
+        return;
+    }
+
     if (!rb_ractor_shareable_p(obj)) {
         ++*pcnt;
     }
@@ -2173,9 +2186,7 @@ static int
 obj_refer_only_shareables_p(VALUE obj)
 {
     int cnt = 0;
-    RB_VM_LOCKING_NO_BARRIER() {
-        rb_objspace_reachable_objects_from(obj, obj_refer_only_shareables_p_i, &cnt);
-    }
+    rb_objspace_reachable_objects_from_local(obj, obj_refer_only_shareables_p_i, &cnt);
     return cnt == 0;
 }
 
