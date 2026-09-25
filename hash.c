@@ -5457,8 +5457,6 @@ static char **origenviron;
 static char **my_environ;
 #undef environ
 #define environ my_environ
-#undef getenv
-#define getenv(n) rb_w32_ugetenv(n)
 #elif defined(__APPLE__)
 #undef environ
 #define environ (*_NSGetEnviron())
