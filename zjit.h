@@ -37,13 +37,15 @@ typedef struct zjit_jit_frame {
 // Stack map entries are opcodes for zjit_materialize_frames(), which walks them
 // in order while moving a cursor down the VM stack. An untagged entry is an
 // immediate Ruby VALUE to store; the tagged forms below copy from the native
-// stack, skip slots, or move the cursor. Stack maps never contain heap VALUEs,
-// so these tags are available: they are not Qfalse (0), and their low 3 bits
-// are zero, so RB_SPECIAL_CONST_P is false. Tags must stay non-zero multiples
-// of 8 for that to hold.
+// stack, skip slots, move the cursor, or cross into the caller frame. Stack
+// maps never contain heap VALUEs, so these tags are available: they are not
+// Qfalse (0), and their low 3 bits are zero, so RB_SPECIAL_CONST_P is false.
+// Tags must stay non-zero multiples of 8 for that to hold.
 #define ZJIT_STACK_MAP_VREG_TAG 0x08
 #define ZJIT_STACK_MAP_SKIP_TAG 0x10
 #define ZJIT_STACK_MAP_BASE_PTR_TAG 0x18
+#define ZJIT_STACK_MAP_LOCAL_MOD_TAG 0x20
+#define ZJIT_STACK_MAP_PREV_FRAME_TAG 0x28
 #define ZJIT_STACK_MAP_TAG_MASK 0xff
 #define ZJIT_STACK_MAP_SHIFT 8
 
@@ -74,6 +76,23 @@ static inline size_t
 ZJIT_STACK_MAP_SKIP_SIZE(VALUE entry)
 {
     return entry >> ZJIT_STACK_MAP_SHIFT;
+}
+
+static inline bool
+ZJIT_STACK_MAP_LOCAL_MOD_P(VALUE entry)
+{
+    return (entry & ZJIT_STACK_MAP_TAG_MASK) == ZJIT_STACK_MAP_LOCAL_MOD_TAG;
+}
+
+// One stack map can describe several control frames, since ZJIT inlines through
+// sends. This opcode marks the boundary between them: it moves the write cursor
+// past the inlined callee's receiver slot, which sits below its local table, and
+// switches the frame whose env decides whether LOCAL_MOD entries are written.
+// There is always a receiver slot there because we only inline through sends.
+static inline bool
+ZJIT_STACK_MAP_PREV_FRAME_P(VALUE entry)
+{
+    return (entry & ZJIT_STACK_MAP_TAG_MASK) == ZJIT_STACK_MAP_PREV_FRAME_TAG;
 }
 
 // Anchor the write cursor using the SP register the JIT saved on its native
@@ -133,6 +152,7 @@ void rb_zjit_invalidate_root_box(void);
 void rb_zjit_jit_frame_update_references(zjit_jit_frame_t *jit_frame);
 void rb_zjit_materialize_frames(const rb_execution_context_t *ec, rb_control_frame_t *cfp);
 void rb_zjit_materialize_frames_for_longjmp(const rb_execution_context_t *ec, rb_control_frame_t *cfp);
+void rb_zjit_spill_frame(const rb_execution_context_t *ec, rb_control_frame_t *cfp);
 size_t rb_zjit_hash_new_size(VALUE *flags_out, size_t size);
 VALUE rb_zjit_new_obj_shape(VALUE flags, size_t alloc_size);
 bool rb_zjit_class_allocate_instance_fastpath(VALUE klass, size_t *size_out, VALUE *flags_out);
@@ -187,6 +207,7 @@ static inline void rb_zjit_invalidate_root_box(void) {}
 static inline void rb_zjit_jit_frame_update_references(zjit_jit_frame_t *jit_frame) {}
 static inline void rb_zjit_materialize_frames(const rb_execution_context_t *ec, rb_control_frame_t *cfp) {}
 static inline void rb_zjit_materialize_frames_for_longjmp(const rb_execution_context_t *ec, rb_control_frame_t *cfp) {}
+static inline void rb_zjit_spill_frame(const rb_execution_context_t *ec, rb_control_frame_t *cfp) {}
 static inline const zjit_jit_frame_t *CFP_ZJIT_FRAME(const rb_control_frame_t *cfp) { return NULL; }
 #endif // #if USE_ZJIT
 

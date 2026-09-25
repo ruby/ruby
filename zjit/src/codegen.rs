@@ -1097,10 +1097,23 @@ fn gen_ccall_with_frame(
 
     // Can't use gen_prepare_non_leaf_call() because we need to adjust the SP
     // to account for the receiver and arguments (and block arguments if any)
-    gen_write_jit_frame(asm, state, 0);
+    // The map describes the frame as it is *after* the call consumes recv and args,
+    // like gen_send_iseq_direct() does, so it never claims slots the callee owns.
+    // Anchor the map on a private copy of the SP register rather than on cfp->sp:
+    // these callees can run arbitrary Ruby -- an implicit to_hash conversion, say --
+    // and move cfp->sp before raising, which would shift every write. Same reasoning
+    // as gen_prepare_non_leaf_call().
+    let mut stack_map = vec![StackMapEntry::BasePtr {
+        slot_index: jit.base_ptr_slot_index(state.depth),
+        stack_size: caller_stack_size.try_into().expect("stack size overflow"),
+    }];
+    stack_map.extend(build_stack_map(jit, function, &state.with_stack_size(caller_stack_size)));
+    let jit_frame = gen_write_jit_frame(asm, state, stack_map.len());
     gen_save_sp(asm, caller_stack_size);
+    asm_comment!(asm, "save SP as the stack map anchor");
+    asm.mov(Opnd::mem(64, NATIVE_BASE_PTR, jit.base_ptr_slot_native_base_ptr_offset()), SP);
     gen_spill_stack(jit, asm, function, state);
-    gen_spill_locals(jit, asm, state);
+    asm.stack_map(stack_map, jit_frame, state.depth);
 
     let block_handler_specval = if let Some(BlockHandler::BlockIseq(block_iseq)) = block {
         // Change cfp->block_code in the current frame. See vm_caller_setup_arg_block().
@@ -1193,10 +1206,21 @@ fn gen_ccall_variadic(
 
     // Can't use gen_prepare_non_leaf_call() because we need to adjust the SP
     // to account for the receiver and arguments (like gen_ccall_with_frame does)
-    gen_write_jit_frame(asm, state, 0);
+    // Anchor the map on a private copy of the SP register rather than on cfp->sp:
+    // these callees can run arbitrary Ruby -- an implicit to_hash conversion, say --
+    // and move cfp->sp before raising, which would shift every write. Same reasoning
+    // as gen_prepare_non_leaf_call().
+    let mut stack_map = vec![StackMapEntry::BasePtr {
+        slot_index: jit.base_ptr_slot_index(state.depth),
+        stack_size: caller_stack_size.try_into().expect("stack size overflow"),
+    }];
+    stack_map.extend(build_stack_map(jit, function, &state.with_stack_size(caller_stack_size)));
+    let jit_frame = gen_write_jit_frame(asm, state, stack_map.len());
     gen_save_sp(asm, caller_stack_size);
+    asm_comment!(asm, "save SP as the stack map anchor");
+    asm.mov(Opnd::mem(64, NATIVE_BASE_PTR, jit.base_ptr_slot_native_base_ptr_offset()), SP);
     gen_spill_stack(jit, asm, function, state);
-    gen_spill_locals(jit, asm, state);
+    asm.stack_map(stack_map, jit_frame, state.depth);
 
     let block_handler_specval = if let Some(BlockHandler::BlockIseq(blockiseq)) = block {
         gen_block_handler_specval(asm, blockiseq)
@@ -1686,8 +1710,6 @@ fn gen_push_inline_frame(
     gen_write_jit_frame(asm, state, 0);
     gen_save_sp(asm, stack_size);
 
-    gen_spill_locals(jit, asm, state);
-
     // This mirrors vm_caller_setup_arg_block() for the `blockiseq != NULL` case.
     // The HIR specialization guards ensure we will only reach here for literal blocks,
     // not &block forwarding, &:foo, etc. These are rejected in `type_specialize` by
@@ -1834,7 +1856,6 @@ fn gen_send_iseq_direct(
     let jit_frame = gen_write_jit_frame(asm, state, stack_map.len());
     gen_save_sp(asm, stack_size);
 
-    gen_spill_locals(jit, asm, state);
     asm.stack_map(stack_map, jit_frame, state.depth);
 
     // This mirrors vm_caller_setup_arg_block().
@@ -2088,7 +2109,6 @@ fn gen_invoke_block_iseq_direct(
     let jit_frame = gen_write_jit_frame(asm, state, stack_map.len());
     gen_save_sp(asm, stack_size);
 
-    gen_spill_locals(jit, asm, state);
     asm.stack_map(stack_map, jit_frame, state.depth);
 
     gen_push_frame(asm, args.len(), state, ControlFrame {
@@ -3394,31 +3414,20 @@ fn cfp_jit_return_for_depth(asm: &mut Assembler, depth: InlineDepth) -> Opnd {
     }
 }
 
-fn jit_frame_next_pc(state: &FrameState) -> *const VALUE {
-    let opcode: usize = state.get_opcode().try_into().unwrap();
-    unsafe { state.pc.offset(insn_len(opcode) as isize) }
-}
-
-fn jit_frame_for_state(state: &FrameState, stack_map_size: usize) -> *const zjit_jit_frame {
-    JITFrame::new_iseq(jit_frame_next_pc(state), state.iseq, stack_map_size)
-}
-
-/// Save only the PC to CFP. Use this when you need to call gen_save_sp()
-/// immediately after with a custom stack size (e.g., gen_ccall_with_frame
-/// adjusts SP to exclude receiver and arguments).
+/// Generate a cfp->jit_return bump point
 fn gen_write_jit_frame(asm: &mut Assembler, state: &FrameState, stack_map_size: usize) -> *const zjit_jit_frame {
+    // The JIT frame describes the frame in the middle of a VM instruction, and VM opcode handler
+    // bump PC first thing on entry. So we put an advanced PC in the JIT frame.
+    fn jit_frame_next_pc(state: &FrameState) -> *const VALUE {
+        let opcode: usize = state.get_opcode().try_into().unwrap();
+        unsafe { state.pc.add(insn_len(opcode).to_usize()) }
+    }
+
     gen_incr_counter(asm, Counter::vm_write_jit_frame_count);
     asm_comment!(asm, "save JITFrame to CFP");
-    let jit_frame = jit_frame_for_state(state, stack_map_size);
+    let jit_frame = JITFrame::new_iseq(jit_frame_next_pc(state), state.iseq, stack_map_size);
     asm.mov(Opnd::mem(64, NATIVE_BASE_PTR, jit_frame_slot_offset(state.depth)), Opnd::const_ptr(jit_frame));
 
-    // CFP_PC for a live JIT frame routes through the JITFrame on the native
-    // stack (cfp->jit_return points at this frame's slot), so we don't need to
-    // touch cfp->pc here. Poisoning cfp->pc with PC_POISON would actively
-    // break the case where rb_zjit_materialize_frames() previously copied
-    // jit_frame->pc into cfp->pc and cleared cfp->jit_return: the JIT keeps
-    // running, lands on this routine again, and the poison would replace
-    // the valid materialized pc behind the GC's back.
     jit_frame
 }
 
@@ -3469,16 +3478,6 @@ fn gen_save_sp(asm: &mut Assembler, stack_size: usize) {
     asm.mov(cfp_sp, sp_addr);
 }
 
-/// Spill locals onto the stack.
-fn gen_spill_locals(jit: &JITState, asm: &mut Assembler, state: &FrameState) {
-    // TODO: Avoid spilling locals that have been spilled before and not changed.
-    gen_incr_counter(asm, Counter::vm_write_locals_count);
-    asm_comment!(asm, "spill locals");
-    for (idx, &insn_id) in state.locals().enumerate() {
-        asm.mov(Opnd::mem(64, SP, (-local_idx_to_ep_offset(state.iseq, idx) - 1) * SIZEOF_VALUE_I32), jit.get_opnd(insn_id));
-    }
-}
-
 /// Spill the virtual stack onto the stack.
 fn gen_spill_stack(jit: &JITState, asm: &mut Assembler, function: &Function, state: &FrameState) {
     // This function does not call gen_save_sp() at the moment because
@@ -3487,7 +3486,8 @@ fn gen_spill_stack(jit: &JITState, asm: &mut Assembler, function: &Function, sta
     asm_comment!(asm, "spill stack");
 
     let mut offset = state.stack_size() as i32;
-    for entry in build_stack_map(jit, function, state) {
+    let mut stack_map_iter = build_stack_map(jit, function, state).into_iter();
+    while let Some(entry) = stack_map_iter.next() {
         match entry {
             StackMapEntry::Opnd(opnd) => {
                 offset -= 1;
@@ -3495,6 +3495,18 @@ fn gen_spill_stack(jit: &JITState, asm: &mut Assembler, function: &Function, sta
             }
             StackMapEntry::Skip(skip) => {
                 offset -= skip as i32;
+            }
+            StackMapEntry::LocalModifier => {
+                // HIR's own local stores write the locals, so don't write this one here --
+                // but its slot still has to be accounted for, or the entries that follow
+                // (a caller frame's operand stack, when frames are inlined) land too high.
+                offset -= 1;
+                _ = stack_map_iter.next();
+            }
+            StackMapEntry::PrevFrame => {
+                // The inlined callee's receiver slot. Like Skip(1), but it also
+                // switches frames on the decoder side.
+                offset -= 1;
             }
             // Only gen_prepare_non_leaf_call() prepends this, and it doesn't spill.
             StackMapEntry::BasePtr { .. } => unreachable!("build_stack_map() does not emit BasePtr"),
@@ -3504,13 +3516,16 @@ fn gen_spill_stack(jit: &JITState, asm: &mut Assembler, function: &Function, sta
 
 /// Prepare for VM fallback helpers that read arguments from the VM stack.
 ///
-/// Direct JIT-to-JIT calls keep cfp->sp lazy, so this must publish SP before
-/// writing stack slots. Otherwise spilling the stack can overwrite frame
-/// metadata below the real VM-stack base.
+/// These helpers consume the receiver and arguments off the VM stack and push the
+/// callee's frame over those same slots, so by the time we unwind the callee owns
+/// them: its locals sit where our arguments were, and when its local table is
+/// smaller than the number of pushed arguments (e.g. a rest parameter collecting a
+/// splat), its env data (flags/specval/me) lands inside the region our operand
+/// stack claims. Materializing our operand stack back over that would corrupt the
+/// callee's frame, so spill the stack directly and have the stack map skip over it.
+/// gen_send_without_block_direct() avoids a stack map entirely for the same reason.
 fn gen_prepare_fallback_call(jit: &JITState, asm: &mut Assembler, function: &Function, state: &FrameState) {
-    gen_write_jit_frame(asm, state, 0);
-    gen_save_sp(asm, state.stack_size());
-    gen_spill_locals(jit, asm, state);
+    gen_prepare_non_leaf_call_with_operand_stack(jit, asm, function, state, OperandStack::AlreadySpilled);
     gen_spill_stack(jit, asm, function, state);
 }
 
@@ -3521,42 +3536,97 @@ fn build_stack_map(jit: &JITState, function: &Function, state: &FrameState) -> V
     let mut stack = Vec::new();
     let mut current_state = state.clone();
     loop {
-        stack.extend(current_state.stack().rev().copied().map(|insn_id| {
+        let to_entry = |insn_id| {
             let opnd = jit.get_opnd(insn_id);
             assert!(
                 matches!(opnd, Opnd::Value(_) | Opnd::VReg { .. }),
                 "FrameState should only reference Opnd::Value or Opnd::VReg, but got: {opnd:?}",
             );
             StackMapEntry::Opnd(opnd)
-        }));
+        };
+
+        // Operand stack, top-down.
+        stack.extend(current_state.stack().rev().copied().map(to_entry));
+        // Frame environment data (me/cref, specval, flags) already lives in memory.
+        stack.push(StackMapEntry::Skip(VM_ENV_DATA_SIZE.to_usize()));
+        // Locals, top-down (local[L-1] .. local[0]).
+        let spilled_locals = current_state.spilled_locals();
+        let mut run_of_spilled_locals = 0;
+        for (idx, &insn_id) in current_state.locals().enumerate().rev() {
+            // Skip spilled slots which are already initialized on entry.
+            if spilled_locals.get(idx) {
+                run_of_spilled_locals += 1;
+            } else {
+                if run_of_spilled_locals > 0 {
+                    stack.push(StackMapEntry::Skip(run_of_spilled_locals));
+                    run_of_spilled_locals = 0;
+                }
+                stack.push(StackMapEntry::LocalModifier);
+                stack.push(to_entry(insn_id));
+            }
+        }
+        if run_of_spilled_locals > 0 {
+            stack.push(StackMapEntry::Skip(run_of_spilled_locals));
+        }
 
         let Some(caller) = current_state.caller() else {
             break;
         };
-        stack.push(StackMapEntry::Skip(inline_frame_stack_gap(current_state.iseq)));
+        // Cross into the caller's frame. This moves the cursor past the callee's
+        // receiver slot, which sits below its local table -- there is always a
+        // receiver there because we currently only inline through sends -- and
+        // tells the decoder to consult the caller's env from here on.
+        stack.push(StackMapEntry::PrevFrame);
         current_state = function.frame_state(caller);
     }
     stack
 }
 
-fn inline_frame_stack_gap(iseq: IseqPtr) -> usize {
-    // The extra slot is for the callee's receiver below its local table.
-    // We currently never map out the stack for `invokeblock`, which doesn't
-    // put a receiver on cfp->sp stack.
-    1 + unsafe { get_iseq_body_local_table_size(iseq) }.to_usize() + VM_ENV_DATA_SIZE.to_usize()
+/// Whether the stack map should carry this frame's own operand stack values.
+#[derive(Clone, Copy, PartialEq)]
+enum OperandStack {
+    /// The operand stack lives in registers and native stack slots, so the stack
+    /// map describes it and materialization writes it back.
+    Describe,
+    /// The operand stack is already spilled to VM stack memory by the caller of
+    /// this routine, so the stack map only moves the cursor past it. Use this when
+    /// the callee may take ownership of those slots; see gen_prepare_fallback_call().
+    AlreadySpilled,
 }
 
 /// Prepare for calling a C function that may call an arbitrary method.
 /// Use gen_prepare_leaf_call_with_gc() if the method is leaf but allocates objects.
 fn gen_prepare_non_leaf_call(jit: &JITState, asm: &mut Assembler, function: &Function, state: &FrameState) {
+    gen_prepare_non_leaf_call_with_operand_stack(jit, asm, function, state, OperandStack::Describe);
+}
+
+fn gen_prepare_non_leaf_call_with_operand_stack(
+    jit: &JITState,
+    asm: &mut Assembler,
+    function: &Function,
+    state: &FrameState,
+    operand_stack: OperandStack,
+) {
     // Anchor the stack map on a private copy of SP rather than on cfp->sp. The callee is free to
     // use the stack map after pushing through and moving cfp->sp (e.g. rb_funcall() + a raise in
     // vm_callee_setup_arg()).
+    let stack_size = state.stack_size();
     let mut stack_map = vec![StackMapEntry::BasePtr {
         slot_index: jit.base_ptr_slot_index(state.depth),
-        stack_size: state.stack_size().try_into().expect("stack size overflow"),
+        stack_size: stack_size.try_into().expect("stack size overflow"),
     }];
-    stack_map.extend(build_stack_map(jit, function, state));
+    let frame_entries = build_stack_map(jit, function, state);
+    match operand_stack {
+        OperandStack::Describe => stack_map.extend(frame_entries),
+        OperandStack::AlreadySpilled => {
+            // build_stack_map() emits this frame's operand stack first, top-down,
+            // one entry per slot. Replace those entries with a cursor skip.
+            if stack_size > 0 {
+                stack_map.push(StackMapEntry::Skip(stack_size));
+            }
+            stack_map.extend(frame_entries.into_iter().skip(stack_size));
+        }
+    }
     let jit_frame = gen_prepare_call_with_gc(asm, state, false, stack_map.len());
 
     // NOTE(alan): This store can be done once per CFP switch, but analysis is required
@@ -3567,9 +3637,6 @@ fn gen_prepare_non_leaf_call(jit: &JITState, asm: &mut Assembler, function: &Fun
     // Remember the stack map in case it raises an exception
     // and the interpreter uses the stack for handling the exception
     asm.stack_map(stack_map, jit_frame, state.depth);
-
-    // Spill locals in case the method looks at caller Bindings
-    gen_spill_locals(jit, asm, state);
 }
 
 /// Frame metadata written by gen_push_frame()
@@ -3727,21 +3794,19 @@ fn build_side_exit(jit: &JITState, function: &Function, state: &FrameState) -> S
         stack,
         locals,
         iseq: state.iseq,
-        stack_map: build_caller_stack_map(jit, function, state),
+        stack_map: build_stackmap_for_sidexit(jit, function, state),
         recompile: None,
     }
 }
 
-fn build_caller_stack_map(jit: &JITState, function: &Function, state: &FrameState) -> Option<StackMap> {
-    let caller = state.caller()?;
-    let caller_state = function.frame_state(caller);
-    let stack_map = build_stack_map(jit, function, &caller_state);
+fn build_stackmap_for_sidexit(jit: &JITState, function: &Function, state: &FrameState) -> Option<StackMap> {
+    let stack_map = build_stack_map(jit, function, state);
     if stack_map.is_empty() {
         return None;
     }
 
-    let jit_frame = jit_frame_for_state(&caller_state, stack_map.len());
-    Some(StackMap::new(stack_map, jit_frame, caller_state.depth))
+    let jit_frame = JITFrame::new_iseq(state.pc, state.iseq, stack_map.len());
+    Some(StackMap::new(stack_map, jit_frame, state.depth))
 }
 
 #[cfg(target_arch = "x86_64")]
@@ -4150,13 +4215,6 @@ pub fn gen_materialize_exit_trampoline(cb: &mut CodeBlock, exit_trampoline: Code
 
     let mut asm = Assembler::new();
     asm.new_block_without_id("materialize_exit_trampoline");
-
-    asm_comment!(asm, "clear JITFrame materialized by exit code");
-    asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_JIT_RETURN), 0.into());
-    // Clear cfp->block_code since it may have been left uninitialized by JITFrame mechanisms.
-    // Zero is the right value because we're dealing with the top most frame.
-    // Non-zero values are only set before pushing a frame.
-    asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_BLOCK_CODE), 0.into());
 
     asm_comment!(asm, "materialize ZJIT frames");
     asm_ccall!(asm, rb_zjit_materialize_frames, EC, CFP);
