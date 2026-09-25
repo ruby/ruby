@@ -25640,33 +25640,34 @@ mod hir_opt_tests {
         bb3(v9:BasicObject, v10:BasicObject):
           v17:Fixnum[1] = Const Value(1)
           PatchPoint MethodRedefined(Integer@0x1008, ===@0x1010, cme:0x1018)
-          v74:BasicObject = CCallWithFrame v17, :Integer#===@0x1040, v10
-          v22:CBool = Test v74
+          v75:Fixnum = GuardType v10, Fixnum
+          v76:BoolExact = FixnumEq v17, v75
+          v22:CBool = Test v76
           CondBranch v22, bb4(), bb6()
         bb4():
-          PatchPoint MethodRedefined(Object@0x1048, foo@0x1050, cme:0x1058)
-          v76:ObjectSubclass[class_exact*:Object@VALUE(0x1048)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1048)] recompile
-          v77:Fixnum[1] = Const Value(1)
+          PatchPoint MethodRedefined(Object@0x1040, foo@0x1048, cme:0x1050)
+          v78:ObjectSubclass[class_exact*:Object@VALUE(0x1040)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1040)] recompile
+          v79:Fixnum[1] = Const Value(1)
           CheckInterrupts
-          Return v77
+          Return v79
         bb6():
           v27:Fixnum[2] = Const Value(2)
           PatchPoint MethodRedefined(Integer@0x1008, ===@0x1010, cme:0x1018)
-          v80:BasicObject = CCallWithFrame v27, :Integer#===@0x1040, v10
-          v32:CBool = Test v80
+          v84:BoolExact = FixnumEq v27, v75
+          v32:CBool = Test v84
           CondBranch v32, bb5(), bb7()
         bb5():
-          PatchPoint MethodRedefined(Object@0x1048, bar@0x1080, cme:0x1088)
-          v82:ObjectSubclass[class_exact*:Object@VALUE(0x1048)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1048)] recompile
-          v83:Fixnum[2] = Const Value(2)
+          PatchPoint MethodRedefined(Object@0x1040, bar@0x1078, cme:0x1080)
+          v86:ObjectSubclass[class_exact*:Object@VALUE(0x1040)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1040)] recompile
+          v87:Fixnum[2] = Const Value(2)
           CheckInterrupts
-          Return v83
+          Return v87
         bb7():
-          PatchPoint MethodRedefined(Object@0x1048, baz@0x10b0, cme:0x10b8)
-          v85:ObjectSubclass[class_exact*:Object@VALUE(0x1048)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1048)] recompile
-          v86:Fixnum[3] = Const Value(3)
+          PatchPoint MethodRedefined(Object@0x1040, baz@0x10a8, cme:0x10b0)
+          v89:ObjectSubclass[class_exact*:Object@VALUE(0x1040)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1040)] recompile
+          v90:Fixnum[3] = Const Value(3)
           CheckInterrupts
-          Return v86
+          Return v90
         ");
     }
 }
