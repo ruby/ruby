@@ -2750,7 +2750,7 @@ fn gen_object_alloc_class(jit: &mut JITState, asm: &mut Assembler, function: &Fu
         let alloc_func = unsafe { rb_zjit_class_get_alloc_func(class) };
         assert!(alloc_func.is_some(), "class {} passed to ObjectAllocClass must have an allocator", get_class_name(class));
         asm_comment!(asm, "call allocator for class {}", get_class_name(class));
-        asm.count_call_to(&format!("{}::allocator", get_class_name(class)));
+        asm.count_call_to_with(|| format!("{}::allocator", get_class_name(class)));
         asm.ccall(alloc_func.unwrap() as *const u8, vec![class.into()])
     }
 }
