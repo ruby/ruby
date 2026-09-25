@@ -5308,6 +5308,21 @@ realpath_rec(long *prefixlenp, VALUE *resolvedp, const char *unresolved, VALUE f
     return 0;
 }
 
+#ifdef DOSISH_DRIVE_LETTER
+/* expand_path on Windows builds the result in the code page of the
+ * argument encoding, which may not represent the current directory */
+static VALUE
+ospath_for_expand(VALUE path)
+{
+    switch (ENCODING_GET(path)) {
+      case ENCINDEX_ASCII_8BIT:
+      case ENCINDEX_US_ASCII:
+        return rb_enc_associate_index(rb_str_dup(path), rb_filesystem_encindex());
+    }
+    return TO_OSPATH(path);
+}
+#endif
+
 static VALUE
 rb_check_realpath_emulate(VALUE basedir, VALUE path, rb_encoding *origenc, enum rb_realpath_mode mode)
 {
@@ -5321,6 +5336,23 @@ rb_check_realpath_emulate(VALUE basedir, VALUE path, rb_encoding *origenc, enum 
     char *path_names = NULL, *basedir_names = NULL, *curdir_names = NULL;
     char *ptr, *prefixptr = NULL, *pend;
     long len;
+
+#ifdef DOSISH_DRIVE_LETTER
+    VALUE rootdir = path;
+    RSTRING_GETMEM(path, ptr, len);
+    if (!NIL_P(basedir) && skipprefixroot(ptr, ptr + len, rb_enc_get(path)) == ptr) {
+        FilePathValue(basedir);
+        rootdir = basedir;
+    }
+    RSTRING_GETMEM(rootdir, ptr, len);
+    if (len >= 2 && has_drive_letter(ptr) && (len == 2 || !isdirsep(ptr[2]))) {
+        /* Expand a drive-relative path or basedir against the current
+         * directory of the drive, as File.absolute_path does */
+        if (!NIL_P(basedir)) basedir = ospath_for_expand(rb_get_path(basedir));
+        path = rb_file_absolute_path(ospath_for_expand(path), basedir);
+        basedir = Qnil;
+    }
+#endif
 
     unresolved_path = rb_str_dup_frozen(path);
 
