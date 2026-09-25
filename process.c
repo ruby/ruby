@@ -1752,69 +1752,22 @@ export_dup(VALUE str)
 #endif
 
 #if USE_SPAWNV
-#if defined(_WIN32)
-#define proc_spawn_cmd_internal(argv, prog) rb_w32_uaspawn(P_NOWAIT, (prog), (argv))
-#else
-static rb_pid_t
-proc_spawn_cmd_internal(char **argv, char *prog)
-{
-    char fbuf[MAXPATHLEN];
-    rb_pid_t status;
-
-    if (!prog)
-        prog = argv[0];
-    prog = dln_find_exe_r(prog, 0, fbuf, sizeof(fbuf));
-    if (!prog)
-        return -1;
-
-    before_exec();
-    status = spawnv(P_NOWAIT, prog, (const char **)argv);
-    if (status == -1 && errno == ENOEXEC) {
-        *argv = (char *)prog;
-        *--argv = (char *)"sh";
-        status = spawnv(P_NOWAIT, "/bin/sh", (const char **)argv);
-        after_exec();
-        if (status == -1) errno = ENOEXEC;
-    }
-    return status;
-}
-#endif
-
 static rb_pid_t
 proc_spawn_cmd(char **argv, VALUE prog, struct rb_execarg *eargp)
 {
     rb_pid_t pid = -1;
 
     if (argv[0]) {
-#if defined(_WIN32)
         DWORD flags = 0;
         if (eargp->new_pgroup_given && eargp->new_pgroup_flag) {
             flags = CREATE_NEW_PROCESS_GROUP;
         }
         pid = rb_w32_uaspawn_flags(P_NOWAIT, prog ? RSTRING_PTR(prog) : 0, argv, flags);
-#else
-        pid = proc_spawn_cmd_internal(argv, prog ? RSTRING_PTR(prog) : 0);
-#endif
     }
     return pid;
 }
 
-#if defined(_WIN32)
 #define proc_spawn_sh(str) rb_w32_uspawn(P_NOWAIT, (str), 0)
-#else
-static rb_pid_t
-proc_spawn_sh(char *str)
-{
-    char fbuf[MAXPATHLEN];
-    rb_pid_t status;
-
-    char *shell = dln_find_exe_r("sh", 0, fbuf, sizeof(fbuf));
-    before_exec();
-    status = spawnl(P_NOWAIT, (shell ? shell : "/bin/sh"), "sh", "-c", str, (char*)NULL);
-    after_exec();
-    return status;
-}
-#endif
 #endif
 
 static VALUE
