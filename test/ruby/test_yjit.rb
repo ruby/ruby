@@ -1256,9 +1256,12 @@ class TestYJIT < Test::Unit::TestCase
 
       return :not_compiled1 unless eval('compiled_iseq? { nil.to_i }')
 
-      RubyVM::YJIT.max_compile_time_ns = RubyVM::YJIT.total_compile_time_ns + 1_000_000
+      # Compilation between reading the total and setting the budget eats into it, so be generous here
+      RubyVM::YJIT.max_compile_time_ns = RubyVM::YJIT.total_compile_time_ns + 1_000_000_000
 
       return :not_compiled2 unless eval('compiled_iseq? { nil.to_i }')
+
+      RubyVM::YJIT.max_compile_time_ns = RubyVM::YJIT.total_compile_time_ns + 1_000_000
       compile_for(2_000_000)
 
       return :not_over unless RubyVM::YJIT.total_compile_time_ns >= RubyVM::YJIT.max_compile_time_ns
