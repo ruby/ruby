@@ -21,7 +21,7 @@ use crate::profile::reset_profiles_remaining;
 use crate::perf;
 use crate::state::{rb_zjit_compiling_p, ZJITState};
 use crate::stats::{CompileError, exit_counter_for_compile_error, exit_counter_for_unhandled_hir_insn, incr_counter, incr_counter_by, send_fallback_counter, send_fallback_counter_for_method_type, send_fallback_counter_for_super_method_type, send_fallback_counter_ptr_for_opcode, send_fallback_counter_for_optimized_method_type};
-use crate::stats::{counter_ptr, with_time_stat, trace_compile_phase, Counter, Counter::{compile_time_ns, exit_compile_error}};
+use crate::stats::{counter_ptr, with_time_stat, trace_compile_phase, trace_compile_phase_with, Counter, Counter::{compile_time_ns, exit_compile_error}};
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
 use crate::backend::lir::{self, Assembler, CArgLocation, C_ARG_OPNDS, C_RET_OPND, CFP, EC, NATIVE_BASE_PTR, NATIVE_STACK_PTR, Opnd, SP, SideExit, SideExitRecompile, SideExitTarget, StackMap, StackMapEntry, Target, asm_ccall, asm_comment};
 use crate::hir::{self, iseq_to_hir, BlockId, Invariant, RangeType, SideExitReason::{self, *}, SpecialBackrefSymbol, SpecialObjectType};
@@ -238,8 +238,7 @@ fn gen_iseq_entry_point(cb: &mut CodeBlock, iseq: IseqPtr, jit_exception: bool) 
         return gen_exception_handler_counter(cb);
     }
 
-    let iseq_name = iseq_get_location(iseq, 0);
-    trace_compile_phase(&iseq_name, || {
+    trace_compile_phase_with(|| iseq_get_location(iseq, 0), || {
         // Compile ISEQ into High-level IR
         let function = crate::stats::with_time_stat(Counter::compile_hir_time_ns, || compile_iseq(iseq).inspect_err(|_| {
             incr_counter!(failed_iseq_count);
@@ -356,7 +355,7 @@ fn gen_iseq(cb: &mut CodeBlock, iseq: IseqPtr, function: Option<&Function>) -> R
     // from a stub hit -- wrap in a trace event covering the full compile.
     let mut version = IseqVersion::new(iseq);
     let code_ptrs = if function.is_none() {
-        trace_compile_phase(&iseq_get_location(iseq, 0), || gen_iseq_body(cb, iseq, version, function))
+        trace_compile_phase_with(|| iseq_get_location(iseq, 0), || gen_iseq_body(cb, iseq, version, function))
     } else {
         gen_iseq_body(cb, iseq, version, function)
     };
