@@ -88,7 +88,6 @@ int rb_ascii8bit_appendable_encoding_index(rb_encoding *enc, unsigned int code);
 VALUE rb_str_include(VALUE str, VALUE arg);
 VALUE rb_str_byte_substr(VALUE str, VALUE beg, VALUE len);
 VALUE rb_str_substr_two_fixnums(VALUE str, VALUE beg, VALUE len, int empty);
-VALUE rb_str_tmp_frozen_no_embed_acquire(VALUE str);
 void rb_str_make_embedded(VALUE);
 VALUE rb_str_upto_each(VALUE, VALUE, int, int (*each)(VALUE, VALUE), VALUE);
 size_t rb_str_size_as_embedded(VALUE);
@@ -115,6 +114,7 @@ RUBY_SYMBOL_EXPORT_BEGIN
 /* string.c (export) */
 VALUE rb_str_tmp_frozen_acquire(VALUE str);
 void rb_str_tmp_frozen_release(VALUE str, VALUE tmp);
+VALUE rb_str_tmp_frozen_no_embed_acquire(VALUE str);
 VALUE rb_setup_fake_str(struct RString *fake_str, const char *name, long len, rb_encoding *enc);
 RUBY_SYMBOL_EXPORT_END
 

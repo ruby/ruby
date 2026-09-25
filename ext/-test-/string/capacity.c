@@ -25,10 +25,19 @@ bug_str_tmp_frozen_acquire_release(VALUE klass, VALUE str)
     return str;
 }
 
+static VALUE
+bug_str_tmp_frozen_no_embed_acquire_release(VALUE klass, VALUE str)
+{
+    VALUE tmp = rb_str_tmp_frozen_no_embed_acquire(str);
+    rb_str_tmp_frozen_release(str, tmp);
+    return str;
+}
+
 void
 Init_string_capacity(VALUE klass)
 {
     rb_define_singleton_method(klass, "capacity", bug_str_capacity, 1);
     rb_define_singleton_method(klass, "rb_str_new_shared", bug_str_new_shared, 1);
     rb_define_singleton_method(klass, "tmp_frozen_acquire_release", bug_str_tmp_frozen_acquire_release, 1);
+    rb_define_singleton_method(klass, "tmp_frozen_no_embed_acquire_release", bug_str_tmp_frozen_no_embed_acquire_release, 1);
 }

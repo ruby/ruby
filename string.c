@@ -1608,6 +1608,9 @@ rb_str_tmp_frozen_no_embed_acquire(VALUE orig)
         RBASIC(str)->flags |= RBASIC(orig)->flags & STR_NOFREE;
         RBASIC(orig)->flags &= ~STR_NOFREE;
         STR_SET_SHARED(orig, str);
+        /* str was just allocated here, so orig is its only child and it is
+         * safe for rb_str_tmp_frozen_release to give the buffer back. */
+        FL_UNSET_RAW(str, STR_BORROWED);
         if (RB_OBJ_SHAREABLE_P(orig)) {
             RB_OBJ_SET_SHAREABLE(str);
             RUBY_ASSERT((rb_gc_verify_shareable(str), 1));
@@ -1639,7 +1642,7 @@ rb_str_tmp_frozen_release(VALUE orig, VALUE tmp)
 
             /* Unshare orig since the root (tmp) only has this one child. */
             FL_UNSET_RAW(orig, STR_SHARED);
-            RSTRING(orig)->as.heap.aux.capa = RSTRING(tmp)->as.heap.aux.capa;
+            RSTRING(orig)->as.heap.aux.capa = RSTRING(tmp)->as.heap.aux.capa + TERM_LEN(tmp) - TERM_LEN(orig);
             RBASIC(orig)->flags |= RBASIC(tmp)->flags & STR_NOFREE;
             RUBY_ASSERT(OBJ_FROZEN_RAW(tmp));
 
@@ -1656,8 +1659,13 @@ str_new_frozen(VALUE klass, VALUE orig)
     return str_new_frozen_buffer(klass, orig, TRUE);
 }
 
+/* Transfers ownership of orig's buffer to a new shared root string.
+ * termlen is the terminator length of the returned string, which may differ
+ * from orig's terminator length when the caller does not copy the encoding.
+ * The capacity is stored without the terminator, so it must be adjusted for
+ * the difference to keep the buffer size (capa + termlen) unchanged. */
 static VALUE
-heap_str_make_shared(VALUE klass, VALUE orig)
+heap_str_make_shared(VALUE klass, VALUE orig, int termlen)
 {
     RUBY_ASSERT(!STR_EMBED_P(orig));
     RUBY_ASSERT(!STR_SHARED_P(orig));
@@ -1666,7 +1674,7 @@ heap_str_make_shared(VALUE klass, VALUE orig)
     VALUE str = str_alloc_heap(klass);
     STR_SET_LEN(str, RSTRING_LEN(orig));
     RSTRING(str)->as.heap.ptr = RSTRING_PTR(orig);
-    RSTRING(str)->as.heap.aux.capa = RSTRING(orig)->as.heap.aux.capa;
+    RSTRING(str)->as.heap.aux.capa = RSTRING(orig)->as.heap.aux.capa + TERM_LEN(orig) - termlen;
     RBASIC(str)->flags |= RBASIC(orig)->flags & STR_NOFREE;
     RBASIC(orig)->flags &= ~STR_NOFREE;
     STR_SET_SHARED(orig, str);
@@ -1725,7 +1733,7 @@ str_new_frozen_buffer(VALUE klass, VALUE orig, int copy_encoding)
                 str = str_new(klass, RSTRING_PTR(orig), RSTRING_LEN(orig));
             }
             else {
-                str = heap_str_make_shared(klass, orig);
+                str = heap_str_make_shared(klass, orig, termlen);
             }
         }
     }
@@ -5862,7 +5870,7 @@ rb_str_drop_bytes(VALUE str, long len)
     }
     else {
         if (!STR_SHARED_P(str)) {
-            VALUE shared = heap_str_make_shared(rb_obj_class(str), str);
+            VALUE shared = heap_str_make_shared(rb_obj_class(str), str, TERM_LEN(str));
             rb_enc_cr_str_exact_copy(shared, str);
             OBJ_FREEZE(shared);
         }
