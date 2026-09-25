@@ -75,6 +75,18 @@ class Test_StringCapacity < Test::Unit::TestCase
     assert_equal(capacity, capa(s))
   end
 
+  def test_frozen_root_no_embed_capacity_with_multibyte_terminator
+    # This approximates heap strings returned by C extensions: non-embedded,
+    # not shared, and with an exactly-sized external buffer.
+    s = Bug::String.cstr_noembed(multibyte_terminator_string)
+    capacity = capa(s)
+    assert_operator(capacity, :>=, s.bytesize)
+
+    Bug::String.tmp_frozen_no_embed_acquire_release(s)
+
+    assert_equal(capacity, capa(s))
+  end
+
   private
 
   def capa(str)
