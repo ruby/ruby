@@ -60,6 +60,30 @@ RSpec.describe Bundler::Fetcher::Downloader do
         end
       end
 
+      context "when the redirect uri is on the same host but another port" do
+        let(:uri) { Gem::URI("https://username:password@www.uri-to-fetch.com/api/v2/endpoint") }
+
+        before { http_response["location"] = "https://www.uri-to-fetch.com:8443/api/v1/endpoint" }
+
+        it "should not set the user and password for the redirect uri" do
+          expect(subject).to receive(:fetch).with(uri, options, 0).and_call_original
+          expect(subject).to receive(:fetch).with(Gem::URI("https://www.uri-to-fetch.com:8443/api/v1/endpoint"), options, 1)
+          subject.fetch(uri, options, counter)
+        end
+      end
+
+      context "when the redirect uri is on the same host but another scheme" do
+        let(:uri) { Gem::URI("http://username:password@www.uri-to-fetch.com:8080/api/v2/endpoint") }
+
+        before { http_response["location"] = "https://www.uri-to-fetch.com:8080/api/v1/endpoint" }
+
+        it "should not set the user and password for the redirect uri" do
+          expect(subject).to receive(:fetch).with(uri, options, 0).and_call_original
+          expect(subject).to receive(:fetch).with(Gem::URI("https://www.uri-to-fetch.com:8080/api/v1/endpoint"), options, 1)
+          subject.fetch(uri, options, counter)
+        end
+      end
+
       context "when the redirect uri downgrades https to http" do
         let(:uri) { Gem::URI("https://username:password@www.uri-to-fetch.com/api/v2/endpoint") }
 

@@ -56,7 +56,7 @@ module Bundler
           if https?(uri) && !https?(new_uri)
             raise HTTPError, "Redirecting to a non-https URI is not allowed: #{URICredentialsFilter.credential_filtered_uri(new_uri)}"
           end
-          if new_uri.host == uri.host
+          if [new_uri.scheme, new_uri.host, new_uri.port] == [uri.scheme, uri.host, uri.port]
             new_uri.user = uri.user
             new_uri.password = uri.password
           end

@@ -654,6 +654,56 @@ class TestGemRemoteFetcher < Gem::TestCase
     assert_equal [url, "https://user:pass@gems.example.com/real"], fetcher.instance_variable_get(:@requested)
   end
 
+  def test_fetch_http_redirects_drop_userinfo_on_another_port
+    fetcher = Gem::RemoteFetcher.new nil
+    @fetcher = fetcher
+    url = "https://user:pass@gems.example.com/redirect"
+
+    def fetcher.request(uri, request_class, last_modified = nil)
+      (@requested ||= []) << uri.to_s
+      if @requested.size > 1
+        res = Gem::Net::HTTPOK.new nil, 200, nil
+        def res.body
+          "real_path"
+        end
+      else
+        res = Gem::Net::HTTPFound.new nil, 302, nil
+        res.add_field "Location", "https://gems.example.com:8443/real"
+      end
+      res
+    end
+
+    data = fetcher.fetch_http Gem::URI.parse(url)
+
+    assert_equal "real_path", data
+    assert_equal [url, "https://gems.example.com:8443/real"], fetcher.instance_variable_get(:@requested)
+  end
+
+  def test_fetch_http_redirects_drop_userinfo_on_another_scheme
+    fetcher = Gem::RemoteFetcher.new nil
+    @fetcher = fetcher
+    url = "http://user:pass@gems.example.com:8080/redirect"
+
+    def fetcher.request(uri, request_class, last_modified = nil)
+      (@requested ||= []) << uri.to_s
+      if @requested.size > 1
+        res = Gem::Net::HTTPOK.new nil, 200, nil
+        def res.body
+          "real_path"
+        end
+      else
+        res = Gem::Net::HTTPFound.new nil, 302, nil
+        res.add_field "Location", "https://gems.example.com:8080/real"
+      end
+      res
+    end
+
+    data = fetcher.fetch_http Gem::URI.parse(url)
+
+    assert_equal "real_path", data
+    assert_equal [url, "https://gems.example.com:8080/real"], fetcher.instance_variable_get(:@requested)
+  end
+
   def test_fetch_http_redirects_to_non_https_redacts_location
     fetcher = Gem::RemoteFetcher.new nil
     @fetcher = fetcher

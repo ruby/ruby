@@ -244,7 +244,8 @@ class Gem::RemoteFetcher
         raise FetchError.new("redirecting to non-https resource: #{Gem::Uri.redact(location)}", uri)
       end
       # see Gem::CompactIndexClient::HTTPFetcher#fetch
-      location.userinfo = uri.userinfo if location.host == uri.host && !location.userinfo
+      same_origin = [location.scheme, location.host, location.port] == [uri.scheme, uri.host, uri.port]
+      location.userinfo = uri.userinfo if same_origin && !location.userinfo
 
       fetch_http(location, last_modified, head, depth + 1)
     else
