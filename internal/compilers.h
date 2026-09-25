@@ -18,9 +18,6 @@
 #include "ruby/internal/has/warning.h"
 #include "ruby/backward/2/gcc_version_since.h"
 
-#define MSC_VERSION_SINCE(_)   RBIMPL_COMPILER_SINCE(MSVC, (_) / 100, (_) % 100, 0)
-#define MSC_VERSION_BEFORE(_)  RBIMPL_COMPILER_BEFORE(MSVC, (_) / 100, (_) % 100, 0)
-
 #ifndef __has_attribute
 # define __has_attribute(...) RBIMPL_HAS_ATTRIBUTE(__VA_ARGS__)
 #endif

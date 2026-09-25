@@ -28,7 +28,7 @@
 #include "ruby/internal/config.h"
 #include <limits.h>             /* for CHAR_BITS */
 #include <stdint.h>             /* for uintptr_t */
-#include "internal/compilers.h" /* for MSC_VERSION_SINCE */
+#include "internal/compilers.h" /* for __has_builtin */
 
 #ifdef _MSC_VER
 # include <stdlib.h>            /* for _byteswap_uint64 */
