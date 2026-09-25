@@ -4202,7 +4202,10 @@ rb_f_loop_size(VALUE self, VALUE args, VALUE eobj)
  *
  *  Classes, modules, and objects are interrelated. In the diagram
  *  that follows, the vertical arrows represent inheritance, and the
- *  parentheses metaclasses. All metaclasses are instances
+ *  parentheses denote metaclasses (singleton classes). Horizontal
+ *  arrows (<tt>---></tt>) point from an object to its class, as in
+ *  <tt>obj--->OtherClass</tt>, or from a class to its singleton class,
+ *  as in <tt>OtherClass--->(OtherClass)</tt>. All metaclasses are instances
  *  of the class `Class'.
  *                             +---------+             +-...
  *                             |         |             |
