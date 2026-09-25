@@ -56,9 +56,6 @@ void *xrealloc();
 #define free(x) xfree(x)
 
 #include <stdio.h>
-#if defined(_WIN32)
-#include "missing/file.h"
-#endif
 #include <sys/types.h>
 #include <sys/stat.h>
 

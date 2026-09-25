@@ -25,10 +25,6 @@
 #include <math.h>
 #include <stdio.h>
 
-#ifdef _WIN32
-# include "missing/file.h"
-#endif
-
 #include "internal.h"
 #include "internal/sanitizers.h"
 #include "internal/imemo.h"
