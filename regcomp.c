@@ -223,6 +223,10 @@ unset_addr_list_add(UnsetAddrList* uslist, int offset, struct _Node* node)
 static int
 add_opcode(regex_t* reg, int opcode)
 {
+  /* Every instruction passes here, so this is where a program that would
+     outgrow its offset type is stopped, while it is still being emitted. */
+  if (reg->used > MAX_COMPILED_PROGRAM_SIZE)
+    return ONIGERR_TOO_BIG_COMPILED_PROGRAM;
   BBUF_ADD1(reg, opcode);
   return 0;
 }
