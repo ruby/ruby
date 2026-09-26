@@ -24,11 +24,11 @@
 #define RARRAY_FAKEARY          FL_USER19
 
 /* array.c */
-VALUE rb_ary_hash_values(long len, const VALUE *elements);
+VALUE rb_ary_hash_values(rb_long_t len, const VALUE *elements);
 VALUE rb_ary_last(int, const VALUE *, VALUE);
-void rb_ary_set_len(VALUE, long);
+void rb_ary_set_len(VALUE, rb_long_t);
 void rb_ary_delete_same(VALUE, VALUE);
-VALUE rb_ary_hidden_new_fill(long capa);
+VALUE rb_ary_hidden_new_fill(rb_long_t capa);
 VALUE rb_ary_at(VALUE, VALUE);
 size_t rb_ary_memsize(VALUE);
 VALUE rb_to_array_type(VALUE obj);
@@ -40,25 +40,25 @@ bool rb_ary_embeddable_p(VALUE ary);
 bool rb_ary_embedded_shared_root_p(VALUE ary);
 VALUE rb_ary_diff(VALUE ary1, VALUE ary2);
 VALUE rb_ary_compact_bang(VALUE ary);
-VALUE rb_ary_modify_expand(VALUE ary, long expand);
+VALUE rb_ary_modify_expand(VALUE ary, rb_long_t expand);
 RUBY_EXTERN VALUE rb_cArray_empty_frozen;
 
-static inline VALUE rb_ary_entry_internal(VALUE ary, long offset);
+static inline VALUE rb_ary_entry_internal(VALUE ary, rb_long_t offset);
 static inline bool ARY_PTR_USING_P(VALUE ary);
 
-VALUE rb_ary_tmp_new_from_values(VALUE, long, const VALUE *);
+VALUE rb_ary_tmp_new_from_values(VALUE, rb_long_t, const VALUE *);
 VALUE rb_check_to_array(VALUE ary);
-VALUE rb_ary_behead(VALUE, long);
+VALUE rb_ary_behead(VALUE, rb_long_t);
 VALUE rb_ary_aref1(VALUE ary, VALUE i);
 
 struct rb_execution_context_struct;
-VALUE rb_ec_ary_new_from_values(struct rb_execution_context_struct *ec, long n, const VALUE *elts);
+VALUE rb_ec_ary_new_from_values(struct rb_execution_context_struct *ec, rb_long_t n, const VALUE *elts);
 
 // YJIT needs this function to never allocate and never raise
 static inline VALUE
-rb_ary_entry_internal(VALUE ary, long offset)
+rb_ary_entry_internal(VALUE ary, rb_long_t offset)
 {
-    long len = RARRAY_LEN(ary);
+    rb_long_t len = RARRAY_LEN(ary);
     const VALUE *ptr = RARRAY_CONST_PTR(ary);
     if (len == 0) return Qnil;
     if (offset < 0) {
@@ -114,7 +114,7 @@ ARY_SHARED_ROOT_P(VALUE ary)
     return FL_TEST_RAW(ary, RARRAY_SHARED_ROOT_FLAG);
 }
 
-static inline long
+static inline rb_long_t
 ARY_SHARED_ROOT_REFCNT(VALUE ary)
 {
     assert(ARY_SHARED_ROOT_P(ary));
@@ -139,7 +139,7 @@ ARY_SHARED_ROOT_REFCNT(VALUE ary)
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()
 RBIMPL_ATTR_ARTIFICIAL()
 static inline VALUE
-RARRAY_AREF(VALUE ary, long i)
+RARRAY_AREF(VALUE ary, rb_long_t i)
 {
     VALUE val;
     RBIMPL_ASSERT_TYPE(ary, RUBY_T_ARRAY);

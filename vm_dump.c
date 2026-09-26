@@ -1493,7 +1493,7 @@ rb_vm_bugreport(const void *ctx, FILE *errout)
     if (vm && !rb_during_gc()) {
         int i;
         VALUE name;
-        long len;
+        rb_long_t len;
         const int max_name_length = 1024;
 # define LIMITED_NAME_LENGTH(s) \
         (((len = RSTRING_LEN(s)) > max_name_length) ? max_name_length : (int)len)

@@ -79,7 +79,7 @@ is_notop_id2(ID id)
 }
 
 static VALUE
-enc_str_new(const char *ptr, long len, parser_encoding *enc)
+enc_str_new(const char *ptr, rb_long_t len, parser_encoding *enc)
 {
     return rb_enc_str_new(ptr, len, enc);
 }
@@ -169,13 +169,13 @@ enc_isspace(OnigCodePoint c, parser_encoding *enc)
 }
 
 static ID
-intern3(const char *name, long len, parser_encoding *enc)
+intern3(const char *name, rb_long_t len, parser_encoding *enc)
 {
     return rb_intern3(name, len, enc);
 }
 
 static int
-enc_symname_type(const char *name, long len, parser_encoding *enc, unsigned int allowed_attrset)
+enc_symname_type(const char *name, rb_long_t len, parser_encoding *enc, unsigned int allowed_attrset)
 {
     return rb_enc_symname_type(name, len, enc, allowed_attrset);
 }
@@ -285,7 +285,7 @@ static_id2sym(ID id)
     return (((VALUE)(id)<<RUBY_SPECIAL_SHIFT)|SYMBOL_FLAG);
 }
 
-static long
+static rb_long_t
 str_coderange_scan_restartable(const char *s, const char *e, parser_encoding *enc, int *cr)
 {
     return rb_str_coderange_scan_restartable(s, e, enc, cr);

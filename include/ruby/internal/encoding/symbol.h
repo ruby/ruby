@@ -42,7 +42,7 @@ RBIMPL_SYMBOL_EXPORT_BEGIN()
  *             is up  to you to avoid  memory leaks.  Think twice  before using
  *             it.
  */
-ID rb_intern3(const char *name, long len, rb_encoding *enc);
+ID rb_intern3(const char *name, rb_long_t len, rb_encoding *enc);
 
 RBIMPL_ATTR_NONNULL(())
 /**
@@ -66,7 +66,7 @@ int rb_enc_symname_p(const char *str, rb_encoding *enc);
  * @retval     1     It is a valid symbol name.
  * @retval     0     It is invalid as a symbol name.
  */
-int rb_enc_symname2_p(const char *name, long len, rb_encoding *enc);
+int rb_enc_symname2_p(const char *name, rb_long_t len, rb_encoding *enc);
 
 /**
  * Identical to  rb_check_id(), except it  takes a  pointer to a  memory region
@@ -79,7 +79,7 @@ int rb_enc_symname2_p(const char *name, long len, rb_encoding *enc);
  * @retval     0                  No such id ever existed in the history.
  * @retval     otherwise          The id that represents the given name.
  */
-ID rb_check_id_cstr(const char *ptr, long len, rb_encoding *enc);
+ID rb_check_id_cstr(const char *ptr, rb_long_t len, rb_encoding *enc);
 
 /**
  * Identical to rb_check_id_cstr(), except for the return type.  It can also be
@@ -93,7 +93,7 @@ ID rb_check_id_cstr(const char *ptr, long len, rb_encoding *enc);
  * @retval     RUBY_Qnil          No such id ever existed in the history.
  * @retval     otherwise          The id that represents the given name.
  */
-VALUE rb_check_symbol_cstr(const char *ptr, long len, rb_encoding *enc);
+VALUE rb_check_symbol_cstr(const char *ptr, rb_long_t len, rb_encoding *enc);
 
 RBIMPL_SYMBOL_EXPORT_END()
 

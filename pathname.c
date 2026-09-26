@@ -247,7 +247,7 @@ path_absolute_p(VALUE self)
 {
     VALUE path = get_strpath(self);
     const char *ptr = RSTRING_PTR(path);
-    long len = RSTRING_LEN(path);
+    rb_long_t len = RSTRING_LEN(path);
     if (len < 1) return Qfalse;
     if (drive_letter) {
         if (len >= 2 && ISALPHA(ptr[0]) && (ptr[1] == ':')) return Qtrue;
@@ -296,7 +296,7 @@ static VALUE
 path_sub_ext(VALUE self, VALUE repl)
 {
     VALUE path = get_strpath(self);
-    long len = RSTRING_LEN(path);
+    rb_long_t len = RSTRING_LEN(path);
     const char *ptr = RSTRING_PTR(path);
     const char *ext = ruby_enc_find_extname(ptr, &len, rb_enc_get(path));
     if (len > 0) {
@@ -316,7 +316,7 @@ path_sub_ext(VALUE self, VALUE repl)
 static VALUE
 chop_basename(VALUE self, VALUE path)
 {
-    long baselen, alllen = RSTRING_LEN(check_strpath(path));
+    rb_long_t baselen, alllen = RSTRING_LEN(check_strpath(path));
     if (alllen <= 0) return Qnil;
     rb_encoding *enc = rb_enc_get(path);
     const char *name = RSTRING_PTR(path);
@@ -356,7 +356,7 @@ split_names(VALUE self, VALUE path)
 static VALUE
 has_trailing_separator(VALUE self, VALUE path)
 {
-    long baselen, alllen = RSTRING_LEN(check_strpath(path));
+    rb_long_t baselen, alllen = RSTRING_LEN(check_strpath(path));
     if (alllen <= 0) return Qfalse;
     rb_encoding *enc = rb_enc_get(path);
     const char *name = RSTRING_PTR(path);
@@ -387,7 +387,7 @@ add_trailing_separator(VALUE self, VALUE path)
 static VALUE
 del_trailing_separator(VALUE self, VALUE path)
 {
-    long len = RSTRING_LEN(check_strpath(path));
+    rb_long_t len = RSTRING_LEN(check_strpath(path));
     if (len <= 0) return path;
     rb_encoding *enc = rb_enc_get(path);
     const char *name = RSTRING_PTR(path);

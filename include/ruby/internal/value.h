@@ -124,10 +124,33 @@ typedef unsigned LONG_LONG ID;
 # error ---->> ruby requires sizeof(void*) == sizeof(long) or sizeof(LONG_LONG) to be compiled. <<----
 #endif
 
+/**
+ * A signed integer type for lengths and indices of objects such as String and
+ * Array.  It is `long` for now, on every platform.
+ */
+typedef long rb_long_t;
+
+/** An unsigned integer type that has the same width with ::rb_long_t. */
+typedef unsigned long rb_ulong_t;
+
+/** Printf prefix for ::rb_long_t. */
+#define PRI_LONGT_PREFIX "l"
+
+/** Maximum possible value that a ::rb_long_t can take. */
+#define RB_LONGT_MAX LONG_MAX
+
+/** Minimum possible value that a ::rb_long_t can take. */
+#define RB_LONGT_MIN LONG_MIN
+
+/** Maximum possible value that a ::rb_ulong_t can take. */
+#define RB_ULONGT_MAX ULONG_MAX
+
 /** @cond INTERNAL_MACRO */
 RBIMPL_STATIC_ASSERT(sizeof_int, SIZEOF_INT == sizeof(int));
 RBIMPL_STATIC_ASSERT(sizeof_long, SIZEOF_LONG == sizeof(long));
 RBIMPL_STATIC_ASSERT(sizeof_long_long, SIZEOF_LONG_LONG == sizeof(LONG_LONG));
 RBIMPL_STATIC_ASSERT(sizeof_voidp, SIZEOF_VOIDP == sizeof(void *));
+RBIMPL_STATIC_ASSERT(sizeof_rb_long_t, sizeof(rb_long_t) == sizeof(long));
+RBIMPL_STATIC_ASSERT(sizeof_rb_ulong_t, sizeof(rb_ulong_t) == sizeof(unsigned long));
 /** @endcond */
 #endif /* RBIMPL_VALUE_H */

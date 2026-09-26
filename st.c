@@ -2419,9 +2419,9 @@ st_insert_single(st_table *tab, VALUE hash, VALUE key, VALUE val)
 }
 
 static void
-st_insert_linear(st_table *tab, long argc, const VALUE *argv, VALUE hash)
+st_insert_linear(st_table *tab, rb_long_t argc, const VALUE *argv, VALUE hash)
 {
-    long i;
+    rb_long_t i;
 
     for (i = 0; i < argc; /* */) {
         st_data_t k = st_stringify(argv[i++]);
@@ -2433,9 +2433,9 @@ st_insert_linear(st_table *tab, long argc, const VALUE *argv, VALUE hash)
 }
 
 static void
-st_insert_generic(st_table *tab, long argc, const VALUE *argv, VALUE hash)
+st_insert_generic(st_table *tab, rb_long_t argc, const VALUE *argv, VALUE hash)
 {
-    long i;
+    rb_long_t i;
 
     /* push elems */
     for (i = 0; i < argc; /* */) {
@@ -2451,7 +2451,7 @@ st_insert_generic(st_table *tab, long argc, const VALUE *argv, VALUE hash)
 /* Mimics ruby's { foo => bar } syntax. This function is subpart
    of rb_hash_bulk_insert. */
 void
-rb_hash_bulk_insert_into_st_table(long argc, const VALUE *argv, VALUE hash)
+rb_hash_bulk_insert_into_st_table(rb_long_t argc, const VALUE *argv, VALUE hash)
 {
     st_index_t n, size = argc / 2;
     st_table *tab = RHASH_ST_TABLE(hash);

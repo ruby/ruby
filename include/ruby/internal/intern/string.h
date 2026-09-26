@@ -60,7 +60,7 @@ RBIMPL_SYMBOL_EXPORT_BEGIN()
  * @pre        At  least  `len` bytes  of  continuous  memory region  shall  be
  *             accessible via `ptr`.
  */
-VALUE rb_str_new(const char *ptr, long len);
+VALUE rb_str_new(const char *ptr, rb_long_t len);
 
 /**
  * Identical to rb_str_new(), except it assumes the passed pointer is a pointer
@@ -120,7 +120,7 @@ VALUE rb_str_new_frozen(VALUE str);
  *
  * Why it doesn't take an instance of ::rb_cClass?
  */
-VALUE rb_str_new_with_class(VALUE obj, const char *ptr, long len);
+VALUE rb_str_new_with_class(VALUE obj, const char *ptr, rb_long_t len);
 
 /**
  * Identical  to  rb_str_new(),  except  it  generates  a  string  of  "default
@@ -140,7 +140,7 @@ VALUE rb_str_new_with_class(VALUE obj, const char *ptr, long len);
  *             a  corrupted  output.  You  can  know  the failure  by  querying
  *             `valid_encoding?` of the result object.
  */
-VALUE rb_external_str_new(const char *ptr, long len);
+VALUE rb_external_str_new(const char *ptr, rb_long_t len);
 
 RBIMPL_ATTR_NONNULL(())
 /**
@@ -183,7 +183,7 @@ VALUE rb_external_str_new_cstr(const char *ptr);
  *             a  corrupted  output.  You  can  know  the failure  by  querying
  *             `valid_encoding?` of the result object.
  */
-VALUE rb_locale_str_new(const char *ptr, long len);
+VALUE rb_locale_str_new(const char *ptr, rb_long_t len);
 
 RBIMPL_ATTR_NONNULL(())
 /**
@@ -226,7 +226,7 @@ VALUE rb_locale_str_new_cstr(const char *ptr);
  *             a  corrupted  output.  You  can  know  the failure  by  querying
  *             `valid_encoding?` of the result object.
  */
-VALUE rb_filesystem_str_new(const char *ptr, long len);
+VALUE rb_filesystem_str_new(const char *ptr, rb_long_t len);
 
 RBIMPL_ATTR_NONNULL(())
 /**
@@ -258,7 +258,7 @@ VALUE rb_filesystem_str_new_cstr(const char *ptr);
  * @param[in]  capa  Designed capacity of the generating string.
  * @return     An empty string, of "binary" encoding, whose capacity is `capa`.
  */
-VALUE rb_str_buf_new(long capa);
+VALUE rb_str_buf_new(rb_long_t capa);
 
 RBIMPL_ATTR_NONNULL(())
 /**
@@ -285,7 +285,7 @@ VALUE rb_str_buf_new_cstr(const char *ptr);
  * @return     A hidden, empty string.
  * @see        rb_obj_hide()
  */
-VALUE rb_str_tmp_new(long len);
+VALUE rb_str_tmp_new(rb_long_t len);
 
 /**
  * Identical  to rb_str_new(),  except  it  generates a  string  of "US  ASCII"
@@ -300,7 +300,7 @@ VALUE rb_str_tmp_new(long len);
  * @return     An  instance   of  ::rb_cString,  of  `len`   bytes  length,  of
  *             "US ASCII" encoding, whose contents are verbatim copy of `ptr`.
  */
-VALUE rb_usascii_str_new(const char *ptr, long len);
+VALUE rb_usascii_str_new(const char *ptr, rb_long_t len);
 
 /**
  * Identical to rb_str_new_cstr(),  except it generates a string  of "US ASCII"
@@ -328,7 +328,7 @@ VALUE rb_usascii_str_new_cstr(const char *ptr);
  * @return     An  instance   of  ::rb_cString,  of  `len`   bytes  length,  of
  *             "UTF-8" encoding, whose contents are verbatim copy of `ptr`.
  */
-VALUE rb_utf8_str_new(const char *ptr, long len);
+VALUE rb_utf8_str_new(const char *ptr, rb_long_t len);
 
 /**
  * Identical  to rb_str_new_cstr(),  except it  generates a  string of  "UTF-8"
@@ -372,7 +372,7 @@ VALUE rb_utf8_str_new_cstr(const char *ptr);
  *
  * Surprisingly it can take NULL, and generates an empty string.
  */
-VALUE rb_str_new_static(const char *ptr, long len);
+VALUE rb_str_new_static(const char *ptr, rb_long_t len);
 
 /**
  * Identical to rb_str_new_static(), except it generates a string of "US ASCII"
@@ -389,7 +389,7 @@ VALUE rb_str_new_static(const char *ptr, long len);
  *             immediate  SEGV shall  occur).  Consider  return values  of this
  *             function be read-only.
  */
-VALUE rb_usascii_str_new_static(const char *ptr, long len);
+VALUE rb_usascii_str_new_static(const char *ptr, rb_long_t len);
 
 /**
  * Identical to  rb_str_new_static(), except it  generates a string  of "UTF-8"
@@ -406,7 +406,7 @@ VALUE rb_usascii_str_new_static(const char *ptr, long len);
  *             immediate  SEGV shall  occur).  Consider  return values  of this
  *             function be read-only.
  */
-VALUE rb_utf8_str_new_static(const char *ptr, long len);
+VALUE rb_utf8_str_new_static(const char *ptr, rb_long_t len);
 
 /** @} */
 
@@ -450,7 +450,7 @@ VALUE rb_str_to_interned_str(VALUE str);
  * @pre        At  least  `len` bytes  of  continuous  memory region  shall  be
  *             accessible via `ptr`.
  */
-VALUE rb_interned_str(const char *ptr, long len);
+VALUE rb_interned_str(const char *ptr, rb_long_t len);
 
 RBIMPL_ATTR_NONNULL(())
 /**
@@ -522,7 +522,7 @@ void rb_str_shared_replace(VALUE dst, VALUE src);
 VALUE rb_str_buf_append(VALUE dst, VALUE src);
 
 /** @alias{rb_str_cat} */
-VALUE rb_str_buf_cat(VALUE, const char*, long);
+VALUE rb_str_buf_cat(VALUE, const char*, rb_long_t);
 
 /** @alias{rb_str_cat_cstr} */
 VALUE rb_str_buf_cat2(VALUE, const char*);
@@ -670,7 +670,7 @@ VALUE rb_str_times(VALUE str, VALUE num);
  * @param[in]  pos  Offset, in bytes.
  * @return     Offset, in characters.
  */
-long rb_str_sublen(VALUE str, long pos);
+rb_long_t rb_str_sublen(VALUE str, rb_long_t pos);
 
 /**
  * This is the implementation of two-argumented `String#slice`.
@@ -722,7 +722,7 @@ long rb_str_sublen(VALUE str, long pos);
  *                        substring of `str`.
  * @pre        `str` must not be any arbitrary objects except ::RString.
  */
-VALUE rb_str_substr(VALUE str, long beg, long len);
+VALUE rb_str_substr(VALUE str, rb_long_t beg, rb_long_t len);
 
 /**
  * Identical to  rb_str_substr(), except  the numbers  are interpreted  as byte
@@ -735,7 +735,7 @@ VALUE rb_str_substr(VALUE str, long beg, long len);
  * @pre        `str` must not be any arbitrary objects except ::RString.
  * @pre        `beg` and `len` must not point to OOB contents.
  */
-VALUE rb_str_subseq(VALUE str, long beg, long len);
+VALUE rb_str_subseq(VALUE str, rb_long_t beg, rb_long_t len);
 
 /**
  * Identical  to rb_str_substr(),  except it  returns a  C's string  instead of
@@ -750,7 +750,7 @@ VALUE rb_str_subseq(VALUE str, long beg, long len);
  * @pre            `str` must not be any arbitrary objects except ::RString.
  * @post           `len` is updated to have the length of the return value.
  */
-char *rb_str_subpos(VALUE str, long beg, long *len);
+char *rb_str_subpos(VALUE str, rb_long_t beg, rb_long_t *len);
 
 /**
  * Declares that the string is about to be modified.  This for instance let the
@@ -778,7 +778,7 @@ void rb_str_modify(VALUE str);
  * @post        Upon successful  return the passed  string is modified  so that
  *              its capacity is increased for `capa` bytes.
  */
-void rb_str_modify_expand(VALUE str, long capa);
+void rb_str_modify_expand(VALUE str, rb_long_t capa);
 
 /**
  * This is the implementation of `String#freeze`.
@@ -812,7 +812,7 @@ VALUE rb_str_freeze(VALUE str);
  * @pre         `str` must not be any arbitrary objects except ::RString.
  * @post        Upon successful return `str`'s length is set to `len`.
  */
-void rb_str_set_len(VALUE str, long len);
+void rb_str_set_len(VALUE str, rb_long_t len);
 
 /**
  * Overwrites the length of the  string.  In contrast to rb_str_set_len(), this
@@ -828,7 +828,7 @@ void rb_str_set_len(VALUE str, long len);
  * @post        Upon successful return `str` is  either expanded or shrunken to
  *              have its length be `len`.
  */
-VALUE rb_str_resize(VALUE str, long len);
+VALUE rb_str_resize(VALUE str, rb_long_t len);
 
 /**
  * Destructively appends the passed contents to the string.
@@ -841,7 +841,7 @@ VALUE rb_str_resize(VALUE str, long len);
  * @pre         `dst` must not be any arbitrary objects except ::RString.
  * @post        `dst` has the contents of `ptr` appended.
  */
-VALUE rb_str_cat(VALUE dst, const char *src, long srclen);
+VALUE rb_str_cat(VALUE dst, const char *src, rb_long_t srclen);
 
 /**
  * Identical to rb_str_cat(), except it assumes the passed pointer is a pointer
@@ -906,7 +906,7 @@ VALUE rb_str_concat(VALUE dst, VALUE src);
  *             Cryptology in  India (INDOCRYPT 2012), LNCS  7668, pp.  489-508,
  *             2012.  http://doi.org/10.1007/978-3-642-34931-7_28
 */
-st_index_t rb_memhash(const void *ptr, long len);
+st_index_t rb_memhash(const void *ptr, rb_long_t len);
 
 /**
  * Starts a series of hashing.  Suppose you have a struct:
@@ -1046,7 +1046,7 @@ VALUE rb_str_equal(VALUE str1, VALUE str2);
  *
  * What if `len` is negative?
  */
-VALUE rb_str_drop_bytes(VALUE str, long len);
+VALUE rb_str_drop_bytes(VALUE str, rb_long_t len);
 
 /**
  * Replaces some  (or all) of  the contents of the  given string.  This  is the
@@ -1066,7 +1066,7 @@ VALUE rb_str_drop_bytes(VALUE str, long len);
  *              same  length as  the portion  it  is replacing,  `dst` will  be
  *              resized accordingly.
  */
-void rb_str_update(VALUE dst, long beg, long len, VALUE src);
+void rb_str_update(VALUE dst, rb_long_t beg, rb_long_t len, VALUE src);
 
 /**
  * Replaces the contents  of the former object with the  stringised contents of
@@ -1187,7 +1187,7 @@ VALUE rb_sym_to_s(VALUE sym);
  * @param[in]  str  Target string to query.
  * @return     Its number of characters.
  */
-long rb_str_strlen(VALUE str);
+rb_long_t rb_str_strlen(VALUE str);
 
 /**
  * Identical to rb_str_strlen(), except it returns the value in ::rb_cInteger.
@@ -1206,7 +1206,7 @@ VALUE rb_str_length(VALUE);
  * @param[in]  pos  Offset, in characters.
  * @return     Offset, in bytes.
  */
-long rb_str_offset(VALUE str, long pos);
+rb_long_t rb_str_offset(VALUE str, rb_long_t pos);
 
 RBIMPL_ATTR_PURE()
 /**
@@ -1232,7 +1232,7 @@ size_t rb_str_capacity(VALUE str);
  * @retval     otherwise       A new, shortened string.
  * @note       The length is counted in characters.
  */
-VALUE rb_str_ellipsize(VALUE str, long len);
+VALUE rb_str_ellipsize(VALUE str, rb_long_t len);
 
 /**
  * "Cleanses" the string.   A string has its encoding and  its contents.  They,
@@ -1344,12 +1344,12 @@ RBIMPL_ATTR_NONNULL(())
  * This is an implementation detail.  Don't bother.
  *
  * @param[in]  str  A C string.
- * @return     `strlen`, casted to `long`.
+ * @return     `strlen`, casted to ::rb_long_t.
  */
-static inline long
+static inline rb_long_t
 rbimpl_strlen(const char *str)
 {
-    return RBIMPL_CAST((long)strlen(str));
+    return RBIMPL_CAST((rb_long_t)strlen(str));
 }
 
 RBIMPL_ATTR_NONNULL(())
@@ -1364,7 +1364,7 @@ RBIMPL_ATTR_NONNULL(())
 static inline VALUE
 rbimpl_str_new_cstr(const char *str)
 {
-    long len = rbimpl_strlen(str);
+    rb_long_t len = rbimpl_strlen(str);
     return rb_str_new_static(str, len);
 }
 
@@ -1380,7 +1380,7 @@ RBIMPL_ATTR_NONNULL(())
 static inline VALUE
 rbimpl_usascii_str_new_cstr(const char *str)
 {
-    long len = rbimpl_strlen(str);
+    rb_long_t len = rbimpl_strlen(str);
     return rb_usascii_str_new_static(str, len);
 }
 
@@ -1396,7 +1396,7 @@ RBIMPL_ATTR_NONNULL(())
 static inline VALUE
 rbimpl_utf8_str_new_cstr(const char *str)
 {
-    long len = rbimpl_strlen(str);
+    rb_long_t len = rbimpl_strlen(str);
     return rb_utf8_str_new_static(str, len);
 }
 
@@ -1412,7 +1412,7 @@ RBIMPL_ATTR_NONNULL(())
 static inline VALUE
 rbimpl_external_str_new_cstr(const char *str)
 {
-    long len = rbimpl_strlen(str);
+    rb_long_t len = rbimpl_strlen(str);
     return rb_external_str_new(str, len);
 }
 
@@ -1428,7 +1428,7 @@ RBIMPL_ATTR_NONNULL(())
 static inline VALUE
 rbimpl_locale_str_new_cstr(const char *str)
 {
-    long len = rbimpl_strlen(str);
+    rb_long_t len = rbimpl_strlen(str);
     return rb_locale_str_new(str, len);
 }
 
@@ -1444,7 +1444,7 @@ RBIMPL_ATTR_NONNULL(())
 static inline VALUE
 rbimpl_str_buf_new_cstr(const char *str)
 {
-    long len = rbimpl_strlen(str);
+    rb_long_t len = rbimpl_strlen(str);
     VALUE buf = rb_str_buf_new(len);
     return rb_str_buf_cat(buf, str, len);
 }
@@ -1462,7 +1462,7 @@ RBIMPL_ATTR_NONNULL(())
 static inline VALUE
 rbimpl_str_cat_cstr(VALUE buf, const char *str)
 {
-    long len = rbimpl_strlen(str);
+    rb_long_t len = rbimpl_strlen(str);
     return rb_str_cat(buf, str, len);
 }
 
@@ -1479,7 +1479,7 @@ RBIMPL_ATTR_NONNULL(())
 static inline VALUE
 rbimpl_exc_new_cstr(VALUE exc, const char *str)
 {
-    long len = rbimpl_strlen(str);
+    rb_long_t len = rbimpl_strlen(str);
     return rb_exc_new(exc, str, len);
 }
 

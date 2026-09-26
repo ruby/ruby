@@ -1659,7 +1659,7 @@ tracepoint_new_s(rb_execution_context_t *ec, VALUE self, VALUE args)
 {
     rb_event_flag_t events = 0;
     long i;
-    long argc = RARRAY_LEN(args);
+    rb_long_t argc = RARRAY_LEN(args);
 
     if (argc > 0) {
         for (i=0; i<argc; i++) {
