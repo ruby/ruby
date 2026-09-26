@@ -262,6 +262,7 @@ pub fn init() -> Annotations {
     annotate!(rb_cInteger, "%", inline_integer_mod);
     annotate!(rb_cInteger, "&", inline_integer_and);
     annotate!(rb_cInteger, "|", inline_integer_or);
+    annotate!(rb_cInteger, "anybits?", inline_integer_anybits_p);
     annotate!(rb_cInteger, ">", inline_integer_gt);
     annotate!(rb_cInteger, ">=", inline_integer_ge);
     annotate!(rb_cInteger, "<", inline_integer_lt);
@@ -798,6 +799,20 @@ fn inline_integer_and(fun: &mut hir::Function, block: hir::BlockId, recv: hir::I
 fn inline_integer_or(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
     try_inline_fixnum_op(fun, block, &|left, right| hir::Insn::FixnumOr { left, right, }, BOP_OR, recv, other, state)
+}
+
+fn inline_integer_anybits_p(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[mask] = args else { return None; };
+    if fun.likely_a(recv, types::Fixnum, state) && fun.likely_a(mask, types::Fixnum, state) {
+        let recv = fun.coerce_to(block, recv, types::Fixnum, state);
+        let mask = fun.coerce_to(block, mask, types::Fixnum, state);
+        // Like int_anybits_p, test for overlapping bits. FixnumAnd returns a
+        // tagged Fixnum, so compare against tagged Fixnum zero.
+        let bits = fun.push_insn(block, hir::Insn::FixnumAnd { left: recv, right: mask });
+        let zero = fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(VALUE::fixnum_from_usize(0)) });
+        return Some(fun.push_insn(block, hir::Insn::FixnumNeq { left: bits, right: zero }));
+    }
+    None
 }
 
 fn inline_integer_gt(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {

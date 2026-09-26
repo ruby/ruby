@@ -22753,6 +22753,40 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_inline_integer_anybits_p_with_fixnums() {
+        eval("
+            def test(flags, mask) = flags.anybits?(mask)
+            test(0b1010, 0b0010)
+            test(0b1010, 0b0100)
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :flags@0x1000
+          v4:BasicObject = LoadField v2, :mask@0x1001
+          Jump bb3(v1, v3, v4)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :flags@1
+          v9:BasicObject = LoadArg :mask@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1008, anybits?@0x1010, cme:0x1018)
+          v27:Fixnum = GuardType v12, Fixnum recompile
+          v28:Fixnum = GuardType v13, Fixnum
+          v29:Fixnum = FixnumAnd v27, v28
+          v30:Fixnum[0] = Const Value(0)
+          v31:BoolExact = FixnumNeq v29, v30
+          CheckInterrupts
+          Return v31
+        ");
+    }
+
+    #[test]
     fn test_integer_even_p_annotation() {
         eval(r#"
             def test(x) = x.even?
