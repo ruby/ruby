@@ -3172,7 +3172,6 @@ do_fast_fallback_getaddrinfo(void *ptr)
         IPV6_HOSTNAME_RESOLVED : IPV4_HOSTNAME_RESOLVED;
 
         if (shared->notify != -1 && (write(shared->notify, &notification, 1)) < 0) {
-            entry->err = errno;
             entry->has_syserr = true;
         }
         if (--(entry->refcount) == 0) {
