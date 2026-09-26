@@ -2447,8 +2447,8 @@ lazy_zip(int argc, VALUE *argv, VALUE obj)
                     rb_raise(rb_eTypeError, "wrong argument type %"PRIsVALUE" (must respond to :each)",
                              rb_obj_class(argv[i]));
                 }
+                rb_ary_push(ary, argv[i]);
             }
-            ary = rb_ary_new4(argc, argv);
             funcs = &lazy_zip_funcs[0];
             break;
         }
