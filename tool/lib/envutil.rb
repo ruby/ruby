@@ -194,6 +194,8 @@ module EnvUtil
       rescue Errno::EINVAL
         next
       rescue Errno::ESRCH
+        # Windows reports ESRCH for a child that has exited but not been reaped
+        Process.wait(pid, Process::WNOHANG) rescue nil
         break
       end
       if signals.empty? or !reprieve
