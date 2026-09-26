@@ -2502,6 +2502,42 @@ mnew_missing_by_name(VALUE klass, VALUE obj, VALUE *name, int scope, VALUE mclas
 
 VALUE rb_zsuper_to_super(int argc, VALUE *argv, VALUE self);
 
+static inline bool
+refinement_module_p(VALUE mod)
+{
+    return RB_TYPE_P(mod, T_MODULE) && FL_TEST_RAW(mod, RMODULE_IS_REFINEMENT);
+}
+
+VALUE rb_vm_module_refinement_iclass(VALUE refinement_iclass, VALUE defined_class);
+VALUE rb_vm_refinement_iclass_for_cme(VALUE refinement, const rb_callable_method_entry_t *cme);
+
+static VALUE
+find_refined_target_ancestor(VALUE start, VALUE refined_target)
+{
+    VALUE klass;
+    for (klass = start; klass; klass = RCLASS_SUPER(klass)) {
+        if (RB_TYPE_P(klass, T_ICLASS) && RBASIC(klass)->klass == refined_target) {
+            return klass;
+        }
+    }
+    return 0;
+}
+
+static VALUE
+find_refinement_iclass(VALUE owner, VALUE klass, VALUE iclass)
+{
+    VALUE refined_target = rb_refinement_module_get_refined_class(owner);
+
+    if (RB_TYPE_P(refined_target, T_MODULE)) {
+        VALUE refined_ancestor = find_refined_target_ancestor(klass, refined_target);
+        if (refined_ancestor) {
+            iclass = rb_vm_module_refinement_iclass(iclass, refined_ancestor);
+        }
+    }
+
+    return iclass;
+}
+
 static VALUE
 mnew_internal(const rb_method_entry_t *me, VALUE klass, VALUE iclass,
               VALUE obj, ID id, VALUE mclass, int scope, int error)
@@ -2563,6 +2599,10 @@ static VALUE
 mnew_from_me(const rb_method_entry_t *me, VALUE klass, VALUE iclass,
              VALUE obj, ID id, VALUE mclass, int scope)
 {
+    if (me && refinement_module_p(me->owner) && !RICLASS_FOR_REFINEMENT_P(iclass)) {
+        iclass = klass;
+    }
+
     return mnew_internal(me, klass, iclass, obj, id, mclass, scope, TRUE);
 }
 
@@ -3474,13 +3514,19 @@ convert_umethod_to_method_components(const struct METHOD *data, VALUE recv, VALU
             // because this branch manipulates it in rb_method_entry_complement_defined_class
             me = rb_method_entry_clone(me);
         }
-        VALUE ic = rb_class_search_ancestor(klass, me->owner);
-        if (ic) {
-            klass = ic;
-            iclass = ic;
+        if (refinement_module_p(me->owner) && RICLASS_FOR_REFINEMENT_P(data->iclass)) {
+            iclass = find_refinement_iclass(me->owner, klass, data->iclass);
+            klass = iclass;
         }
         else {
-            klass = rb_include_class_new(methclass, klass);
+            VALUE ic = rb_class_search_ancestor(klass, me->owner);
+            if (ic) {
+                klass = ic;
+                iclass = ic;
+            }
+            else {
+                klass = rb_include_class_new(methclass, klass);
+            }
         }
         me = (const rb_method_entry_t *) rb_method_entry_complement_defined_class(me, me->called_id, klass);
     }
@@ -4288,10 +4334,26 @@ method_super_method(VALUE method)
     TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
     iclass = data->iclass;
     if (!iclass) return Qnil;
+    bool is_refinement_method = refinement_module_p(data->me->owner);
     if (data->me->def->type == VM_METHOD_TYPE_ALIAS && data->me->defined_class) {
         super_class = RCLASS_SUPER(rb_find_defined_class_by_owner(data->me->defined_class,
             data->me->def->body.alias.original_me->owner));
         mid = data->me->def->body.alias.original_me->def->original_id;
+    }
+    else if (is_refinement_method) {
+        if (RICLASS_FOR_REFINEMENT_P(iclass)) {
+            do {
+                super_class = RCLASS_SUPER(iclass);
+                iclass = super_class;
+            } while (RICLASS_FOR_REFINEMENT_P(super_class));
+        }
+        else {
+            super_class = find_refined_target_ancestor(iclass, rb_refinement_module_get_refined_class(data->me->owner));
+            if (!super_class) {
+                super_class = RCLASS_SUPER(data->me->owner);
+            }
+        }
+        mid = data->me->def->original_id;
     }
     else {
         VALUE klass = iclass;
@@ -4306,7 +4368,7 @@ method_super_method(VALUE method)
 
     // For refined methods, skip refinements for the same definition, but consider
     // refinements for superclass methods
-    const rb_method_definition_t *skip_def = RICLASS_FOR_REFINEMENT_P(iclass) ? data->me->def : NULL;
+    const rb_method_definition_t *skip_def = is_refinement_method ? data->me->def : NULL;
 
     // Use the CREF of the Method/UnboundMethod, not the CREF of the caller of super_method.
     // We must avoid the use of rb_callable_method_entry_with_refinements, as that will
@@ -4345,6 +4407,7 @@ method_super_method(VALUE method)
             if (NIL_P(refs)) continue;
             VALUE r = rb_hash_lookup(refs, cme->owner);
             if (NIL_P(r)) continue;
+            r = rb_vm_refinement_iclass_for_cme(r, cme);
             const rb_callable_method_entry_t *ref_cme = rb_callable_method_entry(r, mid);
             if (!ref_cme) break;
             if (ref_cme->def->type == VM_METHOD_TYPE_REFINED) continue;
@@ -4359,7 +4422,7 @@ method_super_method(VALUE method)
         const rb_method_entry_t *orig_me = cme->def->body.refined.orig_me;
         if (orig_me) {
             me = (rb_method_entry_t *)orig_me;
-            iclass = orig_me->defined_class ? orig_me->defined_class : cme->defined_class;
+            iclass = cme->defined_class;
             break;
         }
         klass = RCLASS_SUPER(cme->defined_class);

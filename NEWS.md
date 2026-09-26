@@ -7,6 +7,10 @@ Note that each entry is kept to a minimum, see links for details.
 
 ## Language changes
 
+* `super` in a module method that was called via `super` from a refinement
+  method now works correctly.
+  [[Feature #22309]]
+
 * `Module#clone` and `Module#dup` no longer rewrite the lexical scope of
   copied methods. Constants and class variables resolve through the
   original class, consistent with inheritance and mixins.
@@ -555,6 +559,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #22226]: https://bugs.ruby-lang.org/issues/22226
 [Feature #22238]: https://bugs.ruby-lang.org/issues/22238
 [Feature #22297]: https://bugs.ruby-lang.org/issues/22297
+[Feature #22309]: https://bugs.ruby-lang.org/issues/22309
 [PR #17201]: https://github.com/ruby/ruby/pull/17201
 [GH-psych #805]: https://github.com/ruby/psych/pull/805
 [RubyGems-v4.0.4]: https://github.com/rubygems/rubygems/releases/tag/v4.0.4
