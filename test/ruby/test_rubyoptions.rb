@@ -1332,6 +1332,13 @@ class TestRubyOptions < Test::Unit::TestCase
     assert_ruby_status([env, "-e;"])
   end
 
+  def test_path_separator_after_multibyte_char
+    path = ["./\u{3042}", "./b"].join(File::PATH_SEPARATOR)
+    code = "p $:.include?('./b')"
+    assert_in_out_err([{"RUBYLIB"=>path}, "-e", code], "", %w[true], [])
+    assert_in_out_err(["-I", path, "-e", code], "", %w[true], [])
+  end
+
   def test_null_script
     omit "#{IO::NULL} is not a character device" unless File.chardev?(IO::NULL)
     assert_in_out_err([IO::NULL], success: true)

@@ -1166,6 +1166,21 @@ class TestProcess < Test::Unit::TestCase
     }
   end
 
+  def test_exec_relative_path_after_multibyte_dir
+    return unless windows?
+    with_tmpchdir {|d|
+      dir = "\u{3042}"
+      Dir.mkdir(dir)
+      File.write("#{dir}/foo.cmd", "@echo cwd\n")
+      Dir.mkdir("path")
+      Dir.mkdir("path/#{dir}")
+      File.write("path/#{dir}/foo.cmd", "@echo path\n")
+      env = {"PATH"=>"#{d}/path;#{ENV["PATH"]}"}
+      r = IO.popen([env, RUBY, "-e", "exec(*ARGV)", "#{dir}\\foo", "x"], &:read)
+      assert_equal("cwd", r.chomp)
+    }
+  end
+
   def test_system_wordsplit
     with_tmpchdir {|d|
       File.write("script", <<-'End')
