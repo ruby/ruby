@@ -3344,7 +3344,10 @@ AS_CASE(["$target_os"],
     AS_IF([test "x$ac_cv_lib_procstat_procstat_open_sysctl" = xyes], [
 	AC_CHECK_FUNCS(procstat_getvmmap)
     ])
-    ])
+],
+[openbsd*], [
+    AC_CHECK_FUNCS([getexecpath])
+])
 AS_CASE(["$target_cpu-$target_os"],
 [*-darwin*], [
     AC_CHECK_HEADERS([libproc.h])
