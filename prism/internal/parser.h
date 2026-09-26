@@ -448,6 +448,9 @@ typedef enum {
 
     /* a while statement */
     PM_CONTEXT_WHILE,
+
+    /* the number of contexts, which is not itself a context */
+    PM_CONTEXT_MAXIMUM,
 } pm_context_t;
 
 /* This is a node in a linked list of contexts. */
@@ -457,6 +460,9 @@ typedef struct pm_context_node {
 
     /* A pointer to the previous context in the linked list. */
     struct pm_context_node *prev;
+
+    /* One bit set per context in this list, including one for this node. */
+    uint64_t mask;
 } pm_context_node_t;
 
 /* The type of shareable constant value that can be set. */
