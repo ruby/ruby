@@ -233,7 +233,8 @@ impl Assembler {
                 // need to load the input value to preserve it
                 Insn::LShift { opnd, .. } |
                 Insn::RShift { opnd, .. } |
-                Insn::URShift { opnd, .. } => {
+                Insn::URShift { opnd, .. } |
+                Insn::ByteSwap { opnd, .. } => {
                     *opnd = asm.load(*opnd);
                     asm.push_insn(insn);
                 },
@@ -535,6 +536,7 @@ impl Assembler {
                     asm_mov(asm, out, left, SCRATCH0_OPND);
                 }
                 &mut Insn::Not { opnd, out } |
+                &mut Insn::ByteSwap { opnd, out } |
                 &mut Insn::LShift { opnd, out, .. } |
                 &mut Insn::RShift { opnd, out, .. } |
                 &mut Insn::URShift { opnd, out, .. } => {
@@ -872,6 +874,15 @@ impl Assembler {
 
                 Insn::Not { opnd, .. } => {
                     not(cb, opnd.into());
+                },
+
+                Insn::ByteSwap { opnd, .. } => {
+                    // bswap has no 16-bit form, so rotate the two bytes instead.
+                    if opnd.rm_num_bits() == 16 {
+                        rol(cb, opnd.into(), uimm_opnd(8));
+                    } else {
+                        bswap(cb, opnd.into());
+                    }
                 },
 
                 Insn::LShift { opnd, shift , ..} => {
@@ -1566,6 +1577,54 @@ mod tests {
         0xd: and rax, r11
         ");
         assert_snapshot!(cb.hexdump(), @"4889c049bbffffffffffff00004c21d8");
+    }
+
+    #[test]
+    fn test_emit_byteswap_16() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let opnd = asm.load(Opnd::mem(16, SP, 0));
+        let _ = asm.byteswap(opnd.with_num_bits(16));
+        asm.compile_with_num_regs(&mut cb, 2);
+
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: mov di, word ptr [rbx]
+        0x3: mov di, di
+        0x6: rol di, 8
+        ");
+        assert_snapshot!(cb.hexdump(), @"668b3b6689ff66c1c708");
+    }
+
+    #[test]
+    fn test_emit_byteswap_32() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let opnd = asm.load(Opnd::mem(32, SP, 0));
+        let _ = asm.byteswap(opnd.with_num_bits(32));
+        asm.compile_with_num_regs(&mut cb, 2);
+
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: mov edi, dword ptr [rbx]
+        0x2: mov edi, edi
+        0x4: bswap edi
+        ");
+        assert_snapshot!(cb.hexdump(), @"8b3b89ff0fcf");
+    }
+
+    #[test]
+    fn test_emit_byteswap_64() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let opnd = asm.load(Opnd::mem(64, SP, 0));
+        let _ = asm.byteswap(opnd);
+        asm.compile_with_num_regs(&mut cb, 2);
+
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: mov rdi, qword ptr [rbx]
+        0x3: mov rdi, rdi
+        0x6: bswap rdi
+        ");
+        assert_snapshot!(cb.hexdump(), @"488b3b4889ff480fcf");
     }
 
     #[test]
