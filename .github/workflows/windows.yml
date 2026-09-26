@@ -215,7 +215,7 @@ jobs:
           if ((Get-ChildItem $dest).Count -ne 1) { throw "zip must contain a single root directory" }
           $root = (Get-ChildItem $dest)[0].FullName
           if (!(Test-Path "$root\bin\ruby.exe")) { throw "bin\ruby.exe not found" }
-          if (Get-ChildItem "$root\bin" -Filter "vcruntime140*.dll") { throw "the VC runtime must not be bundled" }
+          if (Get-ChildItem "$root\bin" | Where-Object Name -match '^vcruntime140(_\w+)?\.dll$') { throw "the VC runtime must not be bundled" }
           if (!(Get-ChildItem "$root\LICENSES" -ErrorAction SilentlyContinue)) { throw "LICENSES missing" }
           $env:PATH = "$env:SystemRoot\System32"
           & "$root\bin\ruby.exe" -v -ropenssl -rfiddle -rpsych -rzlib -e 'abort "configure_args has an absolute path: #{RbConfig::CONFIG[%q(configure_args)]}" if RbConfig::CONFIG[%q(configure_args)] =~ /\b[A-Za-z]:[\/\\]/; puts %q(binary package OK)'
