@@ -6900,7 +6900,7 @@ pm_symbol_node_to_string_node(pm_parser_t *parser, pm_symbol_node_t *node) {
         flags,
         PM_LOCATION_INIT_NODE(node),
         node->opening_loc,
-        node->value_loc,
+        node->content_loc,
         node->closing_loc,
         node->unescaped
     );
@@ -17180,7 +17180,7 @@ pm_slice_is_valid_local(const pm_parser_t *parser, const uint8_t *start, const u
  */
 static pm_node_t *
 parse_pattern_hash_implicit_value(pm_parser_t *parser, pm_constant_id_list_t *captures, pm_symbol_node_t *key) {
-    const pm_location_t *value_loc = &((pm_symbol_node_t *) key)->value_loc;
+    const pm_location_t *value_loc = &((pm_symbol_node_t *) key)->content_loc;
     const uint8_t *start = parser->start + PM_LOCATION_START(value_loc);
     const uint8_t *end = parser->start + PM_LOCATION_END(value_loc);
 
@@ -19136,8 +19136,8 @@ parse_symbol_array(pm_parser_t *parser, uint16_t depth) {
                     pm_symbol_node_t *cast = (pm_symbol_node_t *) current;
                     pm_token_t content = {
                         .type = PM_TOKEN_STRING_CONTENT,
-                        .start = parser->start + cast->value_loc.start,
-                        .end = parser->start + cast->value_loc.start + cast->value_loc.length
+                        .start = parser->start + cast->content_loc.start,
+                        .end = parser->start + cast->content_loc.start + cast->content_loc.length
                     };
 
                     pm_node_t *first_string = UP(pm_string_node_create_unescaped(parser, NULL, &content, NULL, &cast->unescaped));
@@ -20516,7 +20516,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
                         pm_interpolated_symbol_node_append(parser->arena, (pm_interpolated_symbol_node_t *) current, string);
                     } else if (PM_NODE_TYPE_P(current, PM_SYMBOL_NODE)) {
                         pm_symbol_node_t *cast = (pm_symbol_node_t *) current;
-                        pm_token_t content = { .type = PM_TOKEN_STRING_CONTENT, .start = parser->start + cast->value_loc.start, .end = parser->start + cast->value_loc.start + cast->value_loc.length };
+                        pm_token_t content = { .type = PM_TOKEN_STRING_CONTENT, .start = parser->start + cast->content_loc.start, .end = parser->start + cast->content_loc.start + cast->content_loc.length };
                         pm_node_t *first_string = UP(pm_string_node_create_unescaped(parser, NULL, &content, NULL, &cast->unescaped));
                         pm_node_t *second_string = UP(pm_string_node_create_current_string(parser, NULL, &parser->previous, NULL));
                         parser_lex(parser);
