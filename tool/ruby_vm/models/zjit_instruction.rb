@@ -20,15 +20,6 @@ class RubyVM::ZJITInstruction
     return @orig.name
   end
 
-  # opt_case_dispatch jumps straight to the matching `when` body, skipping the
-  # `===` chain it guards. While profiling, pop the key and fall through to the
-  # `===` chain instead so that its instructions and the dispatched blocks get
-  # profiled too. This is equivalent because opt_case_dispatch only takes the
-  # jump table when `===` is not redefined for the key.
-  def is_opt_case_dispatch?
-    return @orig.name == 'opt_case_dispatch'
-  end
-
   def bin
     return sprintf "BIN(%s)", @name
   end
