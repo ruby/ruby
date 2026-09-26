@@ -2829,6 +2829,10 @@ rb_fiber_start(rb_fiber_t *fiber_arg)
             err = Qfalse;
         }
         else if (state == TAG_FATAL) {
+            if (err == th->vm->special_exceptions[ruby_error_thread_killed]) {
+                /* Preserve the unmaskable thread-kill marker across fibers. */
+                err = RUBY_FATAL_THREAD_KILLED;
+            }
             rb_threadptr_pending_interrupt_enque(th, err);
         }
         else {
