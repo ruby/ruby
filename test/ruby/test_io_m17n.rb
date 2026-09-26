@@ -2656,6 +2656,19 @@ EOT
     end
   end if /mswin|mingw/ =~ RUBY_PLATFORM
 
+  def test_write_to_console
+    begin
+      con = File.open("CONOUT$", "r+")
+    rescue SystemCallError
+      omit "console is not available"
+    end
+    # non-ASCII, but leaves nothing visible on the console
+    str = "\u00a0\b"
+    assert_equal(str.bytesize, con.write(str))
+  ensure
+    con&.close
+  end if /mswin|mingw/ =~ RUBY_PLATFORM
+
   def test_cr_decorator_on_stdout
     with_pipe do |in_r, in_w|
       with_pipe do |out_r, out_w|
