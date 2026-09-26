@@ -8695,9 +8695,7 @@ proc_warmup(VALUE _)
     // instead of being loaded lazily on the first error at runtime.
     rb_eager_load_detailed_message_extension();
 
-    RB_VM_LOCKING() {
-        rb_gc_prepare_heap();
-    }
+    rb_gc_prepare_heap();
     return Qtrue;
 }
 

@@ -5,8 +5,10 @@
 #include "ruby/ruby.h"
 #include "ruby/ractor.h"
 #include "vm_core.h"
+#include "darray.h"
 #include "id_table.h"
 #include "vm_debug.h"
+#include "vm_sync.h"
 #include "hrtime.h"
 
 #ifndef RACTOR_CHECK_MODE
@@ -182,6 +184,14 @@ struct rb_ractor_struct {
      * allocation until vm_insert_ractor clears it (under the VM lock) so the global GC
      * still enumerates it. */
     void *creating_child_objspace;
+
+    /* Calls deferred out of a VM lock critical section, run by vm_lock_leave() once this
+     * Ractor releases the outermost lock.  Per-Ractor because the drain happens after the
+     * native mutex is dropped, by which point another Ractor may already be queueing its
+     * own.  deferred_calls_pos is the next entry to run: a callback may take and release
+     * the lock, and the nested drain must not re-run what is already running. */
+    rb_darray(struct rb_deferred_call) deferred_calls;
+    size_t deferred_calls_pos;
 
 }; // rb_ractor_t is defined in vm_core.h
 

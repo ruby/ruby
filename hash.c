@@ -5511,16 +5511,100 @@ env_str_new2(const char *ptr, rb_encoding *enc)
     return env_str_new(ptr, strlen(ptr), enc);
 }
 
+static inline size_t
+environ_size(char **env)
+{
+    size_t size = 0;
+    while (*env) {
+        size += 1;
+        env++;
+    }
+    return size;
+}
+
+/* An iteration over the "NAME=VALUE" entries of the environment.
+ *
+ * Readers of ENV must not build the Strings they return while holding the ENV
+ * lock, because converting to the locale encoding can autoload an encoding,
+ * which runs Ruby.  Where the lock is a no-op there is no such constraint and
+ * `environ` is walked in place; otherwise the entries are copied out under the
+ * lock and the copy is what gets walked.  `snapshot` is volatile to keep it
+ * pinned on the stack while `cur` points into it. */
+struct env_entries {
+    volatile VALUE snapshot; /* the copied entries, 0 when walking `environ` */
+    const char *cur, *end;
+    char **env;
+    long len;
+};
+
+static void
+env_entries_get(struct env_entries *entries)
+{
+    entries->snapshot = 0;
+    entries->cur = entries->end = NULL;
+    entries->env = NULL;
+    entries->len = 0;
+
+    if (!rb_vm_locking_needed_p()) {
+        entries->env = GET_ENVIRON(environ);
+        entries->len = (long)environ_size(entries->env);
+        return;
+    }
+
+    VALUE snapshot = rb_str_buf_new(0);
+
+    ENV_LOCKING() {
+        char **env = GET_ENVIRON(environ);
+        while (*env) {
+            rb_str_buf_cat(snapshot, *env, strlen(*env) + 1);
+            entries->len++;
+            env++;
+        }
+        FREE_ENVIRON(environ);
+    }
+
+    entries->snapshot = snapshot;
+    entries->cur = RSTRING_PTR(snapshot);
+    entries->end = entries->cur + RSTRING_LEN(snapshot);
+}
+
+static const char *
+env_entries_next(struct env_entries *entries)
+{
+    if (!entries->snapshot) {
+        return *entries->env ? *entries->env++ : NULL;
+    }
+
+    if (entries->cur >= entries->end) return NULL;
+
+    const char *entry = entries->cur;
+    entries->cur = entry + strlen(entry) + 1;
+    return entry;
+}
+
+static void
+env_entries_release(struct env_entries *entries)
+{
+    if (!entries->snapshot) FREE_ENVIRON(environ);
+}
+
 static VALUE
 getenv_with_lock(const char *name)
 {
-    VALUE ret;
     rb_encoding *enc = env_encoding();
+
+    if (!rb_vm_locking_needed_p()) {
+        return env_str_new2(getenv(name), enc);
+    }
+
+    VALUE raw;
+
     ENV_LOCKING() {
         const char *val = getenv(name);
-        ret = env_str_new2(val, enc);
+        raw = val ? rb_str_new_cstr(val) : Qnil;
     }
-    return ret;
+
+    return NIL_P(raw) ? Qnil : env_enc_str_new(RSTRING_PTR(raw), RSTRING_LEN(raw), enc);
 }
 
 static bool
@@ -6024,21 +6108,19 @@ env_keys(int raw)
 {
     rb_encoding *enc = raw ? 0 : env_encoding();
     VALUE ary = rb_ary_new();
+    struct env_entries entries;
+    const char *p;
 
-    ENV_LOCKING() {
-        char **env = GET_ENVIRON(environ);
-        while (*env) {
-            char *s = strchr(*env, '=');
-            if (s) {
-                const char *p = *env;
-                size_t l = s - p;
-                VALUE e = raw ? rb_utf8_str_new(p, l) : env_enc_str_new(p, l, enc);
-                rb_ary_push(ary, e);
-            }
-            env++;
+    env_entries_get(&entries);
+    while ((p = env_entries_next(&entries)) != NULL) {
+        const char *s = strchr(p, '=');
+        if (s) {
+            size_t l = s - p;
+            VALUE e = raw ? rb_utf8_str_new(p, l) : env_enc_str_new(p, l, enc);
+            rb_ary_push(ary, e);
         }
-        FREE_ENVIRON(environ);
     }
+    env_entries_release(&entries);
 
     return ary;
 }
@@ -6118,18 +6200,17 @@ env_values(void)
     VALUE ary = rb_ary_new();
 
     rb_encoding *enc = env_encoding();
-    ENV_LOCKING() {
-        char **env = GET_ENVIRON(environ);
+    struct env_entries entries;
+    const char *p;
 
-        while (*env) {
-            char *s = strchr(*env, '=');
-            if (s) {
-                rb_ary_push(ary, env_str_new2(s+1, enc));
-            }
-            env++;
+    env_entries_get(&entries);
+    while ((p = env_entries_next(&entries)) != NULL) {
+        const char *s = strchr(p, '=');
+        if (s) {
+            rb_ary_push(ary, env_str_new2(s+1, enc));
         }
-        FREE_ENVIRON(environ);
     }
+    env_entries_release(&entries);
 
     return ary;
 }
@@ -6211,19 +6292,18 @@ env_each_pair(VALUE ehash)
     VALUE ary = rb_ary_new();
 
     rb_encoding *enc = env_encoding();
-    ENV_LOCKING() {
-        char **env = GET_ENVIRON(environ);
+    struct env_entries entries;
+    const char *p;
 
-        while (*env) {
-            char *s = strchr(*env, '=');
-            if (s) {
-                rb_ary_push(ary, env_str_new(*env, s-*env, enc));
-                rb_ary_push(ary, env_str_new2(s+1, enc));
-            }
-            env++;
+    env_entries_get(&entries);
+    while ((p = env_entries_next(&entries)) != NULL) {
+        const char *s = strchr(p, '=');
+        if (s) {
+            rb_ary_push(ary, env_str_new(p, s-p, enc));
+            rb_ary_push(ary, env_str_new2(s+1, enc));
         }
-        FREE_ENVIRON(environ);
     }
+    env_entries_release(&entries);
 
     if (rb_block_pair_yield_optimizable()) {
         for (i=0; i<RARRAY_LEN(ary); i+=2) {
@@ -6535,24 +6615,26 @@ env_inspect(VALUE _)
     VALUE str = rb_str_buf_new2("{");
     rb_encoding *enc = env_encoding();
 
-    ENV_LOCKING() {
-        char **env = GET_ENVIRON(environ);
-        while (*env) {
-            const char *s = strchr(*env, '=');
+    struct env_entries entries;
+    const char *p;
+    bool first = true;
 
-            if (env != environ) {
-                rb_str_buf_cat2(str, ", ");
-            }
-            if (s) {
-                rb_str_buf_append(str, rb_str_inspect(env_enc_str_new(*env, s-*env, enc)));
-                rb_str_buf_cat2(str, " => ");
-                s++;
-                rb_str_buf_append(str, rb_str_inspect(env_enc_str_new(s, strlen(s), enc)));
-            }
-            env++;
+    env_entries_get(&entries);
+    while ((p = env_entries_next(&entries)) != NULL) {
+        const char *s = strchr(p, '=');
+
+        if (!first) {
+            rb_str_buf_cat2(str, ", ");
         }
-        FREE_ENVIRON(environ);
+        first = false;
+        if (s) {
+            rb_str_buf_append(str, rb_str_inspect(env_enc_str_new(p, s-p, enc)));
+            rb_str_buf_cat2(str, " => ");
+            s++;
+            rb_str_buf_append(str, rb_str_inspect(env_enc_str_new(s, strlen(s), enc)));
+        }
     }
+    env_entries_release(&entries);
 
     rb_str_buf_cat2(str, "}");
 
@@ -6574,18 +6656,18 @@ env_to_a(VALUE _)
     VALUE ary = rb_ary_new();
 
     rb_encoding *enc = env_encoding();
-    ENV_LOCKING() {
-        char **env = GET_ENVIRON(environ);
-        while (*env) {
-            char *s = strchr(*env, '=');
-            if (s) {
-                rb_ary_push(ary, rb_assoc_new(env_str_new(*env, s-*env, enc),
-                                              env_str_new2(s+1, enc)));
-            }
-            env++;
+    struct env_entries entries;
+    const char *p;
+
+    env_entries_get(&entries);
+    while ((p = env_entries_next(&entries)) != NULL) {
+        const char *s = strchr(p, '=');
+        if (s) {
+            rb_ary_push(ary, rb_assoc_new(env_str_new(p, s-p, enc),
+                                          env_str_new2(s+1, enc)));
         }
-        FREE_ENVIRON(environ);
     }
+    env_entries_release(&entries);
 
     return ary;
 }
@@ -6829,55 +6911,42 @@ env_key(VALUE dmy, VALUE value)
     VALUE str = Qnil;
 
     rb_encoding *enc = env_encoding();
-    ENV_LOCKING() {
-        char **env = GET_ENVIRON(environ);
-        while (*env) {
-            char *s = strchr(*env, '=');
-            if (s++) {
-                long len = strlen(s);
-                if (RSTRING_LEN(value) == len && strncmp(s, RSTRING_PTR(value), len) == 0) {
-                    str = env_str_new(*env, s-*env-1, enc);
-                    break;
-                }
+    struct env_entries entries;
+    const char *p;
+
+    env_entries_get(&entries);
+    while ((p = env_entries_next(&entries)) != NULL) {
+        const char *s = strchr(p, '=');
+        if (s++) {
+            long len = strlen(s);
+            if (RSTRING_LEN(value) == len && strncmp(s, RSTRING_PTR(value), len) == 0) {
+                str = env_str_new(p, s-p-1, enc);
+                break;
             }
-            env++;
         }
-        FREE_ENVIRON(environ);
     }
+    env_entries_release(&entries);
 
     return str;
-}
-
-static inline size_t
-environ_size(char **env)
-{
-    size_t size = 0;
-    while (*env) {
-        size += 1;
-        env++;
-    }
-    return size;
 }
 
 static VALUE
 env_to_hash(void)
 {
-    VALUE hash;
-
     rb_encoding *enc = env_encoding();
-    ENV_LOCKING() {
-        char **env = GET_ENVIRON(environ);
-        hash = rb_hash_new_capa(environ_size(env));
-        while (*env) {
-            char *s = strchr(*env, '=');
-            if (s) {
-                rb_hash_aset(hash, env_str_new(*env, s-*env, enc),
-                             env_str_new2(s+1, enc));
-            }
-            env++;
+    struct env_entries entries;
+    const char *p;
+
+    env_entries_get(&entries);
+    VALUE hash = rb_hash_new_capa(entries.len);
+    while ((p = env_entries_next(&entries)) != NULL) {
+        const char *s = strchr(p, '=');
+        if (s) {
+            rb_hash_aset(hash, env_str_new(p, s-p, enc),
+                         env_str_new2(s+1, enc));
         }
-        FREE_ENVIRON(environ);
     }
+    env_entries_release(&entries);
 
     return hash;
 }
@@ -7014,29 +7083,23 @@ env_freeze(VALUE self)
 static VALUE
 env_shift(VALUE _)
 {
-    VALUE result = Qnil;
     VALUE key = Qnil;
+    struct env_entries entries;
 
-    rb_encoding *enc = env_encoding();
-    ENV_LOCKING() {
-        char **env = GET_ENVIRON(environ);
-        if (*env) {
-            const char *p = *env;
-            const char *s = strchr(p, '=');
-            if (s) {
-                key = env_str_new(p, s-p, enc);
-                VALUE val = env_str_new2(getenv(RSTRING_PTR(key)), enc);
-                result = rb_assoc_new(key, val);
-            }
-        }
-        FREE_ENVIRON(environ);
+    env_entries_get(&entries);
+    const char *p = env_entries_next(&entries);
+    const char *s = p ? strchr(p, '=') : NULL;
+    if (s) {
+        key = env_enc_str_new(p, s-p, env_encoding());
     }
+    env_entries_release(&entries);
 
-    if (!NIL_P(key)) {
-        env_delete(key);
-    }
+    if (NIL_P(key)) return Qnil;
 
-    return result;
+    VALUE val = getenv_with_lock(RSTRING_PTR(key));
+    env_delete(key);
+
+    return rb_assoc_new(key, val);
 }
 
 /*

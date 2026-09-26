@@ -286,6 +286,14 @@ ractor_mark_unshareable_parts(rb_ractor_t *r)
 
     /* Structures the owner mutates while running follow. */
 
+    /* Calls deferred out of a VM lock critical section: the entries still to run are
+     * reachable from nowhere else. */
+    for (size_t i = r->deferred_calls_pos; i < rb_darray_size(r->deferred_calls); i++) {
+        const struct rb_deferred_call *call = rb_darray_ref(r->deferred_calls, i);
+        rb_gc_mark(call->arg0);
+        rb_gc_mark(call->arg1);
+    }
+
     rb_hook_list_mark(&r->pub.hooks);
     if (r->pub.targeted_hooks.num_entries) {
         st_foreach(&r->pub.targeted_hooks, mark_targeted_hook_list, 0);
@@ -459,6 +467,7 @@ ractor_free(void *ptr)
     RUBY_DEBUG_LOG("free r:%"PRI_SERIALT_PREFIX"u", rb_ractor_id(r));
 
     free_targeted_hooks(&r->pub.targeted_hooks);
+    rb_darray_free_without_gc(r->deferred_calls); /* appended with rb_darray_append_without_gc */
     rb_thread_sched_destroy(&r->threads.sched);
     rb_native_mutex_destroy(&r->sync.lock);
     ractor_local_storage_free(r);
@@ -641,8 +650,10 @@ vm_insert_ractor(rb_vm_t *vm, rb_ractor_t *r)
         if (vm->ractor.cnt == 0) {
             // main ractor
             vm_insert_ractor0(vm, r, true);
-            ractor_status_set(r, ractor_blocking);
-            ractor_status_set(r, ractor_running);
+            RB_VM_LOCKING() { // for assertions
+                ractor_status_set(r, ractor_blocking);
+                ractor_status_set(r, ractor_running);
+            }
         }
         else {
             cancel_single_ractor_mode();
@@ -1641,6 +1652,11 @@ obj_traverse_reachable_i(VALUE obj, void *ptr)
 }
 
 // Traverse obj's children via its GC mark function. Returns 1 to stop.
+//
+// No VM lock: rb_objspace_reachable_objects_from() needs none, and obj_traverse_i()
+// recurses back into here from the callback, so locking would put a whole subtree --
+// its allocations included -- in one reentrant critical section.  The objects walked
+// here are unshareable, hence local to this Ractor.
 static int
 obj_traverse_reachable(VALUE obj, struct obj_traverse_data *data)
 {
@@ -1648,9 +1664,7 @@ obj_traverse_reachable(VALUE obj, struct obj_traverse_data *data)
         .stop = false,
         .data = data,
     };
-    RB_VM_LOCKING_NO_BARRIER() {
-        rb_objspace_reachable_objects_from(obj, obj_traverse_reachable_i, &d);
-    }
+    rb_objspace_reachable_objects_from(obj, obj_traverse_reachable_i, &d);
     return d.stop;
 }
 
@@ -2169,13 +2183,13 @@ obj_refer_only_shareables_p_i(VALUE obj, void *ptr)
     }
 }
 
+// No VM lock, as in obj_traverse_reachable() above: the traversal needs none, and the
+// callback only reads shareable bits.
 static int
 obj_refer_only_shareables_p(VALUE obj)
 {
     int cnt = 0;
-    RB_VM_LOCKING_NO_BARRIER() {
-        rb_objspace_reachable_objects_from(obj, obj_refer_only_shareables_p_i, &cnt);
-    }
+    rb_objspace_reachable_objects_from(obj, obj_refer_only_shareables_p_i, &cnt);
     return cnt == 0;
 }
 

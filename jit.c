@@ -834,7 +834,7 @@ void
 rb_jit_for_each_iseq(rb_iseq_callback callback, void *data)
 {
     struct iseq_callback_data callback_data = { .callback = callback, .data = data };
-    rb_objspace_each_objects(for_each_iseq_i, (void *)&callback_data);
+    rb_objspace_each_objects_all(for_each_iseq_i, (void *)&callback_data);
 }
 
 bool

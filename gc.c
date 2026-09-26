@@ -4164,11 +4164,17 @@ each_objects_foreign_i(void *objspace, void *arg)
  *
  * If callback() returns non-zero, the iteration will be stopped.
  *
- * This takes the VM barrier for the whole walk, stopping every other
- * Ractor: the set of heap pages must not change under the callback, and a
- * GC is stop-the-world.  Because of that, the callback must not wait on
- * another Ractor (e.g. send/receive) -- they are all suspended and it
- * would deadlock.
+ * This walks the calling Ractor's own objspace, and only that one: with
+ * per-Ractor heaps, another Ractor's objects are reachable only under the VM
+ * barrier, where a callback may not run Ruby.  Use
+ * rb_objspace_each_objects_all() for whole-process coverage with a pure-C
+ * callback.
+ *
+ * No lock is taken, so the callback is free to run Ruby -- extensions do, e.g.
+ * ruby/debug's ObjectSpace.each_iseq yields each iseq from here.
+ * rb_gc_impl_each_objects() settles the lazy sweep and turns off incremental GC
+ * for the duration, so the walk tolerates the callback allocating or triggering
+ * a GC, and it tolerates pages being freed under it.
  *
  * This is a sample callback code to iterate liveness objects:
  *
@@ -4197,16 +4203,29 @@ each_objects_foreign_i(void *objspace, void *arg)
 void
 rb_objspace_each_objects(int (*callback)(void *, void *, size_t, void *), void *data)
 {
+    rb_gc_impl_each_objects(rb_gc_get_objspace(), callback, data);
+}
+
+/* Like rb_objspace_each_objects(), but covering every object in the process: the other
+ * live Ractors' objspaces and the zombie ones too, under the VM lock and barrier.
+ *
+ * That barrier is what makes the walk whole -- the other Ractors are stopped, so their
+ * heap pages cannot change under the callback -- and it is why the callback must be
+ * pure C here: it runs in a critical section, so it must not run Ruby, check interrupts
+ * or raise, and it must not wait on another Ractor (e.g. send/receive), which are all
+ * suspended and would deadlock.
+ *
+ * A foreign objspace's stopped lazy sweep is not settled; the walk skips its dead
+ * objects. */
+void
+rb_objspace_each_objects_all(int (*callback)(void *, void *, size_t, void *), void *data)
+{
     RB_VM_LOCKING() {
         rb_vm_barrier();
 
         void *self = rb_gc_get_objspace();
         rb_gc_impl_each_objects(self, callback, data);
 
-        /* Like upstream, cover every object in the process: walk the other live
-         * Ractors' objspaces too, under the VM lock and barrier, with a pure-C callback.
-         * A foreign objspace's stopped lazy sweep is not settled; the walk skips its
-         * dead objects. Also covers zombie objspaces. */
         struct each_objects_foreign_arg arg = { self, callback, data };
         rb_gc_vm_each_objspace(each_objects_foreign_i, &arg);
     }
@@ -5682,24 +5701,28 @@ ruby_gc_set_params(void)
     rb_gc_impl_set_params(rb_gc_get_objspace());
 }
 
+/* No lock: the redirect slot is private to this Ractor and the walk is synchronous, the
+ * same reasoning as rb_gc_verify_shareable().  The slot is only installed across
+ * rb_gc_mark_children(), which allocates nothing and reaches no safepoint -- and
+ * RB_GC_MARK_OR_TRAVERSE() clears it again around each callback, so whatever func()
+ * allocates is marked normally.  (The VM lock this used to take guarded the redirect
+ * back when it lived on the VM; per-Ractor storage replaced that.) */
 void
 rb_objspace_reachable_objects_from(VALUE obj, void (func)(VALUE, void *), void *data)
 {
-    RB_VM_LOCKING() {
-        if (rb_gc_impl_during_gc_p(rb_gc_get_objspace())) rb_bug("rb_objspace_reachable_objects_from() is not supported while during GC");
+    if (rb_gc_impl_during_gc_p(rb_gc_get_objspace())) rb_bug("rb_objspace_reachable_objects_from() is not supported while during GC");
 
-        if (!RB_SPECIAL_CONST_P(obj)) {
-            struct gc_mark_func_data_struct **mfdp = GC_MARK_FUNC_DATA_SLOTP();
-            struct gc_mark_func_data_struct *prev_mfd = *mfdp;
-            struct gc_mark_func_data_struct mfd = {
-                .mark_func = func,
-                .data = data,
-            };
+    if (!RB_SPECIAL_CONST_P(obj)) {
+        struct gc_mark_func_data_struct **mfdp = GC_MARK_FUNC_DATA_SLOTP();
+        struct gc_mark_func_data_struct *prev_mfd = *mfdp;
+        struct gc_mark_func_data_struct mfd = {
+            .mark_func = func,
+            .data = data,
+        };
 
-            *mfdp = &mfd;
-            rb_gc_mark_children(rb_gc_get_objspace(), obj);
-            *mfdp = prev_mfd;
-        }
+        *mfdp = &mfd;
+        rb_gc_mark_children(rb_gc_get_objspace(), obj);
+        *mfdp = prev_mfd;
     }
 }
 

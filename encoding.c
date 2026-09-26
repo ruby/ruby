@@ -350,7 +350,9 @@ rb_find_encoding(VALUE enc)
 static int
 enc_table_expand(struct enc_table *enc_table, int newsize)
 {
+    ASSERT_vm_locking();
     if (newsize > ENCODING_LIST_CAPA) {
+        RB_VM_UNLOCK();
         rb_raise(rb_eEncodingError, "too many encoding (> %d)", ENCODING_LIST_CAPA);
     }
     return newsize;
@@ -512,8 +514,9 @@ rb_enc_registered(const char *name)
 void
 rb_encdb_declare(const char *name)
 {
+    int idx;
     GLOBAL_ENC_TABLE_LOCKING(enc_table) {
-        int idx = enc_registered(enc_table, name);
+        idx = enc_registered(enc_table, name);
         if (idx < 0) {
             idx = enc_register(enc_table, name, 0);
         }
@@ -1861,9 +1864,12 @@ set_default_internal(VALUE klass, VALUE encoding)
     return encoding;
 }
 
+/* Runs under the VM lock: rb_define_const() dispatches const_added, which
+ * rb_vm_call_when_unlocked() defers to the outermost lock release. */
 static void
 set_encoding_const(const char *name, rb_encoding *enc)
 {
+    ASSERT_vm_locking();
     VALUE encoding = rb_enc_from_encoding(enc);
     char *s = (char *)name;
     int haslower = 0, hasupper = 0, valid = 0;
@@ -2091,7 +2097,9 @@ Init_unicode_version(void)
 void
 Init_encodings(void)
 {
-    rb_enc_init(&global_enc_table);
+    RB_VM_LOCKING() {
+        rb_enc_init(&global_enc_table);
+    }
 }
 
 /* locale insensitive ctype functions */

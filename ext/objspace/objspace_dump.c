@@ -782,31 +782,38 @@ dump_result(struct dump_config *dc)
     return dc->given_output;
 }
 
+/* dump_output() runs Ruby -- it converts the output with #to_io and flushes it
+ * -- so it is called before taking the VM lock, and what it sets up is handed
+ * to the locked part through here. */
+struct dump_args {
+    struct dump_config *dc;
+    VALUE obj;
+    VALUE shapes;
+};
+
 static VALUE
 dump_locked(void *args_p)
 {
-    struct dump_config dc = {0,};
-    VALUE obj = ((VALUE*)args_p)[0];
-    VALUE output = ((VALUE*)args_p)[1];
+    const struct dump_args *args = args_p;
 
-    if (!RB_SPECIAL_CONST_P(obj)) {
-        dc.cur_page_slot_size = rb_gc_obj_slot_size(obj);
-    }
-    dump_output(&dc, output, Qnil, Qnil, Qnil);
+    dump_object(args->obj, args->dc);
 
-    dump_object(obj, &dc);
-
-    return dump_result(&dc);
+    return dump_result(args->dc);
 }
 
 /* :nodoc: */
 static VALUE
 objspace_dump(VALUE os, VALUE obj, VALUE output)
 {
-    VALUE args[2];
-    args[0] = obj;
-    args[1] = output;
-    return rb_vm_lock_with_barrier(dump_locked, (void*)args);
+    struct dump_config dc = {0,};
+
+    if (!RB_SPECIAL_CONST_P(obj)) {
+        dc.cur_page_slot_size = rb_gc_obj_slot_size(obj);
+    }
+    dump_output(&dc, output, Qnil, Qnil, Qnil);
+
+    struct dump_args args = {.dc = &dc, .obj = obj};
+    return rb_vm_lock_with_barrier(dump_locked, &args);
 }
 
 static void
@@ -860,65 +867,58 @@ shape_id_i(shape_id_t shape_id, void *data)
 static VALUE
 dump_all_locked(void *args_p)
 {
-    struct dump_config dc = {0,};
-    VALUE output = ((VALUE*)args_p)[0];
-    VALUE full = ((VALUE*)args_p)[1];
-    VALUE since = ((VALUE*)args_p)[2];
-    VALUE shapes = ((VALUE*)args_p)[3];
+    const struct dump_args *args = args_p;
+    struct dump_config *dc = args->dc;
 
-    dump_output(&dc, output, full, since, shapes);
-
-    if (!dc.partial_dump || dc.since == 0) {
+    if (!dc->partial_dump || dc->since == 0) {
         /* dump roots */
-        rb_objspace_reachable_objects_from_root(root_obj_i, &dc);
-        if (dc.roots) dump_append(&dc, "]}\n");
+        rb_objspace_reachable_objects_from_root(root_obj_i, dc);
+        if (dc->roots) dump_append(dc, "]}\n");
     }
 
-    if (RTEST(shapes)) {
-        rb_shape_each_shape_id(shape_id_i, &dc);
+    if (RTEST(args->shapes)) {
+        rb_shape_each_shape_id(shape_id_i, dc);
     }
 
     /* dump all objects */
-    rb_objspace_each_objects(heap_i, &dc);
+    rb_objspace_each_objects_all(heap_i, dc);
 
-    return dump_result(&dc);
+    return dump_result(dc);
 }
 
 /* :nodoc: */
 static VALUE
 objspace_dump_all(VALUE os, VALUE output, VALUE full, VALUE since, VALUE shapes)
 {
-    VALUE args[4];
-    args[0] = output;
-    args[1] = full;
-    args[2] = since;
-    args[3] = shapes;
-    return rb_vm_lock_with_barrier(dump_all_locked, (void*)args);
+    struct dump_config dc = {0,};
+
+    dump_output(&dc, output, full, since, shapes);
+
+    struct dump_args args = {.dc = &dc, .shapes = shapes};
+    return rb_vm_lock_with_barrier(dump_all_locked, &args);
 }
 
 static VALUE
 dump_shapes_locked(void *args_p)
 {
-    struct dump_config dc = {0,};
-    VALUE output = ((VALUE*)args_p)[0];
-    VALUE shapes = ((VALUE*)args_p)[1];
+    const struct dump_args *args = args_p;
 
-    dump_output(&dc, output, Qfalse, Qnil, shapes);
-
-    if (RTEST(shapes)) {
-        rb_shape_each_shape_id(shape_id_i, &dc);
+    if (RTEST(args->shapes)) {
+        rb_shape_each_shape_id(shape_id_i, args->dc);
     }
-    return dump_result(&dc);
+    return dump_result(args->dc);
 }
 
 /* :nodoc: */
 static VALUE
 objspace_dump_shapes(VALUE os, VALUE output, VALUE shapes)
 {
-    VALUE args[2];
-    args[0] = output;
-    args[1] = shapes;
-    return rb_vm_lock_with_barrier(dump_shapes_locked, (void*)args);
+    struct dump_config dc = {0,};
+
+    dump_output(&dc, output, Qfalse, Qnil, shapes);
+
+    struct dump_args args = {.dc = &dc, .shapes = shapes};
+    return rb_vm_lock_with_barrier(dump_shapes_locked, &args);
 }
 
 void

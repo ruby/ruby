@@ -26,7 +26,7 @@ vm_lock_assertable_p(void)
 void
 RUBY_ASSERT_vm_locking(void)
 {
-    if (vm_lock_assertable_p() && rb_multi_ractor_p()) {
+    if (vm_lock_assertable_p() && rb_vm_locking_needed_p()) {
         rb_vm_t *vm = GET_VM();
         VM_ASSERT(vm_locked(vm));
     }
@@ -35,7 +35,7 @@ RUBY_ASSERT_vm_locking(void)
 void
 RUBY_ASSERT_vm_locking_with_barrier(void)
 {
-    if (vm_lock_assertable_p() && rb_multi_ractor_p()) {
+    if (vm_lock_assertable_p() && rb_vm_locking_needed_p()) {
         rb_vm_t *vm = GET_VM();
         VM_ASSERT(vm_locked(vm));
 
@@ -49,7 +49,7 @@ RUBY_ASSERT_vm_locking_with_barrier(void)
 void
 RUBY_ASSERT_vm_unlocking(void)
 {
-    if (vm_lock_assertable_p() && rb_multi_ractor_p()) {
+    if (vm_lock_assertable_p() && rb_vm_locking_needed_p()) {
         rb_vm_t *vm = GET_VM();
         VM_ASSERT(!vm_locked(vm));
     }
@@ -60,6 +60,46 @@ bool
 rb_vm_locked_p(void)
 {
     return vm_locked(GET_VM());
+}
+
+void
+rb_vm_call_when_unlocked(void (*func)(VALUE, VALUE), VALUE arg0, VALUE arg1)
+{
+    if (LIKELY(!rb_vm_locked_p())) {
+        func(arg0, arg1);
+        return;
+    }
+
+    /* _without_gc: rb_darray_append() can collect from inside its realloc, after the
+     * buffer has moved but before the Ractor points at the new one, and the marker
+     * would walk the freed block.  It also keeps the allocation from raising
+     * NoMemoryError here, which a critical section could not take either. */
+    struct rb_deferred_call call = { func, arg0, arg1 };
+    rb_darray_append_without_gc(&GET_RACTOR()->deferred_calls, call);
+}
+
+/* Called from vm_lock_leave() with the lock released, so the callbacks may run Ruby. */
+static void
+vm_run_deferred_calls(rb_ractor_t *cr)
+{
+    ASSERT_vm_unlocking();
+
+    /* Drive from the Ractor rather than a detached list: the pending entries stay
+     * reachable for marking, and a callback that queues more is picked up here. */
+    while (cr->deferred_calls_pos < rb_darray_size(cr->deferred_calls)) {
+        struct rb_deferred_call call = *rb_darray_ref(cr->deferred_calls, cr->deferred_calls_pos++);
+        call.func(call.arg0, call.arg1);
+    }
+
+    cr->deferred_calls_pos = 0;
+    rb_darray_clear(cr->deferred_calls);
+}
+
+void
+rb_vm_discard_deferred_calls(rb_ractor_t *cr)
+{
+    cr->deferred_calls_pos = 0;
+    rb_darray_clear(cr->deferred_calls);
 }
 
 static bool
@@ -124,7 +164,7 @@ vm_lock_enter(rb_ractor_t *cr, rb_vm_t *vm, bool locked, bool no_barrier, unsign
 static void
 vm_lock_leave(rb_vm_t *vm, bool no_barrier, unsigned int *lev APPEND_LOCATION_ARGS)
 {
-    MAYBE_UNUSED(rb_ractor_t *cr = vm->ractor.sync.lock_owner);
+    rb_ractor_t *cr = vm->ractor.sync.lock_owner;
 
     RUBY_DEBUG_LOG2(file, line, "rec:%u owner:%u%s", vm->ractor.sync.lock_rec,
                     (unsigned int)rb_ractor_id(cr),
@@ -152,6 +192,13 @@ vm_lock_leave(rb_vm_t *vm, bool no_barrier, unsigned int *lev APPEND_LOCATION_AR
     if (vm->ractor.sync.lock_rec == 0) {
         vm->ractor.sync.lock_owner = NULL;
         rb_native_mutex_unlock(&vm->ractor.sync.lock);
+
+        /* After the unlock: these callbacks may run Ruby.  Reading cr's own list here is
+         * safe even though another Ractor may already hold the lock -- only its owner
+         * touches it. */
+        if (UNLIKELY(rb_darray_size(cr->deferred_calls) > cr->deferred_calls_pos)) {
+            vm_run_deferred_calls(cr);
+        }
     }
 }
 
@@ -256,6 +303,10 @@ rb_ec_vm_lock_rec_release(const rb_execution_context_t *ec,
                           unsigned int current_lock_rec)
 {
     VM_ASSERT(recorded_lock_rec != current_lock_rec);
+
+    /* A non-local exit is not a safe point to run a deferred call: we are mid-longjmp,
+     * and the operation that queued it did not complete. */
+    rb_vm_discard_deferred_calls(rb_ec_ractor_ptr(ec));
 
     if (UNLIKELY(recorded_lock_rec > current_lock_rec)) {
         rb_bug("unexpected situation - recordd:%u current:%u",
