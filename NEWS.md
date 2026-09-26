@@ -342,6 +342,11 @@ Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for det
   shareable, but almost all of its methods raise `FrozenError` and it can
   still refer to unshareable objects through the members of `rb_io_t`.
 
+* On Windows, `Process.kill(0, pid)` now raises `Errno::ESRCH` for a process
+  that has exited but whose handle is still open, such as a child spawned by
+  `IO.popen` before it is reaped.  It used to return 1.  A process which exited
+  with the code 259 is still reported as alive. [[Feature #7082]]
+
 ## Stdlib compatibility issues
 
 * `Etc.getlogin` on Windows now returns the login name determined when the
@@ -528,6 +533,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Bug #18947]: https://bugs.ruby-lang.org/issues/18947
 [Bug #22273]: https://bugs.ruby-lang.org/issues/22273
 [Bug #22276]: https://bugs.ruby-lang.org/issues/22276
+[Feature #7082]: https://bugs.ruby-lang.org/issues/7082
 [Feature #8948]: https://bugs.ruby-lang.org/issues/8948
 [Feature #9779]: https://bugs.ruby-lang.org/issues/9779
 [Feature #15330]: https://bugs.ruby-lang.org/issues/15330

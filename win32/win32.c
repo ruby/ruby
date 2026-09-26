@@ -5001,6 +5001,19 @@ kill(rb_pid_t pid, int sig)
                 ret = -1;
             }
             else {
+                DWORD status;
+                if (!GetExitCodeProcess(hProc, &status)) {
+                    errno = map_errno(GetLastError());
+                    ret = -1;
+                }
+                else if (status != STILL_ACTIVE) {
+                    /* An open handle keeps the process object alive after
+                     * exit, so OpenProcess can succeed here.  Exit code
+                     * STILL_ACTIVE (259) is indistinguishable from a
+                     * running process. */
+                    errno = ESRCH;
+                    ret = -1;
+                }
                 CloseHandle(hProc);
             }
         }
