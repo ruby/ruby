@@ -223,6 +223,10 @@ unset_addr_list_add(UnsetAddrList* uslist, int offset, struct _Node* node)
 static int
 add_opcode(regex_t* reg, int opcode)
 {
+  /* Every instruction passes here, so this is where a program that would
+     outgrow its offset type is stopped, while it is still being emitted. */
+  if (reg->used > MAX_COMPILED_PROGRAM_SIZE)
+    return ONIGERR_TOO_BIG_COMPILED_PROGRAM;
   BBUF_ADD1(reg, opcode);
   return 0;
 }
@@ -739,6 +743,10 @@ is_anychar_star_quantifier(QtfrNode* qn)
 }
 
 #define QUANTIFIER_EXPAND_LIMIT_SIZE   50
+/* (tlen * n <= QUANTIFIER_EXPAND_LIMIT_SIZE) without overflowing int: tlen
+   and n are each bounded by ONIG_MAX_REPEAT_NUM, but their product is not. */
+#define IS_EXPAND_LIMIT_OK(tlen, n) \
+  ((n) <= 0 || (tlen) <= QUANTIFIER_EXPAND_LIMIT_SIZE / (n))
 #define CKN_ON   (ckn > 0)
 
 #ifdef USE_COMBINATION_EXPLOSION_CHECK
@@ -1003,7 +1011,7 @@ compile_length_quantifier_node(QtfrNode* qn, regex_t* reg)
     mod_tlen = tlen;
 
   if (infinite &&
-      (qn->lower <= 1 || tlen * qn->lower <= QUANTIFIER_EXPAND_LIMIT_SIZE)) {
+      (qn->lower <= 1 || IS_EXPAND_LIMIT_OK(tlen, qn->lower))) {
     if (qn->lower == 1 && tlen > QUANTIFIER_EXPAND_LIMIT_SIZE) {
       len = SIZE_OP_JUMP;
     }
@@ -1029,8 +1037,8 @@ compile_length_quantifier_node(QtfrNode* qn, regex_t* reg)
     len = SIZE_OP_JUMP + tlen;
   }
   else if (!infinite && qn->greedy &&
-           (qn->upper == 1 || (tlen + SIZE_OP_PUSH) * qn->upper
-                                      <= QUANTIFIER_EXPAND_LIMIT_SIZE)) {
+           (qn->upper == 1 ||
+            IS_EXPAND_LIMIT_OK(tlen + SIZE_OP_PUSH, qn->upper))) {
     len = tlen * qn->lower;
     len += (SIZE_OP_PUSH + tlen) * (qn->upper - qn->lower);
   }
@@ -1080,7 +1088,7 @@ compile_quantifier_node(QtfrNode* qn, regex_t* reg)
     mod_tlen = tlen;
 
   if (infinite &&
-      (qn->lower <= 1 || tlen * qn->lower <= QUANTIFIER_EXPAND_LIMIT_SIZE)) {
+      (qn->lower <= 1 || IS_EXPAND_LIMIT_OK(tlen, qn->lower))) {
     if (qn->lower == 1 && tlen > QUANTIFIER_EXPAND_LIMIT_SIZE) {
       if (qn->greedy) {
 #ifdef USE_OP_PUSH_OR_JUMP_EXACT
@@ -1150,8 +1158,8 @@ compile_quantifier_node(QtfrNode* qn, regex_t* reg)
     r = compile_tree(qn->target, reg);
   }
   else if (!infinite && qn->greedy &&
-           (qn->upper == 1 || (tlen + SIZE_OP_PUSH) * qn->upper
-                                  <= QUANTIFIER_EXPAND_LIMIT_SIZE)) {
+           (qn->upper == 1 ||
+            IS_EXPAND_LIMIT_OK(tlen + SIZE_OP_PUSH, qn->upper))) {
     int n = qn->upper - qn->lower;
 
     r = compile_tree_n_times(qn->target, qn->lower, reg);
