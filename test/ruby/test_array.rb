@@ -3417,6 +3417,16 @@ class TestArray < Test::Unit::TestCase
     # 49 will be out-of-bounds when ary.replace is called
     def gen.rand(lim) = 49
     assert_equal([], ary.sample(obj, random: gen))
+
+    ary = (1..100).to_a
+    obj = Object.new
+    obj.define_singleton_method(:to_int) do
+      ary.replace(Array.new(10) { :x })
+      10
+    end
+    gen = Object.new
+    gen.define_singleton_method(:rand) { |lim| 8 }
+    assert_equal([], ary.sample(obj, random: gen))
   end
 
   def test_cycle
