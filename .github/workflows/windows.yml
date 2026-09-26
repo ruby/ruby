@@ -51,7 +51,7 @@ jobs:
       || (github.event.pull_request.user.login == 'dependabot[bot]' && !startsWith(github.head_ref, 'dependabot/vcpkg'))
       )}}
 
-    name: Windows ${{ matrix.os }}${{ matrix.target == 'x86' && ' x86' || '' }} (${{ matrix.test_task }})
+    name: Windows ${{ matrix.os }}${{ case(matrix.target == 'x86', ' x86', '') }} (${{ matrix.test_task }})
 
     permissions:
       contents: read
@@ -188,7 +188,7 @@ jobs:
       - name: Set up Launchable
         uses: ./.github/actions/launchable/setup
         with:
-          os: windows-${{ matrix.os }}${{ matrix.target == 'x86' && '-x86' || '' }}
+          os: windows-${{ matrix.os }}${{ case(matrix.target == 'x86', '-x86', '') }}
           launchable-token: ${{ secrets.LAUNCHABLE_TOKEN }}
           builddir: build
           srcdir: src
@@ -227,7 +227,7 @@ jobs:
 
       - uses: ./.github/actions/slack
         with:
-          label: Windows ${{ matrix.os }}${{ matrix.target == 'x86' && ' x86' || '' }} / ${{ matrix.test_task || 'check' }}
+          label: Windows ${{ matrix.os }}${{ case(matrix.target == 'x86', ' x86', '') }} / ${{ matrix.test_task || 'check' }}
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
         if: ${{ failure() }}
 
