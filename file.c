@@ -7866,10 +7866,6 @@ rb_find_file(VALUE path)
 const char ruby_null_device[] =
 #if defined DOSISH
     "NUL"
-#elif defined AMIGA || defined __amigaos__
-    "NIL"
-#elif defined __VMS
-    "NL:"
 #else
     "/dev/null"
 #endif

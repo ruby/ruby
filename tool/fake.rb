@@ -2,7 +2,7 @@
 # See common.mk and Makefile.in for details.
 
 class File
-  sep = ("\\" if RUBY_PLATFORM =~ /mswin|bccwin|mingw/)
+  sep = ("\\" if RUBY_PLATFORM =~ /mswin|mingw/)
   if sep != ALT_SEPARATOR
     remove_const :ALT_SEPARATOR
     ALT_SEPARATOR = sep

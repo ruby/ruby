@@ -2,7 +2,7 @@
 require 'test/unit'
 
 class TestEnv < Test::Unit::TestCase
-  windows = /bccwin|mswin|mingw/ =~ RUBY_PLATFORM
+  windows = /mswin|mingw/ =~ RUBY_PLATFORM
   IGNORE_CASE = windows
   ENCODING = windows ? Encoding::UTF_8 : Encoding.find("locale")
   PATH_ENV = "PATH"
@@ -1499,7 +1499,7 @@ class TestEnv < Test::Unit::TestCase
     RUBY
   end
 
-  if RUBY_PLATFORM =~ /bccwin|mswin|mingw/
+  if RUBY_PLATFORM =~ /mswin|mingw/
     def test_memory_leak_aset
       bug9977 = '[ruby-dev:48323] [Bug #9977]'
       assert_no_memory_leak([], <<-'end;', "5_000.times(&doit)", bug9977, limit: 2.0)
