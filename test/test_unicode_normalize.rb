@@ -219,6 +219,22 @@ class TestUnicodeNormalize
     assert_equal "\u{16121 16121 16121 16121 16121 1611E}", "\u{1611E 16121 16121 16121 16121 16121}".unicode_normalize
   end
 
+  def test_ractor
+    assert_ractor(<<~'RUBY')
+      src = "D\u0307\u0323"
+      r = Ractor.new(src) do |s|
+        # call twice per form: the first fills the memoization cache, the second hits it
+        [%i[nfc nfd nfkc nfkd].map {|form| 2.times.map {s.unicode_normalize(form)}},
+         %i[nfc nfd nfkc nfkd].map {|form| s.unicode_normalized?(form)},
+         s.encode('UTF-16BE').unicode_normalize(:nfc)]
+      end.value
+      assert_equal([["\u1E0C\u0307"] * 2, ["D\u0323\u0307"] * 2,
+                    ["\u1E0C\u0307"] * 2, ["D\u0323\u0307"] * 2], r[0])
+      assert_equal([false] * 4, r[1])
+      assert_equal("\u1E0C\u0307".encode('UTF-16BE'), r[2])
+    RUBY
+  end
+
   def test_canonical_ordering
     a = "\u03B1\u0313\u0300\u0345"
     a_unordered1 = "\u03B1\u0345\u0313\u0300"
