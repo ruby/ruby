@@ -6,18 +6,39 @@ describe "ARGF.lineno" do
     @file2 = fixture __FILE__, "file2.txt"
   end
 
-  # NOTE: this test assumes that fixtures files have two lines each
-  # TODO: break this into four specs
-  it "returns the current line number on each file" do
+  # NOTE: these examples assume that the fixture files have two lines each
+  it "starts counting from 1 after resetting the line number" do
     argf [@file1, @file2] do
       @argf.lineno = 0
       @argf.gets
       @argf.lineno.should == 1
+    end
+  end
+
+  it "increments with each additional line in the current file" do
+    argf [@file1] do
+      @argf.lineno = 0
+      @argf.gets
       @argf.gets
       @argf.lineno.should == 2
-      @argf.gets
+    end
+  end
+
+  it "continues counting when moving to the next file" do
+    argf [@file1, @file2] do
+      @argf.lineno = 0
+      3.times { @argf.gets }
       @argf.lineno.should == 3
+
       @argf.gets
+      @argf.lineno.should == 4
+    end
+  end
+
+  it "returns the total line number once all input has been read" do
+    argf [@file1, @file2] do
+      @argf.lineno = 0
+      @argf.each_line { }
       @argf.lineno.should == 4
     end
   end
