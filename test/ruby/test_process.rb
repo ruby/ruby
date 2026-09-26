@@ -292,7 +292,7 @@ class TestProcess < Test::Unit::TestCase
   end
   case RbConfig::CONFIG['target_os']
   when /mswin|mingw/
-    MANDATORY_ENVS.concat(%w[HOME USER TMPDIR PROCESSOR_ARCHITECTURE])
+    MANDATORY_ENVS.concat(%w[HOME USER TMPDIR PROCESSOR_ARCHITECTURE PROCESSOR_ARCHITEW6432])
   when /darwin/
     MANDATORY_ENVS.concat(%w[TMPDIR], ENV.keys.grep(/\A__CF_/))
     # IO.popen([ENV.keys.to_h {|e| [e, nil]},
