@@ -80,32 +80,6 @@ module JSON
     def generator=(generator) # :nodoc:
       old, $VERBOSE = $VERBOSE, nil
 
-      unless generator::State.respond_to?(:default_sort_keys_proc_unchecked=, true)
-        generator::State.singleton_class.class_eval do
-          alias_method :default_sort_keys_proc_unchecked=, :default_sort_keys_proc=
-          private :default_sort_keys_proc_unchecked=
-
-          def default_sort_keys_proc=(proc)
-            unless ::Proc === proc
-              raise ::TypeError, "sort_key_proc must be a Proc"
-            end
-            if defined?(::Ractor) && !::Ractor.shareable?(proc) && !::Ractor.current.equal?(::Ractor.main)
-              raise ::Ractor::IsolationError,
-                    "can not set a non-shareable Proc as the default sort_keys proc from a non-main Ractor"
-            end
-            self.default_sort_keys_proc_unchecked = proc
-          end
-        end
-      end
-
-      # The default proc used when the +sort_keys+ generation option is +true+.
-      # It returns a new hash with the entries sorted by their keys.
-      sort_keys_proc = ->(hash) { hash.sort.to_h }
-      if defined?(::Ractor) && Ractor.respond_to?(:shareable_lambda)
-        sort_keys_proc = Ractor.shareable_lambda(&sort_keys_proc)
-      end
-      generator::State.default_sort_keys_proc = sort_keys_proc
-
       @generator = generator
       if generator.const_defined?(:GeneratorMethods)
         generator_methods = generator::GeneratorMethods

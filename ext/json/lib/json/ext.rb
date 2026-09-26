@@ -32,13 +32,22 @@ module JSON
     Ext::Parser::Config = Ext::ParserConfig
     JSON.parser = Ext::Parser
 
-    if RUBY_ENGINE == 'truffleruby'
+    generator = if RUBY_ENGINE == 'truffleruby'
       require 'json/truffle_ruby/generator'
-      JSON.generator = JSON::TruffleRuby::Generator
+      JSON::TruffleRuby::Generator
     else
       require 'json/ext/generator'
-      JSON.generator = Generator
+      Generator
     end
+
+    # The default proc used when the +sort_keys+ generation option is +true+.
+    # It returns a new hash with the entries sorted by their keys.
+    sort_keys_proc = ->(hash) { hash.sort.to_h }
+    if defined?(::Ractor) && Ractor.respond_to?(:shareable_lambda)
+      sort_keys_proc = Ractor.shareable_lambda(&sort_keys_proc)
+    end
+    generator::State.default_sort_keys_proc = sort_keys_proc
+    JSON.generator = generator
   end
 
   if defined?(ResumableParser) # Not yet available on JRuby
