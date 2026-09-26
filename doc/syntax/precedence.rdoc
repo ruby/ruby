@@ -3,6 +3,10 @@
 From highest to lowest, this is the precedence table for ruby.  High precedence
 operations happen before low precedence operations.
 
+  ::
+
+  []
+
   !, ~, unary +
 
   **
@@ -43,8 +47,6 @@ operations happen before low precedence operations.
 
   modifier-if, modifier-unless, modifier-while, modifier-until
 
-  { } blocks
-
 Unary <code>+</code> and unary <code>-</code> are for <code>+1</code>,
 <code>-1</code> or <code>-(a + b)</code>.
 
@@ -57,8 +59,14 @@ Note that <code>(a if b rescue c)</code> is parsed as <code>((a if b) rescue
 c)</code> due to reasons not related to precedence. See {modifier
 statements}[control_expressions.rdoc#label-Modifier+Statements].
 
-<code>{ ... }</code> blocks have priority below all listed operations, but
-<code>do ... end</code> blocks have lower priority.
+Blocks are not part of the precedence table above; the difference between the
+two block forms is how far they reach.  A <code>{ ... }</code> block binds to
+the nearest method call, while a <code>do ... end</code> block binds to the
+outermost one, so <code>{ ... }</code> binds more tightly than
+<code>do ... end</code>:
+
+  p [1, 2].map { |x| x * 2 }      # prints [2, 4]
+  p [1, 2].map do |x| x * 2 end   # prints an Enumerator
 
 All other words in the precedence table above are keywords.
 
