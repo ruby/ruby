@@ -4182,11 +4182,65 @@ io_buffer_check_mask_size(size_t size)
         rb_raise(rb_eIOBufferMaskError, "Zero-length mask given!");
 }
 
-static void
-memory_and(unsigned char * restrict output, const unsigned char * restrict base, size_t size, const unsigned char * restrict mask, size_t mask_size)
+enum io_buffer_mask_operation {
+    IO_BUFFER_MASK_AND,
+    IO_BUFFER_MASK_OR,
+    IO_BUFFER_MASK_XOR,
+};
+
+static inline bool
+memory_mask_broadcast(const unsigned char *mask, size_t mask_size, uint64_t *word)
 {
-    for (size_t offset = 0; offset < size; offset += 1) {
-        output[offset] = base[offset] & mask[offset % mask_size];
+    if (sizeof(*word) % mask_size != 0) return false;
+
+    unsigned char *bytes = (unsigned char *)word;
+    for (size_t offset = 0; offset < sizeof(*word); offset += 1) {
+        bytes[offset] = mask[offset % mask_size];
+    }
+
+    return true;
+}
+
+static inline uint64_t
+memory_mask_apply(enum io_buffer_mask_operation operation, uint64_t value, uint64_t mask)
+{
+    switch (operation) {
+      case IO_BUFFER_MASK_AND:
+        return value & mask;
+      case IO_BUFFER_MASK_OR:
+        return value | mask;
+      case IO_BUFFER_MASK_XOR:
+        return value ^ mask;
+      default:
+        UNREACHABLE_RETURN(value);
+    }
+}
+
+// output and base may be the same pointer, so neither can be restrict.
+static inline void
+memory_mask(enum io_buffer_mask_operation operation, unsigned char *output, const unsigned char *base, size_t size, const unsigned char * restrict mask, size_t mask_size)
+{
+    size_t offset = 0;
+
+    if (mask_size >= size) {
+        for (; offset < size; offset += 1) {
+            output[offset] = memory_mask_apply(operation, base[offset], mask[offset]);
+        }
+        return;
+    }
+
+    uint64_t word;
+    if (memory_mask_broadcast(mask, mask_size, &word)) {
+        for (; offset + sizeof(word) <= size; offset += sizeof(word)) {
+            uint64_t value;
+            memcpy(&value, base + offset, sizeof(value));
+            value = memory_mask_apply(operation, value, word);
+            memcpy(output + offset, &value, sizeof(value));
+        }
+    }
+
+    for (; offset < size; offset += 1) {
+        output[offset] = memory_mask_apply(operation, base[offset], mask[offset % mask_size]);
     }
 }
 
@@ -4222,17 +4276,9 @@ io_buffer_and(VALUE self, VALUE mask)
     VALUE output = rb_io_buffer_new(NULL, size, io_flags_for_size(size));
     struct rb_io_buffer_view *output_buffer = get_io_buffer_view(output);
 
-    memory_and(output_buffer->base, base, size, mask_base, mask_size);
+    memory_mask(IO_BUFFER_MASK_AND, output_buffer->base, base, size, mask_base, mask_size);
 
     return output;
-}
-
-static void
-memory_or(unsigned char * restrict output, const unsigned char * restrict base, size_t size, const unsigned char * restrict mask, size_t mask_size)
-{
-    for (size_t offset = 0; offset < size; offset += 1) {
-        output[offset] = base[offset] | mask[offset % mask_size];
-    }
 }
 
 /*
@@ -4267,17 +4313,9 @@ io_buffer_or(VALUE self, VALUE mask)
     VALUE output = rb_io_buffer_new(NULL, size, io_flags_for_size(size));
     struct rb_io_buffer_view *output_buffer = get_io_buffer_view(output);
 
-    memory_or(output_buffer->base, base, size, mask_base, mask_size);
+    memory_mask(IO_BUFFER_MASK_OR, output_buffer->base, base, size, mask_base, mask_size);
 
     return output;
-}
-
-static void
-memory_xor(unsigned char * restrict output, const unsigned char * restrict base, size_t size, const unsigned char * restrict mask, size_t mask_size)
-{
-    for (size_t offset = 0; offset < size; offset += 1) {
-        output[offset] = base[offset] ^ mask[offset % mask_size];
-    }
 }
 
 /*
@@ -4312,7 +4350,7 @@ io_buffer_xor(VALUE self, VALUE mask)
     VALUE output = rb_io_buffer_new(NULL, size, io_flags_for_size(size));
     struct rb_io_buffer_view *output_buffer = get_io_buffer_view(output);
 
-    memory_xor(output_buffer->base, base, size, mask_base, mask_size);
+    memory_mask(IO_BUFFER_MASK_XOR, output_buffer->base, base, size, mask_base, mask_size);
 
     return output;
 }
@@ -4380,14 +4418,6 @@ io_buffer_check_overlaps(const struct rb_io_buffer_view *a, const struct rb_io_b
         rb_raise(rb_eIOBufferMaskError, "Mask overlaps source buffer!");
 }
 
-static void
-memory_and_inplace(unsigned char * restrict base, size_t size, unsigned char * restrict mask, size_t mask_size)
-{
-    for (size_t offset = 0; offset < size; offset += 1) {
-        base[offset] &= mask[offset % mask_size];
-    }
-}
-
 /*
  *  call-seq:
  *    source.and!(mask) -> io_buffer
@@ -4423,17 +4453,9 @@ io_buffer_and_inplace(VALUE self, VALUE mask)
     size_t mask_size;
     io_buffer_get_bytes_for_reading(mask_buffer, &mask_base, &mask_size);
 
-    memory_and_inplace(base, size, (unsigned char *)mask_base, mask_size);
+    memory_mask(IO_BUFFER_MASK_AND, base, base, size, mask_base, mask_size);
 
     return self;
-}
-
-static void
-memory_or_inplace(unsigned char * restrict base, size_t size, unsigned char * restrict mask, size_t mask_size)
-{
-    for (size_t offset = 0; offset < size; offset += 1) {
-        base[offset] |= mask[offset % mask_size];
-    }
 }
 
 /*
@@ -4471,17 +4493,9 @@ io_buffer_or_inplace(VALUE self, VALUE mask)
     size_t mask_size;
     io_buffer_get_bytes_for_reading(mask_buffer, &mask_base, &mask_size);
 
-    memory_or_inplace(base, size, (unsigned char *)mask_base, mask_size);
+    memory_mask(IO_BUFFER_MASK_OR, base, base, size, mask_base, mask_size);
 
     return self;
-}
-
-static void
-memory_xor_inplace(unsigned char * restrict base, size_t size, unsigned char * restrict mask, size_t mask_size)
-{
-    for (size_t offset = 0; offset < size; offset += 1) {
-        base[offset] ^= mask[offset % mask_size];
-    }
 }
 
 /*
@@ -4519,7 +4533,7 @@ io_buffer_xor_inplace(VALUE self, VALUE mask)
     size_t mask_size;
     io_buffer_get_bytes_for_reading(mask_buffer, &mask_base, &mask_size);
 
-    memory_xor_inplace(base, size, (unsigned char *)mask_base, mask_size);
+    memory_mask(IO_BUFFER_MASK_XOR, base, base, size, mask_base, mask_size);
 
     return self;
 }
