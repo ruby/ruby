@@ -1277,20 +1277,6 @@ assert_equal 'Ractor::IsolationError', %q{
   res
 }
 
-# Class#initialize writes the superclass of an uninitialized class, so it is
-# owner-only like any other modification
-assert_equal 'can not modify K because it is created by another Ractor', %q{
-  K = Class.allocate
-
-  r = Ractor.new { K.send(:initialize, Struct) }
-
-  begin
-    r.join
-  rescue Ractor::RemoteError => e
-    e.cause.message
-  end
-}
-
 # Module#refine writes its refinement tables into the receiver, so the receiver
 # must be owned too
 assert_equal 'can not modify M because it is created by another Ractor', %q{

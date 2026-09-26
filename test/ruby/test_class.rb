@@ -83,12 +83,6 @@ class TestClass < Test::Unit::TestCase
     assert_nil(Class.new <=> 1)
   end
 
-  def test_class_initialize
-    assert_raise(TypeError) do
-      Class.new.instance_eval { initialize }
-    end
-  end
-
   def test_instantiate_singleton_class
     c = class << Object.new; self; end
     assert_raise(TypeError) { c.new }
@@ -317,14 +311,18 @@ class TestClass < Test::Unit::TestCase
   end
 
   def test_uninitialized
-    assert_raise(TypeError) { Class.allocate.new }
-    assert_raise(TypeError) { Class.allocate.superclass }
-    bug6863 = '[ruby-core:47148]'
-    assert_raise(TypeError, bug6863) { Class.new(Class.allocate) }
+    assert_raise(NoMethodError) { Class.allocate }
 
     allocator = Class.instance_method(:allocate)
+    assert_raise(TypeError) { allocator.bind_call(Class) }
     assert_nothing_raised { allocator.bind(Rational).call }
     assert_nothing_raised { allocator.bind_call(Rational) }
+  end
+
+  def test_singleton_class_new
+    assert_raise_with_message(TypeError, /singleton class/) { Integer.singleton_class.new }
+    assert_raise_with_message(TypeError, /singleton class/) { Class.new.singleton_class.new }
+    assert_raise_with_message(TypeError, /singleton class/) { Class.singleton_class.new }
   end
 
   def test_nonascii_name

@@ -6913,7 +6913,7 @@ mod hir_opt_tests {
             def test = SC.allocate
             test rescue 0
         ");
-        // Not specialized: singleton classes are not leaf allocators
+        // Not specialized: a metaclass finds Module.allocate, which is undefined
         assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:4:
         bb1():
@@ -6927,10 +6927,9 @@ mod hir_opt_tests {
         bb3(v6:BasicObject):
           PatchPoint StableConstantNames(0x1000, SC)
           v11:ClassSubclass[Class@0x1008] = Const Value(VALUE(0x1008))
-          PatchPoint MethodRedefined(Class@0x1010, allocate@0x1018, cme:0x1020)
-          v22:BasicObject = CCallWithFrame v11, :Class.allocate@0x1048
+          v13:BasicObject = Send v11, :allocate # SendFallbackReason: Send: unsupported method type Null
           CheckInterrupts
-          Return v22
+          Return v13
         ");
     }
 
@@ -19298,69 +19297,6 @@ mod hir_opt_tests {
           v22:ClassSubclass[Class@0x1048] = Const Value(VALUE(0x1048))
           CheckInterrupts
           Return v22
-        ");
-    }
-
-    #[test]
-    fn test_dont_fold_uninitialized_class_superclass() {
-        eval(r#"
-            C = Class.allocate
-            def test = C.superclass
-            begin; test; rescue TypeError; end
-        "#);
-        assert_snapshot!(hir_string("test"), @"
-        fn test@<compiled>:3:
-        bb1():
-          EntryPoint interpreter
-          v1:BasicObject = LoadSelf
-          Jump bb3(v1)
-        bb2():
-          EntryPoint JIT(0)
-          v4:BasicObject = LoadArg :self@0
-          Jump bb3(v4)
-        bb3(v6:BasicObject):
-          PatchPoint StableConstantNames(0x1000, C)
-          v11:ClassExact[C@0x1008] = Const Value(VALUE(0x1008))
-          PatchPoint NoSingletonClass(Class@0x1010)
-          PatchPoint MethodRedefined(Class@0x1010, superclass@0x1018, cme:0x1020)
-          v23:NilClass|Class = CCallWithFrame v11, :Class#superclass@0x1048
-          CheckInterrupts
-          Return v23
-        ");
-    }
-
-    #[test]
-    fn test_dont_fold_uninitialized_class_with_included_module_superclass() {
-        // include sets RCLASS_SUPER to the module's ICLASS but leaves the superclasses array
-        // unbuilt, so Class#superclass still raises TypeError; make sure we don't fold.
-        // Call test before the include: interpreted Class#superclass has a (bogus) assertion
-        // that RCLASS_SUPER is unset whenever the superclasses array is, which aborts dev
-        // builds after the include. Compilation happens at hir_string time, after it.
-        eval(r#"
-            module M; end
-            C = Class.allocate
-            def test = C.superclass
-            begin; test; rescue TypeError; end
-            C.include M
-        "#);
-        assert_snapshot!(hir_string("test"), @"
-        fn test@<compiled>:4:
-        bb1():
-          EntryPoint interpreter
-          v1:BasicObject = LoadSelf
-          Jump bb3(v1)
-        bb2():
-          EntryPoint JIT(0)
-          v4:BasicObject = LoadArg :self@0
-          Jump bb3(v4)
-        bb3(v6:BasicObject):
-          PatchPoint StableConstantNames(0x1000, C)
-          v11:ClassExact[C@0x1008] = Const Value(VALUE(0x1008))
-          PatchPoint NoSingletonClass(Class@0x1010)
-          PatchPoint MethodRedefined(Class@0x1010, superclass@0x1018, cme:0x1020)
-          v23:NilClass|Class = CCallWithFrame v11, :Class#superclass@0x1048
-          CheckInterrupts
-          Return v23
         ");
     }
 
