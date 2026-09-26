@@ -3,9 +3,59 @@ require 'test/unit'
 require_relative 'scheduler'
 
 require 'timeout'
+require 'tempfile'
 
 class TestFiberIOBuffer < Test::Unit::TestCase
   MESSAGE = "Hello World"
+
+  class AdvancingProbeScheduler < IOBufferScheduler
+    attr_accessor :probe_method, :probe_buffer
+
+    def respond_to?(name, include_private = false)
+      if name == @probe_method && @probe_buffer
+        buffer = @probe_buffer
+        @probe_buffer = nil
+        buffer.advance(buffer.size)
+        return false
+      end
+      super
+    end
+  end
+
+  def test_native_fallback_revalidates_view_after_scheduler_probe
+    [:read, :write, :pread, :pwrite].each do |method|
+      buffer = IO::Buffer.new(8)
+      begin
+        buffer.set_string("AAAABBBB")
+        view = buffer.slice(0, 4)
+        Tempfile.create("io-buffer-fallback") do |file|
+          file.binmode
+          file.write("cccccccc")
+          file.rewind
+
+          Thread.new do
+            scheduler = AdvancingProbeScheduler.new
+            Fiber.set_scheduler(scheduler)
+            Fiber.schedule do
+              scheduler.probe_method = :"io_#{method}"
+              scheduler.probe_buffer = view
+              args = [file]
+              args << 0 if [:pread, :pwrite].include?(method)
+              assert_raise(ArgumentError, method.to_s) {view.public_send(method, *args)}
+            end
+          end.value
+
+          assert_predicate view, :empty?
+          refute_predicate buffer, :locked?
+          assert_equal "AAAABBBB", buffer.get_string
+          file.rewind
+          assert_equal "cccccccc", file.read
+        end
+      ensure
+        buffer.free
+      end
+    end
+  end
 
   def test_read_write_blocking
     omit "UNIXSocket is not defined!" unless defined?(UNIXSocket)

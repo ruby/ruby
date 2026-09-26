@@ -101,19 +101,21 @@ describe "IO::Buffer#transfer" do
   end
 
   context "with a slice of a buffer" do
-    it "transfers source to a new slice, not touching the buffer" do
-      @buffer = IO::Buffer.new(4)
-      @buffer.set_string("test")
-      slice = @buffer.slice(0, 2)
-      slice.get_string.should == "te"
+    ruby_version_is ""..."4.1" do
+      it "transfers source to a new slice, not touching the buffer" do
+        @buffer = IO::Buffer.new(4)
+        @buffer.set_string("test")
+        slice = @buffer.slice(0, 2)
+        slice.get_string.should == "te"
 
-      new_slice = slice.transfer
-      slice.null?.should == true
-      new_slice.null?.should == false
-      @buffer.null?.should == false
+        new_slice = slice.transfer
+        slice.null?.should == true
+        new_slice.null?.should == false
+        @buffer.null?.should == false
 
-      new_slice.set_string("ea")
-      @buffer.get_string.should == "east"
+        new_slice.set_string("ea")
+        @buffer.get_string.should == "east"
+      end
     end
 
     it "nullifies buffer, invalidating the slice" do
@@ -121,8 +123,17 @@ describe "IO::Buffer#transfer" do
       slice = buffer.slice(0, 2)
       @buffer = buffer.transfer
 
-      slice.null?.should == false
       slice.valid?.should == false
+
+      ruby_version_is ""..."4.1" do
+        slice.null?.should == false
+      end
+
+      ruby_version_is "4.1" do
+        # Offset-based slices resolve their base from the now-nullified source.
+        slice.null?.should == true
+      end
+
       -> { slice.get_string }.should.raise(IO::Buffer::InvalidatedError, "Buffer has been invalidated!")
     end
   end
