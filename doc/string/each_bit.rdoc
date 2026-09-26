@@ -1,0 +1,38 @@
+Calls the given block with each bit of +self+ as +0+ or +1+; returns +self+:
+
+  "\xAA".each_bit {|bit| print bit }
+  # Output: 01010101
+
+With no arguments, iterates over all bits of +self+. With +offset+ and
++length+, iterates over only the +length+ bits beginning at zero-based bit
++offset+; with a Range, iterates over the bits covered by +range+:
+
+  data = "\xFF\xAA"
+  data.each_bit(8, 4).to_a # => [0, 1, 0, 1]
+  data.each_bit(8..).to_a  # => [0, 1, 0, 1, 0, 1, 0, 1]
+
+A region that extends beyond the end of +self+ is clamped to the bits that
+exist; a region that begins at or beyond the end yields nothing:
+
+  data.each_bit(12, 100).to_a # => [0, 1, 0, 1]
+  data.each_bit(100, 8).to_a  # => []
+
+By default, bits within each byte are numbered from least-significant to
+most-significant. If +lsb_first+ is +false+, byte order is unchanged but bits
+within each byte are numbered from most-significant to least-significant:
+
+  "\xAA".each_bit(lsb_first: false).to_a # => [1, 0, 1, 0, 1, 0, 1, 0]
+
+With no block given, returns a new Enumerator whose +size+ is the number of
+bits in the region:
+
+  "\xAA".each_bit.size # => 8
+
+The block may modify +self+. The iteration reads the current contents of
++self+ for each bit and stops at the current end of +self+.
+
+Raises +ArgumentError+ if +offset+ is given without +length+.
+Raises +IndexError+ if +offset+ or a Range endpoint is negative.
+Raises +ArgumentError+ if +length+ is negative.
+Raises +ArgumentError+ if a bit position is too large to be represented.
+Raises +ArgumentError+ if +lsb_first+ is neither +true+ nor +false+.

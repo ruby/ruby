@@ -1,0 +1,18 @@
+Returns an array of the zero-based offsets of the bits of +self+ that are
+equal to +bit+, in increasing order:
+
+  data = "\xAA\xCC"
+  data.bit_offsets(1) # => [1, 3, 5, 7, 10, 11, 14, 15]
+  data.bit_offsets(0) # => [0, 2, 4, 6, 8, 9, 12, 13]
+
+The arguments select the bit value, the region, and the bit numbering in the
+same way as String#each_bit_offset:
+
+  data.bit_offsets(true, 8, 4)           # => [10, 11]
+  data.bit_offsets(1, 8..)               # => [10, 11, 14, 15]
+  data.bit_offsets(1, lsb_first: false)  # => [0, 2, 4, 6, 8, 9, 12, 13]
+
+With a block given, behaves like String#each_bit_offset: calls the block
+with each offset and returns +self+.
+
+Raises the same exceptions as String#each_bit_offset.
