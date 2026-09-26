@@ -7626,6 +7626,14 @@ rb_str_byte_substr(VALUE str, VALUE beg, VALUE len)
     return str_byte_substr(str, NUM2LONG(beg), NUM2LONG(len), TRUE);
 }
 
+#if USE_ZJIT
+VALUE
+rb_zjit_str_byte_substr(VALUE str, long beg, long len)
+{
+    return str_byte_substr(str, beg, len, TRUE);
+}
+#endif
+
 static VALUE
 str_byte_aref(VALUE str, VALUE indx)
 {

@@ -4254,7 +4254,7 @@ fn gen_string_getbyte(asm: &mut Assembler, string: Opnd, index: Opnd) -> Opnd {
 
 fn gen_string_byteslice(asm: &mut Assembler, string: Opnd, beg: Opnd, len: Opnd, state: &FrameState) -> Opnd {
     gen_prepare_leaf_call_with_gc(asm, state);
-    asm_ccall!(asm, rb_str_byte_substr, string, beg, len)
+    asm_ccall!(asm, rb_zjit_str_byte_substr, string, beg, len)
 }
 
 fn gen_string_setbyte_fixnum(asm: &mut Assembler, string: Opnd, index: Opnd, value: Opnd) -> Opnd {

@@ -2363,7 +2363,6 @@ unsafe extern "C" {
     pub fn rb_gvar_get(arg1: ID) -> VALUE;
     pub fn rb_gvar_set(arg1: ID, arg2: VALUE) -> VALUE;
     pub fn rb_vm_barrier();
-    pub fn rb_str_byte_substr(str_: VALUE, beg: VALUE, len: VALUE) -> VALUE;
     pub fn rb_str_substr_two_fixnums(
         str_: VALUE,
         beg: VALUE,
@@ -2418,6 +2417,11 @@ unsafe extern "C" {
         len_out: *mut ::std::os::raw::c_long,
         byte_size_out: *mut usize,
     ) -> bool;
+    pub fn rb_zjit_str_byte_substr(
+        str_: VALUE,
+        beg: ::std::os::raw::c_long,
+        len: ::std::os::raw::c_long,
+    ) -> VALUE;
     pub fn rb_zjit_array_dup_can_fastpath(
         ary: VALUE,
         alloc_size_out: *mut usize,

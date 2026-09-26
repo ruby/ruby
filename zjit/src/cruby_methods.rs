@@ -527,6 +527,8 @@ fn inline_string_byteslice(fun: &mut hir::Function, block: hir::BlockId, recv: h
     if fun.likely_a(beg, types::Fixnum, state) && fun.likely_a(len, types::Fixnum, state) {
         let beg = fun.coerce_to(block, beg, types::Fixnum, state);
         let len = fun.coerce_to(block, len, types::Fixnum, state);
+        let beg = fun.push_insn(block, hir::Insn::UnboxFixnum { val: beg });
+        let len = fun.push_insn(block, hir::Insn::UnboxFixnum { val: len });
         Some(fun.push_insn(block, hir::Insn::StringByteslice { string: recv, beg, len, state }))
     } else {
         None
