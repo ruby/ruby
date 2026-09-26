@@ -11,8 +11,10 @@ INSN_ENTRY(<%= insn.name %>)
 %# jump table when `===` is not redefined for the key.
 % if insn.name == 'zjit_opt_case_dispatch'
     ADD_PC(<%= insn.width %>);
-%# NB: Keep sp_inc in sync with opt_case_dispatch in insns.def.
-    INC_SP(-1);
+%   insn.operands.each_with_index do |ope, i|
+    <%= ope[:decl] %> = (<%= ope[:type] %>)GET_OPERAND(<%= i + 1 %>);
+%   end
+    INC_SP(<%= insn.call_attribute('sp_inc') %>);
 % else
     rb_zjit_profile_insn(BIN(<%= insn.jump_destination %>), ec);
     DISPATCH_ORIGINAL_INSN(<%= insn.jump_destination %>);
