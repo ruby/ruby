@@ -15,7 +15,6 @@
 #fcntl
 #io/console
 #io/nonblock
-#io/wait
 #json
 #json/generator
 #json/parser
