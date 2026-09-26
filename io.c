@@ -2114,8 +2114,7 @@ io_fwrite(VALUE str, rb_io_t *fptr, int nosync)
 
 #ifdef _WIN32
     if (fptr->mode & FMODE_TTY) {
-        long len = rb_w32_write_console(str, fptr->fd);
-        if (len > 0) return len;
+        if (rb_w32_write_console(str, fptr->fd) > 0) return RSTRING_LEN(str);
     }
 #endif
 
