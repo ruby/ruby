@@ -1290,26 +1290,26 @@ class TestGc < Test::Unit::TestCase
       end
 
       worker_count, control = ready.receive
-      raise "worker count" unless worker_count == 3
+      assert_equal(3, worker_count, "worker count")
       live = GC.stat(:count, scope: :global)
-      raise "live work missing" unless live - process_before == 3
-      raise "worker changed main count" unless GC.stat(:count) == local_before
+      assert_equal(3, live - process_before, "live work missing")
+      assert_equal(local_before, GC.stat(:count), "worker changed main count")
 
       monitor = Ractor::Port.new
       worker.monitor(monitor)
       control << :finish
-      raise "worker did not exit" unless monitor.receive == [worker, :exited]
-      raise "history lost on exit" unless GC.stat(:count, scope: :global) == live
+      assert_equal([worker, :exited], monitor.receive, "worker did not exit")
+      assert_equal(live, GC.stat(:count, scope: :global), "history lost on exit")
 
       global_before = GC.stat(:count, scope: :global)
       GC.start(full_mark: true, immediate_mark: true, immediate_sweep: true)
-      raise "global count" unless GC.stat(:count, scope: :global) - global_before == 1
+      assert_equal(1, GC.stat(:count, scope: :global) - global_before, "global count")
       local_after_global = GC.stat(:count)
 
       snapshot = GC.stat(scope: :global)
-      raise "worker result" unless worker.value == :finish
-      raise "absorption changed history" unless GC.stat(scope: :global) == snapshot
-      raise "absorption changed main count" unless GC.stat(:count) == local_after_global
+      assert_equal(:finish, worker.value, "worker result")
+      assert_equal(snapshot, GC.stat(scope: :global), "absorption changed history")
+      assert_equal(local_after_global, GC.stat(:count), "absorption changed main count")
     RUBY
   end
 
@@ -1332,16 +1332,18 @@ class TestGc < Test::Unit::TestCase
           GC.stat(:count)
         end
         raise "inner count" unless inner.value == 5
+
         reply << :ready
         Ractor.receive
       end
 
       ready.receive
-      raise "nested history missing" unless GC.stat(:count, scope: :global) - process_before == 8
+
+      assert_equal(8, GC.stat(:count, scope: :global) - process_before, "nested history missing")
       outer.send(:finish)
-      raise "outer result" unless outer.value == :finish
-      raise "nested history changed" unless GC.stat(:count, scope: :global) - process_before == 8
-      raise "main inherited nested counts" unless GC.stat(:count) == local_before
+      assert_equal(:finish, outer.value, "outer result")
+      assert_equal(8, GC.stat(:count, scope: :global) - process_before, "nested history changed")
+      assert_equal(local_before, GC.stat(:count), "main inherited nested counts")
     RUBY
   end
 
@@ -1413,7 +1415,7 @@ class TestGc < Test::Unit::TestCase
 
       worker_control << :go
       reader_control << :go
-      raise "reader did not reach halfway" unless ready.receive == :halfway
+      assert_equal(:halfway, ready.receive, "reader did not reach halfway")
       assert_equal :done, worker.value
       reader_control << :continue
       reader_last = reader.value
@@ -1496,7 +1498,7 @@ class TestGc < Test::Unit::TestCase
         r << GC.stat(:count)
         Ractor.receive
       end
-      raise "live count" unless live_ready.receive == 2
+      assert_equal(2, live_ready.receive, "live count")
 
       snapshot = GC.stat(scope: :global)
       assert_equal 5, snapshot[:count] - process_before
@@ -1516,7 +1518,7 @@ class TestGc < Test::Unit::TestCase
       child_after = Marshal.load(read)
       read.close
       _, status = Process.waitpid2(pid)
-      raise "child exit status" unless status.success?
+      assert_predicate(status, :success?, "child exit status")
       assert_equal snapshot, child_initial
       assert_equal 1, child_after[:count] - child_initial[:count]
       assert_equal snapshot[:count], GC.stat(:count, scope: :global)
