@@ -1821,7 +1821,8 @@ nogvl_rmdir(void *ptr)
  *   Dir.rmdir(dirpath) -> 0
  *   Dir.unlink(dirpath) -> 0
  *
- * Removes the directory at `dirpath`, along with its filesystem entry:
+ * Removes the directory entry ([hard link](rdoc-ref:file/hard_links.md)) at `dirpath`,
+ * along with its associated inode:
  *
  * ```ruby
  * dirpath = '/tmp/tmpdir'
