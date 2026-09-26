@@ -4,8 +4,21 @@
 INSN_ENTRY(<%= insn.name %>)
 {
     START_OF_ORIGINAL_INSN(<%= insn.name %>);
+%# opt_case_dispatch jumps straight to the matching `when` body, skipping the
+%# `===` chain it guards. While profiling, pop the key and fall through to the
+%# `===` chain instead so that its instructions and the dispatched blocks get
+%# profiled too. This is equivalent because opt_case_dispatch only takes the
+%# jump table when `===` is not redefined for the key.
+% if insn.name == 'zjit_opt_case_dispatch'
+    ADD_PC(<%= insn.width %>);
+%   insn.operands.each_with_index do |ope, i|
+    <%= ope[:decl] %> = (<%= ope[:type] %>)GET_OPERAND(<%= i + 1 %>);
+%   end
+    INC_SP(<%= insn.call_attribute('sp_inc') %>);
+% else
     rb_zjit_profile_insn(BIN(<%= insn.jump_destination %>), ec);
     DISPATCH_ORIGINAL_INSN(<%= insn.jump_destination %>);
+% end
     END_INSN(<%= insn.name %>);
 }
 

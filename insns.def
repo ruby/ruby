@@ -1357,6 +1357,7 @@ opt_case_dispatch
 (..., VALUE key)
 ()
 // attr rb_snum_t sp_inc = -1;
+// attr bool zjit_profile = true;
 {
     OFFSET dst = vm_case_dispatch(hash, else_offset, key);
 

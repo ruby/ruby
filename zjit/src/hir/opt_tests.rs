@@ -25605,4 +25605,69 @@ mod hir_opt_tests {
           Return v54
         ");
     }
+
+    #[test]
+    fn test_opt_case_dispatch_profiles_branches() {
+        set_call_threshold(3);
+        eval("
+            def foo = 1
+            def bar = 2
+            def baz = 3
+            def test(o)
+              case o
+              when 1 then foo
+              when 2 then bar
+              else baz
+              end
+            end
+            test(1)
+            test(2)
+            test(3)
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:6:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v17:Fixnum[1] = Const Value(1)
+          PatchPoint MethodRedefined(Integer@0x1008, ===@0x1010, cme:0x1018)
+          v75:Fixnum = GuardType v10, Fixnum
+          v76:BoolExact = FixnumEq v17, v75
+          v22:CBool = Test v76
+          CondBranch v22, bb4(), bb6()
+        bb4():
+          PatchPoint MethodRedefined(Object@0x1040, foo@0x1048, cme:0x1050)
+          v78:ObjectSubclass[class_exact*:Object@VALUE(0x1040)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1040)] recompile
+          v79:Fixnum[1] = Const Value(1)
+          CheckInterrupts
+          Return v79
+        bb6():
+          v27:Fixnum[2] = Const Value(2)
+          PatchPoint MethodRedefined(Integer@0x1008, ===@0x1010, cme:0x1018)
+          v84:BoolExact = FixnumEq v27, v75
+          v32:CBool = Test v84
+          CondBranch v32, bb5(), bb7()
+        bb5():
+          PatchPoint MethodRedefined(Object@0x1040, bar@0x1078, cme:0x1080)
+          v86:ObjectSubclass[class_exact*:Object@VALUE(0x1040)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1040)] recompile
+          v87:Fixnum[2] = Const Value(2)
+          CheckInterrupts
+          Return v87
+        bb7():
+          PatchPoint MethodRedefined(Object@0x1040, baz@0x10a8, cme:0x10b0)
+          v89:ObjectSubclass[class_exact*:Object@VALUE(0x1040)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1040)] recompile
+          v90:Fixnum[3] = Const Value(3)
+          CheckInterrupts
+          Return v90
+        ");
+    }
 }
