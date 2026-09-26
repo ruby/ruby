@@ -317,6 +317,12 @@ class TestLazyEnumerator < Test::Unit::TestCase
       assert_equal([], e.lazy.take(0).zip((12..20)).to_a)
       assert_equal([], e.lazy.take(0).uniq.to_a)
       assert_equal([], e.lazy.take(0).sort.to_a)
+      assert_equal([], e.lazy.take(0).each_with_index.to_a, '[Bug #21142]')
+      assert_equal([], e.lazy.take(0).each_with_object([]).to_a, '[Bug #21142]')
+      assert_nil(e.lazy.take(0).each_with_index { flunk }, '[Bug #21142]')
+      memo = []
+      assert_same(memo, e.lazy.take(0).each_with_object(memo) { flunk }, '[Bug #21142]')
+      assert_same(memo, e.lazy.take(0).with_object(memo) { flunk }, '[Bug #21142]')
     end
   end
 
