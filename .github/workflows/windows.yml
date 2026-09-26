@@ -34,7 +34,7 @@ jobs:
           - os: 2025-vs2026
             test_task: test-bundled-gems
           - os: 11-arm
-            test_task: 'btest test-basic test-tool' # check and test-spec are broken yet.
+            test_task: check
             target: arm64
       fail-fast: false
 
