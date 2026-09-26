@@ -312,6 +312,10 @@ Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for det
 * Building Ruby with MSVC now requires Visual Studio 2017 version 15.8
   (`_MSC_VER` 1915) or later.
 
+* Ruby built with MSVC now requires Windows 10 version 1809 (build 17763)
+  or Windows Server 2019 or later.  Earlier Windows 10 releases and Windows
+  Server 2016 are no longer supported.
+
 ## Compatibility issues
 
 * A class or module can now be modified only by the Ractor which created it,
