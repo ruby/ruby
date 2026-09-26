@@ -6,6 +6,7 @@
 require 'rbconfig'
 require 'fileutils'
 require 'shellwords'
+require 'open3'
 
 class String # :nodoc:
   # Wraps a string in escaped quotes if it contains whitespace.
@@ -443,8 +444,8 @@ MESSAGE
       if werror
         result = nil
         Logging.postpone do |log|
-          output = IO.popen(env, command, &:read)
-          result = ($?.success? and File.zero?(log.path))
+          output, status = Open3.capture2e(env, command)
+          result = (status.success? and File.zero?(log.path))
           output
         end
         result
