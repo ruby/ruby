@@ -1316,6 +1316,43 @@ fiber_is_root_p(const rb_fiber_t *fiber)
 
 static void jit_cont_free(struct rb_jit_cont *cont);
 
+static bool
+ec_registered_p(const rb_execution_context_t *ec)
+{
+    return ec->thread_node.next != &ec->thread_node;
+}
+
+static bool
+fiber_root_p(const rb_fiber_t *fiber)
+{
+    rb_thread_t *th = fiber->cont.saved_ec.thread_ptr;
+
+    return th->root_fiber ? th->root_fiber == fiber : !fiber->first_proc;
+}
+
+static void
+fiber_unregister_ec(rb_fiber_t *fiber)
+{
+    rb_execution_context_t *ec = &fiber->cont.saved_ec;
+
+    if (!ec_registered_p(ec)) return;
+
+    if (!fiber_root_p(fiber)) {
+        rb_thread_t *th = ec->thread_ptr;
+        rb_execution_context_t *root_ec = th->root_fiber ?
+            &th->root_fiber->cont.saved_ec : th->ec;
+
+        rb_ec_move_mutexes(ec, root_ec);
+        ccan_list_del_init(&ec->thread_node);
+    }
+    else {
+        /* The root EC can be swept before other unreachable fibers belonging
+         * to the same thread.  Detach every EC now so their later frees never
+         * dereference the root EC or thread. */
+        rb_threadptr_unlock_all_mutexes(ec->thread_ptr);
+    }
+}
+
 static void
 cont_free(void *ptr)
 {
@@ -1434,6 +1471,8 @@ rb_fiber_free_body(void *ptr)
     RUBY_FREE_ENTER("fiber");
 
     if (DEBUG) fprintf(stderr, "fiber_free: %p[%p]\n", (void *)fiber, fiber->stack.base);
+
+    fiber_unregister_ec(fiber);
 
     if (fiber->cont.saved_ec.local_storage) {
         rb_id_table_free(fiber->cont.saved_ec.local_storage);
@@ -1662,6 +1701,8 @@ cont_init(rb_context_t *cont, rb_thread_t *th)
     /* save thread context */
     cont_save_thread(cont, th);
     cont->saved_ec.thread_ptr = th;
+    ccan_list_node_init(&cont->saved_ec.thread_node);
+    cont->saved_ec.keeping_mutexes = NULL;
     cont->saved_ec.local_storage = NULL;
     cont->saved_ec.local_storage_recursive_hash = Qnil;
     cont->saved_ec.local_storage_recursive_hash_for_trace = Qnil;
@@ -1922,6 +1963,9 @@ fiber_setcontext(rb_fiber_t *new_fiber, rb_fiber_t *old_fiber)
     if (from == NULL) {
         rb_syserr_fail(errno, "coroutine_transfer");
     }
+
+    /* The fiber may have been resumed by a different Ruby thread. */
+    th = rb_ec_thread_ptr(rb_current_ec_noinline());
 
     /* restore thread context */
     fiber_restore_thread(th, old_fiber);
@@ -2220,6 +2264,11 @@ rb_cont_call(int argc, VALUE *argv, VALUE contval)
  *  block arguments. Otherwise they will be the return value of the
  *  call to Fiber.yield
  *
+ *  A suspended fiber may be resumed or transferred to by another thread.
+ *  It then runs as part of that thread, so Thread.current changes accordingly.
+ *  Calls must remain serialized: a fiber cannot be resumed or transferred to
+ *  while it is already running. Root fibers cannot be moved between threads.
+ *
  *  Example:
  *
  *    fiber = Fiber.new do |first|
@@ -2321,6 +2370,7 @@ fiber_t_alloc(VALUE fiber_value, unsigned int blocking)
     fiber->cont.saved_ec.fiber_ptr = fiber;
     fiber->cont.saved_ec.serial = next_ec_serial(th->ractor);
     rb_ec_clear_vm_stack(&fiber->cont.saved_ec);
+    ccan_list_add_tail(&th->execution_contexts, &fiber->cont.saved_ec.thread_node);
 
     fiber->prev = NULL;
 
@@ -2785,18 +2835,19 @@ void
 rb_fiber_start(rb_fiber_t *fiber_arg)
 {
     rb_fiber_t * volatile fiber = fiber_arg;
-    rb_thread_t * volatile th = fiber->cont.saved_ec.thread_ptr;
+    rb_execution_context_t *ec = &fiber->cont.saved_ec;
+    rb_thread_t *th = ec->thread_ptr;
 
     enum ruby_tag_type state;
 
-    VM_ASSERT(th->ec == GET_EC());
+    VM_ASSERT(ec == GET_EC());
     VM_ASSERT(FIBER_RESUMED_P(fiber));
 
     if (fiber->blocking) {
         th->blocking += 1;
     }
 
-    EC_PUSH_TAG(th->ec);
+    EC_PUSH_TAG(ec);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
         rb_context_t *cont = &fiber->cont;
         rb_proc_t *proc;
@@ -2805,20 +2856,22 @@ rb_fiber_start(rb_fiber_t *fiber_arg)
         GetProcPtr(fiber->first_proc, proc);
         argv = (argc = cont->argc) > 1 ? RARRAY_CONST_PTR(args) : &args;
         cont->value = Qnil;
-        th->ec->errinfo = Qnil;
-        th->ec->root_lep = rb_vm_proc_local_ep(fiber->first_proc);
-        th->ec->root_svar = Qfalse;
+        ec->errinfo = Qnil;
+        ec->root_lep = rb_vm_proc_local_ep(fiber->first_proc);
+        ec->root_svar = Qfalse;
 
-        EXEC_EVENT_HOOK(th->ec, RUBY_EVENT_FIBER_SWITCH, th->self, 0, 0, 0, Qnil);
+        EXEC_EVENT_HOOK(ec, RUBY_EVENT_FIBER_SWITCH, ec->thread_ptr->self, 0, 0, 0, Qnil);
         const rb_cref_t *cref = rb_proc_refinements_cref_for_call(fiber->first_proc);
-        cont->value = rb_vm_invoke_proc(th->ec, proc, argc, argv, cont->kw_splat, VM_BLOCK_HANDLER_NONE, cref);
+        cont->value = rb_vm_invoke_proc(ec, proc, argc, argv, cont->kw_splat, VM_BLOCK_HANDLER_NONE, cref);
     }
     EC_POP_TAG();
+
+    th = ec->thread_ptr;
 
     int need_interrupt = TRUE;
     VALUE err = Qfalse;
     if (state) {
-        err = th->ec->errinfo;
+        err = ec->errinfo;
         VM_ASSERT(FIBER_RESUMED_P(fiber));
 
         if (state == TAG_RAISE) {
@@ -2852,6 +2905,8 @@ rb_threadptr_root_fiber_setup(rb_thread_t *th)
     fiber->cont.saved_ec.fiber_ptr = fiber;
     fiber->cont.saved_ec.serial = next_ec_serial(th->ractor);
     fiber->cont.saved_ec.thread_ptr = th;
+    ccan_list_node_init(&fiber->cont.saved_ec.thread_node);
+    ccan_list_add_tail(&th->execution_contexts, &fiber->cont.saved_ec.thread_node);
     fiber->blocking = 1;
     fiber->killed = 0;
     fiber_status_set(fiber, FIBER_RESUMED); /* skip CREATED */
@@ -2989,10 +3044,6 @@ fiber_switch(rb_fiber_t *fiber, int argc, const VALUE *argv, int kw_splat, rb_fi
         return make_passing_arg(argc, argv);
     }
 
-    if (cont_thread_value(cont) != th->self) {
-        rb_raise(rb_eFiberError, "fiber called across threads");
-    }
-
     if (FIBER_TERMINATED_P(fiber)) {
         value = rb_exc_new2(rb_eFiberError, "dead fiber called");
 
@@ -3016,7 +3067,19 @@ fiber_switch(rb_fiber_t *fiber, int argc, const VALUE *argv, int kw_splat, rb_fi
         }
     }
 
-    VM_ASSERT(FIBER_RUNNABLE_P(fiber));
+    if (!FIBER_RUNNABLE_P(fiber)) {
+        rb_raise(rb_eFiberError, "attempt to switch to a running fiber");
+    }
+
+    if (cont_thread_value(cont) != th->self) {
+        if (!fiber->first_proc) {
+            rb_raise(rb_eFiberError, "attempt to switch to a root fiber across threads");
+        }
+
+        ccan_list_del_init(&cont->saved_ec.thread_node);
+        cont->saved_ec.thread_ptr = th;
+        ccan_list_add_tail(&th->execution_contexts, &cont->saved_ec.thread_node);
+    }
 
     /*
      * Keep the target fiber object alive across fiber_store.  The raw
@@ -3049,6 +3112,9 @@ fiber_switch(rb_fiber_t *fiber, int argc, const VALUE *argv, int kw_splat, rb_fi
     cont->value = make_passing_arg(argc, argv);
 
     fiber_store(fiber, th);
+
+    /* A different Ruby thread may have resumed this fiber. */
+    th = rb_ec_thread_ptr(rb_current_ec_noinline());
 
     // We cannot free the stack until the pthread is joined:
 #ifndef COROUTINE_PTHREAD_CONTEXT
@@ -3193,8 +3259,11 @@ rb_fiber_s_blocking_p(VALUE klass)
 void
 rb_fiber_close(rb_fiber_t *fiber)
 {
+    rb_execution_context_t *ec = &fiber->cont.saved_ec;
+
+    if (!fiber_root_p(fiber)) fiber_unregister_ec(fiber);
     fiber_status_set(fiber, FIBER_TERMINATED);
-    rb_ec_close(&fiber->cont.saved_ec);
+    rb_ec_close(ec);
 }
 
 static void
@@ -3569,8 +3638,6 @@ rb_fiber_raise(VALUE fiber, int argc, VALUE *argv)
  *  yielding, it is resumed. If it is transferring, it is transferred into.
  *  But if it is resuming, raises +FiberError+.
  *
- *  Raises +FiberError+ if called on a Fiber belonging to another +Thread+.
- *
  *  See Kernel#raise for more information on arguments.
  *
  */
@@ -3595,7 +3662,6 @@ rb_fiber_m_raise(int argc, VALUE *argv, VALUE self)
  *
  *  If the fiber is already terminated, does nothing.
  *
- *  Raises FiberError if called on a fiber belonging to another thread.
  */
 static VALUE
 rb_fiber_m_kill(VALUE self)

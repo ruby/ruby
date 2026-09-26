@@ -1098,6 +1098,10 @@ struct rb_execution_context_struct {
 
     rb_fiber_t *fiber_ptr;
     struct rb_thread_struct *thread_ptr;
+    /* Links this EC into thread_ptr->execution_contexts. */
+    struct ccan_list_node thread_node;
+    /* Mutexes kept by this EC for ownership tracking and cleanup. */
+    struct rb_mutex_struct *keeping_mutexes;
     rb_serial_t serial;
     rb_serial_t ractor_id;
 
@@ -1189,6 +1193,8 @@ typedef struct rb_thread_struct {
     rb_vm_t *vm;
     struct rb_native_thread *nt;
     rb_execution_context_t *ec;
+    /* ECs currently associated with this thread. */
+    struct ccan_list_head execution_contexts;
 
     struct rb_thread_sched_item sched;
     bool mn_schedulable;
@@ -1234,7 +1240,6 @@ typedef struct rb_thread_struct {
     rb_nativethread_lock_t interrupt_lock;
     struct rb_unblock_callback unblock;
     VALUE locking_mutex;
-    struct rb_mutex_struct *keeping_mutexes;
     struct ccan_list_head interrupt_exec_tasks;
 
     struct rb_waiting_list *join_list;
@@ -2353,6 +2358,9 @@ void rb_threadptr_signal_exit(rb_thread_t *th);
 int rb_threadptr_execute_interrupts(rb_thread_t *, int);
 void rb_threadptr_interrupt(rb_thread_t *th);
 void rb_threadptr_unlock_all_locking_mutexes(rb_thread_t *th);
+void rb_threadptr_unlock_all_mutexes(rb_thread_t *th);
+void rb_ec_move_mutexes(rb_execution_context_t *from, rb_execution_context_t *to);
+void rb_ec_abandon_mutexes(rb_execution_context_t *ec);
 void rb_threadptr_pending_interrupt_clear(rb_thread_t *th);
 void rb_threadptr_pending_interrupt_enque(rb_thread_t *th, VALUE v);
 VALUE rb_ec_get_errinfo(const rb_execution_context_t *ec);
