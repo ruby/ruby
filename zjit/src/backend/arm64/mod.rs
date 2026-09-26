@@ -603,7 +603,8 @@ impl Assembler {
                 },
                 Insn::LShift { opnd, .. } |
                 Insn::RShift { opnd, .. } |
-                Insn::URShift { opnd, .. } => {
+                Insn::URShift { opnd, .. } |
+                Insn::ByteSwap { opnd, .. } => {
                     // The operand must be in a register, so
                     // if we get anything else we need to load it first.
                     *opnd = split_load_operand(asm, *opnd);
@@ -1265,6 +1266,15 @@ impl Assembler {
                 },
                 Insn::Not { opnd, out } => {
                     mvn(cb, out.into(), opnd.into());
+                },
+                Insn::ByteSwap { opnd, out } => {
+                    // Arm has no 16-bit operands, so a halfword swap runs on the
+                    // 32-bit register and leaves the upper halfword unused.
+                    if opnd.rm_num_bits() == 16 {
+                        rev16(cb, out.with_num_bits(32).into(), opnd.with_num_bits(32).into());
+                    } else {
+                        rev(cb, out.into(), opnd.into());
+                    }
                 },
                 Insn::RShift { opnd, shift, out } => {
                     asr(cb, out.into(), opnd.into(), shift.into());
@@ -3114,6 +3124,54 @@ mod tests {
         0xc: lsl x0, x15, #1
         ");
         assert_snapshot!(cb.hexdump(), @"300080d2b0831ff8af835ff8e0f97fd3");
+    }
+
+    #[test]
+    fn test_byteswap_16() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let opnd = asm.load(Opnd::mem(16, SP, 0));
+        let out = asm.byteswap(opnd.with_num_bits(16));
+        asm.mov(C_RET_OPND, out.with_num_bits(64));
+        asm.compile_with_num_regs(&mut cb, 2);
+
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: ldurh w0, [x21]
+        0x4: rev16 w0, w0
+        ");
+        assert_snapshot!(cb.hexdump(), @"a00240780004c05a");
+    }
+
+    #[test]
+    fn test_byteswap_32() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let opnd = asm.load(Opnd::mem(32, SP, 0));
+        let out = asm.byteswap(opnd.with_num_bits(32));
+        asm.mov(C_RET_OPND, out.with_num_bits(64));
+        asm.compile_with_num_regs(&mut cb, 2);
+
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: ldur w0, [x21]
+        0x4: rev w0, w0
+        ");
+        assert_snapshot!(cb.hexdump(), @"a00240b80008c05a");
+    }
+
+    #[test]
+    fn test_byteswap_64() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let opnd = asm.load(Opnd::mem(64, SP, 0));
+        let out = asm.byteswap(opnd);
+        asm.mov(C_RET_OPND, out);
+        asm.compile_with_num_regs(&mut cb, 2);
+
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: ldur x0, [x21]
+        0x4: rev x0, x0
+        ");
+        assert_snapshot!(cb.hexdump(), @"a00240f8000cc0da");
     }
 
     #[test]
