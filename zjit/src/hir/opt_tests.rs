@@ -22350,6 +22350,19 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_inline_integer_anybits_p_with_fixnums() {
+        eval("
+            def test(flags, mask) = flags.anybits?(mask)
+            test(0b1010, 0b0010)
+            test(0b1010, 0b0100)
+        ");
+        let hir = hir_string("test");
+        assert!(hir.contains("FixnumAnd"), "{hir}");
+        assert!(hir.contains("FixnumNeq"), "{hir}");
+        assert!(!hir.contains("CCallWithFrame"), "{hir}");
+    }
+
+    #[test]
     fn test_integer_even_p_annotation() {
         eval(r#"
             def test(x) = x.even?
