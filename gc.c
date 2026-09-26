@@ -4295,10 +4295,8 @@ rb_gc_objspace_retire_gc(void)
 }
 
 void
-rb_gc_objspace_retire(void **objspace_slot)
+rb_gc_objspace_retire_with_vm(rb_vm_t *vm, void **objspace_slot)
 {
-    rb_vm_t *vm = GET_VM();
-
     if (!rb_gc_impl_multi_objspace_p()) {
         /* It only aliased the shared objspace, so just drop it. */
         *objspace_slot = NULL;
@@ -4375,6 +4373,12 @@ rb_gc_vm_forget_zombie(void *objspace)
             break;
         }
     }
+}
+
+void
+rb_gc_objspace_retire(void **objspace_slot)
+{
+    rb_gc_objspace_retire_with_vm(GET_VM(), objspace_slot);
 }
 
 /* Total zombie pages, deciding whether to start a global GC.  An upper bound between

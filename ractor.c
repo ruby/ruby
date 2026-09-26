@@ -699,7 +699,7 @@ vm_remove_ractor(rb_vm_t *vm, rb_ractor_t *cr)
         if (cr->objspace) {
             /* The final self collection already ran (ractor_postmortem_collect),
              * so the entry measures exactly the pages the joiner will inherit. */
-            rb_gc_objspace_retire(&cr->objspace);
+            rb_gc_objspace_retire_with_vm(vm, &cr->objspace);
         }
         vm->ractor.cnt--;
 
@@ -827,7 +827,7 @@ rb_ractor_terminate_atfork(rb_vm_t *vm, rb_ractor_t *r)
     /* In a forked child every other Ractor is terminated-unjoined, so keep its objspace
      * enumerable until a join or a global GC merges it. */
     if (r->objspace) {
-        rb_gc_objspace_retire(&r->objspace);
+        rb_gc_objspace_retire_with_vm(vm, &r->objspace);
     }
     ractor_sync_terminate_atfork(vm, r);
 }
