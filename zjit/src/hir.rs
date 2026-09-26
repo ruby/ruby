@@ -1717,6 +1717,20 @@ macro_rules! for_each_operand_impl {
     };
 }
 
+macro_rules! edges_of {
+    ($insn:expr, $unbox:ident) => {
+        match $insn {
+            Insn::Jump(edge) => [Some(edge), None],
+            Insn::CondBranch { if_true, if_false, .. } => [Some(if_true), Some(if_false)],
+            Insn::CondBranchHasType(data) => {
+                let CondBranchHasTypeData { if_true, if_false, .. } = data.$unbox();
+                [Some(if_true), Some(if_false)]
+            }
+            _ => [None, None],
+        }.into_iter().flatten()
+    };
+}
+
 impl Insn {
     /// Not every instruction returns a value. Return true if the instruction does and false otherwise.
     pub fn has_output(&self) -> bool {
@@ -1874,8 +1888,8 @@ impl Insn {
             Insn::GetBlockParam { .. } => effects::Any,
             Insn::SymToProc { .. } => effects::Any,
             Insn::Snapshot { .. } => effects::Empty,
-            Insn::Jump(_) => effects::Any,
-            Insn::CondBranch { .. } => effects::Any,
+            Insn::Jump(_) => Effect::read_write(abstract_heaps::Empty, abstract_heaps::Control),
+            Insn::CondBranch { .. } => Effect::read_write(abstract_heaps::Empty, abstract_heaps::Control),
             Insn::CondBranchHasType(insn)
                 => Effect::read_write(
                     if insn.expected.is_subtype(types::Immediate) { abstract_heaps::Empty } else { abstract_heaps::Memory },
@@ -2012,6 +2026,14 @@ impl Insn {
             => false,
             _ => true,
         }
+    }
+
+    fn outgoing_edges(&self) -> impl Iterator<Item = &BranchEdge> {
+        edges_of!(self, as_ref)
+    }
+
+    fn outgoing_edges_mut(&mut self) -> impl Iterator<Item = &mut BranchEdge> + '_ {
+        edges_of!(self, as_mut)
     }
 }
 
@@ -2570,6 +2592,10 @@ impl Block {
     /// Return an iterator over insns
     pub fn insns(&self) -> Iter<'_, InsnId> {
         self.insns.iter()
+    }
+
+    pub fn terminator(&self) -> &InsnId {
+        self.insns().last().unwrap()
     }
 }
 
@@ -6569,33 +6595,6 @@ impl Function {
             })
         }
 
-        fn block_terminator(fun: &Function, block_id: BlockId) -> InsnId {
-            *fun.blocks[block_id].insns().last().unwrap()
-        }
-
-        // The extra `&`/`&mut` tokens borrow the boxed CondBranchHasType payload's edges with the
-        // same mutability as the match ergonomics give the other arms' bindings.
-        macro_rules! edges_of {
-            ($insn:expr, $($borrow:tt)+) => {
-                match $insn {
-                    Insn::Jump(edge) => [Some(edge), None],
-                    Insn::CondBranch { if_true, if_false, .. } => [Some(if_true), Some(if_false)],
-                    Insn::CondBranchHasType(insn) => [Some($($borrow)+ insn.if_true), Some($($borrow)+ insn.if_false)],
-                    _ => [None, None],
-                }.into_iter().flatten()
-            };
-        }
-
-        fn outgoing_edges(fun: &Function, block_id: BlockId) -> impl Iterator<Item = &BranchEdge> {
-            let insn_id = block_terminator(fun, block_id);
-            edges_of!(&fun.insns[insn_id], &)
-        }
-
-        fn outgoing_edges_mut(fun: &mut Function, block_id: BlockId) -> impl Iterator<Item = &mut BranchEdge> {
-            let insn_id = block_terminator(fun, block_id);
-            edges_of!(&mut fun.insns[insn_id], &mut)
-        }
-
         // Instantiate the domain for abstract interpretation.
         // We store possible param values for each block
         let mut param_values: Vec<Vec<ParamValue>> = self.blocks.iter().map(|block| vec![ParamValue::None; block.params.len()]).collect();
@@ -6605,7 +6604,7 @@ impl Function {
         // Collect blocks that terminate with Jump or CondBranch instructions that pass at least one block param along.
         let blocks_sending_params: Vec<BlockId> = blocks.iter().copied()
             .filter(|&block_id|
-                outgoing_edges(self, block_id).any(|edge| !edge.args.is_empty()))
+                self.resolve(*self.blocks[block_id].terminator()).insn(self).outgoing_edges().any(|edge| !edge.args.is_empty()))
             .collect();
 
         // We only need to update blocks that have params. (Blocks without params cannot be improved)
@@ -6634,17 +6633,18 @@ impl Function {
             }
 
             // Scan through each jump, collecting edges with params to analyze from CondBranch and Jump insns.
-            for block_id in &blocks_sending_params {
+            for &block_id in &blocks_sending_params {
                 // Use the results of abstract interpretation to update the states
                 // Perform abstract interpretation
-                for BranchEdge { target: block_id, args: params } in outgoing_edges(self, *block_id) {
+                let edges = self.resolve(*self.blocks[block_id].terminator()).insn(self).outgoing_edges();
+                for BranchEdge { target: target_block_id, args: params } in edges {
                     for (i, param) in params.iter().enumerate() {
                         let param = self.find_id(*param);
                         // If the param is the same as passed into the block, it is a self loop and provides no new predecessor information.
-                        if param == self.find_id(self.blocks[*block_id].params[i]) {
+                        if param == self.find_id(self.blocks[*target_block_id].params[i]) {
                             continue
                         }
-                        param_values[*block_id][i].update(param);
+                        param_values[*target_block_id][i].update(param);
                     }
                 }
             }
@@ -6687,7 +6687,8 @@ impl Function {
 
                 // Update the terminators (basic blocks can only branch at the terminator. This is where block params are passed)
                 for jump_block_id in &blocks_sending_params {
-                    for edge in outgoing_edges_mut(self, *jump_block_id) {
+                    let edges = self.resolve(*self.blocks[*jump_block_id].terminator()).insn_mut(self).outgoing_edges_mut();
+                    for edge in edges {
                         if edge.target == *block_id {
                             prune_vec_by_indices(&mut edge.args, &trivial_indices);
                         }
@@ -6699,76 +6700,150 @@ impl Function {
 
 
     fn optimize_load_store(&mut self) {
-        for block in self.reverse_post_order() {
-            let mut compile_time_heap: HashMap<(InsnId, i32), InsnId>  = HashMap::new();
-            let old_insns = std::mem::take(&mut self.blocks[block].insns);
-            let mut new_insns = Vec::with_capacity(old_insns.len());
-            for insn_id in old_insns {
-                let replacement_insn: InsnId = match self.resolve(insn_id).insn(self) {
-                    &Insn::StoreField { recv, offset, val, .. } => {
-                        let key = (self.chase_insn(recv), offset);
-                        let heap_entry = compile_time_heap.get(&key).copied();
-                        // TODO(Jacob): Switch from actual to partial equality
-                        if Some(val) == heap_entry {
-                            // If the value is already stored, short circuit and don't add an instruction to the block
-                            continue
+        use std::collections::hash_map::Entry;
+
+        #[derive(Hash, PartialEq, Eq, Clone, Copy, Debug)]
+        struct Key {
+            id: InsnId,
+            offset: i32,
+        }
+
+        let cfi = ControlFlowInfo::new(self);
+        let rpo = &cfi.reverse_post_order;
+        let mut changed = true;
+        let mut has_back_edge = false;
+        let mut rpo_order = vec![usize::MAX; self.blocks.len()];
+        for (idx, &block_id) in rpo.iter().enumerate() {
+            rpo_order[block_id] = idx;
+        }
+
+        // Each block contains a cache of tracked load and store instructions.
+        // The cache is filled with load and store instructions when scanning a block.
+        // The cache is invalidated from effectful instructions that could modify instructions saved in the cache.
+        // The cache is pruned when loads and stores can alias between objects.
+        let mut cache: Vec<HashMap<Key, InsnId>> = vec![HashMap::new(); cfi.num_blocks];
+
+        loop {
+            for (rpo_index, &block_id) in rpo.iter().enumerate() {
+                let mut block_cache: HashMap<Key, InsnId>  = HashMap::new();
+                // Populate the block cache with information from predecessors
+                // If all predecessors contain the same entry and value, add it to the map
+                match cfi.predecessors(block_id) {
+                    [] => {},
+                    [head] => {
+                        block_cache = cache[*head].clone();
+                    }
+                    [head, tail @ ..] => {
+                        block_cache = cache[*head].clone();
+                        for pred in tail {
+                            block_cache.retain(|key, value| cache[pred.0 as usize].get(key) == Some(value));
                         }
-                        // TODO(Jacob): Add TBAA to avoid removing so many entries
-                        compile_time_heap.retain(|(_, off), _| *off != offset);
-                        compile_time_heap.insert(key, val);
-                        insn_id
-                    },
-                    &Insn::LoadField { recv, offset, return_type, .. } => {
-                        let key = (self.chase_insn(recv), offset);
-                        match compile_time_heap.entry(key) {
-                            std::collections::hash_map::Entry::Occupied(entry) => {
-                                let cached_insn = *entry.get();
 
-                                // TODO (nirvdrum 2026-06-04): Remove the return type guard and supporting code when the type checker becomes more accurate.
-                                // If there's an an embedded<=>heap shape storage transition, it's possible for this `LoadField` to have a different return
-                                // type than the cached entry (`CPtr` vs `BasicObject`). While the loaded value would be the same in either case, the
-                                // difference in associated type causes type checking to fail. Consequently, we conservatively retain the duplicate `LoadField`.
-                                // The `optimize_load_store_does_not_alias_loads_with_incompatible_return_types` test checks the problematic case.
-                                let can_forward_cached_insn = match self.resolve(cached_insn).insn(self) {
-                                    Insn::LoadField { return_type : cached_return_type,.. } => cached_return_type.is_subtype(return_type),
-                                    _ => true
-                                };
+                        // If multiple entries contain the same offset, they may alias.
+                        // Unlike the case inside of the pass, we have no newest element. We must remove all entries at this offset.
+                        // let aliases: Vec<Key> = Vec::with_capacity(block_cache.len());
+                        let mut aliases: HashMap<i32, Vec<Key>> = HashMap::new();
 
-                                if can_forward_cached_insn {
-                                    // If the value is stored already, we should short circuit.
-                                    // However, we need to replace insn_id with its representative in the SSA union.
-                                    self.make_equal_to(insn_id, cached_insn);
-                                    continue
+                        for (key, _) in block_cache.iter() {
+                            aliases.entry(key.offset).or_default().push(*key);
+                        }
+
+                        for (_, keys) in aliases.iter() {
+                            if keys.len() >= 2 {
+                                for key in keys {
+                                    block_cache.remove(&key);
                                 }
                             }
-                            std::collections::hash_map::Entry::Vacant(_) => {
-                                // If the value has not been accessed, cache a copy to optimize future loads or stores.
-                                compile_time_heap.insert(key, insn_id);
+                        }
+                    }
+                }
+                let old_insns = std::mem::take(&mut self.blocks[block_id].insns);
+                let mut new_insns = Vec::with_capacity(old_insns.len());
+                for insn_id in old_insns {
+                    let replacement_insn: InsnId = match self.resolve(insn_id).insn(self) {
+                        &Insn::StoreField { recv, offset, val, .. } => {
+                            let key = Key { id: self.chase_insn(recv), offset };
+                            let heap_entry = block_cache.get(&key).copied();
+                            // TODO(Jacob): Switch from actual to partial equality
+                            if Some(val) == heap_entry {
+                                // If the value is already stored, short circuit and don't add an instruction to the block
+                                continue
                             }
+                            // TODO(Jacob): Add TBAA to avoid removing so many entries
+                            block_cache.retain(|key, _| key.offset != offset);
+                            block_cache.insert(key, val);
+                            insn_id
+                        },
+                        &Insn::LoadField { recv, offset, return_type, .. } => {
+                            let key = Key { id: self.chase_insn(recv), offset };
+                            match block_cache.entry(key) {
+                                Entry::Occupied(entry) => {
+                                    let cached_insn = *entry.get();
+
+                                    // TODO (nirvdrum 2026-06-04): Remove the return type guard and supporting code when the type checker becomes more accurate.
+                                    // If there's an an embedded<=>heap shape storage transition, it's possible for this `LoadField` to have a different return
+                                    // type than the cached entry (`CPtr` vs `BasicObject`). While the loaded value would be the same in either case, the
+                                    // difference in associated type causes type checking to fail. Consequently, we conservatively retain the duplicate `LoadField`.
+                                    // The `optimize_load_store_does_not_alias_loads_with_incompatible_return_types` test checks the problematic case.
+                                    let can_forward_cached_insn = match self.resolve(cached_insn).insn(self) {
+                                        Insn::LoadField { return_type : cached_return_type,.. } => cached_return_type.is_subtype(return_type),
+                                        _ => true
+                                    };
+
+                                    if can_forward_cached_insn {
+                                        // If the value is stored already, we should short circuit.
+                                        // However, we need to replace insn_id with its representative in the SSA union.
+                                        self.make_equal_to(insn_id, cached_insn);
+                                        continue
+                                    }
+                                }
+                                Entry::Vacant(_) => {
+                                    // If the value has not been accessed, cache a copy to optimize future loads or stores.
+                                    block_cache.insert(key, insn_id);
+                                }
+                            }
+                            insn_id
                         }
-                        insn_id
-                    }
-                    &Insn::WriteBarrier { .. } => {
-                        // Currently, WriteBarrier write effects are Allocator and Memory when we'd really like them to be flags.
-                        // We don't use LoadField for mark bits so we can ignore them for now.
-                        // But flags does not exist in our effects abstract heap modeling and we don't want to add special casing to effects.
-                        // This special casing in this pass here should be removed once we refine our effects system to provide greater granularity for WriteBarrier.
-                        // TODO: use TBAA
-                        let offset = RUBY_OFFSET_RBASIC_FLAGS;
-                        compile_time_heap.retain(|(_, off), _| *off != offset);
-                        insn_id
-                    },
-                    insn => {
-                        // If an instruction affects memory and we haven't modeled it, the compile_time_heap is invalidated
-                        if insn.effects_of().includes(Effect::write(abstract_heaps::Memory)) {
-                            compile_time_heap.clear();
+                        &Insn::WriteBarrier { .. } => {
+                            // Currently, WriteBarrier write effects are Allocator and Memory when we'd really like them to be flags.
+                            // We don't use LoadField for mark bits so we can ignore them for now.
+                            // But flags does not exist in our effects abstract heap modeling and we don't want to add special casing to effects.
+                            // This special casing in this pass here should be removed once we refine our effects system to provide greater granularity for WriteBarrier.
+                            // TODO: use TBAA
+                            let offset = RUBY_OFFSET_RBASIC_FLAGS;
+                            block_cache.retain(|key, _| key.offset != offset);
+                            insn_id
+                        },
+                        insn => {
+                            if insn.effects_of().includes(Effect::write(abstract_heaps::Memory)) {
+                                block_cache.clear();
+                            }
+                            insn_id
                         }
-                        insn_id
+                    };
+                    new_insns.push(replacement_insn);
+                }
+
+                self.blocks[block_id].insns = new_insns;
+
+                // Check for back edges
+                for edge in self.resolve(*self.blocks[block_id].terminator()).insn(self).outgoing_edges() {
+                    if rpo_order[edge.target] <= rpo_index {
+                        has_back_edge |= true;
                     }
-                };
-                new_insns.push(replacement_insn);
+                }
+
+                if cache[block_id] == block_cache {
+                    changed = false;
+                }
+                else {
+                    cache[block_id] = block_cache.clone();
+                }
             }
-            self.blocks[block].insns = new_insns;
+
+            if !(changed && has_back_edge) {
+                break;
+            }
         }
     }
 
