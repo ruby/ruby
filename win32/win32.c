@@ -7204,10 +7204,6 @@ constat_apply(HANDLE handle, struct constat *s, WCHAR w)
     }
 }
 
-/* get rid of console writing bug; assume WriteConsole and WriteFile
- * on a console share the same limit. */
-static const long MAXSIZE_CONSOLE_WRITING = 31366;
-
 /* License: Ruby's */
 static long
 constat_parse(HANDLE h, struct constat *s, const WCHAR **ptrp, long *lenp)
@@ -7262,7 +7258,7 @@ constat_parse(HANDLE h, struct constat *s, const WCHAR **ptrp, long *lenp)
             }
             rest = 0;
         }
-        else if ((rest = *lenp - len) < MAXSIZE_CONSOLE_WRITING) {
+        else {
             continue;
         }
         *ptrp = ptr;
@@ -7539,7 +7535,7 @@ rb_w32_write_internal(int fd, const void *buf, size_t size, rb_off_t *offset)
 
     ret = 0;
   retry:
-    len = (_osfile(fd) & FDEV) ? min(MAXSIZE_CONSOLE_WRITING, size) : size;
+    len = size;
     size -= len;
   retry2:
 
