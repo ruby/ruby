@@ -450,6 +450,31 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end if Process.respond_to?(:fork)
 
+  def test_concurrent_binwrite_shareable_string
+    # [Bug #22382]
+    assert_ractor(<<~'RUBY', timeout: 30)
+      require "tmpdir"
+
+      Dir.mktmpdir do |dir|
+        50.times do
+          str = Ractor.make_shareable(Random.bytes(512 * 1024))
+
+          go = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 0.02
+          12.times.map do |n|
+            Ractor.new(str, File.join(dir, "w#{n}"), go) do |s, path, at|
+              Thread.pass until Process.clock_gettime(Process::CLOCK_MONOTONIC) >= at
+              File.binwrite(path, s)
+            end
+          end.each(&:join)
+
+          GC.start
+        end
+
+        assert_equal 512 * 1024, File.size(File.join(dir, "w0"))
+      end
+    RUBY
+  end
+
   def test_fork_raise_isolation_error
     assert_ractor(<<~'RUBY')
       ractor = Ractor.new do
