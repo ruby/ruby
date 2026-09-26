@@ -7731,6 +7731,7 @@ impl Function {
         // on inlining passes. If we reach the max, we run the loop one more time with inlining
         // disabled in order to optimize the results of the last inlining operation.
         let inline_max_iterations = get_option!(inline_max_iterations);
+        let mut has_ever_inlined = false;
         for iteration in 0..=inline_max_iterations {
             // Function is assumed to have types inferred already
             run_pass!(type_specialize);
@@ -7749,7 +7750,10 @@ impl Function {
             run_pass!(clean_cfg);
             run_pass!(remove_redundant_patch_points);
             run_pass!(remove_duplicate_check_interrupts);
-            run_pass!(eliminate_empty_inline_frames);
+            has_ever_inlined |= did_inline;
+            if has_ever_inlined {
+                run_pass!(eliminate_empty_inline_frames);
+            }
             run_pass!(eliminate_dead_code);
 
             if !did_inline {
