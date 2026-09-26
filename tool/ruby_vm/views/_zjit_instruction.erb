@@ -4,7 +4,7 @@
 INSN_ENTRY(<%= insn.name %>)
 {
     START_OF_ORIGINAL_INSN(<%= insn.name %>);
-% if insn.skip_fast_path?
+% if insn.is_opt_case_dispatch?
     ADD_PC(<%= insn.width %>);
     INC_SP(-1);
 % else

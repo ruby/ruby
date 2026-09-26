@@ -25,7 +25,7 @@ class RubyVM::ZJITInstruction
   # `===` chain instead so that its instructions and the dispatched blocks get
   # profiled too. This is equivalent because opt_case_dispatch only takes the
   # jump table when `===` is not redefined for the key.
-  def skip_fast_path?
+  def is_opt_case_dispatch?
     return @orig.name == 'opt_case_dispatch'
   end
 
