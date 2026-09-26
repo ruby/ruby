@@ -114,7 +114,6 @@ int flock(int, int);
 #  undef HAVE_REALPATH
 # endif
 #endif /* _WIN32 */
-#define STAT(p, s)      stat((p), (s))
 
 #ifdef HAVE_STRUCT_STATX_STX_BTIME
 # define ST_(name) stx_ ## name
@@ -1339,7 +1338,7 @@ static void *
 no_gvl_stat(void * data)
 {
     no_gvl_stat_data *arg = data;
-    return (void *)(VALUE)STAT(arg->file.path, arg->st);
+    return (void *)(VALUE)stat(arg->file.path, arg->st);
 }
 
 static int
@@ -1478,7 +1477,7 @@ statx_birthtime(const rb_io_stat_data *stx)
 # define fstatx_without_gvl(fptr, st, mask) fstat_without_gvl(fptr, st)
 # define lstatx_without_gvl(path, st, mask) lstat_without_gvl(path, st)
 # define rb_statx(file, stx, mask) rb_stat(file, stx)
-# define STATX(path, st, mask) STAT(path, st)
+# define STATX(path, st, mask) stat(path, st)
 
 #if defined(HAVE_STAT_BIRTHTIME)
 # define statx_has_birthtime(st) 1
@@ -1760,7 +1759,7 @@ eaccess(const char *path, int mode)
     if (getuid() == euid && getgid() == getegid())
         return access(path, mode);
 
-    if (STAT(path, &st) < 0)
+    if (stat(path, &st) < 0)
         return -1;
 
     if (euid == 0) {
