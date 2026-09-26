@@ -236,6 +236,8 @@ rsock_s_recvfrom(VALUE socket, int argc, VALUE *argv, enum sock_recv_type from)
 
 #ifdef HAVE_TYPE_STRUCT_SOCKADDR_UN
       case RECV_UNIX:
+        if (arg.alen == sizeof(arg.buf)) /* connection-oriented socket may not return a from result */
+            arg.alen = 0;
         return rb_assoc_new(str, rsock_unixaddr(&arg.buf.un, arg.alen));
 #endif
       case RECV_SOCKET:

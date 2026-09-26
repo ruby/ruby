@@ -186,6 +186,9 @@ unix_path(VALUE sock)
  *   s1.send "a", 0, s2_ai
  *   p s3.recvfrom(10) #=> ["a", ["AF_UNIX", "/tmp/sock1"]]
  *
+ * On a connection-oriented socket the path is empty, since the platform
+ * does not report a source address for it.
+ *
  */
 static VALUE
 unix_recvfrom(int argc, VALUE *argv, VALUE sock)
