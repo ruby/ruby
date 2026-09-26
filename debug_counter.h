@@ -107,6 +107,7 @@ RB_DEBUG_COUNTER(ccf_iseq_bmethod)
 RB_DEBUG_COUNTER(ccf_noniseq_bmethod)
 RB_DEBUG_COUNTER(ccf_opt_send_complex)
 RB_DEBUG_COUNTER(ccf_opt_send_simple)
+RB_DEBUG_COUNTER(ccf_uncached)
 
 /*
  * control frame push counts.
