@@ -96,6 +96,7 @@ bool rb_str_reembeddable_p(VALUE);
 bool rb_str_embedded_shared_root_p(VALUE);
 VALUE rb_str_upto_endless_each(VALUE, int (*each)(VALUE, VALUE), VALUE);
 VALUE rb_str_with_debug_created_info(VALUE, VALUE, int);
+VALUE rb_chilled_str_with_debug_created_info(VALUE, VALUE, int);
 VALUE rb_str_frozen_bare_string(VALUE);
 const char *rb_str_null_check(VALUE);
 VALUE rb_str_casecmp(VALUE str1, VALUE str2);

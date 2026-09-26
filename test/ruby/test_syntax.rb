@@ -813,15 +813,6 @@ class TestSyntax < Test::Unit::TestCase
         end
       }
     }
-    assert_warning(/#{w[3]}/) {
-      eval %q{
-        case 1
-        when __FILE__, __FILE__
-        when "filename", "filename"
-        when "filename", "filename"
-        end
-      }, binding, "filename"
-    }
   end
 
   def test_duplicated_when_check_option

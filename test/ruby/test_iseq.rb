@@ -287,6 +287,33 @@ class TestISeq < Test::Unit::TestCase
     assert_equal(line+1, iseq.first_lineno)
   end
 
+  def test_location_override
+    source = '[__FILE__, __dir__]'
+    assert_equal iseq_eval(source, "original", "/original-realpath/file.rb"), load_iseq_eval(source, "original", "/original-realpath/file.rb")
+    assert_equal iseq_eval(source, "override"), load_iseq_eval(source, "override")
+    assert_equal iseq_eval(source), load_iseq_eval(source)
+
+    source = <<~'RUBY'
+      # shareable_constant_value: literal
+      [__FILE__]
+    RUBY
+
+    assert_equal iseq_eval(source, "original", "/original-realpath/file.rb"), load_iseq_eval(source, "original", "/original-realpath/file.rb")
+    assert_equal iseq_eval(source, "override"), load_iseq_eval(source, "override")
+    assert_equal iseq_eval(source), load_iseq_eval(source)
+  end
+
+  def iseq_eval(source, ...)
+    iseq = ISeq.compile(source, ...)
+    iseq.eval
+  end
+
+  def load_iseq_eval(source, ...)
+    binary = ISeq.compile(source).to_binary
+    iseq = ISeq.load_from_binary(binary, ...)
+    iseq.eval
+  end
+
   def test_label_fstring
     c = Class.new{ def foobar() end }
 
