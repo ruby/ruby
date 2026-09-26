@@ -997,10 +997,30 @@ pub fn zjit_alloc_bytes() -> usize {
 
 /// Record a Perfetto duration event spanning the execution of `func`.
 /// Uses Begin/End pairs so nested calls produce properly nested slices.
-pub fn trace_compile_phase<F, R>(name: &str, func: F) -> R where F: FnOnce() -> R {
+/// Dynamic names go through [`trace_compile_phase_with`] so they're only built when tracing.
+pub fn trace_compile_phase<R>(
+    name: &'static str,
+    func: impl FnOnce() -> R
+) -> R {
     if !get_option!(trace_compiles, /*default=*/false) {
         return func();
     }
+    record_compile_phase(name, func)
+}
+
+/// Like [`trace_compile_phase`], but only builds the name when tracing is enabled.
+pub fn trace_compile_phase_with<R>(
+    name: impl FnOnce() -> String,
+    func: impl FnOnce() -> R
+) -> R {
+    if !get_option!(trace_compiles, /*default=*/false) {
+        return func();
+    }
+    record_compile_phase(&name(), func)
+}
+
+/// Emit the Begin/End events for a compile phase. Callers check `trace_compiles` first.
+fn record_compile_phase<R>(name: &str, func: impl FnOnce() -> R) -> R {
     if let Some(tracer) = ZJITState::get_tracer() {
         let ts = tracer.elapsed_ns();
         tracer.write_duration_begin("compile", name, ts, &[]);
