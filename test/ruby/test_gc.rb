@@ -1299,7 +1299,7 @@ class TestGc < Test::Unit::TestCase
       worker.monitor(monitor)
       control << :finish
       assert_equal([worker, :exited], monitor.receive, "worker did not exit")
-      assert_equal(live, GC.stat(:count, scope: :global), "history lost on exit")
+      assert_equal(live + 1, GC.stat(:count, scope: :global), "history lost on exit")
 
       global_before = GC.stat(:count, scope: :global)
       GC.start(full_mark: true, immediate_mark: true, immediate_sweep: true)
@@ -1339,10 +1339,10 @@ class TestGc < Test::Unit::TestCase
 
       ready.receive
 
-      assert_equal(8, GC.stat(:count, scope: :global) - process_before, "nested history missing")
+      assert_equal(9, GC.stat(:count, scope: :global) - process_before, "nested history missing")
       outer.send(:finish)
       assert_equal(:finish, outer.value, "outer result")
-      assert_equal(8, GC.stat(:count, scope: :global) - process_before, "nested history changed")
+      assert_equal(10, GC.stat(:count, scope: :global) - process_before, "nested history changed")
       assert_equal(local_before, GC.stat(:count), "main inherited nested counts")
     RUBY
   end
@@ -1469,7 +1469,7 @@ class TestGc < Test::Unit::TestCase
       assert_equal [worker_time, worker_marking, worker_sweeping], [after_time, after_marking, after_sweeping]
 
       after = GC.stat(scope: :global)
-      assert_equal 3, after[:count] - before[:count]
+      assert_equal 4, after[:count] - before[:count]
       assert_equal before.values_at(:time, :marking_time, :sweeping_time),
                    after.values_at(:time, :marking_time, :sweeping_time)
     RUBY
@@ -1501,7 +1501,7 @@ class TestGc < Test::Unit::TestCase
       assert_equal(2, live_ready.receive, "live count")
 
       snapshot = GC.stat(scope: :global)
-      assert_equal 5, snapshot[:count] - process_before
+      assert_equal 6, snapshot[:count] - process_before
       read, write = IO.pipe
       pid = Process.fork do
         read.close

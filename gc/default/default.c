@@ -8709,7 +8709,7 @@ heap_ready_to_gc(rb_objspace_t *objspace, rb_heap_t *heap)
 static int
 ready_to_gc(rb_objspace_t *objspace)
 {
-    if (rb_gc_gc_disabled_global_p() || dont_gc_val() || during_gc) {
+    if ((!objspace->flags.during_postmortem && rb_gc_gc_disabled_global_p()) || dont_gc_val() || during_gc) {
         for (int i = 0; i < HEAP_COUNT; i++) {
             rb_heap_t *heap = &heaps[i];
             heap_ready_to_gc(objspace, heap);
