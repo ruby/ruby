@@ -1,0 +1,3 @@
+for x in [x] then x end
+    ^ circular reference of loop variable - x
+
