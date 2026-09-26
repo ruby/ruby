@@ -6,6 +6,7 @@ INSN_ENTRY(<%= insn.name %>)
     START_OF_ORIGINAL_INSN(<%= insn.name %>);
 % if insn.is_opt_case_dispatch?
     ADD_PC(<%= insn.width %>);
+    // NB: Keep in sync with opt_case_dispatch in insns.def.
     INC_SP(-1);
 % else
     rb_zjit_profile_insn(BIN(<%= insn.jump_destination %>), ec);

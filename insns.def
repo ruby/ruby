@@ -1350,7 +1350,9 @@ once
     val = vm_once_dispatch(ec, iseq, ise);
 }
 
-/* case dispatcher, jump by table if possible */
+/* case dispatcher, jump by table if possible
+NB: Keep sp_inc in sync with opt_case_dispatch in _zjit_instruction.erb.
+*/
 DEFINE_INSN
 opt_case_dispatch
 (CDHASH hash, OFFSET else_offset)
