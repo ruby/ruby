@@ -462,6 +462,7 @@ ractor_free(void *ptr)
     rb_thread_sched_destroy(&r->threads.sched);
     rb_native_mutex_destroy(&r->sync.lock);
     ractor_local_storage_free(r);
+    if (r->courier_scratch) st_free_table(r->courier_scratch);
     rb_hook_list_free(&r->pub.hooks);
     rb_st_free_embedded_table(&r->pub.targeted_hooks);
 
@@ -3204,21 +3205,51 @@ copy_courier_supported_p(VALUE obj, struct copy_support_ctx *ctx)
     return ctx->ok;
 }
 
+/* Borrow the current Ractor's cached seen-table.  An empty slot (first use, or a
+ * nested walk from a dump hook) gets a fresh table instead. */
+static st_table *
+courier_scratch_take(void)
+{
+    rb_ractor_t *cr = GET_RACTOR();
+    st_table *tab = cr->courier_scratch;
+
+    if (tab) {
+        cr->courier_scratch = NULL;
+        return tab;
+    }
+    return st_init_numtable();
+}
+
+static void
+courier_scratch_give(st_table *tab)
+{
+    rb_ractor_t *cr = GET_RACTOR();
+
+    /* A big table would cost a big memset on every later clear. */
+    if (!cr->courier_scratch && st_table_size(tab) <= 512) {
+        st_clear(tab);
+        cr->courier_scratch = tab;
+    }
+    else {
+        st_free_table(tab);
+    }
+}
+
 /* Build a courier holding a copy of obj's graph, leaving the sources untouched.
  * Returns NULL when the graph has a type it cannot carry. */
 struct rb_ractor_courier *
 rb_ractor_courier_build_copy(VALUE obj, struct rb_ractor_courier **slot)
 {
-    struct copy_support_ctx scan = { st_init_numtable(), 0, 0, true };
+    struct copy_support_ctx scan = { courier_scratch_take(), 0, 0, true };
     {
         bool ok = copy_courier_supported_p(obj, &scan);
-        st_free_table(scan.seen);
+        courier_scratch_give(scan.seen);
         if (!ok) return NULL;
     }
 
     struct rb_ractor_courier *c = ZALLOC(struct rb_ractor_courier);
     courier_reserve(c, scan.nodes, scan.refs);
-    c->seen = st_init_numtable();
+    c->seen = courier_scratch_take();
     struct courier_build b = { c, true };
 
     /* Publish it into the caller's basket before capturing anything: from here the
@@ -3232,7 +3263,7 @@ rb_ractor_courier_build_copy(VALUE obj, struct rb_ractor_courier **slot)
         c->root = courier_capture(&b, obj);
     }
     EC_POP_TAG();
-    st_free_table(c->seen);
+    courier_scratch_give(c->seen);
     c->seen = NULL;
     /* Published above, so the basket owns it even half-built: it frees it. */
     if (state != TAG_NONE) EC_JUMP_TAG(ec, state);
@@ -3246,7 +3277,7 @@ rb_ractor_courier_build_move(VALUE obj, struct rb_ractor_courier **slot)
 {
     /* Two phases, preflight then commit, so an unmovable object is raised from the
      * read-only walk while the graph is still intact. */
-    struct move_preflight_ctx scan = { st_init_numtable(), 0, 0 };
+    struct move_preflight_ctx scan = { courier_scratch_take(), 0, 0 };
     {
         enum ruby_tag_type state;
         rb_execution_context_t *ec = GET_EC();
@@ -3255,13 +3286,13 @@ rb_ractor_courier_build_move(VALUE obj, struct rb_ractor_courier **slot)
             move_preflight(obj, &scan);
         }
         EC_POP_TAG();
-        st_free_table(scan.seen);
+        courier_scratch_give(scan.seen);
         if (state != TAG_NONE) EC_JUMP_TAG(ec, state);
     }
 
     struct rb_ractor_courier *c = ZALLOC(struct rb_ractor_courier);
     courier_reserve(c, scan.nodes, scan.refs);
-    c->seen = st_init_numtable();
+    c->seen = courier_scratch_take();
     struct courier_build b = { c, false };
 
     /* Publish it into the caller's basket before the sources become T_MOVED: from here
@@ -3276,7 +3307,7 @@ rb_ractor_courier_build_move(VALUE obj, struct rb_ractor_courier **slot)
         c->root = courier_capture(&b, obj);
     }
     EC_POP_TAG();
-    st_free_table(c->seen);
+    courier_scratch_give(c->seen);
     c->seen = NULL;
     if (state != TAG_NONE) {
         /* courier_capture raised (an unmovable type, an interrupt).  The courier belongs
