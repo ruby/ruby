@@ -455,13 +455,6 @@ ruby_push_include(const char *path, VALUE (*filter)(VALUE))
 #else
 # define is_path_sep(c) ((c) == sep)
 #endif
-#ifdef _WIN32
-    /* RUBYLIB and -I are UTF-8 while CharNext() follows the ANSI code
-     * page, and neither has the separator in a multibyte character. */
-# define next_char(s) ((s) + 1)
-#else
-# define next_char(s) CharNext(s)
-#endif
 
     if (path == 0) return;
     p = path;
@@ -470,10 +463,10 @@ ruby_push_include(const char *path, VALUE (*filter)(VALUE))
         while (is_path_sep(*p))
             p++;
         if (!*p) break;
-        for (s = p; *s && !is_path_sep(*s); s = next_char(s));
+        /* separators never appear inside a multibyte character */
+        for (s = p; *s && !is_path_sep(*s); s++);
         len = s - p;
 #undef is_path_sep
-#undef next_char
 
 #ifdef __CYGWIN__
         if (*s) {
