@@ -301,14 +301,23 @@ struct fast_fallback_inetsock_arg
 };
 
 static struct fast_fallback_getaddrinfo_shared *
-allocate_fast_fallback_getaddrinfo_shared(int family_size)
+allocate_fast_fallback_getaddrinfo_shared(int family_size, const char *hostp, const char *portp)
 {
     struct fast_fallback_getaddrinfo_shared *shared;
+    size_t entries_size = (family_size == 1 ? 0 : 2) * sizeof(struct fast_fallback_getaddrinfo_entry);
+    size_t hostp_size = hostp ? strlen(hostp) + 1 : 0;
+    size_t portp_size = portp ? strlen(portp) + 1 : 0;
 
+    /* The resolver thread may free this without the GVL, so no xmalloc. */
     shared = (struct fast_fallback_getaddrinfo_shared *)calloc(
         1,
-        sizeof(struct fast_fallback_getaddrinfo_shared) + (family_size == 1 ? 0 : 2) * sizeof(struct fast_fallback_getaddrinfo_entry)
+        sizeof(struct fast_fallback_getaddrinfo_shared) + entries_size + hostp_size + portp_size
     );
+    if (!shared) return NULL;
+
+    char *buf = (char *)shared + sizeof(struct fast_fallback_getaddrinfo_shared) + entries_size;
+    if (hostp) shared->node = memcpy(buf, hostp, hostp_size);
+    if (portp) shared->service = memcpy(buf + hostp_size, portp, portp_size);
 
     return shared;
 }
@@ -528,18 +537,17 @@ pick_addrinfo(struct hostname_resolution_store *resolution_store, int last_famil
     return selected_ai;
 }
 
-static void
+static int
 socket_nonblock_set(int fd)
 {
     int flags = fcntl(fd, F_GETFL);
 
-    if (flags < 0) rb_syserr_fail(errno, "fcntl(2)");
-    if ((flags & O_NONBLOCK) != 0) return;
+    if (flags < 0) return -1;
+    if ((flags & O_NONBLOCK) != 0) return 0;
 
     flags |= O_NONBLOCK;
 
-    if (fcntl(fd, F_SETFL, flags) < 0) rb_syserr_fail(errno, "fcntl(2)");
-    return;
+    return fcntl(fd, F_SETFL, flags);
 }
 
 static int
@@ -639,7 +647,6 @@ init_fast_fallback_inetsock_internal(VALUE v)
 
     /* start of hostname resolution */
     if (arg->family_size == 1) {
-        arg->wait = -1;
         arg->getaddrinfo_shared = NULL;
 
         int family = arg->families[0];
@@ -665,25 +672,24 @@ init_fast_fallback_inetsock_internal(VALUE v)
         }
         resolution_store.is_all_finished = true;
     } else {
+        arg->getaddrinfo_shared = allocate_fast_fallback_getaddrinfo_shared(arg->family_size, arg->hostp, arg->portp);
+        if (!arg->getaddrinfo_shared) rb_syserr_fail(errno, "calloc(3)");
+
+        rb_nativethread_lock_initialize(&arg->getaddrinfo_shared->lock);
+        arg->getaddrinfo_shared->notify = -1;
+        arg->getaddrinfo_shared->refcount = 1;
+
         if (pipe(pipefd) != 0) rb_syserr_fail(errno, "pipe(2)");
         hostname_resolution_waiter = pipefd[0];
+        arg->wait = hostname_resolution_waiter;
+        hostname_resolution_notifier = pipefd[1];
+        arg->getaddrinfo_shared->notify = hostname_resolution_notifier;
+
         int waiter_flags = fcntl(hostname_resolution_waiter, F_GETFL, 0);
         if (waiter_flags < 0) rb_syserr_fail(errno, "fcntl(2)");
         if ((fcntl(hostname_resolution_waiter, F_SETFL, waiter_flags | O_NONBLOCK)) < 0) {
             rb_syserr_fail(errno, "fcntl(2)");
         }
-        arg->wait = hostname_resolution_waiter;
-        hostname_resolution_notifier = pipefd[1];
-
-        arg->getaddrinfo_shared = allocate_fast_fallback_getaddrinfo_shared(arg->family_size);
-        if (!arg->getaddrinfo_shared) rb_syserr_fail(errno, "calloc(3)");
-
-        rb_nativethread_lock_initialize(&arg->getaddrinfo_shared->lock);
-        arg->getaddrinfo_shared->notify = hostname_resolution_notifier;
-
-        arg->getaddrinfo_shared->node = arg->hostp ? ruby_strdup(arg->hostp) : NULL;
-        arg->getaddrinfo_shared->service = arg->portp ? ruby_strdup(arg->portp) : NULL;
-        arg->getaddrinfo_shared->refcount = arg->family_size + 1;
 
         for (int i = 0; i < arg->family_size; i++) {
             arg->getaddrinfo_entries[i] = &arg->getaddrinfo_shared->getaddrinfo_entries[i];
@@ -726,7 +732,18 @@ init_fast_fallback_inetsock_internal(VALUE v)
                 }
             }
 
+            rb_nativethread_lock_lock(&arg->getaddrinfo_shared->lock);
+            {
+                arg->getaddrinfo_shared->refcount++;
+            }
+            rb_nativethread_lock_unlock(&arg->getaddrinfo_shared->lock);
+
             if (raddrinfo_pthread_create(&threads[i], fork_safe_do_fast_fallback_getaddrinfo, arg->getaddrinfo_entries[i]) != 0) {
+                rb_nativethread_lock_lock(&arg->getaddrinfo_shared->lock);
+                {
+                    arg->getaddrinfo_shared->refcount--;
+                }
+                rb_nativethread_lock_unlock(&arg->getaddrinfo_shared->lock);
                 rsock_raise_resolution_error("getaddrinfo(3)", EAI_AGAIN);
             }
         }
@@ -786,6 +803,14 @@ init_fast_fallback_inetsock_internal(VALUE v)
                     }
                 }
 
+                if (current_capacity == arg->connection_attempt_fds_size) {
+                    current_capacity = reallocate_connection_attempt_fds(
+                        &arg->connection_attempt_fds,
+                        current_capacity,
+                        additional_capacity
+                    );
+                }
+
                 status = rsock_socket(remote_ai->ai_family, remote_ai->ai_socktype, remote_ai->ai_protocol);
                 syscall = "socket(2)";
 
@@ -817,7 +842,9 @@ init_fast_fallback_inetsock_internal(VALUE v)
                     #if !defined(_WIN32) && !defined(__CYGWIN__)
                     status = 1;
                     if ((setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (char*)&status, (socklen_t)sizeof(status))) < 0) {
-                        rb_syserr_fail(errno, "setsockopt(2)");
+                        int e = errno;
+                        close(fd);
+                        rb_syserr_fail(e, "setsockopt(2)");
                     }
                     #endif
                     status = bind(fd, local_ai->ai_addr, local_ai->ai_addrlen);
@@ -853,11 +880,17 @@ init_fast_fallback_inetsock_internal(VALUE v)
                 if (any_addrinfos(&resolution_store) ||
                     in_progress_fds(arg->connection_attempt_fds_size) ||
                     !resolution_store.is_all_finished) {
-                    socket_nonblock_set(fd);
+                    if (socket_nonblock_set(fd) < 0) {
+                        int e = errno;
+                        close(fd);
+                        rb_syserr_fail(e, "fcntl(2)");
+                    }
                     status = connect(fd, remote_ai->ai_addr, remote_ai->ai_addrlen);
                     last_family = remote_ai->ai_family;
                 } else {
                     VALUE timeout = Qnil;
+
+                    io = arg->io = rsock_init_sock(arg->self, fd);
 
                     if (!NIL_P(open_timeout)) {
                         VALUE elapsed = rb_funcall(current_clocktime(), '-', 1, starts_at);
@@ -877,7 +910,6 @@ init_fast_fallback_inetsock_internal(VALUE v)
                           Qnil : tv_to_seconds(user_specified_connect_timeout_at);
                     }
 
-                    io = arg->io = rsock_init_sock(arg->self, fd);
                     status = rsock_connect(io, remote_ai->ai_addr, remote_ai->ai_addrlen, 0, timeout);
                 }
 
@@ -887,13 +919,6 @@ init_fast_fallback_inetsock_internal(VALUE v)
                 }
 
                 if (errno == EINPROGRESS) {
-                    if (current_capacity == arg->connection_attempt_fds_size) {
-                        current_capacity = reallocate_connection_attempt_fds(
-                            &arg->connection_attempt_fds,
-                            current_capacity,
-                            additional_capacity
-                        );
-                    }
                     arg->connection_attempt_fds[arg->connection_attempt_fds_size] = fd;
                     (arg->connection_attempt_fds_size)++;
 
@@ -1237,7 +1262,11 @@ init_fast_fallback_inetsock_internal(VALUE v)
         arg->io = rsock_init_sock(arg->self, connected_fd);
     }
 
-    return arg->io;
+    /* Don't close the socket in the cleanup if we are returning it */
+    io = arg->io;
+    arg->io = Qnil;
+
+    return io;
 }
 
 static VALUE
@@ -1311,6 +1340,11 @@ fast_fallback_inetsock_cleanup(VALUE v)
     if (arg->connection_attempt_fds) {
         free(arg->connection_attempt_fds);
         arg->connection_attempt_fds = NULL;
+    }
+
+    if (!NIL_P(arg->io)) {
+        rb_io_close(arg->io);
+        arg->io = Qnil;
     }
 
     return Qnil;
@@ -1390,6 +1424,7 @@ rsock_init_inetsock(
             fast_fallback_arg.hostp = hostp;
             fast_fallback_arg.portp = portp;
             fast_fallback_arg.additional_flags = additional_flags;
+            fast_fallback_arg.wait = -1;
 
             int resolving_families[resolving_family_size];
             int resolving_family_index = 0;

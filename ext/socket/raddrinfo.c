@@ -3111,10 +3111,6 @@ rsock_io_socket_addrinfo(VALUE io, struct sockaddr *addr, socklen_t len)
 void
 free_fast_fallback_getaddrinfo_shared(struct fast_fallback_getaddrinfo_shared **shared)
 {
-    xfree((*shared)->node);
-    (*shared)->node = NULL;
-    xfree((*shared)->service);
-    (*shared)->service = NULL;
     rb_nativethread_lock_destroy(&(*shared)->lock);
     free(*shared);
     *shared = NULL;
