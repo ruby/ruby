@@ -1110,6 +1110,39 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+  # The courier hands the moved String's buffer to a String rebuilt by
+  # rb_str_new_owned with a capacity that already excludes the terminator of the
+  # moved String's encoding.  That String is allocated as ASCII-8BIT, so giving it
+  # an encoding with a longer terminator (UTF-16LE here) must not convert the
+  # capacity again: it would leave the capacity, and the size the buffer is freed
+  # with, one byte short of the allocation.
+  def test_move_string_with_multibyte_terminator
+    assert_ractor(<<~'RUBY', require: "objspace", timeout: 60)
+      def utf16_with_spare_capacity
+        str = String.new(capacity: 4096, encoding: Encoding::UTF_16LE)
+        str << "\u3042".encode(Encoding::UTF_16LE) * 10
+        str
+      end
+
+      # Not embedded and with spare capacity, so the buffer is handed over as it is.
+      r = Ractor.new { Ractor.receive }
+      r.send(utf16_with_spare_capacity, move: true)
+      moved = r.value
+
+      assert_equal utf16_with_spare_capacity, moved
+      assert_equal Encoding::UTF_16LE, moved.encoding
+      assert_equal ObjectSpace.memsize_of(utf16_with_spare_capacity),
+                   ObjectSpace.memsize_of(moved)
+
+      # An embedded String is copied into a courier buffer sized for its own
+      # terminator, which must not be converted either.
+      embedded = "\u3042".encode(Encoding::UTF_16LE) * 10
+      r = Ractor.new { Ractor.receive }
+      r.send(embedded, move: true)
+      assert_equal "\u3042".encode(Encoding::UTF_16LE) * 10, r.value
+    RUBY
+  end
+
   # String#dup of a frozen string shares the original's bytes, and for an embedded
   # string those bytes live in its slot.  Moving the original must leave that slot
   # alone: the sharer reads it for as long as it lives.

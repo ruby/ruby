@@ -1224,7 +1224,10 @@ rb_str_new_owned(char *ptr, long len, long capa, int encindex)
     /* Freed by size (STR_HEAP_SIZE = capa + terminator), so capa must describe the
      * allocation the caller made, not just the bytes in use. */
     RSTRING(str)->as.heap.aux.capa = capa;
-    rb_enc_associate_index(str, encindex);
+    /* capa and the buffer already account for encindex's terminator, so set the
+     * encoding raw: rb_enc_associate_index would convert capa from the terminator
+     * length of the encoding str was allocated with (binary) and get it wrong. */
+    rb_enc_raw_set(str, rb_enc_from_index(encindex));
     return str;
 }
 
