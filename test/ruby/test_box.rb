@@ -758,6 +758,33 @@ class TestBox < Test::Unit::TestCase
     end;
   end
 
+  def test_c_backed_global_variables_are_shared_in_the_main_box
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      EnvUtil.suppress_warning do
+        $/ = "!"
+        assert_equal "hello", "hello!".chomp
+        assert_equal "!", $-0
+
+        assert_raise(TypeError) { $/ = 1 }
+        assert_raise(NameError) { $-a = true }
+
+        assert_equal "\r\n", Ruby::Box.new.eval('$-0 = "\r\n"; $-0')
+        assert_equal "!", $-0
+      end
+    end;
+  end
+
+  def test_frozen_loaded_features_in_box
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      box = Ruby::Box.new
+      assert_raise_with_message(RuntimeError, /\$LOADED_FEATURES is frozen; cannot append feature/) do
+        box.eval('$LOADED_FEATURES.freeze; require "erb"')
+      end
+    end;
+  end
+
   def test_match_variables_are_not_cached_in_box
     assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
     begin;
@@ -1013,6 +1040,58 @@ class TestBox < Test::Unit::TestCase
     end;
   end
 
+  # [Bug #22282]
+  def test_verbose_not_cached_in_box
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      $VERBOSE = nil
+      assert_equal [nil, nil, nil, 0], [$VERBOSE, $-v, $-w, $-W]
+
+      $VERBOSE = false
+      assert_equal [false, false, false, 1], [$VERBOSE, $-v, $-w, $-W]
+
+      $VERBOSE = true
+      assert_equal [true, true, true, 2], [$VERBOSE, $-v, $-w, $-W]
+    end;
+  end
+
+  def test_debug_not_cached_in_box
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      $DEBUG = true
+      assert_equal [true, true], [$DEBUG, $-d]
+
+      $DEBUG = false
+      assert_equal [false, false], [$DEBUG, $-d]
+    end;
+  end
+
+  def test_verbose_nil_silences_warnings_in_box
+    assert_in_out_err([ENV_ENABLE_BOX, "--disable=gems", "-W:experimental"], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
+      begin;
+        old, $VERBOSE = $VERBOSE, nil
+        warn "silenced"
+        $VERBOSE = old
+        warn "printed"
+      end;
+      assert_equal [], output
+      assert_match EXPERIMENTAL_WARNING_LINE_PATTERNS[0], error[0]
+      assert_match EXPERIMENTAL_WARNING_LINE_PATTERNS[1], error[1]
+      assert_equal ["printed"], error[2..]
+    end
+  end
+
+  def test_verbose_from_command_line_option_in_box
+    assert_in_out_err([ENV_ENABLE_BOX, "--disable=gems", "-W0"], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
+      begin;
+        p [$VERBOSE, $-v, $-W]
+        warn "silenced"
+      end;
+      assert_equal ["[nil, nil, 0]"], output
+      assert_equal [], error
+    end
+  end
+
   def test_load_path_and_loaded_features
     setup_box
 
@@ -1166,6 +1245,49 @@ class TestBox < Test::Unit::TestCase
     end
   end
 
+  def test_prelude_method_require_loads_feature_into_calling_box
+    # `Kernel#pp` in <internal:prelude> requires 'pp' and calls the real pp.
+    # The require must load the feature into the box of the caller, not into
+    # the master box where it is invisible from every other box.
+    assert_in_out_err([ENV_ENABLE_BOX], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
+      begin;
+        root = Ruby::Box.root
+        root.eval("pp 42")
+        puts root.eval("defined?(PP)").inspect
+        puts root.eval("method(:pp).source_location.first")
+        puts root.eval("$LOADED_FEATURES").grep(%r{/pp\.rb\z}).size
+        puts defined?(PP).inspect
+        pp :main
+        puts defined?(PP).inspect
+        puts method(:pp).source_location.first
+      end;
+      assert_equal "42", output[0]
+      assert_equal '"constant"', output[1], "PP must be defined in the root box"
+      assert_match(%r{/pp\.rb\z}, output[2], "lib/pp.rb must redefine pp in the root box")
+      assert_equal "1", output[3], "pp.rb must be in the root box's $LOADED_FEATURES"
+      assert_equal "nil", output[4], "PP must not leak into the main box"
+      assert_equal ":main", output[5]
+      assert_equal '"constant"', output[6], "PP must be defined in the main box"
+      assert_match(%r{/pp\.rb\z}, output[7], "lib/pp.rb must redefine pp in the main box")
+    end
+  end
+
+  def test_prelude_method_require_loads_feature_into_user_box
+    assert_in_out_err([ENV_ENABLE_BOX], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
+      begin;
+        box = Ruby::Box.new
+        box.eval("pp :user")
+        puts box.eval("defined?(PP)").inspect
+        puts box.eval("method(:pp).source_location.first")
+        puts defined?(PP).inspect
+      end;
+      assert_equal ":user", output[0]
+      assert_equal '"constant"', output[1], "PP must be defined in the user box"
+      assert_match(%r{/pp\.rb\z}, output[2], "lib/pp.rb must redefine pp in the user box")
+      assert_equal "nil", output[3], "PP must not leak into the main box"
+    end
+  end
+
   def test_calling_root_box_methods_does_not_change_user_boxes_newly_created
     assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true, timeout: 60)
     begin;
@@ -1187,6 +1309,16 @@ class TestBox < Test::Unit::TestCase
       assert_not_include b1.eval("Object.constants.sort"), :Find
       b2 = Ruby::Box.new
       assert_not_include b2.eval("Object.constants.sort"), :Find
+    end;
+  end
+
+  def test_ractor_copies_arguments_in_the_caller_box
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      Warning[:experimental] = false
+      require "date"
+      d = Date.parse("Aug 23:55")
+      assert_equal d, Ractor.new(d) {|x| x }.value
     end;
   end
 
@@ -1251,6 +1383,16 @@ class TestBox < Test::Unit::TestCase
         yield ENV_ENABLE_BOX.merge("BUNDLER_SETUP" => setup.path, "BUNDLER_SETUP_LOG" => log.path)
       end
     end
+  end
+
+  def test_top_level_definition_methods_in_a_box
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      path = File.join(ENV["TEST_DIR"], "box", "top_level_methods.rb")
+
+      assert Ruby::Box.new.load(path)
+      assert load(path, true)
+    end;
   end
 
   def test_require_list_loaded_only_in_main_box
