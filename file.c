@@ -4115,22 +4115,36 @@ unlink_internal(const char *path, void *arg)
  *    File.delete(*paths) -> integer
  *    File.unlink(*paths) -> integer
  *
- *  Removes the entry at each path in `paths`;
- *  returns the count of removed entries.
- *
- *  Does not follow [symbolic links](rdoc-ref:file/symbolic_links.md);
- *  if an entry is a symlink, the link itself is removed.
+ *  Removes the entry ([hard link](rdoc-ref:file/hard_links.md)) at each path in `paths`;
+ *  returns the count of removed entries:
  *
  *  ```ruby
- *  File.write('t.tmp', 'foo')
- *  File.write('u.tmp', 'bar')
- *  File.delete('t.tmp', 'u.tmp') # => 2
- *  File.symlink('README.md', 'foo')
- *  File.unlink('foo')            # => 1
+ *  filepath0 = '/tmp/t0.tmp'
+ *  filepath1 = '/tmp/t1.tmp'
+ *  File.write(filepath0, 'foo')
+ *  File.write(filepath1, 'bar')
+ *  File.unlink(filepath0, filepath1) # => 2
+ *  ```
+ *
+ *  If the removed hard link is the last one associated with the inode,
+ *  also removes the inode; otherwise, not.
+ *  See [Unlinking](rdoc-ref:file/hard_links.md@Unlinking).
+ *
+ *  Does not follow [symbolic links](rdoc-ref:file/symbolic_links.md);
+ *  if the entry is a symbolic link, removes the entry itself (not the link target).
+ *
+ *  ```ruby
+ *  filepath = '/tmp/t.tmp'
+ *  linkpath = '/tmp/link'
+ *  File.write(filepath, 'foo')
+ *  File.symlink(filepath, linkpath)
+ *  File.unlink(linkpath) # => 1
+ *  File.exist?(filepath) # => true
+ *  File.unlink(filepath) # => 1
  *  ```
  *
  *  Raises an exception on any error;
- *  some entries may have been deleted before the path causing the error.
+ *  some entries may have been deleted before the error occurs.
  */
 
 static VALUE
