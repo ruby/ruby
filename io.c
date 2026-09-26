@@ -4279,19 +4279,19 @@ rb_io_getline_0(VALUE rs, long limit, int chomp, rb_io_t *fptr)
         while ((c = appendline(fptr, newline, &str, &limit, enc)) != EOF) {
             const char *s, *p, *pp, *e;
 
-            if (c == newline) {
-                if (RSTRING_LEN(str) < rslen) continue;
+            if (c == newline && RSTRING_LEN(str) >= rslen) {
                 s = RSTRING_PTR(str);
                 e = RSTRING_END(str);
                 p = e - rslen;
-                if (!at_char_boundary(s, p, e, enc)) continue;
-                if (!rspara) rscheck(rsptr, rslen, rs);
-                if (memcmp(p, rsptr, rslen) == 0) {
-                    if (chomp) {
-                        if (chomp_cr && p > s && *(p-1) == '\r') --p;
-                        rb_str_set_len(str, p - s);
+                if (at_char_boundary(s, p, e, enc)) {
+                    if (!rspara) rscheck(rsptr, rslen, rs);
+                    if (memcmp(p, rsptr, rslen) == 0) {
+                        if (chomp) {
+                            if (chomp_cr && p > s && *(p-1) == '\r') --p;
+                            rb_str_set_len(str, p - s);
+                        }
+                        break;
                     }
-                    break;
                 }
             }
             if (limit == 0) {
