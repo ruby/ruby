@@ -404,7 +404,7 @@ module Ruby::Prism
   end
   <%- nodes.each do |node| -%>
 
-  <%- node.each_comment_line do |line| -%>
+  <%- node.each_comment_rdoc_line do |line| -%>
   #<%= line %>
   <%- end -%>
   class <%= node.name -%> < Node
@@ -573,7 +573,7 @@ module Ruby::Prism
     <%- if field.comment.nil? -%>
     # Returns the Location represented by `<%= field.name %>`.
     <%- else -%>
-    <%- field.each_comment_line do |line| -%>
+    <%- field.each_comment_rdoc_line do |line| -%>
     #<%= line %>
     <%- end -%>
     <%- end -%>
@@ -602,7 +602,7 @@ module Ruby::Prism
     <%- if field.comment.nil? -%>
     # Returns the Location represented by `<%= field.name %>`.
     <%- else -%>
-    <%- field.each_comment_line do |line| -%>
+    <%- field.each_comment_rdoc_line do |line| -%>
     #<%= line %>
     <%- end -%>
     <%- end -%>
@@ -635,7 +635,7 @@ module Ruby::Prism
     <%- if field.comment.nil? -%>
     # Returns the `<%= field.name %>` attribute.
     <%- else -%>
-    <%- field.each_comment_line do |line| -%>
+    <%- field.each_comment_rdoc_line do |line| -%>
     #<%= line %>
     <%- end -%>
     <%- end -%>
