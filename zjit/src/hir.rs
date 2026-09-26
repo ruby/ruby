@@ -1752,6 +1752,14 @@ impl Insn {
         }
     }
 
+    pub fn outgoing_edges(&self) -> impl Iterator<Item = &BranchEdge> + '_ {
+        match self {
+            Insn::CondBranch { if_true, if_false, .. } => [Some(if_true), Some(if_false)],
+            Insn::Jump(edge) => [Some(edge), None],
+            _ => [None, None],
+        }.into_iter().flatten()
+    }
+
     /// Call `f` on each operand (InsnId) of this instruction.
     pub fn for_each_operand(&self, mut f: impl FnMut(InsnId)) {
         macro_rules! visit_one { ($p:expr) => { f($p) }; }
@@ -6532,28 +6540,46 @@ impl Function {
 
     /// ZJIT uses block parameters in HIR SSA representation.
     /// Sometimes, we can prove that a block param is only called with a single value.
-    /// This pass identifies such trivial block params and replaces them with the concretized value.
+    /// This pass identifies such trivial block params and replaces them with constants.
     /// This produces a minimal SSA representation amenable to further optimizations.
     /// The implementation is inspired from algorithm 2 in <https://c9x.me/compile/bib/braun13cc.pdf>.
     fn remove_trivial_block_params(&mut self) {
+        // This pass works as follows:
+        // In a loop until no further optimizations are possible, do:
+        // 1. Find a block that has predecessors and non-zero block params
+        // 2. Perform abstract interpretation to determine trivial block params.
+        //    A param is "trivial" if all edges passing this param use the same value.
+        // 3. Replace each trivial param in the following places.
+        //    - at the block definition (remove this param)
+        //    - for each predecessor edge of the block (remove this param)
+        //    - at each use of the param (replace this param with the actual constants)
+
         // Each block param is lifted to an abstract domain of ParamValues.
         // The lattice is simple. None is Bottom, Multiple is Top, and One is between both.
         // During analysis, all block params start with None.
         // New values passed to the block transition up the lattice.
         // Trivial block params have one unique value. This is the case we optimize away.
-        // Lattice structure taken from cranelift: <https://github.com/bytecodealliance/wasmtime/blob/main/cranelift/codegen/src/remove_constant_phis.rs>
+        // The idea to represent this as a lattice was taken from cranelift: <https://github.com/bytecodealliance/wasmtime/blob/main/cranelift/codegen/src/remove_constant_phis.rs>
         #[derive(Clone, Copy)]
-        enum ParamValue {
+        enum AbstractValue {
             None,
             One(InsnId),
             Many
         }
 
-        impl ParamValue {
-            fn update(&mut self, value: InsnId) {
+        impl AbstractValue {
+            // Update the abstract value based on new predecessor param information.
+            // Assumption: value and self_loop_value have been normalized in the union find with something like `find_id`
+            fn update(&mut self, value: InsnId, self_loop_value: InsnId) {
+                // Values provided from the block definition came from inside the block and add no new information
+                // This likely does not happen in ZJIT source because blocks do not directly refer to themselves as of this writing.
+                // We could remove this check if we ensure that `predecessors` (defined below) does not contain any self loops.
+                if value == self_loop_value {
+                    return
+                }
                 *self = match *self {
-                    ParamValue::None => ParamValue::One(value),
-                    ParamValue::One(original) if original != value => ParamValue::Many,
+                    AbstractValue::None => AbstractValue::One(value),
+                    AbstractValue::One(original) if original != value => AbstractValue::Many,
                     other => other
                 };
             }
@@ -6569,6 +6595,7 @@ impl Function {
             })
         }
 
+        // ZJIT usese basic blocks, so each branching instruction must be at the block terminator.
         fn block_terminator(fun: &Function, block_id: BlockId) -> InsnId {
             *fun.blocks[block_id].insns().last().unwrap()
         }
@@ -6596,103 +6623,85 @@ impl Function {
             edges_of!(&mut fun.insns[insn_id], &mut)
         }
 
-        // Instantiate the domain for abstract interpretation.
-        // We store possible param values for each block
-        let mut param_values: Vec<Vec<ParamValue>> = self.blocks.iter().map(|block| vec![ParamValue::None; block.params.len()]).collect();
+        // Search `fn infer_types` for more on optimizations relating to rpo and rpo_order.
+        // We reuse these optimizations here. While it is potentially faster in the general case to use a worklist, most cases do not have loops.
+        // A fixpoint loop with backedge detection is simpler and faster for the vast majority of cases.
+        let rpo = self.reverse_post_order();
+        let mut rpo_order = vec![usize::MAX; self.blocks.len()];
+        for (idx, &block_id) in rpo.iter().enumerate() {
+            rpo_order[block_id] = idx;
+        }
+        let mut has_back_edge = false;
 
-        let blocks = self.reverse_post_order();
-
-        // Collect blocks that terminate with Jump or CondBranch instructions that pass at least one block param along.
-        let blocks_sending_params: Vec<BlockId> = blocks.iter().copied()
-            .filter(|&block_id|
-                outgoing_edges(self, block_id).any(|edge| !edge.args.is_empty()))
-            .collect();
-
-        // We only need to update blocks that have params. (Blocks without params cannot be improved)
-        let blocks_receiving_params: Vec<BlockId> = blocks.iter().copied()
-            .filter(|&block_id|
-                self.blocks[block_id].params().len() != 0)
-            .collect();
-
-        // Create a vec to represent trivial indices
-        let max_params = blocks.iter().copied().map(|id| self.blocks[id].params.len()).max().unwrap_or(0);
-        let mut trivial_indices: Vec<usize> = Vec::with_capacity(max_params);
-
-        let mut changed = true;
-
-        while changed {
-            changed = false;
-
-            // When trivial params are elided, the number of params per block can shrink.
-            // When we reset each analysis loop, we do two things:
-            // 1. Reset analysis state to None (bottom of the lattice)
-            // 2. Shrink the number of params per row to match the params per block.
-            //    This resizing occurs when former iterations have found and removed trivial params.
-            for (row, block) in param_values.iter_mut().zip(&self.blocks) {
-                row.truncate(block.params.len());
-                row.as_mut_slice().fill(ParamValue::None);
+        // Populate each block with a vec of instructions that call said block
+        let mut predecessors: Vec<Vec<BlockId>> = vec![vec![]; self.num_blocks()];
+        for block_id in rpo.iter().cloned() {
+            for edge in outgoing_edges(self, block_id) {
+                predecessors[edge.target].push(block_id);
             }
+        }
 
-            // Scan through each jump, collecting edges with params to analyze from CondBranch and Jump insns.
-            for block_id in &blocks_sending_params {
-                // Use the results of abstract interpretation to update the states
-                // Perform abstract interpretation
-                for BranchEdge { target: block_id, args: params } in outgoing_edges(self, *block_id) {
-                    for (i, param) in params.iter().enumerate() {
-                        let param = self.find_id(*param);
-                        // If the param is the same as passed into the block, it is a self loop and provides no new predecessor information.
-                        if param == self.find_id(self.blocks[*block_id].params[i]) {
-                            continue
-                        }
-                        param_values[*block_id][i].update(param);
-                    }
+        loop {
+            let mut changed = false;
+            for target in rpo.iter().copied() {
+                // If there are no predecessors or no params, nothing can be optimized.
+                if predecessors[target].len() == 0 || self.blocks[target].params.len() == 0 {
+                    continue
                 }
-            }
 
-            // Remove the trivial block params and fix up our SSA representation
-            // This is done by as follows.
-            // 1. Replace uses of the trivial params with the concretized value
-            // 2. Remove trivial params from the basic block definition
-            // 3. Remove trivial params from each CondBranch and Jump that targets the basic block that was just updated
-            for block_id in &blocks_receiving_params {
-                let block_preds = &param_values[*block_id];
-                trivial_indices.clear();
-                for (idx, state) in block_preds.iter().enumerate() {
-                    if let ParamValue::One(_) = state {
-                        trivial_indices.push(idx);
-                    } else {
-                        // If the param has a constant Ruby object associated with it, even if it
-                        // is passed muliple InsnId, we can still optimize it away.
-                        let param_id = self.blocks[*block_id].params[idx];
-                        if let Some(obj) = self.type_of(param_id).ruby_object() {
-                            let const_insn = self.prepend_insn(*block_id, Insn::Const { val: Const::Value(obj) });
-                            self.insn_types[const_insn] = self.infer_type(const_insn);
-                            self.make_equal_to(param_id, const_insn);
-                            trivial_indices.push(idx);
-                            changed = true;
+                // Perform abstract interpretation to identify trivial params.
+                let mut abstract_domain = vec![AbstractValue::None; self.blocks[target].params.len()];
+                for &block_id in &predecessors[target] {
+                    // In almost all cases, there is only one edge that returns from this filter. However, there's one thorny edge case.
+                    // Technically, a CondBranch could pass two sets of different parameters to the same target. Both of these are predecessors and both must be checked.
+                    for edge in outgoing_edges(self, block_id).filter(|edge| edge.target == target) {
+                        has_back_edge |= rpo_order[edge.target] <= rpo_order[rpo_order[block_id]];
+                        // Collect the params for abstract interpretation. The params are args of the BranchEdges extracted from block terminators.
+                        let predecessor_params = &edge.args;
+                        // Perform abstract interpretation to determine trivial params
+                        for i in 0..predecessor_params.len() {
+                            let param = self.find_id(predecessor_params[i]);
+                            let self_loop_param = self.find_id(self.blocks[target].params[i]);
+                            abstract_domain[i].update(param, self_loop_param);
                         }
                     }
                 }
 
-                // Replace uses of the trivial params with the concretized value
-                for param_index in &trivial_indices {
-                    if let ParamValue::One(insn_id) = block_preds[*param_index] {
-                        self.make_equal_to(self.blocks[*block_id].params[*param_index], insn_id);
-                        changed = true;
+                // Remove trivial params and replace uses with the actual constants.
+                let mut trivial_indices: Vec<usize> = Vec::with_capacity(abstract_domain.len());
+                for (index, value) in abstract_domain.into_iter().enumerate() {
+                    let old_insn_id = self.blocks[target].params[index];
+                    let new_insn_id: InsnId;
+                    if let AbstractValue::One(id) = value {
+                        new_insn_id = id;
                     }
+                    else if let Some(obj) = self.type_of(old_insn_id).ruby_object() {
+                        new_insn_id = self.prepend_insn(target, Insn::Const { val: Const::Value(obj) });
+                        self.insn_types[new_insn_id] = self.infer_type(new_insn_id);
+                    }
+                    else {
+                        // If the predecessors do not reduce to a trivial value or the type is not a ruby object, we cannot optimize the block params.
+                        continue
+                    }
+                    changed = true;
+                    self.make_equal_to(old_insn_id, new_insn_id);
+                    trivial_indices.push(index);
                 }
 
-                // Update the block
-                prune_vec_by_indices(&mut self.blocks[*block_id].params, &trivial_indices);
-
-                // Update the terminators (basic blocks can only branch at the terminator. This is where block params are passed)
-                for jump_block_id in &blocks_sending_params {
-                    for edge in outgoing_edges_mut(self, *jump_block_id) {
-                        if edge.target == *block_id {
+                for &block_id in &predecessors[target] {
+                    for edge in outgoing_edges_mut(self, block_id) {
+                        if edge.target == target {
                             prune_vec_by_indices(&mut edge.args, &trivial_indices);
                         }
                     }
                 }
+
+                prune_vec_by_indices(&mut self.blocks[target].params, &trivial_indices);
+            }
+
+            // End analysis when there are no changes or the CFG has no back edges.
+            if !(changed && has_back_edge) {
+                break;
             }
         }
     }
