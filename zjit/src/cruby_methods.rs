@@ -847,10 +847,11 @@ fn inline_integer_anybits_p(fun: &mut hir::Function, block: hir::BlockId, recv: 
     if fun.likely_a(recv, types::Fixnum, state) && fun.likely_a(mask, types::Fixnum, state) {
         let recv = fun.coerce_to(block, recv, types::Fixnum, state);
         let mask = fun.coerce_to(block, mask, types::Fixnum, state);
+        // Like int_anybits_p, test for overlapping bits. FixnumAnd returns a
+        // tagged Fixnum, so compare against tagged Fixnum zero.
         let bits = fun.push_insn(block, hir::Insn::FixnumAnd { left: recv, right: mask });
         let zero = fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(VALUE::fixnum_from_usize(0)) });
-        let any_bits = fun.push_insn(block, hir::Insn::IsBitNotEqual { left: bits, right: zero });
-        return Some(fun.push_insn(block, hir::Insn::BoxBool { val: any_bits }));
+        return Some(fun.push_insn(block, hir::Insn::FixnumNeq { left: bits, right: zero }));
     }
     None
 }
