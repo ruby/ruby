@@ -647,6 +647,13 @@ class TestSyntax < Test::Unit::TestCase
     assert_valid_syntax("{foo: /=/}", bug11456)
   end
 
+  def test_computed_key_hash
+    assert_valid_syntax '{ (a + b): c }'
+    assert_valid_syntax '{ ("a" + "b"): c }'
+    assert_valid_syntax '{ (1): c }'
+    assert_syntax_error '{ (a + b) : c }', /expect/  # space before colon
+  end
+
   def test_percent_string_after_label
     bug11812 = '[ruby-core:72084]'
     assert_valid_syntax('{label:%w(*)}', bug11812)
