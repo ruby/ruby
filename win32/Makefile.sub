@@ -187,7 +187,7 @@ PLATFORM = mswin32
 ! error Runtime library $(RT_VER) is not supported
 !endif
 !ifndef NTVER
-NTVER = _WIN32_WINNT_WIN8
+NTVER = _WIN32_WINNT_WIN10
 !endif
 !ifdef NTVER
 ARCHDEFS = -D_WIN32_WINNT=$(NTVER) $(ARCHDEFS)
