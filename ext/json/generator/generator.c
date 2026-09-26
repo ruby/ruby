@@ -1733,6 +1733,9 @@ static VALUE cState_set_default_sort_keys_proc(VALUE self, VALUE proc)
     if (!rb_obj_is_proc(proc)) {
         rb_raise(rb_eTypeError, "sort_key_proc must be a Proc");
     }
+    if (default_sort_keys_proc) {
+        rb_raise(rb_eArgError, "sort_key_proc can only be set once");
+    }
     return default_sort_keys_proc = proc;
 }
 
