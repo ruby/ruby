@@ -260,6 +260,32 @@ class TestLazyEnumerator < Test::Unit::TestCase
     assert_equal([5, nil], a.lazy.zip("a".."c").force.last)
   end
 
+  def test_zip_array_convertible_before_enumerable
+    array_like = Object.new
+    def array_like.to_ary
+      [:a, :b]
+    end
+
+    zip = (1..3).lazy.zip(array_like, 10..12)
+    expected = [[1, :a, 10], [2, :b, 11], [3, nil, 12]]
+    assert_equal(expected, zip.force)
+    assert_equal(expected, zip.force)
+  end
+
+  def test_zip_array_conversion_precedes_each
+    array_like = Object.new
+    def array_like.to_ary
+      [:a, :b]
+    end
+    def array_like.each
+      yield :c
+      yield :d
+    end
+
+    assert_equal([[1, :a, 10], [2, :b, 11]],
+                 (1..2).lazy.zip(array_like, 10..11).force)
+  end
+
   def test_zip_without_arg
     a = Step.new(1..3)
     assert_equal([1], a.zip.first)
