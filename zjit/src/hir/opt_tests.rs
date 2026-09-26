@@ -13524,7 +13524,7 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_does_not_fold_hash_aref_with_frozen_hash() {
+    fn test_fold_hash_aref_with_frozen_hash() {
         eval("
             H = {a: 0}.freeze
             def test = H[:a]
@@ -13546,10 +13546,51 @@ mod hir_opt_tests {
           v13:StaticSymbol[:a] = Const Value(VALUE(0x1010))
           PatchPoint NoSingletonClass(Hash@0x1018)
           PatchPoint MethodRedefined(Hash@0x1018, []@0x1020, cme:0x1028)
-          v26:BasicObject = HashAref v11, v13
+          v27:Fixnum[0] = Const Value(0)
           CheckInterrupts
-          Return v26
+          Return v27
         ");
+    }
+
+    #[test]
+    fn test_does_not_fold_unsafe_frozen_hash_aref() {
+        eval("
+            H_MISSING = {a: 0}.freeze
+            H_MIXED_KEYS = Ractor.make_shareable({a: 0, Object.new => 1})
+            H_OBJECT_KEY = Ractor.make_shareable(Object.new)
+            H_OBJECT_KEYS = Ractor.make_shareable({H_OBJECT_KEY => 0})
+
+            def test_missing_hash_key = H_MISSING[:missing]
+            def test_mixed_hash_keys = H_MIXED_KEYS[:a]
+            def test_object_hash_key = H_OBJECT_KEYS[H_OBJECT_KEY]
+
+            test_missing_hash_key
+            test_mixed_hash_keys
+            test_object_hash_key
+        ");
+
+        for method in ["test_missing_hash_key", "test_mixed_hash_keys", "test_object_hash_key"] {
+            let hir = hir_string(method);
+            assert!(hir.contains("HashAref"), "unexpectedly folded {method}:\n{hir}");
+        }
+    }
+
+    #[test]
+    fn test_fold_frozen_hash_aref_in_bmethod() {
+        eval("
+            POLICY_FLAGS = {view: 1, edit: 2}.freeze
+            POLICY_FLAGS.each_key do |key|
+              define_method(:\"allows_#{key}\") { POLICY_FLAGS[key] }
+            end
+
+            def test_policy_flag = allows_view
+            test_policy_flag
+        ");
+
+        let hir = hir_string("test_policy_flag");
+        assert!(hir.contains("GuardBitEquals"), "failed to guard captured key:\n{hir}");
+        assert!(!hir.contains("HashAref"), "failed to fold frozen Hash lookup:\n{hir}");
+        assert!(hir.contains("Fixnum[1] = Const Value(1)"), "failed to return folded value:\n{hir}");
     }
 
     #[test]

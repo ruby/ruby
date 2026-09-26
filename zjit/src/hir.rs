@@ -652,6 +652,7 @@ pub enum SideExitReason {
     Interrupt,
     InvokeBlockHandlerNotIseq,
     InvokeBlockIseqChanged,
+    CapturedLocalChanged,
     BlockParamWbRequired,
     StackOverflow,
     FixnumModByZero,
@@ -5985,6 +5986,16 @@ impl Function {
                 // callee sits one level deeper (caller_depth + 1).
                 let caller_depth = self.frame_depth(state);
 
+                let captured_ep = if unsafe { get_cme_def_type(cme) } == VM_METHOD_TYPE_BMETHOD {
+                    let procv = unsafe { rb_get_def_bmethod_proc((*cme).def) };
+                    let proc = unsafe { rb_jit_get_proc_ptr(procv) };
+                    let proc_block = unsafe { (*proc).block.as_ref() };
+                    let capture = unsafe { proc_block.as_.captured.as_ref() };
+                    Some(capture.ep)
+                } else {
+                    None
+                };
+
                 // The callee's perspective of the stack is with the receiver and arguments popped off.
                 let caller_stack_size = call_state.stack_size() - args_len - 1; // -1 for receiver
                 let post_send_caller = self.new_insn(Insn::Snapshot { state: Box::new(call_state.with_stack_size(caller_stack_size)) });
@@ -5994,6 +6005,7 @@ impl Function {
                     depth: caller_depth + 1,
                     jit_entry_idx: passed_opt_num,
                     blockiseq,
+                    captured_ep,
                 };
                 let add_result = match add_iseq_to_hir(self, iseq, mode) {
                     Ok(r) => r,
@@ -6844,6 +6856,40 @@ impl Function {
     ///
     /// It can fold fixnum math, truthiness tests, and branches with constant conditionals.
     fn fold_constants(&mut self) {
+        unsafe extern "C" fn check_static_symbol_key(key: st_data_t, _value: st_data_t, all_static_symbols: st_data_t) -> c_int {
+            let all_static_symbols = unsafe { &mut *(all_static_symbols as *mut bool) };
+            if !VALUE(key as usize).static_sym_p() {
+                *all_static_symbols = false;
+                ST_STOP as c_int
+            } else {
+                ST_CONTINUE as c_int
+            }
+        }
+
+        fn static_symbol_hash_lookup(hash: VALUE, key: VALUE) -> Option<VALUE> {
+            if !key.static_sym_p() {
+                return None;
+            }
+
+            // Hash lookups may call Ruby `hash` and `eql?` methods. Restrict folding to
+            // static Symbol keys, whose hashing and comparison cannot run Ruby code.
+            let mut all_static_symbols = true;
+            unsafe {
+                rb_hash_stlike_foreach(
+                    hash,
+                    Some(check_static_symbol_key),
+                    (&mut all_static_symbols as *mut bool) as st_data_t,
+                );
+            }
+            if !all_static_symbols {
+                return None;
+            }
+
+            let mut value = 0;
+            let found = unsafe { rb_hash_stlike_lookup(hash, key.0 as st_data_t, &mut value) };
+            (found != 0).then_some(VALUE(value as usize))
+        }
+
         fn is_power_of_two(d: i64) -> bool {
             d > 0 && (d & (d - 1)) == 0
         }
@@ -7135,6 +7181,17 @@ impl Function {
                             (true, Some(index)) => {
                                 let val = unsafe { rb_yarv_ary_entry_internal(array_obj, index) };
                                 self.new_insn(Insn::Const { val: Const::Value(val) })
+                            }
+                            _ => insn_id,
+                        }
+                    }
+                    &Insn::HashAref { hash, key, .. } => {
+                        match (self.type_of(hash).ruby_object(), self.type_of(key).ruby_object()) {
+                            (Some(hash_obj), Some(key_obj)) if hash_obj.is_frozen() => {
+                                match static_symbol_hash_lookup(hash_obj, key_obj) {
+                                    Some(val) => self.new_insn(Insn::Const { val: Const::Value(val) }),
+                                    None => insn_id,
+                                }
                             }
                             _ => insn_id,
                         }
@@ -9016,6 +9073,8 @@ enum AddIseqMode {
         jit_entry_idx: usize,
         /// The literal block the caller passed to this frame, if any.
         blockiseq: Option<IseqPtr>,
+        /// The captured parent environment for a bmethod.
+        captured_ep: Option<*const VALUE>,
     },
 }
 
@@ -9851,7 +9910,19 @@ fn add_iseq_to_hir(
                     if level != 0 {
                         // Load local from EP; no change to FrameState as it describes level 0.
                         let ep = fun.get_ep(block, level);
-                        let val = fun.get_local_from_ep(block, iseq, ep, ep_offset, level, types::BasicObject);
+                        let mut val = fun.get_local_from_ep(block, iseq, ep, ep_offset, level, types::BasicObject);
+                        if let AddIseqMode::Inlined { captured_ep: Some(captured_ep), .. } = mode
+                            && level == 1
+                        {
+                            let expected = unsafe { captured_ep.sub(ep_offset.to_usize()).read() };
+                            val = fun.push_insn(block, Insn::GuardBitEquals {
+                                val,
+                                expected: Const::Value(expected),
+                                reason: Box::new(SideExitReason::CapturedLocalChanged),
+                                state: exit_id,
+                                recompile: Some(Recompile),
+                            });
+                        }
                         state.stack_push(val);
                     } else if !local_inval {
                         assert!(level == 0); // from place in decision tree

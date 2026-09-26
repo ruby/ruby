@@ -227,6 +227,20 @@ class TestZJITCLI < Test::Unit::TestCase
     end
   end
 
+  def test_inlined_bmethod_captured_local_changed
+    assert_runs '[1, 2]', %q{
+      policy_flags = {view: 1, edit: 2}.freeze
+      key = :view
+      define_method(:policy_flag) { policy_flags[key] }
+      define_method(:change_key) { |new_key| key = new_key }
+      def test = policy_flag
+
+      first = test
+      change_key(:edit)
+      [first, test]
+    }, call_threshold: 1
+  end
+
   # tool/ruby_vm/views/*.erb relies on the zjit instructions a) being contiguous and
   # b) being reliably ordered after all the other instructions.
   def test_instruction_order
