@@ -4307,14 +4307,15 @@ mod hir_opt_tests {
           v8:BasicObject = LoadArg :x@1
           Jump bb3(v7, v8)
         bb3(v11:BasicObject, v12:BasicObject):
-          v32:NilClass = Const Value(nil)
+          v34:NilClass = Const Value(nil)
           v17:ArrayExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           v18:ArrayExact = ArrayDup v17
           PatchPoint NoSingletonClass(Array@0x1010)
           PatchPoint MethodRedefined(Array@0x1010, first@0x1018, cme:0x1020)
-          v31:BasicObject = InvokeBuiltin leaf <inline_expr>, v18
+          v32:CInt64[0] = Const CInt64(0)
+          v33:BasicObject = ArrayAref v18, v32
           CheckInterrupts
-          Return v31
+          Return v33
         ");
     }
 
@@ -14119,6 +14120,90 @@ mod hir_opt_tests {
           CheckInterrupts
           Return v27
         ");
+    }
+
+    #[test]
+    fn test_optimize_array_first() {
+        let result = eval("
+            def test(arr) = arr.first
+            test([1])
+            test([1])
+        ");
+        assert_eq!(VALUE::fixnum_from_usize(1), result);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :arr@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :arr@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint NoSingletonClass(Array@0x1008)
+          PatchPoint MethodRedefined(Array@0x1008, first@0x1010, cme:0x1018)
+          v23:ArrayExact = GuardType v10, ArrayExact recompile
+          v25:CInt64[0] = Const CInt64(0)
+          v26:BasicObject = ArrayAref v23, v25
+          CheckInterrupts
+          Return v26
+        ");
+    }
+
+    #[test]
+    fn test_optimize_array_first_empty_array() {
+        let result = eval("
+            def test(arr) = arr.first
+            test([])
+            test([])
+        ");
+        assert_eq!(Qnil, result);
+    }
+
+    #[test]
+    fn test_optimize_array_last() {
+        let result = eval("
+            def test(arr) = arr.last
+            test([1, 2, 3])
+            test([1, 2, 3])
+        ");
+        assert_eq!(VALUE::fixnum_from_usize(4), result);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :arr@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :arr@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint NoSingletonClass(Array@0x1008)
+          PatchPoint MethodRedefined(Array@0x1008, last@0x1010, cme:0x1018)
+          v23:ArrayExact = GuardType v10, ArrayExact recompile
+          v25:CInt64[-1] = Const CInt64(-1)
+          v26:BasicObject = ArrayAref v23, v25
+          CheckInterrupts
+          Return v26
+        ");
+    }
+
+    #[test]
+    fn test_optimize_array_last_empty_array() {
+        let result = eval("
+            def test(arr) = arr.last
+            test([])
+            test([])
+        ");
+        assert_eq!(Qnil, result);
     }
 
     #[test]

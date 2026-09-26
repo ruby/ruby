@@ -19,6 +19,8 @@ unsafe extern "C" {
     fn rb_builtin_ary_at_end(ec: EcPtr, self_: VALUE, index: VALUE) -> VALUE;
     fn rb_builtin_ary_at(ec: EcPtr, self_: VALUE, index: VALUE) -> VALUE;
     fn rb_builtin_fixnum_inc(ec: EcPtr, self_: VALUE, num: VALUE) -> VALUE;
+    fn rb_builtin_ary_first(ec: EcPtr, self_: VALUE) -> VALUE;
+    fn rb_builtin_ary_last(ec: EcPtr, self_: VALUE) -> VALUE;
     fn rb_str_equal(str1: VALUE, str2: VALUE) -> VALUE;
 }
 
@@ -306,6 +308,10 @@ pub fn init() -> Annotations {
     builtin_funcs.insert(rb_builtin_fixnum_inc as *mut c_void, FnProperties { inline: inline_fixnum_inc, return_type: types::Fixnum, ..Default::default() });
     builtin_funcs.insert(rb_builtin_ary_at as *mut c_void, FnProperties { inline: inline_ary_at, ..Default::default() });
     builtin_funcs.insert(rb_builtin_ary_at_end as *mut c_void, FnProperties { inline: inline_ary_at_end, return_type: types::BoolExact, ..Default::default() });
+
+    // Builtins used by Array#first and Array#last when called with no arguments
+    builtin_funcs.insert(rb_builtin_ary_first as *mut c_void, FnProperties { inline: inline_ary_first, no_gc: true, leaf: true, elidable: true, ..Default::default() });
+    builtin_funcs.insert(rb_builtin_ary_last as *mut c_void, FnProperties { inline: inline_ary_last, no_gc: true, leaf: true, elidable: true, ..Default::default() });
 
     Annotations {
         cfuncs: std::mem::take(cfuncs),
@@ -1157,5 +1163,23 @@ fn inline_ary_at_end(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::I
     let length_cint = fun.push_insn(block, hir::Insn::ArrayLength { array: recv });
     let length = fun.push_insn(block, hir::Insn::BoxFixnum { val: length_cint, state });
     let result = fun.push_insn(block, hir::Insn::FixnumGe { left: index, right: length });
+    Some(result)
+}
+
+/// Inline `ary_first(ec, self)` from Array#first with no arguments.
+fn inline_ary_first(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[recv] = args else { return None; };
+    let recv = fun.push_insn(block, hir::Insn::RefineType { val: recv, new_type: types::Array });
+    let zero = fun.push_insn(block, hir::Insn::Const { val: hir::Const::CInt64(0) });
+    let result = fun.push_insn(block, hir::Insn::ArrayAref { array: recv, index: zero});
+    Some(result)
+}
+
+/// Inline `ary_last(ec, self)` from Array#last with no arguments.
+fn inline_ary_last(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[recv] = args else { return None; };
+    let recv = fun.push_insn(block, hir::Insn::RefineType { val: recv, new_type: types::Array });
+    let index = fun.push_insn(block, hir::Insn::Const { val: hir::Const::CInt64(-1) });
+    let result = fun.push_insn(block, hir::Insn::ArrayAref { array: recv, index });
     Some(result)
 }
