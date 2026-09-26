@@ -5712,6 +5712,7 @@ p_kw_label	: tLABEL
 
 p_kwrest	: kwrest_mark tIDENTIFIER
                     {
+                        error_duplicate_pattern_variable(p, $2, &@2);
                         $$ = $2;
                     /*% ripper: var_field!($:2) %*/
                     }
