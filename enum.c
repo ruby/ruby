@@ -3764,7 +3764,7 @@ enum_cycle_size(VALUE self, VALUE args, VALUE eobj)
 
     if (NIL_P(n)) return DBL2NUM(HUGE_VAL);
     if (mul <= 0) return INT2FIX(0);
-    n = LONG2FIX(mul);
+    n = LONG2NUM(mul);
     return rb_funcallv(size, '*', 1, &n);
 }
 
