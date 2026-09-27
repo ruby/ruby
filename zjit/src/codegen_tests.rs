@@ -1207,6 +1207,107 @@ fn test_yield_inlined_caller_block_dispatches_without_guards() {
 }
 
 #[test]
+fn test_inline_blockarg_proc_yield() {
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines("
+            def sum2 = (yield 1) + (yield 2)
+            def test(pr) = sum2(&pr)
+            pr = proc { |x| x * 10 }
+            test(pr)
+            test(pr)
+        "), @"30");
+    });
+}
+
+#[test]
+fn test_inline_blockarg_proc_block_given() {
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines("
+            def maybe_yield = block_given? ? yield(10) : :no_block
+            def test(pr) = maybe_yield(&pr)
+            pr = proc { |x| x * 2 }
+            test(pr)
+            test(pr)
+        "), @"20");
+    });
+}
+
+#[test]
+fn test_inline_blockarg_proc_lambda_strict_arity() {
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines(r#"
+            def call_it = yield(1, 2)
+            def test(l) = call_it(&l)
+            lam = ->(x) { x }
+            def run(l) = begin; test(l); rescue ArgumentError; :arg_error; end
+            run(lam)
+            run(lam)
+        "#), @":arg_error");
+    });
+}
+
+#[test]
+fn test_inline_blockarg_proc_side_exit() {
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines_allowing_exits("
+            def compute(x) = yield(x + 1)
+            def test(pr, x) = compute(x, &pr)
+            pr = proc { |v| v * 10 }
+            test(pr, 1)
+            test(pr, 1)
+            test(pr, 1.5)
+        "), @"25.0");
+    });
+}
+
+#[test]
+fn test_inline_blockarg_proc_forwarded_block_param_inlines_inner() {
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines("
+            def inner = yield(3)
+            def outer(&b) = inner(&b)
+            def test(pr) = outer(&pr)
+            pr = proc { |x| x * 7 }
+            test(pr)
+            test(pr)
+        "), @"21");
+    });
+}
+
+#[test]
+fn test_inline_blockarg_proc_non_local_return() {
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines("
+            def run = yield
+            def test
+              pr = proc { return :returned }
+              run(&pr)
+              :not_returned
+            end
+            test
+            test
+        "), @":returned");
+    });
+}
+
+#[test]
+fn test_inline_blockarg_proc_break() {
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines("
+            def run = yield
+            def test
+              pr = proc { break :broke }
+              run(&pr)
+            rescue LocalJumpError
+              :local_jump_error
+            end
+            test
+            test
+        "), @":local_jump_error");
+    });
+}
+
+#[test]
 fn test_yield_block_iseq_guard_survives_compaction() {
     with_inlining_threshold(0, || {
         eval("
