@@ -131,6 +131,11 @@ class TestEtc < Test::Unit::TestCase
     }
   end
 
+  def test_uname_release_on_windows
+    release = IO.popen(%w[cmd.exe /c ver], "rb", &:read)[/\d+\.\d+\.\d+/]
+    assert_equal(release, Etc.uname[:release])
+  end if /mswin|mingw/ =~ RUBY_PLATFORM
+
   def test_sysconf
     begin
       Etc.sysconf
