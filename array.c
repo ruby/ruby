@@ -7133,8 +7133,8 @@ rb_ary_cycle_size(VALUE self, VALUE args, VALUE eobj)
     if (NIL_P(n)) return DBL2NUM(HUGE_VAL);
     mul = NUM2LONG(n);
     if (mul <= 0) return INT2FIX(0);
-    n = LONG2FIX(mul);
-    return rb_fix_mul_fix(rb_ary_length(self), n);
+    n = LONG2NUM(mul);
+    return rb_int_mul(rb_ary_length(self), n);
 }
 
 /*
