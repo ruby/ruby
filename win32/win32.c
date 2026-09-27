@@ -7396,6 +7396,9 @@ rb_w32_read_internal(int fd, void *buf, size_t size, rb_off_t *offset)
     size_t ret;
     OVERLAPPED ol;
 
+    /* recv, _read and ReadFile take 32-bit lengths; a short read is fine */
+    if (size > INT_MAX) size = INT_MAX;
+
     if (is_socket(sock))
         return rb_w32_recv(fd, buf, size, 0);
 
