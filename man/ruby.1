@@ -1,5 +1,5 @@
 .\"Ruby is copyrighted by Yukihiro Matsumoto <matz@netlab.jp>.
-.Dd July 10, 2026
+.Dd July 23, 2026
 .Dt RUBY 1 "Ruby Programmer's Reference Guide"
 .Os UNIX
 .Sh NAME
@@ -16,7 +16,6 @@
 .Op Fl F Ns Op Ar pattern
 .Op Fl I Ar directory
 .Op Fl K Ns Op Ar c
-.Op Fl T Ns Op Ar level
 .Op Fl W Ns Op Ar level
 .Op Fl e Ar command
 .Op Fl i Ns Op Ar extension
@@ -232,9 +231,6 @@ would be
 but it does not work if the script is being interpreted by
 .Xr csh 1 .
 .Pp
-.It Fl T Ns Op Ar level=1
-Turns on taint checks at the specified level (default 1).
-.Pp
 .It Fl U
 Sets the default value for internal encodings
 .Pf ( Li "Encoding.default_internal" ) to UTF-8.
@@ -444,8 +440,7 @@ Show long help message (same as
 .Fl -help).
 .It Sy syntax
 Check syntax (same as
-.Fl c
-.Fl -yydebug).
+.Fl c).
 .Pp
 .El
 .Pp
@@ -500,7 +495,7 @@ e.g.
 .Dl RUBYOPT="-w -Ke"
 .Pp
 Note that RUBYOPT can contain only
-.Fl d , Fl E , Fl I , Fl K , Fl r , Fl T , Fl U , Fl v , Fl w , Fl W, Fl -debug ,
+.Fl d , Fl E , Fl I , Fl K , Fl r , Fl U , Fl v , Fl w , Fl W, Fl -debug ,
 .Fl -disable- Ns Ar FEATURE
 and
 .Fl -enable- Ns Ar FEATURE .
