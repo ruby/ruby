@@ -17628,22 +17628,44 @@ parse_pattern_primitive(pm_parser_t *parser, pm_constant_id_list_t *captures, pm
     }
 }
 
+/**
+ * Add an error for each variable captured by the given pattern. Only descend
+ * into nodes that make up the pattern itself: a lambda, a string interpolation,
+ * or a pinned expression can contain local variable targets of its own that
+ * are not captures of this pattern. A nested alternation is not visited
+ * either: its operands were already checked when it was parsed.
+ */
 static bool
 parse_pattern_alternation_error_each(const pm_node_t *node, void *data) {
+    pm_parser_t *parser = (pm_parser_t *) data;
+
     switch (PM_NODE_TYPE(node)) {
-        case PM_LOCAL_VARIABLE_TARGET_NODE: {
-            pm_parser_t *parser = (pm_parser_t *) data;
-            pm_parser_err(parser, PM_NODE_START(node), PM_NODE_LENGTH(node), PM_ERR_PATTERN_CAPTURE_IN_ALTERNATIVE);
+        case PM_LOCAL_VARIABLE_TARGET_NODE:
+            // Underscore-prefixed names are not captures, see
+            // parse_pattern_capture.
+            if (peek_at(parser, parser->start + PM_NODE_START(node)) != '_') {
+                pm_parser_err(parser, PM_NODE_START(node), PM_NODE_LENGTH(node), PM_ERR_PATTERN_CAPTURE_IN_ALTERNATIVE);
+            }
             return false;
-        }
-        default:
+        case PM_ARRAY_PATTERN_NODE:
+        case PM_ASSOC_NODE:
+        case PM_ASSOC_SPLAT_NODE:
+        case PM_CAPTURE_PATTERN_NODE:
+        case PM_FIND_PATTERN_NODE:
+        case PM_HASH_PATTERN_NODE:
+        case PM_IMPLICIT_NODE:
+        case PM_PARENTHESES_NODE:
+        case PM_SPLAT_NODE:
             return true;
+        default:
+            return false;
     }
 }
 
 /**
- * When we get here, we know that we already have a syntax error, because we
- * know we have captured a variable and that we are in an alternation.
+ * Called when we are in an alternation and a variable has been captured
+ * somewhere in the pattern. That capture may be outside of the given node, so
+ * this only adds errors for the captures that are actually inside of it.
  */
 static void
 parse_pattern_alternation_error(pm_parser_t *parser, const pm_node_t *node) {

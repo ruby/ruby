@@ -34,6 +34,9 @@ module Prism
 
       # https://bugs.ruby-lang.org/issues/19107
       "4.1/trailing_comma_after_method_arguments.txt",
+
+      # https://bugs.ruby-lang.org/issues/22310
+      "pattern_alternation_non_captures.txt",
     ]
 
     Fixture.each_for_current_ruby(except: except) do |fixture|
