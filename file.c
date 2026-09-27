@@ -2236,14 +2236,28 @@ rb_file_world_readable_p(VALUE obj, VALUE fname)
 }
 
 /*
+ * :markup: markdown
+ *
  * call-seq:
- *    File.writable?(file_name)   -> true or false
+ *   File.writable?(object) -> true or false
  *
- * Returns +true+ if the named file is writable by the effective user and
- * group id of this process. See <code>eaccess(3)</code>.
+ * Returns whether given `object` exists and is writable by the owner and group
+ * in the current process:
  *
- * Note that some OS-level security features may cause this to return true
- * even though the file is not writable by the effective user/group.
+ * ```ruby
+ * filepath = '/tmp/secret.txt'
+ * File.writable?(filepath)   # => false  # Non-existent.
+ * File.write(filepath, 'foo')            # Create file.
+ * File.writable?(filepath)   # => true   # Writable.
+ * File.chmod(0o000, filepath)            # Make non-writable.
+ * File.writable?(filepath)   # => false  # Not writable.
+ * File.delete(filepath)                  # Clean up.
+ * File.writable?('/etc')     # => false  # Directory.
+ * File.writable?($stdin)     # => false  # IO object.
+ * ```
+ *
+ * Note that filesystem security features may cause this method to return `true`
+ * even when the file is not writable by the owner and group.
  */
 
 static VALUE
@@ -7147,14 +7161,26 @@ rb_stat_wr(VALUE obj)
 }
 
 /*
- *  call-seq:
- *     stat.writable?  ->  true or false
+ * :markup: markdown
+
+ * call-seq:
+ *   writable? -> true or false
  *
- *  Returns +true+ if <i>stat</i> is writable by the effective user id of this
- *  process.
+ * Returns whether the entry at the path in `self` exists and is writable
+ * by the effective owner and group in the current process:
  *
- *     File.stat("testfile").writable?   #=> true
+ * ```ruby
+ * filepath = '/tmp/secret.txt'
+ * File.write(filepath, 'foo')
+ * File.stat(filepath).writable? # => true   # Writable.
+ * File.chmod(0o000, filepath)               # Make non-writable.
+ * File.stat(filepath).writable? # => false  # Not writable.
+ * File.delete(filepath)                     # Clean up.
+ * File.stat('/etc').writable?   # => false  # Directory.
+ * ```
  *
+ * Note that filesystem security features may cause this method to return `true`
+ * even when the file is not writable by the effective owner and group.
  */
 
 static VALUE
