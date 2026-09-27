@@ -3,6 +3,7 @@ require 'mkmf'
 if RUBY_ENGINE == 'ruby'
   $INCFLAGS << " -I$(top_srcdir)" if $extmk
   have_func("onig_region_memsize(NULL)")
+  have_func("onig_region_set_position")
   have_func("rb_reg_onig_match", "ruby/re.h")
   have_func("rb_deprecate_constant")
   have_func("rb_int_parse_cstr", "ruby.h") # RUBY_VERSION >= 2.5

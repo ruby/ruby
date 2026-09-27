@@ -59,6 +59,14 @@ extern "C" {
 # define ONIG_EXTERN   extern
 #endif
 
+#ifndef ONIG_ATTR_DEPRECATED
+# ifdef RBIMPL_ATTR_DEPRECATED
+#  define ONIG_ATTR_DEPRECATED(msg) RBIMPL_ATTR_DEPRECATED(msg)
+# else
+#  define ONIG_ATTR_DEPRECATED(msg) /* void */
+# endif
+#endif
+
 #ifndef RUBY
 # ifndef RUBY_SYMBOL_EXPORT_BEGIN
 #  define RUBY_SYMBOL_EXPORT_BEGIN
@@ -873,8 +881,13 @@ ONIG_EXTERN
 void onig_region_clear(OnigRegion* region);
 ONIG_EXTERN
 int onig_region_resize(OnigRegion* region, int n);
+#undef onig_region_set
 ONIG_EXTERN
+ONIG_ATTR_DEPRECATED(("use onig_region_set_position instead"))
 int onig_region_set(OnigRegion* region, int at, int beg, int end);
+#define onig_region_set(region, at, beg, end) onig_region_set_position(region, at, beg, end)
+ONIG_EXTERN
+int onig_region_set_position(OnigRegion* region, int at, OnigPosition beg, OnigPosition end);
 ONIG_EXTERN
 int onig_name_to_group_numbers(OnigRegex reg, const OnigUChar* name, const OnigUChar* name_end, int** nums);
 ONIG_EXTERN
