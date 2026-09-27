@@ -3841,22 +3841,23 @@ utime_internal_i(int argc, VALUE *argv, int follow)
  * ```ruby
  * filepath = '/tmp/t.tmp'
  * File.write(filepath, 'foo')
- * stat = File.stat(filepath)
- * stat.atime      # => 2026-09-26 19:27:31.630260567 -0500
- * stat.mtime      # => 2026-09-26 19:27:31.630260567 -0500
- * time = Time.now # => 2026-09-26 19:28:35.022959 -0500
+ * stat = File.stat(filepath) # Snapshot.
+ * stat.atime                 # => 2026-09-26 19:27:31.630260567 -0500
+ * stat.mtime                 # => 2026-09-26 19:27:31.630260567 -0500
+ * time = Time.now            # => 2026-09-26 19:28:35.022959 -0500
  * File.utime(time, time, filepath)
- * stat = File.stat(filepath)
- * stat.atime   # => 2026-09-26 19:28:35.022959 -0500
- * stat.mtime   # => 2026-09-26 19:28:35.022959 -0500
+ * stat = File.stat(filepath) # Fresh snapshot.
+ * stat.atime                 # => 2026-09-26 19:28:35.022959 -0500
+ * stat.mtime                 # => 2026-09-26 19:28:35.022959 -0500
  * File.utime(0, 0, filepath)
- * stat = File.stat(filepath)
- * stat.atime   # => 1969-12-31 18:00:00 -0600
- * stat.mtime   # => 1969-12-31 18:00:00 -0600
+ * stat = File.stat(filepath) # Fresh snapshot
+ * stat.atime                 # => 1969-12-31 18:00:00 -0600
+ * stat.mtime                 # => 1969-12-31 18:00:00 -0600
  * File.utime(nil, nil, filepath)
- * stat = File.stat(filepath)
- * stat.atime   # => 2026-09-26 19:37:57.901901229 -0500
- * stat.mtime   # => 2026-09-26 19:37:57.901901229 -0500
+ * stat = File.stat(filepath) # Fresh snapshot.
+ * stat.atime                 # => 2026-09-26 19:37:57.901901229 -0500
+ * stat.mtime                 # => 2026-09-26 19:37:57.901901229 -0500
+ * File.delete(filepath)      # Clean up.
  * ```
  *
  * Raises an exception if any entry cannot be updated;
