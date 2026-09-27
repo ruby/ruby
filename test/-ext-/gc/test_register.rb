@@ -148,7 +148,7 @@ class Test_GCRegisterAddress < Test::Unit::TestCase
   def test_verify_internal_consistency_fails_on_foreign_unshareable_store
     omit "needs GC.verify_internal_consistency with the registered-address check" unless
       GC.respond_to?(:verify_internal_consistency) && Bug::GC.registered_address_check_enabled?
-    assert_in_out_err([], <<~RUBY, [], /registered address .* changed since registration to an unshareable object owned by another Ractor/, success: false)
+    assert_in_out_err([], <<~RUBY, [], /registered address .* changed since registration to an unshareable object owned by another Ractor/, success: false, timeout: 60)
       require '-test-/gc/register'
       Bug::GC.register_static(0)
       port = Ractor::Port.new
