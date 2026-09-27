@@ -2796,24 +2796,39 @@ class Pathname    # * FileTest *
   # call-seq:
   #   zero? -> true or false
   #
-  # Returns whether the entry represented by `self` exists and has size zero:
+  # Returns whether the entry at the path in `self` exists and has size zero.
   #
+  # The entry may be a file:
+  #
+  # ```ruby
+  # pn = Pathname('/tmp/t.tmp')
+  # pn.write('foo')
+  # pn.zero?                # => false
+  # pn.truncate(0) pn.zero? # => true
+  # pn.delete               # Clean up.
   # ```
-  # dir_pn = Pathname('example_dir')
-  # dir_pn.zero?  # => false  # Dir does not exist.
+  #
+  # The entry may be a directory:
+  #
+  # ```ruby
+  # dir_pn = Pathname('/tmp/foo')
   # dir_pn.mkdir
-  # dir_pn.zero?  # => false  # Directory never has size zero.
-  # dir_pn.empty? # => true   # But this one is empty.
+  # dir_pn.children.size       # => 0
+  # # Size is filesystem-dependent; may or may not be zero.
+  # dir_pn.size                # => 4096
+  # dir_pn.zero?               # => false
+  # file_pn = dir_pn / 't.tmp' # => #<Pathname:/tmp/foo/t.tmp>
+  # file_pn.write('foo')       # Add a file.
+  # dir_pn.children.size       # => 1
+  # dir_pn.size                # => 4096
+  # dir_pn.zero?               # => false
+  # dir_pn.rmtree
+  # ```
   #
-  # file_pn = Pathname('example_dir/example.txt')
-  # file_pn.zero? # => false  # File does not exist.
-  # file_pn.write('')
-  # file_pn.zero? # => true
-  # file_pn.write('foo')
-  # file_pn.zero? # => false
+  # The entry may be neither of the above:
   #
-  # file_pn.delete
-  # dir_pn.delete
+  # ```ruby
+  # Pathname('nosuch').zero?   # => false
   # ```
   #
   def zero?() FileTest.zero?(@path) end

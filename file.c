@@ -2401,39 +2401,53 @@ rb_file_file_p(VALUE obj, VALUE fname)
 }
 
 /*
+ * :markup: markdown
+
  * call-seq:
- *   File.empty?(object) -> true or false
  *   File.zero?(object) -> true or false
+ *   File.empty?(object) -> true or false
  *
- * Returns whether the given +object+ exists and has size zero.
+ * Returns whether the given `object` exists and has size zero.
  *
- * The given +object+ may be the path to a directory (possibly non-existent):
+ * The given `object` may be the path to a file:
  *
- *    dirpath = 'foo'
- *    File.empty?(dirpath)       # => false  # Directory does not exist.
- *    dir = Dir.mkdir(dirpath)
- *    # The directory size is filesystem-dependent;
- *    # for a directory with no children, may or may not be zero.
- *    File.size(dirpath)         # => 4096
- *    File.empty?(dirpath)       # => false
+ * ```ruby
+ * filepath = '/tmp/t.tmp'
+ * File.write(filepath, 'foo') # File has non-zero size.
+ * File.zero?(filepath)        # => false
+ * File.truncate(filepath, 0)  # File has zero size.
+ * File.zero?(filepath)        # => true
+ * File.delete(filepath)       # Clean up.
+ * ```
  *
- * The given +object+ may be the path to a file (possibly non-existent):
+ * The given `object` may be the path to a directory:
  *
- *    filepath = File.join(dirpath, 't.tmp')
- *    File.empty?(filepath)      # => false  # File does not exist.
- *    File.write(filepath, '')
- *    File.size(filepath)        # => 0
- *    File.empty?(filepath)      # => true   # File exists; size zero.
- *    File.size(dirpath)         # => 4096
- *    File.empty?(dirpath)       # => false
- *    File.write(filepath, 'bar')
- *    File.size(filepath)        # => 3
- *    File.empty?(filepath)      # => false  # File exists; size non-zero.
- *    FileUtils.rm_rf(dirpath)   # Clean up.
+ * ```ruby
+ * dirpath = '/tmp/foo'
+ * Dir.mkdir(dirpath)
+ * Dir.new(dirpath).children.size # => 0
+ * # Size is filesystem-dependent; may or may not be zero.
+ * File.size(dirpath)             # => 4096
+ * File.zero?(dirpath)            # => false
+ * filepath = '/tmp/foo/t.tmp'    # => "/tmp/foo/t.tmp"
+ * File.write(filepath, 'foo')    # Add a child.
+ * Dir.new(dirpath).children.size # => 1
+ * File.size(dirpath)             # => 4096
+ * File.zero?(dirpath)            # => false
+ * FileUtils.rm_rf(dirpath)       # Clean up.
+ * ```
  *
- * The given +object+ may be an IO object:
+ * The given `object` may be an IO object:
  *
- *   File.empty?($stdin)         # => true
+ * ```ruby
+ * File.zero?($stdin) # => true
+ * ```
+ *
+ * The given object may be none of the above:
+ *
+ * ```ruby
+ * File.zero?('nosuch') # => false
+ * ```
  *
  */
 
@@ -7410,12 +7424,40 @@ rb_stat_f(VALUE obj)
 }
 
 /*
- *  call-seq:
- *     stat.zero?    -> true or false
+ * :markup: markdown
  *
- *  Returns +true+ if <i>stat</i> is a zero-length file; +false+ otherwise.
+ * call-seq:
+ *   zero? -> true or false
  *
- *     File.stat("testfile").zero?   #=> false
+ * Returns whether the entry at the path in `self` has size zero.
+ *
+ * The entry may be a file:
+ *
+ * ```ruby
+ * filepath = '/tmp/t.tmp'
+ * File.write(filepath, 'foo')
+ * File.stat(filepath).zero? # => false
+ * File.truncate(filepath, 0)
+ * File.stat(filepath).zero? # => true
+ * File.delete(filepath)     # Clean up.
+ * ```
+ *
+ * The entry may be a directory:
+ *
+ * ```ruby
+ * dirpath = '/tmp/foo'
+ * Dir.mkdir(dirpath)
+ * stat = File.stat(dirpath)
+ * # Size is filesystem-dependent; may or may not be zero.
+ * stat.size                              # => 4096
+ * stat.zero?                             # => false
+ * filepath = File.join(dirpath, 't.tmp') # => "/tmp/foo/t.tmp"
+ * File.write(filepath, 'foo')
+ * stat = File.stat(dirpath)
+ * stat.size                              # => 4096
+ * stat.zero?                             # => false
+ * FileUtils.rm_rf(dirpath)               # Clean up.
+ * ```
  *
  */
 
