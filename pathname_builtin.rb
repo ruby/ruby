@@ -2579,21 +2579,20 @@ class Pathname    # * FileTest *
   # call-seq:
   #   world_readable? -> integer or nil
   #
-  # If the entry at the path in `self` is readable by others,
-  # returns the integer permissions for the entry:
+  # If the entry at the path in `self` exists and is readable by others,
+  # returns the integer [permissions](rdoc-ref:file/filesystem_modes.md@Permissions)
+  # for the entry;
+  # otherwise, returns `nil`:
   #
   # ```ruby
-  # Pathname('/etc/passwd').world_readable?.to_s(8) # => "644"
-  # ```
-  #
-  # Otherwise, returns `nil`:
-  #
-  # ```ruby
-  # pn = Pathname('doc/t.tmp')
-  # pn.write('foo')
-  # pn.chmod(0o0)
-  # pn.world_readable? # => nil
-  # pn.delete
+  # pn = Pathname('/tmp/t.tmp')
+  # pn.world_readable?                    # => nil    # Does not exist.
+  # pn.write('foo')                                   # Create file.
+  # pn.world_readable?.to_s(8)            # => "664"  # World-readable.
+  # pn.chmod(0o000)                                   # Change to unreadable.
+  # pn.world_readable?                    # => nil    # Not readable.
+  # pn.delete                                         # Clean up.
+  # Pathname('.').world_readable?.to_s(8) # => "775"  # Directory.
   # ```
   #
   def world_readable?() File.world_readable?(@path) end

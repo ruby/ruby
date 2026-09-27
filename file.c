@@ -2188,19 +2188,28 @@ rb_file_readable_real_p(VALUE obj, VALUE fname)
 #endif
 
 /*
+ * :markup: markdown
+ *
  * call-seq:
- *    File.world_readable?(file_name)   -> integer or nil
+ *   File.world_readable?(object) -> integer or nil
  *
- * If <i>file_name</i> is readable by others, returns an integer
- * representing the file permission bits of <i>file_name</i>. Returns
- * +nil+ otherwise. The meaning of the bits is platform dependent; on
- * Unix systems, see <code>stat(2)</code>.
+ * If the the given `object` exists and is readable by others,
+ * returns the integer [permissions](rdoc-ref:file/filesystem_modes.md@Permissions)
+ * for the entry;
+ * otherwise, returns `nil`:
  *
- * _file_name_ can be an IO object.
+ * ```ruby
+ * filepath = '/tmp/t.tmp'
+ * File.world_readable?(filepath)         # => nil   # Non-existent.
+ * File.write(filepath, 'foo')                       # Create file.
+ * File.world_readable?(filepath).to_s(8) # => "664" # World-readable.
+ * File.chmod(0o000, filepath)                       # Change to unreadable.
+ * File.world_readable?(filepath)         # => nil   # Not world-readable.
+ * File.delete(filepath)                             # Clean up.
+ * File.world_readable?('.').to_s(8)      # => "775" # Directory.
+ * File.world_readable?($stdin)           # => nil   # IO object.
+ * ```
  *
- *    File.world_readable?("/etc/passwd")	    #=> 420
- *    m = File.world_readable?("/etc/passwd")
- *    sprintf("%o", m)				    #=> "644"
  */
 
 static VALUE
@@ -7140,16 +7149,25 @@ rb_stat_R(VALUE obj)
 }
 
 /*
+ * :markup: markdown
+ *
  * call-seq:
- *    stat.world_readable? -> integer or nil
+ *   world_readable? -> integer or nil
  *
- * If <i>stat</i> is readable by others, returns an integer
- * representing the file permission bits of <i>stat</i>. Returns +nil+
- * otherwise. The meaning of the bits is platform dependent; on Unix
- * systems, see <code>stat(2)</code>.
+ * If the entry in `self` exists and is readable by others,
+ * returns the integer [permissions](rdoc-ref:file/filesystem_modes.md@Permissions)
+ * for the entry;
+ * otherwise, returns `nil`:
  *
- *    m = File.stat("/etc/passwd").world_readable?  #=> 420
- *    sprintf("%o", m)				    #=> "644"
+ * ```ruby
+ * filepath = '/tmp/t.tmp'
+ * File.write(filepath, 'foo')
+ * File.stat(filepath).world_readable?.to_s(8) # => "664"  # World-readable.
+ * File.chmod(0o000, filepath)                             # Make unreadable.
+ * File.stat(filepath).world_readable?         # => nil    # Not world-readable.
+ * File.delete(filepath)                                   # Clean up.
+ * File.stat('.').world_readable?.to_s(8)      # => "775"  # Directory.
+ * ```
  */
 
 static VALUE
