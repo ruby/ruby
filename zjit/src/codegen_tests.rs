@@ -1207,6 +1207,60 @@ fn test_yield_inlined_caller_block_dispatches_without_guards() {
 }
 
 #[test]
+fn test_inline_blockarg_proc_yield() {
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines("
+            def sum2 = (yield 1) + (yield 2)
+            def test(pr) = sum2(&pr)
+            pr = proc { |x| x * 10 }
+            test(pr)
+            test(pr)
+        "), @"30");
+    });
+}
+
+#[test]
+fn test_inline_blockarg_proc_block_given() {
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines("
+            def maybe_yield = block_given? ? yield(10) : :no_block
+            def test(pr) = maybe_yield(&pr)
+            pr = proc { |x| x * 2 }
+            test(pr)
+            test(pr)
+        "), @"20");
+    });
+}
+
+#[test]
+fn test_inline_blockarg_proc_lambda_strict_arity() {
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines(r#"
+            def call_it = yield(1, 2)
+            def test(l) = call_it(&l)
+            lam = ->(x) { x }
+            def run(l) = begin; test(l); rescue ArgumentError; :arg_error; end
+            run(lam)
+            run(lam)
+        "#), @":arg_error");
+    });
+}
+
+#[test]
+fn test_inline_blockarg_proc_side_exit() {
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines_allowing_exits("
+            def compute(x) = x + yield(1)
+            def test(pr, x) = compute(x, &pr)
+            pr = proc { |v| v }
+            test(pr, 1)
+            test(pr, 1)
+            test(pr, 1.5)
+        "), @"2.5");
+    });
+}
+
+#[test]
 fn test_yield_block_iseq_guard_survives_compaction() {
     with_inlining_threshold(0, || {
         eval("
