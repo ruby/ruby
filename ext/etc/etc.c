@@ -800,6 +800,8 @@ static VALUE
 etc_uname(VALUE obj)
 {
 #ifdef _WIN32
+    typedef long (WINAPI version_func)(OSVERSIONINFOW *);
+    version_func *pRtlGetVersion;
     OSVERSIONINFOW v;
     SYSTEM_INFO s;
     const char *sysname, *mach;
@@ -808,9 +810,11 @@ etc_uname(VALUE obj)
     DWORD len = 0;
     WCHAR *buf;
 
+    /* GetVersionEx reports 6.2 unless the manifest declares Windows 8.1 or later */
+    pRtlGetVersion = (version_func *)GetProcAddress(GetModuleHandleW(L"ntdll.dll"), "RtlGetVersion");
     v.dwOSVersionInfoSize = sizeof(v);
-    if (!GetVersionExW(&v))
-        rb_sys_fail("GetVersionEx");
+    if (!pRtlGetVersion || pRtlGetVersion(&v))
+        rb_notimplement();
 
     result = rb_hash_new();
     sysname = "Windows_NT";
