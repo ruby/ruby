@@ -1486,6 +1486,22 @@ class TestIOBuffer < Test::Unit::TestCase
     output&.close
   end
 
+  def test_read_with_length_over_4gb
+    omit "32-bit size_t" if RbConfig::SIZEOF["size_t"] < 8
+    length = 2**32
+    begin
+      buffer = IO::Buffer.new(length)
+    rescue SystemCallError
+      omit "cannot allocate #{length} bytes"
+    end
+    hello_world_tempfile do |io|
+      assert_equal 11, buffer.read(io, 0, length)
+      assert_equal 11, buffer.pread(io, 0, 0, length)
+    end
+  ensure
+    buffer&.free
+  end if /mswin|mingw/ =~ RUBY_PLATFORM
+
   def test_read_with_offset
     hello_world_tempfile do |io|
       buffer = IO::Buffer.new(128)
