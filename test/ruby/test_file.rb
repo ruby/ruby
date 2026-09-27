@@ -146,6 +146,19 @@ class TestFile < Test::Unit::TestCase
     end
   end
 
+  def test_size_over_2gb
+    Tempfile.create("test-size") do |f|
+      size = 0x8000_0000
+      begin
+        f.truncate(size)
+      rescue Errno::ENOSPC
+        omit "no space for #{size} bytes"
+      end
+      assert_equal(size, f.size)
+      assert_equal(size, f.stat.size)
+    end
+  end if /mswin|mingw/ =~ RUBY_PLATFORM
+
   def test_read_all_extended_file
     [{}, {:textmode=>true}, {:binmode=>true}].each do |mode|
       Tempfile.create("test-extended-file", **mode) {|f|

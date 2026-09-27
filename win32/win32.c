@@ -5662,8 +5662,8 @@ rb_w32_fstat(int fd, struct stat *st)
 int
 rb_w32_fstati128(int fd, struct stati128 *st)
 {
-    struct stat tmp;
-    int ret = fstat(fd, &tmp);
+    struct _stat64 tmp;
+    int ret = _fstat64(fd, &tmp);
 
     if (ret) return ret;
     COPY_STAT(tmp, *st, +);
