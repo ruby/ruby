@@ -2778,8 +2778,11 @@ class Pathname    # * FileTest *
   # call-seq:
   #   writable_real? -> true or false
   #
-  # Like #writable?, but checks against the real user and group ids
-  # instead of the effective ids.
+  # Like Pathname#writable?, but checks against the real owner and group
+  # instead of the effective owner and group.
+  #
+  # Note that filesystem security features may cause this method to return `true`
+  # even when the entry at the path in `self` is not writable by the real owner and group.
   def writable_real?() FileTest.writable_real?(@path) end
 
   # :markup: markdown

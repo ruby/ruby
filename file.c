@@ -2253,14 +2253,16 @@ rb_file_writable_p(VALUE obj, VALUE fname)
 }
 
 /*
+ * :markup: markdown
+ *
  * call-seq:
- *    File.writable_real?(file_name)   -> true or false
+ *   File.writable_real?(object) -> true or false
  *
- * Returns +true+ if the named file is writable by the real user and group id
- * of this process. See <code>access(3)</code>.
+ * Like File.writable?, but checks against the real owner and group
+ * instead of the effective owner and group.
  *
- * Note that some OS-level security features may cause this to return true
- * even though the file is not writable by the real user/group.
+ * Note that filesystem security features may cause this method to return `true`
+ * even when the object is not writable by the real owner and group.
  */
 
 static VALUE
@@ -7180,14 +7182,16 @@ rb_stat_w(VALUE obj)
 }
 
 /*
+ * :markup: markdown
+ *
  *  call-seq:
- *     stat.writable_real?  ->  true or false
+ *    writable_real? -> true or false
  *
- *  Returns +true+ if <i>stat</i> is writable by the real user id of this
- *  process.
+ *  Like File::Stat.writable?, but checks against the real owner and group
+ *  instead of the effective owner and group.
  *
- *     File.stat("testfile").writable_real?   #=> true
- *
+ * Note that filesystem security features may cause this method to return `true`
+ * even when the entry in `self` is not writable by the real owner and group.
  */
 
 static VALUE
