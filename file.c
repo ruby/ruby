@@ -2227,8 +2227,10 @@ rb_file_world_readable_p(VALUE obj, VALUE fname)
 }
 
 /*
+ * :markup: markdown
+ *
  * call-seq:
- *    File.writable?(file_name)   -> true or false
+ *   File.writable?(object) -> true or false
  *
  * Returns +true+ if the named file is writable by the effective user and
  * group id of this process. See <code>eaccess(3)</code>.
@@ -2261,19 +2263,28 @@ rb_file_writable_real_p(VALUE obj, VALUE fname)
 }
 
 /*
+ * :markup: markdown
+ *
  * call-seq:
- *    File.world_writable?(file_name)   -> integer or nil
+ *   File.world_writable?(object) -> integer or nil
  *
- * If <i>file_name</i> is writable by others, returns an integer
- * representing the file permission bits of <i>file_name</i>. Returns
- * +nil+ otherwise. The meaning of the bits is platform dependent; on
- * Unix systems, see <code>stat(2)</code>.
+ * If the given `object` exists and is writable by others,
+ * returns the integer [permissions](rdoc-ref:file/filesystem_modes.md@Permissions)
+ * for the entry;
+ * otherwise, returns `nil`:
  *
- * _file_name_ can be an IO object.
+ * ```ruby
+ * filepath = '/tmp/t.tmp'
+ * File.world_writable?(filepath)         # => nil    # Non-existent.
+ * File.write(filepath, 'foo')                        # Create file.
+ * File.world_writable?(filepath)         # => nil    # Not world-writable.
+ * File.chmod(0o777, filepath)                        # Make world-writable.
+ * File.world_writable?(filepath).to_s(8) # => "777"  # World-writable.
+ * File.delete(filepath)                              # Clean up.
+ * File.world_writable?('/tmp').to_s(8)   # => "777"  # Directory.
+ * File.world_writable?($stdin)           # => nil    # IO object.
+ * ```
  *
- *    File.world_writable?("/tmp")		    #=> 511
- *    m = File.world_writable?("/tmp")
- *    sprintf("%o", m)				    #=> "777"
  */
 
 static VALUE
@@ -7249,16 +7260,26 @@ rb_stat_W(VALUE obj)
 }
 
 /*
+ * :markup: markdown
+
  * call-seq:
- *    stat.world_writable?  ->  integer or nil
+ *   world_writable? -> integer or nil
  *
- * If <i>stat</i> is writable by others, returns an integer
- * representing the file permission bits of <i>stat</i>. Returns +nil+
- * otherwise. The meaning of the bits is platform dependent; on Unix
- * systems, see <code>stat(2)</code>.
+ * If the entry in `self` exists and is writable by others,
+ * returns the integer [permissions](rdoc-ref:file/filesystem_modes.md@Permissions)
+ * for the entry;
+ * otherwise, returns `nil`:
  *
- *    m = File.stat("/tmp").world_writable?	    #=> 511
- *    sprintf("%o", m)				    #=> "777"
+ * ```ruby
+ * filepath = '/tmp/t.tmp'
+ * File.write(filepath, 'foo')
+ * File.stat(filepath).world_writable?         # => nil   # Not world-writable.
+ * File.chmod(0o777, filepath)                            # Make world-writable.
+ * File.stat(filepath).world_writable?.to_s(8) # => "777" # World-writable.
+ * File.delete(filepath)                                  # Clean up.
+ * File.stat('/tmp').world_writable?.to_s(8)   # => "777" # Directory.
+ * ```
+ *
  */
 
 static VALUE

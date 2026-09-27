@@ -2761,21 +2761,20 @@ class Pathname    # * FileTest *
   # call-seq:
   #   world_writable? -> integer or nil
   #
-  # If the entry at the path in `self` is writable by others,
-  # returns the integer permissions for the entry:
+  # If the entry at the path in `self` exists and is writable by others,
+  # returns the integer [permissions](rdoc-ref:file/filesystem_modes.md@Permissions)
+  # for the entry;
+  # otherwise, returns `nil`:
   #
   # ```ruby
-  # Pathname('/tmp').world_writable?.to_s(8) # => "777"
-  # ```
-  #
-  # Otherwise, returns `nil`:
-  #
-  # ```ruby
-  # pn = Pathname('doc/t.tmp')
-  # pn.write('foo')
-  # pn.chmod(0o0)
-  # pn.world_writable? # => nil
-  # pn.delete
+  # pn = Pathname('/tmp/t.tmp')
+  # pn.world_writable?                        # => nil    # Non-existent.
+  # pn.write('foo')                                       # Create file.
+  # pn.world_writable?                        # => nil    # Not world-writable.
+  # pn.chmod(0o777)                                       # Make world-writable.
+  # pn.world_writable?.to_s(8)                # => "511"  # World-writable.
+  # pn.delete                                             # Clean up.
+  # Pathname('/tmp').world_writable?.to_s(8)  # => "777"  # Directory.
   # ```
   #
   def world_writable?() File.world_writable?(@path) end
