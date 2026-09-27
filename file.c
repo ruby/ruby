@@ -3815,14 +3815,54 @@ utime_internal_i(int argc, VALUE *argv, int follow)
 }
 
 /*
- * call-seq:
- *  File.utime(atime, mtime, file_name, ...)   ->  integer
+ * :markup: markdown
  *
- * Sets the access and modification times of each named file to the
- * first two arguments. If a file is a symlink, this method acts upon
- * its referent rather than the link itself; for the inverse
- * behavior see File.lutime. Returns the number of file
- * names in the argument list.
+ * call-seq:
+ *  File.utime(atime, mtime, *paths) -> integer
+ *
+ * For the entry at the paths in `paths`,
+ * updates its access time to the given `atime`
+ * and its modification time to the given `mtime`;
+ * see [Filesystem Timestamps](rdoc-ref:file/timestamps.md).
+ * Returns the number of entries updated.
+ *
+ * Each given time may be a Time object, an integer representing a time,
+ * or `nil` (meaning Time.now).
+ *
+ * Each path points to a file or directory.
+ *
+ * Here we show updated times for a single file, using:
+ *
+ * - File.stat to take [snapshots](rdoc-ref:File::Stat@Snapshot) of the times.
+ * - File::Stat.atime to show the access times.
+ * - File::Stat.mtime to show the modification times.
+ * - File.utime to update the times.
+ *
+ * ```ruby
+ * filepath = '/tmp/t.tmp'
+ * File.write(filepath, 'foo')
+ * stat = File.stat(filepath)
+ * stat.atime      # => 2026-09-26 19:27:31.630260567 -0500
+ * stat.mtime      # => 2026-09-26 19:27:31.630260567 -0500
+ * time = Time.now # => 2026-09-26 19:28:35.022959 -0500
+ * File.utime(time, time, filepath)
+ * stat = File.stat(filepath)
+ * stat.atime   # => 2026-09-26 19:28:35.022959 -0500
+ * stat.mtime   # => 2026-09-26 19:28:35.022959 -0500
+ * File.utime(0, 0, filepath)
+ * stat = File.stat(filepath)
+ * stat.atime   # => 1969-12-31 18:00:00 -0600
+ * stat.mtime   # => 1969-12-31 18:00:00 -0600
+ * File.utime(nil, nil, filepath)
+ * stat = File.stat(filepath)
+ * stat.atime   # => 2026-09-26 19:37:57.901901229 -0500
+ * stat.mtime   # => 2026-09-26 19:37:57.901901229 -0500
+ * ```
+ *
+ * Raises an exception if any entry cannot be updated;
+ * some entries may have already been updated.
+
+ * Follows symbolic links; use File.lutime to update the times for symbolic links.
  */
 
 static VALUE

@@ -1990,19 +1990,7 @@ class Pathname    # * File *
   # pn.stat.mtime   # => 2026-07-11 16:13:40.190110708 -0500
   # ```
   #
-  # Follows symbolic links:
-  #
-  # ```ruby
-  # link_pn = Pathname('link')
-  # link_pn.make_symlink(pn)
-  # link_pn.stat.atime # => 2026-07-11 16:13:51.99317823 -0500
-  # link_pn.stat.mtime # => 2026-07-11 16:13:40.190110708 -0500
-  # link_pn.utime(0, 0)
-  # pn.stat.atime      # => 1969-12-31 18:00:00 -0600
-  # pn.stat.mtime      # => 1969-12-31 18:00:00 -0600
-  # pn.delete
-  # link_pn.delete
-  # ```
+  # Follows symbolic links; use #lutime to update the times for a symbolic link.
   def utime(atime, mtime) File.utime(atime, mtime, @path) end
 
   # :markup: markdown
