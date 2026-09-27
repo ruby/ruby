@@ -919,3 +919,9 @@ rb_jit_shape_capacity(shape_id_t shape_id)
 {
     return RSHAPE_CAPACITY(shape_id);
 }
+
+attr_index_t
+rb_jit_shape_len(shape_id_t shape_id)
+{
+    return RSHAPE_LEN(shape_id);
+}
