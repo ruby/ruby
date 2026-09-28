@@ -100,13 +100,16 @@ rb_vm_lock(const char *file, int line)
     }
 }
 
-/* Ungated on purpose, unlike the enter above: rb_vm_unlock_body() releases what this
- * Ractor actually holds.  That costs a call at the handful of RB_VM_UNLOCK() sites and
- * is the same rule the lev pairs below follow. */
+/* This pair has no lev to record in, so the record is the VM's own state and the test
+ * lives in rb_vm_unlock_body(), which releases only what this Ractor holds.  The
+ * predicate still gates the call: it cannot have closed since rb_vm_lock(), so a lock
+ * that was taken always gets here. */
 static inline void
 rb_vm_unlock(const char *file, int line)
 {
-    rb_vm_unlock_body(LOCATION_PARAMS);
+    if (rb_vm_locking_needed_p()) {
+        rb_vm_unlock_body(LOCATION_PARAMS);
+    }
 }
 
 static inline void
