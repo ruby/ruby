@@ -96,19 +96,19 @@ Let's show good work habits.
 
 Resources that may need to be deleted/unlinked:
 
-- Files.
-- Directories.
+- Files
+- Directories
 - Symbolic links
 - UNIX sockets
-- Block-special devices.
-- Character-special devices.
+- Block-special devices
+- Character-special devices
 - Named pipes
 
 Objects that may need to be closed:
 
-- Dir.
-- IO.
-- Tempfile.
+- Dir
+- IO
+- Tempfile
 
 ### Characters
 
