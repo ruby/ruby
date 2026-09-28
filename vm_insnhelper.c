@@ -7425,10 +7425,24 @@ vm_logop_hooked_slow(rb_execution_context_t *ec, struct rb_control_frame_struct 
     return vm_logop_lookup_hook(ec, reg_cfp, cd, recv);
 }
 
+/* Hooks are defined only in refinements, which search_refined_method() finds
+ * through this cref chain. */
+NOINLINE(static bool vm_logop_refinements_in_scope_p(const struct rb_control_frame_struct *reg_cfp));
+
+static bool
+vm_logop_refinements_in_scope_p(const struct rb_control_frame_struct *reg_cfp)
+{
+    for (const rb_cref_t *cref = vm_get_cref(reg_cfp->ep); cref; cref = CREF_NEXT(cref)) {
+        if (!NIL_P(CREF_REFINEMENTS(cref))) return true;
+    }
+    return false;
+}
+
 static inline bool
 vm_logop_hooked_p(rb_execution_context_t *ec, struct rb_control_frame_struct *reg_cfp, CALL_DATA cd, VALUE recv)
 {
     return UNLIKELY(!BASIC_OP_UNREDEFINED_P(BOP_LOGOP, ANY_REDEFINED_OP_FLAG)) &&
+        vm_logop_refinements_in_scope_p(reg_cfp) &&
         vm_logop_hooked_slow(ec, reg_cfp, cd, recv);
 }
 
@@ -7436,12 +7450,10 @@ NOINLINE(static VALUE
          vm_opt_logop_slow(rb_execution_context_t *ec, struct rb_control_frame_struct *reg_cfp,
                            CALL_DATA cd, VALUE recv, VALUE obj));
 
-static VALUE
-vm_opt_logop_slow(rb_execution_context_t *ec, struct rb_control_frame_struct *reg_cfp, CALL_DATA cd, VALUE recv, VALUE obj)
+/* The hook may have been removed while the RHS was evaluated. */
+static inline VALUE
+vm_logop_unhooked_result(CALL_DATA cd, VALUE recv, VALUE obj)
 {
-    if (vm_logop_lookup_hook(ec, reg_cfp, cd, recv)) return Qundef;
-
-    /* The hook may have been removed while the RHS was evaluated. */
     if (vm_ci_mid(cd->ci) == idANDOP) {
         return RTEST(recv) ? obj : recv;
     }
@@ -7450,10 +7462,18 @@ vm_opt_logop_slow(rb_execution_context_t *ec, struct rb_control_frame_struct *re
     }
 }
 
+static VALUE
+vm_opt_logop_slow(rb_execution_context_t *ec, struct rb_control_frame_struct *reg_cfp, CALL_DATA cd, VALUE recv, VALUE obj)
+{
+    if (vm_logop_lookup_hook(ec, reg_cfp, cd, recv)) return Qundef;
+    return vm_logop_unhooked_result(cd, recv, obj);
+}
+
 static inline VALUE
 vm_opt_logop(rb_execution_context_t *ec, struct rb_control_frame_struct *reg_cfp, CALL_DATA cd, VALUE recv, VALUE obj)
 {
     if (LIKELY(BASIC_OP_UNREDEFINED_P(BOP_LOGOP, ANY_REDEFINED_OP_FLAG))) return obj;
+    if (!vm_logop_refinements_in_scope_p(reg_cfp)) return vm_logop_unhooked_result(cd, recv, obj);
     return vm_opt_logop_slow(ec, reg_cfp, cd, recv, obj);
 }
 
