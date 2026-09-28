@@ -2029,9 +2029,14 @@ sudo-precheck: PHONY
 
 update-man-date: PHONY
 	$(Q) $(BASERUBY) -I"$(tooldir)/lib" -rvcs -i -p \
-	-e 'BEGIN{@vcs=VCS.detect(ARGV.shift)}' \
-	-e '$$_.sub!(/^(\.Dd ).*/){$$1+@vcs.author_date(@vcs.relative_to(ARGF.path)).strftime("%B %d, %Y")}' \
-	"$(srcdir)" "$(srcdir)"/man/*.1
+	-C "$(srcdir)" \
+	-e 'BEGIN{@vcs=VCS.detect; ARGV.replace(Dir.glob(ARGV))}' \
+	-e '$$_.sub!(/^\.Dd \K.*/){' \
+	-e   'STDOUT.puts "Updating #{ARGF.path}"' \
+	-e   '@vcs.author_date(@vcs.relative_to(ARGF.path)).strftime("%B %d, %Y")' \
+	-e '}' \
+	$(MANPAGES_TO_UPDATE)
+MANPAGES_TO_UPDATE = man/*.1
 
 .PHONY: ChangeLog
 ChangeLog:
