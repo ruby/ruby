@@ -704,6 +704,66 @@ class TestGemRemoteFetcher < Gem::TestCase
     assert_equal [url, "https://gems.example.com:8080/real"], fetcher.instance_variable_get(:@requested)
   end
 
+  def test_fetch_http_redirects_keep_gemfile_source_on_same_origin
+    fetcher = Gem::RemoteFetcher.new nil
+    @fetcher = fetcher
+    source = "https://user:pass@source.example.com/"
+    fetcher.headers["X-Gemfile-Source"] = source
+
+    def fetcher.request(uri, request_class, last_modified = nil)
+      req = request_class.new uri.request_uri
+      yield req
+      (@sent ||= []) << req["X-Gemfile-Source"]
+      if @sent.size > 1
+        res = Gem::Net::HTTPOK.new nil, 200, nil
+        def res.body
+          "real_path"
+        end
+      else
+        res = Gem::Net::HTTPFound.new nil, 302, nil
+        res.add_field "Location", "https://gems.example.com/real"
+      end
+      res
+    end
+
+    data = fetcher.fetch_http Gem::URI.parse("https://gems.example.com/redirect")
+
+    assert_equal "real_path", data
+    assert_equal [source, source], fetcher.instance_variable_get(:@sent)
+  end
+
+  def test_fetch_http_redirects_drop_gemfile_source_on_another_origin
+    fetcher = Gem::RemoteFetcher.new nil
+    @fetcher = fetcher
+    source = "https://user:pass@source.example.com/"
+    fetcher.headers["X-Gemfile-Source"] = source
+
+    def fetcher.request(uri, request_class, last_modified = nil)
+      req = request_class.new uri.request_uri
+      yield req
+      (@sent ||= []) << req["X-Gemfile-Source"]
+      case @sent.size
+      when 1
+        res = Gem::Net::HTTPFound.new nil, 302, nil
+        res.add_field "Location", "https://gems.example.com:8443/redirect"
+      when 2
+        res = Gem::Net::HTTPFound.new nil, 302, nil
+        res.add_field "Location", "https://gems.example.com:8443/real"
+      else
+        res = Gem::Net::HTTPOK.new nil, 200, nil
+        def res.body
+          "real_path"
+        end
+      end
+      res
+    end
+
+    data = fetcher.fetch_http Gem::URI.parse("https://gems.example.com/redirect")
+
+    assert_equal "real_path", data
+    assert_equal [source, nil, nil], fetcher.instance_variable_get(:@sent)
+  end
+
   def test_fetch_http_redirects_to_non_https_redacts_location
     fetcher = Gem::RemoteFetcher.new nil
     @fetcher = fetcher

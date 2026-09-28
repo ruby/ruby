@@ -59,6 +59,10 @@ module Bundler
           if [new_uri.scheme, new_uri.host, new_uri.port] == [uri.scheme, uri.host, uri.port]
             new_uri.user = uri.user
             new_uri.password = uri.password
+          else
+            # see Gem::RemoteFetcher#fetch_http. A nil value removes the header
+            # that ConnectionPools adds from its override_headers.
+            headers = headers.merge("X-Gemfile-Source" => nil)
           end
           fetch(new_uri, headers, counter + 1)
         when Gem::Net::HTTPRequestedRangeNotSatisfiable
