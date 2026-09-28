@@ -84,8 +84,10 @@ class TestSymbol < Test::Unit::TestCase
     assert_inspect_evaled(':`')
     assert_inspect_evaled(':[]')
     assert_inspect_evaled(':[]=')
-    assert_raise(SyntaxError) {eval ':||'}
-    assert_raise(SyntaxError) {eval ':&&'}
+    assert_inspect_evaled(':||')
+    assert_inspect_evaled(':&&')
+    assert_raise(SyntaxError) {eval ':|||'}
+    assert_raise(SyntaxError) {eval ':&&&'}
     assert_raise(SyntaxError) {eval ':['}
   end
 

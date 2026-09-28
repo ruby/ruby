@@ -6,13 +6,13 @@ class TestLogicalOpHook < Test::Unit::TestCase
 
   module Ext
     refine Node do
-      define_method(:"&&") { |other| Node.new(:and, self, other) }
-      define_method(:"||") { |other| Node.new(:or, self, other) }
+      def &&(other) = Node.new(:and, self, other)
+      def ||(other) = Node.new(:or, self, other)
     end
 
     refine NilClass do
-      define_method(:"&&") { |other| [:nil_and, other] }
-      define_method(:"||") { |other| [:nil_or, other] }
+      def &&(other) = [:nil_and, other]
+      def ||(other) = [:nil_or, other]
     end
 
     refine TrueClass do
@@ -22,8 +22,8 @@ class TestLogicalOpHook < Test::Unit::TestCase
   end
 
   class GloballyDefined
-    define_method(:"&&") { |other| :hooked }
-    define_method(:"||") { |other| :hooked }
+    def &&(other) = :hooked
+    def ||(other) = :hooked
   end
 
   LHS_VALUES = [1, "str", :sym, Object.new, Node.new(:leaf), true, false, nil]
@@ -202,6 +202,37 @@ class TestLogicalOpHook
         assert_nil(and_op(nil, false))
       RUBY
     end
+  end
+
+  def test_syntax
+    assert_equal(:"&&", :&&)
+    assert_equal(:"||", :||)
+    assert_equal([:"&&", :"||"], %i[&& ||])
+    assert_equal(":&&", :&&.inspect)
+    assert_equal(":||", :||.inspect)
+    assert_equal(':"&&&"', :"&&&".inspect)
+    assert_equal(':"||="', :"||=".inspect)
+    assert_equal(:"&&", true ? :&& : :||)
+
+    c = Class.new do
+      def &&(other) = [:and, other]
+      def ||(other) = [:or, other]
+      def self.&&(other) = [:singleton, other]
+      alias andop &&
+    end
+    o = c.new
+    assert_equal([:and, 1], o.&&(1))
+    assert_equal([:or, 2], o.||(2))
+    assert_equal([:and, 3], o.andop(3))
+    assert_equal([:singleton, 4], c.&&(4))
+    assert_equal([:singleton, 5], c::&&(5))
+    assert_equal(:"&&", c.instance_method(:&&).name)
+    c.class_eval { undef &&, || }
+    assert_not_send([c, :method_defined?, :&&])
+    assert_not_send([c, :method_defined?, :||])
+
+    assert_equal([3], [1].map { || 3 })
+    assert_equal(1, [1].each { |a| break a })
   end
 
   def test_delegate_class
