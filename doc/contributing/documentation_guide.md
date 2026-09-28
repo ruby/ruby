@@ -108,7 +108,6 @@ Objects that may need to be closed:
 
 - Dir.
 - IO.
-- StringIO.
 - Tempfile.
 
 ### Characters
