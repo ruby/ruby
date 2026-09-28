@@ -288,6 +288,30 @@ VALUE rb_str_buf_new_cstr(const char *ptr);
 VALUE rb_str_tmp_new(long len);
 
 /**
+ * Creates a frozen copy of `orig` that guarantees the RSTRING_PTR is safe to
+ * use in operations that release the GVL. The returned string must be released
+ * by calling rb_str_no_gvl_safe_release when you are done using it.
+ *
+ * A string may not be safe to be used without the GVL because Ruby code may
+ * execute and cause a GC compaction to run. If the string is embedded, GC
+ * compaction will mprotect the memory region and thus cause a segmentation
+ * fault when the string is read from. This function will guarantee that the
+ * returned string is not embedded.
+ *
+ * @param[in] orig String to create a copy of.
+ * @return String that is safe to be used in operations without the GVL.
+ */
+VALUE rb_str_no_gvl_safe_acquire(VALUE orig);
+
+/**
+ * Releases a string created from rb_str_no_gvl_safe_acquire.
+ *
+ * @param[in] orig The string passed into rb_str_no_gvl_safe_acquire.
+ * @param[in] tmp The string returned from rb_str_no_gvl_safe_acquire.
+ */
+void rb_str_no_gvl_safe_release(VALUE orig, VALUE tmp);
+
+/**
  * Identical  to rb_str_new(),  except  it  generates a  string  of "US  ASCII"
  * encoding.  This  is different from  rb_external_str_new(), not only  for the
  * output encoding, but also it doesn't convert the contents.

@@ -82,7 +82,7 @@ class Test_StringCapacity < Test::Unit::TestCase
     capacity = capa(s)
     assert_operator(capacity, :>=, s.bytesize)
 
-    Bug::String.tmp_frozen_no_embed_acquire_release(s)
+    Bug::String.no_gvl_safe_acquire_release(s)
 
     assert_equal(capacity, capa(s))
   end
