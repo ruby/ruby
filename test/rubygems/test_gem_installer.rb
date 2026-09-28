@@ -2428,7 +2428,7 @@ class TestGemInstaller < Gem::InstallerTestCase
       e = assert_raise Gem::InstallError do
         installer.pre_install_checks
       end
-      assert_equal "#<Gem::Specification name=malicious version=1> has an invalid require_paths", e.message
+      assert_equal "The specification for malicious-1 is corrupt (Gem::Exception)", e.message
     end
   end
 
@@ -2444,7 +2444,7 @@ class TestGemInstaller < Gem::InstallerTestCase
       e = assert_raise Gem::InstallError do
         installer.pre_install_checks
       end
-      assert_equal "#<Gem::Specification name=malicious version=1> has an invalid extensions", e.message
+      assert_equal "The specification for malicious-1 is corrupt (Gem::Exception)", e.message
     end
   end
 
@@ -2455,6 +2455,7 @@ class TestGemInstaller < Gem::InstallerTestCase
     end
 
     def spec.validate(*args); end
+    spec.add_dependency "b"
     spec.specification_version = "malicious\n``"
 
     util_build_gem spec
@@ -2466,30 +2467,24 @@ class TestGemInstaller < Gem::InstallerTestCase
       e = assert_raise Gem::InstallError do
         installer.pre_install_checks
       end
-      assert_equal "#<Gem::Specification name=malicious version=1> has an invalid specification_version", e.message
+      assert_equal "The specification for malicious-1 is corrupt (Gem::Exception)", e.message
     end
   end
 
   def test_pre_install_checks_malicious_dependencies_before_eval
     spec = util_spec "malicious", "1"
-    def spec.full_name # so the spec is buildable
-      "malicious-1"
-    end
-
     def spec.validate(*args); end
-    spec.add_dependency "b\nfoo", "> 5"
+    spec.add_dependency "b", "> 5"
+    spec.dependencies.first.instance_variable_set :@type, :foo
 
-    util_build_gem spec
-
-    gem = File.join(@gemhome, "cache", spec.file_name)
+    installer = Gem::Installer.for_spec spec
+    installer.gem_home = @gemhome
 
     use_ui @ui do
-      installer = Gem::Installer.at gem
-      installer.ignore_dependencies = true
       e = assert_raise Gem::InstallError do
         installer.pre_install_checks
       end
-      assert_equal "#<Gem::Specification name=malicious version=1> has an invalid dependencies", e.message
+      assert_equal "The specification for malicious-1 is corrupt (Gem::Exception)", e.message
     end
   end
 
