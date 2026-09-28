@@ -4015,11 +4015,14 @@ io_buffer_not(VALUE self)
 static inline int
 io_buffer_overlaps(const struct rb_io_buffer *a, const struct rb_io_buffer *b)
 {
-    if (a->base > b->base) {
-        return io_buffer_overlaps(b, a);
-    }
+    if (a->size == 0 || b->size == 0) return 0;
 
-    return (b->base >= a->base) && (b->base < (void*)((unsigned char *)a->base + a->size));
+    // Compare address differences, without ordering unrelated pointers or
+    // constructing end addresses that could overflow.
+    uintptr_t a_start = (uintptr_t)a->base;
+    uintptr_t b_start = (uintptr_t)b->base;
+    if (a_start <= b_start) return b_start - a_start < a->size;
+    return a_start - b_start < b->size;
 }
 
 static inline void

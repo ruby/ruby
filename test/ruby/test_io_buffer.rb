@@ -1547,6 +1547,85 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_equal IO::Buffer.for("\xce\xcd\xcc\xcb\xce\xcd\xcc\xcb\xce\xcd"), source.dup.not!
   end
 
+  [:and!, :or!, :xor!].each do |operation|
+    define_method("test_#{operation.to_s.delete('!')}_empty_range_does_not_overlap") do
+      buffer = IO::Buffer.new(8)
+      buffer.set_string("abcdefgh")
+      [0, 4, 8].each do |offset|
+        view = buffer.slice(offset, 0)
+        refute_predicate view, :null?
+        assert_nothing_raised do
+          assert_same view, view.public_send(operation, buffer)
+        end
+        assert_predicate view, :empty?
+        assert_equal "abcdefgh", buffer.get_string
+      end
+    ensure
+      buffer&.free
+    end
+  end
+
+  def test_inplace_operators_reject_nonempty_overlap
+    buffer = IO::Buffer.new(8)
+    buffer.set_string("abcdefgh")
+    ranges = [
+      [[0, 4], [0, 4]],
+      [[0, 4], [2, 4]],
+      [[2, 4], [0, 4]],
+      [[1, 6], [2, 2]],
+      [[2, 2], [1, 6]],
+    ]
+    [:and!, :or!, :xor!].each do |operation|
+      ranges.each do |left, right|
+        error = assert_raise(IO::Buffer::MaskError) do
+          buffer.slice(*left).public_send(operation, buffer.slice(*right))
+        end
+        assert_equal "Mask overlaps source buffer!", error.message
+      end
+      assert_equal "abcdefgh", buffer.get_string
+    end
+  ensure
+    buffer&.free
+  end
+
+  def test_inplace_operators_accept_disjoint_ranges
+    buffer = IO::Buffer.new(8)
+    ranges = [
+      [[0, 4], [4, 4]],
+      [[4, 4], [0, 4]],
+      [[0, 2], [6, 2]],
+      [[6, 2], [0, 2]],
+    ]
+    [:and!, :or!, :xor!].each do |operation|
+      ranges.each do |left, right|
+        buffer.set_string("abcdefgh")
+        target = buffer.slice(*left)
+        mask = buffer.slice(*right)
+        original_mask = mask.get_string
+        assert_same target, target.public_send(operation, mask)
+        assert_equal original_mask, mask.get_string
+      end
+    end
+  ensure
+    buffer&.free
+  end
+
+  def test_inplace_operators_still_reject_empty_masks
+    buffer = IO::Buffer.new(8)
+    buffer.set_string("abcdefgh")
+    [:and!, :or!, :xor!].each do |operation|
+      [buffer, buffer.slice(4, 0)].each do |target|
+        error = assert_raise(IO::Buffer::MaskError) do
+          target.public_send(operation, buffer.slice(4, 0))
+        end
+        assert_equal "Zero-length mask given!", error.message
+      end
+    end
+    assert_equal "abcdefgh", buffer.get_string
+  ensure
+    buffer&.free
+  end
+
   def test_operators_raise_on_freed_self
     inner = IO::Buffer.new(IO::Buffer::PAGE_SIZE)
     slice = inner.slice(0, 8)
