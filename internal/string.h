@@ -114,7 +114,6 @@ RUBY_SYMBOL_EXPORT_BEGIN
 /* string.c (export) */
 VALUE rb_str_tmp_frozen_acquire(VALUE str);
 void rb_str_tmp_frozen_release(VALUE str, VALUE tmp);
-VALUE rb_str_tmp_frozen_no_embed_acquire(VALUE str);
 VALUE rb_setup_fake_str(struct RString *fake_str, const char *name, long len, rb_encoding *enc);
 RUBY_SYMBOL_EXPORT_END
 

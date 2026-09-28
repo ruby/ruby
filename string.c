@@ -1581,7 +1581,7 @@ rb_str_tmp_frozen_acquire(VALUE orig)
 }
 
 VALUE
-rb_str_tmp_frozen_no_embed_acquire(VALUE orig)
+rb_str_no_gvl_safe_acquire(VALUE orig)
 {
     if (OBJ_FROZEN_RAW(orig) && !STR_EMBED_P(orig) && !rb_str_reembeddable_p(orig)) return orig;
     if (STR_SHARED_P(orig) && !STR_EMBED_P(RSTRING(orig)->as.heap.aux.shared)) return rb_str_tmp_frozen_acquire(orig);
@@ -1621,6 +1621,12 @@ rb_str_tmp_frozen_no_embed_acquire(VALUE orig)
     RSTRING(str)->as.heap.aux.capa = capa + (TERM_LEN(orig) - TERM_LEN(str));
 
     return str;
+}
+
+void
+rb_str_no_gvl_safe_release(VALUE orig, VALUE tmp)
+{
+    rb_str_tmp_frozen_release(orig, tmp);
 }
 
 void
