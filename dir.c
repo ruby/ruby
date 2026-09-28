@@ -78,8 +78,6 @@ char *strchr(char*,char);
 
 #define USE_NAME_ON_FS_REAL_BASENAME 1	/* platform dependent APIs to
                                          * get real basenames */
-#define USE_NAME_ON_FS_BY_FNMATCH 2	/* select the matching
-                                         * basename by fnmatch */
 
 #ifdef HAVE_GETATTRLIST
 # define USE_NAME_ON_FS USE_NAME_ON_FS_REAL_BASENAME
@@ -87,8 +85,6 @@ char *strchr(char*,char);
 # define SIZEUP32(type) RUP32(sizeof(type))
 #elif defined _WIN32
 # define USE_NAME_ON_FS USE_NAME_ON_FS_REAL_BASENAME
-#elif defined DOSISH
-# define USE_NAME_ON_FS USE_NAME_ON_FS_BY_FNMATCH
 #else
 # define USE_NAME_ON_FS 0
 #endif
@@ -115,7 +111,10 @@ char *strchr(char*,char);
 #include "internal/object.h"
 #include "internal/imemo.h"
 #include "internal/vm.h"
+#include "vm_core.h"
 #include "ruby/encoding.h"
+#include "ruby/ractor.h"
+
 #include "ruby/ruby.h"
 #include "ruby/thread.h"
 #include "ruby/util.h"
@@ -131,12 +130,6 @@ char *strchr(char*,char);
 #ifdef _WIN32
 # undef chdir
 # define chdir(p) rb_w32_uchdir(p)
-# undef mkdir
-# define mkdir(p, m) rb_w32_umkdir((p), (m))
-# undef rmdir
-# define rmdir(p) rb_w32_urmdir(p)
-# undef opendir
-# define opendir(p) rb_w32_uopendir(p)
 # define ruby_getcwd() rb_w32_ugetcwd(NULL, 0)
 # define IS_WIN32 1
 #else
@@ -1270,12 +1263,12 @@ dir_chdir0(VALUE path)
 }
 
 static struct {
-    VALUE thread;
+    rb_thread_t *thread; /* only ever compared, never dereferenced */
     VALUE path;
     int line;
     int blocking;
 } chdir_lock = {
-    .blocking = 0, .thread = Qnil,
+    .blocking = 0, .thread = NULL,
     .path = Qnil, .line = 0,
 };
 
@@ -1283,11 +1276,16 @@ static void
 chdir_enter(void)
 {
     if (chdir_lock.blocking == 0) {
-        chdir_lock.path = rb_source_location(&chdir_lock.line);
+        VALUE path = rb_source_location(&chdir_lock.line);
+        /* chdir_lock.path is registered on the main Ractor, but the source
+         * location string belongs to the calling Ractor. To avoid the dangling
+         * reference on local GC, this needs to be shareable
+         */
+        chdir_lock.path = NIL_P(path) ? Qnil : RB_OBJ_SET_FROZEN_SHAREABLE(rb_str_dup(path));
     }
     chdir_lock.blocking++;
-    if (NIL_P(chdir_lock.thread)) {
-        chdir_lock.thread = rb_thread_current();
+    if (chdir_lock.thread == NULL) {
+        chdir_lock.thread = rb_thread_ptr(rb_thread_current());
     }
 }
 
@@ -1296,7 +1294,7 @@ chdir_leave(void)
 {
     chdir_lock.blocking--;
     if (chdir_lock.blocking == 0) {
-        chdir_lock.thread = Qnil;
+        chdir_lock.thread = NULL;
         chdir_lock.path = Qnil;
         chdir_lock.line = 0;
     }
@@ -1307,7 +1305,7 @@ chdir_alone_block_p(void)
 {
     int block_given = rb_block_given_p();
     if (chdir_lock.blocking > 0) {
-        if (rb_thread_current() != chdir_lock.thread)
+        if (rb_thread_ptr(rb_thread_current()) != chdir_lock.thread)
             rb_raise(rb_eRuntimeError, "conflicting chdir during another chdir block");
         if (!block_given) {
             if (!NIL_P(chdir_lock.path)) {
@@ -1658,6 +1656,7 @@ rb_dir_getwd_ospath(void)
         cached_cwd = rb_str_new(path, (long)len);
 #endif
         rb_str_freeze(cached_cwd);
+        RB_OBJ_SET_SHAREABLE(cached_cwd);
         RUBY_ATOMIC_VALUE_SET(last_cwd, cached_cwd);
     }
     return cached_cwd;
@@ -1814,12 +1813,21 @@ nogvl_rmdir(void *ptr)
 }
 
 /*
+ * :markup: markdown
+ *
  * call-seq:
+ *   Dir.delete(dirpath) -> 0
  *   Dir.rmdir(dirpath) -> 0
+ *   Dir.unlink(dirpath) -> 0
  *
- * Removes the directory at +dirpath+ from the underlying file system:
+ * Removes the directory entry ([hard link](rdoc-ref:file/hard_links.md)) at `dirpath`,
+ * along with its associated inode:
  *
- *   Dir.rmdir('foo') # => 0
+ * ```ruby
+ * dirpath = '/tmp/tmpdir'
+ * Dir.mkdir(dirpath)
+ * Dir.rmdir(dirpath) # => 0
+ * ```
  *
  * Raises an exception if the directory is not empty.
  */
@@ -2173,10 +2181,6 @@ has_magic(const char *p, const char *pend, int flags, rb_encoding *enc)
 
 #ifdef _WIN32
           case '.':
-            break;
-
-          case '~':
-            hasalpha = 1;
             break;
 #endif
           default:
@@ -3032,21 +3036,7 @@ glob_helper(
     if (magical || recursive) {
         rb_dirent_t *dp;
         DIR *dirp;
-# if USE_NAME_ON_FS == USE_NAME_ON_FS_BY_FNMATCH
-        char *plainname = 0;
-# endif
         IF_NORMALIZE_UTF8PATH(int norm_p);
-# if USE_NAME_ON_FS == USE_NAME_ON_FS_BY_FNMATCH
-        if (cur + 1 == end && (*cur)->type <= ALPHA) {
-            plainname = join_path(path, pathlen, dirsep, (*cur)->str, strlen((*cur)->str));
-            if (!plainname) return -1;
-            dirp = do_opendir(fd, basename, plainname, flags, enc, funcs->error, arg, &status);
-            GLOB_FREE(plainname);
-        }
-        else
-# else
-            ;
-# endif
         dirp = do_opendir(fd, baselen, path, flags, enc, funcs->error, arg, &status);
         if (dirp == NULL) {
 # if FNM_SYSCASE || NORMALIZE_UTF8PATH
@@ -3184,12 +3174,6 @@ glob_helper(
                         *new_end++ = p->next;
                     break;
                   case ALPHA:
-# if USE_NAME_ON_FS == USE_NAME_ON_FS_BY_FNMATCH
-                    if (plainname) {
-                        *new_end++ = p->next;
-                        break;
-                    }
-# endif
                   case PLAIN:
                   case MAGICAL:
                     if (dirent_match(p->str, enc, name, dp, flags))
@@ -4146,7 +4130,6 @@ Init_Dir(void)
 #endif
 
     rb_gc_register_address(&chdir_lock.path);
-    rb_gc_register_address(&chdir_lock.thread);
     rb_gc_register_address(&last_cwd);
 
     rb_cDir = rb_define_class("Dir", rb_cObject);

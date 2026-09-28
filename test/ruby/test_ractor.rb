@@ -1238,4 +1238,305 @@ class TestRactor < Test::Unit::TestCase
       assert_equal true, Ractor.new { own = Object.new; own.singleton_class.attached_object.equal?(own) }.value
     RUBY
   end
+
+  # The ractor-local GC tests below run through assert_separately rather than
+  # assert_ractor: -W0 silences the experimental-Ractor warning on its own, so the
+  # child does not need assert_ractor's warm-up Ractor, whose objspace would linger
+  # as a zombie and perturb what these tests measure.
+  RACTOR_GC_HELPER = File.expand_path('ractor_gc_helper.rb', __dir__)
+
+  def test_incremental_marking_in_main_and_non_main_ractors
+    omit 'incremental marking gate lives in the default GC' unless GC.config[:implementation] == 'default'
+    assert_separately(%W[-W0 -r-test-/gc/disable -r#{RACTOR_GC_HELPER}], <<~'RUBY', timeout: 120)
+      _blocker = Ractor.new { Ractor.receive }
+
+      assert_equal :marking, start_local_incremental_major
+
+      # Creating a Ractor that is not the first one must leave the creator's mark running:
+      # vm_insert_ractor0 rests only on the 1 -> 2 transition, which _blocker consumed.
+      # (test_first_ractor_new_settles_creator_mid_mark covers the other side.)  The local
+      # disable rules out a collection started behind the assertion's back by the malloc
+      # accounting of Ractor creation; unlike GC.disable it leaves the cycle running.
+      slots_before = GC.stat(:total_allocated_objects)
+      state_after_new = without_local_gc do
+        Ractor.new { Ractor.receive }
+        GC.latest_gc_info(:state)
+      end
+      creator_slots = GC.stat(:total_allocated_objects) - slots_before
+      assert_equal :marking, state_after_new
+      # Incremental marking still advances on page exhaustion inside that window, so the
+      # assertion also needs Ractor creation to cost its creator far less than draining a
+      # mark (~5_000 slots; measured 13).  Fail on the premise if that ever changes.
+      assert_operator creator_slots, :<, 500
+
+      GC.start
+      assert_equal :none, GC.latest_gc_info(:state)
+      GC.verify_internal_consistency
+
+      entered, first_change, final, mark_steps, retained = value_of(Ractor.new do
+        working_set = retain_for_incremental_mark
+        child_entered = start_local_incremental_major
+        child_first_change, child_final, child_mark_steps = drain_incremental_cycle
+        [child_entered, child_first_change, child_final, child_mark_steps, working_set.sum(&:size)]
+      end)
+      assert_equal :marking, entered
+      assert_includes [:sweeping, :none], first_change
+      assert_equal :none, final
+      # The states above are reached whether or not the mark was incremental: a fresh Ractor
+      # objspace holds so little that its major marks everything in one step.  The working set
+      # is what gives the mark enough to do to be worth stepping, so assert it really was
+      # stepped, and that the Ractor still held the whole set while that happened.
+      assert_equal MARK_HEAP_ROUNDS * MARK_HEAP_OBJECTS_PER_ROUND, retained
+      assert_operator mark_steps, :>=, 2, 'non-main Ractor major mark was not incremental'
+    RUBY
+  end
+
+  def test_global_gc_supersedes_ractor_local_incremental_mark
+    omit 'incremental marking gate lives in the default GC' unless GC.config[:implementation] == 'default'
+    assert_separately(%W[-W0 -r#{RACTOR_GC_HELPER}], <<~'RUBY', timeout: 120)
+      child = Ractor.new do
+        # Two WeakMaps, one of which goes unreachable, so the aborted mark has weak
+        # references to drop: marking a WeakMap queues it into objspace->weak_references,
+        # and that is the darray gc_abort_incremental_marking clears.  Ruby cannot say
+        # whether the mark reached either map before the global GC cut it short, so this
+        # is best-effort coverage; the assertion below only demands that the map still
+        # reachable afterwards resolves its key.
+        weak_map = ObjectSpace::WeakMap.new
+        key = Object.new
+        weak_map[key] = :live
+        doomed = ObjectSpace::WeakMap.new
+        doomed[key] = 1
+
+        # A working set large enough that the mark has real work left, and a couple of
+        # steps spent on it, so what the global GC below interrupts is provably a mark in
+        # flight rather than one that already finished on its own.
+        working_set = retain_for_incremental_mark
+        start_local_incremental_major
+        Ractor.main << advance_incremental_mark
+        doomed = nil
+        receive_from
+        after_global = GC.latest_gc_info(:state)
+        alive = weak_map[key]
+        GC.verify_internal_consistency
+        GC.start(full_mark: false)
+        again = start_local_incremental_major
+        [after_global, alive, again, working_set.sum(&:size)]
+      end
+
+      assert_equal :marking, receive_from(child)
+      GC.start
+      child << :continue
+
+      after_global, alive, again, retained = value_of(child)
+      assert_equal :none, after_global
+      assert_equal :live, alive
+      assert_equal :marking, again
+      assert_equal MARK_HEAP_ROUNDS * MARK_HEAP_OBJECTS_PER_ROUND, retained
+    RUBY
+  end
+
+  def test_global_gc_clears_pending_major_request
+    omit 'incremental marking gate lives in the default GC' unless GC.config[:implementation] == 'default'
+    assert_separately(%W[-W0 -r#{RACTOR_GC_HELPER}], <<~'RUBY', timeout: 120)
+      _blocker = Ractor.new { Ractor.receive }
+
+      EnvUtil.without_gc { request_local_major_gc }
+      assert_not_nil GC.latest_gc_info(:need_major_by)
+
+      # gc_start_global clears every objspace's need_major_gc in its step 5, and nothing
+      # in this test can put a flag back: the only writer of GPR_FLAG_MAJOR_BY_FORCE is
+      # objspace_absorb, which needs a join or an orphaned zombie objspace to merge
+      # (_blocker never terminates and no other Ractor is created), and the sweep's own
+      # GPR_FLAG_MAJOR_BY_NOFREE is ruled out by the last_major_gc step 5 just set.
+      GC.start
+      assert_nil GC.latest_gc_info(:need_major_by)
+      assert_equal :none, GC.latest_gc_info(:state)
+      GC.verify_internal_consistency
+    RUBY
+  end
+
+  def test_fork_absorbs_mid_mark_zombie
+    omit 'incremental marking gate lives in the default GC' unless GC.config[:implementation] == 'default'
+    omit 'fork is not supported' unless Process.respond_to?(:fork)
+    assert_separately(%W[-W0 -r#{RACTOR_GC_HELPER}], <<~'RUBY', timeout: 120)
+      r = Ractor.new do
+        Ractor.main << start_local_incremental_major
+        Ractor.receive
+      end
+      assert_equal :marking, receive_from(r)
+
+      pid = fork_child do
+        # Only main survives the fork, so rb_ractor_terminate_atfork has already retired
+        # r and set its legacy value to nil (ractor_sync_terminate_atfork).  The join
+        # must reach the absorb at once rather than wait for a thread that is not there;
+        # checking the value pins that down, since an error raised before
+        # rb_gc_objspace_absorb_into_current would leave the merge below untested.
+        value = with_wait_bound('value of a Ractor that did not survive the fork') { r.value }
+        raise "Ractor#value after fork returned #{value.inspect}, not nil" unless value.nil?
+        GC.verify_internal_consistency
+        # r's pages were merged carrying the mark bits of a mark that never finished, so
+        # drive the merged heap with minors only: a major would re-derive those bits and
+        # hide a stale one.  gc_start_body honours the config over the absorb's own
+        # need_major_gc |= GPR_FLAG_MAJOR_BY_FORCE, which is what makes that possible.
+        GC.config(rgengc_allow_full_mark: false)
+        counts = [GC.stat(:count), GC.stat(:major_gc_count)]
+        400_000.times { Object.new }
+        raise "no collection ran after absorb" unless GC.stat(:count) > counts[0]
+        raise "a major collection ran with full marks disabled" unless GC.stat(:major_gc_count) == counts[1]
+        GC.verify_internal_consistency
+      end
+      assert_predicate wait_for_pid(pid), :success?
+    RUBY
+  end
+
+  def test_first_ractor_new_settles_creator_mid_mark
+    omit 'incremental marking gate lives in the default GC' unless GC.config[:implementation] == 'default'
+    assert_separately(%W[-W0 -r#{RACTOR_GC_HELPER}], <<~'RUBY', timeout: 120)
+      wait_until_single_ractor
+
+      assert_equal :marking, start_local_incremental_major
+      Ractor.new { Ractor.receive }
+      assert_equal :none, GC.latest_gc_info(:state)
+      assert_equal :marking, start_local_incremental_major
+      GC.verify_internal_consistency
+    RUBY
+  end
+
+  def test_ractor_join_absorbs_zombie_while_joiner_mid_mark
+    omit 'incremental marking gate lives in the default GC' unless GC.config[:implementation] == 'default'
+    assert_separately(%W[-W0 -r#{RACTOR_GC_HELPER}], <<~'RUBY', timeout: 120)
+      zombie = Ractor.new { :done }
+
+      assert_equal :marking, start_local_incremental_major
+      # The join is the operation under test (it absorbs the zombie's objspace into a
+      # mid-mark joiner), so it is bounded in place rather than through Ractor.select,
+      # which would reach the value through that same path.
+      assert_equal :done, with_wait_bound('zombie join') { zombie.value }
+      assert_equal :none, GC.latest_gc_info(:state)
+      GC.verify_internal_consistency
+      assert_equal :marking, start_local_incremental_major
+    RUBY
+  end
+
+  def test_incremental_major_with_zombie_objspace
+    omit 'incremental marking gate lives in the default GC' unless GC.config[:implementation] == 'default'
+    assert_separately(%W[-W0 -r#{RACTOR_GC_HELPER}], <<~'RUBY', timeout: 120)
+      zombie = Ractor.new { 1000.times { Object.new } }
+      with_wait_bound('zombie join') { zombie.join }
+      wait_until_single_ractor
+
+      assert_equal :marking, start_local_incremental_major
+      assert_equal :none, finish_incremental_major
+      GC.verify_internal_consistency
+      assert_equal :marking, start_local_incremental_major
+    RUBY
+  end
+
+  def test_concurrent_incremental_marks_with_shareable_exchange
+    omit 'incremental marking gate lives in the default GC' unless GC.config[:implementation] == 'default'
+    assert_separately(%W[-W0 -r#{RACTOR_GC_HELPER}], <<~'RUBY', timeout: 120)
+      worker = Ractor.new do
+        results = []
+        3.times do
+          entered = start_local_incremental_major
+          Ractor.main << :ready
+          inbound = receive_from
+          Ractor.main << Ractor.make_shareable([inbound])
+          count_before = GC.stat(:count)
+          results << [entered, finish_incremental_major, GC.stat(:count) - count_before]
+        end
+        GC.verify_internal_consistency
+        results
+      end
+
+      main_results = []
+      3.times do
+        entered = start_local_incremental_major
+        assert_equal :ready, receive_from(worker)
+        worker << Ractor.make_shareable([:payload])
+        receive_from(worker)
+        count_before = GC.stat(:count)
+        main_results << [entered, finish_incremental_major, GC.stat(:count) - count_before]
+      end
+
+      (value_of(worker) + main_results).each do |entered, final, extra_cycles|
+        assert_equal :marking, entered
+        assert_equal :none, final
+        # finish_incremental_major drives the cycle it was handed to :none and stops there.
+        # A second cycle means the drain outran the handshake and the pair is no longer
+        # exchanging shareables across two marks that overlap, which is the whole premise.
+        assert_equal 0, extra_cycles, 'the drain started another cycle: the marks did not overlap'
+      end
+      GC.verify_internal_consistency
+    RUBY
+  end
+
+  def test_writebarrier_foreign_objects_during_incremental_mark
+    omit 'incremental marking gate lives in the default GC' unless GC.config[:implementation] == 'default'
+    assert_separately(%W[-W0 -r-test-/gc/writebarrier -r#{RACTOR_GC_HELPER}], <<~'RUBY', timeout: 120)
+      box = Bug::GC::WriteBarrier::Box.new
+
+      Ractor.make_shareable(box)
+
+      worker = Ractor.new(box) do |box|
+        results = []
+        2.times do
+          entered = start_local_incremental_major
+          Ractor.main << :ready
+          inbound = receive_from
+
+          retained = Array.new(200) { [] }
+          200.times { |i| retained[i] << inbound }
+          retained = nil
+
+          # Local parent holding a foreign shareable child: re-greying it mid-mark must
+          # re-traverse it without touching the foreign child's GC state.
+          holder = [inbound]
+          Bug::GC::WriteBarrier.remember(holder)
+
+          mine = Object.new
+          box.store(mine)
+          mine_id = mine.object_id
+          mine = nil
+          # box is foreign to this Ractor, so this must be a no-op rather than a crash.
+          Bug::GC::WriteBarrier.remember(box)
+
+          Ractor.main << Ractor.make_shareable([:reply, mine_id])
+          results << [entered, finish_incremental_major, box.child.object_id == mine_id, holder[0]]
+        end
+        GC.verify_internal_consistency
+        results
+      end
+
+      main_retained = Array.new(200) { [] }
+      2.times do
+        entered = start_local_incremental_major
+        assert_equal :ready, receive_from(worker)
+        worker << Ractor.make_shareable([:payload])
+        reply = receive_from(worker)
+        200.times { |i| main_retained[i] << reply }
+        # Local parents now hold a foreign shareable child; the barrier's multi-Ractor
+        # bail-out leaves that edge to the shareable bits, so re-greying the parents
+        # mid-mark must re-traverse them safely.
+        Bug::GC::WriteBarrier.remember(main_retained)
+        # reply is foreign to the main Ractor, so this must be a no-op.
+        Bug::GC::WriteBarrier.remember(reply)
+        assert_equal :marking, entered
+        assert_equal :none, finish_incremental_major
+        assert_equal :reply, reply.first
+      end
+
+      value_of(worker).each do |entered, final, child_kept, held|
+        assert_equal :marking, entered
+        assert_equal :none, final
+        # mine was stored into a shareable box mid-mark from the objspace that owns it.
+        # The barrier bails out on that edge, so nothing greys mine; it survives the
+        # worker's mark only because the store set a shref bit that pinned_roots_mark
+        # picks up in gc_marks_finish.
+        assert child_kept, 'an unshareable stored into a shareable mid-mark was collected'
+        assert_equal [:payload], held
+      end
+      GC.verify_internal_consistency
+    RUBY
+  end
 end

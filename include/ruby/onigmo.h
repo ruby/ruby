@@ -689,6 +689,7 @@ ONIG_EXTERN const OnigSyntaxType*   OnigDefaultSyntax;
 #define ONIGERR_INVALID_CHAR_PROPERTY_NAME                   -223
 #define ONIGERR_TOO_MANY_RANGE_REPEAT                        -224
 #define ONIGERR_TOO_MANY_NULL_CHECK                          -225
+#define ONIGERR_TOO_BIG_COMPILED_PROGRAM                     -226
 #define ONIGERR_INVALID_CODE_POINT_VALUE                     -400
 #define ONIGERR_INVALID_WIDE_CHAR_VALUE                      -400
 #define ONIGERR_TOO_BIG_WIDE_CHAR_VALUE                      -401

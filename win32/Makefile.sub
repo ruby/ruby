@@ -143,8 +143,8 @@ CAT_DEPEND = type
 
 !if !defined(MSC_VER)
 ! error MSC_VER not defined.  Retry from configure pass.
-!else if $(MSC_VER) < 1900
-! error MSVC $(MSC_VER) is not supported
+!else if $(MSC_VER) < 1915
+! error MSVC $(MSC_VER) is not supported.  1915 (Visual Studio 2017 version 15.8) or later is required for the conforming preprocessor.
 !endif
 !if !defined(MACHINE)
 MACHINE = x86
@@ -187,7 +187,7 @@ PLATFORM = mswin32
 ! error Runtime library $(RT_VER) is not supported
 !endif
 !ifndef NTVER
-NTVER = _WIN32_WINNT_WIN8
+NTVER = _WIN32_WINNT_WIN10
 !endif
 !ifdef NTVER
 ARCHDEFS = -D_WIN32_WINNT=$(NTVER) $(ARCHDEFS)
@@ -295,9 +295,6 @@ WERRORFLAG = -WX
 !if !defined(CFLAGS_NO_ARCH)
 CFLAGS_NO_ARCH = $(RUNTIMEFLAG) $(DEBUGFLAGS) $(WARNFLAGS) $(OPTFLAGS) $(COMPILERFLAG)
 !endif
-!if !defined(ARCH_FLAG)
-ARCH_FLAG = $(PROCESSOR_FLAG)
-!endif
 !if !defined(CFLAGS)
 CFLAGS = $(CFLAGS_NO_ARCH) $(ARCH_FLAG)
 !endif
@@ -326,7 +323,7 @@ LIBS = $(LIBS) gmp.lib
 LIBS = $(LIBS) imagehlp.lib shlwapi.lib bcrypt.lib $(EXTLIBS)
 !endif
 !if !defined(MISSING)
-MISSING = crypt.obj ffs.obj langinfo.obj lgamma_r.obj strlcat.obj strlcpy.obj win32/win32.obj win32/file.obj setproctitle.obj
+MISSING = crypt.obj ffs.obj lgamma_r.obj strlcat.obj strlcpy.obj win32/win32.obj win32/file.obj setproctitle.obj
 MISSING = $(MISSING) explicit_bzero.obj memrchr.obj
 !endif
 DLNOBJS = dln.obj
@@ -362,10 +359,8 @@ CPPFLAGS = -DDISABLE_RUBYGEMS $(CPPFLAGS)
 # maybe >= 1926?
 # https://devblogs.microsoft.com/cppblog/announcing-full-support-for-a-c-c-conformant-preprocessor-in-msvc/
 CPPFLAGS = -Zc:preprocessor $(CPPFLAGS)
-!elseif $(MSC_VER) >= 1915
-CPPFLAGS = -experimental:preprocessor $(CPPFLAGS)
 !else
-! error C99 conformant preprocessor is required
+CPPFLAGS = -experimental:preprocessor $(CPPFLAGS)
 !endif
 
 POSTLINK =

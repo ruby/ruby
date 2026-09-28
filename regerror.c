@@ -183,6 +183,8 @@ onig_error_code_to_format(OnigPosition code)
     p = "too many range repeat"; break;
   case ONIGERR_TOO_MANY_NULL_CHECK:
     p = "too many null check"; break;
+  case ONIGERR_TOO_BIG_COMPILED_PROGRAM:
+    p = "too big compiled program"; break;
   case ONIGERR_TOO_MANY_CAPTURE_GROUPS:
     p = "too many capture groups are specified"; break;
   case ONIGERR_INVALID_CODE_POINT_VALUE:

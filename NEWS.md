@@ -62,6 +62,18 @@ Note: We're only listing outstanding class updates.
     * The `fiber_interrupt` hook is now required. Schedulers which do not
       implement it can no longer be installed with `Fiber.set_scheduler`.
 
+* GC
+
+    * `GC.stat` accepts `scope: :ractor` (the default), `scope: :local`
+      (a synonym for `:ractor`), and `scope: :global`.
+      With the default collector, the global scope reports cumulative collection
+      counts and measured marking/sweeping CPU time across Ractors, including
+      history from destroyed object spaces, without requesting a stop-the-world
+      snapshot. Unscoped `GC.stat`, `GC.count`, and `GC.total_time` retain their
+      current-Ractor behavior.
+    * Global compaction no longer counts overlapping CPU intervals in scalar GC
+      timing statistics. Profiler wall-time intervals are unchanged.
+
 * Hash
 
     * `Hash.ruby2_keywords_hash?` and `Hash.ruby2_keywords_hash` are
@@ -290,12 +302,33 @@ Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for det
     * Interix (Windows Services for UNIX)
     * SunOS 4 (Solaris, i.e. SunOS 5, is unaffected)
     * BSD/OS (BSDi)
+    * NeXTSTEP, OpenStep and Rhapsody
+
+* Support code for the following platforms has also been removed.  None
+  of them has a platform maintainer.
+
+    * AmigaOS
+    * AtheOS
+    * ESIX
+    * HI-UX/MPP
+    * IRIX
+    * OSF/1 (Tru64 UNIX)
+    * QNX Neutrino
+    * System V Release 4
+    * UX/PDS
 
 * Windows 10 1703 or later no longer needs the `LongPathsEnabled` registry
   value to use paths longer than 260 characters.  This applies to any process
   running the interpreter, including a program which embeds libruby.  Each path
   component is still limited to 255 characters, and a child process still
   starts with the `MAX_PATH` limited current directory. [[Bug #18947]]
+
+* Building Ruby with MSVC now requires Visual Studio 2017 version 15.8
+  (`_MSC_VER` 1915) or later.
+
+* Ruby built with MSVC now requires Windows 10 version 1809 (build 17763)
+  or Windows Server 2019 or later.  Earlier Windows 10 releases and Windows
+  Server 2016 are no longer supported.
 
 ## Compatibility issues
 
@@ -365,6 +398,25 @@ Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for det
 
   [[Feature #21861]]
 
+### Ractor-scoped GC address registration
+
+* `rb_gc_register_address` and `rb_global_variable` now register the address
+  with the calling Ractor, and only that Ractor's GC marks the stored object.
+
+  Any Ractor may register an address, but the value stored through it must be a
+  special constant, a shareable object, or an unshareable object owned by the
+  registering Ractor. Storing another Ractor's unshareable object can result in
+  the object being freed while the address still refers to it (use-after-free).
+
+  If the address has process lifetime (a static VALUE), register it from the
+  main Ractor or keep the stored values shareable.
+
+  When the registering Ractor is joined with `Ractor#value`, remaining
+  registrations move to the joining Ractor; otherwise they move to the main
+  Ractor once the dead Ractor is collected.
+
+  [[Feature #22277]]
+
 ### Removed APIs
 
 The following APIs, which have been deprecated for many years, are removed.
@@ -397,6 +449,11 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
   collection only runs when it is really needed (explicit full `GC.start`,
   shareable-object growth, reclaiming dead Ractors' heaps).  Allocation-heavy
   Ractor programs now scale like forked processes.
+
+* `GC.start(global: false)` can be used when multiple Ractors are running to force
+   a Ractor-local GC. By default, `GC.start` runs a global GC (all Ractors) like
+   before. This can also be triggered with `GC.start(global: true)`. The `global`
+   keyword argument has no effect when a single Ractor is running.
 
   Visible behavior changes:
 

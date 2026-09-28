@@ -601,9 +601,34 @@ class TestIOBuffer < Test::Unit::TestCase
     slice = inner.slice(0, 8)
     inner.free
 
-    assert_raise(IO::Buffer::InvalidatedError) do
+    assert_raise(ArgumentError) do
       slice.resize(16)
     end
+
+    slice.resize(0)
+    assert_predicate slice, :valid?
+    assert_predicate slice, :null?
+    assert_predicate slice, :empty?
+    slice.free
+  end
+
+  def test_resize_invalidated_slice_beyond_null_source
+    inner = IO::Buffer.new(IO::Buffer::PAGE_SIZE)
+    slice = inner.slice(2, 8)
+    inner.free
+
+    assert_raise(IO::Buffer::InvalidatedError) do
+      slice.resize(0)
+    end
+    refute_predicate slice, :valid?
+
+    inner.resize(IO::Buffer::PAGE_SIZE)
+    inner.set_string("abcdefghij")
+    assert_predicate slice, :valid?
+    assert_equal "cdefghij", slice.get_string
+  ensure
+    inner&.free unless inner&.null?
+    slice&.free unless slice&.null?
   end
 
   def test_resize_after_free
@@ -748,6 +773,63 @@ class TestIOBuffer < Test::Unit::TestCase
       slice.set_string("Adios", 0, 5)
     end
     assert_equal "Hello World", hello
+  end
+
+  def test_slice_readonly_permission_follows_source_replacement
+    buffer = IO::Buffer.new(8)
+    slice = buffer.slice(2, 4)
+
+    buffer.free
+    buffer.send(:initialize, 8, IO::Buffer::INTERNAL | IO::Buffer::READONLY)
+
+    assert_predicate slice, :valid?
+    assert_predicate slice, :readonly?
+    assert_equal IO::Buffer::READONLY, Bug::IOBuffer.get_bytes_flags(slice) & IO::Buffer::READONLY
+    assert_raise(IO::Buffer::AccessError) {slice.set_string("test")}
+
+    buffer.free
+    buffer.resize(8)
+
+    assert_predicate slice, :valid?
+    refute_predicate slice, :readonly?
+    assert_equal 0, Bug::IOBuffer.get_bytes_flags(slice) & IO::Buffer::READONLY
+    slice.set_string("test")
+    assert_equal "\0\0test\0\0", buffer.get_string
+  ensure
+    buffer&.free unless buffer&.null?
+  end
+
+  def test_slice_of_frozen_source_is_readonly
+    buffer = IO::Buffer.new(8)
+    slice = buffer.slice(2, 4)
+    buffer.freeze
+
+    assert_predicate slice, :readonly?
+    assert_equal IO::Buffer::READONLY, Bug::IOBuffer.get_bytes_flags(slice) & IO::Buffer::READONLY
+    assert_raise(IO::Buffer::AccessError) {slice.set_string("test")}
+  end
+
+  def test_slice_tracks_same_range_after_source_reallocation
+    buffer = IO::Buffer.new(8)
+    blocker = IO::Buffer.new(8)
+    buffer.set_string("ABCDEFGH")
+    slice = buffer.slice(2, 4)
+
+    original_address = Bug::IOBuffer.get_bytes_address(buffer)
+    buffer.resize(1 << 20)
+    relocated_address = Bug::IOBuffer.get_bytes_address(buffer)
+    omit "resize did not relocate the allocation" if relocated_address == original_address
+
+    assert_predicate slice, :valid?
+    assert_equal "CDEF", slice.get_string
+    slice.set_string("test")
+    assert_equal "ABtestGH", buffer.get_string(0, 8)
+    assert_true MemoryViewTestUtils.set_data(slice, 1, "?".ord)
+    assert_equal "ABt?stGH", buffer.get_string(0, 8)
+  ensure
+    blocker&.free
+    slice&.free unless slice&.null?
+    buffer&.free unless buffer&.null?
   end
 
   def test_string_backed_slice_is_invalidated_when_root_is_freed
@@ -1004,6 +1086,74 @@ class TestIOBuffer < Test::Unit::TestCase
       end
     end.new(IO::Buffer.new(2_000_000))
     assert_equal 1_000_000, encoding.buffer.get_string(0, 1_000_000, encoding).length
+  end
+
+  def test_get_string_resolves_storage_after_encoding_coercion
+    buffer = IO::Buffer.new(8)
+    previous = nil
+    buffer.set_string("original")
+    encoding = Object.new
+    encoding.define_singleton_method(:to_str) do
+      # Retain the old allocation to make stale reads observable without
+      # accessing released memory. The replacement cannot reuse its address.
+      previous = buffer.transfer
+      buffer.resize(8)
+      buffer.set_string("replaced")
+      "BINARY"
+    end
+
+    assert_equal "repl", buffer.get_string(0, 4, encoding)
+    assert_equal "original", previous.get_string
+    refute_predicate buffer, :locked?
+  ensure
+    previous&.free
+    buffer&.free
+  end
+
+  def test_get_string_range_error_preserves_existing_lock
+    buffer = IO::Buffer.new(8)
+    view = buffer.slice(0, 4)
+    encoding = Object.new
+    encoding.define_singleton_method(:to_str) do
+      view.resize(0)
+      "BINARY"
+    end
+
+    buffer.locked do
+      assert_raise(ArgumentError) {view.get_string(0, 4, encoding)}
+      assert_predicate buffer, :locked?
+    end
+    refute_predicate buffer, :locked?
+  ensure
+    buffer&.free
+  end
+
+  def test_read_rechecks_permissions_after_io_coercion
+    [:read, :pread].each do |method|
+      buffer = IO::Buffer.new(8)
+      begin
+        buffer.set_string("original")
+        view = buffer.slice(0, 4)
+        Tempfile.create("io-buffer-coercion") do |file|
+          file.binmode
+          file.write("data")
+          file.rewind
+          proxy = Object.new
+          proxy.define_singleton_method(:to_io) do
+            view.freeze
+            file
+          end
+          args = [proxy]
+          args << 0 if method == :pread
+          assert_raise(FrozenError, method.to_s) {view.public_send(method, *args)}
+          assert_equal "original", buffer.get_string
+          assert_equal "data", file.read
+          refute_predicate buffer, :locked?
+        end
+      ensure
+        buffer.free
+      end
+    end
   end
 
   def test_zero_length_get_string
@@ -1479,6 +1629,85 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_equal IO::Buffer.for("\xce\xcd\xcc\xcb\xce\xcd\xcc\xcb\xce\xcd"), source.dup.not!
   end
 
+  [:and!, :or!, :xor!].each do |operation|
+    define_method("test_#{operation.to_s.delete('!')}_empty_range_does_not_overlap") do
+      buffer = IO::Buffer.new(8)
+      buffer.set_string("abcdefgh")
+      [0, 4, 8].each do |offset|
+        view = buffer.slice(offset, 0)
+        refute_predicate view, :null?
+        assert_nothing_raised do
+          assert_same view, view.public_send(operation, buffer)
+        end
+        assert_predicate view, :empty?
+        assert_equal "abcdefgh", buffer.get_string
+      end
+    ensure
+      buffer&.free
+    end
+  end
+
+  def test_inplace_operators_reject_nonempty_overlap
+    buffer = IO::Buffer.new(8)
+    buffer.set_string("abcdefgh")
+    ranges = [
+      [[0, 4], [0, 4]],
+      [[0, 4], [2, 4]],
+      [[2, 4], [0, 4]],
+      [[1, 6], [2, 2]],
+      [[2, 2], [1, 6]],
+    ]
+    [:and!, :or!, :xor!].each do |operation|
+      ranges.each do |left, right|
+        error = assert_raise(IO::Buffer::MaskError) do
+          buffer.slice(*left).public_send(operation, buffer.slice(*right))
+        end
+        assert_equal "Mask overlaps source buffer!", error.message
+      end
+      assert_equal "abcdefgh", buffer.get_string
+    end
+  ensure
+    buffer&.free
+  end
+
+  def test_inplace_operators_accept_disjoint_ranges
+    buffer = IO::Buffer.new(8)
+    ranges = [
+      [[0, 4], [4, 4]],
+      [[4, 4], [0, 4]],
+      [[0, 2], [6, 2]],
+      [[6, 2], [0, 2]],
+    ]
+    [:and!, :or!, :xor!].each do |operation|
+      ranges.each do |left, right|
+        buffer.set_string("abcdefgh")
+        target = buffer.slice(*left)
+        mask = buffer.slice(*right)
+        original_mask = mask.get_string
+        assert_same target, target.public_send(operation, mask)
+        assert_equal original_mask, mask.get_string
+      end
+    end
+  ensure
+    buffer&.free
+  end
+
+  def test_inplace_operators_still_reject_empty_masks
+    buffer = IO::Buffer.new(8)
+    buffer.set_string("abcdefgh")
+    [:and!, :or!, :xor!].each do |operation|
+      [buffer, buffer.slice(4, 0)].each do |target|
+        error = assert_raise(IO::Buffer::MaskError) do
+          target.public_send(operation, buffer.slice(4, 0))
+        end
+        assert_equal "Zero-length mask given!", error.message
+      end
+    end
+    assert_equal "abcdefgh", buffer.get_string
+  ensure
+    buffer&.free
+  end
+
   def test_operators_raise_on_freed_self
     inner = IO::Buffer.new(IO::Buffer::PAGE_SIZE)
     slice = inner.slice(0, 8)
@@ -1624,6 +1853,36 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_predicate buf, :null?
     buf.set_string('a', 0, 0)
     assert_predicate buf, :empty?
+  end
+
+  def test_set_string_resize_race
+    assert_normal_exit("#{<<-"begin;"}\n#{<<-'end;'}")
+    begin;
+      buf = IO::Buffer.new(64 * 1024 * 1024)
+      src = "x" * (64 * 1024 * 1024)
+
+      stop = false
+      writer = Thread.new do
+        until stop
+          begin
+            buf.set_string(src)
+          rescue ArgumentError
+          end
+        end
+      end
+
+      resizer = Thread.new do
+        until stop
+          buf.resize(8)
+          buf.resize(64 * 1024 * 1024)
+        end
+      end
+
+      sleep 0.5
+      stop = true
+      writer.join
+      resizer.join
+    end;
   end
 
   # https://bugs.ruby-lang.org/issues/21210

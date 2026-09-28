@@ -81,8 +81,7 @@ static char *w32_getenv(const char *name, UINT cp);
 #define DLN_FIND_EXTRA_ARG ,cp
 #define rb_w32_stati128(path, st) w32_stati128(path, st, cp, FALSE)
 #define getenv(name) w32_getenv(name, cp) /* Necessarily For dln.c */
-#undef CharNext
-#define CharNext(p) CharNextExA(cp, (p), 0)
+#define DLN_CHAR_NEXT(p) CharNextExA(cp, (p), 0)
 #define dln_find_exe_r rb_w32_udln_find_exe_r
 #define dln_find_file_r rb_w32_udln_find_file_r
 #include "dln.h"
@@ -3007,12 +3006,28 @@ copy_fd(fd_set *dst, fd_set *src)
             if (dst->fd_array[d] == fd)
                 break;
         }
-        if (d == dst->fd_count && d < FD_SETSIZE) {
+        if (d == dst->fd_count) {
             dst->fd_array[dst->fd_count++] = fd;
         }
     }
 
     return dst->fd_count;
+}
+
+/* License: Ruby's */
+static void
+save_fd(SOCKET *dst, const fd_set *src)
+{
+    if (src) memcpy(dst, src->fd_array, src->fd_count * sizeof(SOCKET));
+}
+
+/* License: Ruby's */
+static void
+restore_fd(fd_set *dst, const SOCKET *src, UINT count)
+{
+    if (!dst) return;
+    memcpy(dst->fd_array, src, count * sizeof(SOCKET));
+    dst->fd_count = count;
 }
 
 /* License: Ruby's */
@@ -3250,6 +3265,15 @@ rb_w32_select_with_thread(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
         struct timeval rest;
         const struct timeval wait = {0, 10 * 1000}; // 10ms
         struct timeval zero = {0, 0};		    // 0ms
+        // the sets may hold more than FD_SETSIZE sockets
+        UINT nrd = rd ? rd->fd_count : 0;
+        UINT nwr = wr ? wr->fd_count : 0;
+        UINT nex = ex ? ex->fd_count : 0;
+        SOCKET *orig = ALLOC_N(SOCKET, nrd + nwr + nex);
+
+        save_fd(orig, rd);
+        save_fd(orig + nrd, wr);
+        save_fd(orig + nrd + nwr, ex);
         for (;;) {
             if (th && rb_w32_check_interrupt(th) != WAIT_TIMEOUT) {
                 r = -1;
@@ -3265,6 +3289,7 @@ rb_w32_select_with_thread(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
             if (else_rd.fdset->fd_count || else_wr.fdset->fd_count) {
                 r = do_select(nfds, rd, wr, ex, &zero); // polling
                 if (r < 0) break; // XXX: should I ignore error and return signaled handles?
+                // else_{rd,wr} came out of {rd,wr}, which have room for them
                 r += copy_fd(rd, else_rd.fdset);
                 r += copy_fd(wr, else_wr.fdset);
                 if (ex)
@@ -3274,33 +3299,23 @@ rb_w32_select_with_thread(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
             else {
                 const struct timeval *dowait = &wait;
 
-                fd_set orig_rd;
-                fd_set orig_wr;
-                fd_set orig_ex;
-
-                FD_ZERO(&orig_rd);
-                FD_ZERO(&orig_wr);
-                FD_ZERO(&orig_ex);
-
-                if (rd) copy_fd(&orig_rd, rd);
-                if (wr) copy_fd(&orig_wr, wr);
-                if (ex) copy_fd(&orig_ex, ex);
                 r = do_select(nfds, rd, wr, ex, &zero);	// polling
                 if (r != 0) break; // signaled or error
-                if (rd) copy_fd(rd, &orig_rd);
-                if (wr) copy_fd(wr, &orig_wr);
-                if (ex) copy_fd(ex, &orig_ex);
 
                 if (timeout) {
                     struct timeval now;
                     gettimeofday(&now, NULL);
                     rest = limit;
-                    if (!rb_w32_time_subtract(&rest, &now)) break;
+                    if (!rb_w32_time_subtract(&rest, &now)) break; // leave the sets empty
                     if (compare(&rest, &wait) < 0) dowait = &rest;
                 }
+                restore_fd(rd, orig, nrd);
+                restore_fd(wr, orig + nrd, nwr);
+                restore_fd(ex, orig + nrd + nwr, nex);
                 Sleep(dowait->tv_sec * 1000 + (dowait->tv_usec + 999) / 1000);
             }
         }
+        ruby_xfree_sized(orig, sizeof(SOCKET) * (nrd + nwr + nex));
     }
 
     rb_fd_term(&except);

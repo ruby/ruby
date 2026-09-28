@@ -9,6 +9,7 @@ use std::rc::Rc;
 use std::ffi::{c_int, c_long, c_void};
 use std::slice;
 
+use crate::asm::LabelName;
 use crate::backend::current::ALLOC_REGS;
 use crate::invariants::{
     track_bop_assumption, track_cme_assumption, track_no_ep_escape_assumption, track_no_trace_point_assumption,
@@ -102,7 +103,7 @@ impl JITState {
         match &self.labels[lir_block_id.0] {
             Some(label) => label.clone(),
             None => {
-                let label = asm.new_label(&format!("{hir_block_id}_{lir_block_id}"));
+                let label = asm.new_label(LabelName::Block(hir_block_id, lir_block_id));
                 self.labels[lir_block_id.0] = Some(label.clone());
                 label
             }

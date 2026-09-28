@@ -1476,7 +1476,7 @@ module Prism
         # :foo
         # ^^^^
         def visit_symbol_node(node)
-          node.value == "!@" ? s(node, :lit, :"!@") : s(node, :lit, node.unescaped.to_sym)
+          node.content == "!@" ? s(node, :lit, :"!@") : s(node, :lit, node.unescaped.to_sym)
         end
 
         # true

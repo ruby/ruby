@@ -158,6 +158,7 @@ Added '/CN=alternate/DC=example'
   end
 
   def test_execute_build_key_algorithm_ml_dsa_65_key
+    omit_unless_support_ml_dsa_key
     omit_unless_support_ml_dsa_cert
 
     passphrase = "Foo bar"
@@ -449,7 +450,7 @@ Added '/CN=alternate/DC=example'
   end
 
   def test_execute_certificate_ml_dsa_65
-    omit_unless_support_ml_dsa_key
+    omit_unless_support_ml_dsa_key_load
 
     use_ui @ui do
       @cmd.handle_options %W[--certificate #{ML_DSA_65_PUBLIC_CERT_FILE}]
@@ -513,7 +514,7 @@ Added '/CN=alternate/DC=example'
   end
 
   def test_execute_private_ml_dsa_65_key
-    omit_unless_support_ml_dsa_key
+    omit_unless_support_ml_dsa_key_load
 
     use_ui @ui do
       @cmd.send :handle_options, %W[--private-key #{ML_DSA_65_PRIVATE_KEY_FILE}]
@@ -527,7 +528,7 @@ Added '/CN=alternate/DC=example'
   end
 
   def test_execute_private_ml_dsa_65_key_without_ml_dsa_support
-    omit_if_support_ml_dsa_key
+    omit_if_support_ml_dsa_key_load
 
     use_ui @ui do
       e = assert_raise Gem::OptionParser::InvalidArgument do
@@ -539,7 +540,7 @@ Added '/CN=alternate/DC=example'
   end
 
   def test_execute_encrypted_private_ml_dsa_65_key
-    omit_unless_support_ml_dsa_key
+    omit_unless_support_ml_dsa_key_load
 
     use_ui @ui do
       @cmd.send :handle_options,

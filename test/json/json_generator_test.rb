@@ -248,6 +248,18 @@ class JSONGeneratorTest < Test::Unit::TestCase
     assert_instance_of Proc, state.sort_keys
   end
 
+  def test_default_sort_keys_proc_setter_survives_generator_reassignment
+    omit "fork not supported" unless Process.respond_to?(:fork)
+    pid = fork do
+      JSON.generator = JSON::Ext::Generator
+      JSON.generator = JSON::Ext::Generator
+      JSON::State.default_sort_keys_proc = ->(hash) { hash.sort.to_h }
+      exit!(JSON.generate({b: 1, a: 2}, sort_keys: true) == '{"a":2,"b":1}' ? 0 : 1)
+    end
+    _, status = Process.wait2(pid)
+    assert_predicate status, :success?
+  end
+
   def test_generate_custom
     state = State.new(space_before: " ", space: "   ", indent: "<i>", object_nl: "\n", array_nl: "<a_nl>")
     json = generate({1=>{2=>3,4=>[5,6]}}, state)

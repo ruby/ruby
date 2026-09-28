@@ -1042,6 +1042,19 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal("foo", $&)
   end
 
+  def test_match_setter_with_copy
+    [:dup, :clone].each do |copy|
+      [false, true].each do |freeze|
+        m = /a/.match("a").public_send(copy)
+        m.freeze if freeze
+        $~ = m
+        /b/ =~ "b"
+        assert_equal("a", m[0], "#{copy}, freeze: #{freeze}")
+        assert_equal("b", $&)
+      end
+    end
+  end
+
   def test_match_without_regexp
     # create a MatchData for each assertion because the internal state may change
     test = proc {|&blk| "abc".sub("a", ""); blk.call($~) }
@@ -2394,5 +2407,17 @@ class TestRegexp < Test::Unit::TestCase
     source = '(?:(?:foo)?|(?:bar)?)*' * 100000
     assert_raise(RegexpError) { Regexp.new(source) }
     assert_raise(SyntaxError) { eval("/#{source}/") }
+  end
+
+  def test_nested_repeat_expansion_overflow
+    assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}", timeout: 30)
+    begin;
+      # A nested repeat whose expanded size overflows int must not be
+      # unrolled: the compiler used to hang or emit wrapped jump offsets.
+      ["(?:.{90000,}){90000}", "(?:.{46341,}){46341}"].each do |src|
+        re = Regexp.new(src)
+        assert_nil(re.match("x" * 10), src)
+      end
+    end;
   end
 end

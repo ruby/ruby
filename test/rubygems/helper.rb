@@ -1415,8 +1415,8 @@ Also, a list:
   end
 
   ##
-  # Returns whether or not we're on a version of Ruby built with VC++ (or
-  # Borland) versus Cygwin, Mingw, etc.
+  # Returns whether or not we're on a version of Ruby built with VC++ versus
+  # Cygwin, Mingw, etc.
 
   def self.vc_windows?
     RUBY_PLATFORM.match("mswin")
@@ -1453,8 +1453,8 @@ Also, a list:
 
   ##
   # Returns the make command for the current platform. For versions of Ruby
-  # built on MS Windows with VC++ or Borland it will return 'nmake'. On all
-  # other platforms, including Cygwin, it will return 'make'.
+  # built on MS Windows with VC++ it will return 'nmake'. On all other
+  # platforms, including Cygwin, it will return 'make'.
 
   def make_command
     ENV["make"] || ENV["MAKE"] || (vc_windows? ? "nmake" : "make")
@@ -1779,6 +1779,11 @@ Also, a list:
       Gem::PQCUtilities.support_ml_dsa_key?
   end
 
+  def omit_unless_support_ml_dsa_key_load
+    omit "OpenSSL cannot load ML-DSA keys" unless
+      Gem::PQCUtilities.support_ml_dsa_key_load?
+  end
+
   def omit_unless_support_ml_dsa_cert
     omit "Ruby OpenSSL cannot sign a certificate with an ML-DSA key" unless
       Gem::PQCUtilities.support_ml_dsa_cert?
@@ -1791,6 +1796,11 @@ Also, a list:
 
   def omit_if_support_ml_dsa_key
     omit "OpenSSL supports ML-DSA" if Gem::PQCUtilities.support_ml_dsa_key?
+  end
+
+  def omit_if_support_ml_dsa_key_load
+    omit "OpenSSL loads ML-DSA keys" if
+      Gem::PQCUtilities.support_ml_dsa_key_load?
   end
 end
 

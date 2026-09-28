@@ -515,6 +515,17 @@ class TestObjSpace < Test::Unit::TestCase
     assert_not_include(info, '"embedded":true')
   end
 
+  def test_dump_hash
+    ar_hash = {}
+    info = ObjectSpace.dump(ar_hash)
+    assert_include(info, '"ar_table":true')
+
+    st_hash = {}
+    9.times { |i| st_hash[i] = i }
+    info = ObjectSpace.dump(st_hash)
+    assert_not_include(info, '"ar_table":true')
+  end
+
   def test_dump_object
     klass = Class.new
 

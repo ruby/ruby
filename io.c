@@ -37,7 +37,7 @@
 #undef free
 #define free(x) xfree(x)
 
-#if defined(DOSISH) || defined(__CYGWIN__)
+#ifdef __CYGWIN__
 #include <io.h>
 #endif
 
@@ -48,7 +48,7 @@
 # include <sys/socket.h>
 #endif
 
-#if defined(__BOW__) || defined(__CYGWIN__) || defined(_WIN32)
+#if defined(__CYGWIN__) || defined(_WIN32)
 # define NO_SAFE_RENAME
 #endif
 
@@ -56,15 +56,11 @@
 # define USE_SETVBUF
 #endif
 
-#ifdef __QNXNTO__
-#include <unix.h>
-#endif
-
 #include <sys/types.h>
-#if defined(HAVE_SYS_IOCTL_H) && !defined(_WIN32)
+#ifdef HAVE_SYS_IOCTL_H
 #include <sys/ioctl.h>
 #endif
-#if defined(HAVE_FCNTL_H) || defined(_WIN32)
+#if defined(HAVE_FCNTL_H)
 #include <fcntl.h>
 #elif defined(HAVE_SYS_FCNTL_H)
 #include <sys/fcntl.h>
@@ -76,7 +72,7 @@
 
 #include <sys/stat.h>
 
-#if defined(HAVE_SYS_PARAM_H) || defined(__HIUX_MPP__)
+#if defined(HAVE_SYS_PARAM_H)
 # include <sys/param.h>
 #endif
 
@@ -1033,6 +1029,32 @@ io_ungetbyte(VALUE str, rb_io_t *fptr)
     fptr->rbuf.off-=(int)len;
     fptr->rbuf.len+=(int)len;
     MEMMOVE(fptr->rbuf.ptr+fptr->rbuf.off, RSTRING_PTR(str), char, len);
+}
+
+static void
+io_restore_read_buffer(VALUE str, rb_io_t *fptr)
+{
+    long len = RSTRING_LEN(str);
+
+    if (len > INT_MAX - fptr->rbuf.len) {
+        rb_raise(rb_eIOError, "read buffer too large");
+    }
+    if (fptr->rbuf.ptr == NULL || fptr->rbuf.capa >= len + fptr->rbuf.len) {
+        io_ungetbyte(str, fptr);
+    }
+    else {
+        int pending = fptr->rbuf.len;
+        int capa = (int)len + pending;
+        char *ptr = ALLOC_N(char, capa);
+
+        MEMMOVE(ptr, RSTRING_PTR(str), char, len);
+        MEMMOVE(ptr + len, fptr->rbuf.ptr + fptr->rbuf.off, char, pending);
+        ruby_xfree(fptr->rbuf.ptr);
+        fptr->rbuf.ptr = ptr;
+        fptr->rbuf.off = 0;
+        fptr->rbuf.len = capa;
+        fptr->rbuf.capa = capa;
+    }
 }
 
 static rb_io_t *
@@ -2088,8 +2110,7 @@ io_fwrite(VALUE str, rb_io_t *fptr, int nosync)
 
 #ifdef _WIN32
     if (fptr->mode & FMODE_TTY) {
-        long len = rb_w32_write_console(str, fptr->fd);
-        if (len > 0) return len;
+        if (rb_w32_write_console(str, fptr->fd) > 0) return RSTRING_LEN(str);
     }
 #endif
 
@@ -2929,10 +2950,6 @@ nogvl_fdatasync(void *ptr)
 {
     rb_io_t *fptr = ptr;
 
-#ifdef _WIN32
-    if (GetFileType((HANDLE)rb_w32_get_osfhandle(fptr->fd)) != FILE_TYPE_DISK)
-        return 0;
-#endif
     return (VALUE)fdatasync(fptr->fd);
 }
 
@@ -3154,12 +3171,13 @@ read_buffered_data(char *ptr, long len, rb_io_t *fptr)
 }
 
 static long
-io_bufread(char *ptr, long len, rb_io_t *fptr)
+io_bufread(char *ptr, long len, rb_io_t *fptr, long *read_len)
 {
     long offset = 0;
     long n = len;
     long c;
 
+    *read_len = 0;
     if (READ_DATA_PENDING(fptr) == 0) {
         while (n > 0) {
           again:
@@ -3172,6 +3190,7 @@ io_bufread(char *ptr, long len, rb_io_t *fptr)
                 return -1;
             }
             offset += c;
+            *read_len = offset;
             if ((n -= c) <= 0) break;
         }
         return len - n;
@@ -3181,6 +3200,7 @@ io_bufread(char *ptr, long len, rb_io_t *fptr)
         c = read_buffered_data(ptr+offset, n, fptr);
         if (c > 0) {
             offset += c;
+            *read_len = offset;
             if ((n -= c) <= 0) break;
         }
         rb_io_check_closed(fptr);
@@ -3195,16 +3215,43 @@ static int io_setstrbuf(VALUE *str, long len);
 
 struct bufread_arg {
     char *str_ptr;
+    long offset;
     long len;
+    long read_len;
     rb_io_t *fptr;
 };
+
+static VALUE
+bufread_body(VALUE arg)
+{
+    struct bufread_arg *p = (struct bufread_arg *)arg;
+    p->len = io_bufread(p->str_ptr + p->offset, p->len, p->fptr, &p->read_len);
+    return Qundef;
+}
+
+static VALUE
+bufread_timeout(VALUE arg, VALUE error)
+{
+    struct bufread_arg *p = (struct bufread_arg *)arg;
+
+    if (p->offset + p->read_len > 0) {
+        VALUE str = rb_str_new(p->str_ptr, p->offset + p->read_len);
+        io_restore_read_buffer(str, p->fptr);
+    }
+    rb_exc_raise(error);
+    UNREACHABLE_RETURN(Qnil);
+}
 
 static VALUE
 bufread_call(VALUE arg)
 {
     struct bufread_arg *p = (struct bufread_arg *)arg;
-    p->len = io_bufread(p->str_ptr, p->len, p->fptr);
-    return Qundef;
+
+    if (NIL_P(p->fptr->timeout)) {
+        return bufread_body(arg);
+    }
+    return rb_rescue2(bufread_body, arg, bufread_timeout, arg,
+                      rb_eIOTimeoutError, (VALUE)0);
 }
 
 static long
@@ -3214,8 +3261,10 @@ io_fread(VALUE str, long offset, long size, rb_io_t *fptr)
     struct bufread_arg arg;
 
     io_setstrbuf(&str, offset + size);
-    arg.str_ptr = RSTRING_PTR(str) + offset;
+    arg.str_ptr = RSTRING_PTR(str);
+    arg.offset = offset;
     arg.len = size;
+    arg.read_len = 0;
     arg.fptr = fptr;
     rb_str_locktmp_ensure(str, bufread_call, (VALUE)&arg);
     len = arg.len;
@@ -3988,6 +4037,61 @@ search_delim(const char *p, long len, int delim, rb_encoding *enc)
 }
 
 static int
+read_raw_character(rb_io_t *fptr, rb_encoding *enc, char *buf)
+{
+    int n = 0;
+    int r;
+
+    do {
+        if (!READ_DATA_PENDING(fptr)) {
+            READ_CHECK(fptr);
+            if (io_fillbuf(fptr) < 0) break;
+        }
+        buf[n++] = *READ_DATA_PENDING_PTR(fptr);
+        fptr->rbuf.off++;
+        fptr->rbuf.len--;
+        r = rb_enc_precise_mbclen(buf, buf + n, enc);
+    } while (MBCLEN_NEEDMORE_P(r) && n < rb_enc_mbmaxlen(enc));
+
+    return n;
+}
+
+static void
+unread_raw_character(rb_io_t *fptr, const char *buf, int len)
+{
+    if (fptr->rbuf.capa - fptr->rbuf.len < len) {
+        if (fptr->rbuf.capa > INT_MAX - len)
+            rb_raise(rb_eIOError, "ungetbyte failed");
+        fptr->rbuf.capa += len;
+        REALLOC_N(fptr->rbuf.ptr, char, fptr->rbuf.capa);
+    }
+    io_ungetbyte(rb_str_new(buf, len), fptr);
+}
+
+static const char *
+search_wide_delim(const char *p, long len, const char *delim, int width)
+{
+    const char *e = p + len;
+    int index = 0;
+
+    while (index < width && delim[index] == 0) index++;
+    if (index == width) index = 0;
+
+    const char *candidate = p + index;
+    while (candidate < e) {
+        candidate = memchr(candidate, (unsigned char)delim[index], e - candidate);
+        if (candidate == NULL) break;
+        const char *start = candidate - index;
+        if ((start - p) % width == 0 && start + width <= e &&
+            memcmp(start, delim, width) == 0) {
+            return start;
+        }
+        candidate++;
+    }
+    return NULL;
+}
+
+static int
 appendline(rb_io_t *fptr, int delim, VALUE *strp, long *lp, rb_encoding *enc)
 {
     VALUE str = *strp;
@@ -4037,6 +4141,71 @@ appendline(rb_io_t *fptr, int delim, VALUE *strp, long *lp, rb_encoding *enc)
     }
 
     NEED_NEWLINE_DECORATOR_ON_READ_CHECK(fptr);
+    if (rb_enc_mbminlen(enc) != 1) {
+        char buf[ONIGENC_CODE_TO_MBC_MAXLEN];
+        int len;
+
+        if (limit < 0) {
+            int width = rb_enc_mbminlen(enc);
+            int delim_len = rb_enc_codelen(delim, enc);
+
+            if (delim_len == width) {
+                rb_enc_mbcput(delim, buf, enc);
+                for (;;) {
+                    if (!READ_DATA_PENDING(fptr)) {
+                        READ_CHECK(fptr);
+                        if (io_fillbuf(fptr) < 0) return EOF;
+                    }
+                    long pending = READ_DATA_PENDING_COUNT(fptr);
+                    long complete = pending - pending % width;
+                    const char *p = READ_DATA_PENDING_PTR(fptr);
+                    const char *q = complete ? search_wide_delim(p, complete, buf, width) : NULL;
+                    long take = q ? q - p + width : complete;
+
+                    if (take > 0) {
+                        if (NIL_P(str))
+                            *strp = str = rb_str_buf_new(0);
+                        rb_str_buf_cat(str, p, take);
+                        fptr->rbuf.off += (int)take;
+                        fptr->rbuf.len -= (int)take;
+                    }
+                    if (q) return delim;
+                    if (complete == pending) continue;
+
+                    len = read_raw_character(fptr, enc, buf);
+                    if (len == 0) return EOF;
+                    if (NIL_P(str))
+                        *strp = str = rb_str_buf_new(0);
+                    rb_str_buf_cat(str, buf, len);
+                    int r = rb_enc_precise_mbclen(buf, buf + len, enc);
+                    if (MBCLEN_CHARFOUND_P(r) &&
+                        rb_enc_mbc_to_codepoint(buf, buf + len, enc) == (unsigned int)delim)
+                        return delim;
+                }
+            }
+        }
+
+        while ((len = read_raw_character(fptr, enc, buf)) > 0) {
+            if (NIL_P(str))
+                *strp = str = rb_str_buf_new(0);
+            rb_str_buf_cat(str, buf, len);
+            if (limit > 0) {
+                if (len > limit) {
+                    *lp = 0;
+                    return (unsigned char)buf[len - 1];
+                }
+                *lp = limit -= len;
+            }
+            int r = rb_enc_precise_mbclen(buf, buf + len, enc);
+            if (MBCLEN_CHARFOUND_P(r) &&
+                rb_enc_mbc_to_codepoint(buf, buf + len, enc) == (unsigned int)delim)
+                return delim;
+            if (limit == 0)
+                return (unsigned char)buf[len - 1];
+        }
+        *lp = limit;
+        return EOF;
+    }
     do {
         long pending = READ_DATA_PENDING_COUNT(fptr);
         if (pending > 0) {
@@ -4100,6 +4269,20 @@ swallow(rb_io_t *fptr, int term)
     }
 
     NEED_NEWLINE_DECORATOR_ON_READ_CHECK(fptr);
+    rb_encoding *enc = io_read_encoding(fptr);
+    int widechar = rb_enc_mbminlen(enc) != 1;
+    if (widechar) {
+        char buf[ONIGENC_CODE_TO_MBC_MAXLEN];
+        int len;
+
+        while ((len = read_raw_character(fptr, enc, buf)) > 0) {
+            if (rb_enc_ascget(buf, buf + len, NULL, enc) != term) {
+                unread_raw_character(fptr, buf, len);
+                return TRUE;
+            }
+        }
+        return FALSE;
+    }
     do {
         size_t cnt;
         while ((cnt = READ_DATA_PENDING_COUNT(fptr)) > 0) {
@@ -4328,19 +4511,19 @@ rb_io_getline_0(VALUE rs, long limit, int chomp, rb_io_t *fptr)
         while ((c = appendline(fptr, newline, &str, &limit, enc)) != EOF) {
             const char *s, *p, *pp, *e;
 
-            if (c == newline) {
-                if (RSTRING_LEN(str) < rslen) continue;
+            if (c == newline && RSTRING_LEN(str) >= rslen) {
                 s = RSTRING_PTR(str);
                 e = RSTRING_END(str);
                 p = e - rslen;
-                if (!at_char_boundary(s, p, e, enc)) continue;
-                if (!rspara) rscheck(rsptr, rslen, rs);
-                if (memcmp(p, rsptr, rslen) == 0) {
-                    if (chomp) {
-                        if (chomp_cr && p > s && *(p-1) == '\r') --p;
-                        rb_str_set_len(str, p - s);
+                if (at_char_boundary(s, p, e, enc)) {
+                    if (!rspara) rscheck(rsptr, rslen, rs);
+                    if (memcmp(p, rsptr, rslen) == 0) {
+                        if (chomp) {
+                            if (chomp_cr && p > s && *(p-1) == '\r') --p;
+                            rb_str_set_len(str, p - s);
+                        }
+                        break;
                     }
-                    break;
                 }
             }
             if (limit == 0) {
@@ -7531,7 +7714,6 @@ rb_pipe(int *pipes)
 }
 
 #ifdef _WIN32
-#define HAVE_SPAWNV 1
 #define spawnv(mode, cmd, args) rb_w32_uaspawn((mode), (cmd), (args))
 #define spawn(mode, cmd) rb_w32_uspawn((mode), (cmd), 0)
 #endif
@@ -7703,20 +7885,11 @@ pipe_open(VALUE execarg_obj, const char *modestr, enum rb_io_mode fmode,
 #endif
     int e = 0;
 #if defined(HAVE_SPAWNV)
-# if defined(HAVE_SPAWNVE)
-#   define DO_SPAWN(cmd, args, envp) ((args) ? \
-                                      spawnve(P_NOWAIT, (cmd), (args), (envp)) : \
-                                      spawne(P_NOWAIT, (cmd), (envp)))
-# else
-#   define DO_SPAWN(cmd, args, envp) ((args) ? \
-                                      spawnv(P_NOWAIT, (cmd), (args)) : \
-                                      spawn(P_NOWAIT, (cmd)))
-# endif
+# define DO_SPAWN(cmd, args) ((args) ? \
+                              spawnv(P_NOWAIT, (cmd), (args)) : \
+                              spawn(P_NOWAIT, (cmd)))
 # if !defined(HAVE_WORKING_FORK)
     char **args = NULL;
-#   if defined(HAVE_SPAWNVE)
-    char **envp = NULL;
-#   endif
 # endif
 #endif
 #if !defined(HAVE_WORKING_FORK)
@@ -7788,10 +7961,7 @@ pipe_open(VALUE execarg_obj, const char *modestr, enum rb_io_mode fmode,
         pid = rb_fork_async_signal_safe(&status, popen_exec, &arg, arg.eargp->redirect_fds, errmsg, sizeof(errmsg));
 # else
         rb_execarg_run_options(eargp, sargp, NULL, 0);
-#   if defined(HAVE_SPAWNVE)
-        if (eargp->envp_str) envp = (char **)RSTRING_PTR(eargp->envp_str);
-#   endif
-        while ((pid = DO_SPAWN(cmd, args, envp)) < 0) {
+        while ((pid = DO_SPAWN(cmd, args)) < 0) {
             /* exec failed */
             switch (e = errno) {
               case EAGAIN:

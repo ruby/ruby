@@ -51,6 +51,29 @@ RSpec.describe "override DSL" do
       expect(the_bundle).to include_gems "myrack 0.9.1"
     end
 
+    it "keeps the locked version of a transitive-only target that still satisfies the override" do
+      build_repo2 do
+        build_gem "child", "1.0"
+        build_gem "parent", "1.0" do |s|
+          s.add_dependency "child", ">= 1.0"
+        end
+      end
+
+      install_gemfile <<-G
+        source "https://gem.repo2"
+        override "child", version: ">= 1.0"
+        gem "parent"
+      G
+
+      update_repo2 do
+        build_gem "child", "1.1"
+      end
+
+      bundle :install
+
+      expect(the_bundle).to include_gems "child 1.0", "parent 1.0"
+    end
+
     it "pins a prerelease version that the Gemfile dependency would otherwise filter out" do
       build_repo2 do
         build_gem "has_prerelease", "1.0"
@@ -130,6 +153,71 @@ RSpec.describe "override DSL" do
     end
   end
 
+  context "in frozen mode" do
+    it "installs a transitive-only override the lockfile already satisfies" do
+      install_gemfile <<-G
+        source "https://gem.repo1"
+        override "myrack", version: "= 0.9.1"
+        gem "myrack_middleware"
+      G
+
+      bundle :install, env: { "BUNDLE_FROZEN" => "true" }
+
+      expect(the_bundle).to include_gems "myrack 0.9.1", "myrack_middleware 1.0"
+    end
+
+    it "installs a transitive-only override outside the parent's requirement" do
+      install_gemfile <<-G
+        source "https://gem.repo1"
+        override "myrack", version: "= 1.0.0"
+        gem "myrack_middleware"
+      G
+
+      bundle :install, env: { "BUNDLE_FROZEN" => "true" }
+
+      expect(the_bundle).to include_gems "myrack 1.0.0", "myrack_middleware 1.0"
+    end
+
+    it "installs a metadata override on a direct dependency" do
+      build_repo2 do
+        build_gem "needs_old_ruby", "1.0" do |s|
+          s.required_ruby_version = "< #{Gem.ruby_version}"
+        end
+      end
+
+      install_gemfile <<-G
+        source "https://gem.repo2"
+        override "needs_old_ruby", required_ruby_version: nil
+        gem "needs_old_ruby"
+      G
+
+      bundle :install, env: { "BUNDLE_FROZEN" => "true" }
+
+      expect(the_bundle).to include_gems "needs_old_ruby 1.0"
+    end
+
+    it "installs a metadata override on a transitive-only dependency" do
+      build_repo2 do
+        build_gem "needs_old_ruby", "1.0" do |s|
+          s.required_ruby_version = "< #{Gem.ruby_version}"
+        end
+        build_gem "wraps_old", "1.0" do |s|
+          s.add_dependency "needs_old_ruby"
+        end
+      end
+
+      install_gemfile <<-G
+        source "https://gem.repo2"
+        override "needs_old_ruby", required_ruby_version: :ignore_upper
+        gem "wraps_old"
+      G
+
+      bundle :install, env: { "BUNDLE_FROZEN" => "true" }
+
+      expect(the_bundle).to include_gems "needs_old_ruby 1.0", "wraps_old 1.0"
+    end
+  end
+
   context "lockfile contents" do
     it "does not record the override directive in Gemfile.lock" do
       install_gemfile <<-G
@@ -198,7 +286,7 @@ RSpec.describe "override DSL" do
       expect(lockfile).to include("wraps_old (1.0)")
     end
 
-    it "re-resolves a direct dep when a metadata override is added against an existing lockfile" do
+    it "preserves the locked version when a metadata override is added without bundle update" do
       build_repo2 do
         build_gem "selectable", "1.0"
         build_gem "selectable", "2.0" do |s|
@@ -221,6 +309,9 @@ RSpec.describe "override DSL" do
       G
 
       bundle :lock
+      expect(lockfile).to include("selectable (1.0)")
+
+      bundle "update selectable"
       expect(lockfile).to include("selectable (2.0)")
     end
   end
