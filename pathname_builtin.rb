@@ -2742,17 +2742,20 @@ class Pathname    # * FileTest *
   #   writable? => true or false
   #
   # Returns whether entry at the path in `self`
-  # is writable by the owner and group of the current process:
+  # exists and is writable by the effective owner and group of the current process:
   #
   # ```ruby
   # pn = Pathname('/tmp/secret.txt')
-  # pn.write('foo')
-  # pn.writable?                 # => true
-  # pn.chmod(0o000)
-  # pn.writable?                 # => false
-  # pn.delete
-  # Pathname('nosuch').writable? # => false
+  # pn.writable?                # => false  # Non-existent.
+  # pn.write('foo')                         # Create the file.
+  # pn.writable?                # => true   # Writable.
+  # pn.chmod(0o000)                         # Make non-writable.
+  # pn.writable?                # => false  # Not writable.
+  # pn.delete                               # Clean up.
+  # Pathname('/etc/').writable? # => false  # Directory.
   # ```
+  # Note that filesystem security features may cause this method to return true
+  # even when the entry is not writable by the effective owner and group.
   #
   def writable?() FileTest.writable?(@path) end
 
