@@ -7365,34 +7365,70 @@ vm_opt_not(struct rb_control_frame_struct *reg_cfp, CALL_DATA cd, VALUE recv)
     }
 }
 
-static bool
-vm_logop_hooked_p(rb_execution_context_t *ec, struct rb_control_frame_struct *reg_cfp, CALL_DATA cd, VALUE recv)
-{
-    if (LIKELY(BASIC_OP_UNREDEFINED_P(BOP_LOGOP, ANY_REDEFINED_OP_FLAG))) return false;
+NOINLINE(static const rb_callable_method_entry_t *
+         vm_logop_search_refined(rb_execution_context_t *ec, struct rb_control_frame_struct *reg_cfp,
+                                 CALL_DATA cd, VALUE recv, const rb_callable_method_entry_t *cme));
 
-    const rb_callable_method_entry_t *cme = vm_search_method(reg_cfp, cd, recv);
-    if (cme && cme->def->type == VM_METHOD_TYPE_REFINED) {
-        struct rb_calling_info calling = {
-            .cd = cd,
-            .cc = cd->cc,
-            .recv = recv,
-            .argc = 1,
-        };
-        const rb_callable_method_entry_t *ref_cme = search_refined_method(ec, reg_cfp, &calling);
-        if (ref_cme) {
-            const struct rb_callcache *cc = vm_cc_new(cme->defined_class, ref_cme, vm_call_general, cc_type_refinement);
-            RB_OBJ_WRITE(CFP_ISEQ(reg_cfp), &cd->cc, cc);
-        }
-        cme = ref_cme;
+static const rb_callable_method_entry_t *
+vm_logop_search_refined(rb_execution_context_t *ec, struct rb_control_frame_struct *reg_cfp,
+                        CALL_DATA cd, VALUE recv, const rb_callable_method_entry_t *cme)
+{
+    struct rb_calling_info calling = {
+        .cd = cd,
+        .cc = cd->cc,
+        .recv = recv,
+        .argc = 1,
+    };
+    const rb_callable_method_entry_t *ref_cme = search_refined_method(ec, reg_cfp, &calling);
+    if (ref_cme) {
+        const struct rb_callcache *cc = vm_cc_new(cme->defined_class, ref_cme, vm_call_general, cc_type_refinement);
+        RB_OBJ_WRITE(CFP_ISEQ(reg_cfp), &cd->cc, cc);
     }
-    return cme && RB_TYPE_P(cme->owner, T_MODULE) && FL_TEST(cme->owner, RMODULE_IS_REFINEMENT);
+    return ref_cme;
 }
 
-static VALUE
-vm_opt_logop(rb_execution_context_t *ec, struct rb_control_frame_struct *reg_cfp, CALL_DATA cd, VALUE recv, VALUE obj)
+ALWAYS_INLINE(static bool
+              vm_logop_lookup_hook(rb_execution_context_t *ec, struct rb_control_frame_struct *reg_cfp,
+                                   CALL_DATA cd, VALUE recv));
+
+static bool
+vm_logop_lookup_hook(rb_execution_context_t *ec, struct rb_control_frame_struct *reg_cfp, CALL_DATA cd, VALUE recv)
 {
-    if (LIKELY(BASIC_OP_UNREDEFINED_P(BOP_LOGOP, ANY_REDEFINED_OP_FLAG))) return obj;
-    if (vm_logop_hooked_p(ec, reg_cfp, cd, recv)) return Qundef;
+    const struct rb_callcache *cc = vm_search_method_fastpath(reg_cfp, cd, CLASS_OF(recv));
+    const rb_callable_method_entry_t *cme = vm_cc_cme(cc);
+    if (!cme) return false;
+    if (UNLIKELY(cme->def->type == VM_METHOD_TYPE_REFINED)) {
+        cme = vm_logop_search_refined(ec, reg_cfp, cd, recv, cme);
+        if (!cme) return false;
+    }
+    return BUILTIN_TYPE(cme->owner) == T_MODULE && FL_TEST_RAW(cme->owner, RMODULE_IS_REFINEMENT);
+}
+
+NOINLINE(static bool
+         vm_logop_hooked_slow(rb_execution_context_t *ec, struct rb_control_frame_struct *reg_cfp,
+                              CALL_DATA cd, VALUE recv));
+
+static bool
+vm_logop_hooked_slow(rb_execution_context_t *ec, struct rb_control_frame_struct *reg_cfp, CALL_DATA cd, VALUE recv)
+{
+    return vm_logop_lookup_hook(ec, reg_cfp, cd, recv);
+}
+
+static inline bool
+vm_logop_hooked_p(rb_execution_context_t *ec, struct rb_control_frame_struct *reg_cfp, CALL_DATA cd, VALUE recv)
+{
+    return UNLIKELY(!BASIC_OP_UNREDEFINED_P(BOP_LOGOP, ANY_REDEFINED_OP_FLAG)) &&
+        vm_logop_hooked_slow(ec, reg_cfp, cd, recv);
+}
+
+NOINLINE(static VALUE
+         vm_opt_logop_slow(rb_execution_context_t *ec, struct rb_control_frame_struct *reg_cfp,
+                           CALL_DATA cd, VALUE recv, VALUE obj));
+
+static VALUE
+vm_opt_logop_slow(rb_execution_context_t *ec, struct rb_control_frame_struct *reg_cfp, CALL_DATA cd, VALUE recv, VALUE obj)
+{
+    if (vm_logop_lookup_hook(ec, reg_cfp, cd, recv)) return Qundef;
 
     /* The hook may have been removed while the RHS was evaluated. */
     if (vm_ci_mid(cd->ci) == idANDOP) {
@@ -7401,6 +7437,13 @@ vm_opt_logop(rb_execution_context_t *ec, struct rb_control_frame_struct *reg_cfp
     else {
         return RTEST(recv) ? recv : obj;
     }
+}
+
+static inline VALUE
+vm_opt_logop(rb_execution_context_t *ec, struct rb_control_frame_struct *reg_cfp, CALL_DATA cd, VALUE recv, VALUE obj)
+{
+    if (LIKELY(BASIC_OP_UNREDEFINED_P(BOP_LOGOP, ANY_REDEFINED_OP_FLAG))) return obj;
+    return vm_opt_logop_slow(ec, reg_cfp, cd, recv, obj);
 }
 
 /* Returns Qundef when the hook must be called. */

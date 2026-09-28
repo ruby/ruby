@@ -2020,8 +2020,11 @@ pub const YARVINSN_zjit_opt_size: ruby_vminsn_type = 260;
 pub const YARVINSN_zjit_opt_empty_p: ruby_vminsn_type = 261;
 pub const YARVINSN_zjit_opt_succ: ruby_vminsn_type = 262;
 pub const YARVINSN_zjit_opt_not: ruby_vminsn_type = 263;
-pub const YARVINSN_zjit_opt_regexpmatch2: ruby_vminsn_type = 264;
-pub const VM_INSTRUCTION_SIZE: ruby_vminsn_type = 265;
+pub const YARVINSN_zjit_opt_branch_andop: ruby_vminsn_type = 264;
+pub const YARVINSN_zjit_opt_branch_orop: ruby_vminsn_type = 265;
+pub const YARVINSN_zjit_opt_logop: ruby_vminsn_type = 266;
+pub const YARVINSN_zjit_opt_regexpmatch2: ruby_vminsn_type = 267;
+pub const VM_INSTRUCTION_SIZE: ruby_vminsn_type = 268;
 pub type ruby_vminsn_type = u32;
 #[repr(C)]
 #[repr(align(8))]

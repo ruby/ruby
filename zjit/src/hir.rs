@@ -8985,7 +8985,7 @@ fn invalidates_locals(opcode: u32, operands: *const VALUE) -> bool {
         | YARVINSN_branchif_without_ints
         | YARVINSN_branchnil_without_ints
         | YARVINSN_leave => false,
-        // Compiled only while no hook exists, so no Ruby code runs
+        // Hooks are called only after a side exit, so no Ruby code runs
         YARVINSN_opt_branch_andop
         | YARVINSN_opt_branch_orop
         | YARVINSN_opt_logop => false,
@@ -9048,6 +9048,47 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
         return Err(ParseError::Validation(err));
     }
     Ok(fun)
+}
+
+/// While some refinement defines && or ||, guard `recv` on its profiled class if method lookup
+/// on that class can't reach a hook. Returns whether the guarded receiver is truthy, or
+/// otherwise side-exits and returns None.
+fn guard_logop_unhooked(fun: &mut Function, profiles: &ProfileOracle, iseq: IseqPtr, block: BlockId, recv: InsnId, mid: ID, state: InsnId) -> Option<bool> {
+    let summary = profiles.get(state).and_then(|entries| entries.iter().find(|(insn, _)| *insn == recv));
+    let guarded = summary.and_then(|(_, summary)| guard_logop_unhooked_monomorphic(fun, summary, block, recv, mid, state));
+    if guarded.is_none() {
+        let recompile = if summary.is_none() && get_or_create_iseq_payload(iseq).versions.len() + 1 < crate::codegen::max_iseq_versions() {
+            Some(Recompile)
+        } else {
+            None
+        };
+        let reason = SideExitReason::PatchPoint(Invariant::BOPRedefined { klass: ANY_REDEFINED_OP_FLAG, bop: BOP_LOGOP });
+        fun.push_insn(block, Insn::SideExit { state, reason: Box::new(reason), recompile });
+    }
+    guarded
+}
+
+fn guard_logop_unhooked_monomorphic(fun: &mut Function, summary: &TypeDistributionSummary, block: BlockId, recv: InsnId, mid: ID, state: InsnId) -> Option<bool> {
+    if !summary.is_monomorphic() {
+        return None;
+    }
+    let profiled_type = summary.bucket(0);
+    let guard_type = Type::from_profiled_type(profiled_type);
+    let truthy = if guard_type.is_subtype(types::Truthy) {
+        true
+    } else if guard_type.is_subtype(types::Falsy) {
+        false
+    } else {
+        return None;
+    };
+    let klass = profiled_type.class();
+    let cme = unsafe { rb_callable_method_entry(klass, mid) };
+    if cme.is_null() || unsafe { get_cme_def_type(cme) } == VM_METHOD_TYPE_REFINED {
+        return None;
+    }
+    fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
+    fun.guard_type_recompile(block, recv, guard_type, state, Recompile);
+    Some(truthy)
 }
 
 /// Populate `fun` with HIR translated from `iseq`. Used both for top-level
@@ -9785,48 +9826,70 @@ fn add_iseq_to_hir(
                     queue.push_back((state.clone(), target, target_idx, local_inval));
                 }
                 YARVINSN_opt_branch_andop | YARVINSN_opt_branch_orop => {
-                    if !fun.guard_bop_not_redefined(block, ANY_REDEFINED_OP_FLAG, BOP_LOGOP, exit_id) {
-                        break;  // End the block
-                    }
                     let jump_if_truthy = opcode == YARVINSN_opt_branch_orop;
-                    let (jump_type, fall_through_type) = if jump_if_truthy {
-                        (types::Truthy, types::Falsy)
-                    } else {
-                        (types::Falsy, types::Truthy)
-                    };
                     let offset = get_arg(pc, 1).as_i64();
                     let val = state.stack_top()?;
-                    let test_id = fun.push_insn(block, Insn::Test { val });
                     let target_idx = insn_idx_at_offset(insn_idx, offset);
                     let target = insn_idx_to_block[&target_idx];
-                    let jump_val = fun.push_insn(block, Insn::RefineType { val, new_type: jump_type });
-                    let mut jump_state = state.clone();
-                    jump_state.replace(val, jump_val);
-                    let fall_through = fun.new_block(insn_idx);
 
-                    let jump_edge = BranchEdge { target, args: jump_state.as_args(self_param) };
-                    let fall_through_edge = BranchEdge { target: fall_through, args: vec![] };
-                    let (if_true, if_false) = if jump_if_truthy {
-                        (jump_edge, fall_through_edge)
+                    if !fun.assume_bop_not_redefined(block, ANY_REDEFINED_OP_FLAG, BOP_LOGOP, exit_id) {
+                        let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
+                        let mid = unsafe { rb_vm_ci_mid((*cd).ci) };
+                        let Some(truthy) = guard_logop_unhooked(fun, &profiles, iseq, block, val, mid, exit_id) else {
+                            break;  // End the block
+                        };
+                        if truthy == jump_if_truthy {
+                            fun.push_insn(block, Insn::Jump(BranchEdge { target, args: state.as_args(self_param) }));
+                            queue.push_back((state.clone(), target, target_idx, local_inval));
+                            break;  // Don't enqueue the next block as a successor
+                        }
                     } else {
-                        (fall_through_edge, jump_edge)
-                    };
-                    fun.push_insn(block, Insn::CondBranch { val: test_id, if_true, if_false });
+                        let (jump_type, fall_through_type) = if jump_if_truthy {
+                            (types::Truthy, types::Falsy)
+                        } else {
+                            (types::Falsy, types::Truthy)
+                        };
+                        let test_id = fun.push_insn(block, Insn::Test { val });
+                        let jump_val = fun.push_insn(block, Insn::RefineType { val, new_type: jump_type });
+                        let mut jump_state = state.clone();
+                        jump_state.replace(val, jump_val);
+                        let fall_through = fun.new_block(insn_idx);
 
-                    block = fall_through;
+                        let jump_edge = BranchEdge { target, args: jump_state.as_args(self_param) };
+                        let fall_through_edge = BranchEdge { target: fall_through, args: vec![] };
+                        let (if_true, if_false) = if jump_if_truthy {
+                            (jump_edge, fall_through_edge)
+                        } else {
+                            (fall_through_edge, jump_edge)
+                        };
+                        fun.push_insn(block, Insn::CondBranch { val: test_id, if_true, if_false });
 
-                    let fall_through_val = fun.push_insn(block, Insn::RefineType { val, new_type: fall_through_type });
-                    state.replace(val, fall_through_val);
-                    queue.push_back((state.clone(), target, target_idx, local_inval));
+                        block = fall_through;
+
+                        let fall_through_val = fun.push_insn(block, Insn::RefineType { val, new_type: fall_through_type });
+                        state.replace(val, fall_through_val);
+                        queue.push_back((state.clone(), target, target_idx, local_inval));
+                    }
                 }
                 YARVINSN_opt_logop => {
-                    if !fun.guard_bop_not_redefined(block, ANY_REDEFINED_OP_FLAG, BOP_LOGOP, exit_id) {
-                        break;  // End the block
+                    if fun.assume_bop_not_redefined(block, ANY_REDEFINED_OP_FLAG, BOP_LOGOP, exit_id) {
+                        let obj = state.stack_pop()?;
+                        state.stack_pop()?;
+                        state.stack_push(obj);
+                    } else {
+                        let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
+                        let mid = unsafe { rb_vm_ci_mid((*cd).ci) };
+                        let recv = state.stack_topn(1)?;
+                        let Some(truthy) = guard_logop_unhooked(fun, &profiles, iseq, block, recv, mid, exit_id) else {
+                            break;  // End the block
+                        };
+                        let obj = state.stack_pop()?;
+                        let recv = state.stack_pop()?;
+                        // A falsy LHS of && or truthy LHS of || gets here if its hook was
+                        // removed while the RHS was evaluated.
+                        let lhs_is_result = truthy == (mid == rust_str_to_id("||"));
+                        state.stack_push(if lhs_is_result { recv } else { obj });
                     }
-                    // Without hooks, the result is the RHS
-                    let obj = state.stack_pop()?;
-                    state.stack_pop()?;
-                    state.stack_push(obj);
                 }
                 YARVINSN_opt_case_dispatch => {
                     // TODO: Some keys are visible at compile time, so in the future we can

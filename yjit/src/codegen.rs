@@ -4594,6 +4594,49 @@ fn gen_opt_not(
     return gen_opt_send_without_block(jit, asm);
 }
 
+/// Maximum number of receiver classes guarded at an &&/|| site before
+/// falling back to looking up hooks at run time.
+const LOGOP_MAX_DEPTH: u16 = 4;
+
+fn logop_unhooked_everywhere() -> bool {
+    unsafe { BASIC_OP_UNREDEFINED_P(BOP_LOGOP, ANY_REDEFINED_OP_FLAG) }
+}
+
+/// When some refinement defines && or ||, guard the receiver's class and require that
+/// method lookup on it doesn't reach a refined entry.
+fn jit_logop_unhooked(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    cd: *const rb_call_data,
+    recv_idx: i32,
+) -> bool {
+    if assume_bop_not_redefined(jit, asm, ANY_REDEFINED_OP_FLAG, BOP_LOGOP) {
+        return true;
+    }
+    if asm.ctx.get_chain_depth() >= LOGOP_MAX_DEPTH {
+        return false;
+    }
+
+    let comptime_recv = jit.peek_at_stack(&asm.ctx, recv_idx as isize);
+    let mid = unsafe { vm_ci_mid(get_call_data_ci(cd)) };
+    let cme = unsafe { rb_callable_method_entry_or_negative(comptime_recv.class_of(), mid) };
+    if unsafe { get_cme_def_type(cme) } == VM_METHOD_TYPE_REFINED {
+        return false;
+    }
+
+    let recv = asm.stack_opnd(recv_idx);
+    jit_guard_known_klass(
+        jit,
+        asm,
+        recv,
+        recv.into(),
+        comptime_recv,
+        LOGOP_MAX_DEPTH,
+        Counter::guard_send_klass_megamorphic,
+    );
+    jit.assume_method_lookup_stable(asm, cme).is_some()
+}
+
 fn gen_opt_branch_andop(
     jit: &mut JITState,
     asm: &mut Assembler,
@@ -4613,7 +4656,11 @@ fn gen_opt_branch_logop(
     asm: &mut Assembler,
     jump_if_truthy: bool,
 ) -> Option<CodegenStatus> {
-    let cd: *const u8 = jit.get_arg(0).as_ptr();
+    if !logop_unhooked_everywhere() && !jit.at_compile_target() {
+        return jit.defer_compilation(asm);
+    }
+
+    let cd: *const rb_call_data = jit.get_arg(0).as_ptr();
     let jump_offset = jit.get_arg(1).as_i32();
 
     let next_idx = jit.next_insn_idx();
@@ -4629,10 +4676,12 @@ fn gen_opt_branch_logop(
 
     incr_counter!(branch_insn_count);
 
-    let gen_fn = if assume_bop_not_redefined(jit, asm, ANY_REDEFINED_OP_FLAG, BOP_LOGOP) {
+    let gen_fn = if jit_logop_unhooked(jit, asm, cd, 0) {
         if let Some(truthy) = asm.ctx.get_opnd_type(StackOpnd(0)).known_truthy() {
             let target = if truthy == jump_if_truthy { jump_block } else { next_block };
-            gen_direct_jump(jit, &asm.ctx.clone(), target, asm);
+            let mut ctx = asm.ctx;
+            ctx.reset_chain_depth_and_defer();
+            gen_direct_jump(jit, &ctx, target, asm);
             incr_counter!(branch_known_count);
             return Some(EndBlock);
         }
@@ -4650,7 +4699,7 @@ fn gen_opt_branch_logop(
         // Looking up the hook may allocate a call cache
         jit_prepare_call_with_gc(jit, asm);
         let recv = asm.stack_opnd(0);
-        let jump_p = asm.ccall(rb_vm_opt_branch_logop as *const u8, vec![CFP, Opnd::const_ptr(cd), recv]);
+        let jump_p = asm.ccall(rb_vm_opt_branch_logop as *const u8, vec![CFP, Opnd::const_ptr(cd as *const u8), recv]);
 
         // The block ends here, so re-execute this side-effect-free instruction
         // if code is invalidated during the call.
@@ -4662,7 +4711,8 @@ fn gen_opt_branch_logop(
         BranchGenFn::BranchIf(Cell::new(BranchShape::Default))
     };
 
-    let ctx = asm.ctx;
+    let mut ctx = asm.ctx;
+    ctx.reset_chain_depth_and_defer();
     jit.gen_branch(asm, jump_block, &ctx, Some(next_block), Some(&ctx), gen_fn);
 
     Some(EndBlock)
@@ -4682,14 +4732,45 @@ fn gen_opt_logop(
         return Some(KeepCompiling);
     }
 
+    if !jit.at_compile_target() {
+        return jit.defer_compilation(asm);
+    }
+
+    let cd: *const rb_call_data = jit.get_arg(0).as_ptr();
+    if jit_logop_unhooked(jit, asm, cd, 1) {
+        // A falsy LHS of && or truthy LHS of || gets here if its hook was
+        // removed while the RHS was evaluated.
+        let and_p = unsafe { vm_ci_mid(get_call_data_ci(cd)) } == rust_str_to_id("&&");
+        let recv = asm.stack_opnd(1);
+        let obj = asm.stack_opnd(0);
+        if let Some(truthy) = asm.ctx.get_opnd_type(StackOpnd(1)).known_truthy() {
+            if truthy == and_p {
+                asm.mov(recv, obj);
+                let mapping = asm.ctx.get_opnd_mapping(obj.into());
+                asm.ctx.set_opnd_mapping(recv.into(), mapping);
+            }
+            asm.stack_pop(1);
+            return Some(KeepCompiling);
+        }
+        asm.test(recv, Opnd::Imm(!Qnil.as_i64()));
+        let val = if and_p {
+            asm.csel_nz(obj, recv)
+        } else {
+            asm.csel_nz(recv, obj)
+        };
+        asm.stack_pop(2);
+        let stack_ret = asm.stack_push(Type::Unknown);
+        asm.mov(stack_ret, val);
+        return Some(KeepCompiling);
+    }
+
     extern "C" {
         fn rb_vm_opt_logop(cfp: CfpPtr, cd: *const u8, recv: VALUE, obj: VALUE) -> VALUE;
     }
-    let cd: *const u8 = jit.get_arg(0).as_ptr();
     jit_prepare_call_with_gc(jit, asm);
     let recv = asm.stack_opnd(1);
     let obj = asm.stack_opnd(0);
-    let val = asm.ccall(rb_vm_opt_logop as *const u8, vec![CFP, Opnd::const_ptr(cd), recv, obj]);
+    let val = asm.ccall(rb_vm_opt_logop as *const u8, vec![CFP, Opnd::const_ptr(cd as *const u8), recv, obj]);
 
     // Let the interpreter call the hook
     asm.cmp(val, Qundef.into());

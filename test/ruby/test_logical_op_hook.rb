@@ -184,6 +184,36 @@ class TestLogicalOpHook
           assert_equal(:b, or_op(nil))
           assert_equal(:else, cond(nil))
         end
+        values = [1, "s", :sym, 1.0, [], {}, Object.new, true, false, nil, Node.new(1)]
+        3.times do
+          values.each do |a|
+            if a.is_a?(Node)
+              assert_equal([:and, :b], and_op(a))
+              assert_equal([:or, :b], or_op(a))
+            else
+              assert_equal((a ? :b : a), and_op(a))
+              assert_equal((a ? a : :b), or_op(a))
+            end
+          end
+        end
+      RUBY
+    end
+  end
+
+  def test_hook_removed_while_evaluating_rhs
+    jit_opts = [[]]
+    jit_opts << %w[--yjit-call-threshold=1] if defined?(RubyVM::YJIT)
+    jit_opts << %w[--zjit-call-threshold=1] if defined?(RubyVM::ZJIT)
+    jit_opts.each do |opts|
+      assert_separately(opts, <<~'RUBY')
+        module Ext
+          refine(NilClass) { define_method(:"&&") { |o| [:and, o] } }
+        end
+        using Ext
+        def and_op(a, remove) = a && (Ext.refinements[0].send(:remove_method, :"&&") if remove; :b)
+        assert_equal([:and, :b], and_op(nil, false))
+        assert_nil(and_op(nil, true))
+        assert_nil(and_op(nil, false))
       RUBY
     end
   end

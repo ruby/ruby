@@ -1707,6 +1707,7 @@ opt_branch_andop
 ()
 ()
 // attr bool leaf = false; /* has rb_threadptr_execute_interrupts() */
+// attr bool zjit_profile = true;
 {
     VALUE recv = TOPN(0);
 
@@ -1723,6 +1724,7 @@ opt_branch_orop
 ()
 ()
 // attr bool leaf = false; /* has rb_threadptr_execute_interrupts() */
+// attr bool zjit_profile = true;
 {
     VALUE recv = TOPN(0);
 
@@ -1738,6 +1740,7 @@ opt_logop
 (CALL_DATA cd)
 (VALUE recv, VALUE obj)
 (VALUE val)
+// attr bool zjit_profile = true;
 {
     val = vm_opt_logop(ec, GET_CFP(), cd, recv, obj);
 
