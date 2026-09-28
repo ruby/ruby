@@ -1740,8 +1740,6 @@ str_shared_replace(VALUE str, VALUE str2)
     if (str_embed_capa(str) >= RSTRING_LEN(str2) + termlen) {
         STR_SET_EMBED(str);
         memcpy(RSTRING_PTR(str), RSTRING_PTR(str2), (size_t)RSTRING_LEN(str2) + termlen);
-        rb_enc_associate(str, enc);
-        ENC_CODERANGE_SET(str, cr);
     }
     else {
         if (STR_EMBED_P(str2)) {
@@ -1773,9 +1771,12 @@ str_shared_replace(VALUE str, VALUE str2)
         STR_SET_EMBED(str2);
         RSTRING_PTR(str2)[0] = 0;
         STR_SET_LEN(str2, 0);
-        rb_enc_associate(str, enc);
-        ENC_CODERANGE_SET(str, cr);
     }
+
+    // We used str2's termlen above so we set enc raw
+    // to avoid adjusting it based on str1's old enc.
+    rb_enc_raw_set(str, enc);
+    ENC_CODERANGE_SET(str, cr);
 }
 
 VALUE
