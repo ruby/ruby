@@ -99,7 +99,7 @@ Resources that may need to be deleted/unlinked:
 - Files.
 - Directories.
 - Symbolic links
-- Sockets.
+- UNIX sockets
 - Block-special devices.
 - Character-special devices.
 - Named pipes
