@@ -2748,7 +2748,7 @@ class Pathname    # * FileTest *
   # Pathname('/etc/').writable? # => false  # Directory.
   # ```
   # Note that filesystem security features may cause this method to return true
-  # even when the entry is not writable by the effective owner and group..
+  # even when the entry is not writable by the effective owner and group.
   #
   def writable?() FileTest.writable?(@path) end
 
