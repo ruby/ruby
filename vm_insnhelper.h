@@ -15,6 +15,8 @@ RUBY_EXTERN VALUE ruby_vm_const_missing_count;
 RUBY_EXTERN rb_serial_t ruby_vm_constant_cache_invalidations;
 RUBY_EXTERN rb_serial_t ruby_vm_constant_cache_misses;
 RUBY_EXTERN rb_serial_t ruby_vm_global_cvar_state;
+/* Set once a refinement defines && or ||; never cleared. */
+RUBY_EXTERN bool ruby_vm_logop_hook_defined;
 
 #if YJIT_STATS || ZJIT_STATS // We want vm_insn_count only on stats builds.
 // Increment vm_insn_count for --yjit-stats. We increment this even when

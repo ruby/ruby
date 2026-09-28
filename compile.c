@@ -1569,6 +1569,23 @@ new_insn_send(rb_iseq_t *iseq, int line_no, int node_id, ID id, VALUE argc, cons
     return insn;
 }
 
+static INSN *
+new_insn_logop_branch(rb_iseq_t *iseq, int line_no, int node_id, ID mid, LABEL *dst)
+{
+    VALUE ci = (VALUE)new_callinfo(iseq, mid, 1, 0, NULL, FALSE);
+    LABEL_REF(dst);
+    return new_insn_body(iseq, line_no, node_id,
+                         mid == idANDOP ? BIN(opt_branch_andop) : BIN(opt_branch_orop),
+                         2, ci, (VALUE)dst);
+}
+
+static INSN *
+new_insn_logop(rb_iseq_t *iseq, int line_no, int node_id, ID mid)
+{
+    VALUE ci = (VALUE)new_callinfo(iseq, mid, 1, 0, NULL, FALSE);
+    return new_insn_body(iseq, line_no, node_id, BIN(opt_logop), 1, ci);
+}
+
 static rb_iseq_t *
 new_child_iseq(rb_iseq_t *iseq, const NODE *const node,
                VALUE name, const rb_iseq_t *parent, enum rb_iseq_type type, int line_no)
@@ -4973,63 +4990,9 @@ compile_flip_flop(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const nod
 
 static int
 compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *ret, const NODE *cond,
-                         LABEL *then_label, LABEL *else_label);
-
-#define COMPILE_SINGLE 2
-static int
-compile_logical(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *cond,
-                LABEL *then_label, LABEL *else_label)
-{
-    DECL_ANCHOR(seq);
-    INIT_ANCHOR(seq);
-    LABEL *label = NEW_LABEL(nd_line(cond));
-    if (!then_label) then_label = label;
-    else if (!else_label) else_label = label;
-
-    CHECK(compile_branch_condition(iseq, seq, cond, then_label, else_label));
-
-    if (LIST_INSN_SIZE_ONE(seq)) {
-        INSN *insn = (INSN *)ELEM_FIRST_INSN(FIRST_ELEMENT(seq));
-        if (insn->insn_id == BIN(jump) && (LABEL *)(insn->operands[0]) == label)
-            return COMPILE_OK;
-    }
-    if (!label->refcnt) {
-        return COMPILE_SINGLE;
-    }
-    ADD_LABEL(seq, label);
-    ADD_SEQ(ret, seq);
-    return COMPILE_OK;
-}
-
-static int
-compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *ret, const NODE *cond,
                          LABEL *then_label, LABEL *else_label)
 {
-    int ok;
-    DECL_ANCHOR(ignore);
-
-  again:
     switch (nd_type(cond)) {
-      case NODE_AND:
-        CHECK(ok = compile_logical(iseq, ret, RNODE_AND(cond)->nd_1st, NULL, else_label));
-        cond = RNODE_AND(cond)->nd_2nd;
-        if (ok == COMPILE_SINGLE) {
-            ADD_INSNL(ret, cond, jump, else_label);
-            INIT_ANCHOR(ignore);
-            ret = ignore;
-            then_label = NEW_LABEL(nd_line(cond));
-        }
-        goto again;
-      case NODE_OR:
-        CHECK(ok = compile_logical(iseq, ret, RNODE_OR(cond)->nd_1st, then_label, NULL));
-        cond = RNODE_OR(cond)->nd_2nd;
-        if (ok == COMPILE_SINGLE) {
-            ADD_INSNL(ret, cond, jump, then_label);
-            INIT_ANCHOR(ignore);
-            ret = ignore;
-            else_label = NEW_LABEL(nd_line(cond));
-        }
-        goto again;
       case NODE_SYM:
       case NODE_LINE:
       case NODE_FILE:
@@ -5065,7 +5028,7 @@ compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *ret, const NODE *cond,
         CHECK(compile_flip_flop(iseq, ret, cond, FALSE, then_label, else_label));
         return COMPILE_OK;
       case NODE_DEFINED:
-        CHECK(compile_defined_expr(iseq, ret, cond, Qfalse, ret == ignore));
+        CHECK(compile_defined_expr(iseq, ret, cond, Qfalse, false));
         break;
       default:
         {
@@ -11126,22 +11089,28 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
 
       case NODE_AND:
       case NODE_OR:{
+        const ID mid = type == NODE_AND ? idANDOP : idOROP;
         LABEL *end_label = NEW_LABEL(line);
+        const NODE *op = node;
+
         CHECK(COMPILE(ret, "nd_1st", RNODE_OR(node)->nd_1st));
-        if (!popped) {
-            ADD_INSN(ret, node, dup);
+        for (;;) {
+            const NODE *rhs = RNODE_OR(op)->nd_2nd;
+            ADD_ELEM(ret, &new_insn_logop_branch(iseq, nd_line(op), nd_node_id(op), mid, end_label)->link);
+            /* logop() turns `a && b && c` into `a && (b && c)`; the inner
+             * node then begins where the whole chain does. */
+            bool chained = nd_type_p(rhs, type) &&
+                nd_first_lineno(rhs) == nd_first_lineno(node) &&
+                nd_first_column(rhs) == nd_first_column(node);
+            CHECK(COMPILE(ret, "nd_2nd", chained ? RNODE_OR(rhs)->nd_1st : rhs));
+            ADD_ELEM(ret, &new_insn_logop(iseq, nd_line(op), nd_node_id(op), mid)->link);
+            if (!chained) break;
+            op = rhs;
         }
-        if (type == NODE_AND) {
-            ADD_INSNL(ret, node, branchunless, end_label);
-        }
-        else {
-            ADD_INSNL(ret, node, branchif, end_label);
-        }
-        if (!popped) {
+        ADD_LABEL(ret, end_label);
+        if (popped) {
             ADD_INSN(ret, node, pop);
         }
-        CHECK(COMPILE_(ret, "nd_2nd", RNODE_OR(node)->nd_2nd, popped));
-        ADD_LABEL(ret, end_label);
         break;
       }
 

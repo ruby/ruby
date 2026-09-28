@@ -7365,6 +7365,44 @@ vm_opt_not(struct rb_control_frame_struct *reg_cfp, CALL_DATA cd, VALUE recv)
     }
 }
 
+static bool
+vm_logop_hooked_p(rb_execution_context_t *ec, struct rb_control_frame_struct *reg_cfp, CALL_DATA cd, VALUE recv)
+{
+    if (LIKELY(!ruby_vm_logop_hook_defined)) return false;
+
+    const rb_callable_method_entry_t *cme = vm_search_method(reg_cfp, cd, recv);
+    if (cme && cme->def->type == VM_METHOD_TYPE_REFINED) {
+        struct rb_calling_info calling = {
+            .cd = cd,
+            .cc = cd->cc,
+            .recv = recv,
+            .argc = 1,
+        };
+        const rb_callable_method_entry_t *ref_cme = search_refined_method(ec, reg_cfp, &calling);
+        if (ref_cme) {
+            const struct rb_callcache *cc = vm_cc_new(cme->defined_class, ref_cme, vm_call_general, cc_type_refinement);
+            RB_OBJ_WRITE(CFP_ISEQ(reg_cfp), &cd->cc, cc);
+        }
+        cme = ref_cme;
+    }
+    return cme && RB_TYPE_P(cme->owner, T_MODULE) && FL_TEST(cme->owner, RMODULE_IS_REFINEMENT);
+}
+
+static VALUE
+vm_opt_logop(rb_execution_context_t *ec, struct rb_control_frame_struct *reg_cfp, CALL_DATA cd, VALUE recv, VALUE obj)
+{
+    if (LIKELY(!ruby_vm_logop_hook_defined)) return obj;
+    if (vm_logop_hooked_p(ec, reg_cfp, cd, recv)) return Qundef;
+
+    /* The hook may have been removed while the RHS was evaluated. */
+    if (vm_ci_mid(cd->ci) == idANDOP) {
+        return RTEST(recv) ? obj : recv;
+    }
+    else {
+        return RTEST(recv) ? recv : obj;
+    }
+}
+
 static VALUE
 vm_opt_regexpmatch2(VALUE recv, VALUE obj)
 {

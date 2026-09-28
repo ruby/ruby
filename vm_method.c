@@ -1504,6 +1504,9 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
         if (type == VM_METHOD_TYPE_ZSUPER) {
             turn_zsuper_to_super = true;
         }
+        if (mid == idANDOP || mid == idOROP) {
+            ruby_vm_logop_hook_defined = true;
+        }
         rb_add_refined_method_entry(refined_class, mid);
     }
     if (type == VM_METHOD_TYPE_REFINED) {

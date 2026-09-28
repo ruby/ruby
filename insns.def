@@ -1700,6 +1700,52 @@ opt_not
     }
 }
 
+/* LHS && RHS: jump to dst, leaving LHS on the stack, unless RHS is evaluated. */
+DEFINE_INSN
+opt_branch_andop
+(CALL_DATA cd, OFFSET dst)
+()
+()
+// attr bool leaf = false; /* has rb_threadptr_execute_interrupts() */
+{
+    VALUE recv = TOPN(0);
+
+    if (!RTEST(recv) && !vm_logop_hooked_p(ec, GET_CFP(), cd, recv)) {
+        RUBY_VM_CHECK_INTS(ec);
+        JUMP(dst);
+    }
+}
+
+/* LHS || RHS: jump to dst, leaving LHS on the stack, unless RHS is evaluated. */
+DEFINE_INSN
+opt_branch_orop
+(CALL_DATA cd, OFFSET dst)
+()
+()
+// attr bool leaf = false; /* has rb_threadptr_execute_interrupts() */
+{
+    VALUE recv = TOPN(0);
+
+    if (RTEST(recv) && !vm_logop_hooked_p(ec, GET_CFP(), cd, recv)) {
+        RUBY_VM_CHECK_INTS(ec);
+        JUMP(dst);
+    }
+}
+
+/* Result of LHS && RHS or LHS || RHS after RHS is evaluated. */
+DEFINE_INSN
+opt_logop
+(CALL_DATA cd)
+(VALUE recv, VALUE obj)
+(VALUE val)
+{
+    val = vm_opt_logop(ec, GET_CFP(), cd, recv, obj);
+
+    if (UNDEF_P(val)) {
+        CALL_SIMPLE_METHOD();
+    }
+}
+
 /* optimized regexp match 2 */
 DEFINE_INSN
 opt_regexpmatch2
