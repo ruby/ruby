@@ -15,8 +15,7 @@ mod hir_opt_tests {
     fn hir_string_proc(proc: &str) -> String {
         let iseq = crate::cruby::with_rubyvm(|| get_proc_iseq(proc));
         unsafe { crate::cruby::rb_zjit_profile_disable(iseq) };
-        let mut function = iseq_to_hir(iseq).unwrap();
-        function.optimize();
+        let function = optimize_locked(iseq_to_hir_locked(iseq).unwrap());
         function.validate().unwrap();
         hir_string_function(&function)
     }
@@ -36,8 +35,7 @@ mod hir_opt_tests {
         ");
         let iseq = crate::cruby::with_rubyvm(|| get_method_iseq("self", "test"));
         unsafe { crate::cruby::rb_zjit_profile_disable(iseq) };
-        let mut function = iseq_to_hir(iseq).unwrap();
-        function.optimize();
+        let function = optimize_locked(iseq_to_hir_locked(iseq).unwrap());
         function.validate().unwrap();
 
         let new_array_stack_sizes: Vec<usize> = (0..function.num_insns())

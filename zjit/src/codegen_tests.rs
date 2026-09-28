@@ -5,7 +5,7 @@ use crate::asm::CodeBlock;
 use crate::backend::lir::Assembler;
 use crate::codegen::max_iseq_versions;
 use crate::cruby::*;
-use crate::hir::{Insn, iseq_to_hir};
+use crate::hir::{Insn, iseq_to_hir_locked};
 use crate::options::{CallThreshold, get_option, rb_zjit_prepare_options, set_call_threshold, set_inline_threshold, set_max_versions, set_mem_bytes, set_num_exits_until_invalidate};
 use crate::payload::IseqVersion;
 use crate::hir::tests::hir_build_tests::assert_contains_opcode;
@@ -74,7 +74,7 @@ fn test_breakpoint_hir_codegen() {
     eval("def test_breakpoint_hir_codegen = nil");
     let iseq = crate::cruby::with_rubyvm(|| get_method_iseq("self", "test_breakpoint_hir_codegen"));
     unsafe { crate::cruby::rb_zjit_profile_disable(iseq) };
-    let mut function = iseq_to_hir(iseq).unwrap();
+    let mut function = iseq_to_hir_locked(iseq).unwrap();
     let breakpoint = function.push_insn(function.entries_block, Insn::BreakPoint);
 
     let mut jit = JITState::new(
