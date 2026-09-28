@@ -3287,7 +3287,7 @@ impl Function {
     /// Load `captured->code.iseq` from a `struct rb_captured_block *`.
     fn load_captured_code_iseq(&mut self, block: BlockId, captured: InsnId) -> InsnId {
         let offset: i32 = std::mem::offset_of!(rb_captured_block, code).try_into().unwrap();
-        self.load_field(block, captured, FieldName::code_iseq, offset, types::CPtr)
+        self.load_field(block, captured, FieldName::code_iseq, offset, types::Iseq)
     }
 
     /// Untag an ISEQ block handler into its `struct rb_captured_block *`:
@@ -3333,10 +3333,11 @@ impl Function {
             self.push_insn(block, Insn::GuardBitEquals { val: tag, expected: Const::CInt64(0x1), reason: Box::new(SideExitReason::InvokeBlockHandlerNotIseq), state, recompile: Some(Recompile) });
             let captured = self.untag_block_handler(block, block_handler);
 
-            // Guard captured->code.iseq is the profiled block iseq. Compare the raw imemo pointer:
-            // type inference (from_value) can't type an iseq imemo, so guard it as a CPtr identity.
+            // Guard captured->code.iseq is the profiled block iseq. The ISEQ is a GC object that
+            // can be moved by compaction, so bake it in as a `Const::Value` rather than a raw
+            // `Const::CPtr` to let the GC mark it and update the pointer embedded in JIT code.
             let captured_iseq = self.load_captured_code_iseq(block, captured);
-            self.push_insn(block, Insn::GuardBitEquals { val: captured_iseq, expected: Const::CPtr(block_iseq as *const u8), reason: Box::new(SideExitReason::InvokeBlockIseqChanged), state, recompile: Some(Recompile) });
+            self.push_insn(block, Insn::GuardBitEquals { val: captured_iseq, expected: Const::Value(VALUE::from(block_iseq)), reason: Box::new(SideExitReason::InvokeBlockIseqChanged), state, recompile: Some(Recompile) });
 
             let result = self.push_insn(block, Insn::InvokeBlockIseqDirect { iseq: block_iseq, captured, args, state });
             return (block, result);
@@ -3361,7 +3362,8 @@ impl Function {
 
         let mut compare_block = dispatch_block;
         for &block_iseq in iseqs {
-            let expected = self.push_insn(compare_block, Insn::Const { val: Const::CPtr(block_iseq as *const u8) });
+            // Use `Const::Value` so that the GC updates the ISEQ pointer on compaction. See above.
+            let expected = self.push_insn(compare_block, Insn::Const { val: Const::Value(VALUE::from(block_iseq)) });
             let iseq_matches = self.push_insn(compare_block, Insn::IsBitEqual { left: captured_iseq, right: expected });
             let direct_block = self.new_block(insn_idx);
             let miss_block = self.new_block(insn_idx);
