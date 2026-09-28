@@ -268,7 +268,7 @@ RBIMPL_SYMBOL_EXPORT_END()
 static inline bool
 rb_ractor_shareable_p(VALUE obj)
 {
-    bool rb_ractor_shareable_p_continue(VALUE obj);
+    bool rb_ractor_shareable_p_continue(VALUE obj, VALUE *chain);
 
     if (RB_SPECIAL_CONST_P(obj)) {
         return true;
@@ -277,7 +277,7 @@ rb_ractor_shareable_p(VALUE obj)
         return true;
     }
     else {
-        return rb_ractor_shareable_p_continue(obj);
+        return rb_ractor_shareable_p_continue(obj, NULL);
     }
 }
 

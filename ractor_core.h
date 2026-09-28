@@ -266,13 +266,30 @@ st_table *rb_ractor_targeted_hooks(rb_ractor_t *cr);
 RUBY_SYMBOL_EXPORT_BEGIN
 void rb_ractor_finish_marking(bool full_mark);
 
-bool rb_ractor_shareable_p_continue(VALUE obj);
+bool rb_ractor_shareable_p_continue(VALUE obj, VALUE *chain);
+NORETURN(void rb_ractor_raise_isolation_error_with_chain(VALUE klass, VALUE chain, const char *fmt, ...));
 
 // THIS FUNCTION SHOULD NOT CALL WHILE INCREMENTAL MARKING!!
 // This function is for T_DATA::free_func
 void rb_ractor_local_storage_delkey(rb_ractor_local_key_t key);
 
 RUBY_SYMBOL_EXPORT_END
+
+/* rb_ractor_shareable_p(), collecting the chain of references that made obj
+ * unshareable into *chain for the error message. */
+static inline bool
+rb_ractor_shareable_p_chain(VALUE obj, VALUE *chain)
+{
+    if (RB_SPECIAL_CONST_P(obj)) {
+        return true;
+    }
+    else if (RB_OBJ_SHAREABLE_P(obj)) {
+        return true;
+    }
+    else {
+        return rb_ractor_shareable_p_continue(obj, chain);
+    }
+}
 
 static inline bool
 rb_ractor_main_p(void)
@@ -385,6 +402,24 @@ static inline unsigned int
 rb_ractor_targeted_hooks_cnt(rb_ractor_t *cr)
 {
     return cr->pub.targeted_hooks_cnt;
+}
+
+static inline void
+rb_ractor_error_chain_append(VALUE *chain_ptr, const char *fmt, ...)
+{
+    if (!chain_ptr) return;
+
+    va_list args;
+    va_start(args, fmt);
+
+    if (NIL_P(*chain_ptr)) {
+        *chain_ptr = rb_vsprintf(fmt, args);
+    }
+    else {
+        rb_str_vcatf(*chain_ptr, fmt, args);
+    }
+
+    va_end(args);
 }
 
 #if RACTOR_CHECK_MODE > 0

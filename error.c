@@ -1838,6 +1838,8 @@ require_decoration_gems(void)
     rb_set_errinfo(saved_errinfo);
 }
 
+static VALUE exc_detailed_message(int argc, VALUE *argv, VALUE exc);
+
 // Load the decoration gems on the first error display instead of at boot.
 // In non-main Ractors rb_require_string delegates the require to the main
 // Ractor, so this works from any Ractor.
@@ -1850,8 +1852,14 @@ lazy_load_decoration_gems(VALUE exc)
 
     // When entered through super from a decorator already sitting above
     // this method, the caller decorates the result; re-dispatching would
-    // decorate it twice.
-    bool redispatch = rb_method_basic_definition_p(CLASS_OF(exc), id_detailed_message);
+    // decorate it twice.  Overrides defined during boot, such as
+    // Ractor::Error#detailed_message, are still basic definitions, so ask
+    // whether exc dispatches to this very method rather than whether its
+    // definition is basic.
+    const rb_method_entry_t *me = rb_method_entry(CLASS_OF(exc), id_detailed_message);
+    bool redispatch = (me &&
+                       me->def->type == VM_METHOD_TYPE_CFUNC &&
+                       me->def->body.cfunc.func == (rb_cfunc_t)exc_detailed_message);
 
     require_decoration_gems();
     return redispatch;
