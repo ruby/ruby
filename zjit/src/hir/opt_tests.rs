@@ -25639,30 +25639,15 @@ mod hir_opt_tests {
           v202:FalseClass = RefineType v246, Falsy
           CondBranch v201, bb19(), bb18(v202)
         bb19():
-          v208:CShape = LoadField v85, :shape_id@0x1088
-          v209:CShape[0x108d] = GuardBitEquals v208, CShape(0x108d) recompile
           v210:BasicObject = LoadField v85, :@y@0x108c
           PatchPoint NoEPEscape(==)
           PatchPoint NoSingletonClass(Point@0x1008)
           PatchPoint MethodRedefined(Point@0x1008, y@0x1148, cme:0x1150)
-          v251:CShape = LoadField v95, :shape_id@0x1088
-          v252:CShape[0x108d] = GuardBitEquals v251, CShape(0x108d) recompile
-          v253:BasicObject = LoadField v95, :@y@0x108c
           PatchPoint MethodRedefined(Integer@0x1118, ==@0x1098, cme:0x1120)
           v256:Fixnum = GuardType v210, Fixnum recompile
-          v257:Fixnum = GuardType v253, Fixnum
-          v258:BoolExact = FixnumEq v256, v257
+          v258:BoolExact = FixnumEq v256, v49
           Jump bb18(v258)
         bb18(v222:BoolExact):
-          v212:BasicObject = LoadField v85, :@y@0x108c
-          PatchPoint NoEPEscape(==)
-          PatchPoint NoSingletonClass(Point@0x1008)
-          PatchPoint MethodRedefined(Point@0x1008, y@0x1148, cme:0x1150)
-          PatchPoint MethodRedefined(Integer@0x1118, ==@0x1098, cme:0x1120)
-          v259:Fixnum = GuardType v212, Fixnum recompile
-          v261:BoolExact = FixnumEq v259, v49
-          Jump bb18(v261)
-        bb18(v224:BoolExact):
           PopInlineFrame
           CheckInterrupts
           Return v222

@@ -6741,7 +6741,7 @@ impl Function {
         // The cache is filled with load and store instructions when scanning a block.
         // The cache is invalidated from effectful instructions that could modify instructions saved in the cache.
         // The cache is pruned when loads and stores can alias between objects.
-        let mut cache: Vec<HashMap<Key, InsnId>> = vec![HashMap::new(); cfi.num_blocks];
+        let mut cached_insns: Vec<HashMap<Key, InsnId>> = vec![HashMap::new(); cfi.num_blocks];
 
         loop {
             for (rpo_index, &block_id) in rpo.iter().enumerate() {
@@ -6751,12 +6751,12 @@ impl Function {
                 match cfi.predecessors(block_id) {
                     [] => {},
                     [head] => {
-                        block_cache = cache[*head].clone();
+                        block_cache = cached_insns[*head].clone();
                     }
                     [head, tail @ ..] => {
-                        block_cache = cache[*head].clone();
+                        block_cache = cached_insns[*head].clone();
                         for pred in tail {
-                            block_cache.retain(|key, value| cache[pred.0 as usize].get(key) == Some(value));
+                            block_cache.retain(|key, value| cached_insns[pred.0 as usize].get(key) == Some(value));
                         }
 
                         // If multiple entries contain the same offset, they may alias.
@@ -6789,7 +6789,7 @@ impl Function {
                                 // If the value is already stored, short circuit and don't add an instruction to the block
                                 continue
                             }
-                            // TODO(Jacob): Add TBAA to avoid removing so many entries
+                            // TODO(Jacob): Add type based alias analysis to avoid removing so many entries
                             block_cache.retain(|key, _| key.offset != offset);
                             block_cache.insert(key, val);
                             insn_id
@@ -6829,7 +6829,7 @@ impl Function {
                             // We don't use LoadField for mark bits so we can ignore them for now.
                             // But flags does not exist in our effects abstract heap modeling and we don't want to add special casing to effects.
                             // This special casing in this pass here should be removed once we refine our effects system to provide greater granularity for WriteBarrier.
-                            // TODO: use TBAA
+                            // TODO: use type based alias analysis
                             let offset = RUBY_OFFSET_RBASIC_FLAGS;
                             block_cache.retain(|key, _| key.offset != offset);
                             insn_id
@@ -6853,11 +6853,11 @@ impl Function {
                     }
                 }
 
-                if cache[block_id] == block_cache {
+                if cached_insns[block_id] == block_cache {
                     changed = false;
                 }
                 else {
-                    cache[block_id] = block_cache.clone();
+                    cached_insns[block_id] = block_cache.clone();
                 }
             }
 
