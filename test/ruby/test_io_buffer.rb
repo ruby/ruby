@@ -1006,6 +1006,74 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_equal 1_000_000, encoding.buffer.get_string(0, 1_000_000, encoding).length
   end
 
+  def test_get_string_resolves_storage_after_encoding_coercion
+    buffer = IO::Buffer.new(8)
+    previous = nil
+    buffer.set_string("original")
+    encoding = Object.new
+    encoding.define_singleton_method(:to_str) do
+      # Retain the old allocation to make stale reads observable without
+      # accessing released memory. The replacement cannot reuse its address.
+      previous = buffer.transfer
+      buffer.resize(8)
+      buffer.set_string("replaced")
+      "BINARY"
+    end
+
+    assert_equal "repl", buffer.get_string(0, 4, encoding)
+    assert_equal "original", previous.get_string
+    refute_predicate buffer, :locked?
+  ensure
+    previous&.free
+    buffer&.free
+  end
+
+  def test_get_string_range_error_preserves_existing_lock
+    buffer = IO::Buffer.new(8)
+    view = buffer.slice(0, 4)
+    encoding = Object.new
+    encoding.define_singleton_method(:to_str) do
+      view.resize(0)
+      "BINARY"
+    end
+
+    buffer.locked do
+      assert_raise(ArgumentError) {view.get_string(0, 4, encoding)}
+      assert_predicate buffer, :locked?
+    end
+    refute_predicate buffer, :locked?
+  ensure
+    buffer&.free
+  end
+
+  def test_read_rechecks_permissions_after_io_coercion
+    [:read, :pread].each do |method|
+      buffer = IO::Buffer.new(8)
+      begin
+        buffer.set_string("original")
+        view = buffer.slice(0, 4)
+        Tempfile.create("io-buffer-coercion") do |file|
+          file.binmode
+          file.write("data")
+          file.rewind
+          proxy = Object.new
+          proxy.define_singleton_method(:to_io) do
+            view.freeze
+            file
+          end
+          args = [proxy]
+          args << 0 if method == :pread
+          assert_raise(FrozenError, method.to_s) {view.public_send(method, *args)}
+          assert_equal "original", buffer.get_string
+          assert_equal "data", file.read
+          refute_predicate buffer, :locked?
+        end
+      ensure
+        buffer.free
+      end
+    end
+  end
+
   def test_zero_length_get_string
     buffer = IO::Buffer.new.slice(0, 0)
     assert_equal "", buffer.get_string

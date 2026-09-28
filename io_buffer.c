@@ -3243,6 +3243,23 @@ io_buffer_copy(int argc, VALUE *argv, VALUE self)
     return rb_io_buffer_locked_for_reading(source, io_buffer_copy_from_readable, (VALUE)&arguments);
 }
 
+struct io_buffer_get_string_arguments {
+    size_t offset;
+    size_t length;
+    rb_encoding *encoding;
+};
+
+static VALUE
+io_buffer_get_string_locked(const void *base, size_t size, VALUE _arguments)
+{
+    struct io_buffer_get_string_arguments *arguments = (void *)_arguments;
+    if (size_sum_is_bigger_than(arguments->offset, arguments->length, size)) {
+        rb_raise(rb_eArgError, "Specified offset+length is bigger than the buffer size!");
+    }
+    const char *data = base ? (const char *)base + arguments->offset : NULL;
+    return rb_enc_str_new(data, arguments->length, arguments->encoding);
+}
+
 /*
  *  call-seq: get_string([offset, [length, [encoding]]]) -> string
  *
@@ -3262,26 +3279,13 @@ io_buffer_get_string(int argc, VALUE *argv, VALUE self)
 {
     rb_check_arity(argc, 0, 3);
 
-    size_t offset, length;
-    struct rb_io_buffer *buffer = io_buffer_extract_offset_length(self, argc, argv, &offset, &length);
+    struct io_buffer_get_string_arguments arguments;
+    io_buffer_extract_offset_length(self, argc, argv, &arguments.offset, &arguments.length);
 
-    rb_encoding *encoding;
-    if (argc >= 3) {
-        encoding = rb_find_encoding(argv[2]);
-    }
-    else {
-        encoding = rb_ascii8bit_encoding();
-    }
-
-    const void *base;
-    size_t size;
-    io_buffer_get_bytes_for_reading(buffer, &base, &size);
-
-    io_buffer_validate_range(buffer, offset, length);
-
-    const char *data = base ? (const char*)base + offset : NULL;
-
-    return rb_enc_str_new(data, length, encoding);
+    // Encoding coercion may invoke Ruby and change the buffer. Retain no
+    // metadata or byte pointer across it; resolve under the subsequent lock.
+    arguments.encoding = argc >= 3 ? rb_find_encoding(argv[2]) : rb_ascii8bit_encoding();
+    return rb_io_buffer_locked_for_reading(self, io_buffer_get_string_locked, (VALUE)&arguments);
 }
 
 /*
@@ -3482,9 +3486,8 @@ io_buffer_read_internal(void *_argument)
 VALUE
 rb_io_buffer_read(VALUE self, VALUE io, size_t offset, size_t length)
 {
-    struct rb_io_buffer *buffer = get_io_buffer_for_writing(self);
-
     io = rb_io_get_io(io);
+    struct rb_io_buffer *buffer = get_io_buffer_for_writing(self);
 
     io_buffer_validate_range(buffer, offset, length);
 
@@ -3497,6 +3500,10 @@ rb_io_buffer_read(VALUE self, VALUE io, size_t offset, size_t length)
         if (!UNDEF_P(result)) {
             return result;
         }
+
+        // The scheduler capability check can invoke Ruby and change the buffer.
+        buffer = get_io_buffer_for_writing(self);
+        io_buffer_validate_range(buffer, offset, length);
     }
 
     void *base;
@@ -3573,9 +3580,8 @@ io_buffer_pread_internal(void *_argument)
 VALUE
 rb_io_buffer_pread(VALUE self, VALUE io, rb_off_t from, size_t offset, size_t length)
 {
-    struct rb_io_buffer *buffer = get_io_buffer_for_writing(self);
-
     io = rb_io_get_io(io);
+    struct rb_io_buffer *buffer = get_io_buffer_for_writing(self);
 
     io_buffer_validate_range(buffer, offset, length);
 
@@ -3588,6 +3594,9 @@ rb_io_buffer_pread(VALUE self, VALUE io, rb_off_t from, size_t offset, size_t le
         if (!UNDEF_P(result)) {
             return result;
         }
+
+        buffer = get_io_buffer_for_writing(self);
+        io_buffer_validate_range(buffer, offset, length);
     }
 
     void *base;
@@ -3682,6 +3691,9 @@ rb_io_buffer_write(VALUE self, VALUE io, size_t offset, size_t length)
         if (!UNDEF_P(result)) {
             return result;
         }
+
+        buffer = get_io_buffer(self);
+        io_buffer_validate_range(buffer, offset, length);
     }
 
     const void *base;
@@ -3765,6 +3777,9 @@ rb_io_buffer_pwrite(VALUE self, VALUE io, rb_off_t from, size_t offset, size_t l
         if (!UNDEF_P(result)) {
             return result;
         }
+
+        buffer = get_io_buffer(self);
+        io_buffer_validate_range(buffer, offset, length);
     }
 
     const void *base;
