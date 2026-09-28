@@ -84,6 +84,12 @@ rb_vm_locking_needed_p(void)
 #endif
 }
 
+/* Whether to lock is decided on the way in and remembered; the leaves never ask
+ * rb_vm_locking_needed_p() again.  The predicate is not stable across a critical
+ * section -- creating a Ractor opens it, and fork() closes it again in the child -- so
+ * re-deciding on the way out either strands a lock that was really taken [Bug #20942]
+ * or releases one that never was.  For the lev-taking pairs the record is *lev itself:
+ * a held level is >= 1, so 0 means the enter was a no-op. */
 static inline void
 rb_vm_lock(const char *file, int line)
 {
@@ -94,12 +100,13 @@ rb_vm_lock(const char *file, int line)
     }
 }
 
+/* Ungated on purpose, unlike the enter above: rb_vm_unlock_body() releases what this
+ * Ractor actually holds.  That costs a call at the handful of RB_VM_UNLOCK() sites and
+ * is the same rule the lev pairs below follow. */
 static inline void
 rb_vm_unlock(const char *file, int line)
 {
-    if (rb_vm_locking_needed_p()) {
-        rb_vm_unlock_body(LOCATION_PARAMS);
-    }
+    rb_vm_unlock_body(LOCATION_PARAMS);
 }
 
 static inline void
@@ -109,6 +116,9 @@ rb_vm_lock_enter(unsigned int *lev, const char *file, int line)
 
     if (rb_vm_locking_needed_p()) {
         rb_vm_lock_enter_body(lev APPEND_LOCATION_PARAMS);
+    }
+    else {
+        *lev = 0;
     }
 }
 
@@ -120,12 +130,15 @@ rb_vm_lock_enter_nb(unsigned int *lev, const char *file, int line)
     if (rb_vm_locking_needed_p()) {
         rb_vm_lock_enter_body_nb(lev APPEND_LOCATION_PARAMS);
     }
+    else {
+        *lev = 0;
+    }
 }
 
 static inline void
 rb_vm_lock_leave_nb(unsigned int *lev, const char *file, int line)
 {
-    if (rb_vm_locking_needed_p()) {
+    if (*lev > 0) {
         rb_vm_lock_leave_body_nb(lev APPEND_LOCATION_PARAMS);
     }
 }
@@ -133,7 +146,7 @@ rb_vm_lock_leave_nb(unsigned int *lev, const char *file, int line)
 static inline void
 rb_vm_lock_leave(unsigned int *lev, const char *file, int line)
 {
-    if (rb_vm_locking_needed_p()) {
+    if (*lev > 0) {
         rb_vm_lock_leave_body(lev APPEND_LOCATION_PARAMS);
     }
 }
@@ -148,7 +161,9 @@ rb_vm_lock_enter_cr(struct rb_ractor_struct *cr, unsigned int *levp, const char 
 static inline void
 rb_vm_lock_leave_cr(struct rb_ractor_struct *cr, unsigned int *levp, const char *file, int line)
 {
-    rb_vm_lock_leave_body(levp APPEND_LOCATION_PARAMS);
+    if (*levp > 0) {
+        rb_vm_lock_leave_body(levp APPEND_LOCATION_PARAMS);
+    }
 }
 
 #define RB_VM_LOCKED_P()   rb_vm_locked_p()

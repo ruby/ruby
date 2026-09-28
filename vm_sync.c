@@ -258,6 +258,14 @@ void
 rb_vm_unlock_body(LOCATION_ARGS)
 {
     rb_vm_t *vm = GET_VM();
+
+    /* Release what rb_vm_lock() took, which is not what rb_vm_locking_needed_p() would
+     * answer now: the predicate opens when a Ractor is created inside the critical
+     * section and closes again in a forked child, so re-deciding here would release a
+     * lock never taken, or strand one that was.  Testing lock_rec first also covers an
+     * unset GET_RACTOR(), which vm_locked() would match against a NULL owner. */
+    if (vm->ractor.sync.lock_rec == 0 || !vm_locked(vm)) return;
+
     ASSERT_vm_locking();
     VM_ASSERT(vm->ractor.sync.lock_rec == 1);
     vm_lock_leave(vm, false, &vm->ractor.sync.lock_rec APPEND_LOCATION_PARAMS);
@@ -314,6 +322,10 @@ rb_ec_vm_lock_rec_release(const rb_execution_context_t *ec,
     }
     else {
         while (recorded_lock_rec < current_lock_rec) {
+            /* Terminates because current_lock_rec is non-zero here, so the leave is
+             * a real one: it is levels this Ractor holds that are being unwound.
+             * (Deciding that from rb_vm_locking_needed_p() instead is what spun
+             * forever in [Bug #20942].) */
             RB_VM_LOCK_LEAVE_LEV(&current_lock_rec);
         }
     }

@@ -6157,9 +6157,12 @@ rb_memerror(void)
     rb_execution_context_t *ec = GET_EC();
     VALUE exc = GET_VM()->special_exceptions[ruby_error_nomemory];
 
+    /* Raising here can unwind out of a VM lock critical section: the extra levels come
+     * off in rb_ec_vm_lock_rec_release() as the tag is popped.  ([Bug #20942] made this
+     * fatal instead, because that unwind used to spin forever when the leave was
+     * compiled out; the loop releases unconditionally now.) */
     if (!exc ||
-        rb_ec_raised_p(ec, RAISED_NOMEMORY) ||
-        rb_ec_vm_lock_rec(ec) != ec->tag->lock_rec) {
+        rb_ec_raised_p(ec, RAISED_NOMEMORY)) {
         fprintf(stderr, "[FATAL] failed to allocate memory\n");
         exit(EXIT_FAILURE);
     }
