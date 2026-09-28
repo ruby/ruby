@@ -7794,8 +7794,6 @@ rb_ary_product(int argc, VALUE *argv, VALUE ary)
     long i,j;
     long resultlen = 1;
 
-    RBASIC_CLEAR_CLASS(t0);
-
     /* initialize the arrays of arrays */
     ARY_SET_LEN(t0, n);
     arrays[0] = ary;
