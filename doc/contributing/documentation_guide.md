@@ -102,7 +102,7 @@ Resources that may need to be deleted/unlinked:
 - Sockets.
 - Block-special devices.
 - Character-special devices.
-- FIFO (named pipe).
+- Named pipes
 
 Objects that may need to be closed:
 
