@@ -1971,35 +1971,24 @@ class Pathname    # * File *
   # updates its access time to the given `atime`
   # and its modification time to the given `mtime`;
   # each given time may be a Time object, an integer representing a time,
-  # or `nil` (meaning Time.now).
-  #
-  # Here we show updated times for a an entry, using:
-  #
-  # - Pathname#stat to take [snapshots](rdoc-ref:File::Stat@Snapshot) of the times.
-  # - File::Stat.atime to show the access times.
-  # - File::Stat.mtime to show the modification times.
-  # - Pathname#utime to update the times.
+  # or `nil` (meaning Time.now):
   #
   # ```ruby
   # pn = Pathname('/tmp/t.tmp')
   # pn.write('foo')
-  # stat = pn.stat  # Snapshot.
-  # stat.atime      # => 2026-09-27 09:19:15.500818028 -0500
-  # stat.mtime      # => 2026-09-27 09:19:15.500818028 -0500
-  # time = Time.now # => 2026-09-27 09:19:58.290499924 -0500
+  # pn.stat.atime # => 2026-09-28 10:03:58.310433288 -0500
+  # pn.stat.mtime # => 2026-09-28 10:03:58.311433266 -0500
+  # time = Time.now
   # pn.utime(time, time)
-  # stat = pn.stat  # Fresh snapshot.
-  # stat.atime      # => 2026-09-27 09:19:58.290499924 -0500
-  # stat.mtime      # => 2026-09-27 09:19:58.290499924 -0500
+  # pn.stat.atime # => 2026-09-28 10:04:29.233190815 -0500
+  # pn.stat.mtime # => 2026-09-28 10:04:29.233190815 -0500
   # pn.utime(0, 0)
-  # stat = pn.stat  # Fresh snapshot.
-  # stat.atime      # => 1969-12-31 18:00:00 -0600
-  # stat.mtime      # => 1969-12-31 18:00:00 -0600
+  # pn.stat.atime # => 1969-12-31 18:00:00 -0600
+  # pn.stat.mtime # => 1969-12-31 18:00:00 -0600
   # pn.utime(nil, nil)
-  # stat = pn.stat  # Fresh snapshot.
-  # stat.atime      # => 2026-09-27 09:20:43.170210882 -0500
-  # stat.mtime      # => 2026-09-27 09:20:43.170210882 -0500
-  # pn.delete       # Clean up.
+  # pn.stat.atime # => 2026-09-28 10:05:09.228990453 -0500
+  # pn.stat.mtime # => 2026-09-28 10:05:09.228990453 -0500
+  # pn.delete     # Clean up.
   # ```
   #
   # Follows symbolic links; use Pathname#lutime to update the times for a symbolic link.
