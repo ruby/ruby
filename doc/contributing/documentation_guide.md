@@ -98,7 +98,7 @@ Resources that may need to be deleted/unlinked:
 
 - Files.
 - Directories.
-- Links.
+- Symbolic links
 - Sockets.
 - Block-special devices.
 - Character-special devices.
