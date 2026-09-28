@@ -17,8 +17,8 @@ class TestLogicalOpHook < Test::Unit::TestCase
     end
 
     refine TrueClass do
-      define_method(:"&&") { |other| [:true_and, other] }
-      define_method(:"||") { |other| [:true_or, other] }
+      def &&(other) = [:true_and, other]
+      def ||(other) = [:true_or, other]
     end
   end
 
@@ -158,8 +158,8 @@ class TestLogicalOpHook
         end
         module Ext
           refine(Node) do
-            define_method(:"&&") { |o| [:and, o] }
-            define_method(:"||") { |o| [:or, o] }
+            def &&(o) = [:and, o]
+            def ||(o) = [:or, o]
           end
         end
         3.times do
@@ -193,7 +193,7 @@ class TestLogicalOpHook
     jit_opts.each do |opts|
       assert_separately(opts, <<~'RUBY')
         module Ext
-          refine(NilClass) { define_method(:"&&") { |o| [:and, o] } }
+          refine(NilClass) { def &&(o) = [:and, o] }
         end
         using Ext
         def and_op(a, remove) = a && (Ext.refinements[0].send(:remove_method, :"&&") if remove; :b)
