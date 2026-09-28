@@ -157,6 +157,22 @@ typedef struct pm_lex_mode {
             bool interpolation;
 
             /*
+             * Whether any token has been emitted from this list. A word
+             * separator delimits the opener from the first word, so one
+             * without source characters is emitted when the list does not
+             * start with whitespace.
+             */
+            bool started;
+
+            /*
+             * Whether the previously emitted token was a word separator. A
+             * word separator delimits the last word from the terminator, so
+             * one without source characters is emitted when the list does
+             * not end with whitespace.
+             */
+            bool separated;
+
+            /*
              * When lexing a list, it takes into account balancing the
              * terminator if the terminator is one of (), [], {}, or <>.
              */

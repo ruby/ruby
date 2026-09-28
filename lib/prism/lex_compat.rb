@@ -638,6 +638,10 @@ module Prism
         lineno = prism_token.location.start_line
         column = prism_token.location.start_column
 
+        # Ripper is a scanner, so every event it emits corresponds to source
+        # characters. Implicit word separators have none.
+        next if prism_token.type == :WORDS_SEP_IMPLICIT
+
         event = RIPPER.fetch(prism_token.type)
         value = prism_token.value
         lex_state = Translation::Ripper::Lexer::State[prism_token._ripper_state]

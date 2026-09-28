@@ -239,6 +239,8 @@ lex_mode_push_list(pm_parser_t *parser, bool interpolation, uint8_t delimiter) {
         .as.list = {
             .nesting = 0,
             .interpolation = interpolation,
+            .started = false,
+            .separated = false,
             .incrementor = incrementor,
             .terminator = terminator
         }
@@ -11552,6 +11554,9 @@ parser_lex(pm_parser_t *parser) {
                     // mutates next_start
                     parser_flush_heredoc_end(parser);
                 }
+
+                lex_mode->as.list.started = true;
+                lex_mode->as.list.separated = true;
                 LEX(PM_TOKEN_WORDS_SEP);
             }
 
@@ -11559,6 +11564,18 @@ parser_lex(pm_parser_t *parser) {
             // need to return the EOF token.
             if (parser->current.end >= parser->end) {
                 LEX(PM_TOKEN_EOF);
+            }
+
+            /* A word separator delimits the opener from the first word (or
+             * from the terminator when the list is empty). The parser accepts
+             * the words without it, so when the list does not start with
+             * whitespace the implicit separator goes to the lex callback alone
+             * and lexing continues on to the token the parser receives. */
+            if (!lex_mode->as.list.started) {
+                lex_mode->as.list.started = true;
+                lex_mode->as.list.separated = true;
+                parser->current.type = PM_TOKEN_WORDS_SEP_IMPLICIT;
+                parser_lex_callback(parser);
             }
 
             // Here we'll get a list of the places where strpbrk should break,
@@ -11578,6 +11595,7 @@ parser_lex(pm_parser_t *parser) {
                 if (pm_char_is_whitespace(*breakpoint) && *breakpoint != lex_mode->as.list.terminator) {
                     parser->current.end = breakpoint;
                     pm_token_buffer_flush(parser, &token_buffer);
+                    lex_mode->as.list.separated = false;
                     LEX(PM_TOKEN_STRING_CONTENT);
                 }
 
@@ -11598,7 +11616,20 @@ parser_lex(pm_parser_t *parser) {
                     if (breakpoint > parser->current.start) {
                         parser->current.end = breakpoint;
                         pm_token_buffer_flush(parser, &token_buffer);
+                        lex_mode->as.list.separated = false;
                         LEX(PM_TOKEN_STRING_CONTENT);
+                    }
+
+                    /* A word separator delimits the last word from the
+                     * terminator. The parser accepts the terminator without
+                     * it, so when the list does not end with whitespace the
+                     * implicit separator goes to the lex callback alone and
+                     * lexing continues on to the terminator. */
+                    if (!lex_mode->as.list.separated) {
+                        lex_mode->as.list.separated = true;
+                        parser->current.end = breakpoint;
+                        parser->current.type = PM_TOKEN_WORDS_SEP_IMPLICIT;
+                        parser_lex_callback(parser);
                     }
 
                     // Otherwise, switch back to the default state and return
@@ -11708,6 +11739,7 @@ parser_lex(pm_parser_t *parser) {
                         pm_token_buffer_flush(parser, &token_buffer);
                     }
 
+                    lex_mode->as.list.separated = false;
                     LEX(type);
                 }
 
