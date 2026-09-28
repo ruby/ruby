@@ -87,11 +87,6 @@ Note: We're only listing outstanding class updates.
 
 * IO::Buffer
 
-    * `IO::Buffer#source` returns the buffer a slice was created from, or the
-      source String for a String-backed buffer. Source-less buffers return
-      `nil`, whether they own or borrow their memory. Nested slices retain
-      their immediate parent and are bounded by its current view.
-
     * `read`, `write`, `pread`, and `pwrite` now perform one IO operation using
       `(offset, length)`, where `length` is the maximum transfer size. Short
       transfers are returned directly.
