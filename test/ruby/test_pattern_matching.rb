@@ -204,6 +204,71 @@ class TestPatternMatching < Test::Unit::TestCase
       end
     })
 
+    # a binding that precedes an unrelated alternative pattern is fine
+    assert_valid_syntax(%{
+      case 0
+      in [ x, :a | :b ]
+        true
+      end
+    })
+
+    assert_valid_syntax(%{
+      case 0
+      in { a: String => t, b: Integer | String }
+        true
+      end
+    })
+
+    assert_valid_syntax(%{
+      case 0
+      in [ one, "a" | "b" => two ]
+        true
+      end
+    })
+
+    assert_valid_syntax(%{
+      case 0
+      in [ x, (1 | 2), y ]
+        true
+      end
+    })
+
+    # a nested alternation on the right binds nothing either
+    assert_valid_syntax(%{
+      case 0
+      in [ x, 1 | [2 | 3] ]
+        true
+      end
+    })
+
+    # find pattern with anonymous rests
+    assert_valid_syntax(%{
+      case 0
+      in [ x, [*, 1, *] | 2 ]
+        true
+      end
+    })
+
+    # top-level array pattern without brackets
+    assert_valid_syntax(%{
+      case 0
+      in x, 1 | 2
+        true
+      end
+    })
+
+    # rightward assignment
+    assert_valid_syntax(%{
+      0 => [ x, 1 | 2 ]
+    })
+
+    assert_in_out_err(['-c'], %q{
+      case 0
+      in [ x, :a | y ]
+      end
+    }, [], /alternative pattern/,
+    success: false)
+
     assert_in_out_err(['-c'], %q{
       case 0
       in a | 0
@@ -237,6 +302,14 @@ class TestPatternMatching < Test::Unit::TestCase
     assert_in_out_err(['-c'], %q{
       case 0
       in [{ a: [{ b: [{ c: }] }] }] | 1
+      end
+    }, [], /alternative pattern/,
+    success: false)
+
+    # still inside the outer alternation after a nested one
+    assert_in_out_err(['-c'], %q{
+      case 0
+      in 1 | [ 2 | 3, x ]
       end
     }, [], /alternative pattern/,
     success: false)
