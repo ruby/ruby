@@ -1278,6 +1278,31 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal([1, [2], 3], [[1], [[2]], [3]].each.sum([]))
   end
 
+  [false, true].each do |with_block|
+    define_method("test_sum_with_saved_block#{'_and_block' if with_block}") do
+      assert_separately([], <<~RUBY)
+        enum = Object.new
+        class << enum
+          include Enumerable
+          attr_reader :block
+
+          def each(&block)
+            @block = block
+          end
+        end
+
+        yielded = []
+        assert_equal(0, enum.sum #{'{ |x| yielded << x; x * 2 }' if with_block})
+        block = enum.block
+        assert_nil(block.call(1))
+        assert_equal(#{with_block ? '[1]' : '[]'}, yielded)
+        GC.start
+        assert_nil(block.call(2))
+        assert_equal(#{with_block ? '[1, 2]' : '[]'}, yielded)
+      RUBY
+    end
+  end
+
   def test_hash_sum
     histogram = { 1 => 6, 2 => 4, 3 => 3, 4 => 7, 5 => 5, 6 => 4 }
     assert_equal(100, histogram.sum {|v, n| v * n })

@@ -4756,7 +4756,7 @@ static VALUE
 enum_sum_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
 {
     ENUM_WANT_SVALUE();
-    sum_iter(i, (struct enum_sum_memo *) args);
+    sum_iter(i, MEMO_FOR(struct enum_sum_memo, args));
     return Qnil;
 }
 
@@ -4858,10 +4858,17 @@ enum_sum(int argc, VALUE* argv, VALUE obj)
     }
 
     if (RB_TYPE_P(obj, T_HASH) &&
-            rb_method_basic_definition_p(CLASS_OF(obj), id_each))
+        rb_method_basic_definition_p(CLASS_OF(obj), id_each)) {
         hash_sum(obj, &memo);
-    else
-        rb_block_call(obj, id_each, 0, 0, enum_sum_i, (VALUE)&memo);
+    }
+    else {
+        VALUE arg;
+        struct enum_sum_memo *m = NEW_PARTIAL_MEMO_FOR(struct enum_sum_memo, arg, n);
+        *m = memo;
+        rb_block_call(obj, id_each, 0, 0, enum_sum_i, arg);
+        memo = *m;
+        RB_GC_GUARD(arg);
+    }
 
     if (memo.float_value) {
         return DBL2NUM(memo.f + memo.c);
