@@ -190,6 +190,29 @@ class TestRactor < Test::Unit::TestCase
   end
 
 
+  def test_new_port_during_teardown
+    assert_in_out_err(%w[-W0], <<~'RUBY', %w[closed done], [], success: true)
+      worker = Ractor.new do
+        ready = Thread::Queue.new
+        Thread.new do
+          begin
+            ready << true
+            sleep
+          ensure
+            begin
+              Ractor::Port.new
+            rescue Ractor::ClosedError
+              puts "closed"
+            end
+          end
+        end
+        ready.pop
+        :done
+      end
+      puts worker.value
+    RUBY
+  end
+
   def test_class_instance_variables
     assert_ractor(<<~'RUBY')
       # Once we're in multi-ractor mode, the codepaths

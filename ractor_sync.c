@@ -97,6 +97,12 @@ ractor_port_alloc(VALUE klass)
 static VALUE
 ractor_port_init(VALUE rpv, rb_ractor_t *r)
 {
+    // Child threads can still run ensure blocks and report exceptions after
+    // ractor_notify_exit has freed the ports.
+    if (!r->sync.ports) {
+        rb_raise(rb_eRactorClosedError, "The ractor has terminated");
+    }
+
     struct ractor_port *rp = RACTOR_PORT_PTR(rpv);
 
     rp->r = r;
