@@ -87,6 +87,9 @@ Note: We're only listing outstanding class updates.
 
 * IO::Buffer
 
+    * `IO::Buffer#source` returns the immediate source of a buffer view.
+      Nested slices retain their parent and are bounded by its current view.
+
     * `read`, `write`, `pread`, and `pwrite` now perform one IO operation using
       `(offset, length)`, where `length` is the maximum transfer size. Short
       transfers are returned directly.

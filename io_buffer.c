@@ -373,21 +373,20 @@ io_buffer_slice_p(struct rb_io_buffer *buffer)
 }
 
 // For a slice (io_buffer_slice_p), the `base` field stores the byte offset of
-// the slice within its (root) source rather than an absolute pointer.
+// the slice within its immediate source rather than an absolute pointer.
 static inline size_t
 io_buffer_slice_offset(const struct rb_io_buffer *buffer)
 {
     return (uintptr_t)buffer->base;
 }
 
-// Return the buffer which owns the lock count. A slice backed by another
-// buffer shares that source buffer's lock count. Other external sources, such
-// as strings, manage their own lifetime and do not share buffer lock state.
+// Return the buffer which owns the lock count. A slice shares the lock count
+// with the storage at the end of its source chain.
 static struct rb_io_buffer *
 io_buffer_lock_owner(struct rb_io_buffer *buffer)
 {
-    if (io_buffer_slice_p(buffer)) {
-        return get_io_buffer(buffer->source);
+    while (io_buffer_slice_p(buffer)) {
+        buffer = get_io_buffer(buffer->source);
     }
 
     return buffer;
@@ -735,13 +734,13 @@ rb_io_buffer_for_writing(VALUE string_or_buffer, VALUE (*callback)(VALUE, VALUE)
  *    IO::Buffer.for(string) {|io_buffer| ... read/write io_buffer ...}
  *
  *  Creates a zero-copy IO::Buffer from the given string's memory. Without a
- *  block a frozen internal copy of the string is created efficiently and used
- *  as the buffer source. When a block is provided, the buffer is associated
- *  directly with the string's internal buffer and updating the buffer will
- *  update the string.
+ *  block, a frozen snapshot of the string is used as the buffer source, so
+ *  later changes to the original string do not affect the buffer. When a block
+ *  is provided, the buffer is associated directly with the string's internal
+ *  buffer and updating the buffer will update the string.
  *
- *  Until #free is invoked on the buffer, either explicitly or via the garbage
- *  collector, the source string will be locked and cannot be modified.
+ *  In the block form, the string is locked and cannot be modified while the
+ *  block is executing.
  *
  *  If the string is frozen, it will create a read-only buffer which cannot be
  *  modified. If the string is shared, it may trigger a copy-on-write when
@@ -783,8 +782,9 @@ rb_io_buffer_type_for(VALUE klass, VALUE string)
         return rb_ensure(io_buffer_for_yield_instance, (VALUE)&arguments, io_buffer_for_yield_instance_ensure, (VALUE)&arguments);
     }
     else {
-        // This internally returns the source string if it's already frozen.
-        string = rb_str_tmp_frozen_acquire(string);
+        // Use a Ruby-visible frozen snapshot as the backing source. A hidden
+        // temporary frozen String cannot be returned by IO::Buffer#source.
+        string = rb_str_new_frozen(string);
         return io_buffer_for_make_instance(klass, string, RB_IO_BUFFER_READONLY);
     }
 }
@@ -1104,62 +1104,61 @@ rb_io_buffer_initialize(int argc, VALUE *argv, VALUE self)
     return self;
 }
 
-// Resolve the current base pointer and size of a buffer, following slice
-// indirection. A slice of another IO::Buffer stores a logical `offset` into
-// its (root) source and resolves its base as `source_base + offset` here, so
-// it stays valid even if the source's allocation is moved by a resize. A
-// String-backed buffer stores an offset into its pinned String and is
-// range-validated. Returns non-zero if the buffer is valid, and sets
-// `*base`/`*size` accordingly (NULL/0 when invalid).
+// Resolve the current base pointer and size of a buffer, following its source
+// chain. Every source-backed buffer stores an offset into its immediate
+// source. Validate each complete parent view, and use iteration so deeply
+// nested slices do not grow the C stack. Returns non-zero if the buffer is
+// valid, and sets `*base`/`*size` accordingly (NULL/0 when invalid).
 static int
 io_buffer_try_get_bytes(struct rb_io_buffer *buffer, void **base, size_t *size)
 {
-    // Symmetry: the resolved base is `source_base + buffer->base`, where
-    // `buffer->base` is a byte offset into the source (and is the absolute
-    // pointer for an owning buffer, whose source contributes 0):
-    //
-    //   owning (source == Qnil): source_base = 0,               base = buffer->base
-    //   String-backed:           source_base = RSTRING_PTR,     base = 0 + offset
-    //   slice (IO::Buffer):      source_base = resolved(source), base = + offset
-    //
-    // Note: a valid buffer may still resolve to a NULL base (e.g. an empty
-    // buffer, or an empty slice of an empty source). Validity means "the range
-    // exists in the source"; whether the resolved base is NULL is a separate
-    // property (see IO::Buffer#null?).
-    if (buffer->source == Qnil) {
-        // Owning (root) buffer: `base` is absolute (source contributes 0).
-        *base = buffer->base;
-        *size = buffer->size;
-        return 1;
-    }
-
-    // Source-backed buffer: `base` is an offset into the source.
+    size_t length = buffer->size;
+    size_t offset = 0;
     void *source_base = NULL;
-    size_t source_size = 0;
 
-    if (io_buffer_slice_p(buffer)) {
-        // Slice of another IO::Buffer: resolve the (root) source recursively.
-        if (!io_buffer_try_get_bytes(get_io_buffer(buffer->source), &source_base, &source_size)) {
+    while (buffer->source != Qnil) {
+        struct rb_io_buffer *source_buffer = NULL;
+        size_t source_size;
+
+        if (io_buffer_slice_p(buffer)) {
+            source_buffer = get_io_buffer(buffer->source);
+            source_size = source_buffer->size;
+        }
+        else {
+            // A String-backed buffer is rooted in the pinned String.
+            RSTRING_GETMEM(buffer->source, source_base, source_size);
+        }
+
+        size_t relative_offset = io_buffer_slice_offset(buffer);
+        if (relative_offset > source_size || buffer->size > source_size - relative_offset ||
+            relative_offset > SIZE_MAX - offset) {
             *base = NULL;
             *size = 0;
             return 0;
         }
-    }
-    else {
-        // String-backed buffer: the (pinned) String content is the source.
-        RSTRING_GETMEM(buffer->source, source_base, source_size);
+
+        offset += relative_offset;
+        if (!source_buffer) {
+            *base = source_base ? (char *)source_base + offset : NULL;
+            *size = length;
+            return 1;
+        }
+
+        buffer = source_buffer;
     }
 
-    size_t offset = io_buffer_slice_offset(buffer);
-    if (offset <= source_size && buffer->size <= source_size - offset) {
-        *base = source_base ? (char *)source_base + offset : NULL;
-        *size = buffer->size;
-        return 1;
+    // A source-less buffer (allocated, mapped, or borrowed) contributes the
+    // absolute base pointer. The accumulated offset selects a range within it.
+    if (io_buffer_slice_p(buffer)) {
+        // A slice with no source can only be an uninitialized object.
+        *base = NULL;
+        *size = 0;
+        return 0;
     }
 
-    *base = NULL;
-    *size = 0;
-    return 0;
+    *base = buffer->base ? (char *)buffer->base + offset : NULL;
+    *size = length;
+    return 1;
 }
 
 static int
@@ -1447,6 +1446,34 @@ rb_io_buffer_size(VALUE self)
 }
 
 /*
+ *  call-seq: source -> io_buffer, string, or nil
+ *
+ *  Returns the object backing this buffer, or +nil+ for a source-less buffer.
+ *  A slice returns the buffer on which #slice was called, including when
+ *  that buffer is itself a slice. The source is retained while the slice
+ *  lives. There is no source setter.
+ *
+ *  A String-backed buffer returns its backing String. Without a block,
+ *  IO::Buffer.for uses a frozen snapshot of a mutable input String, which is
+ *  also returned as the source.
+ *
+ *  A source-less buffer may own or borrow its memory, so +nil+ does not imply
+ *  that the buffer owns its allocation.
+ *
+ *    root = IO::Buffer.new(8)
+ *    parent = root.slice(1, 6)
+ *    child = parent.slice(1, 2)
+ *    child.source.equal?(parent) # => true
+ *    parent.source.equal?(root)  # => true
+ *    root.source                 # => nil
+ */
+static VALUE
+rb_io_buffer_source(VALUE self)
+{
+    return get_io_buffer(self)->source;
+}
+
+/*
  *  call-seq: valid? -> true or false
  *
  *  A buffer without a source is always valid, including a null buffer. A
@@ -1665,20 +1692,22 @@ rb_io_buffer_private_p(VALUE self)
 static int
 io_buffer_readonly_p(struct rb_io_buffer *buffer)
 {
-    if (buffer->flags & RB_IO_BUFFER_READONLY)
-        return 1;
+    for (;;) {
+        if (buffer->flags & RB_IO_BUFFER_READONLY)
+            return 1;
 
-    VALUE source = buffer->source;
-    if (NIL_P(source))
-        return 0;
+        VALUE source = buffer->source;
+        if (NIL_P(source))
+            return 0;
 
-    if (OBJ_FROZEN(source))
-        return 1;
+        if (OBJ_FROZEN(source))
+            return 1;
 
-    if (RB_TYPE_P(source, T_STRING))
-        return 0;
+        if (RB_TYPE_P(source, T_STRING))
+            return 0;
 
-    return io_buffer_readonly_p(get_io_buffer(source));
+        buffer = get_io_buffer(source);
+    }
 }
 
 /*
@@ -2028,22 +2057,10 @@ rb_io_buffer_slice(struct rb_io_buffer *buffer, VALUE self, size_t offset, size_
 
     slice->size = length;
 
-    // Slices retain their root buffer and store a logical offset into it,
-    // rather than an absolute base pointer, so they remain valid across a
-    // resize that relocates the source. The base is resolved on demand as
-    // `source_base + offset`. If this buffer is already a slice, retain its
-    // root directly rather than building a chain of slices, folding this
-    // slice's offset into the existing one:
-    if (io_buffer_slice_p(buffer)) {
-        // Fold this slice's offset into the parent slice's offset (relative to
-        // the shared root), stored in `base`:
-        slice->base = (void *)(uintptr_t)(io_buffer_slice_offset(buffer) + offset);
-        RB_OBJ_WRITE(instance, &slice->source, buffer->source);
-    }
-    else {
-        slice->base = (void *)(uintptr_t)offset;
-        RB_OBJ_WRITE(instance, &slice->source, self);
-    }
+    // Retain the immediate parent and store an offset into its current view.
+    // Address resolution follows the source chain when the bytes are accessed.
+    slice->base = (void *)(uintptr_t)offset;
+    RB_OBJ_WRITE(instance, &slice->source, self);
 
     return instance;
 }
@@ -2054,11 +2071,14 @@ rb_io_buffer_slice(struct rb_io_buffer *buffer, VALUE self, size_t offset, size_
  *  Produce another IO::Buffer which is a slice (or view into) the current one
  *  starting at +offset+ bytes and going for +length+ bytes.
  *
- *  The slicing happens without copying memory. The slice retains its root
- *  buffer and becomes invalid if that root is freed, transferred, resized so
- *  that the slice is outside its bounds, or otherwise invalidated.
- *  Reallocating the root's storage does not invalidate the slice; it keeps the
- *  same logical offset into the root.
+ *  Slicing does not copy memory. The slice retains +self+ as its source and
+ *  tracks a logical offset and length within that view. Nested slices retain
+ *  their immediate parent rather than being flattened.
+ *
+ *  A slice becomes invalid if its source is freed, transferred, resized so
+ *  that the slice is outside its bounds, or otherwise invalidated. It becomes
+ *  valid again if the source becomes valid and the range fits within it.
+ *  Reallocating the underlying storage does not invalidate the slice.
  *
  *  If the offset is not given, it will be zero. If the offset is negative, it
  *  will raise an ArgumentError.
@@ -4584,6 +4604,7 @@ Init_IO_Buffer(void)
     rb_define_method(rb_cIOBuffer, "hexdump", rb_io_buffer_hexdump, -1);
     rb_define_method(rb_cIOBuffer, "to_s", rb_io_buffer_to_s, 0);
     rb_define_method(rb_cIOBuffer, "size", rb_io_buffer_size, 0);
+    rb_define_method(rb_cIOBuffer, "source", rb_io_buffer_source, 0);
     rb_define_method(rb_cIOBuffer, "valid?", rb_io_buffer_valid_p, 0);
 
     rb_define_method(rb_cIOBuffer, "transfer", io_buffer_transfer, 0);

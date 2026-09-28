@@ -29,7 +29,8 @@ describe "IO::Buffer#readonly?" do
   ruby_version_is "4.1" do
     it "reflects its source's current permissions" do
       @buffer = IO::Buffer.new(8)
-      slice = @buffer.slice(2, 4)
+      parent = @buffer.slice(0, 8)
+      slice = parent.slice(2, 4)
 
       @buffer.free
       @buffer.send(:initialize, 8, IO::Buffer::INTERNAL | IO::Buffer::READONLY)
@@ -49,7 +50,7 @@ describe "IO::Buffer#readonly?" do
 
     it "is true for a slice whose source is frozen" do
       buffer = IO::Buffer.new(8)
-      slice = buffer.slice(2, 4)
+      slice = buffer.slice(2, 4).slice(1, 2)
       buffer.freeze
 
       slice.should.readonly?

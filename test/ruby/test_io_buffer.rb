@@ -579,11 +579,14 @@ class TestIOBuffer < Test::Unit::TestCase
     end
   end
 
-  def test_resize_nested_slice_uses_root_bounds
+  def test_resize_nested_slice_uses_parent_bounds
     buffer = IO::Buffer.for("abcdef").dup
     parent = buffer.slice(1, 2)
     slice = parent.slice(1, 1)
 
+    assert_raise(ArgumentError) { slice.resize(4) }
+
+    parent.resize(5)
     slice.resize(4)
     assert_equal "cdef", slice.get_string
   end
