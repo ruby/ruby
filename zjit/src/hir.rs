@@ -9082,8 +9082,8 @@ fn guard_logop_unhooked_monomorphic(fun: &mut Function, summary: &TypeDistributi
         return None;
     };
     let klass = profiled_type.class();
-    let cme = unsafe { rb_callable_method_entry(klass, mid) };
-    if cme.is_null() || unsafe { get_cme_def_type(cme) } == VM_METHOD_TYPE_REFINED {
+    let cme = unsafe { rb_callable_method_entry_or_negative(klass, mid) };
+    if unsafe { get_cme_def_type(cme) } == VM_METHOD_TYPE_REFINED {
         return None;
     }
     fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });

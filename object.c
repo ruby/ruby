@@ -1685,43 +1685,6 @@ false_and(VALUE obj, VALUE obj2)
 
 /*
  * call-seq:
- *   obj && other    -> other
- *   false || other  -> other
- *   nil || other    -> other
- *
- * Returns +other+.
- *
- * The <tt>&&</tt> and <tt>||</tt> operators call these methods only when
- * a refinement active in the caller's scope overrides them for the class
- * of the left-hand side; such a refinement can call them via +super+.
- * Unlike the operators, a direct call evaluates +other+ eagerly.
- */
-
-static VALUE
-obj_andop(VALUE obj, VALUE other)
-{
-    return other;
-}
-
-/*
- * call-seq:
- *   obj || other    -> obj
- *   false && other  -> false
- *   nil && other    -> nil
- *
- * Returns +self+.
- *
- * See Object#&& for how the operators use these methods.
- */
-
-static VALUE
-obj_orop(VALUE obj, VALUE other)
-{
-    return obj;
-}
-
-/*
- * call-seq:
  *   nil.nil?  -> true
  *
  * Returns +true+.
@@ -4611,8 +4574,6 @@ InitVM_Object(void)
     rb_define_method(rb_mKernel, "nil?", rb_false, 0);
     rb_define_method(rb_mKernel, "===", case_equal, 1);
     rb_define_method(rb_mKernel, "!~", rb_obj_not_match, 1);
-    rb_define_method(rb_cObject, "&&", obj_andop, 1);
-    rb_define_method(rb_cObject, "||", obj_orop, 1);
     rb_define_method(rb_mKernel, "eql?", rb_obj_equal, 1);
     rb_define_method(rb_mKernel, "hash", rb_obj_hash, 0); /* in hash.c */
     rb_define_method(rb_mKernel, "<=>", rb_obj_cmp, 1);
@@ -4663,8 +4624,6 @@ InitVM_Object(void)
     rb_define_method(rb_cNilClass, "&", false_and, 1);
     rb_define_method(rb_cNilClass, "|", false_or, 1);
     rb_define_method(rb_cNilClass, "^", false_xor, 1);
-    rb_define_method(rb_cNilClass, "&&", obj_orop, 1);
-    rb_define_method(rb_cNilClass, "||", obj_andop, 1);
     rb_define_method(rb_cNilClass, "===", case_equal, 1);
 
     rb_define_method(rb_cNilClass, "nil?", rb_true, 0);
@@ -4760,8 +4719,6 @@ InitVM_Object(void)
     rb_define_method(rb_cFalseClass, "&", false_and, 1);
     rb_define_method(rb_cFalseClass, "|", false_or, 1);
     rb_define_method(rb_cFalseClass, "^", false_xor, 1);
-    rb_define_method(rb_cFalseClass, "&&", obj_orop, 1);
-    rb_define_method(rb_cFalseClass, "||", obj_andop, 1);
     rb_define_method(rb_cFalseClass, "===", case_equal, 1);
     rb_undef_alloc_func(rb_cFalseClass);
     rb_undef_method(CLASS_OF(rb_cFalseClass), "new");

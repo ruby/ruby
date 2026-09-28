@@ -12,11 +12,11 @@ class TestLogicalOpHook < Test::Unit::TestCase
 
     refine NilClass do
       define_method(:"&&") { |other| [:nil_and, other] }
-      define_method(:"||") { |other| [:nil_or, super(other)] }
+      define_method(:"||") { |other| [:nil_or, other] }
     end
 
     refine TrueClass do
-      define_method(:"&&") { |other| [:true_and, super(other)] }
+      define_method(:"&&") { |other| [:true_and, other] }
       define_method(:"||") { |other| [:true_or, other] }
     end
   end
@@ -30,7 +30,6 @@ class TestLogicalOpHook < Test::Unit::TestCase
 
   def self.plain_and(log, a) = a && (log << :rhs; :b)
   def self.plain_or(log, a) = a || (log << :rhs; :b)
-  def self.plain_send(recv, op, arg) = recv.send(op, arg)
 end
 
 using TestLogicalOpHook::Ext
@@ -126,19 +125,6 @@ class TestLogicalOpHook
     z = true
     z ||= 1
     assert_equal(true, z)
-  end
-
-  def test_default_methods
-    o = Object.new
-    assert_equal(:b, self.class.plain_send(o, :"&&", :b))
-    assert_same(o, self.class.plain_send(o, :"||", :b))
-    assert_nil(self.class.plain_send(nil, :"&&", :b))
-    assert_equal(:b, self.class.plain_send(nil, :"||", :b))
-    assert_equal(false, self.class.plain_send(false, :"&&", :b))
-    assert_equal(:b, self.class.plain_send(false, :"||", :b))
-    assert_equal(:b, self.class.plain_send(1, :"&&", :b))
-    assert_equal(true, self.class.plain_send(true, :"||", :b))
-    assert_equal([:nil_and, :b], nil.send(:"&&", :b))
   end
 
   def test_global_definition_is_inert
