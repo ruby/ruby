@@ -294,17 +294,19 @@ class TestGemInstaller < Gem::InstallerTestCase
 
   def test_ensure_loadable_spec
     a, a_gem = util_gem "a", 2 do |s|
-      s.add_dependency "garbage ~> 5"
+      s.add_dependency "b"
     end
 
     installer = Gem::Installer.at a_gem
+    requirement = installer.spec.dependencies.first.requirement
+    requirement.instance_variable_set :@requirements, [["garbage", Gem::Version.new(5)]]
 
     e = assert_raise Gem::InstallError do
       installer.ensure_loadable_spec
     end
 
     assert_equal "The specification for #{a.full_name} is corrupt " \
-                 "(SyntaxError)", e.message
+                 "(Gem::Requirement::BadRequirementError)", e.message
   end
 
   def test_ensure_loadable_spec_security_policy
