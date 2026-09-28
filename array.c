@@ -7595,11 +7595,9 @@ rb_ary_repeated_permutation_size(VALUE ary, VALUE args, VALUE eobj)
 static VALUE
 rb_ary_repeated_permutation(VALUE ary, VALUE num)
 {
-    long r, n, i;
-
-    n = RARRAY_LEN(ary);                  /* Array length */
     RETURN_SIZED_ENUMERATOR(ary, 1, &num, rb_ary_repeated_permutation_size);      /* Return Enumerator if no block */
-    r = NUM2LONG(num);                    /* Permutation size from argument */
+    long r = NUM2LONG(num);                    /* Permutation size from argument */
+    long n = RARRAY_LEN(ary);
 
     if (r < 0) {
         /* no permutations: yield nothing */
@@ -7608,7 +7606,7 @@ rb_ary_repeated_permutation(VALUE ary, VALUE num)
         rb_yield(rb_ary_new2(0));
     }
     else if (r == 1) { /* this is a special, easy case */
-        for (i = 0; i < RARRAY_LEN(ary); i++) {
+        for (long i = 0; i < RARRAY_LEN(ary); i++) {
             rb_yield(rb_ary_new3(1, RARRAY_AREF(ary, i)));
         }
     }
