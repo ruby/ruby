@@ -7368,7 +7368,7 @@ vm_opt_not(struct rb_control_frame_struct *reg_cfp, CALL_DATA cd, VALUE recv)
 static bool
 vm_logop_hooked_p(rb_execution_context_t *ec, struct rb_control_frame_struct *reg_cfp, CALL_DATA cd, VALUE recv)
 {
-    if (LIKELY(!ruby_vm_logop_hook_defined)) return false;
+    if (LIKELY(BASIC_OP_UNREDEFINED_P(BOP_LOGOP, ANY_REDEFINED_OP_FLAG))) return false;
 
     const rb_callable_method_entry_t *cme = vm_search_method(reg_cfp, cd, recv);
     if (cme && cme->def->type == VM_METHOD_TYPE_REFINED) {
@@ -7391,7 +7391,7 @@ vm_logop_hooked_p(rb_execution_context_t *ec, struct rb_control_frame_struct *re
 static VALUE
 vm_opt_logop(rb_execution_context_t *ec, struct rb_control_frame_struct *reg_cfp, CALL_DATA cd, VALUE recv, VALUE obj)
 {
-    if (LIKELY(!ruby_vm_logop_hook_defined)) return obj;
+    if (LIKELY(BASIC_OP_UNREDEFINED_P(BOP_LOGOP, ANY_REDEFINED_OP_FLAG))) return obj;
     if (vm_logop_hooked_p(ec, reg_cfp, cd, recv)) return Qundef;
 
     /* The hook may have been removed while the RHS was evaluated. */
@@ -7401,6 +7401,21 @@ vm_opt_logop(rb_execution_context_t *ec, struct rb_control_frame_struct *reg_cfp
     else {
         return RTEST(recv) ? recv : obj;
     }
+}
+
+/* Returns Qundef when the hook must be called. */
+VALUE
+rb_vm_opt_logop(rb_control_frame_t *cfp, CALL_DATA cd, VALUE recv, VALUE obj)
+{
+    return vm_opt_logop(GET_EC(), cfp, cd, recv, obj);
+}
+
+/* Returns whether opt_branch_andop/opt_branch_orop jumps. */
+VALUE
+rb_vm_opt_branch_logop(rb_control_frame_t *cfp, CALL_DATA cd, VALUE recv)
+{
+    bool jump_if_truthy = vm_ci_mid(cd->ci) == idOROP;
+    return RBOOL((bool)RTEST(recv) == jump_if_truthy && !vm_logop_hooked_p(GET_EC(), cfp, cd, recv));
 }
 
 static VALUE

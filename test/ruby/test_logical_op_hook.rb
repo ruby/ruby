@@ -152,6 +152,42 @@ class TestLogicalOpHook
     assert_equal(:hooked, o.send(:"&&", 1))
   end
 
+  def test_hook_defined_after_jit_compilation
+    jit_opts = []
+    jit_opts << %w[--yjit-call-threshold=1] if defined?(RubyVM::YJIT)
+    jit_opts << %w[--zjit-call-threshold=1] if defined?(RubyVM::ZJIT)
+    omit "no JIT" if jit_opts.empty?
+    jit_opts.each do |opts|
+      assert_separately(opts, <<~'RUBY')
+        Node = Struct.new(:x)
+        module Ext
+          refine(Node) {}
+        end
+        using Ext
+        def and_op(a) = a && :b
+        def or_op(a) = a || :b
+        def cond(a) = (a && false) ? :then : :else
+        3.times do
+          [Node.new(1), nil].each { |a| and_op(a); or_op(a); cond(a) }
+        end
+        module Ext
+          refine(Node) do
+            define_method(:"&&") { |o| [:and, o] }
+            define_method(:"||") { |o| [:or, o] }
+          end
+        end
+        3.times do
+          assert_equal([:and, :b], and_op(Node.new(1)))
+          assert_equal([:or, :b], or_op(Node.new(1)))
+          assert_equal(:then, cond(Node.new(1)))
+          assert_nil(and_op(nil))
+          assert_equal(:b, or_op(nil))
+          assert_equal(:else, cond(nil))
+        end
+      RUBY
+    end
+  end
+
   def test_delegate_class
     require 'delegate'
     klass = DelegateClass(Object)

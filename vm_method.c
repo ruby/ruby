@@ -1504,8 +1504,11 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
         if (type == VM_METHOD_TYPE_ZSUPER) {
             turn_zsuper_to_super = true;
         }
-        if (mid == idANDOP || mid == idOROP) {
-            ruby_vm_logop_hook_defined = true;
+        if ((mid == idANDOP || mid == idOROP) &&
+            BASIC_OP_UNREDEFINED_P(BOP_LOGOP, ANY_REDEFINED_OP_FLAG)) {
+            rb_yjit_bop_redefined(ANY_REDEFINED_OP_FLAG, BOP_LOGOP);
+            rb_zjit_bop_redefined(ANY_REDEFINED_OP_FLAG, BOP_LOGOP);
+            ruby_vm_redefined_flag[BOP_LOGOP] |= ANY_REDEFINED_OP_FLAG;
         }
         rb_add_refined_method_entry(refined_class, mid);
     }

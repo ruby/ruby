@@ -489,6 +489,7 @@ make_counters! {
     opt_succ_overflow,
 
     opt_mod_zero,
+    opt_logop_hooked,
     opt_div_zero,
 
     lshift_amount_changed,

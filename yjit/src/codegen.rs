@@ -4594,6 +4594,113 @@ fn gen_opt_not(
     return gen_opt_send_without_block(jit, asm);
 }
 
+fn gen_opt_branch_andop(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+) -> Option<CodegenStatus> {
+    gen_opt_branch_logop(jit, asm, false)
+}
+
+fn gen_opt_branch_orop(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+) -> Option<CodegenStatus> {
+    gen_opt_branch_logop(jit, asm, true)
+}
+
+fn gen_opt_branch_logop(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    jump_if_truthy: bool,
+) -> Option<CodegenStatus> {
+    let cd: *const u8 = jit.get_arg(0).as_ptr();
+    let jump_offset = jit.get_arg(1).as_i32();
+
+    let next_idx = jit.next_insn_idx();
+    let jump_idx = (next_idx as i32) + jump_offset;
+    let next_block = BlockId {
+        iseq: jit.iseq,
+        idx: next_idx,
+    };
+    let jump_block = BlockId {
+        iseq: jit.iseq,
+        idx: jump_idx.try_into().unwrap(),
+    };
+
+    incr_counter!(branch_insn_count);
+
+    let gen_fn = if assume_bop_not_redefined(jit, asm, ANY_REDEFINED_OP_FLAG, BOP_LOGOP) {
+        if let Some(truthy) = asm.ctx.get_opnd_type(StackOpnd(0)).known_truthy() {
+            let target = if truthy == jump_if_truthy { jump_block } else { next_block };
+            gen_direct_jump(jit, &asm.ctx.clone(), target, asm);
+            incr_counter!(branch_known_count);
+            return Some(EndBlock);
+        }
+        let val_opnd = asm.stack_opnd(0);
+        asm.test(val_opnd, Opnd::Imm(!Qnil.as_i64()));
+        if jump_if_truthy {
+            BranchGenFn::BranchIf(Cell::new(BranchShape::Default))
+        } else {
+            BranchGenFn::BranchUnless(Cell::new(BranchShape::Default))
+        }
+    } else {
+        extern "C" {
+            fn rb_vm_opt_branch_logop(cfp: CfpPtr, cd: *const u8, recv: VALUE) -> VALUE;
+        }
+        // Looking up the hook may allocate a call cache
+        jit_prepare_call_with_gc(jit, asm);
+        let recv = asm.stack_opnd(0);
+        let jump_p = asm.ccall(rb_vm_opt_branch_logop as *const u8, vec![CFP, Opnd::const_ptr(cd), recv]);
+
+        // The block ends here, so re-execute this side-effect-free instruction
+        // if code is invalidated during the call.
+        jit.record_boundary_patch_point = false;
+        let exit_pos = jit.gen_outlined_exit(jit.pc, &asm.ctx)?;
+        record_global_inval_patch(asm, exit_pos);
+
+        asm.test(jump_p, Opnd::Imm(!Qnil.as_i64()));
+        BranchGenFn::BranchIf(Cell::new(BranchShape::Default))
+    };
+
+    let ctx = asm.ctx;
+    jit.gen_branch(asm, jump_block, &ctx, Some(next_block), Some(&ctx), gen_fn);
+
+    Some(EndBlock)
+}
+
+fn gen_opt_logop(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+) -> Option<CodegenStatus> {
+    if assume_bop_not_redefined(jit, asm, ANY_REDEFINED_OP_FLAG, BOP_LOGOP) {
+        let rhs = asm.stack_opnd(0);
+        let dst = asm.stack_opnd(1);
+        asm.mov(dst, rhs);
+        let mapping = asm.ctx.get_opnd_mapping(rhs.into());
+        asm.ctx.set_opnd_mapping(dst.into(), mapping);
+        asm.stack_pop(1);
+        return Some(KeepCompiling);
+    }
+
+    extern "C" {
+        fn rb_vm_opt_logop(cfp: CfpPtr, cd: *const u8, recv: VALUE, obj: VALUE) -> VALUE;
+    }
+    let cd: *const u8 = jit.get_arg(0).as_ptr();
+    jit_prepare_call_with_gc(jit, asm);
+    let recv = asm.stack_opnd(1);
+    let obj = asm.stack_opnd(0);
+    let val = asm.ccall(rb_vm_opt_logop as *const u8, vec![CFP, Opnd::const_ptr(cd), recv, obj]);
+
+    // Let the interpreter call the hook
+    asm.cmp(val, Qundef.into());
+    asm.je(Target::side_exit(Counter::opt_logop_hooked));
+
+    asm.stack_pop(2);
+    let stack_ret = asm.stack_push(Type::Unknown);
+    asm.mov(stack_ret, val);
+    Some(KeepCompiling)
+}
+
 fn gen_opt_size(
     jit: &mut JITState,
     asm: &mut Assembler,
@@ -10934,6 +11041,9 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         YARVINSN_opt_empty_p => Some(gen_opt_empty_p),
         YARVINSN_opt_succ => Some(gen_opt_succ),
         YARVINSN_opt_not => Some(gen_opt_not),
+        YARVINSN_opt_branch_andop => Some(gen_opt_branch_andop),
+        YARVINSN_opt_branch_orop => Some(gen_opt_branch_orop),
+        YARVINSN_opt_logop => Some(gen_opt_logop),
         YARVINSN_opt_size => Some(gen_opt_size),
         YARVINSN_opt_length => Some(gen_opt_length),
         YARVINSN_opt_regexpmatch2 => Some(gen_opt_regexpmatch2),

@@ -299,6 +299,7 @@ impl<'a> std::fmt::Display for InvariantPrinter<'a> {
                     STRING_REDEFINED_OP_FLAG => write!(f, "STRING_REDEFINED_OP_FLAG")?,
                     ARRAY_REDEFINED_OP_FLAG => write!(f, "ARRAY_REDEFINED_OP_FLAG")?,
                     HASH_REDEFINED_OP_FLAG => write!(f, "HASH_REDEFINED_OP_FLAG")?,
+                    ANY_REDEFINED_OP_FLAG => write!(f, "ANY_REDEFINED_OP_FLAG")?,
                     _ => write!(f, "{klass}")?,
                 }
                 write!(f, ", ")?;
@@ -337,6 +338,7 @@ impl<'a> std::fmt::Display for InvariantPrinter<'a> {
                     BOP_DEFAULT  => write!(f, "BOP_DEFAULT")?,
                     BOP_PACK     => write!(f, "BOP_PACK")?,
                     BOP_INCLUDE_P => write!(f, "BOP_INCLUDE_P")?,
+                    BOP_LOGOP    => write!(f, "BOP_LOGOP")?,
                     _ => write!(f, "{bop}")?,
                 }
                 write!(f, ")")
@@ -8804,7 +8806,7 @@ fn compute_bytecode_info(iseq: *const rb_iseq_t, opt_table: &[u32]) -> BytecodeI
                 let offset = get_arg(pc, 0).as_i64();
                 jump_targets.insert(insn_idx_at_offset(insn_idx, offset));
             }
-            YARVINSN_opt_new => {
+            YARVINSN_opt_new | YARVINSN_opt_branch_andop | YARVINSN_opt_branch_orop => {
                 let offset = get_arg(pc, 1).as_i64();
                 jump_targets.insert(insn_idx_at_offset(insn_idx, offset));
             }
@@ -8983,6 +8985,10 @@ fn invalidates_locals(opcode: u32, operands: *const VALUE) -> bool {
         | YARVINSN_branchif_without_ints
         | YARVINSN_branchnil_without_ints
         | YARVINSN_leave => false,
+        // Compiled only while no hook exists, so no Ruby code runs
+        YARVINSN_opt_branch_andop
+        | YARVINSN_opt_branch_orop
+        | YARVINSN_opt_logop => false,
         // TODO(max): Read the invokebuiltin target from operands and determine if it's leaf
         _ => unsafe { !rb_zjit_insn_leaf(opcode as i32, operands) }
     }
@@ -9777,6 +9783,50 @@ fn add_iseq_to_hir(
                     let not_nil = fun.push_insn(block, Insn::RefineType { val, new_type });
                     state.replace(val, not_nil);
                     queue.push_back((state.clone(), target, target_idx, local_inval));
+                }
+                YARVINSN_opt_branch_andop | YARVINSN_opt_branch_orop => {
+                    if !fun.guard_bop_not_redefined(block, ANY_REDEFINED_OP_FLAG, BOP_LOGOP, exit_id) {
+                        break;  // End the block
+                    }
+                    let jump_if_truthy = opcode == YARVINSN_opt_branch_orop;
+                    let (jump_type, fall_through_type) = if jump_if_truthy {
+                        (types::Truthy, types::Falsy)
+                    } else {
+                        (types::Falsy, types::Truthy)
+                    };
+                    let offset = get_arg(pc, 1).as_i64();
+                    let val = state.stack_top()?;
+                    let test_id = fun.push_insn(block, Insn::Test { val });
+                    let target_idx = insn_idx_at_offset(insn_idx, offset);
+                    let target = insn_idx_to_block[&target_idx];
+                    let jump_val = fun.push_insn(block, Insn::RefineType { val, new_type: jump_type });
+                    let mut jump_state = state.clone();
+                    jump_state.replace(val, jump_val);
+                    let fall_through = fun.new_block(insn_idx);
+
+                    let jump_edge = BranchEdge { target, args: jump_state.as_args(self_param) };
+                    let fall_through_edge = BranchEdge { target: fall_through, args: vec![] };
+                    let (if_true, if_false) = if jump_if_truthy {
+                        (jump_edge, fall_through_edge)
+                    } else {
+                        (fall_through_edge, jump_edge)
+                    };
+                    fun.push_insn(block, Insn::CondBranch { val: test_id, if_true, if_false });
+
+                    block = fall_through;
+
+                    let fall_through_val = fun.push_insn(block, Insn::RefineType { val, new_type: fall_through_type });
+                    state.replace(val, fall_through_val);
+                    queue.push_back((state.clone(), target, target_idx, local_inval));
+                }
+                YARVINSN_opt_logop => {
+                    if !fun.guard_bop_not_redefined(block, ANY_REDEFINED_OP_FLAG, BOP_LOGOP, exit_id) {
+                        break;  // End the block
+                    }
+                    // Without hooks, the result is the RHS
+                    let obj = state.stack_pop()?;
+                    state.stack_pop()?;
+                    state.stack_push(obj);
                 }
                 YARVINSN_opt_case_dispatch => {
                     // TODO: Some keys are visible at compile time, so in the future we can
