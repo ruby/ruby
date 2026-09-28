@@ -8,6 +8,7 @@ class TestLogicalOpHook < Test::Unit::TestCase
     refine Node do
       def &&(other) = Node.new(:and, self, other)
       def ||(other) = Node.new(:or, self, other)
+      alias andop &&
     end
 
     refine NilClass do
@@ -19,11 +20,6 @@ class TestLogicalOpHook < Test::Unit::TestCase
       define_method(:"&&") { |other| [:true_and, other] }
       define_method(:"||") { |other| [:true_or, other] }
     end
-  end
-
-  class GloballyDefined
-    def &&(other) = :hooked
-    def ||(other) = :hooked
   end
 
   LHS_VALUES = [1, "str", :sym, Object.new, Node.new(:leaf), true, false, nil]
@@ -127,15 +123,19 @@ class TestLogicalOpHook
     assert_equal(true, z)
   end
 
-  def test_global_definition_is_inert
-    o = GloballyDefined.new
-    log = []
-    assert_equal(:b, refined_and(log, o))
-    assert_equal([:rhs], log)
-    log = []
-    assert_same(o, refined_or(log, o))
-    assert_equal([], log)
-    assert_equal(:hooked, o.send(:"&&", 1))
+  def test_definition_outside_refinement
+    c = Class.new
+    assert_raise_with_message(ArgumentError, "'&&' can be defined only in refinements") do
+      c.class_eval { def &&(other) = 1 }
+    end
+    assert_raise(ArgumentError) { c.class_eval { def ||(other) = 1 } }
+    assert_raise(ArgumentError) { c.class_eval { def self.&&(other) = 1 } }
+    assert_raise(ArgumentError) { c.class_eval { define_method(:"||") { |other| } } }
+    assert_raise(ArgumentError) { c.class_eval { alias_method :"&&", :to_s } }
+    assert_raise(ArgumentError) { Object.new.define_singleton_method(:"&&") { |other| } }
+    assert_raise(ArgumentError) { Module.new { def ||(other) = 1 } }
+    assert_not_send([c, :method_defined?, :&&])
+    assert_not_send([c, :method_defined?, :||])
   end
 
   def test_hook_defined_after_jit_compilation
@@ -214,22 +214,12 @@ class TestLogicalOpHook
     assert_equal(':"||="', :"||=".inspect)
     assert_equal(:"&&", true ? :&& : :||)
 
-    c = Class.new do
-      def &&(other) = [:and, other]
-      def ||(other) = [:or, other]
-      def self.&&(other) = [:singleton, other]
-      alias andop &&
-    end
-    o = c.new
-    assert_equal([:and, 1], o.&&(1))
-    assert_equal([:or, 2], o.||(2))
-    assert_equal([:and, 3], o.andop(3))
-    assert_equal([:singleton, 4], c.&&(4))
-    assert_equal([:singleton, 5], c::&&(5))
-    assert_equal(:"&&", c.instance_method(:&&).name)
-    c.class_eval { undef &&, || }
-    assert_not_send([c, :method_defined?, :&&])
-    assert_not_send([c, :method_defined?, :||])
+    n = Node.new(:a)
+    assert_equal(Node.new(:and, n, 1), n.&&(1))
+    assert_equal(Node.new(:or, n, 2), n.||(2))
+    assert_equal(Node.new(:and, n, 3), n.andop(3))
+    assert_equal(Node.new(:and, n, 4), n::&&(4))
+    assert_raise(NameError) { Class.new { undef &&, || } }
 
     assert_equal([3], [1].map { || 3 })
     assert_equal(1, [1].each { |a| break a })

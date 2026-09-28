@@ -1439,11 +1439,22 @@ rb_zsuper_to_super(int argc, VALUE *argv, VALUE self)
 
 static inline rb_method_entry_t* search_method0(VALUE klass, ID id, VALUE *defined_class_ptr, bool skip_refined);
 static void
-method_entry_modify_check(VALUE klass, rb_method_type_t type)
+logop_definition_check(VALUE klass, ID mid)
+{
+    if ((mid == idANDOP || mid == idOROP) &&
+        !(RB_TYPE_P(klass, T_MODULE) && FL_TEST(klass, RMODULE_IS_REFINEMENT))) {
+        rb_raise(rb_eArgError, "'%s' can be defined only in refinements", rb_id2name(mid));
+    }
+}
+
+static void
+method_entry_modify_check(VALUE klass, ID mid, rb_method_type_t type)
 {
     ASSERT_vm_unlocking();
     if (type != VM_METHOD_TYPE_REFINED) {
-        rb_class_modify_check(NIL_P(klass) ? rb_cObject : klass);
+        klass = NIL_P(klass) ? rb_cObject : klass;
+        rb_class_modify_check(klass);
+        logop_definition_check(klass, mid);
     }
 }
 
@@ -1766,7 +1777,7 @@ rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *opts, rb_method_
     const rb_method_entry_t *me;
     struct method_entry_warnings warnings = {0};
 
-    method_entry_modify_check(klass, type);
+    method_entry_modify_check(klass, mid, type);
 
     RB_VM_LOCKING() {
         me = rb_method_entry_make(klass, mid, klass, visi, type, NULL, mid, opts, &warnings);
@@ -1800,7 +1811,7 @@ method_entry_set(VALUE klass, ID mid, const rb_method_entry_t *me,
     rb_method_entry_t *newme;
     struct method_entry_warnings warnings = {0};
 
-    method_entry_modify_check(klass, me->def->type);
+    method_entry_modify_check(klass, mid, me->def->type);
 
     RB_VM_LOCKING() {
         newme = rb_method_entry_make(klass, mid, defined_class, visi,
@@ -2954,6 +2965,7 @@ rb_add_alias(VALUE klass, ID alias_name, ID original_name, rb_method_visibility_
     }
 
     rb_class_modify_check(target_klass);
+    logop_definition_check(target_klass, alias_name);
 
   again:
     orig_me = search_method(klass, original_name, &defined_class);
