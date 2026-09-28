@@ -70,7 +70,6 @@ describe "Symbol#inspect" do
     :"!="      => ":!=",
     :"!~"      => ":!~",
     :"\$"      => ":\"$\"", # for justice!
-    :"&&"      => ":\"&&\"",
     :"'"       => ":\"\'\"",
     :","       => ":\",\"",
     :"."       => ":\".\"",
@@ -83,7 +82,6 @@ describe "Symbol#inspect" do
     :"=>"      => ":\"=>\"",
     :"\?"      => ":\"?\"", # rawr!
     :"@"       => ":\"@\"",
-    :"||"      => ":\"||\"",
     :"|||"     => ":\"|||\"",
     :"++"      => ":\"++\"",
 
@@ -107,6 +105,20 @@ describe "Symbol#inspect" do
     expected = expected[expected_by_encoding] if expected.is_a?(Array)
     it "returns self as a symbol literal for #{expected}" do
       input.inspect.should == expected
+    end
+  end
+
+  ruby_version_is ""..."4.1" do
+    it "quotes :&& and :||" do
+      :"&&".inspect.should == ':"&&"'
+      :"||".inspect.should == ':"||"'
+    end
+  end
+
+  ruby_version_is "4.1" do
+    it "does not quote :&& and :||" do
+      :"&&".inspect.should == ':&&'
+      :"||".inspect.should == ':||'
     end
   end
 
