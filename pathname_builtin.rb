@@ -2994,19 +2994,34 @@ class Pathname    # * mixed *
   # call-seq:
   #   unlink -> 0 or 1
   #
-  # Removes the entry represented by `self`;
-  # returns `0` if a directory, `1` otherwise.
-  #
-  # Does not follow [symbolic links](rdoc-ref:file/symbolic_links.md);
-  # if the entry is a symlink, the link itself is removed.
+  # Removes the entry ([hard link](rdoc-ref:file/hard_links.md))
+  # at the path in `self`;
+  # returns `0` if a directory, `1` otherwise:
   #
   # ```ruby
-  # Pathname(Pathname.mktmpdir).unlink # => 0
-  # Pathname(Tempfile.create).unlink   # => 1
-  # pn_target = Pathname('README.md')  # => #<Pathname:README.md>
-  # pn_link = Pathname('foo')          # => #<Pathname:foo>
-  # pn_link.make_symlink(pn_target)
-  # pn_link.delete
+  # pn_file = Pathname('/tmp/t.txt')
+  # pn_file.write('foo')
+  # pn_file.unlink # => 1
+  # pn_dir = Pathname('/tmp/foo')
+  # pn_dir.mkdir
+  # pn_dir.unlink  # => 0
+  # ```
+  #
+  # If the removed hard link is the last one associated the inode,
+  # also removes the inode; otherwise, not.
+  # See [Unlinking](rdoc-ref:file/hard_links.md@Unlinking).
+  #
+  # Does not follow [symbolic links](rdoc-ref:file/symbolic_links.md);
+  # if the entry is a symbolic link, removes the entry itself (not the link target).
+  #
+  # ```ruby
+  # pn_file = Pathname('/tmp/t.txt')
+  # pn_link = Pathname('/tmp/link')
+  # pn_file.write('foo')
+  # pn_link.make_symlink(pn_file)
+  # pn_link.unlink # => 1
+  # pn_file.exist? # => true  # Link was not followed.
+  # pn_file.unlink # => 1
   # ```
   #
   def unlink()
