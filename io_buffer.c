@@ -3279,6 +3279,10 @@ io_buffer_get_string(int argc, VALUE *argv, VALUE self)
 
     io_buffer_validate_range(buffer, offset, length);
 
+    const void *base;
+    size_t size;
+    io_buffer_get_bytes_for_reading(buffer, &base, &size);
+
     const char *data = base ? (const char*)base + offset : NULL;
 
     return rb_enc_str_new(data, length, encoding);

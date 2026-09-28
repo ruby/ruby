@@ -1006,6 +1006,22 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_equal 1_000_000, encoding.buffer.get_string(0, 1_000_000, encoding).length
   end
 
+  def test_get_string_resolves_encoding_before_accessing_buffer
+    buffer = IO::Buffer.for("hello").dup
+    transferred = nil
+
+    encoding = Object.new
+    encoding.define_singleton_method(:to_str) do
+      transferred = buffer.transfer
+      buffer.resize(5)
+      buffer.set_string("world")
+      "UTF-8"
+    end
+
+    assert_equal "world", buffer.get_string(0, 5, encoding)
+    assert_equal "hello", transferred.get_string
+  end
+
   def test_zero_length_get_string
     buffer = IO::Buffer.new.slice(0, 0)
     assert_equal "", buffer.get_string
