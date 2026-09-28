@@ -1347,6 +1347,12 @@ ary_make_shared_copy(VALUE ary)
     return ary_make_partial(ary, rb_cArray, 0, RARRAY_LEN(ary));
 }
 
+static VALUE
+ary_make_hidden_shared_copy(VALUE ary)
+{
+    return ary_make_partial(ary, 0, 0, RARRAY_LEN(ary));
+}
+
 enum ary_take_pos_flags
 {
     ARY_TAKE_FIRST = 0,
@@ -7382,8 +7388,7 @@ rb_ary_permutation(int argc, VALUE *argv, VALUE ary)
         volatile VALUE t0;
         long *p = ALLOCV_N(long, t0, r+roomof(n, sizeof(long)));
         char *used = (char*)(p + r);
-        VALUE ary0 = ary_make_shared_copy(ary); /* private defensive copy of ary */
-        RBASIC_CLEAR_CLASS(ary0);
+        VALUE ary0 = ary_make_hidden_shared_copy(ary); /* private defensive copy of ary */
 
         MEMZERO(used, char, n); /* initialize array */
 
@@ -7488,11 +7493,10 @@ rb_ary_combination(VALUE ary, VALUE num)
         }
     }
     else {
-        VALUE ary0 = ary_make_shared_copy(ary); /* private defensive copy of ary */
+        VALUE ary0 = ary_make_hidden_shared_copy(ary); /* private defensive copy of ary */
         volatile VALUE t0;
         long *stack = ALLOCV_N(long, t0, n+1);
 
-        RBASIC_CLEAR_CLASS(ary0);
         combinate0(len, n, stack, ary0);
         ALLOCV_END(t0);
         RBASIC_SET_CLASS_RAW(ary0, rb_cArray);
@@ -7611,8 +7615,7 @@ rb_ary_repeated_permutation(VALUE ary, VALUE num)
     else {             /* this is the general case */
         volatile VALUE t0;
         long *p = ALLOCV_N(long, t0, r);
-        VALUE ary0 = ary_make_shared_copy(ary); /* private defensive copy of ary */
-        RBASIC_CLEAR_CLASS(ary0);
+        VALUE ary0 = ary_make_hidden_shared_copy(ary); /* private defensive copy of ary */
 
         rpermute0(n, r, p, ary0); /* compute and yield repeated permutations */
         ALLOCV_END(t0);
@@ -7719,8 +7722,7 @@ rb_ary_repeated_combination(VALUE ary, VALUE num)
     else {
         volatile VALUE t0;
         long *p = ALLOCV_N(long, t0, n);
-        VALUE ary0 = ary_make_shared_copy(ary); /* private defensive copy of ary */
-        RBASIC_CLEAR_CLASS(ary0);
+        VALUE ary0 = ary_make_hidden_shared_copy(ary); /* private defensive copy of ary */
 
         rcombinate0(len, n, p, n, ary0); /* compute and yield repeated combinations */
         ALLOCV_END(t0);
