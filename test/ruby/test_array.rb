@@ -2687,6 +2687,17 @@ class TestArray < Test::Unit::TestCase
     assert_empty(a.reject {|x| !x.include?(0)})
   end
 
+  def test_repeated_permutation_array_modified
+    ary = @cls[*(1..1000)]
+    cls = @cls
+    obj = Object.new
+    obj.define_singleton_method(:to_int) do
+      ary.replace(cls[1, 2])
+      2
+    end
+    assert_equal(@cls[[1, 1], [1, 2], [2, 1], [2, 2]], ary.repeated_permutation(obj).to_a)
+  end
+
   def test_repeated_permutation_stack_error
     assert_separately([], "#{<<-"begin;"}\n#{<<~'end;'}", timeout: 30)
     begin;
