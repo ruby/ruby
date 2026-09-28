@@ -40,14 +40,17 @@ require_relative '../../../spec_helper'
       @buffer.get_string.should == "abcdefgh"
     end
 
-    it "accepts adjacent non-empty ranges in either address order" do
-      [[[0, 4], [4, 4]], [[4, 4], [0, 4]]].each do |left, right|
-        @buffer.set_string("abcdefgh")
-        destination = @buffer.slice(*left)
-        mask = @buffer.slice(*right)
-        original_mask = mask.get_string
-        destination.public_send(operation, mask).should.equal?(destination)
-        mask.get_string.should == original_mask
+    # Adjacent-range overlap was fixed in Ruby 3.4 ([Bug #20933]).
+    ruby_version_is "3.4" do
+      it "accepts adjacent non-empty ranges in either address order" do
+        [[[0, 4], [4, 4]], [[4, 4], [0, 4]]].each do |left, right|
+          @buffer.set_string("abcdefgh")
+          destination = @buffer.slice(*left)
+          mask = @buffer.slice(*right)
+          original_mask = mask.get_string
+          destination.public_send(operation, mask).should.equal?(destination)
+          mask.get_string.should == original_mask
+        end
       end
     end
 
