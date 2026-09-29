@@ -284,17 +284,30 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
             OPTIONS.code_gc = true;
         },
 
-        ("perf", _) => match opt_val {
-            "" => unsafe {
-                OPTIONS.frame_pointer = true;
-                OPTIONS.perf_map = Some(PerfMap::ISEQ);
-            },
-            "fp" => unsafe { OPTIONS.frame_pointer = true },
-            "iseq" => unsafe { OPTIONS.perf_map = Some(PerfMap::ISEQ) },
-            // Accept --yjit-perf=map for backward compatibility
-            "codegen" | "map" => unsafe { OPTIONS.perf_map = Some(PerfMap::Codegen) },
-            _ => return None,
-         },
+        ("perf", _) => {
+            let perf_map = match opt_val {
+                "" => {
+                    unsafe { OPTIONS.frame_pointer = true };
+                    Some(PerfMap::ISEQ)
+                },
+                "fp" => {
+                    unsafe { OPTIONS.frame_pointer = true };
+                    None
+                },
+                "iseq" => Some(PerfMap::ISEQ),
+                // Accept --yjit-perf=map for backward compatibility
+                "codegen" | "map" => Some(PerfMap::Codegen),
+                _ => return None,
+            };
+            if perf_map.is_some() {
+                // The perf map is for Linux perf, and /tmp does not exist on Windows
+                if cfg!(windows) {
+                    eprintln!("WARNING: --yjit-perf does not write a perf map on Windows");
+                } else {
+                    unsafe { OPTIONS.perf_map = perf_map }
+                }
+            }
+        },
 
         ("dump-disasm", _) => {
             if !cfg!(feature = "disasm") {

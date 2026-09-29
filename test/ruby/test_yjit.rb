@@ -55,6 +55,12 @@ class TestYJIT < Test::Unit::TestCase
     #assert_in_out_err('--yjit-call-threshold=', '', [], /--yjit-call-threshold needs an argument/)
   end
 
+  def test_perf_map_on_windows
+    warning = ['WARNING: --yjit-perf does not write a perf map on Windows']
+    assert_in_out_err(%w[--yjit-perf --yjit-call-threshold=1], 'def foo = 1; foo; p :ok', [':ok'], warning, success: true)
+    assert_in_out_err(%w[--yjit-perf=fp --yjit-call-threshold=1], 'def foo = 1; foo; p :ok', [':ok'], [], success: true)
+  end if /mswin/ =~ RUBY_PLATFORM
+
   def test_rel32_calls_on_windows
     stats = assert_compiles(<<~'RUBY', exits: :any)
       def foo = [1, 2].sum
