@@ -383,4 +383,20 @@ class TestFiberScheduler < Test::Unit::TestCase
     thread.kill rescue nil
     FileUtils.rm_f(path)
   end
+
+  def test_io_wait_preserves_errno
+    assert_separately %W[-I#{__dir__} -r scheduler], <<~RUBY
+      [nil, 0].each do |result|
+        Thread.new do
+          Fiber.set_scheduler(IOWaitErrorScheduler.new(result))
+          IO.pipe do |reader, writer|
+            Fiber.schedule do
+              assert_raise(Errno::EAGAIN) { reader.read(1) }
+              assert_raise(Errno::EAGAIN) { writer.write("hello") }
+            end
+          end
+        end.join
+      end
+    RUBY
+  end
 end

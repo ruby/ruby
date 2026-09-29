@@ -1727,8 +1727,14 @@ rb_io_maybe_wait(int error, VALUE io, VALUE events, VALUE timeout)
 #if EWOULDBLOCK != EAGAIN
       case EWOULDBLOCK:
 #endif
+      {
         // The operation would block, so wait for the specified events:
-        return rb_io_wait(io, events, timeout);
+        VALUE result = rb_io_wait(io, events, timeout);
+        // The scheduler may change errno while waiting. Preserve the original
+        // error in case no events are ready and the caller reports the failure.
+        errno = error;
+        return result;
+      }
 
       default:
         // Non-specific error, no event is ready:
