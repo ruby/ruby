@@ -606,6 +606,7 @@ invalid_parameter(const wchar_t *expr, const wchar_t *func, const wchar_t *file,
 }
 
 int ruby_w32_rtc_error;
+int ruby_w32_wer;
 
 #ifndef __MINGW32__
 /* License: Ruby's */
@@ -877,7 +878,9 @@ rb_w32_sysinit(int *argc, char ***argv)
     _set_invalid_parameter_handler(invalid_parameter);
     _RTC_SetErrorFunc(rtc_error_handler);
     set_pioinfo_extra();
-    SetErrorMode(SEM_FAILCRITICALERRORS|SEM_NOGPFAULTERRORBOX);
+    /* RUBY_DEBUG=wer leaves unhandled exceptions to Windows Error Reporting,
+     * so that it can write crash dumps. */
+    SetErrorMode(SEM_FAILCRITICALERRORS|(ruby_w32_wer ? 0 : SEM_NOGPFAULTERRORBOX));
 
     get_version();
 
