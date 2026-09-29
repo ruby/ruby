@@ -137,10 +137,10 @@ pub enum TraceExits {
     Counter(Counter),
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, Debug)]
 pub enum LogOutput {
     // Dump to the log file as events occur.
-    File(std::os::unix::io::RawFd),
+    File(&'static File),
     // Keep the log in memory only
     MemoryOnly,
     // Dump to stderr when the process exits
@@ -152,7 +152,7 @@ pub enum DumpDisasm {
     // Dump to stdout
     Stdout,
     // Dump to "yjit_{pid}.log" file under the specified directory
-    File(std::os::unix::io::RawFd),
+    File(&'static File),
 }
 
 /// Type of symbols to dump into /tmp/perf-{pid}.map
@@ -307,9 +307,8 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
                     let path = format!("{directory}/yjit_{}.log", std::process::id());
                     match File::options().create(true).append(true).open(&path) {
                         Ok(file) => {
-                            use std::os::unix::io::IntoRawFd;
                             eprintln!("YJIT disasm dump: {path}");
-                            unsafe { OPTIONS.dump_disasm = Some(DumpDisasm::File(file.into_raw_fd())) }
+                            unsafe { OPTIONS.dump_disasm = Some(DumpDisasm::File(Box::leak(Box::new(file)))) }
                         }
                         Err(err) => eprintln!("Failed to create {path}: {err}"),
                     }
@@ -354,10 +353,9 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
 
                 match File::options().create(true).write(true).truncate(true).open(&log_file_path) {
                     Ok(file) => {
-                        use std::os::unix::io::IntoRawFd;
                         eprintln!("YJIT log: {log_file_path}");
 
-                        unsafe { OPTIONS.log = Some(LogOutput::File(file.into_raw_fd())) }
+                        unsafe { OPTIONS.log = Some(LogOutput::File(Box::leak(Box::new(file)))) }
                         Log::init()
                     }
                     Err(err) => panic!("Failed to create {log_file_path}: {err}"),
