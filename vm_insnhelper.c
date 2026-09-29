@@ -7365,6 +7365,27 @@ vm_opt_not(struct rb_control_frame_struct *reg_cfp, CALL_DATA cd, VALUE recv)
     }
 }
 
+static const rb_callable_method_entry_t *
+vm_logop_resolve_refined(rb_execution_context_t *ec, struct rb_control_frame_struct *reg_cfp,
+                         CALL_DATA cd, VALUE recv, const struct rb_callcache *cc)
+{
+    struct rb_calling_info calling = {
+        .cd = cd,
+        .cc = cc,
+        .recv = recv,
+        .argc = 1,
+    };
+    const rb_callable_method_entry_t *ref_cme = search_refined_method(ec, reg_cfp, &calling);
+    if (UNDEFINED_METHOD_ENTRY_P(ref_cme) || ref_cme->def->type != VM_METHOD_TYPE_REFINED) {
+        return ref_cme;
+    }
+
+    /* Without active refinements for this class, the lookup may reach a
+     * refined entry of a superclass, which dispatch resolves again too. */
+    const struct rb_callcache super_cc = VM_CC_ON_STACK(ref_cme->defined_class, vm_call_general, {{ 0 }}, ref_cme);
+    return vm_logop_resolve_refined(ec, reg_cfp, cd, recv, &super_cc);
+}
+
 NOINLINE(static const rb_callable_method_entry_t *
          vm_logop_search_refined(rb_execution_context_t *ec, struct rb_control_frame_struct *reg_cfp,
                                  CALL_DATA cd, VALUE recv, const rb_callable_method_entry_t *cme));
@@ -7373,13 +7394,7 @@ static const rb_callable_method_entry_t *
 vm_logop_search_refined(rb_execution_context_t *ec, struct rb_control_frame_struct *reg_cfp,
                         CALL_DATA cd, VALUE recv, const rb_callable_method_entry_t *cme)
 {
-    struct rb_calling_info calling = {
-        .cd = cd,
-        .cc = cd->cc,
-        .recv = recv,
-        .argc = 1,
-    };
-    const rb_callable_method_entry_t *ref_cme = search_refined_method(ec, reg_cfp, &calling);
+    const rb_callable_method_entry_t *ref_cme = vm_logop_resolve_refined(ec, reg_cfp, cd, recv, cd->cc);
     if (ref_cme) {
         const struct rb_callcache *cc = vm_cc_new(cme->defined_class, ref_cme, vm_call_general, cc_type_refinement);
         RB_OBJ_WRITE(CFP_ISEQ(reg_cfp), &cd->cc, cc);

@@ -233,6 +233,21 @@ class TestLogicalOpHook
     assert_same(d, d || :b)
   end
 
+  def test_refinement_of_superclass
+    assert_separately([], <<~'RUBY')
+      module Inactive; refine(Integer) { def &&(other) = :integer }; end
+      module Unrelated; refine(String) { def foo = nil }; end
+      module Ext; refine(Object) { def &&(other) = :object }; end
+      using Unrelated
+      using Ext
+      3.times do
+        assert_equal(:object, 1 && 2)
+        assert_equal(:object, "s" && 2)
+        assert_equal(:object, nil && 2)
+      end
+    RUBY
+  end
+
   def test_proc_refined
     assert_separately([], <<~'RUBY')
       Node = Struct.new(:op, :lhs, :rhs)
