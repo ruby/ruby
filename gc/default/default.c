@@ -4819,6 +4819,12 @@ restore_mach_bad_access_exc(void)
 }
 #endif
 
+#if defined(HAVE_PTHREAD_SIGMASK)
+# define gc_sigmask pthread_sigmask
+#else
+# define gc_sigmask sigprocmask
+#endif
+
 static void
 read_barrier_signal(int sig, siginfo_t *info, void *data)
 {
@@ -4832,7 +4838,7 @@ read_barrier_signal(int sig, siginfo_t *info, void *data)
     sigemptyset(&set);
     sigaddset(&set, SIGBUS);
     sigaddset(&set, SIGSEGV);
-    sigprocmask(SIG_UNBLOCK, &set, &prev_set);
+    gc_sigmask(SIG_UNBLOCK, &set, &prev_set);
 #ifdef HAVE_MACH_TASK_EXCEPTION_PORTS
     disable_mach_bad_access_exc();
 #endif
@@ -4845,7 +4851,7 @@ read_barrier_signal(int sig, siginfo_t *info, void *data)
 #endif
     sigaction(SIGBUS, &prev_sigbus, NULL);
     sigaction(SIGSEGV, &prev_sigsegv, NULL);
-    sigprocmask(SIG_SETMASK, &prev_set, NULL);
+    gc_sigmask(SIG_SETMASK, &prev_set, NULL);
 }
 
 static void
