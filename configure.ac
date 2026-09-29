@@ -3976,6 +3976,9 @@ YJIT_LIBS=
 JIT_CARGO_SUPPORT=no
 AS_CASE(["${YJIT_SUPPORT}"],
 [yes|dev|stats|dev_nodebug], [
+    AS_CASE(["$target_os"], [mingw*], [
+        AC_MSG_ERROR([YJIT is not supported on mingw. Use win32\configure.bat --enable-yjit on mswin instead])
+    ])
     AS_IF([test x"$RUSTC" = "xno"],
         AC_MSG_ERROR([rustc is required. Installation instructions available at https://www.rust-lang.org/tools/install])
     )
