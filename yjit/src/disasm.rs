@@ -145,14 +145,12 @@ pub fn dump_disasm_addr_range(cb: &CodeBlock, start_addr: CodePtr, end_addr: Cod
         if disasm.len() > 0 {
             match dump_disasm {
                 DumpDisasm::Stdout => println!("{disasm}"),
-                DumpDisasm::File(fd) => {
-                    use std::os::unix::io::{FromRawFd, IntoRawFd};
+                DumpDisasm::File(file) => {
                     use std::io::Write;
 
-                    // Write with the fd opened during boot
-                    let mut file = unsafe { std::fs::File::from_raw_fd(*fd) };
+                    // Write with the file opened during boot
+                    let mut file: &std::fs::File = file;
                     file.write_all(disasm.as_bytes()).unwrap();
-                    let _ = file.into_raw_fd(); // keep the fd open
                 }
             };
         }
