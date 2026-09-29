@@ -55,6 +55,17 @@ class TestYJIT < Test::Unit::TestCase
     #assert_in_out_err('--yjit-call-threshold=', '', [], /--yjit-call-threshold needs an argument/)
   end
 
+  def test_rel32_calls_on_windows
+    stats = assert_compiles(<<~'RUBY', exits: :any)
+      def foo = [1, 2].sum
+      foo
+    RUBY
+    if stats[:num_send_x86_rel32] == 0 && stats[:num_send_x86_reg] > 0
+      omit "the JIT region was reserved out of rel32 range of the C functions"
+    end
+    assert_operator stats[:num_send_x86_rel32], :>, 0
+  end if /x64-mswin/ =~ RUBY_PLATFORM
+
   def test_yjit_enable
     args = []
     args << "--disable=yjit" if RubyVM::YJIT.enabled?
@@ -2193,6 +2204,8 @@ class TestYJIT < Test::Unit::TestCase
         flunk "Expected to compile instructions #{missed_insns.join(", ")} but didn't.\niseq:\n#{disasm}"
       end
     end
+
+    runtime_stats
   end
 
   def script_shell_encode(s)
