@@ -250,10 +250,12 @@ module RubyVM::YJIT
     disasm_str = Primitive.rb_yjit_disasm_iseq(iseq)
 
     if !disasm_str
-      warn(
-        "YJIT disasm is only available when YJIT is built in dev mode, i.e.\n" +
-        "./configure --enable-yjit=dev (see doc/jit/yjit.md)\n"
-      )
+      hint = if RUBY_PLATFORM.include?("mswin")
+        ",\nbut YJIT on mswin supports release builds only"
+      else
+        ", i.e.\n./configure --enable-yjit=dev"
+      end
+      warn("YJIT disasm is only available when YJIT is built in dev mode#{hint} (see doc/jit/yjit.md)\n")
       return nil
     end
 
