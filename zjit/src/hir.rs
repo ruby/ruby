@@ -6738,7 +6738,7 @@ impl Function {
                     [head, tail @ ..] => {
                         block_cache = cached_insns[*head].clone();
                         for pred in tail {
-                            block_cache.retain(|key, value| cached_insns[pred.0 as usize].get(key) == Some(value));
+                            block_cache.retain(|key, value| cached_insns[*pred].get(key) == Some(value));
                         }
 
                         // If multiple entries contain the same offset, they may alias.
