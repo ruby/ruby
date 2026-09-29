@@ -9,7 +9,7 @@ use crate::cruby::get_class_name;
 use crate::cruby::get_module_name;
 use crate::cruby::ruby_sym_to_rust_string;
 use crate::cruby::rb_mRubyVMFrozenCore;
-use crate::hir::{Const, PtrPrintMap};
+use crate::hir::{Const, ConstRepr, PtrPrintMap};
 use crate::profile::ProfiledType;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -152,7 +152,7 @@ fn write_spec(f: &mut std::fmt::Formatter, printer: &TypePrinter) -> std::fmt::R
                 write!(f, "[{val}]")
             }
         }
-        Specialization::Int(val) if ty.is_subtype(types::CPtr) => write!(f, "[{}]", Const::CPtr(val as *const u8).print(printer.ptr_map)),
+        Specialization::Int(val) if ty.is_subtype(types::CPtr) => write!(f, "[CPtr({:p})]", printer.ptr_map.map_ptr(val as *const u8)),
         Specialization::Int(val) => write!(f, "[{val}]"),
         Specialization::Double(val) => write!(f, "[{val}]"),
     }
@@ -343,21 +343,21 @@ impl Type {
     }
 
     pub fn from_const(val: Const) -> Type {
-        match val {
-            Const::Value(v) => Self::from_value(v),
-            Const::CBool(v) => Self::from_cbool(v),
-            Const::CInt8(v) => Self::from_cint(types::CInt8, v as i64),
-            Const::CInt16(v) => Self::from_cint(types::CInt16, v as i64),
-            Const::CInt32(v) => Self::from_cint(types::CInt32, v as i64),
-            Const::CInt64(v) => Self::from_cint(types::CInt64, v),
-            Const::CUInt8(v) => Self::from_cint(types::CUInt8, v as i64),
-            Const::CUInt16(v) => Self::from_cint(types::CUInt16, v as i64),
-            Const::CUInt32(v) => Self::from_cint(types::CUInt32, v as i64),
-            Const::CAttrIndex(v) => Self::from_cint(types::CAttrIndex, v as i64),
-            Const::CShape(v) => Self::from_cint(types::CShape, v.0 as i64),
-            Const::CUInt64(v) => Self::from_cint(types::CUInt64, v as i64),
-            Const::CPtr(v) => Self::from_cptr(v),
-            Const::CDouble(v) => Self::from_double(v),
+        match val.inner() {
+            ConstRepr::Value(v) => Self::from_value(v),
+            ConstRepr::CBool(v) => Self::from_cbool(v),
+            ConstRepr::CInt8(v) => Self::from_cint(types::CInt8, v as i64),
+            ConstRepr::CInt16(v) => Self::from_cint(types::CInt16, v as i64),
+            ConstRepr::CInt32(v) => Self::from_cint(types::CInt32, v as i64),
+            ConstRepr::CInt64(v) => Self::from_cint(types::CInt64, v),
+            ConstRepr::CUInt8(v) => Self::from_cint(types::CUInt8, v as i64),
+            ConstRepr::CUInt16(v) => Self::from_cint(types::CUInt16, v as i64),
+            ConstRepr::CUInt32(v) => Self::from_cint(types::CUInt32, v as i64),
+            ConstRepr::CAttrIndex(v) => Self::from_cint(types::CAttrIndex, v as i64),
+            ConstRepr::CShape(v) => Self::from_cint(types::CShape, v.0 as i64),
+            ConstRepr::CUInt64(v) => Self::from_cint(types::CUInt64, v as i64),
+            ConstRepr::CPtr(v) => Self::from_cptr(v),
+            ConstRepr::CDouble(v) => Self::from_double(v),
         }
     }
 
@@ -449,20 +449,20 @@ impl Type {
     }
 
     pub fn has_value(&self, val: Const) -> bool {
-        match (self.spec(), val) {
-            (Specialization::Object(v1), Const::Value(v2)) => v1 == v2,
-            (Specialization::Int(v1), Const::CBool(v2)) if self.is_subtype(types::CBool) => v1 == (v2 as u64),
-            (Specialization::Int(v1), Const::CInt8(v2)) if self.is_subtype(types::CInt8) => v1 == (v2 as u64),
-            (Specialization::Int(v1), Const::CInt16(v2)) if self.is_subtype(types::CInt16) => v1 == (v2 as u64),
-            (Specialization::Int(v1), Const::CInt32(v2)) if self.is_subtype(types::CInt32) => v1 == (v2 as u64),
-            (Specialization::Int(v1), Const::CInt64(v2)) if self.is_subtype(types::CInt64) => v1 == (v2 as u64),
-            (Specialization::Int(v1), Const::CUInt8(v2)) if self.is_subtype(types::CUInt8) => v1 == (v2 as u64),
-            (Specialization::Int(v1), Const::CUInt16(v2)) if self.is_subtype(types::CUInt16) => v1 == (v2 as u64),
-            (Specialization::Int(v1), Const::CUInt32(v2)) if self.is_subtype(types::CUInt32) => v1 == (v2 as u64),
-            (Specialization::Int(v1), Const::CShape(v2)) if self.is_subtype(types::CShape) => v1 == (v2.0 as u64),
-            (Specialization::Int(v1), Const::CUInt64(v2)) if self.is_subtype(types::CUInt64) => v1 == v2,
-            (Specialization::Int(v1), Const::CPtr(v2)) if self.is_subtype(types::CPtr) => v1 == (v2 as u64),
-            (Specialization::Double(v1), Const::CDouble(v2)) => v1.to_bits() == v2.to_bits(),
+        match (self.spec(), val.inner()) {
+            (Specialization::Object(v1), ConstRepr::Value(v2)) => v1 == v2,
+            (Specialization::Int(v1), ConstRepr::CBool(v2)) if self.is_subtype(types::CBool) => v1 == (v2 as u64),
+            (Specialization::Int(v1), ConstRepr::CInt8(v2)) if self.is_subtype(types::CInt8) => v1 == (v2 as u64),
+            (Specialization::Int(v1), ConstRepr::CInt16(v2)) if self.is_subtype(types::CInt16) => v1 == (v2 as u64),
+            (Specialization::Int(v1), ConstRepr::CInt32(v2)) if self.is_subtype(types::CInt32) => v1 == (v2 as u64),
+            (Specialization::Int(v1), ConstRepr::CInt64(v2)) if self.is_subtype(types::CInt64) => v1 == (v2 as u64),
+            (Specialization::Int(v1), ConstRepr::CUInt8(v2)) if self.is_subtype(types::CUInt8) => v1 == (v2 as u64),
+            (Specialization::Int(v1), ConstRepr::CUInt16(v2)) if self.is_subtype(types::CUInt16) => v1 == (v2 as u64),
+            (Specialization::Int(v1), ConstRepr::CUInt32(v2)) if self.is_subtype(types::CUInt32) => v1 == (v2 as u64),
+            (Specialization::Int(v1), ConstRepr::CShape(v2)) if self.is_subtype(types::CShape) => v1 == (v2.0 as u64),
+            (Specialization::Int(v1), ConstRepr::CUInt64(v2)) if self.is_subtype(types::CUInt64) => v1 == v2,
+            (Specialization::Int(v1), ConstRepr::CPtr(v2)) if self.is_subtype(types::CPtr) => v1 == (v2 as u64),
+            (Specialization::Double(v1), ConstRepr::CDouble(v2)) => v1.to_bits() == v2.to_bits(),
             _ => false,
         }
     }
@@ -754,26 +754,26 @@ mod tests {
 
     #[test]
     fn from_const() {
-        let cint32 = Type::from_const(Const::CInt32(12));
+        let cint32 = Type::from_const(12i32.into());
         assert_subtype(cint32, types::CInt32);
         assert_eq!(cint32.spec(), Specialization::Int(12));
         assert_eq!(format!("{}", cint32), "CInt32[12]");
 
-        let cint32 = Type::from_const(Const::CInt32(-12));
+        let cint32 = Type::from_const((-12i32).into());
         assert_subtype(cint32, types::CInt32);
         assert_eq!(cint32.spec(), Specialization::Int((-12i64) as u64));
         assert_eq!(format!("{}", cint32), "CInt32[-12]");
 
-        let cuint32 = Type::from_const(Const::CInt32(12));
+        let cuint32 = Type::from_const(12i32.into());
         assert_subtype(cuint32, types::CInt32);
         assert_eq!(cuint32.spec(), Specialization::Int(12));
 
-        let cuint32 = Type::from_const(Const::CUInt32(0xffffffff));
+        let cuint32 = Type::from_const(0xffffffffu32.into());
         assert_subtype(cuint32, types::CUInt32);
         assert_eq!(cuint32.spec(), Specialization::Int(0xffffffff));
         assert_eq!(format!("{}", cuint32), "CUInt32[4294967295]");
 
-        let cuint32 = Type::from_const(Const::CUInt32(0xc00087));
+        let cuint32 = Type::from_const(0xc00087u32.into());
         assert_subtype(cuint32, types::CUInt32);
         assert_eq!(cuint32.spec(), Specialization::Int(0xc00087));
         assert_eq!(format!("{}", cuint32), "CUInt32[12583047]");
@@ -1175,72 +1175,72 @@ mod tests {
             let a = rust_str_to_sym("a");
             let b = rust_str_to_sym("b");
             let ty = Type::from_value(a);
-            assert!(ty.has_value(Const::Value(a)));
-            assert!(!ty.has_value(Const::Value(b)));
+            assert!(ty.has_value(a.into()));
+            assert!(!ty.has_value(b.into()));
         });
 
         let true_ty = Type::from_cbool(true);
-        assert!(true_ty.has_value(Const::CBool(true)));
-        assert!(!true_ty.has_value(Const::CBool(false)));
+        assert!(true_ty.has_value(true.into()));
+        assert!(!true_ty.has_value(false.into()));
 
         let int8_ty = Type::from_cint(types::CInt8, 42);
-        assert!(int8_ty.has_value(Const::CInt8(42)));
-        assert!(!int8_ty.has_value(Const::CInt8(-1)));
+        assert!(int8_ty.has_value(42i8.into()));
+        assert!(!int8_ty.has_value((-1i8).into()));
         let neg_int8_ty = Type::from_cint(types::CInt8, -1);
-        assert!(neg_int8_ty.has_value(Const::CInt8(-1)));
+        assert!(neg_int8_ty.has_value((-1i8).into()));
 
         let int16_ty = Type::from_cint(types::CInt16, 1000);
-        assert!(int16_ty.has_value(Const::CInt16(1000)));
-        assert!(!int16_ty.has_value(Const::CInt16(2000)));
+        assert!(int16_ty.has_value(1000i16.into()));
+        assert!(!int16_ty.has_value(2000i16.into()));
 
         let int32_ty = Type::from_cint(types::CInt32, 100000);
-        assert!(int32_ty.has_value(Const::CInt32(100000)));
-        assert!(!int32_ty.has_value(Const::CInt32(-100000)));
+        assert!(int32_ty.has_value(100000i32.into()));
+        assert!(!int32_ty.has_value((-100000i32).into()));
 
         let int64_ty = Type::from_cint(types::CInt64, i64::MAX);
-        assert!(int64_ty.has_value(Const::CInt64(i64::MAX)));
-        assert!(!int64_ty.has_value(Const::CInt64(0)));
+        assert!(int64_ty.has_value(i64::MAX.into()));
+        assert!(!int64_ty.has_value(0i64.into()));
 
         let uint8_ty = Type::from_cint(types::CUInt8, u8::MAX as i64);
-        assert!(uint8_ty.has_value(Const::CUInt8(u8::MAX)));
-        assert!(!uint8_ty.has_value(Const::CUInt8(0)));
+        assert!(uint8_ty.has_value(u8::MAX.into()));
+        assert!(!uint8_ty.has_value(0u8.into()));
 
         let uint16_ty = Type::from_cint(types::CUInt16, u16::MAX as i64);
-        assert!(uint16_ty.has_value(Const::CUInt16(u16::MAX)));
-        assert!(!uint16_ty.has_value(Const::CUInt16(1)));
+        assert!(uint16_ty.has_value(u16::MAX.into()));
+        assert!(!uint16_ty.has_value(1u16.into()));
 
         let uint32_ty = Type::from_cint(types::CUInt32, u32::MAX as i64);
-        assert!(uint32_ty.has_value(Const::CUInt32(u32::MAX)));
-        assert!(!uint32_ty.has_value(Const::CUInt32(42)));
+        assert!(uint32_ty.has_value(u32::MAX.into()));
+        assert!(!uint32_ty.has_value(42u32.into()));
 
         let uint64_ty = Type::from_cint(types::CUInt64, i64::MAX);
-        assert!(uint64_ty.has_value(Const::CUInt64(i64::MAX as u64)));
-        assert!(!uint64_ty.has_value(Const::CUInt64(123)));
+        assert!(uint64_ty.has_value((i64::MAX as u64).into()));
+        assert!(!uint64_ty.has_value(123u64.into()));
 
         let shape_ty = Type::from_cint(types::CShape, 0x1234);
-        assert!(shape_ty.has_value(Const::CShape(crate::cruby::ShapeId(0x1234))));
-        assert!(!shape_ty.has_value(Const::CShape(crate::cruby::ShapeId(0x5678))));
+        assert!(shape_ty.has_value(crate::cruby::ShapeId(0x1234).into()));
+        assert!(!shape_ty.has_value(crate::cruby::ShapeId(0x5678).into()));
 
-        let ptr = 0x1000 as *const u8;
-        let ptr_ty = Type::from_cptr(ptr);
-        assert!(ptr_ty.has_value(Const::CPtr(ptr)));
-        assert!(!ptr_ty.has_value(Const::CPtr(0x2000 as *const u8)));
+        let ptr = 0x1000 as *const VALUE;
+        let ptr_ty = Type::from_cptr(ptr as *const u8);
+        assert!(ptr_ty.has_value(Const::cptr(ptr)));
+        assert!(!ptr_ty.has_value(Const::cptr(0x2000 as *const VALUE)));
 
         let double_ty = Type::from_double(std::f64::consts::PI);
-        assert!(double_ty.has_value(Const::CDouble(std::f64::consts::PI)));
-        assert!(!double_ty.has_value(Const::CDouble(3.123)));
+        assert!(double_ty.has_value(std::f64::consts::PI.into()));
+        assert!(!double_ty.has_value(3.123.into()));
 
         let nan_ty = Type::from_double(f64::NAN);
-        assert!(nan_ty.has_value(Const::CDouble(f64::NAN)));
+        assert!(nan_ty.has_value(f64::NAN.into()));
 
         // Mismatched types
-        assert!(!int8_ty.has_value(Const::CInt16(42)));
-        assert!(!int16_ty.has_value(Const::CInt32(1000)));
-        assert!(!uint8_ty.has_value(Const::CInt8(-1i8)));
+        assert!(!int8_ty.has_value(42i16.into()));
+        assert!(!int16_ty.has_value(1000i32.into()));
+        assert!(!uint8_ty.has_value((-1i8).into()));
 
         // Wrong specialization (unknown value)
-        assert!(!types::CInt8.has_value(Const::CInt8(42)));
-        assert!(!types::CBool.has_value(Const::CBool(true)));
-        assert!(!types::CShape.has_value(Const::CShape(crate::cruby::ShapeId(0x1234))));
+        assert!(!types::CInt8.has_value(42i8.into()));
+        assert!(!types::CBool.has_value(true.into()));
+        assert!(!types::CShape.has_value(crate::cruby::ShapeId(0x1234).into()));
     }
 }

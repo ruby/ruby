@@ -3061,8 +3061,8 @@ mod hir_opt_tests {
         let block = function.entry_block;
 
         let comment = function.push_comment(block, "diagnostic".to_string());
-        let dead_const = function.push_insn(block, Insn::Const { val: Const::CBool(false) });
-        let return_val = function.push_insn(block, Insn::Const { val: Const::CBool(true) });
+        let dead_const = function.push_insn(block, Insn::Const { val: false.into() });
+        let return_val = function.push_insn(block, Insn::Const { val: true.into() });
         function.push_insn(block, Insn::Return { val: return_val });
         function.seal_entries();
 

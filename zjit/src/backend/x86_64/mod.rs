@@ -617,7 +617,7 @@ impl Assembler {
                         asm.store(mem_out, SCRATCH0_OPND.with_num_bits(mem_out.rm_num_bits()));
                     }
                 }
-                // Convert Opnd::const_ptr into Opnd::Mem. This split is done here to give
+                // Convert a baked pointer into Opnd::Mem. This split is done here to give
                 // a register for compile_exits.
                 &mut Insn::IncrCounter { mem, value } => {
                     assert!(matches!(mem, Opnd::UImm(_)));

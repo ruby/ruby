@@ -1,3 +1,4 @@
+use crate::bakable_ptr::BakablePtr;
 use crate::backend::lir::{self, Assembler, EC, Opnd, Target, asm_comment};
 use crate::cruby::{
     RB_GC_ZJIT_FASTPATH_DEFAULT, RB_GC_ZJIT_FASTPATH_MMTK,
@@ -243,7 +244,7 @@ fn emit_mmtk_new_obj_fastpath(
     let post_alloc_func = (fastpath.post_alloc_func != 0)
         .then_some(fastpath.post_alloc_func as *const u8)?;
 
-    let objspace_const = Opnd::const_ptr(fastpath.objspace);
+    let objspace_const = fastpath.objspace.bake_ptr();
     let gc_stress = asm.ccall(gc_stress_p_func, vec![objspace_const]);
     asm.test(gc_stress, gc_stress);
     asm.jnz(jit, miss.clone());

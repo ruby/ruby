@@ -17,6 +17,7 @@ mod state;
 mod distribution;
 mod cruby;
 mod cruby_methods;
+pub mod bakable_ptr;
 pub mod hir;
 mod hir_type;
 mod hir_effect;

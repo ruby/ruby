@@ -862,7 +862,7 @@ impl Assembler {
                     }
                 }
                 &mut Insn::IncrCounter { mem, value } => {
-                    // Convert Opnd::const_ptr into Opnd::Mem.
+                    // Convert a baked pointer into Opnd::Mem.
                     // It's split here to support IncrCounter in compile_exits.
                     assert!(matches!(mem, Opnd::UImm(_)));
                     asm.load_into(SCRATCH0_OPND, mem);
