@@ -396,7 +396,6 @@ class TestRactor < Test::Unit::TestCase
   end
 
   def test_sending_hook_payloads_under_gc_stress
-    pend "SIGSEGV intermittently on Windows arm64" if /\A(?:arm64|aarch64)-(?:mswin|mingw)/ =~ RUBY_PLATFORM
     # A dump hook's payload is garbage once captured. A later payload allocated into
     # its slot must not be taken for the one already seen.
     assert_ractor(<<~'RUBY', timeout: 60)
