@@ -712,7 +712,9 @@ rb_jit_get_page_size(void)
 #endif
 }
 
-#if defined(MAP_FIXED_NOREPLACE) && defined(_SC_PAGESIZE)
+#if defined(_WIN32) || (defined(MAP_FIXED_NOREPLACE) && defined(_SC_PAGESIZE))
+# define JIT_PROBE_NEAR_TEXT 1
+
 // Round `ptr` up to the next multiple of `multiple` bytes. Shared with zjit.c.
 uint8_t *
 rb_jit_align_ptr(uint8_t *ptr, uint32_t multiple)
@@ -736,18 +738,20 @@ rb_jit_align_ptr(uint8_t *ptr, uint32_t multiple)
 uint8_t *
 rb_jit_reserve_addr_space(uint32_t mem_size)
 {
+#ifdef JIT_PROBE_NEAR_TEXT
+    uint8_t *const cfunc_sample_addr = (void *)(uintptr_t)&rb_jit_reserve_addr_space;
+    // 64MiB: balancing space probed and time spent probing.
+    const uintptr_t probe_stride = 64 * 1024 * 1024;
+    // Related to the stride. Any successful trial will be within INT32_MAX
+    // range with slack for the binary size.
+    const int max_probe_trials = 30;
+#endif
 #ifndef _WIN32
     uint8_t *mem_block;
 
     // On Linux
     #if defined(MAP_FIXED_NOREPLACE) && defined(_SC_PAGESIZE)
         uint32_t const page_size = (uint32_t)sysconf(_SC_PAGESIZE);
-        uint8_t *const cfunc_sample_addr = (void *)(uintptr_t)&rb_jit_reserve_addr_space;
-        // 64MiB: balancing space probed and time spent probing.
-        const uintptr_t probe_stride = 64 * 1024 * 1024;
-        // Related to the stride. Any successful trial will be within INT32_MAX
-        // range with slack for the binary size.
-        const int max_probe_trials = 30;
 
         // Probe for addresses close to this function using MAP_FIXED_NOREPLACE
         // to improve odds of being in range for 32-bit relative call instructions.
@@ -824,7 +828,21 @@ rb_jit_reserve_addr_space(uint32_t mem_size)
     return mem_block;
 #else
     // Only reserve the address space. rb_jit_mark_writable() commits pages.
-    uint8_t *mem_block = VirtualAlloc(NULL, mem_size, MEM_RESERVE, PAGE_NOACCESS);
+    // Probe below this function as on Linux, aligned to the allocation
+    // granularity that VirtualAlloc() rounds a reservation's address down to.
+    SYSTEM_INFO si;
+    GetSystemInfo(&si);
+    uint8_t *mem_block = NULL;
+    uint8_t *req_addr = cfunc_sample_addr;
+    for (int i = 0; i < max_probe_trials; i++) {
+        req_addr -= probe_stride;
+        req_addr = rb_jit_align_ptr(req_addr, si.dwAllocationGranularity);
+        mem_block = VirtualAlloc(req_addr, mem_size, MEM_RESERVE, PAGE_NOACCESS);
+        if (mem_block != NULL) break;
+    }
+    if (mem_block == NULL) {
+        mem_block = VirtualAlloc(NULL, mem_size, MEM_RESERVE, PAGE_NOACCESS);
+    }
     if (mem_block == NULL) {
         errno = rb_w32_map_errno(GetLastError());
         perror("ruby: jit: Fatal VirtualAlloc failure:");
