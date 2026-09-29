@@ -4578,9 +4578,9 @@ mod hir_opt_tests {
           v30:CInt64[1] = GuardBitEquals v29, CInt64(1) recompile
           v31:CInt64[-4] = Const CInt64(-4)
           v32:CInt64 = IntAnd v27, v31
-          v33:CPtr = LoadField v32, :code_iseq@0x1001
-          v34:CPtr[CPtr(0x1002)] = GuardBitEquals v33, CPtr(0x1002) recompile
-          v35:BasicObject = InvokeBlockIseqDirect (0x1002), v32, v10, v12, v14, v16, v18, v20, v22, v24
+          v33:Iseq = LoadField v32, :code_iseq@0x1001
+          v34:Iseq[VALUE(0x1008)] = GuardBitEquals v33, Value(VALUE(0x1008)) recompile
+          v35:BasicObject = InvokeBlockIseqDirect (0x1008), v32, v10, v12, v14, v16, v18, v20, v22, v24
           CheckInterrupts
           Return v35
         ");
@@ -4738,19 +4738,19 @@ mod hir_opt_tests {
         bb5():
           v20:CInt64[-4] = Const CInt64(-4)
           v21:CInt64 = IntAnd v13, v20
-          v22:CPtr = LoadField v21, :code_iseq@0x1001
-          v23:CPtr[CPtr(0x1002)] = Const CPtr(0x1002)
+          v22:Iseq = LoadField v21, :code_iseq@0x1001
+          v23:Iseq[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           v24:CBool = IsBitEqual v22, v23
           CondBranch v24, bb7(), bb8()
         bb7():
-          v26:BasicObject = InvokeBlockIseqDirect (0x1002), v21, v10
+          v26:BasicObject = InvokeBlockIseqDirect (0x1008), v21, v10
           Jump bb4(v26)
         bb8():
-          v28:CPtr[CPtr(0x1003)] = Const CPtr(0x1003)
+          v28:Iseq[VALUE(0x1010)] = Const Value(VALUE(0x1010))
           v29:CBool = IsBitEqual v22, v28
           CondBranch v29, bb9(), bb10()
         bb9():
-          v31:BasicObject = InvokeBlockIseqDirect (0x1003), v21, v10
+          v31:BasicObject = InvokeBlockIseqDirect (0x1010), v21, v10
           Jump bb4(v31)
         bb10():
           Jump bb6()
@@ -4803,19 +4803,19 @@ mod hir_opt_tests {
         bb5():
           v20:CInt64[-4] = Const CInt64(-4)
           v21:CInt64 = IntAnd v13, v20
-          v22:CPtr = LoadField v21, :code_iseq@0x1001
-          v23:CPtr[CPtr(0x1002)] = Const CPtr(0x1002)
+          v22:Iseq = LoadField v21, :code_iseq@0x1001
+          v23:Iseq[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           v24:CBool = IsBitEqual v22, v23
           CondBranch v24, bb7(), bb8()
         bb7():
-          v26:BasicObject = InvokeBlockIseqDirect (0x1002), v21, v10
+          v26:BasicObject = InvokeBlockIseqDirect (0x1008), v21, v10
           Jump bb4(v26)
         bb8():
-          v28:CPtr[CPtr(0x1003)] = Const CPtr(0x1003)
+          v28:Iseq[VALUE(0x1010)] = Const Value(VALUE(0x1010))
           v29:CBool = IsBitEqual v22, v28
           CondBranch v29, bb9(), bb10()
         bb9():
-          v31:BasicObject = InvokeBlockIseqDirect (0x1003), v21, v10
+          v31:BasicObject = InvokeBlockIseqDirect (0x1010), v21, v10
           Jump bb4(v31)
         bb10():
           Jump bb6()
@@ -4867,19 +4867,19 @@ mod hir_opt_tests {
         bb5():
           v20:CInt64[-4] = Const CInt64(-4)
           v21:CInt64 = IntAnd v13, v20
-          v22:CPtr = LoadField v21, :code_iseq@0x1001
-          v23:CPtr[CPtr(0x1002)] = Const CPtr(0x1002)
+          v22:Iseq = LoadField v21, :code_iseq@0x1001
+          v23:Iseq[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           v24:CBool = IsBitEqual v22, v23
           CondBranch v24, bb7(), bb8()
         bb7():
-          v26:BasicObject = InvokeBlockIseqDirect (0x1002), v21, v10
+          v26:BasicObject = InvokeBlockIseqDirect (0x1008), v21, v10
           Jump bb4(v26)
         bb8():
-          v28:CPtr[CPtr(0x1003)] = Const CPtr(0x1003)
+          v28:Iseq[VALUE(0x1010)] = Const Value(VALUE(0x1010))
           v29:CBool = IsBitEqual v22, v28
           CondBranch v29, bb9(), bb10()
         bb9():
-          v31:BasicObject = InvokeBlockIseqDirect (0x1003), v21, v10
+          v31:BasicObject = InvokeBlockIseqDirect (0x1010), v21, v10
           Jump bb4(v31)
         bb10():
           Jump bb6()
@@ -4932,12 +4932,12 @@ mod hir_opt_tests {
         bb5():
           v20:CInt64[-4] = Const CInt64(-4)
           v21:CInt64 = IntAnd v13, v20
-          v22:CPtr = LoadField v21, :code_iseq@0x1011
-          v23:CPtr[CPtr(0x1012)] = Const CPtr(0x1012)
+          v22:Iseq = LoadField v21, :code_iseq@0x1011
+          v23:Iseq[VALUE(0x1018)] = Const Value(VALUE(0x1018))
           v24:CBool = IsBitEqual v22, v23
           CondBranch v24, bb7(), bb8()
         bb7():
-          v26:BasicObject = InvokeBlockIseqDirect (0x1012), v21, v10
+          v26:BasicObject = InvokeBlockIseqDirect (0x1018), v21, v10
           Jump bb4(v26)
         bb8():
           Jump bb6()
@@ -21915,9 +21915,9 @@ mod hir_opt_tests {
           v83:CInt64[1] = GuardBitEquals v82, CInt64(1) recompile
           v84:CInt64[-4] = Const CInt64(-4)
           v85:CInt64 = IntAnd v80, v84
-          v86:CPtr = LoadField v85, :code_iseq@0x1001
-          v87:CPtr[CPtr(0x1002)] = GuardBitEquals v86, CPtr(0x1002) recompile
-          v88:BasicObject = InvokeBlockIseqDirect (0x1002), v85, v77
+          v86:Iseq = LoadField v85, :code_iseq@0x1001
+          v87:Iseq[VALUE(0x1008)] = GuardBitEquals v86, Value(VALUE(0x1008)) recompile
+          v88:BasicObject = InvokeBlockIseqDirect (0x1008), v85, v77
           v92:Fixnum[1] = Const Value(1)
           v93:Fixnum = FixnumAdd v49, v92
           PatchPoint NoEPEscape(each)
