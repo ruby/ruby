@@ -13238,7 +13238,40 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_inline_struct_initialize_heap() {
+    fn test_inline_struct_initialize_too_many_members_emits_ccall() {
+        eval(r#"
+            C = Struct.new(*(0..257).map {|i| :"a#{i}"})
+            def test = C.new("x")
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:NilClass = Const Value(nil)
+          PatchPoint StableConstantNames(0x1000, C)
+          v13:ClassSubclass[C@0x1008] = Const Value(VALUE(0x1008))
+          v15:StringExact[VALUE(0x1010)] = Const Value(VALUE(0x1010))
+          v16:StringExact = StringCopy v15
+          PatchPoint MethodRedefined(C@0x1008, new@0x1018, cme:0x1020)
+          v46:ObjectSubclass[class_exact:C] = ObjectAllocClass C:VALUE(0x1008)
+          PatchPoint NoSingletonClass(C@0x1008)
+          PatchPoint MethodRedefined(C@0x1008, initialize@0x1048, cme:0x1050)
+          v51:BasicObject = CCallVariadic v46, :Struct#initialize@0x1078, v16
+          CheckInterrupts
+          Return v46
+        ");
+    }
+
+    #[test]
+    fn test_inline_struct_initialize_heap_emits_ccall() {
         eval(r#"
             C = Struct.new(*(0..1000).map {|i| :"a#{i}"})
             def test = C.new("x")

@@ -969,20 +969,20 @@ fn inline_struct_initialize(fun: &mut hir::Function, block: hir::BlockId, recv: 
     if num_members < 0 { return None; }
     // More values than the struct has members raises ArgumentError; leave that to the interpreter.
     if args.len() as i64 > num_members { return None; }
+    // This is a bit of an arbitrary limit but it's designed to avoid bloating the generated code
+    // with inline stores.
+    const MEMBER_LIMIT: i64 = 1 << 8;
+    if num_members > MEMBER_LIMIT { return None; }
     // A `keyword_init: true` class takes keywords only, and callers that pass keywords never get
     // this far (`unspecializable_c_call_type` rejects them), so any argument here would raise
     // ArgumentError. Zero arguments nil out every member before `keyword_init` is consulted at
     // all, so that case is fine either way.
     if !args.is_empty() && unsafe { rb_struct_s_keyword_init(class) }.test() { return None; }
-    // Embeddedness depends only on the member count, so every instance of the class agrees on it
-    // and no shape guard is needed. See struct_alloc.
+    // Embeddedness depends only on the member count. See struct_alloc.
     if !unsafe { rb_zjit_struct_embedded_p(class) } { return None; }
     let base_offset = RUBY_OFFSET_RSTRUCT_AS_ARY;
-    // StoreField encodes its offset as a 4-byte immediate. Check the last slot up front, because
-    // bailing out after pushing instructions would leave them stranded in the scratch block.
-    if num_members > 0 && base_offset as i64 + SIZEOF_VALUE as i64 * (num_members - 1) > i32::MAX as i64 {
-        return None;
-    }
+    // We know it's going to fit into an i32 since it's in [0, MEMBER_LIMIT).
+    let base_offset: i32 = base_offset.try_into().ok()?;
 
     // rb_struct_modify
     fun.guard_not_frozen(block, recv, state);
