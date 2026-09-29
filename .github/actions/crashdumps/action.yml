@@ -1,0 +1,77 @@
+name: Upload crash dumps
+description: >-
+  Uploads the core files in the `crashdumps` directory of the workspace,
+  with the executables and shared libraries they mapped under `sysroot`,
+  so that a debugger elsewhere can read them.  A core holds the whole
+  memory of the process, including its environment, so the step that
+  lets processes dump core must not pass secrets such as
+  LAUNCHABLE_TOKEN down to them.
+
+inputs:
+  name:
+    required: true
+    description: Name of the artifact.
+
+runs:
+  using: composite
+
+  steps:
+    - name: Collect mapped files
+      shell: ruby {0}
+      working-directory: ${{ github.workspace }}/crashdumps
+      run: |
+        require "fileutils"
+
+        # readelf of binutils 2.42 cannot decode NT_FILE, so read it here.
+        def mapped_files(core)
+          File.open(core, "rb") do |f|
+            elf = f.read(64)
+            e = elf.getbyte(5) == 1 ? "<" : ">"
+            size = elf.getbyte(4) == 2 ? 8 : 4
+            word = size == 8 ? "Q#{e}" : "L#{e}"
+            phoff, = elf.unpack("@#{size == 8 ? 32 : 28}#{word}")
+            phentsize, phnum = elf.unpack("@#{size == 8 ? 54 : 42}S#{e}2")
+            phnum.times.flat_map do |i|
+              ph = f.pread(phentsize, phoff + phentsize * i)
+              next [] unless ph.unpack1("L#{e}") == 4 # PT_NOTE
+              offset, len = ph.unpack(size == 8 ? "@8#{word}@32#{word}" : "@4#{word}@16#{word}")
+              notes = f.pread(len, offset)
+              files = []
+              pos = 0
+              while pos < notes.bytesize
+                namesz, descsz, type = notes.unpack("@#{pos}L#{e}3")
+                desc = notes.byteslice(pos + 12 + ((namesz + 3) & ~3), descsz)
+                pos += 12 + ((namesz + 3) & ~3) + ((descsz + 3) & ~3)
+                next unless type == 0x46494c45 # NT_FILE
+                count, = desc.unpack(word)
+                files.concat(desc.byteslice(size * (2 + 3 * count)..).split("\0"))
+              end
+              files
+            end
+          end
+        end
+
+        cores = Dir.glob("core.*")
+        system("file", *cores)
+        cores.flat_map {|core| mapped_files(core)}.uniq.each do |path|
+          next unless File.file?(path) && File.binread(path, 4) == "\x7fELF".b
+          dir = File.dirname(path)
+          # Debuggers look libraries up by the names the loader opened,
+          # which are the soname links such as libz.so.1.
+          links = Dir.children(dir).select do |name|
+            link = File.join(dir, name)
+            !name.end_with?(".so") && File.symlink?(link) && File.exist?(link) && File.realpath(link) == path
+          end
+          FileUtils.mkdir_p(File.join("sysroot", dir))
+          [File.basename(path), *links].each do |name|
+            FileUtils.cp(path, File.join("sysroot", dir, name))
+          end
+        end
+
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      with:
+        name: ${{ inputs.name }}
+        path: ${{ github.workspace }}/crashdumps
+        include-hidden-files: true
+        retention-days: 7
+        overwrite: true
