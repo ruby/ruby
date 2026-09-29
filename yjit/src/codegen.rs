@@ -20,7 +20,7 @@ use std::collections::HashMap;
 use std::ffi::c_void;
 use std::ffi::CStr;
 use std::mem;
-use std::os::raw::c_int;
+use std::os::raw::{c_int, c_long};
 use std::ptr;
 use std::rc::Rc;
 use std::cell::RefCell;
@@ -5973,7 +5973,10 @@ fn jit_rb_str_bytesize(
         RUBY_OFFSET_RSTRING_LEN as i32,
     );
 
-    let len = asm.load(str_len_opnd);
+    let len = match c_long_len(asm, str_len_opnd) {
+        mem @ Opnd::Mem(_) => asm.load(mem),
+        len => len,
+    };
     let shifted_val = asm.lshift(len, Opnd::UImm(1));
     let out_val = asm.or(shifted_val, Opnd::UImm(RUBY_FIXNUM_FLAG as u64));
 
@@ -6145,6 +6148,7 @@ fn jit_rb_str_getbyte(
         asm.load(recv),
         RUBY_OFFSET_RSTRING_LEN as i32,
     );
+    let str_len_opnd = c_long_len(asm, str_len_opnd);
 
     // Exit if the index is out of bounds
     asm.cmp(idx, str_len_opnd);
@@ -6770,7 +6774,7 @@ fn c_method_tracing_currently_enabled(jit: &JITState) -> bool {
 unsafe extern "C" fn build_kwhash(ci: *const rb_callinfo, sp: *const VALUE) -> VALUE {
     let kw_arg = vm_ci_kwarg(ci);
     let kw_len: usize = get_cikw_keyword_len(kw_arg).try_into().unwrap();
-    let hash = rb_hash_new_capa(kw_len as i64);
+    let hash = rb_hash_new_capa(kw_len.try_into().unwrap());
 
     for kwarg_idx in 0..kw_len {
         let key = get_cikw_keywords_idx(kw_arg, kwarg_idx.try_into().unwrap());
@@ -7326,9 +7330,20 @@ fn get_array_len(asm: &mut Assembler, array_opnd: Opnd) -> Opnd {
         array_reg,
         RUBY_OFFSET_RARRAY_AS_HEAP_LEN,
     );
+    let array_len_opnd = c_long_len(asm, array_len_opnd);
 
     // Select the array length value
     asm.csel_nz(emb_len_opnd, array_len_opnd)
+}
+
+/// Make a C long length field usable as a 64-bit operand. long is 32-bit on LLP64 (Windows),
+/// where loading it into a register zero-extends it, and lengths are never negative.
+fn c_long_len(asm: &mut Assembler, len_opnd: Opnd) -> Opnd {
+    if std::os::raw::c_long::BITS == 64 {
+        len_opnd
+    } else {
+        asm.load(len_opnd).with_num_bits(64).unwrap()
+    }
 }
 
 // Generate RARRAY_CONST_PTR (part of RARRAY_AREF)
@@ -8588,7 +8603,7 @@ fn gen_iseq_kw_call(
 
                 // Use the total number of supplied keywords as a size upper bound
                 let keyword_len = unsafe { (*keywords).keyword_len } as usize;
-                let hash = unsafe { rb_hash_new_capa(keyword_len as i64) };
+                let hash = unsafe { rb_hash_new_capa(keyword_len.try_into().unwrap()) };
 
                 // Put pairs into the kwrest hash as the mask describes
                 for kwarg_idx in 0..keyword_len {
@@ -8963,7 +8978,7 @@ fn gen_struct_aref(
 
     // Confidence checks
     assert!(unsafe { RB_TYPE_P(comptime_recv, RUBY_T_STRUCT) });
-    assert!((off as i64) < unsafe { RSTRUCT_LEN(comptime_recv) });
+    assert!((off as c_long) < unsafe { RSTRUCT_LEN(comptime_recv) });
 
     // We are going to use an encoding that takes a 4-byte immediate which
     // limits the offset to INT32_MAX.
@@ -9047,7 +9062,7 @@ fn gen_struct_aset(
 
     // Confidence checks
     assert!(unsafe { RB_TYPE_P(comptime_recv, RUBY_T_STRUCT) });
-    assert!((off as i64) < unsafe { RSTRUCT_LEN(comptime_recv) });
+    assert!((off as c_long) < unsafe { RSTRUCT_LEN(comptime_recv) });
 
     // We are going to use an encoding that takes a 4-byte immediate which
     // limits the offset to INT32_MAX (mirrors struct aref).

@@ -419,6 +419,9 @@ fn main() {
     const TYPE_REPLACEMENTS: &[(&str, &str)] = &[
         // usize is what VALUE() takes, so flag masks need no cast at their use sites
         ("pub type ruby_rstruct_flags = u32;", "pub type ruby_rstruct_flags = usize;"),
+        // These are unsigned long on LP64 but unsigned long long on LLP64 (Windows)
+        ("pub type ID = ::std::os::raw::c_ulong;", "pub type ID = u64;"),
+        ("pub type st_data_t = ::std::os::raw::c_ulong;", "pub type st_data_t = u64;"),
     ];
     // Each needle is a whole line of the output, so plain replacement is unambiguous.
     // Yes, this search-and-replace could be faster, but it's a small file.
