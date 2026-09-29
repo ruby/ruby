@@ -77,7 +77,7 @@ pub struct Options {
     /// Verify context objects (debug mode only)
     pub verify_ctx: bool,
 
-    /// Enable generating frame pointers (for x86. arm64 always does this)
+    /// Enable generating frame pointers (for x86. arm64 always does this, and so does Windows)
     pub frame_pointer: bool,
 
     /// Run code GC when exec_mem_size is reached.
