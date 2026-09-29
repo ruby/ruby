@@ -159,6 +159,13 @@ goto :loopend ;
   if "%feature%" == "rubygems" (
      echo>> %config_make% USE_RUBYGEMS = %enable%
   )
+  if "%feature%" == "yjit" if not "%enable%" == "yes" if not "%enable%" == "no" (
+    echo 1>&2 %configure%: --enable-yjit accepts only yes or no, not %enable%
+    exit /b 1
+  )
+  if "%feature%" == "yjit" (
+     echo>> %config_make% YJIT_SUPPORT = %enable%
+  )
 goto :loopend ;
 :withoutarg
   ::- These take an argument and are recorded in :witharg.  Recording
@@ -268,6 +275,7 @@ goto :loop ;
   echo   --without-ext="a,b,..." ignore extensions a, b, ...
   echo   --with-opt-dir="DIR-LIST" add optional headers and libraries directories separated by ';'
   echo   --disable-install-doc   do not install rdoc indexes during install
+  echo   --enable-yjit           enable in-process JIT compiler that requires rustc (x64 only)
   echo   --with-ntver=0xXXXX     target NT version (shouldn't use with old SDK)
   echo   --with-ntver=_WIN32_WINNT_XXXX
   echo   --with-ntver=XXXX       same as --with-ntver=_WIN32_WINNT_XXXX
