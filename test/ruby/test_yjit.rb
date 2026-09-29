@@ -2114,7 +2114,7 @@ class TestYJIT < Test::Unit::TestCase
       end
 
       iseq = RubyVM::InstructionSequence.of(_test_proc)
-      IO.open(3).write Marshal.dump({
+      File.binwrite ENV["YJIT_TEST_STATS"], Marshal.dump({
         result: #{result == ANY ? "nil" : "result"},
         stats: stats,
         insns: collect_insns(iseq),
@@ -2210,24 +2210,13 @@ class TestYJIT < Test::Unit::TestCase
     args << "--yjit-code-gc" if code_gc
     args << "--yjit-verify-ctx" if verify_ctx
     args << "-e" << script_shell_encode(script)
-    stats_r, stats_w = IO.pipe
-    # Separate thread so we don't deadlock when
-    # the child ruby blocks writing the stats to fd 3
-    stats = ''
-    stats_reader = Thread.new do
-      stats = stats_r.read
-      stats_r.close
+    # Not through fd 3, which spawn cannot pass on Windows
+    Dir.mktmpdir("yjit-stats") do |dir|
+      stats_path = File.join(dir, "stats")
+      out, err, status = invoke_ruby([{"YJIT_TEST_STATS" => stats_path}, *args], '', true, true, timeout: timeout)
+      stats = File.size?(stats_path) ? Marshal.load(File.binread(stats_path)) : ''
+      [status, out, err, stats]
     end
-    out, err, status = invoke_ruby(args, '', true, true, timeout: timeout, ios: { 3 => stats_w })
-    stats_w.close
-    stats_reader.join(timeout)
-    stats = Marshal.load(stats) if !stats.empty?
-    [status, out, err, stats]
-  ensure
-    stats_reader&.kill
-    stats_reader&.join(timeout)
-    stats_r&.close
-    stats_w&.close
   end
 
   # A wrapper of EnvUtil.invoke_ruby that uses RbConfig.ruby instead of EnvUtil.ruby
