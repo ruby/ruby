@@ -401,7 +401,7 @@ EOM
   # +required_rubygems_version+ is constrained before building.
 
   def build_content_addressable_file(skip_validation = false, strict_validation = false)
-    validate_content_addressable_spec
+    Gem::ContentAddress.eligible!(@spec)
     ruby_abi = Gem::ContentAddress.ruby_abi_for(@spec.required_ruby_version)
     @spec.required_rubygems_version = normalized_required_rubygems_version(ruby_abi)
 
@@ -817,23 +817,6 @@ EOM
       else false
       end
     end
-  end
-
-  ##
-  # Validates that the spec can be built as a content-addressable gem: it
-  # must declare a non-Ruby platform and its +required_ruby_version+ must
-  # identify a single Ruby ABI.
-
-  def validate_content_addressable_spec
-    return if Gem::ContentAddress.eligible?(@spec)
-
-    unless Gem::ContentAddress.platform_eligible?(@spec.platform)
-      raise ArgumentError, "Cannot build a content-addressable gem as no platform or a Ruby platform has been set"
-    end
-
-    raise ArgumentError,
-      "Cannot build a content-addressable gem because required_ruby_version is set to #{@spec.required_ruby_version}. " \
-      "Please set required_ruby_version to \"~> X.Y.0\" so that it identifies a single Ruby ABI."
   end
 
   ##
