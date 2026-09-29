@@ -1776,6 +1776,7 @@ fn gen_opt_plus(
         let arg0_untag = asm.sub(arg0, Opnd::Imm(1));
         let out_val = asm.add(arg0_untag, arg1);
         asm.jo(Target::side_exit(Counter::opt_plus_overflow));
+        guard_fixnum_fits_long(asm, out_val, Counter::opt_plus_overflow);
 
         // Push the output on the stack
         let dst = asm.stack_push(Type::Fixnum);
@@ -4135,6 +4136,7 @@ fn gen_opt_minus(
         let val_untag = asm.sub(arg0, arg1);
         asm.jo(Target::side_exit(Counter::opt_minus_overflow));
         let val = asm.add(val_untag, Opnd::Imm(1));
+        guard_fixnum_fits_long(asm, val, Counter::opt_minus_overflow);
 
         // Push the output on the stack
         let dst = asm.stack_push(Type::Fixnum);
@@ -4178,6 +4180,9 @@ fn gen_opt_mult(
         let out_val = asm.mul(arg0_untag, arg1_untag);
         jit_chain_guard(JCC_JO_MUL, jit, asm, 1, Counter::opt_mult_overflow);
         let out_val = asm.add(out_val, Opnd::UImm(1));
+        if cmp_fixnum_fits_long(asm, out_val) {
+            jit_chain_guard(JCC_JNE, jit, asm, 1, Counter::opt_mult_overflow);
+        }
 
         // Push the output on the stack
         let dst = asm.stack_push(Type::Fixnum);
@@ -5477,6 +5482,7 @@ fn jit_rb_int_succ(
     asm_comment!(asm, "Integer#succ");
     let out_val = asm.add(recv, Opnd::Imm(2)); // 2 is untagged Fixnum 1
     asm.jo(Target::side_exit(Counter::opt_succ_overflow));
+    guard_fixnum_fits_long(asm, out_val, Counter::opt_succ_overflow);
 
     // Push the output onto the stack
     let dst = asm.stack_push(Type::Fixnum);
@@ -5506,6 +5512,7 @@ fn jit_rb_int_pred(
     asm_comment!(asm, "Integer#pred");
     let out_val = asm.sub(recv, Opnd::Imm(2)); // 2 is untagged Fixnum 1
     asm.jo(Target::side_exit(Counter::send_pred_underflow));
+    guard_fixnum_fits_long(asm, out_val, Counter::send_pred_underflow);
 
     // Push the output onto the stack
     let dst = asm.stack_push(Type::Fixnum);
@@ -5609,6 +5616,7 @@ fn fixnum_left_shift_body(asm: &mut Assembler, lhs: Opnd, shift_amt: u64) {
 
     // Re-tag the output value
     let out_val = asm.add(out_val, 1.into());
+    guard_fixnum_fits_long(asm, out_val, Counter::lshift_overflow);
 
     let ret_opnd = asm.stack_push(Type::Fixnum);
     asm.mov(ret_opnd, out_val);
@@ -5928,7 +5936,7 @@ fn jit_rb_str_uplus(
 }
 
 fn jit_rb_str_length(
-    _jit: &mut JITState,
+    jit: &mut JITState,
     asm: &mut Assembler,
     _ci: *const rb_callinfo,
     _cme: *const rb_callable_method_entry_t,
@@ -5941,13 +5949,18 @@ fn jit_rb_str_length(
         fn rb_str_length(str: VALUE) -> VALUE;
     }
 
-    // This function cannot allocate or raise an exceptions
+    // The length is always a Fixnum when long is 64-bit, so this function cannot allocate or raise.
+    // long is 32-bit on LLP64 (Windows), where a length of 2**30 or more allocates a Bignum.
+    let fixnum_len = std::os::raw::c_long::BITS == 64;
+    if !fixnum_len {
+        jit_prepare_call_with_gc(jit, asm);
+    }
+
     let recv = asm.stack_opnd(0);
     let ret_opnd = asm.ccall(rb_str_length as *const u8, vec![recv]);
     asm.stack_pop(1); // Keep recv on stack during ccall for GC
 
-    // Should be guaranteed to be a fixnum on 64-bit systems
-    let out_opnd = asm.stack_push(Type::Fixnum);
+    let out_opnd = asm.stack_push(if fixnum_len { Type::Fixnum } else { Type::Unknown });
     asm.mov(out_opnd, ret_opnd);
 
     true
@@ -5979,6 +5992,7 @@ fn jit_rb_str_bytesize(
     };
     let shifted_val = asm.lshift(len, Opnd::UImm(1));
     let out_val = asm.or(shifted_val, Opnd::UImm(RUBY_FIXNUM_FLAG as u64));
+    guard_fixnum_fits_long(asm, out_val, Counter::guard_send_str_bytesize_overflow);
 
     let out_opnd = asm.stack_push(Type::Fixnum);
 
@@ -6441,6 +6455,7 @@ fn jit_rb_ary_length(
     // Convert the length to a fixnum
     let shifted_val = asm.lshift(len_opnd, Opnd::UImm(1));
     let out_val = asm.or(shifted_val, Opnd::UImm(RUBY_FIXNUM_FLAG as u64));
+    guard_fixnum_fits_long(asm, out_val, Counter::guard_send_ary_length_overflow);
 
     let out_opnd = asm.stack_push(Type::Fixnum);
     asm.store(out_opnd, out_val);
@@ -7334,6 +7349,27 @@ fn get_array_len(asm: &mut Assembler, array_opnd: Opnd) -> Opnd {
 
     // Select the array length value
     asm.csel_nz(emb_len_opnd, array_len_opnd)
+}
+
+/// Side-exit unless a tagged Fixnum result fits in a C long. See cmp_fixnum_fits_long.
+/// It exits the way each insn's 64-bit overflow check does, and only opt_mult chains to send.
+fn guard_fixnum_fits_long(asm: &mut Assembler, val: Opnd, counter: Counter) {
+    if cmp_fixnum_fits_long(asm, val) {
+        asm.jne(Target::side_exit(counter));
+    }
+}
+
+/// Compare a tagged Fixnum result with its sign-extended low 32 bits, which differ when it does
+/// not fit in a C long. long is 32-bit on LLP64 (Windows), where a result that did not overflow
+/// 64 bits can still be out of the Fixnum range. Emits nothing and returns false otherwise.
+fn cmp_fixnum_fits_long(asm: &mut Assembler, val: Opnd) -> bool {
+    if std::os::raw::c_long::BITS < 64 {
+        let sext = asm.load_sext(val.with_num_bits(32).unwrap());
+        asm.cmp(sext, val);
+        true
+    } else {
+        false
+    }
 }
 
 /// Make a C long length field usable as a 64-bit operand. long is 32-bit on LLP64 (Windows),

@@ -1753,6 +1753,7 @@ class TestYJIT < Test::Unit::TestCase
 
   def test_opt_mult_overflow
     assert_no_exits('0xfff_ffff_ffff_ffff * 0x10')
+    assert_no_exits('0x10_0000 * 0x10_0000')
   end
 
   def test_disable_stats
