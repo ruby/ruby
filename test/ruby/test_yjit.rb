@@ -2034,6 +2034,13 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_stack_temps_beyond_temp_regs
+    assert_separately(%w[--yjit-call-threshold=1 --yjit-temp-regs=3], <<~RUBY)
+      def foo(a) = [a, a, a, a]
+      assert_equal([1, 1, 1, 1], foo(1))
+    RUBY
+  end
+
   private
 
   def code_gc_helpers

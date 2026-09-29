@@ -435,7 +435,7 @@ impl RegMapping {
 
         // If not, pick any other available register. Like default indexes, prefer
         // lower indexes for Stack, and higher indexes for Local.
-        let mut index_temps = self.0.iter().enumerate();
+        let mut index_temps = self.0[..num_regs].iter().enumerate();
         match opnd {
             RegOpnd::Stack(_) => index_temps.find(|(_, reg_opnd)| reg_opnd.is_none()),
             RegOpnd::Local(_) => index_temps.rev().find(|(_, reg_opnd)| reg_opnd.is_none()),
