@@ -47,6 +47,12 @@ class TestZJITCLI < Test::Unit::TestCase
     RUBY
   end
 
+  def test_reset_stats_no_zjit
+    assert_runs 'nil', <<~RUBY, zjit: false
+      RubyVM::ZJIT.reset_stats!
+    RUBY
+  end
+
   def test_stats_quiet
     # Test that --zjit-stats-quiet collects stats but doesn't print them
     script = <<~RUBY

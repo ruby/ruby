@@ -772,6 +772,10 @@ pub fn send_fallback_counter_for_super_method_type(method_type: crate::hir::Meth
 /// Primitive called in zjit.rb. Zero out all the counters.
 #[unsafe(no_mangle)]
 pub extern "C" fn rb_zjit_reset_stats_bang(_ec: EcPtr, _self: VALUE) -> VALUE {
+    if !zjit_enabled_p() {
+        return Qnil;
+    }
+
     let counters = ZJITState::get_counters();
     let exit_counters = ZJITState::get_exit_counters();
 
