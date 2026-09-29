@@ -328,6 +328,10 @@ MISSING = $(MISSING) explicit_bzero.obj memrchr.obj
 !endif
 DLNOBJS = dln.obj
 
+!if !defined(INSTALL_STATIC_LIBRARY)
+INSTALL_STATIC_LIBRARY = yes
+!endif
+
 !if "$(ARCH)" == "x64"
 COROUTINE_OBJ = coroutine/win64/Context.obj
 COROUTINE_SRC = $(COROUTINE_OBJ:.obj=.asm)
@@ -1060,6 +1064,7 @@ s,@rubyw_install_name@,$(RUBYW_INSTALL_NAME),;t t
 s,@RUBYW_INSTALL_NAME@,$(RUBYW_INSTALL_NAME),;t t
 s,@RUBY_SO_NAME@,$(RUBY_SO_NAME),;t t
 s,@LIBRUBY_A@,$$(RUBY_SO_NAME)-static.lib,;t t
+s,@INSTALL_STATIC_LIBRARY@,$(INSTALL_STATIC_LIBRARY),;t t
 s,@LIBRUBY_SO@,$$(RUBY_SO_NAME).dll,;t t
 s,@LIBRUBY_ALIASES@,$(LIBRUBY_ALIASES),;t t
 s,@LIBRUBY_RELATIVE@,$(LIBRUBY_RELATIVE),;t t
