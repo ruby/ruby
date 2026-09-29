@@ -9788,6 +9788,13 @@ gc_start_global(rb_objspace_t *driver, unsigned int reason, bool compact, bool a
         for (size_t i = 0; i < global_objspace->global_gc.n_objspaces; i++) {
             global_objspace->global_gc.objspaces[i]->flags.during_reference_updating = TRUE;
         }
+
+        for (size_t i = 0; i < global_objspace->global_gc.n_objspaces; i++) {
+            rb_objspace_t *objspace = global_objspace->global_gc.objspaces[i];
+            for (int h = 0; h < HEAP_COUNT; h++) {
+                gc_unprotect_pages(objspace, &heaps[h]);
+            }
+        }
         rb_gc_before_updating_jit_code();
         gc_sweeping_cpu_exit(driver);
         for (size_t i = 0; i < global_objspace->global_gc.n_objspaces; i++) {

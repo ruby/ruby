@@ -557,4 +557,18 @@ class TestGCCompact < Test::Unit::TestCase
       end
     RUBY
   end
+
+  def test_compact_with_ractor_blocked_in_receive
+    assert_normal_exit(<<~'RUBY', '[Bug #22389]', timeout: 30)
+      ready = Ractor::Port.new
+      Ractor.new(ready) do |port|
+        Array.new(10_000) { Object.new }
+        port << true
+        Ractor.receive
+      end
+      ready.receive
+      Thread.new { GC.compact }.join
+      GC.compact
+    RUBY
+  end
 end
