@@ -6112,6 +6112,30 @@ fn test_getivar_t_class_then_string() {
     assert_snapshot!(assert_compiles_allowing_exits("[STR.test, STR.test]"), @"[1000, 1000]");
 }
 
+#[test]
+fn test_getivar_frozen_constant_with_other_shape() {
+    // This is a regression test for an internal compiler error where LoadField
+    // for an embedded ivar was constant-folded by reading a frozen constant
+    // receiver at that offset, even though the constant stores its ivars
+    // out-of-line and therefore has a different shape than the profiled one.
+    set_call_threshold(2);
+    eval(r#"
+      class Box
+        def initialize(n)
+          n.times { |i| instance_variable_set(:"@a#{i}", i) }
+          @v = :v
+          freeze
+        end
+
+        def v = @v
+      end
+      EMBEDDED = Box.new(0)
+      EXTENDED = Box.new(20)
+      EMBEDDED.v; EMBEDDED.v # profile and compile Box#v for embedded ivars
+      def test = EXTENDED.v
+    "#);
+    assert_snapshot!(assert_compiles_allowing_exits("[test, test]"), @"[:v, :v]");
+}
 
 #[test]
 fn test_attr_accessor_setivar() {
