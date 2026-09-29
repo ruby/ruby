@@ -703,8 +703,12 @@ rb_jit_get_page_size(void)
     if (page_size > 0x40000000l) rb_bug("jit page size too large");
 
     return (uint32_t)page_size;
+#elif defined(_WIN32)
+    SYSTEM_INFO si;
+    GetSystemInfo(&si);
+    return (uint32_t)si.dwPageSize;
 #else
-#error "JIT supports POSIX only for now"
+#error "JIT supports POSIX and Windows only for now"
 #endif
 }
 
@@ -819,8 +823,14 @@ rb_jit_reserve_addr_space(uint32_t mem_size)
 
     return mem_block;
 #else
-    // Windows not supported for now
-    return NULL;
+    // Only reserve the address space. rb_jit_mark_writable() commits pages.
+    uint8_t *mem_block = VirtualAlloc(NULL, mem_size, MEM_RESERVE, PAGE_NOACCESS);
+    if (mem_block == NULL) {
+        errno = rb_w32_map_errno(GetLastError());
+        perror("ruby: jit: Fatal VirtualAlloc failure:");
+        abort();
+    }
+    return mem_block;
 #endif
 }
 
@@ -835,7 +845,12 @@ rb_jit_for_each_iseq(rb_iseq_callback callback, void *data)
 bool
 rb_jit_mark_writable(void *mem_block, uint32_t mem_size)
 {
+#ifdef _WIN32
+    // MEM_COMMIT also re-protects pages that are already committed.
+    return VirtualAlloc(mem_block, mem_size, MEM_COMMIT, PAGE_READWRITE) != NULL;
+#else
     return mprotect(mem_block, mem_size, PROT_READ | PROT_WRITE) == 0;
+#endif
 }
 
 void
@@ -846,16 +861,31 @@ rb_jit_mark_executable(void *mem_block, uint32_t mem_size)
     if (mem_size == 0) {
         return;
     }
+#ifdef _WIN32
+    DWORD old_protect;
+    if (!VirtualProtect(mem_block, mem_size, PAGE_EXECUTE_READ, &old_protect)) {
+        rb_bug("Couldn't make JIT page (%p, %lu bytes) executable, error: %lu",
+            mem_block, (unsigned long)mem_size, GetLastError());
+    }
+#else
     if (mprotect(mem_block, mem_size, PROT_READ | PROT_EXEC)) {
         rb_bug("Couldn't make JIT page (%p, %lu bytes) executable, errno: %s",
             mem_block, (unsigned long)mem_size, strerror(errno));
     }
+#endif
 }
 
-// Free the specified memory block.
+// Discard the contents of the specified memory block and make it inaccessible.
 bool
 rb_jit_mark_unused(void *mem_block, uint32_t mem_size)
 {
+#ifdef _WIN32
+    // Keep the pages committed, since rb_jit_mark_executable() covers the whole
+    // mapped region and VirtualProtect() fails on decommitted pages.
+    DWORD old_protect;
+    VirtualAlloc(mem_block, mem_size, MEM_RESET, PAGE_NOACCESS);
+    return VirtualProtect(mem_block, mem_size, PAGE_NOACCESS, &old_protect) != 0;
+#else
     // On Linux, you need to use madvise MADV_DONTNEED to free memory.
     // We might not need to call this on macOS, but it's not really documented.
     // We generally prefer to do the same thing on both to ease testing too.
@@ -864,6 +894,7 @@ rb_jit_mark_unused(void *mem_block, uint32_t mem_size)
     // On macOS, mprotect PROT_NONE seems to reduce RSS.
     // We also call this on Linux to avoid executing unused pages.
     return mprotect(mem_block, mem_size, PROT_NONE) == 0;
+#endif
 }
 
 // Invalidate icache for arm64.
