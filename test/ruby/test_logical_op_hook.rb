@@ -125,15 +125,15 @@ class TestLogicalOpHook
 
   def test_definition_outside_refinement
     c = Class.new
-    assert_raise_with_message(ArgumentError, "'&&' can be defined only in refinements") do
+    assert_raise_with_message(NameError, "'&&' can be defined only in refinements") do
       c.class_eval { def &&(other) = 1 }
     end
-    assert_raise(ArgumentError) { c.class_eval { def ||(other) = 1 } }
-    assert_raise(ArgumentError) { c.class_eval { def self.&&(other) = 1 } }
-    assert_raise(ArgumentError) { c.class_eval { define_method(:"||") { |other| } } }
-    assert_raise(ArgumentError) { c.class_eval { alias_method :"&&", :to_s } }
-    assert_raise(ArgumentError) { Object.new.define_singleton_method(:"&&") { |other| } }
-    assert_raise(ArgumentError) { Module.new { def ||(other) = 1 } }
+    assert_raise(NameError) { c.class_eval { def ||(other) = 1 } }
+    assert_raise(NameError) { c.class_eval { def self.&&(other) = 1 } }
+    assert_raise(NameError) { c.class_eval { define_method(:"||") { |other| } } }
+    assert_raise(NameError) { c.class_eval { alias_method :"&&", :to_s } }
+    assert_raise(NameError) { Object.new.define_singleton_method(:"&&") { |other| } }
+    assert_raise(NameError) { Module.new { def ||(other) = 1 } }
     assert_not_send([c, :method_defined?, :&&])
     assert_not_send([c, :method_defined?, :||])
   end

@@ -1443,7 +1443,7 @@ logop_definition_check(VALUE klass, ID mid)
 {
     if ((mid == idANDOP || mid == idOROP) &&
         !(RB_TYPE_P(klass, T_MODULE) && FL_TEST(klass, RMODULE_IS_REFINEMENT))) {
-        rb_raise(rb_eArgError, "'%s' can be defined only in refinements", rb_id2name(mid));
+        rb_name_err_raise("'%1$s' can be defined only in refinements", klass, ID2SYM(mid));
     }
 }
 
