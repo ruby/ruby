@@ -607,7 +607,7 @@ pub unsafe fn cfp_env_has_escaped(cfp: *mut rb_control_frame_struct) -> bool {
 
 /// Produce a Ruby string from a Rust string slice
 pub fn rust_str_to_ruby(str: &str) -> VALUE {
-    unsafe { rb_utf8_str_new(str.as_ptr() as *const _, str.len() as i64) }
+    unsafe { rb_utf8_str_new(str.as_ptr() as *const _, str.len().try_into().unwrap()) }
 }
 
 /// Produce a Ruby symbol from a Rust string slice
