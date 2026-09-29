@@ -1255,6 +1255,8 @@ extern "C" {
     ) -> ::std::os::raw::c_int;
     pub fn rb_jit_cont_each_iseq(callback: rb_iseq_callback, data: *mut ::std::os::raw::c_void);
     pub fn rb_jit_for_each_iseq(callback: rb_iseq_callback, data: *mut ::std::os::raw::c_void);
+    pub fn rb_jit_get_page_size() -> u32;
+    pub fn rb_jit_reserve_addr_space(mem_size: u32) -> *mut u8;
     pub fn rb_yjit_exit_locations_dict(
         yjit_raw_samples: *mut VALUE,
         yjit_line_samples: *mut ::std::os::raw::c_int,
@@ -1412,8 +1414,6 @@ extern "C" {
     pub fn rb_iseq_get_jit_payload(iseq: *const rb_iseq_t) -> *mut ::std::os::raw::c_void;
     pub fn rb_iseq_set_jit_payload(iseq: *const rb_iseq_t, payload: *mut ::std::os::raw::c_void);
     pub fn rb_iseq_reset_jit_func(iseq: *const rb_iseq_t);
-    pub fn rb_jit_get_page_size() -> u32;
-    pub fn rb_jit_reserve_addr_space(mem_size: u32) -> *mut u8;
     pub fn rb_jit_mark_writable(mem_block: *mut ::std::os::raw::c_void, mem_size: u32) -> bool;
     pub fn rb_jit_mark_executable(mem_block: *mut ::std::os::raw::c_void, mem_size: u32);
     pub fn rb_jit_mark_unused(mem_block: *mut ::std::os::raw::c_void, mem_size: u32) -> bool;
