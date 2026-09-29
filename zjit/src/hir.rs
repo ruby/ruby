@@ -8780,6 +8780,27 @@ struct BytecodeInfo {
     jump_targets: Vec<u32>,
 }
 
+/// Where a value of known truthiness jumping to `target_idx` ends up if the instruction there
+/// branches on it, as when `if a && b` jumps from `a` to the test of the whole expression.
+fn threaded_jump_target(iseq: IseqPtr, target_idx: u32, truthy: bool) -> Option<u32> {
+    let pc = unsafe { rb_iseq_pc_at_idx(iseq, target_idx) };
+    let opcode: u32 = unsafe { rb_zjit_insn_to_bare_insn(rb_iseq_opcode_at_pc(iseq, pc)) }
+        .try_into()
+        .unwrap();
+    let jump_if_truthy = match opcode {
+        YARVINSN_branchif | YARVINSN_branchif_without_ints => true,
+        YARVINSN_branchunless | YARVINSN_branchunless_without_ints => false,
+        _ => return None,
+    };
+    let offset = get_arg(pc, 0).as_i64();
+    // A backward branch checks interrupts
+    if offset < 0 {
+        return None;
+    }
+    let next_idx = target_idx + insn_len(opcode as usize);
+    Some(if truthy == jump_if_truthy { insn_idx_at_offset(next_idx, offset) } else { next_idx })
+}
+
 fn compute_bytecode_info(iseq: *const rb_iseq_t, opt_table: &[u32]) -> BytecodeInfo {
     let iseq_size = unsafe { get_iseq_encoded_size(iseq) };
     let mut insn_idx = 0;
@@ -8806,9 +8827,18 @@ fn compute_bytecode_info(iseq: *const rb_iseq_t, opt_table: &[u32]) -> BytecodeI
                 let offset = get_arg(pc, 0).as_i64();
                 jump_targets.insert(insn_idx_at_offset(insn_idx, offset));
             }
-            YARVINSN_opt_new | YARVINSN_opt_branch_andop | YARVINSN_opt_branch_orop => {
+            YARVINSN_opt_new => {
                 let offset = get_arg(pc, 1).as_i64();
                 jump_targets.insert(insn_idx_at_offset(insn_idx, offset));
+            }
+            YARVINSN_opt_branch_andop | YARVINSN_opt_branch_orop => {
+                let offset = get_arg(pc, 1).as_i64();
+                let target_idx = insn_idx_at_offset(insn_idx, offset);
+                jump_targets.insert(target_idx);
+                // && jumps only with a falsy LHS and || only with a truthy one
+                if let Some(idx) = threaded_jump_target(iseq, target_idx, opcode == YARVINSN_opt_branch_orop) {
+                    jump_targets.insert(idx);
+                }
             }
             YARVINSN_leave | YARVINSN_opt_invokebuiltin_delegate_leave => {
                 if insn_idx < iseq_size {
@@ -9846,17 +9876,25 @@ fn add_iseq_to_hir(
                     let offset = get_arg(pc, 1).as_i64();
                     let val = state.stack_top()?;
                     let target_idx = insn_idx_at_offset(insn_idx, offset);
+                    // If a branch on the LHS follows, jump to where it goes with the LHS popped
+                    let threaded_idx = threaded_jump_target(iseq, target_idx, jump_if_truthy);
+                    let (target_idx, pops) = match threaded_idx {
+                        Some(idx) => (idx, true),
+                        None => (target_idx, false),
+                    };
                     let target = insn_idx_to_block[&target_idx];
 
                     if !fun.assume_bop_not_redefined(block, ANY_REDEFINED_OP_FLAG, BOP_LOGOP, exit_id) {
                         let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
                         let mid = unsafe { rb_vm_ci_mid((*cd).ci) };
                         let arms = logop_dispatch_unhooked(fun, &profiles, iseq, insn_idx, block, val, mid, exit_id);
+                        let mut jump_state = state.clone();
+                        if pops { jump_state.stack_pop()?; }
                         let mut fall_through = None;
                         let mut jumps = false;
                         for (arm, truthy) in arms {
                             if truthy == jump_if_truthy {
-                                fun.push_insn(arm, Insn::Jump(BranchEdge { target, args: state.as_args(self_param) }));
+                                fun.push_insn(arm, Insn::Jump(BranchEdge { target, args: jump_state.as_args(self_param) }));
                                 jumps = true;
                             } else {
                                 let fall_through = *fall_through.get_or_insert_with(|| fun.new_block(insn_idx));
@@ -9864,7 +9902,7 @@ fn add_iseq_to_hir(
                             }
                         }
                         if jumps {
-                            queue.push_back((state.clone(), target, target_idx, local_inval));
+                            queue.push_back((jump_state, target, target_idx, local_inval));
                         }
                         let Some(fall_through) = fall_through else {
                             break;  // End the block
@@ -9880,6 +9918,7 @@ fn add_iseq_to_hir(
                         let jump_val = fun.push_insn(block, Insn::RefineType { val, new_type: jump_type });
                         let mut jump_state = state.clone();
                         jump_state.replace(val, jump_val);
+                        if pops { jump_state.stack_pop()?; }
                         let fall_through = fun.new_block(insn_idx);
 
                         let jump_edge = BranchEdge { target, args: jump_state.as_args(self_param) };
@@ -9895,7 +9934,9 @@ fn add_iseq_to_hir(
 
                         let fall_through_val = fun.push_insn(block, Insn::RefineType { val, new_type: fall_through_type });
                         state.replace(val, fall_through_val);
-                        queue.push_back((state.clone(), target, target_idx, local_inval));
+                        let mut queued_state = state.clone();
+                        if pops { queued_state.stack_pop()?; }
+                        queue.push_back((queued_state, target, target_idx, local_inval));
                     }
                 }
                 YARVINSN_opt_logop => {
