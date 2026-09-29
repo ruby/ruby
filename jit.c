@@ -91,10 +91,7 @@ int
 rb_iseq_opcode_at_pc(const rb_iseq_t *iseq, const VALUE *pc)
 {
     // YJIT should only use iseqs after AST to bytecode compilation.
-    // (Certain non-default interpreter configurations never set ISEQ_TRANSLATED)
-    if (OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE) {
-        RUBY_ASSERT_ALWAYS(FL_TEST_RAW((VALUE)iseq, ISEQ_TRANSLATED));
-    }
+    RUBY_ASSERT_ALWAYS(FL_TEST_RAW((VALUE)iseq, ISEQ_TRANSLATED));
 
     const VALUE at_pc = *pc;
     return rb_vm_insn_addr2opcode((const void *)at_pc);
@@ -105,9 +102,7 @@ rb_iseq_opcode_at_pc(const rb_iseq_t *iseq, const VALUE *pc)
 int
 rb_iseq_bare_opcode_at_pc(const rb_iseq_t *iseq, const VALUE *pc)
 {
-    if (OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE) {
-        RUBY_ASSERT_ALWAYS(FL_TEST_RAW((VALUE)iseq, ISEQ_TRANSLATED));
-    }
+    RUBY_ASSERT_ALWAYS(FL_TEST_RAW((VALUE)iseq, ISEQ_TRANSLATED));
 
     const VALUE at_pc = *pc;
     return rb_vm_insn_addr2insn((const void *)at_pc);
