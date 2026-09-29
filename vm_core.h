@@ -2398,6 +2398,7 @@ struct rb_trace_arg_struct {
 void rb_hook_list_mark(rb_hook_list_t *hooks);
 void rb_hook_list_mark_and_move(rb_hook_list_t *hooks);
 void rb_hook_list_free(rb_hook_list_t *hooks);
+size_t rb_hook_list_memsize(const rb_hook_list_t *hooks);
 void rb_hook_list_connect_local_tracepoint(rb_hook_list_t *list, VALUE tpval, unsigned int target_line);
 bool rb_hook_list_remove_local_tracepoint(rb_hook_list_t *list, VALUE tpval);
 unsigned int rb_hook_list_count(rb_hook_list_t *list);
