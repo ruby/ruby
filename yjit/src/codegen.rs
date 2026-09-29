@@ -1112,6 +1112,7 @@ pub fn gen_entry_prologue(
     let mut asm = Assembler::new(unsafe { get_iseq_body_local_table_size(iseq) });
     asm_comment!(asm, "YJIT entry point: {}", iseq_get_location(iseq, 0));
 
+    // rb_yjit_reserve_addr_space() describes this frame to the Windows unwinder
     asm.frame_setup();
 
     // Save the CFP, EC, SP registers to the C stack
@@ -11213,7 +11214,16 @@ impl CodegenGlobals {
 
         #[cfg(not(test))]
         let (mut cb, mut ocb) = {
+            #[cfg(not(windows))]
             let virt_block: *mut u8 = unsafe { rb_jit_reserve_addr_space(exec_mem_size as u32) };
+            // Also registers unwind info for the region
+            #[cfg(windows)]
+            let virt_block: *mut u8 = {
+                extern "C" {
+                    fn rb_yjit_reserve_addr_space(mem_size: u32) -> *mut u8;
+                }
+                unsafe { rb_yjit_reserve_addr_space(exec_mem_size as u32) }
+            };
 
             // Memory protection syscalls need page-aligned addresses, so check it here. Assuming
             // `virt_block` is page-aligned, `second_half` should be page-aligned as long as the

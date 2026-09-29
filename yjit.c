@@ -465,6 +465,60 @@ rb_yjit_set_exception_return(rb_control_frame_t *cfp, void *leave_exit, void *le
     }
 }
 
+#ifdef _WIN32
+// RtlUnwindEx(), which longjmp() and C++ exceptions use, needs unwind info for
+// every frame. All JIT code runs in the frame gen_entry_prologue() sets up with
+// frame_pointer, so a single UNWIND_INFO based on RBP covers the code region:
+//
+//   [RBP]       caller's RBP
+//   [RBP - 8]   copy of RBP
+//   [RBP - 16]  R13
+//   [RBP - 24]  R12
+//   [RBP - 32]  RBX
+static const uint8_t yjit_unwind_info[] = {
+    1,              // Version 1, no handler
+    0,              // No prologue, since every call happens after it
+    9,              // Count of unwind code slots
+    0x25,           // Frame register RBP at 2 * 16 bytes above RBX
+    0, 0x34, 0, 0,  // UWOP_SAVE_NONVOL RBX at [RBP - 32]
+    0, 0xc4, 1, 0,  // UWOP_SAVE_NONVOL R12 at [RBP - 24]
+    0, 0xd4, 2, 0,  // UWOP_SAVE_NONVOL R13 at [RBP - 16]
+    0, 0x03,        // UWOP_SET_FPREG
+    0, 0x32,        // UWOP_ALLOC_SMALL 32 bytes from [RBP - 8] down to RBX
+    0, 0x50,        // UWOP_PUSH_NONVOL RBP
+    0, 0,           // Padding to an even count
+};
+
+static RUNTIME_FUNCTION yjit_runtime_function;
+
+// Reserve the JIT region after a page holding the unwind info, which has to be
+// within 4GiB above the base address of the registered function table.
+uint8_t *
+rb_yjit_reserve_addr_space(uint32_t mem_size)
+{
+    uint32_t page_size = rb_jit_get_page_size();
+    uint8_t *base = rb_jit_reserve_addr_space(page_size + mem_size);
+    DWORD old_protect;
+
+    if (!VirtualAlloc(base, page_size, MEM_COMMIT, PAGE_READWRITE)) {
+        rb_bug("yjit: failed to commit the unwind info page, error: %lu", GetLastError());
+    }
+    memcpy(base, yjit_unwind_info, sizeof(yjit_unwind_info));
+    VirtualProtect(base, page_size, PAGE_READONLY, &old_protect);
+
+    // RtlVirtualUnwind() takes a call followed by a jmp to the start of the
+    // function for an epilogue, so start it at the unwind info no code jumps to.
+    yjit_runtime_function.BeginAddress = 0;
+    yjit_runtime_function.EndAddress = page_size + mem_size;
+    yjit_runtime_function.UnwindData = 0;
+    if (!RtlAddFunctionTable(&yjit_runtime_function, 1, (DWORD64)base)) {
+        rb_bug("yjit: failed to register unwind info for JIT code");
+    }
+
+    return base + page_size;
+}
+#endif
+
 // VM_INSTRUCTION_SIZE changes depending on if ZJIT is in the build. Since
 // bindgen can only grab one version of the constant and copy that to rust,
 // we make that the upper bound and this the accurate value.

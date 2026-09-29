@@ -543,15 +543,16 @@ impl Assembler
 
                 // Set up RBP to work with frame pointer unwinding
                 // (e.g. with Linux `perf record --call-graph fp`)
+                // Always on Windows, see gen_entry_prologue()
                 Insn::FrameSetup => {
-                    if get_option!(frame_pointer) {
+                    if cfg!(windows) || get_option!(frame_pointer) {
                         push(cb, RBP);
                         mov(cb, RBP, RSP);
                         push(cb, RBP);
                     }
                 },
                 Insn::FrameTeardown => {
-                    if get_option!(frame_pointer) {
+                    if cfg!(windows) || get_option!(frame_pointer) {
                         pop(cb, RBP);
                         pop(cb, RBP);
                     }
