@@ -245,8 +245,9 @@ jobs:
             build/*.exe
             build/*.dll
             build/**/*.pdb
-            !build/**/vc*.pdb
+            !build/**/vc140.pdb
             build/.ext/**/*.so
+            build/.bundle/**/*.so
             src/vcpkg_installed/*/bin
           include-hidden-files: true
           retention-days: 7
