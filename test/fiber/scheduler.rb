@@ -437,6 +437,25 @@ class FailingIOScheduler < Scheduler
   end
 end
 
+class IOWaitErrorScheduler < Scheduler
+  def initialize(result)
+    super()
+    @result = result
+  end
+
+  def io_read(*)
+    -Errno::EAGAIN::Errno
+  end
+
+  alias io_write io_read
+
+  def io_wait(*)
+    # A successful blocking read clears errno while the scheduler is waiting.
+    Fiber.blocking { File.read(File::NULL) }
+    @result
+  end
+end
+
 # This scheduler has a broken implementation of `unblock`` in the sense that it
 # raises an exception. This is used to test the behavior of the scheduler when
 # unblock raises an exception.
