@@ -7394,19 +7394,7 @@ ALWAYS_INLINE(static bool
 static bool
 vm_logop_lookup_hook(rb_execution_context_t *ec, struct rb_control_frame_struct *reg_cfp, CALL_DATA cd, VALUE recv)
 {
-    VALUE klass = CLASS_OF(recv);
-    const struct rb_callcache *cc = cd->cc;
-    const rb_callable_method_entry_t *cme;
-    if (LIKELY(vm_cc_hit_p(cc, cd, klass))) {
-        cme = vm_cc_cme(cc);
-    }
-    else {
-        /* The inline cache can't remember that a method is undefined, but the
-         * per-class cache can. */
-        cme = rb_callable_method_entry_or_negative(klass, vm_ci_mid(cd->ci));
-        if (UNDEFINED_METHOD_ENTRY_P(cme)) return false;
-        cme = vm_cc_cme(vm_search_method_slowpath0((VALUE)CFP_ISEQ(reg_cfp), cd, klass));
-    }
+    const rb_callable_method_entry_t *cme = vm_cc_cme(vm_search_method_fastpath(reg_cfp, cd, CLASS_OF(recv)));
     if (UNDEFINED_METHOD_ENTRY_P(cme)) return false;
     if (UNLIKELY(cme->def->type == VM_METHOD_TYPE_REFINED)) {
         cme = vm_logop_search_refined(ec, reg_cfp, cd, recv, cme);
