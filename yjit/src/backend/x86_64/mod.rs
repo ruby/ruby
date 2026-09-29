@@ -602,7 +602,7 @@ impl Assembler
                 },
 
                 Insn::LoadSExt { opnd, out } => {
-                    movsx(cb, out.into(), opnd.into());
+                    movsx(cb, out.with_num_bits(64).unwrap().into(), opnd.into());
                 },
 
                 Insn::Mov { dest, src } => {

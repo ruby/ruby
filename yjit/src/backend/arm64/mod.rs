@@ -1083,7 +1083,7 @@ impl Assembler
                     match *opnd {
                         Opnd::Reg(Reg { num_bits: 32, .. }) |
                         Opnd::InsnOut { num_bits: 32, .. } => {
-                            sxtw(cb, out.into(), opnd.into());
+                            sxtw(cb, out.with_num_bits(64).unwrap().into(), opnd.into());
                         },
                         Opnd::Mem(Mem { num_bits: 32, .. }) => {
                             ldursw(cb, out.into(), opnd.into());
