@@ -4093,12 +4093,7 @@ rb_vm_insn_addr2opcode(const void *addr)
 int
 rb_vm_insn_decode(const VALUE encoded)
 {
-#if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
-    int insn = rb_vm_insn_addr2insn((void *)encoded);
-#else
-    int insn = (int)encoded;
-#endif
-    return insn;
+    return rb_vm_insn_addr2insn((void *)encoded);
 }
 
 // Turn on or off tracing for a given instruction address
