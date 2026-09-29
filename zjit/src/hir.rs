@@ -9050,45 +9050,61 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
     Ok(fun)
 }
 
-/// While some refinement defines && or ||, guard `recv` on its profiled class if method lookup
-/// on that class can't reach a hook. Returns whether the guarded receiver is truthy, or
-/// otherwise side-exits and returns None.
-fn guard_logop_unhooked(fun: &mut Function, profiles: &ProfileOracle, iseq: IseqPtr, block: BlockId, recv: InsnId, mid: ID, state: InsnId) -> Option<bool> {
-    let summary = profiles.get(state).and_then(|entries| entries.iter().find(|(insn, _)| *insn == recv));
-    let guarded = summary.and_then(|(_, summary)| guard_logop_unhooked_monomorphic(fun, summary, block, recv, mid, state));
-    if guarded.is_none() {
-        let recompile = if summary.is_none() && get_or_create_iseq_payload(iseq).versions.len() + 1 < crate::codegen::max_iseq_versions() {
-            Some(Recompile)
-        } else {
-            None
-        };
-        let reason = SideExitReason::PatchPoint(Invariant::BOPRedefined { klass: ANY_REDEFINED_OP_FLAG, bop: BOP_LOGOP });
-        fun.push_insn(block, Insn::SideExit { state, reason: Box::new(reason), recompile });
-    }
-    guarded
-}
+/// Dispatch `val` on its profiled classes whose lookup can't reach a hook, returning each arm with
+/// the class's truthiness. Other values side-exit, so no arms means the block has ended.
+fn logop_dispatch_unhooked(fun: &mut Function, profiles: &ProfileOracle, iseq: IseqPtr, insn_idx: u32, block: BlockId, val: InsnId, mid: ID, state: InsnId) -> Vec<(BlockId, bool)> {
+    let val_id = fun.chase_insn(val);
+    let summary = profiles.get(state).and_then(|entries| entries.iter().find(|(insn, _)| fun.chase_insn(*insn) == val_id)).map(|(_, summary)| summary);
 
-fn guard_logop_unhooked_monomorphic(fun: &mut Function, summary: &TypeDistributionSummary, block: BlockId, recv: InsnId, mid: ID, state: InsnId) -> Option<bool> {
-    if !summary.is_monomorphic() {
-        return None;
+    let mut expected_types: Vec<(Type, ProfiledType)> = vec![];
+    if let Some(summary) = summary {
+        if summary.is_monomorphic() || summary.is_polymorphic() || summary.is_skewed_polymorphic() {
+            for &profiled_type in summary.buckets() {
+                if profiled_type.is_empty() { break; }
+                let expected = Type::from_profiled_type(profiled_type);
+                if !expected_types.iter().any(|(ty, _)| ty.bit_equal(expected)) {
+                    expected_types.push((expected, profiled_type));
+                }
+            }
+        }
     }
-    let profiled_type = summary.bucket(0);
-    let guard_type = Type::from_profiled_type(profiled_type);
-    let truthy = if guard_type.is_subtype(types::Truthy) {
-        true
-    } else if guard_type.is_subtype(types::Falsy) {
-        false
+
+    let mut arms = vec![];
+    let mut block = block;
+    for (expected, profiled_type) in expected_types {
+        let truthy = if expected.is_subtype(types::Truthy) {
+            true
+        } else if expected.is_subtype(types::Falsy) {
+            false
+        } else {
+            continue;
+        };
+        let klass = profiled_type.class();
+        let cme = unsafe { rb_callable_method_entry_or_negative(klass, mid) };
+        if unsafe { get_cme_def_type(cme) } == VM_METHOD_TYPE_REFINED {
+            continue;
+        }
+        let arm = fun.new_block(insn_idx);
+        let next = fun.new_block(insn_idx);
+        fun.push_insn(block, Insn::CondBranchHasType(Box::new(CondBranchHasTypeData {
+            val,
+            expected,
+            if_true: BranchEdge { target: arm, args: vec![] },
+            if_false: BranchEdge { target: next, args: vec![] },
+        })));
+        fun.push_insn(arm, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
+        arms.push((arm, truthy));
+        block = next;
+    }
+
+    let recompile = if summary.is_none() && get_or_create_iseq_payload(iseq).versions.len() + 1 < crate::codegen::max_iseq_versions() {
+        Some(Recompile)
     } else {
-        return None;
+        None
     };
-    let klass = profiled_type.class();
-    let cme = unsafe { rb_callable_method_entry_or_negative(klass, mid) };
-    if unsafe { get_cme_def_type(cme) } == VM_METHOD_TYPE_REFINED {
-        return None;
-    }
-    fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
-    fun.guard_type_recompile(block, recv, guard_type, state, Recompile);
-    Some(truthy)
+    let reason = SideExitReason::PatchPoint(Invariant::BOPRedefined { klass: ANY_REDEFINED_OP_FLAG, bop: BOP_LOGOP });
+    fun.push_insn(block, Insn::SideExit { state, reason: Box::new(reason), recompile });
+    arms
 }
 
 /// Populate `fun` with HIR translated from `iseq`. Used both for top-level
@@ -9835,14 +9851,25 @@ fn add_iseq_to_hir(
                     if !fun.assume_bop_not_redefined(block, ANY_REDEFINED_OP_FLAG, BOP_LOGOP, exit_id) {
                         let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
                         let mid = unsafe { rb_vm_ci_mid((*cd).ci) };
-                        let Some(truthy) = guard_logop_unhooked(fun, &profiles, iseq, block, val, mid, exit_id) else {
+                        let arms = logop_dispatch_unhooked(fun, &profiles, iseq, insn_idx, block, val, mid, exit_id);
+                        let mut fall_through = None;
+                        let mut jumps = false;
+                        for (arm, truthy) in arms {
+                            if truthy == jump_if_truthy {
+                                fun.push_insn(arm, Insn::Jump(BranchEdge { target, args: state.as_args(self_param) }));
+                                jumps = true;
+                            } else {
+                                let fall_through = *fall_through.get_or_insert_with(|| fun.new_block(insn_idx));
+                                fun.push_insn(arm, Insn::Jump(BranchEdge { target: fall_through, args: vec![] }));
+                            }
+                        }
+                        if jumps {
+                            queue.push_back((state.clone(), target, target_idx, local_inval));
+                        }
+                        let Some(fall_through) = fall_through else {
                             break;  // End the block
                         };
-                        if truthy == jump_if_truthy {
-                            fun.push_insn(block, Insn::Jump(BranchEdge { target, args: state.as_args(self_param) }));
-                            queue.push_back((state.clone(), target, target_idx, local_inval));
-                            break;  // Don't enqueue the next block as a successor
-                        }
+                        block = fall_through;
                     } else {
                         let (jump_type, fall_through_type) = if jump_if_truthy {
                             (types::Truthy, types::Falsy)
@@ -9880,15 +9907,23 @@ fn add_iseq_to_hir(
                         let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
                         let mid = unsafe { rb_vm_ci_mid((*cd).ci) };
                         let recv = state.stack_topn(1)?;
-                        let Some(truthy) = guard_logop_unhooked(fun, &profiles, iseq, block, recv, mid, exit_id) else {
+                        let arms = logop_dispatch_unhooked(fun, &profiles, iseq, insn_idx, block, recv, mid, exit_id);
+                        if arms.is_empty() {
                             break;  // End the block
-                        };
+                        }
                         let obj = state.stack_pop()?;
                         let recv = state.stack_pop()?;
-                        // A falsy LHS of && or truthy LHS of || gets here if its hook was
-                        // removed while the RHS was evaluated.
-                        let lhs_is_result = truthy == (mid == rust_str_to_id("||"));
-                        state.stack_push(if lhs_is_result { recv } else { obj });
+                        let join = fun.new_block(insn_idx);
+                        let join_param = fun.push_insn(join, Insn::Param);
+                        for (arm, truthy) in arms {
+                            // A falsy LHS of && or truthy LHS of || gets here if its hook was
+                            // removed while the RHS was evaluated.
+                            let lhs_is_result = truthy == (mid == rust_str_to_id("||"));
+                            let result = if lhs_is_result { recv } else { obj };
+                            fun.push_insn(arm, Insn::Jump(BranchEdge { target: join, args: vec![result] }));
+                        }
+                        state.stack_push(join_param);
+                        block = join;
                     }
                 }
                 YARVINSN_opt_case_dispatch => {
