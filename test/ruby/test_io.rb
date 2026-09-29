@@ -3581,6 +3581,31 @@ __END__
     end
   end
 
+  def test_concurrent_binwrite_shareable_string
+    # [Bug #22382]
+    assert_ractor(<<~'RUBY', timeout: 30)
+      require "tmpdir"
+
+      Dir.mktmpdir do |dir|
+        50.times do
+          str = Ractor.make_shareable(Random.bytes(512 * 1024))
+
+          go = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 0.02
+          12.times.map do |n|
+            Ractor.new(str, File.join(dir, "w#{n}"), go) do |s, path, at|
+              Thread.pass until Process.clock_gettime(Process::CLOCK_MONOTONIC) >= at
+              File.binwrite(path, s)
+            end
+          end.each(&:take)
+
+          GC.start
+        end
+
+        assert_equal 512 * 1024, File.size(File.join(dir, "w0"))
+      end
+    RUBY
+  end
+
   def test_race_between_read
     Tempfile.create("test") {|file|
       begin
