@@ -777,7 +777,7 @@ class TestIOBuffer < Test::Unit::TestCase
 
     assert_same slice, slice.advance(2)
     assert_equal 2, slice.size
-    assert_equal "de", slice.get_string
+    assert_equal "ef", slice.get_string
     assert_equal "bcdef", parent.get_string
     assert_equal "abcdef", buffer.get_string
   ensure

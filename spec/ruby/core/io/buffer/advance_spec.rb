@@ -25,7 +25,7 @@ ruby_version_is "4.1" do
 
       child.advance(2)
 
-      child.get_string.should == "de"
+      child.get_string.should == "ef"
       parent.get_string.should == "bcdef"
       @buffer.get_string.should == "abcdef"
     end
