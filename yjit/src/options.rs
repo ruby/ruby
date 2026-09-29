@@ -96,7 +96,7 @@ pub static mut OPTIONS: Options = Options {
     exec_mem_size: None,
     no_type_prop: false,
     max_versions: 4,
-    num_temp_regs: 5,
+    num_temp_regs: TEMP_REGS.len(),
     c_builtin: false,
     gen_stats: false,
     trace_exits: None,

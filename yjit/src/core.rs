@@ -3339,7 +3339,7 @@ pub fn new_pending_entry() -> PendingEntryRef {
 }
 
 c_callable! {
-    /// Generated code calls this function with the SysV calling convention.
+    /// Generated code calls this function with the C calling convention.
     /// See [gen_entry_stub].
     fn entry_stub_hit(entry_ptr: *const c_void, ec: EcPtr) -> *const u8 {
         with_compile_time(|| {
@@ -3532,7 +3532,7 @@ fn new_pending_branch(jit: &mut JITState, gen_fn: BranchGenFn) -> PendingBranchR
 }
 
 c_callable! {
-    /// Generated code calls this function with the SysV calling convention.
+    /// Generated code calls this function with the C calling convention.
     /// See [gen_branch_stub].
     fn branch_stub_hit(
         branch_ptr: *const c_void,
@@ -3813,6 +3813,7 @@ fn gen_branch_stub(
     //
     // Bake pointer to Branch into output code.
     // We make sure the block housing the branch is still alive when branch_stub_hit() is running.
+    // This relies on the trampoline doing its ccall first, before register allocation can reuse C_ARG_OPNDS.
     asm.mov(C_ARG_OPNDS[0], branch_struct_address.into());
     asm.mov(C_ARG_OPNDS[1], target_idx.into());
 

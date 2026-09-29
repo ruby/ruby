@@ -134,7 +134,8 @@ yjit_print_iseq(const rb_iseq_t *iseq)
 }
 */
 
-#[cfg(target_arch = "aarch64")]
+// The x86_64 backend emits Win64 calls on Windows, which is what "C" means there.
+#[cfg(any(target_arch = "aarch64", windows))]
 macro_rules! c_callable {
     ($(#[$outer:meta])*
     fn $f:ident $args:tt $(-> $ret:ty)? $body:block) => {
@@ -143,7 +144,7 @@ macro_rules! c_callable {
     };
 }
 
-#[cfg(target_arch = "x86_64")]
+#[cfg(all(target_arch = "x86_64", not(windows)))]
 macro_rules! c_callable {
     ($(#[$outer:meta])*
     fn $f:ident $args:tt $(-> $ret:ty)? $body:block) => {
