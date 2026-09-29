@@ -199,13 +199,16 @@ jobs:
         if: ${{ matrix.test_task != 'test-bundled-gems' }}
         timeout-minutes: 3
 
-      # Minidumps only, as a full dump would carry the environment with
-      # LAUNCHABLE_TOKEN into the artifact.
+      # A minidump with data segments, handles, unloaded modules, the memory
+      # map and thread info (0x1825).  Heap memory and the process data are
+      # left out, as they would carry the environment with LAUNCHABLE_TOKEN
+      # into the artifact.
       - name: Set up crash dumps
         run: |
           md "%GITHUB_WORKSPACE%\crashdumps"
           reg add "HKLM\SOFTWARE\Microsoft\Windows\Windows Error Reporting\LocalDumps" /v DumpFolder /t REG_EXPAND_SZ /d "%GITHUB_WORKSPACE%\crashdumps" /f
-          reg add "HKLM\SOFTWARE\Microsoft\Windows\Windows Error Reporting\LocalDumps" /v DumpType /t REG_DWORD /d 1 /f
+          reg add "HKLM\SOFTWARE\Microsoft\Windows\Windows Error Reporting\LocalDumps" /v DumpType /t REG_DWORD /d 0 /f
+          reg add "HKLM\SOFTWARE\Microsoft\Windows\Windows Error Reporting\LocalDumps" /v CustomDumpFlags /t REG_DWORD /d 0x1825 /f
 
       - run: nmake ${{ matrix.test_task || 'check' }}
         env:
@@ -235,6 +238,10 @@ jobs:
           & "$root\bin\ruby.exe" -v -ropenssl -rfiddle -rpsych -rzlib -e 'abort "configure_args has an absolute path: #{RbConfig::CONFIG[%q(configure_args)]}" if RbConfig::CONFIG[%q(configure_args)] =~ /\b[A-Za-z]:[\/\\]/; puts %q(binary package OK)'
           if ($LASTEXITCODE -ne 0) { throw "smoke test failed" }
         timeout-minutes: 5
+
+      - name: List crash dumps
+        run: dir "%GITHUB_WORKSPACE%\crashdumps"
+        if: ${{ always() && hashFiles('crashdumps/**') != '' }}
 
       - name: Upload crash dumps
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
