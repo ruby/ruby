@@ -2752,6 +2752,28 @@ static const lazyenum_funcs lazy_with_index_funcs = {
     lazy_with_index_proc, lazy_with_index_size,
 };
 
+static VALUE
+lazy_with_index_from(VALUE obj, VALUE memo)
+{
+    return lazy_add_method(obj, 0, 0, memo, rb_ary_new_from_values(1, &memo),
+                           &lazy_with_index_funcs);
+}
+
+/*
+ * call-seq:
+ *   lazy.each_with_index {|(*args), idx| block }
+ *   lazy.each_with_index
+ *
+ * Equals to <tt>with_index(0)</tt>.
+ *
+ * See Enumerator#with_index.
+ */
+static VALUE
+lazy_each_with_index(VALUE obj)
+{
+    return lazy_with_index_from(obj, LONG2NUM(0));
+}
+
 /*
  * call-seq:
  *   lazy.with_index(offset = 0) {|(*args), idx| block }
@@ -2778,7 +2800,7 @@ lazy_with_index(int argc, VALUE *argv, VALUE obj)
     if (NIL_P(memo))
         memo = LONG2NUM(0);
 
-    return lazy_add_method(obj, 0, 0, memo, rb_ary_new_from_values(1, &memo), &lazy_with_index_funcs);
+    return lazy_with_index_from(obj, memo);
 }
 
 static struct MEMO *
@@ -4602,7 +4624,7 @@ InitVM_Enumerator(void)
     rb_cLazy = rb_define_class_under(rb_cEnumerator, "Lazy", rb_cEnumerator);
     rb_define_method(rb_mEnumerable, "lazy", enumerable_lazy, 0);
 
-    lazy_use_super_method = rb_ident_hash_new_capa(18);
+    lazy_use_super_method = rb_ident_hash_new_capa(19);
     rb_vm_register_global_object(lazy_use_super_method);
 #define define_lazy_alias(name) do { \
         ID name_super = rb_intern_const("_enumerable_" name); \
@@ -4629,6 +4651,7 @@ InitVM_Enumerator(void)
     define_lazy_alias("drop_while");
     define_lazy_alias("uniq");
     define_lazy_alias("with_index");
+    define_lazy_alias("each_with_index");
 
     rb_obj_freeze(lazy_use_super_method);
 
@@ -4661,6 +4684,7 @@ InitVM_Enumerator(void)
     rb_define_method(rb_cLazy, "uniq", lazy_uniq, 0);
     rb_define_method(rb_cLazy, "compact", lazy_compact, 0);
     rb_define_method(rb_cLazy, "with_index", lazy_with_index, -1);
+    rb_define_method(rb_cLazy, "each_with_index", lazy_each_with_index, 0);
     rb_define_method(rb_cLazy, "tap_each", lazy_tap_each, 0);
 
 #if 0 /* for RDoc */
