@@ -12774,6 +12774,7 @@ mod hir_opt_tests {
 
     #[test]
     fn test_specialize_struct_new_generates_object_alloc_class() {
+        // TODO(max): Figure out why a Struct with no members isn't embedded
         eval(r#"
             C = Struct.new
             def test = C.new
@@ -12797,8 +12798,7 @@ mod hir_opt_tests {
           v42:ObjectSubclass[class_exact:C] = ObjectAllocClass C:VALUE(0x1008)
           PatchPoint NoSingletonClass(C@0x1008)
           PatchPoint MethodRedefined(C@0x1008, initialize@0x1038, cme:0x1040)
-          v47:CUInt64 = LoadField v42, :RBASIC_FLAGS@0x1068
-          v48:CUInt64 = GuardNoBitsSet v47, RUBY_FL_FREEZE=CUInt64(2048)
+          v47:BasicObject = CCallVariadic v42, :Struct#initialize@0x1068
           CheckInterrupts
           Return v42
         ");
