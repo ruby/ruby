@@ -1583,7 +1583,7 @@ rb_str_tmp_frozen_acquire(VALUE orig)
 VALUE
 rb_str_tmp_frozen_no_embed_acquire(VALUE orig)
 {
-    if (OBJ_FROZEN_RAW(orig) && !STR_EMBED_P(orig) && !rb_str_reembeddable_p(orig)) return orig;
+    if (OBJ_FROZEN_RAW(orig) && !STR_EMBED_P(orig)) return orig;
     if (STR_SHARED_P(orig) && !STR_EMBED_P(RSTRING(orig)->as.heap.aux.shared)) return rb_str_tmp_frozen_acquire(orig);
 
     VALUE str = str_alloc_heap(0);
