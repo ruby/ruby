@@ -12947,7 +12947,6 @@ mod hir_opt_tests {
           v56:CUInt64 = GuardNoBitsSet v55, RUBY_FL_FREEZE=CUInt64(2048)
           StoreField v50, :a@0x1069, v15
           StoreField v50, :b@0x106a, v17
-          PatchPoint NoSingletonClass(C@0x1008)
           PatchPoint MethodRedefined(C@0x1008, b@0x106b, cme:0x1070)
           v68:BasicObject = LoadField v50, :b@0x106a
           CheckInterrupts
@@ -13246,14 +13245,12 @@ mod hir_opt_tests {
             test
         "#);
         // 1001 members is too many to spell out in a snapshot, so check the shape instead.
+        // So few structs are extended that we're just not going to optimize that case (for now).
         let hir = hir_string("test");
-        assert!(!hir.contains("CCallVariadic"), "{hir}");
-        // The members live in a separately allocated buffer, so the stores go through as_heap.
-        assert!(hir.contains(":as_heap@"), "{hir}");
-        // One store per member: the given one, then a nil-filled tail.
-        assert_eq!(hir.matches("StoreField").count(), 1001, "{hir}");
-        // Only the String needs a write barrier; the nils are immediates.
-        assert_eq!(hir.matches("WriteBarrier").count(), 1, "{hir}");
+        assert!(hir.contains("CCallVariadic"), "{hir}");
+        assert!(!hir.contains(":as_heap@"), "{hir}");
+        assert!(!hir.contains("StoreField"), "{hir}");
+        assert!(!hir.contains("WriteBarrier"), "{hir}");
     }
 
     #[test]
@@ -13288,18 +13285,17 @@ mod hir_opt_tests {
           PushInlineFrame :initialize, v45 (0x1068), num_args=1
           v61:Fixnum[2] = Const Value(2)
           PatchPoint MethodRedefined(Struct@0x1088, initialize@0x1038, cme:0x1090)
-          v74:CPtr = GetEP 0
-          v75:RubyValue = LoadField v74, :VM_ENV_DATA_INDEX_ME_CREF@0x10b8
-          v76:CallableMethodEntry[VALUE(0x1040)] = GuardBitEquals v75, Value(VALUE(0x1040))
-          v77:RubyValue = LoadField v74, :VM_ENV_DATA_INDEX_SPECVAL@0x10b9
-          v78:FalseClass = GuardBitEquals v77, Value(false)
-          v79:CUInt64 = LoadField v45, :RBASIC_FLAGS@0x10ba
-          v80:CUInt64 = GuardNoBitsSet v79, RUBY_FL_FREEZE=CUInt64(2048)
-          v81:NilClass = Const Value(nil)
+          v73:CPtr = GetEP 0
+          v74:RubyValue = LoadField v73, :VM_ENV_DATA_INDEX_ME_CREF@0x10b8
+          v75:CallableMethodEntry[VALUE(0x1040)] = GuardBitEquals v74, Value(VALUE(0x1040))
+          v76:RubyValue = LoadField v73, :VM_ENV_DATA_INDEX_SPECVAL@0x10b9
+          v77:FalseClass = GuardBitEquals v76, Value(false)
+          v78:CUInt64 = LoadField v45, :RBASIC_FLAGS@0x10ba
+          v79:CUInt64 = GuardNoBitsSet v78, RUBY_FL_FREEZE=CUInt64(2048)
           StoreField v45, :a@0x10bb, v15
           StoreField v45, :b@0x10bc, v61
-          CheckInterrupts
           PopInlineFrame
+          CheckInterrupts
           Return v45
         ");
     }

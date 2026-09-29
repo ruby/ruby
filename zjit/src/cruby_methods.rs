@@ -976,8 +976,8 @@ fn inline_struct_initialize(fun: &mut hir::Function, block: hir::BlockId, recv: 
     if !args.is_empty() && unsafe { rb_struct_s_keyword_init(class) }.test() { return None; }
     // Embeddedness depends only on the member count, so every instance of the class agrees on it
     // and no shape guard is needed. See struct_alloc.
-    let embedded = unsafe { rb_zjit_struct_embedded_p(class) };
-    let base_offset = if embedded { RUBY_OFFSET_RSTRUCT_AS_ARY } else { 0 };
+    if !unsafe { rb_zjit_struct_embedded_p(class) } { return None; }
+    let base_offset = RUBY_OFFSET_RSTRUCT_AS_ARY;
     // StoreField encodes its offset as a 4-byte immediate. Check the last slot up front, because
     // bailing out after pushing instructions would leave them stranded in the scratch block.
     if num_members > 0 && base_offset as i64 + SIZEOF_VALUE as i64 * (num_members - 1) > i32::MAX as i64 {
@@ -991,11 +991,6 @@ fn inline_struct_initialize(fun: &mut hir::Function, block: hir::BlockId, recv: 
     // list.
     let nil = fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(Qnil) });
     if num_members > 0 {
-        let target = if embedded {
-            recv
-        } else {
-            fun.load_field(block, recv, FieldName::as_heap, RUBY_OFFSET_RSTRUCT_AS_HEAP_PTR, types::CPtr)
-        };
         let num_bits = types::BasicObject.num_bits();
         for index in 0..num_members {
             // Name the slots after their members so these stores line up with the LoadFields that
@@ -1004,12 +999,12 @@ fn inline_struct_initialize(fun: &mut hir::Function, block: hir::BlockId, recv: 
             let offset = base_offset + SIZEOF_VALUE_I32 * index as i32;
             match args.get(index as usize) {
                 Some(&val) => {
-                    fun.push_insn(block, hir::Insn::StoreField { recv: target, id, offset, val, num_bits });
+                    fun.push_insn(block, hir::Insn::StoreField { recv, id, offset, val, num_bits });
                     fun.push_insn(block, hir::Insn::WriteBarrier { recv, val });
                 }
                 // nil is an immediate, so the tail needs no write barrier.
                 None => {
-                    fun.push_insn(block, hir::Insn::StoreField { recv: target, id, offset, val: nil, num_bits });
+                    fun.push_insn(block, hir::Insn::StoreField { recv, id, offset, val: nil, num_bits });
                 }
             }
         }
