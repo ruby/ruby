@@ -190,6 +190,13 @@ macro_rules! get_option_ref {
 pub(crate) use get_option_ref;
 use crate::log::Log;
 
+// How to get a dev mode build, for the options that need the disasm feature
+const DEV_MODE_HINT: &str = if cfg!(windows) {
+    "but YJIT on mswin supports release builds only"
+} else {
+    "i.e. ./configure --enable-yjit=dev"
+};
+
 /// Expected to receive what comes after the third dash in "--yjit-*".
 /// Empty string means user passed only "--yjit". C code rejects when
 /// they pass exact "--yjit-".
@@ -311,7 +318,7 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
 
         ("dump-disasm", _) => {
             if !cfg!(feature = "disasm") {
-                eprintln!("WARNING: the {} option works best when YJIT is built in dev mode, i.e. ./configure --enable-yjit=dev", opt_name);
+                eprintln!("WARNING: the {} option works best when YJIT is built in dev mode, {}", opt_name, DEV_MODE_HINT);
             }
 
             match opt_val {
@@ -331,7 +338,7 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
 
         ("dump-iseq-disasm", _) => unsafe {
             if !cfg!(feature = "disasm") {
-                eprintln!("WARNING: the {} option is only available when YJIT is built in dev mode, i.e. ./configure --enable-yjit=dev", opt_name);
+                eprintln!("WARNING: the {} option is only available when YJIT is built in dev mode, {}", opt_name, DEV_MODE_HINT);
             }
 
             OPTIONS.dump_iseq_disasm = Some(opt_val.to_string());
