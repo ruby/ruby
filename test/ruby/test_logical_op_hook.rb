@@ -232,4 +232,28 @@ class TestLogicalOpHook
     assert_equal(:b, d && :b)
     assert_same(d, d || :b)
   end
+
+  def test_proc_refined
+    assert_separately([], <<~'RUBY')
+      Node = Struct.new(:op, :lhs, :rhs)
+      module Ext
+        refine Node do
+          def &&(other) = Node.new(:and, self, other)
+          def ||(other) = Node.new(:or, self, other)
+        end
+      end
+      def where(&block) = block.refined(Ext).call
+      a, b, c = Node.new(:a), Node.new(:b), Node.new(:c)
+
+      3.times do
+        assert_equal(Node.new(:and, a, b), where { a && b })
+        assert_equal(Node.new(:or, a, b), where { a || b })
+        assert_equal(Node.new(:and, Node.new(:and, a, b), c), where { a && b && c })
+        assert_equal(:hooked, where { a && b ? :hooked : :plain })
+        assert_nil(where { nil && b })
+        assert_equal(b, a && b)
+        assert_same(a, a || b)
+      end
+    RUBY
+  end
 end
