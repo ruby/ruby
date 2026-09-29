@@ -360,7 +360,7 @@ rb_alloc_func_t rb_zjit_class_get_alloc_func(VALUE klass);
 bool rb_zjit_class_has_struct_allocator(VALUE klass);
 long rb_zjit_struct_num_members(VALUE klass);
 ID rb_zjit_struct_member_id(VALUE klass, long index);
-bool rb_zjit_struct_embedded_p(VALUE klass);
+bool rb_zjit_struct_embedded_p(long num_members);
 VALUE rb_struct_s_keyword_init(VALUE klass);
 
 VALUE rb_class_allocate_instance(VALUE klass);

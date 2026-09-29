@@ -2491,7 +2491,7 @@ unsafe extern "C" {
     pub fn rb_zjit_class_has_struct_allocator(klass: VALUE) -> bool;
     pub fn rb_zjit_struct_num_members(klass: VALUE) -> ::std::os::raw::c_long;
     pub fn rb_zjit_struct_member_id(klass: VALUE, index: ::std::os::raw::c_long) -> ID;
-    pub fn rb_zjit_struct_embedded_p(klass: VALUE) -> bool;
+    pub fn rb_zjit_struct_embedded_p(num_members: ::std::os::raw::c_long) -> bool;
     pub fn rb_struct_s_keyword_init(klass: VALUE) -> VALUE;
     pub fn rb_zjit_class_has_default_allocator(klass: VALUE) -> bool;
     pub fn rb_vm_get_untagged_block_handler(reg_cfp: *mut rb_control_frame_t) -> VALUE;

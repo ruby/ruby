@@ -966,7 +966,7 @@ fn inline_struct_initialize(fun: &mut hir::Function, block: hir::BlockId, recv: 
     let class = fun.type_of(recv).exact_ruby_class()?;
     if !unsafe { rb_zjit_class_has_struct_allocator(class) } { return None; }
     let num_members = unsafe { rb_zjit_struct_num_members(class) };
-    if num_members < 0 { return None; }
+    debug_assert!(num_members >= 0, "rb_zjit_struct_num_members returned a negative value");
     // More values than the struct has members raises ArgumentError; leave that to the interpreter.
     if args.len() as i64 > num_members { return None; }
     // This is a bit of an arbitrary limit but it's designed to avoid bloating the generated code
@@ -978,8 +978,8 @@ fn inline_struct_initialize(fun: &mut hir::Function, block: hir::BlockId, recv: 
     // ArgumentError. Zero arguments nil out every member before `keyword_init` is consulted at
     // all, so that case is fine either way.
     if !args.is_empty() && unsafe { rb_struct_s_keyword_init(class) }.test() { return None; }
-    // Embeddedness depends only on the member count. See struct_alloc.
-    if !unsafe { rb_zjit_struct_embedded_p(class) } { return None; }
+    // Embeddedness depends only on the member count. See struct_embedded_p and struct_alloc.
+    if !unsafe { rb_zjit_struct_embedded_p(num_members) } { return None; }
     let base_offset = RUBY_OFFSET_RSTRUCT_AS_ARY;
     // We know it's going to fit into an i32 since it's in [0, MEMBER_LIMIT).
     let base_offset: i32 = base_offset.try_into().ok()?;
