@@ -199,17 +199,17 @@ jobs:
         if: ${{ matrix.test_task != 'test-bundled-gems' }}
         timeout-minutes: 3
 
-      # A minidump with data segments, handles, unloaded modules, the memory
-      # map and thread info (0x1825).  Heap memory and the process data are
-      # left out, as they would carry the environment with LAUNCHABLE_TOKEN
-      # into the artifact.
+      # A minidump with data segments, handles, unloaded modules, the PEB and
+      # TEBs, the memory map and thread info (0x1925).  Heap memory is left
+      # out, as it would carry the environment with LAUNCHABLE_TOKEN into the
+      # artifact.
       - name: Set up crash dumps
         run: |
           md "%GITHUB_WORKSPACE%\crashdumps"
           reg add "HKLM\SOFTWARE\Microsoft\Windows\Windows Error Reporting\LocalDumps" /v DumpFolder /t REG_EXPAND_SZ /d "%GITHUB_WORKSPACE%\crashdumps" /f
           reg add "HKLM\SOFTWARE\Microsoft\Windows\Windows Error Reporting\LocalDumps" /v DumpCount /t REG_DWORD /d 50 /f
           reg add "HKLM\SOFTWARE\Microsoft\Windows\Windows Error Reporting\LocalDumps" /v DumpType /t REG_DWORD /d 0 /f
-          reg add "HKLM\SOFTWARE\Microsoft\Windows\Windows Error Reporting\LocalDumps" /v CustomDumpFlags /t REG_DWORD /d 0x1825 /f
+          reg add "HKLM\SOFTWARE\Microsoft\Windows\Windows Error Reporting\LocalDumps" /v CustomDumpFlags /t REG_DWORD /d 0x1925 /f
 
       - run: nmake ${{ matrix.test_task || 'check' }}
         env:
