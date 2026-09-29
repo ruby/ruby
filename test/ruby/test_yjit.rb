@@ -49,6 +49,7 @@ class TestYJIT < Test::Unit::TestCase
   def test_command_line_switches
     assert_in_out_err('--yjit-', '', [], /invalid option --yjit-/)
     assert_in_out_err('--yjithello', '', [], /invalid option --yjithello/)
+    assert_in_out_err('--yjit-temp-regs=6', '', [], /--yjit-temp-regs must be <= 5\n.*invalid YJIT option 'temp-regs=6'/m)
     #assert_in_out_err('--yjit-call-threshold', '', [], /--yjit-call-threshold needs an argument/)
     #assert_in_out_err('--yjit-call-threshold=', '', [], /--yjit-call-threshold needs an argument/)
   end
