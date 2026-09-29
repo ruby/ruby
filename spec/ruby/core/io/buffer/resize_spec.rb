@@ -265,11 +265,14 @@ describe "IO::Buffer#resize" do
         slice.get_string.should == "cdef"
       end
 
-      it "uses the retained root buffer as the boundary for nested slices" do
+      it "uses the immediate parent as the boundary for nested slices" do
         @buffer = IO::Buffer.for("abcdef").dup
         parent = @buffer.slice(1, 2)
         slice = parent.slice(1, 1)
 
+        -> { slice.resize(4) }.should.raise(ArgumentError, "Resized slice exceeds its source buffer!")
+
+        parent.resize(5)
         slice.resize(4)
         slice.get_string.should == "cdef"
       end

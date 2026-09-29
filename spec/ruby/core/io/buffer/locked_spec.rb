@@ -69,9 +69,11 @@ describe "IO::Buffer#locked" do
 
     it "propagates to buffer's slices" do
       @buffer = IO::Buffer.new(4)
-      slice = @buffer.slice(0, 2)
+      parent = @buffer.slice(0, 3)
+      slice = parent.slice(0, 2)
       @buffer.locked do
         @buffer.locked?.should == true
+        parent.locked?.should == true
         slice.locked?.should == true
         slice.locked do
           slice.locked?.should == true
@@ -82,9 +84,11 @@ describe "IO::Buffer#locked" do
 
     it "propagates backwards from buffer's slices" do
       @buffer = IO::Buffer.new(4)
-      slice = @buffer.slice(0, 2)
+      parent = @buffer.slice(0, 3)
+      slice = parent.slice(0, 2)
       slice.locked do
         slice.locked?.should == true
+        parent.locked?.should == true
         @buffer.locked?.should == true
         @buffer.locked do
           @buffer.locked?.should == true
