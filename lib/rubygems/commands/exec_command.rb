@@ -3,17 +3,20 @@
 require_relative "../command"
 require_relative "../dependency_installer"
 require_relative "../gem_runner"
+require_relative "../local_remote_options"
 require_relative "../package"
 require_relative "../version_option"
 
 class Gem::Commands::ExecCommand < Gem::Command
   include Gem::VersionOption
+  include Gem::LocalRemoteOptions
 
   def initialize
     super "exec", "Run a command from a gem", {
       version: Gem::Requirement.default,
     }
 
+    add_source_option
     add_version_option
     add_prerelease_option "to be installed"
 

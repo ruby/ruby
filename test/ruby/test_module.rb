@@ -3404,6 +3404,23 @@ class TestModule < Test::Unit::TestCase
     assert_not_predicate m.clone(freeze: false), :frozen?
   end
 
+  def test_dup_of_frozen_module_is_not_frozen
+    m = Module.new
+    m.instance_variable_set(:@a, 1)
+    m.freeze
+
+    copy = m.dup
+    assert_not_predicate(copy, :frozen?)
+    copy.instance_variable_set(:@b, 2)
+    assert_equal([1, 2], [copy.instance_variable_get(:@a), copy.instance_variable_get(:@b)])
+  end
+
+  def test_singleton_class_of_frozen_module_is_frozen
+    m = Module.new.freeze
+    assert_predicate(m.singleton_class, :frozen?)
+    assert_raise(FrozenError) {m.singleton_class.instance_variable_set(:@a, 1)}
+  end
+
   def test_module_name_in_singleton_method
     s = Object.new.singleton_class
     mod = s.const_set(:Foo, Module.new)

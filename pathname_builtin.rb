@@ -1950,23 +1950,22 @@ class Pathname    # * File *
   # call-seq:
   #   truncate(size) -> 0
   #
-  # Adjusts the size of file at the path in `self` to the given `size`;
-  # returns `0`:
+  # Adjusts the size of file at the path in `self` to the given `size`:
   #
   # ```ruby
+  # pn = Pathname('/tmp/t.tmp')
   # pn.write('0123456789')
-  # pn.size # => 10
+  # pn.read   # => "0123456789"
   # pn.truncate(5)
-  # pn.size # => 5
-  # pn.read # => "01234"
+  # pn.read   # => "01234"
   # ```
   #
-  # Pads on the right with null characters if necessary:
+  # Pads with null characters if necessary:
   #
   # ```ruby
   # pn.truncate(10)
-  # pn.size # => 10
-  # pn.read # => "01234\u0000\u0000\u0000\u0000\u0000"
+  # pn.read   # => "01234\u0000\u0000\u0000\u0000\u0000"
+  # pn.delete # Clean up.
   # ```
   #
   def truncate(length) File.truncate(@path, length) end
@@ -2580,21 +2579,20 @@ class Pathname    # * FileTest *
   # call-seq:
   #   world_readable? -> integer or nil
   #
-  # If the entry at the path in `self` is readable by others,
-  # returns the integer permissions for the entry:
+  # If the entry at the path in `self` exists and is readable by others,
+  # returns the integer [permissions](rdoc-ref:file/filesystem_modes.md@Permissions)
+  # for the entry;
+  # otherwise, returns `nil`:
   #
   # ```ruby
-  # Pathname('/etc/passwd').world_readable?.to_s(8) # => "644"
-  # ```
-  #
-  # Otherwise, returns `nil`:
-  #
-  # ```ruby
-  # pn = Pathname('doc/t.tmp')
-  # pn.write('foo')
-  # pn.chmod(0o0)
-  # pn.world_readable? # => nil
-  # pn.delete
+  # pn = Pathname('/tmp/t.tmp')
+  # pn.world_readable?                    # => nil    # Does not exist.
+  # pn.write('foo')                                   # Create file.
+  # pn.world_readable?.to_s(8)            # => "664"  # World-readable.
+  # pn.chmod(0o000)                                   # Change to unreadable.
+  # pn.world_readable?                    # => nil    # Not readable.
+  # pn.delete                                         # Clean up.
+  # Pathname('.').world_readable?.to_s(8) # => "775"  # Directory.
   # ```
   #
   def world_readable?() File.world_readable?(@path) end
@@ -2744,17 +2742,20 @@ class Pathname    # * FileTest *
   #   writable? => true or false
   #
   # Returns whether entry at the path in `self`
-  # is writable by the owner and group of the current process:
+  # exists and is writable by the effective owner and group of the current process:
   #
   # ```ruby
   # pn = Pathname('/tmp/secret.txt')
-  # pn.write('foo')
-  # pn.writable?                 # => true
-  # pn.chmod(0o000)
-  # pn.writable?                 # => false
-  # pn.delete
-  # Pathname('nosuch').writable? # => false
+  # pn.writable?                # => false  # Non-existent.
+  # pn.write('foo')                         # Create the file.
+  # pn.writable?                # => true   # Writable.
+  # pn.chmod(0o000)                         # Make non-writable.
+  # pn.writable?                # => false  # Not writable.
+  # pn.delete                               # Clean up.
+  # Pathname('/etc/').writable? # => false  # Directory.
   # ```
+  # Note that filesystem security features may cause this method to return true
+  # even when the entry is not writable by the effective owner and group.
   #
   def writable?() FileTest.writable?(@path) end
 
@@ -2763,21 +2764,20 @@ class Pathname    # * FileTest *
   # call-seq:
   #   world_writable? -> integer or nil
   #
-  # If the entry at the path in `self` is writable by others,
-  # returns the integer permissions for the entry:
+  # If the entry at the path in `self` exists and is writable by others,
+  # returns the integer [permissions](rdoc-ref:file/filesystem_modes.md@Permissions)
+  # for the entry;
+  # otherwise, returns `nil`:
   #
   # ```ruby
-  # Pathname('/tmp').world_writable?.to_s(8) # => "777"
-  # ```
-  #
-  # Otherwise, returns `nil`:
-  #
-  # ```ruby
-  # pn = Pathname('doc/t.tmp')
-  # pn.write('foo')
-  # pn.chmod(0o0)
-  # pn.world_writable? # => nil
-  # pn.delete
+  # pn = Pathname('/tmp/t.tmp')
+  # pn.world_writable?                        # => nil    # Non-existent.
+  # pn.write('foo')                                       # Create file.
+  # pn.world_writable?                        # => nil    # Not world-writable.
+  # pn.chmod(0o777)                                       # Make world-writable.
+  # pn.world_writable?.to_s(8)                # => "511"  # World-writable.
+  # pn.delete                                             # Clean up.
+  # Pathname('/tmp').world_writable?.to_s(8)  # => "777"  # Directory.
   # ```
   #
   def world_writable?() File.world_writable?(@path) end
@@ -2787,8 +2787,11 @@ class Pathname    # * FileTest *
   # call-seq:
   #   writable_real? -> true or false
   #
-  # Like #writable?, but checks against the real user and group ids
-  # instead of the effective ids.
+  # Like Pathname#writable?, but checks against the real owner and group
+  # instead of the effective owner and group.
+  #
+  # Note that filesystem security features may cause this method to return `true`
+  # even when the entry at the path in `self` is not writable by the real owner and group.
   def writable_real?() FileTest.writable_real?(@path) end
 
   # :markup: markdown
@@ -2796,24 +2799,39 @@ class Pathname    # * FileTest *
   # call-seq:
   #   zero? -> true or false
   #
-  # Returns whether the entry represented by `self` exists and has size zero:
+  # Returns whether the entry at the path in `self` exists and has size zero.
   #
+  # The entry may be a file:
+  #
+  # ```ruby
+  # pn = Pathname('/tmp/t.tmp')
+  # pn.write('foo')
+  # pn.zero?                # => false
+  # pn.truncate(0) pn.zero? # => true
+  # pn.delete               # Clean up.
   # ```
-  # dir_pn = Pathname('example_dir')
-  # dir_pn.zero?  # => false  # Dir does not exist.
+  #
+  # The entry may be a directory:
+  #
+  # ```ruby
+  # dir_pn = Pathname('/tmp/foo')
   # dir_pn.mkdir
-  # dir_pn.zero?  # => false  # Directory never has size zero.
-  # dir_pn.empty? # => true   # But this one is empty.
+  # dir_pn.children.size       # => 0
+  # # Size is filesystem-dependent; may or may not be zero.
+  # dir_pn.size                # => 4096
+  # dir_pn.zero?               # => false
+  # file_pn = dir_pn / 't.tmp' # => #<Pathname:/tmp/foo/t.tmp>
+  # file_pn.write('foo')       # Add a file.
+  # dir_pn.children.size       # => 1
+  # dir_pn.size                # => 4096
+  # dir_pn.zero?               # => false
+  # dir_pn.rmtree
+  # ```
   #
-  # file_pn = Pathname('example_dir/example.txt')
-  # file_pn.zero? # => false  # File does not exist.
-  # file_pn.write('')
-  # file_pn.zero? # => true
-  # file_pn.write('foo')
-  # file_pn.zero? # => false
+  # The entry may be neither of the above:
   #
-  # file_pn.delete
-  # dir_pn.delete
+  # ```ruby
+  # Pathname('nosuch').zero?   # => false
   # ```
   #
   def zero?() FileTest.zero?(@path) end
@@ -2995,19 +3013,34 @@ class Pathname    # * mixed *
   # call-seq:
   #   unlink -> 0 or 1
   #
-  # Removes the entry represented by `self`;
-  # returns `0` if a directory, `1` otherwise.
-  #
-  # Does not follow [symbolic links](rdoc-ref:file/symbolic_links.md);
-  # if the entry is a symlink, the link itself is removed.
+  # Removes the entry ([hard link](rdoc-ref:file/hard_links.md))
+  # at the path in `self`;
+  # returns `0` if a directory, `1` otherwise:
   #
   # ```ruby
-  # Pathname(Pathname.mktmpdir).unlink # => 0
-  # Pathname(Tempfile.create).unlink   # => 1
-  # pn_target = Pathname('README.md')  # => #<Pathname:README.md>
-  # pn_link = Pathname('foo')          # => #<Pathname:foo>
-  # pn_link.make_symlink(pn_target)
-  # pn_link.delete
+  # pn_file = Pathname('/tmp/t.txt')
+  # pn_file.write('foo')
+  # pn_file.unlink # => 1
+  # pn_dir = Pathname('/tmp/foo')
+  # pn_dir.mkdir
+  # pn_dir.unlink  # => 0
+  # ```
+  #
+  # If the removed hard link is the last one associated the inode,
+  # also removes the inode; otherwise, not.
+  # See [Unlinking](rdoc-ref:file/hard_links.md@Unlinking).
+  #
+  # Does not follow [symbolic links](rdoc-ref:file/symbolic_links.md);
+  # if the entry is a symbolic link, removes the entry itself (not the link target).
+  #
+  # ```ruby
+  # pn_file = Pathname('/tmp/t.txt')
+  # pn_link = Pathname('/tmp/link')
+  # pn_file.write('foo')
+  # pn_link.make_symlink(pn_file)
+  # pn_link.unlink # => 1
+  # pn_file.exist? # => true  # Link was not followed.
+  # pn_file.unlink # => 1
   # ```
   #
   def unlink()

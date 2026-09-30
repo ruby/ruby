@@ -57,6 +57,41 @@ RSpec.describe Bundler::Fetcher do
           fetcher.send(:connection).override_headers["X-Gemfile-Source"]
         ).to eq("http://zombo.com")
       end
+
+      it "stops sending the 'X-Gemfile-Source' header once a redirect leaves the origin" do
+        previous_client = Gem::Request::ConnectionPools.client
+        require_rack_test
+        require_relative "../support/artifice/helpers/endpoint"
+        require_relative "../support/artifice/helpers/artifice"
+
+        sent = []
+        endpoint = Class.new(Endpoint) do
+          get "/:hop" do
+            sent << [request.host, env["HTTP_X_GEMFILE_SOURCE"]]
+            case params[:hop]
+            when "first" then redirect "https://gems.example.org/second"
+            when "second" then redirect "https://cdn.example.org/third"
+            when "third" then redirect "https://cdn.example.org/last"
+            else "body"
+            end
+          end
+        end
+
+        Artifice.activate_with(endpoint)
+        Gem::Request::ConnectionPools.client = Gem::Net::HTTP
+
+        fetcher.send(:downloader).fetch(Gem::URI("https://gems.example.org/first"))
+
+        expect(sent).to eq([
+          ["gems.example.org", "http://zombo.com"],
+          ["gems.example.org", "http://zombo.com"],
+          ["cdn.example.org", nil],
+          ["cdn.example.org", nil],
+        ])
+      ensure
+        Artifice.deactivate
+        Gem::Request::ConnectionPools.client = previous_client
+      end
     end
 
     context "when there is no rubygems source mirror set" do

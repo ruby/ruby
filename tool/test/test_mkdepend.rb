@@ -1132,6 +1132,31 @@ class TestMkdepend < Test::Unit::TestCase
     end
   end
 
+  def test_build_directory_does_not_shadow_source_tree_names
+    Dir.mktmpdir('mkdepend-builddir') do |root|
+      FileUtils.mkdir_p(File.join(root, 'ext/example'))
+      File.write(File.join(root, 'ext/example/depend'), <<~DEPEND)
+        # mkdepend: depends example.c => {$(VPATH)}example.c
+      DEPEND
+      build = File.join(root, 'build')
+      FileUtils.mkdir_p(File.join(build, 'ext/example'))
+      File.write(File.join(build, 'ext/example/example.c'), '')
+
+      mkdepend = TestDepend.new(root: root)
+      Dir.chdir(build) do
+        assert_equal(
+          'ext/example/depend',
+          mkdepend.dependency_input('ext/example/example.c'),
+        )
+        assert_equal(
+          ['{$(VPATH)}example.c'],
+          mkdepend.depends(%w[ext/example/example.c], nil,
+                           source: 'ext/example/example.c'),
+        )
+      end
+    end
+  end
+
   def test_normalize_dependency_rules_removes_vpath_search
     assert_equal(
       "one.h two.h\n",

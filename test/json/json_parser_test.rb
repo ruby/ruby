@@ -223,6 +223,12 @@ class JSONParserTest < Test::Unit::TestCase
     assert_equal "foo", parse(%("fo\\o"), allow_invalid_escape: true)
   end
 
+  def test_parse_invalid_escape_non_ascii
+    assert_equal "caf\u00e9", parse(%("caf\\\u00e9"), allow_invalid_escape: true)
+    assert_equal "\u3042", parse(%("\\\u3042"), allow_invalid_escape: true)
+    assert_equal "\u{1F600}", parse(%("\\\u{1F600}"), allow_invalid_escape: true)
+  end
+
   def test_parse_arrays
     assert_equal([1,2,3], parse('[1,2,3]'))
     assert_equal([1.2,2,3], parse('[1.2,2,3]'))

@@ -1347,6 +1347,12 @@ ary_make_shared_copy(VALUE ary)
     return ary_make_partial(ary, rb_cArray, 0, RARRAY_LEN(ary));
 }
 
+static VALUE
+ary_make_hidden_shared_copy(VALUE ary)
+{
+    return ary_make_partial(ary, 0, 0, RARRAY_LEN(ary));
+}
+
 enum ary_take_pos_flags
 {
     ARY_TAKE_FIRST = 0,
@@ -7009,7 +7015,7 @@ ary_sample(rb_execution_context_t *ec, VALUE ary, VALUE randgen, VALUE nv, VALUE
     len = RARRAY_LEN(ary);
     if (len < k && n <= numberof(idx)) {
         for (i = 0; i < n; ++i) {
-            if (rnds[i] >= len - 1) return rb_ary_new_capa(0);
+            if (rnds[i] >= len - i) return rb_ary_new_capa(0);
         }
     }
     if (n > len) n = len;
@@ -7133,8 +7139,8 @@ rb_ary_cycle_size(VALUE self, VALUE args, VALUE eobj)
     if (NIL_P(n)) return DBL2NUM(HUGE_VAL);
     mul = NUM2LONG(n);
     if (mul <= 0) return INT2FIX(0);
-    n = LONG2FIX(mul);
-    return rb_fix_mul_fix(rb_ary_length(self), n);
+    n = LONG2NUM(mul);
+    return rb_int_mul(rb_ary_length(self), n);
 }
 
 /*
@@ -7382,8 +7388,7 @@ rb_ary_permutation(int argc, VALUE *argv, VALUE ary)
         volatile VALUE t0;
         long *p = ALLOCV_N(long, t0, r+roomof(n, sizeof(long)));
         char *used = (char*)(p + r);
-        VALUE ary0 = ary_make_shared_copy(ary); /* private defensive copy of ary */
-        RBASIC_CLEAR_CLASS(ary0);
+        VALUE ary0 = ary_make_hidden_shared_copy(ary); /* private defensive copy of ary */
 
         MEMZERO(used, char, n); /* initialize array */
 
@@ -7488,11 +7493,10 @@ rb_ary_combination(VALUE ary, VALUE num)
         }
     }
     else {
-        VALUE ary0 = ary_make_shared_copy(ary); /* private defensive copy of ary */
+        VALUE ary0 = ary_make_hidden_shared_copy(ary); /* private defensive copy of ary */
         volatile VALUE t0;
         long *stack = ALLOCV_N(long, t0, n+1);
 
-        RBASIC_CLEAR_CLASS(ary0);
         combinate0(len, n, stack, ary0);
         ALLOCV_END(t0);
         RBASIC_SET_CLASS_RAW(ary0, rb_cArray);
@@ -7591,11 +7595,9 @@ rb_ary_repeated_permutation_size(VALUE ary, VALUE args, VALUE eobj)
 static VALUE
 rb_ary_repeated_permutation(VALUE ary, VALUE num)
 {
-    long r, n, i;
-
-    n = RARRAY_LEN(ary);                  /* Array length */
     RETURN_SIZED_ENUMERATOR(ary, 1, &num, rb_ary_repeated_permutation_size);      /* Return Enumerator if no block */
-    r = NUM2LONG(num);                    /* Permutation size from argument */
+    long r = NUM2LONG(num);                    /* Permutation size from argument */
+    long n = RARRAY_LEN(ary);
 
     if (r < 0) {
         /* no permutations: yield nothing */
@@ -7604,15 +7606,14 @@ rb_ary_repeated_permutation(VALUE ary, VALUE num)
         rb_yield(rb_ary_new2(0));
     }
     else if (r == 1) { /* this is a special, easy case */
-        for (i = 0; i < RARRAY_LEN(ary); i++) {
+        for (long i = 0; i < RARRAY_LEN(ary); i++) {
             rb_yield(rb_ary_new3(1, RARRAY_AREF(ary, i)));
         }
     }
     else {             /* this is the general case */
         volatile VALUE t0;
         long *p = ALLOCV_N(long, t0, r);
-        VALUE ary0 = ary_make_shared_copy(ary); /* private defensive copy of ary */
-        RBASIC_CLEAR_CLASS(ary0);
+        VALUE ary0 = ary_make_hidden_shared_copy(ary); /* private defensive copy of ary */
 
         rpermute0(n, r, p, ary0); /* compute and yield repeated permutations */
         ALLOCV_END(t0);
@@ -7719,8 +7720,7 @@ rb_ary_repeated_combination(VALUE ary, VALUE num)
     else {
         volatile VALUE t0;
         long *p = ALLOCV_N(long, t0, n);
-        VALUE ary0 = ary_make_shared_copy(ary); /* private defensive copy of ary */
-        RBASIC_CLEAR_CLASS(ary0);
+        VALUE ary0 = ary_make_hidden_shared_copy(ary); /* private defensive copy of ary */
 
         rcombinate0(len, n, p, n, ary0); /* compute and yield repeated combinations */
         ALLOCV_END(t0);
@@ -7793,8 +7793,6 @@ rb_ary_product(int argc, VALUE *argv, VALUE ary)
     VALUE result = Qnil;      /* The array we'll be returning, when no block given */
     long i,j;
     long resultlen = 1;
-
-    RBASIC_CLEAR_CLASS(t0);
 
     /* initialize the arrays of arrays */
     ARY_SET_LEN(t0, n);
@@ -8403,7 +8401,7 @@ rb_ary_sum(int argc, VALUE *argv, VALUE ary)
   not_exact:
     v = finish_exact_sum(n, r, v, i!=0);
 
-    if (init_is_float ? (--i, e = argv[0], true) : RB_FLOAT_TYPE_P(e)) {
+    if (init_is_float || RB_FLOAT_TYPE_P(e)) {
         /*
          * Kahan-Babuska balancing compensated summation algorithm
          * See https://link.springer.com/article/10.1007/s00607-005-0139-x

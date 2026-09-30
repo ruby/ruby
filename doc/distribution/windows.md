@@ -70,7 +70,7 @@ sh ../../ruby/configure -C --disable-install-doc --with-opt-dir=C:\Users\usernam
 
 ### Requirement
 
-1.  Windows 10/Windows Server 2016 or later.
+1.  Windows 10 version 1809 (build 17763)/Windows Server 2019 or later.
 
 2.  Visual C++ 14.15 (Visual Studio 2017 version 15.8) or later.
 

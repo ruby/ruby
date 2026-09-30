@@ -16,7 +16,7 @@ class TestFile < Test::Unit::TestCase
       w.close
       r = File.open(filename, "r")
       begin
-        if /(mswin|bccwin|mingw|emx)/ =~ RUBY_PLATFORM
+        if /(mswin|mingw)/ =~ RUBY_PLATFORM
           assert_raise(Errno::EACCES) {File.unlink(filename)}
         else
           assert_nothing_raised {File.unlink(filename)}

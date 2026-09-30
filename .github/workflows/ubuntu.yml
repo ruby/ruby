@@ -78,7 +78,7 @@ jobs:
         with:
           arch: ${{ matrix.arch }}
 
-      - uses: ruby/setup-ruby@e8944e80fb94b20106697132f8c20c665fab29e9 # v1.325.0
+      - uses: ruby/setup-ruby@14594264cd68ce8a2345dd349bc3d138a4ef85c8 # v1.327.0
         with:
           ruby-version: '3.1'
           bundler: none
@@ -155,10 +155,18 @@ jobs:
           echo "SYNTAX_SUGGEST_TIMEOUT=60" >> $GITHUB_ENV
         if: ${{ endsWith(matrix.os, 'ppc64le') || endsWith(matrix.os, 's390x') }}
 
+      - name: Set up crash dumps
+        id: crashdumps
+        run: |
+          mkdir "${GITHUB_WORKSPACE}/crashdumps"
+          echo "${GITHUB_WORKSPACE}/crashdumps/core.%p" | sudo tee /proc/sys/kernel/core_pattern
+        if: ${{ !endsWith(matrix.os, 'ppc64le') && !endsWith(matrix.os, 's390x') }}
+
       - name: make ${{ matrix.test_task }}
         run: |
           test -n "${LAUNCHABLE_STDOUT}" && exec 1> >(tee "${LAUNCHABLE_STDOUT}")
           test -n "${LAUNCHABLE_STDERR}" && exec 2> >(tee "${LAUNCHABLE_STDERR}")
+          test "${CRASHDUMPS}" = success && ulimit -c unlimited
 
           $SETARCH make -s ${{ matrix.test_task }} \
           ${TESTS:+TESTS="$TESTS"} \
@@ -170,6 +178,8 @@ jobs:
           PRECHECK_BUNDLED_GEMS: 'no'
           LAUNCHABLE_STDOUT: ${{ steps.launchable.outputs.stdout_report_path }}
           LAUNCHABLE_STDERR: ${{ steps.launchable.outputs.stderr_report_path }}
+          LAUNCHABLE_TOKEN: '' # see .github/actions/crashdumps
+          CRASHDUMPS: ${{ steps.crashdumps.outcome }}
 
       - name: make skipped tests
         run: |
@@ -193,6 +203,12 @@ jobs:
         env:
           RUBY_TESTOPTS: '-v --tty=no'
         if: ${{ contains(matrix.extra_checks, 'capi') }}
+
+      - name: Upload crash dumps
+        uses: ./.github/actions/crashdumps
+        with:
+          name: crashdumps-${{ github.job }}-${{ strategy.job-index }}
+        if: ${{ always() && hashFiles('crashdumps/core.*') != '' }}
 
       - uses: ./.github/actions/slack
         with:

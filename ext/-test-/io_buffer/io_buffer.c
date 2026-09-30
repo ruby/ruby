@@ -205,6 +205,23 @@ io_buffer_free_locked(VALUE self, VALUE buffer)
     return rb_io_buffer_free_locked(buffer);
 }
 
+static VALUE
+io_buffer_get_bytes_flags(VALUE self, VALUE buffer)
+{
+    void *base;
+    size_t size;
+    return UINT2NUM(rb_io_buffer_get_bytes(buffer, &base, &size));
+}
+
+static VALUE
+io_buffer_get_bytes_address(VALUE self, VALUE buffer)
+{
+    void *base;
+    size_t size;
+    rb_io_buffer_get_bytes(buffer, &base, &size);
+    return PTR2NUM(base);
+}
+
 void
 Init_io_buffer(void)
 {
@@ -229,4 +246,6 @@ Init_io_buffer(void)
     rb_define_singleton_method(mIOBuffer, "unlock", io_buffer_unlock, 1);
     rb_define_singleton_method(mIOBuffer, "new_locked", io_buffer_new_locked, 1);
     rb_define_singleton_method(mIOBuffer, "free_locked", io_buffer_free_locked, 1);
+    rb_define_singleton_method(mIOBuffer, "get_bytes_flags", io_buffer_get_bytes_flags, 1);
+    rb_define_singleton_method(mIOBuffer, "get_bytes_address", io_buffer_get_bytes_address, 1);
 }

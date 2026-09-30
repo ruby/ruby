@@ -12,7 +12,7 @@
  */
 #if defined(__GNUC__) || defined(__clang__)
 #define pm_ctzll(v) ((unsigned) __builtin_ctzll(v))
-#elif defined(_MSC_VER)
+#elif defined(_MSC_VER) && defined(_WIN64)
 #include <intrin.h>
 #include <stdint.h>
 

@@ -97,6 +97,12 @@ ractor_port_alloc(VALUE klass)
 static VALUE
 ractor_port_init(VALUE rpv, rb_ractor_t *r)
 {
+    // Child threads can still run ensure blocks and report exceptions after
+    // ractor_notify_exit has freed the ports.
+    if (!r->sync.ports) {
+        rb_raise(rb_eRactorClosedError, "The ractor has terminated");
+    }
+
     struct ractor_port *rp = RACTOR_PORT_PTR(rpv);
 
     rp->r = r;
@@ -1054,6 +1060,7 @@ ractor_value(rb_execution_context_t *ec, VALUE self)
         /* Move r's rb_gc_register_mark_object pins to the joiner before the merge
          * below sweeps r's objspace, or the objects pinned there lose their root. */
         rb_ractor_absorb_registered_marks(GET_RACTOR(), r);
+        rb_ractor_absorb_registered_addrs_without_gc(GET_RACTOR(), r);
 
         rb_gc_objspace_absorb_into_current(&r->objspace);
 

@@ -11,7 +11,7 @@ GEM
     ostruct (0.6.3)
     rake (13.3.0)
     rexml (3.4.2)
-    rubyzip (3.3.0)
+    rubyzip (3.4.0)
     warbler (2.1.0)
       jruby-jars (>= 9.4, < 10.1)
       jruby-rack (>= 1.2.3, < 1.3)

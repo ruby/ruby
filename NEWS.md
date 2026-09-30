@@ -62,6 +62,18 @@ Note: We're only listing outstanding class updates.
     * The `fiber_interrupt` hook is now required. Schedulers which do not
       implement it can no longer be installed with `Fiber.set_scheduler`.
 
+* GC
+
+    * `GC.stat` accepts `scope: :ractor` (the default), `scope: :local`
+      (a synonym for `:ractor`), and `scope: :global`.
+      With the default collector, the global scope reports cumulative collection
+      counts and measured marking/sweeping CPU time across Ractors, including
+      history from destroyed object spaces, without requesting a stop-the-world
+      snapshot. Unscoped `GC.stat`, `GC.count`, and `GC.total_time` retain their
+      current-Ractor behavior.
+    * Global compaction no longer counts overlapping CPU intervals in scalar GC
+      timing statistics. Profiler wall-time intervals are unchanged.
+
 * Hash
 
     * `Hash.ruby2_keywords_hash?` and `Hash.ruby2_keywords_hash` are
@@ -252,7 +264,7 @@ They are still available on rubygems.org and can be installed with
   * 0.6.2 to [v0.6.3][net-imap-v0.6.3], [v0.6.4][net-imap-v0.6.4], [v0.6.4.1][net-imap-v0.6.4.1], [v0.6.5][net-imap-v0.6.5], [v0.6.6][net-imap-v0.6.6], [v0.6.7][net-imap-v0.6.7]
 * rbs 4.2.0
   * 3.10.0 to [v3.10.1][rbs-v3.10.1], [v3.10.2][rbs-v3.10.2], [v3.10.3][rbs-v3.10.3], [v3.10.4][rbs-v3.10.4], [v4.0.0.dev.1][rbs-v4.0.0.dev.1], [v4.0.0.dev.2][rbs-v4.0.0.dev.2], [v4.0.0.dev.3][rbs-v4.0.0.dev.3], [v4.0.0.dev.4][rbs-v4.0.0.dev.4], [v4.0.0.dev.5][rbs-v4.0.0.dev.5], [v4.0.0][rbs-v4.0.0], [v4.0.1.dev.1][rbs-v4.0.1.dev.1], [v4.0.1.dev.2][rbs-v4.0.1.dev.2], [v4.0.1][rbs-v4.0.1], [v4.0.2][rbs-v4.0.2], [v4.0.3][rbs-v4.0.3], [v4.1.0.pre.1][rbs-v4.1.0.pre.1], [v4.1.0.pre.2][rbs-v4.1.0.pre.2], [v4.1.0][rbs-v4.1.0], [v4.1.1.pre.1][rbs-v4.1.1.pre.1], [v4.1.1][rbs-v4.1.1], [v4.1.2][rbs-v4.1.2], [v4.1.3][rbs-v4.1.3], [v4.2.0.pre.1][rbs-v4.2.0.pre.1], [v4.2.0][rbs-v4.2.0]
-* typeprof 0.33.1
+* typeprof 0.33.2
 * mutex_m 0.3.0
 * bigdecimal 4.1.3
   * 4.0.1 to [v4.1.0][bigdecimal-v4.1.0], [v4.1.1][bigdecimal-v4.1.1], [v4.1.2][bigdecimal-v4.1.2], [v4.1.3][bigdecimal-v4.1.3]
@@ -268,8 +280,8 @@ They are still available on rubygems.org and can be installed with
   * 0.1.12 to [v0.1.13][repl_type_completor-v0.1.13], [v0.1.14][repl_type_completor-v0.1.14], [v0.1.15][repl_type_completor-v0.1.15], [v0.1.16][repl_type_completor-v0.1.16]
 * pstore 0.2.1
   * 0.2.0 to [v0.2.1][pstore-v0.2.1]
-* rdoc 8.0.0
-  * 7.0.3 to [v7.0.4][rdoc-v7.0.4], [v7.1.0][rdoc-v7.1.0], [v7.2.0][rdoc-v7.2.0], [v8.0.0][rdoc-v8.0.0]
+* rdoc 8.1.0
+  * 7.0.3 to [v7.0.4][rdoc-v7.0.4], [v7.1.0][rdoc-v7.1.0], [v7.2.0][rdoc-v7.2.0], [v8.0.0][rdoc-v8.0.0], [v8.1.0][rdoc-v8.1.0]
 * win32ole 1.9.3
   * 1.9.2 to [v1.9.3][win32ole-v1.9.3]
 * irb 1.18.0
@@ -290,6 +302,20 @@ Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for det
     * Interix (Windows Services for UNIX)
     * SunOS 4 (Solaris, i.e. SunOS 5, is unaffected)
     * BSD/OS (BSDi)
+    * NeXTSTEP, OpenStep and Rhapsody
+
+* Support code for the following platforms has also been removed.  None
+  of them has a platform maintainer.
+
+    * AmigaOS
+    * AtheOS
+    * ESIX
+    * HI-UX/MPP
+    * IRIX
+    * OSF/1 (Tru64 UNIX)
+    * QNX Neutrino
+    * System V Release 4
+    * UX/PDS
 
 * Windows 10 1703 or later no longer needs the `LongPathsEnabled` registry
   value to use paths longer than 260 characters.  This applies to any process
@@ -299,6 +325,10 @@ Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for det
 
 * Building Ruby with MSVC now requires Visual Studio 2017 version 15.8
   (`_MSC_VER` 1915) or later.
+
+* Ruby built with MSVC now requires Windows 10 version 1809 (build 17763)
+  or Windows Server 2019 or later.  Earlier Windows 10 releases and Windows
+  Server 2016 are no longer supported.
 
 ## Compatibility issues
 
@@ -368,6 +398,25 @@ Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for det
 
   [[Feature #21861]]
 
+### Ractor-scoped GC address registration
+
+* `rb_gc_register_address` and `rb_global_variable` now register the address
+  with the calling Ractor, and only that Ractor's GC marks the stored object.
+
+  Any Ractor may register an address, but the value stored through it must be a
+  special constant, a shareable object, or an unshareable object owned by the
+  registering Ractor. Storing another Ractor's unshareable object can result in
+  the object being freed while the address still refers to it (use-after-free).
+
+  If the address has process lifetime (a static VALUE), register it from the
+  main Ractor or keep the stored values shareable.
+
+  When the registering Ractor is joined with `Ractor#value`, remaining
+  registrations move to the joining Ractor; otherwise they move to the main
+  Ractor once the dead Ractor is collected.
+
+  [[Feature #22277]]
+
 ### Removed APIs
 
 The following APIs, which have been deprecated for many years, are removed.
@@ -400,6 +449,11 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
   collection only runs when it is really needed (explicit full `GC.start`,
   shareable-object growth, reclaiming dead Ractors' heaps).  Allocation-heavy
   Ractor programs now scale like forked processes.
+
+* `GC.start(global: false)` can be used when multiple Ractors are running to force
+   a Ractor-local GC. By default, `GC.start` runs a global GC (all Ractors) like
+   before. This can also be triggered with `GC.start(global: true)`. The `global`
+   keyword argument has no effect when a single Ractor is running.
 
   Visible behavior changes:
 
@@ -651,6 +705,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [rdoc-v7.1.0]: https://github.com/ruby/rdoc/releases/tag/v7.1.0
 [rdoc-v7.2.0]: https://github.com/ruby/rdoc/releases/tag/v7.2.0
 [rdoc-v8.0.0]: https://github.com/ruby/rdoc/releases/tag/v8.0.0
+[rdoc-v8.1.0]: https://github.com/ruby/rdoc/releases/tag/v8.1.0
 [win32ole-v1.9.3]: https://github.com/ruby/win32ole/releases/tag/v1.9.3
 [irb-v1.17.0]: https://github.com/ruby/irb/releases/tag/v1.17.0
 [irb-v1.18.0]: https://github.com/ruby/irb/releases/tag/v1.18.0

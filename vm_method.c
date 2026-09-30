@@ -2933,7 +2933,7 @@ rb_hash_method_entry(st_index_t hash, const rb_method_entry_t *me)
 }
 
 void
-rb_alias(VALUE klass, ID alias_name, ID original_name)
+rb_add_alias(VALUE klass, ID alias_name, ID original_name, rb_method_visibility_t visi_alias)
 {
     const VALUE target_klass = klass;
     VALUE defined_class;
@@ -2980,6 +2980,7 @@ rb_alias(VALUE klass, ID alias_name, ID original_name)
     }
 
     if (visi == METHOD_VISI_UNDEF) visi = METHOD_ENTRY_VISI(orig_me);
+    if (visi_alias != METHOD_VISI_UNDEF) visi = visi_alias;
 
     if (!NIL_P(ruby_verbose) && rb_warning_category_enabled_p(RB_WARN_CATEGORY_DEPRECATED)) {
         VALUE owner_class = orig_me->defined_class ? orig_me->defined_class : defined_class;
@@ -3027,6 +3028,12 @@ rb_alias(VALUE klass, ID alias_name, ID original_name)
             RB_OBJ_WRITE(alias_me, &alias_me->defined_class, orig_me->defined_class);
         }
     }
+}
+
+void
+rb_alias(VALUE klass, ID alias_name, ID original_name)
+{
+    rb_add_alias(klass, alias_name, original_name, METHOD_VISI_UNDEF);
 }
 
 /*

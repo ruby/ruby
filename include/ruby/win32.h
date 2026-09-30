@@ -65,41 +65,7 @@ extern "C++" {			/* template without extern "C++" */
 #endif
 #include <io.h>
 #include <malloc.h>
-#if defined __MINGW32__
-# include <stdint.h>
-#else
-# if !defined(_INTPTR_T_DEFINED)
-#  ifdef _WIN64
-typedef __int64 intptr_t;
-#  else
-typedef int intptr_t;
-#  endif
-#  define _INTPTR_T_DEFINED
-# endif
-# if !defined(INTPTR_MAX)
-#  ifdef _WIN64
-#    define INTPTR_MAX 9223372036854775807I64
-#  else
-#    define INTPTR_MAX 2147483647
-#  endif
-#  define INTPTR_MIN (-INTPTR_MAX-1)
-# endif
-# if !defined(_UINTPTR_T_DEFINED)
-#  ifdef _WIN64
-typedef unsigned __int64 uintptr_t;
-#  else
-typedef unsigned int uintptr_t;
-#  endif
-#  define _UINTPTR_T_DEFINED
-# endif
-# if !defined(UINTPTR_MAX)
-#  ifdef _WIN64
-#    define UINTPTR_MAX 18446744073709551615UI64
-#  else
-#    define UINTPTR_MAX 4294967295U
-#  endif
-# endif
-#endif
+#include <stdint.h>
 #ifndef __MINGW32__
 # define mode_t int
 #endif

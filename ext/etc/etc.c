@@ -800,6 +800,8 @@ static VALUE
 etc_uname(VALUE obj)
 {
 #ifdef _WIN32
+    typedef long (WINAPI version_func)(OSVERSIONINFOW *);
+    version_func *pRtlGetVersion;
     OSVERSIONINFOW v;
     SYSTEM_INFO s;
     const char *sysname, *mach;
@@ -808,9 +810,11 @@ etc_uname(VALUE obj)
     DWORD len = 0;
     WCHAR *buf;
 
+    /* GetVersionEx reports 6.2 unless the manifest declares Windows 8.1 or later */
+    pRtlGetVersion = (version_func *)GetProcAddress(GetModuleHandleW(L"ntdll.dll"), "RtlGetVersion");
     v.dwOSVersionInfoSize = sizeof(v);
-    if (!GetVersionExW(&v))
-        rb_sys_fail("GetVersionEx");
+    if (!pRtlGetVersion || pRtlGetVersion(&v))
+        rb_notimplement();
 
     result = rb_hash_new();
     sysname = "Windows_NT";
@@ -1074,6 +1078,7 @@ etc_nprocessors_affin(void)
  * This method is implemented using:
  * - sched_getaffinity(): Linux
  * - sysconf(_SC_NPROCESSORS_ONLN): GNU/Linux, NetBSD, FreeBSD, OpenBSD, DragonFly BSD, OpenIndiana, Mac OS X, AIX
+ * - GetActiveProcessorCount(ALL_PROCESSOR_GROUPS): Windows
  *
  * *Example:*
  *
@@ -1112,9 +1117,24 @@ etc_nprocessors(VALUE obj)
         rb_sys_fail("sysconf(_SC_NPROCESSORS_ONLN)");
     }
 #else
-    SYSTEM_INFO si;
-    GetSystemInfo(&si);
-    ret = (long)si.dwNumberOfProcessors;
+# ifndef ALL_PROCESSOR_GROUPS
+#   define ALL_PROCESSOR_GROUPS 0xffff
+# endif
+    /* GetSystemInfo() counts the current processor group only, and mingw-w64 declares GetActiveProcessorCount() only for _WIN32_WINNT >= 0x0601 */
+    typedef DWORD (WINAPI *GetActiveProcessorCount_t)(WORD);
+    GetActiveProcessorCount_t pGetActiveProcessorCount =
+        (GetActiveProcessorCount_t)GetProcAddress(GetModuleHandleW(L"kernel32.dll"), "GetActiveProcessorCount");
+    DWORD n = 0;
+
+    if (pGetActiveProcessorCount) {
+        n = pGetActiveProcessorCount(ALL_PROCESSOR_GROUPS);
+    }
+    if (n == 0) {
+        SYSTEM_INFO si;
+        GetSystemInfo(&si);
+        n = si.dwNumberOfProcessors;
+    }
+    ret = (long)n;
 #endif
     return LONG2NUM(ret);
 }

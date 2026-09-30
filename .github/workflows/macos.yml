@@ -148,7 +148,10 @@ jobs:
 
       - name: Set timeout scale
         run: echo "RUBY_TEST_TIMEOUT_SCALE=10" >> $GITHUB_ENV # subprocess assertion timeouts flake on slower/contended macOS runners
-        if: ${{ matrix.test_task == 'check' }}
+        if: ${{ matrix.test_task == 'check' || matrix.test_task == 'test-all' }}
+
+      - name: Set up crash dumps
+        run: mkdir "${GITHUB_WORKSPACE}/crashdumps"
 
       - name: make ${{ matrix.test_task }}
         run: |
@@ -165,6 +168,10 @@ jobs:
           PRECHECK_BUNDLED_GEMS: 'no'
           LAUNCHABLE_STDOUT: ${{ steps.launchable.outputs.stdout_report_path }}
           LAUNCHABLE_STDERR: ${{ steps.launchable.outputs.stderr_report_path }}
+          LAUNCHABLE_TOKEN: '' # see .github/actions/crashdumps
+          RUBY_ON_BUG: >- # see .github/actions/crashdumps
+            sh -c 'cd ${{ github.workspace }}/crashdumps && [ $(ls | wc -l) -lt 100 ] &&
+            lldb --batch -p $0 -o "process save-core -s modified-memory core.$0" > lldb.$0.log 2>&1'
 
       - name: make skipped tests
         run: |
@@ -183,6 +190,12 @@ jobs:
         env:
           RUBY_TESTOPTS: '-v --tty=no'
         if: ${{ contains(matrix.extra_checks, 'capi') }}
+
+      - name: Upload crash dumps
+        uses: ./.github/actions/crashdumps
+        with:
+          name: crashdumps-${{ github.job }}-${{ strategy.job-index }}
+        if: ${{ always() && hashFiles('crashdumps/core.*') != '' }}
 
       - uses: ./.github/actions/slack
         with:

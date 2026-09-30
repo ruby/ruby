@@ -187,7 +187,7 @@ PLATFORM = mswin32
 ! error Runtime library $(RT_VER) is not supported
 !endif
 !ifndef NTVER
-NTVER = _WIN32_WINNT_WIN8
+NTVER = _WIN32_WINNT_WIN10
 !endif
 !ifdef NTVER
 ARCHDEFS = -D_WIN32_WINNT=$(NTVER) $(ARCHDEFS)
@@ -295,9 +295,6 @@ WERRORFLAG = -WX
 !if !defined(CFLAGS_NO_ARCH)
 CFLAGS_NO_ARCH = $(RUNTIMEFLAG) $(DEBUGFLAGS) $(WARNFLAGS) $(OPTFLAGS) $(COMPILERFLAG)
 !endif
-!if !defined(ARCH_FLAG)
-ARCH_FLAG = $(PROCESSOR_FLAG)
-!endif
 !if !defined(CFLAGS)
 CFLAGS = $(CFLAGS_NO_ARCH) $(ARCH_FLAG)
 !endif
@@ -326,10 +323,14 @@ LIBS = $(LIBS) gmp.lib
 LIBS = $(LIBS) imagehlp.lib shlwapi.lib bcrypt.lib $(EXTLIBS)
 !endif
 !if !defined(MISSING)
-MISSING = crypt.obj ffs.obj langinfo.obj lgamma_r.obj strlcat.obj strlcpy.obj win32/win32.obj win32/file.obj setproctitle.obj
+MISSING = crypt.obj ffs.obj lgamma_r.obj strlcat.obj strlcpy.obj win32/win32.obj win32/file.obj setproctitle.obj
 MISSING = $(MISSING) explicit_bzero.obj memrchr.obj
 !endif
 DLNOBJS = dln.obj
+
+!if !defined(INSTALL_STATIC_LIBRARY)
+INSTALL_STATIC_LIBRARY = yes
+!endif
 
 !if "$(ARCH)" == "x64"
 COROUTINE_OBJ = coroutine/win64/Context.obj
@@ -1063,6 +1064,7 @@ s,@rubyw_install_name@,$(RUBYW_INSTALL_NAME),;t t
 s,@RUBYW_INSTALL_NAME@,$(RUBYW_INSTALL_NAME),;t t
 s,@RUBY_SO_NAME@,$(RUBY_SO_NAME),;t t
 s,@LIBRUBY_A@,$$(RUBY_SO_NAME)-static.lib,;t t
+s,@INSTALL_STATIC_LIBRARY@,$(INSTALL_STATIC_LIBRARY),;t t
 s,@LIBRUBY_SO@,$$(RUBY_SO_NAME).dll,;t t
 s,@LIBRUBY_ALIASES@,$(LIBRUBY_ALIASES),;t t
 s,@LIBRUBY_RELATIVE@,$(LIBRUBY_RELATIVE),;t t
