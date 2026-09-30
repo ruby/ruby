@@ -21,6 +21,12 @@ fn main() {
                 if let Some(framework) = split_iter.next() {
                     println!("cargo:rustc-link-lib=framework={framework}");
                 }
+            } else if token == "-L" {
+                if let Some(search_dir) = split_iter.next() {
+                    println!("cargo:rustc-link-search=native={search_dir}");
+                }
+            } else if let Some(search_dir) = token.strip_prefix("-L") {
+                println!("cargo:rustc-link-search=native={search_dir}");
             } else if let Some(lib_name) = token.strip_prefix("-l") {
                 println!("cargo:rustc-link-lib={lib_name}");
             }
