@@ -5982,10 +5982,8 @@ fn jit_rb_str_bytesize(
         RUBY_OFFSET_RSTRING_LEN as i32,
     );
 
-    let len = match asm.c_long_len(str_len_opnd) {
-        mem @ Opnd::Mem(_) => asm.load(mem),
-        len => len,
-    };
+    let len = asm.c_long_len(str_len_opnd);
+    let len = asm.load_mem(len);
     let shifted_val = asm.lshift(len, Opnd::UImm(1));
     let out_val = asm.or(shifted_val, Opnd::UImm(RUBY_FIXNUM_FLAG as u64));
     asm.guard_fixnum_fits_long(out_val, Counter::guard_send_str_bytesize_overflow);
@@ -7348,6 +7346,15 @@ fn get_array_len(asm: &mut Assembler, array_opnd: Opnd) -> Opnd {
 }
 
 impl Assembler {
+    /// Emits a load for memory based operands and returns an InsnOut,
+    /// otherwise returns opnd.
+    fn load_mem(&mut self, opnd: Opnd) -> Opnd {
+        match opnd {
+            Opnd::InsnOut { .. } | Opnd::Reg(_) => opnd,
+            _ => self.load(opnd),
+        }
+    }
+
     /// Side-exit when the arithmetic that produced `val` overflowed the Fixnum range. Where long is
     /// 64-bit, the overflow flag decides. On LLP64 (Windows), Fixnum operands fit in 32 bits, so the
     /// 64-bit arithmetic never overflows and only the range check in cmp_fixnum_fits_long is needed.
