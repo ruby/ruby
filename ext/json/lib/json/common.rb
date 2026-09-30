@@ -699,10 +699,10 @@ module JSON
     unless source.is_a?(String)
       if source.respond_to? :to_str
         source = source.to_str
+      elsif source.respond_to? :read
+        source = source.read
       elsif source.respond_to? :to_io
         source = source.to_io.read
-      elsif source.respond_to?(:read)
-        source = source.read
       end
     end
 
