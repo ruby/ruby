@@ -1746,9 +1746,15 @@ pub(crate) mod ids {
         name: minusat            content: b"-@"
         name: aref               content: b"[]"
         name: rb_ivar_get_at_no_ractor_check
+        name: rb_jit_io_buffer_readable_ptr
         name: rb_jit_ruby2_keywords_splat_p
         name: RUBY_FL_FREEZE
         name: RUBY_ELTS_SHARED
+        name: U8
+        name: u16
+        name: U16
+        name: u32
+        name: U32
         name: RubyVM
         name: ZJIT
         name: induce_side_exit_bang       content: b"induce_side_exit!"

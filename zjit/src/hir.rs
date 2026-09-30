@@ -646,6 +646,7 @@ pub enum SideExitReason {
     GuardNotShared,
     GuardLess,
     GuardGreaterEq,
+    GuardIOBufferReadable,
     GuardSuperMethodEntry,
     PatchPoint(Invariant),
     CalleeSideExit,
@@ -942,6 +943,27 @@ impl From<ID> for FieldName {
     }
 }
 
+/// The order the bytes of an integer are laid out in memory.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ByteOrder {
+    LittleEndian,
+    BigEndian,
+}
+
+impl ByteOrder {
+    /// The byte order ZJIT assumes the host uses
+    pub const HOST: Self = Self::LittleEndian;
+}
+
+impl std::fmt::Display for ByteOrder {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            Self::LittleEndian => f.write_str("LittleEndian"),
+            Self::BigEndian => f.write_str("BigEndian"),
+        }
+    }
+}
+
 /// Payload of [`Insn::CCallWithFrame`]. Boxed in the enum to keep `Insn` small.
 #[derive(Debug, Clone)]
 pub struct CCallWithFrameData {
@@ -1025,6 +1047,9 @@ pub enum Insn {
     StringAppend { recv: InsnId, other: InsnId, recv_flags: InsnId, other_flags: InsnId, state: InsnId },
     StringAppendCodepoint { recv: InsnId, other: InsnId, state: InsnId },
     StringEqual { left: InsnId, right: InsnId },
+
+    /// Read an unsigned integer from a pointer known to be in bounds
+    LoadFixnum { ptr: InsnId, num_bytes: usize, byte_order: ByteOrder },
 
     /// Combine count stack values into a regexp
     ToRegexp { opt: usize, values: Vec<InsnId>, state: InsnId },
@@ -1332,6 +1357,8 @@ pub enum Insn {
     GuardAnyBitSet { val: InsnId, mask: Const, mask_name: Option<ID>, reason: Box<SideExitReason>, state: InsnId, recompile: Option<Recompile> },
     /// Side-exit if (val & mask) != 0
     GuardNoBitsSet { val: InsnId, mask: Const, mask_name: Option<ID>, reason: Box<SideExitReason>, state: InsnId },
+    /// Side-exit if val is NULL.
+    GuardNotNull { val: InsnId, reason: Box<SideExitReason>, state: InsnId },
     /// Side-exit if left is not greater than or equal to right (both operands are C long).
     GuardGreaterEq { left: InsnId, right: InsnId, reason: Box<SideExitReason>, state: InsnId },
     /// Side-exit if left is not less than right (both operands are C long).
@@ -1473,6 +1500,9 @@ macro_rules! for_each_operand_impl {
                 $visit_one!(*left);
                 $visit_one!(*right);
             }
+            Insn::LoadFixnum { ptr, .. } => {
+                $visit_one!(*ptr);
+            }
             Insn::ToRegexp { values, state, .. } => {
                 $visit_many!(values);
                 $visit_one!(*state);
@@ -1492,6 +1522,7 @@ macro_rules! for_each_operand_impl {
             | Insn::GuardBitEquals { val, state, .. }
             | Insn::GuardAnyBitSet { val, state, .. }
             | Insn::GuardNoBitsSet { val, state, .. }
+            | Insn::GuardNotNull { val, state, .. }
             | Insn::ToArray { val, state }
             | Insn::IsMethodCfunc { val, state, .. }
             | Insn::ToNewArray { val, state }
@@ -1796,6 +1827,7 @@ impl Insn {
             Insn::StringAppend { .. } => effects::Any,
             Insn::StringAppendCodepoint { .. } => effects::Any,
             Insn::StringEqual { .. } => Effect::write(abstract_heaps::Allocator),
+            Insn::LoadFixnum { .. } => Effect::read(abstract_heaps::Other),
             Insn::ToRegexp { .. } => effects::Any,
             Insn::PutSpecialObject { .. } => effects::Any,
             Insn::ToArray { .. } => effects::Any,
@@ -1964,6 +1996,7 @@ impl Insn {
             Insn::GuardBitEquals { .. } => Effect::read_write(abstract_heaps::Empty, abstract_heaps::Control),
             Insn::GuardAnyBitSet { .. } => Effect::read_write(abstract_heaps::Empty, abstract_heaps::Control),
             Insn::GuardNoBitsSet { .. } => Effect::read_write(abstract_heaps::Empty, abstract_heaps::Control),
+            Insn::GuardNotNull { .. } => Effect::read_write(abstract_heaps::Empty, abstract_heaps::Control),
             Insn::GuardGreaterEq { .. } => Effect::read_write(abstract_heaps::Empty, abstract_heaps::Control),
             Insn::GuardLess { .. } => Effect::read_write(abstract_heaps::Empty, abstract_heaps::Control),
             Insn::PatchPoint { .. } => Effect::read_write(abstract_heaps::PatchPoint, abstract_heaps::Control),
@@ -2210,6 +2243,9 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::StringEqual { left, right } => {
                 write!(f, "StringEqual {left}, {right}")
             }
+            Insn::LoadFixnum { ptr, num_bytes, byte_order } => {
+                write!(f, "LoadFixnum {ptr}, {num_bytes}, {byte_order}")
+            }
             Insn::ToRegexp { values, opt, .. } => {
                 write!(f, "ToRegexp")?;
                 write_separated!(f, " ", ", ", values);
@@ -2388,6 +2424,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             },
             Insn::GuardNoBitsSet { val, mask, mask_name: Some(name), .. } => { write!(f, "GuardNoBitsSet {val}, {name}={}", mask.print(self.ptr_map)) },
             Insn::GuardNoBitsSet { val, mask, .. } => { write!(f, "GuardNoBitsSet {val}, {}", mask.print(self.ptr_map)) },
+            Insn::GuardNotNull { val, .. } => { write!(f, "GuardNotNull {val}") },
             Insn::GuardLess { left, right, .. } => write!(f, "GuardLess {left}, {right}"),
             Insn::GuardGreaterEq { left, right, .. } => write!(f, "GuardGreaterEq {left}, {right}"),
             &Insn::GetBlockParam { level, ep_offset, state, .. } => {
@@ -3739,6 +3776,7 @@ impl Function {
             Insn::StringAppend { .. } => types::StringExact,
             Insn::StringAppendCodepoint { .. } => types::StringExact,
             Insn::StringEqual { .. } => types::BoolExact,
+            Insn::LoadFixnum { .. } => types::Fixnum,
             Insn::ToRegexp { .. } => types::RegexpExact,
             Insn::NewArray { .. } => types::ArrayExact,
             Insn::ArrayDup { .. } => types::ArrayExact,
@@ -3762,6 +3800,7 @@ impl Function {
             Insn::GuardBitEquals { val, expected, .. } => self.type_of(*val).intersection(Type::from_const(*expected)),
             Insn::GuardAnyBitSet { val, .. } => self.type_of(*val),
             Insn::GuardNoBitsSet { val, .. } => self.type_of(*val),
+            Insn::GuardNotNull { val, .. } => self.type_of(*val),
             Insn::GuardLess { left, .. } => self.type_of(*left),
             Insn::GuardGreaterEq { left, .. } => self.type_of(*left),
             Insn::FixnumAdd  { .. } => types::Fixnum,
@@ -4049,7 +4088,8 @@ impl Function {
             Insn::GuardType { val, .. }
             | Insn::GuardBitEquals { val, .. }
             | Insn::GuardAnyBitSet { val, .. }
-            | Insn::GuardNoBitsSet { val, .. } => self.chase_insn(val),
+            | Insn::GuardNoBitsSet { val, .. }
+            | Insn::GuardNotNull { val, .. } => self.chase_insn(val),
             | Insn::RefineType { val, .. } => self.chase_insn(val),
             _ => id,
         }
@@ -6827,6 +6867,7 @@ impl Function {
                     | Insn::GuardBitEquals { val:  src, .. }
                     | Insn::GuardAnyBitSet { val:  src, .. }
                     | Insn::GuardNoBitsSet { val:  src, .. }
+                    | Insn::GuardNotNull   { val:  src, .. }
                     | Insn::GuardGreaterEq { left: src, .. }
                     | Insn::GuardLess      { left: src, .. } => {
                         rewrite_map.insert(*src, canonical_id);
@@ -8301,6 +8342,7 @@ impl Function {
                     }
                 }
             }
+            Insn::GuardNotNull { val, .. } => self.assert_subtype(insn_id, val, types::CPtr),
             Insn::GuardLess { left, right, .. }
             | Insn::GuardGreaterEq { left, right, .. } => {
                 self.assert_subtype(insn_id, left, types::CInt64)?;
@@ -8320,6 +8362,9 @@ impl Function {
                 self.assert_subtype(insn_id, index, types::Fixnum)?;
                 self.assert_subtype(insn_id, value, types::Fixnum)
             }
+            Insn::LoadFixnum { ptr, .. } => {
+                self.assert_subtype(insn_id, ptr, types::CPtr)
+            },
             Insn::IsA { val, class } => {
                 self.assert_subtype(insn_id, val, types::BasicObject)?;
                 self.assert_subtype(insn_id, class, types::Class)

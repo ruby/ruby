@@ -42,6 +42,7 @@ fn main() {
         .clang_args(filtered_clang_args)
         .header("encindex.h")
         .header("internal.h")
+        .header("internal/io_buffer.h")
         .header("internal/object.h")
         .header("internal/re.h")
         .header("include/ruby/ruby.h")
@@ -82,6 +83,7 @@ fn main() {
         .allowlist_function("rb_jit_str_simple_append")
         .allowlist_function("rb_str_dup")
         .allowlist_function("rb_str_getbyte")
+        .allowlist_function("rb_jit_io_buffer_readable_ptr")
         .allowlist_type("ruby_preserved_encindex")
         .allowlist_function("rb_class2name")
 
@@ -189,6 +191,7 @@ fn main() {
         .allowlist_var("rb_cFalseClass")
         .allowlist_var("rb_cInteger")
         .allowlist_var("rb_cIO")
+        .allowlist_var("rb_cIOBuffer")
         .allowlist_var("rb_cSymbol")
         .allowlist_var("rb_cFloat")
         .allowlist_var("rb_cNumeric")

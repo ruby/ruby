@@ -2516,6 +2516,22 @@ io_buffer_size_of(VALUE klass, VALUE buffer_type)
     }
 }
 
+#if USE_YJIT || USE_ZJIT
+// YJIT/ZJIT need this function to never allocate and never raise, so a range it
+// cannot serve is reported as NULL.
+const void *
+rb_jit_io_buffer_readable_ptr(VALUE self, size_t offset, size_t length)
+{
+    struct rb_io_buffer *buffer = get_io_buffer(self);
+
+    if (!buffer->base) return NULL;
+    if (size_sum_is_bigger_than(offset, length, buffer->size)) return NULL;
+    if (!io_buffer_validate(buffer)) return NULL;
+
+    return (const char *)buffer->base + offset;
+}
+#endif
+
 static inline VALUE
 rb_io_buffer_get_value(const void* base, size_t size, ID buffer_type, size_t *offset)
 {
