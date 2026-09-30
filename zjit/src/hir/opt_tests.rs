@@ -26291,4 +26291,72 @@ mod hir_opt_tests {
         "
         );
     }
+
+    #[test]
+    fn test_global_load_cached_insns_invalidated() {
+        set_call_threshold(3);
+        eval(r#"
+           class TestObj
+             def initialize(value)
+               @value = value
+             end
+
+             def foo(modify)
+               before = @value
+               if modify
+                 @value = 5
+               end
+
+               before + @value
+            end
+          end
+
+           obj = TestObj.new(3)
+           obj.foo(false)
+           obj.foo(true)
+        "#);
+
+        assert_snapshot!(
+           hir_string_proc("TestObj.instance_method(:foo)"),
+           @"
+        fn foo@<compiled>:8:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :modify@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :modify@1
+          Jump bb3(v7, v8)
+        bb3(v11:BasicObject, v12:BasicObject):
+          v66:NilClass = Const Value(nil)
+          v17:HeapBasicObject = GuardType v11, HeapBasicObject
+          v18:CShape = LoadField v17, :shape_id@0x1001
+          v19:CShape[0x1002] = GuardBitEquals v18, CShape(0x1002) recompile
+          v20:BasicObject = LoadField v17, :@value@0x1003
+          PatchPoint NoEPEscape(foo)
+          v27:CBool = Test v12
+          v28:Falsy = RefineType v12, Falsy
+          CondBranch v27, bb5(), bb4(v17, v28)
+        bb5():
+          v30:Truthy = RefineType v12, Truthy
+          v33:Fixnum[5] = Const Value(5)
+          StoreField v17, :@value@0x1003, v33
+          Jump bb4(v17, v30)
+        bb4(v42:HeapBasicObject, v43:BasicObject):
+          v50:CShape = LoadField v42, :shape_id@0x1001
+          v51:CShape[0x1002] = GuardBitEquals v50, CShape(0x1002) recompile
+          v52:BasicObject = LoadField v42, :@value@0x1003
+          PatchPoint MethodRedefined(Integer@0x1008, +@0x1010, cme:0x1018)
+          v63:Fixnum = GuardType v20, Fixnum recompile
+          v64:Fixnum = GuardType v52, Fixnum
+          v65:Fixnum = FixnumAdd v63, v64
+          CheckInterrupts
+          Return v65
+        "
+        );
+    }
 }
