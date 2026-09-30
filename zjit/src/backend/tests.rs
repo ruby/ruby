@@ -1,5 +1,6 @@
 use crate::asm::CodeBlock;
 use crate::backend::lir::*;
+use crate::bakable_ptr::BakablePtr;
 use crate::cruby::*;
 use crate::codegen::c_callable;
 use crate::options::rb_zjit_prepare_options;
@@ -115,7 +116,7 @@ fn test_base_insn_out()
     );
 
     // Load the pointer into a register
-    let ptr_opnd = Opnd::const_ptr(4351776248 as *const u8);
+    let ptr_opnd = (4351776248 as *const u8).bake_ptr();
 
     // Increment and store the updated value
     asm.incr_counter(ptr_opnd, 1.into());

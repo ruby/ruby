@@ -6832,7 +6832,7 @@ pub(crate) mod hir_build_tests {
         function.push_insn(bb1, Insn::Jump(edge(bb2)));
         function.push_insn(bb2, Insn::Jump(edge(bb3)));
 
-        let retval = function.push_insn(bb3, Insn::Const { val: Const::CBool(true) });
+        let retval = function.push_insn(bb3, Insn::Const { val: true.into() });
         function.push_insn(bb3, Insn::Return { val: retval });
 
         function.seal_entries();
@@ -6852,12 +6852,12 @@ pub(crate) mod hir_build_tests {
         let bb2 = function.new_block(0);
         let bb3 = function.new_block(0);
 
-        let v1 = function.push_insn(bb0, Insn::Const { val: Const::Value(Qfalse) });
+        let v1 = function.push_insn(bb0, Insn::Const { val: Qfalse.into() });
         let _ = function.push_insn(bb0, Insn::CondBranch { val: v1, if_true: edge(bb2), if_false: edge(bb1) });
         function.push_insn(bb1, Insn::Jump(edge(bb3)));
         function.push_insn(bb2, Insn::Jump(edge(bb3)));
 
-        let retval = function.push_insn(bb3, Insn::Const { val: Const::CBool(true) });
+        let retval = function.push_insn(bb3, Insn::Const { val: true.into() });
         function.push_insn(bb3, Insn::Return { val: retval });
 
         function.seal_entries();
@@ -6878,10 +6878,10 @@ pub(crate) mod hir_build_tests {
          let bb1 = function.new_block(0);
 
          // Construct two separate jump instructions.
-         let v1 = function.push_insn(bb0, Insn::Const { val: Const::Value(Qfalse) });
+         let v1 = function.push_insn(bb0, Insn::Const { val: Qfalse.into() });
          let _ = function.push_insn(bb0, Insn::CondBranch { val: v1, if_true: edge(bb1), if_false: edge(bb1)});
 
-         let retval = function.push_insn(bb1, Insn::Const { val: Const::CBool(true) });
+         let retval = function.push_insn(bb1, Insn::Const { val: true.into() });
          function.push_insn(bb1, Insn::Return { val: retval });
 
          function.seal_entries();
@@ -6923,7 +6923,7 @@ pub(crate) mod hir_build_tests {
          function.push_insn(bb1, Insn::Jump(edge(bb2)));
          function.push_insn(bb2, Insn::Jump(edge(bb3)));
 
-         let retval = function.push_insn(bb3, Insn::Const { val: Const::CBool(true) });
+         let retval = function.push_insn(bb3, Insn::Const { val: true.into() });
          function.push_insn(bb3, Insn::Return { val: retval });
 
          function.seal_entries();
@@ -6958,13 +6958,13 @@ pub(crate) mod hir_build_tests {
         let bb2 = function.new_block(0);
         let bb3 = function.new_block(0);
 
-        let val = function.push_insn(bb0, Insn::Const { val: Const::Value(Qfalse) });
+        let val = function.push_insn(bb0, Insn::Const { val: Qfalse.into() });
         let _ = function.push_insn(bb0, Insn::CondBranch { val, if_true: edge(bb1), if_false: edge(bb2) });
 
         function.push_insn(bb2, Insn::Jump(edge(bb3)));
         function.push_insn(bb1, Insn::Jump(edge(bb3)));
 
-        let retval = function.push_insn(bb3, Insn::Const { val: Const::CBool(true) });
+        let retval = function.push_insn(bb3, Insn::Const { val: true.into() });
         function.push_insn(bb3, Insn::Return { val: retval });
 
         function.seal_entries();
@@ -7006,12 +7006,12 @@ pub(crate) mod hir_build_tests {
 
         function.push_insn(bb0, Insn::Jump(edge(bb1)));
 
-        let v0 = function.push_insn(bb1, Insn::Const { val: Const::Value(Qfalse) });
+        let v0 = function.push_insn(bb1, Insn::Const { val: Qfalse.into() });
         let _ = function.push_insn(bb1, Insn::CondBranch { val: v0, if_true: edge(bb2), if_false: edge(bb4) });
 
         function.push_insn(bb2, Insn::Jump(edge(bb3)));
 
-        let v1 = function.push_insn(bb3, Insn::Const { val: Const::Value(Qfalse) });
+        let v1 = function.push_insn(bb3, Insn::Const { val: Qfalse.into() });
         let _ = function.push_insn(bb3, Insn::CondBranch { val: v1, if_true: edge(bb5), if_false: edge(bb7) });
 
         function.push_insn(bb4, Insn::Jump(edge(bb5)));
@@ -7020,7 +7020,7 @@ pub(crate) mod hir_build_tests {
 
         function.push_insn(bb6, Insn::Jump(edge(bb7)));
 
-        let retval = function.push_insn(bb7, Insn::Const { val: Const::CBool(true) });
+        let retval = function.push_insn(bb7, Insn::Const { val: true.into() });
         function.push_insn(bb7, Insn::Return { val: retval });
 
         function.seal_entries();
@@ -7071,20 +7071,20 @@ pub(crate) mod hir_build_tests {
         let bb4 = function.new_block(0);
         let bb5 = function.new_block(0);
 
-        let v0 = function.push_insn(bb0, Insn::Const { val: Const::Value(Qfalse) });
+        let v0 = function.push_insn(bb0, Insn::Const { val: Qfalse.into() });
         let _ = function.push_insn(bb0, Insn::CondBranch { val: v0, if_true: edge(bb1), if_false: edge(bb4) });
 
-        let v1 = function.push_insn(bb1, Insn::Const { val: Const::Value(Qfalse) });
+        let v1 = function.push_insn(bb1, Insn::Const { val: Qfalse.into() });
         let _ = function.push_insn(bb1, Insn::CondBranch { val: v1, if_true: edge(bb2), if_false: edge(bb3) });
 
         function.push_insn(bb2, Insn::Jump(edge(bb3)));
 
         function.push_insn(bb4, Insn::Jump(edge(bb5)));
 
-        let v2 = function.push_insn(bb5, Insn::Const { val: Const::Value(Qfalse) });
+        let v2 = function.push_insn(bb5, Insn::Const { val: Qfalse.into() });
         let _ = function.push_insn(bb5, Insn::CondBranch { val: v2, if_true: edge(bb3), if_false: edge(bb4) });
 
-        let retval = function.push_insn(bb3, Insn::Const { val: Const::CBool(true) });
+        let retval = function.push_insn(bb3, Insn::Const { val: true.into() });
         function.push_insn(bb3, Insn::Return { val: retval });
 
         function.seal_entries();
@@ -7132,7 +7132,7 @@ pub(crate) mod hir_build_tests {
 
         function.push_insn(bb1, Insn::Jump(edge(bb2)));
 
-        let retval = function.push_insn(bb2, Insn::Const { val: Const::CBool(true) });
+        let retval = function.push_insn(bb2, Insn::Const { val: true.into() });
         function.push_insn(bb2, Insn::Return { val: retval });
 
         function.seal_entries();
@@ -7191,9 +7191,9 @@ mod loop_info_tests {
 
         function.push_insn(bb0, Insn::Jump(edge(bb2)));
 
-        let val = function.push_insn(bb2, Insn::Const { val: Const::Value(Qfalse) });
+        let val = function.push_insn(bb2, Insn::Const { val: Qfalse.into() });
         let _ = function.push_insn(bb2, Insn::CondBranch { val, if_true: edge(bb1), if_false: edge(bb3) });
-        let retval = function.push_insn(bb3, Insn::Const { val: Const::CBool(true) });
+        let retval = function.push_insn(bb3, Insn::Const { val: true.into() });
         let _ = function.push_insn(bb3, Insn::Return { val: retval });
 
         function.push_insn(bb1, Insn::Jump(edge(bb2)));
@@ -7254,13 +7254,13 @@ mod loop_info_tests {
 
         function.push_insn(bb1, Insn::Jump(edge(bb2)));
 
-        let cond = function.push_insn(bb2, Insn::Const { val: Const::Value(Qfalse) });
+        let cond = function.push_insn(bb2, Insn::Const { val: Qfalse.into() });
         let _ = function.push_insn(bb2, Insn::CondBranch { val: cond, if_true: edge(bb1), if_false: edge(bb3) });
 
-        let cond = function.push_insn(bb3, Insn::Const { val: Const::Value(Qtrue) });
+        let cond = function.push_insn(bb3, Insn::Const { val: Qtrue.into() });
         let _ = function.push_insn(bb3, Insn::CondBranch { val: cond, if_true: edge(bb0), if_false: edge(bb4) });
 
-        let retval = function.push_insn(bb4, Insn::Const { val: Const::CBool(true) });
+        let retval = function.push_insn(bb4, Insn::Const { val: true.into() });
         let _ = function.push_insn(bb4, Insn::Return { val: retval });
 
         function.seal_entries();
@@ -7328,7 +7328,7 @@ mod loop_info_tests {
         let bb5 = function.new_block(0);
         let bb6 = function.new_block(0);
 
-        let cond = function.push_insn(bb0, Insn::Const { val: Const::Value(Qfalse) });
+        let cond = function.push_insn(bb0, Insn::Const { val: Qfalse.into() });
         let _ = function.push_insn(bb0, Insn::CondBranch { val: cond, if_true: edge(bb1), if_false: edge(bb3) });
 
         function.push_insn(bb1, Insn::Jump(edge(bb2)));
@@ -7341,7 +7341,7 @@ mod loop_info_tests {
 
         let _ = function.push_insn(bb5, Insn::CondBranch { val: cond, if_true: edge(bb0), if_false: edge(bb6) });
 
-        let retval = function.push_insn(bb6, Insn::Const { val: Const::CBool(true) });
+        let retval = function.push_insn(bb6, Insn::Const { val: true.into() });
         let _ = function.push_insn(bb6, Insn::Return { val: retval });
 
         function.seal_entries();
@@ -7411,7 +7411,7 @@ mod loop_info_tests {
         let _ = function.push_insn(bb0, Insn::Jump(edge(bb1)));
         let _ = function.push_insn(bb1, Insn::Jump(edge(bb2)));
 
-        let retval = function.push_insn(bb2, Insn::Const { val: Const::CBool(true) });
+        let retval = function.push_insn(bb2, Insn::Const { val: true.into() });
         let _ = function.push_insn(bb2, Insn::Return { val: retval });
 
         function.seal_entries();
@@ -7477,7 +7477,7 @@ mod loop_info_tests {
         let bb5 = function.new_block(0);
         let bb6 = function.new_block(0);
 
-        let cond = function.push_insn(bb0, Insn::Const { val: Const::Value(Qfalse) });
+        let cond = function.push_insn(bb0, Insn::Const { val: Qfalse.into() });
         let _ = function.push_insn(bb0, Insn::Jump(edge(bb1)));
         let _ = function.push_insn(bb1, Insn::Jump(edge(bb2)));
         let _ = function.push_insn(bb2, Insn::Jump(edge(bb3)));
@@ -7547,7 +7547,7 @@ mod iongraph_tests {
         let mut function = Function::new(std::ptr::null());
         let bb0 = function.entry_block;
 
-        let retval = function.push_insn(bb0, Insn::Const { val: Const::CBool(true) });
+        let retval = function.push_insn(bb0, Insn::Const { val: true.into() });
         function.push_insn(bb0, Insn::Return { val: retval });
         function.seal_entries();
 
@@ -7563,7 +7563,7 @@ mod iongraph_tests {
 
         function.push_insn(bb0, Insn::Jump(edge(bb1)));
 
-        let retval = function.push_insn(bb1, Insn::Const { val: Const::CBool(false) });
+        let retval = function.push_insn(bb1, Insn::Const { val: false.into() });
         function.push_insn(bb1, Insn::Return { val: retval });
 
         function.seal_entries();
@@ -7576,7 +7576,7 @@ mod iongraph_tests {
         let mut function = Function::new(std::ptr::null());
         let bb0 = function.entry_block;
 
-        let val1 = function.push_insn(bb0, Insn::Const { val: Const::CBool(true) });
+        let val1 = function.push_insn(bb0, Insn::Const { val: true.into() });
         function.push_insn(bb0, Insn::Return { val: val1 });
 
         function.seal_entries();
@@ -7591,13 +7591,13 @@ mod iongraph_tests {
         let bb1 = function.new_block(0);
         let bb2 = function.new_block(0);
 
-        let cond = function.push_insn(bb0, Insn::Const { val: Const::CBool(true) });
+        let cond = function.push_insn(bb0, Insn::Const { val: true.into() });
         function.push_insn(bb0, Insn::CondBranch { val: cond, if_true: edge(bb1), if_false: edge(bb2) });
 
-        let retval1 = function.push_insn(bb2, Insn::Const { val: Const::CBool(false) });
+        let retval1 = function.push_insn(bb2, Insn::Const { val: false.into() });
         function.push_insn(bb2, Insn::Return { val: retval1 });
 
-        let retval2 = function.push_insn(bb1, Insn::Const { val: Const::CBool(true) });
+        let retval2 = function.push_insn(bb1, Insn::Const { val: true.into() });
         function.push_insn(bb1, Insn::Return { val: retval2 });
 
         function.seal_entries();
@@ -7616,9 +7616,9 @@ mod iongraph_tests {
 
         function.push_insn(bb0, Insn::Jump(edge(bb2)));
 
-        let val = function.push_insn(bb2, Insn::Const { val: Const::Value(Qfalse) });
+        let val = function.push_insn(bb2, Insn::Const { val: Qfalse.into() });
         let _ = function.push_insn(bb2, Insn::CondBranch { val, if_true: edge(bb1), if_false: edge(bb3) });
-        let retval = function.push_insn(bb3, Insn::Const { val: Const::CBool(true) });
+        let retval = function.push_insn(bb3, Insn::Const { val: true.into() });
         let _ = function.push_insn(bb3, Insn::Return { val: retval });
 
         function.push_insn(bb1, Insn::Jump(edge(bb2)));
@@ -7635,13 +7635,13 @@ mod iongraph_tests {
         let bb1 = function.new_block(0);
         let bb2 = function.new_block(0);
 
-        let cond = function.push_insn(bb0, Insn::Const { val: Const::CBool(true) });
+        let cond = function.push_insn(bb0, Insn::Const { val: true.into() });
         function.push_insn(bb0, Insn::CondBranch { val: cond, if_true: edge(bb1), if_false: edge(bb2) });
 
-        let retval1 = function.push_insn(bb1, Insn::Const { val: Const::CBool(true) });
+        let retval1 = function.push_insn(bb1, Insn::Const { val: true.into() });
         function.push_insn(bb1, Insn::Return { val: retval1 });
 
-        let retval2 = function.push_insn(bb2, Insn::Const { val: Const::CBool(false) });
+        let retval2 = function.push_insn(bb2, Insn::Const { val: false.into() });
         function.push_insn(bb2, Insn::Return { val: retval2 });
 
         function.seal_entries();

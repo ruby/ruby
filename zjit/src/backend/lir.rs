@@ -4,6 +4,7 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use std::fmt;
 use std::mem::take;
 use std::rc::Rc;
+use crate::bakable_ptr::BakablePtr;
 use crate::bitset::BitSet;
 use crate::perf;
 use crate::cruby::{IseqPtr, RUBY_OFFSET_CFP_ISEQ, RUBY_OFFSET_CFP_JIT_RETURN, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32, VALUE, ZJIT_STACK_MAP_BASE_PTR_INDEX_MASK, ZJIT_STACK_MAP_BASE_PTR_SIZE_SHIFT, ZJIT_STACK_MAP_BASE_PTR_TAG, ZJIT_STACK_MAP_SHIFT, ZJIT_STACK_MAP_SKIP_TAG, ZJIT_STACK_MAP_VREG_TAG, vm_stack_canary, zjit_jit_frame, local_size_and_idx_to_ep_offset};
@@ -471,11 +472,6 @@ impl Opnd
         }
     }
 
-    /// Constructor for constant pointer operand
-    pub fn const_ptr<T>(ptr: *const T) -> Self {
-        Opnd::UImm(ptr as u64)
-    }
-
     /// Unwrap a register operand
     pub fn unwrap_reg(&self) -> Reg {
         match self {
@@ -734,7 +730,7 @@ pub struct CCallData {
     pub opnds: Vec<Opnd>,
     /// VM stack contents to materialize a JIT frame if the call side-exits.
     pub stack_map: Option<StackMap>,
-    /// The function pointer to be called. This should be Opnd::const_ptr
+    /// The function pointer to be called. This should be a `bake_ptr()` operand
     /// (Opnd::UImm) in most cases. gen_entry_trampoline() uses Opnd::Reg.
     pub fptr: Opnd,
     /// Optional PosMarker to remember the start address of the C call.
@@ -3085,7 +3081,7 @@ impl Assembler
             assert!(capture_idx <= asm.stack_state.num_side_exit_stack_map_slots);
             asm_comment!(asm, "install side-exit JITFrame for caller depth {}", frame_depth);
             let jit_frame_slot = Opnd::mem(64, NATIVE_BASE_PTR, -((*frame_depth as i32 + 1) * SIZEOF_VALUE_I32));
-            asm.store(jit_frame_slot, Opnd::const_ptr(jit_frame));
+            asm.store(jit_frame_slot, jit_frame.bake_ptr());
         }
 
         /// Restore VM state (cfp->pc, cfp->sp, stack, locals) for the side exit.
@@ -3164,7 +3160,7 @@ impl Assembler
                 let reason_cstr = std::ffi::CString::new(reason.to_string())
                     .unwrap_or_else(|_| std::ffi::CString::new("unknown").unwrap());
                 let reason_ptr = reason_cstr.into_raw() as *const u8;
-                asm_ccall!(asm, rb_zjit_record_exit_stack, Opnd::const_ptr(reason_ptr));
+                asm_ccall!(asm, rb_zjit_record_exit_stack, reason_ptr.bake_ptr());
             }
             compile_exit_recompile(asm, exit);
             compile_exit_return(asm);
@@ -3231,11 +3227,11 @@ impl Assembler
 
                     if get_option!(stats) || cfg!(test) {
                         asm_comment!(self, "increment a side exit counter");
-                        self.incr_counter(Opnd::const_ptr(exit_counter_ptr(reason)), 1.into());
+                        self.incr_counter(exit_counter_ptr(reason).bake_ptr(), 1.into());
 
                         if let SideExitReason::UnhandledYARVInsn(opcode) = reason {
                             asm_comment!(self, "increment an unhandled YARV insn counter");
-                            self.incr_counter(Opnd::const_ptr(exit_counter_ptr_for_opcode(opcode)), 1.into());
+                            self.incr_counter(exit_counter_ptr_for_opcode(opcode).bake_ptr(), 1.into());
                         }
                     }
 
@@ -3939,7 +3935,7 @@ impl Assembler {
     pub fn ccall(&mut self, fptr: *const u8, opnds: Vec<Opnd>) -> Opnd {
         let canary_opnd = self.set_stack_canary();
         let out = self.new_vreg(Opnd::match_num_bits(&opnds));
-        let fptr = Opnd::const_ptr(fptr);
+        let fptr = fptr.bake_ptr();
         let stack_map = self.stack_map.take();
         self.push_insn(Insn::CCall { data: Box::new(CCallData { opnds, stack_map, fptr, start_marker: None, end_marker: None, out }) });
         self.clear_stack_canary(canary_opnd);
@@ -3949,7 +3945,7 @@ impl Assembler {
     /// Call a C function into an explicit output operand without allocating a
     /// new vreg for the result.
     pub fn ccall_into(&mut self, out: Opnd, fptr: *const u8, opnds: Vec<Opnd>) {
-        let fptr = Opnd::const_ptr(fptr);
+        let fptr = fptr.bake_ptr();
         let stack_map = self.stack_map.take();
         self.push_insn(Insn::CCall { data: Box::new(CCallData { opnds, stack_map, fptr, start_marker: None, end_marker: None, out }) });
     }
@@ -3978,7 +3974,7 @@ impl Assembler {
             data: Box::new(CCallData {
                 opnds,
                 stack_map,
-                fptr: Opnd::const_ptr(fptr),
+                fptr: fptr.bake_ptr(),
                 start_marker: Some(Rc::new(start_marker)),
                 end_marker: Some(Rc::new(end_marker)),
                 out,
@@ -4001,7 +3997,7 @@ impl Assembler {
             let ccall_counter_pointers = crate::state::ZJITState::get_ccall_counter_pointers();
             let counter_ptr = ccall_counter_pointers.entry(fn_name()).or_insert_with(|| Box::new(0));
             let counter_ptr: &mut u64 = counter_ptr.as_mut();
-            self.incr_counter(Opnd::const_ptr(counter_ptr), 1.into());
+            self.incr_counter(std::ptr::from_mut(counter_ptr).bake_ptr(), 1.into());
         }
     }
 

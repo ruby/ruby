@@ -14,6 +14,7 @@ use std::{
 };
 use crate::hir_type::{Type, types};
 use crate::hir_effect::{Effect, abstract_heaps, effects};
+use crate::bakable_ptr::OneLevelPtr;
 use crate::bitset::BitSet;
 use crate::profile::{ProfiledType, SplatLength, TypeDistributionSummary};
 use crate::stats::{Counter, incr_counter};
@@ -21,6 +22,9 @@ use SendFallbackReason::*;
 
 pub(crate) mod tests;
 mod opt_tests;
+mod constant;
+
+pub use constant::{Const, ConstPrinter, ConstRepr};
 
 #[allow(unused_macros)]
 macro_rules! hir_comment {
@@ -380,36 +384,6 @@ impl<'a> std::fmt::Display for InvariantPrinter<'a> {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Copy)]
-pub enum Const {
-    Value(VALUE),
-    CBool(bool),
-    CInt8(i8),
-    CInt16(i16),
-    CInt32(i32),
-    CInt64(i64),
-    CUInt8(u8),
-    CUInt16(u16),
-    CUInt32(u32),
-    CAttrIndex(attr_index_t),
-    CShape(ShapeId),
-    CUInt64(u64),
-    CPtr(*const u8),
-    CDouble(f64),
-}
-
-impl std::fmt::Display for Const {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        self.print(&PtrPrintMap::identity()).fmt(f)
-    }
-}
-
-impl Const {
-    pub fn print<'a>(&'a self, ptr_map: &'a PtrPrintMap) -> ConstPrinter<'a> {
-        ConstPrinter { inner: self, ptr_map }
-    }
-}
-
 #[derive(Clone, Copy)]
 pub enum RangeType {
     Inclusive = 0, // include the end value
@@ -464,32 +438,6 @@ impl TryFrom<u8> for SpecialBackrefSymbol {
     }
 }
 
-/// Print adaptor for [`Const`]. See [`PtrPrintMap`].
-pub struct ConstPrinter<'a> {
-    inner: &'a Const,
-    ptr_map: &'a PtrPrintMap,
-}
-
-impl<'a> std::fmt::Display for ConstPrinter<'a> {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match self.inner {
-            Const::Value(val) => write!(f, "Value({})", val.print(self.ptr_map)),
-            // Since `&` coerces to a raw pointer, be careful to get `val` and not `&val` here.
-            &Const::CPtr(val) => write!(f, "CPtr({:p})", self.ptr_map.map_ptr(val)),
-            &Const::CShape(shape_id) => write!(f, "CShape({:p})", self.ptr_map.map_shape(shape_id)),
-            &Const::CUInt64(int) => {
-                // Print in hex if signed bit is set
-                if 0 != int & (1 << (u64::BITS - 1)) {
-                    write!(f, "CUInt64(0x{int:x})")
-                } else {
-                    write!(f, "CUInt64({int})")
-                }
-            }
-            _ => write!(f, "{:?}", self.inner),
-        }
-    }
-}
-
 /// For output stability in tests, we assign each pointer with a stable
 /// address the first time we see it. This mapping is off by default;
 /// set [`PtrPrintMap::map_ptrs`] to switch it on.
@@ -530,37 +478,6 @@ impl std::fmt::LowerHex for Offset {
         let prefix = if f.alternate() { "0x" } else { "" };
         let bare_hex = format!("{:x}", self.0.abs());
         f.pad_integral(self.0 >= 0, prefix, &bare_hex)
-    }
-}
-
-/// A trait tailored for [`PtrPrintMap`] to disable coercion of `&*const T` into `*const *const T`.
-/// This is implemented for `*const/mut T`, but rules for coercing into `impl Trait` don't consider the
-/// underlying type, so we avoid the undesirable coercion. (It would be weird for the treatment of a
-/// trait to change based on the set of types that implements it since Rust has a nominal type system.)
-pub trait OneLevelPtr: Copy {
-    /// Get the address component of the pointer.
-    fn addr(self) -> usize;
-    /// The layout of the pointed-to type.
-    fn pointee_layout(self) -> std::alloc::Layout;
-}
-
-impl<T> OneLevelPtr for *const T {
-    fn addr(self) -> usize {
-        <*const T>::addr(self)
-    }
-
-    fn pointee_layout(self) -> std::alloc::Layout {
-        std::alloc::Layout::new::<T>()
-    }
-}
-
-impl<T> OneLevelPtr for *mut T {
-    fn addr(self) -> usize {
-        <*mut T>::addr(self)
-    }
-
-    fn pointee_layout(self) -> std::alloc::Layout {
-        std::alloc::Layout::new::<T>()
     }
 }
 
@@ -3293,7 +3210,7 @@ impl Function {
     /// Untag an ISEQ block handler into its `struct rb_captured_block *`:
     /// captured = block_handler & ~0x3
     fn untag_block_handler(&mut self, block: BlockId, block_handler: InsnId) -> InsnId {
-        let untag_mask = self.push_insn(block, Insn::Const { val: Const::CInt64(!0x3) });
+        let untag_mask = self.push_insn(block, Insn::Const { val: (!0x3i64).into() });
         self.push_insn(block, Insn::IntAnd { left: block_handler, right: untag_mask })
     }
 
@@ -3323,21 +3240,19 @@ impl Function {
         let block_handler = self.load_ep_env_field(block, ep, FieldName::VM_ENV_DATA_INDEX_SPECVAL, VM_ENV_DATA_INDEX_SPECVAL, types::CInt64);
 
         // The handler must be an ISEQ block: VM_BH_ISEQ_BLOCK_P is `& 0x3 == 0x1`.
-        let tag_mask = self.push_insn(block, Insn::Const { val: Const::CInt64(0x3) });
+        let tag_mask = self.push_insn(block, Insn::Const { val: 0x3i64.into() });
         let tag = self.push_insn(block, Insn::IntAnd { left: block_handler, right: tag_mask });
 
         // Monomorphic: guard the tag and the ISEQ, then invoke directly in-place.
         // No need for new HIR blocks.
         if iseqs.len() == 1 && !self.policy.no_side_exits {
             let block_iseq = iseqs[0];
-            self.push_insn(block, Insn::GuardBitEquals { val: tag, expected: Const::CInt64(0x1), reason: Box::new(SideExitReason::InvokeBlockHandlerNotIseq), state, recompile: Some(Recompile) });
+            self.push_insn(block, Insn::GuardBitEquals { val: tag, expected: 0x1i64.into(), reason: Box::new(SideExitReason::InvokeBlockHandlerNotIseq), state, recompile: Some(Recompile) });
             let captured = self.untag_block_handler(block, block_handler);
 
-            // Guard captured->code.iseq is the profiled block iseq. The ISEQ is a GC object that
-            // can be moved by compaction, so bake it in as a `Const::Value` rather than a raw
-            // `Const::CPtr` to let the GC mark it and update the pointer embedded in JIT code.
+            // Guard captured->code.iseq is the profiled block iseq.
             let captured_iseq = self.load_captured_code_iseq(block, captured);
-            self.push_insn(block, Insn::GuardBitEquals { val: captured_iseq, expected: Const::Value(VALUE::from(block_iseq)), reason: Box::new(SideExitReason::InvokeBlockIseqChanged), state, recompile: Some(Recompile) });
+            self.push_insn(block, Insn::GuardBitEquals { val: captured_iseq, expected: VALUE::from(block_iseq).into(), reason: Box::new(SideExitReason::InvokeBlockIseqChanged), state, recompile: Some(Recompile) });
 
             let result = self.push_insn(block, Insn::InvokeBlockIseqDirect { iseq: block_iseq, captured, args, state });
             return (block, result);
@@ -3349,7 +3264,7 @@ impl Function {
         let dispatch_block = self.new_block(insn_idx);
         let fallback_block = self.new_block(insn_idx);
 
-        let iseq_tag = self.push_insn(block, Insn::Const { val: Const::CInt64(0x1) });
+        let iseq_tag = self.push_insn(block, Insn::Const { val: 0x1i64.into() });
         let tag_matches = self.push_insn(block, Insn::IsBitEqual { left: tag, right: iseq_tag });
         self.push_insn(block, Insn::CondBranch {
             val: tag_matches,
@@ -3362,8 +3277,8 @@ impl Function {
 
         let mut compare_block = dispatch_block;
         for &block_iseq in iseqs {
-            // Use `Const::Value` so that the GC updates the ISEQ pointer on compaction. See above.
-            let expected = self.push_insn(compare_block, Insn::Const { val: Const::Value(VALUE::from(block_iseq)) });
+            // Bake the ISEQ as a `VALUE` so that the GC updates the pointer on compaction. See above.
+            let expected = self.push_insn(compare_block, Insn::Const { val: VALUE::from(block_iseq).into() });
             let iseq_matches = self.push_insn(compare_block, Insn::IsBitEqual { left: captured_iseq, right: expected });
             let direct_block = self.new_block(insn_idx);
             let miss_block = self.new_block(insn_idx);
@@ -3705,20 +3620,7 @@ impl Function {
             | Insn::StoreField { .. } | Insn::WriteBarrier { .. } | Insn::HashAset { .. } | Insn::ArrayAset { .. }
             | Insn::PushInlineFrame { .. } | Insn::PopInlineFrame { .. } =>
                 panic!("Cannot infer type of instruction with no output: {}. See Insn::has_output().", self.insns[insn]),
-            Insn::Const { val: Const::Value(val) } => Type::from_value(*val),
-            Insn::Const { val: Const::CBool(val) } => Type::from_cbool(*val),
-            Insn::Const { val: Const::CInt8(val) } => Type::from_cint(types::CInt8, *val as i64),
-            Insn::Const { val: Const::CInt16(val) } => Type::from_cint(types::CInt16, *val as i64),
-            Insn::Const { val: Const::CInt32(val) } => Type::from_cint(types::CInt32, *val as i64),
-            Insn::Const { val: Const::CInt64(val) } => Type::from_cint(types::CInt64, *val),
-            Insn::Const { val: Const::CUInt8(val) } => Type::from_cint(types::CUInt8, *val as i64),
-            Insn::Const { val: Const::CUInt16(val) } => Type::from_cint(types::CUInt16, *val as i64),
-            Insn::Const { val: Const::CUInt32(val) } => Type::from_cint(types::CUInt32, *val as i64),
-            Insn::Const { val: Const::CAttrIndex(val) } => Type::from_cint(types::CAttrIndex, *val as i64),
-            Insn::Const { val: Const::CShape(val) } => Type::from_cint(types::CShape, val.0 as i64),
-            Insn::Const { val: Const::CUInt64(val) } => Type::from_cint(types::CUInt64, *val as i64),
-            Insn::Const { val: Const::CPtr(val) } => Type::from_cptr(*val),
-            Insn::Const { val: Const::CDouble(val) } => Type::from_double(*val),
+            Insn::Const { val } => Type::from_const(*val),
             Insn::Test { val } if self.type_of(*val).is_known_falsy() => Type::from_cbool(false),
             Insn::Test { val } if self.type_of(*val).is_known_truthy() => Type::from_cbool(true),
             Insn::Test { .. } => types::CBool,
@@ -4124,11 +4026,11 @@ impl Function {
         match arg {
             SendDirectArg::Existing(value) => value,
             SendDirectArg::SplatElement { array, index } => {
-                let index = self.push_insn(block, Insn::Const { val: Const::CInt64(i64::from(index)) });
+                let index = self.push_insn(block, Insn::Const { val: i64::from(index).into() });
                 self.push_insn(block, Insn::ArrayAref { array, index })
             }
             SendDirectArg::Constant(value) => {
-                self.push_insn(block, Insn::Const { val: Const::Value(value) })
+                self.push_insn(block, Insn::Const { val: value.into() })
             }
             SendDirectArg::KeywordHash(elements) => {
                 let elements = elements
@@ -4215,7 +4117,7 @@ impl Function {
         let array = args[caller_args.splat_arg_idx.unwrap()];
         let actual = self.push_insn(block, Insn::ArrayLength { array });
         for (index, &length) in lengths.iter().enumerate() {
-            let expected = self.push_insn(block, Insn::Const { val: Const::CInt64(i64::from(length)) });
+            let expected = self.push_insn(block, Insn::Const { val: i64::from(length).into() });
             let matches = self.push_insn(block, Insn::IsBitEqual { left: actual, right: expected });
             let matched_block = self.new_block(insn_idx);
             let next_block = if index + 1 == lengths.len() { fallback_block } else { self.new_block(insn_idx) };
@@ -4246,7 +4148,7 @@ impl Function {
         let length = self.push_insn(block, Insn::ArrayLength { array: caller_splat.array });
         self.push_insn(block, Insn::GuardBitEquals {
             val: length,
-            expected: Const::CInt64(i64::from(caller_splat.length)),
+            expected: i64::from(caller_splat.length).into(),
             reason: Box::new(SideExitReason::CallerSplatLengthMismatch),
             state,
             recompile: Some(Recompile),
@@ -4269,7 +4171,7 @@ impl Function {
             });
             self.push_insn(block, Insn::GuardBitEquals {
                 val: ruby2_keywords_splat,
-                expected: Const::CInt64(0),
+                expected: 0i64.into(),
                 reason: Box::new(SideExitReason::CallerSplatRuby2Keywords),
                 state,
                 recompile: None,
@@ -4734,12 +4636,12 @@ impl Function {
 
     pub fn guard_not_frozen(&mut self, block: BlockId, recv: InsnId, state: InsnId) {
         let flags = self.load_rbasic_flags(block, recv);
-        self.push_insn(block, Insn::GuardNoBitsSet { val: flags, mask: Const::CUInt64(RUBY_FL_FREEZE as u64), mask_name: Some(ID!(RUBY_FL_FREEZE)), reason: Box::new(SideExitReason::GuardNotFrozen), state });
+        self.push_insn(block, Insn::GuardNoBitsSet { val: flags, mask: (RUBY_FL_FREEZE as u64).into(), mask_name: Some(ID!(RUBY_FL_FREEZE)), reason: Box::new(SideExitReason::GuardNotFrozen), state });
     }
 
     pub fn guard_not_shared(&mut self, block: BlockId, recv: InsnId, state: InsnId) {
         let flags = self.load_rbasic_flags(block, recv);
-        self.push_insn(block, Insn::GuardNoBitsSet { val: flags, mask: Const::CUInt64(RUBY_ELTS_SHARED as u64), mask_name: Some(ID!(RUBY_ELTS_SHARED)), reason: Box::new(SideExitReason::GuardNotShared), state });
+        self.push_insn(block, Insn::GuardNoBitsSet { val: flags, mask: (RUBY_ELTS_SHARED as u64).into(), mask_name: Some(ID!(RUBY_ELTS_SHARED)), reason: Box::new(SideExitReason::GuardNotShared), state });
     }
 
     /// `iseq` is the ISEQ that `ep_offset` is relative to, which is the ISEQ that
@@ -4837,7 +4739,7 @@ impl Function {
             }
             IseqReturn::Value(value) => {
                 self.count(block, Counter::inline_iseq_optimized_send_count);
-                self.push_insn(block, Insn::Const { val: Const::Value(value) })
+                self.push_insn(block, Insn::Const { val: value.into() })
             }
             IseqReturn::Receiver => {
                 self.count(block, Counter::inline_iseq_optimized_send_count);
@@ -4967,7 +4869,7 @@ impl Function {
                                         // below.
                                         self.push_insn(block, Insn::GuardBitEquals {
                                             val: block_arg,
-                                            expected: Const::Value(Qnil),
+                                            expected: Qnil.into(),
                                             reason: Box::new(SideExitReason::BlockArgNotNil),
                                             state,
                                             recompile: Some(Recompile),
@@ -5469,7 +5371,7 @@ impl Function {
                         let is_expected_cfunc = unsafe { rb_zjit_cme_is_cfunc(cme, cfunc as *const c_void) };
                         let method = unsafe { rb_vm_ci_mid((*cd).ci) };
                         self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass: class, method, cme }, state });
-                        let replacement = self.push_insn(block, Insn::Const { val: Const::CBool(is_expected_cfunc) });
+                        let replacement = self.push_insn(block, Insn::Const { val: is_expected_cfunc.into() });
                         self.insn_types[replacement] = self.infer_type(replacement);
                         self.make_equal_to(insn_id, replacement);
                     }
@@ -5524,12 +5426,12 @@ impl Function {
                             // Load ep[VM_ENV_DATA_INDEX_ME_CREF]
                             let method_entry = fun.load_field(block, lep, FieldName::VM_ENV_DATA_INDEX_ME_CREF, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_ME_CREF, types::RubyValue);
                             // Guard that it matches the expected CME
-                            fun.push_insn(block, Insn::GuardBitEquals { val: method_entry, expected: Const::Value(current_cme.into()), reason: Box::new(SideExitReason::GuardSuperMethodEntry), state, recompile: None });
+                            fun.push_insn(block, Insn::GuardBitEquals { val: method_entry, expected: VALUE::from(current_cme).into(), reason: Box::new(SideExitReason::GuardSuperMethodEntry), state, recompile: None });
 
                             let block_handler = fun.load_field(block, lep, FieldName::VM_ENV_DATA_INDEX_SPECVAL, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL, types::RubyValue);
                             fun.push_insn(block, Insn::GuardBitEquals {
                                 val: block_handler,
-                                expected: Const::Value(VALUE(VM_BLOCK_HANDLER_NONE as usize)),
+                                expected: VALUE(VM_BLOCK_HANDLER_NONE as usize).into(),
                                 reason: Box::new(SideExitReason::UnhandledBlockArg),
                                 state,
                                 recompile: None,
@@ -6080,7 +5982,7 @@ impl Function {
                         self.make_equal_to(param_id, args[i]);
                     } else if i < lead_num + opt_num {
                         // Unfilled optional: nil-initialized; default-init code will overwrite.
-                        let nil = self.push_insn(block, Insn::Const { val: Const::Value(Qnil) });
+                        let nil = self.push_insn(block, Insn::Const { val: Qnil.into() });
                         self.make_equal_to(param_id, nil);
                     } else if i < positional_kw_end {
                         // Post-required or keyword local: the arg sits compactly after
@@ -6093,12 +5995,12 @@ impl Function {
                         // this hidden local. checkkeyword's FixnumBitCheck will read
                         // this constant directly inside the inlined body.
                         let bits_const = self.push_insn(block, Insn::Const {
-                            val: Const::Value(VALUE::fixnum_from_usize(kw_bits as usize)),
+                            val: VALUE::fixnum_from_usize(kw_bits as usize).into(),
                         });
                         self.make_equal_to(param_id, bits_const);
                     } else if i < num_locals {
                         // Non-parameter local: nil-initialized.
-                        let nil = self.push_insn(block, Insn::Const { val: Const::Value(Qnil) });
+                        let nil = self.push_insn(block, Insn::Const { val: Qnil.into() });
                         self.make_equal_to(param_id, nil);
                     }
                 }
@@ -6176,7 +6078,7 @@ impl Function {
     fn guard_shape(&mut self, block: BlockId, val: InsnId, expected: ShapeId, state: InsnId, recompile: Option<Recompile>) -> InsnId {
         self.push_insn(block, Insn::GuardBitEquals {
             val,
-            expected: Const::CShape(expected),
+            expected: expected.into(),
             reason: Box::new(SideExitReason::GuardShape(expected)),
             state,
             recompile,
@@ -6185,7 +6087,7 @@ impl Function {
 
     fn load_ivar_c_call(&mut self, block: BlockId, recv: InsnId, ivar_index: attr_index_t) -> InsnId {
         // rb_ivar_get_at can raise Ractor::IsolationError on classes and modules.
-        let ivar_index_insn = self.push_insn(block, Insn::Const { val: Const::CAttrIndex(ivar_index) });
+        let ivar_index_insn = self.push_insn(block, Insn::Const { val: Const::attr_index(ivar_index) });
         self.push_insn(block, Insn::CCall {
             cfunc: rb_ivar_get_at_no_ractor_check as *const u8,
             recv,
@@ -6217,7 +6119,7 @@ impl Function {
             // If there is no IVAR index, then the ivar was undefined when we
             // entered the compiler.  That means we can just return nil for this
             // shape + iv name
-            return self.push_insn(block, Insn::Const { val: Const::Value(Qnil) });
+            return self.push_insn(block, Insn::Const { val: Qnil.into() });
         }
 
         let layout = recv_type.shape().layout();
@@ -6372,7 +6274,7 @@ impl Function {
         self.push_insn(block, Insn::WriteBarrier { recv: ivar_storage, val });
         if spec.next_shape != spec.profiled_type.shape() {
             // Write the new shape ID
-            let shape_id = self.push_insn(block, Insn::Const { val: Const::CShape(spec.next_shape) });
+            let shape_id = self.push_insn(block, Insn::Const { val: spec.next_shape.into() });
             let shape_id_offset = unsafe { rb_shape_id_offset() };
 
             if !embedded {
@@ -6667,7 +6569,7 @@ impl Function {
                         // is passed muliple InsnId, we can still optimize it away.
                         let param_id = self.blocks[*block_id].params[idx];
                         if let Some(obj) = self.type_of(param_id).ruby_object() {
-                            let const_insn = self.prepend_insn(*block_id, Insn::Const { val: Const::Value(obj) });
+                            let const_insn = self.prepend_insn(*block_id, Insn::Const { val: obj.into() });
                             self.insn_types[const_insn] = self.infer_type(const_insn);
                             self.make_equal_to(param_id, const_insn);
                             trivial_indices.push(idx);
@@ -6778,7 +6680,7 @@ impl Function {
     fn fold_fixnum_bop(&mut self, insn_id: InsnId, left: InsnId, right: InsnId, f: impl FnOnce(Option<i64>, Option<i64>) -> Option<i64>) -> InsnId {
         f(self.type_of(left).fixnum_value(), self.type_of(right).fixnum_value())
             .filter(|&n| n >= (RUBY_FIXNUM_MIN as i64) && n <= RUBY_FIXNUM_MAX as i64)
-            .map(|n| self.new_insn(Insn::Const { val: Const::Value(VALUE::fixnum_from_isize(n as isize)) }))
+            .map(|n| self.new_insn(Insn::Const { val: VALUE::fixnum_from_isize(n as isize).into() }))
             .unwrap_or(insn_id)
     }
 
@@ -6786,7 +6688,7 @@ impl Function {
     fn fold_fixnum_pred(&mut self, insn_id: InsnId, left: InsnId, right: InsnId, f: impl FnOnce(Option<i64>, Option<i64>) -> Option<bool>) -> InsnId {
         f(self.type_of(left).fixnum_value(), self.type_of(right).fixnum_value())
             .map(|b| if b { Qtrue } else { Qfalse })
-            .map(|b| self.new_insn(Insn::Const { val: Const::Value(b) }))
+            .map(|b| self.new_insn(Insn::Const { val: b.into() }))
             .unwrap_or(insn_id)
     }
 
@@ -6878,7 +6780,7 @@ impl Function {
                             Some(recv_obj) if recv_obj.is_frozen() => {
                                 let recv_ptr = recv_obj.as_ptr() as *const VALUE;
                                 let val = unsafe { recv_ptr.byte_add(offset).read() };
-                                self.new_insn(Insn::Const { val: Const::Value(val) })
+                                self.new_insn(Insn::Const { val: val.into() })
                             }
                             _ => insn_id,
                         }
@@ -6891,7 +6793,7 @@ impl Function {
                             Some(recv_obj) if recv_obj.is_frozen() => {
                                 let recv_ptr = recv_obj.as_ptr() as *const u32;
                                 let val = unsafe { recv_ptr.byte_add(offset).read() };
-                                self.new_insn(Insn::Const { val: Const::CShape(ShapeId(val)) })
+                                self.new_insn(Insn::Const { val: ShapeId(val).into() })
                             }
                             _ => insn_id,
                         }
@@ -6904,7 +6806,7 @@ impl Function {
                         match self.type_of(array).ruby_object() {
                             Some(array_obj) if array_obj.is_frozen() => {
                                 let length = unsafe { rb_jit_array_len(array_obj) };
-                                self.new_insn(Insn::Const { val: Const::CInt64(length) })
+                                self.new_insn(Insn::Const { val: length.into() })
                             }
                             _ => insn_id,
                         }
@@ -6912,7 +6814,7 @@ impl Function {
                     &Insn::UnboxFixnum { val } => {
                         let recv_type = self.type_of(val);
                         match recv_type.fixnum_value() {
-                            Some(val) => self.new_insn(Insn::Const { val: Const::CInt64(val) }),
+                            Some(val) => self.new_insn(Insn::Const { val: val.into() }),
                             _ => insn_id,
                         }
                     },
@@ -6960,9 +6862,9 @@ impl Function {
                         let val_type = self.type_of(val);
                         let the_class = Type::from_class_inexact(class_value);
                         if val_type.is_subtype(the_class) {
-                            self.new_insn(Insn::Const { val: Const::Value(Qtrue) })
+                            self.new_insn(Insn::Const { val: Qtrue.into() })
                         } else if !val_type.could_be(the_class) {
-                            self.new_insn(Insn::Const { val: Const::Value(Qfalse) })
+                            self.new_insn(Insn::Const { val: Qfalse.into() })
                         } else {
                             insn_id
                         }
@@ -6971,7 +6873,7 @@ impl Function {
                         // If both operands resolve to the same SSA value,
                         // String#== is guaranteed to be true.
                         if left == right {
-                            self.new_insn(Insn::Const { val: Const::Value(Qtrue) })
+                            self.new_insn(Insn::Const { val: Qtrue.into() })
                         } else {
                             let left_type = self.type_of(left);
                             let right_type = self.type_of(right);
@@ -6981,7 +6883,7 @@ impl Function {
                                 {
                                     // For known frozen Strings, evaluate String#== at compile time.
                                     let val = unsafe { rb_yarv_str_eql_internal(left_obj, right_obj) };
-                                    self.new_insn(Insn::Const { val: Const::Value(val) })
+                                    self.new_insn(Insn::Const { val: val.into() })
                                 }
                                 _ => insn_id,
                             }
@@ -7027,7 +6929,7 @@ impl Function {
                             // shift. Both Ruby's Integer#/ and a sign-extending shift round the
                             // quotient towards negative infinity, so this holds for all fixnums.
                             (None, Some(d)) if is_power_of_two(d) => {
-                                let shift = self.new_insn(Insn::Const { val: Const::Value(VALUE::fixnum_from_isize(d.trailing_zeros() as isize)) });
+                                let shift = self.new_insn(Insn::Const { val: VALUE::fixnum_from_isize(d.trailing_zeros() as isize).into() });
                                 self.insn_types[shift] = self.infer_type(shift);
                                 new_insns.push(shift);
                                 let replacement = self.new_insn(Insn::FixnumRShift { left, right: shift });
@@ -7055,7 +6957,7 @@ impl Function {
                             // of Ruby's Integer#% follows the (positive) divisor, so the result is
                             // in [0, d), which matches two's complement AND for all fixnums.
                             (None, Some(d)) if is_power_of_two(d) => {
-                                let mask = self.new_insn(Insn::Const { val: Const::Value(VALUE::fixnum_from_isize((d - 1) as isize)) });
+                                let mask = self.new_insn(Insn::Const { val: VALUE::fixnum_from_isize((d - 1) as isize).into() });
                                 self.insn_types[mask] = self.infer_type(mask);
                                 new_insns.push(mask);
                                 let replacement = self.new_insn(Insn::FixnumAnd { left, right: mask });
@@ -7136,7 +7038,7 @@ impl Function {
                         match (array_obj.is_frozen(), self.type_of(index).cint64_value()) {
                             (true, Some(index)) => {
                                 let val = unsafe { rb_yarv_ary_entry_internal(array_obj, index) };
-                                self.new_insn(Insn::Const { val: Const::Value(val) })
+                                self.new_insn(Insn::Const { val: val.into() })
                             }
                             _ => insn_id,
                         }
@@ -7152,10 +7054,10 @@ impl Function {
                         }
                     }
                     &Insn::Test { val } if self.type_of(val).is_known_falsy() => {
-                        self.new_insn(Insn::Const { val: Const::CBool(false) })
+                        self.new_insn(Insn::Const { val: false.into() })
                     }
                     &Insn::Test { val } if self.type_of(val).is_known_truthy() => {
-                        self.new_insn(Insn::Const { val: Const::CBool(true) })
+                        self.new_insn(Insn::Const { val: true.into() })
                     }
                     &Insn::Test { val: test_val } => {
                         if let &Insn::BoxBool { val: bool_val } = self.resolve(test_val).insn(self) {
@@ -8274,27 +8176,27 @@ impl Function {
                 Ok(())
             }
             Insn::GuardBitEquals { val, expected, .. } => {
-                match expected {
-                    Const::Value(_) => self.assert_subtype(insn_id, val, types::RubyValue),
-                    Const::CInt8(_) => self.assert_subtype(insn_id, val, types::CInt8),
-                    Const::CInt16(_) => self.assert_subtype(insn_id, val, types::CInt16),
-                    Const::CInt32(_) => self.assert_subtype(insn_id, val, types::CInt32),
-                    Const::CInt64(_) => self.assert_subtype(insn_id, val, types::CInt64),
-                    Const::CUInt8(_) => self.assert_subtype(insn_id, val, types::CUInt8),
-                    Const::CUInt16(_) => self.assert_subtype(insn_id, val, types::CUInt16),
-                    Const::CUInt32(_) => self.assert_subtype(insn_id, val, types::CUInt32),
-                    Const::CAttrIndex(_) => self.assert_subtype(insn_id, val, types::CAttrIndex),
-                    Const::CShape(_) => self.assert_subtype(insn_id, val, types::CShape),
-                    Const::CUInt64(_) => self.assert_subtype(insn_id, val, types::CUInt64),
-                    Const::CBool(_) => self.assert_subtype(insn_id, val, types::CBool),
-                    Const::CDouble(_) => self.assert_subtype(insn_id, val, types::CDouble),
-                    Const::CPtr(_) => self.assert_subtype(insn_id, val, types::CPtr),
+                match expected.inner() {
+                    ConstRepr::Value(_) => self.assert_subtype(insn_id, val, types::RubyValue),
+                    ConstRepr::CInt8(_) => self.assert_subtype(insn_id, val, types::CInt8),
+                    ConstRepr::CInt16(_) => self.assert_subtype(insn_id, val, types::CInt16),
+                    ConstRepr::CInt32(_) => self.assert_subtype(insn_id, val, types::CInt32),
+                    ConstRepr::CInt64(_) => self.assert_subtype(insn_id, val, types::CInt64),
+                    ConstRepr::CUInt8(_) => self.assert_subtype(insn_id, val, types::CUInt8),
+                    ConstRepr::CUInt16(_) => self.assert_subtype(insn_id, val, types::CUInt16),
+                    ConstRepr::CUInt32(_) => self.assert_subtype(insn_id, val, types::CUInt32),
+                    ConstRepr::CAttrIndex(_) => self.assert_subtype(insn_id, val, types::CAttrIndex),
+                    ConstRepr::CShape(_) => self.assert_subtype(insn_id, val, types::CShape),
+                    ConstRepr::CUInt64(_) => self.assert_subtype(insn_id, val, types::CUInt64),
+                    ConstRepr::CBool(_) => self.assert_subtype(insn_id, val, types::CBool),
+                    ConstRepr::CDouble(_) => self.assert_subtype(insn_id, val, types::CDouble),
+                    ConstRepr::CPtr(_) => self.assert_subtype(insn_id, val, types::CPtr),
                 }
             }
             Insn::GuardAnyBitSet { val, mask, .. }
             | Insn::GuardNoBitsSet { val, mask, .. } => {
-                match mask {
-                    Const::CUInt8(_) | Const::CUInt16(_) | Const::CUInt32(_) | Const::CUInt64(_)
+                match mask.inner() {
+                    ConstRepr::CUInt8(_) | ConstRepr::CUInt16(_) | ConstRepr::CUInt32(_) | ConstRepr::CUInt64(_)
                         if self.is_a(val, types::CInt) || self.is_a(val, types::RubyValue) => {
                         Ok(())
                     }
@@ -8409,7 +8311,7 @@ impl Function {
             if i == last_shape_index {
                 if self.policy.no_side_exits {
                     // If the policy doesn't allow exits, make a fallback block and jump to it if the shape doesn't match.
-                    let expected = self.push_insn(block, Insn::Const { val: Const::CShape(profile_shape(profile)) });
+                    let expected = self.push_insn(block, Insn::Const { val: profile_shape(profile).into() });
                     let matches = self.push_insn(block, Insn::IsBitEqual { left: actual, right: expected });
                     let fallback_block = self.new_block(insn_idx);
                     self.push_insn(block, branch(matches, optimized_block, fallback_block));
@@ -8424,7 +8326,7 @@ impl Function {
                 }
             } else {
                 // If this is not the last profiled shape, let the guard jump to the next block.
-                let expected = self.push_insn(block, Insn::Const { val: Const::CShape(profile_shape(profile)) });
+                let expected = self.push_insn(block, Insn::Const { val: profile_shape(profile).into() });
                 let matches = self.push_insn(block, Insn::IsBitEqual { left: actual, right: expected });
                 let next_block = self.new_block(insn_idx);
                 self.push_insn(block, branch(matches, optimized_block, next_block));
@@ -9292,24 +9194,24 @@ fn add_iseq_to_hir(
 
             match opcode {
                 YARVINSN_nop => {},
-                YARVINSN_putnil => { state.stack_push(fun.push_insn(block, Insn::Const { val: Const::Value(Qnil) })); },
-                YARVINSN_putobject => { state.stack_push(fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) })); },
+                YARVINSN_putnil => { state.stack_push(fun.push_insn(block, Insn::Const { val: Qnil.into() })); },
+                YARVINSN_putobject => { state.stack_push(fun.push_insn(block, Insn::Const { val: get_arg(pc, 0).into() })); },
                 YARVINSN_putspecialobject => {
                     let value_type = SpecialObjectType::from(get_arg(pc, 0).as_u32());
                     let insn = if value_type == SpecialObjectType::VMCore {
-                        Insn::Const { val: Const::Value(unsafe { rb_mRubyVMFrozenCore }) }
+                        Insn::Const { val: unsafe { rb_mRubyVMFrozenCore }.into() }
                     } else {
                         Insn::PutSpecialObject { value_type, state: exit_id }
                     };
                     state.stack_push(fun.push_insn(block, insn));
                 }
                 YARVINSN_dupstring => {
-                    let val = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
+                    let val = fun.push_insn(block, Insn::Const { val: get_arg(pc, 0).into() });
                     let insn_id = fun.push_insn(block, Insn::StringCopy { val, chilled: false, state: exit_id });
                     state.stack_push(insn_id);
                 }
                 YARVINSN_dupchilledstring => {
-                    let val = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
+                    let val = fun.push_insn(block, Insn::Const { val: get_arg(pc, 0).into() });
                     let insn_id = fun.push_insn(block, Insn::StringCopy { val, chilled: true, state: exit_id });
                     state.stack_push(insn_id);
                 }
@@ -9384,7 +9286,7 @@ fn add_iseq_to_hir(
                     state.stack_push(fun.push_insn(block, insn));
                 }
                 YARVINSN_duparray => {
-                    let val = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
+                    let val = fun.push_insn(block, Insn::Const { val: get_arg(pc, 0).into() });
                     let insn_id = fun.push_insn(block, Insn::ArrayDup { val, state: exit_id });
                     state.stack_push(insn_id);
                 }
@@ -9423,7 +9325,7 @@ fn add_iseq_to_hir(
                     state.stack_push(fun.push_insn(block, Insn::NewHash { elements, state: exit_id }));
                 }
                 YARVINSN_duphash => {
-                    let val = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
+                    let val = fun.push_insn(block, Insn::Const { val: get_arg(pc, 0).into() });
                     let insn_id = fun.push_insn(block, Insn::HashDup { val, state: exit_id });
                     state.stack_push(insn_id);
                 }
@@ -9483,10 +9385,10 @@ fn add_iseq_to_hir(
                     state.stack_push(array);
                 }
                 YARVINSN_putobject_INT2FIX_0_ => {
-                    state.stack_push(fun.push_insn(block, Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(0)) }));
+                    state.stack_push(fun.push_insn(block, Insn::Const { val: VALUE::fixnum_from_usize(0).into() }));
                 }
                 YARVINSN_putobject_INT2FIX_1_ => {
-                    state.stack_push(fun.push_insn(block, Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(1)) }));
+                    state.stack_push(fun.push_insn(block, Insn::Const { val: VALUE::fixnum_from_usize(1).into() }));
                 }
                 YARVINSN_defined => {
                     // (rb_num_t op_type, VALUE obj, VALUE pushval)
@@ -9501,7 +9403,7 @@ fn add_iseq_to_hir(
                         // block handler. (e.g. `yield` in the top level script is a syntax error.)
                         //
                         // Similar to gen_is_block_given
-                        Insn::Const { val: Const::Value(Qnil) }
+                        Insn::Const { val: Qnil.into() }
                     } else {
                         if op_type == DEFINED_YIELD && matches!(mode, AddIseqMode::Inlined { .. }) {
                             // If we are inlining a method that has a blockiseq handler, we can fold Defined(DEFINED_YIELD).
@@ -9510,9 +9412,9 @@ fn add_iseq_to_hir(
                             // check flags.
                             let has_block = matches!(mode, AddIseqMode::Inlined { blockiseq: Some(_), .. });
                             if has_block {
-                                Insn::Const { val: Const::Value(pushval) }
+                                Insn::Const { val: pushval.into() }
                             } else {
-                                Insn::Const { val: Const::Value(Qnil) }
+                                Insn::Const { val: Qnil.into() }
                             }
                         } else {
                             // For DEFINED_YIELD, codegen materializes the local EP inline (similar to
@@ -9566,7 +9468,7 @@ fn add_iseq_to_hir(
                             let actual_shape = fun.load_shape(block, self_param);
                             // The expected shape can change over run, so we put it
                             // as a pointer to keep it stable in snapshot tests.
-                            let expected_shape = fun.push_insn(block, Insn::Const { val: Const::CShape(profiled_shape) });
+                            let expected_shape = fun.push_insn(block, Insn::Const { val: profiled_shape.into() });
                             let has_shape = fun.push_insn(block, Insn::IsBitEqual { left: actual_shape, right: expected_shape });
                             let iftrue_block = fun.new_block(insn_idx);
                             let target = BranchEdge { target: iftrue_block, args: vec![] };
@@ -9580,9 +9482,9 @@ fn add_iseq_to_hir(
                             block = fall_through;
                             let mut ivar_index: attr_index_t = 0;
                             let result = if unsafe { rb_shape_get_iv_index(profiled_shape.0, id, &mut ivar_index) } {
-                                fun.push_insn(iftrue_block, Insn::Const { val: Const::Value(pushval) })
+                                fun.push_insn(iftrue_block, Insn::Const { val: pushval.into() })
                             } else {
-                                fun.push_insn(iftrue_block, Insn::Const { val: Const::Value(Qnil) })
+                                fun.push_insn(iftrue_block, Insn::Const { val: Qnil.into() })
                             };
                             fun.push_insn(iftrue_block, Insn::Jump(BranchEdge { target: join_block, args: vec![result] }));
                         }
@@ -9600,12 +9502,12 @@ fn add_iseq_to_hir(
                             fun.guard_shape(block, shape, profiled_shape, exit_id, Some(Recompile));
                             let mut ivar_index: attr_index_t = 0;
                             let result = if unsafe { rb_shape_get_iv_index(profiled_shape.0, id, &mut ivar_index) } {
-                                fun.push_insn(block, Insn::Const { val: Const::Value(pushval) })
+                                fun.push_insn(block, Insn::Const { val: pushval.into() })
                             } else {
                                 // If there is no IVAR index, then the ivar was undefined when we
                                 // entered the compiler.  That means we can just return nil for this
                                 // shape + iv name
-                                fun.push_insn(block, Insn::Const { val: Const::Value(Qnil) })
+                                fun.push_insn(block, Insn::Const { val: Qnil.into() })
                             };
                             state.stack_push(result);
                         } else {
@@ -9663,7 +9565,7 @@ fn add_iseq_to_hir(
                         // Invalidate output code on any constant writes associated with constants
                         // referenced after the PatchPoint.
                         fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::StableConstantNames { idlist }, state: exit_id });
-                        fun.push_insn(block, Insn::Const { val: Const::Value(unsafe { (*ice).value }) })
+                        fun.push_insn(block, Insn::Const { val: unsafe { (*ice).value }.into() })
                     } else {
                         fun.push_insn(block, Insn::GetConstantPath { ic, state: exit_id })
                     };
@@ -9700,7 +9602,7 @@ fn add_iseq_to_hir(
                     debug_assert!(!ise.is_null());
                     let mut value = Qnil;
                     if unsafe { rb_vm_once_done_value(ise, &mut value) } {
-                        let val = fun.push_insn(block, Insn::Const { val: Const::Value(value) });
+                        let val = fun.push_insn(block, Insn::Const { val: value.into() });
                         state.stack_push(val);
                     } else {
                         fun.push_insn(block, Insn::SideExit { state: exit_id, reason: Box::new(SideExitReason::OnceNotDone), recompile: Some(Recompile) });
@@ -9772,7 +9674,7 @@ fn add_iseq_to_hir(
                     let val = state.stack_pop()?;
                     let target_idx = insn_idx_at_offset(insn_idx, offset);
                     let target = insn_idx_to_block[&target_idx];
-                    let nil = fun.push_insn(block, Insn::Const { val: Const::Value(Qnil) });
+                    let nil = fun.push_insn(block, Insn::Const { val: Qnil.into() });
                     let mut iftrue_state = state.clone();
                     iftrue_state.replace(val, nil);
 
@@ -9925,7 +9827,7 @@ fn add_iseq_to_hir(
                     let ep = fun.get_ep(block, level);
                     let flags = fun.load_field(block, ep, FieldName::VM_ENV_DATA_INDEX_FLAGS, SIZEOF_VALUE_I32 * (VM_ENV_DATA_INDEX_FLAGS as i32), types::CInt64);
                     let modified_flag = fun.push_insn(block, Insn::Const {
-                        val: Const::CInt64(VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM.into()),
+                        val: i64::from(VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM).into(),
                     });
                     let modified = fun.push_insn(block, Insn::IntOr { left: flags, right: modified_flag });
                     fun.push_insn(block, Insn::StoreField {
@@ -9987,7 +9889,7 @@ fn add_iseq_to_hir(
                     // So to check for either of those cases we can use: val & 0x1 == 0x1
                     let iseq_or_ifunc_block = fun.new_block(branch_insn_idx);
                     let nil_check_block = fun.new_block(branch_insn_idx);
-                    let tag_mask = fun.push_insn(unmodified_block, Insn::Const { val: Const::CInt64(0x1) });
+                    let tag_mask = fun.push_insn(unmodified_block, Insn::Const { val: 0x1i64.into() });
                     let tag_bits = fun.push_insn(unmodified_block, Insn::IntAnd { left: block_handler, right: tag_mask });
                     let is_iseq_or_ifunc = fun.push_insn(unmodified_block, Insn::IsBitEqual { left: tag_bits, right: tag_mask });
                     fun.push_insn(unmodified_block, Insn::CondBranch {
@@ -9996,20 +9898,20 @@ fn add_iseq_to_hir(
                         if_false: BranchEdge { target: nil_check_block, args: vec![] },
                     });
                     // TODO(Shopify/ruby#753): GC root, so we should be able to avoid unnecessary GC tracing
-                    let proxy_val = fun.push_insn(iseq_or_ifunc_block, Insn::Const { val: Const::Value(unsafe { rb_block_param_proxy }) });
+                    let proxy_val = fun.push_insn(iseq_or_ifunc_block, Insn::Const { val: unsafe { rb_block_param_proxy }.into() });
                     jump_to_join_block(fun, iseq_or_ifunc_block, proxy_val);
 
                     // Handle VM_BLOCK_HANDLER_NONE: the block param is nil.
                     let nil_block = fun.new_block(branch_insn_idx);
                     let sym_or_proc_block = fun.new_block(branch_insn_idx);
-                    let none_handler = fun.push_insn(nil_check_block, Insn::Const { val: Const::CInt64(VM_BLOCK_HANDLER_NONE.into()) });
+                    let none_handler = fun.push_insn(nil_check_block, Insn::Const { val: i64::from(VM_BLOCK_HANDLER_NONE).into() });
                     let is_none = fun.push_insn(nil_check_block, Insn::IsBitEqual { left: block_handler, right: none_handler });
                     fun.push_insn(nil_check_block, Insn::CondBranch {
                         val: is_none,
                         if_true: BranchEdge { target: nil_block, args: vec![] },
                         if_false: BranchEdge { target: sym_or_proc_block, args: vec![] },
                     });
-                    let nil_val = fun.push_insn(nil_block, Insn::Const { val: Const::Value(Qnil) });
+                    let nil_val = fun.push_insn(nil_block, Insn::Const { val: Qnil.into() });
                     jump_to_join_block(fun, nil_block, nil_val);
 
                     // Prepare blocks for other cases: Everything left is a symbol or a Proc block handler.
@@ -10018,9 +9920,9 @@ fn add_iseq_to_hir(
                     let proc_block = fun.new_block(branch_insn_idx);
 
                     // RB_STATIC_SYM_P(): (block_handler & 0xff) == RUBY_SYMBOL_FLAG
-                    let sym_mask = fun.push_insn(sym_or_proc_block, Insn::Const { val: Const::CInt64((1 << RUBY_SPECIAL_SHIFT) - 1) });
+                    let sym_mask = fun.push_insn(sym_or_proc_block, Insn::Const { val: ((1i64 << RUBY_SPECIAL_SHIFT) - 1).into() });
                     let sym_bits = fun.push_insn(sym_or_proc_block, Insn::IntAnd { left: block_handler, right: sym_mask });
-                    let sym_flag = fun.push_insn(sym_or_proc_block, Insn::Const { val: Const::CInt64(RUBY_SYMBOL_FLAG.into()) });
+                    let sym_flag = fun.push_insn(sym_or_proc_block, Insn::Const { val: i64::from(RUBY_SYMBOL_FLAG).into() });
                     let is_static_sym = fun.push_insn(sym_or_proc_block, Insn::IsBitEqual { left: sym_bits, right: sym_flag });
                     fun.push_insn(sym_or_proc_block, Insn::CondBranch {
                         val: is_static_sym,
@@ -10030,9 +9932,9 @@ fn add_iseq_to_hir(
 
                     // RB_DYNAMIC_SYM_P(): a dynamic symbol or a Proc is a heap object, so its builtin type can be read from the RBasic flags.
                     let rbasic_flags = fun.load_rbasic_flags(dynsym_check_block, block_handler);
-                    let t_mask = fun.push_insn(dynsym_check_block, Insn::Const { val: Const::CUInt64(RUBY_T_MASK.into()) });
+                    let t_mask = fun.push_insn(dynsym_check_block, Insn::Const { val: u64::from(RUBY_T_MASK).into() });
                     let t_bits = fun.push_insn(dynsym_check_block, Insn::IntAnd { left: rbasic_flags, right: t_mask });
-                    let t_symbol = fun.push_insn(dynsym_check_block, Insn::Const { val: Const::CUInt64(RUBY_T_SYMBOL.into()) });
+                    let t_symbol = fun.push_insn(dynsym_check_block, Insn::Const { val: u64::from(RUBY_T_SYMBOL).into() });
                     let is_dynamic_sym = fun.push_insn(dynsym_check_block, Insn::IsBitEqual { left: t_bits, right: t_symbol });
                     fun.push_insn(dynsym_check_block, Insn::CondBranch {
                         val: is_dynamic_sym,
@@ -10160,7 +10062,7 @@ fn add_iseq_to_hir(
                     if !fun.guard_bop_not_redefined(block, klass, bop, exit_id) {
                         break;  // End the block
                     }
-                    let recv = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
+                    let recv = fun.push_insn(block, Insn::Const { val: get_arg(pc, 0).into() });
                     state.stack_push(recv);
                 }
                 YARVINSN_opt_ary_freeze => {
@@ -10169,7 +10071,7 @@ fn add_iseq_to_hir(
                     if !fun.guard_bop_not_redefined(block, klass, bop, exit_id) {
                         break;  // End the block
                     }
-                    let recv = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
+                    let recv = fun.push_insn(block, Insn::Const { val: get_arg(pc, 0).into() });
                     state.stack_push(recv);
                 }
                 YARVINSN_opt_str_freeze => {
@@ -10178,7 +10080,7 @@ fn add_iseq_to_hir(
                     if !fun.guard_bop_not_redefined(block, klass, bop, exit_id) {
                         break;  // End the block
                     }
-                    let recv = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
+                    let recv = fun.push_insn(block, Insn::Const { val: get_arg(pc, 0).into() });
                     state.stack_push(recv);
                 }
                 YARVINSN_opt_str_uminus => {
@@ -10187,7 +10089,7 @@ fn add_iseq_to_hir(
                     if !fun.guard_bop_not_redefined(block, klass, bop, exit_id) {
                         break;  // End the block
                     }
-                    let recv = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
+                    let recv = fun.push_insn(block, Insn::Const { val: get_arg(pc, 0).into() });
                     state.stack_push(recv);
                 }
                 YARVINSN_leave => {
@@ -10268,7 +10170,7 @@ fn add_iseq_to_hir(
                         {
                             fun.push_insn(block, Insn::BreakPoint);
                             state.stack_pop()?; // pop the receiver (::RubyVM::ZJIT)
-                            state.stack_push(fun.push_insn(block, Insn::Const { val: Const::Value(Qnil) }));
+                            state.stack_push(fun.push_insn(block, Insn::Const { val: Qnil.into() }));
                         }
                     }
 
@@ -10629,9 +10531,9 @@ fn add_iseq_to_hir(
                         let block_handler = fun.load_field(block, lep, FieldName::VM_ENV_DATA_INDEX_SPECVAL, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL, types::CInt64);
 
                         // Check IFUNC tag: (block_handler & 0x3) == 0x3
-                        let tag_mask = fun.push_insn(block, Insn::Const { val: Const::CInt64(0x3) });
+                        let tag_mask = fun.push_insn(block, Insn::Const { val: 0x3i64.into() });
                         let tag_bits = fun.push_insn(block, Insn::IntAnd { left: block_handler, right: tag_mask });
-                        let ifunc_tag = fun.push_insn(block, Insn::Const { val: Const::CInt64(0x3) });
+                        let ifunc_tag = fun.push_insn(block, Insn::Const { val: 0x3i64.into() });
                         let is_ifunc_match = fun.push_insn(block, Insn::IsBitEqual { left: tag_bits, right: ifunc_tag });
 
                         // Branch: on match, call InvokeBlockIfunc directly
@@ -10954,12 +10856,12 @@ fn add_iseq_to_hir(
                     let val = state.stack_pop()?;
                     let array = fun.push_insn(block, Insn::GuardType { val, guard_type: types::ArrayExact, state: exit_id, recompile: None });
                     let length = fun.push_insn(block, Insn::ArrayLength { array });
-                    let expected = fun.push_insn(block, Insn::Const { val: Const::CInt64(num as i64) });
+                    let expected = fun.push_insn(block, Insn::Const { val: (num as i64).into() });
                     fun.push_insn(block, Insn::GuardGreaterEq { left: length, right: expected, reason: Box::new(SideExitReason::ExpandArray), state: exit_id });
                     for i in (0..num).rev() {
                         // We do not emit a length guard here because in-bounds is already
                         // ensured by the expandarray length check above.
-                        let index = fun.push_insn(block, Insn::Const { val: Const::CInt64(i.try_into().unwrap()) });
+                        let index = fun.push_insn(block, Insn::Const { val: i64::try_from(i).unwrap().into() });
                         let element = fun.push_insn(block, Insn::ArrayAref { array, index });
                         state.stack_push(element);
                     }
@@ -11026,7 +10928,7 @@ fn compile_entry_block(fun: &mut Function, jit_entry_insns: &[u32], insn_idx_to_
         // Load PC once at the start of the block, shared among all cases
         let pc = *pc.get_or_insert_with(|| fun.load_pc(entry_block));
         let expected_pc = fun.push_insn(entry_block, Insn::Const {
-            val: Const::CPtr(unsafe { rb_iseq_pc_at_idx(fun.iseq, jit_entry_insn) } as *const u8),
+            val: Const::cptr(unsafe { rb_iseq_pc_at_idx(fun.iseq, jit_entry_insn) }),
         });
         let test_id = fun.push_insn(entry_block, Insn::IsBitEqual { left: pc, right: expected_pc });
 
@@ -11086,7 +10988,7 @@ fn compile_entry_state(fun: &mut Function) -> (InsnId, FrameState) {
             };
             entry_state.locals.push(val);
         } else {
-            entry_state.locals.push(fun.push_insn(entry_block, Insn::Const { val: Const::Value(Qnil) }));
+            entry_state.locals.push(fun.push_insn(entry_block, Insn::Const { val: Qnil.into() }));
         }
     }
     (self_param, entry_state)
@@ -11142,7 +11044,7 @@ fn compile_jit_entry_state(fun: &mut Function, jit_entry_block: BlockId, jit_ent
     for local_idx in 0..num_locals(iseq) {
         let local = if (lead_num + passed_opt_num..lead_num + opt_num).contains(&local_idx) {
             // Omitted optionals are locals, so they start as nils before their code run
-            fun.push_insn(jit_entry_block, Insn::Const { val: Const::Value(Qnil) })
+            fun.push_insn(jit_entry_block, Insn::Const { val: Qnil.into() })
         } else if Some(local_idx) == kw_bits_idx {
             // Read the kw_bits value written by the caller to the callee frame.
             // This tells us which optional keywords were NOT provided and need their defaults evaluated.
@@ -11166,7 +11068,7 @@ fn compile_jit_entry_state(fun: &mut Function, jit_entry_block: BlockId, jit_ent
             arg_idx += 1;
             local
         } else {
-            fun.push_insn(jit_entry_block, Insn::Const { val: Const::Value(Qnil) })
+            fun.push_insn(jit_entry_block, Insn::Const { val: Qnil.into() })
         };
         entry_state.locals.push(local);
 
@@ -11521,7 +11423,7 @@ mod rpo_tests {
         let mut function = Function::new(std::ptr::null());
         let entries = function.entries_block;
         let entry = function.entry_block;
-        let val = function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
+        let val = function.push_insn(entry, Insn::Const { val: Qnil.into() });
         function.push_insn(entry, Insn::Return { val });
         function.seal_entries();
         assert_eq!(function.reverse_post_order(), vec![entries, entry]);
@@ -11534,7 +11436,7 @@ mod rpo_tests {
         let entry = function.entry_block;
         let exit = function.new_block(0);
         function.push_insn(entry, Insn::Jump(BranchEdge { target: exit, args: vec![] }));
-        let val = function.push_insn(exit, Insn::Const { val: Const::Value(Qnil) });
+        let val = function.push_insn(exit, Insn::Const { val: Qnil.into() });
         function.push_insn(exit, Insn::Return { val });
         function.seal_entries();
         assert_eq!(function.reverse_post_order(), vec![entries, entry, exit]);
@@ -11548,13 +11450,13 @@ mod rpo_tests {
         let side = function.new_block(0);
         let exit = function.new_block(0);
         function.push_insn(side, Insn::Jump(BranchEdge { target: exit, args: vec![] }));
-        let val = function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
+        let val = function.push_insn(entry, Insn::Const { val: Qnil.into() });
         function.push_insn(entry, Insn::CondBranch {
             val,
             if_true: BranchEdge { target: side, args: vec![] },
             if_false: BranchEdge { target: exit, args: vec![] }
         });
-        let val = function.push_insn(exit, Insn::Const { val: Const::Value(Qnil) });
+        let val = function.push_insn(exit, Insn::Const { val: Qnil.into() });
         function.push_insn(exit, Insn::Return { val });
         function.seal_entries();
         assert_eq!(function.reverse_post_order(), vec![entries, entry, side, exit]);
@@ -11568,13 +11470,13 @@ mod rpo_tests {
         let side = function.new_block(0);
         let exit = function.new_block(0);
         function.push_insn(side, Insn::Jump(BranchEdge { target: exit, args: vec![] }));
-        let val = function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
+        let val = function.push_insn(entry, Insn::Const { val: Qnil.into() });
         function.push_insn(entry, Insn::CondBranch {
             val,
             if_true: BranchEdge { target: exit, args: vec![] },
             if_false: BranchEdge { target: side, args: vec![] },
         });
-        let val = function.push_insn(exit, Insn::Const { val: Const::Value(Qnil) });
+        let val = function.push_insn(exit, Insn::Const { val: Qnil.into() });
         function.push_insn(exit, Insn::Return { val });
         function.seal_entries();
         assert_eq!(function.reverse_post_order(), vec![entries, entry, side, exit]);
@@ -11609,7 +11511,7 @@ mod validation_tests {
     fn one_block_no_terminator() {
         let mut function = Function::new(std::ptr::null());
         let entry = function.entry_block;
-        function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
+        function.push_insn(entry, Insn::Const { val: Qnil.into() });
         function.seal_entries();
         assert_matches_err(function.validate(), ValidationError::BlockHasNoTerminator(entry));
     }
@@ -11618,9 +11520,9 @@ mod validation_tests {
     fn one_block_terminator_not_at_end() {
         let mut function = Function::new(std::ptr::null());
         let entry = function.entry_block;
-        let val = function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
+        let val = function.push_insn(entry, Insn::Const { val: Qnil.into() });
         let insn_id = function.push_insn(entry, Insn::Return { val });
-        function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
+        function.push_insn(entry, Insn::Const { val: Qnil.into() });
         function.push_insn(entry, Insn::Unreachable);
         function.seal_entries();
         assert_matches_err(function.validate(), ValidationError::TerminatorNotAtEnd(entry, insn_id, 1));
@@ -11631,7 +11533,7 @@ mod validation_tests {
         let mut function = Function::new(std::ptr::null());
         let entry = function.entry_block;
         let side = function.new_block(0);
-        let val = function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
+        let val = function.push_insn(entry, Insn::Const { val: Qnil.into() });
         let fall_through = function.new_block(1);
         function.push_insn(fall_through, Insn::Unreachable);
         function.push_insn(side, Insn::Unreachable);
@@ -11649,7 +11551,7 @@ mod validation_tests {
         let mut function = Function::new(std::ptr::null());
         let entry = function.entry_block;
         let side = function.new_block(0);
-        let val = function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
+        let val = function.push_insn(entry, Insn::Const { val: Qnil.into() });
         let fall_through = function.new_block(1);
         function.push_insn(fall_through, Insn::Unreachable);
         function.push_insn(side, Insn::Unreachable);
@@ -11667,7 +11569,7 @@ mod validation_tests {
         let mut function = Function::new(std::ptr::null());
         let entry = function.entry_block;
         let side = function.new_block(0);
-        let val = function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
+        let val = function.push_insn(entry, Insn::Const { val: Qnil.into() });
         function.push_insn(entry, Insn::Jump ( BranchEdge { target: side, args: vec![val, val, val] } ));
         function.push_insn(side, Insn::Unreachable);
         function.seal_entries();
@@ -11679,7 +11581,7 @@ mod validation_tests {
         let mut function = Function::new(std::ptr::null());
         let entry = function.entry_block;
         // Create an instruction without making it belong to anything.
-        let dangling = function.new_insn(Insn::Const{val: Const::CBool(true)});
+        let dangling = function.new_insn(Insn::Const{val: true.into()});
         let val = function.push_insn(function.entry_block, Insn::ArrayDup { val: dangling, state: InsnId(0) });
         function.push_insn(function.entry_block, Insn::Unreachable);
         function.seal_entries();
@@ -11690,7 +11592,7 @@ mod validation_tests {
     fn using_non_output_insn() {
         let mut function = Function::new(std::ptr::null());
         let entry = function.entry_block;
-        let const_ = function.push_insn(function.entry_block, Insn::Const{val: Const::CBool(true)});
+        let const_ = function.push_insn(function.entry_block, Insn::Const{val: true.into()});
         // Ret is a non-output instruction.
         let ret = function.push_insn(function.entry_block, Insn::Return { val: const_ });
         let val = function.push_insn(function.entry_block, Insn::ArrayDup { val: ret, state: InsnId(0) });
@@ -11706,16 +11608,16 @@ mod validation_tests {
         let entry = function.entry_block;
         let side = function.new_block(0);
         let exit = function.new_block(0);
-        let v0 = function.push_insn(side, Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(3)) });
+        let v0 = function.push_insn(side, Insn::Const { val: VALUE::fixnum_from_usize(3).into() });
         function.push_insn(side, Insn::Jump(BranchEdge { target: exit, args: vec![] }));
-        let val1 = function.push_insn(entry, Insn::Const { val: Const::CBool(false) });
+        let val1 = function.push_insn(entry, Insn::Const { val: false.into() });
         function.push_insn(entry, Insn::CondBranch {
             val: val1,
             if_true: BranchEdge { target: exit, args: vec![] },
             if_false: BranchEdge { target: side, args: vec![] },
         });
         let val2 = function.push_insn(exit, Insn::ArrayDup { val: v0, state: v0 });
-        let const_ = function.push_insn(exit, Insn::Const{val: Const::CBool(true)});
+        let const_ = function.push_insn(exit, Insn::Const{val: true.into()});
         function.push_insn(exit, Insn::Return { val: const_ });
 
         function.seal_entries();
@@ -11732,16 +11634,16 @@ mod validation_tests {
         let entry = function.entry_block;
         let side = function.new_block(0);
         let exit = function.new_block(0);
-        let v0 = function.push_insn(entry, Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(3)) });
+        let v0 = function.push_insn(entry, Insn::Const { val: VALUE::fixnum_from_usize(3).into() });
         function.push_insn(side, Insn::Jump(BranchEdge { target: exit, args: vec![] }));
-        let val = function.push_insn(entry, Insn::Const { val: Const::CBool(false) });
+        let val = function.push_insn(entry, Insn::Const { val: false.into() });
         function.push_insn(entry, Insn::CondBranch {
             val,
             if_true: BranchEdge { target: exit, args: vec![] },
             if_false: BranchEdge { target: side, args: vec![] }
         });
         let _val = function.push_insn(exit, Insn::ArrayDup { val: v0, state: v0 });
-        let const_ = function.push_insn(exit, Insn::Const{val: Const::CBool(true)});
+        let const_ = function.push_insn(exit, Insn::Const{val: true.into()});
         function.push_insn(exit, Insn::Return { val: const_ });
         function.seal_entries();
         crate::cruby::with_rubyvm(|| {
@@ -11766,9 +11668,9 @@ mod validation_tests {
         let p_false = function.push_insn(if_false, Insn::Param);
         function.push_insn(if_false, Insn::Return { val: p_false });
         // Refine a nil to Fixnum: NilClass ∩ Fixnum = Empty (Bottom).
-        let nil = function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
+        let nil = function.push_insn(entry, Insn::Const { val: Qnil.into() });
         let bottom = function.push_insn(entry, Insn::RefineType { val: nil, new_type: types::Fixnum });
-        let arg = function.push_insn(entry, Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(3)) });
+        let arg = function.push_insn(entry, Insn::Const { val: VALUE::fixnum_from_usize(3).into() });
         function.push_insn(entry, Insn::CondBranchHasType(Box::new(CondBranchHasTypeData {
             val: bottom,
             expected: types::Fixnum,
@@ -11797,7 +11699,7 @@ mod validation_tests {
         let mut function = Function::new(std::ptr::null());
         let block = function.new_block(0);
         function.push_insn(function.entry_block, Insn::Jump(BranchEdge { target: block, args: vec![] }));
-        let val = function.push_insn(block, Insn::Const { val: Const::Value(Qnil) });
+        let val = function.push_insn(block, Insn::Const { val: Qnil.into() });
         function.push_insn_id(block, val);
         function.push_insn(block, Insn::Return { val });
         function.seal_entries();
@@ -11809,8 +11711,8 @@ mod validation_tests {
         let mut function = Function::new(std::ptr::null());
         let block = function.new_block(0);
         function.push_insn(function.entry_block, Insn::Jump(BranchEdge { target: block, args: vec![] }));
-        let val0 = function.push_insn(block, Insn::Const { val: Const::Value(Qnil) });
-        let val1 = function.push_insn(block, Insn::Const { val: Const::Value(Qnil) });
+        let val0 = function.push_insn(block, Insn::Const { val: Qnil.into() });
+        let val1 = function.push_insn(block, Insn::Const { val: Qnil.into() });
         function.make_equal_to(val1, val0);
         function.push_insn(block, Insn::Return { val: val0 });
         function.seal_entries();
@@ -11822,7 +11724,7 @@ mod validation_tests {
         let mut function = Function::new(std::ptr::null());
         let block = function.new_block(0);
         function.push_insn(function.entry_block, Insn::Jump(BranchEdge { target: block, args: vec![] }));
-        let val = function.push_insn(block, Insn::Const { val: Const::Value(Qnil) });
+        let val = function.push_insn(block, Insn::Const { val: Qnil.into() });
         let exit = function.new_block(0);
         function.push_insn(block, Insn::Jump(BranchEdge { target: exit, args: vec![] }));
         function.push_insn_id(exit, val);
@@ -11840,7 +11742,7 @@ mod validation_tests {
         let entry = function.entry_block;
         let left = function.new_block(0);
         let right = function.new_block(0);
-        let val = function.push_insn(entry, Insn::Const { val: Const::CBool(true) });
+        let val = function.push_insn(entry, Insn::Const { val: true.into() });
         function.push_insn(entry, Insn::CondBranch {
             val,
             if_true: BranchEdge { target: left, args: vec![] },
@@ -11868,7 +11770,7 @@ mod validation_tests {
 
         let mut function = Function::new(std::ptr::null());
         let entry = function.entry_block;
-        let recv = function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
+        let recv = function.push_insn(entry, Insn::Const { val: Qnil.into() });
         function.load_field(entry, recv, FieldName::as_heap, ROBJECT_OFFSET_AS_HEAP_FIELDS, types::CPtr);
         let ivar = function.load_field(entry, recv, FieldName::Id(ID(1)), ROBJECT_OFFSET_AS_ARY, types::BasicObject);
         function.push_insn(entry, Insn::Return { val: ivar });
@@ -11891,7 +11793,7 @@ mod validation_tests {
 
         let mut function = Function::new(std::ptr::null());
         let entry = function.entry_block;
-        let recv = function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
+        let recv = function.push_insn(entry, Insn::Const { val: Qnil.into() });
         function.load_field(entry, recv, FieldName::as_heap, ROBJECT_OFFSET_AS_HEAP_FIELDS, types::BasicObject);
         let ivar = function.load_field(entry, recv, FieldName::Id(ID(1)), ROBJECT_OFFSET_AS_ARY, types::Array);
         function.push_insn(entry, Insn::Return { val: ivar });
@@ -11925,7 +11827,7 @@ mod infer_tests {
     #[test]
     fn test_const() {
         let mut function = Function::new(std::ptr::null());
-        let val = function.push_insn(function.entry_block, Insn::Const { val: Const::Value(Qnil) });
+        let val = function.push_insn(function.entry_block, Insn::Const { val: Qnil.into() });
         function.push_insn(function.entry_block, Insn::Unreachable);
         assert_bit_equal(function.infer_type(val), types::NilClass);
     }
@@ -11934,7 +11836,7 @@ mod infer_tests {
     fn test_nil() {
         crate::cruby::with_rubyvm(|| {
             let mut function = Function::new(std::ptr::null());
-            let nil = function.push_insn(function.entry_block, Insn::Const { val: Const::Value(Qnil) });
+            let nil = function.push_insn(function.entry_block, Insn::Const { val: Qnil.into() });
             let val = function.push_insn(function.entry_block, Insn::Test { val: nil });
             function.push_insn(function.entry_block, Insn::Unreachable);
             function.seal_entries();
@@ -11947,7 +11849,7 @@ mod infer_tests {
     fn test_false() {
         crate::cruby::with_rubyvm(|| {
             let mut function = Function::new(std::ptr::null());
-            let false_ = function.push_insn(function.entry_block, Insn::Const { val: Const::Value(Qfalse) });
+            let false_ = function.push_insn(function.entry_block, Insn::Const { val: Qfalse.into() });
             let val = function.push_insn(function.entry_block, Insn::Test { val: false_ });
             function.push_insn(function.entry_block, Insn::Unreachable);
             function.seal_entries();
@@ -11960,7 +11862,7 @@ mod infer_tests {
     fn test_truthy() {
         crate::cruby::with_rubyvm(|| {
             let mut function = Function::new(std::ptr::null());
-            let true_ = function.push_insn(function.entry_block, Insn::Const { val: Const::Value(Qtrue) });
+            let true_ = function.push_insn(function.entry_block, Insn::Const { val: Qtrue.into() });
             let val = function.push_insn(function.entry_block, Insn::Test { val: true_ });
             function.push_insn(function.entry_block, Insn::Unreachable);
             function.seal_entries();
@@ -11992,10 +11894,10 @@ mod infer_tests {
         let entry = function.entry_block;
         let side = function.new_block(0);
         let exit = function.new_block(0);
-        let v0 = function.push_insn(side, Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(3)) });
+        let v0 = function.push_insn(side, Insn::Const { val: VALUE::fixnum_from_usize(3).into() });
         function.push_insn(side, Insn::Jump(BranchEdge { target: exit, args: vec![v0] }));
-        let val = function.push_insn(entry, Insn::Const { val: Const::CBool(false) });
-        let v1 = function.push_insn(entry, Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(4)) });
+        let val = function.push_insn(entry, Insn::Const { val: false.into() });
+        let v1 = function.push_insn(entry, Insn::Const { val: VALUE::fixnum_from_usize(4).into() });
         function.push_insn(entry, Insn::CondBranch {
             val,
             if_true: BranchEdge { target: exit, args: vec![v1] },
@@ -12024,10 +11926,10 @@ mod infer_tests {
         let entry = function.entry_block;
         let loop_block = function.new_block(0);
 
-        let c1 = function.push_insn(entry, Insn::Const { val: Const::Value(Qtrue) });
-        let c2 = function.push_insn(entry, Insn::Const { val: Const::Value(Qfalse) });
-        let c3 = function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
-        let c4 = function.push_insn(entry, Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(7)) });
+        let c1 = function.push_insn(entry, Insn::Const { val: Qtrue.into() });
+        let c2 = function.push_insn(entry, Insn::Const { val: Qfalse.into() });
+        let c3 = function.push_insn(entry, Insn::Const { val: Qnil.into() });
+        let c4 = function.push_insn(entry, Insn::Const { val: VALUE::fixnum_from_usize(7).into() });
         function.push_insn(entry, Insn::Jump(BranchEdge {
             target: loop_block,
             args: vec![c1, c2, c3, c4],
@@ -12063,10 +11965,10 @@ mod infer_tests {
         let entry = function.entry_block;
         let side = function.new_block(0);
         let exit = function.new_block(0);
-        let v0 = function.push_insn(side, Insn::Const { val: Const::Value(Qtrue) });
+        let v0 = function.push_insn(side, Insn::Const { val: Qtrue.into() });
         function.push_insn(side, Insn::Jump(BranchEdge { target: exit, args: vec![v0] }));
-        let val = function.push_insn(entry, Insn::Const { val: Const::CBool(false) });
-        let v1 = function.push_insn(entry, Insn::Const { val: Const::Value(Qfalse) });
+        let val = function.push_insn(entry, Insn::Const { val: false.into() });
+        let v1 = function.push_insn(entry, Insn::Const { val: Qfalse.into() });
         function.push_insn(entry, Insn::CondBranch {
             val,
             if_true: BranchEdge { target: exit, args: vec![v1] },

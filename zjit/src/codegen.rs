@@ -24,9 +24,11 @@ use crate::state::{rb_zjit_compiling_p, ZJITState};
 use crate::stats::{CompileError, exit_counter_for_compile_error, exit_counter_for_unhandled_hir_insn, incr_counter, incr_counter_by, send_fallback_counter, send_fallback_counter_for_method_type, send_fallback_counter_for_super_method_type, send_fallback_counter_ptr_for_opcode, send_fallback_counter_for_optimized_method_type};
 use crate::stats::{counter_ptr, with_time_stat, trace_compile_phase, Counter, Counter::{compile_time_ns, exit_compile_error}};
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
+use crate::bakable_ptr::BakablePtr;
 use crate::backend::lir::{self, Assembler, CArgLocation, C_ARG_OPNDS, C_RET_OPND, CFP, EC, NATIVE_BASE_PTR, NATIVE_STACK_PTR, Opnd, SP, SideExit, SideExitRecompile, SideExitTarget, StackMap, StackMapEntry, Target, asm_ccall, asm_comment};
 use crate::hir::{self, iseq_to_hir, BlockId, Invariant, RangeType, SideExitReason::{self, *}, SpecialBackrefSymbol, SpecialObjectType};
-use crate::hir::{BlockHandler, CCallVariadicData, CCallWithFrameData, CondBranchHasTypeData, Const, FieldName, FrameState, Function, Insn, InsnId, Recompile, SendDirectData, SendFallbackReason, qualified_method_name};
+use crate::hir::ConstRepr;
+use crate::hir::{BlockHandler, CCallVariadicData, CCallWithFrameData, CondBranchHasTypeData, FieldName, FrameState, Function, Insn, InsnId, Recompile, SendDirectData, SendFallbackReason, qualified_method_name};
 use crate::hir_type::{types, Type};
 use crate::options::{get_option, InlineDepth, DEFAULT_MAX_VERSIONS};
 use crate::cast::IntoUsize;
@@ -641,19 +643,21 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
 
     let out_opnd = match insn {
         Insn::Comment { .. } => return Ok(()), // comment instruction, no code generation
-        &Insn::Const { val: Const::Value(val) } => gen_const_value(val),
-        &Insn::Const { val: Const::CPtr(val) } => gen_const_cptr(val),
-        &Insn::Const { val: Const::CInt64(val) } => gen_const_long(val),
-        &Insn::Const { val: Const::CUInt16(val) } => gen_const_uint16(val),
-        &Insn::Const { val: Const::CUInt32(val) } => gen_const_uint32(val),
-        &Insn::Const { val: Const::CUInt64(val) } => Opnd::UImm(val),
-        &Insn::Const { val: Const::CAttrIndex(val) } => gen_const_attr_index_t(val),
-        &Insn::Const { val: Const::CShape(val) } => {
-            assert_eq!(SHAPE_ID_NUM_BITS, 32);
-            gen_const_uint32(val.0)
-        }
-        &Insn::Const { val: Const::CBool(val) } => Opnd::UImm(val.into()),
-        Insn::Const { .. } => panic!("Unexpected Const in gen_insn: {insn}"),
+        &Insn::Const { val } => match val.inner() {
+            ConstRepr::Value(val) => gen_const_value(val),
+            ConstRepr::CPtr(val) => gen_const_cptr(val),
+            ConstRepr::CInt64(val) => gen_const_long(val),
+            ConstRepr::CUInt16(val) => gen_const_uint16(val),
+            ConstRepr::CUInt32(val) => gen_const_uint32(val),
+            ConstRepr::CUInt64(val) => Opnd::UImm(val),
+            ConstRepr::CAttrIndex(val) => gen_const_attr_index_t(val),
+            ConstRepr::CShape(val) => {
+                assert_eq!(SHAPE_ID_NUM_BITS, 32);
+                gen_const_uint32(val.0)
+            }
+            ConstRepr::CBool(val) => Opnd::UImm(val.into()),
+            _ => panic!("Unexpected Const in gen_insn: {insn}"),
+        },
         Insn::NewArray { elements, state } => gen_new_array(jit, asm, function, opnds!(elements), &function.frame_state(*state)),
         Insn::NewHash { elements, state } => {
             let sym_keys = elements.iter().step_by(2).all(|&key| function.type_of(key).is_subtype(types::Symbol));
@@ -987,7 +991,7 @@ fn gen_get_constant_path(jit: &JITState, asm: &mut Assembler, function: &Functio
     // Anything could be called on const_missing
     gen_prepare_non_leaf_call(jit, asm, function, state);
 
-    asm_ccall!(asm, rb_vm_opt_getconstant_path, EC, CFP, Opnd::const_ptr(ic))
+    asm_ccall!(asm, rb_vm_opt_getconstant_path, EC, CFP, ic.bake_ptr())
 }
 
 fn gen_getconstant(jit: &mut JITState, asm: &mut Assembler, function: &Function, klass: Opnd, id: ID, allow_nil: Opnd, state: &FrameState) -> Opnd {
@@ -1251,7 +1255,7 @@ fn gen_getivar(jit: &mut JITState, asm: &mut Assembler, function: &Function, rec
         asm_ccall!(asm, rb_ivar_get, recv, id.0.into())
     } else {
         let iseq = Opnd::Value(state.iseq.into());
-        asm_ccall!(asm, rb_vm_getinstancevariable, iseq, recv, id.0.into(), Opnd::const_ptr(ic))
+        asm_ccall!(asm, rb_vm_getinstancevariable, iseq, recv, id.0.into(), ic.bake_ptr())
     }
 }
 
@@ -1264,18 +1268,18 @@ fn gen_setivar(jit: &mut JITState, asm: &mut Assembler, function: &Function, rec
         asm_ccall!(asm, rb_ivar_set, recv, id.0.into(), val);
     } else {
         let iseq = Opnd::Value(state.iseq.into());
-        asm_ccall!(asm, rb_vm_setinstancevariable, iseq, recv, id.0.into(), val, Opnd::const_ptr(ic));
+        asm_ccall!(asm, rb_vm_setinstancevariable, iseq, recv, id.0.into(), val, ic.bake_ptr());
     }
 }
 
 fn gen_getclassvar(jit: &mut JITState, asm: &mut Assembler, function: &Function, id: ID, ic: *const iseq_inline_cvar_cache_entry, state: &FrameState) -> Opnd {
     gen_prepare_non_leaf_call(jit, asm, function, state);
-    asm_ccall!(asm, rb_vm_getclassvariable, VALUE::from(state.iseq).into(), CFP, id.0.into(), Opnd::const_ptr(ic))
+    asm_ccall!(asm, rb_vm_getclassvariable, VALUE::from(state.iseq).into(), CFP, id.0.into(), ic.bake_ptr())
 }
 
 fn gen_setclassvar(jit: &mut JITState, asm: &mut Assembler, function: &Function, id: ID, val: Opnd, ic: *const iseq_inline_cvar_cache_entry, state: &FrameState) {
     gen_prepare_non_leaf_call(jit, asm, function, state);
-    asm_ccall!(asm, rb_vm_setclassvariable, VALUE::from(state.iseq).into(), CFP, id.0.into(), val, Opnd::const_ptr(ic));
+    asm_ccall!(asm, rb_vm_setclassvariable, VALUE::from(state.iseq).into(), CFP, id.0.into(), val, ic.bake_ptr());
 }
 
 /// Look up global variables
@@ -1541,9 +1545,9 @@ fn gen_const_value(val: VALUE) -> lir::Opnd {
     Opnd::Value(val)
 }
 
-/// Compile Const::CPtr
+/// Compile ConstRepr::CPtr
 fn gen_const_cptr(val: *const u8) -> lir::Opnd {
-    Opnd::const_ptr(val)
+    val.bake_ptr()
 }
 
 fn gen_const_long(val: i64) -> lir::Opnd {
@@ -1577,7 +1581,7 @@ fn gen_trace_fallback(asm: &mut Assembler, reason: &str) {
         .unwrap_or_else(|_| std::ffi::CString::new("unknown").unwrap());
     let reason_ptr = reason_cstr.into_raw() as *const u8;
     use crate::state::rb_zjit_record_fallback_stack;
-    asm_ccall!(asm, rb_zjit_record_fallback_stack, Opnd::const_ptr(reason_ptr));
+    asm_ccall!(asm, rb_zjit_record_fallback_stack, reason_ptr.bake_ptr());
 }
 
 fn gen_trace_send_fallback(asm: &mut Assembler, reason: &SendFallbackReason) {
@@ -1608,7 +1612,7 @@ fn gen_send(
     asm_ccall!(
         asm,
         rb_vm_send,
-        EC, CFP, Opnd::const_ptr(cd), VALUE::from(blockiseq).into()
+        EC, CFP, cd.bake_ptr(), VALUE::from(blockiseq).into()
     )
 }
 
@@ -1634,7 +1638,7 @@ fn gen_send_forward(
     asm_ccall!(
         asm,
         rb_vm_sendforward,
-        EC, CFP, Opnd::const_ptr(cd), VALUE::from(blockiseq).into()
+        EC, CFP, cd.bake_ptr(), VALUE::from(blockiseq).into()
     )
 }
 
@@ -1658,7 +1662,7 @@ fn gen_send_without_block(
     asm_ccall!(
         asm,
         rb_vm_opt_send_without_block,
-        EC, CFP, Opnd::const_ptr(cd)
+        EC, CFP, cd.bake_ptr()
     )
 }
 
@@ -1753,12 +1757,12 @@ fn gen_push_inline_frame(
     let callee_entry_pc = unsafe { rb_iseq_pc_at_idx(iseq, 0) };
     let callee_entry_frame = JITFrame::new_iseq(callee_entry_pc, iseq, 0);
     asm_comment!(asm, "install entry JITFrame for inlined callee");
-    asm.mov(Opnd::mem(64, NATIVE_BASE_PTR, jit_frame_slot_offset(callee_depth)), Opnd::const_ptr(callee_entry_frame));
+    asm.mov(Opnd::mem(64, NATIVE_BASE_PTR, jit_frame_slot_offset(callee_depth)), callee_entry_frame.bake_ptr());
     let callee_jit_return = cfp_jit_return_for_depth(asm, callee_depth);
     asm.mov(cfp_opnd(RUBY_OFFSET_CFP_JIT_RETURN), callee_jit_return);
 
     // The callee's hidden `kw_bits` local does not need a runtime store here:
-    // the inliner aliases the local to a `Const::Value` carrying the
+    // the inliner aliases the local to a `Const` holding a `VALUE` with the
     // compile-time bitmask, so `checkkeyword` lowers to a constant
     // `FixnumBitCheck` rather than a memory load. On a side exit out of the
     // inlined body, FrameState materialization writes the local back to the
@@ -1987,7 +1991,7 @@ fn gen_invokeblock(
     asm_ccall!(
         asm,
         rb_vm_invokeblock,
-        EC, CFP, Opnd::const_ptr(cd)
+        EC, CFP, cd.bake_ptr()
     )
 }
 
@@ -2154,7 +2158,7 @@ fn gen_invokesuper(
     asm_ccall!(
         asm,
         rb_vm_invokesuper,
-        EC, CFP, Opnd::const_ptr(cd), VALUE::from(blockiseq).into()
+        EC, CFP, cd.bake_ptr(), VALUE::from(blockiseq).into()
     )
 }
 
@@ -2179,7 +2183,7 @@ fn gen_invokesuperforward(
     asm_ccall!(
         asm,
         rb_vm_invokesuperforward,
-        EC, CFP, Opnd::const_ptr(cd), VALUE::from(blockiseq).into()
+        EC, CFP, cd.bake_ptr(), VALUE::from(blockiseq).into()
     )
 }
 
@@ -2815,7 +2819,7 @@ fn gen_entry_point(jit: &mut JITState, asm: &mut Assembler, jit_entry_idx: Optio
     // always the top-level frame (depth 0). Inlined frames get their own deeper
     // slots in gen_push_inline_frame().
     let jit_frame = JITFrame::new_iseq(entry_pc(jit.iseq(), jit_entry_idx), jit.iseq(), 0);
-    asm.mov(Opnd::mem(64, NATIVE_BASE_PTR, -SIZEOF_VALUE_I32), Opnd::const_ptr(jit_frame));
+    asm.mov(Opnd::mem(64, NATIVE_BASE_PTR, -SIZEOF_VALUE_I32), jit_frame.bake_ptr());
     asm.mov(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_JIT_RETURN), NATIVE_BASE_PTR);
 
     // Direct JIT-to-JIT callers switch the CFP register before calling this entry
@@ -3028,7 +3032,7 @@ fn gen_is_method_cfunc(asm: &mut Assembler, val: lir::Opnd, cd: *const rb_call_d
     unsafe extern "C" {
         fn rb_vm_method_cfunc_is(iseq: IseqPtr, cd: *const rb_call_data, recv: VALUE, cfunc: *const u8) -> VALUE;
     }
-    asm_ccall!(asm, rb_vm_method_cfunc_is, VALUE::from(state.iseq).into(), Opnd::const_ptr(cd), val, Opnd::const_ptr(cfunc))
+    asm_ccall!(asm, rb_vm_method_cfunc_is, VALUE::from(state.iseq).into(), cd.bake_ptr(), val, cfunc.bake_ptr())
 }
 
 fn gen_is_bit_equal(asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd) -> lir::Opnd {
@@ -3246,11 +3250,11 @@ fn gen_guard_bit_equals(jit: &mut JITState, asm: &mut Assembler, function: &Func
     if matches!(reason, SideExitReason::GuardShape(_) ) {
         gen_incr_counter(asm, Counter::guard_shape_count);
     }
-    let expected_opnd: Opnd = match expected {
-        hir::Const::Value(v) => { Opnd::Value(v) }
-        hir::Const::CInt64(v) => { v.into() }
-        hir::Const::CPtr(v) => { Opnd::const_ptr(v) }
-        hir::Const::CShape(v) => { Opnd::UImm(v.0 as u64) }
+    let expected_opnd: Opnd = match expected.inner() {
+        ConstRepr::Value(v) => { Opnd::Value(v) }
+        ConstRepr::CInt64(v) => { v.into() }
+        ConstRepr::CPtr(v) => { v.bake_ptr() }
+        ConstRepr::CShape(v) => { Opnd::UImm(v.0 as u64) }
         _ => panic!("gen_guard_bit_equals: unexpected hir::Const {expected:?}"),
     };
     asm.cmp(val, expected_opnd);
@@ -3259,11 +3263,11 @@ fn gen_guard_bit_equals(jit: &mut JITState, asm: &mut Assembler, function: &Func
 }
 
 fn mask_to_opnd(mask: hir::Const) -> Option<Opnd> {
-    match mask {
-        hir::Const::CUInt8(v) => Some(Opnd::UImm(v as u64)),
-        hir::Const::CUInt16(v) => Some(Opnd::UImm(v as u64)),
-        hir::Const::CUInt32(v) => Some(Opnd::UImm(v as u64)),
-        hir::Const::CUInt64(v) => Some(Opnd::UImm(v)),
+    match mask.inner() {
+        ConstRepr::CUInt8(v) => Some(Opnd::UImm(v as u64)),
+        ConstRepr::CUInt16(v) => Some(Opnd::UImm(v as u64)),
+        ConstRepr::CUInt32(v) => Some(Opnd::UImm(v as u64)),
+        ConstRepr::CUInt64(v) => Some(Opnd::UImm(v)),
         _ => None
     }
 }
@@ -3287,7 +3291,7 @@ fn gen_guard_no_bits_set(jit: &mut JITState, asm: &mut Assembler, function: &Fun
 /// Generate code that records unoptimized C functions if --zjit-stats is enabled
 fn gen_incr_counter_ptr(asm: &mut Assembler, counter_ptr: *mut u64) {
     if get_option!(stats) {
-        asm.incr_counter(Opnd::const_ptr(counter_ptr as *const u8), Opnd::UImm(1));
+        asm.incr_counter(counter_ptr.bake_ptr(), Opnd::UImm(1));
     }
 }
 
@@ -3410,7 +3414,7 @@ fn gen_write_jit_frame(asm: &mut Assembler, state: &FrameState, stack_map_size: 
     gen_incr_counter(asm, Counter::vm_write_jit_frame_count);
     asm_comment!(asm, "save JITFrame to CFP");
     let jit_frame = jit_frame_for_state(state, stack_map_size);
-    asm.mov(Opnd::mem(64, NATIVE_BASE_PTR, jit_frame_slot_offset(state.depth)), Opnd::const_ptr(jit_frame));
+    asm.mov(Opnd::mem(64, NATIVE_BASE_PTR, jit_frame_slot_offset(state.depth)), jit_frame.bake_ptr());
 
     // CFP_PC for a live JIT frame routes through the JITFrame on the native
     // stack (cfp->jit_return points at this frame's slot), so we don't need to
@@ -3627,7 +3631,7 @@ fn gen_push_frame(asm: &mut Assembler, argc: usize, state: &FrameState, frame: C
         // C frames don't have a PC and ISEQ in normal operation. ISEQ frames set PC on gen_write_jit_frame().
         // When runtime checks are enabled we poison the PC for C frames so accidental reads stand out.
         if let (None, Some(pc)) = (frame.iseq, PC_POISON) {
-            asm.mov(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC), Opnd::const_ptr(pc));
+            asm.mov(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC), pc.bake_ptr());
         }
         let new_sp = asm.lea(Opnd::mem(64, SP, (ep_offset + 1) * SIZEOF_VALUE_I32));
         asm.mov(cfp_opnd(RUBY_OFFSET_CFP_SP), new_sp);
@@ -3723,7 +3727,7 @@ fn build_side_exit(jit: &JITState, function: &Function, state: &FrameState) -> S
     }
 
     SideExit{
-        pc: Opnd::const_ptr(state.pc),
+        pc: state.pc.bake_ptr(),
         stack,
         locals,
         iseq: state.iseq,
@@ -4046,7 +4050,7 @@ fn gen_function_stub(cb: &mut CodeBlock, iseq_call: IseqCallRef) -> Result<CodeP
 
     // Call function_stub_hit using the shared trampoline. See `gen_function_stub_hit_trampoline`.
     // Use load_into instead of mov, which is split on arm64, to avoid clobbering ALLOC_REGS.
-    asm.load_into(scratch_reg, Opnd::const_ptr(Rc::into_raw(iseq_call)));
+    asm.load_into(scratch_reg, Rc::into_raw(iseq_call).bake_ptr());
     asm.cpush(scratch_reg);
     asm.jmp(ZJITState::get_function_stub_hit_trampoline().into());
 
