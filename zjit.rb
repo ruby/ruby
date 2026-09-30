@@ -169,7 +169,6 @@ class << RubyVM::ZJIT
 
       :vm_write_jit_frame_count,
       :vm_write_sp_count,
-      :vm_write_locals_count,
       :vm_write_stack_count,
       :vm_write_to_parent_iseq_local_count,
 
