@@ -821,6 +821,59 @@ class TestThread < Test::Unit::TestCase
     end
   end
 
+  # Thread.handle_interrupt checks for interrupts after the block returns,
+  # before re-raising the jump (break/return/raise) that left the block.
+  # Running a signal handler there must not clobber ec->errinfo, which still
+  # holds the payload of that jump.
+  def test_handle_interrupt_with_return_and_trap_handler
+    omit "needs fork" unless Process.respond_to?(:fork)
+    omit "SIGUSR1 is not supported" unless Signal.list.key?("USR1")
+
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}", timeout: 120)
+    begin;
+      trap(:USR1) do
+        begin
+          raise "entering a rescue clause clears errinfo"
+        rescue
+        end
+      end
+
+      def return_from_handle_interrupt(array)
+        array.each do |i|
+          Thread.handle_interrupt(Exception => :immediate) { return i }
+        end
+        nil
+      end
+
+      # Signal from another process: a thread of this process would only get
+      # scheduled a few times a second while the main thread spins.
+      pid = Process.pid
+      killer = fork do
+        begin
+          # Process.ppid changes if the parent crashes.
+          while Process.ppid == pid
+            Process.kill(:USR1, pid)
+            sleep 0.001
+          end
+        rescue Errno::ESRCH
+        end
+        exit!(0)
+      end
+
+      returned = nil
+      begin
+        500_000.times do
+          returned = return_from_handle_interrupt([1, 2, 3])
+          break unless returned == 1
+        end
+      ensure
+        Process.kill(:KILL, killer) rescue Errno::ESRCH
+        Process.waitpid(killer)
+      end
+      assert_equal(1, returned)
+    end;
+  end
+
   def test_handle_interrupt_blocking
     r = nil
     q = Thread::Queue.new
