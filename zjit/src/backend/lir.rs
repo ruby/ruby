@@ -1791,6 +1791,7 @@ impl StackMap {
 
 /// Entry in a JITFrame stack map. These are opcodes for zjit_materialize_frames(),
 /// which walks them in order moving a write cursor down the VM stack.
+// TODO(alan): In documentation pass, centralize the mapping for these with corresponding C tag macros.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum StackMapEntry {
     /// Immediate Ruby VALUE or VReg to materialize.
