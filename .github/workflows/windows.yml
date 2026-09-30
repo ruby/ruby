@@ -200,9 +200,8 @@ jobs:
         timeout-minutes: 3
 
       # A minidump with data segments, handles, unloaded modules, the PEB and
-      # TEBs, the memory map and thread info (0x1925).  Heap memory is left
-      # out, as it would carry the environment with LAUNCHABLE_TOKEN into the
-      # artifact.
+      # TEBs, the memory map and thread info (0x1925).  The heap is left out
+      # to keep the dumps small.
       - name: Set up crash dumps
         run: |
           md "%GITHUB_WORKSPACE%\crashdumps"
@@ -211,11 +210,21 @@ jobs:
           reg add "HKLM\SOFTWARE\Microsoft\Windows\Windows Error Reporting\LocalDumps" /v DumpType /t REG_DWORD /d 0 /f
           reg add "HKLM\SOFTWARE\Microsoft\Windows\Windows Error Reporting\LocalDumps" /v CustomDumpFlags /t REG_DWORD /d 0x1925 /f
 
-      - run: nmake ${{ matrix.test_task || 'check' }}
+      # A dump carries part of the environment, so the test processes run
+      # without LAUNCHABLE_TOKEN (only the Launchable post step uses it), and
+      # no dump is written after this step.
+      - name: nmake ${{ matrix.test_task || 'check' }}
+        run: |
+          set LAUNCHABLE_TOKEN=
+          nmake ${{ matrix.test_task || 'check' }}
         env:
           RUBY_TESTOPTS: -j${{ env.TEST_JOBS || 4 }}
           RUBY_DEBUG: wer
         timeout-minutes: 70
+
+      - name: Stop crash dumps
+        run: reg delete "HKLM\SOFTWARE\Microsoft\Windows\Windows Error Reporting\LocalDumps" /f
+        if: ${{ always() }}
 
       - run: nmake binary-package
         if: ${{ matrix.test_task == 'check' }}
