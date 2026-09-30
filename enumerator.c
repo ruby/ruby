@@ -2279,6 +2279,8 @@ lazy_grep_iter_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long mem
 
     if (!RTEST(chain)) return 0;
     value = rb_proc_call_with_block(entry->proc, 1, &(result->memo_value), Qnil);
+    /* entry is embedded in proc_entry, which only the procs array references */
+    RB_GC_GUARD(proc_entry);
     LAZY_MEMO_SET_VALUE(result, value);
     LAZY_MEMO_RESET_PACKED(result);
 
@@ -2326,6 +2328,7 @@ lazy_grep_v_iter_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long m
 
     if (RTEST(chain)) return 0;
     value = rb_proc_call_with_block(entry->proc, 1, &(result->memo_value), Qnil);
+    RB_GC_GUARD(proc_entry);
     LAZY_MEMO_SET_VALUE(result, value);
     LAZY_MEMO_RESET_PACKED(result);
 
