@@ -7648,6 +7648,10 @@ pipe_atexit(void)
     struct pipe_list *list = pipe_list;
     struct pipe_list *tmp;
 
+    /* The CRT calls this on whichever thread calls ExitProcess, which can be
+     * one Ruby does not know, e.g. the console control handler on Ctrl+Break. */
+    if (!rb_current_execution_context(false)) return;
+
     while (list) {
         tmp = list->next;
         rb_io_fptr_finalize(list->fptr);
