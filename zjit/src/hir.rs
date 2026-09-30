@@ -6757,23 +6757,6 @@ impl Function {
                         for pred in tail {
                             block_cache.retain(|key, value| cached_insns[*pred].get(key) == Some(value));
                         }
-
-                        // If multiple entries contain the same offset, they may alias.
-                        // Unlike the case inside of the pass, we have no newest element. We must remove all entries at this offset.
-                        // let aliases: Vec<Key> = Vec::with_capacity(block_cache.len());
-                        let mut aliases: HashMap<i32, Vec<Key>> = HashMap::new();
-
-                        for (key, _) in block_cache.iter() {
-                            aliases.entry(key.offset).or_default().push(*key);
-                        }
-
-                        for (_, keys) in aliases.iter() {
-                            if keys.len() >= 2 {
-                                for key in keys {
-                                    block_cache.remove(&key);
-                                }
-                            }
-                        }
                     }
                 }
                 let old_insns = std::mem::take(&mut self.blocks[block_id].insns);
