@@ -921,6 +921,9 @@ pub enum FieldName {
     thread_ptr,
     len,
     SelfParam,
+    /// An instance variable stored inline in the receiver, which is either an embedded T_OBJECT
+    /// or the IMemo fields object of a class/module/typed data.
+    Ivar(ID),
     Id(ID),
 }
 
@@ -928,8 +931,8 @@ impl std::fmt::Display for FieldName {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         use FieldName::*;
         match self {
-            Id(id) if id_is_empty(*id) => f.write_str("<empty>"),
-            Id(id) => f.write_str(&id.contents_lossy()),
+            Id(id) | Ivar(id) if id_is_empty(*id) => f.write_str("<empty>"),
+            Id(id) | Ivar(id) => f.write_str(&id.contents_lossy()),
             SelfParam => f.write_str("self"),
             _ => write!(f, "{self:?}"),
         }
@@ -6203,7 +6206,7 @@ impl Function {
         // See ROBJECT_FIELDS() from include/ruby/internal/core/robject.h
         let offset = ROBJECT_OFFSET_AS_ARY
             + (SIZEOF_VALUE * ivar_index.to_usize()) as i32;
-        self.load_field(block, recv, id.into(), offset, types::BasicObject)
+        self.load_field(block, recv, FieldName::Ivar(id), offset, types::BasicObject)
     }
 
     /// Guard that `recv` is a heap allocated object
@@ -6371,7 +6374,7 @@ impl Function {
             }
         };
 
-        self.push_insn(block, Insn::StoreField { recv: ivar_storage, id: id.into(), offset, val, num_bits: types::BasicObject.num_bits() });
+        self.push_insn(block, Insn::StoreField { recv: ivar_storage, id: FieldName::Ivar(id), offset, val, num_bits: types::BasicObject.num_bits() });
         self.push_insn(block, Insn::WriteBarrier { recv: ivar_storage, val });
         if spec.next_shape != spec.profiled_type.shape() {
             // Write the new shape ID
@@ -6852,18 +6855,25 @@ impl Function {
         fn is_power_of_two(d: i64) -> bool {
             d > 0 && (d & (d - 1)) == 0
         }
-        // Only fold loads within an embedded T_OBJECT's initialized fields.
-        fn load_in_bounds(obj: VALUE, offset: usize) -> bool {
-            if !unsafe { RB_TYPE_P(obj, RUBY_T_OBJECT) } {
-                return true;
-            }
-            let fields_start = ROBJECT_OFFSET_AS_ARY as usize;
-            if offset < fields_start {
-                return true;
-            }
+        // Check on the object itself that reading `offset` yields the field named by `id`, instead
+        // of trusting that the profiled shape matches. Otherwise we could fold a load of another
+        // field (or garbage) when a guard is known to fail.
+        fn load_matches_field(obj: VALUE, id: FieldName, offset: usize) -> bool {
             let shape_id = obj.shape_id_of();
-            shape_id.layout() == ShapeLayout::RObject
-                && offset + SIZEOF_VALUE <= fields_start + SIZEOF_VALUE * unsafe { rb_jit_shape_len(shape_id.0) }.to_usize()
+            match id {
+                FieldName::Ivar(ivar) => {
+                    // Only embedded T_OBJECTs; an IMemo fields object is never a known constant
+                    // because the load that produces it is not folded.
+                    if shape_id.layout() != ShapeLayout::RObject || shape_id.is_complex() {
+                        return false;
+                    }
+                    let mut index: attr_index_t = 0;
+                    let found = unsafe { rb_shape_get_iv_index(shape_id.0, ivar, &mut index) };
+                    found && offset == ROBJECT_OFFSET_AS_ARY as usize + index.to_usize() * SIZEOF_VALUE
+                }
+                // TODO: resolve other names (e.g. struct members) the same way.
+                _ => true,
+            }
         }
         // TODO(max): Determine if it's worth it for us to reflow types after each branch
         // simplification. This means that we can have nice cascading optimizations if what used to
@@ -6893,12 +6903,12 @@ impl Function {
                         // Don't bother re-inferring the type of val; we already know it.
                         continue;
                     }
-                    &Insn::LoadField { recv, offset, return_type, .. } if return_type.is_subtype(types::BasicObject) &&
+                    &Insn::LoadField { recv, id, offset, return_type, .. } if return_type.is_subtype(types::BasicObject) &&
                             u32::try_from(offset).is_ok() => {
                         let offset = (offset as u32).to_usize();
                         let recv_type = self.type_of(recv);
                         match recv_type.ruby_object() {
-                            Some(recv_obj) if recv_obj.is_frozen() && load_in_bounds(recv_obj, offset) => {
+                            Some(recv_obj) if recv_obj.is_frozen() && load_matches_field(recv_obj, id, offset) => {
                                 let recv_ptr = recv_obj.as_ptr() as *const VALUE;
                                 let val = unsafe { recv_ptr.byte_add(offset).read() };
                                 self.new_insn(Insn::Const { val: Const::Value(val) })
