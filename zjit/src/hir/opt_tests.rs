@@ -26242,7 +26242,7 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_global_load_elided() {
+    fn test_eliminate_redundant_load_across_blocks() {
         set_call_threshold(3);
         eval(r#"
            class TestObj
@@ -26307,7 +26307,7 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_global_load_cached_insns_invalidated() {
+    fn test_retain_necessary_load_across_blocks() {
         set_call_threshold(3);
         eval(r#"
            class TestObj
