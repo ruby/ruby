@@ -1200,6 +1200,7 @@ fn gen_ccall_variadic(
     let caller_stack_size = state.stack_size() - args_with_recv_len;
 
     // Can't use gen_prepare_non_leaf_call() because we need to adjust the SP
+    // TODO(alan): adjust HIR farme state to be during-send framestate, so we *could* use gen_prepare_non_leaf_call()
     // to account for the receiver and arguments.
     let mut stack_map = vec![StackMapEntry::BasePtr {
         slot_index: jit.base_ptr_slot_index(state.depth),
