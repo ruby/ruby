@@ -826,21 +826,20 @@ rb_vm_insert_cc_refinement(const struct rb_callcache *cc)
     rb_vm_t *vm = GET_VM();
     RB_VM_LOCK_ENTER();
     {
-        struct cc_refinement_entries *e = RTYPEDDATA_GET_DATA(vm->cc_refinement_set);
+        VALUE set = vm->cc_refinement_set;
+        struct cc_refinement_entries *e = RTYPEDDATA_GET_DATA(set);
         if (e->len == e->capa) {
             size_t new_capa = e->capa == 0 ? 16 : e->capa * 2;
-            VALUE *entries = e->entries;
-            SIZED_REALLOC_N(entries, VALUE, new_capa, e->capa);
-            /* The realloc may run a compacting GC, which moves the embedded entries. */
-            e = RTYPEDDATA_GET_DATA(vm->cc_refinement_set);
-            e->entries = entries;
+            SIZED_REALLOC_N(e->entries, VALUE, new_capa, e->capa);
             e->capa = new_capa;
         }
         e->entries[e->len++] = (VALUE)cc;
 
         // We never mark the cc, but we need to issue a writebarrier so that
         // the refinement set can be added to the remembered set
-        RB_OBJ_WRITTEN(vm->cc_refinement_set, Qundef, (VALUE)cc);
+        RB_OBJ_WRITTEN(set, Qundef, (VALUE)cc);
+        /* The entries are embedded in set, so keep it pinned while e is in use. */
+        RB_GC_GUARD(set);
     }
     RB_VM_LOCK_LEAVE();
 }
