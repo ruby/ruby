@@ -1777,7 +1777,7 @@ fn gen_opt_plus(
         let arg0_untag = asm.sub(arg0, Opnd::Imm(1));
         let out_val = asm.add(arg0_untag, arg1);
         asm.jo(Target::side_exit(Counter::opt_plus_overflow));
-        guard_fixnum_fits_long(asm, out_val, Counter::opt_plus_overflow);
+        asm.guard_fixnum_fits_long(out_val, Counter::opt_plus_overflow);
 
         // Push the output on the stack
         let dst = asm.stack_push(Type::Fixnum);
@@ -4137,7 +4137,7 @@ fn gen_opt_minus(
         let val_untag = asm.sub(arg0, arg1);
         asm.jo(Target::side_exit(Counter::opt_minus_overflow));
         let val = asm.add(val_untag, Opnd::Imm(1));
-        guard_fixnum_fits_long(asm, val, Counter::opt_minus_overflow);
+        asm.guard_fixnum_fits_long(val, Counter::opt_minus_overflow);
 
         // Push the output on the stack
         let dst = asm.stack_push(Type::Fixnum);
@@ -4181,7 +4181,7 @@ fn gen_opt_mult(
         let out_val = asm.mul(arg0_untag, arg1_untag);
         jit_chain_guard(JCC_JO_MUL, jit, asm, 1, Counter::opt_mult_overflow);
         let out_val = asm.add(out_val, Opnd::UImm(1));
-        if cmp_fixnum_fits_long(asm, out_val) {
+        if asm.cmp_fixnum_fits_long(out_val) {
             jit_chain_guard(JCC_JNE, jit, asm, 1, Counter::opt_mult_overflow);
         }
 
@@ -5483,7 +5483,7 @@ fn jit_rb_int_succ(
     asm_comment!(asm, "Integer#succ");
     let out_val = asm.add(recv, Opnd::Imm(2)); // 2 is untagged Fixnum 1
     asm.jo(Target::side_exit(Counter::opt_succ_overflow));
-    guard_fixnum_fits_long(asm, out_val, Counter::opt_succ_overflow);
+    asm.guard_fixnum_fits_long(out_val, Counter::opt_succ_overflow);
 
     // Push the output onto the stack
     let dst = asm.stack_push(Type::Fixnum);
@@ -5513,7 +5513,7 @@ fn jit_rb_int_pred(
     asm_comment!(asm, "Integer#pred");
     let out_val = asm.sub(recv, Opnd::Imm(2)); // 2 is untagged Fixnum 1
     asm.jo(Target::side_exit(Counter::send_pred_underflow));
-    guard_fixnum_fits_long(asm, out_val, Counter::send_pred_underflow);
+    asm.guard_fixnum_fits_long(out_val, Counter::send_pred_underflow);
 
     // Push the output onto the stack
     let dst = asm.stack_push(Type::Fixnum);
@@ -5617,7 +5617,7 @@ fn fixnum_left_shift_body(asm: &mut Assembler, lhs: Opnd, shift_amt: u64) {
 
     // Re-tag the output value
     let out_val = asm.add(out_val, 1.into());
-    guard_fixnum_fits_long(asm, out_val, Counter::lshift_overflow);
+    asm.guard_fixnum_fits_long(out_val, Counter::lshift_overflow);
 
     let ret_opnd = asm.stack_push(Type::Fixnum);
     asm.mov(ret_opnd, out_val);
@@ -5987,13 +5987,13 @@ fn jit_rb_str_bytesize(
         RUBY_OFFSET_RSTRING_LEN as i32,
     );
 
-    let len = match c_long_len(asm, str_len_opnd) {
+    let len = match asm.c_long_len(str_len_opnd) {
         mem @ Opnd::Mem(_) => asm.load(mem),
         len => len,
     };
     let shifted_val = asm.lshift(len, Opnd::UImm(1));
     let out_val = asm.or(shifted_val, Opnd::UImm(RUBY_FIXNUM_FLAG as u64));
-    guard_fixnum_fits_long(asm, out_val, Counter::guard_send_str_bytesize_overflow);
+    asm.guard_fixnum_fits_long(out_val, Counter::guard_send_str_bytesize_overflow);
 
     let out_opnd = asm.stack_push(Type::Fixnum);
 
@@ -6163,7 +6163,7 @@ fn jit_rb_str_getbyte(
         asm.load(recv),
         RUBY_OFFSET_RSTRING_LEN as i32,
     );
-    let str_len_opnd = c_long_len(asm, str_len_opnd);
+    let str_len_opnd = asm.c_long_len(str_len_opnd);
 
     // Exit if the index is out of bounds
     asm.cmp(idx, str_len_opnd);
@@ -6456,7 +6456,7 @@ fn jit_rb_ary_length(
     // Convert the length to a fixnum
     let shifted_val = asm.lshift(len_opnd, Opnd::UImm(1));
     let out_val = asm.or(shifted_val, Opnd::UImm(RUBY_FIXNUM_FLAG as u64));
-    guard_fixnum_fits_long(asm, out_val, Counter::guard_send_ary_length_overflow);
+    asm.guard_fixnum_fits_long(out_val, Counter::guard_send_ary_length_overflow);
 
     let out_opnd = asm.stack_push(Type::Fixnum);
     asm.store(out_opnd, out_val);
@@ -7346,40 +7346,42 @@ fn get_array_len(asm: &mut Assembler, array_opnd: Opnd) -> Opnd {
         array_reg,
         RUBY_OFFSET_RARRAY_AS_HEAP_LEN,
     );
-    let array_len_opnd = c_long_len(asm, array_len_opnd);
+    let array_len_opnd = asm.c_long_len(array_len_opnd);
 
     // Select the array length value
     asm.csel_nz(emb_len_opnd, array_len_opnd)
 }
 
-/// Side-exit unless a tagged Fixnum result fits in a C long. See cmp_fixnum_fits_long.
-/// It exits the way each insn's 64-bit overflow check does, and only opt_mult chains to send.
-fn guard_fixnum_fits_long(asm: &mut Assembler, val: Opnd, counter: Counter) {
-    if cmp_fixnum_fits_long(asm, val) {
-        asm.jne(Target::side_exit(counter));
+impl Assembler {
+    /// Side-exit unless a tagged Fixnum result fits in a C long. See cmp_fixnum_fits_long.
+    /// It exits the way each insn's 64-bit overflow check does, and only opt_mult chains to send.
+    fn guard_fixnum_fits_long(&mut self, val: Opnd, counter: Counter) {
+        if self.cmp_fixnum_fits_long(val) {
+            self.jne(Target::side_exit(counter));
+        }
     }
-}
 
-/// Compare a tagged Fixnum result with its sign-extended low 32 bits, which differ when it does
-/// not fit in a C long. long is 32-bit on LLP64 (Windows), where a result that did not overflow
-/// 64 bits can still be out of the Fixnum range. Emits nothing and returns false otherwise.
-fn cmp_fixnum_fits_long(asm: &mut Assembler, val: Opnd) -> bool {
-    if std::os::raw::c_long::BITS < 64 {
-        let sext = asm.load_sext(val.with_num_bits(32).unwrap());
-        asm.cmp(sext, val);
-        true
-    } else {
-        false
+    /// Compare a tagged Fixnum result with its sign-extended low 32 bits, which differ when it does
+    /// not fit in a C long. long is 32-bit on LLP64 (Windows), where a result that did not overflow
+    /// 64 bits can still be out of the Fixnum range. Emits nothing and returns false otherwise.
+    fn cmp_fixnum_fits_long(&mut self, val: Opnd) -> bool {
+        if std::os::raw::c_long::BITS < 64 {
+            let sext = self.load_sext(val.with_num_bits(32).unwrap());
+            self.cmp(sext, val);
+            true
+        } else {
+            false
+        }
     }
-}
 
-/// Make a C long length field usable as a 64-bit operand. long is 32-bit on LLP64 (Windows),
-/// where loading it into a register zero-extends it, and lengths are never negative.
-fn c_long_len(asm: &mut Assembler, len_opnd: Opnd) -> Opnd {
-    if std::os::raw::c_long::BITS == 64 {
-        len_opnd
-    } else {
-        asm.load(len_opnd).with_num_bits(64).unwrap()
+    /// Make a C long length field usable as a 64-bit operand. long is 32-bit on LLP64 (Windows),
+    /// where loading it into a register zero-extends it, and lengths are never negative.
+    fn c_long_len(&mut self, len_opnd: Opnd) -> Opnd {
+        if std::os::raw::c_long::BITS == 64 {
+            len_opnd
+        } else {
+            self.load(len_opnd).with_num_bits(64).unwrap()
+        }
     }
 }
 
