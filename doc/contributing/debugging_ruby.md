@@ -122,7 +122,13 @@ set RUBY_DEBUG=wer
 
 #### From CI
 
-When a Ruby process crashes in the tests on GitHub Actions, the Windows, Ubuntu and macOS workflows upload an artifact named `crashdumps-*` with the dumps and what is needed to read them. It is listed under "Artifacts" on the run's summary page for 7 days, and each dump is named after the pid in the `pid N killed by SIG...` line of the test output.
+When a Ruby process crashes in the tests on GitHub Actions, these workflows upload an artifact with the dumps and what is needed to read them:
+
+* Windows (`windows.yml`), as `crashdumps-OS-TASK`, or `crashdumps-OS-x86-TASK` for the x86 job
+* Ubuntu (`ubuntu.yml`, except the ppc64le and s390x jobs), YJIT Ubuntu (`yjit-ubuntu.yml`) and ZJIT Ubuntu (`zjit-ubuntu.yml`), as `crashdumps-JOB-INDEX`
+* macOS (`macos.yml`), YJIT macOS (`yjit-macos.yml`) and ZJIT macOS (`zjit-macos.yml`), as `crashdumps-JOB-INDEX`
+
+`JOB-INDEX` is the job name and its position in the matrix, such as `crashdumps-make-3`. The other workflows collect no dumps. The artifact is listed under "Artifacts" on the run's summary page for 7 days, and each dump is named after the pid in the `pid N killed by SIG...` line of the test output.
 
 ```sh
 gh run download RUN_ID -R ruby/ruby -n ARTIFACT_NAME -D artifact
