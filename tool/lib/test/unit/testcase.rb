@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 require_relative 'assertions'
 require_relative '../../core_assertions'
+require_relative '../../ractor_assertions'
 
 module Test
   module Unit
