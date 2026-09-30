@@ -921,6 +921,9 @@ pub enum FieldName {
     thread_ptr,
     len,
     SelfParam,
+    /// An instance variable stored inline in the receiver, which is either an embedded T_OBJECT
+    /// or the IMemo fields object of a class/module/typed data.
+    Ivar(ID),
     Id(ID),
 }
 
@@ -928,8 +931,8 @@ impl std::fmt::Display for FieldName {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         use FieldName::*;
         match self {
-            Id(id) if id_is_empty(*id) => f.write_str("<empty>"),
-            Id(id) => f.write_str(&id.contents_lossy()),
+            Id(id) | Ivar(id) if id_is_empty(*id) => f.write_str("<empty>"),
+            Id(id) | Ivar(id) => f.write_str(&id.contents_lossy()),
             SelfParam => f.write_str("self"),
             _ => write!(f, "{self:?}"),
         }
@@ -2511,11 +2514,14 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::StringIntern { val, .. } => { write!(f, "StringIntern {val}") },
             Insn::AnyToString { val, .. } => { write!(f, "AnyToString {val}") },
             Insn::SideExit { reason, recompile, .. } => {
-                if recompile.is_some() {
-                    write!(f, "SideExit {reason} recompile")
-                } else {
-                    write!(f, "SideExit {reason}")
+                match reason.as_ref() {
+                    &SideExitReason::GuardShape(shape_id) => write!(f, "SideExit GuardShape({:p})", self.ptr_map.map_shape(shape_id))?,
+                    reason => write!(f, "SideExit {reason}")?,
                 }
+                if recompile.is_some() {
+                    write!(f, " recompile")?;
+                }
+                Ok(())
             }
             Insn::PutSpecialObject { value_type, .. } => write!(f, "PutSpecialObject {value_type}"),
             Insn::Throw { throw_state, val, .. } => {
@@ -6200,7 +6206,7 @@ impl Function {
         // See ROBJECT_FIELDS() from include/ruby/internal/core/robject.h
         let offset = ROBJECT_OFFSET_AS_ARY
             + (SIZEOF_VALUE * ivar_index.to_usize()) as i32;
-        self.load_field(block, recv, id.into(), offset, types::BasicObject)
+        self.load_field(block, recv, FieldName::Ivar(id), offset, types::BasicObject)
     }
 
     /// Guard that `recv` is a heap allocated object
@@ -6368,7 +6374,7 @@ impl Function {
             }
         };
 
-        self.push_insn(block, Insn::StoreField { recv: ivar_storage, id: id.into(), offset, val, num_bits: types::BasicObject.num_bits() });
+        self.push_insn(block, Insn::StoreField { recv: ivar_storage, id: FieldName::Ivar(id), offset, val, num_bits: types::BasicObject.num_bits() });
         self.push_insn(block, Insn::WriteBarrier { recv: ivar_storage, val });
         if spec.next_shape != spec.profiled_type.shape() {
             // Write the new shape ID
@@ -6849,13 +6855,40 @@ impl Function {
         fn is_power_of_two(d: i64) -> bool {
             d > 0 && (d & (d - 1)) == 0
         }
+        // Check on the object itself that reading `offset` yields the field named by `id`, instead
+        // of trusting that the profiled shape matches. Otherwise we could fold a load of another
+        // field (or garbage) when a guard is known to fail.
+        fn load_matches_field(obj: VALUE, id: FieldName, offset: usize) -> bool {
+            let shape_id = obj.shape_id_of();
+            match id {
+                FieldName::Ivar(ivar) => {
+                    // Only embedded T_OBJECTs; an IMemo fields object is never a known constant
+                    // because the load that produces it is not folded.
+                    if shape_id.layout() != ShapeLayout::RObject || shape_id.is_complex() {
+                        return false;
+                    }
+                    let mut index: attr_index_t = 0;
+                    let found = unsafe { rb_shape_get_iv_index(shape_id.0, ivar, &mut index) };
+                    found && offset == ROBJECT_OFFSET_AS_ARY as usize + index.to_usize() * SIZEOF_VALUE
+                }
+                // TODO: resolve other names (e.g. struct members) the same way.
+                _ => true,
+            }
+        }
         // TODO(max): Determine if it's worth it for us to reflow types after each branch
         // simplification. This means that we can have nice cascading optimizations if what used to
         // be a union of two different basic block arguments now has a single value.
         //
         // This would require 1) fixpointing, 2) worklist, or 3) (slightly less powerful) calling a
         // function-level infer_types after each pruned branch.
+
+        // Folding a terminator can make later blocks unreachable; skip them since their operands may be invalid.
+        let mut reachable = BlockSet::with_capacity(self.blocks.len());
+        reachable.insert(self.entries_block);
         for block in self.reverse_post_order() {
+            if !reachable.get(block) {
+                continue;
+            }
             let old_insns = std::mem::take(&mut self.blocks[block].insns);
             let mut new_insns = Vec::with_capacity(old_insns.len());
             for insn_id in old_insns {
@@ -6870,12 +6903,12 @@ impl Function {
                         // Don't bother re-inferring the type of val; we already know it.
                         continue;
                     }
-                    &Insn::LoadField { recv, offset, return_type, .. } if return_type.is_subtype(types::BasicObject) &&
+                    &Insn::LoadField { recv, id, offset, return_type, .. } if return_type.is_subtype(types::BasicObject) &&
                             u32::try_from(offset).is_ok() => {
                         let offset = (offset as u32).to_usize();
                         let recv_type = self.type_of(recv);
                         match recv_type.ruby_object() {
-                            Some(recv_obj) if recv_obj.is_frozen() => {
+                            Some(recv_obj) if recv_obj.is_frozen() && load_matches_field(recv_obj, id, offset) => {
                                 let recv_ptr = recv_obj.as_ptr() as *const VALUE;
                                 let val = unsafe { recv_ptr.byte_add(offset).read() };
                                 self.new_insn(Insn::Const { val: Const::Value(val) })
@@ -6893,6 +6926,12 @@ impl Function {
                                 let val = unsafe { recv_ptr.byte_add(offset).read() };
                                 self.new_insn(Insn::Const { val: Const::CShape(ShapeId(val)) })
                             }
+                            _ => insn_id,
+                        }
+                    }
+                    &Insn::IsBitEqual { left, right } => {
+                        match (self.type_of(left).cshape_value(), self.type_of(right).cshape_value()) {
+                            (Some(l), Some(r)) => self.new_insn(Insn::Const { val: Const::CBool(l == r) }),
                             _ => insn_id,
                         }
                     }
@@ -6940,11 +6979,13 @@ impl Function {
                             _ => insn_id,
                         }
                     },
-                    &Insn::GuardBitEquals { val, expected, .. } => {
+                    &Insn::GuardBitEquals { val, expected, state, ref reason, recompile } => {
                         let recv_type = self.type_of(val);
                         if recv_type.has_value(expected) {
                             self.make_equal_to(insn_id, val);
                             continue;
+                        } else if !recv_type.could_be(Type::from_const(expected)) {
+                            self.new_insn(Insn::SideExit { state, reason: reason.clone(), recompile })
                         } else {
                             insn_id
                         }
@@ -7211,6 +7252,9 @@ impl Function {
                 }
             }
             self.blocks[block].insns = new_insns;
+            for target in self.successors(block) {
+                reachable.insert(target);
+            }
         }
     }
 

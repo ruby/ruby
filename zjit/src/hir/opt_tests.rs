@@ -1884,10 +1884,10 @@ mod hir_opt_tests {
           v20:ObjectSubclass[class_exact*:Object@VALUE(0x1000)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1000)] recompile
           PushInlineFrame :m, v20 (0x1038), num_args=1
           PatchPoint MethodRedefined(NilClass@0x1058, nil?@0x1060, cme:0x1068)
-          v80:Fixnum[0] = Const Value(0)
+          v79:Fixnum[0] = Const Value(0)
           PopInlineFrame
           CheckInterrupts
-          Return v80
+          Return v79
         ");
     }
 
@@ -20235,6 +20235,96 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_fold_guard_bit_equals_shape_mismatch_on_frozen_constant() {
+        eval("
+            class Box
+              def initialize = @x = 42
+              def x = @x
+              def grow
+                @a = 1
+                @b = 2
+              end
+            end
+
+            small = Box.new
+            30.times { small.x }
+
+            big = Box.new
+            big.grow
+            BIG = big.freeze
+
+            def test = BIG.x
+            30.times { test }
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:18:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint StableConstantNames(0x1000, BIG)
+          v11:ObjectSubclass[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          PatchPoint NoSingletonClass(Box@0x1010)
+          PatchPoint MethodRedefined(Box@0x1010, x@0x1018, cme:0x1020)
+          PushInlineFrame :x, v11 (0x1048), num_args=0
+          v34:IMemo = LoadField v11, :fields_obj@0x1068
+          v35:BasicObject = LoadField v34, :@x@0x1068
+          PopInlineFrame
+          CheckInterrupts
+          Return v35
+        ");
+    }
+
+    #[test]
+    fn test_fold_guard_bit_equals_shape_mismatch_embedded_index_shift() {
+        eval("
+            class Pt
+              def initialize(a)
+                if a
+                  @x = 1
+                else
+                  @y = 2
+                  @x = 3
+                end
+              end
+              def x = @x
+            end
+
+            small = Pt.new(true)
+            30.times { small.x }
+
+            OTHER = Pt.new(false).freeze
+
+            def test = OTHER.x
+            30.times { test }
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:19:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint StableConstantNames(0x1000, OTHER)
+          v11:ObjectSubclass[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          PatchPoint NoSingletonClass(Pt@0x1010)
+          PatchPoint MethodRedefined(Pt@0x1010, x@0x1018, cme:0x1020)
+          v50:Fixnum[3] = Const Value(3)
+          CheckInterrupts
+          Return v50
+        ");
+    }
+
+    #[test]
     fn test_dont_fold_load_field_with_primitive_return_type() {
         eval(r#"
             S = "abc".freeze
@@ -21403,11 +21493,11 @@ mod hir_opt_tests {
           PatchPoint StableConstantNames(0x1068, Integer)
           v31:ClassSubclass[Integer@0x1070] = Const Value(VALUE(0x1070))
           PatchPoint MethodRedefined(Class@0x1078, ==@0x1080, cme:0x1088)
-          v76:CBool = IsBitEqual v12, v31
-          v77:BoolExact = BoxBool v76
+          v72:CBool = IsBitEqual v12, v31
+          v73:BoolExact = BoxBool v72
           PopInlineFrame
           CheckInterrupts
-          Return v77
+          Return v73
         ");
     }
 
