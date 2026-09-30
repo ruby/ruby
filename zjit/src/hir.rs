@@ -2611,8 +2611,8 @@ impl Block {
         self.insns.iter()
     }
 
-    pub fn terminator(&self) -> &InsnId {
-        self.insns().last().unwrap()
+    pub fn terminator(&self) -> InsnId {
+        *self.insns().last().unwrap()
     }
 }
 
@@ -6624,7 +6624,7 @@ impl Function {
         // Collect blocks that terminate with Jump or CondBranch instructions that pass at least one block param along.
         let blocks_sending_params: Vec<BlockId> = blocks.iter().copied()
             .filter(|&block_id|
-                self.resolve(*self.blocks[block_id].terminator()).insn(self).outgoing_edges().any(|edge| !edge.args.is_empty()))
+                self.resolve(self.blocks[block_id].terminator()).insn(self).outgoing_edges().any(|edge| !edge.args.is_empty()))
             .collect();
 
         // We only need to update blocks that have params. (Blocks without params cannot be improved)
@@ -6656,7 +6656,7 @@ impl Function {
             for &block_id in &blocks_sending_params {
                 // Use the results of abstract interpretation to update the states
                 // Perform abstract interpretation
-                let edges = self.resolve(*self.blocks[block_id].terminator()).insn(self).outgoing_edges();
+                let edges = self.resolve(self.blocks[block_id].terminator()).insn(self).outgoing_edges();
                 for BranchEdge { target: target_block_id, args: params } in edges {
                     for (i, param) in params.iter().enumerate() {
                         let param = self.find_id(*param);
@@ -6707,7 +6707,7 @@ impl Function {
 
                 // Update the terminators (basic blocks can only branch at the terminator. This is where block params are passed)
                 for jump_block_id in &blocks_sending_params {
-                    let edges = self.resolve(*self.blocks[*jump_block_id].terminator()).insn_mut(self).outgoing_edges_mut();
+                    let edges = self.resolve(self.blocks[*jump_block_id].terminator()).insn_mut(self).outgoing_edges_mut();
                     for edge in edges {
                         if edge.target == *block_id {
                             prune_vec_by_indices(&mut edge.args, &trivial_indices);
@@ -6746,8 +6746,7 @@ impl Function {
         loop {
             for (rpo_index, &block_id) in rpo.iter().enumerate() {
                 let mut block_cache: HashMap<Key, InsnId>  = HashMap::new();
-                // Populate the block cache with information from predecessors
-                // If all predecessors contain the same entry and value, add it to the map
+                // Set block_cache equal to the intersection of cached insns of all predecessors
                 match cfi.predecessors(block_id) {
                     [] => {},
                     [head] => {
@@ -6817,9 +6816,9 @@ impl Function {
                                         continue
                                     }
                                 }
-                                Entry::Vacant(_) => {
+                                Entry::Vacant(entry) => {
                                     // If the value has not been accessed, cache a copy to optimize future loads or stores.
-                                    block_cache.insert(key, insn_id);
+                                    entry.insert(insn_id);
                                 }
                             }
                             insn_id
@@ -6847,7 +6846,7 @@ impl Function {
                 self.blocks[block_id].insns = new_insns;
 
                 // Check for back edges
-                for edge in self.resolve(*self.blocks[block_id].terminator()).insn(self).outgoing_edges() {
+                for edge in self.resolve(self.blocks[block_id].terminator()).insn(self).outgoing_edges() {
                     if rpo_order[edge.target] <= rpo_index {
                         has_back_edge |= true;
                     }
