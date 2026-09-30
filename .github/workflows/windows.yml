@@ -120,7 +120,7 @@ jobs:
         run: |
           git -C "%VCPKG_INSTALLATION_ROOT%" pull --quiet
           call "%VCPKG_INSTALLATION_ROOT%\bootstrap-vcpkg.bat"
-          vcpkg install
+          vcpkg install --overlay-triplets=.github/vcpkg-triplets
         working-directory: src
 
       - name: setup env
