@@ -251,8 +251,6 @@ RSpec.describe Bundler do
   end
 
   describe "#bin_path" do
-    # Creating the directory here meant that merely asking where binstubs go
-    # made one, and raised on a read-only filesystem. See #9197.
     it "returns the path without creating the directory" do
       allow(Bundler).to receive(:root).and_return(bundled_app)
       Bundler.reset_paths!

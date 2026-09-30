@@ -116,9 +116,6 @@ module Bundler
     end
 
     # Returns absolute location of where binstubs are installed to.
-    #
-    # Does not create the directory; callers that are about to write binstubs
-    # there are responsible for that.
     def bin_path
       @bin_path ||= begin
         path = Bundler.settings[:bin] || "bin"
