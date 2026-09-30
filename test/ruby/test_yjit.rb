@@ -1921,6 +1921,7 @@ class TestYJIT < Test::Unit::TestCase
   end
 
   def test_yjit_enable_replaces_array_each
+    pend "the with_jit hooks run in the master box [Bug #22306]" if defined?(Ruby::Box) && Ruby::Box.enabled?
     assert_separately([*("--disable=yjit" if RubyVM::YJIT.enabled?)], <<~'RUBY')
       # Array#each should be implemented in C for the interpreter
       assert_nil Array.instance_method(:each).source_location
