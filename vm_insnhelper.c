@@ -132,7 +132,7 @@ callable_method_entry_p(const rb_callable_method_entry_t *cme)
     else {
         VM_ASSERT(IMEMO_TYPE_P((VALUE)cme, imemo_ment), "imemo_type:%s", rb_imemo_name(imemo_type((VALUE)cme)));
 
-        if (callable_class_p(cme->defined_class)) {
+        if (!cme->def || callable_class_p(cme->defined_class)) {
             return TRUE;
         }
         else {
@@ -2103,15 +2103,9 @@ vm_populate_cc(VALUE klass, const struct rb_callinfo * const ci, ID mid)
 
     RB_DEBUG_COUNTER_INC(cc_not_found_in_ccs);
 
-    const rb_callable_method_entry_t *cme = rb_callable_method_entry(klass, mid);
+    const rb_callable_method_entry_t *cme = rb_callable_method_entry_or_negative(klass, mid);
 
-    VM_ASSERT(cme == NULL || IMEMO_TYPE_P(cme, imemo_ment));
-
-    if (cme == NULL) {
-        // undef or not found: can't cache the information
-        VM_ASSERT(vm_cc_cme(&vm_empty_cc) == NULL);
-        return &vm_empty_cc;
-    }
+    VM_ASSERT(IMEMO_TYPE_P(cme, imemo_ment));
 
     VALUE cc_tbl = RCLASS_WRITABLE_CC_TBL(klass);
     const VALUE original_cc_table = cc_tbl;
@@ -2123,7 +2117,7 @@ vm_populate_cc(VALUE klass, const struct rb_callinfo * const ci, ID mid)
         cc_tbl = rb_vm_cc_table_dup(cc_tbl);
     }
 
-    VM_ASSERT(cme == rb_callable_method_entry(klass, mid));
+    VM_ASSERT(cme == rb_callable_method_entry_or_negative(klass, mid));
 
     METHOD_ENTRY_CACHED_SET((struct rb_callable_method_entry_struct *)cme);
 
@@ -2141,7 +2135,9 @@ vm_populate_cc(VALUE klass, const struct rb_callinfo * const ci, ID mid)
         }
     }
 
-    cme = rb_check_overloaded_cme(cme, ci);
+    if (!UNDEFINED_METHOD_ENTRY_P(cme)) {
+        cme = rb_check_overloaded_cme(cme, ci);
+    }
 
     const struct rb_callcache *cc = vm_cc_new(klass, cme, vm_call_general, cc_type_normal);
     vm_ccs_push(cc_tbl, mid, ccs, ci, cc);
@@ -2427,13 +2423,12 @@ typedef VALUE (*cfunc_type)(ANYARGS);
 static inline int
 check_cfunc(const rb_callable_method_entry_t *me, cfunc_type func)
 {
-    if (! me) {
+    if (! me || ! me->def) {
         return false;
     }
     else {
         VM_ASSERT(IMEMO_TYPE_P(me, imemo_ment));
         VM_ASSERT(callable_method_entry_p(me));
-        VM_ASSERT(me->def);
         if (me->def->type != VM_METHOD_TYPE_CFUNC) {
             return false;
         }
@@ -5018,7 +5013,7 @@ vm_call_method(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_ca
 
     VM_ASSERT(callable_method_entry_p(vm_cc_cme(cc)));
 
-    if (vm_cc_cme(cc) != NULL) {
+    if (!UNDEFINED_METHOD_ENTRY_P(vm_cc_cme(cc))) {
         switch (METHOD_ENTRY_VISI(vm_cc_cme(cc))) {
           case METHOD_VISI_PUBLIC: /* likely */
             return vm_call_method_each_type(ec, cfp, calling);
@@ -5188,7 +5183,7 @@ vm_search_super_method(const rb_control_frame_t *reg_cfp, struct rb_call_data *c
         const rb_callable_method_entry_t *cached_cme = vm_cc_cme(cc);
 
         // define_method can cache for different method id
-        if (cached_cme == NULL) {
+        if (UNDEFINED_METHOD_ENTRY_P(cached_cme)) {
             // empty_cc_for_super is not markable object
             cd->cc = empty_cc_for_super();
         }

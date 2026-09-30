@@ -2206,7 +2206,7 @@ static const rb_callable_method_entry_t *
 callable_method_entry_refinements0(VALUE klass, ID id, VALUE *defined_class_ptr, bool with_refinements,
                                     const rb_callable_method_entry_t *cme)
 {
-    if (cme == NULL || LIKELY(cme->def->type != VM_METHOD_TYPE_REFINED)) {
+    if (UNDEFINED_METHOD_ENTRY_P(cme) || LIKELY(cme->def->type != VM_METHOD_TYPE_REFINED)) {
         return cme;
     }
     else {
