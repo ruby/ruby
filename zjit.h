@@ -82,11 +82,6 @@ ZJIT_STACK_MAP_LOCAL_MOD_P(VALUE entry)
     return (entry & ZJIT_STACK_MAP_TAG_MASK) == ZJIT_STACK_MAP_LOCAL_MOD_TAG;
 }
 
-// One stack map can describe several control frames, since ZJIT inlines through
-// sends. This opcode marks the boundary between them: it moves the write cursor
-// past the inlined callee's receiver slot, which sits below its local table, and
-// switches the frame whose env decides whether LOCAL_MOD entries are written.
-// There is always a receiver slot there because we only inline through sends.
 static inline bool
 ZJIT_STACK_MAP_PREV_FRAME_P(VALUE entry)
 {
