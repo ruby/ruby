@@ -14874,6 +14874,298 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_optimize_io_buffer_get_value_u8() {
+        eval(r#"
+            def test(b, i) = b.get_value(:U8, i)
+            test(IO::Buffer.new(8), 0)
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :b@0x1000
+          v4:BasicObject = LoadField v2, :i@0x1001
+          Jump bb3(v1, v3, v4)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :b@1
+          v9:BasicObject = LoadArg :i@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          v18:StaticSymbol[:U8] = Const Value(VALUE(0x1008))
+          PatchPoint NoSingletonClass(IO::Buffer::Storage@0x1010)
+          PatchPoint MethodRedefined(IO::Buffer::Storage@0x1010, get_value@0x1018, cme:0x1020)
+          v30:ObjectSubclass[class_exact:IO::Buffer::Storage] = GuardType v12, ObjectSubclass[class_exact:IO::Buffer::Storage] recompile
+          v31:Fixnum = GuardType v13, Fixnum
+          v32:CInt64 = UnboxFixnum v31
+          v33:CInt64[0] = Const CInt64(0)
+          v34:CInt64 = GuardGreaterEq v32, v33
+          v35:CUInt64[1] = Const CUInt64(1)
+          v36:CPtr = CCall v30, :rb_jit_io_buffer_readable_ptr@0x1048, v34, v35
+          v37:CPtr = GuardNotNull v36
+          v38:Fixnum = LoadFixnum v37, 1
+          CheckInterrupts
+          Return v38
+        ");
+    }
+
+    #[test]
+    fn test_optimize_io_buffer_get_value_u16_little_endian() {
+        eval(r#"
+            def test(b, i) = b.get_value(:u16, i)
+            test(IO::Buffer.new(8), 0)
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :b@0x1000
+          v4:BasicObject = LoadField v2, :i@0x1001
+          Jump bb3(v1, v3, v4)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :b@1
+          v9:BasicObject = LoadArg :i@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          v18:StaticSymbol[:u16] = Const Value(VALUE(0x1008))
+          PatchPoint NoSingletonClass(IO::Buffer::Storage@0x1010)
+          PatchPoint MethodRedefined(IO::Buffer::Storage@0x1010, get_value@0x1018, cme:0x1020)
+          v30:ObjectSubclass[class_exact:IO::Buffer::Storage] = GuardType v12, ObjectSubclass[class_exact:IO::Buffer::Storage] recompile
+          v31:Fixnum = GuardType v13, Fixnum
+          v32:CInt64 = UnboxFixnum v31
+          v33:CInt64[0] = Const CInt64(0)
+          v34:CInt64 = GuardGreaterEq v32, v33
+          v35:CUInt64[2] = Const CUInt64(2)
+          v36:CPtr = CCall v30, :rb_jit_io_buffer_readable_ptr@0x1048, v34, v35
+          v37:CPtr = GuardNotNull v36
+          v38:Fixnum = LoadFixnum v37, 2
+          CheckInterrupts
+          Return v38
+        ");
+    }
+
+    #[test]
+    fn test_optimize_io_buffer_get_value_u16_big_endian() {
+        eval(r#"
+            def test(b, i) = b.get_value(:U16, i)
+            test(IO::Buffer.new(8), 0)
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :b@0x1000
+          v4:BasicObject = LoadField v2, :i@0x1001
+          Jump bb3(v1, v3, v4)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :b@1
+          v9:BasicObject = LoadArg :i@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          v18:StaticSymbol[:U16] = Const Value(VALUE(0x1008))
+          PatchPoint NoSingletonClass(IO::Buffer::Storage@0x1010)
+          PatchPoint MethodRedefined(IO::Buffer::Storage@0x1010, get_value@0x1018, cme:0x1020)
+          v30:ObjectSubclass[class_exact:IO::Buffer::Storage] = GuardType v12, ObjectSubclass[class_exact:IO::Buffer::Storage] recompile
+          v31:Fixnum = GuardType v13, Fixnum
+          v32:CInt64 = UnboxFixnum v31
+          v33:CInt64[0] = Const CInt64(0)
+          v34:CInt64 = GuardGreaterEq v32, v33
+          v35:CUInt64[2] = Const CUInt64(2)
+          v36:CPtr = CCall v30, :rb_jit_io_buffer_readable_ptr@0x1048, v34, v35
+          v37:CPtr = GuardNotNull v36
+          v38:Fixnum = LoadFixnum v37, 2 byteswap
+          CheckInterrupts
+          Return v38
+        ");
+    }
+
+    #[test]
+    fn test_optimize_io_buffer_get_value_u32_little_endian() {
+        eval(r#"
+            def test(b, i) = b.get_value(:u32, i)
+            test(IO::Buffer.new(8), 0)
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :b@0x1000
+          v4:BasicObject = LoadField v2, :i@0x1001
+          Jump bb3(v1, v3, v4)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :b@1
+          v9:BasicObject = LoadArg :i@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          v18:StaticSymbol[:u32] = Const Value(VALUE(0x1008))
+          PatchPoint NoSingletonClass(IO::Buffer::Storage@0x1010)
+          PatchPoint MethodRedefined(IO::Buffer::Storage@0x1010, get_value@0x1018, cme:0x1020)
+          v30:ObjectSubclass[class_exact:IO::Buffer::Storage] = GuardType v12, ObjectSubclass[class_exact:IO::Buffer::Storage] recompile
+          v31:Fixnum = GuardType v13, Fixnum
+          v32:CInt64 = UnboxFixnum v31
+          v33:CInt64[0] = Const CInt64(0)
+          v34:CInt64 = GuardGreaterEq v32, v33
+          v35:CUInt64[4] = Const CUInt64(4)
+          v36:CPtr = CCall v30, :rb_jit_io_buffer_readable_ptr@0x1048, v34, v35
+          v37:CPtr = GuardNotNull v36
+          v38:Fixnum = LoadFixnum v37, 4
+          CheckInterrupts
+          Return v38
+        ");
+    }
+
+    #[test]
+    fn test_optimize_io_buffer_get_value_u32_big_endian() {
+        eval(r#"
+            def test(b, i) = b.get_value(:U32, i)
+            test(IO::Buffer.new(8), 0)
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :b@0x1000
+          v4:BasicObject = LoadField v2, :i@0x1001
+          Jump bb3(v1, v3, v4)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :b@1
+          v9:BasicObject = LoadArg :i@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          v18:StaticSymbol[:U32] = Const Value(VALUE(0x1008))
+          PatchPoint NoSingletonClass(IO::Buffer::Storage@0x1010)
+          PatchPoint MethodRedefined(IO::Buffer::Storage@0x1010, get_value@0x1018, cme:0x1020)
+          v30:ObjectSubclass[class_exact:IO::Buffer::Storage] = GuardType v12, ObjectSubclass[class_exact:IO::Buffer::Storage] recompile
+          v31:Fixnum = GuardType v13, Fixnum
+          v32:CInt64 = UnboxFixnum v31
+          v33:CInt64[0] = Const CInt64(0)
+          v34:CInt64 = GuardGreaterEq v32, v33
+          v35:CUInt64[4] = Const CUInt64(4)
+          v36:CPtr = CCall v30, :rb_jit_io_buffer_readable_ptr@0x1048, v34, v35
+          v37:CPtr = GuardNotNull v36
+          v38:Fixnum = LoadFixnum v37, 4 byteswap
+          CheckInterrupts
+          Return v38
+        ");
+    }
+
+    #[test]
+    fn test_dont_inline_io_buffer_get_value_signed_type() {
+        eval(r#"
+            def test(b, i) = b.get_value(:S8, i)
+            test(IO::Buffer.new(8), 0)
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :b@0x1000
+          v4:BasicObject = LoadField v2, :i@0x1001
+          Jump bb3(v1, v3, v4)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :b@1
+          v9:BasicObject = LoadArg :i@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          v18:StaticSymbol[:S8] = Const Value(VALUE(0x1008))
+          PatchPoint NoSingletonClass(IO::Buffer::Storage@0x1010)
+          PatchPoint MethodRedefined(IO::Buffer::Storage@0x1010, get_value@0x1018, cme:0x1020)
+          v30:ObjectSubclass[class_exact:IO::Buffer::Storage] = GuardType v12, ObjectSubclass[class_exact:IO::Buffer::Storage] recompile
+          v31:Float|Integer = CCallWithFrame v30, :IO::Buffer#get_value@0x1048, v18, v13
+          CheckInterrupts
+          Return v31
+        ");
+    }
+
+    #[test]
+    fn test_dont_inline_io_buffer_get_value_dynamic_type() {
+        eval(r#"
+            def test(b, t, i) = b.get_value(t, i)
+            test(IO::Buffer.new(8), :U8, 0)
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :b@0x1000
+          v4:BasicObject = LoadField v2, :t@0x1001
+          v5:BasicObject = LoadField v2, :i@0x1002
+          Jump bb3(v1, v3, v4, v5)
+        bb2():
+          EntryPoint JIT(0)
+          v8:BasicObject = LoadArg :self@0
+          v9:BasicObject = LoadArg :b@1
+          v10:BasicObject = LoadArg :t@2
+          v11:BasicObject = LoadArg :i@3
+          Jump bb3(v8, v9, v10, v11)
+        bb3(v13:BasicObject, v14:BasicObject, v15:BasicObject, v16:BasicObject):
+          PatchPoint NoSingletonClass(IO::Buffer::Storage@0x1008)
+          PatchPoint MethodRedefined(IO::Buffer::Storage@0x1008, get_value@0x1010, cme:0x1018)
+          v32:ObjectSubclass[class_exact:IO::Buffer::Storage] = GuardType v14, ObjectSubclass[class_exact:IO::Buffer::Storage] recompile
+          v33:Float|Integer = CCallWithFrame v32, :IO::Buffer#get_value@0x1040, v15, v16
+          CheckInterrupts
+          Return v33
+        ");
+    }
+
+    #[test]
+    fn test_dont_inline_io_buffer_get_value_wide_type() {
+        eval(r#"
+            def test(b, i) = b.get_value(:U64, i)
+            test(IO::Buffer.new(8), 0)
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :b@0x1000
+          v4:BasicObject = LoadField v2, :i@0x1001
+          Jump bb3(v1, v3, v4)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :b@1
+          v9:BasicObject = LoadArg :i@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          v18:StaticSymbol[:U64] = Const Value(VALUE(0x1008))
+          PatchPoint NoSingletonClass(IO::Buffer::Storage@0x1010)
+          PatchPoint MethodRedefined(IO::Buffer::Storage@0x1010, get_value@0x1018, cme:0x1020)
+          v30:ObjectSubclass[class_exact:IO::Buffer::Storage] = GuardType v12, ObjectSubclass[class_exact:IO::Buffer::Storage] recompile
+          v31:Float|Integer = CCallWithFrame v30, :IO::Buffer#get_value@0x1048, v18, v13
+          CheckInterrupts
+          Return v31
+        ");
+    }
+
+    #[test]
     fn test_optimize_string_byteslice_fixnum() {
         eval(r#"
             def test(s, beg, len) = s.byteslice(beg, len)

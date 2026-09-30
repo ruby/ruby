@@ -680,6 +680,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::StringAppend { recv, other, recv_flags, other_flags, state } => gen_string_append(jit, asm, function, opnd!(recv), opnd!(other), opnd!(recv_flags), opnd!(other_flags), &function.frame_state(*state)),
         Insn::StringAppendCodepoint { recv, other, state } => gen_string_append_codepoint(jit, asm, function, opnd!(recv), opnd!(other), &function.frame_state(*state)),
         Insn::StringEqual { left, right } => gen_string_equal(asm, opnd!(left), opnd!(right)),
+        &Insn::LoadFixnum { ptr, num_bytes, byteswap } => gen_load_fixnum(asm, opnd!(ptr), num_bytes, byteswap),
         Insn::StringIntern { val, state } => gen_intern(jit, asm, function, opnd!(val), &function.frame_state(*state)),
         Insn::ToRegexp { opt, values, state } => gen_toregexp(jit, asm, function, *opt, opnds!(values), &function.frame_state(*state)),
         Insn::Param => unreachable!("block.insns should not have Insn::Param"),
@@ -774,6 +775,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::GuardBitEquals { val, expected, ref reason, state, recompile } => gen_guard_bit_equals(jit, asm, function, opnd!(val), expected, **reason, recompile, &function.frame_state(state)),
         &Insn::GuardAnyBitSet { val, mask, ref reason, state, recompile, .. } => gen_guard_any_bit_set(jit, asm, function, opnd!(val), mask, **reason, recompile, &function.frame_state(state)),
         &Insn::GuardNoBitsSet { val, mask, ref reason, state, .. } => gen_guard_no_bits_set(jit, asm, function, opnd!(val), mask, **reason, &function.frame_state(state)),
+        &Insn::GuardNotNull { val, ref reason, state } => gen_guard_not_null(jit, asm, function, opnd!(val), **reason, &function.frame_state(state)),
         &Insn::GuardLess { left, right, ref reason, state } => gen_guard_less(jit, asm, function, opnd!(left), opnd!(right), **reason, &function.frame_state(state)),
         &Insn::GuardGreaterEq { left, right, state, .. } => gen_guard_greater_eq(jit, asm, function, opnd!(left), opnd!(right), &function.frame_state(state)),
         Insn::PatchPoint { invariant, state } => no_output!(gen_patch_point(jit, asm, function, invariant, &function.frame_state(*state))),
@@ -3349,6 +3351,12 @@ fn gen_guard_no_bits_set(jit: &mut JITState, asm: &mut Assembler, function: &Fun
     val
 }
 
+fn gen_guard_not_null(jit: &mut JITState, asm: &mut Assembler, function: &Function, ptr: lir::Opnd, reason: SideExitReason, state: &FrameState) -> lir::Opnd {
+    asm.cmp(ptr, 0.into());
+    asm.jz(jit, side_exit(jit, function, state, reason));
+    ptr
+}
+
 /// Generate code that records unoptimized C functions if --zjit-stats is enabled
 fn gen_incr_counter_ptr(asm: &mut Assembler, counter_ptr: *mut u64) {
     if get_option!(stats) {
@@ -4371,6 +4379,31 @@ fn gen_string_append(jit: &mut JITState, asm: &mut Assembler, function: &Functio
 fn gen_string_append_codepoint(jit: &mut JITState, asm: &mut Assembler, function: &Function, string: Opnd, val: Opnd, state: &FrameState) -> Opnd {
     gen_prepare_non_leaf_call(jit, asm, function, state);
     asm_ccall!(asm, rb_jit_str_concat_codepoint, string, val)
+}
+
+fn gen_load_fixnum(asm: &mut Assembler, ptr: Opnd, num_bytes: usize, byteswap: bool) -> Opnd {
+    let num_bits = (num_bytes * 8) as u8;
+    let value = asm.load(Opnd::mem(num_bits, ptr, 0));
+
+    let value = if byteswap {
+        asm.byteswap(value.with_num_bits(num_bits))
+    } else {
+        value
+    };
+
+    // x86 loads and swaps narrower than 32 bits leave the rest of the register
+    // alone, so mask before tagging.
+    let value = value.with_num_bits(64);
+    let value = match num_bits {
+        8 => asm.and(value, 0xFF.into()),
+        16 => asm.and(value, 0xFFFF.into()),
+        32 => value,
+        bits => unreachable!("Invalid number of bits. {}", bits)
+    };
+
+    // Tag the value
+    let value = asm.lshift(value, Opnd::UImm(1));
+    asm.or(value, Opnd::UImm(RUBY_FIXNUM_FLAG as u64))
 }
 
 /// Generate a JIT entry that just increments exit_compilation_failure and exits
