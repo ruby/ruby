@@ -2877,7 +2877,7 @@ rb_method_definition_eq(const rb_method_definition_t *d1, const rb_method_defini
       case VM_METHOD_TYPE_IVAR:
         return d1->body.attr.id == d2->body.attr.id;
       case VM_METHOD_TYPE_BMETHOD:
-        return RTEST(rb_equal(d1->body.bmethod.proc, d2->body.bmethod.proc));
+        return RTEST(rb_proc_eq(d1->body.bmethod.proc, d2->body.bmethod.proc));
       case VM_METHOD_TYPE_MISSING:
         return d1->original_id == d2->original_id;
       case VM_METHOD_TYPE_ZSUPER:
