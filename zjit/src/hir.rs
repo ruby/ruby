@@ -6919,6 +6919,12 @@ impl Function {
                             _ => insn_id,
                         }
                     }
+                    &Insn::IsBitEqual { left, right } => {
+                        match (self.type_of(left).cshape_value(), self.type_of(right).cshape_value()) {
+                            (Some(l), Some(r)) => self.new_insn(Insn::Const { val: Const::CBool(l == r) }),
+                            _ => insn_id,
+                        }
+                    }
                     &Insn::WriteBarrier { val, .. } if self.is_a(val, types::Immediate) => {
                         // The write barrier does nothing for immediates.
                         continue;

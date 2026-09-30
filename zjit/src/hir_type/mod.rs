@@ -494,6 +494,13 @@ impl Type {
         }
     }
 
+    pub fn cshape_value(&self) -> Option<crate::cruby::ShapeId> {
+        match (self.is_subtype(types::CShape), self.spec()) {
+            (true, Specialization::Int(val)) => Some(crate::cruby::ShapeId(val as u32)),
+            _ => None,
+        }
+    }
+
     pub fn cint64_value(&self) -> Option<i64> {
         match (self.is_subtype(types::CInt64), self.spec()) {
             (true, Specialization::Int(val)) => Some(val as i64),

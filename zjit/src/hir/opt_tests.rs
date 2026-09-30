@@ -20272,18 +20272,11 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(Box@0x1010)
           PatchPoint MethodRedefined(Box@0x1010, x@0x1018, cme:0x1020)
           PushInlineFrame :x, v11 (0x1048), num_args=0
-          v48:CShape[0x1068] = Const CShape(0x1068)
-          v31:CShape[0x1068] = Const CShape(0x1068)
-          v32:CBool = IsBitEqual v48, v31
-          CondBranch v32, bb7(), bb8()
-        bb7():
-          v34:IMemo = LoadField v11, :fields_obj@0x1069
-          v35:BasicObject = LoadField v34, :@x@0x1069
+          v34:IMemo = LoadField v11, :fields_obj@0x1068
+          v35:BasicObject = LoadField v34, :@x@0x1068
           PopInlineFrame
           CheckInterrupts
           Return v35
-        bb8():
-          SideExit GuardShape(0x106a) recompile
         ");
     }
 
@@ -20325,18 +20318,9 @@ mod hir_opt_tests {
           v11:ObjectSubclass[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           PatchPoint NoSingletonClass(Pt@0x1010)
           PatchPoint MethodRedefined(Pt@0x1010, x@0x1018, cme:0x1020)
-          PushInlineFrame :x, v11 (0x1048), num_args=0
-          v47:CShape[0x1068] = Const CShape(0x1068)
-          v31:CShape[0x1068] = Const CShape(0x1068)
-          v32:CBool = IsBitEqual v47, v31
-          CondBranch v32, bb7(), bb8()
-        bb7():
-          v48:Fixnum[3] = Const Value(3)
-          PopInlineFrame
+          v50:Fixnum[3] = Const Value(3)
           CheckInterrupts
-          Return v48
-        bb8():
-          SideExit GuardShape(0x1069) recompile
+          Return v50
         ");
     }
 
