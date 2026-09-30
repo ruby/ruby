@@ -1884,10 +1884,10 @@ mod hir_opt_tests {
           v20:ObjectSubclass[class_exact*:Object@VALUE(0x1000)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1000)] recompile
           PushInlineFrame :m, v20 (0x1038), num_args=1
           PatchPoint MethodRedefined(NilClass@0x1058, nil?@0x1060, cme:0x1068)
-          v80:Fixnum[0] = Const Value(0)
+          v79:Fixnum[0] = Const Value(0)
           PopInlineFrame
           CheckInterrupts
-          Return v80
+          Return v79
         ");
     }
 
@@ -1974,39 +1974,9 @@ mod hir_opt_tests {
           v40:NilClass = Const Value(nil)
           PatchPoint MethodRedefined(NilClass@0x1070, ==@0x1078, cme:0x1080)
           v173:NilClass = GuardType v16, NilClass recompile
-          v174:CBool = IsBitEqual v173, v40
-          CondBranch v174, bb6(), bb12()
-        bb12():
-          v51:StringExact[VALUE(0x10a8)] = Const Value(VALUE(0x10a8))
-          v52:StringExact = StringCopy v51
-          PatchPoint NoSingletonClass(String@0x10b0)
-          PatchPoint MethodRedefined(String@0x10b0, ==@0x1078, cme:0x10b8)
-          v179 = GuardType v173, StringExact recompile
-          v180:BoolExact = StringEqual v179, v52
-          v57:CBool = Test v180
-          CondBranch v57, bb6(), bb13()
-        bb13():
-          v63:StringExact[VALUE(0x10e0)] = Const Value(VALUE(0x10e0))
-          v64:StringExact = StringCopy v63
-          PatchPoint NoSingletonClass(String@0x10b0)
-          PatchPoint MethodRedefined(String@0x10b0, ==@0x1078, cme:0x10b8)
-          v184 = GuardType v173, StringExact recompile
-          v185:BoolExact = StringEqual v184, v64
-          v69:CBool = Test v185
-          CondBranch v69, bb6(), bb14()
-        bb6():
-          v133:StaticSymbol[:ok] = Const Value(VALUE(0x10e8))
+          v133:StaticSymbol[:ok] = Const Value(VALUE(0x10a8))
           CheckInterrupts
           Return v133
-        bb14():
-          v76:NilClass = Const Value(nil)
-          PatchPoint StableConstantNames(0x10f0, ArgumentError)
-          v79:ClassSubclass[ArgumentError@0x10f8] = Const Value(VALUE(0x10f8))
-          v81:StringExact[VALUE(0x1100)] = Const Value(VALUE(0x1100))
-          PatchPoint NoEPEscape(open_uri)
-          PatchPoint NoSingletonClass(String@0x10b0)
-          v88 = GuardType v173, String
-          Unreachable
         ");
     }
 
@@ -18020,11 +17990,7 @@ mod hir_opt_tests {
           PushInlineFrame :bar, v18 (0x1060), num_args=2
           PatchPoint NoSingletonClass(String@0x1080)
           PatchPoint MethodRedefined(String@0x1080, ==@0x1088, cme:0x1090)
-          v109 = GuardType v50, String
-          v110:BoolExact = StringEqual v48, v109
-          PopInlineFrame
-          CheckInterrupts
-          Return v110
+          SideExit GuardType(String)
         ");
     }
 
@@ -20035,6 +20001,101 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_no_fold_load_field_other_shape() {
+        // Profile an ivar read with an object with embedded ivars, and inline it with a constant with extended ivars.
+        // LoadField for embedded ivars should not be folded from the constant with extended ivars.
+        eval(r#"
+            class TestOtherShape
+              def initialize(n)
+                n.times { |i| instance_variable_set(:"@a#{i}", i) }
+                @v = :v
+                freeze
+              end
+
+              def v = @v
+            end
+
+            EMBEDDED_OBJ = TestOtherShape.new(0)
+            EXTENDED_OBJ = TestOtherShape.new(20)
+            EMBEDDED_OBJ.v
+
+            def test = EXTENDED_OBJ.v
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:16:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint StableConstantNames(0x1000, EXTENDED_OBJ)
+          v11:ObjectSubclass[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          PatchPoint NoSingletonClass(TestOtherShape@0x1010)
+          PatchPoint MethodRedefined(TestOtherShape@0x1010, v@0x1018, cme:0x1020)
+          PushInlineFrame :v, v11 (0x1048), num_args=0
+          v34:IMemo = LoadField v11, :fields_obj@0x1068
+          v35:BasicObject = LoadField v34, :@v@0x1069
+          PopInlineFrame
+          CheckInterrupts
+          Return v35
+        ");
+    }
+
+    #[test]
+    fn test_no_fold_load_field_other_shape_in_later_bucket() {
+        // Like the test above, but the constant's shape is not the most frequent one in the profile
+        // of the inlined reader, so the dispatch first branches on IsBitEqual with another shape.
+        // Folding that IsBitEqual makes the block for the other shape unreachable.
+        set_call_threshold(4);
+        eval(r#"
+            class TestOtherShapeLater
+              def initialize(n)
+                n.times { |i| instance_variable_set(:"@a#{i}", i) }
+                @v = :v
+                freeze
+              end
+
+              def v = @v
+            end
+
+            EMBEDDED_A = TestOtherShapeLater.new(0)
+            EMBEDDED_B = TestOtherShapeLater.new(1)
+            EXTENDED_C = TestOtherShapeLater.new(20)
+            EMBEDDED_A.v; EMBEDDED_A.v; EMBEDDED_B.v
+
+            def test = EXTENDED_C.v
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:17:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint StableConstantNames(0x1000, EXTENDED_C)
+          v11:ObjectSubclass[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          PatchPoint NoSingletonClass(TestOtherShapeLater@0x1010)
+          PatchPoint MethodRedefined(TestOtherShapeLater@0x1010, v@0x1018, cme:0x1020)
+          PushInlineFrame :v, v11 (0x1048), num_args=0
+          v43:IMemo = LoadField v11, :fields_obj@0x1068
+          v44:BasicObject = LoadField v43, :@v@0x1069
+          PopInlineFrame
+          CheckInterrupts
+          Return v44
+        ");
+    }
+
+    #[test]
     fn test_fold_load_field_frozen_with_attr_reader() {
         // Using attr_reader instead of attr_accessor
         eval("
@@ -21403,11 +21464,11 @@ mod hir_opt_tests {
           PatchPoint StableConstantNames(0x1068, Integer)
           v31:ClassSubclass[Integer@0x1070] = Const Value(VALUE(0x1070))
           PatchPoint MethodRedefined(Class@0x1078, ==@0x1080, cme:0x1088)
-          v76:CBool = IsBitEqual v12, v31
-          v77:BoolExact = BoxBool v76
+          v74:CBool[false] = Const CBool(false)
+          v73:BoolExact = BoxBool v74
           PopInlineFrame
           CheckInterrupts
-          Return v77
+          Return v73
         ");
     }
 
