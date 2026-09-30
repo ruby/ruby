@@ -30,11 +30,11 @@ impl JITFrameAllocator {
     /// Reserve the arena's address space, or return None when the platform cannot
     /// provide low memory.
     pub fn new() -> Option<Self> {
-        // A tenth of --zjit-mem-size is reserved, not mapped: physical pages are
-        // mapped in one at a time as the bump cursor crosses into them. lobsters
-        // allocates up to 4MiB of JITFrames, well below the 12.8MiB default.
+        // A quarter of --zjit-mem-size is reserved, not mapped: physical pages are
+        // mapped in one at a time as the bump cursor crosses into them. We pick this
+        // ratio emperically by running against ruby-bench.
         Some(JITFrameAllocator {
-            virt_mem: VirtualMem::alloc_low(get_option!(mem_bytes) / 10)?,
+            virt_mem: VirtualMem::alloc_low(get_option!(mem_bytes) / 4)?,
             cursor: 0,
         })
     }
