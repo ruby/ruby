@@ -343,6 +343,25 @@ mod tests {
         "#), @r#""Object#test""#);
     }
 
+    // A fallback send hands the receiver and arguments to a VM helper that pushes the
+    // callee's frame over those same slots and drops this frame's cfp->sp below them
+    // (vm_call_cfunc_with_frame_(), vm_call_iseq_setup_normal()). Here define_method
+    // turns the literal block into a Proc, which escapes the calling block's env and
+    // materializes it while the define_method frame is still live, so this frame's
+    // stack map has to skip its operand stack rather than write it back over that
+    // frame. See gen_prepare_fallback_call(); on a build with RUBY_DEBUG this dies in
+    // zjit_check_owned_slot() without the skip.
+    #[test]
+    fn test_fallback_send_does_not_write_over_callee_frame() {
+        assert_snapshot!(inspect(r#"
+            def go(i)
+              Class.new { define_method(:m) { i } }
+            end
+            4.times { |i| go(i) }
+            go(99).new.m
+        "#), @"99");
+    }
+
     // A send fallback may throw (e.g. via method_missing raising). The
     // interpreter must be able to find the correct rescue handler in the
     // caller's ISEQ catch table. This exercises throw through send fallback.
@@ -403,6 +422,32 @@ mod tests {
             test.outer
             test.outer
         "#), @"[1, nil]");
+    }
+
+    // vm_make_env_each() spills through the same decoder, so an escaping env in
+    // an inlined frame decodes a map that spans three control frames and crosses
+    // two StackMapEntry::PrevFrame boundaries. Unlike the raise-based tests in
+    // codegen_tests.rs, nothing unwinds here: `keep` has to survive in the
+    // caller frame that the map also describes.
+    #[test]
+    fn test_stack_map_spill_across_inlined_frames() {
+        assert_snapshot!(inspect("
+            def leaf(escape)
+              proc { } if escape # escapes only this frame's env
+              escape ? 2 : 1
+            end
+
+            def middle(n)
+              keep = n + 40
+              keep + leaf(n > 0)
+            end
+
+            def outer(n) = middle(n)
+
+            outer(0)
+            outer(0)
+            [outer(1), outer(0)]
+        "), @"[43, 41]");
     }
 
     // Proc.new inside a block passed via invokeblock captures the caller's
