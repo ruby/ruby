@@ -1776,8 +1776,7 @@ fn gen_opt_plus(
         // Add arg0 + arg1 and test for overflow
         let arg0_untag = asm.sub(arg0, Opnd::Imm(1));
         let out_val = asm.add(arg0_untag, arg1);
-        asm.jo(Target::side_exit(Counter::opt_plus_overflow));
-        asm.guard_fixnum_fits_long(out_val, Counter::opt_plus_overflow);
+        asm.guard_fixnum_overflow(out_val, Counter::opt_plus_overflow);
 
         // Push the output on the stack
         let dst = asm.stack_push(Type::Fixnum);
@@ -4135,9 +4134,8 @@ fn gen_opt_minus(
 
         // Subtract arg0 - arg1 and test for overflow
         let val_untag = asm.sub(arg0, arg1);
-        asm.jo(Target::side_exit(Counter::opt_minus_overflow));
+        asm.guard_fixnum_overflow(val_untag, Counter::opt_minus_overflow);
         let val = asm.add(val_untag, Opnd::Imm(1));
-        asm.guard_fixnum_fits_long(val, Counter::opt_minus_overflow);
 
         // Push the output on the stack
         let dst = asm.stack_push(Type::Fixnum);
@@ -4179,11 +4177,10 @@ fn gen_opt_mult(
         let arg0_untag = asm.rshift(arg0, Opnd::UImm(1));
         let arg1_untag = asm.sub(arg1, Opnd::UImm(1));
         let out_val = asm.mul(arg0_untag, arg1_untag);
-        jit_chain_guard(JCC_JO_MUL, jit, asm, 1, Counter::opt_mult_overflow);
+        // See guard_fixnum_overflow
+        let jcc = if asm.cmp_fixnum_fits_long(out_val) { JCC_JNE } else { JCC_JO_MUL };
+        jit_chain_guard(jcc, jit, asm, 1, Counter::opt_mult_overflow);
         let out_val = asm.add(out_val, Opnd::UImm(1));
-        if asm.cmp_fixnum_fits_long(out_val) {
-            jit_chain_guard(JCC_JNE, jit, asm, 1, Counter::opt_mult_overflow);
-        }
 
         // Push the output on the stack
         let dst = asm.stack_push(Type::Fixnum);
@@ -5482,8 +5479,7 @@ fn jit_rb_int_succ(
 
     asm_comment!(asm, "Integer#succ");
     let out_val = asm.add(recv, Opnd::Imm(2)); // 2 is untagged Fixnum 1
-    asm.jo(Target::side_exit(Counter::opt_succ_overflow));
-    asm.guard_fixnum_fits_long(out_val, Counter::opt_succ_overflow);
+    asm.guard_fixnum_overflow(out_val, Counter::opt_succ_overflow);
 
     // Push the output onto the stack
     let dst = asm.stack_push(Type::Fixnum);
@@ -5512,8 +5508,7 @@ fn jit_rb_int_pred(
 
     asm_comment!(asm, "Integer#pred");
     let out_val = asm.sub(recv, Opnd::Imm(2)); // 2 is untagged Fixnum 1
-    asm.jo(Target::side_exit(Counter::send_pred_underflow));
-    asm.guard_fixnum_fits_long(out_val, Counter::send_pred_underflow);
+    asm.guard_fixnum_overflow(out_val, Counter::send_pred_underflow);
 
     // Push the output onto the stack
     let dst = asm.stack_push(Type::Fixnum);
@@ -7353,17 +7348,28 @@ fn get_array_len(asm: &mut Assembler, array_opnd: Opnd) -> Opnd {
 }
 
 impl Assembler {
+    /// Side-exit when the arithmetic that produced `val` overflowed the Fixnum range. Where long is
+    /// 64-bit, the overflow flag decides. On LLP64 (Windows), Fixnum operands fit in 32 bits, so the
+    /// 64-bit arithmetic never overflows and only the range check in cmp_fixnum_fits_long is needed.
+    fn guard_fixnum_overflow(&mut self, val: Opnd, counter: Counter) {
+        if self.cmp_fixnum_fits_long(val) {
+            self.jne(Target::side_exit(counter));
+        } else {
+            self.jo(Target::side_exit(counter));
+        }
+    }
+
     /// Side-exit unless a tagged Fixnum result fits in a C long. See cmp_fixnum_fits_long.
-    /// It exits the way each insn's 64-bit overflow check does, and only opt_mult chains to send.
     fn guard_fixnum_fits_long(&mut self, val: Opnd, counter: Counter) {
         if self.cmp_fixnum_fits_long(val) {
             self.jne(Target::side_exit(counter));
         }
     }
 
-    /// Compare a tagged Fixnum result with its sign-extended low 32 bits, which differ when it does
-    /// not fit in a C long. long is 32-bit on LLP64 (Windows), where a result that did not overflow
-    /// 64 bits can still be out of the Fixnum range. Emits nothing and returns false otherwise.
+    /// Compare a tagged Fixnum result, or the result minus one, with its sign-extended low 32 bits,
+    /// which differ when the result does not fit in a C long. long is 32-bit on LLP64 (Windows),
+    /// where a result that did not overflow 64 bits can still be out of the Fixnum range. Emits
+    /// nothing and returns false otherwise.
     fn cmp_fixnum_fits_long(&mut self, val: Opnd) -> bool {
         if std::os::raw::c_long::BITS < 64 {
             let sext = self.load_sext(val.with_num_bits(32).unwrap());
