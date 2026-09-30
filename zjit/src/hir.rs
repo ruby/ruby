@@ -1083,6 +1083,10 @@ pub enum Insn {
     Test { val: InsnId },
     /// Return C `true` if `val`'s method on cd resolves to the cfunc.
     IsMethodCfunc { val: InsnId, cd: *const rb_call_data, cfunc: *const u8, state: InsnId },
+    /// Return Qtrue if opt_branch_andop/opt_branch_orop on cd jumps for `val`, checking for hooks.
+    LogopBranch { val: InsnId, cd: *const rb_call_data, state: InsnId },
+    /// Return the result of opt_logop on cd without calling a hook; side-exit if a hook applies.
+    Logop { recv: InsnId, obj: InsnId, cd: *const rb_call_data, state: InsnId },
     /// Return C `true` if left == right
     IsBitEqual { left: InsnId, right: InsnId },
     /// Return C `true` if left != right
@@ -1496,6 +1500,7 @@ macro_rules! for_each_operand_impl {
             | Insn::GuardNoBitsSet { val, state, .. }
             | Insn::ToArray { val, state }
             | Insn::IsMethodCfunc { val, state, .. }
+            | Insn::LogopBranch { val, state, .. }
             | Insn::ToNewArray { val, state }
             | Insn::SetLocal { val, state, .. }
             | Insn::BoxFixnum { val, state } => {
@@ -1535,6 +1540,11 @@ macro_rules! for_each_operand_impl {
             }
             Insn::FloatToInt { recv, state } => {
                 $visit_one!(*recv);
+                $visit_one!(*state);
+            }
+            Insn::Logop { recv, obj, state, .. } => {
+                $visit_one!(*recv);
+                $visit_one!(*obj);
                 $visit_one!(*state);
             }
             Insn::FixnumLt { left, right }
@@ -1836,6 +1846,8 @@ impl Insn {
             Insn::ObjectAllocClass { .. } => allocates,
             Insn::Test { .. } => effects::Empty,
             Insn::IsMethodCfunc { .. } => effects::Any,
+            Insn::LogopBranch { .. } => effects::Any,
+            Insn::Logop { .. } => effects::Any,
             Insn::IsBitEqual { .. } => effects::Empty,
             Insn::IsBitNotEqual { .. } => effects::Empty,
             Insn::BoxBool { .. } => effects::Empty,
@@ -2232,6 +2244,8 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             }
             Insn::Test { val } => { write!(f, "Test {val}") }
             Insn::IsMethodCfunc { val, cd, .. } => { write!(f, "IsMethodCFunc {val}, :{}", ruby_call_method_name(*cd)) }
+            Insn::LogopBranch { val, cd, .. } => { write!(f, "LogopBranch {val}, :{}", ruby_call_method_name(*cd)) }
+            Insn::Logop { recv, obj, cd, .. } => { write!(f, "Logop {recv}, :{}, {obj}", ruby_call_method_name(*cd)) }
             Insn::IsBitEqual { left, right } => write!(f, "IsBitEqual {left}, {right}"),
             Insn::IsBitNotEqual { left, right } => write!(f, "IsBitNotEqual {left}, {right}"),
             Insn::BoxBool { val } => write!(f, "BoxBool {val}"),
@@ -3725,6 +3739,8 @@ impl Function {
             Insn::Test { val } if self.type_of(*val).is_known_truthy() => Type::from_cbool(true),
             Insn::Test { .. } => types::CBool,
             Insn::IsMethodCfunc { .. } => types::CBool,
+            Insn::LogopBranch { .. } => types::BoolExact,
+            Insn::Logop { .. } => types::BasicObject,
             Insn::IsBitEqual { .. } => types::CBool,
             Insn::IsBitNotEqual { .. } => types::CBool,
             Insn::BoxBool { .. } => types::BoolExact,
@@ -8016,6 +8032,7 @@ impl Function {
             // Instructions with 1 Ruby object operand
             Insn::Test { val }
             | Insn::IsMethodCfunc { val, .. }
+            | Insn::LogopBranch { val, .. }
             | Insn::SetGlobal { val, .. }
             | Insn::SetLocal { val, .. }
             | Insn::SetClassVar { val, .. }
@@ -8037,6 +8054,7 @@ impl Function {
             Insn::SetIvar { self_val: left, val: right, .. }
             | Insn::NewRange { low: left, high: right, .. }
             | Insn::CheckMatch { target: left, pattern: right, .. }
+            | Insn::Logop { recv: left, obj: right, .. }
             | Insn::WriteBarrier { recv: left, val: right } => {
                 self.assert_subtype(insn_id, left, types::RubyValue)?;
                 self.assert_subtype(insn_id, right, types::RubyValue)
@@ -9081,8 +9099,8 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 }
 
 /// Dispatch `val` on its profiled classes whose lookup can't reach a hook, returning each arm with
-/// the class's truthiness. Other values side-exit, so no arms means the block has ended.
-fn logop_dispatch_unhooked(fun: &mut Function, profiles: &ProfileOracle, iseq: IseqPtr, insn_idx: u32, block: BlockId, val: InsnId, mid: ID, state: InsnId) -> Vec<(BlockId, bool)> {
+/// the class's truthiness; other values go to the returned fallback block, or side-exit if unprofiled.
+fn logop_dispatch_unhooked(fun: &mut Function, profiles: &ProfileOracle, iseq: IseqPtr, insn_idx: u32, block: BlockId, val: InsnId, mid: ID, state: InsnId) -> (Vec<(BlockId, bool)>, Option<BlockId>) {
     let val_id = fun.chase_insn(val);
     let summary = profiles.get(state).and_then(|entries| entries.iter().find(|(insn, _)| fun.chase_insn(*insn) == val_id)).map(|(_, summary)| summary);
 
@@ -9127,14 +9145,17 @@ fn logop_dispatch_unhooked(fun: &mut Function, profiles: &ProfileOracle, iseq: I
         block = next;
     }
 
-    let recompile = if summary.is_none() && get_or_create_iseq_payload(iseq).versions.len() + 1 < crate::codegen::max_iseq_versions() {
+    if summary.is_some() {
+        return (arms, Some(block));
+    }
+    let recompile = if get_or_create_iseq_payload(iseq).versions.len() + 1 < crate::codegen::max_iseq_versions() {
         Some(Recompile)
     } else {
         None
     };
     let reason = SideExitReason::PatchPoint(Invariant::BOPRedefined { klass: ANY_REDEFINED_OP_FLAG, bop: BOP_LOGOP });
     fun.push_insn(block, Insn::SideExit { state, reason: Box::new(reason), recompile });
-    arms
+    (arms, None)
 }
 
 /// Populate `fun` with HIR translated from `iseq`. Used both for top-level
@@ -9887,11 +9908,22 @@ fn add_iseq_to_hir(
                     if !fun.assume_bop_not_redefined(block, ANY_REDEFINED_OP_FLAG, BOP_LOGOP, exit_id) {
                         let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
                         let mid = unsafe { rb_vm_ci_mid((*cd).ci) };
-                        let arms = logop_dispatch_unhooked(fun, &profiles, iseq, insn_idx, block, val, mid, exit_id);
+                        let (arms, fallback) = logop_dispatch_unhooked(fun, &profiles, iseq, insn_idx, block, val, mid, exit_id);
                         let mut jump_state = state.clone();
                         if pops { jump_state.stack_pop()?; }
                         let mut fall_through = None;
                         let mut jumps = false;
+                        if let Some(fallback) = fallback {
+                            let fall_through = *fall_through.insert(fun.new_block(insn_idx));
+                            let jump = fun.push_insn(fallback, Insn::LogopBranch { val, cd, state: exit_id });
+                            let test_id = fun.push_insn(fallback, Insn::Test { val: jump });
+                            fun.push_insn(fallback, Insn::CondBranch {
+                                val: test_id,
+                                if_true: BranchEdge { target, args: jump_state.as_args(self_param) },
+                                if_false: BranchEdge { target: fall_through, args: vec![] },
+                            });
+                            jumps = true;
+                        }
                         for (arm, truthy) in arms {
                             if truthy == jump_if_truthy {
                                 fun.push_insn(arm, Insn::Jump(BranchEdge { target, args: jump_state.as_args(self_param) }));
@@ -9948,14 +9980,18 @@ fn add_iseq_to_hir(
                         let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
                         let mid = unsafe { rb_vm_ci_mid((*cd).ci) };
                         let recv = state.stack_topn(1)?;
-                        let arms = logop_dispatch_unhooked(fun, &profiles, iseq, insn_idx, block, recv, mid, exit_id);
-                        if arms.is_empty() {
+                        let (arms, fallback) = logop_dispatch_unhooked(fun, &profiles, iseq, insn_idx, block, recv, mid, exit_id);
+                        if arms.is_empty() && fallback.is_none() {
                             break;  // End the block
                         }
                         let obj = state.stack_pop()?;
                         let recv = state.stack_pop()?;
                         let join = fun.new_block(insn_idx);
                         let join_param = fun.push_insn(join, Insn::Param);
+                        if let Some(fallback) = fallback {
+                            let result = fun.push_insn(fallback, Insn::Logop { recv, obj, cd, state: exit_id });
+                            fun.push_insn(fallback, Insn::Jump(BranchEdge { target: join, args: vec![result] }));
+                        }
                         for (arm, truthy) in arms {
                             // A falsy LHS of && or truthy LHS of || gets here if its hook was
                             // removed while the RHS was evaluated.

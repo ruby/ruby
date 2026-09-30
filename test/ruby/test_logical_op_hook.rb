@@ -186,6 +186,41 @@ class TestLogicalOpHook
     end
   end
 
+  def test_megamorphic_site
+    jit_opts = [[]]
+    jit_opts << %w[--yjit-call-threshold=2] if defined?(RubyVM::YJIT)
+    jit_opts << %w[--zjit-call-threshold=2] if defined?(RubyVM::ZJIT)
+    jit_opts.each do |opts|
+      assert_separately(opts, <<~'RUBY')
+        Node = Struct.new(:x)
+        module Ext
+          refine(Node) do
+            def &&(o) = [:and, o]
+            def ||(o) = [:or, o]
+          end
+        end
+        using Ext
+        def and_op(a) = a && :b
+        def or_op(a) = a || :b
+        def cond(a, b = 1) = (a && b) ? :then : :else
+        values = [1, "s", :sym, 1.0, [], {}, Object.new, 1..2, true, false, nil, Node.new(1)]
+        5.times do
+          values.each do |a|
+            if a.is_a?(Node)
+              assert_equal([:and, :b], and_op(a))
+              assert_equal([:or, :b], or_op(a))
+              assert_equal(:then, cond(a))
+            else
+              assert_same((a ? :b : a), and_op(a))
+              assert_same((a ? a : :b), or_op(a))
+              assert_equal((a ? :then : :else), cond(a))
+            end
+          end
+        end
+      RUBY
+    end
+  end
+
   def test_hook_removed_while_evaluating_rhs
     jit_opts = [[]]
     jit_opts << %w[--yjit-call-threshold=1] if defined?(RubyVM::YJIT)
