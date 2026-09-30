@@ -807,12 +807,11 @@ ractor_monitor(rb_execution_context_t *ec, VALUE self, VALUE port)
     if (terminated) {
         SIZED_FREE(rm);
         ractor_send_basket(ec, rp, ractor_basket_new_exit(self, ractor_exit_token(r)), false);
+    }
+    /* rp points into port, which is embedded and may be referenced only from here */
+    RB_GC_GUARD(port);
 
-        return Qfalse;
-    }
-    else {
-        return Qtrue;
-    }
+    return terminated ? Qfalse : Qtrue;
 }
 
 static VALUE
