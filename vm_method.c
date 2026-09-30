@@ -829,7 +829,11 @@ rb_vm_insert_cc_refinement(const struct rb_callcache *cc)
         struct cc_refinement_entries *e = RTYPEDDATA_GET_DATA(vm->cc_refinement_set);
         if (e->len == e->capa) {
             size_t new_capa = e->capa == 0 ? 16 : e->capa * 2;
-            SIZED_REALLOC_N(e->entries, VALUE, new_capa, e->capa);
+            VALUE *entries = e->entries;
+            SIZED_REALLOC_N(entries, VALUE, new_capa, e->capa);
+            /* The realloc may run a compacting GC, which moves the embedded entries. */
+            e = RTYPEDDATA_GET_DATA(vm->cc_refinement_set);
+            e->entries = entries;
             e->capa = new_capa;
         }
         e->entries[e->len++] = (VALUE)cc;
