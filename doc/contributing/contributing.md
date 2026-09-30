@@ -20,6 +20,7 @@ Then:
 
 And possibly:
 
+* [Debug Ruby](debugging_ruby.md).
 * [Benchmark Ruby](https://github.com/ruby/ruby/tree/master/benchmark#make-benchmark).
 
 ## Ruby Documentation
