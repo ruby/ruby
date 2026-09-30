@@ -7196,9 +7196,10 @@ pm_compile_logical_chain(rb_iseq_t *iseq, size_t size, const pm_node_t **nodes, 
             .node_id = nodes[index]->node_id
         };
 
-        ADD_ELEM(ret, &new_insn_logop_branch(iseq, operator_location.line, operator_location.node_id, mid, end_label)->link);
+        INSN *branch = new_insn_logop_branch(iseq, operator_location.line, operator_location.node_id, mid, end_label);
+        ADD_ELEM(ret, &branch->link);
         PM_COMPILE_NOT_POPPED(nodes[index + 1]);
-        ADD_ELEM(ret, &new_insn_logop(iseq, operator_location.line, operator_location.node_id, mid)->link);
+        ADD_ELEM(ret, &new_insn_logop(iseq, operator_location.line, operator_location.node_id, branch)->link);
     }
 
     PUSH_LABEL(ret, end_label);
