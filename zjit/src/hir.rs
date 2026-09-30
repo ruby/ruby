@@ -8693,13 +8693,14 @@ fn spill_locals_for_block(
         return exit_id;
     }
     let spilled = block_accessed_local_set(exit_state.iseq, blockiseq, exit_state.locals.len(), ep_escaped);
-    let Some(snapshot) = fun.spill_locals(block, exit_state, spilled, ep_escaped) else {
-        return exit_id;
-    };
-    // Profiles are keyed by `Snapshot`, and only `exit_id` gets entries from `profile_stack()`.
-    // Copy them over so the call can still specialize on its profiled receiver and arguments.
-    profiles.copy_entries(exit_id, snapshot);
-    snapshot
+    if let Some(snapshot) = fun.spill_locals(block, exit_state, spilled, ep_escaped) {
+        // Profiles are keyed by `Snapshot`, and only `exit_id` gets entries from `profile_stack()`.
+        // Copy them over so the call can still specialize on its profiled receiver and arguments.
+        profiles.copy_entries(exit_id, snapshot);
+        snapshot
+    } else {
+        exit_id
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -10541,11 +10542,15 @@ fn add_iseq_to_hir(
                                 if_false: BranchEdge { target: fall_through, args: vec![] }
                             })));
                             block = fall_through;
+                            let mut snapshot = spill_locals_for_block(fun, &mut profiles, iftrue_block, blockiseq, &exit_state, exit_id, ep_escaped);
                             // Take a fresh Snapshot rather than
                             // reusing exit_id so type specialization resolves the receiver from
                             // its refined, exact type instead of the polymorphic profile that is
                             // keyed at exit_id.
-                            let snapshot = spill_locals_for_block(fun, &mut profiles, iftrue_block, blockiseq, &exit_state, exit_id, ep_escaped);
+                            if snapshot == exit_id {
+                                snapshot = fun.push_insn(iftrue_block, Insn::Snapshot { state: Box::new(exit_state.clone()) });
+                            }
+
                             // Keep the other operands' profile entries visible at the fresh
                             // Snapshot so the specialized send can still see argument profiles
                             // (e.g. Array#[] needs a Fixnum-profiled index to be inlined). Only
