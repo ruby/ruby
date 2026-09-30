@@ -26974,8 +26974,8 @@ mod hir_opt_tests {
           v81:Fixnum[42] = Const Value(42)
           Jump bb14(v81)
         bb18():
-          v63:BasicObject = Send v12, &block, :foo, v18 # SendFallbackReason: Send: polymorphic fallback
-          Jump bb14(v63)
+          v65:BasicObject = Send v12, &block, :foo, v18 # SendFallbackReason: Send: polymorphic fallback
+          Jump bb14(v65)
         bb14(v54:BasicObject):
           PatchPoint NoEPEscape(test)
           CheckInterrupts
