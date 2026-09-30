@@ -1354,6 +1354,8 @@ monitor_enter0(struct monitor_args *args)
         args->mc->count = 0;
     }
     args->mc->count++;
+    /* mc is embedded in the monitor, which nothing else keeps on the stack while the lock blocks */
+    RB_GC_GUARD(args->monitor);
 }
 
 static VALUE
