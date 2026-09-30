@@ -892,12 +892,17 @@ ALWAYS_INLINE(static) VALUE ensure_valid_encoding(struct generate_json_data *dat
 
 static void raw_generate_json_string(FBuffer *buffer, struct generate_json_data *data, VALUE obj)
 {
+    VALUE str = obj;
+    if (RB_UNLIKELY(buffer->io)) {
+        // IO writes can mutate the original string while we are reading it.
+        str = rb_str_new_frozen(str);
+    }
     fbuffer_append_char(buffer, '"');
 
     long len;
     search_state search;
     search.buffer = buffer;
-    RSTRING_GETMEM(obj, search.ptr, len);
+    RSTRING_GETMEM(str, search.ptr, len);
     search.cursor = search.ptr;
     search.end = search.ptr + len;
 
@@ -908,7 +913,7 @@ static void raw_generate_json_string(FBuffer *buffer, struct generate_json_data 
     search.chunk_end = NULL;
 #endif /* HAVE_SIMD */
 
-    switch (json_str_coderange(obj)) {
+    switch (json_str_coderange(str)) {
         case ENC_CODERANGE_7BIT:
         case ENC_CODERANGE_VALID:
             if (RB_UNLIKELY(data->state->ascii_only)) {
@@ -924,6 +929,7 @@ static void raw_generate_json_string(FBuffer *buffer, struct generate_json_data 
             break;
     }
     fbuffer_append_char(buffer, '"');
+    RB_GC_GUARD(str);
 }
 
 static void generate_json_string(FBuffer *buffer, struct generate_json_data *data, VALUE obj)

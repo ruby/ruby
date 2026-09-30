@@ -91,6 +91,45 @@ class JSONGeneratorTest < Test::Unit::TestCase
     assert_equal '[1]', io.string
   end
 
+  def test_dump_string_mutated_during_io_write
+    [{}, {ascii_only: true}, {script_safe: true}, {buffer_initial_length: 1}].each do |options|
+      ['a', "a\né/"].each do |pattern|
+        string = pattern * 100_000
+        assert_dump_preserves_string_during_io_write(string, string, options)
+      end
+    end
+  end
+
+  def test_dump_fragment_mutated_during_io_write
+    string = JSON.generate('a' * 100_000)
+    assert_dump_preserves_string_during_io_write(JSON::Fragment.new(string), string)
+  end
+
+  def test_dump_to_json_result_mutated_during_io_write
+    string = JSON.generate('a' * 100_000)
+    object = Object.new
+    object.define_singleton_method(:to_json) { |*| string }
+    assert_dump_preserves_string_during_io_write(object, string)
+  end
+
+  def assert_dump_preserves_string_during_io_write(object, string, options = {})
+    expected = JSON.dump([object], options)
+    io = StringIO.new
+    mutated = false
+    io.define_singleton_method(:write) do |chunk|
+      unless mutated
+        string.setbyte(0, 'b'.ord)
+        string.replace('changed')
+        mutated = true
+        GC.start
+      end
+      super(chunk)
+    end
+    assert_same io, JSON.dump([object], io, options)
+    assert_equal 'changed', string
+    assert_equal true, expected == io.string, 'IO output must preserve the original string'
+  end
+
   def test_not_frozen
     [
       [[], '[]'],
