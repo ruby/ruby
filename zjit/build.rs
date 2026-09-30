@@ -13,6 +13,7 @@ fn main() {
 
         // System libraries that libminiruby needs. Has to be
         // ordered after -lminiruby above.
+        println!("cargo:rerun-if-env-changed=RUBY_LD_FLAGS");
         let link_flags = env::var("RUBY_LD_FLAGS").unwrap();
 
         let mut split_iter = link_flags.split(" ");
