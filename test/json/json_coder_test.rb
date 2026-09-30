@@ -56,6 +56,16 @@ class JSONCoderTest < Test::Unit::TestCase
     assert_equal({a: 1}, coder.load('{"a":1}'))
   end
 
+  def test_json_coder_load_with_on_load_method
+    on_load = ->(value) { Integer === value ? value + 1 : value }.method(:call)
+    coder = JSON::Coder.new(on_load: on_load)
+    assert_equal [2], coder.load('[1]')
+  end
+
+  def test_json_coder_on_load_invalid_type
+    assert_raise(TypeError) { JSON::Coder.new(on_load: 'x') }
+  end
+
   def test_json_coder_dump_NaN_or_Infinity
     coder = JSON::Coder.new { |o| o.inspect }
     assert_equal "NaN", coder.load(coder.dump(Float::NAN))

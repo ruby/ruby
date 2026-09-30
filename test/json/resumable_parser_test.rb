@@ -106,6 +106,14 @@ class JSONResumageParserTest < Test::Unit::TestCase
     end
   end
 
+  def test_on_load_method
+    on_load = ->(value) { Integer === value ? value + 1 : value }.method(:call)
+    parser = new_parser(on_load: on_load)
+    parser << '[1]'
+    assert parser.parse
+    assert_equal [2], parser.value
+  end
+
   def test_parse_document_direct
     @parser << '[true]'
     assert_equal true, @parser.parse

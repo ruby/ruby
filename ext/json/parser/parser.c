@@ -2021,7 +2021,15 @@ static int parser_config_init_i(VALUE key, VALUE val, VALUE data)
     else if (key == sym_allow_invalid_escape)       { config->allow_invalid_escape = RTEST(val); }
     else if (key == sym_symbolize_names)            { config->symbolize_names = RTEST(val); }
     else if (key == sym_freeze)                     { config->freeze = RTEST(val); }
-    else if (key == sym_on_load)                    { parser_config_wb_write(self, &config->on_load_proc, RTEST(val) ? val : Qfalse); }
+    else if (key == sym_on_load)                    {
+        if (RTEST(val) && !rb_obj_is_proc(val)) {
+            val = rb_check_funcall(val, rb_intern("to_proc"), 0, NULL);
+            if (val == Qundef || !rb_obj_is_proc(val)) {
+                rb_raise(rb_eTypeError, "on_load must be a Proc");
+            }
+        }
+        parser_config_wb_write(self, &config->on_load_proc, RTEST(val) ? val : Qfalse);
+    }
     else if (key == sym_allow_duplicate_key)        { config->allow_duplicate_key = RTEST(val); }
     else if (key == sym_decimal_class)              {
         if (RTEST(val)) {
