@@ -1064,29 +1064,14 @@ define print_id
   end
   if $serial && $serial < ruby_global_symbols.next_id
     set $idx = $serial / ID_ENTRY_UNIT
-    set $ids = (struct RArray *)ruby_global_symbols.ids
-    set $flags = $ids->basic.flags
-    if ($flags & RUBY_FL_USER1)
-      set $idsptr = $ids->as.ary
-      set $idslen = (($flags & (RUBY_FL_USER3|RUBY_FL_USER4)) >> (RUBY_FL_USHIFT+3))
-    else
-      set $idsptr = $ids->as.heap.ptr
-      set $idslen = $ids->as.heap.len
-    end
-    if $idx < $idslen
-      set $t = 0
-      set $ary = (struct RArray *)$idsptr[$idx]
-      if $ary != RUBY_Qnil
-        set $flags = $ary->basic.flags
-        if ($flags & RUBY_FL_USER1)
-          set $aryptr = $ary->as.ary
-          set $arylen = (($flags & (RUBY_FL_USER3|RUBY_FL_USER4)) >> (RUBY_FL_USHIFT+3))
-        else
-          set $aryptr = $ary->as.heap.ptr
-          set $arylen = $ary->as.heap.len
-        end
-        set $result = $aryptr[($serial % ID_ENTRY_UNIT) + $t]
-        if $result != RUBY_Qnil
+    set $dir = (struct id_entry_dir *)((struct RTypedData *)ruby_global_symbols.ids)->data
+    if $idx < $dir->capa
+      set $bucket = $dir->entries[$idx]
+      if $bucket
+        # rb_darray(struct sym_id_entry)
+        set $entries = (struct sym_id_entry *)((rb_darray_meta_t *)((struct RTypedData *)$bucket)->data + 1)
+        set $result = $entries[$serial % ID_ENTRY_UNIT].str
+        if $result
           print_string $result
         else
           echo undef
