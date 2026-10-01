@@ -224,7 +224,7 @@ module JSON
   Fragment = Struct.new(:json) do
     def initialize(json)
       unless string = String.try_convert(json)
-        raise TypeError, " no implicit conversion of #{json.class} into String"
+        raise TypeError, "no implicit conversion of #{json.class} into String"
       end
 
       super(string)
