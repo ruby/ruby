@@ -947,7 +947,7 @@ etc_confstr(VALUE obj, VALUE arg)
     int name;
     char localbuf[128], *buf = localbuf;
     size_t bufsize = sizeof(localbuf), ret;
-    VALUE tmp;
+    VALUE tmp = 0, str;
 
     name = NUM2INT(arg);
 
@@ -962,11 +962,15 @@ etc_confstr(VALUE obj, VALUE arg)
     if (bufsize < ret)
         rb_bug("required buffer size for confstr() changed dynamically.");
     if (ret == 0) {
-        if (errno == 0) /* no configuration-defined value */
+        int e = errno;
+        ALLOCV_END(tmp);
+        if (e == 0) /* no configuration-defined value */
             return Qnil;
-        rb_sys_fail("confstr");
+        rb_syserr_fail(e, "confstr");
     }
-    return rb_str_new_cstr(buf);
+    str = rb_str_new_cstr(buf);
+    ALLOCV_END(tmp);
+    return str;
 }
 #else
 #define etc_confstr rb_f_notimplement
