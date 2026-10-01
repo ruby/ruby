@@ -623,7 +623,7 @@ EOM
   # Note: Colons are only valid as drive letter separators (e.g., C:), not in filenames.
 
   def invalid_windows_filename?(filename) # :nodoc:
-    filename.to_s.split("/").any? { |part| part.match?(/[:<>"|?*\\\x00-\x1f]/) }
+    filename.to_s.split("/").any? {|part| part.match?(/[:<>"|?*\\\x00-\x1f]/) }
   end
 
   ##
