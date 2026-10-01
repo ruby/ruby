@@ -148,7 +148,7 @@ class BackTrace:
         while curr_addr >= last_cfp:
             cfp = self.target.CreateValueFromAddress("cfp", lldb.SBAddress(curr_addr, self.target), cfp_type_p.GetPointeeType())
             ep = cfp.GetValueForExpressionPath("->ep")
-            iseq = cfp.GetValueForExpressionPath("->iseq")
+            iseq = cfp.GetValueForExpressionPath("->_iseq")
 
             frame_type = ep.GetChildAtIndex(0).GetValueAsUnsigned() & self.VM_FRAME_MAGIC_MASK
 
