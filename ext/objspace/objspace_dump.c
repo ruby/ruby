@@ -514,6 +514,11 @@ dump_object(VALUE obj, struct dump_config *dc)
       case T_HASH:
         dump_append(dc, ", \"size\":");
         dump_append_sizet(dc, (size_t)RHASH_SIZE(obj));
+
+        if (RHASH_AR_TABLE_P(obj)) {
+            dump_append(dc, ", \"ar_table\":true");
+        }
+
         if (FL_TEST(obj, RHASH_PROC_DEFAULT)) {
             dump_append(dc, ", \"default\":");
             dump_append_ref(dc, RHASH_IFNONE(obj));

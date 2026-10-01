@@ -506,6 +506,7 @@ VALUE rb_yjit_print_log_p(rb_execution_context_t *c, VALUE self);
 VALUE rb_yjit_trace_exit_locations_enabled_p(rb_execution_context_t *ec, VALUE self);
 VALUE rb_yjit_get_stats(rb_execution_context_t *ec, VALUE self, VALUE key);
 VALUE rb_yjit_reset_stats_bang(rb_execution_context_t *ec, VALUE self);
+void rb_yjit_update_max_compile_time_ns(uint64_t max_compile_time_ns);
 VALUE rb_yjit_get_log(rb_execution_context_t *ec, VALUE self);
 VALUE rb_yjit_disasm_iseq(rb_execution_context_t *ec, VALUE self, VALUE iseq);
 VALUE rb_yjit_insns_compiled(rb_execution_context_t *ec, VALUE self, VALUE iseq);
@@ -514,6 +515,25 @@ VALUE rb_yjit_simulate_oom_bang(rb_execution_context_t *ec, VALUE self);
 VALUE rb_yjit_get_exit_locations(rb_execution_context_t *ec, VALUE self);
 VALUE rb_yjit_enable(rb_execution_context_t *ec, VALUE self, VALUE gen_stats, VALUE print_stats, VALUE gen_compilation_log, VALUE print_compilation_log, VALUE mem_size, VALUE call_threshold);
 VALUE rb_yjit_c_builtin_p(rb_execution_context_t *ec, VALUE self);
+
+static VALUE
+rb_yjit_total_compile_time_ns_get(rb_execution_context_t *ec, VALUE self)
+{
+    return ULL2NUM(rb_yjit_total_compile_time_ns);
+}
+
+static VALUE
+rb_yjit_max_compile_time_ns_get(rb_execution_context_t *ec, VALUE self)
+{
+    return ULL2NUM(rb_yjit_max_compile_time_ns);
+}
+
+static VALUE
+rb_yjit_max_compile_time_ns_set(rb_execution_context_t *ec, VALUE self, VALUE max_compile_time_ns)
+{
+    rb_yjit_update_max_compile_time_ns(NUM2ULL(max_compile_time_ns));
+    return max_compile_time_ns;
+}
 
 // Allow YJIT_C_BUILTIN macro to force --yjit-c-builtin
 #ifdef YJIT_C_BUILTIN

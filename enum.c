@@ -1946,11 +1946,11 @@ DEFINE_ENUMFUNCS(one)
 }
 
 struct nmin_data {
+    VALUE buf;
+    VALUE limit;
     long n;
     long bufmax;
     long curlen;
-    VALUE buf;
-    VALUE limit;
     int (*cmpfunc)(const void *, const void *, void *);
     int rev: 1; /* max if 1 */
     int by: 1; /* min_by if 1 */
@@ -2071,12 +2071,9 @@ nmin_filter(struct nmin_data *data)
 }
 
 static VALUE
-nmin_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, _data))
+nmin_i_ary(VALUE i, struct nmin_data *data, int argc)
 {
-    struct nmin_data *data = (struct nmin_data *)_data;
     VALUE cmpv;
-
-    ENUM_WANT_SVALUE();
 
     if (data->by)
         cmpv = enum_yield(argc, i);
@@ -2104,6 +2101,14 @@ nmin_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, _data))
     return Qnil;
 }
 
+static VALUE
+nmin_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, data))
+{
+    ENUM_WANT_SVALUE();
+
+    return nmin_i_ary(i, MEMO_FOR(struct nmin_data, data), argc);
+}
+
 VALUE
 rb_nmin_run(VALUE obj, VALUE num, int by, int rev, int ary)
 {
@@ -2126,17 +2131,24 @@ rb_nmin_run(VALUE obj, VALUE num, int by, int rev, int ary)
                    nmin_cmp;
     data.rev = rev;
     data.by = by;
+
+    VALUE memo;
+    struct nmin_data *m = &data;
+    if (!ary || data.cmpfunc == nmin_block_cmp) {
+        *(m = NEW_PARTIAL_MEMO_FOR(struct nmin_data, memo, n)) = data;
+    }
     if (ary) {
         long i;
         for (i = 0; i < RARRAY_LEN(obj); i++) {
-            VALUE args[1];
-            args[0] = RARRAY_AREF(obj, i);
-            nmin_i(obj, (VALUE)&data, 1, args, Qundef);
+            nmin_i_ary(RARRAY_AREF(obj, i), m, 1);
         }
     }
     else {
-        rb_block_call(obj, id_each, 0, 0, nmin_i, (VALUE)&data);
+        rb_block_call(obj, id_each, 0, 0, nmin_i, memo);
     }
+    if (m != &data) data = *m;
+    RB_GC_GUARD(memo);
+
     nmin_filter(&data);
     result = data.buf;
     if (by) {
@@ -3764,7 +3776,7 @@ enum_cycle_size(VALUE self, VALUE args, VALUE eobj)
 
     if (NIL_P(n)) return DBL2NUM(HUGE_VAL);
     if (mul <= 0) return INT2FIX(0);
-    n = LONG2FIX(mul);
+    n = LONG2NUM(mul);
     return rb_funcallv(size, '*', 1, &n);
 }
 
@@ -4750,7 +4762,7 @@ static VALUE
 enum_sum_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
 {
     ENUM_WANT_SVALUE();
-    sum_iter(i, (struct enum_sum_memo *) args);
+    sum_iter(i, MEMO_FOR(struct enum_sum_memo, args));
     return Qnil;
 }
 
@@ -4852,10 +4864,17 @@ enum_sum(int argc, VALUE* argv, VALUE obj)
     }
 
     if (RB_TYPE_P(obj, T_HASH) &&
-            rb_method_basic_definition_p(CLASS_OF(obj), id_each))
+        rb_method_basic_definition_p(CLASS_OF(obj), id_each)) {
         hash_sum(obj, &memo);
-    else
-        rb_block_call(obj, id_each, 0, 0, enum_sum_i, (VALUE)&memo);
+    }
+    else {
+        VALUE arg;
+        struct enum_sum_memo *m = NEW_PARTIAL_MEMO_FOR(struct enum_sum_memo, arg, n);
+        *m = memo;
+        rb_block_call(obj, id_each, 0, 0, enum_sum_i, arg);
+        memo = *m;
+        RB_GC_GUARD(arg);
+    }
 
     if (memo.float_value) {
         return DBL2NUM(memo.f + memo.c);

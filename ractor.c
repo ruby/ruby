@@ -356,6 +356,7 @@ rb_ractor_mark_local_roots(rb_ractor_t *r)
         VM_ASSERT(RUBY_ATOMIC_PTR_LOAD(r->threads.dying_th) == NULL);
         rb_ractor_mark_terminated_join_value(r);
         rb_gc_mark_vm_stack_values((long)r->registered_marks_cnt, r->registered_marks);
+        rb_gc_mark_registered_addrs(r, true);
         return;
     }
 
@@ -372,7 +373,6 @@ rb_ractor_mark_local_roots(rb_ractor_t *r)
      * marks only its own residents and leaves foreign or shareable entries to their
      * owner or to the global GC. */
     rb_gc_mark_vm_stack_values((long)r->registered_marks_cnt, r->registered_marks);
-
 }
 
 /* Mark and pin a terminated, unfreed Ractor's return value (legacy); the global GC
@@ -407,6 +407,33 @@ rb_ractor_absorb_registered_marks(rb_ractor_t *dst, rb_ractor_t *src)
            src->registered_marks, VALUE, src->registered_marks_cnt);
     dst->registered_marks_cnt = need;
     src->registered_marks_cnt = 0;
+}
+
+void
+rb_ractor_absorb_registered_addrs_without_gc(rb_ractor_t *dst, rb_ractor_t *src)
+{
+    rb_vm_t *vm = GET_VM();
+
+    rb_native_mutex_lock(&vm->gc.registered_addrs.lock);
+    if (src->registered_addrs_cnt > 0) {
+        size_t need = dst->registered_addrs_cnt + src->registered_addrs_cnt;
+        if (need > dst->registered_addrs_capa) {
+            size_t nc = dst->registered_addrs_capa ? dst->registered_addrs_capa : 64;
+            while (nc < need) nc *= 2;
+            struct rb_ractor_registered_addr *p =
+                realloc(dst->registered_addrs, nc * sizeof(struct rb_ractor_registered_addr));
+            if (!p) rb_bug("rb_ractor_absorb_registered_addrs_without_gc: out of memory");
+            dst->registered_addrs = p;
+            dst->registered_addrs_capa = nc;
+        }
+        MEMCPY(dst->registered_addrs + dst->registered_addrs_cnt,
+               src->registered_addrs, struct rb_ractor_registered_addr, src->registered_addrs_cnt);
+        dst->registered_addrs_cnt = need;
+        src->registered_addrs_cnt = 0;
+        rb_gc_registered_addrs_enroll_without_gc(vm, dst);
+    }
+    rb_gc_registered_addrs_unenroll_without_gc(vm, src);
+    rb_native_mutex_unlock(&vm->gc.registered_addrs.lock);
 }
 
 static int
@@ -457,10 +484,10 @@ ractor_free(void *ptr)
     ractor_sync_free(r);
 
     if (r->in_terminated_set) {
-        rb_native_mutex_lock(&GET_VM()->gc.registered_globals.lock);
+        rb_native_mutex_lock(&GET_VM()->gc.registered_addrs.lock);
         ccan_list_del(&r->vmlr_node);
         r->in_terminated_set = false;
-        rb_native_mutex_unlock(&GET_VM()->gc.registered_globals.lock);
+        rb_native_mutex_unlock(&GET_VM()->gc.registered_addrs.lock);
     }
 
     /* An orphan (unjoined) Ractor hands its rb_gc_register_mark_object pins to main
@@ -468,23 +495,60 @@ ractor_free(void *ptr)
      * Both happen before the objspace merge, so no window has unmoved registrations. */
     if (!r->main_ractor) {
         rb_ractor_absorb_registered_marks(GET_VM()->ractor.main_ractor, r);
+        rb_ractor_absorb_registered_addrs_without_gc(GET_VM()->ractor.main_ractor, r);
+    }
+    else {
+        rb_native_mutex_lock(&GET_VM()->gc.registered_addrs.lock);
+        rb_gc_registered_addrs_unenroll_without_gc(GET_VM(), r);
+        rb_native_mutex_unlock(&GET_VM()->gc.registered_addrs.lock);
     }
     free(r->registered_marks);
     r->registered_marks = NULL;
     r->registered_marks_cnt = r->registered_marks_capa = 0;
+
+    free(r->registered_addrs);
+    r->registered_addrs = NULL;
+    r->registered_addrs_cnt = r->registered_addrs_capa = 0;
 
     if (!r->main_ractor) {
         SIZED_FREE(r);
     }
 }
 
+static int
+targeted_hook_list_memsize_i(st_data_t key, st_data_t val, st_data_t arg)
+{
+    size_t *size = (size_t *)arg;
+    rb_hook_list_t *hook_list = (rb_hook_list_t *)val;
+
+    *size += sizeof(rb_hook_list_t) + rb_hook_list_memsize(hook_list);
+
+    return ST_CONTINUE;
+}
+
 static size_t
 ractor_memsize(const void *ptr)
 {
     rb_ractor_t *r = (rb_ractor_t *)ptr;
+    size_t size = sizeof(rb_ractor_t);
 
-    // TODO: more correct?
-    return sizeof(rb_ractor_t) + ractor_sync_memsize(r);
+    size += ractor_sync_memsize(r);
+
+    size += rb_st_memsize(&r->pub.targeted_hooks) - sizeof(struct st_table);
+    st_foreach(&r->pub.targeted_hooks, targeted_hook_list_memsize_i, (st_data_t)&size);
+    size += rb_hook_list_memsize(&r->pub.hooks);
+
+    if (r->local_storage) {
+        size += st_memsize(r->local_storage);
+    }
+    if (r->idkey_local_storage) {
+        size += rb_id_table_memsize(r->idkey_local_storage);
+    }
+
+    size += r->registered_marks_capa * sizeof(VALUE);
+    size += r->registered_addrs_capa * sizeof(struct rb_ractor_registered_addr);
+
+    return size;
 }
 
 static void
@@ -548,9 +612,9 @@ vm_insert_ractor0(rb_vm_t *vm, rb_ractor_t *r, bool single_ractor_mode)
     RUBY_DEBUG_LOG("r:%"PRI_SERIALT_PREFIX"u ractor.cnt:%u++", r->pub.id, vm->ractor.cnt);
     VM_ASSERT(single_ractor_mode || RB_VM_LOCKED_P());
 
-    /* Incremental marking only runs in a single-objspace world, and nothing later can
-     * finish another objspace's partial mark, so end any cycle in progress before a
-     * second Ractor becomes visible. */
+    /* End main's cycle before a second Ractor becomes visible: the collection was
+     * planned for a single-objspace world (a local GC is a whole-world GC there and may
+     * free shareable objects), so it must not straddle the transition. */
     if (vm->ractor.cnt == 1) {
         rb_gc_rest();
     }
@@ -641,10 +705,10 @@ vm_remove_ractor(rb_vm_t *vm, rb_ractor_t *cr)
          * registered_marks of a Ractor that left the set; track it in a separate list
          * until ractor_free. */
         if (!rb_gc_multi_objspace_p()) {
-            rb_native_mutex_lock(&vm->gc.registered_globals.lock);
+            rb_native_mutex_lock(&vm->gc.registered_addrs.lock);
             ccan_list_add(&vm->ractor.terminated_set, &cr->vmlr_node);
             cr->in_terminated_set = true;
-            rb_native_mutex_unlock(&vm->gc.registered_globals.lock);
+            rb_native_mutex_unlock(&vm->gc.registered_addrs.lock);
         }
 
         if (vm->ractor.cnt <= 2 && vm->ractor.sync.terminate_waiting) {
@@ -781,6 +845,12 @@ rb_ractor_terminate_atfork(rb_vm_t *vm, rb_ractor_t *r)
     r->status_ = ractor_terminated;
     // a termination epilogue in the parent did not survive the fork
     r->threads.dying_th = NULL;
+    if (!rb_gc_multi_objspace_p()) {
+        ccan_list_del(&r->vmlr_node);
+        ccan_list_add(&vm->ractor.terminated_set, &r->vmlr_node);
+        r->in_terminated_set = true;
+    }
+
     /* In a forked child every other Ractor is terminated-unjoined, so keep its objspace
      * enumerable until a join or a global GC merges it. */
     if (r->objspace) {

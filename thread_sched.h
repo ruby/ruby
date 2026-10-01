@@ -131,6 +131,9 @@ struct rb_native_thread {
     // signalled by native_thread_interrupt() to break this thread out of a
     // blocking w32_wait_events()
     HANDLE interrupt_event;
+    // a high-resolution timer that ends a timed wait on readyq at its
+    // deadline rather than at the next timer tick (NULL if unavailable)
+    HANDLE wait_timer;
 #endif
 
     struct rb_thread_struct *running_thread;

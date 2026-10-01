@@ -43,7 +43,7 @@ pub extern "C" fn mmtk_is_live_object(object: ObjectReference) -> bool {
 
 #[unsafe(no_mangle)]
 pub extern "C" fn mmtk_is_reachable(object: ObjectReference) -> bool {
-    binding::object_survives_current_gc(object)
+    object.is_reachable()
 }
 
 // =============== Bootup ===============
@@ -399,7 +399,7 @@ pub extern "C" fn mmtk_declare_weak_references(object: ObjectReference) {
 
 #[unsafe(no_mangle)]
 pub extern "C" fn mmtk_weak_references_alive_p(object: ObjectReference) -> bool {
-    binding::object_survives_current_gc(object)
+    object.is_reachable()
 }
 
 #[unsafe(no_mangle)]

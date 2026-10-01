@@ -4,7 +4,7 @@ This guide discusses recommendations for documenting
 classes, modules, and methods
 in the Ruby core and in the Ruby standard library.
 
-## Generating documentation
+## Generating Documentation
 
 Most Ruby documentation lives in the source files, and is written in RDoc format
 (described in the [RDoc Markup Reference]).
@@ -61,6 +61,55 @@ Use your judgment about what the user needs to know.
     - Using US-ASCII-incompatible characters in C source files;
       see [Characters](#label-Characters) below.
 
+### Examples
+
+#### Output from `irb`
+
+For code examples, consider using interactive Ruby,
+[irb].
+
+For a code example that includes `irb` output,
+consider aligning `# => ...` in successive lines.
+Alignment may sometimes aid readability:
+
+```ruby
+a = [1, 2, 3] # => [1, 2, 3]
+a.shuffle!    # => [2, 3, 1]
+a             # => [2, 3, 1]
+```
+
+#### Languages in Examples
+
+For symbols and strings in documentation examples:
+
+- Prefer \English in \English documentation:  <tt>'Hello'</tt>.
+- Prefer Japanese in Japanese documentation:  <tt>'こんにちは'</tt>.
+- If a second language is needed (as, for example, characters with different byte-sizes),
+  prefer Japanese in \English documentation and \English in Japanese documentation.
+- Use other languages examples only as necessary:  see String#capitalize.
+
+#### Cleaning Up
+
+An example that appropriates system resources should "clean up"
+by releasing those resources.
+Let's show good work habits.
+
+Resources that may need to be deleted/unlinked:
+
+- Files
+- Directories
+- Symbolic links
+- UNIX sockets
+- Block-special devices
+- Character-special devices
+- Named pipes
+
+Objects that may need to be closed:
+
+- Dir
+- IO
+- Tempfile
+
 ### Characters
 
 Use only US-ASCII-compatible characters in a C source file.
@@ -115,21 +164,6 @@ involving new files `doc/*.rdoc`:
 Ruby is documented using RDoc.
 For information on RDoc syntax and features,
 see the [RDoc Markup Reference].
-
-### Output from `irb`
-
-For code examples, consider using interactive Ruby,
-[irb].
-
-For a code example that includes `irb` output,
-consider aligning `# => ...` in successive lines.
-Alignment may sometimes aid readability:
-
-```ruby
-a = [1, 2, 3] #=> [1, 2, 3]
-a.shuffle!    #=> [2, 3, 1]
-a             #=> [2, 3, 1]
-```
 
 ### Headings
 
@@ -352,16 +386,6 @@ Alternatives:
 
     - Example {source}[https://github.com/ruby/ruby/blob/34d802f32f00df1ac0220b62f72605827c16bad8/doc/contributing/glossary.md?plain=1].
     - Corresponding {output}[https://docs.ruby-lang.org/en/master/contributing/glossary_md.html].
-
-### Languages in Examples
-
-For symbols and strings in documentation examples:
-
-- Prefer \English in \English documentation:  <tt>'Hello'</tt>.
-- Prefer Japanese in Japanese documentation:  <tt>'こんにちは'</tt>.
-- If a second language is needed (as, for example, characters with different byte-sizes),
-  prefer Japanese in \English documentation and \English in Japanese documentation.
-- Use other languages examples only as necessary:  see String#capitalize.
 
 ## Documenting Classes and Modules
 

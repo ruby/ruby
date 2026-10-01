@@ -4693,8 +4693,13 @@ rb_fields_tbl_copy(VALUE dst, VALUE src)
 
     VALUE fields_obj = RCLASS_WRITABLE_FIELDS_OBJ(src);
     if (fields_obj) {
-        RCLASS_WRITABLE_SET_FIELDS_OBJ(dst, rb_imemo_fields_clone(fields_obj));
-        RBASIC_SET_SHAPE_ID(dst, RBASIC_SHAPE_ID(src));
+        VALUE dst_fields_obj = rb_imemo_fields_clone(fields_obj);
+        // `dst` is a freshly allocated object, so it must not inherit `src`'s
+        // frozen status. Callers that need it re-freeze `dst` themselves.
+        shape_id_t shape_id = RBASIC_SHAPE_ID(dst_fields_obj) & ~SHAPE_ID_FL_FROZEN;
+        RBASIC_SET_SHAPE_ID(dst_fields_obj, shape_id);
+        RCLASS_WRITABLE_SET_FIELDS_OBJ(dst, dst_fields_obj);
+        RBASIC_SET_SHAPE_ID(dst, shape_id);
     }
 }
 

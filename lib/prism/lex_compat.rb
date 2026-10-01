@@ -616,6 +616,19 @@ module Prism
       last_heredoc_end = nil #: Integer?
       eof_token = nil #: Token?
 
+      # The two tokens Ripper scanned most recently, oldest last. Tokens that
+      # this loop does not emit are not part of Ripper's view, so they never
+      # become either one.
+      previous_token = nil #: Token?
+      previous_previous_token = nil #: Token?
+
+      # The lex state in effect at each embedded expression that is still open,
+      # innermost last, and the state at the opener of the one that closed most
+      # recently. Ending an embedded expression restores the state its opener
+      # had, which on_regexp_end below has to reproduce.
+      embexpr_states = [] #: Array[Integer]
+      last_embexpr_state = nil #: Integer?
+
       bom = source.slice(0, 3) == "\xEF\xBB\xBF"
 
       last_comment_token = nil #: lex_compat_token?
@@ -624,6 +637,10 @@ module Prism
       result_value.each_with_index do |prism_token, index|
         lineno = prism_token.location.start_line
         column = prism_token.location.start_column
+
+        # Ripper is a scanner, so every event it emits corresponds to source
+        # characters. Implicit word separators have none.
+        next if prism_token.type == :WORDS_SEP_IMPLICIT
 
         event = RIPPER.fetch(prism_token.type)
         value = prism_token.value
@@ -636,6 +653,12 @@ module Prism
           last_comment_token[2] += value
           last_comment_token = nil
           last_comment_end = nil
+
+          # The newline's characters are part of the comment Ripper emits, so
+          # it is still the token Ripper scanned most recently, and the trailing
+          # whitespace check at on_eof measures from its end.
+          previous_previous_token = previous_token
+          previous_token = prism_token
           next
         end
 
@@ -682,7 +705,11 @@ module Prism
             # want to bother comparing the state on them.
             last_heredoc_end = prism_token.location.end_offset
             [[lineno, column], event, value, lex_state]
+          when :on_embexpr_beg
+            embexpr_states.push(prism_token._ripper_state)
+            [[lineno, column], event, value, lex_state]
           when :on_embexpr_end
+            last_embexpr_state = embexpr_states.pop
             [[lineno, column], event, value, lex_state]
           when :on_words_sep
             # Ripper emits one token each per line.
@@ -701,24 +728,11 @@ module Prism
             # Ripper's lexed state. So here, if it's a regexp end token, we
             # output the state as the previous state, solely for the sake of
             # comparison.
-            previous_token = result_value[index - 1]
             lex_state =
-              if RIPPER.fetch(previous_token.type) == :on_embexpr_end
-                # If the previous token is embexpr_end, then we have to do even
-                # more processing. The end of an embedded expression sets the
-                # state to the state that it had at the beginning of the
-                # embedded expression. So we have to go and find that state and
-                # set it here.
-                counter = 1
-                current_index = index - 1
-
-                until counter == 0
-                  current_index -= 1
-                  current_event = RIPPER.fetch(result_value[current_index].type)
-                  counter += { on_embexpr_beg: -1, on_embexpr_end: 1 }[current_event] || 0
-                end
-
-                Translation::Ripper::Lexer::State[result_value[current_index]._ripper_state]
+              if previous_token&.type == :EMBEXPR_END && last_embexpr_state
+                # An embedded expression that just closed restored the state its
+                # opener had, so that is the state Ripper reports here.
+                Translation::Ripper::Lexer::State[last_embexpr_state]
               else
                 previous_state
               end
@@ -726,34 +740,36 @@ module Prism
             [[lineno, column], event, value, lex_state]
           when :on_eof
             eof_token = prism_token
-            previous_token = result_value[index - 1]
 
-            # A newline that was folded back into a comment still marks the
-            # comment boundary for the check below.
-            comment_boundary = previous_token.type == :COMMENT ||
-              (index >= 2 && %i[NEWLINE NEWLINE_TERMINATOR IGNORED_NEWLINE].include?(previous_token.type) && result_value[index - 2].type == :COMMENT && result_value[index - 2].location.end_offset == previous_token.location.start_offset)
+            if (previous = previous_token)
+              # A newline that was folded back into a comment still marks the
+              # comment boundary for the check below.
+              before = previous_previous_token
+              comment_boundary = previous.type == :COMMENT ||
+                (before && %i[NEWLINE NEWLINE_TERMINATOR IGNORED_NEWLINE].include?(previous.type) && before.type == :COMMENT && before.location.end_offset == previous.location.start_offset)
 
-            # If we're at the end of the file and the previous token was a
-            # comment and there is still whitespace after the comment, then
-            # Ripper will append a on_nl token (even though there isn't
-            # necessarily a newline). We mirror that here.
-            if comment_boundary
-              # If the comment is at the start of a heredoc: <<HEREDOC # comment
-              # then the comment's end_offset is up near the heredoc_beg.
-              # This is not the correct offset to use for figuring out if
-              # there is trailing whitespace after the last token.
-              # Use the greater offset of the two to determine the start of
-              # the trailing whitespace.
-              start_offset = [previous_token.location.end_offset, last_heredoc_end].compact.max
-              end_offset = prism_token.location.start_offset
+              # If we're at the end of the file and the previous token was a
+              # comment and there is still whitespace after the comment, then
+              # Ripper will append a on_nl token (even though there isn't
+              # necessarily a newline). We mirror that here.
+              if comment_boundary
+                # If the comment is at the start of a heredoc: <<HEREDOC # comment
+                # then the comment's end_offset is up near the heredoc_beg.
+                # This is not the correct offset to use for figuring out if
+                # there is trailing whitespace after the last token.
+                # Use the greater offset of the two to determine the start of
+                # the trailing whitespace.
+                start_offset = [previous.location.end_offset, last_heredoc_end].compact.max
+                end_offset = prism_token.location.start_offset
 
-              if start_offset < end_offset
-                if bom
-                  start_offset += 3
-                  end_offset += 3
+                if start_offset < end_offset
+                  if bom
+                    start_offset += 3
+                    end_offset += 3
+                  end
+
+                  tokens << [[lineno, 0], :on_nl, source.slice(start_offset, end_offset - start_offset), lex_state]
                 end
-
-                tokens << [[lineno, 0], :on_nl, source.slice(start_offset, end_offset - start_offset), lex_state]
               end
             end
 
@@ -763,6 +779,8 @@ module Prism
           end #: lex_compat_token
 
         previous_state = lex_state
+        previous_previous_token = previous_token
+        previous_token = prism_token
 
         if event == :on_comment
           last_comment_token = lex_compat_token

@@ -463,7 +463,8 @@ ruby_push_include(const char *path, VALUE (*filter)(VALUE))
         while (is_path_sep(*p))
             p++;
         if (!*p) break;
-        for (s = p; *s && !is_path_sep(*s); s = CharNext(s));
+        /* separators never appear inside a multibyte character */
+        for (s = p; *s && !is_path_sep(*s); s++);
         len = s - p;
 #undef is_path_sep
 

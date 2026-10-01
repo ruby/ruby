@@ -38,6 +38,32 @@ class JSONParserTest < Test::Unit::TestCase
     assert_equal 'test', parser.parse
   end
 
+  def test_on_load_method
+    on_load = ->(value) { Integer === value ? value + 1 : value }.method(:call)
+    assert_equal [2], JSON.parse('[1]', on_load: on_load)
+  end
+
+  def test_on_load_invalid_type
+    ['x', Object.new, Time.now].each do |on_load|
+      assert_raise(TypeError) { JSON.parse('[1]', on_load: on_load) }
+    end
+  end
+
+  def test_on_load_invalid_to_proc
+    on_load = Object.new
+    def on_load.to_proc
+      method(:to_proc)
+    end
+    assert_raise(TypeError) { JSON.parse('[1]', on_load: on_load) }
+  end
+
+  def test_on_load_falsy
+    [nil, false].each do |on_load|
+      config = JSON::Parser::Config.new(on_load: on_load)
+      assert_equal [1], config.parse('[1]')
+    end
+  end
+
   def test_parser_reset
     parser = Parser.new('{"a":"b"}')
     assert_equal({ 'a' => 'b' }, parser.parse)
@@ -221,6 +247,12 @@ class JSONParserTest < Test::Unit::TestCase
     end
 
     assert_equal "foo", parse(%("fo\\o"), allow_invalid_escape: true)
+  end
+
+  def test_parse_invalid_escape_non_ascii
+    assert_equal "caf\u00e9", parse(%("caf\\\u00e9"), allow_invalid_escape: true)
+    assert_equal "\u3042", parse(%("\\\u3042"), allow_invalid_escape: true)
+    assert_equal "\u{1F600}", parse(%("\\\u{1F600}"), allow_invalid_escape: true)
   end
 
   def test_parse_arrays

@@ -628,10 +628,10 @@ class Gem::Installer
   # installation.
 
   def ensure_loadable_spec
-    ruby = spec.to_ruby_for_cache
+    spec = self.spec
 
     begin
-      eval ruby
+      eval spec.to_ruby_for_cache
     rescue StandardError, SyntaxError => e
       raise Gem::InstallError,
             "The specification for #{spec.full_name} is corrupt (#{e.class})"
@@ -723,28 +723,8 @@ class Gem::Installer
       raise Gem::InstallError, "#{spec} has an invalid version"
     end
 
-    if spec.raw_require_paths.any? {|path| path =~ /\R/ }
-      raise Gem::InstallError, "#{spec} has an invalid require_paths"
-    end
-
-    if spec.extensions.any? {|ext| ext =~ /\R/ }
-      raise Gem::InstallError, "#{spec} has an invalid extensions"
-    end
-
     unless /\A[\w.-]+\z/.match?(spec.platform.to_s)
       raise Gem::InstallError, "#{spec.platform} is an invalid platform"
-    end
-
-    unless /\A\d+\z/.match?(spec.specification_version.to_s)
-      raise Gem::InstallError, "#{spec} has an invalid specification_version"
-    end
-
-    if spec.dependencies.any? {|dep| dep.type != :runtime && dep.type != :development }
-      raise Gem::InstallError, "#{spec} has an invalid dependencies"
-    end
-
-    if spec.dependencies.any? {|dep| dep.name =~ /(?:\R|[<>])/ }
-      raise Gem::InstallError, "#{spec} has an invalid dependencies"
     end
 
     if spec.executables.any? {|name| !name.is_a?(String) || name != File.basename(name) || /\A\.\.?\z|\R/.match?(name) }
@@ -945,8 +925,6 @@ class Gem::Installer
   def pre_install_checks
     verify_gem_home
 
-    # The name and require_paths must be verified first, since it could contain
-    # ruby code that would be eval'ed in #ensure_loadable_spec
     verify_spec
 
     ensure_loadable_spec

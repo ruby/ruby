@@ -7212,18 +7212,78 @@ pm_compile_alias_method_node(rb_iseq_t *iseq, const pm_alias_method_node_t *node
     if (popped) PUSH_INSN(ret, *location, pop);
 }
 
-static inline void
-pm_compile_and_node(rb_iseq_t *iseq, const pm_and_node_t *node, const pm_node_location_t *location, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node)
+/**
+ * Compile a chain of and nodes or a chain of or nodes that has been flattened
+ * into source order, so that `a && b && c` is passed as the nodes
+ * `[a, a && b, b, a && b && c, c]`. Even indices hold the operands, and odd
+ * indices hold the operator nodes between them. Prism parses `a && b && c` as
+ * `(a && b) && c`, so pm_compile_and_node and pm_compile_or_node flatten the
+ * chain by walking left operands iteratively, which keeps the C stack depth
+ * independent of the length of the chain.
+ *
+ * Every operator in the chain branches to one shared end label. The peephole
+ * optimizer threads a branch to a label that is followed by another branch one
+ * link at a time, so a label per operator makes compilation quadratic in the
+ * length of the chain.
+ */
+static void
+pm_compile_logical_chain(rb_iseq_t *iseq, size_t size, const pm_node_t **nodes, const pm_node_location_t *location, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node)
 {
+    const pm_node_type_t type = PM_NODE_TYPE(nodes[1]);
     LABEL *end_label = NEW_LABEL(location->line);
 
-    PM_COMPILE_NOT_POPPED(node->left);
-    if (!popped) PUSH_INSN(ret, *location, dup);
-    PUSH_INSNL(ret, *location, branchunless, end_label);
+    for (size_t index = 0; index + 1 < size; index += 2) {
+        PM_COMPILE_NOT_POPPED(nodes[index]);
 
-    if (!popped) PUSH_INSN(ret, *location, pop);
-    PM_COMPILE(node->right);
+        /* Each operator node starts where its left operand does, so every
+         * operator node in the chain is on the same line. */
+        const pm_node_location_t operator_location = {
+            .line = location->line,
+            .node_id = nodes[index + 1]->node_id
+        };
+
+        if (!popped) PUSH_INSN(ret, operator_location, dup);
+        if (type == PM_AND_NODE)
+        {
+            PUSH_INSNL(ret, operator_location, branchunless, end_label);
+        }
+        else {
+            PUSH_INSNL(ret, operator_location, branchif, end_label);
+        }
+        if (!popped) PUSH_INSN(ret, operator_location, pop);
+    }
+
+    PM_COMPILE(nodes[size - 1]);
     PUSH_LABEL(ret, end_label);
+}
+
+static void
+pm_compile_and_node(rb_iseq_t *iseq, const pm_and_node_t *node, const pm_node_location_t *location, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node)
+{
+    const pm_node_t *cursor = (const pm_node_t *) node;
+    size_t size = 1;
+
+    while (PM_NODE_TYPE_P(cursor, PM_AND_NODE)) {
+        cursor = ((const pm_and_node_t *) cursor)->left;
+        size += 2;
+    }
+
+    VALUE handle = 0;
+    const pm_node_t **nodes = ALLOCV_N(const pm_node_t *, handle, size);
+
+    cursor = (const pm_node_t *) node;
+    size_t index = size;
+
+    while (PM_NODE_TYPE_P(cursor, PM_AND_NODE)) {
+        const pm_and_node_t *cast = (const pm_and_node_t *) cursor;
+        nodes[--index] = cast->right;
+        nodes[--index] = cursor;
+        cursor = cast->left;
+    }
+
+    nodes[0] = cursor;
+    pm_compile_logical_chain(iseq, size, nodes, location, ret, popped, scope_node);
+    ALLOCV_END(handle);
 }
 
 static inline void
@@ -8412,6 +8472,35 @@ pm_compile_next_node(rb_iseq_t *iseq, const pm_next_node_t *node, const pm_node_
             COMPILE_ERROR(iseq, location->line, "Invalid next");
         }
     }
+}
+
+static void
+pm_compile_or_node(rb_iseq_t *iseq, const pm_or_node_t *node, const pm_node_location_t *location, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node)
+{
+    const pm_node_t *cursor = (const pm_node_t *) node;
+    size_t size = 1;
+
+    while (PM_NODE_TYPE_P(cursor, PM_OR_NODE)) {
+        cursor = ((const pm_or_node_t *) cursor)->left;
+        size += 2;
+    }
+
+    VALUE handle = 0;
+    const pm_node_t **nodes = ALLOCV_N(const pm_node_t *, handle, size);
+
+    cursor = (const pm_node_t *) node;
+    size_t index = size;
+
+    while (PM_NODE_TYPE_P(cursor, PM_OR_NODE)) {
+        const pm_or_node_t *cast = (const pm_or_node_t *) cursor;
+        nodes[--index] = cast->right;
+        nodes[--index] = cursor;
+        cursor = cast->left;
+    }
+
+    nodes[0] = cursor;
+    pm_compile_logical_chain(iseq, size, nodes, location, ret, popped, scope_node);
+    ALLOCV_END(handle);
 }
 
 static inline void
@@ -10090,23 +10179,11 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         return;
       }
-      case PM_OR_NODE: {
+      case PM_OR_NODE:
         // a or b
         // ^^^^^^
-        const pm_or_node_t *cast = (const pm_or_node_t *) node;
-
-        LABEL *end_label = NEW_LABEL(location.line);
-        PM_COMPILE_NOT_POPPED(cast->left);
-
-        if (!popped) PUSH_INSN(ret, location, dup);
-        PUSH_INSNL(ret, location, branchif, end_label);
-
-        if (!popped) PUSH_INSN(ret, location, pop);
-        PM_COMPILE(cast->right);
-        PUSH_LABEL(ret, end_label);
-
+        pm_compile_or_node(iseq, (const pm_or_node_t *) node, &location, ret, popped, scope_node);
         return;
-      }
       case PM_OPTIONAL_PARAMETER_NODE: {
         // def foo(bar = 1); end
         //         ^^^^^^^

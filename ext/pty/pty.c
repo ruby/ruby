@@ -395,23 +395,6 @@ get_device_once(int *master, int *slave, char SlaveName[DEVICELEN], int nomesg, 
 
     return 0;
 
-#elif defined HAVE__GETPTY
-    /* SGI IRIX */
-    char *name;
-    mode_t mode = nomesg ? 0600 : 0622;
-
-    if (!(name = _getpty(master, O_RDWR, mode, 0))) {
-        if (!fail) return -1;
-        rb_raise(rb_eRuntimeError, "_getpty() failed");
-    }
-    rb_fd_fix_cloexec(*master);
-
-    *slave = rb_cloexec_open(name, O_RDWR, 0);
-    /* error check? */
-    rb_update_max_fd(*slave);
-    strlcpy(SlaveName, name, DEVICELEN);
-
-    return 0;
 #elif defined(HAVE_PTSNAME)
     /* System V */
     int	 masterfd = -1, slavefd = -1;

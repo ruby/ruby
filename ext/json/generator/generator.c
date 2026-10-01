@@ -1550,6 +1550,18 @@ static VALUE cState_as_json(VALUE self)
     return state->as_json;
 }
 
+static VALUE as_json_config(VALUE value)
+{
+    if (rb_obj_is_proc(value)) {
+        return value;
+    }
+    VALUE proc = rb_check_funcall(value, rb_intern("to_proc"), 0, NULL);
+    if (proc == Qundef || !rb_obj_is_proc(proc)) {
+        rb_raise(rb_eTypeError, "as_json must be a Proc");
+    }
+    return proc;
+}
+
 /*
  * call-seq: as_json=(as_json)
  *
@@ -1559,7 +1571,7 @@ static VALUE cState_as_json_set(VALUE self, VALUE as_json)
 {
     rb_check_frozen(self);
     GET_STATE(self);
-    RB_OBJ_WRITE(self, &state->as_json, rb_convert_type(as_json, T_DATA, "Proc", "to_proc"));
+    RB_OBJ_WRITE(self, &state->as_json, as_json_config(as_json));
     return Qnil;
 }
 
@@ -1733,6 +1745,9 @@ static VALUE cState_set_default_sort_keys_proc(VALUE self, VALUE proc)
     if (!rb_obj_is_proc(proc)) {
         rb_raise(rb_eTypeError, "sort_key_proc must be a Proc");
     }
+    if (default_sort_keys_proc) {
+        rb_raise(rb_eArgError, "sort_key_proc can only be set once");
+    }
     return default_sort_keys_proc = proc;
 }
 
@@ -1876,7 +1891,7 @@ static int configure_state_i(VALUE key, VALUE val, VALUE _arg)
     else if (key == sym_strict)                { state->strict = RTEST(val); }
     else if (key == sym_allow_duplicate_key)   { state->allow_duplicate_key = RTEST(val); }
     else if (key == sym_as_json)               {
-        VALUE proc = RTEST(val) ? rb_convert_type(val, T_DATA, "Proc", "to_proc") : Qfalse;
+        VALUE proc = RTEST(val) ? as_json_config(val) : Qfalse;
         state->as_json_single_arg = proc && rb_proc_arity(proc) == 1;
         state_write_value(data, &state->as_json, proc);
     }

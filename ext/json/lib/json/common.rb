@@ -80,14 +80,6 @@ module JSON
     def generator=(generator) # :nodoc:
       old, $VERBOSE = $VERBOSE, nil
 
-      # The default proc used when the +sort_keys+ generation option is +true+.
-      # It returns a new hash with the entries sorted by their keys.
-      sort_keys_proc = ->(hash) { hash.sort.to_h }
-      if defined?(::Ractor) && Ractor.respond_to?(:shareable_lambda)
-        sort_keys_proc = Ractor.shareable_lambda(&sort_keys_proc)
-      end
-      generator::State.default_sort_keys_proc = sort_keys_proc
-
       @generator = generator
       if generator.const_defined?(:GeneratorMethods)
         generator_methods = generator::GeneratorMethods
@@ -707,10 +699,10 @@ module JSON
     unless source.is_a?(String)
       if source.respond_to? :to_str
         source = source.to_str
+      elsif source.respond_to? :read
+        source = source.read
       elsif source.respond_to? :to_io
         source = source.to_io.read
-      elsif source.respond_to?(:read)
-        source = source.read
       end
     end
 

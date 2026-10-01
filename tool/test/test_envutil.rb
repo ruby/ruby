@@ -27,4 +27,14 @@ class TestEnvUtil < Test::Unit::TestCase
     assert_equal("err", stderr)
     assert_predicate(status, :success?)
   end
+
+  def test_terminate_reaps_exited_child
+    r, w = IO.pipe
+    pid = spawn(EnvUtil.rubybin, "-e", "", out: w)
+    w.close
+    r.read
+    r.close
+
+    assert_equal(pid, EnvUtil.terminate(pid).pid)
+  end
 end

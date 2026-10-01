@@ -93,7 +93,8 @@ module EnvUtil
   def timeout(sec, klass = nil, message = nil, &blk)
     return yield(sec) if sec == nil or sec.zero?
     sec = apply_timeout_scale(sec)
-    Timeout.timeout(sec, klass, message, &blk)
+    # Timeout.timeout in Ruby 2.3 does not take a message
+    Timeout.timeout(sec, klass, *message, &blk)
   end
   module_function :timeout
 
@@ -194,6 +195,8 @@ module EnvUtil
       rescue Errno::EINVAL
         next
       rescue Errno::ESRCH
+        # Windows reports ESRCH for a child that has exited but not been reaped
+        Process.wait(pid, Process::WNOHANG) rescue nil
         break
       end
       if signals.empty? or !reprieve

@@ -575,8 +575,7 @@ AS_CASE(["$target_os"],
     ])
     rb_cv_binary_elf=no
     : ${enable_shared=yes}
-    ],
-[hiuxmpp*], [AC_DEFINE(__HIUX_MPP__)])    # by TOYODA Eizi <toyoda@npd.kishou.go.jp>
+    ])
 
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
@@ -1149,9 +1148,6 @@ AC_SUBST(POSTLINK)
 cleanlibs=
 AC_SUBST(cleanlibs)
 AS_CASE(["$target_os"],
-[nextstep*], [	],
-[openstep*], [	],
-[rhapsody*], [	],
 [darwin*], [
 		ORIG_LIBS="$LIBS"
 		RUBY_PREPEND_OPTION(LIBS, -lobjc)
@@ -1958,8 +1954,6 @@ AS_CASE(["$target_cpu"],
 [alpha*|sh4|sh4el|sh4eb], [AS_CASE(["$target_os"::"$GCC"],
 		[*::yes],  # gcc
 			[CFLAGS="-mieee $CFLAGS"],
-		[osf*],    # ccc
-			[CFLAGS="-ieee $CFLAGS"],
 		)],
 [sparc*], [AC_LIBOBJ([sparc])])
 
@@ -3171,9 +3165,8 @@ STATIC=
       RUBY_APPEND_OPTION(CCDLFLAGS, -fPIC)])
   ], [
     AS_CASE(["$target_os"],
-	[solaris*|irix*], [CCDLFLAGS="$CCDLFLAGS -KPIC"],
-	[esix*|uxpds*],   [CCDLFLAGS="$CCDLFLAGS -KPIC"],
-	                  [: ${CCDLFLAGS=""}])
+	[solaris*], [CCDLFLAGS="$CCDLFLAGS -KPIC"],
+	            [: ${CCDLFLAGS=""}])
   ])
 }
 
@@ -3211,16 +3204,6 @@ AC_SUBST(PROGRAM_EXTS, [${EXTSTATIC:+exts}])
 			    : ${LIBPATHENV=LD_LIBRARY_PATH_32}
 			    : ${PRELOADENV=LD_PRELOAD_32}
 			])
-			rb_cv_dlopen=yes],
-	[irix*], [	: ${LDSHARED='$(LD) -shared'}
-			rb_cv_dlopen=yes],
-	[sysv4*], [	: ${LDSHARED='$(LD) -G'}
-			rb_cv_dlopen=yes],
-	[nto-qnx*], [	: ${LDSHARED='$(CC) -shared'}
-			rb_cv_dlopen=yes],
-	[esix*|uxpds*], [ : ${LDSHARED='$(LD) -G'}
-			rb_cv_dlopen=yes],
-	[osf*], [	: ${LDSHARED='$(LD) -shared -expect_unresolved "*"'}
 			rb_cv_dlopen=yes],
 	[linux* | gnu* | k*bsd*-gnu | netbsd* | kopensolaris*-gnu | haiku*], [
 			: ${LDSHARED='$(CC) -shared'}
@@ -3270,19 +3253,12 @@ AC_SUBST(PROGRAM_EXTS, [${EXTSTATIC:+exts}])
 			: ${LIBPATHENV=LIBPATH}
 			: ${PRELOADENV=LDR_PRELOAD}
 			rb_cv_dlopen=yes],
-	[nto-qnx*], [	DLDFLAGS="$DLDFLAGS -L/lib -L/usr/lib -L/usr/local/lib"
-			: ${LDSHARED='$(LD) -Bshareable -x'}
-			LDFLAGS="$LDFLAGS -L/lib -L/usr/lib -L/usr/local/lib"
-			rb_cv_dlopen=yes],
 	[cygwin*|msys*|mingw*], [
 			: ${LDSHARED='$(CC) -shared'}
 			XLDFLAGS="$XLDFLAGS -Wl,--stack,0x00200000,--enable-auto-import"
 			DLDFLAGS="${DLDFLAGS} -Wl,--enable-auto-image-base,--enable-auto-import"
 			: ${LIBPATHENV=PATH}
 			: ${PRELOADENV=""}
-			rb_cv_dlopen=yes],
-	[hiuxmpp], [	: ${LDSHARED='$(LD) -r'}],
-	[atheos*], [	: ${LDSHARED='$(CC) -shared'}
 			rb_cv_dlopen=yes],
 	[wasi*], [	: ${LDSHARED='$(LD) -shared -Xlinker --export-dynamic'}],
 	[	: ${LDSHARED='$(LD)'}])
@@ -3441,7 +3417,7 @@ AS_IF([test x$with_valgrind != xno],
     [darwin*], [
 	SOEXT=dylib
 	DLEXT=bundle],
-    [cygwin*|msys*|mingw*|*djgpp*], [
+    [cygwin*|msys*|mingw*], [
 	LOAD_RELATIVE=1
 	SOEXT=dll
 	DLEXT=so],
@@ -3679,7 +3655,7 @@ AS_CASE("$enable_shared", [yes], [
 
   relative_libprefix="/../${multiarch+../}${libdir_basename}"
   AS_CASE(["$target_os"],
-    [linux* | gnu* | k*bsd*-gnu | atheos* | kopensolaris*-gnu | haiku*], [
+    [linux* | gnu* | k*bsd*-gnu | kopensolaris*-gnu | haiku*], [
 	RUBY_APPEND_OPTIONS(LIBRUBY_DLDFLAGS, ['-Wl,-soname,$(LIBRUBY_SONAME)' "$LDFLAGS_OPTDIR"])
 	LIBRUBY_ALIASES='$(LIBRUBY_SONAME) lib$(RUBY_SO_NAME).$(SOEXT)'
 	AS_IF([test "$load_relative" = yes], [
@@ -4241,21 +4217,6 @@ enum {
 	)
 	RUBY_APPEND_OPTION(XLDFLAGS, [-framework CoreFoundation])
 	RUBY_APPEND_OPTION(LIBRUBYARG_STATIC, [-framework CoreFoundation])
-	],
-    [osf*], [
-	AS_IF([test "$GCC" != "yes" ], [
-	  # compile something small: taint.c is fine for this.
-	  # the main point is the '-v' flag of 'cc'.
-	  AS_CASE(["`cc -v -I. -c main.c -o /tmp/main.o 2>&1`"],
-	  [*/gemc_cc*], [   # we have the new DEC GEM CC
-                        CFLAGS="$CFLAGS -oldc"
-                        ],
-          [            # we have the old MIPS CC
-                        ])
-	  # cleanup
-	  rm -f /tmp/main.o
-	  CFLAGS="$CFLAGS -std"
-	])
 	],
     [cygwin*|msys*|mingw*], [
 	LIBRUBY_DLDFLAGS="${LIBRUBY_DLDFLAGS}"' -Wl,--out-implib=$(LIBRUBY)'

@@ -488,5 +488,17 @@ module Prism
       end_keyword_loc
     end
   end
+
+  class SymbolNode < Node
+    #: () -> String
+    def value # :nodoc
+      content
+    end
+
+    #: () -> Location
+    def value_loc # :nodoc
+      content_loc
+    end
+  end
   # :startdoc:
 end

@@ -28,6 +28,14 @@ RSpec.describe "bundle executable" do
     expect(out).to eq("Hello, world")
   end
 
+  it "does not execute a bundler-<task> binary that is only in the current directory" do
+    create_file(bundled_app("bundler-testtasks"), "#!/usr/bin/env ruby\nputs 'Hello, world'\n")
+
+    bundle "testtasks", raise_on_error: false
+
+    expect(err).to include('Could not find command "testtasks".')
+  end
+
   describe "aliases" do
     it "aliases e to exec" do
       bundle "e --help"

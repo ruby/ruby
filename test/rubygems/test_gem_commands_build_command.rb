@@ -836,7 +836,7 @@ class TestGemCommandsBuildCommand < Gem::TestCase
   def test_build_signed_gem_ml_dsa_65
     pend "openssl is missing" unless Gem::HAVE_OPENSSL && !Gem.java_platform?
 
-    omit_unless_support_ml_dsa_key
+    omit_unless_support_ml_dsa_key_load
 
     trust_dir = Gem::Security.trust_dir
 
@@ -869,7 +869,7 @@ class TestGemCommandsBuildCommand < Gem::TestCase
   def test_build_signed_gem_ml_dsa_65_without_ml_dsa_support
     pend "openssl is missing" unless Gem::HAVE_OPENSSL
 
-    omit_if_support_ml_dsa_key
+    omit_if_support_ml_dsa_key_load
 
     spec = util_spec "some_gem" do |s|
       s.signing_key = ML_DSA_65_PRIVATE_KEY_FILE

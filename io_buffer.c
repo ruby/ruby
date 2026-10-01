@@ -57,8 +57,17 @@ enum {
 };
 
 struct rb_io_buffer {
+    // Without a source (source == Qnil), this is an absolute pointer to owned
+    // or borrowed memory. Ownership is determined by the flags, not by the
+    // presence of a source.
+    //
+    // With a source (String or IO::Buffer), this is a byte offset into it.
+    // The absolute pointer is resolved as `source_base + offset` on demand
+    // (see io_buffer_try_get_bytes), so source relocation preserves the
+    // logical range. Use io_buffer_slice_offset() to read the offset.
     void *base;
     size_t size;
+
     enum rb_io_buffer_flags flags;
     // Locking and unlocking are performed with the GVL held.
     size_t lock_count;
@@ -207,7 +216,14 @@ io_buffer_zero(struct rb_io_buffer *buffer)
 static void
 io_buffer_initialize(VALUE self, struct rb_io_buffer *buffer, void *base, size_t size, enum rb_io_buffer_flags flags, VALUE source)
 {
-    if (base) {
+    if (source != Qnil) {
+        // The buffer is backed by another object (e.g. a String). Here `base`
+        // is a byte *offset* into that source rather than an absolute pointer,
+        // and the memory is not owned by this buffer. The absolute base is
+        // resolved on demand as `source_base + offset` (see
+        // io_buffer_try_get_bytes), so it stays valid if the source moves.
+    }
+    else if (base) {
         // If we are provided a pointer, we use it.
     }
     else if (size) {
@@ -356,14 +372,21 @@ io_buffer_slice_p(struct rb_io_buffer *buffer)
     return rb_typeddata_is_kind_of(buffer->source, &rb_io_buffer_type);
 }
 
-// Return the buffer which owns the lock count. A slice backed by another
-// buffer shares that source buffer's lock count. Other external sources, such
-// as strings, manage their own lifetime and do not share buffer lock state.
+// For a slice (io_buffer_slice_p), the `base` field stores the byte offset of
+// the slice within its immediate source rather than an absolute pointer.
+static inline size_t
+io_buffer_slice_offset(const struct rb_io_buffer *buffer)
+{
+    return (uintptr_t)buffer->base;
+}
+
+// Return the buffer which owns the lock count. A slice shares the lock count
+// with the storage at the end of its source chain.
 static struct rb_io_buffer *
 io_buffer_lock_owner(struct rb_io_buffer *buffer)
 {
-    if (io_buffer_slice_p(buffer)) {
-        return get_io_buffer(buffer->source);
+    while (io_buffer_slice_p(buffer)) {
+        buffer = get_io_buffer(buffer->source);
     }
 
     return buffer;
@@ -532,7 +555,9 @@ static VALUE io_buffer_for_make_instance(VALUE klass, VALUE string, enum rb_io_b
     if (!(flags & RB_IO_BUFFER_READONLY))
         rb_str_modify(string);
 
-    io_buffer_initialize(instance, buffer, RSTRING_PTR(string), RSTRING_LEN(string), flags, string);
+    // String-backed buffers are offset-based: pass offset 0 (the whole string),
+    // resolved as `RSTRING_PTR(string) + offset` on demand.
+    io_buffer_initialize(instance, buffer, (void *)0, RSTRING_LEN(string), flags, string);
 
     return instance;
 }
@@ -709,13 +734,13 @@ rb_io_buffer_for_writing(VALUE string_or_buffer, VALUE (*callback)(VALUE, VALUE)
  *    IO::Buffer.for(string) {|io_buffer| ... read/write io_buffer ...}
  *
  *  Creates a zero-copy IO::Buffer from the given string's memory. Without a
- *  block a frozen internal copy of the string is created efficiently and used
- *  as the buffer source. When a block is provided, the buffer is associated
- *  directly with the string's internal buffer and updating the buffer will
- *  update the string.
+ *  block, a frozen snapshot of the string is used as the buffer source, so
+ *  later changes to the original string do not affect the buffer. When a block
+ *  is provided, the buffer is associated directly with the string's internal
+ *  buffer and updating the buffer will update the string.
  *
- *  Until #free is invoked on the buffer, either explicitly or via the garbage
- *  collector, the source string will be locked and cannot be modified.
+ *  In the block form, the string is locked and cannot be modified while the
+ *  block is executing.
  *
  *  If the string is frozen, it will create a read-only buffer which cannot be
  *  modified. If the string is shared, it may trigger a copy-on-write when
@@ -757,8 +782,9 @@ rb_io_buffer_type_for(VALUE klass, VALUE string)
         return rb_ensure(io_buffer_for_yield_instance, (VALUE)&arguments, io_buffer_for_yield_instance_ensure, (VALUE)&arguments);
     }
     else {
-        // This internally returns the source string if it's already frozen.
-        string = rb_str_tmp_frozen_acquire(string);
+        // Use a Ruby-visible frozen snapshot as the backing source. A hidden
+        // temporary frozen String cannot be returned by IO::Buffer#source.
+        string = rb_str_new_frozen(string);
         return io_buffer_for_make_instance(klass, string, RB_IO_BUFFER_READONLY);
     }
 }
@@ -951,7 +977,7 @@ io_buffer_map(int argc, VALUE *argv, VALUE klass)
         }
         else if (UNLIKELY((size_t)(file_size - offset) < size)) {
             size_t maximum_offset =
-                (file_size - size) / RUBY_IO_BUFFER_MAP_ALIGNMENT *
+                ((size_t)file_size - size) / RUBY_IO_BUFFER_MAP_ALIGNMENT *
                 RUBY_IO_BUFFER_MAP_ALIGNMENT;
             rb_raise(rb_eArgError,
                      "Offset (%" PRIsVALUE ") can't be larger than "
@@ -1078,34 +1104,60 @@ rb_io_buffer_initialize(int argc, VALUE *argv, VALUE self)
     return self;
 }
 
+// Resolve the current base pointer and size of a buffer, following its source
+// chain. Every source-backed buffer stores an offset into its immediate
+// source. Validate each complete parent view, and use iteration so deeply
+// nested slices do not grow the C stack. Returns non-zero if the buffer is
+// valid, and sets `*base`/`*size` accordingly (NULL/0 when invalid).
 static int
-io_buffer_validate_slice(VALUE source, void *base, size_t size)
+io_buffer_try_get_bytes(struct rb_io_buffer *buffer, void **base, size_t *size)
 {
+    size_t length = buffer->size;
+    size_t offset = 0;
     void *source_base = NULL;
-    size_t source_size = 0;
 
-    if (RB_TYPE_P(source, T_STRING)) {
-        RSTRING_GETMEM(source, source_base, source_size);
+    while (buffer->source != Qnil) {
+        struct rb_io_buffer *source_buffer = NULL;
+        size_t source_size;
+
+        if (io_buffer_slice_p(buffer)) {
+            source_buffer = get_io_buffer(buffer->source);
+            source_size = source_buffer->size;
+        }
+        else {
+            // A String-backed buffer is rooted in the pinned String.
+            RSTRING_GETMEM(buffer->source, source_base, source_size);
+        }
+
+        size_t relative_offset = io_buffer_slice_offset(buffer);
+        if (relative_offset > source_size || buffer->size > source_size - relative_offset ||
+            relative_offset > SIZE_MAX - offset) {
+            *base = NULL;
+            *size = 0;
+            return 0;
+        }
+
+        offset += relative_offset;
+        if (!source_buffer) {
+            *base = source_base ? (char *)source_base + offset : NULL;
+            *size = length;
+            return 1;
+        }
+
+        buffer = source_buffer;
     }
-    else {
-        rb_io_buffer_get_bytes(source, &source_base, &source_size);
+
+    // A source-less buffer (allocated, mapped, or borrowed) contributes the
+    // absolute base pointer. The accumulated offset selects a range within it.
+    if (io_buffer_slice_p(buffer)) {
+        // A slice with no source can only be an uninitialized object.
+        *base = NULL;
+        *size = 0;
+        return 0;
     }
 
-    uintptr_t source_address = (uintptr_t)source_base;
-    uintptr_t address = (uintptr_t)base;
-
-    // Base is out of range:
-    if (address < source_address) return 0;
-
-    uintptr_t offset = address - source_address;
-
-    // Base is beyond the end of the source:
-    if (offset > source_size) return 0;
-
-    // End is beyond the end of the source:
-    if (size > source_size - (size_t)offset) return 0;
-
-    // It seems okay:
+    *base = buffer->base ? (char *)buffer->base + offset : NULL;
+    *size = length;
     return 1;
 }
 
@@ -1114,7 +1166,9 @@ io_buffer_validate(struct rb_io_buffer *buffer)
 {
     if (buffer->source != Qnil) {
         // Only slices incur this overhead, unfortunately... better safe than sorry!
-        return io_buffer_validate_slice(buffer->source, buffer->base, buffer->size);
+        void *base = NULL;
+        size_t size = 0;
+        return io_buffer_try_get_bytes(buffer, &base, &size);
     }
     else {
         return 1;
@@ -1126,17 +1180,11 @@ rb_io_buffer_get_bytes(VALUE self, void **base, size_t *size)
 {
     struct rb_io_buffer *buffer = get_io_buffer(self);
 
-    if (io_buffer_validate(buffer)) {
-        if (buffer->base) {
-            *base = buffer->base;
-            *size = buffer->size;
-
-            return buffer->flags;
-        }
+    if (io_buffer_try_get_bytes(buffer, base, size)) {
+        enum rb_io_buffer_flags flags = buffer->flags;
+        if (io_buffer_readonly_p(buffer)) flags |= RB_IO_BUFFER_READONLY;
+        return flags;
     }
-
-    *base = NULL;
-    *size = 0;
 
     return 0;
 }
@@ -1145,8 +1193,7 @@ rb_io_buffer_get_bytes(VALUE self, void **base, size_t *size)
 static void
 io_buffer_validate_for_writing(struct rb_io_buffer *buffer)
 {
-    if (buffer->flags & RB_IO_BUFFER_READONLY ||
-        (!NIL_P(buffer->source) && OBJ_FROZEN(buffer->source))) {
+    if (io_buffer_readonly_p(buffer)) {
         rb_raise(rb_eIOBufferAccessError, "Buffer is not writable!");
     }
 
@@ -1170,13 +1217,7 @@ io_buffer_get_bytes_for_writing(struct rb_io_buffer *buffer, void **base, size_t
 {
     io_buffer_validate_for_writing(buffer);
 
-    if (buffer->base) {
-        *base = buffer->base;
-        *size = buffer->size;
-    } else {
-        *base = NULL;
-        *size = 0;
-    }
+    io_buffer_try_get_bytes(buffer, base, size);
 }
 
 void
@@ -1200,13 +1241,9 @@ io_buffer_get_bytes_for_reading(struct rb_io_buffer *buffer, const void **base, 
 {
     io_buffer_validate_for_reading(buffer);
 
-    if (buffer->base) {
-        *base = buffer->base;
-        *size = buffer->size;
-    } else {
-        *base = NULL;
-        *size = 0;
-    }
+    void *writable_base = NULL;
+    io_buffer_try_get_bytes(buffer, &writable_base, size);
+    *base = writable_base;
 }
 
 void
@@ -1234,9 +1271,14 @@ rb_io_buffer_to_s(VALUE self)
     VALUE result = rb_str_new_cstr("#<");
 
     rb_str_append(result, rb_class_name(CLASS_OF(self)));
-    rb_str_catf(result, " %p+%"PRIdSIZE, buffer->base, buffer->size);
 
-    if (buffer->base == NULL) {
+    // Resolve the current base (following slice indirection) for display:
+    void *base = NULL;
+    size_t size = 0;
+    io_buffer_try_get_bytes(buffer, &base, &size);
+    rb_str_catf(result, " %p+%"PRIdSIZE, base, buffer->size);
+
+    if (base == NULL) {
         rb_str_cat2(result, " NULL");
     }
 
@@ -1268,7 +1310,7 @@ rb_io_buffer_to_s(VALUE self)
         rb_str_cat2(result, " PRIVATE");
     }
 
-    if (buffer->flags & RB_IO_BUFFER_READONLY) {
+    if (io_buffer_readonly_p(buffer)) {
         rb_str_cat2(result, " READONLY");
     }
 
@@ -1367,7 +1409,9 @@ rb_io_buffer_inspect(VALUE self)
 
     VALUE result = rb_io_buffer_to_s(self);
 
-    if (io_buffer_validate(buffer)) {
+    void *base = NULL;
+    size_t total = 0;
+    if (io_buffer_try_get_bytes(buffer, &base, &total) && base) {
         // Limit the maximum size generated by inspect:
         size_t size = buffer->size;
         int clamped = 0;
@@ -1377,7 +1421,7 @@ rb_io_buffer_inspect(VALUE self)
             clamped = 1;
         }
 
-        io_buffer_hexdump(result, RB_IO_BUFFER_INSPECT_HEXDUMP_WIDTH, buffer->base, size, 0, 0);
+        io_buffer_hexdump(result, RB_IO_BUFFER_INSPECT_HEXDUMP_WIDTH, base, size, 0, 0);
 
         if (clamped) {
             rb_str_catf(result, "\n(and %" PRIuSIZE " more bytes not printed)", buffer->size - size);
@@ -1402,19 +1446,48 @@ rb_io_buffer_size(VALUE self)
 }
 
 /*
+ *  call-seq: source -> io_buffer, string, or nil
+ *
+ *  Returns the object backing this buffer, or +nil+ for a source-less buffer.
+ *  A slice returns the buffer on which #slice was called, including when
+ *  that buffer is itself a slice. The source is retained while the slice
+ *  lives. There is no source setter.
+ *
+ *  A String-backed buffer returns its backing String. Without a block,
+ *  IO::Buffer.for uses a frozen snapshot of a mutable input String, which is
+ *  also returned as the source.
+ *
+ *  A source-less buffer may own or borrow its memory, so +nil+ does not imply
+ *  that the buffer owns its allocation.
+ *
+ *    root = IO::Buffer.new(8)
+ *    parent = root.slice(1, 6)
+ *    child = parent.slice(1, 2)
+ *    child.source.equal?(parent) # => true
+ *    parent.source.equal?(root)  # => true
+ *    root.source                 # => nil
+ */
+static VALUE
+rb_io_buffer_source(VALUE self)
+{
+    return get_io_buffer(self)->source;
+}
+
+/*
  *  call-seq: valid? -> true or false
  *
- *  A buffer which is not a slice is always valid, including a null buffer.
- *  Only slices can become invalid.
+ *  A buffer without a source is always valid, including a null buffer. A
+ *  source-backed buffer is valid when its offset and length fit within its
+ *  source's current size.
  *
- *  A slice is valid when its entire recorded memory range is contained within
- *  its source's current memory range. It can become invalid if its source is
- *  freed, transferred, shrunk past the slice, or reallocated at a different
- *  address. Validity is dynamic: if the source later contains the same address
- *  range again, the slice becomes valid again.
+ *  Relocating a source does not invalidate a source-backed buffer. Freeing,
+ *  transferring, or shrinking the source can make it invalid; if the same
+ *  source later grows to include the range again, the buffer becomes valid
+ *  and refers to the current contents at its original offset.
  *
- *  #valid?, #null? and #empty? describe independent properties. For example,
- *  an invalid slice can still have a non-null address and a non-zero size.
+ *  An empty source-backed range at offset zero can be valid even when its
+ *  source has no storage. #valid?, #null? and #empty? describe distinct
+ *  properties: a buffer can be valid, null, and empty at the same time.
  */
 static VALUE
 rb_io_buffer_valid_p(VALUE self)
@@ -1446,7 +1519,11 @@ rb_io_buffer_null_p(VALUE self)
 {
     struct rb_io_buffer *buffer = get_io_buffer(self);
 
-    return RBOOL(buffer->base == NULL);
+    void *base = NULL;
+    size_t size = 0;
+    io_buffer_try_get_bytes(buffer, &base, &size);
+
+    return RBOOL(base == NULL);
 }
 
 /*
@@ -1498,8 +1575,8 @@ rb_io_buffer_external_p(VALUE self)
  *  requested size is less than the IO::Buffer::PAGE_SIZE and it was not
  *  requested to be mapped on creation.
  *
- *  Internal buffers can be resized, and such an operation will typically
- *  invalidate all slices, but not always.
+ *  Internal buffers can be resized. Slices remain valid if their ranges still
+ *  fit within the resized buffer, including when its storage is relocated.
  */
 static VALUE
 rb_io_buffer_internal_p(VALUE self)
@@ -1519,8 +1596,8 @@ rb_io_buffer_internal_p(VALUE self)
  *  IO::Buffer::MAPPED flag or if the size was at least IO::Buffer::PAGE_SIZE,
  *  or backed by a file if created with ::map.
  *
- *  Mapped buffers can usually be resized, and such an operation will typically
- *  invalidate all slices, but not always.
+ *  Mapped buffers can usually be resized. Slices remain valid if their ranges
+ *  still fit within the resized buffer, including when its mapping is moved.
  */
 static VALUE
 rb_io_buffer_mapped_p(VALUE self)
@@ -1615,7 +1692,22 @@ rb_io_buffer_private_p(VALUE self)
 static int
 io_buffer_readonly_p(struct rb_io_buffer *buffer)
 {
-    return buffer->flags & RB_IO_BUFFER_READONLY;
+    for (;;) {
+        if (buffer->flags & RB_IO_BUFFER_READONLY)
+            return 1;
+
+        VALUE source = buffer->source;
+        if (NIL_P(source))
+            return 0;
+
+        if (OBJ_FROZEN(source))
+            return 1;
+
+        if (RB_TYPE_P(source, T_STRING))
+            return 0;
+
+        buffer = get_io_buffer(source);
+    }
 }
 
 /*
@@ -1626,6 +1718,9 @@ io_buffer_readonly_p(struct rb_io_buffer *buffer)
  *
  *  A buffer created by IO::Buffer.for without a block is read-only, as is one
  *  backed by a frozen string or a read-only file.
+ *
+ *  A slice derives read-only access from its current source. Replacing the
+ *  source's storage can therefore change the slice's read-only status.
  */
 static VALUE
 rb_io_buffer_readonly_p(VALUE self)
@@ -1941,10 +2036,12 @@ rb_io_buffer_hexdump(int argc, VALUE *argv, VALUE self)
 
     VALUE result = Qnil;
 
-    if (io_buffer_validate(buffer) && buffer->base) {
+    void *base = NULL;
+    size_t size = 0;
+    if (io_buffer_try_get_bytes(buffer, &base, &size) && base) {
         result = rb_str_buf_new(io_buffer_hexdump_output_size(width, length, 1));
 
-        io_buffer_hexdump(result, width, buffer->base, offset+length, offset, 1);
+        io_buffer_hexdump(result, width, base, offset+length, offset, 1);
     }
 
     return result;
@@ -1958,18 +2055,12 @@ rb_io_buffer_slice(struct rb_io_buffer *buffer, VALUE self, size_t offset, size_
     VALUE instance = rb_io_buffer_type_allocate(rb_class_of(self));
     struct rb_io_buffer *slice = get_io_buffer(instance);
 
-    slice->flags |= (buffer->flags & RB_IO_BUFFER_READONLY);
-    slice->base = buffer->base ? (char*)buffer->base + offset : NULL;
     slice->size = length;
 
-    // Slices retain their root buffer. If this buffer is already a slice,
-    // retain its root directly rather than building a chain of slices:
-    if (io_buffer_slice_p(buffer)) {
-        RB_OBJ_WRITE(instance, &slice->source, buffer->source);
-    }
-    else {
-        RB_OBJ_WRITE(instance, &slice->source, self);
-    }
+    // Retain the immediate parent and store an offset into its current view.
+    // Address resolution follows the source chain when the bytes are accessed.
+    slice->base = (void *)(uintptr_t)offset;
+    RB_OBJ_WRITE(instance, &slice->source, self);
 
     return instance;
 }
@@ -1980,9 +2071,14 @@ rb_io_buffer_slice(struct rb_io_buffer *buffer, VALUE self, size_t offset, size_
  *  Produce another IO::Buffer which is a slice (or view into) the current one
  *  starting at +offset+ bytes and going for +length+ bytes.
  *
- *  The slicing happens without copying memory. The slice retains its root
- *  buffer and becomes invalid if that root is freed, transferred, resized so
- *  that the slice is outside its bounds, or otherwise invalidated.
+ *  Slicing does not copy memory. The slice retains +self+ as its source and
+ *  tracks a logical offset and length within that view. Nested slices retain
+ *  their immediate parent rather than being flattened.
+ *
+ *  A slice becomes invalid if its source is freed, transferred, resized so
+ *  that the slice is outside its bounds, or otherwise invalidated. It becomes
+ *  valid again if the source becomes valid and the range fits within it.
+ *  Reallocating the underlying storage does not invalidate the slice.
  *
  *  If the offset is not given, it will be zero. If the offset is negative, it
  *  will raise an ArgumentError.
@@ -2121,28 +2217,20 @@ io_buffer_resize_slice(struct rb_io_buffer *slice, size_t size)
 {
     struct rb_io_buffer *source = get_io_buffer(slice->source);
 
-    if (!io_buffer_validate(source)) {
+    void *source_base = NULL;
+    size_t source_size = 0;
+
+    if (!io_buffer_try_get_bytes(source, &source_base, &source_size)) {
         rb_raise(rb_eIOBufferInvalidatedError, "Buffer is invalid!");
     }
 
-    if (source->base == NULL || slice->base == NULL) {
+    size_t offset = io_buffer_slice_offset(slice);
+
+    if (offset > source_size) {
         rb_raise(rb_eIOBufferInvalidatedError, "Buffer is invalid!");
     }
 
-    uintptr_t source_address = (uintptr_t)source->base;
-    uintptr_t slice_address = (uintptr_t)slice->base;
-
-    if (slice_address < source_address) {
-        rb_raise(rb_eIOBufferInvalidatedError, "Buffer is invalid!");
-    }
-
-    uintptr_t offset = slice_address - source_address;
-
-    if (offset > source->size) {
-        rb_raise(rb_eIOBufferInvalidatedError, "Buffer is invalid!");
-    }
-
-    if (size > source->size - (size_t)offset) {
+    if (size > source_size - offset) {
         rb_raise(rb_eArgError, "Resized slice exceeds its source buffer!");
     }
 
@@ -2168,13 +2256,17 @@ rb_io_buffer_resize(VALUE self, size_t size)
         rb_raise(rb_eIOBufferLockedError, "Cannot resize locked buffer!");
     }
 
+    // An external buffer (including a String-backed buffer, whose base is an
+    // offset into the source) does not own its memory and cannot be resized.
+    // This must be checked before the empty-buffer case below, since a
+    // String-backed buffer at offset 0 has a NULL `base`.
+    if (buffer->flags & RB_IO_BUFFER_EXTERNAL) {
+        rb_raise(rb_eIOBufferAccessError, "Cannot resize external buffer!");
+    }
+
     if (buffer->base == NULL) {
         io_buffer_initialize(self, buffer, NULL, size, io_flags_for_size(size), Qnil);
         return;
-    }
-
-    if (buffer->flags & RB_IO_BUFFER_EXTERNAL) {
-        rb_raise(rb_eIOBufferAccessError, "Cannot resize external buffer!");
     }
 
     if (size == 0) {
@@ -3060,7 +3152,15 @@ io_buffer_copy_from(struct rb_io_buffer *buffer, const void *source_base, size_t
     size_t size;
     io_buffer_get_bytes_for_writing(buffer, &base, &size);
 
+    if (length >= IO_BUFFER_BLOCKING_SIZE) {
+        io_buffer_lock(buffer);
+    }
+
     io_buffer_memmove(base, size, offset, source_base, source_offset, source_size, length);
+
+    if (length >= IO_BUFFER_BLOCKING_SIZE) {
+        io_buffer_unlock(buffer);
+    }
 
     return SIZET2NUM(length);
 }
@@ -3235,6 +3335,23 @@ io_buffer_copy(int argc, VALUE *argv, VALUE self)
     return rb_io_buffer_locked_for_reading(source, io_buffer_copy_from_readable, (VALUE)&arguments);
 }
 
+struct io_buffer_get_string_arguments {
+    size_t offset;
+    size_t length;
+    rb_encoding *encoding;
+};
+
+static VALUE
+io_buffer_get_string_locked(const void *base, size_t size, VALUE _arguments)
+{
+    struct io_buffer_get_string_arguments *arguments = (void *)_arguments;
+    if (size_sum_is_bigger_than(arguments->offset, arguments->length, size)) {
+        rb_raise(rb_eArgError, "Specified offset+length is bigger than the buffer size!");
+    }
+    const char *data = base ? (const char *)base + arguments->offset : NULL;
+    return rb_enc_str_new(data, arguments->length, arguments->encoding);
+}
+
 /*
  *  call-seq: get_string([offset, [length, [encoding]]]) -> string
  *
@@ -3254,26 +3371,13 @@ io_buffer_get_string(int argc, VALUE *argv, VALUE self)
 {
     rb_check_arity(argc, 0, 3);
 
-    size_t offset, length;
-    struct rb_io_buffer *buffer = io_buffer_extract_offset_length(self, argc, argv, &offset, &length);
+    struct io_buffer_get_string_arguments arguments;
+    io_buffer_extract_offset_length(self, argc, argv, &arguments.offset, &arguments.length);
 
-    rb_encoding *encoding;
-    if (argc >= 3) {
-        encoding = rb_find_encoding(argv[2]);
-    }
-    else {
-        encoding = rb_ascii8bit_encoding();
-    }
-
-    const void *base;
-    size_t size;
-    io_buffer_get_bytes_for_reading(buffer, &base, &size);
-
-    io_buffer_validate_range(buffer, offset, length);
-
-    const char *data = base ? (const char*)base + offset : NULL;
-
-    return rb_enc_str_new(data, length, encoding);
+    // Encoding coercion may invoke Ruby and change the buffer. Retain no
+    // metadata or byte pointer across it; resolve under the subsequent lock.
+    arguments.encoding = argc >= 3 ? rb_find_encoding(argv[2]) : rb_ascii8bit_encoding();
+    return rb_io_buffer_locked_for_reading(self, io_buffer_get_string_locked, (VALUE)&arguments);
 }
 
 /*
@@ -3474,9 +3578,8 @@ io_buffer_read_internal(void *_argument)
 VALUE
 rb_io_buffer_read(VALUE self, VALUE io, size_t offset, size_t length)
 {
-    struct rb_io_buffer *buffer = get_io_buffer_for_writing(self);
-
     io = rb_io_get_io(io);
+    struct rb_io_buffer *buffer = get_io_buffer_for_writing(self);
 
     io_buffer_validate_range(buffer, offset, length);
 
@@ -3489,6 +3592,10 @@ rb_io_buffer_read(VALUE self, VALUE io, size_t offset, size_t length)
         if (!UNDEF_P(result)) {
             return result;
         }
+
+        // The scheduler capability check can invoke Ruby and change the buffer.
+        buffer = get_io_buffer_for_writing(self);
+        io_buffer_validate_range(buffer, offset, length);
     }
 
     void *base;
@@ -3565,9 +3672,8 @@ io_buffer_pread_internal(void *_argument)
 VALUE
 rb_io_buffer_pread(VALUE self, VALUE io, rb_off_t from, size_t offset, size_t length)
 {
-    struct rb_io_buffer *buffer = get_io_buffer_for_writing(self);
-
     io = rb_io_get_io(io);
+    struct rb_io_buffer *buffer = get_io_buffer_for_writing(self);
 
     io_buffer_validate_range(buffer, offset, length);
 
@@ -3580,6 +3686,9 @@ rb_io_buffer_pread(VALUE self, VALUE io, rb_off_t from, size_t offset, size_t le
         if (!UNDEF_P(result)) {
             return result;
         }
+
+        buffer = get_io_buffer_for_writing(self);
+        io_buffer_validate_range(buffer, offset, length);
     }
 
     void *base;
@@ -3674,6 +3783,9 @@ rb_io_buffer_write(VALUE self, VALUE io, size_t offset, size_t length)
         if (!UNDEF_P(result)) {
             return result;
         }
+
+        buffer = get_io_buffer(self);
+        io_buffer_validate_range(buffer, offset, length);
     }
 
     const void *base;
@@ -3757,6 +3869,9 @@ rb_io_buffer_pwrite(VALUE self, VALUE io, rb_off_t from, size_t offset, size_t l
         if (!UNDEF_P(result)) {
             return result;
         }
+
+        buffer = get_io_buffer(self);
+        io_buffer_validate_range(buffer, offset, length);
     }
 
     const void *base;
@@ -3990,13 +4105,22 @@ io_buffer_not(VALUE self)
 }
 
 static inline int
-io_buffer_overlaps(const struct rb_io_buffer *a, const struct rb_io_buffer *b)
+io_buffer_overlaps(struct rb_io_buffer *a, struct rb_io_buffer *b)
 {
-    if (a->base > b->base) {
-        return io_buffer_overlaps(b, a);
-    }
+    // Resolve the current base pointers (following slice indirection):
+    void *a_base = NULL, *b_base = NULL;
+    size_t a_size = 0, b_size = 0;
+    if (!io_buffer_try_get_bytes(a, &a_base, &a_size)) return 0;
+    if (!io_buffer_try_get_bytes(b, &b_base, &b_size)) return 0;
 
-    return (b->base >= a->base) && (b->base < (void*)((unsigned char *)a->base + a->size));
+    if (a_size == 0 || b_size == 0 || a_base == NULL || b_base == NULL) return 0;
+
+    // Compare integer address differences, without ordering unrelated C
+    // pointers or constructing end addresses that could overflow.
+    uintptr_t a_start = (uintptr_t)a_base;
+    uintptr_t b_start = (uintptr_t)b_base;
+    if (a_start <= b_start) return b_start - a_start < a_size;
+    return a_start - b_start < b_size;
 }
 
 static inline void
@@ -4049,7 +4173,7 @@ io_buffer_and_inplace(VALUE self, VALUE mask)
     size_t mask_size;
     io_buffer_get_bytes_for_reading(mask_buffer, &mask_base, &mask_size);
 
-    memory_and_inplace(base, size, mask_buffer->base, mask_buffer->size);
+    memory_and_inplace(base, size, (unsigned char *)mask_base, mask_size);
 
     return self;
 }
@@ -4097,7 +4221,7 @@ io_buffer_or_inplace(VALUE self, VALUE mask)
     size_t mask_size;
     io_buffer_get_bytes_for_reading(mask_buffer, &mask_base, &mask_size);
 
-    memory_or_inplace(base, size, mask_buffer->base, mask_buffer->size);
+    memory_or_inplace(base, size, (unsigned char *)mask_base, mask_size);
 
     return self;
 }
@@ -4145,7 +4269,7 @@ io_buffer_xor_inplace(VALUE self, VALUE mask)
     size_t mask_size;
     io_buffer_get_bytes_for_reading(mask_buffer, &mask_base, &mask_size);
 
-    memory_xor_inplace(base, size, mask_buffer->base, mask_buffer->size);
+    memory_xor_inplace(base, size, (unsigned char *)mask_base, mask_size);
 
     return self;
 }
@@ -4251,7 +4375,9 @@ io_buffer_memory_view_get(VALUE self, rb_memory_view_t *view, int flags)
 {
     struct rb_io_buffer *buffer = get_io_buffer(self);
 
-    if (buffer->base == NULL || !io_buffer_validate(buffer)) {
+    void *base = NULL;
+    size_t size = 0;
+    if (!io_buffer_try_get_bytes(buffer, &base, &size) || base == NULL) {
         return false;
     }
 
@@ -4263,7 +4389,7 @@ io_buffer_memory_view_get(VALUE self, rb_memory_view_t *view, int flags)
             readonly = false;
         }
     }
-    rb_memory_view_init_as_byte_array(view, self, buffer->base, buffer->size, readonly);
+    rb_memory_view_init_as_byte_array(view, self, base, buffer->size, readonly);
     if (flags & RUBY_MEMORY_VIEW_FORMAT) {
         view->format = "C";
     }
@@ -4312,7 +4438,9 @@ io_buffer_memory_view_available_p(VALUE self)
 {
     struct rb_io_buffer *buffer = get_io_buffer(self);
 
-    return buffer->base != NULL && io_buffer_validate(buffer);
+    void *base = NULL;
+    size_t size = 0;
+    return io_buffer_try_get_bytes(buffer, &base, &size) && base != NULL;
 }
 
 static const rb_memory_view_entry_t io_buffer_memory_view_entry = {
@@ -4476,6 +4604,7 @@ Init_IO_Buffer(void)
     rb_define_method(rb_cIOBuffer, "hexdump", rb_io_buffer_hexdump, -1);
     rb_define_method(rb_cIOBuffer, "to_s", rb_io_buffer_to_s, 0);
     rb_define_method(rb_cIOBuffer, "size", rb_io_buffer_size, 0);
+    rb_define_method(rb_cIOBuffer, "source", rb_io_buffer_source, 0);
     rb_define_method(rb_cIOBuffer, "valid?", rb_io_buffer_valid_p, 0);
 
     rb_define_method(rb_cIOBuffer, "transfer", io_buffer_transfer, 0);

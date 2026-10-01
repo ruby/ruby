@@ -1311,7 +1311,7 @@ class TestM17N < Test::Unit::TestCase
   end
 
   def test_env
-    if RUBY_PLATFORM =~ /bccwin|mswin|mingw/
+    if RUBY_PLATFORM =~ /mswin|mingw/
       env_encoding = Encoding::UTF_8
     else
       env_encoding = Encoding.find("locale")

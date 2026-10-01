@@ -157,6 +157,22 @@ typedef struct pm_lex_mode {
             bool interpolation;
 
             /*
+             * Whether any token has been emitted from this list. A word
+             * separator delimits the opener from the first word, so one
+             * without source characters is emitted when the list does not
+             * start with whitespace.
+             */
+            bool started;
+
+            /*
+             * Whether the previously emitted token was a word separator. A
+             * word separator delimits the last word from the terminator, so
+             * one without source characters is emitted when the list does
+             * not end with whitespace.
+             */
+            bool separated;
+
+            /*
              * When lexing a list, it takes into account balancing the
              * terminator if the terminator is one of (), [], {}, or <>.
              */
@@ -432,6 +448,9 @@ typedef enum {
 
     /* a while statement */
     PM_CONTEXT_WHILE,
+
+    /* the number of contexts, which is not itself a context */
+    PM_CONTEXT_MAXIMUM,
 } pm_context_t;
 
 /* This is a node in a linked list of contexts. */
@@ -441,6 +460,9 @@ typedef struct pm_context_node {
 
     /* A pointer to the previous context in the linked list. */
     struct pm_context_node *prev;
+
+    /* One bit set per context in this list, including one for this node. */
+    uint64_t mask;
 } pm_context_node_t;
 
 /* The type of shareable constant value that can be set. */

@@ -97,6 +97,12 @@ ractor_port_alloc(VALUE klass)
 static VALUE
 ractor_port_init(VALUE rpv, rb_ractor_t *r)
 {
+    // Child threads can still run ensure blocks and report exceptions after
+    // ractor_notify_exit has freed the ports.
+    if (!r->sync.ports) {
+        rb_raise(rb_eRactorClosedError, "The ractor has terminated");
+    }
+
     struct ractor_port *rp = RACTOR_PORT_PTR(rpv);
 
     rp->r = r;
@@ -801,12 +807,11 @@ ractor_monitor(rb_execution_context_t *ec, VALUE self, VALUE port)
     if (terminated) {
         SIZED_FREE(rm);
         ractor_send_basket(ec, rp, ractor_basket_new_exit(self, ractor_exit_token(r)), false);
+    }
+    /* rp points into port, which is embedded and may be referenced only from here */
+    RB_GC_GUARD(port);
 
-        return Qfalse;
-    }
-    else {
-        return Qtrue;
-    }
+    return terminated ? Qfalse : Qtrue;
 }
 
 static VALUE
@@ -1054,6 +1059,7 @@ ractor_value(rb_execution_context_t *ec, VALUE self)
         /* Move r's rb_gc_register_mark_object pins to the joiner before the merge
          * below sweeps r's objspace, or the objects pinned there lose their root. */
         rb_ractor_absorb_registered_marks(GET_RACTOR(), r);
+        rb_ractor_absorb_registered_addrs_without_gc(GET_RACTOR(), r);
 
         rb_gc_objspace_absorb_into_current(&r->objspace);
 
@@ -1296,15 +1302,14 @@ basket_type_name(enum ractor_basket_type type)
 #endif // USE_RUBY_DEBUG_LOG
 
 static bool
-ractor_wakeup_all(rb_ractor_t *r, enum ractor_wakeup_status wakeup_status)
+ractor_wakeup_all_locked(rb_ractor_t *r, enum ractor_wakeup_status wakeup_status)
 {
-    ASSERT_ractor_unlocking(r);
+    ASSERT_ractor_locking(r);
 
     RUBY_DEBUG_LOG("r:%"PRI_SERIALT_PREFIX"u wakeup:%s", rb_ractor_id(r), wakeup_status_str(wakeup_status));
 
     bool wakeup_p = false;
 
-    RACTOR_LOCK(r);
     while (1) {
         struct ractor_waiter *waiter = ccan_list_pop(&r->sync.waiters, struct ractor_waiter, node);
 
@@ -1319,6 +1324,21 @@ ractor_wakeup_all(rb_ractor_t *r, enum ractor_wakeup_status wakeup_status)
         else {
             break;
         }
+    }
+
+    return wakeup_p;
+}
+
+static bool
+ractor_wakeup_all(rb_ractor_t *r, enum ractor_wakeup_status wakeup_status)
+{
+    ASSERT_ractor_unlocking(r);
+
+    bool wakeup_p;
+
+    RACTOR_LOCK(r);
+    {
+        wakeup_p = ractor_wakeup_all_locked(r, wakeup_status);
     }
     RACTOR_UNLOCK(r);
 
@@ -1575,16 +1595,14 @@ ractor_send_basket(rb_execution_context_t *ec, const struct ractor_port *rp, str
             /* The receiver's queue roots it from here; drop it from ours. */
             ractor_off_queue_remove(b);
             ractor_queue_enq(rp->r, rp->r->sync.recv_queue, b);
+            ractor_wakeup_all_locked(rp->r, wakeup_by_send);
         }
     }
     RACTOR_UNLOCK(rp->r);
 
     // NOTE: ref r -> b->p.v is created, but Ractor is unprotected object, so no problem on that.
 
-    if (!closed) {
-        ractor_wakeup_all(rp->r, wakeup_by_send);
-    }
-    else {
+    if (closed) {
         RUBY_DEBUG_LOG("closed:%u@r%"PRI_SERIALT_PREFIX"u", (unsigned int)ractor_port_id(rp), rb_ractor_id(rp->r));
 
         /* Nothing took the basket: it was not enqueued, so free it whether or not the

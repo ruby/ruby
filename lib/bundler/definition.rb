@@ -1111,19 +1111,23 @@ module Bundler
 
     def converge_overrides_outside_dependencies
       @overrides.each do |override|
-        # :all overrides are intentionally not pre-unlocked. They take effect on
-        # fresh resolution (no lockfile) or when the user runs `bundle update`.
-        # Forcing a full re-resolve from a single :all directive would surprise
-        # users with unrelated dependency churn.
-        next unless override.target.is_a?(String)
+        # :all and metadata overrides are intentionally not pre-unlocked. The
+        # lockfile does not record overrides, so unlocking for them would
+        # re-resolve on every run and reject every frozen install. Install-time
+        # compatibility checks already honor them for locked specs, and they
+        # affect resolution on a fresh lock or when the user runs `bundle update`.
+        next unless override.target.is_a?(String) && override.field == :version
 
         name = override.target
-        next if @changed_dependencies.include?(name)
-        next if @originally_locked_specs[name].empty?
-        # version: overrides on direct deps are detected in the per-dep
+        # Overrides on direct deps are detected in the per-dep
         # converge_dependencies loop via apply_override_to + matches_spec?.
-        # Other fields are not visible there, so they always reach here.
-        next if override.field == :version && @dependencies.any? {|d| d.name == name }
+        next if @dependencies.any? {|d| d.name == name }
+
+        locked_specs = @originally_locked_specs[name]
+        next if locked_specs.empty?
+        # Only a version string constrains on its own. :ignore_upper and nil
+        # loosen requirements the lockfile already satisfies.
+        next if override.apply_to(Gem::Requirement.default).satisfied_by?(locked_specs.first.version)
 
         @gems_to_unlock << name
         @changed_dependencies << name

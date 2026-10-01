@@ -4491,6 +4491,38 @@ __END__
     end
   end if Socket.const_defined?(:MSG_OOB)
 
+  def test_select_many_sockets
+    pairs = []
+    TCPServer.open('localhost', 0) do |svr|
+      # more than FD_SETSIZE on Windows
+      70.times {pairs << [TCPSocket.new('localhost', svr.addr[1]), svr.accept]}
+    end
+    readers = pairs.map(&:last)
+    # best effort to write after select has polled once, which Ruby cannot observe
+    th = Thread.new {sleep 0.2; pairs.last.first.write("x")}
+    assert_equal([[readers.last], [], []], IO.select(readers, nil, pairs.map(&:first), 10))
+    IO.pipe do |r, w|
+      writers = [*pairs.map(&:first), w]
+      assert_equal([[], writers, []], IO.select(nil, writers, nil, 10))
+    end
+  ensure
+    th&.join
+    pairs.flatten.each(&:close)
+  end
+
+  def test_select_buffered_socket
+    pairs = []
+    TCPServer.open('localhost', 0) do |svr|
+      2.times {pairs << [TCPSocket.new('localhost', svr.addr[1]), svr.accept]}
+    end
+    readers = pairs.map(&:last)
+    pairs.first.first.write("xy")
+    assert_equal("x", readers.first.getc)
+    assert_equal([[readers.first], [], []], IO.select(readers, nil, nil, 1))
+  ensure
+    pairs.flatten.each(&:close)
+  end
+
   def test_select_timeout
     assert_equal(nil, IO.select(nil,nil,nil,0))
     assert_equal(nil, IO.select(nil,nil,nil,0.0))

@@ -48,9 +48,11 @@ class Gem::CompactIndexClient
         if https?(uri) && !https?(redirect)
           raise Gem::RemoteFetcher::FetchError.new("redirecting to non-https resource: #{Gem::Uri.redact(redirect)}", uri)
         end
-        # An absolute Location on the same host drops the credentials that a
-        # relative one would have kept.
-        redirect.userinfo = uri.userinfo if redirect.host == uri.host && !redirect.userinfo
+        # An absolute Location on the same origin drops the credentials that a
+        # relative one would have kept. Another port or scheme on the same host
+        # is a different protection space (RFC 9110, Section 11.5).
+        same_origin = [redirect.scheme, redirect.host, redirect.port] == [uri.scheme, uri.host, uri.port]
+        redirect.userinfo = uri.userinfo if same_origin && !redirect.userinfo
 
         fetch(redirect, headers, redirects_remaining - 1)
       when Gem::Net::HTTPRangeNotSatisfiable

@@ -98,11 +98,11 @@ describe 'RbConfig::CONFIG' do
 
   guard -> { %w[aarch64 arm64].include? RbConfig::CONFIG['host_cpu'] } do
     it "['host_cpu'] returns CPU architecture properly for AArch64" do
-      platform_is :darwin do
+      platform_is :darwin, :mswin do
         RbConfig::CONFIG['host_cpu'].should == 'arm64'
       end
 
-      platform_is_not :darwin do
+      platform_is_not :darwin, :mswin do
         RbConfig::CONFIG['host_cpu'].should == 'aarch64'
       end
     end

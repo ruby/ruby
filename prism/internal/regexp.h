@@ -2,6 +2,7 @@
 #define PRISM_INTERNAL_REGEXP_H
 
 #include "prism/ast.h"
+#include "prism/internal/constant_pool.h"
 #include "prism/parser.h"
 
 /*
@@ -17,8 +18,8 @@ typedef struct {
     /* The match write node being built, or NULL if no captures found yet. */
     pm_match_write_node_t *match;
 
-    /* The list of capture names found so far (for deduplication). */
-    pm_constant_id_list_t names;
+    /* The set of capture names found so far (for deduplication). */
+    pm_constant_id_set_t names;
 } pm_regexp_name_data_t;
 
 /*

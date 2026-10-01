@@ -108,6 +108,7 @@ bug_str_s_cstr_noembed(VALUE self, VALUE str)
     long capacity = RSTRING_LEN(str) + TERM_LEN(str);
     char *buf = ALLOC_N(char, capacity);
     Check_Type(str, T_STRING);
+    rb_enc_copy(str2, str);
     FL_SET((str2), STR_NOEMBED);
     memcpy(buf, RSTRING_PTR(str), capacity);
     RBASIC(str2)->flags &= ~(STR_SHARED | FL_USER5 | FL_USER6);

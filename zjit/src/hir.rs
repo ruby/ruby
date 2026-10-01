@@ -1774,7 +1774,7 @@ impl Insn {
         Ok(())
     }
 
-    pub fn print<'a>(&self, ptr_map: &'a PtrPrintMap, fun: Option<&'a Function>) -> InsnPrinter<'a> {
+    pub fn print<'a>(&self, ptr_map: &'a PtrPrintMap, fun: Option<&'a FunctionPrinter>) -> InsnPrinter<'a> {
         InsnPrinter { inner: self.clone(), ptr_map, fun }
     }
 
@@ -2017,9 +2017,16 @@ impl Insn {
 
 /// Print adaptor for [`Insn`]. See [`PtrPrintMap`].
 pub struct InsnPrinter<'a> {
-    fun: Option<&'a Function>,
+    fun: Option<&'a FunctionPrinter<'a>>,
     inner: Insn,
     ptr_map: &'a PtrPrintMap,
+}
+
+impl<'a> InsnPrinter<'a> {
+    /// Showing all the instructions without filtering?
+    fn show_all(&self) -> bool {
+        matches!(self.fun, Some(FunctionPrinter { display_snapshot_and_tp_patchpoints: true, .. }))
+    }
 }
 
 fn get_local_var_id(iseq: IseqPtr, level: u32, ep_offset: u32) -> ID {
@@ -2384,18 +2391,24 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::GuardLess { left, right, .. } => write!(f, "GuardLess {left}, {right}"),
             Insn::GuardGreaterEq { left, right, .. } => write!(f, "GuardGreaterEq {left}, {right}"),
             &Insn::GetBlockParam { level, ep_offset, state, .. } => {
-                let iseq = self.fun.map(|fun| fun.frame_state_iseq(state));
+                let iseq = self.fun.map(|fun| fun.fun.frame_state_iseq(state));
                 let name = get_local_var_name_for_printer(iseq, level, ep_offset)
                     .map_or(String::new(), |x| format!("{x}, "));
                 write!(f, "GetBlockParam {name}l{level}, EP@{ep_offset}")
             },
+            Insn::PatchPoint { invariant, state } => {
+                write!(f, "PatchPoint {}", invariant.print(self.ptr_map))?;
+                if self.show_all() {
+                    write!(f, ", {}", state)?;
+                }
+                Ok(())
+            }
             &Insn::SymToProc { level, ep_offset, state, .. } => {
-                let iseq = self.fun.map(|fun| fun.frame_state_iseq(state));
+                let iseq = self.fun.map(|fun| fun.fun.frame_state_iseq(state));
                 let name = get_local_var_name_for_printer(iseq, level, ep_offset)
                     .map_or(String::new(), |x| format!("{x}, "));
                 write!(f, "SymToProc {name}l{level}, EP@{ep_offset}")
             },
-            Insn::PatchPoint { invariant, .. } => { write!(f, "PatchPoint {}", invariant.print(self.ptr_map)) },
             Insn::GetConstant { klass, id, allow_nil, .. } => {
                 write!(f, "GetConstant {klass}, :{}, {allow_nil}", id.contents_lossy())
             }
@@ -2483,7 +2496,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 write!(f, "IsBlockParamModified {flags}")
             },
             &Insn::SetLocal { val, level, ep_offset, state } => {
-                let iseq = self.fun.map(|fun| fun.frame_state_iseq(state));
+                let iseq = self.fun.map(|fun| fun.fun.frame_state_iseq(state));
                 let name = get_local_var_name_for_printer(iseq, level, ep_offset).map_or(String::new(), |x| format!("{x}, "));
                 write!(f, "SetLocal {name}l{level}, EP@{ep_offset}, {val}")
             },
@@ -3274,7 +3287,7 @@ impl Function {
     /// Load `captured->code.iseq` from a `struct rb_captured_block *`.
     fn load_captured_code_iseq(&mut self, block: BlockId, captured: InsnId) -> InsnId {
         let offset: i32 = std::mem::offset_of!(rb_captured_block, code).try_into().unwrap();
-        self.load_field(block, captured, FieldName::code_iseq, offset, types::CPtr)
+        self.load_field(block, captured, FieldName::code_iseq, offset, types::Iseq)
     }
 
     /// Untag an ISEQ block handler into its `struct rb_captured_block *`:
@@ -3320,10 +3333,11 @@ impl Function {
             self.push_insn(block, Insn::GuardBitEquals { val: tag, expected: Const::CInt64(0x1), reason: Box::new(SideExitReason::InvokeBlockHandlerNotIseq), state, recompile: Some(Recompile) });
             let captured = self.untag_block_handler(block, block_handler);
 
-            // Guard captured->code.iseq is the profiled block iseq. Compare the raw imemo pointer:
-            // type inference (from_value) can't type an iseq imemo, so guard it as a CPtr identity.
+            // Guard captured->code.iseq is the profiled block iseq. The ISEQ is a GC object that
+            // can be moved by compaction, so bake it in as a `Const::Value` rather than a raw
+            // `Const::CPtr` to let the GC mark it and update the pointer embedded in JIT code.
             let captured_iseq = self.load_captured_code_iseq(block, captured);
-            self.push_insn(block, Insn::GuardBitEquals { val: captured_iseq, expected: Const::CPtr(block_iseq as *const u8), reason: Box::new(SideExitReason::InvokeBlockIseqChanged), state, recompile: Some(Recompile) });
+            self.push_insn(block, Insn::GuardBitEquals { val: captured_iseq, expected: Const::Value(VALUE::from(block_iseq)), reason: Box::new(SideExitReason::InvokeBlockIseqChanged), state, recompile: Some(Recompile) });
 
             let result = self.push_insn(block, Insn::InvokeBlockIseqDirect { iseq: block_iseq, captured, args, state });
             return (block, result);
@@ -3348,7 +3362,8 @@ impl Function {
 
         let mut compare_block = dispatch_block;
         for &block_iseq in iseqs {
-            let expected = self.push_insn(compare_block, Insn::Const { val: Const::CPtr(block_iseq as *const u8) });
+            // Use `Const::Value` so that the GC updates the ISEQ pointer on compaction. See above.
+            let expected = self.push_insn(compare_block, Insn::Const { val: Const::Value(VALUE::from(block_iseq)) });
             let iseq_matches = self.push_insn(compare_block, Insn::IsBitEqual { left: captured_iseq, right: expected });
             let direct_block = self.new_block(insn_idx);
             let miss_block = self.new_block(insn_idx);
@@ -4147,22 +4162,76 @@ impl Function {
         args
     }
 
-    /// Select the monomorphic caller-splat length while translating the Send.
-    /// The selected length is attached to every receiver dispatch arm so later
-    /// specialization does not need to read the profile again.
-    fn monomorphic_caller_splat_length(&self, ci: *const rb_callinfo, state: InsnId) -> Option<SplatLength> {
-        if self.policy.no_side_exits {
-            return None;
-        }
-        if unsafe { rb_vm_ci_flag(ci) } & VM_CALL_ARGS_SPLAT == 0 {
-            return None;
+    /// Select caller-splat lengths for a callsite.
+    fn caller_splat_lengths(&self, ci: *const rb_callinfo, recv: InsnId, state: InsnId, profiles: &ProfileOracle) -> Vec<SplatLength> {
+        if self.policy.no_side_exits || unsafe { rb_vm_ci_flag(ci) } & VM_CALL_ARGS_SPLAT == 0 {
+            return vec![];
         }
         let frame_state = self.frame_state_ref(state);
-        let summary = get_or_create_iseq_payload(frame_state.iseq).profile.get_splat_length_summary(frame_state.insn_idx)?;
-        if !summary.is_monomorphic() {
-            return None;
+        let Some(splat_length_summary) = get_or_create_iseq_payload(frame_state.iseq).profile.get_splat_length_summary(frame_state.insn_idx) else {
+            return vec![];
+        };
+        // A single observed length uses the existing guarded specialization without dispatch.
+        if splat_length_summary.is_monomorphic() {
+            return splat_length_summary.bucket(0).into_iter().collect();
         }
-        summary.bucket(0)
+        // Only build length dispatch for polymorphic or skewed-polymorphic profiles.
+        // Leave megamorphic profiles, including skewed ones, unspecialized.
+        if !(splat_length_summary.is_polymorphic() || splat_length_summary.is_skewed_polymorphic()) {
+            return vec![];
+        }
+
+        // This lookup only limits CFG expansion to ISEQ callees. type_specialize
+        // still checks visibility and installs the method assumptions as before.
+        let receiver = self.profile_summary(profiles, recv, state);
+        let klass = if receiver.is_monomorphic() || receiver.is_skewed_polymorphic() {
+            Some(receiver.bucket(0).class())
+        } else {
+            self.type_of(recv).runtime_exact_ruby_class()
+        };
+        let Some(klass) = klass else { return vec![] };
+        let mut cme = unsafe { rb_callable_method_entry(klass, vm_ci_mid(ci)) };
+        if cme.is_null() { return vec![]; }
+        cme = unsafe { rb_check_overloaded_cme(cme, ci) };
+        while unsafe { get_cme_def_type(cme) } == VM_METHOD_TYPE_ALIAS {
+            cme = unsafe { rb_aliased_callable_method_entry(cme) };
+        }
+        if unsafe { get_cme_def_type(cme) } != VM_METHOD_TYPE_ISEQ {
+            return vec![];
+        }
+        splat_length_summary.buckets().iter().flatten().copied().collect()
+    }
+
+    /// Split one ISEQ receiver arm by length. Misses retain the original splat
+    /// operand in the shared fallback; only matched arms may expand its elements.
+    fn dispatch_caller_splat(&mut self, mut block: BlockId, send: Insn, lengths: &[SplatLength], fallback_block: BlockId, join_block: BlockId) {
+        let Insn::Send { cd, ref args, state, .. } = send else { unreachable!() };
+        let ci = unsafe { (*cd).ci };
+        let flags = unsafe { rb_vm_ci_flag(ci) };
+        let insn_idx = self.frame_state_ref(state).insn_idx() as u32;
+        // Unlike argument setup, this still sees trailing block/keyword-splat operands.
+        let trailing = usize::from(flags & VM_CALL_ARGS_BLOCKARG != 0) + usize::from(flags & VM_CALL_KW_SPLAT != 0);
+        let caller_args = CallerArguments::new(&args[..args.len() - trailing], ci);
+        let array = args[caller_args.splat_arg_idx.unwrap()];
+        let actual = self.push_insn(block, Insn::ArrayLength { array });
+        for (index, &length) in lengths.iter().enumerate() {
+            let expected = self.push_insn(block, Insn::Const { val: Const::CInt64(i64::from(length)) });
+            let matches = self.push_insn(block, Insn::IsBitEqual { left: actual, right: expected });
+            let matched_block = self.new_block(insn_idx);
+            let next_block = if index + 1 == lengths.len() { fallback_block } else { self.new_block(insn_idx) };
+            self.push_insn(block, Insn::CondBranch {
+                val: matches,
+                if_true: BranchEdge { target: matched_block, args: vec![] },
+                if_false: BranchEdge { target: next_block, args: vec![] },
+            });
+            let mut selected_send = send.clone();
+            if let Insn::Send { caller_splat_length, .. } = &mut selected_send {
+                *caller_splat_length = Some(length);
+            }
+            let result = self.push_insn(matched_block, selected_send);
+            self.push_insn(matched_block, Insn::Jump(BranchEdge { target: join_block, args: vec![result] }));
+            block = next_block;
+        }
     }
 
     /// Guard the caller-splat length selected for this runtime path.
@@ -4172,9 +4241,8 @@ impl Function {
         caller_splat: CallerSplat,
         state: InsnId,
     ) {
-        // Recompile after enough side exits have re-profiled the original Send. Any
-        // second observed length makes the distribution non-monomorphic, so the next
-        // version keeps the dynamic Send instead of emitting the same guard again.
+        // Re-profile on length mismatches so recompilation can use the updated
+        // distribution, including additional lengths observed at this call site.
         let length = self.push_insn(block, Insn::ArrayLength { array: caller_splat.array });
         self.push_insn(block, Insn::GuardBitEquals {
             val: length,
@@ -4960,8 +5028,8 @@ impl Function {
                                 // Count the profile shape for every caller-splat execution;
                                 // complex_arg_pass_caller_splat separately tracks fallbacks.
                                 self.count_caller_splat_profile(block, state);
-                                // `add_iseq_to_hir` selects caller-splat lengths before building
-                                // receiver dispatch. A Send without a selected length stays dynamic.
+                                // A Send without a caller-splat expansion selected by
+                                // `add_iseq_to_hir` stays dynamic.
                                 let Some(length) = caller_splat_length else {
                                     self.count(block, Counter::complex_arg_pass_caller_splat);
                                     self.set_dynamic_send_reason(insn_id, ComplexArgPass);
@@ -6802,19 +6870,6 @@ impl Function {
                         // Don't bother re-inferring the type of val; we already know it.
                         continue;
                     }
-                    &Insn::LoadField { recv, offset, return_type, .. } if return_type.is_subtype(types::BasicObject) &&
-                            u32::try_from(offset).is_ok() => {
-                        let offset = (offset as u32).to_usize();
-                        let recv_type = self.type_of(recv);
-                        match recv_type.ruby_object() {
-                            Some(recv_obj) if recv_obj.is_frozen() => {
-                                let recv_ptr = recv_obj.as_ptr() as *const VALUE;
-                                let val = unsafe { recv_ptr.byte_add(offset).read() };
-                                self.new_insn(Insn::Const { val: Const::Value(val) })
-                            }
-                            _ => insn_id,
-                        }
-                    }
                     &Insn::LoadField { recv, offset, return_type, .. } if return_type.is_subtype(types::CShape) &&
                             u32::try_from(offset).is_ok() => {
                         let offset = (offset as u32).to_usize();
@@ -6902,7 +6957,7 @@ impl Function {
                     &Insn::StringEqual { left, right } => {
                         // If both operands resolve to the same SSA value,
                         // String#== is guaranteed to be true.
-                        if self.chase_insn(left) == self.chase_insn(right) {
+                        if left == right {
                             self.new_insn(Insn::Const { val: Const::Value(Qtrue) })
                         } else {
                             let left_type = self.type_of(left);
@@ -7574,7 +7629,7 @@ impl Function {
                 };
 
 
-                let opcode = insn.print(&ptr_map, Some(self)).to_string();
+                let opcode = insn.print(&ptr_map, Some(&FunctionPrinter::without_snapshot(self))).to_string();
 
                 // Collect inputs for a given instruction.
                 let mut inputs = Vec::new();
@@ -8499,7 +8554,7 @@ impl<'a> std::fmt::Display for FunctionPrinter<'a> {
                         write!(f, "{insn_id}:{} = ", insn_type.print(&self.ptr_map))?;
                     }
                 }
-                writeln!(f, "{}", insn.print(&self.ptr_map, Some(fun)))?;
+                writeln!(f, "{}", insn.print(&self.ptr_map, Some(self)))?;
             }
         }
         Ok(())
@@ -10123,10 +10178,12 @@ fn add_iseq_to_hir(
                     state.stack_push(recv);
                 }
                 YARVINSN_leave => {
-                    fun.push_insn(block, Insn::CheckInterrupts { state: exit_id });
                     let val = state.stack_pop()?;
                     match mode {
-                        AddIseqMode::Standalone => fun.push_insn(block, Insn::Return { val }),
+                        AddIseqMode::Standalone => {
+                            fun.push_insn(block, Insn::CheckInterrupts { state: exit_id });
+                            fun.push_insn(block, Insn::Return { val })
+                        },
                         AddIseqMode::Inlined { return_block, .. } => { fun.push_insn(block, Insn::Jump(BranchEdge { target: return_block, args: vec![val] })) }
                     };
                     break;  // Don't enqueue the next block as a successor
@@ -10210,23 +10267,28 @@ fn add_iseq_to_hir(
 
                     let args = state.stack_pop_n(argc as usize)?;
                     let recv = state.stack_pop()?;
-                    let caller_splat_length = fun.monomorphic_caller_splat_length(call_info, exit_id);
+                    let lengths = fun.caller_splat_lengths(call_info, recv, exit_id, &profiles);
+                    let caller_splat_length = if lengths.len() == 1 { Some(lengths[0]) } else { None };
 
                     if let Some(summary) = fun.polymorphic_summary(&profiles, recv, exit_id) {
                         let join_block = fun.new_block(insn_idx);
                         let join_param = fun.push_insn(join_block, Insn::Param);
+                        let fallback_block = fun.new_block(insn_idx);
                         // Dedup by expected type so immediate/heap variants
                         // under the same Ruby class can still get separate branches.
-                        let mut seen_types = Vec::with_capacity(summary.buckets().len());
+                        let mut receiver_types = Vec::with_capacity(summary.buckets().len());
                         for &profiled_type in summary.buckets() {
                             if profiled_type.is_empty() { break; }
                             let expected = Type::from_profiled_type(profiled_type);
-                            if seen_types.iter().any(|ty: &Type| ty.bit_equal(expected)) {
+                            if receiver_types.iter().any(|ty: &Type| ty.bit_equal(expected)) {
                                 continue;
                             }
-                            seen_types.push(expected);
+                            receiver_types.push(expected);
+                        }
+                        for (index, &expected) in receiver_types.iter().enumerate() {
                             let iftrue_block = fun.new_block(insn_idx);
-                            let fall_through = fun.new_block(insn_idx);
+                            // The final receiver miss joins length misses at the shared fallback.
+                            let fall_through = if index + 1 == receiver_types.len() { fallback_block } else { fun.new_block(insn_idx) };
                             fun.push_insn(block, Insn::CondBranchHasType(Box::new(CondBranchHasTypeData {
                                 val: recv,
                                 expected,
@@ -10246,8 +10308,18 @@ fn add_iseq_to_hir(
                             // exact type, and resolve_receiver_type prefers profiles over types.
                             profiles.copy_entries_except(exit_id, snapshot, recv, fun);
                             let refined_recv = fun.push_insn(iftrue_block, Insn::RefineType { val: recv, new_type: expected });
-                            let send = fun.push_insn(iftrue_block, Insn::Send { recv: refined_recv, cd, block: None, args: args.clone(), caller_splat_length, state: snapshot, reason: Uncategorized(opcode.into()) });
-                            fun.push_insn(iftrue_block, Insn::Jump(BranchEdge { target: join_block, args: vec![send] }));
+                            // Set the refined type now; otherwise length selection sees Any and cannot
+                            // identify the ISEQ callee needed for polymorphic splat dispatch.
+                            fun.insn_types[refined_recv] = expected;
+                            let lengths = fun.caller_splat_lengths(call_info, refined_recv, snapshot, &profiles);
+                            let send = Insn::Send { recv: refined_recv, cd, block: None, args: args.clone(), caller_splat_length, state: snapshot, reason: Uncategorized(opcode.into()) };
+                            if lengths.len() > 1 {
+                                // Receiver and length misses share the original, unexpanded Send.
+                                fun.dispatch_caller_splat(iftrue_block, send, &lengths, fallback_block, join_block);
+                            } else {
+                                let send = fun.push_insn(iftrue_block, send);
+                                fun.push_insn(iftrue_block, Insn::Jump(BranchEdge { target: join_block, args: vec![send] }));
+                            }
                         }
                         // In the fallthrough case, do a generic interpreter send and then join.
                         let reason = SendPolymorphicFallback;
@@ -10255,6 +10327,17 @@ fn add_iseq_to_hir(
                         fun.push_insn(block, Insn::Jump(BranchEdge { target: join_block, args: vec![send] }));
                         state.stack_push(join_param);
                         // Continue compilation from the join block at the next instruction.
+                        block = join_block;
+                    } else if lengths.len() > 1 {
+                        // Without polymorphic receiver dispatch, branch only on the profiled splat lengths.
+                        let join_block = fun.new_block(insn_idx);
+                        let join_param = fun.push_insn(join_block, Insn::Param);
+                        let fallback_block = fun.new_block(insn_idx);
+                        let send = Insn::Send { recv, cd, block: None, args, caller_splat_length: None, state: exit_id, reason: Uncategorized(opcode.into()) };
+                        fun.dispatch_caller_splat(block, send.clone(), &lengths, fallback_block, join_block);
+                        let send = fun.push_insn(fallback_block, send);
+                        fun.push_insn(fallback_block, Insn::Jump(BranchEdge { target: join_block, args: vec![send] }));
+                        state.stack_push(join_param);
                         block = join_block;
                     } else {
                         // Maybe monomorphic; handled in type_specialize
@@ -10288,7 +10371,8 @@ fn add_iseq_to_hir(
                     } else {
                         None
                     };
-                    let caller_splat_length = fun.monomorphic_caller_splat_length(call_info, exit_id);
+                    let lengths = fun.caller_splat_lengths(call_info, recv, exit_id, &profiles);
+                    let caller_splat_length = if lengths.len() == 1 { Some(lengths[0]) } else { None };
                     if let Some(summary) = fun.polymorphic_summary(&profiles, recv, exit_id) {
                         let join_block = fun.new_block(insn_idx);
                         let join_param = fun.push_insn(join_block, Insn::Param);

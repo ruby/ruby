@@ -34,11 +34,11 @@ class TestFileUtils < Test::Unit::TestCase
 
   m = Module.new do
     def have_drive_letter?
-      /mswin(?!ce)|mingw|bcc|emx/ =~ RUBY_PLATFORM
+      /mswin|mingw/ =~ RUBY_PLATFORM
     end
 
     def have_file_perm?
-      /mswin|mingw|bcc|emx/ !~ RUBY_PLATFORM
+      /mswin|mingw/ !~ RUBY_PLATFORM
     end
 
     @@assignable_groups = nil
