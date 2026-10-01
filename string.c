@@ -4093,8 +4093,6 @@ rb_str_append_as_bytes(int argc, VALUE *argv, VALUE str)
         break;
     }
 
-    RB_GC_GUARD(t0);
-
   clear_cr:
     // If no fast path was hit, we clear the coderange.
     // append_as_bytes is predominantly meant to be used in
@@ -4104,6 +4102,7 @@ rb_str_append_as_bytes(int argc, VALUE *argv, VALUE str)
     // situations.
     ENC_CODERANGE_CLEAR(str);
   keep_cr:
+    ALLOCV_END(t0);
     return str;
 }
 
@@ -9949,6 +9948,8 @@ tr_trans_pairs(VALUE str, VALUE pairs_val)
             s += clen;
         }
     }
+
+    ALLOCV_END(pairs_handle);
 
     if (!modify) {
         return Qnil;
