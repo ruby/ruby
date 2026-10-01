@@ -989,7 +989,10 @@ class TestRubyOptions < Test::Unit::TestCase
   def test_crash_report_sender_pid
     omit "needs siginfo" unless (macos? || linux?)
 
-    report = abrt_crash_report("sleep") {|child| Process.kill(:ABRT, child.pid)}
+    # Signal only once the main thread sleeps.  The crash report is not
+    # async-signal-safe and deadlocks if the signal lands inside malloc.
+    code = "Thread.new {Thread.pass until Thread.main.stop?; puts}; sleep"
+    report = abrt_crash_report(code) {|child| child.gets; Process.kill(:ABRT, child.pid)}
     assert_include(report, "[BUG] Aborted")
     assert_include(report, "(sent by pid #{Process.pid})")
   end
