@@ -74,7 +74,14 @@ module Bundler
           puts definition.to_lock
         else
           file = options[:lockfile]
-          file = file ? Pathname.new(file).expand_path : definition.lockfile
+          file = if file
+            Pathname.new(file).expand_path
+          elsif ENV["BUNDLE_LOCKFILE"].to_s.empty?
+            definition.lockfile
+          else
+            # BUNDLE_LOCKFILE outranks the lockfile method in the Gemfile, see gemfile(5)
+            Bundler.default_lockfile
+          end
 
           puts "Writing lockfile to #{file}"
           definition.write_lock(file, false)
