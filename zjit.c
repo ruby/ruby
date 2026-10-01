@@ -357,7 +357,6 @@ rb_zjit_can_load_superclass_p(VALUE klass)
 rb_alloc_func_t rb_zjit_class_get_alloc_func(VALUE klass);
 
 // Defined in struct.c, where struct_alloc and the members ivar are visible.
-bool rb_zjit_class_has_struct_allocator(VALUE klass);
 long rb_zjit_struct_num_members(VALUE klass);
 ID rb_zjit_struct_member_id(VALUE klass, long index);
 bool rb_zjit_struct_embedded_p(long num_members);

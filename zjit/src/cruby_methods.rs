@@ -964,7 +964,6 @@ fn inline_struct_initialize(fun: &mut hir::Function, block: hir::BlockId, recv: 
     // The member count, the member names, and where the members live are all properties of the
     // exact class, so we can only do this when we know it.
     let class = fun.type_of(recv).exact_ruby_class()?;
-    if !unsafe { rb_zjit_class_has_struct_allocator(class) } { return None; }
     let num_members = unsafe { rb_zjit_struct_num_members(class) };
     debug_assert!(num_members >= 0, "rb_zjit_struct_num_members returned a negative value");
     // More values than the struct has members raises ArgumentError; leave that to the interpreter.
