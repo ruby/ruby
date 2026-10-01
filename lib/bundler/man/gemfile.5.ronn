@@ -368,8 +368,9 @@ Git repositories support a number of additional options.
                  sparse_checkout: "packages/foo",
                  glob: "packages/foo/*.gemspec"
 
-    On git versions below 2.25, the entire repository will be cloned
-    with a warning.
+    Files at the top level of the repository are always checked out.
+    On git versions below 2.25, the entire repository will be checked
+    out with a warning.
 
 If a git repository contains multiple `.gemspecs`, each `.gemspec`
 represents a gem located at the same place in the file system as

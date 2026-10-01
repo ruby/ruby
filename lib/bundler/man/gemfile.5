@@ -301,7 +301,7 @@ Specify a directory to include when checking out a git repository\. Uses git's s
 .IP
 gem "foo", git: "https://github\.com/org/monorepo\.git", sparse_checkout: "packages/foo", glob: "packages/foo/*\.gemspec"
 .IP
-On git versions below 2\.25, the entire repository will be cloned with a warning\.
+Files at the top level of the repository are always checked out\. On git versions below 2\.25, the entire repository will be checked out with a warning\.
 .P
 If a git repository contains multiple \fB\.gemspecs\fR, each \fB\.gemspec\fR represents a gem located at the same place in the file system as the \fB\.gemspec\fR\.
 .IP "" 4

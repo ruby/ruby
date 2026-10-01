@@ -554,10 +554,19 @@ RSpec.describe Bundler::Source::Git::GitProxy do
     context "with sparse_checkout option" do
       let(:options) { { "sparse_checkout" => "packages/foo" } }
 
-      context "with git 2.25+" do
+      context "with git 2.35+" do
         it "runs sparse-checkout set with cone mode" do
-          allow(described_class).to receive(:full_version).and_return("2.30.0")
+          allow(described_class).to receive(:full_version).and_return("2.35.0")
           expect(git_proxy).to receive(:git).with("sparse-checkout", "set", "--cone", "packages/foo", dir: destination)
+          git_proxy.send(:setup_sparse_checkout, destination)
+        end
+      end
+
+      context "with git 2.25 through 2.34" do
+        it "initializes cone mode before setting the directory" do
+          allow(described_class).to receive(:full_version).and_return("2.34.1")
+          expect(git_proxy).to receive(:git).with("sparse-checkout", "init", "--cone", dir: destination).ordered
+          expect(git_proxy).to receive(:git).with("sparse-checkout", "set", "packages/foo", dir: destination).ordered
           git_proxy.send(:setup_sparse_checkout, destination)
         end
       end

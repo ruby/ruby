@@ -581,16 +581,26 @@ module Bundler
           @supports_sparse_checkout ||= Gem::Version.new(version) >= Gem::Version.new("2.25.0")
         end
 
+        def supports_sparse_checkout_set_with_cone?
+          @supports_sparse_checkout_set_with_cone ||= Gem::Version.new(version) >= Gem::Version.new("2.35.0")
+        end
+
         def setup_sparse_checkout(destination)
           return unless @sparse_checkout
 
           unless supports_sparse_checkout?
-            Bundler.ui.warn "Git #{version} doesn't support sparse-checkout (requires 2.25+). Cloning full repository."
+            Bundler.ui.warn "Git #{version} doesn't support sparse-checkout (requires 2.25+). Checking out the full repository."
             return
           end
 
           Bundler.ui.debug "Setting sparse checkout to only include #{@sparse_checkout}"
-          git "sparse-checkout", "set", "--cone", @sparse_checkout, dir: destination
+          if supports_sparse_checkout_set_with_cone?
+            git "sparse-checkout", "set", "--cone", @sparse_checkout, dir: destination
+          else
+            # Before git 2.35, `set` keeps an unknown --cone as a pattern instead of rejecting it.
+            git "sparse-checkout", "init", "--cone", dir: destination
+            git "sparse-checkout", "set", @sparse_checkout, dir: destination
+          end
         end
       end
     end
