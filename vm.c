@@ -5081,6 +5081,10 @@ rb_vm_register_global_object(VALUE obj)
         cr->registered_marks_capa = nc;
     }
     cr->registered_marks[cr->registered_marks_cnt++] = obj;
+    // Registered objects are never collected, so make them old now instead of after
+    // surviving a few GCs.  This lets JITs rely on RB_OBJ_PROMOTED for them from boot,
+    // e.g. for rb_block_param_proxy's singleton class.  No-op for WB-unprotected ones.
+    rb_gc_promote_immortal(obj);
     RB_GC_GUARD(obj);
 }
 
@@ -5133,6 +5137,9 @@ Init_top_self(void)
     vm->root_box->top_self = rb_obj_alloc(rb_cObject);
     rb_define_singleton_method(vm->root_box->top_self, "to_s", main_to_s, 0);
     rb_define_alias(rb_singleton_class(vm->root_box->top_self), "inspect", "to_s");
+    // Lives as long as the VM: make it old now, so that JITs treat its singleton class
+    // as stable right after boot.
+    rb_gc_promote_immortal(vm->root_box->top_self);
 }
 
 VALUE *
