@@ -32,6 +32,8 @@ class BackTrace:
 
     VM_FRAME_MAGIC_MASK = 0x7fff0001
 
+    ZJIT_JIT_RETURN_C_FRAME = 0x1
+
     VM_FRAME_MAGIC_NAME = {
             VM_FRAME_MAGIC_TOP: "TOP",
             VM_FRAME_MAGIC_METHOD: "METHOD",
@@ -55,6 +57,8 @@ class BackTrace:
         self.frame = self.thread.GetSelectedFrame()
         self.tRString = self.target.FindFirstType("struct RString").GetPointerType()
         self.tRArray = self.target.FindFirstType("struct RArray").GetPointerType()
+        self.tZjitJitFrame = self.target.FindFirstType("zjit_jit_frame_t").GetPointerType()
+        self.zjit_enabled = self.target.FindFirstGlobalVariable("rb_zjit_entry").GetValueAsUnsigned() != 0
 
         rb_cft_len = len("rb_control_frame_t")
         method_type_length = sorted(map(len, self.VM_FRAME_MAGIC_NAME.values()), reverse=True)[0]
@@ -65,6 +69,16 @@ class BackTrace:
         ep = cfp.GetValueForExpressionPath("->ep")
         frame_type = ep.GetChildAtIndex(0).GetValueAsUnsigned() & self.VM_FRAME_MAGIC_MASK
         return self.VM_FRAME_MAGIC_NAME.get(frame_type, "(none)")
+
+    # Same as CFP_ISEQ() and CFP_PC() in zjit.h
+    def cfp_iseq_and_pc(self, cfp):
+        jit_return = cfp.GetValueForExpressionPath("->jit_return").GetValueAsUnsigned()
+        if self.zjit_enabled and jit_return:
+            if jit_return == self.ZJIT_JIT_RETURN_C_FRAME:
+                return None, 0
+            jit_frame = self.target.CreateValueFromAddress("jit_frame", lldb.SBAddress(jit_return - SIZEOF_VALUE, self.target), self.tZjitJitFrame)
+            return jit_frame.GetValueForExpressionPath("->iseq"), jit_frame.GetValueForExpressionPath("->pc").GetValueAsUnsigned()
+        return cfp.GetValueForExpressionPath("->_iseq"), cfp.GetValueForExpressionPath("->pc").GetValueAsUnsigned()
 
     def read_memory(self, ptr, len):
         # Unlike SBProcess, SBTarget reads static strings missing from a core out
@@ -151,13 +165,12 @@ class BackTrace:
         while curr_addr >= last_cfp:
             cfp = self.target.CreateValueFromAddress("cfp", lldb.SBAddress(curr_addr, self.target), cfp_type_p.GetPointeeType())
             ep = cfp.GetValueForExpressionPath("->ep")
-            iseq = cfp.GetValueForExpressionPath("->_iseq")
+            iseq, pc = self.cfp_iseq_and_pc(cfp)
 
             frame_type = ep.GetChildAtIndex(0).GetValueAsUnsigned() & self.VM_FRAME_MAGIC_MASK
 
-            if iseq.GetValueAsUnsigned():
-                pc = cfp.GetValueForExpressionPath("->pc")
-                if pc.GetValueAsUnsigned():
+            if iseq is not None and iseq.GetValueAsUnsigned():
+                if pc:
                     self.dump_iseq_frame(cfp, iseq)
             else:
                 if frame_type == self.VM_FRAME_MAGIC_CFUNC:
