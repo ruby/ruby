@@ -1815,7 +1815,7 @@ ALWAYS_INLINE(static) bool json_parse_any(JSON_ParserState *state, JSON_ParserCo
         if (RB_LIKELY(peek(state) == '"')) {
             VALUE string = json_parse_string(state, config, true);
             if (UNDEF_P(string)) {
-                if (resumable) {
+                if (resumable && eos(state)) {
                     state->cursor = start;
                     return false;
                 } else {
