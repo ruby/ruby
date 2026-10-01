@@ -961,33 +961,40 @@ fn inline_basic_object_initialize(fun: &mut hir::Function, block: hir::BlockId, 
 /// (`rb_struct_initialize_m`): store each argument into its member slot and nil out the members
 /// the caller left off the end.
 fn inline_struct_initialize(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
-    // The member count, the member names, and where the members live are all properties of the
-    // exact class, so we can only do this when we know it.
+    // Check our pre-conditions. We need to know that:
+
+    // (1) the receiver class is a known class
     let class = fun.type_of(recv).exact_ruby_class()?;
+
+    // (2) with a known number of members
     let num_members = unsafe { rb_zjit_struct_num_members(class) };
     debug_assert!(num_members >= 0, "rb_zjit_struct_num_members returned a negative value");
-    // More values than the struct has members raises ArgumentError; leave that to the interpreter.
+
+    // (3) which also matches the number of arguments passed (more values than the struct has
+    //     members raises ArgumentError; leave that to the interpreter)
     if args.len() as i64 > num_members { return None; }
-    // This is a bit of an arbitrary limit but it's designed to avoid bloating the generated code
-    // with inline stores.
+
+    // (4) the constructor isn't expecting keyword parameters (or it's ok to nil-fill the whole
+    //     instance)
+    if !args.is_empty() && unsafe { rb_struct_s_keyword_init(class) }.test() { return None; }
+
+    // (5) and the number of members is small enough to inline without bloating the generated code
     const MEMBER_LIMIT: i64 = 1 << 8;
     if num_members > MEMBER_LIMIT { return None; }
-    // A `keyword_init: true` class takes keywords only, and callers that pass keywords never get
-    // this far (`unspecializable_c_call_type` rejects them), so any argument here would raise
-    // ArgumentError. Zero arguments nil out every member before `keyword_init` is consulted at
-    // all, so that case is fine either way.
-    if !args.is_empty() && unsafe { rb_struct_s_keyword_init(class) }.test() { return None; }
-    // Embeddedness depends only on the member count. See struct_embedded_p and struct_alloc.
-    if !unsafe { rb_zjit_struct_embedded_p(num_members) } { return None; }
-    let base_offset = RUBY_OFFSET_RSTRUCT_AS_ARY;
-    // We know it's going to fit into an i32 since it's in [0, MEMBER_LIMIT).
-    let base_offset: i32 = base_offset.try_into().ok()?;
 
-    // rb_struct_modify
+    // (6) the object is embedded, which simplifies the implementation (if we see some extended
+    //     structs, we can support that reasonably easily later)
+    //     Embeddedness depends only on the member count. See struct_embedded_p and struct_alloc.
+    if !unsafe { rb_zjit_struct_embedded_p(num_members) } { return None; }
+
+    // We know it's going to fit into an i32 since we checked that the total number of fields was
+    // in [0, MEMBER_LIMIT).
+    let base_offset: i32 = RUBY_OFFSET_RSTRUCT_AS_ARY.try_into().ok()?;
+
+    // #initialize calls rb_struct_modify
     fun.guard_not_frozen(block, recv, state);
 
-    // rb_struct_initialize_m returns nil, and so does every member past the end of the argument
-    // list.
+    // Initialize all the members, either to the argument passed in or nil if it wasn't supplied.
     let nil = fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(Qnil) });
     if num_members > 0 {
         let num_bits = types::BasicObject.num_bits();
@@ -1008,6 +1015,7 @@ fn inline_struct_initialize(fun: &mut hir::Function, block: hir::BlockId, recv: 
             }
         }
     }
+
     Some(nil)
 }
 
