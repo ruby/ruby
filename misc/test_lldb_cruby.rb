@@ -14,8 +14,9 @@ run #{ruby_opts} -e'#{code}'
 #{command}
 eom
       tf.flush
-      o, s = Open3.capture2('lldb', '-b', '-s', tf.path)
+      o, e, s = Open3.capture3('lldb', '-b', '-s', tf.path)
       assert_true s.success?, message
+      assert_not_match /^Traceback/, e, message
       assert_match /^\(lldb\) #{Regexp.quote(command)}\n#{pattern}/, o, message
     end
   end
@@ -45,6 +46,11 @@ eom
   def test_rbbt
     assert_lldb 'def foo = p(1); foo', 'rbbt ruby_current_vm_ptr->ractor.main_thread->ec',
                 /rb_control_frame_t +TYPE *\n0x\h+ +EVAL +-e <main>\n0x\h+ +METHOD +-e foo\n0x\h+ +CFUNC *\n/
+  end
+
+  def test_rbbt_error
+    assert_lldb 'p 1', 'rbbt', /Need an EC for now\n/
+    assert_lldb 'p 1', 'rbbt no_such_variable', /(?:.*\n)*?error: .*no_such_variable/
   end
 
   def test_rbbt_zjit

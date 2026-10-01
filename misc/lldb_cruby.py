@@ -527,14 +527,15 @@ def rb_backtrace(debugger, command, result, internal_dict):
         if frame.IsValid():
             val = frame.EvaluateExpression(command)
         else:
-            val = target.EvaluateExpression(command)
+            val = bt.target.EvaluateExpression(command)
 
         error = val.GetError()
         if error.Fail():
-            print >> result, error
+            print(error, file=result)
             return
     else:
-        print("Need an EC for now")
+        print("Need an EC for now", file=result)
+        return
 
     bt.print_bt(val)
 
