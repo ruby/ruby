@@ -157,7 +157,6 @@ module Bundler
       elsif cached_spec_path = gemspec_cached_path(spec_file_name)
         Bundler.load_gemspec(cached_spec_path)
       else
-        # Retried like `specs_with_retry`, which fetches the full index.
         body = Bundler::Retry.new("fetcher", FAIL_ERRORS).attempts do
           downloader.fetch(uri).body
         end
