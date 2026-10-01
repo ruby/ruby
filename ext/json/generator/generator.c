@@ -1548,7 +1548,7 @@ static VALUE cState_array_nl_set(VALUE self, VALUE array_nl)
 /*
  * call-seq: as_json()
  *
- * This string is put at the end of a line that holds a JSON array.
+ * Returns the callback used to convert unsupported objects in strict mode.
  */
 static VALUE cState_as_json(VALUE self)
 {
@@ -1571,7 +1571,7 @@ static VALUE as_json_config(VALUE value)
 /*
  * call-seq: as_json=(as_json)
  *
- * This string is put at the end of a line that holds a JSON array.
+ * Sets the Proc used to convert unsupported objects in strict mode.
  */
 static VALUE cState_as_json_set(VALUE self, VALUE as_json)
 {
@@ -1818,8 +1818,7 @@ static VALUE cState_depth(VALUE self)
 /*
  * call-seq: depth=(depth)
  *
- * This sets the maximum level of data structure nesting in the generated JSON
- * to the integer depth, max_nesting = 0 if no maximum should be checked.
+ * Sets the current depth of data structure nesting to the integer +depth+.
  */
 static VALUE cState_depth_set(VALUE self, VALUE depth)
 {
