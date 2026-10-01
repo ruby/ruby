@@ -66,7 +66,7 @@ RSpec.describe "bundle install with git sources and sparse_checkout" do
   end
 
   describe "multiple gems from same repo with different sparse_checkouts" do
-    it "creates separate sources for each sparse_checkout" do
+    it "checks out each sparse_checkout from a shared git cache" do
       build_lib "foo", "1.0", path: lib_path("monorepo/packages/foo")
       build_lib "bar", "2.0", path: lib_path("monorepo/packages/bar")
       build_git "monorepo", path: lib_path("monorepo"), gemspec: false
@@ -83,9 +83,8 @@ RSpec.describe "bundle install with git sources and sparse_checkout" do
 
       expect(the_bundle).to include_gems "foo 1.0", "bar 2.0"
 
-      # Different sparse_checkouts = different cache directories
-      cache_dirs = Dir[default_bundle_path("cache/bundler/git/monorepo-*")]
-      expect(cache_dirs.size).to eq(2)
+      expect(Dir[default_bundle_path("cache/bundler/git/monorepo-*")].size).to eq(1)
+      expect(Dir[default_bundle_path("bundler/gems/monorepo-*")].size).to eq(2)
     end
   end
 end

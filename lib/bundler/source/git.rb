@@ -445,9 +445,7 @@ module Bundler
       end
 
       def git_scope
-        scope = "#{base_name}-#{uri_hash}"
-        scope += "-#{Bundler::Digest.sha1(@sparse_checkout)[0..7]}" if @sparse_checkout
-        scope
+        "#{base_name}-#{uri_hash}"
       end
 
       def extension_cache_slug(_)
