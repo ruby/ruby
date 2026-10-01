@@ -130,7 +130,6 @@ module Bundler
 
           extra_fetch_needed = clone_needs_extra_fetch?
           unshallow_needed = clone_needs_unshallow?
-
           return unless extra_fetch_needed || unshallow_needed
 
           git_remote_fetch(unshallow_needed ? ["--unshallow"] : depth_args)
@@ -145,19 +144,13 @@ module Bundler
               SharedHelpers.filesystem_access(destination) do |p|
                 FileUtils.rm_rf(p)
               end
-              if @sparse_checkout && supports_partial_clone?
-                Bundler.ui.debug "Using partial clone with sparse checkout for #{@sparse_checkout}"
-                git(*build_sparse_checkout_clone_args(destination))
-              else
-                git "clone", "--no-checkout", "--quiet", path.to_s, destination.to_s
-                # The copy is cloned from the local bare cache, which holds no Git LFS
-                # objects, so point origin back at the real remote and let git-lfs derive
-                # its endpoint from there when checking out. Use the credential-filtered
-                # URI to avoid persisting secrets in the copy's .git/config; auth is left
-                # to git's credential helper.
-                git "remote", "set-url", "origin", credential_filtered_uri, dir: destination
-              end
-
+              git "clone", "--no-checkout", "--quiet", path.to_s, destination.to_s
+              # The copy is cloned from the local bare cache, which holds no Git LFS
+              # objects, so point origin back at the real remote and let git-lfs derive
+              # its endpoint from there when checking out. Use the credential-filtered
+              # URI to avoid persisting secrets in the copy's .git/config; auth is left
+              # to git's credential helper.
+              git "remote", "set-url", "origin", credential_filtered_uri, dir: destination
               File.chmod((File.stat(destination).mode | 0o777) & ~File.umask, destination)
             rescue Errno::EEXIST => e
               file_path = e.message[%r{.*?((?:[a-zA-Z]:)?/.*)}, 1]
@@ -195,7 +188,6 @@ module Bundler
         private
 
         def git_remote_fetch(args)
-          args = [*partial_clone_filter_args, *args]
           command = fetch_command(args)
           command_with_no_credentials = check_allowed(command)
 
@@ -530,16 +522,15 @@ module Bundler
         end
 
         def extra_clone_args
-          filter_args = partial_clone_filter_args
-          args = depth_args.dup
-          return filter_args if args.empty?
+          args = depth_args
+          return [] if args.empty?
 
           args += ["--single-branch"]
           args.unshift("--no-tags") if supports_cloning_with_no_tags?
-          args.unshift(*filter_args)
 
           # If there's a locked revision, no need to clone any specific branch
-          # or tag, since we will end up checking out that locked revision anyways.
+          # or tag, since we will end up checking out that locked revision
+          # anyways.
           return args if @revision
 
           args += ["--branch", branch_option] if branch_option
@@ -588,25 +579,6 @@ module Bundler
 
         def supports_sparse_checkout?
           @supports_sparse_checkout ||= Gem::Version.new(version) >= Gem::Version.new("2.25.0")
-        end
-
-        def supports_partial_clone?
-          @supports_partial_clone ||= Gem::Version.new(version) >= Gem::Version.new("2.17.0")
-        end
-
-        def partial_clone_filter_args
-          return [] unless @sparse_checkout && supports_partial_clone?
-          ["--filter=blob:none"]
-        end
-
-        def build_sparse_checkout_clone_args(destination)
-          args = ["clone", *partial_clone_filter_args, "--no-checkout", "--quiet"]
-          args.concat(depth_args) unless depth_args.empty?
-          args << "--single-branch"
-          args << "--no-tags" if supports_cloning_with_no_tags?
-          args << "--branch" << branch_option if branch_option
-          args.concat([configured_uri, destination.to_s])
-          args
         end
 
         def setup_sparse_checkout(destination)

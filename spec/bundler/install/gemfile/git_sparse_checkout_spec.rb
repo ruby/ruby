@@ -45,6 +45,24 @@ RSpec.describe "bundle install with git sources and sparse_checkout" do
       bundle :install
       expect(the_bundle).to include_gems "foo 1.0"
     end
+
+    it "reinstalls from the git cache without reaching the remote" do
+      build_lib "foo", "1.0", path: lib_path("monorepo/packages/foo")
+      build_git "monorepo", path: lib_path("monorepo"), gemspec: false
+
+      install_gemfile <<-G
+        source "https://gem.repo1"
+        gem "foo", git: "#{lib_path("monorepo")}",
+                   sparse_checkout: "packages/foo",
+                   glob: "packages/foo/*.gemspec"
+      G
+
+      FileUtils.rm_rf Dir[default_bundle_path("bundler/gems/monorepo-*")]
+      FileUtils.mv lib_path("monorepo"), tmp("monorepo.bck")
+
+      bundle :install
+      expect(the_bundle).to include_gems "foo 1.0"
+    end
   end
 
   describe "multiple gems from same repo with different sparse_checkouts" do

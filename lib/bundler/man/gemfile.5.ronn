@@ -362,7 +362,7 @@ Git repositories support a number of additional options.
   * `sparse_checkout`:
     Specify a directory to include when checking out a git repository.
     Uses git's sparse-checkout feature (requires git 2.25+) to only
-    download the specified directory, reducing disk usage for large repos.
+    check out the specified directory, reducing disk usage for large repos.
 
       gem "foo", git: "https://github.com/org/monorepo.git",
                  sparse_checkout: "packages/foo",

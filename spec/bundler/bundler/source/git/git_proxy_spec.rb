@@ -220,6 +220,16 @@ RSpec.describe Bundler::Source::Git::GitProxy do
       end
     end
 
+    context "with sparse_checkout option" do
+      let(:options) { { "sparse_checkout" => "packages/foo" } }
+
+      it "clones the working copy from the local cache" do
+        expect(git_proxy).to receive(:capture).with(["clone", "--no-checkout", "--quiet", path.to_s, destination.to_s], nil).and_return(["", "", clone_result])
+        expect(git_proxy).not_to receive(:capture).with(array_including("--filter=blob:none"), anything)
+        git_proxy.copy_to(destination)
+      end
+    end
+
     context "when the remote URI embeds credentials" do
       let(:uri) { "https://user:secret@github.com/ruby/rubygems.git" }
 
