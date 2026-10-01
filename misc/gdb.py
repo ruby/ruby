@@ -76,13 +76,13 @@ class CFP(gdb.Command):
             local_size = self.get_int(f'{body}->local_table_size - {body}->param.size')
             param_size = self.get_int(f'{body}->param.size')
 
-            if local_size:
+            if param_size:
                 print(f'Params (size={param_size}):')
                 for i in range(-3 - local_size - param_size, -3 - local_size):
                     self.print_stack(cfp, i, self.rp(cfp, i))
                 print()
 
-            if param_size:
+            if local_size:
                 print(f'Locals (size={local_size}):')
                 for i in range(-3 - local_size, -3):
                     self.print_stack(cfp, i, self.rp(cfp, i))
