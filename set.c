@@ -830,8 +830,9 @@ set_i_add_p(VALUE set, VALUE item)
 static VALUE
 set_i_delete(VALUE set, VALUE item)
 {
+    st_data_t item_data = (st_data_t)item;
     rb_check_frozen(set);
-    if (set_table_delete(RSET_TABLE(set), (st_data_t *)&item)) {
+    if (set_table_delete(RSET_TABLE(set), &item_data)) {
         set_compact_after_delete(set);
     }
     return set;
@@ -852,8 +853,9 @@ set_i_delete(VALUE set, VALUE item)
 static VALUE
 set_i_delete_p(VALUE set, VALUE item)
 {
+    st_data_t item_data = (st_data_t)item;
     rb_check_frozen(set);
-    if (set_table_delete(RSET_TABLE(set), (st_data_t *)&item)) {
+    if (set_table_delete(RSET_TABLE(set), &item_data)) {
         set_compact_after_delete(set);
         return set;
     }
@@ -1296,7 +1298,7 @@ set_merge_enum_into(VALUE set, VALUE arg)
         RB_GC_GUARD(arg);
     }
     else {
-        rb_block_call(arg, enum_method_id(arg), 0, 0, set_merge_block, (VALUE)set);
+        rb_block_call(arg, enum_method_id(arg), 0, 0, set_merge_block, set);
     }
 }
 
@@ -1538,16 +1540,18 @@ set_i_union(VALUE set, VALUE other)
 static int
 set_remove_i(st_data_t key, st_data_t from)
 {
-    set_table_delete((struct set_table *)from, (st_data_t *)&key);
+    st_data_t key_data = (st_data_t)key;
+    set_table_delete((struct set_table *)from, &key_data);
     return ST_CONTINUE;
 }
 
 static VALUE
 set_remove_block(RB_BLOCK_CALL_FUNC_ARGLIST(key, set))
 {
+    st_data_t key_data = (st_data_t)key;
     rb_check_frozen(set);
-    set_table_delete(RSET_TABLE(set), (st_data_t *)&key);
-    return key;
+    set_table_delete(RSET_TABLE(set), &key_data);
+    return (VALUE)key_data;
 }
 
 static void
@@ -1557,7 +1561,7 @@ set_remove_enum_from(VALUE set, VALUE arg)
         set_iter(arg, set_remove_i, (st_data_t)RSET_TABLE(set));
     }
     else {
-        rb_block_call(arg, enum_method_id(arg), 0, 0, set_remove_block, (VALUE)set);
+        rb_block_call(arg, enum_method_id(arg), 0, 0, set_remove_block, set);
     }
     set_compact_after_delete(set);
 }
@@ -2326,7 +2330,8 @@ rb_set_add_no_check(VALUE set, VALUE element)
 bool
 rb_set_delete_no_check(VALUE set, VALUE element)
 {
-    return set_table_delete(RSET_TABLE(set), (st_data_t *)&element) != 0;
+    st_data_t element_data = (st_data_t)element;
+    return set_table_delete(RSET_TABLE(set), &element_data) != 0;
 }
 
 VALUE
