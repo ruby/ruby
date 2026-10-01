@@ -334,6 +334,7 @@ native_cond_timedwait(rb_nativethread_cond_t *cond, rb_nativethread_lock_t *mute
 
     rb_hrtime_t rel = *abs - now;
     HANDLE timer = ruby_thread_from_native()->nt->wait_timer;
+    int r;
 
     if (timer) {
         // a negative due time is relative, in 100ns units
@@ -342,15 +343,20 @@ native_cond_timedwait(rb_nativethread_cond_t *cond, rb_nativethread_lock_t *mute
         if (!SetWaitableTimer(timer, &due, 0, NULL, NULL, FALSE)) {
             w32_error("native_cond_timedwait");
         }
-        return native_cond_timedwait_ms(cond, mutex, timer, INFINITE);
+        r = native_cond_timedwait_ms(cond, mutex, timer, INFINITE);
+    }
+    else {
+        // unsigned long is 32 bits here, and INFINITE would never time out.
+        rb_hrtime_t ms = roomof(rel, RB_HRTIME_PER_MSEC);
+        unsigned long msec = ms < INFINITE ? (unsigned long)ms : INFINITE - 1;
+        r = native_cond_timedwait_ms(cond, mutex, NULL, msec);
     }
 
-    unsigned long msec = (unsigned long)(rel / RB_HRTIME_PER_MSEC);
+    // The wait runs on another clock than rb_hrtime_now() and can end early.
+    // Report that as spurious, the way pthread_cond_timedwait would.
+    if (r == ETIMEDOUT && rb_hrtime_now() < *abs) return 0;
 
-    // do not busy loop on a sub-millisecond deadline
-    if (msec == 0) msec = 1;
-
-    return native_cond_timedwait_ms(cond, mutex, NULL, msec);
+    return r;
 }
 
 void
