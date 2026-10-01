@@ -1132,14 +1132,15 @@ class Resolv
       end
 
       def Config.default_config_hash(filename="/etc/resolv.conf")
-        if File.exist? filename
-          Config.parse_resolv_conf(filename)
-        elsif defined?(Win32::Resolv)
+        # Native Windows resolves the path against the current drive, while Cygwin's own resolver honors it.
+        if defined?(Win32::Resolv) and !(/cygwin/ =~ RUBY_PLATFORM and File.exist?(filename))
           search, nameserver = Win32::Resolv.get_resolv_info
           config_hash = {}
           config_hash[:nameserver] = nameserver if nameserver
           config_hash[:search] = [search].flatten if search
           config_hash
+        elsif File.exist? filename
+          Config.parse_resolv_conf(filename)
         else
           {}
         end
