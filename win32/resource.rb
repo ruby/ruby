@@ -76,7 +76,7 @@ BEGIN
   BLOCK "000004b0"
   BEGIN
    VALUE "Comments",         "#{RUBY_RELEASE_DATE}\\0"
-   VALUE "CompanyName",      "http://www.ruby-lang.org/\\0"
+   VALUE "CompanyName",      "https://www.ruby-lang.org/\\0"
    VALUE "FileDescription",  "Ruby interpreter (#{desc}) #{sversion} [#{RUBY_PLATFORM}]\\0"
    VALUE "FileVersion",      "#{sversion}\\0"
    VALUE "InternalName",     "#{base + ext}\\0"
