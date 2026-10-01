@@ -4413,6 +4413,110 @@ mod hir_opt_tests {
         ");
     }
 
+    // main is promoted by the GC at boot, so its singleton class is profiled before any GC
+    #[test]
+    fn test_send_to_main_singleton_method_before_gc() {
+        let result = eval("
+            def test = to_s
+            test
+            test
+            GC.count
+        ");
+        assert_eq!(VALUE::fixnum_from_usize(0), result, "expected no GC so far");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint MethodRedefined(Object@0x1000, to_s@0x1008, cme:0x1010)
+          v19:ObjectSubclass[class_exact*:Object@VALUE(0x1000)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1000)] recompile
+          v20:BasicObject = CCallWithFrame v19, :Unknown.to_s@0x1038
+          CheckInterrupts
+          Return v20
+        ");
+    }
+
+    // The block param proxy is promoted by the GC at boot, so its singleton class is
+    // profiled before any GC
+    #[test]
+    fn test_send_to_block_param_proxy_before_gc() {
+        let result = eval("
+            def foo(&block) = block.call
+            foo { 1 }
+            foo { 1 }
+            GC.count
+        ");
+        assert_eq!(VALUE::fixnum_from_usize(0), result, "expected no GC so far");
+        assert_snapshot!(hir_string("foo"), @"
+        fn foo@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :block@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :block@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v16:CPtr = GetEP 0
+          v17:CUInt64 = LoadField v16, :VM_ENV_DATA_INDEX_FLAGS@0x1001
+          v18:CBool = IsBlockParamModified v17
+          CondBranch v18, bb4(), bb5()
+        bb4():
+          v20:BasicObject = LoadField v16, :block@0x1002
+          Jump bb6(v20, v20)
+        bb5():
+          v22:CInt64 = LoadField v16, :VM_ENV_DATA_INDEX_SPECVAL@0x1003
+          v23:CInt64[1] = Const CInt64(1)
+          v24:CInt64 = IntAnd v22, v23
+          v25:CBool = IsBitEqual v24, v23
+          CondBranch v25, bb7(), bb8()
+        bb7():
+          v27:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
+          Jump bb6(v27, v10)
+        bb8():
+          v29:CInt64[0] = Const CInt64(0)
+          v30:CBool = IsBitEqual v22, v29
+          CondBranch v30, bb9(), bb10()
+        bb9():
+          v32:NilClass = Const Value(nil)
+          Jump bb6(v32, v10)
+        bb10():
+          v34:CInt64[255] = Const CInt64(255)
+          v35:CInt64 = IntAnd v22, v34
+          v36:CInt64[12] = Const CInt64(12)
+          v37:CBool = IsBitEqual v35, v36
+          CondBranch v37, bb11(), bb12()
+        bb12():
+          v39:CUInt64 = LoadField v22, :RBASIC_FLAGS@0x1001
+          v40:CUInt64[31] = Const CUInt64(31)
+          v41:CInt64 = IntAnd v39, v40
+          v42:CUInt64[20] = Const CUInt64(20)
+          v43:CBool = IsBitEqual v41, v42
+          CondBranch v43, bb11(), bb13()
+        bb11():
+          v45:BasicObject = SymToProc :block, l0, EP@3
+          Jump bb6(v45, v45)
+        bb13():
+          v47:BasicObject = LoadField v16, :VM_ENV_DATA_INDEX_SPECVAL@0x1003
+          Jump bb6(v47, v10)
+        bb6(v14:BasicObject, v15:BasicObject):
+          v50:BasicObject = Send v14, :call # SendFallbackReason: Send: unsupported optimized method type BlockCall
+          PatchPoint NoEPEscape(foo)
+          CheckInterrupts
+          Return v50
+        ");
+    }
+
     #[test]
     fn test_send_iseq_with_block() {
         let result = eval("
