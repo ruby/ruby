@@ -432,6 +432,11 @@ impl VALUE {
         return flags_bits;
     }
 
+    /// Check if the GC has promoted `self` to the old generation, like RB_OBJ_PROMOTED().
+    pub fn promoted(self) -> bool {
+        !self.special_const_p() && self.builtin_flags() & RUBY_FL_PROMOTED as usize != 0
+    }
+
     pub fn class_of(self) -> VALUE {
         if !self.special_const_p() {
             let builtin_type = self.builtin_type();
