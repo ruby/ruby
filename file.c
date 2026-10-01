@@ -3844,14 +3844,43 @@ utime_internal_i(int argc, VALUE *argv, int follow)
 }
 
 /*
- * call-seq:
- *  File.utime(atime, mtime, file_name, ...)   ->  integer
+ * :markup: markdown
  *
- * Sets the access and modification times of each named file to the
- * first two arguments. If a file is a symlink, this method acts upon
- * its referent rather than the link itself; for the inverse
- * behavior see File.lutime. Returns the number of file
- * names in the argument list.
+ * call-seq:
+ *  File.utime(atime, mtime, *paths) -> integer
+ *
+ * For the entry at the paths in `paths`,
+ * updates its access time to the given `atime`
+ * and its modification time to the given `mtime`;
+ * see [Filesystem Timestamps](rdoc-ref:file/timestamps.md).
+ * Returns the number of entries updated.
+ * Each path points to a file or directory.
+ *
+ * Each given time may be a Time object, an integer representing a time,
+ * or `nil` (meaning Time.now):
+ *
+ * ```ruby
+ * filepath = '/tmp/t.tmp'
+ * File.write(filepath, 'foo')
+ * File.atime(filepath)  # => 2026-09-29 12:38:29.889703781 -0500
+ * File.mtime(filepath)  # => 2026-09-29 12:38:29.889703781 -0500
+ * time = Time.now
+ * File.utime(time, time, filepath)
+ * File.atime(filepath)  # => 2026-09-29 12:38:52.533160634 -0500
+ * File.mtime(filepath)  # => 2026-09-29 12:38:52.533160634 -0500
+ * File.utime(0, 0, filepath)
+ * File.atime(filepath)  # => 1969-12-31 18:00:00 -0600
+ * File.mtime(filepath)  # => 1969-12-31 18:00:00 -0600
+ * File.utime(nil, nil, filepath)
+ * File.atime(filepath)  # => 2026-09-29 12:39:50.859421265 -0500
+ * File.mtime(filepath)  # => 2026-09-29 12:39:50.859421265 -0500
+ * File.delete(filepath) # Clean up.
+ * ```
+ *
+ * Raises an exception if any entry cannot be updated;
+ * some entries may have already been updated.
+ *
+ * Follows symbolic links; use File.lutime to update the times for symbolic links.
  */
 
 static VALUE
