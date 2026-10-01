@@ -409,6 +409,7 @@ fn main() {
         .allowlist_function("rb_zjit_class_initialized_p")
         .allowlist_function("rb_zjit_can_load_superclass_p")
         .allowlist_function("rb_zjit_class_has_default_allocator")
+        .allowlist_function("rb_zjit_class_has_struct_allocator")
         .allowlist_function("rb_zjit_struct_num_members")
         .allowlist_function("rb_zjit_struct_member_id")
         .allowlist_function("rb_zjit_struct_embedded_p")

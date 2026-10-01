@@ -878,6 +878,13 @@ struct_alloc(VALUE klass)
     }
 }
 
+// Whether `klass` allocates its instances with struct_alloc.
+bool
+rb_zjit_class_has_struct_allocator(VALUE klass)
+{
+    return rb_get_alloc_func(klass) == struct_alloc;
+}
+
 // The ID of the `index`th member of the Struct class `klass`. `index` must be in bounds
 // according to rb_zjit_struct_num_members().
 ID
