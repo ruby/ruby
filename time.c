@@ -4447,7 +4447,7 @@ time_inspect(VALUE time)
     if (subsec == INT2FIX(0)) {
     }
     else if (FIXNUM_P(subsec) && FIX2LONG(subsec) < TIME_SCALE) {
-        long len;
+        rb_long_t len;
         rb_str_catf(str, ".%09ld", FIX2LONG(subsec));
         for (len=RSTRING_LEN(str); RSTRING_PTR(str)[len-1] == '0' && len > 0; len--)
             ;
@@ -5199,7 +5199,7 @@ time_deconstruct_keys(VALUE time, VALUE keys)
 {
     struct time_object *tobj;
     VALUE h;
-    long i;
+    rb_long_t i;
 
     GetTimeval(time, tobj);
     MAKE_TM_ENSURE(time, tobj, tobj->vtm.yday != 0);
@@ -5296,7 +5296,7 @@ time_strftime(VALUE time, VALUE format)
 {
     struct time_object *tobj;
     const char *fmt;
-    long len;
+    rb_long_t len;
     rb_encoding *enc;
     VALUE tmp;
 
@@ -5424,7 +5424,7 @@ time_xmlschema(int argc, VALUE *argv, VALUE time)
         }
         else {
             subsecx = rb_int2str(subsecx, 10);
-            long len = RSTRING_LEN(subsecx);
+            rb_long_t len = RSTRING_LEN(subsecx);
             if (fraction_digits > len) {
                 memset(ptr, '0', fraction_digits - len);
             }
@@ -5453,7 +5453,7 @@ time_xmlschema(int argc, VALUE *argv, VALUE time)
     return str;
 }
 
-int ruby_marshal_write_long(long x, char *buf);
+int ruby_marshal_write_long(rb_long_t x, char *buf);
 
 enum {base_dump_size = 8};
 
@@ -5539,8 +5539,8 @@ time_mdump(VALUE time)
          */
         size_t ysize = rb_absint_size(year_extend, NULL);
         char *p, *const buf_year_extend = buf + base_dump_size;
-        if (ysize > LONG_MAX ||
-            (i = ruby_marshal_write_long((long)ysize, buf_year_extend)) < 0) {
+        if (ysize > RB_LONGT_MAX ||
+            (i = ruby_marshal_write_long((rb_long_t)ysize, buf_year_extend)) < 0) {
             rb_raise(rb_eArgError, "year too %s to marshal: %"PRIsVALUE" UTC",
                      (year == 1900 ? "small" : "big"), vtm.year);
         }
@@ -5631,7 +5631,7 @@ mload_zone(VALUE time, VALUE zone)
     return z;
 }
 
-long ruby_marshal_read_long(const char **buf, long len);
+long ruby_marshal_read_long(const char **buf, rb_long_t len);
 
 /* :nodoc: */
 static VALUE
@@ -5697,7 +5697,7 @@ time_mload(VALUE time, VALUE str)
             year = INT2FIX(((int)(p >> 14) & 0xffff) + 1900);
         }
         if (RSTRING_LEN(str) > base_dump_size) {
-            long len = RSTRING_LEN(str) - base_dump_size;
+            rb_long_t len = RSTRING_LEN(str) - base_dump_size;
             long ysize = 0;
             VALUE year_extend;
             const char *ybuf = (const char *)(buf += base_dump_size);
@@ -5739,7 +5739,7 @@ time_mload(VALUE time, VALUE str)
         }
         else if (submicro != Qnil) { /* for Ruby 1.9.1 compatibility */
             unsigned char *ptr;
-            long len;
+            rb_long_t len;
             int digit;
             ptr = (unsigned char*)StringValuePtr(submicro);
             len = RSTRING_LEN(submicro);

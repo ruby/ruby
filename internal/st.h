@@ -27,6 +27,6 @@ typedef int st_foreach_with_hash_callback_func(st_data_t, st_data_t, st_data_t, 
 int rb_st_foreach_with_hash(st_table *, st_foreach_with_hash_callback_func *, st_data_t);
 #define st_foreach_with_hash rb_st_foreach_with_hash
 
-void rb_hash_bulk_insert_into_st_table(long, const VALUE *, VALUE);
+void rb_hash_bulk_insert_into_st_table(rb_long_t, const VALUE *, VALUE);
 
 #endif

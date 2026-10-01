@@ -63,7 +63,7 @@ RBIMPL_SYMBOL_EXPORT_BEGIN()
  * This function works for non-exception classes  as well, as long as they take
  * one string argument.
  */
-VALUE rb_exc_new(VALUE etype, const char *ptr, long len);
+VALUE rb_exc_new(VALUE etype, const char *ptr, rb_long_t len);
 
 RBIMPL_ATTR_NONNULL(())
 /**

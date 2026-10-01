@@ -306,7 +306,7 @@ VALUE string_spec_rb_str_substr(VALUE self, VALUE str, VALUE beg, VALUE len) {
 VALUE string_spec_rb_str_subpos(VALUE self, VALUE str, VALUE beg) {
   char* original = RSTRING_PTR(str);
   char* end = RSTRING_END(str);
-  long len = rb_str_strlen(str);
+  rb_long_t len = rb_str_strlen(str);
   char *p = rb_str_subpos(str, FIX2LONG(beg), &len);
   if (p == NULL) {
     return Qnil;

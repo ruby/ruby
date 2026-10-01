@@ -59,7 +59,7 @@ VALUE rb_reg_regcomp(VALUE str);
  * Distinction  between raising  ::rb_eArgError  and  ::rb_eRegexpError is  not
  * obvious, at least to @shyouhei.
  */
-long rb_reg_search(VALUE re, VALUE str, long pos, int dir);
+rb_long_t rb_reg_search(VALUE re, VALUE str, rb_long_t pos, int dir);
 
 /**
  * Substitution.  This  is basically the implementation  of `String#sub`.  Also
@@ -94,7 +94,7 @@ VALUE rb_reg_regsub(VALUE repl, VALUE src, struct re_registers *regs, VALUE rexp
  *             character boundary.
  *
  */
-long rb_reg_adjust_startpos(VALUE re, VALUE str, long pos, int dir);
+rb_long_t rb_reg_adjust_startpos(VALUE re, VALUE str, rb_long_t pos, int dir);
 
 /**
  * Escapes  any  characters  that  would  have special  meaning  in  a  regular

@@ -182,7 +182,7 @@ listed below:
 
 ==== String functions
 
-<tt>rb_str_new(const char *ptr, long len)</tt> ::
+<tt>rb_str_new(const char *ptr, rb_long_t len)</tt> ::
 
   Creates a new Ruby string.
 
@@ -210,7 +210,7 @@ listed below:
 
   Appends Ruby string str2 to Ruby string str1.
 
-<tt>rb_str_cat(VALUE str, const char *ptr, long len)</tt> ::
+<tt>rb_str_cat(VALUE str, const char *ptr, rb_long_t len)</tt> ::
 
   Appends len bytes of data from ptr to the Ruby string.
 
@@ -228,7 +228,7 @@ listed below:
   equivalent to <tt>rb_str_append(str, rb_sprintf(format, ...))</tt> and
   <tt>rb_str_append(str, rb_vsprintf(format, ap))</tt>, respectively.
 
-<tt>rb_enc_str_new(const char *ptr, long len, rb_encoding *enc)</tt> ::
+<tt>rb_enc_str_new(const char *ptr, rb_long_t len, rb_encoding *enc)</tt> ::
 <tt>rb_enc_str_new_cstr(const char *ptr, rb_encoding *enc)</tt> ::
 
   Creates a new Ruby string with the specified encoding.
@@ -238,7 +238,7 @@ listed below:
   Creates a new Ruby string from a C string literal with the specified
   encoding.
 
-<tt>rb_usascii_str_new(const char *ptr, long len)</tt> ::
+<tt>rb_usascii_str_new(const char *ptr, rb_long_t len)</tt> ::
 <tt>rb_usascii_str_new_cstr(const char *ptr)</tt> ::
 
   Creates a new Ruby string with encoding US-ASCII.
@@ -248,7 +248,7 @@ listed below:
   Creates a new Ruby string from a C string literal with encoding
   US-ASCII.
 
-<tt>rb_utf8_str_new(const char *ptr, long len)</tt> ::
+<tt>rb_utf8_str_new(const char *ptr, rb_long_t len)</tt> ::
 <tt>rb_utf8_str_new_cstr(const char *ptr)</tt> ::
 
   Creates a new Ruby string with encoding UTF-8.
@@ -258,7 +258,7 @@ listed below:
   Creates a new Ruby string from a C string literal with encoding
   UTF-8.
 
-<tt>rb_str_resize(VALUE str, long len)</tt> ::
+<tt>rb_str_resize(VALUE str, rb_long_t len)</tt> ::
 
   Resizes a Ruby string to len bytes.  If str is not modifiable, this
   function raises an exception.  The length of str must be set in
@@ -268,7 +268,7 @@ listed below:
   will be garbage.  Note that <tt>RSTRING_PTR(str)</tt> may change by calling
   this function.
 
-<tt>rb_str_set_len(VALUE str, long len)</tt> ::
+<tt>rb_str_set_len(VALUE str, rb_long_t len)</tt> ::
 
   Sets the length of a Ruby string.  If str is not modifiable, this
   function raises an exception.  This function preserves the content
@@ -289,19 +289,19 @@ listed below:
 
   Creates an array with no elements.
 
-<tt>rb_ary_new2(long len)</tt> ::
-<tt>rb_ary_new_capa(long len)</tt> ::
+<tt>rb_ary_new2(rb_long_t len)</tt> ::
+<tt>rb_ary_new_capa(rb_long_t len)</tt> ::
 
   Creates an array with no elements, allocating internal buffer
   for len elements.
 
-<tt>rb_ary_new3(long n, ...)</tt> ::
-<tt>rb_ary_new_from_args(long n, ...)</tt> ::
+<tt>rb_ary_new3(rb_long_t n, ...)</tt> ::
+<tt>rb_ary_new_from_args(rb_long_t n, ...)</tt> ::
 
   Creates an n-element array from the arguments.
 
-<tt>rb_ary_new4(long n, VALUE *elts)</tt> ::
-<tt>rb_ary_new_from_values(long n, VALUE *elts)</tt> ::
+<tt>rb_ary_new4(rb_long_t n, VALUE *elts)</tt> ::
+<tt>rb_ary_new_from_values(rb_long_t n, VALUE *elts)</tt> ::
 
   Creates an n-element array from a C array.
 
@@ -317,15 +317,15 @@ types are given.
 
   Equivalent to Array#[].
 
-<tt>rb_ary_entry(VALUE ary, long offset)</tt> ::
+<tt>rb_ary_entry(VALUE ary, rb_long_t offset)</tt> ::
 
   <tt>ary[offset]</tt>
 
-<tt>rb_ary_store(VALUE ary, long offset, VALUE obj)</tt> ::
+<tt>rb_ary_store(VALUE ary, rb_long_t offset, VALUE obj)</tt> ::
 
   <tt>ary[offset] = obj</tt>
 
-<tt>rb_ary_subseq(VALUE ary, long beg, long len)</tt> ::
+<tt>rb_ary_subseq(VALUE ary, rb_long_t beg, rb_long_t len)</tt> ::
 
   <tt>ary[beg, len]</tt>
 
@@ -336,7 +336,7 @@ types are given.
 
   <tt>ary.push(val)</tt>, <tt>ary.pop</tt>, <tt>ary.shift</tt>, <tt>ary.unshift(val)</tt>
 
-<tt>rb_ary_cat(VALUE ary, const VALUE *ptr, long len)</tt> ::
+<tt>rb_ary_cat(VALUE ary, const VALUE *ptr, rb_long_t len)</tt> ::
 
   Appends _len_ elements of objects from _ptr_ to the array.
 
@@ -527,7 +527,7 @@ argument by using
 
   rb_to_id(VALUE symbol)
   rb_check_id(volatile VALUE *name)
-  rb_check_id_cstr(const char *name, long len, rb_encoding *enc)
+  rb_check_id_cstr(const char *name, rb_long_t len, rb_encoding *enc)
 
 These functions try to convert the argument to a String if it was not a
 Symbol nor a String.  The second function stores the converted result into
@@ -542,7 +542,7 @@ an argument by using
 
   rb_to_symbol(VALUE name)
   rb_check_symbol(volatile VALUE *namep)
-  rb_check_symbol_cstr(const char *ptr, long len, rb_encoding *enc)
+  rb_check_symbol_cstr(const char *ptr, rb_long_t len, rb_encoding *enc)
 
 These functions are similar to above functions except that these
 return a Symbol instead of an ID.

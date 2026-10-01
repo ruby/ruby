@@ -173,6 +173,7 @@ pub const VM_ENV_DATA_INDEX_SPECVAL: i32 = -1;
 pub const VM_ENV_DATA_INDEX_FLAGS: u32 = 0;
 pub const VM_BLOCK_HANDLER_NONE: u32 = 0;
 pub type ID = ::std::os::raw::c_ulong;
+pub type rb_long_t = ::std::os::raw::c_long;
 pub type rb_alloc_func_t = ::std::option::Option<unsafe extern "C" fn(klass: VALUE) -> VALUE>;
 pub const RUBY_Qfalse: ruby_special_consts = 0;
 pub const RUBY_Qnil: ruby_special_consts = 4;
@@ -1118,23 +1119,23 @@ extern "C" {
     pub static mut rb_cThread: VALUE;
     pub static mut rb_cTrueClass: VALUE;
     pub fn rb_obj_class(obj: VALUE) -> VALUE;
-    pub fn rb_ary_new_capa(capa: ::std::os::raw::c_long) -> VALUE;
-    pub fn rb_ary_store(ary: VALUE, key: ::std::os::raw::c_long, val: VALUE);
+    pub fn rb_ary_new_capa(capa: rb_long_t) -> VALUE;
+    pub fn rb_ary_store(ary: VALUE, key: rb_long_t, val: VALUE);
     pub fn rb_ary_dup(ary: VALUE) -> VALUE;
     pub fn rb_ary_resurrect(ary: VALUE) -> VALUE;
-    pub fn rb_ary_cat(ary: VALUE, train: *const VALUE, len: ::std::os::raw::c_long) -> VALUE;
+    pub fn rb_ary_cat(ary: VALUE, train: *const VALUE, len: rb_long_t) -> VALUE;
     pub fn rb_ary_push(ary: VALUE, elem: VALUE) -> VALUE;
     pub fn rb_ary_clear(ary: VALUE) -> VALUE;
     pub fn rb_hash_new() -> VALUE;
-    pub fn rb_hash_new_capa(capa: ::std::os::raw::c_long) -> VALUE;
+    pub fn rb_hash_new_capa(capa: rb_long_t) -> VALUE;
     pub fn rb_hash_aref(hash: VALUE, key: VALUE) -> VALUE;
     pub fn rb_hash_aset(hash: VALUE, key: VALUE, val: VALUE) -> VALUE;
-    pub fn rb_hash_bulk_insert(argc: ::std::os::raw::c_long, argv: *const VALUE, hash: VALUE);
+    pub fn rb_hash_bulk_insert(argc: rb_long_t, argv: *const VALUE, hash: VALUE);
     pub fn rb_obj_is_proc(recv: VALUE) -> VALUE;
     pub fn rb_sym2id(obj: VALUE) -> ID;
     pub fn rb_id2sym(id: ID) -> VALUE;
     pub fn rb_intern(name: *const ::std::os::raw::c_char) -> ID;
-    pub fn rb_intern2(name: *const ::std::os::raw::c_char, len: ::std::os::raw::c_long) -> ID;
+    pub fn rb_intern2(name: *const ::std::os::raw::c_char, len: rb_long_t) -> ID;
     pub fn rb_id2name(id: ID) -> *const ::std::os::raw::c_char;
     pub fn rb_class2name(klass: VALUE) -> *const ::std::os::raw::c_char;
     pub fn rb_class_new_instance_pass_kw(
@@ -1152,10 +1153,7 @@ extern "C" {
     pub fn rb_reg_match_pre(md: VALUE) -> VALUE;
     pub fn rb_reg_match_post(md: VALUE) -> VALUE;
     pub fn rb_reg_match_last(md: VALUE) -> VALUE;
-    pub fn rb_utf8_str_new(
-        ptr: *const ::std::os::raw::c_char,
-        len: ::std::os::raw::c_long,
-    ) -> VALUE;
+    pub fn rb_utf8_str_new(ptr: *const ::std::os::raw::c_char, len: rb_long_t) -> VALUE;
     pub fn rb_str_buf_append(dst: VALUE, src: VALUE) -> VALUE;
     pub fn rb_str_dup(str_: VALUE) -> VALUE;
     pub fn rb_str_intern(str_: VALUE) -> VALUE;
@@ -1168,20 +1166,16 @@ extern "C" {
     pub fn rb_class_allocate_instance(klass: VALUE) -> VALUE;
     pub fn rb_obj_equal(obj1: VALUE, obj2: VALUE) -> VALUE;
     pub fn rb_reg_new_from_values(
-        cnt: ::std::os::raw::c_long,
+        cnt: rb_long_t,
         elements: *const VALUE,
         opt: ::std::os::raw::c_int,
     ) -> VALUE;
     pub fn rb_obj_info(obj: VALUE) -> *const ::std::os::raw::c_char;
     pub fn rb_ec_stack_check(ec: *mut rb_execution_context_struct) -> ::std::os::raw::c_int;
-    pub fn rb_ary_tmp_new_from_values(
-        arg1: VALUE,
-        arg2: ::std::os::raw::c_long,
-        arg3: *const VALUE,
-    ) -> VALUE;
+    pub fn rb_ary_tmp_new_from_values(arg1: VALUE, arg2: rb_long_t, arg3: *const VALUE) -> VALUE;
     pub fn rb_ec_ary_new_from_values(
         ec: *mut rb_execution_context_struct,
-        n: ::std::os::raw::c_long,
+        n: rb_long_t,
         elts: *const VALUE,
     ) -> VALUE;
     pub fn rb_shape_id_offset() -> i32;
@@ -1267,7 +1261,7 @@ extern "C" {
     pub fn rb_vm_base_ptr(cfp: *mut rb_control_frame_struct) -> *mut VALUE;
     pub fn rb_str_neq_internal(str1: VALUE, str2: VALUE) -> VALUE;
     pub fn rb_ary_unshift_m(argc: ::std::os::raw::c_int, argv: *mut VALUE, ary: VALUE) -> VALUE;
-    pub fn rb_yjit_rb_ary_subseq_length(ary: VALUE, beg: ::std::os::raw::c_long) -> VALUE;
+    pub fn rb_yjit_rb_ary_subseq_length(ary: VALUE, beg: rb_long_t) -> VALUE;
     pub fn rb_yjit_splat_varg_checks(
         sp: *mut VALUE,
         splat_array: VALUE,
@@ -1383,7 +1377,7 @@ extern "C" {
     pub fn rb_FL_TEST(obj: VALUE, flags: VALUE) -> VALUE;
     pub fn rb_FL_TEST_RAW(obj: VALUE, flags: VALUE) -> VALUE;
     pub fn rb_RB_TYPE_P(obj: VALUE, t: ruby_value_type) -> bool;
-    pub fn rb_RSTRUCT_LEN(st: VALUE) -> ::std::os::raw::c_long;
+    pub fn rb_RSTRUCT_LEN(st: VALUE) -> rb_long_t;
     pub fn rb_get_call_data_ci(cd: *const rb_call_data) -> *const rb_callinfo;
     pub fn rb_BASIC_OP_UNREDEFINED_P(bop: ruby_basic_operators, klass: u32) -> bool;
     pub fn rb_RCLASS_ORIGIN(c: VALUE) -> VALUE;
@@ -1391,8 +1385,8 @@ extern "C" {
     pub fn rb_assert_holding_vm_lock();
     pub fn rb_IMEMO_TYPE_P(imemo: VALUE, imemo_type: imemo_type) -> ::std::os::raw::c_int;
     pub fn rb_assert_cme_handle(handle: VALUE);
-    pub fn rb_yarv_ary_entry_internal(ary: VALUE, offset: ::std::os::raw::c_long) -> VALUE;
-    pub fn rb_jit_array_len(a: VALUE) -> ::std::os::raw::c_long;
+    pub fn rb_yarv_ary_entry_internal(ary: VALUE, offset: rb_long_t) -> VALUE;
+    pub fn rb_jit_array_len(a: VALUE) -> rb_long_t;
     pub fn rb_jit_ruby2_keywords_splat_p(obj: VALUE) -> usize;
     pub fn rb_set_cfp_pc(cfp: *mut rb_control_frame_struct, pc: *const VALUE);
     pub fn rb_set_cfp_sp(cfp: *mut rb_control_frame_struct, sp: *mut VALUE);

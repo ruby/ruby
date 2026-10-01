@@ -245,7 +245,7 @@ VALUE rb_debug_inspector_backtrace_locations(const rb_debug_inspector_t *dc);
  * @exception  rb_eArgError `index` out of range.
  * @return     The current receiver at `index`-th frame.
  */
-VALUE rb_debug_inspector_frame_self_get(const rb_debug_inspector_t *dc, long index);
+VALUE rb_debug_inspector_frame_self_get(const rb_debug_inspector_t *dc, rb_long_t index);
 
 /**
  * Queries the current class of the passed context's upper frame.
@@ -255,7 +255,7 @@ VALUE rb_debug_inspector_frame_self_get(const rb_debug_inspector_t *dc, long ind
  * @exception  rb_eArgError `index` out of range.
  * @return     The current class at `index`-th frame.
  */
-VALUE rb_debug_inspector_frame_class_get(const rb_debug_inspector_t *dc, long index);
+VALUE rb_debug_inspector_frame_class_get(const rb_debug_inspector_t *dc, rb_long_t index);
 
 /**
  * Queries the binding of the passed context's upper frame.
@@ -265,7 +265,7 @@ VALUE rb_debug_inspector_frame_class_get(const rb_debug_inspector_t *dc, long in
  * @exception  rb_eArgError `index` out of range.
  * @return     The binding at `index`-th frame.
  */
-VALUE rb_debug_inspector_frame_binding_get(const rb_debug_inspector_t *dc, long index);
+VALUE rb_debug_inspector_frame_binding_get(const rb_debug_inspector_t *dc, rb_long_t index);
 
 /**
  * Queries the instruction sequence of the passed context's upper frame.
@@ -278,7 +278,7 @@ VALUE rb_debug_inspector_frame_binding_get(const rb_debug_inspector_t *dc, long 
  *                          represents the  instruction sequence  at `index`-th
  *                          frame.
  */
-VALUE rb_debug_inspector_frame_iseq_get(const rb_debug_inspector_t *dc, long index);
+VALUE rb_debug_inspector_frame_iseq_get(const rb_debug_inspector_t *dc, rb_long_t index);
 
 /**
  * Queries the depth of the passed context's upper frame.
@@ -291,7 +291,7 @@ VALUE rb_debug_inspector_frame_iseq_get(const rb_debug_inspector_t *dc, long ind
  * @exception  rb_eArgError `index` out of range.
  * @retval     The depth at `index`-th frame in Integer.
  */
-VALUE rb_debug_inspector_frame_depth(const rb_debug_inspector_t *dc, long index);
+VALUE rb_debug_inspector_frame_depth(const rb_debug_inspector_t *dc, rb_long_t index);
 
 // A macro to recognize `rb_debug_inspector_frame_depth()` is available or not
 #define RB_DEBUG_INSPECTOR_FRAME_DEPTH(dc, index) rb_debug_inspector_frame_depth(dc, index)

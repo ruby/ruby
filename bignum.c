@@ -4334,7 +4334,7 @@ rb_str_convert_to_inum(VALUE str, int base, int badcheck, int raise_exception)
 {
     VALUE ret;
     const char *s;
-    long len;
+    rb_long_t len;
     char *end;
 
     StringValue(str);
@@ -4807,9 +4807,9 @@ struct big2str_struct {
 static void
 big2str_alloc(struct big2str_struct *b2s, size_t len)
 {
-    if (LONG_MAX-1 < len)
+    if (RB_LONGT_MAX-1 < len)
         rb_raise(rb_eArgError, "too big number");
-    b2s->result = rb_usascii_str_new(0, (long)(len + 1)); /* plus one for sign */
+    b2s->result = rb_usascii_str_new(0, (rb_long_t)(len + 1)); /* plus one for sign */
     b2s->ptr = RSTRING_PTR(b2s->result);
     if (b2s->negative)
         *b2s->ptr++ = '-';
@@ -5136,7 +5136,7 @@ big2str_generic(VALUE x, int base)
     RB_GC_GUARD(x);
 
     *b2s_data.ptr = '\0';
-    rb_str_resize(b2s_data.result, (long)(b2s_data.ptr - RSTRING_PTR(b2s_data.result)));
+    rb_str_resize(b2s_data.result, (rb_long_t)(b2s_data.ptr - RSTRING_PTR(b2s_data.result)));
 
     RB_GC_GUARD(x);
     return b2s_data.result;

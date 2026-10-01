@@ -39,7 +39,7 @@ RBIMPL_SYMBOL_EXPORT_BEGIN()
  * @return     An allocated  new instance  of ::rb_cRegexp, of  `enc` encoding,
  *             whose expression is compiled according to `ptr`.
  */
-VALUE rb_enc_reg_new(const char *ptr, long len, rb_encoding *enc, int opts);
+VALUE rb_enc_reg_new(const char *ptr, rb_long_t len, rb_encoding *enc, int opts);
 
 RBIMPL_SYMBOL_EXPORT_END()
 

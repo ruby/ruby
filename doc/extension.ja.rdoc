@@ -200,7 +200,7 @@ Rubyが用意している関数を用いてください．
 
 ==== 文字列に対する関数
 
-<tt>rb_str_new(const char *ptr, long len)</tt> ::
+<tt>rb_str_new(const char *ptr, rb_long_t len)</tt> ::
 
   新しいRubyの文字列を生成する．
 
@@ -228,7 +228,7 @@ Rubyが用意している関数を用いてください．
   ときは Object#inspect)を使ったVALUEの出力に利用できる．これ
   は<tt>"%i"</tt>と衝突するため，整数には<tt>"%d"</tt>を使用すること．
 
-<tt>rb_str_cat(VALUE str, const char *ptr, long len)</tt> ::
+<tt>rb_str_cat(VALUE str, const char *ptr, rb_long_t len)</tt> ::
 
   Rubyの文字列 _str_ に _len_ バイトの文字列 _ptr_ を追加する．
 
@@ -246,7 +246,7 @@ Rubyが用意している関数を用いてください．
   <tt>rb_str_append(str, rb_sprintf(format, ...))</tt> や
   <tt>rb_str_append(str, rb_vsprintf(format, ap))</tt> と同等である．
 
-<tt>rb_enc_str_new(const char *ptr, long len, rb_encoding *enc)</tt> ::
+<tt>rb_enc_str_new(const char *ptr, rb_long_t len, rb_encoding *enc)</tt> ::
 <tt>rb_enc_str_new_cstr(const char *ptr, rb_encoding *enc)</tt> ::
 
   指定されたエンコーディングでRubyの文字列を生成する.
@@ -255,7 +255,7 @@ Rubyが用意している関数を用いてください．
 
   Cのリテラル文字列から指定されたエンコーディングでRubyの文字列を生成する．
 
-<tt>rb_usascii_str_new(const char *ptr, long len)</tt> ::
+<tt>rb_usascii_str_new(const char *ptr, rb_long_t len)</tt> ::
 <tt>rb_usascii_str_new_cstr(const char *ptr)</tt> ::
 
   エンコーディングがUS-ASCIIのRubyの文字列を生成する.
@@ -264,7 +264,7 @@ Rubyが用意している関数を用いてください．
 
   Cのリテラル文字列からエンコーディングがUS-ASCIIのRubyの文字列を生成する．
 
-<tt>rb_utf8_str_new(const char *ptr, long len)</tt> ::
+<tt>rb_utf8_str_new(const char *ptr, rb_long_t len)</tt> ::
 <tt>rb_utf8_str_new_cstr(const char *ptr)</tt> ::
 
   エンコーディングがUTF-8のRubyの文字列を生成する.
@@ -273,7 +273,7 @@ Rubyが用意している関数を用いてください．
 
   Cのリテラル文字列からエンコーディングがUTF-8のRubyの文字列を生成する．
 
-<tt>rb_str_resize(VALUE str, long len)</tt> ::
+<tt>rb_str_resize(VALUE str, rb_long_t len)</tt> ::
 
   Rubyの文字列のサイズを _len_ バイトに変更する．_str_ の長さは前
   以てセットされていなければならない．_len_ が元の長さよりも短
@@ -282,7 +282,7 @@ Rubyが用意している関数を用いてください．
   れないでゴミになるだろう．この関数の呼び出しによって
   <tt>RSTRING_PTR(str)</tt>が変更されるかもしれないことに注意．
 
-<tt>rb_str_set_len(VALUE str, long len)</tt> ::
+<tt>rb_str_set_len(VALUE str, rb_long_t len)</tt> ::
 
   Rubyの文字列のサイズを _len_ バイトにセットする．_str_ が変更可
   能でなければ例外が発生する．<tt>RSTRING_LEN(str)</tt>とは無関係に，
@@ -303,19 +303,19 @@ Rubyが用意している関数を用いてください．
 
   要素が0の配列を生成する．
 
-<tt>rb_ary_new2(long len)</tt> ::
-<tt>rb_ary_new_capa(long len)</tt> ::
+<tt>rb_ary_new2(rb_long_t len)</tt> ::
+<tt>rb_ary_new_capa(rb_long_t len)</tt> ::
 
   要素が0の配列を生成する．_len_ 要素分の領域をあらかじめ割り
   当てておく．
 
-<tt>rb_ary_new3(long n, ...)</tt> ::
-<tt>rb_ary_new_from_args(long n, ...)</tt> ::
+<tt>rb_ary_new3(rb_long_t n, ...)</tt> ::
+<tt>rb_ary_new_from_args(rb_long_t n, ...)</tt> ::
 
   引数で指定した _n_ 要素を含む配列を生成する．
 
-<tt>rb_ary_new4(long n, VALUE *elts)</tt> ::
-<tt>rb_ary_new_from_values(long n, VALUE *elts)</tt> ::
+<tt>rb_ary_new4(rb_long_t n, VALUE *elts)</tt> ::
+<tt>rb_ary_new_from_values(rb_long_t n, VALUE *elts)</tt> ::
 
   配列で与えた _n_ 要素の配列を生成する．
 
@@ -332,15 +332,15 @@ Rubyが用意している関数を用いてください．
 
   Array#[]と同等.
 
-<tt>rb_ary_entry(VALUE ary, long offset)</tt> ::
+<tt>rb_ary_entry(VALUE ary, rb_long_t offset)</tt> ::
 
   <tt>ary[offset]</tt>
 
-<tt>rb_ary_store(VALUE ary, long offset, VALUE obj)</tt> ::
+<tt>rb_ary_store(VALUE ary, rb_long_t offset, VALUE obj)</tt> ::
 
   <tt>ary[offset] = obj</tt>
 
-<tt>rb_ary_subseq(VALUE ary, long beg, long len)</tt> ::
+<tt>rb_ary_subseq(VALUE ary, rb_long_t beg, rb_long_t len)</tt> ::
 
   <tt>ary[beg, len]</tt>
 
@@ -351,7 +351,7 @@ Rubyが用意している関数を用いてください．
 
   <tt>ary.push(val)</tt>, <tt>ary.pop</tt>, <tt>ary.shift</tt>, <tt>ary.unshift(val)</tt>
 
-<tt>rb_ary_cat(VALUE ary, const VALUE *ptr, long len)</tt> ::
+<tt>rb_ary_cat(VALUE ary, const VALUE *ptr, rb_long_t len)</tt> ::
 
   配列 _ary_ に _ptr_ から _len_ 個のオブジェクトを追加する．
 
@@ -549,7 +549,7 @@ IDとは変数名，メソッド名を表す整数です．Rubyの中では
 
   rb_to_id(VALUE symbol)
   rb_check_id(volatile VALUE *name)
-  rb_check_id_cstr(const char *name, long len, rb_encoding *enc)
+  rb_check_id_cstr(const char *name, rb_long_t len, rb_encoding *enc)
 
 もし引数がシンボルでも文字列でもなければ，+to_str+ メソッドで文
 字列に変換しようとします．第二の関数はその変換結果を<tt>*name</tt>に保
@@ -563,7 +563,7 @@ Rubyから引数として与えられたシンボル(または文字列)をシ�
 
   rb_to_symbol(VALUE name)
   rb_check_symbol(volatile VALUE *namep)
-  rb_check_symbol_cstr(const char *ptr, long len, rb_encoding *enc)
+  rb_check_symbol_cstr(const char *ptr, rb_long_t len, rb_encoding *enc)
 
 これらの関数は，IDの代わりにシンボルを返すことを除けば上記の
 関数と同じです．

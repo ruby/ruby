@@ -33,7 +33,7 @@ RUBY_SYMBOL_EXPORT_BEGIN
 VALUE rb_readlink(VALUE path, rb_encoding *enc);
 #endif
 #ifdef __APPLE__
-VALUE rb_str_normalize_ospath(const char *ptr, long len);
+VALUE rb_str_normalize_ospath(const char *ptr, rb_long_t len);
 #endif
 RUBY_SYMBOL_EXPORT_END
 

@@ -4,7 +4,7 @@ static VALUE
 arith_seq_s_beg_len_step(VALUE mod, VALUE obj, VALUE len, VALUE err)
 {
   VALUE r;
-  long beg, len2, step;
+  rb_long_t beg, len2, step;
 
   r = rb_arithmetic_sequence_beg_len_step(obj, &beg, &len2, &step, NUM2LONG(len), NUM2INT(err));
 

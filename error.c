@@ -1508,7 +1508,7 @@ static ID id_private_call_p, id_top, id_bottom;
 #undef rb_exc_new_cstr
 
 VALUE
-rb_exc_new(VALUE etype, const char *ptr, long len)
+rb_exc_new(VALUE etype, const char *ptr, rb_long_t len)
 {
     VALUE mesg = rb_str_new(ptr, len);
     return rb_class_new_instance(1, &mesg, etype);
@@ -2096,7 +2096,7 @@ exc_backtrace_locations(VALUE exc)
 static VALUE
 rb_check_backtrace(VALUE bt)
 {
-    long i;
+    rb_long_t i;
     static const char err[] = "backtrace must be an Array of String or an Array of Thread::Backtrace::Location";
 
     if (!NIL_P(bt)) {

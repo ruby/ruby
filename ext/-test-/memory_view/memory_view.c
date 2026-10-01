@@ -324,7 +324,7 @@ static VALUE
 memory_view_get_data_body(VALUE _args)
 {
     memory_view_get_data_args *args = (memory_view_get_data_args *)_args;
-    long beg, len;
+    rb_long_t beg, len;
 
     if (RTEST(rb_range_beg_len(args->location,
                                &beg,

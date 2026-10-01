@@ -26,8 +26,8 @@ VALUE range_spec_rb_range_values(VALUE self, VALUE range) {
 }
 
 VALUE range_spec_rb_range_beg_len(VALUE self, VALUE range, VALUE lenv, VALUE errv) {
-  long begp = 0;
-  long lenp = 0;
+  rb_long_t begp = 0;
+  rb_long_t lenp = 0;
   long len = FIX2LONG(lenv);
   int err = FIX2INT(errv);
   VALUE ary = rb_ary_new();
@@ -58,9 +58,9 @@ VALUE range_spec_rb_arithmetic_sequence_extract(VALUE self, VALUE object) {
 }
 
 VALUE range_spec_rb_arithmetic_sequence_beg_len_step(VALUE self, VALUE aseq, VALUE lenv, VALUE errv) {
-  long begp = 0;
-  long lenp = 0;
-  long stepp = 0;
+  rb_long_t begp = 0;
+  rb_long_t lenp = 0;
+  rb_long_t stepp = 0;
 
   long len = FIX2LONG(lenv);
   int err = FIX2INT(errv);
