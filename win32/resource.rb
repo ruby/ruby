@@ -78,12 +78,12 @@ BEGIN
    VALUE "Comments",         "#{RUBY_RELEASE_DATE}\\0"
    VALUE "CompanyName",      "https://www.ruby-lang.org/\\0"
    VALUE "FileDescription",  "Ruby interpreter (#{desc}) #{sversion} [#{RUBY_PLATFORM}]\\0"
-   VALUE "FileVersion",      "#{sversion}\\0"
+   VALUE "FileVersion",      "#{sversion} (#{RUBY_REVISION})\\0"
    VALUE "InternalName",     "#{base + ext}\\0"
    VALUE "LegalCopyright",   "Copyright (C) 1993-#{RUBY_RELEASE_DATE[/\d+/]} Yukihiro Matsumoto\\0"
    VALUE "OriginalFilename", "#{base + ext}\\0"
    VALUE "ProductName",      "Ruby interpreter #{sversion} [#{RUBY_PLATFORM}]\\0"
-   VALUE "ProductVersion",   "#{sversion}\\0"
+   VALUE "ProductVersion",   "#{RUBY_VERSION}\\0"
   END
  END
  BLOCK "VarFileInfo"
