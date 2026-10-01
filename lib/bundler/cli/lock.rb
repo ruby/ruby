@@ -83,8 +83,12 @@ module Bundler
             Bundler.default_lockfile
           end
 
-          puts "Writing lockfile to #{file}"
-          definition.write_lock(file, false)
+          if file
+            puts "Writing lockfile to #{file}"
+            definition.write_lock(file, false)
+          else
+            Bundler.ui.warn "Not writing a lockfile because the Gemfile sets `lockfile false`"
+          end
         end
 
         Bundler::CLI::Common.output_cooldown_skipped_summary(definition)
