@@ -1859,6 +1859,7 @@ class TestGemPackage < Gem::Package::TarTestCase
 
   def test_invalid_file_name_error_message
     error = Gem::Package::InvalidWindowsFileNameError.new("spec/internal/:memory", "crono-2.0.1")
+    assert_kind_of Gem::InstallError, error
     assert_match(%r{The gem contains a file 'spec/internal/:memory'}, error.message)
     assert_match(/characters in its name that are not allowed on Windows/, error.message)
     assert_match(/This is a problem with the 'crono-2.0.1' gem, not Rubygems/, error.message)

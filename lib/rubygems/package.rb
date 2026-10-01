@@ -92,7 +92,7 @@ class Gem::Package
   ##
   # Raised when a filename contains characters that are invalid on Windows
 
-  class InvalidWindowsFileNameError < Error
+  class InvalidWindowsFileNameError < Gem::InstallError
     def initialize(filename, gem_name = nil)
       message = "The gem contains a file '#{filename}' with characters in its name that are not allowed on Windows (e.g., colons)."
       message += " This is a problem with the '#{gem_name}' gem, not Rubygems." if gem_name
