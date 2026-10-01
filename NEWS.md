@@ -72,6 +72,20 @@ Note: We're only listing outstanding class updates.
       history from destroyed object spaces, without requesting a stop-the-world
       snapshot. Unscoped `GC.stat`, `GC.count`, and `GC.total_time` retain their
       current-Ractor behavior.
+    * `GC.stat` reports a new key, `:global_gc_count`: the number of
+      stop-the-world global garbage collection cycles the current Ractor
+      initiated. Each global collection is attributed to exactly one Ractor,
+      so the values sum across Ractors. `GC.stat(:global_gc_count,
+      scope: :global)` reports the process total, including the counts of
+      terminated Ractors.
+    * A global garbage collection is not counted in `:major_gc_count`.
+      `:count` equals `:minor_gc_count` plus `:major_gc_count` plus
+      `:global_gc_count` in both scopes. When another Ractor's object space
+      exists, including one left by a terminated Ractor that is not yet
+      absorbed, or one was absorbed since the last global collection,
+      `GC.start` runs a global collection by default, so it increments
+      `:global_gc_count` rather than `:major_gc_count`; pass `global: false`
+      for a local major collection.
     * Global compaction no longer counts overlapping CPU intervals in scalar GC
       timing statistics. Profiler wall-time intervals are unchanged.
 
