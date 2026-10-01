@@ -1424,7 +1424,7 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_fold_fixnum_neq_true() {
+    fn test_const_fixnum_neq_true() {
         eval("
             def test
               if 1 != 2
@@ -1448,15 +1448,25 @@ mod hir_opt_tests {
           v10:Fixnum[1] = Const Value(1)
           v12:Fixnum[2] = Const Value(2)
           PatchPoint MethodRedefined(Integer@0x1000, !=@0x1008, cme:0x1010)
-          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
+          PushInlineFrame :!=, v10 (0x1038), num_args=1
+          PatchPoint MethodRedefined(Integer@0x1000, ==@0x1058, cme:0x1060)
+          v66:TrueClass = Const Value(true)
+          PopInlineFrame
+          v17:CBool[true] = Test v66
+          CondBranch v17, bb5(), bb4()
+        bb5():
           v23:Fixnum[3] = Const Value(3)
           CheckInterrupts
           Return v23
+        bb4():
+          v32 = Const Value(4)
+          CheckInterrupts
+          Return v32
         ");
     }
 
     #[test]
-    fn test_fold_fixnum_neq_false() {
+    fn test_const_fixnum_neq_false() {
         eval("
             def test
               if 2 != 2
@@ -1480,7 +1490,17 @@ mod hir_opt_tests {
           v10:Fixnum[2] = Const Value(2)
           v12:Fixnum[2] = Const Value(2)
           PatchPoint MethodRedefined(Integer@0x1000, !=@0x1008, cme:0x1010)
-          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
+          PushInlineFrame :!=, v10 (0x1038), num_args=1
+          PatchPoint MethodRedefined(Integer@0x1000, ==@0x1058, cme:0x1060)
+          v57:FalseClass = Const Value(false)
+          PopInlineFrame
+          v17:CBool[false] = Test v57
+          CondBranch v17, bb5(), bb4()
+        bb5():
+          v23 = Const Value(3)
+          CheckInterrupts
+          Return v23
+        bb4():
           v32:Fixnum[4] = Const Value(4)
           CheckInterrupts
           Return v32
@@ -1626,11 +1646,126 @@ mod hir_opt_tests {
         bb3(v9:BasicObject, v10:BasicObject):
           PatchPoint NoSingletonClass(CustomEq@0x1008)
           PatchPoint MethodRedefined(CustomEq@0x1008, !=@0x1010, cme:0x1018)
-          v30:ObjectSubclass[class_exact:CustomEq] = GuardType v10, ObjectSubclass[class_exact:CustomEq] recompile
-          v31:BoolExact = CCallWithFrame v30, :BasicObject#!=@0x1040, v30
+          v29:ObjectSubclass[class_exact:CustomEq] = GuardType v10, ObjectSubclass[class_exact:CustomEq] recompile
+          PushInlineFrame :!=, v29 (0x1040), num_args=1
+          PatchPoint MethodRedefined(CustomEq@0x1008, ==@0x1060, cme:0x1068)
+          PushInlineFrame :==, v29 (0x1090), num_args=1
+          v76:CShape = LoadField v29, :shape_id@0x10b0
+          v78:CShape[0x10b1] = Const CShape(0x10b1)
+          v79:CBool = IsBitEqual v76, v78
+          CondBranch v79, bb11(), bb12()
+        bb11():
+          v81:BasicObject = LoadField v29, :@count@0x10b2
+          Jump bb10(v81)
+        bb12():
+          v83:CShape[0x10b3] = GuardBitEquals v76, CShape(0x10b3) recompile
+          v85:NilClass = Const Value(nil)
+          Jump bb10(v85)
+        bb10(v77:BasicObject):
+          CondBranchHasType v77, Fixnum, bb16(), bb17()
+        bb16():
+          v91:Fixnum = RefineType v77, Fixnum
+          PatchPoint MethodRedefined(Integer@0x10b8, to_i@0x10c0, cme:0x10c8)
+          Jump bb14(v91)
+        bb17():
+          CondBranchHasType v77, NilClass, bb18(), bb15()
+        bb18():
+          v96:NilClass = RefineType v77, NilClass
+          PatchPoint MethodRedefined(NilClass@0x10f0, to_i@0x10c0, cme:0x10f8)
+          PushInlineFrame :to_i, v96 (0x1120), num_args=0
+          v155:Fixnum[0] = Const Value(0)
+          PopInlineFrame
+          Jump bb14(v155)
+        bb15():
+          v99:BasicObject = Send v77, :to_i # SendFallbackReason: Send: polymorphic fallback
+          Jump bb14(v99)
+        bb14(v88:BasicObject):
+          v102:Fixnum[1] = Const Value(1)
+          PatchPoint MethodRedefined(Integer@0x10b8, +@0x1140, cme:0x1148)
+          v142:Fixnum = GuardType v88, Fixnum recompile
+          v143:Fixnum = FixnumAdd v142, v102
+          v108:CShape = LoadField v29, :shape_id@0x10b0
+          v109:CShape[0x10b1] = Const CShape(0x10b1)
+          v110:CBool = IsBitEqual v108, v109
+          CondBranch v110, bb20(), bb21()
+        bb20():
+          StoreField v29, :@count@0x10b2, v143
+          Jump bb19()
+        bb21():
+          v115:CShape[0x10b3] = GuardBitEquals v108, CShape(0x10b3) recompile
+          StoreField v29, :@count@0x10b2, v143
+          v119:CShape[0x10b1] = Const CShape(0x10b1)
+          StoreField v29, :shape_id@0x10b0, v119
+          Jump bb19()
+        bb19():
+          PatchPoint NoEPEscape(==)
+          PatchPoint NoSingletonClass(CustomEq@0x1008)
+          PatchPoint MethodRedefined(CustomEq@0x1008, equal?@0x1170, cme:0x1178)
+          v148:CBool = IsBitEqual v29, v29
+          PopInlineFrame
+          CondBranch v148, bb7(), bb6()
+        bb7():
+          v48:FalseClass = Const Value(false)
+          Jump bb4(v48)
+        bb6():
+          v57:TrueClass = Const Value(true)
+          Jump bb4(v57)
+        bb4(v61:BoolExact):
+          PopInlineFrame
           v21:NilClass = Const Value(nil)
           CheckInterrupts
           Return v21
+        ");
+    }
+
+    #[test]
+    fn test_custom_iseq_eq_inlined_into_neq_result() {
+        eval("
+            class CustomEq
+              def ==(other) = equal?(other)
+            end
+
+            def test(a, b) = a != b
+            obj = CustomEq.new
+            test(obj, obj)
+            test(obj, CustomEq.new)
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:6:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          v4:BasicObject = LoadField v2, :b@0x1001
+          Jump bb3(v1, v3, v4)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :a@1
+          v9:BasicObject = LoadArg :b@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint NoSingletonClass(CustomEq@0x1008)
+          PatchPoint MethodRedefined(CustomEq@0x1008, !=@0x1010, cme:0x1018)
+          v28:ObjectSubclass[class_exact:CustomEq] = GuardType v12, ObjectSubclass[class_exact:CustomEq] recompile
+          PushInlineFrame :!=, v28 (0x1040), num_args=1
+          PatchPoint MethodRedefined(CustomEq@0x1008, ==@0x1060, cme:0x1068)
+          PushInlineFrame :==, v28 (0x1090), num_args=1
+          PatchPoint MethodRedefined(CustomEq@0x1008, equal?@0x10b0, cme:0x10b8)
+          v88:CBool = IsBitEqual v28, v13
+          PopInlineFrame
+          CondBranch v88, bb7(), bb6()
+        bb7():
+          v47:FalseClass = Const Value(false)
+          Jump bb4(v47)
+        bb6():
+          v56:TrueClass = Const Value(true)
+          Jump bb4(v56)
+        bb4(v60:BoolExact):
+          PopInlineFrame
+          CheckInterrupts
+          Return v60
         ");
     }
 
@@ -3779,7 +3914,7 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_eliminate_fixnum_neq() {
+    fn test_unused_fixnum_neq() {
         eval("
             def test(a, b)
               a != b
@@ -3804,12 +3939,68 @@ mod hir_opt_tests {
           Jump bb3(v7, v8, v9)
         bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
           PatchPoint MethodRedefined(Integer@0x1008, !=@0x1010, cme:0x1018)
-          v32:Fixnum = GuardType v12, Fixnum recompile
-          PatchPoint BOPRedefined(INTEGER_REDEFINED_OP_FLAG, BOP_EQ)
-          v34:Fixnum = GuardType v13, Fixnum
+          v31:Fixnum = GuardType v12, Fixnum recompile
+          PushInlineFrame :!=, v31 (0x1040), num_args=1
+          PatchPoint MethodRedefined(Integer@0x1008, ==@0x1060, cme:0x1068)
+          v70:Fixnum = GuardType v13, Fixnum
+          v71:BoolExact = FixnumEq v31, v70
+          v44:CBool = Test v71
+          CondBranch v44, bb7(), bb6()
+        bb7():
+          v50:FalseClass = Const Value(false)
+          Jump bb4(v50)
+        bb6():
+          v59:TrueClass = Const Value(true)
+          Jump bb4(v59)
+        bb4(v63:BoolExact):
+          PopInlineFrame
           v24:Fixnum[5] = Const Value(5)
           CheckInterrupts
           Return v24
+        ");
+    }
+
+    #[test]
+    fn test_dynamic_fixnum_neq_result() {
+        eval("
+            def test(a, b) = a != b
+            test(1, 2)
+            test(3, 3)
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          v4:BasicObject = LoadField v2, :b@0x1001
+          Jump bb3(v1, v3, v4)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :a@1
+          v9:BasicObject = LoadArg :b@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1008, !=@0x1010, cme:0x1018)
+          v27:Fixnum = GuardType v12, Fixnum recompile
+          PushInlineFrame :!=, v27 (0x1040), num_args=1
+          PatchPoint MethodRedefined(Integer@0x1008, ==@0x1060, cme:0x1068)
+          v66:Fixnum = GuardType v13, Fixnum
+          v67:BoolExact = FixnumEq v27, v66
+          v40:CBool = Test v67
+          CondBranch v40, bb7(), bb6()
+        bb7():
+          v46:FalseClass = Const Value(false)
+          Jump bb4(v46)
+        bb6():
+          v55:TrueClass = Const Value(true)
+          Jump bb4(v55)
+        bb4(v59:BoolExact):
+          PopInlineFrame
+          CheckInterrupts
+          Return v59
         ");
     }
 
@@ -18029,7 +18220,7 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn opt_neq_string_nil_falls_back_to_basic_object_neq() {
+    fn opt_neq_string_nil_inlines_basic_object_neq() {
         eval(r#"
             def test(str)
               str != nil
@@ -18055,10 +18246,103 @@ mod hir_opt_tests {
           v15:NilClass = Const Value(nil)
           PatchPoint NoSingletonClass(String@0x1008)
           PatchPoint MethodRedefined(String@0x1008, !=@0x1010, cme:0x1018)
-          v27:StringExact = GuardType v10, StringExact recompile
-          v28:BoolExact = CCallWithFrame v27, :BasicObject#!=@0x1040, v15
+          v26:StringExact = GuardType v10, StringExact recompile
+          PushInlineFrame :!=, v26 (0x1040), num_args=1
+          PatchPoint MethodRedefined(String@0x1008, ==@0x1060, cme:0x1068)
+          v66:BasicObject = CCallWithFrame v26, :String#==@0x1090, v15
+          v39:CBool = Test v66
+          CondBranch v39, bb7(), bb6()
+        bb7():
+          v45:FalseClass = Const Value(false)
+          Jump bb4(v45)
+        bb6():
+          v54:TrueClass = Const Value(true)
+          Jump bb4(v54)
+        bb4(v58:BoolExact):
+          PopInlineFrame
           CheckInterrupts
-          Return v28
+          Return v58
+        ");
+    }
+
+    #[test]
+    fn opt_neq_string_mixed_nil_and_string_profile() {
+        set_call_threshold(4);
+        eval(r#"
+            def test(str, other) = str != other
+            test("x", nil)
+            test("x", "x")
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :str@0x1000
+          v4:BasicObject = LoadField v2, :other@0x1001
+          Jump bb3(v1, v3, v4)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :str@1
+          v9:BasicObject = LoadArg :other@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint NoSingletonClass(String@0x1008)
+          PatchPoint MethodRedefined(String@0x1008, !=@0x1010, cme:0x1018)
+          v28:StringExact = GuardType v12, StringExact recompile
+          PushInlineFrame :!=, v28 (0x1040), num_args=1
+          PatchPoint MethodRedefined(String@0x1008, ==@0x1060, cme:0x1068)
+          v68:BasicObject = CCallWithFrame v28, :String#==@0x1090, v13
+          v41:CBool = Test v68
+          CondBranch v41, bb7(), bb6()
+        bb7():
+          v47:FalseClass = Const Value(false)
+          Jump bb4(v47)
+        bb6():
+          v56:TrueClass = Const Value(true)
+          Jump bb4(v56)
+        bb4(v60:BoolExact):
+          PopInlineFrame
+          CheckInterrupts
+          Return v60
+        ");
+    }
+
+    #[test]
+    fn opt_neq_custom_method_without_inlining() {
+        set_inline_threshold(0);
+        eval("
+            class CustomNeq
+              def !=(other) = other.nil?
+            end
+
+            def test(obj) = obj != nil
+            test(CustomNeq.new)
+            test(CustomNeq.new)
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:6:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :obj@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :obj@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:NilClass = Const Value(nil)
+          PatchPoint NoSingletonClass(CustomNeq@0x1008)
+          PatchPoint MethodRedefined(CustomNeq@0x1008, !=@0x1010, cme:0x1018)
+          v26:ObjectSubclass[class_exact:CustomNeq] = GuardType v10, ObjectSubclass[class_exact:CustomNeq] recompile
+          v27:BasicObject = SendDirect v26, 0x0, :!= (0x1040), v15
+          CheckInterrupts
+          Return v27
         ");
     }
 
@@ -18088,15 +18372,23 @@ mod hir_opt_tests {
         bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
           PatchPoint NoSingletonClass(String@0x1008)
           PatchPoint MethodRedefined(String@0x1008, !=@0x1010, cme:0x1018)
-          v29:StringExact = GuardType v12, StringExact recompile
-          PatchPoint MethodRedefined(String@0x1008, ==@0x1040, cme:0x1048)
-          v33:String = GuardType v13, String
-          v34:BoolExact = StringEqual v29, v33
-          v35:TrueClass = Const Value(true)
-          v36:CBool = IsBitNotEqual v34, v35
-          v37:BoolExact = BoxBool v36
+          v28:StringExact = GuardType v12, StringExact recompile
+          PushInlineFrame :!=, v28 (0x1040), num_args=1
+          PatchPoint MethodRedefined(String@0x1008, ==@0x1060, cme:0x1068)
+          v68:String = GuardType v13, String
+          v69:BoolExact = StringEqual v28, v68
+          v41:CBool = Test v69
+          CondBranch v41, bb7(), bb6()
+        bb7():
+          v47:FalseClass = Const Value(false)
+          Jump bb4(v47)
+        bb6():
+          v56:TrueClass = Const Value(true)
+          Jump bb4(v56)
+        bb4(v60:BoolExact):
+          PopInlineFrame
           CheckInterrupts
-          Return v37
+          Return v60
         ");
     }
 
@@ -18124,14 +18416,13 @@ mod hir_opt_tests {
         bb3(v9:BasicObject, v10:BasicObject):
           PatchPoint NoSingletonClass(String@0x1008)
           PatchPoint MethodRedefined(String@0x1008, !=@0x1010, cme:0x1018)
-          v26:StringExact = GuardType v10, StringExact recompile
-          PatchPoint MethodRedefined(String@0x1008, ==@0x1040, cme:0x1048)
-          v35:TrueClass = Const Value(true)
-          v32:TrueClass = Const Value(true)
-          v33:CBool = IsBitNotEqual v35, v32
-          v34:BoolExact = BoxBool v33
+          v25:StringExact = GuardType v10, StringExact recompile
+          PushInlineFrame :!=, v25 (0x1040), num_args=1
+          PatchPoint MethodRedefined(String@0x1008, ==@0x1060, cme:0x1068)
+          v44:FalseClass = Const Value(false)
+          PopInlineFrame
           CheckInterrupts
-          Return v34
+          Return v44
         ");
     }
 

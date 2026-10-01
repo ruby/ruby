@@ -4726,6 +4726,7 @@ InitVM_Object(void)
 
 #include "kernel.rbinc"
 #include "nilclass.rbinc"
+#include "basic_object.rbinc"
 
 void
 Init_Object(void)
