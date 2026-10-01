@@ -66,6 +66,11 @@ class BackTrace:
         frame_type = ep.GetChildAtIndex(0).GetValueAsUnsigned() & self.VM_FRAME_MAGIC_MASK
         return self.VM_FRAME_MAGIC_NAME.get(frame_type, "(none)")
 
+    def read_memory(self, ptr, len):
+        # Unlike SBProcess, SBTarget reads static strings missing from a core out
+        # of the object file, though it leaves the failed process read in the error.
+        return self.target.ReadMemory(lldb.SBAddress(ptr, self.target), len, lldb.SBError())
+
     def rb_iseq_path_str(self, iseq):
         tRBasic = self.target.FindFirstType("::RBasic").GetPointerType()
 
@@ -88,9 +93,8 @@ class BackTrace:
 
         pathobj = pathobj.Cast(self.tRString)
         ptr, len = string2cstr(pathobj)
-        err = lldb.SBError()
-        path = self.target.process.ReadMemory(ptr, len, err)
-        if err.Success():
+        path = self.read_memory(ptr, len)
+        if path is not None:
             return path.decode("utf-8")
         else:
             return "unknown"
@@ -103,9 +107,8 @@ class BackTrace:
             path = self.rb_iseq_path_str(iseq)
             ptr, len = string2cstr(iseq_label.Cast(self.tRString))
 
-            err = lldb.SBError()
-            iseq_name = self.target.process.ReadMemory(ptr, len, err)
-            if err.Success():
+            iseq_name = self.read_memory(ptr, len)
+            if iseq_name is not None:
                 iseq_name = iseq_name.decode("utf-8")
             else:
                 iseq_name = "error!!"
