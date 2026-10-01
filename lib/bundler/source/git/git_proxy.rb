@@ -593,13 +593,13 @@ module Bundler
             return
           end
 
-          Bundler.ui.debug "Setting sparse checkout to only include #{@sparse_checkout}"
+          Bundler.ui.debug "Setting sparse checkout to only include #{@sparse_checkout.join(", ")}"
           if supports_sparse_checkout_set_with_cone?
-            git "sparse-checkout", "set", "--cone", @sparse_checkout, dir: destination
+            git "sparse-checkout", "set", "--cone", *@sparse_checkout, dir: destination
           else
             # Before git 2.35, `set` keeps an unknown --cone as a pattern instead of rejecting it.
             git "sparse-checkout", "init", "--cone", dir: destination
-            git "sparse-checkout", "set", @sparse_checkout, dir: destination
+            git "sparse-checkout", "set", *@sparse_checkout, dir: destination
           end
         end
       end

@@ -12,6 +12,7 @@ module Bundler
       def initialize(options)
         @options = options
         @checksum_store = Checksum::Store.new
+        @sparse_checkout = normalize_sparse_checkout(options)
         @glob = options["glob"] || DEFAULT_GLOB
 
         @allow_cached = false
@@ -25,7 +26,6 @@ module Bundler
         @branch     = options["branch"]
         @ref        = options["ref"] || options["branch"] || options["tag"]
         @submodules = options["submodules"]
-        @sparse_checkout = options["sparse_checkout"]
         @name       = options["name"]
         @version    = options["version"].to_s.strip.gsub("-", ".pre.")
 
@@ -59,7 +59,7 @@ module Bundler
         %w[ref branch tag submodules].each do |opt|
           out << "  #{opt}: #{options[opt]}\n" if options[opt]
         end
-        out << "  sparse_checkout: #{@sparse_checkout}\n" if @sparse_checkout
+        @sparse_checkout&.each {|dir| out << "  sparse_checkout: #{dir}\n" }
         out << "  glob: #{@glob}\n" unless default_glob?
         out << "  specs:\n"
       end
@@ -131,13 +131,17 @@ module Bundler
       # checkout of the git repository. When using local git
       # repos, this is set to the local repo.
       def install_path
-        @install_path ||= Bundler.install_path.join("#{base_name}-#{shortref_for_path(revision, sparse_checkout: @sparse_checkout)}")
+        @install_path ||= begin
+          git_scope = "#{base_name}-#{shortref_for_path(revision)}"
+
+          Bundler.install_path.join(git_scope)
+        end
       end
 
       alias_method :path, :install_path
 
       def extension_dir_name
-        "#{base_name}-#{shortref_for_path(revision, sparse_checkout: @sparse_checkout)}"
+        "#{base_name}-#{shortref_for_path(revision)}"
       end
 
       def unlock!
@@ -252,7 +256,7 @@ module Bundler
       end
 
       def app_cache_dirname
-        "#{base_name}-#{shortref_for_path(locked_revision || revision, sparse_checkout: @sparse_checkout)}"
+        "#{base_name}-#{shortref_for_path(locked_revision || revision)}"
       end
 
       def revision
@@ -388,10 +392,24 @@ module Bundler
         ref[0..6]
       end
 
-      def shortref_for_path(ref, sparse_checkout: nil)
-        scope = ref[0..11]
-        scope += "-#{Bundler::Digest.sha1(sparse_checkout)[0..7]}" if sparse_checkout
-        scope
+      def shortref_for_path(ref)
+        shortref = ref[0..11]
+        return shortref unless @sparse_checkout
+
+        # Checkouts of the same revision with different cones hold different files
+        "#{shortref}-#{Bundler::Digest.sha1(@sparse_checkout.join("\n"))[0..7]}"
+      end
+
+      def normalize_sparse_checkout(options)
+        return unless options["sparse_checkout"]
+
+        dirs = Array(options["sparse_checkout"])
+        unless dirs.any? && dirs.all? {|dir| dir.is_a?(String) && !dir.empty? }
+          raise GemfileError, "The :sparse_checkout option must be a directory or an array of directories, " \
+            "but #{options["sparse_checkout"].inspect} was given"
+        end
+
+        options["sparse_checkout"] = dirs
       end
 
       def glob_for_display

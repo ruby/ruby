@@ -360,9 +360,10 @@ Git repositories support a number of additional options.
     submodules included in the git repository
 
   * `sparse_checkout`:
-    Specify a directory to include when checking out a git repository.
-    Uses git's sparse-checkout feature (requires git 2.25+) to only
-    check out the specified directory, reducing disk usage for large repos.
+    Specify a directory, or an array of directories, to include when
+    checking out a git repository. Uses git's sparse-checkout feature
+    (requires git 2.25+) to only check out the specified directories,
+    reducing disk usage for large repos.
 
       gem "foo", git: "https://github.com/org/monorepo.git",
                  sparse_checkout: "packages/foo",

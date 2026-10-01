@@ -221,7 +221,7 @@ RSpec.describe Bundler::Source::Git::GitProxy do
     end
 
     context "with sparse_checkout option" do
-      let(:options) { { "sparse_checkout" => "packages/foo" } }
+      let(:options) { { "sparse_checkout" => ["packages/foo"] } }
 
       it "clones the working copy from the local cache" do
         expect(git_proxy).to receive(:capture).with(["clone", "--no-checkout", "--quiet", path.to_s, destination.to_s], nil).and_return(["", "", clone_result])
@@ -552,7 +552,7 @@ RSpec.describe Bundler::Source::Git::GitProxy do
     let(:destination) { Pathname("destination") }
 
     context "with sparse_checkout option" do
-      let(:options) { { "sparse_checkout" => "packages/foo" } }
+      let(:options) { { "sparse_checkout" => ["packages/foo"] } }
 
       context "with git 2.35+" do
         it "runs sparse-checkout set with cone mode" do
@@ -592,10 +592,10 @@ RSpec.describe Bundler::Source::Git::GitProxy do
   end
 
   context "with sparse_checkout option" do
-    let(:options) { { "sparse_checkout" => "packages/foo" } }
+    let(:options) { { "sparse_checkout" => ["packages/foo"] } }
 
     it "stores sparse_checkout from options" do
-      expect(git_proxy.sparse_checkout).to eq("packages/foo")
+      expect(git_proxy.sparse_checkout).to eq(["packages/foo"])
     end
   end
 end
