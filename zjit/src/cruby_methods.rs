@@ -19,7 +19,6 @@ unsafe extern "C" {
     fn rb_builtin_ary_at_end(ec: EcPtr, self_: VALUE, index: VALUE) -> VALUE;
     fn rb_builtin_ary_at(ec: EcPtr, self_: VALUE, index: VALUE) -> VALUE;
     fn rb_builtin_fixnum_inc(ec: EcPtr, self_: VALUE, num: VALUE) -> VALUE;
-    fn rb_str_equal(str1: VALUE, str2: VALUE) -> VALUE;
 }
 
 pub struct Annotations {
@@ -248,7 +247,6 @@ pub fn init() -> Annotations {
     annotate!(rb_mKernel, "dup", inline_kernel_dup);
     annotate!(rb_cBasicObject, "==", inline_basic_object_eq, types::BoolExact, no_gc, leaf, elidable);
     annotate!(rb_cBasicObject, "!", inline_basic_object_not, types::BoolExact, no_gc, leaf, elidable);
-    annotate!(rb_cBasicObject, "!=", inline_basic_object_neq, types::BoolExact);
     annotate!(rb_cBasicObject, "initialize", inline_basic_object_initialize);
     annotate!(rb_cClass, "allocate", inline_class_allocate);
     annotate!(rb_cClass, "superclass", inline_class_superclass, types::Class.union(types::NilClass));
@@ -748,11 +746,6 @@ fn try_inline_fixnum_op(fun: &mut hir::Function, block: hir::BlockId, f: &dyn Fn
         return None;
     }
     if fun.likely_a(left, types::Fixnum, state) && fun.likely_a(right, types::Fixnum, state) {
-        if bop == BOP_NEQ {
-            // For opt_neq, the interpreter checks that both neq and eq are unchanged.
-            fun.push_insn(block, hir::Insn::PatchPoint { invariant: hir::Invariant::BOPRedefined { klass: INTEGER_REDEFINED_OP_FLAG, bop: BOP_EQ }, state });
-        }
-        // Rely on the MethodRedefined PatchPoint for other bops.
         let left = fun.coerce_to(block, left, types::Fixnum, state);
         let right = fun.coerce_to(block, right, types::Fixnum, state);
         return Some(fun.push_insn(block, f(left, right)));
@@ -886,45 +879,6 @@ fn inline_basic_object_not(fun: &mut hir::Function, block: hir::BlockId, recv: h
         return Some(result);
     }
     None
-}
-
-fn try_inline_string_not_equal(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, other: hir::InsnId, state: hir::InsnId) -> Option<hir::InsnId> {
-    if !fun.likely_a(recv, types::String, state) || !fun.likely_a(other, types::String, state) {
-        return None;
-    }
-    let recv_class = fun.type_of(recv).runtime_exact_ruby_class()?;
-
-    // String#!= is lowered to #==. Keep this specialization only while #==
-    // still resolves to rb_str_equal.
-    if !fun.assume_expected_cfunc(block, recv_class, ID!(eq), rb_str_equal as _, state) {
-        return None;
-    }
-
-    let eq_result = try_inline_string_equal(fun, block, recv, other, state)?;
-    // StringEqual always returns a Ruby boolean (Qtrue/Qfalse),
-    // so `!=` can be lowered to `eq_result != Qtrue`.
-    let true_val = fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(Qtrue) });
-    let not_equal = fun.push_insn(block, hir::Insn::IsBitNotEqual { left: eq_result, right: true_val });
-    Some(fun.push_insn(block, hir::Insn::BoxBool { val: not_equal }))
-}
-
-fn inline_basic_object_neq(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
-    let &[other] = args else { return None; };
-    if let Some(result) = try_inline_fixnum_op(fun, block, &|left, right| hir::Insn::FixnumNeq { left, right }, BOP_NEQ, recv, other, state) {
-        return Some(result);
-    }
-
-    if let Some(result) = try_inline_string_not_equal(fun, block, recv, other, state) {
-        return Some(result);
-    }
-
-    let recv_class = fun.type_of(recv).runtime_exact_ruby_class()?;
-    if !fun.assume_expected_cfunc(block, recv_class, ID!(eq), rb_obj_equal as _, state) {
-        return None;
-    }
-    let c_result = fun.push_insn(block, hir::Insn::IsBitNotEqual { left: recv, right: other });
-    let result = fun.push_insn(block, hir::Insn::BoxBool { val: c_result });
-    Some(result)
 }
 
 fn inline_class_allocate(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
