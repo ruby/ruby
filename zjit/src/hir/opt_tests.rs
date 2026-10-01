@@ -1293,11 +1293,9 @@ mod hir_opt_tests {
           v10:Fixnum[1] = Const Value(1)
           v12:Fixnum[2] = Const Value(2)
           PatchPoint MethodRedefined(Integer@0x1000, <=@0x1008, cme:0x1010)
-          v63:TrueClass = Const Value(true)
-          PatchPoint BOPRedefined(ANY_REDEFINED_OP_FLAG, BOP_LOGOP)
-          v51:Fixnum[3] = Const Value(3)
+          v35:Fixnum[3] = Const Value(3)
           CheckInterrupts
-          Return v51
+          Return v35
         ");
     }
 
@@ -1357,11 +1355,9 @@ mod hir_opt_tests {
           v10:Fixnum[2] = Const Value(2)
           v12:Fixnum[1] = Const Value(1)
           PatchPoint MethodRedefined(Integer@0x1000, >=@0x1008, cme:0x1010)
-          v63:TrueClass = Const Value(true)
-          PatchPoint BOPRedefined(ANY_REDEFINED_OP_FLAG, BOP_LOGOP)
-          v51:Fixnum[3] = Const Value(3)
+          v35:Fixnum[3] = Const Value(3)
           CheckInterrupts
-          Return v51
+          Return v35
         ");
     }
 
@@ -1957,65 +1953,59 @@ mod hir_opt_tests {
           v11:BasicObject = LoadArg :mode@3
           Jump bb3(v8, v9, v10, v11)
         bb3(v13:BasicObject, v14:BasicObject, v15:BasicObject, v16:BasicObject):
-          CondBranchHasType v15, ObjectSubclass[class_exact:A], bb10(), bb11()
-        bb10():
+          CondBranchHasType v15, ObjectSubclass[class_exact:A], bb9(), bb10()
+        bb9():
           PatchPoint NoSingletonClass(A@0x1008)
           PatchPoint MethodRedefined(A@0x1008, foo@0x1010, cme:0x1018)
-          v180:Fixnum[1] = Const Value(1)
-          Jump bb8(v180)
+          v167:Fixnum[1] = Const Value(1)
+          Jump bb7(v167)
+        bb10():
+          CondBranchHasType v15, ObjectSubclass[class_exact:B], bb11(), bb8()
         bb11():
-          CondBranchHasType v15, ObjectSubclass[class_exact:B], bb12(), bb9()
-        bb12():
           PatchPoint NoSingletonClass(B@0x1040)
           PatchPoint MethodRedefined(B@0x1040, foo@0x1010, cme:0x1048)
-          v183:Fixnum[2] = Const Value(2)
-          Jump bb8(v183)
-        bb9():
+          v170:Fixnum[2] = Const Value(2)
+          Jump bb7(v170)
+        bb8():
           v32:BasicObject = Send v15, :foo # SendFallbackReason: Send: polymorphic fallback
-          Jump bb8(v32)
-        bb8(v21:BasicObject):
+          Jump bb7(v32)
+        bb7(v21:BasicObject):
           PatchPoint NoEPEscape(open_uri)
           v40:NilClass = Const Value(nil)
           PatchPoint MethodRedefined(NilClass@0x1070, ==@0x1078, cme:0x1080)
-          v186:NilClass = GuardType v16, NilClass recompile
-          v187:CBool = IsBitEqual v186, v40
-          v188:BoolExact = BoxBool v187
-          PatchPoint BOPRedefined(ANY_REDEFINED_OP_FLAG, BOP_LOGOP)
-          CondBranch v187, bb7(), bb13()
+          v173:NilClass = GuardType v16, NilClass recompile
+          v174:CBool = IsBitEqual v173, v40
+          CondBranch v174, bb6(), bb12()
+        bb12():
+          v51:StringExact[VALUE(0x10a8)] = Const Value(VALUE(0x10a8))
+          v52:StringExact = StringCopy v51
+          PatchPoint NoSingletonClass(String@0x10b0)
+          PatchPoint MethodRedefined(String@0x10b0, ==@0x1078, cme:0x10b8)
+          v179 = GuardType v173, StringExact recompile
+          v180:BoolExact = StringEqual v179, v52
+          v57:CBool = Test v180
+          CondBranch v57, bb6(), bb13()
         bb13():
-          v49:FalseClass = RefineType v188, Falsy
-          v52:StringExact[VALUE(0x10a8)] = Const Value(VALUE(0x10a8))
-          v53:StringExact = StringCopy v52
+          v63:StringExact[VALUE(0x10e0)] = Const Value(VALUE(0x10e0))
+          v64:StringExact = StringCopy v63
           PatchPoint NoSingletonClass(String@0x10b0)
           PatchPoint MethodRedefined(String@0x10b0, ==@0x1078, cme:0x10b8)
-          v192 = GuardType v186, StringExact recompile
-          v193:BoolExact = StringEqual v192, v53
-          PatchPoint BOPRedefined(ANY_REDEFINED_OP_FLAG, BOP_LOGOP)
-          v61:CBool = Test v193
-          CondBranch v61, bb7(), bb14()
-        bb14():
-          v64:FalseClass = RefineType v193, Falsy
-          v67:StringExact[VALUE(0x10e0)] = Const Value(VALUE(0x10e0))
-          v68:StringExact = StringCopy v67
-          PatchPoint NoSingletonClass(String@0x10b0)
-          PatchPoint MethodRedefined(String@0x10b0, ==@0x1078, cme:0x10b8)
-          v197 = GuardType v186, StringExact recompile
-          v198:BoolExact = StringEqual v197, v68
-          PatchPoint BOPRedefined(ANY_REDEFINED_OP_FLAG, BOP_LOGOP)
-          v94:CBool = Test v198
-          CondBranch v94, bb7(), bb15()
-        bb7():
-          v82:StaticSymbol[:ok] = Const Value(VALUE(0x10e8))
+          v184 = GuardType v173, StringExact recompile
+          v185:BoolExact = StringEqual v184, v64
+          v69:CBool = Test v185
+          CondBranch v69, bb6(), bb14()
+        bb6():
+          v133:StaticSymbol[:ok] = Const Value(VALUE(0x10e8))
           CheckInterrupts
-          Return v82
-        bb15():
-          v101:NilClass = Const Value(nil)
+          Return v133
+        bb14():
+          v76:NilClass = Const Value(nil)
           PatchPoint StableConstantNames(0x10f0, ArgumentError)
-          v104:ClassSubclass[ArgumentError@0x10f8] = Const Value(VALUE(0x10f8))
-          v106:StringExact[VALUE(0x1100)] = Const Value(VALUE(0x1100))
+          v79:ClassSubclass[ArgumentError@0x10f8] = Const Value(VALUE(0x10f8))
+          v81:StringExact[VALUE(0x1100)] = Const Value(VALUE(0x1100))
           PatchPoint NoEPEscape(open_uri)
           PatchPoint NoSingletonClass(String@0x10b0)
-          v113 = GuardType v186, String
+          v88 = GuardType v173, String
           Unreachable
         ");
     }

@@ -85,25 +85,27 @@ class TestLogicalOpHook
     end
   end
 
-  def test_popped
+  def test_statement_unhooked
     log = []
-    nil && (log << :and)
-    true || (log << :or)
-    false && (log << :not_evaluated)
-    assert_equal([:and, :or], log)
+    nil && (log << :not_evaluated)
+    true || (log << :not_evaluated)
+    Node.new(:a) && (log << :rhs)
+    assert_equal([:rhs], log)
   end
 
-  def test_condition
+  def test_condition_unhooked
     log = []
-    assert_equal(:then, (nil && (log << :rhs; false)) ? :then : :else)
-    assert_equal([:rhs], log)
-    assert_equal(:then, if nil && false then :then else :else end)
-    assert_equal(:else, unless true || nil then :then else :else end)
+    assert_equal(:else, (nil && (log << :rhs; false)) ? :then : :else)
+    assert_empty(log)
+    assert_equal(:else, if nil && false then :then else :else end)
+    assert_equal(:else, if (nil || false) then :then else :else end)
+    assert_equal(:then, unless nil || false then :then else :else end)
+    assert_equal(:else, if nil || nil and true then :then else :else end)
     i = 0
     i += 1 while i < 3 && nil
-    assert_equal(3, i)
-    assert_equal(:else, if false && true then :then else :else end)
+    assert_equal(0, i)
     assert_equal(:then, if 1 && 2 then :then else :else end)
+    assert_equal(false, !(nil && false))
   end
 
   def test_polymorphic_site
@@ -165,7 +167,7 @@ class TestLogicalOpHook
         3.times do
           assert_equal([:and, :b], and_op(Node.new(1)))
           assert_equal([:or, :b], or_op(Node.new(1)))
-          assert_equal(:then, cond(Node.new(1)))
+          assert_equal(:else, cond(Node.new(1)))
           assert_nil(and_op(nil))
           assert_equal(:b, or_op(nil))
           assert_equal(:else, cond(nil))
@@ -299,7 +301,7 @@ class TestLogicalOpHook
         assert_equal(Node.new(:and, a, b), where { a && b })
         assert_equal(Node.new(:or, a, b), where { a || b })
         assert_equal(Node.new(:and, Node.new(:and, a, b), c), where { a && b && c })
-        assert_equal(:hooked, where { a && b ? :hooked : :plain })
+        assert_equal(:else, where { nil && b ? :then : :else })
         assert_nil(where { nil && b })
         assert_equal(b, a && b)
         assert_same(a, a || b)
