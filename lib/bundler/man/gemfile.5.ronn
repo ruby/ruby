@@ -363,11 +363,11 @@ Git repositories support a number of additional options.
     Specify a directory, or an array of directories, to include when
     checking out a git repository. Uses git's sparse-checkout feature
     (requires git 2.25+) to only check out the specified directories,
-    reducing disk usage for large repos.
+    reducing disk usage for large repos. Unless `glob` is given, the
+    `.gemspec` is looked up within those directories.
 
       gem "foo", git: "https://github.com/org/monorepo.git",
-                 sparse_checkout: "packages/foo",
-                 glob: "packages/foo/*.gemspec"
+                 sparse_checkout: "packages/foo"
 
     Files at the top level of the repository are always checked out.
     On git versions below 2.25, the entire repository will be checked

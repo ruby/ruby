@@ -10,11 +10,11 @@ RSpec.describe "bundle install with git sources and sparse_checkout" do
       install_gemfile <<-G
         source "https://gem.repo1"
         gem "foo", git: "#{lib_path("monorepo")}",
-                   sparse_checkout: "packages/foo",
-                   glob: "packages/foo/*.gemspec"
+                   sparse_checkout: "packages/foo"
       G
 
       expect(the_bundle).to include_gems "foo 1.0"
+      expect(File.read(bundled_app_lock)).to include("glob: packages/foo/{,*,*/*}.gemspec")
 
       # Verify only sparse_checkout dir exists (when git 2.25+)
       gem_path = Dir[default_bundle_path("bundler/gems/monorepo-*")].first
@@ -35,8 +35,7 @@ RSpec.describe "bundle install with git sources and sparse_checkout" do
       install_gemfile <<-G
         source "https://gem.repo1"
         gem "foo", git: "#{lib_path("monorepo")}",
-                   sparse_checkout: ["packages/foo", "shared"],
-                   glob: "packages/foo/*.gemspec"
+                   sparse_checkout: ["packages/foo", "shared"]
       G
 
       expect(the_bundle).to include_gems "foo 1.0"

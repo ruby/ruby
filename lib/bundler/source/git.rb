@@ -13,7 +13,7 @@ module Bundler
         @options = options
         @checksum_store = Checksum::Store.new
         @sparse_checkout = normalize_sparse_checkout(options)
-        @glob = options["glob"] || DEFAULT_GLOB
+        @glob = options["glob"] || sparse_checkout_glob || DEFAULT_GLOB
 
         @allow_cached = false
         @allow_remote = false
@@ -410,6 +410,13 @@ module Bundler
         end
 
         options["sparse_checkout"] = dirs
+      end
+
+      def sparse_checkout_glob
+        return unless @sparse_checkout
+
+        dirs = @sparse_checkout.size == 1 ? @sparse_checkout.first : "{#{@sparse_checkout.join(",")}}"
+        "#{dirs}/#{DEFAULT_GLOB}"
       end
 
       def glob_for_display
