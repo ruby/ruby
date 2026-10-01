@@ -1142,6 +1142,8 @@ set_i_clear(VALUE set)
 
 struct set_intersection_data {
     VALUE set;
+    VALUE other_set;
+    VALUE new_set;
     set_table *into;
     set_table *other;
 };
@@ -1149,7 +1151,7 @@ struct set_intersection_data {
 static int
 set_intersection_i(st_data_t key, st_data_t tmp)
 {
-    struct set_intersection_data *data = (struct set_intersection_data *)tmp;
+    struct set_intersection_data *data = MEMO_FOR(struct set_intersection_data, tmp);
     if (set_table_lookup(data->other, key)) {
         set_table_insert_wb(data->into, data->set, key);
     }
@@ -1188,6 +1190,7 @@ set_i_intersection(VALUE set, VALUE other)
     }
     set_table *stable = RSET_TABLE(set);
     set_table *ntable = RSET_TABLE(new_set);
+    VALUE data;
 
     if (rb_obj_is_kind_of(other, rb_cSet)) {
         set_table *otable = RSET_TABLE(other);
@@ -1197,21 +1200,26 @@ set_i_intersection(VALUE set, VALUE other)
             set = other;
         }
 
-        struct set_intersection_data data = {
+        *NEW_PARTIAL_MEMO_FOR(struct set_intersection_data, data, into) = (struct set_intersection_data) {
             .set = new_set,
+            .other_set = other,
+            .new_set = new_set,
             .into = ntable,
-            .other = otable
+            .other = otable,
         };
-        set_iter(set, set_intersection_i, (st_data_t)&data);
+        set_iter(set, set_intersection_i, (st_data_t)data);
     }
     else {
-        struct set_intersection_data data = {
+        *NEW_PARTIAL_MEMO_FOR(struct set_intersection_data, data, into) = (struct set_intersection_data) {
             .set = new_set,
+            .other_set = other,
+            .new_set = new_set,
             .into = ntable,
-            .other = stable
+            .other = stable,
         };
-        rb_block_call(other, enum_method_id(other), 0, 0, set_intersection_block, (VALUE)&data);
+        rb_block_call(other, enum_method_id(other), 0, 0, set_intersection_block, data);
     }
+    RB_GC_GUARD(data);
 
     return new_set;
 }
