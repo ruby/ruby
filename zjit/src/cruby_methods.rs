@@ -250,6 +250,7 @@ pub fn init() -> Annotations {
     annotate!(rb_cBasicObject, "!", inline_basic_object_not, types::BoolExact, no_gc, leaf, elidable);
     annotate!(rb_cBasicObject, "!=", inline_basic_object_neq, types::BoolExact);
     annotate!(rb_cBasicObject, "initialize", inline_basic_object_initialize);
+    annotate!(rb_cStruct, "initialize", inline_struct_initialize);
     annotate!(rb_cClass, "allocate", inline_class_allocate);
     annotate!(rb_cClass, "superclass", inline_class_superclass, types::Class.union(types::NilClass));
     annotate!(rb_cInteger, "succ", inline_integer_succ);
@@ -954,6 +955,68 @@ fn inline_basic_object_initialize(fun: &mut hir::Function, block: hir::BlockId, 
     if !args.is_empty() { return None; }
     let result = fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(Qnil) });
     Some(result)
+}
+
+/// Inline the positional (non-`keyword_init`) case of `Struct#initialize`
+/// (`rb_struct_initialize_m`): store each argument into its member slot and nil out the members
+/// the caller left off the end.
+fn inline_struct_initialize(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    // Check our pre-conditions. We need to know that:
+
+    // (1) the receiver class is a known class
+    let class = fun.type_of(recv).exact_ruby_class()?;
+
+    // (2) with a known number of members
+    let num_members = unsafe { rb_zjit_struct_num_members(class) };
+    debug_assert!(num_members >= 0, "rb_zjit_struct_num_members returned a negative value");
+
+    // (3) which also matches the number of arguments passed (more values than the struct has
+    //     members raises ArgumentError; leave that to the interpreter)
+    if args.len() as i64 > num_members { return None; }
+
+    // (4) the constructor isn't expecting keyword parameters (or it's ok to nil-fill the whole
+    //     instance)
+    if !args.is_empty() && unsafe { rb_struct_s_keyword_init(class) }.test() { return None; }
+
+    // (5) and the number of members is small enough to inline without bloating the generated code
+    const MEMBER_LIMIT: i64 = 1 << 8;
+    if num_members > MEMBER_LIMIT { return None; }
+
+    // (6) the object is embedded, which simplifies the implementation (if we see some extended
+    //     structs, we can support that reasonably easily later)
+    //     Embeddedness depends only on the member count. See struct_embedded_p and struct_alloc.
+    if !unsafe { rb_zjit_struct_embedded_p(num_members) } { return None; }
+
+    // We know it's going to fit into an i32 since we checked that the total number of fields was
+    // in [0, MEMBER_LIMIT).
+    let base_offset: i32 = RUBY_OFFSET_RSTRUCT_AS_ARY.try_into().ok()?;
+
+    // #initialize calls rb_struct_modify
+    fun.guard_not_frozen(block, recv, state);
+
+    // Initialize all the members, either to the argument passed in or nil if it wasn't supplied.
+    let nil = fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(Qnil) });
+    if num_members > 0 {
+        let num_bits = types::BasicObject.num_bits();
+        for index in 0..num_members {
+            // Name the slots after their members so these stores line up with the LoadFields that
+            // the struct reader methods compile to.
+            let id = unsafe { rb_zjit_struct_member_id(class, index) }.into();
+            let offset = base_offset + SIZEOF_VALUE_I32 * index as i32;
+            match args.get(index as usize) {
+                Some(&val) => {
+                    fun.push_insn(block, hir::Insn::StoreField { recv, id, offset, val, num_bits });
+                    fun.push_insn(block, hir::Insn::WriteBarrier { recv, val });
+                }
+                // nil is an immediate, so the tail needs no write barrier.
+                None => {
+                    fun.push_insn(block, hir::Insn::StoreField { recv, id, offset, val: nil, num_bits });
+                }
+            }
+        }
+    }
+
+    Some(nil)
 }
 
 fn inline_nilclass_nil_p(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {

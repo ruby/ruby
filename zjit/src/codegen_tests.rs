@@ -7355,6 +7355,31 @@ fn test_struct_set() {
 }
 
 #[test]
+fn test_struct_new() {
+    assert_snapshot!(inspect("
+        C = Struct.new(:a, :b, :c)
+        def test(x) = [C.new(x, x, x).to_a, C.new(x).to_a, C.new.to_a]
+        test 1
+        test 2
+    "), @"[[2, 2, 2], [2, nil, nil], [nil, nil, nil]]");
+}
+
+#[test]
+fn test_struct_initialize_on_frozen_receiver() {
+    assert_snapshot!(inspect("
+        C = Struct.new(:a)
+        def test(o)
+          o.send(:initialize, 1)
+          o.a
+        rescue FrozenError
+          :frozen_error
+        end
+        r = [test(C.new), test(C.new)]
+        r << test(C.new.freeze)
+    "), @"[1, 1, :frozen_error]");
+}
+
+#[test]
 fn test_opt_case_dispatch() {
     eval("
         def test(x)
