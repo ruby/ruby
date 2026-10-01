@@ -1545,6 +1545,22 @@ class TestIOBuffer < Test::Unit::TestCase
     io.close!
   end
 
+  def test_write_with_length_over_4gb
+    omit "32-bit size_t" if RbConfig::SIZEOF["size_t"] < 8
+    length = 2**32 + 1
+    begin
+      buffer = IO::Buffer.new(length)
+    rescue SystemCallError
+      omit "cannot allocate #{length} bytes"
+    end
+    File.open(File::NULL, "wb") do |io|
+      assert_operator buffer.write(io, 0, length), :>, 1
+      assert_operator buffer.pwrite(io, 0, 0, length), :>, 1
+    end
+  ensure
+    buffer&.free
+  end if /mswin|mingw/ =~ RUBY_PLATFORM
+
   def test_zero_length_io
     io = Tempfile.new
 

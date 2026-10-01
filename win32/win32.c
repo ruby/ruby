@@ -7517,6 +7517,9 @@ rb_w32_write_internal(int fd, const void *buf, size_t size, rb_off_t *offset)
     size_t ret;
     OVERLAPPED ol;
 
+    /* send, _write and WriteFile take 32-bit lengths, and a short write is fine */
+    if (size > INT_MAX) size = INT_MAX;
+
     if (is_socket(sock))
         return rb_w32_send(fd, buf, size, 0);
 
