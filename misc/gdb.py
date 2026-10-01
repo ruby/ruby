@@ -70,9 +70,11 @@ class CFP(gdb.Command):
         gdb.execute(f'p *({cfp})')
         print()
 
-        if self.get_int(f'{cfp}->iseq'):
-            local_size = self.get_int(f'{cfp}->iseq->body->local_table_size - {cfp}->iseq->body->param.size')
-            param_size = self.get_int(f'{cfp}->iseq->body->param.size')
+        iseq = self.iseq(cfp)
+        if iseq:
+            body = f'((rb_iseq_t *){iseq})->body'
+            local_size = self.get_int(f'{body}->local_table_size - {body}->param.size')
+            param_size = self.get_int(f'{body}->param.size')
 
             if local_size:
                 print(f'Params (size={param_size}):')
@@ -94,7 +96,7 @@ class CFP(gdb.Command):
 
         # We can't calculate BP for the first frame.
         # vm_base_ptr doesn't work for C frames either.
-        if cfp_index > 0 and self.get_int(f'{cfp}->iseq'):
+        if cfp_index > 0 and iseq:
             if args.stack_size is not None:
                 stack_size = args.stack_size
             else:
@@ -164,6 +166,11 @@ class CFP(gdb.Command):
                 types.append(flag)
 
         return ' | '.join(types)
+
+    # CFP_ISEQ() through cfp_iseq_pc in .gdbinit
+    def iseq(self, cfp):
+        gdb.execute(f'cfp_iseq_pc ((rb_control_frame_t*){self.get_int(cfp)})')
+        return self.get_int('$iseq')
 
     def get_env(self, cfp, bp_index):
         ep_index = bp_index + 1
