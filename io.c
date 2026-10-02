@@ -7025,7 +7025,12 @@ parse_mode_enc(const char *estr, rb_encoding *estr_enc,
 
     p = strrchr(estr, ':');
     len = p ? (p++ - estr) : (long)strlen(estr);
-    if ((fmode & FMODE_SETENC_BY_BOM) || io_encname_bom_p(estr, len)) {
+    /* Only strip a "BOM|" prefix when the name is actually long enough.
+     * FMODE_SETENC_BY_BOM may be carried in from the mode string (e.g.
+     * "r:BOM|UTF-8") while estr comes from a separate encoding: option; a name
+     * shorter than the prefix must not underflow len and walk estr past its end. */
+    if (len >= bom_prefix_len &&
+        ((fmode & FMODE_SETENC_BY_BOM) || io_encname_bom_p(estr, len))) {
         estr += bom_prefix_len;
         len -= bom_prefix_len;
         if (!STRNCASECMP(estr, utf_prefix, utf_prefix_len)) {
