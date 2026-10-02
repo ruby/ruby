@@ -764,6 +764,25 @@ end.join
     assert_equal(msg, cause.message, msg)
   end
 
+  def test_root_cause
+    root_cause = RuntimeError.new('a')
+
+    e = assert_raise_with_message(RuntimeError, 'c') {
+      begin
+        raise root_cause
+      rescue => a
+        begin
+          raise 'b'
+        rescue => b
+          raise 'c'
+        end
+      end
+    }
+
+    assert_same(e.root_cause, root_cause)
+    assert_nil(e.root_cause.cause)
+  end
+
   def test_cause_reraised
     msg = "[Feature #8257]"
     e = assert_raise(RuntimeError) {
