@@ -8535,7 +8535,6 @@ compile_loop(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
     LABEL *prev_start_label = ISEQ_COMPILE_DATA(iseq)->start_label;
     LABEL *prev_end_label = ISEQ_COMPILE_DATA(iseq)->end_label;
     LABEL *prev_redo_label = ISEQ_COMPILE_DATA(iseq)->redo_label;
-    int prev_loopval_popped = ISEQ_COMPILE_DATA(iseq)->loopval_popped;
     VALUE branches = Qfalse;
 
     struct iseq_compile_data_ensure_node_stack enl;
@@ -8549,7 +8548,6 @@ compile_loop(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
     LABEL *next_catch_label = NEW_LABEL(line);
     LABEL *tmp_label = NULL;
 
-    ISEQ_COMPILE_DATA(iseq)->loopval_popped = 0;
     push_ensure_entry(iseq, &enl, NULL, NULL);
 
     if (RNODE_WHILE(node)->nd_state == 1) {
@@ -8620,7 +8618,6 @@ compile_loop(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
     ISEQ_COMPILE_DATA(iseq)->start_label = prev_start_label;
     ISEQ_COMPILE_DATA(iseq)->end_label = prev_end_label;
     ISEQ_COMPILE_DATA(iseq)->redo_label = prev_redo_label;
-    ISEQ_COMPILE_DATA(iseq)->loopval_popped = prev_loopval_popped;
     ISEQ_COMPILE_DATA(iseq)->ensure_node_stack = ISEQ_COMPILE_DATA(iseq)->ensure_node_stack->prev;
     return COMPILE_OK;
 }
@@ -8727,8 +8724,7 @@ compile_break(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, i
         LABEL *splabel = NEW_LABEL(0);
         ADD_LABEL(ret, splabel);
         ADD_ADJUST(ret, line_node, ISEQ_COMPILE_DATA(iseq)->redo_label);
-        CHECK(COMPILE_(ret, "break val (while/until)", RNODE_BREAK(node)->nd_stts,
-                       ISEQ_COMPILE_DATA(iseq)->loopval_popped));
+        CHECK(COMPILE(ret, "break val (while/until)", RNODE_BREAK(node)->nd_stts));
         add_ensure_iseq(ret, iseq, 0);
         ADD_INSNL(ret, line_node, jump, ISEQ_COMPILE_DATA(iseq)->end_label);
         ADD_ADJUST_RESTORE(ret, splabel);
