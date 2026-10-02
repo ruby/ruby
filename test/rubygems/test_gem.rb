@@ -941,6 +941,51 @@ class TestGem < Gem::TestCase
     RbConfig::CONFIG["sitelibdir"] = orig_sitelibdir
   end
 
+  def test_self_open_file_with_lock_excludes_late_arrivals_after_handover
+    path = File.join(@tempdir, "resource")
+    events = Queue.new
+    release_waiter = Queue.new
+
+    on_warn = lambda do |message|
+      events << [Thread.current.name, :waiting] if message.include?("Waiting for another process")
+    end
+
+    next_event = lambda do
+      events.pop(timeout: 10) || flunk("Timed out waiting for a lock event")
+    end
+
+    contender = lambda do |name, &block|
+      Thread.new do
+        Thread.current.name = name
+        Thread.current.abort_on_exception = true
+        Gem.open_file_with_lock(path) do
+          events << [name, :locked]
+          block&.call
+        end
+      end
+    end
+
+    Gem.stub(:warn, on_warn) do
+      waiter = nil
+      Gem.open_file_with_lock(path) do
+        waiter = contender.call("waiter") { release_waiter.pop }
+        assert_equal ["waiter", :waiting], next_event.call
+      end
+      assert_equal ["waiter", :locked], next_event.call
+
+      late_arrival = contender.call("late_arrival")
+      assert_equal ["late_arrival", :waiting], next_event.call
+
+      release_waiter << true
+      [waiter, late_arrival].each(&:join)
+      assert_equal ["late_arrival", :locked], next_event.call
+    ensure
+      release_waiter << true
+    end
+
+    assert_path_not_exist "#{path}.lock"
+  end
+
   def test_self_read_binary
     File.open "test", "w" do |io|
       io.write "\xCF\x80"
