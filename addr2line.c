@@ -2603,6 +2603,15 @@ main_exe_path(FILE *errout)
     len--; /* sysctl sets strlen+1 */
     return len;
 }
+#elif defined(__OpenBSD__) && defined(HAVE_GETEXECPATH)
+static ssize_t
+main_exe_path(FILE *errout)
+{
+    if (getexecpath(binary_filename, PATH_MAX) == -1)
+        return 0;
+
+    return strlen(binary_filename);
+}
 #elif defined(HAVE_LIBPROC_H)
 static ssize_t
 main_exe_path(FILE *errout)
