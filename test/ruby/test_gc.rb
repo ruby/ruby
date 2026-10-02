@@ -1323,15 +1323,14 @@ class TestGc < Test::Unit::TestCase
       local_before = GC.stat(:count)
       process_before = GC.stat(:count, scope: :global)
       ready = Ractor::Port.new
-      outer = Ractor.new(ready) do |reply|
+      outer = assert_in_ractor(ready, value: false) do |reply|
         GC.disable
         3.times { GC.start(full_mark: false, immediate_mark: true, immediate_sweep: true) }
-        inner = Ractor.new do
+        assert_in_ractor do
           GC.disable
           5.times { GC.start(full_mark: false, immediate_mark: true, immediate_sweep: true) }
-          GC.stat(:count)
+          assert_equal(5, GC.stat(:count), "inner count")
         end
-        raise "inner count" unless inner.value == 5
 
         reply << :ready
         Ractor.receive
@@ -1340,7 +1339,7 @@ class TestGc < Test::Unit::TestCase
       ready.receive
 
       assert_equal(9, GC.stat(:count, scope: :global) - process_before, "nested history missing")
-      outer.send(:finish)
+      outer.ractor.send(:finish)
       assert_equal(:finish, outer.value, "outer result")
       assert_equal(10, GC.stat(:count, scope: :global) - process_before, "nested history changed")
       assert_equal(local_before, GC.stat(:count), "main inherited nested counts")
@@ -1393,16 +1392,16 @@ class TestGc < Test::Unit::TestCase
       end
       worker_control = ready.receive
 
-      reader = Ractor.new(ready, keys) do |reply, ks|
+      reader = assert_in_ractor(ready, keys, value: false) do |reply, ks|
         control = Ractor::Port.new
         reply << control
         control.receive
         previous = nil
         read = lambda do
           stat = GC.stat(scope: :global)
-          raise "count invariant" unless stat[:count] == stat[:minor_gc_count] + stat[:major_gc_count]
-          raise "time rounding" unless (0..1).cover?(stat[:time] - (stat[:marking_time] + stat[:sweeping_time]))
-          ks.each { |key| raise "decreasing #{key}" if previous && stat[key] < previous[key] }
+          assert_equal(stat[:minor_gc_count] + stat[:major_gc_count], stat[:count], "count invariant")
+          assert_include(0..1, stat[:time] - (stat[:marking_time] + stat[:sweeping_time]), "time rounding")
+          ks.each { |key| assert_operator stat[key], :>=, previous[key], "decreasing #{key}" if previous }
           previous = stat
         end
         50.times { read.call }
@@ -1438,7 +1437,7 @@ class TestGc < Test::Unit::TestCase
       GC.measure_total_time = false
       baseline = GC.stat(scope: :global)
       ready = Ractor::Port.new
-      worker = Ractor.new(ready) do |reply|
+      worker = assert_in_ractor(ready, value: false) do |reply|
         GC.disable
         GC.measure_total_time = true
         retained = Array.new(100_000) { Object.new }
@@ -1447,7 +1446,7 @@ class TestGc < Test::Unit::TestCase
           break if GC.stat(:time) - time_before >= 2
           GC.start(full_mark: true, immediate_mark: true, immediate_sweep: true)
         end
-        raise "measured time not reached" unless GC.stat(:time) - time_before >= 2
+        assert_operator(GC.stat(:time) - time_before, :>=, 2, "measured time not reached")
 
         GC.measure_total_time = false
         control = Ractor::Port.new
@@ -1484,12 +1483,11 @@ class TestGc < Test::Unit::TestCase
       GC.disable
       process_before = GC.stat(:count, scope: :global)
 
-      absorbed = Ractor.new do
+      assert_in_ractor do
         GC.disable
         3.times { GC.start(full_mark: false, immediate_mark: true, immediate_sweep: true) }
-        GC.stat(:count)
+        assert_equal(3, GC.stat(:count))
       end
-      assert_equal 3, absorbed.value
 
       live_ready = Ractor::Port.new
       live = Ractor.new(live_ready) do |r|

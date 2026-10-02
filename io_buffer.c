@@ -465,6 +465,17 @@ io_buffer_extract_size(VALUE argument)
     return NUM2SIZET(argument);
 }
 
+// Extract an amount, which must be a non-negative integer.
+static inline size_t
+io_buffer_extract_amount(VALUE argument)
+{
+    if (rb_int_negative_p(argument)) {
+        rb_raise(rb_eArgError, "Amount can't be negative!");
+    }
+
+    return NUM2SIZET(argument);
+}
+
 // Extract a width argument, which must be a non-negative integer, and must be
 // at least the given minimum and at most RB_IO_BUFFER_HEXDUMP_MAXIMUM_WIDTH.
 static inline size_t
@@ -2212,6 +2223,36 @@ io_buffer_resize_copy(VALUE self, struct rb_io_buffer *buffer, size_t size)
     *buffer = resized;
 }
 
+void
+rb_io_buffer_advance(VALUE self, size_t amount)
+{
+    struct rb_io_buffer *buffer = get_io_buffer(self);
+
+    if (buffer->flags & RB_IO_BUFFER_ALLOCATION_FLAGS) {
+        rb_raise(rb_eIOBufferAccessError, "Cannot advance an owning buffer!");
+    }
+
+    if (!io_buffer_validate(buffer)) {
+        rb_raise(rb_eIOBufferInvalidatedError, "Buffer has been invalidated!");
+    }
+
+    if (amount > buffer->size) {
+        rb_raise(rb_eArgError, "Advance amount exceeds buffer size!");
+    }
+
+    if (buffer->source != Qnil) {
+        // Source-backed buffers store an offset into their immediate source.
+        // Advance the offset without changing any ancestor's range.
+        buffer->base = (void *)(uintptr_t)(io_buffer_slice_offset(buffer) + amount);
+    }
+    else if (buffer->base) {
+        // Source-less borrowed buffers store their pointer directly.
+        buffer->base = (char *)buffer->base + amount;
+    }
+
+    buffer->size -= amount;
+}
+
 static void
 io_buffer_resize_slice(struct rb_io_buffer *slice, size_t size)
 {
@@ -2339,6 +2380,43 @@ io_buffer_resize(VALUE self, VALUE size)
     rb_check_frozen(self);
 
     rb_io_buffer_resize(self, io_buffer_extract_size(size));
+
+    return self;
+}
+
+/*
+ *  call-seq: advance(amount) -> self
+ *
+ *  Advances the beginning of a non-owning buffer view by +amount+ bytes,
+ *  reducing its size by the same amount. The backing memory is not moved or
+ *  modified. The buffer must refer to memory managed elsewhere or be a slice;
+ *  a buffer which owns its allocation cannot be advanced.
+ *
+ *  The source and allocation lock count are unchanged. Advancing is allowed
+ *  while the bytes are read-only or the allocation is locked, because it only
+ *  changes the view. If +amount+ equals the current size, the buffer becomes
+ *  an empty view at its previous end.
+ *
+ *  Raises ArgumentError if +amount+ is negative or exceeds the current size,
+ *  IO::Buffer::InvalidatedError if the view is invalid, or
+ *  IO::Buffer::AccessError if the buffer owns its allocation. A frozen buffer
+ *  cannot be advanced.
+ *
+ *    buffer = IO::Buffer.for("test")
+ *    buffer.advance(1)
+ *    buffer.get_string # => "est"
+ */
+static VALUE
+io_buffer_advance(VALUE self, VALUE amount)
+{
+    rb_check_frozen(self);
+
+    size_t size = io_buffer_extract_amount(amount);
+
+    // Argument conversion may call Ruby code which freezes the receiver.
+    rb_check_frozen(self);
+
+    rb_io_buffer_advance(self, size);
 
     return self;
 }
@@ -4658,6 +4736,7 @@ Init_IO_Buffer(void)
     rb_define_method(rb_cIOBuffer, "slice", io_buffer_slice, -1);
     rb_define_method(rb_cIOBuffer, "<=>", rb_io_buffer_compare, 1);
     rb_define_method(rb_cIOBuffer, "resize", io_buffer_resize, 1);
+    rb_define_method(rb_cIOBuffer, "advance", io_buffer_advance, 1);
     rb_define_method(rb_cIOBuffer, "clear", io_buffer_clear, -1);
     rb_define_method(rb_cIOBuffer, "free", io_buffer_free, 0);
 

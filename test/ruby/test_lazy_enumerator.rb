@@ -153,6 +153,27 @@ class TestLazyEnumerator < Test::Unit::TestCase
   def test_flat_map_non_array
     assert_equal(["1", "2", "3"], [1, 2, 3].flat_map {|x| x.to_s})
     assert_equal(["1", "2", "3"], [1, 2, 3].lazy.flat_map {|x| x.to_s}.force)
+
+    assert_separately([], "#{<<~"{#"}\n#{<<~'};'}")
+    {#
+      enum = Object.new
+      class << enum
+        include Enumerable
+        attr_reader :block
+
+        def force; true; end
+        def each(&block)
+          @block = block
+        end
+      end
+
+      yielded = []
+      [enum].lazy.flat_map { |x| yielded << x; x }.each { |x| }
+      GC.start
+      assert_equal 42, enum.block.call(42)
+      assert_equal 1, yielded.size
+      assert_same enum, yielded[0]
+    };
   end
 
   def test_flat_map_hash
@@ -258,6 +279,32 @@ class TestLazyEnumerator < Test::Unit::TestCase
     a = Step.new(1..5)
     assert_equal([5, nil], a.zip("a".."c").last)
     assert_equal([5, nil], a.lazy.zip("a".."c").force.last)
+  end
+
+  def test_zip_array_convertible_before_enumerable
+    array_like = Object.new
+    def array_like.to_ary
+      [:a, :b]
+    end
+
+    zip = (1..3).lazy.zip(array_like, 10..12)
+    expected = [[1, :a, 10], [2, :b, 11], [3, nil, 12]]
+    assert_equal(expected, zip.force)
+    assert_equal(expected, zip.force)
+  end
+
+  def test_zip_array_conversion_precedes_each
+    array_like = Object.new
+    def array_like.to_ary
+      [:a, :b]
+    end
+    def array_like.each
+      yield :c
+      yield :d
+    end
+
+    assert_equal([[1, :a, 10], [2, :b, 11]],
+                 (1..2).lazy.zip(array_like, 10..11).force)
   end
 
   def test_zip_without_arg

@@ -295,6 +295,13 @@ gem "rails", git: "https://github\.com/rails/rails\.git", ref: "4aded"
 .TP
 \fBsubmodules\fR
 For reference, a git submodule \fIhttps://git\-scm\.com/book/en/v2/Git\-Tools\-Submodules\fR lets you have another git repository within a subfolder of your repository\. Specify \fBsubmodules: true\fR to cause bundler to expand any submodules included in the git repository
+.TP
+\fBsparse_checkout\fR
+Specify a directory, or an array of directories, to include when checking out a git repository\. Uses git's sparse\-checkout feature (requires git 2\.25+) to only check out the specified directories, reducing disk usage for large repos\. Unless \fBglob\fR is given, the \fB\.gemspec\fR is looked up within those directories\.
+.IP
+gem "foo", git: "https://github\.com/org/monorepo\.git", sparse_checkout: "packages/foo"
+.IP
+Files at the top level of the repository are always checked out\. On git versions below 2\.25, the entire repository will be checked out with a warning\.
 .P
 If a git repository contains multiple \fB\.gemspecs\fR, each \fB\.gemspec\fR represents a gem located at the same place in the file system as the \fB\.gemspec\fR\.
 .IP "" 4

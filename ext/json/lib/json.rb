@@ -414,6 +414,8 @@ require 'json/common'
 #   When +true+, keys are sorted lexicographically. When a \Proc, it receives
 #   the entire \Hash and must return a \Hash with its pairs in the desired
 #   order, allowing for arbitrary sort orders.
+# - Option +rfc8785+ (boolean) controls whether the generated JSON will be canonicalized
+#   as defined in RFC8785.
 #
 # In this example, +obj+ is used first to generate the shortest
 # \JSON data (no whitespace), then again with all formatting options

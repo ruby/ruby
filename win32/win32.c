@@ -5662,8 +5662,8 @@ rb_w32_fstat(int fd, struct stat *st)
 int
 rb_w32_fstati128(int fd, struct stati128 *st)
 {
-    struct stat tmp;
-    int ret = fstat(fd, &tmp);
+    struct _stat64 tmp;
+    int ret = _fstat64(fd, &tmp);
 
     if (ret) return ret;
     COPY_STAT(tmp, *st, +);
@@ -7396,6 +7396,9 @@ rb_w32_read_internal(int fd, void *buf, size_t size, rb_off_t *offset)
     size_t ret;
     OVERLAPPED ol;
 
+    /* recv, _read and ReadFile take 32-bit lengths; a short read is fine */
+    if (size > INT_MAX) size = INT_MAX;
+
     if (is_socket(sock))
         return rb_w32_recv(fd, buf, size, 0);
 
@@ -7513,6 +7516,9 @@ rb_w32_write_internal(int fd, const void *buf, size_t size, rb_off_t *offset)
     size_t len;
     size_t ret;
     OVERLAPPED ol;
+
+    /* send, _write and WriteFile take 32-bit lengths, and a short write is fine */
+    if (size > INT_MAX) size = INT_MAX;
 
     if (is_socket(sock))
         return rb_w32_send(fd, buf, size, 0);

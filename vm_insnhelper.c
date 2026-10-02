@@ -265,7 +265,8 @@ rb_vm_check_canary(const rb_execution_context_t *ec, VALUE *sp)
         /* This is at the very beginning of a thread. cfp does not exist. */
         return;
     }
-    else if (! (iseq = GET_ISEQ())) {
+    else if (! VM_FRAME_RUBYFRAME_P(reg_cfp) || ! (iseq = GET_ISEQ())) {
+        /* The iseq field of an IFUNC frame holds the ifunc. */
         return;
     }
     else if (LIKELY(sp[0] != vm_stack_canary)) {
@@ -7563,6 +7564,10 @@ Init_vm_stack_canary(void)
 {
     /* This has to be called _after_ our PRNG is properly set up. */
     int n = ruby_fill_random_bytes(&vm_stack_canary, sizeof vm_stack_canary, false);
+    /* Make it a large positive Fixnum.  Arguments a block does not take
+     * stay at the stack top, where vm_push_frame checks the canary. */
+    vm_stack_canary >>= 2;
+    vm_stack_canary |= (VALUE)1 << (SIZEOF_VALUE * CHAR_BIT - 2);
     vm_stack_canary |= 0x01; // valid VALUE (Fixnum)
 
     vm_stack_canary_was_born = true;

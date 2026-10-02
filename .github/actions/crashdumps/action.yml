@@ -93,7 +93,9 @@ runs:
         # lldb cannot read a core against a sysroot, so write the commands
         # that load the copies before the core.  `lldb -s core.PID.lldb`
         # then opens it.  The system libraries are left out, as lldb places
-        # their copies on disk apart from the dyld shared cache.
+        # their copies on disk apart from the dyld shared cache.  Homebrew
+        # libraries are copied but not loaded, as lldb crashes in LoadCore
+        # when the reader has another build of one at the same path.
         macho.each do |core|
           images = loaded_images(core).select do |path, _|
             !path.start_with?("/usr/lib/", "/System/") && File.file?(path)
@@ -106,6 +108,7 @@ runs:
             FileUtils.cp_r("#{path}.dSYM", dir) if File.directory?("#{path}.dSYM")
           end
           (exe, _), *libs = images
+          libs.reject! {|path, _| path.start_with?("/opt/homebrew/", "/usr/local/")}
           File.write("#{core}.lldb", [
             %(target create --no-dependents "sysroot#{exe}"),
             *libs.map {|path, uuid| %(target modules add -u #{uuid} "sysroot#{path}")},

@@ -2124,10 +2124,10 @@ io_fwrite(VALUE str, rb_io_t *fptr, int nosync)
     if (converted)
         OBJ_FREEZE(str);
 
-    tmp = rb_str_tmp_frozen_no_embed_acquire(str);
+    tmp = rb_str_no_gvl_safe_acquire(str);
     RSTRING_GETMEM(tmp, ptr, len);
     n = io_binwrite(ptr, len, fptr, nosync);
-    rb_str_tmp_frozen_release(str, tmp);
+    rb_str_no_gvl_safe_release(str, tmp);
 
     return n;
 }
@@ -7647,6 +7647,10 @@ pipe_atexit(void)
 {
     struct pipe_list *list = pipe_list;
     struct pipe_list *tmp;
+
+    /* The CRT calls this on whichever thread calls ExitProcess, which can be
+     * one Ruby does not know, e.g. the console control handler on Ctrl+Break. */
+    if (!rb_current_execution_context(false)) return;
 
     while (list) {
         tmp = list->next;

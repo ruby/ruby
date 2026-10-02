@@ -3844,14 +3844,43 @@ utime_internal_i(int argc, VALUE *argv, int follow)
 }
 
 /*
- * call-seq:
- *  File.utime(atime, mtime, file_name, ...)   ->  integer
+ * :markup: markdown
  *
- * Sets the access and modification times of each named file to the
- * first two arguments. If a file is a symlink, this method acts upon
- * its referent rather than the link itself; for the inverse
- * behavior see File.lutime. Returns the number of file
- * names in the argument list.
+ * call-seq:
+ *  File.utime(atime, mtime, *paths) -> integer
+ *
+ * For the entry at the paths in `paths`,
+ * updates its access time to the given `atime`
+ * and its modification time to the given `mtime`;
+ * see [Filesystem Timestamps](rdoc-ref:file/timestamps.md).
+ * Returns the number of entries updated.
+ * Each path points to a file or directory.
+ *
+ * Each given time may be a Time object, an integer representing a time,
+ * or `nil` (meaning Time.now):
+ *
+ * ```ruby
+ * filepath = '/tmp/t.tmp'
+ * File.write(filepath, 'foo')
+ * File.atime(filepath)  # => 2026-09-29 12:38:29.889703781 -0500
+ * File.mtime(filepath)  # => 2026-09-29 12:38:29.889703781 -0500
+ * time = Time.now
+ * File.utime(time, time, filepath)
+ * File.atime(filepath)  # => 2026-09-29 12:38:52.533160634 -0500
+ * File.mtime(filepath)  # => 2026-09-29 12:38:52.533160634 -0500
+ * File.utime(0, 0, filepath)
+ * File.atime(filepath)  # => 1969-12-31 18:00:00 -0600
+ * File.mtime(filepath)  # => 1969-12-31 18:00:00 -0600
+ * File.utime(nil, nil, filepath)
+ * File.atime(filepath)  # => 2026-09-29 12:39:50.859421265 -0500
+ * File.mtime(filepath)  # => 2026-09-29 12:39:50.859421265 -0500
+ * File.delete(filepath) # Clean up.
+ * ```
+ *
+ * Raises an exception if any entry cannot be updated;
+ * some entries may have already been updated.
+ *
+ * Follows symbolic links; use File.lutime to update the times for symbolic links.
  */
 
 static VALUE
@@ -5350,6 +5379,21 @@ realpath_rec(long *prefixlenp, VALUE *resolvedp, const char *unresolved, VALUE f
     return 0;
 }
 
+#ifdef DOSISH_DRIVE_LETTER
+/* expand_path on Windows builds the result in the code page of the
+ * argument encoding, which may not represent the current directory */
+static VALUE
+ospath_for_expand(VALUE path)
+{
+    switch (ENCODING_GET(path)) {
+      case ENCINDEX_ASCII_8BIT:
+      case ENCINDEX_US_ASCII:
+        return rb_enc_associate_index(rb_str_dup(path), rb_filesystem_encindex());
+    }
+    return TO_OSPATH(path);
+}
+#endif
+
 static VALUE
 rb_check_realpath_emulate(VALUE basedir, VALUE path, rb_encoding *origenc, enum rb_realpath_mode mode)
 {
@@ -5363,6 +5407,23 @@ rb_check_realpath_emulate(VALUE basedir, VALUE path, rb_encoding *origenc, enum 
     char *path_names = NULL, *basedir_names = NULL, *curdir_names = NULL;
     char *ptr, *prefixptr = NULL, *pend;
     long len;
+
+#ifdef DOSISH_DRIVE_LETTER
+    VALUE rootdir = path;
+    RSTRING_GETMEM(path, ptr, len);
+    if (!NIL_P(basedir) && skipprefixroot(ptr, ptr + len, rb_enc_get(path)) == ptr) {
+        FilePathValue(basedir);
+        rootdir = basedir;
+    }
+    RSTRING_GETMEM(rootdir, ptr, len);
+    if (len >= 2 && has_drive_letter(ptr) && (len == 2 || !isdirsep(ptr[2]))) {
+        /* Expand a drive-relative path or basedir against the current
+         * directory of the drive, as File.absolute_path does */
+        if (!NIL_P(basedir)) basedir = ospath_for_expand(rb_get_path(basedir));
+        path = rb_file_absolute_path(ospath_for_expand(path), basedir);
+        basedir = Qnil;
+    }
+#endif
 
     unresolved_path = rb_str_dup_frozen(path);
 

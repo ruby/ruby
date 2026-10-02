@@ -744,6 +744,133 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_equal("Hello World", buffer.get_string(8, 11))
   end
 
+  def test_advance_borrowed_native_buffer
+    buffer = Bug::IOBuffer.new_borrowed
+
+    assert_predicate buffer, :external?
+    assert_equal "test", buffer.get_string
+    assert_same buffer, buffer.advance(2)
+    assert_equal 2, buffer.size
+    assert_equal "st", buffer.get_string
+    assert_equal "test", Bug::IOBuffer.new_borrowed.get_string
+  ensure
+    buffer&.free unless buffer&.null?
+  end
+
+  def test_advance_string_backed_buffer
+    buffer = IO::Buffer.for("test")
+    source = buffer.source
+
+    assert_same buffer, buffer.advance(1)
+    assert_equal 3, buffer.size
+    assert_equal "est", buffer.get_string
+    assert_same source, buffer.source
+    assert_equal "test", source
+  ensure
+    buffer&.free unless buffer&.null?
+  end
+
+  def test_advance_nested_slice
+    buffer = IO::Buffer.for("abcdef").dup
+    parent = buffer.slice(1, 5)
+    slice = parent.slice(1, 4)
+
+    assert_same slice, slice.advance(2)
+    assert_equal 2, slice.size
+    assert_equal "ef", slice.get_string
+    assert_equal "bcdef", parent.get_string
+    assert_equal "abcdef", buffer.get_string
+  ensure
+    buffer&.free unless buffer&.null?
+  end
+
+  def test_advance_full_size
+    buffer = IO::Buffer.for("test")
+
+    buffer.advance(buffer.size)
+
+    assert_predicate buffer, :valid?
+    assert_predicate buffer, :empty?
+    assert_equal "", buffer.get_string
+  ensure
+    buffer&.free unless buffer&.null?
+  end
+
+  def test_advance_locked_slice
+    buffer = IO::Buffer.new(4)
+    buffer.set_string("test")
+    slice = buffer.slice
+
+    buffer.locked do
+      assert_predicate slice, :locked?
+      assert_same slice, slice.advance(1)
+      assert_predicate slice, :locked?
+      assert_equal "est", slice.get_string
+    end
+  ensure
+    buffer&.free unless buffer&.null?
+  end
+
+  def test_advance_readonly_buffer
+    buffer = IO::Buffer.for("test")
+
+    assert_predicate buffer, :readonly?
+    buffer.advance(2)
+    assert_equal "st", buffer.get_string
+  ensure
+    buffer&.free unless buffer&.null?
+  end
+
+  def test_advance_bounds
+    buffer = IO::Buffer.for("test")
+
+    assert_raise(ArgumentError, "Amount can't be negative!") { buffer.advance(-1) }
+    assert_raise(ArgumentError, "Advance amount exceeds buffer size!") { buffer.advance(5) }
+    assert_equal "test", buffer.get_string
+  ensure
+    buffer&.free unless buffer&.null?
+  end
+
+  def test_advance_invalidated_slice
+    buffer = IO::Buffer.new(8)
+    slice = buffer.slice(2, 4)
+    buffer.resize(1)
+
+    assert_raise(IO::Buffer::InvalidatedError) { slice.advance(1) }
+    assert_equal 4, slice.size
+  ensure
+    buffer&.free unless buffer&.null?
+  end
+
+  def test_advance_rejects_owning_buffer
+    buffer = IO::Buffer.new(4)
+
+    assert_raise(IO::Buffer::AccessError) { buffer.advance(1) }
+    assert_equal 4, buffer.size
+  ensure
+    buffer&.free unless buffer&.null?
+  end
+
+  def test_advance_rejects_frozen_buffer
+    buffer = IO::Buffer.for("test").freeze
+
+    assert_raise(FrozenError) { buffer.advance(1) }
+    assert_equal "test", buffer.get_string
+  end
+
+  def test_advance_progress_survives_exception
+    buffer = IO::Buffer.for("test")
+
+    assert_raise(RuntimeError, "stop") do
+      buffer.advance(2)
+      raise "stop"
+    end
+
+    assert_equal "st", buffer.get_string
+  ensure
+    buffer&.free unless buffer&.null?
+  end
+
   def test_slice_arguments
     buffer = IO::Buffer.for("Hello World")
 
@@ -1486,6 +1613,22 @@ class TestIOBuffer < Test::Unit::TestCase
     output&.close
   end
 
+  def test_read_with_length_over_4gb
+    omit "32-bit size_t" if RbConfig::SIZEOF["size_t"] < 8
+    length = 2**32
+    begin
+      buffer = IO::Buffer.new(length)
+    rescue SystemCallError
+      omit "cannot allocate #{length} bytes"
+    end
+    hello_world_tempfile do |io|
+      assert_equal 11, buffer.read(io, 0, length)
+      assert_equal 11, buffer.pread(io, 0, 0, length)
+    end
+  ensure
+    buffer&.free
+  end if /mswin|mingw/ =~ RUBY_PLATFORM
+
   def test_read_with_offset
     hello_world_tempfile do |io|
       buffer = IO::Buffer.new(128)
@@ -1528,6 +1671,22 @@ class TestIOBuffer < Test::Unit::TestCase
   ensure
     io.close!
   end
+
+  def test_write_with_length_over_4gb
+    omit "32-bit size_t" if RbConfig::SIZEOF["size_t"] < 8
+    length = 2**32 + 1
+    begin
+      buffer = IO::Buffer.new(length)
+    rescue SystemCallError
+      omit "cannot allocate #{length} bytes"
+    end
+    File.open(File::NULL, "wb") do |io|
+      assert_operator buffer.write(io, 0, length), :>, 1
+      assert_operator buffer.pwrite(io, 0, 0, length), :>, 1
+    end
+  ensure
+    buffer&.free
+  end if /mswin|mingw/ =~ RUBY_PLATFORM
 
   def test_zero_length_io
     io = Tempfile.new

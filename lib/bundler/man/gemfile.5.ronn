@@ -359,6 +359,20 @@ Git repositories support a number of additional options.
     Specify `submodules: true` to cause bundler to expand any
     submodules included in the git repository
 
+  * `sparse_checkout`:
+    Specify a directory, or an array of directories, to include when
+    checking out a git repository. Uses git's sparse-checkout feature
+    (requires git 2.25+) to only check out the specified directories,
+    reducing disk usage for large repos. Unless `glob` is given, the
+    `.gemspec` is looked up within those directories.
+
+      gem "foo", git: "https://github.com/org/monorepo.git",
+                 sparse_checkout: "packages/foo"
+
+    Files at the top level of the repository are always checked out.
+    On git versions below 2.25, the entire repository will be checked
+    out with a warning.
+
 If a git repository contains multiple `.gemspecs`, each `.gemspec`
 represents a gem located at the same place in the file system as
 the `.gemspec`.

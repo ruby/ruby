@@ -1581,7 +1581,7 @@ rb_str_tmp_frozen_acquire(VALUE orig)
 }
 
 VALUE
-rb_str_tmp_frozen_no_embed_acquire(VALUE orig)
+rb_str_no_gvl_safe_acquire(VALUE orig)
 {
     if (OBJ_FROZEN_RAW(orig) && !STR_EMBED_P(orig)) return orig;
     if (STR_SHARED_P(orig) && !STR_EMBED_P(RSTRING(orig)->as.heap.aux.shared)) return rb_str_tmp_frozen_acquire(orig);
@@ -1621,6 +1621,12 @@ rb_str_tmp_frozen_no_embed_acquire(VALUE orig)
     RSTRING(str)->as.heap.aux.capa = capa + (TERM_LEN(orig) - TERM_LEN(str));
 
     return str;
+}
+
+void
+rb_str_no_gvl_safe_release(VALUE orig, VALUE tmp)
+{
+    rb_str_tmp_frozen_release(orig, tmp);
 }
 
 void
@@ -1853,8 +1859,6 @@ str_shared_replace(VALUE str, VALUE str2)
     if (str_embed_capa(str) >= RSTRING_LEN(str2) + termlen) {
         STR_SET_EMBED(str);
         memcpy(RSTRING_PTR(str), RSTRING_PTR(str2), (size_t)RSTRING_LEN(str2) + termlen);
-        rb_enc_associate(str, enc);
-        ENC_CODERANGE_SET(str, cr);
     }
     else {
         if (STR_EMBED_P(str2)) {
@@ -1886,9 +1890,12 @@ str_shared_replace(VALUE str, VALUE str2)
         STR_SET_EMBED(str2);
         RSTRING_PTR(str2)[0] = 0;
         STR_SET_LEN(str2, 0);
-        rb_enc_associate(str, enc);
-        ENC_CODERANGE_SET(str, cr);
     }
+
+    // We used str2's termlen above so we set enc raw
+    // to avoid adjusting it based on str1's old enc.
+    rb_enc_raw_set(str, enc);
+    ENC_CODERANGE_SET(str, cr);
 }
 
 VALUE
@@ -4086,8 +4093,6 @@ rb_str_append_as_bytes(int argc, VALUE *argv, VALUE str)
         break;
     }
 
-    RB_GC_GUARD(t0);
-
   clear_cr:
     // If no fast path was hit, we clear the coderange.
     // append_as_bytes is predominantly meant to be used in
@@ -4097,6 +4102,7 @@ rb_str_append_as_bytes(int argc, VALUE *argv, VALUE str)
     // situations.
     ENC_CODERANGE_CLEAR(str);
   keep_cr:
+    ALLOCV_END(t0);
     return str;
 }
 
@@ -9942,6 +9948,8 @@ tr_trans_pairs(VALUE str, VALUE pairs_val)
             s += clen;
         }
     }
+
+    ALLOCV_END(pairs_handle);
 
     if (!modify) {
         return Qnil;

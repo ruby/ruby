@@ -138,7 +138,7 @@ module JSON
     # Is +nil+ when raised by JSON::ResumableParser.
     attr_reader :line
 
-    # Column number where the parser encountered an error.
+    # One-based column number where the parser encountered an error, counted in Unicode codepoints.
     # Is +nil+ when raised by JSON::ResumableParser.
     attr_reader :column
 
@@ -224,7 +224,7 @@ module JSON
   Fragment = Struct.new(:json) do
     def initialize(json)
       unless string = String.try_convert(json)
-        raise TypeError, " no implicit conversion of #{json.class} into String"
+        raise TypeError, "no implicit conversion of #{json.class} into String"
       end
 
       super(string)

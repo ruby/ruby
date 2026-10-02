@@ -129,6 +129,7 @@ class JSONCommonInterfaceTest < Test::Unit::TestCase
     tempfile.write @json
     tempfile.rewind
     assert_equal @hash, JSON.load(tempfile)
+    tempfile.close!
 
     stringio = StringIO.new(@json)
     stringio.rewind

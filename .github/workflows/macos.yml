@@ -47,7 +47,7 @@ jobs:
           - test_task: check
             os: macos-15-intel
           - test_task: check
-            os: macos-14
+            os: xcode-27
       fail-fast: false
 
     env:

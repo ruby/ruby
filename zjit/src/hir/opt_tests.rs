@@ -12788,6 +12788,7 @@ mod hir_opt_tests {
 
     #[test]
     fn test_specialize_struct_new_generates_object_alloc_class() {
+        // TODO(max): Figure out why a Struct with no members isn't embedded
         eval(r#"
             C = Struct.new
             def test = C.new
@@ -12814,6 +12815,535 @@ mod hir_opt_tests {
           v47:BasicObject = CCallVariadic v42, :Struct#initialize@0x1068
           CheckInterrupts
           Return v42
+        ");
+    }
+
+    #[test]
+    fn test_inline_struct_initialize_all_members_given() {
+        eval(r#"
+            C = Struct.new(:a, :b)
+            def test = C.new(1, 2)
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:NilClass = Const Value(nil)
+          PatchPoint StableConstantNames(0x1000, C)
+          v13:ClassSubclass[C@0x1008] = Const Value(VALUE(0x1008))
+          v15:Fixnum[1] = Const Value(1)
+          v17:Fixnum[2] = Const Value(2)
+          PatchPoint MethodRedefined(C@0x1008, new@0x1009, cme:0x1010)
+          v48:ObjectSubclass[class_exact:C] = ObjectAllocClass C:VALUE(0x1008)
+          PatchPoint NoSingletonClass(C@0x1008)
+          PatchPoint MethodRedefined(C@0x1008, initialize@0x1038, cme:0x1040)
+          v53:CUInt64 = LoadField v48, :RBASIC_FLAGS@0x1068
+          v54:CUInt64 = GuardNoBitsSet v53, RUBY_FL_FREEZE=CUInt64(2048)
+          StoreField v48, :a@0x1069, v15
+          StoreField v48, :b@0x106a, v17
+          CheckInterrupts
+          Return v48
+        ");
+    }
+
+    #[test]
+    fn test_inline_struct_initialize_nil_fills_missing_tail() {
+        eval(r#"
+            C = Struct.new(:a, :b, :c)
+            def test = C.new(1)
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:NilClass = Const Value(nil)
+          PatchPoint StableConstantNames(0x1000, C)
+          v13:ClassSubclass[C@0x1008] = Const Value(VALUE(0x1008))
+          v15:Fixnum[1] = Const Value(1)
+          PatchPoint MethodRedefined(C@0x1008, new@0x1009, cme:0x1010)
+          v45:ObjectSubclass[class_exact:C] = ObjectAllocClass C:VALUE(0x1008)
+          PatchPoint NoSingletonClass(C@0x1008)
+          PatchPoint MethodRedefined(C@0x1008, initialize@0x1038, cme:0x1040)
+          v50:CUInt64 = LoadField v45, :RBASIC_FLAGS@0x1068
+          v51:CUInt64 = GuardNoBitsSet v50, RUBY_FL_FREEZE=CUInt64(2048)
+          v52:NilClass = Const Value(nil)
+          StoreField v45, :a@0x1069, v15
+          StoreField v45, :b@0x106a, v52
+          StoreField v45, :c@0x106b, v52
+          CheckInterrupts
+          Return v45
+        ");
+    }
+
+    #[test]
+    fn test_inline_struct_initialize_no_members_given() {
+        eval(r#"
+            C = Struct.new(:a, :b)
+            def test = C.new
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:NilClass = Const Value(nil)
+          PatchPoint StableConstantNames(0x1000, C)
+          v13:ClassSubclass[C@0x1008] = Const Value(VALUE(0x1008))
+          PatchPoint MethodRedefined(C@0x1008, new@0x1009, cme:0x1010)
+          v42:ObjectSubclass[class_exact:C] = ObjectAllocClass C:VALUE(0x1008)
+          PatchPoint NoSingletonClass(C@0x1008)
+          PatchPoint MethodRedefined(C@0x1008, initialize@0x1038, cme:0x1040)
+          v47:CUInt64 = LoadField v42, :RBASIC_FLAGS@0x1068
+          v48:CUInt64 = GuardNoBitsSet v47, RUBY_FL_FREEZE=CUInt64(2048)
+          v49:NilClass = Const Value(nil)
+          StoreField v42, :a@0x1069, v49
+          StoreField v42, :b@0x106a, v49
+          CheckInterrupts
+          Return v42
+        ");
+    }
+
+    #[test]
+    fn test_inline_struct_initialize_then_reader() {
+        eval(r#"
+            C = Struct.new(:a, :b)
+            def test = C.new(1, 2).b
+            test
+            test
+        "#);
+        // The stores and the reader's load agree on member name and offset, but they are still in
+        // separate blocks (opt_new's fast and slow paths) when optimize_load_store runs, so the
+        // load is not forwarded yet.
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:NilClass = Const Value(nil)
+          PatchPoint StableConstantNames(0x1000, C)
+          v13:ClassSubclass[C@0x1008] = Const Value(VALUE(0x1008))
+          v15:Fixnum[1] = Const Value(1)
+          v17:Fixnum[2] = Const Value(2)
+          PatchPoint MethodRedefined(C@0x1008, new@0x1009, cme:0x1010)
+          v50:ObjectSubclass[class_exact:C] = ObjectAllocClass C:VALUE(0x1008)
+          PatchPoint NoSingletonClass(C@0x1008)
+          PatchPoint MethodRedefined(C@0x1008, initialize@0x1038, cme:0x1040)
+          v55:CUInt64 = LoadField v50, :RBASIC_FLAGS@0x1068
+          v56:CUInt64 = GuardNoBitsSet v55, RUBY_FL_FREEZE=CUInt64(2048)
+          StoreField v50, :a@0x1069, v15
+          StoreField v50, :b@0x106a, v17
+          PatchPoint MethodRedefined(C@0x1008, b@0x106b, cme:0x1070)
+          v68:BasicObject = LoadField v50, :b@0x106a
+          CheckInterrupts
+          Return v68
+        ");
+    }
+
+    #[test]
+    fn test_inline_struct_initialize_too_many_members_given() {
+        eval(r#"
+            C = Struct.new(:a, :b)
+            def test = C.new(1, 2, 3)
+            begin; test; rescue ArgumentError; end
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:NilClass = Const Value(nil)
+          PatchPoint StableConstantNames(0x1000, C)
+          v13:ClassSubclass[C@0x1008] = Const Value(VALUE(0x1008))
+          v15:Fixnum[1] = Const Value(1)
+          v17:Fixnum[2] = Const Value(2)
+          v19:Fixnum[3] = Const Value(3)
+          PatchPoint MethodRedefined(C@0x1008, new@0x1009, cme:0x1010)
+          v51:ObjectSubclass[class_exact:C] = ObjectAllocClass C:VALUE(0x1008)
+          PatchPoint NoSingletonClass(C@0x1008)
+          PatchPoint MethodRedefined(C@0x1008, initialize@0x1038, cme:0x1040)
+          v56:BasicObject = CCallVariadic v51, :Struct#initialize@0x1068, v15, v17, v19
+          CheckInterrupts
+          Return v51
+        ");
+    }
+
+    #[test]
+    fn test_inline_struct_initialize_keyword_init_false() {
+        eval(r#"
+            C = Struct.new(:a, :b, keyword_init: false)
+            def test = C.new(1)
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:NilClass = Const Value(nil)
+          PatchPoint StableConstantNames(0x1000, C)
+          v13:ClassSubclass[C@0x1008] = Const Value(VALUE(0x1008))
+          v15:Fixnum[1] = Const Value(1)
+          PatchPoint MethodRedefined(C@0x1008, new@0x1009, cme:0x1010)
+          v45:ObjectSubclass[class_exact:C] = ObjectAllocClass C:VALUE(0x1008)
+          PatchPoint NoSingletonClass(C@0x1008)
+          PatchPoint MethodRedefined(C@0x1008, initialize@0x1038, cme:0x1040)
+          v50:CUInt64 = LoadField v45, :RBASIC_FLAGS@0x1068
+          v51:CUInt64 = GuardNoBitsSet v50, RUBY_FL_FREEZE=CUInt64(2048)
+          v52:NilClass = Const Value(nil)
+          StoreField v45, :a@0x1069, v15
+          StoreField v45, :b@0x106a, v52
+          CheckInterrupts
+          Return v45
+        ");
+    }
+
+    #[test]
+    fn test_inline_struct_initialize_keyword_init_nil() {
+        eval(r#"
+            C = Struct.new(:a, :b, keyword_init: nil)
+            def test = C.new(1)
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:NilClass = Const Value(nil)
+          PatchPoint StableConstantNames(0x1000, C)
+          v13:ClassSubclass[C@0x1008] = Const Value(VALUE(0x1008))
+          v15:Fixnum[1] = Const Value(1)
+          PatchPoint MethodRedefined(C@0x1008, new@0x1009, cme:0x1010)
+          v45:ObjectSubclass[class_exact:C] = ObjectAllocClass C:VALUE(0x1008)
+          PatchPoint NoSingletonClass(C@0x1008)
+          PatchPoint MethodRedefined(C@0x1008, initialize@0x1038, cme:0x1040)
+          v50:CUInt64 = LoadField v45, :RBASIC_FLAGS@0x1068
+          v51:CUInt64 = GuardNoBitsSet v50, RUBY_FL_FREEZE=CUInt64(2048)
+          v52:NilClass = Const Value(nil)
+          StoreField v45, :a@0x1069, v15
+          StoreField v45, :b@0x106a, v52
+          CheckInterrupts
+          Return v45
+        ");
+    }
+
+    #[test]
+    fn test_inline_struct_initialize_keyword_init_nil_with_positional_hash() {
+        // A single Hash argument is the only case where `keyword_init: nil` differs from
+        // `keyword_init: false`: it initializes from the hash if the caller passed keywords. Callers
+        // that pass keywords never reach an inline hook, so this stores the hash positionally.
+        eval(r#"
+            C = Struct.new(:a, :b, keyword_init: nil)
+            def test = C.new({x: 1})
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:NilClass = Const Value(nil)
+          PatchPoint StableConstantNames(0x1000, C)
+          v13:ClassSubclass[C@0x1008] = Const Value(VALUE(0x1008))
+          v15:HashExact[VALUE(0x1010)] = Const Value(VALUE(0x1010))
+          v16:HashExact = HashDup v15
+          PatchPoint MethodRedefined(C@0x1008, new@0x1018, cme:0x1020)
+          v46:ObjectSubclass[class_exact:C] = ObjectAllocClass C:VALUE(0x1008)
+          PatchPoint NoSingletonClass(C@0x1008)
+          PatchPoint MethodRedefined(C@0x1008, initialize@0x1048, cme:0x1050)
+          v51:CUInt64 = LoadField v46, :RBASIC_FLAGS@0x1078
+          v52:CUInt64 = GuardNoBitsSet v51, RUBY_FL_FREEZE=CUInt64(2048)
+          v53:NilClass = Const Value(nil)
+          StoreField v46, :a@0x1079, v16
+          WriteBarrier v46, v16
+          StoreField v46, :b@0x107a, v53
+          CheckInterrupts
+          Return v46
+        ");
+    }
+
+    #[test]
+    fn test_inline_struct_initialize_positional_hash() {
+        eval(r#"
+            C = Struct.new(:a, :b)
+            def test = C.new({x: 1})
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:NilClass = Const Value(nil)
+          PatchPoint StableConstantNames(0x1000, C)
+          v13:ClassSubclass[C@0x1008] = Const Value(VALUE(0x1008))
+          v15:HashExact[VALUE(0x1010)] = Const Value(VALUE(0x1010))
+          v16:HashExact = HashDup v15
+          PatchPoint MethodRedefined(C@0x1008, new@0x1018, cme:0x1020)
+          v46:ObjectSubclass[class_exact:C] = ObjectAllocClass C:VALUE(0x1008)
+          PatchPoint NoSingletonClass(C@0x1008)
+          PatchPoint MethodRedefined(C@0x1008, initialize@0x1048, cme:0x1050)
+          v51:CUInt64 = LoadField v46, :RBASIC_FLAGS@0x1078
+          v52:CUInt64 = GuardNoBitsSet v51, RUBY_FL_FREEZE=CUInt64(2048)
+          v53:NilClass = Const Value(nil)
+          StoreField v46, :a@0x1079, v16
+          WriteBarrier v46, v16
+          StoreField v46, :b@0x107a, v53
+          CheckInterrupts
+          Return v46
+        ");
+    }
+
+    #[test]
+    fn test_inline_struct_initialize_keyword_init_true_without_args() {
+        eval(r#"
+            C = Struct.new(:a, :b, keyword_init: true)
+            def test = C.new
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:NilClass = Const Value(nil)
+          PatchPoint StableConstantNames(0x1000, C)
+          v13:ClassSubclass[C@0x1008] = Const Value(VALUE(0x1008))
+          PatchPoint MethodRedefined(C@0x1008, new@0x1009, cme:0x1010)
+          v42:ObjectSubclass[class_exact:C] = ObjectAllocClass C:VALUE(0x1008)
+          PatchPoint NoSingletonClass(C@0x1008)
+          PatchPoint MethodRedefined(C@0x1008, initialize@0x1038, cme:0x1040)
+          v47:CUInt64 = LoadField v42, :RBASIC_FLAGS@0x1068
+          v48:CUInt64 = GuardNoBitsSet v47, RUBY_FL_FREEZE=CUInt64(2048)
+          v49:NilClass = Const Value(nil)
+          StoreField v42, :a@0x1069, v49
+          StoreField v42, :b@0x106a, v49
+          CheckInterrupts
+          Return v42
+        ");
+    }
+
+    #[test]
+    fn test_inline_struct_initialize_keyword_init_true_with_positional_hash() {
+        eval(r#"
+            C = Struct.new(:a, :b, keyword_init: true)
+            def test = C.new({a: 1})
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:NilClass = Const Value(nil)
+          PatchPoint StableConstantNames(0x1000, C)
+          v13:ClassSubclass[C@0x1008] = Const Value(VALUE(0x1008))
+          v15:HashExact[VALUE(0x1010)] = Const Value(VALUE(0x1010))
+          v16:HashExact = HashDup v15
+          PatchPoint MethodRedefined(C@0x1008, new@0x1018, cme:0x1020)
+          v46:ObjectSubclass[class_exact:C] = ObjectAllocClass C:VALUE(0x1008)
+          PatchPoint NoSingletonClass(C@0x1008)
+          PatchPoint MethodRedefined(C@0x1008, initialize@0x1048, cme:0x1050)
+          v51:BasicObject = CCallVariadic v46, :Struct#initialize@0x1078, v16
+          CheckInterrupts
+          Return v46
+        ");
+    }
+
+    #[test]
+    fn test_inline_struct_initialize_with_keywords() {
+        eval(r#"
+            C = Struct.new(:a, :b)
+            def test = C.new(a: 1)
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:NilClass = Const Value(nil)
+          PatchPoint StableConstantNames(0x1000, C)
+          v13:ClassSubclass[C@0x1008] = Const Value(VALUE(0x1008))
+          v15:Fixnum[1] = Const Value(1)
+          PatchPoint MethodRedefined(C@0x1008, new@0x1009, cme:0x1010)
+          v45:ObjectSubclass[class_exact:C] = ObjectAllocClass C:VALUE(0x1008)
+          v21:BasicObject = Send v45, :initialize, v15 # SendFallbackReason: Complex argument passing
+          CheckInterrupts
+          Return v45
+        ");
+    }
+
+    #[test]
+    fn test_inline_struct_initialize_too_many_members_emits_ccall() {
+        eval(r#"
+            C = Struct.new(*(0..257).map {|i| :"a#{i}"})
+            def test = C.new("x")
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:NilClass = Const Value(nil)
+          PatchPoint StableConstantNames(0x1000, C)
+          v13:ClassSubclass[C@0x1008] = Const Value(VALUE(0x1008))
+          v15:StringExact[VALUE(0x1010)] = Const Value(VALUE(0x1010))
+          v16:StringExact = StringCopy v15
+          PatchPoint MethodRedefined(C@0x1008, new@0x1018, cme:0x1020)
+          v46:ObjectSubclass[class_exact:C] = ObjectAllocClass C:VALUE(0x1008)
+          PatchPoint NoSingletonClass(C@0x1008)
+          PatchPoint MethodRedefined(C@0x1008, initialize@0x1048, cme:0x1050)
+          v51:BasicObject = CCallVariadic v46, :Struct#initialize@0x1078, v16
+          CheckInterrupts
+          Return v46
+        ");
+    }
+
+    #[test]
+    fn test_inline_struct_initialize_heap_emits_ccall() {
+        eval(r#"
+            C = Struct.new(*(0..1000).map {|i| :"a#{i}"})
+            def test = C.new("x")
+            test
+        "#);
+        // 1001 members is too many to spell out in a snapshot, so check the shape instead.
+        // So few structs are extended that we're just not going to optimize that case (for now).
+        let hir = hir_string("test");
+        assert!(hir.contains("CCallVariadic"), "{hir}");
+        assert!(!hir.contains(":as_heap@"), "{hir}");
+        assert!(!hir.contains("StoreField"), "{hir}");
+        assert!(!hir.contains("WriteBarrier"), "{hir}");
+    }
+
+    #[test]
+    fn test_inline_struct_initialize_from_super() {
+        eval(r#"
+            C = Struct.new(:a, :b)
+            class D < C
+              def initialize(a) = super(a, 2)
+            end
+            def test = D.new(1)
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:6:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:NilClass = Const Value(nil)
+          PatchPoint StableConstantNames(0x1000, D)
+          v13:ClassSubclass[D@0x1008] = Const Value(VALUE(0x1008))
+          v15:Fixnum[1] = Const Value(1)
+          PatchPoint MethodRedefined(D@0x1008, new@0x1009, cme:0x1010)
+          v45:ObjectSubclass[class_exact:D] = ObjectAllocClass D:VALUE(0x1008)
+          PatchPoint NoSingletonClass(D@0x1008)
+          PatchPoint MethodRedefined(D@0x1008, initialize@0x1038, cme:0x1040)
+          PushInlineFrame :initialize, v45 (0x1068), num_args=1
+          v61:Fixnum[2] = Const Value(2)
+          PatchPoint MethodRedefined(Struct@0x1088, initialize@0x1038, cme:0x1090)
+          v73:CPtr = GetEP 0
+          v74:RubyValue = LoadField v73, :VM_ENV_DATA_INDEX_ME_CREF@0x10b8
+          v75:CallableMethodEntry[VALUE(0x1040)] = GuardBitEquals v74, Value(VALUE(0x1040))
+          v76:RubyValue = LoadField v73, :VM_ENV_DATA_INDEX_SPECVAL@0x10b9
+          v77:FalseClass = GuardBitEquals v76, Value(false)
+          v78:CUInt64 = LoadField v45, :RBASIC_FLAGS@0x10ba
+          v79:CUInt64 = GuardNoBitsSet v78, RUBY_FL_FREEZE=CUInt64(2048)
+          StoreField v45, :a@0x10bb, v15
+          StoreField v45, :b@0x10bc, v61
+          PopInlineFrame
+          CheckInterrupts
+          Return v45
         ");
     }
 
@@ -19852,8 +20382,12 @@ mod hir_opt_tests {
        ");
     }
 
+    // TODO: The test_todo_fold_load_field_* tests below used to check that LoadField on a frozen
+    // constant object is folded to a Const. The fold was removed because a constant of another shape
+    // may flow into the guarded LoadField (see test_no_fold_load_field_other_shape). Bring the fold
+    // back once it can check that the constant actually stores the field at that offset.
     #[test]
-    fn test_fold_load_field_frozen_constant_object() {
+    fn test_todo_fold_load_field_frozen_constant_object() {
         // Basic case: frozen constant object with attr_accessor
         eval("
             class TestFrozen
@@ -19884,14 +20418,14 @@ mod hir_opt_tests {
           v11:ObjectSubclass[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           PatchPoint NoSingletonClass(TestFrozen@0x1010)
           PatchPoint MethodRedefined(TestFrozen@0x1010, a@0x1018, cme:0x1020)
-          v27:Fixnum[1] = Const Value(1)
+          v25:BasicObject = LoadField v11, :@a@0x1048
           CheckInterrupts
-          Return v27
+          Return v25
         ");
     }
 
     #[test]
-    fn test_fold_load_field_frozen_multiple_ivars() {
+    fn test_todo_fold_load_field_frozen_multiple_ivars() {
         // Frozen object with multiple instance variables
         eval("
             class TestMultiIvars
@@ -19924,14 +20458,14 @@ mod hir_opt_tests {
           v11:ObjectSubclass[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           PatchPoint NoSingletonClass(TestMultiIvars@0x1010)
           PatchPoint MethodRedefined(TestMultiIvars@0x1010, b@0x1018, cme:0x1020)
-          v27:Fixnum[20] = Const Value(20)
+          v25:BasicObject = LoadField v11, :@b@0x1048
           CheckInterrupts
-          Return v27
+          Return v25
         ");
     }
 
     #[test]
-    fn test_fold_load_field_frozen_string_value() {
+    fn test_todo_fold_load_field_frozen_string_value() {
         // Frozen object with a string ivar
         eval(r#"
             class TestFrozenStr
@@ -19963,14 +20497,14 @@ mod hir_opt_tests {
           v12:ObjectSubclass[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           PatchPoint NoSingletonClass(TestFrozenStr@0x1010)
           PatchPoint MethodRedefined(TestFrozenStr@0x1010, name@0x1018, cme:0x1020)
-          v28:StringExact[VALUE(0x1048)] = Const Value(VALUE(0x1048))
+          v26:BasicObject = LoadField v12, :@name@0x1048
           CheckInterrupts
-          Return v28
+          Return v26
         ");
     }
 
     #[test]
-    fn test_fold_load_field_frozen_nil_value() {
+    fn test_todo_fold_load_field_frozen_nil_value() {
         // Frozen object with nil ivar
         eval("
             class TestFrozenNil
@@ -20001,9 +20535,9 @@ mod hir_opt_tests {
           v11:ObjectSubclass[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           PatchPoint NoSingletonClass(TestFrozenNil@0x1010)
           PatchPoint MethodRedefined(TestFrozenNil@0x1010, value@0x1018, cme:0x1020)
-          v27:NilClass = Const Value(nil)
+          v25:BasicObject = LoadField v11, :@value@0x1048
           CheckInterrupts
-          Return v27
+          Return v25
         ");
     }
 
@@ -20049,7 +20583,7 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_fold_load_field_frozen_with_attr_reader() {
+    fn test_todo_fold_load_field_frozen_with_attr_reader() {
         // Using attr_reader instead of attr_accessor
         eval("
             class TestAttrReader
@@ -20080,14 +20614,14 @@ mod hir_opt_tests {
           v11:ObjectSubclass[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           PatchPoint NoSingletonClass(TestAttrReader@0x1010)
           PatchPoint MethodRedefined(TestAttrReader@0x1010, value@0x1018, cme:0x1020)
-          v27:Fixnum[42] = Const Value(42)
+          v25:BasicObject = LoadField v11, :@value@0x1048
           CheckInterrupts
-          Return v27
+          Return v25
         ");
     }
 
     #[test]
-    fn test_fold_load_field_frozen_symbol_value() {
+    fn test_todo_fold_load_field_frozen_symbol_value() {
         // Frozen object with a symbol ivar
         eval("
             class TestFrozenSym
@@ -20118,14 +20652,14 @@ mod hir_opt_tests {
           v11:ObjectSubclass[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           PatchPoint NoSingletonClass(TestFrozenSym@0x1010)
           PatchPoint MethodRedefined(TestFrozenSym@0x1010, sym@0x1018, cme:0x1020)
-          v27:StaticSymbol[:hello] = Const Value(VALUE(0x1048))
+          v25:BasicObject = LoadField v11, :@sym@0x1048
           CheckInterrupts
-          Return v27
+          Return v25
         ");
     }
 
     #[test]
-    fn test_fold_load_field_frozen_true_false() {
+    fn test_todo_fold_load_field_frozen_true_false() {
         // Frozen object with boolean ivars
         eval("
             class TestFrozenBool
@@ -20156,9 +20690,9 @@ mod hir_opt_tests {
           v11:ObjectSubclass[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           PatchPoint NoSingletonClass(TestFrozenBool@0x1010)
           PatchPoint MethodRedefined(TestFrozenBool@0x1010, flag@0x1018, cme:0x1020)
-          v27:TrueClass = Const Value(true)
+          v25:BasicObject = LoadField v11, :@flag@0x1048
           CheckInterrupts
-          Return v27
+          Return v25
         ");
     }
 
@@ -20204,7 +20738,7 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_fold_load_field_frozen_nested_access() {
+    fn test_todo_fold_load_field_frozen_nested_access() {
         // Accessing multiple fields from frozen constant in sequence
         eval("
             class TestNestedAccess
@@ -20236,15 +20770,74 @@ mod hir_opt_tests {
           v11:ObjectSubclass[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           PatchPoint NoSingletonClass(TestNestedAccess@0x1010)
           PatchPoint MethodRedefined(TestNestedAccess@0x1010, x@0x1018, cme:0x1020)
-          v47:Fixnum[100] = Const Value(100)
-          PatchPoint StableConstantNames(0x1048, NESTED_FROZEN)
+          v33:BasicObject = LoadField v11, :@x@0x1048
+          PatchPoint StableConstantNames(0x1050, NESTED_FROZEN)
           v16:ObjectSubclass[VALUE(0x1008)] = Const Value(VALUE(0x1008))
-          PatchPoint MethodRedefined(TestNestedAccess@0x1010, y@0x1050, cme:0x1058)
-          v49:Fixnum[200] = Const Value(200)
-          PatchPoint MethodRedefined(Integer@0x1080, +@0x1088, cme:0x1090)
-          v50:Fixnum[300] = Const Value(300)
+          PatchPoint MethodRedefined(TestNestedAccess@0x1010, y@0x1058, cme:0x1060)
+          v40:BasicObject = LoadField v16, :@y@0x1088
+          PatchPoint MethodRedefined(Integer@0x1090, +@0x1098, cme:0x10a0)
+          v43:Fixnum = GuardType v33, Fixnum recompile
+          v44:Fixnum = GuardType v40, Fixnum
+          v45:Fixnum = FixnumAdd v43, v44
           CheckInterrupts
-          Return v50
+          Return v45
+        ");
+    }
+
+    #[test]
+    fn test_no_fold_load_field_other_shape() {
+        // Profile an ivar read with an object with embedded ivars, and inline it with a constant with extended ivars.
+        // LoadField for embedded ivars must not be folded by reading the constant with extended ivars at that offset.
+        eval(r#"
+            class TestOtherShape
+              def initialize(n)
+                n.times { |i| instance_variable_set(:"@a#{i}", i) }
+                @v = :v
+                freeze
+              end
+
+              def v = @v
+            end
+
+            EMBEDDED_OBJ = TestOtherShape.new(0)
+            EXTENDED_OBJ = TestOtherShape.new(20)
+            EMBEDDED_OBJ.v
+
+            def test = EXTENDED_OBJ.v
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:16:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint StableConstantNames(0x1000, EXTENDED_OBJ)
+          v11:ObjectSubclass[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          PatchPoint NoSingletonClass(TestOtherShape@0x1010)
+          PatchPoint MethodRedefined(TestOtherShape@0x1010, v@0x1018, cme:0x1020)
+          PushInlineFrame :v, v11 (0x1048), num_args=0
+          v48:CShape[0x1068] = Const CShape(0x1068)
+          v31:CShape[0x1068] = Const CShape(0x1068)
+          v32:CBool = IsBitEqual v48, v31
+          CondBranch v32, bb7(), bb8()
+        bb7():
+          v34:IMemo = LoadField v11, :fields_obj@0x1069
+          v35:BasicObject = LoadField v34, :@v@0x106a
+          Jump bb6(v35)
+        bb8():
+          v37 = GuardBitEquals v48, CShape(0x106b) recompile
+          v39:BasicObject = LoadField v11, :@v@0x1069
+          Jump bb6(v39)
+        bb6(v30:BasicObject):
+          PopInlineFrame
+          CheckInterrupts
+          Return v30
         ");
     }
 
