@@ -109,7 +109,7 @@ rsock_init_unixsock(VALUE self, VALUE path, int server)
     }
 
     if (server) {
-        fptr->pathv = rb_str_new_frozen(path);
+        RB_OBJ_WRITE(io, &fptr->pathv, rb_str_new_frozen(path));
     }
 
     return io;
@@ -156,7 +156,7 @@ unix_path(VALUE sock)
         if (getsockname(fptr->fd, (struct sockaddr*)&addr, &len) < 0)
             rsock_sys_fail_path("getsockname(2)", fptr->pathv);
         if (len0 < len) len = len0;
-        fptr->pathv = rb_obj_freeze(rsock_unixpath_str(&addr, len));
+        RB_OBJ_WRITE(sock, &fptr->pathv, rb_obj_freeze(rsock_unixpath_str(&addr, len)));
     }
     return rb_str_dup(fptr->pathv);
 }
