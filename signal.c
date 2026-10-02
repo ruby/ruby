@@ -664,30 +664,47 @@ ruby_nativethread_signal(int signum, sighandler_t handler)
 #endif
 #endif
 
-#if !defined(POSIX_SIGNAL) && !defined(SIG_GET)
+#if !defined(HAVE_SIGACTION) && !defined(SIG_GET)
 static rb_nativethread_lock_t sig_check_lock;
 #endif
+
+static sighandler_t
+ruby_signal_handler(int sig)
+{
+#ifdef HAVE_SIGACTION
+    struct sigaction action;
+    (void)VALGRIND_MAKE_MEM_DEFINED(&action, sizeof(action));
+    if (sigaction(sig, NULL, &action) < 0) return SIG_ERR;
+#ifdef SA_SIGINFO
+    if (action.sa_flags & SA_SIGINFO)
+        return (sighandler_t)action.sa_sigaction;
+#endif
+    return action.sa_handler;
+#elif defined SIG_GET
+    // https://learn.microsoft.com/en-us/cpp/c-runtime-library/signal-action-constants
+    // SIG_GET returns the current handler without changing it.
+    return signal(sig, SIG_GET);
+#else
+    sighandler_t handler;
+    int saved_errno;
+
+    rb_native_mutex_lock(&sig_check_lock);
+    handler = signal(sig, SIG_DFL);
+    if (handler != SIG_ERR && signal(sig, handler) == SIG_ERR) handler = SIG_ERR;
+    saved_errno = errno;
+    rb_native_mutex_unlock(&sig_check_lock);
+    errno = saved_errno;
+
+    return handler;
+#endif
+}
 
 static int
 signal_ignored(int sig)
 {
-    sighandler_t func;
-#ifdef POSIX_SIGNAL
-    struct sigaction old;
-    (void)VALGRIND_MAKE_MEM_DEFINED(&old, sizeof(old));
-    if (sigaction(sig, NULL, &old) < 0) return FALSE;
-    func = old.sa_handler;
-#elif defined SIG_GET
-    // https://learn.microsoft.com/en-us/cpp/c-runtime-library/signal-action-constants
-    // SIG_GET: Returns the current value of the signal.
-    func = signal(sig, SIG_GET);
-#else
-    sighandler_t old;
-    rb_native_mutex_lock(&sig_check_lock);
-    old = signal(sig, SIG_DFL);
-    signal(sig, old);
-    rb_native_mutex_unlock(&sig_check_lock);
-    func = old;
+    sighandler_t func = ruby_signal_handler(sig);
+#ifdef HAVE_SIGACTION
+    if (func == SIG_ERR) return FALSE;
 #endif
     if (func == SIG_IGN) return 1;
     return func == sighandler ? 0 : -1;
@@ -1321,6 +1338,27 @@ trap_signm(VALUE vsig)
 }
 
 static VALUE
+trap_handler_command(VALUE command, sighandler_t handler)
+{
+    switch (command) {
+      case 0:
+      case Qtrue:
+        if (handler == SIG_IGN) command = rb_str_new2("IGNORE");
+        else if (handler == SIG_DFL) command = rb_str_new2("SYSTEM_DEFAULT");
+        else if (handler == sighandler) command = rb_str_new2("DEFAULT");
+        else command = Qnil;
+        break;
+      case Qnil:
+        break;
+      case Qundef:
+        command = rb_str_new2("EXIT");
+        break;
+    }
+
+    return command;
+}
+
+static VALUE
 trap(int sig, sighandler_t func, VALUE command)
 {
     sighandler_t oldfunc;
@@ -1340,20 +1378,7 @@ trap(int sig, sighandler_t func, VALUE command)
         if (oldfunc == SIG_ERR) rb_sys_fail_str(rb_signo2signm(sig));
     }
     oldcmd = vm->trap_list.cmd[sig];
-    switch (oldcmd) {
-      case 0:
-      case Qtrue:
-        if (oldfunc == SIG_IGN) oldcmd = rb_str_new2("IGNORE");
-        else if (oldfunc == SIG_DFL) oldcmd = rb_str_new2("SYSTEM_DEFAULT");
-        else if (oldfunc == sighandler) oldcmd = rb_str_new2("DEFAULT");
-        else oldcmd = Qnil;
-        break;
-      case Qnil:
-        break;
-      case Qundef:
-        oldcmd = rb_str_new2("EXIT");
-        break;
-    }
+    oldcmd = trap_handler_command(oldcmd, oldfunc);
 
     ACCESS_ONCE(VALUE, vm->trap_list.cmd[sig]) = command;
 
@@ -1388,6 +1413,53 @@ reserved_signal_p(int signo)
 #endif
 
     return 0;
+}
+
+/*
+ * call-seq:
+ *   Signal[signal] -> obj
+ *
+ * Returns the current handler for the given signal.
+ *
+ * Argument +signal+ is a signal name (a string or symbol such
+ * as +SIGALRM+ or +SIGUSR1+) or an integer signal number. When +signal+
+ * is a string or symbol, the leading characters +SIG+ may be omitted.
+ *
+ * The returned object is represented the same way as the previous handler
+ * returned by Signal.trap.
+ *
+ * On platforms that support querying native signal handlers, signal handling
+ * is unchanged. Otherwise, the native handler is temporarily set to the
+ * system default and then restored. On such platforms, signals may be handled
+ * differently or lost during inspection, and concurrent native handler changes
+ * may be overwritten.
+ *
+ *     Signal.trap("HUP", "IGNORE")
+ *     Signal["HUP"] # => "IGNORE"
+ */
+static VALUE
+sig_aref(VALUE recv, VALUE signo)
+{
+    int sig = trap_signm(signo);
+    sighandler_t func;
+    VALUE command = GET_VM()->trap_list.cmd[sig];
+
+    if (reserved_signal_p(sig)) {
+        const char *name = signo2signm(sig);
+        if (name)
+            rb_raise(rb_eArgError, "can't get reserved signal: SIG%s", name);
+        else
+            rb_raise(rb_eArgError, "can't get reserved signal: %d", sig);
+    }
+
+    if (sig == 0 || (command != 0 && command != Qtrue)) {
+        return trap_handler_command(command, SIG_ERR);
+    }
+
+    func = ruby_signal_handler(sig);
+    if (func == SIG_ERR) rb_sys_fail_str(rb_signo2signm(sig));
+
+    return trap_handler_command(command, func);
 }
 
 /*
@@ -1569,6 +1641,7 @@ Init_signal(void)
     VALUE mSignal = rb_define_module("Signal");
 
     rb_define_global_function("trap", sig_trap, -1);
+    rb_define_module_function(mSignal, "[]", sig_aref, 1);
     rb_define_module_function(mSignal, "trap", sig_trap, -1);
     rb_define_module_function(mSignal, "list", sig_list, 0);
     rb_define_module_function(mSignal, "signame", sig_signame, 1);
@@ -1577,7 +1650,7 @@ Init_signal(void)
     rb_define_method(rb_eSignal, "signo", esignal_signo, 0);
     rb_alias(rb_eSignal, rb_intern_const("signm"), rb_intern_const("message"));
     rb_define_method(rb_eInterrupt, "initialize", interrupt_init, -1);
-#if !defined(POSIX_SIGNAL) && !defined(SIG_GET)
+#if !defined(HAVE_SIGACTION) && !defined(SIG_GET)
     rb_native_mutex_initialize(&sig_check_lock);
 #endif
 
@@ -1640,7 +1713,7 @@ Init_signal(void)
 void
 rb_signal_atfork(void)
 {
-#if defined(HAVE_WORKING_FORK) && !defined(POSIX_SIGNAL) && !defined(SIG_GET)
+#if defined(HAVE_WORKING_FORK) && !defined(HAVE_SIGACTION) && !defined(SIG_GET)
     rb_native_mutex_initialize(&sig_check_lock);
 #endif
 }
