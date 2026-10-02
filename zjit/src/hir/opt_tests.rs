@@ -14051,7 +14051,7 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_does_not_fold_hash_aref_with_frozen_hash() {
+    fn test_fold_hash_aref_with_frozen_hash() {
         eval("
             H = {a: 0}.freeze
             def test = H[:a]
@@ -14073,10 +14073,69 @@ mod hir_opt_tests {
           v13:StaticSymbol[:a] = Const Value(VALUE(0x1010))
           PatchPoint NoSingletonClass(Hash@0x1018)
           PatchPoint MethodRedefined(Hash@0x1018, []@0x1020, cme:0x1028)
-          v26:BasicObject = HashAref v11, v13
+          v27:Fixnum[0] = Const Value(0)
           CheckInterrupts
-          Return v26
+          Return v27
         ");
+    }
+
+    #[test]
+    fn test_fold_frozen_static_symbol_hash_aref_variants() {
+        eval("
+            H_NIL = {a: nil}.freeze
+            H_FALSE = {a: false}.freeze
+            H_IDENTITY = {}.compare_by_identity
+            H_IDENTITY[:a] = 1
+            H_IDENTITY.freeze
+            H_ST = {k1: 1, k2: 2, k3: 3, k4: 4, k5: 5, k6: 6, k7: 7, k8: 8, k9: 9}.freeze
+
+            def test_nil_value = H_NIL[:a]
+            def test_false_value = H_FALSE[:a]
+            def test_identity_hash = H_IDENTITY[:a]
+            def test_st_hash = H_ST[:k9]
+
+            test_nil_value
+            test_false_value
+            test_identity_hash
+            test_st_hash
+        ");
+
+        for (method, value) in [
+            ("test_nil_value", "NilClass = Const Value(nil)"),
+            ("test_false_value", "FalseClass = Const Value(false)"),
+            ("test_identity_hash", "Fixnum[1] = Const Value(1)"),
+            ("test_st_hash", "Fixnum[9] = Const Value(9)"),
+        ] {
+            let hir = hir_string(method);
+            assert!(!hir.contains("HashAref"), "failed to fold {method}:\n{hir}");
+            assert!(hir.contains(value), "failed to return folded value for {method}:\n{hir}");
+        }
+    }
+
+    #[test]
+    fn test_does_not_fold_unsafe_frozen_hash_aref() {
+        eval("
+            H_MISSING = Hash.new { 0 }.merge(a: 0).freeze
+            H_MIXED_KEYS = Ractor.make_shareable({a: 0, Object.new => 1})
+            H_OBJECT_KEY = Ractor.make_shareable(Object.new)
+            H_OBJECT_KEYS = Ractor.make_shareable({H_OBJECT_KEY => 0})
+            H_DYNAMIC_SYMBOL = {a: 0, \"dynamic_#{rand}\".to_sym => 1}.freeze
+
+            def test_missing_hash_key = H_MISSING[:missing]
+            def test_mixed_hash_keys = H_MIXED_KEYS[:a]
+            def test_object_hash_key = H_OBJECT_KEYS[H_OBJECT_KEY]
+            def test_dynamic_symbol_key = H_DYNAMIC_SYMBOL[:a]
+
+            test_missing_hash_key
+            test_mixed_hash_keys
+            test_object_hash_key
+            test_dynamic_symbol_key
+        ");
+
+        for method in ["test_missing_hash_key", "test_mixed_hash_keys", "test_object_hash_key", "test_dynamic_symbol_key"] {
+            let hir = hir_string(method);
+            assert!(hir.contains("HashAref"), "unexpectedly folded {method}:\n{hir}");
+        }
     }
 
     #[test]
