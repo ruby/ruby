@@ -12,8 +12,12 @@ The mode is most often seen as an octal-format integer:
 - Next digit encodes the special bits.
 - Leftmost two digits encode the file type.
 
-On this page, we show each mode with format `'%06o`,
-which displays the mode as a 6-digit octal number.
+On this page, we show a mode using format `'%06o`,
+which displays the mode as a 6-digit octal number:
+
+```ruby
+'%06o' % File.stat('/etc/passwd').mode # => "100644"
+```
 
 ## Getting a Mode
 
@@ -116,14 +120,14 @@ Permissions for directories and files include read and write permissions.
 The permissions in this table do not involve execute/search,
 and so apply similarly to a directory or a file.
 
-| Octal | \String       | Permissions                              |
-|:-----:|---------------|------------------------------------------|
-| `000` | `'---------'` | No permissions.                          |
-| `400` | `'r--------'` | Owner read-only.                         |
-| `600` | `'rw-------'` | Owner read-write.                        |
-| `644` | `'rw-r--r--'` | Owner read-write; group/world read-only. |
-| `664` | `'rw-rw-r--'` | Owner/group read-write; world read-only. |
-| `666` | `'rw-rw-rw-'` | Owner/group/world read-write.            |
+| Octal      | Permissions                              |
+|------------|------------------------------------------|
+| `0o000000` | No permissions.                          |
+| `0o000400` | Owner read-only.                         |
+| `0o000600` | Owner read-write.                        |
+| `0o000644` | Owner read-write; group/world read-only. |
+| `0o000664` | Owner/group read-write; world read-only. |
+| `0o000666` | Owner/group/world read-write.            |
 
 ### \File Permissions
 
@@ -132,13 +136,13 @@ in addition to the read and write permissions seen above.
 
 The permissions in this table, applied to a file, specify execute permissions.
 
-| Octal    | \String       | Permissions                                                  |
-|:--------:|---------------|--------------------------------------------------------------|
-|  `700`   | `'rwx------'` | Owner read-write-execute.                                    |
-|  `750`   | `'rwxr-x---'` | Owner read-write-execute; group read-execute.                |
-|  `755`   | `'rwxr-xr-x'` | Owner read-write-execute; group read-execute; world execute. |
-|  `775`   | `'rwxrwxr-x'` | Owner/group read-write-execute; world read-execute.          |
-|  `777`   | `'rwxrwxrwx'` | Owner/group/world read-write-execute.                        |
+| Octal         | Permissions                                                  |
+|---------------|--------------------------------------------------------------|
+|  `0o000700`   | Owner read-write-execute.                                    |
+|  `0o000750`   | Owner read-write-execute; group read-execute.                |
+|  `0o000755`   | Owner read-write-execute; group read-execute; world execute. |
+|  `0o000775`   | Owner/group read-write-execute; world read-execute.          |
+|  `0o000777`   | Owner/group/world read-write-execute.                        |
 
 ### Directory Permissions
 
@@ -147,13 +151,13 @@ in addition to the read and write permissions seen above.
 
 The permissions in this table, applied to a directory, specify search permissions.
 
-| Octal  | \String       | Permissions                                               |
-|:------:|---------------|-----------------------------------------------------------|
-| `700`  | `'rwx------'` | Owner read-write-search.                                  |
-| `750`  | `'rwxr-x---'` | Owner read-write-search; group read-search.               |
-| `755`  | `'rwxr-xr-x'` | Owner read-write-search; group read-search; world search. |
-| `775`  | `'rwxrwxr-x'` | Owner/group read-write-search; world read-search.         |
-| `777`  | `'rwxrwxrwx'` | Owner/group/world read-write-search.                      |
+| Octal       | Permissions                                               |
+|-------------|-----------------------------------------------------------|
+| `0o000700`  | Owner read-write-search.                                  |
+| `0o000750`  | Owner read-write-search; group read-search.               |
+| `0o000755`  | Owner read-write-search; group read-search; world search. |
+| `0o000775`  | Owner/group read-write-search; world read-search.         |
+| `0o000777`  | Owner/group/world read-write-search.                      |
 
 ## Special Bits
 
@@ -163,16 +167,16 @@ The fourth octal digit in a mode represents its special bits:
 - The next bit (`2000`) shows whether the [setuid bit][setuid bit] is set.
 - The next bit (`4000`) shows whether the [setgid bit][setgid bit] is set.
 
-| Octal   | Meaning                   |
-|:-------:|---------------------------|
-| `0000`  | None.                     |
-| `1000`  | Sticky.                   |
-| `2000`  | Setgid.                   |
-| `3000`  | Setgid + sticky.          |
-| `4000`  | Setuid.                   |
-| `5000`  | Setuid + sticky.          |
-| `6000`  | Setuid + setgid.          |
-| `7000`  | Setuid + setgid + sticky. |
+| Octal       | Meaning                   |
+|-------------|---------------------------|
+| `0o000000`  | None.                     |
+| `0o001000`  | Sticky.                   |
+| `0o002000`  | Setgid.                   |
+| `0o003000`  | Setgid + sticky.          |
+| `0o004000`  | Setuid.                   |
+| `0o005000`  | Setuid + sticky.          |
+| `0o006000`  | Setuid + setgid.          |
+| `0o007000`  | Setuid + setgid + sticky. |
 
 Examples (note value in special-bits digit -- fourth-from-left):
 
@@ -195,17 +199,17 @@ File.delete(filepath)             # Clean up.
 
 The fifth and sixth octal digits in a mode represent the file type:
 
-| Octal    | \File Type        |
-|----------|-------------------|
-| `010000` | Pipe.             |
-| `020000` | Character device. |
-| `040000` | Directory.        |
-| `060000` | Block device.     |
-| `100000` | Regular file.     |
-| `120000` | Symbolic link.    |
-| `140000` | \Socket.          |
+| Octal      | \File Type        |
+|------------|-------------------|
+| `0o010000` | Pipe.             |
+| `0o020000` | Character device. |
+| `0o040000` | Directory.        |
+| `0o060000` | Block device.     |
+| `0o100000` | Regular file.     |
+| `0o120000` | Symbolic link.    |
+| `0o140000` | \Socket.          |
 
-Set up a path for each file type:
+Define a path for each file type:
 
 ```ruby
 pipe_path =              '/tmp/pipe'
@@ -217,11 +221,11 @@ link_path =              '/tmp/link'
 socket_path =            '/tmp/socket'
 ```
 
-These entries we have to create:
+For some of the paths, the entries exist already; these we have to create:
 
 ```ruby
-File.symlink(file_path, link_path)
 File.mkfifo(pipe_path, 0666)
+File.symlink(file_path, link_path)
 require 'socket'
 UNIXServer.new(socket_path)
 ```
@@ -236,7 +240,7 @@ Show the modes (note the leftmost two digits):
 '%06o' % File.stat(file_path).mode              # => "100644"
 '%06o' % File.stat(link_path).mode              # => "100644"
 '%06o' % File.stat(socket_path).mode            # => "140775"
-File.delete(link_path, socket_path, pipe_path)  # Clean up.
+File.delete(pipe_path, link_path, socket_path)  # Clean up.
 ```
 
 [permissions]:   #permissions
