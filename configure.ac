@@ -3213,17 +3213,11 @@ AC_SUBST(PROGRAM_EXTS, [${EXTSTATIC:+exts}])
 			rb_cv_dlopen=yes],
 	[freebsd*|dragonfly*], [
 			: ${LDSHARED='$(CC) -shared'}
-			AS_IF([test "$rb_cv_binary_elf" = yes], [
-			    LDFLAGS="$LDFLAGS -rdynamic"
-			    DLDFLAGS="$DLDFLAGS "'-Wl,-soname,$@'
-			], [
-			  test "$GCC" = yes && test "$rb_cv_prog_gnu_ld" = yes || LDSHARED='$(LD) -Bshareable'
-			])
+			LDFLAGS="$LDFLAGS -rdynamic"
+			DLDFLAGS="$DLDFLAGS "'-Wl,-soname,$@'
 			rb_cv_dlopen=yes],
 	[openbsd*|mirbsd*], [	: ${LDSHARED='$(CC) -shared ${CCDLFLAGS}'}
-			AS_IF([test "$rb_cv_binary_elf" = yes], [
-			    LDFLAGS="$LDFLAGS -Wl,-E"
-			])
+			LDFLAGS="$LDFLAGS -Wl,-E"
 			rb_cv_dlopen=yes],
 	[darwin*], [	: ${LDSHARED='$(CC) -dynamic -bundle'}
 			: ${DLDSHARED='$(CC) -dynamiclib'}
@@ -3667,10 +3661,7 @@ AS_CASE("$enable_shared", [yes], [
     [freebsd*|dragonfly*], [
 	LIBRUBY_SO='lib$(RUBY_SO_NAME).$(SOEXT).$(MAJOR)$(MINOR)'
 	LIBRUBY_SONAME='$(LIBRUBY_SO)'
-	AS_IF([test "$rb_cv_binary_elf" != "yes" ], [
-	    LIBRUBY_SO="$LIBRUBY_SO.\$(TEENY)"
-	    LIBRUBY_ALIASES=''
-	], [test "$load_relative" = yes], [
+	AS_IF([test "$load_relative" = yes], [
 	    libprefix="'\$\$ORIGIN${relative_libprefix}'"
 	    LIBRUBY_RPATHFLAGS="-Wl,-rpath,${libprefix}"
 	    LIBRUBY_RELATIVE=yes
@@ -3680,11 +3671,7 @@ AS_CASE("$enable_shared", [yes], [
 	LIBRUBY_SONAME='lib$(RUBY_SO_NAME).$(SOEXT).$(MAJOR)$(MINOR)'
 	LIBRUBY_SO="${LIBRUBY_SONAME}"'.$(TEENY)'
 	RUBY_APPEND_OPTIONS(LIBRUBY_DLDFLAGS, ['-Wl,-soname,$(LIBRUBY_SONAME)' "$LDFLAGS_OPTDIR"])
-	AS_IF([test "$rb_cv_binary_elf" = yes], [ # ELF platforms
-	   LIBRUBY_ALIASES='$(LIBRUBY_SONAME) lib$(RUBY_SO_NAME).$(SOEXT)'
-	], [	# a.out platforms
-	   LIBRUBY_ALIASES=""
-	])
+	LIBRUBY_ALIASES='$(LIBRUBY_SONAME) lib$(RUBY_SO_NAME).$(SOEXT)'
 	],
     [openbsd*|mirbsd*], [
 	LIBRUBY_SO='lib$(RUBY_SO_NAME).$(SOEXT).$(MAJOR).'`expr ${MINOR} \* 10 + ${TEENY}`
