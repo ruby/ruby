@@ -3216,7 +3216,7 @@ AC_SUBST(PROGRAM_EXTS, [${EXTSTATIC:+exts}])
 			LDFLAGS="$LDFLAGS -rdynamic"
 			DLDFLAGS="$DLDFLAGS "'-Wl,-soname,$@'
 			rb_cv_dlopen=yes],
-	[openbsd*|mirbsd*], [	: ${LDSHARED='$(CC) -shared ${CCDLFLAGS}'}
+	[openbsd*], [	: ${LDSHARED='$(CC) -shared ${CCDLFLAGS}'}
 			LDFLAGS="$LDFLAGS -Wl,-E"
 			rb_cv_dlopen=yes],
 	[darwin*], [	: ${LDSHARED='$(CC) -dynamic -bundle'}
@@ -3673,7 +3673,7 @@ AS_CASE("$enable_shared", [yes], [
 	RUBY_APPEND_OPTIONS(LIBRUBY_DLDFLAGS, ['-Wl,-soname,$(LIBRUBY_SONAME)' "$LDFLAGS_OPTDIR"])
 	LIBRUBY_ALIASES='$(LIBRUBY_SONAME) lib$(RUBY_SO_NAME).$(SOEXT)'
 	],
-    [openbsd*|mirbsd*], [
+    [openbsd*], [
 	LIBRUBY_SO='lib$(RUBY_SO_NAME).$(SOEXT).$(MAJOR).'`expr ${MINOR} \* 10 + ${TEENY}`
 	],
     [solaris*], [
