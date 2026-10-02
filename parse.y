@@ -14755,7 +14755,8 @@ warn_duplicate_keys(struct parser_params *p, NODE *hash)
 
         /* keyword splat, e.g. {k: 1, **z, k: 2} */
         if (!head) {
-            head = value;
+            hash = next;
+            continue;
         }
 
         if (nd_type_st_key_enable_p(head)) {
