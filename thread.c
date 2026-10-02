@@ -465,14 +465,62 @@ rb_threadptr_join_list_wakeup(rb_thread_t *thread)
 void
 rb_threadptr_unlock_all_locking_mutexes(rb_thread_t *th)
 {
-    while (th->keeping_mutexes) {
-        rb_mutex_t *mutex = th->keeping_mutexes;
-        th->keeping_mutexes = mutex->next_mutex;
+    while (th->ec->keeping_mutexes) {
+        rb_mutex_t *mutex = th->ec->keeping_mutexes;
 
         // rb_warn("mutex #<%p> was not unlocked by thread #<%p>", (void *)mutex, (void*)th);
+        VM_ASSERT(mutex->ec == th->ec);
         VM_ASSERT(mutex->ec_serial);
-        const char *error_message = rb_mutex_unlock_th(mutex, th, 0);
+        const char *error_message = rb_mutex_unlock_ec(mutex, NULL);
         if (error_message) rb_bug("invalid keeping_mutexes: %s", error_message);
+    }
+}
+
+void
+rb_threadptr_unlock_all_mutexes(rb_thread_t *th)
+{
+    rb_execution_context_t *ec, *next;
+
+    ccan_list_for_each_safe(&th->execution_contexts, ec, next, thread_node) {
+        while (ec->keeping_mutexes) {
+            rb_mutex_t *mutex = ec->keeping_mutexes;
+
+            VM_ASSERT(mutex->ec == ec);
+            VM_ASSERT(mutex->ec_serial);
+            const char *error_message = rb_mutex_unlock_ec(mutex, NULL);
+            if (error_message) rb_bug("invalid keeping_mutexes: %s", error_message);
+        }
+
+        ccan_list_del_init(&ec->thread_node);
+    }
+}
+
+void
+rb_ec_move_mutexes(rb_execution_context_t *from, rb_execution_context_t *to)
+{
+    if (from == to) return;
+
+    while (from->keeping_mutexes) {
+        rb_mutex_t *mutex = from->keeping_mutexes;
+
+        from->keeping_mutexes = mutex->next_mutex;
+        mutex->next_mutex = to->keeping_mutexes;
+        mutex->ec = to;
+        to->keeping_mutexes = mutex;
+    }
+}
+
+void
+rb_ec_abandon_mutexes(rb_execution_context_t *ec)
+{
+    while (ec->keeping_mutexes) {
+        rb_mutex_t *mutex = ec->keeping_mutexes;
+
+        ec->keeping_mutexes = mutex->next_mutex;
+        mutex->ec = NULL;
+        mutex->ec_serial = 0;
+        mutex->next_mutex = NULL;
+        ccan_list_head_init(&mutex->waitq);
     }
 }
 
@@ -2718,7 +2766,9 @@ rb_thread_s_handle_interrupt(VALUE self, VALUE mask_arg)
         RUBY_VM_SET_INTERRUPT(th->ec);
     }
 
-    EC_PUSH_TAG(th->ec);
+    /* ec belongs to the executing fiber and remains stable if the fiber moves
+     * to another thread. th still identifies the interrupt mask we pushed. */
+    EC_PUSH_TAG(ec);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
         r = rb_yield(Qnil);
     }
@@ -2730,10 +2780,10 @@ rb_thread_s_handle_interrupt(VALUE self, VALUE mask_arg)
         RUBY_VM_SET_INTERRUPT(th->ec);
     }
 
-    RUBY_VM_CHECK_INTS(th->ec);
+    RUBY_VM_CHECK_INTS(ec);
 
     if (state) {
-        EC_JUMP_TAG(th->ec, state);
+        EC_JUMP_TAG(ec, state);
     }
 
     return r;
@@ -5364,7 +5414,10 @@ terminate_atfork_i(rb_thread_t *th, const rb_thread_t *current_th)
         th->scheduler = Qnil;
 
         rb_native_mutex_initialize(&th->interrupt_lock);
-        rb_mutex_abandon_keeping_mutexes(th);
+        rb_execution_context_t *ec;
+        ccan_list_for_each(&th->execution_contexts, ec, thread_node) {
+            rb_ec_abandon_mutexes(ec);
+        }
         rb_mutex_abandon_locking_mutex(th);
         thread_cleanup_func(th, TRUE);
     }
@@ -6186,7 +6239,8 @@ debug_deadlock_check(rb_ractor_t *r, VALUE msg)
         if (th->locking_mutex) {
             rb_mutex_t *mutex = mutex_ptr(th->locking_mutex);
             rb_str_catf(msg, " mutex:%llu cond:%"PRIuSIZE,
-                        (unsigned long long)mutex->ec_serial, rb_mutex_num_waiting(mutex));
+                        (unsigned long long)mutex->ec_serial,
+                        rb_mutex_num_waiting(mutex));
         }
 
         {
