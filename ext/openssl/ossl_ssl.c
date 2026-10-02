@@ -1178,11 +1178,13 @@ ossl_sslctx_set_client_sigalgs(VALUE self, VALUE v)
  *
  * Added in version 3.0. See also the man page SSL_CTX_set0_tmp_dh_pkey(3).
  *
- * Example:
+ * === Example
  *   ctx = OpenSSL::SSL::SSLContext.new
- *   ctx.tmp_dh = OpenSSL::DH.generate(2048)
- *   svr = OpenSSL::SSL::SSLServer.new(tcp_svr, ctx)
- *   Thread.new { svr.accept }
+ *   ctx.tmp_dh = OpenSSL::PKey::DH.generate(2048)
+ *   Thread.new {
+ *     ssl = OpenSSL::SSL::SSLSocket.new(tcp_svr.accept, ctx)
+ *     ssl.accept
+ *   }
  */
 static VALUE
 ossl_sslctx_set_tmp_dh(VALUE self, VALUE arg)
@@ -1230,9 +1232,11 @@ ossl_sslctx_set_tmp_dh(VALUE self, VALUE arg)
  *
  * === Example
  *   ctx1 = OpenSSL::SSL::SSLContext.new
- *   ctx1.groups = "X25519:P-256:P-224"
- *   svr = OpenSSL::SSL::SSLServer.new(tcp_svr, ctx1)
- *   Thread.new { svr.accept }
+ *   ctx1.groups = "X25519:P-256"
+ *   Thread.new {
+ *     ssl = OpenSSL::SSL::SSLSocket.new(tcp_svr.accept, ctx1)
+ *     ssl.accept
+ *   }
  *
  *   ctx2 = OpenSSL::SSL::SSLContext.new
  *   ctx2.groups = "P-256"
@@ -2803,8 +2807,8 @@ Init_ossl_ssl(void)
     /* Document-module: OpenSSL::SSL
      *
      * Use SSLContext to set up the parameters for a TLS (former SSL)
-     * connection. Both client and server TLS connections are supported,
-     * SSLSocket and SSLServer may be used in conjunction with an instance
+     * connection. Both client and server TLS connections are supported.
+     * SSLSocket may be used in conjunction with a TCPServer and an instance
      * of SSLContext to set up connections.
      */
     mSSL = rb_define_module_under(mOSSL, "SSL");
