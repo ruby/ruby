@@ -6,7 +6,6 @@ use std::ops::Range;
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::mem;
-use crate::state::rb_zjit_compiling_p;
 use crate::virtualmem::*;
 
 // Lots of manual vertical alignment in there that rustfmt doesn't handle well.
@@ -243,10 +242,6 @@ impl CodeBlock {
     pub fn update_dropped_bytes(&mut self) {
         if self.mem_block.borrow().can_allocate() {
             self.dropped_bytes = false;
-
-            // Memory is available again, so let the interpreter resume
-            // triggering compilation.
-            unsafe { rb_zjit_compiling_p = true; }
         }
     }
 

@@ -138,6 +138,38 @@ class TestZJITCLI < Test::Unit::TestCase
     RUBY
   end
 
+  def test_zjit_max_compile_time
+    assert_runs ':ok', <<~'RUBY'
+      def compiled_iseq?
+        count = RubyVM::ZJIT.stats(:compiled_iseq_count)
+        yield
+        RubyVM::ZJIT.stats(:compiled_iseq_count) > count
+      end
+
+      def compile_for(ns)
+        total = RubyVM::ZJIT.total_compile_time_ns
+        target = total + ns
+        while true
+          return unless eval("compiled_iseq? { nil.to_i }")
+          return if RubyVM::ZJIT.total_compile_time_ns > target
+        end
+      end
+
+      return :not_compiled1 unless eval('compiled_iseq? { nil.to_i }')
+
+      RubyVM::ZJIT.max_compile_time_ns = RubyVM::ZJIT.total_compile_time_ns + 1_000_000
+      compile_for(50_000_000)
+
+      unless RubyVM::ZJIT.total_compile_time_ns >= RubyVM::ZJIT.max_compile_time_ns
+        return :not_over
+      end
+
+      return :did_compile1 if eval('compiled_iseq? { nil.to_i }')
+
+      :ok
+    RUBY
+  end
+
   def test_zjit_prelude_kernel_prepend
     # Simulate what bundler/setup can do: prepend a module to Kernel during
     # the prelude via the BUNDLER_SETUP mechanism in rubygems.rb:
