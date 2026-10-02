@@ -6559,10 +6559,6 @@ int_s_try_convert(VALUE self, VALUE num)
 void
 Init_Numeric(void)
 {
-#ifdef _UNICOSMP
-    /* Turn off floating point exceptions for divide by zero, etc. */
-    _set_Creg(0, 0);
-#endif
     id_coerce = rb_intern_const("coerce");
     id_to = rb_intern_const("to");
     id_by = rb_intern_const("by");
