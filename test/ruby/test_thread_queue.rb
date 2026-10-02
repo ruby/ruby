@@ -137,6 +137,18 @@ class TestThreadQueue < Test::Unit::TestCase
     t2&.kill&.join
   end
 
+  def test_queue_pop_rejects_nan_timeout
+    q = Thread::Queue.new
+    assert_raise(ArgumentError) { q.pop(timeout: Float::NAN) }
+    assert_raise(ArgumentError) { q.pop(timeout: -Float::NAN) }
+  end
+
+  def test_sized_queue_push_rejects_nan_timeout
+    q = Thread::SizedQueue.new(1)
+    q << 1
+    assert_raise(ArgumentError) { q.push(2, timeout: Float::NAN) }
+  end
+
   def test_queue_pop_non_block
     q = Thread::Queue.new
     assert_raise_with_message(ThreadError, /empty/) do
