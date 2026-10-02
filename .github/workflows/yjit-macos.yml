@@ -31,7 +31,7 @@ jobs:
   cargo:
     name: cargo test
 
-    runs-on: macos-14
+    runs-on: macos-15
 
     if: >-
       ${{github.repository == 'ruby/ruby' &&
@@ -72,7 +72,7 @@ jobs:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
       RUN_OPTS: ${{ matrix.yjit_opts }}
 
-    runs-on: macos-14
+    runs-on: macos-15
 
     if: >-
       ${{github.repository == 'ruby/ruby' &&
