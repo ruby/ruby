@@ -6747,15 +6747,22 @@ impl Function {
             for (rpo_index, &block_id) in rpo.iter().enumerate() {
                 let mut block_cache: HashMap<Key, InsnId>  = HashMap::new();
                 // Set block_cache equal to the intersection of cached insns of all predecessors
+                // Additionally, check for back edges
                 match cfi.predecessors(block_id) {
                     [] => {},
                     [head] => {
                         block_cache = cached_insns[*head].clone();
+                        if rpo_order[*head] > rpo_index {
+                            has_back_edge |= true;
+                        }
                     }
                     [head, tail @ ..] => {
                         block_cache = cached_insns[*head].clone();
                         for pred in tail {
                             block_cache.retain(|key, value| cached_insns[*pred].get(key) == Some(value));
+                            if rpo_order[*head] > rpo_index {
+                                has_back_edge |= true;
+                            }
                         }
                     }
                 }
@@ -6827,13 +6834,6 @@ impl Function {
                 }
 
                 self.blocks[block_id].insns = new_insns;
-
-                // Check for back edges
-                for edge in self.resolve(self.blocks[block_id].terminator()).insn(self).outgoing_edges() {
-                    if rpo_order[edge.target] <= rpo_index {
-                        has_back_edge |= true;
-                    }
-                }
 
                 if cached_insns[block_id] == block_cache {
                     changed = false;
