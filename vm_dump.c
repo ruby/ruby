@@ -778,7 +778,7 @@ rb_vmdebug_thread_dump_state(FILE *errout, VALUE self)
 #  include <sys/mman.h>
 #  undef backtrace
 
-#  if defined(__arm64__) || defined(__POWERPC__)
+#  if defined(__arm64__)
 static bool
 is_coroutine_start(unw_word_t ip)
 {
@@ -891,22 +891,19 @@ darwin_sigtramp:
     }
     return n;
 
-#  elif defined(__arm64__) || defined(__POWERPC__)
+#  elif defined(__arm64__)
     /* Since Darwin arm64's _sigtramp is implemented as normal function,
      * unwind can unwind frames without special code.
      * https://github.com/apple/darwin-libplatform/blob/215b09856ab5765b7462a91be7076183076600df/src/setjmp/generic/sigtramp.c
      */
     while (n < size && unw_step(&cursor) > 0) {
         unw_get_reg(&cursor, UNW_REG_IP, &ip);
-#   if defined(__arm64__)
         // Strip Arm64's pointer authentication.
         // https://developer.apple.com/documentation/security/preparing_your_app_to_work_with_pointer_authentication
         // I wish I could use "ptrauth_strip()" but I get an error:
         // "this target does not support pointer authentication"
         trace[n++] = (void *)(ip & 0x7fffffffffffull);
-#   else
-        trace[n++] = (void *)ip;
-#   endif
+
         // Apple's libunwind can't handle our coroutine switching code
         if (is_coroutine_start(ip)) break;
     }
