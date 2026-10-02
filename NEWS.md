@@ -333,6 +333,9 @@ Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for det
   or Windows Server 2019 or later.  Earlier Windows 10 releases and Windows
   Server 2016 are no longer supported.
 
+* Ruby on macOS now requires Mac OS X 10.6 or later.  Mac OS X 10.5 and
+  PowerPC Macs are no longer supported.
+
 ## Compatibility issues
 
 * A class or module can now be modified only by the Ractor which created it,
