@@ -47,8 +47,6 @@ jobs:
             os: macos-15
           - test_task: check
             os: macos-15-intel
-          - test_task: check
-            os: macos-14
       fail-fast: false
 
     env:
@@ -177,7 +175,7 @@ jobs:
   result:
     if: ${{ always() }}
     name: ${{ github.workflow }} result
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     needs: [make]
     steps:
       - run: exit 1
