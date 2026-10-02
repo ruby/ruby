@@ -631,17 +631,15 @@ static VALUE build_parse_error_message(const char *format, JSON_ParserState *sta
         }
 
         if (len) {
+            if (len == PARSE_ERROR_FRAGMENT_LEN) {
+                // Only trim when the byte limit splits a multibyte character.
+                while (len && (unsigned char)ptr[len] >= 0x80 && (unsigned char)ptr[len] < 0xC0) {
+                    len--;
+                }
+            }
+
             buffer[0] = '\'';
             MEMCPY(buffer + 1, ptr, char, len);
-
-            while (buffer[len] >= 0x80 && buffer[len] < 0xC0) { // Is continuation byte
-                len--;
-            }
-
-            if (buffer[len] >= 0xC0) { // multibyte character start
-                len--;
-            }
-
             buffer[len + 1] = '\'';
             buffer[len + 2] = '\0';
             ptr = (const char *)buffer;

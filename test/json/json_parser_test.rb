@@ -868,7 +868,7 @@ class JSONParserTest < Test::Unit::TestCase
     assert_equal "unexpected character: 'aああああああああああ' at line 1 column 1", error.message
 
     error = assert_raise(JSON::ParserError) { JSON.parse("abあああああああああああああああああああああああ") }
-    assert_equal "unexpected character: 'abあああああああああ' at line 1 column 1", error.message
+    assert_equal "unexpected character: 'abああああああああああ' at line 1 column 1", error.message
 
     error = assert_raise(JSON::ParserError) { JSON.parse("abcあああああああああああああああああああああああ") }
     assert_equal "unexpected character: 'abcあああああああああ' at line 1 column 1", error.message
@@ -881,6 +881,31 @@ class JSONParserTest < Test::Unit::TestCase
 
     error = assert_raise(JSON::ParserError) { JSON.parse("@") }
     assert_equal "unexpected character: '@' at line 1 column 1", error.message
+
+    error = assert_raise(JSON::ParserError) { JSON.parse('"a" 日本') }
+    assert_equal "unexpected token at end of stream '日本' at line 1 column 5", error.message
+
+    error = assert_raise(JSON::ParserError) { JSON.parse('[1, é') }
+    assert_equal "unexpected character: 'é' at line 1 column 5", error.message
+  end
+
+  def test_parse_error_snippet_multibyte_boundaries
+    omit "JRuby errors don't contain positions" if RUBY_ENGINE == "jruby"
+
+    ['é', '日', '😀'].each do |char|
+      ['', ' ', "\n", "\t", "\r"].each do |suffix|
+        error = assert_raise(JSON::ParserError) { JSON.parse(char + suffix) }
+        assert_equal "unexpected character: '#{char}' at line 1 column 1", error.message
+      end
+
+      (28..32).each do |padding|
+        prefix = 'a' * padding
+        fragment = prefix + char * ((32 - padding) / char.bytesize)
+        error = assert_raise(JSON::ParserError) { JSON.parse(prefix + char * 20) }
+        assert_equal "unexpected character: '#{fragment}' at line 1 column 1", error.message
+        assert_predicate error.message, :valid_encoding?
+      end
+    end
   end
 
   def test_parse_error_json_path
