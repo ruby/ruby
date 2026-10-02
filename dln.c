@@ -95,7 +95,7 @@ dln_loaderror(const char *format, ...)
 # define USE_DLN_DLOPEN
 #endif
 
-#if defined(__hp9000s300) || ((defined(__NetBSD__) || defined(__FreeBSD__) || defined(__OpenBSD__)) && !defined(__ELF__)) || defined(NeXT)
+#if defined(__hp9000s300) || ((defined(__NetBSD__) || defined(__FreeBSD__) || defined(__OpenBSD__)) && !defined(__ELF__))
 # define EXTERNAL_PREFIX "_"
 #else
 # define EXTERNAL_PREFIX ""
@@ -158,17 +158,6 @@ concat_funcname(char *buf, const char *prefix, size_t plen, const struct string_
 #include <ctype.h>	/* for isdigit()	*/
 #include <errno.h>	/* for global errno	*/
 #include <sys/ldr.h>
-#endif
-
-#ifdef NeXT
-#if NS_TARGET_MAJOR < 4
-#include <mach-o/rld.h>
-#else
-#include <mach-o/dyld.h>
-#ifndef NSLINKMODULE_OPTION_BINDNOW
-#define NSLINKMODULE_OPTION_BINDNOW 1
-#endif
-#endif
 #endif
 
 #ifdef _WIN32
