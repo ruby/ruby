@@ -1421,7 +1421,7 @@ AS_IF([test -n "${rb_there_is_in_fact_no_gplusplus_but_autoconf_is_cheating_us}"
     ])
 ])
 
-AC_CHECK_LIB(crypt, crypt)      # glibc (GNU/Linux, GNU/Hurd, GNU/kFreeBSD)
+AC_CHECK_LIB(crypt, crypt)      # glibc (GNU/Linux, GNU/Hurd)
 AC_CHECK_LIB(dl, dlopen)	# Dynamic linking for SunOS/Solaris and SYSV
 AC_CHECK_LIB(socket, shutdown)  # SunOS/Solaris
 
@@ -2156,7 +2156,7 @@ AC_DEFINE(HAVE_ISFINITE)        # C99; backward compatibility
 
 # for missing/setproctitle.c
 AS_CASE(["$target_os"],
-[aix* | k*bsd*-gnu | kopensolaris*-gnu | linux* | darwin*], [AC_DEFINE(SPT_TYPE,SPT_REUSEARGV)],
+[aix* | kopensolaris*-gnu | linux* | darwin*], [AC_DEFINE(SPT_TYPE,SPT_REUSEARGV)],
 [])
 AC_CHECK_HEADERS(sys/pstat.h)
 
@@ -3115,7 +3115,7 @@ AS_IF([test "$ac_cv_header_mach_o_loader_h" = yes], [
 ])
 
 AS_CASE(["$target_os"],
-[linux* | gnu* | k*bsd*-gnu | kopensolaris*-gnu], [
+[linux* | gnu* | kopensolaris*-gnu], [
     AS_IF([test "$rb_cv_binary_elf" = no], [
 	AC_MSG_ERROR(Not ELF)
     ], [
@@ -3195,7 +3195,7 @@ AC_SUBST(PROGRAM_EXTS, [${EXTSTATIC:+exts}])
 			    : ${PRELOADENV=LD_PRELOAD_32}
 			])
 			rb_cv_dlopen=yes],
-	[linux* | gnu* | k*bsd*-gnu | netbsd* | kopensolaris*-gnu | haiku*], [
+	[linux* | gnu* | netbsd* | kopensolaris*-gnu | haiku*], [
 			: ${LDSHARED='$(CC) -shared'}
 			AS_IF([test "$rb_cv_binary_elf" = yes], [
 			    LDFLAGS="$LDFLAGS -Wl,-export-dynamic"
@@ -3639,7 +3639,7 @@ AS_CASE("$enable_shared", [yes], [
 
   relative_libprefix="/../${multiarch+../}${libdir_basename}"
   AS_CASE(["$target_os"],
-    [linux* | gnu* | k*bsd*-gnu | kopensolaris*-gnu | haiku*], [
+    [linux* | gnu* | kopensolaris*-gnu | haiku*], [
 	RUBY_APPEND_OPTIONS(LIBRUBY_DLDFLAGS, ['-Wl,-soname,$(LIBRUBY_SONAME)' "$LDFLAGS_OPTDIR"])
 	LIBRUBY_ALIASES='$(LIBRUBY_SONAME) lib$(RUBY_SO_NAME).$(SOEXT)'
 	AS_IF([test "$load_relative" = yes], [
