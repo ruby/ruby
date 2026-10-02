@@ -1845,6 +1845,9 @@ class Resolv
           # size counts the encoded form, so it starts at 1 for the root
           # label's terminating zero octet. [RFC 1035 3.1]
           size = 1
+          # A pointer chain decodes to few or no labels, so the 255-octet cap
+          # never bounds its work; cap the pointers followed per name too.
+          pointers = 0
           while true
             raise DecodeError.new("limit exceeded") if @limit <= @index
             case @data.getbyte(@index)
@@ -1855,6 +1858,8 @@ class Resolv
               end
               return d
             when 192..255
+              pointers += 1
+              raise DecodeError.new("too many compression pointers") if pointers > 128
               idx = self.get_unpack('n')[0] & 0x3fff
               if prev_index <= idx
                 raise DecodeError.new("non-backward name pointer")
