@@ -5135,17 +5135,23 @@ const pm_encoding_t pm_encodings[] = {
 const pm_encoding_t *
 pm_encoding_find(const uint8_t *start, const uint8_t *end) {
     size_t width = (size_t) (end - start);
+    int utf8_end = 0;
 
     // First, we're going to check for UTF-8. This is the most common encoding.
     // UTF-8 can contain extra information at the end about the platform it is
     // encoded on, such as UTF-8-MAC or UTF-8-UNIX. We'll ignore those suffixes.
-    if ((start + 5 <= end) && (pm_strncasecmp(start, (const uint8_t *) "UTF-8", 5) == 0)) {
+#define ENCODING_MATCH_PREFIX(name) \
+    ((width >= sizeof(name) - 1 && pm_strncasecmp(start, (const uint8_t *) name, width) == 0) ? sizeof(name) - 1 : 0)
+#define ENCODING1_AT(name, offset, encoding) \
+    if (width == sizeof(name) - 1 + (offset) && pm_strncasecmp(start + (offset), (const uint8_t *) name, width - (offset)) == 0) return &pm_encodings[encoding];
+
+    utf8_end = ENCODING_MATCH_PREFIX("UTF-8");
+    if (!utf8_end) utf8_end = ENCODING_MATCH_PREFIX("UTF8");
+    if (utf8_end) {
 #ifndef PRISM_ENCODING_EXCLUDE_FULL
         // We need to explicitly handle UTF-8-HFS, as that one needs to switch
         // over to being UTF8-MAC.
-        if (width == 9 && (pm_strncasecmp(start + 5, (const uint8_t *) "-HFS", 4) == 0)) {
-            return &pm_encodings[PM_ENCODING_UTF8_MAC];
-        }
+        ENCODING1_AT("-HFS", utf8_end, PM_ENCODING_UTF8_MAC);
 #endif
 
         // Otherwise we'll return the default UTF-8 encoding.
@@ -5154,7 +5160,7 @@ pm_encoding_find(const uint8_t *start, const uint8_t *end) {
 
     // Next, we're going to loop through each of the encodings that we handle
     // explicitly. If we found one that we understand, we'll use that value.
-#define ENCODING1(name, encoding) if (width == sizeof(name) - 1 && pm_strncasecmp(start, (const uint8_t *) name, width) == 0) return &pm_encodings[encoding];
+#define ENCODING1(name, encoding) ENCODING1_AT(name, 0, encoding)
 #define ENCODING2(name1, name2, encoding) ENCODING1(name1, encoding) ENCODING1(name2, encoding)
 
     if (width >= 3) {
@@ -5294,7 +5300,7 @@ pm_encoding_find(const uint8_t *start, const uint8_t *end) {
             case 'S': case 's':
                 ENCODING1("SJIS", PM_ENCODING_WINDOWS_31J);
 #ifndef PRISM_ENCODING_EXCLUDE_FULL
-                ENCODING1("Shift_JIS", PM_ENCODING_SHIFT_JIS);
+                ENCODING2("Shift_JIS", "ShiftJIS", PM_ENCODING_SHIFT_JIS);
                 ENCODING1("SJIS-DoCoMo", PM_ENCODING_SJIS_DOCOMO);
                 ENCODING1("SJIS-KDDI", PM_ENCODING_SJIS_KDDI);
                 ENCODING1("SJIS-SoftBank", PM_ENCODING_SJIS_SOFTBANK);
@@ -5317,18 +5323,18 @@ pm_encoding_find(const uint8_t *start, const uint8_t *end) {
 #endif
                 break;
             case 'W': case 'w':
-                ENCODING1("Windows-31J", PM_ENCODING_WINDOWS_31J);
+                ENCODING2("Windows-31J", "Windows31J", PM_ENCODING_WINDOWS_31J);
 #ifndef PRISM_ENCODING_EXCLUDE_FULL
-                ENCODING1("Windows-874", PM_ENCODING_WINDOWS_874);
-                ENCODING1("Windows-1250", PM_ENCODING_WINDOWS_1250);
-                ENCODING1("Windows-1251", PM_ENCODING_WINDOWS_1251);
-                ENCODING1("Windows-1252", PM_ENCODING_WINDOWS_1252);
-                ENCODING1("Windows-1253", PM_ENCODING_WINDOWS_1253);
-                ENCODING1("Windows-1254", PM_ENCODING_WINDOWS_1254);
-                ENCODING1("Windows-1255", PM_ENCODING_WINDOWS_1255);
-                ENCODING1("Windows-1256", PM_ENCODING_WINDOWS_1256);
-                ENCODING1("Windows-1257", PM_ENCODING_WINDOWS_1257);
-                ENCODING1("Windows-1258", PM_ENCODING_WINDOWS_1258);
+                ENCODING2("Windows-874", "Windows874", PM_ENCODING_WINDOWS_874);
+                ENCODING2("Windows-1250", "Windows1250", PM_ENCODING_WINDOWS_1250);
+                ENCODING2("Windows-1251", "Windows1251", PM_ENCODING_WINDOWS_1251);
+                ENCODING2("Windows-1252", "Windows1252", PM_ENCODING_WINDOWS_1252);
+                ENCODING2("Windows-1253", "Windows1253", PM_ENCODING_WINDOWS_1253);
+                ENCODING2("Windows-1254", "Windows1254", PM_ENCODING_WINDOWS_1254);
+                ENCODING2("Windows-1255", "Windows1255", PM_ENCODING_WINDOWS_1255);
+                ENCODING2("Windows-1256", "Windows1256", PM_ENCODING_WINDOWS_1256);
+                ENCODING2("Windows-1257", "Windows1257", PM_ENCODING_WINDOWS_1257);
+                ENCODING2("Windows-1258", "Windows1258", PM_ENCODING_WINDOWS_1258);
 #endif
                 break;
             case '6':
