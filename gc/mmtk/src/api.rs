@@ -414,6 +414,11 @@ pub extern "C" fn mmtk_register_pinning_obj(obj: ObjectReference) {
     crate::binding().pinning_registry.register(obj);
 }
 
+#[unsafe(no_mangle)]
+pub extern "C" fn mmtk_is_pinned(object: ObjectReference) -> bool {
+    memory_manager::is_pinned(object)
+}
+
 // =============== Write barriers ===============
 
 #[unsafe(no_mangle)]

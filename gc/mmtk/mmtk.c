@@ -1221,8 +1221,7 @@ rb_gc_impl_object_moved_p(void *objspace_ptr, VALUE obj)
 bool
 rb_gc_impl_pinned_p(void *objspace_ptr, VALUE obj)
 {
-    /* MMTk tracks pinning separately */
-    return false;
+    return mmtk_is_pinned((MMTk_ObjectReference)obj);
 }
 
 VALUE
