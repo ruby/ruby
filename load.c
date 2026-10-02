@@ -655,6 +655,7 @@ feature_provided(rb_box_t *box, const char *feature, const char **loading)
 {
     const char *ext = strrchr(feature, '.');
     VALUE fullpath = 0;
+    bool found;
 
     if (*feature == '.' &&
         (feature[1] == '/' || strncmp(feature+1, "./", 2) == 0)) {
@@ -663,18 +664,18 @@ feature_provided(rb_box_t *box, const char *feature, const char **loading)
     }
     if (ext && !strchr(ext, '/')) {
         if (IS_RBEXT(ext)) {
-            if (rb_feature_p(box, feature, ext, TRUE, FALSE, loading)) return TRUE;
-            return FALSE;
+            found = rb_feature_p(box, feature, ext, TRUE, FALSE, loading);
+            goto done;
         }
         else if (IS_SOEXT(ext) || IS_DLEXT(ext)) {
-            if (rb_feature_p(box, feature, ext, FALSE, FALSE, loading)) return TRUE;
-            return FALSE;
+            found = rb_feature_p(box, feature, ext, FALSE, FALSE, loading);
+            goto done;
         }
     }
-    if (rb_feature_p(box, feature, 0, TRUE, FALSE, loading))
-        return TRUE;
+    found = rb_feature_p(box, feature, 0, TRUE, FALSE, loading);
+done:
     RB_GC_GUARD(fullpath);
-    return FALSE;
+    return found;
 }
 
 int
