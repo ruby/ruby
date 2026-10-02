@@ -548,6 +548,8 @@ class TestFiber < Test::Unit::TestCase
     omit "not supported with YJIT" if defined?(RubyVM::YJIT) && RubyVM::YJIT.enabled?
     omit "not supported with ZJIT" if defined?(RubyVM::ZJIT) && RubyVM::ZJIT.enabled?
     omit "unstable on RubyCI for ruby_4_0" unless ENV.key?("GITHUB_ACTIONS")
+    # Memory use grows with max_map_count, and a RUBY_DEBUG build needs about 16GB at the 262144 set on GitHub Actions runners.
+    omit "max_map_count is larger than the default" if File.read("/proc/sys/vm/max_map_count").to_i > 65530
 
     assert_separately([], <<~RUBY, timeout: 120)
       max_map_count = File.read("/proc/sys/vm/max_map_count").to_i
