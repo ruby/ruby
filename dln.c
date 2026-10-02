@@ -90,7 +90,7 @@ dln_loaderror(const char *format, ...)
 }
 #endif
 
-#if defined(HAVE_DLOPEN) && !defined(_AIX) && !defined(_UNICOSMP)
+#if defined(HAVE_DLOPEN) && !defined(_AIX)
 /* dynamic load with dlopen() */
 # define USE_DLN_DLOPEN
 #endif
