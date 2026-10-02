@@ -5842,18 +5842,12 @@ ruby_setenv(const char *name, const char *value)
         if (ret) rb_sys_fail_sprintf("setenv(%s)", name);
     }
     else {
-#ifdef VOID_UNSETENV
-        ENV_LOCKING() {
-            unsetenv(name);
-        }
-#else
         int ret;
         ENV_LOCKING() {
             ret = unsetenv(name);
         }
 
         if (ret) rb_sys_fail_sprintf("unsetenv(%s)", name);
-#endif
     }
 #elif defined __sun
     /* Solaris 9 (or earlier) does not have setenv(3C) and unsetenv(3C). */
