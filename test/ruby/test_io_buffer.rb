@@ -806,7 +806,6 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_predicate slice, :valid?
     assert_predicate slice, :null?
     assert_predicate slice, :empty?
-    slice.free
   end
 
   def test_resize_invalidated_slice_beyond_null_source
@@ -825,7 +824,6 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_equal "cdefghij", slice.get_string
   ensure
     inner&.free unless inner&.null?
-    slice&.free unless slice&.null?
   end
 
   def test_resize_after_free
@@ -1152,7 +1150,6 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_equal "ABt?stGH", buffer.get_string(0, 8)
   ensure
     blocker&.free
-    slice&.free unless slice&.null?
     buffer&.free unless buffer&.null?
   end
 
