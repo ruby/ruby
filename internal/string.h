@@ -99,6 +99,18 @@ VALUE rb_str_frozen_bare_string(VALUE);
 const char *rb_str_null_check(VALUE);
 VALUE rb_str_casecmp(VALUE str1, VALUE str2);
 
+/* Reusable state for rb_memsearch's Quick Search fallback. */
+struct rb_memsearch_qs_state {
+    VALUE qstable[256];
+    const unsigned char *needle;
+    long needle_len;
+};
+
+bool rb_memsearch_qs_usable_p(long m, rb_encoding *enc);
+void rb_memsearch_qs_prepare(struct rb_memsearch_qs_state *state, const void *x, long m);
+/* Requires a state prepared with a needle length greater than 1. */
+long rb_memsearch_qs_search(const struct rb_memsearch_qs_state *state, const void *y, long n);
+
 /* error.c */
 void rb_warn_unchilled_literal(VALUE str);
 
