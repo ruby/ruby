@@ -6727,27 +6727,28 @@ impl Function {
 
         loop {
             for (rpo_index, &block_id) in rpo.iter().enumerate() {
-                let mut block_cache: HashMap<Key, InsnId>  = HashMap::new();
                 // Set block_cache equal to the intersection of cached insns of all predecessors
                 // Additionally, check for back edges
-                match cfi.predecessors(block_id) {
-                    [] => {},
+                let mut block_cache: HashMap<Key, InsnId> = match cfi.predecessors(block_id) {
+                    [] => HashMap::new(),
                     [head] => {
-                        block_cache = cached_insns[*head].clone();
                         if rpo_order[*head] > rpo_index {
                             has_back_edge |= true;
                         }
+                        cached_insns[*head].clone()
                     }
                     [head, tail @ ..] => {
-                        block_cache = cached_insns[*head].clone();
+                        let mut cache = cached_insns[*head].clone();
                         for pred in tail {
-                            block_cache.retain(|key, value| cached_insns[*pred].get(key) == Some(value));
+                            cache.retain(|key, value| cached_insns[*pred].get(key) == Some(value));
                             if rpo_order[*head] > rpo_index {
                                 has_back_edge |= true;
                             }
                         }
+                        cache
+
                     }
-                }
+                };
                 let old_insns = std::mem::take(&mut self.blocks[block_id].insns);
                 let mut new_insns = Vec::with_capacity(old_insns.len());
                 for insn_id in old_insns {
