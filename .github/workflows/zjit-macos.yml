@@ -57,7 +57,7 @@ jobs:
       TESTOPTS: ${{ matrix.testopts }}
       ZJIT_RB_BUG: 1
 
-    runs-on: macos-14
+    runs-on: macos-15
 
     if: >-
       ${{!(false
@@ -161,7 +161,7 @@ jobs:
             bench_opts: '--warmup=1 --bench=1'
             configure: '--enable-zjit=dev_nodebug' # --enable-zjit=dev is too slow
 
-    runs-on: macos-14
+    runs-on: macos-15
 
     if: >-
       ${{!(false
