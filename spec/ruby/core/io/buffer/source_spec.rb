@@ -109,10 +109,9 @@ ruby_version_is "4.1" do
       parent = @buffer.slice(1, 6)
       child = parent.slice(2, 2)
 
-      parent.free
+      @buffer.free
 
       child.should_not.valid?
-      @buffer.should.valid?
     end
 
     it "keeps a String-backed buffer's source alive" do
@@ -123,5 +122,29 @@ ruby_version_is "4.1" do
       @buffer.free
       string.should == "test"
     end
+
+    it "clears a Buffer's source when freed, without detaching its slices" do
+      buffer = IO::Buffer.for("abcdefgh")
+      slice = buffer.slice
+      buffer.free
+      buffer.source.should == nil
+      slice.source.should.equal?(buffer)
+      slice.should_not.valid?
+    end
+
+    it "moves a Buffer's source reference when its storage is transferred" do
+      buffer = IO::Buffer.for("abcdefgh")
+      source = buffer.source
+      transferred = nil
+      begin
+        transferred = buffer.transfer
+        buffer.source.should == nil
+        transferred.source.should.equal?(source)
+      ensure
+        transferred&.free
+        buffer.free
+      end
+    end
+
   end
 end
