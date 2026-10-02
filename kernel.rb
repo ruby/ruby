@@ -195,7 +195,7 @@ module Kernel
   # Returns an integer converted from +object+.
   #
   # Tries to convert +object+ to an integer
-  # using +to_int+ first and +to_i+ second;
+  # using +to_int+, +to_str+, and +to_i+, in that order;
   # see below for exceptions.
   #
   # With a non-zero +base+, +object+ must be a string or convertible
@@ -269,10 +269,13 @@ module Kernel
   #
   # - Raises TypeError if +object+ does not respond to +to_int+ or +to_i+.
   # - Raises TypeError if +object+ is +nil+.
+  # - Raises TypeError if +to_int+, +to_str+, or +to_i+ returns a non-nil
+  #   object of the wrong class.
   # - Raises ArgumentError if +object+ is an invalid string.
   #
-  # With +exception+ given as +false+, an exception of any kind is suppressed
-  # and +nil+ is returned.
+  # With +exception+ given as +false+, conversion failures are suppressed and
+  # +nil+ is returned. A TypeError is still raised if +to_int+ or +to_str+
+  # returns a non-nil object of the wrong class.
   #
   def Integer(arg, base = 0, exception: true)
     if Primitive.mandatory_only?

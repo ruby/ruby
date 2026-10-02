@@ -14,20 +14,34 @@ describe "Kernel#Integer" do
     Integer(100).should == 100
   end
 
-  it "raises a TypeError when to_int returns not-an-Integer object and to_i returns nil" do
-    obj = mock("object")
-    obj.should_receive(:to_int).and_return("1")
-    obj.should_receive(:to_i).and_return(nil)
-    -> {
-      Integer(obj)
-    }.should raise_consistent_error(TypeError, "can't convert MockObject into Integer (MockObject#to_i gives nil)")
+  ruby_version_is ""..."4.1" do
+    it "raises a TypeError when to_int returns not-an-Integer object and to_i returns nil" do
+      obj = mock("object")
+      obj.should_receive(:to_int).and_return("1")
+      obj.should_receive(:to_i).and_return(nil)
+      -> {
+        Integer(obj)
+      }.should raise_consistent_error(TypeError, "can't convert MockObject into Integer (MockObject#to_i gives nil)")
+    end
+
+    it "returns a result of to_i when to_int does not return an Integer" do
+      obj = mock("object")
+      obj.should_receive(:to_int).and_return("1")
+      obj.should_receive(:to_i).and_return(42)
+      Integer(obj).should == 42
+    end
   end
 
-  it "return a result of to_i when to_int does not return an Integer" do
-    obj = mock("object")
-    obj.should_receive(:to_int).and_return("1")
-    obj.should_receive(:to_i).and_return(42)
-    Integer(obj).should == 42
+  ruby_version_is "4.1" do
+    it "raises a TypeError when to_int does not return an Integer" do
+      obj = mock("object")
+      obj.should_receive(:to_int).and_return("1")
+      obj.should_not_receive(:to_str)
+      obj.should_not_receive(:to_i)
+      -> {
+        Integer(obj)
+      }.should raise_consistent_error(TypeError, "can't convert MockObject into Integer (MockObject#to_int gives String)")
+    end
   end
 
   it "returns a result of to_str" do
@@ -93,6 +107,13 @@ describe "Kernel#Integer" do
     Integer(obj).should == 1
   end
 
+  it "calls to_i on an object whose to_int raises" do
+    obj = mock("object")
+    obj.should_receive(:to_int).and_raise("conversion failed")
+    obj.should_receive(:to_i).and_return(1)
+    Integer(obj).should == 1
+  end
+
   it "raises a TypeError if to_i returns a value that is not an Integer" do
     obj = mock("object")
     obj.should_receive(:to_i).and_return("1")
@@ -131,6 +152,27 @@ describe "Kernel#Integer" do
   end
 
   describe "when passed exception: false" do
+    ruby_version_is ""..."4.1" do
+      it "returns a result of to_i when to_int does not return an Integer" do
+        obj = mock("object")
+        obj.should_receive(:to_int).and_return("1")
+        obj.should_receive(:to_i).and_return(42)
+        Integer(obj, exception: false).should == 42
+      end
+    end
+
+    ruby_version_is "4.1" do
+      it "raises a TypeError when to_int does not return an Integer" do
+        obj = mock("object")
+        obj.should_receive(:to_int).and_return("1")
+        obj.should_not_receive(:to_str)
+        obj.should_not_receive(:to_i)
+        -> {
+          Integer(obj, exception: false)
+        }.should raise_consistent_error(TypeError, "can't convert MockObject into Integer (MockObject#to_int gives String)")
+      end
+    end
+
     describe "and to_i returns a value that is not an Integer" do
       it "swallows an error" do
         obj = mock("object")
