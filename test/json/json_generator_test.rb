@@ -366,6 +366,7 @@ class JSONGeneratorTest < Test::Unit::TestCase
       space: "",
       space_before: "",
       sort_keys: false,
+      rfc8785: false,
     }.sort_by { |n,| n.to_s }.to_h, state.to_h.sort_by { |n,| n.to_s }.to_h)
 
     state = JSON::State.new(allow_duplicate_key: true)
@@ -385,6 +386,7 @@ class JSONGeneratorTest < Test::Unit::TestCase
       space: "",
       space_before: "",
       sort_keys: false,
+      rfc8785: false,
     }.sort_by { |n,| n.to_s }, state.to_h.sort_by { |n,| n.to_s })
   end
 
@@ -1227,4 +1229,34 @@ class JSONGeneratorTest < Test::Unit::TestCase
     end
   end
 
+  def test_rfc8785_numbers
+    assert_rfc8785 '-9007199254740992', -9007199254740992
+    assert_rfc8785 '0', 0
+    assert_rfc8785 '0.000001', 0.000001
+    assert_rfc8785 '1e+21', 1e+21
+    assert_rfc8785 '9.999999999999997e+22', 9.999999999999997e+22
+    assert_rfc8785 '9.999999999999997e-7', 9.999999999999997e-7
+    assert_rfc8785 '9007199254740992', 9007199254740992
+    assert_rfc8785 '9007199254740994', 9007199254740994
+    assert_rfc8785 '9007199254740996', 9007199254740996
+    assert_rfc8785 '999999999999999700000', 999999999999999700000
+    assert_rfc8785 '999999999999999900000', 999999999999999900000
+    assert_rfc8785 '333333333.3333333', 333333333.33333329
+  end
+
+  fixtures_path = File.expand_path('../fixtures/rfc8785/', __FILE__)
+  Dir[File.join(fixtures_path, "input/*.json", __FILE__)].each do |input|
+    filename = File.basename(input)
+    name, _ = File.basename(filename, ".json")
+    expected = File.join(fixtures_path, 'output', filename)
+    define_method("test_rfc8785_#{name}") do
+      assert_rfc8785(File.read(output), JSON.load_file(input))
+    end
+  end
+
+  private
+
+  def assert_rfc8785(expected, value)
+    assert_equal(expected, JSON.generate(value, rfc8785: true))
+  end
 end
