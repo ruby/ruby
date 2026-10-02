@@ -540,12 +540,7 @@ Warning[:deprecated]   = true
 Warning[:performance]  = true
 ```
 
-You can suppress a category by prefixing `no-` to the category name:
-
-```console
-$ ruby -W:no-experimental -e 'p IO::Buffer.new'
-#<IO::Buffer>
-```
+You can suppress a category by prefixing `no-` to the category name.
 
 ### `-x`: Execute Ruby Code Found in Text
 
