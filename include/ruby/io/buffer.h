@@ -119,6 +119,8 @@ VALUE rb_io_buffer_locked_for_writing(VALUE self, VALUE (*callback)(void *base, 
 
 VALUE rb_io_buffer_transfer(VALUE self);
 void rb_io_buffer_resize(VALUE self, size_t size);
+// Advance the start of a non-owning buffer or slice by the given amount.
+void rb_io_buffer_advance(VALUE self, size_t amount);
 void rb_io_buffer_clear(VALUE self, uint8_t value, size_t offset, size_t length);
 
 // The length is the maximum transfer length. Each function performs one
