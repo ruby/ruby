@@ -38,7 +38,7 @@ jobs:
       # default-gem stub.
       matrix:
         test_task: ${{ inputs.full-matrix && fromJSON('["check", "test-bundled-gems", "test-bundler-parallel"]') || fromJSON('["check"]') }}
-        os: ${{ inputs.full-matrix && fromJSON('["macos-26", "macos-15", "macos-14"]') || fromJSON('["macos-26"]') }}
+        os: ${{ inputs.full-matrix && fromJSON('["macos-26", "macos-15"]') || fromJSON('["macos-26"]') }}
         include: ${{ inputs.full-matrix && fromJSON('[{"os":"macos-15-intel", "test_task":"check", "prefix":"/tmp/ruby-prefix"}]') || fromJSON('[]') }}
       fail-fast: false
     runs-on: ${{ matrix.os }}
