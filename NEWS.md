@@ -298,27 +298,36 @@ Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for det
 
 ## Supported platforms
 
-* Support code for the following platforms has been removed.  Note
-  that all of them reached end of life many years ago and Ruby has
-  long been unbuildable on them.
-
-    * Interix (Windows Services for UNIX)
-    * SunOS 4 (Solaris, i.e. SunOS 5, is unaffected)
-    * BSD/OS (BSDi)
-    * NeXTSTEP, OpenStep and Rhapsody
-
-* Support code for the following platforms has also been removed.  None
-  of them has a platform maintainer.
+* Support code for the following platforms has been removed.  Their
+  vendors or distributors have ended support, there is no environment to
+  test Ruby on them, and none of them has a platform maintainer.
 
     * AmigaOS
     * AtheOS
+    * BSD/OS (BSDi)
     * ESIX
+    * EWS-UX (NEC EWS4800)
+    * FreeBSD, NetBSD and OpenBSD with a.out binaries
+    * GNU/kFreeBSD
+    * GNU/kOpenSolaris
     * HI-UX/MPP
+    * HP-UX on the HP 9000 Series 300
+    * Interix (Windows Services for UNIX)
     * IRIX
+    * MirOS BSD
+    * NeXTSTEP, OpenStep and Rhapsody
     * OSF/1 (Tru64 UNIX)
     * QNX Neutrino
+    * SunOS 4 (Solaris, i.e. SunOS 5, is unaffected)
     * System V Release 4
+    * UNICOS/mp (Cray X1)
     * UX/PDS
+
+* Support code for the following old versions has been removed.
+
+    * Cygwin 1.3 and earlier
+    * Solaris 9 and earlier
+    * Linux 2.6.23 and earlier (RHEL 5)
 
 * Windows 10 1703 or later no longer needs the `LongPathsEnabled` registry
   value to use paths longer than 260 characters.  This applies to any process
