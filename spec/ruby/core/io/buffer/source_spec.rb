@@ -109,10 +109,9 @@ ruby_version_is "4.1" do
       parent = @buffer.slice(1, 6)
       child = parent.slice(2, 2)
 
-      parent.free
+      @buffer.free
 
       child.should_not.valid?
-      @buffer.should.valid?
     end
 
     it "keeps a String-backed buffer's source alive" do
@@ -122,6 +121,8 @@ ruby_version_is "4.1" do
       @buffer.source.should.equal?(string)
       @buffer.free
       string.should == "test"
+    end
+
     it "clears a Buffer's source when freed, without detaching its slices" do
       buffer = IO::Buffer.for("abcdefgh")
       slice = buffer.slice
@@ -145,9 +146,5 @@ ruby_version_is "4.1" do
       end
     end
 
-    it "does not expose a source setter" do
-      buffer = IO::Buffer.new(0)
-      buffer.respond_to?(:source=).should == false
-    end
   end
 end

@@ -415,7 +415,7 @@ get_io_buffer_storage(VALUE self)
 static inline bool
 io_buffer_owning_p(const struct rb_io_buffer_view *buffer)
 {
-    return (buffer->flags & RB_IO_BUFFER_ALLOCATION_FLAGS) != 0;
+    return !io_buffer_slice_p(buffer) && (buffer->flags & RB_IO_BUFFER_ALLOCATION_FLAGS) != 0;
 }
 
 
@@ -1297,6 +1297,8 @@ io_buffer_get_bytes_for_writing(const struct rb_io_buffer_view *buffer, void **b
     if (!io_buffer_validate(buffer)) {
         rb_raise(rb_eIOBufferInvalidatedError, "Buffer is invalid!");
     }
+
+    io_buffer_try_get_bytes(buffer, base, size);
 }
 
 static void
@@ -1317,14 +1319,6 @@ get_io_buffer_view_for_writing(VALUE self)
     return buffer;
 }
 
-static inline void
-io_buffer_get_bytes_for_writing(struct rb_io_buffer *buffer, void **base, size_t *size)
-{
-    io_buffer_validate_for_writing(buffer);
-
-    io_buffer_try_get_bytes(buffer, base, size);
-}
-
 void
 rb_io_buffer_get_bytes_for_writing(VALUE self, void **base, size_t *size)
 {
@@ -1336,19 +1330,19 @@ rb_io_buffer_get_bytes_for_writing(VALUE self, void **base, size_t *size)
 static void
 io_buffer_get_bytes_for_reading(const struct rb_io_buffer_view *buffer, const void **base, size_t *size)
 {
-    if (!io_buffer_validate(buffer)) {
+    void *writable_base = NULL;
+    if (!io_buffer_try_get_bytes(buffer, &writable_base, size)) {
         rb_raise(rb_eIOBufferInvalidatedError, "Buffer has been invalidated!");
     }
+    *base = writable_base;
 }
 
 static void
 io_buffer_validate_for_reading(const struct rb_io_buffer_view *buffer)
 {
-    io_buffer_validate_for_reading(buffer);
-
-    void *writable_base = NULL;
-    io_buffer_try_get_bytes(buffer, &writable_base, size);
-    *base = writable_base;
+    const void *base;
+    size_t size;
+    io_buffer_get_bytes_for_reading(buffer, &base, &size);
 }
 
 void
@@ -1548,34 +1542,6 @@ rb_io_buffer_size(VALUE self)
     struct rb_io_buffer_view *buffer = get_io_buffer_view(self);
 
     return SIZET2NUM(buffer->size);
-}
-
-/*
- *  call-seq: source -> io_buffer, string, or nil
- *
- *  Returns the object backing this buffer, or +nil+ for a source-less buffer.
- *  A slice returns the buffer on which #slice was called, including when
- *  that buffer is itself a slice. The source is retained while the slice
- *  lives. There is no source setter.
- *
- *  A String-backed buffer returns its backing String. Without a block,
- *  IO::Buffer.for uses a frozen snapshot of a mutable input String, which is
- *  also returned as the source.
- *
- *  A source-less buffer may own or borrow its memory, so +nil+ does not imply
- *  that the buffer owns its allocation.
- *
- *    root = IO::Buffer.new(8)
- *    parent = root.slice(1, 6)
- *    child = parent.slice(1, 2)
- *    child.source.equal?(parent) # => true
- *    parent.source.equal?(root)  # => true
- *    root.source                 # => nil
- */
-static VALUE
-rb_io_buffer_source(VALUE self)
-{
-    return get_io_buffer(self)->source;
 }
 
 /*
@@ -1835,9 +1801,9 @@ rb_io_buffer_readonly_p(VALUE self)
  *  source's storage can therefore change the slice's read-only status.
  */
 static VALUE
-rb_io_buffer_readonly_p(VALUE self)
+io_buffer_readonly(VALUE self)
 {
-    struct rb_io_buffer *buffer = get_io_buffer(self);
+    struct rb_io_buffer_view *buffer = get_io_buffer_view(self);
 
     return RBOOL(io_buffer_readonly_p(buffer));
 }
@@ -1932,7 +1898,7 @@ io_buffer_readable_bytes_call(VALUE _arguments)
 VALUE
 rb_io_buffer_locked_for_reading(VALUE self, VALUE (*callback)(const void *base, size_t size, VALUE argument), VALUE argument)
 {
-    struct rb_io_buffer *buffer = get_io_buffer(self);
+    struct rb_io_buffer_view *buffer = get_io_buffer_view(self);
     io_buffer_validate_for_reading(buffer);
 
     struct io_buffer_readable_bytes_arguments arguments = {
@@ -1966,7 +1932,7 @@ io_buffer_writable_bytes_call(VALUE _arguments)
 VALUE
 rb_io_buffer_locked_for_writing(VALUE self, VALUE (*callback)(void *base, size_t size, VALUE argument), VALUE argument)
 {
-    get_io_buffer_for_writing(self);
+    get_io_buffer_view_for_writing(self);
 
     struct io_buffer_writable_bytes_arguments arguments = {
         .self = self,
@@ -2423,9 +2389,9 @@ io_buffer_storage_resize_copy(VALUE self, struct rb_io_buffer_storage *storage, 
 void
 rb_io_buffer_advance(VALUE self, size_t amount)
 {
-    struct rb_io_buffer *buffer = get_io_buffer(self);
+    struct rb_io_buffer_view *buffer = get_io_buffer_view(self);
 
-    if (buffer->flags & RB_IO_BUFFER_ALLOCATION_FLAGS) {
+    if (io_buffer_owning_p(buffer)) {
         rb_raise(rb_eIOBufferAccessError, "Cannot advance an owning buffer!");
     }
 

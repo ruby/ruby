@@ -35,6 +35,10 @@ RUBY_EXTERN VALUE rb_cIOBufferSlice;
 // the native payload, rather than only Ruby inheritance from IO::Buffer.
 int rb_io_buffer_p(VALUE self);
 
+// Returns whether the view is read-only, including restrictions inherited
+// from its current source.
+int rb_io_buffer_readonly_p(VALUE self);
+
 // The operating system page size.
 RUBY_EXTERN size_t RUBY_IO_BUFFER_PAGE_SIZE;
 
