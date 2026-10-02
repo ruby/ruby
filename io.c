@@ -336,23 +336,6 @@ rb_fd_fix_cloexec(int fd)
     rb_update_max_fd(fd);
 }
 
-/* this is only called once */
-static int
-rb_fix_detect_o_cloexec(int fd)
-{
-#if defined(O_CLOEXEC) && defined(F_GETFD)
-    int flags = fcntl(fd, F_GETFD);
-
-    if (flags == -1)
-        rb_bug("rb_fix_detect_o_cloexec: fcntl(%d, F_GETFD) failed: %s", fd, strerror(errno));
-
-    if (flags & FD_CLOEXEC)
-        return 1;
-#endif /* fall through if O_CLOEXEC does not work: */
-    rb_maygvl_fd_fix_cloexec(fd);
-    return 0;
-}
-
 static inline bool
 io_again_p(int e)
 {
@@ -363,7 +346,6 @@ int
 rb_cloexec_open(const char *pathname, int flags, mode_t mode)
 {
     int ret;
-    static int o_cloexec_state = -1; /* <0: unknown, 0: ignored, >0: working */
 
     static const int retry_interval = 0;
     static const int retry_max_count = 10000;
@@ -371,7 +353,6 @@ rb_cloexec_open(const char *pathname, int flags, mode_t mode)
     int retry_count = 0;
 
 #ifdef O_CLOEXEC
-    /* O_CLOEXEC is available since Linux 2.6.23.  Linux 2.6.18 silently ignore it. */
     flags |= O_CLOEXEC;
 #elif defined O_NOINHERIT
     flags |= O_NOINHERIT;
@@ -386,15 +367,10 @@ rb_cloexec_open(const char *pathname, int flags, mode_t mode)
     }
 
     if (ret < 0) return ret;
-    if (ret <= 2 || o_cloexec_state == 0) {
-        rb_maygvl_fd_fix_cloexec(ret);
-    }
-    else if (o_cloexec_state > 0) {
-        return ret;
-    }
-    else {
-        o_cloexec_state = rb_fix_detect_o_cloexec(ret);
-    }
+#ifdef O_CLOEXEC
+    if (ret > 2) return ret;
+#endif
+    rb_maygvl_fd_fix_cloexec(ret);
     return ret;
 }
 
@@ -518,26 +494,9 @@ rb_cloexec_fcntl_dupfd(int fd, int minfd)
 {
     int ret;
 
-#if defined(HAVE_FCNTL) && defined(F_DUPFD_CLOEXEC) && defined(F_DUPFD)
-    static int try_dupfd_cloexec = 1;
-    if (try_dupfd_cloexec) {
-        ret = fcntl(fd, F_DUPFD_CLOEXEC, minfd);
-        if (ret != -1) {
-            if (ret <= 2)
-                rb_maygvl_fd_fix_cloexec(ret);
-            return ret;
-        }
-        /* F_DUPFD_CLOEXEC is available since Linux 2.6.24.  Linux 2.6.18 fails with EINVAL */
-        if (errno == EINVAL) {
-            ret = fcntl(fd, F_DUPFD, minfd);
-            if (ret != -1) {
-                try_dupfd_cloexec = 0;
-            }
-        }
-    }
-    else {
-        ret = fcntl(fd, F_DUPFD, minfd);
-    }
+#if defined(HAVE_FCNTL) && defined(F_DUPFD_CLOEXEC)
+    ret = fcntl(fd, F_DUPFD_CLOEXEC, minfd);
+    if (ret > 2) return ret;
 #elif defined(HAVE_FCNTL) && defined(F_DUPFD)
     ret = fcntl(fd, F_DUPFD, minfd);
 #else
