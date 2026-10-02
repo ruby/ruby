@@ -440,9 +440,9 @@ AS_CASE(["$target_os"],
 [darwin*], [
     AC_MSG_CHECKING(if minimum required OS X version is supported)
     AC_PREPROC_IFELSE([AC_LANG_SOURCE([[@%:@include <AvailabilityMacros.h>
-	@%:@if MAC_OS_X_VERSION_MIN_REQUIRED < __MAC_10_5
-	@%:@error pre OS X 10.5
-	[!<===== pre OS X 10.5 =====>]
+	@%:@if MAC_OS_X_VERSION_MIN_REQUIRED < __MAC_10_6
+	@%:@error pre OS X 10.6
+	[!<===== pre OS X 10.6 =====>]
 	@%:@endif
 	]])],
 	[AC_MSG_RESULT(yes)],

@@ -27,10 +27,6 @@
 # include <sys/wait.h>
 #endif
 
-#if defined __APPLE__
-# include <AvailabilityMacros.h>
-#endif
-
 #include "internal.h"
 #include "internal/class.h"
 #include "internal/error.h"
@@ -964,11 +960,6 @@ bug_important_message(FILE *out, const char *const msg, size_t len)
     fwrite(p, 1, endmsg - p, out);
 }
 
-#undef CRASH_REPORTER_MAY_BE_CREATED
-#if defined(__APPLE__) && \
-    (!defined(MAC_OS_X_VERSION_10_6) || MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_6)
-# define CRASH_REPORTER_MAY_BE_CREATED
-#endif
 static void
 preface_dump(FILE *out)
 {
@@ -977,10 +968,6 @@ preface_dump(FILE *out)
         "-- Crash Report log information "
         "--------------------------------------------\n"
         "   See Crash Report log file in one of the following locations:\n"
-# ifdef CRASH_REPORTER_MAY_BE_CREATED
-        "     * ~/Library/Logs/CrashReporter\n"
-        "     * /Library/Logs/CrashReporter\n"
-# endif
         "     * ~/Library/Logs/DiagnosticReports\n"
         "     * /Library/Logs/DiagnosticReports\n"
         "   for more details.\n"
@@ -1002,9 +989,6 @@ postscript_dump(FILE *out)
         "[IMPORTANT]"
         /*" ------------------------------------------------"*/
         "\n""Don't forget to include the Crash Report log file under\n"
-# ifdef CRASH_REPORTER_MAY_BE_CREATED
-        "CrashReporter or "
-# endif
         "DiagnosticReports directory in bug reports.\n"
         /*"------------------------------------------------------------\n"*/
         "\n";

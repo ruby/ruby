@@ -100,16 +100,6 @@
 
 #ifdef HAVE_COPYFILE_H
 # include <copyfile.h>
-
-# ifndef COPYFILE_STATE_COPIED
-/*
- * Some OSes (e.g., OSX < 10.6) implement fcopyfile() but not
- * COPYFILE_STATE_COPIED.  Since the only use of the former here
- * requires the latter, we disable the former when the latter is undefined.
- */
-#   undef HAVE_FCOPYFILE
-# endif
-
 #endif
 
 #if defined __APPLE__
