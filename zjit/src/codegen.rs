@@ -2815,7 +2815,7 @@ fn gen_entry_point(jit: &mut JITState, asm: &mut Assembler, jit_entry_idx: Optio
     // always the top-level frame (depth 0). Inlined frames get their own deeper
     // slots in gen_push_inline_frame().
     let jit_frame = JITFrame::new_iseq(entry_pc(jit.iseq(), jit_entry_idx), jit.iseq(), 0);
-    asm.mov(Opnd::mem(64, NATIVE_BASE_PTR, -SIZEOF_VALUE_I32), Opnd::const_ptr(jit_frame));
+    asm.mov(Opnd::mem(64, NATIVE_BASE_PTR, jit_frame_slot_offset(0)), Opnd::const_ptr(jit_frame));
     asm.mov(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_JIT_RETURN), NATIVE_BASE_PTR);
 
     // Direct JIT-to-JIT callers switch the CFP register before calling this entry
@@ -3390,7 +3390,7 @@ fn cfp_jit_return_for_depth(asm: &mut Assembler, depth: InlineDepth) -> Opnd {
     if depth == 0 {
         NATIVE_BASE_PTR
     } else {
-        asm.lea(Opnd::mem(64, NATIVE_BASE_PTR, -(SIZEOF_VALUE_I32 * depth as i32)))
+        asm.lea(Opnd::mem(64, NATIVE_BASE_PTR, jit_frame_slot_offset(depth) + SIZEOF_VALUE_I32))
     }
 }
 
