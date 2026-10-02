@@ -1,0 +1,19 @@
+prelude: |
+  empty = ""
+  ascii_blank_short = " \t\r\n"
+  ascii_blank_long = " " * 1024
+  ascii_nonblank_short = "hello"
+  ascii_nonblank_long = " " * 1023 + "x"
+  unicode_blank = "\u3000"
+  unicode_nonblank = "\u3000" * 255 + "x"
+
+benchmark:
+  blank_empty: empty.blank?
+  blank_ascii_short: ascii_blank_short.blank?
+  blank_ascii_long: ascii_blank_long.blank?
+  nonblank_ascii_short: ascii_nonblank_short.blank?
+  nonblank_ascii_long: ascii_nonblank_long.blank?
+  blank_unicode: unicode_blank.blank?
+  nonblank_unicode: unicode_nonblank.blank?
+
+loop_count: 1_000_000
