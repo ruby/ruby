@@ -1690,27 +1690,6 @@ tick(void)
     return val;
 }
 
-#elif defined(__POWERPC__) && defined(__APPLE__)
-/* Implementation for macOS PPC by @nobu
- * See: https://github.com/ruby/ruby/pull/5975#discussion_r890045558
- */
-typedef unsigned long long tick_t;
-#define PRItick "llu"
-
-static __inline__ tick_t
-tick(void)
-{
-    unsigned long int upper, lower, tmp;
-    # define mftbu(r) __asm__ volatile("mftbu   %0" : "=r"(r))
-    # define mftb(r)  __asm__ volatile("mftb    %0" : "=r"(r))
-        do {
-            mftbu(upper);
-            mftb(lower);
-            mftbu(tmp);
-        } while (tmp != upper);
-    return ((tick_t)upper << 32) | lower;
-}
-
 #elif defined(__aarch64__) &&  defined(__GNUC__)
 typedef unsigned long tick_t;
 #define PRItick "lu"
