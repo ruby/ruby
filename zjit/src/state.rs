@@ -29,9 +29,21 @@ pub static mut rb_zjit_entry: *const u8 = null();
 #[unsafe(no_mangle)]
 pub static mut rb_zjit_compiling_p: bool = false;
 
+static mut OUT_OF_MEMORY_P: bool = false;
+
 /// Like rb_zjit_enabled_p, but for Rust code.
 pub fn zjit_enabled_p() -> bool {
     unsafe { rb_zjit_entry != null() }
+}
+
+pub fn zjit_out_of_memory(out_of_memory: bool) {
+    unsafe {
+        OUT_OF_MEMORY_P = out_of_memory
+    }
+}
+
+pub fn zjit_out_of_memory_p() -> bool {
+    unsafe { OUT_OF_MEMORY_P }
 }
 
 /// Global state needed for code generation

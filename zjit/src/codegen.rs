@@ -20,9 +20,9 @@ use crate::gc::append_gc_offsets;
 use crate::payload::{IseqCodePtrs, IseqStatus, IseqVersion, IseqVersionRef, JITFrame, get_or_create_iseq_payload};
 use crate::profile::reset_profiles_remaining;
 use crate::perf;
-use crate::state::{rb_zjit_compiling_p, ZJITState};
+use crate::state::{zjit_out_of_memory, ZJITState};
 use crate::stats::{CompileError, exit_counter_for_compile_error, exit_counter_for_unhandled_hir_insn, incr_counter, incr_counter_by, send_fallback_counter, send_fallback_counter_for_method_type, send_fallback_counter_for_super_method_type, send_fallback_counter_ptr_for_opcode, send_fallback_counter_for_optimized_method_type};
-use crate::stats::{counter_ptr, with_time_stat, trace_compile_phase, Counter, Counter::{compile_time_ns, exit_compile_error}};
+use crate::stats::{counter_ptr, with_compile_time_stat, trace_compile_phase, Counter, Counter::{compile_time_ns, exit_compile_error}};
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
 use crate::backend::lir::{self, Assembler, CArgLocation, C_ARG_OPNDS, C_RET_OPND, CFP, EC, NATIVE_BASE_PTR, NATIVE_STACK_PTR, Opnd, SP, SideExit, SideExitRecompile, SideExitTarget, StackMap, StackMapEntry, Target, asm_ccall, asm_comment};
 use crate::hir::{self, iseq_to_hir, BlockId, Invariant, RangeType, SideExitReason::{self, *}, SpecialBackrefSymbol, SpecialObjectType};
@@ -200,14 +200,14 @@ pub extern "C" fn rb_zjit_iseq_gen_entry_point(iseq: IseqPtr, ec: EcPtr, jit_exc
         update_self_is_heap_object(iseq, unsafe { get_ec_cfp(ec) });
 
         let cb = ZJITState::get_code_block();
-        let mut code_ptr = with_time_stat(compile_time_ns, || gen_iseq_entry_point(cb, iseq, jit_exception));
+        let mut code_ptr = with_compile_time_stat(compile_time_ns, || gen_iseq_entry_point(cb, iseq, jit_exception));
 
         // If this compile ran out of executable memory, stop compiling so
         // that the interpreter stops incrementing ISEQ call counters. It is
         // set back to true in update_dropped_bytes() if memory becomes
         // available again.
         if matches!(&code_ptr, Err(CompileError::OutOfMemory)) {
-            unsafe { rb_zjit_compiling_p = false; }
+            zjit_out_of_memory(true);
         }
 
         if let Err(err) = &code_ptr {
@@ -242,7 +242,7 @@ fn gen_iseq_entry_point(cb: &mut CodeBlock, iseq: IseqPtr, jit_exception: bool) 
     let iseq_name = iseq_get_location(iseq, 0);
     trace_compile_phase(&iseq_name, || {
         // Compile ISEQ into High-level IR
-        let function = crate::stats::with_time_stat(Counter::compile_hir_time_ns, || compile_iseq(iseq).inspect_err(|_| {
+        let function = crate::stats::with_compile_time_stat(Counter::compile_hir_time_ns, || compile_iseq(iseq).inspect_err(|_| {
             incr_counter!(failed_iseq_count);
         }))?;
 
@@ -387,14 +387,14 @@ fn gen_iseq_body(cb: &mut CodeBlock, iseq: IseqPtr, mut version: IseqVersionRef,
     // Convert ISEQ into optimized High-level IR if not given
     let function = match function {
         Some(function) => function,
-        None => &crate::stats::with_time_stat(Counter::compile_hir_time_ns, || compile_iseq(iseq))?,
+        None => &crate::stats::with_compile_time_stat(Counter::compile_hir_time_ns, || compile_iseq(iseq))?,
     };
 
     // Compile the High-level IR
     let (iseq_code_ptrs, gc_offsets, iseq_calls) =
         trace_compile_phase("codegen", || {
             let (iseq_code_ptrs, gc_offsets, iseq_calls) =
-                crate::stats::with_time_stat(Counter::compile_lir_time_ns, || gen_function(cb, iseq, version, function))?;
+                crate::stats::with_compile_time_stat(Counter::compile_lir_time_ns, || gen_function(cb, iseq, version, function))?;
 
             // Stub callee ISEQs for JIT-to-JIT calls
             trace_compile_phase("generate_jit_jit_stubs", || {
@@ -3675,7 +3675,7 @@ fn compile_iseq(iseq: IseqPtr) -> Result<Function, CompileError> {
     }
 
     let function = trace_compile_phase("build_hir", ||
-        crate::stats::with_time_stat(Counter::compile_hir_build_time_ns, || iseq_to_hir(iseq))
+        crate::stats::with_compile_time_stat(Counter::compile_hir_build_time_ns, || iseq_to_hir(iseq))
     );
     let mut function = match function {
         Ok(function) => function,
@@ -3957,7 +3957,7 @@ c_callable! {
             }
 
             // Otherwise, attempt to compile the ISEQ. We have to mark_all_executable() beyond this point.
-            let code_ptr = with_time_stat(compile_time_ns, || function_stub_hit_body(cb, &iseq_call));
+            let code_ptr = with_compile_time_stat(compile_time_ns, || function_stub_hit_body(cb, &iseq_call));
             if code_ptr.is_ok() {
                 if let Some(version) = payload.versions.last_mut() {
                     unsafe { version.as_mut() }.incoming.push(iseq_call);

@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+# :markup: markdown
 
 # This module allows for introspection of ZJIT, CRuby's just-in-time compiler.
 # Everything in the module is highly implementation specific and the API might
@@ -59,6 +60,29 @@ class << RubyVM::ZJIT
   # To show this to ZJIT, say `::RubyVM::ZJIT.induce_breakpoint!` verbatim.
   # Other forms are too dynamic to detect during compilation.
   def induce_breakpoint! = nil
+
+  # Monotonically increasing counter representing the amount of wall time
+  # nanoseconds spent compiling.
+  def total_compile_time_ns
+    Primitive.rb_zjit_total_compile_time_ns_get
+  end
+
+  # The maximum amount of time `ZJIT` is allowed to spend compiling.
+  # When `total_compile_time_ns` goes over `max_compile_time_ns`, `YJIT`
+  # pause compilation until `max_compile_time_ns` is raised.
+  # If set to `0`, there is no limit.
+  # This is a best-effort functionality, there are situations in which `ZJIT` may
+  # still compile even when paused.
+  # This feature is intended to be used to control how fast the JIT warms up,
+  # to spread the compilation overhead over a longer period of time.
+  def max_compile_time_ns
+    Primitive.rb_zjit_max_compile_time_ns_get
+  end
+
+  # Set the maximum amount of time YJIT is allowed to spend compiling.
+  def max_compile_time_ns=(max_compile_time_ns)
+    Primitive.rb_zjit_max_compile_time_ns_set(max_compile_time_ns)
+  end
 
   # Check if `--zjit-stats` is used
   def stats_enabled?
