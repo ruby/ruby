@@ -975,7 +975,36 @@ class TestGemPackage < Gem::Package::TarTestCase
     filepath = File.join @destination, "README.rdoc"
     assert_path_exist filepath
 
-    assert_equal 0o104444, File.stat(filepath).mode
+    assert_equal 0o100444, File.stat(filepath).mode
+  end
+
+  def test_extract_tar_gz_special_mode_bits
+    pend "chmod not supported" if Gem.win_platform?
+
+    package = Gem::Package.new @gem
+
+    tgz_io = util_tar_gz do |tar|
+      tar.mkdir    "lib", 0o7755
+      tar.add_file "lib/foo.rb", 0o7644 do |io|
+        io.write "hi"
+      end
+      tar.add_file "bin/foo", 0o7755 do |io|
+        io.write "hi"
+      end
+    end
+
+    package.extract_tar_gz tgz_io, @destination
+
+    dirpath = File.join @destination, "lib"
+    assert_equal 0o40755.to_s(8), File.stat(dirpath).mode.to_s(8)
+
+    filepath = File.join @destination, "lib/foo.rb"
+    mode = 0o100644 & ~File.umask
+    assert_equal mode.to_s(8), File.stat(filepath).mode.to_s(8)
+
+    filepath = File.join @destination, "bin/foo"
+    mode = 0o100755 & ~File.umask
+    assert_equal mode.to_s(8), File.stat(filepath).mode.to_s(8)
   end
 
   def test_extract_tar_gz_absolute

@@ -548,7 +548,7 @@ EOM
           end
 
         unless directories.include?(mkdir)
-          FileUtils.mkdir_p mkdir, mode: dir_mode ? 0o755 : (entry.header.mode if entry.directory?)
+          FileUtils.mkdir_p mkdir, mode: dir_mode ? 0o755 : (entry.header.mode & 0o777 if entry.directory?)
           directories << mkdir
         end
 
@@ -585,10 +585,10 @@ EOM
   def file_mode(mode) # :nodoc:
     ((mode & 0o111).zero? ? data_mode : prog_mode) ||
       # If we're not using one of the default modes, then we're going to fall
-      # back to the mode from the tarball. In this case we need to mask it down
-      # to fit into 2^16 bits (the maximum value for a mode in CRuby since it
-      # gets put into an unsigned short).
-      (mode & ((1 << 16) - 1))
+      # back to the permission bits from the tarball. Masking drops setuid,
+      # setgid and sticky bits along with anything that does not fit into a
+      # mode in CRuby (an unsigned short).
+      (mode & 0o777)
   end
 
   ##
