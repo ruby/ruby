@@ -2444,7 +2444,14 @@ ossl_ssl_get_state(VALUE self)
  * call-seq:
  *    ssl.pending => Integer
  *
- * The number of bytes that are immediately available for reading.
+ * Returns the number of bytes buffered by the OpenSSL library and immediately
+ * available for reading with #sysread.
+ *
+ * This does not include data read ahead and buffered by SSLSocket. It may
+ * therefore return 0 even when data is available for reading with methods
+ * that are aware of the SSLSocket buffer, such as #read or #gets.
+ *
+ * See also the man page SSL_pending(3).
  */
 static VALUE
 ossl_ssl_pending(VALUE self)
