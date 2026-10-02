@@ -974,7 +974,7 @@ module Test
         case options[:color]
         when :always
           color = true
-        when :auto, nil
+        when :auto, :status, nil
           color = true if @tty || @options[:job_status] == :replace
         else
           color = false
@@ -1025,13 +1025,16 @@ module Test
               del_status_line
               next
             end
-            color = :skip
+            color = "skip"
           else
-            color = :fail
+            color = "fail"
           end
           first, msg = msg.split(/$/, 2)
           first = sprintf("%3d) %s", @report_count += 1, first)
-          @failed_output.print(sep, @colorize.decorate(first, color), msg, "\n")
+          unless @options[:color] == :status
+            first = @colorize.decorate(first, color)
+          end
+          @failed_output.print(sep, first, msg, "\n")
           sep = nil
         end
         report.clear
@@ -1062,8 +1065,8 @@ module Test
         end
 
         opts.on '--color[=WHEN]',
-                [:always, :never, :auto],
-                "colorize the output.  WHEN defaults to 'always'", "or can be 'never' or 'auto'." do |c|
+                [:always, :never, :auto, :status],
+                "colorize the output.  WHEN defaults to 'always'", "or can be 'never', 'auto' or 'status'." do |c|
           options[:color] = c || :always
         end
 
