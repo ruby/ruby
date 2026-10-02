@@ -6844,6 +6844,43 @@ impl Function {
     ///
     /// It can fold fixnum math, truthiness tests, and branches with constant conditionals.
     fn fold_constants(&mut self) {
+        struct StaticSymbolLookup {
+            key: VALUE,
+            value: Option<VALUE>,
+            all_static_symbols: bool,
+        }
+
+        unsafe extern "C" fn find_static_symbol_key(key: st_data_t, value: st_data_t, lookup: st_data_t) -> c_int {
+            let lookup = unsafe { &mut *(lookup as *mut StaticSymbolLookup) };
+            let key = VALUE(key as usize);
+            if !key.static_sym_p() {
+                lookup.all_static_symbols = false;
+                return ST_STOP as c_int;
+            }
+            if key == lookup.key {
+                lookup.value = Some(VALUE(value as usize));
+            }
+            ST_CONTINUE as c_int
+        }
+
+        fn static_symbol_hash_lookup(hash: VALUE, key: VALUE) -> Option<VALUE> {
+            if !key.static_sym_p() {
+                return None;
+            }
+
+            // Compare static Symbols by identity instead of using CRuby's generic
+            // lookup, which can call Ruby `hash` and `eql?` methods for other keys.
+            let mut lookup = StaticSymbolLookup { key, value: None, all_static_symbols: true };
+            unsafe {
+                rb_hash_stlike_foreach(
+                    hash,
+                    Some(find_static_symbol_key),
+                    (&mut lookup as *mut StaticSymbolLookup) as st_data_t,
+                );
+            }
+            if lookup.all_static_symbols { lookup.value } else { None }
+        }
+
         fn is_power_of_two(d: i64) -> bool {
             d > 0 && (d & (d - 1)) == 0
         }
@@ -7135,6 +7172,17 @@ impl Function {
                             (true, Some(index)) => {
                                 let val = unsafe { rb_yarv_ary_entry_internal(array_obj, index) };
                                 self.new_insn(Insn::Const { val: Const::Value(val) })
+                            }
+                            _ => insn_id,
+                        }
+                    }
+                    &Insn::HashAref { hash, key, .. } => {
+                        match (self.type_of(hash).ruby_object(), self.type_of(key).ruby_object()) {
+                            (Some(hash_obj), Some(key_obj)) if hash_obj.is_frozen() => {
+                                match static_symbol_hash_lookup(hash_obj, key_obj) {
+                                    Some(val) => self.new_insn(Insn::Const { val: Const::Value(val) }),
+                                    None => insn_id,
+                                }
                             }
                             _ => insn_id,
                         }
