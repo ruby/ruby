@@ -2476,16 +2476,6 @@ AS_IF([test x"$ac_cv_lib_rt_timer_settime" = xyes], [
     AC_DEFINE(HAVE_TIMER_SETTIME, 1)
 ])
 
-AC_CACHE_CHECK(for unsetenv returns a value, rb_cv_unsetenv_return_value,
-  [AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
-#include <stdlib.h>
-]], [[int v = unsetenv("foo");]])],
-	rb_cv_unsetenv_return_value=yes,
-	rb_cv_unsetenv_return_value=no)])
-AS_IF([test "$rb_cv_unsetenv_return_value" = no], [
-  AC_DEFINE(VOID_UNSETENV)
-])
-
 # End of setjmp check.
 
 AC_ARG_ENABLE(setreuid,
