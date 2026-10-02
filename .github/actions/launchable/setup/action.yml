@@ -181,7 +181,7 @@ runs:
       if: >-
         ${{
         steps.enable-launchable.outputs.enable-launchable
-        && (startsWith(inputs.os, 'macos')
+        && (runner.os == 'macOS'
           || endsWith(inputs.os, 'ppc64le')
           || endsWith(inputs.os, 's390x'))
         }}
