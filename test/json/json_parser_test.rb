@@ -935,6 +935,33 @@ class JSONParserTest < Test::Unit::TestCase
     assert_equal 17, error.column
   end
 
+  def test_parse_error_position_at_newline
+    omit "JRuby string decoding errors don't contain positions" if RUBY_ENGINE == "jruby"
+
+    ["[1,\n\"ab\ncd\"]", "[1,\n\"日本\ncd\"]"].each do |json|
+      error = assert_raise(JSON::ParserError) { JSON.parse(json) }
+      assert_equal 2, error.line
+      assert_equal 4, error.column
+      assert_include error.message, 'at line 2 column 4'
+    end
+  end
+
+  def test_parse_error_position_with_multibyte_characters
+    {
+      '["日本", @]' => [1, 8],
+      "[\n\"é日😀\", @" => [2, 8],
+      '{"日本":{"a":1,"a":2}}' => [1, 7],
+      '["日本",' => [1, 7],
+      "[1,\n" => [2, 1],
+      '' => [1, 1],
+    }.each do |json, (line, column)|
+      error = assert_raise(JSON::ParserError) { JSON.parse(json) }
+      assert_equal line, error.line
+      assert_equal column, error.column
+      assert_include error.message, "at line #{line} column #{column}"
+    end
+  end
+
   def test_parse_error_json_path_on_load
     assert_parse_error_at "$" do
       JSON.load('{"a": {"b": {"c":', -> (obj) {

@@ -138,7 +138,7 @@ module JSON
     # Is +nil+ when raised by JSON::ResumableParser.
     attr_reader :line
 
-    # Column number where the parser encountered an error.
+    # One-based column number where the parser encountered an error, counted in Unicode codepoints.
     # Is +nil+ when raised by JSON::ResumableParser.
     attr_reader :column
 

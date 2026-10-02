@@ -592,19 +592,15 @@ static void cursor_position(JSON_ParserState *state, long *line_out, long *colum
     }
 
     const char *cursor = state->cursor;
-    long column = 0;
     long line = 1;
 
-    while (cursor >= state->start) {
-        if (*cursor-- == '\n') {
-            line++;
-            break;
-        }
-        column++;
+    while (cursor > state->start && cursor[-1] != '\n') {
+        cursor--;
     }
+    long column = rb_enc_strlen(cursor, state->cursor, enc_utf8) + 1;
 
-    while (cursor >= state->start) {
-        if (*cursor-- == '\n') {
+    while (cursor > state->start) {
+        if (*--cursor == '\n') {
             line++;
         }
     }
