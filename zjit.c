@@ -385,7 +385,8 @@ rb_zjit_array_aref_with_adjusted_index(VALUE ary, long index, VALUE *out)
     if (index >= 0 && index < RARRAY_LEN(ary)) {
         *out = RARRAY_AREF(ary, index);
         return true;
-    } else {
+    }
+    else {
         return false;
     }
 }
