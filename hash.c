@@ -5738,16 +5738,6 @@ env_fetch_values(int argc, VALUE *argv, VALUE ehash)
 }
 
 #if defined(_WIN32) || (defined(HAVE_SETENV) && defined(HAVE_UNSETENV))
-#elif defined __sun
-static int
-in_origenv(const char *str)
-{
-    char **env;
-    for (env = origenviron; *env; ++env) {
-        if (*env == str) return 1;
-    }
-    return 0;
-}
 #else
 static int
 envix(const char *nam)
@@ -5767,8 +5757,7 @@ envix(const char *nam)
 }
 #endif
 
-#if defined(_WIN32) || \
-  (defined(__sun) && !(defined(HAVE_SETENV) && defined(HAVE_UNSETENV)))
+#if defined(_WIN32)
 
 NORETURN(static void invalid_envname(const char *name));
 
@@ -5848,45 +5837,6 @@ ruby_setenv(const char *name, const char *value)
         }
 
         if (ret) rb_sys_fail_sprintf("unsetenv(%s)", name);
-    }
-#elif defined __sun
-    /* Solaris 9 (or earlier) does not have setenv(3C) and unsetenv(3C). */
-    /* The below code was tested on Solaris 10 by:
-         % ./configure ac_cv_func_setenv=no ac_cv_func_unsetenv=no
-    */
-    size_t len, mem_size;
-    char **env_ptr, *str, *mem_ptr;
-
-    check_envname(name);
-    len = strlen(name);
-    if (value) {
-        mem_size = len + strlen(value) + 2;
-        mem_ptr = malloc(mem_size);
-        if (mem_ptr == NULL)
-            rb_sys_fail_sprintf("malloc(%"PRIuSIZE")", mem_size);
-        snprintf(mem_ptr, mem_size, "%s=%s", name, value);
-    }
-
-    ENV_LOCKING() {
-        for (env_ptr = GET_ENVIRON(environ); (str = *env_ptr) != 0; ++env_ptr) {
-            if (!strncmp(str, name, len) && str[len] == '=') {
-                if (!in_origenv(str)) free(str);
-                while ((env_ptr[0] = env_ptr[1]) != 0) env_ptr++;
-                break;
-            }
-        }
-    }
-
-    if (value) {
-        int ret;
-        ENV_LOCKING() {
-            ret = putenv(mem_ptr);
-        }
-
-        if (ret) {
-            free(mem_ptr);
-            rb_sys_fail_sprintf("putenv(%s)", name);
-        }
     }
 #else  /* WIN32 */
     size_t len;
