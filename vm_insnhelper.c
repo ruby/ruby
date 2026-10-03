@@ -132,7 +132,7 @@ callable_method_entry_p(const rb_callable_method_entry_t *cme)
     else {
         VM_ASSERT(IMEMO_TYPE_P((VALUE)cme, imemo_ment), "imemo_type:%s", rb_imemo_name(imemo_type((VALUE)cme)));
 
-        if (callable_class_p(cme->defined_class)) {
+        if (!cme->def || callable_class_p(cme->defined_class)) {
             return TRUE;
         }
         else {
@@ -2103,15 +2103,9 @@ vm_populate_cc(VALUE klass, const struct rb_callinfo * const ci, ID mid)
 
     RB_DEBUG_COUNTER_INC(cc_not_found_in_ccs);
 
-    const rb_callable_method_entry_t *cme = rb_callable_method_entry(klass, mid);
+    const rb_callable_method_entry_t *cme = rb_callable_method_entry_or_negative(klass, mid);
 
-    VM_ASSERT(cme == NULL || IMEMO_TYPE_P(cme, imemo_ment));
-
-    if (cme == NULL) {
-        // undef or not found: can't cache the information
-        VM_ASSERT(vm_cc_cme(&vm_empty_cc) == NULL);
-        return &vm_empty_cc;
-    }
+    VM_ASSERT(IMEMO_TYPE_P(cme, imemo_ment));
 
     VALUE cc_tbl = RCLASS_WRITABLE_CC_TBL(klass);
     const VALUE original_cc_table = cc_tbl;
@@ -2123,7 +2117,7 @@ vm_populate_cc(VALUE klass, const struct rb_callinfo * const ci, ID mid)
         cc_tbl = rb_vm_cc_table_dup(cc_tbl);
     }
 
-    VM_ASSERT(cme == rb_callable_method_entry(klass, mid));
+    VM_ASSERT(cme == rb_callable_method_entry_or_negative(klass, mid));
 
     METHOD_ENTRY_CACHED_SET((struct rb_callable_method_entry_struct *)cme);
 
@@ -2141,7 +2135,9 @@ vm_populate_cc(VALUE klass, const struct rb_callinfo * const ci, ID mid)
         }
     }
 
-    cme = rb_check_overloaded_cme(cme, ci);
+    if (!UNDEFINED_METHOD_ENTRY_P(cme)) {
+        cme = rb_check_overloaded_cme(cme, ci);
+    }
 
     const struct rb_callcache *cc = vm_cc_new(klass, cme, vm_call_general, cc_type_normal);
     vm_ccs_push(cc_tbl, mid, ccs, ci, cc);
@@ -2427,13 +2423,12 @@ typedef VALUE (*cfunc_type)(ANYARGS);
 static inline int
 check_cfunc(const rb_callable_method_entry_t *me, cfunc_type func)
 {
-    if (! me) {
+    if (! me || ! me->def) {
         return false;
     }
     else {
         VM_ASSERT(IMEMO_TYPE_P(me, imemo_ment));
         VM_ASSERT(callable_method_entry_p(me));
-        VM_ASSERT(me->def);
         if (me->def->type != VM_METHOD_TYPE_CFUNC) {
             return false;
         }
@@ -5018,7 +5013,7 @@ vm_call_method(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_ca
 
     VM_ASSERT(callable_method_entry_p(vm_cc_cme(cc)));
 
-    if (vm_cc_cme(cc) != NULL) {
+    if (!UNDEFINED_METHOD_ENTRY_P(vm_cc_cme(cc))) {
         switch (METHOD_ENTRY_VISI(vm_cc_cme(cc))) {
           case METHOD_VISI_PUBLIC: /* likely */
             return vm_call_method_each_type(ec, cfp, calling);
@@ -5188,7 +5183,7 @@ vm_search_super_method(const rb_control_frame_t *reg_cfp, struct rb_call_data *c
         const rb_callable_method_entry_t *cached_cme = vm_cc_cme(cc);
 
         // define_method can cache for different method id
-        if (cached_cme == NULL) {
+        if (UNDEFINED_METHOD_ENTRY_P(cached_cme)) {
             // empty_cc_for_super is not markable object
             cd->cc = empty_cc_for_super();
         }
@@ -7368,6 +7363,136 @@ vm_opt_not(struct rb_control_frame_struct *reg_cfp, CALL_DATA cd, VALUE recv)
     else {
         return Qundef;
     }
+}
+
+static const rb_callable_method_entry_t *
+vm_logop_resolve_refined(rb_execution_context_t *ec, struct rb_control_frame_struct *reg_cfp,
+                         CALL_DATA cd, VALUE recv, const struct rb_callcache *cc)
+{
+    struct rb_calling_info calling = {
+        .cd = cd,
+        .cc = cc,
+        .recv = recv,
+        .argc = 1,
+    };
+    const rb_callable_method_entry_t *ref_cme = search_refined_method(ec, reg_cfp, &calling);
+    if (UNDEFINED_METHOD_ENTRY_P(ref_cme) || ref_cme->def->type != VM_METHOD_TYPE_REFINED) {
+        return ref_cme;
+    }
+
+    /* Without active refinements for this class, the lookup may reach a
+     * refined entry of a superclass, which dispatch resolves again too. */
+    const struct rb_callcache super_cc = VM_CC_ON_STACK(ref_cme->defined_class, vm_call_general, {{ 0 }}, ref_cme);
+    return vm_logop_resolve_refined(ec, reg_cfp, cd, recv, &super_cc);
+}
+
+NOINLINE(static const rb_callable_method_entry_t *
+         vm_logop_search_refined(rb_execution_context_t *ec, struct rb_control_frame_struct *reg_cfp,
+                                 CALL_DATA cd, VALUE recv, const rb_callable_method_entry_t *cme));
+
+static const rb_callable_method_entry_t *
+vm_logop_search_refined(rb_execution_context_t *ec, struct rb_control_frame_struct *reg_cfp,
+                        CALL_DATA cd, VALUE recv, const rb_callable_method_entry_t *cme)
+{
+    const rb_callable_method_entry_t *ref_cme = vm_logop_resolve_refined(ec, reg_cfp, cd, recv, cd->cc);
+    if (ref_cme) {
+        const struct rb_callcache *cc = vm_cc_new(cme->defined_class, ref_cme, vm_call_general, cc_type_refinement);
+        RB_OBJ_WRITE(CFP_ISEQ(reg_cfp), &cd->cc, cc);
+    }
+    return ref_cme;
+}
+
+ALWAYS_INLINE(static bool
+              vm_logop_lookup_hook(rb_execution_context_t *ec, struct rb_control_frame_struct *reg_cfp,
+                                   CALL_DATA cd, VALUE recv));
+
+static bool
+vm_logop_lookup_hook(rb_execution_context_t *ec, struct rb_control_frame_struct *reg_cfp, CALL_DATA cd, VALUE recv)
+{
+    const rb_callable_method_entry_t *cme = vm_cc_cme(vm_search_method_fastpath(reg_cfp, cd, CLASS_OF(recv)));
+    if (UNDEFINED_METHOD_ENTRY_P(cme)) return false;
+    if (UNLIKELY(cme->def->type == VM_METHOD_TYPE_REFINED)) {
+        cme = vm_logop_search_refined(ec, reg_cfp, cd, recv, cme);
+        if (UNDEFINED_METHOD_ENTRY_P(cme)) return false;
+    }
+    return BUILTIN_TYPE(cme->owner) == T_MODULE && FL_TEST_RAW(cme->owner, RMODULE_IS_REFINEMENT);
+}
+
+NOINLINE(static bool
+         vm_logop_hooked_slow(rb_execution_context_t *ec, struct rb_control_frame_struct *reg_cfp,
+                              CALL_DATA cd, VALUE recv));
+
+static bool
+vm_logop_hooked_slow(rb_execution_context_t *ec, struct rb_control_frame_struct *reg_cfp, CALL_DATA cd, VALUE recv)
+{
+    return vm_logop_lookup_hook(ec, reg_cfp, cd, recv);
+}
+
+/* Hooks are defined only in refinements, which search_refined_method() finds
+ * through this cref chain. */
+NOINLINE(static bool vm_logop_refinements_in_scope_p(const struct rb_control_frame_struct *reg_cfp));
+
+static bool
+vm_logop_refinements_in_scope_p(const struct rb_control_frame_struct *reg_cfp)
+{
+    for (const rb_cref_t *cref = vm_get_cref(reg_cfp->ep); cref; cref = CREF_NEXT(cref)) {
+        if (!NIL_P(CREF_REFINEMENTS(cref))) return true;
+    }
+    return false;
+}
+
+static inline bool
+vm_logop_hooked_p(rb_execution_context_t *ec, struct rb_control_frame_struct *reg_cfp, CALL_DATA cd, VALUE recv)
+{
+    return UNLIKELY(!BASIC_OP_UNREDEFINED_P(BOP_LOGOP, ANY_REDEFINED_OP_FLAG)) &&
+        vm_logop_refinements_in_scope_p(reg_cfp) &&
+        vm_logop_hooked_slow(ec, reg_cfp, cd, recv);
+}
+
+NOINLINE(static VALUE
+         vm_opt_logop_slow(rb_execution_context_t *ec, struct rb_control_frame_struct *reg_cfp,
+                           CALL_DATA cd, VALUE recv, VALUE obj));
+
+/* The hook may have been removed while the RHS was evaluated. */
+static inline VALUE
+vm_logop_unhooked_result(CALL_DATA cd, VALUE recv, VALUE obj)
+{
+    if (vm_ci_mid(cd->ci) == idANDOP) {
+        return RTEST(recv) ? obj : recv;
+    }
+    else {
+        return RTEST(recv) ? recv : obj;
+    }
+}
+
+static VALUE
+vm_opt_logop_slow(rb_execution_context_t *ec, struct rb_control_frame_struct *reg_cfp, CALL_DATA cd, VALUE recv, VALUE obj)
+{
+    if (vm_logop_lookup_hook(ec, reg_cfp, cd, recv)) return Qundef;
+    return vm_logop_unhooked_result(cd, recv, obj);
+}
+
+static inline VALUE
+vm_opt_logop(rb_execution_context_t *ec, struct rb_control_frame_struct *reg_cfp, CALL_DATA cd, VALUE recv, VALUE obj)
+{
+    if (LIKELY(BASIC_OP_UNREDEFINED_P(BOP_LOGOP, ANY_REDEFINED_OP_FLAG))) return obj;
+    if (!vm_logop_refinements_in_scope_p(reg_cfp)) return vm_logop_unhooked_result(cd, recv, obj);
+    return vm_opt_logop_slow(ec, reg_cfp, cd, recv, obj);
+}
+
+/* Returns Qundef when the hook must be called. */
+VALUE
+rb_vm_opt_logop(rb_control_frame_t *cfp, CALL_DATA cd, VALUE recv, VALUE obj)
+{
+    return vm_opt_logop(GET_EC(), cfp, cd, recv, obj);
+}
+
+/* Returns whether opt_branch_andop/opt_branch_orop jumps. */
+VALUE
+rb_vm_opt_branch_logop(rb_control_frame_t *cfp, CALL_DATA cd, VALUE recv)
+{
+    bool jump_if_truthy = vm_ci_mid(cd->ci) == idOROP;
+    return RBOOL((bool)RTEST(recv) == jump_if_truthy && !vm_logop_hooked_p(GET_EC(), cfp, cd, recv));
 }
 
 static VALUE

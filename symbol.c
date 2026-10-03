@@ -777,7 +777,11 @@ enc_synmane_type_leading_chars(const char *name, long len, rb_encoding *enc, int
           case '@': return (t) { stophere, ID_INTERNAL, 2, };
         }
 
-      case '|': case '^': case '&': case '/': case '%': case '~': case '`':
+      case '|': case '&':
+        if (m + 1 < e && m[1] == *m) return (t) { stophere, ID_INTERNAL, 2, };
+        return (t) { stophere, ID_INTERNAL, 1, };
+
+      case '^': case '/': case '%': case '~': case '`':
         return (t) { stophere, ID_INTERNAL, 1, };
 
       case '[':

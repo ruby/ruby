@@ -1095,6 +1095,15 @@ again:
         pm_compile_defined_expr(iseq, cast->value, &location, ret, false, scope_node, true);
         break;
       }
+      case PM_PARENTHESES_NODE: {
+        /* parse.y sees through parentheses, so `if (a && b)` must not call a hook here either */
+        const pm_parentheses_node_t *cast = (const pm_parentheses_node_t *) cond;
+        if (cast->body != NULL && PM_NODE_TYPE_P(cast->body, PM_STATEMENTS_NODE) && !PM_NODE_FLAG_P(cast, PM_PARENTHESES_NODE_FLAGS_MULTIPLE_STATEMENTS)) {
+            cond = ((const pm_statements_node_t *) cast->body)->body.nodes[0];
+            goto again;
+        }
+      }
+      /* fall through */
       default: {
         DECL_ANCHOR(cond_seq);
         pm_compile_node(iseq, cond, cond_seq, false, scope_node);
@@ -7232,31 +7241,43 @@ pm_compile_alias_method_node(rb_iseq_t *iseq, const pm_alias_method_node_t *node
 static void
 pm_compile_logical_chain(rb_iseq_t *iseq, size_t size, const pm_node_t **nodes, const pm_node_location_t *location, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node)
 {
-    const pm_node_type_t type = PM_NODE_TYPE(nodes[1]);
+    const ID mid = PM_NODE_TYPE_P(nodes[1], PM_AND_NODE) ? idANDOP : idOROP;
     LABEL *end_label = NEW_LABEL(location->line);
 
-    for (size_t index = 0; index + 1 < size; index += 2) {
-        PM_COMPILE_NOT_POPPED(nodes[index]);
+    if (popped) {
+        for (size_t index = 0; index + 1 < size; index += 2) {
+            PM_COMPILE_NOT_POPPED(nodes[index]);
+            const pm_node_location_t operator_location = {
+                .line = location->line,
+                .node_id = nodes[index + 1]->node_id
+            };
+            if (mid == idANDOP) {
+                PUSH_INSNL(ret, operator_location, branchunless, end_label);
+            }
+            else {
+                PUSH_INSNL(ret, operator_location, branchif, end_label);
+            }
+        }
+        PM_COMPILE(nodes[size - 1]);
+        PUSH_LABEL(ret, end_label);
+        return;
+    }
 
+    PM_COMPILE_NOT_POPPED(nodes[0]);
+    for (size_t index = 1; index < size; index += 2) {
         /* Each operator node starts where its left operand does, so every
          * operator node in the chain is on the same line. */
         const pm_node_location_t operator_location = {
             .line = location->line,
-            .node_id = nodes[index + 1]->node_id
+            .node_id = nodes[index]->node_id
         };
 
-        if (!popped) PUSH_INSN(ret, operator_location, dup);
-        if (type == PM_AND_NODE)
-        {
-            PUSH_INSNL(ret, operator_location, branchunless, end_label);
-        }
-        else {
-            PUSH_INSNL(ret, operator_location, branchif, end_label);
-        }
-        if (!popped) PUSH_INSN(ret, operator_location, pop);
+        INSN *branch = new_insn_logop_branch(iseq, operator_location.line, operator_location.node_id, mid, end_label);
+        ADD_ELEM(ret, &branch->link);
+        PM_COMPILE_NOT_POPPED(nodes[index + 1]);
+        ADD_ELEM(ret, &new_insn_logop(iseq, operator_location.line, operator_location.node_id, branch)->link);
     }
 
-    PM_COMPILE(nodes[size - 1]);
     PUSH_LABEL(ret, end_label);
 }
 

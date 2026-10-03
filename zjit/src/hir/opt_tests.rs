@@ -24598,9 +24598,14 @@ mod hir_opt_tests {
         bb3(v6:BasicObject):
           PatchPoint MethodRedefined(Object@0x1000, callee@0x1008, cme:0x1010)
           v18:ObjectSubclass[class_exact*:Object@VALUE(0x1000)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1000)] recompile
-          v26:StaticSymbol[:default] = Const Value(VALUE(0x1038))
+          v53:NilClass = Const Value(nil)
+          PushInlineFrame :callee, v18 (0x1038), num_args=0
+          v25:NilClass = Const Value(nil)
+          PatchPoint BOPRedefined(ANY_REDEFINED_OP_FLAG, BOP_LOGOP)
+          v58:StaticSymbol[:default] = Const Value(VALUE(0x1058))
+          PopInlineFrame
           CheckInterrupts
-          Return v26
+          Return v58
         ");
     }
 
@@ -25638,30 +25643,33 @@ mod hir_opt_tests {
           PatchPoint NoEPEscape(==)
           PatchPoint MethodRedefined(Point@0x1008, x@0x10e8, cme:0x10f0)
           PatchPoint MethodRedefined(Integer@0x1118, ==@0x1098, cme:0x1120)
-          v244:Fixnum = GuardType v190, Fixnum recompile
-          v246:BoolExact = FixnumEq v244, v47
-          v201:CBool = Test v246
-          v202:FalseClass = RefineType v246, Falsy
+          v245:Fixnum = GuardType v190, Fixnum recompile
+          v247:BoolExact = FixnumEq v245, v47
+          PatchPoint BOPRedefined(ANY_REDEFINED_OP_FLAG, BOP_LOGOP)
+          v201:CBool = Test v247
+          v202:FalseClass = RefineType v247, Falsy
           CondBranch v201, bb19(), bb18(v202)
         bb19():
-          v208:CShape = LoadField v85, :shape_id@0x1088
-          v209:CShape[0x108d] = GuardBitEquals v208, CShape(0x108d) recompile
-          v210:BasicObject = LoadField v85, :@y@0x108c
+          v204:TrueClass = RefineType v247, Truthy
+          v207:CShape = LoadField v85, :shape_id@0x1088
+          v208:CShape[0x108d] = GuardBitEquals v207, CShape(0x108d) recompile
+          v209:BasicObject = LoadField v85, :@y@0x108c
           PatchPoint NoEPEscape(==)
           PatchPoint NoSingletonClass(Point@0x1008)
           PatchPoint MethodRedefined(Point@0x1008, y@0x1148, cme:0x1150)
-          v251:CShape = LoadField v95, :shape_id@0x1088
-          v252:CShape[0x108d] = GuardBitEquals v251, CShape(0x108d) recompile
-          v253:BasicObject = LoadField v95, :@y@0x108c
+          v252:CShape = LoadField v95, :shape_id@0x1088
+          v253:CShape[0x108d] = GuardBitEquals v252, CShape(0x108d) recompile
+          v254:BasicObject = LoadField v95, :@y@0x108c
           PatchPoint MethodRedefined(Integer@0x1118, ==@0x1098, cme:0x1120)
-          v256:Fixnum = GuardType v210, Fixnum recompile
-          v257:Fixnum = GuardType v253, Fixnum
-          v258:BoolExact = FixnumEq v256, v257
-          Jump bb18(v258)
-        bb18(v222:BoolExact):
+          v257:Fixnum = GuardType v209, Fixnum recompile
+          v258:Fixnum = GuardType v254, Fixnum
+          v259:BoolExact = FixnumEq v257, v258
+          PatchPoint BOPRedefined(ANY_REDEFINED_OP_FLAG, BOP_LOGOP)
+          Jump bb18(v259)
+        bb18(v223:BoolExact):
           PopInlineFrame
           CheckInterrupts
-          Return v222
+          Return v223
         ");
     }
 

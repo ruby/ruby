@@ -10917,12 +10917,14 @@ parser_lex(pm_parser_t *parser) {
                 // & && &&= &=
                 case '&': {
                     if (match(parser, '&')) {
+                        bool operator = lex_state_operator_p(parser);
                         lex_state_set(parser, PM_LEX_STATE_BEG);
 
                         if (match(parser, '=')) {
                             LEX(PM_TOKEN_AMPERSAND_AMPERSAND_EQUAL);
                         }
 
+                        if (operator) lex_state_set(parser, PM_LEX_STATE_ARG);
                         LEX(PM_TOKEN_AMPERSAND_AMPERSAND);
                     }
 
@@ -10977,7 +10979,7 @@ parser_lex(pm_parser_t *parser) {
                             LEX(PM_TOKEN_PIPE);
                         }
 
-                        lex_state_set(parser, PM_LEX_STATE_BEG);
+                        lex_state_set(parser, lex_state_operator_p(parser) ? PM_LEX_STATE_ARG : PM_LEX_STATE_BEG);
                         LEX(PM_TOKEN_PIPE_PIPE);
                     }
 
@@ -16100,12 +16102,12 @@ parse_conditional(pm_parser_t *parser, pm_context_t context, size_t opening_newl
  * This macro allows you to define a case statement for all of the operators.
  * It's meant to be used in a switch statement.
  */
-#define PM_CASE_OPERATOR PM_TOKEN_AMPERSAND: case PM_TOKEN_BACKTICK: case PM_TOKEN_BANG_EQUAL: \
+#define PM_CASE_OPERATOR PM_TOKEN_AMPERSAND: case PM_TOKEN_AMPERSAND_AMPERSAND: case PM_TOKEN_BACKTICK: case PM_TOKEN_BANG_EQUAL: \
     case PM_TOKEN_BANG_TILDE: case PM_TOKEN_BANG: case PM_TOKEN_BRACKET_LEFT_RIGHT_EQUAL: \
     case PM_TOKEN_BRACKET_LEFT_RIGHT: case PM_TOKEN_CARET: case PM_TOKEN_EQUAL_EQUAL_EQUAL: case PM_TOKEN_EQUAL_EQUAL: \
     case PM_TOKEN_EQUAL_TILDE: case PM_TOKEN_GREATER_EQUAL: case PM_TOKEN_GREATER_GREATER: case PM_TOKEN_GREATER: \
     case PM_TOKEN_LESS_EQUAL_GREATER: case PM_TOKEN_LESS_EQUAL: case PM_TOKEN_LESS_LESS: case PM_TOKEN_LESS: \
-    case PM_TOKEN_MINUS: case PM_TOKEN_PERCENT: case PM_TOKEN_PIPE: case PM_TOKEN_PLUS: case PM_TOKEN_SLASH: \
+    case PM_TOKEN_MINUS: case PM_TOKEN_PERCENT: case PM_TOKEN_PIPE: case PM_TOKEN_PIPE_PIPE: case PM_TOKEN_PLUS: case PM_TOKEN_SLASH: \
     case PM_TOKEN_STAR_STAR: case PM_TOKEN_STAR: case PM_TOKEN_TILDE: case PM_TOKEN_UAMPERSAND: case PM_TOKEN_UMINUS: \
     case PM_TOKEN_UMINUS_NUM: case PM_TOKEN_UPLUS: case PM_TOKEN_USTAR: case PM_TOKEN_USTAR_STAR
 

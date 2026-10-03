@@ -760,6 +760,8 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::FixnumMod { left, right, state } => gen_fixnum_mod(jit, asm, function, opnd!(left), opnd!(right), &function.frame_state(state)),
         &Insn::FixnumAref { recv, index } => gen_fixnum_aref(asm, opnd!(recv), opnd!(index)),
         &Insn::IsMethodCfunc { val, cd, cfunc, state } => gen_is_method_cfunc(asm, opnd!(val), cd, cfunc, &function.frame_state(state)),
+        &Insn::LogopBranch { val, cd, state } => gen_logop_branch(jit, asm, function, opnd!(val), cd, &function.frame_state(state)),
+        &Insn::Logop { recv, obj, cd, state } => gen_logop(jit, asm, function, opnd!(recv), opnd!(obj), cd, &function.frame_state(state)),
         &Insn::IsBitEqual { left, right } => gen_is_bit_equal(asm, opnd!(left), opnd!(right)),
         &Insn::IsBitNotEqual { left, right } => gen_is_bit_not_equal(asm, opnd!(left), opnd!(right)),
         &Insn::BoxBool { val } => gen_box_bool(asm, opnd!(val)),
@@ -3077,6 +3079,27 @@ fn gen_is_method_cfunc(asm: &mut Assembler, val: lir::Opnd, cd: *const rb_call_d
         fn rb_vm_method_cfunc_is(iseq: IseqPtr, cd: *const rb_call_data, recv: VALUE, cfunc: *const u8) -> VALUE;
     }
     asm_ccall!(asm, rb_vm_method_cfunc_is, VALUE::from(state.iseq).into(), Opnd::const_ptr(cd), val, Opnd::const_ptr(cfunc))
+}
+
+fn gen_logop_branch(jit: &mut JITState, asm: &mut Assembler, function: &Function, val: lir::Opnd, cd: *const rb_call_data, state: &FrameState) -> lir::Opnd {
+    gen_prepare_non_leaf_call(jit, asm, function, state);
+    unsafe extern "C" {
+        fn rb_vm_opt_branch_logop(cfp: CfpPtr, cd: *const rb_call_data, recv: VALUE) -> VALUE;
+    }
+    asm_ccall!(asm, rb_vm_opt_branch_logop, CFP, Opnd::const_ptr(cd), val)
+}
+
+fn gen_logop(jit: &mut JITState, asm: &mut Assembler, function: &Function, recv: lir::Opnd, obj: lir::Opnd, cd: *const rb_call_data, state: &FrameState) -> lir::Opnd {
+    gen_prepare_non_leaf_call(jit, asm, function, state);
+    unsafe extern "C" {
+        fn rb_vm_opt_logop(cfp: CfpPtr, cd: *const rb_call_data, recv: VALUE, obj: VALUE) -> VALUE;
+    }
+    let result = asm_ccall!(asm, rb_vm_opt_logop, CFP, Opnd::const_ptr(cd), recv, obj);
+    // The interpreter calls the hook on the side exit
+    asm.cmp(result, Qundef.into());
+    let reason = SideExitReason::PatchPoint(Invariant::BOPRedefined { klass: ANY_REDEFINED_OP_FLAG, bop: BOP_LOGOP });
+    asm.je(jit, side_exit(jit, function, state, reason));
+    result
 }
 
 fn gen_is_bit_equal(asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd) -> lir::Opnd {

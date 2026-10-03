@@ -479,7 +479,7 @@ gccct_method_search(rb_execution_context_t *ec, VALUE recv, ID mid, const struct
             if (LIKELY(!METHOD_ENTRY_INVALIDATED(cme) &&
                        cme->called_id == mid)) {
 
-                VM_ASSERT(vm_cc_check_cme(cc, rb_callable_method_entry(klass, mid)));
+                VM_ASSERT(vm_cc_check_cme(cc, rb_callable_method_entry_or_negative(klass, mid)));
                 RB_DEBUG_COUNTER_INC(gccct_hit);
 
                 return cc;

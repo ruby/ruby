@@ -367,16 +367,17 @@ vm_cc_new(VALUE klass,
         break;
     }
 
-    if (cme) {
-        if (cme->def->type == VM_METHOD_TYPE_ATTRSET) {
-            vm_cc_attr_index_set(cc, IVAR_CACHE_INIT);
-        }
-        else if (cme->def->type == VM_METHOD_TYPE_IVAR) {
-            vm_cc_attr_index_set(cc, rb_getivar_cache_pack(ROOT_SHAPE_ID, ATTR_INDEX_NOT_SET));
-        }
-    }
-    else {
+    if (!cme) {
         *(VALUE *)&cc->flags |= VM_CALLCACHE_INVALID_SUPER;
+    }
+    else if (!cme->def) {
+        /* negative cache: nothing to set up */
+    }
+    else if (cme->def->type == VM_METHOD_TYPE_ATTRSET) {
+        vm_cc_attr_index_set(cc, IVAR_CACHE_INIT);
+    }
+    else if (cme->def->type == VM_METHOD_TYPE_IVAR) {
+        vm_cc_attr_index_set(cc, rb_getivar_cache_pack(ROOT_SHAPE_ID, ATTR_INDEX_NOT_SET));
     }
 
     RB_DEBUG_COUNTER_INC(cc_new);
