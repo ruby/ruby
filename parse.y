@@ -1534,6 +1534,7 @@ RUBY_SYMBOL_EXPORT_END
 
 static void flush_string_content(struct parser_params *p, rb_encoding *enc, size_t back);
 static void error_duplicate_pattern_variable(struct parser_params *p, ID id, const YYLTYPE *loc);
+static int pattern_has_capture(struct parser_params *p, NODE *node);
 static void error_duplicate_pattern_key(struct parser_params *p, ID id, const YYLTYPE *loc);
 static VALUE formal_argument_error(struct parser_params*, ID);
 static ID shadowing_lvar(struct parser_params*,ID);
@@ -2809,7 +2810,7 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
 %type <id>   p_kwrest p_kwnorest p_any_kwrest p_kw_label
 %type <id>   f_no_kwarg f_any_kwrest args_forward excessed_comma nonlocal_var def_name
 %type <ctxt> lex_ctxt begin_defined k_class k_module k_END k_rescue k_ensure after_rescue
-%type <ctxt> p_in_kwarg
+%type <ctxt> p_in_kwarg p_alt_begin
 %type <tbl>  p_lparen p_lbracket p_pktbl p_pvtbl
 %type <num>  max_numparam
 %type <node> numparam
@@ -5433,20 +5434,26 @@ p_as		: p_expr tASSOC p_variable
                 | p_alt
                 ;
 
-p_alt		: p_alt[left] '|'[alt]
+p_alt		: p_alt[left] '|'[alt] p_alt_begin[ctxt] p_expr_basic[right]
                     {
-                        p->ctxt.in_alt_pattern = 1;
-                    }
-                  p_expr_basic[right]
-                    {
-                        if (p->ctxt.capture_in_pattern) {
+                        /* `capture_in_pattern` is only a cheap pre-filter: it is set by any
+                         * binding in the whole `in` clause, so verify the left operand
+                         * actually contains a binding before rejecting (like Prism does). */
+                        if (p->ctxt.capture_in_pattern && !nd_type_p($left, NODE_OR) &&
+                            pattern_has_capture(p, $left)) {
                             yyerror1(&@alt, "alternative pattern after variable capture");
                         }
-                        p->ctxt.in_alt_pattern = 0;
+                        p->ctxt.in_alt_pattern = $ctxt.in_alt_pattern;
                         $$ = NEW_OR($left, $right, &@$, &@alt);
                     /*% ripper: binary!($:left, ID2VAL(idOr), $:right) %*/
                     }
                 | p_expr_basic
+                ;
+
+p_alt_begin	:   {
+                        $$ = p->ctxt;
+                        p->ctxt.in_alt_pattern = 1;
+                    }
                 ;
 
 p_lparen	: '(' p_pktbl
@@ -14796,6 +14803,42 @@ error_duplicate_pattern_variable(struct parser_params *p, ID id, const YYLTYPE *
     else {
         p->ctxt.capture_in_pattern = 1;
         st_insert(p->pvtbl, (st_data_t)id, 0);
+    }
+}
+
+/* Does the pattern node bind any (non-private) local variable? */
+static int
+pattern_has_capture(struct parser_params *p, NODE *node)
+{
+    if (!node || node == NODE_SPECIAL_NO_NAME_REST || node == NODE_SPECIAL_NO_REST_KEYWORD) return 0;
+    switch (nd_type(node)) {
+      case NODE_LASGN:
+        return !is_private_local_id(p, RNODE_LASGN(node)->nd_vid);
+      case NODE_DASGN:
+        return !is_private_local_id(p, RNODE_DASGN(node)->nd_vid);
+      case NODE_LIST:
+        for (; node; node = RNODE_LIST(node)->nd_next) {
+            if (pattern_has_capture(p, RNODE_LIST(node)->nd_head)) return 1;
+        }
+        return 0;
+      case NODE_HASH: /* `pattern => var` and hash pattern key/value list */
+        return pattern_has_capture(p, RNODE_HASH(node)->nd_head);
+      case NODE_OR:
+        return pattern_has_capture(p, RNODE_OR(node)->nd_1st) ||
+            pattern_has_capture(p, RNODE_OR(node)->nd_2nd);
+      case NODE_ARYPTN:
+        return pattern_has_capture(p, RNODE_ARYPTN(node)->pre_args) ||
+            pattern_has_capture(p, RNODE_ARYPTN(node)->rest_arg) ||
+            pattern_has_capture(p, RNODE_ARYPTN(node)->post_args);
+      case NODE_FNDPTN:
+        return pattern_has_capture(p, RNODE_FNDPTN(node)->pre_rest_arg) ||
+            pattern_has_capture(p, RNODE_FNDPTN(node)->args) ||
+            pattern_has_capture(p, RNODE_FNDPTN(node)->post_rest_arg);
+      case NODE_HSHPTN:
+        return pattern_has_capture(p, RNODE_HSHPTN(node)->nd_pkwargs) ||
+            pattern_has_capture(p, RNODE_HSHPTN(node)->nd_pkwrestarg);
+      default: /* values, constants, pins (`^x`, `^(expr)`) bind nothing */
+        return 0;
     }
 }
 
