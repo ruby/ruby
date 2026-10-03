@@ -6,7 +6,7 @@ use std::ops::Range;
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::mem;
-use crate::state::rb_zjit_compiling_p;
+use crate::state::zjit_out_of_memory;
 use crate::virtualmem::*;
 
 // Lots of manual vertical alignment in there that rustfmt doesn't handle well.
@@ -246,7 +246,7 @@ impl CodeBlock {
 
             // Memory is available again, so let the interpreter resume
             // triggering compilation.
-            unsafe { rb_zjit_compiling_p = true; }
+            zjit_out_of_memory(false);
         }
     }
 

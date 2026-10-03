@@ -9,7 +9,15 @@ use crate::options::OPTIONS;
 #[path = "../../jit/src/lib.rs"]
 mod jit;
 
-use crate::{cast::IntoUsize as _, cruby::*, hir::ParseError, options::get_option, state::{zjit_enabled_p, ZJITState}};
+use crate::{cast::IntoUsize as _, cruby::*, hir::ParseError, options::get_option, state::{zjit_enabled_p, zjit_out_of_memory_p, rb_zjit_compiling_p, ZJITState}};
+
+/// Monotonically increasing total of time spent compiling.
+#[unsafe(no_mangle)]
+pub static mut rb_zjit_total_compile_time_ns: u64 = 0;
+
+// Time allocated for compilation. When going over, compilation is paused.
+#[unsafe(no_mangle)]
+pub static mut rb_zjit_max_compile_time_ns: u64 = 0;
 
 macro_rules! make_counters {
     (
@@ -991,6 +999,34 @@ pub fn with_time_stat<F, R>(counter: Counter, func: F) -> R where F: FnOnce() ->
     let ret = func();
     let nanos = Instant::now().duration_since(start).as_nanos();
     incr_counter_by(counter, nanos as u64);
+    ret
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn rb_zjit_update_max_compile_time_ns(max_compile_time_ns: u64) {
+    unsafe {
+        rb_zjit_max_compile_time_ns = max_compile_time_ns;
+
+        if rb_zjit_max_compile_time_ns == 0 || rb_zjit_max_compile_time_ns > rb_zjit_total_compile_time_ns {
+            rb_zjit_compiling_p = !zjit_out_of_memory_p();
+        } else {
+            rb_zjit_compiling_p = false;
+        }
+    }
+}
+
+/// Measure the time taken by func() and add that to zjit_compile_time.
+pub fn with_compile_time_stat<F, R>(counter: Counter, func: F) -> R where F: FnOnce() -> R {
+    let start = Instant::now();
+    let ret = func();
+    let nanos = Instant::now().duration_since(start).as_nanos() as u64;
+    unsafe {
+        rb_zjit_total_compile_time_ns += nanos;
+        if rb_zjit_max_compile_time_ns != 0 && rb_zjit_max_compile_time_ns <= rb_zjit_total_compile_time_ns {
+            rb_zjit_compiling_p = false;
+        }
+    }
+    incr_counter_by(counter, nanos);
     ret
 }
 
