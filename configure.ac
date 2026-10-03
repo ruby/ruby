@@ -4312,6 +4312,7 @@ AS_IF([test -n "${LIBS}"], [
     MAINFLAGS=`echo " $MAINLIBS " | sed "s|$libspat"'||;s/^ *//;s/ *$//'`
 ])
 LIBRUBYARG_STATIC="${LIBRUBYARG_STATIC} \$(MAINLIBS)"
+AS_CASE(["$LIBRUBYARG"], ['$(LIBRUBYARG_STATIC)'], [PROGRAM_LIBS=], [PROGRAM_LIBS='$(MAINLIBS)'])
 CPPFLAGS="$CPPFLAGS "'$(DEFS) ${cppflags}'
 AS_IF([test -n "${cflags+set}"], [
     cflagspat=`eval echo '"'"${cflags}"'"' | sed 's/[[][|.*]]/\\&/g;s/^  */ /;s/^  *$/ /'`
@@ -4378,6 +4379,7 @@ AC_SUBST(DLDLIBS)
 AC_SUBST(DLDSHARED)
 AC_SUBST(ENABLE_SHARED)
 AC_SUBST(MAINLIBS)
+AC_SUBST(PROGRAM_LIBS)
 AC_SUBST(COMMON_LIBS)
 AC_SUBST(COMMON_MACROS)
 AC_SUBST(COMMON_HEADERS)
