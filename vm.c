@@ -4315,6 +4315,36 @@ m_core_set_postexe(VALUE self)
 }
 
 static VALUE
+m_core_iseq_path(VALUE self, VALUE frozen_string_literal_option_value)
+{
+    rb_execution_context_t *ec = GET_EC();
+    rb_control_frame_t *cfp = ec->cfp;
+    cfp = vm_get_ruby_level_caller_cfp(ec, RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp));
+    if (cfp == NULL) {
+        return Qnil;
+    }
+    const rb_iseq_t *iseq = CFP_ISEQ(cfp);
+    VALUE path = rb_iseq_path(iseq);
+    if (RTEST(path)) {
+        int frozen_string_literal_option = NUM2INT(frozen_string_literal_option_value);
+        switch (frozen_string_literal_option) {
+          case ISEQ_FROZEN_STRING_LITERAL_ENABLED:
+            RUBY_ASSERT(OBJ_FROZEN(path));
+            break;
+          case ISEQ_FROZEN_STRING_LITERAL_DISABLED:
+            path = rb_str_resurrect(path);
+            break;
+          case ISEQ_FROZEN_STRING_LITERAL_UNSET:
+            path = rb_ec_str_resurrect(ec, path, true);
+            break;
+          default:
+            UNREACHABLE_RETURN(Qundef);
+        }
+    }
+    return path;
+}
+
+static VALUE
 core_hash_merge(VALUE hash, long argc, const VALUE *argv, bool dup)
 {
     if (NIL_P(hash)) {
@@ -4609,6 +4639,7 @@ Init_VM(void)
     rb_define_method_id(klass, id_core_set_variable_alias, m_core_set_variable_alias, 2);
     rb_define_method_id(klass, id_core_undef_method, m_core_undef_method, 2);
     rb_define_method_id(klass, id_core_set_postexe, m_core_set_postexe, 0);
+    rb_define_method_id(klass, id_core_iseq_path, m_core_iseq_path, 1);
     rb_define_method_id(klass, id_core_hash_merge_ptr, m_core_hash_merge_ptr, -1);
     rb_define_method_id(klass, id_core_hash_merge_bang_ptr, m_core_hash_merge_bang_ptr, -1);
     rb_define_method_id(klass, id_core_hash_merge_kwd, m_core_hash_merge_kwd, 2);

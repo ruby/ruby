@@ -72,7 +72,7 @@ load_with_builtin_functions(const char *feature_name, const struct rb_builtin_fu
     rb_vm_t *vm = GET_VM();
     if (vm->builtin_function_table != NULL) rb_bug("vm->builtin_function_table should be NULL.");
     vm->builtin_function_table = table;
-    const rb_iseq_t *iseq = rb_iseq_ibf_load_bytes((const char *)bin, size);
+    const rb_iseq_t *iseq = rb_iseq_ibf_load_bytes((const char *)bin, size, Qnil, Qnil);
     ASSUME(iseq); // otherwise an exception should have raised
     vm->builtin_function_table = NULL;
 
