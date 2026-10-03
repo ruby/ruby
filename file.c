@@ -7412,18 +7412,11 @@ rb_stat_ww(VALUE obj)
  *
  * On other systems, the entry is executable if it has the execute/search
  * permission for the effective user and group id of the current process;
- * see {Permissions}[rdoc-ref:file/filesystem_modes.md@Permissions].
+ * see {Permissions}[rdoc-ref:file/filesystem_modes.md@Permissions]:
  *
- * These examples use
- * a {helper method}[rdoc-ref:file/filesystem_modes.md@Helper+Method], +mode+,
- * that displays a mode both in octal digits and in characters:
- *
- *   File.stat('.').executable?           # => true
- *   mode('.')                            # => "040775 drwxrwxr-x"
- *   File.stat('bin/gem').executable?     # => true
- *   mode('bin/gem')                      # => "100775 -rwxrwxr-x"
- *   File.stat('/etc/passwd').executable? # => false
- *   mode('/etc/passwd')                  # => "100644 -rw-r--r--"
+ *   File.stat('/bin/bash').executable?        # => true
+ *   File.stat('/etc/passwd').executable?      # => false
+ *   File.stat('.').executable?                # => true
  *
  * Note that some filesystem settings may cause this method to return +true+
  * even though the entry is not executable by the effective user/group.
