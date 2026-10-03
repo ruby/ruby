@@ -8,7 +8,13 @@ module Coverage
   # from a given source code.
   def self.line_stub(file)
     lines = File.foreach(file).map { nil }
-    iseqs = [RubyVM::InstructionSequence.compile_file(file, coverage_enabled: false)]
+    iseq = begin
+      verbose, $VERBOSE = $VERBOSE, nil
+      RubyVM::InstructionSequence.compile_file(file, coverage_enabled: false)
+    ensure
+      $VERBOSE = verbose
+    end
+    iseqs = [iseq]
     until iseqs.empty?
       iseq = iseqs.pop
       iseq.trace_points.each {|n, type| lines[n - 1] = 0 if type == :line }
