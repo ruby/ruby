@@ -340,6 +340,16 @@ fn test_cmp_8_bit() {
 }
 
 #[test]
+fn test_load_sext_insn_out() {
+    let (mut asm, mut cb) = setup_asm();
+    let val = asm.load(Opnd::mem(64, SP, 0));
+    let sext = asm.load_sext(val.with_num_bits(32).unwrap());
+    asm.cmp(sext, val);
+
+    asm.compile_with_num_regs(&mut cb, 2);
+}
+
+#[test]
 fn test_no_pos_marker_callback_when_compile_fails() {
     // When compilation fails (e.g. when out of memory), the code written out is malformed.
     // We don't want to invoke the pos_marker callbacks with positions of malformed code.

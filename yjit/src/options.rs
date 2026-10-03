@@ -77,7 +77,7 @@ pub struct Options {
     /// Verify context objects (debug mode only)
     pub verify_ctx: bool,
 
-    /// Enable generating frame pointers (for x86. arm64 always does this)
+    /// Enable generating frame pointers (for x86. arm64 always does this, and so does Windows)
     pub frame_pointer: bool,
 
     /// Run code GC when exec_mem_size is reached.
@@ -96,7 +96,7 @@ pub static mut OPTIONS: Options = Options {
     exec_mem_size: None,
     no_type_prop: false,
     max_versions: 4,
-    num_temp_regs: 5,
+    num_temp_regs: TEMP_REGS.len(),
     c_builtin: false,
     gen_stats: false,
     trace_exits: None,
@@ -137,10 +137,10 @@ pub enum TraceExits {
     Counter(Counter),
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, Debug)]
 pub enum LogOutput {
     // Dump to the log file as events occur.
-    File(std::os::unix::io::RawFd),
+    File(&'static File),
     // Keep the log in memory only
     MemoryOnly,
     // Dump to stderr when the process exits
@@ -152,7 +152,7 @@ pub enum DumpDisasm {
     // Dump to stdout
     Stdout,
     // Dump to "yjit_{pid}.log" file under the specified directory
-    File(std::os::unix::io::RawFd),
+    File(&'static File),
 }
 
 /// Type of symbols to dump into /tmp/perf-{pid}.map
@@ -189,6 +189,13 @@ macro_rules! get_option_ref {
 }
 pub(crate) use get_option_ref;
 use crate::log::Log;
+
+// How to get a dev mode build, for the options that need the disasm feature
+const DEV_MODE_HINT: &str = if cfg!(windows) {
+    "but YJIT on mswin supports release builds only"
+} else {
+    "i.e. ./configure --enable-yjit=dev"
+};
 
 /// Expected to receive what comes after the third dash in "--yjit-*".
 /// Empty string means user passed only "--yjit". C code rejects when
@@ -284,21 +291,34 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
             OPTIONS.code_gc = true;
         },
 
-        ("perf", _) => match opt_val {
-            "" => unsafe {
-                OPTIONS.frame_pointer = true;
-                OPTIONS.perf_map = Some(PerfMap::ISEQ);
-            },
-            "fp" => unsafe { OPTIONS.frame_pointer = true },
-            "iseq" => unsafe { OPTIONS.perf_map = Some(PerfMap::ISEQ) },
-            // Accept --yjit-perf=map for backward compatibility
-            "codegen" | "map" => unsafe { OPTIONS.perf_map = Some(PerfMap::Codegen) },
-            _ => return None,
-         },
+        ("perf", _) => {
+            let perf_map = match opt_val {
+                "" => {
+                    unsafe { OPTIONS.frame_pointer = true };
+                    Some(PerfMap::ISEQ)
+                },
+                "fp" => {
+                    unsafe { OPTIONS.frame_pointer = true };
+                    None
+                },
+                "iseq" => Some(PerfMap::ISEQ),
+                // Accept --yjit-perf=map for backward compatibility
+                "codegen" | "map" => Some(PerfMap::Codegen),
+                _ => return None,
+            };
+            if perf_map.is_some() {
+                // The perf map is for Linux perf, and /tmp does not exist on Windows
+                if cfg!(windows) {
+                    eprintln!("WARNING: --yjit-perf does not write a perf map on Windows");
+                } else {
+                    unsafe { OPTIONS.perf_map = perf_map }
+                }
+            }
+        },
 
         ("dump-disasm", _) => {
             if !cfg!(feature = "disasm") {
-                eprintln!("WARNING: the {} option works best when YJIT is built in dev mode, i.e. ./configure --enable-yjit=dev", opt_name);
+                eprintln!("WARNING: the {} option works best when YJIT is built in dev mode, {}", opt_name, DEV_MODE_HINT);
             }
 
             match opt_val {
@@ -307,9 +327,8 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
                     let path = format!("{directory}/yjit_{}.log", std::process::id());
                     match File::options().create(true).append(true).open(&path) {
                         Ok(file) => {
-                            use std::os::unix::io::IntoRawFd;
                             eprintln!("YJIT disasm dump: {path}");
-                            unsafe { OPTIONS.dump_disasm = Some(DumpDisasm::File(file.into_raw_fd())) }
+                            unsafe { OPTIONS.dump_disasm = Some(DumpDisasm::File(Box::leak(Box::new(file)))) }
                         }
                         Err(err) => eprintln!("Failed to create {path}: {err}"),
                     }
@@ -319,7 +338,7 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
 
         ("dump-iseq-disasm", _) => unsafe {
             if !cfg!(feature = "disasm") {
-                eprintln!("WARNING: the {} option is only available when YJIT is built in dev mode, i.e. ./configure --enable-yjit=dev", opt_name);
+                eprintln!("WARNING: the {} option is only available when YJIT is built in dev mode, {}", opt_name, DEV_MODE_HINT);
             }
 
             OPTIONS.dump_iseq_disasm = Some(opt_val.to_string());
@@ -354,10 +373,9 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
 
                 match File::options().create(true).write(true).truncate(true).open(&log_file_path) {
                     Ok(file) => {
-                        use std::os::unix::io::IntoRawFd;
                         eprintln!("YJIT log: {log_file_path}");
 
-                        unsafe { OPTIONS.log = Some(LogOutput::File(file.into_raw_fd())) }
+                        unsafe { OPTIONS.log = Some(LogOutput::File(Box::leak(Box::new(file)))) }
                         Log::init()
                     }
                     Err(err) => panic!("Failed to create {log_file_path}: {err}"),

@@ -196,6 +196,13 @@ class TestISeq < Test::Unit::TestCase
     assert_include(RubyVM::InstructionSequence.of(obj.method(name)).disasm, name)
   end
 
+  def test_disasm_after_tracepoint
+    tp = TracePoint.new(:line) {}
+    tp.enable
+    tp.disable
+    assert_not_include(compile("a = 1; a").disasm, "trace_")
+  end
+
   def test_compile_file_encoding
     Tempfile.create(%w"test_iseq .rb") do |f|
       f.puts "{ '\u00de' => 'Th', '\u00df' => 'ss', '\u00e0' => 'a' }"

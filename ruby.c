@@ -1502,7 +1502,7 @@ proc_long_options(ruby_cmdline_options_t *opt, const char *s, long argc, char **
         setup_yjit_options(s);
 #else
         rb_warn("Ruby was built without YJIT support."
-                " You may need to install rustc to build Ruby with YJIT.");
+                " You may need to install rustc and configure with --enable-yjit to build Ruby with YJIT.");
 #endif
     }
     else if (is_option_with_optarg("zjit", '-', true, false, false)) {

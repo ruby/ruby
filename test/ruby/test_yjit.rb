@@ -49,10 +49,28 @@ class TestYJIT < Test::Unit::TestCase
   def test_command_line_switches
     assert_in_out_err('--yjit-', '', [], /invalid option --yjit-/)
     assert_in_out_err('--yjithello', '', [], /invalid option --yjithello/)
-    assert_in_out_err('--yjit-temp-regs=6', '', [], /--yjit-temp-regs must be <= 5\n.*invalid YJIT option 'temp-regs=6'/m)
+    limit = /mswin/ =~ RUBY_PLATFORM ? 3 : 5
+    assert_in_out_err("--yjit-temp-regs=#{limit + 1}", '', [], /--yjit-temp-regs must be <= #{limit}\n.*invalid YJIT option 'temp-regs=#{limit + 1}'/m)
     #assert_in_out_err('--yjit-call-threshold', '', [], /--yjit-call-threshold needs an argument/)
     #assert_in_out_err('--yjit-call-threshold=', '', [], /--yjit-call-threshold needs an argument/)
   end
+
+  def test_perf_map_on_windows
+    warning = ['WARNING: --yjit-perf does not write a perf map on Windows']
+    assert_in_out_err(%w[--yjit-perf --yjit-call-threshold=1], 'def foo = 1; foo; p :ok', [':ok'], warning, success: true)
+    assert_in_out_err(%w[--yjit-perf=fp --yjit-call-threshold=1], 'def foo = 1; foo; p :ok', [':ok'], [], success: true)
+  end if /mswin/ =~ RUBY_PLATFORM
+
+  def test_rel32_calls_on_windows
+    stats = assert_compiles(<<~'RUBY', exits: :any)
+      def foo = [1, 2].sum
+      foo
+    RUBY
+    if stats[:num_send_x86_rel32] == 0 && stats[:num_send_x86_reg] > 0
+      omit "the JIT region was reserved out of rel32 range of the C functions"
+    end
+    assert_operator stats[:num_send_x86_rel32], :>, 0
+  end if /x64-mswin/ =~ RUBY_PLATFORM
 
   def test_yjit_enable
     args = []
@@ -1534,6 +1552,23 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_gc_compact_read_barrier_under_jit_frame
+    omit "compaction is not supported on this platform" unless GC.respond_to?(:compact)
+
+    # Sweeping the dropped fstrings reads the fstring table on a locked page
+    assert_compiles(<<~'RUBY', exits: :any, result: :ok)
+      def churn(n) = n.times.map { |i| -"str#{i}" }
+
+      def compact_in_jit
+        churn(20_000)
+        GC.compact
+      end
+
+      20.times { compact_in_jit }
+      :ok
+    RUBY
+  end
+
   def test_invalidate_cyclic_branch
     assert_compiles(<<~'RUBY', result: 2, exits: { opt_plus: 1 })
       def foo
@@ -1753,6 +1788,7 @@ class TestYJIT < Test::Unit::TestCase
 
   def test_opt_mult_overflow
     assert_no_exits('0xfff_ffff_ffff_ffff * 0x10')
+    assert_no_exits('0x10_0000 * 0x10_0000')
   end
 
   def test_disable_stats
@@ -2114,7 +2150,7 @@ class TestYJIT < Test::Unit::TestCase
       end
 
       iseq = RubyVM::InstructionSequence.of(_test_proc)
-      IO.open(3).write Marshal.dump({
+      File.binwrite ENV["YJIT_TEST_STATS"], Marshal.dump({
         result: #{result == ANY ? "nil" : "result"},
         stats: stats,
         insns: collect_insns(iseq),
@@ -2191,6 +2227,8 @@ class TestYJIT < Test::Unit::TestCase
         flunk "Expected to compile instructions #{missed_insns.join(", ")} but didn't.\niseq:\n#{disasm}"
       end
     end
+
+    runtime_stats
   end
 
   def script_shell_encode(s)
@@ -2210,24 +2248,13 @@ class TestYJIT < Test::Unit::TestCase
     args << "--yjit-code-gc" if code_gc
     args << "--yjit-verify-ctx" if verify_ctx
     args << "-e" << script_shell_encode(script)
-    stats_r, stats_w = IO.pipe
-    # Separate thread so we don't deadlock when
-    # the child ruby blocks writing the stats to fd 3
-    stats = ''
-    stats_reader = Thread.new do
-      stats = stats_r.read
-      stats_r.close
+    # Not through fd 3, which spawn cannot pass on Windows
+    Dir.mktmpdir("yjit-stats") do |dir|
+      stats_path = File.join(dir, "stats")
+      out, err, status = invoke_ruby([{"YJIT_TEST_STATS" => stats_path}, *args], '', true, true, timeout: timeout)
+      stats = File.size?(stats_path) ? Marshal.load(File.binread(stats_path)) : ''
+      [status, out, err, stats]
     end
-    out, err, status = invoke_ruby(args, '', true, true, timeout: timeout, ios: { 3 => stats_w })
-    stats_w.close
-    stats_reader.join(timeout)
-    stats = Marshal.load(stats) if !stats.empty?
-    [status, out, err, stats]
-  ensure
-    stats_reader&.kill
-    stats_reader&.join(timeout)
-    stats_r&.close
-    stats_w&.close
   end
 
   # A wrapper of EnvUtil.invoke_ruby that uses RbConfig.ruby instead of EnvUtil.ruby

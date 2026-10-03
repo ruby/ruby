@@ -20,7 +20,7 @@ use std::collections::HashMap;
 use std::ffi::c_void;
 use std::ffi::CStr;
 use std::mem;
-use std::os::raw::c_int;
+use std::os::raw::{c_int, c_long};
 use std::ptr;
 use std::rc::Rc;
 use std::cell::RefCell;
@@ -1112,6 +1112,7 @@ pub fn gen_entry_prologue(
     let mut asm = Assembler::new(unsafe { get_iseq_body_local_table_size(iseq) });
     asm_comment!(asm, "YJIT entry point: {}", iseq_get_location(iseq, 0));
 
+    // rb_yjit_reserve_addr_space() describes this frame to the Windows unwinder
     asm.frame_setup();
 
     // Save the CFP, EC, SP registers to the C stack
@@ -1775,7 +1776,7 @@ fn gen_opt_plus(
         // Add arg0 + arg1 and test for overflow
         let arg0_untag = asm.sub(arg0, Opnd::Imm(1));
         let out_val = asm.add(arg0_untag, arg1);
-        asm.jo(Target::side_exit(Counter::opt_plus_overflow));
+        asm.guard_fixnum_overflow(out_val, Counter::opt_plus_overflow);
 
         // Push the output on the stack
         let dst = asm.stack_push(Type::Fixnum);
@@ -4133,7 +4134,7 @@ fn gen_opt_minus(
 
         // Subtract arg0 - arg1 and test for overflow
         let val_untag = asm.sub(arg0, arg1);
-        asm.jo(Target::side_exit(Counter::opt_minus_overflow));
+        asm.guard_fixnum_overflow(val_untag, Counter::opt_minus_overflow);
         let val = asm.add(val_untag, Opnd::Imm(1));
 
         // Push the output on the stack
@@ -4176,7 +4177,9 @@ fn gen_opt_mult(
         let arg0_untag = asm.rshift(arg0, Opnd::UImm(1));
         let arg1_untag = asm.sub(arg1, Opnd::UImm(1));
         let out_val = asm.mul(arg0_untag, arg1_untag);
-        jit_chain_guard(JCC_JO_MUL, jit, asm, 1, Counter::opt_mult_overflow);
+        // See guard_fixnum_overflow
+        let jcc = if asm.cmp_fixnum_fits_long(out_val) { JCC_JNE } else { JCC_JO_MUL };
+        jit_chain_guard(jcc, jit, asm, 1, Counter::opt_mult_overflow);
         let out_val = asm.add(out_val, Opnd::UImm(1));
 
         // Push the output on the stack
@@ -5476,7 +5479,7 @@ fn jit_rb_int_succ(
 
     asm_comment!(asm, "Integer#succ");
     let out_val = asm.add(recv, Opnd::Imm(2)); // 2 is untagged Fixnum 1
-    asm.jo(Target::side_exit(Counter::opt_succ_overflow));
+    asm.guard_fixnum_overflow(out_val, Counter::opt_succ_overflow);
 
     // Push the output onto the stack
     let dst = asm.stack_push(Type::Fixnum);
@@ -5505,7 +5508,7 @@ fn jit_rb_int_pred(
 
     asm_comment!(asm, "Integer#pred");
     let out_val = asm.sub(recv, Opnd::Imm(2)); // 2 is untagged Fixnum 1
-    asm.jo(Target::side_exit(Counter::send_pred_underflow));
+    asm.guard_fixnum_overflow(out_val, Counter::send_pred_underflow);
 
     // Push the output onto the stack
     let dst = asm.stack_push(Type::Fixnum);
@@ -5609,6 +5612,7 @@ fn fixnum_left_shift_body(asm: &mut Assembler, lhs: Opnd, shift_amt: u64) {
 
     // Re-tag the output value
     let out_val = asm.add(out_val, 1.into());
+    asm.guard_fixnum_fits_long(out_val, Counter::lshift_overflow);
 
     let ret_opnd = asm.stack_push(Type::Fixnum);
     asm.mov(ret_opnd, out_val);
@@ -5928,7 +5932,7 @@ fn jit_rb_str_uplus(
 }
 
 fn jit_rb_str_length(
-    _jit: &mut JITState,
+    jit: &mut JITState,
     asm: &mut Assembler,
     _ci: *const rb_callinfo,
     _cme: *const rb_callable_method_entry_t,
@@ -5941,13 +5945,18 @@ fn jit_rb_str_length(
         fn rb_str_length(str: VALUE) -> VALUE;
     }
 
-    // This function cannot allocate or raise an exceptions
+    // The length is always a Fixnum when long is 64-bit, so this function cannot allocate or raise.
+    // long is 32-bit on LLP64 (Windows), where a length of 2**30 or more allocates a Bignum.
+    let fixnum_len = std::os::raw::c_long::BITS == 64;
+    if !fixnum_len {
+        jit_prepare_call_with_gc(jit, asm);
+    }
+
     let recv = asm.stack_opnd(0);
     let ret_opnd = asm.ccall(rb_str_length as *const u8, vec![recv]);
     asm.stack_pop(1); // Keep recv on stack during ccall for GC
 
-    // Should be guaranteed to be a fixnum on 64-bit systems
-    let out_opnd = asm.stack_push(Type::Fixnum);
+    let out_opnd = asm.stack_push(if fixnum_len { Type::Fixnum } else { Type::Unknown });
     asm.mov(out_opnd, ret_opnd);
 
     true
@@ -5973,9 +5982,11 @@ fn jit_rb_str_bytesize(
         RUBY_OFFSET_RSTRING_LEN as i32,
     );
 
-    let len = asm.load(str_len_opnd);
+    let len = asm.c_long_len(str_len_opnd);
+    let len = asm.load_mem(len);
     let shifted_val = asm.lshift(len, Opnd::UImm(1));
     let out_val = asm.or(shifted_val, Opnd::UImm(RUBY_FIXNUM_FLAG as u64));
+    asm.guard_fixnum_fits_long(out_val, Counter::guard_send_str_bytesize_overflow);
 
     let out_opnd = asm.stack_push(Type::Fixnum);
 
@@ -6145,6 +6156,7 @@ fn jit_rb_str_getbyte(
         asm.load(recv),
         RUBY_OFFSET_RSTRING_LEN as i32,
     );
+    let str_len_opnd = asm.c_long_len(str_len_opnd);
 
     // Exit if the index is out of bounds
     asm.cmp(idx, str_len_opnd);
@@ -6437,6 +6449,7 @@ fn jit_rb_ary_length(
     // Convert the length to a fixnum
     let shifted_val = asm.lshift(len_opnd, Opnd::UImm(1));
     let out_val = asm.or(shifted_val, Opnd::UImm(RUBY_FIXNUM_FLAG as u64));
+    asm.guard_fixnum_fits_long(out_val, Counter::guard_send_ary_length_overflow);
 
     let out_opnd = asm.stack_push(Type::Fixnum);
     asm.store(out_opnd, out_val);
@@ -6770,7 +6783,7 @@ fn c_method_tracing_currently_enabled(jit: &JITState) -> bool {
 unsafe extern "C" fn build_kwhash(ci: *const rb_callinfo, sp: *const VALUE) -> VALUE {
     let kw_arg = vm_ci_kwarg(ci);
     let kw_len: usize = get_cikw_keyword_len(kw_arg).try_into().unwrap();
-    let hash = rb_hash_new_capa(kw_len as i64);
+    let hash = rb_hash_new_capa(kw_len.try_into().unwrap());
 
     for kwarg_idx in 0..kw_len {
         let key = get_cikw_keywords_idx(kw_arg, kwarg_idx.try_into().unwrap());
@@ -7326,9 +7339,63 @@ fn get_array_len(asm: &mut Assembler, array_opnd: Opnd) -> Opnd {
         array_reg,
         RUBY_OFFSET_RARRAY_AS_HEAP_LEN,
     );
+    let array_len_opnd = asm.c_long_len(array_len_opnd);
 
     // Select the array length value
     asm.csel_nz(emb_len_opnd, array_len_opnd)
+}
+
+impl Assembler {
+    /// Emits a load for memory based operands and returns an InsnOut,
+    /// otherwise returns opnd.
+    fn load_mem(&mut self, opnd: Opnd) -> Opnd {
+        match opnd {
+            Opnd::InsnOut { .. } | Opnd::Reg(_) => opnd,
+            _ => self.load(opnd),
+        }
+    }
+
+    /// Side-exit when the arithmetic that produced `val` overflowed the Fixnum range. Where long is
+    /// 64-bit, the overflow flag decides. On LLP64 (Windows), Fixnum operands fit in 32 bits, so the
+    /// 64-bit arithmetic never overflows and only the range check in cmp_fixnum_fits_long is needed.
+    fn guard_fixnum_overflow(&mut self, val: Opnd, counter: Counter) {
+        if self.cmp_fixnum_fits_long(val) {
+            self.jne(Target::side_exit(counter));
+        } else {
+            self.jo(Target::side_exit(counter));
+        }
+    }
+
+    /// Side-exit unless a tagged Fixnum result fits in a C long. See cmp_fixnum_fits_long.
+    fn guard_fixnum_fits_long(&mut self, val: Opnd, counter: Counter) {
+        if self.cmp_fixnum_fits_long(val) {
+            self.jne(Target::side_exit(counter));
+        }
+    }
+
+    /// Compare a tagged Fixnum result, or the result minus one, with its sign-extended low 32 bits,
+    /// which differ when the result does not fit in a C long. long is 32-bit on LLP64 (Windows),
+    /// where a result that did not overflow 64 bits can still be out of the Fixnum range. Emits
+    /// nothing and returns false otherwise.
+    fn cmp_fixnum_fits_long(&mut self, val: Opnd) -> bool {
+        if std::os::raw::c_long::BITS < 64 {
+            let sext = self.load_sext(val.with_num_bits(32).unwrap());
+            self.cmp(sext, val);
+            true
+        } else {
+            false
+        }
+    }
+
+    /// Make a C long length field usable as a 64-bit operand. long is 32-bit on LLP64 (Windows),
+    /// where loading it into a register zero-extends it, and lengths are never negative.
+    fn c_long_len(&mut self, len_opnd: Opnd) -> Opnd {
+        if std::os::raw::c_long::BITS == 64 {
+            len_opnd
+        } else {
+            self.load(len_opnd).with_num_bits(64).unwrap()
+        }
+    }
 }
 
 // Generate RARRAY_CONST_PTR (part of RARRAY_AREF)
@@ -8588,7 +8655,7 @@ fn gen_iseq_kw_call(
 
                 // Use the total number of supplied keywords as a size upper bound
                 let keyword_len = unsafe { (*keywords).keyword_len } as usize;
-                let hash = unsafe { rb_hash_new_capa(keyword_len as i64) };
+                let hash = unsafe { rb_hash_new_capa(keyword_len.try_into().unwrap()) };
 
                 // Put pairs into the kwrest hash as the mask describes
                 for kwarg_idx in 0..keyword_len {
@@ -8963,7 +9030,7 @@ fn gen_struct_aref(
 
     // Confidence checks
     assert!(unsafe { RB_TYPE_P(comptime_recv, RUBY_T_STRUCT) });
-    assert!((off as i64) < unsafe { RSTRUCT_LEN(comptime_recv) });
+    assert!((off as c_long) < unsafe { RSTRUCT_LEN(comptime_recv) });
 
     // We are going to use an encoding that takes a 4-byte immediate which
     // limits the offset to INT32_MAX.
@@ -9047,7 +9114,7 @@ fn gen_struct_aset(
 
     // Confidence checks
     assert!(unsafe { RB_TYPE_P(comptime_recv, RUBY_T_STRUCT) });
-    assert!((off as i64) < unsafe { RSTRUCT_LEN(comptime_recv) });
+    assert!((off as c_long) < unsafe { RSTRUCT_LEN(comptime_recv) });
 
     // We are going to use an encoding that takes a 4-byte immediate which
     // limits the offset to INT32_MAX (mirrors struct aref).
@@ -11162,7 +11229,16 @@ impl CodegenGlobals {
 
         #[cfg(not(test))]
         let (mut cb, mut ocb) = {
+            #[cfg(not(windows))]
             let virt_block: *mut u8 = unsafe { rb_jit_reserve_addr_space(exec_mem_size as u32) };
+            // Also registers unwind info for the region
+            #[cfg(windows)]
+            let virt_block: *mut u8 = {
+                extern "C" {
+                    fn rb_yjit_reserve_addr_space(mem_size: u32) -> *mut u8;
+                }
+                unsafe { rb_yjit_reserve_addr_space(exec_mem_size as u32) }
+            };
 
             // Memory protection syscalls need page-aligned addresses, so check it here. Assuming
             // `virt_block` is page-aligned, `second_half` should be page-aligned as long as the

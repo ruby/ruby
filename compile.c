@@ -1026,8 +1026,8 @@ rb_iseq_translate_threaded_code(rb_iseq_t *iseq)
         encoded[i] = (VALUE)table[insn];
         i += len;
     }
-    FL_SET((VALUE)iseq, ISEQ_TRANSLATED);
 #endif
+    FL_SET((VALUE)iseq, ISEQ_TRANSLATED);
 
 #if USE_YJIT
     rb_yjit_live_iseq_count++;
@@ -1047,7 +1047,6 @@ rb_iseq_original_iseq(const rb_iseq_t *iseq) /* cold path */
     original_code = ALLOC_N(VALUE, ISEQ_BODY(iseq)->iseq_size);
     MEMCPY(original_code, ISEQ_BODY(iseq)->iseq_encoded, VALUE, ISEQ_BODY(iseq)->iseq_size);
 
-#if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
     {
         unsigned int i;
 
@@ -1059,7 +1058,6 @@ rb_iseq_original_iseq(const rb_iseq_t *iseq) /* cold path */
             i += insn_len(insn);
         }
     }
-#endif
 
     /* Concurrent callers can each build a copy; publish only fully
      * translated code and keep the first one. */
