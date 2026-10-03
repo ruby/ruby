@@ -389,13 +389,29 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
   end
 
   def test_noname_recvfrom
-    if /mswin|mingw/ =~ RUBY_PLATFORM
-      omit "unnamed pipe is emulated on windows"
-    end
-
     UNIXSocket.pair do |s1, s2|
       s2.write("a")
       assert_equal(["a", ["AF_UNIX", ""]], s1.recvfrom(10))
+    end
+  end
+
+  def test_noname_recvfrom_sender_is_not_uninitialized
+    # A platform that reports no sender for a connected socket leaves the
+    # buffer alone; reading it anyway used to hand back kilobytes of stack.
+    # No sockaddr outgrows sockaddr_storage, so 128 bytes is a generous cap.
+    Socket.pair(Socket::AF_UNIX, Socket::SOCK_STREAM, 0) do |s1, s2|
+      s2.write("a")
+      _, sender = s1.recvfrom(10)
+      assert_operator(sender.to_sockaddr.bytesize, :<=, 128)
+    end
+  end
+
+  def test_noname_recvfrom_nonblock_sender_is_not_uninitialized
+    Socket.pair(Socket::AF_UNIX, Socket::SOCK_STREAM, 0) do |s1, s2|
+      s2.write("a")
+      IO.select [s1]
+      _, sender = s1.recvfrom_nonblock(10)
+      assert_operator(sender.to_sockaddr.bytesize, :<=, 128)
     end
   end
 
