@@ -2304,6 +2304,7 @@ unsafe extern "C" {
     pub fn rb_ivar_defined(obj: VALUE, name: ID) -> VALUE;
     pub fn rb_attr_get(obj: VALUE, name: ID) -> VALUE;
     pub fn rb_const_get(space: VALUE, name: ID) -> VALUE;
+    pub static mut rb_cIOBuffer: VALUE;
     pub fn rb_class_allocate_instance(klass: VALUE) -> VALUE;
     pub fn rb_obj_equal(obj1: VALUE, obj2: VALUE) -> VALUE;
     pub fn rb_reg_new_from_values(
@@ -2625,5 +2626,10 @@ unsafe extern "C" {
     pub fn rb_yarv_str_eql_internal(str1: VALUE, str2: VALUE) -> VALUE;
     pub fn rb_jit_str_simple_append(str1: VALUE, str2: VALUE) -> VALUE;
     pub fn rb_jit_str_concat_codepoint(str_: VALUE, codepoint: VALUE);
+    pub fn rb_jit_io_buffer_readable_ptr(
+        self_: VALUE,
+        offset: usize,
+        length: usize,
+    ) -> *const ::std::os::raw::c_void;
     pub fn rb_jit_shape_capacity(shape_id: shape_id_t) -> attr_index_t;
 }
