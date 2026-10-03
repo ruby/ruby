@@ -4261,6 +4261,36 @@ str2guid(const char *str, GUID *guid)
     } NET_LUID;
 #endif
 
+/* License: Ruby's */
+/* GetAdaptersAddresses() gives the prefix length where getifaddrs() is
+ * expected to give a netmask, so spell the same thing the other way. */
+static struct sockaddr *
+ifaddr_netmask(const struct sockaddr *addr, ULONG prefix_length)
+{
+    switch (addr->sa_family) {
+      case AF_INET: {
+        struct sockaddr_in *mask;
+        if (prefix_length > 32) return NULL;
+        mask = ruby_xcalloc(1, sizeof(*mask));
+        mask->sin_family = AF_INET;
+        mask->sin_addr.s_addr =
+            prefix_length ? htonl(~(uint32_t)0 << (32 - prefix_length)) : 0;
+        return (struct sockaddr *)mask;
+      }
+      case AF_INET6: {
+        struct sockaddr_in6 *mask;
+        if (prefix_length > 128) return NULL;
+        mask = ruby_xcalloc(1, sizeof(*mask));
+        mask->sin6_family = AF_INET6;
+        for (ULONG i = 0; i < prefix_length; i++) {
+            mask->sin6_addr.s6_addr[i / 8] |= 0x80 >> (i % 8);
+        }
+        return (struct sockaddr *)mask;
+      }
+    }
+    return NULL;
+}
+
 int
 getifaddrs(struct ifaddrs **ifap)
 {
@@ -4325,6 +4355,8 @@ getifaddrs(struct ifaddrs **ifap)
                     ifa->ifa_addr = ruby_xmalloc(cur->Address.iSockaddrLength);
                     memcpy(ifa->ifa_addr, cur->Address.lpSockaddr,
                            cur->Address.iSockaddrLength);
+                    ifa->ifa_netmask = ifaddr_netmask(ifa->ifa_addr,
+                                                      cur->OnLinkPrefixLength);
                     added = 1;
                 }
             }
@@ -4344,6 +4376,7 @@ freeifaddrs(struct ifaddrs *ifp)
     while (ifp) {
         struct ifaddrs *next = ifp->ifa_next;
         ruby_xfree(ifp->ifa_addr);
+        ruby_xfree(ifp->ifa_netmask);
         ruby_xfree(ifp->ifa_name);
         ruby_xfree(ifp);
         ifp = next;
