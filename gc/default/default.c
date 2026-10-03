@@ -691,11 +691,13 @@ typedef struct rb_objspace {
         rb_darray(struct heap_page *) sorted;
 
         size_t allocated_pages;
+        size_t allocated_pages_snapshot;
         size_t freed_pages;
         uintptr_t range[2];
         size_t freeable_pages;
 
         size_t allocatable_bytes;
+        size_t allocatable_bytes_snapshot;
 
         /* final */
         VALUE deferred_final;
@@ -5623,11 +5625,22 @@ gc_sweep_finish(rb_objspace_t *objspace)
 {
     gc_report(1, objspace, "gc_sweep_finish\n");
 
+    if (is_full_marking(objspace)) {
+        if (objspace->heap_pages.allocated_pages ==
+                    objspace->heap_pages.allocated_pages_snapshot &&
+                objspace->heap_pages.allocatable_bytes ==
+                    objspace->heap_pages.allocatable_bytes_snapshot) {
+            objspace->heap_pages.allocatable_bytes = 0;
+        }
+        objspace->heap_pages.allocated_pages_snapshot = objspace->heap_pages.allocated_pages;
+        objspace->heap_pages.allocatable_bytes_snapshot = objspace->heap_pages.allocatable_bytes;
+    }
     gc_prof_set_heap_info(objspace);
     heap_pages_free_unused_pages(objspace);
     if (rb_gc_single_objspace_p() && is_full_marking(objspace)) {
-        /* gc_marks_finish retains ~2/3 of empty pages in objspace->empty_pages for reuse,
-         * only the excess reaches the pool. */
+        /* gc_marks_finish retains empty pages up to the allocatable_bytes
+         * budget in objspace->empty_pages for reuse, only the excess reaches
+         * the pool. */
         page_pool_reclaim(global_objspace);
     }
 
@@ -7700,16 +7713,20 @@ gc_marks_finish(rb_objspace_t *objspace)
             max_free_slots = total_init_slots;
         }
 
+        size_t pages_to_keep = CEILDIV(objspace->heap_pages.allocatable_bytes, HEAP_PAGE_SIZE);
+        size_t excess_empty_pages = full_marking && objspace->empty_pages_count > pages_to_keep
+            ? objspace->empty_pages_count - pages_to_keep : 0;
+
         /* Approximate freeable pages using the average slots-per-pages across all heaps */
         if (sweep_slots > max_free_slots) {
             size_t excess_slots = sweep_slots - max_free_slots;
             size_t total_heap_pages = heap_eden_total_pages(objspace);
-            heap_pages_freeable_pages = total_heap_pages > 0
+            heap_pages_freeable_pages = (total_heap_pages > 0
                 ? excess_slots * total_heap_pages / total_slots
-                : 0;
+                : 0) + excess_empty_pages;
         }
         else {
-            heap_pages_freeable_pages = 0;
+            heap_pages_freeable_pages = excess_empty_pages;
         }
 
         if (objspace->heap_pages.allocatable_bytes == 0 && sweep_slots < min_free_slots) {
@@ -10103,6 +10120,7 @@ objspace_absorb(rb_objspace_t *dst, rb_objspace_t *src)
             if (heap_pages_himem < end) heap_pages_himem = end;
         }
         objspace->heap_pages.allocated_pages += src->heap_pages.allocated_pages;
+        objspace->heap_pages.allocated_pages_snapshot += src->heap_pages.allocated_pages;
         objspace->heap_pages.freed_pages += src->heap_pages.freed_pages;
         rb_darray_free_without_gc(src->heap_pages.sorted);
         src->heap_pages.sorted = NULL;
