@@ -1383,9 +1383,7 @@ module Test
       end
 
       def non_options(files, options)
-        if scale = options[:timeout_scale] or
-          (scale = ENV["RUBY_TEST_TIMEOUT_SCALE"] || ENV["RUBY_TEST_SUBPROCESS_TIMEOUT_SCALE"] and
-           (scale = scale.to_f) > 0)
+        if scale = options[:timeout_scale]
           EnvUtil.timeout_scale = scale
         end
         super

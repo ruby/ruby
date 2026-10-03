@@ -17,6 +17,10 @@ class TestEnvUtil < Test::Unit::TestCase
     EnvUtil.timeout_scale = original_scale
   end
 
+  def test_timeout_scale_from_env
+    assert_separately([{"RUBY_TEST_TIMEOUT_SCALE" => "2.5"}], "assert_equal(2.5, EnvUtil.timeout_scale)")
+  end
+
   def test_invoke_ruby_captures_output_and_status
     stdout, stderr, status = EnvUtil.invoke_ruby(
       ["-e", "STDOUT.print('out'); STDERR.print('err')"],
