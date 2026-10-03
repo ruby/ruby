@@ -103,6 +103,32 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
     end
   end
 
+  def test_initialize_connect_timeout_is_not_left_to_the_system
+    # Windows used to connect(2) in blocking mode, which returns only after
+    # Winsock's own ~21s timeout.  [Bug #19609]
+    # Which error an unroutable address produces depends on the network, so
+    # assert on the time taken rather than on the exception.
+    started_at = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+    error = nil
+    begin
+      TCPSocket.new("192.0.2.1", 80, connect_timeout: 0.5).close
+    rescue IO::TimeoutError, SystemCallError => error
+    end
+    elapsed = Process.clock_gettime(Process::CLOCK_MONOTONIC) - started_at
+    assert_operator elapsed, :<, 10, "connect_timeout was ignored"
+    assert_operator elapsed, :>=, 0.4 if IO::TimeoutError === error
+  end
+
+  def test_initialize_connection_refused
+    server = TCPServer.new("127.0.0.1", 0)
+    port = server.connect_address.ip_port
+    server.close
+
+    assert_raise(Errno::ECONNREFUSED) do
+      TCPSocket.new("127.0.0.1", port, connect_timeout: 10)
+    end
+  end
+
   def test_recvfrom
     TCPServer.open("localhost", 0) {|svr|
       th = Thread.new {
