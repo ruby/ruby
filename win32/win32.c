@@ -3506,6 +3506,36 @@ rb_w32_listen(int s, int backlog)
 #undef send
 #undef sendto
 
+/*
+ * The low-order bit of OVERLAPPED.hEvent tells the kernel not to queue
+ * the completion packet to an I/O completion port the handle may be
+ * associated with.  The OVERLAPPEDs here live on the stack of the
+ * blocking call, so such a packet would point at freed memory.
+ */
+/* License: Ruby's */
+static HANDLE
+overlapped_event_new(OVERLAPPED *ol, BOOL initial_state)
+{
+    HANDLE event = CreateEvent(NULL, TRUE, initial_state, NULL);
+    ol->hEvent = (HANDLE)((ULONG_PTR)event | 1);
+    return event;
+}
+
+/* License: Ruby's */
+static HANDLE
+overlapped_event(const OVERLAPPED *ol)
+{
+    return (HANDLE)((ULONG_PTR)ol->hEvent & ~(ULONG_PTR)1);
+}
+
+/* License: Ruby's */
+static DWORD
+wait_overlapped_event(const OVERLAPPED *ol)
+{
+    HANDLE event = overlapped_event(ol);
+    return rb_w32_wait_events_blocking(&event, 1, INFINITE);
+}
+
 /* License: Ruby's */
 static int
 finish_overlapped_socket(BOOL input, SOCKET s, WSAOVERLAPPED *wol, int result, DWORD *len, DWORD size)
@@ -3516,7 +3546,7 @@ finish_overlapped_socket(BOOL input, SOCKET s, WSAOVERLAPPED *wol, int result, D
     if (result != SOCKET_ERROR)
         *len = size;
     else if ((err = WSAGetLastError()) == WSA_IO_PENDING) {
-        switch (rb_w32_wait_events_blocking(&wol->hEvent, 1, INFINITE)) {
+        switch (wait_overlapped_event(wol)) {
           case WAIT_OBJECT_0:
             RUBY_CRITICAL {
                 result = WSAGetOverlappedResult(s, wol, &size, TRUE, &flg);
@@ -3553,7 +3583,7 @@ finish_overlapped_socket(BOOL input, SOCKET s, WSAOVERLAPPED *wol, int result, D
             errno = map_errno(err);
         *len = -1;
     }
-    CloseHandle(wol->hEvent);
+    CloseHandle(overlapped_event(wol));
 
     return result;
 }
@@ -3605,7 +3635,7 @@ overlapped_socket_io(BOOL input, int fd, char *buf, int len, int flags,
         wbuf.buf = buf;
         memset(&wol, 0, sizeof(wol));
         RUBY_CRITICAL {
-            wol.hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
+            overlapped_event_new(&wol, FALSE);
             if (input) {
                 flg = flags;
                 if (addr && addrlen)
@@ -3734,7 +3764,7 @@ recvmsg(int fd, struct msghdr *msg, int flags)
         WSAOVERLAPPED wol;
         memset(&wol, 0, sizeof(wol));
         RUBY_CRITICAL {
-            wol.hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
+            overlapped_event_new(&wol, FALSE);
             ret = pWSARecvMsg(s, &wsamsg, &size, &wol, NULL);
         }
 
@@ -3788,7 +3818,7 @@ sendmsg(int fd, const struct msghdr *msg, int flags)
         WSAOVERLAPPED wol;
         memset(&wol, 0, sizeof(wol));
         RUBY_CRITICAL {
-            wol.hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
+            overlapped_event_new(&wol, FALSE);
             ret = pWSASendMsg(s, &wsamsg, flags, &size, &wol, NULL);
         }
 
@@ -7350,8 +7380,7 @@ setup_overlapped(OVERLAPPED *ol, int fd, int iswrite, rb_off_t *_offset)
         ol->OffsetHigh = high;
     }
 
-    ol->hEvent = CreateEvent(NULL, TRUE, TRUE, NULL);
-    if (!ol->hEvent) {
+    if (!overlapped_event_new(ol, TRUE)) {
         errno = map_errno(GetLastError());
         return -1;
     }
@@ -7361,7 +7390,7 @@ setup_overlapped(OVERLAPPED *ol, int fd, int iswrite, rb_off_t *_offset)
 static void
 finish_overlapped(OVERLAPPED *ol, int fd, DWORD size, rb_off_t *_offset)
 {
-    CloseHandle(ol->hEvent);
+    CloseHandle(overlapped_event(ol));
 
     if (_offset) {
         // If we were doing a `pread`/`pwrite`, we need to restore the current that was saved in setup_overlapped:
@@ -7443,7 +7472,7 @@ rb_w32_read_internal(int fd, void *buf, size_t size, rb_off_t *offset)
             return -1;
         }
         else if (err != ERROR_IO_PENDING) {
-            CloseHandle(ol.hEvent);
+            CloseHandle(overlapped_event(&ol));
             if (err == ERROR_ACCESS_DENIED)
                 errno = EBADF;
             else if (err == ERROR_BROKEN_PIPE || err == ERROR_HANDLE_EOF) {
@@ -7457,13 +7486,13 @@ rb_w32_read_internal(int fd, void *buf, size_t size, rb_off_t *offset)
             return -1;
         }
 
-        wait = rb_w32_wait_events_blocking(&ol.hEvent, 1, INFINITE);
+        wait = wait_overlapped_event(&ol);
         if (wait != WAIT_OBJECT_0) {
             if (wait == WAIT_OBJECT_0 + 1)
                 errno = EINTR;
             else
                 errno = map_errno(GetLastError());
-            CloseHandle(ol.hEvent);
+            CloseHandle(overlapped_event(&ol));
             CancelIo((HANDLE)_osfhnd(fd));
             rb_acrt_lowio_unlock_fh(fd);
             return -1;
@@ -7476,7 +7505,7 @@ rb_w32_read_internal(int fd, void *buf, size_t size, rb_off_t *offset)
                 errno = map_errno(err);
                 ret = -1;
             }
-            CloseHandle(ol.hEvent);
+            CloseHandle(overlapped_event(&ol));
             CancelIo((HANDLE)_osfhnd(fd));
             rb_acrt_lowio_unlock_fh(fd);
             return ret;
@@ -7560,7 +7589,7 @@ rb_w32_write_internal(int fd, const void *buf, size_t size, rb_off_t *offset)
     if (!WriteFile((HANDLE)_osfhnd(fd), buf, len, &written, &ol)) {
         err = GetLastError();
         if (err != ERROR_IO_PENDING) {
-            CloseHandle(ol.hEvent);
+            CloseHandle(overlapped_event(&ol));
             if (err == ERROR_ACCESS_DENIED)
                 errno = EBADF;
             else
@@ -7570,13 +7599,13 @@ rb_w32_write_internal(int fd, const void *buf, size_t size, rb_off_t *offset)
             return -1;
         }
 
-        wait = rb_w32_wait_events_blocking(&ol.hEvent, 1, INFINITE);
+        wait = wait_overlapped_event(&ol);
         if (wait != WAIT_OBJECT_0) {
             if (wait == WAIT_OBJECT_0 + 1)
                 errno = EINTR;
             else
                 errno = map_errno(GetLastError());
-            CloseHandle(ol.hEvent);
+            CloseHandle(overlapped_event(&ol));
             CancelIo((HANDLE)_osfhnd(fd));
             rb_acrt_lowio_unlock_fh(fd);
             return -1;
@@ -7584,7 +7613,7 @@ rb_w32_write_internal(int fd, const void *buf, size_t size, rb_off_t *offset)
 
         if (!GetOverlappedResult((HANDLE)_osfhnd(fd), &ol, &written, TRUE)) {
             errno = map_errno(GetLastError());
-            CloseHandle(ol.hEvent);
+            CloseHandle(overlapped_event(&ol));
             CancelIo((HANDLE)_osfhnd(fd));
             rb_acrt_lowio_unlock_fh(fd);
             return -1;
