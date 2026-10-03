@@ -2332,16 +2332,9 @@ rb_file_world_writable_p(VALUE obj, VALUE fname)
  * permission for the effective user and group id of the current process;
  * see {Permissions}[rdoc-ref:file/filesystem_modes.md@Permissions].
  *
- * These examples use
- * a {helper method}[rdoc-ref:file/filesystem_modes.md@Helper+Method], +mode+,
- * that displays a mode both in octal digits and in characters:
- *
+ *   File.executable?('/bin/bash')   # => true
  *   File.executable?('.')           # => true
- *   mode('.')                       # => "040775 drwxrwxr-x"
- *   File.executable?('bin/gem')     # => true
- *   mode('bin/gem')                 # => "100775 -rwxrwxr-x"
  *   File.executable?('/etc/passwd') # => false
- *   mode('/etc/passwd')             # => "100644 -rw-r--r--"
  *   File.executable?('nosuch')      # => false
  *
  * Note that some filesystem settings may cause this method to return +true+
@@ -3267,21 +3260,16 @@ chmod_internal(const char *path, void *mode)
  *  See {Filesystem Modes}[rdoc-ref:file/filesystem_modes.md]
  *  and especially {Setting a Mode}[rdoc-ref:file/filesystem_modes.md@Setting+a+Mode].
  *
- *  These examples use
- *  a {helper method}[rdoc-ref:file/filesystem_modes.md@Helper+Method], +mode+,
- *  that displays a mode both in octal digits and in characters:
- *
- *    dirpath = 'doc/foo'
- *    filepath = File.join(dirpath, 't.tmp')
- *    Dir.mkdir(dirpath)          # Create directory.
- *    mode(dirpath)               # => "040775 drwxrwxr-x"
- *    File.write(filepath, 'bar') # Create file.
- *    mode(filepath)              # => "100664 -rw-rw-r--"
- *    File.chmod(0755, filepath)  # Change file mode.
- *    mode(filepath)              # => "100755 -rwxr-xr-x"
- *    File.chmod(0664, dirpath)   # Change directory mode.
- *    mode(dirpath)               # => "040664 drw-rw-r--"
- *    FileUtils.rm_rf(dirpath)    # Clean up.
+ *    file0path = '/tmp/t0.tmp'
+ *    file1path = '/tmp/t1.tmp'
+ *    File.write(file0path, 'foo')
+ *    File.write(file1path, 'bar')
+ *    '%06o' % File.stat(file0path).mode # => "100664"
+ *    '%06o' % File.stat(file1path).mode # => "100664"
+ *    File.chmod(0o755, file0path, file1path)
+ *    '%06o' % File.stat(file0path).mode # => "100755"
+ *    '%06o' % File.stat(file1path).mode # => "100755"
+ *    File.delete(file0path, file1path)  # Clean up.
  *
  */
 
@@ -3327,16 +3315,13 @@ rb_fchmod(struct rb_io* io, mode_t mode)
  *  See {Filesystem Modes}[rdoc-ref:file/filesystem_modes.md]
  *  and especially {Setting a Mode}[rdoc-ref:file/filesystem_modes.md@Setting+a+Mode].
  *
- *  These examples use
- *  a {helper method}[rdoc-ref:file/filesystem_modes.md@Helper+Method], +mode+,
- *  that displays a mode both in octal digits and in characters:
- *
- *    filepath = 'doc/t.tmp'
+ *    filepath = '/tmp/t.tmp'
  *    File.write(filepath, 'foo')
+ *    '%06o' % File.stat(filepath).mode      # => "100664"
  *    file = File.new(filepath)
- *    mode(filepath)      # => "100664 -rw-rw-r--"
- *    file.chmod(0775)
- *    mode(filepath)      # => "100775 -rwxrwxr-x"
+ *    file.chmod(0o755)
+ *    '%06o' % File.stat(filepath).mode      # => "100755"
+ *    # Clean up.
  *    file.close
  *    File.delete(filepath)
  *
