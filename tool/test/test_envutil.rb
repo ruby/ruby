@@ -2,8 +2,11 @@
 
 require "test/unit"
 require "envutil"
+require "core_assertions"
 
 class TestEnvUtil < Test::Unit::TestCase
+  include Test::Unit::CoreAssertions
+
   def test_rubybin_points_to_a_ruby_executable
     assert(File.executable?(EnvUtil.rubybin))
   end
