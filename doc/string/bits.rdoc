@@ -1,0 +1,17 @@
+Returns an array of the bits of +self+, each as +0+ or +1+:
+
+  "\xAA".bits # => [0, 1, 0, 1, 0, 1, 0, 1]
+
+The arguments select the region and the bit numbering in the same way as
+String#each_bit:
+
+  data = "\xFF\xAA"
+  data.bits(8, 4)               # => [0, 1, 0, 1]
+  data.bits(8..)                # => [0, 1, 0, 1, 0, 1, 0, 1]
+  data.bits(12, 100)            # => [0, 1, 0, 1]
+  "\xAA".bits(lsb_first: false) # => [1, 0, 1, 0, 1, 0, 1, 0]
+
+With a block given, behaves like String#each_bit: calls the block with each
+bit and returns +self+.
+
+Raises the same exceptions as String#each_bit.

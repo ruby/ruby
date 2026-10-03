@@ -7364,6 +7364,73 @@ str_count_bits_region(const unsigned char *ptr, uint64_t beg, uint64_t len, bool
     return count;
 }
 
+/* A clamped, read-only bit region of self: [beg, beg+len) in logical bits. */
+struct str_bit_read_region {
+    uint64_t beg;
+    uint64_t len;
+    bool lsb_first;
+};
+
+/*
+ * Parse the region arguments shared by the reading bit methods:
+ *
+ *   ()                          the whole string
+ *   (offset, length)            length bits from offset
+ *   (range)                     the bits covered by range
+ *
+ * plus the lsb_first: keyword.  nargs, v0 and v1 come from rb_scan_args with
+ * "02:" (or the tail of "12:"), so nargs is 0, 1 or 2.  Every argument is
+ * coerced before the string length is read, because Integer#to_int may run
+ * user code that resizes self.
+ * Reads clamp: the region is cut down to the bits that exist.  Returns false
+ * when nothing is left to read.
+ */
+static bool
+str_bit_read_region_parse(int nargs, VALUE v0, VALUE v1, VALUE opts, VALUE str, struct str_bit_read_region *out)
+{
+    uint64_t beg = 0, len = 0;
+
+    RUBY_ASSERT(nargs >= 0 && nargs <= 2);
+    out->lsb_first = str_lsb_first_from_opts(opts);
+
+    bool is_range = nargs > 0 && rb_obj_is_kind_of(v0, rb_cRange);
+    struct str_bit_range range = {0};
+    if (is_range) {
+        if (nargs == 2) {
+            rb_raise(rb_eArgError, "bit length not allowed with a Range");
+        }
+        str_bit_range_to_offsets(v0, &range);
+    }
+    else if (nargs == 1) {
+        rb_raise(rb_eArgError, "no bit length given");
+    }
+    else if (nargs == 2) {
+        beg = str_bit_offset_from_index(v0).value;
+        len = str_bit_length_from_index(v1);
+    }
+
+    uint64_t total_bits = str_bit_size(RSTRING_LEN(str));
+    if (nargs == 0) {
+        len = total_bits;
+    }
+    else if (is_range) {
+        if (!str_bit_range_resolve(&range, total_bits, &beg, &len)) {
+            return false;
+        }
+    }
+
+    /* Reads clamp: cut the region down to the bits that exist. */
+    if (beg >= total_bits) {
+        return false;
+    }
+    else if (len > total_bits - beg) {
+        len = total_bits - beg;
+    }
+    out->beg = beg;
+    out->len = len;
+    return len > 0;
+}
+
 /*
  *  call-seq:
  *    bit_count -> integer
@@ -7377,51 +7444,269 @@ static VALUE
 rb_str_bit_count(int argc, VALUE *argv, VALUE str)
 {
     VALUE v0, v1, opts;
-    uint64_t beg = 0, len = 0;
+    struct str_bit_read_region region;
 
     /* Count positional arguments so that an explicit nil is not mistaken for an omitted one. */
     int nargs = rb_scan_args(argc, argv, "02:", &v0, &v1, &opts);
-    /*
-     * A whole-string popcount is independent of bit numbering.
-     * no-(offset|range)-argument form only validates lsb_first.
-     */
-    bool lsb_first = str_lsb_first_from_opts(opts);
 
-    if (nargs == 0) {
-        return ULL2NUM(str_count_bits((const unsigned char *)RSTRING_PTR(str), RSTRING_LEN(str)));
-    }
-
-    bool is_range = rb_obj_is_kind_of(v0, rb_cRange);
-    struct str_bit_range range = {0};
-    if (is_range) {
-        if (nargs == 2) {
-            rb_raise(rb_eArgError, "bit length not allowed with a Range");
-        }
-        str_bit_range_to_offsets(v0, &range);
-    }
-    else if (nargs == 1) {
-        rb_raise(rb_eArgError, "no bit length given");
-    }
-    else {
-        beg = str_bit_offset_from_index(v0).value;
-        len = str_bit_length_from_index(v1);
-    }
-
-    const unsigned char *ptr = (const unsigned char *)RSTRING_PTR(str);
-    uint64_t total_bits = str_bit_size(RSTRING_LEN(str));
-    if (is_range) {
-        if (!str_bit_range_resolve(&range, total_bits, &beg, &len)) {
-            return INT2FIX(0);
-        }
-    }
-    else if (beg >= total_bits) {
+    if (!str_bit_read_region_parse(nargs, v0, v1, opts, str, &region)) {
         return INT2FIX(0);
     }
 
-    /* Reads clamp: only the part of the region that exists is counted. */
-    if (len > total_bits - beg) len = total_bits - beg;
-    if (len == 0) return INT2FIX(0);
-    return ULL2NUM(str_count_bits_region(ptr, beg, len, lsb_first));
+    const unsigned char *ptr = (const unsigned char *)RSTRING_PTR(str);
+    /* A whole-string popcount is independent of bit numbering. */
+    if (nargs == 0) {
+        return ULL2NUM(str_count_bits(ptr, RSTRING_LEN(str)));
+    }
+    return ULL2NUM(str_count_bits_region(ptr, region.beg, region.len, region.lsb_first));
+}
+
+#define WANTARRAY(m, size) (!rb_block_given_p() ? rb_ary_new_capa(size) : 0)
+
+static inline int
+enumerator_element(VALUE ary, VALUE e)
+{
+    if (ary) {
+        rb_ary_push(ary, e);
+        return 0;
+    }
+    else {
+        rb_yield(e);
+        return 1;
+    }
+}
+
+#define ENUM_ELEM(ary, e) enumerator_element(ary, e)
+
+/*
+ * The bit argument of each_bit_offset and bit_offsets: 0, 1, true or false.
+ */
+static int
+str_bit_arg(VALUE bit)
+{
+    if (bit == Qtrue) return 1;
+    if (bit == Qfalse) return 0;
+
+    VALUE integer = rb_to_int(bit);
+    if (integer == INT2FIX(0)) return 0;
+    if (integer == INT2FIX(1)) return 1;
+    rb_raise(rb_eArgError, "bit must be 0, 1, true, or false");
+    UNREACHABLE_RETURN(0);
+}
+
+/*
+ * Yield every bit of the region as 0 or 1 in ascending logical order.
+ * The block may modify self, so the length and pointer are re-read for
+ * every bit and the walk stops at the current end of the string.
+ */
+static VALUE
+rb_str_enumerate_bits(VALUE str, const struct str_bit_read_region *region, VALUE ary)
+{
+    uint64_t end = region->beg + region->len;
+
+    for (uint64_t pos = region->beg; pos < end; pos++) {
+        if (str_bit_offset_out_of_range(RSTRING_LEN(str), pos)) break;
+        struct str_bit_location location = str_bit_location_from_offset(pos, region->lsb_first);
+        ENUM_ELEM(ary, INT2FIX(str_get_bit_location(RSTRING_PTR(str), location)));
+    }
+    if (ary)
+        return ary;
+    else
+        return str;
+}
+
+/*
+ * Yield the logical offset of every bit in the region that equals bit, in
+ * ascending order.  Bytes with no matching bit inside the region are skipped
+ * without visiting their bits.  As above, the block may modify self.
+ * The region must not be empty: last_bit below would wrap for len == 0.
+ */
+static VALUE
+rb_str_enumerate_bit_offsets(VALUE str, const struct str_bit_read_region *region, int bit, VALUE ary)
+{
+    uint64_t first_bit = region->beg;
+    uint64_t last_bit = region->beg + region->len - 1;
+    long first_byte = (long)(first_bit / CHAR_BIT);
+    long last_byte = (long)(last_bit / CHAR_BIT);
+    unsigned char invert = bit ? 0 : 0xFF;
+
+    for (long byte_index = first_byte; byte_index <= last_byte; byte_index++) {
+        if (byte_index >= RSTRING_LEN(str)) break;
+
+        unsigned int lo = (byte_index == first_byte) ? (unsigned int)(first_bit % CHAR_BIT) : 0;
+        unsigned int hi = (byte_index == last_byte) ? (unsigned int)(last_bit % CHAR_BIT) : 7;
+        unsigned char mask = str_bit_region_byte_mask(lo, hi, region->lsb_first);
+        unsigned char byte = (unsigned char)(((unsigned char)RSTRING_PTR(str)[byte_index] ^ invert) & mask);
+        if (byte == 0) continue;
+
+        for (unsigned int logical = lo; logical <= hi; logical++) {
+            unsigned int physical = region->lsb_first ? logical : 7 - logical;
+            if (!((byte >> physical) & 1)) continue;
+            ENUM_ELEM(ary, ULL2NUM((uint64_t)byte_index * CHAR_BIT + logical));
+            /* The block may have shrunk self; re-read the byte, or stop. */
+            if (byte_index >= RSTRING_LEN(str)) return ary ? ary : str;
+            byte = (unsigned char)(((unsigned char)RSTRING_PTR(str)[byte_index] ^ invert) & mask);
+        }
+    }
+    if (ary)
+        return ary;
+    else
+        return str;
+}
+
+/*
+ * The bit iterators validate their arguments before returning an Enumerator,
+ * so the size functions below only re-parse what already passed once.  They
+ * still see the current string length, as the string may have changed since.
+ *
+ * A size function runs in the frame of Enumerator#size, which is called
+ * without keywords, so rb_keyword_given_p() is false there and rb_scan_args
+ * would take the lsb_first: Hash for a positional argument.  The Enumerator
+ * does not pass its kw_splat flag to a size function either.  Hence
+ * RB_SCAN_ARGS_LAST_HASH_KEYWORDS.  A Hash in a positional slot passes the
+ * first parse only when it responds to to_int; the size functions do not
+ * support that corner case and raise ArgumentError for it.
+ * The Enumerator keeps no Array at all when it was created without arguments.
+ */
+static VALUE
+rb_str_each_bit_size(VALUE str, VALUE args, VALUE eobj)
+{
+    VALUE v0, v1, opts;
+    struct str_bit_read_region region;
+    int argc = args ? RARRAY_LENINT(args) : 0;
+    const VALUE *argv = args ? RARRAY_CONST_PTR(args) : NULL;
+
+    int nargs = rb_scan_args_kw(RB_SCAN_ARGS_LAST_HASH_KEYWORDS, argc, argv, "02:", &v0, &v1, &opts);
+    if (!str_bit_read_region_parse(nargs, v0, v1, opts, str, &region)) {
+        return INT2FIX(0);
+    }
+    return ULL2NUM(region.len);
+}
+
+static VALUE
+rb_str_each_bit_offset_size(VALUE str, VALUE args, VALUE eobj)
+{
+    VALUE bit_v, v0, v1, opts;
+    struct str_bit_read_region region;
+    int argc = args ? RARRAY_LENINT(args) : 0;
+    const VALUE *argv = args ? RARRAY_CONST_PTR(args) : NULL;
+
+    int nargs = rb_scan_args_kw(RB_SCAN_ARGS_LAST_HASH_KEYWORDS, argc, argv, "12:", &bit_v, &v0, &v1, &opts) - 1;
+    int bit = str_bit_arg(bit_v);
+    if (!str_bit_read_region_parse(nargs, v0, v1, opts, str, &region)) {
+        return INT2FIX(0);
+    }
+    uint64_t set = str_count_bits_region((const unsigned char *)RSTRING_PTR(str), region.beg, region.len, region.lsb_first);
+    return ULL2NUM(bit ? set : region.len - set);
+}
+
+/* A capacity hint for the Array forms that cannot overflow long. */
+static inline long
+str_bit_array_capa(uint64_t len)
+{
+    return len <= (uint64_t)LONG_MAX ? (long)len : 0;
+}
+
+/*
+ *  call-seq:
+ *    each_bit(lsb_first: true) {|bit| ... } -> self
+ *    each_bit(offset, length, lsb_first: true) {|bit| ... } -> self
+ *    each_bit(range, lsb_first: true) {|bit| ... } -> self
+ *    each_bit(lsb_first: true) -> enumerator
+ *    each_bit(offset, length, lsb_first: true) -> enumerator
+ *    each_bit(range, lsb_first: true) -> enumerator
+ *
+ *  :include: doc/string/each_bit.rdoc
+ *
+ */
+static VALUE
+rb_str_each_bit(int argc, VALUE *argv, VALUE str)
+{
+    VALUE v0, v1, opts;
+    struct str_bit_read_region region;
+
+    int nargs = rb_scan_args(argc, argv, "02:", &v0, &v1, &opts);
+    bool nonempty = str_bit_read_region_parse(nargs, v0, v1, opts, str, &region);
+    RETURN_SIZED_ENUMERATOR(str, argc, argv, rb_str_each_bit_size);
+    if (!nonempty) return str;
+    return rb_str_enumerate_bits(str, &region, 0);
+}
+
+/*
+ *  call-seq:
+ *    bits(lsb_first: true) -> array
+ *    bits(offset, length, lsb_first: true) -> array
+ *    bits(range, lsb_first: true) -> array
+ *    bits(lsb_first: true) {|bit| ... } -> self
+ *    bits(offset, length, lsb_first: true) {|bit| ... } -> self
+ *    bits(range, lsb_first: true) {|bit| ... } -> self
+ *
+ *  :include: doc/string/bits.rdoc
+ *
+ */
+static VALUE
+rb_str_bits(int argc, VALUE *argv, VALUE str)
+{
+    VALUE v0, v1, opts;
+    struct str_bit_read_region region;
+
+    int nargs = rb_scan_args(argc, argv, "02:", &v0, &v1, &opts);
+    bool nonempty = str_bit_read_region_parse(nargs, v0, v1, opts, str, &region);
+    VALUE ary = WANTARRAY("bits", nonempty ? str_bit_array_capa(region.len) : 0);
+    if (!nonempty) return ary ? ary : str;
+    return rb_str_enumerate_bits(str, &region, ary);
+}
+
+/*
+ *  call-seq:
+ *    each_bit_offset(bit, lsb_first: true) {|offset| ... } -> self
+ *    each_bit_offset(bit, offset, length, lsb_first: true) {|offset| ... } -> self
+ *    each_bit_offset(bit, range, lsb_first: true) {|offset| ... } -> self
+ *    each_bit_offset(bit, lsb_first: true) -> enumerator
+ *    each_bit_offset(bit, offset, length, lsb_first: true) -> enumerator
+ *    each_bit_offset(bit, range, lsb_first: true) -> enumerator
+ *
+ *  :include: doc/string/each_bit_offset.rdoc
+ *
+ */
+static VALUE
+rb_str_each_bit_offset(int argc, VALUE *argv, VALUE str)
+{
+    VALUE bit_v, v0, v1, opts;
+    struct str_bit_read_region region;
+
+    int nargs = rb_scan_args(argc, argv, "12:", &bit_v, &v0, &v1, &opts) - 1;
+    int bit = str_bit_arg(bit_v);
+    bool nonempty = str_bit_read_region_parse(nargs, v0, v1, opts, str, &region);
+    RETURN_SIZED_ENUMERATOR(str, argc, argv, rb_str_each_bit_offset_size);
+    if (!nonempty) return str;
+    return rb_str_enumerate_bit_offsets(str, &region, bit, 0);
+}
+
+/*
+ *  call-seq:
+ *    bit_offsets(bit, lsb_first: true) -> array
+ *    bit_offsets(bit, offset, length, lsb_first: true) -> array
+ *    bit_offsets(bit, range, lsb_first: true) -> array
+ *    bit_offsets(bit, lsb_first: true) {|offset| ... } -> self
+ *    bit_offsets(bit, offset, length, lsb_first: true) {|offset| ... } -> self
+ *    bit_offsets(bit, range, lsb_first: true) {|offset| ... } -> self
+ *
+ *  :include: doc/string/bit_offsets.rdoc
+ *
+ */
+static VALUE
+rb_str_bit_offsets(int argc, VALUE *argv, VALUE str)
+{
+    VALUE bit_v, v0, v1, opts;
+    struct str_bit_read_region region;
+
+    int nargs = rb_scan_args(argc, argv, "12:", &bit_v, &v0, &v1, &opts) - 1;
+    int bit = str_bit_arg(bit_v);
+    bool nonempty = str_bit_read_region_parse(nargs, v0, v1, opts, str, &region);
+    VALUE ary = WANTARRAY("bit_offsets", 0);
+    if (!nonempty) return ary ? ary : str;
+    return rb_str_enumerate_bit_offsets(str, &region, bit, ary);
 }
 
 static void
@@ -10808,23 +11093,6 @@ rb_str_split(VALUE str, const char *sep0)
     sep = rb_str_new_cstr(sep0);
     return rb_str_split_m(1, &sep, str);
 }
-
-#define WANTARRAY(m, size) (!rb_block_given_p() ? rb_ary_new_capa(size) : 0)
-
-static inline int
-enumerator_element(VALUE ary, VALUE e)
-{
-    if (ary) {
-        rb_ary_push(ary, e);
-        return 0;
-    }
-    else {
-        rb_yield(e);
-        return 1;
-    }
-}
-
-#define ENUM_ELEM(ary, e) enumerator_element(ary, e)
 
 static const char *
 chomp_newline(const char *p, const char *e, rb_encoding *enc)
@@ -14304,6 +14572,10 @@ Init_String(void)
     rb_define_method(rb_cString, "bit_clear", rb_str_bit_clear, -1);
     rb_define_method(rb_cString, "bit_flip", rb_str_bit_flip, -1);
     rb_define_method(rb_cString, "bit_count", rb_str_bit_count, -1);
+    rb_define_method(rb_cString, "each_bit", rb_str_each_bit, -1);
+    rb_define_method(rb_cString, "bits", rb_str_bits, -1);
+    rb_define_method(rb_cString, "each_bit_offset", rb_str_each_bit_offset, -1);
+    rb_define_method(rb_cString, "bit_offsets", rb_str_bit_offsets, -1);
     rb_define_method(rb_cString, "bitwise_not", rb_str_bitwise_not, 0);
     rb_define_method(rb_cString, "bitwise_not!", rb_str_bitwise_not_bang, 0);
     rb_define_method(rb_cString, "bitwise_and", rb_str_bitwise_and, 1);

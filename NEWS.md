@@ -160,9 +160,14 @@ Note: We're only listing outstanding class updates.
       alignment of another directive. [[Feature #22185]]
     * Basic bit operations are added. `String#bit_get`, `String#bit_set?`,
       `String#bit_set`, `String#bit_clear`, `String#bit_flip` and
-      `String#bit_count` handle individual bits, and `String#bitwise_not`,
+      `String#bit_count` handle individual bits or a region of bits given
+      as `(offset, length)` or as a Range, and `String#bitwise_not`,
       `String#bitwise_and`, `String#bitwise_or`, `String#bitwise_xor`
-      (with their `!` variants) handle whole strings. [[Feature #22118]]
+      (with their `!` variants) handle whole strings.
+      [[Feature #22118]] [[Feature #22279]]
+    * `String#each_bit`, `String#bits`, `String#each_bit_offset` and
+      `String#bit_offsets` are added to iterate over the bits of a string
+      or over the offsets of its set or cleared bits. [[Feature #22399]]
     * `String#tr` now accept a Hash for multi-character replacement.
       [[Feature #22238]]
 
@@ -581,7 +586,9 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #22226]: https://bugs.ruby-lang.org/issues/22226
 [Feature #22232]: https://bugs.ruby-lang.org/issues/22232
 [Feature #22238]: https://bugs.ruby-lang.org/issues/22238
+[Feature #22279]: https://bugs.ruby-lang.org/issues/22279
 [Feature #22297]: https://bugs.ruby-lang.org/issues/22297
+[Feature #22399]: https://bugs.ruby-lang.org/issues/22399
 [PR #17201]: https://github.com/ruby/ruby/pull/17201
 [GH-psych #805]: https://github.com/ruby/psych/pull/805
 [RubyGems-v4.0.4]: https://github.com/rubygems/rubygems/releases/tag/v4.0.4

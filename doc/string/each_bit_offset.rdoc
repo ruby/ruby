@@ -1,0 +1,48 @@
+Calls the given block with the zero-based offset of each bit of +self+ that
+is equal to +bit+; returns +self+.
+
++bit+ is +1+ or +true+ to select the set bits, or +0+ or +false+ to select
+the cleared bits:
+
+  data = "\xAA\xCC"
+  data.each_bit_offset(1).to_a # => [1, 3, 5, 7, 10, 11, 14, 15]
+  data.each_bit_offset(0).to_a # => [0, 2, 4, 6, 8, 9, 12, 13]
+
+The offsets are yielded in increasing order.
+
+With +offset+ and +length+, scans only the +length+ bits beginning at
+zero-based bit +offset+; with a Range, scans the bits covered by +range+.
+The yielded offsets are always relative to the start of +self+:
+
+  data.each_bit_offset(1, 8, 4).to_a # => [10, 11]
+  data.each_bit_offset(1, 8..).to_a  # => [10, 11, 14, 15]
+
+A region that extends beyond the end of +self+ is clamped to the bits that
+exist; a region that begins at or beyond the end yields nothing.
+
+By default, bits within each byte are numbered from least-significant to
+most-significant. If +lsb_first+ is +false+, byte order is unchanged but bits
+within each byte are numbered from most-significant to least-significant.
+The yielded offsets use the same numbering as String#bit_get with the same
++lsb_first+:
+
+  data.each_bit_offset(1, lsb_first: false).to_a # => [0, 2, 4, 6, 8, 9, 12, 13]
+  data.each_bit_offset(1, lsb_first: false).all? {|i| data.bit_set?(i, lsb_first: false) }
+  # => true
+
+With no block given, returns a new Enumerator whose +size+ is the number of
+matching bits in the region:
+
+  data.each_bit_offset(1).size # => 8
+
+The block may modify +self+. The iteration reads the current contents of
++self+ for each bit and stops at the current end of +self+.
+
+Raises +ArgumentError+ if +bit+ is an Integer other than +0+ or +1+.
+Raises +TypeError+ if +bit+ is neither +true+ nor +false+ and cannot be
+converted to an Integer with +to_int+.
+Raises +ArgumentError+ if +offset+ is given without +length+.
+Raises +IndexError+ if +offset+ or a Range endpoint is negative.
+Raises +ArgumentError+ if +length+ is negative.
+Raises +ArgumentError+ if a bit position is too large to be represented.
+Raises +ArgumentError+ if +lsb_first+ is neither +true+ nor +false+.
