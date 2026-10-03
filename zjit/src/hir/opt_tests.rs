@@ -8062,9 +8062,8 @@ mod hir_opt_tests {
           v16:NilClass = Const Value(nil)
           Jump bb4(v16)
         bb6():
-          v18:CShape = LoadField v10, :shape_id@0x1000
           v19:CShape[0x1002] = Const CShape(0x1002)
-          v20:CBool = IsBitEqual v18, v19
+          v20:CBool = IsBitEqual v12, v19
           CondBranch v20, bb7(), bb8()
         bb7():
           v22:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
@@ -8100,7 +8099,7 @@ mod hir_opt_tests {
             obj.test
             TEST = C.instance_method(:test)
         ");
-        assert_snapshot!(hir_string_proc("TEST"), @r"
+        assert_snapshot!(hir_string_proc("TEST"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -8120,9 +8119,8 @@ mod hir_opt_tests {
           v16:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           Jump bb4(v16)
         bb6():
-          v18:CShape = LoadField v10, :shape_id@0x1000
           v19:CShape[0x1010] = Const CShape(0x1010)
-          v20:CBool = IsBitEqual v18, v19
+          v20:CBool = IsBitEqual v12, v19
           CondBranch v20, bb7(), bb8()
         bb7():
           v22:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
@@ -8139,9 +8137,8 @@ mod hir_opt_tests {
           v33:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           Jump bb9(v33)
         bb11():
-          v35:CShape = LoadField v10, :shape_id@0x1000
           v36:CShape[0x1010] = Const CShape(0x1010)
-          v37:CBool = IsBitEqual v35, v36
+          v37:CBool = IsBitEqual v29, v36
           CondBranch v37, bb12(), bb13()
         bb12():
           v39:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
@@ -10867,9 +10864,8 @@ mod hir_opt_tests {
           v16:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           Jump bb4(v16)
         bb6():
-          v18:CShape = LoadField v6, :shape_id@0x1000
           v19:CShape[0x1010] = Const CShape(0x1010)
-          v20:CBool = IsBitEqual v18, v19
+          v20:CBool = IsBitEqual v12, v19
           CondBranch v20, bb7(), bb8()
         bb7():
           v22:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
@@ -23238,8 +23234,7 @@ mod hir_opt_tests {
           CondBranch v57, bb5(v18), bb12()
         bb12():
           PatchPoint NoEPEscape(set_value_loop)
-          v66:CShape = LoadField v18, :shape_id@0x1038
-          v67:CShape[0x103b] = GuardBitEquals v66, CShape(0x103b) recompile
+          v67:CShape[0x103b] = GuardBitEquals v45, CShape(0x103b) recompile
           StoreField v18, :@levar@0x103a, v19
           v70:CShape[0x1039] = Const CShape(0x1039)
           StoreField v18, :shape_id@0x1038, v70
@@ -25644,19 +25639,13 @@ mod hir_opt_tests {
           v202:FalseClass = RefineType v246, Falsy
           CondBranch v201, bb19(), bb18(v202)
         bb19():
-          v208:CShape = LoadField v85, :shape_id@0x1088
-          v209:CShape[0x108d] = GuardBitEquals v208, CShape(0x108d) recompile
           v210:BasicObject = LoadField v85, :@y@0x108c
           PatchPoint NoEPEscape(==)
           PatchPoint NoSingletonClass(Point@0x1008)
           PatchPoint MethodRedefined(Point@0x1008, y@0x1148, cme:0x1150)
-          v251:CShape = LoadField v95, :shape_id@0x1088
-          v252:CShape[0x108d] = GuardBitEquals v251, CShape(0x108d) recompile
-          v253:BasicObject = LoadField v95, :@y@0x108c
           PatchPoint MethodRedefined(Integer@0x1118, ==@0x1098, cme:0x1120)
           v256:Fixnum = GuardType v210, Fixnum recompile
-          v257:Fixnum = GuardType v253, Fixnum
-          v258:BoolExact = FixnumEq v256, v257
+          v258:BoolExact = FixnumEq v256, v49
           Jump bb18(v258)
         bb18(v222:BoolExact):
           PopInlineFrame
@@ -26250,5 +26239,138 @@ mod hir_opt_tests {
           CheckInterrupts
           Return v90
         ");
+    }
+
+    #[test]
+    fn test_eliminate_redundant_load_across_blocks() {
+        set_call_threshold(3);
+        eval(r#"
+           class TestObj
+             def initialize(value)
+               @value = value
+             end
+
+             def read(val)
+               even = val.even?
+               a = @value
+               even ? a : @value + 1
+             end
+           end
+
+           obj = TestObj.new(5)
+           obj.read(1)
+           obj.read(2)
+        "#);
+
+        assert_snapshot!(
+           hir_string_proc("TestObj.instance_method(:read)"),
+           @"
+        fn read@<compiled>:8:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :val@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v8:BasicObject = LoadArg :self@0
+          v9:BasicObject = LoadArg :val@1
+          Jump bb3(v8, v9)
+        bb3(v13:BasicObject, v14:BasicObject):
+          v74:NilClass = Const Value(nil)
+          v73:NilClass = Const Value(nil)
+          PatchPoint MethodRedefined(Integer@0x1008, even?@0x1010, cme:0x1018)
+          v67:Fixnum = GuardType v14, Fixnum recompile
+          v68:BoolExact = InvokeBuiltin leaf <inline_expr>, v67
+          PatchPoint NoEPEscape(read)
+          v27:HeapBasicObject = GuardType v13, HeapBasicObject
+          v28:CShape = LoadField v27, :shape_id@0x1040
+          v29:CShape[0x1041] = GuardBitEquals v28, CShape(0x1041) recompile
+          v30:BasicObject = LoadField v27, :@value@0x1042
+          v37:CBool = Test v68
+          v38:FalseClass = RefineType v68, Falsy
+          CondBranch v37, bb5(), bb4()
+        bb5():
+          v40:TrueClass = RefineType v68, Truthy
+          CheckInterrupts
+          Return v30
+        bb4():
+          v57:Fixnum[1] = Const Value(1)
+          PatchPoint MethodRedefined(Integer@0x1008, +@0x1043, cme:0x1048)
+          v71:Fixnum = GuardType v30, Fixnum recompile
+          v72:Fixnum = FixnumAdd v71, v57
+          CheckInterrupts
+          Return v72
+        "
+        );
+    }
+
+    #[test]
+    fn test_retain_necessary_load_across_blocks() {
+        set_call_threshold(3);
+        eval(r#"
+           class TestObj
+             def initialize(value)
+               @value = value
+             end
+
+             def foo(modify)
+               before = @value
+               if modify
+                 @value = 5
+               end
+
+               before + @value
+            end
+          end
+
+           obj = TestObj.new(3)
+           obj.foo(false)
+           obj.foo(true)
+        "#);
+
+        assert_snapshot!(
+           hir_string_proc("TestObj.instance_method(:foo)"),
+           @"
+        fn foo@<compiled>:8:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :modify@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :modify@1
+          Jump bb3(v7, v8)
+        bb3(v11:BasicObject, v12:BasicObject):
+          v66:NilClass = Const Value(nil)
+          v17:HeapBasicObject = GuardType v11, HeapBasicObject
+          v18:CShape = LoadField v17, :shape_id@0x1001
+          v19:CShape[0x1002] = GuardBitEquals v18, CShape(0x1002) recompile
+          v20:BasicObject = LoadField v17, :@value@0x1003
+          PatchPoint NoEPEscape(foo)
+          v27:CBool = Test v12
+          v28:Falsy = RefineType v12, Falsy
+          CondBranch v27, bb5(), bb4(v17, v28)
+        bb5():
+          v30:Truthy = RefineType v12, Truthy
+          v33:Fixnum[5] = Const Value(5)
+          StoreField v17, :@value@0x1003, v33
+          Jump bb4(v17, v30)
+        bb4(v42:HeapBasicObject, v43:BasicObject):
+          v50:CShape = LoadField v42, :shape_id@0x1001
+          v51:CShape[0x1002] = GuardBitEquals v50, CShape(0x1002) recompile
+          v52:BasicObject = LoadField v42, :@value@0x1003
+          PatchPoint MethodRedefined(Integer@0x1008, +@0x1010, cme:0x1018)
+          v63:Fixnum = GuardType v20, Fixnum recompile
+          v64:Fixnum = GuardType v52, Fixnum
+          v65:Fixnum = FixnumAdd v63, v64
+          CheckInterrupts
+          Return v65
+        "
+        );
     }
 }
