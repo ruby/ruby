@@ -368,6 +368,11 @@ Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for det
   shareable, but almost all of its methods raise `FrozenError` and it can
   still refer to unshareable objects through the members of `rb_io_t`.
 
+* `File::Stat#dev` and `File::Stat#rdev` on Windows now hold the volume
+  serial number instead of the drive letter index, so two paths to one file
+  through `subst` or a UNC share get the same `dev` and `ino`, and
+  `File#stat` agrees with `File.stat`.
+
 ## Stdlib compatibility issues
 
 * `Etc.getlogin` on Windows now returns the login name determined when the
