@@ -238,7 +238,7 @@ Show the modes (note the leftmost two digits):
 '%06o' % File.stat(dir_path).mode               # => "041777"
 '%06o' % File.stat(block_special_path).mode     # => "060660"
 '%06o' % File.stat(file_path).mode              # => "100644"
-'%06o' % File.stat(link_path).mode              # => "100644"
+'%06o' % File.lstat(link_path).mode             # => "120777"  # lstat: Do not follow link.
 '%06o' % File.stat(socket_path).mode            # => "140775"
 File.delete(pipe_path, link_path, socket_path)  # Clean up.
 ```
