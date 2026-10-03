@@ -6809,46 +6809,41 @@ rb_f_test(int argc, VALUE *argv, VALUE _)
 /*
  *  Document-class: File::Stat
  *
- *  A \File::Stat object contains information about an entry in the file system.
+ *  :markup: markdown
  *
- *  Each of these methods returns a new \File::Stat object:
+ *  A \File::Stat object contains information about an entry in the filesystem.
  *
- *  - File#lstat.
- *  - File::Stat.new.
- *  - File::lstat.
- *  - File::stat.
- *  - IO#stat.
+ *  Each of these methods returns a new \File::Stat object.
+ *  the first three follow symbolic links; the others don't:
  *
- *  === Snapshot
+ *  - File::Stat.new
+ *  - File::stat
+ *  - IO#stat
+ *  - File#lstat
+ *  - File::lstat
  *
- *  A new \File::Stat object takes an immediate "snapshot" of the entry's information;
- *  the captured information is never updated,
- *  regardless of changes in the actual entry:
+ *  ## Snapshot
  *
- *  The entry must exist when File::Stat.new is called:
+ *  A new \File::Stat object takes an immediate "snapshot" of the filesystem entry
+ *  at the given 'path';
+ *  the snapshot is never updated, regardless of changes in the entry (even its deletion):
  *
- *    filepath = 't.tmp'
- *    File.exist?(filepath)           # => false
- *    File::Stat.new(filepath)        # Raises Errno::ENOENT: No such file or directory.
- *    File.write(filepath, 'foo')     # Create the file.
- *    stat = File::Stat.new(filepath) # Okay.
+ *  ```ruby
+ *  filepath = '/tmp/t.tmp'
+ *  File.stat(filepath) # Raises Errno::ENOENT: No such file or directory.
+ *  File.write(filepath, 'foo')
+ *  stat = File.stat(filepath)
+ *  stat.birthtime # => 2026-10-03 12:19:23.723062465 -0500
+ *  File.delete(filepath)
+ *  stat.birthtime # => 2026-10-03 12:19:23.723062465 -0500
+ *  ```
  *
- *  Later changes to the actual entry do not change the \File::Stat object:
+ *  ## Filesystem Dependencies
  *
- *    File.atime(filepath) # => 2026-04-01 11:51:38.0014518 -0500
- *    stat.atime           # => 2026-04-01 11:51:38.0014518 -0500
- *    File.write(filepath, 'bar')
- *    File.atime(filepath) # => 2026-04-01 11:58:11.922614 -0500
- *    stat.atime           # => 2026-04-01 11:51:38.0014518 -0500
- *    File.delete(filepath)
- *    stat.atime           # => 2026-04-01 11:51:38.0014518 -0500
- *
- *  === OS-Dependencies
- *
- *  Methods in a \File::Stat object may return platform-dependents values,
- *  and not all values are meaningful on all systems;
- *  for example, File::Stat#blocks returns +nil+ on Windows,
- *  but returns an integer on Linux.
+ *  Methods in a \File::Stat object may return filesystem-dependent values,
+ *  and not all values are meaningful on all filesystems;
+ *  for example, File::Stat#blocks returns `nil` on a Windows filesystem,
+ *  but returns an integer on others.
  *
  *  See also Kernel#test.
  */
