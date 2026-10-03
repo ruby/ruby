@@ -4627,7 +4627,7 @@ gc_ref_update_array(void *objspace, VALUE v)
             }
         }
 
-        if (rb_gc_obj_slot_size(v) >= rb_ary_size_as_embedded(v)) {
+        if (!ARY_EMBED_P(v) && rb_gc_obj_slot_size(v) >= rb_ary_size_as_embedded(v)) {
             /* Skip pinned arrays: a pinned array may be referenced from a
              * conservative root holding RARRAY_PTR across this compaction, so
              * freeing its heap buffer here would dangle that pointer. */
