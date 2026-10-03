@@ -81,7 +81,17 @@ void *alloca();
 #endif
 
 #ifdef HAVE_MACH_O_LOADER_H
-# include <crt_externs.h>
+# ifdef __LP64__
+#  define LP(x) x##_64
+# else
+#  define LP(x) x
+# endif
+# ifdef HAVE_CRT_EXTERNS_H
+#  include <crt_externs.h>
+# else
+#  include "missing/crt_externs.h"
+extern struct LP(mach_header) *_NSGetMachExecuteHeader(void);
+# endif
 # include <mach-o/fat.h>
 # include <mach-o/loader.h>
 # include <mach-o/nlist.h>
@@ -2336,11 +2346,6 @@ static uintptr_t
 fill_lines(int num_traces, void **traces, int check_debuglink,
         obj_info_t **objp, line_info_t *lines, int offset, FILE *errout)
 {
-# ifdef __LP64__
-#  define LP(x) x##_64
-# else
-#  define LP(x) x
-# endif
     int fd;
     off_t filesize;
     char *file, *p = NULL;
