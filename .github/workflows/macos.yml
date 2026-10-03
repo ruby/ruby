@@ -148,7 +148,7 @@ jobs:
 
       - name: Set timeout scale
         run: echo "RUBY_TEST_TIMEOUT_SCALE=10" >> $GITHUB_ENV # subprocess assertion timeouts flake on slower/contended macOS runners
-        if: ${{ matrix.test_task == 'check' || matrix.test_task == 'test-all' }}
+        if: ${{ matrix.test_task == 'check' || matrix.test_task == 'test-all' || matrix.test_task == 'test-bundled-gems' }}
 
       - name: Set up crash dumps
         run: mkdir "${GITHUB_WORKSPACE}/crashdumps"
