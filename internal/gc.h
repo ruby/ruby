@@ -17,6 +17,7 @@
 #include "ruby_atomic.h"        /* for RUBY_ATOMIC_VALUE_SET */
 
 struct rb_gc_zjit_fastpath;
+struct rb_vm_struct;
 
 #ifndef USE_MODULAR_GC
 # define USE_MODULAR_GC 0
@@ -323,6 +324,7 @@ VALUE rb_gc_objspace_disable_no_rest(void *objspace);
 VALUE rb_gc_objspace_enable(void *objspace);
 
 void rb_gc_objspace_retire(void **objspace_slot);
+void rb_gc_objspace_retire_with_vm(struct rb_vm_struct *vm, void **objspace_slot);
 void rb_gc_objspace_postmortem_self(void);
 void rb_gc_objspace_absorb_into_current(void **objspace_slot);
 void rb_gc_objspace_absorb_all_zombies(void);
