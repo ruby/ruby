@@ -3703,6 +3703,43 @@ fn test_opt_neq_string_nil() {
 }
 
 #[test]
+fn test_opt_neq_truthy_result_with_overridden_not() {
+    eval(r#"
+        class TruthyResult
+          def ! = :overridden
+        end
+        class CustomEq
+          def ==(other) = TruthyResult.new
+        end
+        def test(obj) = obj != nil
+        obj = CustomEq.new
+        test(obj)
+        test(obj)
+    "#);
+    assert_snapshot!(assert_compiles("test(CustomEq.new)"), @"false");
+}
+
+#[test]
+fn test_opt_neq_inlined_eq_side_exit_preserves_negation() {
+    with_inlining(|| {
+        eval(r#"
+            class CustomEq
+              def initialize = @value = true
+              def ==(other) = @value
+            end
+            def test(obj) = obj != nil
+            $obj = CustomEq.new
+            test($obj)
+            test($obj)
+        "#);
+        assert_snapshot!(assert_compiles_allowing_exits(r#"
+            $obj.instance_variable_set(:@extra, 1)
+            test($obj)
+        "#), @"false");
+    });
+}
+
+#[test]
 fn test_opt_neq_string_same_operand() {
     assert_snapshot!(inspect(r#"
         def test(s) = s != s
