@@ -755,6 +755,25 @@ class TestSocket < Test::Unit::TestCase
     s2.close
   end
 
+  def test_tcp_sendmsg_recvmsg
+    Addrinfo.tcp("127.0.0.1", 0).listen {|serv|
+      serv.local_address.connect {|c|
+        s, = serv.accept
+        begin
+          assert_equal 4, c.sendmsg("haha")
+          assert_equal "ha", s.recvmsg(2, Socket::MSG_PEEK)[0]
+          assert_equal "haha", s.recvmsg(10)[0]
+
+          assert_equal 6, c.sendmsg_nonblock("BBBBBB")
+          IO.select([s])
+          assert_equal "BBBBBB", s.recvmsg_nonblock(10)[0]
+        ensure
+          s.close
+        end
+      }
+    }
+  end
+
   def test_resolurion_error_error_code
     begin
       Socket.getaddrinfo("example.com", 80, "AF_UNIX")
