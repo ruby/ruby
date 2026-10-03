@@ -318,6 +318,9 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
           assert_equal(["AF_UNIX", path], s.addr)
           assert_equal(path, s.path)
           assert_equal("", c.path)
+          # [Bug #21702]
+          assert_equal(s.local_address.to_s, c.remote_address.to_s)
+          assert_equal(c.local_address.to_s, s.remote_address.to_s)
         ensure
           s.close
         end
