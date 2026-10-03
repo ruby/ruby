@@ -6842,11 +6842,19 @@ rb_stat_s_alloc(VALUE klass)
 }
 
 /*
- * call-seq:
- *   File::Stat.new(file_name)  -> stat
+ * :markup: markdown
  *
- * Create a File::Stat object for the given file name (raising an
- * exception if the file doesn't exist).
+ * call-seq:
+ *   File::Stat.new(path) -> stat
+ *
+ * Returns a new \File::Stat object containing a [snapshot](rdoc-ref:File::Stat@Snapshot)
+ * of the filesystem entry at the given `path`:
+ *
+ * ```ruby
+ * File::Stat.new('/etc/passwd')
+ * File::Stat.new('/tmp')
+ * File::Stat.new('nosuch') # Raises Errno::ENOENT: No such file or directory.
+ * ```
  */
 
 static VALUE
