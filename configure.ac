@@ -440,9 +440,9 @@ AS_CASE(["$target_os"],
 [darwin*], [
     AC_MSG_CHECKING(if minimum required OS X version is supported)
     AC_PREPROC_IFELSE([AC_LANG_SOURCE([[@%:@include <AvailabilityMacros.h>
-	@%:@if MAC_OS_X_VERSION_MIN_REQUIRED < __MAC_10_5
-	@%:@error pre OS X 10.5
-	[!<===== pre OS X 10.5 =====>]
+	@%:@if MAC_OS_X_VERSION_MIN_REQUIRED < __MAC_10_6
+	@%:@error pre OS X 10.6
+	[!<===== pre OS X 10.6 =====>]
 	@%:@endif
 	]])],
 	[AC_MSG_RESULT(yes)],
@@ -2079,22 +2079,7 @@ AS_IF([test $rb_cv_stack_end_address != no], [
 
 dnl Checks for library functions.
 AC_TYPE_GETGROUPS
-AS_CASE(["${target_cpu}-${target_os}:${target_archs}"],
-[powerpc*-darwin*], [
-  AC_LIBSOURCES(alloca.c)
-  AC_SUBST([ALLOCA], [\${LIBOBJDIR}alloca.${ac_objext}])
-  AC_DEFINE(C_ALLOCA)
-  AC_DEFINE_UNQUOTED(alloca, alloca)
-  ],
-[universal-darwin*:*ppc*], [
-  AC_LIBSOURCES(alloca.c)
-  AC_SUBST([ALLOCA], [\${LIBOBJDIR}alloca.${ac_objext}])
-  RUBY_DEFINE_IF([defined __POWERPC__], C_ALLOCA, 1) # Darwin defines __POWERPC__ for ppc and ppc64 both
-  RUBY_DEFINE_IF([defined __POWERPC__], alloca, alloca)
-  ],
-[
-  AC_FUNC_ALLOCA
-  ])
+AC_FUNC_ALLOCA
 AS_IF([test "x$ALLOCA" = "x"], [
     AC_CACHE_CHECK([for dynamic size alloca], rb_cv_dynamic_alloca, [
     for chk in ok __chkstk; do
@@ -2747,15 +2732,6 @@ AS_CASE([$coroutine_type], [yes|''], [
         ],
         [arm64-darwin*], [
             coroutine_type=arm64
-        ],
-        # Correct target name is powerpc*-, but Ruby seems to prefer ppc*-.
-        # Notice that Darwin PPC ABI differs from AIX and ELF.
-        # Adding PPC targets for AIX, *BSD and *Linux will require separate implementations.
-        [powerpc-darwin*|ppc-darwin*], [
-            coroutine_type=ppc
-        ],
-        [powerpc64-darwin*|ppc64-darwin*], [
-            coroutine_type=ppc64
         ],
         [x*64-linux*], [
             AS_CASE(["$ac_cv_sizeof_voidp"],
