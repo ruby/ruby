@@ -403,9 +403,14 @@ module Test
         end
 
         def kill
-          EnvUtil::Debugger.search&.dump(@pid)
-          signal = RUBY_PLATFORM =~ /mswin|mingw/ ? :KILL : :SEGV
-          Process.kill(signal, @pid)
+          if RUBY_PLATFORM =~ /mswin|mingw/
+            # exec in runruby.rb runs the worker as another process on Windows
+            pid, signal = @real_pid || @pid, :KILL
+          else
+            pid, signal = @pid, :SEGV
+          end
+          EnvUtil::Debugger.search&.dump(pid)
+          Process.kill(signal, pid)
           warn "worker #{to_s} does not respond; #{signal} is sent"
         rescue Errno::ESRCH
         end
@@ -430,7 +435,7 @@ module Test
         end
 
         attr_reader :io, :pid
-        attr_accessor :status, :file, :real_file, :loadpath
+        attr_accessor :status, :file, :real_file, :real_pid, :loadpath
 
         private
 
@@ -580,8 +585,9 @@ module Test
           # just only dots, ignore
         when /^okay$/
           worker.status = :running
-        when /^ready(!)?$/
+        when /^ready(!)?(?: (\d+))?$/
           bang = $1
+          worker.real_pid = $2.to_i if $2
           worker.status = :ready
 
           unless task = @tasks.shift
