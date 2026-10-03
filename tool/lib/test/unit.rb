@@ -561,6 +561,12 @@ module Test
           end
         rescue Timeout::Error
           if pids
+            if RUBY_PLATFORM =~ /mswin|mingw/
+              # Kill the test processes as Worker#kill does, only of the workers
+              # still running since the pids of the exited ones may be reused.
+              running = closed.select {|w| Process.waitpid(w.pid, Process::WNOHANG).nil? rescue false}
+              pids = running.map {|w| w.real_pid || w.pid}
+            end
             Process.kill(:KILL, *pids) rescue nil
             pids = nil
             retry
