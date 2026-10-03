@@ -674,6 +674,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::ObjectAllocClass { class, state } => gen_object_alloc_class(jit, asm, function, class, &function.frame_state(state)),
         Insn::StringCopy { val, chilled, state } => gen_string_copy(jit, asm, function, *val, opnd!(val), *chilled, &function.frame_state(*state)),
         Insn::StringConcat { strings, state } => gen_string_concat(jit, asm, function, opnds!(strings), &function.frame_state(*state)),
+        Insn::StringForceEncoding { string, encoding, flags, state } => gen_string_force_encoding(jit, asm, function, opnd!(string), opnd!(encoding), opnd!(flags), &function.frame_state(*state)),
         &Insn::StringGetbyte { string, index } => gen_string_getbyte(asm, opnd!(string), opnd!(index)),
         Insn::StringByteslice { string, beg, len, state } => gen_string_byteslice(asm, opnd!(string), opnd!(beg), opnd!(len), &function.frame_state(*state)),
         Insn::StringSetbyteFixnum { string, index, value } => gen_string_setbyte_fixnum(asm, opnd!(string), opnd!(index), opnd!(value)),
@@ -4268,6 +4269,93 @@ fn gen_string_concat(jit: &mut JITState, asm: &mut Assembler, function: &Functio
 
     let first_string_ptr = gen_push_opnds(jit, asm, &strings);
     asm_ccall!(asm, rb_str_concat_literals, strings.len().into(), first_string_ptr)
+}
+
+fn gen_string_force_encoding(jit: &mut JITState, asm: &mut Assembler, function: &Function, string: Opnd, encoding: Opnd, flags: Opnd, state: &FrameState) -> Opnd {
+    unsafe extern "C" {
+        fn rb_enc_associate_index(string: VALUE, index: c_int) -> VALUE;
+    }
+
+    asm_comment!(asm, "String#force_encoding fast path");
+    // Avoid the C call only when a direct flag update preserves all rb_str_force_encoding behavior.
+    let string = asm.load_mem(string);
+    let encoding = asm.load_mem(encoding);
+
+    // rb_str_force_encoding checks mutability before it checks whether the encoding changed.
+    // Side-exit so CRuby can raise for frozen or locked strings and warn for chilled strings.
+    let unmodifiable_exit = side_exit(jit, function, state, GuardNotFrozen);
+    let unmodifiable_mask = RUBY_FL_FREEZE as u64 | RUBY_STR_CHILLED as u64 | RUBY_STR_TMPLOCK as u64;
+    asm.test(flags, Opnd::UImm(unmodifiable_mask));
+    asm.jnz(jit, unmodifiable_exit);
+
+    // RString stores the encoding index in its flags, so load the index from the Encoding object.
+    let encoding_ptr = asm.load(Opnd::mem(VALUE_BITS, encoding, TDATA_OFFSET_DATA as i32));
+    let raw_encoding_index = asm.load(Opnd::mem(32, encoding_ptr, RUBY_OFFSET_ENCODING_INDEX as i32));
+    // Match encoding.c's ENC_TO_ENCINDEX: the raw 32-bit value includes a dummy flag at bit 24.
+    let encoding_index = asm.and(raw_encoding_index, Opnd::UImm((1_u64 << 24) - 1));
+
+    // Both the unchanged path and the mutation path must return the original receiver.
+    let hir_block_id = asm.current_block().hir_block_id;
+    let rpo_idx = asm.current_block().rpo_index;
+    let slow_block = asm.new_block(hir_block_id, false, rpo_idx);
+    let slow_edge = Target::Block(Box::new(lir::BranchEdge { target: slow_block, args: vec![] }));
+    let result_block = asm.new_block(hir_block_id, false, rpo_idx);
+    let result_edge = |value| Target::Block(Box::new(lir::BranchEdge { target: result_block, args: vec![value] }));
+
+    // Inline indices below RUBY_ENCODING_INLINE_MAX can be compared against the string flags.
+    // Larger indices use the sentinel in those flags, so always handle them with the C helper.
+    asm.cmp(encoding_index, Opnd::UImm(RUBY_ENCODING_INLINE_MAX as u64));
+    asm.jge(jit, slow_edge.clone());
+
+    // Skip every write for the no-op case, as rb_str_force_encoding does.
+    let string_encoding = asm.and(flags, Opnd::UImm(RUBY_ENCODING_MASK as u64));
+    let string_encoding = asm.rshift(string_encoding, Opnd::UImm(RUBY_ENCODING_SHIFT as u64));
+    asm.cmp(string_encoding.with_num_bits(32), encoding_index);
+    asm.je(jit, result_edge(string));
+
+    // UTF-16BE (index 3) is the first index beyond the three supported one-byte encodings:
+    // ASCII-8BIT, UTF-8, and US-ASCII use one-byte terminators.
+    // Other changes use encoding.c for terminator and coderange updates.
+    asm.cmp(encoding_index, Opnd::UImm(RUBY_ENCINDEX_UTF_16BE as u64));
+    asm.jge(jit, slow_edge.clone());
+    asm.cmp(string_encoding.with_num_bits(32), Opnd::UImm(RUBY_ENCINDEX_UTF_16BE as u64));
+    asm.jge(jit, slow_edge.clone());
+
+    // Seven-bit bytes remain valid in every supported encoding, so preserve that coderange.
+    // Other bytes can change meaning under the new encoding, so clear their cached coderange.
+    let flags_without_encoding = asm.and(flags, Opnd::UImm(!(RUBY_ENCODING_MASK as u64)));
+    let flags_without_encoding_or_coderange = asm.and(
+        flags,
+        Opnd::UImm(!(RUBY_ENCODING_MASK as u64 | RUBY_ENC_CODERANGE_MASK as u64)),
+    );
+    let coderange = asm.and(flags, Opnd::UImm(RUBY_ENC_CODERANGE_MASK as u64));
+    asm.cmp(coderange, Opnd::UImm(RUBY_ENC_CODERANGE_7BIT as u64));
+    let updated_flags = asm.csel_e(flags_without_encoding, flags_without_encoding_or_coderange);
+
+    // Preserve unrelated flags because force_encoding changes only encoding metadata.
+    let encoding_bits = asm.lshift(
+        encoding_index.with_num_bits(VALUE_BITS),
+        Opnd::UImm(RUBY_ENCODING_SHIFT as u64),
+    );
+    let new_flags = asm.or(updated_flags, encoding_bits);
+    asm.store(Opnd::mem(VALUE_BITS, string, RUBY_OFFSET_RBASIC_FLAGS), new_flags);
+    asm.jmp(result_edge(string));
+
+    // Let encoding.c handle non-inline targets and changes that need terminator/coderange updates.
+    asm.set_current_block(slow_block);
+    let label = jit.get_label(asm, slow_block, hir_block_id);
+    asm.write_label(label);
+    gen_prepare_non_leaf_call(jit, asm, function, state);
+    let result = asm_ccall!(asm, rb_enc_associate_index, string, encoding_index.with_num_bits(VALUE_BITS));
+    asm.jmp(result_edge(result));
+
+    // The helper and both fast paths return the original receiver.
+    asm.set_current_block(result_block);
+    let label = jit.get_label(asm, result_block, hir_block_id);
+    asm.write_label(label);
+    let result = asm.new_block_param(VALUE_BITS);
+    asm.current_block().add_parameter(result);
+    result
 }
 
 // Generate RSTRING_PTR
