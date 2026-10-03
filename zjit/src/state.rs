@@ -408,14 +408,20 @@ pub extern "C" fn rb_zjit_init(zjit_enabled: bool) {
     }
 }
 
-/// Enable ZJIT compilation.
-fn zjit_enable() {
-    // Call ZJIT hooks before enabling ZJIT to avoid compiling the hooks themselves
+/// Install the Ruby implementations of builtins registered by `Module#with_jit`.
+/// This runs arbitrary Ruby -- the hooks call `Array#each`, `undef` and `def` -- so
+/// the VM lock must not be held. Call it before enabling ZJIT, both so the hooks
+/// themselves are not compiled and so the builtins they replace are in place first.
+fn call_jit_hooks() {
     unsafe {
         let zjit = rb_const_get(rb_cRubyVM, rust_str_to_id("ZJIT"));
         rb_funcallv(zjit, rust_str_to_id("call_jit_hooks"), 0, std::ptr::null());
     }
+}
 
+/// Initialize ZJIT state and start compiling. Runs no Ruby, so it is safe to hold
+/// the VM lock across it. Call `call_jit_hooks()` first.
+fn zjit_init_state() {
     // Catch panics to avoid UB for unwinding into C frames.
     // See https://doc.rust-lang.org/nomicon/exception-safety.html
     let result = std::panic::catch_unwind(|| {
@@ -442,26 +448,36 @@ fn zjit_enable() {
     }
 }
 
+/// Enable ZJIT compilation. Must be called without the VM lock held.
+fn zjit_enable() {
+    call_jit_hooks();
+    zjit_init_state();
+}
+
 /// Enable ZJIT compilation, returning Qtrue if ZJIT was previously disabled
 #[unsafe(no_mangle)]
 pub extern "C" fn rb_zjit_enable(_ec: EcPtr, _self: VALUE) -> VALUE {
-    with_vm_lock(src_loc!(), || {
-        // Options would not have been initialized during boot if no flags were specified
-        rb_zjit_prepare_options();
+    // Options would not have been initialized during boot if no flags were specified
+    rb_zjit_prepare_options();
 
-        // Initialize and enable ZJIT
-        zjit_enable();
+    // Runs Ruby, so it has to happen before the VM lock is taken below
+    call_jit_hooks();
 
-        // Add "+ZJIT" to RUBY_DESCRIPTION
-        unsafe {
-            unsafe extern "C" {
-                fn ruby_set_zjit_description();
-            }
-            ruby_set_zjit_description();
+    // Stop other ractors for the flip of rb_zjit_entry, which enables the zjit_*
+    // instructions
+    with_vm_lock(src_loc!(), || zjit_init_state());
+
+    // Add "+ZJIT" to RUBY_DESCRIPTION. rb_define_const() goes through
+    // rb_const_set(), which dispatches Module#const_added, so this stays outside
+    // the VM lock as well.
+    unsafe {
+        unsafe extern "C" {
+            fn ruby_set_zjit_description();
         }
+        ruby_set_zjit_description();
+    }
 
-        Qtrue
-    })
+    Qtrue
 }
 
 /// Assert that any future ZJIT compilation will return a function pointer (not fail to compile)

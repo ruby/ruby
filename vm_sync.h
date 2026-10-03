@@ -16,11 +16,29 @@
 #define APPEND_LOCATION_PARAMS
 #endif
 
+struct rb_ractor_struct;
+
 bool rb_vm_locked_p(void);
 void rb_vm_lock_body(LOCATION_ARGS);
 void rb_vm_unlock_body(LOCATION_ARGS);
 
-struct rb_ractor_struct;
+/* A call deferred out of a VM lock critical section; see rb_vm_call_when_unlocked(). */
+struct rb_deferred_call {
+    void (*func)(VALUE arg0, VALUE arg1);
+    VALUE arg0, arg1;
+};
+
+/* Call func(arg0, arg1) once the outermost VM lock has been released -- or right away,
+ * if the lock is not held.  For work that must not happen inside a critical section:
+ * anything that dispatches a Ruby method, checks interrupts, or can raise.  arg0 and
+ * arg1 are GC roots until the call runs.
+ *
+ * A pending call is dropped if the critical section is left by a non-local exit (see
+ * rb_ec_vm_lock_rec_release): the operation that queued it did not complete, and a
+ * longjmp is not a safe point at which to run Ruby. */
+void rb_vm_call_when_unlocked(void (*func)(VALUE, VALUE), VALUE arg0, VALUE arg1);
+void rb_vm_discard_deferred_calls(struct rb_ractor_struct *cr);
+
 NOINLINE(void rb_vm_lock_enter_body_cr(struct rb_ractor_struct *cr, unsigned int *lev APPEND_LOCATION_ARGS));
 NOINLINE(void rb_vm_lock_enter_body_nb(unsigned int *lev APPEND_LOCATION_ARGS));
 NOINLINE(void rb_vm_lock_enter_body(unsigned int *lev APPEND_LOCATION_ARGS));
@@ -53,20 +71,43 @@ rb_multi_ractor_p(void)
     }
 }
 
+// The VM lock is a no-op in single ractor mode, where it is not needed for
+// mutual exclusion. Debug builds take it anyway so that the lock bookkeeping
+// and the assertions built on it are exercised outside of multi-ractor runs.
+static inline bool
+rb_vm_locking_needed_p(void)
+{
+#if RUBY_DEBUG
+    return true;
+#else
+    return rb_multi_ractor_p();
+#endif
+}
+
+/* Whether to lock is decided on the way in and remembered; the leaves never ask
+ * rb_vm_locking_needed_p() again.  The predicate is not stable across a critical
+ * section -- creating a Ractor opens it, and fork() closes it again in the child -- so
+ * re-deciding on the way out either strands a lock that was really taken [Bug #20942]
+ * or releases one that never was.  For the lev-taking pairs the record is *lev itself:
+ * a held level is >= 1, so 0 means the enter was a no-op. */
 static inline void
 rb_vm_lock(const char *file, int line)
 {
     RB_DEBUG_COUNTER_INC(vm_sync_lock);
 
-    if (rb_multi_ractor_p()) {
+    if (rb_vm_locking_needed_p()) {
         rb_vm_lock_body(LOCATION_PARAMS);
     }
 }
 
+/* This pair has no lev to record in, so the record is the VM's own state and the test
+ * lives in rb_vm_unlock_body(), which releases only what this Ractor holds.  The
+ * predicate still gates the call: it cannot have closed since rb_vm_lock(), so a lock
+ * that was taken always gets here. */
 static inline void
 rb_vm_unlock(const char *file, int line)
 {
-    if (rb_multi_ractor_p()) {
+    if (rb_vm_locking_needed_p()) {
         rb_vm_unlock_body(LOCATION_PARAMS);
     }
 }
@@ -76,8 +117,11 @@ rb_vm_lock_enter(unsigned int *lev, const char *file, int line)
 {
     RB_DEBUG_COUNTER_INC(vm_sync_lock_enter);
 
-    if (rb_multi_ractor_p()) {
+    if (rb_vm_locking_needed_p()) {
         rb_vm_lock_enter_body(lev APPEND_LOCATION_PARAMS);
+    }
+    else {
+        *lev = 0;
     }
 }
 
@@ -86,15 +130,18 @@ rb_vm_lock_enter_nb(unsigned int *lev, const char *file, int line)
 {
     RB_DEBUG_COUNTER_INC(vm_sync_lock_enter_nb);
 
-    if (rb_multi_ractor_p()) {
+    if (rb_vm_locking_needed_p()) {
         rb_vm_lock_enter_body_nb(lev APPEND_LOCATION_PARAMS);
+    }
+    else {
+        *lev = 0;
     }
 }
 
 static inline void
 rb_vm_lock_leave_nb(unsigned int *lev, const char *file, int line)
 {
-    if (rb_multi_ractor_p()) {
+    if (*lev > 0) {
         rb_vm_lock_leave_body_nb(lev APPEND_LOCATION_PARAMS);
     }
 }
@@ -102,7 +149,7 @@ rb_vm_lock_leave_nb(unsigned int *lev, const char *file, int line)
 static inline void
 rb_vm_lock_leave(unsigned int *lev, const char *file, int line)
 {
-    if (rb_multi_ractor_p()) {
+    if (*lev > 0) {
         rb_vm_lock_leave_body(lev APPEND_LOCATION_PARAMS);
     }
 }
@@ -117,7 +164,9 @@ rb_vm_lock_enter_cr(struct rb_ractor_struct *cr, unsigned int *levp, const char 
 static inline void
 rb_vm_lock_leave_cr(struct rb_ractor_struct *cr, unsigned int *levp, const char *file, int line)
 {
-    rb_vm_lock_leave_body(levp APPEND_LOCATION_PARAMS);
+    if (*levp > 0) {
+        rb_vm_lock_leave_body(levp APPEND_LOCATION_PARAMS);
+    }
 }
 
 #define RB_VM_LOCKED_P()   rb_vm_locked_p()

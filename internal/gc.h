@@ -246,7 +246,14 @@ int rb_objspace_foreign_object_p(VALUE obj);
 void rb_gc_declare_weak_references(VALUE obj);
 bool rb_gc_handle_weak_references_alive_p(VALUE obj);
 
+/* The calling Ractor's own objspace only; takes no lock, so the callback may run Ruby. */
 void rb_objspace_each_objects(
+    int (*callback)(void *start, void *end, size_t stride, void *data),
+    void *data);
+
+/* Every objspace in the process, under the VM lock and barrier: the callback must be
+ * pure C (no Ruby, no interrupt check, no raise, no waiting on another Ractor). */
+void rb_objspace_each_objects_all(
     int (*callback)(void *start, void *end, size_t stride, void *data),
     void *data);
 
