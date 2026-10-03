@@ -6,6 +6,19 @@ A filesystem entry has an integer _mode_ that specifies:
 - [Special bits][special bits].
 - [File type][file type].
 
+The mode is most often seen as an octal-format integer:
+
+- Rightmost three digits encode the permissions.
+- Next digit encodes the special bits.
+- Leftmost two digits encode the file type.
+
+On this page, we show a mode using format `'%06o`,
+which displays the mode as a 6-digit octal number:
+
+```ruby
+'%06o' % File.stat('/etc/passwd').mode # => "100644"
+```
+
 ## Getting a Mode
 
 You can use method File::Stat#mode to get the mode of a filesystem entry.
@@ -23,14 +36,9 @@ The first three follow symbolic links; the others don't:
 Once you have the File::Stat object, you can fetch the mode for the entry:
 
 ```ruby
-File.stat('README.md').mode.to_s(8) # => "100664"
-File.stat('doc/').mode.to_s(8)      # => "40775"
+'%06o' % File.stat('/etc').mode        # => "040755"
+'%06o' % File.stat('/etc/passwd').mode # => "100644"
 ```
-
-On this page, we use a helper method to display a mode
-in a convenient form, showing the mode both as an octal integer and a string.
-If you're new to this page, it may be helpful
-to read about the [helper method][helper method] now.
 
 ## Setting a Mode
 
@@ -39,12 +47,12 @@ The mode for an entry is initialized when the entry is created:
 ```ruby
 filepath = '/tmp/t.txt'
 File.write(filepath, 'foo')
-mode(filepath) # => "100664 -rw-rw-r--"
+'%06o' % File.stat(filepath).mode # => "100664"
+File.delete(filepath)             # Clean up.
 dirpath = '/tmp/bar'
 Dir.mkdir(dirpath)
-mode(dirpath)  # => "040775 drwxrwxr-x"
-File.unlink(filepath)
-Dir.rmdir(dirpath)
+'%06o' % File.stat(dirpath).mode  # => "040775"
+Dir.rmdir(dirpath)                # Clean up.
 ```
 
 You can use one of these methods to change the [permissions][permissions]
@@ -79,10 +87,11 @@ the permissions may also be changed:
 
 ```ruby
 filepath = '/tmp/t.tmp'
-File.new(filepath, 'w', 0755)
-mode(filepath) # => "100755 -rwxr-xr-x"
-File.chmod(0644, filepath)
-mode(filepath) # => "100644 -rw-r--r--"
+File.write(filepath, 'foo')
+'%06o' % File.stat(filepath).mode # => "100664"
+File.chmod(0o775, filepath)
+'%06o' % File.stat(filepath).mode # => "100775"
+File.delete(filepath)             # Clean up.
 ```
 
 For a method that actually creates a directory in the underlying filesystem
@@ -91,10 +100,11 @@ the permissions may also be changed:
 
 ```ruby
 dirpath = '/tmp/dir'
-Dir.mkdir(dirpath, 0755)
-mode(dirpath) # => "040755 drwxr-xr-x"
-File.chmod(0644, dirpath)
-mode(dirpath) # => "040644 drw-r--r--"
+Dir.mkdir(dirpath)
+'%06o' % File.stat(dirpath).mode # => "040775"
+File.chmod(0o644, dirpath)
+'%06o' % File.stat(dirpath).mode # => "040644"
+Dir.rmdir(dirpath)               # Clean up.
 ```
 
 On non-Posix operating systems, permissions may include only read-only or read-write,
@@ -110,14 +120,14 @@ Permissions for directories and files include read and write permissions.
 The permissions in this table do not involve execute/search,
 and so apply similarly to a directory or a file.
 
-| Octal | \String       | Permissions                              |
-|:-----:|---------------|------------------------------------------|
-| `000` | `'---------'` | No permissions.                          |
-| `400` | `'r--------'` | Owner read-only.                         |
-| `600` | `'rw-------'` | Owner read-write.                        |
-| `644` | `'rw-r--r--'` | Owner read-write; group/world read-only. |
-| `664` | `'rw-rw-r--'` | Owner/group read-write; world read-only. |
-| `666` | `'rw-rw-rw-'` | Owner/group/world read-write.            |
+| Octal      | Permissions                              |
+|------------|------------------------------------------|
+| `0o000000` | No permissions.                          |
+| `0o000400` | Owner read-only.                         |
+| `0o000600` | Owner read-write.                        |
+| `0o000644` | Owner read-write; group/world read-only. |
+| `0o000664` | Owner/group read-write; world read-only. |
+| `0o000666` | Owner/group/world read-write.            |
 
 ### \File Permissions
 
@@ -126,13 +136,13 @@ in addition to the read and write permissions seen above.
 
 The permissions in this table, applied to a file, specify execute permissions.
 
-| Octal    | \String       | Permissions                                                  |
-|:--------:|---------------|--------------------------------------------------------------|
-|  `700`   | `'rwx------'` | Owner read-write-execute.                                    |
-|  `750`   | `'rwxr-x---'` | Owner read-write-execute; group read-execute.                |
-|  `755`   | `'rwxr-xr-x'` | Owner read-write-execute; group read-execute; world execute. |
-|  `775`   | `'rwxrwxr-x'` | Owner/group read-write-execute; world read-execute.          |
-|  `777`   | `'rwxrwxrwx'` | Owner/group/world read-write-execute.                        |
+| Octal         | Permissions                                                  |
+|---------------|--------------------------------------------------------------|
+|  `0o000700`   | Owner read-write-execute.                                    |
+|  `0o000750`   | Owner read-write-execute; group read-execute.                |
+|  `0o000755`   | Owner read-write-execute; group read-execute; world execute. |
+|  `0o000775`   | Owner/group read-write-execute; world read-execute.          |
+|  `0o000777`   | Owner/group/world read-write-execute.                        |
 
 ### Directory Permissions
 
@@ -141,13 +151,13 @@ in addition to the read and write permissions seen above.
 
 The permissions in this table, applied to a directory, specify search permissions.
 
-| Octal  | \String       | Permissions                                               |
-|:------:|---------------|-----------------------------------------------------------|
-| `700`  | `'rwx------'` | Owner read-write-search.                                  |
-| `750`  | `'rwxr-x---'` | Owner read-write-search; group read-search.               |
-| `755`  | `'rwxr-xr-x'` | Owner read-write-search; group read-search; world search. |
-| `775`  | `'rwxrwxr-x'` | Owner/group read-write-search; world read-search.         |
-| `777`  | `'rwxrwxrwx'` | Owner/group/world read-write-search.                      |
+| Octal       | Permissions                                               |
+|-------------|-----------------------------------------------------------|
+| `0o000700`  | Owner read-write-search.                                  |
+| `0o000750`  | Owner read-write-search; group read-search.               |
+| `0o000755`  | Owner read-write-search; group read-search; world search. |
+| `0o000775`  | Owner/group read-write-search; world read-search.         |
+| `0o000777`  | Owner/group/world read-write-search.                      |
 
 ## Special Bits
 
@@ -157,123 +167,80 @@ The fourth octal digit in a mode represents its special bits:
 - The next bit (`2000`) shows whether the [setuid bit][setuid bit] is set.
 - The next bit (`4000`) shows whether the [setgid bit][setgid bit] is set.
 
-| Octal   | Meaning                   |
-|:-------:|---------------------------|
-| `0000`  | None.                     |
-| `1000`  | Sticky.                   |
-| `2000`  | Setgid.                   |
-| `3000`  | Setgid + sticky.          |
-| `4000`  | Setuid.                   |
-| `5000`  | Setuid + sticky.          |
-| `6000`  | Setuid + setgid.          |
-| `7000`  | Setuid + setgid + sticky. |
+| Octal       | Meaning                   |
+|-------------|---------------------------|
+| `0o000000`  | None.                     |
+| `0o001000`  | Sticky.                   |
+| `0o002000`  | Setgid.                   |
+| `0o003000`  | Setgid + sticky.          |
+| `0o004000`  | Setuid.                   |
+| `0o005000`  | Setuid + sticky.          |
+| `0o006000`  | Setuid + setgid.          |
+| `0o007000`  | Setuid + setgid + sticky. |
 
-Examples:
-
-```ruby
-File.write(filepath, '')
-File.chmod(00644, filepath)
-mode(filepath) # => "100644 -rw-r--r--"  # No special bits set.
-File.chmod(01644, filepath)
-mode(filepath) # => "101644 -rw-r--r-T"  # 'T' shows that sticky bit is set.
-File.chmod(02644, filepath)
-mode(filepath) # => "102644 -rw-r-Sr--"  # 'S' shows that setuid bit is set.
-File.chmod(04644, filepath)
-mode(filepath) # => "104644 -rwSr--r--"  # 'S' shows that setgid bit is set.
-File.chmod(07644, filepath)
-mode(filepath) # => "107644 -rwSr-Sr-T"  # All set.
-```
-
-In each case, if the execute bit is also set,
-lowercase letters `'t'` and `'s'` are displayed instead of uppercase `'T'` and `'S'`:
+Examples (note value in special-bits digit -- fourth-from-left):
 
 ```ruby
-File.chmod(00755, filepath)
-mode(filepath) # => "100755 -rwxr-xr-x"
-File.chmod(01755, filepath)
-mode(filepath) # => "101755 -rwxr-xr-t"
-File.chmod(02755, filepath)
-mode(filepath) # => "102755 -rwxr-sr-x"
-File.chmod(04755, filepath)
-mode(filepath) # => "104755 -rwsr-xr-x"
-File.chmod(07755, filepath)
-mode(filepath) # => "107755 -rwsr-sr-t"
+filepath = '/tmp/t.tmp'
+File.write(filepath, 'foo')
+'%06o' % File.stat(filepath).mode # => "100664"  # No special bits set.
+File.chmod(0o1644, filepath)
+'%06o' % File.stat(filepath).mode # => "101644"  # Sticky bit set.
+File.chmod(0o2644, filepath)
+'%06o' % File.stat(filepath).mode # => "102644"  # Setgid bit set.
+File.chmod(0o4644, filepath)
+'%06o' % File.stat(filepath).mode # => "104644"  # Setuid bit set.
+File.chmod(0o7644, filepath)
+'%06o' % File.stat(filepath).mode # => "107644"  # All special bits set.
+File.delete(filepath)             # Clean up.
 ```
 
 ## \File Type
 
-The fifth and sixth octal digits in a mode represent a file type:
+The fifth and sixth octal digits in a mode represent the file type:
 
-| Octal    | Character | \File Type        |
-|----------|:---------:|-------------------|
-| `010000` |   `'p'`   | Pipe.             |
-| `020000` |   `'c'`   | Character device. |
-| `040000` |   `'d'`   | Directory.        |
-| `060000` |   `'b'`   | Block device.     |
-| `100000` |   `'-'`   | Regular file.     |
-| `120000` |   `'l'`   | Symbolic link.    |
-| `140000` |   `'s'`   | \Socket.          |
+| Octal      | \File Type        |
+|------------|-------------------|
+| `0o010000` | Pipe.             |
+| `0o020000` | Character device. |
+| `0o040000` | Directory.        |
+| `0o060000` | Block device.     |
+| `0o100000` | Regular file.     |
+| `0o120000` | Symbolic link.    |
+| `0o140000` | \Socket.          |
 
-Examples:
+Define a path for each file type:
 
 ```ruby
-File.mkfifo('/tmp/pipe', 0666)
-mode('/tmp/pipe')   # => "010664 prw-rw-r--"  # 01; pipe.
-mode('/dev/tty')    # => "020666 crw-rw-rw-"  # 02; character device.
-mode('doc/')        # => "040775 drwxrwxr-x"  # 04; directory.
-mode('/dev/loop0')  # => "060660 brw-rw----"  # 06; block device.
-mode('README.md')   # => "100664 -rw-rw-r--"  # 10; regular file.
-File.symlink('lib', '/tmp/link')
-mode('/tmp/link')   # => "120777 lrwxrwxrwx"  # 12; symbolic link.
+pipe_path =              '/tmp/pipe'
+character_special_path = '/dev/tty'
+dir_path =               '/tmp'
+block_special_path =     '/dev/loop0'
+file_path =              '/etc/passwd'
+link_path =              '/tmp/link'
+socket_path =            '/tmp/socket'
+```
+
+For some of the paths, the entries exist already; these we have to create:
+
+```ruby
+File.mkfifo(pipe_path, 0666)
+File.symlink(file_path, link_path)
 require 'socket'
-UNIXServer.new('/tmp/socket')
-mode('/tmp/socket') # => "140775 srwxrwxr-x"  # 14; socket.
-File.unlink('/tmp/pipe', '/tmp/link' ,'/tmp/socket')
+UNIXServer.new(socket_path)
 ```
 
-## Helper Method
-
-On this page, we use a helper method, `mode`, to show the mode information for a given path:
+Show the modes (note the leftmost two digits):
 
 ```ruby
-mode('README.md') # => "0100664 -rw-rw-r--"
-mode('/etc')      # => "0040755 drwxr-xr-x"
-```
-
-The [permissions][permissions] are expressed both in:
-
-- The trailing three digits of the octal value (e.g., `755`, `644`).
-
-    - Left digit: owner permissions.
-    - Middle digit: group permissions.
-    - Right digit: world permissions.
-
-- The trailing nine characters of the string string value
-  (e.g., `'rwxr-xr-x'`, `'rw-r--r--'`).
-
-    - Left three characters: owner permissions.
-    - Middle three characters: group permissions.
-    - Right three characters: world permissions.
-
-The [special bits][special bits] are expressed in the fourth digit.
-
-The [file type][file type] is expressed the fifth and sixth digits.
-
-For the code-curious:
-
-```ruby
-# Return a string containing the mode (octal digits and character string)
-# for the given path.
-def mode(path)
-  # Get mode digits from File.lstat.
-  mode_digits = File.lstat(path).inspect.split(', ').select {|s| s.match('mode')}.first.split('=').last
-  # Format to size.
-  formatted_digits = "%06o" % mode_digits
-  # Get mode characters from ls command.
-  mode_characters = `ls -ld #{path}`.split(' ').first
-  # Return both.
-  "#{formatted_digits} #{mode_characters}"
-end
+'%06o' % File.stat(pipe_path).mode              # => "010664"
+'%06o' % File.stat(character_special_path).mode # => "020666"
+'%06o' % File.stat(dir_path).mode               # => "041777"
+'%06o' % File.stat(block_special_path).mode     # => "060660"
+'%06o' % File.stat(file_path).mode              # => "100644"
+'%06o' % File.lstat(link_path).mode             # => "120777"  # lstat: Do not follow link.
+'%06o' % File.stat(socket_path).mode            # => "140775"
+File.delete(pipe_path, link_path, socket_path)  # Clean up.
 ```
 
 [permissions]:   #permissions
