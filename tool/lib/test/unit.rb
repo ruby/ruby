@@ -403,16 +403,16 @@ module Test
         end
 
         def kill
-          if RUBY_PLATFORM =~ /mswin|mingw/
-            # exec in runruby.rb runs the worker as another process on Windows
-            pid, signal = @real_pid || @pid, :KILL
-          else
-            pid, signal = @pid, :SEGV
-          end
-          EnvUtil::Debugger.search&.dump(pid)
-          Process.kill(signal, pid)
+          EnvUtil::Debugger.search&.dump(target_pid)
+          signal = RUBY_PLATFORM =~ /mswin|mingw/ ? :KILL : :SEGV
+          Process.kill(signal, target_pid)
           warn "worker #{to_s} does not respond; #{signal} is sent"
         rescue Errno::ESRCH
+        end
+
+        # exec in runruby.rb runs the worker as another process on Windows
+        def target_pid
+          RUBY_PLATFORM =~ /mswin|mingw/ && @real_pid || @pid
         end
 
         def died(*additional)
@@ -562,10 +562,10 @@ module Test
         rescue Timeout::Error
           if pids
             if RUBY_PLATFORM =~ /mswin|mingw/
-              # Kill the test processes as Worker#kill does, only of the workers
-              # still running since the pids of the exited ones may be reused.
+              # The test processes are not children on Windows and their pids
+              # may be reused once they exit, so kill only the running ones.
               running = closed.select {|w| Process.waitpid(w.pid, Process::WNOHANG).nil? rescue false}
-              pids = running.map {|w| w.real_pid || w.pid}
+              pids = running.map(&:target_pid)
             end
             Process.kill(:KILL, *pids) rescue nil
             pids = nil
