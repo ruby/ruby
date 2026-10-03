@@ -2329,6 +2329,12 @@ rb_objspace_foreign_object_p(VALUE obj)
     return !SPECIAL_CONST_P(obj) && rb_gc_obj_foreign_p(obj);
 }
 
+int
+rb_objspace_live_object_p(VALUE obj)
+{
+    return !SPECIAL_CONST_P(obj) && rb_gc_impl_live_object_p(rb_gc_get_objspace(), (const void *)obj);
+}
+
 #define OBJ_ID_INCREMENT (RUBY_IMMEDIATE_MASK + 1)
 #define LAST_OBJECT_ID() (object_id_counter * OBJ_ID_INCREMENT)
 
@@ -3955,16 +3961,14 @@ rb_gc_zjit_new_obj_fastpath(size_t alloc_size, VALUE flags, VALUE klass, struct 
 #endif
 }
 
+/*
+ * NOTE: `obj` must be from the current objspace.
+ */
 void
 rb_gc_register_mark_object(VALUE obj)
 {
-    /* rb_gc_impl_live_object_p() walks objspace->heap_pages.sorted, which
-     * another ractor may mutate while allocating heap pages under the VM lock,
-     * so the lookup must be done under the VM lock as well. */
-    RB_VM_LOCKING() {
-        if (rb_gc_impl_live_object_p(rb_gc_get_objspace(), (void *)obj)) {
-            rb_vm_register_global_object(obj);
-        }
+    if (rb_gc_impl_live_object_p(rb_gc_get_objspace(), (void *)obj)) {
+        rb_vm_register_global_object(obj);
     }
 }
 
@@ -5682,24 +5686,89 @@ ruby_gc_set_params(void)
     rb_gc_impl_set_params(rb_gc_get_objspace());
 }
 
-void
-rb_objspace_reachable_objects_from(VALUE obj, void (func)(VALUE, void *), void *data)
+/* Walk obj's outgoing references, handing each child to `func` instead of marking it.
+ * The walk is one level deep: it never descends into a child (no mark stack). Callers
+ * wanting the whole graph recurse it themselves. A child living in another Ractor's objspace
+ * (a shareable) is handed to `func` like any other. NOTE: it may return garbage objects, so
+ * callers should check `garbage_object_p`.
+ */
+static void
+reachable_objects_from_body(VALUE obj, void (func)(VALUE, void *), void *data, bool can_run_ruby)
 {
-    RB_VM_LOCKING() {
-        if (rb_gc_impl_during_gc_p(rb_gc_get_objspace())) rb_bug("rb_objspace_reachable_objects_from() is not supported while during GC");
+    if (rb_gc_impl_during_gc_p(rb_gc_get_objspace())) rb_bug("rb_objspace_reachable_objects_from() is not supported while during GC");
 
-        if (!RB_SPECIAL_CONST_P(obj)) {
-            struct gc_mark_func_data_struct **mfdp = GC_MARK_FUNC_DATA_SLOTP();
-            struct gc_mark_func_data_struct *prev_mfd = *mfdp;
-            struct gc_mark_func_data_struct mfd = {
-                .mark_func = func,
-                .data = data,
-            };
+    if (!RB_SPECIAL_CONST_P(obj)) {
+        struct gc_mark_func_data_struct **volatile mfdp = GC_MARK_FUNC_DATA_SLOTP();
+        struct gc_mark_func_data_struct *volatile prev_mfd = *mfdp;
+        struct gc_mark_func_data_struct mfd = {
+            .mark_func = func,
+            .data = data,
+        };
 
-            *mfdp = &mfd;
+        *mfdp = &mfd;
+
+        if (can_run_ruby) {
+            rb_execution_context_t *volatile ec = GET_EC();
+            enum ruby_tag_type state;
+
+            EC_PUSH_TAG(ec);
+            if ((state = EC_EXEC_TAG()) == TAG_NONE) {
+                rb_gc_mark_children(rb_gc_get_objspace(), obj);
+            }
+            EC_POP_TAG();
+
+            *mfdp = prev_mfd;
+
+            if (state != TAG_NONE) EC_JUMP_TAG(ec, state);
+        }
+        else {
             rb_gc_mark_children(rb_gc_get_objspace(), obj);
             *mfdp = prev_mfd;
         }
+    }
+}
+
+/* The walk reads tables whose only synchronization is the VM lock -- a class's m_tbl
+ * and const_tbl are written under it by rb_method_table_insert() and const_tbl_update().
+ * Two things make it safe to read them without the lock, and every unlocked entry point
+ * below rests on one of them:
+ *
+ *   - obj is owned by the current Ractor. rb_class_owner_check() makes that Ractor the
+ *     sole writer, and it is the one walking, so it cannot be mid-insert.
+ *   - the world is stopped (a global GC's barrier), so there is no concurrent writer at
+ *     all. This is the only way a foreign obj may be walked.
+ */
+void
+rb_objspace_reachable_objects_from_unlocked(VALUE obj, void (func)(VALUE, void *), void *data)
+{
+    reachable_objects_from_body(obj, func, data, false);
+}
+
+/* Unlocked walk of an object owned by the current Ractor. Raises ArgumentError rather
+ * than racing the owner if obj turns out to be foreign. Because no lock is held, func may
+ * run Ruby code.
+ */
+void
+rb_objspace_reachable_objects_from_local(VALUE obj, void (func)(VALUE, void *), void *data)
+{
+    ASSERT_vm_unlocking();
+    if (rb_objspace_foreign_object_p(obj)) {
+        rb_raise(rb_eArgError,
+                 "cannot locally traverse %+"PRIsVALUE", it is owned by another Ractor", obj);
+    }
+
+    reachable_objects_from_body(obj, func, data, true);
+}
+
+/* Walk obj's outgoing references, where obj may be owned by another Ractor (a
+ * shareable). The VM lock is what serializes the walk against the owner's writes
+ * for shareable classes/modules, so func must not run Ruby code or check interrupts.
+ */
+void
+rb_objspace_reachable_objects_from(VALUE obj, void (func)(VALUE, void *), void *data)
+{
+    RB_VM_LOCKING_NO_BARRIER() {
+        reachable_objects_from_body(obj, func, data, false);
     }
 }
 

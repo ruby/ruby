@@ -3691,6 +3691,11 @@ is_pointer_to_heap(rb_objspace_t *objspace, const void *ptr)
     return FALSE;
 }
 
+/*
+ * Is this object live in the given objspace. For foreign objects in other object spaces,
+ * it returns `false`. NOTE: this does NOT check whether or not it's unmarked during the process
+ * of lazy sweeping.
+ */
 bool
 rb_gc_impl_live_object_p(void *objspace_ptr, const void *ptr)
 {
@@ -6771,7 +6776,7 @@ objspace_allrefs(rb_objspace_t *objspace)
 
     /* traverse rest objects reachable from root objects */
     while (pop_mark_stack(&data.mark_stack, &obj)) {
-        rb_objspace_reachable_objects_from(data.root_obj = obj, allrefs_i, &data);
+        rb_objspace_reachable_objects_from_unlocked(data.root_obj = obj, allrefs_i, &data);
     }
     free_stack_chunks(&data.mark_stack);
 
@@ -7133,7 +7138,7 @@ verify_internal_consistency_i(void *page_start, void *page_end, size_t stride,
                 * But they can stay alive on the stack, */
                 if (!gc_object_moved_p(objspace, obj)) {
                     /* moved slots don't have children */
-                    rb_objspace_reachable_objects_from(obj, check_children_i, (void *)data);
+                    rb_objspace_reachable_objects_from_unlocked(obj, check_children_i, (void *)data);
                 }
 
                 /* check health of children */
@@ -7143,7 +7148,7 @@ verify_internal_consistency_i(void *page_start, void *page_end, size_t stride,
                 if (!is_marking(objspace) && RVALUE_OLD_P(objspace, obj)) {
                     /* reachable objects from an oldgen object should be old or (young with remember) */
                     data->parent = obj;
-                    rb_objspace_reachable_objects_from(obj, check_generation_i, (void *)data);
+                    rb_objspace_reachable_objects_from_unlocked(obj, check_generation_i, (void *)data);
                 }
 
                 if (!is_marking(objspace) && rb_gc_obj_shareable_p(obj)) {
@@ -7154,7 +7159,7 @@ verify_internal_consistency_i(void *page_start, void *page_end, size_t stride,
                     if (RVALUE_BLACK_P(objspace, obj)) {
                         /* reachable objects from black objects should be black or grey objects */
                         data->parent = obj;
-                        rb_objspace_reachable_objects_from(obj, check_color_i, (void *)data);
+                        rb_objspace_reachable_objects_from_unlocked(obj, check_color_i, (void *)data);
                     }
                 }
             }
@@ -8990,9 +8995,9 @@ gc_start(rb_objspace_t *objspace, unsigned int reason)
 
     gc_exit(objspace, gc_enter_event_start, &lock_lev);
 
-    /* Verify after the GC, at a real safepoint with during_gc cleared: mid-GC it would
-     * call rb_objspace_reachable_objects_from, whose barrier VM lock would join another
-     * Ractor's global GC barrier and let it collect on this half-collected heap. */
+    /* Verify after the GC, at a real safepoint with during_gc cleared: mid-GC
+     * gc_verify_internal_consistency() takes the VM lock and a barrier, which would join
+     * another Ractor's global GC barrier and let it collect on this half-collected heap. */
 #if RGENGC_CHECK_MODE >= 2
     gc_verify_internal_consistency(objspace);
 #endif
@@ -10718,7 +10723,7 @@ heap_check_moved_i(void *vstart, void *vend, size_t stride, void *data)
                     break;
                   default:
                     if (!rb_gc_impl_garbage_object_p(objspace, v)) {
-                        rb_objspace_reachable_objects_from(v, reachable_object_check_moved_i, (void *)v);
+                        rb_objspace_reachable_objects_from_unlocked(v, reachable_object_check_moved_i, (void *)v);
                     }
                 }
             }
