@@ -218,6 +218,7 @@ ary_embeddable_p(long capa)
 bool
 rb_ary_embeddable_p(VALUE ary)
 {
+    RUBY_ASSERT(!ARY_EMBED_P(ary));
     /* An array cannot be turned embeddable when the array is:
      *  - Shared root: other objects may point to the buffer of this array
      *    so we cannot make it embedded.
@@ -226,7 +227,10 @@ rb_ary_embeddable_p(VALUE ary)
      *  - Shared: we don't want to re-embed an array that points to a shared
      *    root (to save memory).
      */
-    return !(ARY_SHARED_ROOT_P(ary) || OBJ_FROZEN(ary) || ARY_SHARED_P(ary));
+    if (ARY_SHARED_ROOT_P(ary) || OBJ_FROZEN(ary) || ARY_SHARED_P(ary)) return false;
+
+    const long embed_len_max = RARRAY_EMBED_LEN_MASK >> RARRAY_EMBED_LEN_SHIFT;
+    return ARY_HEAP_CAPA(ary) <= embed_len_max;
 }
 
 /* True when other arrays may read this array's elements out of its own slot, so the
