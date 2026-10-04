@@ -623,7 +623,7 @@ statx_mtimespec(const rb_io_stat_data *st)
  *
  *  - `-1`, if `self.mtime` is earlier.
  *  - `0`, if the two values are equal.
- *  - `1`, if 1self.mtime` is later.
+ *  - `1`, if `self.mtime` is later.
  *  - `nil`, if `other` is not a \File::Stat object.
  *
  *  Examples:
