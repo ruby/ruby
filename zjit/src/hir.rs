@@ -8767,12 +8767,25 @@ fn insn_idx_at_offset(idx: u32, offset: i64) -> u32 {
 
 struct BytecodeInfo {
     jump_targets: Vec<u32>,
+    locals_dirty_targets: HashSet<u32>,
 }
 
-fn compute_bytecode_info(iseq: *const rb_iseq_t, opt_table: &[u32]) -> BytecodeInfo {
+/// Keep in sync with the handlers in `add_iseq_to_hir` that clear `local_inval`.
+fn rechecks_locals(opcode: u32, pc: *const VALUE, ep_escaped: bool) -> bool {
+    !ep_escaped && match opcode {
+        YARVINSN_getlocal_WC_0 | YARVINSN_setlocal_WC_0 | YARVINSN_checkkeyword => true,
+        YARVINSN_getlocal | YARVINSN_setlocal => get_arg(pc, 1).as_u32() == 0,
+        _ => false,
+    }
+}
+
+fn compute_bytecode_info(iseq: *const rb_iseq_t, opt_table: &[u32], ep_escaped: bool) -> BytecodeInfo {
+    struct InsnFlow { idx: u32, invalidates: bool, rechecks: bool, falls_through: bool, target: Option<u32> }
+
     let iseq_size = unsafe { get_iseq_encoded_size(iseq) };
     let mut insn_idx = 0;
     let mut jump_targets: HashSet<u32> = opt_table.iter().copied().collect();
+    let mut flow: Vec<InsnFlow> = vec![];
     while insn_idx < iseq_size {
         // Get the current pc and opcode
         let pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx) };
@@ -8788,28 +8801,58 @@ fn compute_bytecode_info(iseq: *const rb_iseq_t, opt_table: &[u32]) -> BytecodeI
         let opcode: u32 = unsafe { rb_zjit_insn_to_bare_insn(rb_iseq_opcode_at_pc(iseq, pc)) }
             .try_into()
             .unwrap();
+        let cur_idx = insn_idx;
         insn_idx += insn_len(opcode as usize);
-        match opcode {
+        if matches!(opcode, YARVINSN_leave | YARVINSN_opt_invokebuiltin_delegate_leave) && insn_idx < iseq_size {
+            jump_targets.insert(insn_idx);
+        }
+        let target = match opcode {
             YARVINSN_branchunless | YARVINSN_jump | YARVINSN_branchif | YARVINSN_branchnil
             | YARVINSN_branchunless_without_ints | YARVINSN_jump_without_ints | YARVINSN_branchif_without_ints | YARVINSN_branchnil_without_ints => {
-                let offset = get_arg(pc, 0).as_i64();
-                jump_targets.insert(insn_idx_at_offset(insn_idx, offset));
+                Some(insn_idx_at_offset(insn_idx, get_arg(pc, 0).as_i64()))
             }
-            YARVINSN_opt_new => {
-                let offset = get_arg(pc, 1).as_i64();
-                jump_targets.insert(insn_idx_at_offset(insn_idx, offset));
-            }
-            YARVINSN_leave | YARVINSN_opt_invokebuiltin_delegate_leave => {
-                if insn_idx < iseq_size {
-                    jump_targets.insert(insn_idx);
+            YARVINSN_opt_new => Some(insn_idx_at_offset(insn_idx, get_arg(pc, 1).as_i64())),
+            _ => None,
+        };
+        if let Some(target) = target {
+            jump_targets.insert(target);
+        }
+        flow.push(InsnFlow {
+            idx: cur_idx,
+            invalidates: invalidates_locals(opcode, unsafe { pc.offset(1) }),
+            rechecks: rechecks_locals(opcode, pc, ep_escaped),
+            falls_through: !matches!(opcode, YARVINSN_jump | YARVINSN_jump_without_ints | YARVINSN_leave
+                | YARVINSN_opt_invokebuiltin_delegate_leave | YARVINSN_throw),
+            target,
+        });
+    }
+
+    // Find jump targets reachable from a path that invalidated locals (fixpoint for back-edges).
+    let mut dirty_in: HashSet<u32> = HashSet::new();
+    let mut changed = true;
+    while changed {
+        changed = false;
+        let mut dirty = false;
+        for (i, insn) in flow.iter().enumerate() {
+            dirty |= dirty_in.contains(&insn.idx);
+            dirty = insn.invalidates || (dirty && !insn.rechecks);
+            if dirty {
+                if let Some(target) = insn.target {
+                    changed |= dirty_in.insert(target);
+                }
+                if let (true, Some(next)) = (insn.falls_through, flow.get(i + 1)) {
+                    dirty_in.insert(next.idx);
                 }
             }
-            _ => {}
+            if !insn.falls_through {
+                dirty = false;
+            }
         }
     }
+    let locals_dirty_targets = jump_targets.iter().copied().filter(|idx| dirty_in.contains(idx)).collect();
     let mut result = jump_targets.into_iter().collect::<Vec<_>>();
     result.sort();
-    BytecodeInfo { jump_targets: result }
+    BytecodeInfo { jump_targets: result, locals_dirty_targets }
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]
@@ -9089,7 +9132,15 @@ fn add_iseq_to_hir(
         .get(jit_entry_start..)
         .expect("JIT entry index must be within the callee opt table")
         .iter().copied().map(VALUE::as_u32).collect::<Vec<_>>();
-    let BytecodeInfo { jump_targets } = compute_bytecode_info(iseq, &jit_entry_insns);
+    // Check if the EP is escaped for the ISEQ from the beginning. We give up
+    // optimizing locals in that case because they're shared with other frames.
+    let ep_starts_escaped = iseq_ep_starts_escaped(iseq);
+    // Check if the EP has been escaped at some point in the ISEQ. If it has, then we assume that
+    // its EP is shared with other frames.
+    let seen_ep_escape = iseq_seen_ep_escape(iseq);
+    let ep_escaped = ep_starts_escaped || seen_ep_escape;
+
+    let BytecodeInfo { jump_targets, locals_dirty_targets } = compute_bytecode_info(iseq, &jit_entry_insns, ep_escaped);
 
     let compile_jit_entries = matches!(mode, AddIseqMode::Standalone) && iseq_supports_jit_entry(iseq);
 
@@ -9143,14 +9194,6 @@ fn add_iseq_to_hir(
         }
     }
 
-    // Check if the EP is escaped for the ISEQ from the beginning. We give up
-    // optimizing locals in that case because they're shared with other frames.
-    let ep_starts_escaped = iseq_ep_starts_escaped(iseq);
-    // Check if the EP has been escaped at some point in the ISEQ. If it has, then we assume that
-    // its EP is shared with other frames.
-    let seen_ep_escape = iseq_seen_ep_escape(iseq);
-    let ep_escaped = ep_starts_escaped || seen_ep_escape;
-
     // Iteratively fill out basic blocks using a queue.
     // TODO(max): Basic block arguments at edges
     let mut queue = VecDeque::new();
@@ -9165,6 +9208,10 @@ fn add_iseq_to_hir(
         // Compile each block only once
         if visited.contains(&block) { continue; }
         visited.insert(block);
+
+        if locals_dirty_targets.contains(&insn_idx) {
+            local_inval = true;
+        }
 
         // Load basic block params first
         let mut self_param = fun.push_insn(block, Insn::Param);

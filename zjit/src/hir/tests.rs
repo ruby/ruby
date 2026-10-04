@@ -1955,6 +1955,89 @@ pub(crate) mod hir_build_tests {
     }
 
     #[test]
+    fn test_local_read_at_merge_point_after_non_leaf_call_in_one_branch() {
+        eval("
+            def test(s)
+              y = 1
+              binding.local_variable_set(:y, s) if s
+              y
+            end
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :s@0x1000
+          v4:NilClass = Const Value(nil)
+          Jump bb3(v1, v3, v4)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :s@1
+          v9:NilClass = Const Value(nil)
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:NilClass):
+          v17:Fixnum[1] = Const Value(1)
+          v22:CBool = Test v12
+          v23:Falsy = RefineType v12, Falsy
+          CondBranch v22, bb5(), bb4(v11, v23, v17)
+        bb5():
+          v25:Truthy = RefineType v12, Truthy
+          v28:BasicObject = Send v11, :binding # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v30:StaticSymbol[:y] = Const Value(VALUE(0x1008))
+          PatchPoint NoEPEscape(test)
+          v35:BasicObject = Send v28, :local_variable_set, v30, v25 # SendFallbackReason: Uncategorized(opt_send_without_block)
+          Jump bb4(v11, v25, v17)
+        bb4(v38:BasicObject, v39:BasicObject, v40:Fixnum[1]):
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v40
+        ");
+    }
+
+    #[test]
+    fn test_local_read_at_merge_point_after_eval_in_one_branch() {
+        eval("
+            def test(s)
+              y = 1
+              eval(s) if s
+              y
+            end
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :s@0x1000
+          v4:NilClass = Const Value(nil)
+          Jump bb3(v1, v3, v4)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :s@1
+          v9:NilClass = Const Value(nil)
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:NilClass):
+          v17:Fixnum[1] = Const Value(1)
+          v22:CBool = Test v12
+          v23:Falsy = RefineType v12, Falsy
+          CondBranch v22, bb5(), bb4(v11, v23, v17)
+        bb5():
+          v25:Truthy = RefineType v12, Truthy
+          v29:BasicObject = Send v11, :eval, v25 # SendFallbackReason: Uncategorized(opt_send_without_block)
+          Jump bb4(v11, v25, v17)
+        bb4(v32:BasicObject, v33:BasicObject, v34:Fixnum[1]):
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          Return v34
+        ");
+    }
+
+    #[test]
     fn test_loop() {
         eval("
             def test
