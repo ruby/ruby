@@ -8437,6 +8437,30 @@ fn test_ep_escape_preserves_keyword_default() {
 }
 
 #[test]
+fn test_local_write_through_binding_in_branch_reaches_merge_point() {
+    set_call_threshold(2);
+    assert_snapshot!(inspect(r#"
+        def test(s)
+          y = 1
+          binding.local_variable_set(:y, s) if s
+          y
+        end
+        3.times { test(1) }
+        test(2)
+    "#), @"2");
+}
+
+#[test]
+fn test_local_write_through_call_in_branch_reaches_merge_point() {
+    set_call_threshold(2);
+    assert_snapshot!(inspect(r#"
+        def test(s) = (y = 1; eval(s) if s; y)
+        3.times { test("1") }
+        test("y = 2")
+    "#), @"2");
+}
+
+#[test]
 fn test_send_block_to_accepts_no_block() {
     // Methods with &nil should raise ArgumentError when called with a block
     assert_snapshot!(inspect("
