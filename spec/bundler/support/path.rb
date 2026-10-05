@@ -96,7 +96,7 @@ module Spec
     end
 
     def shipped_files
-      @shipped_files ||= if ruby_core_tarball?
+      @shipped_files ||= if !git_repository?
         loaded_gemspec.files.map {|f| f.gsub(%r{^exe/}, "libexec/") }
       elsif ruby_core?
         tracked_files
@@ -308,10 +308,9 @@ module Spec
       source_root
     end
 
-    def ruby_core_tarball?
-      # A tarball checkout has no `.git` entry at all. Note that `.git` may be
-      # a file rather than a directory in linked git worktrees.
-      !git_root.join(".git").exist?
+    def git_repository?
+      # `.git` may be a file rather than a directory in linked git worktrees.
+      git_root.join(".git").exist?
     end
 
     def rake_path
@@ -352,7 +351,7 @@ module Spec
     end
 
     def git_ls_files(glob)
-      skip "Not running on a git context, since running tests from a tarball" if ruby_core_tarball?
+      skip "Not running on a git context, since running tests from a tarball" unless git_repository?
 
       git("ls-files -z -- #{glob}", source_root).split("\x0")
     end
