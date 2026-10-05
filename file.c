@@ -1140,7 +1140,7 @@ static VALUE statx_birthtime(const rb_io_stat_data *st);
  * File.atime(dirpath)        # => 2026-10-04 15:08:14.818746815 -0500 # Updated.
  * stat0.atime                # => 2026-10-04 15:07:26.194548647 -0500 # Not updated.
  * stat1 = File.stat(dirpath) # Take new shapshot.
- * stat1.atime                # => 2026-10-04 15:08:14.818746815 -0500 # Update.d
+ * stat1.atime                # => 2026-10-04 15:08:14.818746815 -0500 # Updated.
  * Dir.rmdir(dirpath)         # Clean up.
  *
  */
