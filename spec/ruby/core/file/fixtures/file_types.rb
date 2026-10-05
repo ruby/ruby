@@ -9,7 +9,8 @@ module FileSpecs
 
     platform_is_not :windows do
       @block  = `find /dev /devices -type b 2>/dev/null`.split("\n").first
-      @char   = `{ tty || find /dev /devices -type c; } 2>/dev/null`.split("\n").last
+      @char   = "/dev/null" if File.lstat("/dev/null").chardev?
+      @char ||= `{ test -t 0 && tty || find /dev /devices -type c; } 2>/dev/null`.split("\n").last
     end
 
     @configured = true
