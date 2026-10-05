@@ -642,6 +642,7 @@ rb_strftime_with_timespec(VALUE ftime, const char *format, size_t format_len,
 				    if ((unsigned char)tp[i] > 0x7F) {
 					VALUE str = rb_str_conv_enc_opts(rb_str_new_cstr(tp), rb_locale_encoding(), enc, ECONV_UNDEF_REPLACE|ECONV_INVALID_REPLACE, Qnil);
 					i = strlcpy(tbuf, RSTRING_PTR(str), TBUFSIZE);
+					if (i >= TBUFSIZE) i = TBUFSIZE - 1;
 					tp = tbuf;
 					break;
 				    }
