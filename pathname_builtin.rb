@@ -2275,7 +2275,7 @@ class Pathname    # * FileTest *
   # call-seq:
   #   blockdev? => true or false
   #
-  # Returns whether `self` represents a path to a block device
+  # Returns whether the path in `self` points to a block device
   # (i.e., a direct-access device):
   #
   # ```ruby
@@ -2287,7 +2287,7 @@ class Pathname    # * FileTest *
   # Pathname($stdin).blockdev?         # => false
   # ```
   #
-  # The returned value is filesystem-dependent; on Windows, always `false`.
+  # The returned value is filesystem-dependent; returns `false` on Windows or MacOS.
   def blockdev?() FileTest.blockdev?(@path) end
 
   # :markup: markdown
