@@ -27,6 +27,24 @@
 #  endif
 #endif
 
+#if defined(__GLIBC__) && defined(HAVE_RESOLV_H)
+#include <resolv.h>
+
+// glibc detaches a thread's resolver state at thread exit, under a lock that fork does not reset,
+// so lookup threads do it themselves before they allow fork again.
+static void
+release_resolver_state(void)
+{
+    if (_res.nscount > 0) {
+        res_nclose(&_res);
+        _res.nscount = 0; // to make the thread exit skip the detach
+        _res.options = 0;
+    }
+}
+#else
+#define release_resolver_state() ((void)0)
+#endif
+
 #if defined(INET6) && (defined(LOOKUP_ORDER_HACK_INET) || defined(LOOKUP_ORDER_HACK_INET6))
 #define LOOKUP_ORDERS (sizeof(lookup_order_table) / sizeof(lookup_order_table[0]))
 static const int lookup_order_table[] = {
@@ -456,6 +474,8 @@ do_getaddrinfo(void *ptr)
     rb_nativethread_lock_unlock(&arg->lock);
 
     if (need_free) free_getaddrinfo_arg(arg);
+
+    release_resolver_state();
 
     return 0;
 }
@@ -3183,6 +3203,8 @@ do_fast_fallback_getaddrinfo(void *ptr)
     if (shared_need_free && shared) {
         free_fast_fallback_getaddrinfo_shared(&shared);
     }
+
+    release_resolver_state();
 
     return 0;
 }
