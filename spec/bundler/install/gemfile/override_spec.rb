@@ -689,6 +689,32 @@ RSpec.describe "override DSL" do
       expect(err).to match(/override "b", from: "a", to: "c", version: ">= 3" \(declared at Gemfile:\d+\)/)
     end
 
+    it "drops the gem from an existing lockfile and brings it back when the override is removed" do
+      install_gemfile <<-G
+        source "https://gem.repo2"
+        gem "a"
+      G
+
+      expect(the_bundle).to include_gems "a 1.0", "b 1.0"
+
+      install_gemfile <<-G
+        source "https://gem.repo2"
+        override "b", from: "a", to: nil
+        gem "a"
+      G
+
+      expect(the_bundle).to include_gems "a 1.0"
+      expect(the_bundle).not_to include_gems "b"
+      expect(lockfile).not_to match(/^    b \(/)
+
+      install_gemfile <<-G
+        source "https://gem.repo2"
+        gem "a"
+      G
+
+      expect(the_bundle).to include_gems "a 1.0", "b 1.0"
+    end
+
     it "replaces the gem in an existing lockfile" do
       install_gemfile <<-G
         source "https://gem.repo2"
@@ -721,6 +747,22 @@ RSpec.describe "override DSL" do
       expect(out).not_to include("Installing b ")
       bundle "exec ruby -e \"require 'b'; puts B\"", env: env
       expect(out).to eq("c 2.0")
+    end
+
+    it "refuses a frozen install when the override was added without updating the lockfile" do
+      install_gemfile <<-G
+        source "https://gem.repo2"
+        gem "a"
+      G
+
+      gemfile <<-G
+        source "https://gem.repo2"
+        override "b", from: "a", to: nil
+        gem "a"
+      G
+
+      bundle :install, env: { "BUNDLE_FROZEN" => "true" }, raise_on_error: false
+      expect(err).to include("The dependencies in your gemfile changed, but the lockfile can't be updated because frozen mode is set")
     end
 
     it "refuses a frozen install when the override was removed without updating the lockfile" do

@@ -1109,8 +1109,30 @@ module Bundler
       end
 
       converge_overrides_outside_dependencies
+      converge_rewritten_dependencies
 
       @changed_dependencies.any?
+    end
+
+    # The lockfile keeps the upstream dependencies of every gem, so a gem that
+    # a `from:`/`to:` override cut loose stays locked until a resolution drops
+    # it.
+    def converge_rewritten_dependencies
+      @overrides.each do |override|
+        next unless override.from
+
+        name = override.target
+        next if @originally_locked_specs[name].empty?
+        next if @dependencies.any? {|d| d.name == name }
+
+        still_required = @originally_locked_specs.any? do |s|
+          Override.rewrite_dependencies(@overrides, s.name, s.runtime_dependencies).any? {|d| d.name == name }
+        end
+        next if still_required
+
+        @gems_to_unlock << name
+        @changed_dependencies << name
+      end
     end
 
     # A misspelled `from:` gem leaves the override with nothing to rewrite.
