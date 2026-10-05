@@ -660,6 +660,16 @@ class JSONGeneratorTest < Test::Unit::TestCase
     assert_equal state.to_h, JSON.state.new(state.to_h).to_h
   end
 
+  def test_json_state_to_h_ignores_instance_variables
+    state = JSON.state.new(indent: '  ')
+    expected = state.to_h
+    state.instance_variable_set(:@custom, 42)
+    state.instance_variable_set(:@enabled, false)
+
+    assert_equal expected, state.to_h
+    assert_equal expected, state.to_hash
+  end
+
   def test_json_generate
     assert_raise JSON::GeneratorError do
       generate(["\xea"])
