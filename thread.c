@@ -2362,12 +2362,12 @@ ruby_thread_has_gvl_p(void)
 {
     rb_thread_t *th = ruby_thread_from_native();
 
-    if (th && th->blocking_region_buffer == 0) {
-        return 1;
-    }
-    else {
-        return 0;
-    }
+#ifdef RB_THREAD_SCHED_NONE
+    /* The no-thread scheduler does not maintain a running thread. */
+    return th && th->blocking_region_buffer == NULL;
+#else
+    return th && RUBY_ATOMIC_PTR_LOAD(TH_SCHED(th)->running) == th;
+#endif
 }
 
 /*

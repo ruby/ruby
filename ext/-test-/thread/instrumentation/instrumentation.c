@@ -1,6 +1,7 @@
 #include "ruby/ruby.h"
 #include "ruby/atomic.h"
 #include "ruby/thread.h"
+#include "ruby/thread_native.h"
 #include "internal/gc.h"
 
 #ifndef RB_THREAD_LOCAL_SPECIFIER
@@ -210,6 +211,66 @@ thread_register_and_unregister_callback(VALUE thread)
     return Qtrue;
 }
 
+struct gvl_state {
+    VALUE thread;
+    rb_nativethread_id_t native_thread;
+    rb_internal_thread_event_hook_t *hook;
+    unsigned int ready_count, ready_with_gvl;
+    unsigned int resumed_count, resumed_with_gvl;
+};
+
+static void
+gvl_callback(rb_event_flag_t event, const rb_internal_thread_event_data_t *event_data, void *user_data)
+{
+    struct gvl_state *state = user_data;
+    if (event_data->thread != state->thread) return;
+#ifdef HAVE_PTHREAD_H
+    if (!pthread_equal(rb_nativethread_self(), state->native_thread)) return;
+#else
+    if (rb_nativethread_self() != state->native_thread) return;
+#endif
+
+    if (event == RUBY_INTERNAL_THREAD_EVENT_READY) {
+        state->ready_count++;
+        state->ready_with_gvl += ruby_thread_has_gvl_p() != 0;
+    }
+    else if (event == RUBY_INTERNAL_THREAD_EVENT_RESUMED) {
+        state->resumed_count++;
+        state->resumed_with_gvl += ruby_thread_has_gvl_p() != 0;
+    }
+}
+
+static VALUE
+gvl_yield(VALUE unused)
+{
+    return rb_yield(Qnil);
+}
+
+static VALUE
+gvl_unregister(VALUE arg)
+{
+    struct gvl_state *state = (struct gvl_state *)arg;
+    rb_internal_thread_remove_event_hook(state->hook);
+    return Qnil;
+}
+
+static VALUE
+thread_gvl_state(VALUE self)
+{
+    /* Keep callbacks for this thread on the native thread being observed. */
+    rb_thread_lock_native_thread();
+    struct gvl_state state = {0};
+    state.thread = rb_thread_current();
+    state.native_thread = rb_nativethread_self();
+    state.hook = rb_internal_thread_add_event_hook(gvl_callback,
+        RUBY_INTERNAL_THREAD_EVENT_READY | RUBY_INTERNAL_THREAD_EVENT_RESUMED, &state);
+
+    rb_ensure(gvl_yield, Qnil, gvl_unregister, (VALUE)&state);
+    return rb_ary_new_from_args(4,
+        UINT2NUM(state.ready_count), UINT2NUM(state.ready_with_gvl),
+        UINT2NUM(state.resumed_count), UINT2NUM(state.resumed_with_gvl));
+}
+
 void
 Init_instrumentation(void)
 {
@@ -221,4 +282,5 @@ Init_instrumentation(void)
     rb_define_singleton_method(klass, "register_callback", thread_register_callback, 1);
     rb_define_singleton_method(klass, "unregister_callback", thread_unregister_callback, 0);
     rb_define_singleton_method(klass, "register_and_unregister_callbacks", thread_register_and_unregister_callback, 0);
+    rb_define_singleton_method(klass, "gvl_state", thread_gvl_state, 0);
 }

@@ -54,6 +54,40 @@ class TestThreadInstrumentation < Test::Unit::TestCase
     thread&.join
   end
 
+  def test_gvl_state_during_thread_pass # [Bug #19172]
+    queue = Queue.new
+    thread = Thread.new do
+      queue << true
+      loop { Thread.pass }
+    end
+    queue.pop
+
+    ready, ready_with_gvl, resumed, resumed_with_gvl = Bug::ThreadInstrumentation.gvl_state do
+      Thread.pass
+    end
+
+    assert_operator ready, :>, 0
+    assert_equal 0, ready_with_gvl
+    assert_operator resumed, :>, 0
+    assert_equal resumed, resumed_with_gvl
+  ensure
+    thread&.kill
+    thread&.join
+  end
+
+  def test_gvl_state_after_blocking_region
+    require '-test-/gvl/call_without_gvl'
+
+    ready, ready_with_gvl, resumed, resumed_with_gvl = Bug::ThreadInstrumentation.gvl_state do
+      Bug::Thread.runnable_sleep 0.001
+    end
+
+    assert_operator ready, :>, 0
+    assert_equal 0, ready_with_gvl
+    assert_operator resumed, :>, 0
+    assert_equal resumed, resumed_with_gvl
+  end
+
   def test_multi_thread_timeline
     threads = nil
     full_timeline = record do

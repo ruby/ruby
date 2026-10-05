@@ -348,6 +348,8 @@ void rb_internal_thread_specific_set(VALUE thread_val, rb_internal_thread_specif
  * Whether the current thread is holding the GVL.
  *
  * @return true if the current thread is holding the GVL, false otherwise.
+ * @note   Ownership is checked against the current thread's Ractor.
+ * @note   Holding the GVL does not make other Ruby C APIs async-signal-safe.
  */
 int ruby_thread_has_gvl_p(void);
 

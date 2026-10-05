@@ -561,7 +561,8 @@ thread_sched_set_running(struct rb_thread_sched *sched, rb_thread_t *th)
         RUBY_DTRACE_RTS_SET_RUNNING(sched, sched->running, th);
     }
 
-    sched->running = th;
+    /* ruby_thread_has_gvl_p() reads this without taking the scheduler lock. */
+    RUBY_ATOMIC_PTR_SET(sched->running, th);
 }
 
 RBIMPL_ATTR_MAYBE_UNUSED()
