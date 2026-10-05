@@ -949,13 +949,20 @@ rb_stat_size(VALUE self)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     stat.blksize   -> integer or nil
+ *    blksize -> integer or nil
  *
- *  Returns the native file system's block size. Will return +nil+ on
- *  platforms that don't support this information.
+ *  Returns the block size of the filesystem
+ *  of the [snapshot](rdoc-ref:File::Stat@Snapshot) in `self`,
+ *  or `nil` on Windows:
  *
- *     File.stat("testfile").blksize   #=> 4096
+ *  ```ruby
+ *  File.stat('/etc').blksize        # => 4096
+ *  File.stat('/etc/passwd').blksize # => 4096
+ *  File.stat('nosuch').blksize      # Raises Errno::ENOENT: No such file or directory.
+ *  ```
  *
  */
 
