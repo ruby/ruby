@@ -88,6 +88,50 @@ class TestThreadInstrumentation < Test::Unit::TestCase
     assert_equal resumed, resumed_with_gvl
   end
 
+  def test_gvl_state_during_native_thread_migration # [Bug #19172]
+    omit "No native signal sampling support" unless Bug::ThreadInstrumentation.respond_to?(:start_gvl_sampling)
+    out, = EnvUtil.invoke_ruby([{'RUBY_MN_THREADS' => '2'}, '-v'], '', true)
+    omit "No M:N thread support" unless /\+MN/ =~ out
+
+    assert_ractor(<<~'RUBY', args: [{'RUBY_MN_THREADS' => '2', 'RUBY_MAX_CPU' => '4'}], require: '-test-/thread/instrumentation')
+      ready = Ractor::Port.new
+      ractors = 4.times.map do |index|
+        Ractor.new(ready, index) do |ready, index|
+          ready << :ready
+          if Ractor.receive == :start
+            150.times do |iteration|
+              sleep (1 + ((iteration * 31 + index * 13) % 19)) / 1000.0
+              finish = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 0.003
+              while Process.clock_gettime(Process::CLOCK_MONOTONIC) < finish
+                500.times { 1 + 1 }
+              end
+            end
+            ready << :done
+            Ractor.receive
+          end
+        end
+      end
+
+      begin
+        # Begin sampling only after every Ractor has entered its Ruby block.
+        4.times { ready.receive }
+        Bug::ThreadInstrumentation.start_gvl_sampling
+        ractors.each { |ractor| ractor.send :start }
+        4.times { ready.receive }
+        samples, empty, errors = Bug::ThreadInstrumentation.stop_gvl_sampling
+
+        assert_operator samples, :>, 0
+        assert_operator empty, :>, 0, 'No idle native scheduler threads were sampled'
+        assert_equal 0, errors, 'Idle native scheduler threads reported GVL ownership'
+      ensure
+        # Keep the Ruby threads alive until all native signal handlers finish.
+        Bug::ThreadInstrumentation.stop_gvl_sampling
+        ractors.each { |ractor| ractor.send :stop }
+        ractors.each(&:join)
+      end
+    RUBY
+  end
+
   def test_multi_thread_timeline
     threads = nil
     full_timeline = record do

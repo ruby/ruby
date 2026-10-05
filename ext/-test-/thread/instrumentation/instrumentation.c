@@ -2,7 +2,11 @@
 #include "ruby/atomic.h"
 #include "ruby/thread.h"
 #include "ruby/thread_native.h"
+#include "ruby/debug.h"
 #include "internal/gc.h"
+#include <errno.h>
+#include <signal.h>
+#include <time.h>
 
 #ifndef RB_THREAD_LOCAL_SPECIFIER
 #  define RB_THREAD_LOCAL_SPECIFIER
@@ -271,6 +275,113 @@ thread_gvl_state(VALUE self)
         UINT2NUM(state.resumed_count), UINT2NUM(state.resumed_with_gvl));
 }
 
+#if !defined(_WIN32) && defined(HAVE_PTHREAD_H) && defined(HAVE_SIGACTION) && defined(SIGURG)
+#define MAX_SAMPLED_NATIVE_THREADS 32
+static pthread_t sampled_native_threads[MAX_SAMPLED_NATIVE_THREADS], sampling_thread;
+static unsigned int sampled_native_count;
+static pthread_mutex_t sampling_lock = PTHREAD_MUTEX_INITIALIZER;
+static rb_atomic_t sampling_stop, sampling_active, sampling_count, sampling_empty, sampling_errors;
+static struct sigaction sampling_previous_action;
+static rb_internal_thread_event_hook_t *sampling_hook;
+
+static void
+gvl_signal_handler(int signal)
+{
+    int saved_errno = errno;
+    RUBY_ATOMIC_INC(sampling_active);
+    if (!RUBY_ATOMIC_LOAD(sampling_stop)) {
+        VALUE frame;
+        /* The workload keeps every Ruby thread alive with a Ruby frame. An
+         * empty profile therefore identifies an idle native scheduler thread. */
+        int frames = rb_profile_frames(0, 1, &frame, NULL);
+        int has_gvl = ruby_thread_has_gvl_p();
+        RUBY_ATOMIC_INC(sampling_count);
+        if (frames == 0) {
+            RUBY_ATOMIC_INC(sampling_empty);
+            if (has_gvl) RUBY_ATOMIC_INC(sampling_errors);
+        }
+    }
+    RUBY_ATOMIC_DEC(sampling_active);
+    errno = saved_errno;
+}
+
+static void
+gvl_sampling_callback(rb_event_flag_t event, const rb_internal_thread_event_data_t *event_data, void *data)
+{
+    pthread_t current = pthread_self();
+    pthread_mutex_lock(&sampling_lock);
+    for (unsigned int i = 0; i < sampled_native_count; i++) {
+        if (pthread_equal(sampled_native_threads[i], current)) {
+            pthread_mutex_unlock(&sampling_lock);
+            return;
+        }
+    }
+    if (sampled_native_count < MAX_SAMPLED_NATIVE_THREADS) {
+        sampled_native_threads[sampled_native_count++] = current;
+    }
+    pthread_mutex_unlock(&sampling_lock);
+}
+
+static void *
+gvl_sampling_loop(void *unused)
+{
+    while (!RUBY_ATOMIC_LOAD(sampling_stop)) {
+        pthread_mutex_lock(&sampling_lock);
+        for (unsigned int i = 0; i < sampled_native_count; i++) {
+            pthread_kill(sampled_native_threads[i], SIGURG);
+        }
+        pthread_mutex_unlock(&sampling_lock);
+        struct timespec delay = {0, 100000};
+        nanosleep(&delay, NULL);
+    }
+    return NULL;
+}
+
+static VALUE
+thread_start_gvl_sampling(VALUE self)
+{
+    if (sampling_hook) rb_raise(rb_eRuntimeError, "GVL sampling already started");
+    sampled_native_count = 0;
+    sampling_stop = sampling_active = sampling_count = sampling_empty = sampling_errors = 0;
+    struct sigaction action = {0};
+    action.sa_handler = gvl_signal_handler;
+    sigemptyset(&action.sa_mask);
+    if (sigaction(SIGURG, &action, &sampling_previous_action) != 0) rb_sys_fail("sigaction");
+    sampling_hook = rb_internal_thread_add_event_hook(gvl_sampling_callback,
+        RUBY_INTERNAL_THREAD_EVENT_RESUMED, NULL);
+    int error = pthread_create(&sampling_thread, NULL, gvl_sampling_loop, NULL);
+    if (error) {
+        rb_internal_thread_remove_event_hook(sampling_hook);
+        sampling_hook = NULL;
+        sigaction(SIGURG, &sampling_previous_action, NULL);
+        rb_syserr_fail(error, "pthread_create");
+    }
+    return Qnil;
+}
+
+static VALUE
+thread_stop_gvl_sampling(VALUE self)
+{
+    if (!sampling_hook) return Qnil;
+    RUBY_ATOMIC_SET(sampling_stop, 1);
+    int error = pthread_join(sampling_thread, NULL);
+    if (error) rb_syserr_fail(error, "pthread_join");
+    rb_internal_thread_remove_event_hook(sampling_hook);
+    sampling_hook = NULL;
+    /* Pending signals will see sampling_stop; wait for existing probes before
+     * the workload is allowed to terminate its Ruby threads. */
+    while (RUBY_ATOMIC_LOAD(sampling_active)) {
+        struct timespec delay = {0, 100000};
+        nanosleep(&delay, NULL);
+    }
+    if (sigaction(SIGURG, &sampling_previous_action, NULL) != 0) rb_sys_fail("sigaction");
+    return rb_ary_new_from_args(3,
+        UINT2NUM(RUBY_ATOMIC_LOAD(sampling_count)),
+        UINT2NUM(RUBY_ATOMIC_LOAD(sampling_empty)),
+        UINT2NUM(RUBY_ATOMIC_LOAD(sampling_errors)));
+}
+#endif
+
 void
 Init_instrumentation(void)
 {
@@ -283,4 +394,8 @@ Init_instrumentation(void)
     rb_define_singleton_method(klass, "unregister_callback", thread_unregister_callback, 0);
     rb_define_singleton_method(klass, "register_and_unregister_callbacks", thread_register_and_unregister_callback, 0);
     rb_define_singleton_method(klass, "gvl_state", thread_gvl_state, 0);
+#if !defined(_WIN32) && defined(HAVE_PTHREAD_H) && defined(HAVE_SIGACTION) && defined(SIGURG)
+    rb_define_singleton_method(klass, "start_gvl_sampling", thread_start_gvl_sampling, 0);
+    rb_define_singleton_method(klass, "stop_gvl_sampling", thread_stop_gvl_sampling, 0);
+#endif
 }
