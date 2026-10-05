@@ -5653,9 +5653,7 @@ pm_compile_constant_read(rb_iseq_t *iseq, VALUE name, const pm_location_t *name_
 
     if (ISEQ_COMPILE_DATA(iseq)->option->inline_const_cache) {
         ISEQ_BODY(iseq)->ic_size++;
-        VALUE segments = rb_ary_new_from_args(1, name);
-        RB_OBJ_SET_SHAREABLE(segments);
-        PUSH_INSN1(ret, location, opt_getconstant_path, segments);
+        PUSH_INSN1(ret, location, opt_getconstant_path, name);
     }
     else {
         PUSH_INSN(ret, location, putnil);

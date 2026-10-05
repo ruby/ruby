@@ -1440,7 +1440,7 @@ iseq_insn_each_markable_object(INSN *insn, void (*func)(VALUE *, VALUE), VALUE d
           case TS_CDHASH:
           case TS_ISEQ:
           case TS_VALUE:
-          case TS_IC: // constant path array
+          case TS_IC: // constant path array or symbol
           case TS_CALLDATA: // ci is stored.
             func(&OPERAND_AT(insn, j), data);
             break;
@@ -2659,22 +2659,34 @@ add_adjust_info(struct iseq_insn_info_entry *insns_info, unsigned int *positions
 }
 
 static ID *
-array_to_idlist(VALUE arr)
+segments_to_idlist(VALUE operand)
 {
-    RUBY_ASSERT(RB_TYPE_P(arr, T_ARRAY));
-    long size = RARRAY_LEN(arr);
+    if (SYMBOL_P(operand)) {
+        ID *ids = (ID *)ALLOC_N(ID, 2);
+        ids[0] = SYM2ID(operand);
+        ids[1] = 0;
+        return ids;
+    }
+
+    RUBY_ASSERT(RB_TYPE_P(operand, T_ARRAY));
+    long size = RARRAY_LEN(operand);
     ID *ids = (ID *)ALLOC_N(ID, size + 1);
     for (long i = 0; i < size; i++) {
-        VALUE sym = RARRAY_AREF(arr, i);
+        VALUE sym = RARRAY_AREF(operand, i);
         ids[i] = SYM2ID(sym);
     }
     ids[size] = 0;
     return ids;
 }
 
+/* Returns Array or Symbol */
 static VALUE
-idlist_to_array(const ID *ids)
+idlist_to_segments(const ID *ids)
 {
+    if (ids[0] && !ids[1]) {
+        return ID2SYM(ids[0]);
+    }
+
     VALUE arr = rb_ary_new();
     while (*ids) {
         rb_ary_push(arr, ID2SYM(*ids++));
@@ -2895,7 +2907,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
                                               ic_index, ISEQ_IS_SIZE(body));
                             }
 
-                            ic->segments = array_to_idlist(operands[j]);
+                            ic->segments = segments_to_idlist(operands[j]);
 
                             generated_iseq[code_index + 1 + j] = (VALUE)ic;
                         }
@@ -11327,10 +11339,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
 
         if (ISEQ_COMPILE_DATA(iseq)->option->inline_const_cache) {
             body->ic_size++;
-            VALUE segments = rb_ary_new_from_args(1, ID2SYM(RNODE_CONST(node)->nd_vid));
-            RB_OBJ_SET_FROZEN_SHAREABLE(segments);
-            ADD_INSN1(ret, node, opt_getconstant_path, segments);
-            RB_OBJ_WRITTEN(iseq, Qundef, segments);
+            ADD_INSN1(ret, node, opt_getconstant_path, ID2SYM(RNODE_CONST(node)->nd_vid));
         }
         else {
             ADD_INSN(ret, node, putnil);
@@ -12717,7 +12726,7 @@ typedef uint32_t ibf_offset_t;
 
 #define IBF_MAJOR_VERSION ISEQ_MAJOR_VERSION
 #ifdef RUBY_DEVEL
-#define IBF_DEVEL_VERSION 8
+#define IBF_DEVEL_VERSION 9
 #define IBF_MINOR_VERSION (ISEQ_MINOR_VERSION * 10000 + IBF_DEVEL_VERSION)
 #else
 #define IBF_MINOR_VERSION ISEQ_MINOR_VERSION
@@ -13163,8 +13172,8 @@ ibf_dump_code(struct ibf_dump *dump, const rb_iseq_t *iseq)
               case TS_IC:
                 {
                     IC ic = (IC)op;
-                    VALUE arr = idlist_to_array(ic->segments);
-                    wv = ibf_dump_object(dump, arr);
+                    VALUE segments = idlist_to_segments(ic->segments);
+                    wv = ibf_dump_object(dump, segments);
                 }
                 break;
               case TS_ISE:
@@ -13285,7 +13294,7 @@ ibf_load_code(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t bytecod
                     VALUE arr = ibf_load_object(load, op);
 
                     IC ic = &ISEQ_IS_IC_ENTRY(load_body, ic_index++);
-                    ic->segments = array_to_idlist(arr);
+                    ic->segments = segments_to_idlist(arr);
 
                     code[code_index] = (VALUE)ic;
                 }
