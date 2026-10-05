@@ -256,8 +256,8 @@ class TestThread < Test::Unit::TestCase
   def test_join_rejects_nan_timeout
     t = Thread.new { sleep }
     begin
-      assert_raise(ArgumentError) { t.join(Float::NAN) }
-      assert_raise(ArgumentError) { t.join(-Float::NAN) }
+      assert_raise_with_message(FloatDomainError, "NaN") { t.join(Float::NAN) }
+      assert_raise_with_message(FloatDomainError, "NaN") { t.join(-Float::NAN) }
     ensure
       t.kill
       t.join

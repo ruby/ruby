@@ -139,16 +139,16 @@ class TestThreadQueue < Test::Unit::TestCase
 
   def test_queue_pop_rejects_nan_timeout
     [Thread::Queue.new, Thread::SizedQueue.new(1)].each do |q|
-      assert_raise(ArgumentError) { q.pop(timeout: Float::NAN) }
-      assert_raise(ArgumentError) { q.pop(timeout: -Float::NAN) }
+      assert_raise_with_message(FloatDomainError, "NaN") { q.pop(timeout: Float::NAN) }
+      assert_raise_with_message(FloatDomainError, "NaN") { q.pop(timeout: -Float::NAN) }
     end
   end
 
   def test_sized_queue_push_rejects_nan_timeout
     q = Thread::SizedQueue.new(1)
     q << 1
-    assert_raise(ArgumentError) { q.push(2, timeout: Float::NAN) }
-    assert_raise(ArgumentError) { q.push(2, timeout: -Float::NAN) }
+    assert_raise_with_message(FloatDomainError, "NaN") { q.push(2, timeout: Float::NAN) }
+    assert_raise_with_message(FloatDomainError, "NaN") { q.push(2, timeout: -Float::NAN) }
   end
 
   def test_queue_pop_non_block
