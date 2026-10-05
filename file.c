@@ -7094,14 +7094,22 @@ rb_stat_b(VALUE obj)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     stat.chardev?    -> true or false
+ *    chardev? -> true or false
  *
- *  Returns +true+ if the file is a character device, +false+ if it isn't or
- *  if the operating system doesn't support this feature.
+ *  Returns whether the entry in the [snapshot](rdoc-ref:File::Stat@Snapshot) in `self`
+ *  is a character device (i.e., a sequential-access device):
  *
- *     File.stat("/dev/tty").chardev?   #=> true
+ *  ```ruby
+ *  File.stat('/dev/tty').chardev?     # => true
+ *  File.stat('/dev/null').chardev?    # => true
+ *  File.stat('/dev/nvme0n1').chardev? # => false
+ *  File.stat('/dev/loop0').chardev?   # => false
+ *  ```
  *
+ *  The returned value is filesystem-dependent; on Windows, always `false`.
  */
 
 static VALUE
