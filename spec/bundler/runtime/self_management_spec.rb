@@ -167,7 +167,7 @@ RSpec.describe "Self management" do
 
     # Can only run when Gem::BundlerVersionFinder.bundler_versions reads
     # bundler configs
-    it "requires the right bundler version from the config and run bundle CLI without re-exec", rubygems: ">= 4.1.0.dev" do
+    it "requires the right bundler version from the config and run bundle CLI without re-exec", rubygems: ">= 4.1.0.a" do
       lockfile_bundled_with(current_version)
 
       bundle_config "version #{previous_minor}"

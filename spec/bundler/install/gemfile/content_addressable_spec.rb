@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe "bundle install with content-addressable gems", :compact_index, rubygems: ">= 4.1.0.dev" do
+RSpec.describe "bundle install with content-addressable gems", :compact_index, rubygems: ">= 4.1.0.a" do
   before do
     skip "A prerelease Ruby does not satisfy the ~> X.Y.0 ABI pin of content-addressed gems" if Gem.ruby_version.prerelease?
   end
