@@ -88,6 +88,18 @@ RSpec.describe "override DSL" do
 
       expect(the_bundle).to include_gems "has_prerelease 1.1.pre"
     end
+
+    it "locks the generic platform when a transitive dependency is overridden outside the parent's requirement" do
+      simulate_platform "x86_64-linux" do
+        install_gemfile <<-G
+          source "https://gem.repo1"
+          override "myrack", version: "= 1.0.0"
+          gem "myrack_middleware"
+        G
+      end
+
+      expect(lockfile).to include("PLATFORMS\n  ruby\n  x86_64-linux\n")
+    end
   end
 
   context "with a version: :ignore_upper operation" do
@@ -487,6 +499,269 @@ RSpec.describe "override DSL" do
       G
 
       expect(the_bundle).to include_gems "needs_old_ruby_a 1.0", "needs_old_ruby_b 1.0"
+    end
+  end
+
+  context "with from: and to:" do
+    before do
+      build_repo2 do
+        build_gem "b", "1.0"
+        build_gem "b", "2.0"
+        build_gem "c", %w[1.0 2.0] do |s|
+          s.write "lib/b.rb", "B = 'c #{s.version}'"
+        end
+        build_gem "a", "1.0" do |s|
+          s.add_dependency "b", "< 2"
+        end
+        build_gem "top", "1.0" do |s|
+          s.add_dependency "a"
+        end
+        build_gem "d", "1.0" do |s|
+          s.add_dependency "b"
+        end
+      end
+    end
+
+    it "drops a dependency of a direct dependency with to: nil" do
+      install_gemfile <<-G
+        source "https://gem.repo2"
+        override "b", from: "a", to: nil
+        gem "a"
+      G
+
+      expect(the_bundle).to include_gems "a 1.0"
+      expect(the_bundle).not_to include_gems "b"
+      expect(lockfile).to include("    a (1.0)\n      b (< 2)\n")
+      expect(lockfile).not_to match(/^    b \(/)
+    end
+
+    it "drops a dependency of a transitive dependency with to: nil" do
+      install_gemfile <<-G
+        source "https://gem.repo2"
+        override "b", from: "a", to: nil
+        gem "top"
+      G
+
+      expect(the_bundle).to include_gems "top 1.0", "a 1.0"
+      expect(the_bundle).not_to include_gems "b"
+    end
+
+    it "keeps a dropped gem that another gem still requires, without the dropped requirement" do
+      install_gemfile <<-G
+        source "https://gem.repo2"
+        override "b", from: "a", to: nil
+        gem "a"
+        gem "d"
+      G
+
+      expect(the_bundle).to include_gems "a 1.0", "b 2.0", "d 1.0"
+    end
+
+    it "replaces a dependency of a direct dependency with to:" do
+      install_gemfile <<-G
+        source "https://gem.repo2"
+        override "b", from: "a", to: "c"
+        gem "a"
+      G
+
+      expect(the_bundle).to include_gems "a 1.0", "c 2.0"
+      expect(lockfile).not_to match(/^    b \(/)
+
+      run "require 'b'; puts B; puts Gem.loaded_specs.key?('b'); begin; gem 'b'; rescue Gem::LoadError => e; puts e.message; end"
+      expect(out).to eq("c 2.0\nfalse\nb is not part of the bundle. Add it to your Gemfile.")
+    end
+
+    it "replaces a dependency of a transitive dependency with to:" do
+      install_gemfile <<-G
+        source "https://gem.repo2"
+        override "b", from: "a", to: "c"
+        gem "top"
+      G
+
+      expect(the_bundle).to include_gems "top 1.0", "a 1.0", "c 2.0"
+      expect(lockfile).not_to match(/^    b \(/)
+    end
+
+    it "applies version: to the replacement" do
+      install_gemfile <<-G
+        source "https://gem.repo2"
+        override "b", from: "a", to: "c", version: "< 2"
+        gem "a"
+      G
+
+      expect(the_bundle).to include_gems "a 1.0", "c 1.0"
+    end
+
+    it "fails when another gem still requires the replaced gem" do
+      install_gemfile <<-G, raise_on_error: false
+        source "https://gem.repo2"
+        override "b", from: "a", to: "c"
+        gem "a"
+        gem "d"
+      G
+
+      expect(err).to include(%(override "b", from: "a", to: "c" (declared at Gemfile:2) would leave both b and c in the bundle because b is still required by:\n  d\n))
+      expect(err).to include(%(Replace it for each of them, for example:\n  override "b", from: "d", to: "c"))
+    end
+
+    it "allows the replaced gem and the replacement when the override rewrites nothing" do
+      install_gemfile <<-G
+        source "https://gem.repo2"
+        override "b", from: "top", to: "d"
+        gem "a"
+        gem "d"
+      G
+
+      expect(the_bundle).to include_gems "a 1.0", "b 1.0", "d 1.0"
+    end
+
+    it "fails when the Gemfile still requires the replaced gem" do
+      install_gemfile <<-G, raise_on_error: false
+        source "https://gem.repo2"
+        override "b", from: "a", to: "c"
+        gem "a"
+        gem "b"
+      G
+
+      expect(err).to include(%(override "b", from: "a", to: "c" (declared at Gemfile:2) would leave both b and c in the bundle because b is still required by:\n  the Gemfile))
+    end
+
+    it "fails when to: nil drops a gem the Gemfile requires directly" do
+      install_gemfile <<-G, raise_on_error: false
+        source "https://gem.repo2"
+        override "b", from: "a", to: nil
+        gem "a"
+        gem "b"
+      G
+
+      expect(err).to include(%(override "b", from: "a", to: nil (declared at Gemfile:2) cannot drop b because the Gemfile depends on it directly))
+    end
+
+    it "warns about an override whose from: gem does not depend on the target" do
+      install_gemfile <<-G
+        source "https://gem.repo2"
+        override "b", from: "aa", to: nil
+        gem "a"
+      G
+
+      expect(err).to include(%(override "b", from: "aa", to: nil (declared at Gemfile:2) has no effect because the bundle has no aa that depends on b))
+      expect(the_bundle).to include_gems "a 1.0", "b 1.0"
+    end
+
+    it "fetches the replacement from the source of a scoped dependency" do
+      build_repo4 do
+        build_gem "scoped", "1.0" do |s|
+          s.add_dependency "b"
+        end
+        build_gem "lite", "1.0"
+      end
+
+      install_gemfile <<-G, artifice: "compact_index"
+        source "https://gem.repo2"
+        source "https://gem.repo4" do
+          gem "scoped"
+        end
+        override "b", from: "scoped", to: "lite"
+      G
+
+      expect(the_bundle).to include_gems "scoped 1.0", "lite 1.0"
+    end
+
+    it "skips a dropped dependency when suggesting binstubs" do
+      install_gemfile <<-G
+        source "https://gem.repo2"
+        override "b", from: "a", to: nil
+        gem "a"
+      G
+
+      bundle "binstubs a"
+      expect(err).to include("There are no executables for the gem a.")
+    end
+
+    it "lists the override when resolution fails" do
+      install_gemfile <<-G, raise_on_error: false
+        source "https://gem.repo2"
+        override "b", from: "a", to: "c", version: ">= 3"
+        gem "a"
+      G
+
+      expect(err).to include("Bundler applied the following overrides")
+      expect(err).to match(/override "b", from: "a", to: "c", version: ">= 3" \(declared at Gemfile:\d+\)/)
+    end
+
+    it "replaces the gem in an existing lockfile" do
+      install_gemfile <<-G
+        source "https://gem.repo2"
+        gem "top"
+      G
+
+      install_gemfile <<-G
+        source "https://gem.repo2"
+        override "b", from: "a", to: "c"
+        gem "top"
+      G
+
+      expect(the_bundle).to include_gems "top 1.0", "a 1.0", "c 2.0"
+      expect(lockfile).not_to match(/^    b \(/)
+    end
+
+    it "installs and runs from the lockfile in frozen mode" do
+      install_gemfile <<-G
+        source "https://gem.repo2"
+        override "b", from: "a", to: "c"
+        override "b", from: "d", to: nil
+        gem "a"
+        gem "d"
+      G
+
+      env = { "BUNDLE_FROZEN" => "true", "BUNDLE_PATH" => bundled_app("vendor/bundle").to_s }
+      bundle :install, env: env
+
+      expect(out).to include("Installing c 2.0")
+      expect(out).not_to include("Installing b ")
+      bundle "exec ruby -e \"require 'b'; puts B\"", env: env
+      expect(out).to eq("c 2.0")
+    end
+
+    it "refuses a frozen install when the override was removed without updating the lockfile" do
+      install_gemfile <<-G
+        source "https://gem.repo2"
+        override "b", from: "a", to: nil
+        gem "a"
+      G
+
+      gemfile <<-G
+        source "https://gem.repo2"
+        gem "a"
+      G
+
+      bundle :install, env: { "BUNDLE_FROZEN" => "true" }, raise_on_error: false
+      expect(err).to include("Your lockfile includes \"a\" but not some of its dependencies")
+    end
+
+    it "keeps the override when adding a platform" do
+      install_gemfile <<-G
+        source "https://gem.repo2"
+        override "b", from: "a", to: "c"
+        gem "a"
+      G
+
+      bundle "lock --add-platform x86_64-linux"
+
+      expect(lockfile).to include("x86_64-linux")
+      expect(lockfile).not_to match(/^    b \(/)
+    end
+
+    it "locks the generic platform when a dependency is replaced" do
+      simulate_platform "x86_64-linux" do
+        install_gemfile <<-G
+          source "https://gem.repo2"
+          override "b", from: "a", to: "c"
+          gem "a"
+        G
+      end
+
+      expect(lockfile).to include("PLATFORMS\n  ruby\n  x86_64-linux\n")
     end
   end
 end

@@ -200,6 +200,12 @@ module Bundler
 
     def override(target, **operations)
       validate_override_target!(target)
+      source_location = caller_locations(1, 1)&.first
+
+      if operations.key?(:from) || operations.key?(:to)
+        add_dependency_override(target, operations, source_location)
+        return
+      end
 
       if target == :all && operations.key?(:version)
         raise ArgumentError, "`override :all, version:` is not allowed; version requirements are per-gem"
@@ -211,7 +217,6 @@ module Bundler
         validate_override_uniqueness!(target, field)
       end
 
-      source_location = caller_locations(1, 1)&.first
       operations.each do |field, operation|
         @overrides << Override.new(target, field, operation, source_location: source_location)
       end
@@ -219,6 +224,7 @@ module Bundler
 
     def to_definition(lockfile, unlock)
       check_primary_source_safety
+      check_dropped_dependencies
       lockfile = @lockfile unless @lockfile.nil?
       Definition.new(lockfile, @dependencies, @sources, unlock, @ruby_version, @optional_groups, @gemfiles, @overrides)
     end
@@ -315,6 +321,54 @@ module Bundler
     def validate_override_uniqueness!(target, field)
       return unless @overrides.any? {|o| o.target == target && o.field == field }
       raise ArgumentError, "duplicate override for #{target.inspect} `#{field}:`"
+    end
+
+    def add_dependency_override(target, operations, source_location)
+      unless operations.key?(:from)
+        raise ArgumentError, "`override #{target.inspect}, to:` requires `from:` naming the gem whose dependency is rewritten"
+      end
+      unless operations.key?(:to)
+        raise ArgumentError, "`override #{target.inspect}, from:` requires `to:`; use `to: nil` to drop the dependency or `to: \"<gem>\"` to replace it"
+      end
+
+      from = operations[:from]
+      to = operations[:to]
+      requirement = operations[:version]
+
+      raise ArgumentError, "`override :all` does not accept `from:`" if target == :all
+      raise ArgumentError, "`from:` must be a gem name string, got #{from.inspect}" unless from.is_a?(String)
+      raise ArgumentError, "`to:` must be a gem name string or nil, got #{to.inspect}" unless to.nil? || to.is_a?(String)
+      raise ArgumentError, "`to:` must name a gem other than #{target.inspect} and #{from.inspect}" if to == target || to == from
+      validate_gem_name!(from)
+      validate_gem_name!(to) if to
+
+      unsupported = operations.keys - [:from, :to, :version]
+      if unsupported.any?
+        raise ArgumentError, "unsupported override field `#{unsupported.first}:` with `from:`; supported fields: `to:`, `version:`"
+      end
+
+      if operations.key?(:version)
+        raise ArgumentError, "`version:` with `from:` requires `to:` to name a replacement gem" if to.nil?
+        raise ArgumentError, "`version:` with `from:` must be a version requirement string, got #{requirement.inspect}" unless requirement.is_a?(String)
+        validate_override_operation!(requirement)
+      end
+
+      if @overrides.any? {|o| o.target == target && o.from == from }
+        raise ArgumentError, "duplicate override for #{target.inspect} `from: #{from.inspect}`"
+      end
+
+      @overrides << Override.new(target, :to, to, from: from, requirement: requirement, source_location: source_location)
+    end
+
+    # Dropping a gem the Gemfile requires directly would leave it installed
+    # anyway, with only the parent's requirement gone.
+    def check_dropped_dependencies
+      @overrides.each do |override|
+        next unless override.from && override.operation.nil?
+        next unless @dependencies.any? {|d| d.name == override.target }
+
+        raise GemfileError, "#{override} cannot drop #{override.target} because the Gemfile depends on it directly"
+      end
     end
 
     def add_dependency(name, version = nil, options = {})
@@ -460,7 +514,7 @@ module Bundler
       @valid_keys ||= VALID_KEYS
     end
 
-    def normalize_options(name, version, opts)
+    def validate_gem_name!(name)
       if name.is_a?(Symbol)
         raise GemfileError, %(You need to specify gem names as Strings. Use 'gem "#{name}"' instead)
       end
@@ -468,6 +522,10 @@ module Bundler
         raise GemfileError, %('#{name}' is not a valid gem name because it contains whitespace)
       end
       raise GemfileError, %(an empty gem name is not valid) if name.empty?
+    end
+
+    def normalize_options(name, version, opts)
+      validate_gem_name!(name)
 
       normalize_hash(opts)
 
