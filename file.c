@@ -1106,45 +1106,47 @@ static VALUE statx_birthtime(const rb_io_stat_data *st);
 #endif /* defined(HAVE_STRUCT_STAT_ST_BIRTHTIMESPEC) */
 
 /*
+ * :markup: markdown
+ *
  *  call-seq:
  *    atime -> time
  *
  * Returns a new Time object containing the access time
- * of the object represented by +self+
- * at the time +self+ was created;
- * see {Snapshot}[rdoc-ref:File::Stat@Snapshot].
+ * of the [snapshot](rdoc-ref:File::Stat@Snapshot) in `self`.
  * See {File System Timestamps}[rdoc-ref:file/timestamps.md].
  *
  * Access time for a file is established when it is created,
  * and may be updated when the file content is read:
  *
- *   filepath = 't.tmp'
- *   File.exist?(filepath)            # => false
- *   file = File.open(filepath, 'w+') # Create by writing; establishes access time.
- *   file.atime                       # => 2026-08-14 11:55:55.436283939 -0500
- *   stat0 = File::Stat.new(filepath) # Take snapshot.
- *   stat0.atime                      # => 2026-08-14 11:55:55.436283939 -0500
- *   file.read                        # Read file content; updates file access time.
- *   file.atime                       # => 2026-08-14 11:56:22.74241085 -0500
- *   stat0.atime                      # => 2026-08-14 11:55:55.436283939 -0500  # Not updated.
- *   stat1 = File::Stat.new(filepath) # Take new snapshot.
- *   stat1.atime                      # => 2026-08-14 11:56:22.74241085 -0500   # Updated.
- *   # Clean up.
- *   file.close
- *   File.delete(filepath)
+ * ```ruby
+ * filepath = '/tmp/t.tmp'
+ * File.write(filepath, 'foo')
+ * File.atime(filepath)        # => 2026-10-04 14:58:58.805179514 -0500
+ * stat0 = File.stat(filepath) # Take snapshot.
+ * stat0.atime                 # => 2026-10-04 14:58:58.805179514 -0500
+ * File.read(filepath)         # Updates file atime.
+ * File.atime(filepath)        # => 2026-10-04 14:59:47.707059351 -0500
+ * stat0.atime                 # => 2026-10-04 14:58:58.805179514 -0500 # Not updated.
+ * stat1 = File.stat(filepath) # Take new snapshot.
+ * stat1.atime                 # => 2026-10-04 14:59:47.707059351 -0500 # Updated.
+ * File.delete(filepath)       # Clean up.
+ * ```
  *
  * Access time for a directory is established when it is created,
  * and may be updated when its entries are read:
  *
- *   dirpath = 'foo'
- *   File.exist?(dirpath)         # => false
- *   FileUtils.cp_r('doc', 'foo') # Create directory by copying.
- *   File.atime(dirpath)          # => 2026-08-15 14:10:04.832180372 -0500
- *   stat = File::Stat.new(dirpath)
- *   stat.atime                   # => 2026-08-15 14:10:04.832180372 -0500
- *   # Clean up.
- *   FileUtils.rm_rf(dirpath)
- *   dir.close
+ * ```ruby
+ * dirpath = '/tmp/dir'
+ * Dir.mkdir(dirpath)
+ * File.atime(dirpath)        # => 2026-10-04 15:07:26.194548647 -0500
+ * stat0 = File.stat(dirpath) # Take snapshot.
+ * stat0.atime                # => 2026-10-04 15:07:26.194548647 -0500
+ * Dir.entries(dirpath)       # Updates directory atime.
+ * File.atime(dirpath)        # => 2026-10-04 15:08:14.818746815 -0500 # Updated.
+ * stat0.atime                # => 2026-10-04 15:07:26.194548647 -0500 # Not updated.
+ * stat1 = File.stat(dirpath) # Take new shapshot.
+ * stat1.atime                # => 2026-10-04 15:08:14.818746815 -0500 # Updated.
+ * Dir.rmdir(dirpath)         # Clean up.
  *
  */
 
@@ -2864,42 +2866,50 @@ rb_file_s_ftype(VALUE klass, VALUE fname)
 }
 
 /*
- *  call-seq:
- *    File.atime(object) -> time
+ * :markup: markdown
+
+ * call-seq:
+ *   File.atime(object) -> time
  *
  * Returns a new Time object containing the time of the most recent
- * access to the given +object+.
+ * access to the given `object`.
  * See {File System Timestamps}[rdoc-ref:file/timestamps.md].
  *
  * Access time for a file is established when it is created,
  * and may be updated when the file content is read:
  *
- *   filepath = 't.tmp'
- *   File.exist?(filepath)       # => false
- *   File.atime(filepath)        # Raises Errno::ENOENT.
- *   File.write(filepath, 'foo') # Create by writing; establishes access time.
- *   File.atime(filepath)        # => 2026-08-14 10:02:39.721407762 -0500
- *   File.read(filepath)         # Read file content; updates access time.
- *   File.atime(filepath)        # => 2026-08-14 10:03:02.520494995 -0500
- *   File.delete(filepath)       # Clean up.
+ * ```ruby
+ * filepath = '/tmp/t.tmp'
+ * File.exist?(filepath)       # => false
+ * File.atime(filepath)        # Raises Errno::ENOENT: No such file or directory.
+ * File.write(filepath, 'foo') # Establishes access time.
+ * File.atime(filepath)        # => 2026-10-04 14:23:12.421395099 -0500
+ * File.read(filepath)         # Updates access time.
+ * File.atime(filepath)        # => 2026-10-04 14:23:21.848886816 -0500
+ * File.delete(filepath)       # Clean up.
+ * ```
  *
  * Access time for a directory is established when it is created,
  * and may updated when its entries are read:
  *
- *   dirpath = 'foo'
- *   File.exist?(dirpath)         # => false
- *   File.atime(dirpath)          # Raises Errno::ENOENT.
- *   FileUtils.cp_r('doc', 'foo') # Create by copying; establishes access time.
- *   File.atime(dirpath)          # => 2026-08-14 10:32:59.229951125 -0500
- *   Dir.entries(dirpath)         # Read directory entries; updates access time.
- *   File.atime(dirpath)          # => 2026-08-14 10:33:05.679978581 -0500
- *   FileUtils.rm_rf(dirpath)     # Clean up.
+ * ```ruby
+ * dirpath = '/tmp/foo'
+ * File.exist?(dirpath) # => false
+ * File.atime(dirpath)  # Raises Errno::ENOENT: No such file or directory.
+ * Dir.mkdir(dirpath)   # Establishes access time.
+ * File.atime(dirpath)  # => 2026-10-04 14:35:53.940716253 -0500
+ * Dir.entries(dirpath) # Updates access time.
+ * File.atime(dirpath)  # => 2026-10-04 14:36:24.316018872 -0500
+ * Dir.rmdir(dirpath)   # Clean up.
+ * ```
  *
- * Argument +object+ may be a string path (as above),
+ * Argument `object` may be a string path (as above),
  * a File object, or a Dir object:
  *
- *   File.atime(File.new('README.md')) # => 2026-03-31 11:15:27.8215934 -0500
- *   File.atime(Dir.new('.'))          # => 2026-03-31 12:39:45.5910591 -0500
+ * ```ruby
+ * File.atime(File.new('/etc/passwd')) # => 2026-10-04 11:25:01.259278928 -0500
+ * File.atime('.')                     # => 2026-10-04 14:40:42.141637825 -0500
+ * ```
  *
  */
 
@@ -2917,25 +2927,30 @@ rb_file_s_atime(VALUE klass, VALUE fname)
 }
 
 /*
+ * :markup: markdown
+ *
  *  call-seq:
  *    atime -> time
  *
  * Returns a new Time object containing the time of the most recent
- * access to +self+.
+ * access to `self`.
  * See {File System Timestamps}[rdoc-ref:file/timestamps.md].
  *
  * Access time for a file is established when it is created,
  * and may be updated when the file content is read:
  *
- *   filepath = 't.tmp'
- *   File.exist?(filepath)            # => false
- *   file = File.open(filepath, 'w+') # Create by opening; establishes access time.
- *   file.atime                       # => 2026-08-14 11:15:48.422773736 -0500
- *   file.read                        # Read file content; updates access time.
- *   file.atime                       # => 2026-08-14 11:16:10.697861103 -0500
- *   # Clean up.
- *   file.close
- *   File.delete(filepath)
+ * ```
+ * filepath = '/tmp/t.tmp'
+ * File.exist?(filepath)       # => false
+ * File.write(filepath, 'foo') # Establishes access time.
+ * file = File.new(filepath)
+ * file.atime                  # => 2026-10-04 14:48:30.323100327 -0500
+ * file.read                   # Updates access time.
+ * file.atime                  # => 2026-10-04 14:49:01.104340829 -0500
+ * # Clean up.
+ * file.close
+ * File.delete(filepath)
+ * ```
  *
  */
 
