@@ -790,11 +790,7 @@ queue_timeout2hrtime(VALUE timeout)
         rel = rb_sec2hrtime(NUM2TIMET(timeout));
     }
     else {
-        double timeout_d = rb_num2dbl(timeout);
-        if (isnan(timeout_d)) {
-            rb_raise(rb_eArgError, "timeout must not be NaN");
-        }
-        double2hrtime(&rel, timeout_d);
+        double2hrtime(&rel, rb_num2dbl(timeout));
     }
     return rb_hrtime_add(rel, rb_hrtime_now());
 }

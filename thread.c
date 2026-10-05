@@ -65,8 +65,6 @@
 
 #include "ruby/internal/config.h"
 
-#include <math.h>
-
 #ifdef __linux__
 // Normally,  gcc(1)  translates  calls to alloca() with inlined code.  This is not done when either the -ansi, -std=c89, -std=c99, or the -std=c11 option is given and the header <alloca.h> is not included.
 # include <alloca.h>
@@ -1434,11 +1432,7 @@ thread_join_m(int argc, VALUE *argv, VALUE self)
         limit = &rel;
     }
     else {
-        double timeout_d = rb_num2dbl(timeout);
-        if (isnan(timeout_d)) {
-            rb_raise(rb_eArgError, "timeout must not be NaN");
-        }
-        limit = double2hrtime(&rel, timeout_d);
+        limit = double2hrtime(&rel, rb_num2dbl(timeout));
     }
 
     return thread_join(rb_thread_ptr(self), timeout, limit);
