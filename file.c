@@ -610,32 +610,37 @@ statx_mtimespec(const rb_io_stat_data *st)
 #endif
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
  *    self <=> other -> -1, 0, 1, or nil
  *
- *  Compares +self+ and +other+, by comparing their modification times;
- *  that is, by comparing <tt>self.mtime</tt> and <tt>other.mtime</tt>.
+ *  Compares the [snapshots](rdoc-ref:File::Stat@Snapshot)
+ *  in `self` and `other`, by comparing their modification times
+ *  `self.mtime` and `other.mtime`.
  *
  *  Returns:
  *
- *  - +-1+, if <tt>self.mtime</tt> is earlier.
- *  - +0+, if the two values are equal.
- *  - +1+, if <tt>self.mtime</tt> is later.
- *  - +nil+, if +other+ is not a File::Stat object.
+ *  - `-1`, if `self.mtime` is earlier.
+ *  - `0`, if the two values are equal.
+ *  - `1`, if `self.mtime` is later.
+ *  - `nil`, if `other` is not a \File::Stat object.
  *
  *  Examples:
  *
- *    stat0 = File.stat('README.md')
- *    stat1 = File.stat('NEWS.md')
- *    stat0.mtime         # => 2025-12-20 15:33:05.6972341 -0600
- *    stat1.mtime         # => 2025-12-20 16:02:08.2672945 -0600
- *    stat0 <=> stat1     # => -1
- *    stat0 <=> stat0.dup # => 0
- *    stat1 <=> stat0     # => 1
- *    stat0 <=> :foo      # => nil
+ *  ```ruby
+ *  stat0 = File.stat('/etc')
+ *  stat1 = File.stat('/tmp')
+ *  stat0.mtime         # => 2026-10-02 07:52:03.151556038 -0500
+ *  stat1.mtime         # => 2026-10-03 12:22:25.719215899 -0500
+ *  stat0 <=> stat1     # => -1
+ *  stat0 <=> stat0.dup # => 0
+ *  stat1 <=> stat0     # => 1
+ *  stat0 <=> :foo      # => nil
+ *  ```
  *
  *  \Class \File::Stat includes module Comparable,
- *  each of whose methods uses File::Stat#<=> for comparison.
+ *  each of whose methods uses \File::Stat#<=> for comparison.
  */
 
 static VALUE
@@ -1101,45 +1106,47 @@ static VALUE statx_birthtime(const rb_io_stat_data *st);
 #endif /* defined(HAVE_STRUCT_STAT_ST_BIRTHTIMESPEC) */
 
 /*
+ * :markup: markdown
+ *
  *  call-seq:
  *    atime -> time
  *
  * Returns a new Time object containing the access time
- * of the object represented by +self+
- * at the time +self+ was created;
- * see {Snapshot}[rdoc-ref:File::Stat@Snapshot].
+ * of the [snapshot](rdoc-ref:File::Stat@Snapshot) in `self`.
  * See {File System Timestamps}[rdoc-ref:file/timestamps.md].
  *
  * Access time for a file is established when it is created,
  * and may be updated when the file content is read:
  *
- *   filepath = 't.tmp'
- *   File.exist?(filepath)            # => false
- *   file = File.open(filepath, 'w+') # Create by writing; establishes access time.
- *   file.atime                       # => 2026-08-14 11:55:55.436283939 -0500
- *   stat0 = File::Stat.new(filepath) # Take snapshot.
- *   stat0.atime                      # => 2026-08-14 11:55:55.436283939 -0500
- *   file.read                        # Read file content; updates file access time.
- *   file.atime                       # => 2026-08-14 11:56:22.74241085 -0500
- *   stat0.atime                      # => 2026-08-14 11:55:55.436283939 -0500  # Not updated.
- *   stat1 = File::Stat.new(filepath) # Take new snapshot.
- *   stat1.atime                      # => 2026-08-14 11:56:22.74241085 -0500   # Updated.
- *   # Clean up.
- *   file.close
- *   File.delete(filepath)
+ * ```ruby
+ * filepath = '/tmp/t.tmp'
+ * File.write(filepath, 'foo')
+ * File.atime(filepath)        # => 2026-10-04 14:58:58.805179514 -0500
+ * stat0 = File.stat(filepath) # Take snapshot.
+ * stat0.atime                 # => 2026-10-04 14:58:58.805179514 -0500
+ * File.read(filepath)         # Updates file atime.
+ * File.atime(filepath)        # => 2026-10-04 14:59:47.707059351 -0500
+ * stat0.atime                 # => 2026-10-04 14:58:58.805179514 -0500 # Not updated.
+ * stat1 = File.stat(filepath) # Take new snapshot.
+ * stat1.atime                 # => 2026-10-04 14:59:47.707059351 -0500 # Updated.
+ * File.delete(filepath)       # Clean up.
+ * ```
  *
  * Access time for a directory is established when it is created,
  * and may be updated when its entries are read:
  *
- *   dirpath = 'foo'
- *   File.exist?(dirpath)         # => false
- *   FileUtils.cp_r('doc', 'foo') # Create directory by copying.
- *   File.atime(dirpath)          # => 2026-08-15 14:10:04.832180372 -0500
- *   stat = File::Stat.new(dirpath)
- *   stat.atime                   # => 2026-08-15 14:10:04.832180372 -0500
- *   # Clean up.
- *   FileUtils.rm_rf(dirpath)
- *   dir.close
+ * ```ruby
+ * dirpath = '/tmp/dir'
+ * Dir.mkdir(dirpath)
+ * File.atime(dirpath)        # => 2026-10-04 15:07:26.194548647 -0500
+ * stat0 = File.stat(dirpath) # Take snapshot.
+ * stat0.atime                # => 2026-10-04 15:07:26.194548647 -0500
+ * Dir.entries(dirpath)       # Updates directory atime.
+ * File.atime(dirpath)        # => 2026-10-04 15:08:14.818746815 -0500 # Updated.
+ * stat0.atime                # => 2026-10-04 15:07:26.194548647 -0500 # Not updated.
+ * stat1 = File.stat(dirpath) # Take new shapshot.
+ * stat1.atime                # => 2026-10-04 15:08:14.818746815 -0500 # Updated.
+ * Dir.rmdir(dirpath)         # Clean up.
  *
  */
 
@@ -2332,16 +2339,9 @@ rb_file_world_writable_p(VALUE obj, VALUE fname)
  * permission for the effective user and group id of the current process;
  * see {Permissions}[rdoc-ref:file/filesystem_modes.md@Permissions].
  *
- * These examples use
- * a {helper method}[rdoc-ref:file/filesystem_modes.md@Helper+Method], +mode+,
- * that displays a mode both in octal digits and in characters:
- *
+ *   File.executable?('/bin/bash')   # => true
  *   File.executable?('.')           # => true
- *   mode('.')                       # => "040775 drwxrwxr-x"
- *   File.executable?('bin/gem')     # => true
- *   mode('bin/gem')                 # => "100775 -rwxrwxr-x"
  *   File.executable?('/etc/passwd') # => false
- *   mode('/etc/passwd')             # => "100644 -rw-r--r--"
  *   File.executable?('nosuch')      # => false
  *
  * Note that some filesystem settings may cause this method to return +true+
@@ -2866,42 +2866,50 @@ rb_file_s_ftype(VALUE klass, VALUE fname)
 }
 
 /*
- *  call-seq:
- *    File.atime(object) -> time
+ * :markup: markdown
+
+ * call-seq:
+ *   File.atime(object) -> time
  *
  * Returns a new Time object containing the time of the most recent
- * access to the given +object+.
+ * access to the given `object`.
  * See {File System Timestamps}[rdoc-ref:file/timestamps.md].
  *
  * Access time for a file is established when it is created,
  * and may be updated when the file content is read:
  *
- *   filepath = 't.tmp'
- *   File.exist?(filepath)       # => false
- *   File.atime(filepath)        # Raises Errno::ENOENT.
- *   File.write(filepath, 'foo') # Create by writing; establishes access time.
- *   File.atime(filepath)        # => 2026-08-14 10:02:39.721407762 -0500
- *   File.read(filepath)         # Read file content; updates access time.
- *   File.atime(filepath)        # => 2026-08-14 10:03:02.520494995 -0500
- *   File.delete(filepath)       # Clean up.
+ * ```ruby
+ * filepath = '/tmp/t.tmp'
+ * File.exist?(filepath)       # => false
+ * File.atime(filepath)        # Raises Errno::ENOENT: No such file or directory.
+ * File.write(filepath, 'foo') # Establishes access time.
+ * File.atime(filepath)        # => 2026-10-04 14:23:12.421395099 -0500
+ * File.read(filepath)         # Updates access time.
+ * File.atime(filepath)        # => 2026-10-04 14:23:21.848886816 -0500
+ * File.delete(filepath)       # Clean up.
+ * ```
  *
  * Access time for a directory is established when it is created,
  * and may updated when its entries are read:
  *
- *   dirpath = 'foo'
- *   File.exist?(dirpath)         # => false
- *   File.atime(dirpath)          # Raises Errno::ENOENT.
- *   FileUtils.cp_r('doc', 'foo') # Create by copying; establishes access time.
- *   File.atime(dirpath)          # => 2026-08-14 10:32:59.229951125 -0500
- *   Dir.entries(dirpath)         # Read directory entries; updates access time.
- *   File.atime(dirpath)          # => 2026-08-14 10:33:05.679978581 -0500
- *   FileUtils.rm_rf(dirpath)     # Clean up.
+ * ```ruby
+ * dirpath = '/tmp/foo'
+ * File.exist?(dirpath) # => false
+ * File.atime(dirpath)  # Raises Errno::ENOENT: No such file or directory.
+ * Dir.mkdir(dirpath)   # Establishes access time.
+ * File.atime(dirpath)  # => 2026-10-04 14:35:53.940716253 -0500
+ * Dir.entries(dirpath) # Updates access time.
+ * File.atime(dirpath)  # => 2026-10-04 14:36:24.316018872 -0500
+ * Dir.rmdir(dirpath)   # Clean up.
+ * ```
  *
- * Argument +object+ may be a string path (as above),
+ * Argument `object` may be a string path (as above),
  * a File object, or a Dir object:
  *
- *   File.atime(File.new('README.md')) # => 2026-03-31 11:15:27.8215934 -0500
- *   File.atime(Dir.new('.'))          # => 2026-03-31 12:39:45.5910591 -0500
+ * ```ruby
+ * File.atime(File.new('/etc/passwd')) # => 2026-10-04 11:25:01.259278928 -0500
+ * File.atime('.')                     # => 2026-10-04 14:40:42.141637825 -0500
+ * ```
  *
  */
 
@@ -2919,25 +2927,30 @@ rb_file_s_atime(VALUE klass, VALUE fname)
 }
 
 /*
+ * :markup: markdown
+ *
  *  call-seq:
  *    atime -> time
  *
  * Returns a new Time object containing the time of the most recent
- * access to +self+.
+ * access to `self`.
  * See {File System Timestamps}[rdoc-ref:file/timestamps.md].
  *
  * Access time for a file is established when it is created,
  * and may be updated when the file content is read:
  *
- *   filepath = 't.tmp'
- *   File.exist?(filepath)            # => false
- *   file = File.open(filepath, 'w+') # Create by opening; establishes access time.
- *   file.atime                       # => 2026-08-14 11:15:48.422773736 -0500
- *   file.read                        # Read file content; updates access time.
- *   file.atime                       # => 2026-08-14 11:16:10.697861103 -0500
- *   # Clean up.
- *   file.close
- *   File.delete(filepath)
+ * ```
+ * filepath = '/tmp/t.tmp'
+ * File.exist?(filepath)       # => false
+ * File.write(filepath, 'foo') # Establishes access time.
+ * file = File.new(filepath)
+ * file.atime                  # => 2026-10-04 14:48:30.323100327 -0500
+ * file.read                   # Updates access time.
+ * file.atime                  # => 2026-10-04 14:49:01.104340829 -0500
+ * # Clean up.
+ * file.close
+ * File.delete(filepath)
+ * ```
  *
  */
 
@@ -3267,21 +3280,16 @@ chmod_internal(const char *path, void *mode)
  *  See {Filesystem Modes}[rdoc-ref:file/filesystem_modes.md]
  *  and especially {Setting a Mode}[rdoc-ref:file/filesystem_modes.md@Setting+a+Mode].
  *
- *  These examples use
- *  a {helper method}[rdoc-ref:file/filesystem_modes.md@Helper+Method], +mode+,
- *  that displays a mode both in octal digits and in characters:
- *
- *    dirpath = 'doc/foo'
- *    filepath = File.join(dirpath, 't.tmp')
- *    Dir.mkdir(dirpath)          # Create directory.
- *    mode(dirpath)               # => "040775 drwxrwxr-x"
- *    File.write(filepath, 'bar') # Create file.
- *    mode(filepath)              # => "100664 -rw-rw-r--"
- *    File.chmod(0755, filepath)  # Change file mode.
- *    mode(filepath)              # => "100755 -rwxr-xr-x"
- *    File.chmod(0664, dirpath)   # Change directory mode.
- *    mode(dirpath)               # => "040664 drw-rw-r--"
- *    FileUtils.rm_rf(dirpath)    # Clean up.
+ *    file0path = '/tmp/t0.tmp'
+ *    file1path = '/tmp/t1.tmp'
+ *    File.write(file0path, 'foo')
+ *    File.write(file1path, 'bar')
+ *    '%06o' % File.stat(file0path).mode # => "100664"
+ *    '%06o' % File.stat(file1path).mode # => "100664"
+ *    File.chmod(0o755, file0path, file1path)
+ *    '%06o' % File.stat(file0path).mode # => "100755"
+ *    '%06o' % File.stat(file1path).mode # => "100755"
+ *    File.delete(file0path, file1path)  # Clean up.
  *
  */
 
@@ -3327,16 +3335,13 @@ rb_fchmod(struct rb_io* io, mode_t mode)
  *  See {Filesystem Modes}[rdoc-ref:file/filesystem_modes.md]
  *  and especially {Setting a Mode}[rdoc-ref:file/filesystem_modes.md@Setting+a+Mode].
  *
- *  These examples use
- *  a {helper method}[rdoc-ref:file/filesystem_modes.md@Helper+Method], +mode+,
- *  that displays a mode both in octal digits and in characters:
- *
- *    filepath = 'doc/t.tmp'
+ *    filepath = '/tmp/t.tmp'
  *    File.write(filepath, 'foo')
+ *    '%06o' % File.stat(filepath).mode      # => "100664"
  *    file = File.new(filepath)
- *    mode(filepath)      # => "100664 -rw-rw-r--"
- *    file.chmod(0775)
- *    mode(filepath)      # => "100775 -rwxrwxr-x"
+ *    file.chmod(0o755)
+ *    '%06o' % File.stat(filepath).mode      # => "100755"
+ *    # Clean up.
  *    file.close
  *    File.delete(filepath)
  *
@@ -6809,46 +6814,41 @@ rb_f_test(int argc, VALUE *argv, VALUE _)
 /*
  *  Document-class: File::Stat
  *
- *  A \File::Stat object contains information about an entry in the file system.
+ *  :markup: markdown
  *
- *  Each of these methods returns a new \File::Stat object:
+ *  A \File::Stat object contains information about an entry in the filesystem.
  *
- *  - File#lstat.
- *  - File::Stat.new.
- *  - File::lstat.
- *  - File::stat.
- *  - IO#stat.
+ *  Each of these methods returns a new \File::Stat object.
+ *  the first three follow symbolic links; the others don't:
  *
- *  === Snapshot
+ *  - File::Stat.new
+ *  - File::stat
+ *  - IO#stat
+ *  - File#lstat
+ *  - File::lstat
  *
- *  A new \File::Stat object takes an immediate "snapshot" of the entry's information;
- *  the captured information is never updated,
- *  regardless of changes in the actual entry:
+ *  ## Snapshot
  *
- *  The entry must exist when File::Stat.new is called:
+ *  A new \File::Stat object takes an immediate "snapshot" of the filesystem entry
+ *  at the given 'path';
+ *  the snapshot is never updated, regardless of changes in the entry (even its deletion):
  *
- *    filepath = 't.tmp'
- *    File.exist?(filepath)           # => false
- *    File::Stat.new(filepath)        # Raises Errno::ENOENT: No such file or directory.
- *    File.write(filepath, 'foo')     # Create the file.
- *    stat = File::Stat.new(filepath) # Okay.
+ *  ```ruby
+ *  filepath = '/tmp/t.tmp'
+ *  File.stat(filepath) # Raises Errno::ENOENT: No such file or directory.
+ *  File.write(filepath, 'foo')
+ *  stat = File.stat(filepath)
+ *  stat.birthtime # => 2026-10-03 12:19:23.723062465 -0500
+ *  File.delete(filepath)
+ *  stat.birthtime # => 2026-10-03 12:19:23.723062465 -0500
+ *  ```
  *
- *  Later changes to the actual entry do not change the \File::Stat object:
+ *  ## Filesystem Dependencies
  *
- *    File.atime(filepath) # => 2026-04-01 11:51:38.0014518 -0500
- *    stat.atime           # => 2026-04-01 11:51:38.0014518 -0500
- *    File.write(filepath, 'bar')
- *    File.atime(filepath) # => 2026-04-01 11:58:11.922614 -0500
- *    stat.atime           # => 2026-04-01 11:51:38.0014518 -0500
- *    File.delete(filepath)
- *    stat.atime           # => 2026-04-01 11:51:38.0014518 -0500
- *
- *  === OS-Dependencies
- *
- *  Methods in a \File::Stat object may return platform-dependents values,
- *  and not all values are meaningful on all systems;
- *  for example, File::Stat#blocks returns +nil+ on Windows,
- *  but returns an integer on Linux.
+ *  Methods in a \File::Stat object may return filesystem-dependent values,
+ *  and not all values are meaningful on all filesystems;
+ *  for example, File::Stat#blocks returns `nil` on a Windows filesystem,
+ *  but returns an integer on others.
  *
  *  See also Kernel#test.
  */
@@ -6862,11 +6862,19 @@ rb_stat_s_alloc(VALUE klass)
 }
 
 /*
- * call-seq:
- *   File::Stat.new(file_name)  -> stat
+ * :markup: markdown
  *
- * Create a File::Stat object for the given file name (raising an
- * exception if the file doesn't exist).
+ * call-seq:
+ *   File::Stat.new(path) -> stat
+ *
+ * Returns a new \File::Stat object containing a [snapshot](rdoc-ref:File::Stat@Snapshot)
+ * of the filesystem entry at the given `path`:
+ *
+ * ```ruby
+ * File::Stat.new('/etc/passwd')
+ * File::Stat.new('/tmp')
+ * File::Stat.new('nosuch') # Raises Errno::ENOENT: No such file or directory.
+ * ```
  */
 
 static VALUE
@@ -7412,18 +7420,11 @@ rb_stat_ww(VALUE obj)
  *
  * On other systems, the entry is executable if it has the execute/search
  * permission for the effective user and group id of the current process;
- * see {Permissions}[rdoc-ref:file/filesystem_modes.md@Permissions].
+ * see {Permissions}[rdoc-ref:file/filesystem_modes.md@Permissions]:
  *
- * These examples use
- * a {helper method}[rdoc-ref:file/filesystem_modes.md@Helper+Method], +mode+,
- * that displays a mode both in octal digits and in characters:
- *
- *   File.stat('.').executable?           # => true
- *   mode('.')                            # => "040775 drwxrwxr-x"
- *   File.stat('bin/gem').executable?     # => true
- *   mode('bin/gem')                      # => "100775 -rwxrwxr-x"
- *   File.stat('/etc/passwd').executable? # => false
- *   mode('/etc/passwd')                  # => "100644 -rw-r--r--"
+ *   File.stat('/bin/bash').executable?        # => true
+ *   File.stat('/etc/passwd').executable?      # => false
+ *   File.stat('.').executable?                # => true
  *
  * Note that some filesystem settings may cause this method to return +true+
  * even though the entry is not executable by the effective user/group.

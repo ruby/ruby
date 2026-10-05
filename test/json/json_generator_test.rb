@@ -1086,26 +1086,25 @@ class JSONGeneratorTest < Test::Unit::TestCase
     object = Object.new
     state = JSON.state.new(strict: true)
     state.as_json = -> (o, is_key) { o.object_id }.method(:call)
+    assert_kind_of Proc, state.as_json
     assert_equal object.object_id.to_json, state.generate(object)
   end
 
   def test_json_generate_as_json_invalid_type
-    omit 'TruffleRuby does not convert as_json to Proc' if RUBY_ENGINE == 'truffleruby'
     [Object.new, Time.now].each do |as_json|
       assert_raise(TypeError) { JSON.generate(Object.new, strict: true, as_json: as_json) }
     end
   end
 
   def test_state_as_json_invalid_type
-    omit 'TruffleRuby does not convert as_json to Proc' if RUBY_ENGINE == 'truffleruby'
     state = JSON.state.new(strict: true)
     [Object.new, Time.now].each do |as_json|
       assert_raise(TypeError) { state.as_json = as_json }
+      assert_raise(TypeError) { state.configure(as_json: as_json) }
     end
   end
 
   def test_as_json_to_proc_returns_invalid_type
-    omit 'TruffleRuby does not convert as_json to Proc' if RUBY_ENGINE == 'truffleruby'
     as_json = Object.new
     def as_json.to_proc
       method(:to_proc)

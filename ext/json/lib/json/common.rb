@@ -827,7 +827,12 @@ module JSON
     #
     #  puts MyApp::API_JSON_CODER.dump(Time.now.utc) # => "2025-01-21T08:41:44.286Z"
     #
-    def initialize(object_class: nil, array_class: nil, on_load: nil, **options, &as_json)
+    # The conversion callback can also be passed as +as_json:+. If both are given, the block takes precedence.
+    # Passing +false+ or +nil+ for +strict:+ raises ArgumentError.
+    #
+    def initialize(object_class: nil, array_class: nil, on_load: nil, strict: true, **options, &as_json)
+      raise ArgumentError, "JSON::Coder requires strict mode" unless strict
+
       if object_class || array_class
         on_load = ParserOptions.on_load(on_load, object_class, array_class)
       end
@@ -839,7 +844,7 @@ module JSON
       @state = State.new(
         **generator_options,
         strict: true,
-        as_json: as_json,
+        as_json: as_json || generator_options[:as_json],
       ).freeze
     end
 

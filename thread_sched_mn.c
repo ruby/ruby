@@ -835,7 +835,7 @@ nt_alloc_stack(rb_vm_t *vm, void **vm_stack, void **machine_stack)
                 char *mstack_start = stack_start + vm_stack_area + MSTACK_PAGE_SIZE;
 
                 int mstack_flags = MAP_FIXED | MAP_ANONYMOUS | MAP_PRIVATE;
-#if defined(MAP_STACK) && !defined(__FreeBSD__) && !defined(__FreeBSD_kernel__)
+#if defined(MAP_STACK) && !defined(__FreeBSD__)
                 mstack_flags |= MAP_STACK;
 #endif
 

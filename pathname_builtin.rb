@@ -1369,33 +1369,35 @@ class Pathname    # * File *
   #   atime -> time
   #
   # Returns a new Time object containing the access time
-  # of the entry represented by `self`, as reported by the filesystem;
+  # of the entry at the path in `self`, as reported by the filesystem;
   # see {File System Access Time}[rdoc-ref:file/timestamps.md@Access+Time].
   #
   # For a file, the access time is established when the file is created,
   # and may be updated with the file content is read:
   #
   # ```ruby
-  # filepath = 't.tmp'
+  # filepath = '/tmp/t.tmp'
   # pn = Pathname(filepath)
-  # pn.exist? # => false
-  # pn.write('foo')
-  # pn.atime # => 2026-08-15 14:30:28.624455747 -0500
-  # pn.delete
+  # pn.atime        # Raises Errno::ENOENT: No such file or directory.
+  # pn.write('foo') # Establishes access time.
+  # pn.atime        # => 2026-10-04 15:15:10.628255551 -0500
+  # pn.read         # Updates access time.
+  # pn.atime        # => 2026-10-04 15:15:19.770249225 -0500
+  # pn.delete       # Clean up.
   # ```
   #
   # For a directory, the access time is established when the directory is created,
   # and may be updated when its entries are read:
   #
   # ```ruby
-  # dirpath = 'foo'
+  # dirpath = '/tmp/dir'
   # pn = Pathname(dirpath)
-  # pn.exist?          # => false
-  # FileUtils.cp_r('doc', 'foo')
-  # pn.atime           # => 2026-08-15 14:36:20.139756073 -0500
-  # pn.entries.take(3) # => [#<Pathname:syntax>, #<Pathname:contributing>, #<Pathname:strscan>]
-  # pn.atime           # => 2026-08-15 14:36:32.262779081 -0500
-  # pn.rmtree          # Clean up.
+  # pn.atime   # Raises Errno::ENOENT: No such file or directory.
+  # pn.mkdir   # Establishes access time.
+  # pn.atime   # => 2026-10-04 15:19:49.957848452 -0500
+  # pn.entries # Updates access time.
+  # pn.atime   # => 2026-10-04 15:20:05.677814625 -0500
+  # pn.delete  # Clean up.
   # ```
   #
   def atime() File.atime(@path) end

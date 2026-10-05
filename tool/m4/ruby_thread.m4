@@ -53,7 +53,7 @@ AS_IF([test x"$THREAD_MODEL" = xpthread], [
 	AS_CASE(["$pthread_lib:$target_os"],
 		[c:*], [],
 		[root:*], [],
-		[c_r:*|*:openbsd*|*:mirbsd*],  [LIBS="-pthread $LIBS"],
+		[c_r:*|*:openbsd*],  [LIBS="-pthread $LIBS"],
 		[LIBS="-l$pthread_lib $LIBS"])
     ], [
 	AC_MSG_WARN("Don't know how to find pthread library on your system -- thread support disabled")
