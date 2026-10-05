@@ -1107,7 +1107,7 @@ static VALUE statx_birthtime(const rb_io_stat_data *st);
  *    atime -> time
  *
  * Returns a new Time object containing the access time
- * of the [snapshot](rdoc-ref:File::Stat@Snapshot) in `self`
+ * of the [snapshot](rdoc-ref:File::Stat@Snapshot) in `self`.
  * See {File System Timestamps}[rdoc-ref:file/timestamps.md].
  *
  * Access time for a file is established when it is created,
