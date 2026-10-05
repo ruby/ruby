@@ -970,14 +970,20 @@ rb_stat_blksize(VALUE self)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     stat.blocks    -> integer or nil
+ *    blocks -> integer or nil
  *
- *  Returns the number of native file system blocks allocated for this
- *  file, or +nil+ if the operating system doesn't support this
- *  feature.
+ *  Returns the number of filesystem blocks allocated for the entry
+ *  in the [snapshot](rdoc-ref:File::Stat@Snapshot) in `self`:
  *
- *     File.stat("testfile").blocks   #=> 2
+ *  ```ruby
+ *  File.stat('/etc').blocks        # => 24
+ *  File.stat('/etc/passwd').blocks # => 8
+ *  ```
+ *
+ *  Returns `nil` on Windows.
  */
 
 static VALUE
