@@ -337,7 +337,7 @@ struct rb_execution_context_struct;
 #endif
 
 typedef struct rb_iseq_location_struct {
-    VALUE pathobj;      /* String (path) or Array [path, realpath]. Frozen. */
+    VALUE pathobj;      /* String (path) or Array [path, realpath]. Frozen. See pathobj_realpath(). */
     VALUE label;        /* String */
     int first_lineno;
     int node_id;
@@ -360,9 +360,13 @@ pathobj_path(VALUE pathobj)
 }
 
 static inline VALUE
-pathobj_realpath(VALUE pathobj)
+pathobj_realpath(VALUE pathobj, bool no_realpath)
 {
-    if (RB_TYPE_P(pathobj, T_STRING)) {
+    if (no_realpath) {
+        VM_ASSERT(RB_TYPE_P(pathobj, T_STRING));
+        return Qnil;
+    }
+    else if (RB_TYPE_P(pathobj, T_STRING)) {
         return pathobj;
     }
     else {
@@ -554,6 +558,7 @@ struct rb_iseq_constant_body {
     unsigned int builtin_attrs; // Union of rb_builtin_attr
 
     bool prism; // ISEQ was generated from prism compiler
+    bool no_realpath; // location.pathobj names no real file (ex: during eval)
 
     // Set once an EP escape of this iseq has been reported to the enabled JIT.
     rb_atomic_t jit_ep_escape_recorded;
@@ -1414,6 +1419,7 @@ typedef struct {
     const struct rb_block block;
     const VALUE pathobj;
     int first_lineno;
+    bool no_realpath;
 } rb_binding_t;
 
 /* used by compile time and send insn */
@@ -2055,7 +2061,7 @@ VALUE rb_iseq_path(const rb_iseq_t *iseq);
 VALUE rb_iseq_realpath(const rb_iseq_t *iseq);
 RUBY_SYMBOL_EXPORT_END
 
-VALUE rb_iseq_pathobj_new(VALUE path, VALUE realpath);
+VALUE rb_iseq_pathobj_new(VALUE path, VALUE realpath, bool *no_realpath);
 void rb_iseq_pathobj_set(const rb_iseq_t *iseq, VALUE path, VALUE realpath);
 
 int rb_ec_frame_method_id_and_class(const rb_execution_context_t *ec, ID *idp, ID *called_idp, VALUE *klassp);
