@@ -42,7 +42,7 @@ c ||= candidates.find do |c|
 end or abort
 
 checkout = %w"git -c advice.detachedHead=false checkout"
-info = %[, r=#{color.info(r)}] if r
+info = (%[, r=#{color.info(r)}] if r)
 puts "checking out #{color.notice(c)} (v=#{color.info(v)}#{info}) ..."
 unless system(*checkout, c, "--", chdir: n)
   abort if r or !system(*checkout, v, "--", chdir: n)
