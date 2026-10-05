@@ -430,8 +430,8 @@ rb_str_format_ary(int argc, const VALUE *argv, VALUE fmt, VALUE ary)
             GETASTER(width);
             if (width < 0) {
                 flags |= FMINUS;
+                if (width == INT_MIN) rb_raise(rb_eArgError, "width too big");
                 width = -width;
-                if (width < 0) rb_raise(rb_eArgError, "width too big");
             }
             p++;
             goto retry;
