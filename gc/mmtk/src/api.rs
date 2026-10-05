@@ -181,7 +181,7 @@ fn mmtk_builder_default_parse_plan() -> PlanSelector {
         "StickyImmix" => Some(PlanSelector::StickyImmix),
         _ => None,
     })
-    .unwrap_or(PlanSelector::Immix)
+    .unwrap_or(PlanSelector::StickyImmix)
 }
 
 #[unsafe(no_mangle)]
