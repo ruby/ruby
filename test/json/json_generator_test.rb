@@ -477,6 +477,18 @@ class JSONGeneratorTest < Test::Unit::TestCase
     assert_raise(JSON::NestingError) { JSON.pretty_generate(ary) }
   end
 
+  def test_nesting_error_reports_attempted_depth
+    [[[]], { a: {} }].each do |object|
+      [0, 1].each do |depth|
+        state = JSON.state.new(depth: depth, max_nesting: depth + 1)
+        error = assert_raise(JSON::NestingError) { state.generate(object) }
+        assert_match(/\Anesting of #{depth + 2} is too deep\./, error.message)
+        assert_equal depth, state.depth
+        assert_equal '[]', state.generate([])
+      end
+    end
+  end
+
   def test_depth_nesting_error_to_json
     ary = []; ary << ary
     s = JSON.state.new(depth: 1)
