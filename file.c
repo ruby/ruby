@@ -2888,7 +2888,7 @@ rb_file_s_ftype(VALUE klass, VALUE fname)
  * File.atime(filepath)        # => 2026-10-04 14:23:12.421395099 -0500
  * File.read(filepath)         # Updates access time.
  * File.atime(filepath)        # => 2026-10-04 14:23:21.848886816 -0500
- * File.delete(filepath        # Clean up.
+ * File.delete(filepath)       # Clean up.
  * ```
  *
  * Access time for a directory is established when it is created,
