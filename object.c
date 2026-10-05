@@ -840,7 +840,7 @@ rb_obj_inspect(VALUE obj)
 {
     VALUE ivars = rb_check_funcall(obj, id_instance_variables_to_inspect, 0, 0);
     st_index_t n = 0;
-    if (UNDEF_P(ivars) || NIL_P(ivars)) {
+    if (NIL_OR_UNDEF_P(ivars)) {
         n = rb_ivar_count(obj);
         ivars = Qnil;
     }

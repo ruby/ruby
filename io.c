@@ -7053,7 +7053,7 @@ rb_io_extract_encoding_option(VALUE opt, rb_encoding **enc_p, rb_encoding **enc2
         }
         encoding = Qnil;
     }
-    if (!UNDEF_P(extenc) && !NIL_P(extenc)) {
+    if (!NIL_OR_UNDEF_P(extenc)) {
         extencoding = rb_to_encoding(extenc);
     }
     if (!UNDEF_P(intenc)) {

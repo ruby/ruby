@@ -2155,10 +2155,10 @@ rb_str_init(int argc, VALUE *argv, VALUE str)
         rb_get_kwargs(opt, keyword_ids, 0, 2, kwargs);
         venc = kwargs[0];
         vcapa = kwargs[1];
-        if (!UNDEF_P(venc) && !NIL_P(venc)) {
+        if (!NIL_OR_UNDEF_P(venc)) {
             enc = rb_to_encoding(venc);
         }
-        if (!UNDEF_P(vcapa) && !NIL_P(vcapa)) {
+        if (!NIL_OR_UNDEF_P(vcapa)) {
             rb_len_t capa = NUM2LEN(vcapa);
             rb_len_t len = 0;
             int termlen = enc ? rb_enc_mbminlen(enc) : 1;
