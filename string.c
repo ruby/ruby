@@ -3280,7 +3280,7 @@ rb_str_subpos(VALUE str, long beg, long *lenp)
     const char *p, *s = RSTRING_PTR(str), *e = s + blen;
 
     if (len < 0) return 0;
-    if (beg < 0 && -beg < 0) return 0;
+    if (beg == LONG_MIN) return 0;
     if (!blen) {
         len = 0;
     }
