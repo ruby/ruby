@@ -12100,7 +12100,6 @@ io_encoding_set(rb_io_t *fptr, VALUE v1, VALUE v2, VALUE opt)
             ecflags = rb_econv_prepare_options(opt, &ecopts, ecflags);
         }
     }
-    
     validate_enc_binmode(&fptr->mode, ecflags, enc, enc2);
     fptr->encs.enc = enc;
     fptr->encs.enc2 = enc2;
