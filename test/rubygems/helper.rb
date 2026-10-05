@@ -1452,12 +1452,22 @@ Also, a list:
   end
 
   ##
-  # Returns the make command for the current platform. For versions of Ruby
-  # built on MS Windows with VC++ it will return 'nmake'. On all other
-  # platforms, including Cygwin, it will return 'make'.
+  # Returns the make command that Gem::Ext::Builder uses. It comes from the
+  # environment or from --with-make-prog at configure time, and otherwise is
+  # 'nmake' for versions of Ruby built on MS Windows with VC++ and 'make' on
+  # all other platforms, including Cygwin.
 
   def make_command
-    ENV["make"] || ENV["MAKE"] || (vc_windows? ? "nmake" : "make")
+    ENV["MAKE"] || ENV["make"] ||
+      RbConfig::CONFIG["configure_args"].to_s[/with-make-prog=(\w+)/, 1] ||
+      (vc_windows? ? "nmake" : "make")
+  end
+
+  ##
+  # Returns whether or not the make command is nmake.
+
+  def nmake?
+    /\bnmake/i.match?(make_command)
   end
 
   ##
