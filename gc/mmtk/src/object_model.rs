@@ -52,17 +52,51 @@ impl ObjectModel<Ruby> for VMObjectModel {
         let from_acc = RubyObjectAccess::from_objref(from);
         let from_start = from_acc.obj_start();
         let object_size = from_acc.object_size();
-        let to_start = copy_context.alloc_copy(from, object_size, MIN_OBJ_ALIGN, 0, semantics);
+
+        let optimal_payload = (crate::binding().upcalls().obj_optimal_size)(from);
+        let new_size = if optimal_payload != 0 {
+            let size = (RubyObjectAccess::prefix_size()
+                + optimal_payload
+                + RubyObjectAccess::suffix_size())
+            .next_multiple_of(MIN_OBJ_ALIGN);
+            // Never resize beyond the non-LOS allocation limit.
+            let max_non_los = crate::mmtk()
+                .get_plan()
+                .constraints()
+                .max_non_los_default_alloc_bytes;
+            if size <= max_non_los {
+                size
+            } else {
+                object_size
+            }
+        } else {
+            object_size
+        };
+
+        let to_start = copy_context.alloc_copy(from, new_size, MIN_OBJ_ALIGN, 0, semantics);
         debug_assert!(!to_start.is_zero());
         let to_payload = to_start.add(OBJREF_OFFSET);
         unsafe {
-            copy_nonoverlapping::<u8>(from_start.to_ptr(), to_start.to_mut_ptr(), object_size);
+            copy_nonoverlapping::<u8>(
+                from_start.to_ptr(),
+                to_start.to_mut_ptr(),
+                object_size.min(new_size),
+            );
         }
         let to_obj = unsafe { ObjectReference::from_raw_address_unchecked(to_payload) };
-        copy_context.post_copy(to_obj, object_size, semantics);
-        trace!("Copied object from {} to {}", from, to_obj);
+
+        if new_size != object_size {
+            unsafe {
+                to_start.store(
+                    new_size - RubyObjectAccess::prefix_size() - RubyObjectAccess::suffix_size(),
+                );
+            }
+        }
 
         (crate::binding().upcalls().move_obj_during_marking)(from, to_obj);
+
+        copy_context.post_copy(to_obj, new_size, semantics);
+        trace!("Copied object from {} to {}", from, to_obj);
 
         #[cfg(feature = "clear_old_copy")]
         {

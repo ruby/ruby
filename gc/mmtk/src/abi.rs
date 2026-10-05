@@ -312,6 +312,7 @@ pub struct RubyUpcalls {
     pub scan_gc_roots: extern "C" fn(),
     pub scan_objspace: extern "C" fn(),
     pub move_obj_during_marking: extern "C" fn(from: ObjectReference, to: ObjectReference),
+    pub obj_optimal_size: extern "C" fn(object: ObjectReference) -> usize,
     pub update_object_references: extern "C" fn(object: ObjectReference),
     pub call_gc_mark_children: extern "C" fn(object: ObjectReference),
     pub handle_weak_references: extern "C" fn(object: ObjectReference, moving: bool),

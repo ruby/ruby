@@ -308,6 +308,22 @@ static void
 rb_mmtk_move_obj_during_marking(MMTk_ObjectReference from, MMTk_ObjectReference to)
 {
     rb_gc_move_obj_during_marking((VALUE)from, (VALUE)to);
+
+    size_t from_slot_size = rb_gc_impl_obj_slot_size((VALUE)from);
+    size_t to_slot_size = rb_gc_impl_obj_slot_size((VALUE)to);
+    if (from_slot_size != to_slot_size) {
+        /* The object was copied to a differently sized slot; transition the
+         * shape so its capacity matches the new slot size.  The re-embedding
+         * of contents (e.g. arrays, strings, object fields) happens later
+         * during reference updating. */
+        rb_gc_obj_changed_slot_size((VALUE)to, to_slot_size);
+    }
+}
+
+static size_t
+rb_mmtk_obj_optimal_size(MMTk_ObjectReference obj)
+{
+    return rb_gc_obj_optimal_size((VALUE)obj);
 }
 
 static void
@@ -543,6 +559,7 @@ MMTk_RubyUpcalls ruby_upcalls = {
     rb_mmtk_scan_gc_roots,
     rb_mmtk_scan_objspace,
     rb_mmtk_move_obj_during_marking,
+    rb_mmtk_obj_optimal_size,
     rb_mmtk_update_object_references,
     rb_mmtk_call_gc_mark_children,
     rb_mmtk_handle_weak_references,
@@ -1279,6 +1296,16 @@ rb_gc_impl_obj_became_shareable(void *objspace_ptr, VALUE obj)
 void
 rb_gc_impl_writebarrier_remember(void *objspace_ptr, VALUE obj)
 {
+    if (!ruby_native_thread_p()) {
+        /* Called from an MMTk GC worker thread (via gc_ref_update_object's
+         * re-embedding path during reference updating).  There is no mutator
+         * whose modbuf we could log the object into.  This is only reachable
+         * during a moving GC, and moving GCs are always full-heap (major)
+         * GCs, so the object and its children are all marked by the current
+         * GC and no remembering is needed. */
+        return;
+    }
+
     struct MMTk_ractor_cache *cache = rb_gc_get_ractor_newobj_cache();
 
     mmtk_object_reference_write_post(cache->mutator, (MMTk_ObjectReference)obj);
