@@ -308,6 +308,12 @@ module Spec
       source_root
     end
 
+    def ruby_core_tarball?
+      # A tarball checkout has no `.git` entry at all. Note that `.git` may be
+      # a file rather than a directory in linked git worktrees.
+      !git_root.join(".git").exist?
+    end
+
     def rake_path
       find_base_path("rake")
     end
@@ -361,12 +367,6 @@ module Spec
 
     def man_tracked_files_glob
       "lib/bundler/man/bundle*.1.ronn lib/bundler/man/gemfile*.5.ronn"
-    end
-
-    def ruby_core_tarball?
-      # A tarball checkout has no `.git` entry at all. Note that `.git` may be
-      # a file rather than a directory in linked git worktrees.
-      !git_root.join(".git").exist?
     end
 
     def rubocop_gemfile_basename
