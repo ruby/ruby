@@ -391,7 +391,7 @@ RSpec.describe "bundle clean" do
     expect(vendored_gems("bin/myrackup")).not_to exist
   end
 
-  it "removes orphaned gemspecs from ABI-scoped specification dirs", rubygems: ">= 4.1.0.dev" do
+  it "removes orphaned gemspecs from ABI-scoped specification dirs", rubygems: ">= 4.1.0.a" do
     gemfile <<-G
       source "https://gem.repo1"
 
@@ -412,7 +412,7 @@ RSpec.describe "bundle clean" do
     should_have_gems "foo-1.0"
   end
 
-  it "does not remove gemspecs for content-addressed gems in the bundle", :compact_index, rubygems: ">= 4.1.0.dev" do
+  it "does not remove gemspecs for content-addressed gems in the bundle", :compact_index, rubygems: ">= 4.1.0.a" do
     skip "A prerelease Ruby does not satisfy the ~> X.Y.0 ABI pin of content-addressed gems" if Gem.ruby_version.prerelease?
 
     simulate_platform "x86_64-linux" do
