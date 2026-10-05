@@ -12092,15 +12092,15 @@ io_encoding_set(rb_io_t *fptr, VALUE v1, VALUE v2, VALUE opt)
             if (!NIL_P(tmp) && rb_enc_asciicompat(enc = rb_enc_get(tmp))) {
                 parse_mode_enc(RSTRING_PTR(tmp), enc, &enc, &enc2, NULL);
                 SET_UNIVERSAL_NEWLINE_DECORATOR_IF_ENC2(enc2, ecflags);
-                ecflags = rb_econv_prepare_options(opt, &ecopts, ecflags);
             }
             else {
                 rb_io_ext_int_to_encs(find_encoding(v1), NULL, &enc, &enc2, 0);
                 SET_UNIVERSAL_NEWLINE_DECORATOR_IF_ENC2(enc2, ecflags);
-                ecopts = Qnil;
             }
+            ecflags = rb_econv_prepare_options(opt, &ecopts, ecflags);
         }
     }
+    
     validate_enc_binmode(&fptr->mode, ecflags, enc, enc2);
     fptr->encs.enc = enc;
     fptr->encs.enc2 = enc2;
