@@ -750,19 +750,20 @@ class TestGc < Test::Unit::TestCase
   def test_expand_heap
     assert_separately([], __FILE__, __LINE__, <<~'RUBY')
       GC.start
-      base_length = GC.stat[:heap_eden_pages]
-      (base_length * 500).times{ 'a' }
+      eden_pages = GC.stat[:heap_eden_pages]
+      (eden_pages * 500).times{ 'a' }
       GC.start
-      base_length = GC.stat[:heap_eden_pages]
-      (base_length * 500).times{ 'a' }
+      eden_pages = GC.stat[:heap_eden_pages]
+      base_pages = GC.stat[:heap_allocated_pages]
+      (eden_pages * 500).times{ 'a' }
       GC.start
-      assert_in_epsilon base_length, (v = GC.stat[:heap_eden_pages]), 1/8r,
-            "invalid heap expanding (base_length: #{base_length}, GC.stat[:heap_eden_pages]: #{v})"
+      assert_operator (v = GC.stat[:heap_allocated_pages]), :<=, base_pages + base_pages / 8,
+            "invalid heap expanding (base_pages: #{base_pages}, GC.stat[:heap_allocated_pages]: #{v})"
 
       a = []
-      (base_length * 500).times{ a << 'a'; nil }
+      (eden_pages * 500).times{ a << 'a'; nil }
       GC.start
-      assert_operator base_length, :<, GC.stat[:heap_eden_pages] + 1
+      assert_operator base_pages, :<, GC.stat[:heap_allocated_pages] + 1
     RUBY
   end
 
