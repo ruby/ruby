@@ -47,31 +47,24 @@ vm_exec_core(rb_execution_context_t *ec)
 #if defined(__GNUC__) && defined(__i386__)
     DECL_SC_REG(const VALUE *, pc, "di");
     DECL_SC_REG(rb_control_frame_t *, cfp, "si");
-#define USE_MACHINE_REGS 1
 
 #elif defined(__GNUC__) && defined(__x86_64__)
     DECL_SC_REG(const VALUE *, pc, "14");
     DECL_SC_REG(rb_control_frame_t *, cfp, "15");
-#define USE_MACHINE_REGS 1
 
 #elif defined(__GNUC__) && (defined(__powerpc64__) || defined(__POWERPC__))
     DECL_SC_REG(const VALUE *, pc, "14");
     DECL_SC_REG(rb_control_frame_t *, cfp, "15");
-#define USE_MACHINE_REGS 1
 
 #elif defined(__GNUC__) && defined(__aarch64__)
     DECL_SC_REG(const VALUE *, pc, "19");
     DECL_SC_REG(rb_control_frame_t *, cfp, "20");
-#define USE_MACHINE_REGS 1
 
 #else
     register rb_control_frame_t *reg_cfp;
     const VALUE *reg_pc;
-#define USE_MACHINE_REGS 1
 
 #endif
-
-#if USE_MACHINE_REGS
 
 #undef  RESTORE_REGS
 #define RESTORE_REGS() \
@@ -86,7 +79,6 @@ vm_exec_core(rb_execution_context_t *ec)
 #define GET_PC() (reg_pc)
 #undef  SET_PC
 #define SET_PC(x) (reg_cfp->pc = VM_REG_PC = (x))
-#endif
 
 #if OPT_TOKEN_THREADED_CODE || OPT_DIRECT_THREADED_CODE
 #include "vmtc.inc"
