@@ -3144,7 +3144,40 @@ autoload_defined_p(VALUE mod, ID id)
     return !rb_autoloading_value(mod, id, NULL, NULL);
 }
 
-static void const_tbl_update(struct autoload_const *, int);
+/* const_tbl_update() runs under the VM lock, where it can neither warn nor
+ * build the message: rb_warn() dispatches Warning.warn and writes to $stderr,
+ * and formatting a "%"PRIsVALUE" calls #to_s.  It records what to warn about
+ * instead, and the caller warns once the lock is released. */
+struct const_warning {
+    ID id; /* 0 when there is nothing to warn about */
+    VALUE module;
+    VALUE file;
+    int line;
+};
+
+static void const_tbl_update(struct autoload_const *, int, struct const_warning *);
+
+static void
+const_warning_emit(const struct const_warning *warning)
+{
+    if (!warning->id) return;
+
+    VALUE name = QUOTE_ID(warning->id);
+    VALUE previous = Qnil;
+
+    if (!NIL_P(warning->file) && warning->line) {
+        previous = rb_sprintf("\n%"PRIsVALUE":%d: warning: previous definition of %"PRIsVALUE" was here",
+                              warning->file, warning->line, name);
+    }
+
+    if (warning->module == rb_cObject) {
+        rb_warn("already initialized constant %"PRIsVALUE"%"PRIsVALUE"", name, previous);
+    }
+    else {
+        rb_warn("already initialized constant %"PRIsVALUE"::%"PRIsVALUE"%"PRIsVALUE"",
+                rb_class_name(warning->module), name, previous);
+    }
+}
 
 struct autoload_load_arguments {
     VALUE module;
@@ -3165,9 +3198,11 @@ autoload_const_set(struct autoload_const *ac)
 {
     check_before_mod_set(ac->module, ac->name, ac->value, "constant");
 
+    struct const_warning warning = {0};
     RB_VM_LOCKING() {
-        const_tbl_update(ac, true);
+        const_tbl_update(ac, true, &warning);
     }
+    const_warning_emit(&warning);
 
     return 0; /* ignored */
 }
@@ -3905,11 +3940,20 @@ set_namespace_path(VALUE named_namespace, VALUE namespace_path)
 }
 
 static void
+const_added_call(VALUE klass, VALUE name)
+{
+    ASSERT_vm_unlocking();
+    rb_funcallv_uncached(klass, idConst_added, 1, &name);
+}
+
+static void
 const_added(VALUE klass, ID const_name)
 {
     if (GET_VM()->running) {
-        VALUE arg = ID2SYM(const_name);
-        rb_funcallv_uncached(klass, idConst_added, 1, &arg);
+        /* Dispatching const_added runs Ruby and checks interrupts, neither of which is
+         * allowed inside a VM lock critical section, so under the lock this runs at the
+         * outermost release instead. */
+        rb_vm_call_when_unlocked(const_added_call, klass, ID2SYM(const_name));
     }
 }
 
@@ -3929,6 +3973,7 @@ const_set(VALUE klass, ID id, VALUE val)
 
     check_before_mod_set(klass, id, val, "constant");
 
+    struct const_warning warning = {0};
     RB_VM_LOCKING() {
         struct rb_id_table *tbl = RCLASS_WRITABLE_CONST_TBL(klass);
         if (!tbl) {
@@ -3946,9 +3991,10 @@ const_set(VALUE klass, ID id, VALUE val)
                 /* fill the rest with 0 */
             };
             ac.file = rb_source_location(&ac.line);
-            const_tbl_update(&ac, false);
+            const_tbl_update(&ac, false, &warning);
         }
     }
+    const_warning_emit(&warning);
 
     /*
      * Resolve and cache class name immediately to resolve ambiguity
@@ -4004,9 +4050,11 @@ autoload_const_value_for_named_constant(VALUE module, ID name, struct autoload_c
     return Qfalse;
 }
 
+/* Records into *warning rather than warning itself; see struct const_warning. */
 static void
-const_tbl_update(struct autoload_const *ac, int autoload_force)
+const_tbl_update(struct autoload_const *ac, int autoload_force, struct const_warning *warning)
 {
+    ASSERT_vm_locking();
     VALUE value;
     VALUE klass = ac->module;
     VALUE val = ac->value;
@@ -4041,19 +4089,12 @@ const_tbl_update(struct autoload_const *ac, int autoload_force)
             return;
         }
         else {
-            VALUE name = QUOTE_ID(id);
             visibility = ce->flag;
 
-            VALUE previous = Qnil;
-            if (!NIL_P(ce->file) && ce->line) {
-                previous = rb_sprintf("\n%"PRIsVALUE":%d: warning: previous definition of %"PRIsVALUE" was here", ce->file, ce->line, name);
-            }
-
-            if (klass == rb_cObject)
-                rb_warn("already initialized constant %"PRIsVALUE"%"PRIsVALUE"", name, previous);
-            else
-                rb_warn("already initialized constant %"PRIsVALUE"::%"PRIsVALUE"%"PRIsVALUE"",
-                        rb_class_name(klass), name, previous);
+            warning->id = id;
+            warning->module = klass;
+            warning->file = ce->file;
+            warning->line = ce->line;
         }
         rb_clear_constant_cache_for_id(id);
         setup_const_entry(ce, klass, val, visibility);

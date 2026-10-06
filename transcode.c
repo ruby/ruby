@@ -1845,7 +1845,7 @@ rb_econv_asciicompat_encoding(const char *ascii_incompat_name)
             if (table2->num_entries == 1) {
                 data.ascii_incompat_name = ascii_incompat_name;
                 data.ascii_compat_name = NULL;
-                if (rb_multi_ractor_p()) {
+                if (rb_vm_locking_needed_p()) {
                     /*
                      * We need to unlock in case `load_transcoder_entry` actually loads the encoding
                      * and table2 could be inserted into when we unlock.

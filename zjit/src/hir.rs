@@ -9079,6 +9079,24 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
     Ok(fun)
 }
 
+/// Build HIR the way the real compile path does: under the VM lock.
+#[cfg(test)]
+pub fn iseq_to_hir_locked(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
+    with_vm_lock(src_loc!(), || iseq_to_hir(iseq))
+}
+
+/// Run `Function::optimize()` under the VM lock.  See [iseq_to_hir_locked].
+///
+/// Takes the function by value because `with_vm_lock()` wants an `UnwindSafe` closure and
+/// a `&mut` capture is not one.
+#[cfg(test)]
+pub fn optimize_locked(mut function: Function) -> Function {
+    with_vm_lock(src_loc!(), std::panic::AssertUnwindSafe(|| {
+        function.optimize();
+        function
+    }))
+}
+
 /// Populate `fun` with HIR translated from `iseq`. Used both for top-level
 /// compilation (`iseq_to_hir`) and for inlining an ISEQ directly into a caller
 /// (the method inliner).

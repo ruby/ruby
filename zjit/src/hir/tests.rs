@@ -98,7 +98,7 @@ mod snapshot_tests {
     fn hir_string(method: &str) -> String {
         let iseq = crate::cruby::with_rubyvm(|| get_method_iseq("self", method));
         unsafe { crate::cruby::rb_zjit_profile_disable(iseq) };
-        let function = iseq_to_hir(iseq).unwrap();
+        let function = iseq_to_hir_locked(iseq).unwrap();
         format!("{}", FunctionPrinter::with_snapshot(&function))
     }
 
@@ -106,8 +106,7 @@ mod snapshot_tests {
     fn optimized_hir_string(method: &str) -> String {
         let iseq = crate::cruby::with_rubyvm(|| get_proc_iseq(&format!("{}.method(:{})", "self", method)));
         unsafe { crate::cruby::rb_zjit_profile_disable(iseq) };
-        let mut function = iseq_to_hir(iseq).unwrap();
-        function.optimize();
+        let function = optimize_locked(iseq_to_hir_locked(iseq).unwrap());
         function.validate().unwrap();
         format!("{}", FunctionPrinter::with_snapshot(&function))
     }
@@ -368,7 +367,7 @@ pub(crate) mod hir_build_tests {
     fn hir_string_proc(proc: &str) -> String {
         let iseq = crate::cruby::with_rubyvm(|| get_proc_iseq(proc));
         unsafe { crate::cruby::rb_zjit_profile_disable(iseq) };
-        let function = iseq_to_hir(iseq).unwrap();
+        let function = iseq_to_hir_locked(iseq).unwrap();
         hir_string_function(&function)
     }
 
@@ -381,7 +380,7 @@ pub(crate) mod hir_build_tests {
     pub fn assert_compile_fails(method: &str, reason: ParseError) {
         let iseq = crate::cruby::with_rubyvm(|| get_method_iseq("self", method));
         unsafe { crate::cruby::rb_zjit_profile_disable(iseq) };
-        let result = iseq_to_hir(iseq);
+        let result = iseq_to_hir_locked(iseq);
         assert!(result.is_err(), "Expected an error but successfully compiled to HIR: {}", FunctionPrinter::without_snapshot(&result.unwrap()));
         assert_eq!(result.unwrap_err(), reason);
     }
@@ -429,7 +428,7 @@ pub(crate) mod hir_build_tests {
         assert_eq!(unsafe { get_iseq_body_type(eval_iseq) }, ISEQ_TYPE_EVAL);
         assert!(!iseq_supports_jit_entry(eval_iseq));
         unsafe { crate::cruby::rb_zjit_profile_disable(eval_iseq) };
-        let eval_hir = hir_string_function(&iseq_to_hir(eval_iseq).unwrap());
+        let eval_hir = hir_string_function(&iseq_to_hir_locked(eval_iseq).unwrap());
         assert!(!eval_hir.contains("EntryPoint JIT("), "{eval_hir}");
     }
 
@@ -3750,7 +3749,7 @@ pub(crate) mod hir_build_tests {
         ");
         let iseq = crate::cruby::with_rubyvm(|| get_method_iseq("Foo", "test"));
         assert!(iseq_contains_opcode(iseq, YARVINSN_getclassvariable), "iseq Foo.test does not contain getclassvariable");
-        let function = iseq_to_hir(iseq).unwrap();
+        let function = iseq_to_hir_locked(iseq).unwrap();
         assert_snapshot!(hir_string_function(&function), @"
         fn test@<compiled>:3:
         bb1():
@@ -3777,7 +3776,7 @@ pub(crate) mod hir_build_tests {
         ");
         let iseq = crate::cruby::with_rubyvm(|| get_method_iseq("Foo", "test"));
         assert!(iseq_contains_opcode(iseq, YARVINSN_setclassvariable), "iseq Foo.test does not contain setclassvariable");
-        let function = iseq_to_hir(iseq).unwrap();
+        let function = iseq_to_hir_locked(iseq).unwrap();
         assert_snapshot!(hir_string_function(&function), @"
         fn test@<compiled>:3:
         bb1():
@@ -5580,7 +5579,7 @@ pub(crate) mod hir_build_tests {
         // Using an unannotated builtin to test InvokeBuiltin generation
         let iseq = crate::cruby::with_rubyvm(|| get_method_iseq("Dir", "open"));
         assert!(iseq_contains_opcode(iseq, YARVINSN_opt_invokebuiltin_delegate), "iseq Dir.open does not contain invokebuiltin");
-        let function = iseq_to_hir(iseq).unwrap();
+        let function = iseq_to_hir_locked(iseq).unwrap();
         assert_snapshot!(hir_string_function(&function), @"
         fn open@<internal:dir>:
         bb1():
@@ -5668,7 +5667,7 @@ pub(crate) mod hir_build_tests {
     fn test_invokebuiltin_delegate_without_args() {
         let iseq = crate::cruby::with_rubyvm(|| get_method_iseq("GC", "enable"));
         assert!(iseq_contains_opcode(iseq, YARVINSN_opt_invokebuiltin_delegate_leave), "iseq GC.enable does not contain invokebuiltin");
-        let function = iseq_to_hir(iseq).unwrap();
+        let function = iseq_to_hir_locked(iseq).unwrap();
         assert_snapshot!(hir_string_function(&function), @"
         fn enable@<internal:gc>:
         bb1():
@@ -5692,7 +5691,7 @@ pub(crate) mod hir_build_tests {
     fn test_invokebuiltin_with_args() {
         let iseq = crate::cruby::with_rubyvm(|| get_method_iseq("GC", "start"));
         assert!(iseq_contains_opcode(iseq, YARVINSN_invokebuiltin), "iseq GC.start does not contain invokebuiltin");
-        let function = iseq_to_hir(iseq).unwrap();
+        let function = iseq_to_hir_locked(iseq).unwrap();
         assert_snapshot!(hir_string_function(&function), @"
         fn start@<internal:gc>:
         bb1():
@@ -5726,7 +5725,7 @@ pub(crate) mod hir_build_tests {
     #[test]
     fn test_invoke_leaf_builtin_symbol_name() {
         let iseq = crate::cruby::with_rubyvm(|| get_instance_method_iseq("Symbol", "name"));
-        let function = iseq_to_hir(iseq).unwrap();
+        let function = iseq_to_hir_locked(iseq).unwrap();
         assert_snapshot!(hir_string_function(&function), @"
         fn to_s@<internal:symbol>:
         bb1():
@@ -5749,7 +5748,7 @@ pub(crate) mod hir_build_tests {
     #[test]
     fn test_invoke_leaf_builtin_symbol_to_s() {
         let iseq = crate::cruby::with_rubyvm(|| get_instance_method_iseq("Symbol", "to_s"));
-        let function = iseq_to_hir(iseq).unwrap();
+        let function = iseq_to_hir_locked(iseq).unwrap();
         assert_snapshot!(hir_string_function(&function), @"
         fn to_s@<internal:symbol>:
         bb1():
