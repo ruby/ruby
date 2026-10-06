@@ -1670,37 +1670,43 @@ class Pathname    # * File *
   # Same as #fnmatch.
   def fnmatch?(pattern, ...) File.fnmatch?(pattern, @path, ...) end
 
+  #  :markup: markdown
+  #
   #  call-seq:
   #    ftype -> string
   #
-  #  Returns the string type of the object at the path in <tt>self</tt>, one of:
+  #  Returns the string type of the object at the path in `self`, one of:
   #
-  #  - <tt>'file'</tt>.
-  #  - <tt>'directory'</tt>.
-  #  - <tt>'characterSpecial'</tt>.
-  #  - <tt>'blockSpecial'</tt>.
-  #  - <tt>'fifo'</tt>.
-  #  - <tt>'link'</tt>.
-  #  - <tt>'socket'</tt>.
+  #  - `'file'`.
+  #  - `'directory'`.
+  #  - `'characterSpecial'`.
+  #  - `'blockSpecial'`.
+  #  - `'fifo'`.
+  #  - `'link'`.
+  #  - `'socket'`.
   #
   #  Examples:
   #
-  #    Pathname('README.md').ftype   # => "file"
-  #    Pathname('lib').ftype         # => "directory"
-  #    Pathname('/dev/null').ftype   # => "characterSpecial"
-  #    Pathname('/dev/loop0').ftype  # => "blockSpecial"
+  #  ```ruby
+  #  Pathname('/etc/passwd').ftype # => "file"
+  #  Pathname('/etc').ftype        # => "directory"
+  #  Pathname('/dev/null').ftype   # => "characterSpecial"
+  #  Pathname('/dev/loop0').ftype  # => "blockSpecial"
   #
-  #    File.mkfifo('/tmp/pipe', 0666)
-  #    Pathname('/tmp/pipe').ftype   # => "fifo"
+  #  File.mkfifo('/tmp/pipe', 0o666)
+  #  Pathname('/tmp/pipe').ftype   # => "fifo"
   #
-  #    File.symlink('lib', 'lib_link')
-  #    Pathname('lib_link').ftype    # => "link"
+  #  File.symlink('/etc/passwd', '/tmp/link')
+  #  Pathname('/tmp/link').ftype   # => "link"
   #
-  #    require 'socket'
-  #    UNIXServer.new('/tmp/socket')
-  #    Pathname('/tmp/socket').ftype # => "socket"
+  #  require 'socket'
+  #  UNIXServer.new('/tmp/socket')
+  #  Pathname('/tmp/socket').ftype # => "socket"
   #
-  #  Returns <tt>'unknown'</tt> if the type cannot be determined.
+  #  File.delete('/tmp/link', '/tmp/pipe', '/tmp/socket') # Clean up.
+  #  ```
+  #
+  #  Returns `'unknown'` if the type cannot be determined.
   def ftype() File.ftype(@path) end
 
   # :markup: markdown

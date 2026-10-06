@@ -2846,36 +2846,43 @@ rb_file_ftype(mode_t mode)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
  *    File.ftype(path) -> string
  *
- *  Returns the string type of the object at +path+, one of:
+ *  Returns the string type of the object at `path`, one of:
  *
- *  - <tt>'file'</tt>.
- *  - <tt>'directory'</tt>.
- *  - <tt>'characterSpecial'</tt>.
- *  - <tt>'blockSpecial'</tt>.
- *  - <tt>'fifo'</tt>.
- *  - <tt>'link'</tt>.
- *  - <tt>'socket'</tt>.
+ *  - `'file'`.
+ *  - `'directory'`.
+ *  - `'characterSpecial'`.
+ *  - `'blockSpecial'`.
+ *  - `'fifo'`.
+ *  - `'link'`.
+ *  - `'socket'`.
  *
  *  Examples:
  *
- *    File.ftype('README.md')   # => "file"
- *    File.ftype('lib')         # => "directory"
- *    File.ftype("/dev/null")   # => "characterSpecial"
- *    File.ftype("/dev/loop0")  # => "blockSpecial"
+ *  ```ruby
+ *  File.ftype('/etc/passwd') # => "file"
+ *  File.ftype('/etc')        # => "directory"
+ *  File.ftype("/dev/null")   # => "characterSpecial"
+ *  File.ftype("/dev/loop0")  # => "blockSpecial"
  *
- *    File.mkfifo('/tmp/pipe', 0666)
- *    File.ftype('/tmp/pipe')   # => "fifo"
+ *  File.mkfifo('/tmp/pipe', 0o666)
+ *  File.ftype('/tmp/pipe')   # => "fifo"
  *
- *    File.symlink('lib', 'lib_link')
- *    File.ftype('lib_link')    # => "link"
+ *  File.symlink('/etc/passwd', '/tmp/link')
+ *  File.ftype('/tmp/link')   # => "link"
  *
- *    UNIXServer.new('/tmp/socket')
- *    File.ftype('/tmp/socket') # => "socket"
+ *  require 'socket'
+ *  UNIXServer.new('/tmp/socket')
+ *  File.ftype('/tmp/socket') # => "socket"
  *
- *  Returns <tt>'unknown'</tt> if the type cannot be determined.
+ *  File.delete('/tmp/link', '/tmp/pipe', '/tmp/socket') # Clean up.
+ *  ```
+ *
+ *  Returns `'unknown'` if the type cannot be determined.
  */
 
 static VALUE
@@ -6936,40 +6943,44 @@ rb_stat_init_copy(VALUE copy, VALUE orig)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     stat.ftype -> string
+ *    ftype -> string
  *
- *  Returns the string type of the object at +path+, one of:
+ *  Returns the string type of the path in the [snapshot](rdoc-ref:File::Stat@Snapshot)
+ *  in `self`, one of:
  *
- *  - <tt>'file'</tt>.
- *  - <tt>'directory'</tt>.
- *  - <tt>'characterSpecial'</tt>.
- *  - <tt>'blockSpecial'</tt>.
- *  - <tt>'fifo'</tt>.
- *  - <tt>'link'</tt>.
- *  - <tt>'socket'</tt>.
+ *  - `'file'`.
+ *  - `'directory'`.
+ *  - `'characterSpecial'`.
+ *  - `'blockSpecial'`.
+ *  - `'fifo'`.
+ *  - `'link'`.
+ *  - `'socket'`.
  *
  *  Examples:
  *
- *    File.stat('README.md').ftype  # => "file"
- *    File.stat('lib').ftype        # => "directory"
- *    File.stat('/dev/null').ftype  # => "characterSpecial"
- *    File.stat('/dev/loop0').ftype # => "blockSpecial"
+ *  ```ruby
+ *  File.stat('/etc/passwd').ftype   # => "file"
+ *  File.stat('/etc').ftype          # => "directory"
+ *  File.stat('/dev/null').ftype     # => "characterSpecial"
+ *  File.stat('/dev/loop0').ftype    # => "blockSpecial"
  *
- *    File.mkfifo('/tmp/pipe', 0666)
- *    File.stat('/tmp/pipe').ftype  # => "fifo"
+ *  File.mkfifo('/tmp/pipe', 0o666)
+ *  File.stat('/tmp/pipe').ftype     # => "fifo"
  *
- *    # Follows symbolic link.
- *    File.symlink('lib', 'lib_link')
- *    File.stat('lib_link').ftype   # => "directory"
- *    # Does not follow symbolic link.
- *    File.lstat('lib_link').ftype  # => "link"
+ *  File.symlink('/etc/passwd', '/tmp/link')
+ *  File.lstat('/tmp/link').ftype    # => "link"
  *
- *    require 'socket'
- *    UNIXServer.new('/tmp/socket')
- *    File.stat('/tmp/socket').ftype # => "socket"
+ *  require 'socket'
+ *  UNIXServer.new('/tmp/socket')
+ *  File.stat('/tmp/socket').ftype   # => "socket"
  *
- *  Returns <tt>'unknown'</tt> if the type cannot be determined.
+ *  File.delete('/tmp/link', '/tmp/pipe', '/tmp/socket') # Clean up.
+ *  ```
+ *
+ *  Returns `'unknown'` if the type cannot be determined.
  */
 
 static VALUE
