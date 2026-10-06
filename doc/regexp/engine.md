@@ -68,3 +68,20 @@ engine can become the default or Onigmo can be removed.
    C re-raises.
 7. **`tool/lib/envutil.rb` is a copy** of ruby/test-unit-ruby-core. The
    `--regexp-engine` propagation has to go upstream as well.
+8. **The JIT panic hooks abort on any panic.** YJIT (`yjit/src/yjit.rs`)
+   and ZJIT (`zjit/src/cruby.rs`) replace the process-wide panic hook with
+   one that calls `rb_bug()`. The hook runs before unwinding starts, so with
+   a JIT enabled a panic in this engine aborts the process even though the
+   FFI boundary catches it. The crates linked into one ruby need a shared
+   hook that knows which component panicked.
+9. **Warnings run Ruby code.** Onigmo calls `rb_warn` from inside the
+   parser, and `Warning.warn` may raise, which longjmps out of
+   `onig_compile`. The Rust engine collects warnings during compilation and
+   C emits them after it returns.
+10. **Deep patterns overflow the machine stack.** Parsing, the tree passes
+    and the optimizer recurse once per nesting level, up to the parse depth
+    limit of 4096. In a thread, `Regexp.new("(?:a" * 4000 + ")" * 4000)`
+    already raises SystemStackError with Onigmo: Ruby's SIGSEGV handler turns
+    the overflow into an exception and longjmps out of the engine. That
+    cannot be done across Rust frames, so the Rust engine has to check the
+    remaining stack itself and fail before it overflows.
