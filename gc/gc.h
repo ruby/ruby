@@ -205,22 +205,6 @@ gc_ref_update_table_values_only(st_table *tbl)
 }
 
 static int
-gc_mark_tbl_no_pin_i(st_data_t key, st_data_t value, st_data_t data)
-{
-    rb_gc_mark_movable((VALUE)value);
-
-    return ST_CONTINUE;
-}
-
-static int
-gc_mark_set_no_pin_i(st_data_t key, st_data_t value, st_data_t data)
-{
-    rb_gc_mark_movable((VALUE)key);
-
-    return ST_CONTINUE;
-}
-
-static int
 hash_foreach_replace(st_data_t key, st_data_t value, st_data_t argp, int error)
 {
     if (rb_gc_location((VALUE)key) != (VALUE)key) {

@@ -1407,30 +1407,17 @@ class Pathname    # * File *
   # call-seq:
   #   birthtime -> new_time
   #
-  # Returns a new Time object containing the create time of the entry
-  # represented by `self`;
+  # Returns a new Time object containing the creation time of the entry
+  # at the path in `self`;
   # see [File System Timestamps](rdoc-ref:file/timestamps.md):
   #
   # ```ruby
-  # # A directory and its Pathname.
-  # dir_path = 'doc/foo'
-  # dir_pn = Pathname(dir_path)
-  # # Create directory; directory birthtime established.
-  # dir_pn.mkdir
-  # dir_pn.birthtime  # => 2026-06-16 17:06:10.779192552 -0500
-  # # A file therein and its Pathname.
-  # file_path = dir_pn.join('t.tmp')
-  # file_pn = Pathname(file_path)
-  # # Create file; file birthtime established; directory birthtime not updated.
-  # file_pn.write('foo')
-  # dir_pn.birthtime  # => 2026-06-16 17:06:10.779192552 -0500
-  # file_pn.birthtime # => 2026-06-16 17:07:59.339330622 -0500
-  # # Modify file; neither birthtime updated.
-  # file_pn.write('bar')
-  # dir_pn.birthtime  # => 2026-06-16 17:06:10.779192552 -0500
-  # file_pn.birthtime # => 2026-06-16 17:07:59.339330622 -0500
-  # # Clean up.
-  # dir_pn.rmtree
+  # filepath = '/tmp/t.tmp'
+  # pn = Pathname(filepath)
+  # pn.birthtime # Raises Errno::ENOENT: No such file or directory.
+  # pn.write('foo')
+  # pn.birthtime # => 2026-10-05 13:45:54.459480484 -0500
+  # pn.delete    # Clean up.
   # ```
   #
   def birthtime() File.birthtime(@path) end
