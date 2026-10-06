@@ -467,8 +467,11 @@ rb_yjit_set_exception_return(rb_control_frame_t *cfp, void *leave_exit, void *le
 
 #ifdef _WIN32
 // RtlUnwindEx(), which longjmp() and C++ exceptions use, needs unwind info for
-// every frame. All JIT code runs in the frame gen_entry_prologue() sets up with
-// frame_pointer, so a single UNWIND_INFO based on RBP covers the code region:
+// every frame. JIT code calls out only inside the frame gen_entry_prologue()
+// sets up with frame_pointer, so a single UNWIND_INFO based on RBP is right at
+// every call in the code region. It is wrong within the few instructions that
+// set up and tear down the frame, which make no calls, so only an asynchronous
+// exception there, such as a stack overflow on the push, would unwind wrongly:
 //
 //   [RBP]       caller's RBP
 //   [RBP - 8]   copy of RBP
