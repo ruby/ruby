@@ -12,6 +12,7 @@ class TestTracepointObj < Test::Unit::TestCase
   def test_tracks_objspace_events
     result = EnvUtil.suppress_warning {eval(<<-EOS, nil, __FILE__, __LINE__+1)}
     # frozen_string_literal: false
+    GC.start # finish any lazy sweep: an END_SWEEP from an earlier cycle must not land in the window
     Bug.tracepoint_track_objspace_events {
       99
       'abc'
