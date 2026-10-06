@@ -57,6 +57,14 @@
 #include "probes.h"
 #include "probes_helper.h"
 
+#if defined(_MSC_VER) && !defined(__clang__)
+/* Favor speed over the default -Os, which makes vm_exec_core dispatch
+ * instructions by a binary search instead of a jump table.  This must
+ * follow ruby/internal/memory.h, whose `#pragma optimize("", on)`
+ * restores the command line options. */
+#pragma optimize("t", on)
+#endif
+
 static void *native_main_thread_stack_top;
 
 bool ruby_vm_during_cleanup = false;

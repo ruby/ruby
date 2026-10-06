@@ -313,3 +313,4 @@ nmake -al -f %WIN32DIR%/setup.mak "WIN32DIR=%WIN32DIR%" ^
     %target%
 set error=%ERRORLEVEL%
 if exist %config_make% del /q %config_make%
+exit /b %error%
