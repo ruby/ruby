@@ -8426,6 +8426,11 @@ rb_ary_sum(int argc, VALUE *argv, VALUE ary)
 
         f = NUM2DBL(v);
         c = 0.0;
+        if (init_is_float) {
+            x = RFLOAT_VALUE(argv[0]);
+            t = f + x;
+            f = t;
+        }
         goto has_float_value;
         for (; i < RARRAY_LEN(ary); i++) {
             e = RARRAY_AREF(ary, i);
