@@ -1183,11 +1183,16 @@ static void
 adjust_registers_to_matched(struct strscanner *p)
 {
     onig_region_clear(&(p->regs));
+    if (onig_region_resize(&(p->regs), 1) != 0) return;
     if (p->fixed_anchor_p) {
-        onig_region_set(&(p->regs), 0, (int)p->prev, (int)p->curr);
+        /* Store absolute positions without narrowing them to int: scan
+         * positions can exceed INT_MAX (64-bit builds). */
+        p->regs.beg[0] = p->prev;
+        p->regs.end[0] = p->curr;
     }
     else {
-        onig_region_set(&(p->regs), 0, 0, (int)(p->curr - p->prev));
+        p->regs.beg[0] = 0;
+        p->regs.end[0] = p->curr - p->prev;
     }
 }
 
