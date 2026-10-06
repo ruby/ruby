@@ -5976,13 +5976,8 @@ fn jit_rb_str_bytesize(
     let recv = asm.stack_pop(1);
 
     asm_comment!(asm, "get string length");
-    let str_len_opnd = Opnd::mem(
-        std::os::raw::c_long::BITS as u8,
-        asm.load(recv),
-        RUBY_OFFSET_RSTRING_LEN as i32,
-    );
-
-    let len = asm.c_long_len(str_len_opnd);
+    let str_reg = asm.load(recv);
+    let len = asm.c_long_mem(str_reg, RUBY_OFFSET_RSTRING_LEN as i32);
     let len = asm.load_mem(len);
     let shifted_val = asm.lshift(len, Opnd::UImm(1));
     let out_val = asm.or(shifted_val, Opnd::UImm(RUBY_FIXNUM_FLAG as u64));
@@ -6151,12 +6146,8 @@ fn jit_rb_str_getbyte(
 
     asm_comment!(asm, "get string length");
     let recv = asm.load(recv);
-    let str_len_opnd = Opnd::mem(
-        std::os::raw::c_long::BITS as u8,
-        asm.load(recv),
-        RUBY_OFFSET_RSTRING_LEN as i32,
-    );
-    let str_len_opnd = asm.c_long_len(str_len_opnd);
+    let str_reg = asm.load(recv);
+    let str_len_opnd = asm.c_long_mem(str_reg, RUBY_OFFSET_RSTRING_LEN as i32);
 
     // Exit if the index is out of bounds
     asm.cmp(idx, str_len_opnd);
@@ -7334,12 +7325,7 @@ fn get_array_len(asm: &mut Assembler, array_opnd: Opnd) -> Opnd {
         Opnd::InsnOut { .. } => array_opnd,
         _ => asm.load(array_opnd),
     };
-    let array_len_opnd = Opnd::mem(
-        std::os::raw::c_long::BITS as u8,
-        array_reg,
-        RUBY_OFFSET_RARRAY_AS_HEAP_LEN,
-    );
-    let array_len_opnd = asm.c_long_len(array_len_opnd);
+    let array_len_opnd = asm.c_long_mem(array_reg, RUBY_OFFSET_RARRAY_AS_HEAP_LEN);
 
     // Select the array length value
     asm.csel_nz(emb_len_opnd, array_len_opnd)
@@ -7387,13 +7373,15 @@ impl Assembler {
         }
     }
 
-    /// Make a C long length field usable as a 64-bit operand. long is 32-bit on LLP64 (Windows),
-    /// where loading it into a register zero-extends it, and lengths are never negative.
-    fn c_long_len(&mut self, len_opnd: Opnd) -> Opnd {
+    /// Make a C long field at base + disp usable as a 64-bit operand. long is 32-bit on LLP64
+    /// (Windows), where loading it into a register zero-extends it, so the field must never be
+    /// negative.
+    fn c_long_mem(&mut self, base: Opnd, disp: i32) -> Opnd {
+        let opnd = Opnd::mem(std::os::raw::c_long::BITS as u8, base, disp);
         if std::os::raw::c_long::BITS == 64 {
-            len_opnd
+            opnd
         } else {
-            self.load(len_opnd).with_num_bits(64).unwrap()
+            self.load(opnd).with_num_bits(64).unwrap()
         }
     }
 }
