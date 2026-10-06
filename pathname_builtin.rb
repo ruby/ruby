@@ -2422,26 +2422,10 @@ class Pathname    # * FileTest *
   # Returns whether the entry represented by `self` is a directory:
   #
   # ```ruby
-  # Pathname('/etc').directory?      # => true
-  # Pathname('lib').directory?       # => true
-  # Pathname('README.md').directory? # => false
-  # Pathname('nosuch').directory?    # => false
-  # Pathname($stdin).directory?      # => false
-  # ```
-  #
-  # Follows symbolic links:
-  #
-  # ```ruby
-  # target_pn = Pathname('doc')
-  # link_pn = Pathname('link')
-  # link_pn.make_symlink(target_pn)
-  # link_pn.directory?               # => true
-  # link_pn.delete
-  # target_pn = Pathname('README.md')
-  # link_pn = Pathname('link')
-  # link_pn.make_symlink(target_pn)
-  # link_pn.directory?               # => false
-  # link_pn.delete
+  # Pathname('/etc').directory?        # => true
+  # Pathname('/etc/passwd').directory? # => false
+  # Pathname($stdin).directory?        # => false
+  # Pathname('nosuch').directory?      # => false
   # ```
   #
   def directory?() FileTest.directory?(@path) end

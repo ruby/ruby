@@ -1889,28 +1889,20 @@ rb_access(VALUE fname, int mode)
  */
 
 /*
+ * :markup: markdown
+ *
  * call-seq:
  *   File.directory?(object) -> true or false
  *
- * Returns whether the given +object+ represents a directory;
- * +object+ may be a string path or an IO object:
+ * Returns whether the given `object` represents a directory;
+ * `object` may be a string path or an IO object:
  *
- *   File.directory?('/etc')      # => true
- *   File.directory?('lib')       # => true
- *   File.directory?('README.md') # => false
- *   File.directory?('nosuch')    # => false
- *   File.directory?($stdin)      # => false
- *
- * Follows symbolic links:
- *
- *   dirpath = 'doc/dirname'
- *   File.symlink('.', dirpath)
- *   File.directory?(dirpath)     # => true
- *   File.unlink(dirpath)
- *   filepath = 't.tmp'
- *   File.symlink('README.md', filepath)
- *   File.directory?(filepath)    # => false
- *   File.unlink(filepath)
+ * ```ruby
+ * File.directory?('/etc')        # => true
+ * File.directory?('/etc/passwd') # => false
+ * File.directory?($stdin)        # => false
+ * File.directory?('nosuch')      # => false
+ * ```
  *
  */
 
@@ -6991,13 +6983,19 @@ rb_stat_ftype(VALUE obj)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     stat.directory?   -> true or false
+ *    directory? -> true or false
  *
- *  Returns +true+ if <i>stat</i> is a directory, +false+ otherwise.
+ *  Returns whether the entry in the [snapshot](rdoc-ref:File::Stat@Snapshot) in `self`
+ *  is a directory:
  *
- *     File.stat("testfile").directory?   #=> false
- *     File.stat(".").directory?          #=> true
+ *  ```ruby
+ *  File.stat('/etc').directory?        # => true
+ *  File.stat('/etc/passwd').directory? # => false
+ *  ```
+ *
  */
 
 static VALUE
