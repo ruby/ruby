@@ -634,7 +634,7 @@ set_registers(struct strscanner *p, size_t pos, size_t length)
     const int at = 0;
     OnigRegion *regs = &(p->regs);
     onig_region_clear(regs);
-    if (onig_region_set(regs, at, 0, 0)) return;
+    if (onig_region_resize(regs, at + 1) != 0) return;
     if (p->fixed_anchor_p) {
         regs->beg[at] = pos + p->curr;
         regs->end[at] = pos + p->curr + length;
