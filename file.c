@@ -977,14 +977,20 @@ rb_stat_blksize(VALUE self)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     stat.blocks    -> integer or nil
+ *    blocks -> integer or nil
  *
- *  Returns the number of native file system blocks allocated for this
- *  file, or +nil+ if the operating system doesn't support this
- *  feature.
+ *  Returns the number of filesystem blocks allocated for the entry
+ *  in the [snapshot](rdoc-ref:File::Stat@Snapshot) in `self`:
  *
- *     File.stat("testfile").blocks   #=> 2
+ *  ```ruby
+ *  File.stat('/etc').blocks        # => 24
+ *  File.stat('/etc/passwd').blocks # => 8
+ *  ```
+ *
+ *  Returns `nil` on Windows.
  */
 
 static VALUE
@@ -2040,20 +2046,24 @@ rb_file_socket_p(VALUE obj, VALUE fname)
 }
 
 /*
+ * :markup: markdown
+ *
  * call-seq:
  *   File.blockdev?(object) -> true or false
  *
- * Returns whether +object+ (a path or IO object)
+ * Returns whether `object` (a path or IO object)
  * represents a block device (i.e., a direct-access device):
  *
- *   File.blockdev?('/dev/nvme0n1') # => true
- *   File.blockdev?('/dev/loop0')   # => true
- *   File.blockdev?('/dev/tty')     # => false
- *   File.blockdev?('/dev/null')    # => false
- *   File.blockdev?('nosuch')       # => false
- *   File.blockdev?($stdin)         # => false
+ * ```ruby
+ * File.blockdev?('/dev/nvme0n1') # => true
+ * File.blockdev?('/dev/loop0')   # => true
+ * File.blockdev?('/dev/tty')     # => false
+ * File.blockdev?('/dev/null')    # => false
+ * File.blockdev?('nosuch')       # => false
+ * File.blockdev?($stdin)         # => false
+ * ```
  *
- * The returned value is filesystem-dependent; on Windows, always +false+.
+ * The returned value is filesystem-dependent; returns `false` on Windows or MacOS.
  */
 
 static VALUE
@@ -7075,14 +7085,22 @@ rb_stat_S(VALUE obj)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     stat.blockdev?   -> true or false
+ *    blockdev? -> true or false
  *
- *  Returns +true+ if the file is a block device, +false+ if it isn't or if
- *  the operating system doesn't support this feature.
+ *  Returns whether the entry in the [snapshot](rdoc-ref:File::Stat@Snapshot) in `self`
+ *  is a block device (i.e., a direct-access device):
  *
- *     File.stat("testfile").blockdev?    #=> false
- *     File.stat("/dev/hda1").blockdev?   #=> true
+ *  ```ruby
+ *  File.stat('/dev/nvme0n1').blockdev? # => true
+ *  File.stat('/dev/loop0').blockdev?   # => true
+ *  File.stat('/dev/tty').blockdev?     # => false
+ *  File.stat('/dev/null').blockdev?    # => false
+ *  ```
+ *
+ *  The returned value is filesystem-dependent; returns `false` on Windows or MacOS.
  *
  */
 
@@ -7097,14 +7115,22 @@ rb_stat_b(VALUE obj)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     stat.chardev?    -> true or false
+ *    chardev? -> true or false
  *
- *  Returns +true+ if the file is a character device, +false+ if it isn't or
- *  if the operating system doesn't support this feature.
+ *  Returns whether the entry in the [snapshot](rdoc-ref:File::Stat@Snapshot) in `self`
+ *  is a character device (i.e., a sequential-access device):
  *
- *     File.stat("/dev/tty").chardev?   #=> true
+ *  ```ruby
+ *  File.stat('/dev/tty').chardev?     # => true
+ *  File.stat('/dev/null').chardev?    # => true
+ *  File.stat('/dev/nvme0n1').chardev? # => false
+ *  File.stat('/dev/loop0').chardev?   # => false
+ *  ```
  *
+ *  The returned value is filesystem-dependent; on Windows, always `false`.
  */
 
 static VALUE
