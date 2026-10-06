@@ -1266,6 +1266,48 @@ class JSONGeneratorTest < Test::Unit::TestCase
     assert_rfc8785 '999999999999999700000', 999999999999999700000
     assert_rfc8785 '999999999999999900000', 999999999999999900000
     assert_rfc8785 '333333333.3333333', 333333333.33333329
+    assert_rfc8785 '0.30000000000000004', 0.1 + 0.2
+  end
+
+  # https://www.rfc-editor.org/rfc/rfc8785.html#appendix-B
+  {
+    '0000000000000000' => '0',
+    '8000000000000000' => '0',
+    '0000000000000001' => '5e-324',
+    '8000000000000001' => '-5e-324',
+    '7fefffffffffffff' => '1.7976931348623157e+308',
+    'ffefffffffffffff' => '-1.7976931348623157e+308',
+    '4340000000000000' => '9007199254740992',
+    'c340000000000000' => '-9007199254740992',
+    '4430000000000000' => '295147905179352830000',
+    '7fffffffffffffff' => nil,
+    '7ff0000000000000' => nil,
+    '44b52d02c7e14af5' => '9.999999999999997e+22',
+    '44b52d02c7e14af6' => '1e+23',
+    '44b52d02c7e14af7' => '1.0000000000000001e+23',
+    '444b1ae4d6e2ef4e' => '999999999999999700000',
+    '444b1ae4d6e2ef4f' => '999999999999999900000',
+    '444b1ae4d6e2ef50' => '1e+21',
+    '3eb0c6f7a0b5ed8c' => '9.999999999999997e-7',
+    '3eb0c6f7a0b5ed8d' => '0.000001',
+    '41b3de4355555553' => '333333333.3333332',
+    '41b3de4355555554' => '333333333.33333325',
+    '41b3de4355555555' => '333333333.3333333',
+    '41b3de4355555556' => '333333333.3333334',
+    '41b3de4355555557' => '333333333.33333343',
+    'becbf647612f3696' => '-0.0000033333333333333333',
+    '43143ff3c1cb0959' => '1424953923781206.2',
+  }.each do |bits, expected|
+    define_method("test_rfc8785_number_#{bits}") do
+      omit "Float#to_s is not always shortest on this engine" unless RUBY_ENGINE == "ruby"
+      number = [bits].pack('H*').unpack('G').first
+      if expected
+        assert_rfc8785 expected, number
+        assert_equal number, JSON.parse(JSON.generate(number, rfc8785: true)).to_f
+      else
+        assert_raise(JSON::GeneratorError) { JSON.generate(number, rfc8785: true) }
+      end
+    end
   end
 
   fixtures_path = File.expand_path('../fixtures/rfc8785/', __FILE__)

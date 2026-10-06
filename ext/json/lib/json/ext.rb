@@ -66,8 +66,8 @@ module JSON
         if num < 0
           num, sign = -num, '-'
         end
-        native_rep = "%.15E" % num
-        decimal, exponential = native_rep.split('E')
+        native_rep = num.to_s
+        decimal, exponential = native_rep.split('e')
         exp_val = exponential.to_i
         exponential = exp_val > 0 ? ('+' + exp_val.to_s) : exp_val.to_s
 
