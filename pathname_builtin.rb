@@ -2436,12 +2436,12 @@ class Pathname    # * FileTest *
   #   file? -> true or false
   #
   # Returns whether the entry at the path in `self` exists and is a regular file;
-  # see #ftype:
+  # see Pathname#ftype:
   #
   # ```ruby
-  # Pathname('README.md').file? # => true
-  # Pathname('lib/').file?      # => false
-  # Pathname('nosuch').file?    # => false
+  # Pathname('/etc/passwd').file? # => true
+  # Pathname('/etc').file?        # => false
+  # Pathname('nosuch').file?      # => false
   # ```
   #
   def file?() FileTest.file?(@path) end
