@@ -62,7 +62,7 @@ class TestThreadInstrumentation < Test::Unit::TestCase
     end
     queue.pop
 
-    ready, ready_with_gvl, resumed, resumed_with_gvl = Bug::ThreadInstrumentation.gvl_state do
+    ready, ready_with_gvl, resumed, resumed_with_gvl, suspended, suspended_with_gvl = Bug::ThreadInstrumentation.gvl_state do
       Thread.pass
     end
 
@@ -70,6 +70,8 @@ class TestThreadInstrumentation < Test::Unit::TestCase
     assert_equal 0, ready_with_gvl
     assert_operator resumed, :>, 0
     assert_equal resumed, resumed_with_gvl
+    assert_operator suspended, :>, 0
+    assert_equal 0, suspended_with_gvl
   ensure
     thread&.kill
     thread&.join
@@ -78,7 +80,7 @@ class TestThreadInstrumentation < Test::Unit::TestCase
   def test_gvl_state_after_blocking_region
     require '-test-/gvl/call_without_gvl'
 
-    ready, ready_with_gvl, resumed, resumed_with_gvl = Bug::ThreadInstrumentation.gvl_state do
+    ready, ready_with_gvl, resumed, resumed_with_gvl, suspended, suspended_with_gvl = Bug::ThreadInstrumentation.gvl_state do
       Bug::Thread.runnable_sleep 0.001
     end
 
@@ -86,6 +88,8 @@ class TestThreadInstrumentation < Test::Unit::TestCase
     assert_equal 0, ready_with_gvl
     assert_operator resumed, :>, 0
     assert_equal resumed, resumed_with_gvl
+    assert_operator suspended, :>, 0
+    assert_equal 0, suspended_with_gvl
   end
 
   def test_gvl_state_during_native_thread_migration # [Bug #19172]
@@ -98,7 +102,7 @@ class TestThreadInstrumentation < Test::Unit::TestCase
       ractors = 4.times.map do |index|
         Ractor.new(ready, index) do |ready, index|
           ready << :ready
-          if Ractor.receive == :start
+          while Ractor.receive == :start
             150.times do |iteration|
               sleep (1 + ((iteration * 31 + index * 13) % 19)) / 1000.0
               finish = Process.clock_gettime(Process::CLOCK_MONOTONIC) + 0.003
@@ -107,7 +111,6 @@ class TestThreadInstrumentation < Test::Unit::TestCase
               end
             end
             ready << :done
-            Ractor.receive
           end
         end
       end
@@ -115,14 +118,20 @@ class TestThreadInstrumentation < Test::Unit::TestCase
       begin
         # Begin sampling only after every Ractor has entered its Ruby block.
         4.times { ready.receive }
-        Bug::ThreadInstrumentation.start_gvl_sampling
-        ractors.each { |ractor| ractor.send :start }
-        4.times { ready.receive }
-        samples, empty, errors = Bug::ThreadInstrumentation.stop_gvl_sampling
+        # Reuse the Ruby threads to also exercise native registration across
+        # sampling sessions, including slots left by retired native threads.
+        2.times do
+          Bug::ThreadInstrumentation.start_gvl_sampling
+          ractors.each { |ractor| ractor.send :start }
+          4.times { ready.receive }
+          samples, empty, errors, send_errors, registration_errors = Bug::ThreadInstrumentation.stop_gvl_sampling
 
-        assert_operator samples, :>, 0
-        assert_operator empty, :>, 0, 'No idle native scheduler threads were sampled'
-        assert_equal 0, errors, 'Idle native scheduler threads reported GVL ownership'
+          assert_operator samples, :>, 0
+          assert_operator empty, :>, 0, 'No idle native scheduler threads were sampled'
+          assert_equal 0, errors, 'Idle native scheduler threads reported GVL ownership'
+          assert_equal 0, send_errors, 'Signals were sent to retired native scheduler threads'
+          assert_equal 0, registration_errors, 'Could not register native scheduler threads'
+        end
       ensure
         # Keep the Ruby threads alive until all native signal handlers finish.
         Bug::ThreadInstrumentation.stop_gvl_sampling

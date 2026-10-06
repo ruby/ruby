@@ -939,6 +939,8 @@ thread_sched_wakeup_next_thread(struct rb_thread_sched *sched, rb_thread_t *th, 
 
     thread_sched_set_running(sched, next_th);
     VM_ASSERT(next_th == sched->running);
+    /* Notify after releasing ownership, before waking the next thread. */
+    RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_SUSPENDED, th);
     thread_sched_wakeup_running_thread(sched, next_th, will_switch);
 
     if (th != next_th) {
@@ -951,8 +953,6 @@ static void
 thread_sched_to_dead_common(struct rb_thread_sched *sched, rb_thread_t *th)
 {
     RUBY_DEBUG_LOG("th:%u DNT:%d", rb_th_serial(th), th->nt->dedicated);
-
-    RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_SUSPENDED, th);
 
     // A dying coroutine thread (will_switch=true here) does NOT wake the
     // next thread now: it is still winding down (co_start's epilogue), and
@@ -984,8 +984,6 @@ static void
 thread_sched_to_waiting_common(struct rb_thread_sched *sched, rb_thread_t *th, bool yield_immediately)
 {
     RUBY_DEBUG_LOG("th:%u DNT:%d", rb_th_serial(th), th->nt->dedicated);
-
-    RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_SUSPENDED, th);
 
     native_thread_dedicated_inc(th->vm, th->ractor, th->nt);
     if (!yield_immediately) {
@@ -1104,8 +1102,6 @@ thread_sched_to_waiting_until_wakeup(struct rb_thread_sched *sched, rb_thread_t 
     RB_VM_SAVE_MACHINE_CONTEXT(th);
 
 
-    RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_SUSPENDED, th);
-
     thread_sched_lock(sched, th);
     {
         // NOTE: there's a lock ordering inversion here with the ubf call, but it's benign.
@@ -1136,7 +1132,6 @@ thread_sched_yield(struct rb_thread_sched *sched, rb_thread_t *th)
     thread_sched_lock(sched, th);
     {
         if (!ccan_list_empty(&sched->readyq)) {
-            RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_SUSPENDED, th);
             thread_sched_wakeup_next_thread(sched, th, !th_has_dedicated_nt(th));
             bool can_direct_transfer = !th_has_dedicated_nt(th);
             thread_sched_to_ready_common(sched, th, false, can_direct_transfer);
@@ -1469,7 +1464,6 @@ rb_ractor_sched_wait(rb_execution_context_t *ec, rb_ractor_t *cr, rb_unblock_fun
             RB_VM_SAVE_MACHINE_CONTEXT(th);
             th->status = THREAD_STOPPED_FOREVER;
             th->sched.waiting_timed = (end_p != NULL); // never true here for M:N (end_p is NULL)
-            RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_SUSPENDED, th);
             thread_sched_wakeup_next_thread(sched, th, can_direct_transfer);
             // sleep
             thread_sched_wait_running_turn(sched, th, can_direct_transfer, end_p);
