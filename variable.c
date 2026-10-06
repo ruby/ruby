@@ -1295,10 +1295,11 @@ cvar_set_ractor_check(VALUE klass, ID id)
 static void
 cvar_read_ractor_check(VALUE klass, ID id, VALUE val)
 {
-    if (UNLIKELY(!rb_class_owned_p(klass)) && !rb_ractor_shareable_p(val)) {
+    VALUE chain = Qnil;
+    if (UNLIKELY(!rb_class_owned_p(klass)) && !rb_ractor_shareable_p_chain(val, &chain)) {
         rb_raise(rb_eRactorIsolationError,
-                 "can not read non-shareable class variable %"PRIsVALUE" of %"PRIsVALUE", which was created by another Ractor",
-                 rb_id2str(id), klass);
+                 "can not read non-shareable class variable %"PRIsVALUE" of %"PRIsVALUE", which was created by another Ractor%"PRIsVALUE,
+                 rb_id2str(id), klass, chain);
     }
 }
 
@@ -1623,14 +1624,11 @@ rb_ivar_lookup(VALUE obj, ID id, VALUE undef)
     }
 
     if (is_class && val != undef && rb_is_instance_id(id)) {
-        if (UNLIKELY(!rb_class_owned_p(obj)) && !rb_ractor_shareable_p(val)) {
-            rb_raise(
-                rb_eRactorIsolationError,
-                "can not get unshareable values from instance variables of classes/modules "
-                "created by another Ractor (%"PRIsVALUE" from %"PRIsVALUE")",
-                rb_id2str(id),
-                obj
-            );
+        VALUE chain = Qnil;
+        if (UNLIKELY(!rb_class_owned_p(obj)) && !rb_ractor_shareable_p_chain(val, &chain)) {
+            rb_ractor_raise_isolation_error_with_chain(rb_eRactorIsolationError, chain,
+            "can not get unshareable values from instance variables of classes/modules created by "
+            "another Ractor (%"PRIsVALUE" from %"PRIsVALUE")", rb_id2str(id), obj);
         }
     }
 
@@ -3413,8 +3411,11 @@ rb_const_get_0(VALUE klass, ID id, int exclude, int recurse, int visibility)
     VALUE c = rb_const_search(klass, id, exclude, recurse, visibility, &found_in);
     if (!UNDEF_P(c)) {
         if (UNLIKELY(!rb_class_owned_p(found_in))) {
-            if (!rb_ractor_shareable_p(c)) {
-                rb_raise(rb_eRactorIsolationError, "can not access non-shareable objects in constant %"PRIsVALUE"::%"PRIsVALUE" of a class/module created by another Ractor.", rb_class_path(found_in), rb_id2str(id));
+            VALUE chain = Qnil;
+            if (!rb_ractor_shareable_p_chain(c, &chain)) {
+                rb_ractor_raise_isolation_error_with_chain(rb_eRactorIsolationError, chain,
+                        "can not access non-shareable objects in constant %"PRIsVALUE"::%"PRIsVALUE" of a class/module created by another Ractor.",
+                        rb_class_path(found_in), rb_id2str(id));
             }
         }
         return c;
