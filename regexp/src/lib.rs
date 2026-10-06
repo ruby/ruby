@@ -11,6 +11,7 @@ pub mod bytecode;
 pub mod compile;
 pub mod enc;
 pub mod error;
+pub mod exec;
 mod ffi;
 pub mod names;
 pub mod parser;

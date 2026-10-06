@@ -126,6 +126,9 @@ pub struct RepeatRange {
 #[derive(Clone, Debug)]
 pub struct Regex {
     pub program: Vec<u8>,
+    /// A bit per offset of `program`, set at the OP_PUSH of each loop that
+    /// `exec::is_char_loop` accepts. Not part of `regex_t`.
+    pub char_loops: Vec<u64>,
     pub num_mem: i32,
     pub num_repeat: i32,
     pub num_null_check: i32,
@@ -150,6 +153,13 @@ pub struct Regex {
     pub map: [u8; ONIG_CHAR_TABLE_SIZE],
     pub dmin: usize,
     pub dmax: usize,
+}
+
+impl Regex {
+    #[inline]
+    pub fn is_char_loop(&self, at: usize) -> bool {
+        self.char_loops.get(at / 64).is_some_and(|w| w >> (at % 64) & 1 != 0)
+    }
 }
 
 #[derive(Debug)]
@@ -200,6 +210,7 @@ pub fn compile(
         uslist: Vec::new(),
         opt: OptResult::default(),
         opt_pool: Vec::new(),
+        loop_pushes: Vec::new(),
     };
     match c.run(pr.root) {
         Ok(()) => Ok(c.finish()),
@@ -263,6 +274,8 @@ struct Compiler {
     /// small.
     #[allow(clippy::vec_box)]
     opt_pool: Vec<Box<NodeOptInfo>>,
+    /// Where the OP_PUSH of each greedy loop is, for `Regex::char_loops`.
+    loop_pushes: Vec<usize>,
 }
 
 impl Compiler {
@@ -337,8 +350,16 @@ impl Compiler {
         };
         let mut program = self.p;
         program.shrink_to_fit();
+        let mut char_loops = Vec::new();
+        for &at in &self.loop_pushes {
+            if crate::exec::is_char_loop(&program, at, is_find_condition(self.options)) {
+                char_loops.resize(char_loops.len().max(at / 64 + 1), 0u64);
+                char_loops[at / 64] |= 1 << (at % 64);
+            }
+        }
         Regex {
             program,
+            char_loops,
             num_mem: self.num_mem,
             num_repeat: self.num_repeat,
             num_null_check: self.num_null_check,
@@ -2170,6 +2191,7 @@ impl Compiler {
                     self.compile_tree_empty_check(target, empty_info)?;
                     self.add_opcode_rel_addr(OP_JUMP, -(mod_tlen + SIZE_OP_JUMP + SIZE_OP_PUSH_IF_PEEK_NEXT))?;
                 } else {
+                    self.loop_pushes.push(self.p.len());
                     self.add_opcode_rel_addr(OP_PUSH, mod_tlen + SIZE_OP_JUMP)?;
                     self.compile_tree_empty_check(target, empty_info)?;
                     self.add_opcode_rel_addr(OP_JUMP, -(mod_tlen + SIZE_OP_JUMP + SIZE_OP_PUSH))?;

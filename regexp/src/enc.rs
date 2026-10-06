@@ -216,6 +216,42 @@ impl Enc {
         }
     }
 
+/// `enclen_approx` of regexec.c: like `enclen`, but a character cut
+/// short by `end` reports its full length, so callers can see that it
+/// does not fit.
+#[inline]
+pub fn enclen_approx(self, s: &[u8], p: usize, end: usize) -> usize {
+    if self.t.max_enc_len == self.t.min_enc_len {
+        if p < end { self.t.min_enc_len as usize } else { 0 }
+    } else {
+        let ret = self.precise_mbc_enc_len(s, p, end);
+        if ret > 0 {
+            ret as usize
+        } else if ret < -1 {
+            (end - p) + (-1 - ret) as usize
+        } else {
+            1
+        }
+    }
+}
+
+/// `rb_enc_asciicompat` as regexec.c defines it.
+#[inline]
+pub fn is_ascii_compatible(self) -> bool {
+    self.t.min_enc_len == 1 && (self.t.ruby_encoding_index & ENC_DUMMY_FLAG) == 0
+}
+
+/// `ONIGENC_IS_MBC_ASCII_WORD` as regexec.c redefines it for Ruby.
+#[inline]
+pub fn is_mbc_ascii_word(self, s: &[u8], p: usize, end: usize) -> bool {
+    if self.is_ascii_compatible() {
+        let c = s[p];
+        c.is_ascii_alphanumeric() || c == b'_'
+    } else {
+        Enc::ascii_is_code_ctype(self.mbc_to_code(s, p, end), CTYPE_WORD)
+    }
+}
+
     /// `ONIGENC_MBC_TO_CODE`. Returns 0 at the end of the buffer.
     pub fn mbc_to_code(self, s: &[u8], p: usize, end: usize) -> CodePoint {
         if p >= end {
@@ -358,7 +394,8 @@ impl Enc {
     /// `ONIGENC_LEFT_ADJUST_CHAR_HEAD`: the head of the character containing `p`.
     pub fn left_adjust_char_head(self, s: &[u8], start: usize, p: usize, end: usize) -> usize {
         assert!(start <= p && p <= end && end <= s.len(), "position out of range");
-        if p == start {
+        // No character starts at `end`, so it stays as is.
+        if p == start || p == end {
             return p;
         }
         let base = s.as_ptr();
