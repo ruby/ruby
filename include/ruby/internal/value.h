@@ -133,6 +133,9 @@ typedef long rb_len_t;
 /** An unsigned integer type that has the same width with ::rb_len_t. */
 typedef unsigned long rb_ulen_t;
 
+/** Size of ::rb_len_t, in bytes. */
+#define SIZEOF_RB_LEN_T SIZEOF_LONG
+
 /** Printf prefix for ::rb_len_t. */
 #define PRI_LEN_PREFIX "l"
 
