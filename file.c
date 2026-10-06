@@ -824,12 +824,23 @@ rb_stat_uid(VALUE self)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     stat.gid   -> integer
+ *    gid -> integer
  *
- *  Returns the numeric group id of the owner of <i>stat</i>.
+ *  On Windows, returns `0`.
  *
- *     File.stat("testfile").gid   #=> 500
+ *  On other systems, returns the group identifier of the owner of the entry
+ *  in the [snapshot](rdoc-ref:File::Stat@Snapshot) in `self`:
+ *
+ *  ```ruby
+ *  File.stat('/etc').gid   # => 0
+ *  filepath = '/tmp/t.tmp'
+ *  File.write(filepath, 'foo')
+ *  File.stat(filepath).gid # => 1000
+ *  File.delete(filepath)   # Clean up.
+ *  ```
  *
  */
 
