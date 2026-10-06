@@ -1,0 +1,137 @@
+name: Rust regexp
+on:
+  push:
+    paths-ignore:
+      - 'doc/**'
+      - '**/man/*'
+      - '**.md'
+      - '**.rdoc'
+      - '**/.document'
+      - '.*.yml'
+  pull_request:
+    paths-ignore:
+      - 'doc/**'
+      - '**/man/*'
+      - '**.md'
+      - '**.rdoc'
+      - '**/.document'
+      - '.*.yml'
+  merge_group:
+
+concurrency:
+  group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
+  cancel-in-progress: ${{ startsWith(github.event_name, 'pull') }}
+
+permissions:
+  contents: read
+
+jobs:
+  cargo:
+    name: cargo test and clippy
+
+    runs-on: ubuntu-22.04
+
+    if: >-
+      ${{!(false
+      || contains(github.event.head_commit.message, '[DOC]')
+      || contains(github.event.pull_request.title, '[DOC]')
+      || contains(github.event.pull_request.labels.*.name, 'Documentation')
+      || (github.event.pull_request.user.login == 'dependabot[bot]')
+      )}}
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - run: rustup install 1.85.0 --profile minimal --component clippy
+
+      - run: RUST_BACKTRACE=1 cargo +1.85.0 test
+        working-directory: regexp
+
+      - run: cargo +1.85.0 clippy --all-targets -- -D warnings
+        working-directory: regexp
+
+  make:
+    strategy:
+      matrix:
+        include:
+          # The engine as the only Rust crate, built by rustc alone
+          - test_task: check
+            configure: "--disable-yjit --disable-zjit --enable-rust-regexp RUSTC='rustc +1.85.0'"
+            remove_cargo: true
+          # Combined with YJIT and ZJIT into one static library
+          - test_task: check
+            configure: "--enable-yjit --enable-zjit --enable-rust-regexp RUSTC='rustc +1.85.0'"
+            remove_cargo: true
+          # The Rust engine compiles every Regexp
+          - test_task: check
+            configure: '--disable-yjit --disable-zjit --enable-rust-regexp=dev --with-regexp-engine=rust'
+            run_opts: '--regexp-engine=rust'
+            specopts: '-T --regexp-engine=rust'
+            excludes: '../src/test/.excludes-regexp-rust'
+      fail-fast: false
+
+    env:
+      GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
+      RUBY_DEBUG: ci
+      RUST_BACKTRACE: 1
+
+    runs-on: ubuntu-22.04
+
+    if: >-
+      ${{!(false
+      || contains(github.event.head_commit.message, '[DOC]')
+      || contains(github.event.pull_request.title, '[DOC]')
+      || contains(github.event.pull_request.labels.*.name, 'Documentation')
+      || (github.event.pull_request.user.login == 'dependabot[bot]')
+      )}}
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout-cone-mode: false
+          sparse-checkout: /.github
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup/ubuntu
+
+      - uses: ruby/setup-ruby@14594264cd68ce8a2345dd349bc3d138a4ef85c8 # v1.327.0
+        with:
+          ruby-version: '3.1'
+          bundler: none
+
+      - uses: ./.github/actions/setup/directories
+        with:
+          srcdir: src
+          builddir: build
+          makeup: true
+          dummy-files: ${{ matrix.test_task == 'check' }}
+
+      - run: rustup install 1.85.0 --profile minimal
+
+      - name: Remove cargo
+        # Release builds must work with rustc alone.
+        if: ${{ matrix.remove_cargo }}
+        run: sudo rm $(which -a cargo | uniq)
+
+      - name: Run configure
+        run: ../src/configure -C --disable-install-doc ${{ matrix.configure }}
+
+      - run: make
+
+      - name: Check that the Rust engine is selectable
+        run: ./miniruby --regexp-engine=rust -v | grep '+RUST_REGEXP'
+
+      - name: make ${{ matrix.test_task }}
+        run: make -s ${{ matrix.test_task }} RUN_OPTS="$RUN_OPTS" SPECOPTS="$SPECOPTS"
+        timeout-minutes: 60
+        env:
+          RUBY_TESTOPTS: '-q --tty=no'
+          EXCLUDES: ${{ matrix.excludes }}
+          RUN_OPTS: ${{ matrix.run_opts }}
+          SPECOPTS: ${{ matrix.specopts }}
+
+defaults:
+  run:
+    working-directory: build
