@@ -97,7 +97,7 @@ EOS
     io = dummy_io(<<EOS)
 HTTP/1.1 200 OK
 Content-Length: 5
- 	
+
 X-After: value
 
 hello
@@ -116,7 +116,7 @@ EOS
   def test_multiline_header_no_preceding_header
     io = dummy_io(<<EOS)
 HTTP/1.1 200 OK
- 	
+
 Content-Length: 5
 
 hello
