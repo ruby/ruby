@@ -829,7 +829,7 @@ rb_stat_uid(VALUE self)
  *
  *  Returns the numeric group id of the owner of <i>stat</i>.
  *
- *    File.stat("testfile").gid   #=> 500
+ *     File.stat("testfile").gid   #=> 500
  *
  */
 
