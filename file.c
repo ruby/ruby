@@ -2380,25 +2380,21 @@ rb_file_executable_real_p(VALUE obj, VALUE fname)
 #endif
 
 /*
+ * :markup: markdown
+ *
  * call-seq:
  *   File.file?(object) -> true or false
  *
- * Returns whether the given +object+, a string path or IO object,
+ * Returns whether the given `object`, a string path or IO object,
  * represents a filesystem entry that exists and is a regular file;
  * see File.ftype:
  *
- *   # Paths.
- *   File.file?('README.md')     # => true
- *   File.file?('doc/')     # => false
- *   File.file?('nosuch')     # => false
- *   # IO objects.
- *   file = File.new('README.md')
- *   File.file?(file)     # => true
- *   dir = Dir.new('doc/')
- *   File.file?(dir)     # => false
- *   # Clean up.
- *   file.close
- *   dir.close
+ * ```ruby
+ * File.file?('/etc/passwd') # => true
+ * File.file?('/etc')        # => false
+ * File.file?($stdin)        # => false
+ * File.file?('nosuch')      # => false
+ * ```
  *
  */
 
@@ -7487,17 +7483,18 @@ rb_stat_X(VALUE obj)
 }
 
 /*
+ * :markup: markdown
+ *
  *  call-seq:
  *    file? -> true or false
  *
- * Returns whether +self+ represents a filesystem entry that exists and is a regular file;
+ * Returns whether `self` represents a filesystem entry that exists and is a regular file;
  * see File::Stat.ftype:
  *
- *   # Paths.
- *   File.stat('README.md').file?     # => true
- *   File.stat('doc/').file?     # => false
- *   File.stat('nosuch').file? # Raises Errno::ENOENT: No such file or directory.
- *
+ * ```ruby
+ * File.stat('/etc/passwd').file? # => true
+ * File.stat('/etc').file?        # => false
+ * ```
  *
  */
 
