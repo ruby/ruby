@@ -1442,6 +1442,11 @@ ruby_ppoll(struct pollfd *fds, nfds_t nfds,
 // fork read-write lock (only for pthread)
 static pthread_rwlock_t rb_thread_fork_rw_lock = PTHREAD_RWLOCK_INITIALIZER;
 
+// registered thread waiting to be joined
+static rb_nativethread_lock_t exiting_thread_lock = RB_NATIVETHREAD_LOCK_INIT;
+static pthread_t exiting_thread;
+static bool exiting_thread_registered;
+
 void
 rb_thread_release_fork_lock(void)
 {
@@ -1476,6 +1481,30 @@ rb_thread_prevent_fork(void *(*func)(void *), void *data)
     return result;
 }
 
+static void
+join_exiting_thread(const pthread_t *replacement)
+{
+    rb_native_mutex_lock(&exiting_thread_lock);
+    bool registered = exiting_thread_registered;
+    pthread_t thread = exiting_thread;
+    if (replacement) exiting_thread = *replacement;
+    exiting_thread_registered = replacement != NULL;
+    rb_native_mutex_unlock(&exiting_thread_lock);
+
+    int r;
+    if (registered && (r = pthread_join(thread, NULL))) {
+        rb_bug_errno("pthread_join", r);
+    }
+}
+
+// called within rb_thread_prevent_fork() by a thread that exits right after
+void
+rb_thread_register_exiting(void)
+{
+    pthread_t self = pthread_self();
+    join_exiting_thread(&self);
+}
+
 void
 rb_thread_acquire_fork_lock(void)
 {
@@ -1483,6 +1512,10 @@ rb_thread_acquire_fork_lock(void)
     if ((r = pthread_rwlock_wrlock(&rb_thread_fork_rw_lock))) {
         rb_bug_errno("pthread_rwlock_wrlock", r);
     }
+
+    // A thread can still be exiting after it releases the fork lock, and
+    // glibc's thread exit takes resolver locks that fork does not reset.
+    join_exiting_thread(NULL);
 }
 
 // thread internal event hooks (only for pthread)

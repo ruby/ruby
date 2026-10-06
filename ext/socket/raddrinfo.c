@@ -14,7 +14,7 @@
 // GETADDRINFO_IMPL == 0 : call getaddrinfo/getnameinfo directly
 // GETADDRINFO_IMPL == 1 : call getaddrinfo/getnameinfo without gvl (but uncancellable)
 // GETADDRINFO_IMPL == 2 : call getaddrinfo/getnameinfo in a dedicated pthread
-//                         (and if the call is interrupted, the pthread is detached)
+//                         (and if the call is interrupted, the pthread is left running)
 
 #ifndef GETADDRINFO_IMPL
 #  ifdef GETADDRINFO_EMU
@@ -457,6 +457,8 @@ do_getaddrinfo(void *ptr)
 
     if (need_free) free_getaddrinfo_arg(arg);
 
+    rb_thread_register_exiting();
+
     return 0;
 }
 
@@ -497,7 +499,7 @@ cancel_getaddrinfo(void *ptr)
 }
 
 int
-raddrinfo_pthread_create(pthread_t *th, void *(*start_routine) (void *), void *arg)
+raddrinfo_pthread_create(pthread_t *th, void *(*start_routine) (void *), void *arg, int detached)
 {
     int limit = 3, ret;
     int saved_errno;
@@ -516,7 +518,7 @@ retry_attr_init:
         }
         return err;
     }
-    if ((err = pthread_attr_setdetachstate(attr_p, PTHREAD_CREATE_DETACHED)) != 0) {
+    if ((err = pthread_attr_setdetachstate(attr_p, detached ? PTHREAD_CREATE_DETACHED : PTHREAD_CREATE_JOINABLE)) != 0) {
         saved_errno = errno;
         pthread_attr_destroy(attr_p);
         errno = saved_errno;
@@ -539,8 +541,8 @@ retry_attr_init:
         errno = saved_errno;
     }
 #else
-    if (ret == 0) {
-        pthread_detach(th); // this can race with shutdown routine of thread in some glibc versions
+    if (ret == 0 && detached) {
+        pthread_detach(*th); // this can race with shutdown routine of thread in some glibc versions
     }
 #endif
     return ret;
@@ -568,7 +570,7 @@ start:
     }
 
     pthread_t th;
-    if (raddrinfo_pthread_create(&th, fork_safe_do_getaddrinfo, arg) != 0) {
+    if (raddrinfo_pthread_create(&th, fork_safe_do_getaddrinfo, arg, false) != 0) {
         int err = errno;
         free_getaddrinfo_arg(arg);
         errno = err;
@@ -807,7 +809,7 @@ start:
     }
 
     pthread_t th;
-    if (raddrinfo_pthread_create(&th, do_getnameinfo, arg) != 0) {
+    if (raddrinfo_pthread_create(&th, do_getnameinfo, arg, true) != 0) {
         int err = errno;
         free_getnameinfo_arg(arg);
         errno = err;
@@ -3183,6 +3185,8 @@ do_fast_fallback_getaddrinfo(void *ptr)
     if (shared_need_free && shared) {
         free_fast_fallback_getaddrinfo_shared(&shared);
     }
+
+    rb_thread_register_exiting();
 
     return 0;
 }

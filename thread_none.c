@@ -350,6 +350,12 @@ rb_thread_prevent_fork(void *(*func)(void *), void *data)
 }
 
 void
+rb_thread_register_exiting(void)
+{
+    // do nothing
+}
+
+void
 rb_thread_malloc_stack_set(rb_thread_t *th, void *stack, size_t stack_size)
 {
     // no-op
