@@ -7,6 +7,8 @@
 #![deny(unsafe_code)]
 
 pub mod ast;
+pub mod bytecode;
+pub mod compile;
 pub mod enc;
 pub mod error;
 mod ffi;
