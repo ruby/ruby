@@ -18,9 +18,6 @@
 #include "ruby/internal/has/warning.h"
 #include "ruby/backward/2/gcc_version_since.h"
 
-#define MSC_VERSION_SINCE(_)   RBIMPL_COMPILER_SINCE(MSVC, (_) / 100, (_) % 100, 0)
-#define MSC_VERSION_BEFORE(_)  RBIMPL_COMPILER_BEFORE(MSVC, (_) / 100, (_) % 100, 0)
-
 #ifndef __has_attribute
 # define __has_attribute(...) RBIMPL_HAS_ATTRIBUTE(__VA_ARGS__)
 #endif
@@ -83,7 +80,7 @@ rb_obj_builtin_type(VALUE obj)
 #endif
 
 /* A macro for defining a flexible array, like: VALUE ary[FLEX_ARY_LEN]; */
-#if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L)
+#if (defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L)) || defined(_MSC_VER)
 # define FLEX_ARY_LEN   /* VALUE ary[]; */
 #elif defined(__GNUC__) && !defined(__STRICT_ANSI__)
 # define FLEX_ARY_LEN 0 /* VALUE ary[0]; */
@@ -98,7 +95,7 @@ rb_obj_builtin_type(VALUE obj)
  *      ...
  *   };
  */
-#if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L)
+#if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L) && !defined(_MSC_VER)
 # define BITFIELD(type, name, size) type name : size
 #else
 # define BITFIELD(type, name, size) unsigned int name : size

@@ -261,7 +261,7 @@ RBIMPL_ATTR_NONNULL(())
 VALUE rb_check_symbol(volatile VALUE *namep);
 RBIMPL_SYMBOL_EXPORT_END()
 
-RBIMPL_ATTR_PURE()
+RBIMPL_ATTR_NOALIAS()
 RBIMPL_ATTR_NONNULL(())
 /**
  * This  is a  "tiny  optimisation" over  rb_intern().  If  you  pass a  string

@@ -756,8 +756,8 @@ rb_gc_impl_init(void)
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVALUE_SIZE")), SIZET2NUM(sizeof(struct RBasic) + sizeof(VALUE[RBIMPL_RVALUE_EMBED_LEN_MAX])));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("RBASIC_SIZE")), SIZET2NUM(sizeof(struct RBasic)));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVALUE_OVERHEAD")), INT2NUM(0));
-    // TODO: correctly set RVALUE_OLD_AGE when we have generational GC support
-    rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVALUE_OLD_AGE")), INT2FIX(0));
+    rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVALUE_OLD_AGE")),
+                 INT2FIX(strcmp((const char *)mmtk_plan(), "StickyImmix") == 0 ? 1 : 0));
     OBJ_FREEZE(gc_constants);
     rb_define_const(rb_mGC, "INTERNAL_CONSTANTS", gc_constants);
 
@@ -797,7 +797,7 @@ rb_gc_impl_shutdown_free_objects(void *objspace_ptr)
 
 // GC
 void
-rb_gc_impl_start(void *objspace_ptr, bool full_mark, bool immediate_mark, bool immediate_sweep, bool compact)
+rb_gc_impl_start(void *objspace_ptr, bool full_mark, bool immediate_mark, bool immediate_sweep, bool compact, bool global)
 {
     mmtk_handle_user_collection_request(rb_gc_get_ractor_newobj_cache(), true, full_mark);
 }
@@ -1221,8 +1221,7 @@ rb_gc_impl_object_moved_p(void *objspace_ptr, VALUE obj)
 bool
 rb_gc_impl_pinned_p(void *objspace_ptr, VALUE obj)
 {
-    /* MMTk tracks pinning separately */
-    return false;
+    return mmtk_is_pinned((MMTk_ObjectReference)obj);
 }
 
 VALUE
@@ -1692,6 +1691,10 @@ setup_gc_stat_symbols(void)
 VALUE
 rb_gc_impl_stat(void *objspace_ptr, VALUE hash_or_sym)
 {
+    if (objspace_ptr == NULL) {
+        rb_notimplement();
+    }
+
     struct objspace *objspace = objspace_ptr;
     VALUE hash = Qnil, key = Qnil;
 

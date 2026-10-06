@@ -709,6 +709,39 @@ end
     assert_equal expected_value, actual_value
   end
 
+  def test_self_dirs_equals_with_unresolved_deps
+    a = util_spec "a", 1
+    b = util_spec "b", 1
+    install_gem_user a
+    install_gem b
+
+    Gem::Specification.unresolved_deps["b"] = Gem::Dependency.new("b", ">= 0")
+
+    _, err = capture_output do
+      Gem::Specification.dirs = Gem.user_dir
+    end
+
+    assert_match(/b \(>= 0\)\n.*\n      - 1\n/, err)
+    # JRuby replaces dirs= in rubygems/defaults/jruby.rb without the ABI scoped spec dir
+    assert_equal Gem::SpecificationRecord.dirs_from([Gem.user_dir]), Gem::Specification.dirs unless Gem.java_platform?
+    assert_equal %w[a-1], Gem::Specification.map(&:full_name)
+  end
+
+  def test_self_dirs_equals_keeps_specs_set_by_post_reset_hooks
+    b = util_spec "b", 1
+    install_gem b
+    stub = util_spec "stub", 1
+
+    Gem.post_reset { Gem::Specification.all = [stub] }
+    Gem::Specification.unresolved_deps["b"] = Gem::Dependency.new("b", ">= 0")
+
+    capture_output do
+      Gem::Specification.dirs = Gem.user_dir
+    end
+
+    assert_equal %w[stub-1], Gem::Specification.map(&:full_name)
+  end
+
   def test_self__load_future
     spec = Gem::Specification.new
     spec.name = "a"
@@ -2514,7 +2547,7 @@ Gem::Specification.new do |s|
 
   s.specification_version = #{Gem::Specification::CURRENT_SPECIFICATION_VERSION}
 
-  s.add_runtime_dependency(%q<b>.freeze, [\"= 1\".freeze])
+  s.add_runtime_dependency(\"b\".freeze, [\"= 1\".freeze])
 end
     SPEC
 
@@ -2613,7 +2646,7 @@ Gem::Specification.new do |s|
 
   s.specification_version = #{Gem::Specification::CURRENT_SPECIFICATION_VERSION}
 
-  s.add_runtime_dependency(%q<b>.freeze, ["= 1".freeze])
+  s.add_runtime_dependency("b".freeze, ["= 1".freeze])
 end
     SPEC
 
@@ -2666,9 +2699,9 @@ Gem::Specification.new do |s|
 
   s.specification_version = 4
 
-  s.add_runtime_dependency(%q<rake>.freeze, [\"> 0.4\".freeze])
-  s.add_runtime_dependency(%q<jabber4r>.freeze, [\"> 0.0.0\".freeze])
-  s.add_runtime_dependency(%q<pqa>.freeze, [\"> 0.4\".freeze, \"<= 0.6\".freeze])
+  s.add_runtime_dependency(\"rake\".freeze, [\"> 0.4\".freeze])
+  s.add_runtime_dependency(\"jabber4r\".freeze, [\"> 0.0.0\".freeze])
+  s.add_runtime_dependency(\"pqa\".freeze, [\"> 0.4\".freeze, \"<= 0.6\".freeze])
 end
     SPEC
 
@@ -2685,6 +2718,51 @@ end
     end
 
     assert_includes spec.to_ruby, '"~> 1.0".freeze, ">= 1.0.0".freeze'
+  end
+
+  def test_to_ruby_dependency_name
+    name = "b\\>\n\#{raise}"
+    @a2.add_dependency name, "1"
+
+    same_spec = eval @a2.to_ruby
+
+    assert_equal [name], same_spec.dependencies.map(&:name)
+  end
+
+  def test_to_ruby_invalid_dependency_type
+    @a2.add_dependency "b", "1"
+    @a2.dependencies.first.instance_variable_set :@type, :foo
+
+    e = assert_raise Gem::Exception do
+      @a2.to_ruby
+    end
+    assert_equal "invalid dependency type: :foo", e.message
+  end
+
+  def test_to_ruby_invalid_specification_version
+    @a2.add_dependency "b", "1"
+    @a2.specification_version = "4\n``"
+
+    e = assert_raise Gem::Exception do
+      @a2.to_ruby
+    end
+    assert_equal 'invalid specification_version: "4\n``"', e.message
+  end
+
+  def test_to_ruby_newline_in_stub_line
+    [
+      proc {|s| s.name = "a\n``" },
+      proc {|s| s.require_paths = ["lib\n``"] },
+      proc {|s| s.extensions = ["ext\n``"] },
+    ].each do |setup|
+      spec = @a2.dup
+      setup.call spec
+
+      e = assert_raise Gem::Exception do
+        spec.to_ruby
+      end
+      assert_match(/\Astub line .* contains a newline\z/, e.message)
+    end
   end
 
   def test_to_ruby_legacy
@@ -3097,6 +3175,25 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
       use_ui @ui do
         @a1.validate
       end
+    end
+  end
+
+  def test_validate_extension_without_builder
+    util_setup_validate
+
+    Dir.chdir @tempdir do
+      @a1.extensions = ["build.sh"]
+      File.write File.join(@tempdir, "build.sh"), ""
+      gem_make_out = File.join @a1.build_info_dir, "#{@a1.full_name}.gem_make.out"
+
+      e = assert_raise Gem::Ext::BuildError do
+        use_ui @ui do
+          @a1.validate
+        end
+      end
+
+      assert_equal "No builder for extension 'build.sh'", e.message
+      assert_path_not_exist gem_make_out
     end
   end
 

@@ -70,15 +70,15 @@ sh ../../ruby/configure -C --disable-install-doc --with-opt-dir=C:\Users\usernam
 
 ### Requirement
 
-1.  Windows 10/Windows Server 2016 or later.
+1.  Windows 10 version 1809 (build 17763)/Windows Server 2019 or later.
 
-2.  Visual C++ 14.0 (2015) or later.
+2.  Visual C++ 14.15 (Visual Studio 2017 version 15.8) or later.
 
     **Note** if you want to build x64 version, use native compiler for
     x64.
 
     The minimum requirement is here:
-      * VC++/MSVC on VS 2017/2019/2022 version build tools.
+      * VC++/MSVC build tools on VS 2017 version 15.8 or later.
       * Windows 10/11 SDK
 
     You can install Visual Studio Build Tools with `winget`.

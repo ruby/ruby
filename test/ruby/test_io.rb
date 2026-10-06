@@ -1585,6 +1585,21 @@ class TestIO < Test::Unit::TestCase
     end
   end
 
+  def test_write_with_many_arguments_is_flushed_when_sync
+    # Under sync mode, write(*args) must be observably atomic: all data must
+    # reach the peer immediately, not be left buffered until close. This
+    # covers argument counts above IOV_MAX, where the internal writev path
+    # previously coalesced into the buffer without flushing.
+    [10, 1023, 1024, 2000].each do |n|
+      IO.pipe do |r, w|
+        assert_predicate(w, :sync)
+        w.write(*(["a"] * n))
+        assert_equal("a" * n, r.read_nonblock(n),
+                     "sync write with #{n} arguments was not flushed")
+      end
+    end
+  end
+
   def test_write_with_multiple_nonstring_arguments
     assert_in_out_err([], "STDOUT.write(:foo, :bar)", ["foobar"])
   end
@@ -3341,6 +3356,40 @@ __END__
     end.each {|th| th.join}
   end
 
+  def test_close_discards_write_buffer_in_sync_mode
+    IO.pipe do |r, w|
+      w.sync = false
+      w.write("buffered")
+
+      # Enabling sync marks the write buffer as non-authoritative, so close
+      # must abandon the pending bytes rather than replaying them.
+      w.sync = true
+      assert_nothing_raised { w.close }
+
+      assert_equal("", r.read)
+    end
+  end
+
+  def test_close_flushes_write_buffer_when_not_sync
+    IO.pipe do |r, w|
+      w.sync = false
+      w.write("data")
+      w.close
+      assert_equal("data", r.read)
+    end
+  end
+
+  def test_sync_write_is_not_lost_on_close
+    IO.pipe do |r, w|
+      w.sync = true
+      payload = "x" * 200_000
+      reader = Thread.new { r.read }
+      w.write(payload)
+      w.close
+      assert_equal(payload, reader.value)
+    end
+  end
+
   def test_flush_in_finalizer1
     bug3910 = '[ruby-dev:42341]'
     tmp = Tempfile.open("bug3910") {|t|
@@ -4441,6 +4490,38 @@ __END__
       con.close
     end
   end if Socket.const_defined?(:MSG_OOB)
+
+  def test_select_many_sockets
+    pairs = []
+    TCPServer.open('localhost', 0) do |svr|
+      # more than FD_SETSIZE on Windows
+      70.times {pairs << [TCPSocket.new('localhost', svr.addr[1]), svr.accept]}
+    end
+    readers = pairs.map(&:last)
+    # best effort to write after select has polled once, which Ruby cannot observe
+    th = Thread.new {sleep 0.2; pairs.last.first.write("x")}
+    assert_equal([[readers.last], [], []], IO.select(readers, nil, pairs.map(&:first), 10))
+    IO.pipe do |r, w|
+      writers = [*pairs.map(&:first), w]
+      assert_equal([[], writers, []], IO.select(nil, writers, nil, 10))
+    end
+  ensure
+    th&.join
+    pairs.flatten.each(&:close)
+  end
+
+  def test_select_buffered_socket
+    pairs = []
+    TCPServer.open('localhost', 0) do |svr|
+      2.times {pairs << [TCPSocket.new('localhost', svr.addr[1]), svr.accept]}
+    end
+    readers = pairs.map(&:last)
+    pairs.first.first.write("xy")
+    assert_equal("x", readers.first.getc)
+    assert_equal([[readers.first], [], []], IO.select(readers, nil, nil, 1))
+  ensure
+    pairs.flatten.each(&:close)
+  end
 
   def test_select_timeout
     assert_equal(nil, IO.select(nil,nil,nil,0))

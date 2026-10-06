@@ -221,7 +221,7 @@ class Gem::RemoteFetcher
   ##
   # HTTP Fetcher. Dispatched by +fetch_path+. Use it instead.
 
-  def fetch_http(uri, last_modified = nil, head = false, depth = 0)
+  def fetch_http(uri, last_modified = nil, head = false, depth = 0, headers = self.headers)
     fetch_type = head ? Gem::Net::HTTP::Head : Gem::Net::HTTP::Get
     response   = request uri, fetch_type, last_modified do |req|
       headers.each {|k,v| req.add_field(k,v) }
@@ -232,19 +232,25 @@ class Gem::RemoteFetcher
       response.uri = uri
       head ? response : response.body
     when Gem::Net::HTTPMovedPermanently, Gem::Net::HTTPFound, Gem::Net::HTTPSeeOther,
-         Gem::Net::HTTPTemporaryRedirect then
+         Gem::Net::HTTPTemporaryRedirect, Gem::Net::HTTPPermanentRedirect then
       raise FetchError.new("too many redirects", uri) if depth > 10
 
       unless location = response["Location"]
         raise FetchError.new("redirecting but no redirect location was given", uri)
       end
-      location = Gem::Uri.new location
+      location = uri + location
 
       if https?(uri) && !https?(location)
-        raise FetchError.new("redirecting to non-https resource: #{location}", uri)
+        raise FetchError.new("redirecting to non-https resource: #{Gem::Uri.redact(location)}", uri)
       end
+      # see Gem::CompactIndexClient::HTTPFetcher#fetch
+      same_origin = [location.scheme, location.host, location.port] == [uri.scheme, uri.host, uri.port]
+      location.userinfo = uri.userinfo if same_origin && !location.userinfo
+      # X-Gemfile-Source carries the source URI that Bundler mirrors,
+      # credentials included, and is meant for the mirror's origin only.
+      headers = headers.except("X-Gemfile-Source") unless same_origin
 
-      fetch_http(location, last_modified, head, depth + 1)
+      fetch_http(location, last_modified, head, depth + 1, headers)
     else
       custom_error = response["X-Error-Message"]
       error_detail = custom_error || response.message

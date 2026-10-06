@@ -180,7 +180,8 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
       return
     end
 
-    server_thread = Thread.new { server.accept }
+    accepted = nil
+    server_thread = Thread.new { accepted = server.accept }
     port = server.addr[1]
 
     socket = TCPSocket.new(
@@ -191,7 +192,8 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
     )
     assert_true(socket.remote_address.ipv6?)
   ensure
-    server_thread&.value&.close
+    stop_accept_thread(server_thread, socket)
+    accepted&.close
     server&.close
     socket&.close
   end
@@ -202,7 +204,8 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
     server = TCPServer.new("127.0.0.1", 0)
     port = server.addr[1]
 
-    server_thread = Thread.new { server.accept }
+    accepted = nil
+    server_thread = Thread.new { accepted = server.accept }
     socket = TCPSocket.new(
       "localhost",
       port,
@@ -211,7 +214,8 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
     )
     assert_true(socket.remote_address.ipv4?)
   ensure
-    server_thread&.value&.close
+    stop_accept_thread(server_thread, socket)
+    accepted&.close
     server&.close
     socket&.close
   end
@@ -311,7 +315,8 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
     server = TCPServer.new("127.0.0.1", 0)
     port = server.addr[1]
 
-    server_thread = Thread.new { server.accept }
+    accepted = nil
+    server_thread = Thread.new { accepted = server.accept }
     socket = TCPSocket.new(
       "localhost",
       port,
@@ -320,7 +325,30 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
     )
     assert_true(socket.remote_address.ipv4?)
   ensure
-    server_thread&.value&.close
+    stop_accept_thread(server_thread, socket)
+    accepted&.close
+    server&.close
+    socket&.close
+  end
+
+  def test_initialize_ignores_malformed_test_mode_settings
+    return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
+
+    server = TCPServer.new("127.0.0.1", 0)
+    port = server.addr[1]
+
+    accepted = nil
+    server_thread = Thread.new { accepted = server.accept }
+    socket = TCPSocket.new(
+      "localhost",
+      port,
+      fast_fallback: true,
+      test_mode_settings: { delay: 1, error: 1 }
+    )
+    assert_equal(port, socket.remote_address.ip_port)
+  ensure
+    stop_accept_thread(server_thread, socket)
+    accepted&.close
     server&.close
     socket&.close
   end
@@ -387,6 +415,21 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
     end
   end
 
+  def test_initialize_v4_hostname_resolution_failure_after_v6_address_family_error
+    return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
+    omit "EAI_ADDRFAMILY is not defined" unless defined?(Socket::EAI_ADDRFAMILY)
+
+    e = assert_raise(Socket::ResolutionError) do
+      TCPSocket.new(
+        "localhost",
+        12345,
+        fast_fallback: true,
+        test_mode_settings: { delay: { ipv4: 100 }, error: { ipv6: Socket::EAI_ADDRFAMILY, ipv4: Socket::EAI_FAIL } }
+      )
+    end
+    assert_equal(Socket::EAI_FAIL, e.error_code)
+  end
+
   def test_initialize_v6_connected_socket_with_v6_address
     return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
 
@@ -396,13 +439,15 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
       return
     end
 
-    server_thread = Thread.new { server.accept }
+    accepted = nil
+    server_thread = Thread.new { accepted = server.accept }
     port = server.addr[1]
 
     socket = TCPSocket.new("::1", port)
     assert_true(socket.remote_address.ipv6?)
   ensure
-    server_thread&.value&.close
+    stop_accept_thread(server_thread, socket)
+    accepted&.close
     server&.close
     socket&.close
   end
@@ -411,13 +456,15 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
     return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
 
     server = TCPServer.new("127.0.0.1", 0)
-    server_thread = Thread.new { server.accept }
+    accepted = nil
+    server_thread = Thread.new { accepted = server.accept }
     port = server.addr[1]
 
     socket = TCPSocket.new("127.0.0.1", port)
     assert_true(socket.remote_address.ipv4?)
   ensure
-    server_thread&.value&.close
+    stop_accept_thread(server_thread, socket)
+    accepted&.close
     server&.close
     socket&.close
   end
@@ -427,12 +474,14 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
 
     server = TCPServer.new("127.0.0.1", 0)
     _, port, = server.addr
-    server_thread = Thread.new { server.accept }
+    accepted = nil
+    server_thread = Thread.new { accepted = server.accept }
 
     socket = TCPSocket.new("127.0.0.1", port, fast_fallback: false)
     assert_true(socket.remote_address.ipv4?)
   ensure
-    server_thread&.value&.close
+    stop_accept_thread(server_thread, socket)
+    accepted&.close
     server&.close
     socket&.close
   end

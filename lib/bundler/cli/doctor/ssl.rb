@@ -124,14 +124,10 @@ module Bundler
       ctx = OpenSSL::SSL::SSLContext.new
       supported = true
 
-      if ctx.respond_to?(:min_version=)
-        begin
-          ctx.min_version = ctx.max_version = OpenSSL::SSL::TLS1_2_VERSION
-        rescue OpenSSL::SSL::SSLError, NameError
-          supported = false
-        end
-      else
-        supported = OpenSSL::SSL::SSLContext::METHODS.include?(:TLSv1_2) # rubocop:disable Naming/VariableNumber
+      begin
+        ctx.min_version = ctx.max_version = OpenSSL::SSL::TLS1_2_VERSION
+      rescue OpenSSL::SSL::SSLError, NameError
+        supported = false
       end
 
       Bundler.ui.warn(<<~EOM) unless supported

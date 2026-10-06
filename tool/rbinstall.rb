@@ -1126,7 +1126,7 @@ install?(:local, :comm, :hdr, :'comm-hdr') do
   prepare "common headers", rubyhdrdir
 
   noinst = []
-  unless RUBY_PLATFORM =~ /mswin|mingw|bccwin/
+  unless RUBY_PLATFORM =~ /mswin|mingw/
     noinst << "win32.h"
   end
   noinst = nil if noinst.empty?

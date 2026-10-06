@@ -292,6 +292,28 @@ class TestGemCommandsBuildCommand < Gem::TestCase
     assert_match spec.platform, "java"
   end
 
+  def test_execute_platform_option_local
+    local = Gem::Platform.local.to_s
+
+    util_test_build_gem_with_platform_option local, suffix: local
+  end
+
+  def test_execute_platform_option_non_local
+    util_test_build_gem_with_platform_option "java", suffix: "java"
+  end
+
+  def test_execute_platform_option_local_with_gemspec_platform
+    @gem.platform = "arm64-darwin"
+
+    util_test_build_gem_with_platform_option Gem::Platform.local.to_s, suffix: "arm64-darwin"
+  end
+
+  def test_execute_platform_option_non_local_with_gemspec_platform
+    @gem.platform = "arm64-darwin"
+
+    util_test_build_gem_with_platform_option "java", suffix: "arm64-darwin"
+  end
+
   def test_execute_bad_name
     [".", "-", "_"].each do |special_char|
       gem = util_spec "some_gem_with_bad_name" do |s|
@@ -752,6 +774,23 @@ class TestGemCommandsBuildCommand < Gem::TestCase
     spec
   end
 
+  def util_test_build_gem_with_platform_option(platform, suffix:)
+    gemspec_file = File.join(@tempdir, @gem.spec_name)
+
+    File.open gemspec_file, "w" do |gs|
+      gs.write @gem.to_ruby
+    end
+
+    platforms = Gem.platforms.dup
+    begin
+      @cmd.handle_options [gemspec_file, "--platform", platform]
+
+      util_test_build_gem @gem, suffix: suffix
+    ensure
+      Gem.platforms = platforms
+    end
+  end
+
   def test_execute_force
     gemspec_file = File.join(@tempdir, @gem.spec_name)
 
@@ -797,7 +836,7 @@ class TestGemCommandsBuildCommand < Gem::TestCase
   def test_build_signed_gem_ml_dsa_65
     pend "openssl is missing" unless Gem::HAVE_OPENSSL && !Gem.java_platform?
 
-    omit_unless_support_ml_dsa_key
+    omit_unless_support_ml_dsa_key_load
 
     trust_dir = Gem::Security.trust_dir
 
@@ -830,7 +869,7 @@ class TestGemCommandsBuildCommand < Gem::TestCase
   def test_build_signed_gem_ml_dsa_65_without_ml_dsa_support
     pend "openssl is missing" unless Gem::HAVE_OPENSSL
 
-    omit_if_support_ml_dsa_key
+    omit_if_support_ml_dsa_key_load
 
     spec = util_spec "some_gem" do |s|
       s.signing_key = ML_DSA_65_PRIVATE_KEY_FILE

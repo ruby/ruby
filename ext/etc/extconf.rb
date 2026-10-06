@@ -7,7 +7,6 @@ headers = []
     headers << h
   end
 }
-have_library("sun", "getpwnam")	# NIS (== YP) interface for IRIX 4
 have_func("uname((struct utsname *)NULL)", headers)
 have_func("getlogin")
 if have_func("getpwent")

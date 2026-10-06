@@ -789,7 +789,7 @@ module Prism
             visit_words_sep(opening_loc, previous, element)
 
             bounds(element.location)
-            elements = on_qsymbols_add(elements, on_tstring_content(element.value))
+            elements = on_qsymbols_add(elements, on_tstring_content(element.content))
 
             previous = element
           end
@@ -853,7 +853,7 @@ module Prism
               on_symbols_add(
                 elements,
                 if element.is_a?(SymbolNode)
-                  on_word_add(on_word_new, on_tstring_content(element.value))
+                  on_word_add(on_word_new, on_tstring_content(element.content))
                 else
                   element.parts.inject(on_word_new) do |word, part|
                     word_part =
@@ -2351,8 +2351,8 @@ module Prism
                 if (key = element.key).opening_loc.nil?
                   visit(key)
                 else
-                  bounds(key.value_loc)
-                  if (value = key.value).empty?
+                  bounds(key.content_loc)
+                  if (value = key.content).empty?
                     on_string_content
                   else
                     on_string_add(on_string_content, on_tstring_content(value))
@@ -3841,10 +3841,10 @@ module Prism
       def visit_symbol_node(node)
         with_string_bounds(node) do
           if (opening = node.opening)&.match?(/^%s|['"]:?$/)
-            bounds(node.value_loc)
+            bounds(node.content_loc)
             content = on_string_content
 
-            if !(value = node.value).empty?
+            if !(value = node.content).empty?
               content = on_string_add(content, on_tstring_content(value))
             end
 
@@ -3852,13 +3852,13 @@ module Prism
             on_dyna_symbol(content)
           elsif (closing = node.closing) == ":"
             bounds(node.location)
-            on_label("#{node.value}:")
+            on_label("#{node.content}:")
           elsif opening.nil? && node.closing_loc.nil?
-            bounds(node.value_loc)
-            on_symbol_literal(visit_token(node.value))
+            bounds(node.content_loc)
+            on_symbol_literal(visit_token(node.content))
           else
-            bounds(node.value_loc)
-            on_symbol_literal(on_symbol(visit_token(node.value)))
+            bounds(node.content_loc)
+            on_symbol_literal(on_symbol(visit_token(node.content)))
           end
         end
       end

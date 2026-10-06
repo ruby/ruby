@@ -120,11 +120,13 @@ describe "Module#alias_method" do
     -> { ModuleSpecs::ReopeningModule.foo2 }.should_not.raise(NoMethodError)
   end
 
-  it "accesses a method defined on Object from Kernel" do
-    Kernel.public_instance_methods(true).should_not.include?(:module_specs_public_method_on_object)
+  ruby_version_is ""..."4.2" do
+    it "accesses a method defined on Object from Kernel" do
+      Kernel.public_instance_methods(true).should_not.include?(:module_specs_public_method_on_object)
 
-    Kernel.public_instance_methods(false).should.include?(:module_specs_alias_on_kernel)
-    Object.public_instance_methods(true).should.include?(:module_specs_alias_on_kernel)
+      Kernel.public_instance_methods(false).should.include?(:module_specs_alias_on_kernel)
+      Object.public_instance_methods(true).should.include?(:module_specs_alias_on_kernel)
+    end
   end
 
   it "can call a method with super aliased twice" do

@@ -57,8 +57,12 @@
 #include "probes.h"
 #include "probes_helper.h"
 
-#ifdef RUBY_ASSERT_CRITICAL_SECTION
-int ruby_assert_critical_section_entered = 0;
+#if defined(_MSC_VER) && !defined(__clang__)
+/* Favor speed over the default -Os, which makes vm_exec_core dispatch
+ * instructions by a binary search instead of a jump table.  This must
+ * follow ruby/internal/memory.h, whose `#pragma optimize("", on)`
+ * restores the command line options. */
+#pragma optimize("t", on)
 #endif
 
 static void *native_main_thread_stack_top;
@@ -1570,6 +1574,16 @@ proc_isolate_env(VALUE self, rb_proc_t *proc, VALUE read_only_variables)
     RB_OBJ_WRITTEN(self, Qundef, env);
 }
 
+static int
+proc_has_ivar_i(ID name, VALUE val, st_data_t arg)
+{
+    if (rb_is_instance_id(name)) {
+        *(bool *)arg = true;
+        return ST_STOP;
+    }
+    return ST_CONTINUE;
+}
+
 static VALUE
 proc_shared_outer_variables(struct rb_id_table *outer_variables, bool isolate, const char *message)
 {
@@ -1625,6 +1639,16 @@ rb_proc_isolate_bang(VALUE self, VALUE replace_self)
         proc_isolate_env(self, proc, Qfalse);
         proc->header.is_isolated = TRUE;
         RB_OBJ_WRITE(self, &proc->block.as.captured.self, Qnil);
+    }
+
+    /* ivars are not traversed here, so their values may be unshareable */
+    if (UNLIKELY(rb_obj_shape_has_ivars(self))) {
+        bool has_ivar = false;
+        rb_ivar_foreach(self, proc_has_ivar_i, (st_data_t)&has_ivar);
+
+        if (has_ivar) {
+            rb_raise(rb_eRactorIsolationError, "can not isolate a Proc because it has instance variables");
+        }
     }
 
     RB_OBJ_SET_SHAREABLE(self);
@@ -3317,6 +3341,31 @@ rb_vm_frame_flag_set_box_require(const rb_execution_context_t *ec)
     VM_ENV_FLAGS_SET(ec->cfp->ep, VM_FRAME_FLAG_BOX_REQUIRE);
 }
 
+static const rb_box_t *current_box_on_cfp(const rb_execution_context_t *ec, const rb_control_frame_t *cfp);
+
+/**
+ * Returns the nearest user box in the caller frames, or NULL if there is none.
+ *
+ * Builtin methods written in Ruby are defined in the master box, so their own
+ * frame tells nothing about the caller. Those marked with
+ * `Primitive.attr! :caller_user_box` need the box owning the caller code, and the
+ * frames in between may belong to the master or the root box, e.g. when another
+ * builtin method or a proc made in the root box calls them.
+ */
+static const rb_box_t *
+caller_user_box_on_cfp(const rb_execution_context_t *ec, const rb_control_frame_t *cfp)
+{
+    const rb_control_frame_t * const eocfp = RUBY_VM_END_CONTROL_FRAME(ec);
+
+    while (RUBY_VM_VALID_CONTROL_FRAME_P(cfp, eocfp)) {
+        const rb_box_t *box = current_box_on_cfp(ec, cfp);
+        if (BOX_USER_P(box))
+            return box;
+        cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
+    }
+    return NULL;
+}
+
 static const rb_box_t *
 current_box_on_cfp(const rb_execution_context_t *ec, const rb_control_frame_t *cfp)
 {
@@ -3330,6 +3379,15 @@ current_box_on_cfp(const rb_execution_context_t *ec, const rb_control_frame_t *c
         cme = check_method_entry(lep[VM_ENV_DATA_INDEX_ME_CREF], TRUE);
         VM_BOX_ASSERT(cme, "cme should be valid");
         VM_BOX_ASSERT(cme->def, "cme->def shold be valid");
+        if (cme->def->type == VM_METHOD_TYPE_ISEQ &&
+            (ISEQ_BODY(cme->def->body.iseq.iseqptr)->builtin_attrs & BUILTIN_ATTR_CALLER_USER_BOX)) {
+            const rb_control_frame_t *owner_cfp = rb_vm_search_cf_from_ep(ec, cfp, lep);
+            if (owner_cfp) {
+                box = caller_user_box_on_cfp(ec, RUBY_VM_PREVIOUS_CONTROL_FRAME(owner_cfp));
+                if (box)
+                    return box;
+            }
+        }
         return cme->def->box;
     }
     else if (VM_ENV_FRAME_TYPE_P(lep, VM_FRAME_MAGIC_TOP) || VM_ENV_FRAME_TYPE_P(lep, VM_FRAME_MAGIC_CLASS)) {
@@ -3596,6 +3654,10 @@ ruby_vm_destruct(rb_vm_t *vm)
                 rb_free_default_rand_key();
             }
             rb_objspace_free(objspace);
+        }
+
+        if (rb_free_at_exit) {
+            free(vm->gc.registered_addrs.registry);
         }
         rb_native_mutex_destroy(&vm->once_lock);
         rb_native_cond_destroy(&vm->once_cond);
@@ -4895,6 +4957,7 @@ Init_BareVM(void)
     /* The boot objspace belongs to the main Ractor, so the main Ractor has to exist
      * before rb_gc_init_objspaces allocates it. */
     vm->ractor.main_ractor = rb_ractor_main_alloc();
+    rb_native_mutex_initialize(&vm->gc.registered_addrs.lock);
     rb_gc_init_objspaces();
     vm->ractor.main_ractor->newobj_cache = rb_gc_ractor_cache_alloc(vm->ractor.main_ractor);
     rb_id_table_init(&vm->negative_cme_table, 16);
@@ -4919,7 +4982,6 @@ Init_BareVM(void)
     rb_native_mutex_initialize(&vm->ractor.sync.lock);
     rb_native_cond_initialize(&vm->ractor.sync.terminate_cond);
     rb_native_mutex_initialize(&vm->ractor.generic_fields_lock);
-    rb_native_mutex_initialize(&vm->gc.registered_globals.lock);
     vm->gc.orphan_merge_pjob = POSTPONED_JOB_HANDLE_INVALID;
 
     vm_opt_method_def_table = st_init_numtable();

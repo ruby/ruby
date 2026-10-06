@@ -180,7 +180,6 @@ pub use rb_get_ec_cfp as get_ec_cfp;
 pub use rb_get_cfp_iseq as get_cfp_iseq;
 pub use rb_get_cfp_pc as get_cfp_pc;
 pub use rb_get_cfp_sp as get_cfp_sp;
-pub use rb_get_cfp_ep_level as get_cfp_ep_level;
 pub use rb_get_cme_def_type as get_cme_def_type;
 pub use rb_get_cme_def_body_attr_id as get_cme_def_body_attr_id;
 pub use rb_get_cme_def_body_optimized_type as get_cme_def_body_optimized_type;
@@ -757,6 +756,12 @@ impl VALUE {
         unsafe { rb_IMEMO_TYPE_P(self, imemo_ment) == 1 }
     }
 
+    /// Return true if `self` is an ISEQ (`imemo_iseq`)
+    pub fn iseq_p(self) -> bool {
+        if self == VALUE(0) { return false; }
+        unsafe { rb_IMEMO_TYPE_P(self, imemo_iseq) == 1 }
+    }
+
     /// Assert that `self` is a method entry in debug builds
     pub fn as_cme(self) -> *const rb_callable_method_entry_t {
         let ptr: *const rb_callable_method_entry_t = self.as_ptr();
@@ -1322,9 +1327,15 @@ pub mod test_utils {
         }
     }
 
+    /// Make sure the Ruby VM is booted and ZJITState is initialized. Test helpers that
+    /// touch ZJITState or ZJIT stats before running any Ruby code must call this first.
+    pub fn ensure_rubyvm() {
+        RUBY_VM_INIT.call_once(boot_rubyvm);
+    }
+
     /// Make sure the Ruby VM is set up and run a given callback with rb_protect()
     pub fn with_rubyvm<T>(mut func: impl FnMut() -> T) -> T {
-        RUBY_VM_INIT.call_once(boot_rubyvm);
+        ensure_rubyvm();
 
         // Invoke callback through rb_protect() so exceptions don't crash the process.
         // "Fun" double pointer dance to get a thin function pointer to pass through C
@@ -1392,6 +1403,7 @@ pub mod test_utils {
     #[track_caller]
     pub fn assert_compiles_allowing_exits(program: &str) -> String {
         use crate::state::ZJITState;
+        ensure_rubyvm(); // ZJITState is not available until the VM is booted
         ZJITState::enable_assert_compiles();
         let result = inspect(program);
         ZJITState::disable_assert_compiles();
@@ -1403,6 +1415,7 @@ pub mod test_utils {
     #[track_caller]
     pub fn assert_compiles(program: &str) -> String {
         use crate::state::ZJITState;
+        ensure_rubyvm(); // ZJITState is not available until the VM is booted
         let exits_before = crate::stats::total_exit_count();
         ZJITState::enable_assert_compiles();
         let result = inspect(program);
@@ -1641,6 +1654,10 @@ pub fn class_has_leaf_allocator(class: VALUE) -> bool {
     if class == unsafe { rb_cString } { return true; }
     // rb_reg_s_alloc
     if class == unsafe { rb_cRegexp } { return true; }
+    // struct_alloc, used by every Struct subclass, is leaf: it reads the hidden __members__ ivar
+    // and allocates, without calling into Ruby. It does modify the class's __members__ ivar once
+    // to cache the members, but without a Ractor check.
+    if unsafe { rb_zjit_class_has_struct_allocator(class) } { return true; }
     // rb_class_allocate_instance
     unsafe { rb_zjit_class_has_default_allocator(class) }
 }
@@ -1734,7 +1751,6 @@ pub(crate) mod ids {
         name: freeze
         name: minusat            content: b"-@"
         name: aref               content: b"[]"
-        name: rb_obj_is_proc
         name: rb_ivar_get_at_no_ractor_check
         name: rb_jit_ruby2_keywords_splat_p
         name: RUBY_FL_FREEZE

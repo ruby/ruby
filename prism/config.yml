@@ -666,6 +666,8 @@ tokens:
     comment: "unary **"
   - name: WORDS_SEP
     comment: "a separator between words in a list"
+  - name: WORDS_SEP_IMPLICIT
+    comment: "a separator between words in a list that has no source characters"
   - name: XSTRING_BEGIN
     comment: "the beginning of an execution string"
   - name: __END__
@@ -4552,7 +4554,7 @@ nodes:
     fields:
       - name: opening_loc
         type: location?
-      - name: value_loc
+      - name: content_loc
         type: location
       - name: closing_loc
         type: location?

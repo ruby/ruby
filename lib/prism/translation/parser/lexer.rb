@@ -185,6 +185,7 @@ module Prism
           USTAR: :tSTAR,
           USTAR_STAR: :tDSTAR,
           WORDS_SEP: :tSPACE,
+          WORDS_SEP_IMPLICIT: :tSPACE,
           XSTRING_BEGIN: :tXSTRING_BEG
         }
 
@@ -443,15 +444,7 @@ module Prism
                 location = range(token.location.start_offset, token.location.start_offset + 1)
               end
 
-              if percent_array?(quote_stack.pop)
-                prev_token = lexed[index - 2] if index - 2 >= 0
-                empty = %i[PERCENT_LOWER_I PERCENT_LOWER_W PERCENT_UPPER_I PERCENT_UPPER_W].include?(prev_token&.type)
-                ends_with_whitespace = prev_token&.type == :WORDS_SEP
-                # parser always emits a space token after content in a percent array, even if no actual whitespace is present.
-                if !empty && !ends_with_whitespace
-                  tokens << [:tSPACE, [nil, range(token.location.start_offset, token.location.start_offset)]]
-                end
-              end
+              quote_stack.pop
             when :tSYMBEG
               if (next_token = lexed[index]) && next_token.type != :STRING_CONTENT && next_token.type != :EMBEXPR_BEGIN && next_token.type != :EMBVAR && next_token.type != :STRING_END
                 next_location = token.location.join(next_token.location)
@@ -470,7 +463,9 @@ module Prism
             when :tXSTRING_BEG
               quote_stack.push(value)
             when :tSYMBOLS_BEG, :tQSYMBOLS_BEG, :tWORDS_BEG, :tQWORDS_BEG
-              if (next_token = lexed[index]) && next_token.type == :WORDS_SEP
+              # The separator that delimits the opener from the first word is
+              # part of the opener for parser, so it is not emitted separately.
+              if (next_token = lexed[index]) && %i[WORDS_SEP WORDS_SEP_IMPLICIT].include?(next_token.type)
                 index += 1
               end
 

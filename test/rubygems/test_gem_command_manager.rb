@@ -82,11 +82,7 @@ class TestGemCommandManager < Gem::TestCase
       message << "\nDid you mean?  \"push\""
     end
 
-    if e.respond_to?(:detailed_message)
-      actual_message = e.detailed_message(highlight: false).sub(/\A(.*?)(?: \(.+?\))/) { $1 }
-    else
-      actual_message = e.message
-    end
+    actual_message = e.detailed_message(highlight: false).sub(/\A(.*?)(?: \(.+?\))/) { $1 }
 
     assert_equal message, actual_message
   end

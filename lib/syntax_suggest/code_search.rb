@@ -32,7 +32,7 @@ module SyntaxSuggest
   #   search.invalid_blocks.map(&:to_s) # =>
   #   # => ["def lol\n"]
   #
-  class CodeSearch
+  class CodeSearch # :nodoc:
     private
 
     attr_reader :frontier

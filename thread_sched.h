@@ -131,6 +131,9 @@ struct rb_native_thread {
     // signalled by native_thread_interrupt() to break this thread out of a
     // blocking w32_wait_events()
     HANDLE interrupt_event;
+    // a high-resolution timer that ends a timed wait on readyq at its
+    // deadline rather than at the next timer tick (NULL if unavailable)
+    HANDLE wait_timer;
 #endif
 
     struct rb_thread_struct *running_thread;
@@ -161,8 +164,8 @@ struct rb_native_thread {
     bool retiring;
 
     // A terminating coroutine records its context here before its final
-    // transfer; this nt's loop reclaims it. (Not via coroutine_transfer()'s
-    // return value: its meaning differs between the amd64 asm and ucontext.)
+    // transfer; this nt's loop reclaims it. coroutine_transfer() cannot be
+    // used because a terminating coroutine never resumes to return a value.
     struct coroutine_context *dead_co;
 };
 

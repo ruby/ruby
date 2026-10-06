@@ -4273,6 +4273,31 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(:ok, many_kwargs(e0: :ok)[i], "#{i}: e0"); i+=1
   end
 
+  def test_many_kwargs_with_integer_refinement
+    assert_separately([], <<~'RUBY')
+      module Ref
+        refine Integer do
+          def ==(other) super; end
+        end
+      end
+
+      # 257 indices guarantee a collision in the 8-bit hint of a small Hash.
+      # Keep both indices above the keyword bitmask limit.
+      indices = (32...289).to_a
+      a, b = indices.combination(2).find { |x, y| (x.hash & 0xff) == (y.hash & 0xff) }
+      expected = (0...289).to_a
+      expected[a] = {}
+      expected[b] = {}
+      params = expected.each_with_index.map { |value, i| "k#{i}: #{value.inspect}" }
+      eval "def victim(#{params.join(', ')}) [#{expected.each_index.map { |i| "k#{i}" }.join(', ')}]; end"
+
+      assert_equal(expected, victim, '[Bug #22335]')
+      assert_equal(expected, victim(k0: 0), '[Bug #22335]')
+      kwargs = {k0: 0}
+      assert_equal(expected, victim(**kwargs), '[Bug #22335]')
+    RUBY
+  end
+
   def test_splat_empty_hash_with_block_passing
     assert_valid_syntax("bug15087(**{}, &nil)")
   end

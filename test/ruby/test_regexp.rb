@@ -1004,6 +1004,23 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal('foobazquux/foobazquux', result, bug8856)
   end
 
+  def test_alternation_compile_error_no_memory_leak
+    # A compile error in the 2nd+ branch of a top-level alternation leaked the
+    # partially parsed branch (parse_subexp freed the alternation list but not
+    # the node parse_branch had built so far). Regexp#to_s reaches this path
+    # for every /(?:a|b)c(d)/-shaped regexp.
+    assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~"end;"}", "[Bug #22384]", rss: true)
+      code = proc do
+        Regexp.new("a|b(c") rescue nil
+        /(?:a|b)c(d)/.to_s
+      end
+
+      1_000.times(&code)
+    begin;
+      300_000.times(&code)
+    end;
+  end
+
   def test_regsub_no_memory_leak
     assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~"end;"}", rss: true)
       code = proc do
@@ -1040,6 +1057,19 @@ class TestRegexp < Test::Unit::TestCase
     /bar/ =~ "bar"
     $~ = m
     assert_equal("foo", $&)
+  end
+
+  def test_match_setter_with_copy
+    [:dup, :clone].each do |copy|
+      [false, true].each do |freeze|
+        m = /a/.match("a").public_send(copy)
+        m.freeze if freeze
+        $~ = m
+        /b/ =~ "b"
+        assert_equal("a", m[0], "#{copy}, freeze: #{freeze}")
+        assert_equal("b", $&)
+      end
+    end
   end
 
   def test_match_without_regexp
@@ -2394,5 +2424,17 @@ class TestRegexp < Test::Unit::TestCase
     source = '(?:(?:foo)?|(?:bar)?)*' * 100000
     assert_raise(RegexpError) { Regexp.new(source) }
     assert_raise(SyntaxError) { eval("/#{source}/") }
+  end
+
+  def test_nested_repeat_expansion_overflow
+    assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}", timeout: 30)
+    begin;
+      # A nested repeat whose expanded size overflows int must not be
+      # unrolled: the compiler used to hang or emit wrapped jump offsets.
+      ["(?:.{90000,}){90000}", "(?:.{46341,}){46341}"].each do |src|
+        re = Regexp.new(src)
+        assert_nil(re.match("x" * 10), src)
+      end
+    end;
   end
 end

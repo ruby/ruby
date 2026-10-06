@@ -358,8 +358,6 @@ static void iseq_add_setlocal(rb_iseq_t *iseq, LINK_ANCHOR *const seq, const NOD
 #define IS_INSN_ID(iobj, insn) (INSN_OF(iobj) == BIN(insn))
 #define IS_NEXT_INSN_ID(link, insn) \
     ((link)->next && IS_INSN((link)->next) && IS_INSN_ID((link)->next, insn))
-#define IS_NEXT_NEXT_INSN_ID(link, insn) \
-    ((link)->next && IS_NEXT_INSN_ID((link)->next, insn))
 
 static inline bool
 IS_INDEPENDENT_INSN(LINK_ELEMENT *link)
@@ -378,6 +376,10 @@ IS_INDEPENDENT_INSN(LINK_ELEMENT *link)
         type == BIN(duphash) ||
         type == BIN(getinstancevariable) ||
         type == BIN(getlocal) ||
+        type == BIN(getlocal_WC_0) ||
+        type == BIN(getlocal_WC_1) ||
+        type == BIN(putobject_INT2FIX_0_) ||
+        type == BIN(putobject_INT2FIX_1_) ||
         type == BIN(opt_getconstant_path)
     );
 }
@@ -1024,8 +1026,8 @@ rb_iseq_translate_threaded_code(rb_iseq_t *iseq)
         encoded[i] = (VALUE)table[insn];
         i += len;
     }
-    FL_SET((VALUE)iseq, ISEQ_TRANSLATED);
 #endif
+    FL_SET((VALUE)iseq, ISEQ_TRANSLATED);
 
 #if USE_YJIT
     rb_yjit_live_iseq_count++;
@@ -1045,7 +1047,6 @@ rb_iseq_original_iseq(const rb_iseq_t *iseq) /* cold path */
     original_code = ALLOC_N(VALUE, ISEQ_BODY(iseq)->iseq_size);
     MEMCPY(original_code, ISEQ_BODY(iseq)->iseq_encoded, VALUE, ISEQ_BODY(iseq)->iseq_size);
 
-#if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
     {
         unsigned int i;
 
@@ -1057,7 +1058,6 @@ rb_iseq_original_iseq(const rb_iseq_t *iseq) /* cold path */
             i += insn_len(insn);
         }
     }
-#endif
 
     /* Concurrent callers can each build a copy; publish only fully
      * translated code and keep the first one. */
@@ -3242,16 +3242,43 @@ find_destination(INSN *i)
     return 0;
 }
 
+struct unreachable_unref {
+    const unsigned int capacity;
+    unsigned int gen;
+    int *counts;
+    unsigned int *stamps;
+};
+
 static int
-remove_unreachable_chunk(rb_iseq_t *iseq, LINK_ELEMENT *i)
+unreachable_unref_count(const struct unreachable_unref *unref, const LABEL *lab)
+{
+    unsigned int no = (unsigned int)lab->label_no;
+    return unref->stamps[no] == unref->gen ? unref->counts[no] : 0;
+}
+
+static void
+unreachable_unref_increment(const struct unreachable_unref *unref, const LABEL *lab)
+{
+    unsigned int no = (unsigned int)lab->label_no;
+    if (unref->stamps[no] != unref->gen) {
+        unref->stamps[no] = unref->gen;
+        unref->counts[no] = 0;
+    }
+    unref->counts[no]++;
+}
+
+static int
+remove_unreachable_chunk(rb_iseq_t *iseq, struct unreachable_unref *unref, LINK_ELEMENT *i)
 {
     LINK_ELEMENT *first = i, *end, *scan, *pending_end = 0;
     LABEL *pending = 0;
-    int *unref_counts = 0, nlabels = ISEQ_COMPILE_DATA(iseq)->label_no;
 
     if (!i) return 0;
-    unref_counts = ALLOCA_N(int, nlabels);
-    MEMZERO(unref_counts, int, nlabels);
+    if (++unref->gen == 0) {
+        /* The stamp wrapped around, so every stale stamp became ambiguous. */
+        MEMZERO(unref->stamps, unsigned int, unref->capacity);
+        unref->gen = 1;
+    }
 
     end = i;
     scan = i;
@@ -3264,8 +3291,8 @@ remove_unreachable_chunk(rb_iseq_t *iseq, LINK_ELEMENT *i)
                 break;
             }
             else if ((lab = find_destination((INSN *)scan)) != 0) {
-                unref_counts[lab->label_no]++;
-                if (lab == pending && lab->refcnt <= unref_counts[lab->label_no]) {
+                unreachable_unref_increment(unref, lab);
+                if (lab == pending && lab->refcnt <= unreachable_unref_count(unref, lab)) {
                     pending = 0;
                 }
             }
@@ -3276,7 +3303,7 @@ remove_unreachable_chunk(rb_iseq_t *iseq, LINK_ELEMENT *i)
                 if (pending) break;
                 return 0;
             }
-            if (lab->refcnt > unref_counts[lab->label_no]) {
+            if (lab->refcnt > unreachable_unref_count(unref, lab)) {
                 if (pending) break;
                 pending = lab;
                 pending_end = (scan == first) ? 0 : end;
@@ -3493,7 +3520,7 @@ iseq_reg_compile(rb_iseq_t *iseq, VALUE str, int options, const char *sourcefile
 }
 
 static int
-iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcallopt)
+iseq_peephole_optimize(rb_iseq_t *iseq, struct unreachable_unref *unref, LINK_ELEMENT *list, const int do_tailcallopt)
 {
     INSN *const iobj = (INSN *)list;
 
@@ -3531,7 +3558,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
              *      LABEL2 directly
              */
             if (replace_destination(iobj, diobj)) {
-                remove_unreachable_chunk(iseq, iobj->link.next);
+                remove_unreachable_chunk(iseq, unref, iobj->link.next);
                 goto again;
             }
         }
@@ -3604,7 +3631,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
                 ELEM_REPLACE(&piobj->link, &popiobj->link);
             }
         }
-        if (remove_unreachable_chunk(iseq, iobj->link.next)) {
+        if (remove_unreachable_chunk(iseq, unref, iobj->link.next)) {
             goto again;
         }
     }
@@ -3640,7 +3667,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
     }
 
     if (IS_INSN_ID(iobj, leave)) {
-        remove_unreachable_chunk(iseq, iobj->link.next);
+        remove_unreachable_chunk(iseq, unref, iobj->link.next);
     }
 
     /*
@@ -4097,7 +4124,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
                 }
                 label->refcnt++;
                 ELEM_INSERT_NEXT(next, &label->link);
-                CHECK(iseq_peephole_optimize(iseq, get_next_insn(jump), do_tailcallopt));
+                CHECK(iseq_peephole_optimize(iseq, unref, get_next_insn(jump), do_tailcallopt));
             }
             else {
                 ELEM_REMOVE(next);
@@ -4326,10 +4353,11 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
     *  putnil  / (or any other independent instruction)
     *  putself / (or any other independent instruction)
     */
-    if (IS_NEXT_NEXT_INSN_ID(&iobj->link, swap)) {
-        LINK_ELEMENT *first = &iobj->link;
-        LINK_ELEMENT *second = first->next;
+    if (IS_NEXT_INSN_ID(&iobj->link, swap)) {
+        LINK_ELEMENT *second = &iobj->link;
+        LINK_ELEMENT *first = second->prev;
         LINK_ELEMENT *swap = second->next;
+
         if (IS_INDEPENDENT_INSN(first) && IS_INDEPENDENT_INSN(second)) {
             ELEM_REMOVE(swap);
             ELEM_SWAP(first, second);
@@ -4587,6 +4615,17 @@ iseq_optimize(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
     int do_block_optimization = 0;
     LABEL * block_loop_label = NULL;
 
+    int nlabels = ISEQ_COMPILE_DATA(iseq)->label_no;
+    VALUE unref_counts_buf = 0, unref_stamps_buf = 0;
+    struct unreachable_unref unreachable_unref = {
+        .capacity = nlabels,
+        .gen = 0,
+        .counts = ALLOCV_N(int, unref_counts_buf, nlabels),
+        .stamps = ALLOCV_N(unsigned int, unref_stamps_buf, nlabels),
+    };
+    MEMZERO(unreachable_unref.counts, int, nlabels);
+    MEMZERO(unreachable_unref.stamps, unsigned int, nlabels);
+
     // If we're optimizing a block
     if (ISEQ_BODY(iseq)->type == ISEQ_TYPE_BLOCK) {
         do_block_optimization = 1;
@@ -4602,7 +4641,7 @@ iseq_optimize(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
     while (list) {
         if (IS_INSN(list)) {
             if (do_peepholeopt) {
-                iseq_peephole_optimize(iseq, list, tailcallopt);
+                iseq_peephole_optimize(iseq, &unreachable_unref, list, tailcallopt);
             }
             if (do_si) {
                 iseq_specialized_instruction(iseq, (INSN *)list);
@@ -4672,6 +4711,9 @@ iseq_optimize(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
             ELEM_REMOVE(le);
         }
     }
+
+    ALLOCV_END(unref_counts_buf);
+    ALLOCV_END(unref_stamps_buf);
     return COMPILE_OK;
 }
 
@@ -9394,6 +9436,9 @@ compile_builtin_attr_symbol(rb_iseq_t *iseq, VALUE symbol)
     else if (rb_streql_lit(string, "without_interrupts")) {
         ISEQ_BODY(iseq)->builtin_attrs |= BUILTIN_ATTR_WITHOUT_INTERRUPTS;
     }
+    else if (rb_streql_lit(string, "caller_user_box")) {
+        ISEQ_BODY(iseq)->builtin_attrs |= BUILTIN_ATTR_CALLER_USER_BOX;
+    }
     else {
         return COMPILE_NG;
     }
@@ -9582,6 +9627,14 @@ compile_builtin_function_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NOD
 
                 ADD_INSN1(ret, line_node, putobject, Qfalse);
                 return compile_builtin_mandatory_only_method(iseq, node, line_node);
+            }
+            else if (strcmp("local_self!", builtin_func) == 0) {
+                // Push the local named "self" (e.g. the `self:` keyword
+                // parameter of Ractor.shareable_proc) onto the stack.
+                ID id_self;
+                CONST_ID(id_self, "self");
+                compile_lvar(iseq, ret, line_node, id_self);
+                return COMPILE_OK;
             }
             else if (1) {
                 rb_bug("can't find builtin function:%s", builtin_func);
@@ -11113,20 +11166,34 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
       case NODE_AND:
       case NODE_OR:{
         LABEL *end_label = NEW_LABEL(line);
-        CHECK(COMPILE(ret, "nd_1st", RNODE_OR(node)->nd_1st));
-        if (!popped) {
-            ADD_INSN(ret, node, dup);
+        const NODE *cond = node;
+        /* Compile a chain of the same operator (`a && b && ...`) against one
+         * shared end label, so every branch targets it directly. Compiling
+         * nd_2nd recursively would instead give each operator its own label,
+         * and the peephole optimizer would rewrite that chain in quadratic
+         * time. */
+        while (1) {
+            CHECK(COMPILE(ret, "nd_1st", RNODE_OR(cond)->nd_1st));
+            if (!popped) {
+                ADD_INSN(ret, cond, dup);
+            }
+            if (type == NODE_AND) {
+                ADD_INSNL(ret, cond, branchunless, end_label);
+            }
+            else {
+                ADD_INSNL(ret, cond, branchif, end_label);
+            }
+            if (!popped) {
+                ADD_INSN(ret, cond, pop);
+            }
+            const NODE *rest = RNODE_OR(cond)->nd_2nd;
+            if (nd_type_p(rest, type)) {
+                cond = rest;
+                continue;
+            }
+            CHECK(COMPILE_(ret, "nd_2nd", rest, popped));
+            break;
         }
-        if (type == NODE_AND) {
-            ADD_INSNL(ret, node, branchunless, end_label);
-        }
-        else {
-            ADD_INSNL(ret, node, branchif, end_label);
-        }
-        if (!popped) {
-            ADD_INSN(ret, node, pop);
-        }
-        CHECK(COMPILE_(ret, "nd_2nd", RNODE_OR(node)->nd_2nd, popped));
         ADD_LABEL(ret, end_label);
         break;
       }
@@ -13718,6 +13785,7 @@ ibf_dump_outer_variables(struct ibf_dump *dump, const rb_iseq_t *iseq)
             ibf_dump_write_small_value(dump, ibf_dump_id(dump, id));
             ibf_dump_write_small_value(dump, val);
         }
+        ALLOCV_END(buff);
     }
 
     return offset;

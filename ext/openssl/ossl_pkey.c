@@ -35,7 +35,7 @@ const rb_data_type_t ossl_evp_pkey_type = {
     {
         0, ossl_evp_pkey_free,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED,
 };
 
 static VALUE

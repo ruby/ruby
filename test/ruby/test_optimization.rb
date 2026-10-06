@@ -840,6 +840,17 @@ class TestRubyOptimization < Test::Unit::TestCase
     RUBY
   end
 
+  def test_peephole_static_swap
+    code = <<~'RUBY'
+      outer = nil
+      m = Module.new
+      outer::M = m
+    RUBY
+    iseq = RubyVM::InstructionSequence.compile(code)
+    insn = iseq.disasm
+    assert_no_match(/ getlocal\s/, insn, '[Bug #22377]') # unoptimized getlocal
+  end
+
   def test_branch_condition_backquote
     bug = '[ruby-core:80740] [Bug #13444] redefined backquote should be called'
     class << self

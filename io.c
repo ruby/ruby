@@ -37,7 +37,7 @@
 #undef free
 #define free(x) xfree(x)
 
-#if defined(DOSISH) || defined(__CYGWIN__)
+#ifdef __CYGWIN__
 #include <io.h>
 #endif
 
@@ -48,23 +48,19 @@
 # include <sys/socket.h>
 #endif
 
-#if defined(__BOW__) || defined(__CYGWIN__) || defined(_WIN32)
+#if defined(__CYGWIN__) || defined(_WIN32)
 # define NO_SAFE_RENAME
 #endif
 
-#if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__) || defined(__sun) || defined(_nec_ews)
+#if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__) || defined(__sun)
 # define USE_SETVBUF
 #endif
 
-#ifdef __QNXNTO__
-#include <unix.h>
-#endif
-
 #include <sys/types.h>
-#if defined(HAVE_SYS_IOCTL_H) && !defined(_WIN32)
+#ifdef HAVE_SYS_IOCTL_H
 #include <sys/ioctl.h>
 #endif
-#if defined(HAVE_FCNTL_H) || defined(_WIN32)
+#if defined(HAVE_FCNTL_H)
 #include <fcntl.h>
 #elif defined(HAVE_SYS_FCNTL_H)
 #include <sys/fcntl.h>
@@ -76,7 +72,7 @@
 
 #include <sys/stat.h>
 
-#if defined(HAVE_SYS_PARAM_H) || defined(__HIUX_MPP__)
+#if defined(HAVE_SYS_PARAM_H)
 # include <sys/param.h>
 #endif
 
@@ -114,6 +110,10 @@
 #   undef HAVE_FCOPYFILE
 # endif
 
+#endif
+
+#if defined __APPLE__
+# include <AvailabilityMacros.h>
 #endif
 
 #include "ruby/internal/stdbool.h"
@@ -245,6 +245,39 @@ struct argf {
     int8_t init_p, next_p, binmode;
 };
 
+
+#if defined(__APPLE__) && \
+    (!defined(MAC_OS_VERSION_27_0) || (MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_VERSION_27_0))
+
+# if __has_attribute(availability) && __has_warning("-Wunguarded-availability-new")
+
+RBIMPL_WARNING_PUSH()
+RBIMPL_WARNING_IGNORED(-Wunguarded-availability-new)
+
+#   ifdef HAVE_DUP3
+static inline int (*rb_dup3(void))(int, int, int) {return &dup3;}
+#     define dup3 rb_dup3()
+#   endif
+
+#   ifdef HAVE_PIPE2
+static inline int (*rb_pipe2(void))(int [2], int) {return &pipe2;}
+#     define pipe2 rb_pipe2()
+#   endif
+
+RBIMPL_WARNING_POP()
+
+# else /* __API_AVAILABLE macro does nothing on gcc */
+
+#   ifdef HAVE_DUP3
+__attribute__((weak)) int dup3(int, int, int);
+#   endif
+#   ifdef HAVE_PIPE2
+__attribute__((weak)) int pipe2(int [2], int);
+#   endif
+
+# endif
+#endif /* __APPLE__ && < MAC_OS_X_VERSION_27_0 */
+
 static rb_atomic_t max_file_descriptor = NOFILE;
 void
 rb_update_max_fd(int fd)
@@ -303,23 +336,6 @@ rb_fd_fix_cloexec(int fd)
     rb_update_max_fd(fd);
 }
 
-/* this is only called once */
-static int
-rb_fix_detect_o_cloexec(int fd)
-{
-#if defined(O_CLOEXEC) && defined(F_GETFD)
-    int flags = fcntl(fd, F_GETFD);
-
-    if (flags == -1)
-        rb_bug("rb_fix_detect_o_cloexec: fcntl(%d, F_GETFD) failed: %s", fd, strerror(errno));
-
-    if (flags & FD_CLOEXEC)
-        return 1;
-#endif /* fall through if O_CLOEXEC does not work: */
-    rb_maygvl_fd_fix_cloexec(fd);
-    return 0;
-}
-
 static inline bool
 io_again_p(int e)
 {
@@ -330,7 +346,6 @@ int
 rb_cloexec_open(const char *pathname, int flags, mode_t mode)
 {
     int ret;
-    static int o_cloexec_state = -1; /* <0: unknown, 0: ignored, >0: working */
 
     static const int retry_interval = 0;
     static const int retry_max_count = 10000;
@@ -338,7 +353,6 @@ rb_cloexec_open(const char *pathname, int flags, mode_t mode)
     int retry_count = 0;
 
 #ifdef O_CLOEXEC
-    /* O_CLOEXEC is available since Linux 2.6.23.  Linux 2.6.18 silently ignore it. */
     flags |= O_CLOEXEC;
 #elif defined O_NOINHERIT
     flags |= O_NOINHERIT;
@@ -353,15 +367,10 @@ rb_cloexec_open(const char *pathname, int flags, mode_t mode)
     }
 
     if (ret < 0) return ret;
-    if (ret <= 2 || o_cloexec_state == 0) {
-        rb_maygvl_fd_fix_cloexec(ret);
-    }
-    else if (o_cloexec_state > 0) {
-        return ret;
-    }
-    else {
-        o_cloexec_state = rb_fix_detect_o_cloexec(ret);
-    }
+#ifdef O_CLOEXEC
+    if (ret > 2) return ret;
+#endif
+    rb_maygvl_fd_fix_cloexec(ret);
     return ret;
 }
 
@@ -384,23 +393,28 @@ rb_cloexec_dup2(int oldfd, int newfd)
     }
     else {
 #if defined(HAVE_DUP3) && defined(O_CLOEXEC)
-        static int try_dup3 = 1;
-        if (2 < newfd && try_dup3) {
+# if defined(__APPLE__)
+#   define try_dup3 (dup3 != NULL)
+#   define abandon_dup3() true
+# else
+        static bool try_dup3 = true;
+#   define abandon_dup3() (errno != ENOSYS || !!(try_dup3 = false))
+# endif
+        if (newfd <= 2) {
+            /* pass stdin, stdout and stderr to children  */
+        }
+        else if (try_dup3) {
             ret = dup3(oldfd, newfd, O_CLOEXEC);
+            /* dup3 is available since:
+             * - Linux 2.6.27, glibc 2.9
+             * - macOS 27.0
+             */
             if (ret != -1)
                 return ret;
-            /* dup3 is available since Linux 2.6.27, glibc 2.9. */
-            if (errno == ENOSYS) {
-                try_dup3 = 0;
-                ret = dup2(oldfd, newfd);
-            }
+            if (abandon_dup3()) return ret;
         }
-        else {
-            ret = dup2(oldfd, newfd);
-        }
-#else
-        ret = dup2(oldfd, newfd);
 #endif
+        ret = dup2(oldfd, newfd);
         if (ret < 0) return ret;
     }
     rb_maygvl_fd_fix_cloexec(ret);
@@ -425,16 +439,25 @@ rb_fd_set_nonblock(int fd)
     return 0;
 }
 
-int
-rb_cloexec_pipe(int descriptors[2])
+static inline int
+cloexec_pipe(int descriptors[2], int flags, bool force_cloexec)
 {
+    int result = -1;
 #ifdef HAVE_PIPE2
-    int result = pipe2(descriptors, O_CLOEXEC | O_NONBLOCK);
-#else
-    int result = pipe(descriptors);
+# if defined(__APPLE__)
+#   define try_pipe2 (pipe2 != NULL)
+#   define abandon_pipe2() true
+# else
+    static bool try_pipe2 = true;
+#   define abandon_pipe2() (errno != ENOSYS || !!(try_pipe2 = false))
+# endif
+    if (try_pipe2) {
+        result = pipe2(descriptors, O_CLOEXEC | flags);
+        if (result == 0) return result;
+        if (abandon_pipe2()) return result;
+    }
 #endif
-
-    if (result < 0)
+    if (result < 0 && (result = pipe(descriptors)) < 0)
         return result;
 
 #ifdef __CYGWIN__
@@ -446,7 +469,9 @@ rb_cloexec_pipe(int descriptors[2])
     }
 #endif
 
-#ifndef HAVE_PIPE2
+    if (!force_cloexec) return result;
+
+    /* no pipe2 or fallenback to dup */
     rb_maygvl_fd_fix_cloexec(descriptors[0]);
     rb_maygvl_fd_fix_cloexec(descriptors[1]);
 
@@ -454,9 +479,14 @@ rb_cloexec_pipe(int descriptors[2])
     rb_fd_set_nonblock(descriptors[0]);
     rb_fd_set_nonblock(descriptors[1]);
 #endif
-#endif
 
     return result;
+}
+
+int
+rb_cloexec_pipe(int descriptors[2])
+{
+    return cloexec_pipe(descriptors, O_NONBLOCK, true);
 }
 
 int
@@ -464,26 +494,9 @@ rb_cloexec_fcntl_dupfd(int fd, int minfd)
 {
     int ret;
 
-#if defined(HAVE_FCNTL) && defined(F_DUPFD_CLOEXEC) && defined(F_DUPFD)
-    static int try_dupfd_cloexec = 1;
-    if (try_dupfd_cloexec) {
-        ret = fcntl(fd, F_DUPFD_CLOEXEC, minfd);
-        if (ret != -1) {
-            if (ret <= 2)
-                rb_maygvl_fd_fix_cloexec(ret);
-            return ret;
-        }
-        /* F_DUPFD_CLOEXEC is available since Linux 2.6.24.  Linux 2.6.18 fails with EINVAL */
-        if (errno == EINVAL) {
-            ret = fcntl(fd, F_DUPFD, minfd);
-            if (ret != -1) {
-                try_dupfd_cloexec = 0;
-            }
-        }
-    }
-    else {
-        ret = fcntl(fd, F_DUPFD, minfd);
-    }
+#if defined(HAVE_FCNTL) && defined(F_DUPFD_CLOEXEC)
+    ret = fcntl(fd, F_DUPFD_CLOEXEC, minfd);
+    if (ret > 2) return ret;
 #elif defined(HAVE_FCNTL) && defined(F_DUPFD)
     ret = fcntl(fd, F_DUPFD, minfd);
 #else
@@ -975,6 +988,32 @@ io_ungetbyte(VALUE str, rb_io_t *fptr)
     fptr->rbuf.off-=(int)len;
     fptr->rbuf.len+=(int)len;
     MEMMOVE(fptr->rbuf.ptr+fptr->rbuf.off, RSTRING_PTR(str), char, len);
+}
+
+static void
+io_restore_read_buffer(VALUE str, rb_io_t *fptr)
+{
+    long len = RSTRING_LEN(str);
+
+    if (len > INT_MAX - fptr->rbuf.len) {
+        rb_raise(rb_eIOError, "read buffer too large");
+    }
+    if (fptr->rbuf.ptr == NULL || fptr->rbuf.capa >= len + fptr->rbuf.len) {
+        io_ungetbyte(str, fptr);
+    }
+    else {
+        int pending = fptr->rbuf.len;
+        int capa = (int)len + pending;
+        char *ptr = ALLOC_N(char, capa);
+
+        MEMMOVE(ptr, RSTRING_PTR(str), char, len);
+        MEMMOVE(ptr + len, fptr->rbuf.ptr + fptr->rbuf.off, char, pending);
+        ruby_xfree(fptr->rbuf.ptr);
+        fptr->rbuf.ptr = ptr;
+        fptr->rbuf.off = 0;
+        fptr->rbuf.len = capa;
+        fptr->rbuf.capa = capa;
+    }
 }
 
 static rb_io_t *
@@ -1673,8 +1712,14 @@ rb_io_maybe_wait(int error, VALUE io, VALUE events, VALUE timeout)
 #if EWOULDBLOCK != EAGAIN
       case EWOULDBLOCK:
 #endif
+      {
         // The operation would block, so wait for the specified events:
-        return rb_io_wait(io, events, timeout);
+        VALUE result = rb_io_wait(io, events, timeout);
+        // The scheduler may change errno while waiting. Preserve the original
+        // error in case no events are ready and the caller reports the failure.
+        errno = error;
+        return result;
+      }
 
       default:
         // Non-specific error, no event is ready:
@@ -2030,8 +2075,7 @@ io_fwrite(VALUE str, rb_io_t *fptr, int nosync)
 
 #ifdef _WIN32
     if (fptr->mode & FMODE_TTY) {
-        long len = rb_w32_write_console(str, fptr->fd);
-        if (len > 0) return len;
+        if (rb_w32_write_console(str, fptr->fd) > 0) return RSTRING_LEN(str);
     }
 #endif
 
@@ -2039,10 +2083,10 @@ io_fwrite(VALUE str, rb_io_t *fptr, int nosync)
     if (converted)
         OBJ_FREEZE(str);
 
-    tmp = rb_str_tmp_frozen_no_embed_acquire(str);
+    tmp = rb_str_no_gvl_safe_acquire(str);
     RSTRING_GETMEM(tmp, ptr, len);
     n = io_binwrite(ptr, len, fptr, nosync);
-    rb_str_tmp_frozen_release(str, tmp);
+    rb_str_no_gvl_safe_release(str, tmp);
 
     return n;
 }
@@ -2176,6 +2220,14 @@ io_binwritev(struct iovec *iov, int iovcnt, rb_io_t *fptr)
             }
 
             fptr->wbuf.len += total;
+
+            /* io_binwritev is only reached in sync/TTY mode (it is called only
+             * from io_fwritev, which io_writev uses only when FMODE_SYNC or
+             * FMODE_TTY is set), so the coalesced data must be flushed
+             * immediately rather than left in the buffer until the next flush
+             * or close. Otherwise a multi-argument write with many arguments
+             * would not be observably atomic under sync. */
+            if (io_fflush(fptr) < 0) return -1;
 
             return total;
         }
@@ -2863,10 +2915,6 @@ nogvl_fdatasync(void *ptr)
 {
     rb_io_t *fptr = ptr;
 
-#ifdef _WIN32
-    if (GetFileType((HANDLE)rb_w32_get_osfhandle(fptr->fd)) != FILE_TYPE_DISK)
-        return 0;
-#endif
     return (VALUE)fdatasync(fptr->fd);
 }
 
@@ -2989,16 +3037,21 @@ rb_io_pid(VALUE io)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
  *    path -> string or nil
  *
- *  Returns the path associated with the IO, or +nil+ if there is no path
- *  associated with the IO. It is not guaranteed that the path exists on
- *  the filesystem.
+ *  Returns the string path associated with `self`,
+ *  or `nil` if there is no associated path:
  *
- *    $stdin.path # => "<STDIN>"
+ *  ```ruby
+ *  path = 'doc/maintainers.md'
+ *  fd = File.open(path).fileno # => 6
+ *  IO.new(fd, path: path).path # => "doc/maintainers.md"
+ *  IO.new(fd).path             # => nil
+ *  ```
  *
- *    File.open("testfile") {|f| f.path} # => "testfile"
  */
 
 VALUE
@@ -3083,12 +3136,13 @@ read_buffered_data(char *ptr, long len, rb_io_t *fptr)
 }
 
 static long
-io_bufread(char *ptr, long len, rb_io_t *fptr)
+io_bufread(char *ptr, long len, rb_io_t *fptr, long *read_len)
 {
     long offset = 0;
     long n = len;
     long c;
 
+    *read_len = 0;
     if (READ_DATA_PENDING(fptr) == 0) {
         while (n > 0) {
           again:
@@ -3101,6 +3155,7 @@ io_bufread(char *ptr, long len, rb_io_t *fptr)
                 return -1;
             }
             offset += c;
+            *read_len = offset;
             if ((n -= c) <= 0) break;
         }
         return len - n;
@@ -3110,6 +3165,7 @@ io_bufread(char *ptr, long len, rb_io_t *fptr)
         c = read_buffered_data(ptr+offset, n, fptr);
         if (c > 0) {
             offset += c;
+            *read_len = offset;
             if ((n -= c) <= 0) break;
         }
         rb_io_check_closed(fptr);
@@ -3124,16 +3180,43 @@ static int io_setstrbuf(VALUE *str, long len);
 
 struct bufread_arg {
     char *str_ptr;
+    long offset;
     long len;
+    long read_len;
     rb_io_t *fptr;
 };
+
+static VALUE
+bufread_body(VALUE arg)
+{
+    struct bufread_arg *p = (struct bufread_arg *)arg;
+    p->len = io_bufread(p->str_ptr + p->offset, p->len, p->fptr, &p->read_len);
+    return Qundef;
+}
+
+static VALUE
+bufread_timeout(VALUE arg, VALUE error)
+{
+    struct bufread_arg *p = (struct bufread_arg *)arg;
+
+    if (p->offset + p->read_len > 0) {
+        VALUE str = rb_str_new(p->str_ptr, p->offset + p->read_len);
+        io_restore_read_buffer(str, p->fptr);
+    }
+    rb_exc_raise(error);
+    UNREACHABLE_RETURN(Qnil);
+}
 
 static VALUE
 bufread_call(VALUE arg)
 {
     struct bufread_arg *p = (struct bufread_arg *)arg;
-    p->len = io_bufread(p->str_ptr, p->len, p->fptr);
-    return Qundef;
+
+    if (NIL_P(p->fptr->timeout)) {
+        return bufread_body(arg);
+    }
+    return rb_rescue2(bufread_body, arg, bufread_timeout, arg,
+                      rb_eIOTimeoutError, (VALUE)0);
 }
 
 static long
@@ -3143,8 +3226,10 @@ io_fread(VALUE str, long offset, long size, rb_io_t *fptr)
     struct bufread_arg arg;
 
     io_setstrbuf(&str, offset + size);
-    arg.str_ptr = RSTRING_PTR(str) + offset;
+    arg.str_ptr = RSTRING_PTR(str);
+    arg.offset = offset;
     arg.len = size;
+    arg.read_len = 0;
     arg.fptr = fptr;
     rb_str_locktmp_ensure(str, bufread_call, (VALUE)&arg);
     len = arg.len;
@@ -3917,6 +4002,61 @@ search_delim(const char *p, long len, int delim, rb_encoding *enc)
 }
 
 static int
+read_raw_character(rb_io_t *fptr, rb_encoding *enc, char *buf)
+{
+    int n = 0;
+    int r;
+
+    do {
+        if (!READ_DATA_PENDING(fptr)) {
+            READ_CHECK(fptr);
+            if (io_fillbuf(fptr) < 0) break;
+        }
+        buf[n++] = *READ_DATA_PENDING_PTR(fptr);
+        fptr->rbuf.off++;
+        fptr->rbuf.len--;
+        r = rb_enc_precise_mbclen(buf, buf + n, enc);
+    } while (MBCLEN_NEEDMORE_P(r) && n < rb_enc_mbmaxlen(enc));
+
+    return n;
+}
+
+static void
+unread_raw_character(rb_io_t *fptr, const char *buf, int len)
+{
+    if (fptr->rbuf.capa - fptr->rbuf.len < len) {
+        if (fptr->rbuf.capa > INT_MAX - len)
+            rb_raise(rb_eIOError, "ungetbyte failed");
+        fptr->rbuf.capa += len;
+        REALLOC_N(fptr->rbuf.ptr, char, fptr->rbuf.capa);
+    }
+    io_ungetbyte(rb_str_new(buf, len), fptr);
+}
+
+static const char *
+search_wide_delim(const char *p, long len, const char *delim, int width)
+{
+    const char *e = p + len;
+    int index = 0;
+
+    while (index < width && delim[index] == 0) index++;
+    if (index == width) index = 0;
+
+    const char *candidate = p + index;
+    while (candidate < e) {
+        candidate = memchr(candidate, (unsigned char)delim[index], e - candidate);
+        if (candidate == NULL) break;
+        const char *start = candidate - index;
+        if ((start - p) % width == 0 && start + width <= e &&
+            memcmp(start, delim, width) == 0) {
+            return start;
+        }
+        candidate++;
+    }
+    return NULL;
+}
+
+static int
 appendline(rb_io_t *fptr, int delim, VALUE *strp, long *lp, rb_encoding *enc)
 {
     VALUE str = *strp;
@@ -3966,6 +4106,71 @@ appendline(rb_io_t *fptr, int delim, VALUE *strp, long *lp, rb_encoding *enc)
     }
 
     NEED_NEWLINE_DECORATOR_ON_READ_CHECK(fptr);
+    if (rb_enc_mbminlen(enc) != 1) {
+        char buf[ONIGENC_CODE_TO_MBC_MAXLEN];
+        int len;
+
+        if (limit < 0) {
+            int width = rb_enc_mbminlen(enc);
+            int delim_len = rb_enc_codelen(delim, enc);
+
+            if (delim_len == width) {
+                rb_enc_mbcput(delim, buf, enc);
+                for (;;) {
+                    if (!READ_DATA_PENDING(fptr)) {
+                        READ_CHECK(fptr);
+                        if (io_fillbuf(fptr) < 0) return EOF;
+                    }
+                    long pending = READ_DATA_PENDING_COUNT(fptr);
+                    long complete = pending - pending % width;
+                    const char *p = READ_DATA_PENDING_PTR(fptr);
+                    const char *q = complete ? search_wide_delim(p, complete, buf, width) : NULL;
+                    long take = q ? q - p + width : complete;
+
+                    if (take > 0) {
+                        if (NIL_P(str))
+                            *strp = str = rb_str_buf_new(0);
+                        rb_str_buf_cat(str, p, take);
+                        fptr->rbuf.off += (int)take;
+                        fptr->rbuf.len -= (int)take;
+                    }
+                    if (q) return delim;
+                    if (complete == pending) continue;
+
+                    len = read_raw_character(fptr, enc, buf);
+                    if (len == 0) return EOF;
+                    if (NIL_P(str))
+                        *strp = str = rb_str_buf_new(0);
+                    rb_str_buf_cat(str, buf, len);
+                    int r = rb_enc_precise_mbclen(buf, buf + len, enc);
+                    if (MBCLEN_CHARFOUND_P(r) &&
+                        rb_enc_mbc_to_codepoint(buf, buf + len, enc) == (unsigned int)delim)
+                        return delim;
+                }
+            }
+        }
+
+        while ((len = read_raw_character(fptr, enc, buf)) > 0) {
+            if (NIL_P(str))
+                *strp = str = rb_str_buf_new(0);
+            rb_str_buf_cat(str, buf, len);
+            if (limit > 0) {
+                if (len > limit) {
+                    *lp = 0;
+                    return (unsigned char)buf[len - 1];
+                }
+                *lp = limit -= len;
+            }
+            int r = rb_enc_precise_mbclen(buf, buf + len, enc);
+            if (MBCLEN_CHARFOUND_P(r) &&
+                rb_enc_mbc_to_codepoint(buf, buf + len, enc) == (unsigned int)delim)
+                return delim;
+            if (limit == 0)
+                return (unsigned char)buf[len - 1];
+        }
+        *lp = limit;
+        return EOF;
+    }
     do {
         long pending = READ_DATA_PENDING_COUNT(fptr);
         if (pending > 0) {
@@ -4029,6 +4234,20 @@ swallow(rb_io_t *fptr, int term)
     }
 
     NEED_NEWLINE_DECORATOR_ON_READ_CHECK(fptr);
+    rb_encoding *enc = io_read_encoding(fptr);
+    int widechar = rb_enc_mbminlen(enc) != 1;
+    if (widechar) {
+        char buf[ONIGENC_CODE_TO_MBC_MAXLEN];
+        int len;
+
+        while ((len = read_raw_character(fptr, enc, buf)) > 0) {
+            if (rb_enc_ascget(buf, buf + len, NULL, enc) != term) {
+                unread_raw_character(fptr, buf, len);
+                return TRUE;
+            }
+        }
+        return FALSE;
+    }
     do {
         size_t cnt;
         while ((cnt = READ_DATA_PENDING_COUNT(fptr)) > 0) {
@@ -4257,19 +4476,19 @@ rb_io_getline_0(VALUE rs, long limit, int chomp, rb_io_t *fptr)
         while ((c = appendline(fptr, newline, &str, &limit, enc)) != EOF) {
             const char *s, *p, *pp, *e;
 
-            if (c == newline) {
-                if (RSTRING_LEN(str) < rslen) continue;
+            if (c == newline && RSTRING_LEN(str) >= rslen) {
                 s = RSTRING_PTR(str);
                 e = RSTRING_END(str);
                 p = e - rslen;
-                if (!at_char_boundary(s, p, e, enc)) continue;
-                if (!rspara) rscheck(rsptr, rslen, rs);
-                if (memcmp(p, rsptr, rslen) == 0) {
-                    if (chomp) {
-                        if (chomp_cr && p > s && *(p-1) == '\r') --p;
-                        rb_str_set_len(str, p - s);
+                if (at_char_boundary(s, p, e, enc)) {
+                    if (!rspara) rscheck(rsptr, rslen, rs);
+                    if (memcmp(p, rsptr, rslen) == 0) {
+                        if (chomp) {
+                            if (chomp_cr && p > s && *(p-1) == '\r') --p;
+                            rb_str_set_len(str, p - s);
+                        }
+                        break;
                     }
-                    break;
                 }
             }
             if (limit == 0) {
@@ -5573,7 +5792,15 @@ fptr_finalize_flush(rb_io_t *fptr, int noraise, int keepgvl)
             error = finish_writeconv(fptr, noraise);
         }
     }
-    if (fptr->wbuf.len) {
+    /* Do not flush the write buffer on close when the stream is in sync
+     * mode. In sync mode Ruby's write buffer is not authoritative (writes go
+     * straight to the OS), so any bytes left in the buffer are the result of
+     * writes made while sync was disabled. Setting sync = true is therefore a
+     * way to abandon that pending output rather than replaying it on close,
+     * which matters after an interrupted write where the amount actually
+     * written is indeterminate. Call flush before enabling sync if the
+     * buffered data should still be sent. */
+    if (fptr->wbuf.len && !(fptr->mode & FMODE_SYNC)) {
         if (noraise) {
             io_flush_buffer_sync(fptr);
         }
@@ -6044,6 +6271,16 @@ rb_io_close_write(VALUE io)
 #ifndef SHUT_WR
 # define SHUT_WR 1
 #endif
+        /* Flush any buffered data before shutting down the write side.
+         * Otherwise the buffered bytes are silently dropped here, and a
+         * subsequent #close would try to flush them into the now
+         * shutdown(SHUT_WR) socket and fail with EPIPE. This matches the
+         * behaviour of the non-socket path below, which flushes via
+         * rb_io_close(). */
+        if (fptr->mode & FMODE_WRITABLE) {
+            if (io_fflush(fptr) < 0)
+                rb_sys_fail_on_write(fptr);
+        }
         if (shutdown(fptr->fd, SHUT_WR) < 0)
             rb_sys_fail_path(fptr->pathv);
         fptr->mode &= ~FMODE_WRITABLE;
@@ -7370,6 +7607,10 @@ pipe_atexit(void)
     struct pipe_list *list = pipe_list;
     struct pipe_list *tmp;
 
+    /* The CRT calls this on whichever thread calls ExitProcess, which can be
+     * one Ruby does not know, e.g. the console control handler on Ctrl+Break. */
+    if (!rb_current_execution_context(false)) return;
+
     while (list) {
         tmp = list->next;
         rb_io_fptr_finalize(list->fptr);
@@ -7442,7 +7683,6 @@ rb_pipe(int *pipes)
 }
 
 #ifdef _WIN32
-#define HAVE_SPAWNV 1
 #define spawnv(mode, cmd, args) rb_w32_uaspawn((mode), (cmd), (args))
 #define spawn(mode, cmd) rb_w32_uspawn((mode), (cmd), 0)
 #endif
@@ -7614,20 +7854,11 @@ pipe_open(VALUE execarg_obj, const char *modestr, enum rb_io_mode fmode,
 #endif
     int e = 0;
 #if defined(HAVE_SPAWNV)
-# if defined(HAVE_SPAWNVE)
-#   define DO_SPAWN(cmd, args, envp) ((args) ? \
-                                      spawnve(P_NOWAIT, (cmd), (args), (envp)) : \
-                                      spawne(P_NOWAIT, (cmd), (envp)))
-# else
-#   define DO_SPAWN(cmd, args, envp) ((args) ? \
-                                      spawnv(P_NOWAIT, (cmd), (args)) : \
-                                      spawn(P_NOWAIT, (cmd)))
-# endif
+# define DO_SPAWN(cmd, args) ((args) ? \
+                              spawnv(P_NOWAIT, (cmd), (args)) : \
+                              spawn(P_NOWAIT, (cmd)))
 # if !defined(HAVE_WORKING_FORK)
     char **args = NULL;
-#   if defined(HAVE_SPAWNVE)
-    char **envp = NULL;
-#   endif
 # endif
 #endif
 #if !defined(HAVE_WORKING_FORK)
@@ -7699,10 +7930,7 @@ pipe_open(VALUE execarg_obj, const char *modestr, enum rb_io_mode fmode,
         pid = rb_fork_async_signal_safe(&status, popen_exec, &arg, arg.eargp->redirect_fds, errmsg, sizeof(errmsg));
 # else
         rb_execarg_run_options(eargp, sargp, NULL, 0);
-#   if defined(HAVE_SPAWNVE)
-        if (eargp->envp_str) envp = (char **)RSTRING_PTR(eargp->envp_str);
-#   endif
-        while ((pid = DO_SPAWN(cmd, args, envp)) < 0) {
+        while ((pid = DO_SPAWN(cmd, args)) < 0) {
             /* exec failed */
             switch (e = errno) {
               case EAGAIN:
@@ -8137,14 +8365,8 @@ ruby_popen_writer(char *const *argv, rb_pid_t *pid)
     int write_pair[2];
 # endif
 
-#ifdef HAVE_PIPE2
-    int result = pipe2(write_pair, O_CLOEXEC);
-#else
-    int result = pipe(write_pair);
-#endif
-
     *pid = -1;
-    if (result == 0) {
+    if (cloexec_pipe(write_pair, 0, false) == 0) {
 # ifdef HAVE_WORKING_FORK
         pw.argv = argv;
         int status;
@@ -8188,33 +8410,47 @@ rb_open_file(VALUE io, VALUE fname, VALUE vmode, VALUE vperm, VALUE opt)
 /*
  *  Document-method: File::open
  *
+ *  :markup: markdown
+ *
  *  call-seq:
- *    File.open(path, mode = 'r', perm = 0666, **opts) -> file
- *    File.open(path, mode = 'r', perm = 0666, **opts) {|f| ... } -> object
+ *    File.open(path, mode = 'r', permissions = 0666, **options) -> file
+ *    File.open(path, mode = 'r', permissions = 0666, **options) {|file| ... } -> object
  *
- *  Creates a new File object, via File.new with the given arguments.
+ *  Creates a new \File object via File.new with the given arguments.
  *
- *  With no block given, returns the File object.
+ *  With no block given, returns the \File object.
  *
- *  With a block given, calls the block with the File object
- *  and returns the block's value.
+ *  With a block given, calls the block with the \File object,
+ *  closes the \File object, and returns the block's value:
  *
+ *  ```ruby
+ *  File.open('doc/maintainers.md') {|file| file.size } # => 14900
+ *  ```
+ *
+ *  Note that the \File object is automatically closed
+ *  even if the block raises an exception.
  */
 
 /*
  *  Document-method: IO::open
  *
- *  call-seq:
- *    IO.open(fd, mode = 'r', **opts)             -> io
- *    IO.open(fd, mode = 'r', **opts) {|io| ... } -> object
+ *  :markup: markdown
  *
- *  Creates a new \IO object, via IO.new with the given arguments.
+ *  call-seq:
+ *    IO.open(fd, mode = 'r', **options) -> io
+ *    IO.open(fd, mode = 'r', **options) {|io| ... } -> object
+ *
+ *  Creates a new \IO object via IO.new with the given arguments.
  *
  *  With no block given, returns the \IO object.
  *
- *  With a block given, calls the block with the \IO object
- *  and returns the block's value.
+ *  With a block given, calls the block with the \IO object,
+ *  closes the \IO object, and returns the block’s value:
  *
+ *  ```ruby
+ *  fd = File.sysopen('doc/maintainers.md') # => 6
+ *  IO.open(fd) {|io| io.read.size }        # => 14897
+ *  ```
  */
 
 static VALUE
@@ -9666,43 +9902,51 @@ rb_io_set_encoding_by_bom(VALUE io)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *    File.new(path, mode = 'r', perm = 0666, **opts) -> file
+ *    File.new(path, mode = 'r', permissions = 0666, **options) -> file
  *
- *  Opens the file at the given +path+ according to the given +mode+;
- *  creates and returns a new File object for that file.
+ *  Opens the file as specified by the given arguments.
+ *  Creates and returns a new open \File object for that file;
+ *  the opened file is in non-synchronous mode.
  *
- *  The new File object is buffered mode (or non-sync mode), unless
- *  +filename+ is a tty.
- *  See IO#flush, IO#fsync, IO#fdatasync, and IO#sync=.
+ *  Argument `path` must the string path to an existing filesystem entry:
  *
- *  Argument +path+ must be a valid file path:
+ *  ```ruby
+ *  file = File.new('doc/maintainers.md') # => #<File:doc/maintainers.md>
+ *  file.close                            # Clean up.
+ *  tty = File.new('/dev/tty')            # => #<File:/dev/tty>
+ *  tty.close                             # Clean up.
+ *  ```
  *
- *    f = File.new('/etc/fstab')
- *    f.close
- *    f = File.new('t.txt')
- *    f.close
+ *  Note that the caller is responsible for closing the file;
+ *  see File.open for automatic closing.
  *
- *  Optional argument +mode+ (defaults to 'r') must specify a valid mode;
- *  see {Access Modes}[rdoc-ref:File@Access+Modes]:
+ *  Optional argument `mode` (defaults to `'r'`) must specify a valid mode;
+ *  see [Access Modes](rdoc-ref:File@Access+Modes):
  *
- *    f = File.new('t.tmp', 'w')
- *    f.close
- *    f = File.new('t.tmp', File::RDONLY)
- *    f.close
+ *  ```ruby
+ *  file = File.new('t.tmp', 'w')          # => #<File:t.tmp>
+ *  file.close                             # Clean up.
+ *  file = File.new('t.tmp', File::RDONLY) # => #<File:t.tmp>
+ *  file.close                             # Clean up.
+ *  ```
  *
- *  Optional argument +perm+ (defaults to 0666) must specify valid permissions
- *  see {File Permissions}[rdoc-ref:File@File+Permissions]:
+ *  Optional argument `permissions` (defaults to `0666`) must specify valid permissions;
+ *  see [File Permissions](rdoc-ref:File@File+Permissions):
  *
- *    f = File.new('t.tmp', File::CREAT, 0644)
- *    f.close
- *    f = File.new('t.tmp', File::CREAT, 0444)
- *    f.close
+ *  ```ruby
+ *  file = File.new('t.tmp', 'w', 0644)    # => #<File:t.tmp>
+ *  file.close                             # Clean up.
+ *  file = File.new('t.tmp', 'w', 0444)    # => #<File:t.tmp>
+ *  file.close                             # Clean up.
+ *  ```
  *
- *  Optional keyword arguments +opts+ specify:
+ *  Optional keyword arguments `options` specify:
  *
- *  - {Open Options}[rdoc-ref:IO@Open+Options].
- *  - {Encoding options}[rdoc-ref:encodings.rdoc@Encoding+Options].
+ *  - [Open Options](rdoc-ref:IO@Open+Options).
+ *  - [Encoding options](rdoc-ref:encodings.rdoc@Encoding+Options).
  *
  */
 
@@ -11813,13 +12057,12 @@ io_encoding_set(rb_io_t *fptr, VALUE v1, VALUE v2, VALUE opt)
             if (!NIL_P(tmp) && rb_enc_asciicompat(enc = rb_enc_get(tmp))) {
                 parse_mode_enc(RSTRING_PTR(tmp), enc, &enc, &enc2, NULL);
                 SET_UNIVERSAL_NEWLINE_DECORATOR_IF_ENC2(enc2, ecflags);
-                ecflags = rb_econv_prepare_options(opt, &ecopts, ecflags);
             }
             else {
                 rb_io_ext_int_to_encs(find_encoding(v1), NULL, &enc, &enc2, 0);
                 SET_UNIVERSAL_NEWLINE_DECORATOR_IF_ENC2(enc2, ecflags);
-                ecopts = Qnil;
             }
+            ecflags = rb_econv_prepare_options(opt, &ecopts, ecflags);
         }
     }
     validate_enc_binmode(&fptr->mode, ecflags, enc, enc2);
@@ -15924,6 +16167,11 @@ Init_IO(void)
     rb_gvar_ractor_local("$stdout");
     rb_gvar_ractor_local("$>");
     rb_gvar_ractor_local("$stderr");
+
+    rb_gvar_box_dynamic("$stdin");
+    rb_gvar_box_dynamic("$stdout");
+    rb_gvar_box_dynamic("$>");
+    rb_gvar_box_dynamic("$stderr");
 
     rb_global_variable(&rb_stdin);
     rb_stdin  = rb_io_prep_stdin();

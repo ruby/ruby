@@ -44,18 +44,19 @@ jobs:
       OS_VER: windows-${{ matrix.os }}
       VCPKG_DEFAULT_TRIPLET: x64-windows
       FEED_URL: https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json
+      RUBY_DUMP_AST: ./dump_ast-required-unexpectedly
       NoDefaultCurrentDirectoryInExePath: 1
     steps:
       - run: md build
         working-directory:
 
-      - uses: ruby/setup-ruby@95ef2b042f9d7a56d8268cba8559e2842e2ad01b # v1.321.0
+      - uses: ruby/setup-ruby@14594264cd68ce8a2345dd349bc3d138a4ef85c8 # v1.327.0
         with:
           ruby-version: '3.2'
           bundler: none
           windows-toolchain: none
 
-      - uses: msys2/setup-msys2@66cd2cce69caa17b53920067426061ca1de3a884 # v2.32.0
+      - uses: msys2/setup-msys2@ec48f7c5447b3140e2b088413ae3a55687bccb6e # v2.33.0
         id: setup-msys2
         with:
           update: true

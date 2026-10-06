@@ -4,7 +4,7 @@
  */
 
 static const char *const
-IO_CONSOLE_VERSION = "0.9.2";
+IO_CONSOLE_VERSION = "0.9.4";
 
 #include "ruby.h"
 #include "ruby/io.h"
@@ -2314,6 +2314,9 @@ console_ttyname(VALUE io)
     return rb_usascii_str_new_lit("con");
 # elif defined HAVE_TTYNAME_R
     {
+# ifdef TTYNAME_R_RETURNS_CHAR_P
+#   define ttyname_r(fd, name, size) (ttyname_r(fd, name, size) == NULL ? errno : 0)
+# endif
 	char termname[1024], *tn = termname;
 	size_t size = sizeof(termname);
 	int e;

@@ -216,7 +216,7 @@ module Bundler
       Bundler.ui.debug(cmd)
       SharedHelpers.chdir(base) do
         outbuf = IO.popen(cmd, err: [:child, :out], &:read)
-        status = $?
+        status = Process.last_status
         block&.call(outbuf) if status.success?
         [outbuf, status]
       end

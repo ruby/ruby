@@ -36,6 +36,7 @@
 #include "internal/hash.h"
 #include "internal/object.h"
 #include "internal/proc.h"
+#include "internal/ractor.h"
 #include "internal/st.h"
 #include "internal/symbol.h"
 #include "internal/thread.h"
@@ -759,7 +760,7 @@ ar_each_key(ar_table *ar, int max, enum ar_each_key_type type, st_data_t *dst_ke
 }
 
 static st_table *
-ar_force_convert_table(VALUE hash, const char *file, int line)
+ar_force_convert_table(VALUE hash)
 {
     if (RHASH_ST_TABLE_P(hash)) {
         return RHASH_ST_TABLE(hash);
@@ -1553,7 +1554,9 @@ hash_alloc(VALUE klass, VALUE flags, VALUE ifnone, size_t size, bool frozen)
     VALUE hash = rb_newobj_of(klass, T_HASH | flags, hash_slot_size(size, frozen));
     rb_hash_set_ifnone(hash, ifnone);
 
-#ifdef RUBY_DEBUG
+    RHASH_AR_TABLE(hash)->ar_hint.word = 0;
+
+#if RUBY_DEBUG
     if (hash_slot_size(size, frozen) >= sizeof(struct RHash) + sizeof(st_table)) {
         RHASH_ST_TABLE(hash)->num_entries = 0;
         RHASH_ST_TABLE(hash)->entries = NULL;
@@ -1792,16 +1795,16 @@ rb_hash_modify_check(VALUE hash)
 }
 
 struct st_table *
-rb_hash_tbl_raw(VALUE hash, const char *file, int line)
+rb_hash_tbl_raw(VALUE hash)
 {
-    return ar_force_convert_table(hash, file, line);
+    return ar_force_convert_table(hash);
 }
 
 struct st_table *
-rb_hash_tbl(VALUE hash, const char *file, int line)
+rb_hash_tbl(VALUE hash)
 {
     OBJ_WB_UNPROTECT(hash);
-    return rb_hash_tbl_raw(hash, file, line);
+    return rb_hash_tbl_raw(hash);
 }
 
 static void
@@ -1852,7 +1855,7 @@ rb_hash_stlike_update(VALUE hash, st_data_t key, st_update_callback_func *func, 
     if (RHASH_AR_TABLE_P(hash)) {
         int result = ar_update(hash, key, func, arg);
         if (result == -1) {
-            ar_force_convert_table(hash, __FILE__, __LINE__);
+            ar_force_convert_table(hash);
         }
         else {
             return result;
@@ -5024,6 +5027,12 @@ rb_init_identtable(void)
     return st_init_table(&identhash);
 }
 
+void
+rb_init_existing_identtable_with_size(st_table *tbl, st_index_t size)
+{
+    st_init_existing_table_with_size(tbl, &identhash, size);
+}
+
 static int
 any_p_i(VALUE key, VALUE value, VALUE arg)
 {
@@ -5448,8 +5457,6 @@ static char **origenviron;
 static char **my_environ;
 #undef environ
 #define environ my_environ
-#undef getenv
-#define getenv(n) rb_w32_ugetenv(n)
 #elif defined(__APPLE__)
 #undef environ
 #define environ (*_NSGetEnviron())
@@ -5731,16 +5738,6 @@ env_fetch_values(int argc, VALUE *argv, VALUE ehash)
 }
 
 #if defined(_WIN32) || (defined(HAVE_SETENV) && defined(HAVE_UNSETENV))
-#elif defined __sun
-static int
-in_origenv(const char *str)
-{
-    char **env;
-    for (env = origenviron; *env; ++env) {
-        if (*env == str) return 1;
-    }
-    return 0;
-}
 #else
 static int
 envix(const char *nam)
@@ -5760,8 +5757,7 @@ envix(const char *nam)
 }
 #endif
 
-#if defined(_WIN32) || \
-  (defined(__sun) && !(defined(HAVE_SETENV) && defined(HAVE_UNSETENV)))
+#if defined(_WIN32)
 
 NORETURN(static void invalid_envname(const char *name));
 
@@ -5835,57 +5831,12 @@ ruby_setenv(const char *name, const char *value)
         if (ret) rb_sys_fail_sprintf("setenv(%s)", name);
     }
     else {
-#ifdef VOID_UNSETENV
-        ENV_LOCKING() {
-            unsetenv(name);
-        }
-#else
         int ret;
         ENV_LOCKING() {
             ret = unsetenv(name);
         }
 
         if (ret) rb_sys_fail_sprintf("unsetenv(%s)", name);
-#endif
-    }
-#elif defined __sun
-    /* Solaris 9 (or earlier) does not have setenv(3C) and unsetenv(3C). */
-    /* The below code was tested on Solaris 10 by:
-         % ./configure ac_cv_func_setenv=no ac_cv_func_unsetenv=no
-    */
-    size_t len, mem_size;
-    char **env_ptr, *str, *mem_ptr;
-
-    check_envname(name);
-    len = strlen(name);
-    if (value) {
-        mem_size = len + strlen(value) + 2;
-        mem_ptr = malloc(mem_size);
-        if (mem_ptr == NULL)
-            rb_sys_fail_sprintf("malloc(%"PRIuSIZE")", mem_size);
-        snprintf(mem_ptr, mem_size, "%s=%s", name, value);
-    }
-
-    ENV_LOCKING() {
-        for (env_ptr = GET_ENVIRON(environ); (str = *env_ptr) != 0; ++env_ptr) {
-            if (!strncmp(str, name, len) && str[len] == '=') {
-                if (!in_origenv(str)) free(str);
-                while ((env_ptr[0] = env_ptr[1]) != 0) env_ptr++;
-                break;
-            }
-        }
-    }
-
-    if (value) {
-        int ret;
-        ENV_LOCKING() {
-            ret = putenv(mem_ptr);
-        }
-
-        if (ret) {
-            free(mem_ptr);
-            rb_sys_fail_sprintf("putenv(%s)", name);
-        }
     }
 #else  /* WIN32 */
     size_t len;

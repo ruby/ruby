@@ -66,7 +66,7 @@ VS_VERSION_INFO VERSIONINFO
  FILEVERSION    #{nversion}
  PRODUCTVERSION #{nversion}
  FILEFLAGSMASK  0x3fL
- FILEFLAGS      0x0L
+ FILEFLAGS      #{patch.to_i < 0 ? 'VS_FF_PRERELEASE' : '0x0L'}
  FILEOS         VOS__WINDOWS32
  FILETYPE       #{type}
  FILESUBTYPE    VFT2_UNKNOWN
@@ -76,14 +76,14 @@ BEGIN
   BLOCK "000004b0"
   BEGIN
    VALUE "Comments",         "#{RUBY_RELEASE_DATE}\\0"
-   VALUE "CompanyName",      "http://www.ruby-lang.org/\\0"
+   VALUE "CompanyName",      "https://www.ruby-lang.org/\\0"
    VALUE "FileDescription",  "Ruby interpreter (#{desc}) #{sversion} [#{RUBY_PLATFORM}]\\0"
-   VALUE "FileVersion",      "#{sversion}\\0"
+   VALUE "FileVersion",      "#{sversion} (#{RUBY_REVISION})\\0"
    VALUE "InternalName",     "#{base + ext}\\0"
    VALUE "LegalCopyright",   "Copyright (C) 1993-#{RUBY_RELEASE_DATE[/\d+/]} Yukihiro Matsumoto\\0"
    VALUE "OriginalFilename", "#{base + ext}\\0"
    VALUE "ProductName",      "Ruby interpreter #{sversion} [#{RUBY_PLATFORM}]\\0"
-   VALUE "ProductVersion",   "#{sversion}\\0"
+   VALUE "ProductVersion",   "#{RUBY_VERSION}\\0"
   END
  END
  BLOCK "VarFileInfo"

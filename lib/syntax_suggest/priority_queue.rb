@@ -16,7 +16,7 @@ module SyntaxSuggest
   #
   #   puts queue.peek # => 44
   #
-  class PriorityQueue
+  class PriorityQueue # :nodoc:
     attr_reader :elements
 
     def initialize

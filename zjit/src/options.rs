@@ -22,6 +22,10 @@ pub const DEFAULT_MAX_VERSIONS: usize = 4;
 const DEFAULT_NUM_PROFILES: NumProfiles = 5;
 pub type NumProfiles = u16;
 
+/// Default --zjit-num-exits-until-invalidate
+const DEFAULT_NUM_EXITS_UNTIL_INVALIDATE: NumExits = 5;
+pub type NumExits = u32;
+
 /// Default --zjit-call-threshold. This should be large enough to avoid compiling
 /// warmup code, but small enough to perform well on micro-benchmarks.
 pub const DEFAULT_CALL_THRESHOLD: CallThreshold = 30;
@@ -80,6 +84,9 @@ pub struct Options {
     /// Number of times YARV instructions should be profiled.
     pub num_profiles: NumProfiles,
 
+    /// Number of recompile exits before invalidating the current version. See `exit_recompile`.
+    pub num_exits_until_invalidate: NumExits,
+
     /// Enable ZJIT statistics
     pub stats: bool,
 
@@ -113,6 +120,9 @@ pub struct Options {
 
     /// Dump High-level IR in Iongraph JSON format after optimization to /tmp/zjit-iongraph-{$PID}
     pub dump_hir_iongraph: bool,
+
+    /// Add line number mappings to HIR.
+    pub dump_hir_map: bool,
 
     /// Dump low-level IR
     pub dump_lir: Option<HashSet<DumpLIR>>,
@@ -198,6 +208,7 @@ impl Default for Options {
             exec_mem_bytes: 64 * 1024 * 1024,
             mem_bytes: 128 * 1024 * 1024,
             num_profiles: DEFAULT_NUM_PROFILES,
+            num_exits_until_invalidate: DEFAULT_NUM_EXITS_UNTIL_INVALIDATE,
             stats: false,
             print_stats: false,
             print_stats_file: None,
@@ -209,6 +220,7 @@ impl Default for Options {
             dump_hir_file: None,
             dump_hir_graphviz: None,
             dump_hir_iongraph: false,
+            dump_hir_map: false,
             dump_lir: None,
             dump_disasm: None,
             trace_side_exits: None,
@@ -442,6 +454,11 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
             Err(_) => return None,
         },
 
+        ("num-exits-until-invalidate", _) => match opt_val.parse() {
+            Ok(n) => options.num_exits_until_invalidate = n,
+            Err(_) => return None,
+        },
+
         ("max-versions", _) => match opt_val.parse() {
             Ok(n) => options.max_versions = n,
             Err(_) => return None,
@@ -566,6 +583,8 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
         ("dump-hir-init", "all") => options.dump_hir_init = Some(DumpHIR::All),
         ("dump-hir-init", "debug") => options.dump_hir_init = Some(DumpHIR::Debug),
 
+        ("dump-hir-map", "") => options.dump_hir_map = true,
+
         ("dump-hir-graphviz", "") => options.dump_hir_graphviz = Some("/dev/stderr".into()),
         ("dump-hir-graphviz", _) => {
             // Truncate the file if it exists
@@ -677,6 +696,13 @@ pub fn set_call_threshold(call_threshold: CallThreshold) {
     update_profile_threshold();
 }
 
+/// Update --zjit-num-exits-until-invalidate for testing
+#[cfg(test)]
+pub fn set_num_exits_until_invalidate(num_exits_until_invalidate: NumExits) {
+    rb_zjit_prepare_options();
+    unsafe { OPTIONS.as_mut().unwrap().num_exits_until_invalidate = num_exits_until_invalidate; }
+}
+
 /// Update --zjit-max-versions for testing
 #[cfg(test)]
 pub fn set_max_versions(max_versions: usize) {
@@ -689,6 +715,14 @@ pub fn set_max_versions(max_versions: usize) {
 pub fn set_inline_threshold(inline_threshold: InlineThreshold) {
     rb_zjit_prepare_options();
     unsafe { OPTIONS.as_mut().unwrap().inline_threshold = inline_threshold; }
+}
+
+/// Update --zjit-num-profiles for testing
+#[cfg(test)]
+pub fn set_num_profiles(num_profiles: NumProfiles) {
+    rb_zjit_prepare_options();
+    unsafe { OPTIONS.as_mut().unwrap().num_profiles = num_profiles; }
+    update_profile_threshold();
 }
 
 /// Set --zjit-mem-size for testing. It's used to force OOM in tests.

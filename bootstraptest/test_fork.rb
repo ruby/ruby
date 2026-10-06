@@ -54,7 +54,7 @@ assert_equal 'ok', %q{
   rescue NotImplementedError
     :ok
   end
-}, '[ruby-core:28924]'
+}, '[ruby-core:28924]' unless ENV["RUBYCI_OPENBSD"] == "1"
 
 assert_equal '[1, 2]', %q{
   a = []

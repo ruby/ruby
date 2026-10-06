@@ -4,7 +4,6 @@ begin
   require "socket"
   require "tmpdir"
   require "fcntl"
-  require "etc"
   require "test/unit"
 rescue LoadError
 end
@@ -365,13 +364,6 @@ class TestSocket < Test::Unit::TestCase
         next true unless s
         next true if ai.ipv6_linklocal? # IPv6 link-local address is too troublesome in this test.
         case RUBY_PLATFORM
-        when /linux/
-          if ai.ip_address.include?('%') and
-            (Etc.uname[:release][/[0-9.]+/].split('.').map(&:to_i) <=> [2,6,18]) <= 0
-            # Cent OS 5.6 (2.6.18-238.19.1.el5xen) doesn't correctly work
-            # sendmsg with pktinfo for link-local ipv6 addresses
-            next true
-          end
         when /freebsd/
           if ifa.addr.ipv6_linklocal?
             # FreeBSD 9.0 with default setting (ipv6_activate_all_interfaces

@@ -800,6 +800,8 @@ static VALUE
 etc_uname(VALUE obj)
 {
 #ifdef _WIN32
+    typedef long (WINAPI version_func)(OSVERSIONINFOW *);
+    version_func *pRtlGetVersion;
     OSVERSIONINFOW v;
     SYSTEM_INFO s;
     const char *sysname, *mach;
@@ -808,23 +810,14 @@ etc_uname(VALUE obj)
     DWORD len = 0;
     WCHAR *buf;
 
+    /* GetVersionEx reports 6.2 unless the manifest declares Windows 8.1 or later */
+    pRtlGetVersion = (version_func *)GetProcAddress(GetModuleHandleW(L"ntdll.dll"), "RtlGetVersion");
     v.dwOSVersionInfoSize = sizeof(v);
-    if (!GetVersionExW(&v))
-        rb_sys_fail("GetVersionEx");
+    if (!pRtlGetVersion || pRtlGetVersion(&v))
+        rb_notimplement();
 
     result = rb_hash_new();
-    switch (v.dwPlatformId) {
-      case VER_PLATFORM_WIN32s:
-	sysname = "Win32s";
-	break;
-      case VER_PLATFORM_WIN32_NT:
-	sysname = "Windows_NT";
-	break;
-      case VER_PLATFORM_WIN32_WINDOWS:
-      default:
-	sysname = "Windows";
-	break;
-    }
+    sysname = "Windows_NT";
     rb_hash_aset(result, SYMBOL_LIT("sysname"), rb_str_new_cstr(sysname));
     release = rb_sprintf("%lu.%lu.%lu", v.dwMajorVersion, v.dwMinorVersion, v.dwBuildNumber);
     rb_hash_aset(result, SYMBOL_LIT("release"), release);
@@ -848,6 +841,9 @@ etc_uname(VALUE obj)
 # ifndef PROCESSOR_ARCHITECTURE_INTEL
 #   define PROCESSOR_ARCHITECTURE_INTEL 0
 # endif
+# ifndef PROCESSOR_ARCHITECTURE_ARM64
+#   define PROCESSOR_ARCHITECTURE_ARM64 12
+# endif
     GetSystemInfo(&s);
     switch (s.wProcessorArchitecture) {
       case PROCESSOR_ARCHITECTURE_AMD64:
@@ -855,6 +851,9 @@ etc_uname(VALUE obj)
 	break;
       case PROCESSOR_ARCHITECTURE_ARM:
 	mach = "ARM";
+	break;
+      case PROCESSOR_ARCHITECTURE_ARM64:
+	mach = "ARM64";
 	break;
       case PROCESSOR_ARCHITECTURE_INTEL:
 	mach = "x86";
@@ -948,7 +947,7 @@ etc_confstr(VALUE obj, VALUE arg)
     int name;
     char localbuf[128], *buf = localbuf;
     size_t bufsize = sizeof(localbuf), ret;
-    VALUE tmp;
+    VALUE tmp = 0, str;
 
     name = NUM2INT(arg);
 
@@ -963,11 +962,15 @@ etc_confstr(VALUE obj, VALUE arg)
     if (bufsize < ret)
         rb_bug("required buffer size for confstr() changed dynamically.");
     if (ret == 0) {
-        if (errno == 0) /* no configuration-defined value */
+        int e = errno;
+        ALLOCV_END(tmp);
+        if (e == 0) /* no configuration-defined value */
             return Qnil;
-        rb_sys_fail("confstr");
+        rb_syserr_fail(e, "confstr");
     }
-    return rb_str_new_cstr(buf);
+    str = rb_str_new_cstr(buf);
+    ALLOCV_END(tmp);
+    return str;
 }
 #else
 #define etc_confstr rb_f_notimplement
@@ -1079,6 +1082,7 @@ etc_nprocessors_affin(void)
  * This method is implemented using:
  * - sched_getaffinity(): Linux
  * - sysconf(_SC_NPROCESSORS_ONLN): GNU/Linux, NetBSD, FreeBSD, OpenBSD, DragonFly BSD, OpenIndiana, Mac OS X, AIX
+ * - GetActiveProcessorCount(ALL_PROCESSOR_GROUPS): Windows
  *
  * *Example:*
  *
@@ -1117,9 +1121,24 @@ etc_nprocessors(VALUE obj)
         rb_sys_fail("sysconf(_SC_NPROCESSORS_ONLN)");
     }
 #else
-    SYSTEM_INFO si;
-    GetSystemInfo(&si);
-    ret = (long)si.dwNumberOfProcessors;
+# ifndef ALL_PROCESSOR_GROUPS
+#   define ALL_PROCESSOR_GROUPS 0xffff
+# endif
+    /* GetSystemInfo() counts the current processor group only, and mingw-w64 declares GetActiveProcessorCount() only for _WIN32_WINNT >= 0x0601 */
+    typedef DWORD (WINAPI *GetActiveProcessorCount_t)(WORD);
+    GetActiveProcessorCount_t pGetActiveProcessorCount =
+        (GetActiveProcessorCount_t)GetProcAddress(GetModuleHandleW(L"kernel32.dll"), "GetActiveProcessorCount");
+    DWORD n = 0;
+
+    if (pGetActiveProcessorCount) {
+        n = pGetActiveProcessorCount(ALL_PROCESSOR_GROUPS);
+    }
+    if (n == 0) {
+        SYSTEM_INFO si;
+        GetSystemInfo(&si);
+        n = si.dwNumberOfProcessors;
+    }
+    ret = (long)n;
 #endif
     return LONG2NUM(ret);
 }

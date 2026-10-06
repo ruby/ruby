@@ -104,18 +104,54 @@ class TestResolvDNS < Test::Unit::TestCase
     end
   end
 
-  # [ruby-core:65836]
-  def test_resolve_with_2_ndots
-    conf = Resolv::DNS::Config.new :nameserver => ['127.0.0.1'], :ndots => 2
-    assert conf.single?
+  def test_conf_ndots
+    # ndots defaults to 1
+    conf = Resolv::DNS::Config.new(nameserver: '127.0.0.1', search: ['local'])
+    conf.lazy_initialize
+    candidates = conf.generate_candidates('example.com')
+    assert_equal 2, candidates.size
+    assert_equal 'example.com', candidates[0].to_s
+    assert_equal 'example.com.local', candidates[1].to_s
 
-    candidates = []
-    conf.resolv('example.com') { |candidate, *args|
-      candidates << candidate
-      raise Resolv::DNS::Config::NXDomain
-    }
-    n = Resolv::DNS::Name.create 'example.com.'
-    assert_equal n, candidates.last
+    # ndots is 2: search path is used first
+    conf = Resolv::DNS::Config.new(nameserver: '127.0.0.1', search: ['local'], ndots: 2)
+    conf.lazy_initialize
+    candidates = conf.generate_candidates('example.com')
+    assert_equal 2, candidates.size
+    assert_equal 'example.com.local', candidates[0].to_s
+    assert_equal 'example.com', candidates[1].to_s
+  end
+
+  def test_conf_search
+    conf = Resolv::DNS::Config.new(nameserver: '127.0.0.1')
+    conf.lazy_initialize
+    candidates = conf.generate_candidates('example.com')
+    assert_equal candidates.size, candidates.uniq.size
+    assert_equal 'example.com', candidates[0].to_s
+
+    conf = Resolv::DNS::Config.new(nameserver: '127.0.0.1', search: ['local'])
+    conf.lazy_initialize
+    candidates = conf.generate_candidates('example.com')
+    assert_equal 2, candidates.size
+    assert_equal 'example.com', candidates[0].to_s
+    assert_equal 'example.com.local', candidates[1].to_s
+  end
+
+  def test_conf_search_root_domain
+    # Label.split turns both '.' and '' into the root label list
+    ['.', ''].each do |domain|
+      [0, 1, 2].each do |ndots|
+        conf = Resolv::DNS::Config.new(nameserver: '127.0.0.1', search: [domain], ndots: ndots)
+        conf.lazy_initialize
+        candidates = conf.generate_candidates('example.com')
+        assert_equal ['example.com'], candidates.map(&:to_s)
+      end
+    end
+
+    conf = Resolv::DNS::Config.new(nameserver: '127.0.0.1', search: ['.', 'local'])
+    conf.lazy_initialize
+    candidates = conf.generate_candidates('example.com')
+    assert_equal ['example.com', 'example.com.local'], candidates.map(&:to_s)
   end
 
   def test_query_ipv4_address
@@ -634,6 +670,22 @@ class TestResolvDNS < Test::Unit::TestCase
     end
   end
 
+  # A pointer chain hidden in a carrier RR's opaque RDATA, with a second RR's
+  # name pointing at its top, decodes to no labels but follows many pointers.
+  def test_too_many_compression_pointers
+    hops = 130
+    header  = [0, 0, 0, 2, 0, 0].pack("n6")
+    carrier = "\x00" + [60000, 1, 0].pack("nnN")
+    chain = +"\x00"; prev = 23
+    hops.times { |j| chain << [0xC000 | prev].pack("n"); prev = 24 + 2 * j }
+    carrier << [chain.bytesize].pack("n") << chain
+    top = 24 + 2 * (hops - 1)
+    victim = [0xC000 | top].pack("n") + [60000, 1, 0, 0].pack("nnNn")
+    assert_raise_with_message(Resolv::DNS::DecodeError, /too many compression pointers/) do
+      Resolv::DNS::Message.decode(header + carrier + victim)
+    end
+  end
+
   # A DNS label is limited to 63 octets. [RFC 1035 2.3.4] Writing a longer label
   # through the label path must raise instead of overflowing the length octet.
   def test_put_label_rejects_label_over_63_octets
@@ -1147,6 +1199,27 @@ class TestResolvDNS < Test::Unit::TestCase
     Timeout.timeout(EnvUtil.apply_timeout_scale(10)) { t.accept }
   end
 
+  # Closes +sock+ so that the peer sees a reset rather than an orderly close.
+  def reset_connection(sock)
+    sock.setsockopt(Socket::Option.linger(true, 0))
+    sock.close
+  end
+
+  # Answers one query on +u+ with an empty reply that has TC set, asking the
+  # client to retry the same nameserver over TCP.
+  def answer_truncated(u)
+    msg, (_, client_port, _, client_address) =
+      Timeout.timeout(EnvUtil.apply_timeout_scale(10)) { u.recvfrom(4096) }
+    id, word2, = msg.unpack('nnnnnn')
+    opcode = (word2 & 0x7800) >> 11
+    rd = (word2 & 0x0100) >> 8
+    qr = 1
+    tc = 1
+    ra = 1
+    word2 = (qr << 15) | (opcode << 11) | (tc << 9) | (rd << 8) | (ra << 7)
+    u.send([id, word2, 0, 0, 0, 0].pack('nnnnnn'), 0, client_address, client_port)
+  end
+
   # Reads one length prefixed DNS message from +sock+.
   def read_framed_query(sock)
     len_data = sock.read(2)
@@ -1318,18 +1391,7 @@ class TestResolvDNS < Test::Unit::TestCase
         end
       end
 
-      udp_server_thread = Thread.new do
-        msg, (_, client_port, _, client_address) =
-          Timeout.timeout(EnvUtil.apply_timeout_scale(10)) { u.recvfrom(4096) }
-        id, word2, = msg.unpack('nnnnnn')
-        opcode = (word2 & 0x7800) >> 11
-        rd = (word2 & 0x0100) >> 8
-        qr = 1
-        tc = 1 # ask the client to retry over TCP
-        ra = 1
-        word2 = (qr << 15) | (opcode << 11) | (tc << 9) | (rd << 8) | (ra << 7)
-        u.send([id, word2, 0, 0, 0, 0].pack('nnnnnn'), 0, client_address, client_port)
-      end
+      udp_server_thread = Thread.new { answer_truncated(u) }
 
       tcp_server_thread = Thread.new do
         ct = accept_within_timeout(t)
@@ -1363,18 +1425,7 @@ class TestResolvDNS < Test::Unit::TestCase
         end
       end
 
-      udp_server_thread = Thread.new do
-        msg, (_, client_port, _, client_address) =
-          Timeout.timeout(EnvUtil.apply_timeout_scale(10)) { u.recvfrom(4096) }
-        id, word2, = msg.unpack('nnnnnn')
-        opcode = (word2 & 0x7800) >> 11
-        rd = (word2 & 0x0100) >> 8
-        qr = 1
-        tc = 1 # ask the client to retry over TCP
-        ra = 1
-        word2 = (qr << 15) | (opcode << 11) | (tc << 9) | (rd << 8) | (ra << 7)
-        u.send([id, word2, 0, 0, 0, 0].pack('nnnnnn'), 0, client_address, client_port)
-      end
+      udp_server_thread = Thread.new { answer_truncated(u) }
 
       tcp_server_thread = Thread.new do
         partial = accept_within_timeout(t)
@@ -1420,18 +1471,7 @@ class TestResolvDNS < Test::Unit::TestCase
         end
       end
 
-      udp_server_thread = Thread.new do
-        msg, (_, client_port, _, client_address) =
-          Timeout.timeout(EnvUtil.apply_timeout_scale(10)) { u.recvfrom(4096) }
-        id, word2, = msg.unpack('nnnnnn')
-        opcode = (word2 & 0x7800) >> 11
-        rd = (word2 & 0x0100) >> 8
-        qr = 1
-        tc = 1 # ask the client to retry over TCP
-        ra = 1
-        word2 = (qr << 15) | (opcode << 11) | (tc << 9) | (rd << 8) | (ra << 7)
-        u.send([id, word2, 0, 0, 0, 0].pack('nnnnnn'), 0, client_address, client_port)
-      end
+      udp_server_thread = Thread.new { answer_truncated(u) }
 
       tcp_server_thread = Thread.new do
         ct = accept_within_timeout(t)
@@ -1450,6 +1490,129 @@ class TestResolvDNS < Test::Unit::TestCase
 
       result, = assert_join_threads([client_thread, udp_server_thread, tcp_server_thread])
       assert_equal(['192.0.2.1'], result.map {|rr| rr.address.to_s })
+    end
+  end
+
+  # A peer that goes away while another nameserver is being tried leaves a
+  # socket nobody is watching, so the loss only surfaces when the next request
+  # is written to it.  That write has to be reported the way a timeout is, or
+  # the nameservers left to try never get their turn.
+  def test_tcp_peer_lost_while_idle_falls_back_to_the_next_nameserver
+    with_udp_and_tcp('127.0.0.1', 0) do |u1, t1|
+      with_udp_and_tcp('127.0.0.1', 0) do |u2, t2|
+        u2.close # only the TCP side of the second nameserver is used
+        _, server1_port, _, server1_address = u1.addr
+        _, server2_port, _, server2_address = t2.addr
+        moved_on = Thread::Queue.new
+        done = Thread::Queue.new
+
+        client_thread = Thread.new do
+          begin
+            Resolv::DNS.open(nameserver_port: [[server1_address, server1_port],
+                                               [server2_address, server2_port]],
+                             raise_timeout_errors: true) do |dns|
+              dns.timeouts = [EnvUtil.apply_timeout_scale(0.5),
+                              EnvUtil.apply_timeout_scale(5)]
+              Timeout.timeout(EnvUtil.apply_timeout_scale(20)) do
+                dns.getresources('foo.example.org', Resolv::DNS::Resource::IN::A)
+              end
+            end
+          ensure
+            done.push(true)
+          end
+        end
+
+        udp_server1_thread = Thread.new { answer_truncated(u1) }
+
+        tcp_server1_thread = Thread.new do
+          ct = accept_within_timeout(t1)
+          read_framed_query(ct)
+          moved_on.pop # the client is waiting on the other nameserver by now
+          reset_connection(ct)
+        end
+
+        tcp_server2_thread = Thread.new do
+          ct = accept_within_timeout(t2)
+          begin
+            read_framed_query(ct)
+            moved_on.push(true)
+            # Answer the retry only, so that reaching this reply means the
+            # write to the first nameserver was survived rather than skipped.
+            query = Timeout.timeout(EnvUtil.apply_timeout_scale(10)) { read_framed_query(ct) }
+            ct.write(framed(reply_for_query(query, '192.0.2.1')))
+            done.pop
+          ensure
+            ct.close
+          end
+        end
+
+        result, = assert_join_threads([client_thread, udp_server1_thread,
+                                       tcp_server1_thread, tcp_server2_thread])
+        assert_equal(['192.0.2.1'], result.map {|rr| rr.address.to_s })
+      end
+    end
+  end
+
+  # The write that failed leaves the socket dead, so the round after it has to
+  # start from a new connection.  The reply below only reaches the client if it
+  # does.
+  def test_tcp_peer_lost_while_idle_is_not_used_again
+    with_udp_and_tcp('127.0.0.1', 0) do |u1, t1|
+      with_udp_and_tcp('127.0.0.1', 0) do |u2, t2|
+        u2.close # only the TCP side of the second nameserver is used
+        _, server1_port, _, server1_address = u1.addr
+        _, server2_port, _, server2_address = t2.addr
+        moved_on = Thread::Queue.new
+        done = Thread::Queue.new
+
+        client_thread = Thread.new do
+          begin
+            Resolv::DNS.open(nameserver_port: [[server1_address, server1_port],
+                                               [server2_address, server2_port]],
+                             raise_timeout_errors: true) do |dns|
+              dns.timeouts = [EnvUtil.apply_timeout_scale(0.5),
+                              EnvUtil.apply_timeout_scale(0.5),
+                              EnvUtil.apply_timeout_scale(5)]
+              Timeout.timeout(EnvUtil.apply_timeout_scale(20)) do
+                dns.getresources('foo.example.org', Resolv::DNS::Resource::IN::A)
+              end
+            end
+          ensure
+            done.close
+          end
+        end
+
+        udp_server1_thread = Thread.new { answer_truncated(u1) }
+
+        tcp_server1_thread = Thread.new do
+          lost = accept_within_timeout(t1)
+          read_framed_query(lost)
+          moved_on.pop # the client is waiting on the other nameserver by now
+          reset_connection(lost)
+          fresh = accept_within_timeout(t1)
+          begin
+            fresh.write(framed(reply_for_query(read_framed_query(fresh), '192.0.2.1')))
+            done.pop
+          ensure
+            fresh.close
+          end
+        end
+
+        tcp_server2_thread = Thread.new do
+          ct = accept_within_timeout(t2)
+          begin
+            read_framed_query(ct)
+            moved_on.push(true)
+            done.pop # never answer, but stay open so the retries are read
+          ensure
+            ct.close
+          end
+        end
+
+        result, = assert_join_threads([client_thread, udp_server1_thread,
+                                       tcp_server1_thread, tcp_server2_thread])
+        assert_equal(['192.0.2.1'], result.map {|rr| rr.address.to_s })
+      end
     end
   end
 end

@@ -111,6 +111,7 @@ vm_lock_enter(rb_ractor_t *cr, rb_vm_t *vm, bool locked, bool no_barrier, unsign
 
     vm->ractor.sync.lock_rec++;
     *lev = vm->ractor.sync.lock_rec;
+    RUBY_ASSERT_CRITICAL_SECTION_ENTER();
 
     RUBY_DEBUG_LOG2(file, line, "rec:%u owner:%u", vm->ractor.sync.lock_rec,
                     (unsigned int)rb_ractor_id(vm->ractor.sync.lock_owner));
@@ -144,6 +145,7 @@ vm_lock_leave(rb_vm_t *vm, bool no_barrier, unsigned int *lev APPEND_LOCATION_AR
         RUBY_DTRACE_GVL_RELEASE();
     }
 
+    RUBY_ASSERT_CRITICAL_SECTION_LEAVE();
     vm->ractor.sync.lock_rec--;
     *lev = vm->ractor.sync.lock_rec;
 

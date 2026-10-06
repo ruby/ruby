@@ -295,7 +295,7 @@ rb_iseq_flip_cnt_increment(const rb_iseq_t *iseq)
 typedef VALUE iseq_value_itr_t(void *ctx, VALUE obj);
 
 static inline void
-iseq_scan_bits(unsigned int page, iseq_bits_t bits, VALUE *code, VALUE *original_iseq)
+iseq_scan_bits(const struct rb_gc_mark_ctx *ctx, unsigned int page, iseq_bits_t bits, VALUE *code, VALUE *original_iseq)
 {
     unsigned int offset;
     unsigned int page_offset = (page * ISEQ_MBITS_BITLENGTH);
@@ -304,21 +304,21 @@ iseq_scan_bits(unsigned int page, iseq_bits_t bits, VALUE *code, VALUE *original
         offset = ntz_intptr(bits);
         if (original_iseq) {
             VALUE op = original_iseq[page_offset + offset];
-            rb_gc_mark_and_move(&code[page_offset + offset]);
+            rb_gc_mark_and_move_ctx(ctx, &code[page_offset + offset]);
             VALUE newop = code[page_offset + offset];
             if (op != newop) {
                 original_iseq[page_offset + offset] = newop;
             }
         }
         else {
-            rb_gc_mark_and_move(&code[page_offset + offset]);
+            rb_gc_mark_and_move_ctx(ctx, &code[page_offset + offset]);
         }
         bits &= bits - 1; // Reset Lowest Set Bit (BLSR)
     }
 }
 
 static void
-rb_iseq_mark_and_move_each_compile_data_value(const rb_iseq_t *iseq, VALUE *original_iseq)
+rb_iseq_mark_and_move_each_compile_data_value(const struct rb_gc_mark_ctx *ctx, const rb_iseq_t *iseq, VALUE *original_iseq)
 {
     unsigned int size;
     VALUE *code;
@@ -330,18 +330,18 @@ rb_iseq_mark_and_move_each_compile_data_value(const rb_iseq_t *iseq, VALUE *orig
     // Embedded VALUEs
     if (compile_data->mark_bits.list) {
         if(compile_data->is_single_mark_bit) {
-            iseq_scan_bits(0, compile_data->mark_bits.single, code, original_iseq);
+            iseq_scan_bits(ctx, 0, compile_data->mark_bits.single, code, original_iseq);
         }
         else {
             for (unsigned int i = 0; i < ISEQ_MBITS_BUFLEN(size); i++) {
                 iseq_bits_t bits = compile_data->mark_bits.list[i];
-                iseq_scan_bits(i, bits, code, original_iseq);
+                iseq_scan_bits(ctx, i, bits, code, original_iseq);
             }
         }
     }
 }
 static void
-rb_iseq_mark_and_move_each_body_value(const rb_iseq_t *iseq, VALUE *original_iseq)
+rb_iseq_mark_and_move_each_body_value(const struct rb_gc_mark_ctx *ctx, const rb_iseq_t *iseq, VALUE *original_iseq)
 {
     unsigned int size;
     VALUE *code;
@@ -360,7 +360,7 @@ rb_iseq_mark_and_move_each_body_value(const rb_iseq_t *iseq, VALUE *original_ise
         for (unsigned int i = 0; i < body->icvarc_size; i++, is_entries++) {
             ICVARC icvarc = (ICVARC)is_entries;
             if (icvarc->entry) {
-                rb_gc_mark_and_move((VALUE *)&icvarc->entry);
+                rb_gc_mark_and_move_ctx(ctx, (VALUE *)&icvarc->entry);
             }
         }
 
@@ -368,7 +368,7 @@ rb_iseq_mark_and_move_each_body_value(const rb_iseq_t *iseq, VALUE *original_ise
         for (unsigned int i = 0; i < body->ise_size; i++, is_entries++) {
             union iseq_inline_storage_entry *const is = (union iseq_inline_storage_entry *)is_entries;
             if (is->once.value) {
-                rb_gc_mark_and_move(&is->once.value);
+                rb_gc_mark_and_move_ctx(ctx, &is->once.value);
             }
         }
 
@@ -376,7 +376,7 @@ rb_iseq_mark_and_move_each_body_value(const rb_iseq_t *iseq, VALUE *original_ise
         for (unsigned int i = 0; i < body->ic_size; i++, is_entries++) {
             IC ic = (IC)is_entries;
             if (ic->entry) {
-                rb_gc_mark_and_move_ptr(&ic->entry);
+                rb_gc_mark_and_move_ptr_ctx(ctx, &ic->entry);
             }
         }
     }
@@ -384,12 +384,12 @@ rb_iseq_mark_and_move_each_body_value(const rb_iseq_t *iseq, VALUE *original_ise
     // Embedded VALUEs
     if (body->mark_bits.list) {
         if (ISEQ_MBITS_BUFLEN(size) == 1) {
-            iseq_scan_bits(0, body->mark_bits.single, code, original_iseq);
+            iseq_scan_bits(ctx, 0, body->mark_bits.single, code, original_iseq);
         }
         else {
             for (unsigned int i = 0; i < ISEQ_MBITS_BUFLEN(size); i++) {
                 iseq_bits_t bits = body->mark_bits.list[i];
-                iseq_scan_bits(i, bits, code, original_iseq);
+                iseq_scan_bits(ctx, i, bits, code, original_iseq);
             }
         }
     }
@@ -405,28 +405,28 @@ cc_is_active(const struct rb_callcache *cc)
 }
 
 void
-rb_iseq_mark_and_move(rb_iseq_t *iseq, bool reference_updating)
+rb_iseq_mark_and_move(const struct rb_gc_mark_ctx *ctx, rb_iseq_t *iseq, bool reference_updating)
 {
     RUBY_MARK_ENTER("iseq");
 
     if (ISEQ_BODY(iseq)) {
         struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
 
-        rb_iseq_mark_and_move_each_body_value(iseq, reference_updating ? ISEQ_ORIGINAL_ISEQ(iseq) : NULL);
+        rb_iseq_mark_and_move_each_body_value(ctx, iseq, reference_updating ? ISEQ_ORIGINAL_ISEQ(iseq) : NULL);
 
         struct rb_iseq_variable *v = ISEQ_VARIABLE(iseq);
-        if (v) rb_gc_mark_and_move(&v->script_lines);
-        rb_gc_mark_and_move(&body->location.label);
-        rb_gc_mark_and_move(&body->location.pathobj);
-        if (body->local_iseq) rb_gc_mark_and_move_ptr(&body->local_iseq);
-        if (body->parent_iseq) rb_gc_mark_and_move_ptr(&body->parent_iseq);
-        if (body->mandatory_only_iseq) rb_gc_mark_and_move_ptr(&body->mandatory_only_iseq);
+        if (v) rb_gc_mark_and_move_ctx(ctx, &v->script_lines);
+        rb_gc_mark_and_move_ctx(ctx, &body->location.label);
+        rb_gc_mark_and_move_ctx(ctx, &body->location.pathobj);
+        if (body->local_iseq) rb_gc_mark_and_move_ptr_ctx(ctx, &body->local_iseq);
+        if (body->parent_iseq) rb_gc_mark_and_move_ptr_ctx(ctx, &body->parent_iseq);
+        if (body->mandatory_only_iseq) rb_gc_mark_and_move_ptr_ctx(ctx, &body->mandatory_only_iseq);
 
         if (body->call_data) {
             struct rb_call_data *cds = body->call_data;
             for (unsigned int i = 0; i < body->ci_size; i++) {
 
-                if (cds[i].ci) rb_gc_mark_and_move_ptr(&cds[i].ci);
+                if (cds[i].ci) rb_gc_mark_and_move_ptr_ctx(ctx, &cds[i].ci);
 
                 const struct rb_callcache *cc = cds[i].cc;
                 if (!cc || cc == rb_vm_empty_cc() || cc == rb_vm_empty_cc_for_super()) {
@@ -436,11 +436,11 @@ rb_iseq_mark_and_move(rb_iseq_t *iseq, bool reference_updating)
                 }
 
                 if (reference_updating) {
-                    rb_gc_update_moved_ptr(&cds[i].cc);
+                    rb_gc_update_moved_ptr_ctx(ctx, &cds[i].cc);
                 }
                 else {
                     if (cc_is_active(cc)) {
-                        rb_gc_mark_movable((VALUE)cc);
+                        rb_gc_mark_movable_ctx(ctx, (VALUE)cc);
                     }
                     else {
                         // Either the CC or CME has been invalidated. Replace
@@ -456,7 +456,7 @@ rb_iseq_mark_and_move(rb_iseq_t *iseq, bool reference_updating)
 
             if (keyword->default_values != NULL) {
                 for (int j = 0, i = keyword->required_num; i < keyword->num; i++, j++) {
-                    rb_gc_mark_and_move(&keyword->default_values[j]);
+                    rb_gc_mark_and_move_ctx(ctx, &keyword->default_values[j]);
                 }
             }
         }
@@ -468,7 +468,7 @@ rb_iseq_mark_and_move(rb_iseq_t *iseq, bool reference_updating)
                 struct iseq_catch_table_entry *entry;
                 entry = UNALIGNED_MEMBER_PTR(table, entries[i]);
                 if (entry->iseq) {
-                    rb_gc_mark_and_move_ptr(&entry->iseq);
+                    rb_gc_mark_and_move_ptr_ctx(ctx, &entry->iseq);
                 }
             }
         }
@@ -506,7 +506,7 @@ rb_iseq_mark_and_move(rb_iseq_t *iseq, bool reference_updating)
         }
         else {
             // TODO: check jit payload
-            if (!rb_gc_checking_shareable()) {
+            if (!rb_gc_checking_shareable_ctx(ctx)) {
 #if USE_YJIT || USE_ZJIT
                 if (jit_payload_p) {
                     if (jit_payload_lock_p) {
@@ -533,28 +533,28 @@ rb_iseq_mark_and_move(rb_iseq_t *iseq, bool reference_updating)
         }
 
         // TODO: ractor aware coverage
-        if (!rb_gc_checking_shareable()) {
+        if (!rb_gc_checking_shareable_ctx(ctx)) {
             if (v) {
-                rb_gc_mark_and_move(&v->coverage);
-                rb_gc_mark_and_move(&v->pc2branchindex);
+                rb_gc_mark_and_move_ctx(ctx, &v->coverage);
+                rb_gc_mark_and_move_ctx(ctx, &v->pc2branchindex);
             }
         }
     }
 
     if (FL_TEST_RAW((VALUE)iseq, ISEQ_NOT_LOADED_YET)) {
-        if (!rb_gc_checking_shareable()) {
-            rb_gc_mark_and_move(&iseq->aux.loader.obj);
+        if (!rb_gc_checking_shareable_ctx(ctx)) {
+            rb_gc_mark_and_move_ctx(ctx, &iseq->aux.loader.obj);
         }
     }
     else if (FL_TEST_RAW((VALUE)iseq, ISEQ_USE_COMPILE_DATA)) {
-        if (!rb_gc_checking_shareable()) {
+        if (!rb_gc_checking_shareable_ctx(ctx)) {
             const struct iseq_compile_data *const compile_data = ISEQ_COMPILE_DATA(iseq);
 
             rb_iseq_mark_and_move_insn_storage(compile_data->insn.storage_head);
-            rb_iseq_mark_and_move_each_compile_data_value(iseq, reference_updating ? ISEQ_ORIGINAL_ISEQ(iseq) : NULL);
+            rb_iseq_mark_and_move_each_compile_data_value(ctx, iseq, reference_updating ? ISEQ_ORIGINAL_ISEQ(iseq) : NULL);
 
-            rb_gc_mark_and_move((VALUE *)&compile_data->err_info);
-            rb_gc_mark_and_move((VALUE *)&compile_data->catch_table_ary);
+            rb_gc_mark_and_move_ctx(ctx, (VALUE *)&compile_data->err_info);
+            rb_gc_mark_and_move_ctx(ctx, (VALUE *)&compile_data->catch_table_ary);
         }
     }
     else {
@@ -4093,12 +4093,7 @@ rb_vm_insn_addr2opcode(const void *addr)
 int
 rb_vm_insn_decode(const VALUE encoded)
 {
-#if OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE
-    int insn = rb_vm_insn_addr2insn((void *)encoded);
-#else
-    int insn = (int)encoded;
-#endif
-    return insn;
+    return rb_vm_insn_addr2insn((void *)encoded);
 }
 
 // Turn on or off tracing for a given instruction address

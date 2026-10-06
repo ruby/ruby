@@ -23,6 +23,11 @@ def min_long
   -(2**(PlatformGuard::C_LONG_SIZE - 1))
 end
 
+# Larger than the longest String or Array, whose lengths are pointer-sized
+def max_length
+  2**(PlatformGuard::POINTER_SIZE - 1) - 1
+end
+
 # This is a bit hairy, but we need to be able to write specs that cover the
 # boundary between Fixnum and Bignum for operations like Fixnum#<<. Since
 # this boundary is implementation-dependent, we use these helpers to write

@@ -157,6 +157,12 @@ bsock_close_write(VALUE sock)
     if (!(fptr->mode & FMODE_READABLE)) {
         return rb_io_close(sock);
     }
+    /* Flush any buffered (sync == false) data before shutting down the
+     * write side. Otherwise the buffered bytes are silently dropped here,
+     * and a subsequent #close would try to flush them into the now
+     * shutdown(SHUT_WR) socket and fail with EPIPE. This matches the
+     * write-only branch above, which flushes via rb_io_close(). */
+    rb_io_flush(sock);
     shutdown(fptr->fd, SHUT_WR);
     fptr->mode &= ~FMODE_WRITABLE;
 

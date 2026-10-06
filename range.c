@@ -1369,31 +1369,6 @@ range_reverse_each(VALUE range)
     return range;
 }
 
-/*
- *  call-seq:
- *    self.begin -> object
- *
- *  Returns the object that defines the beginning of +self+.
- *
- *    (1..4).begin # => 1
- *    (..2).begin  # => nil
- *
- *  Related: Range#first, Range#end.
- */
-
-/*
- *  call-seq:
- *    self.end -> object
- *
- *  Returns the object that defines the end of +self+.
- *
- *    (1..4).end  # => 4
- *    (1...4).end # => 4
- *    (1..).end   # => nil
- *
- *  Related: Range#begin, Range#last.
- */
-
 static VALUE
 first_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, cbarg))
 {
@@ -2984,6 +2959,28 @@ Init_Range(void)
     rb_define_method(rb_cRange, "%", range_percent_step, 1);
     rb_define_method(rb_cRange, "reverse_each", range_reverse_each, 0);
     rb_define_method(rb_cRange, "bsearch", range_bsearch, 0);
+#if 0 /* for RDoc */
+    /*
+     *  The object that defines the beginning of +self+.
+     *
+     *    (1..4).begin # => 1
+     *    (..2).begin  # => nil
+     *
+     *  Related: Range#first, Range#end.
+     */
+    rb_define_attr(rb_cRange, "begin", TRUE, FALSE);
+
+    /*
+     *  The object that defines the end of +self+.
+     *
+     *    (1..4).end  # => 4
+     *    (1...4).end # => 4
+     *    (1..).end   # => nil
+     *
+     *  Related: Range#begin, Range#last.
+     */
+    rb_define_attr(rb_cRange, "end", TRUE, FALSE);
+#endif
     rb_struct_define_aref_method(rb_cRange, id_beg, 0);
     rb_struct_define_aref_method(rb_cRange, id_end, 1);
     rb_define_method(rb_cRange, "first", range_first, -1);

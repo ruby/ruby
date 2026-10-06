@@ -5,7 +5,7 @@ module SyntaxSuggest
   # priority and also ensures that when one element
   # engulfs/covers/eats another that the larger element
   # evicts the smaller element
-  class PriorityEngulfQueue
+  class PriorityEngulfQueue # :nodoc:
     def initialize
       @queue = PriorityQueue.new
     end

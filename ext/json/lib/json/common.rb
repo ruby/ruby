@@ -80,14 +80,6 @@ module JSON
     def generator=(generator) # :nodoc:
       old, $VERBOSE = $VERBOSE, nil
 
-      # The default proc used when the +sort_keys+ generation option is +true+.
-      # It returns a new hash with the entries sorted by their keys.
-      sort_keys_proc = ->(hash) { hash.sort.to_h }
-      if defined?(::Ractor) && Ractor.respond_to?(:shareable_lambda)
-        sort_keys_proc = Ractor.shareable_lambda(&sort_keys_proc)
-      end
-      generator::State.default_sort_keys_proc = sort_keys_proc
-
       @generator = generator
       if generator.const_defined?(:GeneratorMethods)
         generator_methods = generator::GeneratorMethods
@@ -146,7 +138,7 @@ module JSON
     # Is +nil+ when raised by JSON::ResumableParser.
     attr_reader :line
 
-    # Column number where the parser encountered an error.
+    # One-based column number where the parser encountered an error, counted in Unicode codepoints.
     # Is +nil+ when raised by JSON::ResumableParser.
     attr_reader :column
 
@@ -232,7 +224,7 @@ module JSON
   Fragment = Struct.new(:json) do
     def initialize(json)
       unless string = String.try_convert(json)
-        raise TypeError, " no implicit conversion of #{json.class} into String"
+        raise TypeError, "no implicit conversion of #{json.class} into String"
       end
 
       super(string)
@@ -707,10 +699,10 @@ module JSON
     unless source.is_a?(String)
       if source.respond_to? :to_str
         source = source.to_str
+      elsif source.respond_to? :read
+        source = source.read
       elsif source.respond_to? :to_io
         source = source.to_io.read
-      elsif source.respond_to?(:read)
-        source = source.read
       end
     end
 
@@ -835,7 +827,12 @@ module JSON
     #
     #  puts MyApp::API_JSON_CODER.dump(Time.now.utc) # => "2025-01-21T08:41:44.286Z"
     #
-    def initialize(object_class: nil, array_class: nil, on_load: nil, **options, &as_json)
+    # The conversion callback can also be passed as +as_json:+. If both are given, the block takes precedence.
+    # Passing +false+ or +nil+ for +strict:+ raises ArgumentError.
+    #
+    def initialize(object_class: nil, array_class: nil, on_load: nil, strict: true, **options, &as_json)
+      raise ArgumentError, "JSON::Coder requires strict mode" unless strict
+
       if object_class || array_class
         on_load = ParserOptions.on_load(on_load, object_class, array_class)
       end
@@ -847,7 +844,7 @@ module JSON
       @state = State.new(
         **generator_options,
         strict: true,
-        as_json: as_json,
+        as_json: as_json || generator_options[:as_json],
       ).freeze
     end
 

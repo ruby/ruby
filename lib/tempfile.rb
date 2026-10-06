@@ -390,7 +390,7 @@ class Tempfile < DelegateClass(File)
         $stderr.puts "removing #{@path}..." if $DEBUG
         begin
           File.unlink(@path)
-        rescue Errno::ENOENT
+        rescue Errno::ENOENT, Errno::EACCES
         end
         $stderr.puts "done" if $DEBUG
       end

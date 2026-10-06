@@ -15,7 +15,7 @@ class TestGemExtExtConfBuilder < Gem::TestCase
   end
 
   def test_class_build
-    if vc_windows? && !nmake_found?
+    if nmake? && !nmake_found?
       pend("test_class_build skipped - nmake not found")
     end
 
@@ -96,7 +96,7 @@ class TestGemExtExtConfBuilder < Gem::TestCase
   end
 
   def test_class_build_extconf_fail
-    if vc_windows? && !nmake_found?
+    if nmake? && !nmake_found?
       pend("test_class_build_extconf_fail skipped - nmake not found")
     end
 
@@ -124,7 +124,7 @@ class TestGemExtExtConfBuilder < Gem::TestCase
   end
 
   def test_class_build_extconf_success_without_warning
-    if vc_windows? && !nmake_found?
+    if nmake? && !nmake_found?
       pend("test_class_build_extconf_fail skipped - nmake not found")
     end
 
@@ -147,7 +147,7 @@ class TestGemExtExtConfBuilder < Gem::TestCase
   end
 
   def test_class_build_unconventional
-    if vc_windows? && !nmake_found?
+    if nmake? && !nmake_found?
       pend("test_class_build skipped - nmake not found")
     end
 
@@ -188,7 +188,7 @@ end
   end
 
   def test_class_make
-    if vc_windows? && !nmake_found?
+    if nmake? && !nmake_found?
       pend("test_class_make skipped - nmake not found")
     end
 

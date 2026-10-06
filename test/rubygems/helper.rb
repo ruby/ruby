@@ -404,6 +404,10 @@ class Gem::TestCase < Test::Unit::TestCase
     ENV["BUNDLE_COOLDOWN"] = nil
     ENV["RUBYGEMS_PREVENT_UPDATE_SUGGESTION"] = "true"
 
+    # Child ruby processes inherit RUBY_BOX and print an experimental
+    # warning on startup, breaking assertions on subprocess stderr.
+    ENV["RUBYOPT"] = [ENV["RUBYOPT"], "-W:no-experimental"].compact.join(" ") if ruby_box_enabled?
+
     @current_dir = Dir.pwd
     @fetcher     = nil
 
@@ -1411,8 +1415,8 @@ Also, a list:
   end
 
   ##
-  # Returns whether or not we're on a version of Ruby built with VC++ (or
-  # Borland) versus Cygwin, Mingw, etc.
+  # Returns whether or not we're on a version of Ruby built with VC++ versus
+  # Cygwin, Mingw, etc.
 
   def self.vc_windows?
     RUBY_PLATFORM.match("mswin")
@@ -1441,12 +1445,29 @@ Also, a list:
   end
 
   ##
-  # Returns the make command for the current platform. For versions of Ruby
-  # built on MS Windows with VC++ or Borland it will return 'nmake'. On all
-  # other platforms, including Cygwin, it will return 'make'.
+  # Is this test running under Ruby::Box (RUBY_BOX=1)?
+
+  def ruby_box_enabled?
+    defined?(Ruby::Box) && Ruby::Box.enabled?
+  end
+
+  ##
+  # Returns the make command that Gem::Ext::Builder uses. It comes from the
+  # environment or from --with-make-prog at configure time, and otherwise is
+  # 'nmake' for versions of Ruby built on MS Windows with VC++ and 'make' on
+  # all other platforms, including Cygwin.
 
   def make_command
-    ENV["make"] || ENV["MAKE"] || (vc_windows? ? "nmake" : "make")
+    ENV["MAKE"] || ENV["make"] ||
+      RbConfig::CONFIG["configure_args"].to_s[/with-make-prog=(\w+)/, 1] ||
+      (vc_windows? ? "nmake" : "make")
+  end
+
+  ##
+  # Returns whether or not the make command is nmake.
+
+  def nmake?
+    /\bnmake/i.match?(make_command)
   end
 
   ##
@@ -1768,6 +1789,11 @@ Also, a list:
       Gem::PQCUtilities.support_ml_dsa_key?
   end
 
+  def omit_unless_support_ml_dsa_key_load
+    omit "OpenSSL cannot load ML-DSA keys" unless
+      Gem::PQCUtilities.support_ml_dsa_key_load?
+  end
+
   def omit_unless_support_ml_dsa_cert
     omit "Ruby OpenSSL cannot sign a certificate with an ML-DSA key" unless
       Gem::PQCUtilities.support_ml_dsa_cert?
@@ -1780,6 +1806,11 @@ Also, a list:
 
   def omit_if_support_ml_dsa_key
     omit "OpenSSL supports ML-DSA" if Gem::PQCUtilities.support_ml_dsa_key?
+  end
+
+  def omit_if_support_ml_dsa_key_load
+    omit "OpenSSL loads ML-DSA keys" if
+      Gem::PQCUtilities.support_ml_dsa_key_load?
   end
 end
 
@@ -1807,7 +1838,7 @@ class Object
       end
     end
 
-    metaclass.send(:ruby2_keywords, name) if metaclass.respond_to?(:ruby2_keywords, true)
+    metaclass.send(:ruby2_keywords, name)
 
     yield self
   ensure

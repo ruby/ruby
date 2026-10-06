@@ -232,11 +232,6 @@ make_counters! {
         exit_callee_side_exit,
         exit_interrupt,
         exit_stackoverflow,
-        exit_block_param_proxy_not_iseq_or_ifunc,
-        exit_block_param_proxy_not_nil,
-        exit_block_param_proxy_not_proc,
-        exit_block_param_proxy_fallback_miss,
-        exit_block_param_proxy_profile_not_covered,
         exit_invoke_block_handler_not_iseq,
         exit_invoke_block_iseq_changed,
         exit_block_param_wb_required,
@@ -340,6 +335,7 @@ make_counters! {
         getivar_fallback_not_t_object,
         getivar_fallback_complex,
         getivar_fallback_no_side_exits,
+        getivar_fallback_multi_ractor,
     }
 
     // Ivar fallback counters that are summed as dynamic_definedivar_count
@@ -372,6 +368,7 @@ make_counters! {
     compile_error_validation_duplicate_instruction,
     compile_error_validation_type_check_failure,
     compile_error_validation_misc_validation_error,
+    compile_error_validation_cfg_not_reducible,
 
     // unhandled_hir_insn_: Unhandled HIR instructions
     unhandled_hir_insn_invokebuiltin,
@@ -494,15 +491,6 @@ make_counters! {
     inline_reject_no_returns,
     inline_reject_budget_exceeded,
 
-    getblockparamproxy_handler_iseq,
-    getblockparamproxy_handler_ifunc,
-    getblockparamproxy_handler_symbol,
-    getblockparamproxy_handler_proc,
-    getblockparamproxy_handler_nil,
-    getblockparamproxy_handler_polymorphic,
-    getblockparamproxy_handler_megamorphic,
-    getblockparamproxy_handler_no_profiles,
-
     total_native_stack_bytes,
 }
 
@@ -580,6 +568,7 @@ pub fn exit_counter_for_compile_error(compile_error: &CompileError) -> Counter {
                 OperandNotDefined(_, _, _)    => compile_error_validation_operand_not_defined,
                 DuplicateInstruction(_, _)    => compile_error_validation_duplicate_instruction,
                 MismatchedOperandType(..)     => compile_error_validation_type_check_failure,
+                IrreducibleLoopEdge(..)       => compile_error_validation_cfg_not_reducible,
                 MiscValidationError(..)       => compile_error_validation_misc_validation_error,
             },
         }
@@ -637,11 +626,6 @@ pub fn side_exit_counter(reason: crate::hir::SideExitReason) -> Counter {
         CalleeSideExit                => exit_callee_side_exit,
         Interrupt                     => exit_interrupt,
         StackOverflow                 => exit_stackoverflow,
-        BlockParamProxyNotIseqOrIfunc => exit_block_param_proxy_not_iseq_or_ifunc,
-        BlockParamProxyNotNil         => exit_block_param_proxy_not_nil,
-        BlockParamProxyNotProc       => exit_block_param_proxy_not_proc,
-        BlockParamProxyFallbackMiss => exit_block_param_proxy_fallback_miss,
-        BlockParamProxyProfileNotCovered => exit_block_param_proxy_profile_not_covered,
         InvokeBlockHandlerNotIseq     => exit_invoke_block_handler_not_iseq,
         InvokeBlockIseqChanged        => exit_invoke_block_iseq_changed,
         BlockParamWbRequired          => exit_block_param_wb_required,
@@ -788,33 +772,37 @@ pub fn send_fallback_counter_for_super_method_type(method_type: crate::hir::Meth
 /// Primitive called in zjit.rb. Zero out all the counters.
 #[unsafe(no_mangle)]
 pub extern "C" fn rb_zjit_reset_stats_bang(_ec: EcPtr, _self: VALUE) -> VALUE {
-    let counters = ZJITState::get_counters();
-    let exit_counters = ZJITState::get_exit_counters();
+    // All the counters are on ZJITState so no state means nothing to reset.
+    if !ZJITState::has_instance() {
+        return Qnil;
+    }
 
-    // Reset all counters to zero
-    *counters = Counters::default();
+    with_vm_lock(src_loc!(), || {
+        // Reset all counters to zero
+        *ZJITState::get_counters() = Counters::default();
 
-    // Reset exit counters for YARV instructions
-    exit_counters.as_mut_slice().fill(0);
+        // Reset exit counters for YARV instructions
+        ZJITState::get_exit_counters().as_mut_slice().fill(0);
 
-    // Reset send fallback counters
-    ZJITState::get_send_fallback_counters().as_mut_slice().fill(0);
+        // Reset send fallback counters
+        ZJITState::get_send_fallback_counters().as_mut_slice().fill(0);
 
-    // Reset not-inlined counters
-    ZJITState::get_not_inlined_cfunc_counter_pointers().iter_mut()
-        .for_each(|b| { **(b.1) = 0; });
+        // Reset not-inlined counters
+        ZJITState::get_not_inlined_cfunc_counter_pointers().iter_mut()
+            .for_each(|b| { **(b.1) = 0; });
 
-    // Reset not-annotated counters
-    ZJITState::get_not_annotated_cfunc_counter_pointers().iter_mut()
-        .for_each(|b| { **(b.1) = 0; });
+        // Reset not-annotated counters
+        ZJITState::get_not_annotated_cfunc_counter_pointers().iter_mut()
+            .for_each(|b| { **(b.1) = 0; });
 
-    // Reset ccall counters
-    ZJITState::get_ccall_counter_pointers().iter_mut()
-        .for_each(|b| { **(b.1) = 0; });
+        // Reset ccall counters
+        ZJITState::get_ccall_counter_pointers().iter_mut()
+            .for_each(|b| { **(b.1) = 0; });
 
-    // Reset iseq call counters
-    ZJITState::get_iseq_calls_count_pointers().iter_mut()
-        .for_each(|b| { **(b.1) = 0; });
+        // Reset iseq call counters
+        ZJITState::get_iseq_calls_count_pointers().iter_mut()
+            .for_each(|b| { **(b.1) = 0; });
+    });
 
     Qnil
 }

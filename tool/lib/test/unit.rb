@@ -403,11 +403,16 @@ module Test
         end
 
         def kill
-          EnvUtil::Debugger.search&.dump(@pid)
+          EnvUtil::Debugger.search&.dump(target_pid)
           signal = RUBY_PLATFORM =~ /mswin|mingw/ ? :KILL : :SEGV
-          Process.kill(signal, @pid)
+          Process.kill(signal, target_pid)
           warn "worker #{to_s} does not respond; #{signal} is sent"
         rescue Errno::ESRCH
+        end
+
+        # exec in runruby.rb runs the worker as another process on Windows
+        def target_pid
+          RUBY_PLATFORM =~ /mswin|mingw/ && @real_pid || @pid
         end
 
         def died(*additional)
@@ -430,7 +435,7 @@ module Test
         end
 
         attr_reader :io, :pid
-        attr_accessor :status, :file, :real_file, :loadpath
+        attr_accessor :status, :file, :real_file, :real_pid, :loadpath
 
         private
 
@@ -495,6 +500,7 @@ module Test
         worker.close
         if @jobserver and (token = @job_tokens.slice!(0))
           @jobserver[1] << token
+          @jobserver[1].flush
         end
         @workers.delete(worker)
         @dead_workers << worker
@@ -555,6 +561,12 @@ module Test
           end
         rescue Timeout::Error
           if pids
+            if RUBY_PLATFORM =~ /mswin|mingw/
+              # The test processes are not children on Windows and their pids
+              # may be reused once they exit, so kill only the running ones.
+              running = closed.select {|w| Process.waitpid(w.pid, Process::WNOHANG).nil? rescue false}
+              pids = running.map(&:target_pid)
+            end
             Process.kill(:KILL, *pids) rescue nil
             pids = nil
             retry
@@ -579,8 +591,9 @@ module Test
           # just only dots, ignore
         when /^okay$/
           worker.status = :running
-        when /^ready(!)?$/
+        when /^ready(!)?(?: (\d+))?$/
           bang = $1
+          worker.real_pid = $2.to_i if $2
           worker.status = :ready
 
           unless task = @tasks.shift
@@ -646,6 +659,13 @@ module Test
         return false
       end
 
+      def _run_anything(type)
+        @job_tokens = String.new(encoding: Encoding::ASCII_8BIT) if @jobserver
+        super
+      ensure
+        flush_job_tokens
+      end
+
       def _run_parallel suites, type, result
         @records = {}
 
@@ -667,7 +687,6 @@ module Test
         @workers      = [] # Array of workers.
         @workers_hash = {} # out-IO => worker
         @ios          = [] # Array of worker IOs
-        @job_tokens   = String.new(encoding: Encoding::ASCII_8BIT) if @jobserver
         begin
           while true
             newjobs = [@tasks.size, @options[:parallel]].min - @workers.size
@@ -719,7 +738,6 @@ module Test
           end
 
           quit_workers
-          flush_job_tokens
 
           unless @interrupt || !@options[:retry] || @need_quit
             parallel = @options[:parallel]
@@ -808,10 +826,10 @@ module Test
         _prepare_run(suites, type)
         @interrupt = nil
         result = []
-        GC.start
         if @options[:parallel]
           _run_parallel suites, type, result
         else
+          GC.start
           suites.each {|suite|
             begin
               result << _run_suite(suite, type)
@@ -1295,6 +1313,10 @@ module Test
       def _run_anything(type)
         @repeat_count = @options[:repeat_count]
         @keep_repeating = @options[:keep_repeating]
+        if @repeat_count and @options[:parallel]
+          warn "--repeat-count is not supported in parallel tests; ignored"
+          @repeat_count = @keep_repeating = nil
+        end
         super
       end
     end
@@ -1373,9 +1395,7 @@ module Test
       end
 
       def non_options(files, options)
-        if scale = options[:timeout_scale] or
-          (scale = ENV["RUBY_TEST_TIMEOUT_SCALE"] || ENV["RUBY_TEST_SUBPROCESS_TIMEOUT_SCALE"] and
-           (scale = scale.to_f) > 0)
+        if scale = options[:timeout_scale]
           EnvUtil.timeout_scale = scale
         end
         super
@@ -1824,8 +1844,6 @@ module Test
         } unless @@installed_at_exit
         @@installed_at_exit = true
       end
-
-      alias orig_run_suite _run_suite
 
       # Overriding of Test::Unit::Runner#puke
       def puke klass, meth, e

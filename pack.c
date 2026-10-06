@@ -55,7 +55,7 @@ static const char endstr[] = "sSiIlLqQjJ";
 #endif
 
 #ifdef DYNAMIC_ENDIAN
-/* for universal binary of NEXTSTEP and MacOS X */
+/* for universal binary of MacOS X */
 /* useless since autoconf 2.63? */
 static int
 is_bigendian(void)
@@ -371,6 +371,7 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
     while (p < pend) {
         int explicit_endian = 0;
         size_t align = 0;
+        bool star = false;
         if (RSTRING_END(fmt) != pend) {
             rb_raise(rb_eRuntimeError, "format string modified");
         }
@@ -392,6 +393,7 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
         p = pack_modifiers(p, pend, type, &natint, &explicit_endian);
 
         if (*p == '*') {	/* set data length */
+            star = true;
             len = strchr("@Xxu", type) ? 0
                 : strchr("PMm", type) ? 1
                 : RARRAY_LEN(ary) - idx;
@@ -436,7 +438,9 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
                 plen = RSTRING_LEN(from);
             }
 
-            if (p[-1] == '*')
+            /* The conversion of from with #to_str may have modified fmt,
+             * so p may be a dangling pointer; use star instead of p[-1]. */
+            if (star)
                 len = plen;
 
             switch (type) {
@@ -445,7 +449,7 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
               case 'Z':         /* null terminated string  */
                 if (plen >= len) {
                     rb_str_buf_cat(res, ptr, len);
-                    if (p[-1] == '*' && type == 'Z')
+                    if (star && type == 'Z')
                         rb_str_buf_cat(res, "", 1);
                 }
                 else {
@@ -778,7 +782,6 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
                     size_t numbytes, nlz_bits;
                     int sign, extra = 0;
                     char *cp;
-                    const long start = RSTRING_LEN(res);
 
                     from = NEXTFROM;
                     from = rb_to_int(from);
@@ -795,6 +798,8 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
                         extra = 1;
                     }
                     rb_str_modify_expand(res, numbytes + extra);
+
+                    long start = RSTRING_LEN(res);
 
                     cp = RSTRING_PTR(res) + start;
                     sign = rb_integer_pack(from, cp, numbytes, 1, 1, pack_flags);
@@ -1105,10 +1110,22 @@ pack_unpack_internal(VALUE str, VALUE fmt, VALUE ofs, enum unpack_mode mode)
     AVOID_CC_BUG long tmp_len;
     int signed_p, integer_size, bigendian_p;
     long align_base;
+    const char *sptr;
+    long slen;
+    const char *fptr;
+    long flen;
 #define UNPACK_PUSH(item) do {\
         VALUE item_val = (item);\
         if ((mode) == UNPACK_BLOCK) {\
             rb_yield(item_val);\
+            /* The block may have modified str and invalidated s */ \
+            if (RSTRING_PTR(str) != sptr || RSTRING_LEN(str) != slen) {\
+                rb_raise(rb_eRuntimeError, "string modified");\
+            }\
+            /* The block may have also modified fmt and invalidated p */ \
+            if (RSTRING_PTR(fmt) != fptr || RSTRING_LEN(fmt) != flen) {\
+                rb_raise(rb_eRuntimeError, "format string modified");\
+            }\
         }\
         else if ((mode) == UNPACK_ARRAY) {\
             rb_ary_push(ary, item_val);\
@@ -1130,11 +1147,15 @@ pack_unpack_internal(VALUE str, VALUE fmt, VALUE ofs, enum unpack_mode mode)
 
     s = RSTRING_PTR(str);
     send = s + len;
+    sptr = s;
+    slen = len;
     s += offset;
     align_base = offset;
 
     p = RSTRING_PTR(fmt);
     pend = p + RSTRING_LEN(fmt);
+    fptr = p;
+    flen = RSTRING_LEN(fmt);
 
 #define UNPACK_FETCH(var, type) (memcpy((var), s, sizeof(type)), s += sizeof(type))
 

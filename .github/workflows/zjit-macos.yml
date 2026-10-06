@@ -98,7 +98,7 @@ jobs:
           rustup install ${{ matrix.rust_version }} --profile minimal
           rustup default ${{ matrix.rust_version }}
 
-      - uses: taiki-e/install-action@84f5ac3124727fb3d284d4d22ee9ab3654fd09a6 # v2.87.7
+      - uses: taiki-e/install-action@861a07ce7084f55488e375df125cdc99bba60eb7 # v2.87.23
         with:
           tool: nextest@0.9
         if: ${{ matrix.test_task == 'zjit-check' }}
@@ -132,6 +132,9 @@ jobs:
         continue-on-error: true
         timeout-minutes: 3
 
+      - name: Set up crash dumps
+        run: mkdir "${GITHUB_WORKSPACE}/crashdumps"
+
       - name: make ${{ matrix.test_task }}
         run: |
           test -n "${LAUNCHABLE_STDOUT}" && exec 1> >(tee "${LAUNCHABLE_STDOUT}")
@@ -151,6 +154,10 @@ jobs:
           PRECHECK_BUNDLED_GEMS: 'no'
           LAUNCHABLE_STDOUT: ${{ steps.launchable.outputs.stdout_report_path }}
           LAUNCHABLE_STDERR: ${{ steps.launchable.outputs.stderr_report_path }}
+          LAUNCHABLE_TOKEN: '' # see .github/actions/crashdumps
+          RUBY_ON_BUG: >- # see .github/actions/crashdumps
+            sh -c 'cd ${{ github.workspace }}/crashdumps && [ $(ls | wc -l) -lt 100 ] &&
+            lldb --batch -p $0 -o "process save-core -s modified-memory core.$0" > lldb.$0.log 2>&1'
         continue-on-error: ${{ matrix.continue-on-test_task || false }}
 
       - name: Dump crash logs
@@ -159,6 +166,12 @@ jobs:
         run: |
           tail --verbose --lines=+1 rb_crash_*.txt
           exit 1
+
+      - name: Upload crash dumps
+        uses: ./.github/actions/crashdumps
+        with:
+          name: crashdumps-${{ github.job }}-${{ strategy.job-index }}
+        if: ${{ always() && hashFiles('crashdumps/core.*') != '' }}
 
       - uses: ./.github/actions/slack
         with:

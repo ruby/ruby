@@ -826,7 +826,8 @@ rb_vm_insert_cc_refinement(const struct rb_callcache *cc)
     rb_vm_t *vm = GET_VM();
     RB_VM_LOCK_ENTER();
     {
-        struct cc_refinement_entries *e = RTYPEDDATA_GET_DATA(vm->cc_refinement_set);
+        VALUE set = vm->cc_refinement_set;
+        struct cc_refinement_entries *e = RTYPEDDATA_GET_DATA(set);
         if (e->len == e->capa) {
             size_t new_capa = e->capa == 0 ? 16 : e->capa * 2;
             SIZED_REALLOC_N(e->entries, VALUE, new_capa, e->capa);
@@ -836,7 +837,9 @@ rb_vm_insert_cc_refinement(const struct rb_callcache *cc)
 
         // We never mark the cc, but we need to issue a writebarrier so that
         // the refinement set can be added to the remembered set
-        RB_OBJ_WRITTEN(vm->cc_refinement_set, Qundef, (VALUE)cc);
+        RB_OBJ_WRITTEN(set, Qundef, (VALUE)cc);
+        /* The entries are embedded in set, so keep it pinned while e is in use. */
+        RB_GC_GUARD(set);
     }
     RB_VM_LOCK_LEAVE();
 }
@@ -1435,6 +1438,31 @@ rb_zsuper_to_super(int argc, VALUE *argv, VALUE self)
 }
 
 static inline rb_method_entry_t* search_method0(VALUE klass, ID id, VALUE *defined_class_ptr, bool skip_refined);
+static void
+method_entry_modify_check(VALUE klass, rb_method_type_t type)
+{
+    ASSERT_vm_unlocking();
+    if (type != VM_METHOD_TYPE_REFINED) {
+        rb_class_modify_check(NIL_P(klass) ? rb_cObject : klass);
+    }
+}
+
+/* rb_method_entry_make() runs under the VM lock, where it must not warn:
+ * rb_warn() dispatches Warning.warn and writes to $stderr, either of which can
+ * check for interrupts.  It formats the message instead, and the caller emits
+ * it once the lock is released. */
+struct method_entry_warnings {
+    VALUE redefined; /* $VERBOSE only */
+    VALUE problem;
+};
+
+static void
+method_entry_warnings_emit(const struct method_entry_warnings *warnings)
+{
+    if (warnings->redefined) rb_warning("%"PRIsVALUE, warnings->redefined);
+    if (warnings->problem) rb_warn("%"PRIsVALUE, warnings->problem);
+}
+
 /*
  * klass->method_table[mid] = method_entry(defined_class, visi, def)
  *
@@ -1443,7 +1471,8 @@ static inline rb_method_entry_t* search_method0(VALUE klass, ID id, VALUE *defin
  */
 static rb_method_entry_t *
 rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibility_t visi,
-                     rb_method_type_t type, rb_method_definition_t *def, ID original_id, void *opts)
+                     rb_method_type_t type, rb_method_definition_t *def, ID original_id, void *opts,
+                     struct method_entry_warnings *warnings)
 {
     rb_method_entry_t *me;
     struct rb_id_table *mtbl;
@@ -1468,10 +1497,6 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
           case idRespond_to_missing:
             visi = METHOD_VISI_PRIVATE;
         }
-    }
-
-    if (type != VM_METHOD_TYPE_REFINED) {
-       rb_class_modify_check(klass);
     }
 
     if (RB_TYPE_P(klass, T_MODULE) && FL_TEST(klass, RMODULE_IS_REFINEMENT)) {
@@ -1524,7 +1549,7 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
                 break;
             }
             if (iseq) {
-                rb_warning(
+                warnings->redefined = rb_sprintf(
                     "method redefined; discarding old %"PRIsVALUE"\n%"PRIsVALUE":%d: warning: previous definition of %"PRIsVALUE" was here",
                     rb_id2str(mid),
                     rb_iseq_path(iseq),
@@ -1533,7 +1558,7 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
                 );
             }
             else {
-                rb_warning("method redefined; discarding old %"PRIsVALUE, rb_id2str(mid));
+                warnings->redefined = rb_sprintf("method redefined; discarding old %"PRIsVALUE, rb_id2str(mid));
             }
         }
     }
@@ -1561,13 +1586,13 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
           case idRespond_to_missing:
           case idMethodMissing:
           case idRespond_to:
-            rb_warn("redefining Object#%s may cause infinite loop", rb_id2name(mid));
+            warnings->problem = rb_sprintf("redefining Object#%s may cause infinite loop", rb_id2name(mid));
         }
     }
     /* check mid */
     if (mid == object_id || mid == id__id__ || mid == id__send__) {
         if (type != VM_METHOD_TYPE_CFUNC && search_method(klass, mid, 0)) {
-            rb_warn("redefining '%s' may cause serious problems", rb_id2name(mid));
+            warnings->problem = rb_sprintf("redefining '%s' may cause serious problems", rb_id2name(mid));
         }
     }
 
@@ -1733,9 +1758,15 @@ void
 rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *opts, rb_method_visibility_t visi)
 {
     const rb_method_entry_t *me;
+    struct method_entry_warnings warnings = {0};
+
+    method_entry_modify_check(klass, type);
+
     RB_VM_LOCKING() {
-        me = rb_method_entry_make(klass, mid, klass, visi, type, NULL, mid, opts);
+        me = rb_method_entry_make(klass, mid, klass, visi, type, NULL, mid, opts, &warnings);
     }
+
+    method_entry_warnings_emit(&warnings);
 
     if (type != VM_METHOD_TYPE_UNDEF && type != VM_METHOD_TYPE_REFINED) {
         method_added(klass, mid, me);
@@ -1761,14 +1792,20 @@ method_entry_set(VALUE klass, ID mid, const rb_method_entry_t *me,
                  rb_method_visibility_t visi, VALUE defined_class)
 {
     rb_method_entry_t *newme;
+    struct method_entry_warnings warnings = {0};
+
+    method_entry_modify_check(klass, me->def->type);
+
     RB_VM_LOCKING() {
         newme = rb_method_entry_make(klass, mid, defined_class, visi,
-                me->def->type, me->def, 0, NULL);
+                me->def->type, me->def, 0, NULL, &warnings);
         if (newme == me) {
             me->def->no_redef_warning = TRUE;
             METHOD_ENTRY_FLAGS_SET(newme, visi, FALSE);
         }
     }
+
+    method_entry_warnings_emit(&warnings);
 
     method_added(klass, mid, newme);
     return newme;
@@ -2840,7 +2877,7 @@ rb_method_definition_eq(const rb_method_definition_t *d1, const rb_method_defini
       case VM_METHOD_TYPE_IVAR:
         return d1->body.attr.id == d2->body.attr.id;
       case VM_METHOD_TYPE_BMETHOD:
-        return RTEST(rb_equal(d1->body.bmethod.proc, d2->body.bmethod.proc));
+        return RTEST(rb_proc_eq(d1->body.bmethod.proc, d2->body.bmethod.proc));
       case VM_METHOD_TYPE_MISSING:
         return d1->original_id == d2->original_id;
       case VM_METHOD_TYPE_ZSUPER:
@@ -2899,7 +2936,7 @@ rb_hash_method_entry(st_index_t hash, const rb_method_entry_t *me)
 }
 
 void
-rb_alias(VALUE klass, ID alias_name, ID original_name)
+rb_add_alias(VALUE klass, ID alias_name, ID original_name, rb_method_visibility_t visi_alias)
 {
     const VALUE target_klass = klass;
     VALUE defined_class;
@@ -2910,7 +2947,7 @@ rb_alias(VALUE klass, ID alias_name, ID original_name)
         rb_raise(rb_eTypeError, "no class to make alias");
     }
 
-    rb_class_modify_check(klass);
+    rb_class_modify_check(target_klass);
 
   again:
     orig_me = search_method(klass, original_name, &defined_class);
@@ -2926,6 +2963,9 @@ rb_alias(VALUE klass, ID alias_name, ID original_name)
              UNDEFINED_METHOD_ENTRY_P(orig_me))) {
             rb_print_undef(target_klass, original_name, METHOD_VISI_UNDEF);
         }
+        rb_warn_scheduled_deprecation(4.2, 4.3,
+                                      "the fallback to Object for alias of '%"PRIsVALUE"' in module '%"PRIsVALUE"'",
+                                      NULL, QUOTE_ID(original_name), rb_class_path(target_klass));
     }
 
     switch (orig_me->def->type) {
@@ -2943,12 +2983,39 @@ rb_alias(VALUE klass, ID alias_name, ID original_name)
     }
 
     if (visi == METHOD_VISI_UNDEF) visi = METHOD_ENTRY_VISI(orig_me);
+    if (visi_alias != METHOD_VISI_UNDEF) visi = visi_alias;
+
+    if (!NIL_P(ruby_verbose) && rb_warning_category_enabled_p(RB_WARN_CATEGORY_DEPRECATED)) {
+        VALUE owner_class = orig_me->defined_class ? orig_me->defined_class : defined_class;
+        VALUE origin = RCLASS_ORIGIN(target_klass);
+        bool in_prepended_module = false;
+
+        if (origin != target_klass) {
+            for (VALUE p = RCLASS_SUPER(target_klass); !in_prepended_module && p && p != origin; p = RCLASS_SUPER(p)) {
+                if (p == owner_class) {
+                    in_prepended_module = true;
+                }
+            }
+        }
+
+        if (in_prepended_module) {
+            rb_warn_scheduled_deprecation(4.2, 4.3,
+                "aliasing %"PRIsVALUE"#%"PRIsVALUE" defined in a prepended module %"PRIsVALUE,
+                NULL,
+                rb_class_path(target_klass), QUOTE_ID(original_name),
+                rb_class_path(orig_me->owner));
+        }
+    }
 
     if (orig_me->defined_class == 0) {
+        struct method_entry_warnings warnings = {0};
         const rb_method_entry_t *alias_me =
+            // TODO: needs vm lock?
             rb_method_entry_make(target_klass, alias_name, target_klass, visi,
                                  VM_METHOD_TYPE_ALIAS, NULL, orig_me->called_id,
-                                 (void *)rb_method_entry_clone(orig_me));
+                                 (void *)rb_method_entry_clone(orig_me), &warnings);
+
+        method_entry_warnings_emit(&warnings);
         method_added(target_klass, alias_name, alias_me);
     }
     else {
@@ -2966,6 +3033,12 @@ rb_alias(VALUE klass, ID alias_name, ID original_name)
     }
 }
 
+void
+rb_alias(VALUE klass, ID alias_name, ID original_name)
+{
+    rb_add_alias(klass, alias_name, original_name, METHOD_VISI_UNDEF);
+}
+
 /*
  *  call-seq:
  *     alias_method(new_name, old_name)   -> symbol
@@ -2973,19 +3046,20 @@ rb_alias(VALUE klass, ID alias_name, ID original_name)
  *  Makes <i>new_name</i> a new copy of the method <i>old_name</i>. This can
  *  be used to retain access to methods that are overridden.
  *
- *     module Mod
- *       alias_method :orig_exit, :exit #=> :orig_exit
- *       def exit(code=0)
- *         puts "Exiting with code #{code}"
- *         orig_exit(code)
+ *     class Greeter
+ *       def hello
+ *         "hello"
+ *       end
+ *       alias_method :orig_hello, :hello #=> :orig_hello
+ *       def hello
+ *         "#{orig_hello}, world"
  *       end
  *     end
- *     include Mod
- *     exit(99)
+ *     Greeter.new.hello #=> "hello, world"
  *
- *  <em>produces:</em>
- *
- *     Exiting with code 99
+ *  In a module, <i>old_name</i> must be a method of the module or its
+ *  ancestors. Aliasing a method found only through the fallback to
+ *  Object is deprecated, and will raise a NameError in Ruby 4.3.
  */
 
 static VALUE
@@ -3402,9 +3476,7 @@ top_ruby2_keywords(int argc, VALUE *argv, VALUE module)
  *  be called with the module as a receiver, and also become available
  *  as instance methods to classes that mix in the module. Module
  *  functions are copies of the original, and so may be changed
- *  independently. The instance-method versions are made private. If
- *  used with no arguments, subsequently defined methods become module
- *  functions.
+ *  independently. The instance-method versions are made private.
  *  String arguments are converted to symbols.
  *  If a single argument is passed, it is returned.
  *  If no argument is passed, nil is returned.
@@ -3432,6 +3504,18 @@ top_ruby2_keywords(int argc, VALUE *argv, VALUE module)
  *     end
  *     Mod.one     #=> "This is one"
  *     c.call_one  #=> "This is the new one"
+ *
+ *  If used with no arguments, subsequently defined methods become module
+ *  functions:
+ *
+ *     module Mod
+ *       module_function
+ *
+ *       def two
+ *         "This is two"
+ *       end
+ *     end
+ *     Mod.two  #=> "This is two"
  */
 
 static VALUE

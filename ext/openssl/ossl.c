@@ -941,8 +941,7 @@ ossl_crypto_fixed_length_secure_compare(VALUE dummy, VALUE str1, VALUE str2)
  * An \SSL server requires the certificate and private key to communicate
  * securely with its clients:
  *
- *   context.cert = cert
- *   context.key = key
+ *   context.add_certificate(cert, key)
  *
  * After establishing a TCP connection, the socket is wrapped in an
  * OpenSSL::SSL::SSLSocket with the context. OpenSSL::SSL::SSLSocket#accept

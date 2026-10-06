@@ -5,7 +5,7 @@ require_relative "helper"
 class GemTest < Gem::TestCase
   def test_rubygems_normal_behaviour
     _ = Gem::Util.popen(*ruby_with_rubygems_in_load_path, "-e", "'require \"rubygems\"'", { err: [:child, :out] }).strip
-    assert $?.success?
+    assert Process.last_status.success?
   end
 
   def test_operating_system_other_exceptions
@@ -17,7 +17,7 @@ class GemTest < Gem::TestCase
     RUBY
 
     output = Gem::Util.popen(*ruby_with_rubygems_and_fake_operating_system_in_load_path(path), "-e", "'require \"rubygems\"'", { err: [:child, :out] }).strip
-    assert !$?.success?
+    assert !Process.last_status.success?
     assert_match(/undefined local variable or method [`']intentionally_not_implemented_method'/, output)
     assert_includes output, "Loading the #{operating_system_rb_at(path)} file caused an error. " \
     "This file is owned by your OS, not by rubygems upstream. " \

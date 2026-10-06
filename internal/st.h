@@ -14,6 +14,9 @@ st_table *rb_st_init_existing_numtable_with_size(st_table *tab, st_index_t size)
 st_table *rb_st_init_existing_strtable_with_size(st_table *tab, st_index_t size);
 #define st_init_existing_strtable_with_size rb_st_init_existing_strtable_with_size
 
+size_t rb_st_allocated_memsize(const st_table *tab);
+#define st_allocated_memsize rb_st_allocated_memsize
+
 void rb_st_free_embedded_table(st_table *tab);
 #define st_free_embedded_table rb_st_free_embedded_table
 
@@ -23,4 +26,7 @@ int rb_st_insert_no_rebuild(st_table *tab, st_data_t key, st_data_t value);
 typedef int st_foreach_with_hash_callback_func(st_data_t, st_data_t, st_data_t, st_data_t);
 int rb_st_foreach_with_hash(st_table *, st_foreach_with_hash_callback_func *, st_data_t);
 #define st_foreach_with_hash rb_st_foreach_with_hash
+
+void rb_hash_bulk_insert_into_st_table(long, const VALUE *, VALUE);
+
 #endif

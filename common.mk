@@ -932,7 +932,7 @@ yes-test-tool: prog PHONY
 no-test-tool: PHONY
 
 test-sample: test-basic # backward compatibility for mswin-build
-test-short: btest-ruby $(DOT_WAIT) test-knownbug $(DOT_WAIT) test-basic
+test-short: test-coroutine $(DOT_WAIT) btest-ruby $(DOT_WAIT) test-knownbug $(DOT_WAIT) test-basic
 test: test-short
 
 # Separate to skip updating encs and exts by `make -o test-precheck`
@@ -1043,7 +1043,7 @@ $(ENC_MK): $(srcdir)/enc/make_encmake.rb $(srcdir)/enc/Makefile.in $(srcdir)/enc
 .PHONY: distclean-srcs distclean-srcs-local distclean-srcs-ext
 .PHONY: realclean realclean-ext realclean-local realclean-enc realclean-golf realclean-extout
 .PHONY: realclean-srcs realclean-srcs-local realclean-srcs-ext
-.PHONY: exam check test test-short test-all btest btest-ruby test-basic test-knownbug
+.PHONY: exam check test test-short test-all test-coroutine btest btest-ruby test-basic test-knownbug
 .PHONY: run runruby parse benchmark gdb gdb-ruby
 .PHONY: update-mspec update-rubyspec test-rubyspec test-spec
 .PHONY: touch-unicode-files
@@ -1985,9 +1985,14 @@ sudo-precheck: PHONY
 
 update-man-date: PHONY
 	$(Q) $(BASERUBY) -I"$(tooldir)/lib" -rvcs -i -p \
-	-e 'BEGIN{@vcs=VCS.detect(ARGV.shift)}' \
-	-e '$$_.sub!(/^(\.Dd ).*/){$$1+@vcs.author_date(@vcs.relative_to(ARGF.path)).strftime("%B %d, %Y")}' \
-	"$(srcdir)" "$(srcdir)"/man/*.1
+	-C "$(srcdir)" \
+	-e 'BEGIN{@vcs=VCS.detect; ARGV.replace(Dir.glob(ARGV))}' \
+	-e '$$_.sub!(/^\.Dd \K.*/){' \
+	-e   'STDOUT.puts "Updating #{ARGF.path}"' \
+	-e   '@vcs.author_date(@vcs.relative_to(ARGF.path)).strftime("%B %d, %Y")' \
+	-e '}' \
+	$(MANPAGES_TO_UPDATE)
+MANPAGES_TO_UPDATE = man/*.1
 
 .PHONY: ChangeLog
 ChangeLog:
@@ -2103,3 +2108,4 @@ $(CROSS_COMPILING:yes=)builtin.$(OBJEXT): {$(VPATH)}miniprelude.c
 
 !include $(srcdir)/prism/srcs.mk
 !include $(DEPENDENCIES_DIR)/depend
+!include $(srcdir)/coroutine/test.mk

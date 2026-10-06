@@ -1,6 +1,7 @@
 #ifndef RUBY_RACTOR_CORE_H
 #define RUBY_RACTOR_CORE_H
 #include "internal/gc.h"
+#include "internal/sanitizers.h"
 #include "ruby/ruby.h"
 #include "ruby/ractor.h"
 #include "vm_core.h"
@@ -10,6 +11,17 @@
 
 #ifndef RACTOR_CHECK_MODE
 #define RACTOR_CHECK_MODE (VM_CHECK_MODE || RUBY_DEBUG) && (SIZEOF_UINT64_T == SIZEOF_VALUE)
+#endif
+
+/* Record the registration-time VALUE in each rb_gc_register_address entry so the
+ * verifier can distinguish a transitioned cross-Ractor store from conservative
+ * garbage.  Debug and ASAN builds only; production keeps one-word entries. */
+#ifndef RB_GC_REGISTERED_ADDR_CHECK
+# if RUBY_DEBUG || defined(RUBY_ASAN_ENABLED)
+#  define RB_GC_REGISTERED_ADDR_CHECK 1
+# else
+#  define RB_GC_REGISTERED_ADDR_CHECK 0
+# endif
 #endif
 
 // experimental flag because it is not sure it is the common pattern
@@ -75,6 +87,14 @@ enum ractor_status {
     ractor_terminated,
 };
 
+struct rb_ractor_registered_addr {
+    VALUE *addr;
+#if RB_GC_REGISTERED_ADDR_CHECK
+    /* A raw provenance snapshot for verification only. Never mark or dereference it. */
+    VALUE initial_value;
+#endif
+};
+
 struct rb_ractor_struct {
     struct rb_ractor_pub pub;
     struct rb_ractor_sync sync;
@@ -84,6 +104,10 @@ struct rb_ractor_struct {
      * them to the survivor.  Raw malloc, so a merge during sweep cannot re-enter GC. */
     VALUE *registered_marks;
     size_t registered_marks_cnt, registered_marks_capa;
+
+    struct rb_ractor_registered_addr *registered_addrs;
+    size_t registered_addrs_cnt, registered_addrs_capa;
+    bool registered_addrs_listed;
 
     /* traversal-API mark redirect (NULL outside a traversal).  Per Ractor so a
      * concurrent traversal on another Ractor is never observed.  A modular GC's
@@ -170,6 +194,8 @@ void rb_ractor_reap_dead_ports(rb_ractor_t *r);
  * is absorbed).  An absorb can run during a GC sweep, so the implementation uses raw
  * realloc (ractor.c). */
 void rb_ractor_absorb_registered_marks(rb_ractor_t *dst, rb_ractor_t *src);
+
+void rb_ractor_absorb_registered_addrs_without_gc(rb_ractor_t *dst, rb_ractor_t *src);
 
 enum ractor_wakeup_status {
     wakeup_none,

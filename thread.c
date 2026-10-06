@@ -214,7 +214,7 @@ static inline int
 vm_check_ints_blocking(rb_execution_context_t *ec)
 {
 #ifdef RUBY_ASSERT_CRITICAL_SECTION
-    VM_ASSERT(ruby_assert_critical_section_entered == 0);
+    VM_ASSERT(ec->assert_critical_section_entered == 0);
 #endif
 
     rb_thread_t *th = rb_ec_thread_ptr(ec);
@@ -1704,7 +1704,7 @@ blocking_region_begin(rb_thread_t *th, struct rb_blocking_region_buffer *region,
                       rb_unblock_function_t *ubf, void *arg, int flags)
 {
 #ifdef RUBY_ASSERT_CRITICAL_SECTION
-    VM_ASSERT(ruby_assert_critical_section_entered == 0);
+    VM_ASSERT(th->ec->assert_critical_section_entered == 0);
 #endif
     VM_ASSERT(th == GET_THREAD());
 
@@ -4230,6 +4230,7 @@ rb_thread_local_aset(VALUE thread, ID id, VALUE val)
  *
  *  Attribute Assignment---Sets or creates the value of a fiber-local variable,
  *  using either a symbol or a string.
+ *  Assigning +nil+ deletes the variable.
  *
  *  See also Thread#[].
  *
@@ -4291,19 +4292,33 @@ rb_thread_variable_get(VALUE thread, VALUE key)
  *  Sets a thread local with +key+ to +value+.  Note that these are local to
  *  threads, and not to fibers.  Please see Thread#thread_variable_get and
  *  Thread#[] for more information.
+ *  Assigning +nil+ deletes the variable.
  */
 
 static VALUE
 rb_thread_variable_set(VALUE thread, VALUE key, VALUE val)
 {
     VALUE locals;
+    VALUE symbol;
 
     if (OBJ_FROZEN(thread)) {
         rb_frozen_error_raise(thread, "can't modify frozen thread locals");
     }
 
+    symbol = rb_to_symbol(key);
+
+    if (NIL_P(val)) {
+        if (LIKELY(!THREAD_LOCAL_STORAGE_INITIALISED_P(thread))) {
+            return Qnil;
+        }
+
+        locals = rb_thread_local_storage(thread);
+        rb_hash_delete(locals, symbol);
+        return Qnil;
+    }
+
     locals = rb_thread_local_storage(thread);
-    return rb_hash_aset(locals, rb_to_symbol(key), val);
+    return rb_hash_aset(locals, symbol, val);
 }
 
 /*
@@ -4690,10 +4705,7 @@ rb_fd_init_copy(rb_fdset_t *dst, rb_fdset_t *src)
 static inline size_t
 fdset_memsize(int capa)
 {
-    if (capa == FD_SETSIZE) {
-        return sizeof(fd_set);
-    }
-    return sizeof(unsigned int) + (capa * sizeof(SOCKET));
+    return offsetof(fd_set, fd_array) + (capa * sizeof(SOCKET));
 }
 
 void
@@ -4719,7 +4731,7 @@ rb_fd_set(int fd, rb_fdset_t *set)
         set->capa = (set->fdset->fd_count / FD_SETSIZE + 1) * FD_SETSIZE;
         set->fdset =
             rb_xrealloc_mul_add(
-                set->fdset, set->capa, sizeof(SOCKET), sizeof(unsigned int));
+                set->fdset, set->capa, sizeof(SOCKET), offsetof(fd_set, fd_array));
     }
     set->fdset->fd_array[set->fdset->fd_count++] = s;
 }
@@ -5306,7 +5318,8 @@ rb_thread_atfork_internal(rb_thread_t *th, void (*atfork)(rb_thread_t *, const r
     rb_signal_atfork();
 
     // OK. Only this thread accesses:
-    ccan_list_for_each(&vm->ractor.set, r, vmlr_node) {
+    rb_ractor_t *r_next;
+    ccan_list_for_each_safe(&vm->ractor.set, r, r_next, vmlr_node) {
         if (r != vm->ractor.main_ractor) {
             rb_ractor_terminate_atfork(vm, r);
         }
@@ -5314,7 +5327,8 @@ rb_thread_atfork_internal(rb_thread_t *th, void (*atfork)(rb_thread_t *, const r
             atfork(i, th);
         }
     }
-    rb_vm_living_threads_init(vm);
+
+    ccan_list_head_init(&vm->ractor.set);
 
     rb_ractor_atfork(vm, th);
     rb_vm_postponed_job_atfork();
@@ -5327,6 +5341,7 @@ rb_thread_atfork_internal(rb_thread_t *th, void (*atfork)(rb_thread_t *, const r
     rb_gc_zombie_objspaces_atfork();
     rb_gc_atfork_global_locks();
     rb_generic_fields_lock_atfork();
+    rb_fiber_pool_lock_atfork();
     ccan_list_head_init(&th->interrupt_exec_tasks);
 
     vm->fork_gen++;

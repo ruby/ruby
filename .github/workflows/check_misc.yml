@@ -23,7 +23,7 @@ jobs:
           token: ${{ (github.repository == 'ruby/ruby' && !startsWith(github.event_name, 'pull')) && secrets.MATZBOT_AUTO_UPDATE_TOKEN || secrets.GITHUB_TOKEN }}
           persist-credentials: false
 
-      - uses: ruby/setup-ruby@95ef2b042f9d7a56d8268cba8559e2842e2ad01b # v1.321.0
+      - uses: ruby/setup-ruby@14594264cd68ce8a2345dd349bc3d138a4ef85c8 # v1.327.0
         with:
           ruby-version: head
 
@@ -55,8 +55,8 @@ jobs:
       - name: Check if date in man pages is up-to-date
         run: |
           git fetch origin --depth=1 "${GITHUB_OLD_SHA}"
-          git diff --exit-code --name-only "${GITHUB_OLD_SHA}" HEAD -- man ||
-          make V=1 GIT=git BASERUBY=ruby update-man-date
+          make V=1 GIT=git BASERUBY=ruby update-man-date \
+            MANPAGES_TO_UPDATE="$(git diff --exit-code --name-only "${GITHUB_OLD_SHA}" HEAD -- man)"
           git diff --color --no-ext-diff --ignore-submodules --exit-code -- man
         env:
           GITHUB_OLD_SHA: ${{ github.event.pull_request.base.sha }}

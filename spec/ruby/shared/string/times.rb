@@ -44,15 +44,8 @@ describe :string_times, shared: true do
     result.encoding.should.equal?(Encoding::UTF_8)
   end
 
-  platform_is c_long_size: 32 do
-    it "raises an ArgumentError if the length of the resulting string doesn't fit into a long" do
-      -> { @object.call("abc", (2 ** 31) - 1) }.should.raise(ArgumentError)
-    end
-  end
-
-  platform_is c_long_size: 64 do
-    it "raises an ArgumentError if the length of the resulting string doesn't fit into a long" do
-      -> { @object.call("abc", (2 ** 63) - 1) }.should.raise(ArgumentError)
-    end
+  it "raises an ArgumentError or RangeError if the length of the resulting string doesn't fit into a length" do
+    error_types = [RangeError, ArgumentError]
+    -> { @object.call("abc", max_length) }.should.raise { |err| error_types.should.include?(err.class) }
   end
 end

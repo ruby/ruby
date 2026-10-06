@@ -431,6 +431,15 @@ class TestGemRequire < Gem::TestCase
     assert_equal %w[default-2.0.0.0], loaded_spec_names
   end
 
+  def test_default_gem_listing_a_rubygems_file_is_not_activated_by_requiring_it
+    rubygems_file = "rubygems/test_default_gem_#{$$}"
+    default_bundler = new_default_spec("bundler", "4.1.0", nil, "#{rubygems_file}.rb")
+    install_default_gems(default_bundler)
+
+    assert_require rubygems_file
+    assert_empty loaded_spec_names
+  end
+
   def test_multiple_gems_with_the_same_path_the_non_activated_spec_is_chosen
     a1 = util_spec "a", "1", nil, "lib/ib.rb"
     a2 = util_spec "a", "2", nil, "lib/foo.rb"
@@ -484,7 +493,7 @@ class TestGemRequire < Gem::TestCase
       puts Gem.loaded_specs["json"]
     RUBY
     output = Gem::Util.popen(*ruby_with_rubygems_in_load_path, "-e", cmd).strip
-    assert $?.success?
+    assert Process.last_status.success?
     refute_empty output
   end
 
@@ -508,7 +517,7 @@ class TestGemRequire < Gem::TestCase
     assert_equal "999.99.9", output.lines[0].chomp
     # Make sure only files from the newer json gem are loaded, and no files from the default json gem
     assert_equal ["#{@gemhome}/gems/json-999.99.9/lib/json.rb"], output.lines.grep(%r{/gems/json-}).map(&:chomp)
-    assert $?.success?
+    assert Process.last_status.success?
   end
 
   def test_default_gem_and_normal_gem

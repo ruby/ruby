@@ -1255,6 +1255,8 @@ class Gem::Specification < Gem::BasicSpecification
       end
 
       unresolved_deps.clear
+      # find_all_by_name above memoized the record, which would outlive dirs= and ignore its new dirs
+      @specification_record = nil
     end
     Gem.post_reset_hooks.each(&:call)
   end
@@ -2418,6 +2420,10 @@ class Gem::Specification < Gem::BasicSpecification
     result << "#{Gem::StubSpecification::PREFIX}#{extensions.join "\0"}" unless
       extensions.empty?
     result << "#{Gem::StubSpecification::TARGET_PREFIX}platform=#{platform}" if content_addressed
+    # Comments can't be escaped, so a newline would end the stub line early.
+    result.each do |line|
+      raise Gem::Exception, "stub line #{line.dump} contains a newline" if line.include?("\n")
+    end
     result << nil
     result << "Gem::Specification.new do |s|"
 
@@ -2465,13 +2471,20 @@ class Gem::Specification < Gem::BasicSpecification
     end
 
     unless dependencies.empty?
+      unless Integer === specification_version
+        raise Gem::Exception, "invalid specification_version: #{specification_version.inspect}"
+      end
+
       result << nil
       result << "  s.specification_version = #{specification_version}"
       result << nil
 
       dependencies.each do |dep|
         dep.instance_variable_set :@type, :runtime if dep.type.nil? # HACK
-        result << "  s.add_#{dep.type}_dependency(%q<#{dep.name}>.freeze, #{ruby_code dep.requirements_list})"
+        unless Gem::Dependency::TYPES.include?(dep.type)
+          raise Gem::Exception, "invalid dependency type: #{dep.type.inspect}"
+        end
+        result << "  s.add_#{dep.type}_dependency(#{ruby_code dep.name}, #{ruby_code dep.requirements_list})"
       end
     end
 

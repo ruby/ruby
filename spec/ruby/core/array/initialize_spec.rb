@@ -109,8 +109,9 @@ describe "Array#initialize with (size, object=nil)" do
     -> { [].send(:initialize, -1) }.should.raise(ArgumentError)
   end
 
-  it "raises an ArgumentError if size is too large" do
-    -> { [].send(:initialize, fixnum_max+1) }.should.raise(ArgumentError)
+  it "raises an ArgumentError or RangeError if size is too large" do
+    error_types = [RangeError, ArgumentError]
+    -> { [].send(:initialize, max_length) }.should.raise { |err| error_types.should.include?(err.class) }
   end
 
   it "calls #to_int to convert the size argument to an Integer when object is given" do

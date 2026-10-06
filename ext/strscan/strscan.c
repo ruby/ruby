@@ -617,13 +617,24 @@ match_target(struct strscanner *p)
     }
 }
 
+static inline bool
+curr_char_head_p(struct strscanner *p)
+{
+    const char *pbeg = S_PBEG(p);
+    const char *curr = CURPTR(p);
+
+    if (curr == pbeg) return true;
+    return rb_enc_left_char_head(pbeg, curr, S_PEND(p),
+                                 rb_enc_get(p->str)) == curr;
+}
+
 static inline void
 set_registers(struct strscanner *p, size_t pos, size_t length)
 {
     const int at = 0;
     OnigRegion *regs = &(p->regs);
     onig_region_clear(regs);
-    if (onig_region_set(regs, at, 0, 0)) return;
+    if (onig_region_resize(regs, at + 1) != 0) return;
     if (p->fixed_anchor_p) {
         regs->beg[at] = pos + p->curr;
         regs->end[at] = pos + p->curr + length;
@@ -750,6 +761,10 @@ strscan_do_scan(VALUE self, VALUE pattern, int succptr, int getstr, int headonly
 
     CLEAR_MATCH_STATUS(p);
     if (S_RESTLEN(p) < 0) {
+        return Qnil;
+    }
+
+    if (!curr_char_head_p(p)) {
         return Qnil;
     }
 
@@ -1168,11 +1183,16 @@ static void
 adjust_registers_to_matched(struct strscanner *p)
 {
     onig_region_clear(&(p->regs));
+    if (onig_region_resize(&(p->regs), 1) != 0) return;
     if (p->fixed_anchor_p) {
-        onig_region_set(&(p->regs), 0, (int)p->prev, (int)p->curr);
+        /* Store absolute positions without narrowing them to int: scan
+         * positions can exceed INT_MAX (64-bit builds). */
+        p->regs.beg[0] = p->prev;
+        p->regs.end[0] = p->curr;
     }
     else {
-        onig_region_set(&(p->regs), 0, 0, (int)(p->curr - p->prev));
+        p->regs.beg[0] = 0;
+        p->regs.end[0] = p->curr - p->prev;
     }
 }
 
@@ -1673,10 +1693,14 @@ static VALUE
 strscan_matched_size(VALUE self)
 {
     struct strscanner *p;
+    long beg, end;
 
     GET_SCANNER(self, p);
     if (! MATCHED_P(p)) return Qnil;
-    return LONG2NUM(p->regs.end[0] - p->regs.beg[0]);
+    beg = adjust_register_position(p, p->regs.beg[0]);
+    if (beg > S_LEN(p)) return Qnil;
+    end = minl(adjust_register_position(p, p->regs.end[0]), S_LEN(p));
+    return LONG2NUM(end - beg);
 }
 
 static int

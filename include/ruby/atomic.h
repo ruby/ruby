@@ -458,7 +458,7 @@ rbimpl_atomic_size_fetch_add(volatile size_t *ptr, size_t val, int memory_order)
 #elif defined(HAVE_GCC_SYNC_BUILTINS)
     return __sync_fetch_and_add(ptr, val);
 
-#elif defined(_WIN32)
+#elif defined(_WIN64)
     return InterlockedExchangeAdd64(ptr, val);
 
 #elif defined(__sun) && defined(HAVE_ATOMIC_H) && (defined(_LP64) || defined(_I32LPx))
@@ -466,11 +466,11 @@ rbimpl_atomic_size_fetch_add(volatile size_t *ptr, size_t val, int memory_order)
     RBIMPL_ASSERT_OR_ASSUME(val <= LONG_MAX);
     atomic_add_long(ptr, val);
 
-#elif defined(__sun) && defined(HAVE_ATOMIC_H)
+#elif defined(_WIN32) || (defined(__sun) && defined(HAVE_ATOMIC_H))
     RBIMPL_STATIC_ASSERT(size_of_rb_atomic_t, sizeof *ptr == sizeof(rb_atomic_t));
 
     volatile rb_atomic_t *const tmp = RBIMPL_CAST((volatile rb_atomic_t *)ptr);
-    rbimpl_atomic_fetch_add(tmp, val, memory_order);
+    return rbimpl_atomic_fetch_add(tmp, val, memory_order);
 
 #elif defined(HAVE_STDATOMIC_H)
     return atomic_fetch_add_explicit((_Atomic volatile size_t *)ptr, val, memory_order);
@@ -967,6 +967,9 @@ rbimpl_atomic_load(volatile rb_atomic_t *ptr, int memory_order)
 
 #elif defined(HAVE_GCC_ATOMIC_BUILTINS)
     return __atomic_load_n(ptr, memory_order);
+#elif defined(_M_X64) && !defined(_M_ARM64EC)
+    /* A plain load is seq_cst on x64 because the stores here use xchg. */
+    return *ptr;
 #else
     return rbimpl_atomic_fetch_add(ptr, 0, memory_order);
 #endif
@@ -1112,6 +1115,8 @@ rbimpl_atomic_ptr_load(void **ptr, int memory_order)
 
 #elif defined(HAVE_GCC_ATOMIC_BUILTINS)
     return __atomic_load_n(ptr, memory_order);
+#elif defined(_M_X64) && !defined(_M_ARM64EC)
+    return *RBIMPL_CAST((void *volatile *)ptr);
 #else
     void *val = *ptr;
     return rbimpl_atomic_ptr_cas(ptr, val, val, memory_order, memory_order);

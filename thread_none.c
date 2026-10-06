@@ -321,6 +321,7 @@ rb_ractor_sched_barrier_end(rb_vm_t *vm, rb_ractor_t *cr)
     // do nothing
 }
 
+NORETURN(void rb_ractor_sched_wait(rb_execution_context_t *ec, rb_ractor_t *cr, rb_unblock_function_t *ubf, void *ptr));
 void
 rb_ractor_sched_wait(rb_execution_context_t *ec, rb_ractor_t *cr, rb_unblock_function_t *ubf, void *ptr)
 {

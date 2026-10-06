@@ -91,6 +91,45 @@ class JSONGeneratorTest < Test::Unit::TestCase
     assert_equal '[1]', io.string
   end
 
+  def test_dump_string_mutated_during_io_write
+    [{}, {ascii_only: true}, {script_safe: true}, {buffer_initial_length: 1}].each do |options|
+      ['a', "a\né/"].each do |pattern|
+        string = pattern * 100_000
+        assert_dump_preserves_string_during_io_write(string, string, options)
+      end
+    end
+  end
+
+  def test_dump_fragment_mutated_during_io_write
+    string = JSON.generate('a' * 100_000)
+    assert_dump_preserves_string_during_io_write(JSON::Fragment.new(string), string)
+  end
+
+  def test_dump_to_json_result_mutated_during_io_write
+    string = JSON.generate('a' * 100_000)
+    object = Object.new
+    object.define_singleton_method(:to_json) { |*| string }
+    assert_dump_preserves_string_during_io_write(object, string)
+  end
+
+  def assert_dump_preserves_string_during_io_write(object, string, options = {})
+    expected = JSON.dump([object], options)
+    io = StringIO.new
+    mutated = false
+    io.define_singleton_method(:write) do |chunk|
+      unless mutated
+        string.setbyte(0, 'b'.ord)
+        string.replace('changed')
+        mutated = true
+        GC.start
+      end
+      super(chunk)
+    end
+    assert_same io, JSON.dump([object], io, options)
+    assert_equal 'changed', string
+    assert_equal true, expected == io.string, 'IO output must preserve the original string'
+  end
+
   def test_not_frozen
     [
       [[], '[]'],
@@ -327,6 +366,7 @@ class JSONGeneratorTest < Test::Unit::TestCase
       space: "",
       space_before: "",
       sort_keys: false,
+      rfc8785: false,
     }.sort_by { |n,| n.to_s }.to_h, state.to_h.sort_by { |n,| n.to_s }.to_h)
 
     state = JSON::State.new(allow_duplicate_key: true)
@@ -346,6 +386,7 @@ class JSONGeneratorTest < Test::Unit::TestCase
       space: "",
       space_before: "",
       sort_keys: false,
+      rfc8785: false,
     }.sort_by { |n,| n.to_s }, state.to_h.sort_by { |n,| n.to_s })
   end
 
@@ -617,6 +658,16 @@ class JSONGeneratorTest < Test::Unit::TestCase
   def test_json_state_to_h_roundtrip
     state = JSON.state.new
     assert_equal state.to_h, JSON.state.new(state.to_h).to_h
+  end
+
+  def test_json_state_to_h_ignores_instance_variables
+    state = JSON.state.new(indent: '  ')
+    expected = state.to_h
+    state.instance_variable_set(:@custom, 42)
+    state.instance_variable_set(:@enabled, false)
+
+    assert_equal expected, state.to_h
+    assert_equal expected, state.to_hash
   end
 
   def test_json_generate
@@ -1035,6 +1086,43 @@ class JSONGeneratorTest < Test::Unit::TestCase
     assert_equal object.object_id.to_json, JSON.generate(object, strict: true, as_json: -> (o, is_key) { o.object_id })
   end
 
+  def test_json_generate_as_json_method
+    object = Object.new
+    as_json = -> (o, is_key) { o.object_id }.method(:call)
+    assert_equal object.object_id.to_json, JSON.generate(object, strict: true, as_json: as_json)
+  end
+
+  def test_state_as_json_method
+    object = Object.new
+    state = JSON.state.new(strict: true)
+    state.as_json = -> (o, is_key) { o.object_id }.method(:call)
+    assert_kind_of Proc, state.as_json
+    assert_equal object.object_id.to_json, state.generate(object)
+  end
+
+  def test_json_generate_as_json_invalid_type
+    [Object.new, Time.now].each do |as_json|
+      assert_raise(TypeError) { JSON.generate(Object.new, strict: true, as_json: as_json) }
+    end
+  end
+
+  def test_state_as_json_invalid_type
+    state = JSON.state.new(strict: true)
+    [Object.new, Time.now].each do |as_json|
+      assert_raise(TypeError) { state.as_json = as_json }
+      assert_raise(TypeError) { state.configure(as_json: as_json) }
+    end
+  end
+
+  def test_as_json_to_proc_returns_invalid_type
+    as_json = Object.new
+    def as_json.to_proc
+      method(:to_proc)
+    end
+    assert_raise(TypeError) { JSON.generate(Object.new, strict: true, as_json: as_json) }
+    assert_raise(TypeError) { JSON.state.new.as_json = as_json }
+  end
+
   def test_as_json_nan_does_not_call_to_json
     def (obj = Object.new).to_json(*)
       "null"
@@ -1150,4 +1238,34 @@ class JSONGeneratorTest < Test::Unit::TestCase
     end
   end
 
+  def test_rfc8785_numbers
+    assert_rfc8785 '-9007199254740992', -9007199254740992
+    assert_rfc8785 '0', 0
+    assert_rfc8785 '0.000001', 0.000001
+    assert_rfc8785 '1e+21', 1e+21
+    assert_rfc8785 '9.999999999999997e+22', 9.999999999999997e+22
+    assert_rfc8785 '9.999999999999997e-7', 9.999999999999997e-7
+    assert_rfc8785 '9007199254740992', 9007199254740992
+    assert_rfc8785 '9007199254740994', 9007199254740994
+    assert_rfc8785 '9007199254740996', 9007199254740996
+    assert_rfc8785 '999999999999999700000', 999999999999999700000
+    assert_rfc8785 '999999999999999900000', 999999999999999900000
+    assert_rfc8785 '333333333.3333333', 333333333.33333329
+  end
+
+  fixtures_path = File.expand_path('../fixtures/rfc8785/', __FILE__)
+  Dir[File.join(fixtures_path, "input/*.json", __FILE__)].each do |input|
+    filename = File.basename(input)
+    name, _ = File.basename(filename, ".json")
+    expected = File.join(fixtures_path, 'output', filename)
+    define_method("test_rfc8785_#{name}") do
+      assert_rfc8785(File.read(output), JSON.load_file(input))
+    end
+  end
+
+  private
+
+  def assert_rfc8785(expected, value)
+    assert_equal(expected, JSON.generate(value, rfc8785: true))
+  end
 end

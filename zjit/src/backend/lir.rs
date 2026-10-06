@@ -1,15 +1,16 @@
-use std::cell::{Cell, RefCell};
+use std::cell::Cell;
 use std::collections::hash_map::Entry;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::fmt;
 use std::mem::take;
 use std::rc::Rc;
 use crate::bitset::BitSet;
-use crate::codegen::{perf_symbol_range_start, perf_symbol_range_end, register_with_perf};
+use crate::perf;
 use crate::cruby::{IseqPtr, RUBY_OFFSET_CFP_ISEQ, RUBY_OFFSET_CFP_JIT_RETURN, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32, VALUE, ZJIT_STACK_MAP_BASE_PTR_INDEX_MASK, ZJIT_STACK_MAP_BASE_PTR_SIZE_SHIFT, ZJIT_STACK_MAP_BASE_PTR_TAG, ZJIT_STACK_MAP_SHIFT, ZJIT_STACK_MAP_SKIP_TAG, ZJIT_STACK_MAP_VREG_TAG, vm_stack_canary, zjit_jit_frame, local_size_and_idx_to_ep_offset};
+use crate::asm::LabelName;
 use crate::hir::{Invariant, SideExitReason};
 use crate::hir;
-use crate::options::{TraceExits, PerfMap, get_option};
+use crate::options::{TraceExits, get_option};
 use crate::payload::IseqVersionRef;
 use crate::stats::{exit_counter_ptr, exit_counter_ptr_for_opcode, side_exit_counter, CompileError};
 use crate::virtualmem::CodePtr;
@@ -615,6 +616,13 @@ impl From<VALUE> for Opnd {
     fn from(value: VALUE) -> Self {
         Opnd::Value(value)
     }
+}
+
+/// `hir::BlockHandler` lowered for codegen: a block ISEQ (encoded as a specval
+/// at frame push) or an already-guarded Proc VALUE.
+pub enum BlockHandler {
+    Iseq(IseqPtr),
+    Proc(Opnd),
 }
 
 /// Context for a side exit. If `SideExit` matches, it reuses the same code.
@@ -1343,6 +1351,7 @@ impl Insn {
         self.is_jump() ||
             match self {
                 Insn::CRet(_) => true,
+                Insn::Abort => true,
                 _ => false
             }
     }
@@ -1846,7 +1855,7 @@ pub struct Assembler {
     pub(super) num_vregs: usize,
 
     /// Names of labels
-    pub(super) label_names: Vec<String>,
+    pub(super) label_names: Vec<LabelName>,
 
     /// If true, `push_insn` is allowed to use scratch registers.
     /// On `compile`, it also disables the backend's use of them.
@@ -1948,7 +1957,7 @@ impl Assembler
     }
 
     // Create a LIR basic block without a valid HIR block ID (for testing or internal use).
-    pub fn new_block_without_id(&mut self, name: &str) -> BlockId {
+    pub fn new_block_without_id(&mut self, name: &'static str) -> BlockId {
         let bb_id = self.new_block(hir::BlockId(DUMMY_HIR_BLOCK_ID), true, DUMMY_RPO_INDEX);
         let label = self.new_label(name);
         self.write_label(label);
@@ -2021,42 +2030,6 @@ impl Assembler
     }
 
     pub fn linearize_instructions(&self) -> Vec<Insn> {
-        // Wrap instructions emitted by `push_insns` with PosMarkers and record
-        // the emitted byte range under `symbol_name` in the perf map.
-        fn push_insns_with_perf_symbol(
-            insns: &mut Vec<Insn>,
-            symbol_name: &str,
-            push_insns: impl FnOnce(&mut Vec<Insn>),
-        ) {
-            // ISEQ perf symbols cover the whole compiled ISEQ, including this
-            // padding. HIR perf needs a separate symbol because the padding
-            // doesn't belong to any HIR instruction.
-            if get_option!(perf) != Some(PerfMap::HIR) {
-                push_insns(insns);
-                return;
-            }
-
-            let symbol_name = symbol_name.to_string();
-            let start = Rc::new(RefCell::new(None));
-            let current = start.clone();
-            insns.push(Insn::PosMarker(Rc::new(move |code_ptr, _| {
-                let mut current = current.borrow_mut();
-                assert!(current.is_none(), "perf symbol range already open");
-                *current = Some(code_ptr);
-            })));
-
-            push_insns(insns);
-
-            insns.push(Insn::PosMarker(Rc::new(move |end, cb| {
-                if let Some(start) = start.borrow_mut().take() {
-                    let start_addr = start.raw_addr(cb);
-                    let end_addr = end.raw_addr(cb);
-                    if start_addr < end_addr {
-                        register_with_perf(symbol_name.clone(), start_addr, end_addr - start_addr);
-                    }
-                }
-            })));
-        }
 
         // Emit instructions with labels, expanding branch parameters
         let mut insns = Vec::with_capacity(ASSEMBLER_INSNS_CAPACITY);
@@ -2067,7 +2040,7 @@ impl Assembler
             // Entry blocks shouldn't ever be preceded by something that can
             // stomp on this block.
             if !block.is_entry {
-                push_insns_with_perf_symbol(&mut insns, "BoundaryPad", |insns| {
+                perf::push_insns_with_synthetic_symbol(&mut insns, "BoundaryPad", |insns| {
                     insns.push(Insn::BoundaryPad);
                 });
             }
@@ -2100,7 +2073,7 @@ impl Assembler
             }
         }
         // Make sure we don't stomp on the next function
-        push_insns_with_perf_symbol(&mut insns, "BoundaryPad", |insns| {
+        perf::push_insns_with_synthetic_symbol(&mut insns, "BoundaryPad", |insns| {
             insns.push(Insn::BoundaryPad);
         });
 
@@ -2200,12 +2173,15 @@ impl Assembler
     }
 
     /// Create a new label instance that we can jump to
-    pub fn new_label(&mut self, name: &str) -> Target
+    pub fn new_label(&mut self, name: impl Into<LabelName>) -> Target
     {
-        assert!(!name.contains(' '), "use underscores in label names, not spaces");
+        let name = name.into();
+        if let LabelName::Static(name) = name {
+            assert!(!name.contains(' '), "use underscores in label names, not spaces");
+        }
 
         let label = Label(self.label_names.len());
-        self.label_names.push(name.to_string());
+        self.label_names.push(name);
         Target::Label(label)
     }
 
@@ -3220,12 +3196,8 @@ impl Assembler
         // Map from SideExit to compiled Label. This table is used to deduplicate side exit code.
         let mut compiled_exits: HashMap<SideExit, Label> = HashMap::with_capacity(targets.len());
 
-        // Start a new perf range for side exits
-        let perf_symbol = if get_option!(perf) == Some(PerfMap::HIR) {
-            Some(perf_symbol_range_start(self, "side exit"))
-        } else {
-            None
-        };
+        // Start a new perf range for side exits.
+        let symbol_range = perf::symbol_range_start(self, "side exit");
 
         // Mark the start of side-exit code so we can measure its size
         if !targets.is_empty() {
@@ -3306,8 +3278,8 @@ impl Assembler
         }
 
         // Close the current perf range for side exits
-        if let Some(perf_symbol) = &perf_symbol {
-            perf_symbol_range_end(self, perf_symbol);
+        if let Some(symbol_range) = &symbol_range {
+            perf::symbol_range_end(self, symbol_range);
         }
 
         // Extract exit instructions and restore the previous current block
@@ -3722,7 +3694,7 @@ fn format_insn_compact(asm: &Assembler, insn: &Insn) -> String {
 impl fmt::Display for Assembler {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         // Count the number of duplicated label names to disambiguate them if needed
-        let mut label_counts: HashMap<&String, usize> = HashMap::new();
+        let mut label_counts: HashMap<&LabelName, usize> = HashMap::new();
         let colors = crate::ttycolors::get_colors();
         let bold_begin = colors.bold_begin;
         let bold_end = colors.bold_end;
@@ -3732,7 +3704,7 @@ impl fmt::Display for Assembler {
         }
 
         /// Return a label name String. Suffix "_{label_idx}" if the label name is used multiple times.
-        fn label_name(asm: &Assembler, label_idx: usize, label_counts: &HashMap<&String, usize>) -> String {
+        fn label_name(asm: &Assembler, label_idx: usize, label_counts: &HashMap<&LabelName, usize>) -> String {
             let label_name = &asm.label_names[label_idx];
             let label_count = label_counts.get(&label_name).unwrap_or(&0);
             if *label_count > 1 {

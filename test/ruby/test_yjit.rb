@@ -49,6 +49,7 @@ class TestYJIT < Test::Unit::TestCase
   def test_command_line_switches
     assert_in_out_err('--yjit-', '', [], /invalid option --yjit-/)
     assert_in_out_err('--yjithello', '', [], /invalid option --yjithello/)
+    assert_in_out_err('--yjit-temp-regs=6', '', [], /--yjit-temp-regs must be <= 5\n.*invalid YJIT option 'temp-regs=6'/m)
     #assert_in_out_err('--yjit-call-threshold', '', [], /--yjit-call-threshold needs an argument/)
     #assert_in_out_err('--yjit-call-threshold=', '', [], /--yjit-call-threshold needs an argument/)
   end
@@ -1243,6 +1244,35 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_max_compile_time
+    assert_compiles(code_gc_helpers + <<~'RUBY', exits: :any, result: :ok)
+      def compile_for(ns)
+        total = RubyVM::YJIT.total_compile_time_ns
+        target = total + ns
+        while true
+          return unless eval('compiled_iseq? { nil.to_i }')
+          return if RubyVM::YJIT.total_compile_time_ns > target
+        end
+      end
+
+      return :not_compiled1 unless eval('compiled_iseq? { nil.to_i }')
+
+      # Compilation between reading the total and setting the budget eats into it, so be generous here
+      RubyVM::YJIT.max_compile_time_ns = RubyVM::YJIT.total_compile_time_ns + 1_000_000_000
+
+      return :not_compiled2 unless eval('compiled_iseq? { nil.to_i }')
+
+      RubyVM::YJIT.max_compile_time_ns = RubyVM::YJIT.total_compile_time_ns + 1_000_000
+      compile_for(2_000_000)
+
+      return :not_over unless RubyVM::YJIT.total_compile_time_ns >= RubyVM::YJIT.max_compile_time_ns
+
+      return :did_compile1 if eval('compiled_iseq? { nil.to_i }')
+
+      :ok
+    RUBY
+  end
+
   def test_code_gc
     assert_compiles(code_gc_helpers + <<~'RUBY', exits: :any, result: :ok)
       return :not_paged unless add_pages(100) # prepare freeable pages
@@ -1891,6 +1921,7 @@ class TestYJIT < Test::Unit::TestCase
   end
 
   def test_yjit_enable_replaces_array_each
+    pend "the with_jit hooks run in the master box [Bug #22306]" if defined?(Ruby::Box) && Ruby::Box.enabled?
     assert_separately([*("--disable=yjit" if RubyVM::YJIT.enabled?)], <<~'RUBY')
       # Array#each should be implemented in C for the interpreter
       assert_nil Array.instance_method(:each).source_location
@@ -2005,6 +2036,13 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_stack_temps_beyond_temp_regs
+    assert_separately(%w[--yjit-call-threshold=1 --yjit-temp-regs=3], <<~RUBY)
+      def foo(a) = [a, a, a, a]
+      assert_equal([1, 1, 1, 1], foo(1))
+    RUBY
+  end
+
   private
 
   def code_gc_helpers
@@ -2015,10 +2053,24 @@ class TestYJIT < Test::Unit::TestCase
         failures == RubyVM::YJIT.runtime_stats[:compilation_failure]
       end
 
+      def compiled_iseq?
+        count = RubyVM::YJIT.runtime_stats(:compiled_iseq_count)
+        yield
+        RubyVM::YJIT.runtime_stats(:compiled_iseq_count) > count
+      end
+
       def add_pages(num_jits)
         pages = RubyVM::YJIT.runtime_stats[:live_page_count]
         num_jits.times { return false unless eval('compiles { nil.to_i }') }
         pages.nil? || pages < RubyVM::YJIT.runtime_stats[:live_page_count]
+      end
+
+      def compiles_for_ns(ns)
+        target = RubyVM::YJIT.total_compile_time_ns + ns
+        while RubyVM::YJIT.total_compile_time_ns < target
+          return false unless eval('compiles { nil.to_i }')
+        end
+        true
       end
     RUBY
   end

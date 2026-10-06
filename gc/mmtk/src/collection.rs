@@ -1,19 +1,19 @@
 use crate::abi::GCThreadTLS;
 
+use crate::Ruby;
 use crate::api::RubyMutator;
+use crate::heap::CPU_HEAP_TRIGGER_CONFIG;
 use crate::heap::CpuHeapTrigger;
 use crate::heap::RubyHeapTrigger;
-use crate::heap::CPU_HEAP_TRIGGER_CONFIG;
 use crate::mmtk;
 use crate::upcalls;
-use crate::Ruby;
 use mmtk::memory_manager;
 use mmtk::scheduler::*;
-use mmtk::util::alloc::AllocationError;
-use mmtk::util::heap::GCTriggerPolicy;
 use mmtk::util::VMMutatorThread;
 use mmtk::util::VMThread;
 use mmtk::util::VMWorkerThread;
+use mmtk::util::alloc::AllocationError;
+use mmtk::util::heap::GCTriggerPolicy;
 use mmtk::vm::Collection;
 use mmtk::vm::GCThreadContext;
 use std::sync::atomic::AtomicBool;

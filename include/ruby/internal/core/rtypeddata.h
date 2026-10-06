@@ -174,7 +174,11 @@ rbimpl_typeddata_flags {
      *
      * Pointers into the associated C struct MUST NOT be used after the ruby
      * object is not longer on the stack, as they become invalid when GC
-     * compaction occurs
+     * compaction occurs.
+     *
+     * This flag has no effect unless:
+     *   * dfree is NULL or RUBY_TYPED_DEFAULT_FREE.
+     *   * The RUBY_TYPED_THREAD_SAFE_FREE is set.
      */
     RUBY_TYPED_EMBEDDABLE = 2,
 
@@ -471,10 +475,6 @@ RBIMPL_ATTR_NONNULL(())
  * @param[in]  parent  A data type supposed to be a parent of `child`.
  * @retval     true    `child` is a descendent of `parent`.
  * @retval     false   Otherwise.
- *
- * @internal
- *
- * You can path NULL to both arguments, don't know what that means though.
  */
 int rb_typeddata_inherited_p(const rb_data_type_t *child, const rb_data_type_t *parent);
 

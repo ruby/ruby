@@ -66,7 +66,7 @@ module SyntaxSuggest
   #
   # All of these problems are fixed by joining the whole heredoc into a single
   # line.
-  class CleanDocument
+  class CleanDocument # :nodoc:
     def initialize(source:)
       @document = CodeLine.from_source(source)
     end

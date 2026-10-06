@@ -177,6 +177,58 @@ RSpec.describe "bundle lock" do
     expect(read_lockfile).to eq(expected_lockfile)
   end
 
+  it "writes the lockfile configured in the Gemfile" do
+    build_repo4 do
+      build_gem "foo", "1.0"
+    end
+
+    gemfile <<-G
+      source "https://gem.repo4"
+      gem "foo", "1.0"
+      lockfile "custom.lock"
+    G
+
+    bundle "lock"
+
+    expect(bundled_app("Gemfile.lock")).not_to exist
+    expect(bundled_app("custom.lock")).to exist
+  end
+
+  it "writes to BUNDLE_LOCKFILE over the lockfile configured in the Gemfile" do
+    build_repo4 do
+      build_gem "foo", "1.0"
+    end
+
+    gemfile <<-G
+      source "https://gem.repo4"
+      gem "foo", "1.0"
+      lockfile "custom.lock"
+    G
+
+    bundle "lock", env: { "BUNDLE_LOCKFILE" => "env.lock" }
+
+    expect(bundled_app("env.lock")).to exist
+    expect(bundled_app("custom.lock")).not_to exist
+  end
+
+  it "does not write a lockfile when the Gemfile sets lockfile false" do
+    build_repo4 do
+      build_gem "foo", "1.0"
+    end
+
+    gemfile <<-G
+      source "https://gem.repo4"
+      gem "foo", "1.0"
+      lockfile false
+    G
+
+    bundle "lock"
+
+    expect(err).to include("Not writing a lockfile because the Gemfile sets `lockfile false`")
+    expect(out).not_to include("Writing lockfile")
+    expect(bundled_app_lock).not_to exist
+  end
+
   it "prints a lockfile without fetching new checksums if the existing lockfile had no checksums" do
     gemfile_with_rails_weakling_and_foo_from_repo4
 

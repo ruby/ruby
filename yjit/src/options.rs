@@ -265,7 +265,10 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
 
         ("temp-regs", _) => match opt_val.parse() {
             Ok(n) => {
-                assert!(n <= TEMP_REGS.len(), "--yjit-temp-regs must be <= {}", TEMP_REGS.len());
+                if n > TEMP_REGS.len() {
+                    eprintln!("--yjit-temp-regs must be <= {}", TEMP_REGS.len());
+                    return None;
+                }
                 unsafe { OPTIONS.num_temp_regs = n }
             }
             Err(_) => {

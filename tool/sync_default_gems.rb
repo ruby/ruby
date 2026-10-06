@@ -176,6 +176,7 @@ module SyncDefaultGems
       "ext/json/lib/json/truffle_ruby",
       "test/json/lib",
       "ext/json/extconf.rb",
+      "ext/json/depend",
     ]),
     mmtk: repo(["ruby/mmtk", "main"], [
       ["gc/mmtk", "gc/mmtk"],
@@ -304,9 +305,17 @@ module SyncDefaultGems
       ["test/zlib", "test/zlib"],
       ["zlib.gemspec", "ext/zlib/zlib.gemspec"],
     ]),
+    # Most files under tool/lib and tool/test belong to ruby/ruby, so map
+    # each upstream file rather than the directories.
     "test-unit-ruby-core":repo("ruby/test-unit-ruby-core", [
-      ["lib", "tool/lib"],
-      ["test", "tool/test"],
+      ["lib/core_assertions.rb", "tool/lib/core_assertions.rb"],
+      ["lib/envutil.rb", "tool/lib/envutil.rb"],
+      ["lib/find_executable.rb", "tool/lib/find_executable.rb"],
+      ["lib/memory_status.rb", "tool/lib/memory_status.rb"],
+      ["test/test_core_assertions.rb", "tool/test/test_core_assertions.rb"],
+      ["test/test_envutil.rb", "tool/test/test_envutil.rb"],
+      ["test/test_find_executable.rb", "tool/test/test_find_executable.rb"],
+      ["test/test_memory_status.rb", "tool/test/test_memory_status.rb"],
     ]),
   }.transform_keys(&:to_s)
 
@@ -464,7 +473,7 @@ module SyncDefaultGems
   end
 
   def check_prerelease_version(gem)
-    return if ["rubygems", "mmtk", "Onigmo"].include?(gem)
+    return if ["rubygems", "mmtk", "Onigmo", "test-unit-ruby-core"].include?(gem)
 
     require "net/https"
     require "json"
@@ -484,7 +493,41 @@ module SyncDefaultGems
       "lib/#{gem.split("-").join("/")}/#{gem}.gemspec",
     ].find{|gemspec| File.exist?(gemspec)}
     spec = Gem::Specification.load(gemspec)
-    puts "#{gem}-#{spec.version} is not latest version of rubygems.org" if spec.version.to_s != latest_version
+    version = spec.version
+    return if version.to_s == latest_version
+
+    if !version.prerelease? and Gem::Version.correct?(latest_version) and
+       version > Gem::Version.new(latest_version) and
+       prerelease = mark_as_prerelease(gem, version)
+      puts "#{gem}-#{version} is not released yet, marked as #{prerelease}"
+    else
+      puts "#{gem}-#{version} is not latest version of rubygems.org"
+    end
+  end
+
+  # Upstream bumps the version just after a release, so the synced tree holds a
+  # version nobody can install yet, and `bundle install` against it would lock
+  # to that version.  Turn it into a prerelease instead.
+  def mark_as_prerelease(gem, version)
+    literal = %["#{version}"]
+    files = REPOSITORIES[gem].mappings.flat_map do |_src, dst|
+      File.directory?(dst) ? Dir.glob("#{dst}/**/*.{c,rb,gemspec}") : [dst]
+    end
+    found = files.uniq.filter_map do |file|
+      next unless File.file?(file)
+      source = File.binread(file)
+      definition = source.lines.find {|line| line.include?(literal) and line.include?("VERSION")}
+      [file, source, definition] if definition
+    end
+    unless found.size == 1
+      puts "Cannot tell where #{gem}-#{version} is defined"
+      return nil
+    end
+
+    file, source, definition = found[0]
+    prerelease = "#{version}.dev"
+    File.binwrite(file, source.sub(definition) {definition.sub(literal) {%["#{prerelease}"]}})
+    prerelease
   end
 
   def message_filter(repo, sha, log, context: nil)
@@ -841,12 +884,6 @@ module SyncDefaultGems
         `git remote add ruby-core git@github.com:ruby/ruby.git`
       end
       `git fetch ruby-core master --no-tags`
-      unless `git branch`.match(/ruby\-core/)
-        `git checkout ruby-core/master`
-        `git branch ruby-core`
-      end
-      `git checkout ruby-core`
-      `git rebase ruby-core/master`
       `git fetch origin --tags`
 
       if release

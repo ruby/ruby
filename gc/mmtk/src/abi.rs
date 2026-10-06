@@ -1,6 +1,6 @@
+use crate::Ruby;
 use crate::api::RubyMutator;
 use crate::extra_assert;
-use crate::Ruby;
 use libc::c_int;
 use mmtk::scheduler::GCWorker;
 use mmtk::util::Address;

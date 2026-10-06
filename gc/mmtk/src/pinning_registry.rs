@@ -1,16 +1,16 @@
 use std::sync::Mutex;
 
+use mmtk::MMTK;
 use mmtk::memory_manager;
 use mmtk::scheduler::GCWork;
 use mmtk::scheduler::GCWorker;
 use mmtk::scheduler::WorkBucketStage;
 use mmtk::util::ObjectReference;
 use mmtk::util::VMWorkerThread;
-use mmtk::MMTK;
 
+use crate::Ruby;
 use crate::abi::GCThreadTLS;
 use crate::upcalls;
-use crate::Ruby;
 
 pub struct PinningRegistry {
     pinning_objs: Mutex<Vec<ObjectReference>>,
@@ -158,7 +158,7 @@ impl GCWork<Ruby> for RemoveDeadPinnings {
                 .expect("PinningRegistry should not have races during GC.");
 
             pinning_objs.retain_mut(|obj| {
-                if crate::binding::object_survives_current_gc(*obj) {
+                if obj.is_reachable() {
                     let new_obj = obj.get_forwarded_object().unwrap_or(*obj);
                     *obj = new_obj;
                     true

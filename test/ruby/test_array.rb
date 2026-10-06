@@ -1004,6 +1004,19 @@ class TestArray < Test::Unit::TestCase
     assert_equal([1, 2, 1, 2, 1, c], b.flatten(4))
   end
 
+  def test_flatten_modify_during_to_ary
+    # [Bug #22318]
+    a = (1..10_000).to_a
+    obj = Object.new
+    obj.define_singleton_method(:to_ary) do
+      a.clear
+      [1, 2, 3]
+    end
+    a << obj
+    assert_nothing_raised { a.flatten }
+    assert_equal([], a)
+  end
+
   def test_flatten!
     a1 = @cls[ 1, 2, 3]
     a2 = @cls[ 5, 6 ]
@@ -1820,6 +1833,33 @@ class TestArray < Test::Unit::TestCase
     assert_equal([100], a.slice(-1, 1_000_000_000))
   end
 
+  def test_slice_shrinking_array_by_to_int
+    bug22325 = '[Bug #22325]'
+    cls = Class.new(Numeric) do
+      attr_reader :val
+      def initialize(ary, val)
+        @ary = ary
+        @val = val
+      end
+      def <=>(other)
+        val <=> (other.is_a?(self.class) ? other.val : other)
+      end
+      def to_int
+        @ary.clear
+        val
+      end
+      def coerce(other)
+        [other, val]
+      end
+    end
+
+    ary = @cls[*(1..100).to_a]
+    assert_equal([], ary[Range.new(cls.new(ary, 50), cls.new(ary, 60))], bug22325)
+
+    ary.replace((1..100).to_a)
+    assert_equal([], ary[Range.new(cls.new(ary, 50), cls.new(ary, 60)).step(2)], bug22325)
+  end
+
   def test_slice_gc_compact_stress
     EnvUtil.under_gc_compact_stress { assert_equal([1, 2, 3, 4, 5], (0..10).to_a[1, 5]) }
     EnvUtil.under_gc_compact_stress do
@@ -2593,6 +2633,17 @@ class TestArray < Test::Unit::TestCase
     assert_equal(b, @cls[0, 1, 2, 3, 4][1, 4].permutation.to_a, bug3708)
   end
 
+  def test_permutation_array_modified
+    ary = @cls[*(1..1000)]
+    cls = @cls
+    obj = Object.new
+    obj.define_singleton_method(:to_int) do
+      ary.replace(cls[1, 2])
+      2
+    end
+    assert_equal(@cls[[1, 2], [2, 1]], ary.permutation(obj).to_a)
+  end
+
   def test_permutation_stack_error
     bug9932 = '[ruby-core:63103] [Bug #9932]'
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}", timeout: 30)
@@ -2634,6 +2685,17 @@ class TestArray < Test::Unit::TestCase
 
     a = @cls[0, 1, 2, 3, 4][1, 4].repeated_permutation(2)
     assert_empty(a.reject {|x| !x.include?(0)})
+  end
+
+  def test_repeated_permutation_array_modified
+    ary = @cls[*(1..1000)]
+    cls = @cls
+    obj = Object.new
+    obj.define_singleton_method(:to_int) do
+      ary.replace(cls[1, 2])
+      2
+    end
+    assert_equal(@cls[[1, 1], [1, 2], [2, 1], [2, 2]], ary.repeated_permutation(obj).to_a)
   end
 
   def test_repeated_permutation_stack_error
@@ -2740,6 +2802,7 @@ class TestArray < Test::Unit::TestCase
     assert_equal([1, 1, 1], Array.new(3, 1))
     assert_equal([1, 1, 1], Array.new(3) { 1 })
     assert_equal([1, 1, 1], assert_warning(/block supersedes default value argument/) {Array.new(3, 1) { 1 }})
+    assert_equal([], [1].instance_eval { initialize(0) })
   end
 
   def test_aset_error
@@ -2964,6 +3027,18 @@ class TestArray < Test::Unit::TestCase
     assert_equal([nil], a.values_at(2**31-1))
   end
 
+  def test_values_at_ary_modify
+    a = (0..100_000).to_a
+    obj = Object.new
+    obj.define_singleton_method(:begin) do
+      a.clear
+      0
+    end
+    obj.define_singleton_method(:end) { 10_000 }
+    obj.define_singleton_method(:exclude_end?) { false }
+    assert_equal(10_001, a.values_at(obj).length)
+  end
+
   def test_select
     assert_equal([0, 2], [0, 1, 2, 3].select {|x| x % 2 == 0 })
   end
@@ -3110,6 +3185,18 @@ class TestArray < Test::Unit::TestCase
     assert_equal([["a", 0], ["b", 1], ["c", 2]], a.zip(e), bug17814)
     assert_equal([["a", 3], ["b", 4], ["c", 5]], a.zip(e), bug17814)
     assert_equal([["a", 6], ["b", 7], ["c", 8]], a.zip(e), bug17814)
+  end
+
+  def test_zip_modify_during_to_ary
+    # [Bug #22319]
+    a = (1..100_000).to_a
+    obj = Object.new
+    obj.define_singleton_method(:to_ary) do
+      a.clear
+      [1, 2, 3]
+    end
+    assert_nothing_raised { a.zip(obj) }
+    assert_equal([], a)
   end
 
   def test_transpose
@@ -3328,6 +3415,29 @@ class TestArray < Test::Unit::TestCase
     assert_raise(NoMethodError) {
       ary.sample(random: Object.new)
     }
+  end
+
+  def test_sample_modify_array_out_of_bounds
+    ary = (1..1_000).to_a
+    obj = Object.new
+    obj.define_singleton_method(:to_int) do
+      ary.replace((1..50).to_a)
+      10
+    end
+    gen = Object.new
+    # 49 will be out-of-bounds when ary.replace is called
+    def gen.rand(lim) = 49
+    assert_equal([], ary.sample(obj, random: gen))
+
+    ary = (1..100).to_a
+    obj = Object.new
+    obj.define_singleton_method(:to_int) do
+      ary.replace(Array.new(10) { :x })
+      10
+    end
+    gen = Object.new
+    gen.define_singleton_method(:rand) { |lim| 8 }
+    assert_equal([], ary.sample(obj, random: gen))
   end
 
   def test_cycle
@@ -3663,6 +3773,11 @@ class TestArray < Test::Unit::TestCase
     assert_float_equal(8.5, [3.5, 5].sum)
     assert_float_equal(10.5, [2, 8.5].sum)
     assert_float_equal(1_000 * 0.1, Array.new(1_000, 0.1).sum(0.0))
+
+    # Init with a float, but start with some fixnums in the array.
+    # Tests compensated summation fallthrough in array.c
+    assert_float_equal(5.0, [1, 1, 1.0, 1.0, 1.0].sum(0.0))
+
     assert_float_equal((FIXNUM_MAX+1).to_f, [FIXNUM_MAX, 1, 0.0].sum)
     assert_float_equal((FIXNUM_MAX+1).to_f, [0.0, FIXNUM_MAX+1].sum)
 
@@ -3679,6 +3794,19 @@ class TestArray < Test::Unit::TestCase
     ary = [1, 2.0, three]
     assert_float_equal(12.0, ary.sum {|x| yielded << x; x * 2 })
     assert_equal(ary, yielded)
+
+    yielded_ctr = 0
+    result = %w[a b].sum(0) do
+      yielded_ctr += 1
+    end
+    assert_equal(result, 3)
+
+    yielded_ctr = 0.0
+    result = %w[a b].sum(0.0) do
+      yielded_ctr += 1
+      yielded_ctr.to_f
+    end
+    assert_equal(result, 3.0)
 
     assert_raise(TypeError) { [Object.new].sum }
 

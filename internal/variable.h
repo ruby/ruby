@@ -50,6 +50,7 @@ void rb_obj_replace_fields(VALUE obj, VALUE fields_obj);
 VALUE rb_obj_complex_fields_build(VALUE obj);
 VALUE rb_obj_field_get(VALUE obj, shape_id_t target_shape_id);
 void rb_ivar_set_internal(VALUE obj, ID id, VALUE val);
+void rb_check_ivar_modifiable(VALUE obj);
 void rb_ivar_foreach_buffered(VALUE obj, int (*func)(ID name, VALUE val, st_data_t arg), st_data_t arg);
 attr_index_t rb_ivar_set_index(VALUE obj, ID id, VALUE val);
 attr_index_t rb_obj_field_set(VALUE obj, shape_id_t target_shape_id, ID field_name, VALUE val);

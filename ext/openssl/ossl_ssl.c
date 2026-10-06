@@ -36,7 +36,8 @@ VALUE cSSLSocket;
 static VALUE eSSLErrorWaitReadable;
 static VALUE eSSLErrorWaitWritable;
 
-static ID id_call, ID_callback_state, id_npn_protocols_encoded, id_each;
+static ID id_call, ID_callback_state, id_npn_protocols_encoded, id_each,
+          id_original_context;
 static VALUE sym_exception, sym_wait_readable, sym_wait_writable;
 
 static ID id_i_cert_store, id_i_ca_file, id_i_ca_path, id_i_verify_mode,
@@ -83,7 +84,7 @@ static const rb_data_type_t ossl_sslctx_type = {
         .dfree = ossl_sslctx_free,
         .dcompact = ossl_sslctx_compact,
     },
-    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
+    .flags = RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED,
 };
 
 static VALUE
@@ -1178,11 +1179,13 @@ ossl_sslctx_set_client_sigalgs(VALUE self, VALUE v)
  *
  * Added in version 3.0. See also the man page SSL_CTX_set0_tmp_dh_pkey(3).
  *
- * Example:
+ * === Example
  *   ctx = OpenSSL::SSL::SSLContext.new
- *   ctx.tmp_dh = OpenSSL::DH.generate(2048)
- *   svr = OpenSSL::SSL::SSLServer.new(tcp_svr, ctx)
- *   Thread.new { svr.accept }
+ *   ctx.tmp_dh = OpenSSL::PKey::DH.generate(2048)
+ *   Thread.new {
+ *     ssl = OpenSSL::SSL::SSLSocket.new(tcp_svr.accept, ctx)
+ *     ssl.accept
+ *   }
  */
 static VALUE
 ossl_sslctx_set_tmp_dh(VALUE self, VALUE arg)
@@ -1230,9 +1233,11 @@ ossl_sslctx_set_tmp_dh(VALUE self, VALUE arg)
  *
  * === Example
  *   ctx1 = OpenSSL::SSL::SSLContext.new
- *   ctx1.groups = "X25519:P-256:P-224"
- *   svr = OpenSSL::SSL::SSLServer.new(tcp_svr, ctx1)
- *   Thread.new { svr.accept }
+ *   ctx1.groups = "X25519:P-256"
+ *   Thread.new {
+ *     ssl = OpenSSL::SSL::SSLSocket.new(tcp_svr.accept, ctx1)
+ *     ssl.accept
+ *   }
  *
  *   ctx2 = OpenSSL::SSL::SSLContext.new
  *   ctx2.groups = "P-256"
@@ -1632,7 +1637,7 @@ const rb_data_type_t ossl_ssl_type = {
         .dfree = ossl_ssl_free,
         .dcompact = ossl_ssl_compact,
     },
-    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
+    .flags = RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED,
 };
 
 static VALUE
@@ -1709,6 +1714,7 @@ ossl_ssl_initialize(int argc, VALUE *argv, VALUE self)
 
     GetSSLCTX(v_ctx, ctx);
     rb_ivar_set(self, id_i_context, v_ctx);
+    rb_ivar_set(self, id_original_context, v_ctx);
     ossl_sslctx_setup(v_ctx);
 
     if (rb_respond_to(io, rb_intern("nonblock=")))
@@ -1874,13 +1880,15 @@ ossl_start_ssl(VALUE self, int (*func)(SSL *), const char *funcname, VALUE opts)
             io_wait_readable(io);
             continue;
           case SSL_ERROR_SYSCALL:
+            if (saved_errno) {
+                ossl_clear_error();
 #ifdef __APPLE__
-            /* See ossl_ssl_write_internal() */
-            if (saved_errno == EPROTOTYPE)
-                continue;
+                /* See ossl_ssl_write_internal() */
+                if (saved_errno == EPROTOTYPE)
+                    continue;
 #endif
-            if (saved_errno)
                 rb_exc_raise(rb_syserr_new(saved_errno, funcname));
+            }
             /* fallthrough */
           default: {
               VALUE error_append = Qnil;
@@ -2078,20 +2086,20 @@ ossl_ssl_read_internal(int argc, VALUE *argv, VALUE self, int nonblock)
             io_wait_readable(io);
             break;
           case SSL_ERROR_SYSCALL:
+            if (saved_errno) {
+                ossl_clear_error();
+                rb_exc_raise(rb_syserr_new(saved_errno, "SSL_read"));
+            }
             if (!ERR_peek_error()) {
-                if (saved_errno)
-                    rb_exc_raise(rb_syserr_new(saved_errno, "SSL_read"));
-                else {
-                    /*
-                     * The underlying BIO returned 0. This is actually a
-                     * protocol error. But unfortunately, not all
-                     * implementations cleanly shutdown the TLS connection
-                     * but just shutdown/close the TCP connection. So report
-                     * EOF for now...
-                     */
-                    if (no_exception_p(opts)) { return Qnil; }
-                    rb_eof_error();
-                }
+                /*
+                 * The underlying BIO returned 0. This is actually a
+                 * protocol error. But unfortunately, not all
+                 * implementations cleanly shutdown the TLS connection
+                 * but just shutdown/close the TCP connection. So report
+                 * EOF for now...
+                 */
+                if (no_exception_p(opts)) { return Qnil; }
+                rb_eof_error();
             }
             /* fall through */
           default:
@@ -2188,18 +2196,20 @@ ossl_ssl_write_internal_safe(VALUE _args)
             io_wait_readable(io);
             continue;
           case SSL_ERROR_SYSCALL:
+            if (saved_errno) {
+                ossl_clear_error();
 #ifdef __APPLE__
-            /*
-             * It appears that send syscall can return EPROTOTYPE if the
-             * socket is being torn down. Retry to get a proper errno to
-             * make the error handling in line with the socket library.
-             * [Bug #14713] https://bugs.ruby-lang.org/issues/14713
-             */
-            if (saved_errno == EPROTOTYPE)
-                continue;
+                /*
+                 * It appears that send syscall can return EPROTOTYPE if the
+                 * socket is being torn down. Retry to get a proper errno to
+                 * make the error handling in line with the socket library.
+                 * [Bug #14713] https://bugs.ruby-lang.org/issues/14713
+                 */
+                if (saved_errno == EPROTOTYPE)
+                    continue;
 #endif
-            if (saved_errno)
                 rb_exc_raise(rb_syserr_new(saved_errno, "SSL_write"));
+            }
             /* fallthrough */
           default:
             ossl_raise(eSSLError, "SSL_write");
@@ -2436,7 +2446,14 @@ ossl_ssl_get_state(VALUE self)
  * call-seq:
  *    ssl.pending => Integer
  *
- * The number of bytes that are immediately available for reading.
+ * Returns the number of bytes buffered by the OpenSSL library and immediately
+ * available for reading with #sysread.
+ *
+ * This does not include data read ahead and buffered by SSLSocket. It may
+ * therefore return 0 even when data is available for reading with methods
+ * that are aware of the SSLSocket buffer, such as #read or #gets.
+ *
+ * See also the man page SSL_pending(3).
  */
 static VALUE
 ossl_ssl_pending(VALUE self)
@@ -2799,8 +2816,8 @@ Init_ossl_ssl(void)
     /* Document-module: OpenSSL::SSL
      *
      * Use SSLContext to set up the parameters for a TLS (former SSL)
-     * connection. Both client and server TLS connections are supported,
-     * SSLSocket and SSLServer may be used in conjunction with an instance
+     * connection. Both client and server TLS connections are supported.
+     * SSLSocket may be used in conjunction with a TCPServer and an instance
      * of SSLContext to set up connections.
      */
     mSSL = rb_define_module_under(mOSSL, "SSL");
@@ -3374,6 +3391,7 @@ Init_ossl_ssl(void)
 
     id_npn_protocols_encoded = rb_intern_const("npn_protocols_encoded");
     id_each = rb_intern_const("each");
+    id_original_context = rb_intern_const("original_context");
 
 #define DefIVarID(name) do \
     id_i_##name = rb_intern_const("@"#name); while (0)

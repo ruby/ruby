@@ -1,6 +1,7 @@
 use std::ffi::c_void;
 use std::ptr::NonNull;
 use crate::codegen::IseqCallRef;
+use crate::options::{get_option, NumExits};
 use crate::stats::CompileError;
 use crate::{cruby::*, profile::IseqProfile, virtualmem::CodePtr};
 
@@ -24,6 +25,8 @@ pub struct IseqPayload {
     /// `BasicObject`) when the owner is unknown.
     /// See [`crate::cruby::iseq_self_is_heap_object`].
     pub self_is_heap_object: bool,
+    /// Number of recompile exits before invalidating the current version. See `exit_recompile`.
+    pub num_exits_until_invalidate: NumExits,
 }
 
 impl IseqPayload {
@@ -33,6 +36,7 @@ impl IseqPayload {
             versions: vec![],
             was_invalidated_for_singleton_class_creation: false,
             self_is_heap_object: false,
+            num_exits_until_invalidate: get_option!(num_exits_until_invalidate),
         }
     }
 }
@@ -116,6 +120,11 @@ pub fn get_or_create_iseq_payload_ptr(iseq: IseqPtr) -> *mut IseqPayload {
             payload as *mut IseqPayload
         }
     }
+}
+
+/// Get a pointer to the payload object associated with an ISEQ, or null if never allocated.
+pub fn get_iseq_payload_ptr(iseq: IseqPtr) -> *mut IseqPayload {
+    unsafe { rb_iseq_get_jit_payload(iseq) as *mut IseqPayload }
 }
 
 /// Get the payload object associated with an ISEQ. Create one if none exists.

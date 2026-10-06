@@ -54,16 +54,7 @@ module ErrorHighlight
 
       return nil unless Thread::Backtrace::Location === loc
 
-      node =
-        begin
-          RubyVM::AbstractSyntaxTree.of(loc, keep_script_lines: true)
-        rescue RuntimeError => error
-          # RubyVM::AbstractSyntaxTree.of raises an error with a message that
-          # includes "prism" when the ISEQ was compiled with the prism compiler.
-          # In this case, we'll try to parse again with prism instead.
-          raise unless error.message.include?("prism")
-          prism_find(loc)
-        end
+      node = find_node_from_loc(loc)
 
       Spotter.new(node, **opts).spot
 
@@ -80,6 +71,24 @@ module ErrorHighlight
 
     return nil
   end
+
+  def self.find_node_from_loc(loc)
+    if loc.respond_to?(:syntax_tree)
+      return loc.syntax_tree
+    end
+
+    begin
+      RubyVM::AbstractSyntaxTree.of(loc, keep_script_lines: true)
+    rescue RuntimeError => error
+      # RubyVM::AbstractSyntaxTree.of raises an error with a message that
+      # includes "prism" when the ISEQ was compiled with the prism compiler.
+      # In this case, we'll try to parse again with prism instead.
+      raise unless error.message.include?("prism")
+      prism_find(loc)
+    end
+  end
+
+  private_class_method :find_node_from_loc
 
   # Accepts a Thread::Backtrace::Location object and returns a Prism::Node
   # corresponding to the backtrace location in the source code.

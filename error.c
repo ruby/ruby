@@ -545,7 +545,7 @@ deprecation_warning_enabled(void)
 }
 
 static void
-warn_deprecated(VALUE mesg, const char *removal, const char *suggest)
+warn_deprecated(VALUE mesg, const char *removal, const char *suggest, VALUE category)
 {
     rb_str_set_len(mesg, RSTRING_LEN(mesg) - 1);
     rb_str_cat_cstr(mesg, " is deprecated");
@@ -554,7 +554,7 @@ warn_deprecated(VALUE mesg, const char *removal, const char *suggest)
     }
     if (suggest) rb_str_catf(mesg, "; use %s instead", suggest);
     rb_str_cat_cstr(mesg, "\n");
-    rb_warn_category(mesg, ID2SYM(id_deprecated));
+    rb_warn_category(mesg, category);
 }
 
 void
@@ -563,7 +563,7 @@ rb_warn_deprecated(const char *fmt, const char *suggest, ...)
     if (!deprecation_warning_enabled()) return;
 
     with_warning_string_from(mesg, 0, fmt, suggest) {
-        warn_deprecated(mesg, NULL, suggest);
+        warn_deprecated(mesg, NULL, suggest, ID2SYM(id_deprecated));
     }
 }
 
@@ -573,7 +573,17 @@ rb_warn_deprecated_to_remove(const char *removal, const char *fmt, const char *s
     if (!deprecation_warning_enabled()) return;
 
     with_warning_string_from(mesg, 0, fmt, suggest) {
-        warn_deprecated(mesg, removal, suggest);
+        warn_deprecated(mesg, removal, suggest, ID2SYM(id_deprecated));
+    }
+}
+
+void
+rb_warn_to_remove(const char *removal, const char *fmt, const char *suggest, ...)
+{
+    if (NIL_P(ruby_verbose)) return;
+
+    with_warning_string_from(mesg, 0, fmt, suggest) {
+        warn_deprecated(mesg, removal, suggest, Qnil);
     }
 }
 

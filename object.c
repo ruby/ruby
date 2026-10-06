@@ -519,8 +519,9 @@ rb_obj_clone_setup(VALUE obj, VALUE clone, VALUE kwfreeze)
         }
 
         if (RB_OBJ_FROZEN(obj)) {
-            shape_id_t next_shape_id = rb_obj_shape_transition_frozen(clone);
-            RBASIC_SET_SHAPE_ID(clone, next_shape_id);
+            // Not just the shape_id transition: a frozen class or module must
+            // also have a frozen fields object.
+            rb_obj_freeze_inline(clone);
         }
         break;
       case Qtrue: {
@@ -1370,12 +1371,7 @@ rb_obj_dummy1(VALUE _x, VALUE _y)
 VALUE
 rb_obj_freeze(VALUE obj)
 {
-    if (!OBJ_FROZEN(obj)) {
-        OBJ_FREEZE(obj);
-        if (SPECIAL_CONST_P(obj)) {
-            rb_bug("special consts should be frozen.");
-        }
-    }
+    OBJ_FREEZE(obj);
     return obj;
 }
 

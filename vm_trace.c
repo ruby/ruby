@@ -102,6 +102,18 @@ rb_hook_list_free(rb_hook_list_t *hooks)
     }
 }
 
+size_t
+rb_hook_list_memsize(const rb_hook_list_t *hooks)
+{
+    size_t size = 0;
+    const rb_event_hook_t *hook = hooks->hooks;
+    while (hook) {
+        size += sizeof(rb_event_hook_t);
+        hook = hook->next;
+    }
+    return size;
+}
+
 /* ruby_vm_event_flags management */
 
 void rb_clear_attr_ccs(void);

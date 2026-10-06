@@ -2655,13 +2655,14 @@ time_init_parse(rb_execution_context_t *ec, VALUE time, VALUE str, VALUE zone, V
         rb_raise(rb_eArgError, "time string should have ASCII compatible encoding");
     }
 
+    size_t prec = NIL_P(precision) ? SIZE_MAX : NUM2SIZET(precision);
+
     const char *const begin = RSTRING_PTR(str);
     const char *const end = RSTRING_END(str);
     const char *ptr = begin;
     VALUE year = Qnil, subsec = Qnil;
     int mon = -1, mday = -1, hour = -1, min = -1, sec = -1;
     size_t ndigits;
-    size_t prec = NIL_P(precision) ? SIZE_MAX : NUM2SIZET(precision);
 
     if ((ptr < end) && (ISSPACE(*ptr) || ISSPACE(*(end-1)))) {
         rb_raise(rb_eArgError, "can't parse: %+"PRIsVALUE, str);

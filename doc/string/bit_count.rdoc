@@ -1,8 +1,38 @@
-Returns the number of set bits in +self+:
+Returns the number of set bits in +self+.
+
+With no arguments, counts over all bytes of +self+:
 
   "\x00".bit_count # => 0
   "\xFF".bit_count # => 8
   "\xAA".bit_count # => 4
 
+With +offset+ and +length+, counts only the +length+ bits beginning at
+zero-based bit +offset+; with a Range, counts the bits covered by +range+:
+
+  data = "\xFF\x00\xF0"
+  data.bit_count(0, 8)   # => 8
+  data.bit_count(8, 8)   # => 0
+  data.bit_count(0..7)   # => 8
+  data.bit_count(8...16) # => 0
+  data.bit_count(16..)   # => 4
+
+A region that extends beyond the end of +self+ is clamped to the bits that
+exist; a region that begins at or beyond the end counts zero:
+
+  data.bit_count(16, 100) # => 4
+  data.bit_count(100, 8)  # => 0
+
+By default, bits within each byte are numbered from least-significant to
+most-significant. If +lsb_first+ is +false+, byte order is unchanged but bits
+within each byte are numbered from most-significant to least-significant.
+The numbering matters only when the region is not byte-aligned; the
+no-argument form is independent of it:
+
+  "\xF0".bit_count(0, 4)                   # => 0
+  "\xF0".bit_count(0, 4, lsb_first: false) # => 4
+
 The count is over the bytes of +self+ and is independent of string encoding.
-Raises +ArgumentError+ if any argument is given.
+Raises +IndexError+ if +offset+ or a Range endpoint is negative.
+Raises +ArgumentError+ if +length+ is negative.
+Raises +ArgumentError+ if a bit position is too large to be represented.
+Raises +ArgumentError+ if +lsb_first+ is neither +true+ nor +false+.

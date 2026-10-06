@@ -48,7 +48,7 @@ class TestPath < Test::Unit::TestCase
   end
 
   def test_dirname
-    if /(bcc|ms)win\d|mingw|cygwin|emx/ =~ RUBY_PLATFORM
+    if /mswin\d|mingw|cygwin/ =~ RUBY_PLATFORM
       # DOSISH_DRIVE_LETTER
       assert_equal('C:.', File.dirname('C:'))
       assert_equal('C:.', File.dirname('C:a'))
@@ -104,7 +104,7 @@ class TestPath < Test::Unit::TestCase
     assert_equal('/', File.dirname('/a/'))
     assert_equal('/a', File.dirname('/a/b'))
 
-    if /(bcc|ms|cyg)win|mingw|emx/ =~ RUBY_PLATFORM
+    if /(ms|cyg)win|mingw/ =~ RUBY_PLATFORM
       # DOSISH_UNC
       assert_equal('//', File.dirname('//'))
       assert_equal('//a', File.dirname('//a'))
@@ -138,7 +138,7 @@ class TestPath < Test::Unit::TestCase
   end
 
   def test_basename
-    if /(bcc|ms)win\d|mingw|cygwin|emx/ =~ RUBY_PLATFORM
+    if /mswin\d|mingw|cygwin/ =~ RUBY_PLATFORM
       # DOSISH_DRIVE_LETTER
       assert_equal('', File.basename('C:'))
       assert_equal('a', File.basename('C:a'))
@@ -194,7 +194,7 @@ class TestPath < Test::Unit::TestCase
 
     assert_equal("..", File.basename("..", ".*"))
 
-    if /(bcc|ms|cyg)win|mingw|emx/ =~ RUBY_PLATFORM
+    if /(ms|cyg)win|mingw/ =~ RUBY_PLATFORM
       # DOSISH_UNC
       assert_equal('/', File.basename('//'))
       assert_equal('/', File.basename('//a'))
@@ -234,12 +234,12 @@ class TestPath < Test::Unit::TestCase
     assert_equal(ext, File.extname('.a.rb'))
     assert_equal(ext, File.extname('a/b/d/test.rb'))
     assert_equal(ext, File.extname('.a/b/d/test.rb'))
-    unless /mswin|bccwin|mingw/ =~ RUBY_PLATFORM
+    unless /mswin|mingw/ =~ RUBY_PLATFORM
       # trailing spaces and dots are ignored on NTFS.
       ext = '.'
     end
     assert_equal(ext, File.extname('a.rb.'))
-    if /mswin|bccwin|mingw/ =~ RUBY_PLATFORM
+    if /mswin|mingw/ =~ RUBY_PLATFORM
       # trailing spaces and dots are ignored on NTFS.
       ext = ''
     end

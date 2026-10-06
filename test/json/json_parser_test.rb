@@ -38,6 +38,32 @@ class JSONParserTest < Test::Unit::TestCase
     assert_equal 'test', parser.parse
   end
 
+  def test_on_load_method
+    on_load = ->(value) { Integer === value ? value + 1 : value }.method(:call)
+    assert_equal [2], JSON.parse('[1]', on_load: on_load)
+  end
+
+  def test_on_load_invalid_type
+    ['x', Object.new, Time.now].each do |on_load|
+      assert_raise(TypeError) { JSON.parse('[1]', on_load: on_load) }
+    end
+  end
+
+  def test_on_load_invalid_to_proc
+    on_load = Object.new
+    def on_load.to_proc
+      method(:to_proc)
+    end
+    assert_raise(TypeError) { JSON.parse('[1]', on_load: on_load) }
+  end
+
+  def test_on_load_falsy
+    [nil, false].each do |on_load|
+      config = JSON::Parser::Config.new(on_load: on_load)
+      assert_equal [1], config.parse('[1]')
+    end
+  end
+
   def test_parser_reset
     parser = Parser.new('{"a":"b"}')
     assert_equal({ 'a' => 'b' }, parser.parse)
@@ -221,6 +247,12 @@ class JSONParserTest < Test::Unit::TestCase
     end
 
     assert_equal "foo", parse(%("fo\\o"), allow_invalid_escape: true)
+  end
+
+  def test_parse_invalid_escape_non_ascii
+    assert_equal "caf\u00e9", parse(%("caf\\\u00e9"), allow_invalid_escape: true)
+    assert_equal "\u3042", parse(%("\\\u3042"), allow_invalid_escape: true)
+    assert_equal "\u{1F600}", parse(%("\\\u{1F600}"), allow_invalid_escape: true)
   end
 
   def test_parse_arrays
@@ -836,7 +868,7 @@ class JSONParserTest < Test::Unit::TestCase
     assert_equal "unexpected character: 'aああああああああああ' at line 1 column 1", error.message
 
     error = assert_raise(JSON::ParserError) { JSON.parse("abあああああああああああああああああああああああ") }
-    assert_equal "unexpected character: 'abあああああああああ' at line 1 column 1", error.message
+    assert_equal "unexpected character: 'abああああああああああ' at line 1 column 1", error.message
 
     error = assert_raise(JSON::ParserError) { JSON.parse("abcあああああああああああああああああああああああ") }
     assert_equal "unexpected character: 'abcあああああああああ' at line 1 column 1", error.message
@@ -849,11 +881,34 @@ class JSONParserTest < Test::Unit::TestCase
 
     error = assert_raise(JSON::ParserError) { JSON.parse("@") }
     assert_equal "unexpected character: '@' at line 1 column 1", error.message
+
+    error = assert_raise(JSON::ParserError) { JSON.parse('"a" 日本') }
+    assert_equal "unexpected token at end of stream '日本' at line 1 column 5", error.message
+
+    error = assert_raise(JSON::ParserError) { JSON.parse('[1, é') }
+    assert_equal "unexpected character: 'é' at line 1 column 5", error.message
+  end
+
+  def test_parse_error_snippet_multibyte_boundaries
+    omit "JRuby errors don't contain positions" if RUBY_ENGINE == "jruby"
+
+    ['é', '日', '😀'].each do |char|
+      ['', ' ', "\n", "\t", "\r"].each do |suffix|
+        error = assert_raise(JSON::ParserError) { JSON.parse(char + suffix) }
+        assert_equal "unexpected character: '#{char}' at line 1 column 1", error.message
+      end
+
+      (28..32).each do |padding|
+        prefix = 'a' * padding
+        fragment = prefix + char * ((32 - padding) / char.bytesize)
+        error = assert_raise(JSON::ParserError) { JSON.parse(prefix + char * 20) }
+        assert_equal "unexpected character: '#{fragment}' at line 1 column 1", error.message
+        assert_predicate error.message, :valid_encoding?
+      end
+    end
   end
 
   def test_parse_error_json_path
-    omit "JRuby errors don't contain positions" if RUBY_ENGINE == "jruby"
-
     assert_parse_error_at "$", "xyz"
     assert_parse_error_at "$.a", '{"a": xyz}'
     assert_parse_error_at "$[3]", '[1, 2, "hi", xyz]'
@@ -870,9 +925,44 @@ class JSONParserTest < Test::Unit::TestCase
     assert_parse_error_at "$[5]", '[1,2,3,4,5,]'
   end
 
-  def test_parse_error_json_path_on_load
-    omit "JRuby errors don't contain positions" if RUBY_ENGINE == "jruby"
+  def test_parse_error_position
+    error = assert_raise(JSON::ParserError) { JSON.parse("[1,\n@") }
+    assert_equal 2, error.line
+    assert_equal 1, error.column
 
+    error = assert_raise(JSON::ParserError) { JSON.parse('{"a": {"b": [1, {"c": 1, "c": 2}]}}') }
+    assert_equal 1, error.line
+    assert_equal 17, error.column
+  end
+
+  def test_parse_error_position_at_newline
+    omit "JRuby string decoding errors don't contain positions" if RUBY_ENGINE == "jruby"
+
+    ["[1,\n\"ab\ncd\"]", "[1,\n\"日本\ncd\"]"].each do |json|
+      error = assert_raise(JSON::ParserError) { JSON.parse(json) }
+      assert_equal 2, error.line
+      assert_equal 4, error.column
+      assert_include error.message, 'at line 2 column 4'
+    end
+  end
+
+  def test_parse_error_position_with_multibyte_characters
+    {
+      '["日本", @]' => [1, 8],
+      "[\n\"é日😀\", @" => [2, 8],
+      '{"日本":{"a":1,"a":2}}' => [1, 7],
+      '["日本",' => [1, 7],
+      "[1,\n" => [2, 1],
+      '' => [1, 1],
+    }.each do |json, (line, column)|
+      error = assert_raise(JSON::ParserError) { JSON.parse(json) }
+      assert_equal line, error.line
+      assert_equal column, error.column
+      assert_include error.message, "at line #{line} column #{column}"
+    end
+  end
+
+  def test_parse_error_json_path_on_load
     assert_parse_error_at "$" do
       JSON.load('{"a": {"b": {"c":', -> (obj) {
         if String === obj
@@ -895,8 +985,6 @@ class JSONParserTest < Test::Unit::TestCase
   end
 
   def test_parse_error_json_path_key_escaping
-    omit "JRuby errors don't contain positions" if RUBY_ENGINE == "jruby"
-
     assert_parse_error_at '$["hello world"]', '{"hello world": xyz}'
     assert_parse_error_at '$["a\"b"]', '{"a\"b": xyz}'
     assert_parse_error_at '$[""]', '{"": xyz}'
@@ -905,8 +993,6 @@ class JSONParserTest < Test::Unit::TestCase
   end
 
   def test_parse_error_json_path_duplicate_key
-    omit "JRuby errors don't contain positions" if RUBY_ENGINE == "jruby"
-
     assert_parse_error_at "$.a", '{"a": 1, "a": 2}'
     assert_parse_error_at "$.x.a", '{"x": {"a": 1, "b": 2, "a": 3}}'
     assert_parse_error_at "$.arr[0].a", '{"arr": [{"a": 1, "a": 2}]}'

@@ -23,6 +23,7 @@
 #include "internal.h"
 #include "internal/box.h"
 #include "internal/class.h"
+#include "internal/error.h"
 #include "internal/eval.h"
 #include "internal/gc.h"
 #include "internal/hash.h"
@@ -291,6 +292,9 @@ class_duplicate_iclass_classext(VALUE iclass, rb_classext_t *mod_ext, const rb_b
 
     RCLASSEXT_BOX(ext) = box;
 
+    VM_ASSERT(FL_TEST_RAW(iclass, RCLASS_BOXABLE));
+    first_set = RCLASS_SET_BOX_CLASSEXT(iclass, box, ext);
+
     RCLASSEXT_SUPER(ext) = RCLASSEXT_SUPER(src);
 
     // See also: rb_include_class_new()
@@ -316,16 +320,13 @@ class_duplicate_iclass_classext(VALUE iclass, rb_classext_t *mod_ext, const rb_b
 
     RCLASSEXT_SET_INCLUDER(ext, iclass, RCLASSEXT_INCLUDER(src));
 
-    VM_ASSERT(FL_TEST_RAW(iclass, RCLASS_BOXABLE));
-
-    first_set = RCLASS_SET_BOX_CLASSEXT(iclass, box, ext);
     if (first_set) {
         RCLASS_SET_PRIME_CLASSEXT_WRITABLE(iclass, false);
     }
 }
 
 rb_classext_t *
-rb_class_duplicate_classext(rb_classext_t *orig, VALUE klass, const rb_box_t *box)
+rb_class_duplicate_classext(rb_classext_t *orig, VALUE klass, const rb_box_t *box, int *first_set)
 {
     VM_ASSERT(RB_TYPE_P(klass, T_CLASS) || RB_TYPE_P(klass, T_MODULE) || RB_TYPE_P(klass, T_ICLASS));
 
@@ -333,6 +334,10 @@ rb_class_duplicate_classext(rb_classext_t *orig, VALUE klass, const rb_box_t *bo
     bool dup_iclass = RB_TYPE_P(klass, T_MODULE) ? true : false;
 
     RCLASSEXT_BOX(ext) = box;
+
+    /* Everything made below is reachable only through this classext, so put
+     * it where the GC can find it before allocating any of it. */
+    *first_set = RCLASS_SET_BOX_CLASSEXT(klass, box, ext);
 
     RCLASSEXT_SUPER(ext) = RCLASSEXT_SUPER(orig);
 
@@ -2987,7 +2992,11 @@ singleton_class_of(VALUE obj, bool ensure_eigenclass)
             RCLASS_ATTACHED_OBJECT(klass) == obj)) {
             klass = rb_make_metaclass(obj, klass);
         }
-        RB_FL_SET_RAW(klass, RB_OBJ_FROZEN_RAW(obj));
+        if (RB_OBJ_FROZEN_RAW(obj)) {
+            // Freeze through rb_obj_freeze_inline so the singleton class also
+            // gets a frozen shape_id, not just the FL_FREEZE flag.
+            rb_obj_freeze_inline(klass);
+        }
         if (ensure_eigenclass && RB_TYPE_P(obj, T_CLASS)) {
             /* ensures an exposed class belongs to its own eigenclass */
             (void)ENSURE_EIGENCLASS(klass);
@@ -3000,6 +3009,9 @@ singleton_class_of(VALUE obj, bool ensure_eigenclass)
     return klass;
 }
 
+#if RUBY_VERSION_SINCE(4, 2)
+RBIMPL_TODO("make rb_freeze_singleton_class internal; remove from fl_type.h")
+#endif
 void
 rb_freeze_singleton_class(VALUE attached_object)
 {

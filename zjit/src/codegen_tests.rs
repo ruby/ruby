@@ -6,7 +6,7 @@ use crate::backend::lir::Assembler;
 use crate::codegen::max_iseq_versions;
 use crate::cruby::*;
 use crate::hir::{Insn, iseq_to_hir};
-use crate::options::{CallThreshold, get_option, rb_zjit_prepare_options, set_call_threshold, set_inline_threshold, set_max_versions, set_mem_bytes};
+use crate::options::{CallThreshold, get_option, rb_zjit_prepare_options, set_call_threshold, set_inline_threshold, set_max_versions, set_mem_bytes, set_num_exits_until_invalidate};
 use crate::payload::IseqVersion;
 use crate::hir::tests::hir_build_tests::assert_contains_opcode;
 use crate::payload::*;
@@ -44,6 +44,7 @@ fn with_inlining_threshold<T>(threshold: usize, mut ruby_fragment: impl FnMut() 
 /// interpreter. Asserting on `inline_method_count` fails the test in that case.
 #[track_caller]
 fn assert_inlines(program: &str) -> String {
+    ensure_rubyvm(); // ZJITState is not available until the VM is booted
     let counters = crate::state::ZJITState::get_counters();
     let inline_count_before = counters.inline_method_count;
     let result = assert_compiles(program);
@@ -57,6 +58,7 @@ fn assert_inlines(program: &str) -> String {
 /// of a literal block.
 #[track_caller]
 fn assert_inlines_allowing_exits(program: &str) -> String {
+    ensure_rubyvm(); // ZJITState is not available until the VM is booted
     let counters = crate::state::ZJITState::get_counters();
     let inline_count_before = counters.inline_method_count;
     let result = assert_compiles_allowing_exits(program);
@@ -195,6 +197,7 @@ fn test_putobject() {
 #[test]
 fn test_recompile_exit_invalidates_on_first_exit() {
     set_call_threshold(2);
+    set_num_exits_until_invalidate(1);
     eval("
         def recompile_on_first_exit(a, b) = a + b
         recompile_on_first_exit(1, 2)
@@ -206,9 +209,39 @@ fn test_recompile_exit_invalidates_on_first_exit() {
     assert_eq!(1, payload.versions.len());
     assert!(!unsafe { payload.versions.last().unwrap().as_ref() }.is_invalidated());
 
-    // The first recompile exit invalidates the version right away, so subsequent
-    // calls re-profile every instruction in the interpreter before recompiling.
+    // With --zjit-num-exits-until-invalidate=1, the first recompile exit invalidates the version right
+    // away, so subsequent calls re-profile every instruction in the interpreter before recompiling.
     eval("recompile_on_first_exit(1.5, 2.5)");
+    let payload = get_or_create_iseq_payload(iseq);
+    assert_eq!(1, payload.versions.len());
+    assert!(unsafe { payload.versions.last().unwrap().as_ref() }.is_invalidated());
+}
+
+#[test]
+fn test_recompile_exit_waits_for_exit_budget() {
+    set_call_threshold(2);
+    set_num_exits_until_invalidate(3);
+    eval("
+        def recompile_exit_budget(a, b) = a + b
+        recompile_exit_budget(1, 2)
+        recompile_exit_budget(1, 2)
+    ");
+
+    let iseq = get_method_iseq("self", "recompile_exit_budget");
+    let payload = get_or_create_iseq_payload(iseq);
+    assert_eq!(1, payload.versions.len());
+    assert!(!unsafe { payload.versions.last().unwrap().as_ref() }.is_invalidated());
+
+    // The first two recompile exits only decrement the budget. The compiled version keeps running.
+    for _ in 0..2 {
+        eval("recompile_exit_budget(1.5, 2.5)");
+        let payload = get_or_create_iseq_payload(iseq);
+        assert_eq!(1, payload.versions.len());
+        assert!(!unsafe { payload.versions.last().unwrap().as_ref() }.is_invalidated());
+    }
+
+    // The third recompile exit exhausts the budget and invalidates the version.
+    eval("recompile_exit_budget(1.5, 2.5)");
     let payload = get_or_create_iseq_payload(iseq);
     assert_eq!(1, payload.versions.len());
     assert!(unsafe { payload.versions.last().unwrap().as_ref() }.is_invalidated());
@@ -218,6 +251,7 @@ fn test_recompile_exit_invalidates_on_first_exit() {
 fn test_function_stub_reprofiles_after_invalidation() {
     rb_zjit_prepare_options();
     set_inline_threshold(0);
+    set_num_exits_until_invalidate(1);
     let num_profiles = get_option!(num_profiles);
     let call_threshold = CallThreshold::from(num_profiles) + 2;
     set_call_threshold(call_threshold);
@@ -333,6 +367,51 @@ fn test_string_intern() {
     "#);
     assert_contains_opcode("test", YARVINSN_intern);
     assert_snapshot!(assert_compiles(r#"test"#), @":foo123");
+}
+
+#[test]
+fn test_string_to_sym_invalid_encoding_unused() {
+    eval(r#"
+        def test(str)
+          str.to_sym
+          :converted
+        end
+    "#);
+    assert_snapshot!(assert_compiles(r#"
+        test("warmup")
+        test("warmup")
+        begin
+          test("\xFF".force_encoding(Encoding::UTF_8))
+        rescue EncodingError
+          :encoding_error
+        end
+    "#), @":encoding_error");
+}
+
+#[test]
+fn test_string_subclass_to_sym() {
+    assert_snapshot!(assert_compiles(r#"
+        class MyString < String; end
+        def test(str) = str.to_sym
+        value = MyString.new("key")
+        test(value)
+        test(value)
+        [test(value), test(MyString.new("other"))]
+    "#), @"[:key, :other]");
+}
+
+#[test]
+fn test_string_subclass_to_sym_redefined() {
+    assert_snapshot!(assert_compiles_allowing_exits(r#"
+        class MyString < String; end
+        def test(str) = str.to_sym
+        value = MyString.new("key")
+        test(value)
+        test(value)
+        original = test(value)
+        MyString.class_eval { def to_sym = :overridden }
+        [original, test(value)]
+    "#), @"[:key, :overridden]");
 }
 
 #[test]
@@ -1124,6 +1203,20 @@ fn test_yield_inlined_caller_block_dispatches_without_guards() {
             test
             test
         "), @"30");
+    });
+}
+
+#[test]
+fn test_yield_block_iseq_guard_survives_compaction() {
+    with_inlining_threshold(0, || {
+        eval("
+            def foo = yield
+            def test = foo { 42 }
+            # Call it enough times to compile both test and foo (through test's JIT-to-JIT stub)
+            4.times { test }
+            GC.verify_compaction_references(expand_heap: true, toward: :empty) if GC.respond_to?(:compact)
+        ");
+        assert_snapshot!(assert_compiles("test"), @"42");
     });
 }
 
@@ -1961,6 +2054,79 @@ fn test_send_nil_block_arg() {
         test
         test
     "), @"false");
+}
+
+#[test]
+fn test_send_proc_block_arg() {
+    assert_snapshot!(inspect("
+        def foo = yield 3
+        def test
+          blk = proc { |x| x * 2 }
+          foo(&blk)
+        end
+        test
+        test
+    "), @"6");
+}
+
+#[test]
+fn test_send_proc_block_arg_side_exit() {
+    assert_snapshot!(inspect("
+        def foo = yield 3
+        def test(blk) = foo(&blk)
+        test(proc { |x| x * 2 })
+        test(proc { |x| x * 2 })
+        [test(proc { |x| x * 2 }), test(:succ)]
+    "), @"[6, 4]");
+}
+
+#[test]
+fn test_send_proc_block_arg_lambda() {
+    assert_snapshot!(inspect("
+        def foo = yield 3
+        def test
+          blk = lambda { |x| x * 2 }
+          foo(&blk)
+        end
+        test
+        test
+    "), @"6");
+}
+
+#[test]
+fn test_send_proc_block_arg_rest_optional_keyword_callee() {
+    // Callee has rest/optional/keyword params (so `prepare_direct_send_args` builds
+    // a `NewArray` for the rest param) and also `yield`s, so it's eligible for the
+    // guarded-Proc block-arg direct-send specialization. The NewArray allocation
+    // happens between the Proc guard and the callee send.
+    assert_snapshot!(inspect("
+        def foo(opt = 10, *rest, kw: 20) = yield(opt + rest.sum + kw)
+        def test
+          blk = proc { |x| x + 1 }
+          foo(1, 2, &blk)
+        end
+        test
+        test
+    "), @"24");
+}
+
+#[test]
+fn test_send_proc_subclass_block_arg_falls_back() {
+    // A Proc subclass instance is not an exact-class Proc, so the block arg's
+    // profiled type should not match `is_proc` (which requires class_exact:Proc),
+    // and the call should fall back to a dynamic send rather than being
+    // (incorrectly) treated as a guardable exact Proc.
+    assert_snapshot!(inspect("
+        class MyProc < Proc; end
+
+        def foo = yield 3
+        def test
+          blk = MyProc.new { |x| x * 2 }
+          foo(&blk)
+        end
+        test
+        test
+    "), @"6");
 }
 
 #[test]
@@ -3617,6 +3783,29 @@ fn test_opt_eq_string_distinct_objects() {
 }
 
 #[test]
+fn test_opt_eq_string_symbol_arg_after_inlining() {
+    eval(r#"
+        # frozen_string_literal: true
+        class Foo
+          def self.bar(l, r) = l == r
+        end
+        def test(flag)
+          foo = Foo
+          if flag
+            foo.bar("a", "b")
+          else
+            foo.bar("a", :sym)
+          end
+        end
+    "#);
+    assert_snapshot!(inspect(r#"
+        test(true) # profile opt_eq in bar
+        test(true) # compile test, inlining bar with a Symbol argument on the untaken branch
+        [test(true), test(false)]
+    "#), @"[false, false]");
+}
+
+#[test]
 fn test_opt_eqq_string_same_operand() {
     assert_snapshot!(inspect(r#"
         def test(s) = s === s
@@ -4532,6 +4721,26 @@ fn test_string_append_encoding_mismatch() {
         test(s, "é")
         [s, s.encoding.name, s.valid_encoding?]
     "#), @r#"["éé", "UTF-8", true]"#);
+}
+
+#[test]
+fn test_string_append_encoding_mutation_between_appends() {
+    eval(r#"
+        def test(string, first, second)
+          string << first
+          string << second
+        end
+    "#);
+    assert_contains_opcode("test", YARVINSN_opt_ltlt);
+    assert_snapshot!(assert_compiles(r#"
+        string = String.new(encoding: Encoding::BINARY)
+        begin
+          test(string, "é", "\xFF".b)
+          :no_error
+        rescue Encoding::CompatibilityError
+          [string.bytes, string.encoding.name, string.valid_encoding?]
+        end
+    "#), @"[[195, 169], \"UTF-8\", true]");
 }
 
 #[test]
@@ -5903,6 +6112,30 @@ fn test_getivar_t_class_then_string() {
     assert_snapshot!(assert_compiles_allowing_exits("[STR.test, STR.test]"), @"[1000, 1000]");
 }
 
+#[test]
+fn test_getivar_frozen_constant_with_other_shape() {
+    // This is a regression test for an internal compiler error where LoadField
+    // for an embedded ivar was constant-folded by reading a frozen constant
+    // receiver at that offset, even though the constant stores its ivars
+    // out-of-line and therefore has a different shape than the profiled one.
+    set_call_threshold(2);
+    eval(r#"
+      class Box
+        def initialize(n)
+          n.times { |i| instance_variable_set(:"@a#{i}", i) }
+          @v = :v
+          freeze
+        end
+
+        def v = @v
+      end
+      EMBEDDED = Box.new(0)
+      EXTENDED = Box.new(20)
+      EMBEDDED.v; EMBEDDED.v # profile and compile Box#v for embedded ivars
+      def test = EXTENDED.v
+    "#);
+    assert_snapshot!(assert_compiles_allowing_exits("[test, test]"), @"[:v, :v]");
+}
 
 #[test]
 fn test_attr_accessor_setivar() {
@@ -6575,6 +6808,83 @@ fn test_profile_frames_during_direct_jit_to_jit_entry() {
     });
 }
 
+// Same as test_profile_frames_during_direct_jit_to_jit_entry, but for a direct `yield` to an ISEQ block.
+#[cfg(all(
+    any(target_os = "linux", target_os = "macos"),
+    any(target_arch = "x86_64", target_arch = "aarch64"),
+))]
+#[test]
+fn test_profile_frames_during_direct_block_entry() {
+    with_inlining_threshold(0, || {
+        eval(r#"
+            def profiled_yield_each(n)
+              i = 0
+              while i < n
+                yield i
+                i += 1
+              end
+            end
+
+            def profiled_yield_shallow(n)
+              sum = 0
+              profiled_yield_each(n) { |x| sum += x }
+              sum
+            end
+
+            # Same VM frame depth as profiled_yield_shallow, on a deeper native stack
+            def profiled_yield_deep(n)
+              [n].each { |m| return __send__(:profiled_yield_shallow, m) }
+            end
+
+            def profiled_yield_loop(n)
+              i = 0
+              sum = 0
+              while i < n
+                sum += profiled_yield_deep(1)
+                sum += profiled_yield_shallow(2)
+                i += 1
+              end
+              sum
+            end
+
+            profiled_yield_loop(3)
+            profiled_yield_loop(3)
+            profiled_yield_loop(3)
+        "#);
+
+        let profiler = signal_profiler::Profiler::start(10);
+        assert_snapshot!(assert_compiles("profiled_yield_loop(1_000_000)"), @"1000000");
+        assert!(profiler.samples() > 0, "rb_profile_frames was not called from SIGPROF handler");
+    });
+}
+
+#[test]
+fn test_profiled_proc_block_handler_does_not_retain_proc() {
+    // Profile more than one call so that the profile can hold several Procs
+    rb_zjit_prepare_options();
+    let num_profiles = get_option!(num_profiles);
+    set_call_threshold(CallThreshold::from(num_profiles) + 2);
+
+    assert_snapshot!(inspect("
+        def profiled_proc_take = yield
+        def profiled_proc_forward(&blk) = profiled_proc_take(&blk)
+
+        PROFILED_PROC_OBJECTS = ObjectSpace::WeakMap.new
+        def profiled_proc_make(i)
+          obj = Object.new
+          PROFILED_PROC_OBJECTS[i] = obj
+          pr = proc { obj }
+          profiled_proc_forward(&pr)
+          nil
+        end
+
+        100.times { |i| profiled_proc_make(i) }
+        4.times { GC.start(full_mark: true, immediate_sweep: true) }
+        # Allow one object kept alive by conservative stack scanning
+        PROFILED_PROC_OBJECTS.keys.size <= 1
+    "), @"true");
+}
+
 #[test]
 fn test_profile_under_nested_jit_call() {
     assert_snapshot!(inspect("
@@ -7069,6 +7379,31 @@ fn test_struct_set() {
           :frozen_error
         end
     "), @"[42, 42, :frozen_error]");
+}
+
+#[test]
+fn test_struct_new() {
+    assert_snapshot!(inspect("
+        C = Struct.new(:a, :b, :c)
+        def test(x) = [C.new(x, x, x).to_a, C.new(x).to_a, C.new.to_a]
+        test 1
+        test 2
+    "), @"[[2, 2, 2], [2, nil, nil], [nil, nil, nil]]");
+}
+
+#[test]
+fn test_struct_initialize_on_frozen_receiver() {
+    assert_snapshot!(inspect("
+        C = Struct.new(:a)
+        def test(o)
+          o.send(:initialize, 1)
+          o.a
+        rescue FrozenError
+          :frozen_error
+        end
+        r = [test(C.new), test(C.new)]
+        r << test(C.new.freeze)
+    "), @"[1, 1, :frozen_error]");
 }
 
 #[test]
@@ -7608,6 +7943,61 @@ fn test_send_caller_splat_arguments_with_block_literal() {
         entry([1, 2, 3])
     ");
     assert_snapshot!(assert_compiles("entry([1, 2, 3])"), @"7");
+}
+
+#[test]
+fn test_send_polymorphic_caller_splat_arguments() {
+    set_call_threshold(3);
+    eval("
+        def test(*args) = args
+        def entry(args) = test(*args)
+        entry([1])
+        entry([2, 3])
+    ");
+    // Unprofiled lengths use the original Send without leaving compiled code.
+    assert_snapshot!(assert_compiles("[entry([4]), entry([5, 6]), entry([]), entry([7, 8, 9])]"), @"[[4], [5, 6], [], [7, 8, 9]]");
+}
+
+#[test]
+fn test_send_polymorphic_receiver_with_polymorphic_caller_splat() {
+    set_call_threshold(5);
+    eval("
+        class CallerSplatA
+          def target(*args) = args
+        end
+        class CallerSplatB
+          def target(*args) = args
+        end
+        class CallerSplatC
+          def target(*args) = args
+        end
+        def entry(recv, args) = recv.target(*args)
+        entry(CallerSplatA.new, [1])
+        entry(CallerSplatB.new, [2, 3])
+        entry(CallerSplatA.new, [4, 5])
+        entry(CallerSplatB.new, [6])
+    ");
+    // Both a new length and an unprofiled receiver use the shared original Send.
+    assert_snapshot!(assert_compiles("
+        [entry(CallerSplatA.new, [7]), entry(CallerSplatB.new, [8, 9]),
+         entry(CallerSplatA.new, [1, 2, 3]), entry(CallerSplatC.new, [10, 11, 12])]
+    "), @"[[7], [8, 9], [1, 2, 3], [10, 11, 12]]");
+}
+
+#[test]
+fn test_send_polymorphic_caller_splat_with_cfunc_receiver() {
+    set_call_threshold(5);
+    eval("
+        class CallerSplatFetch
+          def fetch(*args) = args
+        end
+        def entry(recv, args) = recv.fetch(*args)
+        entry(CallerSplatFetch.new, [1])
+        entry([10], [0])
+        entry(CallerSplatFetch.new, [2, 3])
+        entry([], [0, 20])
+    ");
+    assert_snapshot!(assert_compiles("[entry(CallerSplatFetch.new, [4]), entry([10], [0]), entry([], [0, 20])]"), @"[[4], 10, 20]");
 }
 
 #[test]
@@ -8558,7 +8948,6 @@ fn test_uncached_getconstant_path() {
 #[test]
 fn test_line_tracepoint_on_c_method() {
     set_call_threshold(1);
-    eval("nil"); // boot the VM before assert_compiles_allowing_exits touches ZJITState
     assert_snapshot!(assert_compiles_allowing_exits(r#"
         events = []
         events.instance_variable_set(
@@ -8585,7 +8974,6 @@ fn test_line_tracepoint_on_c_method() {
 #[test]
 fn test_targeted_line_tracepoint_in_c_method_call() {
     set_call_threshold(1);
-    eval("nil"); // boot the VM before assert_compiles_allowing_exits touches ZJITState
     assert_snapshot!(assert_compiles_allowing_exits(r#"
         events = []
         events.instance_variable_set(:@tp, TracePoint.new(:line) { |tp| events << tp.lineno })
@@ -8610,7 +8998,6 @@ fn test_targeted_line_tracepoint_in_c_method_call() {
 #[test]
 fn test_regression_cfp_sp_set_correctly_before_leaf_gc_call() {
     set_call_threshold(14);
-    eval("nil"); // boot the VM before assert_compiles_allowing_exits touches ZJITState
     assert_snapshot!(assert_compiles_allowing_exits(r#"
         def check(l, r)
           return 1 unless l
@@ -8641,7 +9028,6 @@ fn test_regression_cfp_sp_set_correctly_before_leaf_gc_call() {
 
 #[test]
 fn test_regression_gc_stress_with_lazy_block_code() {
-    eval("nil"); // boot the VM before assert_compiles_allowing_exits touches ZJITState
     assert_snapshot!(assert_compiles_allowing_exits(r#"
         def allocate_array
           [1, 2, 3]
@@ -8755,7 +9141,6 @@ fn test_no_ep_escape_invalidation_at_max_versions() {
 #[test]
 fn test_float_arithmetic() {
     set_call_threshold(1);
-    eval("nil"); // boot the VM before assert_compiles_allowing_exits touches ZJITState
     assert_snapshot!(assert_compiles_allowing_exits("def test = 1.5 + 2.5; test"), @"4.0");
     assert_snapshot!(assert_compiles_allowing_exits("def test = 2.0 * 3.0; test"), @"6.0");
     assert_snapshot!(assert_compiles_allowing_exits("def test = 3.5 - 2.0; test"), @"1.5");
@@ -8769,7 +9154,6 @@ fn test_float_arithmetic() {
 
 #[test]
 fn test_send_backtrace() {
-    eval("nil"); // boot the VM before assert_compiles_allowing_exits touches ZJITState
     assert_snapshot!(assert_compiles_allowing_exits(r#"
         def jit_frame2 = caller     # 1
         def jit_frame1 = jit_frame2 # 2
@@ -8831,4 +9215,146 @@ fn test_forward_fallback_with_lightweight_frame_reads_cfp() {
       end
       :done
     "#), @":done");
+}
+
+#[test]
+fn test_regression_stub_frame_sp_published_for_gc() {
+    rb_zjit_prepare_options();
+    set_inline_threshold(0); // don't inline the callee; we need a function stub
+    set_call_threshold(2000);
+
+    assert_snapshot!(inspect(r#"
+        class Integer
+          def zjit_stub_gc_callee(x) = x + 1
+        end
+
+        def zjit_stub_gc_caller(run, x)
+          1.zjit_stub_gc_callee(x) if run
+        end
+
+        def zjit_stub_gc_deep(n)
+          if n > 0
+            # Only reachable from this frame's VM stack slots
+            victim = "victim number #{n}"
+            tail = [n, n + 1, n + 2]
+            got = zjit_stub_gc_deep(n - 1)
+            got + victim.length + tail.sum
+          else
+            # Arm an incremental mark that can't finish in one step. Nothing
+            # allocates between here and the function stub hit below, so the
+            # pending mark is still in progress when the stub takes the VM lock.
+            GC.start(full_mark: true, immediate_mark: false, immediate_sweep: false)
+            $zjit_stub_gc_armed += 1 if GC.latest_gc_info(:state) == :marking
+            zjit_stub_gc_caller(true, 0) # JIT-to-JIT call through the function stub
+            0
+          end
+        end
+
+        def zjit_stub_gc_expect(n)
+          total = 0
+          n.downto(1) { |k| total += "victim number #{k}".length + (3 * k + 3) }
+          total
+        end
+
+        # Warm the caller past the call threshold so it compiles with a function
+        # stub for the still-uncompiled callee.
+        i = 0
+        while i < 2100
+          zjit_stub_gc_caller(false, nil)
+          i += 1
+        end
+
+        # Give the incremental mark enough work that it can't finish in one step.
+        $zjit_stub_gc_bloat = Array.new(300_000) { Object.new }
+        $zjit_stub_gc_armed = 0
+
+        bad = []
+        depth = 12
+        6.times do
+          want = zjit_stub_gc_expect(depth)
+          got = zjit_stub_gc_deep(depth)
+          bad << [depth, want, got] if got != want
+          depth += 12 # go deeper than any frame used so far
+        end
+        [bad, $zjit_stub_gc_armed > 0]
+    "#), @"[[], true]");
+
+    // Guard the shape of the repro: the caller must really call the callee
+    // through a JIT-to-JIT function stub.
+    let caller_iseq = get_method_iseq("self", "zjit_stub_gc_caller");
+    let caller_payload = get_or_create_iseq_payload(caller_iseq);
+    let caller_version = unsafe { caller_payload.versions.last().unwrap().as_ref() };
+    assert_eq!(1, caller_version.outgoing.len(), "expected a JIT-to-JIT function stub");
+}
+
+#[test]
+fn test_regression_stub_frame_block_code_cleared_for_gc() {
+    rb_zjit_prepare_options();
+    set_inline_threshold(0); // don't inline the callee; we need a function stub
+    set_call_threshold(2000);
+
+    assert_snapshot!(inspect(r#"
+        class Integer
+          # No send/invokesuper/invokeblock, so iseq_may_write_block_code() is false
+          # and gen_push_frame() leaves this frame's cfp->block_code alone.
+          def zjit_bc_callee(x) = x + 1
+        end
+
+        def zjit_bc_caller(run, x)
+          1.zjit_bc_callee(x) if run
+        end
+
+        def zjit_bc_deep(n)
+          if n > 0
+            zjit_bc_deep(n - 1)
+          else
+            # Arm an incremental mark that can't finish in one step. Nothing
+            # allocates between here and the function stub hit below, so the
+            # pending mark is still in progress when the stub takes the VM lock.
+            GC.start(full_mark: true, immediate_mark: false, immediate_sweep: false)
+            $zjit_bc_armed += 1 if GC.latest_gc_info(:state) == :marking
+            zjit_bc_caller(true, 0) # JIT-to-JIT call through the function stub
+          end
+        end
+
+        # Warm the caller past the call threshold so it compiles with a function
+        # stub for the still-uncompiled callee.
+        i = 0
+        while i < 2100
+          zjit_bc_caller(false, nil)
+          i += 1
+        end
+
+        # Give the incremental mark enough work that it can't finish in one step.
+        $zjit_bc_bloat = Array.new(300_000) { Object.new }
+        $zjit_bc_armed = 0
+
+        # Leave a pointer to this block ISEQ in 60 consecutive CFP slots.
+        # The module is anonymous and the entry call lives inside the eval'd code,
+        # so nothing outside keeps the module, the method or the block ISEQ alive.
+        Module.new.module_eval(<<~PLANT)
+          def self.plant(n)
+            plant(n - 1) { } if n > 0
+          end
+          plant(60)
+        PLANT
+
+        # FREE: the block ISEQ is garbage now, so those slots dangle at a T_NONE slot.
+        GC.start
+
+        results = []
+        depth = 20
+        6.times do
+          results << zjit_bc_deep(depth)
+          depth += 1 # land on a planted slot no frame has pushed over since
+        end
+        [results.uniq, $zjit_bc_armed > 0]
+    "#), @"[[1], true]");
+
+    // Guard the shape of the repro: the caller must really call the callee
+    // through a JIT-to-JIT function stub.
+    let caller_iseq = get_method_iseq("self", "zjit_bc_caller");
+    let caller_payload = get_or_create_iseq_payload(caller_iseq);
+    let caller_version = unsafe { caller_payload.versions.last().unwrap().as_ref() };
+    assert_eq!(1, caller_version.outgoing.len(), "expected a JIT-to-JIT function stub");
 }

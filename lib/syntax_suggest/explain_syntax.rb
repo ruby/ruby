@@ -3,12 +3,6 @@
 require_relative "left_right_token_count"
 
 module SyntaxSuggest
-  class GetParseErrors
-    def self.errors(source)
-      Prism.parse(source).errors.map(&:message)
-    end
-  end
-
   # Explains syntax errors based on their source
   #
   # example:
@@ -32,7 +26,7 @@ module SyntaxSuggest
   #   ).call
   #   explain.errors.first
   #   # => "syntax error, unexpected end-of-input"
-  class ExplainSyntax
+  class ExplainSyntax # :nodoc:
     INVERSE = {
       "{" => "}",
       "}" => "{",
@@ -100,7 +94,8 @@ module SyntaxSuggest
     # on the original error messages
     def errors
       if missing.empty?
-        return GetParseErrors.errors(@code_lines.map(&:original).join).uniq
+        errors = Prism.parse(@code_lines.map(&:original).join).errors
+        return errors.map(&:message).uniq
       end
 
       missing.map { |miss| why(miss) }

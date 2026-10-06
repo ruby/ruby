@@ -166,6 +166,18 @@ class TestTime < Test::Unit::TestCase
     }
   end
 
+  def test_new_from_string_modified_by_precision
+    str = "2020-12-25 00:00:00" + "0" * 1_000_000
+    obj = Object.new
+    obj.define_singleton_method(:to_int) do
+      str.clear
+      9
+    end
+    assert_raise_with_message(ArgumentError, /can't parse/) {
+      Time.new(str, precision: obj)
+    }
+  end
+
   def test_time_add()
     assert_equal(Time.utc(2000, 3, 21, 3, 30) + 3 * 3600,
                  Time.utc(2000, 3, 21, 6, 30))
@@ -887,6 +899,24 @@ class TestTime < Test::Unit::TestCase
     assert_equal("2001-10-01", t.strftime("%F"))
     assert_equal(Encoding::UTF_8, t.strftime("\u3042%Z").encoding)
     assert_equal(true, t.strftime("\u3042%Z").valid_encoding?)
+  end
+
+  def test_strftime_zone_long_abbreviation
+    # A zone abbreviation longer than the internal buffer is transcoded into a
+    # fixed 100-byte buffer when the format uses another encoding; strftime must
+    # use the truncated length, not strlcpy's (source) return value, otherwise
+    # it reads past the buffer.
+    zone = Class.new do
+      def local_to_utc(t) t end
+      def utc_to_local(t) t end
+      def abbr(t) "\u00e9" + "A" * 300 end
+    end.new
+    t = Time.new(2020, 1, 1, 0, 0, 0, zone)
+    enc = Encoding::ISO_8859_1
+    enc = Encoding::Windows_1252 if Encoding.find("locale") == enc
+    out = t.strftime("%Z".dup.force_encoding(enc))
+    assert_operator(out.bytesize, :<=, 100)
+    assert_predicate(out, :valid_encoding?)
   end
 
   def test_strftime_flags

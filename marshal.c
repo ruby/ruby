@@ -28,9 +28,11 @@
 #include "internal/encoding.h"
 #include "internal/error.h"
 #include "internal/hash.h"
+#include "internal/marshal.h"
 #include "internal/numeric.h"
 #include "internal/object.h"
 #include "internal/re.h"
+#include "internal/st.h"
 #include "internal/struct.h"
 #include "internal/symbol.h"
 #include "internal/util.h"
@@ -155,13 +157,33 @@ rb_marshal_define_compat(VALUE newclass, VALUE oldclass, VALUE (*dumper)(VALUE),
     RB_OBJ_WRITTEN(compat_allocator_tbl_wrapper, Qundef, oldclass);
 }
 
+/* The rb_marshal_define_compat entry for an instance of klass, if any, so the Ractor
+ * courier can dump and load it the way Marshal does. */
+bool
+rb_marshal_compat_lookup(VALUE klass, VALUE (**dumper)(VALUE), VALUE (**loader)(VALUE, VALUE))
+{
+    st_data_t data;
+    rb_alloc_func_t allocator = RCLASS_SINGLETON_P(klass) ? 0 : rb_get_alloc_func(klass);
+    if (!allocator || !st_lookup(compat_allocator_tbl, (st_data_t)allocator, &data)) return false;
+    marshal_compat_t *compat = (marshal_compat_t *)data;
+    if (!compat->dumper || !compat->loader) return false;
+    if (dumper) *dumper = compat->dumper;
+    if (loader) *loader = compat->loader;
+    return true;
+}
+
 struct dump_arg {
     VALUE str, dest;
-    st_table *symbols;
-    st_table *data;
-    st_table *compat_tbl;
-    st_table *encodings;
-    st_table *userdefs;
+    st_table symbols;
+    st_table data;
+    st_table userdefs;
+    st_table encodings;
+    st_table compat_tbl;
+    bool has_symbols;
+    bool has_data;
+    bool has_userdefs;
+    bool has_encodings;
+    bool has_compat_tbl;
     st_index_t num_entries;
 };
 
@@ -174,7 +196,7 @@ struct dump_call_arg {
 static VALUE
 check_dump_arg(VALUE ret, struct dump_arg *arg, const char *name)
 {
-    if (!arg->symbols) {
+    if (!arg->has_symbols) {
         rb_raise(rb_eRuntimeError, "Marshal.dump reentered at %s",
                  name);
     }
@@ -205,12 +227,12 @@ static void
 mark_dump_arg(void *ptr)
 {
     struct dump_arg *p = ptr;
-    if (!p->symbols)
+    if (!p->has_symbols)
         return;
-    rb_mark_set(p->symbols);
-    rb_mark_set(p->data);
-    rb_mark_hash(p->compat_tbl);
-    rb_mark_set(p->userdefs);
+    rb_mark_set(&p->symbols);
+    if (p->has_data) rb_mark_set(&p->data);
+    if (p->has_compat_tbl) rb_mark_hash(&p->compat_tbl);
+    if (p->has_userdefs) rb_mark_set(&p->userdefs);
     rb_gc_mark(p->str);
 }
 
@@ -225,11 +247,11 @@ memsize_dump_arg(const void *ptr)
 {
     const struct dump_arg *p = (struct dump_arg *)ptr;
     size_t memsize = 0;
-    if (p->symbols) memsize += rb_st_memsize(p->symbols);
-    if (p->data) memsize += rb_st_memsize(p->data);
-    if (p->compat_tbl) memsize += rb_st_memsize(p->compat_tbl);
-    if (p->userdefs) memsize += rb_st_memsize(p->userdefs);
-    if (p->encodings) memsize += rb_st_memsize(p->encodings);
+    if (p->has_symbols) memsize += rb_st_allocated_memsize(&p->symbols);
+    if (p->has_data) memsize += rb_st_allocated_memsize(&p->data);
+    if (p->has_compat_tbl) memsize += rb_st_allocated_memsize(&p->compat_tbl);
+    if (p->has_userdefs) memsize += rb_st_allocated_memsize(&p->userdefs);
+    if (p->has_encodings) memsize += rb_st_allocated_memsize(&p->encodings);
     return memsize;
 }
 
@@ -295,6 +317,21 @@ w_bytes(const char *s, long n, struct dump_arg *arg)
 {
     w_long(n, arg);
     w_nbyte(s, n, arg);
+}
+
+/* Like w_bytes, but for a Ruby String. Flushing the dump buffer in w_long
+ * can run arbitrary Ruby code through the destination IO's write method,
+ * which can modify the string, so re-validate it before using the pointer. */
+static void
+w_str_bytes(VALUE str, struct dump_arg *arg)
+{
+    long len = RSTRING_LEN(str);
+    const char *ptr = RSTRING_PTR(str);
+    w_long(len, arg);
+    if (RSTRING_PTR(str) != ptr || RSTRING_LEN(str) != len) {
+        rb_raise(rb_eRuntimeError, "string modified during dump");
+    }
+    w_nbyte(ptr, len, arg);
 }
 
 #define w_cstr(s, arg) w_bytes((s), strlen(s), (arg))
@@ -493,7 +530,7 @@ w_symbol(VALUE sym, struct dump_arg *arg)
     st_data_t num;
     VALUE encname;
 
-    if (st_lookup(arg->symbols, sym, &num)) {
+    if (st_lookup(&arg->symbols, sym, &num)) {
         w_byte(TYPE_SYMLINK, arg);
         w_long((long)num, arg);
     }
@@ -506,7 +543,7 @@ w_symbol(VALUE sym, struct dump_arg *arg)
         encname = w_encivar(sym, arg);
         w_byte(TYPE_SYMBOL, arg);
         w_bytes(RSTRING_PTR(sym), RSTRING_LEN(sym), arg);
-        st_add_direct(arg->symbols, orig_sym, arg->symbols->num_entries);
+        st_add_direct(&arg->symbols, orig_sym, arg->symbols.num_entries);
         w_encname(encname, arg);
     }
 }
@@ -562,8 +599,8 @@ w_class(char type, VALUE obj, struct dump_arg *arg, int check)
     st_data_t real_obj;
     VALUE klass;
 
-    if (arg->compat_tbl &&
-                st_lookup(arg->compat_tbl, (st_data_t)obj, &real_obj)) {
+    if (arg->has_compat_tbl &&
+                st_lookup(&arg->compat_tbl, (st_data_t)obj, &real_obj)) {
         obj = (VALUE)real_obj;
     }
     klass = CLASS_OF(obj);
@@ -669,12 +706,18 @@ encoding_name(VALUE obj, struct dump_arg *arg)
             return Qtrue;
         }
 
-        if (arg->encodings ?
-            !st_lookup(arg->encodings, (st_data_t)rb_enc_name(enc), &name) :
-            (arg->encodings = st_init_strcasetable(), 1)) {
-            name = (st_data_t)rb_str_new_cstr(rb_enc_name(enc));
-            st_insert(arg->encodings, (st_data_t)rb_enc_name(enc), name);
+        if (arg->has_encodings) {
+            if (st_lookup(&arg->encodings, (st_data_t)rb_enc_name(enc), &name)) {
+                return (VALUE)name;
+            }
         }
+        else {
+            st_init_existing_strtable_with_size(&arg->encodings, 1);
+            arg->has_encodings = true;
+        }
+
+        name = (st_data_t)rb_str_new_cstr(rb_enc_name(enc));
+        st_insert(&arg->encodings, (st_data_t)rb_enc_name(enc), name);
         return (VALUE)name;
     }
     else {
@@ -812,7 +855,7 @@ w_bigfixnum(VALUE obj, struct dump_arg *arg)
 static void
 w_remember(VALUE obj, struct dump_arg *arg)
 {
-    st_add_direct(arg->data, obj, arg->num_entries++);
+    st_add_direct(&arg->data, obj, arg->num_entries++);
 }
 
 static void
@@ -855,7 +898,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
         w_symbol(obj, arg);
     }
     else {
-        if (st_lookup(arg->data, obj, &num)) {
+        if (st_lookup(&arg->data, obj, &num)) {
             w_byte(TYPE_LINK, arg);
             w_long((long)num, arg);
             return;
@@ -893,7 +936,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
             st_index_t hasiv2;
             VALUE encname2;
 
-            if (arg->userdefs && st_is_member(arg->userdefs, (st_data_t)obj)) {
+            if (arg->has_userdefs && st_is_member(&arg->userdefs, (st_data_t)obj)) {
                 rb_raise(rb_eRuntimeError, "can't dump recursive object using _dump()");
             }
             v = INT2NUM(limit);
@@ -910,15 +953,16 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
             }
             if (hasiv) w_byte(TYPE_IVAR, arg);
             w_class(TYPE_USERDEF, obj, arg, FALSE);
-            w_bytes(RSTRING_PTR(v), RSTRING_LEN(v), arg);
+            w_str_bytes(v, arg);
             if (hasiv) {
                 st_data_t userdefs = (st_data_t)obj;
-                if (!arg->userdefs) {
-                    arg->userdefs = rb_init_identtable();
+                if (!arg->has_userdefs) {
+                    rb_init_existing_identtable_with_size(&arg->userdefs, 1);
+                    arg->has_userdefs = true;
                 }
-                st_add_direct(arg->userdefs, userdefs, 0);
+                st_add_direct(&arg->userdefs, userdefs, 0);
                 w_ivar(hasiv, ivobj, encname, &c_arg);
-                st_delete(arg->userdefs, &userdefs, NULL);
+                st_delete(&arg->userdefs, &userdefs, NULL);
             }
             w_remember(obj, arg);
             return;
@@ -937,10 +981,11 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
                 marshal_compat_t *compat = (marshal_compat_t*)compat_data;
                 VALUE real_obj = obj;
                 obj = compat->dumper(real_obj);
-                if (!arg->compat_tbl) {
-                    arg->compat_tbl = rb_init_identtable();
+                if (!arg->has_compat_tbl) {
+                    rb_init_existing_identtable_with_size(&arg->compat_tbl, 1);
+                    arg->has_compat_tbl = true;
                 }
-                st_insert(arg->compat_tbl, (st_data_t)obj, (st_data_t)real_obj);
+                st_insert(&arg->compat_tbl, (st_data_t)obj, (st_data_t)real_obj);
                 if (obj != real_obj && UNDEF_P(ivobj)) hasiv = 0;
             }
         }
@@ -1014,7 +1059,7 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
           case T_STRING:
             w_uclass(obj, rb_cString, arg);
             w_byte(TYPE_STRING, arg);
-            w_bytes(RSTRING_PTR(obj), RSTRING_LEN(obj), arg);
+            w_str_bytes(obj, arg);
             break;
 
           case T_REGEXP:
@@ -1116,23 +1161,23 @@ w_object(VALUE obj, struct dump_arg *arg, int limit)
 static void
 clear_dump_arg(struct dump_arg *arg)
 {
-    if (!arg->symbols) return;
-    st_free_table(arg->symbols);
-    arg->symbols = 0;
-    st_free_table(arg->data);
-    arg->data = 0;
+    if (!arg->has_symbols) return;
+    st_free_embedded_table(&arg->symbols);
+    arg->has_symbols = false;
+    st_free_embedded_table(&arg->data);
+    arg->has_data = false;
     arg->num_entries = 0;
-    if (arg->compat_tbl) {
-        st_free_table(arg->compat_tbl);
-        arg->compat_tbl = 0;
+    if (arg->has_compat_tbl) {
+        st_free_embedded_table(&arg->compat_tbl);
+        arg->has_compat_tbl = false;
     }
-    if (arg->encodings) {
-        st_free_table(arg->encodings);
-        arg->encodings = 0;
+    if (arg->has_encodings) {
+        st_free_embedded_table(&arg->encodings);
+        arg->has_encodings = false;
     }
-    if (arg->userdefs) {
-        st_free_table(arg->userdefs);
-        arg->userdefs = 0;
+    if (arg->has_userdefs) {
+        st_free_embedded_table(&arg->userdefs);
+        arg->has_userdefs = false;
     }
 }
 
@@ -1206,12 +1251,12 @@ rb_marshal_dump_limited(VALUE obj, VALUE port, int limit)
 
     wrapper = TypedData_Make_Struct(0, struct dump_arg, &dump_arg_data, arg);
     arg->dest = 0;
-    arg->symbols = st_init_numtable();
-    arg->data    = rb_init_identtable();
+    st_init_existing_numtable_with_size(&arg->symbols, 0);
+    arg->has_symbols = true;
+
+    rb_init_existing_identtable_with_size(&arg->data, 0);
+    arg->has_data = true;
     arg->num_entries = 0;
-    arg->compat_tbl = 0;
-    arg->encodings = 0;
-    arg->userdefs = 0;
     arg->str = rb_str_buf_new(0);
     if (!NIL_P(port)) {
         if (!rb_respond_to(port, s_write)) {
@@ -1245,18 +1290,22 @@ struct load_arg {
     long buflen;
     long readable;
     long offset;
-    st_table *symbols;
-    st_table *data;
-    st_table *partial_objects;
+    st_table symbols;
+    st_table data;
+    st_table partial_objects;
     VALUE proc;
-    st_table *compat_tbl;
+    st_table compat_tbl;
+    bool has_symbols;
+    bool has_data;
+    bool has_partial_objects;
+    bool has_compat_tbl;
     bool freeze;
 };
 
 static VALUE
 check_load_arg(VALUE ret, struct load_arg *arg, const char *name)
 {
-    if (!arg->symbols) {
+    if (!arg->has_symbols) {
         rb_raise(rb_eRuntimeError, "Marshal.load reentered at %s",
                  name);
     }
@@ -1271,12 +1320,12 @@ static void
 mark_load_arg(void *ptr)
 {
     struct load_arg *p = ptr;
-    if (!p->symbols)
+    if (!p->has_symbols)
         return;
-    rb_mark_tbl(p->symbols);
-    rb_mark_tbl(p->data);
-    if (p->partial_objects) rb_mark_tbl(p->partial_objects);
-    rb_mark_hash(p->compat_tbl);
+    rb_mark_tbl(&p->symbols);
+    if (p->has_data) rb_mark_tbl(&p->data);
+    if (p->has_partial_objects) rb_mark_tbl(&p->partial_objects);
+    if (p->has_compat_tbl) rb_mark_hash(&p->compat_tbl);
 }
 
 static void
@@ -1290,10 +1339,10 @@ memsize_load_arg(const void *ptr)
 {
     const struct load_arg *p = (struct load_arg *)ptr;
     size_t memsize = 0;
-    if (p->symbols) memsize += rb_st_memsize(p->symbols);
-    if (p->data) memsize += rb_st_memsize(p->data);
-    if (p->partial_objects) memsize += rb_st_memsize(p->partial_objects);
-    if (p->compat_tbl) memsize += rb_st_memsize(p->compat_tbl);
+    if (p->has_symbols) memsize += rb_st_allocated_memsize(&p->symbols);
+    if (p->has_data) memsize += rb_st_allocated_memsize(&p->data);
+    if (p->has_partial_objects) memsize += rb_st_allocated_memsize(&p->partial_objects);
+    if (p->has_compat_tbl) memsize += rb_st_allocated_memsize(&p->compat_tbl);
     return memsize;
 }
 
@@ -1303,7 +1352,7 @@ static const rb_data_type_t load_arg_data = {
     0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_EMBEDDABLE
 };
 
-#define r_entry(v, arg) r_entry0((v), (arg)->data->num_entries, (arg))
+#define r_entry(v, arg) r_entry0((v), (arg)->data.num_entries, (arg))
 static VALUE r_object(struct load_arg *arg);
 static VALUE r_symbol(struct load_arg *arg);
 
@@ -1317,9 +1366,9 @@ too_short(void)
 static st_index_t
 r_prepare(struct load_arg *arg)
 {
-    st_index_t idx = arg->data->num_entries;
+    st_index_t idx = arg->data.num_entries;
 
-    st_insert(arg->data, (st_data_t)idx, (st_data_t)Qundef);
+    st_insert(&arg->data, (st_data_t)idx, (st_data_t)Qundef);
     return idx;
 }
 
@@ -1581,7 +1630,7 @@ r_symlink(struct load_arg *arg)
     st_data_t sym;
     long num = r_long(arg);
 
-    if (!st_lookup(arg->symbols, num, &sym)) {
+    if (!st_lookup(&arg->symbols, num, &sym)) {
         rb_raise(rb_eArgError, "bad symbol");
     }
     return (VALUE)sym;
@@ -1593,10 +1642,10 @@ r_symreal(struct load_arg *arg, int ivar)
     VALUE s = r_bytes(arg);
     VALUE sym;
     int idx = -1;
-    st_index_t n = arg->symbols->num_entries;
+    st_index_t n = arg->symbols.num_entries;
 
     if (rb_enc_str_asciionly_p(s)) rb_enc_associate_index(s, ENCINDEX_US_ASCII);
-    st_insert(arg->symbols, (st_data_t)n, (st_data_t)s);
+    st_insert(&arg->symbols, (st_data_t)n, (st_data_t)s);
     if (ivar) {
         long num = r_long(arg);
         while (num-- > 0) {
@@ -1653,13 +1702,13 @@ static VALUE
 r_entry0(VALUE v, st_index_t num, struct load_arg *arg)
 {
     st_data_t real_obj = (st_data_t)v;
-    if (arg->compat_tbl) {
+    if (arg->has_compat_tbl) {
         /* real_obj is kept if not found */
-        st_lookup(arg->compat_tbl, v, &real_obj);
+        st_lookup(&arg->compat_tbl, v, &real_obj);
     }
-    st_insert(arg->data, num, real_obj);
-    if (arg->partial_objects) {
-        st_insert(arg->partial_objects, (st_data_t)real_obj, Qtrue);
+    st_insert(&arg->data, num, real_obj);
+    if (arg->has_partial_objects) {
+        st_insert(&arg->partial_objects, (st_data_t)real_obj, Qtrue);
     }
     return v;
 }
@@ -1669,7 +1718,7 @@ r_fixup_compat(VALUE v, struct load_arg *arg)
 {
     st_data_t data;
     st_data_t key = (st_data_t)v;
-    if (arg->compat_tbl && st_delete(arg->compat_tbl, &key, &data)) {
+    if (arg->has_compat_tbl && st_delete(&arg->compat_tbl, &key, &data)) {
         VALUE real_obj = (VALUE)data;
         rb_alloc_func_t allocator = rb_get_alloc_func(CLASS_OF(real_obj));
         if (st_lookup(compat_allocator_tbl, (st_data_t)allocator, &data)) {
@@ -1695,10 +1744,10 @@ r_leave(VALUE v, struct load_arg *arg, bool partial)
 {
     v = r_fixup_compat(v, arg);
     if (!partial) {
-        if (arg->partial_objects) {
+        if (arg->has_partial_objects) {
             st_data_t data;
             st_data_t key = (st_data_t)v;
-            st_delete(arg->partial_objects, &key, &data);
+            st_delete(&arg->partial_objects, &key, &data);
         }
         if (arg->freeze) {
             if (RB_TYPE_P(v, T_MODULE) || RB_TYPE_P(v, T_CLASS)) {
@@ -1838,10 +1887,11 @@ obj_alloc_by_klass(VALUE klass, struct load_arg *arg, VALUE *oldclass)
         VALUE obj = rb_obj_alloc(compat->oldclass);
         if (oldclass) *oldclass = compat->oldclass;
 
-        if (!arg->compat_tbl) {
-            arg->compat_tbl = rb_init_identtable();
+        if (!arg->has_compat_tbl) {
+            rb_init_existing_identtable_with_size(&arg->compat_tbl, 1);
+            arg->has_compat_tbl = true;
         }
-        st_insert(arg->compat_tbl, (st_data_t)obj, (st_data_t)real_obj);
+        st_insert(&arg->compat_tbl, (st_data_t)obj, (st_data_t)real_obj);
         return obj;
     }
 
@@ -1890,12 +1940,12 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE klass, VALUE ex
     switch (type) {
       case TYPE_LINK:
         id = r_long(arg);
-        if (!st_lookup(arg->data, (st_data_t)id, &link)) {
+        if (!st_lookup(&arg->data, (st_data_t)id, &link)) {
             rb_raise(rb_eArgError, "dump format error (unlinked)");
         }
         v = (VALUE)link;
-        if (arg->partial_objects &&
-            !st_lookup(arg->partial_objects, (st_data_t)v, &link)) {
+        if (arg->has_partial_objects &&
+            !st_lookup(&arg->partial_objects, (st_data_t)v, &link)) {
             if (arg->freeze && RB_TYPE_P(v, T_STRING)) {
                 v = rb_str_to_interned_str(v);
             }
@@ -1963,10 +2013,10 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE klass, VALUE ex
                 goto type_hash;
             }
             v = r_object_for(arg, partial, 0, c, extmod, type);
-            if (RB_SPECIAL_CONST_P(v) || RB_TYPE_P(v, T_OBJECT) || RB_TYPE_P(v, T_CLASS)) {
+            if (RB_SPECIAL_CONST_P(v) || RB_TYPE_P(v, T_OBJECT) || RB_TYPE_P(v, T_CLASS) || RB_TYPE_P(v, T_MODULE)) {
                 goto format_error;
             }
-            if (RB_TYPE_P(v, T_MODULE) || !RTEST(rb_class_inherited_p(c, RBASIC(v)->klass))) {
+            if (!RTEST(rb_class_inherited_p(c, RBASIC(v)->klass))) {
                 VALUE tmp = rb_obj_alloc(c);
 
                 if (TYPE(v) != TYPE(tmp)) goto format_error;
@@ -2387,18 +2437,18 @@ clear_load_arg(struct load_arg *arg)
     arg->buflen = 0;
     arg->offset = 0;
     arg->readable = 0;
-    if (!arg->symbols) return;
-    st_free_table(arg->symbols);
-    arg->symbols = 0;
-    st_free_table(arg->data);
-    arg->data = 0;
-    if (arg->partial_objects) {
-        st_free_table(arg->partial_objects);
-        arg->partial_objects = 0;
+    if (!arg->has_symbols) return;
+    st_free_embedded_table(&arg->symbols);
+    arg->has_symbols = false;
+    st_free_embedded_table(&arg->data);
+    arg->has_data = false;
+    if (arg->has_partial_objects) {
+        st_free_embedded_table(&arg->partial_objects);
+        arg->has_partial_objects = false;
     }
-    if (arg->compat_tbl) {
-        st_free_table(arg->compat_tbl);
-        arg->compat_tbl = 0;
+    if (arg->has_compat_tbl) {
+        st_free_embedded_table(&arg->compat_tbl);
+        arg->has_compat_tbl = false;
     }
 }
 
@@ -2423,10 +2473,14 @@ rb_marshal_load_with_proc(VALUE port, VALUE proc, bool freeze)
     wrapper = TypedData_Make_Struct(0, struct load_arg, &load_arg_data, arg);
     arg->src = port;
     arg->offset = 0;
-    arg->symbols = st_init_numtable();
-    arg->data    = rb_init_identtable();
-    arg->partial_objects = (RTEST(proc) || freeze) ? rb_init_identtable() : NULL;
-    arg->compat_tbl = 0;
+    st_init_existing_numtable_with_size(&arg->symbols, 0);
+    arg->has_symbols = true;
+    rb_init_existing_identtable_with_size(&arg->data, 0);
+    arg->has_data = true;
+    if (RTEST(proc) || freeze) {
+        rb_init_existing_identtable_with_size(&arg->partial_objects, 0);
+        arg->has_partial_objects = true;
+    }
     arg->proc = 0;
     arg->readable = 0;
     arg->freeze = freeze;

@@ -377,6 +377,33 @@ class TestClass < Test::Unit::TestCase
     assert_equal("mod#foo", copy.new.foo)
   end
 
+  def test_dup_of_frozen_class_is_not_frozen
+    original = Class.new
+    original.instance_variable_set(:@a, 1)
+    original.freeze
+
+    copy = original.dup
+    assert_not_predicate(copy, :frozen?)
+    copy.instance_variable_set(:@b, 2)
+    assert_equal([1, 2], [copy.instance_variable_get(:@a), copy.instance_variable_get(:@b)])
+
+    copy = original.clone(freeze: false)
+    assert_not_predicate(copy, :frozen?)
+    copy.instance_variable_set(:@b, 2)
+    assert_equal([1, 2], [copy.instance_variable_get(:@a), copy.instance_variable_get(:@b)])
+  end
+
+  def test_singleton_class_of_frozen_class_is_frozen
+    klass = Class.new.freeze
+    assert_predicate(klass.singleton_class, :frozen?)
+    assert_raise(FrozenError) {klass.singleton_class.instance_variable_set(:@a, 1)}
+
+    copy = Class.new.freeze.clone
+    assert_predicate(copy, :frozen?)
+    assert_predicate(copy.singleton_class, :frozen?)
+    assert_raise(FrozenError) {copy.instance_variable_set(:@a, 1)}
+  end
+
   def test_nested_class_removal
     assert_normal_exit('File.__send__(:remove_const, :Stat); at_exit{File.stat(".")}; GC.start')
   end

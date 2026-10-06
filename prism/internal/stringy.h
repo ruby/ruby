@@ -4,10 +4,15 @@
 #include "prism/stringy.h"
 
 /*
+ * Backing storage for an empty string.
+ */
+static const uint8_t empty_source[] = "";
+
+/*
  * Defines an empty string. This is useful for initializing a string that will
  * be filled in later.
  */
-#define PM_STRING_EMPTY ((pm_string_t) { .type = PM_STRING_CONSTANT, .source = NULL, .length = 0 })
+#define PM_STRING_EMPTY ((pm_string_t) { .type = PM_STRING_CONSTANT, .source = empty_source, .length = 0 })
 
 /*
  * Initialize a shared string that is based on initial input.

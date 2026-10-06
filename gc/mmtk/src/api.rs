@@ -8,42 +8,42 @@ use mmtk::util::conversions;
 use mmtk::util::options::PlanSelector;
 use std::str::FromStr;
 
+use crate::Ruby;
+use crate::RubySlot;
 use crate::abi::RawVecOfObjRef;
 use crate::abi::RubyBindingOptions;
 use crate::abi::RubyUpcalls;
 use crate::binding;
 use crate::binding::RubyBinding;
-use crate::heap::CpuHeapTriggerConfig;
-use crate::heap::RubyHeapTriggerConfig;
 use crate::heap::CPU_HEAP_TRIGGER_CONFIG;
+use crate::heap::CpuHeapTriggerConfig;
 use crate::heap::RUBY_HEAP_TRIGGER_CONFIG;
+use crate::heap::RubyHeapTriggerConfig;
 use crate::mmtk;
 use crate::utils::default_heap_max;
 use crate::utils::parse_capacity;
-use crate::Ruby;
-use crate::RubySlot;
+use mmtk::AllocationSemantics;
+use mmtk::MMTKBuilder;
+use mmtk::Mutator;
 use mmtk::memory_manager;
 use mmtk::memory_manager::mmtk_init;
-use mmtk::util::constants::MIN_OBJECT_SIZE;
-use mmtk::util::options::GCTriggerSelector;
 use mmtk::util::Address;
 use mmtk::util::ObjectReference;
 use mmtk::util::VMMutatorThread;
 use mmtk::util::VMThread;
-use mmtk::AllocationSemantics;
-use mmtk::MMTKBuilder;
-use mmtk::Mutator;
+use mmtk::util::constants::MIN_OBJECT_SIZE;
+use mmtk::util::options::GCTriggerSelector;
 
 pub type RubyMutator = Mutator<Ruby>;
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn mmtk_is_live_object(object: ObjectReference) -> bool {
     memory_manager::is_live_object(object)
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn mmtk_is_reachable(object: ObjectReference) -> bool {
-    binding::object_survives_current_gc(object)
+    object.is_reachable()
 }
 
 // =============== Bootup ===============
@@ -181,20 +181,20 @@ fn mmtk_builder_default_parse_plan() -> PlanSelector {
         "StickyImmix" => Some(PlanSelector::StickyImmix),
         _ => None,
     })
-    .unwrap_or(PlanSelector::Immix)
+    .unwrap_or(PlanSelector::StickyImmix)
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn mmtk_builder_default() -> *mut MMTKBuilder {
     let mut builder = MMTKBuilder::new_no_env_vars();
     builder.options.no_finalizer.set(true);
 
-    if let Some(threads) = mmtk_builder_default_parse_threads() {
-        if !builder.options.threads.set(threads) {
-            // MMTk will validate it and reject 0.
-            eprintln!("[FATAL] Failed to set the number of MMTk threads to {threads}");
-            std::process::exit(1);
-        }
+    if let Some(threads) = mmtk_builder_default_parse_threads()
+        && !builder.options.threads.set(threads)
+    {
+        // MMTk will validate it and reject 0.
+        eprintln!("[FATAL] Failed to set the number of MMTk threads to {threads}");
+        std::process::exit(1);
     }
 
     let heap_min = mmtk_builder_default_parse_heap_min();
@@ -216,7 +216,7 @@ pub extern "C" fn mmtk_builder_default() -> *mut MMTKBuilder {
     Box::into_raw(Box::new(builder))
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mmtk_init_binding(
     builder: *mut MMTKBuilder,
     binding_options: *const RubyBindingOptions,
@@ -243,27 +243,27 @@ pub unsafe extern "C" fn mmtk_init_binding(
         .unwrap_or_else(|_| panic!("Binding is already initialized"));
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn mmtk_get_vo_bit_log_region_size() -> usize {
     mmtk::util::is_mmtk_object::VO_BIT_REGION_SIZE.trailing_zeros() as usize
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn mmtk_get_vo_bit_base_addr() -> usize {
     mmtk::util::metadata::side_metadata::vo_bit_side_metadata_addr().as_usize()
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn mmtk_initialize_collection(tls: VMThread) {
     memory_manager::initialize_collection(mmtk(), tls)
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn mmtk_bind_mutator(tls: VMMutatorThread) -> *mut RubyMutator {
     Box::into_raw(memory_manager::bind_mutator(mmtk(), tls))
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mmtk_get_bump_pointer_allocator(m: *mut RubyMutator) -> *mut BumpPointer {
     match *crate::BINDING.get().unwrap().mmtk.get_options().plan {
         PlanSelector::Immix | PlanSelector::StickyImmix => {
@@ -281,7 +281,7 @@ pub unsafe extern "C" fn mmtk_get_bump_pointer_allocator(m: *mut RubyMutator) ->
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mmtk_destroy_mutator(mutator: *mut RubyMutator) {
     // notify mmtk-core about destroyed mutator
     memory_manager::destroy_mutator(unsafe { &mut *mutator });
@@ -291,7 +291,7 @@ pub unsafe extern "C" fn mmtk_destroy_mutator(mutator: *mut RubyMutator) {
 
 // =============== GC ===============
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn mmtk_handle_user_collection_request(
     tls: VMMutatorThread,
     force: bool,
@@ -317,7 +317,7 @@ pub extern "C" fn mmtk_handle_user_collection_request(
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn mmtk_set_gc_enabled(enable: bool) {
     if enable {
         crate::mmtk().enable_collection();
@@ -335,14 +335,14 @@ pub extern "C" fn mmtk_set_gc_enabled(enable: bool) {
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn mmtk_gc_enabled_p() -> bool {
     crate::mmtk().is_collection_enabled()
 }
 
 // =============== Object allocation ===============
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn mmtk_max_non_los_default_alloc_bytes() -> usize {
     mmtk()
         .get_plan()
@@ -350,7 +350,7 @@ pub extern "C" fn mmtk_max_non_los_default_alloc_bytes() -> usize {
         .max_non_los_default_alloc_bytes
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mmtk_alloc(
     mutator: *mut RubyMutator,
     size: usize,
@@ -368,7 +368,7 @@ pub unsafe extern "C" fn mmtk_alloc(
     )
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mmtk_post_alloc(
     mutator: *mut RubyMutator,
     refer: ObjectReference,
@@ -378,7 +378,7 @@ pub unsafe extern "C" fn mmtk_post_alloc(
     memory_manager::post_alloc::<Ruby>(unsafe { &mut *mutator }, refer, bytes, semantics)
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mmtk_add_obj_free_candidates(
     objects: *const ObjectReference,
     count: usize,
@@ -392,31 +392,36 @@ pub unsafe extern "C" fn mmtk_add_obj_free_candidates(
 
 // =============== Weak references ===============
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn mmtk_declare_weak_references(object: ObjectReference) {
     binding().weak_proc.add_weak_reference(object);
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn mmtk_weak_references_alive_p(object: ObjectReference) -> bool {
-    binding::object_survives_current_gc(object)
+    object.is_reachable()
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn mmtk_weak_references_count() -> usize {
     binding().weak_proc.weak_references_count()
 }
 
 // =============== Compaction ===============
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn mmtk_register_pinning_obj(obj: ObjectReference) {
     crate::binding().pinning_registry.register(obj);
 }
 
+#[unsafe(no_mangle)]
+pub extern "C" fn mmtk_is_pinned(object: ObjectReference) -> bool {
+    memory_manager::is_pinned(object)
+}
+
 // =============== Write barriers ===============
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub unsafe extern "C" fn mmtk_object_reference_write_post(
     mutator: *mut RubyMutator,
     object: ObjectReference,
@@ -431,19 +436,19 @@ pub unsafe extern "C" fn mmtk_object_reference_write_post(
     )
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn mmtk_register_wb_unprotected_object(object: ObjectReference) {
     crate::binding().register_wb_unprotected_object(object)
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn mmtk_object_wb_unprotected_p(object: ObjectReference) -> bool {
     crate::binding().object_wb_unprotected_p(object)
 }
 
 // =============== Heap walking ===============
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn mmtk_enumerate_objects(
     callback: extern "C" fn(ObjectReference, *mut libc::c_void),
     data: *mut libc::c_void,
@@ -455,63 +460,63 @@ pub extern "C" fn mmtk_enumerate_objects(
 
 // =============== Finalizers ===============
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn mmtk_get_all_obj_free_candidates() -> RawVecOfObjRef {
     let vec = binding().weak_proc.get_all_obj_free_candidates();
     RawVecOfObjRef::from_vec(vec)
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn mmtk_free_raw_vec_of_obj_ref(raw_vec: RawVecOfObjRef) {
     unsafe { raw_vec.into_vec() };
 }
 
 // =============== Forking ===============
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn mmtk_before_fork() {
     mmtk().prepare_to_fork();
     binding().join_all_gc_threads();
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn mmtk_after_fork(tls: VMThread) {
     mmtk().after_fork(tls);
 }
 
 // =============== Statistics ===============
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn mmtk_total_bytes() -> usize {
     memory_manager::total_bytes(mmtk())
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn mmtk_used_bytes() -> usize {
     memory_manager::used_bytes(mmtk())
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn mmtk_free_bytes() -> usize {
     memory_manager::free_bytes(mmtk())
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn mmtk_starting_heap_address() -> Address {
     memory_manager::starting_heap_address()
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn mmtk_last_heap_address() -> Address {
     memory_manager::last_heap_address()
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn mmtk_worker_count() -> usize {
     memory_manager::num_of_workers(mmtk())
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn mmtk_plan() -> *const u8 {
     static NO_GC: &[u8] = b"NoGC\0";
     static MARK_SWEEP: &[u8] = b"MarkSweep\0";
@@ -527,7 +532,7 @@ pub extern "C" fn mmtk_plan() -> *const u8 {
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn mmtk_heap_mode() -> *const u8 {
     static FIXED_HEAP: &[u8] = b"fixed\0";
     static DYNAMIC_HEAP: &[u8] = b"dynamic\0";
@@ -549,7 +554,7 @@ pub extern "C" fn mmtk_heap_mode() -> *const u8 {
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn mmtk_heap_min() -> usize {
     match *crate::BINDING.get().unwrap().mmtk.get_options().gc_trigger {
         GCTriggerSelector::FixedHeapSize(_) => 0,
@@ -569,7 +574,7 @@ pub extern "C" fn mmtk_heap_min() -> usize {
     }
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn mmtk_heap_max() -> usize {
     match *crate::BINDING.get().unwrap().mmtk.get_options().gc_trigger {
         GCTriggerSelector::FixedHeapSize(max_size) => max_size,
@@ -591,7 +596,7 @@ pub extern "C" fn mmtk_heap_max() -> usize {
 
 // =============== Miscellaneous ===============
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn mmtk_is_mmtk_object(addr: Address) -> bool {
     debug_assert!(!addr.is_zero());
     debug_assert!(addr.is_aligned_to(mmtk::util::is_mmtk_object::VO_BIT_REGION_SIZE));

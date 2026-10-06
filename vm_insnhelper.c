@@ -26,6 +26,7 @@
 #include "internal/proc.h"
 #include "internal/random.h"
 #include "internal/variable.h"
+#include "internal/set.h"
 #include "internal/set_table.h"
 #include "internal/struct.h"
 #include "ruby/thread.h"
@@ -264,7 +265,8 @@ rb_vm_check_canary(const rb_execution_context_t *ec, VALUE *sp)
         /* This is at the very beginning of a thread. cfp does not exist. */
         return;
     }
-    else if (! (iseq = GET_ISEQ())) {
+    else if (! VM_FRAME_RUBYFRAME_P(reg_cfp) || ! (iseq = GET_ISEQ())) {
+        /* The iseq field of an IFUNC frame holds the ifunc. */
         return;
     }
     else if (LIKELY(sp[0] != vm_stack_canary)) {
@@ -1394,7 +1396,7 @@ vm_setivar_slowpath(VALUE obj, ID id, VALUE val, const rb_iseq_t *iseq, IVC ic, 
 #if OPT_IC_FOR_IVAR
     RB_DEBUG_COUNTER_INC(ivar_set_ic_miss);
 
-    rb_check_frozen(obj);
+    rb_check_ivar_modifiable(obj);
 
     shape_id_t previous_shape_id = RBASIC_SHAPE_ID(obj);
     attr_index_t index = rb_ivar_set_index(obj, id, val);
@@ -5953,8 +5955,8 @@ vm_check_keyword(lindex_t bits, lindex_t idx, const VALUE *ep)
             return Qfalse;
     }
     else {
-        VM_ASSERT(RB_TYPE_P(kw_bits, T_HASH));
-        if (rb_hash_has_key(kw_bits, INT2FIX(idx))) return Qfalse;
+        VM_ASSERT(rb_set_p(kw_bits), "%s", rb_obj_info(kw_bits));
+        if (rb_set_lookup(kw_bits, INT2FIX(idx))) return Qfalse;
     }
     return Qtrue;
 }
@@ -7562,6 +7564,10 @@ Init_vm_stack_canary(void)
 {
     /* This has to be called _after_ our PRNG is properly set up. */
     int n = ruby_fill_random_bytes(&vm_stack_canary, sizeof vm_stack_canary, false);
+    /* Make it a large positive Fixnum.  Arguments a block does not take
+     * stay at the stack top, where vm_push_frame checks the canary. */
+    vm_stack_canary >>= 2;
+    vm_stack_canary |= (VALUE)1 << (SIZEOF_VALUE * CHAR_BIT - 2);
     vm_stack_canary |= 0x01; // valid VALUE (Fixnum)
 
     vm_stack_canary_was_born = true;

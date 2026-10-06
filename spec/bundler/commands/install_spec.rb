@@ -1389,7 +1389,7 @@ RSpec.describe "bundle install with gem sources" do
       end
     end
 
-    it "doesn't pass down -j to make when MAKEFLAGS is set", rubygems: ">= 4.1.0.dev" do
+    it "doesn't pass down -j to make when MAKEFLAGS is set", rubygems: ">= 4.1.0.a" do
       ENV["MAKEFLAGS"] = "-j1"
 
       install_gemfile(<<~G, env: { "BUNDLE_JOBS" => "8" }, raise_on_error: false)
@@ -1400,7 +1400,7 @@ RSpec.describe "bundle install with gem sources" do
       expect(gem_make_out).not_to include("make -j8")
     end
 
-    it "uses 3 slots from the available pool when running the compilation of an extension", rubygems: ">= 4.1.0.dev" do
+    it "uses 3 slots from the available pool when running the compilation of an extension", rubygems: ">= 4.1.0.a" do
       ENV.delete("MAKEFLAGS")
 
       install_gemfile(<<~G, env: { "BUNDLE_JOBS" => "8" }, raise_on_error: false)
@@ -1411,7 +1411,7 @@ RSpec.describe "bundle install with gem sources" do
       expect(gem_make_out).to include("make -j3")
     end
 
-    it "consumes 3 slots from the pool when BUNDLE_JOBS isn't set", rubygems: ">= 4.1.0.dev" do
+    it "consumes 3 slots from the pool when BUNDLE_JOBS isn't set", rubygems: ">= 4.1.0.a" do
       ENV.delete("MAKEFLAGS")
 
       install_gemfile(<<~G, raise_on_error: false)
@@ -2065,6 +2065,10 @@ RSpec.describe "bundle install with gem sources" do
   end
 
   it "preserves bundled native extensions when BUNDLE_CLEAN removes another gem" do
+    # The command-line/RUBYOPT -r bypasses gem activation under RUBY_BOX=1
+    # (https://bugs.ruby-lang.org/issues/22295)
+    skip "-r cannot activate gems under Ruby::Box" if defined?(Ruby::Box) && Ruby::Box.enabled?
+
     build_repo4 do
       build_gem "native_child", "1.0", &:add_c_extension
       build_gem "native_parent", "1.0" do |s|

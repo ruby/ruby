@@ -463,7 +463,8 @@ ruby_push_include(const char *path, VALUE (*filter)(VALUE))
         while (is_path_sep(*p))
             p++;
         if (!*p) break;
-        for (s = p; *s && !is_path_sep(*s); s = CharNext(s));
+        /* separators never appear inside a multibyte character */
+        for (s = p; *s && !is_path_sep(*s); s++);
         len = s - p;
 #undef is_path_sep
 
@@ -898,7 +899,6 @@ moreswitches(const char *s, ruby_cmdline_options_t *opt, int envopt)
     char **argv, *p;
     const char *ap = 0;
     VALUE argstr, argary;
-    void *ptr;
 
     VALUE src_enc_name = opt->src.enc.name;
     VALUE ext_enc_name = opt->ext.enc.name;
@@ -935,7 +935,7 @@ moreswitches(const char *s, ruby_cmdline_options_t *opt, int envopt)
     rb_str_cat(argary, (char *)&ap, sizeof(ap));
 
     VALUE ptr_obj;
-    argv = ptr = RB_ALLOCV_N(char *, ptr_obj, argc);
+    argv = RB_ALLOCV_N(char *, ptr_obj, argc);
     MEMMOVE(argv, RSTRING_PTR(argary), char *, argc);
 
     while ((i = proc_options(argc, argv, opt, envopt)) > 1 && envopt && (argc -= i) > 0) {

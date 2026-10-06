@@ -220,11 +220,11 @@ set /a MSC_VER = _MSC_VER
 #elif _MSC_VER >= 1920
 set /a MSC_VER_LOWER = MSC_VER/20*20+0
 set /a MSC_VER_UPPER = MSC_VER/20*20+19
-#elif _MSC_VER >= 1900
+#elif _MSC_VER >= 1915
 set /a MSC_VER_LOWER = MSC_VER/10*10+0
 set /a MSC_VER_UPPER = MSC_VER/10*10+9
 #else
-# error Unsupported VC++ compiler
+# error MSVC 1915 (Visual Studio 2017 version 15.8) or later is required
 #endif
 set MSC_VER
 del %0 & exit
@@ -293,7 +293,7 @@ MACHINE = $(@:-=)
 
 # RUBY_INSTALL_NAME = ruby
 # RUBY_SO_NAME = $$(RT)-$$(RUBY_INSTALL_NAME)$$(MAJOR)$$(MINOR)
-# CFLAGS = $$(RUNTIMEFLAG) $$(DEBUGFLAGS) $$(WARNFLAGS) $$(OPTFLAGS) $$(PROCESSOR_FLAG) $$(COMPILERFLAG)
+# CFLAGS = $$(RUNTIMEFLAG) $$(DEBUGFLAGS) $$(WARNFLAGS) $$(OPTFLAGS) $$(COMPILERFLAG)
 # CPPFLAGS =
 # STACK = 0x2000000
 # LDFLAGS = $$(CFLAGS) -Fm

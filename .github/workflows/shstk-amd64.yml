@@ -1,0 +1,113 @@
+name: SHSTK AMD64
+
+on:
+  push:
+    paths-ignore:
+      - 'doc/**'
+      - '**/man/*'
+      - '**.md'
+      - '**.rdoc'
+      - '**/.document'
+      - '.*.yml'
+  pull_request:
+    paths-ignore:
+      - 'doc/**'
+      - '**/man/*'
+      - '**.md'
+      - '**.rdoc'
+      - '**/.document'
+      - '.*.yml'
+  merge_group:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
+  cancel-in-progress: ${{ startsWith(github.event_name, 'pull') }}
+
+permissions:
+  contents: read
+
+jobs:
+  shstk:
+    name: make (check, SHSTK)
+    runs-on: ubuntu-24.04
+
+    if: >-
+      ${{!(false
+      || contains(github.event.head_commit.message, '[DOC]')
+      || contains(github.event.pull_request.title, '[DOC]')
+      || contains(github.event.pull_request.labels.*.name, 'Documentation')
+      || (github.event.pull_request.user.login == 'dependabot[bot]')
+      )}}
+
+    container:
+      image: fedora:44
+
+    env:
+      CONFIGURE_TTY: never
+      GLIBC_TUNABLES: glibc.cpu.hwcaps=SHSTK
+      GNUMAKEFLAGS: -sj4
+      RUBY_DEBUG: ci
+
+    steps:
+      - name: Install dependencies
+        run: >-
+          dnf install -y
+          autoconf automake binutils gcc gcc-c++ git libffi-devel libtool
+          libyaml-devel make ncurses-devel openssl-devel procps-ng
+          readline-devel ruby ruby-devel shadow-utils zlib-devel
+        working-directory:
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout-cone-mode: false
+          sparse-checkout: /.github
+          persist-credentials: false
+
+      - uses: $/.github/actions/setup/directories
+        with:
+          srcdir: src
+          builddir: build
+          makeup: true
+          clean: true
+
+      - name: Create test user
+        run: |
+          useradd --create-home ruby
+          chown -R ruby:ruby "$GITHUB_WORKSPACE"
+        working-directory:
+
+      - name: Run configure
+        run: >-
+          runuser -u ruby -- ../src/configure -C
+          --enable-debug-env
+          --disable-install-doc
+          --with-gcc="gcc -fcf-protection=return"
+
+      - run: runuser -u ruby -- make
+
+      - name: Require active shadow stacks
+        run: |
+          readelf --notes ./miniruby | grep 'x86 feature: SHSTK'
+          runuser -u ruby -- ./miniruby -e '
+            line = File.foreach("/proc/self/status").find { |entry| entry.start_with?("x86_Thread_features:") }
+            features = line&.split(":", 2)&.last&.split || []
+            unless features.include?("shstk")
+              warn "::notice::SHSTK is not active (x86_Thread_features: #{features.join(" ")})"
+              cpuinfo = File.read("/proc/cpuinfo")
+              model = cpuinfo[/^model name.*/]
+              flags = cpuinfo[/^flags.*/]
+              puts model, flags, ENV["GLIBC_TUNABLES"]
+              exit !/\buser_shstk\b/.match?(flags)
+            end
+          '
+
+      - name: make check
+        env:
+          RUBY_TESTOPTS: '-q --tty=no'
+        run: runuser -u ruby -- make -s check RUBYOPT=-w
+        timeout-minutes: 40
+
+defaults:
+  run:
+    working-directory: build

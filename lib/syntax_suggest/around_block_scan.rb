@@ -26,7 +26,7 @@ module SyntaxSuggest
   #   puts scan.before_index # => 0
   #   puts scan.after_index  # => 3
   #
-  class AroundBlockScan
+  class AroundBlockScan # :nodoc:
     def initialize(code_lines:, block:)
       @code_lines = code_lines
       @orig_indent = block.current_indent

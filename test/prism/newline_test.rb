@@ -2,32 +2,16 @@
 
 require_relative "test_helper"
 
-return unless defined?(RubyVM::InstructionSequence)
+# There have also been changes made in other versions of Ruby, so we only want
+# to test on the most recent versions.
+return if !defined?(RubyVM::InstructionSequence) || RUBY_VERSION < "3.4.0"
 
 module Prism
   class NewlineTest < TestCase
-    skips = %w[
-      errors_test.rb
-      locals_test.rb
-      regexp_test.rb
-      test_helper.rb
-      unescape_test.rb
-      api/parse_stream_test.rb
-      api/raise_error_test.rb
-      encoding/regular_expression_encoding_test.rb
-      encoding/string_encoding_test.rb
-      result/breadth_first_search_test.rb
-      result/static_literals_test.rb
-      result/warnings_test.rb
-      ruby/find_fixtures.rb
-      ruby/find_test.rb
-      ruby/parser_test.rb
-      ruby/ripper_test.rb
-      ruby/ruby_parser_test.rb
-    ]
-
+    # If you are coming from ruby/ruby, a test failure here means that TracePoint `:line` events changed.
+    # Before adding a skip, make sure that you actually intended for such a difference to happen.
     base = __dir__
-    (Dir["{,api/,encoding/,result/,ruby/}*.rb", base: base] - skips).each do |relative|
+    Dir["{,api/,encoding/,result/,ruby/}*.rb", base: base].each do |relative|
       define_method(:"test_#{relative}") do
         assert_newlines(base, relative)
       end
@@ -43,33 +27,6 @@ module Prism
       result = Prism.parse_file(filepath)
       assert_empty result.errors
       actual = prism_lines(result)
-
-      source.each_line.with_index(1) do |line, line_number|
-        # Lines like `while (foo = bar)` result in two line flags in the
-        # bytecode but only one newline flag in the AST. We need to remove the
-        # extra line flag from the bytecode to make the test pass.
-        if line.match?(/while \(/)
-          index = expected.index(line_number)
-          expected.delete_at(index) if index
-        end
-
-        # Lines like `foo =` where the value is on the next line result in
-        # another line flag in the bytecode but only one newline flag in the
-        # AST.
-        if line.match?(/^\s+\w+ =$/)
-          if source.lines[line_number].match?(/^\s+case/)
-            actual[actual.index(line_number)] += 1
-          else
-            actual.delete_at(actual.index(line_number))
-          end
-        end
-
-        if line.match?(/^\s+\w+ = \[$/)
-          if !expected.include?(line_number) && !expected.include?(line_number + 2)
-            actual[actual.index(line_number)] += 1
-          end
-        end
-      end
 
       assert_equal expected, actual
     end

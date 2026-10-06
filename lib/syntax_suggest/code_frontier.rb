@@ -49,7 +49,7 @@ module SyntaxSuggest
   #
   #   CodeFrontier#detect_invalid_blocks
   #
-  class CodeFrontier
+  class CodeFrontier # :nodoc:
     def initialize(code_lines:, unvisited: UnvisitedLines.new(code_lines: code_lines))
       @code_lines = code_lines
       @unvisited = unvisited

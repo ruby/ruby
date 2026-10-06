@@ -1682,6 +1682,36 @@ RSpec.describe "the lockfile format" do
     expect(the_bundle).not_to include_gems "myrack 0.9.1"
   end
 
+  it "fills empty CHECKSUMS entries when not frozen, even if every gem is already installed" do
+    system_gems "myrack-0.9.1", gem_repo: gem_repo2
+
+    lockfile <<-L
+      GEM
+        remote: https://gem.repo2/
+        specs:
+          myrack (0.9.1)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        myrack
+
+      CHECKSUMS
+        myrack (0.9.1)
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    install_gemfile <<-G
+      source "https://gem.repo2"
+      gem "myrack"
+    G
+
+    expect(lockfile).to include("  #{checksum_to_lock(gem_repo2, "myrack", "0.9.1")}\n")
+  end
+
   it "automatically fixes the lockfile when it's missing deps, they conflict with other locked deps, but conflicts are fixable" do
     build_repo4 do
       build_gem "other_dep", "0.9"

@@ -95,49 +95,49 @@ RSpec.describe "bundle gem" do
   end
 
   it "has no rubocop offenses when using --linter=rubocop flag" do
-    skip "ruby_core has an 'ast.rb' file that gets in the middle and breaks this spec" if ruby_core?
+    skip "ast.rb on RUBYLIB shadows the ast gem that rubocop needs" if rubylib_provides?("ast")
     bundle "gem #{gem_name} --linter=rubocop"
     bundle_exec_rubocop
     expect(last_command).to be_success
   end
 
   it "has no rubocop offenses when using --ext=c and --linter=rubocop flag" do
-    skip "ruby_core has an 'ast.rb' file that gets in the middle and breaks this spec" if ruby_core?
+    skip "ast.rb on RUBYLIB shadows the ast gem that rubocop needs" if rubylib_provides?("ast")
     bundle "gem #{gem_name} --ext=c --linter=rubocop"
     bundle_exec_rubocop
     expect(last_command).to be_success
   end
 
   it "has no rubocop offenses when using --ext=c, --test=minitest, and --linter=rubocop flag" do
-    skip "ruby_core has an 'ast.rb' file that gets in the middle and breaks this spec" if ruby_core?
+    skip "ast.rb on RUBYLIB shadows the ast gem that rubocop needs" if rubylib_provides?("ast")
     bundle "gem #{gem_name} --ext=c --test=minitest --linter=rubocop"
     bundle_exec_rubocop
     expect(last_command).to be_success
   end
 
   it "has no rubocop offenses when using --ext=c, --test=rspec, and --linter=rubocop flag" do
-    skip "ruby_core has an 'ast.rb' file that gets in the middle and breaks this spec" if ruby_core?
+    skip "ast.rb on RUBYLIB shadows the ast gem that rubocop needs" if rubylib_provides?("ast")
     bundle "gem #{gem_name} --ext=c --test=rspec --linter=rubocop"
     bundle_exec_rubocop
     expect(last_command).to be_success
   end
 
   it "has no rubocop offenses when using --ext=c, --test=test-unit, and --linter=rubocop flag" do
-    skip "ruby_core has an 'ast.rb' file that gets in the middle and breaks this spec" if ruby_core?
+    skip "ast.rb on RUBYLIB shadows the ast gem that rubocop needs" if rubylib_provides?("ast")
     bundle "gem #{gem_name} --ext=c --test=test-unit --linter=rubocop"
     bundle_exec_rubocop
     expect(last_command).to be_success
   end
 
   it "has no standard offenses when using --linter=standard flag" do
-    skip "ruby_core has an 'ast.rb' file that gets in the middle and breaks this spec" if ruby_core?
+    skip "ast.rb on RUBYLIB shadows the ast gem that rubocop needs" if rubylib_provides?("ast")
     bundle "gem #{gem_name} --linter=standard"
     bundle_exec_standardrb
     expect(last_command).to be_success
   end
 
   it "has no rubocop offenses when using --ext=rust and --linter=rubocop flag" do
-    skip "ruby_core has an 'ast.rb' file that gets in the middle and breaks this spec" if ruby_core?
+    skip "ast.rb on RUBYLIB shadows the ast gem that rubocop needs" if rubylib_provides?("ast")
 
     bundle "gem #{gem_name} --ext=rust --linter=rubocop"
     bundle_exec_rubocop
@@ -145,7 +145,7 @@ RSpec.describe "bundle gem" do
   end
 
   it "has no rubocop offenses when using --ext=rust, --test=minitest, and --linter=rubocop flag" do
-    skip "ruby_core has an 'ast.rb' file that gets in the middle and breaks this spec" if ruby_core?
+    skip "ast.rb on RUBYLIB shadows the ast gem that rubocop needs" if rubylib_provides?("ast")
 
     bundle "gem #{gem_name} --ext=rust --test=minitest --linter=rubocop"
     bundle_exec_rubocop
@@ -153,7 +153,7 @@ RSpec.describe "bundle gem" do
   end
 
   it "has no rubocop offenses when using --ext=rust, --test=rspec, and --linter=rubocop flag" do
-    skip "ruby_core has an 'ast.rb' file that gets in the middle and breaks this spec" if ruby_core?
+    skip "ast.rb on RUBYLIB shadows the ast gem that rubocop needs" if rubylib_provides?("ast")
 
     bundle "gem #{gem_name} --ext=rust --test=rspec --linter=rubocop"
     bundle_exec_rubocop
@@ -161,7 +161,7 @@ RSpec.describe "bundle gem" do
   end
 
   it "has no rubocop offenses when using --ext=rust, --test=test-unit, and --linter=rubocop flag" do
-    skip "ruby_core has an 'ast.rb' file that gets in the middle and breaks this spec" if ruby_core?
+    skip "ast.rb on RUBYLIB shadows the ast gem that rubocop needs" if rubylib_provides?("ast")
 
     bundle "gem #{gem_name} --ext=rust --test=test-unit --linter=rubocop"
     bundle_exec_rubocop

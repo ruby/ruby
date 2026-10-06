@@ -10,7 +10,7 @@ require "timeout"
 # Prism is the new parser, replacing Ripper
 require "prism"
 
-module SyntaxSuggest
+module SyntaxSuggest # :nodoc: all
   # Used to indicate a default value that cannot
   # be confused with another input.
   DEFAULT_VALUE = Object.new.freeze
@@ -18,8 +18,8 @@ module SyntaxSuggest
   class Error < StandardError; end
   TIMEOUT_DEFAULT = ENV.fetch("SYNTAX_SUGGEST_TIMEOUT", 1).to_i
 
-  # SyntaxSuggest.handle_error [Public]
-  #
+  # :startdoc:
+
   # Takes a `SyntaxError` exception, uses the
   # error message to locate the file. Then the file
   # will be analyzed to find the location of the syntax
@@ -60,8 +60,8 @@ module SyntaxSuggest
     raise e if re_raise
   end
 
-  # SyntaxSuggest.call [Private]
-  #
+  # :stopdoc:
+
   # Main private interface
   def self.call(source:, filename: DEFAULT_VALUE, terminal: DEFAULT_VALUE, record_dir: DEFAULT_VALUE, timeout: TIMEOUT_DEFAULT, io: $stderr)
     search = nil
@@ -84,8 +84,6 @@ module SyntaxSuggest
     io.puts e.backtrace.first(3).join($/)
   end
 
-  # SyntaxSuggest.record_dir [Private]
-  #
   # Used to generate a unique directory to record
   # search steps for debugging
   def self.record_dir(dir)
@@ -99,8 +97,6 @@ module SyntaxSuggest
     }
   end
 
-  # SyntaxSuggest.valid_without? [Private]
-  #
   # This will tell you if the `code_lines` would be valid
   # if you removed the `without_lines`. In short it's a
   # way to detect if we've found the lines with syntax errors
@@ -124,8 +120,6 @@ module SyntaxSuggest
     lines.empty? || valid?(lines)
   end
 
-  # SyntaxSuggest.invalid? [Private]
-  #
   # Opposite of `SyntaxSuggest.valid?`
   def self.invalid?(source)
     source = source.join if source.is_a?(Array)
@@ -134,8 +128,6 @@ module SyntaxSuggest
     Prism.parse(source).failure?
   end
 
-  # SyntaxSuggest.valid? [Private]
-  #
   # Returns truthy if a given input source is valid syntax
   #
   #   SyntaxSuggest.valid?(<<~EOM) # => true

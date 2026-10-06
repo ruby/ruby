@@ -647,6 +647,9 @@ class TestEnumerator < Test::Unit::TestCase
     assert_equal 0,  [].cycle(5).size
     assert_equal 0,  {}.cycle.size
     assert_equal 0,  {}.cycle(5).size
+    n = RbConfig::LIMITS["FIXNUM_MAX"] + 1
+    assert_equal 2 * n, [:foo, :bar].cycle(n).size
+    assert_equal 2 * n, {foo: 1, bar: 2}.cycle(n).size
 
     assert_equal nil, @obj.cycle.size
     assert_equal nil, @obj.cycle(5).size

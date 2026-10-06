@@ -564,7 +564,7 @@ rb_gc_impl_ractor_cache_free(void *objspace_ptr, void *cache)
 
 // GC
 void
-rb_gc_impl_start(void *objspace_ptr, bool full_mark, bool immediate_mark, bool immediate_sweep, bool compact)
+rb_gc_impl_start(void *objspace_ptr, bool full_mark, bool immediate_mark, bool immediate_sweep, bool compact, bool global)
 {
     rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
     if (objspace) {
@@ -1825,6 +1825,10 @@ rb_gc_impl_latest_gc_info(void *objspace_ptr, VALUE key)
 VALUE
 rb_gc_impl_stat(void *objspace_ptr, VALUE hash_or_sym)
 {
+    if (objspace_ptr == NULL) {
+        rb_notimplement();
+    }
+
     rb_wbcheck_objspace_t *objspace = (rb_wbcheck_objspace_t *)objspace_ptr;
     GC_ASSERT(objspace);
 

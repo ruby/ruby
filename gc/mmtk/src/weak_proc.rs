@@ -6,10 +6,9 @@ use mmtk::scheduler::WorkBucketStage;
 use mmtk::util::ObjectReference;
 use mmtk::vm::ObjectTracerContext;
 
-use crate::abi::GCThreadTLS;
-use crate::binding::object_survives_current_gc;
-use crate::upcalls;
 use crate::Ruby;
+use crate::abi::GCThreadTLS;
+use crate::upcalls;
 
 pub struct WeakProcessor {
     non_parallel_obj_free_candidates: Mutex<Vec<ObjectReference>>,
@@ -138,7 +137,7 @@ fn process_obj_free_candidates(obj_free_candidates: &mut Vec<ObjectReference>) {
     let mut new_candidates = Vec::new();
 
     for object in obj_free_candidates.iter().copied() {
-        if object_survives_current_gc(object) {
+        if object.is_reachable() {
             // Forward and add back to the candidate list.
             let new_object = object.forward();
             trace!("Forwarding obj_free candidate: {object} -> {new_object}");
@@ -224,7 +223,7 @@ impl ProcessWeakReferences {
                 *object_ptr = object;
             }
 
-            if object_survives_current_gc(object) {
+            if object.is_reachable() {
                 (upcalls().handle_weak_references)(object, moving_gc);
 
                 true
@@ -303,7 +302,7 @@ impl GCWork<Ruby> for UpdateWbUnprotectedObjectsList {
         debug!("Updating {} WB-unprotected objects", old_objects.len());
 
         for object in old_objects {
-            if object_survives_current_gc(object) {
+            if object.is_reachable() {
                 // Forward and add back to the candidate list.
                 let new_object = object.forward();
                 trace!("Forwarding WB-unprotected object: {object} -> {new_object}");

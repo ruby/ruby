@@ -16,6 +16,10 @@ module Prism
     #
     #: (Method | UnboundMethod | Proc | Thread::Backtrace::Location callable) -> Node?
     def self.find(callable)
+      if callable.respond_to?(:source_range) && !defined?(::RubyVM)
+        return SourceRangeFind.new.find(callable)
+      end
+
       case callable
       when Proc
         if defined?(::RubyVM)
@@ -53,6 +57,32 @@ module Prism
         return unless file && File.readable?(file)
         result = Prism.parse_file(file)
         result if result.success?
+      end
+    end
+
+    # Finds the AST node for a Method, UnboundMethod, Proc or Thread::Backtrace::Location
+    # using the #source_range
+    class SourceRangeFind < Find
+      # Find the node for the given callable using the #source_range.
+      #
+      #: (Method | UnboundMethod | Proc | Thread::Backtrace::Location callable) -> Node?
+      def find(callable)
+        begin
+          range = callable.source_range
+        rescue ArgumentError # eval
+          return
+        end
+        return unless range
+        return unless (result = parse_file(range.absolute_path))
+
+        start_offset = result.source.byte_offset(range.start_line, range.start_column)
+        end_offset = result.source.byte_offset(range.end_line, range.end_column)
+        result.value.tunnel(range.start_line, range.start_column).reverse_each do |node|
+          if node.start_offset == start_offset && node.end_offset == end_offset
+            return node
+          end
+        end
+        nil
       end
     end
 

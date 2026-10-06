@@ -8,7 +8,7 @@ else
 
   unless ENV["ERB_DISABLE_SIMD"]
     case RbConfig::CONFIG['host_cpu']
-    when /^(arm|aarch64)/
+    when /^(arm64|aarch64)/
       # Try to compile a small program using NEON instructions
       header, type, init, extra = 'arm_neon.h', 'uint8x16_t', 'vdupq_n_u8(32)', nil
     when /^(x86_64|x64)/

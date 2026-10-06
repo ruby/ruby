@@ -236,7 +236,7 @@ module Prism
 
     # True if the current platform is Windows.
     def self.windows?
-      RbConfig::CONFIG["host_os"].match?(/bccwin|cygwin|djgpp|mingw|mswin|wince/i)
+      RbConfig::CONFIG["host_os"].match?(/cygwin|mingw|mswin/i)
     end
 
     # All versions that prism can parse
