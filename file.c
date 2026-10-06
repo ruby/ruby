@@ -1195,15 +1195,31 @@ rb_stat_mtime(VALUE self)
  *  call-seq:
  *    ctime -> time
  *
- *  On Windows, returns the birthtime.
+ *  On Windows, returns the birthtime for the entry in `self`.
  *
  *  On other systems, returns the time of the most recent metadata change
- *  to the [snapshot](rdoc-ref:File::Stat@Snapshot) in `self`.:
+ *  to the [snapshot](rdoc-ref:File::Stat@Snapshot) in `self`:
  *
+ *  ```ruby
+ *  dirpath = '/tmp/dir'
+ *  Dir.mkdir(dirpath)                     # Establishes directory ctime.
+ *  dirstat0 = File.stat(dirpath)          # Take directory snapshot.
+ *  dirstat0.ctime     # => 2026-10-06 11:07:18.073533542 -0500 # Initial directory ctime.
+ *  filepath = File.join(dirpath, 't.tmp') # => "/tmp/dir/t.tmp"
+ *  File.write(filepath, 'foo')            # Establishes file ctime; upates directory ctime.
+ *  filestat0 = File.stat(filepath)        # Take file snapshot.
+ *  filestat0.ctime    # => 2026-10-06 11:07:52.555027213 -0500 # Initial file ctime.
+ *  dirstat0.ctime     # => 2026-10-06 11:07:18.073533542 -0500 # Directory snapshot unchanged.
+ *  dirstat1 = File.stat(dirpath)          # Take new directory snapshot.
+ *  dirstat1.ctime     # => 2026-10-06 11:07:52.555027213 -0500 # Snapshot has new ctime.
+ *  File.write(filepath, 'bar')            # Updates file ctime.
+ *  filestat0.ctime    # => 2026-10-06 11:07:52.555027213 -0500 # Old file snapshot unchanged.
+ *  filestat1 = File.stat(filepath)        # Take new file snapshot.
+ *  filestat1.ctime    # => 2026-10-06 11:14:11.19290223 -0500  # Snapshot shows change.
+ *  FileUtils.rmtree(dirpath)              # Clean up.
+ *  ```
  *
- *
- *
- * See {File System Timestamps}[rdoc-ref:file/timestamps.md].
+ *  See {File System Timestamps}[rdoc-ref:file/timestamps.md].
  */
 
 static VALUE
