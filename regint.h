@@ -1021,6 +1021,30 @@ extern size_t onig_region_memsize(const struct re_registers *regs);
 bool rb_reg_timeout_p(regex_t *reg, void *end_time);
 int rb_reg_check_ints(void);
 void rb_reg_warn(const char *sourcefile, int sourceline, const char *msg);
+
+# if USE_RUST_REGEXP
+/* A regex_t compiled by the Rust engine has no program of its own; its
+   handle sits in reserved1 and the public entry points hand it over to
+   re_engine.c. */
+#  define RB_REG_RUST_P(reg) ((reg)->reserved1 != NULL)
+int rb_reg_rust_compile_hook(regex_t *reg, const UChar *pattern, const UChar *pattern_end,
+                             OnigErrorInfo *einfo, const char *sourcefile, int sourceline, int *result);
+OnigPosition rb_reg_rust_search(regex_t *reg, const UChar *str, const UChar *end, const UChar *global_pos,
+                                const UChar *start, const UChar *range, OnigRegion *region, OnigOptionType option);
+OnigPosition rb_reg_rust_match(regex_t *reg, const UChar *str, const UChar *end, const UChar *at,
+                               OnigRegion *region, OnigOptionType option);
+void rb_reg_rust_free_body(regex_t *reg);
+size_t rb_reg_rust_memsize(const regex_t *reg);
+int rb_reg_rust_copy_body(regex_t *nreg, const regex_t *oreg);
+int rb_reg_rust_linear_time_p(const regex_t *reg);
+int rb_reg_rust_number_of_names(const regex_t *reg);
+int rb_reg_rust_foreach_name(regex_t *reg, int (*func)(const UChar *, const UChar *, int, int *, regex_t *, void *),
+                             void *arg);
+int rb_reg_rust_name_to_group_numbers(regex_t *reg, const UChar *name, const UChar *name_end, int **nums);
+int rb_regexp_rust_set_parse_depth_limit(unsigned int depth);
+# else
+#  define RB_REG_RUST_P(reg) 0
+# endif
 #endif
 
 RUBY_SYMBOL_EXPORT_END

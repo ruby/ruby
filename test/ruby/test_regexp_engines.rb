@@ -87,6 +87,13 @@ class TestRegexpEngines < Test::Unit::TestCase
     end
   end
 
+  def test_default_engine_without_option
+    # Not through EnvUtil, which passes --regexp-engine of this process.
+    out = IO.popen([EnvUtil.rubybin, "--disable=gems", "-e", 'print "éx".grapheme_clusters.size'],
+                   err: [:child, :out], &:read)
+    assert_equal("2", out)
+  end
+
   def test_warnings
     ["[aa]", "[a-z&&a-z]", "a**", "\\y", "[\\w-a]"].each do |pat|
       src = pat.dup.force_encoding("UTF-8")

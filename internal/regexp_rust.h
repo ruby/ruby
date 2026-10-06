@@ -30,6 +30,16 @@ struct rb_regexp_compile_result {
     /* NUL-terminated messages one after another; free with rb_regexp_rust_free_bytes. */
     unsigned char *warnings;
     size_t warnings_len;
+    /* Where the argument of the message lies in the pattern, for OnigErrorInfo. */
+    int has_par;
+    size_t par_off;
+    size_t par_len;
+};
+
+struct rb_regexp_rust_header {
+    uint32_t options;
+    int num_mem;
+    uint32_t case_fold_flag;
 };
 
 /* The compiled form, for comparing the engines in tests. */
@@ -78,5 +88,22 @@ size_t rb_regexp_rust_name_count(const rb_regexp_rust_t *h);
 int rb_regexp_rust_name_at(const rb_regexp_rust_t *h, size_t i,
                            const unsigned char **name, size_t *name_len,
                            int *ngroups, const int **groups);
+int rb_regexp_rust_name_find(const rb_regexp_rust_t *h, const unsigned char *name, size_t name_len,
+                             const int **groups);
+rb_regexp_rust_t *rb_regexp_rust_copy(const rb_regexp_rust_t *h);
+size_t rb_regexp_rust_memsize(const rb_regexp_rust_t *h);
+int rb_regexp_rust_linear_time_p(const rb_regexp_rust_t *h);
+void rb_regexp_rust_header(const rb_regexp_rust_t *h, struct rb_regexp_rust_header *out);
+
+/* Called every 128 steps of a match. Returns 0, ONIGERR_TIMEOUT or
+ * RB_REGEXP_INTERRUPTED, and must not longjmp. */
+typedef int rb_regexp_rust_check_func(void *data);
+OnigPosition rb_regexp_rust_search(const rb_regexp_rust_t *h, const unsigned char *str, size_t len,
+                                   ptrdiff_t gpos, ptrdiff_t start, ptrdiff_t range,
+                                   OnigPosition *beg, OnigPosition *end, int num_regs, uint32_t option,
+                                   rb_regexp_rust_check_func *check, void *data);
+OnigPosition rb_regexp_rust_match(const rb_regexp_rust_t *h, const unsigned char *str, size_t len,
+                                  ptrdiff_t at, OnigPosition *beg, OnigPosition *end, int num_regs,
+                                  uint32_t option, rb_regexp_rust_check_func *check, void *data);
 
 #endif /* INTERNAL_REGEXP_RUST_H */

@@ -5,6 +5,7 @@
 #include "ruby/ruby.h"
 #include "ruby/encoding.h"
 #include "ruby/onigmo.h"
+#include "internal/re.h"
 #if USE_RUST_REGEXP
 # include "internal/regexp_rust.h"
 #endif
@@ -78,8 +79,12 @@ compile_onigmo(VALUE src, unsigned int options, rb_encoding *enc)
     regex_t *reg;
     OnigErrorInfo einfo;
     const char *p = RSTRING_PTR(src);
+    /* onig_new compiles with the default engine; this side must be Onigmo. */
+    rb_regexp_engine_t saved = rb_reg_default_engine();
+    rb_reg_default_engine_set(RB_REGEXP_ENGINE_ONIGMO);
     int r = onig_new(&reg, (const OnigUChar *)p, (const OnigUChar *)p + RSTRING_LEN(src),
                      options, enc, ONIG_SYNTAX_RUBY, &einfo);
+    rb_reg_default_engine_set(saved);
     if (r) {
         OnigUChar buf[ONIG_MAX_ERROR_MESSAGE_LEN];
         onig_error_code_to_str(buf, r, &einfo);

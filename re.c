@@ -5932,6 +5932,8 @@ Init_Regexp(void)
     onigenc_set_default_encoding(ONIG_ENCODING_ASCII);
     onig_set_warn_func(re_warn);
     onig_set_verb_warn_func(re_warn);
+    /* Set up the configured default as --regexp-engine would. */
+    rb_reg_default_engine_set(rb_reg_default_engine());
 
     rb_define_virtual_variable("$~", get_LAST_MATCH_INFO, match_setter);
     rb_define_virtual_variable("$&", last_match_getter, 0);

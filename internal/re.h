@@ -98,8 +98,11 @@ typedef enum {
     RB_REGEXP_ENGINE_RUST,
 } rb_regexp_engine_t;
 
+RUBY_SYMBOL_EXPORT_BEGIN
+/* exported for ext/-test-/regexp */
 rb_regexp_engine_t rb_reg_default_engine(void);
 bool rb_reg_default_engine_set(rb_regexp_engine_t engine);
+RUBY_SYMBOL_EXPORT_END
 
 #define rb_reg_rust_engine_p() (rb_reg_default_engine() == RB_REGEXP_ENGINE_RUST)
 

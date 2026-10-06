@@ -113,6 +113,11 @@ pub struct CompileResult {
     /// `rb_regexp_rust_free_bytes`.
     pub warnings: *mut u8,
     pub warnings_len: usize,
+    /// Where the `%n` argument of the message lies in the pattern, for
+    /// `OnigErrorInfo`; `has_par` is 0 when the message takes none.
+    pub has_par: c_int,
+    pub par_off: usize,
+    pub par_len: usize,
 }
 
 struct CollectWarner {
@@ -179,12 +184,25 @@ pub unsafe extern "C" fn rb_regexp_rust_compile(
     res.message[0] = 0;
     res.warnings = std::ptr::null_mut();
     res.warnings_len = 0;
+    res.has_par = 0;
+    res.par_off = 0;
+    res.par_len = 0;
 
     let mut warner = CollectWarner { flags: warn_flags, out: Vec::new() };
     let compiled = guard(Err(RB_REGEXP_PANICKED), || {
         compile::compile(source, options, enc::ONIGENC_CASE_FOLD_MIN, enc, &mut warner).map_err(|e| {
             let msg = error_code_to_str(e.code, e.par.as_deref().map(|p| (enc, p)));
             write_message(&mut res.message, &msg);
+            // The argument is always a piece of the pattern (a group or
+            // property name), so any occurrence of it will do.
+            if let Some(par) = e.par.as_deref() {
+                let off = if par.is_empty() { Some(0) } else { source.windows(par.len()).position(|w| w == par) };
+                if let Some(off) = off {
+                    res.has_par = 1;
+                    res.par_off = off;
+                    res.par_len = par.len();
+                }
+            }
             e.code
         })
     });
@@ -324,5 +342,158 @@ pub unsafe extern "C" fn rb_regexp_rust_name_at(
             1
         }
         None => 0,
+    }
+}
+
+/// Finds `name` among the named groups. Returns the number of groups and
+/// points `*groups` at them (valid while the handle lives), or 0.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn rb_regexp_rust_name_find(
+    h: *const Handle,
+    name: *const u8,
+    name_len: usize,
+    groups: *mut *const c_int,
+) -> c_int {
+    let h = unsafe { &*h };
+    let name: &[u8] = if name_len == 0 { &[] } else { unsafe { std::slice::from_raw_parts(name, name_len) } };
+    match h.primary.names.find(name) {
+        Some(e) => {
+            unsafe { *groups = e.back_refs.as_ptr() };
+            e.back_refs.len() as c_int
+        }
+        None => 0,
+    }
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn rb_regexp_rust_copy(h: *const Handle) -> *mut Handle {
+    let h = unsafe { &*h };
+    Box::into_raw(Box::new(Handle {
+        primary: Arc::clone(&h.primary),
+        source: h.source.clone(),
+        options: h.options,
+        variants: Mutex::new(Vec::new()),
+    }))
+}
+
+/// Memory owned by the handle, for ObjectSpace.memsize_of. A copy shares
+/// the compiled program and counts it too.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn rb_regexp_rust_memsize(h: *const Handle) -> usize {
+    let h = unsafe { &*h };
+    let r = &h.primary;
+    std::mem::size_of::<Handle>()
+        + std::mem::size_of::<Regex>()
+        + h.source.capacity()
+        + r.program.capacity()
+        + r.char_loops.capacity() * std::mem::size_of::<u64>()
+        + r.repeat_range.capacity() * std::mem::size_of::<crate::compile::RepeatRange>()
+        + r.names.memsize()
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn rb_regexp_rust_linear_time_p(h: *const Handle) -> c_int {
+    let h = unsafe { &*h };
+    guard(0, || crate::exec::check_linear_time(&h.primary) as c_int)
+}
+
+/// Called every 128 steps; returns 0, ONIGERR_TIMEOUT or
+/// RB_REGEXP_INTERRUPTED. It must not longjmp.
+pub type CheckFunc = unsafe extern "C" fn(data: *mut std::ffi::c_void) -> c_int;
+
+unsafe fn subject<'a>(str: *const u8, len: usize) -> &'a [u8] {
+    if len == 0 { &[] } else { unsafe { std::slice::from_raw_parts(str, len) } }
+}
+
+unsafe fn region<'a>(beg: *mut isize, end: *mut isize, num_regs: c_int) -> Option<crate::exec::Region<'a>> {
+    let n = usize::try_from(num_regs).ok().filter(|&n| n > 0)?;
+    if beg.is_null() || end.is_null() {
+        return None;
+    }
+    Some(crate::exec::Region {
+        beg: unsafe { std::slice::from_raw_parts_mut(beg, n) },
+        end: unsafe { std::slice::from_raw_parts_mut(end, n) },
+    })
+}
+
+/// `onig_search_gpos`. Positions are offsets into `str`; `beg`/`end` hold at
+/// least `num_mem + 1` registers or are NULL.
+#[unsafe(no_mangle)]
+#[allow(clippy::too_many_arguments)]
+pub unsafe extern "C" fn rb_regexp_rust_search(
+    h: *const Handle,
+    str: *const u8,
+    len: usize,
+    gpos: isize,
+    start: isize,
+    range: isize,
+    beg: *mut isize,
+    end: *mut isize,
+    num_regs: c_int,
+    option: u32,
+    check: Option<CheckFunc>,
+    data: *mut std::ffi::c_void,
+) -> isize {
+    let h = unsafe { &*h };
+    let sb = unsafe { subject(str, len) };
+    let region = unsafe { region(beg, end, num_regs) };
+    if region.as_ref().is_some_and(|r| r.beg.len() < h.primary.num_mem as usize + 1) {
+        return ONIGERR_INVALID_ARGUMENT as isize;
+    }
+    let mut checker = move || match check {
+        Some(f) => unsafe { f(data) },
+        None => 0,
+    };
+    guard(RB_REGEXP_PANICKED as isize, move || {
+        crate::exec::search(&h.primary, sb, gpos, start, range, region, option, &mut checker)
+    })
+}
+
+/// `onig_match`: returns the length of the match at `at`.
+#[unsafe(no_mangle)]
+#[allow(clippy::too_many_arguments)]
+pub unsafe extern "C" fn rb_regexp_rust_match(
+    h: *const Handle,
+    str: *const u8,
+    len: usize,
+    at: isize,
+    beg: *mut isize,
+    end: *mut isize,
+    num_regs: c_int,
+    option: u32,
+    check: Option<CheckFunc>,
+    data: *mut std::ffi::c_void,
+) -> isize {
+    let h = unsafe { &*h };
+    let sb = unsafe { subject(str, len) };
+    let region = unsafe { region(beg, end, num_regs) };
+    if region.as_ref().is_some_and(|r| r.beg.len() < h.primary.num_mem as usize + 1) {
+        return ONIGERR_INVALID_ARGUMENT as isize;
+    }
+    if !usize::try_from(at).is_ok_and(|at| at <= len) {
+        return ONIG_MISMATCH as isize;
+    }
+    let mut checker = move || match check {
+        Some(f) => unsafe { f(data) },
+        None => 0,
+    };
+    guard(RB_REGEXP_PANICKED as isize, move || {
+        crate::exec::match_at_pos(&h.primary, sb, at, region, option, &mut checker)
+    })
+}
+
+/// Fields of the compiled pattern that live in `regex_t` on the C side.
+#[repr(C)]
+pub struct Header {
+    pub options: u32,
+    pub num_mem: c_int,
+    pub case_fold_flag: u32,
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn rb_regexp_rust_header(h: *const Handle, out: *mut Header) {
+    let h = unsafe { &*h };
+    unsafe {
+        *out = Header { options: h.primary.options, num_mem: h.primary.num_mem, case_fold_flag: h.primary.case_fold_flag };
     }
 }
