@@ -673,13 +673,18 @@ rb_stat_cmp(VALUE self, VALUE other)
 #endif
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     stat.dev    -> integer
+ *    dev -> integer
  *
- *  Returns an integer representing the device on which <i>stat</i>
- *  resides.
+ *  Returns the device number for the [snapshot](rdoc-ref:File::Stat@Snapshot) in `self`:
  *
- *     File.stat("testfile").dev   #=> 774
+ *  ```ruby
+ *  File.stat('/etc').dev # => 66306
+ *  File.stat('/dev').dev # => 5
+ *  ```
+ *
  */
 
 static VALUE
@@ -699,13 +704,21 @@ rb_stat_dev(VALUE self)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     stat.dev_major   -> integer
+ *    dev_major -> integer
  *
- *  Returns the major part of File::Stat#dev or +nil+.
+ *  Returns `nil` on Windows.
  *
- *     File.stat("/dev/fd1").dev_major   #=> 2
- *     File.stat("/dev/tty").dev_major   #=> 5
+ *  On other systems, returns the major part of the device number
+ *  for the [snapshot](rdoc-ref:File::Stat@Snapshot) in `self`:
+ *
+ *  ```ruby
+ *  File.stat('/etc').dev_major # => 259
+ *  File.stat('/dev').dev_major # => 0
+ *  ```
+ *
  */
 
 static VALUE
@@ -721,13 +734,21 @@ rb_stat_dev_major(VALUE self)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     stat.dev_minor   -> integer
+ *    dev_minor -> integer
  *
- *  Returns the minor part of File::Stat#dev or +nil+.
+ *  Returns `nil` on Windows.
  *
- *     File.stat("/dev/fd1").dev_minor   #=> 1
- *     File.stat("/dev/tty").dev_minor   #=> 0
+ *  On other systems, returns the minor part of the device number
+ *  for the [snapshot](rdoc-ref:File::Stat@Snapshot) in `self`:
+ *
+ *  ```ruby
+ *  File.stat('/etc').dev_minor # => 2
+ *  File.stat('/dev').dev_minor # => 5
+ *  ```
+ *
  */
 
 static VALUE
