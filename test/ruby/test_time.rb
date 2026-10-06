@@ -901,6 +901,24 @@ class TestTime < Test::Unit::TestCase
     assert_equal(true, t.strftime("\u3042%Z").valid_encoding?)
   end
 
+  def test_strftime_zone_long_abbreviation
+    # A zone abbreviation longer than the internal buffer is transcoded into a
+    # fixed 100-byte buffer when the format uses another encoding; strftime must
+    # use the truncated length, not strlcpy's (source) return value, otherwise
+    # it reads past the buffer.
+    zone = Class.new do
+      def local_to_utc(t) t end
+      def utc_to_local(t) t end
+      def abbr(t) "\u00e9" + "A" * 300 end
+    end.new
+    t = Time.new(2020, 1, 1, 0, 0, 0, zone)
+    enc = Encoding::ISO_8859_1
+    enc = Encoding::Windows_1252 if Encoding.find("locale") == enc
+    out = t.strftime("%Z".dup.force_encoding(enc))
+    assert_operator(out.bytesize, :<=, 100)
+    assert_predicate(out, :valid_encoding?)
+  end
+
   def test_strftime_flags
     t = Time.mktime(2001, 10, 1, 2, 0, 0)
     assert_equal("01", t.strftime("%d"))

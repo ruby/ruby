@@ -607,9 +607,10 @@ STATIC_ASSERT(tdata_unsafe_free_bits_cover_chunk,
               TDATA_UNSAFE_FREE_CHUNK_CAPA <= 32);
 
 struct gc_process_stat_snapshot {
-    uint32_t count;
-    uint32_t minor_gc_count;
-    uint32_t major_gc_count;
+    uint64_t count;
+    uint64_t minor_gc_count;
+    uint64_t major_gc_count;
+    uint64_t global_gc_count;
     uint64_t marking_time_ns;
     uint64_t sweeping_time_ns;
 };
@@ -618,6 +619,7 @@ struct gc_process_stat_total {
     uint64_t count;
     uint64_t minor_gc_count;
     uint64_t major_gc_count;
+    uint64_t global_gc_count;
     uint64_t marking_time_ns;
     uint64_t sweeping_time_ns;
 };
@@ -722,6 +724,7 @@ typedef struct rb_objspace {
 
         size_t minor_gc_count;
         size_t major_gc_count;
+        size_t global_gc_count;
         size_t compact_count;
         size_t read_barrier_faults;
 #if RGENGC_PROFILE > 0
@@ -2164,9 +2167,10 @@ static void
 gc_process_stat_capture(const rb_objspace_t *objspace,
                         struct gc_process_stat_snapshot *out)
 {
-    out->count = (uint32_t)objspace->profile.count;
-    out->minor_gc_count = (uint32_t)objspace->profile.minor_gc_count;
-    out->major_gc_count = (uint32_t)objspace->profile.major_gc_count;
+    out->count = objspace->profile.count;
+    out->minor_gc_count = objspace->profile.minor_gc_count;
+    out->major_gc_count = objspace->profile.major_gc_count;
+    out->global_gc_count = objspace->profile.global_gc_count;
     out->marking_time_ns = objspace->profile.marking_time_ns;
     out->sweeping_time_ns = objspace->profile.sweeping_time_ns;
 }
@@ -2176,7 +2180,7 @@ gc_process_stat_publish(rb_objspace_t *objspace)
 {
     struct gc_process_stat_snapshot snap;
     gc_process_stat_capture(objspace, &snap);
-    GC_ASSERT(snap.count == snap.minor_gc_count + snap.major_gc_count);
+    GC_ASSERT(snap.count == snap.minor_gc_count + snap.major_gc_count + snap.global_gc_count);
     rb_native_mutex_lock(&objspace->process_stat.lock);
     objspace->process_stat.published = snap;
     rb_native_mutex_unlock(&objspace->process_stat.lock);
@@ -2189,6 +2193,7 @@ gc_process_stat_add(struct gc_process_stat_total *dst,
     dst->count += src->count;
     dst->minor_gc_count += src->minor_gc_count;
     dst->major_gc_count += src->major_gc_count;
+    dst->global_gc_count += src->global_gc_count;
     dst->marking_time_ns += src->marking_time_ns;
     dst->sweeping_time_ns += src->sweeping_time_ns;
 }
@@ -9691,7 +9696,7 @@ gc_start_global(rb_objspace_t *driver, unsigned int reason, bool compact, bool a
             heap_move_pooled_pages_to_free_pages(heap);
         }
     }
-    driver->profile.major_gc_count++;
+    driver->profile.global_gc_count++;
     global_objspace->global_gc.count++;
 
     /* Enable compaction in every objspace before the mark: the unified conservative root
@@ -11065,10 +11070,17 @@ gc_process_stat(VALUE hash_or_sym)
     }
 
     struct gc_process_stat_total total;
+    uint64_t direct_global_gc_count;
     unsigned int lev = RB_GC_VM_LOCK();
     total = global_objspace->process_stat_archive;
     rb_gc_vm_each_objspace(gc_process_stat_accumulate_i, &total);
+    direct_global_gc_count = global_objspace->global_gc.count;
     RB_GC_VM_UNLOCK(lev);
+
+    rb_objspace_t *const current = rb_gc_get_objspace();
+    if (!gc_during_gc_get(current)) {
+        GC_ASSERT(total.global_gc_count == direct_global_gc_count);
+    }
 
     /* Convert to Ruby values after all collector locks are released. */
     uint64_t time_ns = total.marking_time_ns + total.sweeping_time_ns;
@@ -11085,6 +11097,7 @@ gc_process_stat(VALUE hash_or_sym)
     SET64(sweeping_time, ns_to_ms(total.sweeping_time_ns));
     SET64(minor_gc_count, total.minor_gc_count);
     SET64(major_gc_count, total.major_gc_count);
+    SET64(global_gc_count, total.global_gc_count);
 
 #undef SET64
 
@@ -11152,7 +11165,7 @@ rb_gc_impl_stat(void *objspace_ptr, VALUE hash_or_sym)
     SET(malloc_increase_bytes_limit, malloc_limit);
     SET(minor_gc_count, objspace->profile.minor_gc_count);
     SET(major_gc_count, objspace->profile.major_gc_count);
-    SET(global_gc_count, global_objspace->global_gc.count);
+    SET(global_gc_count, objspace->profile.global_gc_count);
     SET(compact_count, objspace->profile.compact_count);
     SET(read_barrier_faults, objspace->profile.read_barrier_faults);
     SET(total_moved_objects, objspace->rcompactor.total_moved);

@@ -1217,23 +1217,24 @@ rb_stat_ctime(VALUE self)
 
 #if defined(HAVE_STAT_BIRTHTIME)
 /*
+ * :markup: markdown
+ *
  *  call-seq:
  *    birthtime -> new_time
  *
- * Returns a new Time object containing the create time
- * of the object represented by +self+
- * at the time +self+ was created;
- * see {Snapshot}[rdoc-ref:File::Stat@Snapshot]:
+ * Returns a new Time object containing the creation time
+ * of the [snapshot](rdoc-ref:File::Stat@Snapshot) in `self`.
+ * See {File System Timestamps}[rdoc-ref:file/timestamps.md]:
  *
- *   filename = 't.tmp'
- *   stat = File::Stat.new(filename) # Raises Errno::ENOENT: No such file or directory
- *   File.write(filename, 'foo')
- *   stat = File::Stat.new(filename)
- *   stat.birthtime # => 2026-04-14 10:41:55.5146554 -0500
- *   File.delete(filename)
- *   stat.birthtime # => 2026-04-14 10:41:55.5146554 -0500
+ * ```ruby
+ * filepath = '/tmp/t.tmp'
+ * File.write(filepath, 'foo')
+ * stat = File.stat(filepath) # Take shapshot.
+ * stat.birthtime             # => 2026-10-05 13:14:24.844158315 -0500
+ * File.delete(filepath)
+ * stat.birthtime             # => 2026-10-05 13:14:24.844158315 -0500  # Unchanged.
+ * ```
  *
- * See {File System Timestamps}[rdoc-ref:file/timestamps.md].
  */
 
 static VALUE
@@ -3128,27 +3129,22 @@ rb_file_ctime(VALUE obj)
 
 #if defined(HAVE_STAT_BIRTHTIME)
 /*
- *  call-seq:
- *    File.birthtime(path) -> time
+ * :markup: markdown
  *
- * Returns a new Time object containing the create time
- * of the entry at the given +path+;
- * see {File System Timestamps}[rdoc-ref:file/timestamps.md]:
+ * call-seq:
+ *   File.birthtime(path) -> time
  *
- *   filepath = 't.tmp'
- *   File.birthtime(filepath) # Raises Errno::ENOENT: No such file or directory
- *   File.write(filepath, 'foo')
- *   File.birthtime(filepath) # => 2026-04-14 11:10:43.2891695 -0500
- *   File.write(filepath, 'bar')
- *   File.birthtime(filepath) # => 2026-04-14 11:10:43.2891695 -0500
- *   File.delete(filepath)
- *   File.birthtime(filepath) # Raises Errno::ENOENT: No such file or directory.
+ * Returns a new Time object containing the creation time
+ * of the entry at the given `path`;
+ * see [File System Timestamps](rdoc-ref:file/timestamps.md):
  *
- *   dirpath = 'tmp'
- *   Dir.mkdir(dirpath)
- *   File.birthtime(dirpath) # => 2026-08-21 13:42:19.389324172 -0500
- *   Dir.rmdir(dirpath)
- *   File.birthtime(dirpath) # Raises Errno::ENOENT: No such file or directory.
+ * ```ruby
+ * filepath = '/tmp/t.tmp'
+ * File.birthtime(filepath) # Raises Errno::ENOENT: No such file or directory.
+ * File.write(filepath, 'foo')
+ * File.birthtime(filepath) # => 2026-10-05 13:41:02.330337383 -0500
+ * File.delete(filepath)    # Clean up.
+ * ```
  *
  */
 

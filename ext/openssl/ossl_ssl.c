@@ -36,7 +36,8 @@ VALUE cSSLSocket;
 static VALUE eSSLErrorWaitReadable;
 static VALUE eSSLErrorWaitWritable;
 
-static ID id_call, ID_callback_state, id_npn_protocols_encoded, id_each;
+static ID id_call, ID_callback_state, id_npn_protocols_encoded, id_each,
+          id_original_context;
 static VALUE sym_exception, sym_wait_readable, sym_wait_writable;
 
 static ID id_i_cert_store, id_i_ca_file, id_i_ca_path, id_i_verify_mode,
@@ -1713,6 +1714,7 @@ ossl_ssl_initialize(int argc, VALUE *argv, VALUE self)
 
     GetSSLCTX(v_ctx, ctx);
     rb_ivar_set(self, id_i_context, v_ctx);
+    rb_ivar_set(self, id_original_context, v_ctx);
     ossl_sslctx_setup(v_ctx);
 
     if (rb_respond_to(io, rb_intern("nonblock=")))
@@ -3389,6 +3391,7 @@ Init_ossl_ssl(void)
 
     id_npn_protocols_encoded = rb_intern_const("npn_protocols_encoded");
     id_each = rb_intern_const("each");
+    id_original_context = rb_intern_const("original_context");
 
 #define DefIVarID(name) do \
     id_i_##name = rb_intern_const("@"#name); while (0)

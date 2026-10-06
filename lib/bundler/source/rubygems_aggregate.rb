@@ -29,7 +29,7 @@ module Bundler
 
       def build_index
         Index.build do |idx|
-          dependency_names = source_map.pinned_spec_names
+          dependency_names = source_map.pinned_spec_names | source_map.replacement_names
 
           sources.all_sources.each do |source|
             next if @excluded_sources.include?(source)
