@@ -9,9 +9,7 @@
 #endif
 
 #if USE_RUST_REGEXP
-/* Must match regexp::ffi::ABI_VERSION in regexp/src/ffi.rs */
-# define RB_REGEXP_RUST_ABI_VERSION 1
-uint32_t rb_regexp_rust_abi_version(void);
+# include "internal/regexp_rust.h"
 #endif
 
 static rb_regexp_engine_t default_engine = RB_DEFAULT_REGEXP_ENGINE;
@@ -35,6 +33,7 @@ rb_reg_default_engine_set(rb_regexp_engine_t engine)
             rb_bug("regexp engine ABI mismatch: %u != %u",
                    rb_regexp_rust_abi_version(), RB_REGEXP_RUST_ABI_VERSION);
         }
+        rb_regexp_rust_init(ONIG_ENCODING_ASCII);
         break;
 #else
         return false;
