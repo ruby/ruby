@@ -318,31 +318,37 @@ consume_match(search_state *search)
 #define find_next find_next_basic
 #endif
 
+static inline char *
+append_segment(char *dest, const unsigned char *segment_start, const search_state *search)
+{
+    size_t segment_len = search->cstr - segment_start;
+    if (segment_len) {
+        memcpy(dest, segment_start, segment_len);
+        dest += segment_len;
+    }
+    return dest;
+}
+
 static VALUE
 optimized_escape_html(VALUE str)
 {
-    VALUE vbuf;
-    char *buf = NULL;
     search_state search = {
         .cstr = (const unsigned char *)RSTRING_PTR(str),
     };
     search.end = search.cstr + RSTRING_LEN(str);
 
     const unsigned char *segment_start = search.cstr;
-    char *dest = NULL;
 
-    while (find_next(&search)) {
+    if (!find_next(&search)) return str;
+
+    VALUE vbuf;
+    char *buf = ALLOCV_N(char, vbuf, escaped_length(str));
+    char *dest = buf;
+
+    do {
         const unsigned char c = *search.cstr;
 
-        size_t segment_len = search.cstr - segment_start;
-        if (!buf) {
-            buf = ALLOCV_N(char, vbuf, escaped_length(str));
-            dest = buf;
-        }
-        if (segment_len) {
-            memcpy(dest, segment_start, segment_len);
-            dest += segment_len;
-        }
+        dest = append_segment(dest, segment_start, &search);
 
         switch(c) {
             #define HTML_ESCAPE(c, str) \
@@ -363,18 +369,13 @@ optimized_escape_html(VALUE str)
         }
         consume_match(&search);
         segment_start = search.cstr;
-    }
+    } while (find_next(&search));
 
-    VALUE escaped = str;
-    if (buf) {
-        size_t segment_len = search.cstr - segment_start;
-        if (segment_len) {
-            memcpy(dest, segment_start, segment_len);
-            dest += segment_len;
-        }
-        escaped = rb_enc_str_new(buf, dest - buf, rb_enc_get(str));
-        ALLOCV_END(vbuf);
-    }
+    dest = append_segment(dest, segment_start, &search);
+
+    VALUE escaped = rb_enc_str_new(buf, dest - buf, rb_enc_get(str));
+    ALLOCV_END(vbuf);
+
     return escaped;
 }
 

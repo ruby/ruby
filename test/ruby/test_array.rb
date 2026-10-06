@@ -2687,6 +2687,17 @@ class TestArray < Test::Unit::TestCase
     assert_empty(a.reject {|x| !x.include?(0)})
   end
 
+  def test_repeated_permutation_array_modified
+    ary = @cls[*(1..1000)]
+    cls = @cls
+    obj = Object.new
+    obj.define_singleton_method(:to_int) do
+      ary.replace(cls[1, 2])
+      2
+    end
+    assert_equal(@cls[[1, 1], [1, 2], [2, 1], [2, 2]], ary.repeated_permutation(obj).to_a)
+  end
+
   def test_repeated_permutation_stack_error
     assert_separately([], "#{<<-"begin;"}\n#{<<~'end;'}", timeout: 30)
     begin;
@@ -3416,6 +3427,16 @@ class TestArray < Test::Unit::TestCase
     gen = Object.new
     # 49 will be out-of-bounds when ary.replace is called
     def gen.rand(lim) = 49
+    assert_equal([], ary.sample(obj, random: gen))
+
+    ary = (1..100).to_a
+    obj = Object.new
+    obj.define_singleton_method(:to_int) do
+      ary.replace(Array.new(10) { :x })
+      10
+    end
+    gen = Object.new
+    gen.define_singleton_method(:rand) { |lim| 8 }
     assert_equal([], ary.sample(obj, random: gen))
   end
 

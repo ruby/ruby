@@ -772,33 +772,37 @@ pub fn send_fallback_counter_for_super_method_type(method_type: crate::hir::Meth
 /// Primitive called in zjit.rb. Zero out all the counters.
 #[unsafe(no_mangle)]
 pub extern "C" fn rb_zjit_reset_stats_bang(_ec: EcPtr, _self: VALUE) -> VALUE {
-    let counters = ZJITState::get_counters();
-    let exit_counters = ZJITState::get_exit_counters();
+    // All the counters are on ZJITState so no state means nothing to reset.
+    if !ZJITState::has_instance() {
+        return Qnil;
+    }
 
-    // Reset all counters to zero
-    *counters = Counters::default();
+    with_vm_lock(src_loc!(), || {
+        // Reset all counters to zero
+        *ZJITState::get_counters() = Counters::default();
 
-    // Reset exit counters for YARV instructions
-    exit_counters.as_mut_slice().fill(0);
+        // Reset exit counters for YARV instructions
+        ZJITState::get_exit_counters().as_mut_slice().fill(0);
 
-    // Reset send fallback counters
-    ZJITState::get_send_fallback_counters().as_mut_slice().fill(0);
+        // Reset send fallback counters
+        ZJITState::get_send_fallback_counters().as_mut_slice().fill(0);
 
-    // Reset not-inlined counters
-    ZJITState::get_not_inlined_cfunc_counter_pointers().iter_mut()
-        .for_each(|b| { **(b.1) = 0; });
+        // Reset not-inlined counters
+        ZJITState::get_not_inlined_cfunc_counter_pointers().iter_mut()
+            .for_each(|b| { **(b.1) = 0; });
 
-    // Reset not-annotated counters
-    ZJITState::get_not_annotated_cfunc_counter_pointers().iter_mut()
-        .for_each(|b| { **(b.1) = 0; });
+        // Reset not-annotated counters
+        ZJITState::get_not_annotated_cfunc_counter_pointers().iter_mut()
+            .for_each(|b| { **(b.1) = 0; });
 
-    // Reset ccall counters
-    ZJITState::get_ccall_counter_pointers().iter_mut()
-        .for_each(|b| { **(b.1) = 0; });
+        // Reset ccall counters
+        ZJITState::get_ccall_counter_pointers().iter_mut()
+            .for_each(|b| { **(b.1) = 0; });
 
-    // Reset iseq call counters
-    ZJITState::get_iseq_calls_count_pointers().iter_mut()
-        .for_each(|b| { **(b.1) = 0; });
+        // Reset iseq call counters
+        ZJITState::get_iseq_calls_count_pointers().iter_mut()
+            .for_each(|b| { **(b.1) = 0; });
+    });
 
     Qnil
 }

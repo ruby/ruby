@@ -478,6 +478,15 @@ class TestBox < Test::Unit::TestCase
       assert_instance_of BoxMarshalBaz, loader.call(Marshal.dump(BoxMarshalBaz.new))
     end;
   end
+
+  def test_ractor_argument_copy_in_main_box
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      require "date"
+      d = Date.parse("Aug 23:55")
+      assert_equal d, Ractor.new(d) {|x| x }.value
+    end;
+  end
 end
 
 class TestBoxDescendantsMain

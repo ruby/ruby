@@ -2547,7 +2547,7 @@ Gem::Specification.new do |s|
 
   s.specification_version = #{Gem::Specification::CURRENT_SPECIFICATION_VERSION}
 
-  s.add_runtime_dependency(%q<b>.freeze, [\"= 1\".freeze])
+  s.add_runtime_dependency(\"b\".freeze, [\"= 1\".freeze])
 end
     SPEC
 
@@ -2646,7 +2646,7 @@ Gem::Specification.new do |s|
 
   s.specification_version = #{Gem::Specification::CURRENT_SPECIFICATION_VERSION}
 
-  s.add_runtime_dependency(%q<b>.freeze, ["= 1".freeze])
+  s.add_runtime_dependency("b".freeze, ["= 1".freeze])
 end
     SPEC
 
@@ -2699,9 +2699,9 @@ Gem::Specification.new do |s|
 
   s.specification_version = 4
 
-  s.add_runtime_dependency(%q<rake>.freeze, [\"> 0.4\".freeze])
-  s.add_runtime_dependency(%q<jabber4r>.freeze, [\"> 0.0.0\".freeze])
-  s.add_runtime_dependency(%q<pqa>.freeze, [\"> 0.4\".freeze, \"<= 0.6\".freeze])
+  s.add_runtime_dependency(\"rake\".freeze, [\"> 0.4\".freeze])
+  s.add_runtime_dependency(\"jabber4r\".freeze, [\"> 0.0.0\".freeze])
+  s.add_runtime_dependency(\"pqa\".freeze, [\"> 0.4\".freeze, \"<= 0.6\".freeze])
 end
     SPEC
 
@@ -2718,6 +2718,51 @@ end
     end
 
     assert_includes spec.to_ruby, '"~> 1.0".freeze, ">= 1.0.0".freeze'
+  end
+
+  def test_to_ruby_dependency_name
+    name = "b\\>\n\#{raise}"
+    @a2.add_dependency name, "1"
+
+    same_spec = eval @a2.to_ruby
+
+    assert_equal [name], same_spec.dependencies.map(&:name)
+  end
+
+  def test_to_ruby_invalid_dependency_type
+    @a2.add_dependency "b", "1"
+    @a2.dependencies.first.instance_variable_set :@type, :foo
+
+    e = assert_raise Gem::Exception do
+      @a2.to_ruby
+    end
+    assert_equal "invalid dependency type: :foo", e.message
+  end
+
+  def test_to_ruby_invalid_specification_version
+    @a2.add_dependency "b", "1"
+    @a2.specification_version = "4\n``"
+
+    e = assert_raise Gem::Exception do
+      @a2.to_ruby
+    end
+    assert_equal 'invalid specification_version: "4\n``"', e.message
+  end
+
+  def test_to_ruby_newline_in_stub_line
+    [
+      proc {|s| s.name = "a\n``" },
+      proc {|s| s.require_paths = ["lib\n``"] },
+      proc {|s| s.extensions = ["ext\n``"] },
+    ].each do |setup|
+      spec = @a2.dup
+      setup.call spec
+
+      e = assert_raise Gem::Exception do
+        spec.to_ruby
+      end
+      assert_match(/\Astub line .* contains a newline\z/, e.message)
+    end
   end
 
   def test_to_ruby_legacy

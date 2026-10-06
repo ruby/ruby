@@ -49,6 +49,7 @@ class TestYJIT < Test::Unit::TestCase
   def test_command_line_switches
     assert_in_out_err('--yjit-', '', [], /invalid option --yjit-/)
     assert_in_out_err('--yjithello', '', [], /invalid option --yjithello/)
+    assert_in_out_err('--yjit-temp-regs=6', '', [], /--yjit-temp-regs must be <= 5\n.*invalid YJIT option 'temp-regs=6'/m)
     #assert_in_out_err('--yjit-call-threshold', '', [], /--yjit-call-threshold needs an argument/)
     #assert_in_out_err('--yjit-call-threshold=', '', [], /--yjit-call-threshold needs an argument/)
   end
@@ -1920,6 +1921,7 @@ class TestYJIT < Test::Unit::TestCase
   end
 
   def test_yjit_enable_replaces_array_each
+    pend "the with_jit hooks run in the master box [Bug #22306]" if defined?(Ruby::Box) && Ruby::Box.enabled?
     assert_separately([*("--disable=yjit" if RubyVM::YJIT.enabled?)], <<~'RUBY')
       # Array#each should be implemented in C for the interpreter
       assert_nil Array.instance_method(:each).source_location
@@ -2031,6 +2033,13 @@ class TestYJIT < Test::Unit::TestCase
 
       run
       assert_equal(#{threshold}, @captured_env.binding.local_variable_get(:i))
+    RUBY
+  end
+
+  def test_stack_temps_beyond_temp_regs
+    assert_separately(%w[--yjit-call-threshold=1 --yjit-temp-regs=3], <<~RUBY)
+      def foo(a) = [a, a, a, a]
+      assert_equal([1, 1, 1, 1], foo(1))
     RUBY
   end
 

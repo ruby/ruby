@@ -10,6 +10,32 @@ class JSONCoderTest < Test::Unit::TestCase
     assert_equal %(["[Object object]"]), coder.dump([Object.new])
   end
 
+  def test_json_coder_with_as_json_option
+    callback = ->(object, is_key) { 42 }
+    [callback, callback.method(:call)].each do |as_json|
+      coder = JSON::Coder.new(as_json: as_json)
+      assert_equal '[42]', coder.dump([Object.new])
+    end
+  end
+
+  def test_json_coder_block_overrides_as_json_option
+    coder = JSON::Coder.new(as_json: ->(object) { 1 }) { 2 }
+    assert_equal '[2]', coder.dump([Object.new])
+  end
+
+  def test_json_coder_as_json_invalid_type
+    assert_raise(TypeError) { JSON::Coder.new(as_json: 'x') }
+  end
+
+  def test_json_coder_rejects_disabling_strict_mode
+    [false, nil].each do |strict|
+      error = assert_raise(ArgumentError) { JSON::Coder.new(strict: strict) }
+      assert_equal 'JSON::Coder requires strict mode', error.message
+    end
+    assert_raise(JSON::GeneratorError) { JSON::Coder.new.dump(Object.new) }
+    assert_raise(JSON::GeneratorError) { JSON::Coder.new(strict: true).dump(Object.new) }
+  end
+
   def test_json_coder_with_proc_with_unsupported_value
     coder = JSON::Coder.new do |object, is_key|
       assert_equal false, is_key
@@ -54,6 +80,16 @@ class JSONCoderTest < Test::Unit::TestCase
   def test_json_coder_load_options
     coder = JSON::Coder.new(symbolize_names: true)
     assert_equal({a: 1}, coder.load('{"a":1}'))
+  end
+
+  def test_json_coder_load_with_on_load_method
+    on_load = ->(value) { Integer === value ? value + 1 : value }.method(:call)
+    coder = JSON::Coder.new(on_load: on_load)
+    assert_equal [2], coder.load('[1]')
+  end
+
+  def test_json_coder_on_load_invalid_type
+    assert_raise(TypeError) { JSON::Coder.new(on_load: 'x') }
   end
 
   def test_json_coder_dump_NaN_or_Infinity

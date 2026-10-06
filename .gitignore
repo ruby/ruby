@@ -59,7 +59,6 @@ lcov*.info
 /*-fake.rb
 /*.dll
 /*.exe
-/coroutine-test
 /*.ilk
 /*.res
 /*.pc
@@ -72,7 +71,6 @@ lcov*.info
 /ChangeLog
 /Doxyfile
 /GNUmakefile
-/README.atheos
 /README.fat-patch
 /README.v6
 /TAGS
@@ -80,7 +78,6 @@ lcov*.info
 /autom4te*.cache
 /automake
 /benchmark/benchmark-driver
-/beos
 /bmlog-*
 /breakpoints.gdb
 /config.cache
@@ -128,7 +125,6 @@ lcov*.info
 /revision.h
 /revision.tmp
 /ripper.tmp.y
-/riscos
 /rubicon
 /ruby
 /ruby-runner
@@ -170,6 +166,10 @@ lcov*.info
 # /coroutine/
 !/coroutine/**/*.s
 !/coroutine/**/*.S
+
+# /coroutine/test/
+/coroutine/test/run
+/coroutine/test/run.exe
 
 # /enc/trans/
 /enc/trans/*.c

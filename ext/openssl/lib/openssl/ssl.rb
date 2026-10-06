@@ -223,14 +223,23 @@ module OpenSSL
         to_io.close_on_exec?
       end
 
+      # Calls IO#wait on the underlying socket.
+      #
+      # Note that this method may block even when there is data immediately
+      # available to read, unlike IO#wait_readable.
       def wait(*args)
         to_io.wait(*args)
       end
 
+      # Calls IO#wait_readable on the underlying socket.
+      #
+      # Note that this method may block even when there is data immediately
+      # available to read, unlike IO#wait_readable.
       def wait_readable(*args)
         to_io.wait_readable(*args)
       end
 
+      # Calls IO#wait_writable on the underlying socket.
       def wait_writable(*args)
         to_io.wait_writable(*args)
       end

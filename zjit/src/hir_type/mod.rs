@@ -333,6 +333,10 @@ impl Type {
             // valid on imemo.
             Type::new(bits::CallableMethodEntry, Specialization::Object(val))
         }
+        else if val.iseq_p() {
+            // Same as CME: an ISEQ is an imemo, so class_of is not valid on it.
+            Type::new(bits::Iseq, Specialization::Object(val))
+        }
         else {
             Self::from_heap_object(val)
         }
@@ -1115,6 +1119,18 @@ mod tests {
             let cme_value: VALUE = cme.into();
             let ty = Type::from_value(cme_value);
             assert_subtype(ty, types::CallableMethodEntry);
+            assert!(ty.ruby_object_known());
+        });
+    }
+
+    #[test]
+    fn iseq() {
+        crate::cruby::with_rubyvm(|| {
+            let iseq = crate::cruby::test_utils::get_proc_iseq("proc { 1 }");
+            assert!(!iseq.is_null());
+            let iseq_value: VALUE = iseq.into();
+            let ty = Type::from_value(iseq_value);
+            assert_subtype(ty, types::Iseq);
             assert!(ty.ruby_object_known());
         });
     }

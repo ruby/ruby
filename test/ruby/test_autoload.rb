@@ -224,17 +224,21 @@ p Foo::Bar
     Kernel.module_eval do
       alias old_require require
     end
-    Ruby::Box.module_eval do
-      alias old_require require
+    if defined?(Ruby::Box)
+      Ruby::Box.module_eval do
+        alias old_require require
+      end
     end
     called_with = []
     Kernel.send :define_method, :require do |path|
       called_with << path
       old_require path
     end
-    Ruby::Box.send :define_method, :require do |path|
-      called_with << path
-      old_require path
+    if defined?(Ruby::Box)
+      Ruby::Box.send :define_method, :require do |path|
+        called_with << path
+        old_require path
+      end
     end
     yield called_with
   ensure
@@ -243,10 +247,12 @@ p Foo::Bar
       alias require old_require
       undef old_require
     end
-    Ruby::Box.module_eval do
-      undef require
-      alias require old_require
-      undef old_require
+    if defined?(Ruby::Box)
+      Ruby::Box.module_eval do
+        undef require
+        alias require old_require
+        undef old_require
+      end
     end
   end
 

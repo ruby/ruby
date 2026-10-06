@@ -571,19 +571,23 @@ class MakeMakefile::Depend
   end
 
   # Makes +path+ relative to #root when it refers to a source-tree file.
+  #
+  # A relative name is resolved against #root, not the current
+  # directory: a build directory nested inside the source tree holds
+  # generated files under source-tree names, and those must not be
+  # taken for the sources they are generated from.  Only a name
+  # reaching outside #root is resolved against the current directory,
+  # where the tool may also be run.
   def relative_source(path)
-    expanded = File.expand_path(path)
-    expanded = File.expand_path(path, @root) unless File.exist?(expanded)
     prefix = @root + File::SEPARATOR
+    expanded = File.expand_path(path, @root)
+    expanded = File.expand_path(path) unless expanded.start_with?(prefix)
     expanded.start_with?(prefix) ? expanded.delete_prefix(prefix) : path
   end
 
-  # Makes +path+ relative to #root without consulting the current
-  # directory.  Unlike #relative_source, a relative name that does not
-  # refer to a source-tree file is kept as-is: generated dependencies
-  # such as builtin_binary.rbbin live in the build directory, and must
-  # keep the name their Make rules use even when the tool runs in a
-  # build directory nested inside the source tree.
+  # Makes +path+ relative to #root, keeping a relative name that does
+  # not refer to a source-tree file as-is: generated dependencies such
+  # as builtin_binary.rbbin must keep the name their Make rules use.
   def relative_dependency(path)
     expanded = File.expand_path(path, @root)
     prefix = @root + File::SEPARATOR

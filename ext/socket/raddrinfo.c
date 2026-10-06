@@ -1896,15 +1896,12 @@ rsock_inspect_sockaddr(struct sockaddr *sockaddr_arg, socklen_t socklen, VALUE r
 
 #if defined(AF_LINK) && defined(HAVE_TYPE_STRUCT_SOCKADDR_DL)
           /* AF_LINK is defined in 4.4BSD derivations since Net2.
-             link_ntoa is also defined at Net2.
-             However Debian GNU/kFreeBSD defines AF_LINK but
-             don't have link_ntoa.  */
+             link_ntoa is also defined at Net2.  */
           case AF_LINK:
           {
             /*
              * Simple implementation using link_ntoa():
-             * This doesn't work on Debian GNU/kFreeBSD 6.0.7 (squeeze).
-             * Also, the format is bit different.
+             * The format is bit different.
              *
              * rb_str_catf(ret, "LINK %s", link_ntoa(&sockaddr->dl));
              * break;
@@ -3172,7 +3169,6 @@ do_fast_fallback_getaddrinfo(void *ptr)
         IPV6_HOSTNAME_RESOLVED : IPV4_HOSTNAME_RESOLVED;
 
         if (shared->notify != -1 && (write(shared->notify, &notification, 1)) < 0) {
-            entry->err = errno;
             entry->has_syserr = true;
         }
         if (--(entry->refcount) == 0) {

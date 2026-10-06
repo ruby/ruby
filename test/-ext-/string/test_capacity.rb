@@ -82,15 +82,37 @@ class Test_StringCapacity < Test::Unit::TestCase
     capacity = capa(s)
     assert_operator(capacity, :>=, s.bytesize)
 
-    Bug::String.tmp_frozen_no_embed_acquire_release(s)
+    Bug::String.no_gvl_safe_acquire_release(s)
 
     assert_equal(capacity, capa(s))
+  end
+
+  def test_encode_bang_capacity_with_multibyte_terminator
+    s = smallest_slot_utf16le_string
+    assert(Bug::String.cstr_embedded?(s))
+
+    s.encode!("UTF-8")
+
+    # The UTF-8 form no longer fits in the slot so the buffer is on heap.
+    refute(Bug::String.cstr_embedded?(s))
+
+    # and sized precisely
+    assert_equal(s.bytesize, capa(s))
   end
 
   private
 
   def capa(str)
     Bug::String.capacity(str)
+  end
+
+  # A UTF-16LE string that fills the smallest slot, so that its UTF-8 form
+  # (1.5x as long) cannot stay embedded.
+  def smallest_slot_utf16le_string
+    embed_capa = pool_slot_size(0) - embed_header_size
+    str = ("\u{30AF}" * ((embed_capa - 2) / 2)).encode("UTF-16LE").b
+    str.force_encoding("UTF-16LE")
+    str
   end
 
   def multibyte_terminator_string

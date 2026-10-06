@@ -147,12 +147,12 @@ jobs:
 
       - uses: ./.github/actions/setup/ubuntu
 
-      - uses: ruby/setup-ruby@e8944e80fb94b20106697132f8c20c665fab29e9 # v1.325.0
+      - uses: ruby/setup-ruby@14594264cd68ce8a2345dd349bc3d138a4ef85c8 # v1.327.0
         with:
           ruby-version: '3.1'
           bundler: none
 
-      - uses: taiki-e/install-action@dfae9bf3d6f6c6f20ef4ebb3486c01a51341ff12 # v2.87.18
+      - uses: taiki-e/install-action@83ac0ad63c0167e6f06796fab0fce28db1bf3db0 # v2.87.22
         with:
           tool: nextest@0.9
         if: ${{ matrix.test_task == 'zjit-check' }}
@@ -216,10 +216,16 @@ jobs:
         continue-on-error: true
         timeout-minutes: 3
 
+      - name: Set up crash dumps
+        run: |
+          mkdir "${GITHUB_WORKSPACE}/crashdumps"
+          echo "${GITHUB_WORKSPACE}/crashdumps/core.%p" | sudo tee /proc/sys/kernel/core_pattern
+
       - name: make ${{ matrix.test_task }}
         run: |
           test -n "${LAUNCHABLE_STDOUT}" && exec 1> >(tee "${LAUNCHABLE_STDOUT}")
           test -n "${LAUNCHABLE_STDERR}" && exec 2> >(tee "${LAUNCHABLE_STDERR}")
+          ulimit -c unlimited
 
           set -x
           make -s ${{ matrix.test_task }} ${TESTS:+TESTS="$TESTS"} \
@@ -238,6 +244,7 @@ jobs:
           CLANG_PATH: ${{ matrix.clang_path }}
           LAUNCHABLE_STDOUT: ${{ steps.launchable.outputs.stdout_report_path }}
           LAUNCHABLE_STDERR: ${{ steps.launchable.outputs.stderr_report_path }}
+          LAUNCHABLE_TOKEN: '' # see .github/actions/crashdumps
         continue-on-error: ${{ matrix.continue-on-test_task || false }}
 
       - name: Dump crash logs
@@ -246,6 +253,12 @@ jobs:
         run: |
           tail --verbose --lines=+1 rb_crash_*.txt
           exit 1
+
+      - name: Upload crash dumps
+        uses: ./.github/actions/crashdumps
+        with:
+          name: crashdumps-${{ github.job }}-${{ strategy.job-index }}
+        if: ${{ always() && hashFiles('crashdumps/core.*') != '' }}
 
       - uses: ./.github/actions/slack
         with:

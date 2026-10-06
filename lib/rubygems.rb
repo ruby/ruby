@@ -1331,6 +1331,11 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
           end
         end
 
+        # RubyGems owns this namespace. Bundler lists copies of some of these
+        # files, and mapping them here would make requiring RubyGems' own file
+        # activate the default Bundler.
+        next if file.start_with?("rubygems/")
+
         spec.activate if already_loaded?(file)
 
         @path_to_default_spec_map[file] = spec

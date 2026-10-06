@@ -41,6 +41,8 @@ module Prism
       incorrect += [
         # https://bugs.ruby-lang.org/issues/21945
         "and_or_with_suffix.txt",
+        # https://bugs.ruby-lang.org/issues/22310
+        "pattern_alternation_non_captures.txt",
       ]
     end
 

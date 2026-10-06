@@ -22,6 +22,7 @@ permissions:
 
 jobs:
   make:
+    continue-on-error: ${{ matrix.os == '11-arm' }}
     strategy:
       matrix:
         include:
@@ -67,7 +68,7 @@ jobs:
       - run: md build
         working-directory:
 
-      - uses: ruby/setup-ruby@e8944e80fb94b20106697132f8c20c665fab29e9 # v1.325.0
+      - uses: ruby/setup-ruby@14594264cd68ce8a2345dd349bc3d138a4ef85c8 # v1.327.0
         with:
           # windows-11-arm has only 3.4.1, 3.4.2, 3.4.3, head
           ruby-version: ${{ !endsWith(matrix.os, 'arm') && '3.1' || '3.4' }}
@@ -119,7 +120,7 @@ jobs:
         run: |
           git -C "%VCPKG_INSTALLATION_ROOT%" pull --quiet
           call "%VCPKG_INSTALLATION_ROOT%\bootstrap-vcpkg.bat"
-          vcpkg install
+          vcpkg install --overlay-triplets=.github/vcpkg-triplets
         working-directory: src
 
       - name: setup env
@@ -165,6 +166,7 @@ jobs:
           ../src/win32/configure.bat --disable-install-doc
           --with-opt-dir=%RUBY_OPT_DIR%
           --with-gmp
+          --enable-debug-env
 
       - run: nmake prepare-vcpkg
 
@@ -197,10 +199,32 @@ jobs:
         if: ${{ matrix.test_task != 'test-bundled-gems' }}
         timeout-minutes: 3
 
-      - run: nmake ${{ matrix.test_task || 'check' }}
+      # A minidump with data segments, handles, unloaded modules, the PEB and
+      # TEBs, the memory map and thread info (0x1925).  The heap is left out
+      # to keep the dumps small.
+      - name: Set up crash dumps
+        run: |
+          md "%GITHUB_WORKSPACE%\crashdumps"
+          reg add "HKLM\SOFTWARE\Microsoft\Windows\Windows Error Reporting\LocalDumps" /v DumpFolder /t REG_EXPAND_SZ /d "%GITHUB_WORKSPACE%\crashdumps" /f
+          reg add "HKLM\SOFTWARE\Microsoft\Windows\Windows Error Reporting\LocalDumps" /v DumpCount /t REG_DWORD /d 50 /f
+          reg add "HKLM\SOFTWARE\Microsoft\Windows\Windows Error Reporting\LocalDumps" /v DumpType /t REG_DWORD /d 0 /f
+          reg add "HKLM\SOFTWARE\Microsoft\Windows\Windows Error Reporting\LocalDumps" /v CustomDumpFlags /t REG_DWORD /d 0x1925 /f
+
+      # A dump carries part of the environment, so the test processes run
+      # without LAUNCHABLE_TOKEN (only the Launchable post step uses it), and
+      # no dump is written after this step.
+      - name: nmake ${{ matrix.test_task || 'check' }}
+        run: |
+          set LAUNCHABLE_TOKEN=
+          nmake ${{ matrix.test_task || 'check' }}
         env:
           RUBY_TESTOPTS: -j${{ env.TEST_JOBS || 4 }}
+          RUBY_DEBUG: wer
         timeout-minutes: 70
+
+      - name: Stop crash dumps
+        run: reg delete "HKLM\SOFTWARE\Microsoft\Windows\Windows Error Reporting\LocalDumps" /f
+        if: ${{ always() }}
 
       - run: nmake binary-package
         if: ${{ matrix.test_task == 'check' }}
@@ -224,6 +248,28 @@ jobs:
           & "$root\bin\ruby.exe" -v -ropenssl -rfiddle -rpsych -rzlib -e 'abort "configure_args has an absolute path: #{RbConfig::CONFIG[%q(configure_args)]}" if RbConfig::CONFIG[%q(configure_args)] =~ /\b[A-Za-z]:[\/\\]/; puts %q(binary package OK)'
           if ($LASTEXITCODE -ne 0) { throw "smoke test failed" }
         timeout-minutes: 5
+
+      - name: List crash dumps
+        run: dir "%GITHUB_WORKSPACE%\crashdumps"
+        if: ${{ always() && hashFiles('crashdumps/**') != '' }}
+
+      - name: Upload crash dumps
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: crashdumps-${{ matrix.os }}${{ case(matrix.target == 'x86', '-x86', '') }}-${{ matrix.test_task }}
+          path: |
+            crashdumps
+            build/*.exe
+            build/*.dll
+            build/**/*.pdb
+            !build/**/vc140.pdb
+            build/.ext/**/*.so
+            build/.bundle/**/*.so
+            src/vcpkg_installed/*/bin
+          include-hidden-files: true
+          retention-days: 7
+          overwrite: true
+        if: ${{ always() && hashFiles('crashdumps/**') != '' }}
 
       - uses: ./.github/actions/slack
         with:
@@ -269,7 +315,7 @@ jobs:
       - run: md build
         working-directory:
 
-      - uses: ruby/setup-ruby@e8944e80fb94b20106697132f8c20c665fab29e9 # v1.325.0
+      - uses: ruby/setup-ruby@14594264cd68ce8a2345dd349bc3d138a4ef85c8 # v1.327.0
         with:
           ruby-version: '3.1'
           bundler: none

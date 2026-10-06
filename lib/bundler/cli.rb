@@ -177,7 +177,7 @@ module Bundler
         else
           puts File.read("#{man_path}/#{File.basename(man_page)}.ronn")
         end
-      elsif command_path = Bundler.which("bundler-#{cli}")
+      elsif command_path = self.class.bundler_command_path(cli)
         Kernel.exec(command_path, "--help")
       else
         super
@@ -189,9 +189,21 @@ module Bundler
         return Bundler::Plugin.exec_command(command, ARGV[1..-1])
       end
 
-      return super unless command_path = Bundler.which("bundler-#{command}")
+      return super unless command_path = bundler_command_path(command)
 
       Kernel.exec(command_path, *ARGV[1..-1])
+    end
+
+    # Only PATH is searched, unlike Bundler.which, which also finds a file in
+    # the current directory and returns a bare name that Kernel.exec cannot run.
+    def self.bundler_command_path(command)
+      ENV.fetch("PATH", "").split(File::PATH_SEPARATOR).each do |path|
+        path = path[1..-2] if path.start_with?('"') && path.end_with?('"')
+        command_path = Bundler.find_executable(File.expand_path("bundler-#{command}", path))
+        return command_path if command_path
+      end
+
+      nil
     end
 
     desc "init [OPTIONS]", "Generates a Gemfile into the current working directory"

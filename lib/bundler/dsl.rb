@@ -17,7 +17,7 @@ module Bundler
     VALID_PLATFORMS = Bundler::CurrentRuby::PLATFORM_MAP.keys.freeze
 
     VALID_KEYS = %w[group groups git path glob name branch ref tag require submodules
-                    platform platforms source install_if force_ruby_platform].freeze
+                    platform platforms source install_if force_ruby_platform sparse_checkout].freeze
 
     GITHUB_PULL_REQUEST_URL = %r{\Ahttps://github\.com/([A-Za-z0-9_\-\.]+/[A-Za-z0-9_\-\.]+)/pull/(\d+)\z}
     GITLAB_MERGE_REQUEST_URL = %r{\Ahttps://gitlab\.com/([A-Za-z0-9_\-\./]+)/-/merge_requests/(\d+)\z}

@@ -13,11 +13,11 @@ test-unit           3.7.8   https://github.com/test-unit/test-unit
 rexml               3.4.4   https://github.com/ruby/rexml
 rss                 0.3.3   https://github.com/ruby/rss
 net-imap            0.6.7   https://github.com/ruby/net-imap
-net-smtp            0.5.1   https://github.com/ruby/net-smtp
+net-smtp            0.5.2   https://github.com/ruby/net-smtp
 matrix              0.4.3   https://github.com/ruby/matrix
 prime               0.1.4   https://github.com/ruby/prime
 rbs                 4.2.0   https://github.com/ruby/rbs
-typeprof            0.33.1  https://github.com/ruby/typeprof
+typeprof            0.33.2  https://github.com/ruby/typeprof
 debug               1.11.1  https://github.com/ruby/debug 6510cfbc7496c55ebbefa437a25c17ca58f7c5eb
 racc                1.8.1   https://github.com/ruby/racc
 mutex_m             0.3.0   https://github.com/ruby/mutex_m
@@ -37,7 +37,7 @@ ostruct             0.6.3   https://github.com/ruby/ostruct
 pstore              0.2.1   https://github.com/ruby/pstore
 benchmark           0.5.0   https://github.com/ruby/benchmark
 logger              1.7.0   https://github.com/ruby/logger
-rdoc                8.0.0   https://github.com/ruby/rdoc a9ebd59d3a49b1e929ae8658f84d3a29a360e10e
+rdoc                8.1.0   https://github.com/ruby/rdoc
 win32ole            1.9.3   https://github.com/ruby/win32ole
 irb                 1.18.0  https://github.com/ruby/irb ac42eaaa88e6399384c1a56cc948c4b2528a9cc2
 reline              0.7.0   https://github.com/ruby/reline

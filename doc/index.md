@@ -56,6 +56,7 @@ Get involved with the Ruby community:
 - [Reporting Issues](rdoc-ref:contributing/reporting_issues.md)
 - [Building Ruby](rdoc-ref:contributing/building_ruby.md)
 - [Testing Ruby](rdoc-ref:contributing/testing_ruby.md)
+- [Debugging Ruby](rdoc-ref:contributing/debugging_ruby.md)
 - [Issue Tracker](https://bugs.ruby-lang.org/projects/ruby-master/issues)
 
 ## Additional Resources

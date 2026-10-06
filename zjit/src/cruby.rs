@@ -756,6 +756,12 @@ impl VALUE {
         unsafe { rb_IMEMO_TYPE_P(self, imemo_ment) == 1 }
     }
 
+    /// Return true if `self` is an ISEQ (`imemo_iseq`)
+    pub fn iseq_p(self) -> bool {
+        if self == VALUE(0) { return false; }
+        unsafe { rb_IMEMO_TYPE_P(self, imemo_iseq) == 1 }
+    }
+
     /// Assert that `self` is a method entry in debug builds
     pub fn as_cme(self) -> *const rb_callable_method_entry_t {
         let ptr: *const rb_callable_method_entry_t = self.as_ptr();

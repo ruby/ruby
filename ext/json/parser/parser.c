@@ -592,19 +592,15 @@ static void cursor_position(JSON_ParserState *state, long *line_out, long *colum
     }
 
     const char *cursor = state->cursor;
-    long column = 0;
     long line = 1;
 
-    while (cursor >= state->start) {
-        if (*cursor-- == '\n') {
-            line++;
-            break;
-        }
-        column++;
+    while (cursor > state->start && cursor[-1] != '\n') {
+        cursor--;
     }
+    long column = rb_enc_strlen(cursor, state->cursor, enc_utf8) + 1;
 
-    while (cursor >= state->start) {
-        if (*cursor-- == '\n') {
+    while (cursor > state->start) {
+        if (*--cursor == '\n') {
             line++;
         }
     }
@@ -631,17 +627,15 @@ static VALUE build_parse_error_message(const char *format, JSON_ParserState *sta
         }
 
         if (len) {
+            if (len == PARSE_ERROR_FRAGMENT_LEN) {
+                // Only trim when the byte limit splits a multibyte character.
+                while (len && (unsigned char)ptr[len] >= 0x80 && (unsigned char)ptr[len] < 0xC0) {
+                    len--;
+                }
+            }
+
             buffer[0] = '\'';
             MEMCPY(buffer + 1, ptr, char, len);
-
-            while (buffer[len] >= 0x80 && buffer[len] < 0xC0) { // Is continuation byte
-                len--;
-            }
-
-            if (buffer[len] >= 0xC0) { // multibyte character start
-                len--;
-            }
-
             buffer[len + 1] = '\'';
             buffer[len + 2] = '\0';
             ptr = (const char *)buffer;
@@ -1815,7 +1809,7 @@ ALWAYS_INLINE(static) bool json_parse_any(JSON_ParserState *state, JSON_ParserCo
         if (RB_LIKELY(peek(state) == '"')) {
             VALUE string = json_parse_string(state, config, true);
             if (UNDEF_P(string)) {
-                if (resumable) {
+                if (resumable && eos(state)) {
                     state->cursor = start;
                     return false;
                 } else {
@@ -2021,7 +2015,15 @@ static int parser_config_init_i(VALUE key, VALUE val, VALUE data)
     else if (key == sym_allow_invalid_escape)       { config->allow_invalid_escape = RTEST(val); }
     else if (key == sym_symbolize_names)            { config->symbolize_names = RTEST(val); }
     else if (key == sym_freeze)                     { config->freeze = RTEST(val); }
-    else if (key == sym_on_load)                    { parser_config_wb_write(self, &config->on_load_proc, RTEST(val) ? val : Qfalse); }
+    else if (key == sym_on_load)                    {
+        if (RTEST(val) && !rb_obj_is_proc(val)) {
+            val = rb_check_funcall(val, rb_intern("to_proc"), 0, NULL);
+            if (val == Qundef || !rb_obj_is_proc(val)) {
+                rb_raise(rb_eTypeError, "on_load must be a Proc");
+            }
+        }
+        parser_config_wb_write(self, &config->on_load_proc, RTEST(val) ? val : Qfalse);
+    }
     else if (key == sym_allow_duplicate_key)        { config->allow_duplicate_key = RTEST(val); }
     else if (key == sym_decimal_class)              {
         if (RTEST(val)) {

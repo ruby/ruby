@@ -214,7 +214,9 @@ module TestParallel
     end
 
     def test_hungup
-      spawn_runner("--worker-timeout=1", "--retry", "test4test_hungup.rb", env: {"RUBY_CRASH_REPORT"=>nil})
+      opts = {env: {"RUBY_CRASH_REPORT"=>nil, "RUBY_ON_BUG"=>nil}}
+      opts[:rlimit_core] = 0 if defined?(Process::RLIMIT_CORE) # the hung worker is killed by SIGSEGV
+      spawn_runner("--worker-timeout=1", "--retry", "test4test_hungup.rb", **opts)
       buf = ::TestParallel.timeout(TIMEOUT) {@test_out.read}
       assert_match(/^Retrying hung up testcases\.+$/, buf)
       assert_match(/^2 tests,.* 0 failures,/, buf)

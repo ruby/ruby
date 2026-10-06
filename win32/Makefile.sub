@@ -328,6 +328,10 @@ MISSING = $(MISSING) explicit_bzero.obj memrchr.obj
 !endif
 DLNOBJS = dln.obj
 
+!if !defined(INSTALL_STATIC_LIBRARY)
+INSTALL_STATIC_LIBRARY = yes
+!endif
+
 !if "$(ARCH)" == "x64"
 COROUTINE_OBJ = coroutine/win64/Context.obj
 COROUTINE_SRC = $(COROUTINE_OBJ:.obj=.asm)
@@ -342,7 +346,7 @@ COROUTINE_SRC = $(COROUTINE_OBJ:.obj=.asm)
 !endif
 COROUTINE_H = $(COROUTINE_OBJ:.obj=.h)
 COROUTINE_TEST_LINK = $(CC) $(COROUTINE_TEST_OBJS) $(COROUTINE_OBJ) $(MAINLIBS) $(OUTFLAG)$(COROUTINE_TEST) -link $(LDFLAGS) $(XLDFLAGS)
-COROUTINE_TEST_RUN = .\$(COROUTINE_TEST)
+COROUTINE_TEST_RUN = .\$(COROUTINE_TEST:/=\)
 
 ARFLAGS = -machine:$(MACHINE) -out:
 LD = $(CC)
@@ -919,9 +923,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub 
 #define restrict __restrict
 #endif
 #define NEED_IO_SEEK_BETWEEN_RW 1
-!if "$(MACHINE)" == "x86" || "$(ARCH)" == "x64"
 #define STACK_GROW_DIRECTION -1
-!endif
 #define COROUTINE_H "$(COROUTINE_H)"
 #define THREAD_IMPL_H "$(THREAD_IMPL_H)"
 #define THREAD_IMPL_SRC "$(THREAD_IMPL_SRC)"
@@ -1060,6 +1062,7 @@ s,@rubyw_install_name@,$(RUBYW_INSTALL_NAME),;t t
 s,@RUBYW_INSTALL_NAME@,$(RUBYW_INSTALL_NAME),;t t
 s,@RUBY_SO_NAME@,$(RUBY_SO_NAME),;t t
 s,@LIBRUBY_A@,$$(RUBY_SO_NAME)-static.lib,;t t
+s,@INSTALL_STATIC_LIBRARY@,$(INSTALL_STATIC_LIBRARY),;t t
 s,@LIBRUBY_SO@,$$(RUBY_SO_NAME).dll,;t t
 s,@LIBRUBY_ALIASES@,$(LIBRUBY_ALIASES),;t t
 s,@LIBRUBY_RELATIVE@,$(LIBRUBY_RELATIVE),;t t

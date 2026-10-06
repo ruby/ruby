@@ -830,8 +830,9 @@ set_i_add_p(VALUE set, VALUE item)
 static VALUE
 set_i_delete(VALUE set, VALUE item)
 {
+    st_data_t item_data = (st_data_t)item;
     rb_check_frozen(set);
-    if (set_table_delete(RSET_TABLE(set), (st_data_t *)&item)) {
+    if (set_table_delete(RSET_TABLE(set), &item_data)) {
         set_compact_after_delete(set);
     }
     return set;
@@ -852,8 +853,9 @@ set_i_delete(VALUE set, VALUE item)
 static VALUE
 set_i_delete_p(VALUE set, VALUE item)
 {
+    st_data_t item_data = (st_data_t)item;
     rb_check_frozen(set);
-    if (set_table_delete(RSET_TABLE(set), (st_data_t *)&item)) {
+    if (set_table_delete(RSET_TABLE(set), &item_data)) {
         set_compact_after_delete(set);
         return set;
     }
@@ -1142,6 +1144,8 @@ set_i_clear(VALUE set)
 
 struct set_intersection_data {
     VALUE set;
+    VALUE other_set;
+    VALUE new_set;
     set_table *into;
     set_table *other;
 };
@@ -1149,7 +1153,7 @@ struct set_intersection_data {
 static int
 set_intersection_i(st_data_t key, st_data_t tmp)
 {
-    struct set_intersection_data *data = (struct set_intersection_data *)tmp;
+    struct set_intersection_data *data = MEMO_FOR(struct set_intersection_data, tmp);
     if (set_table_lookup(data->other, key)) {
         set_table_insert_wb(data->into, data->set, key);
     }
@@ -1188,6 +1192,7 @@ set_i_intersection(VALUE set, VALUE other)
     }
     set_table *stable = RSET_TABLE(set);
     set_table *ntable = RSET_TABLE(new_set);
+    VALUE data;
 
     if (rb_obj_is_kind_of(other, rb_cSet)) {
         set_table *otable = RSET_TABLE(other);
@@ -1197,21 +1202,26 @@ set_i_intersection(VALUE set, VALUE other)
             set = other;
         }
 
-        struct set_intersection_data data = {
+        *NEW_PARTIAL_MEMO_FOR(struct set_intersection_data, data, into) = (struct set_intersection_data) {
             .set = new_set,
+            .other_set = other,
+            .new_set = new_set,
             .into = ntable,
-            .other = otable
+            .other = otable,
         };
-        set_iter(set, set_intersection_i, (st_data_t)&data);
+        set_iter(set, set_intersection_i, (st_data_t)data);
     }
     else {
-        struct set_intersection_data data = {
+        *NEW_PARTIAL_MEMO_FOR(struct set_intersection_data, data, into) = (struct set_intersection_data) {
             .set = new_set,
+            .other_set = other,
+            .new_set = new_set,
             .into = ntable,
-            .other = stable
+            .other = stable,
         };
-        rb_block_call(other, enum_method_id(other), 0, 0, set_intersection_block, (VALUE)&data);
+        rb_block_call(other, enum_method_id(other), 0, 0, set_intersection_block, data);
     }
+    RB_GC_GUARD(data);
 
     return new_set;
 }
@@ -1285,9 +1295,10 @@ set_merge_enum_into(VALUE set, VALUE arg)
         for (i=0; i<RARRAY_LEN(arg); i++) {
             set_table_insert_wb(into, set, RARRAY_AREF(arg, i));
         }
+        RB_GC_GUARD(arg);
     }
     else {
-        rb_block_call(arg, enum_method_id(arg), 0, 0, set_merge_block, (VALUE)set);
+        rb_block_call(arg, enum_method_id(arg), 0, 0, set_merge_block, set);
     }
 }
 
@@ -1529,16 +1540,18 @@ set_i_union(VALUE set, VALUE other)
 static int
 set_remove_i(st_data_t key, st_data_t from)
 {
-    set_table_delete((struct set_table *)from, (st_data_t *)&key);
+    st_data_t key_data = (st_data_t)key;
+    set_table_delete((struct set_table *)from, &key_data);
     return ST_CONTINUE;
 }
 
 static VALUE
 set_remove_block(RB_BLOCK_CALL_FUNC_ARGLIST(key, set))
 {
+    st_data_t key_data = (st_data_t)key;
     rb_check_frozen(set);
-    set_table_delete(RSET_TABLE(set), (st_data_t *)&key);
-    return key;
+    set_table_delete(RSET_TABLE(set), &key_data);
+    return (VALUE)key_data;
 }
 
 static void
@@ -1548,7 +1561,7 @@ set_remove_enum_from(VALUE set, VALUE arg)
         set_iter(arg, set_remove_i, (st_data_t)RSET_TABLE(set));
     }
     else {
-        rb_block_call(arg, enum_method_id(arg), 0, 0, set_remove_block, (VALUE)set);
+        rb_block_call(arg, enum_method_id(arg), 0, 0, set_remove_block, set);
     }
     set_compact_after_delete(set);
 }
@@ -2317,7 +2330,8 @@ rb_set_add_no_check(VALUE set, VALUE element)
 bool
 rb_set_delete_no_check(VALUE set, VALUE element)
 {
-    return set_table_delete(RSET_TABLE(set), (st_data_t *)&element) != 0;
+    st_data_t element_data = (st_data_t)element;
+    return set_table_delete(RSET_TABLE(set), &element_data) != 0;
 }
 
 VALUE

@@ -36,6 +36,7 @@ Note: We're only listing outstanding class updates.
       interrupts, including interrupts masked by `Thread.handle_interrupt`.
       As with the existing skip path, `errno` is `0` because the function was
       never called.
+    * `RHASH_TBL` is deprecated.  [[Feature #22232]]
 
 * Array
 
@@ -71,6 +72,20 @@ Note: We're only listing outstanding class updates.
       history from destroyed object spaces, without requesting a stop-the-world
       snapshot. Unscoped `GC.stat`, `GC.count`, and `GC.total_time` retain their
       current-Ractor behavior.
+    * `GC.stat` reports a new key, `:global_gc_count`: the number of
+      stop-the-world global garbage collection cycles the current Ractor
+      initiated. Each global collection is attributed to exactly one Ractor,
+      so the values sum across Ractors. `GC.stat(:global_gc_count,
+      scope: :global)` reports the process total, including the counts of
+      terminated Ractors.
+    * A global garbage collection is not counted in `:major_gc_count`.
+      `:count` equals `:minor_gc_count` plus `:major_gc_count` plus
+      `:global_gc_count` in both scopes. When another Ractor's object space
+      exists, including one left by a terminated Ractor that is not yet
+      absorbed, or one was absorbed since the last global collection,
+      `GC.start` runs a global collection by default, so it increments
+      `:global_gc_count` rather than `:major_gc_count`; pass `global: false`
+      for a local major collection.
     * Global compaction no longer counts overlapping CPU intervals in scalar GC
       timing statistics. Profiler wall-time intervals are unchanged.
 
@@ -215,7 +230,7 @@ They are still available on rubygems.org and can be installed with
 ### The following default gems are updated.
 
 * RubyGems 4.1.0.beta1
-  * 4.0.3 to [v4.0.4][RubyGems-v4.0.4], [v4.0.5][RubyGems-v4.0.5], [v4.0.6][RubyGems-v4.0.6], [v4.0.7][RubyGems-v4.0.7], [v4.0.8][RubyGems-v4.0.8], [v4.0.9][RubyGems-v4.0.9], [v4.0.10][RubyGems-v4.0.10], [v4.0.11][RubyGems-v4.0.11], [v4.0.12][RubyGems-v4.0.12], [v4.0.13][RubyGems-v4.0.13], [v4.0.14][RubyGems-v4.0.14], [v4.0.15][RubyGems-v4.0.15], [v4.0.16][RubyGems-v4.0.16], [v4.0.17][RubyGems-v4.0.17], [v4.0.18][RubyGems-v4.0.18], [v4.0.19][RubyGems-v4.0.19], [v4.0.20][RubyGems-v4.0.20], [v4.0.21][RubyGems-v4.0.21], [v4.1.0.beta1][RubyGems-v4.1.0.beta1]
+  * 4.0.3 to [v4.0.4][RubyGems-v4.0.4], [v4.0.5][RubyGems-v4.0.5], [v4.0.6][RubyGems-v4.0.6], [v4.0.7][RubyGems-v4.0.7], [v4.0.8][RubyGems-v4.0.8], [v4.0.9][RubyGems-v4.0.9], [v4.0.10][RubyGems-v4.0.10], [v4.0.11][RubyGems-v4.0.11], [v4.0.12][RubyGems-v4.0.12], [v4.0.13][RubyGems-v4.0.13], [v4.0.14][RubyGems-v4.0.14], [v4.0.15][RubyGems-v4.0.15], [v4.0.16][RubyGems-v4.0.16], [v4.0.17][RubyGems-v4.0.17], [v4.0.18][RubyGems-v4.0.18], [v4.0.19][RubyGems-v4.0.19], [v4.0.20][RubyGems-v4.0.20], [v4.0.21][RubyGems-v4.0.21], [v4.0.22][RubyGems-v4.0.22], [v4.1.0.beta1][RubyGems-v4.1.0.beta1]
 * bundler 4.1.0.beta1
   * 4.0.3 to [v4.0.4][bundler-v4.0.4], [v4.0.5][bundler-v4.0.5], [v4.0.6][bundler-v4.0.6], [v4.0.7][bundler-v4.0.7], [v4.0.8][bundler-v4.0.8], [v4.0.9][bundler-v4.0.9], [v4.0.10][bundler-v4.0.10], [v4.0.11][bundler-v4.0.11], [v4.0.12][bundler-v4.0.12], [v4.0.13][bundler-v4.0.13], [v4.0.14][bundler-v4.0.14], [v4.0.15][bundler-v4.0.15], [v4.0.16][bundler-v4.0.16], [v4.0.17][bundler-v4.0.17]
 * erb 6.1.0
@@ -262,9 +277,11 @@ They are still available on rubygems.org and can be installed with
   * 0.3.2 to [0.3.3][rss-0.3.3]
 * net-imap 0.6.7
   * 0.6.2 to [v0.6.3][net-imap-v0.6.3], [v0.6.4][net-imap-v0.6.4], [v0.6.4.1][net-imap-v0.6.4.1], [v0.6.5][net-imap-v0.6.5], [v0.6.6][net-imap-v0.6.6], [v0.6.7][net-imap-v0.6.7]
+* net-smtp 0.5.2
+  * 0.5.1 to [v0.5.2][net-smtp-v0.5.2]
 * rbs 4.2.0
   * 3.10.0 to [v3.10.1][rbs-v3.10.1], [v3.10.2][rbs-v3.10.2], [v3.10.3][rbs-v3.10.3], [v3.10.4][rbs-v3.10.4], [v4.0.0.dev.1][rbs-v4.0.0.dev.1], [v4.0.0.dev.2][rbs-v4.0.0.dev.2], [v4.0.0.dev.3][rbs-v4.0.0.dev.3], [v4.0.0.dev.4][rbs-v4.0.0.dev.4], [v4.0.0.dev.5][rbs-v4.0.0.dev.5], [v4.0.0][rbs-v4.0.0], [v4.0.1.dev.1][rbs-v4.0.1.dev.1], [v4.0.1.dev.2][rbs-v4.0.1.dev.2], [v4.0.1][rbs-v4.0.1], [v4.0.2][rbs-v4.0.2], [v4.0.3][rbs-v4.0.3], [v4.1.0.pre.1][rbs-v4.1.0.pre.1], [v4.1.0.pre.2][rbs-v4.1.0.pre.2], [v4.1.0][rbs-v4.1.0], [v4.1.1.pre.1][rbs-v4.1.1.pre.1], [v4.1.1][rbs-v4.1.1], [v4.1.2][rbs-v4.1.2], [v4.1.3][rbs-v4.1.3], [v4.2.0.pre.1][rbs-v4.2.0.pre.1], [v4.2.0][rbs-v4.2.0]
-* typeprof 0.33.1
+* typeprof 0.33.2
 * mutex_m 0.3.0
 * bigdecimal 4.1.3
   * 4.0.1 to [v4.1.0][bigdecimal-v4.1.0], [v4.1.1][bigdecimal-v4.1.1], [v4.1.2][bigdecimal-v4.1.2], [v4.1.3][bigdecimal-v4.1.3]
@@ -280,8 +297,8 @@ They are still available on rubygems.org and can be installed with
   * 0.1.12 to [v0.1.13][repl_type_completor-v0.1.13], [v0.1.14][repl_type_completor-v0.1.14], [v0.1.15][repl_type_completor-v0.1.15], [v0.1.16][repl_type_completor-v0.1.16]
 * pstore 0.2.1
   * 0.2.0 to [v0.2.1][pstore-v0.2.1]
-* rdoc 8.0.0
-  * 7.0.3 to [v7.0.4][rdoc-v7.0.4], [v7.1.0][rdoc-v7.1.0], [v7.2.0][rdoc-v7.2.0], [v8.0.0][rdoc-v8.0.0]
+* rdoc 8.1.0
+  * 7.0.3 to [v7.0.4][rdoc-v7.0.4], [v7.1.0][rdoc-v7.1.0], [v7.2.0][rdoc-v7.2.0], [v8.0.0][rdoc-v8.0.0], [v8.1.0][rdoc-v8.1.0]
 * win32ole 1.9.3
   * 1.9.2 to [v1.9.3][win32ole-v1.9.3]
 * irb 1.18.0
@@ -295,13 +312,36 @@ Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for det
 
 ## Supported platforms
 
-* Support code for the following platforms has been removed.  Note
-  that all of them reached end of life many years ago and Ruby has
-  long been unbuildable on them.
+* Support code for the following platforms has been removed.  Their
+  vendors or distributors have ended support, there is no environment to
+  test Ruby on them, and none of them has a platform maintainer.
 
-    * Interix (Windows Services for UNIX)
-    * SunOS 4 (Solaris, i.e. SunOS 5, is unaffected)
+    * AmigaOS
+    * AtheOS
     * BSD/OS (BSDi)
+    * ESIX
+    * EWS-UX (NEC EWS4800)
+    * FreeBSD, NetBSD and OpenBSD with a.out binaries
+    * GNU/kFreeBSD
+    * GNU/kOpenSolaris
+    * HI-UX/MPP
+    * HP-UX on the HP 9000 Series 300
+    * Interix (Windows Services for UNIX)
+    * IRIX
+    * MirOS BSD
+    * NeXTSTEP, OpenStep and Rhapsody
+    * OSF/1 (Tru64 UNIX)
+    * QNX Neutrino
+    * SunOS 4 (Solaris, i.e. SunOS 5, is unaffected)
+    * System V Release 4
+    * UNICOS/mp (Cray X1)
+    * UX/PDS
+
+* Support code for the following old versions has been removed.
+
+    * Cygwin 1.3 and earlier
+    * Solaris 9 and earlier
+    * Linux 2.6.23 and earlier (RHEL 5)
 
 * Windows 10 1703 or later no longer needs the `LongPathsEnabled` registry
   value to use paths longer than 260 characters.  This applies to any process
@@ -553,6 +593,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #22185]: https://bugs.ruby-lang.org/issues/22185
 [Feature #22205]: https://bugs.ruby-lang.org/issues/22205
 [Feature #22226]: https://bugs.ruby-lang.org/issues/22226
+[Feature #22232]: https://bugs.ruby-lang.org/issues/22232
 [Feature #22238]: https://bugs.ruby-lang.org/issues/22238
 [Feature #22297]: https://bugs.ruby-lang.org/issues/22297
 [PR #17201]: https://github.com/ruby/ruby/pull/17201
@@ -575,6 +616,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [RubyGems-v4.0.19]: https://github.com/rubygems/rubygems/releases/tag/v4.0.19
 [RubyGems-v4.0.20]: https://github.com/rubygems/rubygems/releases/tag/v4.0.20
 [RubyGems-v4.0.21]: https://github.com/rubygems/rubygems/releases/tag/v4.0.21
+[RubyGems-v4.0.22]: https://github.com/rubygems/rubygems/releases/tag/v4.0.22
 [RubyGems-v4.1.0.beta1]: https://github.com/rubygems/rubygems/releases/tag/v4.1.0.beta1
 [bundler-v4.0.4]: https://github.com/rubygems/rubygems/releases/tag/bundler-v4.0.4
 [bundler-v4.0.5]: https://github.com/rubygems/rubygems/releases/tag/bundler-v4.0.5
@@ -650,6 +692,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [net-imap-v0.6.5]: https://github.com/ruby/net-imap/releases/tag/v0.6.5
 [net-imap-v0.6.6]: https://github.com/ruby/net-imap/releases/tag/v0.6.6
 [net-imap-v0.6.7]: https://github.com/ruby/net-imap/releases/tag/v0.6.7
+[net-smtp-v0.5.2]: https://github.com/ruby/net-smtp/releases/tag/v0.5.2
 [rbs-v3.10.1]: https://github.com/ruby/rbs/releases/tag/v3.10.1
 [rbs-v3.10.2]: https://github.com/ruby/rbs/releases/tag/v3.10.2
 [rbs-v3.10.3]: https://github.com/ruby/rbs/releases/tag/v3.10.3
@@ -691,6 +734,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [rdoc-v7.1.0]: https://github.com/ruby/rdoc/releases/tag/v7.1.0
 [rdoc-v7.2.0]: https://github.com/ruby/rdoc/releases/tag/v7.2.0
 [rdoc-v8.0.0]: https://github.com/ruby/rdoc/releases/tag/v8.0.0
+[rdoc-v8.1.0]: https://github.com/ruby/rdoc/releases/tag/v8.1.0
 [win32ole-v1.9.3]: https://github.com/ruby/win32ole/releases/tag/v1.9.3
 [irb-v1.17.0]: https://github.com/ruby/irb/releases/tag/v1.17.0
 [irb-v1.18.0]: https://github.com/ruby/irb/releases/tag/v1.18.0

@@ -6941,6 +6941,9 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
         keyword->table = (ID *)&ISEQ_BODY(iseq)->local_table[keyword_start_index];
     }
 
+    local_table_for_iseq = NULL;
+    if (idtmp) ALLOCV_END(idtmp);
+
     //********STEP 5************
     // Goal: compile anything that needed to be compiled
     if (optionals_list && optionals_list->size) {

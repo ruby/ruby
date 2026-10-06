@@ -2096,17 +2096,12 @@ lazy_map(VALUE obj)
     return lazy_add_method(obj, 0, 0, Qnil, Qnil, &lazy_map_funcs);
 }
 
-struct flat_map_i_arg {
-    struct MEMO *result;
-    long index;
-};
-
 static VALUE
 lazy_flat_map_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, y))
 {
-    struct flat_map_i_arg *arg = (struct flat_map_i_arg *)y;
+    struct MEMO *arg = MEMO_CAST(y);
 
-    return lazy_yielder_yield(arg->result, arg->index, argc, argv);
+    return lazy_yielder_yield(MEMO_CAST(arg->v1), arg->u3.cnt, argc, argv);
 }
 
 static struct MEMO *
@@ -2121,10 +2116,11 @@ lazy_flat_map_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo
         ary = value;
     }
     else if (rb_respond_to(value, id_force) && rb_respond_to(value, id_each)) {
-        struct flat_map_i_arg arg = {.result = result, .index = proc_index};
+        VALUE arg = (VALUE)rb_imemo_memo_new((VALUE)result, Qnil, proc_index);
         LAZY_MEMO_RESET_BREAK(result);
-        rb_block_call(value, id_each, 0, 0, lazy_flat_map_i, (VALUE)&arg);
+        rb_block_call(value, id_each, 0, 0, lazy_flat_map_i, arg);
         if (break_p) LAZY_MEMO_SET_BREAK(result);
+        RB_GC_GUARD(arg);
         return 0;
     }
 
@@ -2279,6 +2275,8 @@ lazy_grep_iter_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long mem
 
     if (!RTEST(chain)) return 0;
     value = rb_proc_call_with_block(entry->proc, 1, &(result->memo_value), Qnil);
+    /* entry is embedded in proc_entry, which only the procs array references */
+    RB_GC_GUARD(proc_entry);
     LAZY_MEMO_SET_VALUE(result, value);
     LAZY_MEMO_RESET_PACKED(result);
 
@@ -2326,6 +2324,7 @@ lazy_grep_v_iter_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long m
 
     if (RTEST(chain)) return 0;
     value = rb_proc_call_with_block(entry->proc, 1, &(result->memo_value), Qnil);
+    RB_GC_GUARD(proc_entry);
     LAZY_MEMO_SET_VALUE(result, value);
     LAZY_MEMO_RESET_PACKED(result);
 
@@ -2447,8 +2446,8 @@ lazy_zip(int argc, VALUE *argv, VALUE obj)
                     rb_raise(rb_eTypeError, "wrong argument type %"PRIsVALUE" (must respond to :each)",
                              rb_obj_class(argv[i]));
                 }
+                rb_ary_push(ary, argv[i]);
             }
-            ary = rb_ary_new4(argc, argv);
             funcs = &lazy_zip_funcs[0];
             break;
         }
@@ -2752,6 +2751,28 @@ static const lazyenum_funcs lazy_with_index_funcs = {
     lazy_with_index_proc, lazy_with_index_size,
 };
 
+static VALUE
+lazy_with_index_from(VALUE obj, VALUE memo)
+{
+    return lazy_add_method(obj, 0, 0, memo, rb_ary_new_from_values(1, &memo),
+                           &lazy_with_index_funcs);
+}
+
+/*
+ * call-seq:
+ *   lazy.each_with_index {|(*args), idx| block }
+ *   lazy.each_with_index
+ *
+ * Equals to <tt>with_index(0)</tt>.
+ *
+ * See Enumerator#with_index.
+ */
+static VALUE
+lazy_each_with_index(VALUE obj)
+{
+    return lazy_with_index_from(obj, LONG2NUM(0));
+}
+
 /*
  * call-seq:
  *   lazy.with_index(offset = 0) {|(*args), idx| block }
@@ -2778,7 +2799,7 @@ lazy_with_index(int argc, VALUE *argv, VALUE obj)
     if (NIL_P(memo))
         memo = LONG2NUM(0);
 
-    return lazy_add_method(obj, 0, 0, memo, rb_ary_new_from_values(1, &memo), &lazy_with_index_funcs);
+    return lazy_with_index_from(obj, memo);
 }
 
 static struct MEMO *
@@ -4573,8 +4594,6 @@ arith_seq_size(VALUE self)
 void
 InitVM_Enumerator(void)
 {
-    ID id_private = rb_intern_const("private");
-
     rb_define_method(rb_mKernel, "to_enum", obj_to_enum, -1);
     rb_define_method(rb_mKernel, "enum_for", obj_to_enum, -1);
 
@@ -4604,42 +4623,36 @@ InitVM_Enumerator(void)
     rb_cLazy = rb_define_class_under(rb_cEnumerator, "Lazy", rb_cEnumerator);
     rb_define_method(rb_mEnumerable, "lazy", enumerable_lazy, 0);
 
-    rb_define_alias(rb_cLazy, "_enumerable_map", "map");
-    rb_define_alias(rb_cLazy, "_enumerable_collect", "collect");
-    rb_define_alias(rb_cLazy, "_enumerable_flat_map", "flat_map");
-    rb_define_alias(rb_cLazy, "_enumerable_collect_concat", "collect_concat");
-    rb_define_alias(rb_cLazy, "_enumerable_select", "select");
-    rb_define_alias(rb_cLazy, "_enumerable_find_all", "find_all");
-    rb_define_alias(rb_cLazy, "_enumerable_filter", "filter");
-    rb_define_alias(rb_cLazy, "_enumerable_filter_map", "filter_map");
-    rb_define_alias(rb_cLazy, "_enumerable_reject", "reject");
-    rb_define_alias(rb_cLazy, "_enumerable_grep", "grep");
-    rb_define_alias(rb_cLazy, "_enumerable_grep_v", "grep_v");
-    rb_define_alias(rb_cLazy, "_enumerable_zip", "zip");
-    rb_define_alias(rb_cLazy, "_enumerable_take", "take");
-    rb_define_alias(rb_cLazy, "_enumerable_take_while", "take_while");
-    rb_define_alias(rb_cLazy, "_enumerable_drop", "drop");
-    rb_define_alias(rb_cLazy, "_enumerable_drop_while", "drop_while");
-    rb_define_alias(rb_cLazy, "_enumerable_uniq", "uniq");
-    rb_define_private_method(rb_cLazy, "_enumerable_with_index", enumerator_with_index, -1);
+    lazy_use_super_method = rb_ident_hash_new_capa(19);
+    rb_vm_register_global_object(lazy_use_super_method);
+#define define_lazy_alias(name) do { \
+        ID name_super = rb_intern_const("_enumerable_" name); \
+        ID name_orig = rb_intern_const(name); \
+        rb_add_alias(rb_cLazy, name_super, name_orig, METHOD_VISI_PRIVATE); \
+        rb_hash_aset(lazy_use_super_method, ID2SYM(name_orig), ID2SYM(name_super)); \
+    } while (0)
 
-    rb_funcall(rb_cLazy, id_private, 1, sym("_enumerable_map"));
-    rb_funcall(rb_cLazy, id_private, 1, sym("_enumerable_collect"));
-    rb_funcall(rb_cLazy, id_private, 1, sym("_enumerable_flat_map"));
-    rb_funcall(rb_cLazy, id_private, 1, sym("_enumerable_collect_concat"));
-    rb_funcall(rb_cLazy, id_private, 1, sym("_enumerable_select"));
-    rb_funcall(rb_cLazy, id_private, 1, sym("_enumerable_find_all"));
-    rb_funcall(rb_cLazy, id_private, 1, sym("_enumerable_filter"));
-    rb_funcall(rb_cLazy, id_private, 1, sym("_enumerable_filter_map"));
-    rb_funcall(rb_cLazy, id_private, 1, sym("_enumerable_reject"));
-    rb_funcall(rb_cLazy, id_private, 1, sym("_enumerable_grep"));
-    rb_funcall(rb_cLazy, id_private, 1, sym("_enumerable_grep_v"));
-    rb_funcall(rb_cLazy, id_private, 1, sym("_enumerable_zip"));
-    rb_funcall(rb_cLazy, id_private, 1, sym("_enumerable_take"));
-    rb_funcall(rb_cLazy, id_private, 1, sym("_enumerable_take_while"));
-    rb_funcall(rb_cLazy, id_private, 1, sym("_enumerable_drop"));
-    rb_funcall(rb_cLazy, id_private, 1, sym("_enumerable_drop_while"));
-    rb_funcall(rb_cLazy, id_private, 1, sym("_enumerable_uniq"));
+    define_lazy_alias("map");
+    define_lazy_alias("collect");
+    define_lazy_alias("flat_map");
+    define_lazy_alias("collect_concat");
+    define_lazy_alias("select");
+    define_lazy_alias("find_all");
+    define_lazy_alias("filter");
+    define_lazy_alias("filter_map");
+    define_lazy_alias("reject");
+    define_lazy_alias("grep");
+    define_lazy_alias("grep_v");
+    define_lazy_alias("zip");
+    define_lazy_alias("take");
+    define_lazy_alias("take_while");
+    define_lazy_alias("drop");
+    define_lazy_alias("drop_while");
+    define_lazy_alias("uniq");
+    define_lazy_alias("with_index");
+    define_lazy_alias("each_with_index");
+
+    rb_obj_freeze(lazy_use_super_method);
 
     rb_define_method(rb_cLazy, "initialize", lazy_initialize, -1);
     rb_define_method(rb_cLazy, "to_enum", lazy_to_enum, -1);
@@ -4670,29 +4683,8 @@ InitVM_Enumerator(void)
     rb_define_method(rb_cLazy, "uniq", lazy_uniq, 0);
     rb_define_method(rb_cLazy, "compact", lazy_compact, 0);
     rb_define_method(rb_cLazy, "with_index", lazy_with_index, -1);
+    rb_define_method(rb_cLazy, "each_with_index", lazy_each_with_index, 0);
     rb_define_method(rb_cLazy, "tap_each", lazy_tap_each, 0);
-
-    lazy_use_super_method = rb_hash_new_capa(18);
-    rb_hash_aset(lazy_use_super_method, sym("map"), sym("_enumerable_map"));
-    rb_hash_aset(lazy_use_super_method, sym("collect"), sym("_enumerable_collect"));
-    rb_hash_aset(lazy_use_super_method, sym("flat_map"), sym("_enumerable_flat_map"));
-    rb_hash_aset(lazy_use_super_method, sym("collect_concat"), sym("_enumerable_collect_concat"));
-    rb_hash_aset(lazy_use_super_method, sym("select"), sym("_enumerable_select"));
-    rb_hash_aset(lazy_use_super_method, sym("find_all"), sym("_enumerable_find_all"));
-    rb_hash_aset(lazy_use_super_method, sym("filter"), sym("_enumerable_filter"));
-    rb_hash_aset(lazy_use_super_method, sym("filter_map"), sym("_enumerable_filter_map"));
-    rb_hash_aset(lazy_use_super_method, sym("reject"), sym("_enumerable_reject"));
-    rb_hash_aset(lazy_use_super_method, sym("grep"), sym("_enumerable_grep"));
-    rb_hash_aset(lazy_use_super_method, sym("grep_v"), sym("_enumerable_grep_v"));
-    rb_hash_aset(lazy_use_super_method, sym("zip"), sym("_enumerable_zip"));
-    rb_hash_aset(lazy_use_super_method, sym("take"), sym("_enumerable_take"));
-    rb_hash_aset(lazy_use_super_method, sym("take_while"), sym("_enumerable_take_while"));
-    rb_hash_aset(lazy_use_super_method, sym("drop"), sym("_enumerable_drop"));
-    rb_hash_aset(lazy_use_super_method, sym("drop_while"), sym("_enumerable_drop_while"));
-    rb_hash_aset(lazy_use_super_method, sym("uniq"), sym("_enumerable_uniq"));
-    rb_hash_aset(lazy_use_super_method, sym("with_index"), sym("_enumerable_with_index"));
-    rb_obj_freeze(lazy_use_super_method);
-    rb_vm_register_global_object(lazy_use_super_method);
 
 #if 0 /* for RDoc */
     rb_define_method(rb_cLazy, "to_a", lazy_to_a, 0);

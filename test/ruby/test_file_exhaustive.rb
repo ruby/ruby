@@ -8,8 +8,8 @@ require '-test-/file'
 class TestFileExhaustive < Test::Unit::TestCase
   ROOT_REGEXP = %r'\A(?:[a-z]:(?=(/))|//[^/]+/[^/]+)'i
   DRIVE = Dir.pwd[ROOT_REGEXP]
-  POSIX = /cygwin|mswin|bccwin|mingw|emx/ !~ RUBY_PLATFORM
-  NTFS = !(/mingw|mswin|bccwin/ !~ RUBY_PLATFORM)
+  POSIX = /cygwin|mswin|mingw/ !~ RUBY_PLATFORM
+  NTFS = !(/mingw|mswin/ !~ RUBY_PLATFORM)
 
   def assert_incompatible_encoding
     d = "\u{3042}\u{3044}".encode("utf-16le")
@@ -258,7 +258,7 @@ class TestFileExhaustive < Test::Unit::TestCase
       assert_integer_or_nil(fs1.rdev_minor)
       assert_integer(fs1.ino)
       assert_integer(fs1.mode)
-      unless /emx|mswin|mingw/ =~ RUBY_PLATFORM
+      unless /mswin|mingw/ =~ RUBY_PLATFORM
         # on Windows, nlink is always 1. but this behavior will be changed
         # in the future.
         assert_equal(hardlinkfile ? 2 : 1, fs1.nlink)
@@ -849,6 +849,39 @@ class TestFileExhaustive < Test::Unit::TestCase
       system("mountvol", mntpnt, "/d", chdir: @dir, out: IO::NULL, err: IO::NULL)
     end
   end
+
+  def test_realpath_drive_relative_path
+    bug14640 = '[Bug #14640]'
+    drive = @dir[/\A[a-z]:/i]
+    omit "#{@dir} is not on a drive letter" unless drive
+    make_file("", File.join(@dir, "t"))
+    Dir.mkdir(File.join(@dir, "~"))
+    make_file("", File.join(@dir, "~", "t"))
+    assert_equal(File.realpath("t", @dir), File.realpath("#{drive}t", @dir), bug14640)
+    Dir.chdir(@dir) do
+      assert_equal(File.realpath("t"), File.realpath("#{drive}t"), bug14640)
+      assert_equal(File.realpath("."), File.realpath(drive), bug14640)
+      assert_equal(File.realdirpath("nofile"), File.realdirpath("#{drive}nofile"), bug14640)
+      assert_equal(File.realpath("t"), File.realpath("t", drive), bug14640)
+      assert_equal(File.realpath("t", "~"), File.realpath("#{drive}t", "~"), bug14640)
+      assert_equal(File.realpath("~"), File.realpath("~", drive), bug14640)
+      if other = ("A".."Z").find {|d| !"#{d}:".casecmp?(drive) && File.directory?("#{d}:/")}
+        Dir.chdir("#{other}:/") do
+          assert_equal(File.realpath("t", @dir), File.realpath("#{drive}t"), bug14640)
+          assert_equal(File.realpath("t", @dir), File.realpath("#{drive}t", "#{other}:/"), bug14640)
+        end
+      end
+    end
+    Dir.mkdir(dir = File.join(@dir, "\u3042"))
+    make_file("", File.join(dir, "t"))
+    Dir.chdir(dir) do
+      %w[US-ASCII ASCII-8BIT].each do |enc|
+        t = "t".encode(enc)
+        assert_equal(File.realpath(t), File.realpath("#{drive}t".encode(enc)), bug14640)
+        assert_equal(File.realpath(t), File.realpath(t, drive.encode(enc)), bug14640)
+      end
+    end
+  end if DRIVE
 
   def test_unlink
     assert_equal(1, File.unlink(regular_file))

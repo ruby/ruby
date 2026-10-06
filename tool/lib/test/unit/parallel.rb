@@ -101,7 +101,7 @@ module Test
           exit 2 unless @stdout && @stdin
 
           @stdout.sync = true
-          _report "ready!"
+          _report "ready! #{$$}"
           while buf = @stdin.gets
             case buf.chomp
             when /^loadpath (.+?)$/

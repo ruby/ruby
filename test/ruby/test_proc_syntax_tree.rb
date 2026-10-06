@@ -6,6 +6,7 @@ class TestProcSyntaxTree < Test::Unit::TestCase
   PRISM = RubyVM::InstructionSequence.compile("").to_a[4][:parser] == :prism
 
   def with_loaded_file(source)
+    pend "prism is not loadable in every box [Bug #22305]" if defined?(Ruby::Box) && Ruby::Box.enabled?
     Dir.mktmpdir do |dir|
       path = File.join(dir, "target.rb")
       File.write(path, source)

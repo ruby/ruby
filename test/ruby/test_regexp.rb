@@ -1004,6 +1004,23 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal('foobazquux/foobazquux', result, bug8856)
   end
 
+  def test_alternation_compile_error_no_memory_leak
+    # A compile error in the 2nd+ branch of a top-level alternation leaked the
+    # partially parsed branch (parse_subexp freed the alternation list but not
+    # the node parse_branch had built so far). Regexp#to_s reaches this path
+    # for every /(?:a|b)c(d)/-shaped regexp.
+    assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~"end;"}", "[Bug #22384]", rss: true)
+      code = proc do
+        Regexp.new("a|b(c") rescue nil
+        /(?:a|b)c(d)/.to_s
+      end
+
+      1_000.times(&code)
+    begin;
+      300_000.times(&code)
+    end;
+  end
+
   def test_regsub_no_memory_leak
     assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~"end;"}", rss: true)
       code = proc do

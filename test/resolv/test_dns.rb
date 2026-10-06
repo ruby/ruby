@@ -670,6 +670,22 @@ class TestResolvDNS < Test::Unit::TestCase
     end
   end
 
+  # A pointer chain hidden in a carrier RR's opaque RDATA, with a second RR's
+  # name pointing at its top, decodes to no labels but follows many pointers.
+  def test_too_many_compression_pointers
+    hops = 130
+    header  = [0, 0, 0, 2, 0, 0].pack("n6")
+    carrier = "\x00" + [60000, 1, 0].pack("nnN")
+    chain = +"\x00"; prev = 23
+    hops.times { |j| chain << [0xC000 | prev].pack("n"); prev = 24 + 2 * j }
+    carrier << [chain.bytesize].pack("n") << chain
+    top = 24 + 2 * (hops - 1)
+    victim = [0xC000 | top].pack("n") + [60000, 1, 0, 0].pack("nnNn")
+    assert_raise_with_message(Resolv::DNS::DecodeError, /too many compression pointers/) do
+      Resolv::DNS::Message.decode(header + carrier + victim)
+    end
+  end
+
   # A DNS label is limited to 63 octets. [RFC 1035 2.3.4] Writing a longer label
   # through the label path must raise instead of overflowing the length octet.
   def test_put_label_rejects_label_over_63_octets

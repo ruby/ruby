@@ -2044,8 +2044,8 @@ rb_proc_get_iseq(VALUE self, int *is_proc)
  *   #=> false
  *
  */
-static VALUE
-proc_eq(VALUE self, VALUE other)
+VALUE
+rb_proc_eq(VALUE self, VALUE other)
 {
     const rb_proc_t *self_proc, *other_proc;
     const struct rb_block *self_block, *other_block;
@@ -4614,10 +4614,11 @@ proc_curry(int argc, const VALUE *argv, VALUE self)
         arity = INT2FIX(min_arity);
     }
     else {
-        sarity = FIX2INT(arity);
+        sarity = NUM2INT(arity);
         if (rb_proc_lambda_p(self)) {
             rb_check_arity(sarity, min_arity, max_arity);
         }
+        arity = INT2FIX(sarity);
     }
 
     return make_curry_proc(self, rb_ary_new(), arity);
@@ -5390,8 +5391,8 @@ Init_Proc(void)
     rb_define_method(rb_cProc, "curry", proc_curry, -1);
     rb_define_method(rb_cProc, "<<", proc_compose_to_left, 1);
     rb_define_method(rb_cProc, ">>", proc_compose_to_right, 1);
-    rb_define_method(rb_cProc, "==", proc_eq, 1);
-    rb_define_method(rb_cProc, "eql?", proc_eq, 1);
+    rb_define_method(rb_cProc, "==", rb_proc_eq, 1);
+    rb_define_method(rb_cProc, "eql?", rb_proc_eq, 1);
     rb_define_method(rb_cProc, "source_location", rb_proc_location, 0);
     rb_define_method(rb_cProc, "source_range", rb_proc_source_range, 0);
     rb_define_method(rb_cProc, "parameters", rb_proc_parameters, -1);

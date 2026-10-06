@@ -575,8 +575,7 @@ AS_CASE(["$target_os"],
     ])
     rb_cv_binary_elf=no
     : ${enable_shared=yes}
-    ],
-[hiuxmpp*], [AC_DEFINE(__HIUX_MPP__)])    # by TOYODA Eizi <toyoda@npd.kishou.go.jp>
+    ])
 
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
@@ -1149,9 +1148,6 @@ AC_SUBST(POSTLINK)
 cleanlibs=
 AC_SUBST(cleanlibs)
 AS_CASE(["$target_os"],
-[nextstep*], [	],
-[openstep*], [	],
-[rhapsody*], [	],
 [darwin*], [
 		ORIG_LIBS="$LIBS"
 		RUBY_PREPEND_OPTION(LIBS, -lobjc)
@@ -1425,7 +1421,7 @@ AS_IF([test -n "${rb_there_is_in_fact_no_gplusplus_but_autoconf_is_cheating_us}"
     ])
 ])
 
-AC_CHECK_LIB(crypt, crypt)      # glibc (GNU/Linux, GNU/Hurd, GNU/kFreeBSD)
+AC_CHECK_LIB(crypt, crypt)      # glibc (GNU/Linux, GNU/Hurd)
 AC_CHECK_LIB(dl, dlopen)	# Dynamic linking for SunOS/Solaris and SYSV
 AC_CHECK_LIB(socket, shutdown)  # SunOS/Solaris
 
@@ -1958,8 +1954,6 @@ AS_CASE(["$target_cpu"],
 [alpha*|sh4|sh4el|sh4eb], [AS_CASE(["$target_os"::"$GCC"],
 		[*::yes],  # gcc
 			[CFLAGS="-mieee $CFLAGS"],
-		[osf*],    # ccc
-			[CFLAGS="-ieee $CFLAGS"],
 		)],
 [sparc*], [AC_LIBOBJ([sparc])])
 
@@ -2162,7 +2156,7 @@ AC_DEFINE(HAVE_ISFINITE)        # C99; backward compatibility
 
 # for missing/setproctitle.c
 AS_CASE(["$target_os"],
-[aix* | k*bsd*-gnu | kopensolaris*-gnu | linux* | darwin*], [AC_DEFINE(SPT_TYPE,SPT_REUSEARGV)],
+[aix* | linux* | darwin*], [AC_DEFINE(SPT_TYPE,SPT_REUSEARGV)],
 [])
 AC_CHECK_HEADERS(sys/pstat.h)
 
@@ -2480,16 +2474,6 @@ AS_IF([test x"$ac_cv_lib_rt_timer_create" = xyes], [
 ])
 AS_IF([test x"$ac_cv_lib_rt_timer_settime" = xyes], [
     AC_DEFINE(HAVE_TIMER_SETTIME, 1)
-])
-
-AC_CACHE_CHECK(for unsetenv returns a value, rb_cv_unsetenv_return_value,
-  [AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
-#include <stdlib.h>
-]], [[int v = unsetenv("foo");]])],
-	rb_cv_unsetenv_return_value=yes,
-	rb_cv_unsetenv_return_value=no)])
-AS_IF([test "$rb_cv_unsetenv_return_value" = no], [
-  AC_DEFINE(VOID_UNSETENV)
 ])
 
 # End of setjmp check.
@@ -3131,7 +3115,7 @@ AS_IF([test "$ac_cv_header_mach_o_loader_h" = yes], [
 ])
 
 AS_CASE(["$target_os"],
-[linux* | gnu* | k*bsd*-gnu | kopensolaris*-gnu], [
+[linux* | gnu*], [
     AS_IF([test "$rb_cv_binary_elf" = no], [
 	AC_MSG_ERROR(Not ELF)
     ], [
@@ -3171,9 +3155,8 @@ STATIC=
       RUBY_APPEND_OPTION(CCDLFLAGS, -fPIC)])
   ], [
     AS_CASE(["$target_os"],
-	[solaris*|irix*], [CCDLFLAGS="$CCDLFLAGS -KPIC"],
-	[esix*|uxpds*],   [CCDLFLAGS="$CCDLFLAGS -KPIC"],
-	                  [: ${CCDLFLAGS=""}])
+	[solaris*], [CCDLFLAGS="$CCDLFLAGS -KPIC"],
+	            [: ${CCDLFLAGS=""}])
   ])
 }
 
@@ -3212,17 +3195,7 @@ AC_SUBST(PROGRAM_EXTS, [${EXTSTATIC:+exts}])
 			    : ${PRELOADENV=LD_PRELOAD_32}
 			])
 			rb_cv_dlopen=yes],
-	[irix*], [	: ${LDSHARED='$(LD) -shared'}
-			rb_cv_dlopen=yes],
-	[sysv4*], [	: ${LDSHARED='$(LD) -G'}
-			rb_cv_dlopen=yes],
-	[nto-qnx*], [	: ${LDSHARED='$(CC) -shared'}
-			rb_cv_dlopen=yes],
-	[esix*|uxpds*], [ : ${LDSHARED='$(LD) -G'}
-			rb_cv_dlopen=yes],
-	[osf*], [	: ${LDSHARED='$(LD) -shared -expect_unresolved "*"'}
-			rb_cv_dlopen=yes],
-	[linux* | gnu* | k*bsd*-gnu | netbsd* | kopensolaris*-gnu | haiku*], [
+	[linux* | gnu* | netbsd* | haiku*], [
 			: ${LDSHARED='$(CC) -shared'}
 			AS_IF([test "$rb_cv_binary_elf" = yes], [
 			    LDFLAGS="$LDFLAGS -Wl,-export-dynamic"
@@ -3230,17 +3203,11 @@ AC_SUBST(PROGRAM_EXTS, [${EXTSTATIC:+exts}])
 			rb_cv_dlopen=yes],
 	[freebsd*|dragonfly*], [
 			: ${LDSHARED='$(CC) -shared'}
-			AS_IF([test "$rb_cv_binary_elf" = yes], [
-			    LDFLAGS="$LDFLAGS -rdynamic"
-			    DLDFLAGS="$DLDFLAGS "'-Wl,-soname,$@'
-			], [
-			  test "$GCC" = yes && test "$rb_cv_prog_gnu_ld" = yes || LDSHARED='$(LD) -Bshareable'
-			])
+			LDFLAGS="$LDFLAGS -rdynamic"
+			DLDFLAGS="$DLDFLAGS "'-Wl,-soname,$@'
 			rb_cv_dlopen=yes],
-	[openbsd*|mirbsd*], [	: ${LDSHARED='$(CC) -shared ${CCDLFLAGS}'}
-			AS_IF([test "$rb_cv_binary_elf" = yes], [
-			    LDFLAGS="$LDFLAGS -Wl,-E"
-			])
+	[openbsd*], [	: ${LDSHARED='$(CC) -shared ${CCDLFLAGS}'}
+			LDFLAGS="$LDFLAGS -Wl,-E"
 			rb_cv_dlopen=yes],
 	[darwin*], [	: ${LDSHARED='$(CC) -dynamic -bundle'}
 			: ${DLDSHARED='$(CC) -dynamiclib'}
@@ -3270,19 +3237,12 @@ AC_SUBST(PROGRAM_EXTS, [${EXTSTATIC:+exts}])
 			: ${LIBPATHENV=LIBPATH}
 			: ${PRELOADENV=LDR_PRELOAD}
 			rb_cv_dlopen=yes],
-	[nto-qnx*], [	DLDFLAGS="$DLDFLAGS -L/lib -L/usr/lib -L/usr/local/lib"
-			: ${LDSHARED='$(LD) -Bshareable -x'}
-			LDFLAGS="$LDFLAGS -L/lib -L/usr/lib -L/usr/local/lib"
-			rb_cv_dlopen=yes],
 	[cygwin*|msys*|mingw*], [
 			: ${LDSHARED='$(CC) -shared'}
 			XLDFLAGS="$XLDFLAGS -Wl,--stack,0x00200000,--enable-auto-import"
 			DLDFLAGS="${DLDFLAGS} -Wl,--enable-auto-image-base,--enable-auto-import"
 			: ${LIBPATHENV=PATH}
 			: ${PRELOADENV=""}
-			rb_cv_dlopen=yes],
-	[hiuxmpp], [	: ${LDSHARED='$(LD) -r'}],
-	[atheos*], [	: ${LDSHARED='$(CC) -shared'}
 			rb_cv_dlopen=yes],
 	[wasi*], [	: ${LDSHARED='$(LD) -shared -Xlinker --export-dynamic'}],
 	[	: ${LDSHARED='$(LD)'}])
@@ -3441,7 +3401,7 @@ AS_IF([test x$with_valgrind != xno],
     [darwin*], [
 	SOEXT=dylib
 	DLEXT=bundle],
-    [cygwin*|msys*|mingw*|*djgpp*], [
+    [cygwin*|msys*|mingw*], [
 	LOAD_RELATIVE=1
 	SOEXT=dll
 	DLEXT=so],
@@ -3679,7 +3639,7 @@ AS_CASE("$enable_shared", [yes], [
 
   relative_libprefix="/../${multiarch+../}${libdir_basename}"
   AS_CASE(["$target_os"],
-    [linux* | gnu* | k*bsd*-gnu | atheos* | kopensolaris*-gnu | haiku*], [
+    [linux* | gnu* | haiku*], [
 	RUBY_APPEND_OPTIONS(LIBRUBY_DLDFLAGS, ['-Wl,-soname,$(LIBRUBY_SONAME)' "$LDFLAGS_OPTDIR"])
 	LIBRUBY_ALIASES='$(LIBRUBY_SONAME) lib$(RUBY_SO_NAME).$(SOEXT)'
 	AS_IF([test "$load_relative" = yes], [
@@ -3691,10 +3651,7 @@ AS_CASE("$enable_shared", [yes], [
     [freebsd*|dragonfly*], [
 	LIBRUBY_SO='lib$(RUBY_SO_NAME).$(SOEXT).$(MAJOR)$(MINOR)'
 	LIBRUBY_SONAME='$(LIBRUBY_SO)'
-	AS_IF([test "$rb_cv_binary_elf" != "yes" ], [
-	    LIBRUBY_SO="$LIBRUBY_SO.\$(TEENY)"
-	    LIBRUBY_ALIASES=''
-	], [test "$load_relative" = yes], [
+	AS_IF([test "$load_relative" = yes], [
 	    libprefix="'\$\$ORIGIN${relative_libprefix}'"
 	    LIBRUBY_RPATHFLAGS="-Wl,-rpath,${libprefix}"
 	    LIBRUBY_RELATIVE=yes
@@ -3704,13 +3661,9 @@ AS_CASE("$enable_shared", [yes], [
 	LIBRUBY_SONAME='lib$(RUBY_SO_NAME).$(SOEXT).$(MAJOR)$(MINOR)'
 	LIBRUBY_SO="${LIBRUBY_SONAME}"'.$(TEENY)'
 	RUBY_APPEND_OPTIONS(LIBRUBY_DLDFLAGS, ['-Wl,-soname,$(LIBRUBY_SONAME)' "$LDFLAGS_OPTDIR"])
-	AS_IF([test "$rb_cv_binary_elf" = yes], [ # ELF platforms
-	   LIBRUBY_ALIASES='$(LIBRUBY_SONAME) lib$(RUBY_SO_NAME).$(SOEXT)'
-	], [	# a.out platforms
-	   LIBRUBY_ALIASES=""
-	])
+	LIBRUBY_ALIASES='$(LIBRUBY_SONAME) lib$(RUBY_SO_NAME).$(SOEXT)'
 	],
-    [openbsd*|mirbsd*], [
+    [openbsd*], [
 	LIBRUBY_SO='lib$(RUBY_SO_NAME).$(SOEXT).$(MAJOR).'`expr ${MINOR} \* 10 + ${TEENY}`
 	],
     [solaris*], [
@@ -4241,21 +4194,6 @@ enum {
 	)
 	RUBY_APPEND_OPTION(XLDFLAGS, [-framework CoreFoundation])
 	RUBY_APPEND_OPTION(LIBRUBYARG_STATIC, [-framework CoreFoundation])
-	],
-    [osf*], [
-	AS_IF([test "$GCC" != "yes" ], [
-	  # compile something small: taint.c is fine for this.
-	  # the main point is the '-v' flag of 'cc'.
-	  AS_CASE(["`cc -v -I. -c main.c -o /tmp/main.o 2>&1`"],
-	  [*/gemc_cc*], [   # we have the new DEC GEM CC
-                        CFLAGS="$CFLAGS -oldc"
-                        ],
-          [            # we have the old MIPS CC
-                        ])
-	  # cleanup
-	  rm -f /tmp/main.o
-	  CFLAGS="$CFLAGS -std"
-	])
 	],
     [cygwin*|msys*|mingw*], [
 	LIBRUBY_DLDFLAGS="${LIBRUBY_DLDFLAGS}"' -Wl,--out-implib=$(LIBRUBY)'

@@ -1053,7 +1053,15 @@ pub enum Insn {
     ArrayExtend { left: InsnId, right: InsnId, state: InsnId },
     /// Push `val` onto `array`, where `array` is already `Array`.
     ArrayPush { array: InsnId, val: InsnId, state: InsnId },
+    /// Return `array[index]`, where `array` is an `Array` or subclass and `index` is an unboxed
+    /// integer. Assumes `index` is positive and in-bounds.
     ArrayAref { array: InsnId, index: InsnId },
+    /// Return `array[index]`, where `array` is an `Array` or subclass, `index` is an unboxed
+    /// integer, and `length` is an unboxed integer. Assumes `index` is either positive or the
+    /// result of [`Insn::AdjustBounds`] (e.g. index -1 for an array of length 3 has already been
+    /// adjusted to index 2, so any negative `index` is definitely considered out-of-bounds).
+    /// `index` but may be out-of-bounds, in which case it returns `nil`.
+    ArrayArefChecked { array: InsnId, index: InsnId, length: InsnId  },
     ArrayAset { array: InsnId, index: InsnId, val: InsnId },
     ArrayPop { array: InsnId, state: InsnId },
     /// Return the length of the array as a C `long` ([`types::CInt64`])
@@ -1575,6 +1583,11 @@ macro_rules! for_each_operand_impl {
                 $visit_one!(*array);
                 $visit_one!(*index);
             }
+            Insn::ArrayArefChecked { array, index, length } => {
+                $visit_one!(*array);
+                $visit_one!(*index);
+                $visit_one!(*length);
+            }
             Insn::ArrayAset { array, index, val } => {
                 $visit_one!(*array);
                 $visit_one!(*index);
@@ -1823,6 +1836,7 @@ impl Insn {
             Insn::ArrayExtend { .. } => effects::Any,
             Insn::ArrayPush { .. } => effects::Any,
             Insn::ArrayAref { ..  } => effects::Any,
+            Insn::ArrayArefChecked { ..  } => effects::Any,
             Insn::ArrayAset { .. } => effects::Any,
             Insn::ArrayPop { ..  } => effects::Any,
             Insn::ArrayLength { .. } => Effect::write(abstract_heaps::Empty),
@@ -2113,6 +2127,9 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             }
             Insn::ArrayAref { array, index, .. } => {
                 write!(f, "ArrayAref {array}, {index}")
+            }
+            Insn::ArrayArefChecked { array, index, length } => {
+                write!(f, "ArrayArefChecked {array}, {index}, {length}")
             }
             Insn::ArrayAset { array, index, val, ..} => {
                 write!(f, "ArrayAset {array}, {index}, {val}")
@@ -3287,7 +3304,7 @@ impl Function {
     /// Load `captured->code.iseq` from a `struct rb_captured_block *`.
     fn load_captured_code_iseq(&mut self, block: BlockId, captured: InsnId) -> InsnId {
         let offset: i32 = std::mem::offset_of!(rb_captured_block, code).try_into().unwrap();
-        self.load_field(block, captured, FieldName::code_iseq, offset, types::CPtr)
+        self.load_field(block, captured, FieldName::code_iseq, offset, types::Iseq)
     }
 
     /// Untag an ISEQ block handler into its `struct rb_captured_block *`:
@@ -3333,10 +3350,11 @@ impl Function {
             self.push_insn(block, Insn::GuardBitEquals { val: tag, expected: Const::CInt64(0x1), reason: Box::new(SideExitReason::InvokeBlockHandlerNotIseq), state, recompile: Some(Recompile) });
             let captured = self.untag_block_handler(block, block_handler);
 
-            // Guard captured->code.iseq is the profiled block iseq. Compare the raw imemo pointer:
-            // type inference (from_value) can't type an iseq imemo, so guard it as a CPtr identity.
+            // Guard captured->code.iseq is the profiled block iseq. The ISEQ is a GC object that
+            // can be moved by compaction, so bake it in as a `Const::Value` rather than a raw
+            // `Const::CPtr` to let the GC mark it and update the pointer embedded in JIT code.
             let captured_iseq = self.load_captured_code_iseq(block, captured);
-            self.push_insn(block, Insn::GuardBitEquals { val: captured_iseq, expected: Const::CPtr(block_iseq as *const u8), reason: Box::new(SideExitReason::InvokeBlockIseqChanged), state, recompile: Some(Recompile) });
+            self.push_insn(block, Insn::GuardBitEquals { val: captured_iseq, expected: Const::Value(VALUE::from(block_iseq)), reason: Box::new(SideExitReason::InvokeBlockIseqChanged), state, recompile: Some(Recompile) });
 
             let result = self.push_insn(block, Insn::InvokeBlockIseqDirect { iseq: block_iseq, captured, args, state });
             return (block, result);
@@ -3361,7 +3379,8 @@ impl Function {
 
         let mut compare_block = dispatch_block;
         for &block_iseq in iseqs {
-            let expected = self.push_insn(compare_block, Insn::Const { val: Const::CPtr(block_iseq as *const u8) });
+            // Use `Const::Value` so that the GC updates the ISEQ pointer on compaction. See above.
+            let expected = self.push_insn(compare_block, Insn::Const { val: Const::Value(VALUE::from(block_iseq)) });
             let iseq_matches = self.push_insn(compare_block, Insn::IsBitEqual { left: captured_iseq, right: expected });
             let direct_block = self.new_block(insn_idx);
             let miss_block = self.new_block(insn_idx);
@@ -3743,6 +3762,7 @@ impl Function {
             Insn::NewArray { .. } => types::ArrayExact,
             Insn::ArrayDup { .. } => types::ArrayExact,
             Insn::ArrayAref { .. } => types::BasicObject,
+            Insn::ArrayArefChecked { .. } => types::BasicObject,
             Insn::ArrayPop { .. } => types::BasicObject,
             Insn::ArrayLength { .. } => types::CInt64,
             Insn::AdjustBounds { .. } => types::CInt64,
@@ -6868,19 +6888,6 @@ impl Function {
                         // Don't bother re-inferring the type of val; we already know it.
                         continue;
                     }
-                    &Insn::LoadField { recv, offset, return_type, .. } if return_type.is_subtype(types::BasicObject) &&
-                            u32::try_from(offset).is_ok() => {
-                        let offset = (offset as u32).to_usize();
-                        let recv_type = self.type_of(recv);
-                        match recv_type.ruby_object() {
-                            Some(recv_obj) if recv_obj.is_frozen() => {
-                                let recv_ptr = recv_obj.as_ptr() as *const VALUE;
-                                let val = unsafe { recv_ptr.byte_add(offset).read() };
-                                self.new_insn(Insn::Const { val: Const::Value(val) })
-                            }
-                            _ => insn_id,
-                        }
-                    }
                     &Insn::LoadField { recv, offset, return_type, .. } if return_type.is_subtype(types::CShape) &&
                             u32::try_from(offset).is_ok() => {
                         let offset = (offset as u32).to_usize();
@@ -7134,6 +7141,18 @@ impl Function {
                         match (array_obj.is_frozen(), self.type_of(index).cint64_value()) {
                             (true, Some(index)) => {
                                 let val = unsafe { rb_yarv_ary_entry_internal(array_obj, index) };
+                                self.new_insn(Insn::Const { val: Const::Value(val) })
+                            }
+                            _ => insn_id,
+                        }
+                    }
+                    &Insn::ArrayArefChecked { array, index, .. }
+                        if self.type_of(array).ruby_object_known()
+                            && self.type_of(index).is_subtype(types::CInt64) => {
+                        let array_obj = self.type_of(array).ruby_object().unwrap();
+                        let mut val = VALUE(0);
+                        match (array_obj.is_frozen(), self.type_of(index).cint64_value()) {
+                            (true, Some(index)) if unsafe { rb_zjit_array_aref_with_adjusted_index(array_obj, index, &mut val) } => {
                                 self.new_insn(Insn::Const { val: Const::Value(val) })
                             }
                             _ => insn_id,
@@ -8166,6 +8185,11 @@ impl Function {
             Insn::ArrayAref { array, index } => {
                 self.assert_subtype(insn_id, array, types::Array)?;
                 self.assert_subtype(insn_id, index, types::CInt64)
+            }
+            Insn::ArrayArefChecked { array, index, length } => {
+                self.assert_subtype(insn_id, array, types::Array)?;
+                self.assert_subtype(insn_id, index, types::CInt64)?;
+                self.assert_subtype(insn_id, length, types::CInt64)
             }
             Insn::ArrayAset { array, index, .. } => {
                 self.assert_subtype(insn_id, array, types::ArrayExact)?;
@@ -9247,10 +9271,10 @@ fn add_iseq_to_hir(
                         if let [self_type_distribution] = &operand_types[..] {
                             let summary = TypeDistributionSummary::new(&self_type_distribution);
                             if summary.is_monomorphic() {
-                                let obj = summary.bucket(0).class();
-                                if unsafe { rb_IMEMO_TYPE_P(obj, imemo_iseq) == 1 } {
+                                let profiled_type = summary.bucket(0);
+                                if unsafe { rb_IMEMO_TYPE_P(profiled_type.class(), imemo_iseq) == 1 } {
                                     fun.count(block, Counter::invokeblock_handler_monomorphic_iseq);
-                                } else if unsafe { rb_IMEMO_TYPE_P(obj, imemo_ifunc) == 1 } {
+                                } else if profiled_type.flags().is_ifunc_block_handler() {
                                     fun.count(block, Counter::invokeblock_handler_monomorphic_ifunc);
                                 } else {
                                     fun.count(block, Counter::invokeblock_handler_monomorphic_other);
@@ -10556,14 +10580,14 @@ fn add_iseq_to_hir(
                             None
                         }
                     });
-                    // The monomorphic block handler class the profile recorded, if any.
-                    let block_handler_class = block_handler_summary.as_ref().and_then(|summary| {
+                    // The monomorphic block handler type the profile recorded, if any.
+                    let block_handler_type = block_handler_summary.as_ref().and_then(|summary| {
                         if !summary.is_monomorphic() { return None; }
-                        Some(summary.bucket(0).class())
+                        Some(summary.bucket(0))
                     });
 
                     let is_ifunc = (flags & (VM_CALL_ARGS_SPLAT | VM_CALL_KW_SPLAT | VM_CALL_KWARG)) == 0
-                        && block_handler_class.is_some_and(|obj| unsafe { rb_IMEMO_TYPE_P(obj, imemo_ifunc) == 1 });
+                        && block_handler_type.is_some_and(|ty| ty.flags().is_ifunc_block_handler());
 
                     // Collect the profiled ISEQ blocks that can be invoked directly with a JIT-to-JIT call.
                     let mut fallback_reason = InvokeBlockNotSpecialized;
@@ -10952,13 +10976,9 @@ fn add_iseq_to_hir(
                     let val = state.stack_pop()?;
                     let array = fun.push_insn(block, Insn::GuardType { val, guard_type: types::ArrayExact, state: exit_id, recompile: None });
                     let length = fun.push_insn(block, Insn::ArrayLength { array });
-                    let expected = fun.push_insn(block, Insn::Const { val: Const::CInt64(num as i64) });
-                    fun.push_insn(block, Insn::GuardGreaterEq { left: length, right: expected, reason: Box::new(SideExitReason::ExpandArray), state: exit_id });
                     for i in (0..num).rev() {
-                        // We do not emit a length guard here because in-bounds is already
-                        // ensured by the expandarray length check above.
                         let index = fun.push_insn(block, Insn::Const { val: Const::CInt64(i.try_into().unwrap()) });
-                        let element = fun.push_insn(block, Insn::ArrayAref { array, index });
+                        let element = fun.push_insn(block, Insn::ArrayArefChecked { array, index, length });
                         state.stack_push(element);
                     }
                 }

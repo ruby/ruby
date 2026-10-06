@@ -55,7 +55,7 @@ static const char endstr[] = "sSiIlLqQjJ";
 #endif
 
 #ifdef DYNAMIC_ENDIAN
-/* for universal binary of NEXTSTEP and MacOS X */
+/* for universal binary of MacOS X */
 /* useless since autoconf 2.63? */
 static int
 is_bigendian(void)

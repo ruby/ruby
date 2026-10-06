@@ -13732,6 +13732,7 @@ ibf_dump_outer_variables(struct ibf_dump *dump, const rb_iseq_t *iseq)
             ibf_dump_write_small_value(dump, ibf_dump_id(dump, id));
             ibf_dump_write_small_value(dump, val);
         }
+        ALLOCV_END(buff);
     }
 
     return offset;

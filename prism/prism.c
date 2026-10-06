@@ -239,6 +239,8 @@ lex_mode_push_list(pm_parser_t *parser, bool interpolation, uint8_t delimiter) {
         .as.list = {
             .nesting = 0,
             .interpolation = interpolation,
+            .started = false,
+            .separated = false,
             .incrementor = incrementor,
             .terminator = terminator
         }
@@ -884,18 +886,6 @@ pm_locals_free(pm_locals_t *locals) {
 }
 
 /**
- * Use as simple and fast a hash function as we can that still properly mixes
- * the bits.
- */
-static uint32_t
-pm_locals_hash(pm_constant_id_t name) {
-    name = ((name >> 16) ^ name) * 0x45d9f3b;
-    name = ((name >> 16) ^ name) * 0x45d9f3b;
-    name = (name >> 16) ^ name;
-    return name;
-}
-
-/**
  * Resize the locals list to be twice its current size. If the next capacity is
  * above the threshold for switching to a hash, then we'll switch to a hash.
  */
@@ -921,7 +911,7 @@ pm_locals_resize(pm_locals_t *locals) {
             pm_local_t *local = &locals->locals[index];
 
             if (local->name != PM_CONSTANT_ID_UNSET) {
-                if (hash_needed) local->hash = pm_locals_hash(local->name);
+                if (hash_needed) local->hash = pm_constant_id_hash(local->name);
 
                 uint32_t hash = local->hash;
                 while (next_locals[hash & mask].name != PM_CONSTANT_ID_UNSET) hash++;
@@ -977,7 +967,7 @@ pm_locals_write(pm_locals_t *locals, pm_constant_id_t name, uint32_t start, uint
         }
     } else {
         uint32_t mask = locals->capacity - 1;
-        uint32_t hash = pm_locals_hash(name);
+        uint32_t hash = pm_constant_id_hash(name);
         uint32_t initial_hash = hash;
 
         do {
@@ -1019,7 +1009,7 @@ pm_locals_find(pm_locals_t *locals, pm_constant_id_t name) {
         }
     } else {
         uint32_t mask = locals->capacity - 1;
-        uint32_t hash = pm_locals_hash(name);
+        uint32_t hash = pm_constant_id_hash(name);
         uint32_t initial_hash = hash & mask;
 
         do {
@@ -7990,20 +7980,21 @@ context_recoverable(const pm_parser_t *parser, pm_token_t *token) {
     return PM_CONTEXT_NONE;
 }
 
+PM_STATIC_ASSERT(__LINE__, PM_CONTEXT_MAXIMUM <= 64, "Expected every context to fit in the context mask.");
+
 static bool
 context_push(pm_parser_t *parser, pm_context_t context) {
     pm_context_node_t *context_node = (pm_context_node_t *) xmalloc(sizeof(pm_context_node_t));
     if (context_node == NULL) return false;
 
-    *context_node = (pm_context_node_t) { .context = context, .prev = NULL };
+    pm_context_node_t *previous = parser->current_context;
+    *context_node = (pm_context_node_t) {
+        .context = context,
+        .prev = previous,
+        .mask = (previous == NULL ? 0 : previous->mask) | ((uint64_t) 1 << context)
+    };
 
-    if (parser->current_context == NULL) {
-        parser->current_context = context_node;
-    } else {
-        context_node->prev = parser->current_context;
-        parser->current_context = context_node;
-    }
-
+    parser->current_context = context_node;
     return true;
 }
 
@@ -8016,14 +8007,7 @@ context_pop(pm_parser_t *parser) {
 
 static bool
 context_p(const pm_parser_t *parser, pm_context_t context) {
-    pm_context_node_t *context_node = parser->current_context;
-
-    while (context_node != NULL) {
-        if (context_node->context == context) return true;
-        context_node = context_node->prev;
-    }
-
-    return false;
+    return parser->current_context != NULL && (parser->current_context->mask & ((uint64_t) 1 << context)) != 0;
 }
 
 static bool
@@ -8067,6 +8051,7 @@ static const char *
 context_human(pm_context_t context) {
     switch (context) {
         case PM_CONTEXT_NONE:
+        case PM_CONTEXT_MAXIMUM:
             assert(false && "unreachable");
             return "";
         case PM_CONTEXT_BEGIN: return "begin statement";
@@ -11552,6 +11537,9 @@ parser_lex(pm_parser_t *parser) {
                     // mutates next_start
                     parser_flush_heredoc_end(parser);
                 }
+
+                lex_mode->as.list.started = true;
+                lex_mode->as.list.separated = true;
                 LEX(PM_TOKEN_WORDS_SEP);
             }
 
@@ -11559,6 +11547,18 @@ parser_lex(pm_parser_t *parser) {
             // need to return the EOF token.
             if (parser->current.end >= parser->end) {
                 LEX(PM_TOKEN_EOF);
+            }
+
+            /* A word separator delimits the opener from the first word (or
+             * from the terminator when the list is empty). The parser accepts
+             * the words without it, so when the list does not start with
+             * whitespace the implicit separator goes to the lex callback alone
+             * and lexing continues on to the token the parser receives. */
+            if (!lex_mode->as.list.started) {
+                lex_mode->as.list.started = true;
+                lex_mode->as.list.separated = true;
+                parser->current.type = PM_TOKEN_WORDS_SEP_IMPLICIT;
+                parser_lex_callback(parser);
             }
 
             // Here we'll get a list of the places where strpbrk should break,
@@ -11578,6 +11578,7 @@ parser_lex(pm_parser_t *parser) {
                 if (pm_char_is_whitespace(*breakpoint) && *breakpoint != lex_mode->as.list.terminator) {
                     parser->current.end = breakpoint;
                     pm_token_buffer_flush(parser, &token_buffer);
+                    lex_mode->as.list.separated = false;
                     LEX(PM_TOKEN_STRING_CONTENT);
                 }
 
@@ -11598,7 +11599,20 @@ parser_lex(pm_parser_t *parser) {
                     if (breakpoint > parser->current.start) {
                         parser->current.end = breakpoint;
                         pm_token_buffer_flush(parser, &token_buffer);
+                        lex_mode->as.list.separated = false;
                         LEX(PM_TOKEN_STRING_CONTENT);
+                    }
+
+                    /* A word separator delimits the last word from the
+                     * terminator. The parser accepts the terminator without
+                     * it, so when the list does not end with whitespace the
+                     * implicit separator goes to the lex callback alone and
+                     * lexing continues on to the terminator. */
+                    if (!lex_mode->as.list.separated) {
+                        lex_mode->as.list.separated = true;
+                        parser->current.end = breakpoint;
+                        parser->current.type = PM_TOKEN_WORDS_SEP_IMPLICIT;
+                        parser_lex_callback(parser);
                     }
 
                     // Otherwise, switch back to the default state and return
@@ -11708,6 +11722,7 @@ parser_lex(pm_parser_t *parser) {
                         pm_token_buffer_flush(parser, &token_buffer);
                     }
 
+                    lex_mode->as.list.separated = false;
                     LEX(type);
                 }
 
@@ -15745,6 +15760,7 @@ parse_return(pm_parser_t *parser, pm_node_t *node) {
                 // continue to loop.
                 return;
             case PM_CONTEXT_NONE:
+            case PM_CONTEXT_MAXIMUM:
                 // This case should never happen.
                 assert(false && "unreachable");
                 break;
@@ -15843,6 +15859,7 @@ parse_block_exit(pm_parser_t *parser, pm_node_t *node) {
                 // contexts.
                 break;
             case PM_CONTEXT_NONE:
+            case PM_CONTEXT_MAXIMUM:
                 // This case should never happen.
                 assert(false && "unreachable");
                 break;
@@ -16938,22 +16955,20 @@ parse_strings(pm_parser_t *parser, pm_node_t *current, bool accepts_label, uint1
 #define PM_PARSE_PATTERN_MULTI 2
 
 static pm_node_t *
-parse_pattern(pm_parser_t *parser, pm_constant_id_list_t *captures, uint8_t flags, pm_diagnostic_id_t diag_id, uint16_t depth);
+parse_pattern(pm_parser_t *parser, pm_constant_id_set_t *captures, uint8_t flags, pm_diagnostic_id_t diag_id, uint16_t depth);
 
 /**
- * Add the newly created local to the list of captures for this pattern matching
+ * Add the newly created local to the set of captures for this pattern matching
  * expression. If it is duplicated from a previous local, then we'll need to add
  * an error to the parser.
  */
 static void
-parse_pattern_capture(pm_parser_t *parser, pm_constant_id_list_t *captures, pm_constant_id_t capture, const pm_location_t *location) {
+parse_pattern_capture(pm_parser_t *parser, pm_constant_id_set_t *captures, pm_constant_id_t capture, const pm_location_t *location) {
     // Skip this capture if it starts with an underscore.
     if (peek_at(parser, parser->start + location->start) == '_') return;
 
-    if (pm_constant_id_list_includes(captures, capture)) {
+    if (!pm_constant_id_set_insert(parser->arena, captures, capture)) {
         pm_parser_err(parser, location->start, location->length, PM_ERR_PATTERN_CAPTURE_DUPLICATE);
-    } else {
-        pm_constant_id_list_append(parser->arena, captures, capture);
     }
 }
 
@@ -16961,7 +16976,7 @@ parse_pattern_capture(pm_parser_t *parser, pm_constant_id_list_t *captures, pm_c
  * Accept any number of constants joined by :: delimiters.
  */
 static pm_node_t *
-parse_pattern_constant_path(pm_parser_t *parser, pm_constant_id_list_t *captures, pm_node_t *node, uint16_t depth) {
+parse_pattern_constant_path(pm_parser_t *parser, pm_constant_id_set_t *captures, pm_node_t *node, uint16_t depth) {
     // Now, if there are any :: operators that follow, parse them as constant
     // path nodes.
     while (accept1(parser, PM_TOKEN_COLON_COLON)) {
@@ -17081,7 +17096,7 @@ parse_pattern_constant_path(pm_parser_t *parser, pm_constant_id_list_t *captures
  * Parse a rest pattern.
  */
 static pm_splat_node_t *
-parse_pattern_rest(pm_parser_t *parser, pm_constant_id_list_t *captures) {
+parse_pattern_rest(pm_parser_t *parser, pm_constant_id_set_t *captures) {
     assert(parser->previous.type == PM_TOKEN_USTAR);
     pm_token_t operator = parser->previous;
     pm_node_t *name = NULL;
@@ -17115,7 +17130,7 @@ parse_pattern_rest(pm_parser_t *parser, pm_constant_id_list_t *captures) {
  * Parse a keyword rest node.
  */
 static pm_node_t *
-parse_pattern_keyword_rest(pm_parser_t *parser, pm_constant_id_list_t *captures) {
+parse_pattern_keyword_rest(pm_parser_t *parser, pm_constant_id_set_t *captures) {
     assert(parser->current.type == PM_TOKEN_USTAR_STAR);
     parser_lex(parser);
 
@@ -17179,7 +17194,7 @@ pm_slice_is_valid_local(const pm_parser_t *parser, const uint8_t *start, const u
  * value. This will use an implicit local variable target.
  */
 static pm_node_t *
-parse_pattern_hash_implicit_value(pm_parser_t *parser, pm_constant_id_list_t *captures, pm_symbol_node_t *key) {
+parse_pattern_hash_implicit_value(pm_parser_t *parser, pm_constant_id_set_t *captures, pm_symbol_node_t *key) {
     const pm_location_t *value_loc = &((pm_symbol_node_t *) key)->content_loc;
     const uint8_t *start = parser->start + PM_LOCATION_START(value_loc);
     const uint8_t *end = parser->start + PM_LOCATION_END(value_loc);
@@ -17227,7 +17242,7 @@ parse_pattern_hash_key(pm_parser_t *parser, pm_static_literals_t *keys, pm_node_
  * Parse a hash pattern.
  */
 static pm_hash_pattern_node_t *
-parse_pattern_hash(pm_parser_t *parser, pm_constant_id_list_t *captures, pm_node_t *first_node, uint16_t depth) {
+parse_pattern_hash(pm_parser_t *parser, pm_constant_id_set_t *captures, pm_node_t *first_node, uint16_t depth) {
     pm_node_list_t assocs = { 0 };
     pm_static_literals_t keys = { 0 };
     pm_node_t *rest = NULL;
@@ -17370,7 +17385,7 @@ parse_pattern_hash(pm_parser_t *parser, pm_constant_id_list_t *captures, pm_node
  * Parse a pattern expression primitive.
  */
 static pm_node_t *
-parse_pattern_primitive(pm_parser_t *parser, pm_constant_id_list_t *captures, pm_diagnostic_id_t diag_id, uint16_t depth) {
+parse_pattern_primitive(pm_parser_t *parser, pm_constant_id_set_t *captures, pm_diagnostic_id_t diag_id, uint16_t depth) {
     switch (parser->current.type) {
         case PM_TOKEN_IDENTIFIER:
         case PM_TOKEN_METHOD_NAME: {
@@ -17628,22 +17643,44 @@ parse_pattern_primitive(pm_parser_t *parser, pm_constant_id_list_t *captures, pm
     }
 }
 
+/**
+ * Add an error for each variable captured by the given pattern. Only descend
+ * into nodes that make up the pattern itself: a lambda, a string interpolation,
+ * or a pinned expression can contain local variable targets of its own that
+ * are not captures of this pattern. A nested alternation is not visited
+ * either: its operands were already checked when it was parsed.
+ */
 static bool
 parse_pattern_alternation_error_each(const pm_node_t *node, void *data) {
+    pm_parser_t *parser = (pm_parser_t *) data;
+
     switch (PM_NODE_TYPE(node)) {
-        case PM_LOCAL_VARIABLE_TARGET_NODE: {
-            pm_parser_t *parser = (pm_parser_t *) data;
-            pm_parser_err(parser, PM_NODE_START(node), PM_NODE_LENGTH(node), PM_ERR_PATTERN_CAPTURE_IN_ALTERNATIVE);
+        case PM_LOCAL_VARIABLE_TARGET_NODE:
+            // Underscore-prefixed names are not captures, see
+            // parse_pattern_capture.
+            if (peek_at(parser, parser->start + PM_NODE_START(node)) != '_') {
+                pm_parser_err(parser, PM_NODE_START(node), PM_NODE_LENGTH(node), PM_ERR_PATTERN_CAPTURE_IN_ALTERNATIVE);
+            }
             return false;
-        }
-        default:
+        case PM_ARRAY_PATTERN_NODE:
+        case PM_ASSOC_NODE:
+        case PM_ASSOC_SPLAT_NODE:
+        case PM_CAPTURE_PATTERN_NODE:
+        case PM_FIND_PATTERN_NODE:
+        case PM_HASH_PATTERN_NODE:
+        case PM_IMPLICIT_NODE:
+        case PM_PARENTHESES_NODE:
+        case PM_SPLAT_NODE:
             return true;
+        default:
+            return false;
     }
 }
 
 /**
- * When we get here, we know that we already have a syntax error, because we
- * know we have captured a variable and that we are in an alternation.
+ * Called when we are in an alternation and a variable has been captured
+ * somewhere in the pattern. That capture may be outside of the given node, so
+ * this only adds errors for the captures that are actually inside of it.
  */
 static void
 parse_pattern_alternation_error(pm_parser_t *parser, const pm_node_t *node) {
@@ -17655,7 +17692,7 @@ parse_pattern_alternation_error(pm_parser_t *parser, const pm_node_t *node) {
  * assignment.
  */
 static pm_node_t *
-parse_pattern_primitives(pm_parser_t *parser, pm_constant_id_list_t *captures, pm_node_t *first_node, pm_diagnostic_id_t diag_id, uint16_t depth) {
+parse_pattern_primitives(pm_parser_t *parser, pm_constant_id_set_t *captures, pm_node_t *first_node, pm_diagnostic_id_t diag_id, uint16_t depth) {
     pm_node_t *node = first_node;
     bool alternation = false;
 
@@ -17754,7 +17791,7 @@ parse_pattern_primitives(pm_parser_t *parser, pm_constant_id_list_t *captures, p
  * Parse a pattern matching expression.
  */
 static pm_node_t *
-parse_pattern(pm_parser_t *parser, pm_constant_id_list_t *captures, uint8_t flags, pm_diagnostic_id_t diag_id, uint16_t depth) {
+parse_pattern(pm_parser_t *parser, pm_constant_id_set_t *captures, uint8_t flags, pm_diagnostic_id_t diag_id, uint16_t depth) {
     pm_node_t *node = NULL;
 
     bool leading_rest = false;
@@ -18033,6 +18070,7 @@ parse_retry(pm_parser_t *parser, const pm_node_t *node) {
                 context = CONTEXT_THROUGH_ENSURE;
                 break;
             case PM_CONTEXT_NONE:
+            case PM_CONTEXT_MAXIMUM:
                 // This case should never happen.
                 assert(false && "unreachable");
                 break;
@@ -18109,6 +18147,7 @@ parse_yield(pm_parser_t *parser, const pm_node_t *node) {
                 pm_parser_err_node(parser, node, PM_ERR_INVALID_YIELD);
                 return;
             case PM_CONTEXT_NONE:
+            case PM_CONTEXT_MAXIMUM:
                 // This case should never happen.
                 assert(false && "unreachable");
                 break;
@@ -18288,7 +18327,7 @@ parse_case(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
 
             pm_token_t in_keyword = parser->previous;
 
-            pm_constant_id_list_t captures = { 0 };
+            pm_constant_id_set_t captures = { 0 };
             pm_node_t *pattern = parse_pattern(parser, &captures, PM_PARSE_PATTERN_TOP | PM_PARSE_PATTERN_MULTI, PM_ERR_PATTERN_EXPRESSION_AFTER_IN, (uint16_t) (depth + 1));
 
             parser->pattern_matching_newlines = previous_pattern_matching_newlines;
@@ -21437,7 +21476,7 @@ pm_named_capture_escape(pm_parser_t *parser, pm_buffer_t *unescaped, const uint8
 static void
 parse_regular_expression_named_capture(pm_parser_t *parser, const pm_string_t *capture, bool shared, pm_regexp_name_data_t *callback_data) {
     pm_call_node_t *call = callback_data->call;
-    pm_constant_id_list_t *names = &callback_data->names;
+    pm_constant_id_set_t *names = &callback_data->names;
 
     const uint8_t *source = pm_string_source(capture);
     size_t length = pm_string_length(capture);
@@ -21486,10 +21525,11 @@ parse_regular_expression_named_capture(pm_parser_t *parser, const pm_string_t *c
         name = pm_parser_constant_id_owned(parser, memory, length);
     }
 
-    // Add this name to the list of constants if it is valid, not duplicated,
-    // and not a keyword.
-    if (name != 0 && !pm_constant_id_list_includes(names, name)) {
-        pm_constant_id_list_append(parser->arena, names, name);
+    /*
+     * Add this name to the set of constants if it is valid, not duplicated,
+     * and not a keyword.
+     */
+    if (name != 0 && pm_constant_id_set_insert(parser->arena, names, name)) {
 
         int depth;
         if ((depth = pm_parser_local_depth_constant_id(parser, name)) == -1) {
@@ -22436,7 +22476,7 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
             lex_state_set(parser, PM_LEX_STATE_BEG | PM_LEX_STATE_LABEL);
             parser_lex(parser);
 
-            pm_constant_id_list_t captures = { 0 };
+            pm_constant_id_set_t captures = { 0 };
             pm_node_t *pattern = parse_pattern(parser, &captures, PM_PARSE_PATTERN_TOP | PM_PARSE_PATTERN_MULTI, PM_ERR_PATTERN_EXPRESSION_AFTER_IN, (uint16_t) (depth + 1));
 
             parser->pattern_matching_newlines = previous_pattern_matching_newlines;
@@ -22452,7 +22492,7 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
             lex_state_set(parser, PM_LEX_STATE_BEG | PM_LEX_STATE_LABEL);
             parser_lex(parser);
 
-            pm_constant_id_list_t captures = { 0 };
+            pm_constant_id_set_t captures = { 0 };
             pm_node_t *pattern = parse_pattern(parser, &captures, PM_PARSE_PATTERN_TOP | PM_PARSE_PATTERN_MULTI, PM_ERR_PATTERN_EXPRESSION_AFTER_HROCKET, (uint16_t) (depth + 1));
 
             parser->pattern_matching_newlines = previous_pattern_matching_newlines;

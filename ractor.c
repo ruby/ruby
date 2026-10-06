@@ -515,13 +515,40 @@ ractor_free(void *ptr)
     }
 }
 
+static int
+targeted_hook_list_memsize_i(st_data_t key, st_data_t val, st_data_t arg)
+{
+    size_t *size = (size_t *)arg;
+    rb_hook_list_t *hook_list = (rb_hook_list_t *)val;
+
+    *size += sizeof(rb_hook_list_t) + rb_hook_list_memsize(hook_list);
+
+    return ST_CONTINUE;
+}
+
 static size_t
 ractor_memsize(const void *ptr)
 {
     rb_ractor_t *r = (rb_ractor_t *)ptr;
+    size_t size = sizeof(rb_ractor_t);
 
-    // TODO: more correct?
-    return sizeof(rb_ractor_t) + ractor_sync_memsize(r);
+    size += ractor_sync_memsize(r);
+
+    size += rb_st_memsize(&r->pub.targeted_hooks) - sizeof(struct st_table);
+    st_foreach(&r->pub.targeted_hooks, targeted_hook_list_memsize_i, (st_data_t)&size);
+    size += rb_hook_list_memsize(&r->pub.hooks);
+
+    if (r->local_storage) {
+        size += st_memsize(r->local_storage);
+    }
+    if (r->idkey_local_storage) {
+        size += rb_id_table_memsize(r->idkey_local_storage);
+    }
+
+    size += r->registered_marks_capa * sizeof(VALUE);
+    size += r->registered_addrs_capa * sizeof(struct rb_ractor_registered_addr);
+
+    return size;
 }
 
 static void

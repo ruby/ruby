@@ -106,6 +106,14 @@ class JSONResumageParserTest < Test::Unit::TestCase
     end
   end
 
+  def test_on_load_method
+    on_load = ->(value) { Integer === value ? value + 1 : value }.method(:call)
+    parser = new_parser(on_load: on_load)
+    parser << '[1]'
+    assert parser.parse
+    assert_equal [2], parser.value
+  end
+
   def test_parse_document_direct
     @parser << '[true]'
     assert_equal true, @parser.parse
@@ -162,6 +170,7 @@ class JSONResumageParserTest < Test::Unit::TestCase
     assert_resumed_parsing('{    }')
     assert_resumed_parsing('{"test" : true}')
     assert_resumed_parsing('{  "test":12, "value" : { "key": 42}  }')
+    assert_resumed_parsing('{"te\u0000st":true}')
   end
 
   def test_parse_byte_by_byte_string
@@ -224,6 +233,18 @@ class JSONResumageParserTest < Test::Unit::TestCase
     assert_parse_error "{\x00}"         # object key
     assert_parse_error "{\"a\":1\x00}"  # after an object value (',' or '}' expected)
     assert_parse_error "{\"a\":1,\x00}" # object key after ','
+  end
+
+  def test_nul_after_backslash_in_object_key_is_a_syntax_error
+    assert_parse_error "{\"key\\\x00\":1}"
+    assert_parse_error "{\"a\":1,\"key\\\x00\":2}"
+  end
+
+  def test_nul_after_backslash_in_object_key_across_feeds
+    @parser << "{\"key\\"
+    refute @parser.parse
+    @parser << "\x00\":1}"
+    assert_raise(JSON::ParserError) { @parser.parse }
   end
 
   def test_incomplete_input_at_structural_positions_resumes

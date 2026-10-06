@@ -179,7 +179,7 @@ class Resolv
   # Resolv::Hosts is a hostname resolver that uses the system hosts file.
 
   class Hosts
-    if /mswin|cygwin|mingw|bccwin/ =~ RUBY_PLATFORM || ::RbConfig::CONFIG['host_os'] =~ /mswin/
+    if /mswin|cygwin|mingw/ =~ RUBY_PLATFORM || ::RbConfig::CONFIG['host_os'] =~ /mswin/
       begin
         require 'win32/resolv' unless defined?(Win32::Resolv)
         hosts = Win32::Resolv.get_hosts_path || IO::NULL
@@ -1132,14 +1132,15 @@ class Resolv
       end
 
       def Config.default_config_hash(filename="/etc/resolv.conf")
-        if File.exist? filename
-          Config.parse_resolv_conf(filename)
-        elsif defined?(Win32::Resolv)
+        # Native Windows resolves the path against the current drive, while Cygwin's own resolver honors it.
+        if defined?(Win32::Resolv) and !(/cygwin/ =~ RUBY_PLATFORM and File.exist?(filename))
           search, nameserver = Win32::Resolv.get_resolv_info
           config_hash = {}
           config_hash[:nameserver] = nameserver if nameserver
           config_hash[:search] = [search].flatten if search
           config_hash
+        elsif File.exist? filename
+          Config.parse_resolv_conf(filename)
         else
           {}
         end
@@ -1844,6 +1845,9 @@ class Resolv
           # size counts the encoded form, so it starts at 1 for the root
           # label's terminating zero octet. [RFC 1035 3.1]
           size = 1
+          # A pointer chain decodes to few or no labels, so the 255-octet cap
+          # never bounds its work; cap the pointers followed per name too.
+          pointers = 0
           while true
             raise DecodeError.new("limit exceeded") if @limit <= @index
             case @data.getbyte(@index)
@@ -1854,6 +1858,8 @@ class Resolv
               end
               return d
             when 192..255
+              pointers += 1
+              raise DecodeError.new("too many compression pointers") if pointers > 128
               idx = self.get_unpack('n')[0] & 0x3fff
               if prev_index <= idx
                 raise DecodeError.new("non-backward name pointer")

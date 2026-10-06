@@ -106,7 +106,7 @@ class TestGc < Test::Unit::TestCase
     GC.config(full_mark: false)
 
     major_count = GC.stat[:major_gc_count]
-    GC.start
+    GC.start(global: false)
 
     assert_operator(major_count, :<, GC.stat[:major_gc_count])
   ensure
@@ -217,7 +217,7 @@ class TestGc < Test::Unit::TestCase
     assert_equal stat[:heap_allocated_pages], stat[:heap_eden_pages] + stat[:heap_empty_pages]
 
     if use_rgengc?
-      assert_equal stat[:count], stat[:major_gc_count] + stat[:minor_gc_count]
+      assert_equal stat[:count], stat[:major_gc_count] + stat[:minor_gc_count] + stat.fetch(:global_gc_count, 0)
     end
   end
 
@@ -1080,7 +1080,7 @@ class TestGc < Test::Unit::TestCase
       GC.disable
       local = GC.stat
       process = GC.stat(scope: :global)
-      keys = %i[count minor_gc_count major_gc_count time marking_time sweeping_time]
+      keys = %i[count minor_gc_count major_gc_count global_gc_count time marking_time sweeping_time]
       assert_equal local.values_at(*keys), process.values_at(*keys)
     RUBY
   end
@@ -1089,7 +1089,7 @@ class TestGc < Test::Unit::TestCase
     omit 'default GC only' unless GC.config[:implementation] == 'default'
 
     stat = GC.stat(scope: :global)
-    assert_equal stat[:minor_gc_count] + stat[:major_gc_count], stat[:count]
+    assert_equal stat[:minor_gc_count] + stat[:major_gc_count] + stat[:global_gc_count], stat[:count]
   end
 
   def test_stat_global_scope_time_rounding
@@ -1103,7 +1103,7 @@ class TestGc < Test::Unit::TestCase
     omit 'default GC only' unless GC.config[:implementation] == 'default'
 
     stat = GC.stat(scope: :global)
-    keys = %i[count minor_gc_count major_gc_count time marking_time sweeping_time]
+    keys = %i[count minor_gc_count major_gc_count global_gc_count time marking_time sweeping_time]
     assert_kind_of Hash, stat
     assert_not_same stat, GC.stat(scope: :global)
     assert_equal keys.sort, stat.keys.sort
@@ -1114,7 +1114,7 @@ class TestGc < Test::Unit::TestCase
     omit 'default GC only' unless GC.config[:implementation] == 'default'
 
     stat = GC.stat(nil, scope: :global)
-    keys = %i[count minor_gc_count major_gc_count time marking_time sweeping_time]
+    keys = %i[count minor_gc_count major_gc_count global_gc_count time marking_time sweeping_time]
     assert_kind_of Hash, stat
     assert_not_same stat, GC.stat(scope: :global)
     assert_equal keys.sort, stat.keys.sort
@@ -1137,7 +1137,7 @@ class TestGc < Test::Unit::TestCase
   def test_stat_global_scope_supplied_hash_is_updated_and_preserved
     omit 'default GC only' unless GC.config[:implementation] == 'default'
 
-    keys = %i[count minor_gc_count major_gc_count time marking_time sweeping_time]
+    keys = %i[count minor_gc_count major_gc_count global_gc_count time marking_time sweeping_time]
     buffer = { sentinel: :keep }
     assert_same buffer, GC.stat(buffer, scope: :global)
     assert_equal :keep, buffer[:sentinel]
@@ -1323,15 +1323,14 @@ class TestGc < Test::Unit::TestCase
       local_before = GC.stat(:count)
       process_before = GC.stat(:count, scope: :global)
       ready = Ractor::Port.new
-      outer = Ractor.new(ready) do |reply|
+      outer = assert_in_ractor(ready, value: false) do |reply|
         GC.disable
         3.times { GC.start(full_mark: false, immediate_mark: true, immediate_sweep: true) }
-        inner = Ractor.new do
+        assert_in_ractor do
           GC.disable
           5.times { GC.start(full_mark: false, immediate_mark: true, immediate_sweep: true) }
-          GC.stat(:count)
+          assert_equal(5, GC.stat(:count), "inner count")
         end
-        raise "inner count" unless inner.value == 5
 
         reply << :ready
         Ractor.receive
@@ -1340,7 +1339,7 @@ class TestGc < Test::Unit::TestCase
       ready.receive
 
       assert_equal(9, GC.stat(:count, scope: :global) - process_before, "nested history missing")
-      outer.send(:finish)
+      outer.ractor.send(:finish)
       assert_equal(:finish, outer.value, "outer result")
       assert_equal(10, GC.stat(:count, scope: :global) - process_before, "nested history changed")
       assert_equal(local_before, GC.stat(:count), "main inherited nested counts")
@@ -1366,7 +1365,8 @@ class TestGc < Test::Unit::TestCase
       GC.start(full_mark: true, immediate_mark: true, immediate_sweep: true)
       after = GC.stat(scope: :global)
       assert_equal 1, after[:count] - before[:count]
-      assert_equal 1, after[:major_gc_count] - before[:major_gc_count]
+      assert_equal before[:major_gc_count], after[:major_gc_count]
+      assert_equal 1, after[:global_gc_count] - before[:global_gc_count]
       assert_equal before[:minor_gc_count], after[:minor_gc_count]
 
       worker.send(:finish)
@@ -1379,7 +1379,7 @@ class TestGc < Test::Unit::TestCase
     assert_separately([], __FILE__, __LINE__, <<~'RUBY', timeout: 60)
       Warning[:experimental] = false
       GC.disable
-      keys = %i[count minor_gc_count major_gc_count time marking_time sweeping_time]
+      keys = %i[count minor_gc_count major_gc_count global_gc_count time marking_time sweeping_time]
       start_count = GC.stat(:count, scope: :global)
       ready = Ractor::Port.new
 
@@ -1393,16 +1393,16 @@ class TestGc < Test::Unit::TestCase
       end
       worker_control = ready.receive
 
-      reader = Ractor.new(ready, keys) do |reply, ks|
+      reader = assert_in_ractor(ready, keys, value: false) do |reply, ks|
         control = Ractor::Port.new
         reply << control
         control.receive
         previous = nil
         read = lambda do
           stat = GC.stat(scope: :global)
-          raise "count invariant" unless stat[:count] == stat[:minor_gc_count] + stat[:major_gc_count]
-          raise "time rounding" unless (0..1).cover?(stat[:time] - (stat[:marking_time] + stat[:sweeping_time]))
-          ks.each { |key| raise "decreasing #{key}" if previous && stat[key] < previous[key] }
+          assert_equal(stat[:minor_gc_count] + stat[:major_gc_count] + stat[:global_gc_count], stat[:count], "count invariant")
+          assert_include(0..1, stat[:time] - (stat[:marking_time] + stat[:sweeping_time]), "time rounding")
+          ks.each { |key| assert_operator stat[key], :>=, previous[key], "decreasing #{key}" if previous }
           previous = stat
         end
         50.times { read.call }
@@ -1421,7 +1421,7 @@ class TestGc < Test::Unit::TestCase
       reader_last = reader.value
 
       final = GC.stat(scope: :global)
-      assert_equal final[:minor_gc_count] + final[:major_gc_count], final[:count]
+      assert_equal final[:minor_gc_count] + final[:major_gc_count] + final[:global_gc_count], final[:count]
       assert_include 0..1, final[:time] - (final[:marking_time] + final[:sweeping_time])
       assert reader_last.all? { |key, value| final[key] >= value }
       assert_operator final[:count] - start_count, :>=, 50
@@ -1438,7 +1438,7 @@ class TestGc < Test::Unit::TestCase
       GC.measure_total_time = false
       baseline = GC.stat(scope: :global)
       ready = Ractor::Port.new
-      worker = Ractor.new(ready) do |reply|
+      worker = assert_in_ractor(ready, value: false) do |reply|
         GC.disable
         GC.measure_total_time = true
         retained = Array.new(100_000) { Object.new }
@@ -1447,7 +1447,7 @@ class TestGc < Test::Unit::TestCase
           break if GC.stat(:time) - time_before >= 2
           GC.start(full_mark: true, immediate_mark: true, immediate_sweep: true)
         end
-        raise "measured time not reached" unless GC.stat(:time) - time_before >= 2
+        assert_operator(GC.stat(:time) - time_before, :>=, 2, "measured time not reached")
 
         GC.measure_total_time = false
         control = Ractor::Port.new
@@ -1484,12 +1484,11 @@ class TestGc < Test::Unit::TestCase
       GC.disable
       process_before = GC.stat(:count, scope: :global)
 
-      absorbed = Ractor.new do
+      assert_in_ractor do
         GC.disable
         3.times { GC.start(full_mark: false, immediate_mark: true, immediate_sweep: true) }
-        GC.stat(:count)
+        assert_equal(3, GC.stat(:count))
       end
-      assert_equal 3, absorbed.value
 
       live_ready = Ractor::Port.new
       live = Ractor.new(live_ready) do |r|
@@ -1534,7 +1533,7 @@ class TestGc < Test::Unit::TestCase
     assert_separately([], __FILE__, __LINE__, <<~'RUBY', timeout: 60)
       Warning[:experimental] = false
       GC.disable
-      global_keys = %i[count minor_gc_count major_gc_count time marking_time sweeping_time]
+      global_keys = %i[count minor_gc_count major_gc_count global_gc_count time marking_time sweeping_time]
       local_gauge = :heap_live_slots
 
       default = GC.stat
@@ -1618,6 +1617,82 @@ class TestGc < Test::Unit::TestCase
         assert_operator after - before, :>=, 1
       end
       r.send(:done)
+    RUBY
+  end
+
+  def test_stat_global_gc_count_counts_initiated_cycles_only
+    omit 'default GC only' unless GC.config[:implementation] == 'default'
+    assert_ractor(<<~'RUBY')
+      r = Ractor.new { Ractor.receive }
+      GC.disable
+      before = GC.stat
+      GC.start(global: true)
+      after = GC.stat
+      assert_equal 1, after[:global_gc_count] - before[:global_gc_count]
+      assert_equal 1, after[:count] - before[:count]
+      assert_equal before[:major_gc_count], after[:major_gc_count]
+      assert_equal after[:global_gc_count], GC.stat(:global_gc_count, scope: :ractor)
+
+      GC.start(global: false)
+      local = GC.stat
+      assert_equal after[:global_gc_count], local[:global_gc_count]
+      assert_equal 1, local[:major_gc_count] - after[:major_gc_count]
+      r.send(:done)
+    RUBY
+  end
+
+  def test_stat_global_gc_count_is_per_ractor
+    omit 'default GC only' unless GC.config[:implementation] == 'default'
+    assert_ractor(<<~'RUBY')
+      worker = Ractor.new do
+        before = GC.stat(:global_gc_count)
+        GC.start(global: true)
+        GC.stat(:global_gc_count) - before
+      end
+      main_before = GC.stat(:global_gc_count)
+      initiated = worker.value
+      assert_operator initiated, :>=, 1
+      assert_equal 0, GC.stat(:global_gc_count) - main_before
+    RUBY
+  end
+
+  def test_stat_global_scope_global_gc_count_sums_ractor_counts
+    omit 'default GC only' unless GC.config[:implementation] == 'default'
+    assert_ractor(<<~'RUBY')
+      worker = Ractor.new do
+        Ractor.receive
+        GC.start(global: true)
+        GC.stat(:global_gc_count)
+      end
+
+      GC.disable
+      before = GC.stat(scope: :global)
+      assert_equal GC.stat(:global_gc_count), before[:global_gc_count]
+
+      worker << :go
+      worker_count = worker.value
+      assert_operator worker_count, :>=, 1
+
+      after = GC.stat(scope: :global)
+      assert_equal GC.stat(:global_gc_count) + worker_count, after[:global_gc_count]
+    RUBY
+  end
+
+  def test_stat_global_scope_global_gc_count_retains_unjoined_ractor
+    omit 'default GC only' unless GC.config[:implementation] == 'default'
+    assert_ractor(<<~'RUBY')
+      done = Ractor::Port.new
+      Ractor.new(done) do |reply|
+        GC.start(global: true)
+        reply << GC.stat(:global_gc_count)
+      end
+      worker_count = done.receive
+      assert_operator worker_count, :>=, 1
+      Thread.pass until Ractor.count == 1
+
+      GC.disable
+      after = GC.stat(scope: :global)
+      assert_equal GC.stat(:global_gc_count) + worker_count, after[:global_gc_count]
     RUBY
   end
 end

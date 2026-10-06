@@ -2228,6 +2228,7 @@ unsafe extern "C" {
     pub static mut rb_cRegexp: VALUE;
     pub static mut rb_cSet: VALUE;
     pub static mut rb_cString: VALUE;
+    pub static mut rb_cStruct: VALUE;
     pub static mut rb_cSymbol: VALUE;
     pub static mut rb_cThread: VALUE;
     pub static mut rb_cTrueClass: VALUE;
@@ -2258,6 +2259,7 @@ unsafe extern "C" {
     pub fn rb_hash_aref(hash: VALUE, key: VALUE) -> VALUE;
     pub fn rb_hash_aset(hash: VALUE, key: VALUE, val: VALUE) -> VALUE;
     pub fn rb_hash_bulk_insert(argc: ::std::os::raw::c_long, argv: *const VALUE, hash: VALUE);
+    pub fn rb_obj_is_proc(recv: VALUE) -> VALUE;
     pub fn rb_protect(
         func: ::std::option::Option<unsafe extern "C" fn(args: VALUE) -> VALUE>,
         args: VALUE,
@@ -2488,9 +2490,18 @@ unsafe extern "C" {
     pub fn rb_zjit_can_load_superclass_p(klass: VALUE) -> bool;
     pub fn rb_zjit_class_get_alloc_func(klass: VALUE) -> rb_alloc_func_t;
     pub fn rb_zjit_class_has_struct_allocator(klass: VALUE) -> bool;
+    pub fn rb_zjit_struct_num_members(klass: VALUE) -> ::std::os::raw::c_long;
+    pub fn rb_zjit_struct_member_id(klass: VALUE, index: ::std::os::raw::c_long) -> ID;
+    pub fn rb_zjit_struct_embedded_p(num_members: ::std::os::raw::c_long) -> bool;
+    pub fn rb_struct_s_keyword_init(klass: VALUE) -> VALUE;
     pub fn rb_zjit_class_has_default_allocator(klass: VALUE) -> bool;
     pub fn rb_vm_get_untagged_block_handler(reg_cfp: *mut rb_control_frame_t) -> VALUE;
     pub fn rb_vm_once_done_value(is: ISE, result: *mut VALUE) -> bool;
+    pub fn rb_zjit_array_aref_with_adjusted_index(
+        ary: VALUE,
+        index: ::std::os::raw::c_long,
+        out: *mut VALUE,
+    ) -> bool;
     pub fn rb_iseq_encoded_size(iseq: *const rb_iseq_t) -> ::std::os::raw::c_uint;
     pub fn rb_iseq_pc_at_idx(iseq: *const rb_iseq_t, insn_idx: u32) -> *mut VALUE;
     pub fn rb_iseq_opcode_at_pc(iseq: *const rb_iseq_t, pc: *const VALUE) -> ::std::os::raw::c_int;

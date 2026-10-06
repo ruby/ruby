@@ -6,7 +6,7 @@ class TestThreadInstrumentation < Test::Unit::TestCase
   include ThreadInstrumentation::TestHelper
 
   def setup
-    pend("No windows support") if /mswin|mingw|bccwin/ =~ RUBY_PLATFORM
+    pend("No windows support") if /mswin|mingw/ =~ RUBY_PLATFORM
 
     require '-test-/thread/instrumentation'
 
@@ -14,7 +14,7 @@ class TestThreadInstrumentation < Test::Unit::TestCase
   end
 
   def teardown
-    return if /mswin|mingw|bccwin/ =~ RUBY_PLATFORM
+    return if /mswin|mingw/ =~ RUBY_PLATFORM
     Bug::ThreadInstrumentation.unregister_callback
     cleanup_threads
   end

@@ -1813,12 +1813,21 @@ nogvl_rmdir(void *ptr)
 }
 
 /*
+ * :markup: markdown
+ *
  * call-seq:
+ *   Dir.delete(dirpath) -> 0
  *   Dir.rmdir(dirpath) -> 0
+ *   Dir.unlink(dirpath) -> 0
  *
- * Removes the directory at +dirpath+ from the underlying file system:
+ * Removes the directory entry ([hard link](rdoc-ref:file/hard_links.md)) at `dirpath`,
+ * along with its associated inode:
  *
- *   Dir.rmdir('foo') # => 0
+ * ```ruby
+ * dirpath = '/tmp/tmpdir'
+ * Dir.mkdir(dirpath)
+ * Dir.rmdir(dirpath) # => 0
+ * ```
  *
  * Raises an exception if the directory is not empty.
  */
