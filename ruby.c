@@ -53,6 +53,7 @@
 #include "internal/loadpath.h"
 #include "internal/missing.h"
 #include "internal/object.h"
+#include "internal/re.h"
 #include "internal/thread.h"
 #include "internal/ruby_parser.h"
 #include "internal/variable.h"
@@ -371,6 +372,7 @@ usage(const char *name, int help, int highlight, int columns)
         M("--help",                       "",            "Print long help message; use -h for short message."),
         M("--internal-encoding=encoding", "",            "Set default internal encoding."),
         M("--parser=parser",              "",            "Set Ruby parser: parse.y or prism."),
+        M("--regexp-engine=engine",       "",            "Set regexp engine: onigmo or rust."),
         M("--verbose",                    "",            "Set $VERBOSE to true; ignore input from $stdin."),
         M("--version",                    "",            "Print Ruby version."),
         M("-y",                           ", --yydebug", "Print parser log; backward compatibility not guaranteed."),
@@ -1475,6 +1477,19 @@ proc_long_options(ruby_cmdline_options_t *opt, const char *s, long argc, char **
         }
         else {
             rb_raise(rb_eRuntimeError, "unknown parser %s", s);
+        }
+    }
+    else if (is_option_with_arg("regexp-engine", Qfalse, Qtrue)) {
+        if (strcmp("onigmo", s) == 0) {
+            rb_reg_default_engine_set(RB_REGEXP_ENGINE_ONIGMO);
+        }
+        else if (strcmp("rust", s) == 0) {
+            if (!rb_reg_default_engine_set(RB_REGEXP_ENGINE_RUST)) {
+                rb_raise(rb_eRuntimeError, "regexp engine rust is not built in");
+            }
+        }
+        else {
+            rb_raise(rb_eRuntimeError, "unknown regexp engine %s", s);
         }
     }
 #if defined ALLOW_DEFAULT_SOURCE_ENCODING && ALLOW_DEFAULT_SOURCE_ENCODING

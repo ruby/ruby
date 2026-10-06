@@ -145,6 +145,7 @@ random.$(OBJEXT): {$(VPATH)}random.c
 range.$(OBJEXT): {$(VPATH)}range.c
 rational.$(OBJEXT): {$(VPATH)}rational.c
 re.$(OBJEXT): {$(VPATH)}re.c
+re_engine.$(OBJEXT): {$(VPATH)}re_engine.c
 regcomp.$(OBJEXT): {$(VPATH)}regcomp.c
 regenc.$(OBJEXT): {$(VPATH)}regenc.c
 regerror.$(OBJEXT): {$(VPATH)}regerror.c

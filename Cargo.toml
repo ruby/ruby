@@ -12,7 +12,7 @@
 # optional dependencies are built (rust-lang/cargo#10352).
 
 [workspace]
-members = ["zjit", "yjit", "jit"]
+members = ["zjit", "yjit", "jit", "regexp"]
 
 [package]
 name = "ruby"
@@ -24,6 +24,7 @@ publish = false # Don't publish to crates.io
 [dependencies]
 yjit = { path = "yjit", optional = true }
 zjit = { path = "zjit", optional = true }
+regexp = { path = "regexp", optional = true }
 
 [lib]
 crate-type = ["staticlib"]
@@ -31,9 +32,10 @@ path = "ruby.rs"
 
 [features]
 disasm = ["yjit?/disasm", "zjit?/disasm"]
-runtime_checks = ["yjit?/runtime_checks", "zjit?/runtime_checks"]
+runtime_checks = ["yjit?/runtime_checks", "zjit?/runtime_checks", "regexp?/runtime_checks"]
 yjit = [ "dep:yjit" ]
 zjit = [ "dep:zjit" ]
+regexp = [ "dep:regexp" ]
 
 [profile.dev]
 opt-level = 1 # On 0, functions use so much stack space that we get stray `SystemStackError`s
@@ -52,7 +54,7 @@ inherits = "dev"
 inherits = "release"
 
 [profile.release]
-# NOTE: --enable-yjit and zjit builds use `rustc` without going through Cargo. You
+# NOTE: --enable-yjit, zjit and rust-regexp builds use `rustc` without going through Cargo. You
 # might want to update the `rustc` invocation if you change this profile.
 opt-level = 3
 # The extra robustness that comes from checking for arithmetic overflow is
@@ -62,3 +64,8 @@ overflow-checks = true
 debug = true
 # Use ThinLTO. Much smaller output for a small amount of build time increase.
 lto = "thin"
+
+[profile.release.package.regexp]
+# Every access the matcher makes is bounds checked, so overflow checks add
+# no memory safety there and cost about 14% in its inner loop.
+overflow-checks = false

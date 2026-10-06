@@ -323,9 +323,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "regexp"
+version = "0.0.1"
+
+[[package]]
 name = "ruby"
 version = "0.0.0"
 dependencies = [
+ "regexp",
  "yjit",
  "zjit",
 ]
