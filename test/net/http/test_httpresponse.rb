@@ -93,6 +93,40 @@ EOS
     assert_equal('XXX YYY', res['x-bar'])
   end
 
+  def test_multiline_header_whitespace_only
+    io = dummy_io(<<EOS)
+HTTP/1.1 200 OK
+Content-Length: 5
+ 	
+X-After: value
+
+hello
+EOS
+    res = Net::HTTPResponse.read_new(io)
+    # Whitespace only line is ignored
+    assert_equal('5', res['content-length'])
+    assert_equal('value', res['x-after'])
+    body = nil
+    res.reading_body io, true do
+      body = res.read_body
+    end
+    assert_equal('hello', body)
+  end
+
+  def test_multiline_header_no_preceding_header
+    io = dummy_io(<<EOS)
+HTTP/1.1 200 OK
+ 	
+Content-Length: 5
+
+hello
+EOS
+    e = assert_raise(Net::HTTPBadResponse) do
+      Net::HTTPResponse.read_new(io)
+    end
+    assert_equal 'wrong header line format', e.message
+  end
+
   def test_read_body
     io = dummy_io(<<EOS)
 HTTP/1.1 200 OK
