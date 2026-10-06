@@ -6743,6 +6743,13 @@ impl Function {
         // The cache is pruned when loads and stores can alias between objects.
         let mut cached_insns: Vec<HashMap<Key, InsnId>> = vec![HashMap::new(); cfi.num_blocks];
 
+        // An available expression is an expression that has already been computed with values that have not changed since the last computation.
+        // In this case, available expressions == redundant loads and stores
+        // To compute the available expressions, we need to know which expressions have been evaluated, and when effectful operations interrupt the optimization.
+        // This information is stored in cached_insns and is used to populate available_expressions.
+        // Once the fixpoint loop is finished, we elide all available expressions, concluding the load store forwarding pass.
+        let mut available_expressions: InsnSet = InsnSet::with_capacity(self.insns.len());
+
         loop {
             for (rpo_index, &block_id) in rpo.iter().enumerate() {
                 // Set block_cache equal to the intersection of cached insns of all predecessors
@@ -6767,22 +6774,17 @@ impl Function {
 
                     }
                 };
-                let old_insns = std::mem::take(&mut self.blocks[block_id].insns);
-                let mut new_insns = Vec::with_capacity(old_insns.len());
-                for insn_id in old_insns {
-                    let replacement_insn: InsnId = match self.resolve(insn_id).insn(self) {
+                let insns = std::mem::take(&mut self.blocks[block_id].insns);
+                for insn_id in insns.iter() {
+                    match self.resolve(*insn_id).insn(self) {
                         &Insn::StoreField { recv, offset, val, .. } => {
                             let key = Key { id: self.chase_insn(recv), offset };
                             let heap_entry = block_cache.get(&key).copied();
-                            // TODO(Jacob): Switch from actual to partial equality
                             if Some(val) == heap_entry {
-                                // If the value is already stored, short circuit and don't add an instruction to the block
-                                continue
+                                available_expressions.insert(*insn_id);
                             }
-                            // TODO(Jacob): Add type based alias analysis to avoid removing so many entries
                             block_cache.retain(|key, _| key.offset != offset);
                             block_cache.insert(key, val);
-                            insn_id
                         },
                         &Insn::LoadField { recv, offset, return_type, .. } => {
                             let key = Key { id: self.chase_insn(recv), offset };
@@ -6803,38 +6805,32 @@ impl Function {
                                     if can_forward_cached_insn {
                                         // If the value is stored already, we should short circuit.
                                         // However, we need to replace insn_id with its representative in the SSA union.
-                                        self.make_equal_to(insn_id, cached_insn);
-                                        continue
+                                        self.make_equal_to(*insn_id, cached_insn);
+                                        available_expressions.insert(*insn_id);
                                     }
                                 }
                                 Entry::Vacant(entry) => {
                                     // If the value has not been accessed, cache a copy to optimize future loads or stores.
-                                    entry.insert(insn_id);
+                                    entry.insert(*insn_id);
                                 }
                             }
-                            insn_id
                         }
                         &Insn::WriteBarrier { .. } => {
                             // Currently, WriteBarrier write effects are Allocator and Memory when we'd really like them to be flags.
                             // We don't use LoadField for mark bits so we can ignore them for now.
                             // But flags does not exist in our effects abstract heap modeling and we don't want to add special casing to effects.
                             // This special casing in this pass here should be removed once we refine our effects system to provide greater granularity for WriteBarrier.
-                            // TODO: use type based alias analysis
                             let offset = RUBY_OFFSET_RBASIC_FLAGS;
                             block_cache.retain(|key, _| key.offset != offset);
-                            insn_id
                         },
                         insn => {
                             if insn.effects_of().includes(Effect::write(abstract_heaps::Memory)) {
                                 block_cache.clear();
                             }
-                            insn_id
                         }
                     };
-                    new_insns.push(replacement_insn);
                 }
-
-                self.blocks[block_id].insns = new_insns;
+                self.blocks[block_id].insns = insns;
 
                 if cached_insns[block_id] == block_cache {
                     changed = false;
@@ -6847,6 +6843,10 @@ impl Function {
             if !(changed && has_back_edge) {
                 break;
             }
+        }
+
+        for &block_id in rpo {
+            self.blocks[block_id].insns.retain(|&insn_id| !available_expressions.get(insn_id));
         }
     }
 

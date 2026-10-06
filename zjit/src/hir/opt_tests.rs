@@ -26253,7 +26253,8 @@ mod hir_opt_tests {
              def read(val)
                even = val.even?
                a = @value
-               even ? a : @value + 1
+               b = even ? 0 : 1
+               a + b
              end
            end
 
@@ -26274,34 +26275,37 @@ mod hir_opt_tests {
           Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v8:BasicObject = LoadArg :self@0
-          v9:BasicObject = LoadArg :val@1
-          Jump bb3(v8, v9)
-        bb3(v13:BasicObject, v14:BasicObject):
-          v74:NilClass = Const Value(nil)
-          v73:NilClass = Const Value(nil)
+          v9:BasicObject = LoadArg :self@0
+          v10:BasicObject = LoadArg :val@1
+          Jump bb3(v9, v10)
+        bb3(v15:BasicObject, v16:BasicObject):
+          v85:NilClass = Const Value(nil)
+          v84:NilClass = Const Value(nil)
+          v83:NilClass = Const Value(nil)
           PatchPoint MethodRedefined(Integer@0x1008, even?@0x1010, cme:0x1018)
-          v67:Fixnum = GuardType v14, Fixnum recompile
-          v68:BoolExact = InvokeBuiltin leaf <inline_expr>, v67
+          v77:Fixnum = GuardType v16, Fixnum recompile
+          v78:BoolExact = InvokeBuiltin leaf <inline_expr>, v77
           PatchPoint NoEPEscape(read)
-          v27:HeapBasicObject = GuardType v13, HeapBasicObject
-          v28:CShape = LoadField v27, :shape_id@0x1040
-          v29:CShape[0x1041] = GuardBitEquals v28, CShape(0x1041) recompile
-          v30:BasicObject = LoadField v27, :@value@0x1042
-          v37:CBool = Test v68
-          v38:FalseClass = RefineType v68, Falsy
-          CondBranch v37, bb5(), bb4()
-        bb5():
-          v40:TrueClass = RefineType v68, Truthy
-          CheckInterrupts
-          Return v30
+          v30:HeapBasicObject = GuardType v15, HeapBasicObject
+          v31:CShape = LoadField v30, :shape_id@0x1040
+          v32:CShape[0x1041] = GuardBitEquals v31, CShape(0x1041) recompile
+          v33:BasicObject = LoadField v30, :@value@0x1042
+          v40:CBool = Test v78
+          v41:FalseClass = RefineType v78, Falsy
+          CondBranch v40, bb6(), bb4()
+        bb6():
+          v43:TrueClass = RefineType v78, Truthy
+          v45:Fixnum[0] = Const Value(0)
+          Jump bb5(v43, v45)
         bb4():
-          v57:Fixnum[1] = Const Value(1)
+          v55:Fixnum[1] = Const Value(1)
+          Jump bb5(v41, v55)
+        bb5(v59:BoolExact, v62:Fixnum):
           PatchPoint MethodRedefined(Integer@0x1008, +@0x1043, cme:0x1048)
-          v71:Fixnum = GuardType v30, Fixnum recompile
-          v72:Fixnum = FixnumAdd v71, v57
+          v81:Fixnum = GuardType v33, Fixnum recompile
+          v82:Fixnum = FixnumAdd v81, v62
           CheckInterrupts
-          Return v72
+          Return v82
         "
         );
     }
