@@ -365,7 +365,12 @@ gvl_sampling_loop(void *unused)
         pthread_mutex_lock(&sampling_lock);
         for (unsigned int i = 0; i < MAX_SAMPLED_NATIVE_THREADS; i++) {
             struct sampled_native_thread *native = &sampled_native_threads[i];
-            if (native->active && pthread_kill(native->thread, SIGURG)) {
+            if (!native->active) continue;
+            int error = pthread_kill(native->thread, SIGURG);
+            /* Darwin disables signal delivery before TLS destructors run.
+             * The ID is still lifetime-protected by sampling_lock, but an
+             * exiting thread can return ESRCH before it deregisters. */
+            if (error && error != ESRCH) {
                 RUBY_ATOMIC_INC(sampling_send_errors);
             }
         }

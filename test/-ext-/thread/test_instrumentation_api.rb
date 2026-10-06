@@ -129,7 +129,7 @@ class TestThreadInstrumentation < Test::Unit::TestCase
           assert_operator samples, :>, 0
           assert_operator empty, :>, 0, 'No idle native scheduler threads were sampled'
           assert_equal 0, errors, 'Idle native scheduler threads reported GVL ownership'
-          assert_equal 0, send_errors, 'Signals were sent to retired native scheduler threads'
+          assert_equal 0, send_errors, 'Unexpected error sending a native sampling signal'
           assert_equal 0, registration_errors, 'Could not register native scheduler threads'
         end
       ensure
