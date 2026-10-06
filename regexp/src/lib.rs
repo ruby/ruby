@@ -6,6 +6,12 @@
 
 #![deny(unsafe_code)]
 
+pub mod ast;
+pub mod enc;
+pub mod error;
 mod ffi;
+pub mod names;
+pub mod parser;
+pub mod syntax;
 
 pub use ffi::*;
