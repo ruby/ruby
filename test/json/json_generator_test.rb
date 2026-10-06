@@ -1049,20 +1049,23 @@ class JSONGeneratorTest < Test::Unit::TestCase
     end
   end
 
-  if defined?(JSON::Ext::Generator) and RUBY_PLATFORM != "java"
-    def test_valid_utf8_in_different_encoding
-      utf8_string = "€™"
-      wrong_encoding_string = utf8_string.b
-      # This behavior is historical. Not necessary desirable. We should deprecated it.
-      # The pure and java version of the gem already don't behave this way.
-      assert_warning(/UTF-8 string passed as BINARY, this will raise an encoding error in json 3.0/) do
-        assert_equal utf8_string.to_json, wrong_encoding_string.to_json
-      end
-
-      assert_warning(/UTF-8 string passed as BINARY, this will raise an encoding error in json 3.0/) do
-        assert_equal JSON.dump(utf8_string), JSON.dump(wrong_encoding_string)
-      end
+  def test_valid_utf8_in_binary_encoding
+    string = "€™".b.freeze
+    assert_raise(JSON::GeneratorError) { string.to_json }
+    assert_raise(JSON::GeneratorError) { JSON.dump(string) }
+    [string, [string], { string => 1 }, { value: string }].each do |object|
+      error = assert_raise(JSON::GeneratorError) { JSON.generate(object) }
+      assert_same string, error.invalid_object
+      assert_kind_of Encoding::UndefinedConversionError, error.cause
     end
+  end
+
+  def test_ascii_in_binary_encoding
+    string = "ascii".b
+    assert_equal '"ascii"', string.to_json
+    assert_equal '"ascii"', JSON.dump(string)
+    assert_equal '["ascii"]', JSON.generate([string])
+    assert_equal '{"ascii":1}', JSON.generate(string => 1)
   end
 
   def test_nonutf8_encoding
