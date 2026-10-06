@@ -3809,6 +3809,8 @@ class TestArray < Test::Unit::TestCase
     assert_equal(result, 3.0)
 
     assert_raise(TypeError) { [Object.new].sum }
+    assert_raise(TypeError) { [nil].sum(10.0) }
+    assert_raise(TypeError) { ["hello"].sum(10.0) }
 
     large_number = 100000000
     small_number = 1e-9
