@@ -818,7 +818,7 @@ ossl_bn_s_rand(int argc, VALUE *argv, VALUE klass)
 
     switch (rb_scan_args(argc, argv, "12", &bits, &fill, &odd)) {
       case 3:
-        bottom = (odd == Qtrue) ? 1 : 0;
+        bottom = RTEST(odd) ? 1 : 0;
         /* FALLTHROUGH */
       case 2:
         top = NUM2INT(fill);
