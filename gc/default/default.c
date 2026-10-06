@@ -1041,6 +1041,7 @@ heap_init_bytes_min(void)
 /* Precomputed reciprocals for fast slot index calculation.
  * For slot size d: reciprocal = ceil(2^48 / d).
  * Then offset / d == (uint32_t)((offset * reciprocal) >> 48)
+ * and offset % d == 0 iff ((offset * reciprocal) & (2^48 - 1)) < reciprocal
  * for all offset < HEAP_PAGE_SIZE. */
 #define SLOT_RECIPROCAL_SHIFT 48
 #define SLOT_RECIPROCAL(size) (((1ULL << SLOT_RECIPROCAL_SHIFT) + (size) - 1) / (size))
@@ -1233,6 +1234,18 @@ static inline size_t
 slot_index_for_offset(size_t offset, uint64_t reciprocal)
 {
     return (uint32_t)(((uint64_t)offset * reciprocal) >> SLOT_RECIPROCAL_SHIFT);
+}
+
+/* (p - page->start) % page->slot_size == 0, using the divisibility test from
+ * "Faster Remainder by Direct Computation" (Lemire, Kaser, Kurz 2019).
+ * p must already be known to be within the page. */
+static inline bool
+slot_offset_aligned_p(const struct heap_page *page, uintptr_t p)
+{
+    uint64_t offset = p - page->start;
+    uint64_t reciprocal = page->slot_size_reciprocal;
+    uint64_t lowbits = (offset * reciprocal) & ((1ULL << SLOT_RECIPROCAL_SHIFT) - 1);
+    return lowbits < reciprocal;
 }
 
 #define SLOT_INDEX(page, p)          slot_index_for_offset((uintptr_t)(p) - (page)->start, (page)->slot_size_reciprocal)
@@ -3690,7 +3703,7 @@ is_pointer_to_heap(rb_objspace_t *objspace, const void *ptr)
         else {
             if (p < page->start) return FALSE;
             if (p >= page->start + (page->total_slots * page->slot_size)) return FALSE;
-            if ((p - page->start) % page->slot_size != 0) return FALSE;
+            if (!slot_offset_aligned_p(page, p)) return FALSE;
 
             return TRUE;
         }
@@ -6461,7 +6474,7 @@ gc_global_pointer_to_heap_p(const void *ptr)
     if (heap_page_in_global_empty_pages_pool(page->objspace, page)) return false;
     if (p < page->start) return false;
     if (p >= page->start + (page->total_slots * page->slot_size)) return false;
-    if ((p - page->start) % page->slot_size != 0) return false;
+    if (!slot_offset_aligned_p(page, p)) return false;
     return true;
 }
 
