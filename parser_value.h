@@ -105,6 +105,7 @@ typedef unsigned LONG_LONG ID;
 
 typedef long rb_len_t;
 typedef unsigned long rb_ulen_t;
+#define SIZEOF_RB_LEN_T SIZEOF_LONG
 #define PRI_LEN_PREFIX "l"
 #define RB_LEN_MAX LONG_MAX
 #define RB_LEN_MIN LONG_MIN
