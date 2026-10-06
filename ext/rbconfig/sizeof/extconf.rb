@@ -32,5 +32,6 @@ have_type('_Decimal128') # x86_64 ABI
 have_type('__m64') # x86_64 ABI (optional)
 have_type('__m128') # x86_64 ABI (optional)
 have_type('__float80') # gcc x86
+have_type('rb_len_t')
 
 create_makefile('rbconfig/sizeof')
