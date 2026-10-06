@@ -3921,6 +3921,8 @@ op		: '|'		{ $$ = '|'; }
                 | tAREF		{ $$ = tAREF; }
                 | tASET		{ $$ = tASET; }
                 | '`'		{ $$ = '`'; }
+                | tANDOP	{ $$ = tANDOP; }
+                | tOROP		{ $$ = tOROP; }
                 ;
 
 reswords	: keyword__LINE__ | keyword__FILE__ | keyword__ENCODING__
@@ -10804,6 +10806,9 @@ parser_yylex(struct parser_params *p)
                 return tOP_ASGN;
             }
             pushback(p, c);
+            if (IS_lex_state_for(last_state, EXPR_FNAME|EXPR_DOT)) {
+                SET_LEX_STATE(EXPR_ARG);
+            }
             return tANDOP;
         }
         else if (c == '=') {
@@ -10848,6 +10853,9 @@ parser_yylex(struct parser_params *p)
                 c = '|';
                 pushback(p, '|');
                 return c;
+            }
+            if (IS_lex_state_for(last_state, EXPR_FNAME|EXPR_DOT)) {
+                SET_LEX_STATE(EXPR_ARG);
             }
             return tOROP;
         }

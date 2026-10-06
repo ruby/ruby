@@ -1567,6 +1567,23 @@ new_insn_send(rb_iseq_t *iseq, int line_no, int node_id, ID id, VALUE argc, cons
     return insn;
 }
 
+static INSN *
+new_insn_logop_branch(rb_iseq_t *iseq, int line_no, int node_id, ID mid, LABEL *dst)
+{
+    VALUE ci = (VALUE)new_callinfo(iseq, mid, 1, 0, NULL, FALSE);
+    LABEL_REF(dst);
+    return new_insn_body(iseq, line_no, node_id,
+                         mid == idANDOP ? BIN(opt_branch_andop) : BIN(opt_branch_orop),
+                         2, ci, (VALUE)dst);
+}
+
+/* Shares the call data of `branch`, so it does not count toward ci_size. */
+static INSN *
+new_insn_logop(rb_iseq_t *iseq, int line_no, int node_id, INSN *branch)
+{
+    return new_insn_body(iseq, line_no, node_id, BIN(opt_logop), 1, OPERAND_AT(branch, 0));
+}
+
 static rb_iseq_t *
 new_child_iseq(rb_iseq_t *iseq, const NODE *const node,
                VALUE name, const rb_iseq_t *parent, enum rb_iseq_type type, int line_no)
@@ -2680,6 +2697,33 @@ idlist_to_array(const ID *ids)
     return arr;
 }
 
+/* Dead code elimination may remove the opt_logop of a branch, so pair each opt_logop with the
+ * innermost unmatched branch of the same method. */
+static void
+share_logop_call_data(VALUE *code, unsigned int size, unsigned int branches)
+{
+    VALUE buf;
+    struct rb_call_data **stack = ALLOCV_N(struct rb_call_data *, buf, branches);
+    unsigned int depth = 0;
+
+    for (unsigned int pos = 0; pos < size; pos += insn_len(code[pos])) {
+        switch (code[pos]) {
+          case BIN(opt_branch_andop):
+          case BIN(opt_branch_orop):
+            stack[depth++] = (struct rb_call_data *)code[pos + 1];
+            break;
+          case BIN(opt_logop): {
+            ID mid = vm_ci_mid((const struct rb_callinfo *)code[pos + 1]);
+            while (depth > 0 && vm_ci_mid(stack[depth - 1]->ci) != mid) depth--;
+            if (depth == 0) rb_bug("share_logop_call_data: no branch for opt_logop at %u", pos);
+            code[pos + 1] = (VALUE)stack[--depth];
+            break;
+          }
+        }
+    }
+    ALLOCV_END(buf);
+}
+
 /**
   ruby insn object list -> raw instruction sequence
  */
@@ -2695,6 +2739,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
     long data = 0;
 
     int insn_num, code_index, insns_info_index, sp = 0;
+    unsigned int logop_branches = 0;
     int stack_max = fix_sp_depth(iseq, anchor);
 
     if (stack_max < 0) return COMPILE_NG;
@@ -2931,6 +2976,13 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
                       case TS_CALLDATA:
                         {
                             const struct rb_callinfo *source_ci = (const struct rb_callinfo *)operands[j];
+                            if (insn == BIN(opt_logop)) {
+                                generated_iseq[code_index + 1 + j] = (VALUE)source_ci;
+                                break;
+                            }
+                            if (insn == BIN(opt_branch_andop) || insn == BIN(opt_branch_orop)) {
+                                logop_branches++;
+                            }
                             RUBY_ASSERT(ISEQ_COMPILE_DATA(iseq)->ci_index <= body->ci_size);
                             struct rb_call_data *cd = &body->call_data[ISEQ_COMPILE_DATA(iseq)->ci_index++];
                             cd->ci = source_ci;
@@ -3019,6 +3071,10 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
             break;
         }
         list = list->next;
+    }
+
+    if (logop_branches) {
+        share_logop_call_data(generated_iseq, code_index, logop_branches);
     }
 
     body->iseq_encoded = (void *)generated_iseq;
@@ -3306,7 +3362,7 @@ remove_unreachable_chunk(rb_iseq_t *iseq, LINK_ELEMENT *i)
                     unref_destination((INSN *)i, pos);
                     break;
                   case TS_CALLDATA:
-                    --(body->ci_size);
+                    if (insn != BIN(opt_logop)) --(body->ci_size);
                     break;
                 }
             }
@@ -11124,21 +11180,36 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
 
       case NODE_AND:
       case NODE_OR:{
+        const ID mid = type == NODE_AND ? idANDOP : idOROP;
         LABEL *end_label = NEW_LABEL(line);
+        const NODE *op = node;
+
         CHECK(COMPILE(ret, "nd_1st", RNODE_OR(node)->nd_1st));
-        if (!popped) {
-            ADD_INSN(ret, node, dup);
+        if (popped) {
+            if (type == NODE_AND) {
+                ADD_INSNL(ret, node, branchunless, end_label);
+            }
+            else {
+                ADD_INSNL(ret, node, branchif, end_label);
+            }
+            CHECK(COMPILE_(ret, "nd_2nd", RNODE_OR(node)->nd_2nd, popped));
+            ADD_LABEL(ret, end_label);
+            break;
         }
-        if (type == NODE_AND) {
-            ADD_INSNL(ret, node, branchunless, end_label);
+        for (;;) {
+            const NODE *rhs = RNODE_OR(op)->nd_2nd;
+            INSN *branch = new_insn_logop_branch(iseq, nd_line(op), nd_node_id(op), mid, end_label);
+            ADD_ELEM(ret, &branch->link);
+            /* logop() turns `a && b && c` into `a && (b && c)`; the inner
+             * node then begins where the whole chain does. */
+            bool chained = nd_type_p(rhs, type) &&
+                nd_first_lineno(rhs) == nd_first_lineno(node) &&
+                nd_first_column(rhs) == nd_first_column(node);
+            CHECK(COMPILE(ret, "nd_2nd", chained ? RNODE_OR(rhs)->nd_1st : rhs));
+            ADD_ELEM(ret, &new_insn_logop(iseq, nd_line(op), nd_node_id(op), branch)->link);
+            if (!chained) break;
+            op = rhs;
         }
-        else {
-            ADD_INSNL(ret, node, branchif, end_label);
-        }
-        if (!popped) {
-            ADD_INSN(ret, node, pop);
-        }
-        CHECK(COMPILE_(ret, "nd_2nd", RNODE_OR(node)->nd_2nd, popped));
         ADD_LABEL(ret, end_label);
         break;
       }
@@ -12350,6 +12421,7 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *const anchor,
                         break;
                       case TS_CALLDATA:
                         argv[j] = iseq_build_callinfo_from_hash(iseq, op);
+                        if (insn_id == BIN(opt_logop)) ISEQ_BODY(iseq)->ci_size--;
                         break;
                       case TS_ID:
                         argv[j] = rb_to_symbol_type(op);
@@ -13174,9 +13246,9 @@ ibf_dump_code(struct ibf_dump *dump, const rb_iseq_t *iseq)
                 }
                 break;
               case TS_CALLDATA:
-                {
-                    goto skip_wv;
-                }
+                if (insn != BIN(opt_logop)) goto skip_wv;
+                wv = (struct rb_call_data *)op - body->call_data;
+                break;
               case TS_ID:
                 wv = ibf_dump_id(dump, (ID)op);
                 break;
@@ -13314,7 +13386,10 @@ ibf_load_code(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t bytecod
                 }
                 break;
               case TS_CALLDATA:
-                {
+                if (insn == BIN(opt_logop)) {
+                    code[code_index] = (VALUE)&load_body->call_data[ibf_load_small_value(load, &reading_pos)];
+                }
+                else {
                     code[code_index] = (VALUE)cd_entries++;
                 }
                 break;

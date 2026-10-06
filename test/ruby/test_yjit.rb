@@ -219,6 +219,13 @@ class TestYJIT < Test::Unit::TestCase
     assert_compiles('![]', insns: %i[opt_not], result: false)
   end
 
+  def test_compile_opt_logop
+    assert_compiles(<<~RUBY, insns: %i[opt_branch_andop opt_branch_orop opt_logop], result: [2, nil, 1, 3])
+      a, b = [1, nil]
+      [a && 2, b && 2, a || 3, b || 3]
+    RUBY
+  end
+
   def test_compile_opt_newarray
     assert_compiles('[]', insns: %i[newarray], result: [])
     assert_compiles('[1+1]', insns: %i[newarray opt_plus], result: [2])

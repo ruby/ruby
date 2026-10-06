@@ -299,6 +299,7 @@ impl<'a> std::fmt::Display for InvariantPrinter<'a> {
                     STRING_REDEFINED_OP_FLAG => write!(f, "STRING_REDEFINED_OP_FLAG")?,
                     ARRAY_REDEFINED_OP_FLAG => write!(f, "ARRAY_REDEFINED_OP_FLAG")?,
                     HASH_REDEFINED_OP_FLAG => write!(f, "HASH_REDEFINED_OP_FLAG")?,
+                    ANY_REDEFINED_OP_FLAG => write!(f, "ANY_REDEFINED_OP_FLAG")?,
                     _ => write!(f, "{klass}")?,
                 }
                 write!(f, ", ")?;
@@ -337,6 +338,7 @@ impl<'a> std::fmt::Display for InvariantPrinter<'a> {
                     BOP_DEFAULT  => write!(f, "BOP_DEFAULT")?,
                     BOP_PACK     => write!(f, "BOP_PACK")?,
                     BOP_INCLUDE_P => write!(f, "BOP_INCLUDE_P")?,
+                    BOP_LOGOP    => write!(f, "BOP_LOGOP")?,
                     _ => write!(f, "{bop}")?,
                 }
                 write!(f, ")")
@@ -1089,6 +1091,10 @@ pub enum Insn {
     Test { val: InsnId },
     /// Return C `true` if `val`'s method on cd resolves to the cfunc.
     IsMethodCfunc { val: InsnId, cd: *const rb_call_data, cfunc: *const u8, state: InsnId },
+    /// Return Qtrue if opt_branch_andop/opt_branch_orop on cd jumps for `val`, checking for hooks.
+    LogopBranch { val: InsnId, cd: *const rb_call_data, state: InsnId },
+    /// Return the result of opt_logop on cd without calling a hook; side-exit if a hook applies.
+    Logop { recv: InsnId, obj: InsnId, cd: *const rb_call_data, state: InsnId },
     /// Return C `true` if left == right
     IsBitEqual { left: InsnId, right: InsnId },
     /// Return C `true` if left != right
@@ -1502,6 +1508,7 @@ macro_rules! for_each_operand_impl {
             | Insn::GuardNoBitsSet { val, state, .. }
             | Insn::ToArray { val, state }
             | Insn::IsMethodCfunc { val, state, .. }
+            | Insn::LogopBranch { val, state, .. }
             | Insn::ToNewArray { val, state }
             | Insn::SetLocal { val, state, .. }
             | Insn::BoxFixnum { val, state } => {
@@ -1541,6 +1548,11 @@ macro_rules! for_each_operand_impl {
             }
             Insn::FloatToInt { recv, state } => {
                 $visit_one!(*recv);
+                $visit_one!(*state);
+            }
+            Insn::Logop { recv, obj, state, .. } => {
+                $visit_one!(*recv);
+                $visit_one!(*obj);
                 $visit_one!(*state);
             }
             Insn::FixnumLt { left, right }
@@ -1848,6 +1860,8 @@ impl Insn {
             Insn::ObjectAllocClass { .. } => allocates,
             Insn::Test { .. } => effects::Empty,
             Insn::IsMethodCfunc { .. } => effects::Any,
+            Insn::LogopBranch { .. } => effects::Any,
+            Insn::Logop { .. } => effects::Any,
             Insn::IsBitEqual { .. } => effects::Empty,
             Insn::IsBitNotEqual { .. } => effects::Empty,
             Insn::BoxBool { .. } => effects::Empty,
@@ -2247,6 +2261,8 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             }
             Insn::Test { val } => { write!(f, "Test {val}") }
             Insn::IsMethodCfunc { val, cd, .. } => { write!(f, "IsMethodCFunc {val}, :{}", ruby_call_method_name(*cd)) }
+            Insn::LogopBranch { val, cd, .. } => { write!(f, "LogopBranch {val}, :{}", ruby_call_method_name(*cd)) }
+            Insn::Logop { recv, obj, cd, .. } => { write!(f, "Logop {recv}, :{}, {obj}", ruby_call_method_name(*cd)) }
             Insn::IsBitEqual { left, right } => write!(f, "IsBitEqual {left}, {right}"),
             Insn::IsBitNotEqual { left, right } => write!(f, "IsBitNotEqual {left}, {right}"),
             Insn::BoxBool { val } => write!(f, "BoxBool {val}"),
@@ -3740,6 +3756,8 @@ impl Function {
             Insn::Test { val } if self.type_of(*val).is_known_truthy() => Type::from_cbool(true),
             Insn::Test { .. } => types::CBool,
             Insn::IsMethodCfunc { .. } => types::CBool,
+            Insn::LogopBranch { .. } => types::BoolExact,
+            Insn::Logop { .. } => types::BasicObject,
             Insn::IsBitEqual { .. } => types::CBool,
             Insn::IsBitNotEqual { .. } => types::CBool,
             Insn::BoxBool { .. } => types::BoolExact,
@@ -8044,6 +8062,7 @@ impl Function {
             // Instructions with 1 Ruby object operand
             Insn::Test { val }
             | Insn::IsMethodCfunc { val, .. }
+            | Insn::LogopBranch { val, .. }
             | Insn::SetGlobal { val, .. }
             | Insn::SetLocal { val, .. }
             | Insn::SetClassVar { val, .. }
@@ -8065,6 +8084,7 @@ impl Function {
             Insn::SetIvar { self_val: left, val: right, .. }
             | Insn::NewRange { low: left, high: right, .. }
             | Insn::CheckMatch { target: left, pattern: right, .. }
+            | Insn::Logop { recv: left, obj: right, .. }
             | Insn::WriteBarrier { recv: left, val: right } => {
                 self.assert_subtype(insn_id, left, types::RubyValue)?;
                 self.assert_subtype(insn_id, right, types::RubyValue)
@@ -8843,6 +8863,10 @@ fn compute_bytecode_info(iseq: *const rb_iseq_t, opt_table: &[u32]) -> BytecodeI
                 let offset = get_arg(pc, 1).as_i64();
                 jump_targets.insert(insn_idx_at_offset(insn_idx, offset));
             }
+            YARVINSN_opt_branch_andop | YARVINSN_opt_branch_orop => {
+                let offset = get_arg(pc, 1).as_i64();
+                jump_targets.insert(insn_idx_at_offset(insn_idx, offset));
+            }
             YARVINSN_leave | YARVINSN_opt_invokebuiltin_delegate_leave => {
                 if insn_idx < iseq_size {
                     jump_targets.insert(insn_idx);
@@ -9018,6 +9042,10 @@ fn invalidates_locals(opcode: u32, operands: *const VALUE) -> bool {
         | YARVINSN_branchif_without_ints
         | YARVINSN_branchnil_without_ints
         | YARVINSN_leave => false,
+        // Hooks are called only after a side exit, so no Ruby code runs
+        YARVINSN_opt_branch_andop
+        | YARVINSN_opt_branch_orop
+        | YARVINSN_opt_logop => false,
         // TODO(max): Read the invokebuiltin target from operands and determine if it's leaf
         _ => unsafe { !rb_zjit_insn_leaf(opcode as i32, operands) }
     }
@@ -9077,6 +9105,66 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
         return Err(ParseError::Validation(err));
     }
     Ok(fun)
+}
+
+/// Dispatch `val` on its profiled classes whose lookup can't reach a hook, returning each arm with
+/// the class's truthiness; other values go to the returned fallback block, or side-exit if unprofiled.
+fn logop_dispatch_unhooked(fun: &mut Function, profiles: &ProfileOracle, iseq: IseqPtr, insn_idx: u32, block: BlockId, val: InsnId, mid: ID, state: InsnId) -> (Vec<(BlockId, bool)>, Option<BlockId>) {
+    let val_id = fun.chase_insn(val);
+    let summary = profiles.get(state).and_then(|entries| entries.iter().find(|(insn, _)| fun.chase_insn(*insn) == val_id)).map(|(_, summary)| summary);
+
+    let mut expected_types: Vec<(Type, ProfiledType)> = vec![];
+    if let Some(summary) = summary {
+        if summary.is_monomorphic() || summary.is_polymorphic() || summary.is_skewed_polymorphic() {
+            for &profiled_type in summary.buckets() {
+                if profiled_type.is_empty() { break; }
+                let expected = Type::from_profiled_type(profiled_type);
+                if !expected_types.iter().any(|(ty, _)| ty.bit_equal(expected)) {
+                    expected_types.push((expected, profiled_type));
+                }
+            }
+        }
+    }
+
+    let mut arms = vec![];
+    let mut block = block;
+    for (expected, profiled_type) in expected_types {
+        let truthy = if expected.is_subtype(types::Truthy) {
+            true
+        } else if expected.is_subtype(types::Falsy) {
+            false
+        } else {
+            continue;
+        };
+        let klass = profiled_type.class();
+        let cme = unsafe { rb_callable_method_entry_or_negative(klass, mid) };
+        if unsafe { get_cme_def_type(cme) } == VM_METHOD_TYPE_REFINED {
+            continue;
+        }
+        let arm = fun.new_block(insn_idx);
+        let next = fun.new_block(insn_idx);
+        fun.push_insn(block, Insn::CondBranchHasType(Box::new(CondBranchHasTypeData {
+            val,
+            expected,
+            if_true: BranchEdge { target: arm, args: vec![] },
+            if_false: BranchEdge { target: next, args: vec![] },
+        })));
+        fun.push_insn(arm, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
+        arms.push((arm, truthy));
+        block = next;
+    }
+
+    if summary.is_some() {
+        return (arms, Some(block));
+    }
+    let recompile = if get_or_create_iseq_payload(iseq).versions.len() + 1 < crate::codegen::max_iseq_versions() {
+        Some(Recompile)
+    } else {
+        None
+    };
+    let reason = SideExitReason::PatchPoint(Invariant::BOPRedefined { klass: ANY_REDEFINED_OP_FLAG, bop: BOP_LOGOP });
+    fun.push_insn(block, Insn::SideExit { state, reason: Box::new(reason), recompile });
+    (arms, None)
 }
 
 /// Populate `fun` with HIR translated from `iseq`. Used both for top-level
@@ -9812,6 +9900,107 @@ fn add_iseq_to_hir(
                     let not_nil = fun.push_insn(block, Insn::RefineType { val, new_type });
                     state.replace(val, not_nil);
                     queue.push_back((state.clone(), target, target_idx, local_inval));
+                }
+                YARVINSN_opt_branch_andop | YARVINSN_opt_branch_orop => {
+                    let jump_if_truthy = opcode == YARVINSN_opt_branch_orop;
+                    let offset = get_arg(pc, 1).as_i64();
+                    let val = state.stack_top()?;
+                    let target_idx = insn_idx_at_offset(insn_idx, offset);
+                    let target = insn_idx_to_block[&target_idx];
+
+                    if !fun.assume_bop_not_redefined(block, ANY_REDEFINED_OP_FLAG, BOP_LOGOP, exit_id) {
+                        let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
+                        let mid = unsafe { rb_vm_ci_mid((*cd).ci) };
+                        let (arms, fallback) = logop_dispatch_unhooked(fun, &profiles, iseq, insn_idx, block, val, mid, exit_id);
+                        let jump_state = state.clone();
+                        let mut fall_through = None;
+                        let mut jumps = false;
+                        if let Some(fallback) = fallback {
+                            let fall_through = *fall_through.insert(fun.new_block(insn_idx));
+                            let jump = fun.push_insn(fallback, Insn::LogopBranch { val, cd, state: exit_id });
+                            let test_id = fun.push_insn(fallback, Insn::Test { val: jump });
+                            fun.push_insn(fallback, Insn::CondBranch {
+                                val: test_id,
+                                if_true: BranchEdge { target, args: jump_state.as_args(self_param) },
+                                if_false: BranchEdge { target: fall_through, args: vec![] },
+                            });
+                            jumps = true;
+                        }
+                        for (arm, truthy) in arms {
+                            if truthy == jump_if_truthy {
+                                fun.push_insn(arm, Insn::Jump(BranchEdge { target, args: jump_state.as_args(self_param) }));
+                                jumps = true;
+                            } else {
+                                let fall_through = *fall_through.get_or_insert_with(|| fun.new_block(insn_idx));
+                                fun.push_insn(arm, Insn::Jump(BranchEdge { target: fall_through, args: vec![] }));
+                            }
+                        }
+                        if jumps {
+                            queue.push_back((jump_state, target, target_idx, local_inval));
+                        }
+                        let Some(fall_through) = fall_through else {
+                            break;  // End the block
+                        };
+                        block = fall_through;
+                    } else {
+                        let (jump_type, fall_through_type) = if jump_if_truthy {
+                            (types::Truthy, types::Falsy)
+                        } else {
+                            (types::Falsy, types::Truthy)
+                        };
+                        let test_id = fun.push_insn(block, Insn::Test { val });
+                        let jump_val = fun.push_insn(block, Insn::RefineType { val, new_type: jump_type });
+                        let mut jump_state = state.clone();
+                        jump_state.replace(val, jump_val);
+                        let fall_through = fun.new_block(insn_idx);
+
+                        let jump_edge = BranchEdge { target, args: jump_state.as_args(self_param) };
+                        let fall_through_edge = BranchEdge { target: fall_through, args: vec![] };
+                        let (if_true, if_false) = if jump_if_truthy {
+                            (jump_edge, fall_through_edge)
+                        } else {
+                            (fall_through_edge, jump_edge)
+                        };
+                        fun.push_insn(block, Insn::CondBranch { val: test_id, if_true, if_false });
+
+                        block = fall_through;
+
+                        let fall_through_val = fun.push_insn(block, Insn::RefineType { val, new_type: fall_through_type });
+                        state.replace(val, fall_through_val);
+                        queue.push_back((state.clone(), target, target_idx, local_inval));
+                    }
+                }
+                YARVINSN_opt_logop => {
+                    if fun.assume_bop_not_redefined(block, ANY_REDEFINED_OP_FLAG, BOP_LOGOP, exit_id) {
+                        let obj = state.stack_pop()?;
+                        state.stack_pop()?;
+                        state.stack_push(obj);
+                    } else {
+                        let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
+                        let mid = unsafe { rb_vm_ci_mid((*cd).ci) };
+                        let recv = state.stack_topn(1)?;
+                        let (arms, fallback) = logop_dispatch_unhooked(fun, &profiles, iseq, insn_idx, block, recv, mid, exit_id);
+                        if arms.is_empty() && fallback.is_none() {
+                            break;  // End the block
+                        }
+                        let obj = state.stack_pop()?;
+                        let recv = state.stack_pop()?;
+                        let join = fun.new_block(insn_idx);
+                        let join_param = fun.push_insn(join, Insn::Param);
+                        if let Some(fallback) = fallback {
+                            let result = fun.push_insn(fallback, Insn::Logop { recv, obj, cd, state: exit_id });
+                            fun.push_insn(fallback, Insn::Jump(BranchEdge { target: join, args: vec![result] }));
+                        }
+                        for (arm, truthy) in arms {
+                            // A falsy LHS of && or truthy LHS of || gets here if its hook was
+                            // removed while the RHS was evaluated.
+                            let lhs_is_result = truthy == (mid == rust_str_to_id("||"));
+                            let result = if lhs_is_result { recv } else { obj };
+                            fun.push_insn(arm, Insn::Jump(BranchEdge { target: join, args: vec![result] }));
+                        }
+                        state.stack_push(join_param);
+                        block = join;
+                    }
                 }
                 YARVINSN_opt_case_dispatch => {
                     // TODO: Some keys are visible at compile time, so in the future we can
