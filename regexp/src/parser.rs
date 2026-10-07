@@ -1219,7 +1219,7 @@ impl<'a> Parser<'a> {
         Ok(c)
     }
 
-    /// \k<name+n>, \k<name-n>, \k<num+n>, \k<num-n>, \k<-num+n>, \k<-num-n>
+    /// `\k<name+n>`, `\k<name-n>`, `\k<num+n>`, `\k<num-n>`, `\k<-num+n>`, `\k<-num-n>`
     /// Returns (exist_level, back_num, level, name_end).
     fn fetch_name_with_level(&mut self, start_code: u32, src: &mut usize) -> R<(bool, i32, i32, usize)> {
         let mut p = *src;
