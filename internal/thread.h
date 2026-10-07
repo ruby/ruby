@@ -61,9 +61,7 @@ void rb_thread_free_body(void *th);            /* vm.c */
 RUBY_SYMBOL_EXPORT_BEGIN
 
 void *rb_thread_prevent_fork(void *(*func)(void *), void *data); /* for ext/socket/raddrinfo.c */
-/* for ext/socket/raddrinfo.c: the last call a joinable thread makes inside
- * rb_thread_prevent_fork(); the thread is joined later, before any fork */
-void rb_thread_register_exiting(void);
+void rb_thread_register_exiting(void); /* for ext/socket/raddrinfo.c */
 
 /* Temporary.  This API will be removed (renamed). */
 VALUE rb_thread_io_blocking_region(struct rb_io *io, rb_blocking_function_t *func, void *data1);

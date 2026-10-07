@@ -1442,10 +1442,14 @@ ruby_ppoll(struct pollfd *fds, nfds_t nfds,
 // fork read-write lock (only for pthread)
 static pthread_rwlock_t rb_thread_fork_rw_lock = PTHREAD_RWLOCK_INITIALIZER;
 
-// registered thread waiting to be joined
+// registered threads waiting to be joined, one per slot
+#define EXITING_THREAD_SLOTS 8
 static rb_nativethread_lock_t exiting_thread_lock = RB_NATIVETHREAD_LOCK_INIT;
-static pthread_t exiting_thread;
-static bool exiting_thread_registered;
+static struct {
+    pthread_t thread;
+    bool registered;
+} exiting_threads[EXITING_THREAD_SLOTS];
+static unsigned int exiting_thread_next;
 
 void
 rb_thread_release_fork_lock(void)
@@ -1491,19 +1495,21 @@ join_exiting_thread(pthread_t thread)
 }
 
 // Called within rb_thread_prevent_fork() by a joinable thread, as the last
-// thing it does before it exits. The thread takes the place of the thread
-// registered before it and joins that one, so this can wait for it to exit.
-// The calling thread is joined by the next thread to register, or by fork.
+// thing it does before it exits. The thread takes the oldest slot and joins
+// its previous holder, which has almost always exited by then, so exiting
+// threads don't wait on each other. The calling thread is joined by the next
+// thread to take its slot, or by fork.
 void
 rb_thread_register_exiting(void)
 {
     pthread_t self = pthread_self();
 
     rb_native_mutex_lock(&exiting_thread_lock);
-    bool registered = exiting_thread_registered;
-    pthread_t thread = exiting_thread;
-    exiting_thread = self;
-    exiting_thread_registered = true;
+    unsigned int i = exiting_thread_next++ % EXITING_THREAD_SLOTS;
+    bool registered = exiting_threads[i].registered;
+    pthread_t thread = exiting_threads[i].thread;
+    exiting_threads[i].thread = self;
+    exiting_threads[i].registered = true;
     rb_native_mutex_unlock(&exiting_thread_lock);
 
     if (registered) join_exiting_thread(thread);
@@ -1521,9 +1527,11 @@ rb_thread_acquire_fork_lock(void)
     // lock, and glibc's thread exit takes the resolver configuration lock,
     // which fork does not reset. Threads register only inside
     // rb_thread_prevent_fork(), so none can while this lock is held.
-    if (exiting_thread_registered) {
-        exiting_thread_registered = false;
-        join_exiting_thread(exiting_thread);
+    for (int i = 0; i < EXITING_THREAD_SLOTS; i++) {
+        if (exiting_threads[i].registered) {
+            exiting_threads[i].registered = false;
+            join_exiting_thread(exiting_threads[i].thread);
+        }
     }
 }
 
