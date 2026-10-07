@@ -6956,7 +6956,30 @@ rb_ary_flatten(int argc, VALUE *argv, VALUE ary)
     return result;
 }
 
+#if SIZEOF_RB_LEN_T > SIZEOF_LONG
+/* rb_random_ulong_limited takes an unsigned long, narrower than an Array length here. */
+static rb_len_t
+rand_upto(VALUE randgen, rb_len_t max)
+{
+    if ((rb_ulen_t)max - 1 <= ULONG_MAX) {
+        return (rb_len_t)rb_random_ulong_limited(randgen, (unsigned long)(max - 1));
+    }
+
+    VALUE lim = LEN2NUM(max);
+    VALUE v = rb_to_int(rb_funcallv_public(randgen, rb_intern("rand"), 1, &lim));
+    if (rb_num_negative_p(v)) {
+        rb_raise(rb_eRangeError, "random number too small %"PRIsVALUE, v);
+    }
+    rb_len_t r = NUM2LEN(v);
+    if (r >= max) {
+        rb_raise(rb_eRangeError, "random number too big %"PRIsVALUE, v);
+    }
+    return r;
+}
+#define RAND_UPTO(max) rand_upto(randgen, (max))
+#else
 #define RAND_UPTO(max) (rb_len_t)rb_random_ulong_limited((randgen), (max)-1)
+#endif
 
 static VALUE
 rb_ary_shuffle_bang(rb_execution_context_t *ec, VALUE ary, VALUE randgen)
