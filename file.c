@@ -3120,7 +3120,7 @@ rb_file_s_ctime(VALUE klass, VALUE fname)
  *  call-seq:
  *    ctime -> time
  *
- *  On Windows, returns the birthtime for the entry in `self`
+ *  On Windows, returns the birthtime for the entry in `self`.
  *
  *  On other systems,
  *  returns a new Time object containing the time of the most recent
