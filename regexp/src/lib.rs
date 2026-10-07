@@ -16,5 +16,6 @@ mod ffi;
 pub mod names;
 pub mod parser;
 pub mod syntax;
+mod utf8;
 
 pub use ffi::*;

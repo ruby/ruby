@@ -135,7 +135,6 @@ impl Region<'_> {
 
 /// `OnigMatchArg`: state shared by the `match_at` calls of one search.
 pub struct MatchArg<'c> {
-    stack: Vec<Stk>,
     options: u32,
     gpos: Pos,
     best_len: isize,
@@ -152,9 +151,8 @@ pub struct MatchArg<'c> {
 }
 
 impl<'c> MatchArg<'c> {
-    pub fn new(options: u32, gpos: Pos, check: &'c mut dyn FnMut() -> i32) -> Self {
+    fn new(options: u32, gpos: Pos, check: &'c mut dyn FnMut() -> i32) -> Self {
         MatchArg {
-            stack: Vec::new(),
             options,
             gpos,
             best_len: ONIG_MISMATCH as isize,
@@ -168,6 +166,35 @@ impl<'c> MatchArg<'c> {
             match_cache_buf: Vec::new(),
         }
     }
+}
+
+/// The working memory of a search, kept per thread for the next one: C
+/// puts it on the machine stack with alloca, so a search costs no malloc.
+/// The VM borrows it for all the start positions of the search.
+#[derive(Default)]
+struct Spare {
+    stack: Vec<Stk>,
+    repeat_stk: Vec<isize>,
+    mem_start_stk: Vec<isize>,
+    mem_end_stk: Vec<isize>,
+}
+
+thread_local! {
+    static SPARE: std::cell::Cell<Option<Box<Spare>>> = const { std::cell::Cell::new(None) };
+}
+
+/// Runs `f` with the working memory of this thread. It is boxed so that
+/// taking and returning it moves one pointer: moving the arrays themselves
+/// took a sixth of the time of a short search. The thread-local is not held
+/// during the search, as the interrupt check may switch Ruby threads, and a
+/// search nested there gets memory of its own.
+fn with_spare<R>(f: impl FnOnce(&mut Spare) -> R) -> R {
+    let mut work = SPARE.take().unwrap_or_default();
+    let r = f(&mut work);
+    if work.stack.capacity() <= 4096 {
+        SPARE.set(Some(work));
+    }
+    r
 }
 
 // ---- match cache: which opcodes can be memoized (regexec.c 234-880) ----
@@ -601,10 +628,10 @@ struct Vm<'a, 'm, 'c> {
     num_mem: i32,
     pop_level: i32,
     msa: &'m mut MatchArg<'c>,
-    stk: Vec<Stk>,
-    repeat_stk: Vec<isize>,
-    mem_start_stk: Vec<isize>,
-    mem_end_stk: Vec<isize>,
+    stk: &'m mut Vec<Stk>,
+    repeat_stk: &'m mut Vec<isize>,
+    mem_start_stk: &'m mut Vec<isize>,
+    mem_end_stk: &'m mut Vec<isize>,
 }
 
 type VmResult<T> = Result<T, isize>;
@@ -2452,39 +2479,44 @@ fn is_mbc_newline_ex(enc: Enc, sb: &[u8], p: usize, end: usize, option: u32, che
     }
 }
 
-/// Runs `match_at` for one start position: the length of the match, if
-/// any. `str` is position 0 and `end` is `sb.len()`.
-fn match_at(
-    reg: &Regex,
-    sb: &[u8],
-    sstart: usize,
-    sprev: Option<usize>,
-    msa: &mut MatchArg,
-    region: &mut Option<Region<'_>>,
-) -> VmResult<Option<isize>> {
-    let n_mem = reg.num_mem as usize + 1; /* ADD_NUMMEM: #0 is the whole pattern for \g<0> */
-    let mut vm = Vm {
-        reg,
-        prog: Reader { p: &reg.program },
-        plen: reg.program.len(),
-        sb,
-        end: pos(sb.len()),
-        enc: reg.enc,
-        option: reg.options,
-        case_fold_flag: reg.case_fold_flag,
-        num_mem: reg.num_mem,
-        pop_level: reg.stack_pop_level,
-        stk: std::mem::take(&mut msa.stack),
-        repeat_stk: vec![INVALID_STACK_INDEX; reg.num_repeat as usize],
-        mem_start_stk: vec![INVALID_STACK_INDEX; n_mem],
-        mem_end_stk: vec![INVALID_STACK_INDEX; n_mem],
-        msa,
-    };
-    let _ = vm.plen;
-    let r = vm.run(pos(sstart), sprev.map_or(NULL_POS, pos), region);
-    let stk = std::mem::take(&mut vm.stk);
-    vm.msa.stack = stk; /* STACK_SAVE */
-    r
+impl<'a, 'm, 'c> Vm<'a, 'm, 'c> {
+    /// The VM for the `match_at` calls of one search. `str` is position 0
+    /// and `end` is `sb.len()`.
+    fn new(reg: &'a Regex, sb: &'a [u8], msa: &'m mut MatchArg<'c>, work: &'m mut Spare) -> Self {
+        let Spare { stack, repeat_stk, mem_start_stk, mem_end_stk } = work;
+        Vm {
+            reg,
+            prog: Reader { p: &reg.program },
+            plen: reg.program.len(),
+            sb,
+            end: pos(sb.len()),
+            enc: reg.enc,
+            option: reg.options,
+            case_fold_flag: reg.case_fold_flag,
+            num_mem: reg.num_mem,
+            pop_level: reg.stack_pop_level,
+            stk: stack,
+            repeat_stk,
+            mem_start_stk,
+            mem_end_stk,
+            msa,
+        }
+    }
+
+    /// `match_at` for one start position: the length of the match, if any.
+    fn match_at(&mut self, sstart: usize, sprev: Option<usize>, region: &mut Option<Region<'_>>) -> VmResult<Option<isize>> {
+        let n_mem = self.reg.num_mem as usize + 1; /* ADD_NUMMEM: #0 is the whole pattern for \g<0> */
+        refill(self.repeat_stk, self.reg.num_repeat as usize);
+        refill(self.mem_start_stk, n_mem);
+        refill(self.mem_end_stk, n_mem);
+        let _ = self.plen;
+        self.run(pos(sstart), sprev.map_or(NULL_POS, pos), region)
+    }
+}
+
+fn refill(v: &mut Vec<isize>, n: usize) {
+    v.clear();
+    v.resize(n, INVALID_STACK_INDEX);
 }
 
 // ---- string search used by the optimizer ----
@@ -2600,6 +2632,15 @@ fn fold_match(enc: Enc, case_fold_flag: u32, t: &[u8], sb: &[u8], p: usize, end:
             }
             p += 1;
             ti += 1;
+            continue;
+        }
+        if let Some(len) = enc.unfolded_len(sb, p, end) {
+            // It folds to itself, so it is compared in place.
+            if t.get(ti..ti + len) != Some(&sb[p..p + len]) {
+                return false;
+            }
+            p += len;
+            ti += len;
             continue;
         }
         let lowlen = enc.mbc_case_fold(case_fold_flag, sb, &mut p, end, &mut lowbuf);
@@ -2999,7 +3040,9 @@ fn backward_search_range(reg: &Regex, sb: &[u8], s: usize, range: usize, adjrang
 /// (`OnigPosition` of C).
 pub type SearchResult = isize;
 
-/// `onig_search_gpos`: positions are offsets into `sb`.
+/// `onig_search_gpos`: positions are offsets into `sb`. The caller clears
+/// `region` first, as `onig_region_resize_clear` does in C. A `range`
+/// outside `sb` is cut at its ends.
 pub fn search(
     reg: &Regex,
     sb: &[u8],
@@ -3011,9 +3054,6 @@ pub fn search(
     check: &mut dyn FnMut() -> i32,
 ) -> SearchResult {
     let enc = reg.enc;
-    if let Some(r) = region.as_mut() {
-        r.clear();
-    }
     let end = sb.len();
     let Some(mut start) = usize::try_from(start).ok().filter(|&s| s <= end) else {
         return ONIG_MISMATCH as isize;
@@ -3112,9 +3152,11 @@ pub fn search(
     } else if end == 0 {
         /* empty string */
         if reg.threshold_len == 0 {
-            let mut msa = MatchArg::new(option, 0, check);
-            let r = try_match_at(reg, sb, 0, None, &mut msa, &mut region);
-            return finish_result(reg, r, &msa, &mut region);
+            return with_spare(|work| {
+                let mut msa = MatchArg::new(option, 0, check);
+                let r = try_match_at(&mut Vm::new(reg, sb, &mut msa, work), 0, None, &mut region);
+                finish_result(reg, r, &msa, &mut region)
+            });
         }
         return ONIG_MISMATCH as isize;
     }
@@ -3127,9 +3169,11 @@ pub fn search(
         }
     }
 
-    let mut msa = MatchArg::new(option, global_pos, check);
-    let r = search_body(reg, sb, start, range, &mut msa, &mut region);
-    finish_result(reg, r, &msa, &mut region)
+    with_spare(|work| {
+        let mut msa = MatchArg::new(option, global_pos, check);
+        let r = search_body(reg, sb, start, range, &mut msa, work, &mut region);
+        finish_result(reg, r, &msa, &mut region)
+    })
 }
 
 fn begin_position(start: usize, range: usize, global_pos: Pos) -> usize {
@@ -3188,6 +3232,7 @@ fn search_body(
     start: usize,
     range: usize,
     msa: &mut MatchArg,
+    work: &mut Spare,
     region: &mut Option<Region<'_>>,
 ) -> VmResult<Option<usize>> {
     let enc = reg.enc;
@@ -3195,11 +3240,12 @@ fn search_body(
     let threshold_len = usize::try_from(reg.threshold_len).unwrap_or(0);
     let mut s = start;
     let mut prev: Option<usize>;
+    let mut vm = Vm::new(reg, sb, msa, work);
 
     // MATCH_AND_RETURN_CHECK
     macro_rules! try_match {
         () => {
-            if let Some(p) = try_match_at(reg, sb, s, prev, msa, region)? {
+            if let Some(p) = try_match_at(&mut vm, s, prev, region)? {
                 return Ok(Some(p));
             }
         };
@@ -3347,16 +3393,9 @@ fn search_body(
 
 /// `match_at` at `s` for the search: the start of the match, if it is the
 /// one to return.
-fn try_match_at(
-    reg: &Regex,
-    sb: &[u8],
-    s: usize,
-    prev: Option<usize>,
-    msa: &mut MatchArg,
-    region: &mut Option<Region<'_>>,
-) -> VmResult<Option<usize>> {
-    Ok(match match_at(reg, sb, s, prev, msa, region)? {
-        Some(_) if !is_find_longest(reg.options) => Some(s),
+fn try_match_at(vm: &mut Vm, s: usize, prev: Option<usize>, region: &mut Option<Region<'_>>) -> VmResult<Option<usize>> {
+    Ok(match vm.match_at(s, prev, region)? {
+        Some(_) if !is_find_longest(vm.reg.options) => Some(s),
         _ => None,
     })
 }
@@ -3370,16 +3409,15 @@ pub fn match_at_pos(
     option: u32,
     check: &mut dyn FnMut() -> i32,
 ) -> isize {
-    if let Some(r) = region.as_mut() {
-        r.clear();
-    }
     let Some(at) = usize::try_from(at).ok().filter(|&a| a <= sb.len()) else {
         return ONIG_MISMATCH as isize;
     };
-    let mut msa = MatchArg::new(option, pos(at), check);
     let prev = reg.enc.get_prev_char_head(sb, 0, at, sb.len());
-    match match_at(reg, sb, at, prev, &mut msa, &mut region) {
-        Ok(len) => len.unwrap_or(ONIG_MISMATCH as isize),
-        Err(e) => e,
-    }
+    with_spare(|work| {
+        let mut msa = MatchArg::new(option, pos(at), check);
+        match Vm::new(reg, sb, &mut msa, work).match_at(at, prev, &mut region) {
+            Ok(len) => len.unwrap_or(ONIG_MISMATCH as isize),
+            Err(e) => e,
+        }
+    })
 }

@@ -114,7 +114,7 @@ compile_rust(VALUE src, unsigned int options, rb_encoding *enc)
 {
     static int inited;
     if (!inited) {
-        rb_regexp_rust_init(ONIG_ENCODING_ASCII);
+        rb_regexp_rust_init(ONIG_ENCODING_ASCII, rb_utf8_encoding());
         inited = 1;
     }
     rb_regexp_rust_t *h;

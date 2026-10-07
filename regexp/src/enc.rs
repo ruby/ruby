@@ -88,6 +88,12 @@ unsafe impl Sync for OnigEncodingType {}
 #[derive(Clone, Copy)]
 pub struct Enc {
     t: &'static OnigEncodingType,
+    /// Bytes below 0x80 are one-byte characters with that code
+    /// (`rb_enc_asciicompat`), so the C layer need not be asked about them.
+    ascii: bool,
+    /// The functions of the table are those of UTF-8, which `crate::utf8`
+    /// does without a call into C.
+    utf8: bool,
 }
 
 impl PartialEq for Enc {
@@ -115,6 +121,67 @@ fn ascii() -> Enc {
     *ASCII.get().expect("ASCII encoding is not registered")
 }
 
+/// Code points from this one on are not in `Utf8::may_fold`.
+const FOLD_LIMIT: u32 = 0x20000;
+
+struct Utf8 {
+    t: &'static OnigEncodingType,
+    /// A bit per code point below FOLD_LIMIT that the case fold tables
+    /// mention; every other one folds to itself.
+    may_fold: Box<[u64]>,
+    /// Whether the tables mention a code point from FOLD_LIMIT on.
+    folds_above: bool,
+}
+
+static UTF8: std::sync::OnceLock<Utf8> = std::sync::OnceLock::new();
+
+/// Sets the UTF-8 encoding. Tables with the same functions, such as those
+/// of UTF8-MAC, are matched without calling them.
+pub fn set_utf8(enc: Enc) {
+    UTF8.get_or_init(|| {
+        let mut may_fold = vec![0u64; (FOLD_LIMIT / 64) as usize].into_boxed_slice();
+        let mut folds_above = false;
+        let mut mark = |c: CodePoint| match may_fold.get_mut((c / 64) as usize) {
+            Some(w) => *w |= 1 << (c % 64),
+            None => folds_above = true,
+        };
+        enc.apply_all_case_fold(ONIGENC_CASE_FOLD_MIN, &mut |from, to| {
+            mark(from);
+            to.iter().for_each(|&c| mark(c));
+            0
+        });
+        Utf8 { t: enc.t, may_fold, folds_above }
+    });
+}
+
+fn has_utf8_functions(t: &OnigEncodingType) -> bool {
+    let Some(u) = UTF8.get() else {
+        return false;
+    };
+    let f = |t: &OnigEncodingType| {
+        [
+            t.precise_mbc_enc_len.map(|f| f as usize),
+            t.mbc_to_code.map(|f| f as usize),
+            t.is_mbc_newline.map(|f| f as usize),
+            t.mbc_case_fold.map(|f| f as usize),
+            t.apply_all_case_fold.map(|f| f as usize),
+            t.left_adjust_char_head.map(|f| f as usize),
+        ]
+    };
+    f(t) == f(u.t)
+}
+
+/// Whether the case fold of UTF-8 may change `code`.
+fn may_fold(code: CodePoint) -> bool {
+    let Some(u) = UTF8.get() else {
+        return true;
+    };
+    match u.may_fold.get((code / 64) as usize) {
+        Some(w) => w & (1 << (code % 64)) != 0,
+        None => u.folds_above,
+    }
+}
+
 /// An empty Rust slice has a dangling pointer, which the functions of the
 /// encoding tables must not be given, so it is replaced with this buffer.
 static EMPTY: [u8; 8] = [0; 8];
@@ -125,6 +192,14 @@ fn range(s: &[u8], p: usize, end: usize) -> (*const u8, *const u8) {
     let base = if s.is_empty() { EMPTY.as_ptr() } else { s.as_ptr() };
     // In bounds by the assertion above.
     unsafe { (base.add(p), base.add(end)) }
+}
+
+#[cold]
+fn copy_rest(s: &[u8], p: &mut usize, end: usize, out: &mut [u8]) -> usize {
+    let rest = end - *p;
+    out[..rest].copy_from_slice(&s[*p..end]);
+    *p = end;
+    rest
 }
 
 /// A result of `precise_mbc_enc_len`, decoded from the `ONIGENC_MBCLEN_*`
@@ -141,7 +216,9 @@ impl Enc {
     /// # Safety
     /// `t` must point to an encoding table that lives for the whole process.
     pub unsafe fn from_ptr(t: *const OnigEncodingType) -> Enc {
-        Enc { t: unsafe { &*t } }
+        let t = unsafe { &*t };
+        let ascii = t.min_enc_len == 1 && (t.ruby_encoding_index & ENC_DUMMY_FLAG) == 0;
+        Enc { t, ascii, utf8: ascii && has_utf8_functions(t) }
     }
 
     pub fn as_ptr(self) -> *const OnigEncodingType {
@@ -183,8 +260,16 @@ impl Enc {
 
     /// `ONIGENC_PRECISE_MBC_ENC_LEN`.
     pub fn precise_mbc_enc_len(self, s: &[u8], p: usize, end: usize) -> i32 {
+        if self.utf8 && p < end {
+            return crate::utf8::precise_len(s, p, end);
+        }
         let (pp, pe) = range(s, p, end);
         unsafe { (self.t.precise_mbc_enc_len.expect("precise_mbc_enc_len"))(pp, pe, self.t) }
+    }
+
+    #[cold]
+    fn is_cut_short(self, s: &[u8], p: usize, end: usize) -> bool {
+        matches!(self.mbclen(s, p, end), MbcLen::NeedMore(_))
     }
 
     #[inline]
@@ -202,6 +287,13 @@ impl Enc {
         if p >= end {
             return 0;
         }
+        if self.ascii && s[p] < 0x80 {
+            return 1;
+        }
+        self.mbc_enc_len_multibyte(s, p, end)
+    }
+
+    fn mbc_enc_len_multibyte(self, s: &[u8], p: usize, end: usize) -> usize {
         match self.mbclen(s, p, end) {
             MbcLen::CharFound(n) => n.min(end - p),
             MbcLen::NeedMore(_) => end - p,
@@ -225,9 +317,11 @@ impl Enc {
     /// does not fit.
     #[inline]
     pub fn enclen_approx(self, s: &[u8], p: usize, end: usize) -> usize {
-        if self.t.max_enc_len == self.t.min_enc_len {
-            if p < end { self.t.min_enc_len as usize } else { 0 }
-        } else if p >= end {
+        if p >= end {
+            0
+        } else if self.t.max_enc_len == self.t.min_enc_len {
+            self.min_len()
+        } else if self.ascii && s[p] < 0x80 {
             1
         } else {
             match self.mbclen(s, p, end) {
@@ -254,10 +348,27 @@ impl Enc {
         }
     }
 
+    /// The length of the character at `p` when it is known to fold to
+    /// itself, as most characters of UTF-8 do.
+    #[inline]
+    pub fn unfolded_len(self, s: &[u8], p: usize, end: usize) -> Option<usize> {
+        if !self.utf8 || p >= end {
+            return None;
+        }
+        let (code, n) = crate::utf8::decode(s, p, end);
+        (n > 0 && !may_fold(code)).then_some(n as usize)
+    }
+
     /// `ONIGENC_MBC_TO_CODE`. Returns 0 at the end of the buffer.
     pub fn mbc_to_code(self, s: &[u8], p: usize, end: usize) -> CodePoint {
         if p >= end {
             return 0;
+        }
+        if self.ascii && s[p] < 0x80 {
+            return s[p] as CodePoint;
+        }
+        if self.utf8 {
+            return crate::utf8::to_code(s, p, end);
         }
         let (pp, pe) = range(s, p, end);
         unsafe { (self.t.mbc_to_code.expect("mbc_to_code"))(pp, pe, self.t) }
@@ -265,6 +376,13 @@ impl Enc {
 
     pub fn is_mbc_newline(self, s: &[u8], p: usize, end: usize) -> bool {
         if p >= end {
+            return false;
+        }
+        if self.ascii && s[p] < 0x80 {
+            return s[p] == 0x0a;
+        }
+        if self.utf8 {
+            // Ruby builds without USE_UNICODE_ALL_LINE_TERMINATORS.
             return false;
         }
         let (pp, pe) = range(s, p, end);
@@ -295,6 +413,22 @@ impl Enc {
     ) -> usize {
         if *p >= end {
             return 0;
+        }
+        if self.ascii && s[*p] < 0x80 {
+            // ASCII folds to lower case in every encoding Ruby has.
+            out[0] = s[*p].to_ascii_lowercase();
+            *p += 1;
+            return 1;
+        }
+        if end - *p < ONIGENC_CODE_TO_MBC_MAXLEN && self.is_cut_short(s, *p, end) {
+            // A character cut short by `end` has no case to fold.
+            return copy_rest(s, p, end, out);
+        }
+        if let Some(len) = self.unfolded_len(s, *p, end) {
+            // onigenc_unicode_mbc_case_fold copies such a character as is.
+            out[..len].copy_from_slice(&s[*p..*p + len]);
+            *p += len;
+            return len;
         }
         let (pp, pe) = range(s, *p, end);
         let mut cur = pp;
@@ -400,12 +534,20 @@ impl Enc {
     }
 
     /// `ONIGENC_LEFT_ADJUST_CHAR_HEAD`: the head of the character containing `p`.
+    #[inline]
     pub fn left_adjust_char_head(self, s: &[u8], start: usize, p: usize, end: usize) -> usize {
         assert!(start <= p && p <= end && end <= s.len(), "position out of range");
         // No character starts at `end`, so it stays as is.
-        if p == start || p == end {
+        if p == start || p == end || self.is_single_byte() {
             return p;
         }
+        if self.utf8 {
+            return crate::utf8::left_adjust_char_head(s, start, p);
+        }
+        self.left_adjust_char_head_c(s, start, p, end)
+    }
+
+    fn left_adjust_char_head_c(self, s: &[u8], start: usize, p: usize, end: usize) -> usize {
         let base = s.as_ptr();
         let r = unsafe {
             (self.t.left_adjust_char_head.expect("left_adjust_char_head"))(base.add(start), base.add(p), base.add(end), self.t)

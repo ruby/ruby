@@ -3,6 +3,7 @@
 
 #include "internal.h"
 #include "internal/re.h"
+#include "ruby/encoding.h"
 
 #ifndef RB_DEFAULT_REGEXP_ENGINE
 # define RB_DEFAULT_REGEXP_ENGINE RB_REGEXP_ENGINE_ONIGMO
@@ -33,7 +34,7 @@ rb_reg_default_engine_set(rb_regexp_engine_t engine)
             rb_bug("regexp engine ABI mismatch: %u != %u",
                    rb_regexp_rust_abi_version(), RB_REGEXP_RUST_ABI_VERSION);
         }
-        rb_regexp_rust_init(ONIG_ENCODING_ASCII);
+        rb_regexp_rust_init(ONIG_ENCODING_ASCII, rb_utf8_encoding());
         break;
 #else
         return false;

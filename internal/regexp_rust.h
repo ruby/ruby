@@ -13,7 +13,7 @@
 #include "ruby/onigmo.h"
 
 /* Must match regexp::ffi::ABI_VERSION. */
-#define RB_REGEXP_RUST_ABI_VERSION 2
+#define RB_REGEXP_RUST_ABI_VERSION 3
 
 #define RB_REGEXP_WARN_ENABLED 1
 #define RB_REGEXP_WARN_VERBOSE 2
@@ -71,7 +71,7 @@ struct rb_regexp_rust_info {
 };
 
 uint32_t rb_regexp_rust_abi_version(void);
-void rb_regexp_rust_init(const OnigEncodingType *ascii);
+void rb_regexp_rust_init(const OnigEncodingType *ascii, const OnigEncodingType *utf8);
 int rb_regexp_rust_take_panic_message(char *buf, size_t len);
 unsigned int rb_regexp_rust_get_parse_depth_limit(void);
 int rb_regexp_rust_set_parse_depth_limit(unsigned int depth);

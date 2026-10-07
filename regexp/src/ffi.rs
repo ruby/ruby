@@ -20,7 +20,7 @@ use crate::parser::{self, Warner};
 
 /// Version of the interface between this crate and `re_engine.c`. The C side
 /// refuses to use the engine when its own copy of the number differs.
-pub const ABI_VERSION: u32 = 2;
+pub const ABI_VERSION: u32 = 3;
 
 #[unsafe(no_mangle)]
 pub extern "C" fn rb_regexp_rust_abi_version() -> u32 {
@@ -72,9 +72,13 @@ pub unsafe extern "C" fn rb_regexp_rust_take_panic_message(buf: *mut c_char, len
 }
 
 /// Registers `OnigEncodingASCII`, used to resolve the property names of
-/// `\X` the same way regparse.c does.
+/// `\X` the same way regparse.c does, and the UTF-8 encoding, whose
+/// character functions the engine does itself.
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn rb_regexp_rust_init(ascii: *const OnigEncodingType) {
+pub unsafe extern "C" fn rb_regexp_rust_init(ascii: *const OnigEncodingType, utf8: *const OnigEncodingType) {
+    if !utf8.is_null() {
+        enc::set_utf8(unsafe { Enc::from_ptr(utf8) });
+    }
     if !ascii.is_null() {
         enc::set_ascii(unsafe { Enc::from_ptr(ascii) });
     }
