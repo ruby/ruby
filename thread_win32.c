@@ -1007,4 +1007,16 @@ rb_thread_register_exiting(void)
     // nothing to do: there is no fork
 }
 
+static void
+timer_thread_join_exiting_threads(void)
+{
+    // nothing to do: no thread registers
+}
+
+static int
+exiting_thread_timeout(int timeout)
+{
+    return timeout; // no thread registers
+}
+
 #endif /* THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION */

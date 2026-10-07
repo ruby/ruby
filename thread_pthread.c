@@ -1451,6 +1451,12 @@ static struct {
 } exiting_threads[EXITING_THREAD_SLOTS];
 static unsigned int exiting_thread_next;
 
+// the timer thread joins registered threads after this long without a new one
+#define EXITING_THREAD_IDLE RB_HRTIME_PER_SEC
+static bool exiting_thread_pending;
+static unsigned int exiting_thread_seen;
+static rb_hrtime_t exiting_thread_seen_at;
+
 void
 rb_thread_release_fork_lock(void)
 {
@@ -1508,9 +1514,61 @@ rb_thread_register_exiting(void)
     pthread_t thread = exiting_threads[i].thread;
     exiting_threads[i].thread = self;
     exiting_threads[i].registered = true;
+    bool idle = !exiting_thread_pending;
+    exiting_thread_pending = true;
     rb_native_mutex_unlock(&exiting_thread_lock);
 
+    // the timer thread may be waiting without a timeout
+    if (idle) timer_thread_wakeup_force();
     if (registered) join_exiting_thread(thread);
+}
+
+// Called by the timer thread, which joins the registered threads once it has
+// seen none register for EXITING_THREAD_IDLE.  Like a registering thread, it
+// changes the slots only while it holds the fork lock shared.
+static void
+timer_thread_join_exiting_threads(void)
+{
+    pthread_t threads[EXITING_THREAD_SLOTS];
+    int n = 0;
+
+    if (pthread_rwlock_tryrdlock(&rb_thread_fork_rw_lock)) return;
+
+    rb_hrtime_t now = rb_hrtime_now();
+    rb_native_mutex_lock(&exiting_thread_lock);
+    if (exiting_thread_seen != exiting_thread_next) {
+        exiting_thread_seen = exiting_thread_next;
+        exiting_thread_seen_at = now;
+    }
+    else if (exiting_thread_pending &&
+             rb_hrtime_sub(now, exiting_thread_seen_at) >= EXITING_THREAD_IDLE) {
+        for (int i = 0; i < EXITING_THREAD_SLOTS; i++) {
+            if (exiting_threads[i].registered) {
+                exiting_threads[i].registered = false;
+                threads[n++] = exiting_threads[i].thread;
+            }
+        }
+        exiting_thread_pending = false;
+    }
+    rb_native_mutex_unlock(&exiting_thread_lock);
+
+    for (int i = 0; i < n; i++) join_exiting_thread(threads[i]);
+    rb_thread_release_fork_lock();
+}
+
+// Cap the poll timeout (ms; -1 = none) while threads wait to be joined.
+static int
+exiting_thread_timeout(int timeout)
+{
+    rb_native_mutex_lock(&exiting_thread_lock);
+    bool pending = exiting_thread_pending;
+    rb_native_mutex_unlock(&exiting_thread_lock);
+
+    int msec = (int)(EXITING_THREAD_IDLE / RB_HRTIME_PER_MSEC);
+    if (pending && (timeout < 0 || msec < timeout)) {
+        timeout = msec;
+    }
+    return timeout;
 }
 
 void
@@ -1522,8 +1580,8 @@ rb_thread_acquire_fork_lock(void)
     }
 
     // A registered thread may still be exiting, and glibc's thread exit takes
-    // the resolver configuration lock, which fork does not reset.  None can
-    // register while this lock is held, so the slots need no mutex here.
+    // the resolver configuration lock, which fork does not reset.  The slots
+    // change only under the shared lock, so they need no mutex here.
     for (int i = 0; i < EXITING_THREAD_SLOTS; i++) {
         if (exiting_threads[i].registered) {
             exiting_threads[i].registered = false;

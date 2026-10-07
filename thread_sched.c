@@ -2465,6 +2465,7 @@ timer_thread_set_timeout(rb_vm_t *vm)
     ractor_sched_unlock(vm, NULL);
 
     timeout = timer_wheel_timeout(timeout);
+    timeout = exiting_thread_timeout(timeout);
 
     RUBY_DEBUG_LOG("timeout:%d inf:%d", timeout, (int)vm->ractor.sched.timeslice_wait_inf);
 
@@ -2545,6 +2546,7 @@ timer_thread_func(void *ptr)
         timer_thread_check_signal(vm);
         timer_thread_check_timeout(vm);
         ubf_wakeup_all_threads();
+        timer_thread_join_exiting_threads();
 
         RUBY_DEBUG_LOG("system_working:%d", RUBY_ATOMIC_LOAD(system_working));
         timer_thread_polling(vm);
