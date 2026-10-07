@@ -1443,11 +1443,16 @@ rb_func_proc_dup(VALUE src_obj)
     RB_OBJ_WRITTEN(proc_obj, Qundef, proc->basic.block.as.captured.code.val);
 
     const VALUE *src_ep = src_proc->block.as.captured.ep;
-    VALUE *ep = *(VALUE **)&proc->basic.block.as.captured.ep = proc->env + VM_ENV_DATA_SIZE - 1;
-    ep[VM_ENV_DATA_INDEX_FLAGS]   = src_ep[VM_ENV_DATA_INDEX_FLAGS];
-    ep[VM_ENV_DATA_INDEX_ME_CREF] = src_ep[VM_ENV_DATA_INDEX_ME_CREF];
-    ep[VM_ENV_DATA_INDEX_SPECVAL] = src_ep[VM_ENV_DATA_INDEX_SPECVAL];
-    RB_OBJ_WRITE(proc_obj, &ep[VM_ENV_DATA_INDEX_ENV], src_ep[VM_ENV_DATA_INDEX_ENV]);
+    if (src_ep == ((const cfunc_proc_t *)src_proc)->env + VM_ENV_DATA_SIZE - 1) {
+        VALUE *ep = *(VALUE **)&proc->basic.block.as.captured.ep = proc->env + VM_ENV_DATA_SIZE - 1;
+        ep[VM_ENV_DATA_INDEX_FLAGS]   = src_ep[VM_ENV_DATA_INDEX_FLAGS];
+        ep[VM_ENV_DATA_INDEX_ME_CREF] = src_ep[VM_ENV_DATA_INDEX_ME_CREF];
+        ep[VM_ENV_DATA_INDEX_SPECVAL] = src_ep[VM_ENV_DATA_INDEX_SPECVAL];
+        RB_OBJ_WRITE(proc_obj, &ep[VM_ENV_DATA_INDEX_ENV], src_ep[VM_ENV_DATA_INDEX_ENV]);
+    }
+    else {
+        rb_vm_block_ep_update(proc_obj, &proc->basic.block, src_ep);
+    }
 
     return proc_obj;
 }
