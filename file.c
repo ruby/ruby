@@ -2410,18 +2410,13 @@ rb_file_executable_p(VALUE obj, VALUE fname)
 }
 
 /*
+ * :markup: markdown
+ *
  * call-seq:
- *    File.executable_real?(file_name)   -> true or false
+ *    File.executable_real?(path) -> true or false
  *
- * Returns +true+ if the named file is executable by the real user and group
- * id of this process. See <code>access(3)</code>.
- *
- * Windows does not support execute permissions separately from read
- * permissions. On Windows, a file is only considered executable if it ends in
- * .bat, .cmd, .com, or .exe.
- *
- * Note that some OS-level security features may cause this to return true
- * even though the file is not executable by the real user/group.
+ * Like File.executable?, but checks against the real owner/group
+ * instead of the effective owner/group.
  */
 
 static VALUE
@@ -7549,11 +7544,12 @@ rb_stat_x(VALUE obj)
 }
 
 /*
+ *  :markup: markdown
  *  call-seq:
- *     stat.executable_real?    -> true or false
+ *    executable_real? -> true or false
  *
- *  Same as <code>executable?</code>, but tests using the real owner of
- *  the process.
+ *  Like Pathname#executable?, but checks against the real owner/group
+ *  instead of the effective owner/group.
  */
 
 static VALUE
