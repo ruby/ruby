@@ -3306,6 +3306,8 @@ class TestIO < Test::Unit::TestCase
 
   def test_uninitialized
     assert_raise(IOError) { IO.allocate.print "" }
+    assert_raise(IOError) { IO.allocate.external_encoding }
+    assert_raise(IOError) { IO.allocate.internal_encoding }
   end
 
   def test_nofollow
