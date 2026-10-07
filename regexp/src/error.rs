@@ -22,6 +22,9 @@ pub const ONIGERR_TIMEOUT: i32 = -23;
 pub const RB_REGEXP_INTERRUPTED: i32 = -24;
 /// Not an Onigmo code: the engine panicked.
 pub const RB_REGEXP_PANICKED: i32 = -25;
+/// The recursion of the parser or the compiler would leave the machine
+/// stack; C raises SystemStackError.
+pub const RB_REGEXP_STACK_OVERFLOW: i32 = -26;
 pub const ONIGERR_INVALID_ARGUMENT: i32 = -30;
 pub const ONIGERR_END_PATTERN_AT_LEFT_BRACE: i32 = -100;
 pub const ONIGERR_END_PATTERN_AT_LEFT_BRACKET: i32 = -101;

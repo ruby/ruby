@@ -121,7 +121,7 @@ compile_rust(VALUE src, unsigned int options, rb_encoding *enc)
     struct rb_regexp_compile_result res;
     int flags = RB_REGEXP_WARN_ENABLED | (RTEST(ruby_verbose) ? RB_REGEXP_WARN_VERBOSE : 0);
     int r = rb_regexp_rust_compile((const unsigned char *)RSTRING_PTR(src), RSTRING_LEN(src),
-                                   options, enc, flags, &h, &res);
+                                   options, enc, flags, 0, &h, &res);
     /* Emitted only after the engine returned: rb_warn may raise. */
     for (size_t i = 0; i < res.warnings_len; i += strlen((char *)res.warnings + i) + 1) {
         rb_warn("%s", (char *)res.warnings + i);

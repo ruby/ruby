@@ -13,7 +13,7 @@
 #include "ruby/onigmo.h"
 
 /* Must match regexp::ffi::ABI_VERSION. */
-#define RB_REGEXP_RUST_ABI_VERSION 3
+#define RB_REGEXP_RUST_ABI_VERSION 4
 
 #define RB_REGEXP_WARN_ENABLED 1
 #define RB_REGEXP_WARN_VERBOSE 2
@@ -21,6 +21,7 @@
 /* Codes of the Rust engine beyond Onigmo's (-24 and -25 are unused there). */
 #define RB_REGEXP_INTERRUPTED (-24)
 #define RB_REGEXP_PANICKED    (-25)
+#define RB_REGEXP_STACK_OVERFLOW (-26)
 
 typedef struct rb_regexp_rust rb_regexp_rust_t;
 
@@ -77,7 +78,7 @@ unsigned int rb_regexp_rust_get_parse_depth_limit(void);
 int rb_regexp_rust_set_parse_depth_limit(unsigned int depth);
 
 int rb_regexp_rust_compile(const unsigned char *pat, size_t len, uint32_t options,
-                           const OnigEncodingType *enc, int warn_flags,
+                           const OnigEncodingType *enc, int warn_flags, uintptr_t stack_limit,
                            rb_regexp_rust_t **out, struct rb_regexp_compile_result *res);
 void rb_regexp_rust_free(rb_regexp_rust_t *h);
 void rb_regexp_rust_free_bytes(unsigned char *ptr, size_t len);

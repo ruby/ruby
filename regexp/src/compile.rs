@@ -11,8 +11,8 @@ use crate::enc::*;
 use crate::error::*;
 use crate::names::NameTable;
 use crate::parser::{
-    BitStatus, ScanEnv, Warner, bit_status_at, bit_status_on_at, bit_status_on_at_simple, is_code_in_cc,
-    parse_make_tree, reduce_nested_quantifier,
+    BitStatus, ParseSpare, ScanEnv, Warner, bit_status_at, bit_status_on_at, bit_status_on_at_simple, is_code_in_cc,
+    parse_make_tree, reduce_nested_quantifier, stack_exhausted,
 };
 use crate::syntax::*;
 
@@ -175,6 +175,7 @@ pub fn compile(
     option: u32,
     case_fold_flag: u32,
     enc: Enc,
+    stack_limit: usize,
     warner: &mut dyn Warner,
 ) -> Result<Regex, CompileError> {
     let both = ONIG_OPTION_DONT_CAPTURE_GROUP | ONIG_OPTION_CAPTURE_GROUP;
@@ -189,7 +190,8 @@ pub fn compile(
         option |= SYNTAX_RUBY.options;
     }
 
-    let pr = parse_make_tree(pattern, option, case_fold_flag, enc, warner)
+    let spare = SPARE.take().unwrap_or_default();
+    let pr = parse_make_tree(pattern, option, case_fold_flag, enc, stack_limit, spare.parse, warner)
         .map_err(|(code, par)| CompileError { code, par })?;
     let mut c = Compiler {
         num_mem: pr.env.num_mem,
@@ -209,13 +211,29 @@ pub fn compile(
         repeat_range: Vec::new(),
         uslist: Vec::new(),
         opt: OptResult::default(),
-        opt_pool: Vec::new(),
-        loop_pushes: Vec::new(),
+        opt_pool: spare.opts,
+        loop_pushes: spare.loop_pushes,
     };
-    match c.run(pr.root) {
+    let r = match c.run(pr.root) {
         Ok(()) => Ok(c.finish()),
         Err(code) => Err(CompileError { code, par: c.env.error.take() }),
-    }
+    };
+    c.keep_spare();
+    r
+}
+
+/// What a compilation leaves to the next one on its thread: the node arena
+/// and the working vectors, emptied.
+#[derive(Default)]
+struct Spare {
+    parse: ParseSpare,
+    #[allow(clippy::vec_box)]
+    opts: Vec<Box<NodeOptInfo>>,
+    loop_pushes: Vec<usize>,
+}
+
+thread_local! {
+    static SPARE: std::cell::Cell<Option<Spare>> = const { std::cell::Cell::new(None) };
 }
 
 #[derive(Clone)]
@@ -335,7 +353,27 @@ impl Compiler {
         Ok(())
     }
 
-    fn finish(self) -> Regex {
+    /// Keeps the vectors for the next compilation, except what the few
+    /// large patterns grew.
+    fn keep_spare(mut self) {
+        let mut nodes = std::mem::take(&mut self.ast.nodes);
+        if nodes.capacity() > 256 {
+            nodes = Vec::new();
+        }
+        nodes.clear();
+        self.opt_pool.truncate(32);
+        let mut mem_nodes = std::mem::take(&mut self.env.mem_nodes);
+        mem_nodes.clear();
+        let mut loop_pushes = std::mem::take(&mut self.loop_pushes);
+        loop_pushes.clear();
+        SPARE.set(Some(Spare {
+            parse: ParseSpare { nodes, mem_nodes },
+            opts: std::mem::take(&mut self.opt_pool),
+            loop_pushes,
+        }));
+    }
+
+    fn finish(&mut self) -> Regex {
         let stack_pop_level = if self.num_repeat != 0 || self.bt_mem_end != 0 {
             STACK_POP_LEVEL_ALL
         } else if self.bt_mem_start != 0 {
@@ -348,7 +386,7 @@ impl Compiler {
         } else {
             self.repeat_range.len().div_ceil(REPEAT_RANGE_ALLOC) * REPEAT_RANGE_ALLOC
         };
-        let mut program = self.p;
+        let mut program = std::mem::take(&mut self.p);
         program.shrink_to_fit();
         let mut char_loops = Vec::new();
         for &at in &self.loop_pushes {
@@ -368,26 +406,32 @@ impl Compiler {
             bt_mem_start: self.bt_mem_start,
             bt_mem_end: self.bt_mem_end,
             stack_pop_level,
-            repeat_range: self.repeat_range,
+            repeat_range: std::mem::take(&mut self.repeat_range),
             repeat_range_alloc,
             options: self.options,
             enc: self.enc,
             case_fold_flag: self.case_fold_flag,
-            names: self.names,
+            names: std::mem::take(&mut self.names),
             optimize: self.opt.optimize,
             threshold_len: self.opt.threshold_len,
             anchor: self.opt.anchor,
             anchor_dmin: self.opt.anchor_dmin,
             anchor_dmax: self.opt.anchor_dmax,
             sub_anchor: self.opt.sub_anchor,
-            exact: self.opt.exact,
+            exact: std::mem::take(&mut self.opt.exact),
             map: self.opt.map,
             dmin: self.opt.dmin,
             dmax: self.opt.dmax,
         }
     }
 
-    // ---- small accessors ----
+// ---- small accessors ----
+
+/// Called on entry to each recursive pass; see `stack_exhausted`.
+#[inline]
+fn check_stack(&self) -> R<()> {
+    if stack_exhausted(self.env.stack_limit) { Err(RB_REGEXP_STACK_OVERFLOW) } else { Ok(()) }
+}
 
     #[track_caller]
     fn target(&self, id: NodeId) -> R<NodeId> {
@@ -442,6 +486,7 @@ impl Compiler {
     // ---- named groups (USE_NAMED_GROUP) ----
 
     fn noname_disable_map(&mut self, node: NodeId, map: &mut [i32], counter: &mut i32) -> R<NodeId> {
+        self.check_stack()?;
         match self.ast.ntype(node) {
             NT_LIST | NT_ALT => {
                 for cell in self.cells(node) {
@@ -507,6 +552,7 @@ impl Compiler {
     }
 
     fn renumber_by_map(&mut self, node: NodeId, map: &[i32], num_mem: i32) -> R<()> {
+        self.check_stack()?;
         match self.ast.ntype(node) {
             NT_LIST | NT_ALT => {
                 for cell in self.cells(node) {
@@ -542,6 +588,7 @@ impl Compiler {
     }
 
     fn numbered_ref_check(&self, node: NodeId) -> R<()> {
+        self.check_stack()?;
         match self.ast.ntype(node) {
             NT_LIST | NT_ALT => {
                 for cell in self.cells(node) {
@@ -613,6 +660,7 @@ impl Compiler {
     // ---- length analysis ----
 
     fn quantifiers_memory_node_info(&self, node: NodeId) -> R<i32> {
+        self.check_stack()?;
         let mut r = 0;
         match self.ast.ntype(node) {
             NT_LIST | NT_ALT => {
@@ -647,6 +695,7 @@ impl Compiler {
     }
 
     fn get_min_match_length(&mut self, node: NodeId) -> R<usize> {
+        self.check_stack()?;
         let mut min = 0usize;
         match self.ast.ntype(node) {
             NT_BREF => {
@@ -735,6 +784,7 @@ impl Compiler {
     }
 
     fn get_max_match_length(&mut self, node: NodeId) -> R<usize> {
+        self.check_stack()?;
         let mut max = 0usize;
         match self.ast.ntype(node) {
             NT_LIST => {
@@ -816,6 +866,7 @@ impl Compiler {
 
     /// `get_char_length_tree1`.
     fn get_char_length_tree1(&mut self, node: NodeId, level: i32) -> Result<i32, CharLenError> {
+        self.check_stack()?;
         let level = level + 1;
         let mut len: i32 = 0;
         match self.ast.ntype(node) {
@@ -1018,6 +1069,9 @@ impl Compiler {
     }
 
     fn get_head_value_node(&self, node: NodeId, exact: bool, options: u32) -> Option<NodeId> {
+        if self.check_stack().is_err() {
+            return None; /* only an optimization is lost */
+        }
         match self.ast.ntype(node) {
             NT_CTYPE | NT_CCLASS => {
                 if !exact {
@@ -1065,6 +1119,7 @@ impl Compiler {
     }
 
     fn check_type_tree(&self, node: NodeId, type_mask: i32, enclose_mask: i32, anchor_mask: i32) -> R<i32> {
+        self.check_stack()?;
         let typ = self.ast.ntype(node);
         if ntype2bit(typ) & type_mask == 0 {
             return Ok(1);
@@ -1108,6 +1163,7 @@ impl Compiler {
     }
 
     fn subexp_inf_recursive_check(&mut self, node: NodeId, head: bool) -> R<i32> {
+        self.check_stack()?;
         let mut head = head;
         let mut r = 0;
         match self.ast.ntype(node) {
@@ -1169,6 +1225,7 @@ impl Compiler {
     }
 
     fn subexp_inf_recursive_check_trav(&mut self, node: NodeId) -> R<()> {
+        self.check_stack()?;
         match self.ast.ntype(node) {
             NT_LIST | NT_ALT => {
                 for cell in self.cells(node) {
@@ -1198,6 +1255,7 @@ impl Compiler {
     }
 
     fn subexp_recursive_check(&mut self, node: NodeId) -> R<i32> {
+        self.check_stack()?;
         let mut r = 0;
         match self.ast.ntype(node) {
             NT_LIST | NT_ALT => {
@@ -1237,6 +1295,7 @@ impl Compiler {
     }
 
     fn subexp_recursive_check_trav(&mut self, node: NodeId) -> R<i32> {
+        self.check_stack()?;
         let mut r = 0;
         match self.ast.ntype(node) {
             NT_LIST | NT_ALT => {
@@ -1281,6 +1340,7 @@ impl Compiler {
     }
 
     fn setup_subexp_call(&mut self, node: NodeId) -> R<()> {
+        self.check_stack()?;
         match self.ast.ntype(node) {
             NT_LIST | NT_ALT => {
                 for cell in self.cells(node) {
@@ -1628,6 +1688,7 @@ impl Compiler {
     ///  5. find invalid patterns in look-behind.
     ///  6. expand repeated string.
     fn setup_tree(&mut self, node: NodeId, state: i32) -> R<()> {
+        self.check_stack()?;
         match self.ast.ntype(node) {
             NT_LIST => {
                 let mut prev: Option<NodeId> = None;
@@ -2420,7 +2481,10 @@ impl Compiler {
         let an = self.ast.anchor(node);
         if an.char_len < 0 {
             let t = self.target(node)?;
-            self.get_char_length_tree(t).map_err(|_| ONIGERR_INVALID_LOOK_BEHIND_PATTERN)
+            self.get_char_length_tree(t).map_err(|e| match e {
+                CharLenError::Error(RB_REGEXP_STACK_OVERFLOW) => RB_REGEXP_STACK_OVERFLOW,
+                _ => ONIGERR_INVALID_LOOK_BEHIND_PATTERN,
+            })
         } else {
             Ok(an.char_len)
         }
@@ -2476,6 +2540,7 @@ impl Compiler {
     }
 
     fn compile_length_tree(&mut self, node: NodeId) -> R<i64> {
+        self.check_stack()?;
         let r = match self.ast.ntype(node) {
             NT_LIST => {
                 let mut len = 0;
@@ -2526,6 +2591,7 @@ impl Compiler {
     }
 
     fn compile_tree(&mut self, node: NodeId) -> R<()> {
+        self.check_stack()?;
         match self.ast.ntype(node) {
             NT_LIST => {
                 for cell in self.cells(node) {
@@ -2632,6 +2698,7 @@ impl Compiler {
     // ---- optimizer ----
 
     fn optimize_node_left(&mut self, node: NodeId, opt: &mut NodeOptInfo, env: &mut OptEnv) -> R<()> {
+        self.check_stack()?;
         opt.clear();
         opt.set_bound(&env.mmd);
         let enc = self.enc;
@@ -2997,7 +3064,7 @@ impl Compiler {
 
     fn set_optimize_info_from_tree(&mut self, node: NodeId) -> R<()> {
         let mut env = OptEnv { mmd: MinMaxLen::default(), options: self.options };
-        let mut opt = Box::new(NodeOptInfo::new());
+        let mut opt = self.take_opt();
         self.optimize_node_left(node, &mut opt, &mut env)?;
 
         self.opt.anchor = opt.anc.left_anchor
@@ -3035,6 +3102,7 @@ impl Compiler {
                 self.opt.sub_anchor |= opt.anc.right_anchor & ANCHOR_END_LINE;
             }
         }
+        self.opt_pool.push(opt);
         Ok(())
     }
 }

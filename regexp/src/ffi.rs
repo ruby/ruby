@@ -20,7 +20,7 @@ use crate::parser::{self, Warner};
 
 /// Version of the interface between this crate and `re_engine.c`. The C side
 /// refuses to use the engine when its own copy of the number differs.
-pub const ABI_VERSION: u32 = 3;
+pub const ABI_VERSION: u32 = 4;
 
 #[unsafe(no_mangle)]
 pub extern "C" fn rb_regexp_rust_abi_version() -> u32 {
@@ -176,6 +176,7 @@ pub unsafe extern "C" fn rb_regexp_rust_compile(
     options: u32,
     enc: *const OnigEncodingType,
     warn_flags: c_int,
+    stack_limit: usize,
     out: *mut *mut Handle,
     res: *mut CompileResult,
 ) -> c_int {
@@ -194,7 +195,7 @@ pub unsafe extern "C" fn rb_regexp_rust_compile(
 
     let mut warner = CollectWarner { flags: warn_flags, out: Vec::new() };
     let compiled = guard(Err(RB_REGEXP_PANICKED), || {
-        compile::compile(source, options, enc::ONIGENC_CASE_FOLD_MIN, enc, &mut warner).map_err(|e| {
+        compile::compile(source, options, enc::ONIGENC_CASE_FOLD_MIN, enc, stack_limit, &mut warner).map_err(|e| {
             let msg = error_code_to_str(e.code, e.par.as_deref().map(|p| (enc, p)));
             write_message(&mut res.message, &msg);
             // The argument is always a piece of the pattern (a group or

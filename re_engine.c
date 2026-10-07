@@ -49,6 +49,7 @@ rb_reg_default_engine_set(rb_regexp_engine_t engine)
 #if USE_RUST_REGEXP
 #include "hrtime.h"
 #include "regint.h"
+#include "vm_core.h"
 
 #define RUST_HANDLE(reg) ((rb_regexp_rust_t *)(reg)->reserved1)
 
@@ -81,6 +82,28 @@ emit_warnings(unsigned char *warnings, size_t len, const char *sourcefile, int s
 }
 
 /*
+ * The lowest machine stack address the recursion of the Rust parser and
+ * compiler may reach, with room left for the C frames around it and for
+ * Ruby's own overflow handling. 0 disables the check.
+ */
+static uintptr_t
+rust_stack_limit(void)
+{
+#if defined(STACK_GROW_DIRECTION) && STACK_GROW_DIRECTION < 0
+    const rb_execution_context_t *ec = GET_EC();
+    uintptr_t start = (uintptr_t)ec->machine.stack_start;
+    size_t size = ec->machine.stack_maxsize;
+    /* Room for one level of recursion between two checks and the leaf calls
+     * below it. SystemStackError is raised after the engine has returned. */
+    const size_t margin = 16 * 1024;
+    if (!start || size < 4 * margin) return 0;
+    return start - size + margin;
+#else
+    return 0;
+#endif
+}
+
+/*
  * Called at the top of onig_compile_ruby. Compiles with the Rust engine when
  * it is the default and the pattern uses the Ruby syntax and case folding,
  * filling the regex_t header. Returns false to let Onigmo compile.
@@ -95,7 +118,8 @@ rb_reg_rust_compile_hook(regex_t *reg, const UChar *pattern, const UChar *patter
     rb_regexp_rust_t *h;
     struct rb_regexp_compile_result res;
     int flags = RB_REGEXP_WARN_ENABLED | (RTEST(ruby_verbose) ? RB_REGEXP_WARN_VERBOSE : 0);
-    int r = rb_regexp_rust_compile(pattern, pattern_end - pattern, reg->options, reg->enc, flags, &h, &res);
+    int r = rb_regexp_rust_compile(pattern, pattern_end - pattern, reg->options, reg->enc, flags,
+                                   rust_stack_limit(), &h, &res);
 
     if (r == 0) {
         struct rb_regexp_rust_header hd;
@@ -121,6 +145,7 @@ rb_reg_rust_compile_hook(regex_t *reg, const UChar *pattern, const UChar *patter
         RB_GC_GUARD(buf);
     }
     if (r == RB_REGEXP_PANICKED) rust_panicked();
+    if (r == RB_REGEXP_STACK_OVERFLOW) rb_raise(rb_eSysStackError, "stack level too deep");
 
     *result = r;
     return 1;
