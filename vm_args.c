@@ -611,6 +611,13 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
      * <- ISEQ_BODY(iseq)->param.size------------>
      * ^ locals                             ^ sp
      */
+    if ((unsigned int)calling->argc < ISEQ_BODY(iseq)->param.size) {
+        /* Ensure the nil-fill below and the SP extension do not run into the
+         * control frame region, clobbering frames before the stack overflow
+         * check in vm_push_frame has a chance to raise SystemStackError. */
+        CHECK_VM_STACK_OVERFLOW0(ec->cfp, locals + calling->argc,
+                                 ISEQ_BODY(iseq)->param.size - calling->argc);
+    }
     for (i=calling->argc; i<ISEQ_BODY(iseq)->param.size; i++) {
         locals[i] = Qnil;
     }
