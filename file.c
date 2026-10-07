@@ -6901,7 +6901,7 @@ static VALUE
 rb_stat_s_alloc(VALUE klass)
 {
     VALUE obj;
-    stat_alloc(rb_cStat, &obj);
+    stat_alloc(klass, &obj);
     return obj;
 }
 
