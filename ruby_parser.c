@@ -605,7 +605,7 @@ rb_parser_string_t *
 rb_parser_lex_get_str(struct parser_params *p, struct lex_pointer_string *ptr_str)
 {
     char *beg, *end, *start;
-    long len;
+    rb_len_t len;
     VALUE s = ptr_str->str;
 
     beg = RSTRING_PTR(s);

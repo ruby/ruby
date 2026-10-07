@@ -993,7 +993,7 @@ io_ungetbyte(VALUE str, rb_io_t *fptr)
 static void
 io_restore_read_buffer(VALUE str, rb_io_t *fptr)
 {
-    long len = RSTRING_LEN(str);
+    rb_len_t len = RSTRING_LEN(str);
 
     if (len > INT_MAX - fptr->rbuf.len) {
         rb_raise(rb_eIOError, "read buffer too large");

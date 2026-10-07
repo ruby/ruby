@@ -240,7 +240,7 @@ struct producer {
     VALUE size;
 };
 
-typedef struct MEMO *lazyenum_proc_func(VALUE, struct MEMO *, VALUE, long);
+typedef struct MEMO *lazyenum_proc_func(VALUE, struct MEMO *, VALUE, rb_len_t);
 typedef VALUE lazyenum_size_func(VALUE, VALUE);
 typedef int lazyenum_precheck_func(VALUE proc_entry);
 typedef struct {
@@ -1631,7 +1631,7 @@ lazy_init_block_i(RB_BLOCK_CALL_FUNC_ARGLIST(val, m))
         rb_raise(rb_eArgError, "tried to call lazy " #func " without a block"); \
     }
 
-static VALUE lazy_yielder_result(struct MEMO *result, VALUE yielder, VALUE procs_array, VALUE memos, long i);
+static VALUE lazy_yielder_result(struct MEMO *result, VALUE yielder, VALUE procs_array, VALUE memos, rb_len_t i);
 
 static VALUE
 lazy_init_yielder(RB_BLOCK_CALL_FUNC_ARGLIST(_, m))
@@ -1647,7 +1647,7 @@ lazy_init_yielder(RB_BLOCK_CALL_FUNC_ARGLIST(_, m))
 }
 
 static VALUE
-lazy_yielder_yield(struct MEMO *result, long memo_index, int argc, const VALUE *argv)
+lazy_yielder_yield(struct MEMO *result, rb_len_t memo_index, int argc, const VALUE *argv)
 {
     VALUE m = result->v1;
     VALUE yielder = RARRAY_AREF(m, 0);
@@ -1662,7 +1662,7 @@ lazy_yielder_yield(struct MEMO *result, long memo_index, int argc, const VALUE *
 }
 
 static VALUE
-lazy_yielder_result(struct MEMO *result, VALUE yielder, VALUE procs_array, VALUE memos, long i)
+lazy_yielder_result(struct MEMO *result, VALUE yielder, VALUE procs_array, VALUE memos, rb_len_t i)
 {
     int cont = 1;
 
@@ -2058,7 +2058,7 @@ lazyenum_yield_values(VALUE proc_entry, struct MEMO *result)
 }
 
 static struct MEMO *
-lazy_map_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_index)
+lazy_map_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, rb_len_t memo_index)
 {
     VALUE value = lazyenum_yield_values(proc_entry, result);
     LAZY_MEMO_SET_VALUE(result, value);
@@ -2105,11 +2105,11 @@ lazy_flat_map_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, y))
 }
 
 static struct MEMO *
-lazy_flat_map_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_index)
+lazy_flat_map_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, rb_len_t memo_index)
 {
     VALUE value = lazyenum_yield_values(proc_entry, result);
     VALUE ary = 0;
-    const long proc_index = memo_index + 1;
+    const rb_len_t proc_index = memo_index + 1;
     int break_p = LAZY_MEMO_BREAK_P(result);
 
     if (RB_TYPE_P(value, T_ARRAY)) {
@@ -2175,7 +2175,7 @@ lazy_flat_map(VALUE obj)
 }
 
 static struct MEMO *
-lazy_select_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_index)
+lazy_select_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, rb_len_t memo_index)
 {
     VALUE chain = lazyenum_yield(proc_entry, result);
     if (!RTEST(chain)) return 0;
@@ -2202,7 +2202,7 @@ lazy_select(VALUE obj)
 }
 
 static struct MEMO *
-lazy_filter_map_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_index)
+lazy_filter_map_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, rb_len_t memo_index)
 {
     VALUE value = lazyenum_yield_values(proc_entry, result);
     if (!RTEST(value)) return 0;
@@ -2233,7 +2233,7 @@ lazy_filter_map(VALUE obj)
 }
 
 static struct MEMO *
-lazy_reject_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_index)
+lazy_reject_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, rb_len_t memo_index)
 {
     VALUE chain = lazyenum_yield(proc_entry, result);
     if (RTEST(chain)) return 0;
@@ -2259,7 +2259,7 @@ lazy_reject(VALUE obj)
 }
 
 static struct MEMO *
-lazy_grep_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_index)
+lazy_grep_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, rb_len_t memo_index)
 {
     struct proc_entry *entry = proc_entry_ptr(proc_entry);
     VALUE chain = rb_funcall(entry->memo, id_eqq, 1, result->memo_value);
@@ -2268,7 +2268,7 @@ lazy_grep_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_ind
 }
 
 static struct MEMO *
-lazy_grep_iter_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_index)
+lazy_grep_iter_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, rb_len_t memo_index)
 {
     struct proc_entry *entry = proc_entry_ptr(proc_entry);
     VALUE value, chain = rb_funcall(entry->memo, id_eqq, 1, result->memo_value);
@@ -2308,7 +2308,7 @@ lazy_grep(VALUE obj, VALUE pattern)
 }
 
 static struct MEMO *
-lazy_grep_v_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_index)
+lazy_grep_v_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, rb_len_t memo_index)
 {
     struct proc_entry *entry = proc_entry_ptr(proc_entry);
     VALUE chain = rb_funcall(entry->memo, id_eqq, 1, result->memo_value);
@@ -2317,7 +2317,7 @@ lazy_grep_v_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_i
 }
 
 static struct MEMO *
-lazy_grep_v_iter_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_index)
+lazy_grep_v_iter_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, rb_len_t memo_index)
 {
     struct proc_entry *entry = proc_entry_ptr(proc_entry);
     VALUE value, chain = rb_funcall(entry->memo, id_eqq, 1, result->memo_value);
@@ -2368,7 +2368,7 @@ next_stopped(VALUE obj, VALUE _)
 }
 
 static struct MEMO *
-lazy_zip_arrays_func(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_index)
+lazy_zip_arrays_func(VALUE proc_entry, struct MEMO *result, VALUE memos, rb_len_t memo_index)
 {
     struct proc_entry *entry = proc_entry_ptr(proc_entry);
     VALUE ary, arrays = entry->memo;
@@ -2386,7 +2386,7 @@ lazy_zip_arrays_func(VALUE proc_entry, struct MEMO *result, VALUE memos, long me
 }
 
 static struct MEMO *
-lazy_zip_func(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_index)
+lazy_zip_func(VALUE proc_entry, struct MEMO *result, VALUE memos, rb_len_t memo_index)
 {
     struct proc_entry *entry = proc_entry_ptr(proc_entry);
     VALUE arg = rb_ary_entry(memos, memo_index);
@@ -2458,7 +2458,7 @@ lazy_zip(int argc, VALUE *argv, VALUE obj)
 }
 
 static struct MEMO *
-lazy_take_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_index)
+lazy_take_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, rb_len_t memo_index)
 {
     rb_len_t remain;
     struct proc_entry *entry = proc_entry_ptr(proc_entry);
@@ -2516,7 +2516,7 @@ lazy_take(VALUE obj, VALUE n)
 }
 
 static struct MEMO *
-lazy_take_while_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_index)
+lazy_take_while_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, rb_len_t memo_index)
 {
     VALUE take = lazyenum_yield_values(proc_entry, result);
     if (!RTEST(take)) {
@@ -2558,7 +2558,7 @@ lazy_drop_size(VALUE proc_entry, VALUE receiver)
 }
 
 static struct MEMO *
-lazy_drop_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_index)
+lazy_drop_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, rb_len_t memo_index)
 {
     rb_len_t remain;
     struct proc_entry *entry = proc_entry_ptr(proc_entry);
@@ -2604,7 +2604,7 @@ lazy_drop(VALUE obj, VALUE n)
 }
 
 static struct MEMO *
-lazy_drop_while_proc(VALUE proc_entry, struct MEMO* result, VALUE memos, long memo_index)
+lazy_drop_while_proc(VALUE proc_entry, struct MEMO* result, VALUE memos, rb_len_t memo_index)
 {
     struct proc_entry *entry = proc_entry_ptr(proc_entry);
     VALUE memo = rb_ary_entry(memos, memo_index);
@@ -2640,7 +2640,7 @@ lazy_drop_while(VALUE obj)
 }
 
 static int
-lazy_uniq_check(VALUE chain, VALUE memos, long memo_index)
+lazy_uniq_check(VALUE chain, VALUE memos, rb_len_t memo_index)
 {
     VALUE set = rb_ary_entry(memos, memo_index);
 
@@ -2653,14 +2653,14 @@ lazy_uniq_check(VALUE chain, VALUE memos, long memo_index)
 }
 
 static struct MEMO *
-lazy_uniq_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_index)
+lazy_uniq_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, rb_len_t memo_index)
 {
     if (lazy_uniq_check(result->memo_value, memos, memo_index)) return 0;
     return result;
 }
 
 static struct MEMO *
-lazy_uniq_iter_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_index)
+lazy_uniq_iter_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, rb_len_t memo_index)
 {
     VALUE chain = lazyenum_yield(proc_entry, result);
 
@@ -2693,7 +2693,7 @@ lazy_uniq(VALUE obj)
 }
 
 static struct MEMO *
-lazy_compact_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_index)
+lazy_compact_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, rb_len_t memo_index)
 {
     if (NIL_P(result->memo_value)) return 0;
     return result;
@@ -2717,7 +2717,7 @@ lazy_compact(VALUE obj)
 }
 
 static struct MEMO *
-lazy_with_index_proc(VALUE proc_entry, struct MEMO* result, VALUE memos, long memo_index)
+lazy_with_index_proc(VALUE proc_entry, struct MEMO* result, VALUE memos, rb_len_t memo_index)
 {
     struct proc_entry *entry = proc_entry_ptr(proc_entry);
     VALUE memo = rb_ary_entry(memos, memo_index);
@@ -2803,7 +2803,7 @@ lazy_with_index(int argc, VALUE *argv, VALUE obj)
 }
 
 static struct MEMO *
-lazy_tap_each_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_index)
+lazy_tap_each_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, rb_len_t memo_index)
 {
     struct proc_entry *entry = proc_entry_ptr(proc_entry);
 

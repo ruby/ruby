@@ -325,7 +325,7 @@ w_bytes(const char *s, rb_len_t n, struct dump_arg *arg)
 static void
 w_str_bytes(VALUE str, struct dump_arg *arg)
 {
-    long len = RSTRING_LEN(str);
+    rb_len_t len = RSTRING_LEN(str);
     const char *ptr = RSTRING_PTR(str);
     w_long(len, arg);
     if (RSTRING_PTR(str) != ptr || RSTRING_LEN(str) != len) {

@@ -236,7 +236,8 @@ user_length_in_path(const wchar_t *wuser, size_t len)
 static VALUE
 append_wstr(VALUE dst, const WCHAR *ws, ssize_t len, UINT cp, rb_encoding *enc)
 {
-    long olen, nlen = (long)len;
+    rb_len_t olen;
+    long nlen = (long)len;
 
     if (cp != INVALID_CODE_PAGE) {
         if (len == -1) len = lstrlenW(ws);
