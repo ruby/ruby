@@ -201,13 +201,16 @@ module SyncDefaultGems
     },
     pp: lib("ruby/pp"),
     prettyprint: lib("ruby/prettyprint"),
+    # prism is not a default gem: the parser is linked into the interpreter
+    # and the Ruby part is installed as a plain library under the
+    # Ruby::Prism namespace (see prism_do_fixup).  The prism gem itself is a
+    # bundled gem (gems/bundled_gems).
     prism: repo(["ruby/prism", "main"], [
       ["ext/prism", "prism"],
-      ["lib/prism.rb", "lib/prism.rb"],
-      ["lib/prism", "lib/prism"],
+      ["lib/prism.rb", "lib/ruby/prism.rb"],
+      ["lib/prism", "lib/ruby/prism"],
       ["test/prism", "test/prism"],
       ["src", "prism"],
-      ["prism.gemspec", "lib/prism/prism.gemspec"],
       ["include/prism", "prism"],
       ["include/prism.h", "prism/prism.h"],
       ["config.yml", "prism/config.yml"],
@@ -403,6 +406,41 @@ module SyncDefaultGems
     end
   end
 
+  # The upstream prism is written for the `Prism` namespace of the prism gem.
+  # In ruby/ruby the same code is built into the interpreter as `Ruby::Prism`
+  # so that it is always the very parser that compiled the running code, no
+  # matter which version of the prism gem is installed.  Rewrite the namespace
+  # (and the `prism/...` feature names) of the synced files here, so that the
+  # upstream repository does not need to know about the renaming.
+  PRISM_NAMESPACE = "Ruby::Prism"
+
+  # Rewrite the namespace in Ruby code and ERB templates.
+  def prism_rewrite_ruby(src)
+    src = src.gsub(/\b(require|autoload\s+:\w+,)(\s*)(["'])prism(?=["'\/])/) {
+      "#{$1}#{$2}#{$3}ruby/prism"
+    }
+    src.gsub(/(?<![\w:])(::)?Prism\b/) {"#{$1}#{PRISM_NAMESPACE}"}
+  end
+
+  # Rewrite the namespace in C code: only the module definition.  The
+  # `rb_cPrism*` C identifiers are left alone.
+  def prism_rewrite_c(src)
+    src.gsub('rb_define_module("Prism")',
+             'rb_define_module_under(rb_define_module("Ruby"), "Prism")')
+  end
+
+  def prism_do_fixup
+    files = Dir.glob([
+      "lib/ruby/prism.rb", "lib/ruby/prism/**/*.rb", "test/prism/**/*.rb",
+      "prism/templates/**/*.erb", "prism/templates/template.rb", "prism/*.c",
+    ])
+    files.each do |file|
+      src = File.binread(file)
+      rewritten = file.end_with?(".c") ? prism_rewrite_c(src) : prism_rewrite_ruby(src)
+      File.binwrite(file, rewritten) if rewritten != src
+    end
+  end
+
   def minimize_dependencies(gem)
     files = REPOSITORIES[gem].mappings.flat_map do |_src, dst|
       if File.file?(dst)
@@ -463,6 +501,9 @@ module SyncDefaultGems
     if gem == "rubygems"
       rubygems_do_fixup
     end
+    if gem == "prism"
+      prism_do_fixup
+    end
     # A released tree is published as is, and may lack paths that the top-level
     # depend declares for the master tree.
     unless release
@@ -476,7 +517,7 @@ module SyncDefaultGems
   end
 
   def check_prerelease_version(gem)
-    return if ["rubygems", "mmtk", "Onigmo", "test-unit-ruby-core"].include?(gem)
+    return if ["rubygems", "mmtk", "Onigmo", "test-unit-ruby-core", "prism"].include?(gem)
 
     require "net/https"
     require "json"
@@ -715,6 +756,9 @@ module SyncDefaultGems
     Dir.chdir(wt) do
       if gem == "rubygems"
         rubygems_do_fixup
+      end
+      if gem == "prism"
+        prism_do_fixup
       end
       minimize_dependencies(gem)
       replace_rdoc_ref_all_full
