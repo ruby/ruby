@@ -335,11 +335,11 @@ end
 
 class RubyVM::InstructionSequence
   #  call-seq:
-  #     iseq.syntax_tree -> Prism::Node | RubyVM::AbstractSyntaxTree::Node | nil
+  #     iseq.syntax_tree -> Ruby::Prism::Node | RubyVM::AbstractSyntaxTree::Node | nil
   #
   #  Returns the AST node that this instruction sequence was compiled from,
   #  by re-parsing the source with the same parser that compiled it: a
-  #  Prism::Node if it was compiled by prism, or a
+  #  Ruby::Prism::Node if it was compiled by prism, or a
   #  RubyVM::AbstractSyntaxTree::Node if it was compiled by parse.y.
   #
   #  Returns +nil+ whenever the node cannot be retrieved reliably. For
@@ -347,11 +347,10 @@ class RubyVM::InstructionSequence
   #  RubyVM.keep_script_lines enabled), or the source file has been modified
   #  since it was compiled.
   #
-  #  When a prism gem other than the default gem is loaded, a warning is
-  #  emitted in verbose mode. In that case, the loaded prism may parse the
-  #  source differently from the parser that compiled the instruction
-  #  sequence, and the returned node may not correspond to the code that
-  #  was actually executed.
+  #  The node is a Ruby::Prism::Node, not a node of the prism gem:
+  #  Ruby::Prism is the parser built into the interpreter, so the returned
+  #  tree always corresponds to the compiled code regardless of which
+  #  version of the prism gem is installed.
   #
   #  This method is experimental and might change without notice.
   def syntax_tree
@@ -369,22 +368,10 @@ class RubyVM::InstructionSequence
 
     node_id = self.node_id
     if Primitive.iseq_compiled_by_prism_p
-      require "prism"
-
-      # Only the default gem prism is the same parser as the one built into
-      # the interpreter. Another prism gem is still likely to parse the
-      # source in the same way, so continue with a warning.
-      if $VERBOSE && (spec = defined?(Gem) && Gem.loaded_specs["prism"]) && !spec.default_gem?
-        warn "syntax_tree: a prism gem other than the default gem is loaded; " \
-             "the result may not correspond exactly to the compiled code"
-      end
-
-      begin
-        result = source ? Prism.parse(source, version: "current") : Prism.parse_file(path, version: "current")
-      rescue ArgumentError
-        # The loaded prism does not know the grammar of the running Ruby.
-        return nil
-      end
+      # Ruby::Prism is the parser built into the interpreter, i.e., the very
+      # parser that compiled this instruction sequence, so node_id always
+      # corresponds. The prism gem (if any) is not involved.
+      result = source ? Ruby::Prism.parse(source, version: "current") : Ruby::Prism.parse_file(path, version: "current")
       return nil unless result.success?
 
       # Hash exactly the bytes that prism parsed. The data section after an
@@ -431,7 +418,7 @@ end
 
 class Proc
   #  call-seq:
-  #     prc.syntax_tree -> Prism::Node | RubyVM::AbstractSyntaxTree::Node | nil
+  #     prc.syntax_tree -> Ruby::Prism::Node | RubyVM::AbstractSyntaxTree::Node | nil
   #
   #  Returns the AST node that this proc was compiled from. See
   #  RubyVM::InstructionSequence#syntax_tree for details and for when +nil+
@@ -445,7 +432,7 @@ end
 
 class Method
   #  call-seq:
-  #     meth.syntax_tree -> Prism::Node | RubyVM::AbstractSyntaxTree::Node | nil
+  #     meth.syntax_tree -> Ruby::Prism::Node | RubyVM::AbstractSyntaxTree::Node | nil
   #
   #  Returns the AST node that this method was compiled from. Returns
   #  +nil+ for methods not written in Ruby. See
@@ -460,7 +447,7 @@ end
 
 class UnboundMethod
   #  call-seq:
-  #     meth.syntax_tree -> Prism::Node | RubyVM::AbstractSyntaxTree::Node | nil
+  #     meth.syntax_tree -> Ruby::Prism::Node | RubyVM::AbstractSyntaxTree::Node | nil
   #
   #  Returns the AST node that this method was compiled from. Returns
   #  +nil+ for methods not written in Ruby. See
@@ -475,7 +462,7 @@ end
 
 class Thread::Backtrace::Location
   #  call-seq:
-  #     location.syntax_tree -> Prism::Node | RubyVM::AbstractSyntaxTree::Node | nil
+  #     location.syntax_tree -> Ruby::Prism::Node | RubyVM::AbstractSyntaxTree::Node | nil
   #
   #  Returns the AST node at this location, by re-parsing the source file. See
   #  RubyVM::InstructionSequence#syntax_tree for when +nil+ is returned.
