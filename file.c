@@ -764,12 +764,18 @@ rb_stat_dev_minor(VALUE self)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     stat.ino   -> integer
+ *    ino -> integer
  *
- *  Returns the inode number for <i>stat</i>.
+ *  Returns the inode value for the entry
+ *  in the [snapshot](rdoc-ref:File::Stat@Snapshot) in `self`:
  *
- *     File.stat("testfile").ino   #=> 1083669
+ *  ```ruby
+ *  File.stat('/etc').ino        # => 11141121
+ *  File.stat('/etc/passwd').ino # => 11141413
+ *  ```
  *
  */
 
