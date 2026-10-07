@@ -95,7 +95,7 @@ module JSON
     })
 
     generator::State.rfc8785_sort_keys_proc = shareable_lambda(->(hash) {
-      hash.sort_by { |k| k.to_s.encode(Encoding::UTF_16) }.to_h
+      hash.sort_by { |k,| k.to_s.encode(Encoding::UTF_16) }.to_h
     })
 
     JSON.generator = generator

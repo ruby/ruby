@@ -1253,6 +1253,36 @@ class JSONGeneratorTest < Test::Unit::TestCase
     end
   end
 
+  def test_rfc8785_key_order
+    assert_rfc8785 '{"a":1,"a b":2}', { 'a' => 1, 'a b' => 2 }
+    assert_rfc8785 '{"a":2,"a!":1}', { 'a!' => 1, 'a' => 2 }
+    assert_rfc8785 '{"\n":1,"A":2}', { "\n" => 1, 'A' => 2 }
+    assert_rfc8785 '[{"a":1,"a b":2}]', [{ 'a b' => 2, 'a' => 1 }]
+  end
+
+  def test_rfc8785_mixed_key_order
+    assert_rfc8785 '{"10":2,"9":1}', { '9' => 1, 10 => 2 }
+    assert_rfc8785 '{"a":1,"b":2}', { a: 1, 'b' => 2 }
+  end
+
+  def test_rfc8785_key_order_with_default_external_encoding
+    # https://www.rfc-editor.org/rfc/rfc8785.html#section-3.2.3
+    hash = { "\u20ac" => 1, "\r" => 2, "\ufb33" => 3, '1' => 4,
+             "\u{1f600}" => 5, "\u0080" => 6, "\u00f6" => 7 }
+    expected = "{\"\\r\":2,\"1\":4,\"\u0080\":6,\"\u00f6\":7,\"\u20ac\":1,\"\u{1f600}\":5,\"\ufb33\":3}"
+    verbose = $VERBOSE
+    previous_encoding = Encoding.default_external
+    $VERBOSE = nil
+    outputs = [Encoding::UTF_8, Encoding::US_ASCII].map do |encoding|
+      Encoding.default_external = encoding
+      JSON.generate(hash, rfc8785: true)
+    end
+    assert_equal [expected, expected], outputs
+  ensure
+    Encoding.default_external = previous_encoding
+    $VERBOSE = verbose
+  end
+
   def test_rfc8785_numbers
     assert_rfc8785 '-9007199254740992', -9007199254740992
     assert_rfc8785 '0', 0
