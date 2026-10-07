@@ -2714,7 +2714,8 @@ rb_obj_memsize_of(VALUE obj)
         break;
       case T_REGEXP:
         if (RREGEXP_PTR(obj)) {
-            size += onig_memsize(RREGEXP_PTR(obj));
+            /* regex_t is in the slot */
+            size += onig_memsize(RREGEXP_PTR(obj)) - sizeof(regex_t);
             for (struct rb_regexp_variant *variant = RUBY_ATOMIC_PTR_LOAD(RREGEXP(obj)->variants);
                  variant; variant = variant->next) {
                 size += sizeof(*variant) - sizeof(variant->reg) + onig_memsize(&variant->reg);
