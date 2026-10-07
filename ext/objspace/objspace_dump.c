@@ -17,6 +17,7 @@
 #include "internal/hash.h"
 #include "internal/imemo.h"
 #include "internal/io.h"
+#include "internal/jit.h"
 #include "internal/objspace.h"
 #include "internal/string.h"
 #include "internal/sanitizers.h"
@@ -26,6 +27,7 @@
 #include "ruby/debug.h"
 #include "ruby/util.h"
 #include "ruby/io.h"
+#include "vm_core.h"
 
 #define BUFFER_CAPACITY 4096
 
@@ -460,6 +462,22 @@ dump_object(VALUE obj, struct dump_config *dc)
                     dump_append_ref(dc, klass);
                 }
             }
+            break;
+
+          case imemo_iseq:
+#if USE_YJIT || USE_ZJIT
+            {
+                unsigned int jit_call_threshold = rb_jit_call_threshold();
+                if (jit_call_threshold > 0) {
+                    const struct rb_iseq_constant_body *body = ISEQ_BODY((const rb_iseq_t *)obj);
+                    dump_append(dc, ", \"jit_calls\":");
+                    dump_append_lu(dc, body->jit_entry_calls);
+                    if (body->jit_entry_calls >= jit_call_threshold) {
+                        dump_append(dc, ", \"jit_threshold_reached\":true");
+                    }
+                }
+            }
+#endif
             break;
 
           default:
