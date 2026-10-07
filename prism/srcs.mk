@@ -47,75 +47,75 @@ $(srcdir)/prism/internal/diagnostic.h: $(PRISM_CONFIG) $(PRISM_TEMPLATE) $(PRISM
 realclean-prism-srcs::
 	$(RM) $(srcdir)/prism/internal/diagnostic.h
 
-prism-srcs: $(srcdir)/lib/prism/compiler.rb
-$(srcdir)/lib/prism/compiler.rb: $(PRISM_CONFIG) $(PRISM_TEMPLATE) $(PRISM_TEMPLATES_DIR)/lib/prism/compiler.rb.erb
+prism-srcs: $(srcdir)/lib/ruby/prism/compiler.rb
+$(srcdir)/lib/ruby/prism/compiler.rb: $(PRISM_CONFIG) $(PRISM_TEMPLATE) $(PRISM_TEMPLATES_DIR)/lib/prism/compiler.rb.erb
 	$(Q) $(BASERUBY) $(PRISM_TEMPLATE) lib/prism/compiler.rb $@
 
 realclean-prism-srcs::
-	$(RM) $(srcdir)/lib/prism/compiler.rb
+	$(RM) $(srcdir)/lib/ruby/prism/compiler.rb
 
-prism-srcs: $(srcdir)/lib/prism/dispatcher.rb
-$(srcdir)/lib/prism/dispatcher.rb: $(PRISM_CONFIG) $(PRISM_TEMPLATE) $(PRISM_TEMPLATES_DIR)/lib/prism/dispatcher.rb.erb
+prism-srcs: $(srcdir)/lib/ruby/prism/dispatcher.rb
+$(srcdir)/lib/ruby/prism/dispatcher.rb: $(PRISM_CONFIG) $(PRISM_TEMPLATE) $(PRISM_TEMPLATES_DIR)/lib/prism/dispatcher.rb.erb
 	$(Q) $(BASERUBY) $(PRISM_TEMPLATE) lib/prism/dispatcher.rb $@
 
 realclean-prism-srcs::
-	$(RM) $(srcdir)/lib/prism/dispatcher.rb
+	$(RM) $(srcdir)/lib/ruby/prism/dispatcher.rb
 
-prism-srcs: $(srcdir)/lib/prism/dot_visitor.rb
-$(srcdir)/lib/prism/dot_visitor.rb: $(PRISM_CONFIG) $(PRISM_TEMPLATE) $(PRISM_TEMPLATES_DIR)/lib/prism/dot_visitor.rb.erb
+prism-srcs: $(srcdir)/lib/ruby/prism/dot_visitor.rb
+$(srcdir)/lib/ruby/prism/dot_visitor.rb: $(PRISM_CONFIG) $(PRISM_TEMPLATE) $(PRISM_TEMPLATES_DIR)/lib/prism/dot_visitor.rb.erb
 	$(Q) $(BASERUBY) $(PRISM_TEMPLATE) lib/prism/dot_visitor.rb $@
 
 realclean-prism-srcs::
-	$(RM) $(srcdir)/lib/prism/dot_visitor.rb
+	$(RM) $(srcdir)/lib/ruby/prism/dot_visitor.rb
 
-prism-srcs: $(srcdir)/lib/prism/dsl.rb
-$(srcdir)/lib/prism/dsl.rb: $(PRISM_CONFIG) $(PRISM_TEMPLATE) $(PRISM_TEMPLATES_DIR)/lib/prism/dsl.rb.erb
+prism-srcs: $(srcdir)/lib/ruby/prism/dsl.rb
+$(srcdir)/lib/ruby/prism/dsl.rb: $(PRISM_CONFIG) $(PRISM_TEMPLATE) $(PRISM_TEMPLATES_DIR)/lib/prism/dsl.rb.erb
 	$(Q) $(BASERUBY) $(PRISM_TEMPLATE) lib/prism/dsl.rb $@
 
 realclean-prism-srcs::
-	$(RM) $(srcdir)/lib/prism/dsl.rb
+	$(RM) $(srcdir)/lib/ruby/prism/dsl.rb
 
-prism-srcs: $(srcdir)/lib/prism/inspect_visitor.rb
-$(srcdir)/lib/prism/inspect_visitor.rb: $(PRISM_CONFIG) $(PRISM_TEMPLATE) $(PRISM_TEMPLATES_DIR)/lib/prism/inspect_visitor.rb.erb
+prism-srcs: $(srcdir)/lib/ruby/prism/inspect_visitor.rb
+$(srcdir)/lib/ruby/prism/inspect_visitor.rb: $(PRISM_CONFIG) $(PRISM_TEMPLATE) $(PRISM_TEMPLATES_DIR)/lib/prism/inspect_visitor.rb.erb
 	$(Q) $(BASERUBY) $(PRISM_TEMPLATE) lib/prism/inspect_visitor.rb $@
 
 realclean-prism-srcs::
-	$(RM) $(srcdir)/lib/prism/inspect_visitor.rb
+	$(RM) $(srcdir)/lib/ruby/prism/inspect_visitor.rb
 
-prism-srcs: $(srcdir)/lib/prism/mutation_compiler.rb
-$(srcdir)/lib/prism/mutation_compiler.rb: $(PRISM_CONFIG) $(PRISM_TEMPLATE) $(PRISM_TEMPLATES_DIR)/lib/prism/mutation_compiler.rb.erb
+prism-srcs: $(srcdir)/lib/ruby/prism/mutation_compiler.rb
+$(srcdir)/lib/ruby/prism/mutation_compiler.rb: $(PRISM_CONFIG) $(PRISM_TEMPLATE) $(PRISM_TEMPLATES_DIR)/lib/prism/mutation_compiler.rb.erb
 	$(Q) $(BASERUBY) $(PRISM_TEMPLATE) lib/prism/mutation_compiler.rb $@
 
 realclean-prism-srcs::
-	$(RM) $(srcdir)/lib/prism/mutation_compiler.rb
+	$(RM) $(srcdir)/lib/ruby/prism/mutation_compiler.rb
 
-prism-srcs: $(srcdir)/lib/prism/node.rb
-$(srcdir)/lib/prism/node.rb: $(PRISM_CONFIG) $(PRISM_TEMPLATE) $(PRISM_TEMPLATES_DIR)/lib/prism/node.rb.erb
+prism-srcs: $(srcdir)/lib/ruby/prism/node.rb
+$(srcdir)/lib/ruby/prism/node.rb: $(PRISM_CONFIG) $(PRISM_TEMPLATE) $(PRISM_TEMPLATES_DIR)/lib/prism/node.rb.erb
 	$(Q) $(BASERUBY) $(PRISM_TEMPLATE) lib/prism/node.rb $@
 
 realclean-prism-srcs::
-	$(RM) $(srcdir)/lib/prism/node.rb
+	$(RM) $(srcdir)/lib/ruby/prism/node.rb
 
-prism-srcs: $(srcdir)/lib/prism/reflection.rb
-$(srcdir)/lib/prism/reflection.rb: $(PRISM_CONFIG) $(PRISM_TEMPLATE) $(PRISM_TEMPLATES_DIR)/lib/prism/reflection.rb.erb
+prism-srcs: $(srcdir)/lib/ruby/prism/reflection.rb
+$(srcdir)/lib/ruby/prism/reflection.rb: $(PRISM_CONFIG) $(PRISM_TEMPLATE) $(PRISM_TEMPLATES_DIR)/lib/prism/reflection.rb.erb
 	$(Q) $(BASERUBY) $(PRISM_TEMPLATE) lib/prism/reflection.rb $@
 
 realclean-prism-srcs::
-	$(RM) $(srcdir)/lib/prism/reflection.rb
+	$(RM) $(srcdir)/lib/ruby/prism/reflection.rb
 
-prism-srcs: $(srcdir)/lib/prism/serialize.rb
-$(srcdir)/lib/prism/serialize.rb: $(PRISM_CONFIG) $(PRISM_TEMPLATE) $(PRISM_TEMPLATES_DIR)/lib/prism/serialize.rb.erb
+prism-srcs: $(srcdir)/lib/ruby/prism/serialize.rb
+$(srcdir)/lib/ruby/prism/serialize.rb: $(PRISM_CONFIG) $(PRISM_TEMPLATE) $(PRISM_TEMPLATES_DIR)/lib/prism/serialize.rb.erb
 	$(Q) $(BASERUBY) $(PRISM_TEMPLATE) lib/prism/serialize.rb $@
 
 realclean-prism-srcs::
-	$(RM) $(srcdir)/lib/prism/serialize.rb
+	$(RM) $(srcdir)/lib/ruby/prism/serialize.rb
 
-prism-srcs: $(srcdir)/lib/prism/visitor.rb
-$(srcdir)/lib/prism/visitor.rb: $(PRISM_CONFIG) $(PRISM_TEMPLATE) $(PRISM_TEMPLATES_DIR)/lib/prism/visitor.rb.erb
+prism-srcs: $(srcdir)/lib/ruby/prism/visitor.rb
+$(srcdir)/lib/ruby/prism/visitor.rb: $(PRISM_CONFIG) $(PRISM_TEMPLATE) $(PRISM_TEMPLATES_DIR)/lib/prism/visitor.rb.erb
 	$(Q) $(BASERUBY) $(PRISM_TEMPLATE) lib/prism/visitor.rb $@
 
 realclean-prism-srcs::
-	$(RM) $(srcdir)/lib/prism/visitor.rb
+	$(RM) $(srcdir)/lib/ruby/prism/visitor.rb
 
 prism-srcs: $(srcdir)/prism/diagnostic.c
 $(srcdir)/prism/diagnostic.c: $(PRISM_CONFIG) $(PRISM_TEMPLATE) $(PRISM_TEMPLATES_DIR)/src/diagnostic.c.erb

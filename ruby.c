@@ -1793,6 +1793,7 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
 }
 
 VALUE rb_define_gem_modules(VALUE, VALUE);
+void rb_prism_init_autoload(void);
 void Init_builtin_features(void);
 
 static void
@@ -1837,6 +1838,12 @@ ruby_opt_init(ruby_cmdline_options_t *opt)
     extern void rb_zjit_init_builtin_cmes(void);
     rb_zjit_init_builtin_cmes();
 #endif
+
+    // Ruby::Prism is the parser that compiles the program; it is not
+    // exposed when parse.y is selected by --parser.
+    if (rb_ruby_prism_p()) {
+        rb_prism_init_autoload();
+    }
 
     /**
      * Initialize the root/main boxes before loading libraries to run them
