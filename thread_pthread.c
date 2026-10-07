@@ -1494,11 +1494,9 @@ join_exiting_thread(pthread_t thread)
     }
 }
 
-// Called within rb_thread_prevent_fork() by a joinable thread, as the last
-// thing it does before it exits. The thread takes the oldest slot and joins
-// its previous holder, which has almost always exited by then, so exiting
-// threads don't wait on each other. The calling thread is joined by the next
-// thread to take its slot, or by fork.
+// Called within rb_thread_prevent_fork() by a joinable thread just before it
+// exits.  The oldest slot's previous holder has almost always exited by then,
+// so exiting threads don't wait on each other.
 void
 rb_thread_register_exiting(void)
 {
@@ -1523,10 +1521,9 @@ rb_thread_acquire_fork_lock(void)
         rb_bug_errno("pthread_rwlock_wrlock", r);
     }
 
-    // A registered thread can still be exiting after it releases the fork
-    // lock, and glibc's thread exit takes the resolver configuration lock,
-    // which fork does not reset. Threads register only inside
-    // rb_thread_prevent_fork(), so none can while this lock is held.
+    // A registered thread may still be exiting, and glibc's thread exit takes
+    // the resolver configuration lock, which fork does not reset.  None can
+    // register while this lock is held, so the slots need no mutex here.
     for (int i = 0; i < EXITING_THREAD_SLOTS; i++) {
         if (exiting_threads[i].registered) {
             exiting_threads[i].registered = false;
