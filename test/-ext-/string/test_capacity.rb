@@ -2,6 +2,7 @@
 require 'test/unit'
 require '-test-/string'
 require 'rbconfig/sizeof'
+require 'objspace'
 
 class Test_StringCapacity < Test::Unit::TestCase
   def test_capacity_embedded
@@ -59,14 +60,40 @@ class Test_StringCapacity < Test::Unit::TestCase
     assert_equal(s.length, capa(s))
   end
 
+  def test_encode_bang_capacity_with_multibyte_terminator
+    s = smallest_slot_utf16le_string
+    assert(Bug::String.cstr_embedded?(s))
+
+    s.encode!("UTF-8")
+
+    # The UTF-8 form no longer fits in the slot so the buffer is on heap.
+    refute(Bug::String.cstr_embedded?(s))
+
+    # and sized precisely
+    assert_equal(s.bytesize, capa(s))
+  end
+
   private
 
   def capa(str)
     Bug::String.capacity(str)
   end
 
+  # A UTF-16LE string that fills the smallest slot, so that its UTF-8 form
+  # (1.5x as long) cannot stay embedded.
+  def smallest_slot_utf16le_string
+    embed_capa = pool_slot_size(0) - embed_header_size
+    str = ("\u{30AF}" * ((embed_capa - 2) / 2)).encode("UTF-16LE").b
+    str.force_encoding("UTF-16LE")
+    str
+  end
+
   def embed_header_size
     3 * RbConfig::SIZEOF['void*']
+  end
+
+  def pool_slot_size(_idx = 0)
+    Integer(ObjectSpace.dump("")[/"slot_size":(\d+)/, 1])
   end
 
   def max_embed_len
