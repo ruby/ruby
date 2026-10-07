@@ -2,10 +2,10 @@
 
 require_relative "../test_helper"
 
-module Prism
+module Ruby::Prism
   class SourceTest < TestCase
     def test_byte_offset
-      source = Prism.parse(<<~SRC).source
+      source = Ruby::Prism.parse(<<~SRC).source
       abcd
       efgh
       ijkl
@@ -27,7 +27,7 @@ module Prism
     end
 
     def test_byte_offset_with_start_line
-      source = Prism.parse(<<~SRC, line: 11).source
+      source = Ruby::Prism.parse(<<~SRC, line: 11).source
       abcd
       efgh
       ijkl

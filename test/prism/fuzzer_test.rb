@@ -2,12 +2,12 @@
 
 require_relative "test_helper"
 
-module Prism
+module Ruby::Prism
   # These tests are simply to exercise snippets found by the fuzzer that caused
   # invalid memory access.
   class FuzzerTest < TestCase
     def self.snippet(name, source)
-      define_method(:"test_fuzzer_#{name}") { Prism.profile(source) }
+      define_method(:"test_fuzzer_#{name}") { Ruby::Prism.profile(source) }
     end
 
     snippet "incomplete global variable", "$"

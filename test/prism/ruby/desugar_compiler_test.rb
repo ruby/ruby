@@ -2,7 +2,7 @@
 
 require_relative "../test_helper"
 
-module Prism
+module Ruby::Prism
   class DesugarCompilerTest < TestCase
     def test_and_write
       assert_desugars("(AndNode (ClassVariableReadNode) (ClassVariableWriteNode (CallNode)))", "@@foo &&= bar")
@@ -66,14 +66,14 @@ module Prism
     end
 
     def assert_desugars(expected, source)
-      ast = Prism.parse(source).value.accept(DesugarCompiler.new)
+      ast = Ruby::Prism.parse(source).value.accept(DesugarCompiler.new)
       assert_equal expected, ast_inspect(ast.statements.body.last)
 
       ensure_every_node_once_in_ast(ast)
     end
 
     def assert_not_desugared(source, reason)
-      ast = Prism.parse(source).value
+      ast = Ruby::Prism.parse(source).value
       assert_equal_nodes(ast, ast.accept(DesugarCompiler.new))
     end
   end

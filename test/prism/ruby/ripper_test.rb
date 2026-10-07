@@ -5,7 +5,7 @@ return if RUBY_VERSION < "3.3" || RUBY_ENGINE != "ruby"
 require_relative "../test_helper"
 require "ripper"
 
-module Prism
+module Ruby::Prism
   class RipperTest < TestCase
     # Skip these tests that Ripper is reporting the wrong results for.
     incorrect = [
@@ -234,24 +234,24 @@ module Prism
 
     def test_encoding_method
       source = "foo"
-      assert_equal(Ripper.new(source).tap(&:parse).encoding, Prism::Translation::Ripper.new(source).tap(&:parse).encoding)
+      assert_equal(Ripper.new(source).tap(&:parse).encoding, Ruby::Prism::Translation::Ripper.new(source).tap(&:parse).encoding)
 
       source = "foo".b
-      assert_equal(Ripper.new(source).tap(&:parse).encoding, Prism::Translation::Ripper.new(source).tap(&:parse).encoding)
+      assert_equal(Ripper.new(source).tap(&:parse).encoding, Ruby::Prism::Translation::Ripper.new(source).tap(&:parse).encoding)
 
       source = "# encoding: shift_jis"
-      assert_equal(Ripper.new(source).tap(&:parse).encoding, Prism::Translation::Ripper.new(source).tap(&:parse).encoding)
+      assert_equal(Ripper.new(source).tap(&:parse).encoding, Ruby::Prism::Translation::Ripper.new(source).tap(&:parse).encoding)
 
       source = "# encoding: shift_jis".b
-      assert_equal(Ripper.new(source).tap(&:parse).encoding, Prism::Translation::Ripper.new(source).tap(&:parse).encoding)
+      assert_equal(Ripper.new(source).tap(&:parse).encoding, Ruby::Prism::Translation::Ripper.new(source).tap(&:parse).encoding)
     end
 
     def test_end_seen
       source = ""
-      assert_equal(Ripper.new(source).tap(&:parse).end_seen?, Prism::Translation::Ripper.new(source).tap(&:parse).end_seen?)
+      assert_equal(Ripper.new(source).tap(&:parse).end_seen?, Ruby::Prism::Translation::Ripper.new(source).tap(&:parse).end_seen?)
 
       source = "__END__"
-      assert_equal(Ripper.new(source).tap(&:parse).end_seen?, Prism::Translation::Ripper.new(source).tap(&:parse).end_seen?)
+      assert_equal(Ripper.new(source).tap(&:parse).end_seen?, Ruby::Prism::Translation::Ripper.new(source).tap(&:parse).end_seen?)
     end
 
     def test_sexp_coercion
@@ -306,14 +306,14 @@ module Prism
     private
 
     def assert_ripper_sexp_raw(source)
-      assert_equal Ripper.sexp_raw(source), Prism::Translation::Ripper.sexp_raw(source)
+      assert_equal Ripper.sexp_raw(source), Ruby::Prism::Translation::Ripper.sexp_raw(source)
     end
 
     def assert_ripper_lex(source)
       prism = Translation::Ripper.lex(source)
       ripper = Ripper.lex(source)
 
-      # Prism emits tokens by their order in the code, not in parse order
+      # Ruby::Prism emits tokens by their order in the code, not in parse order
       ripper.sort_by! { |elem| elem[0] }
 
       [prism.size, ripper.size].max.times do |index|

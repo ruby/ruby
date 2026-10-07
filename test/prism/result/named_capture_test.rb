@@ -2,7 +2,7 @@
 
 require_relative "../test_helper"
 
-module Prism
+module Ruby::Prism
   class NamedCaptureTest < TestCase
     def test_hex_escapes
       assert_equal :😀, parse_name("\\xf0\\x9f\\x98\\x80")
@@ -23,7 +23,7 @@ module Prism
     private
 
     def parse_name(content)
-      Prism.parse_statement("/(?<#{content}>)/ =~ ''").targets.first.name
+      Ruby::Prism.parse_statement("/(?<#{content}>)/ =~ ''").targets.first.name
     end
   end
 end

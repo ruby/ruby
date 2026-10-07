@@ -2,7 +2,7 @@
 
 require_relative "../test_helper"
 
-module Prism
+module Ruby::Prism
   class StringQueryTest < TestCase
     def test_local?
       assert_predicate StringQuery.new("a"), :local?

@@ -2,7 +2,7 @@
 
 require_relative "test_helper"
 
-module Prism
+module Ruby::Prism
   class SnippetsTest < TestCase
     except = [
       "encoding_binary.txt",
@@ -31,12 +31,12 @@ module Prism
       fixture.read.split(/(?<=\S)\n\n(?=\S)/).each do |snippet|
         snippet = snippet.rstrip
 
-        result = Prism.parse(snippet, filepath: fixture.path, version: version)
+        result = Ruby::Prism.parse(snippet, filepath: fixture.path, version: version)
         assert result.success?
 
         if !ENV["PRISM_BUILD_MINIMAL"]
-          dumped = Prism.dump(snippet, filepath: fixture.path, version: version)
-          assert_equal_nodes(result.value, Prism.load(snippet, dumped, version: version).value)
+          dumped = Ruby::Prism.dump(snippet, filepath: fixture.path, version: version)
+          assert_equal_nodes(result.value, Ruby::Prism.load(snippet, dumped, version: version).value)
         end
       end
     end

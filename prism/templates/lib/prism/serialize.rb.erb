@@ -4,7 +4,7 @@
 require "stringio"
 require_relative "polyfill/unpack1"
 
-module Prism
+module Ruby::Prism
   # A module responsible for deserializing parse results.
   module Serialize # :nodoc:
     # The major version of prism that we are expecting to find in the serialized
@@ -578,33 +578,33 @@ module Prism
                 load_varuint,
                 <%- node.fields.each do |field| -%>
                 <%- case field -%>
-                <%- when Prism::Template::NodeField -%>
+                <%- when Ruby::Prism::Template::NodeField -%>
                 load_node(constant_pool, encoding, freeze), #: <%= field.rbs_class %>
-                <%- when Prism::Template::OptionalNodeField -%>
+                <%- when Ruby::Prism::Template::OptionalNodeField -%>
                 load_optional_node(constant_pool, encoding, freeze), #: <%= field.rbs_class %>
-                <%- when Prism::Template::StringField -%>
+                <%- when Ruby::Prism::Template::StringField -%>
                 load_string(encoding),
-                <%- when Prism::Template::NodeListField -%>
+                <%- when Ruby::Prism::Template::NodeListField -%>
                 Array.new(load_varuint) do
                   load_node(constant_pool, encoding, freeze) #: <%= field.element_rbs_class %>
                 end.tap { |nodes| nodes.freeze if freeze },
-                <%- when Prism::Template::ConstantField -%>
+                <%- when Ruby::Prism::Template::ConstantField -%>
                 load_constant(constant_pool, encoding),
-                <%- when Prism::Template::OptionalConstantField -%>
+                <%- when Ruby::Prism::Template::OptionalConstantField -%>
                 load_optional_constant(constant_pool, encoding),
-                <%- when Prism::Template::ConstantListField -%>
+                <%- when Ruby::Prism::Template::ConstantListField -%>
                 Array.new(load_varuint) { load_constant(constant_pool, encoding) }.tap { |constants| constants.freeze if freeze },
-                <%- when Prism::Template::LocationField -%>
+                <%- when Ruby::Prism::Template::LocationField -%>
                 load_location(freeze),
-                <%- when Prism::Template::OptionalLocationField -%>
+                <%- when Ruby::Prism::Template::OptionalLocationField -%>
                 load_optional_location(freeze),
-                <%- when Prism::Template::UInt8Field -%>
+                <%- when Ruby::Prism::Template::UInt8Field -%>
                 (io.getbyte or raise),
-                <%- when Prism::Template::UInt32Field -%>
+                <%- when Ruby::Prism::Template::UInt32Field -%>
                 load_varuint,
-                <%- when Prism::Template::IntegerField -%>
+                <%- when Ruby::Prism::Template::IntegerField -%>
                 load_integer,
-                <%- when Prism::Template::DoubleField -%>
+                <%- when Ruby::Prism::Template::DoubleField -%>
                 load_double,
                 <%- else raise -%>
                 <%- end -%>
@@ -643,33 +643,33 @@ module Prism
                   load_varuint,
                   <%- node.fields.map do |field| -%>
                   <%- case field -%>
-                  <%- when Prism::Template::NodeField -%>
+                  <%- when Ruby::Prism::Template::NodeField -%>
                   load_node(constant_pool, encoding, freeze), #: <%= field.rbs_class %>
-                  <%- when Prism::Template::OptionalNodeField -%>
+                  <%- when Ruby::Prism::Template::OptionalNodeField -%>
                   load_optional_node(constant_pool, encoding, freeze), #: <%= field.rbs_class %>
-                  <%- when Prism::Template::StringField -%>
+                  <%- when Ruby::Prism::Template::StringField -%>
                   load_string(encoding),
-                  <%- when Prism::Template::NodeListField -%>
+                  <%- when Ruby::Prism::Template::NodeListField -%>
                   Array.new(load_varuint) do
                     load_node(constant_pool, encoding, freeze) #: <%= field.element_rbs_class %>
                   end,
-                  <%- when Prism::Template::ConstantField -%>
+                  <%- when Ruby::Prism::Template::ConstantField -%>
                   load_constant(constant_pool, encoding),
-                  <%- when Prism::Template::OptionalConstantField -%>
+                  <%- when Ruby::Prism::Template::OptionalConstantField -%>
                   load_optional_constant(constant_pool, encoding),
-                  <%- when Prism::Template::ConstantListField -%>
+                  <%- when Ruby::Prism::Template::ConstantListField -%>
                   Array.new(load_varuint) { load_constant(constant_pool, encoding) },
-                  <%- when Prism::Template::LocationField -%>
+                  <%- when Ruby::Prism::Template::LocationField -%>
                   load_location(freeze),
-                  <%- when Prism::Template::OptionalLocationField -%>
+                  <%- when Ruby::Prism::Template::OptionalLocationField -%>
                   load_optional_location(freeze),
-                  <%- when Prism::Template::UInt8Field -%>
+                  <%- when Ruby::Prism::Template::UInt8Field -%>
                   (io.getbyte or raise),
-                  <%- when Prism::Template::UInt32Field -%>
+                  <%- when Ruby::Prism::Template::UInt32Field -%>
                   load_varuint,
-                  <%- when Prism::Template::IntegerField -%>
+                  <%- when Ruby::Prism::Template::IntegerField -%>
                   load_integer,
-                  <%- when Prism::Template::DoubleField -%>
+                  <%- when Ruby::Prism::Template::DoubleField -%>
                   load_double,
                   <%- else raise -%>
                   <%- end -%>

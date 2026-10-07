@@ -2,10 +2,10 @@
 
 require_relative "../test_helper"
 
-module Prism
+module Ruby::Prism
   class DeconstructKeysTest < TestCase
     def test_deconstruct_keys
-      node = Prism.parse_statement("1.to_s")
+      node = Ruby::Prism.parse_statement("1.to_s")
 
       deconstruct_all = node.deconstruct_keys(nil)
       assert_equal deconstruct_all[:node_id], node.node_id

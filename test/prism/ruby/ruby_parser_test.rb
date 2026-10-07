@@ -13,7 +13,7 @@ rescue LoadError
   return
 end
 
-module Prism
+module Ruby::Prism
   class RubyParserTest < TestCase
     todos = [
       "character_literal.txt",
@@ -103,7 +103,7 @@ module Prism
     def assert_ruby_parser(fixture, allowed_failure)
       source = fixture.read
       expected = ignore_warnings { ::RubyParser.new.parse(source, fixture.path) }
-      actual = Prism::Translation::RubyParser.new.parse(source, fixture.path)
+      actual = Ruby::Prism::Translation::RubyParser.new.parse(source, fixture.path)
       on_failure = -> { message(expected, actual) }
 
       if !allowed_failure

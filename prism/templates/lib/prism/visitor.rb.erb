@@ -1,7 +1,7 @@
 #--
 # rbs_inline: enabled
 
-module Prism
+module Ruby::Prism
   # @rbs!
   #    interface _Visitor
   #      <% nodes.each do |node| %>
@@ -48,7 +48,7 @@ module Prism
   # For example, to find all of the method calls that call the `foo` method, you
   # could write:
   #
-  #     class FooCalls < Prism::Visitor
+  #     class FooCalls < Ruby::Prism::Visitor
   #       def visit_call_node(node)
   #         if node.name == :foo
   #           # Do something with the node

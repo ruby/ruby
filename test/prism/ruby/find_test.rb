@@ -6,7 +6,7 @@ return if defined?(RubyVM::InstructionSequence) && RubyVM::InstructionSequence.c
 require_relative "../test_helper"
 require_relative "find_fixtures"
 
-module Prism
+module Ruby::Prism
   class FindTest < TestCase
     Fixtures = FindFixtures
     FIXTURES_PATH = File.expand_path("find_fixtures.rb", __dir__)
@@ -14,71 +14,71 @@ module Prism
     # === Method / UnboundMethod tests ===
 
     def test_simple_method
-      assert_def_node Prism.find(Fixtures::Methods.instance_method(:simple_method)), :simple_method
+      assert_def_node Ruby::Prism.find(Fixtures::Methods.instance_method(:simple_method)), :simple_method
     end
 
     def test_method_with_params
-      node = Prism.find(Fixtures::Methods.instance_method(:method_with_params))
+      node = Ruby::Prism.find(Fixtures::Methods.instance_method(:method_with_params))
       assert_def_node node, :method_with_params
       assert_equal 3, node.parameters.requireds.length
     end
 
     def test_method_with_block_param
-      assert_def_node Prism.find(Fixtures::Methods.instance_method(:method_with_block)), :method_with_block
+      assert_def_node Ruby::Prism.find(Fixtures::Methods.instance_method(:method_with_block)), :method_with_block
     end
 
     def test_singleton_method
-      assert_def_node Prism.find(Fixtures::Methods.method(:singleton_method_fixture)), :singleton_method_fixture
+      assert_def_node Ruby::Prism.find(Fixtures::Methods.method(:singleton_method_fixture)), :singleton_method_fixture
     end
 
     def test_utf8_method_name
-      assert_def_node Prism.find(Fixtures::Methods.instance_method(:été)), :été
+      assert_def_node Ruby::Prism.find(Fixtures::Methods.instance_method(:été)), :été
     end
 
     def test_inline_method
-      assert_def_node Prism.find(Fixtures::Methods.instance_method(:inline_method)), :inline_method
+      assert_def_node Ruby::Prism.find(Fixtures::Methods.instance_method(:inline_method)), :inline_method
     end
 
     def test_bound_method
       obj = Object.new
       obj.extend(Fixtures::Methods)
-      assert_def_node Prism.find(obj.method(:simple_method)), :simple_method
+      assert_def_node Ruby::Prism.find(obj.method(:simple_method)), :simple_method
     end
 
     # === Proc / Lambda tests ===
 
     def test_simple_proc
-      assert_not_nil Prism.find(Fixtures::Procs::SIMPLE_PROC)
+      assert_not_nil Ruby::Prism.find(Fixtures::Procs::SIMPLE_PROC)
     end
 
     def test_simple_lambda
-      assert_not_nil Prism.find(Fixtures::Procs::SIMPLE_LAMBDA)
+      assert_not_nil Ruby::Prism.find(Fixtures::Procs::SIMPLE_LAMBDA)
     end
 
     def test_multi_line_lambda
-      assert_not_nil Prism.find(Fixtures::Procs::MULTI_LINE_LAMBDA)
+      assert_not_nil Ruby::Prism.find(Fixtures::Procs::MULTI_LINE_LAMBDA)
     end
 
     def test_do_block_proc
-      assert_not_nil Prism.find(Fixtures::Procs::DO_BLOCK_PROC)
+      assert_not_nil Ruby::Prism.find(Fixtures::Procs::DO_BLOCK_PROC)
     end
 
     # === define_method tests ===
 
     def test_define_method
-      assert_not_nil Prism.find(Fixtures::DefineMethod.instance_method(:dynamic))
+      assert_not_nil Ruby::Prism.find(Fixtures::DefineMethod.instance_method(:dynamic))
     end
 
     def test_define_method_bound
       obj = Object.new
       obj.extend(Fixtures::DefineMethod)
-      assert_not_nil Prism.find(obj.method(:dynamic))
+      assert_not_nil Ruby::Prism.find(obj.method(:dynamic))
     end
 
     # === for loop test ===
 
     def test_for_loop_proc
-      node = Prism.find(Fixtures::ForLoop::FOR_PROC)
+      node = Ruby::Prism.find(Fixtures::ForLoop::FOR_PROC)
       assert_instance_of ForNode, node
     end
 
@@ -87,7 +87,7 @@ module Prism
     def test_backtrace_location_zero_division
       location = zero_division_location
       assert_not_nil location, "could not find backtrace location in fixtures file"
-      assert_not_nil Prism.find(location)
+      assert_not_nil Ruby::Prism.find(location)
     end
 
     def test_backtrace_location_name_error
@@ -98,13 +98,13 @@ module Prism
       end
 
       assert_not_nil location, "could not find backtrace location in fixtures file"
-      assert_not_nil Prism.find(location)
+      assert_not_nil Ruby::Prism.find(location)
     end
 
     def test_backtrace_location_from_caller
       # caller_locations returns locations for the current call stack
       location = caller_locations(0, 1).first
-      node = Prism.find(location)
+      node = Ruby::Prism.find(location)
       assert_not_nil node
     end
 
@@ -116,37 +116,37 @@ module Prism
       end
 
       # eval locations have no file on disk
-      assert_nil Prism.find(location) if location
+      assert_nil Ruby::Prism.find(location) if location
     end
 
     # === Edge cases ===
 
     def test_nil_source_location
       # Built-in methods have nil source_location
-      assert_nil Prism.find(method(:puts))
+      assert_nil Ruby::Prism.find(method(:puts))
     end
 
     def test_argument_error_on_wrong_type
-      assert_raise(ArgumentError) { Prism.find("not a callable") }
-      assert_raise(ArgumentError) { Prism.find(42) }
-      assert_raise(ArgumentError) { Prism.find(nil) }
+      assert_raise(ArgumentError) { Ruby::Prism.find("not a callable") }
+      assert_raise(ArgumentError) { Ruby::Prism.find(42) }
+      assert_raise(ArgumentError) { Ruby::Prism.find(nil) }
     end
 
     def test_eval_returns_nil
       # eval'd code has no file on disk
       m = eval("proc { 1 }")
-      assert_nil Prism.find(m)
+      assert_nil Ruby::Prism.find(m)
     end
 
     def test_multiple_methods_on_same_line
-      assert_def_node Prism.find(Fixtures::MultipleOnLine.method(:first)), :first
-      assert_def_node Prism.find(Fixtures::MultipleOnLine.method(:second)), :second
+      assert_def_node Ruby::Prism.find(Fixtures::MultipleOnLine.method(:first)), :first
+      assert_def_node Ruby::Prism.find(Fixtures::MultipleOnLine.method(:second)), :second
     end
 
     if defined?(::RubyVM) || -> {}.respond_to?(:source_range)
       def test_multiple_lambdas_on_same_line
-        assert_equal "-> { 1 }", Prism.find(Fixtures::MultipleOnLine::A).slice
-        assert_equal "-> { 2 }", Prism.find(Fixtures::MultipleOnLine::B).slice
+        assert_equal "-> { 1 }", Ruby::Prism.find(Fixtures::MultipleOnLine::A).slice
+        assert_equal "-> { 2 }", Ruby::Prism.find(Fixtures::MultipleOnLine::B).slice
       end
     end
 
@@ -195,23 +195,23 @@ module Prism
     if defined?(RubyVM::InstructionSequence)
       def test_node_id_matches_iseq
         m = Fixtures::Methods.instance_method(:simple_method)
-        node = Prism.find(m)
+        node = Ruby::Prism.find(m)
         assert_equal node_id_of(m), node.node_id
       end
 
       def test_node_id_for_lambda
-        node = Prism.find(Fixtures::Procs::SIMPLE_LAMBDA)
+        node = Ruby::Prism.find(Fixtures::Procs::SIMPLE_LAMBDA)
         assert_equal node_id_of(Fixtures::Procs::SIMPLE_LAMBDA), node.node_id
       end
 
       def test_node_id_for_proc
-        node = Prism.find(Fixtures::Procs::SIMPLE_PROC)
+        node = Ruby::Prism.find(Fixtures::Procs::SIMPLE_PROC)
         assert_equal node_id_of(Fixtures::Procs::SIMPLE_PROC), node.node_id
       end
 
       def test_node_id_for_define_method
         m = Fixtures::DefineMethod.instance_method(:dynamic)
-        node = Prism.find(m)
+        node = Ruby::Prism.find(m)
         assert_equal node_id_of(m), node.node_id
       end
 
@@ -220,7 +220,7 @@ module Prism
         assert_not_nil location
         expected_node_id = RubyVM::AbstractSyntaxTree.node_id_for_backtrace_location(location)
 
-        node = Prism.find(location)
+        node = Ruby::Prism.find(location)
         assert_equal expected_node_id, node.node_id
       end
     end
