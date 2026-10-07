@@ -5,6 +5,9 @@
 //! function table. `unsafe` is confined to the modules that talk to C.
 
 #![deny(unsafe_code)]
+// The port keeps the control flow of the C code so that the two can be read
+// side by side, which these lints would rewrite.
+#![allow(clippy::collapsible_match, clippy::needless_late_init)]
 
 pub mod ast;
 pub mod bytecode;

@@ -7,6 +7,8 @@
 //! through Rust.
 
 #![allow(unsafe_code)]
+// The contract of each export is documented in internal/regexp_rust.h.
+#![allow(clippy::missing_safety_doc)]
 
 use std::cell::RefCell;
 use std::ffi::{c_char, c_int};

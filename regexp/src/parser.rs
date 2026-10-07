@@ -1639,7 +1639,7 @@ impl<'a> Parser<'a> {
 
         if back_num != 0 {
             if back_num < 0 {
-                back_num = self.env.num_mem + 1 + back_num;
+                back_num += self.env.num_mem + 1;
                 if back_num <= 0 {
                     return Err(ONIGERR_INVALID_BACKREF);
                 }

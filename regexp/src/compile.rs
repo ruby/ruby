@@ -619,8 +619,8 @@ fn check_stack(&self) -> R<()> {
         self.renumber_by_map(root, &map, num_mem)?;
 
         let mut pos = 1;
-        for i in 1..=num_mem as usize {
-            if map[i] > 0 {
+        for (i, &new_num) in map.iter().enumerate().skip(1) {
+            if new_num > 0 {
                 let n = self.env.mem_nodes.get(i).copied().flatten();
                 if pos < self.env.mem_nodes.len() {
                     self.env.mem_nodes[pos] = n;
@@ -2737,18 +2737,17 @@ fn check_stack(&self) -> R<()> {
                     }
                     opt.len.set(slen, slen);
                 } else {
-                    let max;
-                    if sn.is_dont_get_opt_info() {
+                    let max = if sn.is_dont_get_opt_info() {
                         let n = enc.strlen(&sn.s, 0, slen);
-                        max = enc.max_len().wrapping_mul(n);
+                        enc.max_len().saturating_mul(n)
                     } else {
                         opt.exb.concat_str(&sn.s, enc);
                         opt.exb.ignore_case = 1;
                         if slen > 0 {
                             opt.map.add_char_amb(&sn.s, enc, self.case_fold_flag)?;
                         }
-                        max = slen;
-                    }
+                        slen
+                    };
                     opt.len.set(slen, max);
                 }
                 if opt.exb.bytes().len() == slen {
