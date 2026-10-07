@@ -3907,7 +3907,7 @@ struct io_buffer_pread_internal_argument {
     // The maximum number of bytes to read:
     size_t length;
     // The position to read from:
-    off_t from;
+    rb_off_t from;
 };
 
 static VALUE
@@ -4090,7 +4090,7 @@ struct io_buffer_pwrite_internal_argument {
     // The maximum number of bytes to write:
     size_t length;
     // The position to write to:
-    off_t from;
+    rb_off_t from;
 };
 
 static VALUE
