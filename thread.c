@@ -2466,6 +2466,11 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
 
     if (th->ec->raised_flag) return ret;
 
+    /* Interrupts are checked at arbitrary points, including while a jump
+     * (break/next/redo/return/raise/throw) is being propagated.
+     * Save errinfo as the interrupt might run Ruby code that could clear it. */
+    const VALUE saved_errinfo = th->ec->errinfo;
+
     while ((interrupt = threadptr_get_interrupts(th)) != 0) {
         int sig;
         int timer_interrupt;
@@ -2562,6 +2567,9 @@ rb_threadptr_execute_interrupts(rb_thread_t *th, int blocking_timing)
             rb_thread_schedule_limits(limits_us);
         }
     }
+
+    th->ec->errinfo = saved_errinfo;
+
     return ret;
 }
 
