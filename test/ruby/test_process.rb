@@ -1964,6 +1964,19 @@ class TestProcess < Test::Unit::TestCase
       assert_not_equal(cpid, dpid)
     end
 
+    def test_daemon_after_getaddrinfo
+      data = IO.popen("-", "r+") do |f|
+        break f.read if f
+        require "socket"
+        Addrinfo.getaddrinfo("localhost", 80, :INET, :STREAM)
+        Process.daemon(true, true)
+        Addrinfo.getaddrinfo("localhost", 80, :INET, :STREAM)
+        Process.wait(fork {})
+        puts "ok"
+      end
+      assert_equal("ok\n", data, "[Bug #22406]")
+    end
+
     def test_daemon_detached
       IO.popen("-", "r+") do |f|
         if f
