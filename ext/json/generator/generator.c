@@ -75,7 +75,7 @@ static void generate_json_bignum(FBuffer *buffer, struct generate_json_data *dat
 static void generate_json_float(FBuffer *buffer, struct generate_json_data *data, VALUE obj);
 static void generate_json_fragment(FBuffer *buffer, struct generate_json_data *data, VALUE obj);
 
-static int usascii_encindex, utf8_encindex, binary_encindex;
+static int usascii_encindex, utf8_encindex;
 
 NORETURN(static void) raise_generator_error_str(VALUE invalid_object, VALUE str)
 {
@@ -865,20 +865,6 @@ NOINLINE(static) VALUE convert_invalid_encoding(struct generate_json_data *data,
         }
     }
 
-    if (RB_ENCODING_GET_INLINED(str) == binary_encindex) {
-        VALUE utf8_string = rb_enc_associate_index(rb_str_dup(str), utf8_encindex);
-        switch (rb_enc_str_coderange(utf8_string)) {
-            case ENC_CODERANGE_7BIT:
-                return utf8_string;
-            case ENC_CODERANGE_VALID:
-                // For historical reason, we silently reinterpret binary strings as UTF-8 if it would work.
-                // TODO: Raise in 3.0.0
-                rb_warn("JSON.generate: UTF-8 string passed as BINARY, this will raise an encoding error in json 3.0");
-                return utf8_string;
-                break;
-        }
-    }
-
     return rb_rescue(encode_json_string_try, str, encode_json_string_rescue, str);
 }
 
@@ -1045,11 +1031,10 @@ json_object_i(VALUE key, VALUE val, VALUE _arg)
 static inline long increase_depth(struct generate_json_data *data)
 {
     JSON_Generator_State *state = data->state;
-    long depth = ++data->depth;
-    if (RB_UNLIKELY(depth > state->max_nesting && state->max_nesting)) {
-        rb_raise(eNestingError, "nesting of %ld is too deep. Did you try to serialize objects with circular references?", --data->depth);
+    if (RB_UNLIKELY(data->depth >= state->max_nesting && state->max_nesting)) {
+        rb_raise(eNestingError, "nesting of %ld is too deep. Did you try to serialize objects with circular references?", data->depth + 1);
     }
-    return depth;
+    return ++data->depth;
 }
 
 static void generate_json_object(FBuffer *buffer, struct generate_json_data *data, VALUE obj)
@@ -2140,7 +2125,6 @@ void Init_generator(void)
 
     usascii_encindex = rb_usascii_encindex();
     utf8_encindex = rb_utf8_encindex();
-    binary_encindex = rb_ascii8bit_encindex();
 
     rb_require("json/ext/generator/state");
 

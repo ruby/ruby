@@ -1129,6 +1129,72 @@ class TestRactor < Test::Unit::TestCase
     end
   end
 
+  # Ractor.make_shareable reaches a T_DATA's references through its GC mark function
+  # (rb_objspace_reachable_objects_from_local), and the walk's callback runs #freeze on
+  # every child it is handed.  So arbitrary Ruby -- allocation, a GC, a compaction, a
+  # raise -- runs while the parent's dmark is still on the stack.  Set is the vector: a
+  # T_DATA with a non-declarative dmark and RUBY_TYPED_FROZEN_SHAREABLE, so its elements
+  # are reachable only through that walk.
+  def test_make_shareable_data_child_freeze_runs_gc
+    assert_separately([], __FILE__, __LINE__, <<-'RUBY')
+      require 'objspace'
+      # If Set stops being a T_DATA, this no longer covers the mark function walk.
+      assert_include ObjectSpace.dump(Set.new), '"type":"DATA"'
+
+      frozen = 0
+      klass = Class.new do
+        define_method(:freeze) do
+          frozen += 1
+          GC.start
+          super()
+        end
+      end
+
+      5.times do
+        set = Set.new(Array.new(10) { klass.new })
+        Ractor.make_shareable(set)
+        assert Ractor.shareable?(set), "the Set should have become shareable"
+        set.each { |e| assert Ractor.shareable?(e), "an element should have become shareable" }
+      end
+      assert_equal 5 * 10, frozen, "not all elements were not reached through the mark function"
+      GC.start
+    RUBY
+  end
+
+  def test_make_shareable_data_child_freeze_runs_compaction
+    omit "GC compaction not supported on this platform" unless GC.respond_to?(:compact)
+
+    assert_separately([], __FILE__, __LINE__, <<-'RUBY')
+      compactor = Class.new do
+        def freeze
+          GC.compact
+          super
+        end
+      end
+
+      set = Set.new(Array.new(10) { compactor.new })
+      Ractor.make_shareable(set)
+      assert Ractor.shareable?(set)
+    RUBY
+  end
+
+  # An exception out of the walk's callback longjmps through the mark function.  The mark
+  # redirect has to be restored on the way out: if it leaks, the next real GC hands its
+  # marking to obj_traverse instead of marking, and the heap is corrupted.
+  def test_make_shareable_data_child_freeze_can_raise
+    raiser = Class.new do
+      def freeze
+        raise "boom"
+      end
+    end
+    10.times do
+      set = Set.new([raiser.new])
+      assert_raise_with_message(RuntimeError, "boom") { Ractor.make_shareable(set) }
+      refute Ractor.shareable?(set), "despite raising, the Set became shareable"
+    end
+    GC.start
+  end
+
   def assert_make_shareable(obj)
     refute Ractor.shareable?(obj), "object was already shareable"
     Ractor.make_shareable(obj)

@@ -15,6 +15,8 @@
 #include "ruby/internal/stdbool.h"     /* for bool */
 #include "ruby/ruby.h"          /* for rb_block_call_func_t */
 
+struct rb_gc_mark_ctx;          /* internal/gc.h */
+
 #define IMEMO_MASK   (FL_USER0 | FL_USER1 | FL_USER2 | FL_USER3 | FL_USER4)
 
 /* FL_USER0 to FL_USER4 is for type */
@@ -155,7 +157,7 @@ static inline void MEMO_V1_SET(struct MEMO *m, VALUE v);
 static inline void MEMO_V2_SET(struct MEMO *m, VALUE v);
 
 size_t rb_imemo_memsize(VALUE obj);
-void rb_imemo_mark_and_move(VALUE obj, bool reference_updating);
+void rb_imemo_mark_and_move(const struct rb_gc_mark_ctx *ctx, VALUE obj, bool reference_updating);
 void rb_imemo_free(VALUE obj);
 
 RUBY_SYMBOL_EXPORT_BEGIN

@@ -607,9 +607,10 @@ STATIC_ASSERT(tdata_unsafe_free_bits_cover_chunk,
               TDATA_UNSAFE_FREE_CHUNK_CAPA <= 32);
 
 struct gc_process_stat_snapshot {
-    uint32_t count;
-    uint32_t minor_gc_count;
-    uint32_t major_gc_count;
+    uint64_t count;
+    uint64_t minor_gc_count;
+    uint64_t major_gc_count;
+    uint64_t global_gc_count;
     uint64_t marking_time_ns;
     uint64_t sweeping_time_ns;
 };
@@ -618,6 +619,7 @@ struct gc_process_stat_total {
     uint64_t count;
     uint64_t minor_gc_count;
     uint64_t major_gc_count;
+    uint64_t global_gc_count;
     uint64_t marking_time_ns;
     uint64_t sweeping_time_ns;
 };
@@ -722,6 +724,7 @@ typedef struct rb_objspace {
 
         size_t minor_gc_count;
         size_t major_gc_count;
+        size_t global_gc_count;
         size_t compact_count;
         size_t read_barrier_faults;
 #if RGENGC_PROFILE > 0
@@ -2164,9 +2167,10 @@ static void
 gc_process_stat_capture(const rb_objspace_t *objspace,
                         struct gc_process_stat_snapshot *out)
 {
-    out->count = (uint32_t)objspace->profile.count;
-    out->minor_gc_count = (uint32_t)objspace->profile.minor_gc_count;
-    out->major_gc_count = (uint32_t)objspace->profile.major_gc_count;
+    out->count = objspace->profile.count;
+    out->minor_gc_count = objspace->profile.minor_gc_count;
+    out->major_gc_count = objspace->profile.major_gc_count;
+    out->global_gc_count = objspace->profile.global_gc_count;
     out->marking_time_ns = objspace->profile.marking_time_ns;
     out->sweeping_time_ns = objspace->profile.sweeping_time_ns;
 }
@@ -2176,7 +2180,7 @@ gc_process_stat_publish(rb_objspace_t *objspace)
 {
     struct gc_process_stat_snapshot snap;
     gc_process_stat_capture(objspace, &snap);
-    GC_ASSERT(snap.count == snap.minor_gc_count + snap.major_gc_count);
+    GC_ASSERT(snap.count == snap.minor_gc_count + snap.major_gc_count + snap.global_gc_count);
     rb_native_mutex_lock(&objspace->process_stat.lock);
     objspace->process_stat.published = snap;
     rb_native_mutex_unlock(&objspace->process_stat.lock);
@@ -2189,6 +2193,7 @@ gc_process_stat_add(struct gc_process_stat_total *dst,
     dst->count += src->count;
     dst->minor_gc_count += src->minor_gc_count;
     dst->major_gc_count += src->major_gc_count;
+    dst->global_gc_count += src->global_gc_count;
     dst->marking_time_ns += src->marking_time_ns;
     dst->sweeping_time_ns += src->sweeping_time_ns;
 }
@@ -3691,6 +3696,11 @@ is_pointer_to_heap(rb_objspace_t *objspace, const void *ptr)
     return FALSE;
 }
 
+/*
+ * Is this object live in the given objspace. For foreign objects in other object spaces,
+ * it returns `false`. NOTE: this does NOT check whether or not it's unmarked during the process
+ * of lazy sweeping.
+ */
 bool
 rb_gc_impl_live_object_p(void *objspace_ptr, const void *ptr)
 {
@@ -6771,7 +6781,7 @@ objspace_allrefs(rb_objspace_t *objspace)
 
     /* traverse rest objects reachable from root objects */
     while (pop_mark_stack(&data.mark_stack, &obj)) {
-        rb_objspace_reachable_objects_from(data.root_obj = obj, allrefs_i, &data);
+        rb_objspace_reachable_objects_from_unlocked(data.root_obj = obj, allrefs_i, &data);
     }
     free_stack_chunks(&data.mark_stack);
 
@@ -7133,7 +7143,7 @@ verify_internal_consistency_i(void *page_start, void *page_end, size_t stride,
                 * But they can stay alive on the stack, */
                 if (!gc_object_moved_p(objspace, obj)) {
                     /* moved slots don't have children */
-                    rb_objspace_reachable_objects_from(obj, check_children_i, (void *)data);
+                    rb_objspace_reachable_objects_from_unlocked(obj, check_children_i, (void *)data);
                 }
 
                 /* check health of children */
@@ -7143,7 +7153,7 @@ verify_internal_consistency_i(void *page_start, void *page_end, size_t stride,
                 if (!is_marking(objspace) && RVALUE_OLD_P(objspace, obj)) {
                     /* reachable objects from an oldgen object should be old or (young with remember) */
                     data->parent = obj;
-                    rb_objspace_reachable_objects_from(obj, check_generation_i, (void *)data);
+                    rb_objspace_reachable_objects_from_unlocked(obj, check_generation_i, (void *)data);
                 }
 
                 if (!is_marking(objspace) && rb_gc_obj_shareable_p(obj)) {
@@ -7154,7 +7164,7 @@ verify_internal_consistency_i(void *page_start, void *page_end, size_t stride,
                     if (RVALUE_BLACK_P(objspace, obj)) {
                         /* reachable objects from black objects should be black or grey objects */
                         data->parent = obj;
-                        rb_objspace_reachable_objects_from(obj, check_color_i, (void *)data);
+                        rb_objspace_reachable_objects_from_unlocked(obj, check_color_i, (void *)data);
                     }
                 }
             }
@@ -8990,9 +9000,9 @@ gc_start(rb_objspace_t *objspace, unsigned int reason)
 
     gc_exit(objspace, gc_enter_event_start, &lock_lev);
 
-    /* Verify after the GC, at a real safepoint with during_gc cleared: mid-GC it would
-     * call rb_objspace_reachable_objects_from, whose barrier VM lock would join another
-     * Ractor's global GC barrier and let it collect on this half-collected heap. */
+    /* Verify after the GC, at a real safepoint with during_gc cleared: mid-GC
+     * gc_verify_internal_consistency() takes the VM lock and a barrier, which would join
+     * another Ractor's global GC barrier and let it collect on this half-collected heap. */
 #if RGENGC_CHECK_MODE >= 2
     gc_verify_internal_consistency(objspace);
 #endif
@@ -9691,7 +9701,7 @@ gc_start_global(rb_objspace_t *driver, unsigned int reason, bool compact, bool a
             heap_move_pooled_pages_to_free_pages(heap);
         }
     }
-    driver->profile.major_gc_count++;
+    driver->profile.global_gc_count++;
     global_objspace->global_gc.count++;
 
     /* Enable compaction in every objspace before the mark: the unified conservative root
@@ -10718,7 +10728,7 @@ heap_check_moved_i(void *vstart, void *vend, size_t stride, void *data)
                     break;
                   default:
                     if (!rb_gc_impl_garbage_object_p(objspace, v)) {
-                        rb_objspace_reachable_objects_from(v, reachable_object_check_moved_i, (void *)v);
+                        rb_objspace_reachable_objects_from_unlocked(v, reachable_object_check_moved_i, (void *)v);
                     }
                 }
             }
@@ -11065,10 +11075,17 @@ gc_process_stat(VALUE hash_or_sym)
     }
 
     struct gc_process_stat_total total;
+    uint64_t direct_global_gc_count;
     unsigned int lev = RB_GC_VM_LOCK();
     total = global_objspace->process_stat_archive;
     rb_gc_vm_each_objspace(gc_process_stat_accumulate_i, &total);
+    direct_global_gc_count = global_objspace->global_gc.count;
     RB_GC_VM_UNLOCK(lev);
+
+    rb_objspace_t *const current = rb_gc_get_objspace();
+    if (!gc_during_gc_get(current)) {
+        GC_ASSERT(total.global_gc_count == direct_global_gc_count);
+    }
 
     /* Convert to Ruby values after all collector locks are released. */
     uint64_t time_ns = total.marking_time_ns + total.sweeping_time_ns;
@@ -11085,6 +11102,7 @@ gc_process_stat(VALUE hash_or_sym)
     SET64(sweeping_time, ns_to_ms(total.sweeping_time_ns));
     SET64(minor_gc_count, total.minor_gc_count);
     SET64(major_gc_count, total.major_gc_count);
+    SET64(global_gc_count, total.global_gc_count);
 
 #undef SET64
 
@@ -11152,7 +11170,7 @@ rb_gc_impl_stat(void *objspace_ptr, VALUE hash_or_sym)
     SET(malloc_increase_bytes_limit, malloc_limit);
     SET(minor_gc_count, objspace->profile.minor_gc_count);
     SET(major_gc_count, objspace->profile.major_gc_count);
-    SET(global_gc_count, global_objspace->global_gc.count);
+    SET(global_gc_count, objspace->profile.global_gc_count);
     SET(compact_count, objspace->profile.compact_count);
     SET(read_barrier_faults, objspace->profile.read_barrier_faults);
     SET(total_moved_objects, objspace->rcompactor.total_moved);

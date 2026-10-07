@@ -477,6 +477,18 @@ class JSONGeneratorTest < Test::Unit::TestCase
     assert_raise(JSON::NestingError) { JSON.pretty_generate(ary) }
   end
 
+  def test_nesting_error_reports_attempted_depth
+    [[[]], { a: {} }].each do |object|
+      [0, 1].each do |depth|
+        state = JSON.state.new(depth: depth, max_nesting: depth + 1)
+        error = assert_raise(JSON::NestingError) { state.generate(object) }
+        assert_match(/\Anesting of #{depth + 2} is too deep\./, error.message)
+        assert_equal depth, state.depth
+        assert_equal '[]', state.generate([])
+      end
+    end
+  end
+
   def test_depth_nesting_error_to_json
     ary = []; ary << ary
     s = JSON.state.new(depth: 1)
@@ -658,6 +670,16 @@ class JSONGeneratorTest < Test::Unit::TestCase
   def test_json_state_to_h_roundtrip
     state = JSON.state.new
     assert_equal state.to_h, JSON.state.new(state.to_h).to_h
+  end
+
+  def test_json_state_to_h_ignores_instance_variables
+    state = JSON.state.new(indent: '  ')
+    expected = state.to_h
+    state.instance_variable_set(:@custom, 42)
+    state.instance_variable_set(:@enabled, false)
+
+    assert_equal expected, state.to_h
+    assert_equal expected, state.to_hash
   end
 
   def test_json_generate
@@ -1039,20 +1061,23 @@ class JSONGeneratorTest < Test::Unit::TestCase
     end
   end
 
-  if defined?(JSON::Ext::Generator) and RUBY_PLATFORM != "java"
-    def test_valid_utf8_in_different_encoding
-      utf8_string = "€™"
-      wrong_encoding_string = utf8_string.b
-      # This behavior is historical. Not necessary desirable. We should deprecated it.
-      # The pure and java version of the gem already don't behave this way.
-      assert_warning(/UTF-8 string passed as BINARY, this will raise an encoding error in json 3.0/) do
-        assert_equal utf8_string.to_json, wrong_encoding_string.to_json
-      end
-
-      assert_warning(/UTF-8 string passed as BINARY, this will raise an encoding error in json 3.0/) do
-        assert_equal JSON.dump(utf8_string), JSON.dump(wrong_encoding_string)
-      end
+  def test_valid_utf8_in_binary_encoding
+    string = "€™".b.freeze
+    assert_raise(JSON::GeneratorError) { string.to_json }
+    assert_raise(JSON::GeneratorError) { JSON.dump(string) }
+    [string, [string], { string => 1 }, { value: string }].each do |object|
+      error = assert_raise(JSON::GeneratorError) { JSON.generate(object) }
+      assert_same string, error.invalid_object
+      assert_kind_of Encoding::UndefinedConversionError, error.cause
     end
+  end
+
+  def test_ascii_in_binary_encoding
+    string = "ascii".b
+    assert_equal '"ascii"', string.to_json
+    assert_equal '"ascii"', JSON.dump(string)
+    assert_equal '["ascii"]', JSON.generate([string])
+    assert_equal '{"ascii":1}', JSON.generate(string => 1)
   end
 
   def test_nonutf8_encoding

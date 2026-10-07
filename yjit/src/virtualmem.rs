@@ -290,6 +290,8 @@ impl<A: Allocator> VirtualMemory<A> {
         // to free code pages that contain unmapped memory pages. When it happens on the last
         // code page, it's more appropriate to check the last byte against the virtual region.
         assert!(virtual_region.contains(&last_byte_to_free));
+        // Windows cannot change the protection of the reserved-only pages past the mapped region.
+        let size = size.min((mapped_region.end as usize - start_ptr.raw_ptr(self) as usize).try_into().unwrap());
 
         let mut mutable = self.mutable.borrow_mut();
         mutable.allocator.mark_unused(start_ptr.raw_ptr(self), size);
@@ -352,7 +354,7 @@ pub mod tests {
     enum AllocRequest {
         MarkWritable{ start_idx: usize, length: usize },
         MarkExecutable{ start_idx: usize, length: usize },
-        MarkUnused,
+        MarkUnused{ start_idx: usize, length: usize },
     }
     use AllocRequest::*;
 
@@ -395,8 +397,8 @@ pub mod tests {
         }
 
         fn mark_unused(&mut self, ptr: *const u8, length: u32) -> bool {
-            self.bounds_check_request(ptr, length);
-            self.requests.push(MarkUnused);
+            let index = self.bounds_check_request(ptr, length);
+            self.requests.push(MarkUnused { start_idx: index, length: length.as_usize() });
 
             true
         }
@@ -481,6 +483,24 @@ pub mod tests {
                 [
                     MarkWritable { start_idx: 0, length: THREE_PAGES },
                     MarkExecutable { start_idx: 0, length: THREE_PAGES },
+                ]
+            ),
+        );
+    }
+
+    #[test]
+    fn free_bytes_stops_at_mapped_end() {
+        const TWO_PAGES: usize = PAGE_SIZE * 2;
+        let virt = new_dummy_virt_mem();
+        virt.write_byte(virt.start_ptr().add_bytes(PAGE_SIZE), 1).unwrap();
+        virt.free_bytes(virt.start_ptr(), (PAGE_SIZE * 4).try_into().unwrap());
+
+        assert!(
+            matches!(
+                virt.mutable.borrow().allocator.requests[..],
+                [
+                    MarkWritable { start_idx: 0, length: TWO_PAGES },
+                    MarkUnused { start_idx: 0, length: TWO_PAGES },
                 ]
             ),
         );

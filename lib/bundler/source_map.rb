@@ -2,12 +2,15 @@
 
 module Bundler
   class SourceMap
-    attr_reader :sources, :dependencies, :locked_specs
+    attr_reader :sources, :dependencies, :locked_specs, :replacement_names
 
-    def initialize(sources, dependencies, locked_specs)
+    def initialize(sources, dependencies, locked_specs, replacement_names = [])
       @sources = sources
       @dependencies = dependencies
       @locked_specs = locked_specs
+      # No gemspec names a gem that a `from:`/`to:` override substitutes, so
+      # the dependency API never fetches it unless asked.
+      @replacement_names = replacement_names
     end
 
     def pinned_spec_names(skip = nil)
@@ -22,6 +25,7 @@ module Bundler
       end
 
       unmet_deps = explicit_sources.map do |source|
+        source.add_dependency_names(replacement_names)
         (source.spec_names - pinned_spec_names).each do |indirect_dependency_name|
           previous_source = requirements[indirect_dependency_name]
           if previous_source.nil?
@@ -39,7 +43,7 @@ module Bundler
         source.unmet_deps
       end
 
-      sources.default_source.add_dependency_names(unmet_deps.flatten - requirements.keys)
+      sources.default_source.add_dependency_names(unmet_deps.flatten + replacement_names - requirements.keys)
 
       requirements
     end
