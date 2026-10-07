@@ -2580,25 +2580,29 @@ rb_file_rowned_p(VALUE obj, VALUE fname)
 }
 
 /*
+ * :markup: markdown
+
  * call-seq:
  *   File.grpowned?(object) -> true or false
  *
- * Returns whether the filesystem entry for the given +object+ exists,
- * and the effective group id of the calling process is the owner of the entry.
+ * Returns `false` on Windows.
  *
- * The given +object+ may be the string path to a file or directory entry:
+ * On other systems returns whether the effective group id of the calling process
+ * is the owner of the given `object`.
  *
- *   File.grpowned?('lib')         # => true
- *   File.grpowned?('README.md')   # => true
- *   File.grpowned?('/etc/passwd') # => false
- *   File.grpowned?('nosuch')      # => false
+ * The given +object+ may be the string path or an IO object:
  *
- * Or an open IO stream:
+ * ```ruby
+ * filepath = '/tmp/t.tmp'
+ * File.write(filepath, 'foo')
+ * File.grpowned?(filepath)       # => true
+ * File.grpowned?('/etc')         # => false
+ * File.grpowned?('/etc/passwd')  # => false
+ * File.grpowned?($stdin)         # => false
+ * File.grpowned?('nosuch')       # => false
+ * File.delete(filepath)          # Clean up.
+ * ```
  *
- *   File.open('README.md', 'r') {|file| File.grpowned?(file) }   # => true
- *   File.open('/etc/passwd', 'r') {|file| File.grpowned?(file) } # => false
- *
- * Returns +false+ on Windows.
  */
 
 static VALUE
@@ -7211,19 +7215,25 @@ rb_stat_rowned(VALUE obj)
 }
 
 /*
+ * :markup: markdown
+ *
  * call-seq:
- *   stat.grpowned?(path) -> true or false
+ *   grpowned?(path) -> true or false
  *
- * Returns whether the filesystem entry for the given string +path+ exists,
- * and the effective group id of the calling process is the owner of the entry:
+ * Returns `false` on Windows.
  *
- *   File.stat('README.md').grpowned?   # => true
- *   File.stat('lib').grpowned?         # => true
- *   File.stat('/etc/passwd').grpowned? # => false
+ * On other systems, returns whether the effective group id of the calling process
+ * is the owner of the [snapshot](rdoc-ref:File::Stat@Snapshot) in `self`:
  *
- * Raises an exception if there is no entry at the given +path+.
+ * ```ruby
+ * filepath = '/tmp/t.tmp'
+ * File.write(filepath, 'foo')
+ * File.stat(filepath).grpowned?      # => true
+ * File.stat('/etc').grpowned?        # => false
+ * File.stat('/etc/passwd').grpowned? # => false
+ * File.delete(filepath)              # Clean up.
+ * ```
  *
- * Returns +false+ on Windows.
  */
 
 static VALUE

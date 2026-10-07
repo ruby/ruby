@@ -2406,18 +2406,26 @@ class Pathname    # * FileTest *
   #
   def exist?() FileTest.exist?(@path) end
 
+  # :markup: markdown
+  #
   # call-seq:
-  #   grpowned?(path) -> true or false
+  #   grpowned? -> true or false
   #
-  # Returns whether the filesystem entry for the path stored in +self+ exists,
-  # and the effective group id of the calling process is the owner of the entry:
+  # Returns `false` on Windows.
   #
-  #   Pathname('README.md').grpowned?   # => true
-  #   Pathname('lib').grpowned?         # => true
-  #   Pathname('/etc/passwd').grpowned? # => false
-  #   Pathname('nosuch').grpowned?      # => false
+  # On other systems, returns whether the effective group id of the calling process
+  # is the owner of the entry at the path in `self`:
   #
-  # Returns +false+ on Windows.
+  # ```ruby
+  # # => "/tmp/t.tmp"
+  # File.write(filepath, 'foo')
+  # Pathname(filepath).grpowned?      # => true
+  # Pathname('/etc').grpowned?        # => false
+  # Pathname('/etc/passwd').grpowned? # => false
+  # Pathname('nosuch').grpowned?      # => false
+  # File.delete(filepath)             # Clean up.
+  # ```
+  #
   def grpowned?() FileTest.grpowned?(@path) end
 
   # :markup: markdown
