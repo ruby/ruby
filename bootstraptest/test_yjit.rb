@@ -5145,7 +5145,7 @@ assert_equal '["raised", "Module", "Object"]', %q{
 
   begin
     foo(Class.allocate)
-  rescue TypeError
+  rescue NoMethodError
     ret << 'raised'
   end
 
