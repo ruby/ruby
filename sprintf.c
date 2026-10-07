@@ -1165,7 +1165,14 @@ ruby__sfvextra(rb_printf_buffer *fp, size_t valsize, void *valp, long *sz, int s
         *(volatile VALUE *)valp = value;
     }
     StringValueCStr(value);
-    RSTRING_GETMEM(value, cp, *sz);
+#if SIZEOF_RB_LEN_T > SIZEOF_LONG
+    /* BSD_vfprintf takes the length of this field as a long. */
+    if (RSTRING_LEN(value) > LONG_MAX) {
+        rb_raise(rb_eArgError, "string size too big");
+    }
+#endif
+    cp = RSTRING_PTR(value);
+    *sz = (long)RSTRING_LEN(value);
     ((rb_printf_buffer_extra *)fp)->value = value;
     return cp;
 }
