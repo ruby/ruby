@@ -2383,30 +2383,24 @@ rb_file_world_writable_p(VALUE obj, VALUE fname)
 }
 
 /*
+ * :markup: markdown
+ *
  * call-seq:
  *   File.executable?(path) -> true or false
  *
- * Returns whether the filesystem entry at the given string +path+
- * exists and is executable.
+ * Returns whether the filesystem entry at the given `path`
+ * is [executable](rdoc-ref:file/filesystem_modes.md@Executable+Files)
+ * by the effective owner/group of the current process:
  *
- * On Windows, the entry is executable if its path has file extension
- * +.bat+, +.cmd+, +.com+, or +.exe+:
+ * ```ruby
+ * File.executable?('/bin/ruby')   # => true
+ * File.executable?('/etc')        # => true
+ * File.executable?('/etc/passwd') # => false
+ * File.executable?('nosuch')      # => false
+ * ```
  *
- *   File.executable?('win32/rtname.cmd') # => true
- *   File.executable?('win32/rtname')     # => false
- *   File.executable?('win32/nosuch.cmd') # => false
- *
- * On other systems, the entry is executable if it has the execute/search
- * permission for the effective user and group id of the current process;
- * see {Permissions}[rdoc-ref:file/filesystem_modes.md@Permissions].
- *
- *   File.executable?('/bin/bash')   # => true
- *   File.executable?('.')           # => true
- *   File.executable?('/etc/passwd') # => false
- *   File.executable?('nosuch')      # => false
- *
- * Note that some filesystem settings may cause this method to return +true+
- * even though the entry is not executable by the effective user/group.
+ * Note that some filesystem settings may cause this method to return `true`
+ * even though the entry is not executable by the effective owner/group.
  */
 
 static VALUE
@@ -7521,29 +7515,25 @@ rb_stat_ww(VALUE obj)
 }
 
 /*
+ * :markup: markdown
+ *
  * call-seq:
  *   executable? -> true or false
  *
- * Returns whether the filesystem entry represented by +self+
- * exists and is executable;
- * raises Errno::ENOENT if the entry does not exist.
+ * Returns whether the filesystem entry represented by `self`
+ * is [executable](rdoc-ref:file/filesystem_modes.md@Executable+Files)
+ * by the effective owner/group of the current process:
  *
- * On Windows, the entry is executable if its path has file extension
- * +.bat+, +.cmd+, +.com+, or +.exe+:
+ * ```ruby
+ * File.stat('/bin/ruby').executable?   # => true
+ * File.stat('/etc').executable?        # => true
+ * File.stat('/etc/passwd').executable? # => false
+ * ```
  *
- *   File.stat('win32/rtname.cmd').executable? # => true
- *   File.stat('win32/file.c').executable?     # => false
+ * Raises Errno::ENOENT if the entry does not exist.
  *
- * On other systems, the entry is executable if it has the execute/search
- * permission for the effective user and group id of the current process;
- * see {Permissions}[rdoc-ref:file/filesystem_modes.md@Permissions]:
- *
- *   File.stat('/bin/bash').executable?        # => true
- *   File.stat('/etc/passwd').executable?      # => false
- *   File.stat('.').executable?                # => true
- *
- * Note that some filesystem settings may cause this method to return +true+
- * even though the entry is not executable by the effective user/group.
+ * Note that some filesystem settings may cause this method to return `true`
+ * even though the entry is not executable by the effective owner/group.
  */
 
 static VALUE

@@ -81,6 +81,30 @@ A filesystem entry has permissions:
     - File: whether the file may be _executed_, and by what processes.
     - Directory: whether the directory may be _searched_, and by what processes.
 
+### Executable Files
+
+On Windows, a file is executable if its path has one of these file extensions:
+`.bat`, `.cmd`, `.com`, or `.exe`:
+
+```ruby
+File.executable?('win32/rtname.cmd') # => true
+File.executable?('win32/rtname')     # => false
+File.executable?('win32/nosuch.cmd') # => false
+```
+
+On other systems, a file is executable if it has the execute/search
+permission for the effective user and group id of the current process:
+
+```ruby
+File.executable?('/bin/ruby')   # => true   # Executable file.
+File.executable?('/etc')        # => true   # Searchable directory.
+File.executable?('/etc/passwd') # => false  # Non-executable file.
+File.executable?('nosuch')      # => false  # Non-existent.
+
+```
+
+### Setting Permissions
+
 For a method that actually creates a file in the underlying filesystem
 (as opposed to merely creating a File object), permissions may be specified;
 the permissions may also be changed:
