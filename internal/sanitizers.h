@@ -54,10 +54,10 @@
     __attribute__((__no_sanitize__("thread"), __noinline__)) x
 #elif defined(NO_SANITIZE_ADDRESS)
 # define ATTRIBUTE_NO_ADDRESS_SAFETY_ANALYSIS(x) \
-    NO_SANITIZE_ADDRESS(NOINLINE(x))
+    NO_SANITIZE_ADDRESS(x)
 #elif defined(NO_ADDRESS_SAFETY_ANALYSIS)
 # define ATTRIBUTE_NO_ADDRESS_SAFETY_ANALYSIS(x) \
-    NO_ADDRESS_SAFETY_ANALYSIS(NOINLINE(x))
+    NO_ADDRESS_SAFETY_ANALYSIS(x)
 #else
 # define ATTRIBUTE_NO_ADDRESS_SAFETY_ANALYSIS(x) x
 #endif
