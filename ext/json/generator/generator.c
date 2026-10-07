@@ -32,7 +32,7 @@ typedef struct JSON_Generator_StateStruct {
 } JSON_Generator_State;
 
 static VALUE mJSON, cState, cFragment, eGeneratorError, eNestingError, Encoding_UTF_8, default_sort_keys_proc,
-             rfc8785_number_formater_proc, rfc8785_sort_keys_proc;
+             rfc8785_number_formatter_proc, rfc8785_sort_keys_proc;
 
 static ID i_to_s, i_to_json, i_new, i_encode;
 static VALUE sym_indent, sym_space, sym_space_before, sym_object_nl, sym_array_nl, sym_max_nesting, sym_allow_nan, sym_allow_duplicate_key,
@@ -1171,7 +1171,7 @@ static void generate_json_float(FBuffer *buffer, struct generate_json_data *data
     }
 
     if (RB_UNLIKELY(data->state->rfc8785)) {
-        VALUE str = rb_proc_call_with_block(rfc8785_number_formater_proc, 1, &obj, Qnil);
+        VALUE str = rb_proc_call_with_block(rfc8785_number_formatter_proc, 1, &obj, Qnil);
         Check_Type(str, T_STRING);
         fbuffer_append_str(buffer, str);
         return;
@@ -1754,15 +1754,15 @@ static VALUE cState_set_default_sort_keys_proc(VALUE self, VALUE proc)
     return default_sort_keys_proc = proc;
 }
 
-static VALUE cState_set_rfc8785_number_formater_proc(VALUE self, VALUE proc)
+static VALUE cState_set_rfc8785_number_formatter_proc(VALUE self, VALUE proc)
 {
     if (!rb_obj_is_proc(proc)) {
-        rb_raise(rb_eTypeError, "rfc8785_number_formater_proc must be a Proc");
+        rb_raise(rb_eTypeError, "rfc8785_number_formatter_proc must be a Proc");
     }
-    if (rfc8785_number_formater_proc) {
-        rb_raise(rb_eArgError, "rfc8785_number_formater_proc can only be set once");
+    if (rfc8785_number_formatter_proc) {
+        rb_raise(rb_eArgError, "rfc8785_number_formatter_proc can only be set once");
     }
-    return rfc8785_number_formater_proc = proc;
+    return rfc8785_number_formatter_proc = proc;
 }
 
 static VALUE cState_set_rfc8785_sort_keys_proc(VALUE self, VALUE proc)
@@ -2036,7 +2036,7 @@ void Init_generator(void)
     VALUE mGenerator = rb_define_module_under(mExt, "Generator");
 
     rb_global_variable(&default_sort_keys_proc);
-    rb_global_variable(&rfc8785_number_formater_proc);
+    rb_global_variable(&rfc8785_number_formatter_proc);
     rb_global_variable(&rfc8785_sort_keys_proc);
 
     rb_global_variable(&eGeneratorError);
@@ -2049,7 +2049,7 @@ void Init_generator(void)
     rb_define_alloc_func(cState, cState_s_allocate);
     rb_define_singleton_method(cState, "from_state", cState_from_state_s, 1);
     rb_define_singleton_method(cState, "default_sort_keys_proc=", cState_set_default_sort_keys_proc, 1);
-    rb_define_singleton_method(cState, "rfc8785_number_formater_proc=", cState_set_rfc8785_number_formater_proc, 1);
+    rb_define_singleton_method(cState, "rfc8785_number_formatter_proc=", cState_set_rfc8785_number_formatter_proc, 1);
     rb_define_singleton_method(cState, "rfc8785_sort_keys_proc=", cState_set_rfc8785_sort_keys_proc, 1);
 
     rb_define_method(cState, "initialize", cState_initialize, -1);

@@ -59,7 +59,7 @@ module JSON
     })
 
     # Directly lifted from Gregg Kellogg's json-canonicalization
-    generator::State.rfc8785_number_formater_proc = shareable_lambda(->(num) {
+    generator::State.rfc8785_number_formatter_proc = shareable_lambda(->(num) {
       if num.zero?
         "0"
       else
