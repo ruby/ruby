@@ -2340,35 +2340,19 @@ class Pathname    # * FileTest *
   # call-seq:
   #   executable? -> true or false
   #
-  # Returns whether the entry represented by `self` exists and is executable.
-  #
-  # On Windows, the entry is executable if its path has file extension
-  # `.bat`, `.cmd`, `.com`, or `.exe`:
-  #
-  # ```ruby
-  # Pathname('bin/gem').executable? # => true
-  # mode('bin/gem') # => "100775 -rwxrwxr-x"
-  # Pathname('.').executable? # => true
-  # mode('.') # => "040775 drwxrwxr-x"
-  # Pathname('nosuch').executable? # => false
-  # ```
-  #
-  # On other systems, the entry is executable if it has the execute/search
-  # permission for the effective user and group id of the current process;
-  # see {Permissions}[rdoc-ref:file/filesystem_modes.md@Permissions].
-  #
-  # These examples use
-  # a {helper method}[rdoc-ref:file/filesystem_modes.md@Helper+Method], `mode`,
-  # that displays a mode both in octal digits and in characters:
+  # Returns whether the entry represented by `self` exists
+  # and is [executable](rdoc-ref:file/filesystem_modes.md@Executable+Files)
+  # by the effective owner/group of the current process.
   #
   # ```ruby
-  # Pathname('bin/gem').executable? # => true
-  # mode('bin/gem')                 # => "100775 -rwxrwxr-x"
-  # Pathname('.').executable?       # => true
-  # mode('.')                       # => "040775 drwxrwxr-x"
-  # Pathname('nosuch').executable?  # => false
+  # Pathname('/bin/ruby').executable?   # => true
+  # Pathname('/etc').executable?        # => true
+  # Pathname('/etc/passwd').executable? # => false
+  # Pathname('nosuch').executable?      # => false
   # ```
   #
+  # Note that some filesystem settings may cause this method to return `true`
+  # even though the entry is not executable by the effective owner/group.
   def executable?() FileTest.executable?(@path) end
 
   # :markup: markdown
