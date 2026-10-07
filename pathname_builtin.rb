@@ -1427,37 +1427,36 @@ class Pathname    # * File *
   # call-seq:
   #   ctime -> new_time
   #
-  # On Windows, returns the #birthtime.
+  # On Windows, returns the birthtime for the path in `self`.
   #
   # On other systems,
   # returns a new Time object containing the time of the most recent
   # metadata change to the entry represented by `self`;
-  # see {File System Timestamps}[rdoc-ref:file/timestamps.md]:
+  # see [File System Timestamps](rdoc-ref:file/timestamps.md):
   #
   # ```ruby
   # # A directory and its Pathname.
-  # dir_path = 'doc/foo'
+  # dir_path = '/tmp/dir'
   # dir_pn = Pathname(dir_path)
-  # # Create directory; directory ctime established.
+  # # Create directory; establishes directory ctime.
   # dir_pn.mkdir
-  # dir_pn.ctime  # => 2026-06-16 16:44:15.86720572 -0500
+  # dir_pn.ctime                     # => 2026-10-05 16:36:52.738405306 -0500
   # # A file therein and its Pathname.
-  # file_path = dir_pn.join('t.tmp')
+  # file_path = dir_pn.join('t.tmp') # => #<Pathname:/tmp/dir/t.tmp>
   # file_pn = Pathname(file_path)
-  # # Create file; file ctime established; directory ctime updated.
+  # # Create file; establishes file ctime; updates directory ctime.
   # file_pn.write('foo')
-  # file_pn.ctime # => 2026-06-16 16:46:00.734974872 -0500
-  # dir_pn.ctime  # => 2026-06-16 16:46:00.734974872 -0500
-  # # Write file; file ctime updated; directory ctime not updated.
+  # file_pn.ctime                    # => 2026-10-05 16:38:35.076588258 -0500
+  # dir_pn.ctime                     # => 2026-10-05 16:38:35.076588258 -0500
+  # # Write file; updates file ctime; does not update directory ctime..
   # file_pn.write('bar')
-  # file_pn.ctime # => 2026-06-16 16:49:11.421204188 -0500
-  # dir_pn.ctime  # => 2026-06-16 16:46:00.734974872 -0500
-  # # Read file; neither ctime updated.
+  # file_pn.ctime                    # => 2026-10-05 16:39:57.842776244 -0500
+  # dir_pn.ctime                     # => 2026-10-05 16:38:35.076588258 -0500
+  # # Read file; updates neither ctime.
   # file_pn.read
-  # file_pn.ctime # => 2026-06-16 16:49:11.421204188 -0500
-  # dir_pn.ctime  # => 2026-06-16 16:46:00.734974872 -0500
-  # # Clean up.
-  # dir_pn.rmtree
+  # file_pn.ctime                    # => 2026-10-05 16:39:57.842776244 -0500
+  # dir_pn.ctime                     # => 2026-10-05 16:38:35.076588258 -0500
+  # dir_pn.rmtree                    # Clean up.
   # ```
   #
   def ctime() File.ctime(@path) end

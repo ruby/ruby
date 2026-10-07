@@ -1235,17 +1235,36 @@ rb_stat_mtime(VALUE self)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     stat.ctime  ->  time
+ *    ctime -> time
  *
- *  Returns the change time for <i>stat</i> (that is, the time
- *  directory information about the file was changed, not the file
- *  itself).
+ *  On Windows, returns the birthtime for the entry in `self`.
  *
- *  Note that on Windows (NTFS), returns creation time (birth time).
+ *  On other systems, returns the time of the most recent metadata change
+ *  to the [snapshot](rdoc-ref:File::Stat@Snapshot) in `self`:
  *
- *     File.stat("testfile").ctime   #=> Wed Apr 09 08:53:14 CDT 2003
+ *  ```ruby
+ *  dirpath = '/tmp/dir'
+ *  Dir.mkdir(dirpath)                     # Establishes directory ctime.
+ *  dirstat0 = File.stat(dirpath)          # Take directory snapshot.
+ *  dirstat0.ctime     # => 2026-10-06 11:07:18.073533542 -0500 # Initial directory ctime.
+ *  filepath = File.join(dirpath, 't.tmp') # => "/tmp/dir/t.tmp"
+ *  File.write(filepath, 'foo')            # Establishes file ctime; upates directory ctime.
+ *  filestat0 = File.stat(filepath)        # Take file snapshot.
+ *  filestat0.ctime    # => 2026-10-06 11:07:52.555027213 -0500 # Initial file ctime.
+ *  dirstat0.ctime     # => 2026-10-06 11:07:18.073533542 -0500 # Directory snapshot unchanged.
+ *  dirstat1 = File.stat(dirpath)          # Take new directory snapshot.
+ *  dirstat1.ctime     # => 2026-10-06 11:07:52.555027213 -0500 # Snapshot has new ctime.
+ *  File.write(filepath, 'bar')            # Updates file ctime.
+ *  filestat0.ctime    # => 2026-10-06 11:07:52.555027213 -0500 # Old file snapshot unchanged.
+ *  filestat1 = File.stat(filepath)        # Take new file snapshot.
+ *  filestat1.ctime    # => 2026-10-06 11:14:11.19290223 -0500  # Snapshot shows change.
+ *  FileUtils.rmtree(dirpath)              # Clean up.
+ *  ```
  *
+ *  See {File System Timestamps}[rdoc-ref:file/timestamps.md].
  */
 
 static VALUE
@@ -3096,37 +3115,38 @@ rb_file_mtime(VALUE obj)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     File.ctime(object) -> time
+ *    File.ctime(object) -> time
  *
- *  Returns a Time object, based on the given +object+,
- *  which is a string path or an IO object.
+ *  On Windows, returns the birthtime for `object`.
  *
- *  On Windows, returns the #birthtime for +object+.
+ * On other systems,
+ * returns a new Time object containing the time of the most recent
+ * metadata change to the entry represented by `object`,
+ * which is a string path or an IO object;
+ * see [File System Timestamps](rdoc-ref:file/timestamps.md):
  *
- *  On other systems,
- *  returns a new Time object containing the time of the most recent
- *  metadata change to the entry represented by +object+;
- *  see {File System Timestamps}[rdoc-ref:file/timestamps.md]:
- *
- *    # Create directory; directory ctime established.
- *    dirpath = 'doc/foo'
- *    Dir.mkdir(dirpath)
- *    File.ctime(dirpath)                     # => 2026-08-23 10:43:05.473815913 -0500
- *    # Create file therein; file ctime established; directory ctime updated.
- *    filepath = File.join(dirpath, 't.tmp')  # => "doc/foo/t.tmp"
- *    File.write(filepath, 'foo')
- *    File.ctime(filepath)                    # => 2026-08-23 10:43:37.560429379 -0500
- *    File.ctime(dirpath)                     # => 2026-08-23 10:43:37.560429379 -0500
- *    # Write file; file ctime updated; directory ctime not updated.
- *    File.write(filepath, 'bar')
- *    File.ctime(filepath)                    # => 2026-08-23 10:46:49.299180833 -0500
- *    File.ctime(dirpath)                     # => 2026-08-23 10:43:37.560429379 -0500
- *    # Read file; neither ctime updated.
- *    File.read(filepath)
- *    File.ctime(filepath)                    # => 2026-08-23 10:46:49.299180833 -0500
- *    File.ctime(dirpath)                     # => 2026-08-23 10:43:37.560429379 -0500
- *    FileUtils.rm_rf(dirpath)                # Clean up.
+ * ```ruby
+ * dirpath = '/tmp/dir'
+ * Dir.mkdir(dirpath)
+ * File.ctime(dirpath)                    # => 2026-10-05 16:24:40.347201215 -0500
+ * # Create file therein; file ctime established; directory ctime updated.
+ * filepath = File.join(dirpath, 't.tmp') # => "/tmp/dir/t.tmp"
+ * File.write(filepath, 'foo')
+ * File.ctime(dirpath)                    # => 2026-10-05 16:25:34.790762181 -0500
+ * File.ctime(filepath)                   # => 2026-10-05 16:25:34.790762181 -0500
+ * # Write file; file ctime updated; directory ctime not updated.
+ * File.write(filepath, 'bar')
+ * File.ctime(dirpath)                    # => 2026-10-05 16:25:34.790762181 -0500
+ * File.ctime(filepath)                   # => 2026-10-05 16:26:23.030432041 -0500
+ * # Read file; neither ctime updated.
+ * File.read(filepath)
+ * File.ctime(dirpath)                    # => 2026-10-05 16:25:34.790762181 -0500
+ * File.ctime(filepath)                   # => 2026-10-05 16:26:23.030432041 -0500
+ * FileUtils.rm_rf(dirpath)               # Clean up.
+ * ```
  *
  */
 
@@ -3144,15 +3164,35 @@ rb_file_s_ctime(VALUE klass, VALUE fname)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     file.ctime  ->  time
+ *    ctime -> time
  *
- *  Returns the change time for <i>file</i> (that is, the time directory
- *  information about the file was changed, not the file itself).
+ *  On Windows, returns the birthtime for the entry in `self`.
  *
- *  Note that on Windows (NTFS), returns creation time (birth time).
+ *  On other systems,
+ *  returns a new Time object containing the time of the most recent
+ *  metadata change to the entry in `self`;
+ *  see [File System Timestamps](rdoc-ref:file/timestamps.md):
  *
- *     File.new("testfile").ctime   #=> Wed Apr 09 08:53:14 CDT 2003
+ *  ```ruby
+ *  # A directory.
+ *  dirpath = '/tmp/dir'
+ *  Dir.mkdir(dirpath)                     # Establishes directory ctime.
+ *  dir = File.new(dirpath) # (Dir does not have method ctime; we use File.)
+ *  dir.ctime                              # => 2026-10-05 17:23:49.406452569 -0500
+ *  # A file therein.
+ *  filepath = File.join(dirpath, 't.tmp') # => "/tmp/dir/t.tmp"
+ *  File.write(filepath, 'foo')            # Establishes file ctime.
+ *  file = File.new(filepath)
+ *  file.ctime                             # => 2026-10-05 17:26:26.467758515 -0500
+ *  dir.ctime                              # => 2026-10-05 17:26:26.467758515 -0500
+ *  File.write(filepath, 'bar')            # Updates file ctime; not directory ctime.
+ *  file.ctime                             # => 2026-10-05 17:28:26.307497599 -0500
+ *  dir.ctime                              # => 2026-10-05 17:26:26.467758515 -0500
+ *  FileUtils.rm_rf(dirpath)               # Clean up.
+ *  ```
  *
  */
 
