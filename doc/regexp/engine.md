@@ -80,8 +80,12 @@ engine can become the default or Onigmo can be removed.
    C emits them after it returns.
 10. **Deep patterns overflow the machine stack.** Parsing, the tree passes
     and the optimizer recurse once per nesting level, up to the parse depth
-    limit of 4096. In a thread, `Regexp.new("(?:a" * 4000 + ")" * 4000)`
-    already raises SystemStackError with Onigmo: Ruby's SIGSEGV handler turns
-    the overflow into an exception and longjmps out of the engine. That
-    cannot be done across Rust frames, so the Rust engine has to check the
-    remaining stack itself and fail before it overflows.
+    limit of 4096. Threads may run on 128KB machine stacks (M:N threads),
+    where Onigmo compiles up to 199 nested groups and then relies on Ruby
+    turning the overflow into SystemStackError by longjmp from its SIGSEGV
+    handler. That cannot cross Rust frames, so the Rust engine compares its
+    frame address with a limit taken from the execution context and returns
+    before the stack runs out; C raises SystemStackError. Its frames are
+    larger than Onigmo's, so it stops at 104 nested groups in such a thread.
+    Matching Onigmo needs smaller frames or an explicit stack in the parser.
+    On the main thread both engines reach the parse depth limit.
