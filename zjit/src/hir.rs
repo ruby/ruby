@@ -6796,7 +6796,7 @@ impl Function {
                     changed = false;
                 }
                 else {
-                    cached_insns[block_id] = block_cache.clone();
+                    cached_insns[block_id] = block_cache;
                 }
             }
 
