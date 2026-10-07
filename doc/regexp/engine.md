@@ -34,6 +34,29 @@ one static library, as before.
 `test/lib/regexp_engine_support.rb` tells tests which engine is active.
 `EnvUtil.invoke_ruby` passes `--regexp-engine` on to child processes.
 
+`test/ruby/test_regexp_engines.rb` compiles the regexp literals of the
+regexp tests with both engines and compares the programs byte for byte,
+through `Bug::Regexp.compile_info`. Matching is compared by fuzzing, and
+performance by a set of workloads:
+
+    ruby tool/regexp-fuzz.rb --ruby=./ruby --seeds=1..8 --count=5000 [--encodings]
+    benchmark-driver benchmark/regexp_engine.yml \
+      -e 'onigmo::./ruby --regexp-engine=onigmo' -e 'rust::./ruby --regexp-engine=rust'
+
+## Status
+
+Measured on arm64 macOS:
+
+* The programs and optimizer choices are identical to Onigmo's for the
+  2798 regexp literals of the test suite in six encodings.
+* `test/ruby`, the regexp, string and matchdata specs and the tests of the
+  default gems pass on the Rust engine; the failures left are the RSS-based
+  leak checks, which fail on Onigmo the same way on this machine.
+* Fuzzing found no difference in about 70,000 patterns, each matched
+  against several subjects, in seven encodings.
+* The workloads above take 1.36 times as long as on Onigmo (geometric mean).
+  Compiling is 1.8 times slower, matching 1.1 to 2 times.
+
 ## Open problems
 
 Problems found while porting. Each one needs a decision before the Rust
