@@ -49,6 +49,10 @@ typedef int strio_refcnt_t;
 # define rb_class_new_instance_kw(argc, argv, klass, kw_splat) rb_class_new_instance(argc, argv, klass)
 #endif
 
+#ifndef ULEN2NUM
+# define ULEN2NUM ULONG2NUM
+#endif
+
 static inline bool
 str_chilled_p(VALUE str)
 {
@@ -1905,7 +1909,7 @@ strio_size(VALUE self)
     if (NIL_P(string)) {
 	return INT2FIX(0);
     }
-    return ULONG2NUM(RSTRING_LEN(string));
+    return ULEN2NUM(RSTRING_LEN(string));
 }
 
 /*
