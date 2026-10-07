@@ -1305,18 +1305,48 @@ rb_stat_birthtime(VALUE self)
 #endif
 
 /*
+ * :markup: markdown
+ *
  * call-seq:
- *   stat.inspect  ->  string
+ *   inspect ->  string
  *
- * Produce a nicely formatted description of <i>stat</i>.
+ * Returns a string representation of the entry
+ * in the [snapshot](rdoc-ref:File::Stat@Snapshot) in `self`;
+ * here we split the returned strings for readability:
  *
- *   File.stat("/etc/passwd").inspect
- *      #=> "#<File::Stat dev=0xe000005, ino=1078078, mode=0100644,
- *      #    nlink=1, uid=0, gid=0, rdev=0x0, size=1374, blksize=4096,
- *      #    blocks=8, atime=Wed Dec 10 10:16:12 CST 2003,
- *      #    mtime=Fri Sep 12 15:41:41 CDT 2003,
- *      #    ctime=Mon Oct 27 11:20:27 CST 2003,
- *      #    birthtime=Mon Aug 04 08:13:49 CDT 2003>"
+ * ```ruby
+ * File.stat('/etc/passwd').inspect.split(', ')
+ * # =>
+ * ["#<File::Stat dev=0x10302",
+ *  "ino=11141413",
+ *  "mode=0100644",
+ *  "nlink=1",
+ *  "uid=0",
+ *  "gid=0",
+ *  "rdev=0x0",
+ *  "size=3092",
+ *  "blksize=4096",
+ *  "blocks=8",
+ *  "atime=2026-10-07 11:25:01.307589569 -0500",
+ *  "mtime=2025-06-10 11:10:47.358999941 -0500",
+ *  "ctime=2025-06-10 11:10:47.38899994 -0500>"]
+ * File.stat('/etc').inspect.split(', ')
+ * # =>
+ * ["#<File::Stat dev=0x10302",
+ *  "ino=11141121",
+ *  "mode=040755",
+ *  "nlink=143",
+ *  "uid=0",
+ *  "gid=0",
+ *  "rdev=0x0",
+ *  "size=12288",
+ *  "blksize=4096",
+ *  "blocks=24",
+ *  "atime=2026-10-04 14:29:46.907775905 -0500",
+ *  "mtime=2026-10-07 06:13:35.116915307 -0500",
+ *  "ctime=2026-10-07 06:13:35.116915307 -0500>"]
+ * ```
+ *
  */
 
 static VALUE
