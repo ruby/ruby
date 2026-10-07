@@ -15,4 +15,9 @@ void rb_jit_for_each_iseq(rb_iseq_callback callback, void *data);
 uint32_t rb_jit_get_page_size(void);
 uint8_t *rb_jit_reserve_addr_space(uint32_t mem_size);
 
+/* vm.c */
+RUBY_SYMBOL_EXPORT_BEGIN
+unsigned int rb_jit_call_threshold(void);
+RUBY_SYMBOL_EXPORT_END
+
 #endif /* INTERNAL_JIT_H */
