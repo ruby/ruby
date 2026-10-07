@@ -4,7 +4,7 @@ return if RUBY_VERSION < "3.1"
 
 require_relative "../test_helper"
 
-module Prism
+module Ruby::Prism
   class WarningsTest < TestCase
     def test_ambiguous_uminus
       assert_warning("a -b", "ambiguous first argument")
@@ -142,8 +142,8 @@ module Prism
       distinct = "#{binary}case x\nin {\"\xC3\xA9\": a, \"\\u00E9\": b}\nend".b
       duplicate = "case x\nin {\"\xC3\xA9\": a, \"\\u00E9\": b}\nend"
 
-      assert_empty Prism.parse(distinct).errors.map(&:message)
-      assert_equal ["duplicated key name"], Prism.parse(duplicate).errors.map(&:message)
+      assert_empty Ruby::Prism.parse(distinct).errors.map(&:message)
+      assert_equal ["duplicated key name"], Ruby::Prism.parse(duplicate).errors.map(&:message)
     end
 
     def test_float_out_of_range
@@ -474,11 +474,11 @@ module Prism
     end
 
     def test_warnings_verbosity
-      warning = Prism.parse("def foo; END { }; end").warnings.first
+      warning = Ruby::Prism.parse("def foo; END { }; end").warnings.first
       assert_equal "END in method; use at_exit", warning.message
       assert_equal :default, warning.level
 
-      warning = Prism.parse("foo +1").warnings.first
+      warning = Ruby::Prism.parse("foo +1").warnings.first
       assert_equal "ambiguous first argument; put parentheses or a space even after `+` operator", warning.message
       assert_equal :verbose, warning.level
     end
@@ -486,7 +486,7 @@ module Prism
     private
 
     def assert_warning(source, *messages, compare: true, **options)
-      warnings = Prism.parse(source, **options).warnings
+      warnings = Ruby::Prism.parse(source, **options).warnings
       assert_equal messages.length, warnings.length, "Expected #{messages.length} warning(s) in #{source.inspect}, got #{warnings.map(&:message).inspect}"
 
       warnings.zip(messages).each do |warning, message|
@@ -500,7 +500,7 @@ module Prism
     end
 
     def refute_warning(source, compare: true, **options)
-      assert_empty Prism.parse(source, **options).warnings
+      assert_empty Ruby::Prism.parse(source, **options).warnings
 
       if compare && defined?(RubyVM::AbstractSyntaxTree)
         assert_empty capture_stderr { RubyVM::AbstractSyntaxTree.parse(source) }

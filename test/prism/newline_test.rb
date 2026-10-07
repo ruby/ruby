@@ -6,7 +6,7 @@ require_relative "test_helper"
 # to test on the most recent versions.
 return if !defined?(RubyVM::InstructionSequence) || RUBY_VERSION < "3.4.0"
 
-module Prism
+module Ruby::Prism
   class NewlineTest < TestCase
     # If you are coming from ruby/ruby, a test failure here means that TracePoint `:line` events changed.
     # Before adding a skip, make sure that you actually intended for such a difference to happen.
@@ -24,7 +24,7 @@ module Prism
       source = File.read(filepath, binmode: true, external_encoding: Encoding::UTF_8)
       expected = rubyvm_lines(source)
 
-      result = Prism.parse_file(filepath)
+      result = Ruby::Prism.parse_file(filepath)
       assert_empty result.errors
       actual = prism_lines(result)
 

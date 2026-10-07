@@ -1,14 +1,14 @@
 #--
 # rbs_inline: enabled
 
-module Prism
+module Ruby::Prism
   # @rbs!
   #    interface _Repository
   #      def enter: (Integer node_id, Symbol field_name) -> Relocation::Entry
   #    end
   #
   #    interface _Node
-  #      def deconstruct: () -> Array[Prism::node?]
+  #      def deconstruct: () -> Array[Ruby::Prism::node?]
   #      def inspect: () -> String
   #    end
   #
@@ -310,12 +310,12 @@ module Prism
     # breadth-first search. This is useful for finding all nodes that match a
     # particular condition.
     #
-    #     node.breadth_first_search_all { |node| node.is_a?(Prism::CallNode) }
+    #     node.breadth_first_search_all { |node| node.is_a?(Ruby::Prism::CallNode) }
     #
     #: () { (node) -> bool } -> Array[node]
     def breadth_first_search_all(&blk)
-      queue = [self] #: Array[Prism::node]
-      results = [] #: Array[Prism::node]
+      queue = [self] #: Array[Ruby::Prism::node]
+      results = [] #: Array[Ruby::Prism::node]
 
       while (node = queue.shift)
         results << node if yield node
@@ -442,7 +442,7 @@ module Prism
       @location = location
       @flags = flags
       <%- node.fields.each do |field| -%>
-      <%- if Prism::Template::CHECK_FIELD_KIND && field.respond_to?(:check_field_kind) -%>
+      <%- if Ruby::Prism::Template::CHECK_FIELD_KIND && field.respond_to?(:check_field_kind) -%>
       raise "<%= node.name %>#<%= field.name %> was of unexpected type:\n#{<%= field.name %>.inspect}" unless <%= field.check_field_kind %>
       <%- end -%>
       @<%= field.name %> = <%= field.name %>
@@ -473,8 +473,8 @@ module Prism
     def child_nodes
       [<%= node.fields.map { |field|
         case field
-        when Prism::Template::NodeField, Prism::Template::OptionalNodeField then field.name
-        when Prism::Template::NodeListField then "*#{field.name}"
+        when Ruby::Prism::Template::NodeField, Ruby::Prism::Template::OptionalNodeField then field.name
+        when Ruby::Prism::Template::NodeListField then "*#{field.name}"
         end
       }.compact.join(", ") %>]
     end
@@ -488,11 +488,11 @@ module Prism
 
       <%- node.fields.each do |field| -%>
       <%- case field -%>
-      <%- when Prism::Template::NodeField -%>
+      <%- when Ruby::Prism::Template::NodeField -%>
       yield <%= field.name %>
-      <%- when Prism::Template::OptionalNodeField -%>
+      <%- when Ruby::Prism::Template::OptionalNodeField -%>
       if (<%= field.name %> = self.<%= field.name %>); yield <%= field.name %>; end
-      <%- when Prism::Template::NodeListField -%>
+      <%- when Ruby::Prism::Template::NodeListField -%>
       <%= field.name %>.each { |node| yield node }
       <%- end -%>
       <%- end -%>
@@ -502,15 +502,15 @@ module Prism
     #
     #: () -> Array[node]
     def compact_child_nodes
-      <%- if node.fields.any? { |field| field.is_a?(Prism::Template::OptionalNodeField) } -%>
-      compact = [] #: Array[Prism::node]
+      <%- if node.fields.any? { |field| field.is_a?(Ruby::Prism::Template::OptionalNodeField) } -%>
+      compact = [] #: Array[Ruby::Prism::node]
       <%- node.fields.each do |field| -%>
       <%- case field -%>
-      <%- when Prism::Template::NodeField -%>
+      <%- when Ruby::Prism::Template::NodeField -%>
       compact << <%= field.name %>
-      <%- when Prism::Template::OptionalNodeField -%>
+      <%- when Ruby::Prism::Template::OptionalNodeField -%>
       if (<%= field.name %> = self.<%= field.name %>); compact << <%= field.name %>; end
-      <%- when Prism::Template::NodeListField -%>
+      <%- when Ruby::Prism::Template::NodeListField -%>
       compact.concat(<%= field.name %>)
       <%- end -%>
       <%- end -%>
@@ -518,8 +518,8 @@ module Prism
       <%- else -%>
       [<%= node.fields.map { |field|
         case field
-        when Prism::Template::NodeField then field.name
-        when Prism::Template::NodeListField then "*#{field.name}"
+        when Ruby::Prism::Template::NodeField then field.name
+        when Ruby::Prism::Template::NodeListField then "*#{field.name}"
         end
       }.compact.join(", ") %>]
       <%- end -%>
@@ -531,10 +531,10 @@ module Prism
     def comment_targets
       [<%= node.fields.map { |field|
         case field
-        when Prism::Template::NodeField, Prism::Template::LocationField then field.name
-        when Prism::Template::OptionalNodeField, Prism::Template::NodeListField, Prism::Template::OptionalLocationField then "*#{field.name}"
+        when Ruby::Prism::Template::NodeField, Ruby::Prism::Template::LocationField then field.name
+        when Ruby::Prism::Template::OptionalNodeField, Ruby::Prism::Template::NodeListField, Ruby::Prism::Template::OptionalLocationField then "*#{field.name}"
         end
-      }.compact.join(", ") %>] #: Array[Prism::node | Location]
+      }.compact.join(", ") %>] #: Array[Ruby::Prism::node | Location]
     end
 
     # :call-seq:
@@ -551,7 +551,7 @@ module Prism
 
     #: (Array[Symbol]? keys) -> Hash[Symbol, untyped]
     def deconstruct_keys(keys) # :nodoc:
-      <%- deconstruct = [:node_id, :location, *node.fields.map { |field| field.name.to_sym }, *node.fields.select { |field| field.is_a?(Prism::Template::LocationField) || field.is_a?(Prism::Template::OptionalLocationField) }.map { |field| field.name.delete_suffix("_loc").to_sym }].uniq -%>
+      <%- deconstruct = [:node_id, :location, *node.fields.map { |field| field.name.to_sym }, *node.fields.select { |field| field.is_a?(Ruby::Prism::Template::LocationField) || field.is_a?(Ruby::Prism::Template::OptionalLocationField) }.map { |field| field.name.delete_suffix("_loc").to_sym }].uniq -%>
       (keys || %i[<%= deconstruct.join(" ") %>]).each_with_object(
         {} #: Hash[Symbol, untyped]
       ) do |key, deconstructed|
@@ -598,7 +598,7 @@ module Prism
     <%- end -%>
     <%- node.fields.each do |field| -%>
     <%- case field -%>
-    <%- when Prism::Template::LocationField -%>
+    <%- when Ruby::Prism::Template::LocationField -%>
     # :category: Locations
     # :call-seq:
     #   <%= field.name %> -> <%= field.call_seq_type %>
@@ -627,7 +627,7 @@ module Prism
       repository.enter(node_id, :<%= field.name %>)
     end
 
-    <%- when Prism::Template::OptionalLocationField -%>
+    <%- when Ruby::Prism::Template::OptionalLocationField -%>
     # :category: Locations
     # :call-seq:
     #   <%= field.name %> -> <%= field.call_seq_type %>
@@ -684,7 +684,7 @@ module Prism
 
     <%- node.fields.each do |field| -%>
     <%- case field -%>
-    <%- when Prism::Template::LocationField -%>
+    <%- when Ruby::Prism::Template::LocationField -%>
     <%- raise unless field.name.end_with?("_loc") -%>
     <%- next if node.fields.any? { |other| other.name == field.name.delete_suffix("_loc") } -%>
     # :call-seq:
@@ -697,7 +697,7 @@ module Prism
       <%= field.name %>.slice
     end
 
-    <%- when Prism::Template::OptionalLocationField -%>
+    <%- when Ruby::Prism::Template::OptionalLocationField -%>
     <%- raise unless field.name.end_with?("_loc") -%>
     <%- next if node.fields.any? { |other| other.name == field.name.delete_suffix("_loc") } -%>
     # :call-seq:
@@ -718,12 +718,12 @@ module Prism
     def ===(other) # :nodoc:
       other.is_a?(<%= node.name %>)<%= " &&" if (fields = [*node.flags, *node.fields]).any? %>
         <%- fields.each_with_index do |field, index| -%>
-        <%- if field.is_a?(Prism::Template::LocationField) || field.is_a?(Prism::Template::OptionalLocationField) -%>
+        <%- if field.is_a?(Ruby::Prism::Template::LocationField) || field.is_a?(Ruby::Prism::Template::OptionalLocationField) -%>
         (<%= field.name %>.nil? == other.<%= field.name %>.nil?)<%= " &&" if index != fields.length - 1 %>
-        <%- elsif field.is_a?(Prism::Template::NodeListField) || field.is_a?(Prism::Template::ConstantListField) -%>
+        <%- elsif field.is_a?(Ruby::Prism::Template::NodeListField) || field.is_a?(Ruby::Prism::Template::ConstantListField) -%>
         (<%= field.name %>.length == other.<%= field.name %>.length) &&
         <%= field.name %>.zip(other.<%= field.name %>).all? { |left, right| left === right }<%= " &&" if index != fields.length - 1 %>
-        <%- elsif field.is_a?(Prism::Template::Flags) -%>
+        <%- elsif field.is_a?(Ruby::Prism::Template::Flags) -%>
         (flags === other.flags)<%= " &&" if index != fields.length - 1 %>
         <%- else -%>
         (<%= field.name %> === other.<%= field.name %>)<%= " &&" if index != fields.length - 1 %>
@@ -738,7 +738,7 @@ module Prism
   module <%= flag.name %>
     <%- flag.values.each_with_index do |value, index| -%>
     # <%= value.comment %>
-    <%= value.name %> = 1 << <%= index + Prism::Template::COMMON_FLAGS_COUNT %>
+    <%= value.name %> = 1 << <%= index + Ruby::Prism::Template::COMMON_FLAGS_COUNT %>
 <%= "\n" if value != flag.values.last -%>
     <%- end -%>
   end

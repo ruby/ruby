@@ -1,5 +1,8 @@
 <% # -*- ruby -*-
 # :stopdoc:
+# templates/template.rb defines Ruby::Prism::Template, and BASERUBY may be
+# older than Ruby 4.0, where the Ruby module does not exist.
+module Ruby; end unless defined?(Ruby)
 require_relative 'templates/template'
 
 script = File.basename(__FILE__)
@@ -9,6 +12,7 @@ mk = 'uncommon.mk'
 # %>
 PRISM_TEMPLATES_DIR = $(PRISM_SRCDIR)/templates
 PRISM_TEMPLATE = $(PRISM_TEMPLATES_DIR)/template.rb
+PRISM_RUN_TEMPLATE = $(BASERUBY) -e "module Ruby; end unless defined?(Ruby); load ARGV.shift; Ruby::Prism::Template.render(ARGV[0], write_to: ARGV[1])" $(PRISM_TEMPLATE)
 PRISM_CONFIG = $(PRISM_SRCDIR)/config.yml
 
 srcs <%=%><%=mk%>: prism/.srcs.mk.time
@@ -34,7 +38,7 @@ realclean-srcs-local:: realclean-prism-srcs
 
 main srcs: prism-srcs
 main incs: prism-incs
-<% Prism::Template::TEMPLATES.map do |t|
+<% Ruby::Prism::Template::TEMPLATES.map do |t|
   /\.(?:[ch]|rb)\z/ =~ t or next
   s = '$(srcdir)/' + t.sub(%r[\A(?:(src)|ext|include)/]) {$1 && 'prism/'}
   s.sub!(%r[\A\$\(srcdir\)/lib/prism/], %q[$(srcdir)/lib/ruby/prism/])
@@ -44,7 +48,7 @@ main incs: prism-incs
 
 prism-<%=%><%=target%>: <%=%><%=s%>
 <%=%><%=s%>: $(PRISM_CONFIG) $(PRISM_TEMPLATE) $(PRISM_TEMPLATES_DIR)/<%=%><%=t%>.erb
-	$(Q) $(BASERUBY) $(PRISM_TEMPLATE) <%=%><%=t%> $@
+	$(Q) $(PRISM_RUN_TEMPLATE) <%=%><%=t%> $@
 
 realclean-prism-srcs::
 	$(RM) <%=%><%=s%>

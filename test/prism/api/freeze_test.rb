@@ -2,37 +2,37 @@
 
 require_relative "../test_helper"
 
-module Prism
+module Ruby::Prism
   class FreezeTest < TestCase
     def test_parse
-      assert_frozen(Prism.parse("1 + 2; %i{foo} + %i{bar}", freeze: true))
+      assert_frozen(Ruby::Prism.parse("1 + 2; %i{foo} + %i{bar}", freeze: true))
     end
 
     def test_offsets_usable
-      node = Prism.parse_statement("1 + 2", freeze: true)
+      node = Ruby::Prism.parse_statement("1 + 2", freeze: true)
       assert_equal(1, node.start_line)
     end
 
     def test_lex
-      assert_frozen(Prism.lex("1 + 2; %i{foo} + %i{bar}", freeze: true))
+      assert_frozen(Ruby::Prism.lex("1 + 2; %i{foo} + %i{bar}", freeze: true))
     end
 
     def test_parse_lex
-      assert_frozen(Prism.parse_lex("1 + 2; %i{foo} + %i{bar}", freeze: true))
-      assert_frozen(Prism.parse_lex("# encoding: euc-jp\n%i{foo}", freeze: true))
+      assert_frozen(Ruby::Prism.parse_lex("1 + 2; %i{foo} + %i{bar}", freeze: true))
+      assert_frozen(Ruby::Prism.parse_lex("# encoding: euc-jp\n%i{foo}", freeze: true))
     end
 
     def test_parse_comments
-      assert_frozen(Prism.parse_comments("# comment", freeze: true))
+      assert_frozen(Ruby::Prism.parse_comments("# comment", freeze: true))
     end
 
     def test_parse_stream
-      assert_frozen(Prism.parse_stream(StringIO.new("1 + 2; %i{foo} + %i{bar}"), freeze: true))
+      assert_frozen(Ruby::Prism.parse_stream(StringIO.new("1 + 2; %i{foo} + %i{bar}"), freeze: true))
     end
 
     if !ENV["PRISM_BUILD_MINIMAL"]
       def test_dump
-        assert_frozen(Prism.dump("1 + 2; %i{foo} + %i{bar}", freeze: true))
+        assert_frozen(Ruby::Prism.dump("1 + 2; %i{foo} + %i{bar}", freeze: true))
       end
     end
 

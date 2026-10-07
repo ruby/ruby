@@ -2,7 +2,7 @@
 
 require_relative "../test_helper"
 
-module Prism
+module Ruby::Prism
   class IndexWriteTest < TestCase
     def test_keywords_3_3
       assert_parse_success(<<~RUBY, "3.3.0")
@@ -79,11 +79,11 @@ module Prism
     private
 
     def assert_parse_success(source, version = "latest")
-      assert Prism.parse_success?(source, version: version)
+      assert Ruby::Prism.parse_success?(source, version: version)
     end
 
     def assert_parse_failure(source, version = "latest")
-      assert Prism.parse_failure?(source, version: version)
+      assert Ruby::Prism.parse_failure?(source, version: version)
     end
   end
 end

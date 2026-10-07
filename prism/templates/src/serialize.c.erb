@@ -73,7 +73,7 @@ static void
 pm_serialize_node(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buffer) {
     pm_buffer_append_byte(buffer, (uint8_t) PM_NODE_TYPE(node));
 
-    <%- if Prism::Template::INCLUDE_NODE_ID -%>
+    <%- if Ruby::Prism::Template::INCLUDE_NODE_ID -%>
     pm_buffer_append_varuint(buffer, node->node_id);
     <%- end -%>
     pm_serialize_location(&node->location, buffer);
@@ -91,40 +91,40 @@ pm_serialize_node(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buffer) {
             size_t length_offset = buffer->length;
             pm_buffer_append_string(buffer, "\0\0\0\0", 4); /* consume 4 bytes, updated below */
             <%- end -%>
-            <%- unless Prism::Template::SERIALIZE_ONLY_SEMANTICS_FIELDS && !node.flags -%>
+            <%- unless Ruby::Prism::Template::SERIALIZE_ONLY_SEMANTICS_FIELDS && !node.flags -%>
             pm_buffer_append_varuint(buffer, (uint32_t) node->flags);
             <%- end -%>
             <%- node.fields.each do |field| -%>
             <%- case field -%>
-            <%- when Prism::Template::NodeField -%>
+            <%- when Ruby::Prism::Template::NodeField -%>
             pm_serialize_node(parser, (pm_node_t *)((pm_<%= node.human %>_t *)node)-><%= field.name %>, buffer);
-            <%- when Prism::Template::OptionalNodeField -%>
+            <%- when Ruby::Prism::Template::OptionalNodeField -%>
             if (((pm_<%= node.human %>_t *)node)-><%= field.name %> == NULL) {
                 pm_buffer_append_byte(buffer, 0);
             } else {
                 pm_serialize_node(parser, (pm_node_t *)((pm_<%= node.human %>_t *)node)-><%= field.name %>, buffer);
             }
-            <%- when Prism::Template::StringField -%>
+            <%- when Ruby::Prism::Template::StringField -%>
             pm_serialize_string(&((pm_<%= node.human %>_t *)node)-><%= field.name %>, buffer);
-            <%- when Prism::Template::NodeListField -%>
+            <%- when Ruby::Prism::Template::NodeListField -%>
             uint32_t <%= field.name %>_size = pm_sizet_to_u32(((pm_<%= node.human %>_t *)node)-><%= field.name %>.size);
             pm_buffer_append_varuint(buffer, <%= field.name %>_size);
             for (uint32_t index = 0; index < <%= field.name %>_size; index++) {
                 pm_serialize_node(parser, (pm_node_t *) ((pm_<%= node.human %>_t *)node)-><%= field.name %>.nodes[index], buffer);
             }
-            <%- when Prism::Template::ConstantField, Prism::Template::OptionalConstantField -%>
+            <%- when Ruby::Prism::Template::ConstantField, Ruby::Prism::Template::OptionalConstantField -%>
             pm_buffer_append_varuint(buffer, pm_sizet_to_u32(((pm_<%= node.human %>_t *)node)-><%= field.name %>));
-            <%- when Prism::Template::ConstantListField -%>
+            <%- when Ruby::Prism::Template::ConstantListField -%>
             uint32_t <%= field.name %>_size = pm_sizet_to_u32(((pm_<%= node.human %>_t *)node)-><%= field.name %>.size);
             pm_buffer_append_varuint(buffer, <%= field.name %>_size);
             for (uint32_t index = 0; index < <%= field.name %>_size; index++) {
                 pm_buffer_append_varuint(buffer, pm_sizet_to_u32(((pm_<%= node.human %>_t *)node)-><%= field.name %>.ids[index]));
             }
-            <%- when Prism::Template::LocationField -%>
+            <%- when Ruby::Prism::Template::LocationField -%>
             <%- if field.should_be_serialized? -%>
             pm_serialize_location(&((pm_<%= node.human %>_t *)node)-><%= field.name %>, buffer);
             <%- end -%>
-            <%- when Prism::Template::OptionalLocationField -%>
+            <%- when Ruby::Prism::Template::OptionalLocationField -%>
             <%- if field.should_be_serialized? -%>
             if (((pm_<%= node.human %>_t *)node)-><%= field.name %>.length == 0) {
                 pm_buffer_append_byte(buffer, 0);
@@ -133,13 +133,13 @@ pm_serialize_node(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buffer) {
                 pm_serialize_location(&((pm_<%= node.human %>_t *)node)-><%= field.name %>, buffer);
             }
             <%- end -%>
-            <%- when Prism::Template::UInt8Field -%>
+            <%- when Ruby::Prism::Template::UInt8Field -%>
             pm_buffer_append_byte(buffer, ((pm_<%= node.human %>_t *)node)-><%= field.name %>);
-            <%- when Prism::Template::UInt32Field -%>
+            <%- when Ruby::Prism::Template::UInt32Field -%>
             pm_buffer_append_varuint(buffer, ((pm_<%= node.human %>_t *)node)-><%= field.name %>);
-            <%- when Prism::Template::IntegerField -%>
+            <%- when Ruby::Prism::Template::IntegerField -%>
             pm_serialize_integer(&((pm_<%= node.human %>_t *)node)-><%= field.name %>, buffer);
-            <%- when Prism::Template::DoubleField -%>
+            <%- when Ruby::Prism::Template::DoubleField -%>
             pm_buffer_append_double(buffer, ((pm_<%= node.human %>_t *)node)-><%= field.name %>);
             <%- else -%>
             <%- raise -%>
@@ -264,7 +264,7 @@ pm_serialize_metadata(pm_parser_t *parser, pm_buffer_t *buffer) {
     pm_serialize_encoding(parser->encoding, buffer);
     pm_buffer_append_varsint(buffer, parser->start_line);
     pm_serialize_line_offset_list(&parser->line_offsets, buffer);
-<%- unless Prism::Template::SERIALIZE_ONLY_SEMANTICS_FIELDS -%>
+<%- unless Ruby::Prism::Template::SERIALIZE_ONLY_SEMANTICS_FIELDS -%>
     pm_serialize_comment_list(&parser->comment_list, buffer);
 <%- end -%>
     pm_serialize_magic_comment_list(&parser->magic_comment_list, buffer);

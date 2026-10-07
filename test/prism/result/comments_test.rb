@@ -2,11 +2,11 @@
 
 require_relative "../test_helper"
 
-module Prism
+module Ruby::Prism
   class CommentsTest < TestCase
     def test_comment_inline
       source = "# comment"
-      assert_equal [0], Prism.parse(source).source.offsets
+      assert_equal [0], Ruby::Prism.parse(source).source.offsets
 
       assert_comment(
         source,
@@ -40,17 +40,17 @@ module Prism
     end
 
     def test_comment_trailing
-      comment = Prism.parse_comments("x # trailing")[0]
+      comment = Ruby::Prism.parse_comments("x # trailing")[0]
       assert_predicate(comment, :trailing?)
     end
 
     def test_comment_syntax_invalid_bytes_trailing
-      comment = Prism.parse_comments("\xFF\xFE# not trailing")[0]
+      comment = Ruby::Prism.parse_comments("\xFF\xFE# not trailing")[0]
       refute_predicate(comment, :trailing?)
     end
 
     def test___END__
-      result = Prism.parse(<<~RUBY)
+      result = Ruby::Prism.parse(<<~RUBY)
         __END__
         comment
       RUBY
@@ -61,7 +61,7 @@ module Prism
     end
 
     def test___END__crlf
-      result = Prism.parse("__END__\r\ncomment\r\n")
+      result = Ruby::Prism.parse("__END__\r\ncomment\r\n")
 
       data_loc = result.data_loc
       assert_equal 0, data_loc.start_offset
@@ -117,7 +117,7 @@ module Prism
         end # Foo end
       RUBY
 
-      result = Prism.parse(source)
+      result = Ruby::Prism.parse(source)
       result.attach_comments!
       tree = result.value
       class_node = tree.statements.body.first
@@ -132,7 +132,7 @@ module Prism
     private
 
     def assert_comment(source, type, start_offset:, end_offset:, start_line:, end_line:, start_column:, end_column:)
-      result = Prism.parse(source)
+      result = Ruby::Prism.parse(source)
       assert result.errors.empty?, result.errors.map(&:message).join("\n")
       assert_kind_of type, result.comments.first
 

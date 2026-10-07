@@ -2,10 +2,10 @@
 
 require_relative "../test_helper"
 
-module Prism
+module Ruby::Prism
   class ErrorRecoveryTest < TestCase
     def test_alias_global_variable_node_old_name_symbol
-      result = Prism.parse("alias $a b")
+      result = Ruby::Prism.parse("alias $a b")
       refute result.success?
 
       node = result.value.statements.body.first
@@ -14,7 +14,7 @@ module Prism
     end
 
     def test_alias_global_variable_node_old_name_missing
-      result = Prism.parse("alias $a 42")
+      result = Ruby::Prism.parse("alias $a 42")
       refute result.success?
 
       node = result.value.statements.body.first
@@ -23,7 +23,7 @@ module Prism
     end
 
     def test_alias_method_node_old_name_global_variable
-      result = Prism.parse("alias a $b")
+      result = Ruby::Prism.parse("alias a $b")
       refute result.success?
 
       node = result.value.statements.body.first
@@ -32,7 +32,7 @@ module Prism
     end
 
     def test_alias_method_node_old_name_missing
-      result = Prism.parse("alias a 42")
+      result = Ruby::Prism.parse("alias a 42")
       refute result.success?
 
       node = result.value.statements.body.first
@@ -41,7 +41,7 @@ module Prism
     end
 
     def test_class_node_constant_path_call
-      result = Prism.parse("class 0.X; end")
+      result = Ruby::Prism.parse("class 0.X; end")
       refute result.success?
 
       node = result.value.statements.body.first
@@ -50,7 +50,7 @@ module Prism
     end
 
     def test_for_node_index_back_reference
-      result = Prism.parse("for $& in a; end")
+      result = Ruby::Prism.parse("for $& in a; end")
       refute result.success?
 
       node = result.value.statements.body.first
@@ -59,7 +59,7 @@ module Prism
     end
 
     def test_for_node_index_numbered_reference
-      result = Prism.parse("for $1 in a; end")
+      result = Ruby::Prism.parse("for $1 in a; end")
       refute result.success?
 
       node = result.value.statements.body.first
@@ -68,7 +68,7 @@ module Prism
     end
 
     def test_for_node_index_missing
-      result = Prism.parse("for in 1..10; end")
+      result = Ruby::Prism.parse("for in 1..10; end")
       refute result.success?
 
       node = result.value.statements.body.first
@@ -77,7 +77,7 @@ module Prism
     end
 
     def test_interpolated_string_node_parts_xstring
-      result = Prism.parse("<<~`FOO` \"bar\"\nls\nFOO\n")
+      result = Ruby::Prism.parse("<<~`FOO` \"bar\"\nls\nFOO\n")
       refute result.success?
 
       node = result.value.statements.body.first
@@ -85,7 +85,7 @@ module Prism
     end
 
     def test_interpolated_string_node_parts_interpolated_xstring
-      result = Prism.parse("<<~`FOO` \"bar\"\n\#{ls}\nFOO\n")
+      result = Ruby::Prism.parse("<<~`FOO` \"bar\"\n\#{ls}\nFOO\n")
       refute result.success?
 
       node = result.value.statements.body.first
@@ -93,7 +93,7 @@ module Prism
     end
 
     def test_module_node_constant_path_def
-      result = Prism.parse("module def foo; end")
+      result = Ruby::Prism.parse("module def foo; end")
       refute result.success?
 
       node = result.value.statements.body.first
@@ -102,7 +102,7 @@ module Prism
     end
 
     def test_module_node_constant_path_missing
-      result = Prism.parse("module Parent module end")
+      result = Ruby::Prism.parse("module Parent module end")
       refute result.success?
 
       node = result.value.statements.body.first.body.body.first
@@ -111,7 +111,7 @@ module Prism
     end
 
     def test_multi_target_node_lefts_back_reference
-      result = Prism.parse("a, (b, $&) = z")
+      result = Ruby::Prism.parse("a, (b, $&) = z")
       refute result.success?
 
       node = result.value.statements.body.first.lefts.last
@@ -119,7 +119,7 @@ module Prism
     end
 
     def test_multi_target_node_lefts_numbered_reference
-      result = Prism.parse("a, (b, $1) = z")
+      result = Ruby::Prism.parse("a, (b, $1) = z")
       refute result.success?
 
       node = result.value.statements.body.first.lefts.last
@@ -127,7 +127,7 @@ module Prism
     end
 
     def test_multi_target_node_rights_back_reference
-      result = Prism.parse("a, (*, $&) = z")
+      result = Ruby::Prism.parse("a, (*, $&) = z")
       refute result.success?
 
       node = result.value.statements.body.first.lefts.last
@@ -135,7 +135,7 @@ module Prism
     end
 
     def test_multi_target_node_rights_numbered_reference
-      result = Prism.parse("a, (*, $1) = z")
+      result = Ruby::Prism.parse("a, (*, $1) = z")
       refute result.success?
 
       node = result.value.statements.body.first.lefts.last
@@ -143,7 +143,7 @@ module Prism
     end
 
     def test_multi_write_node_lefts_back_reference
-      result = Prism.parse("$&, = z")
+      result = Ruby::Prism.parse("$&, = z")
       refute result.success?
 
       node = result.value.statements.body.first
@@ -151,7 +151,7 @@ module Prism
     end
 
     def test_multi_write_node_lefts_numbered_reference
-      result = Prism.parse("$1, = z")
+      result = Ruby::Prism.parse("$1, = z")
       refute result.success?
 
       node = result.value.statements.body.first
@@ -159,7 +159,7 @@ module Prism
     end
 
     def test_multi_write_node_rights_back_reference
-      result = Prism.parse("*, $& = z")
+      result = Ruby::Prism.parse("*, $& = z")
       refute result.success?
 
       node = result.value.statements.body.first
@@ -167,7 +167,7 @@ module Prism
     end
 
     def test_multi_write_node_rights_numbered_reference
-      result = Prism.parse("*, $1 = z")
+      result = Ruby::Prism.parse("*, $1 = z")
       refute result.success?
 
       node = result.value.statements.body.first
@@ -175,7 +175,7 @@ module Prism
     end
 
     def test_parameters_node_posts_keyword_rest
-      result = Prism.parse("def f(**kwargs, ...); end")
+      result = Ruby::Prism.parse("def f(**kwargs, ...); end")
       refute result.success?
 
       node = result.value.statements.body.first.parameters
@@ -183,7 +183,7 @@ module Prism
     end
 
     def test_parameters_node_posts_no_keywords
-      result = Prism.parse("def f(**nil, ...); end")
+      result = Ruby::Prism.parse("def f(**nil, ...); end")
       refute result.success?
 
       node = result.value.statements.body.first.parameters
@@ -191,7 +191,7 @@ module Prism
     end
 
     def test_parameters_node_posts_forwarding
-      result = Prism.parse("def f(..., ...); end")
+      result = Ruby::Prism.parse("def f(..., ...); end")
       refute result.success?
 
       node = result.value.statements.body.first.parameters
@@ -199,7 +199,7 @@ module Prism
     end
 
     def test_pinned_variable_node_variable_missing
-      result = Prism.parse("foo in ^Bar")
+      result = Ruby::Prism.parse("foo in ^Bar")
       refute result.success?
 
       node = result.value.statements.body.first.pattern
@@ -208,7 +208,7 @@ module Prism
     end
 
     def test_rescue_node_reference_back_reference
-      result = Prism.parse("begin; rescue => $&; end")
+      result = Ruby::Prism.parse("begin; rescue => $&; end")
       refute result.success?
 
       node = result.value.statements.body.first.rescue_clause
@@ -217,7 +217,7 @@ module Prism
     end
 
     def test_rescue_node_reference_numbered_reference
-      result = Prism.parse("begin; rescue => $1; end")
+      result = Ruby::Prism.parse("begin; rescue => $1; end")
       refute result.success?
 
       node = result.value.statements.body.first.rescue_clause
@@ -226,7 +226,7 @@ module Prism
     end
 
     def test_rescue_node_reference_missing
-      result = Prism.parse("begin; rescue =>; end")
+      result = Ruby::Prism.parse("begin; rescue =>; end")
       refute result.success?
 
       node = result.value.statements.body.first.rescue_clause

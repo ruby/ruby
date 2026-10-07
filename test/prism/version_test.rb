@@ -2,7 +2,7 @@
 
 require_relative "test_helper"
 
-module Prism
+module Ruby::Prism
   class VersionTest < TestCase
     def test_prism_version_is_set
       refute_nil VERSION

@@ -3,9 +3,9 @@
 
 require_relative "../test_helper"
 
-module Prism
+module Ruby::Prism
   class CompilerTest < TestCase
-    class SExpressions < Prism::Compiler
+    class SExpressions < Ruby::Prism::Compiler
       def visit_arguments_node(node)
         [:arguments, super]
       end
@@ -25,7 +25,7 @@ module Prism
 
     def test_compiler
       expected = [:program, [[[:call, [[:integer], [:arguments, [[:integer]]]]]]]]
-      assert_equal expected, Prism.parse("1 + 2").value.accept(SExpressions.new)
+      assert_equal expected, Ruby::Prism.parse("1 + 2").value.accept(SExpressions.new)
     end
   end
 end

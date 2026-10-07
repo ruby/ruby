@@ -2,18 +2,18 @@
 
 require_relative "../test_helper"
 
-module Prism
+module Ruby::Prism
   class RelocationTest < TestCase
     def test_repository_filepath
       repository = Relocation.filepath(__FILE__).lines
-      declaration = Prism.parse_file(__FILE__).value.statements.body[1]
+      declaration = Ruby::Prism.parse_file(__FILE__).value.statements.body[1]
 
       assert_equal 5, declaration.save(repository).start_line
     end
 
     def test_filepath
       repository = Relocation.filepath(__FILE__).filepath
-      declaration = Prism.parse_file(__FILE__).value.statements.body[1]
+      declaration = Ruby::Prism.parse_file(__FILE__).value.statements.body[1]
 
       assert_equal __FILE__, declaration.save(repository).filepath
     end
@@ -21,7 +21,7 @@ module Prism
     def test_lines
       source = "class Foo😀\nend"
       repository = Relocation.string(source).lines
-      declaration = Prism.parse(source).value.statements.body.first
+      declaration = Ruby::Prism.parse(source).value.statements.body.first
 
       node_entry = declaration.save(repository)
       location_entry = declaration.save_location(repository)
@@ -36,7 +36,7 @@ module Prism
     def test_offsets
       source = "class Foo😀\nend"
       repository = Relocation.string(source).offsets
-      declaration = Prism.parse(source).value.statements.body.first
+      declaration = Ruby::Prism.parse(source).value.statements.body.first
 
       node_entry = declaration.constant_path.save(repository)
       location_entry = declaration.constant_path.save_location(repository)
@@ -51,7 +51,7 @@ module Prism
     def test_character_offsets
       source = "class Foo😀\nend"
       repository = Relocation.string(source).character_offsets
-      declaration = Prism.parse(source).value.statements.body.first
+      declaration = Ruby::Prism.parse(source).value.statements.body.first
 
       node_entry = declaration.constant_path.save(repository)
       location_entry = declaration.constant_path.save_location(repository)
@@ -66,7 +66,7 @@ module Prism
     def test_code_unit_offsets
       source = "class Foo😀\nend"
       repository = Relocation.string(source).code_unit_offsets(Encoding::UTF_16LE)
-      declaration = Prism.parse(source).value.statements.body.first
+      declaration = Ruby::Prism.parse(source).value.statements.body.first
 
       node_entry = declaration.constant_path.save(repository)
       location_entry = declaration.constant_path.save_location(repository)
@@ -81,7 +81,7 @@ module Prism
     def test_columns
       source = "class Foo😀\nend"
       repository = Relocation.string(source).columns
-      declaration = Prism.parse(source).value.statements.body.first
+      declaration = Ruby::Prism.parse(source).value.statements.body.first
 
       node_entry = declaration.constant_path.save(repository)
       location_entry = declaration.constant_path.save_location(repository)
@@ -96,7 +96,7 @@ module Prism
     def test_character_columns
       source = "class Foo😀\nend"
       repository = Relocation.string(source).character_columns
-      declaration = Prism.parse(source).value.statements.body.first
+      declaration = Ruby::Prism.parse(source).value.statements.body.first
 
       node_entry = declaration.constant_path.save(repository)
       location_entry = declaration.constant_path.save_location(repository)
@@ -111,7 +111,7 @@ module Prism
     def test_code_unit_columns
       source = "class Foo😀\nend"
       repository = Relocation.string(source).code_unit_columns(Encoding::UTF_16LE)
-      declaration = Prism.parse(source).value.statements.body.first
+      declaration = Ruby::Prism.parse(source).value.statements.body.first
 
       node_entry = declaration.constant_path.save(repository)
       location_entry = declaration.constant_path.save_location(repository)
@@ -126,7 +126,7 @@ module Prism
     def test_leading_comments
       source = "# leading\nclass Foo\nend"
       repository = Relocation.string(source).leading_comments
-      declaration = Prism.parse(source).value.statements.body.first
+      declaration = Ruby::Prism.parse(source).value.statements.body.first
 
       node_entry = declaration.save(repository)
       location_entry = declaration.save_location(repository)
@@ -138,7 +138,7 @@ module Prism
     def test_trailing_comments
       source = "class Foo\nend\n# trailing"
       repository = Relocation.string(source).trailing_comments
-      declaration = Prism.parse(source).value.statements.body.first
+      declaration = Ruby::Prism.parse(source).value.statements.body.first
 
       node_entry = declaration.save(repository)
       location_entry = declaration.save_location(repository)
@@ -150,7 +150,7 @@ module Prism
     def test_comments
       source = "# leading\nclass Foo\nend\n# trailing"
       repository = Relocation.string(source).comments
-      declaration = Prism.parse(source).value.statements.body.first
+      declaration = Ruby::Prism.parse(source).value.statements.body.first
 
       node_entry = declaration.save(repository)
       location_entry = declaration.save_location(repository)
@@ -181,7 +181,7 @@ module Prism
       source = "class Foo; end"
       repository = Relocation.string(source).lines
 
-      declaration = Prism.parse(source).value.statements.body.first
+      declaration = Ruby::Prism.parse(source).value.statements.body.first
       entry = declaration.constant_path.save(repository)
 
       assert_raise Relocation::Entry::MissingValueError do

@@ -6,7 +6,7 @@ return if RUBY_VERSION < "3.2"
 
 require_relative "../test_helper"
 
-module Prism
+module Ruby::Prism
   class RegularExpressionEncodingTest < TestCase
     each_encoding do |encoding, _|
       define_method(:"test_regular_expression_encoding_flags_#{encoding.name}") do
@@ -58,7 +58,7 @@ module Prism
           end
 
         actual =
-          Prism.parse(source).then do |result|
+          Ruby::Prism.parse(source).then do |result|
             if result.success?
               regexp = result.statement
 
