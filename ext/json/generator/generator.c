@@ -1135,13 +1135,28 @@ static void generate_json_true(FBuffer *buffer, struct generate_json_data *data,
     fbuffer_append(buffer, "true", 4);
 }
 
+static void generate_json_rfc8785_number(FBuffer *buffer, VALUE obj)
+{
+    VALUE str = rb_proc_call_with_block(rfc8785_number_formatter_proc, 1, &obj, Qnil);
+    Check_Type(str, T_STRING);
+    fbuffer_append_str(buffer, str);
+}
+
 static void generate_json_fixnum(FBuffer *buffer, struct generate_json_data *data, VALUE obj)
 {
+    if (RB_UNLIKELY(data->state->rfc8785)) {
+        generate_json_rfc8785_number(buffer, obj);
+        return;
+    }
     fbuffer_append_long(buffer, FIX2LONG(obj));
 }
 
 static void generate_json_bignum(FBuffer *buffer, struct generate_json_data *data, VALUE obj)
 {
+    if (RB_UNLIKELY(data->state->rfc8785)) {
+        generate_json_rfc8785_number(buffer, obj);
+        return;
+    }
     VALUE tmp = rb_funcall(obj, i_to_s, 0);
     fbuffer_append_str(buffer, StringValue(tmp));
 }
@@ -1171,9 +1186,7 @@ static void generate_json_float(FBuffer *buffer, struct generate_json_data *data
     }
 
     if (RB_UNLIKELY(data->state->rfc8785)) {
-        VALUE str = rb_proc_call_with_block(rfc8785_number_formatter_proc, 1, &obj, Qnil);
-        Check_Type(str, T_STRING);
-        fbuffer_append_str(buffer, str);
+        generate_json_rfc8785_number(buffer, obj);
         return;
     }
 

@@ -416,6 +416,8 @@ require 'json/common'
 #   order, allowing for arbitrary sort orders.
 # - Option +rfc8785+ (boolean) controls whether the generated JSON will be canonicalized
 #   as defined in RFC8785.
+#   Integers are converted to Float before formatting and may be rounded.
+#   Integers outside the finite Float range raise JSON::GeneratorError.
 #
 # In this example, +obj+ is used first to generate the shortest
 # \JSON data (no whitespace), then again with all formatting options

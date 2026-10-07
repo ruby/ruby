@@ -60,6 +60,12 @@ module JSON
 
     # Directly lifted from Gregg Kellogg's json-canonicalization
     generator::State.rfc8785_number_formatter_proc = shareable_lambda(->(num) {
+      if Integer === num
+        if num > Float::MAX || num < -Float::MAX
+          raise GeneratorError.new("Integer out of range for RFC 8785", num)
+        end
+        num = num.to_f
+      end
       if num.zero?
         "0"
       else

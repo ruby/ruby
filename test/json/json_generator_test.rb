@@ -1283,6 +1283,48 @@ class JSONGeneratorTest < Test::Unit::TestCase
     $VERBOSE = verbose
   end
 
+  {
+    0 => '0',
+    1 => '1',
+    2**53 - 1 => '9007199254740991',
+    2**53 => '9007199254740992',
+    2**53 + 1 => '9007199254740992',
+    2**53 + 3 => '9007199254740996',
+    2**63 - 1 => '9223372036854776000',
+    2**68 => '295147905179352830000',
+    10**20 => '100000000000000000000',
+    10**21 => '1e+21',
+    Float::MAX.to_i => '1.7976931348623157e+308',
+  }.each do |integer, expected|
+    define_method("test_rfc8785_integer_#{integer}") do
+      [1, -1].each do |sign|
+        number = sign * integer
+        json = sign < 0 && integer != 0 ? "-#{expected}" : expected
+        assert_rfc8785 json, number
+        assert_rfc8785 %({"n":[#{json}]}), { 'n' => [number] }
+        assert_equal json, number.to_json(rfc8785: true)
+        assert_equal json, JSON.generate(number, rfc8785: true, max_nesting: false)
+        assert_equal json, JSON::Coder.new(rfc8785: true).dump(number)
+        io = StringIO.new
+        JSON.dump(number, io, rfc8785: true)
+        assert_equal json, io.string
+        assert_equal number.to_s, JSON.generate(number)
+      end
+    end
+  end
+
+  def test_rfc8785_rejects_out_of_range_integers
+    [Float::MAX.to_i + 1, 10**400].each do |integer|
+      [integer, -integer].each do |number|
+        error = assert_raise(JSON::GeneratorError) { JSON.generate(number, rfc8785: true) }
+        assert_same number, error.invalid_object
+        assert_equal 'Integer out of range for RFC 8785', error.message
+        assert_raise(JSON::GeneratorError) { JSON.dump([number], rfc8785: true) }
+        assert_equal number.to_s, JSON.generate(number)
+      end
+    end
+  end
+
   def test_rfc8785_numbers
     assert_rfc8785 '-9007199254740992', -9007199254740992
     assert_rfc8785 '0', 0
