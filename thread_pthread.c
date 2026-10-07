@@ -1482,27 +1482,31 @@ rb_thread_prevent_fork(void *(*func)(void *), void *data)
 }
 
 static void
-join_exiting_thread(const pthread_t *replacement)
+join_exiting_thread(pthread_t thread)
 {
-    rb_native_mutex_lock(&exiting_thread_lock);
-    bool registered = exiting_thread_registered;
-    pthread_t thread = exiting_thread;
-    if (replacement) exiting_thread = *replacement;
-    exiting_thread_registered = replacement != NULL;
-    rb_native_mutex_unlock(&exiting_thread_lock);
-
     int r;
-    if (registered && (r = pthread_join(thread, NULL))) {
+    if ((r = pthread_join(thread, NULL))) {
         rb_bug_errno("pthread_join", r);
     }
 }
 
-// called within rb_thread_prevent_fork() by a thread that exits right after
+// Called within rb_thread_prevent_fork() by a joinable thread, as the last
+// thing it does before it exits. The thread takes the place of the thread
+// registered before it and joins that one, so this can wait for it to exit.
+// The calling thread is joined by the next thread to register, or by fork.
 void
 rb_thread_register_exiting(void)
 {
     pthread_t self = pthread_self();
-    join_exiting_thread(&self);
+
+    rb_native_mutex_lock(&exiting_thread_lock);
+    bool registered = exiting_thread_registered;
+    pthread_t thread = exiting_thread;
+    exiting_thread = self;
+    exiting_thread_registered = true;
+    rb_native_mutex_unlock(&exiting_thread_lock);
+
+    if (registered) join_exiting_thread(thread);
 }
 
 void
@@ -1513,9 +1517,14 @@ rb_thread_acquire_fork_lock(void)
         rb_bug_errno("pthread_rwlock_wrlock", r);
     }
 
-    // A thread can still be exiting after it releases the fork lock, and
-    // glibc's thread exit takes resolver locks that fork does not reset.
-    join_exiting_thread(NULL);
+    // A registered thread can still be exiting after it releases the fork
+    // lock, and glibc's thread exit takes the resolver configuration lock,
+    // which fork does not reset. Threads register only inside
+    // rb_thread_prevent_fork(), so none can while this lock is held.
+    if (exiting_thread_registered) {
+        exiting_thread_registered = false;
+        join_exiting_thread(exiting_thread);
+    }
 }
 
 // thread internal event hooks (only for pthread)

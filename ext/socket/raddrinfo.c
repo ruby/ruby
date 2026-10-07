@@ -498,6 +498,8 @@ cancel_getaddrinfo(void *ptr)
     rb_nativethread_lock_unlock(&arg->lock);
 }
 
+// A thread created with detached == false must call rb_thread_register_exiting()
+// before it exits, or it is never joined.
 int
 raddrinfo_pthread_create(pthread_t *th, void *(*start_routine) (void *), void *arg, int detached)
 {
