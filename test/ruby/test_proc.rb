@@ -512,6 +512,12 @@ class TestProc < Test::Unit::TestCase
     RUBY
   end
 
+  def test_dup_curry_proc
+    pr = proc {|a, b| a + b }.curry.dup
+    assert_equal(3, pr.call(1).call(2))
+    assert_equal(3, pr.call(1, 2))
+  end
+
   module RefinementsModule
     refine String do
       def shout = upcase + "!"
