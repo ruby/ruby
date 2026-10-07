@@ -1845,7 +1845,7 @@ rb_gc_obj_free(void *objspace, VALUE obj)
             while (variant) {
                 struct rb_regexp_variant *next = variant->next;
                 onig_free_body(&variant->reg);
-                xfree(variant);
+                SIZED_FREE(variant);
                 variant = next;
             }
             RB_DEBUG_COUNTER_INC(obj_regexp_ptr);
