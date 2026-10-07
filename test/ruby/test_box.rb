@@ -1474,7 +1474,7 @@ class TestBox < Test::Unit::TestCase
   def test_loading_extension_libs_in_main_box_1
     assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true, timeout: 60)
     begin;
-      require "prism"
+      require "ruby/prism"
       require "optparse"
       require "date"
       require "time"
