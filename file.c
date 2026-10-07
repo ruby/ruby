@@ -795,16 +795,22 @@ rb_stat_ino(VALUE self)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     stat.mode   -> integer
+ *    mode -> integer
  *
- *  Returns an integer representing the permission bits of
- *  <i>stat</i>. The meaning of the bits is platform dependent; on
- *  Unix systems, see <code>stat(2)</code>.
+ *  Returns an integer representing the permissions of the entry
+ *  in the [snapshot](rdoc-ref:File::Stat@Snapshot) in `self`;
+ *  see [Filesystem Modes](rdoc-ref:file/filesystem_modes.md).
  *
- *     File.chmod(0644, "testfile")   #=> 1
- *     s = File.stat("testfile")
- *     sprintf("%o", s.mode)          #=> "100644"
+ *  The integer is most usefully formatted as six octal digits:
+ *
+ *  ```ruby
+ *  '%06o' % File.stat('/etc').mode        # => "040755"
+ *  '%06o' % File.stat('/etc/passwd').mode # => "100644"
+ *  ```
+ *
  */
 
 static VALUE
