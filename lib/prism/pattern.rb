@@ -175,7 +175,7 @@ module Prism
     def compile_constant_path_node(node) # :nodoc:
       parent = node.parent
 
-      if parent.is_a?(ConstantReadNode) && parent.slice == "Prism"
+      if (parent.is_a?(ConstantReadNode) || parent.is_a?(ConstantPathNode)) && parent.slice == Prism.name
         name = node.name
         raise CompilationError, node.inspect if name.nil?
 
