@@ -39,9 +39,9 @@ struct queue_sleep_arg {
 #define MUTEX_ALLOW_TRAP FL_USER1
 
 static void
-sync_wakeup(struct ccan_list_head *head, long max)
+sync_wakeup(struct ccan_list_head *head, rb_len_t max)
 {
-    RUBY_DEBUG_LOG("max:%ld", max);
+    RUBY_DEBUG_LOG("max:%"PRIdLEN, max);
 
     struct sync_waiter *cur = 0, *next;
 
@@ -663,9 +663,9 @@ rb_mutex_allow_trap(VALUE self, int val)
 struct rb_queue {
     struct ccan_list_head waitq;
     rb_serial_t fork_gen;
-    long capa;
-    long len;
-    long offset;
+    rb_len_t capa;
+    rb_len_t len;
+    rb_len_t offset;
     VALUE *buffer;
     int num_waiting;
 };
@@ -677,7 +677,7 @@ struct rb_szqueue {
     struct rb_queue q;
     int num_waiting_push;
     struct ccan_list_head pushq;
-    long max;
+    rb_len_t max;
 };
 
 static void
@@ -685,7 +685,7 @@ queue_mark_and_move(void *ptr)
 {
     struct rb_queue *q = ptr;
     /* no need to mark threads in waitq, they are on stack */
-    for (long index = 0; index < q->len; index++) {
+    for (rb_len_t index = 0; index < q->len; index++) {
         rb_gc_mark_and_move(&q->buffer[((q->offset + index) % q->capa)]);
     }
 }
@@ -894,7 +894,7 @@ queue_closed_result(VALUE self, struct rb_queue *q)
 #define QUEUE_INITIAL_CAPA 8
 
 static inline void
-ring_buffer_init(struct rb_queue *q, long initial_capa)
+ring_buffer_init(struct rb_queue *q, rb_len_t initial_capa)
 {
     q->buffer = ALLOC_N(VALUE, initial_capa);
     q->capa = initial_capa;
@@ -921,7 +921,7 @@ ring_buffer_push(VALUE self, struct rb_queue *q, VALUE obj)
         ring_buffer_expand(q);
     }
     RUBY_ASSERT(q->capa > q->len);
-    long index = (q->offset + q->len) % q->capa;
+    rb_len_t index = (q->offset + q->len) % q->capa;
     q->len++;
     RB_OBJ_WRITE(self, &q->buffer[index], obj);
 }
@@ -954,8 +954,8 @@ queue_initialize(rb_execution_context_t *ec, VALUE self, VALUE initial)
     }
     else {
         initial = rb_to_array(initial);
-        long len = RARRAY_LEN(initial);
-        long initial_capa = QUEUE_INITIAL_CAPA;
+        rb_len_t len = RARRAY_LEN(initial);
+        rb_len_t initial_capa = QUEUE_INITIAL_CAPA;
         while (initial_capa < len) {
             initial_capa *= 2;
         }
@@ -1079,7 +1079,7 @@ queue_clear(struct rb_queue *q)
 static VALUE
 szqueue_initialize(rb_execution_context_t *ec, VALUE self, VALUE vmax)
 {
-    long max = NUM2LONG(vmax);
+    rb_len_t max = NUM2LEN(vmax);
     struct rb_szqueue *sq = raw_szqueue_ptr(self);
 
     if (max <= 0) {
