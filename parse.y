@@ -2051,8 +2051,14 @@ rb_parser_encoding_string_new(rb_parser_t *p, const char *ptr, long len, rb_enco
 rb_parser_string_t *
 rb_str_to_parser_string(rb_parser_t *p, VALUE str)
 {
+#if SIZEOF_RB_LEN_T > SIZEOF_LONG
+    /* rb_parser_string_t holds its length as a long. */
+    if (RSTRING_LEN(str) > LONG_MAX) {
+        rb_raise(rb_eArgError, "string size too big");
+    }
+#endif
     /* Type check */
-    rb_parser_string_t *ret = rb_parser_encoding_string_new(p, RSTRING_PTR(str), RSTRING_LEN(str), rb_enc_get(str));
+    rb_parser_string_t *ret = rb_parser_encoding_string_new(p, RSTRING_PTR(str), (long)RSTRING_LEN(str), rb_enc_get(str));
     RB_GC_GUARD(str);
     return ret;
 }
