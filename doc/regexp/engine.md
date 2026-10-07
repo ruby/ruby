@@ -70,6 +70,10 @@ engine can become the default or Onigmo can be removed.
 2. **Minimum rustc.** The crate uses edition 2024 (rustc 1.85.0) like ZJIT,
    while YJIT still builds with 1.58.0. Once Onigmo is removed, 1.85.0
    becomes the minimum for every Ruby build, which distributions must ship.
+   RHEL 8.10, 9.8 and 10.2 have 1.92.0 in AppStream, but outside the
+   "Development Tools" group, so building Ruby there needs one more package.
+   Rust Toolset moves with each minor release (from 1.75 to 1.92 during
+   8.10), so a system pinned to an older one may lack 1.85.
 3. **Two regexp parsers already exist.** Prism parses regexp literals with
    its own `prism/regexp.c` to extract named captures and to report syntax
    errors with copies of Onigmo's messages, while `prism_compile.c` still
