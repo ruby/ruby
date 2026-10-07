@@ -29,7 +29,7 @@ def syntax_tree_returns_prism_node
   receiver = -> {}
   if receiver.respond_to?(:syntax_tree)
     node = receiver.syntax_tree
-    defined?(Prism) && node.is_a?(Prism::Node)
+    defined?(Prism) && node.is_a?(Ruby::Prism::Node)
   else
     true
   end
@@ -98,7 +98,7 @@ def capture_backtrace_location_source_range(marked_source, prism_class, frame: 0
   source_range_values(range).should == expected
 
   # Check the Prism node at that location is the one we expect
-  expected_class_name = "Prism::#{prism_class or raise "prism_class must be passed"}"
+  expected_class_name = "Ruby::Prism::#{prism_class or raise "prism_class must be passed"}"
 
   # Also check #syntax_tree is consistent
   if location.respond_to?(:syntax_tree) && syntax_tree_returns_prism_node

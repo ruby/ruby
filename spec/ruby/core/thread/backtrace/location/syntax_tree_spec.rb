@@ -12,7 +12,7 @@ ruby_version_is "4.1" do
     it "returns a CallNode for the first location from caller_locations" do
       node = -> { caller_locations(0, 1)[0] }.call.syntax_tree
       node.start_line.should == __LINE__ - 1
-      node.should.is_a?(Prism::CallNode)
+      node.should.is_a?(Ruby::Prism::CallNode)
       node.name.should == :caller_locations
     end
   end
