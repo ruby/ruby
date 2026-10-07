@@ -1325,6 +1325,62 @@ class JSONGeneratorTest < Test::Unit::TestCase
     end
   end
 
+  {
+    indent: ' ', space: ' ', space_before: ' ', object_nl: "\n", array_nl: "\n",
+    ascii_only: true, script_safe: true, allow_nan: true,
+  }.each do |option, value|
+    define_method("test_rfc8785_rejects_#{option}") do
+      options = { rfc8785: true, option => value }
+      error = assert_raise(ArgumentError) { JSON.generate({ 'a' => [1] }, options) }
+      assert_equal "#{option} cannot be used with rfc8785", error.message
+      assert_raise(ArgumentError) { JSON.generate(nil, options.to_a.reverse.to_h) }
+      assert_raise(ArgumentError) { [1].to_json(options) }
+      assert_raise(ArgumentError) { { 'a' => 1 }.to_json(options) }
+      assert_raise(ArgumentError) { JSON::Coder.new(**options).dump([1]) }
+
+      state = JSON::State.new(option => value)
+      state.rfc8785 = true
+      io = StringIO.new
+      assert_raise(ArgumentError) { state.generate([1], io) }
+      assert_equal '', io.string
+      assert_raise(ArgumentError) { [1].to_json(state) }
+      assert_equal 0, state.depth
+      assert_raise(ArgumentError) { state.freeze.generate([1]) }
+    end
+  end
+
+  def test_rfc8785_accepts_disabled_options
+    options = { rfc8785: true, indent: '', space: '', space_before: '',
+                object_nl: '', array_nl: '', ascii_only: false,
+                script_safe: false, allow_nan: false }
+    assert_equal '["é/",1]', JSON.generate(['é/', 1], options)
+  end
+
+  def test_rfc8785_rejects_pretty_generation
+    assert_raise(ArgumentError) { JSON.pretty_generate({ 'a' => 1 }, rfc8785: true) }
+  end
+
+  def test_rfc8785_dump_disables_allow_nan_by_default
+    assert_equal '[1]', JSON.dump([1], rfc8785: true)
+    [Float::NAN, Float::INFINITY, -Float::INFINITY].each do |number|
+      assert_raise(JSON::GeneratorError) { JSON.dump([number], rfc8785: true) }
+    end
+    assert_raise(ArgumentError) { JSON.dump([1], rfc8785: true, allow_nan: true) }
+  end
+
+  def test_rfc8785_fragments
+    fragment = JSON::Fragment.new('[1,2]')
+    assert_rfc8785 '[1,2]', fragment
+    assert_rfc8785 '[[1,2]]', [fragment]
+    assert_rfc8785 '{"a":[1,2]}', { 'a' => fragment }
+    assert_equal '[[1,2]]', JSON.generate([fragment], rfc8785: true, max_nesting: false)
+    assert_equal '[1,2]', JSON::Coder.new(rfc8785: true).dump(fragment)
+    assert_equal '[1,2]', fragment.to_json(rfc8785: true)
+
+    # Fragment contents are the caller's responsibility and are inserted as is.
+    assert_rfc8785 '[1, 2]', JSON::Fragment.new('[1, 2]')
+  end
+
   def test_rfc8785_numbers
     assert_rfc8785 '-9007199254740992', -9007199254740992
     assert_rfc8785 '0', 0

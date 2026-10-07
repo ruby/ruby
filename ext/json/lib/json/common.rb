@@ -763,7 +763,7 @@ module JSON
     end
 
     opts = {
-      allow_nan: true,
+      allow_nan: !(kwargs && kwargs[:rfc8785]),
     }
     opts[:max_nesting] = _deprecated_limit if _deprecated_limit
     opts.merge!(kwargs) if kwargs

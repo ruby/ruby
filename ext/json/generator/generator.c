@@ -1307,10 +1307,28 @@ static void generate_json_no_fallback(FBuffer *buffer, struct generate_json_data
     generate_json_general(buffer, data, obj, false);
 }
 
+static void validate_rfc8785(JSON_Generator_State *state)
+{
+    if (!state->rfc8785) return;
+
+    const char *option = state->indent ? "indent" :
+        state->space ? "space" :
+        state->space_before ? "space_before" :
+        state->object_nl ? "object_nl" :
+        state->array_nl ? "array_nl" :
+        state->ascii_only ? "ascii_only" :
+        state->script_safe ? "script_safe" :
+        state->allow_nan ? "allow_nan" : NULL;
+    if (option) {
+        rb_raise(rb_eArgError, "%s cannot be used with rfc8785", option);
+    }
+}
+
 static VALUE generate_json_try(VALUE d)
 {
     struct generate_json_data *data = (struct generate_json_data *)d;
 
+    validate_rfc8785(data->state);
     data->func(data->buffer, data, data->obj);
 
     return fbuffer_finalize(data->buffer);
@@ -1990,6 +2008,7 @@ static void configure_state(JSON_Generator_State *state, VALUE vstate, VALUE con
     rb_hash_foreach(config, configure_state_i, (VALUE)&data);
 
     raise_argument_error_on_unknown_keywords(data.unknown_keywords);
+    validate_rfc8785(state);
 }
 
 static VALUE cState_configure(VALUE self, VALUE opts)

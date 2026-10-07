@@ -418,6 +418,10 @@ require 'json/common'
 #   as defined in RFC8785.
 #   Integers are converted to Float before formatting and may be rounded.
 #   Integers outside the finite Float range raise JSON::GeneratorError.
+#   Nonempty +indent+, +space+, +space_before+, +object_nl+, or +array_nl+,
+#   and enabled +ascii_only+, +script_safe+, or +allow_nan+ raise ArgumentError.
+#   JSON.dump defaults +allow_nan+ to +false+ when +rfc8785+ is enabled.
+#   JSON::Fragment contents are inserted as is; the caller must ensure they are canonical.
 #
 # In this example, +obj+ is used first to generate the shortest
 # \JSON data (no whitespace), then again with all formatting options
