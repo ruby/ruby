@@ -12946,11 +12946,11 @@ ibf_dump_write_byte(struct ibf_dump *dump, unsigned char byte)
 }
 
 static void
-ibf_dump_overwrite(struct ibf_dump *dump, void *buff, unsigned int size, long offset)
+ibf_dump_overwrite(struct ibf_dump *dump, void *buff, unsigned int size, rb_len_t offset)
 {
     VALUE str = dump->current_buffer->str;
     char *ptr = RSTRING_PTR(str);
-    if ((unsigned long)(size + offset) > (unsigned long)RSTRING_LEN(str))
+    if ((rb_ulen_t)(size + offset) > (rb_ulen_t)RSTRING_LEN(str))
         rb_bug("ibf_dump_overwrite: overflow");
     memcpy(ptr + offset, buff, size);
 }
