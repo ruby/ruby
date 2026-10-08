@@ -200,6 +200,7 @@ Gem::Specification.new do |spec|
     "sig/generated/prism/parse_result/comments.rbs",
     "sig/generated/prism/parse_result/errors.rbs",
     "sig/generated/prism/parse_result/newlines.rbs",
+    "sig/manifest.yaml",
     "src/arena.c",
     "src/buffer.c",
     "src/char.c",
