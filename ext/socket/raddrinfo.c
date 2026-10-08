@@ -498,9 +498,9 @@ cancel_getaddrinfo(void *ptr)
     rb_nativethread_lock_unlock(&arg->lock);
 }
 
-// Unless detached, start_routine must call rb_thread_register_exiting(), or the thread is never joined.
+// start_routine must call rb_thread_register_exiting(), or the thread is never joined.
 int
-raddrinfo_pthread_create(pthread_t *th, void *(*start_routine) (void *), void *arg, int detached)
+raddrinfo_pthread_create(pthread_t *th, void *(*start_routine) (void *), void *arg)
 {
     int limit = 3, ret;
     int saved_errno;
@@ -519,7 +519,7 @@ retry_attr_init:
         }
         return err;
     }
-    if ((err = pthread_attr_setdetachstate(attr_p, detached ? PTHREAD_CREATE_DETACHED : PTHREAD_CREATE_JOINABLE)) != 0) {
+    if ((err = pthread_attr_setdetachstate(attr_p, PTHREAD_CREATE_JOINABLE)) != 0) {
         saved_errno = errno;
         pthread_attr_destroy(attr_p);
         errno = saved_errno;
@@ -540,10 +540,6 @@ retry_attr_init:
     pthread_attr_destroy(attr_p);
     if (ret != 0) {
         errno = saved_errno;
-    }
-#else
-    if (ret == 0 && detached) {
-        pthread_detach(*th); // this can race with shutdown routine of thread in some glibc versions
     }
 #endif
     return ret;
@@ -571,7 +567,7 @@ start:
     }
 
     pthread_t th;
-    if (raddrinfo_pthread_create(&th, fork_safe_do_getaddrinfo, arg, false) != 0) {
+    if (raddrinfo_pthread_create(&th, fork_safe_do_getaddrinfo, arg) != 0) {
         int err = errno;
         free_getaddrinfo_arg(arg);
         errno = err;
@@ -825,7 +821,7 @@ start:
     }
 
     pthread_t th;
-    if (raddrinfo_pthread_create(&th, fork_safe_do_getnameinfo, arg, false) != 0) {
+    if (raddrinfo_pthread_create(&th, fork_safe_do_getnameinfo, arg) != 0) {
         int err = errno;
         free_getnameinfo_arg(arg);
         errno = err;
