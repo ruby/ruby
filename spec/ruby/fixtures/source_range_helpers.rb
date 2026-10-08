@@ -29,7 +29,7 @@ def syntax_tree_returns_prism_node
   receiver = -> {}
   if receiver.respond_to?(:syntax_tree)
     node = receiver.syntax_tree
-    defined?(Prism) && node.is_a?(Ruby::Prism::Node)
+    defined?(Ruby::Prism) && node.is_a?(Ruby::Prism::Node)
   else
     true
   end
