@@ -96,7 +96,7 @@ GC_IMPL_FN bool rb_gc_impl_zjit_new_obj_fastpath(void *objspace_ptr, size_t allo
  * this word is zero, so only implementations whose write barrier is a no-op
  * under exactly those conditions may return non-NULL.
  */
-GC_IMPL_FN const uintptr_t *rb_gc_impl_zjit_incremental_marking_ptr(void *objspace_ptr);
+GC_IMPL_FN const uintptr_t *rb_gc_impl_zjit_writebarrier_required_p_ptr(void *objspace_ptr);
 GC_IMPL_FN size_t rb_gc_impl_obj_slot_size(VALUE obj);
 GC_IMPL_FN size_t rb_gc_impl_size_slot_size(void *objspace_ptr, size_t size);
 GC_IMPL_FN bool rb_gc_impl_size_allocatable_p(size_t size);

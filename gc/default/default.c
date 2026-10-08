@@ -1542,7 +1542,7 @@ total_final_slots_count(rb_objspace_t *objspace)
 #define will_be_incremental_marking(objspace) ((objspace)->rgengc.need_major_gc != GPR_FLAG_NONE)
 
 /* Mirrors flags.during_incremental_marking so that ZJIT-generated code can
- * read it (a bitfield has no address); see rb_gc_impl_zjit_incremental_marking_ptr.
+ * read it (a bitfield has no address); see rb_gc_impl_zjit_writebarrier_required_p_ptr.
  * Only transitions write to it: incremental marking requires a single objspace,
  * so a redundant FALSE store from another objspace's GC entry must not clobber
  * the marking objspace's TRUE. Written inside GC while mutators are stopped;
@@ -3477,7 +3477,7 @@ rb_gc_impl_zjit_new_obj_fastpath(void *objspace_ptr, size_t alloc_size, VALUE fl
 }
 
 const uintptr_t *
-rb_gc_impl_zjit_incremental_marking_ptr(void *objspace_ptr)
+rb_gc_impl_zjit_writebarrier_required_p_ptr(void *objspace_ptr)
 {
     return &zjit_during_incremental_marking;
 }

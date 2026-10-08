@@ -4146,9 +4146,9 @@ rb_gc_zjit_new_obj_fastpath(size_t alloc_size, VALUE flags, VALUE klass, struct 
 }
 
 const uintptr_t *
-rb_gc_zjit_incremental_marking_ptr(void)
+rb_gc_zjit_writebarrier_required_p_ptr(void)
 {
-    return rb_gc_impl_zjit_incremental_marking_ptr(rb_gc_get_objspace());
+    return rb_gc_impl_zjit_writebarrier_required_p_ptr(rb_gc_get_objspace());
 }
 
 /*
