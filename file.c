@@ -1315,36 +1315,47 @@ rb_stat_birthtime(VALUE self)
  * here we split the returned strings for readability:
  *
  * ```ruby
- * File.stat('/etc/passwd').inspect.split(', ')
- * # =>
- * ["#<File::Stat dev=0x10302",
- *  "ino=11141413",
- *  "mode=0100644",
- *  "nlink=1",
- *  "uid=0",
- *  "gid=0",
- *  "rdev=0x0",
- *  "size=3092",
- *  "blksize=4096",
- *  "blocks=8",
- *  "atime=2026-10-07 11:25:01.307589569 -0500",
- *  "mtime=2025-06-10 11:10:47.358999941 -0500",
- *  "ctime=2025-06-10 11:10:47.38899994 -0500>"]
- * File.stat('/etc').inspect.split(', ')
- * # =>
- * ["#<File::Stat dev=0x10302",
- *  "ino=11141121",
- *  "mode=040755",
- *  "nlink=143",
- *  "uid=0",
- *  "gid=0",
- *  "rdev=0x0",
- *  "size=12288",
- *  "blksize=4096",
- *  "blocks=24",
- *  "atime=2026-10-04 14:29:46.907775905 -0500",
- *  "mtime=2026-10-07 06:13:35.116915307 -0500",
- *  "ctime=2026-10-07 06:13:35.116915307 -0500>"]
+ *  puts File.stat('/etc/passwd').inspect.split(', ')
+ * ```
+ *
+ * Output:
+ *
+ * ```text
+ * #<File::Stat dev=0x10302
+ * ino=11141413
+ * mode=0100644
+ * nlink=1
+ * uid=0
+ * gid=0
+ * rdev=0x0
+ * size=3092
+ * blksize=4096
+ * blocks=8
+ * atime=2026-10-07 11:25:01.307589569 -0500
+ * mtime=2025-06-10 11:10:47.358999941 -0500
+ * ctime=2025-06-10 11:10:47.38899994 -0500>
+ * ```
+ *
+ * ```ruby
+ * puts File.stat('/etc').inspect.split(', ')
+ * ```
+ *
+ * Output:
+ *
+ * ```text
+ * #<File::Stat dev=0x10302
+ * ino=11141121
+ * mode=040755
+ * nlink=143
+ * uid=0
+ * gid=0
+ * rdev=0x0
+ * size=12288
+ * blksize=4096
+ * blocks=24
+ * atime=2026-10-04 14:29:46.907775905 -0500
+ * mtime=2026-10-07 06:13:35.116915307 -0500
+ * ctime=2026-10-07 06:13:35.116915307 -0500>
  * ```
  *
  */
