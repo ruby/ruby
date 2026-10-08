@@ -770,6 +770,12 @@ static void vstate_spill(struct generate_json_data *data)
     RB_OBJ_WRITTEN(vstate, Qundef, state->sort_keys);
 }
 
+static inline VALUE json_to_s(VALUE obj)
+{
+    VALUE tmp = rb_funcall(obj, i_to_s, 0);
+    return StringValue(tmp);
+}
+
 static inline VALUE json_call_to_json(struct generate_json_data *data, VALUE obj)
 {
     if (RB_UNLIKELY(!data->vstate)) {
@@ -865,7 +871,12 @@ NOINLINE(static) VALUE convert_invalid_encoding(struct generate_json_data *data,
         }
     }
 
-    return rb_rescue(encode_json_string_try, str, encode_json_string_rescue, str);
+    str = rb_rescue(encode_json_string_try, str, encode_json_string_rescue, str);
+    Check_Type(str, T_STRING);
+    if (!valid_json_string_p(str)) {
+        raise_generator_error(str, "source sequence is illegal/malformed utf-8");
+    }
+    return str;
 }
 
 ALWAYS_INLINE(static) VALUE ensure_valid_encoding(struct generate_json_data *data, VALUE str, bool as_json_called, bool is_key)
@@ -1114,9 +1125,7 @@ static void generate_json_fallback(FBuffer *buffer, struct generate_json_data *d
         Check_Type(tmp, T_STRING);
         fbuffer_append_str(buffer, tmp);
     } else {
-        tmp = rb_funcall(obj, i_to_s, 0);
-        Check_Type(tmp, T_STRING);
-        generate_json_string(buffer, data, tmp);
+        generate_json_string(buffer, data, json_to_s(obj));
     }
 }
 
@@ -1157,8 +1166,7 @@ static void generate_json_bignum(FBuffer *buffer, struct generate_json_data *dat
         generate_json_rfc8785_number(buffer, obj);
         return;
     }
-    VALUE tmp = rb_funcall(obj, i_to_s, 0);
-    fbuffer_append_str(buffer, StringValue(tmp));
+    fbuffer_append_str(buffer, json_to_s(obj));
 }
 
 static void generate_json_float(FBuffer *buffer, struct generate_json_data *data, VALUE obj)
@@ -1177,11 +1185,10 @@ static void generate_json_float(FBuffer *buffer, struct generate_json_data *data
                     return;
                 }
             }
-            raise_generator_error(obj, "%"PRIsVALUE" not allowed in JSON", rb_funcall(obj, i_to_s, 0));
+            raise_generator_error(obj, "%"PRIsVALUE" not allowed in JSON", json_to_s(obj));
         }
 
-        VALUE tmp = rb_funcall(obj, i_to_s, 0);
-        fbuffer_append_str(buffer, tmp);
+        fbuffer_append_str(buffer, json_to_s(obj));
         return;
     }
 

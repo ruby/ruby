@@ -1223,6 +1223,38 @@ class JSONGeneratorTest < Test::Unit::TestCase
     end
   end
 
+  def test_adversary_encode
+    fake_string = Class.new(String) do
+      def to_s
+        self
+      end
+
+      def encode(*)
+        42
+      end
+    end
+
+    assert_raise TypeError, JSON::GeneratorError do
+      JSON.generate({fake_string.new("\xff".b) => 1})
+    end
+
+    no_to_json = Class.new do
+      undef_method :to_json
+
+      def initialize(str)
+        @str = str
+      end
+
+      def to_s
+        @str
+      end
+    end
+
+    assert_raise TypeError, JSON::GeneratorError do
+      JSON.generate([no_to_json.new(fake_string.new("\xff".b))])
+    end
+  end
+
   # The case when the State is frozen is tested in JSONCoderTest#test_nesting_recovery
   def test_nesting_recovery
     state = JSON::State.new
