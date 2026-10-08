@@ -3431,11 +3431,9 @@ gc_mark_machine_context(const struct rb_gc_mark_ctx *ctx, const rb_execution_con
 }
 
 void
-rb_gc_mark_machine_context(const rb_execution_context_t *ec)
+rb_gc_mark_machine_context_ctx(const struct rb_gc_mark_ctx *ctx, const rb_execution_context_t *ec)
 {
-    const struct rb_gc_mark_ctx ctx = gc_current_mark_ctx();
-
-    gc_mark_machine_context(&ctx, ec);
+    gc_mark_machine_context(ctx, ec);
 }
 
 static int

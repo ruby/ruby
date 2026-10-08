@@ -245,7 +245,7 @@ pub extern "C" fn rb_zjit_mark_all_executable() {
 #[unsafe(no_mangle)]
 pub extern "C" fn rb_zjit_root_mark() {
     // Mark iseq pointers in all JITFrames. JITFrames that are currently on the
-    // stack are also marked via rb_execution_context_mark, but JITFrames not on
+    // stack are also marked via rb_execution_context_mark_ctx, but JITFrames not on
     // the stack still need their iseqs kept alive because JIT code will reuse them.
     if !ZJITState::has_instance() {
         return;

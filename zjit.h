@@ -17,7 +17,7 @@ typedef struct zjit_jit_frame {
     // Program counter for this frame, used for backtraces and GC.
     // NULL for C frames (they don't have a Ruby PC).
     const VALUE *pc;
-    // The ISEQ this frame belongs to. Marked via rb_execution_context_mark.
+    // The ISEQ this frame belongs to. Marked via rb_execution_context_mark_ctx.
     // NULL for C frames.
     const rb_iseq_t *iseq;
     // Whether to materialize block_code when this frame is materialized.
