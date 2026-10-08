@@ -606,7 +606,7 @@ io_buffer_slice_allocate(VALUE klass)
 {
     struct rb_io_buffer_view *buffer;
     VALUE instance = TypedData_Make_Struct(klass, struct rb_io_buffer_view, &rb_io_buffer_type, buffer);
-    buffer->flags = IO_BUFFER_SLICE;
+    buffer->flags = (enum rb_io_buffer_flags)IO_BUFFER_SLICE;
     buffer->source = Qnil;
     return instance;
 }
