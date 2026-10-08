@@ -111,6 +111,7 @@ prism/api_node.$(OBJEXT): $(top_srcdir)/prism/api_node.c
 prism/arena.$(OBJEXT): $(top_srcdir)/prism/arena.c
 prism/buffer.$(OBJEXT): $(top_srcdir)/prism/buffer.c
 prism/char.$(OBJEXT): $(top_srcdir)/prism/char.c
+prism/comments.$(OBJEXT): $(top_srcdir)/prism/comments.c
 prism/constant_pool.$(OBJEXT): $(top_srcdir)/prism/constant_pool.c
 prism/diagnostic.$(OBJEXT): $(top_srcdir)/prism/diagnostic.c
 prism/encoding.$(OBJEXT): $(top_srcdir)/prism/encoding.c

@@ -113,9 +113,6 @@ pm_version(void) {
 #define FL PM_NODE_FLAGS
 #define UP PM_NODE_UPCAST
 
-#define PM_LOCATION_START(location_) ((location_)->start)
-#define PM_LOCATION_END(location_) ((location_)->start + (location_)->length)
-
 #define PM_TOKEN_START(parser_, token_) U32((token_)->start - (parser_)->start)
 #define PM_TOKEN_END(parser_, token_) U32((token_)->end - (parser_)->start)
 #define PM_TOKEN_LENGTH(token_) U32((token_)->end - (token_)->start)
@@ -23002,6 +22999,7 @@ pm_parser_init(pm_arena_t *arena, pm_parser_t *parser, const uint8_t *source, si
         .command_line = 0,
         .parsing_eval = false,
         .partial_script = false,
+        .attach_comments = false,
         .command_start = true,
         .recovering = false,
         .continuable = true,
@@ -23068,6 +23066,9 @@ pm_parser_init(pm_arena_t *arena, pm_parser_t *parser, const uint8_t *source, si
 
         // partial_script
         parser->partial_script = options->partial_script;
+
+        // attach_comments
+        parser->attach_comments = options->attach_comments;
 
         // scopes option
         parser->parsing_eval = options->scopes_count > 0;
@@ -23429,6 +23430,7 @@ pm_node_t *
 pm_parse(pm_parser_t *parser) {
     pm_node_t *node = parse_program(parser);
     pm_parse_continuable(parser);
+    if (parser->attach_comments) pm_comments_attach(parser, node);
     return node;
 }
 

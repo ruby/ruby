@@ -224,6 +224,62 @@ typedef void (*pm_comment_callback_t)(const pm_comment_t *comment, void *data);
 PRISM_EXPORTED_FUNCTION void pm_parser_comments_each(const pm_parser_t *parser, pm_comment_callback_t callback, void *data) PRISM_NONNULL(1);
 
 /**
+ * Returns the number of comments owned by the given node. This is 0 if the
+ * node owns no comments or if the attach_comments option was not set.
+ *
+ * @param parser the parser that produced the node
+ * @param node the node whose comments we want to count
+ * @returns the number of comments owned by the given node
+ */
+PRISM_EXPORTED_FUNCTION uint32_t pm_node_comments_size(const pm_parser_t *parser, const pm_node_t *node) PRISM_NONNULL(1, 2);
+
+/**
+ * Returns the comment at the given index among the comments owned by the given
+ * node, which are ordered by start offset.
+ *
+ * @param parser the parser that produced the node
+ * @param node the node whose comment we want to get
+ * @param index the index of the comment among those owned by the node
+ * @returns the comment at the given index, or NULL if the index is out of range
+ */
+PRISM_EXPORTED_FUNCTION const pm_comment_t * pm_node_comment(const pm_parser_t *parser, const pm_node_t *node, uint32_t index) PRISM_NONNULL(1, 2);
+
+/**
+ * Returns the index, among the comments associated with the given parser, of
+ * the comment at the given index among the comment attachments. The attachments
+ * are every comment, grouped by owning node in order of node id and ordered by
+ * start offset within each node, so there are as many attachments as there are
+ * comments when the attach_comments option is set.
+ *
+ * @param parser the parser whose comment attachments we want to read
+ * @param index the index of the attachment
+ * @returns the index of the comment, or UINT32_MAX if the index is out of range
+ *     or the attach_comments option was not set
+ */
+PRISM_EXPORTED_FUNCTION uint32_t pm_parser_comment_attachment(const pm_parser_t *parser, uint32_t index) PRISM_NONNULL(1);
+
+/**
+ * Returns the number of node ids that have a comment range, which is one more
+ * than the largest id of a node that owns a comment, or 0 if the
+ * attach_comments option was not set or there are no comments.
+ *
+ * @param parser the parser whose comment ranges we want to count
+ * @returns the number of comment ranges
+ */
+PRISM_EXPORTED_FUNCTION uint32_t pm_parser_comment_ranges_size(const pm_parser_t *parser) PRISM_NONNULL(1);
+
+/**
+ * Returns the range of comment attachments owned by the node with the given id.
+ *
+ * @param parser the parser that produced the node
+ * @param node_id the id of the node
+ * @returns the range of attachments owned by the node, whose length is 0 if the
+ *     node owns no comments, the node id is out of range, or the
+ *     attach_comments option was not set
+ */
+PRISM_EXPORTED_FUNCTION pm_comment_range_t pm_parser_comment_range(const pm_parser_t *parser, uint32_t node_id) PRISM_NONNULL(1);
+
+/**
  * Returns the number of magic comments associated with the given parser.
  *
  * @param parser the parser whose magic comments we want to get the size of
