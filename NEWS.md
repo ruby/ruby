@@ -213,7 +213,7 @@ Note: We're only listing outstanding class updates.
       interpreter, i.e., the very parser that compiles the running program,
       independent of the prism gem.  It is autoloaded.
       `Method#syntax_tree` and others return its nodes.  Its API may change
-      between Ruby minor versions; use the prism gem unless you need the
+      between Ruby minor versions; use the `prism` gem unless you need the
       parser of the running interpreter.  [[Bug #22379]]
 
 ### The following bundled gems are added.
