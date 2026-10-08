@@ -2354,7 +2354,6 @@ class Pathname    # * FileTest *
   # Note that some filesystem settings may cause this method to return `true`
   # even though the entry is not executable by the effective owner/group.
   def executable?() FileTest.executable?(@path) end
-  def executable?() FileTest.executable?(@path) end
 
   # :markup: markdown
   #
