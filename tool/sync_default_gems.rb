@@ -103,6 +103,7 @@ module SyncDefaultGems
       ["lib/net/http", "lib/net/http"],
       ["test/net/http", "test/net/http"],
       ["net-http.gemspec", "lib/net/http/net-http.gemspec"],
+      ["sig", "sig/net-http"],
     ]),
     "net-protocol": repo("ruby/net-protocol", [
       ["lib/net/protocol.rb", "lib/net/protocol.rb"],
@@ -212,8 +213,9 @@ module SyncDefaultGems
       ["include/prism.h", "prism/prism.h"],
       ["config.yml", "prism/config.yml"],
       ["templates", "prism/templates"],
+      ["sig/generated", "sig/prism/generated"],
     ], exclude: [
-      "prism/templates/{javascript,java,rbi,sig}",
+      "prism/templates/{javascript,java,rbi}",
       "test/prism/snapshots_test.rb",
       "test/prism/snapshots",
       "prism/extconf.rb",
