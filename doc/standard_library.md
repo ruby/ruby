@@ -12,7 +12,7 @@ of each.
 - `RbConfig`: Information about your Ruby configuration and build
 - `Gem`: A package management framework for Ruby
 - `Pathname`: Representation of the name of a file or directory on the filesystem. Pathname is a core class, but only methods that depend on other libraries are provided as a library.
-- `Ruby::Prism`: The prism parser built into the interpreter, i.e., the parser that compiles the running program
+- `Ruby::Prism`: The prism parser built into the interpreter, i.e., the parser that parsed the running program
 
 ## Extensions
 

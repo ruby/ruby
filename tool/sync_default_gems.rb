@@ -408,7 +408,7 @@ module SyncDefaultGems
 
   # The upstream prism is written for the `Prism` namespace of the prism gem.
   # In ruby/ruby the same code is built into the interpreter as `Ruby::Prism`
-  # so that it is always the very parser that compiled the running code, no
+  # so that it is always the very parser that parsed the running code, no
   # matter which version of the prism gem is installed.  Rewrite the namespace
   # (and the `prism/...` feature names) of the synced files here, so that the
   # upstream repository does not need to know about the renaming.

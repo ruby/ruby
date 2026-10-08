@@ -1839,7 +1839,7 @@ ruby_opt_init(ruby_cmdline_options_t *opt)
     rb_zjit_init_builtin_cmes();
 #endif
 
-    // Ruby::Prism is the parser that compiles the program; it is not
+    // Ruby::Prism is the parser that parsed the program; it is not
     // exposed when parse.y is selected by --parser.
     if (rb_ruby_prism_p()) {
         rb_prism_init_autoload();
