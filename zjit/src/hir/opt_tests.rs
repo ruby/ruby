@@ -23303,8 +23303,8 @@ mod hir_opt_tests {
         bb3(v8:HeapBasicObject):
           v97:NilClass = Const Value(nil)
           v13:Fixnum[0] = Const Value(0)
-          Jump bb6(v13)
-        bb6(v19:Fixnum):
+          Jump bb6(v8, v13)
+        bb6(v18:HeapBasicObject, v19:Fixnum):
           v23:Fixnum[10] = Const Value(10)
           PatchPoint MethodRedefined(Integer@0x1000, <@0x1008, cme:0x1010)
           v92:BoolExact = FixnumLt v19, v23
@@ -23312,32 +23312,32 @@ mod hir_opt_tests {
           v29:CBool = Test v92
           CondBranch v29, bb4(), bb7()
         bb4():
-          v45:CShape = LoadField v8, :shape_id@0x1038
+          v45:CShape = LoadField v18, :shape_id@0x1038
           v47:CShape[0x1039] = Const CShape(0x1039)
           v48:CBool = IsBitEqual v45, v47
           CondBranch v48, bb9(), bb10()
         bb9():
-          v50:BasicObject = LoadField v8, :@levar@0x103a
+          v50:BasicObject = LoadField v18, :@levar@0x103a
           Jump bb8(v50)
         bb10():
           v52:CShape[0x103b] = GuardBitEquals v45, CShape(0x103b) recompile
           Jump bb8(v97)
         bb8(v46:BasicObject):
           v57:CBool = Test v46
-          CondBranch v57, bb5(), bb12()
+          CondBranch v57, bb5(v18), bb12()
         bb12():
           PatchPoint NoEPEscape(set_value_loop)
-          v66:CShape = LoadField v8, :shape_id@0x1038
+          v66:CShape = LoadField v18, :shape_id@0x1038
           v67:CShape[0x103b] = GuardBitEquals v66, CShape(0x103b) recompile
-          StoreField v8, :@levar@0x103a, v19
-          StoreField v8, :shape_id@0x1038, v47
-          Jump bb5()
-        bb5():
+          StoreField v18, :@levar@0x103a, v19
+          StoreField v18, :shape_id@0x1038, v47
+          Jump bb5(v18)
+        bb5(v74:HeapBasicObject):
           PatchPoint NoEPEscape(set_value_loop)
           v82:Fixnum[1] = Const Value(1)
           PatchPoint MethodRedefined(Integer@0x1000, +@0x103c, cme:0x1040)
           v96:Fixnum = FixnumAdd v19, v82
-          Jump bb6(v96)
+          Jump bb6(v74, v96)
         bb7():
           CheckInterrupts
           Return v97
