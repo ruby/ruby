@@ -2396,7 +2396,6 @@ rb_class_superclass(VALUE klass)
     if (klass == rb_cBasicObject) return Qnil;
 
     if (!superclasses) {
-        RUBY_ASSERT(!RCLASS_SUPER(klass));
         rb_raise(rb_eTypeError, "uninitialized class");
     }
 

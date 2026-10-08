@@ -321,6 +321,8 @@ class TestClass < Test::Unit::TestCase
     assert_raise(TypeError) { Class.allocate.superclass }
     bug6863 = '[ruby-core:47148]'
     assert_raise(TypeError, bug6863) { Class.new(Class.allocate) }
+    bug22341 = '[Bug #22341]'
+    assert_raise(TypeError, bug22341) { Class.allocate.include(Module.new).superclass }
 
     allocator = Class.instance_method(:allocate)
     assert_nothing_raised { allocator.bind(Rational).call }
