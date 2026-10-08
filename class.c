@@ -1354,7 +1354,6 @@ make_metaclass(VALUE klass)
     super = RCLASS_SUPER(klass);
     while (RB_TYPE_P(super, T_ICLASS)) super = RCLASS_SUPER(super);
     class_associate_super(metaclass, super ? ENSURE_EIGENCLASS(super) : rb_cClass, true);
-    rb_class_set_initialized(klass);
 
     // Full class ancestry may not have been filled until we reach here.
     rb_class_update_superclasses(METACLASS_OF(metaclass));
@@ -1489,6 +1488,7 @@ Init_class_hierarchy(void)
     rb_cBasicObject = boot_defclass("BasicObject", 0);
     RCLASS_SET_ALLOCATOR(rb_cBasicObject, rb_class_allocate_instance);
     FL_SET_RAW(rb_cBasicObject, RCLASS_ALLOCATOR_DEFINED);
+    rb_class_set_initialized(rb_cBasicObject);
     RCLASS_SET_EXPECT_NO_IVAR(rb_cBasicObject);
 
     rb_cObject = boot_defclass("Object", rb_cBasicObject);
