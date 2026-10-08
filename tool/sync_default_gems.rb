@@ -421,7 +421,7 @@ module SyncDefaultGems
   end
 
   # We usually don't use this. Please consider using #sync_default_gems_with_commits instead.
-  def sync_default_gems(gem)
+  def sync_default_gems(gem, release: false)
     config = REPOSITORIES[gem]
     puts "Sync #{config.upstream}"
 
@@ -463,9 +463,12 @@ module SyncDefaultGems
     if gem == "rubygems"
       rubygems_do_fixup
     end
-    minimize_dependencies(gem)
-
-    check_prerelease_version(gem)
+    # A released tree is published as is, and may lack paths that the top-level
+    # depend declares for the master tree.
+    unless release
+      minimize_dependencies(gem)
+      check_prerelease_version(gem)
+    end
 
     # Architecture-dependent files must not pollute libdir.
     rm_rf(Dir["lib/**/*.#{RbConfig::CONFIG['DLEXT']}"])
@@ -904,10 +907,11 @@ module SyncDefaultGems
       REPOSITORIES.each_key {|gem| update_default_gems(gem)}
     end
   when "all"
+    release = ARGV[1] == "release"
     REPOSITORIES.each_key do |gem|
       next if ["Onigmo"].include?(gem)
-      update_default_gems(gem, release: true) if ARGV[1] == "release"
-      sync_default_gems(gem)
+      update_default_gems(gem, release: true) if release
+      sync_default_gems(gem, release:)
     end
   when "list"
     ARGV.shift
