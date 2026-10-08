@@ -25,7 +25,7 @@ VALUE rb_ractor_courier_materialize(struct rb_ractor_courier *c);
 void rb_ractor_courier_free(struct rb_ractor_courier *c);
 static void ractor_off_queue_add(rb_ractor_t *cr, struct ractor_basket *b);
 static void ractor_off_queue_remove(struct ractor_basket *b);
-void rb_ractor_courier_mark(struct rb_ractor_courier *c);
+void rb_ractor_courier_mark(const struct rb_gc_mark_ctx *ctx, struct rb_ractor_courier *c);
 struct rb_ractor_courier *rb_ractor_courier_build_copy(VALUE obj, struct rb_ractor_courier **slot);
 
 static void ractor_port_note_alive(const struct ractor_port *rp);
@@ -279,21 +279,21 @@ ractor_basket_none_p(const struct ractor_basket *b)
 #endif
 
 static void
-ractor_basket_mark(const struct ractor_basket *b)
+ractor_basket_mark(const struct rb_gc_mark_ctx *ctx, const struct ractor_basket *b)
 {
     if (b->p.courier != NULL) {
         /* The payload became this Ractor's to root the moment the message was enqueued
          * here: the sender's own roots stop at the send.  Before and after the queue the
          * basket is on its holder's off_queue_baskets instead, so a courier is rooted
          * from the moment it is allocated to the moment it is freed. */
-        rb_ractor_courier_mark(b->p.courier);
+        rb_ractor_courier_mark(ctx, b->p.courier);
     }
     else {
-        rb_gc_mark(b->p.v);
+        rb_gc_mark_ctx(ctx, b->p.v);
     }
 
     /* An exit token names a ractor that may be reachable from nothing else. */
-    rb_gc_mark(b->sender);
+    rb_gc_mark_ctx(ctx, b->sender);
 }
 
 static void
@@ -342,11 +342,11 @@ ractor_off_queue_remove(struct ractor_basket *b)
 }
 
 static void
-ractor_mark_off_queue_baskets(rb_ractor_t *r)
+ractor_mark_off_queue_baskets(const struct rb_gc_mark_ctx *ctx, rb_ractor_t *r)
 {
     struct ractor_basket *b;
     ccan_list_for_each(&r->sync.off_queue_baskets, b, off_queue_node) {
-        ractor_basket_mark(b);
+        ractor_basket_mark(ctx, b);
     }
 }
 
@@ -388,12 +388,12 @@ ractor_port_note_alive(const struct ractor_port *rp)
 }
 
 static void
-ractor_queue_mark(const struct ractor_queue *rq)
+ractor_queue_mark(const struct rb_gc_mark_ctx *ctx, const struct ractor_queue *rq)
 {
     const struct ractor_basket *b;
 
     ccan_list_for_each(&rq->set, b, node) {
-        ractor_basket_mark(b);
+        ractor_basket_mark(ctx, b);
     }
 }
 
@@ -759,11 +759,11 @@ struct ractor_monitor {
  * entry's port, so the monitoring Ractor's struct must outlive r, and its wrapper is
  * what keeps it alive. */
 static void
-ractor_mark_monitors(rb_ractor_t *r)
+ractor_mark_monitors(const struct rb_gc_mark_ctx *ctx, rb_ractor_t *r)
 {
     const struct ractor_monitor *rm;
     ccan_list_for_each(&r->sync.monitors, rm, node) {
-        rb_gc_mark(rm->port.r->pub.self);
+        rb_gc_mark_ctx(ctx, rm->port.r->pub.self);
     }
 }
 
@@ -888,23 +888,23 @@ ractor_mark_ports_i(st_data_t key, st_data_t val, st_data_t data)
 {
     // id -> ractor_queue
     const struct ractor_queue *rq = (struct ractor_queue *)val;
-    ractor_queue_mark(rq);
+    ractor_queue_mark((const struct rb_gc_mark_ctx *)data, rq);
     return ST_CONTINUE;
 }
 
 static void
-ractor_sync_mark(rb_ractor_t *r)
+ractor_sync_mark(const struct rb_gc_mark_ctx *ctx, rb_ractor_t *r)
 {
     /* The owner rewrites the queues, the port table and the monitor list under its sync
      * lock, so only the owner itself or the stopped world may walk them. */
     const bool world_stopped = rb_gc_during_global_gc_p();
     VM_ASSERT(world_stopped || r == rb_current_ractor_raw(false));
 
-    rb_gc_mark(r->sync.default_port_value);
+    rb_gc_mark_ctx(ctx, r->sync.default_port_value);
 
     /* Until the value is absorbed this is its only reliable root (Qundef while the
      * Ractor still runs); after Ractor#value returns it, the Ruby side roots it. */
-    rb_gc_mark(r->sync.legacy);
+    rb_gc_mark_ctx(ctx, r->sync.legacy);
 
     /* ractor_sync_init builds the rest, and a root scan reaches the main Ractor before
      * that: ports is what tells the two apart (the lock and the list heads are still
@@ -914,9 +914,9 @@ ractor_sync_mark(rb_ractor_t *r)
     if (r->sync.ports) {
         if (!world_stopped) RACTOR_LOCK_SELF(r);
         {
-            ractor_queue_mark(r->sync.recv_queue);
-            st_foreach(r->sync.ports, ractor_mark_ports_i, 0);
-            ractor_mark_monitors(r);
+            ractor_queue_mark(ctx, r->sync.recv_queue);
+            st_foreach(r->sync.ports, ractor_mark_ports_i, (st_data_t)ctx);
+            ractor_mark_monitors(ctx, r);
         }
         if (!world_stopped) RACTOR_UNLOCK_SELF(r);
 
@@ -929,7 +929,7 @@ ractor_sync_mark(rb_ractor_t *r)
          * nothing else, so this list has to be a root whenever the queues are.  No sync
          * lock, though: only the owner touches it (the lock above guards the queues,
          * which a foreign sender writes). */
-        ractor_mark_off_queue_baskets(r);
+        ractor_mark_off_queue_baskets(ctx, r);
     }
 }
 
