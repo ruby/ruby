@@ -237,6 +237,7 @@ They are still available on rubygems.org and can be installed with
 * erb 6.1.0
   * 6.0.1 to [v6.0.1.1][erb-v6.0.1.1], [v6.0.2][erb-v6.0.2], [v6.0.3][erb-v6.0.3], [v6.0.4][erb-v6.0.4], [v6.0.5][erb-v6.0.5], [v6.0.6][erb-v6.0.6], [v6.0.7][erb-v6.0.7]
 * error_highlight 0.7.2
+* etc 1.5.0
 * io-console 0.9.4
   * 0.8.2 to [v0.9.0][io-console-v0.9.0], [v0.9.1][io-console-v0.9.1], [v0.9.2][io-console-v0.9.2], [v0.9.3][io-console-v0.9.3], [v0.9.4][io-console-v0.9.4]
 * io-wait 999.999.999
@@ -263,6 +264,7 @@ They are still available on rubygems.org and can be installed with
   * 3.1.6 to [v3.1.7][strscan-v3.1.7], [v3.1.8][strscan-v3.1.8]
 * syntax_suggest 3.0.0
 * tempfile 0.3.2
+* time 0.5.0
 * timeout 0.6.1
   * 0.6.0 to [v0.6.1][timeout-v0.6.1]
 * tmpdir 0.3.2
