@@ -6974,13 +6974,15 @@ parse_mode_enc(const char *estr, rb_encoding *estr_enc,
 
     p = strrchr(estr, ':');
     len = p ? (p++ - estr) : (long)strlen(estr);
-    if ((fmode & FMODE_SETENC_BY_BOM) || io_encname_bom_p(estr, len)) {
+    if (io_encname_bom_p(estr, len)) {
         estr += bom_prefix_len;
         len -= bom_prefix_len;
-        if (!STRNCASECMP(estr, utf_prefix, utf_prefix_len)) {
-            fmode |= FMODE_SETENC_BY_BOM;
-        }
-        else {
+        fmode |= FMODE_SETENC_BY_BOM;
+    }
+    /* FMODE_SETENC_BY_BOM may be carried in from the mode string (e.g.
+     * "r:BOM|UTF-8") while estr comes from a separate encoding: option. */
+    if (fmode & FMODE_SETENC_BY_BOM) {
+        if (STRNCASECMP(estr, utf_prefix, utf_prefix_len)) {
             rb_enc_warn(estr_enc, "BOM with non-UTF encoding %s is nonsense", estr);
             fmode &= ~FMODE_SETENC_BY_BOM;
         }
