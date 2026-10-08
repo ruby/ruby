@@ -15,6 +15,24 @@ void rb_autoload_str(VALUE mod, ID id, VALUE file);
 void
 Init_Prism(void)
 {
+#if 0 /* for RDoc; Ruby::Prism is defined by lib/ruby/prism.rb via autoload */
+    VALUE rb_mRuby = rb_define_module("Ruby");
+    /*
+     * Document-module: Ruby::Prism
+     *
+     * \Ruby::Prism is the prism parser built into the interpreter, i.e., the
+     * very parser that compiles the running program.
+     *
+     * Its API follows the version of prism bundled with this Ruby, and may
+     * change incompatibly between Ruby minor versions: not only the node
+     * definitions but also the other APIs, as the bundled prism may move to a
+     * new major version.
+     *
+     * In most cases, use the prism gem instead.  Use \Ruby::Prism only when you
+     * need the very parser of the running interpreter.
+     */
+    VALUE rb_mPrism = rb_define_module_under(rb_mRuby, "Prism");
+#endif
     ruby_init_ext("ruby/prism/prism.so", Init_prism);
 }
 
