@@ -1631,8 +1631,8 @@ AS_IF([test "$cross_compiling" = yes],
     X_BUILTIN_BINARY=no
 ],
 [
-    AS_CASE([ac_cv_sizeof_voidp],
-    [[1-9]*], [dnl fixed value
+    AS_CASE(["$ac_cv_sizeof_voidp"],
+    [@<:@1-9@:>@*], [dnl fixed value
     ],
     [
         AC_CACHE_CHECK([word size], [rb_cv_word_size],
