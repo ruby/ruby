@@ -249,6 +249,7 @@ They are still available on rubygems.org and can be installed with
   * 4.0.0 to [v4.0.1][openssl-v4.0.1], [v4.0.2][openssl-v4.0.2]
 * pp 0.6.4
   * 0.6.3 to [v0.6.4][pp-v0.6.4]
+* prettyprint 0.2.1
 * prism 1.9.0
   * 1.7.0 to [v1.8.0][prism-v1.8.0], [v1.8.1][prism-v1.8.1], [v1.9.0][prism-v1.9.0]
 * psych 5.5.0
