@@ -333,6 +333,10 @@ class TestClass < Test::Unit::TestCase
     assert_raise(TypeError) { c.new }
   end
 
+  def test_uninitialized_dup
+    assert_raise(TypeError) { Class.allocate.dup.new }
+  end
+
   def test_nonascii_name
     c = eval("class ::C\u{df}; self; end")
     assert_equal("C\u{df}", c.name, '[ruby-core:24600]')

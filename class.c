@@ -1112,7 +1112,9 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
 
     init_copy_owner_check(orig);
 
-    rb_class_set_initialized(clone);
+    if (RCLASS_INITIALIZED_P(orig)) {
+        rb_class_set_initialized(clone);
+    }
 
     if (!RCLASS_SINGLETON_P(CLASS_OF(clone))) {
         RBASIC_SET_CLASS(clone, rb_singleton_class_clone(orig));
