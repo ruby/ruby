@@ -1,0 +1,223 @@
+# Generated from lib/prism/parse_result/newlines.rb with RBS::Inline
+
+module Prism
+  class ParseResult < Result
+    # The :line tracepoint event gets fired whenever the Ruby VM encounters an
+    # expression on a new line. The types of expressions that can trigger this
+    # event are:
+    #
+    # * if statements
+    # * unless statements
+    # * nodes that are children of statements lists
+    #
+    # In order to keep track of the newlines, we have a list of offsets that
+    # come back from the parser. We assign these offsets to the first nodes that
+    # we find in the tree that are on those lines.
+    #
+    # Note that the logic in this file should be kept in sync with the Java
+    # MarkNewlinesVisitor, since that visitor is responsible for marking the
+    # newlines for JRuby/TruffleRuby.
+    #
+    # This file is autoloaded only when `mark_newlines!` is called, so the
+    # re-opening of the various nodes in this file will only be performed in
+    # that case. We do that to avoid storing the extra `@newline` instance
+    # variable on every node if we don't need it.
+    class Newlines < Visitor
+      @lines: Array[bool]
+
+      # Create a new Newlines visitor with the given newline offsets.
+      #
+      # : (Integer lines) -> void
+      def initialize: (Integer lines) -> void
+
+      # Permit block nodes to mark newlines within themselves.
+      #
+      # : (BlockNode node) -> void
+      def visit_block_node: (BlockNode node) -> void
+
+      # Permit lambda nodes to mark newlines within themselves.
+      #
+      # : (LambdaNode node) -> void
+      def visit_lambda_node: (LambdaNode node) -> void
+
+      # Permit def nodes to mark newlines within themselves. The body of an
+      # endless method definition never emits newline events, so in that case
+      # mark every line as already seen while visiting it instead. Nested
+      # scopes (blocks, lambdas, etc.) reset the lines and emit events again.
+      #
+      # : (DefNode node) -> void
+      def visit_def_node: (DefNode node) -> void
+
+      # Permit class nodes to mark newlines within themselves.
+      #
+      # : (ClassNode node) -> void
+      def visit_class_node: (ClassNode node) -> void
+
+      # Permit module nodes to mark newlines within themselves.
+      #
+      # : (ModuleNode node) -> void
+      def visit_module_node: (ModuleNode node) -> void
+
+      # Permit singleton class nodes to mark newlines within themselves.
+      #
+      # : (SingletonClassNode node) -> void
+      def visit_singleton_class_node: (SingletonClassNode node) -> void
+
+      # Statements inside string interpolation do not emit newline events, so
+      # mark every line as already seen while visiting them. Nested scopes
+      # (blocks, lambdas, defs, etc.) reset the lines and emit events again.
+      #
+      # : (EmbeddedStatementsNode node) -> void
+      def visit_embedded_statements_node: (EmbeddedStatementsNode node) -> void
+
+      # The predicate of a while loop is compiled at the end of the loop,
+      # after the body, so any statements it contains (from parentheses)
+      # emit their line events again even if the lines were already seen.
+      #
+      # : (WhileNode node) -> void
+      def visit_while_node: (WhileNode node) -> void
+
+      # The predicate of an until loop is compiled at the end of the loop,
+      # after the body, so any statements it contains (from parentheses)
+      # emit their line events again even if the lines were already seen.
+      #
+      # : (UntilNode node) -> void
+      def visit_until_node: (UntilNode node) -> void
+
+      # Mark if nodes as newlines.
+      #
+      # : (IfNode node) -> void
+      def visit_if_node: (IfNode node) -> void
+
+      # Mark unless nodes as newlines.
+      #
+      # : (UnlessNode node) -> void
+      def visit_unless_node: (UnlessNode node) -> void
+
+      # Permit statements lists to mark newlines within themselves.
+      #
+      # : (StatementsNode node) -> void
+      def visit_statements_node: (StatementsNode node) -> void
+    end
+  end
+
+  class Node
+    @newline_flag: bool
+
+    # : () -> bool
+    def newline_flag?: () -> bool
+
+    # : (Array[bool] lines) -> void
+    def newline_flag!: (Array[bool] lines) -> void
+  end
+
+  class BeginNode < Node
+    # : (Array[bool] lines) -> void
+    def newline_flag!: (Array[bool] lines) -> void
+  end
+
+  class ParenthesesNode < Node
+    # : (Array[bool] lines) -> void
+    def newline_flag!: (Array[bool] lines) -> void
+  end
+
+  class IfNode < Node
+    # : (Array[bool] lines) -> void
+    def newline_flag!: (Array[bool] lines) -> void
+  end
+
+  class UnlessNode < Node
+    # : (Array[bool] lines) -> void
+    def newline_flag!: (Array[bool] lines) -> void
+  end
+
+  class UntilNode < Node
+    # : (Array[bool] lines) -> void
+    def newline_flag!: (Array[bool] lines) -> void
+  end
+
+  class WhileNode < Node
+    # : (Array[bool] lines) -> void
+    def newline_flag!: (Array[bool] lines) -> void
+  end
+
+  class RescueModifierNode < Node
+    # : (Array[bool] lines) -> void
+    def newline_flag!: (Array[bool] lines) -> void
+  end
+
+  class LocalVariableWriteNode < Node
+    # : (Array[bool] lines) -> void
+    def newline_flag!: (Array[bool] lines) -> void
+  end
+
+  class InstanceVariableWriteNode < Node
+    # : (Array[bool] lines) -> void
+    def newline_flag!: (Array[bool] lines) -> void
+  end
+
+  class ClassVariableWriteNode < Node
+    # : (Array[bool] lines) -> void
+    def newline_flag!: (Array[bool] lines) -> void
+  end
+
+  class GlobalVariableWriteNode < Node
+    # : (Array[bool] lines) -> void
+    def newline_flag!: (Array[bool] lines) -> void
+  end
+
+  class ConstantWriteNode < Node
+    # : (Array[bool] lines) -> void
+    def newline_flag!: (Array[bool] lines) -> void
+  end
+
+  class ConstantPathWriteNode < Node
+    # : (Array[bool] lines) -> void
+    def newline_flag!: (Array[bool] lines) -> void
+  end
+
+  class MultiWriteNode < Node
+    # : (Array[bool] lines) -> void
+    def newline_flag!: (Array[bool] lines) -> void
+  end
+
+  class CallNode < Node
+    # : (Array[bool] lines) -> void
+    def newline_flag!: (Array[bool] lines) -> void
+  end
+
+  class ArrayNode < Node
+    # : (Array[bool] lines) -> void
+    def newline_flag!: (Array[bool] lines) -> void
+  end
+
+  class HashNode < Node
+    # : (Array[bool] lines) -> void
+    def newline_flag!: (Array[bool] lines) -> void
+  end
+
+  class InterpolatedMatchLastLineNode < Node
+    # : (Array[bool] lines) -> void
+    def newline_flag!: (Array[bool] lines) -> void
+  end
+
+  class InterpolatedRegularExpressionNode < Node
+    # : (Array[bool] lines) -> void
+    def newline_flag!: (Array[bool] lines) -> void
+  end
+
+  class InterpolatedStringNode < Node
+    # : (Array[bool] lines) -> void
+    def newline_flag!: (Array[bool] lines) -> void
+  end
+
+  class InterpolatedSymbolNode < Node
+    # : (Array[bool] lines) -> void
+    def newline_flag!: (Array[bool] lines) -> void
+  end
+
+  class InterpolatedXStringNode < Node
+    # : (Array[bool] lines) -> void
+    def newline_flag!: (Array[bool] lines) -> void
+  end
+end

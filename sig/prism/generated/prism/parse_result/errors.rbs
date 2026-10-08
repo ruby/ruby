@@ -1,0 +1,22 @@
+# Generated from lib/prism/parse_result/errors.rb with RBS::Inline
+
+module Prism
+  class ParseResult < Result
+    # An object to represent the set of errors on a parse result. This object
+    # can be used to format the errors in a human-readable way.
+    class Errors
+      # The parse result that contains the errors.
+      attr_reader parse_result: ParseResult
+
+      # Initialize a new set of errors from the given parse result.
+      #
+      # : (ParseResult parse_result) -> void
+      def initialize: (ParseResult parse_result) -> void
+
+      # Formats the errors in a human-readable way and return them as a string.
+      #
+      # : () -> String
+      def format: () -> String
+    end
+  end
+end

@@ -1,0 +1,492 @@
+# Generated from lib/prism/compiler.rb with RBS::Inline
+
+module Prism
+  # A compiler is a visitor that returns the value of each node as it visits.
+  # This is as opposed to a visitor which will only walk the tree. This can be
+  # useful when you are trying to compile a tree into a different format.
+  #
+  # For example, to build a representation of the tree as s-expressions, you
+  # could write:
+  #
+  #     class SExpressions < Prism::Compiler
+  #       def visit_arguments_node(node) = [:arguments, super]
+  #       def visit_call_node(node) = [:call, super]
+  #       def visit_integer_node(node) = [:integer]
+  #       def visit_program_node(node) = [:program, super]
+  #     end
+  #
+  #     Prism.parse("1 + 2").value.accept(SExpressions.new)
+  #     # => [:program, [[[:call, [[:integer], [:arguments, [[:integer]]]]]]]]
+  class Compiler < Visitor
+    # Visit an individual node.
+    #
+    # : (node?) -> untyped
+    def visit: (node?) -> untyped
+
+    # Visit a list of nodes.
+    #
+    # : (Array[node?]) -> untyped
+    def visit_all: (Array[node?]) -> untyped
+
+    # Visit the child nodes of the given node.
+    #
+    # : (node) -> Array[untyped]
+    def visit_child_nodes: (node) -> Array[untyped]
+
+    # : (AliasGlobalVariableNode) -> Array[untyped]
+    def visit_alias_global_variable_node: (AliasGlobalVariableNode) -> Array[untyped]
+
+    # : (AliasMethodNode) -> Array[untyped]
+    def visit_alias_method_node: (AliasMethodNode) -> Array[untyped]
+
+    # : (AlternationPatternNode) -> Array[untyped]
+    def visit_alternation_pattern_node: (AlternationPatternNode) -> Array[untyped]
+
+    # : (AndNode) -> Array[untyped]
+    def visit_and_node: (AndNode) -> Array[untyped]
+
+    # : (ArgumentsNode) -> Array[untyped]
+    def visit_arguments_node: (ArgumentsNode) -> Array[untyped]
+
+    # : (ArrayNode) -> Array[untyped]
+    def visit_array_node: (ArrayNode) -> Array[untyped]
+
+    # : (ArrayPatternNode) -> Array[untyped]
+    def visit_array_pattern_node: (ArrayPatternNode) -> Array[untyped]
+
+    # : (AssocNode) -> Array[untyped]
+    def visit_assoc_node: (AssocNode) -> Array[untyped]
+
+    # : (AssocSplatNode) -> Array[untyped]
+    def visit_assoc_splat_node: (AssocSplatNode) -> Array[untyped]
+
+    # : (BackReferenceReadNode) -> Array[untyped]
+    def visit_back_reference_read_node: (BackReferenceReadNode) -> Array[untyped]
+
+    # : (BeginNode) -> Array[untyped]
+    def visit_begin_node: (BeginNode) -> Array[untyped]
+
+    # : (BlockArgumentNode) -> Array[untyped]
+    def visit_block_argument_node: (BlockArgumentNode) -> Array[untyped]
+
+    # : (BlockLocalVariableNode) -> Array[untyped]
+    def visit_block_local_variable_node: (BlockLocalVariableNode) -> Array[untyped]
+
+    # : (BlockNode) -> Array[untyped]
+    def visit_block_node: (BlockNode) -> Array[untyped]
+
+    # : (BlockParameterNode) -> Array[untyped]
+    def visit_block_parameter_node: (BlockParameterNode) -> Array[untyped]
+
+    # : (BlockParametersNode) -> Array[untyped]
+    def visit_block_parameters_node: (BlockParametersNode) -> Array[untyped]
+
+    # : (BreakNode) -> Array[untyped]
+    def visit_break_node: (BreakNode) -> Array[untyped]
+
+    # : (CallAndWriteNode) -> Array[untyped]
+    def visit_call_and_write_node: (CallAndWriteNode) -> Array[untyped]
+
+    # : (CallNode) -> Array[untyped]
+    def visit_call_node: (CallNode) -> Array[untyped]
+
+    # : (CallOperatorWriteNode) -> Array[untyped]
+    def visit_call_operator_write_node: (CallOperatorWriteNode) -> Array[untyped]
+
+    # : (CallOrWriteNode) -> Array[untyped]
+    def visit_call_or_write_node: (CallOrWriteNode) -> Array[untyped]
+
+    # : (CallTargetNode) -> Array[untyped]
+    def visit_call_target_node: (CallTargetNode) -> Array[untyped]
+
+    # : (CapturePatternNode) -> Array[untyped]
+    def visit_capture_pattern_node: (CapturePatternNode) -> Array[untyped]
+
+    # : (CaseMatchNode) -> Array[untyped]
+    def visit_case_match_node: (CaseMatchNode) -> Array[untyped]
+
+    # : (CaseNode) -> Array[untyped]
+    def visit_case_node: (CaseNode) -> Array[untyped]
+
+    # : (ClassNode) -> Array[untyped]
+    def visit_class_node: (ClassNode) -> Array[untyped]
+
+    # : (ClassVariableAndWriteNode) -> Array[untyped]
+    def visit_class_variable_and_write_node: (ClassVariableAndWriteNode) -> Array[untyped]
+
+    # : (ClassVariableOperatorWriteNode) -> Array[untyped]
+    def visit_class_variable_operator_write_node: (ClassVariableOperatorWriteNode) -> Array[untyped]
+
+    # : (ClassVariableOrWriteNode) -> Array[untyped]
+    def visit_class_variable_or_write_node: (ClassVariableOrWriteNode) -> Array[untyped]
+
+    # : (ClassVariableReadNode) -> Array[untyped]
+    def visit_class_variable_read_node: (ClassVariableReadNode) -> Array[untyped]
+
+    # : (ClassVariableTargetNode) -> Array[untyped]
+    def visit_class_variable_target_node: (ClassVariableTargetNode) -> Array[untyped]
+
+    # : (ClassVariableWriteNode) -> Array[untyped]
+    def visit_class_variable_write_node: (ClassVariableWriteNode) -> Array[untyped]
+
+    # : (ConstantAndWriteNode) -> Array[untyped]
+    def visit_constant_and_write_node: (ConstantAndWriteNode) -> Array[untyped]
+
+    # : (ConstantOperatorWriteNode) -> Array[untyped]
+    def visit_constant_operator_write_node: (ConstantOperatorWriteNode) -> Array[untyped]
+
+    # : (ConstantOrWriteNode) -> Array[untyped]
+    def visit_constant_or_write_node: (ConstantOrWriteNode) -> Array[untyped]
+
+    # : (ConstantPathAndWriteNode) -> Array[untyped]
+    def visit_constant_path_and_write_node: (ConstantPathAndWriteNode) -> Array[untyped]
+
+    # : (ConstantPathNode) -> Array[untyped]
+    def visit_constant_path_node: (ConstantPathNode) -> Array[untyped]
+
+    # : (ConstantPathOperatorWriteNode) -> Array[untyped]
+    def visit_constant_path_operator_write_node: (ConstantPathOperatorWriteNode) -> Array[untyped]
+
+    # : (ConstantPathOrWriteNode) -> Array[untyped]
+    def visit_constant_path_or_write_node: (ConstantPathOrWriteNode) -> Array[untyped]
+
+    # : (ConstantPathTargetNode) -> Array[untyped]
+    def visit_constant_path_target_node: (ConstantPathTargetNode) -> Array[untyped]
+
+    # : (ConstantPathWriteNode) -> Array[untyped]
+    def visit_constant_path_write_node: (ConstantPathWriteNode) -> Array[untyped]
+
+    # : (ConstantReadNode) -> Array[untyped]
+    def visit_constant_read_node: (ConstantReadNode) -> Array[untyped]
+
+    # : (ConstantTargetNode) -> Array[untyped]
+    def visit_constant_target_node: (ConstantTargetNode) -> Array[untyped]
+
+    # : (ConstantWriteNode) -> Array[untyped]
+    def visit_constant_write_node: (ConstantWriteNode) -> Array[untyped]
+
+    # : (DefNode) -> Array[untyped]
+    def visit_def_node: (DefNode) -> Array[untyped]
+
+    # : (DefinedNode) -> Array[untyped]
+    def visit_defined_node: (DefinedNode) -> Array[untyped]
+
+    # : (ElseNode) -> Array[untyped]
+    def visit_else_node: (ElseNode) -> Array[untyped]
+
+    # : (EmbeddedStatementsNode) -> Array[untyped]
+    def visit_embedded_statements_node: (EmbeddedStatementsNode) -> Array[untyped]
+
+    # : (EmbeddedVariableNode) -> Array[untyped]
+    def visit_embedded_variable_node: (EmbeddedVariableNode) -> Array[untyped]
+
+    # : (EnsureNode) -> Array[untyped]
+    def visit_ensure_node: (EnsureNode) -> Array[untyped]
+
+    # : (ErrorRecoveryNode) -> Array[untyped]
+    def visit_error_recovery_node: (ErrorRecoveryNode) -> Array[untyped]
+
+    # : (FalseNode) -> Array[untyped]
+    def visit_false_node: (FalseNode) -> Array[untyped]
+
+    # : (FindPatternNode) -> Array[untyped]
+    def visit_find_pattern_node: (FindPatternNode) -> Array[untyped]
+
+    # : (FlipFlopNode) -> Array[untyped]
+    def visit_flip_flop_node: (FlipFlopNode) -> Array[untyped]
+
+    # : (FloatNode) -> Array[untyped]
+    def visit_float_node: (FloatNode) -> Array[untyped]
+
+    # : (ForNode) -> Array[untyped]
+    def visit_for_node: (ForNode) -> Array[untyped]
+
+    # : (ForwardingArgumentsNode) -> Array[untyped]
+    def visit_forwarding_arguments_node: (ForwardingArgumentsNode) -> Array[untyped]
+
+    # : (ForwardingParameterNode) -> Array[untyped]
+    def visit_forwarding_parameter_node: (ForwardingParameterNode) -> Array[untyped]
+
+    # : (ForwardingSuperNode) -> Array[untyped]
+    def visit_forwarding_super_node: (ForwardingSuperNode) -> Array[untyped]
+
+    # : (GlobalVariableAndWriteNode) -> Array[untyped]
+    def visit_global_variable_and_write_node: (GlobalVariableAndWriteNode) -> Array[untyped]
+
+    # : (GlobalVariableOperatorWriteNode) -> Array[untyped]
+    def visit_global_variable_operator_write_node: (GlobalVariableOperatorWriteNode) -> Array[untyped]
+
+    # : (GlobalVariableOrWriteNode) -> Array[untyped]
+    def visit_global_variable_or_write_node: (GlobalVariableOrWriteNode) -> Array[untyped]
+
+    # : (GlobalVariableReadNode) -> Array[untyped]
+    def visit_global_variable_read_node: (GlobalVariableReadNode) -> Array[untyped]
+
+    # : (GlobalVariableTargetNode) -> Array[untyped]
+    def visit_global_variable_target_node: (GlobalVariableTargetNode) -> Array[untyped]
+
+    # : (GlobalVariableWriteNode) -> Array[untyped]
+    def visit_global_variable_write_node: (GlobalVariableWriteNode) -> Array[untyped]
+
+    # : (HashNode) -> Array[untyped]
+    def visit_hash_node: (HashNode) -> Array[untyped]
+
+    # : (HashPatternNode) -> Array[untyped]
+    def visit_hash_pattern_node: (HashPatternNode) -> Array[untyped]
+
+    # : (IfNode) -> Array[untyped]
+    def visit_if_node: (IfNode) -> Array[untyped]
+
+    # : (ImaginaryNode) -> Array[untyped]
+    def visit_imaginary_node: (ImaginaryNode) -> Array[untyped]
+
+    # : (ImplicitNode) -> Array[untyped]
+    def visit_implicit_node: (ImplicitNode) -> Array[untyped]
+
+    # : (ImplicitRestNode) -> Array[untyped]
+    def visit_implicit_rest_node: (ImplicitRestNode) -> Array[untyped]
+
+    # : (InNode) -> Array[untyped]
+    def visit_in_node: (InNode) -> Array[untyped]
+
+    # : (IndexAndWriteNode) -> Array[untyped]
+    def visit_index_and_write_node: (IndexAndWriteNode) -> Array[untyped]
+
+    # : (IndexOperatorWriteNode) -> Array[untyped]
+    def visit_index_operator_write_node: (IndexOperatorWriteNode) -> Array[untyped]
+
+    # : (IndexOrWriteNode) -> Array[untyped]
+    def visit_index_or_write_node: (IndexOrWriteNode) -> Array[untyped]
+
+    # : (IndexTargetNode) -> Array[untyped]
+    def visit_index_target_node: (IndexTargetNode) -> Array[untyped]
+
+    # : (InstanceVariableAndWriteNode) -> Array[untyped]
+    def visit_instance_variable_and_write_node: (InstanceVariableAndWriteNode) -> Array[untyped]
+
+    # : (InstanceVariableOperatorWriteNode) -> Array[untyped]
+    def visit_instance_variable_operator_write_node: (InstanceVariableOperatorWriteNode) -> Array[untyped]
+
+    # : (InstanceVariableOrWriteNode) -> Array[untyped]
+    def visit_instance_variable_or_write_node: (InstanceVariableOrWriteNode) -> Array[untyped]
+
+    # : (InstanceVariableReadNode) -> Array[untyped]
+    def visit_instance_variable_read_node: (InstanceVariableReadNode) -> Array[untyped]
+
+    # : (InstanceVariableTargetNode) -> Array[untyped]
+    def visit_instance_variable_target_node: (InstanceVariableTargetNode) -> Array[untyped]
+
+    # : (InstanceVariableWriteNode) -> Array[untyped]
+    def visit_instance_variable_write_node: (InstanceVariableWriteNode) -> Array[untyped]
+
+    # : (IntegerNode) -> Array[untyped]
+    def visit_integer_node: (IntegerNode) -> Array[untyped]
+
+    # : (InterpolatedMatchLastLineNode) -> Array[untyped]
+    def visit_interpolated_match_last_line_node: (InterpolatedMatchLastLineNode) -> Array[untyped]
+
+    # : (InterpolatedRegularExpressionNode) -> Array[untyped]
+    def visit_interpolated_regular_expression_node: (InterpolatedRegularExpressionNode) -> Array[untyped]
+
+    # : (InterpolatedStringNode) -> Array[untyped]
+    def visit_interpolated_string_node: (InterpolatedStringNode) -> Array[untyped]
+
+    # : (InterpolatedSymbolNode) -> Array[untyped]
+    def visit_interpolated_symbol_node: (InterpolatedSymbolNode) -> Array[untyped]
+
+    # : (InterpolatedXStringNode) -> Array[untyped]
+    def visit_interpolated_x_string_node: (InterpolatedXStringNode) -> Array[untyped]
+
+    # : (ItLocalVariableReadNode) -> Array[untyped]
+    def visit_it_local_variable_read_node: (ItLocalVariableReadNode) -> Array[untyped]
+
+    # : (ItParametersNode) -> Array[untyped]
+    def visit_it_parameters_node: (ItParametersNode) -> Array[untyped]
+
+    # : (KeywordHashNode) -> Array[untyped]
+    def visit_keyword_hash_node: (KeywordHashNode) -> Array[untyped]
+
+    # : (KeywordRestParameterNode) -> Array[untyped]
+    def visit_keyword_rest_parameter_node: (KeywordRestParameterNode) -> Array[untyped]
+
+    # : (LambdaNode) -> Array[untyped]
+    def visit_lambda_node: (LambdaNode) -> Array[untyped]
+
+    # : (LocalVariableAndWriteNode) -> Array[untyped]
+    def visit_local_variable_and_write_node: (LocalVariableAndWriteNode) -> Array[untyped]
+
+    # : (LocalVariableOperatorWriteNode) -> Array[untyped]
+    def visit_local_variable_operator_write_node: (LocalVariableOperatorWriteNode) -> Array[untyped]
+
+    # : (LocalVariableOrWriteNode) -> Array[untyped]
+    def visit_local_variable_or_write_node: (LocalVariableOrWriteNode) -> Array[untyped]
+
+    # : (LocalVariableReadNode) -> Array[untyped]
+    def visit_local_variable_read_node: (LocalVariableReadNode) -> Array[untyped]
+
+    # : (LocalVariableTargetNode) -> Array[untyped]
+    def visit_local_variable_target_node: (LocalVariableTargetNode) -> Array[untyped]
+
+    # : (LocalVariableWriteNode) -> Array[untyped]
+    def visit_local_variable_write_node: (LocalVariableWriteNode) -> Array[untyped]
+
+    # : (MatchLastLineNode) -> Array[untyped]
+    def visit_match_last_line_node: (MatchLastLineNode) -> Array[untyped]
+
+    # : (MatchPredicateNode) -> Array[untyped]
+    def visit_match_predicate_node: (MatchPredicateNode) -> Array[untyped]
+
+    # : (MatchRequiredNode) -> Array[untyped]
+    def visit_match_required_node: (MatchRequiredNode) -> Array[untyped]
+
+    # : (MatchWriteNode) -> Array[untyped]
+    def visit_match_write_node: (MatchWriteNode) -> Array[untyped]
+
+    # : (ModuleNode) -> Array[untyped]
+    def visit_module_node: (ModuleNode) -> Array[untyped]
+
+    # : (MultiTargetNode) -> Array[untyped]
+    def visit_multi_target_node: (MultiTargetNode) -> Array[untyped]
+
+    # : (MultiWriteNode) -> Array[untyped]
+    def visit_multi_write_node: (MultiWriteNode) -> Array[untyped]
+
+    # : (NextNode) -> Array[untyped]
+    def visit_next_node: (NextNode) -> Array[untyped]
+
+    # : (NilNode) -> Array[untyped]
+    def visit_nil_node: (NilNode) -> Array[untyped]
+
+    # : (NoBlockParameterNode) -> Array[untyped]
+    def visit_no_block_parameter_node: (NoBlockParameterNode) -> Array[untyped]
+
+    # : (NoKeywordsParameterNode) -> Array[untyped]
+    def visit_no_keywords_parameter_node: (NoKeywordsParameterNode) -> Array[untyped]
+
+    # : (NumberedParametersNode) -> Array[untyped]
+    def visit_numbered_parameters_node: (NumberedParametersNode) -> Array[untyped]
+
+    # : (NumberedReferenceReadNode) -> Array[untyped]
+    def visit_numbered_reference_read_node: (NumberedReferenceReadNode) -> Array[untyped]
+
+    # : (OptionalKeywordParameterNode) -> Array[untyped]
+    def visit_optional_keyword_parameter_node: (OptionalKeywordParameterNode) -> Array[untyped]
+
+    # : (OptionalParameterNode) -> Array[untyped]
+    def visit_optional_parameter_node: (OptionalParameterNode) -> Array[untyped]
+
+    # : (OrNode) -> Array[untyped]
+    def visit_or_node: (OrNode) -> Array[untyped]
+
+    # : (ParametersNode) -> Array[untyped]
+    def visit_parameters_node: (ParametersNode) -> Array[untyped]
+
+    # : (ParenthesesNode) -> Array[untyped]
+    def visit_parentheses_node: (ParenthesesNode) -> Array[untyped]
+
+    # : (PinnedExpressionNode) -> Array[untyped]
+    def visit_pinned_expression_node: (PinnedExpressionNode) -> Array[untyped]
+
+    # : (PinnedVariableNode) -> Array[untyped]
+    def visit_pinned_variable_node: (PinnedVariableNode) -> Array[untyped]
+
+    # : (PostExecutionNode) -> Array[untyped]
+    def visit_post_execution_node: (PostExecutionNode) -> Array[untyped]
+
+    # : (PreExecutionNode) -> Array[untyped]
+    def visit_pre_execution_node: (PreExecutionNode) -> Array[untyped]
+
+    # : (ProgramNode) -> Array[untyped]
+    def visit_program_node: (ProgramNode) -> Array[untyped]
+
+    # : (RangeNode) -> Array[untyped]
+    def visit_range_node: (RangeNode) -> Array[untyped]
+
+    # : (RationalNode) -> Array[untyped]
+    def visit_rational_node: (RationalNode) -> Array[untyped]
+
+    # : (RedoNode) -> Array[untyped]
+    def visit_redo_node: (RedoNode) -> Array[untyped]
+
+    # : (RegularExpressionNode) -> Array[untyped]
+    def visit_regular_expression_node: (RegularExpressionNode) -> Array[untyped]
+
+    # : (RequiredKeywordParameterNode) -> Array[untyped]
+    def visit_required_keyword_parameter_node: (RequiredKeywordParameterNode) -> Array[untyped]
+
+    # : (RequiredParameterNode) -> Array[untyped]
+    def visit_required_parameter_node: (RequiredParameterNode) -> Array[untyped]
+
+    # : (RescueModifierNode) -> Array[untyped]
+    def visit_rescue_modifier_node: (RescueModifierNode) -> Array[untyped]
+
+    # : (RescueNode) -> Array[untyped]
+    def visit_rescue_node: (RescueNode) -> Array[untyped]
+
+    # : (RestParameterNode) -> Array[untyped]
+    def visit_rest_parameter_node: (RestParameterNode) -> Array[untyped]
+
+    # : (RetryNode) -> Array[untyped]
+    def visit_retry_node: (RetryNode) -> Array[untyped]
+
+    # : (ReturnNode) -> Array[untyped]
+    def visit_return_node: (ReturnNode) -> Array[untyped]
+
+    # : (SelfNode) -> Array[untyped]
+    def visit_self_node: (SelfNode) -> Array[untyped]
+
+    # : (ShareableConstantNode) -> Array[untyped]
+    def visit_shareable_constant_node: (ShareableConstantNode) -> Array[untyped]
+
+    # : (SingletonClassNode) -> Array[untyped]
+    def visit_singleton_class_node: (SingletonClassNode) -> Array[untyped]
+
+    # : (SourceEncodingNode) -> Array[untyped]
+    def visit_source_encoding_node: (SourceEncodingNode) -> Array[untyped]
+
+    # : (SourceFileNode) -> Array[untyped]
+    def visit_source_file_node: (SourceFileNode) -> Array[untyped]
+
+    # : (SourceLineNode) -> Array[untyped]
+    def visit_source_line_node: (SourceLineNode) -> Array[untyped]
+
+    # : (SplatNode) -> Array[untyped]
+    def visit_splat_node: (SplatNode) -> Array[untyped]
+
+    # : (StatementsNode) -> Array[untyped]
+    def visit_statements_node: (StatementsNode) -> Array[untyped]
+
+    # : (StringNode) -> Array[untyped]
+    def visit_string_node: (StringNode) -> Array[untyped]
+
+    # : (SuperNode) -> Array[untyped]
+    def visit_super_node: (SuperNode) -> Array[untyped]
+
+    # : (SymbolNode) -> Array[untyped]
+    def visit_symbol_node: (SymbolNode) -> Array[untyped]
+
+    # : (TrueNode) -> Array[untyped]
+    def visit_true_node: (TrueNode) -> Array[untyped]
+
+    # : (UndefNode) -> Array[untyped]
+    def visit_undef_node: (UndefNode) -> Array[untyped]
+
+    # : (UnlessNode) -> Array[untyped]
+    def visit_unless_node: (UnlessNode) -> Array[untyped]
+
+    # : (UntilNode) -> Array[untyped]
+    def visit_until_node: (UntilNode) -> Array[untyped]
+
+    # : (WhenNode) -> Array[untyped]
+    def visit_when_node: (WhenNode) -> Array[untyped]
+
+    # : (WhileNode) -> Array[untyped]
+    def visit_while_node: (WhileNode) -> Array[untyped]
+
+    # : (XStringNode) -> Array[untyped]
+    def visit_x_string_node: (XStringNode) -> Array[untyped]
+
+    # : (YieldNode) -> Array[untyped]
+    def visit_yield_node: (YieldNode) -> Array[untyped]
+  end
+end

@@ -1,0 +1,36 @@
+# Generated from lib/prism/string_query.rb with RBS::Inline
+
+module Prism
+  # Query methods that allow categorizing strings based on their context for
+  # where they could be valid in a Ruby syntax tree.
+  class StringQuery
+    def self.local?: (String string) -> bool
+
+    def self.constant?: (String string) -> bool
+
+    def self.method_name?: (String string) -> bool
+
+    # The string that this query is wrapping.
+    attr_reader string: String
+
+    # Initialize a new query with the given string.
+    #
+    # : (String string) -> void
+    def initialize: (String string) -> void
+
+    # Whether or not this string is a valid local variable name.
+    #
+    # : () -> bool
+    def local?: () -> bool
+
+    # Whether or not this string is a valid constant name.
+    #
+    # : () -> bool
+    def constant?: () -> bool
+
+    # Whether or not this string is a valid method name.
+    #
+    # : () -> bool
+    def method_name?: () -> bool
+  end
+end
