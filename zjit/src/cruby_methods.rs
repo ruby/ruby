@@ -366,7 +366,8 @@ fn inline_freeze(fun: &mut hir::Function, _block: hir::BlockId, recv: hir::InsnI
 fn inline_string_uminus(fun: &mut hir::Function, _block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
     let &[] = args else { return None; };
     let obj = fun.type_of(recv).ruby_object()?;
-    if obj.string_p() && obj.builtin_flags() & RSTRING_FSTR as usize != 0 {
+    debug_assert!(obj.string_p());
+    if obj.builtin_flags() & RSTRING_FSTR as usize != 0 {
         return Some(recv);
     }
     None
