@@ -8927,11 +8927,7 @@ gc_start(rb_objspace_t *objspace, unsigned int reason)
 
     if (objspace->flags.dont_incremental ||
             reason & GPR_FLAG_IMMEDIATE_MARK ||
-            ruby_gc_stressful ||
-            /* No incremental marking while multiple objspaces exist: between steps another
-             * Ractor can create and share objects behind this objspace's already-scanned
-             * roots. */
-            !rb_gc_single_objspace_p()) {
+            ruby_gc_stressful) {
         gc_set_incremental_marking(objspace, FALSE);
     }
     else {
