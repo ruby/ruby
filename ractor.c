@@ -243,30 +243,30 @@ mark_targeted_hook_list(st_data_t key, st_data_t value, st_data_t _arg)
 }
 
 static void
-ractor_mark_thread(rb_thread_t *th)
+ractor_mark_thread(const struct rb_gc_mark_ctx *ctx, rb_thread_t *th)
 {
-    rb_gc_mark(th->self);
+    rb_gc_mark_ctx(ctx, th->self);
 
     /* A thread's ec lives inside the root fiber struct and is freed with that
      * fiber's wrapper object, so keep the fiber wrappers alive from here too. */
     if (th->root_fiber) {
         VALUE root_fiber_self = rb_fiberptr_self(th->root_fiber);
-        if (root_fiber_self) rb_gc_mark(root_fiber_self);
+        if (root_fiber_self) rb_gc_mark_ctx(ctx, root_fiber_self);
     }
     /* The ec sits inside its fiber, so marking that fiber's wrapper scans the ec
      * as well.  Only when there is no wrapper yet (mid-creation, teardown) does
      * the ec need marking of its own. */
     VALUE ec_fiber_self = (th->ec && th->ec->fiber_ptr) ? rb_fiberptr_self(th->ec->fiber_ptr) : 0;
     if (ec_fiber_self) {
-        rb_gc_mark(ec_fiber_self);
+        rb_gc_mark_ctx(ctx, ec_fiber_self);
     }
     else if (th->ec) {
-        rb_execution_context_mark(th->ec);
+        rb_execution_context_mark_ctx(ctx, th->ec);
     }
 
     /* Root the thread's remaining possessions directly as well; thgroup in
      * particular has no other root. */
-    rb_thread_mark_owned_roots(th);
+    rb_thread_mark_owned_roots(ctx, th);
 }
 
 static void
@@ -295,7 +295,7 @@ ractor_mark_unshareable_parts(const struct rb_gc_mark_ctx *ctx, rb_ractor_t *r)
         rb_thread_t *th = 0;
         ccan_list_for_each(&r->threads.set, th, lt_node) {
             VM_ASSERT(th != NULL);
-            ractor_mark_thread(th);
+            ractor_mark_thread(ctx, th);
         }
     }
 
@@ -306,7 +306,7 @@ ractor_mark_unshareable_parts(const struct rb_gc_mark_ctx *ctx, rb_ractor_t *r)
      * thread_mark walks whenever a terminated Thread's wrapper is still
      * referenced, and ractor_mark_thread performs the same marks. */
     rb_thread_t *dying_th = RUBY_ATOMIC_PTR_LOAD(r->threads.dying_th);
-    if (dying_th) ractor_mark_thread(dying_th);
+    if (dying_th) ractor_mark_thread(ctx, dying_th);
 
     ractor_local_storage_mark(r);
 }

@@ -3918,12 +3918,12 @@ rb_execution_context_update(rb_execution_context_t *ec)
 static enum rb_id_table_iterator_result
 mark_local_storage_i(VALUE local, void *data)
 {
-    rb_gc_mark(local);
+    rb_gc_mark_ctx((const struct rb_gc_mark_ctx *)data, local);
     return ID_TABLE_CONTINUE;
 }
 
 void
-rb_execution_context_mark(const rb_execution_context_t *ec)
+rb_execution_context_mark_ctx(const struct rb_gc_mark_ctx *ctx, const rb_execution_context_t *ec)
 {
     /* mark VM stack */
     if (ec->vm_stack) {
@@ -3937,10 +3937,10 @@ rb_execution_context_mark(const rb_execution_context_t *ec)
             if (rb_zjit_enabled_p) {
                 // ZJIT leaves uninitialized slots on the VM stack, so we need
                 // to mark such slots conservatively.
-                rb_gc_mark_maybe(p[i]);
+                rb_gc_mark_maybe_ctx(ctx, p[i]);
             }
             else {
-                rb_gc_mark_movable(p[i]);
+                rb_gc_mark_movable_ctx(ctx, p[i]);
             }
         }
 
@@ -3948,39 +3948,39 @@ rb_execution_context_mark(const rb_execution_context_t *ec)
             const VALUE *ep = cfp->ep;
             VM_ASSERT(!!VM_ENV_FLAGS(ep, VM_ENV_FLAG_ESCAPED) == vm_ep_in_heap_p_(ec, ep));
 
-            rb_gc_mark_movable(cfp->self);
+            rb_gc_mark_movable_ctx(ctx, cfp->self);
             if (CFP_ZJIT_FRAME_P(cfp)) {
                 const zjit_jit_frame_t *jit_frame = CFP_ZJIT_FRAME(cfp);
-                rb_gc_mark_movable((VALUE)jit_frame->iseq);
+                rb_gc_mark_movable_ctx(ctx, (VALUE)jit_frame->iseq);
                 // materialize_block_code means cfp->block_code is lazy and may
                 // still contain stale data from a previous frame. Otherwise it
                 // was initialized by ZJIT and may have been written later by
                 // vm_caller_setup_arg_block (ISEQ frames) or rb_iterate0 (C frames).
                 if (!jit_frame->materialize_block_code) {
-                    rb_gc_mark_movable((VALUE)cfp->block_code);
+                    rb_gc_mark_movable_ctx(ctx, (VALUE)cfp->block_code);
                 }
             }
             else {
-                rb_gc_mark_movable((VALUE)cfp->_iseq);
-                rb_gc_mark_movable((VALUE)cfp->block_code);
+                rb_gc_mark_movable_ctx(ctx, (VALUE)cfp->_iseq);
+                rb_gc_mark_movable_ctx(ctx, (VALUE)cfp->block_code);
             }
 
             if (VM_ENV_LOCAL_P(ep) && VM_ENV_BOXED_P(ep)) {
                 const rb_box_t *box = VM_ENV_BOX(ep);
                 if (BOX_USER_P(box)) {
-                    rb_gc_mark_movable(box->box_object);
+                    rb_gc_mark_movable_ctx(ctx, box->box_object);
                 }
             }
 
             if (!VM_ENV_LOCAL_P(ep)) {
                 const VALUE *prev_ep = VM_ENV_PREV_EP(ep);
                 if (VM_ENV_FLAGS(prev_ep, VM_ENV_FLAG_ESCAPED)) {
-                    rb_gc_mark_movable(prev_ep[VM_ENV_DATA_INDEX_ENV]);
+                    rb_gc_mark_movable_ctx(ctx, prev_ep[VM_ENV_DATA_INDEX_ENV]);
                 }
 
                 if (VM_ENV_FLAGS(ep, VM_ENV_FLAG_ESCAPED)) {
-                    rb_gc_mark_movable(ep[VM_ENV_DATA_INDEX_ENV]);
-                    rb_gc_mark(ep[VM_ENV_DATA_INDEX_ME_CREF]);
+                    rb_gc_mark_movable_ctx(ctx, ep[VM_ENV_DATA_INDEX_ENV]);
+                    rb_gc_mark_ctx(ctx, ep[VM_ENV_DATA_INDEX_ME_CREF]);
                 }
             }
 
@@ -3992,22 +3992,22 @@ rb_execution_context_mark(const rb_execution_context_t *ec)
     if (ec->machine.stack_start && ec->machine.stack_end &&
             /* marked for current ec at the first stage of marking */
             ec != rb_gc_get_ec()) {
-        rb_gc_mark_machine_context(ec);
+        rb_gc_mark_machine_context_ctx(ctx, ec);
     }
 
-    rb_gc_mark(ec->errinfo);
-    rb_gc_mark(ec->root_svar);
+    rb_gc_mark_ctx(ctx, ec->errinfo);
+    rb_gc_mark_ctx(ctx, ec->root_svar);
     if (ec->local_storage) {
-        rb_id_table_foreach_values(ec->local_storage, mark_local_storage_i, NULL);
+        rb_id_table_foreach_values(ec->local_storage, mark_local_storage_i, (void *)ctx);
     }
-    rb_gc_mark(ec->local_storage_recursive_hash);
-    rb_gc_mark(ec->local_storage_recursive_hash_for_trace);
-    rb_gc_mark(ec->private_const_reference);
+    rb_gc_mark_ctx(ctx, ec->local_storage_recursive_hash);
+    rb_gc_mark_ctx(ctx, ec->local_storage_recursive_hash_for_trace);
+    rb_gc_mark_ctx(ctx, ec->private_const_reference);
 
-    rb_gc_mark_movable(ec->storage);
+    rb_gc_mark_movable_ctx(ctx, ec->storage);
 }
 
-void rb_fiber_mark_self(rb_fiber_t *fib);
+void rb_fiber_mark_self(const struct rb_gc_mark_ctx *ctx, const rb_fiber_t *fib);
 void rb_fiber_update_self(rb_fiber_t *fib);
 void rb_threadptr_root_fiber_setup(rb_thread_t *th);
 void rb_root_fiber_obj_setup(rb_thread_t *th, void *objspace);
@@ -4025,32 +4025,32 @@ thread_compact(void *ptr)
  * out of thread_mark so that a local GC can root them straight from the Ractor's
  * local roots (rb_ractor_mark_local_roots). */
 void
-rb_thread_mark_owned_roots(rb_thread_t *th)
+rb_thread_mark_owned_roots(const struct rb_gc_mark_ctx *ctx, rb_thread_t *th)
 {
     /* mark ruby objects */
     switch (th->invoke_type) {
       case thread_invoke_type_proc:
       case thread_invoke_type_ractor_proc:
-        rb_gc_mark(th->invoke_arg.proc.proc);
-        rb_gc_mark(th->invoke_arg.proc.args);
+        rb_gc_mark_ctx(ctx, th->invoke_arg.proc.proc);
+        rb_gc_mark_ctx(ctx, th->invoke_arg.proc.args);
         break;
       case thread_invoke_type_func:
-        rb_gc_mark_maybe((VALUE)th->invoke_arg.func.arg);
+        rb_gc_mark_maybe_ctx(ctx, (VALUE)th->invoke_arg.func.arg);
         break;
       default:
         break;
     }
 
-    rb_gc_mark(th->thgroup);
-    rb_gc_mark(th->value);
-    rb_gc_mark(th->pending_interrupt_queue);
-    rb_gc_mark(th->pending_interrupt_mask_stack);
-    rb_gc_mark(th->top_self);
-    rb_gc_mark(th->top_wrapper);
-    rb_gc_mark(th->last_status);
-    rb_gc_mark(th->locking_mutex);
-    rb_gc_mark(th->name);
-    rb_gc_mark(th->scheduler);
+    rb_gc_mark_ctx(ctx, th->thgroup);
+    rb_gc_mark_ctx(ctx, th->value);
+    rb_gc_mark_ctx(ctx, th->pending_interrupt_queue);
+    rb_gc_mark_ctx(ctx, th->pending_interrupt_mask_stack);
+    rb_gc_mark_ctx(ctx, th->top_self);
+    rb_gc_mark_ctx(ctx, th->top_wrapper);
+    rb_gc_mark_ctx(ctx, th->last_status);
+    rb_gc_mark_ctx(ctx, th->locking_mutex);
+    rb_gc_mark_ctx(ctx, th->name);
+    rb_gc_mark_ctx(ctx, th->scheduler);
 
     rb_threadptr_interrupt_exec_task_mark(th);
 }
@@ -4059,22 +4059,23 @@ static void
 thread_mark(void *ptr)
 {
     rb_thread_t *th = ptr;
+    const struct rb_gc_mark_ctx ctx = rb_gc_current_mark_ctx();
     RUBY_MARK_ENTER("thread");
 
     // ec is null when setting up the thread in rb_threadptr_root_fiber_setup
     if (th->ec) {
-        rb_fiber_mark_self(th->ec->fiber_ptr);
+        rb_fiber_mark_self(&ctx, th->ec->fiber_ptr);
     }
 
     /* A live thread wrapper keeps its Ractor object alive (and through its dfree the
      * rb_ractor_t), so an inherited Thread keeps a dead Ractor alive just as it does
      * upstream. */
-    if (th->ractor) rb_gc_mark(rb_ractor_self(th->ractor));
-    if (th->root_fiber) rb_fiber_mark_self(th->root_fiber);
+    if (th->ractor) rb_gc_mark_ctx(&ctx, rb_ractor_self(th->ractor));
+    if (th->root_fiber) rb_fiber_mark_self(&ctx, th->root_fiber);
 
     RUBY_ASSERT(th->ec == NULL || th->ec == rb_fiberptr_get_ec(th->ec->fiber_ptr));
 
-    rb_thread_mark_owned_roots(th);
+    rb_thread_mark_owned_roots(&ctx, th);
 
     RUBY_MARK_LEAVE("thread");
 }
