@@ -1977,6 +1977,19 @@ class TestProcess < Test::Unit::TestCase
       assert_equal("ok\n", data, "[Bug #22406]")
     end
 
+    def test_daemon_after_getnameinfo
+      data = IO.popen("-", "r+") do |f|
+        break f.read if f
+        require "socket"
+        Socket.getnameinfo(["AF_INET", 80, "127.0.0.1"], Socket::NI_NUMERICHOST)
+        Process.daemon(true, true)
+        Socket.getnameinfo(["AF_INET", 80, "127.0.0.1"], Socket::NI_NUMERICHOST)
+        Process.wait(fork {})
+        puts "ok"
+      end
+      assert_equal("ok\n", data, "[Bug #22406]")
+    end
+
     def test_daemon_detached
       IO.popen("-", "r+") do |f|
         if f
