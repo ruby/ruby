@@ -7,6 +7,12 @@
 
 #include "prism/arena.h"
 
+/* The offset of the start of the given location. */
+#define PM_LOCATION_START(location_) ((location_)->start)
+
+/* The offset just past the end of the given location. */
+#define PM_LOCATION_END(location_) ((location_)->start + (location_)->length)
+
 /*
  * Slow path for pm_node_list_append: grow the list and append the node.
  * Do not call directly — use pm_node_list_append instead.

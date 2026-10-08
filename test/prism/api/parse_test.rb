@@ -110,6 +110,15 @@ module Ruby::Prism
       assert Ruby::Prism.parse_success?("yield", partial_script: true)
     end
 
+    def test_attach_comments
+      assert Ruby::Prism.parse_success?("foo # comment", attach_comments: true)
+      assert Ruby::Prism.parse_success?("foo # comment", attach_comments: false)
+
+      # The serialized options are positional, so the scopes that follow
+      # attach_comments must still be read correctly.
+      assert_kind_of Ruby::Prism::LocalVariableReadNode, Ruby::Prism.parse_statement("foo", attach_comments: true, scopes: [[:foo]])
+    end
+
     def test_version
       assert Ruby::Prism.parse_success?("1 + 1", version: "3.3")
       assert Ruby::Prism.parse_success?("1 + 1", version: "3.3.0")

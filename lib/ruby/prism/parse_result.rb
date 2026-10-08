@@ -29,15 +29,20 @@ module Ruby::Prism
     # byte offset whenever a newline character is encountered.  The first
     # element is always 0 to mark the first line.
     #
-    #: (String source, Integer start_line, Array[Integer] offsets) -> Source
-    def self.for(source, start_line, offsets)
+    # The comments, comment_attachments, and comment_ranges parameters are the
+    # lists described by the attributes of the same names. They are passed in
+    # empty when the source is created by the parser and filled in afterward,
+    # because the comments themselves refer to the source.
+    #
+    #: (String source, Integer start_line, Array[Integer] offsets, ?Array[Comment] comments, ?Array[Comment] comment_attachments, ?Array[Integer?] comment_ranges) -> Source
+    def self.for(source, start_line, offsets, comments = [], comment_attachments = [], comment_ranges = [])
       if source.ascii_only?
-        ASCIISource.new(source, start_line, offsets)
+        ASCIISource.new(source, start_line, offsets, comments, comment_attachments, comment_ranges)
       elsif source.encoding == Encoding::BINARY
         source.force_encoding(Encoding::UTF_8)
 
         if source.valid_encoding?
-          new(source, start_line, offsets)
+          new(source, start_line, offsets, comments, comment_attachments, comment_ranges)
         else
           # This is an extremely niche use case where the file is marked as
           # binary, contains multi-byte characters, and those characters are not
@@ -46,10 +51,10 @@ module Ruby::Prism
           # problems when asking for code units, but it appears to be the
           # cleanest solution at the moment.
           source.force_encoding(Encoding::BINARY)
-          ASCIISource.new(source, start_line, offsets)
+          ASCIISource.new(source, start_line, offsets, comments, comment_attachments, comment_ranges)
         end
       else
-        new(source, start_line, offsets)
+        new(source, start_line, offsets, comments, comment_attachments, comment_ranges)
       end
     end
 
@@ -58,6 +63,22 @@ module Ruby::Prism
 
     # The line number where this source starts.
     attr_reader :start_line #: Integer
+
+    # The list of comments that were encountered during parsing. When the source
+    # is parsed with the attach_comments option, these are sorted by start
+    # offset.
+    attr_reader :comments #: Array[Comment]
+
+    # The comments attached to nodes, grouped by node in order of node id. This
+    # is empty unless the source was parsed with the attach_comments option.
+    attr_reader :comment_attachments #: Array[Comment]
+
+    # Indices into comment_attachments, indexed by node id. For each node that
+    # owns comments, the index at which its comments begin is stored at its node
+    # id and the index at which they end is stored at the following node id. The
+    # other entries are nil. This is empty unless the source was parsed with the
+    # attach_comments option.
+    attr_reader :comment_ranges #: Array[Integer?]
 
     # The list of newline byte offsets in the source code. When initialized from
     # the C extension, this may be a packed binary string of uint32_t values
@@ -74,11 +95,14 @@ module Ruby::Prism
     # parameter can be either an Array of Integer byte offsets or a packed
     # binary string of uint32_t values (from the C extension).
     #
-    #: (String source, Integer start_line, Array[Integer] | String offsets) -> void
-    def initialize(source, start_line, offsets)
+    #: (String source, Integer start_line, Array[Integer] | String offsets, ?Array[Comment] comments, ?Array[Comment] comment_attachments, ?Array[Integer?] comment_ranges) -> void
+    def initialize(source, start_line, offsets, comments = [], comment_attachments = [], comment_ranges = [])
       @source = source
       @start_line = start_line
       @offsets = offsets
+      @comments = comments
+      @comment_attachments = comment_attachments
+      @comment_ranges = comment_ranges
     end
 
     # Replace the value of start_line with the given value.
@@ -93,6 +117,19 @@ module Ruby::Prism
     #: (Array[Integer] offsets) -> void
     def replace_offsets(offsets)
       @offsets = offsets
+    end
+
+    # The comments attached to the node with the given id, ordered by start
+    # offset. Comments are only attached when the source is parsed with the
+    # attach_comments option.
+    #
+    #: (Integer node_id) -> Array[Comment]
+    def comments_for(node_id)
+      start = comment_ranges[node_id]
+      finish = comment_ranges[node_id + 1]
+      return [] if start.nil? || finish.nil?
+
+      comment_attachments[start...finish] || []
     end
 
     # Returns the encoding of the source code, which is set by parameters to the
@@ -222,6 +259,9 @@ module Ruby::Prism
     def deep_freeze
       source.freeze
       offsets.freeze
+      comments.freeze
+      comment_attachments.freeze
+      comment_ranges.freeze
       freeze
     end
 
@@ -406,9 +446,6 @@ module Ruby::Prism
     # The length of this location in bytes.
     attr_reader :length #: Integer
 
-    # @rbs @leading_comments: Array[Comment]?
-    # @rbs @trailing_comments: Array[Comment]?
-
     # Create a new location object with the given source, start byte offset, and
     # byte length.
     #
@@ -417,50 +454,6 @@ module Ruby::Prism
       @source = source
       @start_offset = start_offset
       @length = length
-
-      # These are used to store comments that are associated with this location.
-      # They are initialized to `nil` to save on memory when there are no
-      # comments to be attached and/or the comment-related APIs are not used.
-      @leading_comments = nil
-      @trailing_comments = nil
-    end
-
-    # These are the comments that are associated with this location that exist
-    # before the start of this location.
-    #
-    #: () -> Array[Comment]
-    def leading_comments
-      @leading_comments ||= []
-    end
-
-    # Attach a comment to the leading comments of this location.
-    #
-    #: (Comment comment) -> void
-    def leading_comment(comment)
-      leading_comments << comment
-    end
-
-    # These are the comments that are associated with this location that exist
-    # after the end of this location.
-    #
-    #: () -> Array[Comment]
-    def trailing_comments
-      @trailing_comments ||= []
-    end
-
-    # Attach a comment to the trailing comments of this location.
-    #
-    #: (Comment comment) -> void
-    def trailing_comment(comment)
-      trailing_comments << comment
-    end
-
-    # Returns all comments that are associated with this location (both leading
-    # and trailing comments).
-    #
-    #: () -> Array[Comment]
-    def comments
-      [*@leading_comments, *@trailing_comments] #: Array[Comment]
     end
 
     # Create a new location object with the given options.
@@ -903,9 +896,6 @@ module Ruby::Prism
   # It contains the requested structure, any comments that were encounters,
   # and any errors that were encountered.
   class Result
-    # The list of comments that were encountered during parsing.
-    attr_reader :comments #: Array[Comment]
-
     # The list of magic comments that were encountered during parsing.
     attr_reader :magic_comments #: Array[MagicComment]
 
@@ -925,15 +915,21 @@ module Ruby::Prism
 
     # Create a new result object with the given values.
     #
-    #: (Array[Comment] comments, Array[MagicComment] magic_comments, Location? data_loc, Array[ParseError] errors, Array[ParseWarning] warnings, bool continuable, Source source) -> void
-    def initialize(comments, magic_comments, data_loc, errors, warnings, continuable, source)
-      @comments = comments
+    #: (Array[MagicComment] magic_comments, Location? data_loc, Array[ParseError] errors, Array[ParseWarning] warnings, bool continuable, Source source) -> void
+    def initialize(magic_comments, data_loc, errors, warnings, continuable, source)
       @magic_comments = magic_comments
       @data_loc = data_loc
       @errors = errors
       @warnings = warnings
       @continuable = continuable
       @source = source
+    end
+
+    # The list of comments that were encountered during parsing.
+    #
+    #: () -> Array[Comment]
+    def comments
+      source.comments
     end
 
     # Implement the hash pattern matching interface for Result.
@@ -1001,11 +997,9 @@ module Ruby::Prism
 
   # This is a result specific to the `parse` and `parse_file` methods.
   class ParseResult < Result
-    autoload :Comments, "ruby/prism/parse_result/comments"
     autoload :Errors, "ruby/prism/parse_result/errors"
     autoload :Newlines, "ruby/prism/parse_result/newlines"
 
-    private_constant :Comments
     private_constant :Errors
     private_constant :Newlines
 
@@ -1014,10 +1008,10 @@ module Ruby::Prism
 
     # Create a new parse result object with the given values.
     #
-    #: (ProgramNode value, Array[Comment] comments, Array[MagicComment] magic_comments, Location? data_loc, Array[ParseError] errors, Array[ParseWarning] warnings, bool continuable, Source source) -> void
-    def initialize(value, comments, magic_comments, data_loc, errors, warnings, continuable, source)
+    #: (ProgramNode value, Array[MagicComment] magic_comments, Location? data_loc, Array[ParseError] errors, Array[ParseWarning] warnings, bool continuable, Source source) -> void
+    def initialize(value, magic_comments, data_loc, errors, warnings, continuable, source)
       @value = value
-      super(comments, magic_comments, data_loc, errors, warnings, continuable, source)
+      super(magic_comments, data_loc, errors, warnings, continuable, source)
     end
 
     # Implement the hash pattern matching interface for ParseResult.
@@ -1025,13 +1019,6 @@ module Ruby::Prism
     #: (Array[Symbol]? keys) -> Hash[Symbol, untyped]
     def deconstruct_keys(keys) # :nodoc:
       super.merge!(value: value)
-    end
-
-    # Attach the list of comments to their respective locations in the tree.
-    #
-    #: () -> void
-    def attach_comments!
-      Comments.new(self).attach! # steep:ignore
     end
 
     # Walk the tree and mark nodes that are on a new line, loosely emulating
@@ -1058,10 +1045,10 @@ module Ruby::Prism
 
     # Create a new lex result object with the given values.
     #
-    #: (Array[Token] value, Array[Comment] comments, Array[MagicComment] magic_comments, Location? data_loc, Array[ParseError] errors, Array[ParseWarning] warnings, bool continuable, Source source) -> void
-    def initialize(value, comments, magic_comments, data_loc, errors, warnings, continuable, source)
+    #: (Array[Token] value, Array[MagicComment] magic_comments, Location? data_loc, Array[ParseError] errors, Array[ParseWarning] warnings, bool continuable, Source source) -> void
+    def initialize(value, magic_comments, data_loc, errors, warnings, continuable, source)
       @value = value
-      super(comments, magic_comments, data_loc, errors, warnings, continuable, source)
+      super(magic_comments, data_loc, errors, warnings, continuable, source)
     end
 
     # Implement the hash pattern matching interface for LexResult.
@@ -1080,10 +1067,10 @@ module Ruby::Prism
 
     # Create a new parse lex result object with the given values.
     #
-    #: ([ProgramNode, Array[Token]] value, Array[Comment] comments, Array[MagicComment] magic_comments, Location? data_loc, Array[ParseError] errors, Array[ParseWarning] warnings, bool continuable, Source source) -> void
-    def initialize(value, comments, magic_comments, data_loc, errors, warnings, continuable, source)
+    #: ([ProgramNode, Array[Token]] value, Array[MagicComment] magic_comments, Location? data_loc, Array[ParseError] errors, Array[ParseWarning] warnings, bool continuable, Source source) -> void
+    def initialize(value, magic_comments, data_loc, errors, warnings, continuable, source)
       @value = value
-      super(comments, magic_comments, data_loc, errors, warnings, continuable, source)
+      super(magic_comments, data_loc, errors, warnings, continuable, source)
     end
 
     # Implement the hash pattern matching interface for ParseLexResult.

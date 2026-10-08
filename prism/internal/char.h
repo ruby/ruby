@@ -54,6 +54,12 @@ pm_strspn_inline_whitespace(const uint8_t *string, ptrdiff_t length) {
 size_t pm_strspn_whitespace(const uint8_t *string, ptrdiff_t length);
 
 /*
+ * Returns the number of characters at the end of the string that are
+ * whitespace. Disallows searching past the given maximum number of characters.
+ */
+size_t pm_strrspn_whitespace(const uint8_t *string, ptrdiff_t length);
+
+/*
  * Returns the number of characters at the start of the string that are
  * whitespace while also tracking the location of each newline. Disallows
  * searching past the given maximum number of characters.

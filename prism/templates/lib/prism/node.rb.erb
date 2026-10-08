@@ -170,25 +170,12 @@ module Ruby::Prism
       location.cached_end_code_units_column(cache)
     end
 
-    # Delegates to [`leading_comments`](rdoc-ref:Location#leading_comments) of the associated location object.
-    #
-    #: () -> Array[Comment]
-    def leading_comments
-      location.leading_comments
-    end
-
-    # Delegates to [`trailing_comments`](rdoc-ref:Location#trailing_comments) of the associated location object.
-    #
-    #: () -> Array[Comment]
-    def trailing_comments
-      location.trailing_comments
-    end
-
-    # Delegates to [`comments`](rdoc-ref:Location#comments) of the associated location object.
+    # The comments attached to this node, ordered by start offset. Comments are
+    # only attached when the source is parsed with the attach_comments option.
     #
     #: () -> Array[Comment]
     def comments
-      location.comments
+      source.comments_for(node_id)
     end
 
     # :section:
@@ -380,14 +367,6 @@ module Ruby::Prism
       raise NoMethodError, "undefined method `compact_child_nodes' for #{inspect}"
     end
 
-    # Returns an array of child nodes and locations that could potentially have
-    # comments attached to them.
-    #
-    #: () -> Array[node | Location]
-    def comment_targets
-      raise NoMethodError, "undefined method `comment_targets' for #{inspect}"
-    end
-
     # Returns a string representation of the node.
     #
     #: () -> String
@@ -523,18 +502,6 @@ module Ruby::Prism
         end
       }.compact.join(", ") %>]
       <%- end -%>
-    end
-
-    # See Node.comment_targets.
-    #
-    #: () -> Array[node | Location]
-    def comment_targets
-      [<%= node.fields.map { |field|
-        case field
-        when Ruby::Prism::Template::NodeField, Ruby::Prism::Template::LocationField then field.name
-        when Ruby::Prism::Template::OptionalNodeField, Ruby::Prism::Template::NodeListField, Ruby::Prism::Template::OptionalLocationField then "*#{field.name}"
-        end
-      }.compact.join(", ") %>] #: Array[Ruby::Prism::node | Location]
     end
 
     # :call-seq:

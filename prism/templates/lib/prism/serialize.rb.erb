@@ -38,7 +38,8 @@ module Ruby::Prism
       source.replace_start_line(start_line)
       source.replace_offsets(offsets)
 
-      comments =       loader.load_comments(freeze)
+                       loader.load_comments(source.comments, freeze)
+                       loader.load_comment_attachments(source, freeze)
       magic_comments = loader.load_magic_comments(freeze)
       data_loc =       loader.load_optional_location_object(freeze)
       errors =         loader.load_errors(encoding, freeze)
@@ -53,7 +54,7 @@ module Ruby::Prism
                        loader.load_constant_pool(constant_pool)
       raise unless     loader.eof?
 
-      result = ParseResult.new(node, comments, magic_comments, data_loc, errors, warnings, continuable, source)
+      result = ParseResult.new(node, magic_comments, data_loc, errors, warnings, continuable, source)
       result.freeze if freeze
 
       input.force_encoding(encoding)
@@ -93,7 +94,8 @@ module Ruby::Prism
       source.replace_start_line(start_line)
       source.replace_offsets(offsets)
 
-      comments =       loader.load_comments(freeze)
+                       loader.load_comments(source.comments, freeze)
+                       loader.load_comment_attachments(source, freeze)
       magic_comments = loader.load_magic_comments(freeze)
       data_loc =       loader.load_optional_location_object(freeze)
       errors =         loader.load_errors(encoding, freeze)
@@ -101,7 +103,7 @@ module Ruby::Prism
       continuable =    loader.load_bool
       raise unless     loader.eof?
 
-      result = LexResult.new(tokens, comments, magic_comments, data_loc, errors, warnings, continuable, source)
+      result = LexResult.new(tokens, magic_comments, data_loc, errors, warnings, continuable, source)
 
       tokens.each do |token|
         token[0].value.force_encoding(encoding)
@@ -140,7 +142,7 @@ module Ruby::Prism
       source.replace_start_line(start_line)
       source.replace_offsets(offsets)
 
-      result =     loader.load_comments(freeze)
+      result =     loader.load_comments(source.comments, freeze)
       raise unless loader.eof?
 
       source.deep_freeze if freeze
@@ -167,7 +169,8 @@ module Ruby::Prism
       source.replace_start_line(start_line)
       source.replace_offsets(offsets)
 
-      comments =       loader.load_comments(freeze)
+                       loader.load_comments(source.comments, freeze)
+                       loader.load_comment_attachments(source, freeze)
       magic_comments = loader.load_magic_comments(freeze)
       data_loc =       loader.load_optional_location_object(freeze)
       errors =         loader.load_errors(encoding, freeze)
@@ -183,7 +186,7 @@ module Ruby::Prism
       raise unless     loader.eof?
 
       value = [node, tokens] #: [ProgramNode, Array[Token]]
-      result = ParseLexResult.new(value, comments, magic_comments, data_loc, errors, warnings, continuable, source)
+      result = ParseLexResult.new(value, magic_comments, data_loc, errors, warnings, continuable, source)
 
       tokens.each do |token|
         token[0].value.force_encoding(encoding)
@@ -316,20 +319,46 @@ module Ruby::Prism
         offsets
       end
 
-      #: (bool freeze) -> Array[Comment]
-      def load_comments(freeze)
-        comments =
-          Array.new(load_varuint) do
-            comment =
-              case load_varuint
-              when 0 then InlineComment.new(load_location_object(freeze))
-              when 1 then EmbDocComment.new(load_location_object(freeze))
-              else raise
-              end
+      # Load the comments attached to each node into the comment attachments and
+      # comment ranges of the given source. For each node that owns comments, the
+      # index at which its comments begin is stored at its node id and the index
+      # at which they end at the following node id.
+      #
+      #: (Source source, bool freeze) -> void
+      def load_comment_attachments(source, freeze)
+        comments = source.comments
+        attachments = source.comment_attachments
+        ranges = source.comment_ranges
 
-            comment.freeze if freeze
-            comment
-          end
+        load_varuint.times do
+          node_id = load_varuint
+          ranges[node_id] = attachments.length
+          load_varuint.times { attachments << comments[load_varuint] }
+          ranges[node_id + 1] = attachments.length
+        end
+
+        if freeze
+          attachments.freeze
+          ranges.freeze
+        end
+      end
+
+      # Load the comments into the given list, which belongs to the source that
+      # the comments refer to.
+      #
+      #: (Array[Comment] comments, bool freeze) -> Array[Comment]
+      def load_comments(comments, freeze)
+        load_varuint.times do
+          comment =
+            case load_varuint
+            when 0 then InlineComment.new(load_location_object(freeze))
+            when 1 then EmbDocComment.new(load_location_object(freeze))
+            else raise
+            end
+
+          comment.freeze if freeze
+          comments << comment
+        end
 
         comments.freeze if freeze
         comments

@@ -112,9 +112,19 @@ module Ruby::Prism
         unless actual.nil?
           assert_equal(expected.line, actual.line, on_failure)
           assert_equal(expected.file, actual.file, on_failure)
+          assert_comments(expected, actual)
         end
       elsif expected == actual && expected.line && actual.line && expected.file == actual.file
         puts "#{name} now passes"
+      end
+    end
+
+    def assert_comments(expected, actual)
+      assert_equal(expected.comments, actual.comments, "comments mismatch on #{expected.inspect}")
+
+      expected.each_with_index do |child, index|
+        next unless child.is_a?(Sexp) && actual[index].is_a?(Sexp)
+        assert_comments(child, actual[index])
       end
     end
 

@@ -77,7 +77,7 @@ pm_integer_new(const pm_integer_t *integer) {
 
 // Create a Ruby::Prism::Source object from the given parser, after pm_parse() was called.
 VALUE
-pm_source_new(const pm_parser_t *parser, rb_encoding *encoding, bool freeze) {
+pm_source_new(const pm_parser_t *parser, rb_encoding *encoding, VALUE comments, VALUE comment_attachments, VALUE comment_ranges, bool freeze) {
     const uint8_t *start = pm_parser_start(parser);
     VALUE source_string = rb_enc_str_new((const char *) start, pm_parser_end(parser) - start, encoding);
 
@@ -96,7 +96,7 @@ pm_source_new(const pm_parser_t *parser, rb_encoding *encoding, bool freeze) {
         offsets = rb_str_new((const char *) line_offsets->offsets, line_offsets->size * sizeof(uint32_t));
     }
 
-    VALUE source = rb_funcall(rb_cPrismSource, rb_intern("for"), 3, source_string, LONG2NUM(pm_parser_start_line(parser)), offsets);
+    VALUE source = rb_funcall(rb_cPrismSource, rb_intern("for"), 6, source_string, LONG2NUM(pm_parser_start_line(parser)), offsets, comments, comment_attachments, comment_ranges);
     if (freeze) rb_obj_freeze(source);
 
     return source;

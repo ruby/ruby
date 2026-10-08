@@ -123,51 +123,7 @@ module Ruby::Prism
       assert_equal 11, location_entry.end_code_units_column
     end
 
-    def test_leading_comments
-      source = "# leading\nclass Foo\nend"
-      repository = Relocation.string(source).leading_comments
-      declaration = Ruby::Prism.parse(source).value.statements.body.first
-
-      node_entry = declaration.save(repository)
-      location_entry = declaration.save_location(repository)
-
-      assert_equal ["# leading"], node_entry.leading_comments.map(&:slice)
-      assert_equal ["# leading"], location_entry.leading_comments.map(&:slice)
-    end
-
-    def test_trailing_comments
-      source = "class Foo\nend\n# trailing"
-      repository = Relocation.string(source).trailing_comments
-      declaration = Ruby::Prism.parse(source).value.statements.body.first
-
-      node_entry = declaration.save(repository)
-      location_entry = declaration.save_location(repository)
-
-      assert_equal ["# trailing"], node_entry.trailing_comments.map(&:slice)
-      assert_equal ["# trailing"], location_entry.trailing_comments.map(&:slice)
-    end
-
-    def test_comments
-      source = "# leading\nclass Foo\nend\n# trailing"
-      repository = Relocation.string(source).comments
-      declaration = Ruby::Prism.parse(source).value.statements.body.first
-
-      node_entry = declaration.save(repository)
-      location_entry = declaration.save_location(repository)
-
-      assert_equal ["# leading", "# trailing"], node_entry.comments.map(&:slice)
-      assert_equal ["# leading", "# trailing"], location_entry.comments.map(&:slice)
-    end
-
     def test_misconfiguration
-      assert_raise Relocation::Repository::ConfigurationError do
-        Relocation.string("").comments.leading_comments
-      end
-
-      assert_raise Relocation::Repository::ConfigurationError do
-        Relocation.string("").comments.trailing_comments
-      end
-
       assert_raise Relocation::Repository::ConfigurationError do
         Relocation.string("").code_unit_offsets(Encoding::UTF_8).code_unit_offsets(Encoding::UTF_16LE)
       end
