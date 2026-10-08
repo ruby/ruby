@@ -750,7 +750,7 @@ rb_gc_impl_zjit_new_obj_fastpath(void *objspace_ptr, size_t alloc_size, VALUE fl
 }
 
 const uintptr_t *
-rb_gc_impl_zjit_incremental_marking_ptr(void *objspace_ptr)
+rb_gc_impl_writebarrier_required_p_ptr(void *objspace_ptr)
 {
     /* MMTk's write barrier is not a no-op for young, unshareable receivers,
      * so ZJIT must always call rb_gc_writebarrier(). */
