@@ -503,5 +503,35 @@ module Test_SyncDefaultGems
       out = assert_update
       assert_equal(sha, read_git(*%W"rev-parse ruby-core/master"), out)
     end
+
+    def update_release(version)
+      latest_release = SyncDefaultGems.method(:latest_release)
+      EnvUtil.suppress_warning {SyncDefaultGems.define_singleton_method(:latest_release) {|_| version}}
+      result = nil
+      out = capture_process_output_to([STDOUT, STDERR]) do
+        result = SyncDefaultGems.update_default_gems(@target, release: true)
+      end
+      [result, out]
+    ensure
+      EnvUtil.suppress_warning {SyncDefaultGems.define_singleton_method(:latest_release, latest_release)}
+    end
+
+    def test_release_checks_out_the_published_version
+      upstream = "#{@testdir}/upstream/#{@target}"
+      git(*%W"tag v1.0.0", chdir: upstream)
+      released = read_git(*%W"rev-parse HEAD", chdir: upstream)
+      git(*%W"commit -q --allow-empty -m Unreleased", chdir: upstream)
+      # Sorts after the release, like a tag fetched from ruby/ruby.
+      git(*%W"tag v4.0.2", chdir: upstream)
+      result, out = update_release("1.0.0")
+      assert_true(result, out)
+      assert_equal(released, read_git(*%W"rev-parse HEAD"), out)
+    end
+
+    def test_release_without_tag
+      result, out = update_release("1.0.0")
+      assert_false(result, out)
+      assert_match(/No tag for #{@target}-1\.0\.0/, out)
+    end
   end if /darwin|linux/ =~ RUBY_PLATFORM
 end
