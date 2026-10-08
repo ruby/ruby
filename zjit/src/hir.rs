@@ -6958,8 +6958,8 @@ impl Function {
                         rewrite_map.insert(*src, canonical_id);
                     }
                     _ => {
-                        if self.insns[canonical_id.to_usize()].is_numberable() {
-                            match value_number.entry(self.insns[canonical_id.to_usize()].clone()) {
+                        if self.insns[canonical_id].is_numberable() {
+                            match value_number.entry(self.insns[canonical_id].clone()) {
                                 std::collections::hash_map::Entry::Occupied(entry) => {
                                     rewrite_map.insert(canonical_id, *entry.get());
                                     self.union_find.borrow_mut().make_equal_to(canonical_id, *entry.get());
