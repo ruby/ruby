@@ -181,7 +181,7 @@ end
 #
 module FileUtils
   # The version number.
-  VERSION = "1.8.0"
+  VERSION = "1.8.1"
 
   def self.private_module_function(name)   #:nodoc:
     module_function name
