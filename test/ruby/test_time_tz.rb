@@ -787,6 +787,28 @@ class TestTimeTZ::DummyTZ < Test::Unit::TestCase
     t2 = Time.new(2020,11,11,12,13,14.124r, x)
     assert_equal(t1, t2)
   end
+
+  def test_strftime_zone_abbreviation
+    zone = TestTimeTZ::TZ.new("Encoding", "\u00e9AAA", 0)
+    enc = Encoding::ISO_8859_1
+    enc = Encoding::Windows_1252 if Encoding.find("locale") == enc
+
+    out = TIME_CLASS.new(2020, 1, 1, 0, 0, 0, zone).strftime("A%Z".encode(enc))
+    assert_predicate(out, :valid_encoding?)
+    assert_equal(("A" + "\u00e9AAA"), out)
+
+    out = TIME_CLASS.new(2020, 1, 1, 0, 0, 0, zone).strftime("\u0080%Z".encode(enc))
+    assert_predicate(out, :valid_encoding?)
+    assert_equal(("\u0080\u00e9AAA").encode(enc), out)
+
+    zone = TestTimeTZ::TZ.new("Encoding", "\u{6771 4eac 6a19 6e96 6642}".encode(Encoding::SJIS), 0)
+    out = TIME_CLASS.new(2020, 1, 1, 0, 0, 0, zone).strftime("%Z")
+    assert_predicate(out, :valid_encoding?)
+    assert_equal(zone.abbr(0), out)
+    out = TIME_CLASS.new(2020, 1, 1, 0, 0, 0, zone).strftime("\u{2606}%Z")
+    assert_predicate(out, :valid_encoding?)
+    assert_equal("\u{2606 6771 4eac 6a19 6e96 6642}", out)
+  end
 end
 
 begin
