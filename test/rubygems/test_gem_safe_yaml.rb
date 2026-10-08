@@ -162,6 +162,15 @@ class TestGemSafeYAML < Gem::TestCase
     assert_raise(expected_error) { Gem::SafeYAML.safe_load(yaml) }
   end
 
+  def test_alias_expansion_limit
+    # Each anchor aliases the previous one twice, doubling the expanded size.
+    yaml = +"seq:\n- &a0\n  - x\n  - y\n"
+    1.upto(20) {|i| yaml << "- &a#{i}\n  - *a#{i - 1}\n  - *a#{i - 1}\n" }
+
+    error = assert_raise(Psych::BadAlias) { Gem::SafeYAML.safe_load(yaml) }
+    assert_match(/maximum alias expansion/, error.message)
+  end
+
   def test_unused_anchor_with_aliases_disabled_is_allowed
     aliases_enabled = Gem::SafeYAML.aliases_enabled?
     Gem::SafeYAML.aliases_enabled = false

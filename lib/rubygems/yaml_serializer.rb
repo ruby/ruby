@@ -531,14 +531,16 @@ module Gem
     class Builder
       VALID_OPS = %w[= != > < >= <= ~>].freeze
       ARRAY_FIELDS = %w[files test_files executables extra_rdoc_files].freeze
-      MAX_ALIAS_RESOLUTIONS = 1_000
+      MAX_ALIAS_EXPANSION = 10_000
 
       def initialize(permitted_classes: [], permitted_symbols: [], aliases: true)
         @permitted_classes = permitted_classes.map {|c| "!ruby/object:#{c}" }
         @permitted_symbols = permitted_symbols
         @aliases = aliases
         @anchor_values = {}
-        @alias_count = 0
+        @anchor_sizes = {}
+        @node_count = 0
+        @alias_expansion = 0
       end
 
       def build(node)
@@ -556,31 +558,40 @@ module Gem
       private
 
       def build_node(node)
+        start = @node_count
         case node
         when nil then nil
         when AliasRef then resolve_alias(node)
-        when Scalar then store_anchor(node.anchor, node.value)
-        when Mapping then build_mapping(node)
-        when Sequence then store_anchor(node.anchor, node.items.map {|item| build_node(item) })
+        when Scalar then store_anchor(node.anchor, node.value, start)
+        when Mapping then store_anchor(node.anchor, build_mapping(node), start)
+        when Sequence then store_anchor(node.anchor, node.items.map {|item| build_node(item) }, start)
         else node # already a Ruby object
         end
       end
 
       def resolve_alias(node)
         raise Psych::AliasesNotEnabled unless @aliases
-        @alias_count += 1
-        if @alias_count > MAX_ALIAS_RESOLUTIONS
-          raise Psych::BadAlias, "exceeded maximum alias resolutions (#{MAX_ALIAS_RESOLUTIONS})"
-        end
         unless @anchor_values.key?(node.name)
           klass = defined?(Psych::AnchorNotDefined) ? Psych::AnchorNotDefined : Psych::BadAlias
           raise klass, "An alias referenced an unknown anchor: #{node.name}"
         end
+        # Charge the expanded size of the anchor rather than one per reference,
+        # since anchors that alias earlier anchors grow exponentially.
+        size = @anchor_sizes.fetch(node.name)
+        @node_count += size
+        @alias_expansion += size
+        if @alias_expansion > MAX_ALIAS_EXPANSION
+          raise Psych::BadAlias, "exceeded maximum alias expansion (#{MAX_ALIAS_EXPANSION} nodes)"
+        end
         @anchor_values.fetch(node.name)
       end
 
-      def store_anchor(name, value)
-        @anchor_values[name] = value if name
+      def store_anchor(name, value, start)
+        @node_count += 1
+        if name
+          @anchor_values[name] = value
+          @anchor_sizes[name] = @node_count - start
+        end
         value
       end
 
@@ -606,7 +617,7 @@ module Gem
                    raise ArgumentError, "undefined class/module #{node.tag.sub("!ruby/object:", "")}"
         end
 
-        store_anchor(node.anchor, result)
+        result
       end
 
       def build_hash(node)
