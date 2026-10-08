@@ -12,6 +12,7 @@ of each.
 - `RbConfig`: Information about your Ruby configuration and build
 - `Gem`: A package management framework for Ruby
 - `Pathname`: Representation of the name of a file or directory on the filesystem. Pathname is a core class, but only methods that depend on other libraries are provided as a library.
+- `Ruby::Prism`: The prism parser built into the interpreter, i.e., the parser that compiles the running program
 
 ## Extensions
 
@@ -50,7 +51,6 @@ of each.
 - OpenURI ([GitHub][open-uri]): An easy-to-use wrapper for URI::HTTP, URI::HTTPS, and URI::FTP
 - PP ([GitHub][pp]): Provides a PrettyPrinter for Ruby objects
 - PrettyPrint ([GitHub][prettyprint]): Implements a pretty printing algorithm for readable structure
-- Prism ([GitHub][prism]): A portable, error-tolerant Ruby parser
 - Resolv ([GitHub][resolv]): Thread-aware DNS resolver library in Ruby
 - SecureRandom ([GitHub][securerandom]): Interface for a secure random number generator
 - Shellwords ([GitHub][shellwords]): Manipulates strings with the word parsing rules of the UNIX Bourne shell
@@ -125,6 +125,7 @@ of each.
 - [fiddle]: A libffi wrapper for Ruby
 - [tsort]: Topological sorting using Tarjan's algorithm
 - [win32-registry]: Registry accessor library for the Windows platform.
+- [prism]: A portable, error-tolerant Ruby parser
 
 ## Tools
 
