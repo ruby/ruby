@@ -261,6 +261,7 @@ They are still available on rubygems.org and can be installed with
 * syntax_suggest 3.0.0
 * timeout 0.6.1
   * 0.6.0 to [v0.6.1][timeout-v0.6.1]
+* tmpdir 0.3.2
 * zlib 3.2.3
   * 3.2.2 to [v3.2.3][zlib-v3.2.3]
 
