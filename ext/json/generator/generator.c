@@ -1051,7 +1051,8 @@ static inline long increase_depth(struct generate_json_data *data)
 static void generate_json_object(FBuffer *buffer, struct generate_json_data *data, VALUE obj)
 {
     if (RB_UNLIKELY(data->state->rfc8785)) {
-        obj = rb_proc_call_with_block(rfc8785_sort_keys_proc, 1, &obj, Qnil);
+        VALUE args[2] = {obj, data->state->strict ? data->state->as_json : Qnil};
+        obj = rb_proc_call_with_block(rfc8785_sort_keys_proc, 2, args, Qnil);
         Check_Type(obj, T_HASH);
     } else if (RB_UNLIKELY(data->state->sort_keys)) {
         obj = rb_proc_call_with_block(data->state->sort_keys, 1, &obj, Qnil);

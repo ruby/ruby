@@ -100,7 +100,33 @@ module JSON
       end
     })
 
-    generator::State.rfc8785_sort_keys_proc = shareable_lambda(->(hash) {
+    generator::State.rfc8785_sort_keys_proc = shareable_lambda(->(hash, as_json) {
+      if as_json
+        converted = {}
+        hash.each do |key, value|
+          string = (String === key || Symbol === key) ? key.to_s : nil
+          unless string && (string.ascii_only? || (string.encoding == Encoding::UTF_8 && string.valid_encoding?))
+            key = as_json.call(key, true)
+            unless String === key || Symbol === key
+              raise GeneratorError.new("#{key.class} not allowed as object key in JSON", key)
+            end
+            begin
+              string = key.to_s.encode(Encoding::UTF_8)
+            rescue EncodingError => error
+              raise GeneratorError.new(error.message, key)
+            end
+            unless string.valid_encoding?
+              raise GeneratorError.new("source sequence is illegal/malformed utf-8", key)
+            end
+            key = string
+          end
+          if converted.key?(key)
+            raise GeneratorError.new("detected duplicate key #{key.inspect}", key)
+          end
+          converted[key] = value
+        end
+        hash = converted
+      end
       hash.sort_by { |k,| k.to_s.encode(Encoding::UTF_16) }.to_h
     })
 
