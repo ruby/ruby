@@ -210,7 +210,7 @@ Note: We're only listing outstanding class updates.
 * Ruby::Prism
 
     * `Ruby::Prism` is added.  It is the prism parser built into the
-      interpreter, i.e., the very parser that compiles the running program,
+      interpreter, i.e., the very parser that parsed the running program,
       independent of the prism gem.  It is autoloaded.
       `Method#syntax_tree` and others return its nodes.  Its API may change
       between Ruby minor versions; use the `prism` gem unless you need the

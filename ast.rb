@@ -349,7 +349,7 @@ class RubyVM::InstructionSequence
   #
   #  The node is a Ruby::Prism::Node, not a node of the prism gem:
   #  Ruby::Prism is the parser built into the interpreter, so the returned
-  #  tree always corresponds to the compiled code regardless of which
+  #  tree always corresponds to the running code regardless of which
   #  version of the prism gem is installed.
   #
   #  This method is experimental and might change without notice.
@@ -369,8 +369,8 @@ class RubyVM::InstructionSequence
     node_id = self.node_id
     if Primitive.iseq_compiled_by_prism_p
       # Ruby::Prism is the parser built into the interpreter, i.e., the very
-      # parser that compiled this instruction sequence, so node_id always
-      # corresponds. The prism gem (if any) is not involved.
+      # parser that parsed the source of this instruction sequence, so
+      # node_id always corresponds. The prism gem (if any) is not involved.
       result = source ? Ruby::Prism.parse(source, version: "current") : Ruby::Prism.parse_file(path, version: "current")
       return nil unless result.success?
 
