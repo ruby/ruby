@@ -2474,6 +2474,12 @@ Here is an example of how to use +RUBY_TYPED_EMBEDDABLE+:
       rb_define_singleton_method(cMyData, "parse", my_data_m_parse, 0);
   }
 
+== Appendix H. Efficent Extensions
+
+The Ruby native extension API is large and some parts are kept for compatibility but are discouraged or "soft-deprecated".
+See https://github.com/ruby/ruby/blob/master/doc/efficient_extensions.md for a list of those and tips on which APIs to use instead.
+It also documents what to use for extensions to be efficient and avoid disabling Ruby VM optimizations.
+
 --
 Local variables:
 fill-column: 78
