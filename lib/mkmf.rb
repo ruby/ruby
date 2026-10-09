@@ -2085,7 +2085,7 @@ SRC
       warn "mkmf: nmake cannot handle spaces in paths: #{dir}"
     end
     mk << %{
-SHELL = /bin/sh
+SHELL = #{$mswin ? 'cmd.exe' : '/bin/sh'}
 
 # V=0 quiet, V=1 verbose.  other values don't work.
 V = #{verbose}
@@ -2748,6 +2748,12 @@ site-install-rb: install-rb
     $makefile_created = true
   ensure
     mfile.close if mfile
+    if $makefile_created and $mswin and !$nmake
+      # GNU make substitution references replace suffixes only.
+      mk = File.binread("Makefile")
+      mk.gsub!(/\$[({]([@<*?^]|\w+):([\/\\])=([\/\\])[)}]/) {"$(subst #$2,#$3,$(#$1))"}
+      File.binwrite("Makefile", mk)
+    end
   end
 
   # :stopdoc:
