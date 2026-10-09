@@ -4260,7 +4260,7 @@ static VALUE
 rb_io_getline_fast(rb_io_t *fptr, rb_encoding *enc, int chomp)
 {
     VALUE str = Qnil;
-    int len = 0;
+    rb_len_t len = 0;
     rb_len_t pos = 0;
     int cr = 0;
 
