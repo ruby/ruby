@@ -2,6 +2,13 @@
 
 !include $(config_make)
 
+# configure.bat writes these into config_make only for nmake, but -gmp-
+# needs them for GNU make too.
+!if "$(make_command)" != "nmake" && "$(optdirs)" != ""
+XINCFLAGS = -I"$(optdirs:;=/include" -I")/include"
+XLDFLAGS = -libpath:"$(optdirs:;=/lib" -libpath:")/lib"
+!endif
+
 !if "$(srcdir)" != ""
 WIN32DIR = $(srcdir)/win32
 !elseif "$(WIN32DIR)" == "win32"
@@ -14,7 +21,11 @@ srcdir = $(WIN32DIR)/..
 !ifndef prefix
 prefix = /usr
 !endif
+!if "$(make_command)" == "nmake"
 BANG = !
+!else
+BANG =
+!endif
 APPEND = echo.>>$(MAKEFILE)
 !ifdef MAKEFILE
 MAKE = $(MAKE) -f $(MAKEFILE)
@@ -42,7 +53,9 @@ arm64-mswin64: -prologue- -arm64- -epilogue-
 -basic-vars-: nul
 	@rem <<$(MAKEFILE)
 ### Makefile for ruby ###
+!if "$(make_command)" == "nmake"
 MAKE = nmake
+!endif
 srcdir = $(srcdir:\=/)
 prefix = $(prefix:\=/)
 
@@ -62,7 +75,7 @@ prefix = $(prefix:\=/)
 !if "$(HAVE_BASERUBY)" != "no"
 	@$(COMSPEC) /C "set NoDefaultCurrentDirectoryInExePath=1& \
 	$(BASERUBY:/=\) $(srcdir)/tool/mkdepend.rb --root=$(srcdir) \
-	    --scope=core --nmake --output=.deps"
+	    --scope=core $(BANG:!=--nmake) --output=.deps"
 !endif
 
 -gmp-:
@@ -312,9 +325,9 @@ AS = $(AS) -nologo
 !endif
 	@type << >>$(MAKEFILE)
 
-$(BANG)include $$(srcdir)/win32/Makefile.sub
+$(BANG)include $$(srcdir)/win32/$(MAKEFILE:.new=).sub
 <<
 	@$(COMSPEC) /C $(srcdir:/=\)\win32\rm.bat config.h config.status
 	-@move /y $(MAKEFILE_NEW) $(MAKEFILE_BACK) > nul 2> nul
 	@move /y $(MAKEFILE) $(MAKEFILE_NEW) > nul
-	@echo type 'nmake' to make ruby.
+	@echo type '$(make_command)' to make ruby.
