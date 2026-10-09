@@ -44,6 +44,7 @@
 .ruby-version
 Makefile
 /.deps/
+/.gnumake/
 cygruby*.def
 extconf.h
 y.output
