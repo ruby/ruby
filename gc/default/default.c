@@ -4215,7 +4215,7 @@ rb_gc_impl_copy_finalizer(void *objspace_ptr, VALUE dest, VALUE obj)
 }
 
 static VALUE
-get_final(long i, void *data)
+get_final(rb_len_t i, void *data)
 {
     VALUE table = (VALUE)data;
 

@@ -1367,7 +1367,7 @@ rb_gc_impl_each_object(void *objspace_ptr, void (*func)(VALUE, void *), void *da
 
 // Finalizers
 static VALUE
-gc_run_finalizers_get_final(long i, void *data)
+gc_run_finalizers_get_final(rb_len_t i, void *data)
 {
     VALUE table = (VALUE)data;
 
@@ -1449,8 +1449,8 @@ rb_gc_impl_define_finalizer(void *objspace_ptr, VALUE obj, VALUE block)
 
         /* avoid duplicate block, table is usually small */
         {
-            long len = RARRAY_LEN(table);
-            long i;
+            rb_len_t len = RARRAY_LEN(table);
+            rb_len_t i;
 
             for (i = 0; i < len; i++) {
                 VALUE recv = RARRAY_AREF(table, i);

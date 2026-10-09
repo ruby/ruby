@@ -101,7 +101,7 @@ MODULAR_GC_FN void rb_gc_update_object_references(void *objspace, VALUE obj);
 MODULAR_GC_FN void rb_gc_update_vm_references(void *objspace);
 MODULAR_GC_FN void rb_gc_event_hook(VALUE obj, rb_event_flag_t event);
 MODULAR_GC_FN void *rb_gc_get_objspace(void);
-MODULAR_GC_FN void rb_gc_run_obj_finalizer(VALUE objid, long count, VALUE (*callback)(long i, void *data), void *data);
+MODULAR_GC_FN void rb_gc_run_obj_finalizer(VALUE objid, rb_len_t count, VALUE (*callback)(rb_len_t i, void *data), void *data);
 MODULAR_GC_FN void rb_gc_set_pending_interrupt(void);
 MODULAR_GC_FN void rb_gc_trigger_finalize_deferred(void *objspace, rb_postponed_job_handle_t pjob);
 MODULAR_GC_FN void rb_gc_trigger_postponed_job_on_main(rb_postponed_job_handle_t pjob);
