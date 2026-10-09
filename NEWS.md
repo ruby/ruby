@@ -407,6 +407,14 @@ Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for det
   shareable, but almost all of its methods raise `FrozenError` and it can
   still refer to unshareable objects through the members of `rb_io_t`.
 
+* `Random.urandom` now raises `RangeError` for every size too large for a
+  `long`, as `Random#bytes` does.  A size that still fit in an `unsigned long`
+  used to raise `ArgumentError`. [[Feature #22400]]
+
+* `Struct#[]` and `Struct#[]=` now raise `IndexError` for every out-of-range
+  Integer index that fits in a `long`.  An index past the `int` range used to
+  raise `RangeError`. [[Feature #22400]]
+
 ## Stdlib compatibility issues
 
 * `Etc.getlogin` on Windows now returns the login name determined when the
@@ -467,6 +475,17 @@ Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for det
   Ractor once the dead Ractor is collected.
 
   [[Feature #22277]]
+
+### Type for lengths and indices
+
+* `rb_len_t` and `rb_ulen_t` are added as the types of the lengths and indices
+  of String, Array and MatchData, with `LEN2NUM`, `NUM2LEN`, `ULEN2NUM`,
+  `rb_len2int`, `PRIdLEN` and its siblings, `RB_LEN_MAX`, `RB_LEN_MIN`,
+  `RB_ULEN_MAX` and `SIZEOF_RB_LEN_T`.  `RbConfig::SIZEOF["rb_len_t"]` gives
+  its size to an extconf.rb.  They are `long` on every platform for now, and
+  the C API that carries such lengths, such as `RSTRING_LEN` and
+  `rb_range_beg_len`, uses them.  A later change makes them 64 bits on mswin,
+  so extensions should keep these lengths in `rb_len_t`. [[Feature #22400]]
 
 ### Removed APIs
 
@@ -629,6 +648,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #22232]: https://bugs.ruby-lang.org/issues/22232
 [Feature #22238]: https://bugs.ruby-lang.org/issues/22238
 [Feature #22297]: https://bugs.ruby-lang.org/issues/22297
+[Feature #22400]: https://bugs.ruby-lang.org/issues/22400
 [PR #17201]: https://github.com/ruby/ruby/pull/17201
 [GH-psych #805]: https://github.com/ruby/psych/pull/805
 [RubyGems-v4.0.4]: https://github.com/rubygems/rubygems/releases/tag/v4.0.4
