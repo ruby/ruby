@@ -2394,7 +2394,7 @@ transcode_loop(const unsigned char **in_pos, unsigned char **out_pos,
     VALUE fallback = Qnil;
     VALUE (*fallback_func)(VALUE, VALUE) = 0;
     const unsigned char *source_start = *in_pos;
-    long source_len = in_stop - *in_pos;
+    rb_len_t source_len = in_stop - *in_pos;
 
     ec = rb_econv_open_opts(src_encoding, dst_encoding, ecflags, ecopts);
     if (!ec)

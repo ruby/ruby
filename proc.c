@@ -482,7 +482,7 @@ refinement_recipe_match(VALUE recipe, const rb_cref_t *base_cref, VALUE src_reci
     rb_len_t inherited = refinement_recipe_modc(src_recipe);
     if (RARRAY_AREF(recipe, REFINEMENT_RECIPE_BASE_CREF) != (VALUE)base_cref) return false;
     if (refinement_recipe_modc(recipe) != inherited + argc) return false;
-    for (long i = 0; i < inherited; i++) {
+    for (rb_len_t i = 0; i < inherited; i++) {
         if (RARRAY_AREF(recipe, REFINEMENT_RECIPE_MODS + i) !=
             RARRAY_AREF(src_recipe, REFINEMENT_RECIPE_MODS + i)) return false;
     }
@@ -502,7 +502,7 @@ refinement_recipe_new(const rb_cref_t *base_cref, const rb_cref_t *cref,
     rb_ary_push(recipe, (VALUE)base_cref);
     rb_ary_push(recipe, (VALUE)cref);
     rb_ary_push(recipe, (VALUE)src_iseq);
-    for (long i = 0; i < inherited; i++) {
+    for (rb_len_t i = 0; i < inherited; i++) {
         rb_ary_push(recipe, RARRAY_AREF(src_recipe, REFINEMENT_RECIPE_MODS + i));
     }
     for (long i = 0; i < argc; i++) {
@@ -2331,7 +2331,7 @@ rb_sym_to_proc(VALUE sym)
         }
 
         ID id = SYM2ID(sym);
-        long index = (id % SYM_PROC_CACHE_SIZE);
+        rb_len_t index = (id % SYM_PROC_CACHE_SIZE);
         VALUE procval = RARRAY_AREF(sym_proc_cache, index);
         if (RTEST(procval)) {
             rb_proc_t *proc;

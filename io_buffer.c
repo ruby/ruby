@@ -898,7 +898,7 @@ VALUE
 rb_io_buffer_type_string(VALUE klass, VALUE length)
 {
     klass = io_buffer_storage_class(klass);
-    VALUE string = rb_str_new(NULL, RB_NUM2LONG(length));
+    VALUE string = rb_str_new(NULL, RB_NUM2LEN(length));
 
     struct io_buffer_for_yield_instance_arguments arguments = {
         .klass = klass,

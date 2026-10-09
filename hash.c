@@ -5488,7 +5488,7 @@ env_encoding(void)
 }
 
 static VALUE
-env_enc_str_new(const char *ptr, long len, rb_encoding *enc)
+env_enc_str_new(const char *ptr, rb_len_t len, rb_encoding *enc)
 {
     VALUE str = rb_external_str_new_with_enc(ptr, len, enc);
 
@@ -5497,7 +5497,7 @@ env_enc_str_new(const char *ptr, long len, rb_encoding *enc)
 }
 
 static VALUE
-env_str_new(const char *ptr, long len, rb_encoding *enc)
+env_str_new(const char *ptr, rb_len_t len, rb_encoding *enc)
 {
     return env_enc_str_new(ptr, len, enc);
 }
@@ -6691,7 +6691,7 @@ env_has_value(VALUE dmy, VALUE obj)
         while (*env) {
             char *s = strchr(*env, '=');
             if (s++) {
-                long len = strlen(s);
+                rb_len_t len = strlen(s);
                 if (RSTRING_LEN(obj) == len && strncmp(s, RSTRING_PTR(obj), len) == 0) {
                     ret = Qtrue;
                     break;
@@ -6734,7 +6734,7 @@ env_rassoc(VALUE dmy, VALUE obj)
             const char *p = *env;
             const char *s = strchr(p, '=');
             if (s++) {
-                long len = strlen(s);
+                rb_len_t len = strlen(s);
                 if (RSTRING_LEN(obj) == len && strncmp(s, RSTRING_PTR(obj), len) == 0) {
                     result = rb_assoc_new(rb_str_new(p, s-p-1), obj);
                     break;
@@ -6776,7 +6776,7 @@ env_key(VALUE dmy, VALUE value)
         while (*env) {
             char *s = strchr(*env, '=');
             if (s++) {
-                long len = strlen(s);
+                rb_len_t len = strlen(s);
                 if (RSTRING_LEN(value) == len && strncmp(s, RSTRING_PTR(value), len) == 0) {
                     str = env_str_new(*env, s-*env-1, enc);
                     break;

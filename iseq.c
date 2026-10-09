@@ -3666,7 +3666,7 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
                     if (vm_ci_flag(ci) & VM_CALL_KWARG) {
                         const struct rb_callinfo_kwarg *kwarg = vm_ci_kwarg(ci);
                         int i;
-                        VALUE kw = rb_ary_new2((long)kwarg->keyword_len);
+                        VALUE kw = rb_ary_new2((rb_len_t)kwarg->keyword_len);
 
                         argc -= kwarg->keyword_len;
                         for (i = 0; i < kwarg->keyword_len; i++) {

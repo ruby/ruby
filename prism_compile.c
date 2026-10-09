@@ -1760,7 +1760,7 @@ pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *b
                             // then mark the array at that index as false and
                             // decrement the keyword size.
                             if (!NIL_P(stored_index)) {
-                                rb_ary_store(keyword_indices, NUM2LONG(stored_index), Qfalse);
+                                rb_ary_store(keyword_indices, NUM2LEN(stored_index), Qfalse);
                                 size--;
                             }
 
@@ -1768,7 +1768,7 @@ pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *b
                             // keyword in the hash, mark the array at that index
                             // as true, and increment the keyword size.
                             rb_hash_aset(stored_indices, keyword, ULONG2NUM(element_index));
-                            rb_ary_store(keyword_indices, (long) element_index, Qtrue);
+                            rb_ary_store(keyword_indices, (rb_len_t) element_index, Qtrue);
                             size++;
                         }
 
@@ -1789,7 +1789,7 @@ pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *b
                             const pm_assoc_node_t *assoc = (const pm_assoc_node_t *) elements->nodes[element_index];
                             bool popped = true;
 
-                            if (rb_ary_entry(keyword_indices, (long) element_index) == Qtrue) {
+                            if (rb_ary_entry(keyword_indices, (rb_len_t) element_index) == Qtrue) {
                                 keywords[keyword_index++] = pm_static_literal_value(iseq, assoc->key, scope_node);
                                 popped = false;
                             }
@@ -10773,7 +10773,7 @@ pm_parse_process_error(const pm_parse_result_t *result)
     pm_error_level_t error_level = pm_errors_format(parser, buffer, format_type);
 
     rb_encoding *message_encoding = (error_level == PM_ERROR_LEVEL_LOAD) ? rb_locale_encoding() : rb_enc_find(pm_parser_encoding_name(parser));
-    VALUE message = rb_enc_str_new(pm_buffer_value(buffer), (long) pm_buffer_length(buffer), message_encoding);
+    VALUE message = rb_enc_str_new(pm_buffer_value(buffer), (rb_len_t) pm_buffer_length(buffer), message_encoding);
     pm_buffer_free(buffer);
 
     VALUE error = Qnil;
@@ -11286,8 +11286,8 @@ pm_parse_stdin_fgets(char *string, int size, void *stream)
      * than requested; we must never write past the caller's buffer. One byte
      * is reserved for the NUL terminator.
      */
-    if (length > (long) (size - 1)) {
-        length = (long) (size - 1);
+    if (length > (rb_len_t) (size - 1)) {
+        length = (rb_len_t) (size - 1);
     }
 
     memcpy(string, cstr, (size_t) length);

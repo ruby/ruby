@@ -4017,13 +4017,13 @@ rb_arithmetic_sequence_beg_len_step(VALUE obj, rb_len_t *begp, rb_len_t *lenp, r
         return Qfalse;
     }
 
-    long step = NIL_P(aseq.step) ? 1 : NUM2LONG(aseq.step);
+    rb_len_t step = NIL_P(aseq.step) ? 1 : NUM2LEN(aseq.step);
     *stepp = step;
 
     if (step < 0) {
         if (aseq.exclude_end && !NIL_P(aseq.end)) {
             /* Handle exclusion before range reversal */
-            aseq.end = LONG2NUM(NUM2LONG(aseq.end) + 1);
+            aseq.end = LEN2NUM(NUM2LEN(aseq.end) + 1);
 
             /* Don't exclude the previous beginning */
             aseq.exclude_end = 0;
@@ -4093,7 +4093,7 @@ arith_seq_take(VALUE self, VALUE num)
         long i = FIX2LONG(b);
         long end = FIX2LONG(e);
         long unit = FIX2LONG(s);
-        long len;
+        rb_len_t len;
 
         if (unit >= 0) {
             if (!x) end += 1;

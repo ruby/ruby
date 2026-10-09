@@ -12,7 +12,7 @@
 #ifdef HAVE_BUILTIN___BUILTIN_CONSTANT_P
 #define warn_print(x) RB_GNUC_EXTENSION_BLOCK(	\
     (__builtin_constant_p(x)) ? 		\
-        rb_write_error2((x), (long)strlen(x)) : \
+        rb_write_error2((x), (rb_len_t)strlen(x)) : \
         rb_write_error(x)			\
 )
 #else
@@ -342,7 +342,7 @@ rb_error_write0(VALUE errinfo, VALUE emesg, VALUE errat, VALUE str, VALUE opt, V
         const int bold_part = rb_strlen_lit("Traceback");
         char buff[sizeof(traceback)+sizeof(bold)+sizeof(reset)-2], *p = buff;
         const char *msg = traceback;
-        long len = sizeof(traceback) - 1;
+        rb_len_t len = sizeof(traceback) - 1;
         if (RTEST(highlight)) {
 #define APPEND(s, l) (memcpy(p, s, l), p += (l))
             APPEND(bold, sizeof(bold)-1);

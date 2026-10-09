@@ -14477,7 +14477,7 @@ ibf_load_object_string(const struct ibf_load *load, const struct ibf_object_head
     ibf_offset_t reading_pos = offset;
 
     int encindex = (int)ibf_load_small_value(load, &reading_pos);
-    const long len = (long)ibf_load_small_value(load, &reading_pos);
+    const rb_len_t len = (rb_len_t)ibf_load_small_value(load, &reading_pos);
     const char *ptr = load->current_buffer->buff + reading_pos;
 
     if (encindex > RUBY_ENCINDEX_BUILTIN_MAX) {
@@ -14542,7 +14542,7 @@ ibf_load_object_array(const struct ibf_load *load, const struct ibf_object_heade
 {
     ibf_offset_t reading_pos = offset;
 
-    const long len = (long)ibf_load_small_value(load, &reading_pos);
+    const rb_len_t len = (rb_len_t)ibf_load_small_value(load, &reading_pos);
 
     VALUE ary = header->internal ? rb_ary_hidden_new(len) : rb_ary_new_capa(len);
     int i;
@@ -14790,7 +14790,7 @@ ibf_load_object_symbol(const struct ibf_load *load, const struct ibf_object_head
     ibf_offset_t reading_pos = offset;
 
     int encindex = (int)ibf_load_small_value(load, &reading_pos);
-    const long len = (long)ibf_load_small_value(load, &reading_pos);
+    const rb_len_t len = (rb_len_t)ibf_load_small_value(load, &reading_pos);
     const char *ptr = load->current_buffer->buff + reading_pos;
 
     if (encindex > RUBY_ENCINDEX_BUILTIN_MAX) {

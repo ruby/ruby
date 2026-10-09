@@ -58,7 +58,7 @@ enum ruby_preserved_encindex {
 #define rb_utf8_encindex()      RUBY_ENCINDEX_UTF_8
 #define rb_usascii_encindex()   RUBY_ENCINDEX_US_ASCII
 
-int rb_enc_find_index2(const char *name, long len);
+int rb_enc_find_index2(const char *name, rb_len_t len);
 
 #if defined(__cplusplus)
 #if 0
