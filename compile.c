@@ -12898,7 +12898,7 @@ static ibf_offset_t
 ibf_dump_pos(struct ibf_dump *dump)
 {
     rb_len_t pos = RSTRING_LEN(dump->current_buffer->str);
-#if SIZEOF_LONG > SIZEOF_INT
+#if SIZEOF_RB_LEN_T > SIZEOF_INT
     if (pos >= UINT_MAX) {
         rb_raise(rb_eRuntimeError, "dump size exceeds");
     }
@@ -12913,7 +12913,7 @@ ibf_dump_align(struct ibf_dump *dump, size_t align)
     if (pos % align) {
         static const char padding[sizeof(VALUE)];
         size_t size = align - ((size_t)pos % align);
-#if SIZEOF_LONG > SIZEOF_INT
+#if SIZEOF_RB_LEN_T > SIZEOF_INT
         if (pos + size >= UINT_MAX) {
             rb_raise(rb_eRuntimeError, "dump size exceeds");
         }
@@ -12926,10 +12926,10 @@ ibf_dump_align(struct ibf_dump *dump, size_t align)
 }
 
 static ibf_offset_t
-ibf_dump_write(struct ibf_dump *dump, const void *buff, unsigned long size)
+ibf_dump_write(struct ibf_dump *dump, const void *buff, size_t size)
 {
     ibf_offset_t pos = ibf_dump_pos(dump);
-#if SIZEOF_LONG > SIZEOF_INT
+#if SIZEOF_RB_LEN_T > SIZEOF_INT
     /* ensure the resulting dump does not exceed UINT_MAX */
     if (size >= UINT_MAX || pos + size >= UINT_MAX) {
         rb_raise(rb_eRuntimeError, "dump size exceeds");

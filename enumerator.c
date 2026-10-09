@@ -627,7 +627,7 @@ enumerator_each(int argc, VALUE *argv, VALUE obj)
     if (argc > 0) {
         VALUE args = (e = enumerator_ptr(obj = rb_obj_dup(obj)))->args;
         if (args) {
-#if SIZEOF_INT < SIZEOF_LONG
+#if SIZEOF_INT < SIZEOF_RB_LEN_T
             /* check int range overflow */
             rb_len2int(RARRAY_LEN(args) + argc);
 #endif

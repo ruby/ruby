@@ -314,7 +314,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
     /* convert char * to wchar_t */
     if (!NIL_P(path)) {
         const rb_len_t path_len = RSTRING_LEN(path);
-#if SIZEOF_INT < SIZEOF_LONG
+#if SIZEOF_INT < SIZEOF_RB_LEN_T
         if ((rb_len_t)(int)path_len != path_len) {
             rb_raise(rb_eRangeError, "path (%"PRIdLEN" bytes) is too long",
                      path_len);
@@ -392,7 +392,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
         /* convert char * to wchar_t */
         if (!NIL_P(dir)) {
             const rb_len_t dir_len = RSTRING_LEN(dir);
-#if SIZEOF_INT < SIZEOF_LONG
+#if SIZEOF_INT < SIZEOF_RB_LEN_T
             if ((rb_len_t)(int)dir_len != dir_len) {
                 free(wpath);
                 rb_raise(rb_eRangeError, "base directory (%"PRIdLEN" bytes) is too long",

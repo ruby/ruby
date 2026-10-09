@@ -956,7 +956,7 @@ io_ungetbyte(VALUE str, rb_io_t *fptr)
         const int min_capa = IO_RBUF_CAPA_FOR(fptr);
         fptr->rbuf.off = 0;
         fptr->rbuf.len = 0;
-#if SIZEOF_LONG > SIZEOF_INT
+#if SIZEOF_RB_LEN_T > SIZEOF_INT
         if (len > INT_MAX)
             rb_raise(rb_eIOError, "ungetbyte failed");
 #endif
@@ -5500,7 +5500,7 @@ rb_io_ungetc(VALUE io, VALUE c)
     if (NEED_READCONV(fptr)) {
         SET_BINARY_MODE(fptr);
         len = RSTRING_LEN(c);
-#if SIZEOF_LONG > SIZEOF_INT
+#if SIZEOF_RB_LEN_T > SIZEOF_INT
         if (len > INT_MAX)
             rb_raise(rb_eIOError, "ungetc failed");
 #endif
@@ -8280,7 +8280,7 @@ rb_io_popen(VALUE pname, VALUE pmode, VALUE env, VALUE opt)
     tmp = rb_check_array_type(pname);
     if (!NIL_P(tmp)) {
         rb_len_t len = RARRAY_LEN(tmp);
-#if SIZEOF_LONG > SIZEOF_INT
+#if SIZEOF_RB_LEN_T > SIZEOF_INT
         if (len > INT_MAX) {
             rb_raise(rb_eArgError, "too many arguments");
         }

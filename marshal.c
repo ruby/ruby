@@ -359,7 +359,7 @@ ruby_marshal_write_long(rb_len_t x, char *buf)
 {
     int i;
 
-#if SIZEOF_LONG > 4
+#if SIZEOF_RB_LEN_T > 4
     if (!(RSHIFT(x, 31) == 0 || RSHIFT(x, 31) == -1)) {
         /* big long does not fit in 4 bytes */
         return -1;
