@@ -419,7 +419,7 @@ static VALUE parse_body(VALUE ptr)
                 VALUE plain_implicit, quoted_implicit, style;
                 VALUE val = rb_str_new(
                     (const char *)event.data.scalar.value,
-                    (long)event.data.scalar.length
+                    (rb_len_t)event.data.scalar.length
                     );
 
                 PSYCH_TRANSCODE(val, encoding, internal_enc);
