@@ -869,8 +869,8 @@ rb_backtrace_dup(VALUE btobj)
 
 /* Copy a backtrace's frames into an off-heap blob for a Ractor copy courier.  A frame
  * only references shareable iseq / method-entry imemos, so the blob can carry them as
- * they are.  It has no compaction update hook, so rb_backtrace_blob_mark pins them
- * (rb_gc_mark, not _movable) for as long as the message is in flight. */
+ * they are.  It has no compaction update hook, so rb_backtrace_blob_mark_ctx pins them
+ * (rb_gc_mark_ctx, not _movable) for as long as the message is in flight. */
 void *
 rb_backtrace_blob_dump(VALUE btobj, int *size_out)
 {
@@ -903,12 +903,12 @@ rb_backtrace_blob_load(const void *blob_, int size)
 }
 
 void
-rb_backtrace_blob_mark(const void *blob_, int size)
+rb_backtrace_blob_mark_ctx(const struct rb_gc_mark_ctx *ctx, const void *blob_, int size)
 {
     const rb_backtrace_location_t *blob = blob_;
     for (int i = 0; i < size; i++) {
-        if (blob[i].cme) rb_gc_mark((VALUE)blob[i].cme);
-        if (blob[i].iseq) rb_gc_mark((VALUE)blob[i].iseq);
+        if (blob[i].cme) rb_gc_mark_ctx(ctx, (VALUE)blob[i].cme);
+        if (blob[i].iseq) rb_gc_mark_ctx(ctx, (VALUE)blob[i].iseq);
     }
 }
 

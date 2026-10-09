@@ -2954,6 +2954,12 @@ gc_current_mark_ctx(void)
     };
 }
 
+struct rb_gc_mark_ctx
+rb_gc_current_mark_ctx(void)
+{
+    return gc_current_mark_ctx();
+}
+
 #define RB_GC_MARK_OR_TRAVERSE(ctx, func, obj_or_ptr, obj, check_obj) do { \
     if (!RB_SPECIAL_CONST_P(obj)) { \
         struct gc_mark_func_data_struct **mfdp = (ctx)->mfdp; \
@@ -3586,7 +3592,7 @@ gc_mark_roots_ctx(const struct rb_gc_mark_ctx *ctx, void *objspace, const char *
     if (global_gc) {
         rb_ractor_t *r;
         ccan_list_for_each(&vm->ractor.set, r, vmlr_node) {
-            rb_ractor_mark_local_roots(r);
+            rb_ractor_mark_local_roots(ctx, r);
             MARK_CHECKPOINT("registered_addrs");
             rb_gc_mark_registered_addrs(r, true);
             MARK_CHECKPOINT("ractor");
@@ -3595,7 +3601,7 @@ gc_mark_roots_ctx(const struct rb_gc_mark_ctx *ctx, void *objspace, const char *
         /* Early in boot (before rb_ractor_main_setup) main is not in vm->ractor.set
          * yet; do not drop its registered_marks in a single-objspace boot GC. */
         if (vm->ractor.cnt == 0 && vm->ractor.main_ractor) {
-            rb_ractor_mark_local_roots(vm->ractor.main_ractor);
+            rb_ractor_mark_local_roots(ctx, vm->ractor.main_ractor);
             MARK_CHECKPOINT("registered_addrs");
             rb_gc_mark_registered_addrs(vm->ractor.main_ractor, true);
             MARK_CHECKPOINT("ractor");
@@ -3633,7 +3639,7 @@ gc_mark_roots_ctx(const struct rb_gc_mark_ctx *ctx, void *objspace, const char *
     }
     else {
         rb_ractor_t *cr = rb_ec_ractor_ptr(ec);
-        rb_ractor_mark_local_roots(cr);
+        rb_ractor_mark_local_roots(ctx, cr);
         MARK_CHECKPOINT("registered_addrs");
         rb_gc_mark_registered_addrs(cr, true);
     }
