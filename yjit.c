@@ -50,6 +50,10 @@ STATIC_ASSERT(size_t_no_padding_bits, sizeof(size_t) == sizeof(uint64_t));
 // support one scheme for simplicity.
 STATIC_ASSERT(pointer_tagging_scheme, USE_FLONUM);
 
+// The bindings declare rb_len_t as c_long, and codegen reads String and Array
+// lengths at that width. Widening rb_len_t needs TYPE_REPLACEMENTS updated too.
+STATIC_ASSERT(rb_len_t_matches_bindings, sizeof(rb_len_t) == sizeof(long));
+
 enum yjit_bindgen_constants {
     // ISEQ_TRANSLATED expands to an enum value through a chain of macros,
     // which bindgen cannot evaluate, so it needs to be re-exposed here.
