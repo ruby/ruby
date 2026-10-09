@@ -2089,6 +2089,10 @@ Some macros to check API compatibilities are available by default.
 
   Means that type +rb_io_t+ is provided.
 
++HAVE_RB_LEN_T+ ::
+
+  Means that types +rb_len_t+ and +rb_ulen_t+ are provided.
+
 +USE_SYMBOL_AS_METHOD_NAME+ ::
 
   Means that Symbols will be returned as method names, e.g.,

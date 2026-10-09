@@ -1863,6 +1863,10 @@ APIの互換性をチェックするために以下のマクロがデフォル�
 
   +rb_io_t+ 型が提供されていることを意味する．
 
++HAVE_RB_LEN_T+ ::
+
+  +rb_len_t+ 型と +rb_ulen_t+ 型が提供されていることを意味する．
+
 +USE_SYMBOL_AS_METHOD_NAME+ ::
 
   メソッド名を返すメソッド， Kernel#methods, Object#singleton_methods
