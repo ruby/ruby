@@ -186,10 +186,6 @@ rb_hrtime_sub(rb_hrtime_t a, rb_hrtime_t b)
 #define GC_HEAP_FREE_SLOTS_MAX_RATIO  0.65
 #endif
 
-#ifndef GC_HEAP_PAGE_LIMIT
-#define GC_HEAP_PAGE_LIMIT 16
-#endif
-
 #ifndef GC_MALLOC_LIMIT_MIN
 #define GC_MALLOC_LIMIT_MIN (16 * 1024 * 1024 /* 16MB */)
 #endif
@@ -277,8 +273,6 @@ typedef struct {
     size_t oldmalloc_limit_min;
     size_t oldmalloc_limit_max;
     double oldmalloc_limit_growth_factor;
-
-    size_t heap_page_limit;
 } ruby_gc_params_t;
 
 static ruby_gc_params_t gc_params = {
@@ -301,8 +295,6 @@ static ruby_gc_params_t gc_params = {
     GC_OLDMALLOC_LIMIT_MIN,
     GC_OLDMALLOC_LIMIT_MAX,
     GC_OLDMALLOC_LIMIT_GROWTH_FACTOR,
-
-    GC_HEAP_PAGE_LIMIT,
 };
 
 /* GC_DEBUG:
@@ -710,7 +702,6 @@ typedef struct rb_objspace {
 
         size_t allocatable_bytes;
         size_t allocatable_bytes_snapshot;
-        size_t pages_used_since_gc;
 
         /* final */
         VALUE deferred_final;
@@ -3392,13 +3383,6 @@ heap_next_free_page(rb_objspace_t *objspace, rb_heap_t *heap)
 {
     struct heap_page *page;
 
-    if (gc_params.heap_page_limit > 0 &&
-            ++objspace->heap_pages.pages_used_since_gc >= gc_params.heap_page_limit &&
-            gc_mode(objspace) == gc_mode_none && !during_gc) {
-        objspace->heap_pages.pages_used_since_gc = 0;
-        gc_start(objspace, GPR_FLAG_NEWOBJ);
-    }
-
     if (heap->free_pages == NULL) {
         heap_prepare(objspace, heap);
     }
@@ -5596,7 +5580,6 @@ gc_sweep_start(rb_objspace_t *objspace)
 {
     gc_mode_transition(objspace, gc_mode_sweeping);
     objspace->rincgc.pooled_slots = 0;
-    objspace->heap_pages.pages_used_since_gc = 0;
 
     if (RB_UNLIKELY(objspace->hook_events & RUBY_INTERNAL_EVENT_FREEOBJ)) {
         /* FREEOBJ is never enabled outside the main objspace
@@ -11591,10 +11574,6 @@ get_envparam_double(const char *name, double *default_value, double lower_bound,
  * * RUBY_GC_HEAP_FREE_SLOTS_MAX_RATIO (new from 2.4)
  *   - Allow to free pages when the number of free slots is
  *     greater than the value (total_slots * (this ratio)).
- * * RUBY_GC_HEAP_PAGE_LIMIT (new from 4.1)
- *   - Start a GC once the pages handed to the allocator since the last GC
- *     exceed this number of pages. It is a minor GC unless a major is due.
- *   - if this value is 0, the trigger is disabled.
  * * RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR (new from 2.1.1)
  *   - Do full GC when the number of old objects is more than R * N
  *     where R is this factor and
@@ -11618,13 +11597,6 @@ rb_gc_impl_set_params(void *objspace_ptr)
 {
     rb_objspace_t *objspace = objspace_ptr;
     get_envparam_size("RUBY_GC_HEAP_FREE_SLOTS", &gc_params.heap_free_slots, 0);
-    const char *page_limit = getenv("RUBY_GC_HEAP_PAGE_LIMIT");
-    if (page_limit && strcmp(page_limit, "0") == 0) {
-        gc_params.heap_page_limit = 0;
-    }
-    else {
-        get_envparam_size("RUBY_GC_HEAP_PAGE_LIMIT", &gc_params.heap_page_limit, 0);
-    }
 
     get_envparam_size("RUBY_GC_HEAP_INIT_BYTES", &gc_params.heap_init_bytes,
                       heap_init_bytes_min() - 1);
