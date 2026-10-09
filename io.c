@@ -8726,9 +8726,7 @@ rb_io_reopen(int argc, VALUE *argv, VALUE file)
     FilePathValue(fname);
     rb_io_taint_check(file);
     fptr = RFILE(file)->fptr;
-    if (!fptr) {
-        fptr = RFILE(file)->fptr = ZALLOC(rb_io_t);
-    }
+    rb_io_check_initialized(fptr);
 
     if (!NIL_P(nmode) || !NIL_P(opt)) {
         enum rb_io_mode fmode;
