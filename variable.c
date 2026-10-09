@@ -31,6 +31,7 @@
 #include "internal/gc.h"
 #include "internal/re.h"
 #include "internal/string.h"
+#include "internal/ractor.h"
 #include "internal/struct.h"
 #include "internal/symbol.h"
 #include "internal/thread.h"
@@ -1295,7 +1296,7 @@ cvar_set_ractor_check(VALUE klass, ID id)
 static void
 cvar_read_ractor_check(VALUE klass, ID id, VALUE val)
 {
-    if (UNLIKELY(!rb_class_owned_p(klass)) && !rb_ractor_shareable_p(val)) {
+    if (UNLIKELY(!rb_class_owned_p(klass)) && !rb_ractor_published_shareable_p(val)) {
         rb_raise(rb_eRactorIsolationError,
                  "can not read non-shareable class variable %"PRIsVALUE" of %"PRIsVALUE", which was created by another Ractor",
                  rb_id2str(id), klass);
@@ -1623,7 +1624,7 @@ rb_ivar_lookup(VALUE obj, ID id, VALUE undef)
     }
 
     if (is_class && val != undef && rb_is_instance_id(id)) {
-        if (UNLIKELY(!rb_class_owned_p(obj)) && !rb_ractor_shareable_p(val)) {
+        if (UNLIKELY(!rb_class_owned_p(obj)) && !rb_ractor_published_shareable_p(val)) {
             rb_raise(
                 rb_eRactorIsolationError,
                 "can not get unshareable values from instance variables of classes/modules "
@@ -1660,7 +1661,7 @@ rb_ivar_get_at(VALUE obj, attr_index_t index, ID id)
             VALUE fields_obj = RCLASS_WRITABLE_FIELDS_OBJ(obj);
             VALUE val = rb_imemo_fields_ptr(fields_obj)[index];
 
-            if (UNLIKELY(!rb_class_owned_p(obj)) && !rb_ractor_shareable_p(val)) {
+            if (UNLIKELY(!rb_class_owned_p(obj)) && !rb_ractor_published_shareable_p(val)) {
                 rb_raise(rb_eRactorIsolationError,
                         "can not get unshareable values from instance variables of classes/modules created by another Ractor");
             }
@@ -2086,13 +2087,16 @@ rb_vm_set_ivar_id(VALUE obj, ID id, VALUE val)
     return val;
 }
 
+// NOTE: this can be called on a fakestr/fakeary stack object
 void
 rb_obj_freeze_inline(VALUE x)
 {
     if (RB_FL_ABLE(x)) {
         RB_FL_SET_RAW(x, RUBY_FL_FREEZE);
+        bool fake_str = false;
         if (TYPE(x) == T_STRING) {
             RB_FL_UNSET_RAW(x, FL_USER2); // STR_CHILLED
+            fake_str = FL_TEST_RAW(x, STR_FAKESTR);
         }
 
         // rb_obj_freeze_inline(String)
@@ -2111,6 +2115,12 @@ rb_obj_freeze_inline(VALUE x)
 
         if (RBASIC_CLASS(x) && RCLASS_SINGLETON_P(RBASIC_CLASS(x))) {
             rb_freeze_singleton_class(x);
+        }
+
+        /* If a Ractor publishes a non-frozen value (say, in a class ivar) then freezes it, we try to make it shareable during
+         * the freeze. */
+        if (!fake_str && RBASIC_CLASS(x) && !RB_OBJ_SHAREABLE_P(x) && rb_gc_obj_shref_p(x) && rb_gc_multi_objspace_p()) {
+            rb_ractor_shareable_p(x);
         }
     }
 }
@@ -3413,7 +3423,7 @@ rb_const_get_0(VALUE klass, ID id, int exclude, int recurse, int visibility)
     VALUE c = rb_const_search(klass, id, exclude, recurse, visibility, &found_in);
     if (!UNDEF_P(c)) {
         if (UNLIKELY(!rb_class_owned_p(found_in))) {
-            if (!rb_ractor_shareable_p(c)) {
+            if (!rb_ractor_published_shareable_p(c)) {
                 rb_raise(rb_eRactorIsolationError, "can not access non-shareable objects in constant %"PRIsVALUE"::%"PRIsVALUE" of a class/module created by another Ractor.", rb_class_path(found_in), rb_id2str(id));
             }
         }
@@ -3928,6 +3938,8 @@ const_set(VALUE klass, ID id, VALUE val)
     }
 
     check_before_mod_set(klass, id, val, "constant");
+
+    rb_ractor_publish_shareable(val);
 
     RB_VM_LOCKING() {
         struct rb_id_table *tbl = RCLASS_WRITABLE_CONST_TBL(klass);
@@ -4655,6 +4667,7 @@ complex:
 static attr_index_t
 class_ivar_set(VALUE obj, ID id, VALUE val, bool *new_ivar)
 {
+    rb_ractor_publish_shareable(val);
     rb_class_ensure_writable(obj);
 
     const VALUE original_fields_obj = RCLASS_WRITABLE_FIELDS_OBJ(obj);

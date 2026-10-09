@@ -1178,6 +1178,73 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+  # Promoting a frozen object to shareable is the owner's job: it writes FL_SHAREABLE and
+  # the owner's page bitmaps.  A reader in another Ractor used to do it instead, and for a
+  # T_DATA that walk went through the owner-only rb_objspace_reachable_objects_from_local()
+  # and killed the process.  Now the owner promotes at publication, so these reads only
+  # work if that happened: the reader no longer promotes anything foreign.
+  def test_frozen_data_published_to_class_field_is_promoted
+    assert_ractor(<<~'RUBY')
+      class C
+        @s = Set[1, 2].freeze
+        S = Set[3, 4].freeze
+        @@cv = Set[5, 6].freeze
+        class << self; attr_reader :s; end
+        def self.cv = @@cv
+      end
+
+      assert_equal true, Ractor.new { C.s.include?(1) }.value
+      assert_equal true, Ractor.new { C::S.include?(3) }.value
+      assert_equal true, Ractor.new { C.cv.include?(5) }.value
+    RUBY
+  end
+
+  # Publication promotion is best-effort: a frozen object with an unshareable child can't
+  # be promoted, and the reader must refuse rather than walk another Ractor's objspace.
+  def test_unpromotable_frozen_data_in_class_field_raises_in_other_ractor
+    assert_ractor(<<~'RUBY')
+      class C
+        @s = Set[Object.new].freeze
+        class << self; attr_reader :s; end
+      end
+      refute Ractor.shareable?(C.s)
+
+      err = Ractor.new { C.s rescue $! }.value
+      assert_equal Ractor::IsolationError, err.class
+    RUBY
+  end
+
+  # The first store to a `@iv = ...` call site misses the inline cache and lands in
+  # class_ivar_set; every later one hits it and lands in vm_setivar_class.  Both have to
+  # promote, or a value published by a repeated store (ERB's @scanner_map) stays unflagged.
+  def test_repeated_class_ivar_store_promotes_on_inline_cache_hit
+    assert_ractor(<<~'RUBY')
+      class C
+        @map = {}.freeze
+        class << self
+          def add(k, v) = @map = @map.merge(k => v).freeze
+        end
+      end
+      3.times { |i| C.add(i, i.to_s.freeze) }
+
+      assert_equal 3, Ractor.new { C.instance_variable_get(:@map).size }.value
+    RUBY
+  end
+
+  def test_make_shareable_accepts_another_ractors_shareable_object
+    assert_ractor(<<~'RUBY')
+      class C
+        @s = Set[1, 2].freeze
+        class << self; attr_reader :s; end
+      end
+      foreign = C.s
+      assert Ractor.shareable?(foreign)
+
+      # the foreign-object refusal must not catch an object that is already shareable
+      assert_same foreign, Ractor.new(foreign) { |s| Ractor.make_shareable(s) }.value
+    RUBY
+  end
+
   # An exception out of the walk's callback longjmps through the mark function.  The mark
   # redirect has to be restored on the way out: if it leaks, the next real GC hands its
   # marking to obj_traverse instead of marking, and the heap is corrupted.
