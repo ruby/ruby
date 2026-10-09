@@ -1051,6 +1051,92 @@ class TestRefinement < Test::Unit::TestCase
     end;
   end
 
+  def test_proc_refined_module_iclass_allocations_separate_classes
+    assert_separately([], <<-"end;")
+      module M
+        def m = [:M]
+      end
+      module R1
+        refine M do
+          def m = [:R1, *super]
+        end
+      end
+      module R2
+        refine M do
+          def m = [:R2, *super]
+        end
+      end
+      GC.start
+      starting_iclasses = ObjectSpace.count_objects[:T_ICLASS]
+      100.times do
+        c = Class.new { include M }
+        o = c.new
+        blk = ->(x) { x.m }
+        refined_blks = Array.new(2) { |i| blk.refined(i.even? ? R1 : R2) }
+        assert_equal([[:R1, :M], [:R2, :M]], refined_blks.map { it.call(o) })
+        GC.start
+        num_iclasses = ObjectSpace.count_objects[:T_ICLASS]
+        2.times do |i|
+          sym, mod = i.even? ? [:R1, R1] : [:R2, R2]
+          refined_blk = blk.refined(mod)
+          assert_equal([sym, :M], refined_blk.call(o))
+          assert_operator(ObjectSpace.count_objects[:T_ICLASS], :<=, num_iclasses)
+          assert_equal([sym, :M], refined_blk.call(o))
+          assert_operator(ObjectSpace.count_objects[:T_ICLASS], :<=, num_iclasses)
+        end
+        GC.start
+        assert_operator(ObjectSpace.count_objects[:T_ICLASS], :<=, num_iclasses)
+        assert_equal([[:R1, :M], [:R2, :M]], refined_blks.map { it.call(o) })
+      end
+      GC.start
+      assert(ObjectSpace.count_objects[:T_ICLASS] - starting_iclasses < 100)
+    end;
+  end
+
+  def test_proc_refined_module_iclass_allocations_separate_refinements
+    assert_separately([], <<-"end;")
+      module M
+        def m = [:M]
+      end
+      class C
+        include M
+      end
+      GC.start
+      starting_iclasses = ObjectSpace.count_objects[:T_ICLASS]
+      100.times do
+        o = C.new
+        r1 = Module.new do
+          refine M do
+            def m = [:R1, *super]
+          end
+        end
+        r2 = Module.new do
+          refine M do
+            def m = [:R2, *super]
+          end
+        end
+        blk = ->(x) { x.m }
+        refined_blks = Array.new(2) { |i| blk.refined(i.even? ? r1 : r2) }
+        assert_equal([[:R1, :M], [:R2, :M]], refined_blks.map { it.call(o) })
+        GC.start
+        num_iclasses = ObjectSpace.count_objects[:T_ICLASS]
+        2.times do |i|
+          sym, mod = i.even? ? [:R1, r1] : [:R2, r2]
+          refined_blk = blk.refined(mod)
+          assert_equal([sym, :M], refined_blk.call(o))
+          assert_operator(ObjectSpace.count_objects[:T_ICLASS], :<=, num_iclasses)
+          assert_equal([sym, :M], refined_blk.call(o))
+          assert_operator(ObjectSpace.count_objects[:T_ICLASS], :<=, num_iclasses)
+        end
+        GC.start
+        assert_operator(ObjectSpace.count_objects[:T_ICLASS], :<=, num_iclasses)
+        assert_equal([[:R1, :M], [:R2, :M]], refined_blks.map { it.call(o) })
+      end
+      GC.start
+      assert_operator(ObjectSpace.count_objects[:T_ICLASS] - starting_iclasses, :<, 100)
+    end;
+  end
+
   def test_super_in_refined_module_method
     assert_separately([], <<-"end;")
       class BasicObject
