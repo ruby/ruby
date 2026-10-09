@@ -222,7 +222,7 @@ imemo_count_up(struct MEMO *memo)
         RUBY_ASSERT(RB_TYPE_P(memo->u3.value, T_BIGNUM));
         MEMO_V3_SET(memo, rb_int_succ(memo->u3.value));
     }
-    else if (++memo->u3.cnt == 0) {
+    else if (++memo->u3.ucnt == 0) {
         /* overflow */
         MEMO_V3_SET(memo, rb_int_succ(ULEN2NUM(RB_ULEN_MAX)));
     }
@@ -236,7 +236,7 @@ imemo_count_value(struct MEMO *memo)
         return memo->u3.value;
     }
     else {
-        return ULEN2NUM(memo->u3.cnt);
+        return ULEN2NUM(memo->u3.ucnt);
     }
 }
 
