@@ -2696,7 +2696,7 @@ ossl_ssl_export_keying_material(int argc, VALUE *argv, VALUE self)
 
     GetSSL(self, ssl);
 
-    len = (size_t)NUM2LONG(length);
+    len = (size_t)NUM2LEN(length);
     str = rb_str_new(0, len);
     p = (unsigned char *)RSTRING_PTR(str);
     if (!NIL_P(context)) {
