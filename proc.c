@@ -1699,7 +1699,7 @@ proc_call(int argc, VALUE *argv, VALUE procval)
 }
 #endif
 
-#if SIZEOF_LONG > SIZEOF_INT
+#if SIZEOF_RB_LEN_T > SIZEOF_INT
 static inline int
 check_argc(rb_len_t argc)
 {

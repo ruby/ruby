@@ -373,7 +373,7 @@ mustnot_wchar(VALUE str)
 
 static VALUE register_fstring(VALUE str, bool copy, bool force_precompute_hash);
 
-#if SIZEOF_LONG == SIZEOF_VOIDP
+#if SIZEOF_RB_LEN_T == SIZEOF_VOIDP
 #define PRECOMPUTED_FAKESTR_HASH 1
 #else
 #endif
@@ -587,7 +587,7 @@ register_fstring(VALUE str, bool copy, bool force_precompute_hash)
         .force_precompute_hash = force_precompute_hash
     };
 
-#if SIZEOF_VOIDP == SIZEOF_LONG
+#ifdef PRECOMPUTED_FAKESTR_HASH
     if (FL_TEST_RAW(str, STR_FAKESTR)) {
         // if the string hasn't been interned, we'll need the hash twice, so we
         // compute it once and store it in capa
