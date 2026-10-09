@@ -10,6 +10,11 @@ IO_CONSOLE_VERSION = "0.9.4";
 #include "ruby/io.h"
 #include "ruby/thread.h"
 
+#ifndef HAVE_RB_LEN_T
+typedef long rb_len_t;
+# define PRIdLEN "ld"
+#endif
+
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
@@ -1033,12 +1038,12 @@ console_set_winsize(VALUE io, VALUE size)
 #endif
     VALUE row, col, xpixel, ypixel;
     const VALUE *sz;
-    long sizelen;
+    rb_len_t sizelen;
     int fd;
 
     size = rb_Array(size);
     if ((sizelen = RARRAY_LEN(size)) != 2 && sizelen != 4) {
-        rb_raise(rb_eArgError, "wrong number of arguments (given %ld, expected 2 or 4)", sizelen);
+        rb_raise(rb_eArgError, "wrong number of arguments (given %"PRIdLEN", expected 2 or 4)", sizelen);
     }
     sz = RARRAY_CONST_PTR(size);
     row = sz[0], col = sz[1], xpixel = ypixel = Qnil;
