@@ -916,16 +916,20 @@ def load_gemspec(file, base = nil, files: nil)
     "[" + spec_files + "] || itself"
   end
 
+  # The gemspec is evaluated in this binding and may overwrite `files`.
+  collected_files = files || []
+
   spec = eval(code, binding, file)
-  # for out-of-place build
-  collected_files = files ? spec.files.concat(files).uniq : spec.files
-  spec.files = collected_files.map do |f|
-    if !File.exist?(File.join(base || ".", f)) && f.end_with?(".rb")
+  # Files collected for a default gem are relative to its lib directory,
+  # while the files listed by the gemspec itself are relative to the gem
+  # root.
+  spec.files = (spec.files + collected_files).map do |f|
+    if base ? f.end_with?(".rb") && !File.exist?(File.join(base, f)) : collected_files.include?(f)
       "lib/#{f}"
     else
       f
     end
-  end
+  end.uniq
   unless Gem::Specification === spec
     raise TypeError, "[#{file}] isn't a Gem::Specification (#{spec.class} instead)."
   end
