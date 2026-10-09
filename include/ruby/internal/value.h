@@ -133,8 +133,10 @@ typedef long rb_len_t;
 /** An unsigned integer type that has the same width with ::rb_len_t. */
 typedef unsigned long rb_ulen_t;
 
+#ifndef SIZEOF_RB_LEN_T
 /** Size of ::rb_len_t, in bytes. */
-#define SIZEOF_RB_LEN_T SIZEOF_LONG
+# define SIZEOF_RB_LEN_T SIZEOF_LONG
+#endif
 
 /** Printf prefix for ::rb_len_t. */
 #define PRI_LEN_PREFIX "l"
@@ -153,6 +155,7 @@ RBIMPL_STATIC_ASSERT(sizeof_int, SIZEOF_INT == sizeof(int));
 RBIMPL_STATIC_ASSERT(sizeof_long, SIZEOF_LONG == sizeof(long));
 RBIMPL_STATIC_ASSERT(sizeof_long_long, SIZEOF_LONG_LONG == sizeof(LONG_LONG));
 RBIMPL_STATIC_ASSERT(sizeof_voidp, SIZEOF_VOIDP == sizeof(void *));
+RBIMPL_STATIC_ASSERT(sizeof_rb_len_t_macro, SIZEOF_RB_LEN_T == sizeof(rb_len_t));
 RBIMPL_STATIC_ASSERT(sizeof_rb_len_t, sizeof(rb_len_t) == sizeof(long));
 RBIMPL_STATIC_ASSERT(sizeof_rb_ulen_t, sizeof(rb_ulen_t) == sizeof(unsigned long));
 /** @endcond */
