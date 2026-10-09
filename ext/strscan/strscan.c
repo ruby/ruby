@@ -826,7 +826,7 @@ strscan_do_scan(VALUE self, VALUE pattern, int succptr, int getstr, int headonly
             return extract_beg_len(p, p->prev, length);
         }
         else {
-            return INT2FIX(length);
+            return LEN2NUM(length);
         }
     }
 }
@@ -2190,7 +2190,7 @@ strscan_rest_size(VALUE self)
         return INT2FIX(0);
     }
     i = S_RESTLEN(p);
-    return INT2FIX(i);
+    return LEN2NUM(i);
 }
 
 #define INSPECT_LENGTH 5
