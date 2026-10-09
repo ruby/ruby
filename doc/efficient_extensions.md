@@ -476,12 +476,14 @@ Why:
 
 Sharp edge: if struct allocation inside `Make_Struct` fails, you can end up with a Ruby object whose data pointer is `NULL`. Still usually better than the leak. Reach for `Wrap_Struct` only when you already have a pre-existing struct pointer you can't recreate.
 
-### Tip: 🟧 _Set `RUBY_TYPED_FROZEN_SHAREABLE` if you want frozen TypedData to cross Ractors_
+### Tip: 🟧 _Set `RUBY_TYPED_FROZEN_SHAREABLE` if you want immutable TypedData to cross Ractors_
 
-Impact: _Allows frozen instances to be shared across Ractors without copying_
+Impact: _Allows immutable instances to be shared across Ractors without copying_
 
 Why:
 1. Without the flag, `Ractor.make_shareable(obj)` raises for your type.
-2. With the flag (plus freezing + `Ractor.make_shareable`), the object can be read from any Ractor.
+2. With the flag (+ freezing + `Ractor.make_shareable`), the object can be read from any Ractor.
 
-Do make sure that your object and C code are able to correctly run across many Ractors with no thread safety issues.
+This requires the instance and its fields to be immutable, see
+https://github.com/ruby/ruby/blob/master/doc/extension.rdoc#appendix-f-ractor-support for details.
+`Ractor.make_shareable(obj)` will then make the TypedData instance and every Ruby object it refers to shareable (immutable).
