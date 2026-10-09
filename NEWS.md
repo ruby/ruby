@@ -484,7 +484,7 @@ Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for det
   `RB_ULEN_MAX` and `SIZEOF_RB_LEN_T`.  `RbConfig::SIZEOF["rb_len_t"]` gives
   its size to an extconf.rb.  They are `long` on every platform for now, and
   the C API that carries such lengths, such as `RSTRING_LEN` and
-  `rb_range_beg_len`, uses them.  A later change makes them 64 bits on mswin,
+  `rb_range_beg_len`, uses them.  A later change will makes them 64 bits on mswin,
   so extensions should keep these lengths in `rb_len_t`. [[Feature #22400]]
 
 ### Removed APIs
