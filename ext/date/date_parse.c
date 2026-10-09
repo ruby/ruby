@@ -5,6 +5,13 @@
 #include "ruby.h"
 #include "ruby/encoding.h"
 #include "ruby/re.h"
+
+#ifndef HAVE_RB_LEN_T
+typedef long rb_len_t;
+# define LEN2NUM LONG2NUM
+# define NUM2LEN NUM2LONG
+#endif
+
 #include <ctype.h>
 
 #undef strncasecmp
@@ -330,7 +337,7 @@ subx(VALUE str, VALUE rep, VALUE pat, VALUE hash, int (*cb)(VALUE, VALUE))
 
 	be = f_begin(m, INT2FIX(0));
 	en = f_end(m, INT2FIX(0));
-	f_aset2(str, be, LONG2NUM(NUM2LONG(en) - NUM2LONG(be)), rep);
+	f_aset2(str, be, LEN2NUM(NUM2LEN(en) - NUM2LEN(be)), rep);
 	(*cb)(m, hash);
     }
 
@@ -367,7 +374,7 @@ do { \
 #include "zonetab.h"
 
 static int
-str_end_with_word(const char *s, long l, const char *w)
+str_end_with_word(const char *s, rb_len_t l, const char *w)
 {
     int n = (int)strlen(w);
     if (l <= n || !isspace((unsigned char)s[l - n - 1])) return 0;
@@ -376,10 +383,10 @@ str_end_with_word(const char *s, long l, const char *w)
     return n;
 }
 
-static long
-shrunk_size(const char *s, long l)
+static rb_len_t
+shrunk_size(const char *s, rb_len_t l)
 {
-    long i, ni;
+    rb_len_t i, ni;
     int sp = 0;
     for (i = ni = 0; i < l; ++i) {
 	if (!isspace((unsigned char)s[i])) {
@@ -394,10 +401,10 @@ shrunk_size(const char *s, long l)
     return ni < l ? ni : 0;
 }
 
-static long
-shrink_space(char *d, const char *s, long l)
+static rb_len_t
+shrink_space(char *d, const char *s, rb_len_t l)
 {
-    long i, ni;
+    rb_len_t i, ni;
     int sp = 0;
     for (i = ni = 0; i < l; ++i) {
 	if (!isspace((unsigned char)s[i])) {
@@ -416,7 +423,7 @@ VALUE
 date_zone_to_diff(VALUE str)
 {
     VALUE offset = Qnil;
-    long l = RSTRING_LEN(str);
+    rb_len_t l = RSTRING_LEN(str);
     const char *s = RSTRING_PTR(str);
 
     {
@@ -444,7 +451,7 @@ date_zone_to_diff(VALUE str)
 
 	{
 	    const char *zn = s;
-	    long sl = shrunk_size(s, l);
+	    rb_len_t sl = shrunk_size(s, l);
 	    char shrunk_buff[MAX_WORD_LENGTH]; /* no terminator to be added */
 	    const struct zone *z = 0;
 
@@ -630,7 +637,7 @@ parse_time2_cb(VALUE m, VALUE hash)
 
     if (!NIL_P(f))
 	f = rb_rational_new2(str2num(f),
-			     f_expt(INT2FIX(10), LONG2NUM(RSTRING_LEN(f))));
+			     f_expt(INT2FIX(10), LEN2NUM(RSTRING_LEN(f))));
 
     p = rb_reg_nth_match(5, m);
 
@@ -796,7 +803,7 @@ static int
 check_year_width(VALUE y)
 {
     const char *s;
-    long l;
+    rb_len_t l;
 
     l = RSTRING_LEN(y);
     if (l < 2) return 0;
@@ -1750,9 +1757,9 @@ parse_mday(VALUE str, VALUE hash)
 }
 
 static int
-n2i(const char *s, long f, long w)
+n2i(const char *s, rb_len_t f, rb_len_t w)
 {
-    long e, i;
+    rb_len_t e, i;
     int v;
 
     e = f + w;
@@ -1769,7 +1776,7 @@ parse_ddd_cb(VALUE m, VALUE hash)
 {
     VALUE s1, s2, s3, s4, s5;
     const char *cs2, *cs3, *cs5;
-    long l2, l3, l4, l5;
+    rb_len_t l2, l3, l4, l5;
 
     s1 = rb_reg_nth_match(1, m);
     s2 = rb_reg_nth_match(2, m);
@@ -1929,7 +1936,7 @@ parse_ddd_cb(VALUE m, VALUE hash)
 
 	set_hash("sec_fraction",
 		 rb_rational_new2(str2num(s4),
-				  f_expt(INT2FIX(10), LONG2NUM(l4))));
+				  f_expt(INT2FIX(10), LEN2NUM(l4))));
     }
     if (!NIL_P(s5)) {
 	cs5 = RSTRING_PTR(s5);
@@ -2092,7 +2099,7 @@ parse_wday_and_time(VALUE str, VALUE hash)
 static unsigned
 have_invalid_char_p(VALUE s)
 {
-    long i;
+    rb_len_t i;
 
     for (i = 0; i < RSTRING_LEN(s); i++)
 	if (iscntrl((unsigned char)RSTRING_PTR(s)[i]) &&
@@ -2112,7 +2119,7 @@ static unsigned
 check_class(VALUE s)
 {
     unsigned flags;
-    long i;
+    rb_len_t i;
 
     flags = 0;
     for (i = 0; i < RSTRING_LEN(s); i++) {
@@ -2320,7 +2327,7 @@ sec_fraction(VALUE f)
 {
     return rb_rational_new2(str2num(f),
 			    f_expt(INT2FIX(10),
-				   LONG2NUM(RSTRING_LEN(f))));
+				   LEN2NUM(RSTRING_LEN(f))));
 }
 
 #define SNUM 14
