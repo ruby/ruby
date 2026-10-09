@@ -358,9 +358,9 @@ rb_alloc_func_t rb_zjit_class_get_alloc_func(VALUE klass);
 
 // Defined in struct.c, where struct_alloc and the members ivar are visible.
 bool rb_zjit_class_has_struct_allocator(VALUE klass);
-long rb_zjit_struct_num_members(VALUE klass);
-ID rb_zjit_struct_member_id(VALUE klass, long index);
-bool rb_zjit_struct_embedded_p(long num_members);
+rb_len_t rb_zjit_struct_num_members(VALUE klass);
+ID rb_zjit_struct_member_id(VALUE klass, rb_len_t index);
+bool rb_zjit_struct_embedded_p(rb_len_t num_members);
 VALUE rb_struct_s_keyword_init(VALUE klass);
 
 VALUE rb_class_allocate_instance(VALUE klass);
@@ -379,7 +379,7 @@ VALUE rb_vm_get_untagged_block_handler(rb_control_frame_t *reg_cfp);
 bool rb_vm_once_done_value(ISE is, VALUE *result);
 
 bool
-rb_zjit_array_aref_with_adjusted_index(VALUE ary, long index, VALUE *out)
+rb_zjit_array_aref_with_adjusted_index(VALUE ary, rb_len_t index, VALUE *out)
 {
     RUBY_ASSERT(RB_TYPE_P(ary, T_ARRAY));
     if (index >= 0 && index < RARRAY_LEN(ary)) {

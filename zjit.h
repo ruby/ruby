@@ -139,7 +139,7 @@ bool rb_zjit_class_allocate_instance_fastpath(VALUE klass, size_t *size_out, VAL
 bool rb_zjit_str_resurrect_fastpath(VALUE str, bool chilled, size_t *size_out, VALUE *flags_out, rb_len_t *len_out, size_t *byte_size_out);
 bool rb_zjit_array_dup_can_fastpath(VALUE ary, size_t *alloc_size_out, VALUE *flags_out, rb_len_t *len_out);
 bool rb_zjit_array_new_can_fastpath(rb_len_t len, size_t *alloc_size_out, VALUE *flags_out);
-bool rb_zjit_hash_dup_can_fastpath(VALUE hash, size_t *alloc_size_out, VALUE *flags_out, VALUE *ifnone_out, long *bound_out);
+bool rb_zjit_hash_dup_can_fastpath(VALUE hash, size_t *alloc_size_out, VALUE *flags_out, VALUE *ifnone_out, rb_len_t *bound_out);
 void rb_zjit_range_new_fastpath(bool exclude_end, size_t *alloc_size_out, VALUE *flags_out);
 void rb_zjit_array_new_fastpath(size_t *alloc_size_out, VALUE *flags_out);
 bool rb_zjit_newobj_hook_enabled_p(void);
