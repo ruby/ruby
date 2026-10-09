@@ -1866,6 +1866,7 @@ APIの互換性をチェックするために以下のマクロがデフォル�
 +HAVE_RB_LEN_T+ ::
 
   +rb_len_t+ 型と +rb_ulen_t+ 型が提供されていることを意味する．
+  +LEN2NUM+, +NUM2LEN+, +PRIdLEN+ などのマクロもあわせて提供される．
 
 +USE_SYMBOL_AS_METHOD_NAME+ ::
 
