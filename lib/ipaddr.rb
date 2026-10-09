@@ -207,7 +207,7 @@ class IPAddr
 
   # Returns a string containing the IP address representation.
   def to_s
-    str = to_string
+    str = _to_string(@addr)
     return str if ipv4?
 
     str.gsub!(/\b0{1,3}([\da-f]+)\b/i, '\1')
@@ -227,6 +227,7 @@ class IPAddr
       str = sprintf('::%s%d.%d.%d.%d', $1, $2.hex / 256, $2.hex % 256, $3.hex / 256, $3.hex % 256)
     end
 
+    str << @zone_id if @zone_id
     str
   end
 

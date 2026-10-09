@@ -287,6 +287,14 @@ class TC_IPAddr < Test::Unit::TestCase
     assert_equal("3ffe:505:2::1", IPAddr.new("3ffe:505:2::1").to_s)
   end
 
+  def test_to_s_with_zone_id
+    assert_equal("::%eth0", IPAddr.new("::%eth0").to_s)
+    assert_equal("::ffff:192.168.1.2%eth0", IPAddr.new("::ffff:192.168.1.2%eth0").to_s)
+    assert_equal("::192.168.1.2%eth0", IPAddr.new("::192.168.1.2%eth0").to_s)
+    assert_equal("fe80::1%0ab", IPAddr.new("fe80::1%0ab").to_s)
+    assert_equal("fe80::1%0012", IPAddr.new("fe80::1%0012").to_s)
+  end
+
   def test_as_json
     assert_equal("192.168.1.2", IPAddr.new("192.168.1.2").as_json)
     assert_equal("192.168.1.0/24", IPAddr.new("192.168.1.2/24").as_json)
