@@ -90,7 +90,7 @@ OSSL_IMPL_SK2ARY(x509name, X509_NAME)
 static VALUE
 ossl_str_new_i(VALUE size)
 {
-    return rb_str_new(NULL, (long)size);
+    return rb_str_new(NULL, (rb_len_t)size);
 }
 
 VALUE
@@ -172,7 +172,7 @@ ossl_pem_passwd_cb0(VALUE flag)
 int
 ossl_pem_passwd_cb(char *buf, int max_len, int flag, void *pwd_)
 {
-    long len;
+    rb_len_t len;
     int status;
     VALUE rflag, pass = (VALUE)pwd_;
 
@@ -389,9 +389,9 @@ osslerror_detailed_message(int argc, VALUE *argv, VALUE self)
         return str;
 
     str = rb_str_resurrect(str);
-    rb_str_catf(str, "\nOpenSSL error queue reported %ld errors:",
+    rb_str_catf(str, "\nOpenSSL error queue reported %"PRIdLEN" errors:",
                 RARRAY_LEN(errors));
-    for (long i = 0; i < RARRAY_LEN(errors); i++) {
+    for (rb_len_t i = 0; i < RARRAY_LEN(errors); i++) {
         VALUE err = RARRAY_AREF(errors, i);
         rb_str_catf(str, "\n%"PRIsVALUE, err);
     }
@@ -539,8 +539,8 @@ ossl_crypto_fixed_length_secure_compare(VALUE dummy, VALUE str1, VALUE str2)
 {
     const unsigned char *p1;
     const unsigned char *p2;
-    long len1;
-    long len2;
+    rb_len_t len1;
+    rb_len_t len2;
 
     StringValue(str1);
     StringValue(str2);

@@ -25,6 +25,10 @@
 #if !defined(RUBY_TYPED_THREAD_SAFE_FREE)
 #define RUBY_TYPED_THREAD_SAFE_FREE RUBY_TYPED_FREE_IMMEDIATELY
 #endif
+#ifndef HAVE_RB_LEN_T
+typedef long rb_len_t;
+# define PRIdLEN "ld"
+#endif
 
 #include <openssl/opensslv.h>
 
@@ -124,7 +128,7 @@ VALUE ossl_buf2str(char *buf, int len);
 VALUE ossl_str_new(const char *, long, int *);
 #define ossl_str_adjust(str, p) \
 do{\
-    long newlen = (long)((p) - (unsigned char*)RSTRING_PTR(str));\
+    rb_len_t newlen = (rb_len_t)((p) - (unsigned char*)RSTRING_PTR(str));\
     assert(newlen <= RSTRING_LEN(str));\
     rb_str_set_len((str), newlen);\
 }while(0)

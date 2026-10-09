@@ -105,7 +105,7 @@ static VALUE
 config_s_parse_config(VALUE klass, VALUE io)
 {
     VALUE obj, sections, ret;
-    long i;
+    rb_len_t i;
 
     obj = config_s_parse(klass, io);
     sections = config_get_sections(obj);

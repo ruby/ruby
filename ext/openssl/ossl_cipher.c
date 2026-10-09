@@ -317,12 +317,12 @@ ossl_cipher_pkcs5_keyivgen(int argc, VALUE *argv, VALUE self)
 }
 
 static int
-ossl_cipher_update_long(EVP_CIPHER_CTX *ctx, unsigned char *out, long *out_len_ptr,
-                        const unsigned char *in, long in_len)
+ossl_cipher_update_long(EVP_CIPHER_CTX *ctx, unsigned char *out, rb_len_t *out_len_ptr,
+                        const unsigned char *in, rb_len_t in_len)
 {
     int out_part_len;
     int limit = INT_MAX / 2 + 1;
-    long out_len = 0;
+    rb_len_t out_len = 0;
 
     do {
         int in_part_len = in_len > limit ? limit : (int)in_len;
@@ -361,7 +361,7 @@ ossl_cipher_update(int argc, VALUE *argv, VALUE self)
 {
     EVP_CIPHER_CTX *ctx;
     unsigned char *in;
-    long in_len, out_len;
+    rb_len_t in_len, out_len;
     VALUE data, str;
 
     rb_scan_args(argc, argv, "11", &data, &str);
@@ -387,7 +387,7 @@ ossl_cipher_update(int argc, VALUE *argv, VALUE self)
      */
     if (in_len > LONG_MAX - EVP_MAX_BLOCK_LENGTH) {
         ossl_raise(rb_eRangeError,
-                   "data too big to make output buffer: %ld bytes", in_len);
+                   "data too big to make output buffer: %"PRIdLEN" bytes", in_len);
     }
     out_len = in_len + EVP_MAX_BLOCK_LENGTH;
 
@@ -395,7 +395,7 @@ ossl_cipher_update(int argc, VALUE *argv, VALUE self)
         str = rb_str_buf_new(out_len);
     else {
         StringValue(str);
-        if ((long)rb_str_capacity(str) >= out_len)
+        if ((rb_len_t)rb_str_capacity(str) >= out_len)
             rb_str_modify(str);
         else
             rb_str_modify_expand(str, out_len - RSTRING_LEN(str));
@@ -583,7 +583,7 @@ ossl_cipher_set_auth_data(VALUE self, VALUE data)
 {
     EVP_CIPHER_CTX *ctx;
     unsigned char *in;
-    long in_len, out_len;
+    rb_len_t in_len, out_len;
 
     StringValue(data);
 

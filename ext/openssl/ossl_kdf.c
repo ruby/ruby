@@ -275,7 +275,7 @@ kdf_hkdf(int argc, VALUE *argv, VALUE self)
         rb_raise(rb_eArgError, "length must be non-negative");
     md = ossl_evp_md_fetch(kwargs[3], &md_holder);
 
-    str = rb_str_new(NULL, (long)len);
+    str = rb_str_new(NULL, (rb_len_t)len);
     pctx = EVP_PKEY_CTX_new_id(EVP_PKEY_HKDF, NULL);
     if (!pctx)
         ossl_raise(eKDF, "EVP_PKEY_CTX_new_id");
@@ -306,7 +306,7 @@ kdf_hkdf(int argc, VALUE *argv, VALUE self)
         EVP_PKEY_CTX_free(pctx);
         ossl_raise(eKDF, "EVP_PKEY_derive");
     }
-    rb_str_set_len(str, (long)len);
+    rb_str_set_len(str, (rb_len_t)len);
     EVP_PKEY_CTX_free(pctx);
 
     return str;

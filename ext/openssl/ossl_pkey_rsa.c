@@ -372,7 +372,7 @@ ossl_rsa_sign_pss(int argc, VALUE *argv, VALUE self)
     buf_len = EVP_PKEY_size(pkey);
     md = ossl_evp_md_fetch(digest, &md_holder);
     StringValue(data);
-    signature = rb_str_new(NULL, (long)buf_len);
+    signature = rb_str_new(NULL, (rb_len_t)buf_len);
 
     md_ctx = EVP_MD_CTX_new();
     if (!md_ctx)
@@ -396,7 +396,7 @@ ossl_rsa_sign_pss(int argc, VALUE *argv, VALUE self)
     if (EVP_DigestSignFinal(md_ctx, (unsigned char *)RSTRING_PTR(signature), &buf_len) != 1)
         goto err;
 
-    rb_str_set_len(signature, (long)buf_len);
+    rb_str_set_len(signature, (rb_len_t)buf_len);
 
     EVP_MD_CTX_free(md_ctx);
     return signature;
