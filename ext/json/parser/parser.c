@@ -20,9 +20,9 @@ static int utf8_encindex;
 #ifndef HAVE_RB_HASH_BULK_INSERT
 // For TruffleRuby
 static void
-rb_hash_bulk_insert(long count, const VALUE *pairs, VALUE hash)
+rb_hash_bulk_insert(rb_len_t count, const VALUE *pairs, VALUE hash)
 {
-    long index = 0;
+    rb_len_t index = 0;
     while (index < count) {
         VALUE name = pairs[index++];
         VALUE value = pairs[index++];
@@ -79,7 +79,7 @@ static rb_encoding *enc_utf8;
 
 #define JSON_RVALUE_CACHE_MAX_ENTRY_LENGTH 55
 
-static inline VALUE build_interned_string(const char *str, const long length)
+static inline VALUE build_interned_string(const char *str, const rb_len_t length)
 {
 # ifdef HAVE_RB_ENC_INTERNED_STR
     return rb_enc_interned_str(str, length, enc_utf8);
@@ -89,7 +89,7 @@ static inline VALUE build_interned_string(const char *str, const long length)
 # endif
 }
 
-static inline VALUE build_symbol(const char *str, const long length)
+static inline VALUE build_symbol(const char *str, const rb_len_t length)
 {
     return rb_str_intern(build_interned_string(str, length));
 }
@@ -138,7 +138,7 @@ ALWAYS_INLINE(static) int rstring_cache_memcmp(const char *str, const char *rptr
 ALWAYS_INLINE(static) int rstring_cache_cmp(const char *str, const long length, VALUE rstring)
 {
     const char *rstring_ptr;
-    long rstring_length;
+    rb_len_t rstring_length;
 
     RSTRING_GETMEM(rstring, rstring_ptr, rstring_length);
 
@@ -580,7 +580,7 @@ static inline char peek(JSON_ParserState *state)
     return *state->cursor;
 }
 
-static void cursor_position(JSON_ParserState *state, long *line_out, long *column_out)
+static void cursor_position(JSON_ParserState *state, long *line_out, rb_len_t *column_out)
 {
     JSON_ASSERT(!state->parser);
     JSON_ASSERT(state->cursor);
@@ -597,7 +597,7 @@ static void cursor_position(JSON_ParserState *state, long *line_out, long *colum
     while (cursor > state->start && cursor[-1] != '\n') {
         cursor--;
     }
-    long column = rb_enc_strlen(cursor, state->cursor, enc_utf8) + 1;
+    rb_len_t column = rb_enc_strlen(cursor, state->cursor, enc_utf8) + 1;
 
     while (cursor > state->start) {
         if (*--cursor == '\n') {
@@ -675,11 +675,11 @@ static VALUE json_path_new(JSON_ParserState *state, VALUE duplicate_key)
     return path;
 }
 
-static VALUE parse_error_new(JSON_ParserState *state, VALUE message, long line, long column, bool eos)
+static VALUE parse_error_new(JSON_ParserState *state, VALUE message, long line, rb_len_t column, bool eos)
 {
     VALUE exc = rb_exc_new_str(eParserError, message);
     rb_ivar_set(exc, i_at_line, LONG2NUM(line));
-    rb_ivar_set(exc, i_at_column, LONG2NUM(column));
+    rb_ivar_set(exc, i_at_column, LEN2NUM(column));
     rb_ivar_set(exc, i_at_json_path, json_path_new(state, Qundef));
     return exc;
 }
@@ -697,9 +697,10 @@ NORETURN(static) void raise_parse_error(const char *format, JSON_ParserState *st
         }
     } else {
         VALUE message = build_parse_error_message(format, state);
-        long line, column;
+        long line;
+        rb_len_t column;
         cursor_position(state, &line, &column);
-        rb_str_catf(message, " at line %ld column %ld", line, column);
+        rb_str_catf(message, " at line %ld column %"PRIdLEN, line, column);
         rb_exc_raise(parse_error_new(state, message, line, column, eos));
     }
 }
@@ -889,12 +890,12 @@ static inline VALUE build_string(const char *start, const char *end, bool intern
     VALUE result;
 # ifdef HAVE_RB_ENC_INTERNED_STR
     if (intern) {
-      result = rb_enc_interned_str(start, (long)(end - start), enc_utf8);
+      result = rb_enc_interned_str(start, (rb_len_t)(end - start), enc_utf8);
     } else {
-      result = rb_utf8_str_new(start, (long)(end - start));
+      result = rb_utf8_str_new(start, (rb_len_t)(end - start));
     }
 # else
-    result = rb_utf8_str_new(start, (long)(end - start));
+    result = rb_utf8_str_new(start, (rb_len_t)(end - start));
     if (intern) {
         result = rb_funcall(rb_str_freeze(result), i_uminus, 0);
     }
@@ -1088,7 +1089,7 @@ NOINLINE(static) VALUE json_string_unescape(JSON_ParserState *state, JSON_Parser
 
 typedef VALUE (*json_number_decode_func_t)(const char *ptr);
 
-static inline VALUE json_decode_large_number(const char *start, long len, json_number_decode_func_t func)
+static inline VALUE json_decode_large_number(const char *start, rb_len_t len, json_number_decode_func_t func)
 {
     if (RB_LIKELY(len < MAX_NUMBER_STACK_BUFFER)) {
         char buffer[MAX_NUMBER_STACK_BUFFER];
@@ -1111,7 +1112,7 @@ static VALUE json_decode_inum(const char *buffer)
     return rb_cstr2inum(buffer, 10);
 }
 
-NOINLINE(static) VALUE json_decode_large_integer(const char *start, long len)
+NOINLINE(static) VALUE json_decode_large_integer(const char *start, rb_len_t len)
 {
     return json_decode_large_number(start, len, json_decode_inum);
 }
@@ -1152,7 +1153,7 @@ static VALUE json_decode_dnum(const char *buffer)
     return DBL2NUM(rb_cstr_to_dbl(buffer, 1));
 }
 
-NOINLINE(static) VALUE json_decode_large_float(const char *start, long len)
+NOINLINE(static) VALUE json_decode_large_float(const char *start, rb_len_t len)
 {
     return json_decode_large_number(start, len, json_decode_dnum);
 }
@@ -1231,9 +1232,10 @@ NORETURN(static) void raise_duplicate_key_error(JSON_ParserState *state, VALUE d
     if (state->parser) { // line and columns can't be accurate in resumable
         exc = parse_error_new(state, message, 0, 0, false);
     } else {
-        long line, column;
+        long line;
+        rb_len_t column;
         cursor_position(state, &line, &column);
-        rb_str_catf(message, " at line %ld column %ld", line, column);
+        rb_str_catf(message, " at line %ld column %"PRIdLEN, line, column);
         exc = parse_error_new(state, message, line, column, false);
     }
     rb_ivar_set(exc, i_at_json_path, json_path_new(state, duplicate_key));
@@ -2043,8 +2045,8 @@ static int parser_config_init_i(VALUE key, VALUE val, VALUE data)
                     parser_config_wb_write(self, &config->decimal_class, rb_path_to_class(mod_path));
 
                     const char *method_name_beg = last_colon + 1;
-                    long before_len = method_name_beg - name_cstr;
-                    long len = RSTRING_LEN(name) - before_len;
+                    rb_len_t before_len = method_name_beg - name_cstr;
+                    rb_len_t len = RSTRING_LEN(name) - before_len;
                     VALUE method_name = rb_str_substr(name, before_len, len);
                     config->decimal_method_id = SYM2ID(rb_str_intern(method_name));
                 } else {
@@ -2137,7 +2139,7 @@ static VALUE cParser_parse(JSON_ParserConfig *config, VALUE src)
         .head = 1,
     };
 
-    long len;
+    rb_len_t len;
     const char *start;
 
     RSTRING_GETMEM(Vsource, start, len);
@@ -2456,7 +2458,7 @@ static VALUE cResumableParser_feed(VALUE self, VALUE str)
         rb_str_append(parser->buffer, str);
     }
 
-    long len;
+    rb_len_t len;
     const char *start;
     RSTRING_GETMEM(parser->buffer, start, len);
     parser->state.start = start;
@@ -2762,7 +2764,7 @@ static VALUE cResumableParser_rest(VALUE self)
 
     size_t offset = parser->state.cursor - parser->state.start;
     const char *ptr;
-    long len;
+    rb_len_t len;
     RSTRING_GETMEM(parser->buffer, ptr, len);
     return rb_utf8_str_new(ptr + offset, len - offset);
 }
