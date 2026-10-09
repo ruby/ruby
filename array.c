@@ -7576,8 +7576,7 @@ static VALUE
 rb_ary_repeated_permutation_size(VALUE ary, VALUE args, VALUE eobj)
 {
     rb_len_t n = RARRAY_LEN(ary);
-    /* Not rb_len_t: rb_int_positive_pow() takes an unsigned long exponent. */
-    long k = NUM2LONG(RARRAY_AREF(args, 0));
+    rb_len_t k = NUM2LEN(RARRAY_AREF(args, 0));
 
     if (k < 0) {
         return LONG2FIX(0);
@@ -7585,7 +7584,7 @@ rb_ary_repeated_permutation_size(VALUE ary, VALUE args, VALUE eobj)
     if (n <= 0) {
         return LONG2FIX(!k);
     }
-    return rb_int_positive_pow(n, (unsigned long)k);
+    return rb_int_pow(LEN2NUM(n), LEN2NUM(k));
 }
 
 /*
