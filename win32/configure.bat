@@ -45,6 +45,8 @@ set pathlist=
 set config_make=confargs~%RANDOM%.mak
 set confargs=%config_make:.mak=.sub%
 set debug_configure=
+set MAKEFILE=Makefile
+set make_command=nmake
 echo>%config_make% # CONFIGURE
 type nul > %confargs%
 :loop
@@ -193,6 +195,9 @@ goto :loop ;
   if "%opt%" == "--with-gmp" goto :gmp
   if "%opt%" == "--with-destdir" goto :destdir
   if "%opt%" == "--with-dump-ast" goto :dump-ast
+  if "%opt%" == "--with-gnu-make" goto :gnu-make
+  if "%opt%" == "--with-gnumake" goto :gnu-make
+  if "%opt%" == "--with-gmake" goto :gnu-make
 goto :loop ;
 :ntver
   ::- For version constants, see
@@ -245,6 +250,10 @@ goto :loop ;
 :dump-ast
   echo>> %config_make% DUMP_AST = %arg%
 goto :loop ;
+:gnu-make
+  set "MAKEFILE=GNUmakefile"
+  if defined arg (set "make_command=%arg%") else (set "make_command=make")
+goto :loop ;
 :opt-dir
   if "%arg%" == "" (
     echo 1>&2 %configure%: missing argument for %opt%
@@ -270,6 +279,7 @@ goto :loop ;
   echo   --target=TARGET         configure for TARGET [i386-mswin32]
   echo Optional Package:
   echo   --with-baseruby=RUBY    use RUBY as baseruby [ruby]
+  echo   --with-gnu-make[=MAKE]  generate GNUmakefile for GNU make [make]
   echo   --with-static-linked-ext link external modules statically
   echo   --with-ext="a,b,..."    use extensions a, b, ...
   echo   --without-ext="a,b,..." ignore extensions a, b, ...
@@ -297,12 +307,14 @@ if defined optdirs (echo>>%config_make% optdirs = %optdirs:~1%)
   type %confargs%
   echo # configure_args
 
-  echo.
-  echo !if "$(optdirs)" != ""
-  for %%I in ("$(optdirs:\=/)" "$(optdirs:/;=;)") do @echo optdirs = %%~I
-  echo XINCFLAGS = -I"$(optdirs:;=/include" -I")/include"
-  echo XLDFLAGS = -libpath:"$(optdirs:;=/lib" -libpath:")/lib"
-  echo !endif
+  if not "%MAKEFILE%" == "GNUmakefile" (
+    echo.
+    echo !if "$(optdirs)" != ""
+    for %%I in ("$(optdirs:\=/)" "$(optdirs:/;=;)") do @echo optdirs = %%~I
+    echo XINCFLAGS = -I"$(optdirs:;=/include" -I")/include"
+    echo XLDFLAGS = -libpath:"$(optdirs:;=/lib" -libpath:")/lib"
+    echo !endif
+  )
 
   if not "%pathlist%" == "" (
     echo.
@@ -317,7 +329,8 @@ if "%debug_configure%" == "yes" (type %config_make%)
 
 nmake -al -f %WIN32DIR%/setup.mak "WIN32DIR=%WIN32DIR%" ^
     config_make=%config_make% ^
-    MAKEFILE=Makefile.new MAKEFILE_BACK=Makefile.old MAKEFILE_NEW=Makefile ^
+    MAKEFILE=%MAKEFILE%.new MAKEFILE_BACK=%MAKEFILE%.old MAKEFILE_NEW=%MAKEFILE% ^
+    make_command=%make_command% ^
     %target%
 set error=%ERRORLEVEL%
 if exist %config_make% del /q %config_make%
