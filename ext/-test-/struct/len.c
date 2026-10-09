@@ -3,7 +3,7 @@
 static VALUE
 bug_struct_len(VALUE obj)
 {
-    return LONG2NUM(RSTRUCT_LEN(obj));
+    return LEN2NUM(RSTRUCT_LEN(obj));
 }
 
 void
