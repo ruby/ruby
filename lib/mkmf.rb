@@ -2636,11 +2636,11 @@ static: #{$extmk && !$static ? "all" : %[$(STATIC_LIB)#{$extout ? " install-rb" 
       end
     end
     if target and !dirs.include?(sodir)
-      mfile.print "$(TARGET_SO_DIR_TIMESTAMP):\n\t$(Q) $(MAKEDIRS) $(@D) #{sodir}\n\t$(Q) $(TOUCH) $@\n"
+      mfile.print "$(TARGET_SO_DIR_TIMESTAMP):\n\t$(Q) $(MAKEDIRS) $(@D) #{sodir}\n\t-$(Q) $(TOUCH) $@\n"
     end
     dirs.each do |d|
       t = timestamp_file(d, target_prefix)
-      mfile.print "#{t}:\n\t$(Q) $(MAKEDIRS) $(@D) #{d}\n\t$(Q) $(TOUCH) $@\n"
+      mfile.print "#{t}:\n\t$(Q) $(MAKEDIRS) $(@D) #{d}\n\t-$(Q) $(TOUCH) $@\n"
     end
 
     mfile.print <<-SITEINSTALL
