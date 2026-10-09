@@ -133,7 +133,7 @@ recvfrom_blocking(void *data)
 static VALUE
 rsock_strbuf(VALUE str, long buflen)
 {
-    long len;
+    rb_len_t len;
 
     if (NIL_P(str)) return rb_str_new(0, buflen);
 

@@ -1489,7 +1489,7 @@ ip_inspect(VALUE sock)
         (id = rsock_intern_family(addr.addr.sa_family)) != 0) {
         VALUE family = rb_id2str(id);
         char hbuf[1024], pbuf[1024];
-        long slen = RSTRING_LEN(str);
+        rb_len_t slen = RSTRING_LEN(str);
         const char last = (slen > 1 && RSTRING_PTR(str)[slen - 1] == '>') ?
             (--slen, '>') : 0;
         str = rb_str_subseq(str, 0, slen);

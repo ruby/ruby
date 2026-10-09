@@ -1146,7 +1146,7 @@ sock_s_getnameinfo(int argc, VALUE *argv, VALUE _)
             }
         }
         else {
-            rb_raise(rb_eArgError, "array size should be 3 or 4, %ld given",
+            rb_raise(rb_eArgError, "array size should be 3 or 4, %"PRIdLEN" given",
                      RARRAY_LEN(sa));
         }
         hints.ai_socktype = (fl & NI_DGRAM) ? SOCK_DGRAM : SOCK_STREAM;
@@ -1314,7 +1314,7 @@ sock_s_unpack_sockaddr_un(VALUE self, VALUE addr)
         rb_raise(rb_eArgError, "not an AF_UNIX sockaddr");
     }
     if (sizeof(struct sockaddr_un) < (size_t)RSTRING_LEN(addr)) {
-        rb_raise(rb_eTypeError, "too long sockaddr_un - %ld longer than %d",
+        rb_raise(rb_eTypeError, "too long sockaddr_un - %"PRIdLEN" longer than %d",
                  RSTRING_LEN(addr), (int)sizeof(struct sockaddr_un));
     }
     path = rsock_unixpath_str(sockaddr, RSTRING_SOCKLEN(addr));
