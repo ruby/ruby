@@ -133,6 +133,9 @@ typedef long rb_len_t;
 /** An unsigned integer type that has the same width with ::rb_len_t. */
 typedef unsigned long rb_ulen_t;
 
+/** Indicates that ::rb_len_t and ::rb_ulen_t are available. */
+#define HAVE_RB_LEN_T 1
+
 #ifndef SIZEOF_RB_LEN_T
 /** Size of ::rb_len_t, in bytes. */
 # define SIZEOF_RB_LEN_T SIZEOF_LONG

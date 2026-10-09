@@ -481,8 +481,8 @@ Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for det
 * `rb_len_t` and `rb_ulen_t` are added as the types of the lengths and indices
   of String, Array and MatchData, with `LEN2NUM`, `NUM2LEN`, `ULEN2NUM`,
   `rb_len2int`, `PRIdLEN` and its siblings, `RB_LEN_MAX`, `RB_LEN_MIN`,
-  `RB_ULEN_MAX` and `SIZEOF_RB_LEN_T`.  `RbConfig::SIZEOF["rb_len_t"]` gives
-  its size to an extconf.rb.  They are `long` on every platform for now, and
+  `RB_ULEN_MAX`, `SIZEOF_RB_LEN_T` and `HAVE_RB_LEN_T`.  `RbConfig::SIZEOF["rb_len_t"]`
+  gives its size to an extconf.rb.  They are `long` on every platform for now, and
   the C API that carries such lengths, such as `RSTRING_LEN` and
   `rb_range_beg_len`, uses them.  A later change will makes them 64 bits on mswin,
   so extensions should keep these lengths in `rb_len_t`. [[Feature #22400]]
