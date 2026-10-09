@@ -72,7 +72,7 @@ wakeup_one(struct ccan_list_head *head)
 static void
 wakeup_all(struct ccan_list_head *head)
 {
-    sync_wakeup(head, LONG_MAX);
+    sync_wakeup(head, RB_LEN_MAX);
 }
 
 #if defined(HAVE_WORKING_FORK)

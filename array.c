@@ -7163,16 +7163,16 @@ ary_sample0(rb_execution_context_t *ec, VALUE ary)
 static VALUE
 rb_ary_cycle_size(VALUE self, VALUE args, VALUE eobj)
 {
-    long mul;
+    rb_len_t mul;
     VALUE n = Qnil;
     if (args && (RARRAY_LEN(args) > 0)) {
         n = RARRAY_AREF(args, 0);
     }
     if (RARRAY_LEN(self) == 0) return INT2FIX(0);
     if (NIL_P(n)) return DBL2NUM(HUGE_VAL);
-    mul = NUM2LONG(n);
+    mul = NUM2LEN(n);
     if (mul <= 0) return INT2FIX(0);
-    n = LONG2NUM(mul);
+    n = LEN2NUM(mul);
     return rb_int_mul(rb_ary_length(self), n);
 }
 

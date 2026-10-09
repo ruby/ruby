@@ -8619,7 +8619,7 @@ str_undump(VALUE str)
                 if (s_end - s != 2) goto invalid_format;
                 if (s[0] != '"' || s[1] != ')') goto invalid_format;
 
-                encidx = rb_enc_find_index2(encname, (long)size);
+                encidx = rb_enc_find_index2(encname, (rb_len_t)size);
                 if (encidx < 0) {
                     rb_raise(rb_eRuntimeError, "dumped string has unknown encoding name");
                 }

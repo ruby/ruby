@@ -459,7 +459,7 @@ ruby_push_include(const char *path, VALUE (*filter)(VALUE))
     if (path == 0) return;
     p = path;
     while (*p) {
-        long len;
+        rb_len_t len;
         while (is_path_sep(*p))
             p++;
         if (!*p) break;
@@ -895,7 +895,8 @@ static long proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, in
 static void
 moreswitches(const char *s, ruby_cmdline_options_t *opt, int envopt)
 {
-    long argc, i, len;
+    long argc, i;
+    rb_len_t len;
     char **argv, *p;
     const char *ap = 0;
     VALUE argstr, argary;
@@ -1176,7 +1177,7 @@ dump_option(const char *str, int len, void *arg)
 }
 
 static void
-set_option_encoding_once(const char *type, VALUE *name, const char *e, long elen)
+set_option_encoding_once(const char *type, VALUE *name, const char *e, rb_len_t elen)
 {
     VALUE ename;
 

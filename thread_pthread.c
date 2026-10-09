@@ -1093,7 +1093,7 @@ native_set_another_thread_name(rb_nativethread_id_t thread_id, VALUE name)
     if (!pthread_equal(pthread_self(), thread_id)) return;
 # endif
     if (!NIL_P(name)) {
-        long n;
+        rb_len_t n;
         RSTRING_GETMEM(name, s, n);
         if (n >= (int)sizeof(buf)) {
             memcpy(buf, s, sizeof(buf)-1);

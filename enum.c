@@ -3762,13 +3762,13 @@ cycle_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
 static VALUE
 enum_cycle_size(VALUE self, VALUE args, VALUE eobj)
 {
-    long mul = 0;
+    rb_len_t mul = 0;
     VALUE n = Qnil;
     VALUE size;
 
     if (args && (RARRAY_LEN(args) > 0)) {
         n = RARRAY_AREF(args, 0);
-        if (!NIL_P(n)) mul = NUM2LONG(n);
+        if (!NIL_P(n)) mul = NUM2LEN(n);
     }
 
     size = enum_size(self, args, 0);
@@ -3776,7 +3776,7 @@ enum_cycle_size(VALUE self, VALUE args, VALUE eobj)
 
     if (NIL_P(n)) return DBL2NUM(HUGE_VAL);
     if (mul <= 0) return INT2FIX(0);
-    n = LONG2NUM(mul);
+    n = LEN2NUM(mul);
     return rb_funcallv(size, '*', 1, &n);
 }
 
@@ -3812,7 +3812,7 @@ enum_cycle(int argc, VALUE *argv, VALUE obj)
 {
     VALUE ary;
     VALUE nv = Qnil;
-    long n;
+    rb_len_t n;
     rb_len_t i, len;
 
     rb_check_arity(argc, 0, 1);
@@ -3822,7 +3822,7 @@ enum_cycle(int argc, VALUE *argv, VALUE obj)
         n = -1;
     }
     else {
-        n = NUM2LONG(nv);
+        n = NUM2LEN(nv);
         if (n <= 0) return Qnil;
     }
     ary = rb_ary_new();

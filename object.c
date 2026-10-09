@@ -755,7 +755,7 @@ inspect_i(ID id, VALUE value, st_data_t a)
     if (!rb_is_instance_id(id)) return ST_CONTINUE;
     if (!NIL_P(ivars)) {
         VALUE name = ID2SYM(id);
-        for (long i = 0; RARRAY_AREF(ivars, i) != name; ) {
+        for (rb_len_t i = 0; RARRAY_AREF(ivars, i) != name; ) {
             if (++i >= RARRAY_LEN(ivars)) return ST_CONTINUE;
         }
     }
@@ -2662,7 +2662,7 @@ rb_mod_const_get(int argc, VALUE *argv, VALUE mod)
 
     while (p < pend) {
         VALUE part;
-        long len, beglen;
+        rb_len_t len, beglen;
 
         while (p < pend && *p != ':') p++;
 
@@ -2835,7 +2835,7 @@ rb_mod_const_defined(int argc, VALUE *argv, VALUE mod)
 
     while (p < pend) {
         VALUE part;
-        long len, beglen;
+        rb_len_t len, beglen;
 
         while (p < pend && *p != ':') p++;
 
@@ -2995,7 +2995,7 @@ rb_mod_const_source_location(int argc, VALUE *argv, VALUE mod)
 
     while (p < pend) {
         VALUE part;
-        long len, beglen;
+        rb_len_t len, beglen;
 
         while (p < pend && *p != ':') p++;
 
