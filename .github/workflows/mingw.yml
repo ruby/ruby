@@ -56,7 +56,7 @@ jobs:
         ) }}
       CFLAGS: '-mtune=generic -O3 -pipe'
       CXXFLAGS: '-mtune=generic -O3 -pipe'
-      CPPFLAGS: '-D_FORTIFY_SOURCE=2 -D__USE_MINGW_ANSI_STDIO=1 -DFD_SETSIZE=2048'
+      CPPFLAGS: '-D_FORTIFY_SOURCE=2 -D__USE_MINGW_ANSI_STDIO=1 -DFD_SETSIZE=2048 -DSIZEOF_RB_LEN_T=8'
       LDFLAGS: '-pipe'
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
       NoDefaultCurrentDirectoryInExePath: 1
@@ -99,6 +99,7 @@ jobs:
             ${{ env.MINGW_PACKAGE_PREFIX }}-openssl
             ${{ env.MINGW_PACKAGE_PREFIX }}-libyaml
             ${{ env.MINGW_PACKAGE_PREFIX }}-libffi
+            ${{ env.MINGW_PACKAGE_PREFIX }}-rust
 
       - name: Set up env
         id: setup-env
@@ -186,7 +187,7 @@ jobs:
       - name: configure
         run: >
           ../src/configure --disable-install-doc --prefix=/.
-          --build=$CHOST --host=$CHOST --target=$CHOST
+          --build=$CHOST --host=$CHOST --target=$CHOST --enable-yjit
         shell: sh
         env:
           CHOST: ${{ env.MSYS2_ARCH }}-w64-mingw32
