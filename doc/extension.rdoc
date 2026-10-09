@@ -2201,8 +2201,8 @@ RGenGC. Please check the following tips.
 
 ==== Don't touch pointers directly
 
-In MRI (include/ruby/ruby.h), some macros to acquire pointers to the
-internal data structures are supported such as <tt>RARRAY_PTR()</tt>,
+In MRI (include/ruby/ruby.h), some macros acquire pointers to the
+internal data structures such as <tt>RARRAY_PTR()</tt>,
 <tt>RSTRUCT_PTR()</tt> and so on.
 
 DO NOT USE THESE MACROS and instead use the corresponding C-APIs such as
