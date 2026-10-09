@@ -716,7 +716,7 @@ num_members(VALUE klass)
     return RARRAY_LEN(members);
 }
 
-long
+rb_len_t
 rb_zjit_struct_num_members(VALUE klass)
 {
     return num_members(klass);
@@ -841,7 +841,7 @@ struct_embedded_p(rb_len_t n)
 }
 
 bool
-rb_zjit_struct_embedded_p(long num_members)
+rb_zjit_struct_embedded_p(rb_len_t num_members)
 {
     return struct_embedded_p(num_members);
 }
@@ -888,7 +888,7 @@ rb_zjit_class_has_struct_allocator(VALUE klass)
 // The ID of the `index`th member of the Struct class `klass`. `index` must be in bounds
 // according to rb_zjit_struct_num_members().
 ID
-rb_zjit_struct_member_id(VALUE klass, long index)
+rb_zjit_struct_member_id(VALUE klass, rb_len_t index)
 {
     VALUE members = struct_ivar_get(klass, id_members);
     RUBY_ASSERT(RB_TYPE_P(members, T_ARRAY));
