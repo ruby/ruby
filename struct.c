@@ -1242,8 +1242,8 @@ rb_struct_pos(VALUE s, VALUE *name, bool name_only)
 static void
 invalid_struct_pos(VALUE s, VALUE idx)
 {
-    if (FIXNUM_P(idx)) {
-        rb_len_t i = FIX2INT(idx), len = RSTRUCT_LEN_RAW(s);
+    if (RB_INTEGER_TYPE_P(idx)) {
+        rb_len_t i = NUM2LEN(idx), len = RSTRUCT_LEN_RAW(s);
         if (i < 0) {
             rb_raise(rb_eIndexError, "offset %"PRIdLEN" too small for struct(size:%"PRIdLEN")",
                      i, len);
