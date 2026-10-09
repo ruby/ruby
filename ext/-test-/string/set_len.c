@@ -3,7 +3,7 @@
 static VALUE
 bug_str_set_len(VALUE str, VALUE len)
 {
-    rb_str_set_len(str, NUM2LONG(len));
+    rb_str_set_len(str, NUM2LEN(len));
     return str;
 }
 
@@ -19,7 +19,7 @@ bug_str_append(VALUE str, VALUE addendum)
 static VALUE
 bug_str_resize(VALUE str, VALUE len)
 {
-    rb_str_resize(str, NUM2LONG(len));
+    rb_str_resize(str, NUM2LEN(len));
     return str;
 }
 

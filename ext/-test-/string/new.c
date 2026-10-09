@@ -4,13 +4,13 @@
 static VALUE
 bug_str_buf_new(VALUE self, VALUE len)
 {
-    return rb_str_buf_new(NUM2LONG(len));
+    return rb_str_buf_new(NUM2LEN(len));
 }
 
 static VALUE
 bug_external_str_new(VALUE self, VALUE len, VALUE enc)
 {
-    return rb_external_str_new_with_enc(NULL, NUM2LONG(len), rb_to_encoding(enc));
+    return rb_external_str_new_with_enc(NULL, NUM2LEN(len), rb_to_encoding(enc));
 }
 
 void
