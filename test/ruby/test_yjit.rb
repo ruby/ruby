@@ -49,7 +49,7 @@ class TestYJIT < Test::Unit::TestCase
   def test_command_line_switches
     assert_in_out_err('--yjit-', '', [], /invalid option --yjit-/)
     assert_in_out_err('--yjithello', '', [], /invalid option --yjithello/)
-    limit = /mswin/ =~ RUBY_PLATFORM ? 3 : 5
+    limit = /mswin|mingw/ =~ RUBY_PLATFORM ? 3 : 5
     assert_in_out_err("--yjit-temp-regs=#{limit + 1}", '', [], /--yjit-temp-regs must be <= #{limit}\n.*invalid YJIT option 'temp-regs=#{limit + 1}'/m)
     #assert_in_out_err('--yjit-call-threshold', '', [], /--yjit-call-threshold needs an argument/)
     #assert_in_out_err('--yjit-call-threshold=', '', [], /--yjit-call-threshold needs an argument/)
@@ -59,7 +59,7 @@ class TestYJIT < Test::Unit::TestCase
     warning = ['WARNING: --yjit-perf does not write a perf map on Windows']
     assert_in_out_err(%w[--yjit-perf --yjit-call-threshold=1], 'def foo = 1; foo; p :ok', [':ok'], warning, success: true)
     assert_in_out_err(%w[--yjit-perf=fp --yjit-call-threshold=1], 'def foo = 1; foo; p :ok', [':ok'], [], success: true)
-  end if /mswin/ =~ RUBY_PLATFORM
+  end if /mswin|mingw/ =~ RUBY_PLATFORM
 
   def test_rel32_calls_on_windows
     stats = assert_compiles(<<~'RUBY', exits: :any)
@@ -70,7 +70,7 @@ class TestYJIT < Test::Unit::TestCase
       omit "the JIT region was reserved out of rel32 range of the C functions"
     end
     assert_operator stats[:num_send_x86_rel32], :>, 0
-  end if /x64-mswin/ =~ RUBY_PLATFORM
+  end if /x64-mswin|x64-mingw/ =~ RUBY_PLATFORM
 
   def test_yjit_enable
     args = []

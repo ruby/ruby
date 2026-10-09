@@ -20,7 +20,7 @@ Ruby core development can be done either in Windows `cmd` like:
 ridk install
 ridk enable ucrt64
 
-pacman -S --needed %MINGW_PACKAGE_PREFIX%-openssl %MINGW_PACKAGE_PREFIX%-libyaml %MINGW_PACKAGE_PREFIX%-libffi
+pacman -S --needed %MINGW_PACKAGE_PREFIX%-openssl %MINGW_PACKAGE_PREFIX%-libyaml %MINGW_PACKAGE_PREFIX%-libffi %MINGW_PACKAGE_PREFIX%-rust
 
 mkdir c:\work\ruby
 cd /d c:\work\ruby
@@ -31,7 +31,7 @@ sh ./src/autogen.sh
 
 mkdir build
 cd build
-sh ../src/configure -C --disable-install-doc
+sh ../src/configure -C --disable-install-doc --enable-yjit
 make
 ```
 
@@ -42,7 +42,7 @@ ridk install
 ridk enable ucrt64
 bash
 
-pacman -S --needed $MINGW_PACKAGE_PREFIX-openssl $MINGW_PACKAGE_PREFIX-libyaml $MINGW_PACKAGE_PREFIX-libffi
+pacman -S --needed $MINGW_PACKAGE_PREFIX-openssl $MINGW_PACKAGE_PREFIX-libyaml $MINGW_PACKAGE_PREFIX-libffi $MINGW_PACKAGE_PREFIX-rust
 
 mkdir /c/work/ruby
 cd /c/work/ruby
@@ -51,7 +51,7 @@ git clone https://github.com/ruby/ruby src
 
 ./src/autogen.sh
 cd build
-../src/configure -C --disable-install-doc
+../src/configure -C --disable-install-doc --enable-yjit
 make
 ```
 
