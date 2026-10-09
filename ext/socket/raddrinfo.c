@@ -975,7 +975,7 @@ rb_scheduler_getaddrinfo(VALUE scheduler, VALUE host, const char *service,
     const struct addrinfo *hints, struct rb_addrinfo **res)
 {
     int error, res_allocated = 0, _additional_flags = 0;
-    long i, len;
+    rb_len_t i, len;
     struct addrinfo *ai, *ai_tail = NULL;
     char *hostp;
     char _hbuf[NI_MAXHOST];
