@@ -579,6 +579,28 @@ class TestGc < Test::Unit::TestCase
     RUBY
   end
 
+  def test_gc_parameter_init_bytes_after_full_gc
+    env = { "RUBY_GC_HEAP_INIT_BYTES" => "#{8 * 1024 * 1024}" }
+    assert_separately([env, "-W0"], __FILE__, __LINE__, <<~RUBY, timeout: 60)
+      require "rbconfig/sizeof"
+      GC_HEAP_INIT_BYTES = 8 * 1024 * 1024
+
+      heap = GC::INTERNAL_CONSTANTS[:HEAP_COUNT] - 1
+      slot_size = GC.stat_heap(heap, :slot_size)
+      capa = (slot_size - GC::INTERNAL_CONSTANTS[:RVALUE_OVERHEAD] - (2 * RbConfig::SIZEOF["void*"])) / RbConfig::SIZEOF["void*"]
+      init_slots = GC_HEAP_INIT_BYTES / slot_size
+
+      GC.start
+      GC.start
+
+      gc_count = GC.count
+      Array.new(capa) while GC.count == gc_count && GC.stat_heap(heap, :heap_eden_slots) < init_slots
+
+      assert_operator GC.count, :>, gc_count
+      assert_operator GC.stat_heap(heap, :heap_eden_slots), :<, init_slots
+    RUBY
+  end
+
   def test_profiler_enabled
     GC::Profiler.enable
     assert_equal(true, GC::Profiler.enabled?)

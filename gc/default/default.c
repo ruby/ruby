@@ -552,6 +552,8 @@ typedef struct rb_heap_struct {
     struct heap_page *pooled_pages;
     size_t total_pages;      /* total page count in a heap */
     size_t total_slots;      /* total slot count */
+    size_t init_slots;
+    bool init_slots_scaled;
 
 } rb_heap_t;
 
@@ -2296,6 +2298,28 @@ objspace_heap_init_bytes(const rb_objspace_t *objspace)
         ? gc_params.heap_init_bytes : gc_params.ractor_heap_init_bytes;
 }
 
+static inline size_t
+heap_init_slots(const rb_objspace_t *objspace, const rb_heap_t *heap)
+{
+    size_t init_slots = objspace_heap_init_bytes(objspace) / heap->slot_size;
+    if (heap->init_slots_scaled && heap->init_slots < init_slots) {
+        return heap->init_slots;
+    }
+    return init_slots;
+}
+
+static size_t
+heap_goal_total_slots(size_t live_slots)
+{
+    double goal_ratio = gc_params.heap_free_slots_goal_ratio;
+    double f = gc_params.growth_factor;
+
+    if (goal_ratio > 0.0 && goal_ratio < 1.0 && 1 / (1 - goal_ratio) < f) {
+        f = 1 / (1 - goal_ratio);
+    }
+    return (size_t)(live_slots * f);
+}
+
 static void
 heap_allocatable_bytes_expand(rb_objspace_t *objspace,
         rb_heap_t *heap, size_t free_slots, size_t total_slots, size_t slot_size)
@@ -3132,7 +3156,7 @@ heap_prepare(rb_objspace_t *objspace, rb_heap_t *heap)
 {
     GC_ASSERT(heap->free_pages == NULL);
 
-    if (heap->total_slots < objspace_heap_init_bytes(objspace) / heap->slot_size &&
+    if (heap->total_slots < heap_init_slots(objspace, heap) &&
             heap->sweeping_page == NULL) {
         heap_page_allocate_and_initialize_force(objspace, heap);
         GC_ASSERT(heap->free_pages != NULL);
@@ -5612,7 +5636,13 @@ gc_sweep_finish_heap(rb_objspace_t *objspace, rb_heap_t *heap)
     size_t total_slots = heap->total_slots;
     size_t swept_slots = heap->freed_slots + heap->empty_slots;
 
-    size_t init_slots = objspace_heap_init_bytes(objspace) / heap->slot_size;
+    if (is_full_marking(objspace) && heap->total_pages > 0) {
+        GC_ASSERT(total_slots >= swept_slots);
+        heap->init_slots = heap_goal_total_slots(total_slots - swept_slots);
+        heap->init_slots_scaled = true;
+    }
+
+    size_t init_slots = heap_init_slots(objspace, heap);
     size_t min_free_slots = (size_t)(MAX(total_slots, init_slots) * gc_params.heap_free_slots_min_ratio);
 
     if (swept_slots < min_free_slots &&
@@ -7735,7 +7765,7 @@ gc_marks_finish(rb_objspace_t *objspace)
         /* Setup freeable slots. */
         size_t total_init_slots = 0;
         for (int i = 0; i < HEAP_COUNT; i++) {
-            total_init_slots += (objspace_heap_init_bytes(objspace) / heaps[i].slot_size) * r_mul;
+            total_init_slots += heap_init_slots(objspace, &heaps[i]) * r_mul;
         }
 
         if (max_free_slots < total_init_slots) {
@@ -10111,6 +10141,13 @@ objspace_absorb(rb_objspace_t *dst, rb_objspace_t *src)
         dheap->total_allocated_objects += sheap->total_allocated_objects;
         dheap->total_freed_objects += sheap->total_freed_objects;
         dheap->final_slots_count += sheap->final_slots_count;
+
+        if (dheap->init_slots_scaled && sheap->init_slots_scaled) {
+            dheap->init_slots += sheap->init_slots;
+        }
+        else {
+            dheap->init_slots_scaled = false;
+        }
     }
 
     /* The objspace-wide page bookkeeping. */
