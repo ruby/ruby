@@ -608,12 +608,63 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 
 ## JIT
 
+### ZJIT
+
+* Status
+    * ZJIT is now faster than YJIT on many benchmarks, but we expect that
+      ZJIT can be still slower than YJIT on larger benchmarks or applications
+      as of Ruby 4.1.0 preview releases. Stay tuned for the Ruby 4.1.0 release.
+* Major optimizations
+    * Method inlining: small Ruby methods, including methods that yield to
+      a block, are inlined into their callers, so that the optimizer can see
+      across method boundaries.
+    * Lightweight frames: method calls in JIT code no longer write a full
+      VM control frame. Frame metadata used by backtraces and GC is
+      materialized only when needed.
+    * Recompilation: when guards keep failing, ZJIT re-profiles the method
+      and compiles a new version for the observed behavior instead of
+      repeatedly exiting to the interpreter. Up to 4 versions per method.
+    * Polymorphic specialization: method calls, block calls, and instance
+      variable reads and writes that see more than one class or shape are
+      specialized for each of them.
+    * A new linear scan register allocator, load-store optimization, and
+      more constant folding and redundant guard elimination.
+    * Allocation of objects, Arrays, Hashes, Strings and Ranges is inlined
+      into JIT code, skipping a call into the GC on the fast path.
+* More Ruby code is compiled
+    * Calls with blocks or `&block` arguments, `super`, splats, keyword
+      arguments, `...` forwarding, and post-required parameters.
+    * Specialized code for many core methods, e.g. `Float` arithmetic,
+      `Array#[]`, `Array#length`, `Array#empty?`, `Integer#[]`,
+      `String#byteslice`, `String#to_sym`, `Class#allocate`, and `new` on
+      `Struct` classes.
+    * Instance variable reads and shareable constants are now compiled
+      while multiple Ractors are running.
+* Command-line options
+    * `--zjit-perf=hir` writes a perf map symbol per HIR instruction,
+      to profile which kinds of HIR instructions consume CPU cycles.
+    * `--zjit-stats=FILE` writes stats as JSON when `FILE` ends with `.json`.
+    * `--zjit-trace-compiles` and `--zjit-trace-invalidation` record
+      compilation phases and invalidation events as
+      [Perfetto](https://ui.perfetto.dev/) trace events.
+    * `--zjit-trace-exits` now writes side exits in the
+      [Fuchsia Trace Format](https://fuchsia.dev/fuchsia-src/reference/tracing/trace-format)
+      to `/tmp/perfetto-{pid}.fxt`, which can be opened in Perfetto,
+      instead of a Stackprof dump.
+* Ruby API
+    * `RubyVM::ZJIT.exit_locations` and `RubyVM::ZJIT.dump_exit_locations`
+      are removed along with the Stackprof output of `--zjit-trace-exits`.
+
 ### YJIT
 
 * YJIT now supports Windows (mswin) on x64 CPUs.  Configure with
   `win32\configure.bat --enable-yjit`, which requires `rustc` with the
   `x86_64-pc-windows-msvc` target.  Only the release build is supported,
   and MinGW is not.  [[Feature #18439]]
+* Add `RubyVM::YJIT.max_compile_time_ns` and `RubyVM::YJIT.max_compile_time_ns=`
+  to give YJIT a compilation time budget. When `RubyVM::YJIT.total_compile_time_ns`
+  exceeds it, YJIT pauses compilation until the budget is raised, which
+  spreads the warmup overhead over a longer period. [[Feature #22236]]
 
 [Bug #18661]: https://bugs.ruby-lang.org/issues/18661
 [Bug #18947]: https://bugs.ruby-lang.org/issues/18947
@@ -646,6 +697,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #22205]: https://bugs.ruby-lang.org/issues/22205
 [Feature #22226]: https://bugs.ruby-lang.org/issues/22226
 [Feature #22232]: https://bugs.ruby-lang.org/issues/22232
+[Feature #22236]: https://bugs.ruby-lang.org/issues/22236
 [Feature #22238]: https://bugs.ruby-lang.org/issues/22238
 [Feature #22297]: https://bugs.ruby-lang.org/issues/22297
 [Feature #22400]: https://bugs.ruby-lang.org/issues/22400
