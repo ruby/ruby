@@ -2091,7 +2091,8 @@ Some macros to check API compatibilities are available by default.
 
 +HAVE_RB_LEN_T+ ::
 
-  Means that types +rb_len_t+ and +rb_ulen_t+ are provided.
+  Means that types +rb_len_t+ and +rb_ulen_t+ are provided, along with the
+  macros for them such as +LEN2NUM+, +NUM2LEN+ and +PRIdLEN+.
 
 +USE_SYMBOL_AS_METHOD_NAME+ ::
 
