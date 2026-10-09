@@ -293,14 +293,14 @@ rb_gc_get_objspace(void)
 }
 
 void
-rb_gc_run_obj_finalizer(VALUE objid, long count, VALUE (*callback)(long i, void *data), void *data)
+rb_gc_run_obj_finalizer(VALUE objid, rb_len_t count, VALUE (*callback)(rb_len_t i, void *data), void *data)
 {
     volatile struct {
         VALUE errinfo;
         VALUE final;
         rb_control_frame_t *cfp;
         VALUE *sp;
-        long finished;
+        rb_len_t finished;
     } saved;
 
     rb_execution_context_t * volatile ec = GET_EC();
@@ -330,7 +330,7 @@ rb_gc_run_obj_finalizer(VALUE objid, long count, VALUE (*callback)(long i, void 
         }
     }
 
-    for (long i = saved.finished; RESTORE_FINALIZER(), i < count; saved.finished = ++i) {
+    for (rb_len_t i = saved.finished; RESTORE_FINALIZER(), i < count; saved.finished = ++i) {
         saved.final = callback(i, data);
         rb_check_funcall(saved.final, idCall, 1, &objid);
     }
