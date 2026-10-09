@@ -1358,7 +1358,7 @@ typedef struct rb_parser_config_struct {
     VALUE qnil;
     VALUE qfalse;
     VALUE (*eArgError)(void);
-    int (*long2int)(long);
+    int (*long2int)(rb_len_t);
 
     /* For Ripper */
     int enc_coderange_7bit;
