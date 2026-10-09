@@ -435,7 +435,7 @@ static const rb_parser_config_t rb_global_parser_config = {
     .qnil = Qnil,
     .qfalse = Qfalse,
     .eArgError = arg_error,
-    .long2int = rb_long2int,
+    .long2int = rb_len2int,
 
     /* For Ripper */
     .static_id2sym = static_id2sym,
