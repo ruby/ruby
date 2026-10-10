@@ -735,7 +735,6 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::FloatDiv { recv, other, state } => gen_float_div(asm, opnd!(recv), opnd!(other), &function.frame_state(*state)),
         Insn::FloatToInt { recv, state } => gen_float_to_int(asm, opnd!(recv), &function.frame_state(*state)),
         Insn::FixnumEq { left, right } => gen_fixnum_eq(asm, opnd!(left), opnd!(right)),
-        Insn::FixnumNeq { left, right } => gen_fixnum_neq(asm, opnd!(left), opnd!(right)),
         Insn::FixnumLt { left, right } => gen_fixnum_lt(asm, opnd!(left), opnd!(right)),
         Insn::FixnumLe { left, right } => gen_fixnum_le(asm, opnd!(left), opnd!(right)),
         Insn::FixnumGt { left, right } => gen_fixnum_gt(asm, opnd!(left), opnd!(right)),
@@ -3001,12 +3000,6 @@ fn gen_float_to_int(asm: &mut Assembler, recv: lir::Opnd, state: &FrameState) ->
 fn gen_fixnum_eq(asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd) -> lir::Opnd {
     asm.cmp(left, right);
     asm.csel_e(Qtrue.into(), Qfalse.into())
-}
-
-/// Compile Fixnum != Fixnum
-fn gen_fixnum_neq(asm: &mut Assembler, left: lir::Opnd, right: lir::Opnd) -> lir::Opnd {
-    asm.cmp(left, right);
-    asm.csel_ne(Qtrue.into(), Qfalse.into())
 }
 
 /// Compile Fixnum < Fixnum
