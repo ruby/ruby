@@ -1014,6 +1014,8 @@ pub enum Insn {
     StringCopy { val: InsnId, chilled: bool, state: InsnId },
     StringIntern { val: InsnId, state: InsnId },
     StringConcat { strings: Vec<InsnId>, state: InsnId },
+    /// Apply String#force_encoding for a mutable string and an inline encoding. HIR loads the flags for load reuse.
+    StringForceEncoding { string: InsnId, encoding: InsnId, flags: InsnId, state: InsnId },
     /// Call rb_str_getbyte with known-Fixnum index
     StringGetbyte { string: InsnId, index: InsnId },
     /// Call rb_str_byte_substr with known-Fixnum beg/len
@@ -1448,6 +1450,12 @@ macro_rules! for_each_operand_impl {
                 $visit_many!(strings);
                 $visit_one!(*state);
             }
+            Insn::StringForceEncoding { string, encoding, flags, state } => {
+                $visit_one!(*string);
+                $visit_one!(*encoding);
+                $visit_one!(*flags);
+                $visit_one!(*state);
+            }
             Insn::StringGetbyte { string, index } => {
                 $visit_one!(*string);
                 $visit_one!(*index);
@@ -1801,6 +1809,7 @@ impl Insn {
             Insn::StringCopy { .. } => allocates,
             Insn::StringIntern { .. } => effects::Any,
             Insn::StringConcat { .. } => effects::Any,
+            Insn::StringForceEncoding { .. } => Effect::read_write(abstract_heaps::Memory, abstract_heaps::Control),
             Insn::StringGetbyte { .. } => Effect::read_write(abstract_heaps::Other, abstract_heaps::Empty),
             Insn::StringByteslice { .. } => allocates.union(Effect::read(abstract_heaps::Other)),
             Insn::StringSetbyteFixnum { .. } => effects::Any,
@@ -2206,6 +2215,9 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 write!(f, "StringConcat")?;
                 write_separated!(f, " ", ", ", strings);
                 Ok(())
+            }
+            Insn::StringForceEncoding { string, encoding, flags, .. } => {
+                write!(f, "StringForceEncoding {string}, {encoding}, flags: {flags}")
             }
             Insn::StringGetbyte { string, index, .. } => {
                 write!(f, "StringGetbyte {string}, {index}")
@@ -3750,6 +3762,7 @@ impl Function {
             Insn::StringCopy { .. } => types::StringExact,
             Insn::StringIntern { .. } => types::Symbol,
             Insn::StringConcat { .. } => types::StringExact,
+            Insn::StringForceEncoding { string, .. } => self.type_of(*string),
             Insn::StringGetbyte { .. } => types::Fixnum,
             Insn::StringByteslice { .. } => types::StringExact.union(types::NilClass),
             Insn::StringSetbyteFixnum { .. } => types::Fixnum,
@@ -8280,6 +8293,11 @@ impl Function {
                         Err(ValidationError::MiscValidationError(insn_id, "GuardAnyBitSet/GuardNoBitsSet can only compare RubyValue/CUInt or CInt/CUInt".to_string()))
                     }
                 }
+            }
+            Insn::StringForceEncoding { string, encoding, flags, .. } => {
+                self.assert_subtype(insn_id, string, types::String)?;
+                self.assert_subtype(insn_id, encoding, Type::from_class(unsafe { rb_cEncoding }))?;
+                self.assert_subtype(insn_id, flags, types::CUInt64)
             }
             Insn::GuardLess { left, right, .. }
             | Insn::GuardGreaterEq { left, right, .. } => {

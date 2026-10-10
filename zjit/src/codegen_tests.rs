@@ -4775,6 +4775,101 @@ fn test_string_append_broken_coderange() {
 }
 
 #[test]
+fn test_string_force_encoding_fastpath() {
+    eval(r#"
+        def test(str, enc) = str.force_encoding(enc)
+    "#);
+    assert_snapshot!(assert_compiles(r#"
+        test("\xFF".b, Encoding::UTF_8)
+        test("\xFF".b, Encoding::UTF_8)
+        str = "\xFF".b
+        result = test(str, Encoding::UTF_8)
+        [result.equal?(str), str.bytes, str.encoding.name, str.valid_encoding?]
+    "#), @r#"[true, [255], "UTF-8", false]"#);
+}
+
+#[test]
+fn test_string_force_encoding_clears_broken_coderange() {
+    eval(r#"
+        def test(str, enc) = str.force_encoding(enc)
+    "#);
+    assert_snapshot!(assert_compiles(r#"
+        test(String.new("abc"), Encoding::BINARY)
+        test(String.new("abc"), Encoding::BINARY)
+        str = "\xFF".b.force_encoding(Encoding::UTF_8)
+        str.valid_encoding?
+        result = test(str, Encoding::BINARY)
+        [result.equal?(str), str.bytes, str.encoding.name, str.valid_encoding?]
+    "#), @r#"[true, [255], "ASCII-8BIT", true]"#);
+}
+
+#[test]
+fn test_string_force_encoding_string_subclass() {
+    eval(r#"
+        class StringSubclass < String; end
+        def test(str, enc) = str.force_encoding(enc)
+    "#);
+    assert_snapshot!(assert_compiles_allowing_exits(r#"
+        str = StringSubclass.new("\xFF".b)
+        test(str, Encoding::UTF_8)
+        result = test(str, Encoding::UTF_8)
+        [result.equal?(str), result.class.name, str.bytes, str.encoding.name, str.valid_encoding?]
+    "#), @r#"[true, "StringSubclass", [255], "UTF-8", false]"#);
+}
+
+#[test]
+fn test_string_force_encoding_redefined() {
+    eval(r#"
+        def test(str, enc) = str.force_encoding(enc)
+    "#);
+    assert_snapshot!(assert_compiles_allowing_exits(r#"
+        str = "\xFF".b
+        test(str, Encoding::UTF_8)
+        test(str, Encoding::UTF_8)
+
+        original = String.instance_method(:force_encoding)
+        begin
+          String.define_method(:force_encoding) { |_encoding| :redefined }
+          [test(str, Encoding::BINARY), str.encoding.name, str.bytes]
+        ensure
+          String.define_method(:force_encoding, original)
+        end
+    "#), @r#"[:redefined, "UTF-8", [255]]"#);
+}
+
+#[test]
+fn test_string_force_encoding_fastpath_fallbacks() {
+    eval(r#"
+        def test(str, enc) = str.force_encoding(enc)
+    "#);
+    assert_snapshot!(assert_compiles_allowing_exits(r#"
+        test(String.new("abc"), Encoding::UTF_8)
+        test(String.new("abc"), Encoding::UTF_8)
+
+        changed = "\xFF".b
+        changed_result = test(changed, Encoding::UTF_8)
+
+        frozen = String.new("abc").freeze
+        frozen_result = begin
+          test(frozen, Encoding::UTF_8)
+        rescue FrozenError
+          :frozen_error
+        end
+
+        chilled = "abc"
+        chilled_result = test(chilled, Encoding::UTF_8)
+
+        [
+          changed_result.equal?(changed),
+          changed.encoding.name,
+          changed.valid_encoding?,
+          frozen_result,
+          chilled_result.equal?(chilled),
+        ]
+    "#), @r#"[true, "UTF-8", false, :frozen_error, true]"#);
+}
+
+#[test]
 fn test_new_hash_nonempty() {
     eval(r#"
         def test
