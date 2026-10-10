@@ -2262,6 +2262,20 @@ class TestModule < Test::Unit::TestCase
     end
   end
 
+  def test_deprecate_constant_not_warned_on_assignment
+    c = Class.new
+    c.const_set(:FOO, "foo")
+    c.deprecate_constant(:FOO)
+
+    line = __LINE__+3
+    stderr = EnvUtil.verbose_warning do
+      Warning[:deprecated] = true
+      c.const_set(:FOO, "bar")
+    end
+    assert_match(/:#{line}: warning: already initialized constant #{c}::FOO/, stderr)
+    assert_not_match(/deprecated/, stderr)
+  end
+
   def test_constants_with_private_constant
     assert_not_include(::TestModule.constants, :PrivateClass)
     assert_not_include(::TestModule.constants(true), :PrivateClass)
