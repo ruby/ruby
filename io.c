@@ -3599,6 +3599,11 @@ io_getpartial(int argc, VALUE *argv, VALUE io, int no_exception, int nonblock)
         READ_CHECK(fptr);
     n = read_buffered_data(RSTRING_PTR(str), len, fptr);
     if (n <= 0) {
+        struct timeval timeout_storage, *timeout = NULL;
+        if (!NIL_P(fptr->timeout)) {
+            timeout_storage = rb_time_interval(fptr->timeout);
+            timeout = &timeout_storage;
+        }
       again:
         if (nonblock) {
             rb_io_set_nonblock(fptr);
@@ -3610,7 +3615,7 @@ io_getpartial(int argc, VALUE *argv, VALUE io, int no_exception, int nonblock)
         iis.fd = fptr->fd;
         iis.buf = RSTRING_PTR(str);
         iis.capa = len;
-        iis.timeout = NULL;
+        iis.timeout = timeout;
         n = io_read_memory_locktmp(str, &iis);
         if (n < 0) {
             int e = errno;
@@ -6393,6 +6398,7 @@ rb_io_sysread(int argc, VALUE *argv, VALUE io)
     rb_io_t *fptr;
     rb_len_t n, ilen;
     struct io_internal_read_struct iis;
+    struct timeval timeout_storage;
     int shrinkable;
 
     rb_scan_args(argc, argv, "11", &len, &str);
@@ -6418,6 +6424,10 @@ rb_io_sysread(int argc, VALUE *argv, VALUE io)
     iis.buf = RSTRING_PTR(str);
     iis.capa = ilen;
     iis.timeout = NULL;
+    if (!NIL_P(fptr->timeout)) {
+        timeout_storage = rb_time_interval(fptr->timeout);
+        iis.timeout = &timeout_storage;
+    }
     n = io_read_memory_locktmp(str, &iis);
 
     if (n < 0) {
