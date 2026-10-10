@@ -56,21 +56,9 @@ struct RRegexp {
     /** Source code of this expression. */
     const VALUE src;
 
-    /**
-     * Reference count.  A  regexp match can take extraordinarily  long time to
-     * run.  Ruby's  regular expression is  heavily extended and not  a regular
-     * language any  longer; runs in NP-time  in practice.  Now, Ruby  also has
-     * threads and GVL.  In order to prevent long GVL lockup, our regexp engine
-     * can release it on occasions.  This means that multiple threads can touch
-     * a regular expressions at once.  That  itself is okay.  But their cleanup
-     * phase shall wait for all  the concurrent runs, to prevent use-after-free
-     * situation.  This field is used to  count such threads that are executing
-     * this particular pattern buffer.
-     *
-     * @warning  Of course, touching this field from extension libraries causes
-     *           catastrophic effects.  Just leave it.
-     */
-    unsigned long usecnt;
+    /** Compiled variants for other encodings.
+     * Published with CAS and retained for the lifetime of this regexp. */
+    struct rb_regexp_variant *variants;
 };
 
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()

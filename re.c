@@ -27,6 +27,7 @@
 #include "internal/ractor.h"
 #include "internal/variable.h"
 #include "regint.h"
+#include "ruby/atomic.h"
 #include "ruby/encoding.h"
 #include "ruby/re.h"
 #include "ruby/util.h"
@@ -1771,6 +1772,15 @@ rb_reg_prepare_enc(VALUE re, VALUE str, int warn)
     return enc;
 }
 
+static regex_t *
+reg_find_encoding(struct rb_regexp_variant *variant, rb_encoding *enc)
+{
+    for (; variant; variant = variant->next) {
+        if (variant->reg.enc == enc) return &variant->reg;
+    }
+    return NULL;
+}
+
 regex_t *
 rb_reg_prepare_re(VALUE re, VALUE str)
 {
@@ -1783,7 +1793,9 @@ rb_reg_prepare_re(VALUE re, VALUE str)
     regex_t *reg = RREGEXP_PTR(re);
     if (reg->enc == enc) return reg;
 
-    rb_reg_check(re);
+    struct rb_regexp_variant *head = RUBY_ATOMIC_PTR_LOAD(RREGEXP(re)->variants);
+    regex_t *cached = reg_find_encoding(head, enc);
+    if (cached) return cached;
 
     VALUE src_str = RREGEXP_SRC(re);
     const char *pattern = RSTRING_PTR(src_str);
@@ -1804,38 +1816,41 @@ rb_reg_prepare_re(VALUE re, VALUE str)
     rb_len_t len;
     RSTRING_GETMEM(unescaped, ptr, len);
 
-    /* If there are no other users of this regex, then we can directly overwrite it. */
-    if (ruby_single_main_ractor && RREGEXP(re)->usecnt == 0) {
-        regex_t tmp_reg;
-        r = onig_new_without_alloc(&tmp_reg, (UChar *)ptr, (UChar *)(ptr + len),
-                                   reg->options, enc,
-                                   OnigDefaultSyntax, &einfo);
-
-        if (r) {
-            /* There was an error so perform cleanups. */
-            onig_free_body(&tmp_reg);
-        }
-        else {
-            onig_free_body(reg);
-            /* There are no errors so set reg to tmp_reg. */
-            *reg = tmp_reg;
-        }
-    }
-    else {
-        r = onig_new(&reg, (UChar *)ptr, (UChar *)(ptr + len),
-                     reg->options, enc,
-                     OnigDefaultSyntax, &einfo);
-    }
+    struct rb_regexp_variant *variant = ALLOC(struct rb_regexp_variant);
+    r = onig_new_without_alloc(&variant->reg, (UChar *)ptr, (UChar *)(ptr + len),
+                               reg->options, enc, OnigDefaultSyntax, &einfo);
 
     if (r) {
+        onig_free_body(&variant->reg);
+        xfree(variant);
         onig_error_code_to_str((UChar*)err, r, &einfo);
         rb_reg_raise(err, re);
     }
 
+    reg = &variant->reg;
     reg->timelimit = timelimit;
+
+    /* Published variants are immutable and stay alive with re. Only the head
+     * changes; a failed CAS may mean another Ractor compiled this encoding. */
+    for (;;) {
+        variant->next = head;
+        struct rb_regexp_variant *previous = RUBY_ATOMIC_PTR_CAS(RREGEXP(re)->variants, head, variant);
+        if (previous == head) break;
+
+        head = previous;
+        cached = reg_find_encoding(head, enc);
+        if (cached) {
+            /* Discard our reg and use the cached version */
+            onig_free_body(&variant->reg);
+            xfree(variant);
+            reg = cached;
+            break;
+        }
+    }
 
     RB_GC_GUARD(unescaped);
     RB_GC_GUARD(src_str);
+    RB_GC_GUARD(re);
     return reg;
 }
 
@@ -1846,15 +1861,9 @@ rb_reg_onig_match(VALUE re, VALUE str,
 {
     regex_t *reg = rb_reg_prepare_re(re, str);
 
-    bool tmpreg = reg != RREGEXP_PTR(re);
-    if (!tmpreg) RREGEXP(re)->usecnt++;
-
     OnigPosition result = match(reg, str, regs, args);
 
-    if (!tmpreg) RREGEXP(re)->usecnt--;
-    if (tmpreg) {
-        onig_free(reg);
-    }
+    RB_GC_GUARD(re);
 
     if (result < 0) {
         switch (result) {
@@ -3583,7 +3592,7 @@ rb_reg_s_alloc(VALUE klass)
 
     MEMZERO(RREGEXP_PTR((VALUE)re), struct re_pattern_buffer, 1);
     RB_OBJ_WRITE((VALUE)re, &re->src, 0);
-    re->usecnt = 0;
+    re->variants = NULL;
 
     return (VALUE)re;
 }
