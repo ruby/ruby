@@ -755,6 +755,44 @@ class TestSocket < Test::Unit::TestCase
     s2.close
   end
 
+  def test_udp_recv_nonblock_truncation
+    s1 = Addrinfo.udp("127.0.0.1", 0).bind
+    s2 = s1.connect_address.connect
+    %w[a b c d].each {|c| s2.send(c * 100, 0) }
+    IO.select([s1])
+    assert_equal "a" * 10, s1.recv_nonblock(10)
+    IO.select([s1])
+    ret, addr = s1.recvfrom_nonblock(10)
+    assert_equal "b" * 10, ret
+    assert_equal s2.local_address.ip_unpack, addr.ip_unpack
+    # The nonblock calls above may leave the socket in O_NONBLOCK mode.
+    assert_equal "c" * 10, s1.recv(10)
+    ret, addr = s1.recvfrom(10)
+    assert_equal "d" * 10, ret
+    assert_equal s2.local_address.ip_unpack, addr.ip_unpack
+  ensure
+    s1.close
+    s2.close
+  end
+
+  def test_udp_recvmsg_nonblock_truncation
+    s1 = Addrinfo.udp("127.0.0.1", 0).bind
+    s2 = s1.connect_address.connect
+    %w[a b].each {|c| s2.send(c * 100, 0) }
+    IO.select([s1])
+    ret, addr, rflags = s1.recvmsg_nonblock(10)
+    assert_equal "a" * 10, ret
+    assert_equal s2.local_address.ip_unpack, addr.ip_unpack
+    assert_equal Socket::MSG_TRUNC, rflags & Socket::MSG_TRUNC if !rflags.nil?
+    ret, addr, rflags = s1.recvmsg(10)
+    assert_equal "b" * 10, ret
+    assert_equal s2.local_address.ip_unpack, addr.ip_unpack
+    assert_equal Socket::MSG_TRUNC, rflags & Socket::MSG_TRUNC if !rflags.nil?
+  ensure
+    s1.close
+    s2.close
+  end
+
   def test_resolurion_error_error_code
     begin
       Socket.getaddrinfo("example.com", 80, "AF_UNIX")
