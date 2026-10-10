@@ -1226,7 +1226,7 @@ static VALUE
 ossl_asn1cons_to_der(VALUE self)
 {
     VALUE ary, str;
-    long i;
+    rb_len_t i;
     int indef_len;
 
     indef_len = RTEST(ossl_asn1_get_indefinite_length(self));

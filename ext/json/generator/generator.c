@@ -898,7 +898,7 @@ static void raw_generate_json_string(FBuffer *buffer, struct generate_json_data 
     }
     fbuffer_append_char(buffer, '"');
 
-    long len;
+    rb_len_t len;
     search_state search;
     search.buffer = buffer;
     RSTRING_GETMEM(str, search.ptr, len);

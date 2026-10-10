@@ -774,7 +774,7 @@ ossl_ocspbres_add_status(VALUE self, VALUE cid, VALUE status,
     OCSP_CERTID *id;
     ASN1_TIME *ths = NULL, *nxt = NULL, *rev = NULL;
     int st, rsn = 0, error = 0, rstatus = 0;
-    long i;
+    rb_len_t i;
     VALUE tmp;
 
     GetOCSPBasicRes(self, bs);

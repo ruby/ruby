@@ -16,6 +16,10 @@
 #define RB_DIGEST_WRAP_METADATA_LINKAGE RUBY_FUNC_EXPORTED
 #include "digest.h"
 
+#ifndef HAVE_RB_LEN_T
+# define LEN2NUM LONG2NUM
+#endif
+
 static VALUE rb_mDigest;
 static VALUE rb_mDigest_Instance;
 static VALUE rb_cDigest_Class;
@@ -407,7 +411,7 @@ rb_digest_instance_digest_length(VALUE self)
 
     /* never blindly assume that #digest() returns a string */
     StringValue(digest);
-    return LONG2NUM(RSTRING_LEN(digest));
+    return LEN2NUM(RSTRING_LEN(digest));
 }
 
 /*

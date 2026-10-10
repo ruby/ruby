@@ -60,10 +60,6 @@ typedef int strio_refcnt_t;
 # define rb_class_new_instance_kw(argc, argv, klass, kw_splat) rb_class_new_instance(argc, argv, klass)
 #endif
 
-#ifndef ULEN2NUM
-# define ULEN2NUM ULONG2NUM
-#endif
-
 static inline bool
 str_chilled_p(VALUE str)
 {

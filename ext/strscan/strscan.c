@@ -12,6 +12,13 @@
 #include "ruby/re.h"
 #include "ruby/encoding.h"
 
+#ifndef HAVE_RB_LEN_T
+typedef long rb_len_t;
+# define LEN2NUM LONG2NUM
+# define NUM2LEN NUM2LONG
+# define PRIdLEN "ld"
+#endif
+
 #ifdef RUBY_EXTCONF_H
 #  include RUBY_EXTCONF_H
 #endif
@@ -51,8 +58,8 @@ struct strscanner
     VALUE str;
 
     /* scan pointers */
-    long prev;   /* legal only when MATCHED_P(s) */
-    long curr;   /* always legal */
+    rb_len_t prev;   /* legal only when MATCHED_P(s) */
+    rb_len_t curr;   /* always legal */
 
     /* the regexp register; legal only when MATCHED_P(s) */
     struct re_registers regs;
@@ -90,9 +97,9 @@ struct strscanner
                             Function Prototypes
    ======================================================================= */
 
-static inline long minl _((const long n, const long x));
-static VALUE extract_range _((struct strscanner *p, long beg_i, long end_i));
-static VALUE extract_beg_len _((struct strscanner *p, long beg_i, long len));
+static inline rb_len_t minl _((const rb_len_t n, const rb_len_t x));
+static VALUE extract_range _((struct strscanner *p, rb_len_t beg_i, rb_len_t end_i));
+static VALUE extract_beg_len _((struct strscanner *p, rb_len_t beg_i, rb_len_t len));
 
 static struct strscanner *check_strscan _((VALUE obj));
 static void strscan_mark _((void *p));
@@ -149,21 +156,21 @@ static VALUE inspect2 _((struct strscanner *p));
    ======================================================================= */
 
 static VALUE
-str_new(struct strscanner *p, const char *ptr, long len)
+str_new(struct strscanner *p, const char *ptr, rb_len_t len)
 {
     VALUE str = rb_str_new(ptr, len);
     rb_enc_copy(str, p->str);
     return str;
 }
 
-static inline long
-minl(const long x, const long y)
+static inline rb_len_t
+minl(const rb_len_t x, const rb_len_t y)
 {
     return (x < y) ? x : y;
 }
 
 static VALUE
-extract_range(struct strscanner *p, long beg_i, long end_i)
+extract_range(struct strscanner *p, rb_len_t beg_i, rb_len_t end_i)
 {
     if (beg_i > S_LEN(p)) return Qnil;
     end_i = minl(end_i, S_LEN(p));
@@ -171,7 +178,7 @@ extract_range(struct strscanner *p, long beg_i, long end_i)
 }
 
 static VALUE
-extract_beg_len(struct strscanner *p, long beg_i, long len)
+extract_beg_len(struct strscanner *p, rb_len_t beg_i, rb_len_t len)
 {
     if (beg_i > S_LEN(p)) return Qnil;
     len = minl(len, S_LEN(p) - beg_i);
@@ -558,7 +565,7 @@ strscan_get_pos(VALUE self)
     struct strscanner *p;
 
     GET_SCANNER(self, p);
-    return LONG2NUM(p->curr);
+    return LEN2NUM(p->curr);
 }
 
 /*
@@ -578,7 +585,7 @@ strscan_get_charpos(VALUE self)
     GET_SCANNER(self, p);
 
     s = EOS_P(p) ? S_PEND(p) : CURPTR(p);
-    return LONG2NUM(rb_enc_strlen(S_PBEG(p), s, rb_enc_get(p->str)));
+    return LEN2NUM(rb_enc_strlen(S_PBEG(p), s, rb_enc_get(p->str)));
 }
 
 /*
@@ -594,15 +601,15 @@ static VALUE
 strscan_set_pos(VALUE self, VALUE v)
 {
     struct strscanner *p;
-    long i;
+    rb_len_t i;
 
     GET_SCANNER(self, p);
-    i = NUM2LONG(v);
+    i = NUM2LEN(v);
     if (i < 0) i += S_LEN(p);
     if (i < 0) rb_raise(rb_eRangeError, "index out of range");
     if (i > S_LEN(p)) rb_raise(rb_eRangeError, "index out of range");
     p->curr = i;
-    return LONG2NUM(i);
+    return LEN2NUM(i);
 }
 
 static inline UChar *
@@ -658,7 +665,7 @@ succ(struct strscanner *p)
     }
 }
 
-static inline long
+static inline rb_len_t
 last_match_length(struct strscanner *p)
 {
     if (p->fixed_anchor_p) {
@@ -670,8 +677,8 @@ last_match_length(struct strscanner *p)
     }
 }
 
-static inline long
-adjust_register_position(struct strscanner *p, long position)
+static inline rb_len_t
+adjust_register_position(struct strscanner *p, rb_len_t position)
 {
     if (p->fixed_anchor_p) {
         return position;
@@ -798,8 +805,8 @@ strscan_do_scan(VALUE self, VALUE pattern, int succptr, int getstr, int headonly
         }
         else {
             rb_encoding *enc = rb_enc_check(p->str, pattern);
-            long pos = rb_memsearch(RSTRING_PTR(pattern), RSTRING_LEN(pattern),
-                                    CURPTR(p), S_RESTLEN(p), enc);
+            rb_len_t pos = rb_memsearch(RSTRING_PTR(pattern), RSTRING_LEN(pattern),
+                                        CURPTR(p), S_RESTLEN(p), enc);
             if (pos == -1) {
                 return Qnil;
             }
@@ -814,12 +821,12 @@ strscan_do_scan(VALUE self, VALUE pattern, int succptr, int getstr, int headonly
         succ(p);
     }
     {
-        const long length = last_match_length(p);
+        const rb_len_t length = last_match_length(p);
         if (getstr) {
             return extract_beg_len(p, p->prev, length);
         }
         else {
-            return INT2FIX(length);
+            return LEN2NUM(length);
         }
     }
 }
@@ -1208,7 +1215,7 @@ static VALUE
 strscan_getch(VALUE self)
 {
     struct strscanner *p;
-    long len;
+    rb_len_t len;
 
     GET_SCANNER(self, p);
     CLEAR_MATCH_STATUS(p);
@@ -1322,11 +1329,11 @@ static VALUE
 strscan_peek(VALUE self, VALUE vlen)
 {
     struct strscanner *p;
-    long len;
+    rb_len_t len;
 
     GET_SCANNER(self, p);
 
-    len = NUM2LONG(vlen);
+    len = NUM2LEN(vlen);
     if (EOS_P(p))
         return str_new(p, "", 0);
 
@@ -1335,7 +1342,7 @@ strscan_peek(VALUE self, VALUE vlen)
 }
 
 static VALUE
-strscan_parse_integer(struct strscanner *p, int base, long len)
+strscan_parse_integer(struct strscanner *p, int base, rb_len_t len)
 {
     VALUE buffer_v, integer;
 
@@ -1377,7 +1384,7 @@ static VALUE
 strscan_scan_base10_integer(VALUE self)
 {
     char *ptr;
-    long len = 0, remaining_len;
+    rb_len_t len = 0, remaining_len;
     struct strscanner *p;
 
     GET_SCANNER(self, p);
@@ -1415,7 +1422,7 @@ static VALUE
 strscan_scan_base16_integer(VALUE self)
 {
     char *ptr;
-    long len = 0, remaining_len;
+    rb_len_t len = 0, remaining_len;
     struct strscanner *p;
 
     GET_SCANNER(self, p);
@@ -1693,14 +1700,14 @@ static VALUE
 strscan_matched_size(VALUE self)
 {
     struct strscanner *p;
-    long beg, end;
+    rb_len_t beg, end;
 
     GET_SCANNER(self, p);
     if (! MATCHED_P(p)) return Qnil;
     beg = adjust_register_position(p, p->regs.beg[0]);
     if (beg > S_LEN(p)) return Qnil;
     end = minl(adjust_register_position(p, p->regs.end[0]), S_LEN(p));
-    return LONG2NUM(end - beg);
+    return LEN2NUM(end - beg);
 }
 
 static int
@@ -1725,11 +1732,11 @@ name_to_backref_number(struct re_registers *regs, VALUE regexp, const char* name
  * For Symbol/String specifiers, raises IndexError if the named group
  * does not exist.
  */
-static long
+static rb_len_t
 resolve_capture_index(struct strscanner *p, VALUE specifier)
 {
     const char *name;
-    long i;
+    rb_len_t i;
     if (! MATCHED_P(p)) return -1;
     switch (TYPE(specifier)) {
         case T_SYMBOL:
@@ -1741,7 +1748,7 @@ resolve_capture_index(struct strscanner *p, VALUE specifier)
                                        rb_enc_get(specifier));
             break;
         default:
-            i = NUM2LONG(specifier);
+            i = NUM2LEN(specifier);
     }
     if (i < 0)
         i += p->regs.num_regs;
@@ -1826,7 +1833,7 @@ static VALUE
 strscan_aref(VALUE self, VALUE idx)
 {
     struct strscanner *p;
-    long i;
+    rb_len_t i;
 
     GET_SCANNER(self, p);
     i = resolve_capture_index(p, idx);
@@ -1872,8 +1879,8 @@ static VALUE
 strscan_integer_at(int argc, VALUE *argv, VALUE self)
 {
     struct strscanner *p;
-    long i;
-    long beg, end, len;
+    rb_len_t i;
+    rb_len_t beg, end, len;
     const char *ptr;
     VALUE rb_specifier;
     VALUE rb_base;
@@ -2176,14 +2183,14 @@ static VALUE
 strscan_rest_size(VALUE self)
 {
     struct strscanner *p;
-    long i;
+    rb_len_t i;
 
     GET_SCANNER(self, p);
     if (EOS_P(p)) {
         return INT2FIX(0);
     }
     i = S_RESTLEN(p);
-    return INT2FIX(i);
+    return LEN2NUM(i);
 }
 
 #define INSPECT_LENGTH 5
@@ -2240,7 +2247,7 @@ strscan_inspect(VALUE self)
     }
     if (p->curr == 0) {
 	b = inspect2(p);
-	a = rb_sprintf("#<%"PRIsVALUE" %ld/%ld @ %"PRIsVALUE">",
+	a = rb_sprintf("#<%"PRIsVALUE" %"PRIdLEN"/%"PRIdLEN" @ %"PRIsVALUE">",
 		       rb_obj_class(self),
 		       p->curr, S_LEN(p),
 		       b);
@@ -2248,7 +2255,7 @@ strscan_inspect(VALUE self)
     }
     a = inspect1(p);
     b = inspect2(p);
-    a = rb_sprintf("#<%"PRIsVALUE" %ld/%ld %"PRIsVALUE" @ %"PRIsVALUE">",
+    a = rb_sprintf("#<%"PRIsVALUE" %"PRIdLEN"/%"PRIdLEN" %"PRIsVALUE" @ %"PRIsVALUE">",
 		   rb_obj_class(self),
 		   p->curr, S_LEN(p),
 		   a, b);
@@ -2259,7 +2266,7 @@ static VALUE
 inspect1(struct strscanner *p)
 {
     VALUE str;
-    long len;
+    rb_len_t len;
 
     if (p->curr == 0) return rb_str_new2("");
     if (p->curr > INSPECT_LENGTH) {
@@ -2278,7 +2285,7 @@ static VALUE
 inspect2(struct strscanner *p)
 {
     VALUE str;
-    long len;
+    rb_len_t len;
 
     if (EOS_P(p)) return rb_str_new2("");
     len = S_RESTLEN(p);

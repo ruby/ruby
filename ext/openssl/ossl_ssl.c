@@ -532,7 +532,7 @@ npn_select_cb_common_i(VALUE tmp)
     struct npn_select_cb_common_args *args = (void *)tmp;
     const unsigned char *in = args->in, *in_end = in + args->inlen;
     unsigned char l;
-    long len;
+    rb_len_t len;
     VALUE selected, protocols = rb_ary_new();
 
     /* assume OpenSSL verifies this format */
@@ -716,7 +716,7 @@ ossl_sslctx_setup(VALUE self)
     EVP_PKEY *key = NULL;
     char *ca_path = NULL, *ca_file = NULL;
     int verify_mode;
-    long i;
+    rb_len_t i;
     VALUE val;
 
     if(OBJ_FROZEN(self)) return Qnil;
@@ -1031,7 +1031,7 @@ build_cipher_string(VALUE v)
 
     if (RB_TYPE_P(v, T_ARRAY)) {
         str = rb_str_new(0, 0);
-        for (long i = 0; i < RARRAY_LEN(v); i++) {
+        for (rb_len_t i = 0; i < RARRAY_LEN(v); i++) {
             elem = rb_ary_entry(v, i);
             if (RB_TYPE_P(elem, T_ARRAY)) elem = rb_ary_entry(elem, 0);
             elem = rb_String(elem);
