@@ -79,7 +79,7 @@ static inline void
 args_reduce(struct args_info *args, int over_argc)
 {
     if (args->rest) {
-        const long len = RARRAY_LEN(args->rest);
+        const rb_len_t len = RARRAY_LEN(args->rest);
 
         if (len > over_argc) {
             arg_rest_dup(args);
@@ -230,7 +230,7 @@ args_setup_lead_parameters(struct args_info *args, int argc, VALUE *locals)
 static inline void
 args_setup_post_parameters(struct args_info *args, int argc, VALUE *locals)
 {
-    long len;
+    rb_len_t len;
     len = RARRAY_LEN(args->rest);
     MEMCPY(locals, RARRAY_CONST_PTR(args->rest) + len - argc, VALUE, argc);
     rb_ary_resize(args->rest, len - argc);
@@ -611,6 +611,13 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
      * <- ISEQ_BODY(iseq)->param.size------------>
      * ^ locals                             ^ sp
      */
+    if ((unsigned int)calling->argc < ISEQ_BODY(iseq)->param.size) {
+        /* Ensure the nil-fill below and the SP extension do not run into the
+         * control frame region, clobbering frames before the stack overflow
+         * check in vm_push_frame has a chance to raise SystemStackError. */
+        CHECK_VM_STACK_OVERFLOW0(ec->cfp, locals + calling->argc,
+                                 ISEQ_BODY(iseq)->param.size - calling->argc);
+    }
     for (i=calling->argc; i<ISEQ_BODY(iseq)->param.size; i++) {
         locals[i] = Qnil;
     }

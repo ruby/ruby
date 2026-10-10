@@ -240,7 +240,7 @@ struct producer {
     VALUE size;
 };
 
-typedef struct MEMO *lazyenum_proc_func(VALUE, struct MEMO *, VALUE, long);
+typedef struct MEMO *lazyenum_proc_func(VALUE, struct MEMO *, VALUE, rb_len_t);
 typedef VALUE lazyenum_size_func(VALUE, VALUE);
 typedef int lazyenum_precheck_func(VALUE proc_entry);
 typedef struct {
@@ -262,7 +262,7 @@ static VALUE rb_cEnumChain;
 
 struct enum_chain {
     VALUE enums;
-    long pos;
+    rb_len_t pos;
 };
 
 static VALUE rb_cEnumProduct;
@@ -627,9 +627,9 @@ enumerator_each(int argc, VALUE *argv, VALUE obj)
     if (argc > 0) {
         VALUE args = (e = enumerator_ptr(obj = rb_obj_dup(obj)))->args;
         if (args) {
-#if SIZEOF_INT < SIZEOF_LONG
+#if SIZEOF_INT < SIZEOF_RB_LEN_T
             /* check int range overflow */
-            rb_long2int(RARRAY_LEN(args) + argc);
+            rb_len2int(RARRAY_LEN(args) + argc);
 #endif
             args = rb_ary_dup(args);
             rb_ary_cat(args, argv, argc);
@@ -1126,7 +1126,7 @@ inspect_enumerator(VALUE obj, VALUE dummy, int recur)
     }
 
     if (e->procs) {
-        long i;
+        rb_len_t i;
 
         eobj = generator_ptr(e->obj)->obj;
         /* In case procs chained enumerator traversing all proc entries manually */
@@ -1204,7 +1204,7 @@ append_method_args(VALUE obj, VALUE str, VALUE default_args)
         eargs = default_args;
     }
     if (eargs != Qfalse) {
-        long   argc = RARRAY_LEN(eargs);
+        rb_len_t argc = RARRAY_LEN(eargs);
         const VALUE *argv = RARRAY_CONST_PTR(eargs); /* WB: no new reference */
 
         if (argc > 0) {
@@ -1289,7 +1289,7 @@ enumerator_size(VALUE obj)
     if (e->procs) {
         struct generator *g = generator_ptr(e->obj);
         VALUE receiver = rb_check_funcall(g->obj, id_size, 0, 0);
-        long i = 0;
+        rb_len_t i = 0;
 
         for (i = 0; i < RARRAY_LEN(e->procs); i++) {
             VALUE proc = RARRAY_AREF(e->procs, i);
@@ -1631,7 +1631,7 @@ lazy_init_block_i(RB_BLOCK_CALL_FUNC_ARGLIST(val, m))
         rb_raise(rb_eArgError, "tried to call lazy " #func " without a block"); \
     }
 
-static VALUE lazy_yielder_result(struct MEMO *result, VALUE yielder, VALUE procs_array, VALUE memos, long i);
+static VALUE lazy_yielder_result(struct MEMO *result, VALUE yielder, VALUE procs_array, VALUE memos, rb_len_t i);
 
 static VALUE
 lazy_init_yielder(RB_BLOCK_CALL_FUNC_ARGLIST(_, m))
@@ -1647,7 +1647,7 @@ lazy_init_yielder(RB_BLOCK_CALL_FUNC_ARGLIST(_, m))
 }
 
 static VALUE
-lazy_yielder_yield(struct MEMO *result, long memo_index, int argc, const VALUE *argv)
+lazy_yielder_yield(struct MEMO *result, rb_len_t memo_index, int argc, const VALUE *argv)
 {
     VALUE m = result->v1;
     VALUE yielder = RARRAY_AREF(m, 0);
@@ -1662,7 +1662,7 @@ lazy_yielder_yield(struct MEMO *result, long memo_index, int argc, const VALUE *
 }
 
 static VALUE
-lazy_yielder_result(struct MEMO *result, VALUE yielder, VALUE procs_array, VALUE memos, long i)
+lazy_yielder_result(struct MEMO *result, VALUE yielder, VALUE procs_array, VALUE memos, rb_len_t i)
 {
     int cont = 1;
 
@@ -1726,7 +1726,7 @@ static int
 lazy_precheck(VALUE procs)
 {
     if (RTEST(procs)) {
-        long num_procs = RARRAY_LEN(procs), i = num_procs;
+        rb_len_t num_procs = RARRAY_LEN(procs), i = num_procs;
         while (i-- > 0) {
             VALUE proc = RARRAY_AREF(procs, i);
             struct proc_entry *entry = proc_entry_ptr(proc);
@@ -2058,7 +2058,7 @@ lazyenum_yield_values(VALUE proc_entry, struct MEMO *result)
 }
 
 static struct MEMO *
-lazy_map_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_index)
+lazy_map_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, rb_len_t memo_index)
 {
     VALUE value = lazyenum_yield_values(proc_entry, result);
     LAZY_MEMO_SET_VALUE(result, value);
@@ -2105,11 +2105,11 @@ lazy_flat_map_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, y))
 }
 
 static struct MEMO *
-lazy_flat_map_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_index)
+lazy_flat_map_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, rb_len_t memo_index)
 {
     VALUE value = lazyenum_yield_values(proc_entry, result);
     VALUE ary = 0;
-    const long proc_index = memo_index + 1;
+    const rb_len_t proc_index = memo_index + 1;
     int break_p = LAZY_MEMO_BREAK_P(result);
 
     if (RB_TYPE_P(value, T_ARRAY)) {
@@ -2125,7 +2125,7 @@ lazy_flat_map_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo
     }
 
     if (ary || !NIL_P(ary = rb_check_array_type(value))) {
-        long i;
+        rb_len_t i;
         LAZY_MEMO_RESET_BREAK(result);
         for (i = 0; i + 1 < RARRAY_LEN(ary); i++) {
             const VALUE argv = RARRAY_AREF(ary, i);
@@ -2175,7 +2175,7 @@ lazy_flat_map(VALUE obj)
 }
 
 static struct MEMO *
-lazy_select_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_index)
+lazy_select_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, rb_len_t memo_index)
 {
     VALUE chain = lazyenum_yield(proc_entry, result);
     if (!RTEST(chain)) return 0;
@@ -2202,7 +2202,7 @@ lazy_select(VALUE obj)
 }
 
 static struct MEMO *
-lazy_filter_map_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_index)
+lazy_filter_map_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, rb_len_t memo_index)
 {
     VALUE value = lazyenum_yield_values(proc_entry, result);
     if (!RTEST(value)) return 0;
@@ -2233,7 +2233,7 @@ lazy_filter_map(VALUE obj)
 }
 
 static struct MEMO *
-lazy_reject_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_index)
+lazy_reject_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, rb_len_t memo_index)
 {
     VALUE chain = lazyenum_yield(proc_entry, result);
     if (RTEST(chain)) return 0;
@@ -2259,7 +2259,7 @@ lazy_reject(VALUE obj)
 }
 
 static struct MEMO *
-lazy_grep_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_index)
+lazy_grep_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, rb_len_t memo_index)
 {
     struct proc_entry *entry = proc_entry_ptr(proc_entry);
     VALUE chain = rb_funcall(entry->memo, id_eqq, 1, result->memo_value);
@@ -2268,7 +2268,7 @@ lazy_grep_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_ind
 }
 
 static struct MEMO *
-lazy_grep_iter_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_index)
+lazy_grep_iter_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, rb_len_t memo_index)
 {
     struct proc_entry *entry = proc_entry_ptr(proc_entry);
     VALUE value, chain = rb_funcall(entry->memo, id_eqq, 1, result->memo_value);
@@ -2308,7 +2308,7 @@ lazy_grep(VALUE obj, VALUE pattern)
 }
 
 static struct MEMO *
-lazy_grep_v_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_index)
+lazy_grep_v_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, rb_len_t memo_index)
 {
     struct proc_entry *entry = proc_entry_ptr(proc_entry);
     VALUE chain = rb_funcall(entry->memo, id_eqq, 1, result->memo_value);
@@ -2317,7 +2317,7 @@ lazy_grep_v_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_i
 }
 
 static struct MEMO *
-lazy_grep_v_iter_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_index)
+lazy_grep_v_iter_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, rb_len_t memo_index)
 {
     struct proc_entry *entry = proc_entry_ptr(proc_entry);
     VALUE value, chain = rb_funcall(entry->memo, id_eqq, 1, result->memo_value);
@@ -2368,12 +2368,12 @@ next_stopped(VALUE obj, VALUE _)
 }
 
 static struct MEMO *
-lazy_zip_arrays_func(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_index)
+lazy_zip_arrays_func(VALUE proc_entry, struct MEMO *result, VALUE memos, rb_len_t memo_index)
 {
     struct proc_entry *entry = proc_entry_ptr(proc_entry);
     VALUE ary, arrays = entry->memo;
     VALUE memo = rb_ary_entry(memos, memo_index);
-    long i, count = NIL_P(memo) ? 0 : NUM2LONG(memo);
+    rb_len_t i, count = NIL_P(memo) ? 0 : NUM2LEN(memo);
 
     ary = rb_ary_new2(RARRAY_LEN(arrays) + 1);
     rb_ary_push(ary, result->memo_value);
@@ -2381,18 +2381,18 @@ lazy_zip_arrays_func(VALUE proc_entry, struct MEMO *result, VALUE memos, long me
         rb_ary_push(ary, rb_ary_entry(RARRAY_AREF(arrays, i), count));
     }
     LAZY_MEMO_SET_VALUE(result, ary);
-    rb_ary_store(memos, memo_index, LONG2NUM(++count));
+    rb_ary_store(memos, memo_index, LEN2NUM(++count));
     return result;
 }
 
 static struct MEMO *
-lazy_zip_func(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_index)
+lazy_zip_func(VALUE proc_entry, struct MEMO *result, VALUE memos, rb_len_t memo_index)
 {
     struct proc_entry *entry = proc_entry_ptr(proc_entry);
     VALUE arg = rb_ary_entry(memos, memo_index);
     VALUE zip_args = entry->memo;
     VALUE ary, v;
-    long i;
+    rb_len_t i;
 
     if (NIL_P(arg)) {
         arg = rb_ary_new2(RARRAY_LEN(zip_args));
@@ -2458,9 +2458,9 @@ lazy_zip(int argc, VALUE *argv, VALUE obj)
 }
 
 static struct MEMO *
-lazy_take_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_index)
+lazy_take_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, rb_len_t memo_index)
 {
-    long remain;
+    rb_len_t remain;
     struct proc_entry *entry = proc_entry_ptr(proc_entry);
     VALUE memo = rb_ary_entry(memos, memo_index);
 
@@ -2468,19 +2468,19 @@ lazy_take_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_ind
         memo = entry->memo;
     }
 
-    remain = NUM2LONG(memo);
+    remain = NUM2LEN(memo);
     if (--remain == 0) LAZY_MEMO_SET_BREAK(result);
-    rb_ary_store(memos, memo_index, LONG2NUM(remain));
+    rb_ary_store(memos, memo_index, LEN2NUM(remain));
     return result;
 }
 
 static VALUE
 lazy_take_size(VALUE entry, VALUE receiver)
 {
-    long len = NUM2LONG(RARRAY_AREF(rb_ivar_get(entry, id_arguments), 0));
+    rb_len_t len = NUM2LEN(RARRAY_AREF(rb_ivar_get(entry, id_arguments), 0));
     if (NIL_P(receiver) || (FIXNUM_P(receiver) && FIX2LONG(receiver) < len))
         return receiver;
-    return LONG2NUM(len);
+    return LEN2NUM(len);
 }
 
 static int
@@ -2504,19 +2504,19 @@ static const lazyenum_funcs lazy_take_funcs = {
 static VALUE
 lazy_take(VALUE obj, VALUE n)
 {
-    long len = NUM2LONG(n);
+    rb_len_t len = NUM2LEN(n);
 
     if (len < 0) {
         rb_raise(rb_eArgError, "attempt to take negative size");
     }
 
-    n = LONG2NUM(len);          /* no more conversion */
+    n = LEN2NUM(len);           /* no more conversion */
 
     return lazy_add_method(obj, 0, 0, n, rb_ary_new3(1, n), &lazy_take_funcs);
 }
 
 static struct MEMO *
-lazy_take_while_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_index)
+lazy_take_while_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, rb_len_t memo_index)
 {
     VALUE take = lazyenum_yield_values(proc_entry, result);
     if (!RTEST(take)) {
@@ -2547,30 +2547,30 @@ lazy_take_while(VALUE obj)
 static VALUE
 lazy_drop_size(VALUE proc_entry, VALUE receiver)
 {
-    long len = NUM2LONG(RARRAY_AREF(rb_ivar_get(proc_entry, id_arguments), 0));
+    rb_len_t len = NUM2LEN(RARRAY_AREF(rb_ivar_get(proc_entry, id_arguments), 0));
     if (NIL_P(receiver))
         return receiver;
     if (FIXNUM_P(receiver)) {
         len = FIX2LONG(receiver) - len;
-        return LONG2FIX(len < 0 ? 0 : len);
+        return LEN2NUM(len < 0 ? 0 : len);
     }
-    return rb_funcall(receiver, '-', 1, LONG2NUM(len));
+    return rb_funcall(receiver, '-', 1, LEN2NUM(len));
 }
 
 static struct MEMO *
-lazy_drop_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_index)
+lazy_drop_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, rb_len_t memo_index)
 {
-    long remain;
+    rb_len_t remain;
     struct proc_entry *entry = proc_entry_ptr(proc_entry);
     VALUE memo = rb_ary_entry(memos, memo_index);
 
     if (NIL_P(memo)) {
         memo = entry->memo;
     }
-    remain = NUM2LONG(memo);
+    remain = NUM2LEN(memo);
     if (remain > 0) {
         --remain;
-        rb_ary_store(memos, memo_index, LONG2NUM(remain));
+        rb_ary_store(memos, memo_index, LEN2NUM(remain));
         return 0;
     }
 
@@ -2591,7 +2591,7 @@ static const lazyenum_funcs lazy_drop_funcs = {
 static VALUE
 lazy_drop(VALUE obj, VALUE n)
 {
-    long len = NUM2LONG(n);
+    rb_len_t len = NUM2LEN(n);
     VALUE argv[2];
     argv[0] = sym_each;
     argv[1] = n;
@@ -2604,7 +2604,7 @@ lazy_drop(VALUE obj, VALUE n)
 }
 
 static struct MEMO *
-lazy_drop_while_proc(VALUE proc_entry, struct MEMO* result, VALUE memos, long memo_index)
+lazy_drop_while_proc(VALUE proc_entry, struct MEMO* result, VALUE memos, rb_len_t memo_index)
 {
     struct proc_entry *entry = proc_entry_ptr(proc_entry);
     VALUE memo = rb_ary_entry(memos, memo_index);
@@ -2640,7 +2640,7 @@ lazy_drop_while(VALUE obj)
 }
 
 static int
-lazy_uniq_check(VALUE chain, VALUE memos, long memo_index)
+lazy_uniq_check(VALUE chain, VALUE memos, rb_len_t memo_index)
 {
     VALUE set = rb_ary_entry(memos, memo_index);
 
@@ -2653,14 +2653,14 @@ lazy_uniq_check(VALUE chain, VALUE memos, long memo_index)
 }
 
 static struct MEMO *
-lazy_uniq_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_index)
+lazy_uniq_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, rb_len_t memo_index)
 {
     if (lazy_uniq_check(result->memo_value, memos, memo_index)) return 0;
     return result;
 }
 
 static struct MEMO *
-lazy_uniq_iter_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_index)
+lazy_uniq_iter_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, rb_len_t memo_index)
 {
     VALUE chain = lazyenum_yield(proc_entry, result);
 
@@ -2693,7 +2693,7 @@ lazy_uniq(VALUE obj)
 }
 
 static struct MEMO *
-lazy_compact_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_index)
+lazy_compact_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, rb_len_t memo_index)
 {
     if (NIL_P(result->memo_value)) return 0;
     return result;
@@ -2717,7 +2717,7 @@ lazy_compact(VALUE obj)
 }
 
 static struct MEMO *
-lazy_with_index_proc(VALUE proc_entry, struct MEMO* result, VALUE memos, long memo_index)
+lazy_with_index_proc(VALUE proc_entry, struct MEMO* result, VALUE memos, rb_len_t memo_index)
 {
     struct proc_entry *entry = proc_entry_ptr(proc_entry);
     VALUE memo = rb_ary_entry(memos, memo_index);
@@ -2737,7 +2737,7 @@ lazy_with_index_proc(VALUE proc_entry, struct MEMO* result, VALUE memos, long me
         LAZY_MEMO_SET_VALUE(result, rb_ary_new_from_values(2, argv));
         LAZY_MEMO_SET_PACKED(result);
     }
-    rb_ary_store(memos, memo_index, LONG2NUM(NUM2LONG(memo) + 1));
+    rb_ary_store(memos, memo_index, LEN2NUM(NUM2LEN(memo) + 1));
     return result;
 }
 
@@ -2803,7 +2803,7 @@ lazy_with_index(int argc, VALUE *argv, VALUE obj)
 }
 
 static struct MEMO *
-lazy_tap_each_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_index)
+lazy_tap_each_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, rb_len_t memo_index)
 {
     struct proc_entry *entry = proc_entry_ptr(proc_entry);
 
@@ -3286,7 +3286,7 @@ enum_chain_initialize(VALUE obj, VALUE enums)
 static VALUE
 new_enum_chain(VALUE enums)
 {
-    long i;
+    rb_len_t i;
     VALUE obj = enum_chain_initialize(enum_chain_allocate(rb_cEnumChain), enums);
 
     for (i = 0; i < RARRAY_LEN(enums); i++) {
@@ -3321,7 +3321,7 @@ static VALUE
 enum_chain_total_size(VALUE enums)
 {
     VALUE total = INT2FIX(0);
-    long i;
+    rb_len_t i;
 
     for (i = 0; i < RARRAY_LEN(enums); i++) {
         VALUE size = enum_size(RARRAY_AREF(enums, i));
@@ -3383,7 +3383,7 @@ enum_chain_each(int argc, VALUE *argv, VALUE obj)
 {
     VALUE enums, block;
     struct enum_chain *objptr;
-    long i;
+    rb_len_t i;
 
     RETURN_SIZED_ENUMERATOR(obj, argc, argv, argc > 0 ? enum_chain_enum_no_size : enum_chain_enum_size);
 
@@ -3412,7 +3412,7 @@ enum_chain_rewind(VALUE obj)
 {
     struct enum_chain *objptr = enum_chain_ptr(obj);
     VALUE enums = objptr->enums;
-    long i;
+    rb_len_t i;
 
     for (i = objptr->pos; 0 <= i && i < RARRAY_LEN(enums); objptr->pos = --i) {
         rb_check_funcall(RARRAY_AREF(enums, i), id_rewind, 0, 0);
@@ -3626,7 +3626,7 @@ enum_product_total_size(VALUE enums)
 {
     VALUE total = INT2FIX(1);
     VALUE sizes = rb_ary_hidden_new(RARRAY_LEN(enums));
-    long i;
+    rb_len_t i;
 
     for (i = 0; i < RARRAY_LEN(enums); i++) {
         VALUE size = enum_size(RARRAY_AREF(enums, i));
@@ -3769,7 +3769,7 @@ enum_product_rewind(VALUE obj)
 {
     struct enum_product *ptr = enum_product_ptr(obj);
     VALUE enums = ptr->enums;
-    long i;
+    rb_len_t i;
 
     for (i = 0; i < RARRAY_LEN(enums); i++) {
         rb_check_funcall(RARRAY_AREF(enums, i), id_rewind, 0, 0);
@@ -4006,7 +4006,7 @@ rb_arithmetic_sequence_extract(VALUE obj, rb_arithmetic_sequence_components_t *c
 }
 
 VALUE
-rb_arithmetic_sequence_beg_len_step(VALUE obj, long *begp, long *lenp, long *stepp, long len, int err)
+rb_arithmetic_sequence_beg_len_step(VALUE obj, rb_len_t *begp, rb_len_t *lenp, rb_len_t *stepp, rb_len_t len, int err)
 {
     RBIMPL_NONNULL_ARG(begp);
     RBIMPL_NONNULL_ARG(lenp);
@@ -4017,13 +4017,13 @@ rb_arithmetic_sequence_beg_len_step(VALUE obj, long *begp, long *lenp, long *ste
         return Qfalse;
     }
 
-    long step = NIL_P(aseq.step) ? 1 : NUM2LONG(aseq.step);
+    rb_len_t step = NIL_P(aseq.step) ? 1 : NUM2LEN(aseq.step);
     *stepp = step;
 
     if (step < 0) {
         if (aseq.exclude_end && !NIL_P(aseq.end)) {
             /* Handle exclusion before range reversal */
-            aseq.end = LONG2NUM(NUM2LONG(aseq.end) + 1);
+            aseq.end = LEN2NUM(NUM2LEN(aseq.end) + 1);
 
             /* Don't exclude the previous beginning */
             aseq.exclude_end = 0;
@@ -4055,10 +4055,10 @@ static VALUE
 arith_seq_take(VALUE self, VALUE num)
 {
     VALUE b, e, s, ary;
-    long n;
+    rb_len_t n;
     int x;
 
-    n = NUM2LONG(num);
+    n = NUM2LEN(num);
     if (n < 0) {
         rb_raise(rb_eArgError, "attempt to take negative size");
     }
@@ -4093,7 +4093,7 @@ arith_seq_take(VALUE self, VALUE num)
         long i = FIX2LONG(b);
         long end = FIX2LONG(e);
         long unit = FIX2LONG(s);
-        long len;
+        rb_len_t len;
 
         if (unit >= 0) {
             if (!x) end += 1;
@@ -4130,10 +4130,10 @@ arith_seq_take(VALUE self, VALUE num)
         double beg = NUM2DBL(b);
         double end = NIL_P(e) ? (unit < 0 ? -1 : 1)*HUGE_VAL : NUM2DBL(e);
         double len = ruby_float_step_size(beg, end, unit, x);
-        long i;
+        rb_len_t i;
 
         if (n > len)
-            n = (long)len;
+            n = (rb_len_t)len;
 
         if (isinf(unit)) {
             if (len > 0) {
@@ -4303,7 +4303,7 @@ arith_seq_last(int argc, VALUE *argv, VALUE self)
 {
     VALUE b, e, s, len_1, len, last, nv, ary;
     int last_is_adjusted;
-    long n;
+    rb_len_t n;
 
     e = arith_seq_end(self);
     if (NIL_P(e)) {
@@ -4345,7 +4345,7 @@ arith_seq_last(int argc, VALUE *argv, VALUE self)
     if (RTEST(rb_int_gt(nv, len))) {
         nv = len;
     }
-    n = NUM2LONG(nv);
+    n = NUM2LEN(nv);
     if (n < 0) {
         rb_raise(rb_eArgError, "negative array size");
     }

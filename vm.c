@@ -57,6 +57,14 @@
 #include "probes.h"
 #include "probes_helper.h"
 
+#if defined(_MSC_VER) && !defined(__clang__)
+/* Favor speed over the default -Os, which makes vm_exec_core dispatch
+ * instructions by a binary search instead of a jump table.  This must
+ * follow ruby/internal/memory.h, whose `#pragma optimize("", on)`
+ * restores the command line options. */
+#pragma optimize("t", on)
+#endif
+
 static void *native_main_thread_stack_top;
 
 bool ruby_vm_during_cleanup = false;
@@ -573,6 +581,23 @@ zjit_compile(rb_execution_context_t *ec)
 #else
 # define zjit_compile(ec) ((rb_jit_func_t)0)
 #endif
+
+// Return the call threshold of the enabled JIT, or 0 when no JIT is enabled.
+unsigned int
+rb_jit_call_threshold(void)
+{
+#if USE_YJIT
+    if (rb_yjit_enabled_p) {
+        return rb_yjit_call_threshold;
+    }
+#endif
+#if USE_ZJIT
+    if (rb_zjit_enabled_p) {
+        return rb_zjit_call_threshold;
+    }
+#endif
+    return 0;
+}
 
 #if USE_YJIT || USE_ZJIT
 // Execute JIT code compiled by yjit_compile() or zjit_compile()
@@ -1591,7 +1616,7 @@ proc_shared_outer_variables(struct rb_id_table *outer_variables, bool isolate, c
         VALUE str = rb_sprintf("can not %s because it accesses outer variables", message);
         VALUE ary = data.ary;
         const char *sep = " (";
-        for (long i = 0; i < RARRAY_LEN(ary); i++) {
+        for (rb_len_t i = 0; i < RARRAY_LEN(ary); i++) {
             VALUE name = rb_id2str(NUM2ID(RARRAY_AREF(ary, i)));
             if (!name) continue;
             rb_str_cat_cstr(str, sep);
@@ -4315,6 +4340,36 @@ m_core_set_postexe(VALUE self)
 }
 
 static VALUE
+m_core_iseq_path(VALUE self, VALUE frozen_string_literal_option_value)
+{
+    rb_execution_context_t *ec = GET_EC();
+    rb_control_frame_t *cfp = ec->cfp;
+    cfp = vm_get_ruby_level_caller_cfp(ec, RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp));
+    if (cfp == NULL) {
+        return Qnil;
+    }
+    const rb_iseq_t *iseq = CFP_ISEQ(cfp);
+    VALUE path = rb_iseq_path(iseq);
+    if (RTEST(path)) {
+        int frozen_string_literal_option = NUM2INT(frozen_string_literal_option_value);
+        switch (frozen_string_literal_option) {
+          case ISEQ_FROZEN_STRING_LITERAL_ENABLED:
+            RUBY_ASSERT(OBJ_FROZEN(path));
+            break;
+          case ISEQ_FROZEN_STRING_LITERAL_DISABLED:
+            path = rb_str_resurrect(path);
+            break;
+          case ISEQ_FROZEN_STRING_LITERAL_UNSET:
+            path = rb_ec_str_resurrect(ec, path, true);
+            break;
+          default:
+            UNREACHABLE_RETURN(Qundef);
+        }
+    }
+    return path;
+}
+
+static VALUE
 core_hash_merge(VALUE hash, long argc, const VALUE *argv, bool dup)
 {
     if (NIL_P(hash)) {
@@ -4609,6 +4664,7 @@ Init_VM(void)
     rb_define_method_id(klass, id_core_set_variable_alias, m_core_set_variable_alias, 2);
     rb_define_method_id(klass, id_core_undef_method, m_core_undef_method, 2);
     rb_define_method_id(klass, id_core_set_postexe, m_core_set_postexe, 0);
+    rb_define_method_id(klass, id_core_iseq_path, m_core_iseq_path, 1);
     rb_define_method_id(klass, id_core_hash_merge_ptr, m_core_hash_merge_ptr, -1);
     rb_define_method_id(klass, id_core_hash_merge_bang_ptr, m_core_hash_merge_bang_ptr, -1);
     rb_define_method_id(klass, id_core_hash_merge_kwd, m_core_hash_merge_kwd, 2);

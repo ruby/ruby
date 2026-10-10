@@ -459,7 +459,7 @@ ruby_push_include(const char *path, VALUE (*filter)(VALUE))
     if (path == 0) return;
     p = path;
     while (*p) {
-        long len;
+        rb_len_t len;
         while (is_path_sep(*p))
             p++;
         if (!*p) break;
@@ -829,7 +829,7 @@ static int
 process_sflag(int sflag)
 {
     if (sflag > 0) {
-        long n;
+        rb_len_t n;
         const VALUE *args;
         VALUE argv = rb_argv;
 
@@ -895,7 +895,8 @@ static long proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, in
 static void
 moreswitches(const char *s, ruby_cmdline_options_t *opt, int envopt)
 {
-    long argc, i, len;
+    long argc, i;
+    rb_len_t len;
     char **argv, *p;
     const char *ap = 0;
     VALUE argstr, argary;
@@ -1176,7 +1177,7 @@ dump_option(const char *str, int len, void *arg)
 }
 
 static void
-set_option_encoding_once(const char *type, VALUE *name, const char *e, long elen)
+set_option_encoding_once(const char *type, VALUE *name, const char *e, rb_len_t elen)
 {
     VALUE ename;
 
@@ -1502,7 +1503,7 @@ proc_long_options(ruby_cmdline_options_t *opt, const char *s, long argc, char **
         setup_yjit_options(s);
 #else
         rb_warn("Ruby was built without YJIT support."
-                " You may need to install rustc to build Ruby with YJIT.");
+                " You may need to install rustc and configure with --enable-yjit to build Ruby with YJIT.");
 #endif
     }
     else if (is_option_with_optarg("zjit", '-', true, false, false)) {
@@ -2384,7 +2385,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     int i = (int)proc_options(argc, argv, opt, 0);
     unsigned int dump = opt->dump & dump_exit_bits;
     const rb_box_t *box = rb_root_box();
-    const long loaded_before_enc = RARRAY_LEN(box->loaded_features);
+    const rb_len_t loaded_before_enc = RARRAY_LEN(box->loaded_features);
 
     if (opt->dump & (DUMP_BIT(usage)|DUMP_BIT(help))) {
         const char *const progname =
@@ -2536,7 +2537,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 #endif
     rb_obj_freeze(opt->script_name);
     if (IF_UTF8_PATH(uenc != lenc, 1)) {
-        long i;
+        rb_len_t i;
         VALUE load_path = box->load_path;
         const ID id_initial_load_path_mark = INITIAL_LOAD_PATH_MARK;
         int modifiable = FALSE;
@@ -2566,7 +2567,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     {
         VALUE loaded_features = box->loaded_features;
         bool modified = false;
-        for (long i = loaded_before_enc; i < RARRAY_LEN(loaded_features); ++i) {
+        for (rb_len_t i = loaded_before_enc; i < RARRAY_LEN(loaded_features); ++i) {
             VALUE path = RARRAY_AREF(loaded_features, i);
             if (!(path = copy_str(path, IF_UTF8_PATH(uenc, lenc), true))) continue;
             if (!modified) {
@@ -2728,7 +2729,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 
 #ifndef DOSISH
 static void
-warn_cr_in_shebang(const char *str, long len)
+warn_cr_in_shebang(const char *str, rb_len_t len)
 {
     if (len > 1 && str[len-1] == '\n' && str[len-2] == '\r') {
         rb_warn("shebang line ending with \\r may cause problems");
@@ -2769,7 +2770,7 @@ load_file_internal(VALUE argp_v)
         VALUE c = 1;		/* something not nil */
         VALUE line;
         char *p, *str;
-        long len;
+        rb_len_t len;
         int no_src_enc = !opt->src.enc.name;
         int no_ext_enc = !opt->ext.enc.name;
         int no_int_enc = !opt->intern.enc.name;
@@ -2907,7 +2908,7 @@ open_load_file(VALUE fname_v, int *xflag)
 {
     const char *fname = (fname_v = rb_str_encode_ospath(fname_v),
                          StringValueCStr(fname_v));
-    long flen = RSTRING_LEN(fname_v);
+    rb_len_t flen = RSTRING_LEN(fname_v);
     VALUE f;
     int e;
 

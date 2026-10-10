@@ -109,7 +109,7 @@ RSpec.describe "bundle console", readline: true do
     end
 
     it "uses IRB as default console" do
-      skip "Does not work in a ruby-core context if irb is in the default $LOAD_PATH because it enables the real IRB, not our dummy one" if ruby_core? && Gem.ruby_version < Gem::Version.new("3.5.0.a")
+      skip "irb on RUBYLIB takes precedence over our dummy irb gem" if rubylib_provides?("irb")
 
       bundle "console" do |input, _, _|
         input.puts("__method__")
@@ -134,7 +134,7 @@ RSpec.describe "bundle console", readline: true do
     end
 
     it "falls back to IRB if the other REPL isn't available" do
-      skip "Does not work in a ruby-core context if irb is in the default $LOAD_PATH because it enables the real IRB, not our dummy one" if ruby_core? && Gem.ruby_version < Gem::Version.new("3.5.0.a")
+      skip "irb on RUBYLIB takes precedence over our dummy irb gem" if rubylib_provides?("irb")
 
       bundle_config "console pry"
       # make sure pry isn't there

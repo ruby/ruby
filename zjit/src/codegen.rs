@@ -664,6 +664,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::ArrayDup { val, state } => gen_array_dup(jit, asm, function, *val, opnd!(val), &function.frame_state(*state)),
         Insn::AdjustBounds { index, length } => gen_adjust_bounds(asm, opnd!(index), opnd!(length)),
         Insn::ArrayAref { array, index, .. } => gen_array_aref(asm, opnd!(array), opnd!(index)),
+        Insn::ArrayArefChecked { array, index, length } => gen_array_aref_checked(jit, asm, opnd!(array), opnd!(index), opnd!(length)),
         Insn::ArrayAset { array, index, val } => {
             no_output!(gen_array_aset(asm, opnd!(array), opnd!(index), opnd!(val)))
         }
@@ -1509,6 +1510,23 @@ fn gen_write_barrier(jit: &mut JITState, asm: &mut Assembler, recv: Opnd, val: O
         // If false, don't fire write barrier
         asm.cmp(val, Qfalse.into());
         asm.je(jit, result_edge.clone());
+
+        unsafe extern "C" {
+            fn rb_gc_zjit_writebarrier_required_p_ptr() -> *const usize;
+        }
+        // The barrier is a no-op when the receiver is young (not RUBY_FL_PROMOTED),
+        // not RUBY_FL_SHAREABLE, and incremental marking is off; see
+        // rb_gc_impl_writebarrier. NULL means the GC has no such fast path.
+        let marking_ptr = unsafe { rb_gc_zjit_writebarrier_required_p_ptr() };
+        if !marking_ptr.is_null() {
+            let flags = asm.load(Opnd::mem(64, recv, RUBY_OFFSET_RBASIC_FLAGS));
+            let old_or_shareable = asm.and(flags, Opnd::UImm((RUBY_FL_PROMOTED | RUBY_FL_SHAREABLE) as u64));
+            let marking_addr = asm.load(Opnd::const_ptr(marking_ptr));
+            let marking = asm.load(Opnd::mem(64, marking_addr, 0));
+            let needs_wb = asm.or(old_or_shareable, marking);
+            asm.test(needs_wb, needs_wb);
+            asm.jz(jit, result_edge.clone());
+        }
 
         // Heap object; fire the write barrier
         asm_ccall!(asm, rb_gc_writebarrier, recv, val);
@@ -2358,6 +2376,53 @@ fn gen_array_aref(
     let elem_offset = asm.lshift(unboxed_idx, Opnd::UImm(SIZEOF_VALUE.trailing_zeros() as u64));
     let elem_ptr = asm.add(array_ptr, elem_offset);
     asm.load(Opnd::mem(VALUE_BITS, elem_ptr, 0))
+}
+
+/// Compile checked array access (`array[index]`). If index is out-of-bounds, return `nil`.
+fn gen_array_aref_checked(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    array: Opnd,
+    index: Opnd,
+    length: Opnd,
+) -> lir::Opnd {
+    let hir_block_id = asm.current_block().hir_block_id;
+    let rpo_idx = asm.current_block().rpo_index;
+    let in_bounds_block = asm.new_block(hir_block_id, false, rpo_idx);
+    let result_block = asm.new_block(hir_block_id, false, rpo_idx);
+    let in_bounds_edge = Target::Block(Box::new(lir::BranchEdge {
+        target: in_bounds_block,
+        args: vec![],
+    }));
+    let result_edge = |value| Target::Block(Box::new(lir::BranchEdge {
+        target: result_block,
+        args: vec![value],
+    }));
+
+    let unboxed_idx = asm.load_mem(index);
+    let length = asm.load_mem(length);
+    // An unsigned comparison also treats negative indices as out of bounds.
+    asm.cmp(unboxed_idx, length);
+    asm.jb(in_bounds_edge);
+    asm.jmp(result_edge(Qnil.into()));
+
+    asm.set_current_block(in_bounds_block);
+    let label = jit.get_label(asm, in_bounds_block, hir_block_id);
+    asm.write_label(label);
+    let array = asm.load_mem(array);
+    let array_ptr = gen_array_ptr(asm, array);
+    // Multiply the index by the size of a VALUE.
+    let elem_offset = asm.lshift(unboxed_idx, Opnd::UImm(SIZEOF_VALUE.trailing_zeros() as u64));
+    let elem_ptr = asm.add(array_ptr, elem_offset);
+    let value = asm.load(Opnd::mem(VALUE_BITS, elem_ptr, 0));
+    asm.jmp(result_edge(value));
+
+    asm.set_current_block(result_block);
+    let label = jit.get_label(asm, result_block, hir_block_id);
+    asm.write_label(label);
+    let result = asm.new_block_param(VALUE_BITS);
+    asm.current_block().add_parameter(result);
+    result
 }
 
 fn gen_array_aset(

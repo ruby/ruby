@@ -91,10 +91,7 @@ int
 rb_iseq_opcode_at_pc(const rb_iseq_t *iseq, const VALUE *pc)
 {
     // YJIT should only use iseqs after AST to bytecode compilation.
-    // (Certain non-default interpreter configurations never set ISEQ_TRANSLATED)
-    if (OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE) {
-        RUBY_ASSERT_ALWAYS(FL_TEST_RAW((VALUE)iseq, ISEQ_TRANSLATED));
-    }
+    RUBY_ASSERT_ALWAYS(FL_TEST_RAW((VALUE)iseq, ISEQ_TRANSLATED));
 
     const VALUE at_pc = *pc;
     return rb_vm_insn_addr2opcode((const void *)at_pc);
@@ -105,9 +102,7 @@ rb_iseq_opcode_at_pc(const rb_iseq_t *iseq, const VALUE *pc)
 int
 rb_iseq_bare_opcode_at_pc(const rb_iseq_t *iseq, const VALUE *pc)
 {
-    if (OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE) {
-        RUBY_ASSERT_ALWAYS(FL_TEST_RAW((VALUE)iseq, ISEQ_TRANSLATED));
-    }
+    RUBY_ASSERT_ALWAYS(FL_TEST_RAW((VALUE)iseq, ISEQ_TRANSLATED));
 
     const VALUE at_pc = *pc;
     return rb_vm_insn_addr2insn((const void *)at_pc);
@@ -499,7 +494,7 @@ rb_RB_TYPE_P(VALUE obj, enum ruby_value_type t)
     return RB_TYPE_P(obj, t);
 }
 
-long
+rb_len_t
 rb_RSTRUCT_LEN(VALUE st)
 {
     return RSTRUCT_LEN(st);
@@ -553,12 +548,12 @@ rb_assert_cme_handle(VALUE handle)
 
 // YJIT and ZJIT need this function to never allocate and never raise
 VALUE
-rb_yarv_ary_entry_internal(VALUE ary, long offset)
+rb_yarv_ary_entry_internal(VALUE ary, rb_len_t offset)
 {
     return rb_ary_entry_internal(ary, offset);
 }
 
-long
+rb_len_t
 rb_jit_array_len(VALUE a)
 {
     return rb_array_len(a);
@@ -570,7 +565,7 @@ size_t
 rb_jit_ruby2_keywords_splat_p(VALUE obj)
 {
     if (!RB_TYPE_P(obj, T_ARRAY)) return 0;
-    long len = RARRAY_LEN(obj);
+    rb_len_t len = RARRAY_LEN(obj);
     if (len == 0) return 0;
     VALUE last = RARRAY_AREF(obj, len - 1);
     if (!RB_TYPE_P(last, T_HASH)) return 0;
@@ -708,12 +703,18 @@ rb_jit_get_page_size(void)
     if (page_size > 0x40000000l) rb_bug("jit page size too large");
 
     return (uint32_t)page_size;
+#elif defined(_WIN32)
+    SYSTEM_INFO si;
+    GetSystemInfo(&si);
+    return (uint32_t)si.dwPageSize;
 #else
-#error "JIT supports POSIX only for now"
+#error "JIT supports POSIX and Windows only for now"
 #endif
 }
 
-#if defined(MAP_FIXED_NOREPLACE) && defined(_SC_PAGESIZE)
+#if defined(_WIN32) || (defined(MAP_FIXED_NOREPLACE) && defined(_SC_PAGESIZE))
+# define JIT_PROBE_NEAR_TEXT 1
+
 // Round `ptr` up to the next multiple of `multiple` bytes. Shared with zjit.c.
 uint8_t *
 rb_jit_align_ptr(uint8_t *ptr, uint32_t multiple)
@@ -737,18 +738,20 @@ rb_jit_align_ptr(uint8_t *ptr, uint32_t multiple)
 uint8_t *
 rb_jit_reserve_addr_space(uint32_t mem_size)
 {
+#ifdef JIT_PROBE_NEAR_TEXT
+    uint8_t *const cfunc_sample_addr = (void *)(uintptr_t)&rb_jit_reserve_addr_space;
+    // 64MiB: balancing space probed and time spent probing.
+    const uintptr_t probe_stride = 64 * 1024 * 1024;
+    // Related to the stride. Any successful trial will be within INT32_MAX
+    // range with slack for the binary size.
+    const int max_probe_trials = 30;
+#endif
 #ifndef _WIN32
     uint8_t *mem_block;
 
     // On Linux
     #if defined(MAP_FIXED_NOREPLACE) && defined(_SC_PAGESIZE)
         uint32_t const page_size = (uint32_t)sysconf(_SC_PAGESIZE);
-        uint8_t *const cfunc_sample_addr = (void *)(uintptr_t)&rb_jit_reserve_addr_space;
-        // 64MiB: balancing space probed and time spent probing.
-        const uintptr_t probe_stride = 64 * 1024 * 1024;
-        // Related to the stride. Any successful trial will be within INT32_MAX
-        // range with slack for the binary size.
-        const int max_probe_trials = 30;
 
         // Probe for addresses close to this function using MAP_FIXED_NOREPLACE
         // to improve odds of being in range for 32-bit relative call instructions.
@@ -824,8 +827,28 @@ rb_jit_reserve_addr_space(uint32_t mem_size)
 
     return mem_block;
 #else
-    // Windows not supported for now
-    return NULL;
+    // Only reserve the address space. rb_jit_mark_writable() commits pages.
+    // Probe below this function as on Linux, aligned to the allocation
+    // granularity that VirtualAlloc() rounds a reservation's address down to.
+    SYSTEM_INFO si;
+    GetSystemInfo(&si);
+    uint8_t *mem_block = NULL;
+    uint8_t *req_addr = cfunc_sample_addr;
+    for (int i = 0; i < max_probe_trials; i++) {
+        req_addr -= probe_stride;
+        req_addr = rb_jit_align_ptr(req_addr, si.dwAllocationGranularity);
+        mem_block = VirtualAlloc(req_addr, mem_size, MEM_RESERVE, PAGE_NOACCESS);
+        if (mem_block != NULL) break;
+    }
+    if (mem_block == NULL) {
+        mem_block = VirtualAlloc(NULL, mem_size, MEM_RESERVE, PAGE_NOACCESS);
+    }
+    if (mem_block == NULL) {
+        errno = rb_w32_map_errno(GetLastError());
+        perror("ruby: jit: Fatal VirtualAlloc failure:");
+        abort();
+    }
+    return mem_block;
 #endif
 }
 
@@ -840,7 +863,12 @@ rb_jit_for_each_iseq(rb_iseq_callback callback, void *data)
 bool
 rb_jit_mark_writable(void *mem_block, uint32_t mem_size)
 {
+#ifdef _WIN32
+    // MEM_COMMIT also re-protects pages that are already committed.
+    return VirtualAlloc(mem_block, mem_size, MEM_COMMIT, PAGE_READWRITE) != NULL;
+#else
     return mprotect(mem_block, mem_size, PROT_READ | PROT_WRITE) == 0;
+#endif
 }
 
 void
@@ -851,16 +879,31 @@ rb_jit_mark_executable(void *mem_block, uint32_t mem_size)
     if (mem_size == 0) {
         return;
     }
+#ifdef _WIN32
+    DWORD old_protect;
+    if (!VirtualProtect(mem_block, mem_size, PAGE_EXECUTE_READ, &old_protect)) {
+        rb_bug("Couldn't make JIT page (%p, %lu bytes) executable, error: %lu",
+            mem_block, (unsigned long)mem_size, GetLastError());
+    }
+#else
     if (mprotect(mem_block, mem_size, PROT_READ | PROT_EXEC)) {
         rb_bug("Couldn't make JIT page (%p, %lu bytes) executable, errno: %s",
             mem_block, (unsigned long)mem_size, strerror(errno));
     }
+#endif
 }
 
-// Free the specified memory block.
+// Discard the contents of the specified memory block and make it inaccessible.
 bool
 rb_jit_mark_unused(void *mem_block, uint32_t mem_size)
 {
+#ifdef _WIN32
+    // Keep the pages committed, since rb_jit_mark_executable() covers the whole
+    // mapped region and VirtualProtect() fails on decommitted pages.
+    DWORD old_protect;
+    VirtualAlloc(mem_block, mem_size, MEM_RESET, PAGE_NOACCESS);
+    return VirtualProtect(mem_block, mem_size, PAGE_NOACCESS, &old_protect) != 0;
+#else
     // On Linux, you need to use madvise MADV_DONTNEED to free memory.
     // We might not need to call this on macOS, but it's not really documented.
     // We generally prefer to do the same thing on both to ease testing too.
@@ -869,6 +912,7 @@ rb_jit_mark_unused(void *mem_block, uint32_t mem_size)
     // On macOS, mprotect PROT_NONE seems to reduce RSS.
     // We also call this on Linux to avoid executing unused pages.
     return mprotect(mem_block, mem_size, PROT_NONE) == 0;
+#endif
 }
 
 // Invalidate icache for arm64.

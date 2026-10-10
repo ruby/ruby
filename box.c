@@ -1199,10 +1199,10 @@ dump_classext_i(rb_classext_t *ext, bool is_prime, VALUE _recv, void *data)
 
     tbl = RCLASSEXT_M_TBL(ext);
     if (tbl) {
-        ary = rb_ary_new_capa((long)rb_id_table_size(tbl));
+        ary = rb_ary_new_capa((rb_len_t)rb_id_table_size(tbl));
         rb_id_table_foreach(RCLASSEXT_M_TBL(ext), dump_classext_methods_i, (void *)ary);
         rb_ary_sort_bang(ary);
-        snprintf(buf, 4096, "  Methods(%ld): ", RARRAY_LEN(ary));
+        snprintf(buf, 4096, "  Methods(%"PRIdLEN"): ", RARRAY_LEN(ary));
         rb_str_cat_cstr(res, buf);
         rb_str_concat(res, rb_ary_join(ary, rb_str_new_cstr(",")));
         rb_str_cat_cstr(res, "\n");
@@ -1213,10 +1213,10 @@ dump_classext_i(rb_classext_t *ext, bool is_prime, VALUE _recv, void *data)
 
     tbl = RCLASSEXT_CONST_TBL(ext);
     if (tbl) {
-        ary = rb_ary_new_capa((long)rb_id_table_size(tbl));
+        ary = rb_ary_new_capa((rb_len_t)rb_id_table_size(tbl));
         rb_id_table_foreach(tbl, dump_classext_constants_i, (void *)ary);
         rb_ary_sort_bang(ary);
-        snprintf(buf, 4096, "  Constants(%ld): ", RARRAY_LEN(ary));
+        snprintf(buf, 4096, "  Constants(%"PRIdLEN"): ", RARRAY_LEN(ary));
         rb_str_cat_cstr(res, buf);
         rb_str_concat(res, rb_ary_join(ary, rb_str_new_cstr(",")));
         rb_str_cat_cstr(res, "\n");

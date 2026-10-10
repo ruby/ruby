@@ -1738,7 +1738,6 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
     // scopes array refer to root nodes on the tree, and higher indexes are the
     // leaf nodes.
     iseq = parent;
-    rb_encoding *encoding = rb_enc_get(src);
 
 #define FORWARDING_POSITIONALS_CHR '*'
 #define FORWARDING_POSITIONALS_STR "*"
@@ -1766,20 +1765,6 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
                 VALUE name_obj = rb_id2str(local);
                 const char *name = RSTRING_PTR(name_obj);
                 size_t length = RSTRING_LEN(name_obj);
-
-                // Explicitly skip numbered parameters. These should not be sent
-                // into the eval.
-                if (length == 2 && name[0] == '_' && name[1] >= '1' && name[1] <= '9') {
-                    continue;
-                }
-
-                // Check here if this local can be represented validly in the
-                // encoding of the source string. If it _cannot_, then it should
-                // not be added to the constant pool as it would not be able to
-                // be referenced anyway.
-                if (rb_enc_str_coderange_scan(name_obj, encoding) == ENC_CODERANGE_BROKEN) {
-                    continue;
-                }
 
                 /* We need to duplicate the string because the Ruby string may
                  * be embedded so compaction could move the string and the pointer
@@ -2913,7 +2898,7 @@ rb_current_realfilepath(void)
         }
 
         // [Feature #19755] implicit eval location is "(eval at #{__FILE__}:#{__LINE__})"
-        const long len = RSTRING_LEN(path);
+        const rb_len_t len = RSTRING_LEN(path);
         if (len > EVAL_LOCATION_MARK_LEN+1) {
             const char *const ptr = RSTRING_PTR(path);
             if (ptr[len - 1] == ')' &&

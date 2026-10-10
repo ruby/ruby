@@ -37,6 +37,9 @@ jobs:
           - os: 2025-vs2026
             test_task: check
             target: x86
+          - os: 2025-vs2026
+            test_task: check
+            yjit: true
           - os: 11-arm
             test_task: check
             target: arm64
@@ -52,7 +55,7 @@ jobs:
       || (github.event.pull_request.user.login == 'dependabot[bot]' && !startsWith(github.head_ref, 'dependabot/vcpkg'))
       )}}
 
-    name: Windows ${{ matrix.os }}${{ case(matrix.target == 'x86', ' x86', '') }} (${{ matrix.test_task }})
+    name: Windows ${{ matrix.os }}${{ case(matrix.target == 'x86', ' x86', '') }}${{ case(matrix.yjit == true, ' YJIT', '') }} (${{ matrix.test_task }})
 
     permissions:
       contents: read
@@ -167,6 +170,7 @@ jobs:
           --with-opt-dir=%RUBY_OPT_DIR%
           --with-gmp
           --enable-debug-env
+          ${{ matrix.yjit && '--enable-yjit' || '' }}
 
       - run: nmake prepare-vcpkg
 
@@ -187,6 +191,16 @@ jobs:
 
       - run: nmake
 
+      - name: Set ENV for YJIT
+        shell: pwsh
+        run: |
+          "RUBY_YJIT_ENABLE=1" >> $Env:GITHUB_ENV
+        if: ${{ matrix.yjit }}
+
+      - name: Check YJIT enabled
+        run: .\miniruby.exe -v && .\miniruby.exe -v | findstr /c:"+YJIT" > nul
+        if: ${{ matrix.yjit }}
+
       - name: Set up Launchable
         uses: ./.github/actions/launchable/setup
         with:
@@ -195,6 +209,7 @@ jobs:
           builddir: build
           srcdir: src
           test-task: ${{ matrix.test_task || 'check' }}
+          is-yjit: ${{ matrix.yjit || false }}
         continue-on-error: true
         if: ${{ matrix.test_task != 'test-bundled-gems' }}
         timeout-minutes: 3
@@ -216,7 +231,7 @@ jobs:
       - name: nmake ${{ matrix.test_task || 'check' }}
         run: |
           set LAUNCHABLE_TOKEN=
-          nmake ${{ matrix.test_task || 'check' }}
+          nmake ${{ matrix.test_task || 'check' }} ${{ matrix.yjit && 'RUN_OPTS=--yjit-call-threshold=1' || '' }}
         env:
           RUBY_TESTOPTS: -j${{ env.TEST_JOBS || 4 }}
           RUBY_DEBUG: wer
@@ -256,7 +271,7 @@ jobs:
       - name: Upload crash dumps
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: crashdumps-${{ matrix.os }}${{ case(matrix.target == 'x86', '-x86', '') }}-${{ matrix.test_task }}
+          name: crashdumps-${{ matrix.os }}${{ case(matrix.target == 'x86', '-x86', '') }}${{ case(matrix.yjit == true, '-yjit', '') }}-${{ matrix.test_task }}
           path: |
             crashdumps
             build/*.exe
@@ -273,7 +288,7 @@ jobs:
 
       - uses: ./.github/actions/slack
         with:
-          label: Windows ${{ matrix.os }}${{ case(matrix.target == 'x86', ' x86', '') }} / ${{ matrix.test_task || 'check' }}
+          label: Windows ${{ matrix.os }}${{ case(matrix.target == 'x86', ' x86', '') }}${{ case(matrix.yjit == true, ' YJIT', '') }} / ${{ matrix.test_task || 'check' }}
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
         if: ${{ failure() }}
 

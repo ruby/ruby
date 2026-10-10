@@ -1651,9 +1651,9 @@ rb_dir_getwd_ospath(void)
     if (!cached_cwd || (size_t)RSTRING_LEN(cached_cwd) != len ||
         memcmp(RSTRING_PTR(cached_cwd), path, len) != 0) {
 #ifdef __APPLE__
-        cached_cwd = rb_str_normalize_ospath(path, (long)len);
+        cached_cwd = rb_str_normalize_ospath(path, (rb_len_t)len);
 #else
-        cached_cwd = rb_str_new(path, (long)len);
+        cached_cwd = rb_str_new(path, (rb_len_t)len);
 #endif
         rb_str_freeze(cached_cwd);
         RB_OBJ_SET_SHAREABLE(cached_cwd);
@@ -1704,7 +1704,7 @@ check_dirname(VALUE dir)
 {
     VALUE d = dir;
     char *path, *pend;
-    long len;
+    rb_len_t len;
     rb_encoding *enc;
 
     FilePathValue(d);
@@ -3570,7 +3570,7 @@ static VALUE
 dir_globs(VALUE args, VALUE base, int flags)
 {
     VALUE ary = rb_ary_new();
-    long i;
+    rb_len_t i;
 
     for (i = 0; i < RARRAY_LEN(args); ++i) {
         int status;

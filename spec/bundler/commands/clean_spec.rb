@@ -391,7 +391,7 @@ RSpec.describe "bundle clean" do
     expect(vendored_gems("bin/myrackup")).not_to exist
   end
 
-  it "removes orphaned gemspecs from ABI-scoped specification dirs", rubygems: ">= 4.1.0.dev" do
+  it "removes orphaned gemspecs from ABI-scoped specification dirs", rubygems: ">= 4.1.0.a" do
     gemfile <<-G
       source "https://gem.repo1"
 
@@ -412,10 +412,12 @@ RSpec.describe "bundle clean" do
     should_have_gems "foo-1.0"
   end
 
-  it "does not remove gemspecs for content-addressed gems in the bundle", :compact_index, rubygems: ">= 4.1.0.dev" do
+  it "does not remove gemspecs for content-addressed gems in the bundle", :compact_index, rubygems: ">= 4.1.0.a" do
     skip "Gem::ContentAddress not available" if ruby_core?
+    skip "A prerelease Ruby does not satisfy the ~> X.Y.0 ABI pin of content-addressed gems" if Gem.ruby_version.prerelease?
 
     simulate_platform "x86_64-linux" do
+      current_abi = "#{Gem.ruby_version.segments[0]}.#{Gem.ruby_version.segments[1]}"
       build_repo2 do
         build_gem "mygem", "1.0" do |s|
           s.platform = Gem::Platform.new("x86_64-linux")
@@ -423,9 +425,9 @@ RSpec.describe "bundle clean" do
         end
       end
 
-      build_gem "mygem", "1.0", ruby_abi: Gem.ruby_abi, path: gem_repo2("gems") do |s|
+      build_gem "mygem", "1.0", content_addressable: true, path: gem_repo2("gems") do |s|
         s.platform = Gem::Platform.new("x86_64-linux")
-        s.required_ruby_version = "~> #{Gem.ruby_abi}.0"
+        s.required_ruby_version = "~> #{current_abi}.0"
         s.write "lib/mygem.rb", "MYGEM = '1.0 content_addressed'"
       end
 

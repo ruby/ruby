@@ -59,15 +59,21 @@ module JSON
     })
 
     # Directly lifted from Gregg Kellogg's json-canonicalization
-    generator::State.rfc8785_number_formater_proc = shareable_lambda(->(num) {
+    generator::State.rfc8785_number_formatter_proc = shareable_lambda(->(num) {
+      if Integer === num
+        if num > Float::MAX || num < -Float::MAX
+          raise GeneratorError.new("Integer out of range for RFC 8785", num)
+        end
+        num = num.to_f
+      end
       if num.zero?
         "0"
       else
         if num < 0
           num, sign = -num, '-'
         end
-        native_rep = "%.15E" % num
-        decimal, exponential = native_rep.split('E')
+        native_rep = num.to_s
+        decimal, exponential = native_rep.split('e')
         exp_val = exponential.to_i
         exponential = exp_val > 0 ? ('+' + exp_val.to_s) : exp_val.to_s
 
@@ -95,7 +101,7 @@ module JSON
     })
 
     generator::State.rfc8785_sort_keys_proc = shareable_lambda(->(hash) {
-      hash.sort_by { |k| k.to_s.encode(Encoding::UTF_16) }.to_h
+      hash.sort_by { |k,| k.to_s.encode(Encoding::UTF_16) }.to_h
     })
 
     JSON.generator = generator

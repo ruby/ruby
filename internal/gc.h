@@ -26,12 +26,10 @@ struct rb_gc_zjit_fastpath;
 #define SET_MACHINE_STACK_END(p) __asm__ __volatile__ ("movq\t%%rsp, %0" : "=r" (*(p)))
 #elif defined(__i386) && defined(__GNUC__)
 #define SET_MACHINE_STACK_END(p) __asm__ __volatile__ ("movl\t%%esp, %0" : "=r" (*(p)))
-#elif (defined(__powerpc__) || defined(__powerpc64__)) && defined(__GNUC__) && !defined(_AIX) && !defined(__APPLE__) // Not Apple is NEEDED to unbreak ppc64 build on Darwin. Don't ask.
+#elif (defined(__powerpc__) || defined(__powerpc64__)) && defined(__GNUC__) && !defined(_AIX)
 #define SET_MACHINE_STACK_END(p) __asm__ __volatile__ ("mr\t%0, %%r1" : "=r" (*(p)))
 #elif (defined(__powerpc__) || defined(__powerpc64__)) && defined(__GNUC__) && defined(_AIX)
 #define SET_MACHINE_STACK_END(p) __asm__ __volatile__ ("mr %0,1" : "=r" (*(p)))
-#elif defined(__POWERPC__) && defined(__APPLE__) // Darwin ppc and ppc64
-#define SET_MACHINE_STACK_END(p) __asm__ volatile("mr %0, r1" : "=r" (*(p)))
 #elif defined(__aarch64__) && defined(__GNUC__)
 #define SET_MACHINE_STACK_END(p) __asm__ __volatile__ ("mov\t%0, sp" : "=r" (*(p)))
 #else
@@ -210,12 +208,42 @@ VALUE rb_newobj_of_unprotected(VALUE klass, VALUE flags, size_t size);
 void *rb_gc_ractor_cache_alloc(struct rb_ractor_struct *ractor);
 void rb_gc_ractor_cache_free(void *cache);
 bool rb_gc_zjit_new_obj_fastpath(size_t alloc_size, VALUE flags, VALUE klass, struct rb_gc_zjit_fastpath *fastpath);
+const uintptr_t *rb_gc_zjit_writebarrier_required_p_ptr(void);
 
 bool rb_gc_size_allocatable_p(size_t size);
 size_t rb_gc_size_slot_size(size_t size);
 size_t rb_gc_max_allocation_size(void);
 
 void rb_gc_mark_and_move(VALUE *ptr);
+
+/* The objspace a marking walk marks into, plus the per-Ractor traversal redirect slot
+ * (vm_core.h's gc_mark_func_data_struct) and the shareable-check flag cached from it.
+ * Resolving the current Ractor costs an out-of-line rb_current_ec() call on arm64, so a
+ * walk resolves it once into a ctx and threads that down instead of repeating it per
+ * reference.  Only gc.c builds one; everyone else just passes the pointer along. */
+struct gc_mark_func_data_struct;
+
+struct rb_gc_mark_ctx {
+    void *objspace;
+    struct gc_mark_func_data_struct **mfdp;
+    bool checking_shareable;
+};
+
+void rb_gc_mark_and_pin_ctx(const struct rb_gc_mark_ctx *ctx, VALUE obj);
+void rb_gc_mark_movable_ctx(const struct rb_gc_mark_ctx *ctx, VALUE obj);
+void rb_gc_mark_maybe_ctx(const struct rb_gc_mark_ctx *ctx, VALUE obj);
+void rb_gc_mark_and_move_ctx(const struct rb_gc_mark_ctx *ctx, VALUE *ptr);
+void rb_gc_mark_locations_ctx(const struct rb_gc_mark_ctx *ctx, const VALUE *start, const VALUE *end);
+void rb_mark_tbl_no_pin_ctx(const struct rb_gc_mark_ctx *ctx, st_table *tbl);
+void rb_gc_mark_set_no_pin_ctx(const struct rb_gc_mark_ctx *ctx, st_table *tbl);
+VALUE rb_gc_location_ctx(const struct rb_gc_mark_ctx *ctx, VALUE value);
+void rb_gc_update_moved_ctx(const struct rb_gc_mark_ctx *ctx, VALUE *ptr);
+
+static inline bool
+rb_gc_checking_shareable_ctx(const struct rb_gc_mark_ctx *ctx)
+{
+    return ctx->checking_shareable;
+}
 
 void rb_gc_ref_update_table_values_only(st_table *tbl);
 
@@ -236,6 +264,30 @@ void rb_gc_after_fork(rb_pid_t pid);
     if (_obj != (VALUE)*(ptr)) *(ptr) = (void *)_obj; \
 } while (0)
 
+#define rb_gc_mark_and_move_ptr_ctx(ctx, ptr) do { \
+    VALUE _obj = (VALUE)*(ptr); \
+    rb_gc_mark_and_move_ctx((ctx), &_obj); \
+    if (_obj != (VALUE)*(ptr)) *(ptr) = (void *)_obj; \
+} while (0)
+
+#define rb_gc_update_moved_ptr_ctx(ctx, ptr) do { \
+    VALUE _obj = (VALUE)*(ptr); \
+    rb_gc_update_moved_ctx((ctx), &_obj); \
+    if (_obj != (VALUE)*(ptr)) *(ptr) = (void *)_obj; \
+} while (0)
+
+void rb_objspace_reachable_objects_from_local(VALUE obj, void (func)(VALUE, void *), void *data);
+
+#if USE_MODULAR_GC
+RUBY_SYMBOL_EXPORT_BEGIN
+#endif
+/* Called only by the default GC's verifier, which lives in the GC's shared object in a
+ * modular build, so it needs exporting only there. */
+void rb_objspace_reachable_objects_from_unlocked(VALUE obj, void (func)(VALUE, void *), void *data);
+#if USE_MODULAR_GC
+RUBY_SYMBOL_EXPORT_END
+#endif
+
 RUBY_SYMBOL_EXPORT_BEGIN
 /* exports for objspace module */
 void rb_objspace_reachable_objects_from(VALUE obj, void (func)(VALUE, void *), void *data);
@@ -243,6 +295,7 @@ void rb_objspace_reachable_objects_from_root(void (func)(const char *category, V
 int rb_objspace_internal_object_p(VALUE obj);
 int rb_objspace_garbage_object_p(VALUE obj);
 int rb_objspace_foreign_object_p(VALUE obj);
+int rb_objspace_live_object_p(VALUE obj);
 void rb_gc_declare_weak_references(VALUE obj);
 bool rb_gc_handle_weak_references_alive_p(VALUE obj);
 

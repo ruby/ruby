@@ -30,8 +30,8 @@ VALUE rb_cSockOpt;
 #define check_size(len, size) \
     ((len) == (size) ? \
      (void)0 : \
-     rb_raise(rb_eTypeError, "size differ.  expected as "#size"=%d but %ld", \
-              (int)size, (long)(len)))
+     rb_raise(rb_eTypeError, "size differ.  expected as "#size"=%d but %"PRIdLEN, \
+              (int)size, (rb_len_t)(len)))
 
 static VALUE
 sockopt_pack_byte(VALUE value)
@@ -304,7 +304,7 @@ static VALUE
 sockopt_bool(VALUE self)
 {
     int i;
-    long len;
+    rb_len_t len;
     VALUE data = sockopt_data(self);
     StringValue(data);
     len = RSTRING_LEN(data);

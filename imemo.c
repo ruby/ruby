@@ -8,7 +8,7 @@
 #include "vm_callinfo.h"
 
 size_t rb_iseq_memsize(const rb_iseq_t *iseq);
-void rb_iseq_mark_and_move(rb_iseq_t *iseq, bool reference_updating);
+void rb_iseq_mark_and_move(const struct rb_gc_mark_ctx *ctx, rb_iseq_t *iseq, bool reference_updating);
 void rb_iseq_free(const rb_iseq_t *iseq);
 
 ID
@@ -86,7 +86,7 @@ rb_imemo_tmpbuf_new(void)
 }
 
 void *
-rb_alloc_tmp_buffer(volatile VALUE *store, long len, bool marked)
+rb_alloc_tmp_buffer(volatile VALUE *store, rb_len_t len, bool marked)
 {
     if (len < 0) {
         rb_raise(rb_eArgError, "negative buffer size (or size too big)");
@@ -111,14 +111,14 @@ rb_free_tmp_buffer(volatile VALUE *store)
     rb_imemo_tmpbuf_t *s = (rb_imemo_tmpbuf_t*)ATOMIC_VALUE_EXCHANGE(*store, 0);
     if (s) {
         void *ptr = ATOMIC_PTR_EXCHANGE(s->ptr, 0);
-        long size = s->size;
+        size_t size = s->size;
         s->size = 0;
         ruby_xfree_sized(ptr, size);
     }
 }
 
 struct MEMO *
-rb_imemo_memo_new(VALUE a, VALUE b, long c)
+rb_imemo_memo_new(VALUE a, VALUE b, rb_len_t c)
 {
     struct MEMO *memo = IMEMO_NEW(struct MEMO, imemo_memo, 0);
 
@@ -341,43 +341,43 @@ rb_imemo_memsize(VALUE obj)
  * ========================================================================= */
 
 static void
-mark_and_move_method_entry(rb_method_entry_t *ment, bool reference_updating)
+mark_and_move_method_entry(const struct rb_gc_mark_ctx *ctx, rb_method_entry_t *ment, bool reference_updating)
 {
     rb_method_definition_t *def = ment->def;
 
-    rb_gc_mark_and_move(&ment->owner);
-    rb_gc_mark_and_move(&ment->defined_class);
+    rb_gc_mark_and_move_ctx(ctx, &ment->owner);
+    rb_gc_mark_and_move_ctx(ctx, &ment->defined_class);
 
     if (def) {
-        rb_gc_mark_and_move(&def->original_module);
+        rb_gc_mark_and_move_ctx(ctx, &def->original_module);
 
         switch (def->type) {
           case VM_METHOD_TYPE_ISEQ:
             if (def->body.iseq.iseqptr) {
-                rb_gc_mark_and_move_ptr(&def->body.iseq.iseqptr);
+                rb_gc_mark_and_move_ptr_ctx(ctx, &def->body.iseq.iseqptr);
             }
-            rb_gc_mark_and_move_ptr(&def->body.iseq.cref);
+            rb_gc_mark_and_move_ptr_ctx(ctx, &def->body.iseq.cref);
 
             if (!reference_updating) {
                 if (def->iseq_overload && ment->defined_class) {
                     // it can be a key of "overloaded_cme" table
                     // so it should be pinned.
-                    rb_gc_mark((VALUE)ment);
+                    rb_gc_mark_and_pin_ctx(ctx, (VALUE)ment);
                 }
             }
             break;
           case VM_METHOD_TYPE_ATTRSET:
           case VM_METHOD_TYPE_IVAR:
-            rb_gc_mark_and_move(&def->body.attr.location);
+            rb_gc_mark_and_move_ctx(ctx, &def->body.attr.location);
             break;
           case VM_METHOD_TYPE_BMETHOD:
-            rb_gc_mark_and_move(&def->body.bmethod.proc);
+            rb_gc_mark_and_move_ctx(ctx, &def->body.bmethod.proc);
             break;
           case VM_METHOD_TYPE_ALIAS:
-            rb_gc_mark_and_move_ptr(&def->body.alias.original_me);
+            rb_gc_mark_and_move_ptr_ctx(ctx, &def->body.alias.original_me);
             return;
           case VM_METHOD_TYPE_REFINED:
-            rb_gc_mark_and_move_ptr(&def->body.refined.orig_me);
+            rb_gc_mark_and_move_ptr_ctx(ctx, &def->body.refined.orig_me);
             break;
           case VM_METHOD_TYPE_CFUNC:
           case VM_METHOD_TYPE_ZSUPER:
@@ -391,7 +391,7 @@ mark_and_move_method_entry(rb_method_entry_t *ment, bool reference_updating)
 }
 
 void
-rb_imemo_mark_and_move(VALUE obj, bool reference_updating)
+rb_imemo_mark_and_move(const struct rb_gc_mark_ctx *ctx, VALUE obj, bool reference_updating)
 {
     switch (imemo_type(obj)) {
       case imemo_callcache: {
@@ -422,8 +422,8 @@ rb_imemo_mark_and_move(VALUE obj, bool reference_updating)
              */
         }
         else if (reference_updating) {
-            rb_gc_update_moved((VALUE *)&cc->klass);
-            rb_gc_update_moved_ptr((struct rb_callable_method_entry_struct **)&cc->cme_);
+            rb_gc_update_moved_ctx(ctx, (VALUE *)&cc->klass);
+            rb_gc_update_moved_ptr_ctx(ctx, (struct rb_callable_method_entry_struct **)&cc->cme_);
 
             RUBY_ASSERT(RB_TYPE_P(cc->klass, T_CLASS) || RB_TYPE_P(cc->klass, T_ICLASS));
             RUBY_ASSERT(IMEMO_TYPE_P((VALUE)cc->cme_, imemo_ment));
@@ -433,7 +433,7 @@ rb_imemo_mark_and_move(VALUE obj, bool reference_updating)
             RUBY_ASSERT(IMEMO_TYPE_P((VALUE)cc->cme_, imemo_ment));
 
             if ((vm_cc_super_p(cc) || vm_cc_refinement_p(cc))) {
-                rb_gc_mark_movable((VALUE)cc->cme_);
+                rb_gc_mark_movable_ctx(ctx, (VALUE)cc->cme_);
             }
         }
 
@@ -444,23 +444,23 @@ rb_imemo_mark_and_move(VALUE obj, bool reference_updating)
       case imemo_constcache: {
         struct iseq_inline_constant_cache_entry *ice = (struct iseq_inline_constant_cache_entry *)obj;
 
-        rb_gc_mark_and_move(&ice->value);
+        rb_gc_mark_and_move_ctx(ctx, &ice->value);
 
         break;
       }
       case imemo_cref: {
         rb_cref_t *cref = (rb_cref_t *)obj;
 
-        if (!rb_gc_checking_shareable()) {
+        if (!rb_gc_checking_shareable_ctx(ctx)) {
             // cref->klass_or_self can be unshareable, but no way to access it from other ractors
-            rb_gc_mark_and_move(&cref->klass_or_self);
+            rb_gc_mark_and_move_ctx(ctx, &cref->klass_or_self);
         }
 
-        rb_gc_mark_and_move_ptr(&cref->next);
+        rb_gc_mark_and_move_ptr_ctx(ctx, &cref->next);
 
         // TODO: Ractor and refeinements are not resolved yet
-        if (!rb_gc_checking_shareable()) {
-            rb_gc_mark_and_move(&cref->refinements);
+        if (!rb_gc_checking_shareable_ctx(ctx)) {
+            rb_gc_mark_and_move_ctx(ctx, &cref->refinements);
         }
 
         break;
@@ -470,30 +470,30 @@ rb_imemo_mark_and_move(VALUE obj, bool reference_updating)
 
         if (LIKELY(env->ep)) {
             // just after newobj() can be NULL here.
-            RUBY_ASSERT(rb_gc_location(env->ep[VM_ENV_DATA_INDEX_ENV]) == rb_gc_location(obj));
+            RUBY_ASSERT(rb_gc_location_ctx(ctx, env->ep[VM_ENV_DATA_INDEX_ENV]) == rb_gc_location_ctx(ctx, obj));
             RUBY_ASSERT(reference_updating || VM_ENV_ESCAPED_P(env->ep));
 
             for (unsigned int i = 0; i < env->env_size; i++) {
-                rb_gc_mark_and_move((VALUE *)&env->env[i]);
+                rb_gc_mark_and_move_ctx(ctx, (VALUE *)&env->env[i]);
             }
 
-            rb_gc_mark_and_move_ptr(&env->iseq);
+            rb_gc_mark_and_move_ptr_ctx(ctx, &env->iseq);
 
             if (VM_ENV_LOCAL_P(env->ep) && VM_ENV_BOXED_P(env->ep)) {
                 const rb_box_t *box = VM_ENV_BOX(env->ep);
                 if (BOX_USER_P(box)) {
-                    rb_gc_mark_and_move((VALUE *)&box->box_object);
+                    rb_gc_mark_and_move_ctx(ctx, (VALUE *)&box->box_object);
                 }
             }
 
             if (reference_updating) {
-                rb_gc_update_moved(&((VALUE *)env->ep)[VM_ENV_DATA_INDEX_ENV]);
+                rb_gc_update_moved_ctx(ctx, &((VALUE *)env->ep)[VM_ENV_DATA_INDEX_ENV]);
             }
             else {
                 if (!VM_ENV_FLAGS(env->ep, VM_ENV_FLAG_WB_REQUIRED)) {
                     VM_ENV_FLAGS_SET(env->ep, VM_ENV_FLAG_WB_REQUIRED);
                 }
-                rb_gc_mark_movable( (VALUE)rb_vm_env_prev_env(env));
+                rb_gc_mark_movable_ctx(ctx,  (VALUE)rb_vm_env_prev_env(env));
             }
         }
 
@@ -503,42 +503,42 @@ rb_imemo_mark_and_move(VALUE obj, bool reference_updating)
         struct vm_ifunc *ifunc = (struct vm_ifunc *)obj;
 
         if (!reference_updating) {
-            rb_gc_mark_maybe((VALUE)ifunc->data);
+            rb_gc_mark_maybe_ctx(ctx, (VALUE)ifunc->data);
         }
 
         break;
       }
       case imemo_iseq:
-        rb_iseq_mark_and_move((rb_iseq_t *)obj, reference_updating);
+        rb_iseq_mark_and_move(ctx, (rb_iseq_t *)obj, reference_updating);
         break;
       case imemo_memo: {
         struct MEMO *memo = (struct MEMO *)obj;
 
-        rb_gc_mark_and_move((VALUE *)&memo->v1);
-        rb_gc_mark_and_move((VALUE *)&memo->v2);
+        rb_gc_mark_and_move_ctx(ctx, (VALUE *)&memo->v1);
+        rb_gc_mark_and_move_ctx(ctx, (VALUE *)&memo->v2);
         if (FL_TEST_RAW(obj, MEMO_U3_IS_VALUE)) {
-            rb_gc_mark_and_move((VALUE *)&memo->u3.value);
+            rb_gc_mark_and_move_ctx(ctx, (VALUE *)&memo->u3.value);
         }
 
         break;
       }
       case imemo_ment:
-        mark_and_move_method_entry((rb_method_entry_t *)obj, reference_updating);
+        mark_and_move_method_entry(ctx, (rb_method_entry_t *)obj, reference_updating);
         break;
       case imemo_svar: {
         struct vm_svar *svar = (struct vm_svar *)obj;
 
-        rb_gc_mark_and_move((VALUE *)&svar->cref_or_me);
-        rb_gc_mark_and_move((VALUE *)&svar->lastline);
-        rb_gc_mark_and_move((VALUE *)&svar->backref);
-        rb_gc_mark_and_move((VALUE *)&svar->others);
+        rb_gc_mark_and_move_ctx(ctx, (VALUE *)&svar->cref_or_me);
+        rb_gc_mark_and_move_ctx(ctx, (VALUE *)&svar->lastline);
+        rb_gc_mark_and_move_ctx(ctx, (VALUE *)&svar->backref);
+        rb_gc_mark_and_move_ctx(ctx, (VALUE *)&svar->others);
 
         break;
       }
       case imemo_throw_data: {
         struct vm_throw_data *throw_data = (struct vm_throw_data *)obj;
 
-        rb_gc_mark_and_move((VALUE *)&throw_data->throw_obj);
+        rb_gc_mark_and_move_ctx(ctx, (VALUE *)&throw_data->throw_obj);
 
         break;
       }
@@ -546,15 +546,15 @@ rb_imemo_mark_and_move(VALUE obj, bool reference_updating)
         const rb_imemo_tmpbuf_t *m = (const rb_imemo_tmpbuf_t *)obj;
 
         if (m->marked && !reference_updating) {
-            rb_gc_mark_locations(m->ptr, m->ptr + (m->size / sizeof(VALUE)));
+            rb_gc_mark_locations_ctx(ctx, m->ptr, m->ptr + (m->size / sizeof(VALUE)));
         }
 
         break;
       }
       case imemo_cvar_entry: {
           struct rb_cvar_class_tbl_entry *ent = (struct rb_cvar_class_tbl_entry *)obj;
-          rb_gc_mark_and_move(&ent->class_value);
-          rb_gc_mark_and_move((VALUE *)&ent->cref);
+          rb_gc_mark_and_move_ctx(ctx, &ent->class_value);
+          rb_gc_mark_and_move_ctx(ctx, (VALUE *)&ent->cref);
           break;
       }
       case imemo_subclasses: {
@@ -563,14 +563,14 @@ rb_imemo_mark_and_move(VALUE obj, bool reference_updating)
             VALUE *entries = rb_imemo_subclasses_entries(obj);
             for (uint32_t i = 0; i < subs->count; i++) {
                 if (entries[i]) {
-                    rb_gc_update_moved(&entries[i]);
+                    rb_gc_update_moved_ctx(ctx, &entries[i]);
                 }
             }
         }
         break;
       }
       case imemo_fields: {
-        rb_gc_mark_and_move((VALUE *)&RBASIC(obj)->klass);
+        rb_gc_mark_and_move_ctx(ctx, (VALUE *)&RBASIC(obj)->klass);
 
         /* A shareable imemo_fields (a class/module's fields) can reference unshareable values
          * too.  The write barrier records those as shrefs, so the shareable constraint check
@@ -581,14 +581,14 @@ rb_imemo_mark_and_move(VALUE obj, bool reference_updating)
                 rb_gc_ref_update_table_values_only(tbl);
             }
             else {
-                rb_mark_tbl_no_pin(tbl);
+                rb_mark_tbl_no_pin_ctx(ctx, tbl);
             }
         }
         else {
             VALUE *fields = rb_imemo_fields_ptr(obj);
             attr_index_t len = RSHAPE_LEN(RBASIC_SHAPE_ID(obj));
             for (attr_index_t i = 0; i < len; i++) {
-                rb_gc_mark_and_move(&fields[i]);
+                rb_gc_mark_and_move_ctx(ctx, &fields[i]);
             }
         }
         break;
@@ -599,7 +599,7 @@ rb_imemo_mark_and_move(VALUE obj, bool reference_updating)
             rb_gc_update_set_refs(tbl);
         }
         else {
-            rb_gc_mark_set_no_pin(tbl);
+            rb_gc_mark_set_no_pin_ctx(ctx, tbl);
         }
         break;
       }

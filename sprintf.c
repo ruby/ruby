@@ -65,8 +65,8 @@ sign_bits(int base, const char *p)
 #define FPREC  64
 #define FPREC0 128
 
-static long
-expand_result(VALUE result, long bsiz, long blen, long l)
+static rb_len_t
+expand_result(VALUE result, rb_len_t bsiz, rb_len_t blen, rb_len_t l)
 {
     int cr = ENC_CODERANGE(result);
     RUBY_ASSERT(bsiz >= blen);
@@ -241,10 +241,10 @@ rb_str_format_ary(int argc, const VALUE *argv, VALUE fmt, VALUE ary)
     rb_encoding *enc;
     const char *p, *end;
     char *buf;
-    long blen, bsiz;
+    rb_len_t blen, bsiz;
     VALUE result;
 
-    long scanned = 0;
+    rb_len_t scanned = 0;
     enum ruby_coderange_type coderange = ENC_CODERANGE_7BIT;
     int width, prec, flags = FNONE;
     int nextarg = 1;
@@ -512,7 +512,7 @@ rb_str_format_ary(int argc, const VALUE *argv, VALUE fmt, VALUE ary)
           format_s:
             {
                 VALUE arg = GETARG();
-                long len, slen;
+                rb_len_t len, slen;
 
                 if (*p == 'p') {
                     str = rb_inspect(arg);
@@ -652,8 +652,8 @@ rb_str_format_ary(int argc, const VALUE *argv, VALUE fmt, VALUE ary)
                     int numbits = ffs(base)-1;
                     size_t abs_nlz_bits;
                     size_t numdigits = rb_absint_numwords(val, numbits, &abs_nlz_bits);
-                    long i;
-                    if (INT_MAX-1 < numdigits) /* INT_MAX is used because rb_long2int is used later. */
+                    rb_len_t i;
+                    if (INT_MAX-1 < numdigits) /* INT_MAX is used because rb_len2int is used later. */
                         rb_raise(rb_eArgError, "size too big");
                     if (sign) {
                         if (numdigits == 0)
@@ -700,7 +700,7 @@ rb_str_format_ary(int argc, const VALUE *argv, VALUE fmt, VALUE ary)
                         s = RSTRING_PTR(tmp);
                         dots = valsign < 0;
                     }
-                    len = rb_long2int(RSTRING_END(tmp) - s);
+                    len = rb_len2int(RSTRING_END(tmp) - s);
                 }
                 else if (!bignum) {
                     valsign = 1;
@@ -739,7 +739,7 @@ rb_str_format_ary(int argc, const VALUE *argv, VALUE fmt, VALUE ary)
                         sc = ' ';
                         width--;
                     }
-                    len = rb_long2int(RSTRING_END(tmp) - s);
+                    len = rb_len2int(RSTRING_END(tmp) - s);
                 }
 
                 if (dots) {
@@ -814,7 +814,7 @@ rb_str_format_ary(int argc, const VALUE *argv, VALUE fmt, VALUE ary)
             {
                 VALUE val = GETARG(), num, den;
                 int sign = (flags&FPLUS) ? 1 : 0, zero = 0;
-                long len, fill;
+                rb_len_t len, fill;
                 if (RB_INTEGER_TYPE_P(val)) {
                     den = INT2FIX(1);
                     num = val;
@@ -1092,19 +1092,19 @@ ruby__sfvwrite(register rb_printf_buffer *fp, register struct __suio *uio)
     struct __siov *iov;
     VALUE result = (VALUE)fp->_bf._base;
     char *buf = (char*)fp->_p;
-    long len, n;
-    long blen = buf - RSTRING_PTR(result), bsiz = fp->_w;
+    rb_len_t len, n;
+    rb_len_t blen = buf - RSTRING_PTR(result), bsiz = fp->_w;
 
     if (RBASIC(result)->klass) {
         rb_raise(rb_eRuntimeError, "rb_vsprintf reentered");
     }
     if (uio->uio_resid == 0)
         return 0;
-#if SIZE_MAX > LONG_MAX
-    if (uio->uio_resid >= LONG_MAX)
+#if SIZE_MAX > RB_LEN_MAX
+    if (uio->uio_resid >= RB_LEN_MAX)
         rb_raise(rb_eRuntimeError, "too big string");
 #endif
-    len = (long)uio->uio_resid;
+    len = (rb_len_t)uio->uio_resid;
     CHECK(len);
     buf += blen;
     fp->_w = bsiz;
@@ -1165,7 +1165,14 @@ ruby__sfvextra(rb_printf_buffer *fp, size_t valsize, void *valp, long *sz, int s
         *(volatile VALUE *)valp = value;
     }
     StringValueCStr(value);
-    RSTRING_GETMEM(value, cp, *sz);
+#if SIZEOF_RB_LEN_T > SIZEOF_LONG
+    /* BSD_vfprintf takes the length of this field as a long. */
+    if (RSTRING_LEN(value) > LONG_MAX) {
+        rb_raise(rb_eArgError, "string size too big");
+    }
+#endif
+    cp = RSTRING_PTR(value);
+    *sz = (long)RSTRING_LEN(value);
     ((rb_printf_buffer_extra *)fp)->value = value;
     return cp;
 }
@@ -1177,7 +1184,7 @@ ruby_vsprintf0(VALUE result, char *p, const char *fmt, va_list ap)
 #define f buffer.base
     VALUE klass = RBASIC(result)->klass;
     int coderange = ENC_CODERANGE(result);
-    long scanned = 0;
+    rb_len_t scanned = 0;
 
     if (coderange != ENC_CODERANGE_UNKNOWN) scanned = p - RSTRING_PTR(result);
 
@@ -1193,7 +1200,7 @@ ruby_vsprintf0(VALUE result, char *p, const char *fmt, va_list ap)
     BSD_vfprintf(&f, fmt, ap);
     RBASIC_SET_CLASS_RAW(result, klass);
     p = RSTRING_PTR(result);
-    long blen = (char *)f._p - p;
+    rb_len_t blen = (char *)f._p - p;
 
     coderange = ENC_CODERANGE(result);
     if (coderange != ENC_CODERANGE_UNKNOWN && scanned < blen) {

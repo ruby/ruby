@@ -1,6 +1,7 @@
 # frozen_string_literal: false
 require "test/unit"
 require "objspace"
+require_relative "../lib/jit_support"
 begin
   require "json"
 rescue LoadError
@@ -733,6 +734,68 @@ class TestObjSpace < Test::Unit::TestCase
       assert_empty error
       assert(output.count > 1)
       assert_include output.grep(/"imemo_type":"callinfo"/).join("\n"), '"mid":"baz"'
+    end
+  end
+
+  def test_dump_iseq_includes_jit_call_counter
+    if JITSupport.yjit_supported?
+      jit_options = %w[--yjit --yjit-call-threshold=2]
+    elsif JITSupport.zjit_supported?
+      jit_options = %w[--zjit --zjit-call-threshold=2]
+    else
+      omit "JIT is not supported"
+    end
+
+    assert_in_out_err(%w[-robjspace --disable-gems] + jit_options, "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
+      begin;
+        def foo
+          42
+        end
+
+        5.times { foo }
+
+        ObjectSpace.dump_all(output: $stdout)
+      end;
+
+      assert_empty(error)
+      iseqs = output.filter_map do |line|
+        obj = JSON.parse(line)
+        obj if obj["type"] == "IMEMO" && obj["imemo_type"] == "iseq"
+      end
+      assert_operator iseqs.length, :>, 0
+      iseqs.each do |obj|
+        assert_kind_of(Integer, obj["jit_calls"])
+      end
+
+      threshold_reached = iseqs.select { |obj| obj["jit_threshold_reached"] }
+      assert_operator(threshold_reached.length, :>, 0)
+      threshold_reached.each do |obj|
+        assert_operator(obj["jit_calls"], :>=, 2)
+      end
+    end
+  end
+
+  def test_dump_iseq_omits_jit_call_counter_when_jit_disabled
+    omit "YJIT is force-enabled" if JITSupport.yjit_force_enabled? || ENV["RUBY_YJIT_ENABLE"]
+
+    assert_in_out_err(%w[-robjspace --disable-gems], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
+      begin;
+        def foo
+          42
+        end
+
+        foo
+
+        ObjectSpace.dump_all(output: $stdout)
+      end;
+
+      assert_empty(error)
+      iseqs = output.filter_map do |line|
+        obj = JSON.parse(line)
+        obj if obj["type"] == "IMEMO" && obj["imemo_type"] == "iseq"
+      end
+      assert_operator(iseqs.length, :>, 0)
+      assert(iseqs.none? { |obj| obj.key?("jit_calls") })
     end
   end
 

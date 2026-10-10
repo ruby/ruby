@@ -260,7 +260,7 @@ branch_template(VALUE branches)
     VALUE structure = RARRAY_AREF(branches, 0);
     VALUE counters = RARRAY_AREF(branches, 1);
     long nbases = RHASH_SIZE(structure);
-    long ntargets = RARRAY_LEN(counters);
+    rb_len_t ntargets = RARRAY_LEN(counters);
     VALUE cache = RARRAY_LEN(branches) > 2 ? RARRAY_AREF(branches, 2) : Qnil;
 
     if (!NIL_P(cache) &&
@@ -422,7 +422,7 @@ method_fill_count(st_data_t *key, st_data_t *value, st_data_t argp, int existing
     VALUE mes = (VALUE)*value;
     long count;
     if (RB_TYPE_P(mes, T_ARRAY)) {
-        long i;
+        rb_len_t i;
         count = 0;
         for (i = 0; i < RARRAY_LEN(mes); i++) {
             count += method_call_count(RARRAY_AREF(mes, i));

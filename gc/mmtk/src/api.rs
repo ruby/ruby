@@ -181,7 +181,7 @@ fn mmtk_builder_default_parse_plan() -> PlanSelector {
         "StickyImmix" => Some(PlanSelector::StickyImmix),
         _ => None,
     })
-    .unwrap_or(PlanSelector::Immix)
+    .unwrap_or(PlanSelector::StickyImmix)
 }
 
 #[unsafe(no_mangle)]
@@ -412,6 +412,11 @@ pub extern "C" fn mmtk_weak_references_count() -> usize {
 #[unsafe(no_mangle)]
 pub extern "C" fn mmtk_register_pinning_obj(obj: ObjectReference) {
     crate::binding().pinning_registry.register(obj);
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn mmtk_is_pinned(object: ObjectReference) -> bool {
+    memory_manager::is_pinned(object)
 }
 
 // =============== Write barriers ===============

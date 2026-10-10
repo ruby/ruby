@@ -421,7 +421,7 @@ module SyncDefaultGems
   end
 
   # We usually don't use this. Please consider using #sync_default_gems_with_commits instead.
-  def sync_default_gems(gem)
+  def sync_default_gems(gem, release: false)
     config = REPOSITORIES[gem]
     puts "Sync #{config.upstream}"
 
@@ -463,9 +463,12 @@ module SyncDefaultGems
     if gem == "rubygems"
       rubygems_do_fixup
     end
-    minimize_dependencies(gem)
-
-    check_prerelease_version(gem)
+    # A released tree is published as is, and may lack paths that the top-level
+    # depend declares for the master tree.
+    unless release
+      minimize_dependencies(gem)
+      check_prerelease_version(gem)
+    end
 
     # Architecture-dependent files must not pollute libdir.
     rm_rf(Dir["lib/**/*.#{RbConfig::CONFIG['DLEXT']}"])
@@ -867,6 +870,32 @@ module SyncDefaultGems
     return true
   end
 
+  # Returns the newest version of +gem+ on rubygems.org, prereleases included.
+  def latest_release(gem)
+    require "net/https"
+    require "json"
+    require "uri"
+
+    name = gem == "rubygems" ? "rubygems-update" : gem.downcase
+    response = Net::HTTP.get_response(URI("https://rubygems.org/api/v1/versions/#{name}.json"))
+    return unless Net::HTTPSuccess === response
+    JSON.parse(response.body).map {|v| Gem::Version.new(v["number"])}.max&.to_s
+  end
+
+  # Tags cannot be ranked by name, as a clone may also hold the tags of
+  # ruby/ruby.  Check out the tag of the published version instead.
+  def checkout_release(gem)
+    unless version = latest_release(gem)
+      warn "#{gem} is not published on rubygems.org"
+      return false
+    end
+    unless tag = `git tag`.split.find {|t| t.delete_prefix("v") == version}
+      warn "No tag for #{gem}-#{version}"
+      return false
+    end
+    system("git", "checkout", tag)
+  end
+
   def update_default_gems(gem, release: false)
     config = REPOSITORIES[gem]
     author, repository = config.upstream.split('/')
@@ -887,8 +916,7 @@ module SyncDefaultGems
       `git fetch origin --tags`
 
       if release
-        last_release = `git tag | sort -V`.chomp.split.delete_if{|v| v =~ /pre|beta/ }.last
-        `git checkout #{last_release}`
+        checkout_release(gem)
       else
         `git checkout #{default_branch}`
         `git rebase origin/#{default_branch}`
@@ -904,10 +932,11 @@ module SyncDefaultGems
       REPOSITORIES.each_key {|gem| update_default_gems(gem)}
     end
   when "all"
+    release = ARGV[1] == "release"
     REPOSITORIES.each_key do |gem|
       next if ["Onigmo"].include?(gem)
-      update_default_gems(gem, release: true) if ARGV[1] == "release"
-      sync_default_gems(gem)
+      next if release and !update_default_gems(gem, release: true)
+      sync_default_gems(gem, release:)
     end
   when "list"
     ARGV.shift

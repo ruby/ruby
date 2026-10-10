@@ -555,5 +555,114 @@ RSpec.describe Bundler::Dsl do
       subject.override("nokogiri", version: :ignore_upper)
       expect(subject.overrides.size).to eq(2)
     end
+
+    it "stores a from:/to: override that drops a dependency" do
+      subject.override("em-websocket", from: "jekyll", to: nil)
+      override = subject.overrides.first
+      expect(override.target).to eq("em-websocket")
+      expect(override.from).to eq("jekyll")
+      expect(override.field).to eq(:to)
+      expect(override.operation).to be_nil
+      expect(override.requirement).to be_nil
+    end
+
+    it "stores a from:/to: override that replaces a dependency" do
+      subject.override("grpc", from: "google-cloud-pubsub", to: "grpc-lite", version: ">= 2")
+      override = subject.overrides.first
+      expect(override.operation).to eq("grpc-lite")
+      expect(override.requirement).to eq(">= 2")
+    end
+
+    it "allows overriding the same target from different gems" do
+      subject.override("grpc", from: "a", to: "grpc-lite")
+      subject.override("grpc", from: "b", to: "grpc-lite")
+      expect(subject.overrides.size).to eq(2)
+    end
+
+    it "allows a from:/to: override next to a version: override on the same target" do
+      subject.override("grpc", version: ">= 1")
+      subject.override("grpc", from: "a", to: nil)
+      expect(subject.overrides.size).to eq(2)
+    end
+
+    it "rejects to: without from:" do
+      expect do
+        subject.override("grpc", to: "grpc-lite")
+      end.to raise_error(ArgumentError, /`override "grpc", to:` requires `from:`/)
+    end
+
+    it "rejects from: without to:" do
+      expect do
+        subject.override("grpc", from: "a", version: ">= 2")
+      end.to raise_error(ArgumentError, /`override "grpc", from:` requires `to:`/)
+    end
+
+    it "rejects from: on an :all target" do
+      expect do
+        subject.override(:all, from: "a", to: nil)
+      end.to raise_error(ArgumentError, /`override :all` does not accept `from:`/)
+    end
+
+    it "rejects a from: that is not a string" do
+      expect do
+        subject.override("grpc", from: :a, to: nil)
+      end.to raise_error(ArgumentError, /`from:` must be a gem name string/)
+    end
+
+    it "rejects a to: that is neither a string nor nil" do
+      expect do
+        subject.override("grpc", from: "a", to: :grpc_lite)
+      end.to raise_error(ArgumentError, /`to:` must be a gem name string or nil/)
+    end
+
+    it "rejects a to: naming the target itself" do
+      expect do
+        subject.override("grpc", from: "a", to: "grpc")
+      end.to raise_error(ArgumentError, /`to:` must name a gem other than "grpc" and "a"/)
+    end
+
+    it "rejects a to: naming the from: gem" do
+      expect do
+        subject.override("grpc", from: "a", to: "a")
+      end.to raise_error(ArgumentError, /`to:` must name a gem other than "grpc" and "a"/)
+    end
+
+    it "rejects an empty to:" do
+      expect do
+        subject.override("grpc", from: "a", to: "")
+      end.to raise_error(Bundler::GemfileError, /an empty gem name is not valid/)
+    end
+
+    it "rejects a from: containing whitespace" do
+      expect do
+        subject.override("grpc", from: "google cloud", to: nil)
+      end.to raise_error(Bundler::GemfileError, /'google cloud' is not a valid gem name because it contains whitespace/)
+    end
+
+    it "rejects version: when to: drops the dependency" do
+      expect do
+        subject.override("grpc", from: "a", to: nil, version: ">= 2")
+      end.to raise_error(ArgumentError, /requires `to:` to name a replacement gem/)
+    end
+
+    it "rejects a version: with from: that is not a requirement string" do
+      expect do
+        subject.override("grpc", from: "a", to: "grpc-lite", version: :ignore_upper)
+      end.to raise_error(ArgumentError, /must be a version requirement string/)
+    end
+
+    it "rejects fields other than version: with from:" do
+      expect do
+        subject.override("grpc", from: "a", to: "grpc-lite", required_ruby_version: nil)
+      end.to raise_error(ArgumentError, /unsupported override field `required_ruby_version:` with `from:`/)
+    end
+
+    it "rejects a duplicate target and from:" do
+      subject.override("grpc", from: "a", to: nil)
+      expect do
+        subject.override("grpc", from: "a", to: "grpc-lite")
+      end.to raise_error(ArgumentError, /duplicate override for "grpc" `from: "a"`/)
+      expect(subject.overrides.size).to eq(1)
+    end
   end
 end

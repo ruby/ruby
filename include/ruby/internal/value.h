@@ -124,10 +124,42 @@ typedef unsigned LONG_LONG ID;
 # error ---->> ruby requires sizeof(void*) == sizeof(long) or sizeof(LONG_LONG) to be compiled. <<----
 #endif
 
+/**
+ * A signed integer type for lengths and indices of objects such as String and
+ * Array.  It is `long` for now, on every platform.
+ */
+typedef long rb_len_t;
+
+/** An unsigned integer type that has the same width with ::rb_len_t. */
+typedef unsigned long rb_ulen_t;
+
+/** Indicates that ::rb_len_t and ::rb_ulen_t are available. */
+#define HAVE_RB_LEN_T 1
+
+#ifndef SIZEOF_RB_LEN_T
+/** Size of ::rb_len_t, in bytes. */
+# define SIZEOF_RB_LEN_T SIZEOF_LONG
+#endif
+
+/** Printf prefix for ::rb_len_t. */
+#define PRI_LEN_PREFIX "l"
+
+/** Maximum possible value that a ::rb_len_t can take. */
+#define RB_LEN_MAX LONG_MAX
+
+/** Minimum possible value that a ::rb_len_t can take. */
+#define RB_LEN_MIN LONG_MIN
+
+/** Maximum possible value that a ::rb_ulen_t can take. */
+#define RB_ULEN_MAX ULONG_MAX
+
 /** @cond INTERNAL_MACRO */
 RBIMPL_STATIC_ASSERT(sizeof_int, SIZEOF_INT == sizeof(int));
 RBIMPL_STATIC_ASSERT(sizeof_long, SIZEOF_LONG == sizeof(long));
 RBIMPL_STATIC_ASSERT(sizeof_long_long, SIZEOF_LONG_LONG == sizeof(LONG_LONG));
 RBIMPL_STATIC_ASSERT(sizeof_voidp, SIZEOF_VOIDP == sizeof(void *));
+RBIMPL_STATIC_ASSERT(sizeof_rb_len_t_macro, SIZEOF_RB_LEN_T == sizeof(rb_len_t));
+RBIMPL_STATIC_ASSERT(sizeof_rb_len_t, sizeof(rb_len_t) == sizeof(long));
+RBIMPL_STATIC_ASSERT(sizeof_rb_ulen_t, sizeof(rb_ulen_t) == sizeof(unsigned long));
 /** @endcond */
 #endif /* RBIMPL_VALUE_H */

@@ -287,6 +287,14 @@ class TC_IPAddr < Test::Unit::TestCase
     assert_equal("3ffe:505:2::1", IPAddr.new("3ffe:505:2::1").to_s)
   end
 
+  def test_to_s_with_zone_id
+    assert_equal("::%eth0", IPAddr.new("::%eth0").to_s)
+    assert_equal("::ffff:192.168.1.2%eth0", IPAddr.new("::ffff:192.168.1.2%eth0").to_s)
+    assert_equal("::192.168.1.2%eth0", IPAddr.new("::192.168.1.2%eth0").to_s)
+    assert_equal("fe80::1%0ab", IPAddr.new("fe80::1%0ab").to_s)
+    assert_equal("fe80::1%0012", IPAddr.new("fe80::1%0012").to_s)
+  end
+
   def test_as_json
     assert_equal("192.168.1.2", IPAddr.new("192.168.1.2").as_json)
     assert_equal("192.168.1.0/24", IPAddr.new("192.168.1.2/24").as_json)
@@ -526,12 +534,18 @@ class TC_Operator < Test::Unit::TestCase
     assert_equal(false, IPAddr.new('0.0.0.0').loopback?)
     assert_equal(false, IPAddr.new('192.168.2.0').loopback?)
     assert_equal(false, IPAddr.new('255.0.0.0').loopback?)
+    assert_equal(true,  IPAddr.new('127.0.0.0/8').loopback?)
+    assert_equal(false, IPAddr.new('127.0.0.0/7').loopback?)
     assert_equal(true,  IPAddr.new('::1').loopback?)
     assert_equal(false, IPAddr.new('::').loopback?)
     assert_equal(false, IPAddr.new('3ffe:505:2::1').loopback?)
+    assert_equal(true,  IPAddr.new('::1/128').loopback?)
+    assert_equal(false, IPAddr.new('::1/127').loopback?)
 
     assert_equal(true,  IPAddr.new('::ffff:127.0.0.1').loopback?)
     assert_equal(true,  IPAddr.new('::ffff:127.127.1.1').loopback?)
+    assert_equal(true,  IPAddr.new('::ffff:127.0.0.0/104').loopback?)
+    assert_equal(false, IPAddr.new('::ffff:127.0.0.0/103').loopback?)
     assert_equal(false, IPAddr.new('::ffff:0.0.0.0').loopback?)
     assert_equal(false, IPAddr.new('::ffff:192.168.2.0').loopback?)
     assert_equal(false, IPAddr.new('::ffff:255.0.0.0').loopback?)
@@ -548,16 +562,23 @@ class TC_Operator < Test::Unit::TestCase
     assert_equal(true,  IPAddr.new('10.0.0.0').private?)
     assert_equal(true,  IPAddr.new('10.255.255.255').private?)
     assert_equal(false, IPAddr.new('11.255.1.1').private?)
+    assert_equal(true,  IPAddr.new('10.0.0.0/8').private?)
+    assert_equal(false, IPAddr.new('10.0.0.0/7').private?)
 
     assert_equal(false, IPAddr.new('172.15.255.255').private?)
     assert_equal(true,  IPAddr.new('172.16.0.0').private?)
     assert_equal(true,  IPAddr.new('172.31.255.255').private?)
     assert_equal(false, IPAddr.new('172.32.0.0').private?)
+    assert_equal(true,  IPAddr.new('172.16.0.0/12').private?)
+    assert_equal(false, IPAddr.new('172.16.0.0/11').private?)
 
     assert_equal(false, IPAddr.new('190.168.0.0').private?)
     assert_equal(true,  IPAddr.new('192.168.0.0').private?)
     assert_equal(true,  IPAddr.new('192.168.255.255').private?)
     assert_equal(false, IPAddr.new('192.169.0.0').private?)
+    assert_equal(true,  IPAddr.new('192.168.0.0/16').private?)
+    assert_equal(true,  IPAddr.new('192.168.1.0/24').private?)
+    assert_equal(false, IPAddr.new('192.168.0.0/15').private?)
 
     assert_equal(false, IPAddr.new('169.254.0.1').private?)
 
@@ -568,6 +589,9 @@ class TC_Operator < Test::Unit::TestCase
     assert_equal(true,  IPAddr.new('fc84:8bf7:e905::1').private?)
     assert_equal(true,  IPAddr.new('fd84:8bf7:e905::1').private?)
     assert_equal(false, IPAddr.new('fe84:8bf7:e905::1').private?)
+    assert_equal(true,  IPAddr.new('fc00::/7').private?)
+    assert_equal(true,  IPAddr.new('fd00::/8').private?)
+    assert_equal(false, IPAddr.new('fc00::/6').private?)
 
     assert_equal(false, IPAddr.new('::ffff:0.0.0.0').private?)
     assert_equal(false, IPAddr.new('::ffff:127.0.0.1').private?)
@@ -576,16 +600,22 @@ class TC_Operator < Test::Unit::TestCase
     assert_equal(true,  IPAddr.new('::ffff:10.0.0.0').private?)
     assert_equal(true,  IPAddr.new('::ffff:10.255.255.255').private?)
     assert_equal(false, IPAddr.new('::ffff:11.255.1.1').private?)
+    assert_equal(true,  IPAddr.new('::ffff:10.0.0.0/104').private?)
+    assert_equal(false, IPAddr.new('::ffff:10.0.0.0/103').private?)
 
     assert_equal(false, IPAddr.new('::ffff:172.15.255.255').private?)
     assert_equal(true,  IPAddr.new('::ffff:172.16.0.0').private?)
     assert_equal(true,  IPAddr.new('::ffff:172.31.255.255').private?)
     assert_equal(false, IPAddr.new('::ffff:172.32.0.0').private?)
+    assert_equal(true,  IPAddr.new('::ffff:172.16.0.0/108').private?)
+    assert_equal(false, IPAddr.new('::ffff:172.16.0.0/107').private?)
 
     assert_equal(false, IPAddr.new('::ffff:190.168.0.0').private?)
     assert_equal(true,  IPAddr.new('::ffff:192.168.0.0').private?)
     assert_equal(true,  IPAddr.new('::ffff:192.168.255.255').private?)
     assert_equal(false, IPAddr.new('::ffff:192.169.0.0').private?)
+    assert_equal(true,  IPAddr.new('::ffff:192.168.0.0/112').private?)
+    assert_equal(false, IPAddr.new('::ffff:192.168.0.0/111').private?)
 
     assert_equal(false, IPAddr.new('::ffff:169.254.0.1').private?)
 
@@ -603,12 +633,16 @@ class TC_Operator < Test::Unit::TestCase
 
     assert_equal(true,  IPAddr.new('169.254.1.1').link_local?)
     assert_equal(true,  IPAddr.new('169.254.254.255').link_local?)
+    assert_equal(true,  IPAddr.new('169.254.0.0/16').link_local?)
+    assert_equal(false, IPAddr.new('169.254.0.0/15').link_local?)
 
     assert_equal(false, IPAddr.new('::1').link_local?)
     assert_equal(false, IPAddr.new('::').link_local?)
     assert_equal(false, IPAddr.new('fb84:8bf7:e905::1').link_local?)
 
     assert_equal(true,  IPAddr.new('fe80::dead:beef:cafe:1234').link_local?)
+    assert_equal(true,  IPAddr.new('fe80::/10').link_local?)
+    assert_equal(false, IPAddr.new('fe80::/9').link_local?)
 
     assert_equal(false, IPAddr.new('::ffff:0.0.0.0').link_local?)
     assert_equal(false, IPAddr.new('::ffff:127.0.0.1').link_local?)
@@ -618,6 +652,8 @@ class TC_Operator < Test::Unit::TestCase
 
     assert_equal(true,  IPAddr.new('::ffff:169.254.1.1').link_local?)
     assert_equal(true,  IPAddr.new('::ffff:169.254.254.255').link_local?)
+    assert_equal(true,  IPAddr.new('::ffff:169.254.0.0/112').link_local?)
+    assert_equal(false, IPAddr.new('::ffff:169.254.0.0/111').link_local?)
 
     # Global unicast addresses with 0xffff in group 5 must not be mistaken for ::ffff:169.254.x.x
     assert_equal(false, IPAddr.new('2001:db8:1:1:0:ffff:a9fe:101').link_local?)
@@ -627,6 +663,7 @@ class TC_Operator < Test::Unit::TestCase
     assert_equal(true, IPAddr.new('224.0.0.0').multicast?)
     assert_equal(true, IPAddr.new('225.0.0.0').multicast?)
     assert_equal(true, IPAddr.new('224.0.0.0/4').multicast?)
+    assert_equal(false, IPAddr.new('224.0.0.0/3').multicast?)
 
     assert_equal(false, IPAddr.new('240.0.0.0').multicast?)
     assert_equal(false, IPAddr.new('240.0.0.0/4').multicast?)
@@ -637,6 +674,7 @@ class TC_Operator < Test::Unit::TestCase
     assert_equal(true, IPAddr.new('ff00::').multicast?)
     assert_equal(true, IPAddr.new('ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff').multicast?)
     assert_equal(true, IPAddr.new('ff00::/8').multicast?)
+    assert_equal(false, IPAddr.new('ff00::/7').multicast?)
 
     assert_equal(false, IPAddr.new('feff::').multicast?)
     assert_equal(false, IPAddr.new('feff:ffff:ffff:ffff:ffff:ffff:ffff:ffff').multicast?)
@@ -646,6 +684,8 @@ class TC_Operator < Test::Unit::TestCase
 
     assert_equal(true, IPAddr.new('::ffff:224.0.0.0').multicast?)
     assert_equal(false, IPAddr.new('::ffff:240.0.0.0').multicast?)
+    assert_equal(true, IPAddr.new('::ffff:224.0.0.0/100').multicast?)
+    assert_equal(false, IPAddr.new('::ffff:224.0.0.0/99').multicast?)
   end
 
   def test_link_local_multicast?
@@ -655,6 +695,7 @@ class TC_Operator < Test::Unit::TestCase
 
     assert_equal(false, IPAddr.new('224.0.1.1').link_local_multicast?)
     assert_equal(false, IPAddr.new('224.1.0.0').link_local_multicast?)
+    assert_equal(false, IPAddr.new('224.0.0.0/23').link_local_multicast?)
 
     assert_equal(false, IPAddr.new('225.0.0.0').link_local_multicast?)
     assert_equal(false, IPAddr.new('225.0.0.0/24').link_local_multicast?)
@@ -664,6 +705,7 @@ class TC_Operator < Test::Unit::TestCase
 
     assert_equal(true, IPAddr.new('ff02::1').link_local_multicast?)
     assert_equal(true, IPAddr.new('ff02::/16').link_local_multicast?)
+    assert_equal(false, IPAddr.new('ff02::/15').link_local_multicast?)
 
     assert_equal(false, IPAddr.new('ff00::').link_local_multicast?)
     assert_equal(false, IPAddr.new('ff03::1').link_local_multicast?)
@@ -676,6 +718,7 @@ class TC_Operator < Test::Unit::TestCase
     assert_equal(false, IPAddr.new('::ffff:224.0.1.1').link_local_multicast?)
     assert_equal(false, IPAddr.new('::ffff:224.1.0.0').link_local_multicast?)
     assert_equal(false, IPAddr.new('::ffff:225.0.0.0').link_local_multicast?)
+    assert_equal(true, IPAddr.new('::ffff:224.0.0.0/120').link_local_multicast?)
   end
 
   def test_hash

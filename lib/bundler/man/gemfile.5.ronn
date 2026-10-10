@@ -601,8 +601,7 @@ one of:
 A per-gem override on the same field takes precedence over an `:all` override.
 `:all + version:` is rejected: version requirements only make sense per gem.
 
-Multiple `override` calls for distinct targets are allowed; declaring the
-same `target` and `field` twice is an error.
+Declaring the same `target` and `field` twice is an error.
 
     source "https://rubygems.org"
 
@@ -628,6 +627,44 @@ compatibility checks; `Gemfile.lock` continues to reflect the resolved
 versions, not the rewritten requirements. When resolution still fails,
 Bundler appends the active overrides (with their Gemfile location) to the
 error message so it is clear which override shaped the constraint set.
+
+### DROPPING OR REPLACING A DEPENDENCY
+
+`from:` and `to:` rewrite a single dependency of a single gem:
+
+    override <target>, from: <gem>, to: nil
+    override <target>, from: <gem>, to: <replacement>, version: <requirement>
+
+`to: nil` removes the dependency of `<gem>` on `<target>`, so `<target>` is
+not installed unless something else still requires it. `to: <replacement>`
+makes `<gem>` depend on `<replacement>` instead of `<target>`. The requirement
+`<gem>` put on `<target>` is discarded, and the optional `version:` gives the
+replacement its own. Both forms apply whether `<gem>` is a direct or a
+transitive dependency.
+
+`from:` is required, and so is `to:` once `from:` is given. To rewrite the
+same dependency of several gems, write one `override` per gem. It is an error
+to declare the same `<target>` and `from:` twice, to drop a gem that the
+Gemfile requires directly, or to replace a gem that another gem still
+requires, since both would then be in the bundle.
+
+    # jekyll only loads em-websocket for `jekyll serve --livereload`.
+    override "em-websocket", from: "jekyll", to: nil
+
+    # Use an API-compatible gem that provides the same files.
+    override "foo", from: "bar", to: "foo-lite"
+
+Bundler does not check what a gem loads at runtime. If `<gem>` requires
+`<target>` unconditionally, dropping it makes that require raise `LoadError`,
+as with jekyll's dependency on jekyll-sass-converter or the adapters that
+faraday 1.x requires on load. A replacement only works when it provides the
+files `<gem>` requires, and it does not take over the name of `<target>`:
+`Gem.loaded_specs` has no entry for `<target>`, and `gem "<target>"` fails.
+
+`Gemfile.lock` keeps listing `<target>` under `<gem>` as the gem publishes it,
+while the locked gems leave `<target>` out or include `<replacement>`. A
+frozen install accepts that lockfile as long as the Gemfile still has the
+override. Removing the override makes Bundler resolve `<target>` again.
 
 ## SOURCE PRIORITY
 

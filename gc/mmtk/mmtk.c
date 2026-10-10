@@ -749,6 +749,14 @@ rb_gc_impl_zjit_new_obj_fastpath(void *objspace_ptr, size_t alloc_size, VALUE fl
 #endif
 }
 
+const uintptr_t *
+rb_gc_impl_zjit_writebarrier_required_p_ptr(void *objspace_ptr)
+{
+    /* MMTk's write barrier is not a no-op for young, unshareable receivers,
+     * so ZJIT must always call rb_gc_writebarrier(). */
+    return NULL;
+}
+
 void
 rb_gc_impl_init(void)
 {
@@ -756,8 +764,8 @@ rb_gc_impl_init(void)
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVALUE_SIZE")), SIZET2NUM(sizeof(struct RBasic) + sizeof(VALUE[RBIMPL_RVALUE_EMBED_LEN_MAX])));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("RBASIC_SIZE")), SIZET2NUM(sizeof(struct RBasic)));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVALUE_OVERHEAD")), INT2NUM(0));
-    // TODO: correctly set RVALUE_OLD_AGE when we have generational GC support
-    rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVALUE_OLD_AGE")), INT2FIX(0));
+    rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVALUE_OLD_AGE")),
+                 INT2FIX(strcmp((const char *)mmtk_plan(), "StickyImmix") == 0 ? 1 : 0));
     OBJ_FREEZE(gc_constants);
     rb_define_const(rb_mGC, "INTERNAL_CONSTANTS", gc_constants);
 
@@ -1221,8 +1229,7 @@ rb_gc_impl_object_moved_p(void *objspace_ptr, VALUE obj)
 bool
 rb_gc_impl_pinned_p(void *objspace_ptr, VALUE obj)
 {
-    /* MMTk tracks pinning separately */
-    return false;
+    return mmtk_is_pinned((MMTk_ObjectReference)obj);
 }
 
 VALUE
@@ -1360,7 +1367,7 @@ rb_gc_impl_each_object(void *objspace_ptr, void (*func)(VALUE, void *), void *da
 
 // Finalizers
 static VALUE
-gc_run_finalizers_get_final(long i, void *data)
+gc_run_finalizers_get_final(rb_len_t i, void *data)
 {
     VALUE table = (VALUE)data;
 
@@ -1442,8 +1449,8 @@ rb_gc_impl_define_finalizer(void *objspace_ptr, VALUE obj, VALUE block)
 
         /* avoid duplicate block, table is usually small */
         {
-            long len = RARRAY_LEN(table);
-            long i;
+            rb_len_t len = RARRAY_LEN(table);
+            rb_len_t i;
 
             for (i = 0; i < len; i++) {
                 VALUE recv = RARRAY_AREF(table, i);

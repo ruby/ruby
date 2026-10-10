@@ -247,6 +247,8 @@ module TestStruct
     assert_equal(1, o[0])
     assert_raise_with_message(IndexError, /offset -2\b/) {o[-2]}
     assert_raise_with_message(IndexError, /offset 1\b/) {o[1]}
+    big = RbConfig::LIMITS["FIXNUM_MAX"] + 1
+    assert_raise_with_message(IndexError, /offset #{big}\b/) {o[big]}
     assert_raise_with_message(NameError, /foo/) {o["foo"]}
     assert_raise_with_message(NameError, /foo/) {o[:foo]}
   end
@@ -258,6 +260,8 @@ module TestStruct
     assert_equal(2, o[:a])
     assert_raise_with_message(IndexError, /offset -2\b/) {o[-2] = 3}
     assert_raise_with_message(IndexError, /offset 1\b/) {o[1] = 3}
+    big = RbConfig::LIMITS["FIXNUM_MAX"] + 1
+    assert_raise_with_message(IndexError, /offset #{big}\b/) {o[big] = 3}
     assert_raise_with_message(NameError, /foo/) {o["foo"] = 3}
     assert_raise_with_message(NameError, /foo/) {o[:foo] = 3}
   end

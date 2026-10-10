@@ -662,8 +662,8 @@ module Spec
         FileUtils.mkdir_p(lib_path.join(destination))
 
         built_gem =
-          if opts[:ruby_abi]
-            Dir.chdir(lib_path) { Gem::Package.build(@spec, false, false, nil, opts[:ruby_abi]) }
+          if opts[:content_addressable]
+            Dir.chdir(lib_path) { Gem::Package.build(@spec, content_addressable: true) }
           elsif [:yaml, false].include?(opts[:gemspec])
             Dir.chdir(lib_path) do
               Bundler.rubygems.build(@spec, opts[:skip_validation])

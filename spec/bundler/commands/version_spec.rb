@@ -3,10 +3,10 @@
 require_relative "../support/path"
 
 RSpec.describe "bundle version" do
-  if Spec::Path.ruby_core?
-    COMMIT_HASH = /unknown|[a-fA-F0-9]{7,}/
-  else
+  if Spec::Path.git_repository?
     COMMIT_HASH = /[a-fA-F0-9]{7,}/
+  else
+    COMMIT_HASH = /unknown|[a-fA-F0-9]{7,}/
   end
 
   context "with -v" do

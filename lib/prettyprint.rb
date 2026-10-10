@@ -34,7 +34,7 @@
 class PrettyPrint
 
   # The version string
-  VERSION = "0.2.0"
+  VERSION = "0.2.1"
 
   # This is a convenience method which is same as follows:
   #

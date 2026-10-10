@@ -9,5 +9,9 @@ module Spec
     def rubylib
       ENV["RUBYLIB"].to_s.split(File::PATH_SEPARATOR)
     end
+
+    def rubylib_provides?(feature)
+      rubylib.any? {|dir| File.exist?(File.join(dir, "#{feature}.rb")) }
+    end
   end
 end

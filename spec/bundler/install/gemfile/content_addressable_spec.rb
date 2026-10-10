@@ -1,8 +1,9 @@
 # frozen_string_literal: true
 
-RSpec.describe "bundle install with content-addressable gems", :compact_index, rubygems: ">= 4.1.0.dev" do
+RSpec.describe "bundle install with content-addressable gems", :compact_index, rubygems: ">= 4.1.0.a" do
   before do
     skip "Gem::ContentAddress not available" if ruby_core?
+    skip "A prerelease Ruby does not satisfy the ~> X.Y.0 ABI pin of content-addressed gems" if Gem.ruby_version.prerelease?
   end
 
   let(:current_abi) { "#{Gem.ruby_version.segments[0]}.#{Gem.ruby_version.segments[1]}" }
@@ -17,7 +18,7 @@ RSpec.describe "bundle install with content-addressable gems", :compact_index, r
         end
       end
 
-      build_gem "mygem", "1.0", ruby_abi: current_abi, path: gem_repo2("gems") do |s|
+      build_gem "mygem", "1.0", content_addressable: true, path: gem_repo2("gems") do |s|
         s.platform = Gem::Platform.new("x86_64-linux")
         s.required_ruby_version = "~> #{current_abi}.0"
         s.write "lib/mygem.rb", "MYGEM = '1.0 content_addressed'"
@@ -65,7 +66,7 @@ RSpec.describe "bundle install with content-addressable gems", :compact_index, r
         end
       end
 
-      build_gem "mygem", "1.0", ruby_abi: current_abi, path: gem_repo2("gems") do |s|
+      build_gem "mygem", "1.0", content_addressable: true, path: gem_repo2("gems") do |s|
         s.platform = Gem::Platform.new("x86_64-linux")
         s.required_ruby_version = "~> #{current_abi}.0"
         s.write "lib/mygem.rb", "MYGEM = '1.0 content_addressed'"
@@ -99,7 +100,7 @@ RSpec.describe "bundle install with content-addressable gems", :compact_index, r
         end
       end
 
-      build_gem "mygem", "1.0", ruby_abi: mismatched_abi, path: gem_repo2("gems") do |s|
+      build_gem "mygem", "1.0", content_addressable: true, path: gem_repo2("gems") do |s|
         s.platform = Gem::Platform.new("x86_64-linux")
         s.required_ruby_version = "~> #{mismatched_abi}.0"
         s.write "lib/mygem.rb", "MYGEM = '1.0 content_addressed'"
@@ -143,7 +144,7 @@ RSpec.describe "bundle install with content-addressable gems", :compact_index, r
         end
       end
 
-      build_gem "mygem", "1.0", ruby_abi: current_abi, path: gem_repo2("gems") do |s|
+      build_gem "mygem", "1.0", content_addressable: true, path: gem_repo2("gems") do |s|
         s.platform = Gem::Platform.new("arm64-darwin")
         s.required_ruby_version = "~> #{current_abi}.0"
         s.write "lib/mygem.rb", "MYGEM = '1.0 content_addressed'"
@@ -163,13 +164,13 @@ RSpec.describe "bundle install with content-addressable gems", :compact_index, r
     simulate_platform "x86_64-linux" do
       build_repo2
 
-      build_gem "mygem", "1.0", ruby_abi: current_abi, path: gem_repo2("gems") do |s|
+      build_gem "mygem", "1.0", content_addressable: true, path: gem_repo2("gems") do |s|
         s.platform = Gem::Platform.new("x86_64-linux")
         s.required_ruby_version = "~> #{current_abi}.0"
         s.write "lib/mygem.rb", "MYGEM = '1.0 content_addressed_linux'"
       end
 
-      build_gem "mygem", "1.0", ruby_abi: current_abi, path: gem_repo2("gems") do |s|
+      build_gem "mygem", "1.0", content_addressable: true, path: gem_repo2("gems") do |s|
         s.platform = Gem::Platform.new("arm64-darwin")
         s.required_ruby_version = "~> #{current_abi}.0"
         s.write "lib/mygem.rb", "MYGEM = '1.0 content_addressed_darwin'"
@@ -194,7 +195,7 @@ RSpec.describe "bundle install with content-addressable gems", :compact_index, r
         end
       end
 
-      build_gem "mygem", "1.0", ruby_abi: current_abi, path: gem_repo2("gems") do |s|
+      build_gem "mygem", "1.0", content_addressable: true, path: gem_repo2("gems") do |s|
         s.platform = Gem::Platform.new("arm64-darwin")
         s.required_ruby_version = "~> #{current_abi}.0"
         s.write "lib/mygem.rb", "MYGEM = '1.0 content_addressed'"
@@ -218,7 +219,7 @@ RSpec.describe "bundle install with content-addressable gems", :compact_index, r
         end
       end
 
-      build_gem "mygem", "1.0", ruby_abi: mismatched_abi, path: gem_repo2("gems") do |s|
+      build_gem "mygem", "1.0", content_addressable: true, path: gem_repo2("gems") do |s|
         s.platform = Gem::Platform.new("x86_64-linux")
         s.required_ruby_version = "~> #{mismatched_abi}.0"
         s.write "lib/mygem.rb", "MYGEM = '1.0 content_addressed'"
@@ -238,13 +239,13 @@ RSpec.describe "bundle install with content-addressable gems", :compact_index, r
     simulate_platform "x86_64-linux" do
       build_repo2
 
-      build_gem "mygem", "1.0", ruby_abi: current_abi, path: gem_repo2("gems") do |s|
+      build_gem "mygem", "1.0", content_addressable: true, path: gem_repo2("gems") do |s|
         s.platform = Gem::Platform.new("x86_64-linux")
         s.required_ruby_version = "~> #{current_abi}.0"
         s.write "lib/mygem.rb", "MYGEM = '1.0 content_addressed_matching_abi'"
       end
 
-      build_gem "mygem", "1.0", ruby_abi: mismatched_abi, path: gem_repo2("gems") do |s|
+      build_gem "mygem", "1.0", content_addressable: true, path: gem_repo2("gems") do |s|
         s.platform = Gem::Platform.new("x86_64-linux")
         s.required_ruby_version = "~> #{mismatched_abi}.0"
         s.write "lib/mygem.rb", "MYGEM = '1.0 content_addressed_mismatched_abi'"
@@ -269,7 +270,7 @@ RSpec.describe "bundle install with content-addressable gems", :compact_index, r
         end
       end
 
-      build_gem "mygem", "1.0", ruby_abi: current_abi, path: gem_repo2("gems") do |s|
+      build_gem "mygem", "1.0", content_addressable: true, path: gem_repo2("gems") do |s|
         s.platform = Gem::Platform.new("x86_64-linux")
         s.required_ruby_version = "~> #{current_abi}.0"
         s.write "lib/mygem.rb", "MYGEM = '1.0 content_addressed'"
@@ -294,14 +295,14 @@ RSpec.describe "bundle install with content-addressable gems", :compact_index, r
         end
       end
 
-      build_gem "mygem", "1.0", ruby_abi: mismatched_abi, path: gem_repo2("gems") do |s|
+      build_gem "mygem", "1.0", content_addressable: true, path: gem_repo2("gems") do |s|
         s.platform = Gem::Platform.new("x86_64-linux")
         s.required_ruby_version = "~> #{mismatched_abi}.0"
         s.write "lib/mygem.rb", "MYGEM = '1.0 content_addressed_mismatched_abi_1'"
       end
 
       second_mismatched_abi = "#{Gem.ruby_version.segments[0] + 2}.0"
-      build_gem "mygem", "1.0", ruby_abi: second_mismatched_abi, path: gem_repo2("gems") do |s|
+      build_gem "mygem", "1.0", content_addressable: true, path: gem_repo2("gems") do |s|
         s.platform = Gem::Platform.new("x86_64-linux")
         s.required_ruby_version = "~> #{second_mismatched_abi}.0"
         s.write "lib/mygem.rb", "MYGEM = '1.0 content_addressed_mismatched_abi_2'"
@@ -323,7 +324,7 @@ RSpec.describe "bundle install with content-addressable gems", :compact_index, r
         build_gem "other", "1.0"
       end
 
-      build_gem "mygem", "1.0", ruby_abi: mismatched_abi, path: gem_repo2("gems") do |s|
+      build_gem "mygem", "1.0", content_addressable: true, path: gem_repo2("gems") do |s|
         s.platform = Gem::Platform.new("x86_64-linux")
         s.required_ruby_version = "~> #{mismatched_abi}.0"
         s.write "lib/mygem.rb", "MYGEM = '1.0 content_addressed'"
@@ -350,7 +351,7 @@ RSpec.describe "bundle install with content-addressable gems", :compact_index, r
         end
       end
 
-      build_gem "mygem", "1.0", ruby_abi: current_abi, path: gem_repo2("gems") do |s|
+      build_gem "mygem", "1.0", content_addressable: true, path: gem_repo2("gems") do |s|
         s.platform = Gem::Platform.new("x86_64-linux")
         s.required_ruby_version = "~> #{current_abi}.0"
         s.write "lib/mygem.rb", "MYGEM = '1.0 content_addressed'"
@@ -381,13 +382,13 @@ RSpec.describe "bundle install with content-addressable gems", :compact_index, r
         end
       end
 
-      build_gem "mygem", "1.0", ruby_abi: current_abi, path: gem_repo2("gems") do |s|
+      build_gem "mygem", "1.0", content_addressable: true, path: gem_repo2("gems") do |s|
         s.platform = Gem::Platform.new("x86_64-linux")
         s.required_ruby_version = "~> #{current_abi}.0"
         s.write "lib/mygem.rb", "MYGEM = '1.0 content_addressed'"
       end
 
-      build_gem "mygem", "1.0", ruby_abi: mismatched_abi, path: gem_repo2("gems") do |s|
+      build_gem "mygem", "1.0", content_addressable: true, path: gem_repo2("gems") do |s|
         s.platform = Gem::Platform.new("x86_64-linux")
         s.required_ruby_version = "~> #{mismatched_abi}.0"
         s.write "lib/mygem.rb", "MYGEM = '1.0 mismatched'"
@@ -444,7 +445,7 @@ RSpec.describe "bundle install with content-addressable gems", :compact_index, r
         build_gem "othergem", "1.0"
       end
 
-      build_gem "mygem", "1.0", ruby_abi: current_abi, path: gem_repo2("gems") do |s|
+      build_gem "mygem", "1.0", content_addressable: true, path: gem_repo2("gems") do |s|
         s.platform = Gem::Platform.new("x86_64-linux")
         s.required_ruby_version = "~> #{current_abi}.0"
         s.write "lib/mygem.rb", "MYGEM = '1.0 content_addressed'"
@@ -485,7 +486,7 @@ RSpec.describe "bundle install with content-addressable gems", :compact_index, r
         end
       end
 
-      build_gem "mygem", "1.0", ruby_abi: current_abi, path: gem_repo2("gems") do |s|
+      build_gem "mygem", "1.0", content_addressable: true, path: gem_repo2("gems") do |s|
         s.platform = Gem::Platform.new("x86_64-linux")
         s.required_ruby_version = "~> #{current_abi}.0"
         s.write "lib/mygem.rb", "MYGEM = '1.0 content_addressed'"
@@ -508,7 +509,6 @@ end
 
 RSpec.describe "bundle install with content-addressable gems invisible to pre-4.1 RubyGems clients", :compact_index, rubygems: ">= 4.1.0.a" do
   before do
-    skip "Gem::ContentAddress not available" if ruby_core?
     skip "A prerelease Ruby does not satisfy the ~> X.Y.0 ABI pin of content-addressed gems" if Gem.ruby_version.prerelease?
   end
 
@@ -523,7 +523,7 @@ RSpec.describe "bundle install with content-addressable gems invisible to pre-4.
         end
       end
 
-      build_gem "mygem", "1.0", ruby_abi: current_abi, path: gem_repo2("gems") do |s|
+      build_gem "mygem", "1.0", content_addressable: true, path: gem_repo2("gems") do |s|
         s.platform = Gem::Platform.new("x86_64-linux")
         s.required_ruby_version = "~> #{current_abi}.0"
         s.write "lib/mygem.rb", "MYGEM = '1.0 content_addressed'"

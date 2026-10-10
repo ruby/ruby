@@ -52,6 +52,11 @@ class TestRbConfig < Test::Unit::TestCase
     end
   end
 
+  def test_sizeof_rb_len_t
+    require 'rbconfig/sizeof'
+    assert_include([RbConfig::SIZEOF["long"], RbConfig::SIZEOF["void*"]], RbConfig::SIZEOF["rb_len_t"])
+  end
+
   def test_limits_and_sizeof_access_in_ractor
     assert_separately(["-W0"], <<~'RUBY')
       r = Ractor.new do

@@ -3778,6 +3778,10 @@ class TestArray < Test::Unit::TestCase
     # Tests compensated summation fallthrough in array.c
     assert_float_equal(5.0, [1, 1, 1.0, 1.0, 1.0].sum(0.0))
 
+    assert_float_equal(11.5, [1.5].sum(10.0))
+    assert_float_equal(16.5, [1, 2, 3.5].sum(10.0))
+    assert_complex_equal(11.0 + 2i, [Complex(1, 2)].sum(10.0))
+
     assert_float_equal((FIXNUM_MAX+1).to_f, [FIXNUM_MAX, 1, 0.0].sum)
     assert_float_equal((FIXNUM_MAX+1).to_f, [0.0, FIXNUM_MAX+1].sum)
 
@@ -3809,6 +3813,8 @@ class TestArray < Test::Unit::TestCase
     assert_equal(result, 3.0)
 
     assert_raise(TypeError) { [Object.new].sum }
+    assert_raise(TypeError) { [nil].sum(10.0) }
+    assert_raise(TypeError) { ["hello"].sum(10.0) }
 
     large_number = 100000000
     small_number = 1e-9

@@ -103,7 +103,7 @@ module Bundler
 
       if options[:binstubs_cmd] && spec.executables.empty?
         options = {}
-        spec.runtime_dependencies.each do |dep|
+        Override.rewrite_dependencies(@definition.overrides, spec.name, spec.runtime_dependencies).each do |dep|
           bins = @definition.specs[dep].first.executables
           options[dep.name] = bins unless bins.empty?
         end

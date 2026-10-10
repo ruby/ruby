@@ -328,6 +328,38 @@ MISSING = $(MISSING) explicit_bzero.obj memrchr.obj
 !endif
 DLNOBJS = dln.obj
 
+!if "$(YJIT_SUPPORT)" == "yes"
+!if "$(ARCH)" != "x64"
+!error YJIT is supported only on x64, not $(ARCH).  Retry without --enable-yjit.
+!endif
+!if !defined(RUSTC)
+RUSTC = rustc
+!endif
+YJIT_OBJ = yjit.$(OBJEXT)
+JIT_OBJ = jit.$(OBJEXT)
+YJIT_LIBS = target/release/yjit.lib
+RUST_LIB = $(YJIT_LIBS)
+# Not archived into $(LIBRUBY_A), whose every symbol mkexports.rb exports.
+# After $(LIBS), so C code imports imagehlp.dll, which loads dbghelp lazily.
+JIT_LIBS = $(RUST_LIB) ntdll.lib userenv.lib dbghelp.lib
+!if !defined(INSTALL_STATIC_LIBRARY)
+INSTALL_STATIC_LIBRARY = no
+!elseif "$(INSTALL_STATIC_LIBRARY)" != "no"
+!error YJIT does not support the static library.  Retry without --enable-install-static-library.
+!endif
+# Explicit, so that a windows-gnu default toolchain does not build libyjit.a.
+JIT_RUST_FLAGS = --crate-type=staticlib --target=x86_64-pc-windows-msvc --cfg feature=\"stats_allocator\"
+!if !defined(RUSTC_FLAGS)
+RUSTC_FLAGS = -g -C lto=thin -C opt-level=3 -C overflow-checks=on
+!endif
+!elseif defined(YJIT_SUPPORT) && "$(YJIT_SUPPORT)" != "no"
+!error YJIT_SUPPORT accepts only yes or no, not $(YJIT_SUPPORT).  Retry without YJIT_SUPPORT=$(YJIT_SUPPORT).
+!else
+YJIT_SUPPORT = no
+!if !defined(RUSTC)
+RUSTC = no
+!endif
+!endif
 !if !defined(INSTALL_STATIC_LIBRARY)
 INSTALL_STATIC_LIBRARY = yes
 !endif
@@ -346,7 +378,7 @@ COROUTINE_SRC = $(COROUTINE_OBJ:.obj=.asm)
 !endif
 COROUTINE_H = $(COROUTINE_OBJ:.obj=.h)
 COROUTINE_TEST_LINK = $(CC) $(COROUTINE_TEST_OBJS) $(COROUTINE_OBJ) $(MAINLIBS) $(OUTFLAG)$(COROUTINE_TEST) -link $(LDFLAGS) $(XLDFLAGS)
-COROUTINE_TEST_RUN = .\$(COROUTINE_TEST)
+COROUTINE_TEST_RUN = .\$(COROUTINE_TEST:/=\)
 
 ARFLAGS = -machine:$(MACHINE) -out:
 LD = $(CC)
@@ -938,6 +970,9 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub 
 !if "$(USE_GMP)" != ""
 #define USE_GMP 1
 !endif
+!if "$(YJIT_SUPPORT)" == "yes"
+#define USE_YJIT 1
+!endif
 #define EXECUTABLE_EXTS $(EXECUTABLE_EXTS)
 #define RUBY_COREDLL "$(RT)"
 #define RUBY_PLATFORM "$(arch)"
@@ -1073,6 +1108,8 @@ s,@LIBRUBYARG_SHARED@,$$(LIBRUBY),;t t
 s,@SOLIBS@,$(SOLIBS),;t t
 s,@DLDLIBS@,$(DLDLIBS),;t t
 s,@ENABLE_SHARED@,yes,;t t
+s,@YJIT_SUPPORT@,$(YJIT_SUPPORT),;t t
+s,@RUSTC@,$(RUSTC),;t t
 s,@BASERUBY@,$(BASERUBY),;t t
 s,@OUTFLAG@,$(OUTFLAG),;t t
 s,@COUTFLAG@,$(COUTFLAG),;t t
@@ -1147,10 +1184,10 @@ $(RBCONFIG): $(PREP)
 
 miniruby: miniruby$(EXEEXT)
 
-miniruby$(EXEEXT):
+miniruby$(EXEEXT): $(RUST_LIB)
 		@echo $(LIBS)
 		$(ECHO) linking $(@:\=/)
-		$(Q) $(PURIFY) $(CC) $(MAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(LIBS) \
+		$(Q) $(PURIFY) $(CC) $(MAINOBJ) $(MINIOBJS) $(COMMONOBJS) $(LIBS) $(JIT_LIBS) \
 			$(OUTFLAG)$@ -link $(LDFLAGS) $(XLDFLAGS)
 		@$(RM) miniruby.lib miniruby.exp
 		$(Q) .\miniruby.exe -v
@@ -1202,12 +1239,12 @@ $(LIBRUBY):	$(RUBYDEF)
 		$(ECHO) linking import-library $(@:\=/)
 		$(Q) $(AR) $(ARFLAGS)$@ -def:$(RUBYDEF)
 
-$(LIBRUBY_SO):	$(LIBRUBY_A) $(DLDOBJS) $(RUBYDEF) $(RUBY_SO_NAME).res
+$(LIBRUBY_SO):	$(LIBRUBY_A) $(DLDOBJS) $(RUBYDEF) $(RUBY_SO_NAME).res $(RUST_LIB)
 		@echo $(DLDOBJS)
 		@-$(PRE_LIBRUBY_UPDATE)
 		$(ECHO) linking shared-library $(@:\=/)
 		$(Q) $(LDSHARED) $(DLDOBJS) $(LIBRUBY_A) \
-			$(RUBY_SO_NAME).res $(SOLIBS) $(EXTSOLIBS) $(LIBS) \
+			$(RUBY_SO_NAME).res $(SOLIBS) $(EXTSOLIBS) $(LIBS) $(JIT_LIBS) \
 			$(OUTFLAG)$@ -link $(LDFLAGS) $(XLDFLAGS) \
 			$(LIBRUBY_DLDFLAGS)
 		@$(RM) dummy.lib dummy.exp
@@ -1216,6 +1253,22 @@ $(RUBYDEF):	$(LIBRUBY_A) $(DLDOBJS) $(RBCONFIG)
 		$(ECHO) generating $(@:\=/)
 		$(Q) $(BOOTSTRAPRUBY_COMMAND) $(srcdir)/win32/mkexports.rb \
 		  -output=$@ -arch=$(ARCH) $(LIBRUBY_A) -- $(DLDOBJS)
+
+!if "$(YJIT_SUPPORT)" == "yes"
+# A rule would mark the stamp updated even when rustc is unchanged.
+!if [(if not exist target md target) & $(RUSTC) -V | $(IFCHANGE) --empty target/.rustc-version - > nul]
+!endif
+# Not common.mk's YJIT_RUSTC_ARGS, whose single quotes cmd.exe keeps.
+$(YJIT_LIBS): $(srcdir)/yjit/src/*.rs $(srcdir)/yjit/src/asm/*.rs \
+		$(srcdir)/yjit/src/asm/x86_64/*.rs $(srcdir)/yjit/src/asm/arm64/*.rs \
+		$(srcdir)/yjit/src/asm/arm64/arg/*.rs $(srcdir)/yjit/src/asm/arm64/inst/*.rs \
+		$(srcdir)/yjit/src/backend/*.rs $(srcdir)/yjit/src/backend/x86_64/*.rs \
+		$(srcdir)/yjit/src/backend/arm64/*.rs $(srcdir)/jit/src/lib.rs \
+		target/.rustc-version
+		$(ECHO) building Rust YJIT (release mode)
+		$(Q) $(RUSTC) --crate-name=yjit $(JIT_RUST_FLAGS) $(RUSTC_FLAGS) \
+			--edition=2021 --out-dir=$(@D) $(srcdir)/yjit/src/lib.rs
+!endif
 
 {$(win_srcdir)}.def.lib:
 		$(Q) $(AR) $(ARFLAGS)$@ -def:$<

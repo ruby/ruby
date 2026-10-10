@@ -54,6 +54,8 @@ module Prism
 
     module MultipleOnLine
       def self.first; end; def self.second; end
+
+      A, B = -> { 1 }, -> { 2 }
     end
 
     module Errors

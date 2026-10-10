@@ -143,6 +143,13 @@ module Prism
       assert_def_node Prism.find(Fixtures::MultipleOnLine.method(:second)), :second
     end
 
+    if defined?(::RubyVM) || -> {}.respond_to?(:source_range)
+      def test_multiple_lambdas_on_same_line
+        assert_equal "-> { 1 }", Prism.find(Fixtures::MultipleOnLine::A).slice
+        assert_equal "-> { 2 }", Prism.find(Fixtures::MultipleOnLine::B).slice
+      end
+    end
+
     # === Fallback (line-based) tests ===
 
     def test_fallback_simple_method
