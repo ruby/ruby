@@ -867,17 +867,28 @@ rb_jit_for_each_iseq(rb_iseq_callback callback, void *data)
 // Remember the ranges made writable, which all lie in that region, and protect
 // only those again. The JITs call these only at boot or under the VM lock, so
 // the record needs no lock of its own.
+
+// The most separate ranges one write session can record.
 #define JIT_WRITABLE_RANGES 64
+// The ranges made writable since the last rb_jit_mark_executable(), each
+// [start, end) and none overlapping or touching another.
 static struct { uintptr_t start, end; } jit_writable[JIT_WRITABLE_RANGES];
+// The number of ranges in use in jit_writable.
 static int jit_writable_count;
+// Set when a write session makes more separate ranges writable than
+// jit_writable can hold. Recording then stops, and the next
+// rb_jit_mark_executable() protects the whole region it is given instead,
+// then clears the record and this flag.
 static bool jit_writable_overflow;
 
+// Record [start, end) as made writable, merging it with every recorded range
+// it overlaps or touches. Set jit_writable_overflow when no slot is left.
 static void
 jit_writable_add(uintptr_t start, uintptr_t end)
 {
     if (jit_writable_overflow) return;
-    // Absorb every range the new one overlaps or touches. The ranges stay
-    // apart from each other, so one pass is enough.
+    // The ranges stay apart from each other, so one pass finds every range to
+    // merge.
     int kept = 0;
     for (int i = 0; i < jit_writable_count; i++) {
         if (start <= jit_writable[i].end && jit_writable[i].start <= end) {
