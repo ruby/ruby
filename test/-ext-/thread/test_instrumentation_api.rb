@@ -287,3 +287,17 @@ class TestThreadInstrumentation < Test::Unit::TestCase
     assert_equal [Thread.current], Thread.list
   end
 end
+
+class TestThreadSpecificStorage < Test::Unit::TestCase
+  def test_specific_key_create_limit
+    # Keys are process global and never released.
+    assert_separately([], <<-'RUBY')
+      require '-test-/thread/instrumentation'
+      max = Bug::ThreadInstrumentation::SPECIFIC_KEY_MAX
+      max.times do |i|
+        assert_equal i, Bug::ThreadInstrumentation.specific_key_create
+      end
+      assert_raise(ThreadError) { Bug::ThreadInstrumentation.specific_key_create }
+    RUBY
+  end
+end
