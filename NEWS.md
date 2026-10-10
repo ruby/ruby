@@ -227,9 +227,9 @@ releases.
 
 ### The following bundled gems are promoted from default gems.
 
+* prism 1.9.0
 * tsort 0.2.0
 * win32-registry 0.1.2
-* prism 1.9.0
 
 ### The following bundled gems are removed.
 
