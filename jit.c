@@ -108,7 +108,7 @@ rb_iseq_bare_opcode_at_pc(const rb_iseq_t *iseq, const VALUE *pc)
     return rb_vm_insn_addr2insn((const void *)at_pc);
 }
 
-unsigned long
+rb_len_t
 rb_RSTRING_LEN(VALUE str)
 {
     return RSTRING_LEN(str);
