@@ -746,7 +746,7 @@ Init_native_thread(rb_thread_t *main_th)
     main_th->nt->serial = 1;
     ruby_thread_set_native(main_th);
 
-    TH_SCHED(main_th)->running = main_th;
+    RUBY_ATOMIC_PTR_SET(TH_SCHED(main_th)->running, main_th);
     main_th->has_dedicated_nt = 1;
 
     // setup main NT (before the record below: its kind decides where it goes)

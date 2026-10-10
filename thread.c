@@ -2360,14 +2360,17 @@ rb_thread_call_with_gvl(void *(*func)(void *), void *data1)
 int
 ruby_thread_has_gvl_p(void)
 {
-    rb_thread_t *th = ruby_thread_from_native();
+    /* A shared native scheduler thread can retain Ruby-thread TLS after that
+     * thread migrates. Its current execution context is cleared when idle. */
+    rb_execution_context_t *ec = rb_current_execution_context(false);
+    rb_thread_t *th = ec ? rb_ec_thread_ptr(ec) : NULL;
 
-    if (th && th->blocking_region_buffer == 0) {
-        return 1;
-    }
-    else {
-        return 0;
-    }
+#ifdef RB_THREAD_SCHED_NONE
+    /* The no-thread scheduler does not maintain a running thread. */
+    return th && th->blocking_region_buffer == NULL;
+#else
+    return th && RUBY_ATOMIC_PTR_LOAD(TH_SCHED(th)->running) == th;
+#endif
 }
 
 /*
