@@ -13,7 +13,7 @@
 // GETADDRINFO_IMPL == 0 : call getaddrinfo/getnameinfo directly
 // GETADDRINFO_IMPL == 1 : call getaddrinfo/getnameinfo without gvl (but uncancellable)
 // GETADDRINFO_IMPL == 2 : call getaddrinfo/getnameinfo in a dedicated pthread
-//                         (and if the call is interrupted, the pthread is detached)
+//                         (and if the call is interrupted, the pthread is left running)
 
 #ifndef GETADDRINFO_IMPL
 #  ifdef GETADDRINFO_EMU
@@ -442,6 +442,8 @@ do_getaddrinfo(void *ptr)
 
     if (need_free) free_getaddrinfo_arg(arg);
 
+    rb_thread_register_exiting();
+
     return 0;
 }
 
@@ -469,6 +471,7 @@ cancel_getaddrinfo(void *ptr)
     rb_nativethread_lock_unlock(&arg->lock);
 }
 
+// start_routine must call rb_thread_register_exiting(), or the thread is never joined.
 int
 raddrinfo_pthread_create(pthread_t *th, void *(*start_routine) (void *), void *arg)
 {
@@ -489,7 +492,7 @@ retry_attr_init:
         }
         return err;
     }
-    if ((err = pthread_attr_setdetachstate(attr_p, PTHREAD_CREATE_DETACHED)) != 0) {
+    if ((err = pthread_attr_setdetachstate(attr_p, PTHREAD_CREATE_JOINABLE)) != 0) {
         saved_errno = errno;
         pthread_attr_destroy(attr_p);
         errno = saved_errno;
@@ -510,10 +513,6 @@ retry_attr_init:
     pthread_attr_destroy(attr_p);
     if (ret != 0) {
         errno = saved_errno;
-    }
-#else
-    if (ret == 0) {
-        pthread_detach(th); // this can race with shutdown routine of thread in some glibc versions
     }
 #endif
     return ret;
@@ -623,6 +622,13 @@ nogvl_getnameinfo(void *arg)
                                       ptr->serv, (socklen_t)ptr->servlen,
                                       ptr->flags);
 }
+
+static void *
+fork_safe_getnameinfo(void *arg)
+{
+    return rb_thread_prevent_fork(nogvl_getnameinfo, arg);
+}
+
 int
 rb_getnameinfo(const struct sockaddr *sa, socklen_t salen,
                char *host, size_t hostlen,
@@ -641,7 +647,7 @@ rb_getnameinfo(const struct sockaddr *sa, socklen_t salen,
     arg.serv = serv;
     arg.servlen = servlen;
     arg.flags = flags;
-    ret = (int)(VALUE)rb_thread_call_without_gvl(nogvl_getnameinfo, &arg, RUBY_UBF_IO, 0);
+    ret = (int)(VALUE)rb_thread_call_without_gvl(fork_safe_getnameinfo, &arg, RUBY_UBF_IO, 0);
     return ret;
 }
 
@@ -726,6 +732,8 @@ do_getnameinfo(void *ptr)
 
     if (need_free) free_getnameinfo_arg(arg);
 
+    rb_thread_register_exiting();
+
     return 0;
 }
 
@@ -751,6 +759,12 @@ cancel_getnameinfo(void *ptr)
     rb_nativethread_lock_unlock(&arg->lock);
 }
 
+static void *
+fork_safe_do_getnameinfo(void *ptr)
+{
+    return rb_thread_prevent_fork(do_getnameinfo, ptr);
+}
+
 int
 rb_getnameinfo(const struct sockaddr *sa, socklen_t salen,
                char *host, size_t hostlen,
@@ -773,7 +787,7 @@ start:
     }
 
     pthread_t th;
-    if (raddrinfo_pthread_create(&th, do_getnameinfo, arg) != 0) {
+    if (raddrinfo_pthread_create(&th, fork_safe_do_getnameinfo, arg) != 0) {
         int err = errno;
         free_getnameinfo_arg(arg);
         errno = err;
@@ -3151,6 +3165,8 @@ do_fast_fallback_getaddrinfo(void *ptr)
     if (shared_need_free && shared) {
         free_fast_fallback_getaddrinfo_shared(&shared);
     }
+
+    rb_thread_register_exiting();
 
     return 0;
 }
