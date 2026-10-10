@@ -1255,14 +1255,15 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
             F_MSG(pre_rest_arg, "pre rest argument", "NODE_SPECIAL_NO_NAME_REST (rest argument without name)");
         }
         F_NODE(args, RNODE_FNDPTN, "arguments");
-
-        LAST_NODE;
         if (NODE_NAMED_REST_P(RNODE_FNDPTN(node)->post_rest_arg)) {
             F_NODE(post_rest_arg, RNODE_FNDPTN, "post rest argument");
         }
         else {
             F_MSG(post_rest_arg, "post rest argument", "NODE_SPECIAL_NO_NAME_REST (rest argument without name)");
         }
+        F_LOC(opening_loc, RNODE_FNDPTN);
+        LAST_NODE;
+        F_LOC(closing_loc, RNODE_FNDPTN);
         return;
 
       case NODE_HSHPTN:
