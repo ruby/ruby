@@ -3050,6 +3050,18 @@ vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state, V
 {
     struct vm_throw_data *err = (struct vm_throw_data *)errinfo;
 
+    /* If a native extension runs Ruby code between rb_protect() and
+     * rb_jump_tag() and that code rescues an exception, ec->errinfo is
+     * cleared while the tag state is still TAG_RAISE.  The exception that
+     * was being raised is lost and unwinding would dereference a non object,
+     * so there is nothing to recover from.  Extensions must save errinfo
+     * before such a call and restore it before rb_jump_tag(). */
+    if (state == TAG_RAISE && RB_SPECIAL_CONST_P(errinfo)) {
+        rb_bug("exception object was lost during stack unwinding; "
+               "a native extension may have run Ruby code containing a rescue clause "
+               "between rb_protect() and rb_jump_tag()");
+    }
+
     for (;;) {
         unsigned int i;
         const struct iseq_catch_table_entry *entry;
