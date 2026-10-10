@@ -2556,6 +2556,24 @@ EOT
     end
   end
 
+  def test_binmode_widechar_separator_after_split_surrogate
+    with_tmpdir do
+      line = "x" * 4_094
+      content = "#{line}\u{1F600}\nab\ncd"
+      [Encoding::UTF_16BE, Encoding::UTF_16LE].each do |e|
+        separator = "\n".encode(e)
+        File.binwrite("widechar", "\0" + content.encode(e).b)
+        File.open("widechar", "rb", encoding: e) do |f|
+          f.getbyte
+          actual = [f.gets(separator)&.delete_prefix(line.encode(e)),
+                    f.gets(separator), f.gets(separator)]
+          assert_equal(["\u{1F600}\n".encode(e), "ab\n".encode(e),
+                        "cd".encode(e)], actual, "[Bug #20819] #{e}")
+        end
+      end
+    end
+  end
+
   def test_binmode_widechar_separator_at_limit
     with_tmpdir do
       [Encoding::UTF_32BE, Encoding::UTF_32LE,

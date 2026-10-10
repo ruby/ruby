@@ -4006,7 +4006,8 @@ read_raw_character(rb_io_t *fptr, rb_encoding *enc, char *buf)
         fptr->rbuf.off++;
         fptr->rbuf.len--;
         r = rb_enc_precise_mbclen(buf, buf + n, enc);
-    } while (MBCLEN_NEEDMORE_P(r) && n < rb_enc_mbmaxlen(enc));
+    } while ((MBCLEN_NEEDMORE_P(r) || n < rb_enc_mbminlen(enc)) &&
+             n < rb_enc_mbmaxlen(enc));
 
     return n;
 }
