@@ -30,6 +30,7 @@
 #define NUM2LEN    RB_NUM2LEN             /**< @old{RB_NUM2LEN} */
 #define ULEN2NUM   RB_ULEN2NUM            /**< @old{RB_ULEN2NUM} */
 #define rb_len2int rb_len2int_inline      /**< @alias{rb_len2int_inline} */
+#define rb_len2long rb_len2long_inline    /**< @alias{rb_len2long_inline} */
 
 /** Converts a ::rb_len_t into an instance of ::rb_cInteger. */
 #define RB_LEN2NUM RB_LONG2NUM
@@ -60,6 +61,28 @@ rb_len2int_inline(rb_len_t n)
         rb_out_of_int(n);
 
     return i;
+}
+
+/**
+ * Checks if `long` can hold the given integer.
+ *
+ * @param[in]  n               Arbitrary ::rb_len_t value.
+ * @exception  rb_eRangeError  `n` is out of range of `long`.
+ * @return     Identical value of type `long`
+ */
+static inline long
+rb_len2long_inline(rb_len_t n)
+{
+    long l = RBIMPL_CAST((long)n);
+
+    if /* constexpr */ (sizeof(rb_len_t) <= sizeof(long)) {
+        RBIMPL_ASSUME(l == n);
+    }
+
+    if (l != n)
+        rb_out_of_long(n);
+
+    return l;
 }
 
 #endif /* RBIMPL_ARITHMETIC_LEN_T_H */

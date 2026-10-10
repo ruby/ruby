@@ -3194,6 +3194,13 @@ rb_out_of_int(SIGNED_VALUE num)
              num, num < 0 ? "small" : "big");
 }
 
+void
+rb_out_of_long(SIGNED_VALUE num)
+{
+    rb_raise(rb_eRangeError, "integer %"PRIdVALUE " too %s to convert to 'long'",
+             num, num < 0 ? "small" : "big");
+}
+
 #if SIZEOF_INT < SIZEOF_LONG
 static void
 check_int(long num)

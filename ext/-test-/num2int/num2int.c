@@ -106,6 +106,21 @@ test_fix2ulong(VALUE obj, VALUE num)
     return rb_str_new_cstr(buf);
 }
 
+static VALUE
+test_len2long(VALUE obj, VALUE num)
+{
+    char buf[128];
+    snprintf(buf, sizeof(buf), "%ld", rb_len2long(NUM2LEN(num)));
+    return rb_str_new_cstr(buf);
+}
+
+static VALUE
+test_out_of_long(VALUE obj, VALUE num)
+{
+    rb_out_of_long(NUM2SSIZET(num));
+    UNREACHABLE_RETURN(Qnil);
+}
+
 void
 Init_num2int(void)
 {
@@ -132,5 +147,8 @@ Init_num2int(void)
 
     rb_define_module_function(mNum2int, "FIX2LONG", test_fix2long, 1);
     rb_define_module_function(mNum2int, "FIX2ULONG", test_fix2ulong, 1);
+
+    rb_define_module_function(mNum2int, "rb_len2long", test_len2long, 1);
+    rb_define_module_function(mNum2int, "rb_out_of_long", test_out_of_long, 1);
 }
 

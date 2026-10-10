@@ -493,6 +493,10 @@ Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for det
   `rb_range_beg_len`, uses them.  A later change will makes them 64 bits on mswin,
   so extensions should keep these lengths in `rb_len_t`. [[Feature #22400]]
 
+* `rb_len2long` is added to convert an `rb_len_t` to `long`, raising
+  `RangeError` via the new `rb_out_of_long` when it does not fit, for
+  extensions that keep a length in `long`. [[Feature #22400]]
+
 ### Removed APIs
 
 The following APIs, which have been deprecated for many years, are removed.
