@@ -1042,6 +1042,22 @@ def test_branch_coverage_for_eval_repeated
     }
   end
 
+  def test_line_stub_does_not_emit_warnings
+    Dir.mktmpdir {|tmp|
+      Dir.chdir(tmp) {
+        File.open("test.rb", "w") do |f|
+          f.puts "def foo"
+          f.puts "  x = 1"
+          f.puts "  nil if (y = 2)"
+          f.puts "  true"
+          f.puts "end"
+        end
+
+        assert_in_out_err(%w[-W2 -rcoverage], "p Coverage.line_stub('test.rb')", ["[0, 0, 0, 0, nil]"], [])
+      }
+    }
+  end
+
   def test_line_stub_does_not_clobber_existing_coverage
     Dir.mktmpdir {|tmp|
       Dir.chdir(tmp) {
