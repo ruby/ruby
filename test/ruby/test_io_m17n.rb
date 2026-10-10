@@ -2574,6 +2574,24 @@ EOT
     end
   end
 
+  def test_binmode_widechar_lone_high_surrogate_realigns
+    with_tmpdir do
+      [Encoding::UTF_16BE, Encoding::UTF_16LE].each do |e|
+        separator = "\n".encode(e)
+        lone = (e == Encoding::UTF_16BE ? "\xD8\x00" : "\x00\xD8").b
+        File.binwrite("widechar", lone + "\ncd\ne\n".encode(e).b)
+        File.open("widechar", "rb", encoding: e) do |f|
+          lines = []
+          while (line = f.gets(separator, 100))
+            lines << line
+          end
+          assert_equal(2, lines.size, "[Bug #20819] #{e} #{lines.inspect}")
+          assert_equal("e\n".encode(e), lines.last, "[Bug #20819] #{e}")
+        end
+      end
+    end
+  end
+
   def test_binmode_widechar_separator_at_limit
     with_tmpdir do
       [Encoding::UTF_32BE, Encoding::UTF_32LE,
