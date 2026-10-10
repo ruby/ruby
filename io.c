@@ -3601,7 +3601,8 @@ io_getpartial(int argc, VALUE *argv, VALUE io, int no_exception, int nonblock)
     if (n <= 0) {
       again:
         if (nonblock) {
-            rb_io_set_nonblock(fptr);
+            /* NOTE: The result is deliberately ignored */
+            rb_fd_set_nonblock(fptr->fd);
         }
         io_setstrbuf(&str, len);
         iis.th = rb_thread_current();
