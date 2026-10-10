@@ -1,0 +1,184 @@
+# Generated from lib/prism/serialize.rb with RBS::Inline
+
+module Prism
+  # A module responsible for deserializing parse results.
+  module Serialize
+    # The major version of prism that we are expecting to find in the serialized
+    # strings.
+    MAJOR_VERSION: ::Integer
+
+    # The minor version of prism that we are expecting to find in the serialized
+    # strings.
+    MINOR_VERSION: ::Integer
+
+    # The patch version of prism that we are expecting to find in the serialized
+    # strings.
+    PATCH_VERSION: ::Integer
+
+    # Deserialize the dumped output from a request to parse or parse_file.
+    #
+    # The formatting of the source of this method is purposeful to illustrate
+    # the structure of the serialized data.
+    #
+    # : (String input, String serialized, bool freeze) -> ParseResult
+    def self.load_parse: (String input, String serialized, bool freeze) -> ParseResult
+
+    # Deserialize the dumped output from a request to lex or lex_file.
+    #
+    # The formatting of the source of this method is purposeful to illustrate
+    # the structure of the serialized data.
+    #
+    # : (String input, String serialized, bool freeze) -> LexResult
+    def self.load_lex: (String input, String serialized, bool freeze) -> LexResult
+
+    # Deserialize the dumped output from a request to parse_comments or
+    # parse_file_comments.
+    #
+    # The formatting of the source of this method is purposeful to illustrate
+    # the structure of the serialized data.
+    #
+    # : (String input, String serialized, bool freeze) -> Array[Comment]
+    def self.load_parse_comments: (String input, String serialized, bool freeze) -> Array[Comment]
+
+    # Deserialize the dumped output from a request to parse_lex or
+    # parse_lex_file.
+    #
+    # The formatting of the source of this method is purposeful to illustrate
+    # the structure of the serialized data.
+    #
+    # : (String input, String serialized, bool freeze) -> ParseLexResult
+    def self.load_parse_lex: (String input, String serialized, bool freeze) -> ParseLexResult
+
+    class ConstantPool
+      # :nodoc:
+      attr_reader size: Integer
+
+      @serialized: String
+
+      @base: Integer
+
+      @pool: Array[Symbol?]
+
+      # : (String serialized, Integer base, Integer size) -> void
+      def initialize: (String serialized, Integer base, Integer size) -> void
+
+      # : (Integer index, Encoding encoding) -> Symbol
+      def get: (Integer index, Encoding encoding) -> Symbol
+    end
+
+    FastStringIO: untyped
+
+    class Loader
+      # :nodoc:
+      attr_reader input: String
+
+      attr_reader io: StringIO
+
+      attr_reader source: Source
+
+      # : (Source source, String serialized) -> void
+      def initialize: (Source source, String serialized) -> void
+
+      # : () -> bool
+      def eof?: () -> bool
+
+      # : (ConstantPool constant_pool) -> void
+      def load_constant_pool: (ConstantPool constant_pool) -> void
+
+      # : () -> void
+      def load_header: () -> void
+
+      # : () -> Encoding
+      def load_encoding: () -> Encoding
+
+      # : (bool freeze) -> Array[Integer]
+      def load_line_offsets: (bool freeze) -> Array[Integer]
+
+      # : (bool freeze) -> Array[Comment]
+      def load_comments: (bool freeze) -> Array[Comment]
+
+      # : (bool freeze) -> Array[MagicComment]
+      def load_magic_comments: (bool freeze) -> Array[MagicComment]
+
+      DIAGNOSTIC_TYPES: Array[Symbol]
+
+      # : () -> Symbol
+      def load_error_level: () -> Symbol
+
+      # : (Encoding encoding, bool freeze) -> Array[ParseError]
+      def load_errors: (Encoding encoding, bool freeze) -> Array[ParseError]
+
+      # : () -> Symbol
+      def load_warning_level: () -> Symbol
+
+      # : (Encoding encoding, bool freeze) -> Array[ParseWarning]
+      def load_warnings: (Encoding encoding, bool freeze) -> Array[ParseWarning]
+
+      # : () -> Array[Token]
+      def load_tokens: () -> Array[Token]
+
+      # variable-length integer using https://en.wikipedia.org/wiki/LEB128
+      # This is also what protobuf uses: https://protobuf.dev/programming-guides/encoding/#varints
+      #
+      # : () -> Integer
+      def load_varuint: () -> Integer
+
+      # : () -> Integer
+      def load_varsint: () -> Integer
+
+      # : () -> Integer
+      def load_integer: () -> Integer
+
+      # : () -> Float
+      def load_double: () -> Float
+
+      # : () -> bool
+      def load_bool: () -> bool
+
+      # : () -> Integer
+      def load_uint32: () -> Integer
+
+      # : (ConstantPool constant_pool, Encoding encoding, bool freeze) -> node?
+      def load_optional_node: (ConstantPool constant_pool, Encoding encoding, bool freeze) -> node?
+
+      # : (Encoding encoding) -> String
+      def load_string: (Encoding encoding) -> String
+
+      # : (bool freeze) -> Location
+      def load_location_object: (bool freeze) -> Location
+
+      # Load a location object from the serialized data. Note that we are lying
+      # about the signature a bit here, because we sometimes load it as a packed
+      # integer instead of an object.
+      #
+      # : (bool freeze) -> Location
+      def load_location: (bool freeze) -> Location
+
+      # Load an optional location object from the serialized data if it is
+      # present. Note that we are lying about the signature a bit here, because
+      # we sometimes load it as a packed integer instead of an object.
+      #
+      # : (bool freeze) -> Location?
+      def load_optional_location: (bool freeze) -> Location?
+
+      # : (bool freeze) -> Location?
+      def load_optional_location_object: (bool freeze) -> Location?
+
+      # : (ConstantPool constant_pool, Encoding encoding) -> Symbol
+      def load_constant: (ConstantPool constant_pool, Encoding encoding) -> Symbol
+
+      # : (ConstantPool constant_pool, Encoding encoding) -> Symbol?
+      def load_optional_constant: (ConstantPool constant_pool, Encoding encoding) -> Symbol?
+
+      # : (ConstantPool constant_pool, Encoding encoding, bool freeze) -> node
+      def load_node: (ConstantPool constant_pool, Encoding encoding, bool freeze) -> node
+
+      @load_node_lambdas: Array[Proc]
+
+      def define_load_node_lambdas: () -> void
+    end
+
+    # The token types that can be indexed by their enum values.
+    TOKEN_TYPES: Array[Symbol?]
+  end
+end

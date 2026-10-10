@@ -1,0 +1,156 @@
+# Generated from lib/prism/pattern.rb with RBS::Inline
+
+module Prism
+  # A pattern is an object that wraps a Ruby pattern matching expression. The
+  # expression would normally be passed to an `in` clause within a `case`
+  # expression or a rightward assignment expression. For example, in the
+  # following snippet:
+  #
+  #     case node
+  #     in ConstantPathNode[ConstantReadNode[name: :Prism], ConstantReadNode[name: :Pattern]]
+  #     end
+  #
+  # the pattern is the <tt>ConstantPathNode[...]</tt> expression.
+  #
+  # The pattern gets compiled into an object that responds to #call by running
+  # the #compile method. This method itself will run back through Prism to
+  # parse the expression into a tree, then walk the tree to generate the
+  # necessary callable objects. For example, if you wanted to compile the
+  # expression above into a callable, you would:
+  #
+  #     callable = Prism::Pattern.new("ConstantPathNode[ConstantReadNode[name: :Prism], ConstantReadNode[name: :Pattern]]").compile
+  #     callable.call(node)
+  #
+  # The callable object returned by #compile is guaranteed to respond to #call
+  # with a single argument, which is the node to match against. It also is
+  # guaranteed to respond to #===, which means it itself can be used in a `case`
+  # expression, as in:
+  #
+  #     case node
+  #     when callable
+  #     end
+  #
+  # If the query given to the initializer cannot be compiled into a valid
+  # matcher (either because of a syntax error or because it is using syntax we
+  # do not yet support) then a Prism::Pattern::CompilationError will be
+  # raised.
+  class Pattern
+    # Raised when the query given to a pattern is either invalid Ruby syntax or
+    # is using syntax that we don't yet support.
+    class CompilationError < StandardError
+      # Create a new CompilationError with the given representation of the node
+      # that caused the error.
+      #
+      # : (String repr) -> void
+      def initialize: (String repr) -> void
+    end
+
+    # The query that this pattern was initialized with.
+    attr_reader query: String
+
+    @compiled: Proc?
+
+    # Create a new pattern with the given query. The query should be a string
+    # containing a Ruby pattern matching expression.
+    #
+    # : (String query) -> void
+    def initialize: (String query) -> void
+
+    # Compile the query into a callable object that can be used to match against
+    # nodes.
+    #
+    # : () -> Proc
+    def compile: () -> Proc
+
+    # Scan the given node and all of its children for nodes that match the
+    # pattern. If a block is given, it will be called with each node that
+    # matches the pattern. If no block is given, an enumerator will be returned
+    # that will yield each node that matches the pattern.
+    #
+    # : (node root) -> Enumerator[node, void]
+    # : (node root) { (node) -> void } -> void
+    def scan: (node root) -> Enumerator[node, void]
+            | (node root) { (node) -> void } -> void
+
+    private
+
+    # Shortcut for combining two procs into one that returns true if both return
+    # true.
+    #
+    # : (Proc left, Proc right) -> Proc
+    def combine_and: (Proc left, Proc right) -> Proc
+
+    # Shortcut for combining two procs into one that returns true if either
+    # returns true.
+    #
+    # : (Proc left, Proc right) -> Proc
+    def combine_or: (Proc left, Proc right) -> Proc
+
+    # Raise an error because the given node is not supported. Note purposefully
+    # not typing this method since it is a no return method that Steep does not
+    # understand.
+    #
+    # : (node node) -> bot
+    def compile_error: (node node) -> bot
+
+    # in [foo, bar, baz]
+    #
+    # : (ArrayPatternNode node) -> Proc
+    def compile_array_pattern_node: (ArrayPatternNode node) -> Proc
+
+    # in foo | bar
+    #
+    # : (AlternationPatternNode node) -> Proc
+    def compile_alternation_pattern_node: (AlternationPatternNode node) -> Proc
+
+    # in Prism::ConstantReadNode
+    #
+    # : (ConstantPathNode node) -> Proc
+    def compile_constant_path_node: (ConstantPathNode node) -> Proc
+
+    # in ConstantReadNode
+    # in String
+    #
+    # : (ConstantReadNode node) -> Proc
+    def compile_constant_read_node: (ConstantReadNode node) -> Proc
+
+    # Compile a name associated with a constant.
+    #
+    # : ((ConstantPathNode | ConstantReadNode) node, Symbol name) -> Proc
+    def compile_constant_name: (ConstantPathNode | ConstantReadNode node, Symbol name) -> Proc
+
+    # in InstanceVariableReadNode[name: Symbol]
+    # in { name: Symbol }
+    #
+    # : (HashPatternNode node) -> Proc
+    def compile_hash_pattern_node: (HashPatternNode node) -> Proc
+
+    # in nil
+    #
+    # : (NilNode node) -> Proc
+    def compile_nil_node: (NilNode node) -> Proc
+
+    # in /foo/
+    #
+    # : (RegularExpressionNode node) -> Proc
+    def compile_regular_expression_node: (RegularExpressionNode node) -> Proc
+
+    # in ""
+    # in "foo"
+    #
+    # : (StringNode node) -> Proc
+    def compile_string_node: (StringNode node) -> Proc
+
+    # in :+
+    # in :foo
+    #
+    # : (SymbolNode node) -> Proc
+    def compile_symbol_node: (SymbolNode node) -> Proc
+
+    # Compile any kind of node. Dispatch out to the individual compilation
+    # methods based on the type of node.
+    #
+    # : (node node) -> Proc
+    def compile_node: (node node) -> Proc
+  end
+end

@@ -558,10 +558,22 @@ module RbInstall
       end
 
       def collect
-        requirable_features.sort
+        requirable_features.sort + sig_files
       end
 
       private
+
+      # RBS type signatures of the gem, kept under sig/<gem name>/ in the
+      # source tree.  They are installed into the gem directory so that
+      # rbs finds them via Gem::Specification#gem_dir, in the same way as
+      # for bundled gems and gems installed by RubyGems.
+      def sig_files
+        gemname = File.basename(gemspec, ".gemspec")
+        base = "#{srcdir}/sig/#{gemname}"
+        Dir.glob("**/*", base: base).reject {|f|
+          File.directory?(File.join(base, f))
+        }.map {|f| "sig/#{f}"}.sort
+      end
 
       def features_from_makefile(makefile_path)
         makefile = File.read(makefile_path)
@@ -772,6 +784,7 @@ module RbInstall
 
       if @options[:install_as_default]
         extract_bin
+        extract_sig
         write_default_spec
       else
         extract_files
@@ -845,6 +858,10 @@ module RbInstall
     def write_default_spec
       super unless $dryrun
       $installed_list.puts(without_destdir(default_spec_file)) if $installed_list
+    end
+
+    def extract_sig
+      @package.extract_files gem_dir, "sig/*"
     end
 
     def install
@@ -975,7 +992,7 @@ def install_default_gem(dir, srcdir, bindir)
 
     gemspec.loaded_from = File.join srcdir, gemspec.spec_name
 
-    package = RbInstall::DirPackage.new gemspec, {gemspec.bindir => 'libexec'}
+    package = RbInstall::DirPackage.new gemspec, {gemspec.bindir => 'libexec', 'sig' => "sig/#{gemspec.name}"}
     ins = RbInstall::UnpackedInstaller.new(package, options)
     puts "#{INDENT}#{gemspec.name} #{gemspec.version}"
     ins.install

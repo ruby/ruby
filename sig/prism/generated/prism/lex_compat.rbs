@@ -1,0 +1,166 @@
+# Generated from lib/prism/lex_compat.rb with RBS::Inline
+
+module Prism
+  module Translation
+    class Ripper
+      EXPR_NONE: Integer
+      EXPR_BEG: Integer
+      EXPR_MID: Integer
+      EXPR_END: Integer
+      EXPR_CLASS: Integer
+      EXPR_VALUE: Integer
+      EXPR_ARG: Integer
+      EXPR_CMDARG: Integer
+      EXPR_ENDARG: Integer
+      EXPR_ENDFN: Integer
+
+      class Lexer < Ripper
+        class State
+          def self.[]: (Integer value) -> State
+        end
+      end
+
+      class LineAndColumnCache
+        def initialize: (Source source) -> void
+
+        def line_and_column: (Integer byte_offset) -> [ Integer, Integer ]
+      end
+    end
+  end
+
+  # This class is responsible for lexing the source using prism and then
+  # converting those tokens to be compatible with Ripper. In the vast majority
+  # of cases, this is a one-to-one mapping of the token type. Everything else
+  # generally lines up. However, there are a few cases that require special
+  # handling.
+  class LexCompat
+    # A token produced by the Ripper lexer that Prism is replicating.
+    type lex_compat_token = [ [ Integer, Integer ], Symbol, String, untyped ]
+
+    # A result class specialized for holding tokens produced by the lexer.
+    class Result < Prism::Result
+      # The list of tokens that were produced by the lexer.
+      attr_reader value: Array[lex_compat_token]
+
+      # Create a new lex compat result object with the given values.
+      #
+      # : (Array[lex_compat_token] value, Array[Comment] comments, Array[MagicComment] magic_comments, Location? data_loc, Array[ParseError] errors, Array[ParseWarning] warnings, bool continuable, Source source) -> void
+      def initialize: (Array[lex_compat_token] value, Array[Comment] comments, Array[MagicComment] magic_comments, Location? data_loc, Array[ParseError] errors, Array[ParseWarning] warnings, bool continuable, Source source) -> void
+
+      # Implement the hash pattern matching interface for Result.
+      #
+      # : (Array[Symbol]? keys) -> Hash[Symbol, untyped]
+      def deconstruct_keys: (Array[Symbol]? keys) -> Hash[Symbol, untyped]
+    end
+
+    # This is a mapping of prism token types to Ripper token types. This is a
+    # many-to-one mapping because we split up our token types, whereas Ripper
+    # tends to group them.
+    RIPPER: untyped
+
+    # A heredoc in this case is a list of tokens that belong to the body of the
+    # heredoc that should be appended onto the list of tokens when the heredoc
+    # closes.
+    module Heredoc
+      # Heredocs that are no dash or tilde heredocs are just a list of tokens.
+      # We need to keep them around so that we can insert them in the correct
+      # order back into the token stream and set the state of the last token to
+      # the state that the heredoc was opened in.
+      class PlainHeredoc
+        # :nodoc:
+        attr_reader tokens: Array[lex_compat_token]
+
+        # : () -> void
+        def initialize: () -> void
+
+        # : (lex_compat_token token) -> void
+        def <<: (lex_compat_token token) -> void
+
+        # : () -> Array[lex_compat_token]
+        def to_a: () -> Array[lex_compat_token]
+      end
+
+      # Dash heredocs are a little more complicated. They are a list of tokens
+      # that need to be split on "\\\n" to mimic Ripper's behavior. We also need
+      # to keep track of the state that the heredoc was opened in.
+      class DashHeredoc
+        # :nodoc:
+        attr_reader split: bool
+
+        attr_reader tokens: Array[lex_compat_token]
+
+        # : (bool split) -> void
+        def initialize: (bool split) -> void
+
+        # : (lex_compat_token token) -> void
+        def <<: (lex_compat_token token) -> void
+
+        # : () -> Array[lex_compat_token]
+        def to_a: () -> Array[lex_compat_token]
+      end
+
+      # Heredocs that are dedenting heredocs are a little more complicated.
+      # Ripper outputs on_ignored_sp tokens for the whitespace that is being
+      # removed from the output. prism only modifies the node itself and keeps
+      # the token the same. This simplifies prism, but makes comparing against
+      # Ripper much harder because there is a length mismatch.
+      #
+      # Fortunately, we already have to pull out the heredoc tokens in order to
+      # insert them into the stream in the correct order. As such, we can do
+      # some extra manipulation on the tokens to make them match Ripper's
+      # output by mirroring the dedent logic that Ripper uses.
+      class DedentingHeredoc
+        # :nodoc:
+        TAB_WIDTH: ::Integer
+
+        attr_reader tokens: Array[lex_compat_token]
+
+        attr_reader dedent_next: bool
+
+        attr_reader dedent: Integer?
+
+        attr_reader embexpr_balance: Integer
+
+        @ended_on_newline: bool
+
+        # : () -> void
+        def initialize: () -> void
+
+        # As tokens are coming in, we track the minimum amount of common leading
+        # whitespace on plain string content tokens. This allows us to later
+        # remove that amount of whitespace from the beginning of each line.
+        #
+        # : (lex_compat_token token) -> void
+        def <<: (lex_compat_token token) -> void
+
+        # : () -> Array[lex_compat_token]
+        def to_a: () -> Array[lex_compat_token]
+      end
+
+      # Here we will split between the two types of heredocs and return the
+      # object that will store their tokens.
+      #
+      # : (lex_compat_token opening) -> (PlainHeredoc | DashHeredoc | DedentingHeredoc)
+      def self.build: (lex_compat_token opening) -> (PlainHeredoc | DashHeredoc | DedentingHeredoc)
+    end
+
+    # In previous versions of Ruby, Ripper wouldn't flush the bom before the
+    # first token, so we had to have a hack in place to account for that.
+    BOM_FLUSHED: untyped
+
+    attr_reader options: Hash[Symbol, untyped]
+
+    @source: String
+
+    # : (String source, **untyped options) -> void
+    def initialize: (String source, **untyped options) -> void
+
+    # : () -> Result
+    def result: () -> Result
+
+    private
+
+    # : (Array[lex_compat_token] tokens, Source source, Location? data_loc, bool bom, Token? eof_token) -> Array[lex_compat_token]
+    def post_process_tokens: (Array[lex_compat_token] tokens, Source source, Location? data_loc, bool bom, Token? eof_token) -> Array[lex_compat_token]
+  end
+end
