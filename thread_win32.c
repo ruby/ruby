@@ -1017,6 +1017,12 @@ rb_thread_prevent_fork(void *(*func)(void *), void *data)
 }
 
 void
+rb_thread_register_exiting(void)
+{
+    // nothing to do: there is no fork
+}
+
+void
 rb_thread_malloc_stack_set(rb_thread_t *th, void *stack)
 {
     // no-op
