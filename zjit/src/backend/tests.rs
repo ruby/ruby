@@ -57,6 +57,20 @@ fn test_load_reg()
     asm.compile_with_num_regs(&mut cb, 1);
 }
 
+// Test that a sign-extended narrow load can be used in 64-bit arithmetic
+#[test]
+fn test_load_sext_arithmetic()
+{
+    let (mut asm, mut cb) = setup_asm();
+
+    let out = asm.load_sext(Opnd::mem(8, SP, 0));
+    let sum = asm.add(out, Opnd::UImm(1));
+    let tagged = asm.lshift(sum, Opnd::UImm(1));
+    asm.mov(Opnd::mem(64, SP, 0), tagged);
+
+    asm.compile_with_num_regs(&mut cb, 2);
+}
+
 // Test load of a GC'd value
 #[test]
 fn test_load_value()

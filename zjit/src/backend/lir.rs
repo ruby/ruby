@@ -4168,7 +4168,7 @@ impl Assembler {
 
     #[must_use]
     pub fn load_sext(&mut self, opnd: Opnd) -> Opnd {
-        let out = self.new_vreg(Opnd::match_num_bits(&[opnd]));
+        let out = self.new_vreg(64);
         self.push_insn(Insn::LoadSExt { opnd, out });
         out
     }
