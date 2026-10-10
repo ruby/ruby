@@ -860,12 +860,76 @@ rb_jit_for_each_iseq(rb_iseq_callback callback, void *data)
     rb_objspace_each_objects(for_each_iseq_i, (void *)&callback_data);
 }
 
+#ifdef _WIN32
+// The JITs pass the whole mapped region to rb_jit_mark_executable() at the
+// end of every write session, and VirtualProtect() takes time for every page
+// in the range, unlike mprotect() which skips mappings already protected so.
+// Remember the ranges made writable, which all lie in that region, and protect
+// only those again. The JITs call these only at boot or under the VM lock, so
+// the record needs no lock of its own.
+
+// The most separate ranges one write session can record.
+#define JIT_WRITABLE_RANGES 64
+// The ranges made writable since the last rb_jit_mark_executable(), each
+// [start, end) and none overlapping or touching another.
+static struct { uintptr_t start, end; } jit_writable[JIT_WRITABLE_RANGES];
+// The number of ranges in use in jit_writable.
+static int jit_writable_count;
+// Set when a write session makes more separate ranges writable than
+// jit_writable can hold. Recording then stops, and the next
+// rb_jit_mark_executable() protects the whole region it is given instead,
+// then clears the record and this flag.
+static bool jit_writable_overflow;
+
+// Record [start, end) as made writable, merging it with every recorded range
+// it overlaps or touches. Set jit_writable_overflow when no slot is left.
+static void
+jit_writable_add(uintptr_t start, uintptr_t end)
+{
+    if (jit_writable_overflow) return;
+    // The ranges stay apart from each other, so one pass finds every range to
+    // merge.
+    int kept = 0;
+    for (int i = 0; i < jit_writable_count; i++) {
+        if (start <= jit_writable[i].end && jit_writable[i].start <= end) {
+            if (jit_writable[i].start < start) start = jit_writable[i].start;
+            if (jit_writable[i].end > end) end = jit_writable[i].end;
+        }
+        else {
+            jit_writable[kept++] = jit_writable[i];
+        }
+    }
+    jit_writable_count = kept;
+    if (jit_writable_count == JIT_WRITABLE_RANGES) {
+        jit_writable_overflow = true;
+        return;
+    }
+    jit_writable[jit_writable_count].start = start;
+    jit_writable[jit_writable_count].end = end;
+    jit_writable_count++;
+}
+
+static void
+jit_protect_executable(void *mem_block, size_t mem_size)
+{
+    DWORD old_protect;
+    if (!VirtualProtect(mem_block, mem_size, PAGE_EXECUTE_READ, &old_protect)) {
+        rb_bug("Couldn't make JIT page (%p, %lu bytes) executable, error: %lu",
+            mem_block, (unsigned long)mem_size, GetLastError());
+    }
+}
+#endif
+
 bool
 rb_jit_mark_writable(void *mem_block, uint32_t mem_size)
 {
 #ifdef _WIN32
     // MEM_COMMIT also re-protects pages that are already committed.
-    return VirtualAlloc(mem_block, mem_size, MEM_COMMIT, PAGE_READWRITE) != NULL;
+    if (VirtualAlloc(mem_block, mem_size, MEM_COMMIT, PAGE_READWRITE) == NULL) {
+        return false;
+    }
+    jit_writable_add((uintptr_t)mem_block, (uintptr_t)mem_block + mem_size);
+    return true;
 #else
     return mprotect(mem_block, mem_size, PROT_READ | PROT_WRITE) == 0;
 #endif
@@ -880,11 +944,24 @@ rb_jit_mark_executable(void *mem_block, uint32_t mem_size)
         return;
     }
 #ifdef _WIN32
-    DWORD old_protect;
-    if (!VirtualProtect(mem_block, mem_size, PAGE_EXECUTE_READ, &old_protect)) {
-        rb_bug("Couldn't make JIT page (%p, %lu bytes) executable, error: %lu",
-            mem_block, (unsigned long)mem_size, GetLastError());
+    if (jit_writable_overflow) {
+        jit_protect_executable(mem_block, mem_size);
+        jit_writable_count = 0;
+        jit_writable_overflow = false;
+        return;
     }
+    uintptr_t start = (uintptr_t)mem_block, end = start + mem_size;
+    int kept = 0;
+    for (int i = 0; i < jit_writable_count; i++) {
+        uintptr_t s = jit_writable[i].start, e = jit_writable[i].end;
+        if (start <= s && e <= end) {
+            jit_protect_executable((void *)s, e - s);
+        }
+        else {
+            jit_writable[kept++] = jit_writable[i];
+        }
+    }
+    jit_writable_count = kept;
 #else
     if (mprotect(mem_block, mem_size, PROT_READ | PROT_EXEC)) {
         rb_bug("Couldn't make JIT page (%p, %lu bytes) executable, errno: %s",
@@ -898,8 +975,9 @@ bool
 rb_jit_mark_unused(void *mem_block, uint32_t mem_size)
 {
 #ifdef _WIN32
-    // Keep the pages committed, since rb_jit_mark_executable() covers the whole
-    // mapped region and VirtualProtect() fails on decommitted pages.
+    // Keep the pages committed, since rb_jit_mark_executable() protects the
+    // whole mapped region once its record overflows, and VirtualProtect()
+    // fails on decommitted pages.
     DWORD old_protect;
     VirtualAlloc(mem_block, mem_size, MEM_RESET, PAGE_NOACCESS);
     return VirtualProtect(mem_block, mem_size, PAGE_NOACCESS, &old_protect) != 0;
