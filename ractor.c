@@ -1946,6 +1946,15 @@ make_shareable_check_shareable(VALUE obj)
     if (rb_ractor_shareable_p(obj)) {
         return traverse_skip;
     }
+    // TODO: this shouldn't happen! Can we remove this check in non-debug builds?
+    else if (rb_objspace_foreign_object_p(obj)) {
+         /* Promotion sets FL_SHAREABLE and updates the owner's page bitmaps, which
+         rb_gc_impl_obj_became_shareable() keeps single-writer by assuming the owner is
+         the one running it. obj is left out of the message on purpose: inspecting a
+         foreign unshareable object is the very thing being refused. */
+        rb_raise(rb_eRactorIsolationError,
+                 "can not make shareable an object owned by another Ractor");
+    }
     else if (!allow_frozen_shareable_p(obj)) {
         if (!RB_TYPE_P(obj, T_DATA)) {
             rb_raise(rb_eRactorError,
@@ -2055,6 +2064,12 @@ shareable_p_enter(VALUE obj)
         // TODO: remove it
         mark_shareable(obj);
         return traverse_skip;
+    }
+    // TODO: this shouldn't happen! Can we remove this check in non-debug builds?
+    else if (rb_objspace_foreign_object_p(obj)) {
+        /* Deciding for an unflagged object means walking and promoting it, which only
+         * its owner may do (see make_shareable_check_shareable).  */
+        return traverse_stop;
     }
     else if (RB_OBJ_FROZEN_RAW(obj) &&
              allow_frozen_shareable_p(obj)) {

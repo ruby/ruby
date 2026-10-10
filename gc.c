@@ -6944,6 +6944,13 @@ rb_gc_obj_shareable_p(VALUE obj)
     return RB_OBJ_SHAREABLE_P(obj);
 }
 
+/* obj is referenced by a shareable object, recorded by the write barrier. */
+bool
+rb_gc_obj_shref_p(VALUE obj)
+{
+    return rb_gc_impl_shref_marked_p(rb_gc_get_objspace(), obj);
+}
+
 void
 rb_gc_rp(VALUE obj)
 {

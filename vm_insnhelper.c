@@ -24,6 +24,7 @@
 #include "internal/hash.h"
 #include "internal/numeric.h"
 #include "internal/proc.h"
+#include "internal/ractor.h"
 #include "internal/random.h"
 #include "internal/variable.h"
 #include "internal/set.h"
@@ -1145,7 +1146,7 @@ vm_get_ev_const(rb_execution_context_t *ec, VALUE orig_klass, ID id, bool allow_
                         }
                         else {
                             if (UNLIKELY(!rb_class_owned_p(klass))) {
-                                if (!rb_ractor_shareable_p(val)) {
+                                if (!rb_ractor_published_shareable_p(val)) {
                                     rb_raise(rb_eRactorIsolationError,
                                              "can not access non-shareable objects in constant %"PRIsVALUE"::%"PRIsVALUE" of a class/module created by another Ractor.", rb_class_path(klass), rb_id2str(id));
                                 }
@@ -1444,6 +1445,8 @@ vm_setivar_class(VALUE obj, VALUE val, rb_setivar_cache cache)
     if (UNLIKELY(dest_shape_id == INVALID_SHAPE_ID)) {
         return Qundef;
     }
+
+    rb_ractor_publish_shareable(val);
 
     RB_OBJ_WRITE(fields_obj, &rb_imemo_fields_ptr(fields_obj)[cache.index], val);
 
