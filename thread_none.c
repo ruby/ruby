@@ -328,4 +328,10 @@ rb_thread_prevent_fork(void *(*func)(void *), void *data)
     return func(data);
 }
 
+void
+rb_thread_register_exiting(void)
+{
+    // do nothing
+}
+
 #endif /* THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION */
