@@ -132,6 +132,53 @@ fn test_and() {
 }
 
 #[test]
+fn test_bswap() {
+    let cb1 = compile(|cb| bswap(cb, EAX));
+    let cb2 = compile(|cb| bswap(cb, RAX));
+    let cb3 = compile(|cb| bswap(cb, ECX));
+    let cb4 = compile(|cb| bswap(cb, R11));
+    let cb5 = compile(|cb| bswap(cb, R11D));
+
+    assert_disasm_snapshot!(disasms!(cb1, cb2, cb3, cb4, cb5), @"
+    0x0: bswap eax
+    0x0: bswap rax
+    0x0: bswap ecx
+    0x0: bswap r11
+    0x0: bswap r11d
+    ");
+
+    assert_snapshot!(hexdumps!(cb1, cb2, cb3, cb4, cb5), @"
+    0fc8
+    480fc8
+    0fc9
+    490fcb
+    410fcb
+    ");
+}
+
+#[test]
+fn test_rol() {
+    let cb1 = compile(|cb| rol(cb, AX, uimm_opnd(8)));
+    let cb2 = compile(|cb| rol(cb, CX, uimm_opnd(8)));
+    let cb3 = compile(|cb| rol(cb, R11W, uimm_opnd(8)));
+    let cb4 = compile(|cb| rol(cb, EAX, uimm_opnd(16)));
+
+    assert_disasm_snapshot!(disasms!(cb1, cb2, cb3, cb4), @"
+    0x0: rol ax, 8
+    0x0: rol cx, 8
+    0x0: rol r11w, 8
+    0x0: rol eax, 0x10
+    ");
+
+    assert_snapshot!(hexdumps!(cb1, cb2, cb3, cb4), @"
+    66c1c008
+    66c1c108
+    6641c1c308
+    c1c010
+    ");
+}
+
+#[test]
 fn test_call_label() {
     let cb = compile(|cb| {
         let label_idx = cb.new_label("fn");
