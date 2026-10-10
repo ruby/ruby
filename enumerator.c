@@ -690,6 +690,7 @@ enumerator_with_index(int argc, VALUE *argv, VALUE obj)
     rb_check_arity(argc, 0, 1);
     RETURN_SIZED_ENUMERATOR(obj, argc, argv, enumerator_enum_size);
     memo = (!argc || NIL_P(memo = argv[0])) ? INT2FIX(0) : rb_to_int(memo);
+    if (!lazy_precheck(enumerator_ptr(obj)->procs)) return Qnil;
     return enumerator_block_call(obj, enumerator_with_index_i, (VALUE)rb_imemo_memo_new(memo, 0, 0));
 }
 
@@ -751,7 +752,9 @@ static VALUE
 enumerator_with_object(VALUE obj, VALUE memo)
 {
     RETURN_SIZED_ENUMERATOR(obj, 1, &memo, enumerator_enum_size);
-    enumerator_block_call(obj, enumerator_with_object_i, memo);
+    if (lazy_precheck(enumerator_ptr(obj)->procs)) {
+        enumerator_block_call(obj, enumerator_with_object_i, memo);
+    }
 
     return memo;
 }
