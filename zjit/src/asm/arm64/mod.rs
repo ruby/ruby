@@ -1138,6 +1138,34 @@ pub fn sxtw(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd) {
     cb.write_bytes(&bytes);
 }
 
+/// REV - reverse the bytes of a register
+pub fn rev(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd) {
+    let bytes: [u8; 4] = match (rd, rn) {
+        (A64Opnd::Reg(rd), A64Opnd::Reg(rn)) => {
+            assert!(rd.num_bits == rn.num_bits, "Expected registers to be the same size");
+
+            Rev::rev(rd.reg_no, rn.reg_no, rd.num_bits).into()
+        },
+        _ => panic!("Invalid operand combination to rev instruction")
+    };
+
+    cb.write_bytes(&bytes);
+}
+
+/// REV16 - reverse the bytes within each halfword of a register
+pub fn rev16(cb: &mut CodeBlock, rd: A64Opnd, rn: A64Opnd) {
+    let bytes: [u8; 4] = match (rd, rn) {
+        (A64Opnd::Reg(rd), A64Opnd::Reg(rn)) => {
+            assert!(rd.num_bits == rn.num_bits, "Expected registers to be the same size");
+
+            Rev::rev16(rd.reg_no, rn.reg_no, rd.num_bits).into()
+        },
+        _ => panic!("Invalid operand combination to rev16 instruction")
+    };
+
+    cb.write_bytes(&bytes);
+}
+
 /// RET - unconditionally return to a location in a register, defaults to X30
 pub fn ret(cb: &mut CodeBlock, rn: A64Opnd) {
     let bytes: [u8; 4] = match rn {
@@ -1787,6 +1815,27 @@ mod tests {
         let cb = compile(|cb| orr(cb, W10, W11, A64Opnd::new_uimm(1)));
         assert_disasm_snapshot!(cb.disasm(), @"  0x0: orr w10, w11, #1");
         assert_snapshot!(cb.hexdump(), @"6a010032");
+    }
+
+    #[test]
+    fn test_rev() {
+        let cb = compile(|cb| rev(cb, X10, X11));
+        assert_disasm_snapshot!(cb.disasm(), @"  0x0: rev x10, x11");
+        assert_snapshot!(cb.hexdump(), @"6a0dc0da");
+    }
+
+    #[test]
+    fn test_rev_32b() {
+        let cb = compile(|cb| rev(cb, W10, W11));
+        assert_disasm_snapshot!(cb.disasm(), @"  0x0: rev w10, w11");
+        assert_snapshot!(cb.hexdump(), @"6a09c05a");
+    }
+
+    #[test]
+    fn test_rev16() {
+        let cb = compile(|cb| rev16(cb, W10, W11));
+        assert_disasm_snapshot!(cb.disasm(), @"  0x0: rev16 w10, w11");
+        assert_snapshot!(cb.hexdump(), @"6a05c05a");
     }
 
     #[test]

@@ -783,6 +783,9 @@ pub enum Insn {
     // Abort the process
     Abort,
 
+    /// Reverse the byte order of a value, over the operand's width.
+    ByteSwap { opnd: Opnd, out: Opnd },
+
     /// Add a comment into the IR at the point that this instruction is added.
     /// It won't have any impact on that actual compiled code.
     Comment(String),
@@ -1058,7 +1061,8 @@ macro_rules! for_each_operand_impl {
             Insn::Lea { opnd, .. } |
             Insn::Load { opnd, .. } |
             Insn::LoadSExt { opnd, .. } |
-            Insn::Not { opnd, .. } => {
+            Insn::Not { opnd, .. } |
+            Insn::ByteSwap { opnd, .. } => {
                 visit_one!(opnd);
             }
             Insn::CPushPair(opnd0, opnd1) => {
@@ -1190,6 +1194,7 @@ impl Insn {
             Insn::BoundaryPad => "BoundaryPad",
             Insn::Breakpoint => "Breakpoint",
             Insn::Abort => "Abort",
+            Insn::ByteSwap { .. } => "ByteSwap",
             Insn::Comment(_) => "Comment",
             Insn::Cmp { .. } => "Cmp",
             Insn::CPop { .. } => "CPop",
@@ -1269,6 +1274,7 @@ impl Insn {
             Insn::Load { out, .. } |
             Insn::LoadSExt { out, .. } |
             Insn::LShift { out, .. } |
+            Insn::ByteSwap { out, .. } |
             Insn::Not { out, .. } |
             Insn::Or { out, .. } |
             Insn::RShift { out, .. } |
@@ -1301,6 +1307,7 @@ impl Insn {
             Insn::Load { out, .. } |
             Insn::LoadSExt { out, .. } |
             Insn::LShift { out, .. } |
+            Insn::ByteSwap { out, .. } |
             Insn::Not { out, .. } |
             Insn::Or { out, .. } |
             Insn::RShift { out, .. } |
@@ -3919,6 +3926,18 @@ impl Assembler {
 
     pub fn bake_string(&mut self, text: &str) {
         self.push_insn(Insn::BakeString(text.to_string()));
+    }
+
+    #[must_use]
+    pub fn byteswap(&mut self, opnd: Opnd) -> Opnd {
+        let num_bits = Opnd::match_num_bits(&[opnd]);
+        if num_bits == 8 {
+            return opnd;
+        }
+
+        let out = self.new_vreg(num_bits);
+        self.push_insn(Insn::ByteSwap { opnd, out });
+        out
     }
 
     pub fn is_ruby_code(&self) -> bool {
