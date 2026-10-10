@@ -26,6 +26,9 @@ class TestNum2int < Test::Unit::TestCase
   FIXNUM_MAX = l["FIXNUM_MAX"]
   FIXNUM_MIN = l["FIXNUM_MIN"]
 
+  INTPTR_MAX = l["INTPTR_MAX"]
+  INTPTR_MIN = l["INTPTR_MIN"]
+
   def fix2big(n)
     10000000000000000000000000000.coerce(n)[0]
   end
@@ -258,6 +261,28 @@ class TestNum2int < Test::Unit::TestCase
     assert_fix2i_success(:ulong, 0)
     assert_fix2i_success(:ulong, FIXNUM_MAX)
     assert_fix2i_success(:ulong, -1, ULONG_MAX)
+  end
+
+  def test_len2long
+    assert_equal(LONG_MAX.to_s, Num2int.rb_len2long(LONG_MAX))
+    assert_equal(LONG_MIN.to_s, Num2int.rb_len2long(LONG_MIN))
+    if RbConfig::SIZEOF["rb_len_t"] > RbConfig::SIZEOF["long"]
+      assert_raise_with_message(RangeError, "integer #{LONG_MAX+1} too big to convert to 'long'") {
+        Num2int.rb_len2long(LONG_MAX+1)
+      }
+      assert_raise_with_message(RangeError, "integer #{LONG_MIN-1} too small to convert to 'long'") {
+        Num2int.rb_len2long(LONG_MIN-1)
+      }
+    end
+  end
+
+  def test_out_of_long
+    assert_raise_with_message(RangeError, "integer #{INTPTR_MAX} too big to convert to 'long'") {
+      Num2int.rb_out_of_long(INTPTR_MAX)
+    }
+    assert_raise_with_message(RangeError, "integer #{INTPTR_MIN} too small to convert to 'long'") {
+      Num2int.rb_out_of_long(INTPTR_MIN)
+    }
   end
 
 end
