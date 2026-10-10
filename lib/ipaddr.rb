@@ -712,6 +712,7 @@ class IPAddr
         raise AddressFamilyError, "unsupported address family: #{family}"
       end
     end
+    requested_family = family
     prefix, prefixlen = addr.split('/', 2)
     if prefix =~ /\A\[(.*)\]\z/i
       prefix = $1
@@ -737,7 +738,7 @@ class IPAddr
       @family = Socket::AF_INET6
     end
     @zone_id = zone_id
-    if family != Socket::AF_UNSPEC && @family != family
+    if requested_family != Socket::AF_UNSPEC && @family != requested_family
       raise AddressFamilyError, "address family mismatch"
     end
     if prefixlen
