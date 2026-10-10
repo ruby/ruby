@@ -394,8 +394,11 @@ get_loaded_features_index(const rb_box_t *box)
                 rb_ary_store(features, i, as_str);
             features_index_add(box, as_str, INT2FIX(i));
         }
-        /* The user modified $LOADED_FEATURES, so we should restore the changes. */
-        if (!rb_ary_shared_with_p(features, box->loaded_features)) {
+        /* The user modified $LOADED_FEATURES, so we should restore the changes.
+         * A frozen array is never shared, so this check always fires for one.
+         * Let rb_provide_feature() report the freeze instead. */
+        if (!OBJ_FROZEN(box->loaded_features) &&
+            !rb_ary_shared_with_p(features, box->loaded_features)) {
             rb_ary_replace(box->loaded_features, features);
         }
         reset_loaded_features_snapshot(box);
