@@ -1,0 +1,9 @@
+prelude: |
+  START = "a" * 23
+  buffer = ""
+  START.ascii_only?
+  GC.disable
+benchmark:
+  string_expand: |
+    buffer.replace(START)
+    buffer << buffer << buffer << buffer << buffer << buffer << buffer << buffer << buffer << buffer
