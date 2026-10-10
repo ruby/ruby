@@ -3571,15 +3571,12 @@ io_read_memory_locktmp(VALUE str, struct io_internal_read_struct *iis)
 #define no_exception_p(opts) !rb_opts_exception_p((opts), TRUE)
 
 static VALUE
-io_getpartial(int argc, VALUE *argv, VALUE io, int no_exception, int nonblock)
+io_getpartial(VALUE io, VALUE length, VALUE str, int no_exception, int nonblock)
 {
     rb_io_t *fptr;
-    VALUE length, str;
     rb_len_t n, len;
     struct io_internal_read_struct iis;
     int shrinkable;
-
-    rb_scan_args(argc, argv, "11", &length, &str);
 
     if ((len = NUM2LEN(length)) < 0) {
         rb_raise(rb_eArgError, "negative length %"PRIdLEN" given", len);
@@ -3601,7 +3598,8 @@ io_getpartial(int argc, VALUE *argv, VALUE io, int no_exception, int nonblock)
     if (n <= 0) {
       again:
         if (nonblock) {
-            rb_io_set_nonblock(fptr);
+            /* NOTE: The result is deliberately ignored */
+            rb_fd_set_nonblock(fptr->fd);
         }
         io_setstrbuf(&str, len);
         iis.th = rb_thread_current();
@@ -3729,9 +3727,10 @@ io_getpartial(int argc, VALUE *argv, VALUE io, int no_exception, int nonblock)
 static VALUE
 io_readpartial(int argc, VALUE *argv, VALUE io)
 {
-    VALUE ret;
+    VALUE ret, length, str;
 
-    ret = io_getpartial(argc, argv, io, Qnil, 0);
+    rb_scan_args(argc, argv, "11", &length, &str);
+    ret = io_getpartial(io, length, str, 0, 0);
     if (NIL_P(ret))
         rb_eof_error();
     return ret;
@@ -3750,55 +3749,12 @@ io_nonblock_eof(int no_exception)
 static VALUE
 io_read_nonblock(rb_execution_context_t *ec, VALUE io, VALUE length, VALUE str, VALUE ex)
 {
-    rb_io_t *fptr;
-    rb_len_t n, len;
-    struct io_internal_read_struct iis;
-    int shrinkable;
+    int no_exception = !rb_bool_expected(ex, "exception", TRUE);
+    VALUE ret = io_getpartial(io, length, str, no_exception, 1);
+    if (NIL_P(ret))
+        io_nonblock_eof(no_exception);
 
-    if ((len = NUM2LEN(length)) < 0) {
-        rb_raise(rb_eArgError, "negative length %"PRIdLEN" given", len);
-    }
-
-    shrinkable = io_setstrbuf(&str, len);
-    rb_bool_expected(ex, "exception", TRUE);
-
-    GetOpenFile(io, fptr);
-    rb_io_check_byte_readable(fptr);
-
-    if (len == 0) {
-        io_set_read_length(str, 0, shrinkable);
-        return str;
-    }
-
-    n = read_buffered_data(RSTRING_PTR(str), len, fptr);
-    if (n <= 0) {
-        rb_fd_set_nonblock(fptr->fd);
-        shrinkable |= io_setstrbuf(&str, len);
-        iis.fptr = fptr;
-        iis.nonblock = 1;
-        iis.fd = fptr->fd;
-        iis.buf = RSTRING_PTR(str);
-        iis.capa = len;
-        iis.timeout = NULL;
-        n = io_read_memory_locktmp(str, &iis);
-        if (n < 0) {
-            int e = errno;
-            if (io_again_p(e)) {
-                if (!ex) return sym_wait_readable;
-                rb_readwrite_syserr_fail(RB_IO_WAIT_READABLE,
-                                         e, "read would block");
-            }
-            rb_syserr_fail_path(e, fptr->pathv);
-        }
-    }
-    io_set_read_length(str, n, shrinkable);
-
-    if (n == 0) {
-        if (!ex) return Qnil;
-        rb_eof_error();
-    }
-
-    return str;
+    return ret;
 }
 
 /* :nodoc: */
@@ -14314,7 +14270,7 @@ argf_getpartial(int argc, VALUE *argv, VALUE argf, VALUE opts, int nonblock)
                          rescue_does_nothing, Qnil, rb_eEOFError, (VALUE)0);
     }
     else {
-        tmp = io_getpartial(argc, argv, ARGF.current_file, no_exception, nonblock);
+        tmp = io_getpartial(ARGF.current_file, length, str, no_exception, nonblock);
     }
     if (NIL_P(tmp)) {
         if (ARGF.next_p == -1) {
