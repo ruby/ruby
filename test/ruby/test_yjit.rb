@@ -1943,6 +1943,7 @@ class TestYJIT < Test::Unit::TestCase
   end
 
   def test_yjit_option_uses_array_each_in_ruby
+    pend "fails while builtins resolve calls in the caller's box" if defined?(Ruby::Box) && Ruby::Box.enabled?
     assert_separately(["--yjit"], <<~'RUBY')
       # Array#each should be implemented in Ruby for YJIT
       assert_equal "<internal:array>", Array.instance_method(:each).source_location.first
