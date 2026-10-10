@@ -1061,6 +1061,14 @@ static void token_info_drop(struct parser_params *p, const char *token, rb_code_
 #define compile_for_eval	(p->parent_iseq != 0)
 #endif
 
+#ifndef RIPPER
+# define ifndef_ripper(x) (x)
+# define ifdef_ripper(r,x) (x)
+#else
+# define ifndef_ripper(x)
+# define ifdef_ripper(r,x) (r)
+#endif
+
 #define token_column		((int)(p->lex.ptok - p->lex.pbeg))
 
 #define CALL_Q_P(q) ((q) == tANDDOT)
@@ -1691,7 +1699,7 @@ restore_defun(struct parser_params *p, rb_node_def_temp_t *temp)
     p->ctxt.in_rescue = ctxt.in_rescue;
     p->max_numparam = temp->save.max_numparam;
     numparam_pop(p, temp->save.numparam_save);
-    clear_block_exit(p, true);
+    clear_block_exit(p, ifdef_ripper(false, true));
 }
 
 static void
@@ -1729,14 +1737,6 @@ endless_method_name(struct parser_params *p, ID mid, const YYLTYPE *loc)
         } \
         local_push(p, 0); \
     } while (0)
-
-#ifndef RIPPER
-# define ifndef_ripper(x) (x)
-# define ifdef_ripper(r,x) (x)
-#else
-# define ifndef_ripper(x)
-# define ifdef_ripper(r,x) (r)
-#endif
 
 # define rb_warn0(fmt)         WARN_CALL(WARN_ARGS(fmt, 1))
 # define rb_warn1(fmt,a)       WARN_CALL(WARN_ARGS(fmt, 2), (a))
@@ -3224,7 +3224,7 @@ top_stmts	: none
 
 top_stmt	: stmt
                     {
-                        clear_block_exit(p, true);
+                        clear_block_exit(p, ifdef_ripper(false, true));
                         $$ = $1;
                     }
                 | keyword_BEGIN begin_block
@@ -4713,7 +4713,7 @@ primary		: inline_primary
                 }
             | keyword_retry[kw]
                 {
-                    if (!p->ctxt.in_defined) {
+                    if (ifdef_ripper(false, !p->ctxt.in_defined)) {
                         switch (p->ctxt.in_rescue) {
                           case before_rescue: yyerror1(&@kw, "Invalid retry without rescue"); break;
                           case after_rescue: /* ok */ break;
@@ -4895,7 +4895,10 @@ k_return	: keyword_return
 
 k_yield 	: keyword_yield
                     {
-                        if (!p->ctxt.in_defined && !p->ctxt.in_def && !compile_for_eval)
+                        if (ifdef_ripper(false,
+                                         (!p->ctxt.in_defined &&
+                                          !p->ctxt.in_def &&
+                                          !compile_for_eval)))
                             yyerror1(&@1, "Invalid yield");
                     }
                 ;
