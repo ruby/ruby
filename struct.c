@@ -1173,17 +1173,14 @@ deconstruct_keys(VALUE s, VALUE keys, bool name_only)
                  rb_obj_class(keys));
 
     }
-    if (RSTRUCT_LEN_RAW(s) < RARRAY_LEN(keys)) {
-        return rb_hash_new();
-    }
     h = rb_hash_new_capa(RARRAY_LEN(keys));
     for (i=0; i<RARRAY_LEN(keys); i++) {
         VALUE key = RARRAY_AREF(keys, i);
-        int i = rb_struct_pos(s, &key, name_only);
-        if (i < 0) {
-            return h;
+        int pos = rb_struct_pos(s, &key, name_only);
+        if (pos < 0) {
+            continue;
         }
-        rb_hash_aset(h, key, RSTRUCT_GET_RAW(s, i));
+        rb_hash_aset(h, key, RSTRUCT_GET_RAW(s, pos));
     }
     return h;
 }
