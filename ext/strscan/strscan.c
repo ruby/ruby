@@ -32,6 +32,25 @@ extern void rb_deprecate_constant(VALUE mod, const char *name);
 # define rb_deprecate_constant(mod, name) ((void)0)
 #endif
 
+#ifndef HAVE_ONIG_REGION_SET_POSITION
+/* Store absolute positions without narrowing them to int: scan
+ * positions can exceed INT_MAX (64-bit builds). */
+static int
+onig_region_set_position(OnigRegion* region, int at, OnigPosition beg, OnigPosition end)
+{
+    if (at < 0) return ONIGERR_INVALID_ARGUMENT;
+
+    if (at >= region->allocated) {
+        int r = onig_region_resize(region, at + 1);
+        if (r < 0) return r;
+    }
+
+    region->beg[at] = beg;
+    region->end[at] = end;
+    return 0;
+}
+#endif
+
 /* =======================================================================
                          Data Type Definitions
    ======================================================================= */
@@ -1185,14 +1204,10 @@ adjust_registers_to_matched(struct strscanner *p)
     onig_region_clear(&(p->regs));
     if (onig_region_resize(&(p->regs), 1) != 0) return;
     if (p->fixed_anchor_p) {
-        /* Store absolute positions without narrowing them to int: scan
-         * positions can exceed INT_MAX (64-bit builds). */
-        p->regs.beg[0] = p->prev;
-        p->regs.end[0] = p->curr;
+        onig_region_set_position(&(p->regs), 0, p->prev, p->curr);
     }
     else {
-        p->regs.beg[0] = 0;
-        p->regs.end[0] = p->curr - p->prev;
+        onig_region_set_position(&(p->regs), 0, 0, (p->curr - p->prev));
     }
 }
 
