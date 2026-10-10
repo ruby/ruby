@@ -4641,27 +4641,27 @@ refined_method_callable_without_refinement(const rb_callable_method_entry_t *me)
 }
 
 // Construct correct super chain for module refinements.
-// Each class including/prepending a module has a hash mapping refinement
-// modules to refinement module iclasses with the correct super. Like
-// singleton classes, these are lazily initialized (both the hash and
+// Each class including/prepending a module has a weak map mapping refinement
+// iclasses to refinement module iclasses with the correct super. Like
+// singleton classes, these are lazily initialized (both the map and
 // the refinement module iclasses).
 static VALUE
 module_refinement_iclass(VALUE refinement_iclass, VALUE defined_class)
 {
-    VALUE module_ref_iclass = Qnil;
+    VALUE module_ref_iclass = Qundef;
 
     RB_VM_LOCKING() {
         VALUE cache = RCLASS_MODULE_REFINEMENT_ICLASSES(defined_class);
 
         if (LIKELY(cache)) {
-            module_ref_iclass = rb_hash_lookup(cache, refinement_iclass);
+            module_ref_iclass = rb_wmap_lookup(cache, refinement_iclass);
         }
         else {
-            cache = rb_obj_hide(rb_ident_hash_new());
+            cache = rb_wmap_new_hidden();
             RCLASS_SET_MODULE_REFINEMENT_ICLASSES(defined_class, cache);
         }
 
-        if (NIL_P(module_ref_iclass)) {
+        if (UNDEF_P(module_ref_iclass)) {
             VALUE super;
             VALUE refinement_iclass_super = RCLASS_SUPER(refinement_iclass);
 
@@ -4675,7 +4675,7 @@ module_refinement_iclass(VALUE refinement_iclass, VALUE defined_class)
             module_ref_iclass = rb_include_class_new(RBASIC(refinement_iclass)->klass, super);
             RCLASS_SET_REFINED_CLASS(module_ref_iclass, RCLASS_REFINED_CLASS(refinement_iclass));
             rb_class_subclass_add(RCLASS_REFINED_CLASS(refinement_iclass), module_ref_iclass);
-            rb_hash_aset(cache, refinement_iclass, module_ref_iclass);
+            rb_wmap_aset(cache, refinement_iclass, module_ref_iclass);
         }
     }
 
