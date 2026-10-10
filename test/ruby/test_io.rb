@@ -4542,6 +4542,19 @@ __END__
     }
   end
 
+  def test_select_with_buffered_data_and_process_exit
+    IO.pipe do |unreadable, _writer|
+      100.times do
+        IO.popen([EnvUtil.rubybin, "--disable-gems", "-e", "1_000.times { puts 'x' }"]) do |readable|
+          while readable.gets
+            ready, = IO.select([readable, unreadable])
+            assert_not_include(ready, unreadable, "IO.select returned an unreadable pipe [Bug #20461]")
+          end
+        end
+      end
+    end
+  end
+
   def test_recycled_fd_close
     dot = -'.'
     IO.pipe do |sig_rd, sig_wr|
