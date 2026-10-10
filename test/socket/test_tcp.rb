@@ -97,6 +97,18 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
     end
   end
 
+  def test_initialize_invalid_open_timeout_keeps_stdin
+    return if RUBY_PLATFORM =~ /mswin|mingw|cygwin/
+
+    assert_separately([], <<~'RUBY')
+      require "socket"
+      assert_raise(TypeError) do
+        TCPSocket.new("localhost", 12345, open_timeout: "1", fast_fallback: true)
+      end
+      assert_nothing_raised { IO.new(0, autoclose: false).stat }
+    RUBY
+  end
+
   def test_initialize_connect_timeout
     assert_raise(IO::TimeoutError, Errno::ENETUNREACH, Errno::EACCES) do
       TCPSocket.new("192.0.2.1", 80, connect_timeout: 0)
