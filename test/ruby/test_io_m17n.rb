@@ -2534,6 +2534,64 @@ EOT
     end
   end
 
+  def test_binmode_widechar_separator_after_split_character
+    with_tmpdir do
+      line = "x" * 8_192
+      ["\n", "\u{3042}"].each do |sep|
+        content = "#{line}#{sep}ab#{sep}cd"
+        [Encoding::UTF_32BE, Encoding::UTF_32LE,
+         Encoding::UTF_16BE, Encoding::UTF_16LE].each do |e|
+          separator = sep.encode(e)
+          File.binwrite("widechar", "\0" + content.encode(e).b)
+          File.open("widechar", "rb", encoding: e) do |f|
+            f.getbyte
+            actual = [f.gets(separator)&.delete_prefix(line.encode(e)),
+                      f.gets(separator), f.gets(separator)]
+            assert_equal([separator, "ab#{sep}".encode(e), "cd".encode(e)],
+                         actual,
+                         "[Bug #20819] #{e} separator #{sep.dump}")
+          end
+        end
+      end
+    end
+  end
+
+  def test_binmode_widechar_separator_after_split_surrogate
+    with_tmpdir do
+      line = "x" * 4_094
+      content = "#{line}\u{1F600}\nab\ncd"
+      [Encoding::UTF_16BE, Encoding::UTF_16LE].each do |e|
+        separator = "\n".encode(e)
+        File.binwrite("widechar", "\0" + content.encode(e).b)
+        File.open("widechar", "rb", encoding: e) do |f|
+          f.getbyte
+          actual = [f.gets(separator)&.delete_prefix(line.encode(e)),
+                    f.gets(separator), f.gets(separator)]
+          assert_equal(["\u{1F600}\n".encode(e), "ab\n".encode(e),
+                        "cd".encode(e)], actual, "[Bug #20819] #{e}")
+        end
+      end
+    end
+  end
+
+  def test_binmode_widechar_lone_high_surrogate_realigns
+    with_tmpdir do
+      [Encoding::UTF_16BE, Encoding::UTF_16LE].each do |e|
+        separator = "\n".encode(e)
+        lone = (e == Encoding::UTF_16BE ? "\xD8\x00" : "\x00\xD8").b
+        File.binwrite("widechar", lone + "\ncd\ne\n".encode(e).b)
+        File.open("widechar", "rb", encoding: e) do |f|
+          lines = []
+          while (line = f.gets(separator, 100))
+            lines << line
+          end
+          assert_equal(2, lines.size, "[Bug #20819] #{e} #{lines.inspect}")
+          assert_equal("e\n".encode(e), lines.last, "[Bug #20819] #{e}")
+        end
+      end
+    end
+  end
+
   def test_binmode_widechar_separator_at_limit
     with_tmpdir do
       [Encoding::UTF_32BE, Encoding::UTF_32LE,

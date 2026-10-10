@@ -4006,7 +4006,8 @@ read_raw_character(rb_io_t *fptr, rb_encoding *enc, char *buf)
         fptr->rbuf.off++;
         fptr->rbuf.len--;
         r = rb_enc_precise_mbclen(buf, buf + n, enc);
-    } while (MBCLEN_NEEDMORE_P(r) && n < rb_enc_mbmaxlen(enc));
+    } while ((MBCLEN_NEEDMORE_P(r) || n % rb_enc_mbminlen(enc)) &&
+             n < rb_enc_mbmaxlen(enc));
 
     return n;
 }
@@ -4105,7 +4106,9 @@ appendline(rb_io_t *fptr, int delim, VALUE *strp, rb_len_t *lp, rb_encoding *enc
             int delim_len = rb_enc_codelen(delim, enc);
 
             if (delim_len == width) {
-                rb_enc_mbcput(delim, buf, enc);
+                char delim_buf[ONIGENC_CODE_TO_MBC_MAXLEN];
+
+                rb_enc_mbcput(delim, delim_buf, enc);
                 for (;;) {
                     if (!READ_DATA_PENDING(fptr)) {
                         READ_CHECK(fptr);
@@ -4114,7 +4117,7 @@ appendline(rb_io_t *fptr, int delim, VALUE *strp, rb_len_t *lp, rb_encoding *enc
                     long pending = READ_DATA_PENDING_COUNT(fptr);
                     long complete = pending - pending % width;
                     const char *p = READ_DATA_PENDING_PTR(fptr);
-                    const char *q = complete ? search_wide_delim(p, complete, buf, width) : NULL;
+                    const char *q = complete ? search_wide_delim(p, complete, delim_buf, width) : NULL;
                     long take = q ? q - p + width : complete;
 
                     if (take > 0) {
