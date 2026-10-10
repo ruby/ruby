@@ -3546,9 +3546,9 @@ convert_umethod_to_method_components(const struct METHOD *data, VALUE recv, VALU
  *  call-seq:
  *     umeth.bind(obj) -> method
  *
- *  Bind <i>umeth</i> to <i>obj</i>. If Klass was the class from which
- *  <i>umeth</i> was obtained, <code>obj.kind_of?(Klass)</code> must
- *  be true.
+ *  Bind <i>umeth</i> to <i>obj</i>. If <i>umeth</i>'s owner is a class,
+ *  <i>obj</i> must be an instance of that class or one of its subclasses.
+ *  If the owner is a module, <i>obj</i> may be any object.
  *
  *     class A
  *       def test
@@ -3562,6 +3562,7 @@ convert_umethod_to_method_components(const struct METHOD *data, VALUE recv, VALU
  *
  *
  *     um = B.instance_method(:test)
+ *     um.owner #=> A
  *     bm = um.bind(C.new)
  *     bm.call
  *     bm = um.bind(B.new)
@@ -3569,12 +3570,22 @@ convert_umethod_to_method_components(const struct METHOD *data, VALUE recv, VALU
  *     bm = um.bind(A.new)
  *     bm.call
  *
+ *     module M
+ *       def mm
+ *         "mm on #{self.class}"
+ *       end
+ *     end
+ *
+ *     um2 = M.instance_method(:mm)
+ *     um2.owner #=> M
+ *     um2.bind(42).call #=> "mm on Integer"
+ *
  *  <em>produces:</em>
  *
  *     In test, class = C
  *     In test, class = B
- *     prog.rb:16:in `bind': bind argument must be an instance of B (TypeError)
- *     	from prog.rb:16
+ *     In test, class = A
+ *     mm on Integer
  */
 
 static VALUE
