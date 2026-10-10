@@ -6377,7 +6377,7 @@ impl Function {
         self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass: recv_class, method: method_id, cme }, state });
     }
 
-    /// Side exit back to the state after a block-backed send.
+    /// Side exit back to the state after a send.
     /// Using the pre-send snapshot would re-execute the send in the interpreter.
     fn gen_post_send_no_ep_escape_patch_point(&mut self, block: BlockId, state: &FrameState, insn_idx: u32) {
         let iseq = state.iseq;
@@ -9089,6 +9089,14 @@ fn add_iseq_to_hir(
         .get(jit_entry_start..)
         .expect("JIT entry index must be within the callee opt table")
         .iter().copied().map(VALUE::as_u32).collect::<Vec<_>>();
+    // Check if the EP is escaped for the ISEQ from the beginning. We give up
+    // optimizing locals in that case because they're shared with other frames.
+    let ep_starts_escaped = iseq_ep_starts_escaped(iseq);
+    // Check if the EP has been escaped at some point in the ISEQ. If it has, then we assume that
+    // its EP is shared with other frames.
+    let seen_ep_escape = iseq_seen_ep_escape(iseq);
+    let ep_escaped = ep_starts_escaped || seen_ep_escape;
+
     let BytecodeInfo { jump_targets } = compute_bytecode_info(iseq, &jit_entry_insns);
 
     let compile_jit_entries = matches!(mode, AddIseqMode::Standalone) && iseq_supports_jit_entry(iseq);
@@ -9143,25 +9151,17 @@ fn add_iseq_to_hir(
         }
     }
 
-    // Check if the EP is escaped for the ISEQ from the beginning. We give up
-    // optimizing locals in that case because they're shared with other frames.
-    let ep_starts_escaped = iseq_ep_starts_escaped(iseq);
-    // Check if the EP has been escaped at some point in the ISEQ. If it has, then we assume that
-    // its EP is shared with other frames.
-    let seen_ep_escape = iseq_seen_ep_escape(iseq);
-    let ep_escaped = ep_starts_escaped || seen_ep_escape;
-
     // Iteratively fill out basic blocks using a queue.
     // TODO(max): Basic block arguments at edges
     let mut queue = VecDeque::new();
     for &insn_idx in jit_entry_insns.iter() {
-        queue.push_back((new_frame_state(mode, iseq), insn_idx_to_block[&insn_idx], /*insn_idx=*/insn_idx, /*local_inval=*/false));
+        queue.push_back((new_frame_state(mode, iseq), insn_idx_to_block[&insn_idx], /*insn_idx=*/insn_idx));
     }
 
     // Keep compiling blocks until the queue becomes empty
     let mut visited = HashSet::new();
     let iseq_size = unsafe { get_iseq_encoded_size(iseq) };
-    while let Some((incoming_state, mut block, mut insn_idx, mut local_inval)) = queue.pop_front() {
+    while let Some((incoming_state, mut block, mut insn_idx)) = queue.pop_front() {
         // Compile each block only once
         if visited.contains(&block) { continue; }
         visited.insert(block);
@@ -9250,11 +9250,6 @@ fn add_iseq_to_hir(
             }
             else {
                 profiles.profile_stack(exit_id, &exit_state);
-            }
-
-            // Flag a future getlocal/setlocal to add a patch point if this instruction is not leaf.
-            if invalidates_locals(opcode, unsafe { pc.offset(1) }) {
-                local_inval = true;
             }
 
             if unsafe { rb_iseq_event_flags(iseq, insn_idx as usize) } != 0 {
@@ -9603,15 +9598,10 @@ fn add_iseq_to_hir(
                     let index = get_arg(pc, 1).as_u64();
                     let index: u8 = index.try_into().map_err(|_| ParseError::MalformedIseq(insn_idx))?;
                     // Use FrameState to get kw_bits when possible, just like getlocal_WC_0.
-                    let val = if !local_inval {
-                        state.getlocal(ep_offset)
-                    } else if ep_escaped {
+                    let val = if ep_escaped {
                         let ep = fun.get_ep(block, 0);
                         fun.get_local_from_ep(block, iseq, ep, ep_offset, 0, types::BasicObject)
                     } else {
-                        let exit_id = fun.push_insn(block, Insn::Snapshot { state: Box::new(exit_state.without_locals()) });
-                        fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoEPEscape(iseq), state: exit_id });
-                        local_inval = false;
                         state.getlocal(ep_offset)
                     };
                     state.stack_push(fun.push_insn(block, Insn::FixnumBitCheck { val, index }));
@@ -9711,7 +9701,7 @@ fn add_iseq_to_hir(
                     let not_nil_false_type = types::Truthy;
                     let not_nil_false = fun.push_insn(block, Insn::RefineType { val, new_type: not_nil_false_type });
                     state.replace(val, not_nil_false);
-                    queue.push_back((state.clone(), target, target_idx, local_inval));
+                    queue.push_back((state.clone(), target, target_idx));
                 }
                 YARVINSN_branchif | YARVINSN_branchif_without_ints => {
                     let offset = get_arg(pc, 0).as_i64();
@@ -9740,7 +9730,7 @@ fn add_iseq_to_hir(
                     let nil_false_type = types::Falsy;
                     let nil_false = fun.push_insn(block, Insn::RefineType { val, new_type: nil_false_type });
                     state.replace(val, nil_false);
-                    queue.push_back((state.clone(), target, target_idx, local_inval));
+                    queue.push_back((state.clone(), target, target_idx));
                 }
                 YARVINSN_branchnil | YARVINSN_branchnil_without_ints => {
                     let offset = get_arg(pc, 0).as_i64();
@@ -9767,7 +9757,7 @@ fn add_iseq_to_hir(
                     let new_type = types::NotNil;
                     let not_nil = fun.push_insn(block, Insn::RefineType { val, new_type });
                     state.replace(val, not_nil);
-                    queue.push_back((state.clone(), target, target_idx, local_inval));
+                    queue.push_back((state.clone(), target, target_idx));
                 }
                 YARVINSN_opt_case_dispatch => {
                     // TODO: Some keys are visible at compile time, so in the future we can
@@ -9799,7 +9789,7 @@ fn add_iseq_to_hir(
                         if_false: BranchEdge { target, args: state.as_args(self_param) }
                     });
                     block = fall_through;
-                    queue.push_back((state.clone(), target, target_idx, local_inval));
+                    queue.push_back((state.clone(), target, target_idx));
 
                     // Move on to the fast path
                     let insn_id = fun.push_insn(block, Insn::ObjectAlloc { val, state: exit_id });
@@ -9816,7 +9806,7 @@ fn add_iseq_to_hir(
                     let _branch_id = fun.push_insn(block, Insn::Jump(
                         BranchEdge { target, args: state.as_args(self_param) }
                     ));
-                    queue.push_back((state.clone(), target, target_idx, local_inval));
+                    queue.push_back((state.clone(), target, target_idx));
                     break;  // Don't enqueue the next block as a successor
                 }
                 opcode @ (YARVINSN_getlocal | YARVINSN_getlocal_WC_0 | YARVINSN_getlocal_WC_1) => {
@@ -9833,12 +9823,6 @@ fn add_iseq_to_hir(
                         let ep = fun.get_ep(block, level);
                         let val = fun.get_local_from_ep(block, iseq, ep, ep_offset, level, types::BasicObject);
                         state.stack_push(val);
-                    } else if !local_inval {
-                        assert!(level == 0); // from place in decision tree
-                        // The FrameState is the source of truth for locals until invalidated.
-                        // In case of JIT-to-JIT send locals might never end up in EP memory.
-                        let val = state.getlocal(ep_offset);
-                        state.stack_push(val);
                     } else if ep_escaped {
                         assert!(level == 0); // from place in decision tree
                         // Read the local using EP
@@ -9847,15 +9831,7 @@ fn add_iseq_to_hir(
                         state.setlocal(ep_offset, val); // remember the result to spill on side-exits
                         state.stack_push(val);
                     } else {
-                        assert!(local_inval); // from place in decision tree
-                        assert!(level == 0);  // from place in decision tree
-                        // There has been some non-leaf call since JIT entry or the last patch point,
-                        // so add a patch point to make sure locals have not been escaped.
-                        let exit_id = fun.push_insn(block, Insn::Snapshot { state: Box::new(exit_state.without_locals()) }); // skip spilling locals
-                        fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoEPEscape(iseq), state: exit_id });
-                        local_inval = false;
-
-                        // Read the local from FrameState
+                        assert!(level == 0); // from place in decision tree
                         let val = state.getlocal(ep_offset);
                         state.stack_push(val);
                     }
@@ -9877,18 +9853,9 @@ fn add_iseq_to_hir(
                         // Write the local using EP
                         fun.push_insn(block, Insn::SetLocal { val, ep_offset, level: 0, state: exit_id });
                         state.setlocal(ep_offset, val);
-                    } else if !local_inval {
+                    } else {
                         assert!(level == 0);  // from place in decision tree
                         assert!(!ep_escaped); // from place in decision tree
-                        state.setlocal(ep_offset, val);
-                    } else {
-                        assert!(local_inval); // from place in decision tree
-                        assert!(level == 0);  // from place in decision tree
-                        // If there has been any non-leaf call since JIT entry or the last patch point,
-                        // add a patch point to make sure locals have not been escaped.
-                        let exit_id = fun.push_insn(block, Insn::Snapshot { state: Box::new(exit_state.without_locals()) }); // skip spilling locals
-                        fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoEPEscape(iseq), state: exit_id });
-                        local_inval = false;
                         state.setlocal(ep_offset, val);
                     }
                 }
@@ -10416,9 +10383,6 @@ fn add_iseq_to_hir(
 
                     if let Some(BlockHandler::BlockIseq(blockiseq)) = block_handler {
                         // Reload locals that may have been modified by the blockiseq.
-                        if !ep_escaped && !state.locals.is_empty() {
-                            fun.gen_post_send_no_ep_escape_patch_point(block, &state, insn_idx);
-                        }
                         fun.reload_locals_modified_by_block(block, iseq, blockiseq, &mut state, ep_escaped);
                     }
                 }
@@ -10447,9 +10411,6 @@ fn add_iseq_to_hir(
 
                     if !blockiseq.is_null() {
                         // Reload locals that may have been modified by the blockiseq.
-                        if !ep_escaped && !state.locals.is_empty() {
-                            fun.gen_post_send_no_ep_escape_patch_point(block, &state, insn_idx);
-                        }
                         fun.reload_locals_modified_by_block(block, iseq, blockiseq, &mut state, ep_escaped);
                     }
                 }
@@ -10475,9 +10436,6 @@ fn add_iseq_to_hir(
 
                     if !blockiseq.is_null() {
                         // Reload locals that may have been modified by the blockiseq.
-                        if !ep_escaped && !state.locals.is_empty() {
-                            fun.gen_post_send_no_ep_escape_patch_point(block, &state, insn_idx);
-                        }
                         fun.reload_locals_modified_by_block(block, iseq, blockiseq, &mut state, ep_escaped);
                     }
                 }
@@ -10505,9 +10463,6 @@ fn add_iseq_to_hir(
 
                     if !blockiseq.is_null() {
                         // Reload locals that may have been modified by the blockiseq.
-                        if !ep_escaped && !state.locals.is_empty() {
-                            fun.gen_post_send_no_ep_escape_patch_point(block, &state, insn_idx);
-                        }
                         fun.reload_locals_modified_by_block(block, iseq, blockiseq, &mut state, ep_escaped);
                     }
                 }
@@ -10945,10 +10900,17 @@ fn add_iseq_to_hir(
                 }
             }
 
+            // Patch point right after the call rather than lazily at the next local access:
+            // a lazy flag needs dataflow to be correct at merge points and can emit duplicates.
+            if !ep_escaped && !state.locals.is_empty() && insn_idx < iseq_size
+                && invalidates_locals(opcode, unsafe { pc.offset(1) }) {
+                fun.gen_post_send_no_ep_escape_patch_point(block, &state, insn_idx);
+            }
+
             if insn_idx_to_block.contains_key(&insn_idx) {
                 let target = insn_idx_to_block[&insn_idx];
                 fun.push_insn(block, Insn::Jump(BranchEdge { target, args: state.as_args(self_param) }));
-                queue.push_back((state, target, insn_idx, local_inval));
+                queue.push_back((state, target, insn_idx));
                 break;  // End the block
             }
         }
