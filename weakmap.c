@@ -504,6 +504,24 @@ wmap_size(VALUE self)
 #endif
 }
 
+VALUE
+rb_wmap_new_hidden(void)
+{
+    return wmap_allocate(0);
+}
+
+VALUE
+rb_wmap_lookup(VALUE self, VALUE key)
+{
+    return wmap_lookup(self, key);
+}
+
+void
+rb_wmap_aset(VALUE self, VALUE key, VALUE val)
+{
+    wmap_aset(self, key, val);
+}
+
 /* ===== WeakKeyMap =====
  *
  * WeakKeyMap contains one ST table which contains a pointer to the object as
