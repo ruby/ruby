@@ -1,0 +1,185 @@
+---
+prelude: |
+  require "fiber" # ruby 3.0 compatibility
+
+  max = Integer(ENV["BENCHMARK_SZQUEUE_MAX"]    ||       100)
+  N   = Integer(ENV["BENCHMARK_ENQ_PER_ITER"]   || 1_000_000)
+  P   = Integer(ENV["BENCHMARK_PRODUCER_COUNT"] ||        10)
+  C   = Integer(ENV["BENCHMARK_CONSUMER_COUNT"] ||        10)
+
+  # Not implemented: IO, timers, waidpid, getaddrinfo, or thread-safe unblock.
+  # There's no run_loop and no sleep, so unblock has nothing to wake up.
+  # Blocking on an empty runq will spin, possibly forever!
+  class ToyScheduler
+    def initialize; @runq, @blocked = [], {} end
+    def fiber(&b)             = Fiber.new(&b).tap{@runq.push _1}
+    def kernel_sleep(t = nil) = block(:sleep, t)
+    def unblock(_, fiber)     = @runq.push(fiber)
+    def io_wait(...)          = raise(NotImplementedError, "IO wait")
+    def block(blocker, timeout = nil)
+      raise NotImplementedError, "timeouts" if timeout
+      @blocked[f = Fiber.current] = blocker # needed to avoid SEGV: [BUG:18818]
+      (fiber = @runq.shift) until fiber&.alive?
+      fiber.transfer
+    rescue Exception => e
+      warn "fiber=%p, and raised [%s] %s" % [fiber, e.class, e]
+      exit 1
+    ensure
+      @blocked.delete f
+    end
+    module Refined # refinements are fun and nice and should be used more ;)
+      refine Fiber.singleton_class do
+        def sync(&b) = blocking? ? new(blocking: false, &b).resume : yield
+      end
+    end
+  end
+  using ToyScheduler::Refined
+
+  scheduler = ToyScheduler.new
+  Fiber.set_scheduler scheduler
+
+benchmark:
+  - name: fiber_queue
+    script: |
+      n = N
+      q = Thread::Queue.new
+      consumer = Thread::SizedQueue.new 1
+      Fiber.schedule {
+        while q.pop
+          # consuming
+        end
+        consumer.close
+      }
+
+      Fiber.schedule {
+        while n > 0
+          q.push true
+          n -= 1
+        end
+        q.push nil
+      }
+
+      Fiber.sync { consumer.pop }
+
+  - name: fiber_sized_queue
+    script: |
+      # one producer, one consumer
+      n = N
+      q = Thread::SizedQueue.new(max)
+      consumer = Thread::SizedQueue.new 1
+      Fiber.schedule {
+        while q.pop
+          # consuming
+        end
+        consumer.close
+      }
+
+      Fiber.schedule {
+        while n > 0
+          q.push true
+          n -= 1
+        end
+        q.push nil
+      }
+
+      Fiber.sync{consumer.pop}
+
+  - name: fiber_sized_queue2
+    script: |
+      # one producer, many consumers
+      n = N
+      m = C
+      q = Thread::SizedQueue.new(max)
+      consumers = m.times.map do
+        consumer = Thread::SizedQueue.new 1
+        Fiber.schedule do
+          while q.pop
+            # consuming
+          end
+          consumer.close
+        end
+        consumer
+      end
+
+      producer = Thread::SizedQueue.new 1
+      Fiber.schedule do
+        while n > 0
+          q.push true
+          n -= 1
+        end
+        m.times { q.push nil }
+        producer.close
+      end
+
+      Fiber.sync {
+        producer.pop
+        consumers.each(&:pop)
+      }
+
+  - name: fiber_sized_queue3
+    script: |
+      # many producers, one consumer
+      n = N
+      m = P
+      q = Thread::SizedQueue.new(max)
+      consumer = Thread::SizedQueue.new 1
+      Fiber.schedule do
+        while q.pop
+          # consuming
+        end
+        consumer.close
+      end
+
+      producers = m.times.map do
+        producer = Thread::SizedQueue.new 1
+        Fiber.schedule do
+          while n > 0
+            q.push true
+            n -= 1
+          end
+          producer.close
+        end
+        producer
+      end
+
+      Fiber.sync {
+        producers.each(&:pop)
+        q.push nil
+        consumer.pop
+      }
+
+  - name: fiber_sized_queue4
+    script: |
+      # many producers, many consumers
+      nr = N
+      n = C
+      m = P
+      q = Thread::SizedQueue.new(max)
+      consumers = n.times.map do
+        consumer = Thread::SizedQueue.new 1
+        Fiber.schedule do
+          while q.pop
+            # consuming
+          end
+          consumer.close
+        end
+        consumer
+      end
+
+      producers = m.times.map do
+        producer = Thread::SizedQueue.new 1
+        Fiber.schedule do
+          while nr > 0
+            q.push true
+            nr -= 1
+          end
+          producer.close
+        end
+        producer
+      end
+
+      Fiber.sync {
+        producers.each(&:pop)
+        n.times { q.push nil }
+        consumers.each(&:pop)
+      }
