@@ -282,7 +282,9 @@ They are still available on rubygems.org and can be installed with
 * timeout 0.6.1
   * 0.6.0 to [v0.6.1][timeout-v0.6.1]
 * tmpdir 0.3.2
+  * 0.3.1 to [v0.3.2][tmpdir-v0.3.2]
 * uri 1.1.2
+  * 1.1.1 to [v1.1.2][uri-v1.1.2]
 * zlib 3.2.4
   * 3.2.2 to [v3.2.3][zlib-v3.2.3], [v3.2.4][zlib-v3.2.4]
 
@@ -742,6 +744,8 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [tempfile-v0.3.2]: https://github.com/ruby/tempfile/releases/tag/v0.3.2
 [time-v0.5.0]: https://github.com/ruby/time/releases/tag/v0.5.0
 [timeout-v0.6.1]: https://github.com/ruby/timeout/releases/tag/v0.6.1
+[tmpdir-v0.3.2]: https://github.com/ruby/tmpdir/releases/tag/v0.3.2
+[uri-v1.1.2]: https://github.com/ruby/uri/releases/tag/v1.1.2
 [zlib-v3.2.3]: https://github.com/ruby/zlib/releases/tag/v3.2.3
 [zlib-v3.2.4]: https://github.com/ruby/zlib/releases/tag/v3.2.4
 [power_assert-v3.1.0]: https://github.com/ruby/power_assert/releases/tag/v3.1.0
