@@ -6982,11 +6982,10 @@ rand_upto(VALUE randgen, rb_len_t max)
     if (rb_num_negative_p(v)) {
         rb_raise(rb_eRangeError, "random number too small %"PRIsVALUE, v);
     }
-    rb_len_t r = NUM2LEN(v);
-    if (r >= max) {
+    if (RTEST(rb_int_ge(v, lim))) {
         rb_raise(rb_eRangeError, "random number too big %"PRIsVALUE, v);
     }
-    return r;
+    return NUM2LEN(v);
 }
 #define RAND_UPTO(max) rand_upto(randgen, (max))
 #else
