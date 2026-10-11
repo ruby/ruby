@@ -19109,9 +19109,9 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(Object@0x1018)
           PatchPoint MethodRedefined(Object@0x1018, !=@0x1020, cme:0x1028)
           PushInlineFrame :!=, v16 (0x1050), num_args=1
-          v52:BasicObject = Send v16, :==, v10 # SendFallbackReason: Send: polymorphic fallback
-          v55:CBool = Test v52
-          CondBranch v55, bb12(), bb6()
+          PatchPoint MethodRedefined(Object@0x1018, ==@0x1070, cme:0x1078)
+          v83:CBool = IsBitEqual v16, v10
+          CondBranch v83, bb12(), bb6()
         bb12():
           v61:FalseClass = Const Value(false)
           Jump bb4(v61)
