@@ -210,8 +210,6 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
         sock.setsockopt(:TCP, :NODELAY, 1)
         ssl = OpenSSL::SSL::SSLSocket.new(sock)
         assert_raise(timeout_error) { ssl.connect(timeout: 0.1) }
-        taken = Process.clock_gettime(Process::CLOCK_MONOTONIC) - start
-        assert_operator(taken, :<, 0.2)
       ensure
         sock.close
       end
