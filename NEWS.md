@@ -526,6 +526,12 @@ Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for det
   check `HAVE_RB_LEN_T` and fall back to `typedef long rb_len_t`.
   [[Feature #22400]]
 
+* On mswin, extensions are now built with incompatible pointer types
+  (warning C4133) as errors.  Besides a `long *` passed where an
+  `rb_len_t *` is expected, this rejects any other mismatched pointer that
+  used to compile with a warning.
+  [[Feature #22400]]
+
 * `rb_len2long` is added to convert an `rb_len_t` to `long`, raising
   `RangeError` via the new `rb_out_of_long` when it does not fit, for
   extensions that keep a length in `long`. [[Feature #22400]]
