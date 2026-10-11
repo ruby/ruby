@@ -89,13 +89,20 @@ rsock_init_sock(VALUE sock, int fd)
     return sock;
 }
 
+#ifdef _WIN32
+/* Winsock takes the length as int; the caller sees a short write. */
+# define SEND_LENGTH(str) (int)(RSTRING_LEN(str) > INT_MAX ? INT_MAX : RSTRING_LEN(str))
+#else
+# define SEND_LENGTH(str) RSTRING_LEN(str)
+#endif
+
 VALUE
 rsock_sendto_blocking(void *data)
 {
     struct rsock_send_arg *arg = data;
     VALUE mesg = arg->mesg;
     ssize_t ret;
-    do_write_retry(sendto(arg->fd, RSTRING_PTR(mesg), RSTRING_LEN(mesg),
+    do_write_retry(sendto(arg->fd, RSTRING_PTR(mesg), SEND_LENGTH(mesg),
                           arg->flags, arg->to, arg->tolen));
     return (VALUE)ret;
 }
@@ -106,7 +113,7 @@ rsock_send_blocking(void *data)
     struct rsock_send_arg *arg = data;
     VALUE mesg = arg->mesg;
     ssize_t ret;
-    do_write_retry(send(arg->fd, RSTRING_PTR(mesg), RSTRING_LEN(mesg),
+    do_write_retry(send(arg->fd, RSTRING_PTR(mesg), SEND_LENGTH(mesg),
                         arg->flags));
     return (VALUE)ret;
 }
@@ -414,7 +421,7 @@ rsock_write_nonblock(VALUE sock, VALUE str, VALUE ex)
 #ifdef __APPLE__
   again:
 #endif
-    n = (long)send(fptr->fd, RSTRING_PTR(str), RSTRING_LEN(str), MSG_DONTWAIT);
+    n = (long)send(fptr->fd, RSTRING_PTR(str), SEND_LENGTH(str), MSG_DONTWAIT);
     if (n < 0) {
         int e = errno;
 
