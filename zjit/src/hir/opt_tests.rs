@@ -19072,6 +19072,60 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn opt_neq_object_with_polymorphic_eq_profile() {
+        set_call_threshold(4);
+        set_num_profiles(4);
+        // The == profile is shared by callers of BasicObject#!=, even when a
+        // caller has a statically known receiver.
+        eval(r#"
+            2.times do
+              "x" != nil
+              1 != nil
+            end
+
+            NULL = Object.new
+            def test(value) = NULL != value
+
+            4.times { test(nil) }
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:8:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :value@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :value@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1008, NULL)
+          v16:ObjectExact[VALUE(0x1010)] = Const Value(VALUE(0x1010))
+          PatchPoint NoEPEscape(test)
+          PatchPoint NoSingletonClass(Object@0x1018)
+          PatchPoint MethodRedefined(Object@0x1018, !=@0x1020, cme:0x1028)
+          PushInlineFrame :!=, v16 (0x1050), num_args=1
+          v52:BasicObject = Send v16, :==, v10 # SendFallbackReason: Send: polymorphic fallback
+          v55:CBool = Test v52
+          CondBranch v55, bb12(), bb6()
+        bb12():
+          v61:FalseClass = Const Value(false)
+          Jump bb4(v61)
+        bb6():
+          v70:TrueClass = Const Value(true)
+          Jump bb4(v70)
+        bb4(v74:BoolExact):
+          PopInlineFrame
+          CheckInterrupts
+          Return v74
+        ");
+    }
+
+    #[test]
     fn opt_neq_custom_method_without_inlining() {
         set_inline_threshold(0);
         eval("
