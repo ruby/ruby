@@ -1291,6 +1291,14 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_max_compile_time_when_not_enabled
+    assert_separately(["--disable-all", "--yjit-disable"], <<~'RUBY')
+      assert_equal false, RubyVM::YJIT.enabled?
+      RubyVM::YJIT.max_compile_time_ns = 42
+      assert_equal 42, RubyVM::YJIT.max_compile_time_ns
+    RUBY
+  end
+
   def test_code_gc
     assert_compiles(code_gc_helpers + <<~'RUBY', exits: :any, result: :ok)
       return :not_paged unless add_pages(100) # prepare freeable pages

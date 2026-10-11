@@ -1058,10 +1058,12 @@ pub extern "C" fn rb_yjit_update_max_compile_time_ns(max_compile_time_ns: u64) {
     unsafe {
         rb_yjit_max_compile_time_ns = max_compile_time_ns;
 
-        if rb_yjit_max_compile_time_ns == 0 || rb_yjit_max_compile_time_ns > rb_yjit_total_compile_time_ns {
-            rb_yjit_compiling_p = !out_of_memory_p();
-        } else {
-            rb_yjit_compiling_p = false;
+        if yjit_enabled_p() {
+            if rb_yjit_max_compile_time_ns == 0 || rb_yjit_max_compile_time_ns > rb_yjit_total_compile_time_ns {
+                rb_yjit_compiling_p = !out_of_memory_p();
+            } else {
+                rb_yjit_compiling_p = false;
+            }
         }
     }
 }
