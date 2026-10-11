@@ -255,6 +255,21 @@ class TestBox < Test::Unit::TestCase
     end
   end
 
+  def test_autoload_registered_in_master_box
+    # Ruby::Prism is autoloaded in the master box, and shared by all boxes like
+    # builtin classes, regardless of which box triggers it.
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      omit "Ruby::Prism is not autoloaded" unless Ruby.autoload?(:Prism)
+      b1 = Ruby::Box.new
+      b2 = Ruby::Box.new
+      node = b1.eval("Ruby::Prism::Node")
+      assert_same(node, b2.eval("Ruby::Prism::Node"))
+      assert_same(node, Ruby::Box.root.eval("Ruby::Prism::Node"))
+      assert_same(node, Ruby::Box.new.eval("Ruby::Prism::Node"))
+    end;
+  end
+
   def test_continuous_top_level_method_in_a_box
     setup_box
 
