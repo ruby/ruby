@@ -3239,12 +3239,25 @@ autoload_apply_constants(VALUE _arguments)
     return Qtrue;
 }
 
+// Require the feature and set the constants of the autoload.
 static VALUE
-autoload_feature_require_in_box(VALUE receiver, VALUE feature)
+autoload_require_and_apply(VALUE receiver, VALUE _arguments)
+{
+    struct autoload_load_arguments *arguments = (struct autoload_load_arguments*)_arguments;
+
+    VALUE result = rb_funcall(receiver, rb_intern("require"), 1, arguments->autoload_data->feature);
+    if (RTEST(result)) {
+        return rb_mutex_synchronize(autoload_mutex, autoload_apply_constants, _arguments);
+    }
+    return result;
+}
+
+static VALUE
+autoload_feature_require_in_box(VALUE receiver, VALUE _arguments)
 {
     rb_vm_frame_flag_set_box_require(GET_EC());
 
-    return rb_funcall(receiver, rb_intern("require"), 1, feature);
+    return autoload_require_and_apply(receiver, _arguments);
 }
 
 static VALUE
@@ -3272,24 +3285,36 @@ autoload_feature_require(VALUE _arguments)
         box = rb_get_box_t(autoload_box_value);
     }
 
-    VALUE result;
     if (box && box->top_self) {
         /*
          * Call `require` on the top self of the box that registered the autoload, in a frame
          * running in that box, so that `Kernel#require` decorations in the box (RubyGems,
          * Zeitwerk, etc.) are dispatched and the feature is loaded into that box.
          */
-        result = rb_vm_call_cfunc_in_box(box->top_self, autoload_feature_require_in_box,
-                                         box->top_self, feature, feature, box);
+        return rb_vm_call_cfunc_in_box(box->top_self, autoload_feature_require_in_box,
+                                       box->top_self, _arguments, feature, box);
     }
-    else {
-        result = rb_funcall(rb_vm_top_self(), rb_intern("require"), 1, feature);
-    }
+    return autoload_require_and_apply(rb_vm_top_self(), _arguments);
+}
 
-    if (RTEST(result)) {
-        return rb_mutex_synchronize(autoload_mutex, autoload_apply_constants, _arguments);
+static rb_const_entry_t *const_lookup(struct rb_id_table *tbl, ID id);
+
+// The box in which the feature of the autoload is required.
+static const rb_box_t *
+autoload_box(const struct autoload_const *ac)
+{
+    if (rb_box_available() && BOX_OBJ_P(ac->box_value)) {
+        const rb_box_t *box = rb_get_box_t(ac->box_value);
+        if (box->top_self) return box;
     }
-    return result;
+    return rb_current_box();
+}
+
+// The constant entry `id` of `mod` in the view of `box`.
+static rb_const_entry_t *
+const_lookup_in_box(VALUE mod, ID id, const rb_box_t *box)
+{
+    return const_lookup(RCLASSEXT_CONST_TBL(RCLASS_EXT_READABLE_IN_BOX(mod, box)), id);
 }
 
 static VALUE
@@ -3297,10 +3322,27 @@ autoload_try_load(VALUE _arguments)
 {
     struct autoload_load_arguments *arguments = (struct autoload_load_arguments*)_arguments;
 
+    // Load the feature and set the constants in the box that registered the autoload:
     VALUE result = autoload_feature_require(_arguments);
 
     // After we loaded the feature, if the constant is not defined, we remove it completely:
     rb_const_entry_t *ce = rb_const_lookup(arguments->module, arguments->name);
+
+    // Copy the constant from the box that registered the autoload into the current box:
+    if (ce && UNDEF_P(ce->value)) {
+        rb_const_entry_t *loaded = const_lookup_in_box(arguments->module, arguments->name,
+                                                       autoload_box(arguments->autoload_const));
+        if (loaded && !UNDEF_P(loaded->value)) {
+            RB_VM_LOCKING() {
+                ce->flag = loaded->flag;
+                RB_OBJ_WRITE(arguments->module, &ce->value, loaded->value);
+                RB_OBJ_WRITE(arguments->module, &ce->file, loaded->file);
+                ce->line = loaded->line;
+                rb_clear_constant_cache_for_id(arguments->name);
+            }
+            result = Qtrue;
+        }
+    }
 
     if (!ce || UNDEF_P(ce->value)) {
         result = Qfalse;
