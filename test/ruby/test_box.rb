@@ -1685,6 +1685,31 @@ class TestBox < Test::Unit::TestCase
     end;
   end
 
+  def test_method_called_from_c_in_another_user_box
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true, timeout: 60)
+    begin;
+      def nil.box_probe = :main
+      # Kernel#public_send calls the method from C through the global call
+      # cache table of 1023 entries, and some of this many boxes share the
+      # entry of the main box.
+      boxes = []
+      8192.times do
+        box = Ruby::Box.new
+        box.eval('def nil.box_probe = :box; nil.public_send(:box_probe)')
+        assert_equal :main, nil.public_send(:box_probe)
+        boxes << box
+      end
+    end;
+  end
+
+  def test_method_called_from_c_in_master_box_after_root_box
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      Ruby::Box.root.eval('class Array; def root_only = :root; end; [].public_send(:root_only)')
+      assert_raise(NoMethodError) {Ruby::Box.master.eval('[].public_send(:root_only)')}
+    end;
+  end
+
   def test_method_call_in_isolated_proc_from_class_frame
     # A TOP/CLASS local env stores its box in the SPECVAL slot (VM_ENV_BOX);
     # Ractor.make_shareable's env copy must preserve it, or any method call
