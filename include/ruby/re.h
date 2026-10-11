@@ -116,7 +116,10 @@ VALUE rb_reg_quote(VALUE str);
  * @exception  rb_eEncCompatError  `re` and `str` are incompatible.
  * @exception  rb_eRegexpError     `re` is malformed.
  * @return     A preprocessesed pattern buffer ready to be applied to `str`.
- * @note       The return value is manages by our GC.  Don't free.
+ * @warning    Do not use this function.  Use rb_reg_onig_match() instead.
+ *             It is kept only for old extensions.  Its ownership rules are
+ *             error prone: unless the return value is `RREGEXP_PTR(re)`, the
+ *             caller must free it with `onig_free()`.
  *
  * @internal
  *

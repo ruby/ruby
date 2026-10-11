@@ -943,6 +943,23 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal(/^[0-9]/, Bug::Regexp.new_binary("^[0-9]"))
   end
 
+  def test_match_encodings
+    re = Regexp.new('(?<letter>.)a', Regexp::IGNORECASE)
+    strings = [Encoding::UTF_8, Encoding::EUC_JP, Encoding::Windows_31J].map do |enc|
+      "\u3042A".encode(enc)
+    end
+    strings.each do |str|
+      assert_equal str[0], re.match(str)[:letter]
+    end
+
+    GC.start
+    strings.reverse_each do |str|
+      assert_equal str[0], re.match(str)[:letter]
+    end
+    assert_equal Encoding::US_ASCII, re.encoding
+    assert_equal "b", re.match("bA")[:letter]
+  end
+
   def test_quote
     assert_equal("\xff", Regexp.quote([0xff].pack("C")))
     assert_equal("\\ ", Regexp.quote("\ "))
