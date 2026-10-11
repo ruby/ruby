@@ -1874,6 +1874,18 @@ ossl_ssl_accept(VALUE self)
 }
 
 /*
+ * TODO: This shouldn't be necessary, but we do not want to use
+ * String.new(capacity: len) in #sysread because it allocates Hash objects
+ * for the kwargs.
+ */
+static VALUE
+ossl_ssl_string_new_capacity(VALUE self, VALUE len)
+{
+    rb_len_t capa = NUM2LEN(len);
+    return rb_str_buf_new(capa >= 0 ? capa : 0);
+}
+
+/*
  * call-seq:
  *    ssl.ssl_read(len, str) -> str, nil, :wait_readable, or :wait_writable
  */
@@ -2941,6 +2953,7 @@ Init_ossl_ssl(void)
     rb_undef_method(cSSLSocket, "initialize_copy");
     rb_define_private_method(cSSLSocket, "ssl_connect", ossl_ssl_connect, 0);
     rb_define_private_method(cSSLSocket, "ssl_accept", ossl_ssl_accept, 0);
+    rb_define_private_method(cSSLSocket, "string_new_capacity", ossl_ssl_string_new_capacity, 1);
     rb_define_private_method(cSSLSocket, "ssl_read", ossl_ssl_read, 2);
     rb_define_private_method(cSSLSocket, "ssl_write", ossl_ssl_write, 1);
     rb_define_private_method(cSSLSocket, "stop",   ossl_ssl_stop, 0);

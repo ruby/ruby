@@ -476,7 +476,7 @@ module OpenSSL
       # Reads _length_ bytes from the SSL connection.  If a pre-allocated
       # _buffer_ is provided the data will be written into it.
       def sysread(length, buffer = nil)
-        buffer ||= String.new(capacity: length)
+        buffer ||= string_new_capacity(length)
         blocking {
           ssl_read(length, buffer) or raise EOFError, "end of file reached"
         }
@@ -489,7 +489,7 @@ module OpenSSL
       #
       # A non-blocking version of #sysread.
       private def sysread_nonblock(length, buffer = nil, exception: true)
-        buffer ||= String.new(capacity: length)
+        buffer ||= string_new_capacity(length)
         ret = ssl_read(length, buffer)
         if exception
           raise EOFError, "end of file reached" if ret.nil?
