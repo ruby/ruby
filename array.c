@@ -3766,8 +3766,8 @@ rb_ary_bsearch(VALUE ary)
 {
     VALUE index_result = rb_ary_bsearch_index(ary);
 
-    if (FIXNUM_P(index_result)) {
-        return rb_ary_entry(ary, FIX2LONG(index_result));
+    if (RB_INTEGER_TYPE_P(index_result)) {
+        return rb_ary_entry(ary, NUM2LEN(index_result));
     }
     return index_result;
 }
