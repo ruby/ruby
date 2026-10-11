@@ -505,11 +505,12 @@ Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for det
   `rb_len2int`, `PRIdLEN` and its siblings, `RB_LEN_MAX`, `RB_LEN_MIN`,
   `RB_ULEN_MAX`, `SIZEOF_RB_LEN_T` and `HAVE_RB_LEN_T`.
   `RbConfig::SIZEOF["rb_len_t"]` gives its size to an extconf.rb.  They are
-  `long`, except on mswin, where they are 64 bits.  The C API that carries such
-  lengths, such as `RSTRING_LEN` and `rb_range_beg_len`, uses them.
+  `long`, except on 64-bit mswin, where they are 64 bits.  The C API that
+  carries such lengths, such as `RSTRING_LEN` and `rb_range_beg_len`, uses
+  them.
   [[Feature #22400]]
 
-* On mswin this changes the ABI, so extensions have to be rebuilt.  An
+* On 64-bit mswin this changes the ABI, so extensions have to be rebuilt.  An
   extension that passes a `long *` to an output parameter such as
   `rb_range_beg_len` no longer compiles there, and one that keeps a length in
   `long` truncates it at 2GiB.  Keep such lengths in `rb_len_t`, or convert
