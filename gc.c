@@ -3243,7 +3243,7 @@ mark_const_entry_i(VALUE value, void *data)
     const struct rb_gc_mark_ctx *ctx = (const struct rb_gc_mark_ctx *)data;
 
     gc_mark_internal(ctx, ce->value);
-    gc_mark_internal(ctx, ce->file); // TODO: ce->file should be shareable?
+    gc_mark_internal(ctx, ce->u.file); // TODO: ce->u.file should be shareable?
 
     return ID_TABLE_CONTINUE;
 }
@@ -5004,8 +5004,8 @@ update_const_tbl_i(VALUE value, void *objspace)
         ce->value = gc_location_internal(objspace, ce->value);
     }
 
-    if (gc_object_moved_p_internal(objspace, ce->file)) {
-        ce->file = gc_location_internal(objspace, ce->file);
+    if (gc_object_moved_p_internal(objspace, ce->u.file)) {
+        ce->u.file = gc_location_internal(objspace, ce->u.file);
     }
 
     return ID_TABLE_CONTINUE;
