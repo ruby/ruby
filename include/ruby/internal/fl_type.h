@@ -205,11 +205,13 @@ ruby_fl_type {
     RUBY_FL_PROMOTED    = (1<<5),
 
     /**
-     * This flag is no longer in use
+     * This object is referenced by a shareable object.  Only GC implementations
+     * that keep no side metadata for this set it. The default GC uses a per-page
+     * bitmap instead.
      *
      * @internal
      */
-    RUBY_FL_UNUSED6      = (1<<6),
+    RUBY_FL_SHREF        = (1<<6),
 
     /**
      * This flag has  something to do with finalisers.  A  ruby object can have

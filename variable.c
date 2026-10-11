@@ -2119,7 +2119,7 @@ rb_obj_freeze_inline(VALUE x)
 
         /* If a Ractor publishes a non-frozen value (say, in a class ivar) then freezes it, we try to make it shareable during
          * the freeze. */
-        if (!fake_str && RBASIC_CLASS(x) && !RB_OBJ_SHAREABLE_P(x) && rb_gc_obj_shref_p(x) && rb_gc_multi_objspace_p()) {
+        if (!fake_str && RBASIC_CLASS(x) && !RB_OBJ_SHAREABLE_P(x) && rb_gc_obj_shref_p(x)) {
             rb_ractor_shareable_p(x);
         }
     }

@@ -1261,6 +1261,14 @@ rb_gc_impl_writebarrier(void *objspace_ptr, VALUE a, VALUE b)
     MMTK_ASSERT(BUILTIN_TYPE(a) != T_NONE);
     MMTK_ASSERT(BUILTIN_TYPE(b) != T_NONE);
 
+    /* A shareable object now references an unshareable one.  The default GC records
+     * this in b's page bitmap, keeping b's header clean for fork's copy-on-write; with
+     * no side metadata here it goes in the header instead. */
+    if (RB_UNLIKELY(RB_FL_TEST_RAW(a, RUBY_FL_SHAREABLE)) &&
+            !RB_FL_TEST_RAW(b, RUBY_FL_SHAREABLE | RUBY_FL_SHREF)) {
+        RB_FL_SET_RAW(b, RUBY_FL_SHREF);
+    }
+
     mmtk_object_reference_write_post(cache->mutator, (MMTk_ObjectReference)a);
 }
 
@@ -1273,7 +1281,7 @@ rb_gc_impl_writebarrier_unprotect(void *objspace_ptr, VALUE obj)
 void
 rb_gc_impl_obj_became_shareable(void *objspace_ptr, VALUE obj)
 {
-    /* MMTk has no per-page shareable bits. */
+    RB_FL_UNSET_RAW(obj, RUBY_FL_SHREF);
 }
 
 void
@@ -1851,8 +1859,7 @@ rb_gc_impl_obj_foreign_p(void *objspace_ptr, VALUE obj)
 bool
 rb_gc_impl_shref_marked_p(void *objspace_ptr, VALUE obj)
 {
-    /* With a single objspace there is no cross-objspace pinning to track. */
-    return true;
+    return RB_FL_TEST_RAW(obj, RUBY_FL_SHREF);
 }
 
 size_t

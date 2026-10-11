@@ -1231,6 +1231,26 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+  def test_freeze_after_publication_promotes_to_shareable
+    assert_ractor(<<~'RUBY')
+      class C
+        class << self; attr_accessor :frozen_after, :never_frozen; end
+      end
+      C.frozen_after = [1, 2, 3]
+      C.frozen_after.freeze
+      C.never_frozen = [4, 5, 6]
+
+      # Ractor.shareable? promotes as a side effect, so asking it here would be what
+      # made the read below succeed.  The cross-Ractor read only tests the flag.
+      assert_equal 6, Ractor.new { C.frozen_after.sum }.value
+
+      # Control: without the freeze there is nothing to promote, so the same read fails.
+      # If it starts passing, the test above has stopped proving anything.
+      err = Ractor.new { C.never_frozen rescue $! }.value
+      assert_equal Ractor::IsolationError, err.class
+    RUBY
+  end
+
   def test_make_shareable_accepts_another_ractors_shareable_object
     assert_ractor(<<~'RUBY')
       class C
