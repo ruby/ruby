@@ -255,18 +255,42 @@ class TestBox < Test::Unit::TestCase
     end
   end
 
+  def test_autoload_of_the_same_name_registered_in_two_boxes
+    # Each box has its own autoload table, as it has its own constant table.
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      require "tmpdir"
+      Dir.mktmpdir do |dir|
+        %w[1 2].each do |n|
+          File.write("#{dir}/foo#{n}.rb", "module Ruby; BoxAutoloadTest = [#{n}, Ruby::Box.current]; end")
+        end
+        b1 = Ruby::Box.new
+        b2 = Ruby::Box.new
+        b1.eval("Ruby.autoload(:BoxAutoloadTest, #{"#{dir}/foo1.rb".dump})")
+        b2.eval("Ruby.autoload(:BoxAutoloadTest, #{"#{dir}/foo2.rb".dump})")
+        assert_equal("#{dir}/foo1.rb", b1.eval("Ruby.autoload?(:BoxAutoloadTest)"))
+        assert_equal([1, b1], b1.eval("Ruby::BoxAutoloadTest"))
+        assert_equal([2, b2], b2.eval("Ruby::BoxAutoloadTest"))
+      end
+    end;
+  end
+
   def test_autoload_registered_in_master_box
     # Ruby::Prism is autoloaded in the master box, and shared by all boxes like
     # builtin classes, regardless of which box triggers it.
     assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
     begin;
       omit "Ruby::Prism is not autoloaded" unless Ruby.autoload?(:Prism)
+      module Ruby; BOX_TEST = 1; end # the main box has its own copy of Ruby
       b1 = Ruby::Box.new
       b2 = Ruby::Box.new
       node = b1.eval("Ruby::Prism::Node")
+      assert_equal("constant", defined?(Ruby::Prism))
       assert_same(node, b2.eval("Ruby::Prism::Node"))
+      assert_same(node, Ruby::Prism::Node)
       assert_same(node, Ruby::Box.root.eval("Ruby::Prism::Node"))
       assert_same(node, Ruby::Box.new.eval("Ruby::Prism::Node"))
+      assert_nil(Ruby.autoload?(:Prism))
     end;
   end
 

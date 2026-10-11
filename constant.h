@@ -34,7 +34,10 @@ typedef struct rb_const_entry_struct {
     rb_const_flag_t flag;
     int line;
     VALUE value;            /* should be mark */
-    VALUE file;             /* should be mark */
+    union {                 /* should be mark */
+        VALUE file;             /* the file where the constant is defined */
+        VALUE autoload_const;   /* the autoload registration if value is Qundef */
+    } u;
 } rb_const_entry_t;
 
 VALUE rb_mod_private_constant(int argc, const VALUE *argv, VALUE obj);
