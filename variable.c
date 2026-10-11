@@ -2808,7 +2808,7 @@ get_autoload_data(VALUE autoload_const_value, struct autoload_const **autoload_c
 
 // The autoload entry of the constant `id` of `mod`, or 0.
 static VALUE
-autoload_data(VALUE mod, ID id)
+autoload_entry(VALUE mod, ID id)
 {
     rb_const_entry_t *ce = rb_const_lookup(mod, id);
     if (!ce || !UNDEF_P(ce->value) || !rb_typeddata_is_kind_of(ce->u.autoload_const, &autoload_const_type)) return 0;
@@ -2956,7 +2956,7 @@ autoload_by_someone_else(struct autoload_data *ele)
 static VALUE
 check_autoload_required(VALUE mod, ID id, const char **loadingpath)
 {
-    VALUE autoload_const_value = autoload_data(mod, id);
+    VALUE autoload_const_value = autoload_entry(mod, id);
     struct autoload_data *autoload_data;
     const char *loading;
 
@@ -3021,7 +3021,7 @@ autoload_by_current(struct autoload_data *ele)
 struct autoload_const *
 autoloading_const_entry(VALUE mod, ID id)
 {
-    VALUE load = autoload_data(mod, id);
+    VALUE load = autoload_entry(mod, id);
     struct autoload_data *ele;
     struct autoload_const *ac;
 
@@ -3502,7 +3502,7 @@ rb_const_location_from(VALUE klass, ID id, int exclude, int recurse, int visibil
             }
 
             VALUE file = ce->u.file;
-            VALUE autoload_const_value = autoload_data(klass, id);
+            VALUE autoload_const_value = autoload_entry(klass, id);
             if (autoload_const_value) {
                 struct autoload_const *autoload_const;
                 struct autoload_data *autoload_data = get_autoload_data(autoload_const_value, &autoload_const);
@@ -3944,7 +3944,7 @@ rb_const_set(VALUE klass, ID id, VALUE val)
 static VALUE
 autoload_const_value_for_named_constant(VALUE module, ID name, struct autoload_const **autoload_const_pointer)
 {
-    VALUE autoload_const_value = autoload_data(module, name);
+    VALUE autoload_const_value = autoload_entry(module, name);
     if (!autoload_const_value) return Qfalse;
 
     struct autoload_data *autoload_data = get_autoload_data(autoload_const_value, autoload_const_pointer);
