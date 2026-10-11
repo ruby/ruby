@@ -6826,7 +6826,7 @@ str_bit_offset_out_of_range(rb_len_t byte_len, uint64_t bit_offset)
  * Keep both the full bit offset and its rb_len_t representation.  Most calls
  * use a Fixnum-sized offset and can stay on the rb_len_t fast path; only large
  * Bignum offsets need the uint64_t path below.  This matters on platforms where
- * rb_len_t is narrower than the address space, such as 32-bit and LLP64.
+ * rb_len_t is 32 bits.
  */
 struct str_bit_offset {
     uint64_t value;

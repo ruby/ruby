@@ -3676,10 +3676,10 @@ class TestArray < Test::Unit::TestCase
     assert_include([1, 2], a.bsearch_index {|x| (2**100).coerce((1 - x / 4) * (2**100)).first })
   end
 
-  sizeof_long = [0].pack("l!").size
+  sizeof_len = RbConfig::SIZEOF["rb_len_t"]
   sizeof_voidp = [""].pack("p").size
-  if sizeof_long < sizeof_voidp
-    ARY_MAX = (1<<(8*sizeof_long-1)) / sizeof_voidp - 1
+  if sizeof_len < sizeof_voidp
+    ARY_MAX = (1<<(8*sizeof_len-1)) / sizeof_voidp - 1
     Bug11235 = '[ruby-dev:49043] [Bug #11235]'
 
     def test_push_over_ary_max
