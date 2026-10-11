@@ -422,6 +422,8 @@ fn main() {
         // These are unsigned long on LP64 but unsigned long long on LLP64 (Windows)
         ("pub type ID = ::std::os::raw::c_ulong;", "pub type ID = u64;"),
         ("pub type st_data_t = ::std::os::raw::c_ulong;", "pub type st_data_t = u64;"),
+        // long on LP64 but int64_t on mswin
+        ("pub type rb_len_t = ::std::os::raw::c_long;", "pub type rb_len_t = i64;"),
     ];
     // Each needle is a whole line of the output, so plain replacement is unambiguous.
     // Yes, this search-and-replace could be faster, but it's a small file.
