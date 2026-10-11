@@ -137,7 +137,7 @@ typedef uint64_t rb_ulen_t;
 #else
 /**
  * A signed integer type for lengths and indices of objects such as String and
- * Array.  It is `long`, except on mswin, where it is `int64_t`.
+ * Array.  It is `long`, except on 64-bit mswin, where it is `int64_t`.
  */
 typedef long rb_len_t;
 
