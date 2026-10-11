@@ -7670,10 +7670,13 @@ rb_w32_write_console(uintptr_t strarg, int fd)
       case ENCINDEX_ASCII_8BIT:
         /* assume UTF-8 */
       case ENCINDEX_UTF_8:
-        ptr = wbuffer = mbstr_to_wstr(CP_UTF8, RSTRING_PTR(str), RSTRING_LEN(str), &len);
+        /* mbstr_to_wstr takes an int; the caller falls back to write(). */
+        if (RSTRING_LEN(str) > INT_MAX) return -1L;
+        ptr = wbuffer = mbstr_to_wstr(CP_UTF8, RSTRING_PTR(str), (int)RSTRING_LEN(str), &len);
         if (!ptr) return -1L;
         break;
       case ENCINDEX_UTF_16LE:
+        if (RSTRING_LEN(str) > INT_MAX) return -1L;
         ptr = (const WCHAR *)RSTRING_PTR(str);
         len = RSTRING_LEN(str) / sizeof(WCHAR);
         break;
