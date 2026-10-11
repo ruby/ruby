@@ -385,6 +385,10 @@ Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for det
   component is still limited to 255 characters, and a child process still
   starts with the `MAX_PATH` limited current directory. [[Bug #18947]]
 
+* On 64-bit Windows with MSVC (mswin), String, Array and MatchData can now be
+  2GiB or longer.  Their lengths used to be `long`, which is 32 bits there.
+  [[Feature #22400]]
+
 * Building Ruby with MSVC now requires Visual Studio 2017 version 15.8
   (`_MSC_VER` 1915) or later.
 
@@ -422,12 +426,12 @@ Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for det
   still refer to unshareable objects through the members of `rb_io_t`.
 
 * `Random.urandom` now raises `RangeError` for every size too large for a
-  `long`, as `Random#bytes` does.  A size that still fit in an `unsigned long`
+  String, as `Random#bytes` does.  A size that still fit in an `unsigned long`
   used to raise `ArgumentError`. [[Feature #22400]]
 
 * `Struct#[]` and `Struct#[]=` now raise `IndexError` for every out-of-range
-  Integer index that fits in a `long`.  An index past the `int` range used to
-  raise `RangeError`. [[Feature #22400]]
+  Integer index within the range of Array indices.  An index past the `int`
+  range used to raise `RangeError`. [[Feature #22400]]
 
 ## Stdlib compatibility issues
 
@@ -499,11 +503,19 @@ Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for det
 * `rb_len_t` and `rb_ulen_t` are added as the types of the lengths and indices
   of String, Array and MatchData, with `LEN2NUM`, `NUM2LEN`, `ULEN2NUM`,
   `rb_len2int`, `PRIdLEN` and its siblings, `RB_LEN_MAX`, `RB_LEN_MIN`,
-  `RB_ULEN_MAX`, `SIZEOF_RB_LEN_T` and `HAVE_RB_LEN_T`.  `RbConfig::SIZEOF["rb_len_t"]`
-  gives its size to an extconf.rb.  They are `long` on every platform for now, and
-  the C API that carries such lengths, such as `RSTRING_LEN` and
-  `rb_range_beg_len`, uses them.  A later change will makes them 64 bits on mswin,
-  so extensions should keep these lengths in `rb_len_t`. [[Feature #22400]]
+  `RB_ULEN_MAX`, `SIZEOF_RB_LEN_T` and `HAVE_RB_LEN_T`.
+  `RbConfig::SIZEOF["rb_len_t"]` gives its size to an extconf.rb.  They are
+  `long`, except on mswin, where they are 64 bits.  The C API that carries such
+  lengths, such as `RSTRING_LEN` and `rb_range_beg_len`, uses them.
+  [[Feature #22400]]
+
+* On mswin this changes the ABI, so extensions have to be rebuilt.  An
+  extension that passes a `long *` to an output parameter such as
+  `rb_range_beg_len` no longer compiles there, and one that keeps a length in
+  `long` truncates it at 2GiB.  Keep such lengths in `rb_len_t`, or convert
+  them with `rb_len2long`.  An extension that also supports older versions can
+  check `HAVE_RB_LEN_T` and fall back to `typedef long rb_len_t`.
+  [[Feature #22400]]
 
 * `rb_len2long` is added to convert an `rb_len_t` to `long`, raising
   `RangeError` via the new `rb_out_of_long` when it does not fit, for
