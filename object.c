@@ -231,6 +231,12 @@ rb_obj_not(VALUE obj)
     return RBOOL(!RTEST(obj));
 }
 
+VALUE
+rb_builtin_bool_negate(rb_execution_context_t *ec, VALUE self, VALUE value)
+{
+    return rb_obj_not(value);
+}
+
 /**
  *  call-seq:
  *     obj != other        -> true or false

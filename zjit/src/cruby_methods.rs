@@ -14,12 +14,13 @@ use std::ffi::c_void;
 use crate::hir_type::{types, Type};
 use crate::hir::{self, FieldName};
 
-// Array iteration builtin functions (defined in array.c)
+// Core library builtin functions (defined in array.c and object.c)
 unsafe extern "C" {
     fn rb_builtin_ary_at_end(ec: EcPtr, self_: VALUE, index: VALUE) -> VALUE;
     fn rb_builtin_ary_at(ec: EcPtr, self_: VALUE, index: VALUE) -> VALUE;
     fn rb_builtin_ary_first(ec: EcPtr, self_: VALUE) -> VALUE;
     fn rb_builtin_fixnum_inc(ec: EcPtr, self_: VALUE, num: VALUE) -> VALUE;
+    fn rb_builtin_bool_negate(ec: EcPtr, self_: VALUE, value: VALUE) -> VALUE;
 }
 
 pub struct Annotations {
@@ -305,6 +306,8 @@ pub fn init() -> Annotations {
     annotate_builtin!(rb_cString, "ascii_only?", inline_string_ascii_only_p, types::BoolExact, no_gc, leaf);
     annotate_builtin!(rb_cString, "valid_encoding?", inline_string_valid_encoding_p, types::BoolExact, no_gc, leaf);
     annotate_builtin!(rb_cSymbol, "empty?", types::BoolExact);
+
+    builtin_funcs.insert(rb_builtin_bool_negate as *mut c_void, FnProperties { inline: inline_bool_negate, return_type: types::BoolExact, ..Default::default() });
 
     // Array iteration builtins (used in with_jit Array#each, map, select, find)
     builtin_funcs.insert(rb_builtin_fixnum_inc as *mut c_void, FnProperties { inline: inline_fixnum_inc, return_type: types::Fixnum, ..Default::default() });
@@ -901,6 +904,11 @@ fn inline_basic_object_eq(fun: &mut hir::Function, block: hir::BlockId, recv: hi
     let c_result = fun.push_insn(block, hir::Insn::IsBitEqual { left: recv, right: other });
     let result = fun.push_insn(block, hir::Insn::BoxBool { val: c_result });
     Some(result)
+}
+
+fn inline_bool_negate(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[_self, val] = args else { return None; };
+    Some(fun.push_insn(block, hir::Insn::BoolNegate { val }))
 }
 
 fn inline_basic_object_not(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {

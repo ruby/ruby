@@ -9,12 +9,8 @@ class BasicObject
         # Keep the replacement classified as a basic method like the C definition.
         Primitive.attr! :c_trace
 
-        # Calling #! on the result would allow a redefinition to change the answer.
-        if self == other
-          false
-        else
-          true
-        end
+        # Negate truthiness without calling a possibly redefined #!.
+        Primitive.rb_builtin_bool_negate(self == other)
       end
     end
   end

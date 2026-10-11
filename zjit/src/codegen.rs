@@ -765,6 +765,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::BoxFixnum { val, state } => gen_box_fixnum(jit, asm, function, opnd!(val), &function.frame_state(state)),
         &Insn::UnboxFixnum { val } => gen_unbox_fixnum(asm, opnd!(val)),
         Insn::Test { val } => gen_test(asm, opnd!(val)),
+        Insn::BoolNegate { val } => gen_bool_negate(asm, opnd!(val), function.type_of(*val)),
         Insn::RefineType { val, .. } => opnd!(val),
         &Insn::GuardType { val, guard_type, state, recompile } => {
             let val_type = function.type_of(val);
@@ -3127,6 +3128,15 @@ fn gen_test(asm: &mut Assembler, val: lir::Opnd) -> lir::Opnd {
     // See RB_TEST(), include/ruby/internal/special_consts.h
     asm.test(val, Opnd::Imm(!Qnil.as_i64()));
     asm.csel_e(0.into(), 1.into())
+}
+
+fn gen_bool_negate(asm: &mut Assembler, val: lir::Opnd, val_type: Type) -> lir::Opnd {
+    if val_type.is_subtype(types::BoolExact) {
+        asm.xor(val, Qtrue.into())
+    } else {
+        asm.test(val, Opnd::Imm(!Qnil.as_i64()));
+        asm.csel_e(Qtrue.into(), Qfalse.into())
+    }
 }
 
 /// Branch to `if_true` if `val` has type `ty` and to `if_false` otherwise, using only the

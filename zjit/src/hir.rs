@@ -1093,6 +1093,8 @@ pub enum Insn {
     IsBitNotEqual { left: InsnId, right: InsnId },
     /// Convert a C `bool` to a Ruby `Qtrue`/`Qfalse`. Same as `RBOOL` macro.
     BoxBool { val: InsnId },
+    /// Negate Ruby truthiness without dispatching #!.
+    BoolNegate { val: InsnId },
     /// Convert a C `long` to a Ruby `Fixnum`. Side exit on overflow.
     BoxFixnum { val: InsnId, state: InsnId },
     UnboxFixnum { val: InsnId },
@@ -1485,6 +1487,7 @@ macro_rules! for_each_operand_impl {
             Insn::RefineType { val, .. }
             | Insn::Return { val }
             | Insn::Test { val }
+            | Insn::BoolNegate { val }
             | Insn::BoxBool { val } => {
                 $visit_one!(*val);
             }
@@ -1847,6 +1850,7 @@ impl Insn {
             Insn::IsBitEqual { .. } => effects::Empty,
             Insn::IsBitNotEqual { .. } => effects::Empty,
             Insn::BoxBool { .. } => effects::Empty,
+            Insn::BoolNegate { .. } => effects::Empty,
             Insn::BoxFixnum { .. } => effects::Empty,
             Insn::UnboxFixnum { .. } => effects::Empty,
             Insn::FixnumAref { .. } => effects::Empty,
@@ -2245,6 +2249,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::IsBitEqual { left, right } => write!(f, "IsBitEqual {left}, {right}"),
             Insn::IsBitNotEqual { left, right } => write!(f, "IsBitNotEqual {left}, {right}"),
             Insn::BoxBool { val } => write!(f, "BoxBool {val}"),
+            Insn::BoolNegate { val } => write!(f, "BoolNegate {val}"),
             Insn::BoxFixnum { val, .. } => write!(f, "BoxFixnum {val}"),
             Insn::UnboxFixnum { val } => write!(f, "UnboxFixnum {val}"),
             Insn::FixnumAref { recv, index } => write!(f, "FixnumAref {recv}, {index}"),
@@ -3737,6 +3742,9 @@ impl Function {
             Insn::IsBitEqual { .. } => types::CBool,
             Insn::IsBitNotEqual { .. } => types::CBool,
             Insn::BoxBool { .. } => types::BoolExact,
+            Insn::BoolNegate { val } if self.type_of(*val).is_known_falsy() => types::TrueClass,
+            Insn::BoolNegate { val } if self.type_of(*val).is_known_truthy() => types::FalseClass,
+            Insn::BoolNegate { .. } => types::BoolExact,
             Insn::BoxFixnum { .. } => types::Fixnum,
             Insn::UnboxFixnum { val } => self
                 .type_of(*val)
@@ -7118,6 +7126,12 @@ impl Function {
                     &Insn::Test { val } if self.type_of(val).is_known_falsy() => {
                         self.new_insn(Insn::Const { val: Const::CBool(false) })
                     }
+                    &Insn::BoolNegate { val } if self.type_of(val).is_known_falsy() => {
+                        self.new_insn(Insn::Const { val: Const::Value(Qtrue) })
+                    }
+                    &Insn::BoolNegate { val } if self.type_of(val).is_known_truthy() => {
+                        self.new_insn(Insn::Const { val: Const::Value(Qfalse) })
+                    }
                     &Insn::Test { val } if self.type_of(val).is_known_truthy() => {
                         self.new_insn(Insn::Const { val: Const::CBool(true) })
                     }
@@ -7990,6 +8004,7 @@ impl Function {
             }
             // Instructions with 1 Ruby object operand
             Insn::Test { val }
+            | Insn::BoolNegate { val }
             | Insn::IsMethodCfunc { val, .. }
             | Insn::SetGlobal { val, .. }
             | Insn::SetLocal { val, .. }
