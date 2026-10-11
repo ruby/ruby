@@ -285,7 +285,7 @@ COMPILERFLAG  = -Zm600
 !if !defined(WARNFLAGS)
 WARNFLAGS = -W2 -wd4100 -wd4127 -wd4210 -wd4214 -wd4255 -wd4574 \
 	    -wd4668 -wd4710 -wd4711 -wd4820 -wd4996 \
-	    -we4028 -we4142 -we4047 -we4013
+	    -we4028 -we4142 -we4047 -we4013 -we4133
 !if $(MSC_VER) >= 1944
 # https://developercommunity.visualstudio.com/t/warning-C5287:-operands-are-different-e/10877942
 WARNFLAGS = $(WARNFLAGS) -wd5287
