@@ -953,6 +953,7 @@ static VALUE
 dir_yield_with_type(VALUE arg, VALUE path, struct dir_entry_args *dir_entry)
 {
     VALUE type;
+#ifdef DT_UNKNOWN
     switch (dir_entry->dp->d_type) {
 #ifdef DT_BLK
       case DT_BLK:
@@ -987,6 +988,9 @@ dir_yield_with_type(VALUE arg, VALUE path, struct dir_entry_args *dir_entry)
         type = sym_unknown;
         break;
     }
+#else
+    type = sym_unknown;
+#endif
 
 #ifdef HAVE_DIRFD
     if (RUBY_DEBUG || RB_UNLIKELY(type == sym_unknown)) {
