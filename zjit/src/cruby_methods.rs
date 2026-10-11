@@ -211,6 +211,16 @@ pub fn init() -> Annotations {
             props.inline = $inline;
             $(props.$properties = true;)+
             annotate_builtin_method(builtin_funcs, unsafe { $module }, $method_name, props);
+        };
+        ($func:ident, $inline:ident) => {
+            annotate_builtin!($func, $inline, types::BasicObject)
+        };
+        ($func:ident, $inline:ident, $return_type:expr) => {
+            builtin_funcs.insert($func as *mut c_void, FnProperties {
+                inline: $inline,
+                return_type: $return_type,
+                ..Default::default()
+            });
         }
     }
 
@@ -307,13 +317,13 @@ pub fn init() -> Annotations {
     annotate_builtin!(rb_cString, "valid_encoding?", inline_string_valid_encoding_p, types::BoolExact, no_gc, leaf);
     annotate_builtin!(rb_cSymbol, "empty?", types::BoolExact);
 
-    builtin_funcs.insert(rb_builtin_bool_negate as *mut c_void, FnProperties { inline: inline_bool_negate, return_type: types::BoolExact, ..Default::default() });
+    annotate_builtin!(rb_builtin_bool_negate, inline_bool_negate, types::BoolExact);
 
     // Array iteration builtins (used in with_jit Array#each, map, select, find)
-    builtin_funcs.insert(rb_builtin_fixnum_inc as *mut c_void, FnProperties { inline: inline_fixnum_inc, return_type: types::Fixnum, ..Default::default() });
-    builtin_funcs.insert(rb_builtin_ary_at as *mut c_void, FnProperties { inline: inline_ary_at, ..Default::default() });
-    builtin_funcs.insert(rb_builtin_ary_at_end as *mut c_void, FnProperties { inline: inline_ary_at_end, return_type: types::BoolExact, ..Default::default() });
-    builtin_funcs.insert(rb_builtin_ary_first as *mut c_void, FnProperties { inline: inline_ary_first, ..Default::default() });
+    annotate_builtin!(rb_builtin_fixnum_inc, inline_fixnum_inc, types::Fixnum);
+    annotate_builtin!(rb_builtin_ary_at, inline_ary_at);
+    annotate_builtin!(rb_builtin_ary_at_end, inline_ary_at_end, types::BoolExact);
+    annotate_builtin!(rb_builtin_ary_first, inline_ary_first);
 
     Annotations {
         cfuncs: std::mem::take(cfuncs),
