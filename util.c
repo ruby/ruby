@@ -604,9 +604,39 @@ ruby_each_words(const char *str, void (*func)(const char*, int, void*), void *ar
 }
 
 #undef strtod
-#define strtod ruby_strtod
+#define strtod ruby_strtod_exact
+static double ruby_strtod_exact(const char *, char **);
 #undef dtoa
 #define dtoa ruby_dtoa
 #undef hdtoa
 #define hdtoa ruby_hdtoa
 #include "missing/dtoa.c"
+#undef strtod
+
+/*
+ * missing/dtoa.c needs the rounding precision of 53 bits, as it says.
+ * x87 rounds to 64 bits by default on some platforms, and the result
+ * is rounded again when it is stored to double.
+ */
+#if defined(__GNUC__) && defined(__i386__) && \
+    defined(FLT_EVAL_METHOD) && FLT_EVAL_METHOD == 2
+# define STRTOD_SET_X87_PRECISION 1
+#endif
+
+double
+ruby_strtod(const char *str, char **endptr)
+{
+    double d;
+#ifdef STRTOD_SET_X87_PRECISION
+    volatile unsigned short cw, cw53;
+
+    __asm__ volatile ("fnstcw %0" : "=m" (cw));
+    cw53 = (cw & ~0x0300) | 0x0200;
+    __asm__ volatile ("fldcw %0" : : "m" (cw53));
+    d = ruby_strtod_exact(str, endptr);
+    __asm__ volatile ("fldcw %0" : : "m" (cw));
+#else
+    d = ruby_strtod_exact(str, endptr);
+#endif
+    return d;
+}
