@@ -4453,18 +4453,27 @@ struct unlink_tree_name {
     struct unlink_tree_name *next;
     char name[];
 };
+#else
+struct unlink_tree_name {
+    struct unlink_tree_name *next;
+    char path[];
+};
 #endif
 
 struct unlink_tree {
 #if USE_UNLINKAT_TREE
-    struct unlink_tree_name *children;
+    DIR *stream;
 #endif
+    struct unlink_tree_name *children;
+    bool eof;
     DIR *dir;
     struct unlink_tree *parent;
     dev_t dev;
     ino_t ino;
     char name[];
 };
+
+#define UNLINK_TREE_BATCH_BYTES (8u << 20)
 
 static bool
 unlink_tree_identical(dev_t dev, ino_t ino, const struct stat *st)
@@ -4477,12 +4486,13 @@ unlink_tree_free(struct unlink_tree *entry)
 {
     if (entry->dir) closedir(entry->dir);
 #if USE_UNLINKAT_TREE
+    if (entry->stream) closedir(entry->stream);
+#endif
     while (entry->children) {
         struct unlink_tree_name *item = entry->children;
         entry->children = item->next;
         free(item);
     }
-#endif
     free(entry);
 }
 
@@ -4490,18 +4500,61 @@ unlink_tree_free(struct unlink_tree *entry)
 /* Retain this many ancestors in addition to the current directory and base. */
 #define UNLINK_TREE_KEEP_PARENTS 8
 
-/* Save names before descending so ancestors need no open directory stream. */
+static int
+unlink_tree_fd(struct unlink_tree *entry)
+{
+    return dirfd(entry->stream ? entry->stream : entry->dir);
+}
+
+/* Read one batch, removing non-directories and empty directories as we go. */
 static int
 unlink_tree_read(struct unlink_tree *entry)
 {
     struct unlink_tree_name **tail = &entry->children;
+    size_t bytes = 0;
+
+    if (!entry->stream) {
+        int fd = openat(dirfd(entry->dir), ".", O_RDONLY | O_DIRECTORY | O_CLOEXEC);
+        if (fd < 0) return -1;
+        entry->stream = fdopendir(fd);
+        if (!entry->stream) {
+            int e = errno;
+            close(fd);
+            errno = e;
+            return -1;
+        }
+    }
+
     for (;;) {
         errno = 0;
-        struct dirent *child = readdir(entry->dir);
-        if (!child) return errno ? -1 : 0;
+        struct dirent *child = readdir(entry->stream);
+        if (!child) {
+            int e = errno;
+            if (closedir(entry->stream) < 0 && !e) e = errno;
+            entry->stream = NULL;
+            entry->eof = true;
+            if (e) {
+                errno = e;
+                return -1;
+            }
+            return 0;
+        }
         const char *name = child->d_name;
         size_t len = NAMLEN(child);
         if (dirent_dot_p(child)) continue;
+
+        int base = unlink_tree_fd(entry);
+        if (unlinkat(base, name, 0) == 0) continue;
+
+        int e = errno;
+        struct stat st;
+        if (fstatat(base, name, &st, AT_SYMLINK_NOFOLLOW) < 0) return -1;
+        if (!S_ISDIR(st.st_mode)) {
+            errno = e;
+            return -1;
+        }
+        if (unlinkat(base, name, AT_REMOVEDIR) == 0) continue;
+
         struct unlink_tree_name *item = malloc(sizeof(*item) + len + 1);
         if (!item) {
             errno = ENOMEM;
@@ -4511,6 +4564,8 @@ unlink_tree_read(struct unlink_tree *entry)
         memcpy(item->name, name, len + 1);
         *tail = item;
         tail = &item->next;
+        bytes += len + 1 + 2 * sizeof(char *) + 24;
+        if (bytes >= UNLINK_TREE_BATCH_BYTES) return 0;
     }
 }
 
@@ -4519,7 +4574,7 @@ static int
 unlink_tree_parent(struct unlink_tree *entry)
 {
     struct unlink_tree *parent = entry->parent;
-    if (parent->dir) return 0;
+    if (parent->dir || parent->stream) return 0;
     int fd = openat(dirfd(entry->dir), "..",
                     O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC);
     if (fd < 0) return -1;
@@ -4588,12 +4643,8 @@ unlink_tree_enter(int base, const char *name, const struct stat *root,
         goto close_fd;
     }
     entry->children = NULL;
-    if (unlink_tree_read(entry) < 0) {
-        e = errno;
-        unlink_tree_free(entry);
-        errno = e;
-        return -1;
-    }
+    entry->stream = NULL;
+    entry->eof = false;
     entry->dev = after.st_dev;
     entry->ino = after.st_ino;
     entry->parent = *stack;
@@ -4624,10 +4675,13 @@ unlink_tree_enter(int base, const char *name, const struct stat *root,
 static int
 unlink_tree_next(struct unlink_tree **stack, const struct stat *root)
 {
+    while (!(*stack)->children) {
+        if ((*stack)->eof) return 0;
+        if (unlink_tree_read(*stack) < 0) return -1;
+    }
     struct unlink_tree_name *child = (*stack)->children;
-    if (!child) return 0;
     (*stack)->children = child->next;
-    int ret = unlink_tree_enter(dirfd((*stack)->dir), child->name, root, stack);
+    int ret = unlink_tree_enter(unlink_tree_fd(*stack), child->name, root, stack);
     int e = ret == -1 ? errno : 0;
     free(child);
     if (ret == -1) errno = e;
@@ -4641,7 +4695,7 @@ unlink_tree_leave(struct unlink_tree *entry, int base)
         int ret = unlink_tree_parent(entry);
         if (ret < 0) return ret;
     }
-    int parentfd = entry->parent ? dirfd(entry->parent->dir) : base;
+    int parentfd = entry->parent ? unlink_tree_fd(entry->parent) : base;
     struct stat st;
     if (fstatat(parentfd, entry->name, &st, AT_SYMLINK_NOFOLLOW) < 0) return -1;
     if (!unlink_tree_identical(entry->dev, entry->ino, &st)) {
@@ -4695,6 +4749,8 @@ unlink_tree_enter(const char *path, const struct stat *root, struct unlink_tree 
     }
     memcpy(entry->name, path, size);
     entry->dir = dir;
+    entry->children = NULL;
+    entry->eof = false;
     entry->dev = st.st_dev;
     entry->ino = st.st_ino;
     entry->parent = *stack;
@@ -4716,26 +4772,72 @@ unlink_tree_next(struct unlink_tree **stack, const struct stat *root)
     if (!S_ISDIR(st.st_mode) || !unlink_tree_identical(entry->dev, entry->ino, &st)) {
         return -2;
     }
-    struct dirent *child;
-    do {
-        errno = 0;
-        child = readdir(entry->dir);
-        if (!child) return errno ? -1 : 0;
-    } while (dirent_dot_p(child));
-    const char *name = child->d_name;
-    size_t namlen = NAMLEN(child);
-    size_t plen = strlen(entry->name);
-    char *path = malloc(plen + namlen + 2);
-    if (!path) {
-        errno = ENOMEM;
-        return -1;
+    while (!entry->children && !entry->eof) {
+        size_t bytes = 0;
+        struct unlink_tree_name **tail = &entry->children;
+        struct dirent *child;
+        while (1) {
+            errno = 0;
+            child = readdir(entry->dir);
+            if (!child) {
+                if (errno) return -1;
+                entry->eof = true;
+                break;
+            }
+            if (dirent_dot_p(child)) continue;
+            size_t namlen = NAMLEN(child);
+            size_t plen = strlen(entry->name);
+            char *path = malloc(plen + namlen + 2);
+            if (!path) {
+                errno = ENOMEM;
+                return -1;
+            }
+            memcpy(path, entry->name, plen);
+            path[plen] = '/';
+            memcpy(path + plen + 1, child->d_name, namlen + 1);
+
+            struct stat st;
+            if (lstat(path, &st) < 0) {
+                int e = errno;
+                free(path);
+                errno = e;
+                return -1;
+            }
+            if (!S_ISDIR(st.st_mode)) {
+                int ret = unlink(path);
+                int e = errno;
+                free(path);
+                if (ret < 0) {
+                    errno = e;
+                    return -1;
+                }
+                continue;
+            }
+            if (rmdir(path) == 0) {
+                free(path);
+                continue;
+            }
+            struct unlink_tree_name *item = malloc(sizeof(*item) + strlen(path) + 1);
+            if (!item) {
+                free(path);
+                errno = ENOMEM;
+                return -1;
+            }
+            item->next = NULL;
+            strcpy(item->path, path);
+            free(path);
+            *tail = item;
+            tail = &item->next;
+            bytes += strlen(item->path) + 1 + 2 * sizeof(char *) + 24;
+            if (bytes >= UNLINK_TREE_BATCH_BYTES) break;
+        }
     }
-    memcpy(path, entry->name, plen);
-    path[plen] = '/';
-    memcpy(path + plen + 1, name, namlen + 1);
-    int ret = unlink_tree_enter(path, root, stack);
+    if (!entry->children) return 0;
+    struct unlink_tree_name *child = entry->children;
+    entry->children = child->next;
+    int ret = unlink_tree_enter(child->path, root, stack);
     int e = ret == -1 ? errno : 0;
-    free(path);
+    free(child);
     if (ret == -1) errno = e;
     return ret < 0 ? ret : 1;
 }

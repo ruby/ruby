@@ -8070,19 +8070,32 @@ rb_w32_unlink(const char *path)
 }
 
 /* License: Ruby's */
+struct wunlink_tree_child {
+    struct wunlink_tree_child *next;
+    WCHAR *path;
+    BY_HANDLE_FILE_INFORMATION info;
+};
+
 struct wunlink_tree {
     HANDLE handle;
     WCHAR *path;
     struct wunlink_tree *parent;
+    struct wunlink_tree_child *children;
+    struct wunlink_tree_child **children_tail;
     BYTE *buffer;
     DWORD offset;
     DWORD attributes;
+    BY_HANDLE_FILE_INFORMATION info;
+    BOOL eof;
     BOOL remove;
 };
 
+#define WUNLINK_TREE_BATCH_BYTES (8u << 20)
+
 /* Keep each path component open without read, write or delete sharing. */
 static int
-wunlink_tree_enter(WCHAR *path, BOOL remove, struct wunlink_tree **stack)
+wunlink_tree_enter(WCHAR *path, BOOL remove, const BY_HANDLE_FILE_INFORMATION *expected,
+                   struct wunlink_tree **stack)
 {
     DWORD attributes = GetFileAttributesW(path);
     if (attributes == INVALID_FILE_ATTRIBUTES) {
@@ -8108,6 +8121,12 @@ wunlink_tree_enter(WCHAR *path, BOOL remove, struct wunlink_tree **stack)
         e = map_errno(GetLastError());
         goto close_handle;
     }
+    if (expected && (expected->dwVolumeSerialNumber != info.dwVolumeSerialNumber ||
+                     expected->nFileIndexHigh != info.nFileIndexHigh ||
+                     expected->nFileIndexLow != info.nFileIndexLow)) {
+        CloseHandle(handle);
+        return -2;
+    }
     /* Do not silently reinterpret a changed type or newly readonly entry. */
     const DWORD mask = FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_REPARSE_POINT | FILE_ATTRIBUTE_READONLY;
     if ((attributes & mask) != (info.dwFileAttributes & mask)) {
@@ -8127,8 +8146,10 @@ wunlink_tree_enter(WCHAR *path, BOOL remove, struct wunlink_tree **stack)
     entry->handle = handle;
     entry->path = path;
     entry->attributes = attributes;
+    entry->info = info;
     entry->remove = remove;
     entry->parent = *stack;
+    entry->children_tail = &entry->children;
     *stack = entry;
     return 0;
 
@@ -8244,7 +8265,7 @@ rb_w32_uunlink_recursive(const char *path)
         }
         memcpy(part, full, n * sizeof(WCHAR));
         part[n] = L'\0';
-        ret = wunlink_tree_enter(part, !*p, &stack);
+        ret = wunlink_tree_enter(part, !*p, NULL, &stack);
         if (ret < 0) {
             if (ret == -1) e = errno;
             free(part);
@@ -8257,43 +8278,110 @@ rb_w32_uunlink_recursive(const char *path)
     while (stack && stack->remove) {
         struct wunlink_tree *entry = stack;
         if ((entry->attributes & (FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_REPARSE_POINT)) == FILE_ATTRIBUTE_DIRECTORY) {
-            if (!entry->buffer) {
-                entry->buffer = malloc(65536);
+            size_t bytes = 0;
+            while (!entry->eof && !entry->children && bytes < WUNLINK_TREE_BATCH_BYTES) {
                 if (!entry->buffer) {
+                    entry->buffer = malloc(65536);
+                    if (!entry->buffer) {
+                        e = ENOMEM;
+                        goto done;
+                    }
+                }
+                if (!entry->offset) {
+                    if (!GetFileInformationByHandleEx(entry->handle, FileIdBothDirectoryInfo, entry->buffer, 65536)) {
+                        DWORD error = GetLastError();
+                        if (error != ERROR_NO_MORE_FILES) {
+                            e = map_errno(error);
+                            goto done;
+                        }
+                        entry->eof = TRUE;
+                        break;
+                    }
+                }
+                FILE_ID_BOTH_DIR_INFO *child = (FILE_ID_BOTH_DIR_INFO *)(entry->buffer + entry->offset);
+                entry->offset = child->NextEntryOffset ? entry->offset + child->NextEntryOffset : 0;
+                size_t n = child->FileNameLength / sizeof(WCHAR);
+                if (n && child->FileName[0] == L'.' && (n == 1 || (n == 2 && child->FileName[1] == L'.'))) continue;
+                size_t plen = wcslen(entry->path);
+                WCHAR *childpath = malloc((plen + n + 2) * sizeof(WCHAR));
+                if (!childpath) {
                     e = ENOMEM;
                     goto done;
                 }
-            }
-            if (!entry->offset) {
-                if (!GetFileInformationByHandleEx(entry->handle, FileIdBothDirectoryInfo, entry->buffer, 65536)) {
-                    DWORD error = GetLastError();
-                    if (error != ERROR_NO_MORE_FILES) {
-                        e = map_errno(error);
+                memcpy(childpath, entry->path, plen * sizeof(WCHAR));
+                childpath[plen] = L'\\';
+                memcpy(childpath + plen + 1, child->FileName, child->FileNameLength);
+                childpath[plen + n + 1] = L'\0';
+                ret = wunlink_tree_enter(childpath, TRUE, NULL, &stack);
+                if (ret < 0) {
+                    if (ret == -1) e = errno;
+                    free(childpath);
+                    goto done;
+                }
+                struct wunlink_tree *child_entry = stack;
+                BOOL directory = (child_entry->attributes & FILE_ATTRIBUTE_DIRECTORY) &&
+                    !(child_entry->attributes & FILE_ATTRIBUTE_REPARSE_POINT);
+                if (!directory) {
+                    if (!wunlink_tree_delete(child_entry)) {
+                        e = map_errno(GetLastError());
                         goto done;
                     }
-                    goto remove_entry;
+                    stack = child_entry->parent;
+                    if (!CloseHandle(child_entry->handle)) e = map_errno(GetLastError());
+                    free(child_entry->buffer);
+                    free(child_entry->path);
+                    free(child_entry);
+                    if (e) goto done;
+                    continue;
                 }
+                if (wunlink_tree_delete(child_entry)) {
+                    stack = child_entry->parent;
+                    if (!CloseHandle(child_entry->handle)) e = map_errno(GetLastError());
+                    free(child_entry->buffer);
+                    free(child_entry->path);
+                    free(child_entry);
+                    if (e) goto done;
+                    continue;
+                }
+                DWORD error = GetLastError();
+                if (error != ERROR_DIR_NOT_EMPTY) {
+                    e = map_errno(error);
+                    goto done;
+                }
+                struct wunlink_tree_child *queued = malloc(sizeof(*queued));
+                if (!queued) {
+                    e = ENOMEM;
+                    goto done;
+                }
+                queued->next = NULL;
+                queued->path = child_entry->path;
+                queued->info = child_entry->info;
+                *entry->children_tail = queued;
+                entry->children_tail = &queued->next;
+                size_t child_bytes = (wcslen(queued->path) + 1) * sizeof(WCHAR) + sizeof(*queued) + 24;
+                bytes += child_bytes;
+                stack = child_entry->parent;
+                if (!CloseHandle(child_entry->handle)) e = map_errno(GetLastError());
+                free(child_entry->buffer);
+                free(child_entry);
+                if (e) goto done;
             }
-            FILE_ID_BOTH_DIR_INFO *child = (FILE_ID_BOTH_DIR_INFO *)(entry->buffer + entry->offset);
-            entry->offset = child->NextEntryOffset ? entry->offset + child->NextEntryOffset : 0;
-            size_t n = child->FileNameLength / sizeof(WCHAR);
-            if (n && child->FileName[0] == L'.' && (n == 1 || (n == 2 && child->FileName[1] == L'.'))) continue;
-            size_t plen = wcslen(entry->path);
-            WCHAR *childpath = malloc((plen + n + 2) * sizeof(WCHAR));
-            if (!childpath) {
-                e = ENOMEM;
-                goto done;
+            if (entry->children) {
+                struct wunlink_tree_child *queued = entry->children;
+                entry->children = queued->next;
+                if (!entry->children) entry->children_tail = &entry->children;
+                WCHAR *childpath = queued->path;
+                ret = wunlink_tree_enter(childpath, TRUE, &queued->info, &stack);
+                if (ret < 0) {
+                    if (ret == -1) e = errno;
+                    free(childpath);
+                    free(queued);
+                    goto done;
+                }
+                free(queued);
+                continue;
             }
-            memcpy(childpath, entry->path, plen * sizeof(WCHAR));
-            childpath[plen] = L'\\';
-            memcpy(childpath + plen + 1, child->FileName, child->FileNameLength);
-            childpath[plen + n + 1] = L'\0';
-            ret = wunlink_tree_enter(childpath, TRUE, &stack);
-            if (ret < 0) {
-                if (ret == -1) e = errno;
-                free(childpath);
-                goto done;
-            }
+            if (entry->eof) goto remove_entry;
             continue;
         }
       remove_entry:
@@ -8316,6 +8404,12 @@ rb_w32_uunlink_recursive(const char *path)
         CloseHandle(entry->handle);
         free(entry->buffer);
         free(entry->path);
+        while (entry->children) {
+            struct wunlink_tree_child *child = entry->children;
+            entry->children = child->next;
+            free(child->path);
+            free(child);
+        }
         free(entry);
     }
     free(full);
