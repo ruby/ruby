@@ -22992,7 +22992,7 @@ pm_parser_init(pm_arena_t *arena, pm_parser_t *parser, const uint8_t *source, si
         .encoding_changed_callback = NULL,
         .encoding_comment_start = source,
         .lex_callback = { 0 },
-        .filepath = { 0 },
+        .filepath = PM_STRING_EMPTY,
         .constant_pool = { 0 },
         .line_offsets = { 0 },
         .integer = { 0 },
@@ -23040,7 +23040,9 @@ pm_parser_init(pm_arena_t *arena, pm_parser_t *parser, const uint8_t *source, si
     // If options were provided to this parse, establish them here.
     if (options != NULL) {
         // filepath option
-        parser->filepath = options->filepath;
+        if (pm_string_length(&options->filepath) > 0) {
+            parser->filepath = options->filepath;
+        }
 
         // line option
         parser->start_line = options->line;
