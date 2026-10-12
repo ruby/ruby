@@ -1332,18 +1332,18 @@ parse_stream_fgets(char *string, int size, void *stream) {
     }
 
     const char *cstr = RSTRING_PTR(line);
-    long length = RSTRING_LEN(line);
+    size_t length = (size_t) RSTRING_LEN(line);
 
     /*
      * Defensively clamp the copy. A misbehaving `gets` may ignore the limit
      * entirely and return an arbitrarily long string; we must never write past
      * the caller's buffer. One byte is reserved for the NUL terminator.
      */
-    if (length > (long) (size - 1)) {
-        length = (long) (size - 1);
+    if (length > (size_t) (size - 1)) {
+        length = (size_t) (size - 1);
     }
 
-    memcpy(string, cstr, (size_t) length);
+    memcpy(string, cstr, length);
     string[length] = '\0';
 
     return string;
