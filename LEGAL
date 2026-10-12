@@ -65,6 +65,16 @@ mentioned below.
   Unless otherwise specified, these files are licensed under the
   {MIT License}[rdoc-ref:@MIT+License].
 
+[float_conv.c]
+[float_conv_table.h]
+
+  These files are adapted from Drachennest by Alexander Bolz https://github.com/abolz/Drachennest
+
+  >>>
+    Copyright 2020 Alexander Bolz
+
+    {Boost Software License}[rdoc-ref:@Boost+Software+License+1.0]
+
 [include/ruby/onigmo.h]
 [include/ruby/oniguruma.h]
 [regcomp.c]
