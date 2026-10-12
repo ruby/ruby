@@ -17,6 +17,7 @@
 #include "digest.h"
 
 #ifndef HAVE_RB_LEN_T
+# define RB_LEN_MAX LONG_MAX
 # define LEN2NUM LONG2NUM
 #endif
 
@@ -116,7 +117,7 @@ hexencode_str_new(VALUE str_digest)
     digest = RSTRING_PTR(str_digest);
     digest_len = RSTRING_LEN(str_digest);
 
-    if (LONG_MAX / 2 < digest_len) {
+    if (RB_LEN_MAX / 2 < digest_len) {
         rb_raise(rb_eRuntimeError, "digest string too long");
     }
 
