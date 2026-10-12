@@ -1523,7 +1523,7 @@ stack_double(OnigStackType** arg_stk_base, OnigStackType** arg_stk_end,
 #endif
 
 #ifdef ONIG_DEBUG_MATCH_CACHE
-# define MATCH_CACHE_DEBUG_MEMOIZE(stkp) fprintf(stderr, "MATCH CACHE: memoize (index=%ld mask=%d)\n", stkp->u.match_cache_point.index, stkp->u.match_cache_point.mask);
+# define MATCH_CACHE_DEBUG_MEMOIZE(stkp) fprintf(stderr, "MATCH CACHE: memoize (index=%td mask=%d)\n", stkp->u.match_cache_point.index, stkp->u.match_cache_point.mask);
 #else
 # define MATCH_CACHE_DEBUG_MEMOIZE(stkp) ((void) 0)
 #endif
@@ -2281,7 +2281,7 @@ find_cache_point(regex_t* reg, const OnigCacheOpcode* cache_opcodes, long num_ca
 }
 
 static int
-check_extended_match_cache_point(uint8_t *match_cache_buf, long match_cache_point_index, uint8_t match_cache_point_mask)
+check_extended_match_cache_point(uint8_t *match_cache_buf, OnigPosition match_cache_point_index, uint8_t match_cache_point_mask)
 {
   if (match_cache_point_mask & 0x80) {
     return (match_cache_buf[match_cache_point_index + 1] & 0x01) > 0;
@@ -2292,7 +2292,7 @@ check_extended_match_cache_point(uint8_t *match_cache_buf, long match_cache_poin
 }
 
 static void
-memoize_extended_match_cache_point(uint8_t *match_cache_buf, long match_cache_point_index, uint8_t match_cache_point_mask)
+memoize_extended_match_cache_point(uint8_t *match_cache_buf, OnigPosition match_cache_point_index, uint8_t match_cache_point_mask)
 {
   match_cache_buf[match_cache_point_index] |= match_cache_point_mask;
   if (match_cache_point_mask & 0x80) {
@@ -2614,7 +2614,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 
 #ifdef USE_MATCH_CACHE
 #ifdef ONIG_DEBUG_MATCH_CACHE
-#define MATCH_CACHE_DEBUG fprintf(stderr, "MATCH CACHE: cache %ld (p=%p index=%ld mask=%d)\n", match_cache_point, pbegin, match_cache_point_index, match_cache_point_mask)
+#define MATCH_CACHE_DEBUG fprintf(stderr, "MATCH CACHE: cache %td (p=%p index=%td mask=%d)\n", match_cache_point, pbegin, match_cache_point_index, match_cache_point_mask)
 #define MATCH_CACHE_DEBUG_HIT fprintf(stderr, "MATCH CACHE: cache hit\n")
 #else
 #define MATCH_CACHE_DEBUG ((void) 0)
@@ -2628,8 +2628,8 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
     const OnigCacheOpcode *cache_opcode;\
     long cache_point = find_cache_point(reg, msa->cache_opcodes, msa->num_cache_opcodes, pbegin, stk_base, repeat_stk, &cache_opcode);\
     if (cache_point >= 0) {\
-      long match_cache_point = msa->num_cache_points * (long)(s - str) + cache_point;\
-      long match_cache_point_index = match_cache_point >> 3;\
+      OnigPosition match_cache_point = msa->num_cache_points * (OnigPosition)(s - str) + cache_point;\
+      OnigPosition match_cache_point_index = match_cache_point >> 3;\
       uint8_t match_cache_point_mask = 1 << (match_cache_point & 7);\
       MATCH_CACHE_DEBUG;\
       if (msa->match_cache_buf[match_cache_point_index] & match_cache_point_mask) {\
@@ -4130,7 +4130,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 #ifdef USE_MATCH_CACHE
       if (
           msa->match_cache_status != MATCH_CACHE_STATUS_DISABLED &&
-          ++msa->num_fails >= (long)(end - str) * msa->num_cache_opcodes
+          ++msa->num_fails >= (OnigPosition)(end - str) * msa->num_cache_opcodes
       ) {
         if (msa->match_cache_status == MATCH_CACHE_STATUS_UNINIT) {
           msa->match_cache_status = MATCH_CACHE_STATUS_INIT;
@@ -4141,7 +4141,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
           msa->match_cache_status = MATCH_CACHE_STATUS_DISABLED;
           goto fail_match_cache;
         }
-        if (msa->num_fails < (long)(end - str) * msa->num_cache_opcodes) {
+        if (msa->num_fails < (OnigPosition)(end - str) * msa->num_cache_opcodes) {
           goto fail_match_cache;
         }
         if (msa->cache_opcodes == NULL) {
@@ -4175,7 +4175,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
           if (num_match_cache_points / length != (size_t)msa->num_cache_points) {
             return ONIGERR_MEMORY;
           }
-          if (num_match_cache_points >= LONG_MAX_LIMIT) {
+          if (num_match_cache_points >= (size_t)PTRDIFF_MAX) {
             return ONIGERR_MEMORY;
           }
           size_t match_cache_buf_length = (num_match_cache_points >> 3) + (num_match_cache_points & 7 ? 1 : 0) + 1;
