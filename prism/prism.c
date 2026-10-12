@@ -21490,6 +21490,14 @@ parse_regular_expression_named_capture(pm_parser_t *parser, const pm_string_t *c
     const uint8_t *cursor = pm_memchr(source, '\\', length, parser->encoding_changed, parser->encoding);
     if (PRISM_UNLIKELY(cursor != NULL)) {
         pm_named_capture_escape(parser, &unescaped, source, length, cursor, shared ? NULL : &call->receiver->location);
+
+        /*
+         * Escapes like \u{} write nothing, so the unescaped name can be empty.
+         * An empty name is never a valid local, and the buffer is unallocated
+         * (NULL) in that case, so there is no slice to check.
+         */
+        if (pm_buffer_length(&unescaped) == 0) return;
+
         source = (const uint8_t *) pm_buffer_value(&unescaped);
         length = pm_buffer_length(&unescaped);
     }
