@@ -302,6 +302,16 @@ class TC_IPAddr < Test::Unit::TestCase
     assert_equal("fe80::1%0012", IPAddr.new("fe80::1%0012").to_s)
   end
 
+  def test_to_hex
+    assert_equal("c0a80101", IPAddr.new("192.168.1.1").to_hex)
+    assert_equal("00000000", IPAddr.new("0.0.0.0").to_hex)
+    assert_equal("ffffffff", IPAddr.new("255.255.255.255").to_hex)
+    assert_equal("3ffe0505000200000000000000000001", IPAddr.new("3ffe:505:2::1").to_hex)
+    assert_equal("0123456789abcdef0abcdef012345678", IPAddr.new("123:4567:89ab:cdef:0abc:def0:1234:5678").to_hex)
+    assert_equal("00000000000000000000000000000000", IPAddr.new("::").to_hex)
+    assert_equal("ffffffffffffffffffffffffffffffff", IPAddr.new("ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff").to_hex)
+  end
+
   def test_as_json
     assert_equal("192.168.1.2", IPAddr.new("192.168.1.2").as_json)
     assert_equal("192.168.1.0/24", IPAddr.new("192.168.1.2/24").as_json)

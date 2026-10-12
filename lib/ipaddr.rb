@@ -205,6 +205,24 @@ class IPAddr
     return @addr
   end
 
+  # Returns a string containing the hexadecimal representation of the
+  # IP address value, right adjusted to the address size.
+  #
+  # e.g.:
+  #   require 'ipaddr'
+  #   p IPAddr.new("192.168.1.1").to_hex   #=> "c0a80101"
+  #   p IPAddr.new("3ffe:505:2::1").to_hex #=> "3ffe0505000200000000000000000001"
+  def to_hex
+    case @family
+    when Socket::AF_INET
+      @addr.to_s(16).rjust(8, '0')
+    when Socket::AF_INET6
+      @addr.to_s(16).rjust(32, '0')
+    else
+      raise AddressFamilyError, "unsupported address family"
+    end
+  end
+
   # Returns a string containing the IP address representation.
   def to_s
     str = _to_string(@addr)
@@ -268,12 +286,9 @@ class IPAddr
   # Returns a network byte ordered string form of the IP address.
   def hton
     case @family
-    when Socket::AF_INET
-      return [@addr].pack('N')
-    when Socket::AF_INET6
-      return (0..7).map { |i|
-        (@addr >> (112 - 16 * i)) & 0xffff
-      }.pack('n8')
+    when Socket::AF_INET, Socket::AF_INET6
+      value = to_hex
+      return [value].pack("H#{value.length}")
     else
       raise AddressFamilyError, "unsupported address family"
     end
@@ -830,7 +845,7 @@ class IPAddr
         (@addr >> (8 * i)) & 0xff
       }.join('.')
     when Socket::AF_INET6
-      return ("%.32x" % @addr).reverse!.gsub!(/.(?!$)/, '\&.')
+      return to_hex.reverse.chars.join('.')
     else
       raise AddressFamilyError, "unsupported address family"
     end
