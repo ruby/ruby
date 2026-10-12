@@ -2003,6 +2003,97 @@ class TestArray < Test::Unit::TestCase
     end
   end
 
+  def test_sort_numeric
+    fixmax = RbConfig::LIMITS["FIXNUM_MAX"]
+    fixmin = RbConfig::LIMITS["FIXNUM_MIN"]
+    rng = Random.new(42)
+    patterns = {
+      int_random: ->(n) { Array.new(n) { rng.rand(fixmin..fixmax) } },
+      int_few: ->(n) { Array.new(n) { rng.rand(-2..2) } },
+      int_sorted: ->(n) { Array.new(n) {|i| i - n / 2 } },
+      int_reversed: ->(n) { Array.new(n) {|i| n - i } },
+      int_non_ascending: ->(n) { Array.new(n) {|i| (n - i) / 3 } },
+      int_equal: ->(n) { Array.new(n, -3) },
+      int_organ_pipe: ->(n) { Array.new(n) {|i| i < n / 2 ? i : n - i } },
+      int_two_runs: ->(n) { Array.new(n) {|i| i < n / 2 ? 2 * i : 2 * (i - n / 2) + 1 } },
+      int_nearly_sorted: ->(n) { Array.new(n) {|i| i }.tap {|a| a[rng.rand(n)] = rng.rand(n) } },
+      int_push_front: ->(n) { Array.new(n) {|i| i + 1 }.tap {|a| a[-1] = 0 } },
+      int_extremes: ->(n) { Array.new(n) { [fixmin, fixmax, 0, -1, 1].sample(random: rng) } },
+      float_random: ->(n) { Array.new(n) { (rng.rand - 0.5) * 10**rng.rand(-60..60) } },
+      float_few: ->(n) { Array.new(n) { [0.0, 1.5, -1.5, 2.0].sample(random: rng) } },
+      float_reversed: ->(n) { Array.new(n) {|i| -i * 0.25 } },
+      # not specialized
+      float_heap: ->(n) { Array.new(n) { [-0.0, 0.0, 1e300, -1e300, Float::INFINITY].sample(random: rng) } },
+      int_then_bignum: ->(n) { Array.new(n) { rng.rand(100) } << fixmax + 1 },
+      int_then_float: ->(n) { Array.new(n) { rng.rand(100) } << 0.5 },
+      float_then_int: ->(n) { Array.new(n) { rng.rand } << 3 },
+    }
+    patterns.each do |name, gen|
+      [2, 3, 5, 24, 25, 26, 47, 48, 49, 100, 1000, 5000].each do |n|
+        a = @cls[*gen[n]]
+        orig = a.dup
+        expected = a.sort {|x, y| x <=> y}
+        sorted = a.sort
+        assert_equal(orig, a, "#{name} #{n}")
+        assert_equal(expected.size, sorted.size, "#{name} #{n}")
+        assert(expected.zip(sorted).all? {|x, y| x.equal?(y) || x.eql?(y)}, "#{name} #{n}")
+        assert_same(a, a.sort!, "#{name} #{n}")
+        assert(sorted.zip(a).all? {|x, y| x.equal?(y) || x.eql?(y)}, "#{name} #{n}")
+      end
+    end
+
+    assert_raise(ArgumentError) { (Array.new(100) { rng.rand } << Float::NAN).shuffle(random: rng).sort }
+    assert_raise(FrozenError) { @cls[3, 1, 2].freeze.sort! }
+  end
+
+  def test_sort_numeric_redefined_cmp
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      class Integer
+        alias_method :orig_cmp, :<=>
+        def <=>(other) = -orig_cmp(other)
+      end
+      assert_equal([5, 4, 3, 2, 1], [3, 1, 2, 5, 4].sort)
+    end;
+
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      class Float
+        alias_method :orig_cmp, :<=>
+        def <=>(other) = -orig_cmp(other)
+      end
+      assert_equal([5.0, 4.0, 3.0, 2.0, 1.0], [3.0, 1.0, 2.0, 5.0, 4.0].sort)
+    end;
+  end
+
+  # An input on which the sort specialized for numbers keeps choosing
+  # bad pivots, until it gives up and falls back to heapsort.  Made by
+  # running the adversary in M. D. McIlroy, "A Killer Adversary for
+  # Quicksort" (1999) against rb_numsort() in internal/sort.h, and needs
+  # to be made again when the way to choose the pivots there is changed.
+  SORT_KILLER = [
+    0, 149, 162, 197, 86, 160, 136, 89, 196, 126, 157, 134, 22, 191, 124,
+    155, 132, 96, 186, 198, 152, 130, 87, 180, 193, 1, 128, 13, 179, 189,
+    146, 42, 46, 174, 184, 144, 169, 95, 172, 6, 31, 12, 195, 194, 164,
+    192, 18, 190, 159, 188, 187, 24, 185, 30, 183, 182, 181, 154, 36, 178,
+    177, 176, 175, 7, 173, 199, 171, 170, 19, 168, 167, 166, 165, 25, 163,
+    2, 161, 8, 37, 158, 14, 156, 20, 43, 153, 26, 151, 150, 32, 148,
+    147, 38, 145, 44, 143, 142, 141, 140, 139, 138, 3, 137, 9, 135, 15,
+    133, 21, 131, 27, 129, 33, 127, 39, 125, 45, 123, 122, 121, 120, 119,
+    118, 117, 116, 115, 114, 113, 112, 111, 110, 109, 108, 107, 106, 105, 104,
+    103, 102, 101, 100, 11, 98, 29, 23, 17, 41, 35, 92, 67, 90, 4,
+    88, 10, 16, 28, 34, 40, 85, 84, 83, 82, 81, 80, 79, 77, 74,
+    75, 76, 48, 73, 72, 71, 70, 69, 68, 5, 99, 47, 97, 93, 94,
+    91, 66, 65, 64, 63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53,
+    52, 51, 50, 49, 78,
+  ].freeze
+
+  def test_sort_killer
+    expected = SORT_KILLER.sort {|a, b| a <=> b}
+    assert_equal(expected, @cls[*SORT_KILLER].sort)
+    assert_equal(expected.map(&:to_f), @cls[*SORT_KILLER.map(&:to_f)].sort)
+  end
+
   def test_sort_with_callcc
     need_continuation
     n = 1000
