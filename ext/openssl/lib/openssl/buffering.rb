@@ -111,13 +111,9 @@ module OpenSSL::Buffering
   # See IO#read for full details.
 
   def read(size=nil, buf=nil)
-    if size == 0
-      if buf
-        buf.clear
-        return buf
-      else
-        return String.new
-      end
+    if size
+      return buf&.clear || String.new if size == 0
+      raise ArgumentError, "negative length #{size} given" if size < 0
     end
     until @eof
       break if size && size <= @rbuffer.size
@@ -139,13 +135,9 @@ module OpenSSL::Buffering
   # See IO#readpartial for full details.
 
   def readpartial(maxlen, buf=nil)
-    if maxlen == 0
-      if buf
-        buf.clear
-        return buf
-      else
-        return String.new
-      end
+    if maxlen
+      return buf&.clear || String.new if maxlen == 0
+      raise ArgumentError, "negative length #{maxlen} given" if maxlen < 0
     end
     if @rbuffer.empty?
       return sysread(maxlen, buf)
@@ -193,13 +185,9 @@ module OpenSSL::Buffering
   # it will return +nil+ instead of raising EOFError.
 
   def read_nonblock(maxlen, buf=nil, exception: true)
-    if maxlen == 0
-      if buf
-        buf.clear
-        return buf
-      else
-        return String.new
-      end
+    if maxlen
+      return buf&.clear || String.new if maxlen == 0
+      raise ArgumentError, "negative length #{maxlen} given" if maxlen < 0
     end
     if @rbuffer.empty?
       return sysread_nonblock(maxlen, buf, exception: exception)

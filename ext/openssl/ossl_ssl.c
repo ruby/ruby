@@ -1901,6 +1901,8 @@ ossl_ssl_read(VALUE self, VALUE len, VALUE str)
         rb_raise(eSSLError, "SSL session is not started yet");
 
     ilen = NUM2INT(len);
+    if (ilen < 0)
+        rb_raise(rb_eArgError, "negative length %d given", ilen);
     StringValue(str);
     if ((rb_len_t)rb_str_capacity(str) >= ilen)
         rb_str_modify(str);
