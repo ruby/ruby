@@ -1891,7 +1891,7 @@ char_is_identifier_utf8(const uint8_t *b, ptrdiff_t n) {
  * Up to three optimized implementations are selected at compile time, with a
  * no-op fallback for unsupported platforms:
  *   1. NEON — processes 16 bytes per iteration on aarch64.
- *   2. SSSE3 — processes 16 bytes per iteration on x86-64.
+ *   2. SSE2 — processes 16 bytes per iteration on x86-64.
  *   3. SWAR — little-endian fallback, processes 8 bytes per iteration.
  */
 
@@ -1949,8 +1949,8 @@ scan_identifier_ascii(const uint8_t *start, const uint8_t *end) {
     return (size_t) (cursor - start);
 }
 
-#elif defined(PRISM_HAS_SSSE3)
-#include <tmmintrin.h>
+#elif defined(PRISM_HAS_SSE2)
+#include <emmintrin.h>
 
 static PRISM_INLINE size_t
 scan_identifier_ascii(const uint8_t *start, const uint8_t *end) {

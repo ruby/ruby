@@ -933,7 +933,7 @@ struct pm_parser_t {
      */
     bool warn_mismatched_indentation;
 
-#if defined(PRISM_HAS_NEON) || defined(PRISM_HAS_SSSE3) || defined(PRISM_HAS_SWAR)
+#if defined(PRISM_HAS_NEON) || defined(PRISM_HAS_SSE2) || defined(PRISM_HAS_SWAR)
     /*
      * Cached lookup tables for pm_strpbrk's SIMD fast path. Avoids rebuilding
      * the nibble-based tables on every call when the charset hasn't changed
