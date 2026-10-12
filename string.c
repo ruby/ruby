@@ -4555,16 +4555,13 @@ str_casecmp(VALUE str1, VALUE str2)
     p1 = RSTRING_PTR(str1); p1end = RSTRING_END(str1);
     p2 = RSTRING_PTR(str2); p2end = RSTRING_END(str2);
     if (single_byte_optimizable(str1) && single_byte_optimizable(str2)) {
-        while (p1 < p1end && p2 < p2end) {
-            if (*p1 != *p2) {
-                unsigned int c1 = TOLOWER(*p1 & 0xff);
-                unsigned int c2 = TOLOWER(*p2 & 0xff);
-                if (c1 != c2)
-                    return INT2FIX(c1 < c2 ? -1 : 1);
-            }
-            p1++;
-            p2++;
-        }
+        int r;
+        len = p1end - p1 < p2end - p2 ? p1end - p1 : p2end - p2;
+        r = str_casecmp_chunks(p1, p2, len);
+        if (r != 0)
+            return INT2FIX(r);
+        p1 += len;
+        p2 += len;
     }
     else {
         while (p1 < p1end && p2 < p2end) {

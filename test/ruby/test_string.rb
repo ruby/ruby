@@ -3522,6 +3522,31 @@ CODE
     assert_equal(1,  S("FOOBAR").casecmp("foo"))
     assert_equal(0, S("foo\0bar").casecmp("FOO\0BAR"))
 
+    # at each position in strings of the lengths around the sizes of the
+    # chunks compared at once
+    downcase = ->(s) {s.bytes.map {|c| c.between?(0x41, 0x5a) ? c + 0x20 : c}}
+    [1, 7, 8, 9, 15, 16, 17, 31, 32, 33, 48, 70].each do |n|
+      base = ("aB0_@[`{" * n)[0, n]
+      assert_equal(0, S(base).casecmp(base.dup))
+      assert_equal(0, S(base).casecmp(base.swapcase))
+      assert_equal(-1, S(base).casecmp(base + "a"))
+      assert_equal(1, S(base + "a").casecmp(base.swapcase))
+      n.times do |i|
+        ["-", "~", "@", "`", "[", "{", base[i].swapcase, (base[i].ord ^ 0x20).chr].each do |c|
+          other = base.dup
+          other[i] = c
+          expected = downcase[base] <=> downcase[other]
+          assert_equal(expected, S(base).casecmp(other), "#{base.dump} #{other.dump}")
+          assert_equal(-expected, S(other.upcase).casecmp(base), "#{other.dump} #{base.dump}")
+        end
+        # a byte that is not ASCII, in a single byte encoding
+        other = base.b
+        other.setbyte(i, base.getbyte(i) | 0x80)
+        assert_equal(-1, S(base.b).casecmp(other), "#{base.dump} #{other.dump}")
+        assert_equal(1, S(other).casecmp(base.b), "#{other.dump} #{base.dump}")
+      end
+    end
+
     assert_nil(S("foo").casecmp(:foo))
     assert_nil(S("foo").casecmp(Object.new))
 
