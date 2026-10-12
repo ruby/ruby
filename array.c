@@ -2187,6 +2187,161 @@ rb_ary_rfind(int argc, VALUE *argv, VALUE ary)
 }
 
 /*
+ * Two Fixnums, two flonums or two static Symbols are equal only if they
+ * are the identical VALUE, unless #== of the class is redefined, and
+ * rb_equal() compares them so without calling the method.  When one of
+ * these is searched for, the elements of the same kind are compared as
+ * VALUEs by the functions below, instead of calling rb_equal() for each.
+ */
+struct ary_scan {
+    VALUE mask, tag; /* (e & mask) == tag if e is of the kind */
+    int redefined_flag; /* of the class of the kind */
+};
+
+/* The elements are examined this many at a time, without a branch each. */
+#define ARY_SCAN_BLOCK 8
+
+/* Whether +e+ is of the kind, and is equal only to the identical VALUE. */
+#define ARY_SCAN_TARGET_P(scan, e) \
+    ((((e) & (scan)->mask) == (scan)->tag) && \
+     BASIC_OP_UNREDEFINED_P(BOP_EQ, (scan)->redefined_flag))
+
+static void
+ary_scan_init(struct ary_scan *scan, VALUE item)
+{
+    if (FIXNUM_P(item)) {
+        scan->mask = RUBY_FIXNUM_FLAG;
+        scan->tag = RUBY_FIXNUM_FLAG;
+        scan->redefined_flag = INTEGER_REDEFINED_OP_FLAG;
+    }
+    else if (FLONUM_P(item)) {
+        scan->mask = RUBY_FLONUM_MASK;
+        scan->tag = RUBY_FLONUM_FLAG;
+        scan->redefined_flag = FLOAT_REDEFINED_OP_FLAG;
+    }
+    else if (STATIC_SYM_P(item)) {
+        scan->mask = ~(~(VALUE)0 << RUBY_SPECIAL_SHIFT);
+        scan->tag = RUBY_SYMBOL_FLAG;
+        scan->redefined_flag = SYMBOL_REDEFINED_OP_FLAG;
+    }
+    else {
+        /* no element is of the kind */
+        scan->mask = 0;
+        scan->tag = 1;
+        scan->redefined_flag = 0;
+    }
+}
+
+/*
+ * Returns the index of the first element in [i, len) that is +item+ or
+ * is not of the kind of +item+, or +len+ if there is no such element.
+ */
+static rb_len_t
+ary_scan_forward(const struct ary_scan *scan, const VALUE *ptr,
+                 rb_len_t i, rb_len_t len, VALUE item)
+{
+    const VALUE mask = scan->mask, tag = scan->tag;
+
+    for (; len - i >= ARY_SCAN_BLOCK; i += ARY_SCAN_BLOCK) {
+        VALUE stop = 0;
+        for (int j = 0; j < ARY_SCAN_BLOCK; j++) {
+            const VALUE e = ptr[i + j];
+            stop |= ((e & mask) ^ tag) | (VALUE)(e == item);
+        }
+        if (stop) break;
+    }
+    for (; i < len; i++) {
+        const VALUE e = ptr[i];
+        if ((e & mask) != tag || e == item) break;
+    }
+    return i;
+}
+
+/*
+ * Returns the index of the last element in [0, i] that is +item+ or is
+ * not of the kind of +item+, or -1 if there is no such element.
+ */
+static rb_len_t
+ary_scan_backward(const struct ary_scan *scan, const VALUE *ptr,
+                  rb_len_t i, VALUE item)
+{
+    const VALUE mask = scan->mask, tag = scan->tag;
+
+    for (; i + 1 >= ARY_SCAN_BLOCK; i -= ARY_SCAN_BLOCK) {
+        VALUE stop = 0;
+        for (int j = 0; j < ARY_SCAN_BLOCK; j++) {
+            const VALUE e = ptr[i - j];
+            stop |= ((e & mask) ^ tag) | (VALUE)(e == item);
+        }
+        if (stop) break;
+    }
+    for (; i >= 0; i--) {
+        const VALUE e = ptr[i];
+        if ((e & mask) != tag || e == item) break;
+    }
+    return i;
+}
+
+/*
+ * Returns the index of the first element in [i, len) that is not of the
+ * kind of +item+, or +len+ if there is no such element.  The number of
+ * the elements before it that are +item+ is added to +*count+.
+ */
+static rb_len_t
+ary_scan_count(const struct ary_scan *scan, const VALUE *ptr,
+               rb_len_t i, rb_len_t len, VALUE item, rb_len_t *count)
+{
+    const VALUE mask = scan->mask, tag = scan->tag;
+    rb_len_t n = *count;
+
+    for (; len - i >= ARY_SCAN_BLOCK; i += ARY_SCAN_BLOCK) {
+        VALUE stop = 0;
+        rb_len_t found = 0;
+        for (int j = 0; j < ARY_SCAN_BLOCK; j++) {
+            const VALUE e = ptr[i + j];
+            stop |= (e & mask) ^ tag;
+            found += (e == item);
+        }
+        if (stop) break;
+        n += found;
+    }
+    for (; i < len; i++) {
+        const VALUE e = ptr[i];
+        if ((e & mask) != tag) break;
+        n += (e == item);
+    }
+    *count = n;
+    return i;
+}
+
+/*
+ * Returns the index of the first element that is equal to +item+, or -1
+ * if there is no such element.
+ */
+static rb_len_t
+ary_index_of(VALUE ary, VALUE item)
+{
+    struct ary_scan scan;
+    rb_len_t i;
+
+    ary_scan_init(&scan, item);
+    for (i=0; i<RARRAY_LEN(ary); i++) {
+        VALUE e = RARRAY_AREF(ary, i);
+        if (ARY_SCAN_TARGET_P(&scan, e)) {
+            if (e == item) return i;
+            i = ary_scan_forward(&scan, RARRAY_CONST_PTR(ary), i + 1,
+                                 RARRAY_LEN(ary), item);
+            if (i >= RARRAY_LEN(ary)) break;
+            e = RARRAY_AREF(ary, i);
+        }
+        if (rb_equal(e, item)) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+/*
  *  call-seq:
  *    find_index(object) -> integer or nil
  *    find_index {|element| ... } -> integer or nil
@@ -2239,13 +2394,8 @@ rb_ary_index(int argc, VALUE *argv, VALUE ary)
     val = argv[0];
     if (rb_block_given_p())
         rb_warn("given block not used");
-    for (i=0; i<RARRAY_LEN(ary); i++) {
-        VALUE e = RARRAY_AREF(ary, i);
-        if (rb_equal(e, val)) {
-            return LEN2NUM(i);
-        }
-    }
-    return Qnil;
+    i = ary_index_of(ary, val);
+    return i < 0 ? Qnil : LEN2NUM(i);
 }
 
 /*
@@ -2279,6 +2429,7 @@ rb_ary_index(int argc, VALUE *argv, VALUE ary)
 static VALUE
 rb_ary_rindex(int argc, VALUE *argv, VALUE ary)
 {
+    struct ary_scan scan;
     VALUE val;
     rb_len_t i = RARRAY_LEN(ary), len;
 
@@ -2297,8 +2448,15 @@ rb_ary_rindex(int argc, VALUE *argv, VALUE ary)
     val = argv[0];
     if (rb_block_given_p())
         rb_warn("given block not used");
+    ary_scan_init(&scan, val);
     while (i--) {
         VALUE e = RARRAY_AREF(ary, i);
+        if (ARY_SCAN_TARGET_P(&scan, e)) {
+            if (e == val) return LEN2NUM(i);
+            i = ary_scan_backward(&scan, RARRAY_CONST_PTR(ary), i - 1, val);
+            if (i < 0) break;
+            e = RARRAY_AREF(ary, i);
+        }
         if (rb_equal(e, val)) {
             return LEN2NUM(i);
         }
@@ -5655,16 +5813,7 @@ rb_ary_hash(VALUE ary)
 VALUE
 rb_ary_includes(VALUE ary, VALUE item)
 {
-    rb_len_t i;
-    VALUE e;
-
-    for (i=0; i<RARRAY_LEN(ary); i++) {
-        e = RARRAY_AREF(ary, i);
-        if (rb_equal(e, item)) {
-            return Qtrue;
-        }
-    }
-    return Qfalse;
+    return RBOOL(ary_index_of(ary, item) >= 0);
 }
 
 static VALUE
@@ -6712,13 +6861,22 @@ rb_ary_count(int argc, VALUE *argv, VALUE ary)
         }
     }
     else {
+        struct ary_scan scan;
         VALUE obj = argv[0];
 
         if (rb_block_given_p()) {
             rb_warn("given block not used");
         }
+        ary_scan_init(&scan, obj);
         for (i = 0; i < RARRAY_LEN(ary); i++) {
-            if (rb_equal(RARRAY_AREF(ary, i), obj)) n++;
+            VALUE e = RARRAY_AREF(ary, i);
+            if (ARY_SCAN_TARGET_P(&scan, e)) {
+                i = ary_scan_count(&scan, RARRAY_CONST_PTR(ary), i,
+                                   RARRAY_LEN(ary), obj, &n);
+                if (i >= RARRAY_LEN(ary)) break;
+                e = RARRAY_AREF(ary, i);
+            }
+            if (rb_equal(e, obj)) n++;
         }
     }
 
