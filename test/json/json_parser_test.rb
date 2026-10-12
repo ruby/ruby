@@ -931,6 +931,10 @@ class JSONParserTest < Test::Unit::TestCase
     assert_parse_error_at "$[4]", '[1,2,3,4,5'
     assert_parse_error_at "$[5]", '[1,2,3,4,5,'
     assert_parse_error_at "$[5]", '[1,2,3,4,5,]'
+
+    if RUBY_ENGINE != "jruby"
+      assert_parse_error_at %($["\xff"][1]), %({"\xff":[1,x]})
+    end
   end
 
   def test_parse_error_position
