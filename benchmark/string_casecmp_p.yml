@@ -15,12 +15,30 @@ prelude: |
   unonascii10 = unonascii1 * 10
   unonascii100 = unonascii10 * 10
   unonascii1000 = unonascii100 * 10
+  # the same letters in the same cases
+  sstr1 = lstr1.dup
+  sstr10 = lstr10.dup
+  sstr100 = lstr100.dup
+  sstr1000 = lstr1000.dup
+  # only the first letter in the other case
+  cstr1 = lstr1.capitalize
+  cstr10 = lstr10.capitalize
+  cstr100 = lstr100.capitalize
+  cstr1000 = lstr1000.capitalize
   GC.disable # GC causes a lot of variance
 benchmark:
   casecmp_p-1: lstr1.casecmp?(ustr1)
   casecmp_p-10: lstr10.casecmp?(ustr10)
   casecmp_p-100: lstr100.casecmp?(ustr100)
   casecmp_p-1000: lstr1000.casecmp?(ustr1000)
+  casecmp_p-same1: lstr1.casecmp?(sstr1)
+  casecmp_p-same10: lstr10.casecmp?(sstr10)
+  casecmp_p-same100: lstr100.casecmp?(sstr100)
+  casecmp_p-same1000: lstr1000.casecmp?(sstr1000)
+  casecmp_p-capitalized1: lstr1.casecmp?(cstr1)
+  casecmp_p-capitalized10: lstr10.casecmp?(cstr10)
+  casecmp_p-capitalized100: lstr100.casecmp?(cstr100)
+  casecmp_p-capitalized1000: lstr1000.casecmp?(cstr1000)
   casecmp_p-nonascii1: lnonascii1.casecmp?(unonascii1)
   casecmp_p-nonascii10: lnonascii10.casecmp?(unonascii10)
   casecmp_p-nonascii100: lnonascii100.casecmp?(unonascii100)
