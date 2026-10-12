@@ -147,6 +147,12 @@ class JSONParserTest < Test::Unit::TestCase
     assert_raise(ParserError) { parse('-Infinity') }
     assert_equal(-1.0/0, parse('-Infinity', allow_nan: true))
     capture_output { assert_equal(Float::INFINITY, parse("23456789012E666")) }
+
+    assert_parse_float "1.5e-99999999999999999999"
+    assert_parse_float "1.5e-9223372036854775808"
+    assert_parse_float "0.0e-99999999999999999999"
+    assert_parse_float "-1.5e-99999999999999999999"
+    assert_parse_float "123.456e-18446744073709551615"
   end
 
   INTEGER_FAST_PATH_BOUNDARIES = [
@@ -1083,6 +1089,10 @@ class JSONParserTest < Test::Unit::TestCase
   end
 
   private
+
+  def assert_parse_float(float_str)
+    assert_equal Float(float_str), JSON.parse(float_str)
+  end
 
   def assert_equal_float(expected, actual, delta = 1e-2)
     Array === expected and expected = expected.first

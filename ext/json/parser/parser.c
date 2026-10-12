@@ -1169,11 +1169,11 @@ static inline VALUE json_decode_float(JSON_ParserConfig *config, uint64_t mantis
         return rb_funcallv(config->decimal_class, config->decimal_method_id, 1, &text);
     }
 
-    if (RB_UNLIKELY(exponent > INT32_MAX)) {
+    if (RB_UNLIKELY(exponent >= (int64_t)INT32_MAX)) {
         return negative ? CMinusInfinity : CInfinity;
     }
 
-    if (RB_UNLIKELY(exponent < INT32_MIN)) {
+    if (RB_UNLIKELY(exponent <= INT32_MIN)) {
         return rb_float_new(negative ? -0.0 : 0.0);
     }
 
@@ -1514,7 +1514,7 @@ static inline VALUE json_parse_number(JSON_ParserState *state, JSON_ParserConfig
         }
 
         if (RB_UNLIKELY(exponent_digits >= 20 || abs_exponent > (uint64_t)INT64_MAX)) {
-            exponent = negative_exponent ? INT64_MIN : INT64_MAX;
+            exponent = negative_exponent ? INT32_MIN : INT32_MAX;
         } else {
             exponent = negative_exponent ? -(int64_t)abs_exponent : (int64_t)abs_exponent;
         }
