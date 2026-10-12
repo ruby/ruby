@@ -1397,6 +1397,10 @@ enum_sort(VALUE obj)
 
 #define SORT_BY_BUFSIZE 16
 #define SORT_BY_UNIFORMED(num, flo, fix) (((num&1)<<2)|((flo&1)<<1)|fix)
+#define SORT_BY_CMP_OPTIMIZABLE() \
+    SORT_BY_UNIFORMED((CMP_OPTIMIZABLE(FLOAT) && CMP_OPTIMIZABLE(INTEGER)), \
+                      CMP_OPTIMIZABLE(FLOAT), \
+                      CMP_OPTIMIZABLE(INTEGER))
 struct sort_by_data {
     const VALUE ary;
     const VALUE buf;
@@ -1733,10 +1737,10 @@ enum_sort_by(VALUE obj)
     RB_OBJ_WRITE(memo, &data->ary, ary);
     RB_OBJ_WRITE(memo, &data->buf, buf);
     data->n = 0;
-    data->primitive_uniformed = SORT_BY_UNIFORMED((CMP_OPTIMIZABLE(FLOAT) && CMP_OPTIMIZABLE(INTEGER)),
-                                                  CMP_OPTIMIZABLE(FLOAT),
-                                                  CMP_OPTIMIZABLE(INTEGER));
+    data->primitive_uniformed = SORT_BY_CMP_OPTIMIZABLE();
     rb_block_call(obj, id_each, 0, 0, sort_by_i, (VALUE)memo);
+    /* <=> may have been redefined in the block */
+    data->primitive_uniformed &= SORT_BY_CMP_OPTIMIZABLE();
     ary = data->ary;
     buf = data->buf;
     if (data->n) {

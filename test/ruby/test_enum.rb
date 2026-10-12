@@ -489,6 +489,40 @@ class TestEnumerable < Test::Unit::TestCase
     assert_equal([[3, 2], [2, 1], [2, 4], [1, 0], [1, 3]], @obj.each_with_index.sort_by(&cond))
   end
 
+  def test_sort_by_cmp_redefined_in_block
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      redefined = false
+      sorted = [3, 1, 2, 5, 4].sort_by do |x|
+        unless redefined
+          redefined = true
+          class Integer
+            alias_method :orig_cmp, :<=>
+            def <=>(other) = -orig_cmp(other)
+          end
+        end
+        x
+      end
+      assert_equal([5, 4, 3, 2, 1], sorted)
+    end;
+
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      redefined = false
+      sorted = [3.0, 1.0, 2.0, 5.0, 4.0].sort_by do |x|
+        unless redefined
+          redefined = true
+          class Float
+            alias_method :orig_cmp, :<=>
+            def <=>(other) = -orig_cmp(other)
+          end
+        end
+        x
+      end
+      assert_equal([5.0, 4.0, 3.0, 2.0, 1.0], sorted)
+    end;
+  end
+
   def test_all
     assert_equal(true, @obj.all? {|x| x <= 3 })
     assert_equal(false, @obj.all? {|x| x < 3 })
