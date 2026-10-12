@@ -753,7 +753,7 @@ static const signed char digit_values[256] = {
 static uint32_t unescape_unicode(JSON_ParserState *state, const char *sp, const char *spe)
 {
     if (RB_UNLIKELY(sp > spe - 4)) {
-        raise_eos_error_at("incomplete unicode character escape sequence at %s", state, sp - 2);
+        raise_syntax_error_at("incomplete unicode character escape sequence at %s", state, sp - 2);
     }
 
     const unsigned char *p = (const unsigned char *)sp;
