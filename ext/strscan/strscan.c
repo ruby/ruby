@@ -1732,23 +1732,24 @@ name_to_backref_number(struct re_registers *regs, VALUE regexp, const char* name
  * For Symbol/String specifiers, raises IndexError if the named group
  * does not exist.
  */
-static rb_len_t
+static long
 resolve_capture_index(struct strscanner *p, VALUE specifier)
 {
     const char *name;
-    rb_len_t i;
+    rb_len_t len;
+    long i;
     if (! MATCHED_P(p)) return -1;
     switch (TYPE(specifier)) {
         case T_SYMBOL:
             specifier = rb_sym2str(specifier);
             /* fall through */
         case T_STRING:
-            RSTRING_GETMEM(specifier, name, i);
-            i = name_to_backref_number(&(p->regs), p->regex, name, name + i,
+            RSTRING_GETMEM(specifier, name, len);
+            i = name_to_backref_number(&(p->regs), p->regex, name, name + len,
                                        rb_enc_get(specifier));
             break;
         default:
-            i = NUM2LEN(specifier);
+            i = NUM2LONG(specifier);
     }
     if (i < 0)
         i += p->regs.num_regs;
@@ -1833,7 +1834,7 @@ static VALUE
 strscan_aref(VALUE self, VALUE idx)
 {
     struct strscanner *p;
-    rb_len_t i;
+    long i;
 
     GET_SCANNER(self, p);
     i = resolve_capture_index(p, idx);
@@ -1879,7 +1880,7 @@ static VALUE
 strscan_integer_at(int argc, VALUE *argv, VALUE self)
 {
     struct strscanner *p;
-    rb_len_t i;
+    long i;
     rb_len_t beg, end, len;
     const char *ptr;
     VALUE rb_specifier;
