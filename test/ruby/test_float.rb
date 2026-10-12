@@ -310,6 +310,36 @@ class TestFloat < Test::Unit::TestCase
     end
   end
 
+  def test_to_f_correctly_rounded
+    rng = Random.new(42)
+    strings = [
+      ->{rng.rand.to_s},
+      ->{"%.#{rng.rand(1..30)}g" % (rng.rand * 10.0**rng.rand(-300..300))},
+      ->{"%.#{rng.rand(0..30)}f" % (rng.rand * 10**rng.rand(0..18))},
+      ->{"#{rng.rand(10**rng.rand(1..25))}.#{rng.rand(10**rng.rand(1..25))}e#{rng.rand(-300..280)}"},
+      ->{rng.rand(10**rng.rand(1..40)).to_s},
+    ]
+    3000.times do |i|
+      s = strings[i % strings.size].call
+      f = s.to_r.to_f
+      assert_equal(f, s.to_f, s)
+      assert_equal(f, Float(s), s)
+      assert_equal(-f, "-#{s}".to_f, s)
+    end
+
+    # exactly halfway between two doubles, and just above and below it
+    300.times do
+      k = rng.rand(1..40)
+      m = rng.rand(1 << 52) | 1 << 52
+      s = ((m * 2 + 1) * 5**k).to_s.rjust(k + 1, "0").insert(-k - 1, ".")
+      lower = m.to_f / 2**(k - 1)
+      upper = (m + 1).to_f / 2**(k - 1)
+      assert_equal(m.even? ? lower : upper, s.to_f, s)
+      assert_equal(upper, "#{s}1".to_f, s)
+      assert_equal(lower, s.sub(/5\z/, "49").to_f, s)
+    end
+  end
+
   def test_coerce
     assert_equal(Float, 1.0.coerce(1).first.class)
   end

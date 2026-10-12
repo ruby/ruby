@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# Generates float_conv_table.h, the table of powers of 10 used by
+# Generates float_conv_table.h, the tables of powers of 10 and 5 used by
 # float_conv.c.
 #
 #   ruby tool/mk_float_conv_table.rb > float_conv_table.h
@@ -26,8 +26,28 @@ def pow10_ceil(k)
   end
 end
 
+# The same table as script/table_generation.py of fast_float makes.
+def pow5_128(q)
+  if q >= 0
+    n = 5**q
+    n <<= 1 while n < (1 << 127)
+    n >>= 1 while n >= (1 << 128)
+    n
+  else
+    d = 5**-q
+    z = 0
+    z += 1 while (1 << z) < d
+    b = q >= -27 ? z + 127 : 2 * z + 128
+    c = (1 << b) / d + 1
+    c >>= 1 while c >= (1 << 128)
+    c
+  end
+end
+
 POW10_MIN = -292
 POW10_MAX = 324
+POW5_MIN = -342
+POW5_MAX = 308
 
 # the approximations of logarithms used with the tables must be exact
 (POW10_MIN..POW10_MAX).each do |k|
@@ -49,4 +69,18 @@ puts <<EOS
 static const uint64_t float_conv_pow10[][2] = {
 EOS
 (POW10_MIN..POW10_MAX).each {|k| puts entry(pow10_ceil(k))}
+puts <<EOS
+};
+
+#define FLOAT_CONV_POW5_MIN (#{POW5_MIN})
+#define FLOAT_CONV_POW5_MAX #{POW5_MAX}
+
+/*
+ * 5**q for FLOAT_CONV_POW5_MIN <= q <= FLOAT_CONV_POW5_MAX, as the high
+ * and low halves of the most significant 128 bits; truncated if q is not
+ * negative, or the reciprocal of 5**-q rounded up otherwise.
+ */
+static const uint64_t float_conv_pow5[][2] = {
+EOS
+(POW5_MIN..POW5_MAX).each {|q| puts entry(pow5_128(q))}
 puts "};"

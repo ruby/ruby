@@ -1,10 +1,12 @@
 #include "ruby/internal/config.h"
 
+#include <errno.h>
 #include <float.h>
 #include <stdint.h>
 #include <string.h>
 
 #include "internal.h"
+#include "internal/bits.h"
 #include "internal/float_conv.h"
 #include "ruby/ruby.h"
 
@@ -15,8 +17,8 @@
 #include "float_conv_table.h"
 
 /*
- * The conversion here is for IEEE 754 binary64 only.  The callers must
- * use the functions in util.c when it is not available.
+ * The conversions here are for IEEE 754 binary64 only.  The callers
+ * must use the functions in util.c when these are not available.
  */
 #if defined(DBL_MANT_DIG) && DBL_MANT_DIG == 53 && \
     defined(DBL_MAX_EXP) && DBL_MAX_EXP == 1024 && FLT_RADIX == 2
@@ -219,4 +221,216 @@ rb_float_shortest_digits(double d, char *buf, int *decpt)
 #else
     return 0;
 #endif
+}
+
+/*
+ * The decimal to double conversion, by Eisel and Lemire.
+ *
+ * Daniel Lemire, "Number Parsing at a Gigabyte per Second", Software:
+ * Practice and Experience 51 (8), 2021.  https://arxiv.org/abs/2101.11408
+ *
+ * Noble Mushtak, Daniel Lemire, "Fast Number Parsing Without Fallback",
+ * Software: Practice and Experience 53 (7), 2023.
+ * https://arxiv.org/abs/2212.06644
+ *
+ * This follows the fast_float library,
+ * https://github.com/fastfloat/fast_float
+ *
+ *   Copyright (c) 2021 The fast_float authors
+ *
+ *   Licensed under the MIT License.
+ */
+
+/* The most decimal digits that always fit in uint64_t. */
+#define SCAN_DIGITS_MAX 19
+
+/* Exponents and fractions longer than this are left to ruby_strtod(). */
+#define SCAN_EXPONENT_MAX (FLOAT_CONV_POW5_MAX - FLOAT_CONV_POW5_MIN)
+
+#if defined(FLT_EVAL_METHOD) && FLT_EVAL_METHOD == 0
+/* The powers of 10 that are exact in double. */
+static const double exact_pow10[] = {
+    1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9, 1e10, 1e11,
+    1e12, 1e13, 1e14, 1e15, 1e16, 1e17, 1e18, 1e19, 1e20, 1e21, 1e22,
+};
+# define EXACT_POW10_MAX ((int)numberof(exact_pow10) - 1)
+#endif
+
+/*
+ * Sets +*result+ to the double that is the closest to w * 10**q and
+ * returns true, if it is a normal number and is found for sure.  +w+
+ * must not be zero.
+ */
+static bool
+decimal_to_double(uint64_t w, int q, double *result)
+{
+#if FLOAT_CONV_IEEE754_BINARY64
+    const uint64_t *pow5;
+    uint64_t hi, lo, mantissa, bits;
+    int lz, upperbit, power2;
+
+#ifdef EXACT_POW10_MAX
+    /* "1.50" is 15e-1 rather than 150e-2 */
+    while (q < 0 && w % 10 == 0) {
+        w /= 10;
+        q++;
+    }
+    if (w <= DBL_HIDDEN_BIT << 1 &&
+        -EXACT_POW10_MAX <= q && q <= EXACT_POW10_MAX) {
+        /* both are exact, so the result is rounded only once */
+        const double d = (double)w;
+        *result = q < 0 ? d / exact_pow10[-q] : d * exact_pow10[q];
+        return true;
+    }
+#endif
+    if (q < FLOAT_CONV_POW5_MIN || q > FLOAT_CONV_POW5_MAX) return false;
+
+    /* w * 5**q to the most significant 64 bits and some below */
+    lz = (int)nlz_int64(w);
+    w <<= lz;
+    pow5 = float_conv_pow5[q - FLOAT_CONV_POW5_MIN];
+    lo = mul_64x64(w, pow5[0], &hi);
+    if ((hi & 0x1FF) == 0x1FF) {
+        /* the bits to round may be affected by the lower half of 5**q */
+        uint64_t hi2;
+        (void)mul_64x64(w, pow5[1], &hi2);
+        lo += hi2;
+        if (hi2 > lo) hi++;
+    }
+    if (lo == UINT64_MAX && (q < -27 || q > 55)) {
+        /*
+         * The first paper leaves this case to a fallback, since the
+         * product might be too inexact to be rounded.  The second one
+         * proves that it never is, but ruby_strtod() is there anyway.
+         */
+        return false;
+    }
+
+    upperbit = (int)(hi >> 63);
+    mantissa = hi >> (upperbit + 9);
+    power2 = RSHIFT((152170 + 65536) * q, 16) + 63 + upperbit - lz + 1023;
+    if (power2 <= 0) return false; /* subnormal */
+
+    if (lo <= 1 && q >= -4 && q <= 23 && (mantissa & 3) == 1 &&
+        (mantissa << (upperbit + 9)) == hi) {
+        /* exactly at the halfway; round to even */
+        mantissa &= ~UINT64_C(1);
+    }
+    mantissa += mantissa & 1;
+    mantissa >>= 1;
+    if (mantissa >= (DBL_HIDDEN_BIT << 1)) {
+        mantissa = DBL_HIDDEN_BIT;
+        power2++;
+    }
+    mantissa &= ~DBL_HIDDEN_BIT;
+    if (power2 >= (1 << DBL_EXPONENT_BITS) - 1) return false; /* infinity */
+
+    bits = mantissa | ((uint64_t)power2 << DBL_SIGNIFICAND_BITS);
+    memcpy(result, &bits, sizeof(bits));
+    return true;
+#else
+    return false;
+#endif
+}
+
+/*
+ * Converts the decimal number at the beginning of +str+ in the same
+ * way as ruby_strtod(), if it is in a simple form: an optional sign,
+ * digits, optional fraction digits after a period, and an optional
+ * exponent; of SCAN_DIGITS_MAX significant digits at most; and is zero
+ * or a normal number.
+ *
+ * Returns true if it is converted.  Otherwise returns false, with
+ * nothing changed, and the caller must use ruby_strtod().
+ */
+bool
+rb_float_scan_decimal(const char *str, char **endptr, double *result)
+{
+    const char *s = str;
+    bool negative = false;
+    uint64_t w = 0;
+    int digits = 0, fraction = 0, exponent = 0;
+    int dropped = 0; /* digits before the point that are not in w */
+    int kept = 0; /* digits after the point that are in w */
+    bool truncated = false;
+    double d;
+
+    while (*s == ' ' || ('\t' <= *s && *s <= '\r')) s++;
+    if (*s == '-') {
+        negative = true;
+        s++;
+    }
+    else if (*s == '+') {
+        s++;
+    }
+    if (!ISDIGIT(*s)) return false;
+    if (*s == '0' && (s[1] == 'x' || s[1] == 'X')) return false;
+
+    for (; ISDIGIT(*s); s++) {
+        if (w == 0 && *s == '0') continue;
+        if (digits < SCAN_DIGITS_MAX) {
+            digits++;
+            w = w * 10 + (uint64_t)(*s - '0');
+        }
+        else {
+            if (++dropped > FLOAT_CONV_POW5_MAX) return false;
+            truncated = true;
+        }
+    }
+    if (*s == '.') {
+        const char *const point = s++;
+        if (!ISDIGIT(*s)) return false;
+        for (; ISDIGIT(*s); s++) {
+            if (w == 0 && *s == '0') continue;
+            if (digits < SCAN_DIGITS_MAX) {
+                digits++;
+                w = w * 10 + (uint64_t)(*s - '0');
+            }
+            else {
+                if (!truncated) kept = (int)(s - point) - 1;
+                truncated = true;
+            }
+        }
+        if (s - point > SCAN_EXPONENT_MAX) return false;
+        fraction = truncated ? kept : (int)(s - point) - 1;
+    }
+    if (*s == 'e' || *s == 'E') {
+        const char *t = s + 1;
+        bool exponent_negative = false;
+        if (*t == '-') {
+            exponent_negative = true;
+            t++;
+        }
+        else if (*t == '+') {
+            t++;
+        }
+        if (!ISDIGIT(*t)) return false;
+        for (; ISDIGIT(*t); t++) {
+            if (exponent > SCAN_EXPONENT_MAX) return false;
+            exponent = exponent * 10 + (*t - '0');
+        }
+        if (exponent_negative) exponent = -exponent;
+        s = t;
+    }
+
+    exponent += dropped - fraction;
+    if (w == 0) {
+        d = 0.0;
+    }
+    else if (!decimal_to_double(w, exponent, &d)) {
+        return false;
+    }
+    else if (truncated) {
+        /*
+         * The number is between w and w + 1, in the unit of the last
+         * digit of w.  It is rounded to the same as these are, if these
+         * are rounded to the same.
+         */
+        double d1;
+        if (!decimal_to_double(w + 1, exponent, &d1) || d != d1) return false;
+    }
+    errno = 0;
+    if (endptr) *endptr = (char *)s;
+    *result = negative ? -d : d;
+    return true;
 }
