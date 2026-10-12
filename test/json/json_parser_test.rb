@@ -239,6 +239,8 @@ class JSONParserTest < Test::Unit::TestCase
     end
 
     JSON.parse(%("#{'a' * 30}#{backslash_and_control_char}"), allow_control_characters: true, allow_invalid_escape: true)
+
+    assert_equal ["a\u0000b", 2], JSON.parse("[\"a\\\x00b\", 2]", allow_control_characters: true, allow_invalid_escape: true)
   end
 
   def test_parse_invalid_escape

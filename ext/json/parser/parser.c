@@ -1046,13 +1046,13 @@ NOINLINE(static) VALUE json_string_unescape(JSON_ParserState *state, JSON_Parser
                 p = ++pe;
                 break;
             }
-            case 0:
-              return Qundef;
             default:
                 if ((unsigned char)*pe < 0x20) {
                     if (!config->allow_control_characters) {
                         if (*pe == '\n') {
                             raise_syntax_error_at("Invalid unescaped newline character (\\n) in string: %s", state, pe - 1);
+                        } else if (*pe == '\0') {
+                            raise_syntax_error_at("Invalid unescaped NULL character (\\0) in string: %s", state, pe - 1);
                         }
                         raise_syntax_error_at("invalid ASCII control character in string: %s", state, pe - 1);
                     }
