@@ -669,6 +669,7 @@ install-vcpkg::
 	@cd "$(srcdir:/=\)" && set LC_TIME=C && vcpkg install $(TRIPLET_OPTION)
 
 prepare-vcpkg::
+	@del /a:l *.dll 2> nul
 	for %%I in ($(srcdir:/=\)\vcpkg_installed\$(VCPKG_DEFAULT_TRIPLET)\bin\*.dll) do @( \
 		if not %%~nI == readline mklink %%~nxI %%I \
 	)
