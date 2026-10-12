@@ -635,18 +635,6 @@ module OpenSSL
         ctx.ciphers.include?(cipher)
       end
 
-      def client_cert_cb
-        @context.client_cert_cb
-      end
-
-      def session_new_cb
-        @context.session_new_cb
-      end
-
-      def session_get_cb
-        @context.session_get_cb
-      end
-
       class << self
 
         # call-seq:
