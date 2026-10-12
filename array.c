@@ -7852,7 +7852,7 @@ rb_ary_product(int argc, VALUE *argv, VALUE ary)
                 result = rb_ary_new2(0);
                 goto done;
             }
-            if (MUL_OVERFLOW_LONG_P(resultlen, k))
+            if (MUL_OVERFLOW_SIGNED_INTEGER_P(resultlen, k, RB_LEN_MIN, RB_LEN_MAX))
                 rb_raise(rb_eRangeError, "too big to product");
             resultlen *= k;
         }
