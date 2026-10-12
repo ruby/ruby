@@ -1045,6 +1045,41 @@ class JSONParserTest < Test::Unit::TestCase
     assert_equal expected, actual
   end
 
+  def test_adversary_encode
+    fake_string = Class.new(String) do
+      def encode(*)
+        42
+      end
+    end
+
+    assert_raise TypeError, Encoding::InvalidByteSequenceError do
+      JSON.parse(fake_string.new("\xff".b, encoding: Encoding::UTF_16))
+    end
+
+    if RUBY_ENGINE != "jruby"
+      fake_string = Class.new(String) do
+        attr_reader :encoded_str
+
+        def initialize(...)
+          super
+          @encoded_str = JSON.dump(1000.times.to_a)
+        end
+
+        def encode(*)
+          @encoded_str
+        end
+      end
+
+      fake = fake_string.new("blah", encoding: Encoding::UTF_16)
+      assert_equal 1000.times.to_a, JSON.parse(fake, on_load: ->(v) {
+        if v == 20
+          fake.encoded_str.clear
+        end
+        v
+      })
+    end
+  end
+
   private
 
   def assert_equal_float(expected, actual, delta = 1e-2)

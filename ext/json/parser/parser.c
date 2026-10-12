@@ -2113,9 +2113,7 @@ static VALUE cParser_parse(JSON_ParserConfig *config, VALUE src)
     // Ensure the string isn't mutated under us.
     // The classic API to use is `rb_str_locktmp`, but then we'd
     // need to use `rb_protect` to make sure we always unlock.
-    if (Vsource == src) {
-        Vsource = rb_str_new_frozen(Vsource);
-    }
+    Vsource = rb_str_new_frozen(Vsource);
 
     VALUE rvalue_stack_buffer[RVALUE_STACK_INITIAL_CAPA];
     rvalue_stack value_stack = {
