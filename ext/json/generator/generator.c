@@ -1098,7 +1098,7 @@ static void generate_json_array(FBuffer *buffer, struct generate_json_data *data
 
     fbuffer_append_char(buffer, '[');
     if (RB_UNLIKELY(data->state->array_nl)) fbuffer_append_str(buffer, data->state->array_nl);
-    for (int i = 0; i < RARRAY_LEN(obj); i++) {
+    for (rb_len_t i = 0; i < RARRAY_LEN(obj); i++) {
         if (i > 0) {
             fbuffer_append_char(buffer, ',');
             if (RB_UNLIKELY(data->state->array_nl)) fbuffer_append_str(buffer, data->state->array_nl);
