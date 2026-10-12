@@ -323,14 +323,17 @@ static const rb_data_type_t JSON_Parser_rvalue_stack_type = {
 static rvalue_stack *rvalue_stack_spill(rvalue_stack *old_stack, VALUE *handle, rvalue_stack **stack_ref)
 {
     rvalue_stack *stack;
-    *handle = TypedData_Make_Struct(0, rvalue_stack, &JSON_Parser_rvalue_stack_type, stack);
-    *stack_ref = stack;
+    VALUE stack_handle = TypedData_Make_Struct(0, rvalue_stack, &JSON_Parser_rvalue_stack_type, stack);
     MEMCPY(stack, old_stack, rvalue_stack, 1);
 
     stack->capa = old_stack->capa << 1;
     stack->ptr = ALLOC_N(VALUE, stack->capa);
     stack->type = RVALUE_STACK_HEAP_ALLOCATED;
     MEMCPY(stack->ptr, old_stack->ptr, VALUE, old_stack->head);
+
+    *handle = stack_handle;
+    *stack_ref = stack;
+
     return stack;
 }
 
