@@ -2094,6 +2094,15 @@ class TestArray < Test::Unit::TestCase
     assert_equal(expected.map(&:to_f), @cls[*SORT_KILLER.map(&:to_f)].sort)
   end
 
+  def test_sort_by_killer
+    expected = SORT_KILLER.sort {|a, b| a <=> b}
+    assert_equal(expected, @cls[*SORT_KILLER].sort_by {|x| x})
+    assert_equal(expected, @cls[*SORT_KILLER].sort_by {|x| x.to_f})
+    # too large to be flonums
+    assert_equal(expected, @cls[*SORT_KILLER].sort_by {|x| x * 1e80})
+    assert_equal(expected, @cls[*SORT_KILLER].sort_by {|x| x.odd? ? x.to_f : x})
+  end
+
   def test_sort_with_callcc
     need_continuation
     n = 1000
