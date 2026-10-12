@@ -3550,6 +3550,24 @@ CODE
     assert_equal(true, S('äöü').casecmp?('ÄÖÜ'))
     assert_equal(false, S("foo").casecmp?("foo\0"))
 
+    # at each position in strings of the lengths around the sizes of the
+    # chunks compared at once
+    [1, 7, 8, 9, 15, 16, 17, 31, 32, 33, 48, 70].each do |n|
+      base = ("aB0_@[`{" * n)[0, n]
+      assert_equal(true, S(base).casecmp?(base.dup))
+      assert_equal(true, S(base).casecmp?(base.swapcase))
+      assert_equal(false, S(base).casecmp?(base + "a"))
+      n.times do |i|
+        ["-", "@", "`", "[", "{", base[i].swapcase, (base[i].ord ^ 0x20).chr].each do |c|
+          other = base.dup
+          other[i] = c
+          expected = base.downcase == other.downcase
+          assert_equal(expected, S(base).casecmp?(other), "#{base.dump} #{other.dump}")
+          assert_equal(expected, S(other.upcase).casecmp?(base), "#{other.dump} #{base.dump}")
+        end
+      end
+    end
+
     assert_nil(S("foo").casecmp?(:foo))
     assert_nil(S("foo").casecmp?(Object.new))
 
