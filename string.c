@@ -2042,7 +2042,10 @@ rb_str_init(int argc, VALUE *argv, VALUE str)
             TERM_FILL(&RSTRING(str)->as.heap.ptr[len], termlen);
             if (n == 1) {
                 memcpy(RSTRING(str)->as.heap.ptr, RSTRING_PTR(orig), len);
-                rb_enc_cr_str_exact_copy(str, orig);
+                if (!enc || rb_enc_get(orig) == enc) {
+                    rb_enc_cr_str_exact_copy(str, orig);
+                    enc = 0;
+                }
             }
             FL_SET(str, STR_NOEMBED);
             RSTRING(str)->as.heap.aux.capa = capa;
@@ -2051,7 +2054,8 @@ rb_str_init(int argc, VALUE *argv, VALUE str)
             rb_str_replace(str, orig);
         }
         if (enc) {
-            rb_enc_associate(str, enc);
+            str_modifiable(str);
+            rb_enc_raw_set(str, enc);
             ENC_CODERANGE_CLEAR(str);
         }
     }
