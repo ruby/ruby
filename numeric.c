@@ -4388,16 +4388,80 @@ int_accurate_in_double(VALUE n)
     return false;
 }
 
+/*
+ * Returns the double nearest to x / y, the one with the even significand
+ * if two are the nearest, for Integers +x+ and +y+ that are not zero.
+ *
+ * Converting them to double and dividing rounds up to three times, when
+ * they are not accurate in double.
+ */
+static double
+int_fdiv_nearest(VALUE x, VALUE y)
+{
+    /* a bit more than the significand, to round at once */
+    enum {quotient_bits = DBL_MANT_DIG + 2};
+    const bool negative = int_neg_p(x) != int_neg_p(y);
+    size_t xbits, ybits;
+    long shift, exponent;
+    int qbits, prec, drop;
+    uint64_t q, m, rest, half;
+    bool inexact;
+    VALUE qr;
+    double d;
+
+    x = rb_int_abs(x);
+    y = rb_int_abs(y);
+    xbits = rb_absint_numwords(x, 1, NULL);
+    ybits = rb_absint_numwords(y, 1, NULL);
+
+    /* 2**(xbits - ybits - 1) < x / y < 2**(xbits - ybits + 1) */
+    if (xbits > ybits && xbits - ybits > DBL_MAX_EXP + 1) {
+        return negative ? -HUGE_VAL : HUGE_VAL;
+    }
+    if (ybits > xbits && ybits - xbits > DBL_MANT_DIG - DBL_MIN_EXP + 2) {
+        return negative ? -0.0 : 0.0;
+    }
+
+    /* q = floor(x / y * 2**shift), of quotient_bits or one more bits */
+    shift = quotient_bits + (long)ybits - (long)xbits;
+    if (shift >= 0) {
+        x = rb_int_lshift(x, LONG2FIX(shift));
+    }
+    else {
+        y = rb_int_lshift(y, LONG2FIX(-shift));
+    }
+    qr = rb_int_divmod(x, y);
+    q = NUM2ULL(RARRAY_AREF(qr, 0));
+    inexact = !FIXNUM_ZERO_P(RARRAY_AREF(qr, 1));
+
+    /* the bits that the result can have; fewer if it is subnormal */
+    qbits = 64 - (int)nlz_int64(q);
+    exponent = qbits - 1 - shift;
+    prec = DBL_MANT_DIG;
+    if (exponent < DBL_MIN_EXP - 1) {
+        if (DBL_MIN_EXP - 1 - exponent > DBL_MANT_DIG) {
+            return negative ? -0.0 : 0.0;
+        }
+        prec -= (int)(DBL_MIN_EXP - 1 - exponent);
+    }
+
+    drop = qbits - prec;
+    m = q >> drop;
+    rest = q & ((UINT64_C(1) << drop) - 1);
+    half = UINT64_C(1) << (drop - 1);
+    if (rest > half || (rest == half && (inexact || (m & 1)))) m++;
+
+    d = ldexp((double)m, (int)(drop - shift));
+    return negative ? -d : d;
+}
+
 double
 rb_int_fdiv_double(VALUE x, VALUE y)
 {
-    if (RB_INTEGER_TYPE_P(y) && !FIXNUM_ZERO_P(y) &&
+    if (RB_INTEGER_TYPE_P(x) && !FIXNUM_ZERO_P(x) &&
+        RB_INTEGER_TYPE_P(y) && !FIXNUM_ZERO_P(y) &&
         !(int_accurate_in_double(x) && int_accurate_in_double(y))) {
-        VALUE gcd = rb_gcd(x, y);
-        if (!FIXNUM_ZERO_P(gcd) && gcd != INT2FIX(1)) {
-            x = rb_int_idiv(x, gcd);
-            y = rb_int_idiv(y, gcd);
-        }
+        return int_fdiv_nearest(x, y);
     }
     if (FIXNUM_P(x)) {
         return fix_fdiv_double(x, y);
