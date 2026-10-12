@@ -27,6 +27,7 @@
 
 #include "internal.h"
 #include "internal/sanitizers.h"
+#include "internal/float_conv.h"
 #include "internal/imemo.h"
 #include "internal/util.h"
 #include "ruby/util.h"
@@ -629,7 +630,10 @@ ruby_strtod(const char *str, char **endptr)
     double d;
 #ifdef STRTOD_SET_X87_PRECISION
     volatile unsigned short cw, cw53;
+#endif
 
+    if (rb_float_scan_decimal(str, endptr, &d)) return d;
+#ifdef STRTOD_SET_X87_PRECISION
     __asm__ volatile ("fnstcw %0" : "=m" (cw));
     cw53 = (cw & ~0x0300) | 0x0200;
     __asm__ volatile ("fldcw %0" : : "m" (cw53));

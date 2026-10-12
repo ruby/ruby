@@ -9,11 +9,13 @@
  * @brief      Internal header for float_conv.c.
  */
 #include "ruby/internal/config.h"
+#include "ruby/internal/stdbool.h" /* for bool */
 
 /* The most digits that rb_float_shortest_digits() writes. */
 #define RB_FLOAT_SHORTEST_DIGITS_MAX 17
 
 /* float_conv.c */
 int rb_float_shortest_digits(double d, char *buf, int *decpt);
+bool rb_float_scan_decimal(const char *str, char **endptr, double *result);
 
 #endif /* INTERNAL_FLOAT_CONV_H */
