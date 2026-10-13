@@ -241,6 +241,9 @@ set /a MSC_VER_UPPER = MSC_VER/10*10+9
 #endif
 set MSC_VER
 #ifdef __clang__
+#if __clang_major__ < 15
+# error clang-cl 15 or later is required
+#endif
 echo CLANG_VER = __clang_major__
 #endif
 del %0 & exit

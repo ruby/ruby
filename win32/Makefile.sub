@@ -146,6 +146,11 @@ CAT_DEPEND = type
 !else if $(MSC_VER) < 1915
 ! error MSVC $(MSC_VER) is not supported.  1915 (Visual Studio 2017 version 15.8) or later is required for the conforming preprocessor.
 !endif
+!if defined(CLANG_VER)
+!if $(CLANG_VER) < 15
+! error clang-cl $(CLANG_VER) is not supported.  15 or later is required for pragma optimize, which RB_GC_GUARD relies on.
+!endif
+!endif
 !if !defined(MACHINE)
 MACHINE = x86
 !endif
