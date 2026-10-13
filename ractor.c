@@ -914,9 +914,28 @@ rb_ractor_main_setup(rb_vm_t *vm, rb_ractor_t *r, rb_thread_t *th)
     RB_GC_GUARD(rv);
 }
 
+// Same semantics as Ractor.shareable_proc: the block is duplicated (the caller's
+// Proc is never mutated), may read outer variables which are never reassigned and
+// whose values are shareable, and `self` is replaced by the new Ractor when run.
+static VALUE
+ractor_isolated_block(VALUE block)
+{
+    if (vm_proc_iseq(block)) {
+        return rb_proc_ractor_make_shareable(rb_proc_dup(block), Qnil);
+    }
+    else {
+        // Symbol procs, method procs, etc.: they have no outer variables.
+        return rb_proc_isolate(block);
+    }
+}
+
 static VALUE
 ractor_create(rb_execution_context_t *ec, VALUE self, VALUE loc, VALUE name, VALUE args, VALUE block)
 {
+    /* Make the shareable copy before anything is allocated: it may raise
+     * Ractor::IsolationError, and the original block is left untouched. */
+    block = ractor_isolated_block(block);
+
     VALUE rv = ractor_alloc(self);
     rb_ractor_t *r = RACTOR_PTR(rv);
     ractor_init(r, name, loc);
