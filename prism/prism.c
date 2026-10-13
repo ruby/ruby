@@ -19833,6 +19833,61 @@ parse_defined(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
     return pm_defined_node_create(parser, NTOK2PTR(lparen), expression, NTOK2PTR(rparen), &keyword);
 }
 
+static pm_for_node_t *
+parse_for(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
+    pm_token_t for_keyword = parser->current;
+    size_t opening_newline_index = token_newline_index(parser);
+    parser_lex(parser);
+
+    pm_node_t *index;
+    context_push(parser, PM_CONTEXT_FOR_INDEX);
+
+    // First, parse out the first index expression.
+    if (accept1(parser, PM_TOKEN_USTAR)) {
+        index = parse_splat(parser, flags, depth);
+    } else if (token_begins_expression_p(parser->current.type)) {
+        index = parse_expression(parser, PM_BINDING_POWER_INDEX, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_EXPECT_EXPRESSION_AFTER_COMMA, (uint16_t) (depth + 1));
+    } else {
+        pm_parser_err_token(parser, &for_keyword, PM_ERR_FOR_INDEX);
+        index = UP(pm_error_recovery_node_create(parser, PM_TOKEN_START(parser, &for_keyword), PM_TOKEN_LENGTH(&for_keyword)));
+    }
+
+    // Now, if there are multiple index expressions, parse them out.
+    if (match1(parser, PM_TOKEN_COMMA)) {
+        index = parse_targets(parser, index, PM_BINDING_POWER_INDEX, (uint16_t) (depth + 1));
+    } else {
+        index = parse_target(parser, index, false, false);
+    }
+
+    context_pop(parser);
+    pm_do_loop_stack_push(parser, true);
+
+    expect1(parser, PM_TOKEN_KEYWORD_IN, PM_ERR_FOR_IN);
+    pm_token_t in_keyword = parser->previous;
+
+    pm_node_t *collection = parse_value_expression(parser, PM_BINDING_POWER_COMPOSITION, (uint8_t) ((flags & PM_PARSE_ACCEPTS_DO_BLOCK) | PM_PARSE_ACCEPTS_COMMAND_CALL), PM_ERR_FOR_COLLECTION, (uint16_t) (depth + 1));
+    pm_do_loop_stack_pop(parser);
+
+    pm_token_t do_keyword = { 0 };
+    if (accept1(parser, PM_TOKEN_KEYWORD_DO_LOOP)) {
+        do_keyword = parser->previous;
+    } else {
+        if (!match2(parser, PM_TOKEN_SEMICOLON, PM_TOKEN_NEWLINE)) {
+            PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->current, PM_ERR_EXPECT_FOR_DELIMITER, pm_token_str(parser->current.type));
+        }
+    }
+
+    pm_statements_node_t *statements = NULL;
+    if (!match1(parser, PM_TOKEN_KEYWORD_END)) {
+        statements = parse_statements(parser, PM_CONTEXT_FOR, (uint16_t) (depth + 1));
+    }
+
+    parser_warn_indentation_mismatch(parser, opening_newline_index, &for_keyword, false, false);
+    expect1_opening(parser, PM_TOKEN_KEYWORD_END, PM_ERR_FOR_TERM, &for_keyword);
+
+    return pm_for_node_create(parser, index, collection, statements, &for_keyword, &in_keyword, NTOK2PTR(do_keyword), &parser->previous);
+}
+
 /**
  * Parse an expression that begins with the previous node that we just lexed.
  */
@@ -20298,60 +20353,8 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
         case PM_TOKEN_KEYWORD_FALSE:
             parser_lex(parser);
             return UP(pm_false_node_create(parser, &parser->previous));
-        case PM_TOKEN_KEYWORD_FOR: {
-            size_t opening_newline_index = token_newline_index(parser);
-            parser_lex(parser);
-
-            pm_token_t for_keyword = parser->previous;
-            pm_node_t *index;
-
-            context_push(parser, PM_CONTEXT_FOR_INDEX);
-
-            // First, parse out the first index expression.
-            if (accept1(parser, PM_TOKEN_USTAR)) {
-                index = parse_splat(parser, flags, depth);
-            } else if (token_begins_expression_p(parser->current.type)) {
-                index = parse_expression(parser, PM_BINDING_POWER_INDEX, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_EXPECT_EXPRESSION_AFTER_COMMA, (uint16_t) (depth + 1));
-            } else {
-                pm_parser_err_token(parser, &for_keyword, PM_ERR_FOR_INDEX);
-                index = UP(pm_error_recovery_node_create(parser, PM_TOKEN_START(parser, &for_keyword), PM_TOKEN_LENGTH(&for_keyword)));
-            }
-
-            // Now, if there are multiple index expressions, parse them out.
-            if (match1(parser, PM_TOKEN_COMMA)) {
-                index = parse_targets(parser, index, PM_BINDING_POWER_INDEX, (uint16_t) (depth + 1));
-            } else {
-                index = parse_target(parser, index, false, false);
-            }
-
-            context_pop(parser);
-            pm_do_loop_stack_push(parser, true);
-
-            expect1(parser, PM_TOKEN_KEYWORD_IN, PM_ERR_FOR_IN);
-            pm_token_t in_keyword = parser->previous;
-
-            pm_node_t *collection = parse_value_expression(parser, PM_BINDING_POWER_COMPOSITION, (uint8_t) ((flags & PM_PARSE_ACCEPTS_DO_BLOCK) | PM_PARSE_ACCEPTS_COMMAND_CALL), PM_ERR_FOR_COLLECTION, (uint16_t) (depth + 1));
-            pm_do_loop_stack_pop(parser);
-
-            pm_token_t do_keyword = { 0 };
-            if (accept1(parser, PM_TOKEN_KEYWORD_DO_LOOP)) {
-                do_keyword = parser->previous;
-            } else {
-                if (!match2(parser, PM_TOKEN_SEMICOLON, PM_TOKEN_NEWLINE)) {
-                    PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->current, PM_ERR_EXPECT_FOR_DELIMITER, pm_token_str(parser->current.type));
-                }
-            }
-
-            pm_statements_node_t *statements = NULL;
-            if (!match1(parser, PM_TOKEN_KEYWORD_END)) {
-                statements = parse_statements(parser, PM_CONTEXT_FOR, (uint16_t) (depth + 1));
-            }
-
-            parser_warn_indentation_mismatch(parser, opening_newline_index, &for_keyword, false, false);
-            expect1_opening(parser, PM_TOKEN_KEYWORD_END, PM_ERR_FOR_TERM, &for_keyword);
-
-            return UP(pm_for_node_create(parser, index, collection, statements, &for_keyword, &in_keyword, NTOK2PTR(do_keyword), &parser->previous));
-        }
+        case PM_TOKEN_KEYWORD_FOR:
+            return UP(parse_for(parser, flags, depth));
         case PM_TOKEN_KEYWORD_IF:
             if (parser_end_of_line_p(parser)) {
                 PM_PARSER_WARN_TOKEN_FORMAT_CONTENT(parser, &parser->current, PM_WARN_KEYWORD_EOL);
