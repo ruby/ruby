@@ -2553,7 +2553,7 @@ class Pathname    # * FileTest *
   # call-seq:
   #   readable_real? -> true or false
   #
-  # Like #readable?, but checks against the real user and group ids
+  # Like #readable?, but checks against the real owners and group ids
   # instead of the effective ids.
   def readable_real?() FileTest.readable_real?(@path) end
 

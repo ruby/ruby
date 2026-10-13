@@ -2304,7 +2304,7 @@ rb_file_readable_p(VALUE obj, VALUE fname)
  * call-seq:
  *    File.readable_real?(path) -> true or false
  *
- * Like File.readable?, but checks against the real user and group ids
+ * Like File.readable?, but checks against the real owner and group ids
  * instead of the effective ids.
  */
 
@@ -7392,7 +7392,7 @@ rb_stat_r(VALUE obj)
  *  call-seq:
  *     stat.readable_real?  ->  true or false
  *
- *  Like #readable?, but checks against the real user and group ids
+ *  Like #readable?, but checks against the real owner and group ids
  *  instead of the effective ids.
  */
 
