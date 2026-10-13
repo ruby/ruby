@@ -2027,13 +2027,13 @@ rb_file_directory_p(VALUE obj, VALUE fname)
  * Returns whether the entry at the given `path` is a pipe:
  *
  * ```ruby
- * File.pipe?('doc/syntax/')        # => false  # Directory.
- * File.pipe?('doc/maintainers.md') # => false  # Regular file.
- * File.pipe?('nosuch')             # => false  # Non-existent.
- * path = '/tmp/foo'
- * File.mkfifo(path)
- * File.pipe?(path)                 # => true
- * File.delete(path)                # Clean up.
+ * pipepath = '/tmp/pipe'
+ * File.pipe?(pipepath)      # => false
+ * File.mkfifo(pipepath)
+ * File.pipe?(pipepath)      # => true
+ * File.pipe?('/etc')        # => false
+ * File.pipe?('/etc/passwd') # => false
+ * File.delete(pipepath)     # Clean up.
  * ```
  *
  */
@@ -7120,17 +7120,19 @@ rb_stat_d(VALUE obj)
  * :markup: markdown
  *
  *  call-seq:
- *    stat.pipe? -> true or false
+ *    pipe? -> true or false
  *
  * Returns whether the entry at the path in `self` is a pipe:
  *
  * ```ruby
- * File.stat('doc/syntax/').pipe?        # => false  # Directory .
- * File.stat('doc/maintainers.md').pipe? # => false  # Regular file.
- * path = '/tmp/foo'
- * File.mkfifo(path)
- * File.stat(path).pipe?                 # => true
- * File.delete(path)                     # Clean up.
+ * pipepath = '/tmp/pipe'
+ * File.mkfifo(pipepath)                       # Make pipe.
+ * stat = File.stat(pipepath)                  # Take snapshot.
+ * stat.pipe?                       # => true  # In snapshot.
+ * File.delete(pipepath)                       # Clean up.
+ * stat.pipe?                       # => true  # Snapshot not updated.
+ * File.stat('/etc').pipe?          # => false
+ * File.stat('/etc/passwd').pipe?   # => false
  * ```
  *
  */
