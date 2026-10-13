@@ -17784,6 +17784,13 @@ parse_pattern_primitives(pm_parser_t *parser, pm_constant_id_set_t *captures, pm
  */
 static pm_node_t *
 parse_pattern(pm_parser_t *parser, pm_constant_id_set_t *captures, uint8_t flags, pm_diagnostic_id_t diag_id, uint16_t depth) {
+    /* Nested patterns recurse back into parse_pattern without passing through
+     * parse_expression, so this cycle needs its own depth check. */
+    if (PRISM_UNLIKELY(depth >= PRISM_DEPTH_MAXIMUM)) {
+        pm_parser_err_current(parser, PM_ERR_NESTING_TOO_DEEP);
+        return UP(pm_error_recovery_node_create(parser, PM_TOKEN_START(parser, &parser->current), PM_TOKEN_LENGTH(&parser->current)));
+    }
+
     pm_node_t *node = NULL;
 
     bool leading_rest = false;
