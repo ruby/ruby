@@ -20265,6 +20265,82 @@ parse_xstring(pm_parser_t *parser, uint16_t depth) {
     return UP(node);
 }
 
+static pm_node_t *
+parse_identifier(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t flags, uint16_t depth) {
+    pm_token_t identifier = parser->current;
+    parser_lex(parser);
+
+    pm_node_t *node = parse_variable_call(parser);
+
+    if (PM_NODE_TYPE_P(node, PM_CALL_NODE)) {
+        // If parse_variable_call returned with a call node, then we
+        // know the identifier is not in the local table. In that case
+        // we need to check if there are arguments following the
+        // identifier.
+        pm_call_node_t *call = (pm_call_node_t *) node;
+        pm_arguments_t arguments = { 0 };
+
+        if (parse_arguments_list(parser, &arguments, true, flags, (uint16_t) (depth + 1))) {
+            // Since we found arguments, we need to turn off the
+            // variable call bit in the flags.
+            pm_node_flag_unset(UP(call), PM_CALL_NODE_FLAGS_VARIABLE_CALL);
+
+            call->opening_loc = arguments.opening_loc;
+            call->arguments = arguments.arguments;
+            call->closing_loc = arguments.closing_loc;
+            call->block = arguments.block;
+
+            const pm_location_t *end = pm_arguments_end(&arguments);
+            if (end == NULL) {
+                PM_NODE_LENGTH_SET_LOCATION(call, &call->message_loc);
+            } else {
+                PM_NODE_LENGTH_SET_LOCATION(call, end);
+            }
+        }
+    } else {
+        // Otherwise, we know the identifier is in the local table. This
+        // can still be a method call if it is followed by arguments or
+        // a block, so we need to check for that here.
+        if (
+            ((flags & PM_PARSE_ACCEPTS_COMMAND_CALL) && (token_begins_expression_p(parser->current.type) || match3(parser, PM_TOKEN_UAMPERSAND, PM_TOKEN_USTAR, PM_TOKEN_USTAR_STAR))) ||
+            (pm_accepts_block_stack_p(parser) && match1(parser, PM_TOKEN_KEYWORD_DO)) ||
+            match1(parser, PM_TOKEN_BRACE_LEFT)
+        ) {
+            pm_arguments_t arguments = { 0 };
+            parse_arguments_list(parser, &arguments, true, flags, (uint16_t) (depth + 1));
+            pm_call_node_t *fcall = pm_call_node_fcall_create(parser, &identifier, &arguments);
+
+            if (PM_NODE_TYPE_P(node, PM_IT_LOCAL_VARIABLE_READ_NODE)) {
+                // If we're about to convert an 'it' implicit local
+                // variable read into a method call, we need to remove
+                // it from the list of implicit local variables.
+                pm_node_unreference(parser, node);
+            } else {
+                // Otherwise, we're about to convert a regular local
+                // variable read into a method call, in which case we
+                // need to indicate that this was not a read for the
+                // purposes of warnings.
+                assert(PM_NODE_TYPE_P(node, PM_LOCAL_VARIABLE_READ_NODE));
+
+                if (pm_token_is_numbered_parameter(parser, PM_TOKEN_START(parser, &identifier), PM_TOKEN_LENGTH(&identifier))) {
+                    pm_node_unreference(parser, node);
+                } else {
+                    pm_local_variable_read_node_t *cast = (pm_local_variable_read_node_t *) node;
+                    pm_locals_unread(&pm_parser_scope_find(parser, cast->depth)->locals, cast->name);
+                }
+            }
+
+            return UP(fcall);
+        }
+    }
+
+    if ((binding_power == PM_BINDING_POWER_STATEMENT) && match1(parser, PM_TOKEN_COMMA)) {
+        node = parse_targets_validate(parser, node, PM_BINDING_POWER_INDEX, (uint16_t) (depth + 1));
+    }
+
+    return node;
+}
+
 /**
  * Parse an expression that begins with the previous node that we just lexed.
  */
@@ -20418,79 +20494,8 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
             return node;
         }
         case PM_TOKEN_IDENTIFIER:
-        case PM_TOKEN_METHOD_NAME: {
-            parser_lex(parser);
-            pm_token_t identifier = parser->previous;
-            pm_node_t *node = parse_variable_call(parser);
-
-            if (PM_NODE_TYPE_P(node, PM_CALL_NODE)) {
-                // If parse_variable_call returned with a call node, then we
-                // know the identifier is not in the local table. In that case
-                // we need to check if there are arguments following the
-                // identifier.
-                pm_call_node_t *call = (pm_call_node_t *) node;
-                pm_arguments_t arguments = { 0 };
-
-                if (parse_arguments_list(parser, &arguments, true, flags, (uint16_t) (depth + 1))) {
-                    // Since we found arguments, we need to turn off the
-                    // variable call bit in the flags.
-                    pm_node_flag_unset(UP(call), PM_CALL_NODE_FLAGS_VARIABLE_CALL);
-
-                    call->opening_loc = arguments.opening_loc;
-                    call->arguments = arguments.arguments;
-                    call->closing_loc = arguments.closing_loc;
-                    call->block = arguments.block;
-
-                    const pm_location_t *end = pm_arguments_end(&arguments);
-                    if (end == NULL) {
-                        PM_NODE_LENGTH_SET_LOCATION(call, &call->message_loc);
-                    } else {
-                        PM_NODE_LENGTH_SET_LOCATION(call, end);
-                    }
-                }
-            } else {
-                // Otherwise, we know the identifier is in the local table. This
-                // can still be a method call if it is followed by arguments or
-                // a block, so we need to check for that here.
-                if (
-                    ((flags & PM_PARSE_ACCEPTS_COMMAND_CALL) && (token_begins_expression_p(parser->current.type) || match3(parser, PM_TOKEN_UAMPERSAND, PM_TOKEN_USTAR, PM_TOKEN_USTAR_STAR))) ||
-                    (pm_accepts_block_stack_p(parser) && match1(parser, PM_TOKEN_KEYWORD_DO)) ||
-                    match1(parser, PM_TOKEN_BRACE_LEFT)
-                ) {
-                    pm_arguments_t arguments = { 0 };
-                    parse_arguments_list(parser, &arguments, true, flags, (uint16_t) (depth + 1));
-                    pm_call_node_t *fcall = pm_call_node_fcall_create(parser, &identifier, &arguments);
-
-                    if (PM_NODE_TYPE_P(node, PM_IT_LOCAL_VARIABLE_READ_NODE)) {
-                        // If we're about to convert an 'it' implicit local
-                        // variable read into a method call, we need to remove
-                        // it from the list of implicit local variables.
-                        pm_node_unreference(parser, node);
-                    } else {
-                        // Otherwise, we're about to convert a regular local
-                        // variable read into a method call, in which case we
-                        // need to indicate that this was not a read for the
-                        // purposes of warnings.
-                        assert(PM_NODE_TYPE_P(node, PM_LOCAL_VARIABLE_READ_NODE));
-
-                        if (pm_token_is_numbered_parameter(parser, PM_TOKEN_START(parser, &identifier), PM_TOKEN_LENGTH(&identifier))) {
-                            pm_node_unreference(parser, node);
-                        } else {
-                            pm_local_variable_read_node_t *cast = (pm_local_variable_read_node_t *) node;
-                            pm_locals_unread(&pm_parser_scope_find(parser, cast->depth)->locals, cast->name);
-                        }
-                    }
-
-                    return UP(fcall);
-                }
-            }
-
-            if ((binding_power == PM_BINDING_POWER_STATEMENT) && match1(parser, PM_TOKEN_COMMA)) {
-                node = parse_targets_validate(parser, node, PM_BINDING_POWER_INDEX, (uint16_t) (depth + 1));
-            }
-
-            return node;
-        }
+        case PM_TOKEN_METHOD_NAME:
+            return parse_identifier(parser, binding_power, flags, depth);
         case PM_TOKEN_HEREDOC_START:
             return parse_heredoc(parser, depth);
         case PM_TOKEN_INSTANCE_VARIABLE: {
