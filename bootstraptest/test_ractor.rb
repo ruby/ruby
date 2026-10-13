@@ -1937,8 +1937,8 @@ assert_equal '[true, false]', %q{
   }.value
 }
 
-# Can not trap with not isolated Proc on non-main ractor
-assert_equal '[:ok, :ok]', %q{
+# Can not trap with a Proc referring to unshareable objects on non-main ractor
+assert_equal '[:ok, :ok, :ok]', %q{
   a = []
   Ractor.new{
     trap(:INT){p :ok}
@@ -1953,6 +1953,13 @@ assert_equal '[:ok, :ok]', %q{
   rescue Ractor::RemoteError
     a << :ok
   end
+
+  # a read-only shareable outer variable is fine
+  msg = 'shareable'.freeze
+  Ractor.new{
+    trap(:INT){p msg}
+  }.join
+  a << :ok
 }
 
 # Ractor.select is interruptible
