@@ -20689,6 +20689,35 @@ parse_char(pm_parser_t *parser, uint16_t depth) {
     return node;
 }
 
+static pm_node_t *
+parse_constant(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t flags, uint16_t depth) {
+    pm_token_t constant = parser->current;
+    parser_lex(parser);
+
+    /* If a constant is immediately followed by parentheses, then this is in
+     * fact a method call, not a constant read. */
+    if (
+        match1(parser, PM_TOKEN_PARENTHESIS_LEFT) ||
+        ((flags & PM_PARSE_ACCEPTS_COMMAND_CALL) && (token_begins_expression_p(parser->current.type) || match3(parser, PM_TOKEN_UAMPERSAND, PM_TOKEN_USTAR, PM_TOKEN_USTAR_STAR))) ||
+        (pm_accepts_block_stack_p(parser) && match1(parser, PM_TOKEN_KEYWORD_DO)) ||
+        match1(parser, PM_TOKEN_BRACE_LEFT)
+    ) {
+        pm_arguments_t arguments = { 0 };
+        parse_arguments_list(parser, &arguments, true, flags, (uint16_t) (depth + 1));
+        return UP(pm_call_node_fcall_create(parser, &constant, &arguments));
+    }
+
+    pm_node_t *node = UP(pm_constant_read_node_create(parser, &parser->previous));
+
+    if ((binding_power == PM_BINDING_POWER_STATEMENT) && match1(parser, PM_TOKEN_COMMA)) {
+        /* If we get here, then we have a comma immediately following a
+         * constant, so we're going to parse this as a multiple assignment. */
+        node = parse_targets_validate(parser, node, PM_BINDING_POWER_INDEX, (uint16_t) (depth + 1));
+    }
+
+    return node;
+}
+
 /**
  * Parse an expression that begins with the previous node that we just lexed.
  */
@@ -20714,33 +20743,8 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
 
             return node;
         }
-        case PM_TOKEN_CONSTANT: {
-            parser_lex(parser);
-            pm_token_t constant = parser->previous;
-
-            // If a constant is immediately followed by parentheses, then this is in
-            // fact a method call, not a constant read.
-            if (
-                match1(parser, PM_TOKEN_PARENTHESIS_LEFT) ||
-                ((flags & PM_PARSE_ACCEPTS_COMMAND_CALL) && (token_begins_expression_p(parser->current.type) || match3(parser, PM_TOKEN_UAMPERSAND, PM_TOKEN_USTAR, PM_TOKEN_USTAR_STAR))) ||
-                (pm_accepts_block_stack_p(parser) && match1(parser, PM_TOKEN_KEYWORD_DO)) ||
-                match1(parser, PM_TOKEN_BRACE_LEFT)
-            ) {
-                pm_arguments_t arguments = { 0 };
-                parse_arguments_list(parser, &arguments, true, flags, (uint16_t) (depth + 1));
-                return UP(pm_call_node_fcall_create(parser, &constant, &arguments));
-            }
-
-            pm_node_t *node = UP(pm_constant_read_node_create(parser, &parser->previous));
-
-            if ((binding_power == PM_BINDING_POWER_STATEMENT) && match1(parser, PM_TOKEN_COMMA)) {
-                // If we get here, then we have a comma immediately following a
-                // constant, so we're going to parse this as a multiple assignment.
-                node = parse_targets_validate(parser, node, PM_BINDING_POWER_INDEX, (uint16_t) (depth + 1));
-            }
-
-            return node;
-        }
+        case PM_TOKEN_CONSTANT:
+            return parse_constant(parser, binding_power, flags, depth);
         case PM_TOKEN_UCOLON_COLON: {
             parser_lex(parser);
             pm_token_t delimiter = parser->previous;
