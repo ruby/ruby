@@ -19769,6 +19769,35 @@ parse_heredoc(pm_parser_t *parser, uint16_t depth) {
     return node;
 }
 
+static pm_begin_node_t *
+parse_begin(pm_parser_t *parser, uint16_t depth) {
+    pm_token_t begin_keyword = parser->current;
+    size_t opening_newline_index = token_newline_index(parser);
+    parser_lex(parser);
+
+    accept2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON);
+
+    pm_node_list_t current_block_exits = { 0 };
+    pm_node_list_t *previous_block_exits = push_block_exits(parser, &current_block_exits);
+    pm_statements_node_t *begin_statements = NULL;
+
+    if (!match4(parser, PM_TOKEN_KEYWORD_RESCUE, PM_TOKEN_KEYWORD_ENSURE, PM_TOKEN_KEYWORD_ELSE, PM_TOKEN_KEYWORD_END)) {
+        pm_accepts_block_stack_push(parser, true);
+        begin_statements = parse_statements(parser, PM_CONTEXT_BEGIN, (uint16_t) (depth + 1));
+        pm_accepts_block_stack_pop(parser);
+        accept2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON);
+    }
+
+    pm_begin_node_t *node = pm_begin_node_create(parser, &begin_keyword, begin_statements);
+    parse_rescues(parser, opening_newline_index, &begin_keyword, node, PM_RESCUES_BEGIN, (uint16_t) (depth + 1));
+    expect1_opening(parser, PM_TOKEN_KEYWORD_END, PM_ERR_BEGIN_TERM, &begin_keyword);
+
+    PM_NODE_LENGTH_SET_TOKEN(parser, node, &parser->previous);
+    pm_begin_node_end_keyword_set(parser, node, &parser->previous);
+    pop_block_exits(parser, previous_block_exits);
+    return node;
+}
+
 /**
  * Parse an expression that begins with the previous node that we just lexed.
  */
@@ -20076,33 +20105,8 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
         }
         case PM_TOKEN_KEYWORD_CASE:
             return parse_case(parser, flags, depth);
-        case PM_TOKEN_KEYWORD_BEGIN: {
-            size_t opening_newline_index = token_newline_index(parser);
-            parser_lex(parser);
-
-            pm_token_t begin_keyword = parser->previous;
-            accept2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON);
-
-            pm_node_list_t current_block_exits = { 0 };
-            pm_node_list_t *previous_block_exits = push_block_exits(parser, &current_block_exits);
-            pm_statements_node_t *begin_statements = NULL;
-
-            if (!match4(parser, PM_TOKEN_KEYWORD_RESCUE, PM_TOKEN_KEYWORD_ENSURE, PM_TOKEN_KEYWORD_ELSE, PM_TOKEN_KEYWORD_END)) {
-                pm_accepts_block_stack_push(parser, true);
-                begin_statements = parse_statements(parser, PM_CONTEXT_BEGIN, (uint16_t) (depth + 1));
-                pm_accepts_block_stack_pop(parser);
-                accept2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON);
-            }
-
-            pm_begin_node_t *begin_node = pm_begin_node_create(parser, &begin_keyword, begin_statements);
-            parse_rescues(parser, opening_newline_index, &begin_keyword, begin_node, PM_RESCUES_BEGIN, (uint16_t) (depth + 1));
-            expect1_opening(parser, PM_TOKEN_KEYWORD_END, PM_ERR_BEGIN_TERM, &begin_keyword);
-
-            PM_NODE_LENGTH_SET_TOKEN(parser, begin_node, &parser->previous);
-            pm_begin_node_end_keyword_set(parser, begin_node, &parser->previous);
-            pop_block_exits(parser, previous_block_exits);
-            return UP(begin_node);
-        }
+        case PM_TOKEN_KEYWORD_BEGIN:
+            return UP(parse_begin(parser, depth));
         case PM_TOKEN_KEYWORD_BEGIN_UPCASE: {
             pm_node_list_t current_block_exits = { 0 };
             pm_node_list_t *previous_block_exits = push_block_exits(parser, &current_block_exits);
