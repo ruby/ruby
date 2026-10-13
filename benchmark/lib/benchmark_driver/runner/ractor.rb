@@ -100,7 +100,7 @@ File.write(<%= result.dump %>, __bmdv_ractors.shift)
     private
 
     # id is to prevent:
-    # can not isolate a Proc because it accesses outer variables (__bmdv_i)
+    # cannot make a shareable Proc because the outer variable '__bmdv_i' may be reassigned.
     def while_loop(content, times, id:)
       if !times.is_a?(Integer) || times <= 0
         raise ArgumentError.new("Unexpected times: #{times.inspect}")
