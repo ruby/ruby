@@ -3737,9 +3737,11 @@ handle_fork_error(int err, struct rb_process_status *status, int *ep, volatile i
     return -1;
 }
 
+/* Flush the current Ractor's own stdio: taking the write_lock of an IO owned
+ * by another Ractor can block on a thread that rb_check_deadlock can't see. */
 #define prefork() (		\
-        rb_io_flush(rb_stdout), \
-        rb_io_flush(rb_stderr)	\
+        rb_io_flush(rb_ractor_stdout()), \
+        rb_io_flush(rb_ractor_stderr())	\
         )
 
 /*
