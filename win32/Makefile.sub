@@ -391,7 +391,9 @@ CPPFLAGS = -DDISABLE_RUBYGEMS $(CPPFLAGS)
 !endif
 
 # https://learn.microsoft.com/en-us/cpp/build/reference/zc-preprocessor?view=msvc-170
-!if $(MSC_VER) >= 1925
+!if defined(CLANG_VER)
+# clang-cl conforms already and warns that -Zc:preprocessor is unused
+!elseif $(MSC_VER) >= 1925
 # maybe >= 1926?
 # https://devblogs.microsoft.com/cppblog/announcing-full-support-for-a-c-c-conformant-preprocessor-in-msvc/
 CPPFLAGS = -Zc:preprocessor $(CPPFLAGS)

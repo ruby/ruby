@@ -240,6 +240,9 @@ set /a MSC_VER_UPPER = MSC_VER/10*10+9
 # error MSVC 1915 (Visual Studio 2017 version 15.8) or later is required
 #endif
 set MSC_VER
+#ifdef __clang__
+echo CLANG_VER = __clang_major__
+#endif
 del %0 & exit
 <<
 
