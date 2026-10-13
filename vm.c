@@ -1448,7 +1448,6 @@ struct collect_outer_variable_name_data {
     VALUE ary;
     VALUE read_only;
     bool yield;
-    bool isolate;
 };
 
 static VALUE
@@ -1479,8 +1478,7 @@ collect_outer_variable_names(ID id, VALUE val, void *ptr)
     }
     else {
         VALUE *store;
-        if (data->isolate ||
-            val == Qtrue /* write */) {
+        if (val == Qtrue /* write */) {
             store = &data->ary;
         }
         else {
@@ -1587,21 +1585,10 @@ proc_isolate_env(VALUE self, rb_proc_t *proc, VALUE read_only_variables)
     RB_OBJ_WRITTEN(self, Qundef, env);
 }
 
-static int
-proc_has_ivar_i(ID name, VALUE val, st_data_t arg)
-{
-    if (rb_is_instance_id(name)) {
-        *(bool *)arg = true;
-        return ST_STOP;
-    }
-    return ST_CONTINUE;
-}
-
 static VALUE
-proc_shared_outer_variables(struct rb_id_table *outer_variables, bool isolate, const char *message)
+proc_shared_outer_variables(struct rb_id_table *outer_variables, const char *message)
 {
     struct collect_outer_variable_name_data data = {
-        .isolate = isolate,
         .ary = Qfalse,
         .read_only = Qfalse,
         .yield = false,
@@ -1631,52 +1618,6 @@ proc_shared_outer_variables(struct rb_id_table *outer_variables, bool isolate, c
 }
 
 VALUE
-rb_proc_isolate_bang(VALUE self, VALUE replace_self)
-{
-    const rb_iseq_t *iseq = vm_proc_iseq(self);
-
-    if (iseq) {
-        rb_proc_t *proc = (rb_proc_t *)RTYPEDDATA_DATA(self);
-
-        if (proc->block.type != block_type_iseq) rb_raise(rb_eRuntimeError, "not supported yet");
-
-        if (!UNDEF_P(replace_self)) {
-            VM_ASSERT(rb_ractor_shareable_p(replace_self));
-            RB_OBJ_WRITE(self, &proc->block.as.captured.self, replace_self);
-        }
-
-        if (ISEQ_BODY(iseq)->outer_variables) {
-            proc_shared_outer_variables(ISEQ_BODY(iseq)->outer_variables, true, "isolate a Proc");
-        }
-
-        proc_isolate_env(self, proc, Qfalse);
-        proc->header.is_isolated = TRUE;
-        RB_OBJ_WRITE(self, &proc->block.as.captured.self, Qnil);
-    }
-
-    /* ivars are not traversed here, so their values may be unshareable */
-    if (UNLIKELY(rb_obj_shape_has_ivars(self))) {
-        bool has_ivar = false;
-        rb_ivar_foreach(self, proc_has_ivar_i, (st_data_t)&has_ivar);
-
-        if (has_ivar) {
-            rb_raise(rb_eRactorIsolationError, "can not isolate a Proc because it has instance variables");
-        }
-    }
-
-    RB_OBJ_SET_SHAREABLE(self);
-    return self;
-}
-
-VALUE
-rb_proc_isolate(VALUE self)
-{
-    VALUE dst = rb_proc_dup(self);
-    rb_proc_isolate_bang(dst, Qundef);
-    return dst;
-}
-
-VALUE
 rb_proc_ractor_make_shareable(VALUE self, VALUE replace_self)
 {
     const rb_iseq_t *iseq = vm_proc_iseq(self);
@@ -1700,7 +1641,7 @@ rb_proc_ractor_make_shareable(VALUE self, VALUE replace_self)
 
         if (ISEQ_BODY(iseq)->outer_variables) {
             read_only_variables =
-                proc_shared_outer_variables(ISEQ_BODY(iseq)->outer_variables, false, "make a Proc shareable");
+                proc_shared_outer_variables(ISEQ_BODY(iseq)->outer_variables, "make a Proc shareable");
         }
 
         proc_isolate_env(self, proc, read_only_variables);
