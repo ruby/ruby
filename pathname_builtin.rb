@@ -2588,7 +2588,7 @@ class Pathname    # * FileTest *
   # for the entry at the path in `self`:
   #
   # ```ruby
-  # pn = Pathname('doc/t.tmp')
+  # pn = Pathname('/tmp/t.tmp')
   # pn.write('foo')
   # mode = pn.stat.mode.to_s(8) # => "100664"
   # pn.setgid?                  # => false
