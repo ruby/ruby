@@ -20657,6 +20657,38 @@ parse_yield(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
     return node;
 }
 
+static pm_node_t *
+parse_char(pm_parser_t *parser, uint16_t depth) {
+    pm_node_t *node = UP(pm_string_node_create_current_string(
+        parser,
+        &(pm_token_t) {
+            .type = PM_TOKEN_STRING_BEGIN,
+            .start = parser->current.start,
+            .end = parser->current.start + 1
+        },
+        &(pm_token_t) {
+            .type = PM_TOKEN_STRING_CONTENT,
+            .start = parser->current.start + 1,
+            .end = parser->current.end
+        },
+        NULL
+    ));
+
+    pm_node_flag_set(node, parse_unescaped_encoding(parser, parser->explicit_encoding));
+
+    /* Skip past the character literal here, since now we have handled
+     * parser->explicit_encoding correctly. */
+    parser_lex(parser);
+
+    /* Characters can be followed by strings in which case they are
+     * automatically concatenated. */
+    if (match1(parser, PM_TOKEN_STRING_BEGIN)) {
+        return parse_strings(parser, node, false, (uint16_t) (depth + 1));
+    }
+
+    return node;
+}
+
 /**
  * Parse an expression that begins with the previous node that we just lexed.
  */
@@ -20670,36 +20702,8 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
             return parse_parentheses(parser, binding_power, flags, depth);
         case PM_TOKEN_BRACE_LEFT_HASH:
             return UP(parse_hash(parser, depth));
-        case PM_TOKEN_CHARACTER_LITERAL: {
-            pm_node_t *node = UP(pm_string_node_create_current_string(
-                parser,
-                &(pm_token_t) {
-                    .type = PM_TOKEN_STRING_BEGIN,
-                    .start = parser->current.start,
-                    .end = parser->current.start + 1
-                },
-                &(pm_token_t) {
-                    .type = PM_TOKEN_STRING_CONTENT,
-                    .start = parser->current.start + 1,
-                    .end = parser->current.end
-                },
-                NULL
-            ));
-
-            pm_node_flag_set(node, parse_unescaped_encoding(parser, parser->explicit_encoding));
-
-            // Skip past the character literal here, since now we have handled
-            // parser->explicit_encoding correctly.
-            parser_lex(parser);
-
-            // Characters can be followed by strings in which case they are
-            // automatically concatenated.
-            if (match1(parser, PM_TOKEN_STRING_BEGIN)) {
-                return parse_strings(parser, node, false, (uint16_t) (depth + 1));
-            }
-
-            return node;
-        }
+        case PM_TOKEN_CHARACTER_LITERAL:
+            return parse_char(parser, depth);
         case PM_TOKEN_CLASS_VARIABLE: {
             parser_lex(parser);
             pm_node_t *node = UP(pm_class_variable_read_node_create(parser, &parser->previous));
@@ -21045,7 +21049,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
 
             return node;
         }
-        case PM_TOKEN_MINUS_GREATER: 
+        case PM_TOKEN_MINUS_GREATER:
             return UP(parse_lambda(parser, depth));
         case PM_TOKEN_UPLUS: {
             if (binding_power > PM_BINDING_POWER_UNARY) {
