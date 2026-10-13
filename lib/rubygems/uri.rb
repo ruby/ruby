@@ -109,7 +109,7 @@ class Gem::Uri
   end
 
   def password?
-    !!password
+    !password.nil? && !password.empty?
   end
 
   def oauth_basic?
@@ -117,7 +117,7 @@ class Gem::Uri
   end
 
   def token?
-    !user.nil? && password.nil?
+    !user.nil? && !password?
   end
 
   def initialize_copy(original)

@@ -4,7 +4,7 @@ return if RUBY_VERSION < "3.2"
 
 require_relative "../test_helper"
 
-module Prism
+module Ruby::Prism
   class ParametersSignatureTest < TestCase
     def test_req
       assert_parameters([[:req, :a]], "a")
@@ -79,7 +79,7 @@ module Prism
 
     def test_invalid_syntax
       e = assert_raise(RuntimeError) do
-        Prism.parse_statement("def f(**nil, ...); end").parameters.signature
+        Ruby::Prism.parse_statement("def f(**nil, ...); end").parameters.signature
       end
       assert_equal("Invalid syntax", e.message)
     end
@@ -98,7 +98,7 @@ module Prism
     end
 
     def signature(source)
-      program = Prism.parse("def m(#{source}); end").value
+      program = Ruby::Prism.parse("def m(#{source}); end").value
       program.statements.body.first.parameters.signature
     end
   end

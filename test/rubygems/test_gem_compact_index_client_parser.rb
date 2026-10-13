@@ -55,6 +55,16 @@ class TestGemCompactIndexClientParser < Gem::TestCase
     assert_equal [["a", "1.0.0"]], parser.versions["a"]
   end
 
+  def test_versions_skips_blank_and_name_only_lines
+    index = FakeIndex.new(versions: "---\na 1.0.0 aaa111\n\nb\nc 2.0.0 ccc222\n")
+    parser = Gem::CompactIndexClient::Parser.new(index)
+
+    versions = parser.versions
+
+    assert_equal %w[a c], versions.keys
+    assert_equal [["c", "2.0.0"]], versions["c"]
+  end
+
   def test_info_passes_checksum_from_versions_index
     index = FakeIndex.new(versions: "---\na 1.0.0 aaa111\na 1.1.0 aaa222\n",
                           info: { "a" => "---\n1.0.0 |checksum:abc\n" })

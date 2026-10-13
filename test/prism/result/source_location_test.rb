@@ -2,7 +2,7 @@
 
 require_relative "../test_helper"
 
-module Prism
+module Ruby::Prism
   class SourceLocationTest < TestCase
     def test_AliasGlobalVariableNode
       assert_location(AliasGlobalVariableNode, "alias $foo $bar")
@@ -924,7 +924,7 @@ module Prism
     end
 
     def test_all_tested
-      expected = Prism.constants.grep(/.Node$/).sort - %i[ErrorRecoveryNode ProgramNode]
+      expected = Ruby::Prism.constants.grep(/.Node$/).sort - %i[ErrorRecoveryNode ProgramNode]
       actual = SourceLocationTest.instance_methods(false).grep(/.Node$/).map { |name| name[5..].to_sym }.sort
       assert_equal expected, actual
     end
@@ -932,7 +932,7 @@ module Prism
     private
 
     def assert_location(kind, source, expected = 0...source.length, **options)
-      result = Prism.parse(source, **options)
+      result = Ruby::Prism.parse(source, **options)
       assert result.success?
 
       node = result.value.statements.body.last

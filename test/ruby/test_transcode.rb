@@ -2283,6 +2283,18 @@ class TestTranscode < Test::Unit::TestCase
     assert_equal(30000, r.bytesize)
   end
 
+  def test_fallback_modify_source_string
+    # [Bug #22330]
+    s = "\u3042" * 1000
+    assert_raise_with_message(RuntimeError, /string modified/) do
+      s.encode("US-ASCII",
+        fallback: proc {|x|
+          s.clear
+          "?"
+        })
+    end
+  end
+
   def test_fallback_method
     def (fallback = "U+%.4X").escape(x)
       self % x.unpack("U")
@@ -2398,7 +2410,6 @@ class TestTranscode < Test::Unit::TestCase
   end
 
   def test_ractor_lazy_load_encoding_random
-    omit 'unstable on s390x' if RUBY_PLATFORM =~ /s390x/
     assert_ractor("#{<<~"begin;"}\n#{<<~'end;'}", timeout: 30)
     begin;
       rs = []

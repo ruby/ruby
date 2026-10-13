@@ -29,6 +29,7 @@
 #include "iseq.h"
 #include "ruby/debug.h"
 #include "internal/cont.h"
+#include "internal/jit.h"
 
 // For mmapp(), sysconf()
 #ifndef _WIN32
@@ -48,6 +49,10 @@ STATIC_ASSERT(size_t_no_padding_bits, sizeof(size_t) == sizeof(uint64_t));
 // This build config impacts the pointer tagging scheme and we only want to
 // support one scheme for simplicity.
 STATIC_ASSERT(pointer_tagging_scheme, USE_FLONUM);
+
+// The bindings declare rb_len_t as c_long, and codegen reads String and Array
+// lengths at that width. Widening rb_len_t needs TYPE_REPLACEMENTS updated too.
+STATIC_ASSERT(rb_len_t_matches_bindings, sizeof(rb_len_t) == sizeof(long));
 
 enum yjit_bindgen_constants {
     // ISEQ_TRANSLATED expands to an enum value through a chain of macros,
@@ -242,9 +247,9 @@ rb_str_neq_internal(VALUE str1, VALUE str2)
 extern VALUE rb_ary_unshift_m(int argc, VALUE *argv, VALUE ary);
 
 VALUE
-rb_yjit_rb_ary_subseq_length(VALUE ary, long beg)
+rb_yjit_rb_ary_subseq_length(VALUE ary, rb_len_t beg)
 {
-    long len = RARRAY_LEN(ary);
+    rb_len_t len = RARRAY_LEN(ary);
     return rb_ary_subseq(ary, beg, len);
 }
 
@@ -253,7 +258,7 @@ VALUE
 rb_yjit_splat_varg_checks(VALUE *sp, VALUE splat_array, rb_control_frame_t *cfp)
 {
     // We inserted a T_ARRAY guard before this call
-    long len = RARRAY_LEN(splat_array);
+    rb_len_t len = RARRAY_LEN(splat_array);
 
     // Large splat arrays need a separate allocation
     if (len < 0 || len > VM_ARGC_STACK_MAX) return Qfalse;
@@ -296,7 +301,7 @@ void
 rb_yjit_dump_iseq_loc(const rb_iseq_t *iseq, uint32_t insn_idx)
 {
     char *ptr;
-    long len;
+    rb_len_t len;
     VALUE path = rb_iseq_path(iseq);
     RSTRING_GETMEM(path, ptr, len);
     fprintf(stderr, "%s %.*s:%u\n", __func__, (int)len, ptr, rb_iseq_line_no(iseq, insn_idx));
@@ -464,6 +469,63 @@ rb_yjit_set_exception_return(rb_control_frame_t *cfp, void *leave_exit, void *le
     }
 }
 
+#ifdef _WIN32
+// RtlUnwindEx(), which longjmp() and C++ exceptions use, needs unwind info for
+// every frame. JIT code calls out only inside the frame gen_entry_prologue()
+// sets up with frame_pointer, so a single UNWIND_INFO based on RBP is right at
+// every call in the code region. It is wrong within the few instructions that
+// set up and tear down the frame, which make no calls, so only an asynchronous
+// exception there, such as a stack overflow on the push, would unwind wrongly:
+//
+//   [RBP]       caller's RBP
+//   [RBP - 8]   copy of RBP
+//   [RBP - 16]  R13
+//   [RBP - 24]  R12
+//   [RBP - 32]  RBX
+static const uint8_t yjit_unwind_info[] = {
+    1,              // Version 1, no handler
+    0,              // No prologue, since every call happens after it
+    9,              // Count of unwind code slots
+    0x25,           // Frame register RBP at 2 * 16 bytes above RBX
+    0, 0x34, 0, 0,  // UWOP_SAVE_NONVOL RBX at [RBP - 32]
+    0, 0xc4, 1, 0,  // UWOP_SAVE_NONVOL R12 at [RBP - 24]
+    0, 0xd4, 2, 0,  // UWOP_SAVE_NONVOL R13 at [RBP - 16]
+    0, 0x03,        // UWOP_SET_FPREG
+    0, 0x32,        // UWOP_ALLOC_SMALL 32 bytes from [RBP - 8] down to RBX
+    0, 0x50,        // UWOP_PUSH_NONVOL RBP
+    0, 0,           // Padding to an even count
+};
+
+static RUNTIME_FUNCTION yjit_runtime_function;
+
+// Reserve the JIT region after a page holding the unwind info, which has to be
+// within 4GiB above the base address of the registered function table.
+uint8_t *
+rb_yjit_reserve_addr_space(uint32_t mem_size)
+{
+    uint32_t page_size = rb_jit_get_page_size();
+    uint8_t *base = rb_jit_reserve_addr_space(page_size + mem_size);
+    DWORD old_protect;
+
+    if (!VirtualAlloc(base, page_size, MEM_COMMIT, PAGE_READWRITE)) {
+        rb_bug("yjit: failed to commit the unwind info page, error: %lu", GetLastError());
+    }
+    memcpy(base, yjit_unwind_info, sizeof(yjit_unwind_info));
+    VirtualProtect(base, page_size, PAGE_READONLY, &old_protect);
+
+    // RtlVirtualUnwind() takes a call followed by a jmp to the start of the
+    // function for an epilogue, so start it at the unwind info no code jumps to.
+    yjit_runtime_function.BeginAddress = 0;
+    yjit_runtime_function.EndAddress = page_size + mem_size;
+    yjit_runtime_function.UnwindData = 0;
+    if (!RtlAddFunctionTable(&yjit_runtime_function, 1, (DWORD64)base)) {
+        rb_bug("yjit: failed to register unwind info for JIT code");
+    }
+
+    return base + page_size;
+}
+#endif
+
 // VM_INSTRUCTION_SIZE changes depending on if ZJIT is in the build. Since
 // bindgen can only grab one version of the constant and copy that to rust,
 // we make that the upper bound and this the accurate value.
@@ -505,6 +567,7 @@ VALUE rb_yjit_print_log_p(rb_execution_context_t *c, VALUE self);
 VALUE rb_yjit_trace_exit_locations_enabled_p(rb_execution_context_t *ec, VALUE self);
 VALUE rb_yjit_get_stats(rb_execution_context_t *ec, VALUE self, VALUE key);
 VALUE rb_yjit_reset_stats_bang(rb_execution_context_t *ec, VALUE self);
+void rb_yjit_update_max_compile_time_ns(uint64_t max_compile_time_ns);
 VALUE rb_yjit_get_log(rb_execution_context_t *ec, VALUE self);
 VALUE rb_yjit_disasm_iseq(rb_execution_context_t *ec, VALUE self, VALUE iseq);
 VALUE rb_yjit_insns_compiled(rb_execution_context_t *ec, VALUE self, VALUE iseq);
@@ -513,6 +576,25 @@ VALUE rb_yjit_simulate_oom_bang(rb_execution_context_t *ec, VALUE self);
 VALUE rb_yjit_get_exit_locations(rb_execution_context_t *ec, VALUE self);
 VALUE rb_yjit_enable(rb_execution_context_t *ec, VALUE self, VALUE gen_stats, VALUE print_stats, VALUE gen_compilation_log, VALUE print_compilation_log, VALUE mem_size, VALUE call_threshold);
 VALUE rb_yjit_c_builtin_p(rb_execution_context_t *ec, VALUE self);
+
+static VALUE
+rb_yjit_total_compile_time_ns_get(rb_execution_context_t *ec, VALUE self)
+{
+    return ULL2NUM(rb_yjit_total_compile_time_ns);
+}
+
+static VALUE
+rb_yjit_max_compile_time_ns_get(rb_execution_context_t *ec, VALUE self)
+{
+    return ULL2NUM(rb_yjit_max_compile_time_ns);
+}
+
+static VALUE
+rb_yjit_max_compile_time_ns_set(rb_execution_context_t *ec, VALUE self, VALUE max_compile_time_ns)
+{
+    rb_yjit_update_max_compile_time_ns(NUM2ULL(max_compile_time_ns));
+    return max_compile_time_ns;
+}
 
 // Allow YJIT_C_BUILTIN macro to force --yjit-c-builtin
 #ifdef YJIT_C_BUILTIN
@@ -523,4 +605,3 @@ static VALUE yjit_c_builtin_p(rb_execution_context_t *ec, VALUE self) { return Q
 
 // Preprocessed yjit.rb generated during build
 #include "yjit.rbinc"
-

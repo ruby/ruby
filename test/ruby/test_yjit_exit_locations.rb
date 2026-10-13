@@ -26,7 +26,7 @@ class TestYJITExitLocations < Test::Unit::TestCase
 
   def assert_exit_locations(test_script)
     write_results = <<~RUBY
-      IO.open(3).write Marshal.dump({
+      File.binwrite ENV["YJIT_TEST_STATS"], Marshal.dump({
         enabled: RubyVM::YJIT.trace_exit_locations_enabled?,
         exit_locations: RubyVM::YJIT.exit_locations
       })
@@ -78,15 +78,13 @@ class TestYJITExitLocations < Test::Unit::TestCase
       "--yjit-trace-exits"
     ]
     args << "-e" << script_shell_encode(script)
-    stats_r, stats_w = IO.pipe
-    _out, _err, _status = EnvUtil.invoke_ruby(args,
-                                              '', true, true, timeout: 1000, ios: { 3 => stats_w }
-                                             )
-    stats_w.close
-    stats = stats_r.read
-    stats = Marshal.load(stats) if !stats.empty?
-    stats_r.close
-    stats
+    # see TestYJIT#eval_with_jit
+    Dir.mktmpdir("yjit-stats") do |dir|
+      stats_path = File.join(dir, "stats")
+      _out, err, status = EnvUtil.invoke_ruby([{"YJIT_TEST_STATS" => stats_path}, *args], '', true, true, timeout: 1000)
+      assert status.success?, "exited with status #{status.to_i}, stderr:\n#{err}"
+      File.size?(stats_path) ? Marshal.load(File.binread(stats_path)) : ''
+    end
   end
 
   def script_shell_encode(s)

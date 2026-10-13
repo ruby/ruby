@@ -20,6 +20,30 @@ pub mod arm64;
 #[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
 pub struct Label(pub usize);
 
+/// Name of a label, used for printing. It is `Copy` so that creating a label doesn't allocate.
+#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
+pub enum LabelName {
+    /// Label of a LIR basic block lowered from an HIR basic block
+    Block(crate::hir::BlockId, crate::backend::lir::BlockId),
+    /// Label with a fixed name
+    Static(&'static str),
+}
+
+impl From<&'static str> for LabelName {
+    fn from(name: &'static str) -> Self {
+        LabelName::Static(name)
+    }
+}
+
+impl fmt::Display for LabelName {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            LabelName::Block(hir_block_id, lir_block_id) => write!(f, "{hir_block_id}_{lir_block_id}"),
+            LabelName::Static(name) => write!(f, "{name}"),
+        }
+    }
+}
+
 /// The object that knows how to encode the branch instruction.
 type BranchEncoder = Box<dyn Fn(&mut CodeBlock, i64, i64) -> Result<(), ()>>;
 
@@ -55,7 +79,7 @@ pub struct CodeBlock {
     label_addrs: Vec<usize>,
 
     // Table of registered label names
-    label_names: Vec<String>,
+    label_names: Vec<LabelName>,
 
     // References to labels
     label_refs: Vec<LabelRef>,
@@ -227,8 +251,11 @@ impl CodeBlock {
     }
 
     /// Allocate a new label with a given name
-    pub fn new_label(&mut self, name: String) -> Label {
-        assert!(!name.contains(' '), "use underscores in label names, not spaces");
+    pub fn new_label(&mut self, name: impl Into<LabelName>) -> Label {
+        let name = name.into();
+        if let LabelName::Static(name) = name {
+            assert!(!name.contains(' '), "use underscores in label names, not spaces");
+        }
 
         // This label doesn't have an address yet
         self.label_addrs.push(0);
@@ -491,7 +518,7 @@ mod tests
         // label_ref() must reserve its bytes by writing them, so that the
         // unmappable page surfaces as dropped_bytes here, where the caller
         // still reads it and turns it into CompileError::OutOfMemory.
-        let label = cb.new_label("over_the_page_boundary".to_string());
+        let label = cb.new_label("over_the_page_boundary");
         cb.label_ref(label, 5, |cb, _, _| {
             cb.write_bytes(&[0; 5]);
             Ok(())

@@ -28,6 +28,9 @@ rules:
   secrets-outside-env:
     # All committers with write access are trusted; no need for environment-scoped secrets.
     disable: true
+  self-repository:
+    # Local actions come from our own checkout, and SHA pinning is not enforced.
+    disable: true
   unpinned-uses:
     ignore:
       - wsl.yml

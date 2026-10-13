@@ -10,6 +10,32 @@ class JSONCoderTest < Test::Unit::TestCase
     assert_equal %(["[Object object]"]), coder.dump([Object.new])
   end
 
+  def test_json_coder_with_as_json_option
+    callback = ->(object, is_key) { 42 }
+    [callback, callback.method(:call)].each do |as_json|
+      coder = JSON::Coder.new(as_json: as_json)
+      assert_equal '[42]', coder.dump([Object.new])
+    end
+  end
+
+  def test_json_coder_block_overrides_as_json_option
+    coder = JSON::Coder.new(as_json: ->(object) { 1 }) { 2 }
+    assert_equal '[2]', coder.dump([Object.new])
+  end
+
+  def test_json_coder_as_json_invalid_type
+    assert_raise(TypeError) { JSON::Coder.new(as_json: 'x') }
+  end
+
+  def test_json_coder_rejects_disabling_strict_mode
+    [false, nil].each do |strict|
+      error = assert_raise(ArgumentError) { JSON::Coder.new(strict: strict) }
+      assert_equal 'JSON::Coder requires strict mode', error.message
+    end
+    assert_raise(JSON::GeneratorError) { JSON::Coder.new.dump(Object.new) }
+    assert_raise(JSON::GeneratorError) { JSON::Coder.new(strict: true).dump(Object.new) }
+  end
+
   def test_json_coder_with_proc_with_unsupported_value
     coder = JSON::Coder.new do |object, is_key|
       assert_equal false, is_key
@@ -38,6 +64,54 @@ class JSONCoderTest < Test::Unit::TestCase
     assert_equal "Integer not allowed as object key in JSON", error.message
   end
 
+  def test_json_coder_rfc8785_converted_keys
+    time = Time.utc(1999)
+    calls = []
+    coder = JSON::Coder.new(rfc8785: true) do |object, is_key|
+      calls << [object, is_key]
+      object.year.to_s
+    end
+    input = { time => 1, '1999!' => 2, Time.utc(2000) => 3 }
+    assert_equal '{"1999":1,"1999!":2,"2000":3}', coder.dump(input)
+    assert_equal [[time, true], [Time.utc(2000), true]], calls
+    assert_equal [time, '1999!', Time.utc(2000)], input.keys
+  end
+
+  def test_json_coder_rfc8785_converted_key_validation
+    object = Object.new
+    coder = JSON::Coder.new(rfc8785: true) { 42 }
+    error = assert_raise(JSON::GeneratorError) { coder.dump(object => 1) }
+    assert_equal 'Integer not allowed as object key in JSON', error.message
+    assert_equal 42, error.invalid_object
+
+    coder = JSON::Coder.new(rfc8785: true) { :a }
+    assert_equal '{"a":1,"b":2}', coder.dump('b' => 2, object => 1)
+
+    invalid = "\xFF"
+    calls = 0
+    coder = JSON::Coder.new(rfc8785: true) { calls += 1; invalid }
+    error = assert_raise(JSON::GeneratorError) { coder.dump(object => 1) }
+    assert_same invalid, error.invalid_object
+    assert_equal 1, calls
+  end
+
+  def test_json_coder_rfc8785_converted_key_collision
+    coder = JSON::Coder.new(rfc8785: true) { 'a' }
+    assert_raise(JSON::GeneratorError) { coder.dump(Object.new => 1, 'a' => 2) }
+    assert_raise(JSON::GeneratorError) { coder.dump(Object.new => 1, Object.new => 2) }
+    assert_raise(JSON::GeneratorError) { coder.dump(Object.new => 1, :a => 2) }
+  end
+
+  def test_json_coder_rfc8785_invalid_encoding_key
+    calls = []
+    coder = JSON::Coder.new(rfc8785: true) do |object, is_key|
+      calls << [object, is_key]
+      'a'
+    end
+    assert_equal '{"a":1,"b":2}', coder.dump('b' => 2, "\xFF" => 1)
+    assert_equal [["\xFF", true]], calls
+  end
+
   def test_json_coder_options
     coder = JSON::Coder.new(array_nl: "\n") do |object|
       42
@@ -54,6 +128,16 @@ class JSONCoderTest < Test::Unit::TestCase
   def test_json_coder_load_options
     coder = JSON::Coder.new(symbolize_names: true)
     assert_equal({a: 1}, coder.load('{"a":1}'))
+  end
+
+  def test_json_coder_load_with_on_load_method
+    on_load = ->(value) { Integer === value ? value + 1 : value }.method(:call)
+    coder = JSON::Coder.new(on_load: on_load)
+    assert_equal [2], coder.load('[1]')
+  end
+
+  def test_json_coder_on_load_invalid_type
+    assert_raise(TypeError) { JSON::Coder.new(on_load: 'x') }
   end
 
   def test_json_coder_dump_NaN_or_Infinity

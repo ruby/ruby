@@ -452,6 +452,22 @@ create_makefile '#{@spec.name}'
     assert_path_not_exist gem_make_out
   end
 
+  def test_uninstall_removes_build_info_file
+    installer = setup_base_installer
+    installer.build_args = %w[--with-foo-dir /opt/foo]
+
+    use_ui ui do
+      installer.install
+    end
+
+    assert_path_exist @spec.build_info_file, "sanity check"
+
+    uninstaller = Gem::Uninstaller.new @spec.name, executables: true
+    uninstaller.uninstall
+
+    assert_path_not_exist @spec.build_info_file
+  end
+
   def test_uninstall_nonexistent
     uninstaller = Gem::Uninstaller.new "bogus", executables: true
 

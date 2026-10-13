@@ -23,6 +23,7 @@
 #include "iseq.h"
 #include "ruby/debug.h"
 #include "internal/cont.h"
+#include "internal/jit.h"
 #include "ractor_core.h"
 #include "shape.h"
 
@@ -148,6 +149,13 @@ rb_zjit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec, bool jit
     }
 }
 
+// This is used by a function stub to install compiled code as the ISEQ's entry point.
+void
+rb_zjit_iseq_set_jit_entry(const rb_iseq_t *iseq, void *code_ptr)
+{
+    ISEQ_BODY(iseq)->jit_entry = (rb_jit_func_t)code_ptr;
+}
+
 extern VALUE *rb_vm_base_ptr(struct rb_control_frame_struct *cfp);
 
 // Convert a given ISEQ's instructions to zjit_* instructions
@@ -166,6 +174,26 @@ rb_zjit_profile_enable(const rb_iseq_t *iseq)
         }
         insn_idx += insn_len(insn);
     }
+}
+
+// Return false if a function stub has not collected enough profiles yet, enabling
+// profiling instructions as needed. Return true once enough profiles are collected.
+bool
+rb_zjit_iseq_has_profiled_enough(const rb_iseq_t *iseq)
+{
+    struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
+
+    if (body->jit_entry_calls < rb_zjit_profile_threshold) {
+        // Skip the unprofiled warmup. The compiled caller already establishes
+        // that the callee is hot, so go straight to the profiling window.
+        body->jit_entry_calls = rb_zjit_profile_threshold;
+        rb_zjit_profile_enable(iseq);
+    }
+    else {
+        body->jit_entry_calls++;
+    }
+
+    return body->jit_entry_calls >= rb_zjit_call_threshold;
 }
 
 // Convert a given ISEQ's ZJIT instructions to bare instructions
@@ -317,7 +345,23 @@ rb_zjit_class_initialized_p(VALUE klass)
     return RCLASS_INITIALIZED_P(klass);
 }
 
+// Whether rb_class_superclass can be called on the class without raising: it raises
+// TypeError when the superclasses array is unbuilt (an uninitialized class, e.g.
+// Class.allocate), except for BasicObject, which it special-cases to return nil.
+bool
+rb_zjit_can_load_superclass_p(VALUE klass)
+{
+    return klass == rb_cBasicObject || RCLASS_SUPERCLASSES(klass) != NULL;
+}
+
 rb_alloc_func_t rb_zjit_class_get_alloc_func(VALUE klass);
+
+// Defined in struct.c, where struct_alloc and the members ivar are visible.
+bool rb_zjit_class_has_struct_allocator(VALUE klass);
+rb_len_t rb_zjit_struct_num_members(VALUE klass);
+ID rb_zjit_struct_member_id(VALUE klass, rb_len_t index);
+bool rb_zjit_struct_embedded_p(rb_len_t num_members);
+VALUE rb_struct_s_keyword_init(VALUE klass);
 
 VALUE rb_class_allocate_instance(VALUE klass);
 
@@ -331,9 +375,21 @@ rb_zjit_class_has_default_allocator(VALUE klass)
 }
 
 
-VALUE rb_vm_untag_block_handler(VALUE block_handler);
 VALUE rb_vm_get_untagged_block_handler(rb_control_frame_t *reg_cfp);
 bool rb_vm_once_done_value(ISE is, VALUE *result);
+
+bool
+rb_zjit_array_aref_with_adjusted_index(VALUE ary, rb_len_t index, VALUE *out)
+{
+    RUBY_ASSERT(RB_TYPE_P(ary, T_ARRAY));
+    if (index >= 0 && index < RARRAY_LEN(ary)) {
+        *out = RARRAY_AREF(ary, index);
+        return true;
+    }
+    else {
+        return false;
+    }
+}
 
 // Primitives used by zjit.rb. Don't put other functions below, which wouldn't use them.
 VALUE rb_zjit_enable(rb_execution_context_t *ec, VALUE self);

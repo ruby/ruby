@@ -101,7 +101,9 @@ class Gem::Ext::Builder
 
       require "open3"
       # Set $SOURCE_DATE_EPOCH for the subprocess.
-      # Under Ruby::Box mkmf makes RbConfig.expand recurse until SystemStackError.
+      # Under Ruby::Box defined?($gvar) does not see assignments made inside the
+      # box, so mkmf have_devel? never memoizes and recurses until SystemStackError
+      # (https://bugs.ruby-lang.org/issues/22283).
       # Drop $RUBY_BOX last so no caller can restore it.
       build_env = { "SOURCE_DATE_EPOCH" => Gem.source_date_epoch_string }.merge(env).merge("RUBY_BOX" => nil)
       # A single-element command would be parsed as a shell command line,
@@ -204,7 +206,8 @@ class Gem::Ext::Builder
     when /Cargo.toml/ then
       Gem::Ext::CargoBuilder.new
     else
-      build_error("No builder for extension '#{extension}'")
+      # Also called to validate a specification, which must not leave a build log.
+      raise Gem::Ext::BuildError, "No builder for extension '#{extension}'"
     end
   end
 
@@ -231,7 +234,11 @@ EOF
   def build_extension(extension, dest_path) # :nodoc:
     results = []
 
-    builder = builder_for(extension)
+    begin
+      builder = builder_for(extension)
+    rescue Gem::Ext::BuildError => e
+      build_error(e.message)
+    end
 
     extension_dir =
       File.expand_path File.join(@gem_dir, File.dirname(extension))

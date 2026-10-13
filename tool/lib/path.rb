@@ -41,9 +41,8 @@ module Path
 
   module Mswin
     def ln_safe(src, dest, real_src, *opt)
-      cmd = ["mklink", dest.tr("/", "\\"), src.tr("/", "\\")]
-      cmd[1, 0] = opt
-      return if system("cmd", "/c", *cmd)
+      cmd = ["mklink", *opt, dest.tr("/", "\\"), src.tr("/", "\\")]
+      return if system(*cmd)
       # TODO: use RUNAS or something
       puts cmd.join(" ")
     end

@@ -20,7 +20,6 @@ static void Init_builtin_prelude(void);
 void
 rb_call_inits(void)
 {
-    CALL(default_shapes);
     CALL(Thread_Mutex);
     CALL(RandomSeedCore);
     CALL(encodings);

@@ -41,6 +41,6 @@ RANGE_EXCL(VALUE r)
 
 VALUE
 rb_range_component_beg_len(VALUE b, VALUE e, int excl,
-                           long *begp, long *lenp, long len, int err);
+                           rb_len_t *begp, rb_len_t *lenp, rb_len_t len, int err);
 
 #endif /* INTERNAL_RANGE_H */

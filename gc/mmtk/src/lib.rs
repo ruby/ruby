@@ -16,10 +16,10 @@ use std::thread::ThreadId;
 use abi::RubyUpcalls;
 use binding::RubyBinding;
 use binding::RubyBindingFast;
+use mmtk::MMTK;
+use mmtk::vm::VMBinding;
 use mmtk::vm::slot::SimpleSlot;
 use mmtk::vm::slot::UnimplementedMemorySlice;
-use mmtk::vm::VMBinding;
-use mmtk::MMTK;
 use once_cell::sync::OnceCell;
 
 pub mod abi;

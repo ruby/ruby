@@ -31,6 +31,17 @@ RSpec.describe "bundle install with git sources" do
       expect(out).to eq("WIN")
     end
 
+    it "installs and updates gems when git only accepts explicit bare repositories" do
+      git "config --global safe.bareRepository explicit"
+
+      install_base_gemfile
+      expect(the_bundle).to include_gems("foo 1.0")
+
+      update_git "foo", "1.1", path: lib_path("foo-1.0")
+      bundle "update foo"
+      expect(the_bundle).to include_gems("foo 1.1")
+    end
+
     it "points the installed copy's origin at the real remote, not the local cache" do
       install_base_gemfile
 
@@ -540,7 +551,7 @@ RSpec.describe "bundle install with git sources" do
   describe "a git gem whose extension fails to build" do
     # Where a build log goes is decided by the RubyGems running the install, and
     # older ones write a bare gem_make.out into the extension directory.
-    it "keeps the build log with that checkout instead of the shared repository", rubygems: ">= 4.1.0.dev" do
+    it "keeps the build log with that checkout instead of the shared repository", rubygems: ">= 4.1.0.a" do
       build_git "foo", "1.0" do |s|
         s.add_c_extension
         # Overwrite the source add_c_extension wrote, before the checkout is

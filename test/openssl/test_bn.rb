@@ -252,6 +252,9 @@ class OpenSSL::TestBN < OpenSSL::TestCase
       r4 = OpenSSL::BN.rand(8, 1, true)
       assert_include(192..255, r4)
       assert_equal(true, r4.odd?)
+      # Any truthy value asks for an odd number, not only true
+      r6 = OpenSSL::BN.rand(8, 1, 1)
+      assert_equal(true, r6.odd?)
 
       r5 = OpenSSL::BN.rand_range(256)
       assert_include(0..255, r5)

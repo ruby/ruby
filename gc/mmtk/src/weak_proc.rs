@@ -6,9 +6,9 @@ use mmtk::scheduler::WorkBucketStage;
 use mmtk::util::ObjectReference;
 use mmtk::vm::ObjectTracerContext;
 
+use crate::Ruby;
 use crate::abi::GCThreadTLS;
 use crate::upcalls;
-use crate::Ruby;
 
 pub struct WeakProcessor {
     non_parallel_obj_free_candidates: Mutex<Vec<ObjectReference>>,

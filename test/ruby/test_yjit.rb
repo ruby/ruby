@@ -49,9 +49,28 @@ class TestYJIT < Test::Unit::TestCase
   def test_command_line_switches
     assert_in_out_err('--yjit-', '', [], /invalid option --yjit-/)
     assert_in_out_err('--yjithello', '', [], /invalid option --yjithello/)
+    limit = /mswin/ =~ RUBY_PLATFORM ? 3 : 5
+    assert_in_out_err("--yjit-temp-regs=#{limit + 1}", '', [], /--yjit-temp-regs must be <= #{limit}\n.*invalid YJIT option 'temp-regs=#{limit + 1}'/m)
     #assert_in_out_err('--yjit-call-threshold', '', [], /--yjit-call-threshold needs an argument/)
     #assert_in_out_err('--yjit-call-threshold=', '', [], /--yjit-call-threshold needs an argument/)
   end
+
+  def test_perf_map_on_windows
+    warning = ['WARNING: --yjit-perf does not write a perf map on Windows']
+    assert_in_out_err(%w[--yjit-perf --yjit-call-threshold=1], 'def foo = 1; foo; p :ok', [':ok'], warning, success: true)
+    assert_in_out_err(%w[--yjit-perf=fp --yjit-call-threshold=1], 'def foo = 1; foo; p :ok', [':ok'], [], success: true)
+  end if /mswin/ =~ RUBY_PLATFORM
+
+  def test_rel32_calls_on_windows
+    stats = assert_compiles(<<~'RUBY', exits: :any)
+      def foo = [1, 2].sum
+      foo
+    RUBY
+    if stats[:num_send_x86_rel32] == 0 && stats[:num_send_x86_reg] > 0
+      omit "the JIT region was reserved out of rel32 range of the C functions"
+    end
+    assert_operator stats[:num_send_x86_rel32], :>, 0
+  end if /x64-mswin/ =~ RUBY_PLATFORM
 
   def test_yjit_enable
     args = []
@@ -1243,6 +1262,43 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_max_compile_time
+    assert_compiles(code_gc_helpers + <<~'RUBY', exits: :any, result: :ok)
+      def compile_for(ns)
+        total = RubyVM::YJIT.total_compile_time_ns
+        target = total + ns
+        while true
+          return unless eval('compiled_iseq? { nil.to_i }')
+          return if RubyVM::YJIT.total_compile_time_ns > target
+        end
+      end
+
+      return :not_compiled1 unless eval('compiled_iseq? { nil.to_i }')
+
+      # Compilation between reading the total and setting the budget eats into it, so be generous here
+      RubyVM::YJIT.max_compile_time_ns = RubyVM::YJIT.total_compile_time_ns + 1_000_000_000
+
+      return :not_compiled2 unless eval('compiled_iseq? { nil.to_i }')
+
+      RubyVM::YJIT.max_compile_time_ns = RubyVM::YJIT.total_compile_time_ns + 1_000_000
+      compile_for(2_000_000)
+
+      return :not_over unless RubyVM::YJIT.total_compile_time_ns >= RubyVM::YJIT.max_compile_time_ns
+
+      return :did_compile1 if eval('compiled_iseq? { nil.to_i }')
+
+      :ok
+    RUBY
+  end
+
+  def test_max_compile_time_when_not_enabled
+    assert_separately(["--disable-all", "--yjit-disable"], <<~'RUBY')
+      assert_equal false, RubyVM::YJIT.enabled?
+      RubyVM::YJIT.max_compile_time_ns = 42
+      assert_equal 42, RubyVM::YJIT.max_compile_time_ns
+    RUBY
+  end
+
   def test_code_gc
     assert_compiles(code_gc_helpers + <<~'RUBY', exits: :any, result: :ok)
       return :not_paged unless add_pages(100) # prepare freeable pages
@@ -1504,6 +1560,23 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_gc_compact_read_barrier_under_jit_frame
+    omit "compaction is not supported on this platform" unless GC.respond_to?(:compact)
+
+    # Sweeping the dropped fstrings reads the fstring table on a locked page
+    assert_compiles(<<~'RUBY', exits: :any, result: :ok)
+      def churn(n) = n.times.map { |i| -"str#{i}" }
+
+      def compact_in_jit
+        churn(20_000)
+        GC.compact
+      end
+
+      20.times { compact_in_jit }
+      :ok
+    RUBY
+  end
+
   def test_invalidate_cyclic_branch
     assert_compiles(<<~'RUBY', result: 2, exits: { opt_plus: 1 })
       def foo
@@ -1723,6 +1796,7 @@ class TestYJIT < Test::Unit::TestCase
 
   def test_opt_mult_overflow
     assert_no_exits('0xfff_ffff_ffff_ffff * 0x10')
+    assert_no_exits('0x10_0000 * 0x10_0000')
   end
 
   def test_disable_stats
@@ -1891,6 +1965,7 @@ class TestYJIT < Test::Unit::TestCase
   end
 
   def test_yjit_enable_replaces_array_each
+    pend "the with_jit hooks run in the master box [Bug #22306]" if defined?(Ruby::Box) && Ruby::Box.enabled?
     assert_separately([*("--disable=yjit" if RubyVM::YJIT.enabled?)], <<~'RUBY')
       # Array#each should be implemented in C for the interpreter
       assert_nil Array.instance_method(:each).source_location
@@ -2005,6 +2080,13 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_stack_temps_beyond_temp_regs
+    assert_separately(%w[--yjit-call-threshold=1 --yjit-temp-regs=3], <<~RUBY)
+      def foo(a) = [a, a, a, a]
+      assert_equal([1, 1, 1, 1], foo(1))
+    RUBY
+  end
+
   private
 
   def code_gc_helpers
@@ -2015,10 +2097,24 @@ class TestYJIT < Test::Unit::TestCase
         failures == RubyVM::YJIT.runtime_stats[:compilation_failure]
       end
 
+      def compiled_iseq?
+        count = RubyVM::YJIT.runtime_stats(:compiled_iseq_count)
+        yield
+        RubyVM::YJIT.runtime_stats(:compiled_iseq_count) > count
+      end
+
       def add_pages(num_jits)
         pages = RubyVM::YJIT.runtime_stats[:live_page_count]
         num_jits.times { return false unless eval('compiles { nil.to_i }') }
         pages.nil? || pages < RubyVM::YJIT.runtime_stats[:live_page_count]
+      end
+
+      def compiles_for_ns(ns)
+        target = RubyVM::YJIT.total_compile_time_ns + ns
+        while RubyVM::YJIT.total_compile_time_ns < target
+          return false unless eval('compiles { nil.to_i }')
+        end
+        true
       end
     RUBY
   end
@@ -2062,7 +2158,7 @@ class TestYJIT < Test::Unit::TestCase
       end
 
       iseq = RubyVM::InstructionSequence.of(_test_proc)
-      IO.open(3).write Marshal.dump({
+      File.binwrite ENV["YJIT_TEST_STATS"], Marshal.dump({
         result: #{result == ANY ? "nil" : "result"},
         stats: stats,
         insns: collect_insns(iseq),
@@ -2139,6 +2235,8 @@ class TestYJIT < Test::Unit::TestCase
         flunk "Expected to compile instructions #{missed_insns.join(", ")} but didn't.\niseq:\n#{disasm}"
       end
     end
+
+    runtime_stats
   end
 
   def script_shell_encode(s)
@@ -2158,24 +2256,13 @@ class TestYJIT < Test::Unit::TestCase
     args << "--yjit-code-gc" if code_gc
     args << "--yjit-verify-ctx" if verify_ctx
     args << "-e" << script_shell_encode(script)
-    stats_r, stats_w = IO.pipe
-    # Separate thread so we don't deadlock when
-    # the child ruby blocks writing the stats to fd 3
-    stats = ''
-    stats_reader = Thread.new do
-      stats = stats_r.read
-      stats_r.close
+    # Not through fd 3, which spawn cannot pass on Windows
+    Dir.mktmpdir("yjit-stats") do |dir|
+      stats_path = File.join(dir, "stats")
+      out, err, status = invoke_ruby([{"YJIT_TEST_STATS" => stats_path}, *args], '', true, true, timeout: timeout)
+      stats = File.size?(stats_path) ? Marshal.load(File.binread(stats_path)) : ''
+      [status, out, err, stats]
     end
-    out, err, status = invoke_ruby(args, '', true, true, timeout: timeout, ios: { 3 => stats_w })
-    stats_w.close
-    stats_reader.join(timeout)
-    stats = Marshal.load(stats) if !stats.empty?
-    [status, out, err, stats]
-  ensure
-    stats_reader&.kill
-    stats_reader&.join(timeout)
-    stats_r&.close
-    stats_w&.close
   end
 
   # A wrapper of EnvUtil.invoke_ruby that uses RbConfig.ruby instead of EnvUtil.ruby

@@ -111,15 +111,17 @@ describe "IO::Buffer#free" do
   end
 
   context "with a slice of a buffer" do
-    it "nullifies the slice, not touching the buffer" do
-      buffer = IO::Buffer.new(4)
-      slice = buffer.slice(0, 2)
+    ruby_version_is ""..."4.1" do
+      it "nullifies the slice, not touching the buffer" do
+        buffer = IO::Buffer.new(4)
+        slice = buffer.slice(0, 2)
 
-      slice.free
-      slice.null?.should == true
-      buffer.null?.should == false
+        slice.free
+        slice.null?.should == true
+        buffer.null?.should == false
 
-      buffer.free
+        buffer.free
+      end
     end
 
     it "nullifies buffer, invalidating the slice" do
@@ -127,8 +129,16 @@ describe "IO::Buffer#free" do
       slice = buffer.slice(0, 2)
 
       buffer.free
-      slice.null?.should == false
       slice.valid?.should == false
+
+      ruby_version_is ""..."4.1" do
+        slice.null?.should == false
+      end
+
+      ruby_version_is "4.1" do
+        # Offset-based slices resolve their base from the freed source.
+        slice.null?.should == true
+      end
     end
   end
 end

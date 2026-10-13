@@ -27,7 +27,7 @@ require 'date'
 # #
 class Time
 
-  VERSION = "0.4.2"             # :nodoc:
+  VERSION = "0.5.0"             # :nodoc:
 
   class << Time
 
@@ -658,7 +658,7 @@ class Time
     def rfc3339(time)
       pattern = /\A\s*
           (-?\d{4})-(\d\d)-(\d\d)
-          [T\s]
+          [T ]
           (\d\d):(\d\d):(\d\d)
           (\.\d+)?
           (Z|[+-]\d\d:\d\d)

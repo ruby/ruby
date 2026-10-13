@@ -519,8 +519,9 @@ rb_obj_clone_setup(VALUE obj, VALUE clone, VALUE kwfreeze)
         }
 
         if (RB_OBJ_FROZEN(obj)) {
-            shape_id_t next_shape_id = rb_obj_shape_transition_frozen(clone);
-            RBASIC_SET_SHAPE_ID(clone, next_shape_id);
+            // Not just the shape_id transition: a frozen class or module must
+            // also have a frozen fields object.
+            rb_obj_freeze_inline(clone);
         }
         break;
       case Qtrue: {
@@ -754,7 +755,7 @@ inspect_i(ID id, VALUE value, st_data_t a)
     if (!rb_is_instance_id(id)) return ST_CONTINUE;
     if (!NIL_P(ivars)) {
         VALUE name = ID2SYM(id);
-        for (long i = 0; RARRAY_AREF(ivars, i) != name; ) {
+        for (rb_len_t i = 0; RARRAY_AREF(ivars, i) != name; ) {
             if (++i >= RARRAY_LEN(ivars)) return ST_CONTINUE;
         }
     }
@@ -839,7 +840,7 @@ rb_obj_inspect(VALUE obj)
 {
     VALUE ivars = rb_check_funcall(obj, id_instance_variables_to_inspect, 0, 0);
     st_index_t n = 0;
-    if (UNDEF_P(ivars) || NIL_P(ivars)) {
+    if (NIL_OR_UNDEF_P(ivars)) {
         n = rb_ivar_count(obj);
         ivars = Qnil;
     }
@@ -1370,12 +1371,7 @@ rb_obj_dummy1(VALUE _x, VALUE _y)
 VALUE
 rb_obj_freeze(VALUE obj)
 {
-    if (!OBJ_FROZEN(obj)) {
-        OBJ_FREEZE(obj);
-        if (SPECIAL_CONST_P(obj)) {
-            rb_bug("special consts should be frozen.");
-        }
-    }
+    OBJ_FREEZE(obj);
     return obj;
 }
 
@@ -2227,6 +2223,7 @@ rb_class_initialize(int argc, VALUE *argv, VALUE klass)
     rb_class_set_super(klass, super);
     RCLASS_SET_MAX_IV_COUNT(klass, RCLASS_MAX_IV_COUNT(super));
     RCLASS_SET_ALLOCATOR(klass, RCLASS_ALLOCATOR(super));
+    rb_class_set_initialized(klass);
     rb_make_metaclass(klass, RBASIC(super)->klass);
     rb_class_inherited(super, klass);
     rb_mod_initialize_exec(klass);
@@ -2665,7 +2662,7 @@ rb_mod_const_get(int argc, VALUE *argv, VALUE mod)
 
     while (p < pend) {
         VALUE part;
-        long len, beglen;
+        rb_len_t len, beglen;
 
         while (p < pend && *p != ':') p++;
 
@@ -2838,7 +2835,7 @@ rb_mod_const_defined(int argc, VALUE *argv, VALUE mod)
 
     while (p < pend) {
         VALUE part;
-        long len, beglen;
+        rb_len_t len, beglen;
 
         while (p < pend && *p != ':') p++;
 
@@ -2998,7 +2995,7 @@ rb_mod_const_source_location(int argc, VALUE *argv, VALUE mod)
 
     while (p < pend) {
         VALUE part;
-        long len, beglen;
+        rb_len_t len, beglen;
 
         while (p < pend && *p != ':') p++;
 
@@ -3700,7 +3697,7 @@ static double
 rb_str_to_dbl_raise(VALUE str, int badcheck, int raise, int *error)
 {
     char *s;
-    long len;
+    rb_len_t len;
     double ret;
     VALUE v = 0;
 

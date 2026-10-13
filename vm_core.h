@@ -94,9 +94,8 @@ RUBY_ASSERT_CRITICAL_SECTION_LEAVE();
 If `rb_vm_check_ints()` is called between the `RUBY_ASSERT_CRITICAL_SECTION_ENTER()` and
 `RUBY_ASSERT_CRITICAL_SECTION_LEAVE()`, a failed assertion will result.
 */
-extern int ruby_assert_critical_section_entered;
-#define RUBY_ASSERT_CRITICAL_SECTION_ENTER() do{ruby_assert_critical_section_entered += 1;}while(false)
-#define RUBY_ASSERT_CRITICAL_SECTION_LEAVE() do{VM_ASSERT(ruby_assert_critical_section_entered > 0);ruby_assert_critical_section_entered -= 1;}while(false)
+#define RUBY_ASSERT_CRITICAL_SECTION_ENTER() do{GET_EC()->assert_critical_section_entered += 1;}while(false)
+#define RUBY_ASSERT_CRITICAL_SECTION_LEAVE() do{rb_execution_context_t *ec__ = GET_EC();VM_ASSERT(ec__->assert_critical_section_entered > 0);ec__->assert_critical_section_entered -= 1;}while(false)
 #else
 #define RUBY_ASSERT_CRITICAL_SECTION_ENTER()
 #define RUBY_ASSERT_CRITICAL_SECTION_LEAVE()
@@ -147,8 +146,6 @@ extern int ruby_assert_critical_section_entered;
 #elif defined(_SIG_MAXSIG)      /* FreeBSD */
 # undef NSIG
 # define NSIG _SIG_MAXSIG
-#elif defined(_SIGMAX)          /* QNX */
-# define NSIG (_SIGMAX + 1)
 #elif defined(NSIG)             /* 99% of everything else */
 # /* take it */
 #else                           /* Last resort */
@@ -407,6 +404,8 @@ enum rb_builtin_attr {
     BUILTIN_ATTR_C_TRACE = 0x08,
     // The iseq uses noint branch/jump opcodes that skip interrupt checking.
     BUILTIN_ATTR_WITHOUT_INTERRUPTS = 0x10,
+    // The iseq operates on the nearest user box in its caller frames.
+    BUILTIN_ATTR_CALLER_USER_BOX = 0x20,
 };
 
 typedef VALUE (*rb_jit_func_t)(struct rb_execution_context_struct *, struct rb_control_frame_struct *);
@@ -778,9 +777,6 @@ typedef struct rb_vm_struct {
 
     int src_encoding_index;
 
-    /* workqueue (thread-safe, NOT async-signal-safe) */
-    struct ccan_list_head workqueue; /* <=> rb_workqueue_job.jnode */
-    rb_nativethread_lock_t workqueue_lock;
 
     /* `once` completion event (see vm_once_dispatch) */
     rb_nativethread_lock_t once_lock;
@@ -820,14 +816,11 @@ typedef struct rb_vm_struct {
 #if USE_MODULAR_GC
         struct gc_mark_func_data_struct *mark_func_data;
 #endif
-        /* One VM-wide list for rb_gc_register_address: a slot can later hold another
-         * objspace's value, so it is not split per Ractor and every Ractor's GC scans it
-         * conservatively.  Leaf lock; register/unregister are cold paths. */
         struct {
             rb_nativethread_lock_t lock;
-            VALUE **addrs;              /* rb_gc_register_address: mark_maybe on *addr */
-            size_t addrs_cnt, addrs_capa;
-        } registered_globals;
+            struct rb_ractor_struct **registry;
+            size_t registry_cnt, registry_capa;
+        } registered_addrs;
 
         /* Holders keeping GC disabled (atomic): Ractors that called GC.disable (at
          * most one hold each) plus short internal critical sections.  One holder stops
@@ -893,7 +886,7 @@ extern bool ruby_vm_during_cleanup;
 #define RUBY_VM_FIBER_VM_STACK_SIZE           (  16 * 1024 * sizeof(VALUE)) /*   64 KB or  128 KB */
 #define RUBY_VM_FIBER_VM_STACK_SIZE_MIN       (   2 * 1024 * sizeof(VALUE)) /*    8 KB or   16 KB */
 #define RUBY_VM_FIBER_MACHINE_STACK_SIZE      (  64 * 1024 * sizeof(VALUE)) /*  256 KB or  512 KB */
-#if defined(__powerpc64__) || defined(__ppc64__) // macOS has __ppc64__
+#if defined(__powerpc64__)
 #define RUBY_VM_FIBER_MACHINE_STACK_SIZE_MIN  (  32 * 1024 * sizeof(VALUE)) /*  128 KB or  256 KB */
 #else
 #define RUBY_VM_FIBER_MACHINE_STACK_SIZE_MIN  (  16 * 1024 * sizeof(VALUE)) /*   64 KB or  128 KB */
@@ -1148,6 +1141,10 @@ struct rb_execution_context_struct {
         void *asan_fake_stack_handle;
 #endif
     } machine;
+
+#ifdef RUBY_ASSERT_CRITICAL_SECTION
+    int assert_critical_section_entered;
+#endif
 };
 
 #ifndef rb_execution_context_t
@@ -1720,11 +1717,16 @@ VM_ENV_BOX_UNCHECKED(const VALUE *ep)
 #if VM_CHECK_MODE > 0
 int rb_vm_ep_in_heap_p(const VALUE *ep);
 #endif
+static inline rb_execution_context_t * rb_current_execution_context(bool expect_ec);
 
 static inline int
 VM_ENV_ESCAPED_P(const VALUE *ep)
 {
-    VM_ASSERT(rb_vm_ep_in_heap_p(ep) == !!VM_ENV_FLAGS(ep, VM_ENV_FLAG_ESCAPED));
+#if VM_CHECK_MODE > 0
+    if (rb_current_execution_context(false)) {
+        VM_ASSERT(rb_vm_ep_in_heap_p(ep) == !!VM_ENV_FLAGS(ep, VM_ENV_FLAG_ESCAPED));
+    }
+#endif
     return VM_ENV_FLAGS(ep, VM_ENV_FLAG_ESCAPED) ? 1 : 0;
 }
 
@@ -2093,7 +2095,6 @@ void rb_thread_wakeup_timer_thread(int);
 static inline void
 rb_vm_living_threads_init(rb_vm_t *vm)
 {
-    ccan_list_head_init(&vm->workqueue);
     ccan_list_head_init(&vm->ractor.set);
     ccan_list_head_init(&vm->ractor.terminated_set);
 }
@@ -2116,7 +2117,7 @@ VALUE rb_vm_bh_to_procval(const rb_execution_context_t *ec, VALUE block_handler)
 void rb_vm_register_special_exception_str(enum ruby_special_exceptions sp, VALUE exception_class, VALUE mesg);
 
 #define rb_vm_register_special_exception(sp, e, m) \
-    rb_vm_register_special_exception_str(sp, e, rb_usascii_str_new_static((m), (long)rb_strlen_lit(m)))
+    rb_vm_register_special_exception_str(sp, e, rb_usascii_str_new_static((m), (rb_len_t)rb_strlen_lit(m)))
 
 void rb_gc_mark_machine_context(const rb_execution_context_t *ec);
 
@@ -2365,7 +2366,7 @@ static inline void
 rb_vm_check_ints(rb_execution_context_t *ec)
 {
 #ifdef RUBY_ASSERT_CRITICAL_SECTION
-    VM_ASSERT(ruby_assert_critical_section_entered == 0);
+    VM_ASSERT(ec->assert_critical_section_entered == 0);
 #endif
 
     VM_ASSERT(ec == rb_current_ec_noinline());
@@ -2397,6 +2398,7 @@ struct rb_trace_arg_struct {
 void rb_hook_list_mark(rb_hook_list_t *hooks);
 void rb_hook_list_mark_and_move(rb_hook_list_t *hooks);
 void rb_hook_list_free(rb_hook_list_t *hooks);
+size_t rb_hook_list_memsize(const rb_hook_list_t *hooks);
 void rb_hook_list_connect_local_tracepoint(rb_hook_list_t *list, VALUE tpval, unsigned int target_line);
 bool rb_hook_list_remove_local_tracepoint(rb_hook_list_t *list, VALUE tpval);
 unsigned int rb_hook_list_count(rb_hook_list_t *list);
@@ -2495,7 +2497,7 @@ int rb_thread_check_trap_pending(void);
 #define RUBY_EVENT_COVERAGE_LINE                0x010000
 #define RUBY_EVENT_COVERAGE_BRANCH              0x020000
 
-void rb_postponed_job_flush(rb_vm_t *vm);
+void rb_postponed_job_flush(void);
 void rb_postponed_job_trigger_for_ractor(unsigned int h, VALUE running_ractor);
 
 // ractor.c

@@ -71,6 +71,7 @@ module Bundler
       @cached_dependencies = Hash.new do |dependencies, package|
         dependencies[package] = Hash.new do |versions, version|
           deps = version.dependencies.reject {|d| d.name == package.name }
+          deps = Override.rewrite_dependencies(@base.overrides, package.name, deps)
           deps = apply_metadata_overrides(deps, package.name)
           versions[version] = to_dependency_hash(deps, @packages)
         end
@@ -88,6 +89,7 @@ module Bundler
       solver = Gem::PubGrub::VersionSolver.new(source: self, root: root, strategy: Strategy.new(self), logger: logger)
       result = solver.solve
       resolved_specs = result.flat_map {|package, version| version.to_specs(package, @most_specific_locked_platform) }
+      check_replaced_gems(resolved_specs)
       Override.attach(resolved_specs, @base.overrides)
       spec_set = SpecSet.new(resolved_specs).specs_with_additional_variants_from(@base.locked_specs)
       @cooldown_skipped = cooldown_skipped_summary(spec_set)
@@ -137,15 +139,37 @@ module Bundler
       raise SolveFailure.new(explanation)
     end
 
+    # A replacement is only useful when it provides the files of the gem it
+    # replaces, so the two cannot be loaded side by side.
+    def check_replaced_gems(specs)
+      names = specs.map(&:name)
+
+      @base.overrides.each do |override|
+        next unless override.from && override.operation
+        next unless names.include?(override.target) && names.include?(override.operation)
+        next unless specs.any? {|s| s.name == override.from && s.dependencies.any? {|d| d.name == override.target } }
+
+        dependents = specs.select do |spec|
+          Override.rewrite_dependencies(@base.overrides, spec.name, spec.dependencies).any? {|d| d.name == override.target }
+        end.map(&:name).uniq
+
+        lines = ["#{override} would leave both #{override.target} and #{override.operation} in the bundle because #{override.target} is still required by:"]
+        lines << "  the Gemfile" if @base.requirements.any? {|d| d.name == override.target }
+        lines.concat(dependents.map {|name| "  #{name}" })
+        if dependents.any?
+          lines << "Replace it for each of them, for example:"
+          lines << "  #{Override.new(override.target, :to, override.operation, from: dependents.first)}"
+        end
+        raise GemfileError, lines.join("\n")
+      end
+    end
+
     def override_diagnostic_summary
       return nil if @base.overrides.empty?
 
       lines = ["Bundler applied the following overrides while resolving:"]
       @base.overrides.each do |override|
-        target = override.target == :all ? ":all" : override.target.inspect
-        location = override.source_location_label
-        lines << "  override #{target}, #{override.field}: #{override.operation.inspect}" \
-          "#{location ? " (declared at #{location})" : ""}"
+        lines << "  #{override}"
       end
       "\n\n#{lines.join("\n")}"
     end

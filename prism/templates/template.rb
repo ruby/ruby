@@ -5,7 +5,7 @@ require "erb"
 require "fileutils"
 require "yaml"
 
-module Prism
+module Ruby::Prism
   module Template # :nodoc: all
     SERIALIZE_ONLY_SEMANTICS_FIELDS = ENV.fetch("PRISM_SERIALIZE_ONLY_SEMANTICS_FIELDS", false)
     CHECK_FIELD_KIND = ENV.fetch("CHECK_FIELD_KIND", false)
@@ -156,7 +156,7 @@ module Prism
         elsif union_kind
           "(#{union_kind.join(" | ")})"
         else
-          "Prism::node"
+          "Ruby::Prism::node"
         end
       end
 
@@ -188,7 +188,7 @@ module Prism
         elsif union_kind
           "(#{union_kind.join(" | ")})?"
         else
-          "Prism::node?"
+          "Ruby::Prism::node?"
         end
       end
 
@@ -224,7 +224,7 @@ module Prism
         elsif union_kind
           "#{union_kind.join(" | ")}"
         else
-          "Prism::node"
+          "Ruby::Prism::node"
         end
       end
 
@@ -715,9 +715,9 @@ end
 
 if __FILE__ == $0
   if ARGV.empty?
-    Prism::Template::TEMPLATES.each { |filepath| Prism::Template.render(filepath) }
+    Ruby::Prism::Template::TEMPLATES.each { |filepath| Ruby::Prism::Template.render(filepath) }
   else # ruby/ruby
     name, write_to = ARGV
-    Prism::Template.render(name, write_to: write_to)
+    Ruby::Prism::Template.render(name, write_to: write_to)
   end
 end

@@ -125,7 +125,7 @@ int initgroups(const char *, rb_gid_t);
 #define open	rb_w32_uopen
 #endif
 
-#if defined(HAVE_TIMES) || defined(_WIN32)
+#if defined(HAVE_TIMES)
 /*********************************************************************
  *
  * Document-class: Process::Tms
@@ -1752,69 +1752,22 @@ export_dup(VALUE str)
 #endif
 
 #if USE_SPAWNV
-#if defined(_WIN32)
-#define proc_spawn_cmd_internal(argv, prog) rb_w32_uaspawn(P_NOWAIT, (prog), (argv))
-#else
-static rb_pid_t
-proc_spawn_cmd_internal(char **argv, char *prog)
-{
-    char fbuf[MAXPATHLEN];
-    rb_pid_t status;
-
-    if (!prog)
-        prog = argv[0];
-    prog = dln_find_exe_r(prog, 0, fbuf, sizeof(fbuf));
-    if (!prog)
-        return -1;
-
-    before_exec();
-    status = spawnv(P_NOWAIT, prog, (const char **)argv);
-    if (status == -1 && errno == ENOEXEC) {
-        *argv = (char *)prog;
-        *--argv = (char *)"sh";
-        status = spawnv(P_NOWAIT, "/bin/sh", (const char **)argv);
-        after_exec();
-        if (status == -1) errno = ENOEXEC;
-    }
-    return status;
-}
-#endif
-
 static rb_pid_t
 proc_spawn_cmd(char **argv, VALUE prog, struct rb_execarg *eargp)
 {
     rb_pid_t pid = -1;
 
     if (argv[0]) {
-#if defined(_WIN32)
         DWORD flags = 0;
         if (eargp->new_pgroup_given && eargp->new_pgroup_flag) {
             flags = CREATE_NEW_PROCESS_GROUP;
         }
         pid = rb_w32_uaspawn_flags(P_NOWAIT, prog ? RSTRING_PTR(prog) : 0, argv, flags);
-#else
-        pid = proc_spawn_cmd_internal(argv, prog ? RSTRING_PTR(prog) : 0);
-#endif
     }
     return pid;
 }
 
-#if defined(_WIN32)
 #define proc_spawn_sh(str) rb_w32_uspawn(P_NOWAIT, (str), 0)
-#else
-static rb_pid_t
-proc_spawn_sh(char *str)
-{
-    char fbuf[MAXPATHLEN];
-    rb_pid_t status;
-
-    char *shell = dln_find_exe_r("sh", 0, fbuf, sizeof(fbuf));
-    before_exec();
-    status = spawnl(P_NOWAIT, (shell ? shell : "/bin/sh"), "sh", "-c", str, (char*)NULL);
-    after_exec();
-    return status;
-}
-#endif
 #endif
 
 static VALUE
@@ -2208,7 +2161,7 @@ check_exec_options_i_extract(st_data_t st_key, st_data_t st_val, st_data_t arg)
 static int
 check_exec_fds_1(struct rb_execarg *eargp, VALUE h, int maxhint, VALUE ary)
 {
-    long i;
+    rb_len_t i;
 
     if (ary != Qfalse) {
         for (i = 0; i < RARRAY_LEN(ary); i++) {
@@ -2241,7 +2194,7 @@ check_exec_fds(struct rb_execarg *eargp)
     VALUE h = rb_hash_new();
     VALUE ary;
     int maxhint = -1;
-    long i;
+    rb_len_t i;
 
     maxhint = check_exec_fds_1(eargp, h, maxhint, eargp->fd_dup2);
     maxhint = check_exec_fds_1(eargp, h, maxhint, eargp->fd_close);
@@ -2255,7 +2208,7 @@ check_exec_fds(struct rb_execarg *eargp)
             int oldfd = FIX2INT(RARRAY_AREF(elt, 1));
             int lastfd = oldfd;
             VALUE val = rb_hash_lookup(h, INT2FIX(lastfd));
-            long depth = 0;
+            rb_len_t depth = 0;
             while (FIXNUM_P(val) && 0 <= FIX2INT(val)) {
                 lastfd = FIX2INT(val);
                 val = rb_hash_lookup(h, val);
@@ -2693,7 +2646,7 @@ fill_envp_buf_i(st_data_t st_key, st_data_t st_val, st_data_t arg)
 }
 
 
-static long run_exec_dup2_tmpbuf_size(long n);
+static rb_len_t run_exec_dup2_tmpbuf_size(rb_len_t n);
 
 struct open_struct {
     VALUE fname;
@@ -2714,7 +2667,7 @@ open_func(void *ptr)
 }
 
 static void
-rb_execarg_allocate_dup2_tmpbuf(struct rb_execarg *eargp, long len)
+rb_execarg_allocate_dup2_tmpbuf(struct rb_execarg *eargp, rb_len_t len)
 {
     rb_alloc_tmp_buffer(&eargp->dup2_tmpbuf, run_exec_dup2_tmpbuf_size(len), false);
 }
@@ -2729,7 +2682,7 @@ rb_execarg_parent_start1(VALUE execarg_obj)
 
     ary = eargp->fd_open;
     if (ary != Qfalse) {
-        long i;
+        rb_len_t i;
         for (i = 0; i < RARRAY_LEN(ary); i++) {
             VALUE elt = RARRAY_AREF(ary, i);
             int fd = FIX2INT(RARRAY_AREF(elt, 0));
@@ -2787,7 +2740,7 @@ rb_execarg_parent_start1(VALUE execarg_obj)
         }
         hide_obj(envtbl);
         if (envopts != Qfalse) {
-            long i;
+            rb_len_t i;
             for (i = 0; i < RARRAY_LEN(envopts); i++) {
                 VALUE pair = RARRAY_AREF(envopts, i);
                 VALUE key = RARRAY_AREF(pair, 0);
@@ -2850,7 +2803,7 @@ execarg_parent_end(VALUE execarg_obj)
 
     ary = eargp->fd_open;
     if (ary != Qfalse) {
-        long i;
+        rb_len_t i;
         for (i = 0; i < RARRAY_LEN(ary); i++) {
             VALUE elt = RARRAY_AREF(ary, i);
             VALUE param = RARRAY_AREF(elt, 1);
@@ -3086,13 +3039,13 @@ intrcmp(const void *a, const void *b)
 struct run_exec_dup2_fd_pair {
     int oldfd;
     int newfd;
-    long older_index;
-    long num_newer;
+    rb_len_t older_index;
+    rb_len_t num_newer;
     int cloexec;
 };
 
-static long
-run_exec_dup2_tmpbuf_size(long n)
+static rb_len_t
+run_exec_dup2_tmpbuf_size(rb_len_t n)
 {
     return sizeof(struct run_exec_dup2_fd_pair) * n;
 }
@@ -3163,7 +3116,7 @@ fd_clear_cloexec(int fd, char *errmsg, size_t errmsg_buflen)
 static int
 run_exec_dup2(VALUE ary, VALUE tmpbuf, struct rb_execarg *sargp, char *errmsg, size_t errmsg_buflen)
 {
-    long n, i;
+    rb_len_t n, i;
     int ret;
     int extra_fd = -1;
     struct run_exec_dup2_fd_pair *pairs = RB_IMEMO_TMPBUF_PTR(tmpbuf);
@@ -3205,7 +3158,7 @@ run_exec_dup2(VALUE ary, VALUE tmpbuf, struct rb_execarg *sargp, char *errmsg, s
 
     /* non-cyclic redirection: O(n) */
     for (i = 0; i < n; i++) {
-        long j = i;
+        rb_len_t j = i;
         while (j != -1 && pairs[j].oldfd != -1 && pairs[j].num_newer == 0) {
             if (save_redirect_fd(pairs[j].newfd, sargp, errmsg, errmsg_buflen) < 0) /* async-signal-safe */
                 goto fail;
@@ -3228,7 +3181,7 @@ run_exec_dup2(VALUE ary, VALUE tmpbuf, struct rb_execarg *sargp, char *errmsg, s
 
     /* cyclic redirection: O(n) */
     for (i = 0; i < n; i++) {
-        long j;
+        rb_len_t j;
         if (pairs[i].oldfd == -1)
             continue;
         if (pairs[i].oldfd == pairs[i].newfd) { /* self cycle */
@@ -3293,7 +3246,7 @@ run_exec_dup2(VALUE ary, VALUE tmpbuf, struct rb_execarg *sargp, char *errmsg, s
 static int
 run_exec_close(VALUE ary, char *errmsg, size_t errmsg_buflen)
 {
-    long i;
+    rb_len_t i;
     int ret;
 
     for (i = 0; i < RARRAY_LEN(ary); i++) {
@@ -3312,7 +3265,7 @@ run_exec_close(VALUE ary, char *errmsg, size_t errmsg_buflen)
 static int
 run_exec_dup2_child(VALUE ary, struct rb_execarg *sargp, char *errmsg, size_t errmsg_buflen)
 {
-    long i;
+    rb_len_t i;
     int ret;
 
     for (i = 0; i < RARRAY_LEN(ary); i++) {
@@ -3371,7 +3324,7 @@ run_exec_pgroup(const struct rb_execarg *eargp, struct rb_execarg *sargp, char *
 static int
 run_exec_rlimit(VALUE ary, struct rb_execarg *sargp, char *errmsg, size_t errmsg_buflen)
 {
-    long i;
+    rb_len_t i;
     for (i = 0; i < RARRAY_LEN(ary); i++) {
         VALUE elt = RARRAY_AREF(ary, i);
         int rtype = NUM2INT(RARRAY_AREF(elt, 0));
@@ -3469,7 +3422,7 @@ rb_execarg_run_options(const struct rb_execarg *eargp, struct rb_execarg *sargp,
 
     obj = eargp->env_modification;
     if (obj != Qfalse) {
-        long i;
+        rb_len_t i;
         save_env(sargp);
         for (i = 0; i < RARRAY_LEN(obj); i++) {
             VALUE pair = RARRAY_AREF(obj, i);
@@ -5262,7 +5215,7 @@ proc_setpriority(VALUE obj, VALUE which, VALUE who, VALUE prio)
 
 #if defined(HAVE_SETRLIMIT) && defined(NUM2RLIM)
 static int
-rlimit_resource_name2int(const char *name, long len, int casetype)
+rlimit_resource_name2int(const char *name, rb_len_t len, int casetype)
 {
     int resource;
     const char *p;
@@ -5374,13 +5327,13 @@ rlimit_resource_name2int(const char *name, long len, int casetype)
 }
 
 static int
-rlimit_type_by_hname(const char *name, long len)
+rlimit_type_by_hname(const char *name, rb_len_t len)
 {
     return rlimit_resource_name2int(name, len, 0);
 }
 
 static int
-rlimit_type_by_lname(const char *name, long len)
+rlimit_type_by_lname(const char *name, rb_len_t len)
 {
     return rlimit_resource_name2int(name, len, 1);
 }
@@ -5390,7 +5343,7 @@ rlimit_type_by_sym(VALUE key)
 {
     VALUE name = rb_sym2str(key);
     const char *rname = RSTRING_PTR(name);
-    long len = RSTRING_LEN(name);
+    rb_len_t len = RSTRING_LEN(name);
     int rtype = -1;
     static const char prefix[] = "rlimit_";
     enum {prefix_len = sizeof(prefix)-1};
@@ -5407,7 +5360,7 @@ static int
 rlimit_resource_type(VALUE rtype)
 {
     const char *name;
-    long len;
+    rb_len_t len;
     VALUE v;
     int r;
 
@@ -5646,7 +5599,7 @@ rb_getlogin(void)
     typedef size_t getlogin_r_size_t;
 #   endif
 
-    long loginsize = GETLOGIN_R_SIZE_INIT;  /* maybe -1 */
+    rb_len_t loginsize = GETLOGIN_R_SIZE_INIT;  /* maybe -1 */
 
     if (loginsize < 0)
         loginsize = GETLOGIN_R_SIZE_DEFAULT;
@@ -5754,7 +5707,7 @@ rb_getpwdirnam_for_login(VALUE login_name)
 # ifdef USE_GETPWNAM_R
 
     char *bufnm;
-    long bufsizenm = GETPW_R_SIZE_INIT;  /* maybe -1 */
+    rb_len_t bufsizenm = GETPW_R_SIZE_INIT;  /* maybe -1 */
 
     if (bufsizenm < 0)
         bufsizenm = GETPW_R_SIZE_DEFAULT;
@@ -5778,7 +5731,7 @@ rb_getpwdirnam_for_login(VALUE login_name)
             rb_syserr_fail(enm, "getpwnam_r");
         }
 
-        rb_str_modify_expand(getpwnm_tmp, (long)args.bufsize);
+        rb_str_modify_expand(getpwnm_tmp, (rb_len_t)args.bufsize);
         args.buf = RSTRING_PTR(getpwnm_tmp);
         args.bufsize = (size_t)rb_str_capacity(getpwnm_tmp);
     }
@@ -5850,7 +5803,7 @@ rb_getpwdiruid(void)
 # ifdef USE_GETPWUID_R
 
     char *bufid;
-    long bufsizeid = GETPW_R_SIZE_INIT;  /* maybe -1 */
+    rb_len_t bufsizeid = GETPW_R_SIZE_INIT;  /* maybe -1 */
 
     if (bufsizeid < 0)
         bufsizeid = GETPW_R_SIZE_DEFAULT;
@@ -5874,7 +5827,7 @@ rb_getpwdiruid(void)
             rb_syserr_fail(eid, "getpwuid_r");
         }
 
-        rb_str_modify_expand(getpwid_tmp, (long)args.bufsize);
+        rb_str_modify_expand(getpwid_tmp, (rb_len_t)args.bufsize);
         args.buf = RSTRING_PTR(getpwid_tmp);
         args.bufsize = (size_t)rb_str_capacity(getpwid_tmp);
     }
@@ -5942,7 +5895,7 @@ obj2uid(VALUE id
         struct passwd *pwptr;
 #ifdef USE_GETPWNAM_R
         char *getpw_buf;
-        long getpw_buf_len;
+        rb_len_t getpw_buf_len;
         int e;
         if (!*getpw_tmp) {
             getpw_buf_len = GETPW_R_SIZE_INIT;
@@ -5960,7 +5913,7 @@ obj2uid(VALUE id
                 rb_str_resize(*getpw_tmp, 0);
                 rb_syserr_fail(e, "getpwnam_r");
             }
-            rb_str_modify_expand(*getpw_tmp, (long)args.bufsize);
+            rb_str_modify_expand(*getpw_tmp, (rb_len_t)args.bufsize);
             args.buf = RSTRING_PTR(*getpw_tmp);
             args.bufsize = (size_t)rb_str_capacity(*getpw_tmp);
         }
@@ -6041,7 +5994,7 @@ obj2gid(VALUE id
         struct group *grptr;
 #ifdef USE_GETGRNAM_R
         char *getgr_buf;
-        long getgr_buf_len;
+        rb_len_t getgr_buf_len;
         int e;
         if (!*getgr_tmp) {
             getgr_buf_len = GETGR_R_SIZE_INIT;
@@ -6059,7 +6012,7 @@ obj2gid(VALUE id
                 rb_str_resize(*getgr_tmp, 0);
                 rb_syserr_fail(e, "getgrnam_r");
             }
-            rb_str_modify_expand(*getgr_tmp, (long)args.bufsize);
+            rb_str_modify_expand(*getgr_tmp, (rb_len_t)args.bufsize);
             args.buf = RSTRING_PTR(*getgr_tmp);
             args.bufsize = (size_t)rb_str_capacity(*getgr_tmp);
         }
@@ -9173,6 +9126,8 @@ InitVM_process(void)
 
     rb_gvar_ractor_local("$$");
     rb_gvar_ractor_local("$?");
+    rb_gvar_box_ready("$$");
+    rb_gvar_box_ready("$?");
 
     rb_define_global_function("exec", f_exec, -1);
     rb_define_global_function("fork", rb_f_fork, 0);
@@ -9564,7 +9519,7 @@ InitVM_process(void)
     rb_define_module_function(rb_mProcess, "clock_gettime", rb_clock_gettime, -1);
     rb_define_module_function(rb_mProcess, "clock_getres", rb_clock_getres, -1);
 
-#if defined(HAVE_TIMES) || defined(_WIN32)
+#if defined(HAVE_TIMES)
     rb_cProcessTms = rb_struct_define_under(rb_mProcess, "Tms", "utime", "stime", "cutime", "cstime", NULL);
 #if 0 /* for RDoc */
     /* user time used in this process */

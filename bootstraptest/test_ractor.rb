@@ -888,13 +888,57 @@ assert_equal "can not get unshareable values from instance variables of classes/
   end
 RUBY
 
-# ivar in shareable-objects are not allowed to access from non-main Ractor
-assert_equal 'can not access instance variables of shareable objects from non-main Ractors', %q{
+# setting an ivar on a shareable but unfrozen object is not allowed, by instance_variable_set
+assert_equal "can't modify instance variables of a shareable Ractor", %q{
   shared = Ractor.new{}
-  shared.instance_variable_set(:@iv, 'str')
+
+  begin
+    shared.instance_variable_set(:@iv, 'str')
+  rescue Ractor::IsolationError => e
+    e.message
+  end
+}
+
+# setting an ivar on a shareable but unfrozen object is not allowed, by @iv = ...
+assert_equal "can't modify instance variables of a shareable Ractor", %q{
+  class Ractor
+    def setup
+      @foo = ''
+    end
+  end
+
+  shared = Ractor.new{}
+
+  begin
+    shared.setup
+  rescue Ractor::IsolationError => e
+    e.message
+  end
+}
+
+# ivars of a shareable object are frozen, so they can be read from a non-main Ractor
+assert_equal 'nil', %q{
+  shared = Ractor.new{}
 
   r = Ractor.new shared do |shared|
-    p shared.instance_variable_get(:@iv)
+    shared.instance_variable_get(:@iv)
+  end
+
+  r.value.inspect
+}
+
+# setting an ivar on a shareable object is not allowed from a non-main Ractor either
+assert_equal "can't modify instance variables of a shareable Ractor", %q{
+  class Ractor
+    def setup
+      @foo = ''
+    end
+  end
+
+  shared = Ractor.new{}
+
+  r = Ractor.new shared do |shared|
+    shared.setup
   end
 
   begin
@@ -904,51 +948,67 @@ assert_equal 'can not access instance variables of shareable objects from non-ma
   end
 }
 
-# ivar in shareable-objects are not allowed to access from non-main Ractor, by @iv (get)
-assert_equal 'can not access instance variables of shareable objects from non-main Ractors', %q{
-  class Ractor
-    def setup
-      @foo = ''
-    end
-
-    def foo
-      @foo
-    end
-  end
-
-  shared = Ractor.new{}
-  shared.setup
-
-  r = Ractor.new shared do |shared|
-    p shared.foo
-  end
+# a Proc which already has ivars can not be isolated
+assert_equal 'can not isolate a Proc because it has instance variables', %q{
+  pr = Proc.new{}
+  pr.instance_variable_set(:@iv, Object.new)
 
   begin
-    r.value
-  rescue Ractor::RemoteError => e
-    e.cause.message
+    Ractor.new(&pr)
+  rescue Ractor::IsolationError => e
+    e.message
   end
 }
 
-# ivar in shareable-objects are not allowed to access from non-main Ractor, by @iv (set)
-assert_equal 'can not access instance variables of shareable objects from non-main Ractors', %q{
-  class Ractor
-    def setup
-      @foo = ''
+# freezing the Proc first does not skip the check
+assert_equal 'can not isolate a Proc because it has instance variables', %q{
+  pr = Proc.new{}
+  pr.instance_variable_set(:@iv, Object.new)
+  pr.freeze
+
+  begin
+    Ractor.new(&pr)
+  rescue Ractor::IsolationError => e
+    e.message
+  end
+}
+
+# an ivar set by Proc#refined is internal, so it does not block isolation
+assert_equal 'r', %q{
+  module M
+    refine String do
+      def foo; 'r'; end
     end
   end
 
-  shared = Ractor.new{}
+  rp = Proc.new{ ''.foo }.refined(M)
+  Ractor.new(&rp).value
+}
 
-  r = Ractor.new shared do |shared|
-    p shared.setup
-  end
+# a Proc made shareable by Ractor.new can not be given ivars afterwards
+assert_equal "can't modify instance variables of a shareable Proc", %q{
+  HAX = -> { }
+  Ractor.new(&HAX).join
 
   begin
-    r.value
-  rescue Ractor::RemoteError => e
-    e.cause.message
+    HAX.instance_variable_set(:@foo, Object.new)
+  rescue Ractor::IsolationError => e
+    e.message
   end
+}
+
+# freezing a shareable object from another Ractor can not expose an ivar, since
+# none could be set after it became shareable
+assert_equal 'nil', %q{
+  HAX = -> { }
+  Ractor.new(&HAX).join
+
+  r = Ractor.new do
+    HAX.freeze
+    HAX.instance_variable_get(:@foo)
+  end
+
+  r.value.inspect
 }
 
 # But a shareable object is frozen, it is allowed to access ivars from non-main Ractor
@@ -2710,7 +2770,7 @@ assert_equal 'ok', %q{
 
 ## Ractor#monitor
 
-# monitor port returns `:exited` when the monitering Ractor terminated.
+# monitor port returns [ractor, :exited] when the monitering Ractor terminated.
 assert_equal 'true', %q{
   r = Ractor.new do
     Ractor.main << :ok1
@@ -2719,10 +2779,10 @@ assert_equal 'true', %q{
 
   r.monitor port = Ractor::Port.new
   Ractor.receive # :ok1
-  port.receive == :exited
+  port.receive == [r, :exited]
 }
 
-# monitor port returns `:exited` even if the monitoring Ractor was terminated.
+# monitor port returns [ractor, :exited] even if the monitoring Ractor was terminated.
 assert_equal 'true', %q{
   r = Ractor.new do
     :ok
@@ -2731,7 +2791,7 @@ assert_equal 'true', %q{
   r.join # wait for r's terminateion
 
   r.monitor port = Ractor::Port.new
-  port.receive == :exited
+  port.receive == [r, :exited]
 }
 
 # monitor returns false if the monitoring Ractor was terminated.
@@ -2745,7 +2805,7 @@ assert_equal 'false', %q{
   r.monitor Ractor::Port.new
 }
 
-# monitor port returns `:aborted` when the monitering Ractor is aborted.
+# monitor port returns [ractor, :aborted] when the monitering Ractor is aborted.
 assert_equal 'true', %q{
   r = Ractor.new do
     Ractor.main << :ok1
@@ -2754,10 +2814,10 @@ assert_equal 'true', %q{
 
   r.monitor port = Ractor::Port.new
   Ractor.receive # :ok1
-  port.receive == :aborted
+  port.receive == [r, :aborted]
 }
 
-# monitor port returns `:aborted` even if the monitoring Ractor was aborted.
+# monitor port returns [ractor, :aborted] even if the monitoring Ractor was aborted.
 assert_equal 'true', %q{
   r = Ractor.new do
     raise 'ok'
@@ -2770,7 +2830,7 @@ assert_equal 'true', %q{
   end
 
   r.monitor port = Ractor::Port.new
-  port.receive == :aborted
+  port.receive == [r, :aborted]
 }
 
 assert_equal 'ok', %q{
@@ -3242,4 +3302,18 @@ assert_equal '[:closed, :closed]', %q{
   timed.close
 
   [untimed_result, th2.value]
+}
+
+# last_cwd is set on init in the main Ractor, but Dir.pwd attempts to store into
+# it. When this is done on a child Ractor we violate the invariant that the
+# owning and registering Ractor must be the same. On a normal build the
+# use-after-free is invisible, because we only zero out the flags, so the cache
+# check compares the slot bytes as usual and just thinks it's a cache miss.
+#
+# This test exists because it will hit a use-after-poison on ASAN builds
+assert_equal 'ok', %q{
+  Dir.chdir("..")
+  Ractor.new { Dir.pwd; 500_000.times { "y" * 300 } }.join
+  Dir.pwd
+  'ok'
 }

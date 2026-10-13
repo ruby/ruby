@@ -244,6 +244,22 @@ pm_options_freeze_set(pm_options_t *options, bool freeze) {
 }
 
 /**
+ * Get the attach_comments option on the given options struct.
+ */
+bool
+pm_options_attach_comments(const pm_options_t *options) {
+    return options->attach_comments;
+}
+
+/**
+ * Set the attach_comments option on the given options struct.
+ */
+void
+pm_options_attach_comments_set(pm_options_t *options, bool attach_comments) {
+    options->attach_comments = attach_comments;
+}
+
+/**
  * Get the raise_error option on the given options struct.
  */
 uint8_t pm_options_raise_error(const pm_options_t *options) {
@@ -401,6 +417,7 @@ pm_options_read(pm_options_t *options, const char *data) {
     options->main_script = ((uint8_t) *data++) > 0;
     options->partial_script = ((uint8_t) *data++) > 0;
     options->freeze = ((uint8_t) *data++) > 0;
+    options->attach_comments = ((uint8_t) *data++) > 0;
 
     uint32_t scopes_count = pm_options_read_u32(data);
     data += 4;

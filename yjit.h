@@ -28,6 +28,8 @@ extern unsigned int rb_yjit_call_threshold;
 extern unsigned int rb_yjit_cold_threshold;
 extern uint64_t rb_yjit_live_iseq_count;
 extern uint64_t rb_yjit_iseq_alloc_count;
+extern uint64_t rb_yjit_max_compile_time_ns;
+extern uint64_t rb_yjit_total_compile_time_ns;
 extern bool rb_yjit_enabled_p;
 extern bool rb_yjit_compiling_p;
 void rb_yjit_incr_counter(const char *counter_name);

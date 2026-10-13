@@ -905,6 +905,9 @@ module Prism
     def test_AndNode
       assert_prism_eval("true && 1")
       assert_prism_eval("false && 1")
+      assert_prism_eval("true && 1 && 2")
+      assert_prism_eval("true && nil && 2")
+      assert_prism_eval("a = []; a.push(1) && a.push(2) && nil && a.push(3); a")
     end
 
     def test_CaseNode
@@ -1000,6 +1003,9 @@ module Prism
     def test_OrNode
       assert_prism_eval("true || 1")
       assert_prism_eval("false || 1")
+      assert_prism_eval("nil || false || 1")
+      assert_prism_eval("nil || 1 || 2")
+      assert_prism_eval("a = []; a.push(1).empty? || nil || a.push(2) || a.push(3); a")
     end
 
     def test_UnlessNode
@@ -1502,6 +1508,14 @@ a
           return *args, *args, **kwargs
         end
         prism_test_return_node(1, foo: 0)
+      CODE
+
+      # [Bug #22334]
+      assert_prism_eval(<<-CODE)
+        def self.prism_test_return_node
+          return **{foo: 1}
+        end
+        prism_test_return_node
       CODE
     end
 

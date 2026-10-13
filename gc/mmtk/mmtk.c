@@ -308,6 +308,22 @@ static void
 rb_mmtk_move_obj_during_marking(MMTk_ObjectReference from, MMTk_ObjectReference to)
 {
     rb_gc_move_obj_during_marking((VALUE)from, (VALUE)to);
+
+    size_t from_slot_size = rb_gc_impl_obj_slot_size((VALUE)from);
+    size_t to_slot_size = rb_gc_impl_obj_slot_size((VALUE)to);
+    if (from_slot_size != to_slot_size) {
+        /* The object was copied to a differently sized slot; transition the
+         * shape so its capacity matches the new slot size.  The re-embedding
+         * of contents (e.g. arrays, strings, object fields) happens later
+         * during reference updating. */
+        rb_gc_obj_changed_slot_size((VALUE)to, to_slot_size);
+    }
+}
+
+static size_t
+rb_mmtk_obj_optimal_size(MMTk_ObjectReference obj)
+{
+    return rb_gc_obj_optimal_size((VALUE)obj);
 }
 
 static void
@@ -543,6 +559,7 @@ MMTk_RubyUpcalls ruby_upcalls = {
     rb_mmtk_scan_gc_roots,
     rb_mmtk_scan_objspace,
     rb_mmtk_move_obj_during_marking,
+    rb_mmtk_obj_optimal_size,
     rb_mmtk_update_object_references,
     rb_mmtk_call_gc_mark_children,
     rb_mmtk_handle_weak_references,
@@ -749,6 +766,14 @@ rb_gc_impl_zjit_new_obj_fastpath(void *objspace_ptr, size_t alloc_size, VALUE fl
 #endif
 }
 
+const uintptr_t *
+rb_gc_impl_zjit_writebarrier_required_p_ptr(void *objspace_ptr)
+{
+    /* MMTk's write barrier is not a no-op for young, unshareable receivers,
+     * so ZJIT must always call rb_gc_writebarrier(). */
+    return NULL;
+}
+
 void
 rb_gc_impl_init(void)
 {
@@ -756,8 +781,8 @@ rb_gc_impl_init(void)
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVALUE_SIZE")), SIZET2NUM(sizeof(struct RBasic) + sizeof(VALUE[RBIMPL_RVALUE_EMBED_LEN_MAX])));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("RBASIC_SIZE")), SIZET2NUM(sizeof(struct RBasic)));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVALUE_OVERHEAD")), INT2NUM(0));
-    // TODO: correctly set RVALUE_OLD_AGE when we have generational GC support
-    rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVALUE_OLD_AGE")), INT2FIX(0));
+    rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVALUE_OLD_AGE")),
+                 INT2FIX(strcmp((const char *)mmtk_plan(), "StickyImmix") == 0 ? 1 : 0));
     OBJ_FREEZE(gc_constants);
     rb_define_const(rb_mGC, "INTERNAL_CONSTANTS", gc_constants);
 
@@ -797,7 +822,7 @@ rb_gc_impl_shutdown_free_objects(void *objspace_ptr)
 
 // GC
 void
-rb_gc_impl_start(void *objspace_ptr, bool full_mark, bool immediate_mark, bool immediate_sweep, bool compact)
+rb_gc_impl_start(void *objspace_ptr, bool full_mark, bool immediate_mark, bool immediate_sweep, bool compact, bool global)
 {
     mmtk_handle_user_collection_request(rb_gc_get_ractor_newobj_cache(), true, full_mark);
 }
@@ -1054,6 +1079,10 @@ rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags
     alloc_obj[0] = flags;
     alloc_obj[1] = klass;
 
+    if (RB_UNLIKELY(!wb_protected)) {
+        mmtk_register_wb_unprotected_object((MMTk_ObjectReference)alloc_obj);
+    }
+
     if (semantics == MMTK_ALLOCATION_SEMANTICS_LOS || ractor_cache->bump_pointer == NULL) {
         mmtk_post_alloc(ractor_cache->mutator, (void*)alloc_obj, total_size, semantics);
     }
@@ -1217,8 +1246,7 @@ rb_gc_impl_object_moved_p(void *objspace_ptr, VALUE obj)
 bool
 rb_gc_impl_pinned_p(void *objspace_ptr, VALUE obj)
 {
-    /* MMTk tracks pinning separately */
-    return false;
+    return mmtk_is_pinned((MMTk_ObjectReference)obj);
 }
 
 VALUE
@@ -1268,6 +1296,16 @@ rb_gc_impl_obj_became_shareable(void *objspace_ptr, VALUE obj)
 void
 rb_gc_impl_writebarrier_remember(void *objspace_ptr, VALUE obj)
 {
+    if (!ruby_native_thread_p()) {
+        /* Called from an MMTk GC worker thread (via gc_ref_update_object's
+         * re-embedding path during reference updating).  There is no mutator
+         * whose modbuf we could log the object into.  This is only reachable
+         * during a moving GC, and moving GCs are always full-heap (major)
+         * GCs, so the object and its children are all marked by the current
+         * GC and no remembering is needed. */
+        return;
+    }
+
     struct MMTk_ractor_cache *cache = rb_gc_get_ractor_newobj_cache();
 
     mmtk_object_reference_write_post(cache->mutator, (MMTk_ObjectReference)obj);
@@ -1356,7 +1394,7 @@ rb_gc_impl_each_object(void *objspace_ptr, void (*func)(VALUE, void *), void *da
 
 // Finalizers
 static VALUE
-gc_run_finalizers_get_final(long i, void *data)
+gc_run_finalizers_get_final(rb_len_t i, void *data)
 {
     VALUE table = (VALUE)data;
 
@@ -1438,8 +1476,8 @@ rb_gc_impl_define_finalizer(void *objspace_ptr, VALUE obj, VALUE block)
 
         /* avoid duplicate block, table is usually small */
         {
-            long len = RARRAY_LEN(table);
-            long i;
+            rb_len_t len = RARRAY_LEN(table);
+            rb_len_t i;
 
             for (i = 0; i < len; i++) {
                 VALUE recv = RARRAY_AREF(table, i);
@@ -1688,6 +1726,10 @@ setup_gc_stat_symbols(void)
 VALUE
 rb_gc_impl_stat(void *objspace_ptr, VALUE hash_or_sym)
 {
+    if (objspace_ptr == NULL) {
+        rb_notimplement();
+    }
+
     struct objspace *objspace = objspace_ptr;
     VALUE hash = Qnil, key = Qnil;
 
@@ -1741,16 +1783,18 @@ rb_gc_impl_stat_heap(void *objspace_ptr, VALUE heap_name, VALUE hash_or_sym)
 
 // Miscellaneous
 
-#define RB_GC_OBJECT_METADATA_ENTRY_COUNT 1
+#define RB_GC_OBJECT_METADATA_ENTRY_COUNT 2
 static struct rb_gc_object_metadata_entry object_metadata_entries[RB_GC_OBJECT_METADATA_ENTRY_COUNT + 1];
 
 struct rb_gc_object_metadata_entry *
 rb_gc_impl_object_metadata(void *objspace_ptr, VALUE obj)
 {
+    static ID ID_wb_protected;
     static ID ID_object_id;
 
     if (!ID_object_id) {
 #define I(s) ID_##s = rb_intern(#s);
+        I(wb_protected);
         I(object_id);
 #undef I
     }
@@ -1764,6 +1808,7 @@ rb_gc_impl_object_metadata(void *objspace_ptr, VALUE obj)
     n++; \
 } while (0)
 
+    if (!mmtk_object_wb_unprotected_p((MMTk_ObjectReference)obj)) SET_ENTRY(wb_protected, Qtrue);
     if (rb_obj_id_p(obj)) SET_ENTRY(object_id, rb_obj_id(obj));
 
     object_metadata_entries[n].name = 0;

@@ -198,7 +198,7 @@ module Bundler
 
       sources.cached!
 
-      if options[:add_checksums] || (!options[:local] && (install_needed? || refetch_needed?(options)))
+      if options[:add_checksums] || (!options[:local] && (install_needed? || refetch_needed?(options) || @locked_spec_with_empty_checksums))
         sources.remote!
         true
       else
@@ -346,7 +346,9 @@ module Bundler
     #
     # @return [SpecSet] resolved dependencies
     def resolve
-      @resolve ||= if Bundler.frozen_bundle?
+      return @resolve if @resolve
+
+      @resolve = if Bundler.frozen_bundle?
         Bundler.ui.debug "Frozen, using resolution from the lockfile"
         @locked_specs
       elsif no_resolve_needed?
@@ -366,6 +368,8 @@ module Bundler
 
         start_resolution
       end
+      warn_inert_overrides(@resolve)
+      @resolve
     end
 
     def spec_git_paths
@@ -650,13 +654,23 @@ module Bundler
         @missing_lockfile_dep ||
         @unlocking_bundler ||
         @locked_spec_with_missing_checksums ||
-        @locked_spec_with_empty_checksums ||
+        empty_checksums_actionable? ||
         @locked_spec_with_missing_deps ||
         @locked_spec_with_invalid_deps
     end
 
     def resolve_needed?
       unlocking? || something_changed?
+    end
+
+    # Only a remote fetch can fill an empty CHECKSUMS entry, so it justifies a
+    # resolution only when one is coming. Resolving locally for it would repeat
+    # on every `Bundler.setup` without changing the lockfile. Frozen mode still
+    # has to refuse the entry.
+    def empty_checksums_actionable?
+      return false unless @locked_spec_with_empty_checksums
+
+      Bundler.frozen_bundle? || !sources.local_mode?
     end
 
     def should_add_extra_platforms?
@@ -1095,25 +1109,61 @@ module Bundler
       end
 
       converge_overrides_outside_dependencies
+      converge_rewritten_dependencies
 
       @changed_dependencies.any?
     end
 
-    def converge_overrides_outside_dependencies
+    # The lockfile keeps the upstream dependencies of every gem, so a gem that
+    # a `from:`/`to:` override cut loose stays locked until a resolution drops
+    # it.
+    def converge_rewritten_dependencies
       @overrides.each do |override|
-        # :all overrides are intentionally not pre-unlocked. They take effect on
-        # fresh resolution (no lockfile) or when the user runs `bundle update`.
-        # Forcing a full re-resolve from a single :all directive would surprise
-        # users with unrelated dependency churn.
-        next unless override.target.is_a?(String)
+        next unless override.from
 
         name = override.target
-        next if @changed_dependencies.include?(name)
         next if @originally_locked_specs[name].empty?
-        # version: overrides on direct deps are detected in the per-dep
+        next if @dependencies.any? {|d| d.name == name }
+
+        still_required = @originally_locked_specs.any? do |s|
+          Override.rewrite_dependencies(@overrides, s.name, s.runtime_dependencies).any? {|d| d.name == name }
+        end
+        next if still_required
+
+        @gems_to_unlock << name
+        @changed_dependencies << name
+      end
+    end
+
+    # A misspelled `from:` gem leaves the override with nothing to rewrite.
+    def warn_inert_overrides(specs)
+      @overrides.each do |override|
+        next unless override.from
+        next if specs[override.from].any? {|s| s.dependencies.any? {|d| d.name == override.target } }
+
+        Bundler.ui.warn "#{override} has no effect because the bundle has no #{override.from} that depends on #{override.target}"
+      end
+    end
+
+    def converge_overrides_outside_dependencies
+      @overrides.each do |override|
+        # :all and metadata overrides are intentionally not pre-unlocked. The
+        # lockfile does not record overrides, so unlocking for them would
+        # re-resolve on every run and reject every frozen install. Install-time
+        # compatibility checks already honor them for locked specs, and they
+        # affect resolution on a fresh lock or when the user runs `bundle update`.
+        next unless override.target.is_a?(String) && override.field == :version
+
+        name = override.target
+        # Overrides on direct deps are detected in the per-dep
         # converge_dependencies loop via apply_override_to + matches_spec?.
-        # Other fields are not visible there, so they always reach here.
-        next if override.field == :version && @dependencies.any? {|d| d.name == name }
+        next if @dependencies.any? {|d| d.name == name }
+
+        locked_specs = @originally_locked_specs[name]
+        next if locked_specs.empty?
+        # Only a version string constrains on its own. :ignore_upper and nil
+        # loosen requirements the lockfile already satisfies.
+        next if override.apply_to(Gem::Requirement.default).satisfied_by?(locked_specs.first.version)
 
         @gems_to_unlock << name
         @changed_dependencies << name
@@ -1342,7 +1392,7 @@ module Bundler
     end
 
     def source_map
-      @source_map ||= SourceMap.new(sources, dependencies, @locked_specs)
+      @source_map ||= SourceMap.new(sources, dependencies, @locked_specs, @overrides.filter_map {|o| o.operation if o.from })
     end
 
     def new_resolver_for_full_update

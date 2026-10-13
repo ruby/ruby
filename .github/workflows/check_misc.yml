@@ -12,9 +12,6 @@ jobs:
   checks:
     name: Miscellaneous checks
 
-    permissions:
-      contents: write # for Git to git push
-
     runs-on: ubuntu-latest
 
     steps:
@@ -23,7 +20,7 @@ jobs:
           token: ${{ (github.repository == 'ruby/ruby' && !startsWith(github.event_name, 'pull')) && secrets.MATZBOT_AUTO_UPDATE_TOKEN || secrets.GITHUB_TOKEN }}
           persist-credentials: false
 
-      - uses: ruby/setup-ruby@95ef2b042f9d7a56d8268cba8559e2842e2ad01b # v1.321.0
+      - uses: ruby/setup-ruby@e81a8fa391b11a595c1b7ed84177cc0fe02faf83 # v1.328.0
         with:
           ruby-version: head
 
@@ -55,8 +52,8 @@ jobs:
       - name: Check if date in man pages is up-to-date
         run: |
           git fetch origin --depth=1 "${GITHUB_OLD_SHA}"
-          git diff --exit-code --name-only "${GITHUB_OLD_SHA}" HEAD -- man ||
-          make V=1 GIT=git BASERUBY=ruby update-man-date
+          make V=1 GIT=git BASERUBY=ruby update-man-date \
+            MANPAGES_TO_UPDATE="$(git diff --exit-code --name-only "${GITHUB_OLD_SHA}" HEAD -- man)"
           git diff --color --no-ext-diff --ignore-submodules --exit-code -- man
         env:
           GITHUB_OLD_SHA: ${{ github.event.pull_request.base.sha }}
@@ -164,7 +161,7 @@ jobs:
           )}}
 
       - name: Upload docs
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           path: html
           name: ${{ steps.docs.outputs.htmlout }}

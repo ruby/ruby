@@ -207,7 +207,6 @@ pub use rb_FL_TEST_RAW as FL_TEST_RAW;
 pub use rb_RB_TYPE_P as RB_TYPE_P;
 pub use rb_BASIC_OP_UNREDEFINED_P as BASIC_OP_UNREDEFINED_P;
 pub use rb_RSTRUCT_LEN as RSTRUCT_LEN;
-pub use rb_RSTRUCT_SET as RSTRUCT_SET;
 pub use rb_vm_ci_argc as vm_ci_argc;
 pub use rb_vm_ci_mid as vm_ci_mid;
 pub use rb_vm_ci_flag as vm_ci_flag;
@@ -608,7 +607,7 @@ pub unsafe fn cfp_env_has_escaped(cfp: *mut rb_control_frame_struct) -> bool {
 
 /// Produce a Ruby string from a Rust string slice
 pub fn rust_str_to_ruby(str: &str) -> VALUE {
-    unsafe { rb_utf8_str_new(str.as_ptr() as *const _, str.len() as i64) }
+    unsafe { rb_utf8_str_new(str.as_ptr() as *const _, str.len().try_into().unwrap()) }
 }
 
 /// Produce a Ruby symbol from a Rust string slice

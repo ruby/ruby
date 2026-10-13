@@ -43,7 +43,7 @@ static const rb_data_type_t ossl_hmac_type = {
     {
         0, ossl_hmac_free,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED,
 };
 
 static VALUE
@@ -188,7 +188,7 @@ ossl_hmac_digest(VALUE self)
     if (EVP_DigestSignFinal(ctx, (unsigned char *)RSTRING_PTR(ret),
                             &buf_len) != 1)
         ossl_raise(eHMACError, "EVP_DigestSignFinal");
-    rb_str_set_len(ret, (long)buf_len);
+    rb_str_set_len(ret, (rb_len_t)buf_len);
 
     return ret;
 }

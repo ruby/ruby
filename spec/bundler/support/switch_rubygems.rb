@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require_relative "rubygems_version_manager"
-ENV["RGV"] ||= "."
 
 # RGV=system runs specs against system RubyGems: processes spawned by specs
 # boot it untouched (see `Spec::Helpers#sys_exec`). The test harness itself
@@ -9,7 +8,10 @@ ENV["RGV"] ||= "."
 # unavoidably on its load path and would get mixed into an older RubyGems.
 # The system RubyGems version is captured here, while it's still the one
 # loaded, so version-gated specs can check the version actually under test.
-source = ENV["RGV"]
+#
+# The default stays a local: `.` resolves against this layout's source root, so
+# exporting it would mislead a child process running a different checkout.
+source = ENV["RGV"] || "."
 if source == "system"
   ENV["BUNDLER_SPEC_SYSTEM_RUBYGEMS_VERSION"] ||= Gem::VERSION
   source = "."

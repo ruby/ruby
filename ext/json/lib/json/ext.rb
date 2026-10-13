@@ -28,17 +28,109 @@ module JSON
       end
     end
 
+    class << self
+      if defined?(::Ractor) && Ractor.respond_to?(:shareable_lambda)
+        def shareable_lambda(block) # :nodoc:
+          Ractor.shareable_lambda(&block)
+        end
+      else
+        def shareable_lambda(block) # :nodoc:
+          block
+        end
+      end
+    end
+
     require 'json/ext/parser'
     Ext::Parser::Config = Ext::ParserConfig
     JSON.parser = Ext::Parser
 
-    if RUBY_ENGINE == 'truffleruby'
+    generator = if RUBY_ENGINE == 'truffleruby'
       require 'json/truffle_ruby/generator'
-      JSON.generator = JSON::TruffleRuby::Generator
+      JSON::TruffleRuby::Generator
     else
       require 'json/ext/generator'
-      JSON.generator = Generator
+      Generator
     end
+
+    # The default proc used when the +sort_keys+ generation option is +true+.
+    # It returns a new hash with the entries sorted by their keys.
+    generator::State.default_sort_keys_proc = shareable_lambda(->(hash) {
+      hash.sort.to_h
+    })
+
+    # Directly lifted from Gregg Kellogg's json-canonicalization
+    generator::State.rfc8785_number_formatter_proc = shareable_lambda(->(num) {
+      if Integer === num
+        if num > Float::MAX || num < -Float::MAX
+          raise GeneratorError.new("Integer out of range for RFC 8785", num)
+        end
+        num = num.to_f
+      end
+      if num.zero?
+        "0"
+      else
+        if num < 0
+          num, sign = -num, '-'
+        end
+        native_rep = num.to_s
+        decimal, exponential = native_rep.split('e')
+        exp_val = exponential.to_i
+        exponential = exp_val > 0 ? ('+' + exp_val.to_s) : exp_val.to_s
+
+        integral, fractional = decimal.split('.')
+        fractional = fractional.sub(/0+$/, '')  # Remove trailing zeros
+
+        if exp_val > 0 && exp_val < 21
+          while exp_val > 0
+            integral += fractional.to_s[0] || '0'
+            fractional = fractional.to_s[1..-1]
+            exp_val -= 1
+          end
+          exponential = nil
+        elsif exp_val == 0
+          exponential = nil
+        elsif exp_val < 0 && exp_val > -7
+          # Small numbers are shown as 0.etc with e-6 as lower limit
+          fractional, integral, exponential = integral + fractional.to_s, '0', nil
+          fractional = ("0" * (-exp_val - 1)) + fractional
+        end
+
+        fractional = nil if fractional.to_s.empty?
+        sign.to_s + integral + (fractional ? ".#{fractional}" : '') + (exponential ? "e#{exponential}" : '')
+      end
+    })
+
+    generator::State.rfc8785_sort_keys_proc = shareable_lambda(->(hash, as_json) {
+      if as_json
+        converted = {}
+        hash.each do |key, value|
+          string = (String === key || Symbol === key) ? key.to_s : nil
+          unless string && (string.ascii_only? || (string.encoding == Encoding::UTF_8 && string.valid_encoding?))
+            key = as_json.call(key, true)
+            unless String === key || Symbol === key
+              raise GeneratorError.new("#{key.class} not allowed as object key in JSON", key)
+            end
+            begin
+              string = key.to_s.encode(Encoding::UTF_8)
+            rescue EncodingError => error
+              raise GeneratorError.new(error.message, key)
+            end
+            unless string.valid_encoding?
+              raise GeneratorError.new("source sequence is illegal/malformed utf-8", key)
+            end
+            key = string
+          end
+          if converted.key?(key)
+            raise GeneratorError.new("detected duplicate key #{key.inspect}", key)
+          end
+          converted[key] = value
+        end
+        hash = converted
+      end
+      hash.sort_by { |k,| k.to_s.encode(Encoding::UTF_16) }.to_h
+    })
+
+    JSON.generator = generator
   end
 
   if defined?(ResumableParser) # Not yet available on JRuby

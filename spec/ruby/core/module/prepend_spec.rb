@@ -521,10 +521,23 @@ describe "Module#prepend" do
     c.public_instance_method(:meth).owner.should == m
   end
 
-  it "causes the prepended module's method to be aliased by alias_method" do
-    m = Module.new { def meth; :m end }
-    c = Class.new { def meth; :c end; prepend(m); alias_method :alias, :meth }
-    c.new.alias.should == :m
+  ruby_version_is '4.1' do
+    it "causes the prepended module's method to be aliased by alias_method" do
+      m = Module.new { def meth; :m end }
+      c = Class.new { def meth; :c end; prepend(m) }
+      -> {
+        c.send(:alias_method, :alias, :meth)
+      }.should complain(/aliasing .*#meth defined in a prepended module .* is deprecated/)
+      c.new.alias.should == :m
+    end
+  end
+
+  ruby_version_is ''...'4.1' do
+    it "causes the prepended module's method to be aliased by alias_method" do
+      m = Module.new { def meth; :m end }
+      c = Class.new { def meth; :c end; prepend(m); alias_method :alias, :meth }
+      c.new.alias.should == :m
+    end
   end
 
   it "reports the class for the owner of an aliased method on the class" do
@@ -533,10 +546,23 @@ describe "Module#prepend" do
     c.instance_method(:alias).owner.should == c
   end
 
-  it "reports the class for the owner of a method aliased from the prepended module" do
-    m = Module.new { def meth; :m end }
-    c = Class.new { prepend(m); alias_method :alias, :meth }
-    c.instance_method(:alias).owner.should == c
+  ruby_version_is '4.1' do
+    it "reports the class for the owner of a method aliased from the prepended module" do
+      m = Module.new { def meth; :m end }
+      c = Class.new { prepend(m) }
+      -> {
+        c.send(:alias_method, :alias, :meth)
+      }.should complain(/aliasing .*#meth defined in a prepended module .* is deprecated/)
+      c.instance_method(:alias).owner.should == c
+    end
+  end
+
+  ruby_version_is ''...'4.1' do
+    it "reports the class for the owner of a method aliased from the prepended module" do
+      m = Module.new { def meth; :m end }
+      c = Class.new { prepend(m); alias_method :alias, :meth }
+      c.instance_method(:alias).owner.should == c
+    end
   end
 
   it "sees an instance of a prepended class as kind of the prepended module" do

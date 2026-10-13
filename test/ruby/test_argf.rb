@@ -38,7 +38,7 @@ class TestArgf < Test::Unit::TestCase
   end
 
   def no_safe_rename
-    /cygwin|mswin|mingw|bccwin/ =~ RUBY_PLATFORM
+    /cygwin|mswin|mingw/ =~ RUBY_PLATFORM
   end
 
   def assert_src_expected(src, args = nil, line: caller_locations(1, 1)[0].lineno+1)

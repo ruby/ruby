@@ -700,7 +700,7 @@ install:
       system(Gem.ruby, "-rmkmf", "-e", "exit MakeMakefile::RbConfig::CONFIG['host_os'] == 'fake_os'",
              "--", "--target-rbconfig=#{fake_rbconfig}")
     end
-    unless $?.success?
+    unless Process.last_status.success?
       assert_include(stderr, "uninitialized constant MakeMakefile::RbConfig")
       pend "This version of mkmf does not support --target-rbconfig"
     end

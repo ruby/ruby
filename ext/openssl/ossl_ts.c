@@ -59,7 +59,7 @@ static const rb_data_type_t ossl_ts_req_type = {
     {
         0, ossl_ts_req_free,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED,
 };
 
 static void
@@ -73,7 +73,7 @@ static  const rb_data_type_t ossl_ts_resp_type = {
     {
         0, ossl_ts_resp_free,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED,
 };
 
 static void
@@ -87,7 +87,7 @@ static const rb_data_type_t ossl_ts_token_info_type = {
     {
         0, ossl_ts_token_info_free,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED,
 };
 
 static VALUE
@@ -1206,7 +1206,7 @@ ossl_tsfac_create_ts(VALUE self, VALUE key, VALUE certificate, VALUE request)
     allowed_digests = ossl_tsfac_get_allowed_digests(self);
     if (rb_obj_is_kind_of(allowed_digests, rb_cArray)) {
         allowed_digests_tmp = rb_ary_new_capa(RARRAY_LEN(allowed_digests));
-        for (long i = 0; i < RARRAY_LEN(allowed_digests); i++) {
+        for (rb_len_t i = 0; i < RARRAY_LEN(allowed_digests); i++) {
             VALUE args[] = {
                 allowed_digests_tmp,
                 rb_ary_entry(allowed_digests, i),

@@ -327,6 +327,16 @@ class TestClass < Test::Unit::TestCase
     assert_nothing_raised { allocator.bind_call(Rational) }
   end
 
+  def test_uninitialized_with_singleton_class
+    c = Class.allocate
+    c.singleton_class
+    assert_raise(TypeError) { c.new }
+  end
+
+  def test_uninitialized_dup
+    assert_raise(TypeError) { Class.allocate.dup.new }
+  end
+
   def test_nonascii_name
     c = eval("class ::C\u{df}; self; end")
     assert_equal("C\u{df}", c.name, '[ruby-core:24600]')
@@ -375,6 +385,33 @@ class TestClass < Test::Unit::TestCase
     copy = original.clone
     copy.send(:include, mod)
     assert_equal("mod#foo", copy.new.foo)
+  end
+
+  def test_dup_of_frozen_class_is_not_frozen
+    original = Class.new
+    original.instance_variable_set(:@a, 1)
+    original.freeze
+
+    copy = original.dup
+    assert_not_predicate(copy, :frozen?)
+    copy.instance_variable_set(:@b, 2)
+    assert_equal([1, 2], [copy.instance_variable_get(:@a), copy.instance_variable_get(:@b)])
+
+    copy = original.clone(freeze: false)
+    assert_not_predicate(copy, :frozen?)
+    copy.instance_variable_set(:@b, 2)
+    assert_equal([1, 2], [copy.instance_variable_get(:@a), copy.instance_variable_get(:@b)])
+  end
+
+  def test_singleton_class_of_frozen_class_is_frozen
+    klass = Class.new.freeze
+    assert_predicate(klass.singleton_class, :frozen?)
+    assert_raise(FrozenError) {klass.singleton_class.instance_variable_set(:@a, 1)}
+
+    copy = Class.new.freeze.clone
+    assert_predicate(copy, :frozen?)
+    assert_predicate(copy.singleton_class, :frozen?)
+    assert_raise(FrozenError) {copy.instance_variable_set(:@a, 1)}
   end
 
   def test_nested_class_removal

@@ -34,7 +34,7 @@ module Gem::LocalSSLServerUtilities
   #              X25519MLKEM768, and PQC-supported certificate, ML-DSA-65
   def start_ssl_server(config = {})
     mode = config.fetch(:mode, :non_pqc)
-    server = TCPServer.new(0)
+    server = TCPServer.new("localhost", 0)
     ctx = OpenSSL::SSL::SSLContext.new
 
     case mode
@@ -59,8 +59,8 @@ module Gem::LocalSSLServerUtilities
         ensure
           client.close
         end
-      rescue OpenSSL::SSL::SSLError
-        # Ignore SSL errors because we're testing them implicitly
+      rescue OpenSSL::SSL::SSLError, Errno::ECONNABORTED, Errno::ECONNRESET
+        # Ignore handshake failures the client causes; a reset arrives as Errno, not SSLError
       end
     end
     @ssl_server

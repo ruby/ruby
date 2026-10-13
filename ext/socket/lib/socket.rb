@@ -3,6 +3,16 @@
 require 'socket.so'
 
 class Addrinfo
+  # :stopdoc:
+  # Windows signals a failed connect(2) through the exceptfds of select(2)
+  # only.  Elsewhere the priority event would just take the wait off the M:N
+  # thread scheduler, which refuses any event but readable and writable.
+  # [Bug #18661]
+  CONNECT_EVENTS = IO::WRITABLE |
+    (/mswin|mingw|cygwin/.match?(RUBY_PLATFORM) ? IO::PRIORITY : 0)
+  private_constant :CONNECT_EVENTS
+  # :startdoc:
+
   # creates an Addrinfo object from the arguments.
   #
   # The arguments are interpreted as similar to self.
@@ -56,7 +66,7 @@ class Addrinfo
         when 0 # success or EISCONN, other errors raise
           break
         when :wait_writable
-          sock.wait_writable(timeout) or
+          sock.wait(CONNECT_EVENTS, timeout) or
             raise Errno::ETIMEDOUT, "user specified timeout for #{self.ip_address}:#{self.ip_port}"
           # Check SO_ERROR instead of relying on the connect_nonblock retry;
           # some kernels (e.g. Darwin 27) answer the retry connect(2) with

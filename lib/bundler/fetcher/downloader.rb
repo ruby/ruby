@@ -56,12 +56,18 @@ module Bundler
           if https?(uri) && !https?(new_uri)
             raise HTTPError, "Redirecting to a non-https URI is not allowed: #{URICredentialsFilter.credential_filtered_uri(new_uri)}"
           end
-          if new_uri.host == uri.host
+          if [new_uri.scheme, new_uri.host, new_uri.port] == [uri.scheme, uri.host, uri.port]
             new_uri.user = uri.user
             new_uri.password = uri.password
+          else
+            # see Gem::RemoteFetcher#fetch_http. A nil value removes the header
+            # that ConnectionPools adds from its override_headers.
+            headers = headers.merge("X-Gemfile-Source" => nil)
           end
           fetch(new_uri, headers, counter + 1)
         when Gem::Net::HTTPRequestedRangeNotSatisfiable
+          raise bad_response(response) unless headers.key?("Range")
+
           new_headers = headers.dup
           new_headers.delete("Range")
           fetch(uri, new_headers)
@@ -77,9 +83,7 @@ module Bundler
         when Gem::Net::HTTPNotFound
           raise FallbackError, "Gem::Net::HTTPNotFound: #{filtered_uri}"
         else
-          message = "Gem::#{response.class.name.gsub(/\AGem::/, "")}"
-          message += ": #{response.body}" unless response.body.empty?
-          raise HTTPError, message
+          raise bad_response(response)
         end
       end
 
@@ -116,6 +120,12 @@ module Bundler
       end
 
       private
+
+      def bad_response(response)
+        message = "Gem::#{response.class.name.gsub(/\AGem::/, "")}"
+        message += ": #{response.body}" unless response.body.empty?
+        HTTPError.new(message)
+      end
 
       def network_down_error(uri, filtered_uri)
         host = uri.host

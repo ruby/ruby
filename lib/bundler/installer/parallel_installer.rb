@@ -69,7 +69,8 @@ module Bundler
       @specs = all_specs.map {|s| SpecInstallation.new(s) }
       specs_by_name = @specs.to_h {|s| [s.name, s] }
       @specs.each do |spec_install|
-        spec_install.dependencies = spec_install.spec.dependencies.filter_map do |dep|
+        dependencies = Override.rewrite_dependencies(installer.definition.overrides, spec_install.name, spec_install.spec.dependencies)
+        spec_install.dependencies = dependencies.filter_map do |dep|
           specs_by_name[dep.name] unless dep.type == :development || dep.name == spec_install.name
         end
       end

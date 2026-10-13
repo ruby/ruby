@@ -75,7 +75,7 @@ Lock the gems specified in Gemfile.
   If updating, prefer updating only to next minor version.
 
 * `--major`:
-  If updating, prefer updating to next major version (default).
+  If updating, prefer updating to latest major version (default).
 
 * `--pre`:
   If updating, always choose the highest allowed version, regardless of prerelease status.

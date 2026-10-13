@@ -303,6 +303,13 @@ class TestZJITCLI < Test::Unit::TestCase
     }, stats: true
   end
 
+  def test_reset_stats_with_zjit_off
+    # [Bug #22327]
+    assert_runs 'nil', <<~RUBY, zjit: false
+      RubyVM::ZJIT.reset_stats!
+    RUBY
+  end
+
   def test_exit_tracing
     # Smoke test: --zjit-trace-exits writes a Fuchsia trace (.fxt) file to /tmp
     assert_compiles('true', <<~RUBY, extra_args: ['--zjit-trace-exits'])

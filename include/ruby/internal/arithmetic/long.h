@@ -77,6 +77,16 @@ RBIMPL_ATTR_COLD()
  */
 void rb_out_of_int(SIGNED_VALUE num);
 
+RBIMPL_ATTR_NORETURN()
+RBIMPL_ATTR_COLD()
+/**
+ * This is an utility function to raise an ::rb_eRangeError.
+ *
+ * @param[in]  num             A signed value about to overflow.
+ * @exception  rb_eRangeError  `num` is out of range of `long`.
+ */
+void rb_out_of_long(SIGNED_VALUE num);
+
 /**
  * Converts an instance of ::rb_cNumeric into C's `long`.
  *

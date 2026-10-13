@@ -2,7 +2,7 @@
 require 'test/unit'
 
 class TestEnv < Test::Unit::TestCase
-  windows = /bccwin|mswin|mingw/ =~ RUBY_PLATFORM
+  windows = /mswin|mingw/ =~ RUBY_PLATFORM
   IGNORE_CASE = windows
   ENCODING = windows ? Encoding::UTF_8 : Encoding.find("locale")
   PATH_ENV = "PATH"
@@ -1474,25 +1474,13 @@ class TestEnv < Test::Unit::TestCase
     end;
   end
 
-  def test_ivar_in_env_should_not_be_access_from_non_main_ractors
+  def test_ivar_in_env_is_not_allowed
+    # ENV is shareable but can never be frozen, so it may not carry instance
+    # variables at all: they would be unshareable values reachable from any ractor.
     assert_ractor <<~RUBY
-    ENV.instance_eval{ @a = "hello" }
-    assert_equal "hello", ENV.instance_variable_get(:@a)
-
-    r_get =  Ractor.new do
-      ENV.instance_variable_get(:@a)
-    rescue Ractor::IsolationError => e
-      e
-    end
-    assert_equal Ractor::IsolationError, r_get.value.class
-
-    r_get =  Ractor.new do
-      ENV.instance_eval{ @a }
-    rescue Ractor::IsolationError => e
-      e
-    end
-
-    assert_equal Ractor::IsolationError, r_get.value.class
+    assert_raise(Ractor::IsolationError) { ENV.instance_eval{ @a = "hello" } }
+    assert_nil ENV.instance_variable_get(:@a)
+    assert_equal [], ENV.instance_variables
 
     r_set = Ractor.new do
       ENV.instance_eval{ @b = "hello" }
@@ -1501,10 +1489,17 @@ class TestEnv < Test::Unit::TestCase
     end
 
     assert_equal Ractor::IsolationError, r_set.value.class
+
+    # Reads are allowed: since writes are forbidden, there is nothing
+    # unshareable to read.
+    r_get = Ractor.new do
+      ENV.instance_variable_get(:@a)
+    end
+    assert_nil r_get.value
     RUBY
   end
 
-  if RUBY_PLATFORM =~ /bccwin|mswin|mingw/
+  if RUBY_PLATFORM =~ /mswin|mingw/
     def test_memory_leak_aset
       bug9977 = '[ruby-dev:48323] [Bug #9977]'
       assert_no_memory_leak([], <<-'end;', "5_000.times(&doit)", bug9977, limit: 2.0)

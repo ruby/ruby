@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module SyntaxSuggest
-  module Capture
+  module Capture # :nodoc:
   end
 end
 
@@ -45,7 +45,7 @@ module SyntaxSuggest
   #       def bark
   #     end
   #
-  class CaptureCodeContext
+  class CaptureCodeContext # :nodoc:
     attr_reader :code_lines
 
     def initialize(blocks:, code_lines:)

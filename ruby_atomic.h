@@ -39,6 +39,8 @@ rbimpl_atomic_u64_load_relaxed(const volatile rbimpl_atomic_uint64_t *value)
 {
 #if defined(HAVE_GCC_ATOMIC_BUILTINS_64)
     return __atomic_load_n(value, __ATOMIC_RELAXED);
+#elif defined(_M_X64) && !defined(_M_ARM64EC)
+    return *value;
 #elif defined(_WIN32)
     uint64_t val = *value;
     return InterlockedCompareExchange64(RBIMPL_CAST((uint64_t *)value), val, val);

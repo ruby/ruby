@@ -4,11 +4,16 @@
  */
 
 static const char *const
-IO_CONSOLE_VERSION = "0.9.2";
+IO_CONSOLE_VERSION = "0.9.4";
 
 #include "ruby.h"
 #include "ruby/io.h"
 #include "ruby/thread.h"
+
+#ifndef HAVE_RB_LEN_T
+typedef long rb_len_t;
+# define PRIdLEN "ld"
+#endif
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -1033,12 +1038,12 @@ console_set_winsize(VALUE io, VALUE size)
 #endif
     VALUE row, col, xpixel, ypixel;
     const VALUE *sz;
-    long sizelen;
+    rb_len_t sizelen;
     int fd;
 
     size = rb_Array(size);
     if ((sizelen = RARRAY_LEN(size)) != 2 && sizelen != 4) {
-        rb_raise(rb_eArgError, "wrong number of arguments (given %ld, expected 2 or 4)", sizelen);
+        rb_raise(rb_eArgError, "wrong number of arguments (given %"PRIdLEN", expected 2 or 4)", sizelen);
     }
     sz = RARRAY_CONST_PTR(size);
     row = sz[0], col = sz[1], xpixel = ypixel = Qnil;
@@ -2314,6 +2319,9 @@ console_ttyname(VALUE io)
     return rb_usascii_str_new_lit("con");
 # elif defined HAVE_TTYNAME_R
     {
+# ifdef TTYNAME_R_RETURNS_CHAR_P
+#   define ttyname_r(fd, name, size) (ttyname_r(fd, name, size) == NULL ? errno : 0)
+# endif
 	char termname[1024], *tn = termname;
 	size_t size = sizeof(termname);
 	int e;

@@ -499,3 +499,122 @@ describe :dir_glob_recursive, shared: true do
     end
   end
 end
+
+ruby_version_is "4.1" do
+  describe :dir_glob_recursive_symlinks, shared: true do
+    platform_is_not :windows do
+      before :each do
+        @cwd = Dir.pwd
+        @mock_dir = tmp('dir_glob_recursive_symlinks')
+        mkdir_p "#{@mock_dir}/dir/sub"
+        touch "#{@mock_dir}/dir/sub/file.txt"
+        touch "#{@mock_dir}/file.txt"
+        Dir.chdir @mock_dir
+        File.symlink('dir', 'link')
+        File.symlink('sub', 'dir/inner')
+      end
+
+      after :each do
+        Dir.chdir @cwd
+        rm_r @mock_dir
+      end
+
+      it "follows multiple directory symlinks along a path with '***/'" do
+        Dir.send(@method, '***/file.txt').should == %w[
+          dir/inner/file.txt dir/sub/file.txt file.txt
+          link/inner/file.txt link/sub/file.txt
+        ]
+      end
+
+      it "does not follow directory symlinks with '**/'" do
+        Dir.send(@method, '**/file.txt').should == %w[dir/sub/file.txt file.txt]
+      end
+
+      describe "with base:" do
+        before :each do
+          File.symlink('.', 'loop')
+          @expected = %w[
+            dir/inner/file.txt dir/sub/file.txt file.txt
+            link/inner/file.txt link/sub/file.txt
+          ]
+          Dir.chdir File.dirname(@mock_dir)
+          @relative_base = File.basename(@mock_dir)
+        end
+
+        it "follows directory symlinks relative to an absolute path and stops at cycles" do
+          Dir.send(@method, '***/file.txt', base: @mock_dir).should == @expected
+        end
+
+        it "follows directory symlinks relative to a relative path and stops at cycles" do
+          Dir.send(@method, '***/file.txt', base: @relative_base).should == @expected
+        end
+
+        it "follows directory symlinks relative to a Dir opened with an absolute path" do
+          Dir.open(@mock_dir) do |dir|
+            Dir.send(@method, '***/file.txt', base: dir).should == @expected
+          end
+        end
+
+        it "follows directory symlinks relative to a Dir opened with a relative path" do
+          Dir.open(@relative_base) do |dir|
+            Dir.send(@method, '***/file.txt', base: dir).should == @expected
+            Dir.send(@method, '***/file.txt', base: dir, sort: false).sort.should == @expected
+          end
+        end
+
+        it "uses the current directory when base is '.', '', or nil" do
+          Dir.chdir(@mock_dir) do
+            ['.', '', nil].each do |base|
+              Dir.send(@method, '***/file.txt', base: base).should == @expected
+            end
+          end
+        end
+      end
+
+      it "searches separate symlinks to the same directory independently" do
+        File.symlink('dir', 'other')
+        Dir.send(@method, '***/file.txt').should == %w[
+          dir/inner/file.txt dir/sub/file.txt file.txt
+          link/inner/file.txt link/sub/file.txt
+          other/inner/file.txt other/sub/file.txt
+        ]
+      end
+
+      it "does not recurse through a symlink to an ancestor directory" do
+        File.symlink('..', 'dir/parent')
+        Dir.send(@method, '***/file.txt').should == %w[
+          dir/inner/file.txt dir/sub/file.txt file.txt
+          link/inner/file.txt link/sub/file.txt
+        ]
+      end
+
+      it "matches a cyclic directory symlink itself without descending into it" do
+        File.symlink('.', 'loop')
+        Dir.send(@method, '***/*').should == %w[
+          dir dir/inner dir/inner/file.txt dir/sub dir/sub/file.txt
+          file.txt link link/inner link/inner/file.txt link/sub link/sub/file.txt loop
+        ]
+        Dir.send(@method, '***/').should == %w[
+          dir/ dir/inner/ dir/sub/ link/ link/inner/ link/sub/ loop/
+        ]
+      end
+
+      it "treats consecutive recursive components containing '***' as '***'" do
+        expected = Dir.send(@method, '***/file.txt')
+        Dir.send(@method, '**/***/**/file.txt').should == expected
+        Dir.send(@method, '***/***/file.txt').should == expected
+      end
+
+      it "treats '***' as ordinary wildcards when not followed by a slash" do
+        Dir.send(@method, '***').should == %w[dir file.txt link]
+      end
+
+      it "treats '***' as ordinary wildcards when part of a larger component" do
+        Dir.send(@method, 'd***/file.txt').should == []
+        Dir.send(@method, '***r/file.txt').should == []
+        Dir.send(@method, '****/file.txt').should == []
+        Dir.send(@method, 'd***/sub/file.txt').should == ['dir/sub/file.txt']
+      end
+    end
+  end
+end

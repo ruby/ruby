@@ -12,7 +12,7 @@ rescue LoadError
   return
 end
 
-module Prism
+module Ruby::Prism
   class OnigmoTest < TestCase
     def test_ONIGERR_PARSE_DEPTH_LIMIT_OVER
       assert_error(%Q{#{"(" * 4096}a#{")" * 4096}}, "parse depth limit over")
@@ -54,7 +54,7 @@ module Prism
     private
 
     def assert_error(source, message)
-      result = Prism.parse("/#{source}/")
+      result = Ruby::Prism.parse("/#{source}/")
 
       assert result.failure?, "Expected #{source.inspect} to error"
       assert_equal message, result.errors.first.message

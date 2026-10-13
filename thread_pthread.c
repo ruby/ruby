@@ -42,10 +42,6 @@
 
 #include "probes.h"
 
-#if defined __APPLE__
-# include <AvailabilityMacros.h>
-#endif
-
 #if defined(HAVE_SYS_EVENTFD_H) && defined(HAVE_EVENTFD)
 #  define USE_EVENTFD (1)
 #  include <sys/eventfd.h>
@@ -66,10 +62,6 @@ static const void *const condattr_monotonic = NULL;
 // does when the condvar counts in the same clock rb_hrtime_now() reads;
 // otherwise the caller has to restate the deadline in the condvar's clock.
 #define RB_NATIVE_COND_HRTIME_DEADLINE_P() (condattr_monotonic != NULL)
-
-/* A retiring shared native thread frees its own context while the threads it
- * parked are still suspended with that context as their target. */
-#define COROUTINE_TARGET_MAY_BE_FREED 1
 
 #include COROUTINE_H
 
@@ -1101,7 +1093,7 @@ native_set_another_thread_name(rb_nativethread_id_t thread_id, VALUE name)
     if (!pthread_equal(pthread_self(), thread_id)) return;
 # endif
     if (!NIL_P(name)) {
-        long n;
+        rb_len_t n;
         RSTRING_GETMEM(name, s, n);
         if (n >= (int)sizeof(buf)) {
             memcpy(buf, s, sizeof(buf)-1);
@@ -1129,33 +1121,9 @@ native_thread_native_thread_id(rb_thread_t *target_th)
     return INT2FIX(tid);
 #elif defined(__APPLE__)
     uint64_t tid;
-/* The first condition is needed because MAC_OS_X_VERSION_10_6
-    is not defined on 10.5, and while __POWERPC__ takes care of ppc/ppc64,
-    i386 will be broken without this. Note, 10.5 is supported with GCC upstream,
-    so it has C++17 and everything needed to build modern Ruby. */
-# if (!defined(MAC_OS_X_VERSION_10_6) || \
-      (MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_6) || \
-      defined(__POWERPC__) /* never defined for PowerPC platforms */)
-    const bool no_pthread_threadid_np = true;
-#   define NO_PTHREAD_MACH_THREAD_NP 1
-# elif MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_6
-    const bool no_pthread_threadid_np = false;
-# else
-#   if !(defined(__has_attribute) && __has_attribute(availability))
-    /* __API_AVAILABLE macro does nothing on gcc */
-    __attribute__((weak)) int pthread_threadid_np(pthread_t, uint64_t*);
-#   endif
-    /* Check weakly linked symbol */
-    const bool no_pthread_threadid_np = !&pthread_threadid_np;
-# endif
-    if (no_pthread_threadid_np) {
-        return ULL2NUM(pthread_mach_thread_np(pthread_self()));
-    }
-# ifndef NO_PTHREAD_MACH_THREAD_NP
     int e = pthread_threadid_np(target_th->nt->thread_id, &tid);
     if (e != 0) rb_syserr_fail(e, "pthread_threadid_np");
     return ULL2NUM((unsigned long long)tid);
-# endif
 #endif
 }
 # define USE_NATIVE_THREAD_NATIVE_THREAD_ID 1
@@ -1225,21 +1193,6 @@ static bool timeslice_scan(rb_vm_t *vm, bool interrupt);
 static int timer_thread_set_timeout(rb_vm_t *vm);
 
 #include "thread_sched_mn.c"
-
-
-void
-rb_assert_sig(void)
-{
-    sigset_t oldmask;
-    pthread_sigmask(0, NULL, &oldmask);
-    if (sigismember(&oldmask, SIGVTALRM)) {
-        rb_bug("!!!");
-    }
-    else {
-        RUBY_DEBUG_LOG("ok");
-    }
-}
-
 
 /* only use signal-safe system calls here */
 static void

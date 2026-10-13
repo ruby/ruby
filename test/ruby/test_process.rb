@@ -20,7 +20,7 @@ class TestProcess < Test::Unit::TestCase
     self.class.windows?
   end
   def self.windows?
-    return /mswin|mingw|bccwin/ =~ RUBY_PLATFORM
+    return /mswin|mingw/ =~ RUBY_PLATFORM
   end
 
   def with_tmpchdir
@@ -292,7 +292,7 @@ class TestProcess < Test::Unit::TestCase
   end
   case RbConfig::CONFIG['target_os']
   when /mswin|mingw/
-    MANDATORY_ENVS.concat(%w[HOME USER TMPDIR PROCESSOR_ARCHITECTURE])
+    MANDATORY_ENVS.concat(%w[HOME USER TMPDIR PROCESSOR_ARCHITECTURE PROCESSOR_ARCHITEW6432])
   when /darwin/
     MANDATORY_ENVS.concat(%w[TMPDIR], ENV.keys.grep(/\A__CF_/))
     # IO.popen([ENV.keys.to_h {|e| [e, nil]},
@@ -1166,6 +1166,21 @@ class TestProcess < Test::Unit::TestCase
     }
   end
 
+  def test_exec_relative_path_after_multibyte_dir
+    return unless windows?
+    with_tmpchdir {|d|
+      dir = "\u{3042}"
+      Dir.mkdir(dir)
+      File.write("#{dir}/foo.cmd", "@echo cwd\n")
+      Dir.mkdir("path")
+      Dir.mkdir("path/#{dir}")
+      File.write("path/#{dir}/foo.cmd", "@echo path\n")
+      env = {"PATH"=>"#{d}/path;#{ENV["PATH"]}"}
+      r = IO.popen([env, RUBY, "-e", "exec(*ARGV)", "#{dir}\\foo", "x"], &:read)
+      assert_equal("cwd", r.chomp)
+    }
+  end
+
   def test_system_wordsplit
     with_tmpchdir {|d|
       File.write("script", <<-'End')
@@ -1270,7 +1285,7 @@ class TestProcess < Test::Unit::TestCase
     with_tmpchdir {|d|
       File.write("script", <<-'End')
         File.open("result", "w") {|t|
-          if /mswin|bccwin|mingw/ =~ RUBY_PLATFORM
+          if /mswin|mingw/ =~ RUBY_PLATFORM
             t << "hehe ppid=#{Process.ppid}"
           else
             t << "hehe pid=#{$$} ppid=#{Process.ppid}"

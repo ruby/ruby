@@ -1682,6 +1682,36 @@ RSpec.describe "the lockfile format" do
     expect(the_bundle).not_to include_gems "myrack 0.9.1"
   end
 
+  it "fills empty CHECKSUMS entries when not frozen, even if every gem is already installed" do
+    system_gems "myrack-0.9.1", gem_repo: gem_repo2
+
+    lockfile <<-L
+      GEM
+        remote: https://gem.repo2/
+        specs:
+          myrack (0.9.1)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        myrack
+
+      CHECKSUMS
+        myrack (0.9.1)
+
+      BUNDLED WITH
+         #{Bundler::VERSION}
+    L
+
+    install_gemfile <<-G
+      source "https://gem.repo2"
+      gem "myrack"
+    G
+
+    expect(lockfile).to include("  #{checksum_to_lock(gem_repo2, "myrack", "0.9.1")}\n")
+  end
+
   it "automatically fixes the lockfile when it's missing deps, they conflict with other locked deps, but conflicts are fixable" do
     build_repo4 do
       build_gem "other_dep", "0.9"
@@ -2121,20 +2151,22 @@ RSpec.describe "the lockfile format" do
       build_gem "net-smtp", "0.5.0"
     end
 
+    git = build_git "rack", "3.2.0"
+
     gemfile <<~G
       source "#{file_uri_for(gem_repo4)}"
       gem "logger"
       gem "net-smtp"
 
       install_if -> { false } do
-        gem 'rack', github: 'rack/rack'
+        gem 'rack', git: "#{lib_path("rack-3.2.0")}"
       end
     G
 
     lockfile <<~L
       GIT
-        remote: https://github.com/rack/rack.git
-        revision: 2fface9ac09fc582a81386becd939c987ad33f99
+        remote: #{lib_path("rack-3.2.0")}
+        revision: #{git.ref_for("main")}
         specs:
           rack (3.2.0)
 
@@ -2158,8 +2190,8 @@ RSpec.describe "the lockfile format" do
 
     expect(lockfile).to eq <<~L
       GIT
-        remote: https://github.com/rack/rack.git
-        revision: 2fface9ac09fc582a81386becd939c987ad33f99
+        remote: #{lib_path("rack-3.2.0")}
+        revision: #{git.ref_for("main")}
         specs:
           rack (3.2.0)
 

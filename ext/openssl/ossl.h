@@ -22,6 +22,9 @@
 #else
 #define RUBY_TYPED_FROZEN_SHAREABLE 0
 #endif
+#if !defined(RUBY_TYPED_THREAD_SAFE_FREE)
+#define RUBY_TYPED_THREAD_SAFE_FREE RUBY_TYPED_FREE_IMMEDIATELY
+#endif
 
 #include <openssl/opensslv.h>
 
@@ -97,6 +100,27 @@ void ossl_want_uninitialized(VALUE self, const rb_data_type_t *type);
 /*
  * Type conversions
  */
+#ifndef HAVE_RB_LEN_T /* Ruby 4.1 */
+typedef long rb_len_t;
+# define SIZEOF_RB_LEN_T SIZEOF_LONG
+# define RB_LEN_MAX LONG_MAX
+# define PRIdLEN "ld"
+# define NUM2LEN NUM2LONG
+# define LEN2NUM LONG2NUM
+static inline long
+rb_len2long(rb_len_t n)
+{
+#if SIZEOF_RB_LEN_T > SIZEOF_LONG
+    if (n > LONG_MAX || n < LONG_MIN) {
+        rb_raise(rb_eRangeError,
+                 "integer %"PRIdLEN" too %s to convert to 'long'",
+                 n, n < 0 ? "small" : "big");
+    }
+#endif
+    return (long)n;
+}
+#endif
+
 #if !defined(NUM2UINT64T) /* in case Ruby starts to provide */
 #  if SIZEOF_LONG == 8
 #    define NUM2UINT64T(x) ((uint64_t)NUM2ULONG(x))
@@ -117,11 +141,11 @@ STACK_OF(X509) *ossl_protect_x509_ary2sk(VALUE,int*);
 VALUE ossl_x509_sk2ary(const STACK_OF(X509) *certs);
 VALUE ossl_x509crl_sk2ary(const STACK_OF(X509_CRL) *crl);
 VALUE ossl_x509name_sk2ary(const STACK_OF(X509_NAME) *names);
-VALUE ossl_buf2str(char *buf, int len);
-VALUE ossl_str_new(const char *, long, int *);
+VALUE ossl_str_new(const char *ptr, rb_len_t len, int *pstate);
+VALUE ossl_buf2str(char *buf);
 #define ossl_str_adjust(str, p) \
 do{\
-    long newlen = (long)((p) - (unsigned char*)RSTRING_PTR(str));\
+    rb_len_t newlen = (rb_len_t)((p) - (unsigned char*)RSTRING_PTR(str));\
     assert(newlen <= RSTRING_LEN(str));\
     rb_str_set_len((str), newlen);\
 }while(0)

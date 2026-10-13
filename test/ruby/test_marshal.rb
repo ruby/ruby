@@ -169,6 +169,19 @@ class TestMarshal < Test::Unit::TestCase
     assert_equal(Enumerable, Marshal.load(Marshal.dump(Enumerable)))
   end
 
+  class ModuleSubclass < Module
+  end
+
+  def test_uclass_module_not_relabeled
+    # TYPE_UCLASS ('C') wrapping a module must be rejected, not relabel it.
+    uclass = Marshal.dump(ModuleSubclass.name.to_sym)[2..-1]  # ":<name>"
+    wrapped = Marshal.dump(TestModule)[2..-1]                 # "m<name>"
+    payload = "\x04\x08C#{uclass}#{wrapped}"
+    assert_raise_with_message(ArgumentError, "dump format error (user class)") do
+      Marshal.load(payload)
+    end
+  end
+
   class C2
     def initialize(ary)
       @ary = ary
@@ -184,6 +197,24 @@ class TestMarshal < Test::Unit::TestCase
     o = C2.new(a)
     a << o << nil
     assert_raise(RuntimeError) { Marshal.dump(a) }
+  end
+
+  def test_modify_string_during_dump
+    str = "a" * 100
+    writer = Object.new
+    writer.define_singleton_method(:write) do |s|
+      str.replace("")
+      s.bytesize
+    end
+    # The padding tunes the dump buffer level so that the flush (which calls
+    # the write method above) happens while the length of str is being
+    # written, right before its payload is copied from its buffer.
+    assert_raise(RuntimeError) do
+      (0..10_000).each do |i|
+        str.replace("a" * 100)
+        Marshal.dump(["x" * i, str], writer)
+      end
+    end
   end
 
   def test_change_class_name

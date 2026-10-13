@@ -54,7 +54,7 @@ module Bundler
       # All actions required by the Git source is encapsulated in this
       # object.
       class GitProxy
-        attr_accessor :path, :uri, :branch, :tag, :ref, :explicit_ref
+        attr_accessor :path, :uri, :branch, :tag, :ref, :explicit_ref, :sparse_checkout
         attr_writer :revision
 
         def self.version
@@ -95,6 +95,7 @@ module Bundler
           @revision = revision
           @git      = git
           @commit_ref = nil
+          @sparse_checkout = options["sparse_checkout"]
         end
 
         def revision
@@ -158,6 +159,8 @@ module Bundler
                 "this file and try again."
             end
           end
+
+          setup_sparse_checkout(destination)
 
           ref = @commit_ref || (locked_to_full_sha? && @revision)
           if ref
@@ -507,7 +510,15 @@ module Bundler
 
           return ["git", *opts, *cmd] unless dir
 
-          ["git", "-C", dir.to_s, *opts, *cmd]
+          # With safe.bareRepository=explicit, git refuses to discover a bare
+          # repository from -C, so the cache clone is named with --git-dir.
+          # Working trees, like a local override, still go through -C.
+          location = bare_repo?(dir) ? "--git-dir" : "-C"
+          ["git", location, dir.to_s, *opts, *cmd]
+        end
+
+        def bare_repo?(dir)
+          File.exist?(File.join(dir, "objects")) && File.exist?(File.join(dir, "HEAD"))
         end
 
         def extra_clone_args
@@ -564,6 +575,32 @@ module Bundler
 
         def supports_cloning_with_no_tags?
           @supports_cloning_with_no_tags ||= Gem::Version.new(version) >= Gem::Version.new("2.14.0-rc0")
+        end
+
+        def supports_sparse_checkout?
+          @supports_sparse_checkout ||= Gem::Version.new(version) >= Gem::Version.new("2.25.0")
+        end
+
+        def supports_sparse_checkout_set_with_cone?
+          @supports_sparse_checkout_set_with_cone ||= Gem::Version.new(version) >= Gem::Version.new("2.35.0")
+        end
+
+        def setup_sparse_checkout(destination)
+          return unless @sparse_checkout
+
+          unless supports_sparse_checkout?
+            Bundler.ui.warn "Git #{version} doesn't support sparse-checkout (requires 2.25+). Checking out the full repository."
+            return
+          end
+
+          Bundler.ui.debug "Setting sparse checkout to only include #{@sparse_checkout.join(", ")}"
+          if supports_sparse_checkout_set_with_cone?
+            git "sparse-checkout", "set", "--cone", *@sparse_checkout, dir: destination
+          else
+            # Before git 2.35, `set` keeps an unknown --cone as a pattern instead of rejecting it.
+            git "sparse-checkout", "init", "--cone", dir: destination
+            git "sparse-checkout", "set", *@sparse_checkout, dir: destination
+          end
         end
       end
     end

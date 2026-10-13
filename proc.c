@@ -292,13 +292,13 @@ static bool
 refinement_recipe_eq(VALUE r1, VALUE r2)
 {
     if (r1 == r2) return true;
-    long len = RARRAY_LEN(r1);
+    rb_len_t len = RARRAY_LEN(r1);
     if (RARRAY_LEN(r2) != len) return false;
     if (RARRAY_AREF(r1, REFINEMENT_RECIPE_BASE_CREF) !=
         RARRAY_AREF(r2, REFINEMENT_RECIPE_BASE_CREF)) return false;
     if (RARRAY_AREF(r1, REFINEMENT_RECIPE_SRC_ISEQ) !=
         RARRAY_AREF(r2, REFINEMENT_RECIPE_SRC_ISEQ)) return false;
-    for (long i = REFINEMENT_RECIPE_MODS; i < len; i++) {
+    for (rb_len_t i = REFINEMENT_RECIPE_MODS; i < len; i++) {
         if (RARRAY_AREF(r1, i) != RARRAY_AREF(r2, i)) return false;
     }
     return true;
@@ -469,7 +469,7 @@ refinement_memo_set(const rb_iseq_t *src_iseq, VALUE recipe, const rb_iseq_t *co
     }
 }
 
-static long
+static rb_len_t
 refinement_recipe_modc(VALUE recipe)
 {
     return NIL_P(recipe) ? 0 : RARRAY_LEN(recipe) - REFINEMENT_RECIPE_MODS;
@@ -479,10 +479,10 @@ static bool
 refinement_recipe_match(VALUE recipe, const rb_cref_t *base_cref, VALUE src_recipe,
                         long argc, const VALUE *mods)
 {
-    long inherited = refinement_recipe_modc(src_recipe);
+    rb_len_t inherited = refinement_recipe_modc(src_recipe);
     if (RARRAY_AREF(recipe, REFINEMENT_RECIPE_BASE_CREF) != (VALUE)base_cref) return false;
     if (refinement_recipe_modc(recipe) != inherited + argc) return false;
-    for (long i = 0; i < inherited; i++) {
+    for (rb_len_t i = 0; i < inherited; i++) {
         if (RARRAY_AREF(recipe, REFINEMENT_RECIPE_MODS + i) !=
             RARRAY_AREF(src_recipe, REFINEMENT_RECIPE_MODS + i)) return false;
     }
@@ -497,12 +497,12 @@ refinement_recipe_new(const rb_cref_t *base_cref, const rb_cref_t *cref,
                       const rb_iseq_t *src_iseq, VALUE src_recipe,
                       long argc, const VALUE *mods)
 {
-    long inherited = refinement_recipe_modc(src_recipe);
+    rb_len_t inherited = refinement_recipe_modc(src_recipe);
     VALUE recipe = rb_ary_hidden_new(REFINEMENT_RECIPE_MODS + inherited + argc);
     rb_ary_push(recipe, (VALUE)base_cref);
     rb_ary_push(recipe, (VALUE)cref);
     rb_ary_push(recipe, (VALUE)src_iseq);
-    for (long i = 0; i < inherited; i++) {
+    for (rb_len_t i = 0; i < inherited; i++) {
         rb_ary_push(recipe, RARRAY_AREF(src_recipe, REFINEMENT_RECIPE_MODS + i));
     }
     for (long i = 0; i < argc; i++) {
@@ -1443,11 +1443,16 @@ rb_func_proc_dup(VALUE src_obj)
     RB_OBJ_WRITTEN(proc_obj, Qundef, proc->basic.block.as.captured.code.val);
 
     const VALUE *src_ep = src_proc->block.as.captured.ep;
-    VALUE *ep = *(VALUE **)&proc->basic.block.as.captured.ep = proc->env + VM_ENV_DATA_SIZE - 1;
-    ep[VM_ENV_DATA_INDEX_FLAGS]   = src_ep[VM_ENV_DATA_INDEX_FLAGS];
-    ep[VM_ENV_DATA_INDEX_ME_CREF] = src_ep[VM_ENV_DATA_INDEX_ME_CREF];
-    ep[VM_ENV_DATA_INDEX_SPECVAL] = src_ep[VM_ENV_DATA_INDEX_SPECVAL];
-    RB_OBJ_WRITE(proc_obj, &ep[VM_ENV_DATA_INDEX_ENV], src_ep[VM_ENV_DATA_INDEX_ENV]);
+    if (src_ep == ((const cfunc_proc_t *)src_proc)->env + VM_ENV_DATA_SIZE - 1) {
+        VALUE *ep = *(VALUE **)&proc->basic.block.as.captured.ep = proc->env + VM_ENV_DATA_SIZE - 1;
+        ep[VM_ENV_DATA_INDEX_FLAGS]   = src_ep[VM_ENV_DATA_INDEX_FLAGS];
+        ep[VM_ENV_DATA_INDEX_ME_CREF] = src_ep[VM_ENV_DATA_INDEX_ME_CREF];
+        ep[VM_ENV_DATA_INDEX_SPECVAL] = src_ep[VM_ENV_DATA_INDEX_SPECVAL];
+        RB_OBJ_WRITE(proc_obj, &ep[VM_ENV_DATA_INDEX_ENV], src_ep[VM_ENV_DATA_INDEX_ENV]);
+    }
+    else {
+        rb_vm_block_ep_update(proc_obj, &proc->basic.block, src_ep);
+    }
 
     return proc_obj;
 }
@@ -1699,13 +1704,13 @@ proc_call(int argc, VALUE *argv, VALUE procval)
 }
 #endif
 
-#if SIZEOF_LONG > SIZEOF_INT
+#if SIZEOF_RB_LEN_T > SIZEOF_INT
 static inline int
-check_argc(long argc)
+check_argc(rb_len_t argc)
 {
     if (argc > INT_MAX || argc < 0) {
-        rb_raise(rb_eArgError, "too many arguments (%lu)",
-                 (unsigned long)argc);
+        rb_raise(rb_eArgError, "too many arguments (%"PRIuLEN")",
+                 (rb_ulen_t)argc);
     }
     return (int)argc;
 }
@@ -2044,8 +2049,8 @@ rb_proc_get_iseq(VALUE self, int *is_proc)
  *   #=> false
  *
  */
-static VALUE
-proc_eq(VALUE self, VALUE other)
+VALUE
+rb_proc_eq(VALUE self, VALUE other)
 {
     const rb_proc_t *self_proc, *other_proc;
     const struct rb_block *self_block, *other_block;
@@ -2262,10 +2267,10 @@ rb_hash_proc(st_index_t hash, VALUE prc)
             /* from the recipe, not the block iseq: the latter flips from the
              * source to the copy on the first call, and the hash must not */
             VALUE recipe = rb_proc_refinements_recipe(prc);
-            long len = RARRAY_LEN(recipe);
+            rb_len_t len = RARRAY_LEN(recipe);
             hash = rb_st_hash_uint(hash, (st_index_t)RARRAY_AREF(recipe, REFINEMENT_RECIPE_BASE_CREF));
             hash = iseq_location_hash(hash, (const rb_iseq_t *)RARRAY_AREF(recipe, REFINEMENT_RECIPE_SRC_ISEQ));
-            for (long i = REFINEMENT_RECIPE_MODS; i < len; i++) {
+            for (rb_len_t i = REFINEMENT_RECIPE_MODS; i < len; i++) {
                 hash = rb_st_hash_uint(hash, (st_index_t)RARRAY_AREF(recipe, i));
             }
         }
@@ -2326,7 +2331,7 @@ rb_sym_to_proc(VALUE sym)
         }
 
         ID id = SYM2ID(sym);
-        long index = (id % SYM_PROC_CACHE_SIZE);
+        rb_len_t index = (id % SYM_PROC_CACHE_SIZE);
         VALUE procval = RARRAY_AREF(sym_proc_cache, index);
         if (RTEST(procval)) {
             rb_proc_t *proc;
@@ -2502,6 +2507,42 @@ mnew_missing_by_name(VALUE klass, VALUE obj, VALUE *name, int scope, VALUE mclas
 
 VALUE rb_zsuper_to_super(int argc, VALUE *argv, VALUE self);
 
+static inline bool
+refinement_module_p(VALUE mod)
+{
+    return RB_TYPE_P(mod, T_MODULE) && FL_TEST_RAW(mod, RMODULE_IS_REFINEMENT);
+}
+
+VALUE rb_vm_module_refinement_iclass(VALUE refinement_iclass, VALUE defined_class);
+VALUE rb_vm_refinement_iclass_for_cme(VALUE refinement, const rb_callable_method_entry_t *cme);
+
+static VALUE
+find_refined_target_ancestor(VALUE start, VALUE refined_target)
+{
+    VALUE klass;
+    for (klass = start; klass; klass = RCLASS_SUPER(klass)) {
+        if (RB_TYPE_P(klass, T_ICLASS) && RBASIC(klass)->klass == refined_target) {
+            return klass;
+        }
+    }
+    return 0;
+}
+
+static VALUE
+find_refinement_iclass(VALUE owner, VALUE klass, VALUE iclass)
+{
+    VALUE refined_target = rb_refinement_module_get_refined_class(owner);
+
+    if (RB_TYPE_P(refined_target, T_MODULE)) {
+        VALUE refined_ancestor = find_refined_target_ancestor(klass, refined_target);
+        if (refined_ancestor) {
+            iclass = rb_vm_module_refinement_iclass(iclass, refined_ancestor);
+        }
+    }
+
+    return iclass;
+}
+
 static VALUE
 mnew_internal(const rb_method_entry_t *me, VALUE klass, VALUE iclass,
               VALUE obj, ID id, VALUE mclass, int scope, int error)
@@ -2563,6 +2604,10 @@ static VALUE
 mnew_from_me(const rb_method_entry_t *me, VALUE klass, VALUE iclass,
              VALUE obj, ID id, VALUE mclass, int scope)
 {
+    if (me && refinement_module_p(me->owner) && !RICLASS_FOR_REFINEMENT_P(iclass)) {
+        iclass = klass;
+    }
+
     return mnew_internal(me, klass, iclass, obj, id, mclass, scope, TRUE);
 }
 
@@ -3474,13 +3519,19 @@ convert_umethod_to_method_components(const struct METHOD *data, VALUE recv, VALU
             // because this branch manipulates it in rb_method_entry_complement_defined_class
             me = rb_method_entry_clone(me);
         }
-        VALUE ic = rb_class_search_ancestor(klass, me->owner);
-        if (ic) {
-            klass = ic;
-            iclass = ic;
+        if (refinement_module_p(me->owner) && RICLASS_FOR_REFINEMENT_P(data->iclass)) {
+            iclass = find_refinement_iclass(me->owner, klass, data->iclass);
+            klass = iclass;
         }
         else {
-            klass = rb_include_class_new(methclass, klass);
+            VALUE ic = rb_class_search_ancestor(klass, me->owner);
+            if (ic) {
+                klass = ic;
+                iclass = ic;
+            }
+            else {
+                klass = rb_include_class_new(methclass, klass);
+            }
         }
         me = (const rb_method_entry_t *) rb_method_entry_complement_defined_class(me, me->called_id, klass);
     }
@@ -4090,6 +4141,9 @@ method_inspect(VALUE method)
     }
     else {
         mklass = data->klass;
+        if (RB_TYPE_P(mklass, T_ICLASS)) {
+            mklass = RBASIC_CLASS(mklass);
+        }
         if (RCLASS_SINGLETON_P(mklass)) {
             VALUE v = RCLASS_ATTACHED_OBJECT(mklass);
             if (!(RB_TYPE_P(v, T_CLASS) || RB_TYPE_P(v, T_MODULE))) {
@@ -4285,10 +4339,26 @@ method_super_method(VALUE method)
     TypedData_Get_Struct(method, struct METHOD, &method_data_type, data);
     iclass = data->iclass;
     if (!iclass) return Qnil;
+    bool is_refinement_method = refinement_module_p(data->me->owner);
     if (data->me->def->type == VM_METHOD_TYPE_ALIAS && data->me->defined_class) {
         super_class = RCLASS_SUPER(rb_find_defined_class_by_owner(data->me->defined_class,
             data->me->def->body.alias.original_me->owner));
         mid = data->me->def->body.alias.original_me->def->original_id;
+    }
+    else if (is_refinement_method) {
+        if (RICLASS_FOR_REFINEMENT_P(iclass)) {
+            do {
+                super_class = RCLASS_SUPER(iclass);
+                iclass = super_class;
+            } while (RICLASS_FOR_REFINEMENT_P(super_class));
+        }
+        else {
+            super_class = find_refined_target_ancestor(iclass, rb_refinement_module_get_refined_class(data->me->owner));
+            if (!super_class) {
+                super_class = RCLASS_SUPER(data->me->owner);
+            }
+        }
+        mid = data->me->def->original_id;
     }
     else {
         VALUE klass = iclass;
@@ -4303,7 +4373,7 @@ method_super_method(VALUE method)
 
     // For refined methods, skip refinements for the same definition, but consider
     // refinements for superclass methods
-    const rb_method_definition_t *skip_def = RICLASS_FOR_REFINEMENT_P(iclass) ? data->me->def : NULL;
+    const rb_method_definition_t *skip_def = is_refinement_method ? data->me->def : NULL;
 
     // Use the CREF of the Method/UnboundMethod, not the CREF of the caller of super_method.
     // We must avoid the use of rb_callable_method_entry_with_refinements, as that will
@@ -4342,6 +4412,7 @@ method_super_method(VALUE method)
             if (NIL_P(refs)) continue;
             VALUE r = rb_hash_lookup(refs, cme->owner);
             if (NIL_P(r)) continue;
+            r = rb_vm_refinement_iclass_for_cme(r, cme);
             const rb_callable_method_entry_t *ref_cme = rb_callable_method_entry(r, mid);
             if (!ref_cme) break;
             if (ref_cme->def->type == VM_METHOD_TYPE_REFINED) continue;
@@ -4356,7 +4427,7 @@ method_super_method(VALUE method)
         const rb_method_entry_t *orig_me = cme->def->body.refined.orig_me;
         if (orig_me) {
             me = (rb_method_entry_t *)orig_me;
-            iclass = orig_me->defined_class ? orig_me->defined_class : cme->defined_class;
+            iclass = cme->defined_class;
             break;
         }
         klass = RCLASS_SUPER(cme->defined_class);
@@ -4611,10 +4682,11 @@ proc_curry(int argc, const VALUE *argv, VALUE self)
         arity = INT2FIX(min_arity);
     }
     else {
-        sarity = FIX2INT(arity);
+        sarity = NUM2INT(arity);
         if (rb_proc_lambda_p(self)) {
             rb_check_arity(sarity, min_arity, max_arity);
         }
+        arity = INT2FIX(sarity);
     }
 
     return make_curry_proc(self, rb_ary_new(), arity);
@@ -5387,8 +5459,8 @@ Init_Proc(void)
     rb_define_method(rb_cProc, "curry", proc_curry, -1);
     rb_define_method(rb_cProc, "<<", proc_compose_to_left, 1);
     rb_define_method(rb_cProc, ">>", proc_compose_to_right, 1);
-    rb_define_method(rb_cProc, "==", proc_eq, 1);
-    rb_define_method(rb_cProc, "eql?", proc_eq, 1);
+    rb_define_method(rb_cProc, "==", rb_proc_eq, 1);
+    rb_define_method(rb_cProc, "eql?", rb_proc_eq, 1);
     rb_define_method(rb_cProc, "source_location", rb_proc_location, 0);
     rb_define_method(rb_cProc, "source_range", rb_proc_source_range, 0);
     rb_define_method(rb_cProc, "parameters", rb_proc_parameters, -1);

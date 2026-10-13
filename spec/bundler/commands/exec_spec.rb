@@ -1273,7 +1273,7 @@ RSpec.describe "bundle exec" do
           expect(run(file.read, artifice: nil, env: env)).to eq(default_openssl_version)
         end
 
-        skip "ruby_core has openssl and rubygems in the same folder, and this test needs rubygems require but default openssl not in a directly added entry in $LOAD_PATH" if ruby_core?
+        skip "the default openssl on RUBYLIB takes precedence over the installed openssl gem" if rubylib_provides?("openssl")
         # sanity check that we get the newer, custom version without bundler
         sys_exec "#{Gem.ruby} #{file}", env: env, raise_on_error: false
         expect(err).to include("custom openssl should not be loaded")

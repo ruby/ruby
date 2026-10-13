@@ -247,6 +247,37 @@ class TestPack < Test::Unit::TestCase
     end
   end
 
+  def test_format_string_modified_by_to_str
+    fmt = "a" + " " * 1_000_000
+    o = Object.new
+    o.define_singleton_method(:to_str) do
+      fmt.clear
+      "A"
+    end
+    assert_raise_with_message(RuntimeError, /format string modified/) do
+      [o].pack(fmt)
+    end
+  end
+
+  def test_unpack_with_block_modifying_string
+    # [Bug #22315]
+    s = "C" * 4000
+    assert_raise_with_message(RuntimeError, /string modified/) {
+      s.unpack("L*") { s.clear }
+    }
+    s = "ABCD"
+    assert_raise_with_message(RuntimeError, /string modified/) {
+      s.unpack("C*") { s << "E" * 100 }
+    }
+  end
+
+  def test_unpack_with_block_modifying_format
+    fmt = "C" * 1_000_000
+    assert_raise_with_message(RuntimeError, /format string modified/) {
+      ("A" * 4000).unpack(fmt) { fmt.clear }
+    }
+  end
+
   def test_comment
     assert_equal("\0\1", [0,1].pack("  C  #foo \n  C  "))
     assert_equal([0,1], "\0\1".unpack("  C  #foo \n  C  "))
@@ -993,6 +1024,20 @@ EXPECTED
 
       assert_equal "oh no", v
     end;
+  end
+
+  def test_pack_modify_buffer_r_R
+    buf = "x" * 10_000
+    o = Object.new
+    o.define_singleton_method(:to_int) { buf.clear; 1 }
+    [o, 42].pack("R R", buffer: buf)
+    assert_equal "\x01\x2A".b, buf
+
+    buf = "x" * 10_000
+    o = Object.new
+    o.define_singleton_method(:to_int) { buf.clear; -2 }
+    [o].pack("r", buffer: buf)
+    assert_equal "\x7E".b, buf
   end
 
   def test_unpack_broken_R

@@ -116,7 +116,7 @@ module Gem
           warn "#{msg.join}." unless Gem::Deprecate.skip
           send old, *args, &block
         end
-        ruby2_keywords name if respond_to?(:ruby2_keywords, true)
+        ruby2_keywords name
       end
     end
 
@@ -143,7 +143,7 @@ module Gem
           warn "#{msg.join}." unless Gem::Deprecate.skip
           send old, *args, &block
         end
-        ruby2_keywords name if respond_to?(:ruby2_keywords, true)
+        ruby2_keywords name
       end
     end
 

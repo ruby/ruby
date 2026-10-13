@@ -133,11 +133,11 @@ mod snapshot_tests {
           Jump bb3(v4)
         bb3(v6:BasicObject):
           v8:Any = Snapshot FrameState { pc: 0x1000, stack: [], locals: [] }
-          PatchPoint NoTracePoint
+          PatchPoint NoTracePoint, v8
           v10:Fixnum[1] = Const Value(1)
           v12:Fixnum[2] = Const Value(2)
           v13:Any = Snapshot FrameState { pc: 0x1008, stack: [v10, v12], locals: [] }
-          PatchPoint MethodRedefined(Integer@0x1010, +@0x1018, cme:0x1020)
+          PatchPoint MethodRedefined(Integer@0x1010, +@0x1018, cme:0x1020), v13
           v35:Fixnum[6] = Const Value(6)
           v21:Any = Snapshot FrameState { pc: 0x1048, stack: [v35], locals: [] }
           CheckInterrupts
@@ -168,12 +168,12 @@ mod snapshot_tests {
         bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
           v14:Any = Snapshot FrameState { pc: 0x1008, stack: [], locals: [a=v12, b=v13] }
           v15:Any = Snapshot FrameState { pc: 0x1010, stack: [], locals: [a=v12, b=v13] }
-          PatchPoint NoTracePoint
+          PatchPoint NoTracePoint, v15
           v17:Any = Snapshot FrameState { pc: 0x1018, stack: [v12], locals: [a=v12, b=v13] }
           v18:Any = Snapshot FrameState { pc: 0x1020, stack: [v12, v13], locals: [a=v12, b=v13] }
           v19:ArrayExact = NewArray v12, v13
           v20:Any = Snapshot FrameState { pc: 0x1028, stack: [v19], locals: [a=v12, b=v13] }
-          PatchPoint NoTracePoint
+          PatchPoint NoTracePoint, v20
           CheckInterrupts
           Return v19
         ");
@@ -201,22 +201,22 @@ mod snapshot_tests {
           Jump bb3(v4)
         bb3(v6:BasicObject):
           v8:Any = Snapshot FrameState { pc: 0x1000, stack: [], locals: [] }
-          PatchPoint NoTracePoint
+          PatchPoint NoTracePoint, v8
           v11:Fixnum[3] = Const Value(3)
           v13:Fixnum[1] = Const Value(1)
           v15:Fixnum[2] = Const Value(2)
           v16:Any = Snapshot FrameState { pc: 0x1008, stack: [v6, v11, v13, v15], locals: [] }
-          PatchPoint MethodRedefined(Object@0x1010, foo@0x1018, cme:0x1020)
+          PatchPoint MethodRedefined(Object@0x1010, foo@0x1018, cme:0x1020), v16
           v24:ObjectSubclass[class_exact*:Object@VALUE(0x1010)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1010)] recompile
           v25:Any = Snapshot FrameState { pc: 0x1008, stack: [v24, v13, v15, v11], locals: [] }
-          v44:Fixnum[0] = Const Value(0)
+          v43:Fixnum[0] = Const Value(0)
           v27:Any = Snapshot FrameState { pc: 0x1008, stack: [], locals: [] }
           PushInlineFrame :foo, v24 (0x1048), num_args=3
-          v38:Any = Snapshot FrameState { pc: 0x1068, stack: [v13, v15, v11], locals: [a=v13, b=v15, c=v11, ID(0)=v44], caller: v27 }
+          v38:Any = Snapshot FrameState { pc: 0x1068, stack: [v13, v15, v11], locals: [a=v13, b=v15, c=v11, ID(0)=v43], caller: v27 }
           v39:ArrayExact = NewArray v13, v15, v11
-          v40:Any = Snapshot FrameState { pc: 0x1070, stack: [v39], locals: [a=v13, b=v15, c=v11, ID(0)=v44], caller: v27 }
-          CheckInterrupts
           PopInlineFrame
+          v18:Any = Snapshot FrameState { pc: 0x1070, stack: [v39], locals: [] }
+          CheckInterrupts
           Return v39
         ");
     }
@@ -243,20 +243,20 @@ mod snapshot_tests {
           Jump bb3(v4)
         bb3(v6:BasicObject):
           v8:Any = Snapshot FrameState { pc: 0x1000, stack: [], locals: [] }
-          PatchPoint NoTracePoint
+          PatchPoint NoTracePoint, v8
           v11:Fixnum[1] = Const Value(1)
           v13:Fixnum[2] = Const Value(2)
           v14:Any = Snapshot FrameState { pc: 0x1008, stack: [v6, v11, v13], locals: [] }
-          PatchPoint MethodRedefined(Object@0x1010, foo@0x1018, cme:0x1020)
+          PatchPoint MethodRedefined(Object@0x1010, foo@0x1018, cme:0x1020), v14
           v22:ObjectSubclass[class_exact*:Object@VALUE(0x1010)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1010)] recompile
-          v39:Fixnum[0] = Const Value(0)
+          v38:Fixnum[0] = Const Value(0)
           v24:Any = Snapshot FrameState { pc: 0x1008, stack: [], locals: [] }
           PushInlineFrame :foo, v22 (0x1048), num_args=2
-          v33:Any = Snapshot FrameState { pc: 0x1068, stack: [v11, v13], locals: [a=v11, b=v13, ID(0)=v39], caller: v24 }
+          v33:Any = Snapshot FrameState { pc: 0x1068, stack: [v11, v13], locals: [a=v11, b=v13, ID(0)=v38], caller: v24 }
           v34:ArrayExact = NewArray v11, v13
-          v35:Any = Snapshot FrameState { pc: 0x1070, stack: [v34], locals: [a=v11, b=v13, ID(0)=v39], caller: v24 }
-          CheckInterrupts
           PopInlineFrame
+          v16:Any = Snapshot FrameState { pc: 0x1070, stack: [v34], locals: [] }
+          CheckInterrupts
           Return v34
         ");
     }
@@ -283,7 +283,7 @@ mod snapshot_tests {
           Jump bb3(v4)
         bb3(v6:BasicObject):
           v8:Any = Snapshot FrameState { pc: 0x1000, stack: [], locals: [] }
-          PatchPoint NoTracePoint
+          PatchPoint NoTracePoint, v8
           v11:Fixnum[5] = Const Value(5)
           v13:Fixnum[6] = Const Value(6)
           v15:Fixnum[4] = Const Value(4)
@@ -293,17 +293,17 @@ mod snapshot_tests {
           v23:Fixnum[7] = Const Value(7)
           v25:Fixnum[8] = Const Value(8)
           v26:Any = Snapshot FrameState { pc: 0x1008, stack: [v6, v11, v13, v15, v17, v19, v21, v23, v25], locals: [] }
-          PatchPoint MethodRedefined(Object@0x1010, foo@0x1018, cme:0x1020)
+          PatchPoint MethodRedefined(Object@0x1010, foo@0x1018, cme:0x1020), v26
           v34:ObjectSubclass[class_exact*:Object@VALUE(0x1010)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1010)] recompile
           v35:Any = Snapshot FrameState { pc: 0x1008, stack: [v34, v11, v13, v19, v21, v17, v15, v23, v25], locals: [] }
-          v64:Fixnum[0] = Const Value(0)
+          v63:Fixnum[0] = Const Value(0)
           v37:Any = Snapshot FrameState { pc: 0x1008, stack: [], locals: [] }
           PushInlineFrame :foo, v34 (0x1048), num_args=8
-          v58:Any = Snapshot FrameState { pc: 0x1068, stack: [v19, v21, v17, v15, v11, v13, v23, v25], locals: [five=v11, six=v13, a=v19, b=v21, c=v17, d=v15, e=v23, f=v25, ID(0)=v64], caller: v37 }
+          v58:Any = Snapshot FrameState { pc: 0x1068, stack: [v19, v21, v17, v15, v11, v13, v23, v25], locals: [five=v11, six=v13, a=v19, b=v21, c=v17, d=v15, e=v23, f=v25, ID(0)=v63], caller: v37 }
           v59:ArrayExact = NewArray v19, v21, v17, v15, v11, v13, v23, v25
-          v60:Any = Snapshot FrameState { pc: 0x1070, stack: [v59], locals: [five=v11, six=v13, a=v19, b=v21, c=v17, d=v15, e=v23, f=v25, ID(0)=v64], caller: v37 }
-          CheckInterrupts
           PopInlineFrame
+          v28:Any = Snapshot FrameState { pc: 0x1070, stack: [v59], locals: [] }
+          CheckInterrupts
           Return v59
         ");
     }
@@ -1203,6 +1203,38 @@ pub(crate) mod hir_build_tests {
           v13:Fixnum[1] = Const Value(1)
           CheckInterrupts
           Return v13
+        ");
+    }
+
+    #[test]
+    fn test_setlocal_getlocal_no_operands_unification() {
+        eval_with_options("
+            def test(a)
+              x = a
+              x = 2
+              x
+            end
+        ", "{ operands_unification: false }");
+        assert_contains_opcodes("test", &[YARVINSN_getlocal, YARVINSN_setlocal]);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          v4:NilClass = Const Value(nil)
+          Jump bb3(v1, v3, v4)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :a@1
+          v9:NilClass = Const Value(nil)
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:NilClass):
+          v20:Fixnum[2] = Const Value(2)
+          CheckInterrupts
+          Return v20
         ");
     }
 
@@ -2303,13 +2335,43 @@ pub(crate) mod hir_build_tests {
           Jump bb6(v28, v28)
         bb5():
           v30:CInt64 = LoadField v24, :VM_ENV_DATA_INDEX_SPECVAL@0x102a
-          v31:CInt64 = GuardAnyBitSet v30, CUInt64(1) recompile
-          v32:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1030))
-          Jump bb6(v32, v10)
+          v31:CInt64[1] = Const CInt64(1)
+          v32:CInt64 = IntAnd v30, v31
+          v33:CBool = IsBitEqual v32, v31
+          CondBranch v33, bb7(), bb8()
+        bb7():
+          v35:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1030))
+          Jump bb6(v35, v10)
+        bb8():
+          v37:CInt64[0] = Const CInt64(0)
+          v38:CBool = IsBitEqual v30, v37
+          CondBranch v38, bb9(), bb10()
+        bb9():
+          v40:NilClass = Const Value(nil)
+          Jump bb6(v40, v10)
+        bb10():
+          v42:CInt64[255] = Const CInt64(255)
+          v43:CInt64 = IntAnd v30, v42
+          v44:CInt64[12] = Const CInt64(12)
+          v45:CBool = IsBitEqual v43, v44
+          CondBranch v45, bb11(), bb12()
+        bb12():
+          v47:CUInt64 = LoadField v30, :RBASIC_FLAGS@0x1028
+          v48:CUInt64[31] = Const CUInt64(31)
+          v49:CInt64 = IntAnd v47, v48
+          v50:CUInt64[20] = Const CUInt64(20)
+          v51:CBool = IsBitEqual v49, v50
+          CondBranch v51, bb11(), bb13()
+        bb11():
+          v53:BasicObject = SymToProc :&, l0, EP@3
+          Jump bb6(v53, v53)
+        bb13():
+          v55:BasicObject = LoadField v24, :VM_ENV_DATA_INDEX_SPECVAL@0x102a
+          Jump bb6(v55, v10)
         bb6(v22:BasicObject, v23:BasicObject):
-          v35:BasicObject = Send v9, &block, :consume, v22 # SendFallbackReason: Uncategorized(send)
+          v58:BasicObject = Send v9, &block, :consume, v22 # SendFallbackReason: Uncategorized(send)
           CheckInterrupts
-          Return v35
+          Return v58
         ");
     }
 
@@ -2379,29 +2441,27 @@ pub(crate) mod hir_build_tests {
         bb3(v6:BasicObject):
           v10:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v12:Fixnum[123] = Const Value(123)
-          v15:CBool[false] = HasType v12, String
-          CondBranch v15, bb4(), bb5()
+          CondBranchHasType v12, String, bb4(), bb5()
         bb4():
-          v17 = RefineType v12, String
-          Jump bb6(v17)
+          v16 = RefineType v12, String
+          Jump bb6(v16)
         bb5():
-          v19:Fixnum[123] = RefineType v12, NotString
-          v20:BasicObject = Send v19, :to_s # SendFallbackReason: ObjToString: result is not a string
-          Jump bb6(v20)
-        bb6(v22:BasicObject):
-          v24:CBool = HasType v22, String
-          CondBranch v24, bb7(), bb8()
+          v18:Fixnum[123] = RefineType v12, NotString
+          v19:BasicObject = Send v18, :to_s # SendFallbackReason: ObjToString: result is not a string
+          Jump bb6(v19)
+        bb6(v21:BasicObject):
+          CondBranchHasType v21, String, bb7(), bb8()
         bb7():
-          v26:String = RefineType v22, String
-          Jump bb9(v26)
+          v24:String = RefineType v21, String
+          Jump bb9(v24)
         bb8():
-          v28:StringExact = AnyToString v12
-          Jump bb9(v28)
-        bb9(v30:String):
-          v32:StringExact = StringConcat v10, v30
-          v34:Symbol = StringIntern v32
+          v26:StringExact = AnyToString v12
+          Jump bb9(v26)
+        bb9(v28:String):
+          v30:StringExact = StringConcat v10, v28
+          v32:Symbol = StringIntern v30
           CheckInterrupts
-          Return v34
+          Return v32
         ");
     }
 
@@ -2857,9 +2917,39 @@ pub(crate) mod hir_build_tests {
           Jump bb6(v40, v40)
         bb5():
           v42:CInt64 = LoadField v36, :VM_ENV_DATA_INDEX_SPECVAL@0x1006
-          v43:CInt64 = GuardAnyBitSet v42, CUInt64(1) recompile
-          v44:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
-          Jump bb6(v44, v21)
+          v43:CInt64[1] = Const CInt64(1)
+          v44:CInt64 = IntAnd v42, v43
+          v45:CBool = IsBitEqual v44, v43
+          CondBranch v45, bb7(), bb8()
+        bb7():
+          v47:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
+          Jump bb6(v47, v21)
+        bb8():
+          v49:CInt64[0] = Const CInt64(0)
+          v50:CBool = IsBitEqual v42, v49
+          CondBranch v50, bb9(), bb10()
+        bb9():
+          v52:NilClass = Const Value(nil)
+          Jump bb6(v52, v21)
+        bb10():
+          v54:CInt64[255] = Const CInt64(255)
+          v55:CInt64 = IntAnd v42, v54
+          v56:CInt64[12] = Const CInt64(12)
+          v57:CBool = IsBitEqual v55, v56
+          CondBranch v57, bb11(), bb12()
+        bb12():
+          v59:CUInt64 = LoadField v42, :RBASIC_FLAGS@0x1004
+          v60:CUInt64[31] = Const CUInt64(31)
+          v61:CInt64 = IntAnd v59, v60
+          v62:CUInt64[20] = Const CUInt64(20)
+          v63:CBool = IsBitEqual v61, v62
+          CondBranch v63, bb11(), bb13()
+        bb11():
+          v65:BasicObject = SymToProc :&, l0, EP@4
+          Jump bb6(v65, v65)
+        bb13():
+          v67:BasicObject = LoadField v36, :VM_ENV_DATA_INDEX_SPECVAL@0x1006
+          Jump bb6(v67, v21)
         bb6(v34:BasicObject, v35:BasicObject):
           SideExit SplatKwNotProfiled
         ");
@@ -3583,13 +3673,12 @@ pub(crate) mod hir_build_tests {
           v4:BasicObject = LoadArg :self@0
           Jump bb3(v4)
         bb3(v6:BasicObject):
-          PatchPoint SingleRactorMode
-          v11:HeapBasicObject = GuardType v6, HeapBasicObject
-          v12:CShape = LoadField v11, :shape_id@0x1000
-          v13:CShape[0x1001] = GuardBitEquals v12, CShape(0x1001) recompile
-          v14:NilClass = Const Value(nil)
+          v10:HeapBasicObject = GuardType v6, HeapBasicObject
+          v11:CShape = LoadField v10, :shape_id@0x1000
+          v12:CShape[0x1001] = GuardBitEquals v11, CShape(0x1001) recompile
+          v13:NilClass = Const Value(nil)
           CheckInterrupts
-          Return v14
+          Return v13
         ");
     }
 
@@ -3612,15 +3701,14 @@ pub(crate) mod hir_build_tests {
           Jump bb3(v4)
         bb3(v6:BasicObject):
           v10:Fixnum[1] = Const Value(1)
-          PatchPoint SingleRactorMode
-          v14:HeapBasicObject = GuardType v6, HeapBasicObject
-          v15:CShape = LoadField v14, :shape_id@0x1000
-          v16:CShape[0x1001] = GuardBitEquals v15, CShape(0x1001) recompile
-          StoreField v14, :@foo@0x1002, v10
-          WriteBarrier v14, v10
-          v19:CShape[0x1003] = Const CShape(0x1003)
-          StoreField v14, :shape_id@0x1000, v19
-          v21:HeapBasicObject = RefineType v6, HeapBasicObject
+          v13:HeapBasicObject = GuardType v6, HeapBasicObject
+          v14:CShape = LoadField v13, :shape_id@0x1000
+          v15:CShape[0x1001] = GuardBitEquals v14, CShape(0x1001) recompile
+          StoreField v13, :@foo@0x1002, v10
+          WriteBarrier v13, v10
+          v18:CShape[0x1003] = Const CShape(0x1003)
+          StoreField v13, :shape_id@0x1000, v18
+          v20:HeapBasicObject = RefineType v6, HeapBasicObject
           CheckInterrupts
           Return v10
         ");
@@ -3821,13 +3909,43 @@ pub(crate) mod hir_build_tests {
           Jump bb6(v21, v21)
         bb5():
           v23:CInt64 = LoadField v17, :VM_ENV_DATA_INDEX_SPECVAL@0x1003
-          v24:CInt64 = GuardAnyBitSet v23, CUInt64(1) recompile
-          v25:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
-          Jump bb6(v25, v10)
+          v24:CInt64[1] = Const CInt64(1)
+          v25:CInt64 = IntAnd v23, v24
+          v26:CBool = IsBitEqual v25, v24
+          CondBranch v26, bb7(), bb8()
+        bb7():
+          v28:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
+          Jump bb6(v28, v10)
+        bb8():
+          v30:CInt64[0] = Const CInt64(0)
+          v31:CBool = IsBitEqual v23, v30
+          CondBranch v31, bb9(), bb10()
+        bb9():
+          v33:NilClass = Const Value(nil)
+          Jump bb6(v33, v10)
+        bb10():
+          v35:CInt64[255] = Const CInt64(255)
+          v36:CInt64 = IntAnd v23, v35
+          v37:CInt64[12] = Const CInt64(12)
+          v38:CBool = IsBitEqual v36, v37
+          CondBranch v38, bb11(), bb12()
+        bb12():
+          v40:CUInt64 = LoadField v23, :RBASIC_FLAGS@0x1001
+          v41:CUInt64[31] = Const CUInt64(31)
+          v42:CInt64 = IntAnd v40, v41
+          v43:CUInt64[20] = Const CUInt64(20)
+          v44:CBool = IsBitEqual v42, v43
+          CondBranch v44, bb11(), bb13()
+        bb11():
+          v46:BasicObject = SymToProc :block, l0, EP@3
+          Jump bb6(v46, v46)
+        bb13():
+          v48:BasicObject = LoadField v17, :VM_ENV_DATA_INDEX_SPECVAL@0x1003
+          Jump bb6(v48, v10)
         bb6(v15:BasicObject, v16:BasicObject):
-          v28:BasicObject = Send v9, &block, :tap, v15 # SendFallbackReason: Uncategorized(send)
+          v51:BasicObject = Send v9, &block, :tap, v15 # SendFallbackReason: Uncategorized(send)
           CheckInterrupts
-          Return v28
+          Return v51
         ");
     }
 
@@ -3864,14 +3982,44 @@ pub(crate) mod hir_build_tests {
           v22:BasicObject = LoadField v18, :block@0x1002
           Jump bb6(v22, v22)
         bb5():
-          v24:BasicObject = LoadField v18, :VM_ENV_DATA_INDEX_SPECVAL@0x1003
-          v25:BasicObject = CCall v24, :rb_obj_is_proc@0x1004
-          v26:TrueClass = GuardBitEquals v25, Value(true) recompile
-          Jump bb6(v24, v10)
+          v24:CInt64 = LoadField v18, :VM_ENV_DATA_INDEX_SPECVAL@0x1003
+          v25:CInt64[1] = Const CInt64(1)
+          v26:CInt64 = IntAnd v24, v25
+          v27:CBool = IsBitEqual v26, v25
+          CondBranch v27, bb7(), bb8()
+        bb7():
+          v29:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
+          Jump bb6(v29, v10)
+        bb8():
+          v31:CInt64[0] = Const CInt64(0)
+          v32:CBool = IsBitEqual v24, v31
+          CondBranch v32, bb9(), bb10()
+        bb9():
+          v34:NilClass = Const Value(nil)
+          Jump bb6(v34, v10)
+        bb10():
+          v36:CInt64[255] = Const CInt64(255)
+          v37:CInt64 = IntAnd v24, v36
+          v38:CInt64[12] = Const CInt64(12)
+          v39:CBool = IsBitEqual v37, v38
+          CondBranch v39, bb11(), bb12()
+        bb12():
+          v41:CUInt64 = LoadField v24, :RBASIC_FLAGS@0x1001
+          v42:CUInt64[31] = Const CUInt64(31)
+          v43:CInt64 = IntAnd v41, v42
+          v44:CUInt64[20] = Const CUInt64(20)
+          v45:CBool = IsBitEqual v43, v44
+          CondBranch v45, bb11(), bb13()
+        bb11():
+          v47:BasicObject = SymToProc :block, l0, EP@3
+          Jump bb6(v47, v47)
+        bb13():
+          v49:BasicObject = LoadField v18, :VM_ENV_DATA_INDEX_SPECVAL@0x1003
+          Jump bb6(v49, v10)
         bb6(v16:BasicObject, v17:BasicObject):
-          v29:BasicObject = Send v14, &block, :then, v16 # SendFallbackReason: Uncategorized(send)
+          v52:BasicObject = Send v14, &block, :then, v16 # SendFallbackReason: Uncategorized(send)
           CheckInterrupts
-          Return v29
+          Return v52
         ");
     }
 
@@ -3920,13 +4068,43 @@ pub(crate) mod hir_build_tests {
           Jump bb9(v36, v36)
         bb8():
           v38:CInt64 = LoadField v32, :VM_ENV_DATA_INDEX_SPECVAL@0x1003
-          v39:CInt64 = GuardAnyBitSet v38, CUInt64(1) recompile
-          v40:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
-          Jump bb9(v40, v17)
+          v39:CInt64[1] = Const CInt64(1)
+          v40:CInt64 = IntAnd v38, v39
+          v41:CBool = IsBitEqual v40, v39
+          CondBranch v41, bb10(), bb11()
+        bb10():
+          v43:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
+          Jump bb9(v43, v17)
+        bb11():
+          v45:CInt64[0] = Const CInt64(0)
+          v46:CBool = IsBitEqual v38, v45
+          CondBranch v46, bb12(), bb13()
+        bb12():
+          v48:NilClass = Const Value(nil)
+          Jump bb9(v48, v17)
+        bb13():
+          v50:CInt64[255] = Const CInt64(255)
+          v51:CInt64 = IntAnd v38, v50
+          v52:CInt64[12] = Const CInt64(12)
+          v53:CBool = IsBitEqual v51, v52
+          CondBranch v53, bb14(), bb15()
+        bb15():
+          v55:CUInt64 = LoadField v38, :RBASIC_FLAGS@0x1001
+          v56:CUInt64[31] = Const CUInt64(31)
+          v57:CInt64 = IntAnd v55, v56
+          v58:CUInt64[20] = Const CUInt64(20)
+          v59:CBool = IsBitEqual v57, v58
+          CondBranch v59, bb14(), bb16()
+        bb14():
+          v61:BasicObject = SymToProc :block, l0, EP@4
+          Jump bb9(v61, v61)
+        bb16():
+          v63:BasicObject = LoadField v32, :VM_ENV_DATA_INDEX_SPECVAL@0x1003
+          Jump bb9(v63, v17)
         bb9(v30:BasicObject, v31:BasicObject):
-          v43:BasicObject = Send v11, &block, :tap, v30 # SendFallbackReason: Uncategorized(send)
+          v66:BasicObject = Send v11, &block, :tap, v30 # SendFallbackReason: Uncategorized(send)
           CheckInterrupts
-          Return v43
+          Return v66
         ");
     }
 
@@ -3973,13 +4151,43 @@ pub(crate) mod hir_build_tests {
           Jump bb9(v31)
         bb8():
           v33:CInt64 = LoadField v27, :VM_ENV_DATA_INDEX_SPECVAL@0x1002
-          v34:CInt64 = GuardAnyBitSet v33, CUInt64(1) recompile
-          v35:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
-          Jump bb9(v35)
+          v34:CInt64[1] = Const CInt64(1)
+          v35:CInt64 = IntAnd v33, v34
+          v36:CBool = IsBitEqual v35, v34
+          CondBranch v36, bb10(), bb11()
+        bb10():
+          v38:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
+          Jump bb9(v38)
+        bb11():
+          v40:CInt64[0] = Const CInt64(0)
+          v41:CBool = IsBitEqual v33, v40
+          CondBranch v41, bb12(), bb13()
+        bb12():
+          v43:NilClass = Const Value(nil)
+          Jump bb9(v43)
+        bb13():
+          v45:CInt64[255] = Const CInt64(255)
+          v46:CInt64 = IntAnd v33, v45
+          v47:CInt64[12] = Const CInt64(12)
+          v48:CBool = IsBitEqual v46, v47
+          CondBranch v48, bb14(), bb15()
+        bb15():
+          v50:CUInt64 = LoadField v33, :RBASIC_FLAGS@0x1000
+          v51:CUInt64[31] = Const CUInt64(31)
+          v52:CInt64 = IntAnd v50, v51
+          v53:CUInt64[20] = Const CUInt64(20)
+          v54:CBool = IsBitEqual v52, v53
+          CondBranch v54, bb14(), bb16()
+        bb14():
+          v56:BasicObject = SymToProc :block, l1, EP@3
+          Jump bb9(v56)
+        bb16():
+          v58:BasicObject = LoadField v27, :VM_ENV_DATA_INDEX_SPECVAL@0x1002
+          Jump bb9(v58)
         bb9(v26:BasicObject):
-          v38:BasicObject = Send v8, &block, :tap, v26 # SendFallbackReason: Uncategorized(send)
+          v61:BasicObject = Send v8, &block, :tap, v26 # SendFallbackReason: Uncategorized(send)
           CheckInterrupts
-          Return v38
+          Return v61
         ");
     }
 
@@ -4022,23 +4230,40 @@ pub(crate) mod hir_build_tests {
           v25:CInt64[1] = Const CInt64(1)
           v26:CInt64 = IntAnd v24, v25
           v27:CBool = IsBitEqual v26, v25
-          CondBranch v27, bb7(), bb9()
+          CondBranch v27, bb7(), bb8()
         bb7():
           v29:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
           Jump bb6(v29, v10)
-        bb9():
+        bb8():
           v31:CInt64[0] = Const CInt64(0)
           v32:CBool = IsBitEqual v24, v31
-          CondBranch v32, bb8(), bb10()
-        bb8():
+          CondBranch v32, bb9(), bb10()
+        bb9():
           v34:NilClass = Const Value(nil)
           Jump bb6(v34, v10)
-        bb6(v16:BasicObject, v17:BasicObject):
-          v38:BasicObject = Send v14, &block, :then, v16 # SendFallbackReason: Uncategorized(send)
-          CheckInterrupts
-          Return v38
         bb10():
-          SideExit BlockParamProxyProfileNotCovered
+          v36:CInt64[255] = Const CInt64(255)
+          v37:CInt64 = IntAnd v24, v36
+          v38:CInt64[12] = Const CInt64(12)
+          v39:CBool = IsBitEqual v37, v38
+          CondBranch v39, bb11(), bb12()
+        bb12():
+          v41:CUInt64 = LoadField v24, :RBASIC_FLAGS@0x1001
+          v42:CUInt64[31] = Const CUInt64(31)
+          v43:CInt64 = IntAnd v41, v42
+          v44:CUInt64[20] = Const CUInt64(20)
+          v45:CBool = IsBitEqual v43, v44
+          CondBranch v45, bb11(), bb13()
+        bb11():
+          v47:BasicObject = SymToProc :block, l0, EP@3
+          Jump bb6(v47, v47)
+        bb13():
+          v49:BasicObject = LoadField v18, :VM_ENV_DATA_INDEX_SPECVAL@0x1003
+          Jump bb6(v49, v10)
+        bb6(v16:BasicObject, v17:BasicObject):
+          v52:BasicObject = Send v14, &block, :then, v16 # SendFallbackReason: Uncategorized(send)
+          CheckInterrupts
+          Return v52
         ");
     }
 
@@ -4079,36 +4304,43 @@ pub(crate) mod hir_build_tests {
           Jump bb6(v22, v22)
         bb5():
           v24:CInt64 = LoadField v18, :VM_ENV_DATA_INDEX_SPECVAL@0x1003
-          Jump bb10()
-        bb10():
-          v26:BasicObject = LoadField v18, :VM_ENV_DATA_INDEX_SPECVAL@0x1003
-          v27:BasicObject = CCall v26, :rb_obj_is_proc@0x1004
-          v28:TrueClass = Const Value(true)
-          v29:CBool = IsBitEqual v27, v28
-          CondBranch v29, bb7(), bb11()
+          v25:CInt64[1] = Const CInt64(1)
+          v26:CInt64 = IntAnd v24, v25
+          v27:CBool = IsBitEqual v26, v25
+          CondBranch v27, bb7(), bb8()
         bb7():
-          Jump bb6(v26, v10)
-        bb11():
-          v32:CInt64[0] = Const CInt64(0)
-          v33:CBool = IsBitEqual v24, v32
-          CondBranch v33, bb8(), bb12()
+          v29:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
+          Jump bb6(v29, v10)
         bb8():
-          v35:NilClass = Const Value(nil)
-          Jump bb6(v35, v10)
-        bb12():
-          v37:CInt64[1] = Const CInt64(1)
-          v38:CInt64 = IntAnd v24, v37
-          v39:CBool = IsBitEqual v38, v37
-          CondBranch v39, bb9(), bb13()
+          v31:CInt64[0] = Const CInt64(0)
+          v32:CBool = IsBitEqual v24, v31
+          CondBranch v32, bb9(), bb10()
         bb9():
-          v41:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
-          Jump bb6(v41, v10)
-        bb6(v16:BasicObject, v17:BasicObject):
-          v45:BasicObject = Send v14, &block, :then, v16 # SendFallbackReason: Uncategorized(send)
-          CheckInterrupts
-          Return v45
+          v34:NilClass = Const Value(nil)
+          Jump bb6(v34, v10)
+        bb10():
+          v36:CInt64[255] = Const CInt64(255)
+          v37:CInt64 = IntAnd v24, v36
+          v38:CInt64[12] = Const CInt64(12)
+          v39:CBool = IsBitEqual v37, v38
+          CondBranch v39, bb11(), bb12()
+        bb12():
+          v41:CUInt64 = LoadField v24, :RBASIC_FLAGS@0x1001
+          v42:CUInt64[31] = Const CUInt64(31)
+          v43:CInt64 = IntAnd v41, v42
+          v44:CUInt64[20] = Const CUInt64(20)
+          v45:CBool = IsBitEqual v43, v44
+          CondBranch v45, bb11(), bb13()
+        bb11():
+          v47:BasicObject = SymToProc :block, l0, EP@3
+          Jump bb6(v47, v47)
         bb13():
-          SideExit BlockParamProxyProfileNotCovered
+          v49:BasicObject = LoadField v18, :VM_ENV_DATA_INDEX_SPECVAL@0x1003
+          Jump bb6(v49, v10)
+        bb6(v16:BasicObject, v17:BasicObject):
+          v52:BasicObject = Send v14, &block, :then, v16 # SendFallbackReason: Uncategorized(send)
+          CheckInterrupts
+          Return v52
         ");
     }
 
@@ -4246,9 +4478,39 @@ pub(crate) mod hir_build_tests {
           Jump bb6(v25, v25)
         bb5():
           v27:CInt64 = LoadField v21, :VM_ENV_DATA_INDEX_SPECVAL@0x1004
-          v28:CInt64 = GuardAnyBitSet v27, CUInt64(1) recompile
-          v29:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
-          Jump bb6(v29, v13)
+          v28:CInt64[1] = Const CInt64(1)
+          v29:CInt64 = IntAnd v27, v28
+          v30:CBool = IsBitEqual v29, v28
+          CondBranch v30, bb7(), bb8()
+        bb7():
+          v32:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
+          Jump bb6(v32, v13)
+        bb8():
+          v34:CInt64[0] = Const CInt64(0)
+          v35:CBool = IsBitEqual v27, v34
+          CondBranch v35, bb9(), bb10()
+        bb9():
+          v37:NilClass = Const Value(nil)
+          Jump bb6(v37, v13)
+        bb10():
+          v39:CInt64[255] = Const CInt64(255)
+          v40:CInt64 = IntAnd v27, v39
+          v41:CInt64[12] = Const CInt64(12)
+          v42:CBool = IsBitEqual v40, v41
+          CondBranch v42, bb11(), bb12()
+        bb12():
+          v44:CUInt64 = LoadField v27, :RBASIC_FLAGS@0x1002
+          v45:CUInt64[31] = Const CUInt64(31)
+          v46:CInt64 = IntAnd v44, v45
+          v47:CUInt64[20] = Const CUInt64(20)
+          v48:CBool = IsBitEqual v46, v47
+          CondBranch v48, bb11(), bb13()
+        bb11():
+          v50:BasicObject = SymToProc :b, l0, EP@3
+          Jump bb6(v50, v50)
+        bb13():
+          v52:BasicObject = LoadField v21, :VM_ENV_DATA_INDEX_SPECVAL@0x1004
+          Jump bb6(v52, v13)
         bb6(v19:BasicObject, v20:BasicObject):
           SideExit SplatKwNotProfiled
         ");
@@ -4295,14 +4557,44 @@ pub(crate) mod hir_build_tests {
           Jump bb6(v40, v40)
         bb5():
           v42:CInt64 = LoadField v36, :VM_ENV_DATA_INDEX_SPECVAL@0x1006
-          v43:CInt64[0] = GuardBitEquals v42, CInt64(0) recompile
-          v44:NilClass = Const Value(nil)
-          Jump bb6(v44, v21)
+          v43:CInt64[1] = Const CInt64(1)
+          v44:CInt64 = IntAnd v42, v43
+          v45:CBool = IsBitEqual v44, v43
+          CondBranch v45, bb7(), bb8()
+        bb7():
+          v47:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
+          Jump bb6(v47, v21)
+        bb8():
+          v49:CInt64[0] = Const CInt64(0)
+          v50:CBool = IsBitEqual v42, v49
+          CondBranch v50, bb9(), bb10()
+        bb9():
+          v52:NilClass = Const Value(nil)
+          Jump bb6(v52, v21)
+        bb10():
+          v54:CInt64[255] = Const CInt64(255)
+          v55:CInt64 = IntAnd v42, v54
+          v56:CInt64[12] = Const CInt64(12)
+          v57:CBool = IsBitEqual v55, v56
+          CondBranch v57, bb11(), bb12()
+        bb12():
+          v59:CUInt64 = LoadField v42, :RBASIC_FLAGS@0x1004
+          v60:CUInt64[31] = Const CUInt64(31)
+          v61:CInt64 = IntAnd v59, v60
+          v62:CUInt64[20] = Const CUInt64(20)
+          v63:CBool = IsBitEqual v61, v62
+          CondBranch v63, bb11(), bb13()
+        bb11():
+          v65:BasicObject = SymToProc :&, l0, EP@4
+          Jump bb6(v65, v65)
+        bb13():
+          v67:BasicObject = LoadField v36, :VM_ENV_DATA_INDEX_SPECVAL@0x1006
+          Jump bb6(v67, v21)
         bb6(v34:BasicObject, v35:BasicObject):
-          v47:NilClass = GuardType v20, NilClass
-          v49:BasicObject = Send v17, &block, :foo, v18, v29, v47, v34 # SendFallbackReason: Uncategorized(send)
+          v70:NilClass = GuardType v20, NilClass
+          v72:BasicObject = Send v17, &block, :foo, v18, v29, v70, v34 # SendFallbackReason: Uncategorized(send)
           CheckInterrupts
-          Return v49
+          Return v72
         ");
     }
 
@@ -4338,15 +4630,45 @@ pub(crate) mod hir_build_tests {
           v25:BasicObject = LoadField v21, :b@0x1003
           Jump bb6(v25, v25)
         bb5():
-          v27:BasicObject = LoadField v21, :VM_ENV_DATA_INDEX_SPECVAL@0x1004
-          v28:BasicObject = CCall v27, :rb_obj_is_proc@0x1005
-          v29:TrueClass = GuardBitEquals v28, Value(true) recompile
-          Jump bb6(v27, v13)
+          v27:CInt64 = LoadField v21, :VM_ENV_DATA_INDEX_SPECVAL@0x1004
+          v28:CInt64[1] = Const CInt64(1)
+          v29:CInt64 = IntAnd v27, v28
+          v30:CBool = IsBitEqual v29, v28
+          CondBranch v30, bb7(), bb8()
+        bb7():
+          v32:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
+          Jump bb6(v32, v13)
+        bb8():
+          v34:CInt64[0] = Const CInt64(0)
+          v35:CBool = IsBitEqual v27, v34
+          CondBranch v35, bb9(), bb10()
+        bb9():
+          v37:NilClass = Const Value(nil)
+          Jump bb6(v37, v13)
+        bb10():
+          v39:CInt64[255] = Const CInt64(255)
+          v40:CInt64 = IntAnd v27, v39
+          v41:CInt64[12] = Const CInt64(12)
+          v42:CBool = IsBitEqual v40, v41
+          CondBranch v42, bb11(), bb12()
+        bb12():
+          v44:CUInt64 = LoadField v27, :RBASIC_FLAGS@0x1002
+          v45:CUInt64[31] = Const CUInt64(31)
+          v46:CInt64 = IntAnd v44, v45
+          v47:CUInt64[20] = Const CUInt64(20)
+          v48:CBool = IsBitEqual v46, v47
+          CondBranch v48, bb11(), bb13()
+        bb11():
+          v50:BasicObject = SymToProc :b, l0, EP@3
+          Jump bb6(v50, v50)
+        bb13():
+          v52:BasicObject = LoadField v21, :VM_ENV_DATA_INDEX_SPECVAL@0x1004
+          Jump bb6(v52, v13)
         bb6(v19:BasicObject, v20:BasicObject):
-          v32:HashExact = GuardType v12, HashExact
-          v34:BasicObject = Send v11, &block, :foo, v32, v19 # SendFallbackReason: Uncategorized(send)
+          v55:HashExact = GuardType v12, HashExact
+          v57:BasicObject = Send v11, &block, :foo, v55, v19 # SendFallbackReason: Uncategorized(send)
           CheckInterrupts
-          Return v34
+          Return v57
         ");
     }
 
@@ -4382,15 +4704,45 @@ pub(crate) mod hir_build_tests {
           v25:BasicObject = LoadField v21, :b@0x1003
           Jump bb6(v25, v25)
         bb5():
-          v27:BasicObject = LoadField v21, :VM_ENV_DATA_INDEX_SPECVAL@0x1004
-          v28:BasicObject = CCall v27, :rb_obj_is_proc@0x1005
-          v29:TrueClass = GuardBitEquals v28, Value(true) recompile
-          Jump bb6(v27, v13)
+          v27:CInt64 = LoadField v21, :VM_ENV_DATA_INDEX_SPECVAL@0x1004
+          v28:CInt64[1] = Const CInt64(1)
+          v29:CInt64 = IntAnd v27, v28
+          v30:CBool = IsBitEqual v29, v28
+          CondBranch v30, bb7(), bb8()
+        bb7():
+          v32:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
+          Jump bb6(v32, v13)
+        bb8():
+          v34:CInt64[0] = Const CInt64(0)
+          v35:CBool = IsBitEqual v27, v34
+          CondBranch v35, bb9(), bb10()
+        bb9():
+          v37:NilClass = Const Value(nil)
+          Jump bb6(v37, v13)
+        bb10():
+          v39:CInt64[255] = Const CInt64(255)
+          v40:CInt64 = IntAnd v27, v39
+          v41:CInt64[12] = Const CInt64(12)
+          v42:CBool = IsBitEqual v40, v41
+          CondBranch v42, bb11(), bb12()
+        bb12():
+          v44:CUInt64 = LoadField v27, :RBASIC_FLAGS@0x1002
+          v45:CUInt64[31] = Const CUInt64(31)
+          v46:CInt64 = IntAnd v44, v45
+          v47:CUInt64[20] = Const CUInt64(20)
+          v48:CBool = IsBitEqual v46, v47
+          CondBranch v48, bb11(), bb13()
+        bb11():
+          v50:BasicObject = SymToProc :b, l0, EP@3
+          Jump bb6(v50, v50)
+        bb13():
+          v52:BasicObject = LoadField v21, :VM_ENV_DATA_INDEX_SPECVAL@0x1004
+          Jump bb6(v52, v13)
         bb6(v19:BasicObject, v20:BasicObject):
-          v32:HashExact = GuardType v12, HashExact
-          v34:BasicObject = Send v11, &block, :foo, v32, v19 # SendFallbackReason: Uncategorized(send)
+          v55:HashExact = GuardType v12, HashExact
+          v57:BasicObject = Send v11, &block, :foo, v55, v19 # SendFallbackReason: Uncategorized(send)
           CheckInterrupts
-          Return v34
+          Return v57
         ");
     }
 
@@ -4437,9 +4789,39 @@ pub(crate) mod hir_build_tests {
           Jump bb6(v40, v40)
         bb5():
           v42:CInt64 = LoadField v36, :VM_ENV_DATA_INDEX_SPECVAL@0x1006
-          v43:CInt64[0] = GuardBitEquals v42, CInt64(0) recompile
-          v44:NilClass = Const Value(nil)
-          Jump bb6(v44, v21)
+          v43:CInt64[1] = Const CInt64(1)
+          v44:CInt64 = IntAnd v42, v43
+          v45:CBool = IsBitEqual v44, v43
+          CondBranch v45, bb7(), bb8()
+        bb7():
+          v47:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
+          Jump bb6(v47, v21)
+        bb8():
+          v49:CInt64[0] = Const CInt64(0)
+          v50:CBool = IsBitEqual v42, v49
+          CondBranch v50, bb9(), bb10()
+        bb9():
+          v52:NilClass = Const Value(nil)
+          Jump bb6(v52, v21)
+        bb10():
+          v54:CInt64[255] = Const CInt64(255)
+          v55:CInt64 = IntAnd v42, v54
+          v56:CInt64[12] = Const CInt64(12)
+          v57:CBool = IsBitEqual v55, v56
+          CondBranch v57, bb11(), bb12()
+        bb12():
+          v59:CUInt64 = LoadField v42, :RBASIC_FLAGS@0x1004
+          v60:CUInt64[31] = Const CUInt64(31)
+          v61:CInt64 = IntAnd v59, v60
+          v62:CUInt64[20] = Const CUInt64(20)
+          v63:CBool = IsBitEqual v61, v62
+          CondBranch v63, bb11(), bb13()
+        bb11():
+          v65:BasicObject = SymToProc :&, l0, EP@4
+          Jump bb6(v65, v65)
+        bb13():
+          v67:BasicObject = LoadField v36, :VM_ENV_DATA_INDEX_SPECVAL@0x1006
+          Jump bb6(v67, v21)
         bb6(v34:BasicObject, v35:BasicObject):
           SideExit SplatKwPolymorphic
         ");
@@ -4480,9 +4862,39 @@ pub(crate) mod hir_build_tests {
           Jump bb6(v25, v25)
         bb5():
           v27:CInt64 = LoadField v21, :VM_ENV_DATA_INDEX_SPECVAL@0x1004
-          v28:CInt64 = GuardAnyBitSet v27, CUInt64(1) recompile
-          v29:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
-          Jump bb6(v29, v13)
+          v28:CInt64[1] = Const CInt64(1)
+          v29:CInt64 = IntAnd v27, v28
+          v30:CBool = IsBitEqual v29, v28
+          CondBranch v30, bb7(), bb8()
+        bb7():
+          v32:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
+          Jump bb6(v32, v13)
+        bb8():
+          v34:CInt64[0] = Const CInt64(0)
+          v35:CBool = IsBitEqual v27, v34
+          CondBranch v35, bb9(), bb10()
+        bb9():
+          v37:NilClass = Const Value(nil)
+          Jump bb6(v37, v13)
+        bb10():
+          v39:CInt64[255] = Const CInt64(255)
+          v40:CInt64 = IntAnd v27, v39
+          v41:CInt64[12] = Const CInt64(12)
+          v42:CBool = IsBitEqual v40, v41
+          CondBranch v42, bb11(), bb12()
+        bb12():
+          v44:CUInt64 = LoadField v27, :RBASIC_FLAGS@0x1002
+          v45:CUInt64[31] = Const CUInt64(31)
+          v46:CInt64 = IntAnd v44, v45
+          v47:CUInt64[20] = Const CUInt64(20)
+          v48:CBool = IsBitEqual v46, v47
+          CondBranch v48, bb11(), bb13()
+        bb11():
+          v50:BasicObject = SymToProc :block, l0, EP@3
+          Jump bb6(v50, v50)
+        bb13():
+          v52:BasicObject = LoadField v21, :VM_ENV_DATA_INDEX_SPECVAL@0x1004
+          Jump bb6(v52, v13)
         bb6(v19:BasicObject, v20:BasicObject):
           SideExit SplatKwNotNilOrHash
         ");
@@ -4890,8 +5302,7 @@ pub(crate) mod hir_build_tests {
           v10:NilClass = Const Value(nil)
           Jump bb3(v7, v8, v9, v10)
         bb3(v12:BasicObject, v13:NilClass, v14:NilClass, v15:NilClass):
-          PatchPoint SingleRactorMode
-          v20:HeapBasicObject = GuardType v12, HeapBasicObject
+          v19:HeapBasicObject = GuardType v12, HeapBasicObject
           SideExit NoProfileGetIvar recompile
 
         fn reverse_even@<compiled>:8:
@@ -4912,8 +5323,7 @@ pub(crate) mod hir_build_tests {
           v12:NilClass = Const Value(nil)
           Jump bb3(v8, v9, v10, v11, v12)
         bb3(v14:BasicObject, v15:NilClass, v16:NilClass, v17:NilClass, v18:NilClass):
-          PatchPoint SingleRactorMode
-          v23:HeapBasicObject = GuardType v14, HeapBasicObject
+          v22:HeapBasicObject = GuardType v14, HeapBasicObject
           SideExit NoProfileGetIvar recompile
         ");
     }
@@ -4938,16 +5348,15 @@ pub(crate) mod hir_build_tests {
           v7:BasicObject = LoadArg :x@1
           Jump bb3(v6, v7)
         bb3(v9:BasicObject, v10:BasicObject):
-          v16:CBool = HasType v10, NilClass
-          v17:NilClass = Const Value(nil)
-          CondBranch v16, bb4(v9, v17, v17), bb5()
+          v16:NilClass = Const Value(nil)
+          CondBranchHasType v10, NilClass, bb4(v9, v16, v16), bb5()
         bb5():
-          v19:NotNil = RefineType v10, NotNil
-          v21:BasicObject = Send v19, :itself # SendFallbackReason: Uncategorized(opt_send_without_block)
-          Jump bb4(v9, v19, v21)
-        bb4(v23:BasicObject, v24:BasicObject, v25:BasicObject):
+          v18:NotNil = RefineType v10, NotNil
+          v20:BasicObject = Send v18, :itself # SendFallbackReason: Uncategorized(opt_send_without_block)
+          Jump bb4(v9, v18, v20)
+        bb4(v22:BasicObject, v23:BasicObject, v24:BasicObject):
           CheckInterrupts
-          Return v25
+          Return v24
         ");
     }
 
@@ -4983,20 +5392,19 @@ pub(crate) mod hir_build_tests {
           CondBranch v15, bb6(), bb4(v9, v16)
         bb6():
           v18:Truthy = RefineType v10, Truthy
-          v23:CBool[false] = HasType v18, NilClass
-          v24:NilClass = Const Value(nil)
-          CondBranch v23, bb5(v9, v24, v24), bb7()
+          v23:NilClass = Const Value(nil)
+          CondBranchHasType v18, NilClass, bb5(v9, v23, v23), bb7()
         bb7():
-          v26:Truthy = RefineType v18, NotNil
-          v28:BasicObject = Send v26, :itself # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v25:Truthy = RefineType v18, NotNil
+          v27:BasicObject = Send v25, :itself # SendFallbackReason: Uncategorized(opt_send_without_block)
           CheckInterrupts
-          Return v28
-        bb4(v33:BasicObject, v34:Falsy):
-          v38:Fixnum[4] = Const Value(4)
-          Jump bb5(v33, v34, v38)
-        bb5(v40:BasicObject, v41:Falsy, v42:Fixnum[4]):
+          Return v27
+        bb4(v32:BasicObject, v33:Falsy):
+          v37:Fixnum[4] = Const Value(4)
+          Jump bb5(v32, v33, v37)
+        bb5(v39:BasicObject, v40:Falsy, v41:Fixnum[4]):
           CheckInterrupts
-          Return v42
+          Return v41
         ");
     }
 
@@ -5207,22 +5615,52 @@ pub(crate) mod hir_build_tests {
           Jump bb8(v39, v39)
         bb7():
           v41:CInt64 = LoadField v35, :VM_ENV_DATA_INDEX_SPECVAL@0x1006
-          v42:CInt64 = GuardAnyBitSet v41, CUInt64(1) recompile
-          v43:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
-          Jump bb8(v43, v22)
-        bb8(v33:BasicObject, v34:BasicObject):
-          v46:CBool = Test v33
-          v47:Falsy = RefineType v33, Falsy
-          CondBranch v46, bb9(), bb4(v18, v19, v20, v21, v34, v27)
+          v42:CInt64[1] = Const CInt64(1)
+          v43:CInt64 = IntAnd v41, v42
+          v44:CBool = IsBitEqual v43, v42
+          CondBranch v44, bb9(), bb10()
         bb9():
-          v49:Truthy = RefineType v33, Truthy
-          v53:BasicObject = InvokeBlock v27 # SendFallbackReason: InvokeBlock: not yet specialized
-          v56:BasicObject = InvokeBuiltin dir_s_close, v18, v27
+          v46:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
+          Jump bb8(v46, v22)
+        bb10():
+          v48:CInt64[0] = Const CInt64(0)
+          v49:CBool = IsBitEqual v41, v48
+          CondBranch v49, bb11(), bb12()
+        bb11():
+          v51:NilClass = Const Value(nil)
+          Jump bb8(v51, v22)
+        bb12():
+          v53:CInt64[255] = Const CInt64(255)
+          v54:CInt64 = IntAnd v41, v53
+          v55:CInt64[12] = Const CInt64(12)
+          v56:CBool = IsBitEqual v54, v55
+          CondBranch v56, bb13(), bb14()
+        bb14():
+          v58:CUInt64 = LoadField v41, :RBASIC_FLAGS@0x1004
+          v59:CUInt64[31] = Const CUInt64(31)
+          v60:CInt64 = IntAnd v58, v59
+          v61:CUInt64[20] = Const CUInt64(20)
+          v62:CBool = IsBitEqual v60, v61
+          CondBranch v62, bb13(), bb15()
+        bb13():
+          v64:BasicObject = SymToProc :block, l0, EP@4
+          Jump bb8(v64, v64)
+        bb15():
+          v66:BasicObject = LoadField v35, :VM_ENV_DATA_INDEX_SPECVAL@0x1006
+          Jump bb8(v66, v22)
+        bb8(v33:BasicObject, v34:BasicObject):
+          v69:CBool = Test v33
+          v70:Falsy = RefineType v33, Falsy
+          CondBranch v69, bb16(), bb4(v18, v19, v20, v21, v34, v27)
+        bb16():
+          v72:Truthy = RefineType v33, Truthy
+          v76:BasicObject = InvokeBlock v27 # SendFallbackReason: InvokeBlock: not yet specialized
+          v79:BasicObject = InvokeBuiltin dir_s_close, v18, v27
           CheckInterrupts
-          Return v53
-        bb4(v62:BasicObject, v63:BasicObject, v64:BasicObject, v65:BasicObject, v66:BasicObject, v67:BasicObject):
+          Return v76
+        bb4(v85:BasicObject, v86:BasicObject, v87:BasicObject, v88:BasicObject, v89:BasicObject, v90:BasicObject):
           CheckInterrupts
-          Return v67
+          Return v90
         ");
     }
 
@@ -5264,22 +5702,24 @@ pub(crate) mod hir_build_tests {
           v3:BasicObject = LoadField v2, :full_mark@0x1000
           v4:BasicObject = LoadField v2, :immediate_mark@0x1001
           v5:BasicObject = LoadField v2, :immediate_sweep@0x1002
-          v6:BasicObject = LoadField v2, :<empty>@0x1003
-          Jump bb3(v1, v3, v4, v5, v6)
+          v6:BasicObject = LoadField v2, :global@0x1003
+          v7:BasicObject = LoadField v2, :<empty>@0x1004
+          Jump bb3(v1, v3, v4, v5, v6, v7)
         bb2():
           EntryPoint JIT(0)
-          v9:BasicObject = LoadArg :self@0
-          v10:BasicObject = LoadArg :full_mark@1
-          v11:BasicObject = LoadArg :immediate_mark@2
-          v12:BasicObject = LoadArg :immediate_sweep@3
-          v13:CPtr = GetEP 0
-          v14:BasicObject = LoadField v13, :<empty>@0x1004
-          Jump bb3(v9, v10, v11, v12, v14)
-        bb3(v16:BasicObject, v17:BasicObject, v18:BasicObject, v19:BasicObject, v20:BasicObject):
-          v27:FalseClass = Const Value(false)
-          v29:BasicObject = InvokeBuiltin gc_start_internal, v16, v17, v18, v19, v27
+          v10:BasicObject = LoadArg :self@0
+          v11:BasicObject = LoadArg :full_mark@1
+          v12:BasicObject = LoadArg :immediate_mark@2
+          v13:BasicObject = LoadArg :immediate_sweep@3
+          v14:BasicObject = LoadArg :global@4
+          v15:CPtr = GetEP 0
+          v16:BasicObject = LoadField v15, :<empty>@0x1005
+          Jump bb3(v10, v11, v12, v13, v14, v16)
+        bb3(v18:BasicObject, v19:BasicObject, v20:BasicObject, v21:BasicObject, v22:BasicObject, v23:BasicObject):
+          v30:FalseClass = Const Value(false)
+          v33:BasicObject = InvokeBuiltin gc_start_internal, v18, v19, v20, v21, v30, v22
           CheckInterrupts
-          Return v29
+          Return v33
         ");
     }
 
@@ -5387,28 +5827,26 @@ pub(crate) mod hir_build_tests {
         bb3(v6:BasicObject):
           v10:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v12:Fixnum[1] = Const Value(1)
-          v15:CBool[false] = HasType v12, String
-          CondBranch v15, bb4(), bb5()
+          CondBranchHasType v12, String, bb4(), bb5()
         bb4():
-          v17 = RefineType v12, String
-          Jump bb6(v17)
+          v16 = RefineType v12, String
+          Jump bb6(v16)
         bb5():
-          v19:Fixnum[1] = RefineType v12, NotString
-          v20:BasicObject = Send v19, :to_s # SendFallbackReason: ObjToString: result is not a string
-          Jump bb6(v20)
-        bb6(v22:BasicObject):
-          v24:CBool = HasType v22, String
-          CondBranch v24, bb7(), bb8()
+          v18:Fixnum[1] = RefineType v12, NotString
+          v19:BasicObject = Send v18, :to_s # SendFallbackReason: ObjToString: result is not a string
+          Jump bb6(v19)
+        bb6(v21:BasicObject):
+          CondBranchHasType v21, String, bb7(), bb8()
         bb7():
-          v26:String = RefineType v22, String
-          Jump bb9(v26)
+          v24:String = RefineType v21, String
+          Jump bb9(v24)
         bb8():
-          v28:StringExact = AnyToString v12
-          Jump bb9(v28)
-        bb9(v30:String):
-          v32:StringExact = StringConcat v10, v30
+          v26:StringExact = AnyToString v12
+          Jump bb9(v26)
+        bb9(v28:String):
+          v30:StringExact = StringConcat v10, v28
           CheckInterrupts
-          Return v32
+          Return v30
         ");
     }
 
@@ -5430,68 +5868,62 @@ pub(crate) mod hir_build_tests {
           Jump bb3(v4)
         bb3(v6:BasicObject):
           v10:Fixnum[1] = Const Value(1)
-          v13:CBool[false] = HasType v10, String
-          CondBranch v13, bb4(), bb5()
+          CondBranchHasType v10, String, bb4(), bb5()
         bb4():
-          v15 = RefineType v10, String
-          Jump bb6(v15)
+          v14 = RefineType v10, String
+          Jump bb6(v14)
         bb5():
-          v17:Fixnum[1] = RefineType v10, NotString
-          v18:BasicObject = Send v17, :to_s # SendFallbackReason: ObjToString: result is not a string
-          Jump bb6(v18)
-        bb6(v20:BasicObject):
-          v22:CBool = HasType v20, String
-          CondBranch v22, bb7(), bb8()
+          v16:Fixnum[1] = RefineType v10, NotString
+          v17:BasicObject = Send v16, :to_s # SendFallbackReason: ObjToString: result is not a string
+          Jump bb6(v17)
+        bb6(v19:BasicObject):
+          CondBranchHasType v19, String, bb7(), bb8()
         bb7():
-          v24:String = RefineType v20, String
-          Jump bb9(v24)
+          v22:String = RefineType v19, String
+          Jump bb9(v22)
         bb8():
-          v26:StringExact = AnyToString v10
-          Jump bb9(v26)
-        bb9(v28:String):
-          v30:Fixnum[2] = Const Value(2)
-          v33:CBool[false] = HasType v30, String
-          CondBranch v33, bb10(), bb11()
+          v24:StringExact = AnyToString v10
+          Jump bb9(v24)
+        bb9(v26:String):
+          v28:Fixnum[2] = Const Value(2)
+          CondBranchHasType v28, String, bb10(), bb11()
         bb10():
-          v35 = RefineType v30, String
-          Jump bb12(v35)
+          v32 = RefineType v28, String
+          Jump bb12(v32)
         bb11():
-          v37:Fixnum[2] = RefineType v30, NotString
-          v38:BasicObject = Send v37, :to_s # SendFallbackReason: ObjToString: result is not a string
-          Jump bb12(v38)
-        bb12(v40:BasicObject):
-          v42:CBool = HasType v40, String
-          CondBranch v42, bb13(), bb14()
+          v34:Fixnum[2] = RefineType v28, NotString
+          v35:BasicObject = Send v34, :to_s # SendFallbackReason: ObjToString: result is not a string
+          Jump bb12(v35)
+        bb12(v37:BasicObject):
+          CondBranchHasType v37, String, bb13(), bb14()
         bb13():
-          v44:String = RefineType v40, String
-          Jump bb15(v44)
+          v40:String = RefineType v37, String
+          Jump bb15(v40)
         bb14():
-          v46:StringExact = AnyToString v30
-          Jump bb15(v46)
-        bb15(v48:String):
-          v50:Fixnum[3] = Const Value(3)
-          v53:CBool[false] = HasType v50, String
-          CondBranch v53, bb16(), bb17()
+          v42:StringExact = AnyToString v28
+          Jump bb15(v42)
+        bb15(v44:String):
+          v46:Fixnum[3] = Const Value(3)
+          CondBranchHasType v46, String, bb16(), bb17()
         bb16():
-          v55 = RefineType v50, String
-          Jump bb18(v55)
+          v50 = RefineType v46, String
+          Jump bb18(v50)
         bb17():
-          v57:Fixnum[3] = RefineType v50, NotString
-          v58:BasicObject = Send v57, :to_s # SendFallbackReason: ObjToString: result is not a string
-          Jump bb18(v58)
-        bb18(v60:BasicObject):
-          v62:CBool = HasType v60, String
-          CondBranch v62, bb19(), bb20()
+          v52:Fixnum[3] = RefineType v46, NotString
+          v53:BasicObject = Send v52, :to_s # SendFallbackReason: ObjToString: result is not a string
+          Jump bb18(v53)
+        bb18(v55:BasicObject):
+          CondBranchHasType v55, String, bb19(), bb20()
         bb19():
-          v64:String = RefineType v60, String
-          Jump bb21(v64)
+          v58:String = RefineType v55, String
+          Jump bb21(v58)
         bb20():
-          v66:StringExact = AnyToString v50
-          Jump bb21(v66)
-        bb21(v68:String):
-          v70:StringExact = StringConcat v28, v48, v68
+          v60:StringExact = AnyToString v46
+          Jump bb21(v60)
+        bb21(v62:String):
+          v64:StringExact = StringConcat v26, v44, v62
           CheckInterrupts
-          Return v70
+          Return v64
         ");
     }
 
@@ -5514,28 +5946,26 @@ pub(crate) mod hir_build_tests {
         bb3(v6:BasicObject):
           v10:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v12:NilClass = Const Value(nil)
-          v15:CBool[false] = HasType v12, String
-          CondBranch v15, bb4(), bb5()
+          CondBranchHasType v12, String, bb4(), bb5()
         bb4():
-          v17 = RefineType v12, String
-          Jump bb6(v17)
+          v16 = RefineType v12, String
+          Jump bb6(v16)
         bb5():
-          v19:NilClass = RefineType v12, NotString
-          v20:BasicObject = Send v19, :to_s # SendFallbackReason: ObjToString: result is not a string
-          Jump bb6(v20)
-        bb6(v22:BasicObject):
-          v24:CBool = HasType v22, String
-          CondBranch v24, bb7(), bb8()
+          v18:NilClass = RefineType v12, NotString
+          v19:BasicObject = Send v18, :to_s # SendFallbackReason: ObjToString: result is not a string
+          Jump bb6(v19)
+        bb6(v21:BasicObject):
+          CondBranchHasType v21, String, bb7(), bb8()
         bb7():
-          v26:String = RefineType v22, String
-          Jump bb9(v26)
+          v24:String = RefineType v21, String
+          Jump bb9(v24)
         bb8():
-          v28:StringExact = AnyToString v12
-          Jump bb9(v28)
-        bb9(v30:String):
-          v32:StringExact = StringConcat v10, v30
+          v26:StringExact = AnyToString v12
+          Jump bb9(v26)
+        bb9(v28:String):
+          v30:StringExact = StringConcat v10, v28
           CheckInterrupts
-          Return v32
+          Return v30
         ");
     }
 
@@ -5557,68 +5987,62 @@ pub(crate) mod hir_build_tests {
           Jump bb3(v4)
         bb3(v6:BasicObject):
           v10:Fixnum[1] = Const Value(1)
-          v13:CBool[false] = HasType v10, String
-          CondBranch v13, bb4(), bb5()
+          CondBranchHasType v10, String, bb4(), bb5()
         bb4():
-          v15 = RefineType v10, String
-          Jump bb6(v15)
+          v14 = RefineType v10, String
+          Jump bb6(v14)
         bb5():
-          v17:Fixnum[1] = RefineType v10, NotString
-          v18:BasicObject = Send v17, :to_s # SendFallbackReason: ObjToString: result is not a string
-          Jump bb6(v18)
-        bb6(v20:BasicObject):
-          v22:CBool = HasType v20, String
-          CondBranch v22, bb7(), bb8()
+          v16:Fixnum[1] = RefineType v10, NotString
+          v17:BasicObject = Send v16, :to_s # SendFallbackReason: ObjToString: result is not a string
+          Jump bb6(v17)
+        bb6(v19:BasicObject):
+          CondBranchHasType v19, String, bb7(), bb8()
         bb7():
-          v24:String = RefineType v20, String
-          Jump bb9(v24)
+          v22:String = RefineType v19, String
+          Jump bb9(v22)
         bb8():
-          v26:StringExact = AnyToString v10
-          Jump bb9(v26)
-        bb9(v28:String):
-          v30:Fixnum[2] = Const Value(2)
-          v33:CBool[false] = HasType v30, String
-          CondBranch v33, bb10(), bb11()
+          v24:StringExact = AnyToString v10
+          Jump bb9(v24)
+        bb9(v26:String):
+          v28:Fixnum[2] = Const Value(2)
+          CondBranchHasType v28, String, bb10(), bb11()
         bb10():
-          v35 = RefineType v30, String
-          Jump bb12(v35)
+          v32 = RefineType v28, String
+          Jump bb12(v32)
         bb11():
-          v37:Fixnum[2] = RefineType v30, NotString
-          v38:BasicObject = Send v37, :to_s # SendFallbackReason: ObjToString: result is not a string
-          Jump bb12(v38)
-        bb12(v40:BasicObject):
-          v42:CBool = HasType v40, String
-          CondBranch v42, bb13(), bb14()
+          v34:Fixnum[2] = RefineType v28, NotString
+          v35:BasicObject = Send v34, :to_s # SendFallbackReason: ObjToString: result is not a string
+          Jump bb12(v35)
+        bb12(v37:BasicObject):
+          CondBranchHasType v37, String, bb13(), bb14()
         bb13():
-          v44:String = RefineType v40, String
-          Jump bb15(v44)
+          v40:String = RefineType v37, String
+          Jump bb15(v40)
         bb14():
-          v46:StringExact = AnyToString v30
-          Jump bb15(v46)
-        bb15(v48:String):
-          v50:Fixnum[3] = Const Value(3)
-          v53:CBool[false] = HasType v50, String
-          CondBranch v53, bb16(), bb17()
+          v42:StringExact = AnyToString v28
+          Jump bb15(v42)
+        bb15(v44:String):
+          v46:Fixnum[3] = Const Value(3)
+          CondBranchHasType v46, String, bb16(), bb17()
         bb16():
-          v55 = RefineType v50, String
-          Jump bb18(v55)
+          v50 = RefineType v46, String
+          Jump bb18(v50)
         bb17():
-          v57:Fixnum[3] = RefineType v50, NotString
-          v58:BasicObject = Send v57, :to_s # SendFallbackReason: ObjToString: result is not a string
-          Jump bb18(v58)
-        bb18(v60:BasicObject):
-          v62:CBool = HasType v60, String
-          CondBranch v62, bb19(), bb20()
+          v52:Fixnum[3] = RefineType v46, NotString
+          v53:BasicObject = Send v52, :to_s # SendFallbackReason: ObjToString: result is not a string
+          Jump bb18(v53)
+        bb18(v55:BasicObject):
+          CondBranchHasType v55, String, bb19(), bb20()
         bb19():
-          v64:String = RefineType v60, String
-          Jump bb21(v64)
+          v58:String = RefineType v55, String
+          Jump bb21(v58)
         bb20():
-          v66:StringExact = AnyToString v50
-          Jump bb21(v66)
-        bb21(v68:String):
-          v70:RegexpExact = ToRegexp v28, v48, v68
+          v60:StringExact = AnyToString v46
+          Jump bb21(v60)
+        bb21(v62:String):
+          v64:RegexpExact = ToRegexp v26, v44, v62
           CheckInterrupts
-          Return v70
+          Return v64
         ");
     }
 
@@ -5640,48 +6064,44 @@ pub(crate) mod hir_build_tests {
           Jump bb3(v4)
         bb3(v6:BasicObject):
           v10:Fixnum[1] = Const Value(1)
-          v13:CBool[false] = HasType v10, String
-          CondBranch v13, bb4(), bb5()
+          CondBranchHasType v10, String, bb4(), bb5()
         bb4():
-          v15 = RefineType v10, String
-          Jump bb6(v15)
+          v14 = RefineType v10, String
+          Jump bb6(v14)
         bb5():
-          v17:Fixnum[1] = RefineType v10, NotString
-          v18:BasicObject = Send v17, :to_s # SendFallbackReason: ObjToString: result is not a string
-          Jump bb6(v18)
-        bb6(v20:BasicObject):
-          v22:CBool = HasType v20, String
-          CondBranch v22, bb7(), bb8()
+          v16:Fixnum[1] = RefineType v10, NotString
+          v17:BasicObject = Send v16, :to_s # SendFallbackReason: ObjToString: result is not a string
+          Jump bb6(v17)
+        bb6(v19:BasicObject):
+          CondBranchHasType v19, String, bb7(), bb8()
         bb7():
-          v24:String = RefineType v20, String
-          Jump bb9(v24)
+          v22:String = RefineType v19, String
+          Jump bb9(v22)
         bb8():
-          v26:StringExact = AnyToString v10
-          Jump bb9(v26)
-        bb9(v28:String):
-          v30:Fixnum[2] = Const Value(2)
-          v33:CBool[false] = HasType v30, String
-          CondBranch v33, bb10(), bb11()
+          v24:StringExact = AnyToString v10
+          Jump bb9(v24)
+        bb9(v26:String):
+          v28:Fixnum[2] = Const Value(2)
+          CondBranchHasType v28, String, bb10(), bb11()
         bb10():
-          v35 = RefineType v30, String
-          Jump bb12(v35)
+          v32 = RefineType v28, String
+          Jump bb12(v32)
         bb11():
-          v37:Fixnum[2] = RefineType v30, NotString
-          v38:BasicObject = Send v37, :to_s # SendFallbackReason: ObjToString: result is not a string
-          Jump bb12(v38)
-        bb12(v40:BasicObject):
-          v42:CBool = HasType v40, String
-          CondBranch v42, bb13(), bb14()
+          v34:Fixnum[2] = RefineType v28, NotString
+          v35:BasicObject = Send v34, :to_s # SendFallbackReason: ObjToString: result is not a string
+          Jump bb12(v35)
+        bb12(v37:BasicObject):
+          CondBranchHasType v37, String, bb13(), bb14()
         bb13():
-          v44:String = RefineType v40, String
-          Jump bb15(v44)
+          v40:String = RefineType v37, String
+          Jump bb15(v40)
         bb14():
-          v46:StringExact = AnyToString v30
-          Jump bb15(v46)
-        bb15(v48:String):
-          v50:RegexpExact = ToRegexp v28, v48, MULTILINE|IGNORECASE|EXTENDED|NOENCODING
+          v42:StringExact = AnyToString v28
+          Jump bb15(v42)
+        bb15(v44:String):
+          v46:RegexpExact = ToRegexp v26, v44, MULTILINE|IGNORECASE|EXTENDED|NOENCODING
           CheckInterrupts
-          Return v50
+          Return v46
         ");
     }
 
@@ -5803,12 +6223,10 @@ pub(crate) mod hir_build_tests {
         bb3(v13:BasicObject, v14:BasicObject, v15:NilClass, v16:NilClass):
           v22:ArrayExact = GuardType v14, ArrayExact
           v23:CInt64 = ArrayLength v22
-          v24:CInt64[2] = Const CInt64(2)
-          v25:CInt64 = GuardGreaterEq v23, v24
-          v26:CInt64[1] = Const CInt64(1)
-          v27:BasicObject = ArrayAref v22, v26
-          v28:CInt64[0] = Const CInt64(0)
-          v29:BasicObject = ArrayAref v22, v28
+          v24:CInt64[1] = Const CInt64(1)
+          v25:BasicObject = ArrayArefChecked v22, v24, v23
+          v26:CInt64[0] = Const CInt64(0)
+          v27:BasicObject = ArrayArefChecked v22, v26, v23
           PatchPoint NoEPEscape(test)
           CheckInterrupts
           Return v14
@@ -6332,6 +6750,60 @@ pub(crate) mod hir_build_tests {
           v10:RegexpExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           CheckInterrupts
           Return v10
+        ");
+    }
+
+    #[test]
+    fn test_opt_case_dispatch() {
+        eval("
+            def test(o)
+              case o
+              when 1 then :one
+              when 2 then :two
+              else :other
+              end
+            end
+        ");
+        assert_contains_opcode("test", YARVINSN_opt_case_dispatch);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :o@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :o@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v17:Fixnum[1] = Const Value(1)
+          v20:BasicObject = Send v17, :===, v10 # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v22:CBool = Test v20
+          v23:Truthy = RefineType v20, Truthy
+          CondBranch v22, bb4(v9, v10, v10), bb6()
+        bb4(v44:BasicObject, v45:BasicObject, v46:BasicObject):
+          v51:StaticSymbol[:one] = Const Value(VALUE(0x1008))
+          CheckInterrupts
+          Return v51
+        bb6():
+          v25:Falsy = RefineType v20, Falsy
+          v27:Fixnum[2] = Const Value(2)
+          v30:BasicObject = Send v27, :===, v10 # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v32:CBool = Test v30
+          v33:Truthy = RefineType v30, Truthy
+          CondBranch v32, bb5(v9, v10, v10), bb7()
+        bb5(v56:BasicObject, v57:BasicObject, v58:BasicObject):
+          v63:StaticSymbol[:two] = Const Value(VALUE(0x1010))
+          CheckInterrupts
+          Return v63
+        bb7():
+          v35:Falsy = RefineType v30, Falsy
+          v39:StaticSymbol[:other] = Const Value(VALUE(0x1018))
+          CheckInterrupts
+          Return v39
         ");
     }
 }

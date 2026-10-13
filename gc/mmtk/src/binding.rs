@@ -3,14 +3,14 @@ use std::ffi::CString;
 use std::sync::Mutex;
 use std::thread::JoinHandle;
 
-use mmtk::util::ObjectReference;
 use mmtk::MMTK;
+use mmtk::util::ObjectReference;
 
+use crate::Ruby;
 use crate::abi;
 use crate::abi::RubyBindingOptions;
 use crate::pinning_registry::PinningRegistry;
 use crate::weak_proc::WeakProcessor;
-use crate::Ruby;
 
 pub struct RubyBindingFast {
     pub suffix_size: usize,

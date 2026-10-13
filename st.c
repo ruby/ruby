@@ -750,14 +750,19 @@ st_free_table(st_table *tab)
     free_fixed_ptr(tab);
 }
 
+size_t
+st_allocated_memsize(const st_table *tab)
+{
+    RUBY_ASSERT(tab != NULL);
+    return bins_size(tab) + st_entries_memsize(tab);
+}
+
 /* Return byte size of memory allocated for table TAB.  */
 size_t
 st_memsize(const st_table *tab)
 {
     RUBY_ASSERT(tab != NULL);
-    return(sizeof(st_table)
-           + bins_size(tab)
-           + st_entries_memsize(tab));
+    return sizeof(st_table) + st_allocated_memsize(tab);
 }
 
 static st_index_t
@@ -2414,9 +2419,9 @@ st_insert_single(st_table *tab, VALUE hash, VALUE key, VALUE val)
 }
 
 static void
-st_insert_linear(st_table *tab, long argc, const VALUE *argv, VALUE hash)
+st_insert_linear(st_table *tab, rb_len_t argc, const VALUE *argv, VALUE hash)
 {
-    long i;
+    rb_len_t i;
 
     for (i = 0; i < argc; /* */) {
         st_data_t k = st_stringify(argv[i++]);
@@ -2428,9 +2433,9 @@ st_insert_linear(st_table *tab, long argc, const VALUE *argv, VALUE hash)
 }
 
 static void
-st_insert_generic(st_table *tab, long argc, const VALUE *argv, VALUE hash)
+st_insert_generic(st_table *tab, rb_len_t argc, const VALUE *argv, VALUE hash)
 {
-    long i;
+    rb_len_t i;
 
     /* push elems */
     for (i = 0; i < argc; /* */) {
@@ -2446,12 +2451,12 @@ st_insert_generic(st_table *tab, long argc, const VALUE *argv, VALUE hash)
 /* Mimics ruby's { foo => bar } syntax. This function is subpart
    of rb_hash_bulk_insert. */
 void
-rb_hash_bulk_insert_into_st_table(long argc, const VALUE *argv, VALUE hash)
+rb_hash_bulk_insert_into_st_table(rb_len_t argc, const VALUE *argv, VALUE hash)
 {
     st_index_t n, size = argc / 2;
     st_table *tab = RHASH_ST_TABLE(hash);
 
-    tab = RHASH_TBL_RAW(hash);
+    tab = rb_hash_tbl_raw(hash);
     n = tab->entries_bound + size;
     st_expand_table(tab, n);
     if (UNLIKELY(tab->num_entries))
@@ -3353,7 +3358,7 @@ set_foreach_check(set_table *tab, set_foreach_check_callback_func *func, st_data
 
 /* Set up array KEYS by at most SIZE keys of head table TAB entries.
    Return the number of keys set up in array KEYS.  */
-inline st_index_t
+st_index_t
 set_keys(set_table *tab, st_data_t *keys, st_index_t size)
 {
     st_index_t i, bound;

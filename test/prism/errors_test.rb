@@ -4,7 +4,7 @@ return if RUBY_VERSION < "3.3.0"
 
 require_relative "test_helper"
 
-module Prism
+module Ruby::Prism
   class ErrorsTest < TestCase
     base = File.expand_path("errors", __dir__)
     filepaths = Dir[ENV.fetch("FOCUS", "**/*.txt"), base: base]
@@ -23,13 +23,13 @@ module Prism
     end
 
     def test_newline_preceding_eof
-      err = Prism.parse("foo(").errors.first
+      err = Ruby::Prism.parse("foo(").errors.first
       assert_equal 1, err.location.start_line
 
-      err = Prism.parse("foo(\n").errors.first
+      err = Ruby::Prism.parse("foo(\n").errors.first
       assert_equal 1, err.location.start_line
 
-      err = Prism.parse("foo(\n\n\n\n\n").errors.first
+      err = Ruby::Prism.parse("foo(\n\n\n\n\n").errors.first
       assert_equal 5, err.location.start_line
     end
 
@@ -43,53 +43,53 @@ module Prism
 
       source.each_line do |line|
         assert_valid_syntax(source)
-        assert_predicate Prism.parse(source), :success?
+        assert_predicate Ruby::Prism.parse(source), :success?
       end
     end
 
     def test_unterminated_string_closing
-      statement = Prism.parse_statement("'hello")
+      statement = Ruby::Prism.parse_statement("'hello")
       assert_equal statement.unescaped, "hello"
       assert_nil statement.closing
     end
 
     def test_unterminated_interpolated_string_closing
-      statement = Prism.parse_statement('"hello')
+      statement = Ruby::Prism.parse_statement('"hello')
       assert_equal statement.unescaped, "hello"
       assert_nil statement.closing
     end
 
     def test_unterminated_empty_string_closing
-      statement = Prism.parse_statement('"')
+      statement = Ruby::Prism.parse_statement('"')
       assert_empty statement.unescaped
       assert_nil statement.closing
     end
 
     def test_regexp_encoding_option_mismatch_error
       # UTF-8 char with ASCII-8BIT modifier
-      result = Prism.parse('/Ȃ/n')
+      result = Ruby::Prism.parse('/Ȃ/n')
       assert_includes result.errors.map(&:type), :regexp_encoding_option_mismatch
 
       # UTF-8 char with EUC-JP modifier
-      result = Prism.parse('/Ȃ/e')
+      result = Ruby::Prism.parse('/Ȃ/e')
       assert_includes result.errors.map(&:type), :regexp_encoding_option_mismatch
 
       # UTF-8 char with Windows-31J modifier
-      result = Prism.parse('/Ȃ/s')
+      result = Ruby::Prism.parse('/Ȃ/s')
       assert_includes result.errors.map(&:type), :regexp_encoding_option_mismatch
 
       # UTF-8 char with UTF-8 modifier
-      result = Prism.parse('/Ȃ/u')
+      result = Ruby::Prism.parse('/Ȃ/u')
       assert_empty result.errors
     end
 
     def test_incomplete_def_closing_loc
-      statement = Prism.parse_statement("def f; 123")
+      statement = Ruby::Prism.parse_statement("def f; 123")
       assert_nil(statement.end_keyword)
     end
 
     def test_unclosed_interpolation
-      statement = Prism.parse_statement("\"\#{")
+      statement = Ruby::Prism.parse_statement("\"\#{")
       assert_equal('"', statement.opening)
       assert_nil(statement.closing)
 
@@ -100,7 +100,7 @@ module Prism
     end
 
     def test_unclosed_heredoc_and_interpolation
-      statement = Prism.parse_statement("<<D\n\#{")
+      statement = Ruby::Prism.parse_statement("<<D\n\#{")
       assert_equal("<<D", statement.opening)
       assert_nil(statement.closing)
 
@@ -120,7 +120,7 @@ module Prism
         refute_valid_syntax(source)
       end
 
-      result = Prism.parse(source, version: version)
+      result = Ruby::Prism.parse(source, version: version)
       errors = result.errors
       refute_empty errors, "Expected errors in #{filepath}"
 

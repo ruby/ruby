@@ -21,6 +21,7 @@
 #include "internal/variable.h"
 #include "eval_intern.h"
 #include "internal/io.h"
+#include "internal/marshal.h"
 #include "internal/ractor.h"
 #include "internal/rational.h"
 #include "internal/re.h"
@@ -44,6 +45,9 @@ static VALUE rb_eRactorRemoteError;
 static VALUE rb_eRactorMovedError;
 static VALUE rb_eRactorClosedError;
 static VALUE rb_cRactorMovedObject;
+
+static ID id_marshal_dump, id_marshal_load;
+static ID id_dump, id_load, id_dump_data, id_load_data;
 
 static void vm_ractor_blocking_cnt_inc(rb_vm_t *vm, rb_ractor_t *r, const char *file, int line);
 
@@ -352,6 +356,7 @@ rb_ractor_mark_local_roots(rb_ractor_t *r)
         VM_ASSERT(RUBY_ATOMIC_PTR_LOAD(r->threads.dying_th) == NULL);
         rb_ractor_mark_terminated_join_value(r);
         rb_gc_mark_vm_stack_values((long)r->registered_marks_cnt, r->registered_marks);
+        rb_gc_mark_registered_addrs(r, true);
         return;
     }
 
@@ -368,7 +373,6 @@ rb_ractor_mark_local_roots(rb_ractor_t *r)
      * marks only its own residents and leaves foreign or shareable entries to their
      * owner or to the global GC. */
     rb_gc_mark_vm_stack_values((long)r->registered_marks_cnt, r->registered_marks);
-
 }
 
 /* Mark and pin a terminated, unfreed Ractor's return value (legacy); the global GC
@@ -403,6 +407,33 @@ rb_ractor_absorb_registered_marks(rb_ractor_t *dst, rb_ractor_t *src)
            src->registered_marks, VALUE, src->registered_marks_cnt);
     dst->registered_marks_cnt = need;
     src->registered_marks_cnt = 0;
+}
+
+void
+rb_ractor_absorb_registered_addrs_without_gc(rb_ractor_t *dst, rb_ractor_t *src)
+{
+    rb_vm_t *vm = GET_VM();
+
+    rb_native_mutex_lock(&vm->gc.registered_addrs.lock);
+    if (src->registered_addrs_cnt > 0) {
+        size_t need = dst->registered_addrs_cnt + src->registered_addrs_cnt;
+        if (need > dst->registered_addrs_capa) {
+            size_t nc = dst->registered_addrs_capa ? dst->registered_addrs_capa : 64;
+            while (nc < need) nc *= 2;
+            struct rb_ractor_registered_addr *p =
+                realloc(dst->registered_addrs, nc * sizeof(struct rb_ractor_registered_addr));
+            if (!p) rb_bug("rb_ractor_absorb_registered_addrs_without_gc: out of memory");
+            dst->registered_addrs = p;
+            dst->registered_addrs_capa = nc;
+        }
+        MEMCPY(dst->registered_addrs + dst->registered_addrs_cnt,
+               src->registered_addrs, struct rb_ractor_registered_addr, src->registered_addrs_cnt);
+        dst->registered_addrs_cnt = need;
+        src->registered_addrs_cnt = 0;
+        rb_gc_registered_addrs_enroll_without_gc(vm, dst);
+    }
+    rb_gc_registered_addrs_unenroll_without_gc(vm, src);
+    rb_native_mutex_unlock(&vm->gc.registered_addrs.lock);
 }
 
 static int
@@ -453,10 +484,10 @@ ractor_free(void *ptr)
     ractor_sync_free(r);
 
     if (r->in_terminated_set) {
-        rb_native_mutex_lock(&GET_VM()->gc.registered_globals.lock);
+        rb_native_mutex_lock(&GET_VM()->gc.registered_addrs.lock);
         ccan_list_del(&r->vmlr_node);
         r->in_terminated_set = false;
-        rb_native_mutex_unlock(&GET_VM()->gc.registered_globals.lock);
+        rb_native_mutex_unlock(&GET_VM()->gc.registered_addrs.lock);
     }
 
     /* An orphan (unjoined) Ractor hands its rb_gc_register_mark_object pins to main
@@ -464,23 +495,60 @@ ractor_free(void *ptr)
      * Both happen before the objspace merge, so no window has unmoved registrations. */
     if (!r->main_ractor) {
         rb_ractor_absorb_registered_marks(GET_VM()->ractor.main_ractor, r);
+        rb_ractor_absorb_registered_addrs_without_gc(GET_VM()->ractor.main_ractor, r);
+    }
+    else {
+        rb_native_mutex_lock(&GET_VM()->gc.registered_addrs.lock);
+        rb_gc_registered_addrs_unenroll_without_gc(GET_VM(), r);
+        rb_native_mutex_unlock(&GET_VM()->gc.registered_addrs.lock);
     }
     free(r->registered_marks);
     r->registered_marks = NULL;
     r->registered_marks_cnt = r->registered_marks_capa = 0;
+
+    free(r->registered_addrs);
+    r->registered_addrs = NULL;
+    r->registered_addrs_cnt = r->registered_addrs_capa = 0;
 
     if (!r->main_ractor) {
         SIZED_FREE(r);
     }
 }
 
+static int
+targeted_hook_list_memsize_i(st_data_t key, st_data_t val, st_data_t arg)
+{
+    size_t *size = (size_t *)arg;
+    rb_hook_list_t *hook_list = (rb_hook_list_t *)val;
+
+    *size += sizeof(rb_hook_list_t) + rb_hook_list_memsize(hook_list);
+
+    return ST_CONTINUE;
+}
+
 static size_t
 ractor_memsize(const void *ptr)
 {
     rb_ractor_t *r = (rb_ractor_t *)ptr;
+    size_t size = sizeof(rb_ractor_t);
 
-    // TODO: more correct?
-    return sizeof(rb_ractor_t) + ractor_sync_memsize(r);
+    size += ractor_sync_memsize(r);
+
+    size += rb_st_memsize(&r->pub.targeted_hooks) - sizeof(struct st_table);
+    st_foreach(&r->pub.targeted_hooks, targeted_hook_list_memsize_i, (st_data_t)&size);
+    size += rb_hook_list_memsize(&r->pub.hooks);
+
+    if (r->local_storage) {
+        size += st_memsize(r->local_storage);
+    }
+    if (r->idkey_local_storage) {
+        size += rb_id_table_memsize(r->idkey_local_storage);
+    }
+
+    size += r->registered_marks_capa * sizeof(VALUE);
+    size += r->registered_addrs_capa * sizeof(struct rb_ractor_registered_addr);
+
+    return size;
 }
 
 static void
@@ -544,9 +612,9 @@ vm_insert_ractor0(rb_vm_t *vm, rb_ractor_t *r, bool single_ractor_mode)
     RUBY_DEBUG_LOG("r:%"PRI_SERIALT_PREFIX"u ractor.cnt:%u++", r->pub.id, vm->ractor.cnt);
     VM_ASSERT(single_ractor_mode || RB_VM_LOCKED_P());
 
-    /* Incremental marking only runs in a single-objspace world, and nothing later can
-     * finish another objspace's partial mark, so end any cycle in progress before a
-     * second Ractor becomes visible. */
+    /* End main's cycle before a second Ractor becomes visible: the collection was
+     * planned for a single-objspace world (a local GC is a whole-world GC there and may
+     * free shareable objects), so it must not straddle the transition. */
     if (vm->ractor.cnt == 1) {
         rb_gc_rest();
     }
@@ -572,6 +640,7 @@ cancel_single_ractor_mode(void)
     rb_yjit_invalidate_single_ractor();
     rb_zjit_invalidate_single_ractor();
 
+    ASSERT_vm_unlocking();
     rb_funcall(rb_cRactor, rb_intern("_activated"), 0);
 }
 
@@ -636,10 +705,10 @@ vm_remove_ractor(rb_vm_t *vm, rb_ractor_t *cr)
          * registered_marks of a Ractor that left the set; track it in a separate list
          * until ractor_free. */
         if (!rb_gc_multi_objspace_p()) {
-            rb_native_mutex_lock(&vm->gc.registered_globals.lock);
+            rb_native_mutex_lock(&vm->gc.registered_addrs.lock);
             ccan_list_add(&vm->ractor.terminated_set, &cr->vmlr_node);
             cr->in_terminated_set = true;
-            rb_native_mutex_unlock(&vm->gc.registered_globals.lock);
+            rb_native_mutex_unlock(&vm->gc.registered_addrs.lock);
         }
 
         if (vm->ractor.cnt <= 2 && vm->ractor.sync.terminate_waiting) {
@@ -715,8 +784,7 @@ ractor_alloc(VALUE klass)
 {
     rb_ractor_t *r;
     VALUE rv = TypedData_Make_Struct(klass, rb_ractor_t, &ractor_data_type, r);
-    FL_SET_RAW(rv, RUBY_FL_SHAREABLE);
-    rb_gc_obj_became_shareable(rv);
+    RB_OBJ_SET_SHAREABLE(rv);
     r->pub.self = rv;
     r->next_ec_serial = 1;
     VM_ASSERT(ractor_status_p(r, ractor_created));
@@ -777,6 +845,12 @@ rb_ractor_terminate_atfork(rb_vm_t *vm, rb_ractor_t *r)
     r->status_ = ractor_terminated;
     // a termination epilogue in the parent did not survive the fork
     r->threads.dying_th = NULL;
+    if (!rb_gc_multi_objspace_p()) {
+        ccan_list_del(&r->vmlr_node);
+        ccan_list_add(&vm->ractor.terminated_set, &r->vmlr_node);
+        r->in_terminated_set = true;
+    }
+
     /* In a forked child every other Ractor is terminated-unjoined, so keep its objspace
      * enumerable until a join or a global GC merges it. */
     if (r->objspace) {
@@ -831,8 +905,7 @@ void
 rb_ractor_main_setup(rb_vm_t *vm, rb_ractor_t *r, rb_thread_t *th)
 {
     VALUE rv = r->pub.self = TypedData_Wrap_Struct(rb_cRactor, &ractor_data_type, r);
-    FL_SET_RAW(r->pub.self, RUBY_FL_SHAREABLE);
-    rb_gc_obj_became_shareable(r->pub.self);
+    RB_OBJ_SET_SHAREABLE(r->pub.self);
     ractor_init(r, Qnil, Qnil);
     r->threads.main = th;
     rb_ractor_living_threads_insert(r, th);
@@ -1355,6 +1428,13 @@ Init_Ractor(void)
     rb_define_method(rb_cRactorMovedObject, "instance_eval", ractor_moved_missing, -1);
     rb_define_method(rb_cRactorMovedObject, "instance_exec", ractor_moved_missing, -1);
 
+    id_marshal_dump = rb_intern_const("marshal_dump");
+    id_marshal_load = rb_intern_const("marshal_load");
+    id_dump        = rb_intern_const("_dump");
+    id_load        = rb_intern_const("_load");
+    id_dump_data   = rb_intern_const("_dump_data");
+    id_load_data   = rb_intern_const("_load_data");
+
     Init_RactorPort();
 }
 
@@ -1452,11 +1532,6 @@ rb_ractor_stderr_set(VALUE err)
     }
 }
 
-rb_hook_list_t *
-rb_ractor_hooks(rb_ractor_t *cr)
-{
-    return &cr->pub.hooks;
-}
 
 st_table *
 rb_ractor_targeted_hooks(rb_ractor_t *cr)
@@ -1474,6 +1549,16 @@ rb_obj_set_shareable_no_assert(VALUE obj)
     FL_SET_RAW(obj, FL_SHAREABLE);
     rb_gc_obj_became_shareable(obj);
 
+    /* Ivars on a shareable object would be mutable shared state, so freeze them
+     * (not obj itself).  A T_IMEMO has no shape id to transition. */
+    bool froze_ivars = false;
+    if (!RB_OBJ_FROZEN_RAW(obj) && !RB_TYPE_P(obj, T_IMEMO) &&
+        !RB_TYPE_P(obj, T_CLASS) && !RB_TYPE_P(obj, T_MODULE) && !RB_TYPE_P(obj, T_ICLASS)) {
+
+        RBASIC_SET_SHAPE_ID(obj, rb_shape_transition_frozen(RBASIC_SHAPE_ID(obj)));
+        froze_ivars = true;
+    }
+
     /* A T_OBJECT can have a fields imemo too (too_complex and friends), and an imemo
      * born while its owner was unshareable stays unshareable
      * (imemo_fields_complex_from_obj), so align it here. */
@@ -1486,6 +1571,8 @@ rb_obj_set_shareable_no_assert(VALUE obj)
             // no recursive mark
             FL_SET_RAW(fields, FL_SHAREABLE);
             rb_gc_obj_became_shareable(fields);
+            // the imemo carries its owner's shape id, frozen bit included
+            if (froze_ivars) RBASIC_SET_SHAPE_ID(fields, RBASIC_SHAPE_ID(obj));
             // Field values the traversal never reaches (hidden internal ivars, say)
             // can stay unshareable, so record their shrefs to keep the shareable
             // fields imemo's edges correct.
@@ -1575,6 +1662,15 @@ obj_traverse_reachable_i(VALUE obj, void *ptr)
 {
     struct obj_traverse_callback_data *d = (struct obj_traverse_callback_data *)ptr;
 
+    // We need to assume foreign objects are properly shareable. If we check
+    // their shareability, this could result in a crash because the page could
+    // be unmapped. The object could also be freed concurrently.
+    if (!rb_objspace_live_object_p(obj)) {
+        return;
+    }
+    // If the object is "garbage" (unmarked during lazy sweeping), it's okay
+    // to traverse it.
+
     if (obj_traverse_i(obj, d->data)) {
         d->stop = true;
     }
@@ -1588,9 +1684,7 @@ obj_traverse_reachable(VALUE obj, struct obj_traverse_data *data)
         .stop = false,
         .data = data,
     };
-    RB_VM_LOCKING_NO_BARRIER() {
-        rb_objspace_reachable_objects_from(obj, obj_traverse_reachable_i, &d);
-    }
+    rb_objspace_reachable_objects_from_local(obj, obj_traverse_reachable_i, &d);
     return d.stop;
 }
 
@@ -1683,10 +1777,10 @@ obj_traverse_i(VALUE obj, struct obj_traverse_data *data)
 
       case T_STRUCT:
         {
-            long len = RSTRUCT_LEN_RAW(obj);
+            rb_len_t len = RSTRUCT_LEN_RAW(obj);
             const VALUE *ptr = RSTRUCT_CONST_PTR(obj);
 
-            for (long i=0; i<len; i++) {
+            for (rb_len_t i=0; i<len; i++) {
                 if (obj_traverse_i(ptr[i], data)) return 1;
             }
         }
@@ -2104,6 +2198,10 @@ obj_refer_only_shareables_p_i(VALUE obj, void *ptr)
 {
     int *pcnt = (int *)ptr;
 
+    if (!rb_objspace_live_object_p(obj)) {
+        return;
+    }
+
     if (!rb_ractor_shareable_p(obj)) {
         ++*pcnt;
     }
@@ -2113,9 +2211,7 @@ static int
 obj_refer_only_shareables_p(VALUE obj)
 {
     int cnt = 0;
-    RB_VM_LOCKING_NO_BARRIER() {
-        rb_objspace_reachable_objects_from(obj, obj_refer_only_shareables_p_i, &cnt);
-    }
+    rb_objspace_reachable_objects_from_local(obj, obj_refer_only_shareables_p_i, &cnt);
     return cnt == 0;
 }
 
@@ -2269,10 +2365,10 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
 
       case T_STRUCT:
         {
-            long len = RSTRUCT_LEN_RAW(obj);
+            rb_len_t len = RSTRUCT_LEN_RAW(obj);
             const VALUE *ptr = RSTRUCT_CONST_PTR(obj);
 
-            for (long i=0; i<len; i++) {
+            for (rb_len_t i=0; i<len; i++) {
                 CHECK_AND_REPLACE(obj, ptr[i]);
             }
         }
@@ -2371,7 +2467,30 @@ enum courier_node_kind {
     COURIER_KIND_STRUCT,
     COURIER_KIND_MATCH,
     COURIER_KIND_IO,
+    COURIER_KIND_REGEXP,    /* recompiled from its source and options (copy only) */
+    COURIER_KIND_HOOKED,    /* rebuilt from its dump hook's payload by klass._load, marshal_load or _load_data */
 };
+
+/* Marshal's protocols, but nothing is serialized: the hook's return value travels as an
+ * ordinary child node, so sharing, cycles and shareable references all survive. */
+enum courier_hook {
+    COURIER_HOOK_NONE,
+    COURIER_HOOK_MARSHAL_DUMP, /* marshal_dump -> alloc + marshal_load */
+    COURIER_HOOK_DUMP,         /* _dump        -> klass._load         */
+    COURIER_HOOK_COMPAT,       /* rb_marshal_define_compat dumper -> alloc + loader (Set, Process::Status) */
+    COURIER_HOOK_DUMP_DATA,    /* _dump_data   -> alloc + _load_data  */
+};
+
+/* Which one obj's class implements, in Marshal's order of preference. */
+static enum courier_hook
+courier_hook_of(VALUE obj)
+{
+    if (rb_obj_respond_to(obj, id_marshal_dump, TRUE)) return COURIER_HOOK_MARSHAL_DUMP;
+    if (rb_obj_respond_to(obj, id_dump, TRUE)) return COURIER_HOOK_DUMP;
+    if (rb_marshal_compat_lookup(CLASS_OF(obj), NULL, NULL)) return COURIER_HOOK_COMPAT;
+    if (BUILTIN_TYPE(obj) == T_DATA && rb_obj_respond_to(obj, id_dump_data, TRUE)) return COURIER_HOOK_DUMP_DATA;
+    return COURIER_HOOK_NONE;
+}
 
 struct courier_node {
     enum courier_node_kind kind;
@@ -2383,13 +2502,15 @@ struct courier_node {
     uint32_t *iv_vals;   /* owned by the courier; node ids */
     union {
         VALUE ref;
-        struct { char *ptr; long len, capa; int encidx; VALUE klass; } str;  /* the courier owns ptr */
-        struct { long len; uint32_t *elems; VALUE klass; } ary;              /* the courier owns elems */
+        struct { char *ptr; rb_len_t len, capa; int encidx; VALUE klass; } str;   /* the courier owns ptr */
+        struct { rb_len_t len; uint32_t *elems; VALUE klass; } ary;               /* the courier owns elems */
         struct { long size; uint32_t *kv; uint32_t ifnone_id; bool compare_by_id; bool proc_default; VALUE klass; } hash; /* owns kv (2*size) */
         struct { VALUE klass; } obj;
-        struct { long len; uint32_t *elems; VALUE klass; } strct; /* owns elems */
+        struct { rb_len_t len; uint32_t *elems; VALUE klass; } strct; /* owns elems */
         struct { uint32_t regexp_id, str_id; int num_regs; void *regs; VALUE klass; } match; /* owns regs */
-        struct { void *blob; int size; } bt;                                 /* the courier owns blob */
+        struct { void *blob; int size; } bt;                                      /* the courier owns blob */
+        struct { VALUE src; int options; VALUE klass; } re;    /* src is an fstring: shareable */
+        struct { VALUE klass; uint32_t payload_id; enum courier_hook hook; } hooked;
         struct {
             struct rb_io *fptr;  /* carried by pointer (it owns the fd) */
             VALUE klass;
@@ -2408,20 +2529,24 @@ struct courier_node {
 
 struct rb_ractor_courier {
     struct courier_node *nodes;
+    uint32_t *order;          /* node ids in capture's post-order: children before parents */
     uint32_t count;
     uint32_t capa;
     VALUE *refs;              /* shareable payloads, embedded by value */
     uint32_t refs_count;
     uint32_t refs_capa;
     uint32_t root;
+    /* src VALUE -> (node id + 1), only while building.  Marked so that a key cannot
+     * die (a dump hook's payload has no other owner) or move (compaction). */
+    st_table *seen;
 };
 
 struct courier_build {
     struct rb_ractor_courier *c;
-    st_table *seen;   /* src VALUE -> (node id + 1) */
     /* Copy mode: read the sources instead of taking them apart.  No husk, no buffer
      * hand-over, no freeing of the source's internals. */
     bool copy;
+    uint32_t ordered; /* nodes appended to c->order so far */
 };
 
 static uint32_t courier_capture(struct courier_build *b, VALUE obj);
@@ -2443,6 +2568,7 @@ courier_grow_nodes(struct rb_ractor_courier *c)
     c->nodes = nodes;
     c->capa = capa;
     ruby_xfree(old_nodes);
+    REALLOC_N(c->order, uint32_t, capa);
 }
 
 static void
@@ -2481,6 +2607,7 @@ courier_reserve(struct rb_ractor_courier *c, uint32_t nodes, uint32_t refs)
 {
     if (nodes > 0) {
         c->nodes = ALLOC_N(struct courier_node, nodes);
+        c->order = ALLOC_N(uint32_t, nodes);
         c->capa = nodes;
     }
     if (refs > 0) {
@@ -2641,6 +2768,57 @@ courier_capture_ivars(struct courier_build *b, VALUE obj, uint32_t id)
     b->c->nodes[id].iv_vals = oc.vals;
 }
 
+/* Run obj's dump hook and capture what it returns as an ordinary child node.  That
+ * includes _dump's String: Marshal writes its ivars next to its bytes (Time keeps the
+ * sub-microsecond part and the zone there), and a String node carries them the same
+ * way. */
+static void
+courier_capture_hooked(struct courier_build *b, VALUE obj, uint32_t id, enum courier_hook hook)
+{
+    VALUE klass = rb_obj_class(obj);
+    VALUE payload;
+
+    switch (hook) {
+      case COURIER_HOOK_DUMP: {
+        /* _dump takes the depth limit Marshal would have applied; a copy has none. */
+        VALUE limit = INT2FIX(-1);
+        payload = rb_funcallv(obj, id_dump, 1, &limit);
+        if (!RB_TYPE_P(payload, T_STRING)) {
+            rb_raise(rb_eTypeError, "_dump() must return string");
+        }
+        break;
+      }
+      case COURIER_HOOK_MARSHAL_DUMP:
+        payload = rb_funcallv(obj, id_marshal_dump, 0, 0);
+        break;
+      case COURIER_HOOK_DUMP_DATA:
+        payload = rb_funcallv(obj, id_dump_data, 0, 0);
+        break;
+      case COURIER_HOOK_COMPAT: {
+        VALUE (*dumper)(VALUE);
+        rb_marshal_compat_lookup(klass, &dumper, NULL);
+        payload = dumper(obj);
+        break;
+      }
+      default:
+        rb_bug("courier_capture_hooked: no dump protocol");
+    }
+
+    uint32_t payload_id = courier_capture(b, payload);
+
+    b->c->nodes[id].kind = COURIER_KIND_HOOKED;
+    b->c->nodes[id].u.hooked.klass = klass;
+    b->c->nodes[id].u.hooked.hook = hook;
+    b->c->nodes[id].u.hooked.payload_id = payload_id;
+}
+
+/* A move carries the singleton class with its object; a copy drops it, like #dup. */
+static inline VALUE
+courier_klass(struct courier_build *b, VALUE obj)
+{
+    return b->copy ? rb_obj_class(obj) : RBASIC_CLASS(obj);
+}
+
 /* Capture obj into the courier, recurse into its children, return its node id.  The id
  * is registered before recursing (a cycle back resolves to the same node); node fields
  * are written after (recursion can realloc c->nodes); a move neutralizes the source
@@ -2659,7 +2837,7 @@ courier_capture(struct courier_build *b, VALUE obj)
      * Testing shareable first would embed the husk instead of resolving the second
      * occurrence to the node the first one built. */
     st_data_t existing;
-    if (st_lookup(b->seen, (st_data_t)obj, &existing)) {
+    if (st_lookup(b->c->seen, (st_data_t)obj, &existing)) {
         return (uint32_t)existing - 1;
     }
 
@@ -2668,7 +2846,7 @@ courier_capture(struct courier_build *b, VALUE obj)
     }
 
     uint32_t id = courier_alloc_node(b->c);
-    st_insert(b->seen, (st_data_t)obj, (st_data_t)(uintptr_t)(id + 1));
+    st_insert(b->c->seen, (st_data_t)obj, (st_data_t)(uintptr_t)(id + 1));
 
     /* Reject an unmovable object before anything is mutated. */
     if (BUILTIN_TYPE(obj) == T_FILE && RFILE(obj)->fptr == NULL) {
@@ -2685,13 +2863,13 @@ courier_capture(struct courier_build *b, VALUE obj)
          * Safe even when frozen: it changes ownership, not content.  Afterwards a string
          * is embedded, owns a private heap buffer, or is a shared ROOT (a no-op). */
         if (!b->copy) rb_str_make_independent(obj);
-        long len = RSTRING_LEN(obj);
+        rb_len_t len = RSTRING_LEN(obj);
         int encidx = ENCODING_GET(obj);
         /* The receiver adopts this buffer as a String body, which is freed by size:
          * capa has to describe the allocation exactly (capa + terminator bytes). */
         const int termlen = rb_enc_mbminlen(rb_enc_from_index(encidx));
         char *ptr;
-        long capa;
+        rb_len_t capa;
         if (!b->copy && !STR_EMBED_P(obj) && rb_str_reembeddable_p(obj)) {
             /* Owns a private heap buffer: carry the pointer over (zero-copy) and leave
              * the source as a shell that does not free it. */
@@ -2708,7 +2886,7 @@ courier_capture(struct courier_build *b, VALUE obj)
             capa = len;
         }
         b->c->nodes[id].kind = COURIER_KIND_STRING;
-        b->c->nodes[id].u.str.klass = RBASIC_CLASS(obj);
+        b->c->nodes[id].u.str.klass = courier_klass(b, obj);
         b->c->nodes[id].u.str.ptr = ptr;
         b->c->nodes[id].u.str.len = len;
         b->c->nodes[id].u.str.capa = capa;
@@ -2717,13 +2895,13 @@ courier_capture(struct courier_build *b, VALUE obj)
       }
 
       case T_ARRAY: {
-        long len = RARRAY_LEN(obj);
+        rb_len_t len = RARRAY_LEN(obj);
         uint32_t *elems = len ? ALLOC_N(uint32_t, len) : NULL;
-        for (long i = 0; i < len; i++) {
+        for (rb_len_t i = 0; i < len; i++) {
             elems[i] = courier_capture(b, RARRAY_AREF(obj, i));
         }
         b->c->nodes[id].kind = COURIER_KIND_ARRAY;
-        b->c->nodes[id].u.ary.klass = RBASIC_CLASS(obj);
+        b->c->nodes[id].u.ary.klass = courier_klass(b, obj);
         b->c->nodes[id].u.ary.len = len;
         b->c->nodes[id].u.ary.elems = elems;
         /* Free the source's heap buffer now that the children were read, but only when it
@@ -2737,12 +2915,13 @@ courier_capture(struct courier_build *b, VALUE obj)
 
       case T_HASH: {
         uint32_t ifnone_id = courier_capture(b, RHASH_IFNONE(obj));
+        /* An entry count, not a String or Array length, so u.hash.size stays long */
         long size = RHASH_SIZE(obj);
         uint32_t *kv = size ? ALLOC_N(uint32_t, size * 2) : NULL;
         struct courier_hash_ctx hc = { b, kv, 0 };
         rb_hash_stlike_foreach(obj, courier_capture_hash_i, (st_data_t)&hc);
         b->c->nodes[id].kind = COURIER_KIND_HASH;
-        b->c->nodes[id].u.hash.klass = RBASIC_CLASS(obj);
+        b->c->nodes[id].u.hash.klass = courier_klass(b, obj);
         b->c->nodes[id].u.hash.size = size;
         b->c->nodes[id].u.hash.kv = kv;
         b->c->nodes[id].u.hash.ifnone_id = ifnone_id;
@@ -2755,22 +2934,19 @@ courier_capture(struct courier_build *b, VALUE obj)
 
       case T_OBJECT:
         b->c->nodes[id].kind = COURIER_KIND_OBJECT;
-        /* Keep the real class: even a singleton class is shareable, so a cross-objspace
-         * reference is safe.  rebuild re-attaches it after allocating with a
-         * non-singleton class. */
-        b->c->nodes[id].u.obj.klass = RBASIC_CLASS(obj);
+        b->c->nodes[id].u.obj.klass = courier_klass(b, obj);
         break;
 
       case T_STRUCT: {
-        long len = RSTRUCT_LEN(obj);
+        rb_len_t len = RSTRUCT_LEN(obj);
         uint32_t *elems = len ? ALLOC_N(uint32_t, len) : NULL;
-        for (long i = 0; i < len; i++) {
+        for (rb_len_t i = 0; i < len; i++) {
             elems[i] = courier_capture(b, RSTRUCT_GET(obj, (int)i));
         }
         b->c->nodes[id].kind = COURIER_KIND_STRUCT;
         b->c->nodes[id].u.strct.len = len;
         b->c->nodes[id].u.strct.elems = elems;
-        b->c->nodes[id].u.strct.klass = RBASIC_CLASS(obj);
+        b->c->nodes[id].u.strct.klass = courier_klass(b, obj);
         /* Free the source's private heap buffer (an embedded struct has none) */
         if (!b->copy && RSTRUCT_EMBED_LEN(obj) == 0) {
             ruby_xfree((void *)RSTRUCT_CONST_PTR(obj));
@@ -2791,7 +2967,7 @@ courier_capture(struct courier_build *b, VALUE obj)
         b->c->nodes[id].u.match.str_id = sid;
         b->c->nodes[id].u.match.num_regs = nregs;
         b->c->nodes[id].u.match.regs = regs;
-        b->c->nodes[id].u.match.klass = RBASIC_CLASS(obj);
+        b->c->nodes[id].u.match.klass = courier_klass(b, obj);
         break;
       }
 
@@ -2819,7 +2995,7 @@ courier_capture(struct courier_build *b, VALUE obj)
         fptr->tied_io_for_writing = 0;  /* io.c tests it as a C boolean, so 0 rather than Qnil */
         b->c->nodes[id].kind = COURIER_KIND_IO;
         b->c->nodes[id].u.io.fptr = fptr;
-        b->c->nodes[id].u.io.klass = RBASIC_CLASS(obj);
+        b->c->nodes[id].u.io.klass = courier_klass(b, obj);
         b->c->nodes[id].u.io.pathv_id = pathv_id;
         b->c->nodes[id].u.io.ecopts_id = ecopts_id;
         b->c->nodes[id].u.io.wc_pre_ecopts_id = wc_pre_id;
@@ -2828,6 +3004,20 @@ courier_capture(struct courier_build *b, VALUE obj)
         break;
       }
 
+      case T_REGEXP:
+        /* Copy only: the receiver compiles the source again, as Marshal does.  Move
+         * would have to take the onig pattern apart. */
+        if (b->copy) {
+            /* The source is an fstring (reg_set_source), so it can be carried as is. */
+            VALUE src = RREGEXP_SRC(obj);
+            VM_ASSERT(rb_ractor_shareable_p(src));
+            b->c->nodes[id].kind = COURIER_KIND_REGEXP;
+            b->c->nodes[id].u.re.klass = courier_klass(b, obj);
+            b->c->nodes[id].u.re.src = src;
+            b->c->nodes[id].u.re.options = rb_reg_options(obj);
+            break;
+        }
+        /* fall through */
       case T_DATA:
         /* Only an exception's backtrace, and only for a copy: move still refuses every
          * T_DATA (its source would have to be taken apart). */
@@ -2840,12 +3030,22 @@ courier_capture(struct courier_build *b, VALUE obj)
             break;
         }
         /* fall through */
-      default:
-        rb_raise(rb_eRactorError, "can not move a %"PRIsVALUE" object",
-                 rb_class_name(rb_obj_class(obj)));
+      default: {
+        /* Copy has one more option: the object's own dump hook, which the preflight
+         * already found.  Move has not, since it would have to take the source apart. */
+        enum courier_hook hook = b->copy ? courier_hook_of(obj) : COURIER_HOOK_NONE;
+        if (hook == COURIER_HOOK_NONE) {
+            rb_raise(rb_eRactorError, "can not %s a %"PRIsVALUE" object",
+                     b->copy ? "copy" : "move", rb_class_name(rb_obj_class(obj)));
+        }
+        courier_capture_hooked(b, obj, id, hook);
+        break;
+      }
     }
 
     if (!b->copy) move_neutralize_source(obj);
+    /* Every child has returned: the post-order materialize fills in. */
+    b->c->order[b->ordered++] = id;
     return id;
 }
 
@@ -2906,7 +3106,7 @@ move_preflight(VALUE obj, struct move_preflight_ctx *ctx)
         break;
       }
       case T_ARRAY:
-        for (long i = 0; i < RARRAY_LEN(obj); i++) {
+        for (rb_len_t i = 0; i < RARRAY_LEN(obj); i++) {
             move_preflight(RARRAY_AREF(obj, i), ctx);
         }
         break;
@@ -2915,7 +3115,7 @@ move_preflight(VALUE obj, struct move_preflight_ctx *ctx)
         move_preflight(RHASH_IFNONE(obj), ctx);
         break;
       case T_STRUCT:
-        for (long i = 0; i < RSTRUCT_LEN(obj); i++) {
+        for (rb_len_t i = 0; i < RSTRUCT_LEN(obj); i++) {
             move_preflight(RSTRUCT_GET(obj, (int)i), ctx);
         }
         break;
@@ -2983,9 +3183,7 @@ copy_support_hash_i(st_data_t key, st_data_t val, st_data_t arg)
     return copy_support_val_i(val, arg);
 }
 
-/* Read-only walk: can the copy courier carry obj's whole graph?  Everything it says no
- * to (MatchData, IO, any other T_DATA, a singleton class) stays on the older on-heap
- * snapshot path, which keeps handling or rejecting it exactly as before. */
+/* Read-only walk: can the copy courier carry obj's whole graph?  A no is a send error. */
 static bool
 copy_courier_supported_p(VALUE obj, struct copy_support_ctx *ctx)
 {
@@ -2999,14 +3197,12 @@ copy_courier_supported_p(VALUE obj, struct copy_support_ctx *ctx)
     st_insert(seen, (st_data_t)obj, 0);
     ctx->nodes++;
 
-    /* A singleton class is a send error today (the native copier refuses it and Marshal
-     * then raises); the courier would happily carry it, so keep it off this path. */
-    VALUE klass = RBASIC_CLASS(obj);
-    if (klass == 0 || FL_TEST_RAW(klass, FL_SINGLETON)) return false;
+    if (RBASIC_CLASS(obj) == 0) return false;
 
     switch (BUILTIN_TYPE(obj)) {
       case T_STRING:
       case T_OBJECT:
+      case T_REGEXP:
         break;                       /* children are ivars only (below) */
       case T_MATCH: {
         struct RMatch *rm = RMATCH(obj);
@@ -3015,11 +3211,11 @@ copy_courier_supported_p(VALUE obj, struct copy_support_ctx *ctx)
         break;
       }
       case T_DATA:
-        /* An exception's backtrace is the one T_DATA the courier carries. */
-        if (!rb_backtrace_p(obj)) return false;
+        /* An exception's backtrace is the one T_DATA the courier carries natively. */
+        if (!rb_backtrace_p(obj) && courier_hook_of(obj) == COURIER_HOOK_NONE) return false;
         break;
       case T_ARRAY:
-        for (long i = 0; i < RARRAY_LEN(obj); i++) {
+        for (rb_len_t i = 0; i < RARRAY_LEN(obj); i++) {
             if (!copy_courier_supported_p(RARRAY_AREF(obj, i), ctx)) return false;
         }
         break;
@@ -3029,12 +3225,16 @@ copy_courier_supported_p(VALUE obj, struct copy_support_ctx *ctx)
         if (!copy_courier_supported_p(RHASH_IFNONE(obj), ctx)) return false;
         break;
       case T_STRUCT:
-        for (long i = 0; i < RSTRUCT_LEN(obj); i++) {
+        for (rb_len_t i = 0; i < RSTRUCT_LEN(obj); i++) {
             if (!copy_courier_supported_p(RSTRUCT_GET(obj, (int)i), ctx)) return false;
         }
         break;
       default:
-        return false;
+        /* Anything else has to dump itself.  What the hook returns is not walked here:
+         * running it twice is not an option, so capture allocates its nodes through the
+         * growth path instead of the reservation. */
+        if (courier_hook_of(obj) == COURIER_HOOK_NONE) return false;
+        break;
     }
 
     rb_ivar_foreach(obj, copy_support_ivar_i, (st_data_t)ctx);
@@ -3042,7 +3242,7 @@ copy_courier_supported_p(VALUE obj, struct copy_support_ctx *ctx)
 }
 
 /* Build a courier holding a copy of obj's graph, leaving the sources untouched.
- * Returns NULL when the graph has a type only the on-heap snapshot path handles. */
+ * Returns NULL when the graph has a type it cannot carry. */
 struct rb_ractor_courier *
 rb_ractor_courier_build_copy(VALUE obj, struct rb_ractor_courier **slot)
 {
@@ -3055,7 +3255,8 @@ rb_ractor_courier_build_copy(VALUE obj, struct rb_ractor_courier **slot)
 
     struct rb_ractor_courier *c = ZALLOC(struct rb_ractor_courier);
     courier_reserve(c, scan.nodes, scan.refs);
-    struct courier_build b = { c, st_init_numtable(), true };
+    c->seen = st_init_numtable();
+    struct courier_build b = { c, true };
 
     /* Publish it into the caller's basket before capturing anything: from here the
      * shareable payloads it collects are rooted by the basket's holder. */
@@ -3068,7 +3269,8 @@ rb_ractor_courier_build_copy(VALUE obj, struct rb_ractor_courier **slot)
         c->root = courier_capture(&b, obj);
     }
     EC_POP_TAG();
-    st_free_table(b.seen);
+    st_free_table(c->seen);
+    c->seen = NULL;
     /* Published above, so the basket owns it even half-built: it frees it. */
     if (state != TAG_NONE) EC_JUMP_TAG(ec, state);
     return c;
@@ -3096,7 +3298,8 @@ rb_ractor_courier_build_move(VALUE obj, struct rb_ractor_courier **slot)
 
     struct rb_ractor_courier *c = ZALLOC(struct rb_ractor_courier);
     courier_reserve(c, scan.nodes, scan.refs);
-    struct courier_build b = { c, st_init_numtable(), false };
+    c->seen = st_init_numtable();
+    struct courier_build b = { c, false };
 
     /* Publish it into the caller's basket before the sources become T_MOVED: from here
      * the basket's holder roots what the courier carries, and partial nodes are
@@ -3110,7 +3313,8 @@ rb_ractor_courier_build_move(VALUE obj, struct rb_ractor_courier **slot)
         c->root = courier_capture(&b, obj);
     }
     EC_POP_TAG();
-    st_free_table(b.seen);
+    st_free_table(c->seen);
+    c->seen = NULL;
     if (state != TAG_NONE) {
         /* courier_capture raised (an unmovable type, an interrupt).  The courier belongs
          * to the basket from the publish above, so leave it there and re-raise: the
@@ -3185,6 +3389,22 @@ rb_ractor_courier_materialize(struct rb_ractor_courier *c)
           case COURIER_KIND_BACKTRACE:
             shell = rb_backtrace_blob_load(n->u.bt.blob, n->u.bt.size);
             break;
+          case COURIER_KIND_REGEXP:
+            /* Allocated as its real class up front, as Marshal does: initializing a
+             * plain Regexp freezes it, and the freeze pass below decides that here. */
+            shell = rb_reg_init_str(rb_reg_s_alloc(rb_class_real(n->u.re.klass)), n->u.re.src, n->u.re.options);
+            courier_apply_klass(shell, n->u.re.klass);
+            break;
+          case COURIER_KIND_HOOKED:
+            if (n->u.hooked.hook == COURIER_HOOK_DUMP) {
+                shell = Qnil;   /* klass._load makes it below, once its String exists */
+                break;
+            }
+            /* Allocated now and filled by its load hook below, which is what lets a
+             * cycle back through the payload resolve to the object itself. */
+            shell = rb_obj_alloc(rb_class_real(n->u.hooked.klass));
+            courier_apply_klass(shell, n->u.hooked.klass);
+            break;
           case COURIER_KIND_IO:
             shell = rb_obj_alloc(rb_class_real(n->u.io.klass));
             courier_apply_klass(shell, n->u.io.klass);
@@ -3198,29 +3418,80 @@ rb_ractor_courier_materialize(struct rb_ractor_courier *c)
         rb_ary_push(shells, shell);
     }
 
-    for (uint32_t i = 0; i < c->count; i++) {
+    /* Fill in capture's post-order, so each node is settled after everything below it,
+     * shared children included: a Hash sees complete keys (a content-based #hash would
+     * collide on every key while the graph is still empty), a load hook sees a complete
+     * payload, and a parent sees the object klass._load returned.  Only a cycle reaches
+     * a node still being filled (a #hash or a payload cycling through itself is out of
+     * scope). */
+    for (uint32_t k = 0; k < c->count; k++) {
+        uint32_t i = c->order[k];
         struct courier_node *n = &c->nodes[i];
         VALUE shell = RARRAY_AREF(shells, i);
         switch (n->kind) {
           case COURIER_KIND_ARRAY: {
             /* The length is known, so set it once and write the slots, rather than
              * pushing each element through the capacity check. */
-            const long len = n->u.ary.len;
+            const rb_len_t len = n->u.ary.len;
             if (len > 0) {
                 rb_ary_resize(shell, len);
-                for (long j = 0; j < len; j++) {
+                for (rb_len_t j = 0; j < len; j++) {
                     RARRAY_ASET(shell, j, courier_child(c, shells, n->u.ary.elems[j]));
                 }
             }
             break;
           }
           case COURIER_KIND_HASH:
-            /* Entry insertion is deferred to a third pass: insertion calls the key's
-             * #hash / #eql?, and a content-based #hash would collide on every key while
-             * the graph is still empty, collapsing entries. */
+            for (long j = 0; j < n->u.hash.size; j++) {
+                rb_hash_aset(shell, courier_child(c, shells, n->u.hash.kv[2 * j]),
+                             courier_child(c, shells, n->u.hash.kv[2 * j + 1]));
+            }
+            /* Restore the default value and default proc (before freezing) */
+            VALUE ifnone = courier_child(c, shells, n->u.hash.ifnone_id);
+            if (n->u.hash.proc_default) {
+                rb_hash_set_default_proc(shell, ifnone);
+            }
+            else if (ifnone != Qnil) {
+                rb_hash_set_default(shell, ifnone);
+            }
             break;
+          case COURIER_KIND_HOOKED: {
+            VALUE payload = courier_child(c, shells, n->u.hooked.payload_id);
+            VALUE klass = n->u.hooked.klass;
+            ID mid;
+            switch (n->u.hooked.hook) {
+              case COURIER_HOOK_DUMP:
+                if (!rb_obj_respond_to(klass, id_load, TRUE)) {
+                    rb_raise(rb_eTypeError, "class %"PRIsVALUE" needs to have method '_load'", klass);
+                }
+                /* _load returns the object: it takes the place of the Qnil placeholder
+                 * so everything filled after this receives it, and the ivars restored
+                 * below land on it. */
+                shell = rb_funcallv(klass, id_load, 1, &payload);
+                RARRAY_ASET(shells, i, shell);
+                break;
+              case COURIER_HOOK_MARSHAL_DUMP:
+              case COURIER_HOOK_DUMP_DATA:
+                mid = n->u.hooked.hook == COURIER_HOOK_MARSHAL_DUMP ? id_marshal_load : id_load_data;
+                if (!rb_obj_respond_to(shell, mid, TRUE)) {
+                    rb_raise(rb_eTypeError, "instance of %"PRIsVALUE" needs to have method '%"PRIsVALUE"'",
+                             klass, rb_id2str(mid));
+                }
+                rb_funcallv(shell, mid, 1, &payload);
+                break;
+              case COURIER_HOOK_COMPAT: {
+                VALUE (*loader)(VALUE, VALUE);
+                rb_marshal_compat_lookup(klass, NULL, &loader);
+                loader(shell, payload);
+                break;
+              }
+              default:
+                rb_bug("rb_ractor_courier_materialize: no dump protocol");
+            }
+            break;
+          }
           case COURIER_KIND_STRUCT:
-            for (long j = 0; j < n->u.strct.len; j++) {
+            for (rb_len_t j = 0; j < n->u.strct.len; j++) {
                 RSTRUCT_SET(shell, (int)j, courier_child(c, shells, n->u.strct.elems[j]));
             }
             break;
@@ -3246,27 +3517,6 @@ rb_ractor_courier_materialize(struct rb_ractor_courier *c)
         /* Restore instance and generic ivars (any non-REF node can have them) */
         for (uint32_t j = 0; j < n->niv; j++) {
             rb_ivar_set(shell, n->iv_ids[j], courier_child(c, shells, n->iv_vals[j]));
-        }
-    }
-
-    /* Insert hash entries only once every shell is filled.  Ids are assigned
-     * depth-first (children larger), so inserting in reverse settles nested hash keys
-     * inside-out (a #hash cycling through itself is out of scope). */
-    for (uint32_t i = c->count; i > 0; i--) {
-        struct courier_node *n = &c->nodes[i - 1];
-        if (n->kind != COURIER_KIND_HASH) continue;
-        VALUE shell = RARRAY_AREF(shells, i - 1);
-        for (long j = 0; j < n->u.hash.size; j++) {
-            rb_hash_aset(shell, courier_child(c, shells, n->u.hash.kv[2 * j]),
-                         courier_child(c, shells, n->u.hash.kv[2 * j + 1]));
-        }
-        /* Restore the default value and default proc (before freezing) */
-        VALUE ifnone = courier_child(c, shells, n->u.hash.ifnone_id);
-        if (n->u.hash.proc_default) {
-            rb_hash_set_default_proc(shell, ifnone);
-        }
-        else if (ifnone != Qnil) {
-            rb_hash_set_default(shell, ifnone);
         }
     }
 
@@ -3323,17 +3573,20 @@ rb_ractor_courier_free(struct rb_ractor_courier *c)
         }
     }
     ruby_xfree(c->nodes);
+    ruby_xfree(c->order);
     ruby_xfree(c->refs);
     ruby_xfree(c);
 }
 
 /* Mark the only VALUEs a courier holds: shareable objects and immediates (REF) and the
  * classes of its objects.  All of them are shareable, so marking cannot race, and the
- * global GC keeps them reachable through the courier. */
+ * global GC keeps them reachable through the courier.  While it is being built it also
+ * holds the sender's sources in seen; the basket is on the sender's own list then. */
 void
 rb_ractor_courier_mark(struct rb_ractor_courier *c)
 {
     if (!c) return;
+    if (c->seen) rb_mark_set(c->seen);
     for (uint32_t i = 0; i < c->refs_count; i++) {
         rb_gc_mark(c->refs[i]);
     }
@@ -3365,6 +3618,13 @@ rb_ractor_courier_mark(struct rb_ractor_courier *c)
         }
         else if (n->kind == COURIER_KIND_HASH) {
             rb_gc_mark(n->u.hash.klass);
+        }
+        else if (n->kind == COURIER_KIND_REGEXP) {
+            rb_gc_mark(n->u.re.src);
+            rb_gc_mark(n->u.re.klass);
+        }
+        else if (n->kind == COURIER_KIND_HOOKED) {
+            rb_gc_mark(n->u.hooked.klass);
         }
     }
 }
@@ -3427,9 +3687,12 @@ ractor_native_shallow_copy(VALUE obj)
     }
 
     /* The traversal rewrites the children inside the copy with raw stores, so the frozen
-     * bit can be set now: by the time leave runs the original is out of sight. */
+     * bit can be set now: by the time leave runs the original is out of sight. The shape
+     * has to be transitioned along with the flag, because field writes are refused based
+     * on the shape (see rb_check_ivar_modifiable). */
     if (OBJ_FROZEN(obj)) {
         RB_FL_SET_RAW(copy, RUBY_FL_FREEZE);
+        RBASIC_SET_SHAPE_ID(copy, rb_obj_shape_transition_frozen(copy));
     }
     return copy;
 }
@@ -4042,6 +4305,18 @@ rb_ractor_autoload_load(VALUE module, ID name)
     else {
         return result;
     }
+}
+
+VALUE
+rb_builtin_shareable_proc(rb_execution_context_t *ec, VALUE self, VALUE arg_self)
+{
+    return ractor_shareable_proc(ec, arg_self, false);
+}
+
+VALUE
+rb_builtin_shareable_lambda(rb_execution_context_t *ec, VALUE self, VALUE arg_self)
+{
+    return ractor_shareable_proc(ec, arg_self, true);
 }
 
 #include "ractor.rbinc"

@@ -44,18 +44,19 @@ jobs:
       OS_VER: windows-${{ matrix.os }}
       VCPKG_DEFAULT_TRIPLET: x64-windows
       FEED_URL: https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json
+      RUBY_DUMP_AST: ./dump_ast-required-unexpectedly
       NoDefaultCurrentDirectoryInExePath: 1
     steps:
       - run: md build
         working-directory:
 
-      - uses: ruby/setup-ruby@95ef2b042f9d7a56d8268cba8559e2842e2ad01b # v1.321.0
+      - uses: ruby/setup-ruby@e81a8fa391b11a595c1b7ed84177cc0fe02faf83 # v1.328.0
         with:
           ruby-version: '3.2'
           bundler: none
           windows-toolchain: none
 
-      - uses: msys2/setup-msys2@66cd2cce69caa17b53920067426061ca1de3a884 # v2.32.0
+      - uses: msys2/setup-msys2@ec48f7c5447b3140e2b088413ae3a55687bccb6e # v2.33.0
         id: setup-msys2
         with:
           update: true
@@ -65,7 +66,7 @@ jobs:
         shell: msys2 {0}
         run: echo PATCH=$(cygpath -wa $(command -v patch)) >> $GITHUB_ENV
         if: ${{ steps.setup-msys2.outcome == 'success' }}
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: Packages
           path: pkg

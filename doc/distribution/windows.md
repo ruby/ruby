@@ -70,15 +70,15 @@ sh ../../ruby/configure -C --disable-install-doc --with-opt-dir=C:\Users\usernam
 
 ### Requirement
 
-1.  Windows 10/Windows Server 2016 or later.
+1.  Windows 10 version 1809 (build 17763)/Windows Server 2019 or later.
 
-2.  Visual C++ 14.0 (2015) or later.
+2.  Visual C++ 14.15 (Visual Studio 2017 version 15.8) or later.
 
     **Note** if you want to build x64 version, use native compiler for
     x64.
 
     The minimum requirement is here:
-      * VC++/MSVC on VS 2017/2019/2022 version build tools.
+      * VC++/MSVC build tools on VS 2017 version 15.8 or later.
       * Windows 10/11 SDK
 
     You can install Visual Studio Build Tools with `winget`.
@@ -153,6 +153,13 @@ sh ../../ruby/configure -C --disable-install-doc --with-opt-dir=C:\Users\usernam
     [Developer Mode](https://learn.microsoft.com/windows/apps/get-started/developer-mode-features-and-debugging)
     (Settings > System > For developers) so that they do not fail with
     `Permission denied @ rb_file_s_symlink`.
+
+8.  If you want to build YJIT, `rustc` with the `x86_64-pc-windows-msvc`
+    target is required.  YJIT is enabled with `--enable-yjit` of
+    `win32\configure.bat`, and is supported only on x64 and only in
+    YJIT's release mode, without the dev and stats builds.
+    `--enable-yjit` accepts only `yes` or `no`.  A YJIT
+    build does not install the static library.
 
 ### How to compile and install
 

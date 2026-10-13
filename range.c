@@ -1369,43 +1369,18 @@ range_reverse_each(VALUE range)
     return range;
 }
 
-/*
- *  call-seq:
- *    self.begin -> object
- *
- *  Returns the object that defines the beginning of +self+.
- *
- *    (1..4).begin # => 1
- *    (..2).begin  # => nil
- *
- *  Related: Range#first, Range#end.
- */
-
-/*
- *  call-seq:
- *    self.end -> object
- *
- *  Returns the object that defines the end of +self+.
- *
- *    (1..4).end  # => 4
- *    (1...4).end # => 4
- *    (1..).end   # => nil
- *
- *  Related: Range#begin, Range#last.
- */
-
 static VALUE
 first_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, cbarg))
 {
     VALUE *ary = (VALUE *)cbarg;
-    long n = NUM2LONG(ary[0]);
+    rb_len_t n = NUM2LEN(ary[0]);
 
     if (n <= 0) {
         rb_iter_break();
     }
     rb_ary_push(ary[1], i);
     n--;
-    ary[0] = LONG2NUM(n);
+    ary[0] = LEN2NUM(n);
     return Qnil;
 }
 
@@ -1443,7 +1418,7 @@ range_first(int argc, VALUE *argv, VALUE range)
 
     rb_scan_args(argc, argv, "1", &n);
     ary[0] = n;
-    ary[1] = rb_ary_new2(NUM2LONG(n));
+    ary[1] = rb_ary_new2(NUM2LEN(n));
     rb_block_call(range, idEach, 0, 0, first_i, (VALUE)ary);
 
     return ary[1];
@@ -1473,7 +1448,7 @@ rb_int_range_last(int argc, VALUE *argv, VALUE range)
 
     VALUE b, e, len_1 = Qnil, len = Qnil, nv, ary;
     int x;
-    long n;
+    rb_len_t n;
 
     RUBY_ASSERT(argc > 0);
 
@@ -1505,15 +1480,15 @@ rb_int_range_last(int argc, VALUE *argv, VALUE range)
     }
 
     rb_scan_args(argc, argv, "1", &nv);
-    n = NUM2LONG(nv);
+    n = NUM2LEN(nv);
     if (n < 0) {
         rb_raise(rb_eArgError, "negative array size");
     }
 
-    nv = LONG2NUM(n);
+    nv = LEN2NUM(n);
     if (!NIL_P(b) && RTEST(rb_int_gt(nv, len))) {
         nv = len;
-        n = NUM2LONG(nv);
+        n = NUM2LEN(nv);
     }
 
     ary = rb_ary_new_capa(n);
@@ -1788,7 +1763,7 @@ range_max(int argc, VALUE *argv, VALUE range)
         ID reverse_each;
         CONST_ID(reverse_each, "reverse_each");
         rb_scan_args(argc, argv, "1", &ary[0]);
-        ary[1] = rb_ary_new2(NUM2LONG(ary[0]));
+        ary[1] = rb_ary_new2(NUM2LEN(ary[0]));
         rb_block_call(range, reverse_each, 0, 0, first_i, (VALUE)ary);
         return ary[1];
 #if 0
@@ -1932,12 +1907,12 @@ rb_range_values(VALUE range, VALUE *begp, VALUE *endp, int *exclp)
  */
 VALUE
 rb_range_component_beg_len(VALUE b, VALUE e, int excl,
-                           long *begp, long *lenp, long len, int err)
+                           rb_len_t *begp, rb_len_t *lenp, rb_len_t len, int err)
 {
-    long beg, end;
+    rb_len_t beg, end;
 
-    beg = NIL_P(b) ? 0 : NUM2LONG(b);
-    end = NIL_P(e) ? -1 : NUM2LONG(e);
+    beg = NIL_P(b) ? 0 : NUM2LEN(b);
+    end = NIL_P(e) ? -1 : NUM2LEN(e);
     if (NIL_P(e)) excl = 0;
     if (beg < 0) {
         beg += len;
@@ -1967,7 +1942,7 @@ rb_range_component_beg_len(VALUE b, VALUE e, int excl,
 }
 
 VALUE
-rb_range_beg_len(VALUE range, long *begp, long *lenp, long len, int err)
+rb_range_beg_len(VALUE range, rb_len_t *begp, rb_len_t *lenp, rb_len_t len, int err)
 {
     VALUE b, e;
     int excl;
@@ -2984,6 +2959,28 @@ Init_Range(void)
     rb_define_method(rb_cRange, "%", range_percent_step, 1);
     rb_define_method(rb_cRange, "reverse_each", range_reverse_each, 0);
     rb_define_method(rb_cRange, "bsearch", range_bsearch, 0);
+#if 0 /* for RDoc */
+    /*
+     *  The object that defines the beginning of +self+.
+     *
+     *    (1..4).begin # => 1
+     *    (..2).begin  # => nil
+     *
+     *  Related: Range#first, Range#end.
+     */
+    rb_define_attr(rb_cRange, "begin", TRUE, FALSE);
+
+    /*
+     *  The object that defines the end of +self+.
+     *
+     *    (1..4).end  # => 4
+     *    (1...4).end # => 4
+     *    (1..).end   # => nil
+     *
+     *  Related: Range#begin, Range#last.
+     */
+    rb_define_attr(rb_cRange, "end", TRUE, FALSE);
+#endif
     rb_struct_define_aref_method(rb_cRange, id_beg, 0);
     rb_struct_define_aref_method(rb_cRange, id_end, 1);
     rb_define_method(rb_cRange, "first", range_first, -1);

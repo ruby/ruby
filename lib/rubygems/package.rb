@@ -89,6 +89,18 @@ class Gem::Package
 
   class TarInvalidError < Error; end
 
+  ##
+  # Raised when a filename contains characters that are invalid on Windows
+
+  class InvalidWindowsFileNameError < Gem::InstallError
+    def initialize(filename, gem_name = nil)
+      message = "The gem contains a file '#{filename}' with characters in its name that are not allowed on Windows (e.g., colons)."
+      message += " This is a problem with the '#{gem_name}' gem, not Rubygems." if gem_name
+      message += " Please report this issue to the gem author."
+      super message
+    end
+  end
+
   attr_accessor :build_time # :nodoc:
 
   ##
@@ -137,18 +149,20 @@ class Gem::Package
   MINIMUM_RUBYGEMS_VERSION = ">= 4.1.0.a"
 
   ##
-  # Builds the gem described by +spec+ and returns the built file name;
-  # passing +ruby_abi+ ("X.Y") builds a content-addressable gem named by the
-  # SHA-256 of its contents, updates +spec.required_ruby_version+ to
-  # "~> X.Y.0", and constrains +spec.required_rubygems_version+ to at least
-  # MINIMUM_RUBYGEMS_VERSION (incompatible with
-  # +file_name+).
+  # Builds the gem described by +spec+ and returns the built file name.
+  #
+  # When +content_addressable+ is true, builds a gem named by the SHA-256
+  # digest of its contents. The spec must declare a non-Ruby platform and a
+  # +required_ruby_version+ identifying a single Ruby ABI. Its
+  # +required_rubygems_version+ is constrained to at least
+  # MINIMUM_RUBYGEMS_VERSION. Content-addressable builds are incompatible
+  # with +file_name+.
 
-  def self.build(spec, skip_validation = false, strict_validation = false, file_name = nil, ruby_abi = nil)
-    if ruby_abi && file_name
-      raise ArgumentError, "Cannot specify both a Ruby ABI and an output file name because content addressable gems must use the generated file name."
+  def self.build(spec, skip_validation = false, strict_validation = false, file_name = nil, content_addressable: false)
+    if content_addressable && file_name
+      raise ArgumentError, "Cannot specify an output file name for a content-addressable gem as these gems must use the generated file name."
     end
-    if ruby_abi
+    if content_addressable
       require "digest"
       require "stringio"
 
@@ -157,9 +171,8 @@ class Gem::Package
 
       package = new io
       package.spec = spec.dup
-      gem_file = package.build_content_addressable_file ruby_abi, skip_validation, strict_validation
+      gem_file = package.build_content_addressable_file skip_validation, strict_validation
 
-      spec.required_ruby_version = package.spec.required_ruby_version
       spec.required_rubygems_version = package.spec.required_rubygems_version
     else
       gem_file = file_name || spec.file_name
@@ -309,6 +322,10 @@ class Gem::Package
 
   def add_files(tar) # :nodoc:
     @spec.files.each do |file|
+      if invalid_windows_filename?(file)
+        alert_warning "filename '#{file}' contains characters that are invalid on Windows (e.g., colons). This gem may fail to install on Windows."
+      end
+
       stat = File.lstat file
 
       if stat.symlink?
@@ -375,20 +392,18 @@ EOM
   end
 
   ##
-  # Builds this package scoped to +ruby_abi+ ("X.Y"), then writes it to a
-  # content-addressable file name derived from the SHA-256 digest of the gem
-  # contents, e.g. "example-1.0-01234567.gem". Returns the file name of the
-  # written gem.
+  # Builds this package and writes it to a content-addressable file name
+  # derived from the SHA-256 digest of the gem contents, for example
+  # "example-1.0-01234567.gem". Returns the written file name.
   #
-  # The spec is validated for an ABI-scoped build and its
-  # +required_ruby_version+ and +required_rubygems_version+ are constrained
-  # before building, so every gem this method produces is eligible for
-  # content addressing.
+  # The spec is validated for content addressing. Its
+  # +required_ruby_version+ determines the Ruby ABI, while its
+  # +required_rubygems_version+ is constrained before building.
 
-  def build_content_addressable_file(ruby_abi, skip_validation = false, strict_validation = false)
-    validate_ruby_abi ruby_abi
+  def build_content_addressable_file(skip_validation = false, strict_validation = false)
+    Gem::ContentAddress.eligible!(@spec)
+    ruby_abi = Gem::ContentAddress.ruby_abi_for(@spec.required_ruby_version)
     @spec.required_rubygems_version = normalized_required_rubygems_version(ruby_abi)
-    @spec.required_ruby_version = Gem::ContentAddress.ruby_abi_requirement(ruby_abi)
 
     build skip_validation, strict_validation
 
@@ -507,6 +522,11 @@ EOM
         full_name = entry.full_name
         next unless File.fnmatch pattern, full_name, File::FNM_DOTMATCH
 
+        if Gem.win_platform? && invalid_windows_filename?(full_name)
+          gem_name = @spec ? @spec.full_name : "unknown"
+          raise Gem::Package::InvalidWindowsFileNameError.new(full_name, gem_name)
+        end
+
         destination = install_location full_name, destination_dir
 
         if entry.symlink?
@@ -527,7 +547,7 @@ EOM
           end
 
         unless directories.include?(mkdir)
-          FileUtils.mkdir_p mkdir, mode: dir_mode ? 0o755 : (entry.header.mode if entry.directory?)
+          FileUtils.mkdir_p mkdir, mode: dir_mode ? 0o755 : (entry.header.mode & 0o777 if entry.directory?)
           directories << mkdir
         end
 
@@ -564,10 +584,10 @@ EOM
   def file_mode(mode) # :nodoc:
     ((mode & 0o111).zero? ? data_mode : prog_mode) ||
       # If we're not using one of the default modes, then we're going to fall
-      # back to the mode from the tarball. In this case we need to mask it down
-      # to fit into 2^16 bits (the maximum value for a mode in CRuby since it
-      # gets put into an unsigned short).
-      (mode & ((1 << 16) - 1))
+      # back to the permission bits from the tarball. Masking drops setuid,
+      # setgid and sticky bits along with anything that does not fit into a
+      # mode in CRuby (an unsigned short).
+      (mode & 0o777)
   end
 
   ##
@@ -593,6 +613,16 @@ EOM
     def normalize_path(pathname) # :nodoc:
       pathname
     end
+  end
+
+  ##
+  # Checks if a filename contains characters that are invalid on Windows.
+  # Windows doesn't allow: < > : " | ? * \ and control characters (0x00-0x1F).
+  # Colons are the most common issue since they're allowed on Unix.
+  # Note: Colons are only valid as drive letter separators (e.g., C:), not in filenames.
+
+  def invalid_windows_filename?(filename) # :nodoc:
+    filename.to_s.split("/").any? {|part| part.match?(/[:<>"|?*\\\x00-\x1f]/) }
   end
 
   ##
@@ -786,22 +816,6 @@ EOM
       when ">=", "~>", "=", ">" then version >= floor
       else false
       end
-    end
-  end
-
-  ##
-  # Validates that the spec can be built as a content-addressable gem scoped
-  # to +ruby_abi+ ("X.Y"): the ABI must be well-formed, the spec must declare
-  # a non-Ruby platform, and any existing +required_ruby_version+ must match
-  # the ABI.
-
-  def validate_ruby_abi(ruby_abi)
-    if !Gem::ContentAddress.valid_ruby_abi?(ruby_abi)
-      raise ArgumentError, "Ruby ABI must be in X.Y format"
-    elsif !Gem::ContentAddress.platform_eligible?(@spec.platform)
-      raise ArgumentError, "Cannot build a gem scoped to a single Ruby ABI as no platform or a Ruby platform has been set"
-    elsif !Gem::ContentAddress.ruby_abi_compatible?(@spec, ruby_abi)
-      raise ArgumentError, "Cannot build gem for Ruby ABI #{ruby_abi} because required_ruby_version is set to #{@spec.required_ruby_version}. Please set required_ruby_version to \"~> #{ruby_abi}.0\"."
     end
   end
 

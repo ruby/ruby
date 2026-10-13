@@ -68,6 +68,7 @@ typedef struct MMTk_RubyUpcalls {
     void (*scan_gc_roots)(void);
     void (*scan_objspace)(void);
     void (*move_obj_during_marking)(MMTk_ObjectReference from, MMTk_ObjectReference to);
+    size_t (*obj_optimal_size)(MMTk_ObjectReference object);
     void (*update_object_references)(MMTk_ObjectReference object);
     void (*call_gc_mark_children)(MMTk_ObjectReference object);
     void (*handle_weak_references)(MMTk_ObjectReference object, bool moving);
@@ -139,6 +140,8 @@ bool mmtk_weak_references_alive_p(MMTk_ObjectReference object);
 size_t mmtk_weak_references_count(void);
 
 void mmtk_register_pinning_obj(MMTk_ObjectReference obj);
+
+bool mmtk_is_pinned(MMTk_ObjectReference object);
 
 void mmtk_object_reference_write_post(MMTk_Mutator *mutator, MMTk_ObjectReference object);
 

@@ -3,7 +3,7 @@
 use std::ptr::null;
 use std::{ffi::c_void, ops::Range};
 use crate::{cruby::*, state::ZJITState, stats::with_time_stat, virtualmem::CodePtr};
-use crate::payload::{IseqPayload, IseqVersionRef, get_or_create_iseq_payload};
+use crate::payload::{IseqPayload, IseqVersionRef, get_iseq_payload_ptr};
 use crate::stats::Counter::gc_time_ns;
 
 /// GC callback for marking GC objects in the per-ISEQ payload.
@@ -51,14 +51,26 @@ pub extern "C" fn rb_zjit_iseq_free(iseq: IseqPtr) {
         return;
     }
 
-    // TODO(Shopify/ruby#682): Free `IseqPayload`
-    let payload = get_or_create_iseq_payload(iseq);
-    for version in payload.versions.iter_mut() {
-        unsafe { version.as_mut() }.iseq = null();
+    ZJITState::get_invariants().forget_iseq(iseq);
+
+    // If ZJIT has never created a payload for this ISEQ, do nothing.
+    let payload_ptr = get_iseq_payload_ptr(iseq);
+    if payload_ptr.is_null() {
+        return;
     }
 
-    let invariants = ZJITState::get_invariants();
-    invariants.forget_iseq(iseq);
+    // Take ownership of the payload and unset it from the ISEQ.
+    let payload = unsafe { Box::from_raw(payload_ptr) };
+    unsafe { rb_iseq_clear_jit_payload(iseq) };
+
+    // Clear IseqVersion references. Patch points may hold raw pointers to them, so
+    // they have to outlive the ISEQ. They're dropped when the assumption is broken.
+    for &version in payload.versions.iter() {
+        unsafe { (*version.as_ptr()).iseq = null() };
+    }
+
+    // Free the IseqPayload.
+    drop(payload);
 }
 
 /// GC callback for finalizing a CME
@@ -240,5 +252,45 @@ pub extern "C" fn rb_zjit_root_mark() {
     }
     for &jit_frame in ZJITState::get_jit_frames().iter() {
         unsafe { &*jit_frame }.mark();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::cruby::test_utils::{eval, with_rubyvm};
+    use crate::options::set_call_threshold;
+
+    /// Regression test that freeing an ISEQ must not leave an `IseqPayload` behind.
+    #[test]
+    fn test_freed_iseqs_do_not_retain_payloads() {
+        with_rubyvm(|| {
+            // A high call threshold to keep any ISEQs out of the JIT
+            let old_call_threshold = unsafe { crate::options::rb_zjit_call_threshold };
+            set_call_threshold(1_000_000);
+
+            eval(r#"
+                def zjit_eval_iseqs(n)
+                  n.times do |i|
+                    eval("def __zjit_churn#{i}(x) = x + 1", TOPLEVEL_BINDING, "zjit_churn#{i}.rb")
+                    send(:"__zjit_churn#{i}", i)
+                    Object.send(:remove_method, :"__zjit_churn#{i}")
+                  end
+                  3.times { GC.start }
+                end
+            "#);
+
+            // Each iteration creates and frees several ISEQs. It should not grow the heap usage.
+            let alloc_bytes_after_eval = |n: usize| {
+                eval(&format!("zjit_eval_iseqs({n})"));
+                crate::stats::zjit_alloc_bytes()
+            };
+            let small = alloc_bytes_after_eval(200);
+            let large = alloc_bytes_after_eval(2000);
+
+            set_call_threshold(old_call_threshold);
+
+            let alloc_growth = large.saturating_sub(small);
+            assert!(alloc_growth < 100_000, "zjit_alloc_bytes grew by {alloc_growth} bytes across freed ISEQs");
+        });
     }
 }

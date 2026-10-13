@@ -975,7 +975,7 @@ rb_scheduler_getaddrinfo(VALUE scheduler, VALUE host, const char *service,
     const struct addrinfo *hints, struct rb_addrinfo **res)
 {
     int error, res_allocated = 0, _additional_flags = 0;
-    long i, len;
+    rb_len_t i, len;
     struct addrinfo *ai, *ai_tail = NULL;
     char *hostp;
     char _hbuf[NI_MAXHOST];
@@ -1070,7 +1070,7 @@ rsock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints, int socktype_h
         if (hostp && hostp[strlen(hostp)-1] == '\n') {
             rb_raise(rb_eSocket, "newline at the end of hostname");
         }
-        rsock_raise_resolution_error("getaddrinfo", error);
+        rsock_raise_resolution_error_for_host("getaddrinfo", error, host);
     }
 
     return res;
@@ -1896,15 +1896,12 @@ rsock_inspect_sockaddr(struct sockaddr *sockaddr_arg, socklen_t socklen, VALUE r
 
 #if defined(AF_LINK) && defined(HAVE_TYPE_STRUCT_SOCKADDR_DL)
           /* AF_LINK is defined in 4.4BSD derivations since Net2.
-             link_ntoa is also defined at Net2.
-             However Debian GNU/kFreeBSD defines AF_LINK but
-             don't have link_ntoa.  */
+             link_ntoa is also defined at Net2.  */
           case AF_LINK:
           {
             /*
              * Simple implementation using link_ntoa():
-             * This doesn't work on Debian GNU/kFreeBSD 6.0.7 (squeeze).
-             * Also, the format is bit different.
+             * The format is bit different.
              *
              * rb_str_catf(ret, "LINK %s", link_ntoa(&sockaddr->dl));
              * break;
@@ -3172,7 +3169,6 @@ do_fast_fallback_getaddrinfo(void *ptr)
         IPV6_HOSTNAME_RESOLVED : IPV4_HOSTNAME_RESOLVED;
 
         if (shared->notify != -1 && (write(shared->notify, &notification, 1)) < 0) {
-            entry->err = errno;
             entry->has_syserr = true;
         }
         if (--(entry->refcount) == 0) {

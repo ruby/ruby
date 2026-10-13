@@ -917,7 +917,7 @@ rb_enc_find_index(const char *name)
 }
 
 int
-rb_enc_find_index2(const char *name, long len)
+rb_enc_find_index2(const char *name, rb_len_t len)
 {
     char buf[ENCODING_NAMELEN_MAX+1];
 

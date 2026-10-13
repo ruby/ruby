@@ -81,6 +81,11 @@ module EnvUtil
     self.timeout_scale = 10
   end
 
+  # Read here so that runners other than tool/lib/test/unit.rb, such as
+  # the test-unit gem in test-bundled-gems, also scale timeouts.
+  scale = (ENV["RUBY_TEST_TIMEOUT_SCALE"] || ENV["RUBY_TEST_SUBPROCESS_TIMEOUT_SCALE"]).to_f
+  self.timeout_scale = scale if scale > 0
+
   def apply_timeout_scale(t)
     if scale = EnvUtil.timeout_scale
       t * scale
@@ -93,7 +98,8 @@ module EnvUtil
   def timeout(sec, klass = nil, message = nil, &blk)
     return yield(sec) if sec == nil or sec.zero?
     sec = apply_timeout_scale(sec)
-    Timeout.timeout(sec, klass, message, &blk)
+    # Timeout.timeout in Ruby 2.3 does not take a message
+    Timeout.timeout(sec, klass, *message, &blk)
   end
   module_function :timeout
 
@@ -194,6 +200,8 @@ module EnvUtil
       rescue Errno::EINVAL
         next
       rescue Errno::ESRCH
+        # Windows reports ESRCH for a child that has exited but not been reaped
+        Process.wait(pid, Process::WNOHANG) rescue nil
         break
       end
       if signals.empty? or !reprieve
@@ -365,8 +373,6 @@ module EnvUtil
   module_function :under_gc_stress
 
   def under_gc_compact_stress(val = :empty, &block)
-    raise "compaction doesn't work well on s390x. Omit the test in the caller." if RUBY_PLATFORM =~ /s390x/ # https://github.com/ruby/ruby/pull/5077
-
     if GC.respond_to?(:auto_compact)
       auto_compact = GC.auto_compact
       GC.auto_compact = val

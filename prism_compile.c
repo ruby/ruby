@@ -803,21 +803,6 @@ pm_compile_regexp_dynamic(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_
     PUSH_INSN2(ret, *node_location, toregexp, INT2FIX(parse_regexp_flags(node) & 0xFF), INT2FIX(length));
 }
 
-static VALUE
-pm_source_file_value(const pm_source_file_node_t *node, const pm_scope_node_t *scope_node)
-{
-    const pm_string_t *filepath = &node->filepath;
-    size_t length = pm_string_length(filepath);
-
-    if (length > 0) {
-        rb_encoding *filepath_encoding = scope_node->filepath_encoding != NULL ? scope_node->filepath_encoding : rb_utf8_encoding();
-        return rb_enc_interned_str((const char *) pm_string_source(filepath), length, filepath_encoding);
-    }
-    else {
-        return rb_fstring_lit("<compiled>");
-    }
-}
-
 /**
  * Return a static literal string, optionally with attached debugging
  * information.
@@ -920,10 +905,6 @@ pm_static_literal_value(rb_iseq_t *iseq, const pm_node_t *node, pm_scope_node_t 
       }
       case PM_SOURCE_ENCODING_NODE:
         return rb_enc_from_encoding(scope_node->encoding);
-      case PM_SOURCE_FILE_NODE: {
-        const pm_source_file_node_t *cast = (const pm_source_file_node_t *) node;
-        return pm_source_file_value(cast, scope_node);
-      }
       case PM_SOURCE_LINE_NODE:
         return INT2FIX(pm_node_line_number_cached(node, scope_node));
       case PM_STRING_NODE: {
@@ -1779,7 +1760,7 @@ pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *b
                             // then mark the array at that index as false and
                             // decrement the keyword size.
                             if (!NIL_P(stored_index)) {
-                                rb_ary_store(keyword_indices, NUM2LONG(stored_index), Qfalse);
+                                rb_ary_store(keyword_indices, NUM2LEN(stored_index), Qfalse);
                                 size--;
                             }
 
@@ -1787,7 +1768,7 @@ pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *b
                             // keyword in the hash, mark the array at that index
                             // as true, and increment the keyword size.
                             rb_hash_aset(stored_indices, keyword, ULONG2NUM(element_index));
-                            rb_ary_store(keyword_indices, (long) element_index, Qtrue);
+                            rb_ary_store(keyword_indices, (rb_len_t) element_index, Qtrue);
                             size++;
                         }
 
@@ -1808,7 +1789,7 @@ pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *b
                             const pm_assoc_node_t *assoc = (const pm_assoc_node_t *) elements->nodes[element_index];
                             bool popped = true;
 
-                            if (rb_ary_entry(keyword_indices, (long) element_index) == Qtrue) {
+                            if (rb_ary_entry(keyword_indices, (rb_len_t) element_index) == Qtrue) {
                                 keywords[keyword_index++] = pm_static_literal_value(iseq, assoc->key, scope_node);
                                 popped = false;
                             }
@@ -3697,6 +3678,18 @@ retry:;
 
             PUSH_INSN1(ret, *node_location, putobject, Qfalse);
             return pm_compile_builtin_mandatory_only_method(iseq, scope_node, call_node, node_location);
+        }
+        else if (strcmp("local_self!", builtin_func) == 0) {
+            // Push the local named "self" (e.g. the `self:` keyword parameter
+            // of Ractor.shareable_proc) onto the stack.
+            pm_constant_id_t self_id = pm_parser_constant_find(scope_node->parser, (const uint8_t *) "self", 4);
+            if (self_id == 0) {
+                COMPILE_ERROR(iseq, node_location->line, "local_self! called but 'self' not found in local table");
+                return COMPILE_NG;
+            }
+            pm_local_index_t self_index = pm_lookup_local_index(iseq, scope_node, self_id, /*start_depth=*/0);
+            PUSH_GETLOCAL(ret, *node_location, self_index.index, self_index.level);
+            return COMPILE_OK;
         }
         else if (1) {
             rb_bug("can't find builtin function:%s", builtin_func);
@@ -5756,8 +5749,6 @@ pm_compile_shareable_constant_literal(rb_iseq_t *iseq, const pm_node_t *node, pm
         return pm_static_literal_value(iseq, node, scope_node);
       case PM_STRING_NODE:
         return parse_static_literal_string(iseq, scope_node, node, &((const pm_string_node_t *) node)->unescaped);
-      case PM_SOURCE_FILE_NODE:
-        return pm_source_file_value((const pm_source_file_node_t *) node, scope_node);
       case PM_ARRAY_NODE: {
         const pm_array_node_t *cast = (const pm_array_node_t *) node;
         VALUE result = rb_ary_new_capa(cast->elements.size);
@@ -6933,6 +6924,9 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
         keyword->table = (ID *)&ISEQ_BODY(iseq)->local_table[keyword_start_index];
     }
 
+    local_table_for_iseq = NULL;
+    if (idtmp) ALLOCV_END(idtmp);
+
     //********STEP 5************
     // Goal: compile anything that needed to be compiled
     if (optionals_list && optionals_list->size) {
@@ -7204,18 +7198,78 @@ pm_compile_alias_method_node(rb_iseq_t *iseq, const pm_alias_method_node_t *node
     if (popped) PUSH_INSN(ret, *location, pop);
 }
 
-static inline void
-pm_compile_and_node(rb_iseq_t *iseq, const pm_and_node_t *node, const pm_node_location_t *location, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node)
+/**
+ * Compile a chain of and nodes or a chain of or nodes that has been flattened
+ * into source order, so that `a && b && c` is passed as the nodes
+ * `[a, a && b, b, a && b && c, c]`. Even indices hold the operands, and odd
+ * indices hold the operator nodes between them. Prism parses `a && b && c` as
+ * `(a && b) && c`, so pm_compile_and_node and pm_compile_or_node flatten the
+ * chain by walking left operands iteratively, which keeps the C stack depth
+ * independent of the length of the chain.
+ *
+ * Every operator in the chain branches to one shared end label. The peephole
+ * optimizer threads a branch to a label that is followed by another branch one
+ * link at a time, so a label per operator makes compilation quadratic in the
+ * length of the chain.
+ */
+static void
+pm_compile_logical_chain(rb_iseq_t *iseq, size_t size, const pm_node_t **nodes, const pm_node_location_t *location, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node)
 {
+    const pm_node_type_t type = PM_NODE_TYPE(nodes[1]);
     LABEL *end_label = NEW_LABEL(location->line);
 
-    PM_COMPILE_NOT_POPPED(node->left);
-    if (!popped) PUSH_INSN(ret, *location, dup);
-    PUSH_INSNL(ret, *location, branchunless, end_label);
+    for (size_t index = 0; index + 1 < size; index += 2) {
+        PM_COMPILE_NOT_POPPED(nodes[index]);
 
-    if (!popped) PUSH_INSN(ret, *location, pop);
-    PM_COMPILE(node->right);
+        /* Each operator node starts where its left operand does, so every
+         * operator node in the chain is on the same line. */
+        const pm_node_location_t operator_location = {
+            .line = location->line,
+            .node_id = nodes[index + 1]->node_id
+        };
+
+        if (!popped) PUSH_INSN(ret, operator_location, dup);
+        if (type == PM_AND_NODE)
+        {
+            PUSH_INSNL(ret, operator_location, branchunless, end_label);
+        }
+        else {
+            PUSH_INSNL(ret, operator_location, branchif, end_label);
+        }
+        if (!popped) PUSH_INSN(ret, operator_location, pop);
+    }
+
+    PM_COMPILE(nodes[size - 1]);
     PUSH_LABEL(ret, end_label);
+}
+
+static void
+pm_compile_and_node(rb_iseq_t *iseq, const pm_and_node_t *node, const pm_node_location_t *location, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node)
+{
+    const pm_node_t *cursor = (const pm_node_t *) node;
+    size_t size = 1;
+
+    while (PM_NODE_TYPE_P(cursor, PM_AND_NODE)) {
+        cursor = ((const pm_and_node_t *) cursor)->left;
+        size += 2;
+    }
+
+    VALUE handle = 0;
+    const pm_node_t **nodes = ALLOCV_N(const pm_node_t *, handle, size);
+
+    cursor = (const pm_node_t *) node;
+    size_t index = size;
+
+    while (PM_NODE_TYPE_P(cursor, PM_AND_NODE)) {
+        const pm_and_node_t *cast = (const pm_and_node_t *) cursor;
+        nodes[--index] = cast->right;
+        nodes[--index] = cursor;
+        cursor = cast->left;
+    }
+
+    nodes[0] = cursor;
+    pm_compile_logical_chain(iseq, size, nodes, location, ret, popped, scope_node);
+    ALLOCV_END(handle);
 }
 
 static inline void
@@ -7602,7 +7656,6 @@ pm_compile_case_node_dispatch(rb_iseq_t *iseq, VALUE dispatch, const pm_node_t *
       case PM_FALSE_NODE:
       case PM_INTEGER_NODE:
       case PM_NIL_NODE:
-      case PM_SOURCE_FILE_NODE:
       case PM_SOURCE_LINE_NODE:
       case PM_SYMBOL_NODE:
       case PM_TRUE_NODE:
@@ -8405,6 +8458,35 @@ pm_compile_next_node(rb_iseq_t *iseq, const pm_next_node_t *node, const pm_node_
             COMPILE_ERROR(iseq, location->line, "Invalid next");
         }
     }
+}
+
+static void
+pm_compile_or_node(rb_iseq_t *iseq, const pm_or_node_t *node, const pm_node_location_t *location, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node)
+{
+    const pm_node_t *cursor = (const pm_node_t *) node;
+    size_t size = 1;
+
+    while (PM_NODE_TYPE_P(cursor, PM_OR_NODE)) {
+        cursor = ((const pm_or_node_t *) cursor)->left;
+        size += 2;
+    }
+
+    VALUE handle = 0;
+    const pm_node_t **nodes = ALLOCV_N(const pm_node_t *, handle, size);
+
+    cursor = (const pm_node_t *) node;
+    size_t index = size;
+
+    while (PM_NODE_TYPE_P(cursor, PM_OR_NODE)) {
+        const pm_or_node_t *cast = (const pm_or_node_t *) cursor;
+        nodes[--index] = cast->right;
+        nodes[--index] = cursor;
+        cursor = cast->left;
+    }
+
+    nodes[0] = cursor;
+    pm_compile_logical_chain(iseq, size, nodes, location, ret, popped, scope_node);
+    ALLOCV_END(handle);
 }
 
 static inline void
@@ -9762,12 +9844,25 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         const pm_keyword_hash_node_t *cast = (const pm_keyword_hash_node_t *) node;
         const pm_node_list_t *elements = &cast->elements;
 
-        const pm_node_t *element;
-        PM_NODE_LIST_FOREACH(elements, index, element) {
-            PM_COMPILE(element);
+        bool has_splat = false;
+        for (size_t index = 0; index < elements->size; index++) {
+            if (PM_NODE_TYPE_P(elements->nodes[index], PM_ASSOC_SPLAT_NODE)) {
+                has_splat = true;
+                break;
+            }
         }
 
-        if (!popped) PUSH_INSN1(ret, location, newhash, INT2FIX(elements->size * 2));
+        if (has_splat) {
+            pm_compile_hash_elements(iseq, node, elements, 0, Qundef, false, ret, scope_node);
+        }
+        else {
+            const pm_node_t *element;
+            PM_NODE_LIST_FOREACH(elements, index, element) {
+                PM_COMPILE(element);
+            }
+
+            if (!popped) PUSH_INSN1(ret, location, newhash, INT2FIX(elements->size * 2));
+        }
         return;
       }
       case PM_LAMBDA_NODE: {
@@ -10070,23 +10165,11 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         return;
       }
-      case PM_OR_NODE: {
+      case PM_OR_NODE:
         // a or b
         // ^^^^^^
-        const pm_or_node_t *cast = (const pm_or_node_t *) node;
-
-        LABEL *end_label = NEW_LABEL(location.line);
-        PM_COMPILE_NOT_POPPED(cast->left);
-
-        if (!popped) PUSH_INSN(ret, location, dup);
-        PUSH_INSNL(ret, location, branchif, end_label);
-
-        if (!popped) PUSH_INSN(ret, location, pop);
-        PM_COMPILE(cast->right);
-        PUSH_LABEL(ret, end_label);
-
+        pm_compile_or_node(iseq, (const pm_or_node_t *) node, &location, ret, popped, scope_node);
         return;
-      }
       case PM_OPTIONAL_PARAMETER_NODE: {
         // def foo(bar = 1); end
         //         ^^^^^^^
@@ -10397,17 +10480,21 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // ^^^^^^^^
         if (!popped) {
             const pm_source_file_node_t *cast = (const pm_source_file_node_t *) node;
-            VALUE string = pm_source_file_value(cast, scope_node);
 
+            int string_type;
             if (PM_NODE_FLAG_P(cast, PM_STRING_FLAGS_FROZEN)) {
-                PUSH_INSN1(ret, location, putobject, string);
+                string_type = ISEQ_FROZEN_STRING_LITERAL_ENABLED;
             }
             else if (PM_NODE_FLAG_P(cast, PM_STRING_FLAGS_MUTABLE)) {
-                PUSH_INSN1(ret, location, dupstring, string);
+                string_type = ISEQ_FROZEN_STRING_LITERAL_DISABLED;
             }
             else {
-                PUSH_INSN1(ret, location, dupchilledstring, string);
+                string_type = ISEQ_FROZEN_STRING_LITERAL_UNSET;
             }
+
+            PUSH_INSN1(ret, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+            PUSH_INSN1(ret, location, putobject, INT2FIX(string_type));
+            PUSH_SEND(ret, location, id_core_iseq_path, INT2FIX(1));
         }
         return;
       }
@@ -10686,7 +10773,7 @@ pm_parse_process_error(const pm_parse_result_t *result)
     pm_error_level_t error_level = pm_errors_format(parser, buffer, format_type);
 
     rb_encoding *message_encoding = (error_level == PM_ERROR_LEVEL_LOAD) ? rb_locale_encoding() : rb_enc_find(pm_parser_encoding_name(parser));
-    VALUE message = rb_enc_str_new(pm_buffer_value(buffer), (long) pm_buffer_length(buffer), message_encoding);
+    VALUE message = rb_enc_str_new(pm_buffer_value(buffer), (rb_len_t) pm_buffer_length(buffer), message_encoding);
     pm_buffer_free(buffer);
 
     VALUE error = Qnil;
@@ -10971,7 +11058,7 @@ pm_load_file(pm_parse_result_t *result, VALUE filepath, bool load_error)
 
         if (!RB_TYPE_P(contents, T_STRING)) goto error_generic;
 
-        long len = RSTRING_LEN(contents);
+        rb_len_t len = RSTRING_LEN(contents);
         if (len < 0) goto error_generic;
 
         size_t length = (size_t) len;
@@ -11144,7 +11231,7 @@ pm_node_source_location(VALUE source, VALUE filepath, int start_line,
     return found;
 }
 
-VALUE rb_io_gets_limit_internal(VALUE io, long limit);
+VALUE rb_io_gets_limit_internal(VALUE io, rb_len_t limit);
 
 /**
  * Report whether the stream has reached EOF. The stream reader uses this to
@@ -11191,7 +11278,7 @@ pm_parse_stdin_fgets(char *string, int size, void *stream)
     }
 
     const char *cstr = RSTRING_PTR(line);
-    long length = RSTRING_LEN(line);
+    rb_len_t length = RSTRING_LEN(line);
 
     /*
      * Defensively clamp the copy. The line reader relaxes the limit to avoid
@@ -11199,8 +11286,8 @@ pm_parse_stdin_fgets(char *string, int size, void *stream)
      * than requested; we must never write past the caller's buffer. One byte
      * is reserved for the NUL terminator.
      */
-    if (length > (long) (size - 1)) {
-        length = (long) (size - 1);
+    if (length > (rb_len_t) (size - 1)) {
+        length = (rb_len_t) (size - 1);
     }
 
     memcpy(string, cstr, (size_t) length);

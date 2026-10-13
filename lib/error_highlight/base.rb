@@ -54,20 +54,11 @@ module ErrorHighlight
 
       return nil unless Thread::Backtrace::Location === loc
 
-      node =
-        begin
-          RubyVM::AbstractSyntaxTree.of(loc, keep_script_lines: true)
-        rescue RuntimeError => error
-          # RubyVM::AbstractSyntaxTree.of raises an error with a message that
-          # includes "prism" when the ISEQ was compiled with the prism compiler.
-          # In this case, we'll try to parse again with prism instead.
-          raise unless error.message.include?("prism")
-          prism_find(loc)
-        end
+      node = find_node_from_loc(loc)
 
       Spotter.new(node, **opts).spot
 
-    when RubyVM::AbstractSyntaxTree::Node, Prism::Node
+    when RubyVM::AbstractSyntaxTree::Node, prism::Node
       Spotter.new(obj, **opts).spot
 
     else
@@ -81,20 +72,51 @@ module ErrorHighlight
     return nil
   end
 
+  def self.find_node_from_loc(loc)
+    if loc.respond_to?(:syntax_tree)
+      return loc.syntax_tree
+    end
+
+    begin
+      RubyVM::AbstractSyntaxTree.of(loc, keep_script_lines: true)
+    rescue RuntimeError => error
+      # RubyVM::AbstractSyntaxTree.of raises an error with a message that
+      # includes "prism" when the ISEQ was compiled with the prism compiler.
+      # In this case, we'll try to parse again with prism instead.
+      raise unless error.message.include?("prism")
+      prism_find(loc)
+    end
+  end
+
+  private_class_method :find_node_from_loc
+
   # Accepts a Thread::Backtrace::Location object and returns a Prism::Node
   # corresponding to the backtrace location in the source code.
   def self.prism_find(location)
-    require "prism"
-    return nil if Prism::VERSION < "1.0.0"
+    return nil if prism::VERSION < "1.0.0"
 
     absolute_path = location.absolute_path
     return unless absolute_path
 
     node_id = RubyVM::AbstractSyntaxTree.node_id_for_backtrace_location(location)
-    Prism.parse_file(absolute_path).value.breadth_first_search { |node| node.node_id == node_id }
+    prism.parse_file(absolute_path).value.breadth_first_search { |node| node.node_id == node_id }
   end
 
   private_class_method :prism_find
+
+  # Returns the prism module: Ruby::Prism, the parser built into the
+  # interpreter (Ruby 4.1+), whose nodes always correspond to the compiled
+  # code; or the prism gem on older Rubies.
+  def self.prism
+    if defined?(Ruby::Prism)
+      Ruby::Prism
+    else
+      require "prism"
+      ::Prism
+    end
+  end
+
+  private_class_method :prism
 
   class Spotter
     class NonAscii < Exception; end
@@ -158,9 +180,9 @@ module ErrorHighlight
 
         begin
           subnodes << node if node.name == @name
-        end while (node = node.parent).is_a?(Prism::ConstantPathNode)
+        end while (node = node.parent)&.type == :constant_path_node
 
-        if node.is_a?(Prism::ConstantReadNode) && node.name == @name
+        if node&.type == :constant_read_node && node.name == @name
           subnodes << node
         end
 

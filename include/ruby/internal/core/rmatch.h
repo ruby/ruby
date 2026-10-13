@@ -63,8 +63,8 @@ typedef struct re_pattern_buffer Regexp;
  * But why on earth it has to be visible from extension libraries?
  */
 struct rmatch_offset {
-    long beg; /**< Beginning of a group. */
-    long end; /**< End of a group. */
+    rb_len_t beg; /**< Beginning of a group. */
+    rb_len_t end; /**< End of a group. */
 };
 
 /**

@@ -203,8 +203,7 @@ VALUE rb_obj_dup(VALUE obj);
 VALUE rb_obj_init_copy(VALUE src, VALUE dst);
 
 /**
- * Just  calls  rb_obj_freeze_inline() inside.   Does  this  make any  sens  to
- * extension libraries?
+ * Same as RB_OBJ_FREEZE(), but returns the given object.
  *
  * @param[out]  obj  Object to freeze.
  * @return      Verbatim `obj`.
@@ -213,8 +212,7 @@ VALUE rb_obj_freeze(VALUE obj);
 
 RBIMPL_ATTR_PURE()
 /**
- * Just calls  RB_OBJ_FROZEN() inside.   Does this make  any sens  to extension
- * libraries?
+ * Same as RB_OBJ_FROZEN(), but returns #Qtrue/#Qfalse instead of #bool.
  *
  * @param[in]  obj          Object in question.
  * @retval     RUBY_Qtrue   Yes it is.
@@ -281,7 +279,7 @@ RBIMPL_ATTR_PURE()
  */
 VALUE rb_class_real(VALUE klass);
 
-RBIMPL_ATTR_PURE()
+RBIMPL_ATTR_NOALIAS()
 /**
  * Determines if the given two modules are relatives.
  *
@@ -294,7 +292,7 @@ RBIMPL_ATTR_PURE()
  */
 VALUE rb_class_inherited_p(VALUE scion, VALUE ascendant);
 
-RBIMPL_ATTR_PURE()
+RBIMPL_ATTR_NOALIAS()
 /**
  * Queries the parent of the given class.
  *

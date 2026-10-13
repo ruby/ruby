@@ -6,7 +6,8 @@ require "rubygems"
 class TestGemExit < Gem::TestCase
   def test_exit
     system(*ruby_with_rubygems_in_load_path, "-e", "raise Gem::SystemExitException.new(2)")
-    assert_equal 2, $?.exitstatus
+    # Process.last_status instead of $?, which Ruby::Box leaves uninitialized
+    assert_equal 2, Process.last_status.exitstatus
   end
 
   def test_status
