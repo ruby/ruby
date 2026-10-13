@@ -47,6 +47,7 @@ set confargs=%config_make:.mak=.sub%
 set debug_configure=
 set MAKEFILE=Makefile
 set make_command=nmake
+set cc_arg=
 echo>%config_make% # CONFIGURE
 type nul > %confargs%
 :loop
@@ -131,6 +132,7 @@ goto :loop ;
 goto :unknown_opt
 :name
   if "%eq%" == "" call :take_arg
+  if "%var%" == "CC" set "cc_arg=yes"
   echo>> %config_make% %var% = %arg%
 goto :loopend ;
 :dir
@@ -299,6 +301,10 @@ goto :EOF
   ) 1>&2
   exit /b 1
 :end
+::- Record CC from the environment as if given as an argument, so that
+::- the reconfiguration by make keeps it even from a shell without CC.
+if not defined cc_arg if defined CC echo>> %config_make% CC = %CC%
+if not defined cc_arg if defined CC echo>>%confargs%  "CC=%CC:$=$$%" \
 if "%debug_configure%" == "yes" (type %confargs%)
 if defined optdirs (echo>>%config_make% optdirs = %optdirs:~1%)
 (
