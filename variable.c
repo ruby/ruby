@@ -3240,7 +3240,9 @@ autoload_try_load(VALUE _arguments)
     // After we loaded the feature, if the constant is not defined, we remove it completely:
     rb_const_entry_t *ce = rb_const_lookup(arguments->module, arguments->name);
 
-    // Copy the constant from the box that registered the autoload into the current box:
+    // Copy the constant from the box that registered the autoload into the current box.
+    // E.g., after a box B1 triggers the autoload, another box B2 with its own copy of the
+    // module still has it; referring to it in B2 comes here too, as the require does nothing.
     if (ce && UNDEF_P(ce->value)) {
         rb_const_entry_t *loaded = const_lookup_in_box(arguments->module, arguments->name,
                                                        autoload_box(arguments->autoload_const));
