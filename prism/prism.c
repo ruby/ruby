@@ -20767,6 +20767,27 @@ parse_unary_minus_number(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
 }
 
 static pm_node_t *
+parse_unary_star(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t flags, pm_diagnostic_id_t diag_id, uint16_t depth)  {
+    parser_lex(parser);
+
+    /* * operators at the beginning of expressions are only valid in the context
+     * of a multiple assignment. We enforce that here. We'll still lex past it
+     * though and create an error recovery node. */
+    if (binding_power != PM_BINDING_POWER_STATEMENT) {
+        pm_parser_err_prefix(parser, diag_id);
+        return UP(pm_error_recovery_node_create(parser, PM_TOKEN_START(parser, &parser->previous), PM_TOKEN_LENGTH(&parser->previous)));
+    }
+
+    pm_node_t *splat = parse_splat(parser, flags, depth);
+
+    if (match1(parser, PM_TOKEN_COMMA)) {
+        return parse_targets_validate(parser, splat, PM_BINDING_POWER_INDEX, (uint16_t) (depth + 1));
+    } else {
+        return parse_target_validate(parser, splat, true);
+    }
+}
+
+static pm_node_t *
 parse_super(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
     pm_token_t keyword = parser->current;
     parser_lex(parser);
@@ -21051,25 +21072,8 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
         case PM_TOKEN_XSTRING_BEGIN:
         case PM_TOKEN_PERCENT_LOWER_X:
             return parse_xstring(parser, depth);
-        case PM_TOKEN_USTAR: {
-            parser_lex(parser);
-
-            // * operators at the beginning of expressions are only valid in the
-            // context of a multiple assignment. We enforce that here. We'll
-            // still lex past it though and create a missing node place.
-            if (binding_power != PM_BINDING_POWER_STATEMENT) {
-                pm_parser_err_prefix(parser, diag_id);
-                return UP(pm_error_recovery_node_create(parser, PM_TOKEN_START(parser, &parser->previous), PM_TOKEN_LENGTH(&parser->previous)));
-            }
-
-            pm_node_t *splat = parse_splat(parser, flags, depth);
-
-            if (match1(parser, PM_TOKEN_COMMA)) {
-                return parse_targets_validate(parser, splat, PM_BINDING_POWER_INDEX, (uint16_t) (depth + 1));
-            } else {
-                return parse_target_validate(parser, splat, true);
-            }
-        }
+        case PM_TOKEN_USTAR:
+            return parse_unary_star(parser, binding_power, flags, diag_id, depth);
         case PM_TOKEN_BANG:
             return UP(parse_bang(parser, binding_power, flags, depth));
         case PM_TOKEN_TILDE:
