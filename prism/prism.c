@@ -21835,6 +21835,70 @@ parse_match(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t binding_pow
 }
 
 static pm_node_t *
+parse_equal(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t previous_binding_power, pm_binding_power_t binding_power, uint8_t flags, uint16_t depth) {
+    pm_token_t operator = parser->current;
+
+    switch (PM_NODE_TYPE(node)) {
+        case PM_CALL_NODE: {
+            // If we have no arguments to the call node and we need this
+            // to be a target then this is either a method call or a
+            // local variable write. This _must_ happen before the value
+            // is parsed because it could be referenced in the value.
+            pm_call_node_t *call_node = (pm_call_node_t *) node;
+            if (PM_NODE_FLAG_P(call_node, PM_CALL_NODE_FLAGS_VARIABLE_CALL)) {
+                pm_parser_local_add_location(parser, &call_node->message_loc, 0);
+            }
+        }
+        PRISM_FALLTHROUGH
+        case PM_CASE_WRITABLE: {
+            // When we have `it = value`, we need to add `it` as a local
+            // variable before parsing the value, in case the value
+            // references the variable.
+            if (PM_NODE_TYPE_P(node, PM_IT_LOCAL_VARIABLE_READ_NODE)) {
+                pm_parser_local_add_location(parser, &node->location, 0);
+            }
+
+            parser_lex(parser);
+            pm_node_t *value = parse_assignment_values(parser, previous_binding_power, PM_NODE_TYPE_P(node, PM_MULTI_TARGET_NODE) ? PM_BINDING_POWER_MULTI_ASSIGNMENT + 1 : binding_power, flags, PM_ERR_EXPECT_EXPRESSION_AFTER_EQUAL, (uint16_t) (depth + 1));
+
+            if (PM_NODE_TYPE_P(node, PM_MULTI_TARGET_NODE) && previous_binding_power != PM_BINDING_POWER_STATEMENT && !(flags & PM_PARSE_ACCEPTS_STATEMENT)) {
+                pm_parser_err_node(parser, node, PM_ERR_UNEXPECTED_MULTI_WRITE);
+            }
+
+            return parse_write(parser, node, &operator, value);
+        }
+        case PM_SPLAT_NODE: {
+            pm_multi_target_node_t *multi_target = pm_multi_target_node_create(parser);
+            pm_multi_target_node_targets_append(parser, multi_target, node);
+
+            parser_lex(parser);
+            pm_node_t *value = parse_assignment_values(parser, previous_binding_power, PM_BINDING_POWER_MULTI_ASSIGNMENT + 1, flags, PM_ERR_EXPECT_EXPRESSION_AFTER_EQUAL, (uint16_t) (depth + 1));
+            return parse_write(parser, UP(multi_target), &operator, value);
+        }
+        case PM_SOURCE_ENCODING_NODE:
+        case PM_FALSE_NODE:
+        case PM_SOURCE_FILE_NODE:
+        case PM_SOURCE_LINE_NODE:
+        case PM_NIL_NODE:
+        case PM_SELF_NODE:
+        case PM_TRUE_NODE: {
+            // In these special cases, we have specific error messages
+            // and we will replace them with local variable writes.
+            parser_lex(parser);
+            pm_node_t *value = parse_assignment_values(parser, previous_binding_power, binding_power, flags, PM_ERR_EXPECT_EXPRESSION_AFTER_EQUAL, (uint16_t) (depth + 1));
+            return parse_unwriteable_write(parser, node, &operator, value);
+        }
+        default:
+            // In this case we have an = sign, but we don't know what
+            // it's for. We need to treat it as an error. We'll mark it
+            // as an error and skip past it.
+            parser_lex(parser);
+            pm_parser_err_token(parser, &operator, PM_ERR_EXPRESSION_NOT_WRITABLE);
+            return node;
+    }
+}
+
+static pm_node_t *
 parse_and_equal(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t previous_binding_power, pm_binding_power_t binding_power, uint8_t flags, uint16_t depth) {
     pm_token_t operator = parser->current;
 
@@ -22234,66 +22298,8 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
     pm_token_t token = parser->current;
 
     switch (token.type) {
-        case PM_TOKEN_EQUAL: {
-            switch (PM_NODE_TYPE(node)) {
-                case PM_CALL_NODE: {
-                    // If we have no arguments to the call node and we need this
-                    // to be a target then this is either a method call or a
-                    // local variable write. This _must_ happen before the value
-                    // is parsed because it could be referenced in the value.
-                    pm_call_node_t *call_node = (pm_call_node_t *) node;
-                    if (PM_NODE_FLAG_P(call_node, PM_CALL_NODE_FLAGS_VARIABLE_CALL)) {
-                        pm_parser_local_add_location(parser, &call_node->message_loc, 0);
-                    }
-                }
-                PRISM_FALLTHROUGH
-                case PM_CASE_WRITABLE: {
-                    // When we have `it = value`, we need to add `it` as a local
-                    // variable before parsing the value, in case the value
-                    // references the variable.
-                    if (PM_NODE_TYPE_P(node, PM_IT_LOCAL_VARIABLE_READ_NODE)) {
-                        pm_parser_local_add_location(parser, &node->location, 0);
-                    }
-
-                    parser_lex(parser);
-                    pm_node_t *value = parse_assignment_values(parser, previous_binding_power, PM_NODE_TYPE_P(node, PM_MULTI_TARGET_NODE) ? PM_BINDING_POWER_MULTI_ASSIGNMENT + 1 : binding_power, flags, PM_ERR_EXPECT_EXPRESSION_AFTER_EQUAL, (uint16_t) (depth + 1));
-
-                    if (PM_NODE_TYPE_P(node, PM_MULTI_TARGET_NODE) && previous_binding_power != PM_BINDING_POWER_STATEMENT && !(flags & PM_PARSE_ACCEPTS_STATEMENT)) {
-                        pm_parser_err_node(parser, node, PM_ERR_UNEXPECTED_MULTI_WRITE);
-                    }
-
-                    return parse_write(parser, node, &token, value);
-                }
-                case PM_SPLAT_NODE: {
-                    pm_multi_target_node_t *multi_target = pm_multi_target_node_create(parser);
-                    pm_multi_target_node_targets_append(parser, multi_target, node);
-
-                    parser_lex(parser);
-                    pm_node_t *value = parse_assignment_values(parser, previous_binding_power, PM_BINDING_POWER_MULTI_ASSIGNMENT + 1, flags, PM_ERR_EXPECT_EXPRESSION_AFTER_EQUAL, (uint16_t) (depth + 1));
-                    return parse_write(parser, UP(multi_target), &token, value);
-                }
-                case PM_SOURCE_ENCODING_NODE:
-                case PM_FALSE_NODE:
-                case PM_SOURCE_FILE_NODE:
-                case PM_SOURCE_LINE_NODE:
-                case PM_NIL_NODE:
-                case PM_SELF_NODE:
-                case PM_TRUE_NODE: {
-                    // In these special cases, we have specific error messages
-                    // and we will replace them with local variable writes.
-                    parser_lex(parser);
-                    pm_node_t *value = parse_assignment_values(parser, previous_binding_power, binding_power, flags, PM_ERR_EXPECT_EXPRESSION_AFTER_EQUAL, (uint16_t) (depth + 1));
-                    return parse_unwriteable_write(parser, node, &token, value);
-                }
-                default:
-                    // In this case we have an = sign, but we don't know what
-                    // it's for. We need to treat it as an error. We'll mark it
-                    // as an error and skip past it.
-                    parser_lex(parser);
-                    pm_parser_err_token(parser, &token, PM_ERR_EXPRESSION_NOT_WRITABLE);
-                    return node;
-            }
-        }
+        case PM_TOKEN_EQUAL:
+            return parse_equal(parser, node, previous_binding_power, binding_power, flags, depth);
         case PM_TOKEN_AMPERSAND_AMPERSAND_EQUAL:
             return parse_and_equal(parser, node, previous_binding_power, binding_power, flags, depth);
         case PM_TOKEN_PIPE_PIPE_EQUAL:
