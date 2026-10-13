@@ -20605,6 +20605,35 @@ parse_postexe(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t fla
     return pm_post_execution_node_create(parser, &keyword, &opening, statements, &parser->previous);
 }
 
+static pm_undef_node_t *
+parse_undef(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t flags, uint16_t depth) {
+    if (binding_power != PM_BINDING_POWER_STATEMENT && !(flags & PM_PARSE_ACCEPTS_STATEMENT)) {
+        pm_parser_err_current(parser, PM_ERR_STATEMENT_UNDEF);
+    }
+
+    parser_lex(parser);
+    pm_undef_node_t *undef = pm_undef_node_create(parser, &parser->previous);
+    pm_node_t *name = parse_undef_argument(parser, (uint16_t) (depth + 1));
+
+    if (!PM_NODE_TYPE_P(name, PM_ERROR_RECOVERY_NODE)) {
+        pm_undef_node_append(parser->arena, undef, name);
+
+        while (match1(parser, PM_TOKEN_COMMA)) {
+            lex_state_set(parser, PM_LEX_STATE_FNAME | PM_LEX_STATE_FITEM);
+            parser_lex(parser);
+
+            name = parse_undef_argument(parser, (uint16_t) (depth + 1));
+            if (PM_NODE_TYPE_P(name, PM_ERROR_RECOVERY_NODE)) {
+                break;
+            }
+
+            pm_undef_node_append(parser->arena, undef, name);
+        }
+    }
+
+    return undef;
+}
+
 /**
  * Parse an expression that begins with the previous node that we just lexed.
  */
@@ -20875,34 +20904,8 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
             parser_lex(parser);
 
             return parse_conditional(parser, PM_CONTEXT_IF, opening_newline_index, if_after_else, (uint16_t) (depth + 1));
-        case PM_TOKEN_KEYWORD_UNDEF: {
-            if (binding_power != PM_BINDING_POWER_STATEMENT && !(flags & PM_PARSE_ACCEPTS_STATEMENT)) {
-                pm_parser_err_current(parser, PM_ERR_STATEMENT_UNDEF);
-            }
-
-            parser_lex(parser);
-            pm_undef_node_t *undef = pm_undef_node_create(parser, &parser->previous);
-            pm_node_t *name = parse_undef_argument(parser, (uint16_t) (depth + 1));
-
-            if (PM_NODE_TYPE_P(name, PM_ERROR_RECOVERY_NODE)) {
-            } else {
-                pm_undef_node_append(parser->arena, undef, name);
-
-                while (match1(parser, PM_TOKEN_COMMA)) {
-                    lex_state_set(parser, PM_LEX_STATE_FNAME | PM_LEX_STATE_FITEM);
-                    parser_lex(parser);
-                    name = parse_undef_argument(parser, (uint16_t) (depth + 1));
-
-                    if (PM_NODE_TYPE_P(name, PM_ERROR_RECOVERY_NODE)) {
-                        break;
-                    }
-
-                    pm_undef_node_append(parser->arena, undef, name);
-                }
-            }
-
-            return UP(undef);
-        }
+        case PM_TOKEN_KEYWORD_UNDEF:
+            return UP(parse_undef(parser, binding_power, flags, depth));
         case PM_TOKEN_KEYWORD_NOT:
             return parse_not(parser, binding_power, flags, depth);
         case PM_TOKEN_KEYWORD_UNLESS: {
