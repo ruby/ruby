@@ -1034,6 +1034,8 @@ class TestRange < Test::Unit::TestCase
     assert_include("a"..."z", "y")
     assert_not_include("a"..."z", "z")
     assert_not_include("a".."z", "cc")
+    assert_not_include("z".."a", "a")
+    assert_include("a".."a", "a")
     assert_raise(TypeError) {("a"..).include?("c")}
     assert_raise(TypeError) {("a"..).include?("5")}
 
