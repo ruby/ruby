@@ -6364,15 +6364,21 @@ rb_io_sysread(int argc, VALUE *argv, VALUE io)
 
     rb_scan_args(argc, argv, "11", &len, &str);
     ilen = NUM2LEN(len);
-
+    if (ilen < 0) {
+        rb_raise(rb_eArgError, "negative length %"PRIdLEN" given", ilen);
+    }
     shrinkable = io_setstrbuf(&str, ilen);
-    if (ilen == 0) return str;
 
     GetOpenFile(io, fptr);
     rb_io_check_byte_readable(fptr);
 
     if (READ_DATA_BUFFERED(fptr)) {
         rb_raise(rb_eIOError, "sysread for buffered IO");
+    }
+
+    if (ilen == 0) {
+        io_set_read_length(str, 0, shrinkable);
+        return str;
     }
 
     rb_io_check_closed(fptr);
@@ -6394,7 +6400,7 @@ rb_io_sysread(int argc, VALUE *argv, VALUE io)
 
     io_set_read_length(str, n, shrinkable);
 
-    if (n == 0 && ilen > 0) {
+    if (n == 0) {
         rb_eof_error();
     }
 
@@ -6466,25 +6472,35 @@ static VALUE
 rb_io_pread(int argc, VALUE *argv, VALUE io)
 {
     VALUE len, offset, str;
+    rb_len_t ilen;
     rb_io_t *fptr;
     ssize_t n;
     struct prdwr_internal_arg arg;
     int shrinkable;
 
     rb_scan_args(argc, argv, "21", &len, &offset, &str);
-    arg.count = NUM2SIZET(len);
+    ilen = NUM2LEN(len);
+    if (ilen < 0) {
+        rb_raise(rb_eArgError, "negative length %"PRIdLEN" given", ilen);
+    }
     arg.offset = NUM2OFFT(offset);
 
-    shrinkable = io_setstrbuf(&str, (rb_len_t)arg.count);
-    if (arg.count == 0) return str;
-    rb_str_make_heap(str);
-    arg.buf = RSTRING_PTR(str);
+    shrinkable = io_setstrbuf(&str, ilen);
 
     GetOpenFile(io, fptr);
     rb_io_check_byte_readable(fptr);
 
+    if (ilen == 0) {
+        io_set_read_length(str, 0, shrinkable);
+        return str;
+    }
+
+    io_setstrbuf(&str, ilen);
+    rb_str_make_heap(str);
     arg.io = fptr;
     arg.fd = fptr->fd;
+    arg.buf = RSTRING_PTR(str);
+    arg.count = (size_t)ilen;
     rb_io_check_closed(fptr);
 
     rb_str_locktmp(str);
@@ -6494,7 +6510,7 @@ rb_io_pread(int argc, VALUE *argv, VALUE io)
         rb_sys_fail_path(fptr->pathv);
     }
     io_set_read_length(str, n, shrinkable);
-    if (n == 0 && arg.count > 0) {
+    if (n == 0) {
         rb_eof_error();
     }
 
