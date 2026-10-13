@@ -277,7 +277,9 @@ CPPFLAGS := -DDISABLE_RUBYGEMS $(CPPFLAGS)
 endif
 
 # https://learn.microsoft.com/en-us/cpp/build/reference/zc-preprocessor?view=msvc-170
-ifneq ($(intcmp $(MSC_VER),1925,lt),lt)
+ifneq ($(CLANG_VER),)
+# clang-cl conforms already and warns that -Zc:preprocessor is unused
+else ifneq ($(intcmp $(MSC_VER),1925,lt),lt)
 CPPFLAGS := -Zc:preprocessor $(CPPFLAGS)
 else
 CPPFLAGS := -experimental:preprocessor $(CPPFLAGS)
