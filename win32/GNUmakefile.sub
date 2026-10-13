@@ -120,6 +120,11 @@ $(error MSC_VER not defined.  Retry from configure pass.)
 else ifeq ($(intcmp $(MSC_VER),1915,lt),lt)
 $(error MSVC $(MSC_VER) is not supported.  1915 (Visual Studio 2017 version 15.8) or later is required for the conforming preprocessor.)
 endif
+ifneq ($(CLANG_VER),)
+ifeq ($(intcmp $(CLANG_VER),15,lt),lt)
+$(error clang-cl $(CLANG_VER) is not supported.  15 or later is required for pragma optimize, which RB_GC_GUARD relies on.)
+endif
+endif
 MACHINE ?= x86
 ifeq ($(MACHINE),x86)
 PROCESSOR_LEVEL ?= 5
