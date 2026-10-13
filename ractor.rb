@@ -400,6 +400,29 @@ class Ractor
     "#<Ractor:##{id}#{name ? ' '+name : ''}#{loc ? " " + loc : ''} #{status}>"
   end
 
+  #
+  # call-seq:
+  #    ractor.alive? -> true or false
+  #
+  # Returns +true+ if the ractor has not yet terminated, +false+ once it has
+  # finished running (whether normally or by an unhandled exception).
+  #
+  #     r = Ractor.new { Ractor.receive }
+  #     r.alive? #=> true
+  #     r << :done
+  #     r.join
+  #     r.alive? #=> false
+  #
+  def alive?
+    # The block's result is recorded (sync.legacy) before joiners are woken, whereas the
+    # status only becomes terminated at the very end of thread teardown.  Check both so
+    # that a ractor is never alive? after #join or #value returned.
+    __builtin_cexpr! %q{
+      RBOOL(!rb_ractor_status_p(RACTOR_PTR(self), ractor_terminated) &&
+            UNDEF_P(RACTOR_PTR(self)->sync.legacy))
+    }
+  end
+
   alias to_s inspect
 
   # Returns the name set in Ractor.new, or +nil+.

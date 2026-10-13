@@ -150,6 +150,11 @@ Note: We're only listing outstanding class updates.
     * `Proc#ruby2_keywords` is deprecated and will be removed in Ruby 4.4.
       [[Feature #22205]]
 
+* Ractor
+
+    * `Ractor#alive?` is added. It returns `false` once the ractor has
+      terminated. [[Feature #22441]]
+
 * Range
 
     * `Range#clamp` is added. It returns a new `Range` instance whose
@@ -673,6 +678,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #22297]: https://bugs.ruby-lang.org/issues/22297
 [Feature #22309]: https://bugs.ruby-lang.org/issues/22309
 [Feature #22400]: https://bugs.ruby-lang.org/issues/22400
+[Feature #22441]: https://bugs.ruby-lang.org/issues/22441
 [PR #17201]: https://github.com/ruby/ruby/pull/17201
 [GH-psych #805]: https://github.com/ruby/psych/pull/805
 [RubyGems-v4.0.4]: https://github.com/rubygems/rubygems/releases/tag/v4.0.4
