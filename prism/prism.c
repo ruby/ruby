@@ -19115,172 +19115,6 @@ parse_string_array(pm_parser_t *parser, uint16_t depth) {
 }
 
 /**
- * Parse an interpolated symbol array literal (`%I[...]`).
- */
-static pm_node_t *
-parse_symbol_array(pm_parser_t *parser, uint16_t depth) {
-    parser_lex(parser);
-    pm_token_t opening = parser->previous;
-    pm_array_node_t *array = pm_array_node_create(parser, &opening);
-
-    /* This is the current node that we are parsing that will be added to the
-     * list of elements. */
-    pm_node_t *current = NULL;
-
-    while (!match2(parser, PM_TOKEN_STRING_END, PM_TOKEN_EOF)) {
-        switch (parser->current.type) {
-            case PM_TOKEN_WORDS_SEP: {
-                /* Reset the explicit encoding if we hit a separator since each
-                 * element can have its own encoding. */
-                parser->explicit_encoding = NULL;
-
-                if (current == NULL) {
-                    /* If we hit a separator before we have any content, then we
-                     * don't need to do anything. */
-                } else {
-                    /* If we hit a separator after we've hit content, then we
-                     * need to append that content to the list and reset the
-                     * current node. */
-                    pm_array_node_elements_append(parser->arena, array, current);
-                    current = NULL;
-                }
-
-                parser_lex(parser);
-                break;
-            }
-            case PM_TOKEN_STRING_CONTENT: {
-                if (current == NULL) {
-                    /* If we hit content and the current node is NULL, then this
-                     * is the first string content we've seen. In that case
-                     * we're going to create a new string node and set that to
-                     * the current. */
-                    current = UP(pm_symbol_node_create_current_string(parser, NULL, &parser->current, NULL));
-                    parser_lex(parser);
-                } else if (PM_NODE_TYPE_P(current, PM_INTERPOLATED_SYMBOL_NODE)) {
-                    /* If we hit string content and the current node is an
-                     * interpolated string, then we need to append the string
-                     * content to the list of child nodes. */
-                    pm_node_t *string = UP(pm_string_node_create_current_string(parser, NULL, &parser->current, NULL));
-                    parser_lex(parser);
-
-                    pm_interpolated_symbol_node_append(parser->arena, (pm_interpolated_symbol_node_t *) current, string);
-                } else if (PM_NODE_TYPE_P(current, PM_SYMBOL_NODE)) {
-                    /* If we hit string content and the current node is a symbol
-                     * node, then we need to convert the current node into an
-                     * interpolated string and add the string content to the
-                     * list of child nodes. */
-                    pm_symbol_node_t *cast = (pm_symbol_node_t *) current;
-                    pm_token_t content = {
-                        .type = PM_TOKEN_STRING_CONTENT,
-                        .start = parser->start + cast->content_loc.start,
-                        .end = parser->start + cast->content_loc.start + cast->content_loc.length
-                    };
-
-                    pm_node_t *first_string = UP(pm_string_node_create_unescaped(parser, NULL, &content, NULL, &cast->unescaped));
-                    pm_node_t *second_string = UP(pm_string_node_create_current_string(parser, NULL, &parser->previous, NULL));
-                    parser_lex(parser);
-
-                    pm_interpolated_symbol_node_t *interpolated = pm_interpolated_symbol_node_create(parser, NULL, NULL, NULL);
-                    pm_interpolated_symbol_node_append(parser->arena, interpolated, first_string);
-                    pm_interpolated_symbol_node_append(parser->arena, interpolated, second_string);
-
-                    current = UP(interpolated);
-                } else {
-                    assert(false && "unreachable");
-                }
-
-                break;
-            }
-            case PM_TOKEN_EMBVAR: {
-                bool start_location_set = false;
-                if (current == NULL) {
-                    /* If we hit an embedded variable and the current node is
-                     * NULL, then this is the start of a new string. We'll set
-                     * the current node to a new interpolated string. */
-                    current = UP(pm_interpolated_symbol_node_create(parser, NULL, NULL, NULL));
-                } else if (PM_NODE_TYPE_P(current, PM_SYMBOL_NODE)) {
-                    /* If we hit an embedded variable and the current node is a
-                     * string node, then we'll convert the current into an
-                     * interpolated string and add the string node to the list
-                     * of parts. */
-                    pm_interpolated_symbol_node_t *interpolated = pm_interpolated_symbol_node_create(parser, NULL, NULL, NULL);
-
-                    current = UP(pm_symbol_node_to_string_node(parser, (pm_symbol_node_t *) current));
-                    pm_interpolated_symbol_node_append(parser->arena, interpolated, current);
-                    PM_NODE_START_SET_NODE(interpolated, current);
-                    start_location_set = true;
-                    current = UP(interpolated);
-                } else {
-                    /* If we hit an embedded variable and the current node is an
-                     * interpolated string, then we'll just add the embedded
-                     * variable. */
-                }
-
-                pm_node_t *part = parse_string_part(parser, (uint16_t) (depth + 1));
-                pm_interpolated_symbol_node_append(parser->arena, (pm_interpolated_symbol_node_t *) current, part);
-                if (!start_location_set) {
-                    PM_NODE_START_SET_NODE(current, part);
-                }
-                break;
-            }
-            case PM_TOKEN_EMBEXPR_BEGIN: {
-                bool start_location_set = false;
-                if (current == NULL) {
-                    /* If we hit an embedded expression and the current node is
-                     * NULL, then this is the start of a new string. We'll set
-                     * the current node to a new interpolated string. */
-                    current = UP(pm_interpolated_symbol_node_create(parser, NULL, NULL, NULL));
-                } else if (PM_NODE_TYPE_P(current, PM_SYMBOL_NODE)) {
-                    /* If we hit an embedded expression and the current node is
-                     * a string node, then we'll convert the current into an
-                     * interpolated string and add the string node to the list
-                     * of parts. */
-                    pm_interpolated_symbol_node_t *interpolated = pm_interpolated_symbol_node_create(parser, NULL, NULL, NULL);
-
-                    current = UP(pm_symbol_node_to_string_node(parser, (pm_symbol_node_t *) current));
-                    pm_interpolated_symbol_node_append(parser->arena, interpolated, current);
-                    PM_NODE_START_SET_NODE(interpolated, current);
-                    start_location_set = true;
-                    current = UP(interpolated);
-                } else if (PM_NODE_TYPE_P(current, PM_INTERPOLATED_SYMBOL_NODE)) {
-                    /* If we hit an embedded expression and the current node is
-                     * an interpolated string, then we'll just continue on. */
-                } else {
-                    assert(false && "unreachable");
-                }
-
-                pm_node_t *part = parse_string_part(parser, (uint16_t) (depth + 1));
-                pm_interpolated_symbol_node_append(parser->arena, (pm_interpolated_symbol_node_t *) current, part);
-                if (!start_location_set) {
-                    PM_NODE_START_SET_NODE(current, part);
-                }
-                break;
-            }
-            default:
-                expect1(parser, PM_TOKEN_STRING_CONTENT, PM_ERR_LIST_I_UPPER_ELEMENT);
-                parser_lex(parser);
-                break;
-        }
-    }
-
-    /* If we have a current node, then we need to append it to the list. */
-    if (current) {
-        pm_array_node_elements_append(parser->arena, array, current);
-    }
-
-    pm_token_t closing = parser->current;
-    if (match1(parser, PM_TOKEN_EOF)) {
-        pm_parser_err_token(parser, &opening, PM_ERR_LIST_I_UPPER_TERM);
-        closing = (pm_token_t) { .type = 0, .start = parser->previous.end, .end = parser->previous.end };
-    } else {
-        expect1(parser, PM_TOKEN_STRING_END, PM_ERR_LIST_I_UPPER_TERM);
-    }
-    pm_array_node_close_set(parser, array, &closing);
-
-    return UP(array);
-}
-
-/**
  * Parse a parenthesized expression, which could be a grouping, a multi-target
  * assignment, or a set of statements.
  */
@@ -20341,6 +20175,230 @@ parse_identifier(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t 
     return node;
 }
 
+static pm_array_node_t *
+parse_uninterpolated_symbol_array(pm_parser_t *parser) {
+    pm_token_t opening = parser->current;
+    parser_lex(parser);
+
+    pm_array_node_t *array = pm_array_node_create(parser, &opening);
+    pm_node_t *current = NULL;
+
+    while (!match2(parser, PM_TOKEN_STRING_END, PM_TOKEN_EOF)) {
+        accept1(parser, PM_TOKEN_WORDS_SEP);
+        if (match1(parser, PM_TOKEN_STRING_END)) break;
+
+        // Interpolation is not possible but nested heredocs can still lead to
+        // consecutive (disjoint) string tokens when the final newline is escaped.
+        while (match1(parser, PM_TOKEN_STRING_CONTENT)) {
+            // Record the string node, moving to interpolation if needed.
+            if (current == NULL) {
+                current = UP(pm_symbol_node_create_current_string(parser, NULL, &parser->current, NULL));
+                parser_lex(parser);
+            } else if (PM_NODE_TYPE_P(current, PM_INTERPOLATED_SYMBOL_NODE)) {
+                pm_node_t *string = UP(pm_string_node_create_current_string(parser, NULL, &parser->current, NULL));
+                parser_lex(parser);
+                pm_interpolated_symbol_node_append(parser->arena, (pm_interpolated_symbol_node_t *) current, string);
+            } else if (PM_NODE_TYPE_P(current, PM_SYMBOL_NODE)) {
+                pm_symbol_node_t *cast = (pm_symbol_node_t *) current;
+                pm_token_t content = { .type = PM_TOKEN_STRING_CONTENT, .start = parser->start + cast->content_loc.start, .end = parser->start + cast->content_loc.start + cast->content_loc.length };
+                pm_node_t *first_string = UP(pm_string_node_create_unescaped(parser, NULL, &content, NULL, &cast->unescaped));
+                pm_node_t *second_string = UP(pm_string_node_create_current_string(parser, NULL, &parser->previous, NULL));
+                parser_lex(parser);
+
+                pm_interpolated_symbol_node_t *interpolated = pm_interpolated_symbol_node_create(parser, NULL, NULL, NULL);
+                pm_interpolated_symbol_node_append(parser->arena, interpolated, first_string);
+                pm_interpolated_symbol_node_append(parser->arena, interpolated, second_string);
+
+                // current is arena-allocated so no explicit free is needed.
+                current = UP(interpolated);
+            } else {
+                assert(false && "unreachable");
+            }
+        }
+
+        if (current) {
+            pm_array_node_elements_append(parser->arena, array, current);
+            current = NULL;
+        } else {
+            expect1(parser, PM_TOKEN_STRING_CONTENT, PM_ERR_LIST_I_LOWER_ELEMENT);
+        }
+    }
+
+    pm_token_t closing = parser->current;
+    if (match1(parser, PM_TOKEN_EOF)) {
+        pm_parser_err_token(parser, &opening, PM_ERR_LIST_I_LOWER_TERM);
+        closing = (pm_token_t) { .type = 0, .start = parser->previous.end, .end = parser->previous.end };
+    } else {
+        expect1(parser, PM_TOKEN_STRING_END, PM_ERR_LIST_I_LOWER_TERM);
+    }
+    pm_array_node_close_set(parser, array, &closing);
+
+    return array;
+}
+
+static pm_array_node_t *
+parse_interpolated_symbol_array(pm_parser_t *parser, uint16_t depth) {
+    parser_lex(parser);
+    pm_token_t opening = parser->previous;
+    pm_array_node_t *array = pm_array_node_create(parser, &opening);
+
+    /* This is the current node that we are parsing that will be added to the
+     * list of elements. */
+    pm_node_t *current = NULL;
+
+    while (!match2(parser, PM_TOKEN_STRING_END, PM_TOKEN_EOF)) {
+        switch (parser->current.type) {
+            case PM_TOKEN_WORDS_SEP: {
+                /* Reset the explicit encoding if we hit a separator since each
+                 * element can have its own encoding. */
+                parser->explicit_encoding = NULL;
+
+                if (current == NULL) {
+                    /* If we hit a separator before we have any content, then we
+                     * don't need to do anything. */
+                } else {
+                    /* If we hit a separator after we've hit content, then we
+                     * need to append that content to the list and reset the
+                     * current node. */
+                    pm_array_node_elements_append(parser->arena, array, current);
+                    current = NULL;
+                }
+
+                parser_lex(parser);
+                break;
+            }
+            case PM_TOKEN_STRING_CONTENT: {
+                if (current == NULL) {
+                    /* If we hit content and the current node is NULL, then this
+                     * is the first string content we've seen. In that case
+                     * we're going to create a new string node and set that to
+                     * the current. */
+                    current = UP(pm_symbol_node_create_current_string(parser, NULL, &parser->current, NULL));
+                    parser_lex(parser);
+                } else if (PM_NODE_TYPE_P(current, PM_INTERPOLATED_SYMBOL_NODE)) {
+                    /* If we hit string content and the current node is an
+                     * interpolated string, then we need to append the string
+                     * content to the list of child nodes. */
+                    pm_node_t *string = UP(pm_string_node_create_current_string(parser, NULL, &parser->current, NULL));
+                    parser_lex(parser);
+
+                    pm_interpolated_symbol_node_append(parser->arena, (pm_interpolated_symbol_node_t *) current, string);
+                } else if (PM_NODE_TYPE_P(current, PM_SYMBOL_NODE)) {
+                    /* If we hit string content and the current node is a symbol
+                     * node, then we need to convert the current node into an
+                     * interpolated string and add the string content to the
+                     * list of child nodes. */
+                    pm_symbol_node_t *cast = (pm_symbol_node_t *) current;
+                    pm_token_t content = {
+                        .type = PM_TOKEN_STRING_CONTENT,
+                        .start = parser->start + cast->content_loc.start,
+                        .end = parser->start + cast->content_loc.start + cast->content_loc.length
+                    };
+
+                    pm_node_t *first_string = UP(pm_string_node_create_unescaped(parser, NULL, &content, NULL, &cast->unescaped));
+                    pm_node_t *second_string = UP(pm_string_node_create_current_string(parser, NULL, &parser->previous, NULL));
+                    parser_lex(parser);
+
+                    pm_interpolated_symbol_node_t *interpolated = pm_interpolated_symbol_node_create(parser, NULL, NULL, NULL);
+                    pm_interpolated_symbol_node_append(parser->arena, interpolated, first_string);
+                    pm_interpolated_symbol_node_append(parser->arena, interpolated, second_string);
+
+                    current = UP(interpolated);
+                } else {
+                    assert(false && "unreachable");
+                }
+
+                break;
+            }
+            case PM_TOKEN_EMBVAR: {
+                bool start_location_set = false;
+                if (current == NULL) {
+                    /* If we hit an embedded variable and the current node is
+                     * NULL, then this is the start of a new string. We'll set
+                     * the current node to a new interpolated string. */
+                    current = UP(pm_interpolated_symbol_node_create(parser, NULL, NULL, NULL));
+                } else if (PM_NODE_TYPE_P(current, PM_SYMBOL_NODE)) {
+                    /* If we hit an embedded variable and the current node is a
+                     * string node, then we'll convert the current into an
+                     * interpolated string and add the string node to the list
+                     * of parts. */
+                    pm_interpolated_symbol_node_t *interpolated = pm_interpolated_symbol_node_create(parser, NULL, NULL, NULL);
+
+                    current = UP(pm_symbol_node_to_string_node(parser, (pm_symbol_node_t *) current));
+                    pm_interpolated_symbol_node_append(parser->arena, interpolated, current);
+                    PM_NODE_START_SET_NODE(interpolated, current);
+                    start_location_set = true;
+                    current = UP(interpolated);
+                } else {
+                    /* If we hit an embedded variable and the current node is an
+                     * interpolated string, then we'll just add the embedded
+                     * variable. */
+                }
+
+                pm_node_t *part = parse_string_part(parser, (uint16_t) (depth + 1));
+                pm_interpolated_symbol_node_append(parser->arena, (pm_interpolated_symbol_node_t *) current, part);
+                if (!start_location_set) {
+                    PM_NODE_START_SET_NODE(current, part);
+                }
+                break;
+            }
+            case PM_TOKEN_EMBEXPR_BEGIN: {
+                bool start_location_set = false;
+                if (current == NULL) {
+                    /* If we hit an embedded expression and the current node is
+                     * NULL, then this is the start of a new string. We'll set
+                     * the current node to a new interpolated string. */
+                    current = UP(pm_interpolated_symbol_node_create(parser, NULL, NULL, NULL));
+                } else if (PM_NODE_TYPE_P(current, PM_SYMBOL_NODE)) {
+                    /* If we hit an embedded expression and the current node is
+                     * a string node, then we'll convert the current into an
+                     * interpolated string and add the string node to the list
+                     * of parts. */
+                    pm_interpolated_symbol_node_t *interpolated = pm_interpolated_symbol_node_create(parser, NULL, NULL, NULL);
+
+                    current = UP(pm_symbol_node_to_string_node(parser, (pm_symbol_node_t *) current));
+                    pm_interpolated_symbol_node_append(parser->arena, interpolated, current);
+                    PM_NODE_START_SET_NODE(interpolated, current);
+                    start_location_set = true;
+                    current = UP(interpolated);
+                } else if (PM_NODE_TYPE_P(current, PM_INTERPOLATED_SYMBOL_NODE)) {
+                    /* If we hit an embedded expression and the current node is
+                     * an interpolated string, then we'll just continue on. */
+                } else {
+                    assert(false && "unreachable");
+                }
+
+                pm_node_t *part = parse_string_part(parser, (uint16_t) (depth + 1));
+                pm_interpolated_symbol_node_append(parser->arena, (pm_interpolated_symbol_node_t *) current, part);
+                if (!start_location_set) {
+                    PM_NODE_START_SET_NODE(current, part);
+                }
+                break;
+            }
+            default:
+                expect1(parser, PM_TOKEN_STRING_CONTENT, PM_ERR_LIST_I_UPPER_ELEMENT);
+                parser_lex(parser);
+                break;
+        }
+    }
+
+    /* If we have a current node, then we need to append it to the list. */
+    if (current) {
+        pm_array_node_elements_append(parser->arena, array, current);
+    }
+
+    pm_token_t closing = parser->current;
+    if (match1(parser, PM_TOKEN_EOF)) {
+        pm_parser_err_token(parser, &opening, PM_ERR_LIST_I_UPPER_TERM);
+        closing = (pm_token_t) { .type = 0, .start = parser->previous.end, .end = parser->previous.end };
+    } else {
+        expect1(parser, PM_TOKEN_STRING_END, PM_ERR_LIST_I_UPPER_TERM);
+    }
+    pm_array_node_close_set(parser, array, &closing);
+
+    return array;
+}
+
 /**
  * Parse an expression that begins with the previous node that we just lexed.
  */
@@ -20824,66 +20882,10 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
             return UP(parse_until(parser, flags, depth));
         case PM_TOKEN_KEYWORD_WHILE:
             return UP(parse_while(parser, flags, depth));
-        case PM_TOKEN_PERCENT_LOWER_I: {
-            parser_lex(parser);
-            pm_token_t opening = parser->previous;
-            pm_array_node_t *array = pm_array_node_create(parser, &opening);
-            pm_node_t *current = NULL;
-
-            while (!match2(parser, PM_TOKEN_STRING_END, PM_TOKEN_EOF)) {
-                accept1(parser, PM_TOKEN_WORDS_SEP);
-                if (match1(parser, PM_TOKEN_STRING_END)) break;
-
-                // Interpolation is not possible but nested heredocs can still lead to
-                // consecutive (disjoint) string tokens when the final newline is escaped.
-                while (match1(parser, PM_TOKEN_STRING_CONTENT)) {
-                    // Record the string node, moving to interpolation if needed.
-                    if (current == NULL) {
-                        current = UP(pm_symbol_node_create_current_string(parser, NULL, &parser->current, NULL));
-                        parser_lex(parser);
-                    } else if (PM_NODE_TYPE_P(current, PM_INTERPOLATED_SYMBOL_NODE)) {
-                        pm_node_t *string = UP(pm_string_node_create_current_string(parser, NULL, &parser->current, NULL));
-                        parser_lex(parser);
-                        pm_interpolated_symbol_node_append(parser->arena, (pm_interpolated_symbol_node_t *) current, string);
-                    } else if (PM_NODE_TYPE_P(current, PM_SYMBOL_NODE)) {
-                        pm_symbol_node_t *cast = (pm_symbol_node_t *) current;
-                        pm_token_t content = { .type = PM_TOKEN_STRING_CONTENT, .start = parser->start + cast->content_loc.start, .end = parser->start + cast->content_loc.start + cast->content_loc.length };
-                        pm_node_t *first_string = UP(pm_string_node_create_unescaped(parser, NULL, &content, NULL, &cast->unescaped));
-                        pm_node_t *second_string = UP(pm_string_node_create_current_string(parser, NULL, &parser->previous, NULL));
-                        parser_lex(parser);
-
-                        pm_interpolated_symbol_node_t *interpolated = pm_interpolated_symbol_node_create(parser, NULL, NULL, NULL);
-                        pm_interpolated_symbol_node_append(parser->arena, interpolated, first_string);
-                        pm_interpolated_symbol_node_append(parser->arena, interpolated, second_string);
-
-                        // current is arena-allocated so no explicit free is needed.
-                        current = UP(interpolated);
-                    } else {
-                        assert(false && "unreachable");
-                    }
-                }
-
-                if (current) {
-                    pm_array_node_elements_append(parser->arena, array, current);
-                    current = NULL;
-                } else {
-                    expect1(parser, PM_TOKEN_STRING_CONTENT, PM_ERR_LIST_I_LOWER_ELEMENT);
-                }
-            }
-
-            pm_token_t closing = parser->current;
-            if (match1(parser, PM_TOKEN_EOF)) {
-                pm_parser_err_token(parser, &opening, PM_ERR_LIST_I_LOWER_TERM);
-                closing = (pm_token_t) { .type = 0, .start = parser->previous.end, .end = parser->previous.end };
-            } else {
-                expect1(parser, PM_TOKEN_STRING_END, PM_ERR_LIST_I_LOWER_TERM);
-            }
-            pm_array_node_close_set(parser, array, &closing);
-
-            return UP(array);
-        }
+        case PM_TOKEN_PERCENT_LOWER_I:
+            return UP(parse_uninterpolated_symbol_array(parser));
         case PM_TOKEN_PERCENT_UPPER_I:
-            return parse_symbol_array(parser, depth);
+            return UP(parse_interpolated_symbol_array(parser, depth));
         case PM_TOKEN_PERCENT_LOWER_W: {
             parser_lex(parser);
             pm_token_t opening = parser->previous;
