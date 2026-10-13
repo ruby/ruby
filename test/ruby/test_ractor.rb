@@ -813,22 +813,56 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
-  def test_ractor_new_raises_isolation_error_if_outer_variables_are_accessed
-    assert_raise(Ractor::IsolationError) do
+  def test_ractor_new_allows_reading_shareable_outer_variables
+    assert_ractor(<<~'RUBY')
       channel = Ractor::Port.new
-      Ractor.new(channel) do
+      r = Ractor.new(channel) do
         inbound_work = Ractor::Port.new
         channel << inbound_work
       end
-    end
+      assert_kind_of Ractor::Port, channel.receive
+      r.join
+    RUBY
+  end
+
+  def test_ractor_new_raises_isolation_error_if_unshareable_outer_variables_are_accessed
+    assert_ractor(<<~'RUBY')
+      assert_raise_with_message(Ractor::IsolationError, /unshareable object \[\]/) do
+        list = []
+        Ractor.new { list }
+      end
+    RUBY
+  end
+
+  def test_ractor_new_raises_isolation_error_if_outer_variables_are_reassigned
+    assert_ractor(<<~'RUBY')
+      assert_raise_with_message(Ractor::IsolationError, /'n' may be reassigned/) do
+        n = 1
+        Ractor.new { n }
+        n = 2
+      end
+    RUBY
+  end
+
+  def test_ractor_new_does_not_modify_the_block
+    assert_ractor(<<~'RUBY')
+      pr = proc { 42 }
+      assert_equal 42, Ractor.new(&pr).value
+      assert_not_predicate pr, :frozen?
+      assert_not_operator Ractor, :shareable?, pr
+      assert_equal 42, Ractor.new(&pr).value
+    RUBY
   end
 
   def test_ractor_new_raises_isolation_error_if_proc_uses_yield
-    assert_raise(Ractor::IsolationError) do
-      Ractor.new do
-        yield
+    assert_ractor(<<~'RUBY')
+      def ractor_with_yield
+        Ractor.new do
+          yield
+        end
       end
-    end
+      assert_raise(Ractor::IsolationError) { ractor_with_yield }
+    RUBY
   end
 
   def test_ractor_does_not_inherit_fiber_storage
@@ -919,19 +953,20 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
-  # A Ractor.new that fails with IsolationError (stillborn) must still clean up the
-  # half-created objspace (regression guard for double enumeration / use-after-free).
+  # A Ractor.new that fails with an uncopyable argument (stillborn) must still clean
+  # up the half-created objspace (regression guard for double enumeration /
+  # use-after-free).
   def test_stillborn_ractor_gc
     assert_ractor(<<~'RUBY', timeout: 60)
-      x = 42 # capturing an outer local makes Ractor.new raise IsolationError
+      x = Thread.current # an uncopyable argument makes Ractor.new raise Ractor::Error
       worker = Ractor.new { loop { break if Ractor.receive == :quit } }
-      assert_raise(Ractor::IsolationError) { Ractor.new { x } }
+      assert_raise(Ractor::Error) { Ractor.new(x) { } }
       10.times { GC.start; 500.times { Object.new } }
       GC.verify_internal_consistency
       worker.send(:quit)
       worker.value
       100.times do |i|
-        assert_raise(Ractor::IsolationError) { Ractor.new { x } }
+        assert_raise(Ractor::Error) { Ractor.new(x) { } }
         if (i % 20).zero?
           Ractor.new { :ok }.value
           GC.start
@@ -947,7 +982,7 @@ class TestRactor < Test::Unit::TestCase
   # built by another thread of the same Ractor: a stillborn child frees that objspace.
   def test_stillborn_ractor_with_free_off_gvl
     assert_ractor(<<~'RUBY', require: '-test-/gvl/call_without_gvl', timeout: 60)
-      x = 42 # capturing an outer local makes Ractor.new raise IsolationError
+      x = Thread.current # an uncopyable argument makes Ractor.new raise Ractor::Error
       stop = false
       ready = Queue.new
       freers = 4.times.map do
@@ -959,8 +994,8 @@ class TestRactor < Test::Unit::TestCase
       freers.size.times { ready.pop } # all of them are churning before we start
       2_000.times do
         begin
-          Ractor.new { x }
-        rescue Ractor::IsolationError
+          Ractor.new(x) { }
+        rescue Ractor::Error
         end
       end
       stop = true
