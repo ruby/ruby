@@ -1461,6 +1461,52 @@ class TestRange < Test::Unit::TestCase
     assert_equal([1,2,3,4,5], (1..5).to_a)
     assert_equal([1,2,3,4], (1...5).to_a)
     assert_raise(RangeError) { (1..).to_a }
+
+    assert_equal([], (5..1).to_a)
+    assert_equal([], (1...1).to_a)
+    assert_equal([1], (1..1).to_a)
+    assert_equal([-2,-1,0,1,2], (-2..2).to_a)
+    assert_equal([-2,-1,0,1], (-2...2).to_a)
+    assert_equal(Array.new(1000) {|i| i - 500}, (-500...500).to_a)
+    assert_equal([1,2,3], (1..3).entries)
+    assert_equal([1,2,3], [*1..3])
+    assert_equal([1,2,3], Array(1..3))
+
+    fmax = RbConfig::LIMITS['FIXNUM_MAX']
+    fmin = RbConfig::LIMITS['FIXNUM_MIN']
+    assert_equal([fmax-1, fmax], (fmax-1..fmax).to_a)
+    assert_equal([fmax-1], (fmax-1...fmax).to_a)
+    assert_equal([fmax-1, fmax, fmax+1], (fmax-1..fmax+1).to_a)
+    assert_equal([fmin-1, fmin, fmin+1], (fmin-1..fmin+1).to_a)
+    assert_equal([fmin, fmin+1], (fmin..fmin+1).to_a)
+    assert_equal([], (fmax..fmin).to_a)
+    assert_equal([], (fmax...fmin).to_a)
+
+    a = (1..3).to_a
+    a << 4
+    assert_equal([1,2,3,4], a)
+    assert_equal([1,2,3], (1..3).to_a)
+
+    subclass = Class.new(Range) do
+      def each
+        yield :a
+        yield :b
+      end
+    end
+    assert_equal([:a, :b], subclass.new(1, 3).to_a)
+    assert_equal([:a, :b], subclass.new(1, 3).entries)
+  end
+
+  def test_to_a_with_redefine_each
+    assert_in_out_err([], <<-'end;', ['true'], [])
+      class Range
+        remove_method :each
+        def each(&b)
+          [1, 2, 3, 4, 5].each(&b)
+        end
+      end
+      puts [1, 2, 3, 4, 5] == (1..10).to_a
+    end;
   end
 
   def test_to_set
