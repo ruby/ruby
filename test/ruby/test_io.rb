@@ -2598,8 +2598,13 @@ class TestIO < Test::Unit::TestCase
       w.write "foob"
       w.close
     end, proc do |r|
-      r.sysread( 5, s = "01234567" )
-      assert_equal( "foob", s )
+      s = +"01234567"
+      assert_same(s, r.sysread(5, s))
+      assert_equal("foob", s)
+
+      s = +"01234567"
+      assert_same(s, r.sysread(0, s))
+      assert_equal("", s)
     end)
   end
 
@@ -2607,6 +2612,7 @@ class TestIO < Test::Unit::TestCase
     make_tempfile {|t|
       open(t.path) do |f|
         assert_raise(ArgumentError) { f.sysread(-1) }
+        assert_raise(ArgumentError) { f.sysread(-1, String.new) }
       end
     }
   end
@@ -4464,6 +4470,13 @@ __END__
         assert_equal("bar", f.pread(3, 4, buf))
         assert_equal("bar", buf)
         assert_raise(EOFError) { f.pread(1, f.size) }
+        assert_equal("", f.pread(0, f.size))
+
+        buf = +"abc"
+        assert_same(buf, f.pread(0, f.size, buf))
+        assert_equal("", buf)
+
+        assert_raise(ArgumentError) { f.pread(-1, 0, buf) }
       end
     }
   end
