@@ -1990,7 +1990,7 @@ djb2(const uint8_t *str, size_t len)
 }
 
 static st_index_t
-parser_memhash(const void *ptr, long len)
+parser_memhash(const void *ptr, rb_len_t len)
 {
     return djb2(ptr, len);
 }
@@ -2019,12 +2019,12 @@ parser_string_char_at_end(struct parser_params *p, rb_parser_string_t *str, int 
 }
 
 static rb_parser_string_t *
-rb_parser_string_new(rb_parser_t *p, const char *ptr, long len)
+rb_parser_string_new(rb_parser_t *p, const char *ptr, rb_len_t len)
 {
     rb_parser_string_t *str;
 
     if (len < 0) {
-        rb_bug("negative string size (or size too big): %ld", len);
+        rb_bug("negative string size (or size too big): %"PRIdLEN, len);
     }
 
     str = xcalloc(1, sizeof(rb_parser_string_t));
@@ -2039,7 +2039,7 @@ rb_parser_string_new(rb_parser_t *p, const char *ptr, long len)
 }
 
 static rb_parser_string_t *
-rb_parser_encoding_string_new(rb_parser_t *p, const char *ptr, long len, rb_encoding *enc)
+rb_parser_encoding_string_new(rb_parser_t *p, const char *ptr, rb_len_t len, rb_encoding *enc)
 {
     rb_parser_string_t *str = rb_parser_string_new(p, ptr, len);
     str->coderange = RB_PARSER_ENC_CODERANGE_UNKNOWN;
@@ -2051,14 +2051,8 @@ rb_parser_encoding_string_new(rb_parser_t *p, const char *ptr, long len, rb_enco
 rb_parser_string_t *
 rb_str_to_parser_string(rb_parser_t *p, VALUE str)
 {
-#if SIZEOF_RB_LEN_T > SIZEOF_LONG
-    /* rb_parser_string_t holds its length as a long. */
-    if (RSTRING_LEN(str) > LONG_MAX) {
-        rb_raise(rb_eArgError, "string size too big");
-    }
-#endif
     /* Type check */
-    rb_parser_string_t *ret = rb_parser_encoding_string_new(p, RSTRING_PTR(str), (long)RSTRING_LEN(str), rb_enc_get(str));
+    rb_parser_string_t *ret = rb_parser_encoding_string_new(p, RSTRING_PTR(str), RSTRING_LEN(str), rb_enc_get(str));
     RB_GC_GUARD(str);
     return ret;
 }
@@ -2168,7 +2162,7 @@ rb_parser_search_nonascii(const char *p, const char *e)
 }
 
 static int
-rb_parser_coderange_scan(struct parser_params *p, const char *ptr, long len, rb_encoding *enc)
+rb_parser_coderange_scan(struct parser_params *p, const char *ptr, rb_len_t len, rb_encoding *enc)
 {
     const char *e = ptr + len;
 
@@ -2276,13 +2270,13 @@ rb_parser_str_modify(rb_parser_string_t *str)
 }
 
 static void
-rb_parser_str_set_len(struct parser_params *p, rb_parser_string_t *str, long len)
+rb_parser_str_set_len(struct parser_params *p, rb_parser_string_t *str, rb_len_t len)
 {
-    long capa;
+    rb_len_t capa;
     const int termlen = STRING_TERM_LEN(str);
 
-    if (len > (capa = (long)(rb_parser_str_capacity(str, termlen))) || len < 0) {
-        rb_bug("probable buffer overflow: %ld for %ld", len, capa);
+    if (len > (capa = (rb_len_t)(rb_parser_str_capacity(str, termlen))) || len < 0) {
+        rb_bug("probable buffer overflow: %"PRIdLEN" for %"PRIdLEN, len, capa);
     }
 
     int cr = PARSER_ENC_CODERANGE(str);
@@ -2305,12 +2299,12 @@ rb_parser_str_set_len(struct parser_params *p, rb_parser_string_t *str, long len
 }
 
 static rb_parser_string_t *
-rb_parser_str_buf_cat(struct parser_params *p, rb_parser_string_t *str, const char *ptr, long len)
+rb_parser_str_buf_cat(struct parser_params *p, rb_parser_string_t *str, const char *ptr, rb_len_t len)
 {
     rb_parser_str_modify(str);
     if (len == 0) return 0;
 
-    long total, olen, off = -1;
+    rb_len_t total, olen, off = -1;
     char *sptr;
     const int termlen = STRING_TERM_LEN(str);
 
@@ -2319,7 +2313,7 @@ rb_parser_str_buf_cat(struct parser_params *p, rb_parser_string_t *str, const ch
         off = ptr - sptr;
     }
 
-    if (olen > LONG_MAX - len) {
+    if (olen > RB_LEN_MAX - len) {
         compile_error(p, "string sizes too big");
         return 0;
     }
@@ -2340,7 +2334,7 @@ rb_parser_str_buf_cat(struct parser_params *p, rb_parser_string_t *str, const ch
 #define parser_str_cat_cstr(str, lit) rb_parser_str_buf_cat(p, str, lit, strlen(lit))
 
 static rb_parser_string_t *
-rb_parser_enc_cr_str_buf_cat(struct parser_params *p, rb_parser_string_t *str, const char *ptr, long len,
+rb_parser_enc_cr_str_buf_cat(struct parser_params *p, rb_parser_string_t *str, const char *ptr, rb_len_t len,
     rb_encoding *ptr_enc, int ptr_cr, int *ptr_cr_ret)
 {
     int str_cr, res_cr;
@@ -2416,7 +2410,7 @@ rb_parser_enc_cr_str_buf_cat(struct parser_params *p, rb_parser_string_t *str, c
 }
 
 static rb_parser_string_t *
-rb_parser_enc_str_buf_cat(struct parser_params *p, rb_parser_string_t *str, const char *ptr, long len,
+rb_parser_enc_str_buf_cat(struct parser_params *p, rb_parser_string_t *str, const char *ptr, rb_len_t len,
     rb_encoding *ptr_enc)
 {
     return rb_parser_enc_cr_str_buf_cat(p, str, ptr, len, ptr_enc, RB_PARSER_ENC_CODERANGE_UNKNOWN, NULL);
@@ -2436,20 +2430,20 @@ rb_parser_str_buf_append(struct parser_params *p, rb_parser_string_t *str, rb_pa
 }
 
 static rb_parser_string_t *
-rb_parser_str_resize(struct parser_params *p, rb_parser_string_t *str, long len)
+rb_parser_str_resize(struct parser_params *p, rb_parser_string_t *str, rb_len_t len)
 {
     if (len < 0) {
         rb_bug("negative string size (or size too big)");
     }
 
-    long slen = PARSER_STRING_LEN(str);
+    rb_len_t slen = PARSER_STRING_LEN(str);
 
     if (slen > len && PARSER_ENC_CODERANGE(str) != RB_PARSER_ENC_CODERANGE_7BIT) {
         PARSER_ENC_CODERANGE_CLEAR(str);
     }
 
     {
-        long capa;
+        rb_len_t capa;
         const int termlen = STRING_TERM_LEN(str);
 
         if ((capa = slen) < len) {
@@ -2470,7 +2464,7 @@ rb_parser_str_resize(struct parser_params *p, rb_parser_string_t *str, long len)
 static int
 rb_parser_string_hash_cmp(rb_parser_string_t *str1, rb_parser_string_t *str2)
 {
-    long len1, len2;
+    rb_len_t len1, len2;
     const char *ptr1, *ptr2;
     rb_encoding *enc1, *enc2;
 
@@ -7542,7 +7536,7 @@ enum string_type {
 };
 
 static rb_parser_string_t *
-parser_str_new(struct parser_params *p, const char *ptr, long len, rb_encoding *enc, int func, rb_encoding *enc0)
+parser_str_new(struct parser_params *p, const char *ptr, rb_len_t len, rb_encoding *enc, int func, rb_encoding *enc0)
 {
     rb_parser_string_t *pstr;
 
@@ -8790,7 +8784,7 @@ heredoc_restore(struct parser_params *p, rb_strterm_heredoc_t *here)
 }
 
 static int
-dedent_string_column(const char *str, long len, int width)
+dedent_string_column(const char *str, rb_len_t len, int width)
 {
     int i, col = 0;
 
@@ -8815,7 +8809,7 @@ static int
 dedent_string(struct parser_params *p, rb_parser_string_t *string, int width)
 {
     char *str;
-    long len;
+    rb_len_t len;
     int i;
 
     len = PARSER_STRING_LEN(string);
