@@ -172,7 +172,12 @@ XCFLAGS = $(XCFLAGS) -DRUBY_DEVEL=1
 XCFLAGS = $(XCFLAGS) -Dmodular_gc_dir="$(modular_gc_dir)"
 !endif
 !if !defined(OPTFLAGS)
+!if defined(CLANG_VER)
+# clang-cl takes -O2sy- as -Os
+OPTFLAGS = -O2 -Oy-
+!else
 OPTFLAGS = -O2sy-
+!endif
 !endif
 OPTFLAGS = $(OPTFLAGS) -Zc:inline
 !if !defined(incflags)
