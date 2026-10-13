@@ -20190,6 +20190,81 @@ parse_while(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
     return pm_while_node_create(parser, &keyword, NTOK2PTR(do_keyword), &parser->previous, predicate, statements, 0);
 }
 
+static pm_node_t *
+parse_xstring(pm_parser_t *parser, uint16_t depth) {
+    pm_token_t opening = parser->current;
+    parser_lex(parser);
+
+    // When we get here, we don't know if this string is going to have
+    // interpolation or not, even though it is allowed. Still, we want to be
+    // able to return a string node without interpolation if we can since
+    // it'll be faster.
+    if (match1(parser, PM_TOKEN_STRING_END)) {
+        // If we get here, then we have an end immediately after a start. In
+        // that case we'll create an empty content token and return an
+        // uninterpolated string.
+        pm_token_t content = (pm_token_t) {
+            .type = PM_TOKEN_STRING_CONTENT,
+            .start = parser->previous.end,
+            .end = parser->previous.end
+        };
+
+        parser_lex(parser);
+        return UP(pm_xstring_node_create(parser, &opening, &content, &parser->previous));
+    }
+
+    pm_interpolated_x_string_node_t *node;
+
+    if (match1(parser, PM_TOKEN_STRING_CONTENT)) {
+        // In this case we've hit string content so we know the string
+        // at least has something in it. We'll need to check if the
+        // following token is the end (in which case we can return a
+        // plain string) or if it's not then it has interpolation.
+        pm_string_t unescaped = parser->current_string;
+        pm_token_t content = parser->current;
+        parser_lex(parser);
+
+        if (match1(parser, PM_TOKEN_STRING_END)) {
+            pm_node_t *node = UP(pm_xstring_node_create_unescaped(parser, &opening, &content, &parser->current, &unescaped));
+            pm_node_flag_set(node, parse_unescaped_encoding(parser, parser->explicit_encoding));
+            parser_lex(parser);
+            return node;
+        }
+
+        // If we get here, then we have interpolation so we'll need to
+        // create a string node with interpolation.
+        node = pm_interpolated_xstring_node_create(parser, &opening, &opening);
+
+        pm_node_t *part = UP(pm_string_node_create_unescaped(parser, NULL, &parser->previous, NULL, &unescaped));
+        pm_node_flag_set(part, parse_unescaped_encoding(parser, parser->explicit_encoding));
+
+        pm_interpolated_xstring_node_append(parser->arena, node, part);
+    } else {
+        // If the first part of the body of the string is not a string
+        // content, then we have interpolation and we need to create an
+        // interpolated string node.
+        node = pm_interpolated_xstring_node_create(parser, &opening, &opening);
+    }
+
+    pm_node_t *part;
+    while (!match2(parser, PM_TOKEN_STRING_END, PM_TOKEN_EOF)) {
+        if ((part = parse_string_part(parser, (uint16_t) (depth + 1))) != NULL) {
+            pm_interpolated_xstring_node_append(parser->arena, node, part);
+        }
+    }
+
+    pm_token_t closing = parser->current;
+    if (match1(parser, PM_TOKEN_EOF)) {
+        pm_parser_err_token(parser, &opening, PM_ERR_XSTRING_TERM);
+        closing = (pm_token_t) { .type = 0, .start = parser->previous.end, .end = parser->previous.end };
+    } else {
+        expect1(parser, PM_TOKEN_STRING_END, PM_ERR_XSTRING_TERM);
+    }
+    pm_interpolated_xstring_node_closing_set(parser, node, &closing);
+
+    return UP(node);
+}
+
 /**
  * Parse an expression that begins with the previous node that we just lexed.
  */
@@ -20859,79 +20934,8 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
         case PM_TOKEN_REGEXP_BEGIN:
             return parse_regexp(parser, depth);
         case PM_TOKEN_XSTRING_BEGIN:
-        case PM_TOKEN_PERCENT_LOWER_X: {
-            parser_lex(parser);
-            pm_token_t opening = parser->previous;
-
-            // When we get here, we don't know if this string is going to have
-            // interpolation or not, even though it is allowed. Still, we want to be
-            // able to return a string node without interpolation if we can since
-            // it'll be faster.
-            if (match1(parser, PM_TOKEN_STRING_END)) {
-                // If we get here, then we have an end immediately after a start. In
-                // that case we'll create an empty content token and return an
-                // uninterpolated string.
-                pm_token_t content = (pm_token_t) {
-                    .type = PM_TOKEN_STRING_CONTENT,
-                    .start = parser->previous.end,
-                    .end = parser->previous.end
-                };
-
-                parser_lex(parser);
-                return UP(pm_xstring_node_create(parser, &opening, &content, &parser->previous));
-            }
-
-            pm_interpolated_x_string_node_t *node;
-
-            if (match1(parser, PM_TOKEN_STRING_CONTENT)) {
-                // In this case we've hit string content so we know the string
-                // at least has something in it. We'll need to check if the
-                // following token is the end (in which case we can return a
-                // plain string) or if it's not then it has interpolation.
-                pm_string_t unescaped = parser->current_string;
-                pm_token_t content = parser->current;
-                parser_lex(parser);
-
-                if (match1(parser, PM_TOKEN_STRING_END)) {
-                    pm_node_t *node = UP(pm_xstring_node_create_unescaped(parser, &opening, &content, &parser->current, &unescaped));
-                    pm_node_flag_set(node, parse_unescaped_encoding(parser, parser->explicit_encoding));
-                    parser_lex(parser);
-                    return node;
-                }
-
-                // If we get here, then we have interpolation so we'll need to
-                // create a string node with interpolation.
-                node = pm_interpolated_xstring_node_create(parser, &opening, &opening);
-
-                pm_node_t *part = UP(pm_string_node_create_unescaped(parser, NULL, &parser->previous, NULL, &unescaped));
-                pm_node_flag_set(part, parse_unescaped_encoding(parser, parser->explicit_encoding));
-
-                pm_interpolated_xstring_node_append(parser->arena, node, part);
-            } else {
-                // If the first part of the body of the string is not a string
-                // content, then we have interpolation and we need to create an
-                // interpolated string node.
-                node = pm_interpolated_xstring_node_create(parser, &opening, &opening);
-            }
-
-            pm_node_t *part;
-            while (!match2(parser, PM_TOKEN_STRING_END, PM_TOKEN_EOF)) {
-                if ((part = parse_string_part(parser, (uint16_t) (depth + 1))) != NULL) {
-                    pm_interpolated_xstring_node_append(parser->arena, node, part);
-                }
-            }
-
-            pm_token_t closing = parser->current;
-            if (match1(parser, PM_TOKEN_EOF)) {
-                pm_parser_err_token(parser, &opening, PM_ERR_XSTRING_TERM);
-                closing = (pm_token_t) { .type = 0, .start = parser->previous.end, .end = parser->previous.end };
-            } else {
-                expect1(parser, PM_TOKEN_STRING_END, PM_ERR_XSTRING_TERM);
-            }
-            pm_interpolated_xstring_node_closing_set(parser, node, &closing);
-
-            return UP(node);
-        }
+        case PM_TOKEN_PERCENT_LOWER_X:
+            return parse_xstring(parser, depth);
         case PM_TOKEN_USTAR: {
             parser_lex(parser);
 
