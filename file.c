@@ -820,14 +820,30 @@ rb_stat_mode(VALUE self)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     stat.nlink   -> integer
+ *    nlink -> integer
  *
- *  Returns the number of hard links to <i>stat</i>.
+ *  Returns the number of [hard links](rdoc-ref:file/hard_links.md) to the entry
+ *  in the [snapshot](rdoc-ref:File::Stat@Snapshot) in `self`:
  *
- *     File.stat("testfile").nlink             #=> 1
- *     File.link("testfile", "testfile.bak")   #=> 0
- *     File.stat("testfile").nlink             #=> 2
+ *  ```ruby
+ *  filepath = '/tmp/t.txt'
+ *  File.write(filepath, 'foo')    # Creates hard link.
+ *  stat0 = File.stat(filepath)    # Take snapshot.
+ *  stat0.nlink # => 1             # One hard link.
+ *  linkpath = '/tmp/t.bak'
+ *  File.link(filepath, linkpath)  # Creates another hard link.
+ *  stat0.nlink # => 1             # Snapshot not updated.
+ *  stat1 = File.stat(filepath)    # Take new snapshot.
+ *  stat1.nlink # => 2             # Updated nlink count.
+ *  File.unlink(linkpath)          # Remove one hard link.
+ *  stat1.nlink # => 2             # Snapshot not updated.
+ *  stat2 = File.stat(filepath)    # Take new shapshot.
+ *  stat2.nlink # => 1             # Updated nlink count.
+ *  File.unlink(filepath)          # Clean up.
+ *  ```
  *
  */
 
