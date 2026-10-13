@@ -61,6 +61,14 @@ module Ruby::Prism
       end
     end
 
+    def test_parse_file_null_byte
+      Dir.mktmpdir do |dir|
+        path = File.join(dir, "target.txt")
+        File.write(path, "# secret")
+        assert_raise(ArgumentError) { Ruby::Prism.parse_file("#{path}\0.rb") }
+      end
+    end
+
     def test_parse_tempfile
       Tempfile.create(["test_parse_tempfile", ".rb"]) do |t|
         t.puts ["begin\n", " end\n"]

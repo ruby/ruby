@@ -217,12 +217,12 @@ module Ruby::Prism # :nodoc:
 
       # Yields a PrismSource to the given block, backed by a pm_source_t.
       def self.with_file(filepath, options)
-        unless filepath.is_a?(String)
-          filepath = filepath.to_path if filepath.respond_to?(:to_path)
-          filepath = filepath.to_str if filepath.respond_to?(:to_str)
-        end
+        # File.path applies the same coercion and validation as the C
+        # extension's rb_get_path: it accepts to_path/to_str objects and
+        # rejects paths containing a NUL byte, which would otherwise truncate
+        # the path when it is handed to C as a NUL-terminated string.
+        filepath = File.path(filepath)
         options[:filepath] = filepath
-        raise TypeError unless filepath.is_a?(String)
 
         # On Windows and Mac, it's expected that filepaths will be encoded in
         # UTF-8. If they are not, we need to convert them to UTF-8 before
