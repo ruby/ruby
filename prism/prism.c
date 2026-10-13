@@ -18112,7 +18112,7 @@ parse_retry(pm_parser_t *parser, const pm_node_t *node) {
  * Ensures that the current yield token is valid in the current context.
  */
 static void
-parse_yield(pm_parser_t *parser, const pm_node_t *node) {
+ensure_valid_yield(pm_parser_t *parser, const pm_yield_node_t *node) {
     pm_context_node_t *context_node = parser->current_context;
 
     while (context_node != NULL) {
@@ -18141,7 +18141,7 @@ parse_yield(pm_parser_t *parser, const pm_node_t *node) {
             case PM_CONTEXT_SCLASS_ELSE:
                 // These are the bad cases. We're not allowed to have a retry in
                 // these contexts.
-                pm_parser_err_node(parser, node, PM_ERR_INVALID_YIELD);
+                pm_parser_err_node(parser, UP(node), PM_ERR_INVALID_YIELD);
                 return;
             case PM_CONTEXT_NONE:
             case PM_CONTEXT_MAXIMUM:
@@ -20634,6 +20634,29 @@ parse_undef(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t flags
     return undef;
 }
 
+static pm_yield_node_t *
+parse_yield(pm_parser_t *parser, uint8_t flags, uint16_t depth) {
+    pm_token_t keyword = parser->current;
+    parser_lex(parser);
+
+    pm_arguments_t arguments = { 0 };
+    parse_arguments_list(parser, &arguments, false, flags, (uint16_t) (depth + 1));
+
+    /* It's possible that we've parsed a block argument through our call to
+     * parse_arguments_list. If we found one, we should mark it as invalid and
+     * destroy it, as we don't have a place for it on the yield node. */
+    if (arguments.block != NULL) {
+        pm_parser_err_node(parser, arguments.block, PM_ERR_UNEXPECTED_BLOCK_ARGUMENT);
+        pm_node_unreference(parser, arguments.block);
+        arguments.block = NULL;
+    }
+
+    pm_yield_node_t *node = pm_yield_node_create(parser, &keyword, &arguments.opening_loc, arguments.arguments, &arguments.closing_loc);
+    if (!parser->parsing_eval && !parser->partial_script) ensure_valid_yield(parser, node);
+
+    return node;
+}
+
 /**
  * Parse an expression that begins with the previous node that we just lexed.
  */
@@ -20859,28 +20882,8 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
 
             return UP(pm_super_node_create(parser, &keyword, &arguments));
         }
-        case PM_TOKEN_KEYWORD_YIELD: {
-            parser_lex(parser);
-
-            pm_token_t keyword = parser->previous;
-            pm_arguments_t arguments = { 0 };
-            parse_arguments_list(parser, &arguments, false, flags, (uint16_t) (depth + 1));
-
-            // It's possible that we've parsed a block argument through our
-            // call to parse_arguments_list. If we found one, we should mark it
-            // as invalid and destroy it, as we don't have a place for it on the
-            // yield node.
-            if (arguments.block != NULL) {
-                pm_parser_err_node(parser, arguments.block, PM_ERR_UNEXPECTED_BLOCK_ARGUMENT);
-                pm_node_unreference(parser, arguments.block);
-                arguments.block = NULL;
-            }
-
-            pm_node_t *node = UP(pm_yield_node_create(parser, &keyword, &arguments.opening_loc, arguments.arguments, &arguments.closing_loc));
-            if (!parser->parsing_eval && !parser->partial_script) parse_yield(parser, node);
-
-            return node;
-        }
+        case PM_TOKEN_KEYWORD_YIELD:
+            return UP(parse_yield(parser, flags, depth));
         case PM_TOKEN_KEYWORD_CLASS:
             return parse_class(parser, flags, depth);
         case PM_TOKEN_KEYWORD_DEF:
