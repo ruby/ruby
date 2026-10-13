@@ -16327,10 +16327,13 @@ parse_operator_symbol(pm_parser_t *parser, const pm_token_t *opening, pm_lex_sta
  * symbols.
  */
 static pm_node_t *
-parse_symbol(pm_parser_t *parser, pm_lex_mode_t *lex_mode, pm_lex_state_t next_state, uint16_t depth) {
+parse_symbol(pm_parser_t *parser, pm_lex_state_t next_state, uint16_t depth) {
+    pm_lex_mode_t lex_mode = *parser->lex_modes.current;
+    parser_lex(parser);
+
     const pm_token_t opening = parser->previous;
 
-    if (lex_mode->mode != PM_LEX_STRING) {
+    if (lex_mode.mode != PM_LEX_STRING) {
         if (next_state != PM_LEX_STATE_NONE) lex_state_set(parser, next_state);
 
         switch (parser->current.type) {
@@ -16359,7 +16362,7 @@ parse_symbol(pm_parser_t *parser, pm_lex_mode_t *lex_mode, pm_lex_state_t next_s
         return UP(symbol);
     }
 
-    if (lex_mode->as.string.interpolation) {
+    if (lex_mode.as.string.interpolation) {
         // If we have the end of the symbol, then we can return an empty symbol.
         if (match1(parser, PM_TOKEN_STRING_END)) {
             if (next_state != PM_LEX_STATE_NONE) lex_state_set(parser, next_state);
@@ -16479,12 +16482,8 @@ parse_undef_argument(pm_parser_t *parser, uint16_t depth) {
 
             return UP(symbol);
         }
-        case PM_TOKEN_SYMBOL_BEGIN: {
-            pm_lex_mode_t lex_mode = *parser->lex_modes.current;
-            parser_lex(parser);
-
-            return parse_symbol(parser, &lex_mode, PM_LEX_STATE_NONE, (uint16_t) (depth + 1));
-        }
+        case PM_TOKEN_SYMBOL_BEGIN:
+            return parse_symbol(parser, PM_LEX_STATE_NONE, (uint16_t) (depth + 1));
         default:
             pm_parser_err_current(parser, PM_ERR_UNDEF_ARGUMENT);
             return UP(pm_error_recovery_node_create(parser, PM_TOKEN_START(parser, &parser->current), PM_TOKEN_LENGTH(&parser->current)));
@@ -16515,12 +16514,8 @@ parse_alias_argument(pm_parser_t *parser, bool first, uint16_t depth) {
 
             return UP(symbol);
         }
-        case PM_TOKEN_SYMBOL_BEGIN: {
-            pm_lex_mode_t lex_mode = *parser->lex_modes.current;
-            parser_lex(parser);
-
-            return parse_symbol(parser, &lex_mode, first ? PM_LEX_STATE_FNAME | PM_LEX_STATE_FITEM : PM_LEX_STATE_NONE, (uint16_t) (depth + 1));
-        }
+        case PM_TOKEN_SYMBOL_BEGIN:
+            return parse_symbol(parser, first ? PM_LEX_STATE_FNAME | PM_LEX_STATE_FITEM : PM_LEX_STATE_NONE, (uint16_t) (depth + 1));
         case PM_TOKEN_BACK_REFERENCE:
             parser_lex(parser);
             return UP(pm_back_reference_read_node_create(parser, &parser->previous));
@@ -21081,12 +21076,8 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
             return UP(parse_unary_plus(parser, binding_power, flags, depth));
         case PM_TOKEN_STRING_BEGIN:
             return parse_strings(parser, NULL, flags & PM_PARSE_ACCEPTS_LABEL, (uint16_t) (depth + 1));
-        case PM_TOKEN_SYMBOL_BEGIN: {
-            pm_lex_mode_t lex_mode = *parser->lex_modes.current;
-            parser_lex(parser);
-
-            return parse_symbol(parser, &lex_mode, PM_LEX_STATE_END, (uint16_t) (depth + 1));
-        }
+        case PM_TOKEN_SYMBOL_BEGIN:
+            return parse_symbol(parser, PM_LEX_STATE_END, (uint16_t) (depth + 1));
         default: {
             pm_context_t recoverable = context_recoverable(parser, &parser->current);
 
