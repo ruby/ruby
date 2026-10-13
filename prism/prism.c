@@ -22293,6 +22293,78 @@ parse_operator_equal(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t pr
     }
 }
 
+static pm_node_t *
+parse_call(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t previous_binding_power, uint8_t flags, uint16_t depth) {
+    pm_token_t operator = parser->current;
+    parser_lex(parser);
+
+    pm_arguments_t arguments = { 0 };
+
+    // This if statement handles the foo.() syntax.
+    if (match1(parser, PM_TOKEN_PARENTHESIS_LEFT)) {
+        parse_arguments_list(parser, &arguments, true, false, (uint16_t) (depth + 1));
+        return UP(pm_call_node_shorthand_create(parser, node, &operator, &arguments));
+    }
+
+    switch (PM_NODE_TYPE(node)) {
+        case PM_RESCUE_MODIFIER_NODE: {
+            pm_rescue_modifier_node_t *cast = (pm_rescue_modifier_node_t *) node;
+            if (PM_NODE_TYPE_P(cast->rescue_expression, PM_MATCH_PREDICATE_NODE) || PM_NODE_TYPE_P(cast->rescue_expression, PM_MATCH_REQUIRED_NODE)) {
+                PM_PARSER_ERR_TOKEN_FORMAT(parser, &operator, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, pm_token_str(operator.type));
+            }
+            break;
+        }
+        case PM_AND_NODE: {
+            pm_and_node_t *cast = (pm_and_node_t *) node;
+            if (PM_NODE_TYPE_P(cast->right, PM_MATCH_PREDICATE_NODE) || PM_NODE_TYPE_P(cast->right, PM_MATCH_REQUIRED_NODE)) {
+                PM_PARSER_ERR_TOKEN_FORMAT(parser, &operator, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, pm_token_str(operator.type));
+            }
+            break;
+        }
+        case PM_OR_NODE: {
+            pm_or_node_t *cast = (pm_or_node_t *) node;
+            if (PM_NODE_TYPE_P(cast->right, PM_MATCH_PREDICATE_NODE) || PM_NODE_TYPE_P(cast->right, PM_MATCH_REQUIRED_NODE)) {
+                PM_PARSER_ERR_TOKEN_FORMAT(parser, &operator, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, pm_token_str(operator.type));
+            }
+            break;
+        }
+        default:
+            break;
+    }
+
+    pm_token_t message;
+
+    switch (parser->current.type) {
+        case PM_CASE_OPERATOR:
+        case PM_CASE_KEYWORD:
+        case PM_TOKEN_CONSTANT:
+        case PM_TOKEN_IDENTIFIER:
+        case PM_TOKEN_METHOD_NAME: {
+            parser_lex(parser);
+            message = parser->previous;
+            break;
+        }
+        default: {
+            PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->current, PM_ERR_EXPECT_MESSAGE, pm_token_str(parser->current.type));
+            message = (pm_token_t) { .type = 0, .start = parser->previous.end, .end = parser->previous.end };
+        }
+    }
+
+    parse_arguments_list(parser, &arguments, true, flags, (uint16_t) (depth + 1));
+    pm_call_node_t *call = pm_call_node_call_create(parser, node, &operator, &message, &arguments);
+
+    if (
+        (previous_binding_power == PM_BINDING_POWER_STATEMENT) &&
+        arguments.arguments == NULL &&
+        arguments.opening_loc.length == 0 &&
+        match1(parser, PM_TOKEN_COMMA)
+    ) {
+        return parse_targets_validate(parser, UP(call), PM_BINDING_POWER_INDEX, (uint16_t) (depth + 1));
+    } else {
+        return UP(call);
+    }
+}
+
 static PRISM_INLINE pm_node_t *
 parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t previous_binding_power, pm_binding_power_t binding_power, uint8_t flags, uint16_t depth) {
     pm_token_t token = parser->current;
@@ -22397,75 +22469,8 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
             return UP(pm_call_node_binary_create(parser, node, &token, argument, PM_CALL_NODE_FLAGS_COMPARISON));
         }
         case PM_TOKEN_AMPERSAND_DOT:
-        case PM_TOKEN_DOT: {
-            parser_lex(parser);
-            pm_token_t operator = parser->previous;
-            pm_arguments_t arguments = { 0 };
-
-            // This if statement handles the foo.() syntax.
-            if (match1(parser, PM_TOKEN_PARENTHESIS_LEFT)) {
-                parse_arguments_list(parser, &arguments, true, false, (uint16_t) (depth + 1));
-                return UP(pm_call_node_shorthand_create(parser, node, &operator, &arguments));
-            }
-
-            switch (PM_NODE_TYPE(node)) {
-                case PM_RESCUE_MODIFIER_NODE: {
-                    pm_rescue_modifier_node_t *cast = (pm_rescue_modifier_node_t *) node;
-                    if (PM_NODE_TYPE_P(cast->rescue_expression, PM_MATCH_PREDICATE_NODE) || PM_NODE_TYPE_P(cast->rescue_expression, PM_MATCH_REQUIRED_NODE)) {
-                        PM_PARSER_ERR_TOKEN_FORMAT(parser, &operator, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, pm_token_str(operator.type));
-                    }
-                    break;
-                }
-                case PM_AND_NODE: {
-                    pm_and_node_t *cast = (pm_and_node_t *) node;
-                    if (PM_NODE_TYPE_P(cast->right, PM_MATCH_PREDICATE_NODE) || PM_NODE_TYPE_P(cast->right, PM_MATCH_REQUIRED_NODE)) {
-                        PM_PARSER_ERR_TOKEN_FORMAT(parser, &operator, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, pm_token_str(operator.type));
-                    }
-                    break;
-                }
-                case PM_OR_NODE: {
-                    pm_or_node_t *cast = (pm_or_node_t *) node;
-                    if (PM_NODE_TYPE_P(cast->right, PM_MATCH_PREDICATE_NODE) || PM_NODE_TYPE_P(cast->right, PM_MATCH_REQUIRED_NODE)) {
-                        PM_PARSER_ERR_TOKEN_FORMAT(parser, &operator, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, pm_token_str(operator.type));
-                    }
-                    break;
-                }
-                default:
-                    break;
-            }
-
-            pm_token_t message;
-
-            switch (parser->current.type) {
-                case PM_CASE_OPERATOR:
-                case PM_CASE_KEYWORD:
-                case PM_TOKEN_CONSTANT:
-                case PM_TOKEN_IDENTIFIER:
-                case PM_TOKEN_METHOD_NAME: {
-                    parser_lex(parser);
-                    message = parser->previous;
-                    break;
-                }
-                default: {
-                    PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->current, PM_ERR_EXPECT_MESSAGE, pm_token_str(parser->current.type));
-                    message = (pm_token_t) { .type = 0, .start = parser->previous.end, .end = parser->previous.end };
-                }
-            }
-
-            parse_arguments_list(parser, &arguments, true, flags, (uint16_t) (depth + 1));
-            pm_call_node_t *call = pm_call_node_call_create(parser, node, &operator, &message, &arguments);
-
-            if (
-                (previous_binding_power == PM_BINDING_POWER_STATEMENT) &&
-                arguments.arguments == NULL &&
-                arguments.opening_loc.length == 0 &&
-                match1(parser, PM_TOKEN_COMMA)
-            ) {
-                return parse_targets_validate(parser, UP(call), PM_BINDING_POWER_INDEX, (uint16_t) (depth + 1));
-            } else {
-                return UP(call);
-            }
-        }
+        case PM_TOKEN_DOT:
+            return parse_call(parser, node, previous_binding_power, flags, depth);
         case PM_TOKEN_DOT_DOT:
         case PM_TOKEN_DOT_DOT_DOT: {
             parser_lex(parser);
